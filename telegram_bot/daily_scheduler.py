@@ -1,12 +1,17 @@
 """
-웰페리온 일일 자동 보고 스케줄러 v2.1
+웰페리온 일일 자동 보고 스케줄러 v2.2
 -------------------------------
-정규 스케줄: 06/12/18/21/23시 텔레그램 자동 보고 (GM 알림 홍수 축소 · 2026-07-18 GM 승인)
-  · GM DM: 06(개인)·18(개인)·21(마감)·23(마감점검 — 이상시만 조건부 발송)
-  · 12시는 점검관리방(실무진) 전용 — GM DM 아님
-  · 점검 알림 통합(GM 2026-07-18 추가 확정): 오전점검(12시)·마감점검 개인DM(23시)은
-    킬스위치 CHECK_MORNING_1200_ENABLED/CHECK_2300_GM_DM_ENABLED=False 로 발송만 OFF
-    (22:30 점검관리방 다이제스트·23:00 카카오 4부서 요약은 무변경 유지). 계산/원장 적재는 보존.
+정규 스케줄: 06/12/21/23시 텔레그램 자동 보고 (GM 알림 홍수 축소 · 2026-07-18 GM 승인)
+  · GM DM: 06(개인)·21(마감 — 18시 퇴근·저녁·명언 흡수)·23(마감점검, GM DM은 폐지·원장 적재만 보존)
+  · 12시는 점검관리방(실무진) 전용이었으나 GM DM 아님 — 발신 자체는 폐지(아래 참조)
+  · ★배10011(2026-07-24, GM 승인) — 알림 묶기 1주차:
+      ①18:00 GM DM 폐지, 내용(퇴근인사·저녁루틴·명언)은 21:00 본문 서두로 흡수(builder 함수는
+        되돌림·--manual-test 미리보기용으로 보존 — 07/09/15/22 폐지 때와 동일 관례).
+      ②오전점검(12시)·마감점검 개인DM(23시) 킬스위치(CHECK_MORNING_1200_ENABLED/
+        CHECK_2300_GM_DM_ENABLED)를 "끄기"에서 "삭제"로 전환 — 되돌릴 수 있는 스위치를
+        남겨두면 죽은 코드로 있다 누가 또 켠다(배10008과 동일 원칙). 발신은 구조적으로
+        영구 미발신, 23시의 원장 적재(CHECK_INCOMPLETE_LEDGER, 카톡 22:30/23:00 "반복 미완료
+        제안"이 계속 소비)는 그대로 보존.
   · 07(어제결산)·09(매출/진행)·15(중간정리)·22(취침) GM DM 슬롯은 08:00 통합브리프로 흡수·폐지
 테스트 모드: python daily_scheduler.py --test  →  1시간 주기 실행
 ※ 08시(오늘의 항로 통합브리프)는 ceo_morning_pipeline.py (별도 Task Scheduler) 담당 —
@@ -290,10 +295,11 @@ CFO_SHEET_URL = ENV.get("CFO_SHEET_URL", "")
 
 # 업무현황 SSOT API (G1 할일, 09·15시 공용) — 정의는 collectors.ops_shared(위에서 import).
 
-# ── 점검 알림 통합 킬스위치 (GM 2026-07-18) ────────────────────────────────────
-#   가역·발송만 게이트(계산/원장 적재 등 부작용은 항상 보존). True로 되돌리면 즉시 부활.
-CHECK_MORNING_1200_ENABLED = False   # GM 2026-07-18: 오전 점검(12시) 알림 없앰. True로 되돌리면 부활
-CHECK_2300_GM_DM_ENABLED = False     # GM 2026-07-18: 마감점검 개인DM 중복 제거(점검관리방·카톡으로 수신). True로 부활
+# ── 점검 알림 통합 킬스위치 — 배10011(2026-07-24, GM 승인)로 삭제됨 ──────────────
+#   과거 CHECK_MORNING_1200_ENABLED/CHECK_2300_GM_DM_ENABLED(둘 다 False)는 재부팅
+#   가능한 스위치라 "꺼두면 죽은 코드로 남아 누가 또 켠다"(배10008과 동일 원칙) 위험이
+#   있어 삭제했다. 12시·23시 GM DM은 run_report() 내부에서 무조건 미발신으로 고정됐고
+#   (23시의 원장 적재 부작용은 보존), 되돌리려면 이 커밋을 revert해야 한다(실수로 못 켬).
 
 
 # ── state.json 읽기/쓰기 ─────────────────────────────────────────────────────
@@ -1953,27 +1959,41 @@ def _build_15_body() -> str:
     )
 
 
+def _18_evening_lines() -> str:
+    """18시 콘텐츠(퇴근인사·저녁루틴·명언) — 배10011(2026-07-24)로 21시 본문 서두에 흡수.
+    명언은 EVENING_QUOTES 정적 리스트에서 날짜 결정론(day % len) 선택."""
+    now = datetime.now()
+    quote = EVENING_QUOTES[now.day % len(EVENING_QUOTES)]
+    return (
+        f"🌙 오늘도 수고하셨습니다.\n"
+        f"🌆 저녁 루틴 — 오늘 마무리하고 재충전하세요.\n"
+        f'\n> "{quote}"\n'
+    )
+
+
 def _build_18_body() -> str:
     """18시 — 퇴근 인사 + 저녁 루틴 + 명언 [개인] (운영 데이터 0·GM 2026-07-09)
 
     [GM 2026-07-09] 18시를 개인 메시지로 축소 — 점검 현황·오늘 성과(커밋)·대시보드
     링크 전부 제거. 시설·지원·주차 마감 현황은 23시로 일원화. 여기는 퇴근+저녁루틴+
-    명언만. 명언은 EVENING_QUOTES 정적 리스트에서 날짜 결정론(day % len) 선택.
-    """
-    now = datetime.now()
-    quote = EVENING_QUOTES[now.day % len(EVENING_QUOTES)]
+    명언만.
 
+    ★배10011(2026-07-24, GM 승인): 18:00 단독 발신은 폐지, 내용은 21:00 본문 서두로
+    흡수(schedule_map에서 "18" 제거 — 이 함수는 더 이상 cron으로 안 불림). 이 함수 자체는
+    되돌림·--manual-test 미리보기용으로 보존한다(2026-07-18 07/09/15/22 폐지 때와 동일 관례).
+    """
     return (
         f"{_unified_header('18', '개인', '퇴근·저녁')}\n"
-        f"🌙 오늘도 수고하셨습니다.\n"
-        f"🌆 저녁 루틴 — 오늘 마무리하고 재충전하세요.\n"
-        f'\n> "{quote}"\n\n'
+        f"{_18_evening_lines()}\n"
         f"{_AUTO_FOOTER}"
     )
 
 
 def _build_21_body() -> str:
-    """21시 — 오늘 최종 정리 + 내일 항로점 브릿지 [개인&회사]"""
+    """21시 — 오늘 최종 정리 + 내일 항로점 브릿지 [개인&회사]
+
+    ★배10011(2026-07-24, GM 승인): 18:00 퇴근인사·저녁루틴·명언(_18_evening_lines)을
+    본문 서두에 흡수(18시 단독 발신 폐지). 나머지 구조는 무변경."""
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
@@ -2040,6 +2060,8 @@ def _build_21_body() -> str:
 
     return (
         f"{_unified_header('21', '개인&회사', '오늘 마감·내일 정립')}\n"
+        f"{_18_evening_lines()}\n"
+        f"{_DIVIDER}\n"
         f"   오늘의 성과\n"
         f"{table_str}\n\n"
         f"🚢 코드·자동화\n"
@@ -2600,20 +2622,16 @@ def run_report(slot: str, test_mode: bool = False) -> None:
         logger.error(f"{label} owner_id 미등록 — state.json 확인 필요. 보고 생략.")
         return
 
-    # 23시 마감 점검 = 조건부 GM DM (GM 2026-07-18): 점검 이상(미완 회차·기준이탈·반복제안)
-    #   있을 때만 GM DM 발신, 정상이면 미발신 — 상세 점검은 카톡 23시가 담당.
-    #   test_mode는 미리보기라 항상 발신(GM DM). 여기서 본문을 한 번만 산출해 재조회 방지.
+    # ★배10011(2026-07-24, GM 승인): 23시 GM 개인DM은 완전 폐지(끄기가 아니라 삭제 —
+    #   되돌릴 수 있는 킬스위치를 남기면 죽은 코드로 있다 누가 또 켠다·배10008과 동일 원칙).
+    #   단 _compute_23_body_and_anomaly() 내부의 미완료 원장 적재(CHECK_INCOMPLETE_LEDGER
+    #   append_daily_from_live) 부작용은 카톡 22:30/23:00 "반복 미완료 제안"이 계속 소비하므로
+    #   계산 호출 자체는 보존한다(호출부 확인 완료 — support_check_summary/kakao 23시 경로).
     body_override: str | None = None
     if slot == "23" and not test_mode:
-        _b23, _anom23 = _compute_23_body_and_anomaly()
-        if not _anom23:
-            logger.info(f"{label} 마감 점검 이상 0 — GM DM 조건부 미발신(상세는 카톡 23시 담당)")
-            return
-        if not CHECK_2300_GM_DM_ENABLED:
-            logger.info(f"{label} CHECK_2300_GM_DM_ENABLED=False — 마감점검 개인DM 게이트 OFF(점검관리방·카톡 23시로 수신, 계산/원장 적재는 보존). 미발신")
-            return
-        body_override = _b23
-        logger.info(f"{label} 마감 점검 이상 감지 — GM DM 발신")
+        _compute_23_body_and_anomaly()  # 원장 적재 부작용만 필요 — 반환값은 GM DM에 안 씀(폐지)
+        logger.info(f"{label} 23시 GM DM 폐지(배10011) — 원장 적재만 수행, 발신 없음(상세는 카톡 23시·점검관리방)")
+        return
 
     try:
         if body_override is not None:
@@ -2656,12 +2674,11 @@ def run_report(slot: str, test_mode: bool = False) -> None:
 
     # 12시 점검현황 = 점검관리방 전용(GM 2026-07-13) — 업무보고(owner DM) 중복 발송 제거.
     #   test_mode는 GM DM(owner)로 미리보기만(방 오발송 방지).
+    #   ★배10011(2026-07-24, GM 승인): CHECK_MORNING_1200_ENABLED 킬스위치를 삭제하고
+    #   점검관리방 발신을 구조적으로 영구 미발신 고정(끄기가 아니라 삭제 — 배10008과 동일
+    #   원칙). builder(_build_12_body)는 되돌림·--manual-test 미리보기용으로 보존.
     if slot == "12" and not test_mode:
-        if not CHECK_MORNING_1200_ENABLED:
-            logger.info(f"{label} CHECK_MORNING_1200_ENABLED=False — 오전점검(12시) 게이트 OFF. 점검관리방 미발신(본문 계산은 보존)")
-            return
-        room_ok = send_telegram(CHECK_NUDGE_CHAT_ID, body, parse_mode=parse_mode)
-        logger.info(f"{label} 점검관리방 발송 {'완료' if room_ok else '실패'} chat_id={CHECK_NUDGE_CHAT_ID}")
+        logger.info(f"{label} 12시 점검관리방 발신 폐지(배10011, 2026-07-18 GM 결정 영구화) — 미발신")
         return
 
     success = send_telegram(owner_id, body, parse_mode=parse_mode)
@@ -3037,17 +3054,18 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06/12/18/21/23시 (GM 알림 홍수 축소 · 2026-07-18 GM 승인) ===")
+        logger.info("=== 정규 스케줄 시작: 06/12/21/23시 (GM 알림 홍수 축소 · 2026-07-18 GM 승인, 배10011로 18시 흡수) ===")
         # [2026-06-07 GM 확정] 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당.
         # [2026-07-18 GM 승인] GM DM 홍수 축소 — 07(어제결산)·09(매출/진행)·15(중간정리)·
         #   22(취침) GM DM 슬롯 폐지. 핵심값(어제완료·매출1줄·북극성top·직원카드)은 08:00
-        #   통합브리프(ceo_morning_pipeline)로 흡수. 23시는 조건부(점검 이상시만 GM DM,
-        #   정상이면 미발신 — 상세는 카톡 23시 담당). 12시는 점검관리방(실무진) 전용이라 유지.
-        #   builder 함수(_build_07/09/15/22_body)는 보존 — 되돌림·--manual-test 미리보기용.
+        #   통합브리프(ceo_morning_pipeline)로 흡수. 12시·23시 GM DM은 배10011(2026-07-24)로
+        #   킬스위치가 삭제되며 구조적으로 영구 미발신(23시 원장 적재만 보존) — 아래 run_report 참조.
+        #   builder 함수(_build_07/09/12/15/18/22_body)는 보존 — 되돌림·--manual-test 미리보기용.
+        # [2026-07-24 GM 승인·배10011] 18시(퇴근인사·저녁루틴·명언) 단독 발신 폐지 — 21시 본문
+        #   서두로 흡수(_build_21_body 참조). schedule_map에서 "18" 제거.
         schedule_map = {
             "06": (6, 0),
             "12": (12, 0),
-            "18": (18, 0),
             "21": (21, 0),
             "23": (23, 0),
         }

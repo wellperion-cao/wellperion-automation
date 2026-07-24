@@ -38,15 +38,15 @@ SCHEDULER_PATH = ROOT / "telegram_bot" / "daily_scheduler.py"
 DRIFT_OUT = ROOT / "status" / "notify_drift.json"
 
 # apscheduler 트리거 항목이 전제하는 코드 마커 — 없어지면 CODE_MARKER_GONE
+# ★배10011(2026-07-24): '"18": (18, 0)'·CHECK_MORNING_1200_ENABLED·CHECK_2300_GM_DM_ENABLED
+#   3개는 의도적 삭제(18시→21시 흡수, 12/23시 킬스위치 삭제)라 목록에서도 함께 제거했다 —
+#   남겨두면 이 체커가 "코드에서 사라졌다"고 매번 오탐(CODE_MARKER_GONE)한다.
 APSCHEDULER_MARKERS = [
     'schedule_map = {',
     '"06": (6, 0)',
     '"12": (12, 0)',
-    '"18": (18, 0)',
     '"21": (21, 0)',
     '"23": (23, 0)',
-    'CHECK_MORNING_1200_ENABLED',
-    'CHECK_2300_GM_DM_ENABLED',
     'nudge_map = {',
     'id="daily_digest_early"',
     'id="daily_digest_late"',
@@ -94,8 +94,12 @@ def main():
     mismatches = []
 
     # ── 1) 등록부(schtasks 트리거) → 실제 예약작업 존재 확인 ──────────────
+    # state=='dead'는 제외 — 죽었다고 이미 확정한 항목이 예약작업 부재로 또 걸리는 건
+    # 오탐(배10011: win-2300-kakao-check가 배10008 삭제로 이 케이스가 됨).
     for item in reg_items:
         if item.get('trigger') != 'schtasks':
+            continue
+        if item.get('state') == 'dead':
             continue
         task_name = str(item.get('source', '')).split('·')[0].strip()
         if not task_name:
