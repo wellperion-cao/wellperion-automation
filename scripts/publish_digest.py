@@ -59,6 +59,9 @@ try:  # 결정 정합 게이트 공용 신호(§4) — dedup 이 재발송을 �
 except Exception:
     def _replay_append(*_a, **_k):
         return False
+# 종결 상태값 단일 출처(약속 L01) — 발행 가드(A2·watcher)와 요약 제외(A3·여기)가 같은
+# 집합을 본다. review_states 는 잎 모듈이라 순환 없음(폴백 복사본을 두지 않는다).
+from review_states import TERMINAL_STATES
 from pathlib import Path
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
@@ -178,8 +181,18 @@ def _load_review_queue() -> list[dict]:
 
 
 def _group_all_entries(folder: str, all_review_items: list[dict]) -> list[dict]:
-    """folder(그룹키)에 속하는 review_queue 전체 엔트리 — 발행완료·검수대기·실패·폐기 전부."""
-    return [it for it in all_review_items if _base_key(it) == folder]
+    """folder(그룹키)에 속하는 review_queue 엔트리 — 발행완료·검수대기·실패 등 진행중 상태 전부.
+
+    ★2026-07-24 A3(배9598): 종결(폐기·취소) 엔트리는 여기서 제외한다. 이 함수가 완결
+    판정(_group_is_complete)·보류 사유·요약 본문(_dedup_channel_entries) 3곳의 공통
+    입구라, 한 지점에서 걸러야 '취소한 편이 요약에 섞여 나가는' 경로가 전부 닫힌다.
+    그룹이 전부 종결이면 빈 리스트 → 호출부에서 미완결(보류)로 귀결 = 안전한 쪽.
+    실측(2026-07-24 · 큐 167건/81그룹): 판정 변경 그룹 0건 — 발신 델타 0.
+    """
+    return [
+        it for it in all_review_items
+        if _base_key(it) == folder and (it.get("status") or "") not in TERMINAL_STATES
+    ]
 
 
 def _group_is_official(entries: list[dict]) -> bool:

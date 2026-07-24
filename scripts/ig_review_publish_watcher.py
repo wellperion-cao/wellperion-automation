@@ -105,7 +105,10 @@ POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
 # 이 패턴에 안 맞는 채널은 dispatch_publish 의 else 에서 발행 차단(구 폴백 구멍 수리).
 _IG_CHANNEL_RE = re.compile(r"인스타|instagram", re.IGNORECASE)
 
-TERMINAL_STATES = {"폐기", "취소"}
+# 정본 = scripts/review_states.py (잎 모듈). 여기서 재정의하지 않고 그대로 재수출한다 —
+# publish_digest 도 같은 집합을 봐야 하는데 이 모듈은 publish_digest 를 import 하므로
+# (아래 L59) 반대 방향 import 가 순환이라 조용히 복사본으로 떨어졌다(2026-07-24 배9598).
+from review_states import TERMINAL_STATES  # noqa: E402  (재수출 — 기존 호출부 무손상)
 _DEPRECATED_MARKER_RE = re.compile(r"폐기|DEPRECATED", re.IGNORECASE)
 # 같은 실행(run) 안에서 같은 항목을 여러 배제 지점이 중복 기록하지 않도록 하는 프로세스 로컬 dedup.
 _TERMINAL_BLOCK_LOGGED: set[str] = set()
