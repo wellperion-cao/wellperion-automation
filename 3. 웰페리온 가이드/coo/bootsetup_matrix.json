@@ -498,75 +498,6 @@
       "ideas": "👥 문의 5종 단일체계 완성 — 멤버십·성인·유소년·공간렌트·비즈니스\n이탈 예측 · 자동 팔로업"
     },
     {
-      "id": "cfo",
-      "nsmap": {
-        "kpi": "재무 정확화 (4축 복합)",
-        "axes": [
-          {
-            "name": "월 매출 정확도",
-            "measured": true,
-            "value_key": "sales_month",
-            "goal": "610.5M/월",
-            "note": "최근 마감월 실적(sales_monthly GAS 실측·배354)"
-          },
-          {
-            "name": "연간 달성률",
-            "measured": false,
-            "goal": "연 목표",
-            "note": "부분·26년 분석시트 수동"
-          },
-          {
-            "name": "지출 연동",
-            "measured": false,
-            "goal": "자동 연동",
-            "note": "구매성 상수·부분"
-          },
-          {
-            "name": "이상감지 소요",
-            "measured": false,
-            "goal": "자동 경보",
-            "note": "미구현"
-          }
-        ],
-        "tier": "🔧 배관수리(매출 배선+지출 칸)",
-        "현재": "미측정",
-        "goal": "측정 개통",
-        "path": "매출·지출 연동↑ = 재무 한눈에",
-        "reach": {
-          "mode": "measured",
-          "source": "kpi_values.roles.cfo",
-          "value_key": "sales_month",
-          "target": 610500000
-        }
-      },
-      "icon": "💰",
-      "name": "시뽀",
-      "title": "AI CFO",
-      "owner": "나우열M",
-      "accent": "#7C3AED",
-      "dims": [
-        "매출·지출 KPI 정확화 · 재무 투명성 (전사 예산 한눈에)",
-        "소스확인(GAS·시트)→집계·검증→대시보드 반영→웰리·GM 보고",
-        "ssot/ 4종(약속·incidents·canon·kpi) + 시뽀.md + S2 공통·cfo탭 + F1·F2 + cfo.json",
-        "- 월 매출 정확도\n- 연간 달성률\n- 지출 연동 상태\n- 이상감지→경보 소요",
-        "8.33억 중복합산 가드 · 칸밀림 가드 · MCP차단→GAS openById · 공식값 게이트",
-        "자율: 집계로직·대시보드 패치. GM 결재: 결제·예산정책·목표값·공식값",
-        "소유: 매출·지출 집계·KPI(F1·F2)·예산추적·재무이상감지. 타 도메인 = 소유자 경유",
-        "웰리 → GM. 시우(운영비용)·시토(GAS연동)·시모(마케팅예산)·시포(회원수익)"
-      ],
-      "owns": [
-        {
-          "label": "F1 재무 허브",
-          "href": "wellperion_guide(main).html#F1"
-        },
-        {
-          "label": "매출·지출 현황",
-          "href": "cfo/finance/매출지출현황.html"
-        }
-      ],
-      "ideas": "💰 지출 자동집계 → 매출-지출 순액 실시간\n재무 이상감지 자동경보(회원수익·마케팅ROI 연결)"
-    },
-    {
       "id": "chro",
       "nsmap": {
         "kpi": "인사 시스템화 (4축 복합)",
@@ -665,6 +596,75 @@
         }
       ],
       "ideas": "🧑‍💼 업무 난이도 → 인사평가 가중 자동집계\n교육이수·온보딩 자동추적"
+    },
+    {
+      "id": "cfo",
+      "nsmap": {
+        "kpi": "재무 정확화 (4축 복합)",
+        "axes": [
+          {
+            "name": "월 매출 정확도",
+            "measured": true,
+            "value_key": "sales_month",
+            "goal": "610.5M/월",
+            "note": "최근 마감월 실적(sales_monthly GAS 실측·배354)"
+          },
+          {
+            "name": "연간 달성률",
+            "measured": false,
+            "goal": "연 목표",
+            "note": "부분·26년 분석시트 수동"
+          },
+          {
+            "name": "지출 연동",
+            "measured": false,
+            "goal": "자동 연동",
+            "note": "구매성 상수·부분"
+          },
+          {
+            "name": "이상감지 소요",
+            "measured": false,
+            "goal": "자동 경보",
+            "note": "미구현"
+          }
+        ],
+        "tier": "🔧 배관수리(매출 배선+지출 칸)",
+        "현재": "미측정",
+        "goal": "측정 개통",
+        "path": "매출·지출 연동↑ = 재무 한눈에",
+        "reach": {
+          "mode": "measured",
+          "source": "kpi_values.roles.cfo",
+          "value_key": "sales_month",
+          "target": 610500000
+        }
+      },
+      "icon": "💰",
+      "name": "시뽀",
+      "title": "AI CFO",
+      "owner": "나우열M",
+      "accent": "#7C3AED",
+      "dims": [
+        "매출·지출 KPI 정확화 · 재무 투명성 (전사 예산 한눈에)",
+        "소스확인(GAS·시트)→집계·검증→대시보드 반영→웰리·GM 보고",
+        "ssot/ 4종(약속·incidents·canon·kpi) + 시뽀.md + S2 공통·cfo탭 + F1·F2 + cfo.json",
+        "- 월 매출 정확도\n- 연간 달성률\n- 지출 연동 상태\n- 이상감지→경보 소요",
+        "8.33억 중복합산 가드 · 칸밀림 가드 · MCP차단→GAS openById · 공식값 게이트",
+        "자율: 집계로직·대시보드 패치. GM 결재: 결제·예산정책·목표값·공식값",
+        "소유: 매출·지출 집계·KPI(F1·F2)·예산추적·재무이상감지. 타 도메인 = 소유자 경유",
+        "웰리 → GM. 시우(운영비용)·시토(GAS연동)·시모(마케팅예산)·시포(회원수익)"
+      ],
+      "owns": [
+        {
+          "label": "F1 재무 허브",
+          "href": "wellperion_guide(main).html#F1"
+        },
+        {
+          "label": "매출·지출 현황",
+          "href": "cfo/finance/매출지출현황.html"
+        }
+      ],
+      "ideas": "💰 지출 자동집계 → 매출-지출 순액 실시간\n재무 이상감지 자동경보(회원수익·마케팅ROI 연결)"
     }
   ]
 }
