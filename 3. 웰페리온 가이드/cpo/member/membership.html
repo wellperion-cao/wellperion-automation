@@ -2752,7 +2752,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
      실무진(임정은M)·AI가 같은 화면에서 회원 관리 자동화가 한 일·빠뜨린 일을 함께 본다(GM 2026-07-23 배9960).
      데이터·스타일 = _assets/worklog_panel.js 단일 출처(이 페이지는 최초 부착이라 스크립트 태그 포함). -->
 <div data-worklog="cpo"></div>
-<script src="/wellperion-automation/_assets/worklog_panel.js"></script>
+<!-- defer: 페이지 본문을 다 그린 뒤 실행 — 패널 때문에 화면 뜨는 게 늦어지지 않게(2026-07-24 GM 확인).
+     실측(같은 날): 스크립트 7.2KB + 데이터 5.2KB = 12.4KB·91ms, 전부 백그라운드. -->
+<script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
 
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */

@@ -51,6 +51,19 @@ FUNNEL_EXEC_URL = (
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 _LOSS_STATUSES = {"LOSS", "환불", "양도LOSS"}
 _SUCCESS_STATUSES = {"SUC", "단기SUC"}
+# 해소·취소 계열(=이미 끝난 문의) 판별. 배9597 결정정합 게이트 A4.
+# ★대조키 없음이 설계의 핵심: 종결 표시가 문의 행 자체(status 칸)에 들어 있어 다른 원천과
+#   맞춰볼 필요가 없다 — 행번호(INC row-delete race)도, 전화번호도 키로 쓰지 않는다.
+#   전화번호 단독 대조는 실측상 위험(2026-07-24): 재문의 고객은 같은 번호에 문의 행이 2줄
+#   생기고(라이브 3건 확인), 옛 행이 종결이라고 번호로 빼면 살아있는 새 문의까지 사라진다.
+# 키워드 판별인 이유: 진행상태는 실무진이 시트에서 값을 늘릴 수 있어 값 하드코딩은 곧 낡는다.
+#   Survey.js `_lessonScopeFilter_` 의 terminal 정규식과 같은 방식(도메인 내 일관).
+_CLOSED_STATUS_RE = re.compile(r"종결|취소|해소")
+
+
+def _is_closed_status(status: str) -> bool:
+    """문의가 '해소·취소'로 이미 끝났는지(행 자체 표시 기준). 끝난 문의는 일일 액션카드에서 제외."""
+    return bool(_CLOSED_STATUS_RE.search(str(status or "")))
 _AUTO_FOOTER = "_본 메시지는 자동 발송입니다._"
 
 
@@ -197,6 +210,8 @@ def _is_active_status(status: str) -> bool:
     """진행상태가 이탈·전환(가입) 어느 쪽도 아닌 '진행중' 상태인지. 신규 상태값이 추가돼도
     LOSS/SUC 계열이 아니면 활성으로 보는 포괄 정의(값 하드코딩 최소화)."""
     s = str(status or "").strip()
+    if _is_closed_status(s):
+        return False  # 배9597 — 해소·취소로 끝난 문의는 활성 아님(액션카드 제외)
     return bool(s) and s not in _LOSS_STATUSES and s not in _SUCCESS_STATUSES
 
 
@@ -210,6 +225,8 @@ def todays_reservations(rows: list[dict], today: str) -> list[dict]:
     """오늘 날짜 상담·체험 예약 보유 문의자(reservations[].date == today)."""
     out = []
     for r in rows:
+        if _is_closed_status(r.get("status")):
+            continue  # 배9597 — 해소·취소로 끝난 문의의 예약은 오늘 액션이 아니다
         for res in (r.get("reservations") or []):
             if res.get("date") == today:
                 out.append({**r, "_res_time": res.get("time", "")})
