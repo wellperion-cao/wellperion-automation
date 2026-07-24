@@ -643,11 +643,11 @@
     "task_id": "CEO-2026-07-23-COMMIT-STALE-TREE-GUARD",
     "clevel": "ceo",
     "title": "[웰리] 커밋 스테일 트리 TOCTOU 근본 차단 — 이미 2회 기록된 사고의 3번째 발생(시모 제기·GM 07-23 웰리 경유 지시)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "NORMAL",
     "enqueued_at": "2026-07-23",
     "from": "cmo",
-    "note": "2026-07-23 시모 제기(GM 지시=웰리 경유). 상세=status/briefs/시모_커밋스테일트리_제기_20260723.md. 2026-07-21 11:25 fe9be3f9d(AI하루 10편 190파일 추가) 4분 뒤 11:29 b96cac0ea(chore(cto): 종합접수처 apps_script_voc.js 라이브정합, 배9468 시토 작업, 세션 session_01DeysMM9YomN5abF2TyP7oc)가 189/190 파일 삭제. 판정=스테일 트리/인덱스 스냅샷(커밋 준비 시점 트리 상태를 나중 parent 위에 커밋) — autostash/rebase 가설은 reflog로 배제(4분 구간 rebase·stash·merge 이벤트 0, 단일 parent 순수 선형 커밋). 같은 날 e7b412fbc/e4af6cace로 자가복구됐으나 review_queue.json 등록 10건은 다음날 재작업됨(현 id가 CMO-2026-07-22-AIDAY* 인 이유). 4주 전수 스캔=20파일 이상 삭제 커밋 이 1건뿐. ★핵심=반복 3회차 — 이미 기억에 2건 박제(임시 인덱스 커밋→옛 blob 잔류 / 임시 인덱스는 read-tree HEAD로 시작)돼 있었으나 문서·기억만으로는 안 막힘(헌법 불변원리 2 미이행 사례). 지목하는 차단(구현은 웰리 판단)=커밋 확정 직전 \"트리를 읽은 시점 HEAD ≠ 커밋 시점 HEAD\" 재검증 후 재시도, 부차적으로 무관 경로 대량 삭제 시 경고. 시모가 직접 안 고친 이유=전 C-Level 공용 커밋 경로라 잘못 조이면 6명 커밋이 전부 막힘. GM 2026-07-23 \"웰리 통해\" 지시.\n\n[웰리 판단·배정 완료 2026-07-24] 조사 결과 = status/briefs/웰리_커밋TOCTOU_차단설계_20260724.md (sha 521d15d1a).\n판단: safe_commit.py 주경로(read-tree HEAD·HEAD 재검증·update-ref CAS)는 7/21형 스테일트리를 실제로 막는다 — 뼈대는 맞다. 진짜 구멍은 안전망 배선: 혼입검사가 push 뒤에 돌아 나쁜 커밋이 그대로 origin까지 간다(탐지O 차단X). 추가로 훅 미발화로 최강 삭제가드가 safe_commit 경로에서 안 돌고, 우회 bare 커밋 경로 7개+공용헬퍼1이 남아 있다.\n배정: 시토 배10009 (A안 — 혼입 판정을 update-ref 이전으로 앞당겨 선검증). 우회 7경로는 범위 폭발 방지로 이번 회차 제외·목록만 등재.\n웰리 역할 = 이후 검증(실제 혼입 재현으로 가드 발화 확인 · 문서로 닫기 금지).\n",
+    "note": "2026-07-23 시모 제기(GM 지시=웰리 경유). 상세=status/briefs/시모_커밋스테일트리_제기_20260723.md. 2026-07-21 11:25 fe9be3f9d(AI하루 10편 190파일 추가) 4분 뒤 11:29 b96cac0ea(chore(cto): 종합접수처 apps_script_voc.js 라이브정합, 배9468 시토 작업, 세션 session_01DeysMM9YomN5abF2TyP7oc)가 189/190 파일 삭제. 판정=스테일 트리/인덱스 스냅샷(커밋 준비 시점 트리 상태를 나중 parent 위에 커밋) — autostash/rebase 가설은 reflog로 배제(4분 구간 rebase·stash·merge 이벤트 0, 단일 parent 순수 선형 커밋). 같은 날 e7b412fbc/e4af6cace로 자가복구됐으나 review_queue.json 등록 10건은 다음날 재작업됨(현 id가 CMO-2026-07-22-AIDAY* 인 이유). 4주 전수 스캔=20파일 이상 삭제 커밋 이 1건뿐. ★핵심=반복 3회차 — 이미 기억에 2건 박제(임시 인덱스 커밋→옛 blob 잔류 / 임시 인덱스는 read-tree HEAD로 시작)돼 있었으나 문서·기억만으로는 안 막힘(헌법 불변원리 2 미이행 사례). 지목하는 차단(구현은 웰리 판단)=커밋 확정 직전 \"트리를 읽은 시점 HEAD ≠ 커밋 시점 HEAD\" 재검증 후 재시도, 부차적으로 무관 경로 대량 삭제 시 경고. 시모가 직접 안 고친 이유=전 C-Level 공용 커밋 경로라 잘못 조이면 6명 커밋이 전부 막힘. GM 2026-07-23 \"웰리 통해\" 지시.\n\n[웰리 판단·배정 완료 2026-07-24] 조사 결과 = status/briefs/웰리_커밋TOCTOU_차단설계_20260724.md (sha 521d15d1a).\n판단: safe_commit.py 주경로(read-tree HEAD·HEAD 재검증·update-ref CAS)는 7/21형 스테일트리를 실제로 막는다 — 뼈대는 맞다. 진짜 구멍은 안전망 배선: 혼입검사가 push 뒤에 돌아 나쁜 커밋이 그대로 origin까지 간다(탐지O 차단X). 추가로 훅 미발화로 최강 삭제가드가 safe_commit 경로에서 안 돌고, 우회 bare 커밋 경로 7개+공용헬퍼1이 남아 있다.\n배정: 시토 배10009 (A안 — 혼입 판정을 update-ref 이전으로 앞당겨 선검증). 우회 7경로는 범위 폭발 방지로 이번 회차 제외·목록만 등재.\n웰리 역할 = 이후 검증(실제 혼입 재현으로 가드 발화 확인 · 문서로 닫기 금지).\n\n\n[웰리 검증 통과·종료 2026-07-24] 시토 배10009 실행분을 검증했다. safe_commit.py 선검증이 update-ref 이전으로 앞당겨졌고(커밋 c8b8efa9e), 격리 재현 5/5 통과 — 유령삭제·혼입 3종 차단, 정상 커밋·정당한 삭제는 통과(오탐 0). ssot/incidents.json INC-030 GUARDED 등재 확인(검증증거 = 실제 재현 출력). HEAD 실재 확인 완료.\n잔여(정직): safe_commit 우회 bare 커밋 경로 7개 + 공용헬퍼 1은 미차단으로 남았다 — INC-030 차단조치 칸에 '미차단 잔여'로 명시됨. 범위 폭발 방지로 이번 회차 제외했으며 다음 회차 대상이다.\n",
     "next": "시토 배10009 진행 대기 → 웰리 검증(실제 혼입 재현으로 가드 발화 확인 후 incidents GUARDED 승인)",
     "depends_on": "",
     "ship_no": 9862,
@@ -1193,5 +1193,19 @@
     "short_no": 54,
     "module": "home",
     "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-2b658224c",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10020,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 2b658224c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "2b658224c37b34ac77929ba46621c43f9227e08c"
   }
 ]
