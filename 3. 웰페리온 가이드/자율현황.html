@@ -38,6 +38,15 @@
   .hero{margin:2px 0 16px;}
   .hero-line{font-size:14.5px; font-weight:700; color:var(--text-soft); line-height:1.55; padding:13px 16px; border:1px solid rgba(124,58,237,0.32); border-left:4px solid var(--accent); border-radius:11px; background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(240,198,116,0.05));}
   .hero-line b{color:var(--accent-soft); font-size:16px; font-weight:800;}
+  /* 0건일 때 '마지막으로 있었던 때' — 오늘 없었을 뿐인지, 오래 멈춘 건지 구분(2026-07-24) */
+  .hero-since{font-size:12px; font-weight:600; color:var(--dim); margin-left:3px; white-space:nowrap;}
+  /* 표 칸 — 요약만 보이고 전문은 펼쳐보기(글벽 방지 · 정보 손실 0 · 2026-07-24) */
+  .cellmore{max-width:520px;}
+  .cellmore>summary{cursor:pointer; list-style:none; word-break:keep-all; overflow-wrap:anywhere; line-height:1.55;}
+  .cellmore>summary::-webkit-details-marker{display:none;}
+  .cellmore>summary::after{content:' 펼쳐보기'; font-size:11px; font-weight:700; color:var(--accent-soft); white-space:nowrap;}
+  .cellmore[open]>summary::after{content:' 접기';}
+  .cellfull{margin-top:7px; padding-top:7px; border-top:1px dashed var(--border); color:var(--text-soft); line-height:1.65; word-break:keep-all; overflow-wrap:anywhere;}
 
   /* ── 정직 프레이밍 노트: 자율=제안·감시 위주 현상태 명시(배237) ── */
   .honest-note{display:flex; gap:9px; align-items:flex-start; margin:2px 0 18px; padding:10px 13px; border:1px solid var(--border-strong); border-left:3px solid var(--dim); border-radius:9px; background:var(--surface);}
@@ -860,9 +869,22 @@
     return '⛵';
   }
   function missionSummary(txt){
-    var t = String(txt || '').replace(/\s+/g, ' ').trim();
-    if(!t) return '';
-    return t.length > 170 ? t.slice(0, 170) + '…' : t;
+    return String(txt || '').replace(/\s+/g, ' ').trim();
+  }
+  // 표 칸 요약 — 문장·구 경계에서 자른다. 글자수로만 자르면 단어 한가운데서 끊긴다
+  // (GM 2026-07-22 '글 끊김 금지'). 잘린 뒤 전문은 펼쳐보기로 남겨 정보 손실 0.
+  function missionSnippet(t, max){
+    if(t.length <= max) return t;
+    var win = t.slice(0, max + 1);
+    var best = -1;
+    // 문장부호 → 구분점 → 공백 순으로, 너무 짧아지지 않는 선에서 가장 뒤쪽 경계를 고른다.
+    [/[.!?。](?=\s|$)/g, /[·—…)\]]/g, /\s/g].forEach(function(re){
+      if(best >= 0) return;
+      var m, at = -1;
+      while((m = re.exec(win)) !== null){ if(m.index >= max * 0.45) { at = m.index; } }
+      if(at > 0) best = at;
+    });
+    return (best > 0 ? t.slice(0, best + 1) : t.slice(0, max)).replace(/\s+$/, '') + '…';
   }
   function missionCleanTitle(t){ return String(t || '').replace(/^\[[^\]]+\]\s*/, ''); }
   // 진행중·정박 공용 표 렌더(GM 지시 2026-07-22 — 카드 나열 대신 표로 한눈 스캔). 컬럼: 배|담당|미션|상태|재개조건·다음.
@@ -870,13 +892,19 @@
     var rows = list.map(function(s){
       var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
       var owner = esc(nick + (s.ship_no != null ? ' ' + s.ship_no : ''));
-      var content = missionSummary(contentFn(s));
+      var full = missionSummary(contentFn(s));
+      var head = missionSnippet(full, 95);
+      // 한 칸에 원문을 통째로 넣으면 표가 글벽이 된다(GM 2026-07-24 지적). 요약만 보이고
+      // 전문은 접어 둔다 — 잘라내는 게 아니라 접는 것이라 정보는 하나도 안 잃는다.
+      var content = !full ? '' : (head === full ? esc(full)
+        : '<details class="cellmore"><summary>' + esc(head) + '</summary>'
+          + '<div class="cellfull">' + esc(full) + '</div></details>');
       return '<tr>' +
         '<td style="text-align:center;">' + missionBoat(s.priority) + '</td>' +
         '<td>' + owner + '</td>' +
         '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong></td>' +
         '<td>' + esc(statusFn(s)) + '</td>' +
-        '<td>' + (content ? esc(content) : '<span style="color:var(--dim);">—</span>') + '</td>' +
+        '<td>' + (content || '<span style="color:var(--dim);">—</span>') + '</td>' +
       '</tr>';
     }).join('');
     return '<div class="gtbl-wrap"><table class="gtbl">' +
@@ -955,21 +983,50 @@
          + axRoutine + '</details>')
       : '';
 
+    // ── 0건일 때 '마지막으로 있었던 때'를 함께 적는다 (2026-07-24 시토 · GM 지적) ──
+    //   그냥 '0건'만 적으면 '오늘은 없었음'과 '한 달째 멈춤'이 구분되지 않는다.
+    //   실제로 학습 반영은 2026-06-23 이후 정지 상태였는데 화면상 그냥 0으로만 보였다.
+    function sinceHint(lastWhen){
+      if(!lastWhen) return '<span class="hero-since">(기록 없음)</span>';
+      var days = Math.floor((localTodayMs() - ts(lastWhen)) / 86400000);
+      var ago = days <= 0 ? '오늘' : (days === 1 ? '어제' : days + '일 전');
+      return '<span class="hero-since">(마지막 ' + fmtWhen(lastWhen) + ' · ' + ago + ')</span>';
+    }
+    // 0이면 힌트를 붙이고, 1건 이상이면 숫자만 — 잘 돌 때 화면을 어지럽히지 않는다.
+    function withHint(n, lastWhen){
+      return '<b>' + n + '</b>건' + (n > 0 ? '' : ' ' + sinceHint(lastWhen));
+    }
+    function lastWhenOf(arr, whenKey, ok){
+      for(var i = arr.length - 1; i >= 0; i--){ if(ok(arr[i])) return arr[i][whenKey]; }
+      return null;
+    }
+
+    if(autoTxt === '미측정'){
+      autoTxt = '미측정 ' + sinceHint(lastWhenOf(ledger, 'observed_at', function(o){ return o.signal_type === 'auto_exec'; }));
+    } else if(judgeKeys.length === 0){
+      // 판단형 0 — 루틴만 돌았다는 사실이 헤드라인에서 안 보여 '아무것도 안 함'으로 읽혔다.
+      autoTxt = '<b>0</b>건' + (routineKeys.length ? '<span class="hero-since">(루틴 동기화 ' + routineKeys.length + '건은 수행)</span>' : '');
+    }
+
     // 포착 건수 = 오늘 gm_aide_scan_log 회차 captured 합
     var capTxt;
-    if(!scan.length){ capTxt = '미측정'; }
+    if(!scan.length){ capTxt = '미측정 <span class="hero-since">(기록 없음)</span>'; }
     else {
       var capSum = todayScan.reduce(function(a, s){ return a + (s.captured|0); }, 0);
-      capTxt = '<b>' + capSum + '</b>건';
+      capTxt = withHint(capSum, lastWhenOf(scan, 'logged_at', function(s){ return (s.captured|0) > 0; }));
     }
 
     // 학습 반영 건수 = 오늘 반영일시로 status '반영' 처리된 learning_proposals 건수
     var learn = d.learn || [];
     var learnTxt;
-    if(!learn.length){ learnTxt = '미측정'; }
+    if(!learn.length){ learnTxt = '미측정 <span class="hero-since">(기록 없음)</span>'; }
     else {
-      var learnN = learn.filter(function(p){ return p.status === '반영' && isToday(p['반영일시']); }).length;
-      learnTxt = '<b>' + learnN + '</b>건';
+      var learnDone = learn.filter(function(p){ return p.status === '반영'; });
+      var learnN = learnDone.filter(function(p){ return isToday(p['반영일시']); }).length;
+      // 반영된 적이 없으면 '제안이 만들어진 마지막 때'라도 보여준다(완전 침묵보다 낫다).
+      var learnLast = learnDone.length ? last(learnDone)['반영일시']
+                                       : (learn.length ? last(learn)['생성일'] : null);
+      learnTxt = withHint(learnN, learnLast);
     }
 
     el.innerHTML = '<div class="hero-line">🤖 자율이 오늘 한 일 — 자율 처리 ' + autoTxt + ' · 포착 ' + capTxt + ' · 학습 반영 ' + learnTxt + '</div>' + autoDetailHtml;
