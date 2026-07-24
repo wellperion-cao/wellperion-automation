@@ -1337,6 +1337,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   submit_inquiry: true,  // 방문자 문의 제출 — 토큰 면제
   intake_submit:  true,  // 유입 자체 Survey 폼 제출(배1037 갈래B) — 토큰(INTAKE_SUBMIT_TOKEN)·허니팟·타이밍·레이트리밋으로 별도 방어. 2026-07-15 시포
   ping_inquiry_notify: true,  // [진단용] BOT_TOKEN 확인 + 문의 알림 방 테스트 발송 (시모 2026-06-24)
+  staff_feedback_submit: true,  // 실무진 피드백 제출 — intake_submit 과 동일하게 토큰(INTAKE_SUBMIT_TOKEN)·허니팟·멱등·레이트리밋으로 별도 방어. 고객 PII 미취급(별도 탭). 2026-07-24 시포·GM
   // 마케팅 집계(PII 미노출) 면제 — 2026-06-17 CMO, 시토 게이트 공유
   // 아래 액션들은 집계 숫자만 반환 · 이름·전화 등 원시 개인정보 미노출 → 면제 안전.
   // inquiry_list 등 원시 행/PII 반환 액션은 절대 면제 금지(게이트 유지).
@@ -3180,6 +3181,59 @@ function _processAction(body) {
         + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
+  }
+
+  // ─── 실무진 피드백 접수 — 회원관리 화면 상단 '💬 실무진 피드백' 버튼 → 실무진피드백.html (GM 2026-07-24 시포) ───
+  //   실무진이 화면·업무를 쓰다 느낀 불편·개선요청을 그 자리에서 남긴다. 저장 = 멤버십 스프레드시트
+  //   '실무진 피드백' 탭(없으면 헤더와 함께 생성) · 알림 = 업무보고방 1줄.
+  //   ★방어는 intake_submit 과 같은 계열을 그대로 쓴다(토큰·허니팟·멱등·레이트리밋) — 새 방식 발명 없음.
+  //   ★고객 데이터 무관(회원 시트에 쓰지 않는다) — 별도 탭이라 기존 문의 파이프라인에 영향 0.
+  if (action === 'staff_feedback_submit') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    if (String(body.hp || '').trim() !== '') return _json({ ok: true, id: 'HP', dedup: true });  // 허니팟(봇) — 조용히 성공가장
+    var _sfCache = CacheService.getScriptCache();
+    var _sfSid = String(body.submissionId || '').slice(0, 64);
+    if (_sfSid) {   // 멱등 — 재시도로 같은 피드백이 두 줄 쌓이지 않게
+      var _sfPrev = _sfCache.get('sf_sid_' + _sfSid);
+      if (_sfPrev) return _json({ ok: true, id: _sfPrev, dedup: true });
+    }
+    var _sfBody = String(body.content || '').trim();
+    if (!_sfBody) return _json({ ok: false, error: '내용을 입력해 주세요.', noRetry: true });
+    if (_sfBody.length > 2000) _sfBody = _sfBody.slice(0, 2000);
+    var _sfScreen = String(body.screen  || '').trim().slice(0, 40);
+    var _sfKind   = String(body.kind    || '').trim().slice(0, 40);
+    var _sfUrgent = String(body.urgency || '').trim().slice(0, 20);
+    var _sfWho    = String(body.writer  || '').trim().slice(0, 40);
+    var _sfRlKey = 'sf_rl_' + (_sfWho || 'anon');   // 레이트리밋 — 60초 내 5회 초과만 차단(정상 사용 무영향)
+    var _sfN = parseInt(_sfCache.get(_sfRlKey) || '0', 10) + 1;
+    _sfCache.put(_sfRlKey, String(_sfN), 60);
+    if (_sfN > 5) return _json({ ok: false, error: '잠시 후 다시 보내주세요.', noRetry: true });
+
+    var _sfId = 'FB' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyMMdd-HHmmss');
+    try {
+      var _sfSs = SpreadsheetApp.openById(_MI_SS_ID);          // 멤버십 문의 관리 스프레드시트(정본 상수 재사용)
+      var _sfSh = _sfSs.getSheetByName('실무진 피드백');
+      if (!_sfSh) {
+        _sfSh = _sfSs.insertSheet('실무진 피드백');
+        _sfSh.appendRow(['접수시각', '접수ID', '화면', '종류', '급한정도', '작성자', '내용', '처리상태', '처리메모']);
+        _sfSh.setFrozenRows(1);
+      }
+      _sfSh.appendRow([new Date(), _sfId, _sfScreen, _sfKind, _sfUrgent, _sfWho, _sfBody, '접수', '']);
+    } catch (e) {
+      // ★저장 실패를 성공으로 위장하지 않는다(INC-014 재발방지) — 화면이 실패를 그대로 보여줘야 한다.
+      return _json({ ok: false, error: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+    if (_sfSid) _sfCache.put('sf_sid_' + _sfSid, _sfId, 600);
+    try {   // 알림 실패는 접수를 되돌리지 않는다(이미 저장됨) — best-effort
+      var _sfEsc = function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+      _notifyTelegram('💬 <b>실무진 피드백</b>'
+        + (_sfScreen ? '\n화면: ' + _sfEsc(_sfScreen) : '')
+        + (_sfKind   ? '\n종류: ' + _sfEsc(_sfKind)   : '')
+        + (_sfUrgent ? '\n급한정도: ' + _sfEsc(_sfUrgent) : '')
+        + (_sfWho    ? '\n작성: ' + _sfEsc(_sfWho)    : '')
+        + '\n\n' + _sfEsc(_sfBody.slice(0, 300)));
+    } catch (e) { /* 알림 실패 무시 */ }
+    return _json({ ok: true, id: _sfId });
   }
 
   // ─── (관리) 유입언어(KO/EN) 칸 생성 + 검증 프로브 — 영문 자체폼 컷오버(배9674 시모, 2026-07-22). 토큰 게이트. ───
