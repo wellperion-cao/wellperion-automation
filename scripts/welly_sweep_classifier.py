@@ -27,22 +27,47 @@ scripts/welly_sweep_classifier.py — 자율 웰리 스윕 순수 분류 엔진 
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from dataclasses import dataclass, field
 
 # ── 결재영역 5종 게이트 키워드 (계획 §4 step0 · 영구 자율 금지) ──────────────
-#   결제·보안 발효·공식값·전략·콘텐츠 발행. first-match-wins 최우선 하드 차단.
-GATE_KEYWORDS: tuple[str, ...] = (
-    # 결제
+#   정본 = ssot/canon_values.json rules[].key=="gm_approval_gate_5" (2026-07-24 A안 단일화 · GM 승인).
+#   결제·보안 발효·금지·전략·공식값 5종. first-match-wins 최우선 하드 차단.
+#   ※ "콘텐츠 발행"은 2026-07-24 GM 결정으로 제외(자동발행 표준 운영 중 — 배58 참조). 5종에 없음.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_CANON_PATH = _REPO_ROOT / "ssot" / "canon_values.json"
+
+# canon_values.json 로드 실패 시에만 쓰는 폴백(fail-open — 로딩 실패로 판정 엔진이 멎으면 안 됨).
+# 위 canon 규칙과 내용 동일 유지 의무(값은 canon이 정본, 이건 비상용 사본).
+_FALLBACK_GATE_KEYWORDS: tuple[str, ...] = (
     "결제", "페이", "정산", "환불", "결재",
-    # 보안 발효
     "보안", "차단", "발효", "jwt", "token_enforce",
-    # 공식값
-    "공식값", "공식 링크", "공식링크", "대표 전화", "대표전화",
-    # 콘텐츠 발행
-    "발행", "publish", "게시", "업로드", "라이브",
-    # 전략 / C-Level 자기영역
+    "금지", "블랙리스트",
     "전략", "북극성", "8차원",
+    "공식값", "공식 링크", "공식링크", "대표 전화", "대표전화",
 )
+
+
+def _load_gate_keywords() -> tuple[str, ...]:
+    """ssot/canon_values.json의 gm_approval_gate_5 규칙에서 키워드를 직독.
+    실패 시 _FALLBACK_GATE_KEYWORDS 유지(fail-open)."""
+    try:
+        with open(_CANON_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        for rule in data.get("rules", []):
+            if rule.get("key") == "gm_approval_gate_5":
+                kws: list[str] = []
+                for cat in rule.get("categories", []):
+                    kws.extend(cat.get("keywords", []))
+                if kws:
+                    return tuple(kws)
+    except Exception:
+        pass
+    return _FALLBACK_GATE_KEYWORDS
+
+
+GATE_KEYWORDS: tuple[str, ...] = _load_gate_keywords()
 
 # ── 비가역·외부영향 키워드 (계획 §4 step2 · 자율 금지·HOLD) ───────────────────
 IRREVERSIBLE_KEYWORDS: tuple[str, ...] = (
