@@ -145,6 +145,67 @@ def _tree_diff_status(tree_a: str, tree_b: str, root: Path) -> list[tuple[str, s
     return pairs
 
 
+# ── 훅가드 이식(2026-07-24 · 웰리 가드모듈 병합지도 §2 사각지대 봉합) ──────────
+# safe_commit 은 commit-tree/update-ref 라 git 훅(.git/hooks/pre-commit)이
+# 전혀 안 걸린다(위 _precheck_violations 주석 참조) — 그 훅 안 가드 10개가
+# 전부 이 경로에서 미발화한다는 게 조사로 확인됐다(status/briefs/
+# 웰리_가드모듈_병합지도_20260724.md §2). 그중 위험도 최상위 3개(비밀값·
+# 대량유실·공식값)만 1단계로 이식한다 — 로직은 복제하지 않고 기존 가드
+# 스크립트를 그대로 서브프로세스로 호출한다(L01, 단일 지점 재사용).
+# 나머지 7개(queue·incident·erp_anchor·sheet_link·chatid_drift·
+# reception_drift·phantom_delete)는 이번엔 이식하지 않는다 — phantom_delete
+# 는 이미 위 _precheck_violations 가 대체 판정 중이고, 나머지는 오탐 위험
+# 검증 전엔 동시 커밋 중인 다른 세션 전부를 막을 수 있어 2단계로 미룬다.
+_HOOK_GUARDS = (
+    ("secret", "precommit_secret_guard.py"),
+    ("truncation", "precommit_truncation_guard.py"),
+    ("enforcement", "precommit_enforcement_guard.py"),
+)
+
+
+def _run_hook_guards(root: Path, index_path: Path) -> list[str]:
+    """이식된 훅가드 3종을 임시 인덱스 기준으로 실행 — 위반 메시지 목록(비면 통과).
+
+    각 가드는 내부적으로 `git diff --cached`/`git cat-file -p :path` 로 스테이징
+    상태를 읽는다 — 둘 다 GIT_INDEX_FILE 환경변수를 그대로 존중하므로, 이 임시
+    인덱스를 가리키게 하면 safe_commit 이 stage 한 내용만 정확히 본다(라이브
+    인덱스는 안 건드림). cwd=root 로 실행해 각 가드의 내부 git 호출이 이 저장소를
+    보게 한다.
+
+    ★enforcement 가드의 GM 승인 우회([GM-approved])는 `.git/COMMIT_EDITMSG` 를
+      읽는데(ssot/enforcement.py:_commit_message) safe_commit 경로엔 그 파일이
+      "이번" 커밋 메시지를 담고 있지 않다(옛 커밋의 메시지이거나 비어있음) —
+      알려진 한계. 단 enforcement_mode.json 기본값이 warn/off(둘 다 절대
+      비차단)라 지금은 실질 위험 없음. mode=block 전환 시엔 이 한계부터 반드시
+      보완할 것(§2 참고, 이 함수를 다시 고치지 말고 ssot/enforcement.py 쪽에
+      commit_message 인자를 받는 진입점을 추가하는 방향).
+    """
+    run_env = dict(os.environ)
+    run_env["GIT_INDEX_FILE"] = str(index_path)
+    run_env["PYTHONUTF8"] = "1"
+    violations: list[str] = []
+    for label, fname in _HOOK_GUARDS:
+        script = _SCRIPTS_DIR / fname
+        if not script.exists():
+            continue  # 가드 파일 없음 = fail-open(기존 훅 규약과 동일)
+        try:
+            r = subprocess.run(
+                [sys.executable, str(script)],
+                cwd=str(root), env=run_env,
+                capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=30,
+            )
+        except Exception as exc:
+            # 가드 실행 자체 실패 = fail-open(기존 훅 규약과 동일 — 가드 버그로
+            # 전 커밋이 막히면 안 됨).
+            print(f"[WARN] {label} 가드 실행 실패(fail-open): {type(exc).__name__}: {exc}")
+            continue
+        if r.returncode == 1:
+            msg = (r.stderr or r.stdout or "").strip()
+            violations.append(f"[{label}] {msg[:500]}")
+    return violations
+
+
 def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: Path) -> list[str]:
     """commit-tree/update-ref *이전* 선검증(배10009) — 무관 경로 혼입 + 유령 삭제 판정.
 
@@ -256,7 +317,7 @@ def safe_commit(
     root = Path(repo_root) if repo_root else ROOT
     rel_paths = [_rel(p, root) for p in paths if str(p).strip()]
     result = {"ok": False, "committed": False, "sha": "", "attempts": 0,
-              "changed": [], "foreign": [], "index_synced": [], "reason": ""}
+              "changed": [], "foreign": [], "hook_violations": [], "index_synced": [], "reason": ""}
     if not rel_paths:
         result["ok"] = True
         result["reason"] = "대상 경로 없음"
@@ -294,6 +355,18 @@ def safe_commit(
                     result["reason"] = (
                         f"선검증 실패(커밋 생성 안 함) — {violations[0]}"
                         + (f" 외 {len(violations) - 1}건" if len(violations) > 1 else "")
+                    )
+                    return result
+
+                # ②-c 훅가드 이식(2026-07-24) — secret·truncation·enforcement.
+                # 같은 임시 인덱스를 GIT_INDEX_FILE 로 넘겨 스테이징 내용만 정확히
+                # 검사한다. 걸리면 ②-b 와 동일하게 커밋 자체를 만들지 않고 중단.
+                hook_violations = _run_hook_guards(root, index_path)
+                if hook_violations:
+                    result["hook_violations"] = hook_violations
+                    result["reason"] = (
+                        f"훅가드 위반(커밋 생성 안 함) — {hook_violations[0]}"
+                        + (f" 외 {len(hook_violations) - 1}건" if len(hook_violations) > 1 else "")
                     )
                     return result
 
@@ -377,6 +450,8 @@ def main() -> int:
         print(f"  + {c}")
     for f in res["foreign"]:
         print(f"  ! 혼입 {f}")
+    for h in res["hook_violations"]:
+        print(f"  ! 훅가드 {h}")
     return 0 if res["ok"] else 1
 
 
