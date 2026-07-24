@@ -1081,6 +1081,23 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 .hz-zone-label { font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--dim); }
 .hz-btns { display: flex; gap: 6px; flex-wrap: wrap; }
 .hz-zone.z-theme { border-left-color: var(--yellow); }
+/* 실무진 피드백 CTA — header-top(제목 ↔ header-actions) 가운데 슬롯. flex:1로 header-actions가 쓰던
+   margin-left:auto 여유공간을 대신 흡수해 header-top 기존 flex 규칙은 안 건드리면서 가운데 정렬한다.
+   좁은 화면에서는 header-top의 기존 flex-wrap:wrap이 자연히 다음 줄로 흘려보낸다(가로 스크롤 없음).
+   버튼 자체는 action-btn보다 한 단계 강조(솔리드 accent 배경+굵은 글씨) — 형광색·과한 그림자 없이 절제된 강조.
+   GM 재지시(2026-07-24). */
+.header-feedback-slot{ flex:1 1 180px; display:flex; justify-content:center; align-items:center; min-width:0; }
+.feedback-cta-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:800;
+  height:34px;padding:0 18px;border-radius:var(--radius-btn);
+  background:var(--accent);color:#1a1918;
+  border:1px solid var(--accent-border);
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(183,159,138,0.25);
+  transition:filter 0.15s,transform 0.15s;
+}
+.feedback-cta-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); }
 .theme-toggle-btn{
   display:inline-flex;align-items:center;gap:5px;
   font-size:11px;font-weight:600;
@@ -1196,6 +1213,16 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
           <span style="flex-shrink:0">멤버십·강습 통합 잠재고객 관리 — 담당 실무: 임정은M</span>
           <span id="cpoReportStatusLine" style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:8px;border-left:1px solid var(--border)">🤖 자동보고 상태 불러오는 중…</span>
         </div>
+      </div>
+      <!-- 실무진 피드백 버튼 — GM 지시(2026-07-24, 우선순위 높음 · 07-24 재지시: 헤더 구석 hz-zone → 제목·오른쪽
+           버튼묶음 사이 가운데로 이동, 시각 강조). header-actions 밖(형제)에 둬 모바일 hz-zone 규칙(.header-actions
+           {display:none}, 520px 이하)의 영향을 받지 않고 항상 보인다 — GM이 "잘 보이는 쪽"을 요구했기 때문.
+           header-top(flex) 자체는 미변경 — 이 슬롯이 flex:1로 header-actions의 margin-left:auto가 쓰던 여유 공간을
+           대신 차지해 가운데 정렬하고, header-actions는 기존과 동일하게 오른쪽 끝에 남는다(레이아웃 규칙 최소 변경).
+           멤버십·강습 family 전환과 무관하게 항상 노출(switchFamily display 토글 대상 아님).
+           팝업 = 모달 iframe(실무진피드백.html), openRenewDash 패턴 벤치마킹. -->
+      <div class="header-feedback-slot">
+        <button type="button" class="feedback-cta-btn" onclick="openStaffFeedback()">💬 실무진 피드백</button>
       </div>
       <div class="header-actions">
         <div class="hz-zone z-status">
@@ -2716,6 +2743,22 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   </div>
 </div>
 
+<!-- ══ 실무진 피드백 모달 (헤더 버튼 💬 실무진 피드백 → openStaffFeedback). openRenewDash 모달 iframe 패턴
+     그대로 벤치마킹(신규 디자인 없음). 본문 = 실무진피드백.html을 iframe으로 로드, 모달을 처음 열 때만
+     data-src→src 승격(지연 로드). GM 지시(2026-07-24) ══ -->
+<div class="gdoc-overlay" id="staffFeedbackModalOverlay" onclick="if(event.target===this)closeStaffFeedback()">
+  <div class="gdoc-modal" role="dialog" aria-modal="true" style="max-width:560px">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title">💬 실무진 피드백</span>
+      <button class="gdoc-close" type="button" onclick="closeStaffFeedback()" aria-label="닫기">&times;</button>
+    </div>
+    <div id="staffFeedbackModalBody">
+      <iframe id="staffFeedbackIframe" data-src="실무진피드백.html" title="실무진 피드백"
+        style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px;display:block;background:var(--paper)"></iframe>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 강습 문의 현황 집중형 대시보드 모달 (버튼 📊 강습 문의 현황 → openLessonDash). 멤버십 팝업 패턴 복제, type(성인/유소년)별 배선. 2026-07-07 시포·GM ══ -->
 <div class="gdoc-overlay" id="lessonDashModalOverlay" onclick="if(event.target===this)closeLessonDash()">
   <div class="gdoc-modal" role="dialog" aria-modal="true">
@@ -3606,6 +3649,34 @@ function _renewDashFail(){
   body.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--dim);font-size:13px">' +
     '재등록 대시보드를 불러오지 못했습니다.<br><br>' +
     '<a href="renewal.html" target="_blank" rel="noopener" style="color:var(--text);font-weight:700">직접 열기 ↗</a>' +
+    '</div>';
+}
+/* ── 실무진 피드백 모달 — 진입 버튼(💬 실무진 피드백) → #staffFeedbackModalOverlay. 본문은
+   실무진피드백.html을 iframe으로 로드. lazy load(모달 첫 오픈 시 data-src→src 승격). GM 지시(2026-07-24) ── */
+var _staffFeedbackLoaded = false;
+function openStaffFeedback(){
+  var ov = document.getElementById('staffFeedbackModalOverlay');
+  if (!ov) return;
+  ov.classList.add('open');
+  if (!_staffFeedbackLoaded) { _staffFeedbackLoaded = true; _staffFeedbackLoadIframe(); }
+}
+function closeStaffFeedback(){
+  var ov = document.getElementById('staffFeedbackModalOverlay');
+  if (ov) ov.classList.remove('open');
+}
+function _staffFeedbackLoadIframe(){
+  var f = document.getElementById('staffFeedbackIframe');
+  if (!f) return;
+  var src = f.getAttribute('data-src');
+  f.onerror = function(){ _staffFeedbackFail(); };
+  f.src = src;
+}
+function _staffFeedbackFail(){
+  var body = document.getElementById('staffFeedbackModalBody');
+  if (!body) return;
+  body.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--dim);font-size:13px">' +
+    '피드백 화면을 불러오지 못했습니다.<br><br>' +
+    '<a href="실무진피드백.html" target="_blank" rel="noopener" style="color:var(--text);font-weight:700">직접 열기 ↗</a>' +
     '</div>';
 }
 function _mdashYmd(dt){ return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); }
