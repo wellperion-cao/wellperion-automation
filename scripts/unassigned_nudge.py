@@ -163,10 +163,31 @@ def build_message(today: str | None = None) -> str:
 
 
 def send(text: str, chat_id: int) -> dict:
-    sys.path.insert(0, os.path.join(os.path.dirname(_HERE), "wellperion-agents"))
+    """실제 발송. 토큰 SSOT = telegram_bot/.env (CLAUDE.md §3).
+
+    ★2026-07-24 시토 수리: 여기는 그동안 한 번도 성공한 적이 없었다(항상 ok=False).
+      telegram_notifier 는 **import 시점에** load_dotenv() 를 인자 없이 부른다 → 현재
+      작업폴더에 .env 가 있어야만 토큰이 잡힌다. 이 스크립트는 저장소 루트에서 도는데
+      루트엔 .env 가 없어서 토큰이 빈 문자열이었고, send() 가 조용히 {} 를 반환했다.
+      dry-run 만 돌려봤기 때문에 '보낼 준비 됐다'로 오인돼 있었다.
+      고침 = ①정본 .env 를 경로로 명시해 먼저 읽고 ②모듈이 이미 빈 값을 잡았을 수도 있으니
+      토큰·주소를 인스턴스에 직접 박는다(import 순서에 좌우되지 않게).
+    """
+    repo = os.path.dirname(_HERE)
+    from dotenv import load_dotenv  # noqa: E402
+
+    load_dotenv(os.path.join(repo, "telegram_bot", ".env"))
+    sys.path.insert(0, os.path.join(repo, "wellperion-agents"))
     from telegram_notifier import TelegramNotifier  # noqa: E402
 
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        return {"ok": False, "chat_id": chat_id, "resp": {},
+                "error": "TELEGRAM_BOT_TOKEN 없음 — telegram_bot/.env 확인"}
+
     notifier = TelegramNotifier()
+    notifier.token = token
+    notifier.base_url = f"https://api.telegram.org/bot{token}"
     # TelegramNotifier.send() 는 생성 시 잡힌 self.chat_id 로만 보낸다(방 인자 없음).
     # 방을 바꿔 보내려면 이 속성을 갈아끼우는 게 유일한 경로다.
     notifier.chat_id = str(chat_id)
