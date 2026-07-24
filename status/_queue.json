@@ -1148,5 +1148,19 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 9e1097335)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9e109733533e4b66c488105cc7f182a186e63ae6"
+  },
+  {
+    "task_id": "CTO-2026-07-24-ADHOC-cb11aba4c",
+    "clevel": "cto",
+    "title": "[시토] 배정 독려 발송이 한 번도 성공한 적 없었다 — 토큰 미로드 조용한 실패 수리 (배9206)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10017,
+    "artifact": "- 증상: --send 가 항상 ok=False. dry-run 만 돌려봐서 '보낼 준비 완료'로 오인돼 있었다(과대보고)\n- 원인: telegram_notifier 가 import 시점에 load_dotenv() 를 인자 없이 호출 → 작업폴더 .env 만 읽음.\n        이 스크립트는 저장소 루트에서 돌아 토큰이 빈 문자열, send() 가 조용히 {} 반환\n- 수리: 정본 telegram_bot/.env 경로 명시 선로드 + 토큰/base_url 인스턴스 직접 주입(import 순서 무관)\n        토큰이 없으면 조 (CLI ad-hoc · 커밋 cb11aba4c)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "cb11aba4cd35247cf122e565061b9c22a1aa0b7d"
   }
 ]
