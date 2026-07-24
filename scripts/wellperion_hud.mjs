@@ -93,13 +93,30 @@ function myShips(cwd, role) {
       && String(s.processed_at || s.enqueued_at || '').startsWith(ymd)).length;
     const shortOf = {};
     for (const s of q) if (s && s.ship_no != null) shortOf[s.ship_no] = s.short_no != null ? s.short_no : s.ship_no;
-    return { run, wait, done, shortOf };
+    // 지금 붙들고 있는 배 = 진행중 중 가장 최근에 움직인 것. 번호만으로는 무슨 일인지 알 수 없어
+    // 제목까지 같이 낸다(GM 2026-07-24 '작업중인 내용은 안 나오는건가?').
+    // ★커밋 제목에서 뽑던 번호(myLastCommit)는 '방금 끝낸 배'를 가리킬 수 있다 — 큐의 IN_PROGRESS 가 진실이다.
+    const running = mine.filter((s) => s.status === 'IN_PROGRESS')
+      .sort((a, b) => String(b.updated_at || b.enqueued_at || '').localeCompare(String(a.updated_at || a.enqueued_at || '')));
+    const cur = running[0] ? { no: running[0].ship_no, title: shortTitle(running[0].title) } : null;
+    return { run, wait, done, shortOf, cur };
   } catch { return null; }
 }
 
 /** 내 마지막 커밋 — 몇 분 전인지 + 내가 붙들고 있는 배 번호.
  *  시각은 '가장 최근 커밋'에서 가져오되, 배 번호는 제목에 번호가 없을 수도 있어
  *  번호가 나올 때까지 내 커밋을 거슬러 찾는다(제목이 '배 현황' 같은 말이면 번호가 없다). */
+/** 배 제목을 상태줄용으로 줄인다. 앞의 '[시포] ' 같은 역할 꼬리표는 이미 옆에 닉네임이 있어 군더더기라 뗀다.
+ *  ★단어 중간에서 어색하게 자르지 않는다 — 구분자(— · ( /)가 한도 안에 있으면 거기서 끊는다(GM 품격 기준). */
+function shortTitle(t, max = 18) {
+  let s = String(t || '').replace(/^\s*\[[^\]]{1,10}\]\s*/, '').trim();
+  if (!s) return '';
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const at = Math.max(cut.lastIndexOf(' — '), cut.lastIndexOf(' · '), cut.lastIndexOf(' ('), cut.lastIndexOf(' /'));
+  return (at >= max * 0.5 ? cut.slice(0, at) : cut.trimEnd()) + '…';
+}
+
 function myLastCommit(cwd, role) {
   const out = git(cwd, ['log', '-60', '--format=%ct%x09%s']);
   if (!out) return null;
@@ -142,9 +159,14 @@ function main() {
     const lc = myLastCommit(cwd, role);
     const s = myShips(cwd, role);
     let head = `${B}${C}${NICK[role]}${X}`;
-    if (lc && lc.ship != null) {
+    // 지금 붙들고 있는 배(큐 IN_PROGRESS)를 우선 — 번호 + 무슨 일인지. 진행중이 없을 때만
+    // 마지막 커밋에서 뽑은 번호로 폴백(그건 '방금 끝낸 배'일 수 있어 뒤로 뺀다).
+    if (s && s.cur) {
+      const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
+      head += `${C}▶${n}${X}` + (s.cur.title ? ` ${s.cur.title} ` : '');   // 제목 뒤 한 칸 — '재설계…·7분전'처럼 붙어 읽히지 않게
+    } else if (lc && lc.ship != null) {
       const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
-      head += `${C}▶${n}${X}`;
+      head += `${D}✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
     }
     if (lc) head += `${D}·${X}${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
     parts.push(head);
