@@ -30,6 +30,15 @@ ROOT = Path(__file__).resolve().parent.parent
 # 기록 시각으로 쓰이는 키 후보(파일마다 이름이 다르다) — 정렬용.
 TS_KEYS = ("logged_at", "observed_at", "ts", "timestamp", "at", "time", "date", "생성시각")
 
+# 덧붙이기 성격의 JSON 배열 — 파일별 명시 허용목록(2026-07-24 추가).
+#   .json 을 통째로 되돌리면 옛 사본이 최신 상태를 덮을 수 있어 원칙적으로 제외한다.
+#   단 아래 파일들은 '항목이 쌓이는 배열'이고 항목마다 고유키가 있어서,
+#   **현재 파일에 없는 항목만 추가**하는 방식이면 기존 값을 건드리지 않는다.
+#   (예: 07-20 제안 3건이 스태시에 갇혀 학습 파이프라인이 멈춰 보였다 — INC-034 여파)
+ADD_ONLY_JSON = {
+    "status/learning_proposals.json": ("id", "생성시각", "생성일"),
+}
+
 
 def git(*args: str) -> subprocess.CompletedProcess:
     # ★encoding 을 반드시 지정한다. 안 주면 윈도우 기본 cp949 로 디코딩하다
@@ -69,6 +78,58 @@ def sort_key(line: str) -> str:
         if isinstance(v, str) and v:
             return v
     return ""
+
+
+def item_key(obj: dict, keys: tuple) -> str:
+    return "|".join(str(obj.get(k, "")) for k in keys)
+
+
+def recover_json_arrays(refs: list[str], apply: bool) -> int:
+    """허용목록에 든 JSON 배열에 대해, 스태시에만 있는 항목을 **추가만** 한다."""
+    total = 0
+    for path, keys in ADD_ONLY_JSON.items():
+        target = ROOT / path
+        if not target.exists():
+            continue
+        try:
+            cur = json.loads(target.read_text(encoding="utf-8"))
+        except Exception as exc:
+            print(f"  ! {path}: 현재 파일 파싱 실패 — 건너뜀({exc})")
+            continue
+        if not isinstance(cur, list):
+            continue
+        curkeys = {item_key(o, keys) for o in cur if isinstance(o, dict)}
+        add: list = []
+        addkeys: set = set()
+        for ref in refs:
+            r = git("show", f"{ref}:{path}")
+            if r.returncode != 0:
+                continue
+            try:
+                old = json.loads(r.stdout)
+            except Exception:
+                continue
+            if not isinstance(old, list):
+                continue
+            for o in old:
+                if not isinstance(o, dict):
+                    continue
+                k = item_key(o, keys)
+                if k and k not in curkeys and k not in addkeys:
+                    addkeys.add(k)
+                    add.append(o)
+        if not add:
+            print(f"  = {path}: 회수할 항목 없음(현재 {len(cur)}건)")
+            continue
+        add.sort(key=lambda o: str(o.get("생성시각") or o.get("생성일") or ""))
+        total += len(add)
+        print(f"  + {path}: 현재 {len(cur)}건 → 회수 {len(add)}건")
+        for o in add[:3]:
+            print(f"      예) {o.get('생성일')} {str(o.get('무엇을'))[:70]}")
+        if apply:
+            target.write_text(json.dumps(cur + add, ensure_ascii=False, indent=2) + "\n",
+                              encoding="utf-8")
+    return total
 
 
 def main() -> int:
@@ -118,9 +179,13 @@ def main() -> int:
                 for l in new:
                     f.write(l + "\n")
 
-    print(f"\n합계 회수 대상 {total_new}줄 — {'회수 완료' if args.apply else '미리보기(--apply 로 실행)'}")
+    print(f"\n[덧붙이기 성격 JSON 배열 — 허용목록만]")
+    total_json = recover_json_arrays(refs, args.apply)
+
+    print(f"\n합계 회수 대상 {total_new}줄 + {total_json}건 — "
+          f"{'회수 완료' if args.apply else '미리보기(--apply 로 실행)'}")
     if not args.apply:
-        print("※ .json·.md 상태 파일은 대상이 아니다(옛 사본이 최신을 덮을 수 있어 의도적으로 제외).")
+        print("※ 허용목록 밖 .json·.md 상태 파일은 대상이 아니다(옛 사본이 최신을 덮을 수 있어 의도적으로 제외).")
     return 0
 
 
