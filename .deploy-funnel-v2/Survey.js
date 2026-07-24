@@ -2100,6 +2100,10 @@ function _lessonContactsBySport_(arr, sportStr) {
   });
   return out;
 }
+// ★접수 시각 보존(2026-07-24 시포·GM) — 2026-07-20 에 멤버십(_miReadRows_)만 _miToISOTime_ 로 고치고
+//   강습·렌트비즈는 _miToISO_(날짜만) 그대로 둬서 같은 개념이 화면마다 다르게 보였다(멤버십은 시각까지,
+//   강습은 날짜만). 시트엔 시각이 멀쩡히 살아 있다(실측: 성인 'Fri Jul 24 2026 00:22:25', 유소년 13:26:32).
+//   _miToISOTime_ 는 시각이 없거나 자정이면 날짜만 돌려주므로 과거 행도 안전하다.
 function _lessonReadRows_(gid) {
   var sh = _lessonSheet_(gid);
   if (!sh) return [];
@@ -2146,7 +2150,7 @@ function _lessonReadRows_(gid) {
     if (!_lHistArr.length && _lMemo) _lHistArr.push({ date: '', time: '', note: _lMemo });  // 레거시 상담메모 폴백
     out.push({
       rowIndex: r + 2 + rowOffset,
-      timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
+      timestamp: _miToISOTime_(iTs >= 0 ? row[iTs] : ''),   // 시각 보존(2026-07-24 시포·GM · 멤버십과 동일 규칙)
       name:    iName  >= 0 ? String(row[iName]  || '') : '',
       phone:   iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',   // 표시 정규화(앞 0 복원·하이픈)
       age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
@@ -2295,7 +2299,7 @@ function _lessonIntakeReadRows_(body) {
     if (!histArr.length) { var p = String(histRaw || '').trim(); if (p) histArr.push({ date: '', time: '', note: p }); }
     out.push({
       rowIndex: r + 2 + _ROW_OFFSET_INTAKE_,
-      timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
+      timestamp: _miToISOTime_(iTs >= 0 ? row[iTs] : ''),   // 시각 보존(2026-07-24 시포·GM · 멤버십과 동일 규칙)
       name:    iName  >= 0 ? String(row[iName]  || '') : '',
       phone:   iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',
       age:     iAge   >= 0 ? String(row[iAge]   || '') : '',
@@ -2389,7 +2393,7 @@ function _rentbizReadRows_(gid) {
     if (!hasName && !hasPhone) continue;  // 완전 빈 행 스킵
     out.push({
       rowIndex: r + 2,
-      timestamp: _miToISO_(iTs >= 0 ? row[iTs] : ''),
+      timestamp: _miToISOTime_(iTs >= 0 ? row[iTs] : ''),   // 시각 보존(2026-07-24 시포·GM · 멤버십과 동일 규칙)
       name:    iName  >= 0 ? String(row[iName]  || '') : '',
       phone:   iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '',
       channel: iChan  >= 0 ? String(row[iChan]  || '') : '',
