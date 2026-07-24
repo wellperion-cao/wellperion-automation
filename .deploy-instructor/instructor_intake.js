@@ -34,6 +34,23 @@ var ALLOW_MIME = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1, 'video/mp4'
 //   [new Date(), d.name, d.team, d.intro, d.benefit, urls.join, vurl, folder.getUrl(), '접수']
 var INTAKE_HEADER = ['접수일시', '성함', '분류', '한줄소개', '회원이얻는것', '사진링크', '영상링크', '드라이브폴더', '상태'];
 
+// ─── 접수 탭 지정 (2026-07-24 수리 · 배9888) ───
+// ★고친 이유: 종전 getSheets()[0] 은 '맨 앞 탭'을 잡는다. INTAKE_SHEET_ID 는 2021년부터
+//   쓰는 라이브 강습 운영 스프레드시트('3-1) 강습, WSC 강습 문의 관리')이고, 접수가 들어갈
+//   곳은 그 안의 '마케팅 접수' 탭이다 — 지금은 우연히 맨 앞이라 맞아떨어질 뿐, 누가 탭 순서를
+//   한 번만 바꾸면 접수가 '강습 신규문의' 탭에 append 된다(강습 데이터 오염).
+//   → 이름으로 잡아 순서 변경에 영향받지 않게 한다. 조회 경로는 없으면 만들지 않는다(읽기 전용 유지).
+var INTAKE_SHEET_NAME = '마케팅 접수';
+
+function _intakeSheet_(createIfMissing) {
+  var id = PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID');
+  if (!id) return null;
+  var ss = SpreadsheetApp.openById(id);
+  var sh = ss.getSheetByName(INTAKE_SHEET_NAME);
+  if (!sh && createIfMissing) sh = ss.insertSheet(INTAKE_SHEET_NAME);
+  return sh || null;
+}
+
 // 1행이 헤더인가? — 오판이 안전한 쪽(= 데이터로 간주 → 헤더 삽입)으로 판정한다.
 // 데이터로 보는 신호: 1열이 Date · 날짜/타임스탬프 문자열 · 숫자 · 빈칸.
 // 그 외(사람이 붙인 어떤 제목이든)는 헤더로 인정 → 중복 삽입 없음.
@@ -86,7 +103,8 @@ function doPost(e) {
     var folder = root.createFolder(d.team + '_' + d.name + '_' + _stamp());
     var urls = (d.photos || []).map(function (p) { return _saveFile_(p.b64, p.mime, p.fname, folder); });
     var vurl = d.video ? _saveFile_(d.video.b64, d.video.mime, d.video.fname, folder) : (d.videoLink || '');
-    var sh = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID')).getSheets()[0];
+    var sh = _intakeSheet_(true);                                  // 이름으로 지정 · 없으면 생성
+    if (!sh) return _json({ ok: false, err: 'INTAKE_SHEET_ID 미설정' });
     var row = [new Date(), d.name, d.team, d.intro || '', d.benefit || '', urls.join('\n'), vurl, folder.getUrl(), '접수'];
     try { _ensureIntakeHeader_(sh); } catch (hErr) { }             // 헤더 보장 실패해도 접수 저장은 계속
     sh.appendRow(row);
@@ -135,7 +153,8 @@ function _intakeDiag_() {
   };
   if (!out.sheet_id_set) { out.sheet_error = 'INTAKE_SHEET_ID 미설정'; return out; }
   try {
-    var sh = SpreadsheetApp.openById(sheetId).getSheets()[0];
+    var sh = _intakeSheet_(false);                       // 조회는 만들지 않는다(읽기 전용)
+    if (!sh) { out.ok = false; out.sheet_error = "'" + INTAKE_SHEET_NAME + "' 탭 없음"; return out; }
     var last = sh.getLastRow(), width = sh.getLastColumn();
     var first = (last > 0 && width > 0) ? sh.getRange(1, 1, 1, width).getValues()[0] : [];
     var hasHeader = _looksLikeHeader_(first);
@@ -154,9 +173,8 @@ function _intakeDiag_() {
 // 접수 행 조회 — 필드명은 시트 실제 헤더 사용, 헤더가 없으면 col1..colN 폴백(1행도 데이터로 반환).
 // limit(기본 100·최대 500)·since(ISO) 지원.
 function _intakeRows_(p) {
-  var sheetId = PropertiesService.getScriptProperties().getProperty('INTAKE_SHEET_ID');
-  if (!sheetId) return { ok: false, error: 'INTAKE_SHEET_ID 미설정' };
-  var sh = SpreadsheetApp.openById(sheetId).getSheets()[0];
+  var sh = _intakeSheet_(false);                         // 조회는 만들지 않는다(읽기 전용)
+  if (!sh) return { ok: false, error: "INTAKE_SHEET_ID 미설정 또는 '" + INTAKE_SHEET_NAME + "' 탭 없음" };
   var last = sh.getLastRow(), width = sh.getLastColumn();
   if (last < 1 || width < 1) {
     return { ok: true, sheet_name: sh.getName(), header_ok: false, count: 0, total_rows: 0, rows: [] };
