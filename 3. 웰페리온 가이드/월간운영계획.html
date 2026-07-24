@@ -359,6 +359,25 @@
   /* 🔄 자동 연동 배지 — objectives 진척 옆 병기(실무 SSOT·채용공고·연동 배 자동값 · 배9678) */
   .auto-badge{display:inline-block;margin-top:5px;font-size:10.5px;font-weight:700;color:#2f6d9e;background:#eaf3fb;border:1px solid #cfe2f4;border-radius:999px;padding:2px 8px;line-height:1.4;white-space:nowrap;}
   @media print{ .auto-badge{font-size:7px !important;padding:1px 5px !important;margin-top:1px !important;} }
+
+  /* 🏷️ 정직 딱지 — objective 제목 옆 병기(✅실측/👀상태만/📝사람값/🔧측정실패 · GM 1단계 2026-07-24)
+     색=기존 :root 변수(--green·--blue·--dim·--rose)만 재사용 · 새 색 정의 없음(.mstat과 동일 관례 — var()는 글자색, 배경은 그 색의 옅은 rgba). */
+  .hbadge{display:inline-block; margin-left:6px; font-size:9.5px; font-weight:700; border-radius:999px; padding:1px 7px; line-height:1.5; white-space:nowrap; cursor:help; vertical-align:middle;}
+  .hbadge.measured{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.35);}
+  .hbadge.observed{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.35);}
+  .hbadge.manual{color:var(--dim); background:rgba(135,131,124,0.14); border:1px solid rgba(135,131,124,0.4);}
+  .hbadge.unmeasured{color:var(--rose); background:rgba(221,127,110,0.12); border:1px solid rgba(221,127,110,0.35);}
+  @media print{ .hbadge{font-size:6.5px !important; padding:0.5px 4px !important; margin-left:3px !important;} }
+
+  /* 🎚️ 자동화 달성률 게이지 — obj-board 맨 위 한 줄(honesty_summary와 같은 정의: 실측÷총 · GM 1단계 2026-07-24) */
+  .hgauge{font-size:11.5px; font-weight:700; color:var(--text-soft); background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:8px 13px; margin:0 0 10px; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center;}
+  .hgauge b{color:var(--text); font-size:13px;}
+  .hgauge .hg-i{font-weight:600; white-space:nowrap;}
+  .hgauge .hg-i.measured{color:var(--green);}
+  .hgauge .hg-i.observed{color:var(--blue);}
+  .hgauge .hg-i.manual{color:var(--dim);}
+  .hgauge .hg-i.unmeasured{color:var(--rose);}
+  @media print{ .hgauge{font-size:8px !important; padding:3px 7px !important; margin-bottom:4px !important;} }
   /* ── 🚀 ERP 월별 진척 타임라인 ── */
   .erp-time{display:flex; gap:10px; align-items:stretch; position:relative;}
   .erp-step{flex:1; min-width:0; background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:13px 14px 12px; position:relative; display:flex; flex-direction:column; gap:7px;}
@@ -1675,13 +1694,23 @@
       '<div class="cyc-flow">' + flow + '</div>' +
       '<div class="cyc-depts">' + depts + '</div></div>';
   }
+  // 🏷️ 정직 딱지(honesty) — scripts/monthly_ops_sync.py resolve() 판정에서 엔진이 그대로 도출한 값을
+  // 렌더만 한다(페이지는 지어내지 않음). honesty 없는 옛 항목은 빈칸이 '문제없음'으로 읽히지 않도록
+  // 보수적으로 '📝 사람값'으로 표시(GM 1단계 2026-07-24 — 측정 실패·미기록을 조용히 감추지 않는다).
+  function honestyBadge(o){
+    var h = o.honesty;
+    var lvl = (h && h.level) || 'manual';
+    var label = (h && h.label) || '📝 사람값';
+    var basis = (h && h.basis) || '옛 항목 — 아직 정직 판정 미기록(엔진 재실행 시 자동 채움)';
+    return '<span class="hbadge ' + esc(lvl) + '" title="' + esc(basis) + '">' + esc(label) + '</span>';
+  }
   function objRow(o, withDelta){
     // 서브항목(부모-자식)이 있으면 부모 진척% = 서브 %의 집계(평균) — 렌더에서 계산(GM 지시 2026-07-06 3차).
     var hasSub = o.sub && o.sub.length;
     var displayProg = (hasSub && !_editMode)
       ? Math.round(o.sub.reduce(function(s, x){ return s + clampPct(x.progress); }, 0) / o.sub.length)
       : o.progress;
-    var titleCell = '<div class="r-title">' + esc(o.title) + '</div>' + metricBlock(o) + (o.cycle ? cycleBlock(o.cycle) : '');
+    var titleCell = '<div class="r-title">' + esc(o.title) + honestyBadge(o) + '</div>' + metricBlock(o) + (o.cycle ? cycleBlock(o.cycle) : '');
     var noteCell;
     if(_editMode){
       noteCell = '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
@@ -1771,6 +1800,23 @@
       '<th>핵심 과제</th><th>담당</th><th>목표치</th><th>상태</th><th>진척' + (withDelta ? ' · 궤적' : '') + '</th><th>→ 북극성</th>' +
       '</tr></thead><tbody>' + sorted.map(function(o){ return objRow(o, withDelta); }).join('') + '</tbody></table></div>';
   }
+  // 🎚️ 자동화 달성률 게이지 — 목표 목록 맨 위 한 줄(GM이 매일 보는 목표 달성 게이지 · 2026-07-24).
+  // 정의는 status/monthly_ops_plan.json honesty_summary 와 동일: 자동화율 = 실측(measured) ÷ 총.
+  // honesty 없는 옛 항목은 honestyBadge()와 동일하게 '사람값'으로 보수 집계(빈칸=문제없음 오인 방지).
+  function honestyGauge(objs){
+    var n = {measured:0, observed:0, manual:0, unmeasured:0};
+    objs.forEach(function(o){
+      var lvl = (o.honesty && n[o.honesty.level] != null) ? o.honesty.level : 'manual';
+      n[lvl]++;
+    });
+    var total = objs.length;
+    var pct = total ? Math.round(n.measured / total * 100) : 0;
+    return '<div class="hgauge">자동화 <b>' + n.measured + '/' + total + '</b> (' + pct + '%) — ' +
+      '<span class="hg-i measured">✅실측 ' + n.measured + '</span> · ' +
+      '<span class="hg-i observed">👀상태만 ' + n.observed + '</span> · ' +
+      '<span class="hg-i manual">📝사람값 ' + n.manual + '</span> · ' +
+      '<span class="hg-i unmeasured">🔧측정실패 ' + n.unmeasured + '</span></div>';
+  }
   function renderBoard(){
     var board = document.getElementById('obj-board');
     var m = _data.months[_sel];
@@ -1779,6 +1825,7 @@
     var neu = objs.filter(function(o){ return !o.initiative_id; });
     var carry = objs.filter(function(o){ return !!o.initiative_id; });
     board.innerHTML =
+      honestyGauge(objs) +
       objSplitSection('🆕 당월 신규 과제', 'new', neu, false) +
       objSplitSection('🔁 이월·연속 과제', 'carry', carry, true);
   }

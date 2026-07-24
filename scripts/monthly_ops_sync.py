@@ -244,6 +244,48 @@ def _observe_verdict(title: str, obj: dict, items: list, avg_val: int, src_label
             "observed": observed, "src": src_label, "detail": detail}
 
 
+# ── 정직 딱지(honesty) ─────────────────────
+# GM 지시 2026-07-24: "숫자마다 정직 딱지를 붙인다" — 딱지는 resolve() 판정 결과에서
+# 그대로 도출한다(손으로 달지 않음 · 약속 L01·L05 — 손으로 달면 그게 또 거짓말이 된다).
+_SRC_KIND = {
+    "metric_live": "home_kpi 실시간 지표",
+    "queue": "업무현황 배",
+    "todo_ssot": "업무현황 SSOT",
+    "job_status": "채용 공고",
+}
+
+
+def _src_kind(src: str) -> str:
+    """sync 판정 src 라벨(예 'queue:status_map(2배)')에서 소스 종류만 한국어로."""
+    key = str(src or "").split(":", 1)[0]
+    return _SRC_KIND.get(key, key)
+
+
+def honesty_from_verdict(v: dict) -> dict:
+    """resolve() 판정 결과 v 하나에서 정직 딱지를 도출한다.
+    · AUTO(metric_live·count_done·avg_progress 로 실제 값 갱신) → measured(✅ 실측)
+    · OBSERVE(status_map — 상태만 관찰, 진척률은 사람 값 유지) → observed(👀 상태만)
+    · MANUAL(연결 소스 없음) → manual(📝 사람값)
+    · 그 외(소스는 있는데 조회 실패/연결 대상 없음 = verdict '미연동') → unmeasured(🔧 측정 실패)
+    honesty_summary.자동화율 정의 = 실측(measured) ÷ 총. '상태만'(observed)은 숫자 자체는
+    사람이 넣은 값이라 실측에 포함하지 않는다(부풀리기 금지 — GM 과대보고 지적 2026-07-24)."""
+    verdict = v.get("verdict")
+    at = datetime.now().strftime("%Y-%m-%d")
+    if verdict == "AUTO":
+        src = v.get("src", "")
+        basis = f"{_src_kind(src)} · {src}" if src else _src_kind(src)
+        return {"level": "measured", "label": "✅ 실측", "basis": basis, "at": at}
+    if verdict == "OBSERVE":
+        observed = v.get("observed") or {}
+        parts = [f"{k} {observed[k]}건" for k in _STATUS_LABEL_ORDER if k in observed]
+        basis = f"{_src_kind(v.get('src', ''))} " + (" · ".join(parts) if parts else "관찰 없음")
+        return {"level": "observed", "label": "👀 상태만", "basis": basis.strip(), "at": at}
+    if verdict == "MANUAL":
+        return {"level": "manual", "label": "📝 사람값", "basis": "연결된 소스 없음", "at": at}
+    # verdict == "미연동" — 소스는 연결돼 있는데 조회 실패/연결 대상 없음 → 조용히 감추지 않고 표기.
+    return {"level": "unmeasured", "label": "🔧 측정 실패", "basis": v.get("detail", ""), "at": at}
+
+
 def resolve(obj: dict, kpi: dict | None) -> dict:
     """objective 하나에 대해 자동값을 계산. 반환=판정 dict(쓰지는 않음)."""
     sync = obj.get("sync")
@@ -379,12 +421,21 @@ def run(month: str | None, apply: bool) -> None:
         isinstance(o.get("sync"), dict) and o["sync"].get("source") == "metric_live" for o in objs
     ) else None
 
-    n_auto = n_observe = n_manual = n_gap = changed = obs_changed = 0
+    n_auto = n_observe = n_manual = n_gap = changed = obs_changed = honesty_changed = 0
     print(f"\n{'상태':<6} {'목표':<36} 내용")
     print("─" * 72)
     for o in objs:
         v = resolve(o, kpi)
         vd = v["verdict"]
+        # 정직 딱지 — verdict 와 무관하게 모든 objective 에 매긴다(honesty 없는 옛 항목도 포함).
+        # 'at' 는 비교에서 제외(당일 재실행은 무변경으로 취급 · sync_observed 비교와 동일 관례).
+        honesty = honesty_from_verdict(v)
+        prior_honesty = {k: val for k, val in (o.get("honesty") or {}).items() if k != "at"}
+        new_honesty_cmp = {k: val for k, val in honesty.items() if k != "at"}
+        if prior_honesty != new_honesty_cmp:
+            honesty_changed += 1
+        if live:
+            o["honesty"] = honesty
         if vd == "AUTO":
             n_auto += 1
             prior_av = (o.get("sync") or {}).get("auto_value")
@@ -417,7 +468,17 @@ def run(month: str | None, apply: bool) -> None:
     print(f"요약: 🔄자동 {n_auto}(변경 {changed}) · 👀상태만 {n_observe} · "
           f"✋수동 {n_manual} · ⚠️미연동 {n_gap}")
 
-    if live and (changed or obs_changed):
+    total = len(objs)
+    # 자동화율 정의(honesty_summary.자동화율) = 실측(measured=AUTO) ÷ 총. status_map 관찰(observed)은
+    # 숫자는 사람 값 그대로라 분자에서 뺀다 — 부풀리기 금지(GM 과대보고 지적 2026-07-24).
+    auto_rate = round(n_auto / total, 4) if total else 0.0
+
+    if live and (changed or obs_changed or honesty_changed):
+        plan["honesty_summary"] = {
+            "총": total, "실측": n_auto, "상태만": n_observe,
+            "사람값": n_manual, "측정실패": n_gap,
+            "자동화율": auto_rate, "at": datetime.now().strftime("%Y-%m-%d"),
+        }
         PLAN_FILE.write_text(
             json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"[반영] {PLAN_FILE.name} 저장 완료 — safe_commit 경유 커밋 시도.")
@@ -425,10 +486,12 @@ def run(month: str | None, apply: bool) -> None:
         # 작업 현황 로그(best-effort) — dry-run 시엔 남기지 않음(실행 1회당 1줄)
         worklog_log(
             "coo", "월간계획",
-            f"월간 운영계획 진척 자동 반영 — {changed}개 목표 갱신·상태관찰 {obs_changed}건 갱신",
+            f"월간 운영계획 진척 자동 반영 — {changed}개 목표 갱신·상태관찰 {obs_changed}건 갱신·"
+            f"정직딱지 {honesty_changed}건 갱신",
             result="ok",
             detail=f"{month} · 자동판정 {n_auto}건 중 변경 {changed}건 · "
-                   f"상태만판정 {n_observe}건 중 관찰갱신 {obs_changed}건",
+                   f"상태만판정 {n_observe}건 중 관찰갱신 {obs_changed}건 · "
+                   f"정직딱지 갱신 {honesty_changed}건 · 자동화율 {round(auto_rate * 100)}%",
             ref=month,
         )
     elif live:
@@ -439,6 +502,10 @@ def run(month: str | None, apply: bool) -> None:
         )
     else:
         print("[드라이런] 파일 무변경. 라이브=MONTHLY_SYNC_APPLY=1 + --apply")
+
+    # 정직 요약 — 드라이런·라이브 어느 쪽이든 항상 콘솔 맨 아래에 출력(GM 1단계 2026-07-24).
+    print(f"정직: ✅실측 {n_auto} · 👀상태만 {n_observe} · 📝사람값 {n_manual} · "
+          f"🔧측정실패 {n_gap} → 자동화율 {round(auto_rate * 100)}%")
 
 
 def main() -> None:
