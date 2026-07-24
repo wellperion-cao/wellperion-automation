@@ -180,13 +180,13 @@ a { color:var(--accent); text-decoration:none; }
 <div class="sticky-top">
   <div class="header">
     <div>
-      <h1>🙋 웰페리온 종합접수처 현황 <span title="7종 접수·습득물 모두 GAS 실시간 자동 반영(사람 손 없이 갱신)" style="font-size:13px;font-weight:700;color:#1f7a3d;background:rgba(46,160,86,0.14);border:1px solid rgba(46,160,86,0.45);border-radius:999px;padding:2px 10px;vertical-align:middle;white-space:nowrap;">🟢 라이브</span></h1>
-      <div class="header-meta">COO 관할 · 7종 접수 통합 칸반(습득물 포함) · GAS 실시간 (단일 SSOT)</div>
+      <h1>🙋 웰페리온 종합접수처 현황 <span title="8종 접수·습득물·휴회 모두 GAS 실시간 자동 반영(사람 손 없이 갱신)" style="font-size:13px;font-weight:700;color:#1f7a3d;background:rgba(46,160,86,0.14);border:1px solid rgba(46,160,86,0.45);border-radius:999px;padding:2px 10px;vertical-align:middle;white-space:nowrap;">🟢 라이브</span></h1>
+      <div class="header-meta">COO 관할 · 8종 접수 통합 칸반(습득물·휴회 포함) · GAS 실시간 (단일 SSOT)</div>
     </div>
     <div class="header-btns">
       <a href="http://wellperion.com/ko/reception/" target="_blank">📲 회원 접수 폼</a>
       <a href="/wellperion-automation/wellperion_guide(main).html#O2">🏠 ERP 허브</a>
-      <button onclick="regLoad();lfLoad()">↻ 새로고침</button>
+      <button onclick="regLoad();lfLoad();holdLoad()">↻ 새로고침</button>
     </div>
   </div>
 </div>
@@ -299,7 +299,8 @@ var CAT_META = [
   {label:'청결 이슈 접수',        icon:'🧹', dept:'지원부', color:'var(--green)',  bg:'var(--green-bg)'},
   {label:'컴플레인 접수',        icon:'📣', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
   {label:'직원·강사 칭찬합니다',   icon:'⭐', dept:'운영부', color:'var(--green)',  bg:'var(--green-bg)'},
-  {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'}
+  {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
+  {label:'휴회 접수',            icon:'⏸️', dept:'운영부', color:'var(--yellow)', bg:'var(--yellow-bg)'}
 ];
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
@@ -310,12 +311,14 @@ var EXTRA_LABEL = {
   equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
   issueKind:'유형', urgency:'시급도',
   targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망',
-  area:'분야', occurredAt:'발생시점'
+  area:'분야', occurredAt:'발생시점',
+  holdKind:'구분', holdStart:'휴회시작일', holdEnd:'휴회종료일', wishDays:'희망일수', holdReason:'사유'
 };
 
-var _allItems = [];   // VOC 6종 + 습득물(매핑) 병합 결과
+var _allItems = [];   // VOC 6종 + 습득물(매핑) + 휴회(매핑) 병합 결과
 var _vocItems = [];   // reg_board(VOC 6종)
 var _lfItems  = [];   // lf_list → 습득물 매핑(게시중→접수·수령완료→완료)
+var _holdItems = [];  // member_hold_intake_list → 휴회 매핑(읽기 전용·8번째 카드). 승인/반려는 회원 관리 화면 전용.
 var _curCat = '';
 var _curDept = '';
 var _curMonth = '';
@@ -323,8 +326,8 @@ var _curSearch = '';
 var _doneExpanded = false;
 var _loading = false;
 
-/* VOC + 습득물 병합 후 렌더 (둘 중 하나만 갱신돼도 합쳐서 다시 그림) */
-function _merge(){ _allItems = _vocItems.concat(_lfItems); _render(); }
+/* VOC + 습득물 + 휴회 병합 후 렌더 (하나만 갱신돼도 합쳐서 다시 그림) */
+function _merge(){ _allItems = _vocItems.concat(_lfItems).concat(_holdItems); _render(); }
 
 /* 검색·완료접기 */
 function setSearch(v){ _curSearch = String(v||'').trim().toLowerCase(); _render(); }
@@ -568,6 +571,13 @@ function _card(r){
 
   h += '<div class="divider"></div>';
 
+  /* ⏸️ 휴회 접수 = 읽기 전용 현황만(승인·반려는 회원 관리 화면 전용 — 여기서 기능 추가 금지) */
+  if(catLabel === '휴회 접수'){
+    h += '<div class="lf-note">⏸️ 승인·반려는 회원 관리 화면에서 처리합니다. <a href="../../cpo/member/membership.html#holdStatusCard" target="_blank" rel="noopener">휴회 회원 관리 바로가기 →</a></div>';
+    h += '</div>';
+    return h;
+  }
+
   /* 상태 */
   var opts = STATUS_LIST.map(function(s){ return '<option value="' + _esc(s) + '"' + (s===status?' selected':'') + '>' + _esc(s) + '</option>'; }).join('');
   h += '<div class="field-row"><label>상태</label>';
@@ -671,6 +681,50 @@ function lfLoad(){
       _merge();
     })
     .catch(function(){ _lfLoading = false; /* 습득물 실패는 6종 보드 유지, 조용히 스킵 */ });
+}
+
+/* ═══════════════════════════════════════════
+   ⏸️ 휴회 접수 = 8번째 카테고리로 통합 (같은 접수/처리중/완료 보드 · 읽기 전용)
+   데이터: 회원쪽 GAS(REG_API와 다른 배포 — cpo/member/membership.html GAS_URL과 동일)
+           member_hold_intake_list(ERP read + 서버 자동판정 · _SURVEY_PUBLIC_ACTIONS 등재로 토큰 게이트 면제).
+   상태 매핑: 접수대기→접수 · 승인(휴회 진행중)→처리중 · 반려·완료(휴회 종료)→완료. 그 외 값=접수(보수적 폴백).
+   승인/반려 기능 없음(회원 관리 화면 전용) — 카드에 바로가기 링크만 제공.
+   ═══════════════════════════════════════════ */
+var HOLD_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+var HOLD_STATUS_MAP = { '접수대기':'접수', '승인':'처리중', '반려':'완료', '완료':'완료' };
+var _holdLoading = false;
+function holdLoad(){
+  if(_holdLoading) return;
+  _holdLoading = true;
+  var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
+  var url = HOLD_API + '?action=member_hold_intake_list' + (key ? ('&key=' + encodeURIComponent(key)) : '') + '&_=' + Date.now();
+  fetch(url, {redirect:'follow', cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _holdLoading = false;
+      if(!d || !d.ok){ _holdItems = []; _merge(); return; }
+      var rows = Array.isArray(d.data) ? d.data : [];
+      _holdItems = rows.map(function(r){
+        var vtxt = '판정: ' + (r.verdict || '-') + (r.verdictReason ? ' — ' + r.verdictReason : '');
+        return {
+          regId:     'H' + (r.intakeRow || ''),
+          category:  '휴회 접수',
+          dept:      '운영부',
+          status:    HOLD_STATUS_MAP[String(r.status || '접수대기')] || '접수',
+          createdAt: r.appliedAt || '',
+          name:      r.name  || '',
+          contact:   r.phone || '',
+          content:   vtxt,
+          holdKind:  r.kind  || '',
+          holdStart: r.start || '',
+          holdEnd:   r.end   || '',
+          wishDays:  (r.wishDays != null ? r.wishDays + '일' : ''),
+          holdReason:r.reason|| ''
+        };
+      });
+      _merge();
+    })
+    .catch(function(){ _holdLoading = false; /* 휴회 실패는 나머지 7종 보드 유지, 조용히 스킵(실패 격리) */ });
 }
 
 /* ═══════════════════════════════════════════
@@ -802,6 +856,7 @@ function _wireBoard(){
 _wireBoard();
 regLoad();
 lfLoad();
+holdLoad();
 </script>
 </body>
 </html>
