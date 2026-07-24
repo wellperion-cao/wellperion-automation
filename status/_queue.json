@@ -1361,5 +1361,35 @@
     "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 9bcb4c628)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9bcb4c6283b776255b2f31f42391688448bd82ad"
+  },
+  {
+    "task_id": "CEO-2026-07-24-자기학습-제안-적체-승인-3건-21일째-미반영-미검",
+    "clevel": "ceo",
+    "title": "[웰리] 자기학습 제안 적체 — 승인 3건 21일째 미반영 · 미검토 제안 14건",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-24",
+    "from": "cto",
+    "note": "[시토 → 웰리 전달 2026-07-24] 2026-07-24 시토 발견(GM '자율현황 문제점' 점검 중). 자율현황 헤드라인 '학습 반영 0건'을 파고든 결과 원인이 둘로 갈렸다. ▶절반은 시토가 처리 완료: 07-20 제안 생성기는 rc=0 으로 정상 실행됐는데 산출물이 autostash 에 갇혀 파일에 안 남았다(INC-034 같은 뿌리) → 6건 회수, 현재 21건(커밋 9efc7bc5c). ▶나머지 절반이 웰리 몫: 설계상 '승인 후 실제 반영(메모리·프롬프트 수정)은 웰리 수동'인데(자기수정 코드 0 = GM 결정 수위), 07-02 승인된 3건이 21일째 '승인' 상태로 멈춰 있다. 또 '제안' 상태 14건이 검토 대기다(06-29·07-06·07-10·07-13·07-20 회차 누적). 역할분리 정본 = G1=제안 검토·승인 / T1=반영·효과 회고. ▶승인 대기 3건 요지: ①AI CEO '두뇌-손 분리'에 핸드오프 명세 추가 ②텔레그램 13시 헬스체크에 명시적 evaluator 계약 추가 ③auto mode 안전 액션 화이트리스트를 발행 파이프라인에 도입. ▶시토가 직접 안 한 이유: 반영 대상이 웰리 프롬프트·전사 운영 원칙이라 CEO 도메인이다(침범 금지). 도구는 준비돼 있다 — scripts/ai_learning_proposer.py --list/--approve/--mark-applied. ▶정직: 파이프라인이 '멈춘 것처럼' 보인 건 절반은 유실, 절반은 사람 단계 적체였다. 자동화 결함으로만 보고하면 틀린다.",
+    "next": "웰리: ①승인 3건 실제 반영 또는 폐기 판단 → --mark-applied 로 상태 전이 ②제안 14건 검토(일괄 반려도 결정이다) ③반영 후 효과 회고는 T1 자기학습 탭",
+    "depends_on": "",
+    "ship_no": 10032,
+    "short_no": 56,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-24-ADHOC-eb0ac2891",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-24",
+    "processed_at": "2026-07-24",
+    "ship_no": 10033,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 eb0ac2891)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "eb0ac2891c27a3007537cacff1788da292889077"
   }
 ]
