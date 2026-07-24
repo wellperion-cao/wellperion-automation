@@ -56,6 +56,7 @@ import os
 import re
 import subprocess
 import sys
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -74,6 +75,13 @@ MATRIX_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "bootsetup_matrix.jso
 SCAN_LOG = STATUS_DIR / "gm_aide_scan_log.jsonl"
 
 LONG_PENDING_DAYS = 30
+
+# ── 결재 장기 무처리 규칙(배69 · GM 07-24 지시 — 58일 적체 5건 재발 차단) ──
+# 임계값 근거(2026-07-24 실측): 결재완료 17건의 생성→완료 소요일 중앙값 2일 · 대부분 6일 내 종결,
+#   가장 느린 정상 케이스가 13~14일(2건) · 그 다음은 52일 이상치 1건뿐. 14일 = "느리지만 정상"과
+#   "방치"의 실측 경계값. 7일로 잡으면 정상 지연건까지 섞여 벽이 되고, 30일은 첫 적발까지 너무 늦다.
+STALE_APPROVAL_DAYS = 14
+SSOT_TODO_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
 UNAPPROVED_STREAK_GATE = 3     # 추천 미응답 연속 이만큼이면 '접근 재점검' 게이트 제안
 MAX_PROPOSALS_PER_RUN = 5      # 하루 과다등록 방지 cap
 PROPOSAL_TAG = "[GM보좌 제안]"
@@ -264,6 +272,57 @@ def scan_long_pending(active: list) -> list:
             remedy="GM 결정 필요(착수/우선순위 하향/폐기) — 비가역(폐기) 포함 → 제안만",
             dedup_key=f"gmaide|long_pending|{tid}",
             source_item=x,
+        ))
+    return caps
+
+
+def fetch_todo_list_readonly() -> list:
+    """업무&결재 SSOT(ERP S3) 원본 읽기 전용 GET(action=todo_list). 쓰기 호출 없음.
+    실패(네트워크·타임아웃·파싱 오류)해도 예외를 밖으로 던지지 않고 빈 리스트 반환 —
+    이 스캔이 06:30 예약 전체를 죽이면 안 된다(기존 함수들의 방어적 실패 패턴과 동일)."""
+    try:
+        req = urllib.request.Request(
+            SSOT_TODO_URL + "?action=todo_list",
+            headers={"User-Agent": "gm_aide_scan/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        rows = data.get("data") if isinstance(data, dict) else None
+        return rows if isinstance(rows, list) else []
+    except Exception as e:
+        print(f"  [WARN] 업무&결재 SSOT 읽기 실패(스킵·스캔은 계속): {e}")
+        return []
+
+
+def scan_stale_approval(todo_rows: list) -> list:
+    """결재요청 후 STALE_APPROVAL_DAYS일 이상 무처리(결재상태=대기)인 건 포착(배69 · GM 07-24).
+    ★오탐 방지: 결재선을 탄 건만(결재요청 비어있는 순수 업무기록 제외) · 결재상태가 정확히
+    '대기'인 것만(결재완료·GM반려 등 종결건은 절대 재부상 안 함) · 생성일 파싱 실패는 스킵(정직)."""
+    caps = []
+    for r in todo_rows or []:
+        appr_req = (r.get("결재요청") or "").strip()
+        if not appr_req:
+            continue  # 결재선 없는 순수 업무기록 — 대상 아님(오탐 방지)
+        if (r.get("결재상태") or "").strip() != "대기":
+            continue  # 완료·반려 등 종결건은 재부상 금지
+        created = _parse_date_loose(r.get("생성일"))
+        if created is None:
+            continue
+        age = (TODAY - created).days
+        if age < STALE_APPROVAL_DAYS:
+            continue
+        tid = r.get("id") or "unknown"
+        title = (r.get("업무명") or "").strip()
+        owner = (r.get("담당자") or "").strip()
+        caps.append(make_capture(
+            ctype="stale_approval",
+            reversibility="비가역",   # 승인/반려 = GM 결정 게이트 → 제안 배(기존 long_pending과 동일 경로)
+            target_role="ceo",        # 결재요청 대상이 실무 C-Level이 아니라 GM 본인이라 웰리가 대신 표면화
+            title=f"[{tid}] 결재 {age}일째 무처리 — {title[:35]}",
+            reason=f"결재요청({appr_req}) 후 {age}일째 미처리(결재상태=대기) — 정상 승인 소요(중앙값 2일·최대 14일) 대비 장기 방치",
+            evidence=f"생성일={r.get('생성일')} 결재요청={appr_req} 담당자={owner} 업무명={title[:60]}",
+            remedy="GM 결정 필요(승인/반려) — 방치될수록 맥락 소실(58일 적체 실측 사례)",
+            dedup_key=f"gmaide|stale_approval|{tid}",
         ))
     return caps
 
@@ -1119,13 +1178,15 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     ns_map = load_northstar_map()
     profile_exists = PROFILE_MD.exists()
     profile_hints = load_profile_missed_hints()
+    todo_rows = fetch_todo_list_readonly()  # 업무&결재 SSOT 읽기 전용(배69) — 실패해도 빈 리스트, 스캔 계속
     print(f"[1/3] 입력 로드 — 활성큐 {len(active)}척 · 프로필 {'있음' if profile_exists else '없음(먼저 gm_profile_builder 실행 권장)'}"
-          f" · 프로필 근거(자주 놓치는 것) {len(profile_hints)}건 연동")
+          f" · 프로필 근거(자주 놓치는 것) {len(profile_hints)}건 연동 · 업무&결재 SSOT {len(todo_rows)}건 읽음")
 
     # ── 포착 ──
     captures = []
     captures += scan_drift(active)
     captures += scan_long_pending(active)
+    captures += scan_stale_approval(todo_rows)
     captures += scan_unapproved_recommendation(ns_log, ns_pending)
     captures += scan_routine_missing(ns_pending)
 
