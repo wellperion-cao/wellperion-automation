@@ -1146,6 +1146,23 @@ function edClear(){edSet("");}
 const LS_Q="wp_att_req_v1";
 let REQS=JSON.parse(localStorage.getItem(LS_Q)||"[]");
 const saveQ=()=>localStorage.setItem(LS_Q,JSON.stringify(REQS));
+/* 7월 실측 연차·반차(IMPORT_LEAVE 정본) → 승인 완료 신청 더미 — 기기별 최초 1회 자동 시드.
+   결재일=대상일 3일 전 · 김남욱GM 본인 건만 이정헌소장 결재. 동일 인·일·종류 존재 시 건너뜀. */
+const SEED_FLAG="wp_att_req_seed_v1";
+if(!localStorage.getItem(SEED_FLAG)){
+  const SEED=[
+    {id:"RS7",emp:"임정은",type:"연차",date:"2026-07-27",appr:"김남욱GM",decidedAt:"2026-07-24"},
+    {id:"RS6",emp:"최준용",type:"연차",date:"2026-07-24",appr:"김남욱GM",decidedAt:"2026-07-21"},
+    {id:"RS5",emp:"김남욱",type:"반차오후",date:"2026-07-16",appr:"이정헌소장",decidedAt:"2026-07-13"},
+    {id:"RS4",emp:"나우열",type:"반차오후",date:"2026-07-10",appr:"김남욱GM",decidedAt:"2026-07-07"},
+    {id:"RS3",emp:"최준용",type:"연차",date:"2026-07-08",appr:"김남욱GM",decidedAt:"2026-07-05"},
+    {id:"RS2",emp:"이경연",type:"반차오전",date:"2026-07-03",appr:"김남욱GM",decidedAt:"2026-06-30"},
+    {id:"RS1",emp:"임정은",type:"연차",date:"2026-07-02",appr:"김남욱GM",decidedAt:"2026-06-29"}
+  ].map(r=>({...r,s:"",e:"",reason:"7월 실측 반영",status:"승인"}));
+  const add=SEED.filter(r=>!REQS.some(x=>x.emp===r.emp&&x.date===r.date&&x.type===r.type));
+  if(add.length){REQS=add.concat(REQS);saveQ();}
+  localStorage.setItem(SEED_FLAG,"1");
+}
 const REQ_W={"연차":1,"반차오전":0.5,"반차오후":0.5};
 function pendingUseOf(nm){return REQS.filter(r=>r.emp===nm&&r.status==="대기").reduce((a,r)=>a+(REQ_W[r.type]||0),0);}
 function fillReqEmp(){
