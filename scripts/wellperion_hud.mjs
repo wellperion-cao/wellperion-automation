@@ -89,8 +89,26 @@ function myShips(cwd, role) {
     const ymd = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     const run = mine.filter((s) => s.status === 'IN_PROGRESS').length;
     const wait = mine.filter((s) => s.status === 'PENDING' || s.status === 'STANDBY').length;
-    const done = mine.filter((s) => (s.status === 'DONE' || s.status === '완료')
-      && String(s.processed_at || s.enqueued_at || '').startsWith(ymd)).length;
+    // '오늘 입항'은 보관함까지 세야 한다(GM 2026-07-24 '오늘 🏁0이 틀렸다').
+    //   완료한 배는 곧 _queue_archive.json 으로 옮겨진다 → 살아있는 큐만 보면 오늘 끝낸 배가
+    //   보관되는 순간 사라져 이 칸이 사실상 항상 0이었다(죽은 칸).
+    //   완료 날짜 칸은 배마다 제각각(processed_at·done_at·둘 다 없으면 enqueued_at)이라 셋 다 본다.
+    const isDoneToday = (s) => (s.status === 'DONE' || s.status === '완료')
+      && String(s.processed_at || s.done_at || s.enqueued_at || '').startsWith(ymd);
+    let done = mine.filter(isDoneToday).length;
+    // 보관함(2.4MB)은 읽는 값이 있을 때만 연다 — 오늘 아무것도 보관되지 않았으면 파일이
+    // 오늘 바뀌지도 않았으므로 열 이유가 없다(실측: 열면 +100ms, 안 열면 0ms).
+    // 못 읽어도 살아있는 큐 기준 숫자는 그대로 나온다(0으로 무너뜨리지 않는다).
+    try {
+      const arcPath = path.join(cwd, 'status', '_queue_archive.json');
+      const st = statSync(arcPath);
+      if (!new Date(st.mtimeMs).toLocaleDateString('sv-SE').startsWith(ymd)) throw 0;  // 오늘 보관 없음
+      const arc = JSON.parse(readFileSync(arcPath, 'utf8'));
+      if (Array.isArray(arc)) {
+        const seen = new Set(mine.map((s) => s.ship_no));
+        done += arc.filter((s) => s && s.clevel === role && !seen.has(s.ship_no) && isDoneToday(s)).length;
+      }
+    } catch { /* 보관함 못 읽음 — 살아있는 큐 기준으로만 센다 */ }
     const shortOf = {};
     for (const s of q) if (s && s.ship_no != null) shortOf[s.ship_no] = s.short_no != null ? s.short_no : s.ship_no;
     // 지금 붙들고 있는 배 = 진행중 중 가장 최근에 움직인 것. 번호만으로는 무슨 일인지 알 수 없어
