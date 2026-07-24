@@ -1236,10 +1236,13 @@ function renderReq(){
   el.innerHTML=REQS.map(r=>{
     const detail=r.type==="근무변경"?`근무변경 → ${fmtT(r.s)}${r.e?"–"+fmtT(r.e):""}`
       :LEAVE_LABEL[r.type]+(r.s?` · ${fmtT(r.s)}${r.e?"–"+fmtT(r.e):""} 근무`:"");
+    /* 결재 완료 배지: "승인 · 김남욱GM 7/24" (결재자·결재일 한 덩어리, 없는 값은 생략) */
+    const decideTail=[r.appr||"",r.decidedAt?md(r.decidedAt):""].filter(Boolean).join(" ");
+    const badge=r.status==="대기"?(r.appr?r.appr+" 결재 대기":"승인 대기"):r.status+(decideTail?" · "+decideTail:"");
     return `<div class="reqitem${r.status!=="대기"?" done":""}">`+
       `<div class="ri-main"><div class="ri-title">${r.emp} · ${detail}</div>`+
       `<div class="ri-sub">${md(r.date)} (${DOW[new Date(r.date).getDay()]})${r.reason?` · ${r.reason}`:""} · ${EMP_DEPT[r.emp]||""}${r.appr?` · <b style="color:var(--bronze2)">결재자 ${r.appr}</b>`:""}</div></div>`+
-      `<span class="rbadge rb-${r.status}">${r.status==="대기"?(r.appr?r.appr+" 결재 대기":"승인 대기"):r.status+(r.appr&&r.status==="승인"?" · "+r.appr:"")+(r.decidedAt?" · "+md(r.decidedAt):"")}</span>`+
+      `<span class="rbadge rb-${r.status}">${badge}</span>`+
       (r.status==="대기"
         ?`<button class="rbtn primary" onclick="approveReq('${r.id}')">${r.appr?"결재(승인)":"승인"}</button><button class="rbtn danger" onclick="rejectReq('${r.id}')">반려</button>`
         :`<button class="rbtn ghost" onclick="delReq('${r.id}')">삭제</button>`)+
@@ -1276,10 +1279,12 @@ function printReqMonth(){
     const detail=r.type==="근무변경"
       ?`${fmtT(r.s)}${r.e?"–"+fmtT(r.e):""}`
       :(r.s?`${fmtT(r.s)}${r.e?"–"+fmtT(r.e):""} 근무`:"—");
+    /* 결재란: "김남욱GM 7/24" — 결재자·결재일 한 덩어리, 대기 건은 — */
+    const decide=r.status==="대기"?"—":([esc(r.appr)||"",r.decidedAt?md2(r.decidedAt):""].filter(Boolean).join(" ")||"—");
     return `<tr class="st-${r.status}"><td>${i+1}</td><td>${md2(r.date)} (${DOW[new Date(r.date).getDay()]})</td>`+
       `<td>${esc(EMP_DEPT[r.emp]||"—")}</td><td>${esc(r.emp)}</td><td>${esc(kind)}</td><td>${detail}</td>`+
       `<td class="rsn">${esc(r.reason||"")}</td><td class="st">${r.status}</td>`+
-      `<td>${esc(r.appr)||"—"}</td><td>${r.status==="대기"?"—":md2(r.decidedAt)}</td></tr>`;
+      `<td>${decide}</td></tr>`;
   }).join("");
   const [py,pm]=ym.split("-");
   const w=window.open("","_blank");
@@ -1300,7 +1305,7 @@ function printReqMonth(){
     `</style></head><body>`+
     `<h1>🗓️ ${py}년 ${+pm}월 근무변경·연차 신청 내역</h1>`+
     `<div class="meta">주식회사 웰페리온 · 근무 스케줄 보드 · 총 ${L.length}건 (승인 ${c("승인")} · 반려 ${c("반려")} · 대기 ${c("대기")})</div>`+
-    `<table><thead><tr><th>No</th><th>대상일</th><th>부서</th><th>신청자</th><th>종류</th><th>근무시간</th><th>사유</th><th>상태</th><th>결재자</th><th>결재일</th></tr></thead>`+
+    `<table><thead><tr><th>No</th><th>대상일</th><th>부서</th><th>신청자</th><th>종류</th><th>근무시간</th><th>사유</th><th>상태</th><th>결재자 · 결재일</th></tr></thead>`+
     `<tbody>${rows}</tbody></table>`+
     `<div class="foot"><span>대상 일자 기준 · 결재일=승인/반려 처리일</span><span>출력일 ${todayYmd()}</span></div>`+
     `<scr`+`ipt>onload=()=>setTimeout(()=>print(),250)</scr`+`ipt></body></html>`);
