@@ -54,15 +54,20 @@ def build_ship(args, queue):
     # 여전히 ship_no). 재사용 방지 로직은 assign_short_no.next_short_no() 단일 소스.
     short_no = next_short_no(queue)
 
+    # 제목 앞에 닉네임 태그를 붙이는 건 이 함수 몫이다. 부르는 쪽이 관례를 몰라
+    # "[시토] ..." 처럼 이미 붙여 보내면 "[시토] [시토] ..." 로 겹쳤다(2026-07-24 시우 실측).
+    # 받는 역할의 태그가 이미 맨 앞에 있으면 한 번만 남긴다.
+    title = re.sub(r"^\s*\[\s*%s\s*\]\s*" % re.escape(nick), "", args.title)
+
     sender = ROLES.get((args.sender or "").lower(), args.sender or "")
     note = args.note or ""
     if sender:
         note = ("[%s → %s 전달 %s] " % (sender, nick, today)) + note
 
     return {
-        "task_id": "%s-%s-%s" % (role.upper(), today, _slug(args.title)),
+        "task_id": "%s-%s-%s" % (role.upper(), today, _slug(title)),
         "clevel": role,
-        "title": "[%s] %s" % (nick, args.title),
+        "title": "[%s] %s" % (nick, title),
         "status": "PENDING",
         "priority": args.priority,
         "enqueued_at": today,
