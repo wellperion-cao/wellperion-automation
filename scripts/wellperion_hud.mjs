@@ -159,7 +159,11 @@ function main() {
     .map((r) => (alive.has(r) ? `${G}●${X}` : `${D}○${X}`)).join('');
   if (dots) parts.push(`${D}전사${X}${dots}`);
 
-  process.stdout.write(base + (parts.length ? `${D} | ${X}${parts.join(`${D} · ${X}`)}` : ''));
+  // ★같은 줄에 이어 붙이지 않고 **줄을 따로 뺀다** (GM 2026-07-24 '시모·시우·시포는 잘리는데?').
+  //   OMC HUD 는 서브에이전트가 돌면 그 목록까지 찍어 줄이 길어진다. 거기에 이어 붙이면
+  //   터미널 폭을 넘겨 **끝에 붙은 우리 부분부터 잘린다** — 정작 제일 보고 싶은 게 사라진다.
+  //   별도 줄이면 폭 경쟁이 없어 어느 창에서도 온전히 보인다(OMC 도 이미 여러 줄을 쓴다).
+  process.stdout.write(base + (parts.length ? '\n' + parts.join(`${D} · ${X}`) : ''));
 }
 
 main();
