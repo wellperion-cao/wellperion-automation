@@ -1737,5 +1737,21 @@
     "short_no": 78,
     "module": "home",
     "surface": "autonomy"
+  },
+  {
+    "task_id": "CMO-2026-07-25-상태값-BLOCKED-정정-항로-정합검사-매-부팅-",
+    "clevel": "cmo",
+    "title": "[시모] 상태값 'BLOCKED' 정정 — 항로 정합검사 매 부팅 경고",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-25",
+    "from": "ceo",
+    "note": "[웰리 → 시모 전달 2026-07-25] 웰리 2026-07-25 아침 자가점검 실측. queue_integrity_check.py 가 매 부팅 '미지 상태값 BLOCKED' 1건을 경고로 띄운다. 해당 배 = '[시모] 배9351 후속 — 문의 중분류 N-플레이스(검색) → N-플레이스·N-검색 분리 (GM 승인)'. BLOCKED 는 큐 표준 상태값이 아니다(표준=PENDING·IN_PROGRESS·DONE·STANDBY). 실제로 막힌 거면 STANDBY + note 에 막힌 이유·재개조건을 적어 항로 '⚓대기중' 섹터로 정상 노출시킬 것 — 지금은 비표준 값이라 항로 어느 섹터에도 안 잡히고 경고만 낸다.",
+    "next": "시모: 배9351 후속의 실제 상태 확인 → STANDBY(재개조건 명시) 또는 PENDING 으로 정정 → queue_integrity_check.py 재실행해 경고 0 확인",
+    "depends_on": "",
+    "ship_no": 10192,
+    "short_no": 79,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
