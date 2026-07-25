@@ -1164,10 +1164,14 @@ function groupCount(arr,key){
 function orgChartHtml(active){
   var norm=function(s){return String(s==null?"":s).replace(/\n/g," ").trim();};
   var by={};active.forEach(function(e){var d=norm(e["부서"]);(by[d]=by[d]||[]).push({nm:norm(e["성명"]||e["이름"]),jg:norm(e["직급"])});});
-  var leadRank={"회장":0,"대표이사":1,"대표":1,"이사":2,"GM":3};
+  // 회장/대표(이사)만 상단 전체 리드 스트립에 표시. 이사·GM은 각자 소속 부서 카드 안에서 상단 고정(2026-07-25 매니저 지시 —
+  // 김남욱 GM→경영지원부 상단, 주영희 이사→관리부 상단; 직책 기반 정렬이라 동일 직급자는 자동으로 같은 규칙 적용).
+  var leadRank={"회장":0,"대표이사":1,"대표":1};
   var lead=[],leadNames={};
   active.forEach(function(e){var jg=norm(e["직급"]);if(leadRank[jg]!=null){var nm=norm(e["성명"]||e["이름"]);if(nm&&!leadNames[nm]){leadNames[nm]=1;lead.push({nm:nm,jg:jg,r:leadRank[jg]});}}});
   lead.sort(function(a,b){return a.r-b.r;});
+  // 부서 카드 내부 상단 고정 직급(값이 작을수록 카드 최상단). 목록에 없는 직급은 원래 순서 유지(안정 정렬).
+  var deptTopRank={"이사":0,"GM":1};
   var disp={"시설":"시설부","주차 관리":"주차관리","지원":"지원부 · 사우나"};
   var sections=[
     {t:"경영지원 · 관리 · 운영",d:["경영지원부","관리부","운영부"]},
@@ -1184,6 +1188,7 @@ function orgChartHtml(active){
   sections.forEach(function(s){
     var cards=s.d.map(function(dept){
       var mem=(by[dept]||[]).filter(function(p){if(leadNames[p.nm]||placed[p.nm])return false;placed[p.nm]=1;return true;});
+      mem.sort(function(a,b){return (deptTopRank[a.jg]!=null?deptTopRank[a.jg]:99)-(deptTopRank[b.jg]!=null?deptTopRank[b.jg]:99);});
       if(!mem.length)return"";
       var dn=disp[dept]||dept;
       var c='<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px">';
