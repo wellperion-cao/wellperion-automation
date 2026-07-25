@@ -438,9 +438,15 @@ def safe_commit(
         # ★교착 없음: 이 자리는 위 `with GitLock(...)` 을 이미 빠져나온 뒤다. auto_log 는 자기
         #   GitLock 을 따로 잡고, 못 잡으면 within-parent-lock 으로 보류한다(fail-open).
         # ★순서: 훅과 동일하게 자동기록 → push. 그래야 자동기록이 만든 커밋까지 같이 올라간다.
+        # ★배106(2026-07-25 시토 · 웰리 결정): 방금 만든 커밋 sha 를 명시 인자로 넘긴다 —
+        #   인자 없이 HEAD 를 읽으면 이 호출 전에 다른 세션 커밋이 끼어들 때 남의 커밋을
+        #   기록한다(레이스). 기록 계층은 auto_log 쪽에 있다: ①[umbrella:ID] 명시 흡수
+        #   → ②그 역할 IN_PROGRESS 배 note 흡수 → ③상설 일일 ad-hoc 배 1척 갱신
+        #   (도배 방지 · 시포 배10014 방식 재사용). 여기(관문)는 호출만 한다(L21).
         try:
             subprocess.run(
-                [sys.executable, str(_SCRIPTS_DIR / "auto_log_adhoc_to_queue.py")],
+                [sys.executable, str(_SCRIPTS_DIR / "auto_log_adhoc_to_queue.py"),
+                 result["sha"]],
                 cwd=str(root), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=120,
             )

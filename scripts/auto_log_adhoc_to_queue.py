@@ -6,8 +6,15 @@
 CLI 세션에서 굵직한 작업을 끝내고 커밋하면, 사람이 따로 _queue 에 '입항 완료 배'를
 손으로 적지 않아도(자동 안 됨) 이 스크립트가 post-commit 훅에서 발화해 자동 등록한다.
 
+기록 계층(배106 · 웰리 결정 2026-07-25):
+  ① [umbrella:ID] 명시 마커 → 그 배 note 흡수 (기존)
+  ② 귀속 역할의 IN_PROGRESS 배 존재 → 그 배 note 흡수 (진행중 작업에 커밋 자동 기록)
+  ③ 없으면 → 상설 일일 ad-hoc 배 1척(role-date-ADHOC-DAILY)에 누적 갱신
+     (회차마다 새 완료-배를 찍어 G1 을 도배하던 사고의 재발 방지 — 시포 배10014 방식)
+
 호출 경로:
   .git/hooks/post-commit → (이 스크립트) → post_commit_push.py
+  scripts/safe_commit.py → (이 스크립트, 커밋 sha 명시 인자) → post_commit_push.py
   (auto_log 가 chore(queue) 커밋을 1개 만들 수 있고, 그 커밋의 post-commit 이
    다시 이 스크립트를 부르지만 — chore(queue) 는 SKIP 규칙 2.b 에 걸려 base case 로
    기록하지 않으므로 재귀 없음.)
@@ -294,7 +301,9 @@ def _build_item(meta: dict, clevel: str, ship_no: int) -> dict:
         base = meta["subject"]
     artifact = f"{base} (CLI ad-hoc · 커밋 {sha7})"
     return {
-        "task_id": f"{clevel.upper()}-{date}-ADHOC-{sha7}",
+        # 배106(2026-07-25): sha7 별 task_id → 일일 상설 배 1척으로 전환(도배 방지).
+        # 같은 날 후속 ad-hoc 커밋은 main() ③에서 이 배의 note 에 누적된다.
+        "task_id": f"{clevel.upper()}-{date}-ADHOC-DAILY",
         "clevel": clevel,
         "title": title,
         "status": "DONE",
@@ -467,16 +476,64 @@ def main() -> int:
                     return 0
                 # 마커는 있으나 umbrella 미발견 → 기존 동작(새 배)로 폴백.
 
-            # ship_no = 활성 큐 + 아카이브 통틀어 max+1 (전역 유니크·재사용 방지).
-            archive_path = os.path.join(root, ARCHIVE_REL)
-            archive, _ = _load_queue(archive_path)
-            if archive is None:
-                archive = []
-
             clevel = _attribute_clevel(root, meta["subject"], meta["body"])
-            item = _build_item(meta, clevel, _next_ship_no(queue, archive))
+            sha7 = meta["short"]
+            clean = _strip_conventional_prefix(meta["subject"])
+            line = f"- [{meta['date']}] {clean} (커밋 {sha7})"
 
-            queue.append(item)
+            # ② IN_PROGRESS 배 흡수(배106 · 웰리 결정 2026-07-25): 커밋 시점에 그 역할의
+            #   진행중 배가 있으면 새 배를 만들지 않고 그 배 note 에 한 줄 기록한다.
+            #   여러 척이면 마지막 매치(=가장 최근 추가 배 — 큐는 append-only 라 뒤가 최신).
+            #   note 의 [날짜] 브래킷은 stall_watch.last_activity 가 그대로 읽으므로
+            #   진행중 배의 '정체 오탐'도 함께 풀린다(별도 필드 불필요).
+            target = None
+            for it in queue:
+                if (isinstance(it, dict) and it.get("clevel") == clevel
+                        and str(it.get("status", "")).upper() == "IN_PROGRESS"):
+                    target = it
+            if target is not None:
+                prev = str(target.get("note") or "")
+                if sha7 in prev:
+                    return 0  # 멱등 — 이미 기록됨.
+                target["note"] = (prev + ("\n" if prev else "") + line).strip()
+                item = target
+            else:
+                # ③ 상설 일일 ad-hoc 배 갱신(도배 방지 · 시포 배10014 방식 재사용):
+                #   같은 역할의 같은 날 ad-hoc 커밋은 회차마다 새 완료-배를 찍지 않고
+                #   상설 배 1척의 note 에 누적한다 — 문의 스냅샷이 G1 을 도배한 사고
+                #   (배10014)의 재발 방지. 날짜가 바뀌면 새 상설 배(전날 DONE 은
+                #   queue_archive_sweep 이 아카이브로 옮기는 리듬과 일치).
+                daily_id = f"{clevel.upper()}-{meta['date']}-ADHOC-DAILY"
+                standing = None
+                for it in queue:
+                    if isinstance(it, dict) and it.get("task_id") == daily_id:
+                        standing = it
+                        break
+                if standing is not None:
+                    prev = str(standing.get("note") or "")
+                    if sha7 in prev:
+                        return 0  # 멱등.
+                    standing["note"] = (prev + ("\n" if prev else "") + line).strip()
+                    n = int(standing.get("adhoc_count") or 1) + 1
+                    standing["adhoc_count"] = n
+                    standing["title"] = (
+                        f"[{NICK.get(clevel, clevel)}] {clean[:120]} 외 {n - 1}건 (CLI ad-hoc)"
+                    )
+                    standing["artifact"] = f"{clean[:200]} (CLI ad-hoc · 커밋 {sha7} · 누적 {n}건)"
+                    standing["adhoc_commit"] = meta["full"]
+                    standing["processed_at"] = meta["date"]
+                    item = standing
+                else:
+                    # ship_no = 활성 큐 + 아카이브 통틀어 max+1 (전역 유니크·재사용 방지).
+                    archive_path = os.path.join(root, ARCHIVE_REL)
+                    archive, _ = _load_queue(archive_path)
+                    if archive is None:
+                        archive = []
+                    item = _build_item(meta, clevel, _next_ship_no(queue, archive))
+                    item["note"] = line
+                    item["adhoc_count"] = 1
+                    queue.append(item)
+
             if not _write_queue(queue_path, queue, crlf):
                 return 0  # 쓰기 실패 → fail-open.
 
