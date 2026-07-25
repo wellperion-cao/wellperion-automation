@@ -1224,6 +1224,104 @@ def rule_m1_stale_pinned_status() -> list[dict]:
     return gaps
 
 
+def rule_pipeline_running_but_no_output() -> list[dict]:
+    """예약은 정상인데 **산출이 0**인 상태 적발 (2026-07-25 신설).
+
+    계기: 개인계정 AI A~Z 제작기가 2026-07-12부터 매일 rc=0 으로 돌면서 신규 제작 0건이었는데
+    2주 동안 아무도 몰랐다. '실패'는 알람이 울리지만 **'정상인데 아무것도 안 나온 것'은 조용하다.**
+    ★판정 = 계정별 최근 N일 신규 검수큐 등록 0건. 로그 문구가 아니라 **산출물 실재**로 본다."""
+    items = _load_json(REVIEW_QUEUE_PATH, [])
+    if not isinstance(items, list):
+        return []
+    today = datetime.now(tz=KST).date()
+    QUIET_DAYS = 10
+    gaps: list[dict] = []
+    for acct, label in (("namuk.wellperion", "개인계정"), ("wellperion", "공식계정")):
+        newest = None
+        for it in items:
+            if not isinstance(it, dict) or str(it.get("account", "")) != acct:
+                continue
+            d = _parse_iso_date(str(it.get("published_at") or "")[:10]) \
+                or _parse_folder_date(Path(str(it.get("folder", ""))).name)
+            if d and (newest is None or d > newest):
+                newest = d
+        if newest is None:
+            continue
+        days = (today - newest).days
+        if days < QUIET_DAYS:
+            continue
+        gaps.append({
+            "role": "cmo",
+            "severity": "high" if days >= 20 else "mid",
+            "title": f"{label} — {days}일째 새 콘텐츠 0건 (예약은 정상 가동)",
+            "detail": f"검수큐 기준 마지막 신규 = {newest} · 그 뒤 신규 등록 없음. "
+                      f"예약작업은 매일 도는데 만들 재고가 없으면 조용히 빈손으로 끝난다",
+            "hint": "재고(기획예정/대본완료)를 채우거나, 더 만들 계획이 없으면 모듈을 휴면으로 표시",
+            "ref": f"review_queue.json · account={acct}",
+            "age": "누적",
+        })
+    return gaps
+
+
+def rule_weekend_stock_empty() -> list[dict]:
+    """주말(토·일) 발행 재고가 비어 있는 것 적발 (2026-07-25 신설).
+
+    계기: 2026-07-25 토요일 개인계정 발행이 0건이었는데 GM이 먼저 발견했다. 요일 게이트로
+    멈추는 건 오류가 아니라 '정상 종료'라 어떤 알람도 안 울린다. 디스패처에 금요일 선행 경고를
+    넣었지만 그건 텔레그램 한 줄 — 항로(내 할 일)에도 떠야 잊지 않는다."""
+    plan = ROOT / "instagram" / "_실전사례_2주플랜.md"
+    try:
+        text = plan.read_text(encoding="utf-8")
+    except Exception:
+        return []
+    stock = [
+        ln for ln in text.split("\n")
+        if ln.strip().startswith("|") and "주말GM" in ln and "재고(대본완료)" in ln
+    ]
+    if stock:
+        return []
+    return [{
+        "role": "cmo",
+        "severity": "high",
+        "title": "주말(토·일) 발행 재고 0편 — 이번 주말 개인계정 발행 없음",
+        "detail": "편성표 주말GM 트랙에 '재고(대본완료)' 행이 하나도 없다. "
+                  "요일 게이트는 오류 없이 조용히 끝나므로 이 상태로 주말이 지나가면 발행이 0건이 된다",
+        "hint": "토요일편(업계 문제 + AI 해결)은 그 주 사건에 안 매여 미리 만들 수 있다 — 소재 S1~S6 참고",
+        "ref": "instagram/_실전사례_2주플랜.md · 주말GM",
+        "age": "신규",
+    }]
+
+
+def rule_test_data_left_in_queue() -> list[dict]:
+    """검수큐·접수에 **시험용 데이터가 살아 있는 것** 적발 (2026-07-25 신설).
+
+    계기: M1 콘텐츠 접수에 `__접수테스트2__`·`__접수테스트3_축소후__` 2건이 남아 있는 걸
+    GM이 먼저 발견했다. 기능 시험 뒤 치우는 건 사람 기억에 맡겨져 있어 매번 빠진다."""
+    items = _load_json(REVIEW_QUEUE_PATH, [])
+    if not isinstance(items, list):
+        return []
+    pat = re.compile(r"(테스트|test|더미|dummy|__)", re.I)
+    gaps: list[dict] = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        if str(it.get("status", "")) in ("폐기", "발행완료"):
+            continue
+        blob = f"{it.get('title','')} {it.get('id','')}"
+        if not pat.search(blob):
+            continue
+        gaps.append({
+            "role": "cmo",
+            "severity": "mid",
+            "title": f"시험용 데이터가 아직 살아있음 — {str(it.get('title',''))[:38]}",
+            "detail": f"status={it.get('status')} · 제목/식별자에 시험 흔적. 실제 콘텐츠 목록에 섞여 보인다",
+            "hint": "치울 때는 파일에서 지우지 말고 status='폐기' 로 — 지우면 접수 폴러가 15분 뒤 다시 넣는다",
+            "ref": str(it.get("id", "")),
+            "age": "신규",
+        })
+    return gaps
+
+
 _RULES: dict[str, list] = {
     "ceo": [],
     "cfo": [],
@@ -1239,6 +1337,9 @@ _RULES: dict[str, list] = {
         rule_publish_overclaim,        # 2026-07-23 신설 — 감사기 실측 '주소 죽음'(과대보고 재발방지)
         rule_m1_dead_screen_ref,       # 2026-07-25 신설 — M1 본문이 폐지된 화면을 가리킴(GM 지적)
         rule_m1_stale_pinned_status,   # 2026-07-25 신설 — 손으로 박은 상태값이 오래 방치됨(GM 지적)
+        rule_pipeline_running_but_no_output,  # 2026-07-25 신설 — 예약은 도는데 산출 0(2주 무감지)
+        rule_weekend_stock_empty,             # 2026-07-25 신설 — 주말 재고 0(요일 게이트 조용한 정지)
+        rule_test_data_left_in_queue,         # 2026-07-25 신설 — 시험용 데이터 잔존(GM 발견)
     ],
     "coo": [
         rule_recurring_check_incomplete,   # 2026-07-23 신설 — 지원부 반복 미완료(기존 감사기 재사용)
