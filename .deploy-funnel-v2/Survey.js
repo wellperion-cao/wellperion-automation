@@ -1654,6 +1654,22 @@ var ACT_RES_COL = '재등록예약목록';
 //  하위호환(비파괴): '연락이력'이 비어 있고 옛 Contact1/2/3에 값이 있으면 각각 {date:'',time:'',note:Cn}으로 합성해 표시.
 //  Contact1/2/3 컬럼은 절대 삭제·덮어쓰지 않음(원복 안전) — '연락이력'이 있으면 그것을 우선 사용.
 var CONTACT_HIST_COL = '연락이력';
+// ═══ 컨택자(컨택한 사람) 구조화 — 배101(2026-07-25 시포·GM) ═══
+//  '누가 컨택했는지'를 메모 끝 수기 서명(-이름) 대신 구조화 필드(by)로 기록한다.
+//  시트 저장 = 사람이 읽는 평문 유지(GM: 시트 JSON 금지) — 노트 끝 '(컨택:이름)' 마커 한 가지.
+//  읽기 = 마커를 by 로 분리(note 에서는 마커 제거). 과거분 소급 복원 불가 — 컨택자 집계 기준선 = 2026-07-25.
+var CONTACT_BY_RE = /\s*\(컨택:([^()]*)\)\s*$/;
+function _ctBySplit_(note) {
+  var s = String(note == null ? '' : note);
+  var m = s.match(CONTACT_BY_RE);
+  if (!m) return { note: s, by: '' };
+  return { note: s.replace(CONTACT_BY_RE, '').trim(), by: m[1].trim() };
+}
+function _ctByJoin_(note, by) {
+  var n = String(note == null ? '' : note).trim();
+  var b = String(by == null ? '' : by).trim();
+  return b ? (n ? n + ' (컨택:' + b + ')' : '(컨택:' + b + ')') : n;
+}
 // 셀/배열/JSON 문자열 → 정규 예약 배열([{date,time,note}]). 완전 빈 항목 제거.
 function _resParse_(raw) {
   if (!raw) return [];
@@ -1671,8 +1687,12 @@ function _resParse_(raw) {
     var d = _miToISO_(it.date || '');
     var t = _miTime_(it.time || '') || (it.time ? String(it.time).trim() : '');
     var n = (it.note == null) ? '' : String(it.note);
-    if (!d && !t && !n) continue;
-    out.push({ date: d, time: t, note: n });
+    // 컨택자(by, 배101): 필드 우선, 없으면 노트 끝 '(컨택:이름)' 마커 흡수(레거시 JSON·수기 호환).
+    var _bs = _ctBySplit_(n);
+    var b = String(it.by == null ? '' : it.by).trim() || _bs.by;
+    n = _bs.note;
+    if (!d && !t && !n && !b) continue;
+    out.push({ date: d, time: t, note: n, by: b });
   }
   return out;
 }
@@ -1684,8 +1704,11 @@ function _resStringify_(arr) {
     var d = _miToISO_(it.date || '');
     var t = it.time ? String(it.time).trim() : '';
     var n = (it.note == null) ? '' : String(it.note);
-    if (!d && !t && !n) return;
-    clean.push({ date: d, time: t, note: n });
+    var b = String(it.by == null ? '' : it.by).trim();   // 컨택자(배101) — 있을 때만 키 포함(예약 등 무관 소비자 무영향)
+    if (!d && !t && !n && !b) return;
+    var o = { date: d, time: t, note: n };
+    if (b) o.by = b;
+    clean.push(o);
   });
   return clean.length ? JSON.stringify(clean) : '';
 }
@@ -1797,7 +1820,9 @@ function _miReadRows_(sh) {
     //   과거 데이터 호환: 연락이력에만 있고 Contact가 빈 옛 행(실측 17건)도 그대로 다 보인다.
     var _histArr = [];
     [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
-      if (cv) _histArr.push({ date: '', time: '', note: cv });
+      if (!cv) return;
+      var _cbs = _ctBySplit_(cv);   // 컨택자(배101): 셀 끝 '(컨택:이름)' → by 분리
+      _histArr.push({ date: '', time: '', note: _cbs.note, by: _cbs.by });
     });
     var _histOverflow = _resParse_(iHist >= 0 ? row[iHist] : '');
     if (_histOverflow.length) {
@@ -2030,11 +2055,18 @@ function _lessonEnsureCols_(sh) {
 function _lessonContactPlainParseLine_(line) {
   var s = String(line || '').trim();
   if (!s) return null;
+  var _bys = _ctBySplit_(s);   // 컨택자(배101): 줄 끝 '(컨택:이름)' → by 분리 후 나머지 파싱
+  s = _bys.note;
+  var it = null;
   var m = s.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}))?\s*(.*)$/);
-  if (m) return { date: m[1], time: m[2] || '', note: (m[3] || '').trim() };
-  var m2 = s.match(/^(\d{1,2}:\d{2})\s+(.*)$/);
-  if (m2) return { date: '', time: m2[1], note: (m2[2] || '').trim() };
-  return { date: '', time: '', note: s };
+  if (m) it = { date: m[1], time: m[2] || '', note: (m[3] || '').trim() };
+  else {
+    var m2 = s.match(/^(\d{1,2}:\d{2})\s+(.*)$/);
+    if (m2) it = { date: '', time: m2[1], note: (m2[2] || '').trim() };
+    else it = { date: '', time: '', note: s };
+  }
+  it.by = _bys.by;
+  return it;
 }
 // 평문 셀(줄바꿈 구분) → 정규 배열([{date,time,note}]). 빈 줄·완전빈 항목 제거. 빈 셀=[].
 function _lessonContactPlainParse_(raw) {
@@ -2044,18 +2076,18 @@ function _lessonContactPlainParse_(raw) {
   var out = [];
   for (var i = 0; i < lines.length; i++) {
     var it = _lessonContactPlainParseLine_(lines[i]);
-    if (it && (it.date || it.time || it.note)) out.push(it);
+    if (it && (it.date || it.time || it.note || it.by)) out.push(it);
   }
   return out;
 }
-// 정규 배열 → 평문 셀(줄바꿈 구분, 한 줄="YYYY-MM-DD HH:MM 노트" 빈 값 생략). 빈 배열=''(셀 클리어).
+// 정규 배열 → 평문 셀(줄바꿈 구분, 한 줄="YYYY-MM-DD HH:MM 노트 (컨택:이름)" 빈 값 생략). 빈 배열=''(셀 클리어).
 function _lessonContactPlainStringify_(arr) {
   var lines = [];
   (arr || []).forEach(function(it){
     if (!it) return;
     var d = _miToISO_(it.date || '');
     var t = it.time ? String(it.time).trim() : '';
-    var n = (it.note == null) ? '' : String(it.note).trim();
+    var n = _ctByJoin_((it.note == null) ? '' : String(it.note).trim(), it.by);   // 컨택자(배101) 마커 포함
     if (!d && !t && !n) return;
     var parts = [];
     if (d) parts.push(d);
@@ -2096,7 +2128,7 @@ function _lessonContactsBySport_(arr, sportStr) {
     //   미일치 태그 줄은 flat(공통)로 남아 화면에 계속 노출(숨김 없음). 2026-07-22 시포(디버그).
     if (!sk || _tokens.indexOf(_norm(sk)) < 0) return;
     if (!out[sk]) out[sk] = { contacts: [] };
-    out[sk].contacts.push({ date: c.date || '', time: c.time || '', note: (m[2] || '').trim() });
+    out[sk].contacts.push({ date: c.date || '', time: c.time || '', note: (m[2] || '').trim(), by: c.by || '' });   // 컨택자 보존(배101)
   });
   return out;
 }
@@ -5306,7 +5338,7 @@ function _processAction(body) {
         var _muCFmt = function (e) {
           if (!e) return '';
           var pre = String((e.date || '') + ' ' + (e.time || '')).trim();
-          var body_ = String(e.note || '').trim();
+          var body_ = _ctByJoin_(String(e.note || '').trim(), e.by);   // 컨택자(배101): '(컨택:이름)' 마커로 평문 보존
           return pre ? (pre + ' ' + body_).trim() : body_;
         };
         // 앞 3건 → Contact1/2/3. 해당 칸이 없으면 만들지 않고 건너뛴다(칸 자동생성 금지 — 이번 사고의 원인).
@@ -5396,7 +5428,7 @@ function _processAction(body) {
         var _histFirst = _muHistNewArr[0];
         var _histWhen = ((_histFirst.date || '') + ' ' + (_histFirst.time || '')).trim();
         var _histChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-        _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + (_coName || '-') + ' (' + _teamChip(_coProg) + (_progNameOnly_(_coProg) || '-') + ')\n일시: ' + (_histWhen || '-') + '\n내용: ' + (_histFirst.note || '-') + (_coOwner ? '\n담당: ' + _coOwner : ''), _histChatId);
+        _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + (_coName || '-') + ' (' + _teamChip(_coProg) + (_progNameOnly_(_coProg) || '-') + ')\n일시: ' + (_histWhen || '-') + '\n내용: ' + (_histFirst.note || '-') + (_histFirst.by ? '\n컨택: ' + _histFirst.by : '') + (_coOwner ? '\n배정 담당: ' + _coOwner : ''), _histChatId);
       } catch (e) {}
     }
     // 등록 해제(이전 SUC → 신규 비SUC, status 명시 전송 시) — 잘못 등록 되돌리기: 등록현황에서 제거. 2026-06-29 시포.
@@ -5946,7 +5978,7 @@ function _processAction(body) {
         _spNewHistArr = _resParse_(body.contacts);
         var _spKept = _spExisting.filter(function (c) { return !_spIsThisSport(c); });   // 다른 종목·공통(무태그) 보존
         var _spTagged = _spNewHistArr.map(function (c) {
-          return { date: c.date || '', time: c.time || '', note: '[' + luSportKey + '] ' + String(c.note || '').trim() };
+          return { date: c.date || '', time: c.time || '', note: '[' + luSportKey + '] ' + String(c.note || '').trim(), by: c.by || '' };   // 컨택자 보존(배101)
         });
         var _spMerged = _spKept.concat(_spTagged);
         try {
@@ -5967,7 +5999,7 @@ function _processAction(body) {
           var _lsmHistWhen = ((_lsmHistFirst.date || '') + ' ' + (_lsmHistFirst.time || '')).trim();
           var _lsmOwnerVal = String(body.owner || '').trim();
           var _lsmContactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _lsmName + ' (' + _lsmTypeLabel + ' · ' + _teamChip(luSportKey) + luSportKey + ')\n일시: ' + (_lsmHistWhen || '-') + '\n내용: ' + (_lsmHistFirst.note || '-') + (_lsmOwnerVal ? '\n담당: ' + _lsmOwnerVal : ''), _lsmContactChatId);
+          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _lsmName + ' (' + _lsmTypeLabel + ' · ' + _teamChip(luSportKey) + luSportKey + ')\n일시: ' + (_lsmHistWhen || '-') + '\n내용: ' + (_lsmHistFirst.note || '-') + (_lsmHistFirst.by ? '\n컨택: ' + _lsmHistFirst.by : '') + (_lsmOwnerVal ? '\n배정 담당: ' + _lsmOwnerVal : ''), _lsmContactChatId);
         } catch (e) {}
       }
     } else {
@@ -6031,7 +6063,7 @@ function _processAction(body) {
           var _luHistFirst = _luHistNewArr[0];
           var _luHistWhen = ((_luHistFirst.date || '') + ' ' + (_luHistFirst.time || '')).trim();
           var _luContactChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _luName + ' (' + _luTypeLabel + ' · ' + _teamChip(_luSport) + _luSport + ')\n일시: ' + (_luHistWhen || '-') + '\n내용: ' + (_luHistFirst.note || '-') + (_luOwnerVal ? '\n담당: ' + _luOwnerVal : ''), _luContactChatId);
+          _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + _luName + ' (' + _luTypeLabel + ' · ' + _teamChip(_luSport) + _luSport + ')\n일시: ' + (_luHistWhen || '-') + '\n내용: ' + (_luHistFirst.note || '-') + (_luHistFirst.by ? '\n컨택: ' + _luHistFirst.by : '') + (_luOwnerVal ? '\n배정 담당: ' + _luOwnerVal : ''), _luContactChatId);
         } catch (e) {}
       }
     }
