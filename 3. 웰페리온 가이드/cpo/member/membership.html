@@ -7938,13 +7938,31 @@ function saveConsultModal() {
   else if (regChanged && origReg) { payload.status = '미정'; }   // 등록 해제 → 강등(미정). 방문여부는 visited 플래그가 별도 추적 · 퍼널 상태는 예약/방문 아님. 2026-07-18 GM
   if (regProgramChanged) payload.regProgram = regProgram;   // 등록 종목 — 등록 완료 상태에서만 전송(문의 시 관심프로그램과 별개). 2026-07-18 시토(GM요청) 대행.
   // 방문 완료는 독립 ✓플래그(payload.visited)로만 기록 — 진행상황(가망·컨택중 등 퍼널 단계)은 건드리지 않음. 2026-06-29 시포(리뷰 #2)
-  // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
+  // 상담 내용 → 연락 이력(CONTACT)에 쌓는다. 2026-07-25 GM 확정("보통 상담 내용은 Contact에 기록이 되는건데?").
+  //   ★그 전까지는 비고(memo)로 보냈다. 그래서 실무진이 상담 모달로 적은 내용은 CONTACT 칸에 영원히
+  //   나타나지 않았고 "CONTACT 내용이 사라졌다"는 신고가 반복됐다(FB260725-122831 홍재영님 건 —
+  //   실제로는 비고에 '[2026-07-25] 상담: …' 로 멀쩡히 저장돼 있었다). 입력구는 둘인데 저장되는 칸이
+  //   달랐던 게 본질이고, 저장 실패가 아니었다.
+  //   보내는 방식 = body.contacts(연락 이력 배열). 서버가 앞 3건을 Contact1/2/3에, 4건째부터는
+  //   연락이력 칸에 넣는다(기존 계약 그대로 — 새 저장 경로를 만들지 않는다).
+  //   contacts 를 보낼 땐 contact1/2/3 을 따로 보내지 않는다 — 서버에서 contacts 블록이 뒤에 실행돼
+  //   덮어쓰므로 두 벌을 보내면 어느 쪽이 이겼는지 알 수 없게 된다.
   if (input) {
     var today = new Date();
     var ds = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    var line = '[' + ds + '] 상담: ' + input;
-    var prev = (_consultEv.memo && String(_consultEv.memo).trim()) ? String(_consultEv.memo) : '';
-    payload.memo = prev ? (prev + '\n' + line) : line;
+    // 화면에 지금 떠 있는 3칸(수정분 반영) → {date,time,note} 로 되돌린다. 'YYYY-MM-DD 내용' 모양이면
+    // 날짜를 떼어 보존하고, 그 밖의 옛 수기 표기는 통째로 내용으로 둔다(형식을 강제해 지우지 않는다).
+    var _toEntry = function (s) {
+      var v = String(s || '').trim();
+      if (!v) return null;
+      var m = v.match(/^(\d{4}-\d{2}-\d{2})\s*(.*)$/);
+      return m ? { date: m[1], time: '', note: m[2] } : { date: '', time: '', note: v };
+    };
+    var _list = [_toEntry(c1), _toEntry(c2), _toEntry(c3)].filter(function (e) { return e; });
+    // 4건째부터는 서버가 연락이력 칸으로 넘긴다 — 기존 기록을 밀어내지 않는다.
+    _list.push({ date: ds, time: '', note: input });
+    payload.contacts = JSON.stringify(_list);
+    delete payload.contact1; delete payload.contact2; delete payload.contact3;
   }
 
   var saveBtn = document.getElementById('cmSaveBtn');
@@ -7964,6 +7982,24 @@ function saveConsultModal() {
         if (payload.contact1 !== undefined) evRef.contact1 = payload.contact1;
         if (payload.contact2 !== undefined) evRef.contact2 = payload.contact2;
         if (payload.contact3 !== undefined) evRef.contact3 = payload.contact3;
+        // 상담 내용을 CONTACT로 보낸 경우(2026-07-25) — 서버가 앞 3건을 Contact1/2/3에 넣는 것과
+        // 같은 규칙으로 화면에도 즉시 반영한다. 안 하면 저장 직후 모달을 다시 열었을 때 방금 쓴 글이
+        // 안 보여 또 '사라졌다'로 보인다(이번 사고와 같은 인상을 남기는 자리다).
+        if (payload.contacts !== undefined) {
+          try {
+            var _newList = JSON.parse(payload.contacts) || [];
+            var _fmtOne = function (e) {
+              if (!e) return '';
+              var pre = String((e.date || '') + ' ' + (e.time || '')).trim();
+              var bd = String(e.note || '').trim();
+              return pre ? (pre + ' ' + bd).trim() : bd;
+            };
+            evRef.contact1 = _fmtOne(_newList[0]);
+            evRef.contact2 = _fmtOne(_newList[1]);
+            evRef.contact3 = _fmtOne(_newList[2]);
+            evRef.contacts = _newList;
+          } catch (e) { /* 파싱 실패해도 서버 저장은 그대로 — 다음 재조회에서 맞춰진다 */ }
+        }
         if (payload.memo !== undefined) evRef.memo = payload.memo;
         if (payload.regDate !== undefined) evRef.regDate = payload.regDate;   // 등록일자 로컬 반영 — 재오픈 시 오늘로 리셋 방지(리뷰 #4)
         if (payload.regProgram !== undefined) evRef.regProgram = payload.regProgram;   // 등록 종목 로컬 반영. 2026-07-18 시토(GM요청) 대행.
