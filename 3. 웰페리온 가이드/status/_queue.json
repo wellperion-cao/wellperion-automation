@@ -2584,5 +2584,35 @@
     "artifact": "fix(cpo): 강습 등록현황 최신 등록이 맨 위로 — GAS 순서(과거부터) 그대로 쓰던 것 정렬 (GM 07-25) (CLI ad-hoc · 커밋 9140b38a2)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "9140b38a230be47ab5f92aa79d3b25e5cd8fe7ec"
+  },
+  {
+    "task_id": "COO-2026-07-25-시토-시우-자동-검사-3건-빨간불-COO-OPS-F",
+    "clevel": "coo",
+    "title": "[시우] [시토→시우] 자동 검사 3건 빨간불 — coo-ops-fill-board 에 honesty_default 누락",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-25",
+    "from": "cto",
+    "note": "[시토 → 시우 전달 2026-07-25] [2026-07-25 시토 진단·수정 안 함] 전체 자동 검사판을 되살려 돌린 결과 남은 빨간불 5건 중 3건이 시우 도메인이라 넘긴다. [원인 1개] status/module_registry.json 에 신설된 coo-ops-fill-board(GM 07-23 지시·실무진 업무판 채움 보드) 항목에 등록부 필수 스키마 키 honesty_default 가 빠져 있다. 이 하나가 세 테스트를 동시에 깨뜨린다 — tests/test_coo_honesty_tags.py::test_all_coo_modules_have_valid_honesty_default 1건 + tests/test_coo_registry.py 2건(스키마 검증·enabled 집합). [시토가 안 고친 이유] 등록부의 coo-* 항목은 시우 소유이고 honesty_default 값(measured/estimated 등)은 그 모듈이 내는 숫자가 실측인지 추정인지에 대한 판단이라 소유자만 정할 수 있다. 시토가 임의로 값을 넣으면 정직 표기가 거짓이 될 수 있다. [맥락 — 왜 지금 발견됐나] 오늘까지 pytest tests/ 전체 실행이 두 파일 때문에 세션째 죽어 아무도 전체 검사를 못 돌리고 있었다(배10245 에서 수리·완주 복구). 그래서 이 3건도 그동안 빨간불인 줄 모르고 있었다.",
+    "next": "시우: coo-ops-fill-board 항목에 honesty_default 를 그 모듈의 실제 성격에 맞게 지정(measured=실측 / estimated=추정 등 등록부 스키마 계약 확인). 지정 후 python -m pytest tests/test_coo_registry.py tests/test_coo_honesty_tags.py -q 로 3건 녹색 확인",
+    "depends_on": "",
+    "ship_no": 10281,
+    "short_no": 116,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "COO-2026-07-25-ADHOC-abc44438b",
+    "clevel": "coo",
+    "title": "[시우] O1 운영 모듈 현황 카드 6→9장 — 종합접수처·운영부·리셉션 추가 (GM 지시 2026-07-25)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10282,
+    "artifact": "종합접수처 = 미처리 접수 32건 + 밀린 분류 상위 2개(분실물 17·컴플레인 10)\n  운영부     = 실무진(최준용M·윤병현AM·이경연 실장) 진행 업무 27건 + 마감 지남 11건\n  리셉션     = 라커 운영 — 숫자 대신 '열어서 확인' (CLI ad-hoc · 커밋 abc44438b)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "abc44438b709ea475db0c51b0e7330a9b3811c4d"
   }
 ]
