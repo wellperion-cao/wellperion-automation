@@ -3970,61 +3970,61 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       </div>
     </section>
 
+    <!-- ── 파이프라인 4블록: S2 시모 탭에서 이관(2026-07-25 GM "한 곳만 바라보게").
+       역할 정의는 S2, 콘텐츠가 실제로 도는 방식은 M1 — 두 곳에 나눠 적지 않는다. ── -->
+    <h3 id="m1-pipeline"><span class="ico">🔁</span>파이프라인 — 발행 · 반응 · 성과 환류</h3>
+    <p style="font-size:13px;color:var(--dim);margin:6px 0 14px;">위 6단계가 한 편이 도는 흐름이라면, 아래는 그 흐름이 <strong>사업 성과(문의→등록)</strong>까지 닫히는 큰 고리와 각 단계의 실제 배선입니다.</p>
+    <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM 박제 2026-06-23) ── -->
+    <h4 style="margin-top:20px;">🔁 마케팅 파이프라인 (폐루프 5단계)</h4>
+    <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. <strong>상단 '콘텐츠 허브 6단계'를 사업 성과(문의→등록)까지 확장한 것</strong> — 앞단(1 = 제작~발행)은 6단계와 동일, 이 루프의 초점은 <strong>뒷단(문의→등록→평가·환류)</strong>. 문의·등록(2·3)은 시포(CPO) 라인과 맞물림. (GM 박제 2026-06-23)</div>
+    <table>
+      <tr><th style="width:50px">단계</th><th>내용</th><th style="width:120px">상태</th></tr>
+      <tr><td><strong>1</strong></td><td>콘텐츠 기획 → 자동 업로드 (M3→텔레그램 승인→5채널 발행) <span style="color:var(--dim);font-size:11px;">— 하위 6단계 상세는 아래 '발행 루프' 참고</span></td><td>✅ 완성</td></tr>
+      <tr><td><strong>2</strong></td><td>CTA 문의 접수: 문의페이지 → 자동 집계·시트 기록 + 문의 DB 페이지(체험·투어&amp;상담 캘린더)</td><td>🟡 부분 (시트 의존·자체DB 미구축)</td></tr>
+      <tr><td><strong>3</strong></td><td>회원 관리프로그램 신규 등록 명단 체크 → 문의 DB 페이지로 등록 체크·등록 현황 반영</td><td>❌ 약함 (등록 매칭=추정 → 자동화 진행 중)</td></tr>
+      <tr><td><strong>4</strong></td><td>콘텐츠→문의 성과 대시보드 (M1 통합 · 채널별 실측)</td><td>🟡 부분 (채널 단위 실측 · 게시글 단위·등록 매칭은 CPO 라인)</td></tr>
+      <tr><td><strong>5</strong></td><td>대시보드 분석 → 콘텐츠 평가 → 1)로 환류 <span style="color:var(--dim);font-size:11px;">— 반응 판정·개선제안 루프 신설(아래 '반응 루프' 참고)</span></td><td>🟡 부분 (반응 루프 반무인 가동 · 3종 신호만 실측)</td></tr>
+    </table>
+    <p style="margin-top:8px;"><strong>우선순위:</strong> 3번 등록 매칭부터 — 고리가 닫혀야 4·5번 수치가 진실해진다.</p>
+    <!-- ── /마케팅 파이프라인 폐루프 5단계 ── -->
+
+    <!-- ── 발행 루프 6단계 + 반응 루프 (2026-07-20 GM 지시 완성분 · SSOT — 2026-07-25 S2 시모 탭에서 M1으로 이관) ── -->
+    <h4 style="margin-top:20px;">🚀 발행 루프 — 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(2026-07-20 가동 · 위 1단계의 하위 상세)</span></h4>
+    <div class="callout">공식계정(@wellperion) 전용. 원고 1건이 형제 채널 원고까지 자동으로 갖춰지고, GM 승인 카드 1장으로 5채널이 함께 나간다.</div>
+    <table>
+      <tr><th style="width:34px">#</th><th style="width:150px">단계</th><th>처리</th></tr>
+      <tr><td>1</td><td>콘텐츠 제작</td><td>IG 원고·이미지 제작(CMO)</td></tr>
+      <tr><td>2</td><td>4채널 원고 자동 생성</td><td>IG 캡션 1개 → 블로그·카페·카카오·당근 원고 자동 작성(<code>scripts/generate_channel_copy.py</code>). 이미 있는 수동 작성 원고는 덮어쓰지 않음</td></tr>
+      <tr><td>3</td><td>5채널 검수 엔트리 자동 등록</td><td>4채널 원고가 있으면 형제 검수 엔트리 자동 upsert(<code>scripts/publish_register.py</code> → <code>register_channel_review.py</code>)</td></tr>
+      <tr><td>4</td><td>GM 승인 카드 1장 → 5채널 동시 발행</td><td>IG+형제채널을 카드 1장으로 묶어 발송, [승인] 1번으로 5채널 함께 발행(<code>scripts/ig_review_publish_watcher.py</code>)</td></tr>
+      <tr><td>5</td><td>발행 검증</td><td>URL 회수 성공=발행완료 / 게시는 됐는데 URL만 못 받아온 건=<strong>「확인필요(발행됨·URL미회수)」</strong>로 분리 도장 — <strong>재발행 절대 안 함</strong>(2026-07-20 중복 게시 사고 재발방지)</td></tr>
+      <tr><td>6</td><td>누락 경보 + 텔레그램 요약</td><td>IG만 있고 형제채널이 없으면 GM 업무보고방 즉시 경보. 발행 완료 시 실무진방에 IG 대표 이미지 1장 + 5채널 링크 + 응원 요청 통합 요약 자동 발송</td></tr>
+    </table>
+
+    <h4 style="margin-top:20px;">↻ 반응 루프 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 발행 루프를 감싸는 상위 루프 · 2026-07-20 신설</span></h4>
+    <div class="callout">GM 지시: "발행 루프를 또 감싸서 반응을 파악하고, 반응이 없으면 있게 만드는 작업"도 필요. 편별 반응 저조 여부를 판정하고, 저조하면 개선안을 GM께 제안한다. <strong>반무인</strong> — 재발행 등 비가역 행동은 GM 승인 후에만 실행.</div>
+    <table>
+      <tr><th style="width:120px">항목</th><th>내용</th></tr>
+      <tr><td>측정 신호</td><td>① IG 편별 도달 ② 당근 조회·찜 ③ 네이버 카페 조회(수집 희소) — <code>scripts/reaction_scorecard.py</code>, 매일 09:45 IG 도달 자동수집에 편승 실행(신규 예약작업 없음)</td></tr>
+      <tr><td>판정 기준</td><td>최근 발행 5편 중앙값 대비 <strong>50% 미만 = 저조</strong> · 발행 24시간 미경과 또는 비교표본 3건 미만 = <strong>판정보류</strong>(억지 판정 금지)</td></tr>
+      <tr><td>개선안</td><td>'저조' 판정 시만 로드맵(<code>instagram/_공식시리즈_로드맵.md</code>) 근거로 구체적 제안 자동생성 → GM 업무보고방 발송</td></tr>
+      <tr><td>주간 보고</td><td>기존 주간 마케팅 브리프 §5 "콘텐츠 반응 성적표"로 편입(<code>scripts/weekly_marketing_feedback.py</code>)</td></tr>
+    </table>
+
+    <h4 style="margin-top:20px;">⚠️ 반응 측정 한계 (정직 표기)</h4>
+    <table>
+      <tr><th style="width:150px">구분</th><th>내용</th></tr>
+      <tr><td>측정 가능</td><td>IG 도달 · 당근 조회/찜 · 네이버 카페 조회(수집 희소)</td></tr>
+      <tr><td>측정 불가</td><td>네이버 블로그 조회수(로그인 필요) · 카카오 반응(비공개) · IG 좋아요·저장(비공개 지표)</td></tr>
+      <tr><td>편별 귀속 불가</td><td>채널별 문의→가입 전환은 누적 집계라 편(게시글) 단위로 나눌 수 없음</td></tr>
+      <tr><td>클릭 집계</td><td>2026-07-15 GM 결정으로 삭제 — 되살리지 않고 위 3신호로 대체</td></tr>
+    </table>
+    <div class="callout tip" style="margin-top:8px;">채널별 문구·링크 규칙 정본 = <code>scripts/cta_utm.py</code>(재서술 안 함) · 규칙 중복 감시 = <code>ssot/divergence_scan.py</code>.</div>
+    <!-- ── /발행 루프 6단계 + 반응 루프 ── -->
+
     <div style="margin:36px 0 6px;border-top:2px solid var(--accent);padding-top:16px;font-size:1.12rem;font-weight:800;color:var(--text);">② 제작</div>
 
     
-      <!-- ── 파이프라인 4블록: S2 시모 탭에서 이관(2026-07-25 GM "한 곳만 바라보게").
-           역할 정의는 S2, 콘텐츠가 실제로 도는 방식은 M1 — 두 곳에 나눠 적지 않는다. ── -->
-      <h3 id="m1-pipeline"><span class="ico">🔁</span>파이프라인 — 발행 · 반응 · 성과 환류</h3>
-      <p style="font-size:13px;color:var(--dim);margin:6px 0 14px;">위 6단계가 한 편이 도는 흐름이라면, 아래는 그 흐름이 <strong>사업 성과(문의→등록)</strong>까지 닫히는 큰 고리와 각 단계의 실제 배선입니다.</p>
-<!-- ── 마케팅 파이프라인 폐루프 5단계 (GM 박제 2026-06-23) ── -->
-        <h4 style="margin-top:20px;">🔁 마케팅 파이프라인 (폐루프 5단계)</h4>
-        <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. <strong>상단 '콘텐츠 허브 6단계'를 사업 성과(문의→등록)까지 확장한 것</strong> — 앞단(1 = 제작~발행)은 6단계와 동일, 이 루프의 초점은 <strong>뒷단(문의→등록→평가·환류)</strong>. 문의·등록(2·3)은 시포(CPO) 라인과 맞물림. (GM 박제 2026-06-23)</div>
-        <table>
-          <tr><th style="width:50px">단계</th><th>내용</th><th style="width:120px">상태</th></tr>
-          <tr><td><strong>1</strong></td><td>콘텐츠 기획 → 자동 업로드 (M3→텔레그램 승인→5채널 발행) <span style="color:var(--dim);font-size:11px;">— 하위 6단계 상세는 아래 '발행 루프' 참고</span></td><td>✅ 완성</td></tr>
-          <tr><td><strong>2</strong></td><td>CTA 문의 접수: 문의페이지 → 자동 집계·시트 기록 + 문의 DB 페이지(체험·투어&amp;상담 캘린더)</td><td>🟡 부분 (시트 의존·자체DB 미구축)</td></tr>
-          <tr><td><strong>3</strong></td><td>회원 관리프로그램 신규 등록 명단 체크 → 문의 DB 페이지로 등록 체크·등록 현황 반영</td><td>❌ 약함 (등록 매칭=추정 → 자동화 진행 중)</td></tr>
-          <tr><td><strong>4</strong></td><td>콘텐츠→문의 성과 대시보드 (M1 통합 · 채널별 실측)</td><td>🟡 부분 (채널 단위 실측 · 게시글 단위·등록 매칭은 CPO 라인)</td></tr>
-          <tr><td><strong>5</strong></td><td>대시보드 분석 → 콘텐츠 평가 → 1)로 환류 <span style="color:var(--dim);font-size:11px;">— 반응 판정·개선제안 루프 신설(아래 '반응 루프' 참고)</span></td><td>🟡 부분 (반응 루프 반무인 가동 · 3종 신호만 실측)</td></tr>
-        </table>
-        <p style="margin-top:8px;"><strong>우선순위:</strong> 3번 등록 매칭부터 — 고리가 닫혀야 4·5번 수치가 진실해진다.</p>
-        <!-- ── /마케팅 파이프라인 폐루프 5단계 ── -->
-
-        <!-- ── 발행 루프 6단계 + 반응 루프 (2026-07-20 GM 지시 완성분 · SSOT — M1은 이 섹션을 가리키기만 함) ── -->
-        <h4 style="margin-top:20px;">🚀 발행 루프 — 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(2026-07-20 가동 · 위 1단계의 하위 상세)</span></h4>
-        <div class="callout">공식계정(@wellperion) 전용. 원고 1건이 형제 채널 원고까지 자동으로 갖춰지고, GM 승인 카드 1장으로 5채널이 함께 나간다.</div>
-        <table>
-          <tr><th style="width:34px">#</th><th style="width:150px">단계</th><th>처리</th></tr>
-          <tr><td>1</td><td>콘텐츠 제작</td><td>IG 원고·이미지 제작(CMO)</td></tr>
-          <tr><td>2</td><td>4채널 원고 자동 생성</td><td>IG 캡션 1개 → 블로그·카페·카카오·당근 원고 자동 작성(<code>scripts/generate_channel_copy.py</code>). 이미 있는 수동 작성 원고는 덮어쓰지 않음</td></tr>
-          <tr><td>3</td><td>5채널 검수 엔트리 자동 등록</td><td>4채널 원고가 있으면 형제 검수 엔트리 자동 upsert(<code>scripts/publish_register.py</code> → <code>register_channel_review.py</code>)</td></tr>
-          <tr><td>4</td><td>GM 승인 카드 1장 → 5채널 동시 발행</td><td>IG+형제채널을 카드 1장으로 묶어 발송, [승인] 1번으로 5채널 함께 발행(<code>scripts/ig_review_publish_watcher.py</code>)</td></tr>
-          <tr><td>5</td><td>발행 검증</td><td>URL 회수 성공=발행완료 / 게시는 됐는데 URL만 못 받아온 건=<strong>「확인필요(발행됨·URL미회수)」</strong>로 분리 도장 — <strong>재발행 절대 안 함</strong>(2026-07-20 중복 게시 사고 재발방지)</td></tr>
-          <tr><td>6</td><td>누락 경보 + 텔레그램 요약</td><td>IG만 있고 형제채널이 없으면 GM 업무보고방 즉시 경보. 발행 완료 시 실무진방에 IG 대표 이미지 1장 + 5채널 링크 + 응원 요청 통합 요약 자동 발송</td></tr>
-        </table>
-
-        <h4 style="margin-top:20px;">↻ 반응 루프 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 발행 루프를 감싸는 상위 루프 · 2026-07-20 신설</span></h4>
-        <div class="callout">GM 지시: "발행 루프를 또 감싸서 반응을 파악하고, 반응이 없으면 있게 만드는 작업"도 필요. 편별 반응 저조 여부를 판정하고, 저조하면 개선안을 GM께 제안한다. <strong>반무인</strong> — 재발행 등 비가역 행동은 GM 승인 후에만 실행.</div>
-        <table>
-          <tr><th style="width:120px">항목</th><th>내용</th></tr>
-          <tr><td>측정 신호</td><td>① IG 편별 도달 ② 당근 조회·찜 ③ 네이버 카페 조회(수집 희소) — <code>scripts/reaction_scorecard.py</code>, 매일 09:45 IG 도달 자동수집에 편승 실행(신규 예약작업 없음)</td></tr>
-          <tr><td>판정 기준</td><td>최근 발행 5편 중앙값 대비 <strong>50% 미만 = 저조</strong> · 발행 24시간 미경과 또는 비교표본 3건 미만 = <strong>판정보류</strong>(억지 판정 금지)</td></tr>
-          <tr><td>개선안</td><td>'저조' 판정 시만 로드맵(<code>instagram/_공식시리즈_로드맵.md</code>) 근거로 구체적 제안 자동생성 → GM 업무보고방 발송</td></tr>
-          <tr><td>주간 보고</td><td>기존 주간 마케팅 브리프 §5 "콘텐츠 반응 성적표"로 편입(<code>scripts/weekly_marketing_feedback.py</code>)</td></tr>
-        </table>
-
-        <h4 style="margin-top:20px;">⚠️ 반응 측정 한계 (정직 표기)</h4>
-        <table>
-          <tr><th style="width:150px">구분</th><th>내용</th></tr>
-          <tr><td>측정 가능</td><td>IG 도달 · 당근 조회/찜 · 네이버 카페 조회(수집 희소)</td></tr>
-          <tr><td>측정 불가</td><td>네이버 블로그 조회수(로그인 필요) · 카카오 반응(비공개) · IG 좋아요·저장(비공개 지표)</td></tr>
-          <tr><td>편별 귀속 불가</td><td>채널별 문의→가입 전환은 누적 집계라 편(게시글) 단위로 나눌 수 없음</td></tr>
-          <tr><td>클릭 집계</td><td>2026-07-15 GM 결정으로 삭제 — 되살리지 않고 위 3신호로 대체</td></tr>
-        </table>
-        <div class="callout tip" style="margin-top:8px;">채널별 문구·링크 규칙 정본 = <code>scripts/cta_utm.py</code>(재서술 안 함) · 규칙 중복 감시 = <code>ssot/divergence_scan.py</code>.</div>
-        <!-- ── /발행 루프 6단계 + 반응 루프 ── -->
-
       <h3 id="m1-loop"><span class="ico">✍️</span>제작 품질 — 3렌즈 반복 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = AI C-Level 운영 한 장 / 부트셋업)</span></h3>
     <p>제작 세부 = <strong>기획·설계</strong>(소재·메시지·채널·타깃 · CS 스토리텔링·현실감 공식) → <strong>초안</strong>(카피·슬라이드) → <strong>디자인</strong>(compose_barre 룩·레이아웃). 여기까지가 상단 6단계 흐름의 <strong>'② 제작'</strong> 한 단계다.</p>
     <div class="callout tip"><strong>원샷 금지 — 제작 품질의 핵심.</strong> 초안을 <strong>① 고도화</strong>(브랜드 톤·후킹·현실감) → <strong>② 단순화</strong>(군더더기·과장 제거) → <strong>③ AI 검토</strong> 각각 <strong>별도 패스</strong>로 돌린다(한 번에 뭉치지 말 것). <br>※ 검수→발행→성과→환류 <strong>전체 루프는 상단 「콘텐츠 허브」 6단계</strong>가 정본 — 중복 표기 제거(구 '북극성 지향 제작 루프' 표 = 상단 6단계와 동일 루프였음). 현재 병목 = <strong>발행 후 반응 → 다음 기획 자동 반영(환류)</strong> 고리 — 시모 품질의 다음 한 걸음.</div>
@@ -4266,10 +4266,13 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
          cmo/funnel/콘텐츠문의현황.html 전체 페이지가 정본. 여기는 이번 달 요약만 얹는다.
          데이터 = 같은 실측 소스 재사용(review_queue.json 발행 + funnel_conversion GAS 문의/전환) —
          신규 집계·신규 파일 없음. click_stats 액션은 2026-07-15 GM 결정으로 폐기되어 사용하지 않음.
-         노출(도달) = IG Graph API 토큰 부재로 미측정 — 가짜 분모 금지, 정직 표기. -->
+         도달(reach) = 측정 중(scripts/ig_reach_collector.py → status/ig_reach_ledger.json).
+         노출(impressions) = 게시물 유형 제약(CAROUSEL 미지원)으로 수집 제외 — 가짜 분모 금지, 정직 표기.
+         ※2026-07-25 정정: 여기 '토큰 부재로 미측정'이라 적혀 있었으나 실측 결과 도달은 07-07부터 계속
+           쌓이고 있었다(오늘 값 포함). 낡은 서술이 M1 안에서 반응 루프 설명과 정면으로 어긋나던 것을 바로잡음. -->
     <h3 id="m1-perf-summary"><span class="ico">📊</span>채널별 문의 성과 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 이번 달 요약 · 라이브</span></h3>
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 12px;line-height:1.6;">콘텐츠 5채널(인스타그램·네이버 블로그·네이버 카페·카카오·당근)이 데려온 문의 실측 요약입니다. 기간 필터·전환 상세 명단·전 유입채널(콘텐츠 밖 포함)·강습 종목별 문의는 <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="color:var(--accent);font-weight:600;">콘텐츠 문의 현황 전체보기 →</a></p>
-    <div class="callout tip" style="margin-bottom:14px;"><strong>노출(도달) — 미측정.</strong> IG Graph API 토큰 부재로 게시물 노출·도달수는 집계되지 않습니다(가짜 분모 금지). 아래는 실측 가능한 <strong>발행 → 문의 → 전환</strong> 구간만 표시합니다.</div>
+    <div class="callout tip" style="margin-bottom:14px;"><strong>도달 = 측정 중</strong> — 인스타 게시물이 몇 명에게 닿았는지는 매일 자동 수집됩니다(<code>scripts/ig_reach_collector.py</code> · 정본 <code>status/ig_reach_ledger.json</code>). 다만 <strong>노출(같은 사람이 여러 번 본 횟수)은 게시물 유형 제약으로 수집되지 않습니다</strong> — 없는 분모를 지어내지 않습니다. 아래 표는 <strong>발행 → 문의 → 전환</strong> 구간의 실측입니다.</div>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
       <div style="flex:1;min-width:110px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
