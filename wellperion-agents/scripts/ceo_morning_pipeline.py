@@ -1267,31 +1267,25 @@ def split_for_telegram(text: str, limit: int = TELEGRAM_MSG_LIMIT) -> list[str]:
     return messages
 
 
-def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
-    """
-    GM 아침 보고 — '오늘의 항로' 레이아웃.
+def _board_text_and_secs(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, dict]:
+    """hangro_board.build_board() 호출 + 텔레그램 길이 접기(공유 헬퍼).
+    build_telegram_report / build_split_reports 양쪽이 동일 조립을 재사용(중복 구현 금지)."""
+    board_text, secs = hangro_build_board(gas_items, queue_items)
+    board_text = _fold_board_done_section(board_text, secs)
+    return board_text, secs
 
-    2026-07-22 GM 지시(항로 ↔ G1 정합): 항로 블록은 더 이상 이 함수가 자체
-    재구현하지 않는다. scripts/hangro_board.py의 build_board() 결과를 그대로
-    소비해 렌더한다 — 08:00과 G1 웹보드가 동일 출처(GAS todo_list + _queue.json)·
-    동일 3섹터 분류(🚢진행중/⚓대기중/🏁입항완료)·동일 결재판정(_next_approver)을
-    쓴다. 기존에는 이 함수가 fetch_g1_ssot 결과를 flat 리스트로 재분류하고
-    SECURITY_SIGNALS 키워드('토큰'·'PIN' 등)로 GM결재를 오탐(6건)했으며
-    입항완료 섹션도 없었다 — 그 자체 재구현을 폐기한다.
 
-    s1/assigned/orch(3분류·배정·오케스트레이션 계획)는 stage1~3의 산출물로
-    save_plan()의 로컬 감사 JSON에는 계속 쓰이지만, 이 렌더 함수에는 더 이상
-    관여하지 않는다(시그니처는 run_pipeline 호출부 호환을 위해 유지).
+def _board_item_count(secs: dict) -> int:
+    """항로 3섹터(+긴급·결재) 표시 항목 총합. 0이면 '빈 표' — 발신 금지 판정에 사용
+    (자율화 미션 secs['autonomy']은 애초 항로 제외 대상이라 카운트에서 뺀다)."""
+    return sum(len(secs.get(k, [])) for k in
+               ("urgent", "today", "appr", "appr_inflight", "done", "drift"))
 
-    부가내용(매출·운영점검·북극성 한 수·직원카드)은 삭제하지 않고 항로 블록
-    뒤 '── 부록 ──' 아래로 명확히 분리해 GM이 항로/부가를 혼동하지 않게 한다.
-    """
-    gas_items = hangro_fetch_gas_items()
-    queue_items = hangro_fetch_queue_items()
-    board_text, _secs = hangro_build_board(gas_items, queue_items)
-    board_text = _fold_board_done_section(board_text, _secs)
 
-    lines = [board_text, "", "━" * 14 + " 부록 " + "━" * 14]
+def _build_appendix_lines() -> list[str]:
+    """항로 블록 뒤 '── 부록 ──' — 매출·운영점검·북극성 한 수·직원카드 (구 06:30/07/09시 흡수).
+    build_telegram_report / build_split_reports(업무보고방) 공유 — 부가내용 삭제 없음."""
+    lines = ["", "━" * 14 + " 부록 " + "━" * 14]
 
     # ── 💰 매출·지출 1줄 (구 09시 GM DM 흡수 · 상세는 카톡 09:30) ──
     _sales_line = fetch_sales_oneline()
@@ -1321,8 +1315,105 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
 
     # ── 직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 부록 맨 아래 배치 ──
     lines.append(build_staff_share_card())
+    return lines
 
+
+def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
+    """
+    GM 아침 보고 — '오늘의 항로' 레이아웃.
+
+    2026-07-22 GM 지시(항로 ↔ G1 정합): 항로 블록은 더 이상 이 함수가 자체
+    재구현하지 않는다. scripts/hangro_board.py의 build_board() 결과를 그대로
+    소비해 렌더한다 — 08:00과 G1 웹보드가 동일 출처(GAS todo_list + _queue.json)·
+    동일 3섹터 분류(🚢진행중/⚓대기중/🏁입항완료)·동일 결재판정(_next_approver)을
+    쓴다. 기존에는 이 함수가 fetch_g1_ssot 결과를 flat 리스트로 재분류하고
+    SECURITY_SIGNALS 키워드('토큰'·'PIN' 등)로 GM결재를 오탐(6건)했으며
+    입항완료 섹션도 없었다 — 그 자체 재구현을 폐기한다.
+
+    s1/assigned/orch(3분류·배정·오케스트레이션 계획)는 stage1~3의 산출물로
+    save_plan()의 로컬 감사 JSON에는 계속 쓰이지만, 이 렌더 함수에는 더 이상
+    관여하지 않는다(시그니처는 run_pipeline 호출부 호환을 위해 유지).
+
+    부가내용(매출·운영점검·북극성 한 수·직원카드)은 삭제하지 않고 항로 블록
+    뒤 '── 부록 ──' 아래로 명확히 분리해 GM이 항로/부가를 혼동하지 않게 한다.
+
+    [2026-07-26 웰리 지시 배10244] 08:00 분리 발신(업무보고방/AI 진행현황방)의
+    폴백 안전판 — 이 함수·send_reports()는 원본 그대로 보존한다. 분리 시도가
+    실패(방 해소·분류 예외)하면 run_pipeline이 이 함수로 되돌아가 기존처럼
+    통째 1회 발송한다(정보 손실 0).
+    """
+    gas_items = hangro_fetch_gas_items()
+    queue_items = hangro_fetch_queue_items()
+    board_text, _secs = _board_text_and_secs(gas_items, queue_items)
+    lines = [board_text] + _build_appendix_lines()
     return "\n".join(lines)
+
+
+# ── 08:00 분리 발신 — 업무보고방 / AI 진행현황방 (2026-07-26 웰리 지시 배10244) ──────
+# 웰리가 정한 경계(2026-07-26 실측으로 1차안 폐기 후 확정 · 임의 변경 금지):
+#   AI 진행현황방(자동화현황방) = 기계가 스스로 만든 배만(_AI_ROOM_ORIGINS)
+#   업무보고방(8254867551)     = 그 밖의 전부 — S3(GAS todo_list) 배 + 나머지 _queue 배
+# ★1차안(‘origin=="gm" 만 업무보고방, 나머지 전부 AI 방’)은 dry-run 실측에서 폐기했다.
+#   실무진 피드백 처리·GM 직접 지시 배가 AI 방으로 숨고 업무보고방이 비었다 — 지금보다 나쁘다.
+#   큐에 '누구를 위한 일인가' 칸이 생기기 전까지는 덜 덜어내는 쪽이 맞다(배10292 후속).
+# 새 판별 함수·새 파일·새 필드 생성 금지(약속 L21) — origin 필드(이미 존재)와
+# module_reporter.resolve_chat_id() 단일 경로만 재사용한다.
+
+def _queue_origin_map() -> dict[str, str]:
+    """_queue.json 원본에서 task_id → origin(소문자) 맵. origin은 이미 존재하는 필드 —
+    hangro_board.fetch_queue_items()가 렌더용으로 골라낸 필드셋에는 없어 원본에서 직독한다."""
+    m: dict[str, str] = {}
+    for q in load_queue():
+        tid = str(q.get("task_id") or "").strip()
+        if tid:
+            m[tid] = str(q.get("origin") or "").strip().lower()
+    return m
+
+
+# AI 진행현황방으로 보낼 자격이 있는 origin — '기계가 스스로 만든 배'만 확실히 여기 해당한다.
+# bridge   = 완료 훅이 '다음'으로 자동 생성한 포인터 배
+# self-audit = 아침 자가점검(약속 L20)이 스스로 띄운 배
+# ★incident·gm 은 넣지 않는다: 실측(2026-07-26) 결과 origin=='gm' 12척 대부분이 시토의
+#   내부 정비 배였고, 실무진 피드백 처리 배는 origin 이 비어 있었다 — origin 은 '누구를
+#   위한 일인가'를 담은 칸이 아니다. 그래서 이 집합 밖은 전부 업무보고방에 남긴다(아래).
+_AI_ROOM_ORIGINS = ("bridge", "self-audit")
+
+
+def _split_queue_items_for_rooms(queue_items: list[dict]) -> tuple[list[dict], list[dict]]:
+    """hangro_fetch_queue_items() 결과를 업무보고방/AI 진행현황방 배로 가른다.
+
+    ★기본값은 업무보고방이다(웰리 판단 2026-07-26 · 배10244). 큐에는 아직 '이 일이
+    누구를 위한 것인가'를 담은 칸이 없다 — 그래서 확실히 기계가 만든 배(_AI_ROOM_ORIGINS)만
+    AI 방으로 덜어내고, 판단이 안 서는 배는 전부 업무보고방에 남긴다. 잘못 덜어내면
+    실무진 일이 GM 시야에서 사라지지만, 안 덜어내면 그냥 지금과 같을 뿐이라
+    두 오류의 무게가 다르다(정보 손실 0 우선).
+    """
+    origin_map = _queue_origin_map()
+    office, ai = [], []
+    for it in queue_items:
+        tid = str(it.get("id") or "").strip()
+        (ai if origin_map.get(tid, "") in _AI_ROOM_ORIGINS else office).append(it)
+    return office, ai
+
+
+def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str, str | None]:
+    """
+    08:00 보고를 업무보고방/AI 진행현황방 2건으로 분리 조립.
+    반환: (office_report, ai_report). ai_report는 AI 방으로 갈 배가 0건이면
+    None(빈 표 발신 금지). 업무보고방은 기존 build_telegram_report와 동일 양식
+    (항로 3섹터 표 + 부록) — 제목·부록 구성 변경 없음.
+    """
+    gas_items = hangro_fetch_gas_items()
+    all_queue_items = hangro_fetch_queue_items()
+    office_queue, ai_queue = _split_queue_items_for_rooms(all_queue_items)
+
+    office_board, _office_secs = _board_text_and_secs(gas_items, office_queue)
+    office_report = "\n".join([office_board] + _build_appendix_lines())
+
+    ai_board, ai_secs = _board_text_and_secs([], ai_queue)
+    ai_report = ("🤖 AI C레벨 진행현황\n" + ai_board) if _board_item_count(ai_secs) > 0 else None
+
+    return office_report, ai_report
 
 
 def build_question_card(gm_decision: list[dict]) -> str:
@@ -1381,6 +1472,72 @@ def save_plan(s1: dict, assigned: list[dict], orch: dict, dry_run: bool) -> Path
         out.write_text(text, encoding="utf-8")
         print(f"[OK] 계획 저장 → {out}")
     return out
+
+
+def _resolve_ai_room_chat_id() -> int | None:
+    """AI 진행현황방(자동화현황방) chat_id 해소. status/telegram_rooms.json +
+    module_reporter.resolve_chat_id() 단일 경로 재사용(약속 L01 — 판정 로직 복제 금지).
+    해소 실패(파일·모듈·키 없음) 시 None → 호출부가 분리 발신을 포기하고 폴백."""
+    try:
+        rooms = json.loads((STATUS_DIR / "telegram_rooms.json").read_text(encoding="utf-8"))
+        from module_reporter import resolve_chat_id  # noqa: PLC0415
+        return resolve_chat_id("자동화현황방", rooms)
+    except Exception as exc:
+        print(f"[WARN] AI 진행현황방 chat_id 해소 실패: {exc}", file=sys.stderr)
+        return None
+
+
+def send_split_reports(office_report: str, ai_report: str | None, ai_chat_id, dry_run: bool) -> bool:
+    """
+    08:00 분리 발신 — 업무보고방(기존 TelegramNotifier 경로) + AI 진행현황방
+    (기존 notify.telegram_send.send 범용 발신기, notify_gm_progress.py와 동일 경로).
+    새 발신 경로 생성 금지 — 둘 다 이미 있는 발신기를 그대로 재사용한다.
+    ai_report가 None이면 AI 진행현황방은 아예 호출하지 않는다(빈 표 발신 금지).
+    """
+    office_chunks = split_for_telegram(office_report)
+    ai_chunks = split_for_telegram(ai_report) if ai_report else []
+
+    if dry_run:
+        print(f"\n========== [DRY-RUN] 업무보고방(8254867551) 「🧭 오늘의 항로」 "
+              f"({len(office_chunks)}통, 발송 안 함) ==========")
+        for i, chunk in enumerate(office_chunks, 1):
+            print(f"---------- 메시지 {i}/{len(office_chunks)} ({len(chunk)}자) ----------")
+            print(chunk)
+        if ai_chunks:
+            print(f"\n========== [DRY-RUN] AI 진행현황방(chat_id={ai_chat_id}) 「🤖 AI C레벨 진행현황」 "
+                  f"({len(ai_chunks)}통, 발송 안 함) ==========")
+            for i, chunk in enumerate(ai_chunks, 1):
+                print(f"---------- 메시지 {i}/{len(ai_chunks)} ({len(chunk)}자) ----------")
+                print(chunk)
+        else:
+            print("\n[DRY-RUN] AI 진행현황방 — 배정된 배 0건, 발송 스킵(빈 표 발신 금지)")
+        print("========== [DRY-RUN] 끝 ==========\n")
+        return True
+
+    ok1 = True
+    try:
+        from telegram_notifier import TelegramNotifier
+        tg = TelegramNotifier()
+        for chunk in office_chunks:
+            r1 = tg.send(chunk)
+            ok1 = ok1 and (bool(r1.get("ok")) if isinstance(r1, dict) else False)
+    except Exception as exc:
+        print(f"[FAIL] 업무보고방 발송 실패: {exc}", file=sys.stderr)
+        ok1 = False
+
+    ok2 = True
+    if ai_chunks:
+        try:
+            from notify.telegram_send import send as _tg_send  # noqa: PLC0415
+            for chunk in ai_chunks:
+                ok2 = ok2 and bool(_tg_send(ai_chat_id, chunk))
+        except Exception as exc:
+            print(f"[FAIL] AI 진행현황방 발송 실패: {exc}", file=sys.stderr)
+            ok2 = False
+
+    print(f"[OK] 텔레그램 분리 발송 — 업무보고방={ok1}({len(office_chunks)}통) "
+          f"AI진행현황방={ok2}({len(ai_chunks)}통, 배정 {'있음' if ai_chunks else '없음'})")
+    return ok1 and ok2
 
 
 def send_reports(report: str, question_card: str, dry_run: bool) -> bool:
@@ -1447,14 +1604,35 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
         print(f"    [{tag}] {c['lock_key'][:60]} — {len(c['tasks'])} task(s)")
 
     # ④ 보고 빌드 + 발송
-    report = build_telegram_report(s1, assigned, orch)
     # [2026-06-23 GM] 아침 선장 결정카드 중복 폐지 — '오늘의 항로' 보고 안에
     # 🔴 선장(GM) 결정 목록이 이미 인라인 포함됨. 별도 카드는 같은 내용 2번째
     # 텔레그램이라 중복 → 발송 안 함. (build_question_card 함수는 보존)
     question_card = ""
+
+    # [2026-07-26 웰리 지시 배10244] 업무보고방/AI 진행현황방 분리 발신 시도.
+    # 방 해소·분리 조립 중 무엇이든 실패하면 즉시 폴백 — 기존 단일 발신(통째 1회,
+    # 업무보고방)으로 되돌아간다(정보 손실 0). 실무진 방으로는 절대 보내지 않는다.
+    ai_chat_id = _resolve_ai_room_chat_id()
+    split_ok = False
+    office_report = ai_report = None
+    if ai_chat_id is not None:
+        try:
+            office_report, ai_report = build_split_reports(s1, assigned, orch)
+            split_ok = True
+        except Exception as exc:
+            print(f"[WARN] 분리 발신 조립 실패({exc}) — 기존 단일 발신으로 폴백", file=sys.stderr)
+            split_ok = False
+
     plan_path = save_plan(s1, assigned, orch, dry_run)
-    sent = send_reports(report, question_card, dry_run)
-    print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — {'OK' if sent else 'FAIL'}")
+    if split_ok:
+        sent = send_split_reports(office_report, ai_report, ai_chat_id, dry_run)
+        print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — 분리(업무보고방+AI진행현황방) "
+              f"{'OK' if sent else 'FAIL'}")
+    else:
+        report = build_telegram_report(s1, assigned, orch)
+        sent = send_reports(report, question_card, dry_run)
+        print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — 단일 폴백 "
+              f"{'OK' if sent else 'FAIL'}")
 
     if as_json:
         print("\n========== PLAN JSON ==========")
