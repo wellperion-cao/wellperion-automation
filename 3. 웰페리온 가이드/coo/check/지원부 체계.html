@@ -4179,7 +4179,8 @@ function _onCkAfter(d,gender){
 
   // 정상(주간)모드: 현재 라운드(조) 100% 완료 시 그 조 제출 제안
   const curRound=getRoundG(gender);
-  const rdef=roundDef(curRound)||ROUNDS[0];
+  /* ★날짜 인지(GM 2026-07-25 지적) — 제출 확인 문구에 뜨는 시각도 주말엔 12시여야 한다. */
+  const rdef=roundDefFor(curRound,d)||ROUNDS[0];
   const dow=getDayOfWeek(d);
   let total=0,done=0;
   /* 멤버십(itemRounds) 기준 + 회차별 체크(isChecked) — 렌더 진행도와 정합 */
@@ -4594,7 +4595,9 @@ async function unlockRound(round,gender){
 async function sendTelegramRound(date,round,submitter,gender){
   if(!ONLINE)return;
   const sched=getSched(date); if(!sched)return;
-  const rdef=roundDef(round); if(!rdef)return;
+  /* ★날짜 인지 필수(GM 2026-07-25 지적): roundDef 는 평일 마스터(ROUNDS_WEEKDAY)만 보므로
+     주말에도 '오전조[1] 10시'로 나갔다. 주말 정본은 오전 12시·마감 18시 → roundDefFor(round,date). */
+  const rdef=roundDefFor(round,date); if(!rdef)return;
   const genderLabel=gender==='f'?'여':'남';
   const dow=getDayOfWeek(date);
   let total=0,done=0,issues=[];
@@ -4626,7 +4629,9 @@ async function sendTelegramRound(date,round,submitter,gender){
 /* 라운드 스냅샷 1행 적립 — shift 칸에 라운드 라벨 기록(GAS 무변경: '교대' 컬럼에 들어감). */
 async function appendRoundSnapshot(date,round,submitter,gender){
   if(!ONLINE)return;
-  const rdef=roundDef(round); if(!rdef)return;   // 회차 정의(라벨)는 필수
+  /* ★날짜 인지 필수(GM 2026-07-25 지적) — 이 라벨은 시트 '교대' 칸에 그대로 적립되므로
+     주말에 평일 시각으로 기록되면 점검일지 원장 자체가 틀어진다. roundDefFor(round,date). */
+  const rdef=roundDefFor(round,date); if(!rdef)return;   // 회차 정의(라벨)는 필수
   /* 그 조의 가시 항목·이슈 수집 — 스케줄을 못 읽어도 제출 자체는 기록(GM 2026-06-16: 조용한 스킵 차단) */
   let sched=null; try{ sched=getSched(date); }catch(e){ sched=null; }
   const dow=getDayOfWeek(date);
