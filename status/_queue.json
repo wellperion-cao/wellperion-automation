@@ -2311,5 +2311,21 @@
     "artifact": "fix(cpo): 문의 스냅샷 커밋도 safe_commit 관문으로 — push 실패 452건 누적 해소 (/debug) (CLI ad-hoc · 커밋 20e741925)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "20e741925d7a1ac24417ef8d5898fbad32d66e9b"
+  },
+  {
+    "task_id": "CTO-2026-07-25-GIT-COMMIT-PUSH가-DETACHED-HE",
+    "clevel": "cto",
+    "title": "[시토] git_commit_push가 detached HEAD에서 push 실패 — 공용 헬퍼라 여러 모듈이 같이 앓는다",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-25",
+    "from": "cpo",
+    "note": "[시포 → 시토 전달 2026-07-25] [시포 → 시토 전달 2026-07-25] 시포 모듈 점검 중 발견. 공용 헬퍼 scripts/git_lock.py 의 git_commit_push 가 이 저장소가 detached HEAD 로 돌 때 push 단계에서 죽는다.\n오류: fatal: You are not currently on a branch. / To push the history leading to the current (detached HEAD) state now, use git push origin HEAD:<branch>\n실측 누적(2026-07-25 기준 로그):\n· logs/git_lock.log 443건\n· logs/cpo_inquiry_snapshot.log 452건 (시포 모듈 — 오늘 safe_commit 경유로 전환해 자체 해소)\n· logs/engagement_collect.log 4건 · logs/ig_reach_collect.log 4건 (시모 모듈)\n영향: 커밋은 되지만 push 가 안 된다 → 라이브(Pages) 반영이 다른 워처가 밀어줄 때까지 지연되고, 매 회차 빨간 로그가 쌓여 진짜 오류가 묻힌다.\n▸비교: scripts/safe_commit.py 는 같은 상황을 정상 처리한다(오늘 세션에서 15회 이상 성공). 시포는 자기 모듈 2개(cpo_inquiry_snapshot·cpo_staff_feedback_watch)를 safe_commit 경유로 바꿔 해결했다.\n▸시포가 공용 헬퍼를 직접 고치지 않은 이유 = 자동화 배선은 시토 소관이고, 이 헬퍼를 쓰는 모듈이 시포 밖에도 있어 영향 범위 판단이 필요하다.",
+    "next": "① git_lock.git_commit_push 의 push 를 detached HEAD 에서도 되게 고칠지, 아니면 safe_commit 으로 수렴시켜 헬퍼를 없앨지 판단(관문 단일화 방향은 후자) ② 결정 후 남은 호출부 일괄 전환 ③ 로그에서 push 실패 0 확인",
+    "depends_on": "",
+    "ship_no": 10262,
+    "short_no": 113,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
