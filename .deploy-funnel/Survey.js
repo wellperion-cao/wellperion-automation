@@ -3273,6 +3273,7 @@ function _processAction(body) {
     //    Contact1/2/3은 위에서 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
     var _muHistPrevCount = 0;
     var _muHistNewArr = null;
+    var _muHistErr = '';  // ★삼키지 않는다(2026-07-26 v1 백업 수렴) — v2와 동일 방어.
     if (body.contacts !== undefined) {
       try {
         var _muHistCi = _miColIdx_(muHdr, [CONTACT_HIST_COL]);
@@ -3283,7 +3284,10 @@ function _processAction(body) {
         var _muHistCell = muSh.getRange(muRow, _muHistCi2 + 1);
         _muHistCell.setNumberFormat('@');
         _muHistCell.setValue(_resStringify_(_muHistNewArr));
-      } catch (eHist) { Logger.log('연락이력 저장 실패: ' + eHist.message); }
+      } catch (eHist) {
+        Logger.log('연락이력 저장 실패: ' + eHist.message);
+        _muHistErr = String(eHist && eHist.message ? eHist.message : eHist);
+      }
     }
     // 방문 완료 — 진행상황과 독립 칸(방문완료일). 등록(SUC)돼도 방문 기록 유지. body.visited 미전송이면 무변경.
     //   true=방문일자(없으면 오늘) 기록 / false=클리어. 칸 없으면 _miEnsureCol_이 생성. 2026-06-29 시포.
@@ -3337,6 +3341,9 @@ function _processAction(body) {
     }
     // 조회 캐시 무효화(축1) — 다음 목록 조회부터 최신 반영. 2026-07-08 시토.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
+    if (_muHistErr) {
+      return _json({ ok: false, error: '연락 이력 저장 실패 — 적으신 내용이 저장되지 않았습니다. 창을 닫지 마시고 다시 시도해 주세요.', detail: _muHistErr, rowIndex: muRowRaw, partial: true });
+    }
     return _json({ ok: true, rowIndex: muRowRaw, message: '수정되었습니다.' });
   }
 
