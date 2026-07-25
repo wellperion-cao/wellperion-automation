@@ -4956,6 +4956,18 @@ function _lessonEnsureSportTabLoaded_(tabName) {
   if (_lessonSportTabResolved_[tabName] || _lessonSportTabInflight_[tabName]) return;
   _lessonSportTabInflight_[tabName] = true;
   _gzFetchTableBySheetName_(GVIZ_LESSON_SS_ID, tabName).then(function(t) {
+    // ★엉뚱한 시트를 받아왔는지 먼저 본다(2026-07-25 시포 · GM "수영종목이면 수영선생님+수영팀장만
+    //   나와야지 뭐 이렇게 다나오냐"). 구글 시트는 없는 탭 이름을 요청하면 오류가 아니라 '첫 번째 시트'를
+    //   조용히 돌려준다. 이 스프레드시트(강습 문의 관리)엔 '수영'·'P.T'·'골프' 같은 종목 탭이 없어서
+    //   세 종목 모두 성인강습 문의 응답탭(505행)이 돌아왔고, 그 시트의 지정강사 값 전부(27명)가
+    //   '이 종목 정규 강사'로 잡혀 종목과 무관하게 전원이 드롭다운에 떴다.
+    //   판별 = 문의 응답탭에만 있는 '타임스탬프' 칸. 있으면 종목 명단이 아니므로 통째로 버리고
+    //   종목별 명단(LESSON_INSTRUCTOR_ROSTER + 팀장) 폴백을 그대로 쓴다.
+    var _looksLikeInquiryTab = _gzFindCol_(t.headers, ['타임스탬프']) >= 0;
+    if (_looksLikeInquiryTab) {
+      _lessonSportTabResolved_[tabName] = {};   // 빈맵 = 폴백 유지(종목별 하드코딩 명단)
+      return;
+    }
     var iPhone = _gzFindCol_(t.headers, ['휴대폰', '연락처', '전화']);
     var iName  = _gzFindCol_(t.headers, ['성함', '이름', 'Name']);
     var iOwner = -1;
