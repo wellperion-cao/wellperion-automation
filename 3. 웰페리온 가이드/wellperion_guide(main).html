@@ -2361,15 +2361,59 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         <tr><td><strong>3</strong></td><td><strong>운영 자동화 고도화</strong> — AI + 시스템 기반 운영 효율 극대화</td><td>2026.01 ~ 12</td></tr>
       </table>
     </div>
+    <!-- 6단계 실측 진척 — status/monthly_ops_plan.json(strategy_roadmap) 직독 렌더.
+         정본=그 파일, 여기는 렌더만(헌법 구조1). 월간운영계획.html 과 같은 RAW 경로를 그대로
+         재사용한다(약속 L01 — 새 미러·새 소스 만들지 않음). 이 표가 없던 시절엔 6단계 상태가
+         HTML에 손으로 박혀 있어 5월 보고본 그대로 굳어 있었다(2026-07-25 GM 지적 → 실측 전환). -->
+    <div id="s0-roadmap-live" style="margin:0 0 18px;">
+      <div id="s0-roadmap-live-body" style="font-size:13px;color:var(--dim);">6단계 진척 불러오는 중…</div>
+    </div>
+    <script>
+    (function(){
+      var RAW='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+      var box=document.getElementById('s0-roadmap-live-body');
+      if(!box) return;
+      function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+      fetch(RAW+'?cb='+Date.now(),{cache:'no-store'}).then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+      }).then(function(d){
+        var items=((d||{}).strategy_roadmap||{}).items||[];
+        if(!items.length) throw new Error('데이터 없음');
+        var q=items.filter(function(x){return /분기/.test(String(x.name||''));});
+        var st=items.filter(function(x){return !/분기/.test(String(x.name||''));});
+        var rows=st.map(function(x,i){
+          var p=(typeof x.progress==='number')?x.progress:null;
+          var s=String(x.status||'');
+          var col=(s==='완료')?'#2E6E5B':(s==='진행'?'#ED5B3F':'var(--dim)');
+          return '<tr><td style="width:44px"><strong>'+('0'+(i+1)).slice(-2)+'</strong></td>'
+            +'<td>'+esc(x.name)+'</td>'
+            +'<td style="width:92px;color:'+col+';font-weight:700">'+esc(s||'—')+'</td>'
+            +'<td style="width:70px;text-align:right">'+(p===null?'—':p+'%')+'</td></tr>';
+        }).join('');
+        var qline=q.map(function(x){
+          return esc(x.name)+' '+(x.status==='완료'?'✅':'진행');
+        }).join(' · ');
+        box.innerHTML='<table style="margin:0"><tr><th>단계</th><th>내용</th><th>상태</th><th style="text-align:right">진척</th></tr>'
+          +rows+'</table>'
+          +(qline?'<p style="margin:10px 0 0;font-size:12.5px;color:var(--dim);">분기 목표 — '+qline+'</p>':'')
+          +'<p style="margin:6px 0 0;font-size:12px;color:var(--dim);">위 진척은 월간 운영계획의 실측값을 그대로 읽어 옵니다 — 이 화면에 손으로 적지 않습니다.</p>';
+      }).catch(function(e){
+        box.innerHTML='<span style="color:var(--dim)">6단계 진척을 불러오지 못했습니다 ('+esc(e.message)
+          +'). 아래 단계별 설명은 그대로 보실 수 있습니다.</span>';
+      });
+    })();
+    </script>
+
     <details class="toggle" open>
-      <summary>01 자동화 및 매뉴얼 체계 완성 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+      <summary>01 자동화 및 매뉴얼 체계 완성</summary>
       <div class="toggle-body">
         <ul><li>브로제이 시스템 무인화 · 핵심 운영 매뉴얼 정비 · C-레벨 AI 에이전트 도입</li></ul>
         <p><strong>목표:</strong> 사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영</p>
       </div>
     </details>
     <details class="toggle" open>
-      <summary>02 체크리스트 경영 + 핵심 인재 확보 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+      <summary>02 체크리스트 경영 + 핵심 인재 확보</summary>
       <div class="toggle-body">
         <ul><li>전 운영 업무 체크리스트화 · 관리자급 독립 운영 · GM 직속 3라인 배치</li></ul>
         <p><strong>목표:</strong> 현장은 시스템+인재가, GM은 성장 전략에 전념</p>
@@ -2393,7 +2437,16 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
     </details>
     <div class="callout"><strong>북극성 · 슬로건.</strong> A Day, Well Completed. — 하루의 완성, 웰페리온.</div>
 
-    <div class="source">원본: <a href="회사문서/1. 웰페리온_회사소개서_v2.19.html" target="_blank">회사소개서 v2.19</a> · <a href="회사문서/4. 웰페리온_브랜드확장_회사소개서_v1_단일파일.html" target="_blank">브랜드확장 소개서</a> · <a href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 v1.4</a> · 3라인 조직체계 = CHRO 허브·운영 체계 / 핵심 프롬프트 = T1</div>
+    <div class="source">
+      <strong>정본(SSOT) = 이 S0 화면.</strong> 회사소개서·전략 로드맵·위탁운영 제안서는 모두 여기가 단일 출처이며, 아래 파일들은 여기서 뻗어 나간 원본·인쇄본입니다.<br>
+      📘 <a href="회사문서/웰페리온_회사소개서_통합.html" target="_blank"><strong>회사소개서 v2.2(정본)</strong></a>
+      · <a href="회사문서/1. 웰페리온_회사소개서_v2.19.html" target="_blank">회사소개서 원고 v2.19</a>
+      · <a href="회사문서/회사소개서_A3_전체_20260722.html" target="_blank">A3 인쇄본(12장)</a>
+      · <a href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 보고서(2026-05 보고본)</a>
+      · <a href="회사문서/웰페리온_위탁운영_제안서.html" target="_blank">위탁운영 제안서</a>
+      · <a href="회사문서/4. 웰페리온_브랜드확장_회사소개서_v1_단일파일.html" target="_blank">브랜드확장 소개서(생크몽드 제휴 — 별개 문서)</a><br>
+      <span style="color:var(--dim)">※ 전략 로드맵 보고서는 2026년 5월 시점 보고본입니다. <strong>현재 진척은 위 6단계 표</strong>(월간 운영계획 실측)를 보십시오. · 3라인 조직체계 = CHRO 허브·운영 체계 / 핵심 프롬프트 = T1</span>
+    </div>
   </article>
 
 
