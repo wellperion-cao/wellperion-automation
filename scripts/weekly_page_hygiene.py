@@ -63,7 +63,7 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "coo", "label": "운영부 체계", "path": "3. 웰페리온 가이드/coo/check/운영부 체계.html"},
     {"clevel": "coo", "label": "주차관리부 체계", "path": "3. 웰페리온 가이드/coo/check/주차관리부 체계.html"},
     {"clevel": "coo", "label": "파트너팀 체계", "path": "3. 웰페리온 가이드/coo/check/파트너팀 체계.html"},
-    {"clevel": "coo", "label": "강습팀 업장관리", "path": "3. 웰페리온 가이드/coo/check/강습팀 업장관리.html"},
+    # "강습팀 업장관리" 2026-07-16 e1a2f73 로 페이지 삭제(감사 레지스트리 정리 포함) — 본 목록에서도 함께 제거.
     {"clevel": "coo", "label": "전사_일정", "path": "3. 웰페리온 가이드/coo/check/전사_일정.html"},
     {"clevel": "coo", "label": "업무 현황 SSOT", "path": "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html"},
     {"clevel": "coo", "label": "결재 현황 SSOT", "path": "3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html"},

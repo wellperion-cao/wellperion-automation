@@ -23,13 +23,13 @@ import weekly_page_hygiene as wph  # noqa: E402
 
 
 # ── load_targets: config 실측(읽기전용 — 실제 리포 대상 존재 확인) ──
-def test_load_targets_coo_returns_14_pages():
+def test_load_targets_coo_returns_13_pages():
     targets = wph.load_targets("coo")
-    assert len(targets) == 14
+    assert len(targets) == 13
 
 
 @pytest.mark.parametrize("clevel,expected_count", [
-    ("coo", 14),
+    ("coo", 13),  # 2026-07-16 e1a2f73: "강습팀 업장관리" 페이지 삭제로 14 -> 13
     ("cpo", 3),
     ("cmo", 7),
     ("cto", 2),
@@ -41,9 +41,10 @@ def test_load_targets_per_clevel_counts(clevel, expected_count):
     assert len(wph.load_targets(clevel)) == expected_count
 
 
-def test_load_targets_all_clevels_sum_to_47_total():
-    # 2026-07-14: 오늘 감사한 전사 47페이지 전량을 config가 커버.
-    assert len(wph.load_targets(None)) == 47
+def test_load_targets_all_clevels_sum_to_46_total():
+    # 2026-07-14: 감사한 전사 47페이지를 config가 커버했으나, 2026-07-16 e1a2f73
+    # 커밋에서 "강습팀 업장관리" 페이지가 삭제되며 46으로 줄었다(대상 목록 갱신).
+    assert len(wph.load_targets(None)) == 46
 
 
 def test_load_targets_all_paths_exist_on_disk():
