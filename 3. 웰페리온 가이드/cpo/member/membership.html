@@ -5894,9 +5894,21 @@ function _lessonRosterRender(t, kind) {
     if (!na !== !nb) return na ? -1 : 1;          // 이름 있는 쪽 먼저
     return na.localeCompare(nb, 'ko');
   });
-  var html = extNote;
-  rows.forEach(function(r){
-    html += '<tr>' +
+  // 옛 기록 분리 보관(2026-07-25 GM 'B안') — 이름·연락처가 비어 누구인지 확인할 수 없는 행을
+  //   본 명단에서 빼고 맨 아래 접힌 '옛 기록 보관'으로 내린다. 명단은 실체 있는 회원만 남고,
+  //   기록은 하나도 지우지 않는다(펼치면 그대로 다 보인다).
+  //   ★원본(강사 팀시트 13개)은 건드리지 않는다 — 강사들이 실시간으로 쓰는 시트이고 IMPORTRANGE
+  //     원본이라 행을 옮기면 그쪽이 깨진다(행 삭제 금지 사고 이력). 화면에서만 갈라 놓는다.
+  var _archived = [];
+  if (kind === 'mem') {
+    var _live = [];
+    rows.forEach(function(r){
+      if (String(r.name || '').trim()) _live.push(r); else _archived.push(r);
+    });
+    rows = _live;
+  }
+  var _rowHtml = function(r){
+    return '<tr>' +
       '<td style="font-size:12px"><span style="' + _lessonSportChipStyle(r.sport) + '">' + esc(r.sport ? _lessonSportDisplay(r.sport, t === 'youth') : '—') + '</span></td>' +
       // 이름이 없는 행 = 옛 팀시트에 진행 상황 값만 남은 기록. '—'로만 두면 단순 누락처럼 보여
       // 회원 수에 그대로 섞인다 → 무엇인지 밝혀 준다(GM 2026-07-23 A안 · 정직 표기).
@@ -5919,7 +5931,25 @@ function _lessonRosterRender(t, kind) {
       (kind === 'mem' ? ('<td style="font-size:12px;color:var(--text);font-weight:600">' + esc(r.regCount || '—') + '</td>' +
         '<td style="font-size:12px;color:var(--dim)">' + esc(r.regExpire || '—') + '</td>') : '') +
     '</tr>';
-  });
+  };
+  var html = extNote;
+  rows.forEach(function(r){ html += _rowHtml(r); });
+  // 옛 기록 보관 — 기본은 접혀 있고, 펼치면 같은 표 모양 그대로 전부 보인다(정보 손실 0).
+  if (kind === 'mem' && _archived.length) {
+    html += '<tr><td colspan="' + _cs + '" style="padding:0;border-bottom:none">' +
+      '<details style="margin:10px 0 2px">' +
+        '<summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--dim);padding:9px 12px;' +
+          'background:var(--paper);border:1px dashed var(--border);border-radius:8px;list-style:revert">' +
+          '🗄️ 옛 기록 보관 ' + _archived.length + '건' +
+          '<span style="font-weight:400"> — 이름·연락처가 없어 누구인지 확인할 수 없는 옛 팀시트 기록입니다. ' +
+          '회원 수에는 넣지 않지만 지우지 않고 보관합니다.</span>' +
+        '</summary>' +
+        '<div class="reg-table-wrap" style="margin-top:8px"><table class="reg-table">' +
+          '<tbody>' + _archived.map(_rowHtml).join('') + '</tbody>' +
+        '</table></div>' +
+      '</details>' +
+    '</td></tr>';
+  }
   tbody.innerHTML = html;
 }
 
