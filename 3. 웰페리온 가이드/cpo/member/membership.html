@@ -4846,10 +4846,16 @@ var LESSON_VALIDITY_ADULT = {
   'P.T':     {10:2, 20:3, 30:5, 50:8, 100:12},
   '필라테스': {8:2, 10:2, 20:3, 30:5},
   '골프':     {1:'1일', 8:1, 10:2, 20:3, 30:5},
-  '스쿼시':   {1:'1일', 8:2, 10:2, 30:5}
-  // 수영(성인)·체조&트램폴린·뮤지컬팀·웰니스(발레·바레 월정기)=규칙 불균일 → 수동
+  '스쿼시':   {1:'1일', 8:2, 10:2, 30:5},
+  // 성인 수영 단체반(8회) = 매월 1일~말일 → 등록일이 속한 달의 말일까지(2026-07-25 GM 확정).
+  //   등록일+N개월이 아니라 '당월 말일'이라 계산 방식이 다르다 → '월말' 규칙으로 표기.
+  //   수영은 8회권이 단체반뿐이라 회수만으로 갈린다(1:1·1:2는 4회권).
+  //   ※ 수영 개인레슨(1:1·1:2 4회)·아쿠아로빅 외 미등재분은 GM 미확정 → 넣지 않는다(수동 폴백).
+  '수영':     {8:'월말'}
+  // 체조&트램폴린·뮤지컬팀·웰니스(발레·바레 월정기)=규칙 미확정 → 수동
 };
-var LESSON_VALIDITY_YOUTH = { '_any': {1:'1일', 4:2} };  // 유소년 WSC 전 종목 공통: 체험/1회=당일, 4회=2개월
+// 유소년 WSC 전 종목 공통: 체험/1회=당일, 4회·8회=2개월(8회는 2026-07-25 GM 확정으로 추가).
+var LESSON_VALIDITY_YOUTH = { '_any': {1:'1일', 4:2, 8:2} };
 // (종목,회수,유형)→개월|'1일'|null 반환. null=수동입력 폴백. 2026-07-21 시포·GM.
 function lessonValidityMonths(sportKey, count, isYouth){
   var c = parseInt(count,10); if(!c) return null;
@@ -4864,6 +4870,9 @@ function lessonExpireDate(regDateStr, monthsRule){
   var base = regDateStr ? new Date(regDateStr) : new Date();
   if(isNaN(base.getTime())) base = new Date();
   if(monthsRule==='1일'){ return _mdashYmd(base); }
+  // '월말' = 등록일이 속한 달의 마지막 날(2026-07-25 GM — 성인 단체반은 매월 1일~말일).
+  //   다음 달 0일 = 이번 달 말일(윤년·30/31일 자동 처리).
+  if(monthsRule==='월말'){ return _mdashYmd(new Date(base.getFullYear(), base.getMonth()+1, 0)); }
   var d = new Date(base.getTime()); d.setMonth(d.getMonth()+parseInt(monthsRule,10));
   return _mdashYmd(d);
 }
@@ -8516,7 +8525,10 @@ function _regValidityUpdate() {
     txt.textContent = '수동/해당없음';
   } else {
     var exp = lessonExpireDate(_mdashYmd(new Date()), rule);
-    txt.textContent = (rule === '1일' ? '자동: 당일' : ('자동: ' + rule + '개월')) + (exp ? ' (만료 ' + exp + ')' : '');
+    var _ruleText = (rule === '1일') ? '자동: 당일'
+                  : (rule === '월말') ? '자동: 이번 달 말일까지'
+                  : ('자동: ' + rule + '개월');
+    txt.textContent = _ruleText + (exp ? ' (만료 ' + exp + ')' : '');
   }
 }
 function openInquiryRegProgramModal(rowIndex) {
