@@ -577,18 +577,33 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 /* ═══════════════════════════════════════
    저장 상태 토스트
    ═══════════════════════════════════════ */
+/* ── 저장 안내창(토스트) — 2026-07-25 GM "저장 중 / 저장 완료 이런 내용으로 뜨는 연한 안내창? 정말 불편해"
+   이전: 우측 맨 아래 구석 · 13px · 어두운 반투명 배경 위에 옅은 색 글씨 → 저장했는지 안 했는지 눈에 안 들어옴.
+   지금: 화면 아래 가운데(시선이 가는 자리) · 16px 굵게 · 꽉 찬 단색 배경에 흰 글씨.
+   ▸ 배경을 단색으로 채운 이유 = 브랜드 초록(#6abf7b)·빨강(#ED5B3F)은 밝은 색이라 글씨로 쓰면
+     밝은 화면에서 대비가 모자란다. 같은 계열의 진한 색을 배경으로 깔고 글씨를 흰색으로 두면
+     밝은 화면·어두운 화면 어디서도 똑같이 또렷하다(대비 4.9:1 이상).
+   ▸ 인쇄 시 숨김은 기존 규칙 그대로 유지된다. ── */
 .save-toast{
-  position:fixed;bottom:28px;right:28px;
-  padding:11px 20px;border-radius:var(--radius-card);
-  font-size:13px;font-weight:700;z-index:9999;
+  position:fixed;bottom:34px;left:50%;
+  padding:15px 30px;border-radius:12px;
+  font-size:16px;font-weight:800;letter-spacing:-0.01em;
+  line-height:1.45;text-align:center;
+  max-width:min(660px,calc(100vw - 40px));
+  word-break:keep-all;                    /* 단어가 어중간하게 잘리지 않게 */
+  z-index:9999;
   opacity:0;pointer-events:none;
-  transition:opacity 0.2s,transform 0.2s;
-  transform:translateY(6px);
-  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  transition:opacity 0.16s ease,transform 0.16s ease;
+  transform:translate(-50%,12px) scale(0.97);
+  box-shadow:0 10px 34px rgba(0,0,0,0.34);
+  color:#fff;border:none;
 }
-.save-toast.ok{background:rgba(34,40,30,0.95);color:var(--green);border:1px solid var(--green-border)}
-.save-toast.err{background:rgba(40,26,22,0.95);color:var(--red);border:1px solid var(--red-border)}
-.save-toast.show{opacity:1;transform:translateY(0)}
+.save-toast.ok{background:#2E7D4F}
+.save-toast.err{background:#C0392B}
+.save-toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+@media(max-width:520px){
+  .save-toast{bottom:20px;font-size:15px;padding:13px 20px}
+}
 
 /* ── 동기화 배지(배1037 · 버퍼 write-back 표면화, INC-013) — 헤더 큐카운트 + 실패 상세.
      낙관 저장은 즉시 화면반영되고, 시트 동기화 상태(진행/실패/재시도)를 이 칩으로 표면화한다. ── */
@@ -10516,7 +10531,9 @@ function showToast(msg, type) {
   el.className = 'save-toast ' + (type || 'ok');
   el.classList.add('show');
   if (_toastTimer) clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2800);
+  // 실패 안내는 더 오래 띄운다(2026-07-25 GM) — 잘못됐다는 말은 놓치면 안 된다.
+  // 성공 안내도 2.8초는 짧아 놓치기 쉬웠다.
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, (type === 'err') ? 6000 : 3600);
 }
 
 /* ─────────────────────────────────────────────
