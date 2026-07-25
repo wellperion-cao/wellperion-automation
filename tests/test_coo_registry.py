@@ -49,7 +49,7 @@ def test_iter_enabled_returns_all_enabled_coo_modules():
     reg = R.load_registry()
     enabled = {m["id"] for m in R.iter_enabled(reg)}
     assert enabled == {"coo-check-status", "coo-work-approval", "coo-schedule-ssot",
-                        "coo-monthly-ops", "coo-notice"}
+                        "coo-monthly-ops", "coo-notice", "coo-ops-fill-board"}
 
 
 def test_workapproval_module_enabled_and_wired():
