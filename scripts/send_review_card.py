@@ -323,7 +323,24 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
 
     # 발행 품질 게이트 경고(배10038) — review_queue_util._apply_quality_gate 가 등록 시점에
     # item['qc_flags'] 로 남긴 것을 그대로 노출. 차단은 안 하되 GM이 승인 전에 보게 한다.
-    qc_flags = item.get("qc_flags") or []
+    #
+    # 일괄 승인 카드(group_ids)는 버튼 한 번에 형제 채널이 전부 발행된다 → 대표 item 의
+    # 경고만 보이면 나머지 채널의 위반을 GM이 못 보고 승인하게 된다. 그래서 그룹이면
+    # 형제 전원의 qc_flags 를 모아 노출한다(2026-07-25).
+    qc_flags = list(item.get("qc_flags") or [])
+    if group_ids:
+        try:
+            _all = json.loads(QUEUE.read_text(encoding="utf-8"))
+            _by_id = {x.get("id"): x for x in (_all if isinstance(_all, list) else [])}
+            for _gid in group_ids:
+                if _gid == item_id:
+                    continue
+                for _f in (_by_id.get(_gid, {}).get("qc_flags") or []):
+                    _labeled = f"[{_by_id[_gid].get('channel') or _gid}] {_f}"
+                    if _labeled not in qc_flags:
+                        qc_flags.append(_labeled)
+        except Exception as exc:  # 경고 수집 실패가 카드 발송을 막지 않는다
+            print(f"[WARN] 그룹 qc_flags 수집 실패(무시): {exc}")
     qc_line = ("\n⚠️ <b>품질 경고</b> — " + " / ".join(qc_flags) + "\n") if qc_flags else ""
 
     caption = (
