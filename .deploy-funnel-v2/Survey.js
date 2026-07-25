@@ -3232,10 +3232,19 @@ function _processAction(body) {
       var _sfSh = _sfSs.getSheetByName('실무진 피드백');
       if (!_sfSh) {
         _sfSh = _sfSs.insertSheet('실무진 피드백');
-        _sfSh.appendRow(['접수시각', '접수ID', '화면', '종류', '급한정도', '작성자', '내용', '처리상태', '처리메모']);
+        _sfSh.appendRow(['접수시각', '접수ID', '업무 구분', '종류', '급한정도', '작성자', '내용', '처리상태', '처리메모']);
         _sfSh.setFrozenRows(1);
       }
-      _sfSh.appendRow([new Date(), _sfId, _sfScreen, _sfKind, _sfUrgent, _sfWho, _sfBody, '접수', '']);
+      // C칸 제목 정정(2026-07-25 GM) — '화면'은 무엇을 적는 칸인지 모호했다. 값이 '멤버십 회원관리'·
+      // '강습 회원관리'·'종합접수처' 처럼 업무 단위라 '업무 구분'이 맞다. 이미 그렇게 돼 있으면 건드리지 않는다.
+      if (String(_sfSh.getRange(1, 3).getValue() || '').trim() === '화면') {
+        _sfSh.getRange(1, 3).setValue('업무 구분');
+      }
+      // ★새 접수는 맨 위(2행)에 넣는다(2026-07-25 GM "접수시각 기준 최근 것을 최상단으로").
+      //   맨 아래로 쌓이면 실무진·시포 모두 매번 시트 끝까지 내려가야 최신 건을 본다.
+      //   기존 행은 그대로 한 칸씩 내려갈 뿐이라 값·수식이 어긋나지 않는다(행 삭제 아님).
+      _sfSh.insertRowBefore(2);
+      _sfSh.getRange(2, 1, 1, 9).setValues([[new Date(), _sfId, _sfScreen, _sfKind, _sfUrgent, _sfWho, _sfBody, '접수', '']]);
     } catch (e) {
       // ★저장 실패를 성공으로 위장하지 않는다(INC-014 재발방지) — 화면이 실패를 그대로 보여줘야 한다.
       return _json({ ok: false, error: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' });
@@ -3276,8 +3285,28 @@ function _processAction(body) {
         for (var c = 0; c < _fbHdr.length; c++) o[String(_fbHdr[c]).trim()] = _fbVals[i][c];
         _rows.push(o);
       }
-      _rows.reverse();   // 최신 먼저
+      // 최신 먼저 — 물리적 행 순서에 기대지 않고 접수ID(FByyMMdd-HHmmss)로 정렬한다.
+      // 2026-07-25부터 새 접수는 2행에 꽂히므로 예전처럼 reverse() 하면 오히려 과거가 위로 온다.
+      // 접수ID는 시각을 그대로 담은 문자열이라 사전순 내림차순 = 시간 내림차순이다.
+      _rows.sort(function (a, b) {
+        var x = String(a['접수ID'] || ''), y = String(b['접수ID'] || '');
+        return x < y ? 1 : (x > y ? -1 : 0);
+      });
       return _json({ ok: true, count: _rows.length, rows: _rows });
+    }
+
+    // 한 번만 필요한 정렬(2026-07-25 GM) — 이미 쌓여 있던 옛 행들을 접수시각 내림차순으로 재배치한다.
+    //   새 접수는 이제 2행에 꽂히므로 앞으로는 저절로 최신이 위다. 새 액션을 만들지 않고 같은 토큰
+    //   게이트 안에서 처리한다. 정렬은 값만 재배치(행 삭제 없음)이고, 이미 정렬돼 있으면 결과가 같다(멱등).
+    if (body.resort === true) {
+      if (_fbLast >= 3) _fbSh.getRange(2, 1, _fbLast - 1, _fbHdr.length).sort({ column: 1, ascending: false });
+      // C칸 제목도 여기서 함께 바로잡는다 — 접수가 들어와야만 고쳐지면 며칠 동안 옛 제목이 남는다.
+      var _renamed = false;
+      if (String(_fbSh.getRange(1, 3).getValue() || '').trim() === '화면') {
+        _fbSh.getRange(1, 3).setValue('업무 구분');
+        _renamed = true;
+      }
+      return _json({ ok: true, sorted: Math.max(0, _fbLast - 1), renamed: _renamed });
     }
 
     // update — [{id, status, memo}] 배열을 받아 접수ID 로 찾아 적는다(못 찾으면 건너뛰고 보고).

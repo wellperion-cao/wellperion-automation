@@ -120,11 +120,13 @@ textarea.err{border-color:var(--red-border);box-shadow:0 0 0 3px var(--red-bg)}
 <form id="feedbackForm" onsubmit="return false;">
 
   <fieldset>
-    <legend>어떤 화면인가요?</legend>
+    <legend>어떤 업무인가요?</legend>
     <div class="choice-group" data-field="screen">
+      <!-- 업무별로 나눈다(2026-07-25 GM) — 멤버십은 멤버십, 강습은 강습, 종합접수처는 종합접수처.
+           예전 '문의 접수'는 어느 화면을 말하는지 모호해 접수 뒤 담당을 가릴 수 없었다. -->
       <button type="button" class="choice-btn active" data-value="멤버십 회원관리">멤버십 회원관리</button>
       <button type="button" class="choice-btn" data-value="강습 회원관리">강습 회원관리</button>
-      <button type="button" class="choice-btn" data-value="문의 접수">문의 접수</button>
+      <button type="button" class="choice-btn" data-value="종합접수처">종합접수처</button>
       <button type="button" class="choice-btn" data-value="기타">기타</button>
     </div>
   </fieldset>
