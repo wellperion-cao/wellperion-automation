@@ -140,6 +140,170 @@ def _load_cta_standard() -> str:
         return "문의: wellperion.com/ko/inquiry"
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# 시각 산출물 발행 전 자동 검수 — 규격 · 브랜드 색 이탈 · 계정 시그니처 색 혼용
+# (배10036, 2026-07-25 시모) — 같은 취지 제안이 07-06·07-10·07-13 3회 중복 접수돼
+# 이 1건으로 수렴. 새 스킬·새 게이트 신설 금지(약속 L21) — 위 발행 품질 게이트(qc_flags)에
+# 항목만 추가한다. 판정 방식은 oh-my-claudecode:visual-verdict 스킬(통과/불통과+사유 1패스)을
+# 참고했을 뿐 그 스킬을 호출하진 않는다 — Pillow 만으로 이 함수 안에서 끝낸다.
+#
+# 기준 = scripts/brand_constants.py(원천 ssot/brand.json) 런타임 직독. 색상 값을 여기 다시
+# 적지 않는다(약속 L01) — _load_visual_palette() 가 매 프로세스 1회 import 해서 채운다.
+#
+# 오탐 함정(중요) — AI하루 시리즈(개인계정 @namuk.wellperion)는 2026-07-22 GM 방향으로
+# 디자인이 공식계정과 동일(BEIGE/BLACK, compose_html.py). "개인계정=에메랄드 아니면 이탈"로
+# 보면 이 시리즈 전체가 상시 오탐 처리된다 → BEIGE/BLACK/WHITE 는 두 계정 공통 중립색으로
+# 취급하고, 계정 "전용색"(개인=에메랄드 · 공식=부서 프리셋 primary/accent/background)이
+# 상대 계정에서 나올 때만 혼용으로 본다.
+# ─────────────────────────────────────────────────────────────────────────
+
+_VALID_IMAGE_SIZES = {(1080, 1080), (1080, 1350)}  # slide_compositor.py ASPECT_PRESETS 과 동일
+_COLOR_DIST_TOLERANCE = 70  # RGB 유클리드 거리 — 계정 전용색(에메랄드·부서색) 매칭 허용치
+_NEUTRAL_TOL = 55  # 중립색(베이지·블랙·화이트) 매칭 허용치 — 종이질감·조명 밝기 변주가 커서 더 넓게
+_EMERALD_LIGHT = (0x2E, 0x6E, 0x5B)  # #2E6E5B — 개인계정 시그니처(project_personal_account_signature_color_emerald)
+_EMERALD_DARK = (0x63, 0xBB, 0xA0)  # #63BBA0
+
+
+def _rgb_dist(a: tuple, b: tuple) -> float:
+    return sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5
+
+
+@functools.lru_cache(maxsize=1)
+def _load_visual_palette() -> dict:
+    """브랜드 색 팔레트 — brand_constants.py(원천 ssot/brand.json) 직독. 하드코딩 사본 금지(약속 L01).
+
+    neutral  = 두 계정 공통 중립색(베이지·블랙·화이트) — 여기 걸리면 혼용 판정에서 제외.
+    personal = 개인계정(@namuk.wellperion) 전용색(에메랄드).
+    official = 공식계정 전용색(부서 프리셋 primary/accent/background, 중립색과 겹치는 값 제외).
+    """
+    try:
+        _scripts_dir = str(Path(__file__).resolve().parent)
+        if _scripts_dir not in sys.path:
+            sys.path.insert(0, _scripts_dir)
+        from brand_constants import BEIGE, BLACK_BG, WHITE, BRAND_PRESETS
+
+        neutral = {tuple(BEIGE), tuple(BLACK_BG), tuple(WHITE)}
+        official = set()
+        for preset in BRAND_PRESETS.values():
+            for key in ("primary", "accent", "background"):
+                v = preset.get(key)
+                if v:
+                    official.add(tuple(v))
+        official -= neutral
+        personal = {_EMERALD_LIGHT, _EMERALD_DARK}
+        return {"neutral": neutral, "official": official, "personal": personal}
+    except Exception as exc:
+        print(f"[WARN] qc_gate(visual): brand_constants 로드 실패(색 검사 스킵) — {exc}")
+        return {"neutral": set(), "official": set(), "personal": set()}
+
+
+def _classify_color(
+    color: tuple,
+    palette: dict,
+    tol: float = _COLOR_DIST_TOLERANCE,
+    neutral_tol: float = _NEUTRAL_TOL,
+):
+    """color 의 팔레트 카테고리('neutral'/'personal'/'official') 반환. 매칭 없으면 None(='색 이탈').
+
+    중립색(베이지·블랙·화이트)을 넓은 허용치(neutral_tol)로 먼저 본다 — 두 계정이 공유하는
+    베이지 배경은 종이질감·조명에 따라 밝기가 꽤 흔들리는데, 이 흔들린 값이 우연히 부서
+    전용색(예: 체조 프리셋 연보라)에 최근접 매칭돼 '계정 혼용'으로 오탐되는 걸 막기 위함
+    (실사고: AI하루 08/10편 정상 베이지·오프화이트 슬라이드가 좁은 허용치에서 오탐됨,
+    회귀 테스트로 확인·수정 — 배10036). 중립에 안 걸리면 그때 전용색(personal/official)을
+    tol 로 최근접 매칭한다.
+    """
+    for c in palette.get("neutral", ()):
+        if _rgb_dist(color, c) <= neutral_tol:
+            return "neutral"
+    best_cat, best_d = None, tol
+    for cat in ("personal", "official"):
+        for c in palette.get(cat, ()):
+            d = _rgb_dist(color, c)
+            if d < best_d:
+                best_d, best_cat = d, cat
+    return best_cat
+
+
+def _inspect_image(path: Path):
+    """(width,height), 대표색(RGB) 반환 — 실패 시 (None, None). Pillow 미설치·손상 파일도 조용히 스킵."""
+    try:
+        from PIL import Image
+    except Exception:
+        return None, None
+    try:
+        with Image.open(path) as im:
+            size = im.size
+            small = im.convert("RGB").resize((80, 80))
+        colors = small.getcolors(80 * 80) or []
+        if not colors:
+            return size, None
+        colors.sort(reverse=True)
+        return size, colors[0][1]
+    except Exception:
+        return None, None
+
+
+def _item_image_paths(item: dict) -> list:
+    """항목에서 검수할 이미지 경로 목록(중복 제거·순서 보존). slides 우선, images/image 보조."""
+    paths = []
+    for key in ("slides", "images"):
+        v = item.get(key)
+        if isinstance(v, list):
+            paths.extend(str(p) for p in v if p)
+    single = item.get("image")
+    if isinstance(single, str) and single:
+        paths.append(single)
+    seen, out = set(), []
+    for p in paths:
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
+
+
+def _qc_scan_visuals(item: dict) -> list:
+    """생성된 슬라이드 이미지를 규격·색으로 1패스 검수. 이미지 없거나 Pillow 없으면 통과([])."""
+    paths = _item_image_paths(item)
+    if not paths:
+        return []
+
+    account = str(item.get("account") or "")
+    is_personal = account == "namuk.wellperion"
+    is_official = account not in ("", "namuk.wellperion")
+
+    palette = _load_visual_palette()
+    bad_sizes, bad_colors, mixed = [], [], []
+
+    for rel in paths:
+        p = _ROOT / rel
+        if not p.exists():
+            continue
+        size, color = _inspect_image(p)
+        if size is None:
+            continue  # 읽기 실패(Pillow 없음·손상) — 조용히 스킵, 등록은 계속
+        name = p.name
+        if size not in _VALID_IMAGE_SIZES:
+            bad_sizes.append(f"{name}({size[0]}x{size[1]})")
+        if color is None:
+            continue
+        cat = _classify_color(color, palette)
+        if cat is None:
+            bad_colors.append(f"{name}(#{color[0]:02X}{color[1]:02X}{color[2]:02X})")
+        elif cat == "personal" and is_official:
+            mixed.append(f"{name} 대표색이 개인계정 시그니처(에메랄드)에 가까움")
+        elif cat == "official" and is_personal and color not in palette["neutral"]:
+            mixed.append(f"{name} 대표색이 공식계정 부서색에 가까움")
+
+    flags = []
+    if bad_sizes:
+        flags.append(f"규격 이탈(1080x1080/1080x1350 아님): {', '.join(bad_sizes)}")
+    if bad_colors:
+        flags.append(f"브랜드 색 팔레트 이탈: {', '.join(bad_colors)}")
+    if mixed:
+        flags.append(f"계정 시그니처 색 혼용: {', '.join(mixed)}")
+    return flags
+
+
 def _qc_scan_item(item: dict) -> list:
     """검수대기 항목 1건의 title/body/caption을 스캔해 경고 문구 리스트 반환(통과=[]).
 
@@ -187,6 +351,11 @@ def _qc_scan_item(item: dict) -> list:
     overclaim = [t for t in _OVERCLAIM_TERMS if t in text]
     if overclaim:
         flags.append(f"과장 표현: {', '.join(overclaim)}")
+
+    try:
+        flags.extend(_qc_scan_visuals(item))
+    except Exception as exc:
+        print(f"[WARN] qc_gate(visual): 스캔 예외(무시) — {item.get('id')}: {exc}")
 
     return flags
 
