@@ -652,6 +652,38 @@
       "honesty_default": "measured"
     },
     {
+      "id": "cpo-inquiry-snapshot",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "문의 스냅샷 자동 발행(멤버십·성인강습·유소년 원장 3분 주기 캐시)",
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js member_inquiry_list/lesson_inquiry_list → status/inquiry_snapshot_member.json·inquiry_snapshot_lesson.json + status/heartbeats/cpo-inquiry-snapshot.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "notify_wired": false
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-cpo-autonomy"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "화면이 구글시트를 매번 왕복하지 않고 이 스냅샷을 읽어 즉시 표시",
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "note": "2026-07-25 시포 등록(배1) — 등록부에 없어 가동 신호를 보여줄 자리가 없었고, 그래서 회차마다 커밋이 완료-배를 낳아 G1을 도배했다(GM 07-24 지적). 가동 신호는 하트비트·자율현황 카드로 옮기고 배 생성은 중단."
+    },
+    {
       "id": "cto-weekly-page-hygiene",
       "owner_role": "cto",
       "owner_nick": "시토",

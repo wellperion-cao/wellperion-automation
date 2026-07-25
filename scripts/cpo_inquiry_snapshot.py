@@ -54,6 +54,9 @@ HEARTBEAT_SEC = 15 * 60     # 15분 — 데이터 무변경이어도 이 이상 
 sys.path.insert(0, str(SCRIPTS_DIR))
 from cpo_report import _gas_get  # noqa: E402  (기존 검증된 GAS 조회 헬퍼 재사용 — 신규 포팅 없음)
 from git_lock import git_commit_push, GitLockTimeout  # noqa: E402
+from module_heartbeat import record_heartbeat, last_heartbeat  # noqa: E402  (공통 유틸 — 자체 재구현 금지)
+
+MODULE_ID = "cpo-inquiry-snapshot"
 
 
 def _now_kst() -> datetime:
@@ -244,6 +247,20 @@ def main() -> int:
         _log(f"[member] {member_payload.get('count', 0)}건, ok={member_payload.get('ok')}")
         a = lesson_payload["adult"]["year"]; y = lesson_payload["youth"]["year"]
         _log(f"[lesson] 성인 {a.get('count', 0)}건(ok={a.get('ok')}) · 유소년 {y.get('count', 0)}건(ok={y.get('ok')})")
+
+        # 가동 신호는 하트비트 1곳에만 남긴다(2026-07-25 시포·배1). 예전엔 회차마다 커밋이
+        # 완료-배를 낳아 G1 '입항 완료(오늘)'를 도배했다 — 배는 실무 신호용이고, 무인 모듈의
+        # '살아있음'은 자율현황 카드가 볼 자리(status/heartbeats/)가 정본이다. 파일을 실제로
+        # 쓴 뒤에 부른다(스크립트 진입부 호출 금지 — 거짓 하트비트가 INC-018의 본질).
+        _prev_hb = last_heartbeat(MODULE_ID) or {}
+        _runs = int(_prev_hb.get("누적_회차") or 0) + 1  # extra는 평평하게 병합된다(중첩 아님)
+        record_heartbeat(
+            MODULE_ID,
+            detail=(f"멤버십 {member_payload.get('count', 0)}건 · 성인강습 {a.get('count', 0)}건 · "
+                    f"유소년 {y.get('count', 0)}건 (누적 {_runs}회차)"),
+            extra={"누적_회차": _runs, "멤버십": member_payload.get("count", 0),
+                   "성인강습": a.get("count", 0), "유소년": y.get("count", 0)},
+        )
 
         changed_paths = []
         if _should_commit(_load_prev_from_head(MEMBER_OUT), member_payload):

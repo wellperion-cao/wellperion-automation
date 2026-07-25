@@ -240,7 +240,13 @@ def _should_skip(meta: dict, queue: list) -> bool:
         return True
     if "[welly-sweep]" in subject or "[welly-sweep]" in meta.get("body", ""):
         return True
-    for kw in ("auto-log", "시스템 현황 자동 발행", "erp_status", "changelog"):
+    # b-2. 무인 예약 스크립트의 자동 발행 커밋 — 배를 만들지 않는다(2026-07-25 시포·배77 후속).
+    #   기존엔 "시스템 현황 자동 발행"만 이름으로 막아, 같은 성격의 문의 스냅샷은 회차마다
+    #   새 완료-배를 찍어 G1 '입항 완료(오늘)'를 도배했다(2026-07-24 GM 지적 — 오늘 완료 15건
+    #   중 14건이 기계발행, 그중 시포 11건). 모듈명을 하나씩 더 박는 대신 kpi_collector
+    #   _is_machine_ship() 이 이미 쓰는 것과 같은 구조적 신호('자동 발행' 문구)로 일반화한다
+    #   — 새 예약 스크립트도 이 관례만 따르면 자동 편입되고, 등록부·키워드를 늘리지 않는다.
+    for kw in ("auto-log", "자동 발행", "erp_status", "changelog"):
         if kw.lower() in low:
             return True
     # c. 변경파일이 전부 자동발행/큐 전용 집합에만 속함(=실작업 파일 0).
