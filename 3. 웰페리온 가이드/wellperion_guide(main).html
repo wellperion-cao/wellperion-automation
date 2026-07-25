@@ -5941,7 +5941,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <div style="font-size:14.5px;color:var(--text);line-height:1.7;font-weight:700;">웰페리온의 하루가 실제로 어떻게 돌아가는지를 <span style="color:var(--accent);">계획 → 현황 → 접수 → 개선</span> 한 흐름으로 보는 곳입니다.</div>
       <div style="font-size:12.5px;color:var(--dim);line-height:1.65;margin-top:6px;">부서별 문서를 모아둔 링크 모음이 아니라, <strong>각 부서가 오늘 어디까지 했는지</strong>가 숫자로 뜨고, <strong>밀린 것이 스스로 드러나</strong> 다음 손댈 곳이 보이는 화면입니다.</div>
       <div style="margin-top:13px;font-size:13px;color:var(--dim);line-height:1.8;">
-        🗓️ 월간 계획 → 🏢 오늘 현황(9개 모듈) → 🙋 접수·VOC → 📝 업무·결재 — 위에서 아래로 한 번에 훑기
+        🗓️ 월간 계획 → 🏢 오늘 현황(9개 모듈) → 🙋 종합접수처 → 📝 업무·결재 — 위에서 아래로 한 번에 훑기
       </div>
       <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12px;color:var(--dim);line-height:1.55;">
         <div>🔢 <strong style="color:var(--text);">큰 숫자 + 작은 경고</strong> — 카드마다 대표값 하나와 '지금 볼 일' 한 줄. 경고가 없으면 오늘 그 부서는 손댈 게 없다는 뜻.</div>
@@ -5992,9 +5992,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var RECEPTION_HREF      = "/wellperion-automation/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html";
       var OPS_HREF            = BASE + "coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
       var RECEPTION_WORK_HREF = BASE + "coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html";
-      // 종합접수처(VOC) 웹앱 — 점검·업무 GAS 와 또 다른 프로젝트다(섞으면 action 오류).
-      // 정본 = scripts/collectors/ops_shared.py VOC_EXEC_URL · 종합접수처_현황.html 과 동일 주소.
-      var VOC_API = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
+      // 종합접수처 웹앱 — 점검·업무 GAS 와 또 다른 프로젝트다(섞으면 action 오류).
+      // 정본 = scripts/collectors/ops_shared.py 의 접수처 주소 · 종합접수처_현황.html 과 동일.
+      var RECEPTION_API = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
       // status/*.json 은 Pages 발행루트에 없다 — 저장소 raw 를 직독한다(worklog_panel.js 와 동일 관례).
       var RAW_BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/";
       // 공지 목록(notice_list) 전용 — 점검 GAS(CHECK_API)와 다른 웹앱이다. 섞으면 '알 수 없는 action' 이 된다.
@@ -6062,7 +6062,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           + moduleCard({icon:'🅿️',label:'주차관리부 체계', caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
           + moduleCard({icon:'📅',label:'전사 일정',       caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
           + moduleCard({icon:'📢',label:'공지·안내문 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
-          + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수',      value:S.vocOpen,     warn:S.vocWarn,   warnLevel:S.vocLevel,   href:RECEPTION_HREF,
+          + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수',      value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
                         extra:{label:'📲 회원 접수 폼', href:'http://wellperion.com/ko/reception/'}})
           + moduleCard({icon:'🏢',label:'운영부 체계',     caption:'실무진 진행 업무',  value:S.opsTask,     warn:S.opsWarn,   warnLevel:S.opsLevel,   href:OPS_HREF})
           + moduleCard({icon:'🛎️',label:'리셉션 업무',     caption:'라커 운영',        value:S.lockerVal,   warn:S.lockerWarn, warnLevel:'ok',        href:RECEPTION_WORK_HREF});
@@ -6089,7 +6089,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var S = {fRow:null,mRow:null,wRow:null,fPct:null,mPct:null,wPct:null,
                  parkAmt:null,parkWarn:'',schedTotal:null,schedWarn:'',schedLevel:'ok',
                  noticeTotal:null,noticeWarn:'',noticeLevel:'ok',
-                 vocOpen:null,vocWarn:'',vocLevel:'ok',
+                 receptionOpen:null,receptionWarn:'',receptionLevel:'ok',
                  opsTask:null,opsWarn:'',opsLevel:'ok',
                  lockerVal:null,lockerWarn:''};
         var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
@@ -6103,12 +6103,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var parkP  = jget(RAW_BASE+"status/parking_revenue.json?_pv="+pv);
         var schedP = jget(RAW_BASE+"status/schedule_ssot.json?_pv="+pv);
         var noticeP= jget(TODO_API+"?action=notice_list&_pv="+pv);
-        var vocP   = jget(VOC_API+"?action=reg_list&_pv="+pv);
+        var receptionP = jget(RECEPTION_API+"?action=reg_list&_pv="+pv);
         var todoP  = jget(TODO_API+"?action=todo_list&_pv="+pv);
 
-        Promise.all([fP,sP,parkP,schedP,noticeP,vocP,todoP]).then(function(res){
+        Promise.all([fP,sP,parkP,schedP,noticeP,receptionP,todoP]).then(function(res){
           var facilityRow=res[0], supportRow=res[1], park=res[2], sched=res[3], notice=res[4],
-              voc=res[5], todo=res[6];
+              reception=res[5], todo=res[6];
           S.fRow = facilityRow; S.fPct = pctOf(facilityRow);
           var byGender = supportRow && supportRow.byGender;
           S.mRow = byGender && byGender.m ? byGender.m : null; S.mPct = S.mRow ? pctOf(S.mRow) : null;
@@ -6139,17 +6139,17 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             }
           }
           /* 종합접수처 — 미처리(완료 계열이 아닌 것) 건수. 분류까지 한 줄로 붙여 무엇이 밀렸는지 보이게. */
-          var vrows = voc && (voc.data||voc.rows);
-          if(Array.isArray(vrows)){
+          var rrows = reception && (reception.data||reception.rows);
+          if(Array.isArray(rrows)){
             var DONE = {'완료':1,'처리완료':1,'해결':1};
-            var open = vrows.filter(function(x){ return !DONE[String(x.status||'접수')]; });
-            S.vocOpen = open.length+'건';
+            var open = rrows.filter(function(x){ return !DONE[String(x.status||'접수')]; });
+            S.receptionOpen = open.length+'건';
             var byCat = {};
             open.forEach(function(x){ var c=String(x.category||'기타').replace(' 접수',''); byCat[c]=(byCat[c]||0)+1; });
             var top = Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).slice(0,2)
                         .map(function(k){ return k+' '+byCat[k]; }).join(' · ');
-            S.vocWarn  = open.length>0 ? ('⚠ '+top) : '✓ 밀린 접수 없음';
-            S.vocLevel = open.length>0 ? 'bad' : 'ok';
+            S.receptionWarn  = open.length>0 ? ('⚠ '+top) : '✓ 밀린 접수 없음';
+            S.receptionLevel = open.length>0 ? 'bad' : 'ok';
           }
           /* 운영부 — 실무진(최준용M·윤병현AM·이경연 실장) 담당 업무 중 완료 아닌 것.
              ★종합접수처와 겹치지 않게 '업무판' 쪽만 센다(같은 숫자를 두 카드에 띄우지 않는다). */
