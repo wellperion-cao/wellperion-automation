@@ -1346,7 +1346,9 @@
     "title": "[시토] import만으로 stdout을 갈아끼우는 스크립트 26건 — 검사판을 또 무너뜨릴 지뢰",
     "priority": "⛵돛단배",
     "note": "[2026-07-25 시토 발견 — 배10245 수리 중 부수 확인] 오늘 전체 검사판이 통째로 죽은 원인이 gm_aide_scan.py 의 '모듈 최상단 sys.stdout 재할당'이었다. AST 로 scripts/ 전수 확인(모듈 레벨 스코프만, __name__==\"__main__\" 가드가 있는 안전한 것은 제외) 결과 **같은 패턴이 26건 더 있다**: ai_education_auto_learner · ai_learning_proposer · build_voyage_map · check_chatid_drift · check_reception_wp_drift · cmo_kpi_collector · extract_glossary_quiz · gm_profile_builder · hangro_board · ig_pin_manager · ig_publish_verify · inc020_close_verify · kakao_export_chat · monthly_check_report · monthly_ops_report · monthly_ops_sync · northstar_recommender · ops_daily_digest · ops_fill_board · precommit_enforcement_guard · qa_inject_inquiry · review_queue_recover · send_ops_digest · verify_g1_edit · weekly_self_review · welly_sweep. [지금 당장은 무해] 이 중 어느 것도 현재 테스트에서 import 되지 않아 문제를 안 일으킨다. [왜 배로 남기나] 누군가 이 중 하나를 import 하는 테스트를 새로 쓰는 순간 검사판이 또 통째로 죽는다. 오늘 그게 실제로 일어났고 그동안 아무도 몰랐다. 지뢰가 26개 깔려 있는 상태다. [고치는 법은 이미 정해져 있다] 저장소 선례(support_check_summary·self_health_watchdog·module_silence_detector)대로 __main__ 블록 안으로 옮기거나 sys.stdout.reconfigure(encoding='utf-8') 로 바꾸면 된다 — 객체를 갈아끼우지 않는 방식. 한 건당 몇 줄이라 기계적이지만 26개 파일을 건드리므로 공유 워크트리 충돌 위험이 있어 한 번에 몰아서 해야 한다.",
-    "next": "시토: ①26건을 한 커밋으로 몰아서 교정(파일당 몇 줄·기계적, 나눠 하면 충돌 창이 길어짐) ②각 파일 직접 실행 시 한글 출력 정상 확인(수리가 실용도를 깨뜨리지 않았는지) ③전체 검사 완주 재확인 ④재발 방지 — 새 스크립트가 같은 패턴을 넣지 못하게 pre-commit 에 검사를 붙일지 판단(단 약속 L21 '장치 늘리지 않는다' — 기존 precommit 가드에 흡수)"
+    "next": "시토: ①26건을 한 커밋으로 몰아서 교정(파일당 몇 줄·기계적, 나눠 하면 충돌 창이 길어짐) ②각 파일 직접 실행 시 한글 출력 정상 확인(수리가 실용도를 깨뜨리지 않았는지) ③전체 검사 완주 재확인 ④재발 방지 — 새 스크립트가 같은 패턴을 넣지 못하게 pre-commit 에 검사를 붙일지 판단(단 약속 L21 '장치 늘리지 않는다' — 기존 precommit 가드에 흡수)",
+    "aide_interview_needed": true,
+    "aide_interview_reason": "스코프 결정·판단이 필요(러너가 대신 정하면 안 되는 것)"
   },
   {
     "task_id": "CTO-2026-07-25-GIT-COMMIT-PUSH가-DETACHED-HE",
