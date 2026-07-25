@@ -13,4 +13,8 @@ if not exist "%PY%" set PY=python
 cd /d "%ROOT%"
 echo ===== %DATE% %TIME% cpo-inquiry-snapshot start ===== >> "%ROOT%\logs\cpo_inquiry_snapshot.log"
 "%PY%" "%ROOT%\scripts\cpo_inquiry_snapshot.py" >> "%ROOT%\logs\cpo_inquiry_snapshot.log" 2>&1
+REM Staff feedback watcher (2026-07-25 GM) - rides this 3-minute slot instead of a new
+REM scheduled task. New staff feedback becomes a CPO ship immediately so nothing sits
+REM unattended in the sheet. Fail-soft: never blocks the snapshot job above.
+"%PY%" "%ROOT%\scripts\collectors\cpo_staff_feedback_watch.py" >> "%ROOT%\logs\cpo_staff_feedback_watch.log" 2>&1
 endlocal

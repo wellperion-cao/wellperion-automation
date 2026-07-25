@@ -1,56 +1,6 @@
 {
-  "generated_at": "2026-07-25T11:28:53+09:00",
+  "generated_at": "2026-07-25T16:08:30+09:00",
   "gaps": [
-    {
-      "role": "cmo",
-      "severity": "mid",
-      "title": "인스타그램 · L시리즈 성인강습 3/6 — 골프(정직한 점… — 발행완료인데 URL 없음",
-      "detail": "status=발행완료 · url/post_url 필드 모두 비어있음 · 콘텐츠=L시리즈 성인강습 3/6 — 골프(정직한 점수판)",
-      "hint": "게시 URL 수동 보강 또는 scripts/reconcile_published.py 로 재회수",
-      "ref": "CMO-2026-07-14-LSERIES-L3-GOLF::인스타그램",
-      "age": "신규",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "mid",
-      "title": "웰페리온 프리미엄 공간 3칸 그리드 — right (수영장) — 형제채널 미등록(인스타만)",
-      "detail": "공식계정 인스타는 등록됐으나 블로그·카페·카카오·당근 형제 엔트리 0건",
-      "hint": "register_channel_review.register_channels() 로 형제 채널 등록 확인 필요",
-      "ref": "instagram/260616_웰페리온_프리미엄공간_3칸/right",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "mid",
-      "title": "웰페리온 프리미엄 공간 3칸 그리드 — center (수영장) — 형제채널 미등록(인스타만)",
-      "detail": "공식계정 인스타는 등록됐으나 블로그·카페·카카오·당근 형제 엔트리 0건",
-      "hint": "register_channel_review.register_channels() 로 형제 채널 등록 확인 필요",
-      "ref": "instagram/260616_웰페리온_프리미엄공간_3칸/center",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "mid",
-      "title": "웰페리온 프리미엄 공간 3칸 그리드 — left (수영장) — 형제채널 미등록(인스타만)",
-      "detail": "공식계정 인스타는 등록됐으나 블로그·카페·카카오·당근 형제 엔트리 0건",
-      "hint": "register_channel_review.register_channels() 로 형제 채널 등록 확인 필요",
-      "ref": "instagram/260616_웰페리온_프리미엄공간_3칸/left",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "cmo",
-      "severity": "high",
-      "title": "발행 주소 자동 회수 — 성공 1건 / 미회… — 기록엔 있는데 실물 없음",
-      "detail": "worklog 기록 ref=CMO-2026-07-22-PUBLISH-URL-RECOVERY-3CH(area=발행)가 검수큐·배큐 어디에도 없음",
-      "hint": "검수큐 등록분 유실 의심 — git 이력 확인 후 재등록 필요",
-      "ref": "CMO-2026-07-22-PUBLISH-URL-RECOVERY-3CH",
-      "age": "신규",
-      "first_seen": "2026-07-25"
-    },
     {
       "role": "cmo",
       "severity": "low",
@@ -59,6 +9,16 @@
       "hint": "기존 예약작업에 best-effort 편승(신규 예약작업 금지) 또는 폐기 결정 필요",
       "ref": "scripts/publish_channels_check.py",
       "age": "신규",
+      "first_seen": "2026-07-25"
+    },
+    {
+      "role": "cmo",
+      "severity": "low",
+      "title": "M1 수기 상태값 32일째 미갱신 (2026-06-23 기준)",
+      "detail": "… 각 단계의 실제 배선입니다.\n    <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM… 근처 상태 배지(✅/🟡/❌)가 32일 전 값 그대로",
+      "hint": "각 단계 실제 진척과 대조해 상태 배지 갱신 또는 '변화 없음' 확인 후 날짜만 갱신",
+      "ref": "wellperion_guide(main).html#M1 · 2026-06-23",
+      "age": "누적",
       "first_seen": "2026-07-25"
     },
     {
@@ -194,56 +154,6 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "리셉션 상담실 리뉴얼 — 결재 대기 45일째",
-      "detail": "결재요청=GM · 결재상태=대기 · 최근 수정일=2026-06-10(그 뒤 갱신 없음)",
-      "hint": "업무&결재 현황 SSOT에서 결재요청 대상자 확인 후 후속 조치 필요",
-      "ref": "TODO-20260526173336073::approval",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "[GM-04] 기구 A/S 및 유지보수 — 결재 대기 23일째",
-      "detail": "결재요청=GM · 결재상태=대기 · 최근 수정일=2026-07-02(그 뒤 갱신 없음)",
-      "hint": "업무&결재 현황 SSOT에서 결재요청 대상자 확인 후 후속 조치 필요",
-      "ref": "TODO-20260526173331522::approval",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "[GM-03] 운영 통합 체계 4부서 셋업… — 결재 대기 23일째",
-      "detail": "결재요청=GM · 결재상태=대기 · 최근 수정일=2026-07-02(그 뒤 갱신 없음)",
-      "hint": "업무&결재 현황 SSOT에서 결재요청 대상자 확인 후 후속 조치 필요",
-      "ref": "TODO-20260526173246953::approval",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "[GM-02] 쓰쿠루 파트너 정기 계약 해지… — 결재 대기 23일째",
-      "detail": "결재요청=GM · 결재상태=대기 · 최근 수정일=2026-07-02(그 뒤 갱신 없음)",
-      "hint": "업무&결재 현황 SSOT에서 결재요청 대상자 확인 후 후속 조치 필요",
-      "ref": "TODO-20260526173233153::approval",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "[GM-01] 다이슨 방향 전환 대안 제품군… — 결재 대기 23일째",
-      "detail": "결재요청=GM · 결재상태=대기 · 최근 수정일=2026-07-02(그 뒤 갱신 없음)",
-      "hint": "업무&결재 현황 SSOT에서 결재요청 대상자 확인 후 후속 조치 필요",
-      "ref": "TODO-20260526173215570::approval",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
       "title": "7월 3주차 회의 — 마감 1일 경과",
       "detail": "종료일=2026-07-24 · 상태=진행중(완료·보류 아님)",
       "hint": "종료일 갱신 또는 완료·보류 처리 필요",
@@ -338,36 +248,6 @@
       "detail": "종료일=2026-06-11 · 상태=진행중(완료·보류 아님)",
       "hint": "종료일 갱신 또는 완료·보류 처리 필요",
       "ref": "TODO-20260526173340498::overdue",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "리셉션 상담실 리뉴얼 — 마감 27일 경과",
-      "detail": "종료일=2026-06-28 · 상태=진행중(완료·보류 아님)",
-      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
-      "ref": "TODO-20260526173336073::overdue",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "[GM-02] 쓰쿠루 파트너 정기 계약 해지… — 마감 26일 경과",
-      "detail": "종료일=2026-06-29 · 상태=진행중(완료·보류 아님)",
-      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
-      "ref": "TODO-20260526173233153::overdue",
-      "age": "누적",
-      "first_seen": "2026-07-23"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "[GM-01] 다이슨 방향 전환 대안 제품군… — 마감 28일 경과",
-      "detail": "종료일=2026-06-27 · 상태=진행중(완료·보류 아님)",
-      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
-      "ref": "TODO-20260526173215570::overdue",
       "age": "누적",
       "first_seen": "2026-07-23"
     },
@@ -2245,6 +2125,16 @@
       "role": "cpo",
       "severity": "low",
       "title": "강습(성인강습) 문의 · 등록완료 처리인데 기록 흔적 없음",
+      "detail": "진행상태=SUC · 접수일=2026-01-16 · 메모·연락이력 모두 등록 흔적 없음",
+      "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
+      "ref": "lesson-adult::3089::regtrace",
+      "age": "누적",
+      "first_seen": "2026-07-25"
+    },
+    {
+      "role": "cpo",
+      "severity": "low",
+      "title": "강습(성인강습) 문의 · 등록완료 처리인데 기록 흔적 없음",
       "detail": "진행상태=SUC · 접수일=2026-01-27 · 메모·연락이력 모두 등록 흔적 없음",
       "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
       "ref": "lesson-adult::3122::regtrace",
@@ -2260,6 +2150,26 @@
       "ref": "lesson-adult::3178::regtrace",
       "age": "누적",
       "first_seen": "2026-07-23"
+    },
+    {
+      "role": "cpo",
+      "severity": "low",
+      "title": "강습(성인강습) 문의 · 등록완료 처리인데 기록 흔적 없음",
+      "detail": "진행상태=SUC · 접수일=2026-03-06 · 메모·연락이력 모두 등록 흔적 없음",
+      "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
+      "ref": "lesson-adult::3208::regtrace",
+      "age": "누적",
+      "first_seen": "2026-07-25"
+    },
+    {
+      "role": "cpo",
+      "severity": "low",
+      "title": "강습(성인강습) 문의 · 등록완료 처리인데 기록 흔적 없음",
+      "detail": "진행상태=SUC · 접수일=2026-03-14 · 메모·연락이력 모두 등록 흔적 없음",
+      "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
+      "ref": "lesson-adult::3234::regtrace",
+      "age": "누적",
+      "first_seen": "2026-07-25"
     },
     {
       "role": "cpo",
@@ -2310,6 +2220,16 @@
       "ref": "lesson-adult::3385::regtrace",
       "age": "누적",
       "first_seen": "2026-07-23"
+    },
+    {
+      "role": "cpo",
+      "severity": "low",
+      "title": "강습(성인강습) 문의 · 등록완료 처리인데 기록 흔적 없음",
+      "detail": "진행상태=SUC · 접수일=2026-07-07 · 메모·연락이력 모두 등록 흔적 없음",
+      "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
+      "ref": "lesson-adult::3508::regtrace",
+      "age": "누적",
+      "first_seen": "2026-07-25"
     },
     {
       "role": "cpo",
@@ -2852,6 +2772,36 @@
       "error": ""
     },
     {
+      "role": "cmo",
+      "rule": "m1_dead_screen_ref",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "role": "cmo",
+      "rule": "m1_stale_pinned_status",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "role": "cmo",
+      "rule": "pipeline_running_but_no_output",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "role": "cmo",
+      "rule": "weekend_stock_empty",
+      "ok": true,
+      "error": ""
+    },
+    {
+      "role": "cmo",
+      "rule": "test_data_left_in_queue",
+      "ok": true,
+      "error": ""
+    },
+    {
       "role": "coo",
       "rule": "recurring_check_incomplete",
       "ok": true,
@@ -2901,7 +2851,7 @@
     }
   ],
   "summary": {
-    "신규": 11,
-    "누적": 269
+    "신규": 9,
+    "누적": 263
   }
 }

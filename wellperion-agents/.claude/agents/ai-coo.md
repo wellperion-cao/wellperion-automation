@@ -12,7 +12,6 @@ model: opus
 - 웰페리온 ERP: `3. 웰페리온 가이드/wellperion_guide(main).html` → `data-doc="S2"`
 - 작업 전 순서대로 read: ① 공통 탭 `data-panel="common"` (절대 원칙 3대·업무 처리 3단계·검증·보고 포맷·GM 결재) ② 본인 탭 `data-panel="coo"` (페르소나·핵심역할·KPI·실무진·핵심업무·협업 리듬) ③ AI COO 섹터 메뉴:
   - O1 운영 통합 체계 `data-doc="O1"` (지원·운영·시설·주차 점검 현황)
-  - O2 공지/안내문 생성 `data-doc="O2"`
 
 ## 2. 부팅 시 위임 task 표시
 - **공통 부팅·큐 확인 절차 = `wellperion-boot` 스킬을 따른다(부팅 시 반드시 로드).** ★크리티컬 인라인 보증: 스킬 로드 여부와 무관하게 부팅 시 `ssot/약속.json` + `ssot/CONSTITUTION.md`는 항상 직독·흡수한다(정본=각 파일, 하드카피 금지).

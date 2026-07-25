@@ -665,6 +665,20 @@ def run(dry_run: bool, plan_only: bool) -> int:
         telegram("📭 실전사례 대본 재고 소진 — 시모 대본 제작 필요(재고표: instagram/_실전사례_2주플랜.md)")
         return 0
 
+    # 주말GM 제목 고정 가드 (GM 2026-07-25) — 문서로만 두면 다음 사람이 또 다르게 적는다(약속 L02).
+    #   토=「GM의 토요일」 / 일=「GM의 일요일」 로 시작하지 않으면 여기서 붙여 맞춘다.
+    #   차단이 아니라 교정이다 — 제목 하나 때문에 주말 발행을 멈추는 게 더 손해다.
+    if nxt.get("track") == WEEKEND_TRACK:
+        title_now = str(nxt.get("title", ""))
+        # ★둘 중 하나로 시작하면 이미 규약을 지킨 것 — 손대지 않는다.
+        #   요일로만 판정하면 토요일 런이 일요일편을 집었을 때(오늘 몫이 이미 나간 경우 등)
+        #   앞머리를 겹쳐 붙인다("GM의 토요일 — GM의 일요일 — …"). 실제로 자체 검증에서 재현됐다.
+        if not title_now.startswith(("GM의 토요일", "GM의 일요일")):
+            want = "GM의 토요일" if now.weekday() == 5 else "GM의 일요일"
+            fixed = f"{want} — {title_now.lstrip('—- ')}"
+            print(f"[WARN] 주말GM 제목 고정 규약 위반 — 「{title_now}」 → 「{fixed}」 로 교정")
+            nxt["title"] = fixed
+
     print(f"[INFO] 다음 편 선정 → #{nxt['num']:02d} 「{nxt['title']}」 / 폴더: {nxt['folder']}")
 
     if plan_only:
@@ -712,7 +726,13 @@ def run(dry_run: bool, plan_only: bool) -> int:
             account="namuk.wellperion",
             slides=slides,
             queue_id=queue_id,
-            title=f"실전사례 {nxt['num']:02d} — {nxt['title']}(개인계정)",
+            # 주말GM 트랙은 제목을 고정한다 — 「GM의 토요일 — {부제}」 / 「GM의 일요일 — {부제}」
+            # (GM 2026-07-25 지시: "개인계정 인스타그램 제목을 고정해줘 GM의 일요일처럼, GM의 토요일로").
+            # 그동안 종결된 평일 시리즈 이름표("실전사례 14 —")가 주말편에도 붙어 나가,
+            # 같은 요일 시리즈인데 회차마다 앞머리가 달라 보였다. 주말편은 재고표 제목을 그대로 쓴다
+            # (재고표 §재고 주말GM 행이 이미 「GM의 토요일/일요일 — …」 형식이고, 아래 가드가 이를 강제한다).
+            title=(f"{nxt['title']}(개인계정)" if nxt.get("track") == WEEKEND_TRACK
+                   else f"실전사례 {nxt['num']:02d} — {nxt['title']}(개인계정)"),
             channel="인스타그램 (namuk.wellperion)",
             send_card=False,  # 카드는 아래 6)에서 별도 호출(중복 방지 — producer 동일 관례)
         )

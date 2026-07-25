@@ -428,6 +428,24 @@ def safe_commit(
     # ★배10009: committed 만 보면 혼입이 감지돼(ok=False) 이미 만들어진 나쁜 커밋이
     # 그대로 push 될 수 있었다 — 검증 통과 여부(ok)를 게이트로 쓴다.
     if result["ok"] and push:
+        # ── ① ad-hoc 자동기록(2026-07-25 시우 · GM 지적 "상태줄에 안 나온다") ──
+        # safe_commit 은 commit-tree/update-ref 라 .git/hooks/post-commit 이 발화하지 않는다.
+        # 그 훅의 ①단계(auto_log_adhoc_to_queue.py)만 이식에서 빠져 있었다 — pre-commit 가드는
+        # 함수로 이식했고 push 는 아래에서 명시 호출하는데 이것만 누락됐다.
+        # 결과(역설): 맨손 commit 금지 규칙을 지킨 세션일수록 한 일이 G1·상태줄에서 사라지고,
+        # 규칙을 어긴 쪽만 자동기록됐다. 실측 2026-07-25 — 그날 자동기록 37척 중 33척이 예약
+        # 스크립트(맨손 commit)였고 safe_commit 으로 올린 C-Level 커밋은 0척이었다.
+        # ★교착 없음: 이 자리는 위 `with GitLock(...)` 을 이미 빠져나온 뒤다. auto_log 는 자기
+        #   GitLock 을 따로 잡고, 못 잡으면 within-parent-lock 으로 보류한다(fail-open).
+        # ★순서: 훅과 동일하게 자동기록 → push. 그래야 자동기록이 만든 커밋까지 같이 올라간다.
+        try:
+            subprocess.run(
+                [sys.executable, str(_SCRIPTS_DIR / "auto_log_adhoc_to_queue.py")],
+                cwd=str(root), capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=120,
+            )
+        except Exception as exc:  # 기록 실패가 커밋·push 를 막지 않는다(fail-open, 훅 규약 동일)
+            print(f"[WARN] ad-hoc 자동기록 건너뜀: {type(exc).__name__}: {exc}")
         try:
             subprocess.run(
                 [sys.executable, str(_SCRIPTS_DIR / "post_commit_push.py")],

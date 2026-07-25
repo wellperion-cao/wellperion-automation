@@ -665,6 +665,17 @@ def build_caption(room: dict, base_caption: str) -> str:
 # 어떤 새 발신 경로가 추가되더라도 자동으로 같이 방어된다(개별 스크립트마다 매번
 # 새로 챙길 필요 없음 — 근본 위치에 1회 박음).
 # ══════════════════════════════════════════════════════════════════════════
+# ── 발신 계측(배99, 2026-07-25) — 카톡도 하루 단위로 셀 수 있게, 텔레그램과 같은
+# 관문 로거(tg_outbound_log.log_outbound)를 channel='kakao'로 재사용해
+# logs/kakao_sent-YYYY-MM-DD.log 에 실발송 1건=1줄 남긴다(L21 — 새 로거 신설 없음).
+# 이 스크립트는 저장소의 모든 카톡 발신이 통과하는 단일 관문이라 여기 1곳이면 전량 계측된다.
+# best-effort: 계측 실패가 실제 발신을 절대 막지 않는다.
+try:
+    from tg_outbound_log import log_outbound as _log_outbound
+except Exception:
+    def _log_outbound(*a, **k):
+        pass
+
 DEDUP_LEDGER_PATH = ROOT / "status" / "kakao_dedup_ledger.json"
 DEDUP_WINDOW_SEC = float(os.environ.get("KAKAO_DEDUP_WINDOW_SEC", 7200))  # 2시간(22:30↔23:00류 30분 간격을 넉넉히 덮음)
 SKIP_DEDUP_ENV = "SKIP_KAKAO_DEDUP_GUARD"
@@ -785,6 +796,8 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     time.sleep(0.5)
     screenshot(room_win, room_name, "message_sent")
     log(f"[{room_name}] 텍스트 전송 완료")
+    _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
+                  ok=True, kind="message", channel="kakao")
     return True
 
 
@@ -828,6 +841,8 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
 
     screenshot(room_win, room_name, "sent")
     log(f"[{room_name}] 전송 완료")
+    _log_outbound(caption, chat_id=room_name, source="kakao_report_sender.image",
+                  ok=True, kind="image+caption", channel="kakao")
     return True
 
 

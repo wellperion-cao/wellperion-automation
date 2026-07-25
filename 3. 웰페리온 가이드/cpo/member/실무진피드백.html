@@ -120,11 +120,13 @@ textarea.err{border-color:var(--red-border);box-shadow:0 0 0 3px var(--red-bg)}
 <form id="feedbackForm" onsubmit="return false;">
 
   <fieldset>
-    <legend>어떤 화면인가요?</legend>
+    <legend>어떤 업무인가요?</legend>
     <div class="choice-group" data-field="screen">
+      <!-- 업무별로 나눈다(2026-07-25 GM) — 멤버십은 멤버십, 강습은 강습, 종합접수처는 종합접수처.
+           예전 '문의 접수'는 어느 화면을 말하는지 모호해 접수 뒤 담당을 가릴 수 없었다. -->
       <button type="button" class="choice-btn active" data-value="멤버십 회원관리">멤버십 회원관리</button>
       <button type="button" class="choice-btn" data-value="강습 회원관리">강습 회원관리</button>
-      <button type="button" class="choice-btn" data-value="문의 접수">문의 접수</button>
+      <button type="button" class="choice-btn" data-value="종합접수처">종합접수처</button>
       <button type="button" class="choice-btn" data-value="기타">기타</button>
     </div>
   </fieldset>
@@ -154,9 +156,14 @@ textarea.err{border-color:var(--red-border);box-shadow:0 0 0 3px var(--red-bg)}
     </div>
   </fieldset>
 
+  <!-- 작성자 필수(2026-07-25 GM 지시 "작성자도 꼭 기록하게끔") — 무기명 피드백은 되물을 수가 없다.
+       실제로 7/24~25 접수 8건 중 3건이 무기명이었고, 그중 2건이 '누구 회원의 어떤 내용이 사라졌다'는
+       확인이 필요한 건이라 작성자에게 되묻지 못했다. 한 번 적으면 이 브라우저에 기억시켜(localStorage)
+       다음부터 자동으로 채워 넣는다 — 필수로 만들되 매번 타이핑하는 부담은 주지 않는다. -->
   <fieldset>
-    <legend>작성자 <span class="hint">(비워도 됩니다)</span></legend>
-    <input type="text" id="fbAuthor" placeholder="이름 (예: 임정은)">
+    <legend>작성자 <span class="req">*</span> <span class="hint">(한 번 적으면 다음부터 자동으로 채워집니다)</span></legend>
+    <input type="text" id="fbAuthor" placeholder="이름 (예: 임정은)" autocomplete="name">
+    <div class="err-line" id="fbAuthorErr">누가 남기셨는지 적어 주세요 — 확인이 필요할 때 되묻기 위해 꼭 필요합니다.</div>
   </fieldset>
 
   <!-- 접수 결과가 여기에 뜬다(보내는 중 / 접수됨 / 실패). 문구는 보낼 때 채워진다. -->
@@ -171,6 +178,12 @@ textarea.err{border-color:var(--red-border);box-shadow:0 0 0 3px var(--red-bg)}
 
 <script>
 "use strict";
+// 지난번에 적은 작성자 자동 채움 — 필수 항목이라 매번 타이핑하지 않게(2026-07-25 GM).
+try {
+  var _fbSavedAuthor = localStorage.getItem('wlp_fb_author');
+  if (_fbSavedAuthor) document.getElementById('fbAuthor').value = _fbSavedAuthor;
+} catch(e) {}
+
 // 선택형 필드(button group) — 클릭한 버튼만 active, 같은 그룹 내 나머지는 해제.
 document.querySelectorAll('.choice-group').forEach(function(group){
   group.addEventListener('click', function(e){
@@ -206,6 +219,20 @@ function submitStaffFeedback(){
   contentEl.classList.remove('err');
   errEl.classList.remove('show');
 
+  // 작성자 필수(2026-07-25 GM) — 무기명이면 보내지 않는다. 내용 검사와 같은 방식·같은 어조.
+  var authorEl = document.getElementById('fbAuthor');
+  var authorErr = document.getElementById('fbAuthorErr');
+  var author = (authorEl.value || '').trim();
+  if (!author){
+    authorEl.classList.add('err');
+    if (authorErr) authorErr.classList.add('show');
+    authorEl.focus();
+    return;
+  }
+  authorEl.classList.remove('err');
+  if (authorErr) authorErr.classList.remove('show');
+  try { localStorage.setItem('wlp_fb_author', author); } catch(e) {}   // 다음 접수 때 자동 채움
+
   var payload = {
     action: 'staff_feedback_submit',
     t: FB_TOKEN,
@@ -213,7 +240,7 @@ function submitStaffFeedback(){
     kind: _fbGroupValue('type'),
     content: content,
     urgency: _fbGroupValue('urgency'),
-    writer: (document.getElementById('fbAuthor').value || '').trim(),
+    writer: author,
     // 같은 글의 재시도는 같은 번호로 보낸다 → 두 번 눌러도 시트엔 한 줄만 남는다.
     submissionId: _fbSubmissionId()
   };

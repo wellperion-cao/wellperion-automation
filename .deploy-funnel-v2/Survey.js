@@ -3232,10 +3232,19 @@ function _processAction(body) {
       var _sfSh = _sfSs.getSheetByName('실무진 피드백');
       if (!_sfSh) {
         _sfSh = _sfSs.insertSheet('실무진 피드백');
-        _sfSh.appendRow(['접수시각', '접수ID', '화면', '종류', '급한정도', '작성자', '내용', '처리상태', '처리메모']);
+        _sfSh.appendRow(['접수시각', '접수ID', '업무 구분', '종류', '급한정도', '작성자', '내용', '처리상태', '처리메모']);
         _sfSh.setFrozenRows(1);
       }
-      _sfSh.appendRow([new Date(), _sfId, _sfScreen, _sfKind, _sfUrgent, _sfWho, _sfBody, '접수', '']);
+      // C칸 제목 정정(2026-07-25 GM) — '화면'은 무엇을 적는 칸인지 모호했다. 값이 '멤버십 회원관리'·
+      // '강습 회원관리'·'종합접수처' 처럼 업무 단위라 '업무 구분'이 맞다. 이미 그렇게 돼 있으면 건드리지 않는다.
+      if (String(_sfSh.getRange(1, 3).getValue() || '').trim() === '화면') {
+        _sfSh.getRange(1, 3).setValue('업무 구분');
+      }
+      // ★새 접수는 맨 위(2행)에 넣는다(2026-07-25 GM "접수시각 기준 최근 것을 최상단으로").
+      //   맨 아래로 쌓이면 실무진·시포 모두 매번 시트 끝까지 내려가야 최신 건을 본다.
+      //   기존 행은 그대로 한 칸씩 내려갈 뿐이라 값·수식이 어긋나지 않는다(행 삭제 아님).
+      _sfSh.insertRowBefore(2);
+      _sfSh.getRange(2, 1, 1, 9).setValues([[new Date(), _sfId, _sfScreen, _sfKind, _sfUrgent, _sfWho, _sfBody, '접수', '']]);
     } catch (e) {
       // ★저장 실패를 성공으로 위장하지 않는다(INC-014 재발방지) — 화면이 실패를 그대로 보여줘야 한다.
       return _json({ ok: false, error: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.' });
@@ -3276,8 +3285,28 @@ function _processAction(body) {
         for (var c = 0; c < _fbHdr.length; c++) o[String(_fbHdr[c]).trim()] = _fbVals[i][c];
         _rows.push(o);
       }
-      _rows.reverse();   // 최신 먼저
+      // 최신 먼저 — 물리적 행 순서에 기대지 않고 접수ID(FByyMMdd-HHmmss)로 정렬한다.
+      // 2026-07-25부터 새 접수는 2행에 꽂히므로 예전처럼 reverse() 하면 오히려 과거가 위로 온다.
+      // 접수ID는 시각을 그대로 담은 문자열이라 사전순 내림차순 = 시간 내림차순이다.
+      _rows.sort(function (a, b) {
+        var x = String(a['접수ID'] || ''), y = String(b['접수ID'] || '');
+        return x < y ? 1 : (x > y ? -1 : 0);
+      });
       return _json({ ok: true, count: _rows.length, rows: _rows });
+    }
+
+    // 한 번만 필요한 정렬(2026-07-25 GM) — 이미 쌓여 있던 옛 행들을 접수시각 내림차순으로 재배치한다.
+    //   새 접수는 이제 2행에 꽂히므로 앞으로는 저절로 최신이 위다. 새 액션을 만들지 않고 같은 토큰
+    //   게이트 안에서 처리한다. 정렬은 값만 재배치(행 삭제 없음)이고, 이미 정렬돼 있으면 결과가 같다(멱등).
+    if (body.resort === true) {
+      if (_fbLast >= 3) _fbSh.getRange(2, 1, _fbLast - 1, _fbHdr.length).sort({ column: 1, ascending: false });
+      // C칸 제목도 여기서 함께 바로잡는다 — 접수가 들어와야만 고쳐지면 며칠 동안 옛 제목이 남는다.
+      var _renamed = false;
+      if (String(_fbSh.getRange(1, 3).getValue() || '').trim() === '화면') {
+        _fbSh.getRange(1, 3).setValue('업무 구분');
+        _renamed = true;
+      }
+      return _json({ ok: true, sorted: Math.max(0, _fbLast - 1), renamed: _renamed });
     }
 
     // update — [{id, status, memo}] 배열을 받아 접수ID 로 찾아 적는다(못 찾으면 건너뛰고 보고).
@@ -5257,6 +5286,10 @@ function _processAction(body) {
     //    Contact1/2/3은 위에서 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
     var _muHistPrevCount = 0;
     var _muHistNewArr = null;
+    // 연락 이력 저장이 실패했는지 붙들어 둔다(2026-07-25 시포·GM · 실무진 피드백 FB260725-122608 외).
+    //   그동안은 아래 catch 가 Logger.log 만 하고 끝나 응답은 ok:true 로 나갔다 — 화면은 '저장'
+    //   토스트를 띄우고, 실무진은 저장된 줄 알고 창을 닫았다. 조용한 유실의 마지막 통로다.
+    var _muHistErr = '';
     // ★저장 위치 정정(2026-07-20 GM 지적) — 기존 Contact1/2/3(O·P·Q)가 정본이다.
     //   그동안 '연락이력'이라는 칸을 새로 만들어 JSON으로 쌓았는데, 멀쩡한 칸을 두고 새 칸을 만든 것이 잘못이었다.
     //   (실측: 연락이력이 있어 보이는 468행 중 454행은 실제로 Contact1/2/3에서 합성된 값이었고, 진짜 JSON은 17행뿐)
@@ -5295,7 +5328,11 @@ function _processAction(body) {
           muSh.getRange(muRow, _muHistCi3 + 1).setNumberFormat('@');
           muSh.getRange(muRow, _muHistCi3 + 1).setValue(_resStringify_(_muOverflow));
         }
-      } catch (eHist) { Logger.log('연락이력 저장 실패: ' + eHist.message); }
+      } catch (eHist) {
+        // ★삼키지 않는다(2026-07-25) — 실패는 응답에 실어 화면이 빨갛게 알리고 창을 열어두게 한다.
+        Logger.log('연락이력 저장 실패: ' + eHist.message);
+        _muHistErr = String(eHist && eHist.message ? eHist.message : eHist);
+      }
     }
     // 방문 완료 — 진행상황과 독립 칸(방문완료일). 등록(SUC)돼도 방문 기록 유지. body.visited 미전송이면 무변경.
     //   true=방문일자(없으면 오늘) 기록 / false=클리어. 칸 없으면 _miEnsureCol_이 생성. 2026-06-29 시포.
@@ -5370,6 +5407,12 @@ function _processAction(body) {
     }
     // 조회 캐시 무효화(축1) — 다음 목록 조회부터 최신 반영. 2026-07-08 시토.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
+    // 연락 이력 저장이 실패했으면 성공으로 답하지 않는다(2026-07-25 시포·GM). 다른 칸은 이미 저장됐지만
+    // 실무진이 알아야 할 것은 '적은 글이 안 들어갔다'는 사실이다 — 화면이 창을 닫지 않고 다시 시도할 수 있다.
+    if (_muHistErr) {
+      return _json({ ok: false, error: '연락 이력 저장 실패 — 적으신 내용이 저장되지 않았습니다. 창을 닫지 마시고 다시 시도해 주세요.',
+                     detail: _muHistErr, rowIndex: muRowRaw, partial: true });
+    }
     return _json({ ok: true, rowIndex: muRowRaw, message: '수정되었습니다.' });
   }
 

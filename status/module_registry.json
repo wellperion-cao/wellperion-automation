@@ -684,6 +684,39 @@
       "note": "2026-07-25 시포 등록(배1) — 등록부에 없어 가동 신호를 보여줄 자리가 없었고, 그래서 회차마다 커밋이 완료-배를 낳아 G1을 도배했다(GM 07-24 지적). 가동 신호는 하트비트·자율현황 카드로 옮기고 배 생성은 중단."
     },
     {
+      "id": "cpo-staff-feedback-watch",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "실무진 피드백 감시 — 접수되면 즉시 시포 배로 올려 방치 0",
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js staff_feedback_list ('실무진 피드백' 탭) → status/_queue.json + status/heartbeats/cpo-staff-feedback-watch.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "notify_wired": false,
+        "note": "접수 알림은 GAS staff_feedback_submit 이 이미 업무보고방으로 보낸다 — 여기서 또 보내지 않는다(중복 발신 금지)."
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-cpo-autonomy"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "피드백이 시트에 남고 텔레그램 알림이 가므로, 이 모듈이 멈춰도 접수 자체는 유실되지 않는다(배로 안 올라올 뿐).",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "note": "2026-07-25 GM 지시 \"이건은 발생할때마다 체크해서 해줄순없나\" → 3분 주기 cpo_inquiry_snapshot.bat 에 얹어 함께 실행(새 예약작업 만들지 않음). 대조키=접수ID, 활성 큐+아카이브 양쪽 대조로 한 피드백=한 배."
+    },
+    {
       "id": "cto-weekly-page-hygiene",
       "owner_role": "cto",
       "owner_nick": "시토",
@@ -815,7 +848,7 @@
       "feature": "실무진 업무판 '채움 보드' — 미등록·정체·마감일/점수 빈칸을 담당자별 완성도로 (GM 2026-07-23 지시)",
       "data_source": {
         "kind": "gas+file",
-        "ref": "업무 현황 SSOT todo_list + status/monthly_ops_plan.json → scripts/ops_fill_board.py"
+        "ref": "업무 현황 SSOT todo_list(GAS 읽기) + 월간 운영계획(status/monthly_ops_plan.json 읽기) + status/heartbeats/coo-ops-fill-board.json"
       },
       "notify_spec": {
         "daily": false,
@@ -836,7 +869,8 @@
         "entries": []
       },
       "reversible": true,
-      "note": "생성=scripts/ops_fill_board.py (--json 수치만 · --send 카톡 발송 · --date 기준일 지정). 예약=Wellperion-COO-FillBoard-Mon-1000 (매주 월 10:00 · launchers/ops_fill_board_weekly_hidden.vbs → scripts/ops_fill_board_weekly.bat · 로그 logs/ops_fill_board.log · 역롤백=작업 비활성화). ★시각 선정 근거(2026-07-23 실측): 07:30은 이미 3개 예약이 겹쳐 git 락 경합 위험, 09:30은 카톡 매출보고가 카톡 창을 점유해 오발송 위험 → 그 뒤인 10:00. 실무진 착석 후라 실제로 읽힘. 출력 2곳: 3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html(실무진 공개) · status/boards/s3_cleanup_board.html(GM 아티팩트 소스) — 같은 실행에서 함께 써 드리프트 0. ★빈칸·정체 합계가 0이면 발송을 자동 생략한다(채울 게 없는데 매주 보내면 잔소리가 된다). 발송은 --only-room '★ 운영부' 고정 — 회장님·관리부 방 오발송 차단. 경영진(김남욱GM·이정헌 소장) 건은 월간 운영계획 소관이라 보드에서 제외하고 사유를 화면에 명시. 완료 신호=완비 N/N 도달 시 보드 역할 축소(상시 위생 점검 전환)."
+      "note": "생성=scripts/ops_fill_board.py (--json 수치만 · --send 카톡 발송 · --date 기준일 지정). 예약=Wellperion-COO-FillBoard-Mon-1000 (매주 월 10:00 · launchers/ops_fill_board_weekly_hidden.vbs → scripts/ops_fill_board_weekly.bat · 로그 logs/ops_fill_board.log · 역롤백=작업 비활성화). ★시각 선정 근거(2026-07-23 실측): 07:30은 이미 3개 예약이 겹쳐 git 락 경합 위험, 09:30은 카톡 매출보고가 카톡 창을 점유해 오발송 위험 → 그 뒤인 10:00. 실무진 착석 후라 실제로 읽힘. 출력 2곳: 3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html(실무진 공개) · status/boards/s3_cleanup_board.html(GM 아티팩트 소스) — 같은 실행에서 함께 써 드리프트 0. ★빈칸·정체 합계가 0이면 발송을 자동 생략한다(채울 게 없는데 매주 보내면 잔소리가 된다). 발송은 --only-room '★ 운영부' 고정 — 회장님·관리부 방 오발송 차단. 경영진(김남욱GM·이정헌 소장) 건은 월간 운영계획 소관이라 보드에서 제외하고 사유를 화면에 명시. 완료 신호=완비 N/N 도달 시 보드 역할 축소(상시 위생 점검 전환).",
+      "enabled": true
     },
     {
       "id": "cmo-content-intake",

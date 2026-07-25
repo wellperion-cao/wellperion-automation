@@ -1123,6 +1123,205 @@ def rule_registration_no_trace() -> list[dict]:
 
 
 # role 별 규칙 등록부 — 다른 C-Level 은 자기 role 리스트에 함수만 추가하면 됨(공용 스캔 재사용).
+GUIDE_PATH = ROOT / "3. 웰페리온 가이드" / "wellperion_guide(main).html"
+
+
+def _m1_section() -> str:
+    """가이드에서 M1 문서 영역만 잘라 반환. 못 읽으면 빈 문자열(규칙이 조용히 통과)."""
+    try:
+        s = GUIDE_PATH.read_text(encoding="utf-8")
+    except Exception:
+        return ""
+    a = s.find('<article class="doc" id="M1"')
+    if a < 0:
+        return ""
+    b = s.find('<article class="doc"', a + 10)
+    return s[a:b if b > 0 else len(s)]
+
+
+def rule_m1_dead_screen_ref() -> list[dict]:
+    """M1 본문이 **이미 없어진 화면**(M2·M3·M4)을 가리키는 곳 적발 (2026-07-25 신설).
+
+    계기: GM이 M1을 보고 "상태가 뭔가 좀 이상한 게 많네" — 실제로 파이프라인 1단계 설명이
+    `M3→텔레그램 승인` 이라고 적혀 있었다. M3는 2026-07-09 M1에 흡수·폐지된 화면이라
+    읽는 사람이 없는 곳을 찾게 된다. 앵커 링크(#M3)는 앞서 정리됐지만 **본문 서술**은 남아 있었다.
+    ★판정은 이름이 아니라 실재로 한다 — 가이드에 그 화면(id="M2" 등)이 실제로 없을 때만 잡는다.
+    ★오탐 방지: SVG 좌표(M3 12,5)·변수명이 아니라 **한글 문맥에서 화면을 가리킬 때만**."""
+    m1 = _m1_section()
+    if not m1:
+        return []
+    try:
+        whole = GUIDE_PATH.read_text(encoding="utf-8")
+    except Exception:
+        return []
+    # ★HTML 주석은 제외한다 — 자체 검증에서 첫 오탐이 여기서 났다.
+    #   주석 안의 "구 M3 통합 영역에서 이동" 은 **과거 경위 기록**이라 고칠 대상이 아니고,
+    #   화면에 보이지도 않는다. 오탐이 한 번 나면 그 뒤로 아무도 이 목록을 안 본다.
+    m1 = re.sub(r"<!--.*?-->", " ", m1, flags=re.S)
+    gaps: list[dict] = []
+    for n in ("M2", "M3", "M4"):
+        if f'id="{n}"' in whole:          # 아직 살아있는 화면이면 참조는 정상
+            continue
+        # 화면을 가리키는 문맥만: 뒤에 한글/화살표가 붙는 경우
+        for m in re.finditer(rf"{n}\s*(?:→|->|[가-힣])", m1):
+            around = re.sub(r"<[^>]+>", "", m1[max(0, m.start() - 60):m.start() + 40]).strip()
+            # '구 M3'·'옛 M3' 처럼 과거를 가리키는 서술은 고칠 대상이 아니다(정상적인 이력 표기).
+            if re.search(r"(구|옛|이전)\s*$", m1[max(0, m.start() - 4):m.start()]):
+                continue
+            gaps.append({
+                "role": "cmo",
+                "severity": "mid",
+                "title": f"M1 본문이 없어진 화면 '{n}'을 가리킴",
+                "detail": f"…{around[:90]}… · 가이드에 id=\"{n}\" 없음(폐지된 화면)",
+                "hint": "해당 문장을 현재 이름으로 교체(M2·M3는 2026-07-09 M1 흡수)",
+                "ref": f"wellperion_guide(main).html#M1 · {n}",
+                "age": "누적",
+            })
+            break   # 화면당 1건이면 충분 — 같은 말을 여러 줄로 불리지 않는다
+    return gaps
+
+
+def rule_m1_stale_pinned_status() -> list[dict]:
+    """M1의 **손으로 박은 상태값**이 오래 방치된 것 적발 (2026-07-25 신설).
+
+    계기: 파이프라인 5단계 상태(✅완성/🟡부분/❌약함)가 `GM 박제 2026-06-23` 인 채로
+    한 달 넘게 그대로였다. 그 사이 4단계는 실제로 진척했는데 화면은 옛 상태를 보여줬다.
+    수기 값은 시간이 지나면 자동으로 거짓이 된다 — 그래서 '틀렸다'가 아니라 '확인할 때가 됐다'로 올린다."""
+    m1 = _m1_section()
+    if not m1:
+        return []
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+    seen: set[str] = set()
+    for m in re.finditer(r"(박제|갱신|확정)\s*(20\d{2})-(\d{2})-(\d{2})", m1):
+        d = _parse_iso_date(f"{m.group(2)}-{m.group(3)}-{m.group(4)}")
+        if not d:
+            continue
+        days = (today - d).days
+        # 임계 30일 — 자체 검증에서 45일로 뒀더니 GM이 실제로 "이상하다"고 느낀 32일짜리
+        # (파이프라인 5단계 · GM 박제 2026-06-23)를 못 잡았다. 사람이 이상하다고 느끼는
+        # 시점보다 늦게 우는 알람은 없는 것과 같다.
+        if days < 30:
+            continue
+        # 그 근처에 상태 배지가 있을 때만 = '상태를 손으로 적어둔 자리'
+        near = m1[max(0, m.start() - 900):m.start() + 900]
+        if not re.search(r"[✅🟡❌]", near):
+            continue
+        key = f"{m.group(2)}-{m.group(3)}-{m.group(4)}"
+        if key in seen:
+            continue
+        seen.add(key)
+        label = re.sub(r"<[^>]+>", "", m1[max(0, m.start() - 70):m.start()]).strip()[-50:]
+        gaps.append({
+            "role": "cmo",
+            "severity": "low",
+            "title": f"M1 수기 상태값 {days}일째 미갱신 ({key} 기준)",
+            "detail": f"…{label}… 근처 상태 배지(✅/🟡/❌)가 {days}일 전 값 그대로",
+            "hint": "각 단계 실제 진척과 대조해 상태 배지 갱신 또는 '변화 없음' 확인 후 날짜만 갱신",
+            "ref": f"wellperion_guide(main).html#M1 · {key}",
+            "age": "누적",
+        })
+    return gaps
+
+
+def rule_pipeline_running_but_no_output() -> list[dict]:
+    """예약은 정상인데 **산출이 0**인 상태 적발 (2026-07-25 신설).
+
+    계기: 개인계정 AI A~Z 제작기가 2026-07-12부터 매일 rc=0 으로 돌면서 신규 제작 0건이었는데
+    2주 동안 아무도 몰랐다. '실패'는 알람이 울리지만 **'정상인데 아무것도 안 나온 것'은 조용하다.**
+    ★판정 = 계정별 최근 N일 신규 검수큐 등록 0건. 로그 문구가 아니라 **산출물 실재**로 본다."""
+    items = _load_json(REVIEW_QUEUE_PATH, [])
+    if not isinstance(items, list):
+        return []
+    today = datetime.now(tz=KST).date()
+    QUIET_DAYS = 10
+    gaps: list[dict] = []
+    for acct, label in (("namuk.wellperion", "개인계정"), ("wellperion", "공식계정")):
+        newest = None
+        for it in items:
+            if not isinstance(it, dict) or str(it.get("account", "")) != acct:
+                continue
+            d = _parse_iso_date(str(it.get("published_at") or "")[:10]) \
+                or _parse_folder_date(Path(str(it.get("folder", ""))).name)
+            if d and (newest is None or d > newest):
+                newest = d
+        if newest is None:
+            continue
+        days = (today - newest).days
+        if days < QUIET_DAYS:
+            continue
+        gaps.append({
+            "role": "cmo",
+            "severity": "high" if days >= 20 else "mid",
+            "title": f"{label} — {days}일째 새 콘텐츠 0건 (예약은 정상 가동)",
+            "detail": f"검수큐 기준 마지막 신규 = {newest} · 그 뒤 신규 등록 없음. "
+                      f"예약작업은 매일 도는데 만들 재고가 없으면 조용히 빈손으로 끝난다",
+            "hint": "재고(기획예정/대본완료)를 채우거나, 더 만들 계획이 없으면 모듈을 휴면으로 표시",
+            "ref": f"review_queue.json · account={acct}",
+            "age": "누적",
+        })
+    return gaps
+
+
+def rule_weekend_stock_empty() -> list[dict]:
+    """주말(토·일) 발행 재고가 비어 있는 것 적발 (2026-07-25 신설).
+
+    계기: 2026-07-25 토요일 개인계정 발행이 0건이었는데 GM이 먼저 발견했다. 요일 게이트로
+    멈추는 건 오류가 아니라 '정상 종료'라 어떤 알람도 안 울린다. 디스패처에 금요일 선행 경고를
+    넣었지만 그건 텔레그램 한 줄 — 항로(내 할 일)에도 떠야 잊지 않는다."""
+    plan = ROOT / "instagram" / "_실전사례_2주플랜.md"
+    try:
+        text = plan.read_text(encoding="utf-8")
+    except Exception:
+        return []
+    stock = [
+        ln for ln in text.split("\n")
+        if ln.strip().startswith("|") and "주말GM" in ln and "재고(대본완료)" in ln
+    ]
+    if stock:
+        return []
+    return [{
+        "role": "cmo",
+        "severity": "high",
+        "title": "주말(토·일) 발행 재고 0편 — 이번 주말 개인계정 발행 없음",
+        "detail": "편성표 주말GM 트랙에 '재고(대본완료)' 행이 하나도 없다. "
+                  "요일 게이트는 오류 없이 조용히 끝나므로 이 상태로 주말이 지나가면 발행이 0건이 된다",
+        "hint": "토요일편(업계 문제 + AI 해결)은 그 주 사건에 안 매여 미리 만들 수 있다 — 소재 S1~S6 참고",
+        "ref": "instagram/_실전사례_2주플랜.md · 주말GM",
+        "age": "신규",
+    }]
+
+
+def rule_test_data_left_in_queue() -> list[dict]:
+    """검수큐·접수에 **시험용 데이터가 살아 있는 것** 적발 (2026-07-25 신설).
+
+    계기: M1 콘텐츠 접수에 `__접수테스트2__`·`__접수테스트3_축소후__` 2건이 남아 있는 걸
+    GM이 먼저 발견했다. 기능 시험 뒤 치우는 건 사람 기억에 맡겨져 있어 매번 빠진다."""
+    items = _load_json(REVIEW_QUEUE_PATH, [])
+    if not isinstance(items, list):
+        return []
+    pat = re.compile(r"(테스트|test|더미|dummy|__)", re.I)
+    gaps: list[dict] = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        if str(it.get("status", "")) in ("폐기", "발행완료"):
+            continue
+        blob = f"{it.get('title','')} {it.get('id','')}"
+        if not pat.search(blob):
+            continue
+        gaps.append({
+            "role": "cmo",
+            "severity": "mid",
+            "title": f"시험용 데이터가 아직 살아있음 — {str(it.get('title',''))[:38]}",
+            "detail": f"status={it.get('status')} · 제목/식별자에 시험 흔적. 실제 콘텐츠 목록에 섞여 보인다",
+            "hint": "치울 때는 파일에서 지우지 말고 status='폐기' 로 — 지우면 접수 폴러가 15분 뒤 다시 넣는다",
+            "ref": str(it.get("id", "")),
+            "age": "신규",
+        })
+    return gaps
+
+
 _RULES: dict[str, list] = {
     "ceo": [],
     "cfo": [],
@@ -1136,6 +1335,11 @@ _RULES: dict[str, list] = {
         rule_content_folder_vanished,  # 2026-07-23 신설 — 콘텐츠 폴더·슬라이드 소실
         rule_orphan_automation,        # 2026-07-23 신설 — 만들고 아무 실행 경로에도 안 이은 것
         rule_publish_overclaim,        # 2026-07-23 신설 — 감사기 실측 '주소 죽음'(과대보고 재발방지)
+        rule_m1_dead_screen_ref,       # 2026-07-25 신설 — M1 본문이 폐지된 화면을 가리킴(GM 지적)
+        rule_m1_stale_pinned_status,   # 2026-07-25 신설 — 손으로 박은 상태값이 오래 방치됨(GM 지적)
+        rule_pipeline_running_but_no_output,  # 2026-07-25 신설 — 예약은 도는데 산출 0(2주 무감지)
+        rule_weekend_stock_empty,             # 2026-07-25 신설 — 주말 재고 0(요일 게이트 조용한 정지)
+        rule_test_data_left_in_queue,         # 2026-07-25 신설 — 시험용 데이터 잔존(GM 발견)
     ],
     "coo": [
         rule_recurring_check_incomplete,   # 2026-07-23 신설 — 지원부 반복 미완료(기존 감사기 재사용)

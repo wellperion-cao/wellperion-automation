@@ -63,7 +63,7 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "coo", "label": "운영부 체계", "path": "3. 웰페리온 가이드/coo/check/운영부 체계.html"},
     {"clevel": "coo", "label": "주차관리부 체계", "path": "3. 웰페리온 가이드/coo/check/주차관리부 체계.html"},
     {"clevel": "coo", "label": "파트너팀 체계", "path": "3. 웰페리온 가이드/coo/check/파트너팀 체계.html"},
-    {"clevel": "coo", "label": "강습팀 업장관리", "path": "3. 웰페리온 가이드/coo/check/강습팀 업장관리.html"},
+    # "강습팀 업장관리" 2026-07-16 e1a2f73 로 페이지 삭제(감사 레지스트리 정리 포함) — 본 목록에서도 함께 제거.
     {"clevel": "coo", "label": "전사_일정", "path": "3. 웰페리온 가이드/coo/check/전사_일정.html"},
     {"clevel": "coo", "label": "업무 현황 SSOT", "path": "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html"},
     {"clevel": "coo", "label": "결재 현황 SSOT", "path": "3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html"},
@@ -77,7 +77,7 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "cpo", "label": "강습회원관리", "path": "3. 웰페리온 가이드/cpo/member/강습회원관리.html"},
     {"clevel": "cpo", "label": "상품기획", "path": "3. 웰페리온 가이드/cpo/product/상품기획.html"},
     # ── CMO 7 (2026-07-14 추가) ──
-    {"clevel": "cmo", "label": "마케팅현황대시보드", "path": "3. 웰페리온 가이드/cmo/funnel/마케팅현황대시보드.html"},
+    {"clevel": "cmo", "label": "콘텐츠문의현황", "path": "3. 웰페리온 가이드/cmo/funnel/콘텐츠문의현황.html"},
     {"clevel": "cmo", "label": "문의흐름지도", "path": "3. 웰페리온 가이드/cmo/funnel/문의흐름지도.html"},
     {"clevel": "cmo", "label": "월간마케팅보고서", "path": "3. 웰페리온 가이드/cmo/funnel/월간마케팅보고서.html"},
     {"clevel": "cmo", "label": "홈페이지", "path": "3. 웰페리온 가이드/cmo/home/홈페이지.html"},

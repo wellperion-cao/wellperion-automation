@@ -314,6 +314,10 @@ function doGet(e) {
    if (action === 'sort_manual_order') { return sortManualByPageOrder(); }
   if (action === 'items')     return getItems(e.parameter);
   if (action === 'board')     return getBoard(e.parameter);
+  if (action === 'dump_board_facility') return dumpBoardFacility();   // 읽기전용: FACILITY_CHECK 캐시 전수 백업. 2026-07-22 시토.
+  if (action === 'props_usage') return propsUsage();   // 읽기전용: ScriptProperties 총 사용량(바이트) 진단. 2026-07-22 시토.
+  if (action === 'prune_board_facility') return pruneBoardFacility(e.parameter);   // FACILITY_CHECK 캐시 프루닝(keepDays·dryRun). 2026-07-22 시토.
+  if (action === 'delete_test_board') return deleteTestBoard(e.parameter);   // TEST_ 접두 board 키 자가청소(안전장치 내장). 2026-07-22 시토.
   if (action === 'weekly')    return handleWeekly(e.parameter);
   if (action === 'today_live') return handleTodayLive(e.parameter);   // 오늘 실시간 현황(cr 원장 기반·읽기전용) — home·대시보드 단일값. 2026-06-16 시우.
   if (action === 'monthly_report') return handleMonthlyReport(e.parameter);   // 지원부 점검 월간 리포트 집계(snapshot+이슈대장). 완료율=denomNote 월별 분기(7월+ 확정/6월 이전 참고). 배208 후속. 2026-07-03 시우.
@@ -2596,6 +2600,17 @@ function syncSeedItems(body) {
 const BOARD_PROP_PREFIX = 'BOARD_';   // ScriptProperties 키 접두사
 const BOARD_DEFAULT_KEY  = 'SUPPORT_MANUAL_BOARD';
 
+// ─── BOARD_FACILITY_CHECK_{date} 캐시 유지일수 (2026-07-22 시토, GM go) ───
+// ScriptProperties 총량 500KB(512000B) 하드리밋 초과로 saveBoard 저장 실패(회차 유실) 긴급수리.
+// 소비처(daily_scheduler.py _fetch_facility_board·kakao_daily_check_share.py·support_check_summary.py)는
+// 전부 오늘 날짜 키만 읽는다(과거일 조회 소비처 없음 — 확인 완료) → 유지일수 넘는 과거분 프루닝은
+// 실 기능 무손실. 실 점검기록 SoT=시트(점검일지_facility 등)이며 이 board는 캐시일 뿐.
+// 30일치 실측(2026-07-22, action=dump_board_facility): FACILITY_CHECK 22키=283,102B + 그 외
+// (다른 board 계열 등) 206키=349,997B = 총 633,099B(512,000B 초과). 하루치 평균 ~15~30KB —
+// 14일 유지도 585,296B로 여전히 초과(otherBytes는 우리 통제 밖이라 계속 늘 수 있음).
+// 5일 유지 시 410,422B(여유 101,578B·약 20%) — 지속가능한 최소 안전선으로 채택.
+var BOARD_FACILITY_RETENTION_DAYS = 5;
+
 // ─── 보드 조회 (GET ?action=board[&key=SUPPORT_MANUAL_BOARD]) ───
 function getBoard(params) {
   var key = (params && params.key) ? String(params.key) : BOARD_DEFAULT_KEY;
@@ -2628,6 +2643,11 @@ function saveBoard(body) {
     try { existing = JSON.parse(props.getProperty(propKey) || 'null'); } catch (eParse) { existing = null; }
     var merged = _mergeBoardSubmissions(existing, incoming);
     props.setProperty(propKey, JSON.stringify(merged));
+    // 자동 상한(2026-07-22 시토, GM go): FACILITY_CHECK_ board 저장 성공 직후 유지일수 넘는 과거
+    // 캐시를 같은 락 스코프 안에서 프루닝 — 500KB 재초과 재발 방지. 실패해도 저장 자체는 이미 끝났으니 무시.
+    if (key.indexOf('FACILITY_CHECK_') === 0) {
+      try { _pruneBoardFacilityKeys(BOARD_FACILITY_RETENTION_DAYS, false); } catch (ePrune) {}
+    }
   } finally {
     if (locked) { try { lock.releaseLock(); } catch (eRelease) {} }
   }
@@ -2662,6 +2682,77 @@ function _mergeBoardSubmissions(existing, incoming) {
 
   incoming.store.submissions = mergedSubs;
   return incoming;
+}
+
+// ─── FACILITY_CHECK 캐시 전수 백업 덤프 (읽기전용, GET ?action=dump_board_facility) ───
+// 프루닝 전 원문 보존용. BOARD_FACILITY_CHECK_* 키만(다른 board 계열 절대 미포함). 2026-07-22 시토.
+function dumpBoardFacility() {
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var out = {}, n = 0;
+  Object.keys(props).forEach(function (k) {
+    if (k.indexOf(BOARD_PROP_PREFIX + 'FACILITY_CHECK_') === 0) { out[k] = props[k]; n++; }
+  });
+  return jsonRes({ ok: true, count: n, props: out });
+}
+
+// ─── ScriptProperties 총 사용량 진단 (읽기전용, GET ?action=props_usage) ───
+// 값은 노출하지 않고 바이트 합계만 반환(비밀값 안전 — handleCheckDiag와 동일 원칙).
+// 500KB(512000B) 하드리밋 대조용. 2026-07-22 시토.
+function propsUsage() {
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var total = 0, facBytes = 0, facCount = 0, otherCount = 0;
+  Object.keys(props).forEach(function (k) {
+    var b = Utilities.newBlob(k + String(props[k])).getBytes().length;
+    total += b;
+    if (k.indexOf(BOARD_PROP_PREFIX + 'FACILITY_CHECK_') === 0) { facBytes += b; facCount++; }
+    else { otherCount++; }
+  });
+  return jsonRes({ ok: true, totalBytes: total, hardLimit: 512000, facilityCheckBytes: facBytes, facilityCheckCount: facCount, otherKeyCount: otherCount });
+}
+
+// ─── FACILITY_CHECK 캐시 프루닝 내부 로직 (saveBoard 자동상한 + prune_board_facility 액션 공용) ───
+// BOARD_FACILITY_CHECK_YYYY-MM-DD 정확 형식 키만 대상(정규식 앵커 고정) — 테스트 키(날짜 형식
+// 아님)·다른 board 계열은 절대 미매치. keepDays 이전 날짜만 삭제. dryRun=true면 미리보기만.
+function _pruneBoardFacilityKeys(keepDays, dryRun) {
+  var kd = parseInt(keepDays, 10);
+  if (!kd || kd < 1) kd = BOARD_FACILITY_RETENTION_DAYS;
+  var cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - kd);
+  var cutoffStr = Utilities.formatDate(cutoff, 'Asia/Seoul', 'yyyy-MM-dd');
+  var propsService = PropertiesService.getScriptProperties();
+  var all = propsService.getProperties();
+  var re = /^BOARD_FACILITY_CHECK_(\d{4}-\d{2}-\d{2})$/;
+  var toDelete = [];
+  Object.keys(all).forEach(function (k) {
+    var m = re.exec(k);
+    if (m && m[1] < cutoffStr) toDelete.push(k);
+  });
+  if (!dryRun) {
+    toDelete.forEach(function (k) { propsService.deleteProperty(k); });
+  }
+  return { keepDays: kd, cutoff: cutoffStr, dryRun: !!dryRun, deletedCount: toDelete.length, deletedKeys: toDelete };
+}
+
+// ─── FACILITY_CHECK 캐시 프루닝 액션 (GET ?action=prune_board_facility[&keepDays=30][&dryRun=1]) ───
+function pruneBoardFacility(params) {
+  var keepDays = (params && params.keepDays) || BOARD_FACILITY_RETENTION_DAYS;
+  var dryRun = !!(params && (params.dryRun === '1' || params.dryRun === 1));
+  var result = _pruneBoardFacilityKeys(keepDays, dryRun);
+  result.ok = true;
+  return jsonRes(result);
+}
+
+// ─── 테스트 board 키 자가청소 (GET ?action=delete_test_board&key=FACILITY_CHECK_TEST_...) ───
+// BOARD_FACILITY_CHECK_TEST_ 접두 키만 삭제 가능(하드 안전장치) — 실 날짜 키·다른 board 계열
+// 절대 미접촉. 런타임 검증(saveBoard union 병합)용 테스트 키 자가청소 전용. 2026-07-22 시토.
+function deleteTestBoard(params) {
+  var key = String((params && params.key) || '').trim();
+  var propKey = BOARD_PROP_PREFIX + key;
+  if (propKey.indexOf(BOARD_PROP_PREFIX + 'FACILITY_CHECK_TEST_') !== 0) {
+    return jsonRes({ ok: false, error: 'TEST_ 접두 키만 삭제 가능(안전장치)' });
+  }
+  PropertiesService.getScriptProperties().deleteProperty(propKey);
+  return jsonRes({ ok: true, deleted: propKey });
 }
 
 // ─── 점검항목 마스터 dept 1회 마이그레이션 (S4 갭② · 2026-06-10 시토) ───

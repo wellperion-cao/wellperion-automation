@@ -53,7 +53,6 @@ HEARTBEAT_SEC = 15 * 60     # 15분 — 데이터 무변경이어도 이 이상 
 
 sys.path.insert(0, str(SCRIPTS_DIR))
 from cpo_report import _gas_get  # noqa: E402  (기존 검증된 GAS 조회 헬퍼 재사용 — 신규 포팅 없음)
-from git_lock import git_commit_push, GitLockTimeout  # noqa: E402
 from module_heartbeat import record_heartbeat, last_heartbeat  # noqa: E402  (공통 유틸 — 자체 재구현 금지)
 
 MODULE_ID = "cpo-inquiry-snapshot"
@@ -283,18 +282,25 @@ def main() -> int:
             _log("[done] --no-push — 로컬 파일만 갱신, 커밋 생략")
             return 0
 
+        # 커밋은 safe_commit 하나로 모은다(2026-07-25 시포 · 부팅 스킬 §5-2 커밋 관문 단일화).
+        #   그전엔 git_commit_push 를 직접 불렀고, 이 저장소가 detached HEAD 로 돌 때마다
+        #   push 가 "You are not currently on a branch" 로 죽었다 — 로그에 452건 누적(실측
+        #   2026-07-25). 커밋은 됐지만 push 가 안 돼 라이브 반영이 다른 워처 손에 달려 있었고,
+        #   index.lock 경합·pre-commit 훅 충돌까지 합쳐 매 회차 빨간 로그가 쌓였다.
+        #   safe_commit 은 락 직렬화·HEAD 재검증·지정 경로만 담기·detached HEAD 를 모두 처리한다.
+        rel_paths = [str(Path(p).resolve().relative_to(ROOT)).replace("\\", "/") for p in changed_paths]
         try:
-            git_commit_push(
-                paths=changed_paths,
-                message="chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot)",
-                holder="cpo-inquiry-snapshot",
-                repo_root=str(ROOT),
+            r = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "safe_commit.py"),
+                 "-m", "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot)", "--", *rel_paths],
+                cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", timeout=180,
             )
-            _log("[done] git 커밋·푸시 완료")
-        except GitLockTimeout as e:
-            _log(f"[error] git lock 타임아웃 — 다음 회차에 재시도: {e}")
+            tail = (r.stdout or "").strip().splitlines()
+            _log("[done] " + (tail[0] if tail else "safe_commit 출력 없음"))
+            if r.returncode != 0:
+                _log(f"[warn] safe_commit rc={r.returncode} — 파일은 로컬에 남음, 다음 회차 재시도")
         except Exception as e:
-            _log(f"[error] git 커밋·푸시 실패(무해 — 파일은 로컬에 남음): {e}")
+            _log(f"[warn] 커밋 실패(무해 — 파일은 로컬에 남음): {type(e).__name__}: {str(e)[:120]}")
         return 0
     finally:
         _lock_release()

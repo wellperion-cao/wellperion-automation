@@ -372,7 +372,6 @@
     <a data-toggle="coo-nav2" data-has-sub="true"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
     <div class="sub-nav" data-parent="coo-nav2">
       <a data-id="O1">🏢 운영 통합 체계</a>
-      <a data-id="O2">🙋 웰페리온 종합 접수처</a>
     </div>
 
     <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
@@ -626,7 +625,7 @@
           </div>
         </div>
         <div style="margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O2]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
+          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
           <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📊 전용 현황 페이지</a>
           <a href="http://wellperion.com/ko/reception/" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📲 회원 접수 폼</a>
         </div>
@@ -1458,529 +1457,7 @@
   })();
   </script>
 
-  <!-- ── O2 웰페리온 종합 접수처 보드 JS ── -->
-  <script>
-  (function(){
-    var _REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-    var _REG_COLS = [
-      {status:'접수',  color:'#e6944e', bg:'rgba(230,148,78,0.12)'},
-      {status:'처리중', color:'#5b9fd5', bg:'rgba(91,159,213,0.12)'},
-      {status:'완료',  color:'#6abf7b', bg:'rgba(106,191,123,0.12)'},
-      {status:'보류',  color:'#8c8b83', bg:'rgba(140,139,131,0.12)'}
-    ];
-var _regCurrentCat = '';
-    var _regAllItems = [];  // 항상 전체(무필터) 캐시 — 건수요약·즉시필터용
-    // ── 연/분기/월 기간 필터 ('' = 전체). 기본값 = 올해 전체 ──
-    var _regPeriod = { y: String(new Date().getFullYear()), q: '', m: '' };
-    function _regItemYM(it){
-      var s = String(it['접수일시'] || '');
-      var mm = s.match(/^(\d{4})-(\d{2})/);
-      if(!mm) return null;
-      return { y: mm[1], m: mm[2], q: String(Math.floor((parseInt(mm[2],10)-1)/3)+1) };
-    }
-    function _regFilterPeriod(items){
-      var p = _regPeriod;
-      if(!p.y && !p.q && !p.m) return items;
-      return items.filter(function(it){
-        var ym = _regItemYM(it);
-        if(!ym) return false;
-        if(p.y && ym.y !== p.y) return false;
-        if(p.q && ym.q !== p.q) return false;
-        if(p.m && ym.m !== p.m) return false;
-        return true;
-      });
-    }
-    function _regRenderPeriodChips(){
-      var box = document.getElementById('regPeriodChips');
-      if(!box) return;
-      var p = _regPeriod;
-      var years = {};
-      _regAllItems.forEach(function(it){ var ym=_regItemYM(it); if(ym) years[ym.y]=1; });
-      var yearList = Object.keys(years).sort().reverse();
-      if(p.y && yearList.indexOf(p.y) === -1) yearList.unshift(p.y);
-      function chip(label, active, oc){
-        return '<button onclick="' + oc + '" style="padding:3px 11px;border-radius:16px;border:1px solid '
-          + (active?'var(--accent,#7c5f3d)':'var(--border)') + ';background:'
-          + (active?'var(--accent-bg,#f5ede3)':'var(--paper)') + ';color:'
-          + (active?'var(--accent,#7c5f3d)':'var(--dim)') + ';font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">' + label + '</button>';
-      }
-      var h = '';
-      h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"><span style="font-size:11px;color:var(--dim);min-width:30px;">연도</span>';
-      h += chip('전체', p.y==='', "_regSetPeriod('y','')");
-      yearList.forEach(function(y){ h += chip(y, p.y===y, "_regSetPeriod('y','"+y+"')"); });
-      h += '</div>';
-      if(p.y){
-        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"><span style="font-size:11px;color:var(--dim);min-width:30px;">분기</span>';
-        h += chip('전체', p.q==='', "_regSetPeriod('q','')");
-        ['1','2','3','4'].forEach(function(q){ h += chip(q+'분기', p.q===q, "_regSetPeriod('q','"+q+"')"); });
-        h += '</div>';
-      }
-      if(p.y && p.q){
-        var qn = parseInt(p.q,10);
-        h += '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"><span style="font-size:11px;color:var(--dim);min-width:30px;">월</span>';
-        h += chip('전체', p.m==='', "_regSetPeriod('m','')");
-        [ (qn-1)*3+1, (qn-1)*3+2, (qn-1)*3+3 ].forEach(function(mo){ var mm=('0'+mo).slice(-2); h += chip(mo+'월', p.m===mm, "_regSetPeriod('m','"+mm+"')"); });
-        h += '</div>';
-      }
-      box.innerHTML = h;
-    }
-    window._regSetPeriod = function(level, val){
-      if(level==='y'){ _regPeriod.y=val; _regPeriod.q=''; _regPeriod.m=''; }
-      else if(level==='q'){ _regPeriod.q=val; _regPeriod.m=''; }
-      else { _regPeriod.m=val; }
-      _regRenderPeriodChips();
-      _regRenderSummary(_regAllItems);
-      _regBoardRender(_regAllItems);
-    };
-
-    // 카테고리 → 아이콘·짧은이름 (건수요약·컴팩트 칩용)
-    var _REG_CAT_META = [
-      {cat:'분실물 접수',         icon:'📦', short:'분실'},
-      {cat:'시설물 고장 접수',     icon:'🔧', short:'고장'},
-      {cat:'청결 이슈 접수',       icon:'🧹', short:'청결'},
-      {cat:'컴플레인 접수',       icon:'📣', short:'컴플레인'},
-      {cat:'직원·강사 칭찬합니다', icon:'⭐', short:'칭찬'},
-      {cat:'직원·강사 쓴소리합니다', icon:'💬', short:'쓴소리'}
-    ];
-    // SLA 배지 HTML — 서버(reg_board)가 실어준 slaStatus/remainH 기준.
-    // 정상=회색('기한 …'), 임박=노랑('임박'), 초과=빨강('초과 +Nh'). 완료·SLA없음('-')은 빈 문자열(배지 없음).
-    function _regSlaBadge(it){
-      var st = String(it.slaStatus || '');
-      if(st !== '정상' && st !== '임박' && st !== '초과') return '';
-      var r = (it.remainH === null || it.remainH === undefined) ? null : Number(it.remainH);
-      var bg, color, txt;
-      if(st === '초과'){
-        bg = 'rgba(230,91,63,0.14)'; color = '#e65b3f';
-        txt = '초과 +' + (r !== null ? Math.abs(Math.round(r)) + 'h' : '');
-      } else if(st === '임박'){
-        bg = 'rgba(230,148,78,0.18)'; color = '#cf7a1e';
-        txt = '임박' + (r !== null ? ' ' + (r < 1 ? Math.round(r*60) + '분' : Math.round(r) + 'h') : '');
-      } else {
-        bg = 'var(--border)'; color = 'var(--dim)';
-        txt = '기한 ' + (r !== null ? (r < 24 ? Math.round(r) + 'h' : 'D-' + Math.floor(r/24)) : '');
-      }
-      return '<span title="기한 ' + _regEsc(String(it.deadline||'')) + '" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:' + bg + ';color:' + color + ';white-space:nowrap;">' + _regEsc(txt) + '</span>';
-    }
-    function _regCatIcon(cat){
-      for(var i=0;i<_REG_CAT_META.length;i++){ if(_REG_CAT_META[i].cat === cat) return _REG_CAT_META[i].icon; }
-      return '📋';
-    }
-
-    function _regEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-
-    // reg_board API는 영문 키로 반환 → UI가 읽는 한글 키로 1회 정규화 (공통 + 카테고리별 extras)
-    var _REG_KEYMAP = {
-      regId:'접수ID', category:'카테고리', createdAt:'접수일시', name:'이름',
-      contact:'연락처', loc:'위치', content:'내용', photoUrl:'사진URL',
-      status:'상태', assignee:'담당', memo:'처리메모', dept:'부서', handler:'처리자',
-      // 분실물 접수 extras
-      itemName:'물품명', lostWhen:'분실시각', keepWhere:'보관처',
-      // 휴회 접수 extras
-memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유',
-      // 시설·청결·칭찬·쓴소리 extras
-      equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
-      issueKind:'유형', urgency:'시급도',
-      targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망',
-      area:'분야', occurredAt:'발생시점',
-      smsReceived:'접수문자', smsResolved:'조치문자'
-    };
-    function _regNormalize(rows){
-      return (rows||[]).map(function(row){
-        var out = {};
-        Object.keys(row||{}).forEach(function(k){
-          var kk = _REG_KEYMAP[k] || k;  // 미정의 영문키는 라벨 그대로 노출(누락 방지)
-          out[kk] = row[k];
-        });
-        return out;
-      });
-    }
-
-    window.regBoardLoad = function(dept, category){
-      // 항상 전체를 받아 클라이언트 필터 — 건수요약 정확·필터 즉시반영
-      if(category !== undefined) _regCurrentCat = category;
-      var board = document.getElementById('regBoard');
-      if(!board) return;
-      board.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:18px 4px;">불러오는 중…</div>';
-      var url = _REG_API + '?action=reg_board&_=' + Date.now();
-      fetch(_wpUrl(url), {redirect:'follow'})
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-          if(_wpGate(d)) return;
-          if(!d || !d.ok){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">현황을 불러오지 못했습니다 — ' + _regEsc(d && d.error || '') + '</div>'; return; }
-          _regAllItems = _regNormalize(d.data || []);
-          _regRenderPeriodChips();
-          _regRenderSummary(_regAllItems);
-          _regBoardRender(_regAllItems);
-        })
-        .catch(function(){ board.innerHTML = '<div style="color:var(--warm,#e65b3f);font-size:13px;padding:18px 4px;">네트워크 오류 — 새로고침 해주세요.</div>'; });
-    };
-
-    // 카테고리별 건수 요약 줄 (클릭=필터, 활성 카테고리 강조)
-    function _regRenderSummary(items){
-      var sum = document.getElementById('regCatSummary');
-      if(!sum) return;
-      items = _regFilterPeriod(items);
-      var total = items.length;
-      var html = '<button onclick="regChipClick(_regChipForCat(\'\'))" data-sum-cat="" style="display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:18px;border:1px solid '
-        + (_regCurrentCat === '' ? 'var(--accent,#7c5f3d)' : 'var(--border)') + ';background:'
-        + (_regCurrentCat === '' ? 'var(--accent-bg,#f5ede3)' : 'var(--paper)') + ';color:'
-        + (_regCurrentCat === '' ? 'var(--accent,#7c5f3d)' : 'var(--dim)') + ';font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;">전체 <b>' + total + '</b></button>';
-      _REG_CAT_META.forEach(function(m){
-        var n = items.filter(function(it){ return String(it['카테고리']||'') === m.cat; }).length;
-        var active = (_regCurrentCat === m.cat);
-        html += '<button onclick="regChipClick(_regChipForCat(\'' + _regEsc(m.cat) + '\'))" data-sum-cat="' + _regEsc(m.cat) + '" style="display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:18px;border:1px solid '
-          + (active ? 'var(--accent,#7c5f3d)' : 'var(--border)') + ';background:'
-          + (active ? 'var(--accent-bg,#f5ede3)' : 'var(--paper)') + ';color:'
-          + (active ? 'var(--accent,#7c5f3d)' : (n ? 'var(--text)' : 'var(--dim)')) + ';font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;'
-          + (n ? '' : 'opacity:.55;') + '">' + m.icon + m.short + ' <b>' + n + '</b></button>';
-      });
-      sum.innerHTML = html;
-    }
-    // 요약 칩 클릭 → 동일 카테고리의 상단 필터칩 엘리먼트 반환(없으면 합성)
-    window._regChipForCat = function(cat){
-      var chips = document.querySelectorAll('#regCatChips .reg-chip');
-      for(var i=0;i<chips.length;i++){ if(chips[i].getAttribute('data-cat') === cat) return chips[i]; }
-      return { getAttribute:function(){ return cat; }, classList:{add:function(){},remove:function(){}}, style:{} };
-    };
-
-    function _regBoardRender(items){
-      var board = document.getElementById('regBoard');
-      if(!board) return;
-      board.innerHTML = '';
-      var filtered = _regFilterPeriod(items);
-      if(_regCurrentCat) filtered = filtered.filter(function(it){ return String(it['카테고리']||'') === _regCurrentCat; });
-      _REG_COLS.forEach(function(col){
-        var list = filtered.filter(function(it){ return String(it['상태'] || '접수') === col.status; });
-        var colEl = document.createElement('div');
-        colEl.style.cssText = 'flex:1;min-width:200px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px;';
-        var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-          + '<span style="font-size:14px;font-weight:700;color:' + col.color + ';">' + col.status + '</span>'
-          + '<span style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;background:' + col.bg + ';color:' + col.color + ';">' + list.length + '</span></div>';
-        if(!list.length){ html += '<div style="color:var(--dim);font-size:12px;padding:14px 4px;text-align:center;">건이 없습니다</div>'; }
-        else { html += _regGroupByCat(list, col); }
-        colEl.innerHTML = html;
-        board.appendChild(colEl);
-      });
-    }
-
-    // ── 카테고리별 묶음(접기/펼치기) — 컬럼 안에서 카테고리별 그룹 ──
-    function _regGrpCollapsed(key){
-      try { var o = JSON.parse(localStorage.getItem('regGrpCollapse') || '{}'); return o[key] === false ? false : true; } catch(e){ return true; }
-    }
-    window._regToggleGrp = function(headEl){
-      var key = headEl.getAttribute('data-grpkey');
-      var body = headEl.nextElementSibling;
-      if(!body) return;
-      var willShow = (body.style.display === 'none');
-      body.style.display = willShow ? 'block' : 'none';
-      var arrow = headEl.querySelector('.reg-grp-arrow'); if(arrow) arrow.textContent = willShow ? '▾' : '▸';
-      try { var o = JSON.parse(localStorage.getItem('regGrpCollapse') || '{}'); o[key] = willShow ? false : true; localStorage.setItem('regGrpCollapse', JSON.stringify(o)); } catch(e){}
-    };
-    function _regGrpBlock(status, cat, icon, shortName, grp, col){
-      var key = status + '|' + cat;
-      var collapsed = _regGrpCollapsed(key);
-      var head = '<div onclick="_regToggleGrp(this)" data-grpkey="' + _regEsc(key) + '" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 8px;margin-bottom:6px;border-radius:8px;background:var(--bg);border:1px solid var(--border);user-select:none;">'
-        + '<span class="reg-grp-arrow" style="font-size:10px;color:var(--dim);width:10px;">' + (collapsed?'▸':'▾') + '</span>'
-        + '<span style="font-size:12px;font-weight:700;color:var(--text);">' + icon + ' ' + _regEsc(shortName) + '</span>'
-        + '<span style="margin-left:auto;font-size:11px;font-weight:700;padding:1px 8px;border-radius:9px;background:' + col.bg + ';color:' + col.color + ';">' + grp.length + '</span></div>';
-      var body = '<div style="display:' + (collapsed?'none':'block') + ';margin-bottom:4px;">';
-      grp.forEach(function(it){ body += _regCard(it, col); });
-      body += '</div>';
-      return head + body;
-    }
-    function _regGroupByCat(list, col){
-      var out = '', known = [];
-      _REG_CAT_META.forEach(function(m){
-        known.push(m.cat);
-        var grp = list.filter(function(it){ return String(it['카테고리']||'') === m.cat; });
-        if(grp.length) out += _regGrpBlock(col.status, m.cat, m.icon, m.short, grp, col);
-      });
-      var other = list.filter(function(it){ return known.indexOf(String(it['카테고리']||'')) === -1; });
-      if(other.length) out += _regGrpBlock(col.status, '기타', '📋', '기타', other, col);
-      return out;
-    }
-    // 카드 내용 펼침 토글 (인라인)
-    window._regToggle = function(id, btn){
-      var body = document.getElementById('regbody-' + id);
-      if(!body) return;
-      var open = body.style.display === 'none' || body.style.display === '';
-      body.style.display = open ? 'block' : 'none';
-      if(btn) btn.innerHTML = open ? '▲ 접기' : '▼ 내용';
-    };
-
-    function _regCard(it, col){
-      var id = _regEsc(it['접수ID']);
-      var cat = _regEsc(it['카테고리'] || '-');
-      var icon = _regCatIcon(String(it['카테고리']||''));
-      var loc = _regEsc(it['위치'] || '');
-      var content = _regEsc(it['내용'] || '');
-      var name = _regEsc(it['이름'] || '');
-      var contact = _regEsc(it['연락처'] || '');
-      var assignee = _regEsc(it['담당'] || '');
-      var memo = _regEsc(it['처리메모'] || '');
-      var handler = _regEsc(it['처리자'] || '');
-      var smsRcv = _regEsc(it['접수문자'] || '');
-      var smsRsv = _regEsc(it['조치문자'] || '');
-      var photo = String(it['사진URL'] || '').trim();
-      var dt = _regEsc(String(it['접수일시'] || '').slice(0, 16));
-      // 공통 외 추가필드 (접수ID·카테고리·접수일시·이름·연락처·위치·내용·사진URL·상태·담당·처리메모·부서 제외)
-      var COMMON_KEYS = ['접수ID','카테고리','접수일시','이름','연락처','위치','내용','사진URL','상태','담당','처리메모','부서','처리자','slaHours','deadline','remainH','slaStatus','접수문자','조치문자']; // 처리자 추가 — 입력칸과 추가정보 줄 중복 표시 방지
-      var extras = '';
-      Object.keys(it).forEach(function(k){
-        if(COMMON_KEYS.indexOf(k) === -1 && it[k] !== '' && it[k] !== null && it[k] !== undefined){
-          extras += '<div style="font-size:11.5px;color:var(--dim);margin-bottom:2px;"><b>' + _regEsc(k) + ':</b> ' + _regEsc(it[k]) + '</div>';
-        }
-      });
-      var _rc = _regEsc(it['카테고리']||'');
-      var _bs = 'font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);cursor:pointer;font-family:inherit;';
-      var _hold = ' <button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'보류\')" style="' + _bs + 'color:var(--dim);">⏸ 보류</button>';
-      var actions = '';
-      if(col.status === '접수'){
-        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'처리중\')" style="' + _bs + 'color:var(--text);">처리 시작 →</button>' + _hold;
-      } else if(col.status === '처리중'){
-        actions = '<button onclick="_regComplete(\'' + id + '\',\'' + _rc + '\')" style="' + _bs + 'color:var(--text);">완료 ✓</button>'
-          + ' <button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'접수\')" style="' + _bs + 'color:var(--dim);">← 되돌리기</button>'
-          + _hold;
-      } else if(col.status === '완료'){
-        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'처리중\')" style="' + _bs + 'color:var(--dim);">↩ 재개</button>';
-      } else {
-        actions = '<button onclick="_regStatus(\'' + id + '\',\'' + _rc + '\',\'접수\')" style="' + _bs + 'color:var(--dim);">↩ 재개</button>';
-      }
-      // 펼침 영역에 들어갈 상세 (이름·연락처·전체내용·사진·추가필드)
-      var hasDetail = !!(name || contact || content || photo || extras);
-      var detail = '';
-      if(hasDetail){
-        detail = '<div id="regbody-' + id + '" style="display:none;border-top:1px solid var(--border);margin-top:7px;padding-top:8px;">'
-          + (name ? '<div style="font-size:12px;color:var(--dim);margin-bottom:4px;">👤 ' + name + (contact ? '&nbsp;&nbsp;☎ ' + contact : '') + '</div>' : (contact ? '<div style="font-size:11.5px;color:var(--dim);margin-bottom:4px;">☎ ' + contact + '</div>' : ''))
-          + (content ? '<div style="font-size:13px;line-height:1.5;margin-bottom:6px;word-break:break-word;">' + content + '</div>' : '')
-          + (/^https?:/.test(photo) ? '<a href="' + _regEsc(photo) + '" target="_blank" style="font-size:11.5px;color:var(--blue,#5b9fd5);text-decoration:none;display:inline-block;margin-bottom:6px;">📷 사진 보기</a>' : (photo ? '<div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">📷 사진 있음</div>' : ''))
-          + (extras ? '<div style="border-top:1px solid var(--border);margin:6px 0 6px;padding-top:6px;">' + extras + '</div>' : '')
-          + '</div>';
-      }
-      // 컴팩트 헤더: 아이콘·카테고리칩·위치·접수일 (1줄) + 내용 1줄 미리보기(있으면)
-      var preview = content ? content.replace(/\s+/g,' ').slice(0,28) + (content.length > 28 ? '…' : '') : (name ? '👤 ' + name : '');
-      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px;">'
-        + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
-        + '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + col.bg + ';color:' + col.color + ';">' + icon + ' ' + cat + '</span>'
-        + (loc ? '<span style="font-size:11.5px;color:var(--dim);">📍' + loc + '</span>' : '')
-        + _regSlaBadge(it)
-        + (dt ? '<span style="font-size:10.5px;color:var(--dim);margin-left:auto;">' + dt + '</span>' : '')
-        + '</div>'
-        + (preview ? '<div style="font-size:12.5px;color:var(--text);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + preview + '</div>' : '')
-        + (hasDetail ? '<button onclick="_regToggle(\'' + id + '\',this)" style="margin-top:6px;font-size:11px;font-weight:700;padding:2px 9px;border:1px solid var(--border);border-radius:12px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">▼ 내용</button>' : '')
-        + detail
-        + '<div style="display:flex;gap:6px;align-items:center;margin:8px 0 7px;">'
-        + '<input type="text" placeholder="담당자" value="' + assignee + '" id="regva-' + id + '" style="flex:1;min-width:0;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:inherit;">'
-        
-        // 1. 배정 버튼에 this(버튼 자신)를 넘겨주도록 수정
-        + '<button onclick="_regAssign(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\', this)" style="font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--text);cursor:pointer;font-family:inherit;">배정</button></div>'
-        
-        + (col.status === '접수' ? '' :
-            '<div style="margin:0 0 7px;">'
-          + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">'
-          + '<input type="text" placeholder="처리자(실제 처리한 사람)" value="' + handler + '" id="reghdl-' + id + '" style="flex:1;min-width:0;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:12px;font-family:inherit;">'
-          + '<button onclick="_regHandlerSave(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',this)" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">저장</button></div>'
-          + '<textarea placeholder="조치내용 — 어떻게 처리했는지 기록 (완료 시 필수)" id="regmemo-' + id + '" rows="2" style="width:100%;box-sizing:border-box;background:var(--paper);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;">' + memo + '</textarea>'
-          + '<button onclick="_regMemoSave(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',this)" style="margin-top:4px;font-size:11px;padding:3px 9px;border:1px solid var(--border);border-radius:7px;background:var(--paper);color:var(--dim);cursor:pointer;font-family:inherit;">메모 저장</button></div>')
-        + '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 8px;font-size:11.5px;color:var(--dim);">'
-        + '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"' + (smsRcv?' checked':'') + ' onchange="_regSms(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'smsReceived\',this)"> 접수문자<span id="regsms-smsReceived-' + id + '" style="color:var(--accent);font-weight:700;">' + (smsRcv?(' '+smsRcv):'') + '</span></label>'
-        + '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"' + (smsRsv?' checked':'') + ' onchange="_regSms(\'' + id + '\',\'' + _regEsc(it['카테고리']||'') + '\',\'smsResolved\',this)"> 조치문자<span id="regsms-smsResolved-' + id + '" style="color:var(--accent);font-weight:700;">' + (smsRsv?(' '+smsRsv):'') + '</span></label>'
-        + '</div>'
-        + '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div></div>';
-    }
-
-    // 2. 상태 변경 시에는 기존처럼 전체 새로고침 유지 (칸이 이동해야 하므로)
-    window._regStatus = function(id, category, status){
-      _regPost({action:'reg_update', id:id, category:category, status:status}, '상태 변경됨');
-    };
-    // 완료 시 조치내용(처리메모) 필수 — 시트의 처리메모 칼럼에 함께 저장
-    window._regComplete = function(id, category){
-      var el = document.getElementById('regmemo-' + id);
-      var memo = el ? el.value.trim() : '';
-      if(!memo){ alert('완료하려면 조치내용을 입력해 주세요.'); if(el){ el.focus(); el.style.borderColor = 'var(--warm,#e65b3f)'; } return; }
-      _regPost({action:'reg_update', id:id, category:category, status:'완료', memo:memo}, '완료 처리됨');
-    };
-    // 조치내용만 저장 (상태 변경 없이 — 화면 새로고침 없이 즉시 저장 피드백)
-    window._regMemoSave = function(id, category, btn){
-      var el = document.getElementById('regmemo-' + id);
-      var memo = el ? el.value.trim() : '';
-      var payload = {action:'reg_update', id:id, category:category, memo:memo};
-      var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
-      // 응답 확인 전까지는 "저장 중" — 서버 확인(ok===true) 후에만 성공 표시, 실패는 조용히 삼키지 않는다
-      if(btn){ btn.textContent = '저장 중…'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; }
-      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-          if(res && res.ok === true){
-            if(btn){ btn.textContent = '저장됨 ✓'; btn.style.color = '#6abf7b'; btn.style.borderColor = 'rgba(106,191,123,0.4)'; }
-            setTimeout(function(){ if(btn){ btn.textContent = '메모 저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
-          } else {
-            if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
-          }
-        })
-        .catch(function(){
-          if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
-        });
-    };
-    // 처리자 저장 (실제 처리한 사람 — 인사고과 결산용). 화면 새로고침 없이 즉시 저장.
-    window._regHandlerSave = function(id, category, btn){
-      var el = document.getElementById('reghdl-' + id);
-      var val = el ? el.value.trim() : '';
-      var payload = {action:'reg_update', id:id, category:category, handler:val};
-      var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
-      // 응답 확인 전까지는 "저장 중" — 서버 확인(ok===true) 후에만 성공 표시, 실패는 조용히 삼키지 않는다
-      if(btn){ btn.textContent = '저장 중…'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; }
-      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-          if(res && res.ok === true){
-            if(btn){ btn.textContent = '저장됨 ✓'; btn.style.color = '#6abf7b'; btn.style.borderColor = 'rgba(106,191,123,0.4)'; }
-            setTimeout(function(){ if(btn){ btn.textContent = '저장'; btn.style.color = 'var(--dim)'; btn.style.borderColor = 'var(--border)'; } }, 2000);
-          } else {
-            if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
-          }
-        })
-        .catch(function(){
-          if(btn){ btn.textContent = '저장 실패 ✕'; btn.style.color = '#e65b3f'; btn.style.borderColor = 'rgba(230,91,63,0.4)'; }
-        });
-    };
-    // 문자 발송 체크 — 체크 시 오늘 날짜 기록(시트 저장·양방향), 해제 시 비움. 화면 새로고침 없음.
-    // 서버 확인(ok===true) 전까지 낙관 표시 대신 "저장 중" 유지, 실패 시 체크상태·날짜표시 모두 원복
-    window._regSms = function(id, category, field, chk){
-      var span = document.getElementById('regsms-' + field + '-' + id);
-      var prevChecked = !chk.checked; // onchange는 이미 토글된 후 발동 — 실패 시 되돌릴 이전 상태
-      var prevText = span ? span.textContent : '';
-      var d = new Date();
-      var val = chk.checked ? (d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2)) : '';
-      if(span){ span.textContent = ' 저장 중…'; span.style.color = 'var(--dim)'; }
-      var payload = {action:'reg_update', id:id, category:category};
-      payload[field] = val;
-      var _k = (typeof _wpKey === 'function') ? _wpKey() : ''; if(_k) payload.key = _k;
-      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)})
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-          if(res && res.ok === true){
-            if(span){ span.textContent = val ? (' ' + val) : ''; span.style.color = 'var(--accent)'; }
-          } else {
-            chk.checked = prevChecked;
-            if(span){ span.textContent = ' 저장 실패 ✕'; span.style.color = '#e65b3f'; }
-            setTimeout(function(){ if(span){ span.textContent = prevText; span.style.color = 'var(--accent)'; } }, 2500);
-          }
-        })
-        .catch(function(){
-          chk.checked = prevChecked;
-          if(span){ span.textContent = ' 저장 실패 ✕'; span.style.color = '#e65b3f'; }
-          setTimeout(function(){ if(span){ span.textContent = prevText; span.style.color = 'var(--accent)'; } }, 2500);
-        });
-    };
-
-    // 3. 🌟 핵심! 배정 시에는 화면 새로고침 없이 초록색 피드백만 주도록 독립시킴
-    // 4. 버튼(this)을 인자로 직접 받는다 — event.target 의존 제거(크롬 외 브라우저 오동작 방지), 서버 확인 후에만 성공 표시
-    window._regAssign = function(id, category, btn) {
-      var el = document.getElementById('regva-' + id);
-      var assignee = el ? el.value.trim() : '';
-
-      // 응답 확인 전까지는 "저장 중" 표시
-      if(btn){
-        btn.textContent = '저장 중…';
-        btn.style.background = 'var(--paper)';
-        btn.style.color = 'var(--text)';
-        btn.style.borderColor = 'var(--border)';
-      }
-
-      var payload = { action: 'reg_update', id: id, category: category, assignee: assignee };
-      if (typeof _wpKey === 'function') payload.key = _wpKey();
-
-      fetch(_REG_API, {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      })
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-          if(res && res.ok === true){
-            if(btn){
-              btn.textContent = '완료 ✓';
-              btn.style.background = 'rgba(106,191,123,0.12)';
-              btn.style.color = '#6abf7b';
-              btn.style.borderColor = 'rgba(106,191,123,0.4)';
-            }
-            setTimeout(function() {
-              if(btn){
-                btn.textContent = '배정';
-                btn.style.background = 'var(--paper)';
-                btn.style.color = 'var(--text)';
-                btn.style.borderColor = 'var(--border)';
-              }
-            }, 2000);
-          } else {
-            if(btn){
-              btn.textContent = '저장 실패 ✕';
-              btn.style.background = 'rgba(230,91,63,0.12)';
-              btn.style.color = '#e65b3f';
-              btn.style.borderColor = 'rgba(230,91,63,0.4)';
-            }
-          }
-        })
-        .catch(function(){
-          if(btn){
-            btn.textContent = '저장 실패 ✕';
-            btn.style.background = 'rgba(230,91,63,0.12)';
-            btn.style.color = '#e65b3f';
-            btn.style.borderColor = 'rgba(230,91,63,0.4)';
-          }
-        });
-    };
-    function _regPost(payload, okMsg){
-      var _p = Object.assign({}, payload);
-      var _k = _wpKey(); if(_k) _p.key = _k;
-      fetch(_REG_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(_p)})
-        .then(function(r){ return r.json(); })
-        .then(function(d){ if(d && d.ok){ regBoardLoad(); } })
-        .catch(function(){});
-    }
-    // 카테고리 필터칩 클릭 핸들러 (상단 칩·건수요약 칩 공용). 캐시서 즉시 필터.
-    window.regChipClick = function(el){
-      var cat = el.getAttribute('data-cat');
-      _regCurrentCat = cat || '';
-      // 상단 필터칩 활성 표시 동기화 (data-cat 일치하는 실제 칩)
-      document.querySelectorAll('#regCatChips .reg-chip').forEach(function(c){
-        var on = (c.getAttribute('data-cat') === _regCurrentCat);
-        c.classList.toggle('reg-chip-active', on);
-        c.style.borderColor = on ? 'var(--accent,#7c5f3d)' : 'var(--border)';
-        c.style.background  = on ? 'var(--accent-bg,#f5ede3)' : 'var(--paper)';
-        c.style.color       = on ? 'var(--accent,#7c5f3d)' : 'var(--text)';
-      });
-      if(_regAllItems.length){
-        _regRenderSummary(_regAllItems);
-        _regBoardRender(_regAllItems);
-      } else {
-        regBoardLoad();  // 아직 데이터 없으면 로드
-      }
-    };
-
-    // O2 activateDoc 훅
-    (function(){
-      var orig = window.activateDoc;
-      if(typeof orig === 'function'){
-        window.activateDoc = function(id, tabName){
-          orig(id, tabName);
-          if(id === 'O2') regBoardLoad();
-        };
-      }
-      // O2 메뉴 클릭 직접 감지
-      document.addEventListener('click', function(ev){
-        var a = ev.target.closest('[data-id="O2"]');
-        if(a) setTimeout(regBoardLoad, 200);
-      });
-      // #O2 해시 딥링크 초기 진입 시 로드
-      if((window.location.hash || '').replace(/^#/,'').split('/')[0] === 'O2'){
-        setTimeout(regBoardLoad, 300);
-      }
-    })();
-  })();
-  </script>
+  
 
   <article class="doc" id="S1">
     <div class="doc-header"><h2>공통 가이드라인</h2><div class="meta">전사 공통 기준 + 문서 업데이트 방법 + 브랜드 디자인</div></div>
@@ -1990,7 +1467,6 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="how-to">업데이트 방법</button>
         <button class="tab-btn" data-tab="company-guide">직원&파트너 기본 에티켓</button>
-        <button class="tab-btn" data-tab="brand-design">브랜드 디자인</button>
         <button class="tab-btn" data-tab="terms-doc">문서 관리</button>
         <button class="tab-btn" data-tab="terms-vocab">조직·시스템·운영</button>
         <button class="tab-btn" data-tab="terms-ext">파일 확장자</button>
@@ -2079,71 +1555,6 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         </ul></div>
 
         <div class="callout"><strong>이 가이드라인 변경 시:</strong> GM님 결재 필수. 변경 후 전 부서 공지 의무.</div>
-      </div>
-
-      <div class="tab-panel" data-panel="brand-design">
-        <h3><span class="ico">🎨</span>브랜드 디자인 가이드</h3>
-        <p>WELLPERION 브랜드 디자인의 모든 기준. 로고·컬러·타이포·톤앤매너. 모든 콘텐츠 제작은 이 가이드를 따릅니다.</p>
-
-        <h4>핵심 정체성</h4>
-        <div class="card accent">
-          <h4>WELLPERION (웰페리온)</h4>
-          <p><strong>프리미엄 라이프스타일 스포츠클럽</strong></p>
-          <p>슬로건: A Day, Well Completed. 하루의 완성, 웰페리온</p>
-        </div>
-
-        <h4>로고 파일</h4>
-        <table>
-          <tr><th>파일</th><th>색상</th><th>용도</th></tr>
-          <tr><td><code>_assets/logo/wellperion_white.png</code></td><td>#FFFFFF</td><td>어두운 배경 (인스타 메인)</td></tr>
-          <tr><td><code>_assets/logo/wellperion_beige.png</code></td><td>#B79F8A</td><td>밝은 배경</td></tr>
-          <tr><td><code>_assets/logo/wellperion_black.png</code></td><td>#000000</td><td>인쇄용</td></tr>
-        </table>
-        <div class="callout fix"><strong>W 심볼 직접 그리기 금지.</strong> 정식 PNG 파일만 사용.</div>
-
-        <h4>메인 컬러</h4>
-        <table>
-          <tr><th>역할</th><th>HEX</th><th>용도</th></tr>
-          <tr><td>BEIGE (Primary)</td><td><strong>#B79F8A</strong></td><td>로고·텍스트 강조</td></tr>
-          <tr><td>BLACK (Background)</td><td><strong>#221F20</strong></td><td>메인 배경 (따뜻한 차콜)</td></tr>
-          <tr><td>HIGHLIGHT</td><td><strong>#ED5B3F</strong></td><td>CTA·강한 주목</td></tr>
-        </table>
-
-        <h4>서브 브랜드 컬러</h4>
-        <table>
-          <tr><th>사업부</th><th>Logo HEX</th><th>BG HEX</th></tr>
-          <tr><td>W PT</td><td>#B54840</td><td>#512B32</td></tr>
-          <tr><td>SPORTS CLUB</td><td>#3F71B0</td><td>#253B6C</td></tr>
-          <tr><td>W PILATES</td><td>#C44558</td><td>#822A37</td></tr>
-          <tr><td>W SWIMMING</td><td>#215768</td><td>#172C42</td></tr>
-          <tr><td>W SQUASH</td><td>#D2D2D2</td><td>#77968E</td></tr>
-          <tr><td>W GOLF</td><td>#337342</td><td>#132117</td></tr>
-          <tr><td>W GYMNASTIC</td><td>#C2BAD6</td><td>#563A61</td></tr>
-          <tr><td>BRAD LITTLE'S</td><td>#FFFFFF</td><td>#000000</td></tr>
-        </table>
-
-        <h4>타이포그래피</h4>
-        <table>
-          <tr><th>용도</th><th>서체</th></tr>
-          <tr><td>영문 헤드라인</td><td>ITC Avant Garde / Medium</td></tr>
-          <tr><td>Sports Club 전용</td><td>Hudson NY Serif</td></tr>
-          <tr><td>한글·본문</td><td>Pretendard (Bold/Medium/SemiBold)</td></tr>
-        </table>
-
-        <h4>톤앤매너</h4>
-        <div class="grid-2">
-          <div class="card grow"><h4>허용</h4><ul><li>정중</li><li>절제</li><li>럭셔리</li><li>신뢰감</li></ul></div>
-          <div class="card warm"><h4>금지</h4><ul><li>캐주얼</li><li>컬러풀</li><li>이모지 과다</li><li>과장 그라디언트</li><li>만화체</li></ul></div>
-        </div>
-
-        <h4>인스타그램 적용 규칙</h4>
-        <ul>
-          <li>배경: BLACK / 사진 위 50~70% 블랙 마스크</li>
-          <li>텍스트: BEIGE(메인) + WHITE(보조) + HIGHLIGHT(강조)</li>
-          <li>레이아웃: 여백 크게, 중앙/좌측 정렬, 박스 라운드 8~16px</li>
-          <li>로고: 하단 중앙 또는 좌측, 베이지 단색</li>
-          <li>금지: 네온 그라디언트 · 굵은 굴림체 · 형광색 · 만화 일러스트</li>
-        </ul>
       </div>
 
       <div class="tab-panel" data-panel="terms-doc">
@@ -2361,15 +1772,61 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         <tr><td><strong>3</strong></td><td><strong>운영 자동화 고도화</strong> — AI + 시스템 기반 운영 효율 극대화</td><td>2026.01 ~ 12</td></tr>
       </table>
     </div>
+    <!-- 6단계 실측 진척 — status/monthly_ops_plan.json(strategy_roadmap) 직독 렌더.
+         정본=그 파일, 여기는 렌더만(헌법 구조1). 월간운영계획.html 과 같은 RAW 경로를 그대로
+         재사용한다(약속 L01 — 새 미러·새 소스 만들지 않음). 이 표가 없던 시절엔 6단계 상태가
+         HTML에 손으로 박혀 있어 5월 보고본 그대로 굳어 있었다(2026-07-25 GM 지적 → 실측 전환). -->
+    <div id="s0-roadmap-live" style="margin:0 0 18px;">
+      <div id="s0-roadmap-live-body" style="font-size:13px;color:var(--dim);">6단계 진척 불러오는 중…</div>
+    </div>
+    <script>
+    (function(){
+      var RAW='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
+      var box=document.getElementById('s0-roadmap-live-body');
+      if(!box) return;
+      function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+      fetch(RAW+'?cb='+Date.now(),{cache:'no-store'}).then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+      }).then(function(d){
+        var items=((d||{}).strategy_roadmap||{}).items||[];
+        if(!items.length) throw new Error('데이터 없음');
+        // stage 필드가 'Q1'/'Q2' 면 분기 목표, 숫자 1~6 이면 6단계 (원천 스키마 그대로 사용).
+        var q=items.filter(function(x){return /^Q/i.test(String(x.stage));});
+        var st=items.filter(function(x){return !/^Q/i.test(String(x.stage));});
+        var rows=st.map(function(x,i){
+          var p=(typeof x.progress==='number')?x.progress:null;
+          var s=String(x.status||'');
+          var col=(s==='완료')?'#2E6E5B':(s==='진행'?'#ED5B3F':'var(--dim)');
+          var no=(typeof x.stage==='number')?x.stage:(i+1);
+          return '<tr><td style="width:44px"><strong>'+('0'+no).slice(-2)+'</strong></td>'
+            +'<td>'+esc(x.title)+(x.goal?'<br><span style="font-size:12px;color:var(--dim)">'+esc(x.goal)+'</span>':'')+'</td>'
+            +'<td style="width:92px;color:'+col+';font-weight:700">'+esc(s||'—')+'</td>'
+            +'<td style="width:70px;text-align:right">'+(p===null?'—':p+'%')+'</td></tr>';
+        }).join('');
+        var qline=q.map(function(x){
+          return esc(x.title)+' '+(x.status==='완료'?'✅':'진행');
+        }).join(' · ');
+        box.innerHTML='<table style="margin:0"><tr><th>단계</th><th>내용</th><th>상태</th><th style="text-align:right">진척</th></tr>'
+          +rows+'</table>'
+          +(qline?'<p style="margin:10px 0 0;font-size:12.5px;color:var(--dim);">분기 목표 — '+qline+'</p>':'')
+          +'<p style="margin:6px 0 0;font-size:12px;color:var(--dim);">위 진척은 월간 운영계획의 실측값을 그대로 읽어 옵니다 — 이 화면에 손으로 적지 않습니다.</p>';
+      }).catch(function(e){
+        box.innerHTML='<span style="color:var(--dim)">6단계 진척을 불러오지 못했습니다 ('+esc(e.message)
+          +'). 아래 단계별 설명은 그대로 보실 수 있습니다.</span>';
+      });
+    })();
+    </script>
+
     <details class="toggle" open>
-      <summary>01 자동화 및 매뉴얼 체계 완성 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+      <summary>01 자동화 및 매뉴얼 체계 완성</summary>
       <div class="toggle-body">
         <ul><li>브로제이 시스템 무인화 · 핵심 운영 매뉴얼 정비 · C-레벨 AI 에이전트 도입</li></ul>
         <p><strong>목표:</strong> 사람이 바뀌어도 품질이 흔들리지 않는 시스템 기반 운영</p>
       </div>
     </details>
     <details class="toggle" open>
-      <summary>02 체크리스트 경영 + 핵심 인재 확보 <span class="badge warm" style="margin-left:8px">현재</span></summary>
+      <summary>02 체크리스트 경영 + 핵심 인재 확보</summary>
       <div class="toggle-body">
         <ul><li>전 운영 업무 체크리스트화 · 관리자급 독립 운영 · GM 직속 3라인 배치</li></ul>
         <p><strong>목표:</strong> 현장은 시스템+인재가, GM은 성장 전략에 전념</p>
@@ -2393,7 +1850,16 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
     </details>
     <div class="callout"><strong>북극성 · 슬로건.</strong> A Day, Well Completed. — 하루의 완성, 웰페리온.</div>
 
-    <div class="source">원본: <a href="회사문서/1. 웰페리온_회사소개서_v2.19.html" target="_blank">회사소개서 v2.19</a> · <a href="회사문서/4. 웰페리온_브랜드확장_회사소개서_v1_단일파일.html" target="_blank">브랜드확장 소개서</a> · <a href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 v1.4</a> · 3라인 조직체계 = CHRO 허브·운영 체계 / 핵심 프롬프트 = T1</div>
+    <div class="source">
+      <strong>정본(SSOT) = 이 S0 화면.</strong> 회사소개서·전략 로드맵·위탁운영 제안서는 모두 여기가 단일 출처이며, 아래 파일들은 여기서 뻗어 나간 원본·인쇄본입니다.<br>
+      📘 <a href="회사문서/웰페리온_회사소개서_통합.html" target="_blank"><strong>회사소개서 v2.2(정본)</strong></a>
+      · <a href="회사문서/1. 웰페리온_회사소개서_v2.19.html" target="_blank">회사소개서 원고 v2.19</a>
+      · <a href="회사문서/회사소개서_A3_전체_20260722.html" target="_blank">A3 인쇄본(12장)</a>
+      · <a href="회사문서/2. 웰페리온_전략로드맵_보고서_v1.4_A3.html" target="_blank">전략 로드맵 보고서(2026-05 보고본)</a>
+      · <a href="회사문서/웰페리온_위탁운영_제안서.html" target="_blank">위탁운영 제안서</a>
+      · <a href="회사문서/4. 웰페리온_브랜드확장_회사소개서_v1_단일파일.html" target="_blank">브랜드확장 소개서(생크몽드 제휴 — 별개 문서)</a><br>
+      <span style="color:var(--dim)">※ 전략 로드맵 보고서는 2026년 5월 시점 보고본입니다. <strong>현재 진척은 위 6단계 표</strong>(월간 운영계획 실측)를 보십시오. · 3라인 조직체계 = CHRO 허브·운영 체계 / 핵심 프롬프트 = T1</span>
+    </div>
   </article>
 
 
@@ -3177,14 +2643,16 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
           <tr><td><strong>권한 자동 Yes</strong></td><td>GM 지시 시 PowerShell·Bash·Tool 권한 자동 Yes(승인 대기 X).</td></tr>
         </table>
 
-        <h4 id="con-token" style="margin-top:24px;"><span class="ico">🎚️</span>⑨ 토큰 라우팅 매트릭스 (3계층)</h4>
-        <div class="callout" style="margin:8px 0 12px;"><strong>메인 CEO·6 C-Level = Opus(판단·결재 본업) 유지.</strong> 반복 작업(가동·patch·집계·git·송부)은 무조건 Sonnet/Haiku 서브에이전트(<code>executor</code> 등) 위임. 메인 모델로 반복 작업 처리 = 위반.</div>
+        <h4 id="con-token" style="margin-top:24px;"><span class="ico">🎚️</span>⑨ 토큰 라우팅 매트릭스 (4계층)</h4>
+        <div class="callout" style="margin:8px 0 12px;"><strong>메인 CEO·6 C-Level = Opus(판단·결재 본업) 유지.</strong> 반복 작업(가동·patch·집계·git·송부)은 무조건 Sonnet/Haiku 서브에이전트(<code>executor</code> 등) 위임. 메인 모델로 반복 작업 처리 = 위반.<br><strong>가르는 선 = 일의 종류다.</strong> &lsquo;판단이냐 결정이냐&rsquo;로 가르지 않는다 — 결정하려면 판단이 선행하므로 한 덩어리라 선이 서지 않는다. <strong>자율화 모듈·파이프라인을 만드는 일은 그 안의 판단·결정까지 통째로 Fable</strong>, 그 밖의 일반 진행은 Opus.</div>
         <table>
           <tr><th style="width:140px">모델</th><th>담당</th></tr>
           <tr><td><strong>Haiku</strong></td><td>단순 read·lookup · 1줄 보고 · 텔레그램 송부</td></tr>
           <tr><td><strong>Sonnet</strong></td><td>자동화 가동 · 집계 · patch · git · 콘텐츠 가공 · 일일 보고 빌드 · 로그 정리</td></tr>
-          <tr><td><strong>Opus</strong></td><td>판단 · 결정 · 진행 · 검토 · 결재 · 정책 정립 · 이슈 진단 · R&amp;D 방향 · Peer Cross-Check</td></tr>
+          <tr><td><strong>Fable</strong></td><td><strong>자율화 모듈·파이프라인 만들기</strong> — 사람 손을 빼는 구조를 새로 짜거나 다시 짜는 일. 모듈 설계·신설·병합 · 파이프라인 연결·재배선 · 자동화 흐름 프롬프트 · 그 과정의 <strong>판단·결정 포함</strong>(별도로 Opus에 올리지 않는다). 단, 금지 5종(💰🔒🚫📐🏷️)에 닿으면 GM 결재로 올린다.</td></tr>
+          <tr><td><strong>Opus</strong></td><td><strong>일반 진행</strong> — 일상 판단 · 결정 · 검토 · 결재 · 정책 정립 · 이슈 진단 · <strong>검수(진짜/가짜 가려내기)</strong> · 대외 문안·법적 사안 · R&amp;D 방향 · Peer Cross-Check</td></tr>
         </table>
+        <p style="margin-top:8px;font-size:13px;color:var(--dim);"><strong>Fable = 시험 운용 중</strong>(GM go 2026-07-25 · 범위 확정 GM 2026-07-25 재지시). 시험 대상 배 3척 = <strong>94</strong> 구매→진행→비품 파이프라인 프롬프트 / <strong>97</strong> 종합 다이제스트 자율화 모듈 확장 / <strong>99</strong> 매출보고 단일화·발신 계측 재배선. 같은 날 나머지 배는 기존 배분 유지 → 웰리가 결과 비교 후 보고. <strong>확대·축소 판단 전까지 이 표가 현행 기준이다.</strong></p>
 
         <h4 style="margin-top:24px;"><span class="ico">📌</span>⑩ 지적·교훈 박제 원리 (구조·파이프라인으로 관리 · 지식만 메모리)</h4>
         <div class="callout" style="margin:8px 0 12px;"><strong>핵심 명제 — 관리는 '메모리에 기록'이 아니라 '구조(코드·시스템·게이트)를 만들고, 구조끼리 파이프라인으로 잇기'다. 글은 기계를 못 막지만 구조는 막는다.</strong> 같은 지적이 반복되면 메모리가 부족해서가 아니라 행동을 구조로 강제하지 않아서다. 박제 전에 먼저 가른다: 지식이냐 행동이냐.</div>
@@ -3634,27 +3102,9 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
           <p>프리미엄 라이프스타일 스포츠클럽의 브랜드·콘텐츠·회원 전환 설계자</p>
           <p style="font-size:13px;color:var(--dim);margin-top:8px;"><strong>철학:</strong> <span id="persona-cmo">무분별한 가격 할인 지양. <strong>노출을 회원으로 바꾸는 전환 설계</strong>가 본질. 톤 = 절제된 고급감 · 경험 중심 · 일관된 호칭("스포츠클럽").</span></p>
         </div>
-
-        <!-- 🧭 콘텐츠 허브 모듈 정의 (2026-07-18 GM: M1 '이 모듈은' 상세와 동기화 · 모듈 단일 정의 · 정본) -->
-        <h3 style="margin-top:8px;"><span class="ico">🧭</span>콘텐츠 허브 모듈 (M1) — 모듈 정의</h3>
-        <div class="callout">웰페리온의 모든 마케팅 콘텐츠를 <strong>기반 → 제작 → 검수 → 발행 → 성과 → 환류</strong> 한 흐름으로 운영. 콘텐츠 한 편이 <strong>기반(회사·전략·브랜드) 위에서 태어나</strong> 5채널로 나가고, 그 <strong>성과가 다음 기획으로 돌아오는 폐루프</strong>. 흩어진 도구가 아니라 M1 한 곳에서 돈다.</div>
-        <table>
-          <tr><th style="width:96px">단계</th><th>내용</th></tr>
-          <tr><td>🧭 ① 기반</td><td>회사소개서·전략·브랜드 = 모든 콘텐츠의 뿌리. 소재·각·톤이 자동 반영돼 브랜드·전략에서 벗어나지 않음. <strong>정본 = <code>2. 브랜드_자료/웰페리온_기반_FOUNDATION.md</code></strong></td></tr>
-          <tr><td>✍️ ② 제작</td><td>북극성 지향 루프(기획→초안→디자인→고도화→단순화). 종목 템플릿에서 생성. AI 보조 = 선택(끄고도 가능)</td></tr>
-          <tr><td>📨 ③ 검수</td><td>실무진이 미리보기 보고 승인/반려 = 발행 트리거(반무인 게이트 · GM 텔레그램 [승인]이 유일 경로)</td></tr>
-          <tr><td>🚀 ④ 발행</td><td>승인 시 스크립트가 5채널(인스타·블로그·카페·카카오·당근) 자동 공개발행 · 링크 회수는 자동(네이버는 불안정) · 정정은 GM 직접</td></tr>
-          <tr><td>📊 ⑤ 성과</td><td>콘텐츠→문의 <strong>채널별</strong> 성과 라이브(M1 대시보드). 게시글 단위 문의 귀속은 원천 불가(IG·당근 = 프로필 bio 링크) → 채널 단위가 이 플랫폼들의 최선</td></tr>
-          <tr><td>↻ ⑥ 환류</td><td>성과에서 배운 걸 다음 기획으로(아래 '마케팅 파이프라인 폐루프 5단계' 참조)</td></tr>
-        </table>
-        <div class="callout tip" style="margin-top:8px;"><strong>AI 없이 자체 가동</strong> — 검수·발행·성과는 도구(버튼·스크립트·대시보드)라 실무진이 직접 운영. 콘텐츠 <strong>생성</strong>만 템플릿/AI 보조(선택), 나머지 흐름엔 AI가 없어도 안 멈춘다. &nbsp;·&nbsp; <strong>제품화</strong> — 회사만 바꿔 기반을 넣으면 그 회사다운 콘텐츠(타 업체 이식 가능). &nbsp;·&nbsp; <strong>두 계정</strong> — 공식 @wellperion(시설·프로그램) / 개인 @namuk.wellperion(운영자 1인칭·AI 자동화 스토리). 톤 = 압박 없이 알리기.</div>
-
-        <table>
-          <tr><th style="width:120px">북극성</th><td id="northstar-cmo">노출 → 회원 전환 엔진 완성 (무인 자동화 + 전환율 목표)</td></tr><tr><th style="width:120px">핵심역할</th><td id="corerole-cmo">마케팅</td></tr>
-          <tr><th>담당 KPI</th><td id="kpi-cmo">🔧 노출→문의 전환율(채널귀속 측정 인프라 필요 · <strong>최우선</strong>) · ✅ 발행 건수·자동 무인화율(M5·디스패처 로그) · 🔧 월 신규 문의 수(퍼널) <span style="color:var(--dim);font-size:12px;">— 북극성 직결 전환율이 미측정 = 1순위 투자</span></td></tr>
-          <tr><th>실무진</th><td id="staff-cmo">김남욱 GM</td></tr>
-        </table>
-        <h4 style="margin-top:16px;">핵심업무</h4>
+        <h4 style="margin-top:16px;">핵심역할</h4>
+        <p>마케팅 — 브랜드·콘텐츠·회원 전환 설계.</p>
+<h4 style="margin-top:16px;">핵심업무</h4>
         <ul>
           <li>공식 핵심 3채널: IG namuk.wellperion · 네이버 블로그(wellperion) · 네이버 카페(동부이촌동) + 추가 발행 채널: 당근(반자동·당일)·카카오 | 페북 영구 삭제</li>
           <li>콘텐츠 제작 프로세스 관리</li>
@@ -3665,8 +3115,7 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         <p><strong>일일 콘텐츠 캘린더</strong> — 매일 09:00. 발행 예정 콘텐츠 · SNS 일정 · 전일 성과 · 주간 캘린더.</p>
         <p style="margin-top:8px;font-size:13px;color:var(--dim);">간판이 아니라 공간이 말하는 브랜드. 톤 3기준: 절제된 고급감 / 경험 중심 / 일관된 호칭("스포츠클럽").</p>
 
-        <!-- ── 시모 정체성 카드 8항목 (deep-interview 2026-06-18 확정) ── -->
-        <!-- 시모 정체성 카드: deep-interview 2026-06-18 확정 -->
+
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">🪪</span>시모 정체성 카드 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 8항목</span></h3>
         <table>
           <tr><th style="width:140px">항목</th><th>확정 내용</th></tr>
@@ -3722,54 +3171,6 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         </table>
 
         <!-- ── /역할 원칙 흡수 STAGE2 ── -->
-
-        <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM 박제 2026-06-23) ── -->
-        <h4 style="margin-top:20px;">🔁 마케팅 파이프라인 (폐루프 5단계)</h4>
-        <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. <strong>상단 '콘텐츠 허브 6단계'를 사업 성과(문의→등록)까지 확장한 것</strong> — 앞단(1 = 제작~발행)은 6단계와 동일, 이 루프의 초점은 <strong>뒷단(문의→등록→평가·환류)</strong>. 문의·등록(2·3)은 시포(CPO) 라인과 맞물림. (GM 박제 2026-06-23)</div>
-        <table>
-          <tr><th style="width:50px">단계</th><th>내용</th><th style="width:120px">상태</th></tr>
-          <tr><td><strong>1</strong></td><td>콘텐츠 기획 → 자동 업로드 (M3→텔레그램 승인→5채널 발행) <span style="color:var(--dim);font-size:11px;">— 하위 6단계 상세는 아래 '발행 루프' 참고</span></td><td>✅ 완성</td></tr>
-          <tr><td><strong>2</strong></td><td>CTA 문의 접수: 문의페이지 → 자동 집계·시트 기록 + 문의 DB 페이지(체험·투어&amp;상담 캘린더)</td><td>🟡 부분 (시트 의존·자체DB 미구축)</td></tr>
-          <tr><td><strong>3</strong></td><td>회원 관리프로그램 신규 등록 명단 체크 → 문의 DB 페이지로 등록 체크·등록 현황 반영</td><td>❌ 약함 (등록 매칭=추정 → 자동화 진행 중)</td></tr>
-          <tr><td><strong>4</strong></td><td>콘텐츠→문의 성과 대시보드 (M1 통합 · 채널별 실측)</td><td>🟡 부분 (채널 단위 실측 · 게시글 단위·등록 매칭은 CPO 라인)</td></tr>
-          <tr><td><strong>5</strong></td><td>대시보드 분석 → 콘텐츠 평가 → 1)로 환류 <span style="color:var(--dim);font-size:11px;">— 반응 판정·개선제안 루프 신설(아래 '반응 루프' 참고)</span></td><td>🟡 부분 (반응 루프 반무인 가동 · 3종 신호만 실측)</td></tr>
-        </table>
-        <p style="margin-top:8px;"><strong>우선순위:</strong> 3번 등록 매칭부터 — 고리가 닫혀야 4·5번 수치가 진실해진다.</p>
-        <!-- ── /마케팅 파이프라인 폐루프 5단계 ── -->
-
-        <!-- ── 발행 루프 6단계 + 반응 루프 (2026-07-20 GM 지시 완성분 · SSOT — M1은 이 섹션을 가리키기만 함) ── -->
-        <h4 style="margin-top:20px;">🚀 발행 루프 — 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(2026-07-20 가동 · 위 1단계의 하위 상세)</span></h4>
-        <div class="callout">공식계정(@wellperion) 전용. 원고 1건이 형제 채널 원고까지 자동으로 갖춰지고, GM 승인 카드 1장으로 5채널이 함께 나간다.</div>
-        <table>
-          <tr><th style="width:34px">#</th><th style="width:150px">단계</th><th>처리</th></tr>
-          <tr><td>1</td><td>콘텐츠 제작</td><td>IG 원고·이미지 제작(CMO)</td></tr>
-          <tr><td>2</td><td>4채널 원고 자동 생성</td><td>IG 캡션 1개 → 블로그·카페·카카오·당근 원고 자동 작성(<code>scripts/generate_channel_copy.py</code>). 이미 있는 수동 작성 원고는 덮어쓰지 않음</td></tr>
-          <tr><td>3</td><td>5채널 검수 엔트리 자동 등록</td><td>4채널 원고가 있으면 형제 검수 엔트리 자동 upsert(<code>scripts/publish_register.py</code> → <code>register_channel_review.py</code>)</td></tr>
-          <tr><td>4</td><td>GM 승인 카드 1장 → 5채널 동시 발행</td><td>IG+형제채널을 카드 1장으로 묶어 발송, [승인] 1번으로 5채널 함께 발행(<code>scripts/ig_review_publish_watcher.py</code>)</td></tr>
-          <tr><td>5</td><td>발행 검증</td><td>URL 회수 성공=발행완료 / 게시는 됐는데 URL만 못 받아온 건=<strong>「확인필요(발행됨·URL미회수)」</strong>로 분리 도장 — <strong>재발행 절대 안 함</strong>(2026-07-20 중복 게시 사고 재발방지)</td></tr>
-          <tr><td>6</td><td>누락 경보 + 텔레그램 요약</td><td>IG만 있고 형제채널이 없으면 GM 업무보고방 즉시 경보. 발행 완료 시 실무진방에 IG 대표 이미지 1장 + 5채널 링크 + 응원 요청 통합 요약 자동 발송</td></tr>
-        </table>
-
-        <h4 style="margin-top:20px;">↻ 반응 루프 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 발행 루프를 감싸는 상위 루프 · 2026-07-20 신설</span></h4>
-        <div class="callout">GM 지시: "발행 루프를 또 감싸서 반응을 파악하고, 반응이 없으면 있게 만드는 작업"도 필요. 편별 반응 저조 여부를 판정하고, 저조하면 개선안을 GM께 제안한다. <strong>반무인</strong> — 재발행 등 비가역 행동은 GM 승인 후에만 실행.</div>
-        <table>
-          <tr><th style="width:120px">항목</th><th>내용</th></tr>
-          <tr><td>측정 신호</td><td>① IG 편별 도달 ② 당근 조회·찜 ③ 네이버 카페 조회(수집 희소) — <code>scripts/reaction_scorecard.py</code>, 매일 09:45 IG 도달 자동수집에 편승 실행(신규 예약작업 없음)</td></tr>
-          <tr><td>판정 기준</td><td>최근 발행 5편 중앙값 대비 <strong>50% 미만 = 저조</strong> · 발행 24시간 미경과 또는 비교표본 3건 미만 = <strong>판정보류</strong>(억지 판정 금지)</td></tr>
-          <tr><td>개선안</td><td>'저조' 판정 시만 로드맵(<code>instagram/_공식시리즈_로드맵.md</code>) 근거로 구체적 제안 자동생성 → GM 업무보고방 발송</td></tr>
-          <tr><td>주간 보고</td><td>기존 주간 마케팅 브리프 §5 "콘텐츠 반응 성적표"로 편입(<code>scripts/weekly_marketing_feedback.py</code>)</td></tr>
-        </table>
-
-        <h4 style="margin-top:20px;">⚠️ 반응 측정 한계 (정직 표기)</h4>
-        <table>
-          <tr><th style="width:150px">구분</th><th>내용</th></tr>
-          <tr><td>측정 가능</td><td>IG 도달 · 당근 조회/찜 · 네이버 카페 조회(수집 희소)</td></tr>
-          <tr><td>측정 불가</td><td>네이버 블로그 조회수(로그인 필요) · 카카오 반응(비공개) · IG 좋아요·저장(비공개 지표)</td></tr>
-          <tr><td>편별 귀속 불가</td><td>채널별 문의→가입 전환은 누적 집계라 편(게시글) 단위로 나눌 수 없음</td></tr>
-          <tr><td>클릭 집계</td><td>2026-07-15 GM 결정으로 삭제 — 되살리지 않고 위 3신호로 대체</td></tr>
-        </table>
-        <div class="callout tip" style="margin-top:8px;">채널별 문구·링크 규칙 정본 = <code>scripts/cta_utm.py</code>(재서술 안 함) · 규칙 중복 감시 = <code>ssot/divergence_scan.py</code>.</div>
-        <!-- ── /발행 루프 6단계 + 반응 루프 ── -->
       </div>
       <div class="tab-panel" data-panel="cto">
         <div class="card accent" style="margin-bottom:16px;">
@@ -4046,9 +3447,62 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       </div>
     </section>
 
+    <!-- ── 파이프라인 4블록: S2 시모 탭에서 이관(2026-07-25 GM "한 곳만 바라보게").
+       역할 정의는 S2, 콘텐츠가 실제로 도는 방식은 M1 — 두 곳에 나눠 적지 않는다. ── -->
+    <h3 id="m1-pipeline"><span class="ico">🔁</span>파이프라인 — 발행 · 반응 · 성과 환류</h3>
+    <p style="font-size:13px;color:var(--dim);margin:6px 0 14px;">위 6단계가 한 편이 도는 흐름이라면, 아래는 그 흐름이 <strong>사업 성과(문의→등록)</strong>까지 닫히는 큰 고리와 각 단계의 실제 배선입니다.</p>
+    <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM 박제 2026-06-23) ── -->
+    <h4 style="margin-top:20px;">🔁 마케팅 파이프라인 (폐루프 5단계)</h4>
+    <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. <strong>상단 '콘텐츠 허브 6단계'를 사업 성과(문의→등록)까지 확장한 것</strong> — 앞단(1 = 제작~발행)은 6단계와 동일, 이 루프의 초점은 <strong>뒷단(문의→등록→평가·환류)</strong>. 문의·등록(2·3)은 시포(CPO) 라인과 맞물림. (GM 박제 2026-06-23)</div>
+    <table>
+      <tr><th style="width:50px">단계</th><th>내용</th><th style="width:120px">상태</th></tr>
+      <tr><td><strong>1</strong></td><td>콘텐츠 기획 → 자동 업로드 (검수큐→텔레그램 승인→5채널 발행) <span style="color:var(--dim);font-size:11px;">— 하위 6단계 상세는 아래 '발행 루프' 참고</span></td><td>✅ 완성</td></tr>
+      <tr><td><strong>2</strong></td><td>CTA 문의 접수: 문의페이지 → 자동 집계·시트 기록 + 문의 DB 페이지(체험·투어&amp;상담 캘린더)</td><td>🟡 부분 (시트 의존·자체DB 미구축)</td></tr>
+      <tr><td><strong>3</strong></td><td>회원 관리프로그램 신규 등록 명단 체크 → 문의 DB 페이지로 등록 체크·등록 현황 반영</td><td>❌ 약함 (등록 매칭=추정 → 자동화 진행 중)</td></tr>
+      <tr><td><strong>4</strong></td><td>콘텐츠→문의 성과 대시보드 (M1 통합 · 채널별 실측)</td><td>🟡 부분 (채널 단위 문의 + 인스타 도달까지 실측 · 게시글 단위 귀속·등록 매칭은 CPO 라인 — 2026-07-25 갱신)</td></tr>
+      <tr><td><strong>5</strong></td><td>대시보드 분석 → 콘텐츠 평가 → 1)로 환류 <span style="color:var(--dim);font-size:11px;">— 반응 판정·개선제안 루프 신설(아래 '반응 루프' 참고)</span></td><td>🟡 부분 (반응 루프 반무인 가동 · 3종 신호만 실측)</td></tr>
+    </table>
+    <p style="margin-top:8px;"><strong>우선순위:</strong> 3번 등록 매칭부터 — 고리가 닫혀야 4·5번 수치가 진실해진다.</p>
+    <!-- ── /마케팅 파이프라인 폐루프 5단계 ── -->
+
+    <!-- ── 발행 루프 6단계 + 반응 루프 (2026-07-20 GM 지시 완성분 · SSOT — 2026-07-25 S2 시모 탭에서 M1으로 이관) ── -->
+    <h4 style="margin-top:20px;">🚀 발행 루프 — 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(2026-07-20 가동 · 위 1단계의 하위 상세)</span></h4>
+    <div class="callout">공식계정(@wellperion) 전용. 원고 1건이 형제 채널 원고까지 자동으로 갖춰지고, GM 승인 카드 1장으로 5채널이 함께 나간다.</div>
+    <table>
+      <tr><th style="width:34px">#</th><th style="width:150px">단계</th><th>처리</th></tr>
+      <tr><td>1</td><td>콘텐츠 제작</td><td>IG 원고·이미지 제작(CMO)</td></tr>
+      <tr><td>2</td><td>4채널 원고 자동 생성</td><td>IG 캡션 1개 → 블로그·카페·카카오·당근 원고 자동 작성(<code>scripts/generate_channel_copy.py</code>). 이미 있는 수동 작성 원고는 덮어쓰지 않음</td></tr>
+      <tr><td>3</td><td>5채널 검수 엔트리 자동 등록</td><td>4채널 원고가 있으면 형제 검수 엔트리 자동 upsert(<code>scripts/publish_register.py</code> → <code>register_channel_review.py</code>)</td></tr>
+      <tr><td>4</td><td>GM 승인 카드 1장 → 5채널 동시 발행</td><td>IG+형제채널을 카드 1장으로 묶어 발송, [승인] 1번으로 5채널 함께 발행(<code>scripts/ig_review_publish_watcher.py</code>)</td></tr>
+      <tr><td>5</td><td>발행 검증</td><td>URL 회수 성공=발행완료 / 게시는 됐는데 URL만 못 받아온 건=<strong>「확인필요(발행됨·URL미회수)」</strong>로 분리 도장 — <strong>재발행 절대 안 함</strong>(2026-07-20 중복 게시 사고 재발방지)</td></tr>
+      <tr><td>6</td><td>누락 경보 + 텔레그램 요약</td><td>IG만 있고 형제채널이 없으면 GM 업무보고방 즉시 경보. 발행 완료 시 실무진방에 IG 대표 이미지 1장 + 5채널 링크 + 응원 요청 통합 요약 자동 발송</td></tr>
+    </table>
+
+    <h4 style="margin-top:20px;">↻ 반응 루프 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 발행 루프를 감싸는 상위 루프 · 2026-07-20 신설</span></h4>
+    <div class="callout">GM 지시: "발행 루프를 또 감싸서 반응을 파악하고, 반응이 없으면 있게 만드는 작업"도 필요. 편별 반응 저조 여부를 판정하고, 저조하면 개선안을 GM께 제안한다. <strong>반무인</strong> — 재발행 등 비가역 행동은 GM 승인 후에만 실행.</div>
+    <table>
+      <tr><th style="width:120px">항목</th><th>내용</th></tr>
+      <tr><td>측정 신호</td><td>① IG 편별 도달 ② 당근 조회·찜 ③ 네이버 카페 조회(수집 희소) — <code>scripts/reaction_scorecard.py</code>, 매일 09:45 IG 도달 자동수집에 편승 실행(신규 예약작업 없음)</td></tr>
+      <tr><td>판정 기준</td><td>최근 발행 5편 중앙값 대비 <strong>50% 미만 = 저조</strong> · 발행 24시간 미경과 또는 비교표본 3건 미만 = <strong>판정보류</strong>(억지 판정 금지)</td></tr>
+      <tr><td>개선안</td><td>'저조' 판정 시만 로드맵(<code>instagram/_공식시리즈_로드맵.md</code>) 근거로 구체적 제안 자동생성 → GM 업무보고방 발송</td></tr>
+      <tr><td>주간 보고</td><td>기존 주간 마케팅 브리프 §5 "콘텐츠 반응 성적표"로 편입(<code>scripts/weekly_marketing_feedback.py</code>)</td></tr>
+    </table>
+
+    <h4 style="margin-top:20px;">⚠️ 반응 측정 한계 (정직 표기)</h4>
+    <table>
+      <tr><th style="width:150px">구분</th><th>내용</th></tr>
+      <tr><td>측정 가능</td><td>IG 도달 · 당근 조회/찜 · 네이버 카페 조회(수집 희소)</td></tr>
+      <tr><td>측정 불가</td><td>네이버 블로그 조회수(로그인 필요) · 카카오 반응(비공개) · IG 좋아요·저장(비공개 지표)</td></tr>
+      <tr><td>편별 귀속 불가</td><td>채널별 문의→가입 전환은 누적 집계라 편(게시글) 단위로 나눌 수 없음</td></tr>
+      <tr><td>클릭 집계</td><td>2026-07-15 GM 결정으로 삭제 — 되살리지 않고 위 3신호로 대체</td></tr>
+    </table>
+    <div class="callout tip" style="margin-top:8px;">채널별 문구·링크 규칙 정본 = <code>scripts/cta_utm.py</code>(재서술 안 함) · 규칙 중복 감시 = <code>ssot/divergence_scan.py</code>.</div>
+    <!-- ── /발행 루프 6단계 + 반응 루프 ── -->
+
     <div style="margin:36px 0 6px;border-top:2px solid var(--accent);padding-top:16px;font-size:1.12rem;font-weight:800;color:var(--text);">② 제작</div>
 
-    <h3 id="m1-loop"><span class="ico">✍️</span>제작 품질 — 3렌즈 반복 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = AI C-Level 운영 한 장 / 부트셋업)</span></h3>
+    
+      <h3 id="m1-loop"><span class="ico">✍️</span>제작 품질 — 3렌즈 반복 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = AI C-Level 운영 한 장 / 부트셋업)</span></h3>
     <p>제작 세부 = <strong>기획·설계</strong>(소재·메시지·채널·타깃 · CS 스토리텔링·현실감 공식) → <strong>초안</strong>(카피·슬라이드) → <strong>디자인</strong>(compose_barre 룩·레이아웃). 여기까지가 상단 6단계 흐름의 <strong>'② 제작'</strong> 한 단계다.</p>
     <div class="callout tip"><strong>원샷 금지 — 제작 품질의 핵심.</strong> 초안을 <strong>① 고도화</strong>(브랜드 톤·후킹·현실감) → <strong>② 단순화</strong>(군더더기·과장 제거) → <strong>③ AI 검토</strong> 각각 <strong>별도 패스</strong>로 돌린다(한 번에 뭉치지 말 것). <br>※ 검수→발행→성과→환류 <strong>전체 루프는 상단 「콘텐츠 허브」 6단계</strong>가 정본 — 중복 표기 제거(구 '북극성 지향 제작 루프' 표 = 상단 6단계와 동일 루프였음). 현재 병목 = <strong>발행 후 반응 → 다음 기획 자동 반영(환류)</strong> 고리 — 시모 품질의 다음 한 걸음.</div>
 
@@ -4289,10 +3743,13 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
          cmo/funnel/콘텐츠문의현황.html 전체 페이지가 정본. 여기는 이번 달 요약만 얹는다.
          데이터 = 같은 실측 소스 재사용(review_queue.json 발행 + funnel_conversion GAS 문의/전환) —
          신규 집계·신규 파일 없음. click_stats 액션은 2026-07-15 GM 결정으로 폐기되어 사용하지 않음.
-         노출(도달) = IG Graph API 토큰 부재로 미측정 — 가짜 분모 금지, 정직 표기. -->
+         도달(reach) = 측정 중(scripts/ig_reach_collector.py → status/ig_reach_ledger.json).
+         노출(impressions) = 게시물 유형 제약(CAROUSEL 미지원)으로 수집 제외 — 가짜 분모 금지, 정직 표기.
+         ※2026-07-25 정정: 여기 '토큰 부재로 미측정'이라 적혀 있었으나 실측 결과 도달은 07-07부터 계속
+           쌓이고 있었다(오늘 값 포함). 낡은 서술이 M1 안에서 반응 루프 설명과 정면으로 어긋나던 것을 바로잡음. -->
     <h3 id="m1-perf-summary"><span class="ico">📊</span>채널별 문의 성과 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 이번 달 요약 · 라이브</span></h3>
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 12px;line-height:1.6;">콘텐츠 5채널(인스타그램·네이버 블로그·네이버 카페·카카오·당근)이 데려온 문의 실측 요약입니다. 기간 필터·전환 상세 명단·전 유입채널(콘텐츠 밖 포함)·강습 종목별 문의는 <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="color:var(--accent);font-weight:600;">콘텐츠 문의 현황 전체보기 →</a></p>
-    <div class="callout tip" style="margin-bottom:14px;"><strong>노출(도달) — 미측정.</strong> IG Graph API 토큰 부재로 게시물 노출·도달수는 집계되지 않습니다(가짜 분모 금지). 아래는 실측 가능한 <strong>발행 → 문의 → 전환</strong> 구간만 표시합니다.</div>
+    <div class="callout tip" style="margin-bottom:14px;"><strong>도달 = 측정 중</strong> — 인스타 게시물이 몇 명에게 닿았는지는 매일 자동 수집됩니다(<code>scripts/ig_reach_collector.py</code> · 정본 <code>status/ig_reach_ledger.json</code>). 다만 <strong>노출(같은 사람이 여러 번 본 횟수)은 게시물 유형 제약으로 수집되지 않습니다</strong> — 없는 분모를 지어내지 않습니다. 아래 표는 <strong>발행 → 문의 → 전환</strong> 구간의 실측입니다.</div>
 
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
       <div style="flex:1;min-width:110px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
@@ -4307,7 +3764,14 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         <div id="m1-perf-kpi-per" style="font-size:22px;font-weight:800;color:var(--accent);">···</div>
         <div style="font-size:10px;color:var(--dim);margin-top:4px;">게시물당 문의</div>
       </div>
+      <!-- 도달 칸 (2026-07-25 신설) — CMO 최우선 KPI '노출→문의 전환율'이 그동안 숫자를 못 가졌던 건
+           분모가 없어서가 아니라 **있는 줄 몰라서**였다. 도달은 2026-07-07부터 계속 쌓이고 있었다. -->
+      <div style="flex:1;min-width:110px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
+        <div id="m1-perf-kpi-reach" style="font-size:22px;font-weight:800;color:var(--accent);">···</div>
+        <div style="font-size:10px;color:var(--dim);margin-top:4px;">인스타 누적 도달</div>
+      </div>
     </div>
+    <div id="m1-perf-reach-note" style="font-size:12px;color:var(--dim);margin:-4px 0 14px;line-height:1.65;"></div>
 
     <div id="m1-perf-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
       <div style="color:var(--dim);font-size:12px;padding:10px 0;">채널별 성과 불러오는 중…</div>
@@ -4397,8 +3861,45 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         }
         var note=document.getElementById('m1-perf-note');
         if(note){
-          note.textContent=(fc?'':'채널별 문의 집계 실패 — 잠시 후 다시 시도 또는 상세 페이지 확인. ')+'기간 '+from+' ~ '+to+'(이번 달) · 데이터=review_queue.json 발행 실측 + funnel_conversion(GAS) 실측 · 콘텐츠 5채널 유입만 집계(소개·지인·오프라인 등 제외) · 노출(도달) 분모는 미측정.';
+          note.textContent=(fc?'':'채널별 문의 집계 실패 — 잠시 후 다시 시도 또는 상세 페이지 확인. ')+'기간 '+from+' ~ '+to+'(이번 달) · 데이터=review_queue.json 발행 실측 + funnel_conversion(GAS) 실측 · 콘텐츠 5채널 유입만 집계(소개·지인·오프라인 등 제외) · 도달=ig_reach_ledger.json 실측(노출은 수집 제외).';
         }
+
+        // ── 인스타 도달 → 문의 (2026-07-25 신설) ───────────────────────────────
+        // CMO 최우선 KPI('노출→문의 전환율')가 처음으로 숫자를 갖는 자리다.
+        // ★숫자를 크게 띄우지 않고 문장으로 쓰는 이유: 인스타는 게시글에 링크를 못 달아
+        //   프로필 링크로만 문의가 들어온다 → 귀속이 구조적으로 샌다. 이 전환율은 **하한선**이지
+        //   실제 성과가 아니다. 크게 띄우면 "인스타는 효과 없다"로 잘못 읽힌다.
+        // 발행 루트에 미러가 없는 파일이라 원본을 직접 읽는다(월간운영계획·S0와 같은 경로 방식).
+        fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/ig_reach_ledger.json?cb='+Date.now(),{cache:'no-store'})
+          .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+          .then(function(rl){
+            var snaps=(rl&&rl.media_snapshots)||[];
+            var total=0, cnt=0;
+            snaps.forEach(function(m){
+              var ss=(m&&m.snapshots)||[]; if(!ss.length) return;
+              var last=ss.reduce(function(a,b){ return String(b.date)>String(a.date)?b:a; });
+              if(typeof last.reach==='number'){ total+=last.reach; cnt++; }
+            });
+            if(!cnt) throw new Error('스냅샷 없음');
+            var avg=Math.round(total/cnt);
+            var elR=document.getElementById('m1-perf-kpi-reach');
+            if(elR) elR.textContent=total.toLocaleString('ko-KR');
+            var igInq=fc?(inqByCh[PUB2GAS['인스타그램']]||0):null;
+            var nb=document.getElementById('m1-perf-reach-note');
+            if(nb){
+              var rate=(igInq!=null&&total>0)?((igInq/total)*100).toFixed(2):null;
+              nb.innerHTML='인스타 게시물 <strong>'+cnt+'편</strong>이 지금까지 <strong>'+total.toLocaleString('ko-KR')
+                +'명</strong>에게 닿았습니다(편당 평균 '+avg.toLocaleString('ko-KR')+'명).'
+                +(rate!==null?' 그중 문의로 이어진 건 <strong>'+igInq+'건</strong> — 겉으로는 '+rate+'%입니다.':'')
+                +' <span style="color:var(--dim)">다만 인스타는 게시글에 링크를 달 수 없어 프로필 링크로만 문의가 들어옵니다 — '
+                +'실제로 인스타를 보고 왔어도 다른 경로로 기록될 수 있어, 이 비율은 <strong>바닥값</strong>으로 보십시오.</span>';
+            }
+          }).catch(function(e){
+            var elR=document.getElementById('m1-perf-kpi-reach');
+            if(elR) elR.textContent='—';
+            var nb=document.getElementById('m1-perf-reach-note');
+            if(nb) nb.textContent='도달 수치를 불러오지 못했습니다 ('+(e&&e.message||'')+').';
+          });
       }).catch(function(){
         var wrap=document.getElementById('m1-perf-table-wrap');
         if(wrap)wrap.innerHTML='<div style="color:var(--dim);font-size:12px;padding:10px 0;">채널별 성과 집계 실패 — <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="color:var(--accent);">콘텐츠 문의 현황 전체보기</a>에서 확인하세요.</div>';
@@ -6431,68 +5932,23 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <!-- ── G19: 업무자동화 ── -->
   <!-- ── COO 체크리스트 소개 ── -->
   <article class="doc" id="O1">
-    <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 운영 체계 · 지원부 우선 완성 → 확장</div></div>
-    <section id="o1-module-hub" style="margin:18px 0;">
-      <h3 style="font-size:1.05rem;margin:0 0 10px;">🏢 운영 모듈 현황</h3>
-      <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
-        <div style="color:var(--dim);">모듈 불러오는 중…</div>
+    <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 운영 SSOT · 계획 → 현황 → 접수 → 개선</div></div>
+
+    <!-- 모듈 소개 (2026-07-25 GM: 'O1도 M1처럼 이 모듈에 대한 설명이 하나 있으면 좋겠다')
+         형식·톤 = M1 '이 모듈은' 박스와 동일. 내용 정본 = S2 COO 본인탭 + module_registry owner_role=coo. -->
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:9px;">이 모듈은 · COO 운영 허브</div>
+      <div style="font-size:14.5px;color:var(--text);line-height:1.7;font-weight:700;">웰페리온의 하루가 실제로 어떻게 돌아가는지를 <span style="color:var(--accent);">계획 → 현황 → 접수 → 개선</span> 한 흐름으로 보는 곳입니다.</div>
+      <div style="font-size:12.5px;color:var(--dim);line-height:1.65;margin-top:6px;">부서별 문서를 모아둔 링크 모음이 아니라, <strong>각 부서가 오늘 어디까지 했는지</strong>가 숫자로 뜨고, <strong>밀린 것이 스스로 드러나</strong> 다음 손댈 곳이 보이는 화면입니다.</div>
+      <div style="margin-top:13px;font-size:13px;color:var(--dim);line-height:1.8;">
+        🗓️ 월간 계획 → 🏢 오늘 현황(9개 모듈) → 🙋 종합접수처 → 📝 업무·결재 — 위에서 아래로 한 번에 훑기
       </div>
-    </section>
-    <script>
-    // 프론트 등록부 구동은 웰리 공유 렌더러+등록부 Pages 서빙 후속(front_card 스키마 예약).
-    (function(){
-      var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
-      // Pages는 '3. 웰페리온 가이드/' 접두어 없이 서빙(접두어=404 · 아래 부서별 체계 링크와 동일 베이스). 2026-07-14 시우 404 수정.
-      var BASE = "https://wellperion-cao.github.io/wellperion-automation/";
-      var CACHE_KEY = "o1_check_metric_v1";
-      function card(name, feature, metric, badge, href, tag){
-        return '<a href="'+href+'" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
-          + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+name+' '+badge+'</div>'
-          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+feature+'</div>'
-          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+metric+'</div>'
-          + '<div style="font-size:.72rem;color:var(--dim);margin-top:6px;">'+tag+'</div></a>';
-      }
-      function pctOf(row){ if(!row) return null; if(row.pct!=null) return row.pct; return row.total? Math.round(row.done/row.total*100):null; }
-      function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
-      // weekly(data 배열) → 오늘(KST) 날짜 행 매칭, 없으면 마지막 폴백. today_live(단일 객체) → 그대로. line 10507 pickToday 패턴 재사용.
-      function pickToday(resp){
-        if(resp && Array.isArray(resp.data) && resp.data.length){
-          var today = todayStr();
-          var row = resp.data.filter(function(x){return x.date===today;})[0];
-          return row || resp.data[resp.data.length-1];
-        }
-        return resp;
-      }
-      function render(metric, badge, tag){
-        var el = document.getElementById('o1-module-cards'); if(!el) return;
-        var checkHref = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
-        var schedHref = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
-        var noticeHref = BASE + "coo/notice/notice_template.html";
-        el.innerHTML = card('시설·지원 점검 현황','부서별 점검 완료율·이상', metric, badge, checkHref, tag)
-          + card('전사 일정','정기 안전·법정 점검 등 반복 일정', '열기 →', '📅', schedHref, '전 부서 공유 · 검사일 입력 대기')
-          + card('공지/안내문 생성','브랜드 기준 공지·안내문 · A3/A4 인쇄', '열기 →', '📢', noticeHref, '9개 사업부 컬러 · 8프리셋');
-      }
-      function loadHub(){
-        // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — 느린 GAS 콜에 링크가 막히지 않게
-        var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
-        if(cached) render(cached.metric, cached.badge, '측정값 · 갱신 중');
-        else render('불러오는 중…', '⏳', '측정값(measured)');
-        var pv = Date.now();
-        var fP = fetch(CHECK_API+"?action=weekly&dept=facility&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-        var sP = fetch(CHECK_API+"?action=today_live&dept=support&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-        Promise.all([fP, sP]).then(function(res){
-          var fPct = pctOf(res[0]), sPct = pctOf(res[1]);
-          var anomaly = (fPct==null || fPct>100 || sPct==null || sPct>100);
-          var badge = anomaly? '⚠' : '✅';
-          var metric = '시설 '+(fPct==null?'—':fPct+'%')+' · 지원 '+(sPct==null?'—':sPct+'%');
-          render(metric, badge, '측정값(measured)');
-          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({metric:metric,badge:badge})); }catch(e){}
-        }).catch(function(){ if(!cached){ var el=document.getElementById('o1-module-cards'); if(el) el.innerHTML='<div style="color:var(--red);">점검 현황: (측정 실패 — 정직 표기)</div>'; } });
-      }
-      loadHub();
-    })();
-    </script>
-    <p class="lead">전 부서 공통 운영 체계입니다.</p>
+      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12px;color:var(--dim);line-height:1.55;">
+        <div>🔢 <strong style="color:var(--text);">큰 숫자 + 작은 경고</strong> — 카드마다 대표값 하나와 '지금 볼 일' 한 줄. 경고가 없으면 오늘 그 부서는 손댈 게 없다는 뜻.</div>
+        <div>🚫 <strong style="color:var(--text);">가짜 숫자 없음</strong> — 측정 못 하는 건 0%가 아니라 '아직 측정 없음'으로 적습니다. 빈 칸이 보여야 채울 마음이 생깁니다.</div>
+        <div>🔗 <strong style="color:var(--text);">카드 = 문</strong> — 각 카드가 그 부서 페이지로 가는 입구입니다. 부서 페이지는 그대로 독립 유지(흡수 아님).</div>
+      </div>
+    </div>
 
     <a href="월간운영계획.html" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#14352a,#1a1a2a);border:1px solid #2fa37a;border-radius:14px;text-decoration:none;color:#fff;">
       <span style="font-size:28px;flex-shrink:0;">🗓️</span>
@@ -6512,16 +5968,228 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <span style="font-size:13px;font-weight:800;color:#221F20;background:#c9a24a;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
     </a>
 
-    <h4 style="margin-bottom:10px;">부서별 체계</h4>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏢 운영부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏭 시설부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">✅ 지원부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🅿️ 주차관리부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🛎️ 리셉션 체계</a>
+    <section id="o1-module-hub" style="margin:18px 0;">
+      <h3 style="font-size:1.05rem;margin:0 0 10px;">🏢 운영 모듈 현황</h3>
+      <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+        <div style="color:var(--dim);">모듈 불러오는 중…</div>
+      </div>
+      <!-- 전사일정·공지·종합접수처·운영부·리셉션 전부 맨 링크에서 현황 카드로 승격
+           (GM 지시 2026-07-25) — 위 카드 그리드가 9장을 렌더한다. 별도 링크 줄 없음. -->
+    </section>
+    <script>
+    // 프론트 등록부 구동은 웰리 공유 렌더러+등록부 Pages 서빙 후속(front_card 스키마 예약).
+    // 운영모듈 현황 = 시설/지원(남)/지원(여) 3구분 카드 (GM 지시 2026-07-25 배95 · 시우 재구성).
+    (function(){
+      var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
+      // Pages는 '3. 웰페리온 가이드/' 접두어 없이 서빙(접두어=404 · 아래 부서별 체계 링크와 동일 베이스). 2026-07-14 시우 404 수정.
+      var BASE = "https://wellperion-cao.github.io/wellperion-automation/";
+      var CACHE_KEY = "o1_dept_cards_v2";   // v1 = 3카드 시절 캐시 — 스키마가 달라 키를 올린다(옛 캐시 오독 방지)
+      var FACILITY_HREF = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      var SUPPORT_HREF  = BASE + "coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      var PARKING_HREF  = BASE + "coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      var SCHEDULE_HREF = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
+      var NOTICE_HREF   = BASE + "coo/notice/notice_template.html";
+      var RECEPTION_HREF      = "/wellperion-automation/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html";
+      var OPS_HREF            = BASE + "coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      var RECEPTION_WORK_HREF = BASE + "coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html";
+      // 종합접수처 웹앱 — 점검·업무 GAS 와 또 다른 프로젝트다(섞으면 action 오류).
+      // 정본 = scripts/collectors/ops_shared.py 의 접수처 주소 · 종합접수처_현황.html 과 동일.
+      var RECEPTION_API = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
+      // status/*.json 은 Pages 발행루트에 없다 — 저장소 raw 를 직독한다(worklog_panel.js 와 동일 관례).
+      var RAW_BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/";
+      // 공지 목록(notice_list) 전용 — 점검 GAS(CHECK_API)와 다른 웹앱이다. 섞으면 '알 수 없는 action' 이 된다.
+      // 이 페이지가 이미 쓰는 TODO_API_URL 과 같은 주소 — 값을 또 적지 않고 있으면 그걸 쓴다(약속 L01).
+      var TODO_API = (typeof TODO_API_URL !== 'undefined' && TODO_API_URL)
+        ? TODO_API_URL
+        : "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
+      /* 카드 1장 = 모듈 1개. 구성은 GM 확정(2026-07-25 딥인터뷰): **큰 숫자(대표값) + 작은 경고(볼 일)**.
+         경고가 없으면 회색 정보 한 줄로 떨어뜨린다(빈 줄을 두지 않는다 — 카드 높이가 들쭉날쭉해짐).
+         ★가짜 숫자 금지: 값이 없으면 '—' + '아직 측정 없음'. 0%로 떨어뜨리지 않는다. */
+      /* o.extra = {label, href} 를 주면 카드 아래에 **보조 버튼**이 하나 더 붙는다(예: 종합접수처 카드의
+         '회원 접수 폼'). ★<a> 안에 <a> 를 넣으면 HTML 이 무효라 브라우저가 태그를 쪼개 레이아웃이
+         깨진다 — 그래서 카드 겉을 <div> 로 감싸고 본문 링크와 보조 버튼을 형제로 둔다. */
+      function moduleCard(o){
+        var warnColor = o.warnLevel==='bad' ? 'var(--red)' : (o.warnLevel==='ok' ? 'var(--dim)' : 'var(--orange, #d98a3d)');
+        var big = (o.value==null || o.value==='') ? '—' : o.value;
+        var sub = (o.value==null || o.value==='') ? '아직 측정 없음' : (o.warn||'');
+        var body = '<a href="'+o.href+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);">'
+          + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+o.icon+' '+o.label+'</div>'
+          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+o.caption+'</div>'
+          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+big+'</div>'
+          + '<div style="font-size:.74rem;color:'+((o.value==null||o.value==='')?'var(--dim)':warnColor)+';margin-top:6px;font-weight:'+(o.warnLevel==='bad'?'700':'400')+';">'+sub+'</div></a>';
+        var extra = o.extra
+          ? '<a href="'+o.extra.href+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:7px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;text-decoration:none;">'+o.extra.label+'</a>'
+          : '';
+        return '<div style="border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'+body+extra+'</div>';
+      }
+      function deptCard(icon, label, pctText, badge, href, tag){   // 하위호환(다른 호출부 대비) — 신규 카드로 위임
+        return moduleCard({icon:icon,label:label,caption:'오늘 점검 완료율',value:pctText==='—'?null:pctText,warn:tag,warnLevel:'ok',href:href});
+      }
+      function pctOf(row){ if(!row) return null; if(row.pct!=null) return row.pct; return row.total? Math.round(row.done/row.total*100):null; }
+      function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+      // weekly(data 배열) → 오늘(KST) 날짜 행 매칭, 없으면 마지막 폴백. today_live(단일 객체) → 그대로. line 10507 pickToday 패턴 재사용.
+      function pickToday(resp){
+        if(resp && Array.isArray(resp.data) && resp.data.length){
+          var today = todayStr();
+          var row = resp.data.filter(function(x){return x.date===today;})[0];
+          return row || resp.data[resp.data.length-1];
+        }
+        return resp;
+      }
+      /* 미점검 건수 = total-done. 점검 카드의 '작은 경고'는 %가 아니라 **남은 건수**다
+         (GM: 퍼센트만 보면 몇 건 남았는지 몰라 손이 안 간다). */
+      function undone(row){
+        if(!row || row.total==null || row.done==null) return null;
+        var n = Number(row.total) - Number(row.done);
+        return (isNaN(n) || n<0) ? null : n;
+      }
+      function checkWarn(row){
+        var n = undone(row);
+        if(n==null) return {warn:'', level:'ok'};
+        return n>0 ? {warn:'⚠ 미점검 '+n+'건', level:'bad'} : {warn:'✓ 오늘 다 마침', level:'ok'};
+      }
+      function pctText(p){ return p==null ? null : p+'%'; }
+
+      function render(S){
+        var el = document.getElementById('o1-module-cards'); if(!el) return;
+        var fW=checkWarn(S.fRow), mW=checkWarn(S.mRow), wW=checkWarn(S.wRow);
+        // 카드 제목은 부서 페이지 이름 그대로 쓴다(GM 2026-07-25) — '시설'이 아니라 '시설부 체계'.
+        // 화면에 뜬 이름과 눌러서 들어간 페이지 이름이 같아야 헷갈리지 않는다.
+        el.innerHTML =
+            moduleCard({icon:'🏭',label:'시설부 체계',     caption:'오늘 점검 완료율', value:pctText(S.fPct), warn:fW.warn, warnLevel:fW.level, href:FACILITY_HREF})
+          + moduleCard({icon:'🚹',label:'지원부 체계(남)', caption:'오늘 점검 완료율', value:pctText(S.mPct), warn:mW.warn, warnLevel:mW.level, href:SUPPORT_HREF})
+          + moduleCard({icon:'🚺',label:'지원부 체계(여)', caption:'오늘 점검 완료율', value:pctText(S.wPct), warn:wW.warn, warnLevel:wW.level, href:SUPPORT_HREF})
+          + moduleCard({icon:'🅿️',label:'주차관리부 체계', caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
+          + moduleCard({icon:'📅',label:'전사 일정',       caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
+          + moduleCard({icon:'📢',label:'공지·안내문 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
+          + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수',      value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
+                        extra:{label:'📲 회원 접수 폼', href:'http://wellperion.com/ko/reception/'}})
+          + moduleCard({icon:'🏢',label:'운영부 체계',     caption:'실무진 진행 업무',  value:S.opsTask,     warn:S.opsWarn,   warnLevel:S.opsLevel,   href:OPS_HREF})
+          + moduleCard({icon:'🛎️',label:'리셉션 업무',     caption:'라커 운영',        value:S.lockerVal,   warn:S.lockerWarn, warnLevel:'ok',        href:RECEPTION_WORK_HREF});
+      }
+      function won(n){ // 256만원 / 1,250원 — 큰 숫자 칸이 좁아 만원 단위로 접는다
+        if(n==null || isNaN(n)) return null;
+        n = Number(n);
+        if(n >= 10000) return Math.round(n/10000).toLocaleString('ko-KR')+'만원';
+        return n.toLocaleString('ko-KR')+'원';
+      }
+      /* 공지 savedAt 은 GAS 가 만든 한국어 표기다 — 실측 예 '2026. 7. 13. 오후 9:49:58'.
+         Date.parse 로는 안 읽혀 경과일이 통째로 비었다(2026-07-25 렌더 시뮬레이션에서 발견).
+         날짜 세 토막만 뽑아 쓴다(시각은 경과일 계산에 불필요). ISO 형식도 그대로 통과. */
+      function daysSince(raw){
+        var s = String(raw||'');
+        var m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+        var t = m ? new Date(+m[1], +m[2]-1, +m[3]).getTime() : Date.parse(s);
+        if(isNaN(t)) return null;
+        return Math.max(0, Math.floor((Date.now()-t)/86400000));
+      }
+      function loadHub(){
+        // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate)
+        // — 느린 GAS 콜에 링크가 막히지 않게. 한 소스가 죽어도 나머지 카드는 그대로 뜬다(개별 catch).
+        var S = {fRow:null,mRow:null,wRow:null,fPct:null,mPct:null,wPct:null,
+                 parkAmt:null,parkWarn:'',schedTotal:null,schedWarn:'',schedLevel:'ok',
+                 noticeTotal:null,noticeWarn:'',noticeLevel:'ok',
+                 receptionOpen:null,receptionWarn:'',receptionLevel:'ok',
+                 opsTask:null,opsWarn:'',opsLevel:'ok',
+                 lockerVal:null,lockerWarn:''};
+        var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
+        if(cached){ for(var k in cached){ if(cached.hasOwnProperty(k)) S[k]=cached[k]; } }
+        render(S);
+        var pv = Date.now();
+        function jget(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); }
+
+        var fP = jget(CHECK_API+"?action=weekly&dept=facility&_pv="+pv).then(pickToday).catch(function(){return null;});
+        var sP = jget(CHECK_API+"?action=today_live&dept=support&_pv="+pv).then(pickToday).catch(function(){return null;});
+        var parkP  = jget(RAW_BASE+"status/parking_revenue.json?_pv="+pv);
+        var schedP = jget(RAW_BASE+"status/schedule_ssot.json?_pv="+pv);
+        var noticeP= jget(TODO_API+"?action=notice_list&_pv="+pv);
+        var receptionP = jget(RECEPTION_API+"?action=reg_list&_pv="+pv);
+        var todoP  = jget(TODO_API+"?action=todo_list&_pv="+pv);
+
+        Promise.all([fP,sP,parkP,schedP,noticeP,receptionP,todoP]).then(function(res){
+          var facilityRow=res[0], supportRow=res[1], park=res[2], sched=res[3], notice=res[4],
+              reception=res[5], todo=res[6];
+          S.fRow = facilityRow; S.fPct = pctOf(facilityRow);
+          var byGender = supportRow && supportRow.byGender;
+          S.mRow = byGender && byGender.m ? byGender.m : null; S.mPct = S.mRow ? pctOf(S.mRow) : null;
+          S.wRow = byGender && byGender.f ? byGender.f : null; S.wPct = S.wRow ? pctOf(S.wRow) : null;
+
+          // 주차 — 실결제 매출·건수(status/parking_revenue.json, 07:00 갱신)
+          if(park && park['매출금액']!=null){
+            S.parkAmt  = won(park['매출금액']);
+            S.parkWarn = (park['결제건수']!=null) ? ('결제 '+Number(park['결제건수']).toLocaleString('ko-KR')+'건') : '';
+          }
+          // 전사 일정 — 등록 건수 + '시행일 미기록' 경고(법정점검인데 언제 했는지 기록이 없는 건)
+          if(sched && Array.isArray(sched.items)){
+            S.schedTotal = sched.items.length+'건';
+            var noDate = sched.items.filter(function(x){ return !x.last_done && !x.next_due; }).length;
+            S.schedWarn  = noDate>0 ? ('⚠ 시행일 미기록 '+noDate+'건') : '✓ 시행일 모두 기록됨';
+            S.schedLevel = noDate>0 ? 'bad' : 'ok';
+          }
+          // 공지 — 저장 건수 + 최근 공지 제목·경과일(30일 초과면 경고색)
+          var nrows = notice && (notice.data||notice.notices);
+          if(Array.isArray(nrows)){
+            S.noticeTotal = nrows.length+'건';
+            var top = nrows[0];
+            if(top){
+              var d = daysSince(top.savedAt);   // 원문 그대로 — daysSince 가 한국어 표기를 직접 해석한다
+              var t = String(top.titleKr||top.title||'제목없음').slice(0,14);
+              S.noticeWarn  = '최근: '+t+(d!=null?(' · '+d+'일 전'):'');
+              S.noticeLevel = (d!=null && d>30) ? 'bad' : 'ok';
+            }
+          }
+          /* 종합접수처 — 미처리(완료 계열이 아닌 것) 건수. 분류까지 한 줄로 붙여 무엇이 밀렸는지 보이게. */
+          var rrows = reception && (reception.data||reception.rows);
+          if(Array.isArray(rrows)){
+            var DONE = {'완료':1,'처리완료':1,'해결':1};
+            var open = rrows.filter(function(x){ return !DONE[String(x.status||'접수')]; });
+            S.receptionOpen = open.length+'건';
+            var byCat = {};
+            open.forEach(function(x){ var c=String(x.category||'기타').replace(' 접수',''); byCat[c]=(byCat[c]||0)+1; });
+            var top = Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).slice(0,2)
+                        .map(function(k){ return k+' '+byCat[k]; }).join(' · ');
+            S.receptionWarn  = open.length>0 ? ('⚠ '+top) : '✓ 밀린 접수 없음';
+            S.receptionLevel = open.length>0 ? 'bad' : 'ok';
+          }
+          /* 운영부 — 실무진(최준용M·윤병현AM·이경연 실장) 담당 업무 중 완료 아닌 것.
+             ★종합접수처와 겹치지 않게 '업무판' 쪽만 센다(같은 숫자를 두 카드에 띄우지 않는다). */
+          var trows = todo && todo.data;
+          if(Array.isArray(trows)){
+            var OPS = {'최준용M':1,'윤병현AM':1,'이경연 실장':1};
+            var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS[String(t['담당자']||'').trim()]; });
+            S.opsTask = mine.length+'건';
+            var td = todayStr();
+            var over = mine.filter(function(t){ var e=String(t['종료일']||'').slice(0,10); return e && e<td; }).length;
+            S.opsWarn  = over>0 ? ('⚠ 마감 지남 '+over+'건') : '✓ 마감 초과 없음';
+            S.opsLevel = over>0 ? 'bad' : 'ok';
+          }
+          /* 리셉션 — 라커 현황은 웹앱이 비밀번호 POST 로만 내준다(세션 입력). 공개 화면에 비밀번호를
+             심지 않는다(🔒) → 숫자를 지어내지 않고 '들어가서 본다'고 정직하게 적는다. */
+          S.lockerVal  = '라커 관리';
+          S.lockerWarn = '열어서 확인 (비밀번호 필요)';
+
+          render(S);
+          try{ localStorage.setItem(CACHE_KEY, JSON.stringify(S)); }catch(e){}
+        }).catch(function(){ if(!cached){ var el=document.getElementById('o1-module-cards'); if(el) el.innerHTML='<div style="color:var(--red);">운영 모듈 현황: (측정 실패 — 정직 표기)</div>'; } });
+      }
+      loadHub();
+    })();
+    </script>
+
+    <!-- 종합접수처 처리 절차 — O2 폐지하며 고유 내용만 여기로 흡수(GM 지시 2026-07-25).
+         진입 링크는 위 「🙋 종합접수처」 카드가 담당한다(같은 링크를 두 번 두지 않는다·L01). -->
+    <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:14px 18px;margin:16px 0;">
+      <div style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:8px;">종합접수처 처리 절차</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.85;">
+        <b>① 접수</b> — 회원이 종합접수처 폼(QR·모바일)으로 제출하면 즉시 GAS 시트에 기록됩니다. 6종 카테고리·위치·내용 입력.<br>
+        <b>② 부서 전달</b> — 카테고리별 담당 부서로 자동 라우팅. <b>전용 현황 페이지</b>에서 담당 배정 → 상태 전환하면 실시간 반영됩니다.<br>
+        <b>③ 완료 고지</b> — 처리 완료 시 회원에게 결과 고지(가능한 경우). 미처리 건은 다음 교대조에 인계.
+      </div>
     </div>
 
-    <div class="callout tip" style="margin-top:12px;"><strong>새 부서 구축 순서:</strong> 규정 → 가이드 → 매뉴얼 → 체크리스트·기록·이슈. 템플릿 = 지원부 체계 4탭 구조 복제.</div>
+    <!-- 「부서별 체계」 5링크 섹션 제거(GM 지시 2026-07-25) — 위 「운영 모듈 현황」 카드가 그 역할을
+         대신한다. 카드 자체가 각 부서 페이지로 가는 문이며, 숫자가 없는 운영부·리셉션은 같은 섹션
+         하단에 작은 링크로 남겨 두었다. ★부서 페이지는 그대로 독립 유지 — 흡수가 아니라 링크다.
 
     <!-- 전 C-Level 공통 '작업 현황 로그' 패널 — 운영 모듈 현황 바로 아래 배치(GM·실무진이 같은
          화면에서 운영 자동화가 한 일·빠뜨린 일을 함께 본다, 2026-07-23 배9959). 데이터·스타일 =
@@ -7429,32 +7097,6 @@ function crTab(btn, panelId) {
   <!-- O3 재등록 대시보드 제거 (2026-07-20 시우·GM) — CPO 회원관리 소관으로 이관: cpo/member/renewal.html
        멤버십 회원관리 상단 '🔄 재등록 현황' 버튼에서 열람. 이관하고 삭제 = GM 지시. -->
   
-
-  <!-- ── O2 웰페리온 종합 접수처 ── -->
-  <article class="doc" id="O2">
-    <div class="doc-header"><h2>웰페리온 종합 접수처</h2><div class="meta">COO 관할 · 6종 접수 + 🧳습득물 · 전용 현황 페이지에서 관리</div></div>
-    <p class="lead">분실물·시설물 고장·청결 이슈·컴플레인·직원 칭찬·직원 쓴소리 6종 접수를 한 보드에서 확인합니다.</p>
-
-    <!-- VOC 처리 절차 (운영부 규정 'VOC 처리' 컬럼에서 이관·통합 · 2026-06-23 GM) -->
-    <div style="background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;padding:14px 18px;margin:16px 0;">
-      <div style="font-size:14px;font-weight:800;color:var(--accent);margin-bottom:8px;">종합접수처 처리 절차</div>
-      <div style="font-size:13px;color:var(--text);line-height:1.85;">
-        <b>① 접수</b> — 회원이 종합접수처 폼(QR·모바일)으로 제출하면 즉시 GAS 시트에 기록됩니다. 6종 카테고리·위치·내용 입력.<br>
-        <b>② 부서 전달</b> — 카테고리별 담당 부서로 자동 라우팅. <b>전용 현황 페이지</b>에서 담당 배정 → 상태 전환하면 실시간 반영됩니다.<br>
-        <b>③ 완료 고지</b> — 처리 완료 시 회원에게 결과 고지(가능한 경우). 미처리 건은 다음 교대조에 인계.
-      </div>
-    </div>
-
-    <!-- 🗂 종합접수처 관리 = 전용 현황 페이지로 일원화 (2026-07-20) -->
-    <div style="background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:24px 20px;margin:18px 0;text-align:center;">
-      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">🗂 접수 관리는 전용 현황 페이지에서</div>
-      <p style="font-size:13px;color:var(--dim);line-height:1.7;margin:0 0 18px;">6종 접수 + 🧳 습득물까지 한 화면에서 담당 배정·상태 전환·처리자·메모를 관리합니다.<br>모든 변경은 같은 GAS 시트에 실시간 저장됩니다.</p>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-        <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;padding:11px 22px;background:var(--accent);color:#221f20;border-radius:10px;text-decoration:none;">📊 전용 현황 페이지 열기</a>
-        <a href="http://wellperion.com/ko/reception/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:11px 20px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:10px;text-decoration:none;">📲 회원 접수 폼</a>
-      </div>
-    </div>
-  </article>
 </main>
 </div>
 
@@ -7470,7 +7112,7 @@ function crTab(btn, panelId) {
     'gcoo-check':'O1','ghome':'M1','g14':'M1',   // gcoo-reenroll(O3) 제거 → 아래 외부 이관 리다이렉트로 처리
     'gcmo-print':'M1','gcmo-funnel':'M2','cmo-publish':'M1','g16':'T1','g19':'T2',
     'M3':'M1',  // 2026-07-09: M3(검수·발행) → M1로 병합 (죽은 링크 방지 안전망)
-    'g15':'T1','T3':'T1','gm1':'G1','O5':'O2','O4':'O2'
+    'g15':'T1','T3':'T1','gm1':'G1','O5':'O1','O4':'O1','O2':'O1'
   };
 
   // ── 이관 리다이렉트 — 재등록 대시보드(구 O3)는 2026-07-20 CPO 회원관리 소관으로 이관됐다.

@@ -1127,9 +1127,14 @@ def send_telegram(message: str) -> bool:
         return False
     env = load_env()
     token = env.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = env.get("TELEGRAM_CHAT_ID", "")
+    try:
+        from notify_gm_progress import resolve_room  # noqa: PLC0415
+    except ImportError:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from notify_gm_progress import resolve_room  # noqa: PLC0415
+    chat_id = resolve_room()  # AI 진행현황방(구 자동화현황방) — 하드코딩 금지, 약속 L01
     if not token or not chat_id:
-        print("[WARN] 텔레그램 설정 없음 — 발송 생략")
+        print("[WARN] 텔레그램 설정/방 해소 없음 — 발송 생략")
         return False
     if len(message) > 4000:
         message = message[:3990] + "\n...(잘림)"

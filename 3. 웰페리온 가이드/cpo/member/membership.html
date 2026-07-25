@@ -577,18 +577,33 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 /* ═══════════════════════════════════════
    저장 상태 토스트
    ═══════════════════════════════════════ */
+/* ── 저장 안내창(토스트) — 2026-07-25 GM "저장 중 / 저장 완료 이런 내용으로 뜨는 연한 안내창? 정말 불편해"
+   이전: 우측 맨 아래 구석 · 13px · 어두운 반투명 배경 위에 옅은 색 글씨 → 저장했는지 안 했는지 눈에 안 들어옴.
+   지금: 화면 아래 가운데(시선이 가는 자리) · 16px 굵게 · 꽉 찬 단색 배경에 흰 글씨.
+   ▸ 배경을 단색으로 채운 이유 = 브랜드 초록(#6abf7b)·빨강(#ED5B3F)은 밝은 색이라 글씨로 쓰면
+     밝은 화면에서 대비가 모자란다. 같은 계열의 진한 색을 배경으로 깔고 글씨를 흰색으로 두면
+     밝은 화면·어두운 화면 어디서도 똑같이 또렷하다(대비 4.9:1 이상).
+   ▸ 인쇄 시 숨김은 기존 규칙 그대로 유지된다. ── */
 .save-toast{
-  position:fixed;bottom:28px;right:28px;
-  padding:11px 20px;border-radius:var(--radius-card);
-  font-size:13px;font-weight:700;z-index:9999;
+  position:fixed;bottom:34px;left:50%;
+  padding:15px 30px;border-radius:12px;
+  font-size:16px;font-weight:800;letter-spacing:-0.01em;
+  line-height:1.45;text-align:center;
+  max-width:min(660px,calc(100vw - 40px));
+  word-break:keep-all;                    /* 단어가 어중간하게 잘리지 않게 */
+  z-index:9999;
   opacity:0;pointer-events:none;
-  transition:opacity 0.2s,transform 0.2s;
-  transform:translateY(6px);
-  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  transition:opacity 0.16s ease,transform 0.16s ease;
+  transform:translate(-50%,12px) scale(0.97);
+  box-shadow:0 10px 34px rgba(0,0,0,0.34);
+  color:#fff;border:none;
 }
-.save-toast.ok{background:rgba(34,40,30,0.95);color:var(--green);border:1px solid var(--green-border)}
-.save-toast.err{background:rgba(40,26,22,0.95);color:var(--red);border:1px solid var(--red-border)}
-.save-toast.show{opacity:1;transform:translateY(0)}
+.save-toast.ok{background:#2E7D4F}
+.save-toast.err{background:#C0392B}
+.save-toast.show{opacity:1;transform:translate(-50%,0) scale(1)}
+@media(max-width:520px){
+  .save-toast{bottom:20px;font-size:15px;padding:13px 20px}
+}
 
 /* ── 동기화 배지(배1037 · 버퍼 write-back 표면화, INC-013) — 헤더 큐카운트 + 실패 상세.
      낙관 저장은 즉시 화면반영되고, 시트 동기화 상태(진행/실패/재시도)를 이 칩으로 표면화한다. ── */
@@ -1004,8 +1019,19 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 /* 강습 문의 테이블 — 제목(헤더)값 가운데 정렬 통일 + 성함칸 폭 확대(나이 병기). 배973 시포·GM 2026-07-14 */
 .lesson-inq-table thead th{text-align:center !important}
 .lesson-inq-table th:nth-child(2),.lesson-inq-table td:nth-child(2){min-width:132px;width:132px}
-/* CONTACT(연락이력·희망요일/시간 칸 추가로 9번째) 폭 고정 — 문의내용 칸 추가로 고정폭 합이 커져 CONTACT가 0폭으로 눌리던 것 방지. 표는 래퍼(reg-table-wrap overflow-x)로 가로스크롤. 2026-07-21 시포·GM */
-.lesson-inq-table th:nth-child(9),.lesson-inq-table td:nth-child(9){width:240px;min-width:240px}
+/* CONTACT(9번째)는 폭을 지정하지 않는다 — 남는 폭을 이 칸 하나가 흡수한다(멤버십 #dbTable과 같은 방식).
+   경위: 2026-07-09 설계가 원래 이랬는데(마지막 열 width 미지정 → 남는 폭 자동 흡수), 07-21에 CONTACT가
+   0폭으로 눌리는 걸 막으려 width:240px를 박으면서 9칸 전부가 폭을 갖게 됐다. table-layout:fixed + width:100%
+   에서 모든 칸에 폭이 있으면 브라우저가 남는 폭을 전 칸에 비례 분배한다 → 창을 넓히면 성함·연락처·진행상태
+   같은 칸까지 같이 늘어난다(2026-07-25 GM 지적: "멤버십은 고정인데 강습만 늘어난다").
+   눌림은 폭을 박아서가 아니라 표 최소폭으로 막는 게 맞다 — 아래 min-width가 그 역할(#dbTable의 min-width:1270px와 동일 원리).
+   2026-07-25 시포·GM */
+.lesson-inq-table th:nth-child(9),.lesson-inq-table td:nth-child(9){min-width:240px}
+/* 고정 8칸 합 1294px(문의일시142+성함132+연락처136+강습종목230+문의내용300+희망요일150+진행상태92+담당112)
+   + CONTACT 최소 260px = 1554px. 이보다 좁아지면 래퍼(.reg-table-wrap overflow-x)가 가로 스크롤을 낸다.
+   ※ 문의내용 150→300px (2026-07-25 GM "문의 내용도 지금보다 2배 사이즈로 고정") — 늘어나는 칸은
+     여전히 CONTACT 하나뿐이고, 문의내용은 넓어진 채로 고정된다. */
+.lesson-inq-table{min-width:1554px}
 .lesson-inq-table th:nth-child(5),.lesson-inq-table td:nth-child(5){white-space:normal;word-break:break-word}
 /* 희망 요일/시간(6번째) — 줄바꿈 wrap. 2026-07-21 시포·GM */
 .lesson-inq-table th:nth-child(6),.lesson-inq-table td:nth-child(6){white-space:normal;word-break:break-word}
@@ -1893,7 +1919,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th class="left" style="width:100px">성함</th>
               <th style="width:136px">연락처</th>
               <th style="width:230px">강습종목</th>
-              <th class="left" style="width:150px">문의내용</th>
+              <th class="left" style="width:300px">문의내용</th>
               <th class="left" style="width:150px">희망 요일/시간</th>
               <th style="width:92px">진행상태</th>
               <th style="width:112px">담당</th>
@@ -1923,7 +1949,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th class="left" style="width:100px">성함</th>
             <th style="width:136px">연락처</th>
             <th style="width:230px">강습종목</th>
-            <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:300px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
@@ -1952,7 +1978,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th class="left" style="width:100px">성함</th>
             <th style="width:136px">연락처</th>
             <th id="lessonWaitSportTh_adult" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('adult')">강습종목</th>
-            <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:300px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
@@ -2083,7 +2109,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
               <th class="left" style="width:150px">성함</th>
               <th style="width:136px">연락처</th>
               <th style="width:230px">강습종목</th>
-              <th class="left" style="width:150px">문의내용</th>
+              <th class="left" style="width:300px">문의내용</th>
               <th class="left" style="width:150px">희망 요일/시간</th>
               <th style="width:92px">진행상태</th>
               <th style="width:112px">담당</th>
@@ -2113,7 +2139,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th class="left" style="width:100px">성함</th>
             <th style="width:136px">연락처</th>
             <th style="width:230px">강습종목</th>
-            <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:300px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
@@ -2142,7 +2168,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <th class="left" style="width:100px">성함</th>
             <th style="width:136px">연락처</th>
             <th id="lessonWaitSportTh_youth" style="width:230px;cursor:pointer;user-select:none" title="클릭하여 종목별 정렬" onclick="_lessonWaitSortToggle('youth')">강습종목</th>
-            <th class="left" style="width:150px">문의내용</th>
+            <th class="left" style="width:300px">문의내용</th>
             <th class="left" style="width:150px">희망 요일/시간</th>
             <th style="width:92px">진행상태</th>
             <th style="width:112px">담당</th>
@@ -2380,7 +2406,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-field-label">기존 메모</div>
     <div class="consult-memo-prev" id="cmMemoPrev">—</div>
 
-    <div class="consult-field-label">상담 내용 (오늘 기록 — 기존 메모 아래 누적)</div>
+    <!-- 저장되는 곳을 라벨에 명시(2026-07-25 GM) — 예전엔 '기존 메모 아래 누적'이라 적혀 있었고
+         실제로도 비고로 갔다. 지금은 연락 이력(CONTACT)에 쌓인다. 어디에 적히는지가 화면에 보여야
+         실무진이 "적었는데 CONTACT에 없다"고 느끼지 않는다. -->
+    <div class="consult-field-label">상담 내용 <span style="font-weight:400;color:var(--dim)">— 연락 이력(CONTACT)에 오늘 날짜로 쌓입니다</span></div>
     <textarea class="consult-memo" id="cmMemoInput" placeholder="상담·통화 내용을 입력하세요."></textarea>
 
     <div class="consult-field-label">연락 기록 (Contact 1·2·3 — 입력한 칸만 저장)</div>
@@ -4819,10 +4848,16 @@ var LESSON_VALIDITY_ADULT = {
   'P.T':     {10:2, 20:3, 30:5, 50:8, 100:12},
   '필라테스': {8:2, 10:2, 20:3, 30:5},
   '골프':     {1:'1일', 8:1, 10:2, 20:3, 30:5},
-  '스쿼시':   {1:'1일', 8:2, 10:2, 30:5}
-  // 수영(성인)·체조&트램폴린·뮤지컬팀·웰니스(발레·바레 월정기)=규칙 불균일 → 수동
+  '스쿼시':   {1:'1일', 8:2, 10:2, 30:5},
+  // 성인 수영(2026-07-25 GM 확정) — 회수로 갈린다.
+  //   4회 = 개인레슨(1:1·1:2) → 2개월
+  //   8회 = 단체반·아쿠아로빅 → 매월 1일~말일, 즉 등록일이 속한 달의 말일까지('월말')
+  //   '월말'은 등록일+N개월이 아니라 계산 방식 자체가 달라 별도 규칙으로 둔다.
+  '수영':     {4:2, 8:'월말'}
+  // 체조&트램폴린·뮤지컬팀·웰니스(발레·바레 월정기)=규칙 미확정 → 수동
 };
-var LESSON_VALIDITY_YOUTH = { '_any': {1:'1일', 4:2} };  // 유소년 WSC 전 종목 공통: 체험/1회=당일, 4회=2개월
+// 유소년 WSC 전 종목 공통: 체험/1회=당일, 4회·8회=2개월(8회는 2026-07-25 GM 확정으로 추가).
+var LESSON_VALIDITY_YOUTH = { '_any': {1:'1일', 4:2, 8:2} };
 // (종목,회수,유형)→개월|'1일'|null 반환. null=수동입력 폴백. 2026-07-21 시포·GM.
 function lessonValidityMonths(sportKey, count, isYouth){
   var c = parseInt(count,10); if(!c) return null;
@@ -4837,6 +4872,9 @@ function lessonExpireDate(regDateStr, monthsRule){
   var base = regDateStr ? new Date(regDateStr) : new Date();
   if(isNaN(base.getTime())) base = new Date();
   if(monthsRule==='1일'){ return _mdashYmd(base); }
+  // '월말' = 등록일이 속한 달의 마지막 날(2026-07-25 GM — 성인 단체반은 매월 1일~말일).
+  //   다음 달 0일 = 이번 달 말일(윤년·30/31일 자동 처리).
+  if(monthsRule==='월말'){ return _mdashYmd(new Date(base.getFullYear(), base.getMonth()+1, 0)); }
   var d = new Date(base.getTime()); d.setMonth(d.getMonth()+parseInt(monthsRule,10));
   return _mdashYmd(d);
 }
@@ -4932,6 +4970,18 @@ function _lessonEnsureSportTabLoaded_(tabName) {
   if (_lessonSportTabResolved_[tabName] || _lessonSportTabInflight_[tabName]) return;
   _lessonSportTabInflight_[tabName] = true;
   _gzFetchTableBySheetName_(GVIZ_LESSON_SS_ID, tabName).then(function(t) {
+    // ★엉뚱한 시트를 받아왔는지 먼저 본다(2026-07-25 시포 · GM "수영종목이면 수영선생님+수영팀장만
+    //   나와야지 뭐 이렇게 다나오냐"). 구글 시트는 없는 탭 이름을 요청하면 오류가 아니라 '첫 번째 시트'를
+    //   조용히 돌려준다. 이 스프레드시트(강습 문의 관리)엔 '수영'·'P.T'·'골프' 같은 종목 탭이 없어서
+    //   세 종목 모두 성인강습 문의 응답탭(505행)이 돌아왔고, 그 시트의 지정강사 값 전부(27명)가
+    //   '이 종목 정규 강사'로 잡혀 종목과 무관하게 전원이 드롭다운에 떴다.
+    //   판별 = 문의 응답탭에만 있는 '타임스탬프' 칸. 있으면 종목 명단이 아니므로 통째로 버리고
+    //   종목별 명단(LESSON_INSTRUCTOR_ROSTER + 팀장) 폴백을 그대로 쓴다.
+    var _looksLikeInquiryTab = _gzFindCol_(t.headers, ['타임스탬프']) >= 0;
+    if (_looksLikeInquiryTab) {
+      _lessonSportTabResolved_[tabName] = {};   // 빈맵 = 폴백 유지(종목별 하드코딩 명단)
+      return;
+    }
     var iPhone = _gzFindCol_(t.headers, ['휴대폰', '연락처', '전화']);
     var iName  = _gzFindCol_(t.headers, ['성함', '이름', 'Name']);
     var iOwner = -1;
@@ -4984,12 +5034,9 @@ function _lessonSportMgmt(row, sportKey) {
   var _valid = _lessonValidOwners(sportKey, isYouth), _vk = Object.keys(_valid);
   // 정규 강사 아님 → 미배정(담당자 X). 단, 단일 공급자 종목(웰니스=루프메소드·뮤지컬=편한별)은 그 공급자로 기본 배정. 2026-07-16 GM
   if (owner && _vk.length && !_valid[owner]) owner = (_vk.length === 1) ? _vk[0] : '';
-  // 미배정 → 종목 팀장 기본배정. 단 ★새 문의(미컨택: 진행상황 신규/미정/빈값)는 담당자 X 유지 — 팀장 자동배정 금지(팀장이 보고 직접 배정). GM 2026-07-16.
-  if (!owner) {
-    var _st = String(row.status || '').trim();
-    var _isNewInq = (!_st || _st === '미정' || _st === '신규' || _st === '미컨택');
-    if (!_isNewInq) owner = _lessonTeamLeadOf(sportKey) || '';
-  }
+  // ★팀장 자동 대입 폐기(배100, 웰리 감사 2026-07-25) — 원본 owner 공란을 화면이 종목 팀장 이름으로
+  //   채워 보여줘 배정 완료율이 과대평가됐다(실측 5건). 원본이 공란이면 화면도 미배정(담당자 X)으로 둔다.
+  //   드롭다운 옵션에는 팀장이 여전히 포함되어 수동 배정은 그대로 가능(_lessonRosterFor). 저장 경로 무변경.
   // 종목별 컨택 분리(GM 2026-07-22 · 디버그 보강): 다종목 회원만 종목별 분리(단일종목=flat 공유 그대로 — 태깅·중복 없음).
   //   다종목: 이 종목 태그 컨택 + 무태그(공통) 컨택 함께 표시(공통 숨기지 않음). 단일종목/미기재: flat 전체 노출.
   var _bs = (row.bySport && typeof row.bySport === 'object') ? row.bySport : {};
@@ -5583,6 +5630,11 @@ function _lessonRegistryRender(t) {
   var st = _lessonState[t];
   var rows = st.registry || [];
   if (st.regSport) rows = rows.filter(function(r){ return String(r.종목 || '기타').trim() === st.regSport; });
+  // 최근 등록이 맨 위(2026-07-25 GM) — GAS가 주는 순서는 시트 행 순서(오래된 것부터)라
+  // 최신 건을 보려면 매번 맨 아래까지 내려가야 했다. 정렬만 하고 데이터는 건드리지 않는다.
+  rows = rows.slice().sort(function(a, b){
+    return String(b.등록일 || '').localeCompare(String(a.등록일 || ''));
+  });
   if (!rows.length) { tbody.innerHTML = _lessonRegRow('등록 없음', '선택한 기간에 등록한 회원이 없습니다.'); return; }
   var html = '';
   rows.forEach(function(r){
@@ -5825,18 +5877,38 @@ function _lessonRosterRender(t, kind) {
       '<div class="empty-state-desc">' + _emptyDesc + '</div></div></td></tr>';
     return;
   }
-  // 정렬 고정(2026-07-23 GM '정렬 정리 좀') — 서버가 주는 순서는 팀시트·문의 소스가 섞여 뒤죽박죽이다.
-  //   ①종목 가나다 ②이름 가나다. 이름 없는 '정보 없음' 행은 각 종목 맨 뒤로 몰아 실명 회원이 먼저 보이게.
+  // 정렬 — 문의일 최신이 맨 위(2026-07-25 GM "문의일 최근을 최상단으로 셋업 필요해").
+  //   그전엔 ①종목 ②이름 가나다였다(2026-07-23 GM '정렬 정리 좀'). 그 결과 맨 위가 2023~2024년
+  //   문의와 2026년 문의가 뒤섞여, 최근 들어온 수강 회원을 명단에서 바로 볼 수 없었다.
+  //   문의일이 없는 행(옛 팀시트 유래 '정보 없음' 등)은 맨 뒤로 — 실체가 있는 회원이 먼저 보이게 한다.
+  //   ※ mem(수강 회원 명단) 뷰에만 문의일(inqDate)이 있다. reg 뷰는 기존대로 종목·이름 순.
   rows = rows.slice().sort(function(a, b){
+    if (kind === 'mem') {
+      var da = String(a.inqDate || '').trim(), db = String(b.inqDate || '').trim();
+      if (!da !== !db) return da ? -1 : 1;        // 문의일 있는 쪽 먼저
+      if (da !== db) return db.localeCompare(da); // 최신 → 과거
+    }
     var sa = String(a.sport || '').trim(), sb = String(b.sport || '').trim();
     if (sa !== sb) return sa.localeCompare(sb, 'ko');
     var na = String(a.name || '').trim(), nb = String(b.name || '').trim();
     if (!na !== !nb) return na ? -1 : 1;          // 이름 있는 쪽 먼저
     return na.localeCompare(nb, 'ko');
   });
-  var html = extNote;
-  rows.forEach(function(r){
-    html += '<tr>' +
+  // 옛 기록 분리 보관(2026-07-25 GM 'B안') — 이름·연락처가 비어 누구인지 확인할 수 없는 행을
+  //   본 명단에서 빼고 맨 아래 접힌 '옛 기록 보관'으로 내린다. 명단은 실체 있는 회원만 남고,
+  //   기록은 하나도 지우지 않는다(펼치면 그대로 다 보인다).
+  //   ★원본(강사 팀시트 13개)은 건드리지 않는다 — 강사들이 실시간으로 쓰는 시트이고 IMPORTRANGE
+  //     원본이라 행을 옮기면 그쪽이 깨진다(행 삭제 금지 사고 이력). 화면에서만 갈라 놓는다.
+  var _archived = [];
+  if (kind === 'mem') {
+    var _live = [];
+    rows.forEach(function(r){
+      if (String(r.name || '').trim()) _live.push(r); else _archived.push(r);
+    });
+    rows = _live;
+  }
+  var _rowHtml = function(r){
+    return '<tr>' +
       '<td style="font-size:12px"><span style="' + _lessonSportChipStyle(r.sport) + '">' + esc(r.sport ? _lessonSportDisplay(r.sport, t === 'youth') : '—') + '</span></td>' +
       // 이름이 없는 행 = 옛 팀시트에 진행 상황 값만 남은 기록. '—'로만 두면 단순 누락처럼 보여
       // 회원 수에 그대로 섞인다 → 무엇인지 밝혀 준다(GM 2026-07-23 A안 · 정직 표기).
@@ -5859,7 +5931,25 @@ function _lessonRosterRender(t, kind) {
       (kind === 'mem' ? ('<td style="font-size:12px;color:var(--text);font-weight:600">' + esc(r.regCount || '—') + '</td>' +
         '<td style="font-size:12px;color:var(--dim)">' + esc(r.regExpire || '—') + '</td>') : '') +
     '</tr>';
-  });
+  };
+  var html = extNote;
+  rows.forEach(function(r){ html += _rowHtml(r); });
+  // 옛 기록 보관 — 기본은 접혀 있고, 펼치면 같은 표 모양 그대로 전부 보인다(정보 손실 0).
+  if (kind === 'mem' && _archived.length) {
+    html += '<tr><td colspan="' + _cs + '" style="padding:0;border-bottom:none">' +
+      '<details style="margin:10px 0 2px">' +
+        '<summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--dim);padding:9px 12px;' +
+          'background:var(--paper);border:1px dashed var(--border);border-radius:8px;list-style:revert">' +
+          '🗄️ 옛 기록 보관 ' + _archived.length + '건' +
+          '<span style="font-weight:400"> — 이름·연락처가 없어 누구인지 확인할 수 없는 옛 팀시트 기록입니다. ' +
+          '회원 수에는 넣지 않지만 지우지 않고 보관합니다.</span>' +
+        '</summary>' +
+        '<div class="reg-table-wrap" style="margin-top:8px"><table class="reg-table">' +
+          '<tbody>' + _archived.map(_rowHtml).join('') + '</tbody>' +
+        '</table></div>' +
+      '</details>' +
+    '</td></tr>';
+  }
   tbody.innerHTML = html;
 }
 
@@ -7929,13 +8019,31 @@ function saveConsultModal() {
   else if (regChanged && origReg) { payload.status = '미정'; }   // 등록 해제 → 강등(미정). 방문여부는 visited 플래그가 별도 추적 · 퍼널 상태는 예약/방문 아님. 2026-07-18 GM
   if (regProgramChanged) payload.regProgram = regProgram;   // 등록 종목 — 등록 완료 상태에서만 전송(문의 시 관심프로그램과 별개). 2026-07-18 시토(GM요청) 대행.
   // 방문 완료는 독립 ✓플래그(payload.visited)로만 기록 — 진행상황(가망·컨택중 등 퍼널 단계)은 건드리지 않음. 2026-06-29 시포(리뷰 #2)
-  // 상담 내용: 기존 메모 보존 + 새 줄 누적. 빈 입력이면 메모 미전송.
+  // 상담 내용 → 연락 이력(CONTACT)에 쌓는다. 2026-07-25 GM 확정("보통 상담 내용은 Contact에 기록이 되는건데?").
+  //   ★그 전까지는 비고(memo)로 보냈다. 그래서 실무진이 상담 모달로 적은 내용은 CONTACT 칸에 영원히
+  //   나타나지 않았고 "CONTACT 내용이 사라졌다"는 신고가 반복됐다(FB260725-122831 홍재영님 건 —
+  //   실제로는 비고에 '[2026-07-25] 상담: …' 로 멀쩡히 저장돼 있었다). 입력구는 둘인데 저장되는 칸이
+  //   달랐던 게 본질이고, 저장 실패가 아니었다.
+  //   보내는 방식 = body.contacts(연락 이력 배열). 서버가 앞 3건을 Contact1/2/3에, 4건째부터는
+  //   연락이력 칸에 넣는다(기존 계약 그대로 — 새 저장 경로를 만들지 않는다).
+  //   contacts 를 보낼 땐 contact1/2/3 을 따로 보내지 않는다 — 서버에서 contacts 블록이 뒤에 실행돼
+  //   덮어쓰므로 두 벌을 보내면 어느 쪽이 이겼는지 알 수 없게 된다.
   if (input) {
     var today = new Date();
     var ds = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    var line = '[' + ds + '] 상담: ' + input;
-    var prev = (_consultEv.memo && String(_consultEv.memo).trim()) ? String(_consultEv.memo) : '';
-    payload.memo = prev ? (prev + '\n' + line) : line;
+    // 화면에 지금 떠 있는 3칸(수정분 반영) → {date,time,note} 로 되돌린다. 'YYYY-MM-DD 내용' 모양이면
+    // 날짜를 떼어 보존하고, 그 밖의 옛 수기 표기는 통째로 내용으로 둔다(형식을 강제해 지우지 않는다).
+    var _toEntry = function (s) {
+      var v = String(s || '').trim();
+      if (!v) return null;
+      var m = v.match(/^(\d{4}-\d{2}-\d{2})\s*(.*)$/);
+      return m ? { date: m[1], time: '', note: m[2] } : { date: '', time: '', note: v };
+    };
+    var _list = [_toEntry(c1), _toEntry(c2), _toEntry(c3)].filter(function (e) { return e; });
+    // 4건째부터는 서버가 연락이력 칸으로 넘긴다 — 기존 기록을 밀어내지 않는다.
+    _list.push({ date: ds, time: '', note: input });
+    payload.contacts = JSON.stringify(_list);
+    delete payload.contact1; delete payload.contact2; delete payload.contact3;
   }
 
   var saveBtn = document.getElementById('cmSaveBtn');
@@ -7955,6 +8063,24 @@ function saveConsultModal() {
         if (payload.contact1 !== undefined) evRef.contact1 = payload.contact1;
         if (payload.contact2 !== undefined) evRef.contact2 = payload.contact2;
         if (payload.contact3 !== undefined) evRef.contact3 = payload.contact3;
+        // 상담 내용을 CONTACT로 보낸 경우(2026-07-25) — 서버가 앞 3건을 Contact1/2/3에 넣는 것과
+        // 같은 규칙으로 화면에도 즉시 반영한다. 안 하면 저장 직후 모달을 다시 열었을 때 방금 쓴 글이
+        // 안 보여 또 '사라졌다'로 보인다(이번 사고와 같은 인상을 남기는 자리다).
+        if (payload.contacts !== undefined) {
+          try {
+            var _newList = JSON.parse(payload.contacts) || [];
+            var _fmtOne = function (e) {
+              if (!e) return '';
+              var pre = String((e.date || '') + ' ' + (e.time || '')).trim();
+              var bd = String(e.note || '').trim();
+              return pre ? (pre + ' ' + bd).trim() : bd;
+            };
+            evRef.contact1 = _fmtOne(_newList[0]);
+            evRef.contact2 = _fmtOne(_newList[1]);
+            evRef.contact3 = _fmtOne(_newList[2]);
+            evRef.contacts = _newList;
+          } catch (e) { /* 파싱 실패해도 서버 저장은 그대로 — 다음 재조회에서 맞춰진다 */ }
+        }
         if (payload.memo !== undefined) evRef.memo = payload.memo;
         if (payload.regDate !== undefined) evRef.regDate = payload.regDate;   // 등록일자 로컬 반영 — 재오픈 시 오늘로 리셋 방지(리뷰 #4)
         if (payload.regProgram !== undefined) evRef.regProgram = payload.regProgram;   // 등록 종목 로컬 반영. 2026-07-18 시토(GM요청) 대행.
@@ -8444,7 +8570,10 @@ function _regValidityUpdate() {
     txt.textContent = '수동/해당없음';
   } else {
     var exp = lessonExpireDate(_mdashYmd(new Date()), rule);
-    txt.textContent = (rule === '1일' ? '자동: 당일' : ('자동: ' + rule + '개월')) + (exp ? ' (만료 ' + exp + ')' : '');
+    var _ruleText = (rule === '1일') ? '자동: 당일'
+                  : (rule === '월말') ? '자동: 이번 달 말일까지'
+                  : ('자동: ' + rule + '개월');
+    txt.textContent = _ruleText + (exp ? ' (만료 ' + exp + ')' : '');
   }
 }
 function openInquiryRegProgramModal(rowIndex) {
@@ -10471,7 +10600,9 @@ function showToast(msg, type) {
   el.className = 'save-toast ' + (type || 'ok');
   el.classList.add('show');
   if (_toastTimer) clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2800);
+  // 실패 안내는 더 오래 띄운다(2026-07-25 GM) — 잘못됐다는 말은 놓치면 안 된다.
+  // 성공 안내도 2.8초는 짧아 놓치기 쉬웠다.
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, (type === 'err') ? 6000 : 3600);
 }
 
 /* ─────────────────────────────────────────────

@@ -6,11 +6,13 @@ import os, json, glob, datetime, time
 _LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
 _RETAIN_DAYS = 30
 
-def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage'):
+def log_outbound(text, chat_id=None, source='', ok=None, kind='sendMessage', channel='telegram'):
+    """channel: 'telegram'(기본) → logs/telegram_sent-*.log / 'kakao' → logs/kakao_sent-*.log.
+    배99(2026-07-25): 카톡도 하루 단위로 셀 수 있게 같은 관문 로거를 채널만 나눠 재사용(L21)."""
     try:
         os.makedirs(_LOG_DIR, exist_ok=True)
         now = datetime.datetime.now()
-        path = os.path.join(_LOG_DIR, 'telegram_sent-%s.log' % now.strftime('%Y-%m-%d'))
+        path = os.path.join(_LOG_DIR, '%s_sent-%s.log' % (channel, now.strftime('%Y-%m-%d')))
         rec = {
             'ts': now.strftime('%Y-%m-%dT%H:%M:%S'),
             'source': source, 'chat_id': chat_id, 'kind': kind, 'ok': ok,
@@ -113,8 +115,8 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
 def _cleanup(now):
     try:
         cutoff = now - datetime.timedelta(days=_RETAIN_DAYS)
-        for p in glob.glob(os.path.join(_LOG_DIR, 'telegram_sent-*.log')):
-            base = os.path.basename(p)[len('telegram_sent-'):-len('.log')]
+        for p in glob.glob(os.path.join(_LOG_DIR, '*_sent-*.log')):
+            base = os.path.basename(p)[:-len('.log')].rsplit('_sent-', 1)[-1]
             try:
                 d = datetime.datetime.strptime(base, '%Y-%m-%d')
             except ValueError:
