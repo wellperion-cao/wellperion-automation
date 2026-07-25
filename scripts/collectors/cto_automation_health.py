@@ -51,6 +51,12 @@ _DEFAULT_REF = "status/erp_status.json"
 _KST = timezone(timedelta(hours=9))
 _LIVE_OK_STATES = ("정상", "정상(건너뜀)")
 
+# §주간 품질 회귀(delta) — 배10037 / 자기학습 승인건 prop_20260713_094621_6a0e52
+_REPORT_LOG = os.path.join(_PROJECT_ROOT, "status", "module_report_log.jsonl")
+_REGRESS_THRESHOLD = -0.10   # 전주 대비 성공률 하락 폭이 이 이하면 REGRESSED
+_MIN_SAMPLE = 5              # 이번주 표본이 이 미만이면 판정 보류(N<5)
+_TOP_N = 3                   # 텔레그램 1줄에 실을 상위 하락 모듈 수
+
 
 def _load_json(path):
     try:
@@ -199,11 +205,91 @@ def _self_health_rows():
     return [{"label": f"자가건강·{name}", "value": lines[0]} for name, lines in active.items()]
 
 
+# ── §주간 품질 회귀 delta (module_report_log.jsonl 재사용 — 새 리포트·새 모듈 없음) ──
+def _week_key(dt):
+    """ISO 주 키(연, 주). 주 경계 = 월요일(ISO 표준)."""
+    y, w, _ = dt.isocalendar()
+    return (y, w)
+
+
+def _weekly_success_rates(log_path=None, now=None):
+    """module_report_log.jsonl → {module: {week_key: (ok, total)}}.
+    성공 = 그 주에 실제 발신된 보고 건수(sent=true) / 시도 총건수.
+    로그 없음·손상 라인은 조용히 건너뛴다(집계 실패로 전체 다이제스트를 깨지 않는다).
+    """
+    path = log_path or _REPORT_LOG
+    agg = {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                    mod = row["module"]
+                    wk = _week_key(datetime.fromisoformat(row["ts"]))
+                except Exception:
+                    continue
+                ok, total = agg.setdefault(mod, {}).get(wk, (0, 0))
+                agg[mod][wk] = (ok + (1 if row.get("sent") else 0), total + 1)
+    except Exception:
+        return {}
+    return agg
+
+
+def _regression_row(log_path=None, now=None):
+    """이번주 vs 지난주 모듈별 성공률 delta → 한 줄 metric(없으면 None).
+    · delta ≤ -0.10 이고 이번주 표본 ≥5 인 모듈만 'REGRESSED' 플래그
+    · 이번주 표본 <5 = 판정 보류(N<5) — 하락으로 단정하지 않고 건수만 정직 표기
+    """
+    agg = _weekly_success_rates(log_path, now)
+    if not agg:
+        return None
+    ref = now or datetime.now(_KST)
+    this_wk = _week_key(ref)
+    last_wk = _week_key(ref - timedelta(days=7))
+
+    regressed, held, compared = [], 0, 0
+    for mod, weeks in agg.items():
+        if this_wk not in weeks or last_wk not in weeks:
+            continue
+        t_ok, t_total = weeks[this_wk]
+        l_ok, l_total = weeks[last_wk]
+        if not t_total or not l_total:
+            continue
+        if t_total < _MIN_SAMPLE:
+            held += 1
+            continue
+        compared += 1
+        delta = (t_ok / t_total) - (l_ok / l_total)
+        if delta <= _REGRESS_THRESHOLD:
+            regressed.append((delta, mod, t_ok, t_total, l_ok, l_total))
+
+    if not compared and not held:
+        return {"label": "주간 품질 회귀(전주 대비)",
+                "value": "판정 보류 — 전주와 이번주 둘 다 기록된 모듈 없음(비교 불가)"}
+
+    hold_tail = f" · 표본부족 보류 {held}건(N<{_MIN_SAMPLE})" if held else ""
+    if not regressed:
+        return {"label": "주간 품질 회귀(전주 대비)",
+                "value": f"하락 모듈 0건 ✅ (비교 {compared}건){hold_tail}"}
+
+    regressed.sort()  # delta 오름차순 = 하락 폭 큰 순
+    top = " · ".join(
+        f"{mod} {delta * 100:+.0f}%p({t_ok}/{t_total}←{l_ok}/{l_total})"
+        for delta, mod, t_ok, t_total, l_ok, l_total in regressed[:_TOP_N]
+    )
+    more = f" 외 {len(regressed) - _TOP_N}건" if len(regressed) > _TOP_N else ""
+    return {"label": "주간 품질 회귀(전주 대비)",
+            "value": f"⚠️ 하락 {len(regressed)}건 (비교 {compared}건){hold_tail} — {top}{more}"}
+
+
 def _enrich_with_live_signals(payload, erp):
     """payload 를 in-place 로 병합(라이브+스케줄+자가건강) — 실제 운영 erp_status.json
     일 때만 호출된다(테스트/가짜 경로는 원본 payload 그대로 반환하는 기존 계약 보존)."""
     payload["title"] = "전체 자동화 현황"
-    for row in (_live_row(erp), _schedule_row(erp)):
+    for row in (_live_row(erp), _schedule_row(erp), _regression_row()):
         if row:
             payload["metrics"].append(row)
     self_health_rows = _self_health_rows()

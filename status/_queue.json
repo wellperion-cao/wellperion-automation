@@ -1707,5 +1707,35 @@
     "short_no": 77,
     "module": "home",
     "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-25-ADHOC-f852280c2",
+    "clevel": "cpo",
+    "title": "[시포] 문의 스냅샷 자동 발행 (inquiry_snapshot)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10190,
+    "artifact": "chore(cpo): 문의 스냅샷 자동 발행 (inquiry_snapshot) (CLI ad-hoc · 커밋 f852280c2)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "f852280c26e543ae7647185bd048ea3fa5652170"
+  },
+  {
+    "task_id": "CTO-2026-07-25-모듈보고-방-미해소-가드-흡수경로에-가림",
+    "clevel": "cto",
+    "title": "[시토] 모듈 보고 '방 미해소' 안전장치가 흡수 경로에 가려 죽어 있음 (테스트 적색)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-25",
+    "from": "cto",
+    "note": "[시토 아침 자가점검 2026-07-25 발견] scripts/module_reporter.py run_report() 에서 배10011 '번들 흡수' 분기(line 244, ABSORB_BUNDLES)가 방 해소 게이트(line 251-260)보다 앞에 있다. 그래서 cadence+bot_id 가 흡수 대상(daily/weekly + 자동화현황방)인 모듈은 그 방의 chat_id 가 null 이어도 흡수 분기에서 먼저 걸려 pending 번들에 쌓이기만 하고 'room_unresolved' 실패 사유가 로그에도 results 에도 남지 않는다 = 조용한 실패. 실증: tests/test_module_reporter.py::test_bot_id_str_unresolved_room_skips 가 HEAD 에서 적색(1 failed / 15 passed, 내 변경 무관 — git diff HEAD 로 module_reporter.py·해당 테스트 무수정 확인). 이 테스트는 원래 '방 미해소면 정직하게 스킵 사유를 남긴다'를 지키던 가드였는데 흡수 경로가 앞에 끼어들며 깨졌고 아무도 몰랐다. [현재 라이브 피해 0 — 정직 표기] status/telegram_rooms.json 에서 자동화현황방 = -5498808140 로 정상 해소되어 지금 실제 미수신은 없다. 잠재 위험: 방을 바꾸거나 지워 null 이 되는 순간 자동화현황방 보고가 소리 없이 번들에만 쌓인다(발신 0·사유 0). 적색 테스트를 방치하면 안전망 자체가 무의미해진다.",
+    "next": "시토: 흡수 분기(line 244)보다 방 해소 게이트(line 251)를 먼저 평가하도록 순서 교정 — chat_id 가 null 이면 흡수 전에 room_unresolved 로 스킵·로그. 새 파일·새 가드 신설 금지(L21 — 기존 관문 한 곳의 순서만 교정). 교정 후 tests/test_module_reporter.py 전체 녹색 확인 + weekly dry-run 으로 정상 흡수 경로 무손상 확인.",
+    "depends_on": "",
+    "ship_no": 10191,
+    "short_no": 78,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
