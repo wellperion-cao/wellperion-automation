@@ -1990,7 +1990,6 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="how-to">업데이트 방법</button>
         <button class="tab-btn" data-tab="company-guide">직원&파트너 기본 에티켓</button>
-        <button class="tab-btn" data-tab="brand-design">브랜드 디자인</button>
         <button class="tab-btn" data-tab="terms-doc">문서 관리</button>
         <button class="tab-btn" data-tab="terms-vocab">조직·시스템·운영</button>
         <button class="tab-btn" data-tab="terms-ext">파일 확장자</button>
@@ -2079,35 +2078,6 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         </ul></div>
 
         <div class="callout"><strong>이 가이드라인 변경 시:</strong> GM님 결재 필수. 변경 후 전 부서 공지 의무.</div>
-      </div>
-
-      <div class="tab-panel" data-panel="brand-design">
-        <h3><span class="ico">🎨</span>브랜드 디자인 가이드</h3>
-        <p><strong>정본은 여기가 아닙니다.</strong> 로고·컬러·타이포·톤앤매너·캡션·금지어 등 브랜드 기준의 단일 출처는
-        <a href="cmo/brand/브랜드가이드.html" target="_blank"><strong>브랜드 가이드(M1)</strong></a> 한 곳입니다.
-        콘텐츠를 만들거나 검수할 때는 그 문서를 여십시오.</p>
-
-        <div class="callout">
-          <strong>왜 여기서 값을 지웠나 &mdash; 2026-07-25 GM 지시.</strong>
-          같은 기준이 이 화면과 브랜드 가이드 두 곳에 적혀 있었고, 이미 서로 갈라져 있었습니다.
-          이 화면 쪽에는 <strong>개인 계정 시그니처 색(에메랄드)이 아예 빠져</strong> 있었고,
-          영문 서체도 <strong>실제로는 쓰지 않는 유료 서체</strong>가 그대로 적혀 있었습니다.
-          두 곳을 보면 만드는 사람마다 다른 걸 보게 됩니다 &mdash; 그래서 값은 한 곳에만 둡니다.
-        </div>
-
-        <table>
-          <tr><th style="width:150px">무엇을 찾나</th><th>어디를 보나</th></tr>
-          <tr><td>색·서체·로고 파일</td><td><a href="cmo/brand/브랜드가이드.html" target="_blank">브랜드 가이드</a> &mdash; 컬러 팔레트 / 타이포그래피 / 로고</td></tr>
-          <tr><td>사진&middot;영상&middot;슬라이드</td><td><a href="cmo/brand/브랜드가이드.html" target="_blank">브랜드 가이드</a> &mdash; 사진 &middot; 영상</td></tr>
-          <tr><td>캡션&middot;해시태그&middot;문의 안내</td><td><a href="cmo/brand/브랜드가이드.html" target="_blank">브랜드 가이드</a> &mdash; 캡션 &middot; 해시태그 &middot; CTA</td></tr>
-          <tr><td>두 계정(공식&middot;개인) 구분</td><td><a href="cmo/brand/브랜드가이드.html" target="_blank">브랜드 가이드</a> &mdash; 두 계정, 두 목소리</td></tr>
-          <tr><td>쓰면 안 되는 말</td><td><a href="cmo/brand/브랜드가이드.html" target="_blank">브랜드 가이드</a> &mdash; 금지어 &middot; 절대 규칙 (같은 목록을 발행 전 자동 검사도 사용)</td></tr>
-        </table>
-
-        <p style="font-size:13px;color:var(--dim);margin-top:12px;">
-          기계가 쓰는 값의 원천은 <code>scripts/brand_constants.py</code>이고, 브랜드 가이드는 그 값을 사람이 읽게 풀어 쓴 문서입니다.
-          두 곳이 어긋나면 코드 쪽이 맞습니다.
-        </p>
       </div>
 
       <div class="tab-panel" data-panel="terms-doc">
@@ -3656,38 +3626,6 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
           <p style="font-size:13px;color:var(--dim);margin-top:8px;"><strong>철학:</strong> <span id="persona-cmo">무분별한 가격 할인 지양. <strong>노출을 회원으로 바꾸는 전환 설계</strong>가 본질. 톤 = 절제된 고급감 · 경험 중심 · 일관된 호칭("스포츠클럽").</span></p>
         </div>
 
-        <!-- 🧭 콘텐츠 허브 모듈 정의 (2026-07-18 GM: M1 '이 모듈은' 상세와 동기화 · 모듈 단일 정의 · 정본) -->
-        <h3 style="margin-top:8px;"><span class="ico">🧭</span>콘텐츠 허브 모듈 (M1) — 모듈 정의</h3>
-        <div class="callout">웰페리온의 모든 마케팅 콘텐츠를 <strong>기반 → 제작 → 검수 → 발행 → 성과 → 환류</strong> 한 흐름으로 운영. 콘텐츠 한 편이 <strong>기반(회사·전략·브랜드) 위에서 태어나</strong> 5채널로 나가고, 그 <strong>성과가 다음 기획으로 돌아오는 폐루프</strong>. 흩어진 도구가 아니라 M1 한 곳에서 돈다.</div>
-        <table>
-          <tr><th style="width:96px">단계</th><th>내용</th></tr>
-          <tr><td>🧭 ① 기반</td><td>회사소개서·전략·브랜드 = 모든 콘텐츠의 뿌리. 소재·각·톤이 자동 반영돼 브랜드·전략에서 벗어나지 않음. <strong>정본 = <code>2. 브랜드_자료/웰페리온_기반_FOUNDATION.md</code></strong></td></tr>
-          <tr><td>✍️ ② 제작</td><td>북극성 지향 루프(기획→초안→디자인→고도화→단순화). 종목 템플릿에서 생성. AI 보조 = 선택(끄고도 가능)</td></tr>
-          <tr><td>📨 ③ 검수</td><td>실무진이 미리보기 보고 승인/반려 = 발행 트리거(반무인 게이트 · GM 텔레그램 [승인]이 유일 경로)</td></tr>
-          <tr><td>🚀 ④ 발행</td><td>승인 시 스크립트가 5채널(인스타·블로그·카페·카카오·당근) 자동 공개발행 · 링크 회수는 자동(네이버는 불안정) · 정정은 GM 직접</td></tr>
-          <tr><td>📊 ⑤ 성과</td><td>콘텐츠→문의 <strong>채널별</strong> 성과 라이브(M1 대시보드). 게시글 단위 문의 귀속은 원천 불가(IG·당근 = 프로필 bio 링크) → 채널 단위가 이 플랫폼들의 최선</td></tr>
-          <tr><td>↻ ⑥ 환류</td><td>성과에서 배운 걸 다음 기획으로(아래 '마케팅 파이프라인 폐루프 5단계' 참조)</td></tr>
-        </table>
-        <div class="callout tip" style="margin-top:8px;"><strong>AI 없이 자체 가동</strong> — 검수·발행·성과는 도구(버튼·스크립트·대시보드)라 실무진이 직접 운영. 콘텐츠 <strong>생성</strong>만 템플릿/AI 보조(선택), 나머지 흐름엔 AI가 없어도 안 멈춘다. &nbsp;·&nbsp; <strong>제품화</strong> — 회사만 바꿔 기반을 넣으면 그 회사다운 콘텐츠(타 업체 이식 가능). &nbsp;·&nbsp; <strong>두 계정</strong> — 공식 @wellperion(시설·프로그램) / 개인 @namuk.wellperion(운영자 1인칭·AI 자동화 스토리). 톤 = 압박 없이 알리기.</div>
-
-        <table>
-          <tr><th style="width:120px">북극성</th><td id="northstar-cmo">노출 → 회원 전환 엔진 완성 (무인 자동화 + 전환율 목표)</td></tr><tr><th style="width:120px">핵심역할</th><td id="corerole-cmo">마케팅</td></tr>
-          <tr><th>담당 KPI</th><td id="kpi-cmo">🔧 노출→문의 전환율(채널귀속 측정 인프라 필요 · <strong>최우선</strong>) · ✅ 발행 건수·자동 무인화율(M5·디스패처 로그) · 🔧 월 신규 문의 수(퍼널) <span style="color:var(--dim);font-size:12px;">— 북극성 직결 전환율이 미측정 = 1순위 투자</span></td></tr>
-          <tr><th>실무진</th><td id="staff-cmo">김남욱 GM</td></tr>
-        </table>
-        <h4 style="margin-top:16px;">핵심업무</h4>
-        <ul>
-          <li>공식 핵심 3채널: IG namuk.wellperion · 네이버 블로그(wellperion) · 네이버 카페(동부이촌동) + 추가 발행 채널: 당근(반자동·당일)·카카오 | 페북 영구 삭제</li>
-          <li>콘텐츠 제작 프로세스 관리</li>
-          <li>신규 회원 모집 기획</li>
-          <li>월간 마케팅 ROI 분석</li>
-        </ul>
-        <h4 style="margin-top:16px;">협업 리듬</h4>
-        <p><strong>일일 콘텐츠 캘린더</strong> — 매일 09:00. 발행 예정 콘텐츠 · SNS 일정 · 전일 성과 · 주간 캘린더.</p>
-        <p style="margin-top:8px;font-size:13px;color:var(--dim);">간판이 아니라 공간이 말하는 브랜드. 톤 3기준: 절제된 고급감 / 경험 중심 / 일관된 호칭("스포츠클럽").</p>
-
-        <!-- ── 시모 정체성 카드 8항목 (deep-interview 2026-06-18 확정) ── -->
-        <!-- 시모 정체성 카드: deep-interview 2026-06-18 확정 -->
         <h3 style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;"><span class="ico">🪪</span>시모 정체성 카드 <span style="font-size:13px;font-weight:400;color:var(--dim);">— 8항목</span></h3>
         <table>
           <tr><th style="width:140px">항목</th><th>확정 내용</th></tr>
