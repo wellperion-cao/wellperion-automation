@@ -469,6 +469,23 @@ def main():
         ref=S["date"],
     )
 
+    # 살아있음 신호(2026-07-25 시우 · 아침 자가점검 발견 배10185).
+    # ★왜 필요했나: 침묵 감지기가 이 모듈의 신선도를 판정할 자기 산출물이 없어
+    #   '디렉터리 status 내 최신파일 mtime' 폴백으로 판정하고 있었다. status 폴더는 다른
+    #   모듈이 수분마다 쓰므로 영구히 "0.0h 전" = 이 모듈이 몇 주 멈춰도 계속 ok 로 떴다
+    #   (주간 카톡 ★운영부 발신 모듈이라 멈춰도 아무도 모르는 상태).
+    # ★새 파일·새 관례를 만들지 않는다(약속 L21) — 등록부 전 모듈이 이미 쓰는
+    #   scripts/module_heartbeat.py 관문에 그대로 합류한다.
+    try:
+        from module_heartbeat import record_heartbeat  # noqa: PLC0415
+        record_heartbeat(
+            "coo-ops-fill-board",
+            f"채움 보드 갱신 — 진행 {S['act']}·미등록 {S['unlinked']}·쉬는중 {S['rest']}",
+            extra={"date": S["date"]},
+        )
+    except Exception as exc:  # fail-soft — 하트비트 실패가 보드 생성을 막지 않음
+        print(f"[WARN] 하트비트 기록 건너뜀: {type(exc).__name__}: {exc}")
+
     if a.json:
         print(json.dumps(S, ensure_ascii=False))
         return
