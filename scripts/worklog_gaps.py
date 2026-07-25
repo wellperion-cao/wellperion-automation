@@ -737,6 +737,25 @@ def rule_orphan_automation() -> list[dict]:
 
 CHECK_INCOMPLETE_LEDGER_PATH = ROOT / "status" / "check_incomplete_ledger.json"
 
+_TODO_ROWS_CACHE: list | None = None
+
+
+def _todo_rows() -> list[dict]:
+    """업무·결재 SSOT(TODO_API todo_list) 행 — 한 스캔 안에서 1회만 조회하고 재사용한다.
+
+    ★2026-07-25 시우: 아래 COO 규칙 3종이 각자 같은 todo_list 를 따로 불러 스캔 1회에
+    동일 GAS 호출이 3번 나가고 있었다(규칙을 늘릴수록 선형 증가). 판정 로직 복제 금지와
+    같은 원리로 조회도 한 지점으로 모은다(약속 L01·L21). 캐시는 프로세스 수명 한정 —
+    scan() 은 1회성 실행이라 신선도 문제가 없다."""
+    global _TODO_ROWS_CACHE
+    if _TODO_ROWS_CACHE is None:
+        import coo_registry  # noqa: PLC0415
+
+        data = coo_registry._http_get_json(f"{coo_registry.TODO_API}?action=todo_list")
+        rows = data.get("data", []) if isinstance(data, dict) else []
+        _TODO_ROWS_CACHE = rows if isinstance(rows, list) else []
+    return _TODO_ROWS_CACHE
+
 
 def rule_recurring_check_incomplete() -> list[dict]:
     """지원부 일일점검 반복 미완료 적발 — 신규 판정 로직 없음, scripts/check_incomplete_detector.py
@@ -769,10 +788,7 @@ def rule_approval_stale_pending() -> list[dict]:
     coo_registry.fetch_workapproval_status()의 pending 필터(결재상태 있고 결재완료 아니고
     반려 아님)와 동일 — 그 함수는 집계값만 반환해 항목 단위가 필요한 여기선 같은 조건을
     그대로 재적용한다(신규 판정 로직 아님)."""
-    import coo_registry  # noqa: PLC0415
-
-    data = coo_registry._http_get_json(f"{coo_registry.TODO_API}?action=todo_list")
-    rows = data.get("data", []) if isinstance(data, dict) else []
+    rows = _todo_rows()
     today = datetime.now(tz=KST).date()
     gaps: list[dict] = []
     for r in rows:
@@ -809,8 +825,7 @@ def rule_task_deadline_passed_active() -> list[dict]:
     자체가 없어 그 규칙은 만들 수 없었다 — 대신 실데이터가 있는 일반 업무 마감초과로 적는다)."""
     import coo_registry  # noqa: PLC0415
 
-    data = coo_registry._http_get_json(f"{coo_registry.TODO_API}?action=todo_list")
-    rows = data.get("data", []) if isinstance(data, dict) else []
+    rows = _todo_rows()
     today_str = coo_registry._kst_today()
     today = datetime.now(tz=KST).date()
     gaps: list[dict] = []
@@ -831,6 +846,59 @@ def rule_task_deadline_passed_active() -> list[dict]:
             "hint": "종료일 갱신 또는 완료·보류 처리 필요",
             "ref": f"{r.get('id', title)}::overdue",
             "age": _classify_age(target_date, today),
+        })
+    return gaps
+
+
+# 보류 방치 판정 임계 — 2026-07-25 시우, 실측 분포 근거로 확정(추정값 아님).
+# 실측: 업무 SSOT 115행 中 보류 4건, 그중 마감 경과 3건(마감초과 56·41·37일 / 무갱신 45·28·19일).
+# 마감 30일 + 무갱신 14일 = 3건 전부 표면화. 대상 모수가 4건뿐이라 "경고가 벽이 된다"는
+# 위험이 구조적으로 없고(배10065 note 의 경계 사항), 누가 한 번이라도 손대면 무갱신이
+# 리셋돼 스스로 목록에서 빠진다 — 방치된 것만 남는 자기정리형 임계.
+_HOLD_OVERDUE_DAYS = 30
+_HOLD_STALE_DAYS = 14
+
+def rule_hold_abandoned() -> list[dict]:
+    """보류인데 마감이 지나고 오래 방치된 업무 적발 — "멈춰둔 것"과 "잊힌 것"을 가른다.
+
+    ★왜 필요한가(2026-07-25 시우 실측): rule_task_deadline_passed_active 는 상태가
+    '완료·보류'면 건너뛴다. 그래서 보류로 돌려둔 순간 그 업무는 어느 화면에도 안 뜬다 —
+    배10065 가 근거로 든 바로 그 사례('목욕탕 허가건', 마감 56일 초과·45일 무갱신)가
+    지금까지 아무 규칙에도 안 걸린 이유다. 보류는 정당한 상태지만, 재개 조건 없이
+    마감까지 지나면 그건 보류가 아니라 표류다.
+
+    ★재개조건 필드가 아직 없어(배9836 GM 결재 대기) 대리 신호로 '마감 경과 + 무갱신'을
+    쓴다 — 그 배가 재개조건 입력 게이트를 붙이면 이 규칙의 판정 근거를 그 필드로 바꾼다
+    (지금은 없는 필드를 있다고 가정하지 않는다).
+    """
+    rows = _todo_rows()
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+    for r in rows:
+        if str(r.get("상태") or "") != "보류":
+            continue
+        end_date = _parse_iso_date(str(r.get("종료일") or "")[:10])
+        if end_date is None:
+            continue  # 마감이 없는 보류는 판정 불가 — 지어내지 않고 건너뜀
+        overdue = (today - end_date).days
+        if overdue < _HOLD_OVERDUE_DAYS:
+            continue
+        mod_date = _parse_iso_date(str(r.get("수정일") or "")[:10])
+        if mod_date is None:
+            continue
+        stale = (today - mod_date).days
+        if stale < _HOLD_STALE_DAYS:
+            continue  # 최근에 누가 손댔음 — 잊힌 게 아니다
+        title = r.get("업무명", r.get("id", "?"))
+        gaps.append({
+            "role": "coo",
+            "severity": "mid",
+            "title": f"{_truncate_title(str(title))} — 보류인 채 마감 {overdue}일 경과",
+            "detail": f"상태=보류 · 종료일={end_date.isoformat()} · 최근 수정일={mod_date.isoformat()}"
+                      f"(그 뒤 {stale}일간 갱신 없음) — 재개 조건 없이 멈춰 있음",
+            "hint": "재개 조건·중단 사유를 적거나, 되살릴 게 아니면 종결 처리 필요",
+            "ref": f"{r.get('id', title)}::hold-abandoned",
+            "age": _classify_age(mod_date, today),
         })
     return gaps
 
@@ -1064,6 +1132,7 @@ _RULES: dict[str, list] = {
         rule_recurring_check_incomplete,   # 2026-07-23 신설 — 지원부 반복 미완료(기존 감사기 재사용)
         rule_approval_stale_pending,       # 2026-07-23 신설 — 결재 대기 N일 초과
         rule_task_deadline_passed_active,  # 2026-07-23 신설 — 업무 마감(종료일) 경과인데 방치
+        rule_hold_abandoned,               # 2026-07-25 신설 — 보류인 채 마감 지나고 방치(위 규칙 사각지대)
         rule_voc_stale_unresolved,         # 2026-07-23 신설 — VOC 접수 후 N일 미처리(분실물 제외)
     ],
     "cpo": [
@@ -1140,7 +1209,39 @@ def scan() -> dict:
         GAPS_PATH.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     except Exception as exc:
         print(f"[WARN] worklog_gaps.json 저장 실패(best-effort): {exc}")
+    _publish_best_effort()
     return result
+
+
+def _publish_best_effort() -> None:
+    """스캔 산출물을 그 자리에서 깃에 올린다(약속 L13 · INC-006 동류).
+
+    ★필요한 이유(2026-07-25 시우 실측): 패널(worklog_panel.js)은 로컬 파일이 아니라
+    raw.githubusercontent master 를 읽는다. 07:30 스캔이 파일만 갱신하고 아무도 커밋하지
+    않아, 화면에는 2026-07-23 20:41 데이터가 이틀째 떠 있었다(coo 25건 · 실제로는 39건).
+    "고쳤다"가 화면에 도달하지 않는 전형적 형태 — 쓰는 자리 = 올리는 자리로 붙인다.
+
+    ★장치를 늘리지 않는다(약속 L21): 새 워처·새 예약작업 없이 기존 관문
+    scripts/safe_commit.py 를 그대로 호출한다(락 직렬화·지정 경로만·push 연계 전부 그쪽 보장).
+    best-effort — 깃 실패가 스캔·상위 자동화(07:30 카드 발송)를 절대 깨뜨리지 않는다.
+    """
+    try:
+        from safe_commit import safe_commit  # noqa: PLC0415 — scripts/ 는 위에서 sys.path 삽입
+    except Exception as exc:
+        print(f"[WARN] 산출물 게시 건너뜀(safe_commit 임포트 실패): {exc}")
+        return
+    try:
+        res = safe_commit(
+            [GAPS_PATH, GAPS_STATE_PATH],
+            "chore: 빠진 것 스캔 결과 갱신 (worklog_gaps)",
+            holder="worklog_gaps_scan",
+        )
+        if res.get("committed"):
+            print(f"[INFO] 스캔 결과 게시 완료 — {res.get('sha', '')[:7]}")
+        else:
+            print(f"[INFO] 스캔 결과 게시 생략 — {res.get('reason', '')}")
+    except Exception as exc:
+        print(f"[WARN] 스캔 결과 게시 실패(best-effort, 스캔 자체는 정상): {exc}")
 
 
 def main() -> int:
