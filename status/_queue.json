@@ -1718,5 +1718,19 @@
     "short_no": 99,
     "module": "home",
     "surface": "autonomy"
+  },
+  {
+    "task_id": "COO-2026-07-25-ADHOC-4646b0e2d",
+    "clevel": "coo",
+    "title": "[시우] 안전커밋이 ad-hoc 자동기록을 건너뛰던 문제 — 한 일이 G1·상태줄에서 사라지던 원인 (배10219)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10222,
+    "artifact": "safe_commit 은 commit-tree/update-ref 라 .git/hooks/post-commit 이 발화하지 않는다.\n그 훅의 ①단계 auto_log_adhoc_to_queue.py 만 이식에서 누락돼 있었다(pre-commit 가드 10개는\n함수 이식 완료, push 는 명시 호출 중이었는데 이것만 빠짐).\n역설: 맨손 commit 금지 규칙을 지킨 세션일수록 한 일이 G1에서 사라지고, 어긴 쪽만 기록됐다.\n실측 2026-07-25 — 자동기록 37척 중 33척이 예약 스크립트, safe_commit 커밋은 0척. (CLI ad-hoc · 커밋 4646b0e2d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4646b0e2d8df4563a823226da62d6566d263fa3f"
   }
 ]
