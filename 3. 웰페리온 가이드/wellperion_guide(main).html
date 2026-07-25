@@ -3694,54 +3694,6 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         </table>
 
         <!-- ── /역할 원칙 흡수 STAGE2 ── -->
-
-        <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM 박제 2026-06-23) ── -->
-        <h4 style="margin-top:20px;">🔁 마케팅 파이프라인 (폐루프 5단계)</h4>
-        <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. <strong>상단 '콘텐츠 허브 6단계'를 사업 성과(문의→등록)까지 확장한 것</strong> — 앞단(1 = 제작~발행)은 6단계와 동일, 이 루프의 초점은 <strong>뒷단(문의→등록→평가·환류)</strong>. 문의·등록(2·3)은 시포(CPO) 라인과 맞물림. (GM 박제 2026-06-23)</div>
-        <table>
-          <tr><th style="width:50px">단계</th><th>내용</th><th style="width:120px">상태</th></tr>
-          <tr><td><strong>1</strong></td><td>콘텐츠 기획 → 자동 업로드 (M3→텔레그램 승인→5채널 발행) <span style="color:var(--dim);font-size:11px;">— 하위 6단계 상세는 아래 '발행 루프' 참고</span></td><td>✅ 완성</td></tr>
-          <tr><td><strong>2</strong></td><td>CTA 문의 접수: 문의페이지 → 자동 집계·시트 기록 + 문의 DB 페이지(체험·투어&amp;상담 캘린더)</td><td>🟡 부분 (시트 의존·자체DB 미구축)</td></tr>
-          <tr><td><strong>3</strong></td><td>회원 관리프로그램 신규 등록 명단 체크 → 문의 DB 페이지로 등록 체크·등록 현황 반영</td><td>❌ 약함 (등록 매칭=추정 → 자동화 진행 중)</td></tr>
-          <tr><td><strong>4</strong></td><td>콘텐츠→문의 성과 대시보드 (M1 통합 · 채널별 실측)</td><td>🟡 부분 (채널 단위 실측 · 게시글 단위·등록 매칭은 CPO 라인)</td></tr>
-          <tr><td><strong>5</strong></td><td>대시보드 분석 → 콘텐츠 평가 → 1)로 환류 <span style="color:var(--dim);font-size:11px;">— 반응 판정·개선제안 루프 신설(아래 '반응 루프' 참고)</span></td><td>🟡 부분 (반응 루프 반무인 가동 · 3종 신호만 실측)</td></tr>
-        </table>
-        <p style="margin-top:8px;"><strong>우선순위:</strong> 3번 등록 매칭부터 — 고리가 닫혀야 4·5번 수치가 진실해진다.</p>
-        <!-- ── /마케팅 파이프라인 폐루프 5단계 ── -->
-
-        <!-- ── 발행 루프 6단계 + 반응 루프 (2026-07-20 GM 지시 완성분 · SSOT — M1은 이 섹션을 가리키기만 함) ── -->
-        <h4 style="margin-top:20px;">🚀 발행 루프 — 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(2026-07-20 가동 · 위 1단계의 하위 상세)</span></h4>
-        <div class="callout">공식계정(@wellperion) 전용. 원고 1건이 형제 채널 원고까지 자동으로 갖춰지고, GM 승인 카드 1장으로 5채널이 함께 나간다.</div>
-        <table>
-          <tr><th style="width:34px">#</th><th style="width:150px">단계</th><th>처리</th></tr>
-          <tr><td>1</td><td>콘텐츠 제작</td><td>IG 원고·이미지 제작(CMO)</td></tr>
-          <tr><td>2</td><td>4채널 원고 자동 생성</td><td>IG 캡션 1개 → 블로그·카페·카카오·당근 원고 자동 작성(<code>scripts/generate_channel_copy.py</code>). 이미 있는 수동 작성 원고는 덮어쓰지 않음</td></tr>
-          <tr><td>3</td><td>5채널 검수 엔트리 자동 등록</td><td>4채널 원고가 있으면 형제 검수 엔트리 자동 upsert(<code>scripts/publish_register.py</code> → <code>register_channel_review.py</code>)</td></tr>
-          <tr><td>4</td><td>GM 승인 카드 1장 → 5채널 동시 발행</td><td>IG+형제채널을 카드 1장으로 묶어 발송, [승인] 1번으로 5채널 함께 발행(<code>scripts/ig_review_publish_watcher.py</code>)</td></tr>
-          <tr><td>5</td><td>발행 검증</td><td>URL 회수 성공=발행완료 / 게시는 됐는데 URL만 못 받아온 건=<strong>「확인필요(발행됨·URL미회수)」</strong>로 분리 도장 — <strong>재발행 절대 안 함</strong>(2026-07-20 중복 게시 사고 재발방지)</td></tr>
-          <tr><td>6</td><td>누락 경보 + 텔레그램 요약</td><td>IG만 있고 형제채널이 없으면 GM 업무보고방 즉시 경보. 발행 완료 시 실무진방에 IG 대표 이미지 1장 + 5채널 링크 + 응원 요청 통합 요약 자동 발송</td></tr>
-        </table>
-
-        <h4 style="margin-top:20px;">↻ 반응 루프 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 발행 루프를 감싸는 상위 루프 · 2026-07-20 신설</span></h4>
-        <div class="callout">GM 지시: "발행 루프를 또 감싸서 반응을 파악하고, 반응이 없으면 있게 만드는 작업"도 필요. 편별 반응 저조 여부를 판정하고, 저조하면 개선안을 GM께 제안한다. <strong>반무인</strong> — 재발행 등 비가역 행동은 GM 승인 후에만 실행.</div>
-        <table>
-          <tr><th style="width:120px">항목</th><th>내용</th></tr>
-          <tr><td>측정 신호</td><td>① IG 편별 도달 ② 당근 조회·찜 ③ 네이버 카페 조회(수집 희소) — <code>scripts/reaction_scorecard.py</code>, 매일 09:45 IG 도달 자동수집에 편승 실행(신규 예약작업 없음)</td></tr>
-          <tr><td>판정 기준</td><td>최근 발행 5편 중앙값 대비 <strong>50% 미만 = 저조</strong> · 발행 24시간 미경과 또는 비교표본 3건 미만 = <strong>판정보류</strong>(억지 판정 금지)</td></tr>
-          <tr><td>개선안</td><td>'저조' 판정 시만 로드맵(<code>instagram/_공식시리즈_로드맵.md</code>) 근거로 구체적 제안 자동생성 → GM 업무보고방 발송</td></tr>
-          <tr><td>주간 보고</td><td>기존 주간 마케팅 브리프 §5 "콘텐츠 반응 성적표"로 편입(<code>scripts/weekly_marketing_feedback.py</code>)</td></tr>
-        </table>
-
-        <h4 style="margin-top:20px;">⚠️ 반응 측정 한계 (정직 표기)</h4>
-        <table>
-          <tr><th style="width:150px">구분</th><th>내용</th></tr>
-          <tr><td>측정 가능</td><td>IG 도달 · 당근 조회/찜 · 네이버 카페 조회(수집 희소)</td></tr>
-          <tr><td>측정 불가</td><td>네이버 블로그 조회수(로그인 필요) · 카카오 반응(비공개) · IG 좋아요·저장(비공개 지표)</td></tr>
-          <tr><td>편별 귀속 불가</td><td>채널별 문의→가입 전환은 누적 집계라 편(게시글) 단위로 나눌 수 없음</td></tr>
-          <tr><td>클릭 집계</td><td>2026-07-15 GM 결정으로 삭제 — 되살리지 않고 위 3신호로 대체</td></tr>
-        </table>
-        <div class="callout tip" style="margin-top:8px;">채널별 문구·링크 규칙 정본 = <code>scripts/cta_utm.py</code>(재서술 안 함) · 규칙 중복 감시 = <code>ssot/divergence_scan.py</code>.</div>
-        <!-- ── /발행 루프 6단계 + 반응 루프 ── -->
       </div>
       <div class="tab-panel" data-panel="cto">
         <div class="card accent" style="margin-bottom:16px;">
@@ -4020,7 +3972,60 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
 
     <div style="margin:36px 0 6px;border-top:2px solid var(--accent);padding-top:16px;font-size:1.12rem;font-weight:800;color:var(--text);">② 제작</div>
 
-    <h3 id="m1-loop"><span class="ico">✍️</span>제작 품질 — 3렌즈 반복 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = AI C-Level 운영 한 장 / 부트셋업)</span></h3>
+    
+      <!-- ── 파이프라인 4블록: S2 시모 탭에서 이관(2026-07-25 GM "한 곳만 바라보게").
+           역할 정의는 S2, 콘텐츠가 실제로 도는 방식은 M1 — 두 곳에 나눠 적지 않는다. ── -->
+      <h3 id="m1-pipeline"><span class="ico">🔁</span>파이프라인 — 발행 · 반응 · 성과 환류</h3>
+      <p style="font-size:13px;color:var(--dim);margin:6px 0 14px;">위 6단계가 한 편이 도는 흐름이라면, 아래는 그 흐름이 <strong>사업 성과(문의→등록)</strong>까지 닫히는 큰 고리와 각 단계의 실제 배선입니다.</p>
+<!-- ── 마케팅 파이프라인 폐루프 5단계 (GM 박제 2026-06-23) ── -->
+        <h4 style="margin-top:20px;">🔁 마케팅 파이프라인 (폐루프 5단계)</h4>
+        <div class="callout">시모(CMO)의 운영 북극성. 콘텐츠가 문의·등록을 만들고, 그 결과로 다음 콘텐츠를 평가·재기획하는 닫힌 고리. <strong>상단 '콘텐츠 허브 6단계'를 사업 성과(문의→등록)까지 확장한 것</strong> — 앞단(1 = 제작~발행)은 6단계와 동일, 이 루프의 초점은 <strong>뒷단(문의→등록→평가·환류)</strong>. 문의·등록(2·3)은 시포(CPO) 라인과 맞물림. (GM 박제 2026-06-23)</div>
+        <table>
+          <tr><th style="width:50px">단계</th><th>내용</th><th style="width:120px">상태</th></tr>
+          <tr><td><strong>1</strong></td><td>콘텐츠 기획 → 자동 업로드 (M3→텔레그램 승인→5채널 발행) <span style="color:var(--dim);font-size:11px;">— 하위 6단계 상세는 아래 '발행 루프' 참고</span></td><td>✅ 완성</td></tr>
+          <tr><td><strong>2</strong></td><td>CTA 문의 접수: 문의페이지 → 자동 집계·시트 기록 + 문의 DB 페이지(체험·투어&amp;상담 캘린더)</td><td>🟡 부분 (시트 의존·자체DB 미구축)</td></tr>
+          <tr><td><strong>3</strong></td><td>회원 관리프로그램 신규 등록 명단 체크 → 문의 DB 페이지로 등록 체크·등록 현황 반영</td><td>❌ 약함 (등록 매칭=추정 → 자동화 진행 중)</td></tr>
+          <tr><td><strong>4</strong></td><td>콘텐츠→문의 성과 대시보드 (M1 통합 · 채널별 실측)</td><td>🟡 부분 (채널 단위 실측 · 게시글 단위·등록 매칭은 CPO 라인)</td></tr>
+          <tr><td><strong>5</strong></td><td>대시보드 분석 → 콘텐츠 평가 → 1)로 환류 <span style="color:var(--dim);font-size:11px;">— 반응 판정·개선제안 루프 신설(아래 '반응 루프' 참고)</span></td><td>🟡 부분 (반응 루프 반무인 가동 · 3종 신호만 실측)</td></tr>
+        </table>
+        <p style="margin-top:8px;"><strong>우선순위:</strong> 3번 등록 매칭부터 — 고리가 닫혀야 4·5번 수치가 진실해진다.</p>
+        <!-- ── /마케팅 파이프라인 폐루프 5단계 ── -->
+
+        <!-- ── 발행 루프 6단계 + 반응 루프 (2026-07-20 GM 지시 완성분 · SSOT — M1은 이 섹션을 가리키기만 함) ── -->
+        <h4 style="margin-top:20px;">🚀 발행 루프 — 6단계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(2026-07-20 가동 · 위 1단계의 하위 상세)</span></h4>
+        <div class="callout">공식계정(@wellperion) 전용. 원고 1건이 형제 채널 원고까지 자동으로 갖춰지고, GM 승인 카드 1장으로 5채널이 함께 나간다.</div>
+        <table>
+          <tr><th style="width:34px">#</th><th style="width:150px">단계</th><th>처리</th></tr>
+          <tr><td>1</td><td>콘텐츠 제작</td><td>IG 원고·이미지 제작(CMO)</td></tr>
+          <tr><td>2</td><td>4채널 원고 자동 생성</td><td>IG 캡션 1개 → 블로그·카페·카카오·당근 원고 자동 작성(<code>scripts/generate_channel_copy.py</code>). 이미 있는 수동 작성 원고는 덮어쓰지 않음</td></tr>
+          <tr><td>3</td><td>5채널 검수 엔트리 자동 등록</td><td>4채널 원고가 있으면 형제 검수 엔트리 자동 upsert(<code>scripts/publish_register.py</code> → <code>register_channel_review.py</code>)</td></tr>
+          <tr><td>4</td><td>GM 승인 카드 1장 → 5채널 동시 발행</td><td>IG+형제채널을 카드 1장으로 묶어 발송, [승인] 1번으로 5채널 함께 발행(<code>scripts/ig_review_publish_watcher.py</code>)</td></tr>
+          <tr><td>5</td><td>발행 검증</td><td>URL 회수 성공=발행완료 / 게시는 됐는데 URL만 못 받아온 건=<strong>「확인필요(발행됨·URL미회수)」</strong>로 분리 도장 — <strong>재발행 절대 안 함</strong>(2026-07-20 중복 게시 사고 재발방지)</td></tr>
+          <tr><td>6</td><td>누락 경보 + 텔레그램 요약</td><td>IG만 있고 형제채널이 없으면 GM 업무보고방 즉시 경보. 발행 완료 시 실무진방에 IG 대표 이미지 1장 + 5채널 링크 + 응원 요청 통합 요약 자동 발송</td></tr>
+        </table>
+
+        <h4 style="margin-top:20px;">↻ 반응 루프 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 발행 루프를 감싸는 상위 루프 · 2026-07-20 신설</span></h4>
+        <div class="callout">GM 지시: "발행 루프를 또 감싸서 반응을 파악하고, 반응이 없으면 있게 만드는 작업"도 필요. 편별 반응 저조 여부를 판정하고, 저조하면 개선안을 GM께 제안한다. <strong>반무인</strong> — 재발행 등 비가역 행동은 GM 승인 후에만 실행.</div>
+        <table>
+          <tr><th style="width:120px">항목</th><th>내용</th></tr>
+          <tr><td>측정 신호</td><td>① IG 편별 도달 ② 당근 조회·찜 ③ 네이버 카페 조회(수집 희소) — <code>scripts/reaction_scorecard.py</code>, 매일 09:45 IG 도달 자동수집에 편승 실행(신규 예약작업 없음)</td></tr>
+          <tr><td>판정 기준</td><td>최근 발행 5편 중앙값 대비 <strong>50% 미만 = 저조</strong> · 발행 24시간 미경과 또는 비교표본 3건 미만 = <strong>판정보류</strong>(억지 판정 금지)</td></tr>
+          <tr><td>개선안</td><td>'저조' 판정 시만 로드맵(<code>instagram/_공식시리즈_로드맵.md</code>) 근거로 구체적 제안 자동생성 → GM 업무보고방 발송</td></tr>
+          <tr><td>주간 보고</td><td>기존 주간 마케팅 브리프 §5 "콘텐츠 반응 성적표"로 편입(<code>scripts/weekly_marketing_feedback.py</code>)</td></tr>
+        </table>
+
+        <h4 style="margin-top:20px;">⚠️ 반응 측정 한계 (정직 표기)</h4>
+        <table>
+          <tr><th style="width:150px">구분</th><th>내용</th></tr>
+          <tr><td>측정 가능</td><td>IG 도달 · 당근 조회/찜 · 네이버 카페 조회(수집 희소)</td></tr>
+          <tr><td>측정 불가</td><td>네이버 블로그 조회수(로그인 필요) · 카카오 반응(비공개) · IG 좋아요·저장(비공개 지표)</td></tr>
+          <tr><td>편별 귀속 불가</td><td>채널별 문의→가입 전환은 누적 집계라 편(게시글) 단위로 나눌 수 없음</td></tr>
+          <tr><td>클릭 집계</td><td>2026-07-15 GM 결정으로 삭제 — 되살리지 않고 위 3신호로 대체</td></tr>
+        </table>
+        <div class="callout tip" style="margin-top:8px;">채널별 문구·링크 규칙 정본 = <code>scripts/cta_utm.py</code>(재서술 안 함) · 규칙 중복 감시 = <code>ssot/divergence_scan.py</code>.</div>
+        <!-- ── /발행 루프 6단계 + 반응 루프 ── -->
+
+      <h3 id="m1-loop"><span class="ico">✍️</span>제작 품질 — 3렌즈 반복 <span style="font-size:12px;color:var(--dim);font-weight:400;">(전 C-Level 공통 표준 · 정본 = AI C-Level 운영 한 장 / 부트셋업)</span></h3>
     <p>제작 세부 = <strong>기획·설계</strong>(소재·메시지·채널·타깃 · CS 스토리텔링·현실감 공식) → <strong>초안</strong>(카피·슬라이드) → <strong>디자인</strong>(compose_barre 룩·레이아웃). 여기까지가 상단 6단계 흐름의 <strong>'② 제작'</strong> 한 단계다.</p>
     <div class="callout tip"><strong>원샷 금지 — 제작 품질의 핵심.</strong> 초안을 <strong>① 고도화</strong>(브랜드 톤·후킹·현실감) → <strong>② 단순화</strong>(군더더기·과장 제거) → <strong>③ AI 검토</strong> 각각 <strong>별도 패스</strong>로 돌린다(한 번에 뭉치지 말 것). <br>※ 검수→발행→성과→환류 <strong>전체 루프는 상단 「콘텐츠 허브」 6단계</strong>가 정본 — 중복 표기 제거(구 '북극성 지향 제작 루프' 표 = 상단 6단계와 동일 루프였음). 현재 병목 = <strong>발행 후 반응 → 다음 기획 자동 반영(환류)</strong> 고리 — 시모 품질의 다음 한 걸음.</div>
 
@@ -6403,25 +6408,32 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <!-- ── G19: 업무자동화 ── -->
   <!-- ── COO 체크리스트 소개 ── -->
   <article class="doc" id="O1">
-    <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 운영 체계 · 지원부 우선 완성 → 확장</div></div>
+    <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 관할 · 부서별 운영 체계</div></div>
     <section id="o1-module-hub" style="margin:18px 0;">
       <h3 style="font-size:1.05rem;margin:0 0 10px;">🏢 운영 모듈 현황</h3>
       <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
         <div style="color:var(--dim);">모듈 불러오는 중…</div>
       </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">📅 전사 일정</a>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/notice/notice_template.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">📢 공지/안내문 생성</a>
+      </div>
     </section>
     <script>
     // 프론트 등록부 구동은 웰리 공유 렌더러+등록부 Pages 서빙 후속(front_card 스키마 예약).
+    // 운영모듈 현황 = 시설/지원(남)/지원(여) 3구분 카드 (GM 지시 2026-07-25 배95 · 시우 재구성).
     (function(){
       var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
       // Pages는 '3. 웰페리온 가이드/' 접두어 없이 서빙(접두어=404 · 아래 부서별 체계 링크와 동일 베이스). 2026-07-14 시우 404 수정.
       var BASE = "https://wellperion-cao.github.io/wellperion-automation/";
-      var CACHE_KEY = "o1_check_metric_v1";
-      function card(name, feature, metric, badge, href, tag){
-        return '<a href="'+href+'" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
-          + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+name+' '+badge+'</div>'
-          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+feature+'</div>'
-          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+metric+'</div>'
+      var CACHE_KEY = "o1_dept_cards_v1";
+      var FACILITY_HREF = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      var SUPPORT_HREF  = BASE + "coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      function deptCard(icon, label, pctText, badge, href, tag){
+        return '<a href="'+href+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
+          + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+icon+' '+label+' '+badge+'</div>'
+          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">오늘 점검 완료율</div>'
+          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+pctText+'</div>'
           + '<div style="font-size:.72rem;color:var(--dim);margin-top:6px;">'+tag+'</div></a>';
       }
       function pctOf(row){ if(!row) return null; if(row.pct!=null) return row.pct; return row.total? Math.round(row.done/row.total*100):null; }
@@ -6435,36 +6447,35 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         }
         return resp;
       }
-      function render(metric, badge, tag){
+      function render(fPct, mPct, wPct, badge, tag){
         var el = document.getElementById('o1-module-cards'); if(!el) return;
-        var checkHref = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
-        var schedHref = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
-        var noticeHref = BASE + "coo/notice/notice_template.html";
-        el.innerHTML = card('시설·지원 점검 현황','부서별 점검 완료율·이상', metric, badge, checkHref, tag)
-          + card('전사 일정','정기 안전·법정 점검 등 반복 일정', '열기 →', '📅', schedHref, '전 부서 공유 · 검사일 입력 대기')
-          + card('공지/안내문 생성','브랜드 기준 공지·안내문 · A3/A4 인쇄', '열기 →', '📢', noticeHref, '9개 사업부 컬러 · 8프리셋');
+        el.innerHTML = deptCard('🏭','시설', (fPct==null?'—':fPct+'%'), badge, FACILITY_HREF, tag)
+          + deptCard('🚹','지원(남)', (mPct==null?'—':mPct+'%'), badge, SUPPORT_HREF, tag)
+          + deptCard('🚺','지원(여)', (wPct==null?'—':wPct+'%'), badge, SUPPORT_HREF, tag);
       }
       function loadHub(){
         // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — 느린 GAS 콜에 링크가 막히지 않게
         var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
-        if(cached) render(cached.metric, cached.badge, '측정값 · 갱신 중');
-        else render('불러오는 중…', '⏳', '측정값(measured)');
+        if(cached) render(cached.f, cached.m, cached.w, cached.badge, '측정값 · 갱신 중');
+        else render(null, null, null, '⏳', '측정값(measured)');
         var pv = Date.now();
         var fP = fetch(CHECK_API+"?action=weekly&dept=facility&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
         var sP = fetch(CHECK_API+"?action=today_live&dept=support&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
         Promise.all([fP, sP]).then(function(res){
-          var fPct = pctOf(res[0]), sPct = pctOf(res[1]);
-          var anomaly = (fPct==null || fPct>100 || sPct==null || sPct>100);
+          var facilityRow = res[0], supportRow = res[1];
+          var fPct = pctOf(facilityRow);
+          var byGender = supportRow && supportRow.byGender;
+          var mPct = (byGender && byGender.m) ? pctOf(byGender.m) : null;
+          var wPct = (byGender && byGender.f) ? pctOf(byGender.f) : null;
+          var anomaly = (fPct==null || fPct>100 || mPct==null || mPct>100 || wPct==null || wPct>100);
           var badge = anomaly? '⚠' : '✅';
-          var metric = '시설 '+(fPct==null?'—':fPct+'%')+' · 지원 '+(sPct==null?'—':sPct+'%');
-          render(metric, badge, '측정값(measured)');
-          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({metric:metric,badge:badge})); }catch(e){}
+          render(fPct, mPct, wPct, badge, '측정값(measured)');
+          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({f:fPct,m:mPct,w:wPct,badge:badge})); }catch(e){}
         }).catch(function(){ if(!cached){ var el=document.getElementById('o1-module-cards'); if(el) el.innerHTML='<div style="color:var(--red);">점검 현황: (측정 실패 — 정직 표기)</div>'; } });
       }
       loadHub();
     })();
     </script>
-    <p class="lead">전 부서 공통 운영 체계입니다.</p>
 
     <a href="월간운영계획.html" style="display:flex;align-items:center;gap:14px;margin:14px 0 18px;padding:16px 20px;background:linear-gradient(135deg,#14352a,#1a1a2a);border:1px solid #2fa37a;border-radius:14px;text-decoration:none;color:#fff;">
       <span style="font-size:28px;flex-shrink:0;">🗓️</span>
@@ -6484,6 +6495,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <span style="font-size:13px;font-weight:800;color:#221F20;background:#c9a24a;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
     </a>
 
+    <!-- 종합접수처 O2→O1 통합 (GM 지시 2026-07-25 배95) — O2 탭은 유지(외부·기존 링크 보존), O1에서도 바로 진입 -->
+    <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:-6px 0 18px;">
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:6px;">🙋 웰페리온 종합 접수처</div>
+      <p style="font-size:12.5px;color:var(--dim);line-height:1.7;margin:0 0 14px;">분실물·시설물 고장·청결 이슈·컴플레인·직원 칭찬·직원 쓴소리 6종 접수 + 🧳습득물까지 담당 배정·상태 전환을 여기서 바로 확인·처리합니다.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;padding:11px 22px;background:var(--accent);color:#221f20;border-radius:10px;text-decoration:none;">📊 종합접수 현황 열기</a>
+        <a href="http://wellperion.com/ko/reception/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:11px 20px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:10px;text-decoration:none;">📲 회원 접수 폼</a>
+      </div>
+    </div>
+
     <h4 style="margin-bottom:10px;">부서별 체계</h4>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏢 운영부 체계</a>
@@ -6492,8 +6513,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🅿️ 주차관리부 체계</a>
       <a href="https://wellperion-cao.github.io/wellperion-automation/coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🛎️ 리셉션 체계</a>
     </div>
-
-    <div class="callout tip" style="margin-top:12px;"><strong>새 부서 구축 순서:</strong> 규정 → 가이드 → 매뉴얼 → 체크리스트·기록·이슈. 템플릿 = 지원부 체계 4탭 구조 복제.</div>
 
     <!-- 전 C-Level 공통 '작업 현황 로그' 패널 — 운영 모듈 현황 바로 아래 배치(GM·실무진이 같은
          화면에서 운영 자동화가 한 일·빠뜨린 일을 함께 본다, 2026-07-23 배9959). 데이터·스타일 =
