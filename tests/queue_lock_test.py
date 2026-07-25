@@ -21,8 +21,11 @@ import sys
 import tempfile
 import time
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_TESTS_DIR)
+_SCRIPTS_DIR = os.path.join(_PROJECT_ROOT, "scripts")
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
 import queue_lock  # noqa: E402
 
 NPROC = 6
