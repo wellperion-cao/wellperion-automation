@@ -181,7 +181,7 @@
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
-        "bot_id": "자동화현황방"
+        "bot_id": "GM_DM"
       },
       "front_card": {
         "window": "M1",
@@ -212,7 +212,7 @@
         "weekly": true,
         "monthly": true,
         "channel": "telegram",
-        "bot_id": "자동화현황방"
+        "bot_id": "GM_DM"
       },
       "front_card": {
         "window": "M1",
@@ -416,7 +416,7 @@
         "weekly": false,
         "monthly": true,
         "channel": "telegram",
-        "bot_id": "자동화현황방"
+        "bot_id": "GM_DM"
       },
       "front_card": {
         "window": "O1",
@@ -447,7 +447,7 @@
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
-        "bot_id": "자동화현황방"
+        "bot_id": "GM_DM"
       },
       "front_card": {
         "window": "O1",
@@ -571,7 +571,7 @@
         "weekly": false,
         "monthly": false,
         "channel": "telegram",
-        "bot_id": "자동화현황방"
+        "bot_id": "GM_DM"
       },
       "front_card": {
         "window": "문의회원",
@@ -736,38 +736,6 @@
       },
       "autonomy": "auto",
       "ai_free_fallback": "06:30 예약 gm_aide_scan.bat 무인 가동 — 프로필 갱신+포착+3게이트(GM_AIDE_AUTO_EXEC·AIDE_RESUMABLE_APPLY·AIDE_VERIFY_APPLY). [2026-07-22 GM 지시·방4 정리] bot_id null이라 module_reporter로는 원래도 미발신 — daily를 꺼서 매일 collector_missing 스킵로그 소음만 제거. CEO(웰리) 소유 두뇌 모듈이라 executor(CTO 소관 작업)는 collector 신설 안 함 — 콘텐츠 있는 daily 알림이 필요하면 웰리 승인·설계 필요(보고만, 미실행).",
-      "feedback": {
-        "enabled": true,
-        "audience": "gm+clevel",
-        "entries": []
-      },
-      "reversible": true,
-      "enabled": true,
-      "honesty_default": "measured"
-    },
-    {
-      "id": "ceo-hangro-review",
-      "owner_role": "ceo",
-      "owner_nick": "웰리",
-      "feature": "항로 검수·종착지 두뇌 — 배 상태 정직성 검수(5종: 오완료·정체·표류·오라벨·종착지없음)+종착지(다음 한 수+최종 북극성) LLM 추천→GM 카드 핑(간격제어). 게이트 HANGRO_APPLY OFF=제안만(휴면·라이브 반영 0), 라이브 발효=GM go",
-      "data_source": {
-        "kind": "json",
-        "ref": "status/hangro_pending.json + status/hangro_decisions.jsonl"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": false,
-        "channel": "telegram",
-        "bot_id": null,
-        "notify_wired": false
-      },
-      "front_card": {
-        "window": "자율현황",
-        "anchor": "layer-autonomy"
-      },
-      "autonomy": "propose",
-      "ai_free_fallback": "규칙 폴백(brain_fallback)으로 claude 없이 종착지 후보 생성·검수는 상수 판정(stall_watch·_classify 재사용)",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",
