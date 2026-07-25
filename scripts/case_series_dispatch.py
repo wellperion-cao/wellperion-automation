@@ -588,6 +588,26 @@ def run(dry_run: bool, plan_only: bool) -> int:
         telegram(msg)
         return 1
 
+    # 1.3) 금요일 선행 경고 — 주말 재고가 비었으면 **주말이 오기 전에** 알린다(2026-07-25).
+    #      토요일 아침에야 '재고 없음'을 알아봐야 그날 발행은 이미 늦는다. 토요일편은
+    #      그 주에 실제 있었던 문제를 다루므로 미리 만들어 둘 수도 없다(지어내기 금지·약속 L05)
+    #      → 만들 시점을 앞당기는 대신 '만들 때가 됐다'는 신호를 금요일에 준다.
+    #      종결 마커 검사보다 앞에 둔다 — 마커가 있으면 평일 런이 여기서 일찍 끝나기 때문.
+    if now.weekday() == 4 and not (dry_run or plan_only):  # 4=금
+        _wk_stock = [r["num_raw"] for r in rows
+                     if r.get("track") == WEEKEND_TRACK and r.get("status") == STOCK_STATUS]
+        if not _wk_stock:
+            print("[WARN] 금요일 선행 점검 — 주말GM 재고 0. 이번 주말 발행분 대본 제작 필요.")
+            _replay_append(
+                "cmo-case-series-dispatch",
+                subject="주말GM 재고 선행경고(금)",
+                detail="주말GM 트랙 재고 0 — 이번 주말(토·일) 발행분 대본 미제작. 오늘 만들어야 한다.",
+            )
+            telegram("📭 주말 콘텐츠 재고가 비었습니다 — 이번 주 토·일 개인계정 발행분 대본이 아직 없습니다. "
+                     "(재고표: instagram/_실전사례_2주플랜.md · 주말GM 트랙)")
+        else:
+            print(f"[INFO] 금요일 선행 점검 — 주말GM 재고 {len(_wk_stock)}편 확보({_wk_stock}).")
+
     # 1.4) 시리즈 종결 킬스위치 — 표에 '시리즈 상태: 종결' 마커가 있으면 **평일 트랙만** 휴면.
     #      주말GM 트랙은 별도 트랙이라 계속 돈다(2026-07-25 범위 수정 · 상세 = 정규식 정의부 주석).
     terminated = False
