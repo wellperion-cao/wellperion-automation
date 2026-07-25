@@ -6461,9 +6461,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
         <div style="color:var(--dim);">모듈 불러오는 중…</div>
       </div>
+      <!-- 전사일정·공지는 맨 링크에서 현황 카드로 승격(GM 지시 2026-07-25) — 위 카드 그리드가 렌더한다. -->
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">📅 전사 일정</a>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/notice/notice_template.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">📢 공지/안내문 생성</a>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:12px;font-weight:700;border-radius:9px;text-decoration:none;">🏢 운영부 체계</a>
+        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:12px;font-weight:700;border-radius:9px;text-decoration:none;">🛎️ 리셉션 업무</a>
+        <span style="align-self:center;font-size:11.5px;color:var(--dim);">— 문서·절차 페이지(측정 지표 없음)</span>
       </div>
     </section>
     <script>
@@ -6473,15 +6475,34 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
       // Pages는 '3. 웰페리온 가이드/' 접두어 없이 서빙(접두어=404 · 아래 부서별 체계 링크와 동일 베이스). 2026-07-14 시우 404 수정.
       var BASE = "https://wellperion-cao.github.io/wellperion-automation/";
-      var CACHE_KEY = "o1_dept_cards_v1";
+      var CACHE_KEY = "o1_dept_cards_v2";   // v1 = 3카드 시절 캐시 — 스키마가 달라 키를 올린다(옛 캐시 오독 방지)
       var FACILITY_HREF = BASE + "coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
       var SUPPORT_HREF  = BASE + "coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
-      function deptCard(icon, label, pctText, badge, href, tag){
-        return '<a href="'+href+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
-          + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+icon+' '+label+' '+badge+'</div>'
-          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">오늘 점검 완료율</div>'
-          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+pctText+'</div>'
-          + '<div style="font-size:.72rem;color:var(--dim);margin-top:6px;">'+tag+'</div></a>';
+      var PARKING_HREF  = BASE + "coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      var SCHEDULE_HREF = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
+      var NOTICE_HREF   = BASE + "coo/notice/notice_template.html";
+      // status/*.json 은 Pages 발행루트에 없다 — 저장소 raw 를 직독한다(worklog_panel.js 와 동일 관례).
+      var RAW_BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/";
+      // 공지 목록(notice_list) 전용 — 점검 GAS(CHECK_API)와 다른 웹앱이다. 섞으면 '알 수 없는 action' 이 된다.
+      // 이 페이지가 이미 쓰는 TODO_API_URL 과 같은 주소 — 값을 또 적지 않고 있으면 그걸 쓴다(약속 L01).
+      var TODO_API = (typeof TODO_API_URL !== 'undefined' && TODO_API_URL)
+        ? TODO_API_URL
+        : "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
+      /* 카드 1장 = 모듈 1개. 구성은 GM 확정(2026-07-25 딥인터뷰): **큰 숫자(대표값) + 작은 경고(볼 일)**.
+         경고가 없으면 회색 정보 한 줄로 떨어뜨린다(빈 줄을 두지 않는다 — 카드 높이가 들쭉날쭉해짐).
+         ★가짜 숫자 금지: 값이 없으면 '—' + '아직 측정 없음'. 0%로 떨어뜨리지 않는다. */
+      function moduleCard(o){
+        var warnColor = o.warnLevel==='bad' ? 'var(--red)' : (o.warnLevel==='ok' ? 'var(--dim)' : 'var(--orange, #d98a3d)');
+        var big = (o.value==null || o.value==='') ? '—' : o.value;
+        var sub = (o.value==null || o.value==='') ? '아직 측정 없음' : (o.warn||'');
+        return '<a href="'+o.href+'" target="_blank" style="display:block;text-decoration:none;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
+          + '<div style="font-weight:700;margin-bottom:4px;color:var(--text);">'+o.icon+' '+o.label+'</div>'
+          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+o.caption+'</div>'
+          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+big+'</div>'
+          + '<div style="font-size:.74rem;color:'+((o.value==null||o.value==='')?'var(--dim)':warnColor)+';margin-top:6px;font-weight:'+(o.warnLevel==='bad'?'700':'400')+';">'+sub+'</div></a>';
+      }
+      function deptCard(icon, label, pctText, badge, href, tag){   // 하위호환(다른 호출부 대비) — 신규 카드로 위임
+        return moduleCard({icon:icon,label:label,caption:'오늘 점검 완료율',value:pctText==='—'?null:pctText,warn:tag,warnLevel:'ok',href:href});
       }
       function pctOf(row){ if(!row) return null; if(row.pct!=null) return row.pct; return row.total? Math.round(row.done/row.total*100):null; }
       function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
@@ -6494,31 +6515,99 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         }
         return resp;
       }
-      function render(fPct, mPct, wPct, badge, tag){
+      /* 미점검 건수 = total-done. 점검 카드의 '작은 경고'는 %가 아니라 **남은 건수**다
+         (GM: 퍼센트만 보면 몇 건 남았는지 몰라 손이 안 간다). */
+      function undone(row){
+        if(!row || row.total==null || row.done==null) return null;
+        var n = Number(row.total) - Number(row.done);
+        return (isNaN(n) || n<0) ? null : n;
+      }
+      function checkWarn(row){
+        var n = undone(row);
+        if(n==null) return {warn:'', level:'ok'};
+        return n>0 ? {warn:'⚠ 미점검 '+n+'건', level:'bad'} : {warn:'✓ 오늘 다 마침', level:'ok'};
+      }
+      function pctText(p){ return p==null ? null : p+'%'; }
+
+      function render(S){
         var el = document.getElementById('o1-module-cards'); if(!el) return;
-        el.innerHTML = deptCard('🏭','시설', (fPct==null?'—':fPct+'%'), badge, FACILITY_HREF, tag)
-          + deptCard('🚹','지원(남)', (mPct==null?'—':mPct+'%'), badge, SUPPORT_HREF, tag)
-          + deptCard('🚺','지원(여)', (wPct==null?'—':wPct+'%'), badge, SUPPORT_HREF, tag);
+        var fW=checkWarn(S.fRow), mW=checkWarn(S.mRow), wW=checkWarn(S.wRow);
+        el.innerHTML =
+            moduleCard({icon:'🏭',label:'시설',    caption:'오늘 점검 완료율', value:pctText(S.fPct), warn:fW.warn, warnLevel:fW.level, href:FACILITY_HREF})
+          + moduleCard({icon:'🚹',label:'지원(남)', caption:'오늘 점검 완료율', value:pctText(S.mPct), warn:mW.warn, warnLevel:mW.level, href:SUPPORT_HREF})
+          + moduleCard({icon:'🚺',label:'지원(여)', caption:'오늘 점검 완료율', value:pctText(S.wPct), warn:wW.warn, warnLevel:wW.level, href:SUPPORT_HREF})
+          + moduleCard({icon:'🅿️',label:'주차',    caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
+          + moduleCard({icon:'📅',label:'전사 일정', caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
+          + moduleCard({icon:'📢',label:'공지·안내문',caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF});
+      }
+      function won(n){ // 256만원 / 1,250원 — 큰 숫자 칸이 좁아 만원 단위로 접는다
+        if(n==null || isNaN(n)) return null;
+        n = Number(n);
+        if(n >= 10000) return Math.round(n/10000).toLocaleString('ko-KR')+'만원';
+        return n.toLocaleString('ko-KR')+'원';
+      }
+      /* 공지 savedAt 은 GAS 가 만든 한국어 표기다 — 실측 예 '2026. 7. 13. 오후 9:49:58'.
+         Date.parse 로는 안 읽혀 경과일이 통째로 비었다(2026-07-25 렌더 시뮬레이션에서 발견).
+         날짜 세 토막만 뽑아 쓴다(시각은 경과일 계산에 불필요). ISO 형식도 그대로 통과. */
+      function daysSince(raw){
+        var s = String(raw||'');
+        var m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+        var t = m ? new Date(+m[1], +m[2]-1, +m[3]).getTime() : Date.parse(s);
+        if(isNaN(t)) return null;
+        return Math.max(0, Math.floor((Date.now()-t)/86400000));
       }
       function loadHub(){
-        // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate) — 느린 GAS 콜에 링크가 막히지 않게
+        // 링크는 즉시 렌더(클릭 가능) · 지표는 직전 캐시 표시 후 백그라운드 갱신(stale-while-revalidate)
+        // — 느린 GAS 콜에 링크가 막히지 않게. 한 소스가 죽어도 나머지 카드는 그대로 뜬다(개별 catch).
+        var S = {fRow:null,mRow:null,wRow:null,fPct:null,mPct:null,wPct:null,
+                 parkAmt:null,parkWarn:'',schedTotal:null,schedWarn:'',schedLevel:'ok',
+                 noticeTotal:null,noticeWarn:'',noticeLevel:'ok'};
         var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
-        if(cached) render(cached.f, cached.m, cached.w, cached.badge, '측정값 · 갱신 중');
-        else render(null, null, null, '⏳', '측정값(measured)');
+        if(cached){ for(var k in cached){ if(cached.hasOwnProperty(k)) S[k]=cached[k]; } }
+        render(S);
         var pv = Date.now();
-        var fP = fetch(CHECK_API+"?action=weekly&dept=facility&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-        var sP = fetch(CHECK_API+"?action=today_live&dept=support&_pv="+pv,{cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
-        Promise.all([fP, sP]).then(function(res){
-          var facilityRow = res[0], supportRow = res[1];
-          var fPct = pctOf(facilityRow);
+        function jget(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); }
+
+        var fP = jget(CHECK_API+"?action=weekly&dept=facility&_pv="+pv).then(pickToday).catch(function(){return null;});
+        var sP = jget(CHECK_API+"?action=today_live&dept=support&_pv="+pv).then(pickToday).catch(function(){return null;});
+        var parkP  = jget(RAW_BASE+"status/parking_revenue.json?_pv="+pv);
+        var schedP = jget(RAW_BASE+"status/schedule_ssot.json?_pv="+pv);
+        var noticeP= jget(TODO_API+"?action=notice_list&_pv="+pv);
+
+        Promise.all([fP,sP,parkP,schedP,noticeP]).then(function(res){
+          var facilityRow=res[0], supportRow=res[1], park=res[2], sched=res[3], notice=res[4];
+          S.fRow = facilityRow; S.fPct = pctOf(facilityRow);
           var byGender = supportRow && supportRow.byGender;
-          var mPct = (byGender && byGender.m) ? pctOf(byGender.m) : null;
-          var wPct = (byGender && byGender.f) ? pctOf(byGender.f) : null;
-          var anomaly = (fPct==null || fPct>100 || mPct==null || mPct>100 || wPct==null || wPct>100);
-          var badge = anomaly? '⚠' : '✅';
-          render(fPct, mPct, wPct, badge, '측정값(measured)');
-          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({f:fPct,m:mPct,w:wPct,badge:badge})); }catch(e){}
-        }).catch(function(){ if(!cached){ var el=document.getElementById('o1-module-cards'); if(el) el.innerHTML='<div style="color:var(--red);">점검 현황: (측정 실패 — 정직 표기)</div>'; } });
+          S.mRow = byGender && byGender.m ? byGender.m : null; S.mPct = S.mRow ? pctOf(S.mRow) : null;
+          S.wRow = byGender && byGender.f ? byGender.f : null; S.wPct = S.wRow ? pctOf(S.wRow) : null;
+
+          // 주차 — 실결제 매출·건수(status/parking_revenue.json, 07:00 갱신)
+          if(park && park['매출금액']!=null){
+            S.parkAmt  = won(park['매출금액']);
+            S.parkWarn = (park['결제건수']!=null) ? ('결제 '+Number(park['결제건수']).toLocaleString('ko-KR')+'건') : '';
+          }
+          // 전사 일정 — 등록 건수 + '시행일 미기록' 경고(법정점검인데 언제 했는지 기록이 없는 건)
+          if(sched && Array.isArray(sched.items)){
+            S.schedTotal = sched.items.length+'건';
+            var noDate = sched.items.filter(function(x){ return !x.last_done && !x.next_due; }).length;
+            S.schedWarn  = noDate>0 ? ('⚠ 시행일 미기록 '+noDate+'건') : '✓ 시행일 모두 기록됨';
+            S.schedLevel = noDate>0 ? 'bad' : 'ok';
+          }
+          // 공지 — 저장 건수 + 최근 공지 제목·경과일(30일 초과면 경고색)
+          var nrows = notice && (notice.data||notice.notices);
+          if(Array.isArray(nrows)){
+            S.noticeTotal = nrows.length+'건';
+            var top = nrows[0];
+            if(top){
+              var d = daysSince(top.savedAt);   // 원문 그대로 — daysSince 가 한국어 표기를 직접 해석한다
+              var t = String(top.titleKr||top.title||'제목없음').slice(0,14);
+              S.noticeWarn  = '최근: '+t+(d!=null?(' · '+d+'일 전'):'');
+              S.noticeLevel = (d!=null && d>30) ? 'bad' : 'ok';
+            }
+          }
+          render(S);
+          try{ localStorage.setItem(CACHE_KEY, JSON.stringify(S)); }catch(e){}
+        }).catch(function(){ if(!cached){ var el=document.getElementById('o1-module-cards'); if(el) el.innerHTML='<div style="color:var(--red);">운영 모듈 현황: (측정 실패 — 정직 표기)</div>'; } });
       }
       loadHub();
     })();
@@ -6552,14 +6641,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
     </div>
 
-    <h4 style="margin-bottom:10px;">부서별 체계</h4>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏢 운영부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🏭 시설부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">✅ 지원부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🅿️ 주차관리부 체계</a>
-      <a href="https://wellperion-cao.github.io/wellperion-automation/coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;border-radius:10px;text-decoration:none;">🛎️ 리셉션 체계</a>
-    </div>
+    <!-- 「부서별 체계」 5링크 섹션 제거(GM 지시 2026-07-25) — 위 「운영 모듈 현황」 카드가 그 역할을
+         대신한다. 카드 자체가 각 부서 페이지로 가는 문이며, 숫자가 없는 운영부·리셉션은 같은 섹션
+         하단에 작은 링크로 남겨 두었다. ★부서 페이지는 그대로 독립 유지 — 흡수가 아니라 링크다.
 
     <!-- 전 C-Level 공통 '작업 현황 로그' 패널 — 운영 모듈 현황 바로 아래 배치(GM·실무진이 같은
          화면에서 운영 자동화가 한 일·빠뜨린 일을 함께 본다, 2026-07-23 배9959). 데이터·스타일 =
