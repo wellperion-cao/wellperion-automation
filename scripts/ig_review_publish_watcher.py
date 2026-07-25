@@ -84,6 +84,42 @@ APPROVED_STATES = {"승인", "승인발행대기", "approved"}
 POST_URL_RE = re.compile(r"post\s+[A-C]:\s*(https?://\S+)", re.IGNORECASE)
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 발행 파이프라인 단계별 권한 표 (배10035, 2026-07-25 시모)
+#   목적: GM을 부르지 않아도 되는 저위험 단계까지 승인 카드를 띄우던 관행을 없앤다 —
+#   자동화 '확대'가 아니라 불필요한 GM 호출 '제거'다. 비가역(실제 채널 전송) 게이트는
+#   절대 그대로 둔다(안전선).
+#
+#   단계              | 가역여부 | 승인 필요 | 처리 위치
+#   -----------------|--------|----------|----------------------------------------
+#   초안 저장(등록)    | 가역    | 불필요    | publish_register.register_publish
+#   미리보기 생성      | 가역    | 불필요    | publish_register._copy_preview / build 계열
+#   검수큐 등록        | 가역    | 불필요    | review_queue_util.mutate_review_queue(status=검수대기)
+#   실제 채널 발행      | 비가역  | 필요(GM 탭)| dispatch_publish (본 파일) — APPROVED_STATES 건만
+#
+#   변경 전/후 동일 — 이 표는 기존 동작(위 3단계는 원래도 무승인 자동 통과)을 코드로
+#   명문화한 것. SAFE_ACTIONS 는 "승인 불필요"로 확정된 가역 단계만 담는다.
+#   ★절대 규칙: "publish"(dispatch_publish 실제 채널 전송)는 여기 넣지 않는다 —
+#   넣는 순간 비가역 게이트가 풀린다. 새 단계 추가 시 기본값은 "승인 필요".
+SAFE_ACTIONS = frozenset({"draft_save", "preview_generate", "review_register"})
+
+
+def _assert_publish_authorized(it: dict, events: list) -> bool:
+    """dispatch_publish 진입 시 권한 가드(최종 방어선).
+
+    호출부(process_queue)가 이미 APPROVED_STATES 로 필터링하지만, 여기서 다시 한 번
+    확인한다(이중 방어 — 호출부 필터가 뚫려도/직접 호출돼도 비가역 단계는 막힌다).
+    True=발행 진행 가능 / False=차단(상태 보존, 이벤트 로그만 남김).
+    """
+    assert "publish" not in SAFE_ACTIONS, "SAFE_ACTIONS 에 publish 포함 금지 — 비가역 게이트 위반"
+    if it.get("status") not in APPROVED_STATES:
+        title = it.get("title", it.get("id", "?"))
+        events.append(
+            f"⛔ {title}: 승인 상태 아님(status={it.get('status')!r}) — 발행 권한 가드 차단"
+        )
+        return False
+    return True
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 종결(폐기·취소) 결정 명문 배제 — 결정정합 게이트 A2 (배9598 · 2026-07-23)
 #   계약 정본: ssot/decision_contracts.json ▸ cmo-content-pipeline (pattern K · effect=제외)
 #
@@ -697,6 +733,10 @@ def dispatch_publish(it: dict, events: list) -> None:
     """
     title = it.get("title", it.get("id", "?"))
     ch = it.get("channel", "")
+
+    # [배10035 · 권한 가드] 비가역 단계 진입 전 승인 상태 재확인 — SAFE_ACTIONS 표 참조.
+    if not _assert_publish_authorized(it, events):
+        return
 
     # [A2 명문 배제 · 최종 방어선] 앞단 필터가 뚫려도 여기서 발행을 막는다.
     # 종결 결정(status 폐기·취소 / terminal / 폴더 폐기 마커)은 status 를 덮어쓰지 않고
