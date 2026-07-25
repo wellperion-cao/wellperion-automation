@@ -213,8 +213,17 @@ function myShips(cwd, role) {
     //   (adhoc_commit 존재 AND 제목에 "자동 발행") — KPI 완결률과 같은 잣대를 쓴다.
     //   ※JS/파이썬이라 함수를 직접 못 쓴다. 규칙이 바뀌면 정본과 함께 여기도 고칠 것.
     const isMachineShip = (s) => !!s.adhoc_commit && String(s.title || '').includes('자동 발행');
+    // ★updated_at 을 날짜 후보에 넣는다 (GM 2026-07-25 "작업이 안 잡힌다").
+    //   실측: 2026-07-25 시모가 끝낸 배 8척 중 **4척만** 잡혔다. 어제 이전에 띄운 배를 오늘
+    //   닫으면 processed_at·done_at 이 안 적히고(그 칸은 clevel_post_action 을 거친 배만 얻는다)
+    //   enqueued_at 은 옛 날짜라, 오늘 한 일의 절반이 통째로 안 보였다.
+    //   순서 주의: processed_at·done_at 이 있으면 그걸 먼저 쓴다. updated_at 은 그 둘이 없을
+    //   때만 쓰는 차선책이다 — 옛 배의 메모만 오늘 고쳐도 오늘 완료로 셀 수 있는 값이라
+    //   더 정확한 칸이 있으면 양보시킨다.
+    //   ※진짜 해법은 배를 닫을 때 done_at 을 적는 것이다. 그건 닫는 쪽(각 역할·스크립트)이
+    //     고쳐야 해서 여기서는 보이는 숫자부터 맞춘다.
     const isDoneToday = (s) => (s.status === 'DONE' || s.status === '완료')
-      && String(s.processed_at || s.done_at || s.enqueued_at || '').startsWith(ymd)
+      && String(s.processed_at || s.done_at || s.updated_at || s.enqueued_at || '').startsWith(ymd)
       && !isMachineShip(s);
     let done = mine.filter(isDoneToday).length;
     // 보관함(2.4MB)은 읽는 값이 있을 때만 연다 — 오늘 아무것도 보관되지 않았으면 파일이
