@@ -13,9 +13,15 @@
  * 왜: 기존 statusline(OMC HUD)은 비용·모델·컨텍스트만 보여줘 GM 이 "지금 일이 돌고 있는지"를
  *     알 수 없었다("작업을 하는건지 마는건지 모르겠는데" — GM 2026-07-24).
  *
- * 무엇을 덧붙이나 (GM 2026-07-24 선택 = '내 배 + 남은 일까지'):
- *     시토▶10026·4분전 · 항로🚢3⚓9 · 오늘🏁5 │ 전사●●●○
- *     └역할  └잡은 배 └내 마지막 커밋  └진행/대기  └오늘 입항   └나 뺀 4역할 가동
+ * 무엇을 보여주나 (웰리 결정 · GM 승인 D안 2026-07-25 — 배107):
+ *     시토▶107 상태줄 재설계 — 한 줄에…·✅단계3분전 🆕2 · 항로🚢8⚓43·44·27+34 · 오늘🏁11 · ⚠️시우▸35 결재4일 ⏸시모▸10 16일 +7
+ *     └역할 └잡은 배+제목(12자 상한 폐지 — 폭 가변·최소 20자) └새 지시 └대기 배 번호(무거운 순) └오늘 입항 └전사 '막힌 것 우선'
+ *
+ *   ★전사 가동 점(●●●●)은 삭제 — GM 판단 "정보량 0". 살아있음은 커밋 시각으로 이미 보이고,
+ *     정작 안 보이던 건 "무엇이 멈춰 있나"였다(결재 60일·검수대기 8건). 그 자리를 이렇게 채운다:
+ *     ① GM 결재 대기 배(⚠️ 역할▸번호 결재N일) ② N일 정지 배(⏸ 역할▸번호 N일) ③ 남는 폭에 정상 진행 배.
+ *   ★폭 반응형: 터미널 폭을 읽어 **뒤에서부터 접는다**(전사→오늘→대기목록→🆕 → 마지막까지 내 배).
+ *     상태줄은 비대화형이라 토글이 없다 — 창을 넓히면 저절로 더 보이는 것이 토글의 대체다.
  *
  * ★7역할 공통 — 역할별 설정이 필요 없다.
  *     세션이 자기 transcript 첫머리의 부팅 프롬프트(`ai-cto.md` 등)를 읽어 **스스로 역할을 안다.**
@@ -27,13 +33,13 @@
  *       무슨 일이 생겨도 statusline 이 비지 않게 — 실패하면 OMC 출력만이라도 낸다.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync, mkdirSync, openSync } from 'node:fs';
 import path from 'node:path';
+import tty from 'node:tty';
 
 const OMC_HUD = 'C:/Users/jjky0/.claude/hud/omc-hud-cost.mjs';
-const PROJECT_LOGS = 'C:/Users/jjky0/.claude/projects/C--Users-jjky0-welperion-automation';
 const NODE = process.execPath;
-const ALIVE_MIN = 30;   // 이 시간 안에 움직인 세션 = 가동중(●)
+const STALL_DAYS = 3;   // 진행중인데 이 날수 이상 안 움직인 배 = ⏸ 정지로 본다
 
 // 역할 기억함 — 한 번 알아낸 역할을 세션별로 적어둔다(2026-07-25 GM 지시).
 //   왜: roleOf 는 transcript **첫 60,000자**에서 부팅 문구(ai-<role>.md)를 찾는다. 대화가
@@ -43,9 +49,6 @@ const ALIVE_MIN = 30;   // 이 시간 안에 움직인 세션 = 가동중(●)
 const ROLE_CACHE = 'tmp/hud_role_cache.json';   // .gitignore 대상(tmp/) — 커밋 오염 없음
 const ROLE_CACHE_MAX = 50;                       // 오래된 세션부터 버린다(무한 증식 방지)
 
-// 역할 고정 순서 — 점의 자리가 늘 같아야 눈이 익는다.
-// 시로(chro)·시뽀(cfo)는 GM 지시로 점에서 제외(2026-07-24). 순서 = 웰리·시토·시모·시우·시포.
-const ROLES = ['ceo', 'cto', 'cmo', 'coo', 'cpo'];
 const NICK = { ceo: '웰리', cfo: '시뽀', chro: '시로', cmo: '시모', coo: '시우', cpo: '시포', cto: '시토' };
 
 const D = '\x1b[2m', C = '\x1b[36m', G = '\x1b[32m', Y = '\x1b[33m', R = '\x1b[31m';
@@ -165,9 +168,7 @@ function lastProgress(cwd, role) {
       if (!Number.isFinite(ts)) continue;
       return {
         mins: Math.max(0, Math.round((Date.now() - ts) / 60000)),
-        // 단계 이름 6자 상한 — 규칙 ③(잘림 0). "진행 보고 배선"(7자) 같은 긴 이름을 그대로
-        // 실으면 80칸 창에서 줄 끝이 잘린다(실측: 상한 없으면 86칸). 코드포인트 단위로 자른다.
-        step: shortTitle(rec.step, 6),
+        step: shortTitle(rec.step, 6),   // 단계 이름은 짧게 — 제목 칸에 폭을 양보한다
         state: String(rec.state || 'done'),
       };
     }
@@ -175,60 +176,59 @@ function lastProgress(cwd, role) {
   return null;
 }
 
-/** 지금 살아있는 역할 — 최근 움직인 transcript 들만 훑는다(오래된 파일은 건너뛰어 싸다). */
-function aliveRoles() {
-  const alive = new Set();
-  try {
-    const cut = Date.now() - ALIVE_MIN * 60000;
-    for (const f of readdirSync(PROJECT_LOGS)) {
-      if (!f.endsWith('.jsonl')) continue;
-      const p = path.join(PROJECT_LOGS, f);
-      let st;
-      try { st = statSync(p); } catch { continue; }
-      if (st.mtimeMs < cut) continue;
-      const r = roleOf(p);
-      if (r) alive.add(r);
-    }
-  } catch { /* 못 읽으면 빈 집합 — 점이 다 ○ 로 나온다 */ }
-  return alive;
-}
-
-/** 내 항로 — 진행/대기/오늘 입항 + 배번호 짧은번호 매핑. */
-function myShips(cwd, role) {
+/** 큐 한 번 읽기 — ★렌더당 파싱 1회만(성능 상한 200ms 계약 · 배107).
+ *  내 항로·🆕배지·전사 막힌 배가 전부 이 한 번의 파싱을 나눠 쓴다. 추가 전수 훑기 금지. */
+function loadQueue(cwd) {
   try {
     const q = JSON.parse(readFileSync(path.join(cwd, 'status', '_queue.json'), 'utf8'));
-    if (!Array.isArray(q)) return null;
+    return Array.isArray(q) ? q : null;
+  } catch { return null; }
+}
+
+// 배 무게 — 대기 목록을 무거운 순으로 늘어놓기 위한 값(항해 세계관 priority).
+const WEIGHT = { '🛳️크루즈': 3, '⛴️여객선': 2, '⛵돛단배': 1 };
+function weightOf(s) { return WEIGHT[String(s.priority || '')] || 0; }
+
+// 배의 '마지막 움직임'이 며칠 전인가 — updated_at 이 있으면 그것, 없으면 enqueued_at.
+function idleDays(s, now) {
+  const t = Date.parse(String(s.updated_at || s.enqueued_at || ''));
+  return Number.isFinite(t) ? Math.max(0, Math.floor((now - t) / 86400000)) : 0;
+}
+// 표시용 배 번호 — 짧은번호 우선.
+function noOf(s) { return s.short_no != null ? s.short_no : s.ship_no; }
+
+/** 내 항로 — 진행/대기/오늘 입항 + 대기 배 번호 목록 + 🆕(남이 띄웠는데 아직 안 잡은 배). */
+function myShips(q, cwd, role) {
+  try {
     const mine = q.filter((s) => s && s.clevel === role);
     const t = new Date();
     const ymd = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     const run = mine.filter((s) => s.status === 'IN_PROGRESS').length;
-    const wait = mine.filter((s) => s.status === 'PENDING' || s.status === 'STANDBY').length;
+    // 대기 배 — 번호를 무게 무거운 순으로 늘어놓는다(웰리 결정 D안 ④). 같은 무게면 오래 기다린 순.
+    const waiting = mine.filter((s) => s.status === 'PENDING' || s.status === 'STANDBY')
+      .sort((a, b) => (weightOf(b) - weightOf(a))
+        || String(a.enqueued_at || '').localeCompare(String(b.enqueued_at || '')));
+    const waitNos = waiting.map(noOf).filter((n) => n != null);
+    // 🆕 = 남이 나에게 띄웠는데 아직 안 잡은 배(웰리 결정 D안 ③ — "다른 C레벨도 작업 지시 현황 바로").
+    //   '남이' = from 이 있고 내가 아님. '안 잡은' = PENDING(STANDBY 는 잡았다가 정박한 배라 제외).
+    const fresh = waiting.filter((s) => s.status === 'PENDING' && s.from && s.from !== role).length;
     // '오늘 입항'은 보관함까지 세야 한다(GM 2026-07-24 '오늘 🏁0이 틀렸다').
     //   완료한 배는 곧 _queue_archive.json 으로 옮겨진다 → 살아있는 큐만 보면 오늘 끝낸 배가
     //   보관되는 순간 사라져 이 칸이 사실상 항상 0이었다(죽은 칸).
     //   완료 날짜 칸은 배마다 제각각(processed_at·done_at·둘 다 없으면 enqueued_at)이라 셋 다 본다.
     // ★기계가 찍어낸 배는 뺀다(GM 2026-07-24 '오늘🏁31이 부풀려졌다').
-    //   문의 스냅샷(3분마다)·주차매출 같은 무인 예약 스크립트가 만든 배까지 세면 실무 성과가 아니라
-    //   가동 횟수가 된다. 판별 규칙 정본 = scripts/kpi_collector.py `_is_machine_ship`
+    //   판별 규칙 정본 = scripts/kpi_collector.py `_is_machine_ship`
     //   (adhoc_commit 존재 AND 제목에 "자동 발행") — KPI 완결률과 같은 잣대를 쓴다.
     //   ※JS/파이썬이라 함수를 직접 못 쓴다. 규칙이 바뀌면 정본과 함께 여기도 고칠 것.
     const isMachineShip = (s) => !!s.adhoc_commit && String(s.title || '').includes('자동 발행');
-    // ★updated_at 을 날짜 후보에 넣는다 (GM 2026-07-25 "작업이 안 잡힌다").
-    //   실측: 2026-07-25 시모가 끝낸 배 8척 중 **4척만** 잡혔다. 어제 이전에 띄운 배를 오늘
-    //   닫으면 processed_at·done_at 이 안 적히고(그 칸은 clevel_post_action 을 거친 배만 얻는다)
-    //   enqueued_at 은 옛 날짜라, 오늘 한 일의 절반이 통째로 안 보였다.
-    //   순서 주의: processed_at·done_at 이 있으면 그걸 먼저 쓴다. updated_at 은 그 둘이 없을
-    //   때만 쓰는 차선책이다 — 옛 배의 메모만 오늘 고쳐도 오늘 완료로 셀 수 있는 값이라
-    //   더 정확한 칸이 있으면 양보시킨다.
-    //   ※진짜 해법은 배를 닫을 때 done_at 을 적는 것이다. 그건 닫는 쪽(각 역할·스크립트)이
-    //     고쳐야 해서 여기서는 보이는 숫자부터 맞춘다.
+    // ★updated_at 을 날짜 후보에 넣는다 (GM 2026-07-25 "작업이 안 잡힌다") — processed_at·done_at
+    //   이 더 정확하므로 그 둘이 없을 때만 차선책으로 쓴다.
     const isDoneToday = (s) => (s.status === 'DONE' || s.status === '완료')
       && String(s.processed_at || s.done_at || s.updated_at || s.enqueued_at || '').startsWith(ymd)
       && !isMachineShip(s);
     let done = mine.filter(isDoneToday).length;
     // 보관함(2.4MB)은 읽는 값이 있을 때만 연다 — 오늘 아무것도 보관되지 않았으면 파일이
     // 오늘 바뀌지도 않았으므로 열 이유가 없다(실측: 열면 +100ms, 안 열면 0ms).
-    // 못 읽어도 살아있는 큐 기준 숫자는 그대로 나온다(0으로 무너뜨리지 않는다).
     try {
       const arcPath = path.join(cwd, 'status', '_queue_archive.json');
       const st = statSync(arcPath);
@@ -241,24 +241,75 @@ function myShips(cwd, role) {
     } catch { /* 보관함 못 읽음 — 살아있는 큐 기준으로만 센다 */ }
     const shortOf = {};
     for (const s of q) if (s && s.ship_no != null) shortOf[s.ship_no] = s.short_no != null ? s.short_no : s.ship_no;
-    // 지금 붙들고 있는 배 = 진행중 중 가장 최근에 움직인 것. 번호만으로는 무슨 일인지 알 수 없어
-    // 제목까지 같이 낸다(GM 2026-07-24 '작업중인 내용은 안 나오는건가?').
+    // 지금 붙들고 있는 배 = 진행중 중 가장 최근에 움직인 것.
     // ★커밋 제목에서 뽑던 번호(myLastCommit)는 '방금 끝낸 배'를 가리킬 수 있다 — 큐의 IN_PROGRESS 가 진실이다.
     const running = mine.filter((s) => s.status === 'IN_PROGRESS')
       .sort((a, b) => String(b.updated_at || b.enqueued_at || '').localeCompare(String(a.updated_at || a.enqueued_at || '')));
-    // 제목은 원문 그대로 넘기고 자르는 건 main 이 한다 — 단계 칸이 함께 나올 때는 폭이 모자라
-    // 더 짧게 잘라야 하는데, 그 판단은 옆에 뭐가 붙는지 아는 쪽(main)만 할 수 있다.
     const cur = running[0] ? { no: running[0].ship_no, title: running[0].title } : null;
-    return { run, wait, done, shortOf, cur };
+    return { run, wait: waitNos.length, waitNos, fresh, done, shortOf, cur };
   } catch { return null; }
 }
 
-/** 내 마지막 커밋 — 몇 분 전인지 + 내가 붙들고 있는 배 번호.
- *  시각은 '가장 최근 커밋'에서 가져오되, 배 번호는 제목에 번호가 없을 수도 있어
- *  번호가 나올 때까지 내 커밋을 거슬러 찾는다(제목이 '배 현황' 같은 말이면 번호가 없다). */
+/** 전사 '막힌 것 우선' 목록 (웰리 결정 D안 · GM 승인 2026-07-25 — 전사 가동 점 ●●●● 대체).
+ *  ① ⚠️ GM 결재 대기 배 ② ⏸ N일 정지 배 ③ 남는 폭에 정상 진행 배 — 나(role)는 뺀다(내 배는 앞에 있다).
+ *  'GM 결재 대기' 판별은 큐에 전용 칸이 없어 제목·next 의 문구로 잡는다(기술 배선 = 시토):
+ *    "GM go/승인/결재/결정 + 후·대기·필요·받·로·요청" 꼴, "[GM보좌 제안]", "승인/결재/검수 대기".
+ *    ※"(GM 승인 2026-07-25)" 같은 **이미 승인된** 표기는 잡지 않는다. */
+function companyItems(q, role) {
+  const now = Date.now();
+  const gmWait = /(GM\s?(go|승인|결재|결정))(\s?(승인|결재))?\s?(후|대기|필요|받|로|요청)|\[GM보좌 제안\]|(승인|결재|검수)\s?대기/i;
+  const A = [], P = [], N = [];
+  for (const s of q) {
+    if (!s || s.clevel === role || !NICK[s.clevel]) continue;
+    const st = s.status;
+    if (st === 'PENDING' || st === 'STANDBY') {
+      if (!gmWait.test(`${s.title || ''} ${s.next || ''}`)) continue;
+      const d = idleDays(s, now);
+      A.push({ d, pre: `${Y}⚠️${NICK[s.clevel]}▸${noOf(s)}${X}`, label: `${Y}결재${d}일${X}` });
+    } else if (st === 'IN_PROGRESS') {
+      const d = idleDays(s, now);
+      if (d >= STALL_DAYS) P.push({ d, pre: `${Y}⏸${NICK[s.clevel]}▸${noOf(s)}${X}`, label: `${Y}${d}일${X}` });
+      else N.push({ d, pre: `${D}${NICK[s.clevel]}▸${noOf(s)}${X}`, label: `${D}${shortTitle(s.title, 6)}${X}` });
+    }
+  }
+  A.sort((a, b) => b.d - a.d);       // 오래 막힌 결재부터
+  P.sort((a, b) => b.d - a.d);       // 오래 멈춘 배부터
+  N.sort((a, b) => a.d - b.d);       // 정상 진행은 최근에 움직인 배부터
+  return [...A, ...P, ...N];
+}
+
+/** 전사 목록을 주어진 폭에 채운다 — 뒤에서부터 접기: 제목→번호→생략(+N). (웰리 결정 D안) */
+function buildCompany(items, budget) {
+  if (!items.length || budget < 4) return '';
+  const out = [];
+  let used = 0, withLabel = true;
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const restN = items.length - 1 - i;
+    const tail = restN > 0 ? dw(`+${restN}`) + 1 : 0;   // 뒤에 올 '+N' 자리 예약 — 잘림 0
+    let cand = withLabel ? `${it.pre} ${it.label}` : it.pre;
+    let cw = dw(cand) + (out.length ? 1 : 0);
+    if (withLabel && used + cw + tail > budget) {        // 제목부터 접는다
+      withLabel = false;
+      cand = it.pre;
+      cw = dw(cand) + (out.length ? 1 : 0);
+    }
+    if (used + cw + tail > budget) {                     // 번호도 안 들어가면 생략(+N)
+      if (!out.length) return '';                        // 한 척도 못 실으면 '+N'만 덜렁 내지 않는다 — 통째로 접는다
+      out.push(`${D}+${items.length - i}${X}`);
+      break;
+    }
+    out.push(cand);
+    used += cw;
+  }
+  return out.join(' ');
+}
+
+/** 내 마지막 커밋 — 몇 분 전인지 + 내가 붙들고 있는 배 번호. */
 /** 배 제목을 상태줄용으로 줄인다. 앞의 '[시포] ' 같은 역할 꼬리표는 이미 옆에 닉네임이 있어 군더더기라 뗀다.
- *  ★표시문자 12자 상한(GM 07-24 폭 사고 재발 방지) — 한글·이모지가 섞이므로 코드포인트 단위(Array.from)로
- *  자른다. 바이트/UTF-16 slice 는 서로게이트 페어(일부 이모지)를 반으로 쪼개 깨질 수 있다. */
+ *  한글·이모지가 섞이므로 코드포인트 단위(Array.from)로 자른다 — UTF-16 slice 는 서로게이트 페어를 쪼갠다.
+ *  ※내 배 제목의 12자 고정 상한은 폐지됐다(배107 — 폭 계산 기반 가변). 이 함수는 단계 이름·전사
+ *    목록의 짧은 제목처럼 '몇 자'가 명확한 곳에만 쓴다. */
 function shortTitle(t, max = 12) {
   const s = String(t || '').replace(/^\[[^\]]*\]\s*/, '').trim();
   if (!s) return '';
@@ -290,6 +341,145 @@ function agoText(m) {
 }
 function agoColor(m) { return m <= 10 ? G : m <= 30 ? Y : R; }
 
+// ── 폭 계산 (배107 · 잘림 0 계약) ──────────────────────────────────────────────
+// 애매폭 문자(도형·화살표·— 등)는 전부 2칸으로 **넓게** 친다 — 넓게 재면 폭을 조금 손해볼 뿐이지만
+// 좁게 재면 줄 끝이 잘린다. 잘림 0 이 우선이다.
+function charW(ch) {
+  const c = ch.codePointAt(0);
+  if (c === 0xFE0F || c === 0x200D) return 0;   // 이모지 변형선택자·결합자 — 폭 없음
+  return ((c >= 0x1100 && c <= 0x115F) || c === 0x2014 || c === 0x2026
+    || (c >= 0x2190 && c <= 0x2BFF)
+    || (c >= 0x2E80 && c <= 0xA4CF) || (c >= 0xAC00 && c <= 0xD7A3)
+    || (c >= 0xF900 && c <= 0xFAFF) || (c >= 0xFE30 && c <= 0xFE4F)
+    || (c >= 0xFF00 && c <= 0xFF60) || (c >= 0xFFE0 && c <= 0xFFE6)
+    || c >= 0x1F000) ? 2 : 1;
+}
+function dw(s) {   // 표시 폭 — ANSI 색은 폭 0
+  let w = 0;
+  for (const ch of String(s).replace(/\x1b\[[0-9;]*m/g, '')) w += charW(ch);
+  return w;
+}
+/** 문자열을 표시 폭 cols 안으로 자른다(넘치면 … 붙임). */
+function fitCols(s, cols) {
+  const chars = Array.from(String(s));
+  let w = 0;
+  for (let i = 0; i < chars.length; i++) {
+    const cw = charW(chars[i]);
+    if (w + cw > cols) {
+      let j = i, ww = w;
+      while (j > 0 && ww + 2 > cols) { j--; ww -= charW(chars[j]); }   // '…'(2칸) 자리 확보
+      return j > 0 ? chars.slice(0, j).join('') + '…' : '';
+    }
+    w += cw;
+  }
+  return chars.join('');
+}
+/** 터미널 폭 — 상태줄은 stdout 이 파이프라 columns 가 비어 있다. 콘솔 핸들(CONOUT$)로 직접 잰다.
+ *  못 재면 80(좁게) — 넘겨 짚으면 잘린다. COLUMNS 환경변수는 테스트·수동 지정용. */
+function termWidth() {
+  if (process.stdout.columns > 0) return process.stdout.columns;
+  const env = Number(process.env.COLUMNS || '');
+  if (env > 0) return env;
+  try {
+    const fd = openSync('\\\\.\\CONOUT$', 'w');
+    const ws = new tty.WriteStream(fd);
+    const c = ws.columns;
+    ws.destroy();
+    if (c > 0) return c;
+  } catch { /* 콘솔 없음(리다이렉트 등) — 아래 폴백 */ }
+  return 80;
+}
+
+/** 상태줄 한 줄 조립 — 웰리 결정 D안. 폭이 모자라면 **뒤에서부터** 접는다:
+ *  전사(제목→번호→+N) → 오늘🏁 → 대기 번호목록(→개수) → 🆕 → 마지막까지 내 배(①②)만. */
+function buildLine(cwd, role) {
+  const W = termWidth() - 1;                    // 마지막 칸 자동줄바꿈 여유 1칸
+  const q = loadQueue(cwd);
+  const s = q ? myShips(q, cwd, role) : null;
+  const lc = myLastCommit(cwd, role);
+  const pg = lastProgress(cwd, role);
+
+  // ① 닉네임 + ② 현재 배 번호 — 접지 않는 고정부. 제목은 폭 따라 가변(최소 20자).
+  let head = `${B}${C}${NICK[role]}${X}`;
+  let title = '';
+  if (s && s.cur) {
+    const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
+    head += `${C}▶${n}${X}`;
+    title = String(s.cur.title || '').replace(/^\[[^\]]*\]\s*/, '').trim();
+  } else if (lc && lc.ship != null) {
+    const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
+    head += `${D}✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
+  } else {
+    // ★잡은 배도 방금 끝낸 배도 없으면 **빈칸으로 두지 않는다** (GM 2026-07-25 "없으면 없다고").
+    head += `${D}·작업없음${X}`;
+  }
+  // 시각 칸 — '방금 넘긴 단계'가 있으면 그걸 쓰고, 없을 때만 커밋 시각으로 폴백한다.
+  //   커밋은 일이 **끝나야** 찍히므로 일하는 중에는 멈춰 보였다. 진행 한 줄이 더 진실에 가깝다.
+  let time = '';
+  if (pg) {
+    const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
+    time = `${D}·${X}${icon}${pg.step ? `${D}${pg.step}${X}` : ''}${agoColor(pg.mins)}${agoText(pg.mins)}${X}`;
+  } else if (lc) {
+    time = `${D}·${X}${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
+  }
+
+  // 선택부(접히는 순서의 역순으로 정의) — ③🆕 ④대기 목록 ⑤오늘🏁 ⑥전사 막힌 것 우선.
+  const segNew = (s && s.fresh > 0) ? `${Y}🆕${s.fresh}${X}` : null;
+  let waitNums = null;
+  if (s) {
+    if (s.waitNos.length) {
+      const shown = s.waitNos.slice(0, 3);                      // 번호는 3개까지, 나머지 +N
+      const rest = s.waitNos.length - shown.length;
+      waitNums = `${D}항로${X}🚢${s.run}${D}⚓${shown.join('·')}${rest > 0 ? `+${rest}` : ''}${X}`;
+    } else {
+      waitNums = `${D}항로${X}🚢${s.run}${D}⚓0${X}`;
+    }
+  }
+  // 큐를 못 읽었을 때도 침묵하지 않는다 — '일이 0건'과 '못 읽었다'는 다른 말이다.
+  const waitCount = s ? `${D}항로${X}🚢${s.run}${D}⚓${s.wait}${X}` : `${D}항로${X}${Y}읽기실패${X}`;
+  const segDone = s ? `${D}오늘${X}🏁${s.done}` : null;
+  const coItems = q ? companyItems(q, role) : [];
+
+  // 제목 최소 폭(20자 확보 — 배107) — 제목이 그보다 짧으면 그 길이만큼만.
+  const titleChars = Array.from(title);
+  const minTitleW = titleChars.length
+    ? dw(titleChars.slice(0, 20).join('')) + (titleChars.length > 20 ? 2 : 0) : 0;
+  const fixedW = dw(head) + dw(time) + (title ? 2 : 0);   // 제목 앞뒤 한 칸씩
+  const SEPW = 3;                                          // ' · '
+  const segsW = (arr) => arr.reduce((a, g) => a + SEPW + dw(g), 0);
+
+  // 사다리 — 위에서부터 처음 폭에 들어가는 단을 쓴다. 마지막 단 = 내 배만.
+  const ladder = [
+    ['new', 'waitN', 'done', 'co'],
+    ['new', 'waitN', 'done'],
+    ['new', 'waitC', 'done'],
+    ['new', 'waitC'],
+    ['new'],
+    [],
+  ];
+  let chosen = [];
+  for (const lv of ladder) {
+    const segs = [];
+    if (lv.includes('new') && segNew) segs.push(segNew);
+    if (lv.includes('waitN') && waitNums) segs.push(waitNums);
+    if (lv.includes('waitC') && waitCount) segs.push(waitCount);
+    if (lv.includes('done') && segDone) segs.push(segDone);
+    if (lv.includes('co')) {
+      const budget = W - fixedW - minTitleW - segsW(segs) - SEPW;
+      const co = buildCompany(coItems, budget);
+      if (!co) continue;                        // 전사가 한 척도 안 들어가면 이 단은 접는다
+      segs.push(co);
+    }
+    if (fixedW + minTitleW + segsW(segs) <= W) { chosen = segs; break; }
+  }
+  // 남는 폭은 전부 제목에게 — 12자 상한 폐지의 실체. (좁으면 20자 밑으로도 줄여 잘림만은 막는다)
+  const titleBudget = W - dw(head) - dw(time) - (title ? 2 : 0) - segsW(chosen);
+  const titleFit = title ? fitCols(title, Math.max(titleBudget, 0)) : '';
+
+  const first = head + (titleFit ? ` ${D}${titleFit}${X} ` : '') + time;
+  return [first.replace(/ $/, ''), ...chosen].join(`${D} · ${X}`);
+}
+
 function main() {
   const input = readStdin();
   const base = omcHud(input);
@@ -302,66 +492,13 @@ function main() {
   } catch { /* 기본값 사용 */ }
 
   const role = resolveRole(cwd, transcript);
-  const parts = [];
+  // ★역할을 못 찾은 경우 — 사라지는 대신 왜 안 보이는지를 적는다(GM 2026-07-25).
+  //   역할 기억함(ROLE_CACHE)이 채워지면 저절로 복구된다.
+  const line = role ? buildLine(cwd, role) : `${D}역할 확인중 · 작업표시 대기${X}`;
 
-  if (role) {
-    const lc = myLastCommit(cwd, role);
-    const s = myShips(cwd, role);
-    const pg = lastProgress(cwd, role);
-    let head = `${B}${C}${NICK[role]}${X}`;
-    // 지금 붙들고 있는 배(큐 IN_PROGRESS)를 우선 — 번호 + 무슨 일인지. 진행중이 없을 때만
-    // 마지막 커밋에서 뽑은 번호로 폴백(그건 '방금 끝낸 배'일 수 있어 뒤로 뺀다).
-    if (s && s.cur) {
-      const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
-      // 제목 상한은 옆에 단계 칸이 붙느냐에 따라 다르다 — 규칙 ③(잘림 0) 실측 기준:
-      // 단계 없이 12자 = 최대 77칸 / 단계까지 붙으면 12자는 85칸으로 넘친다 → 8자로 줄인다.
-      // 더 신선한 정보(방금 넘긴 단계)에 자리를 내주는 쪽이 맞다.
-      const title = shortTitle(s.cur.title, pg ? 8 : 12);
-      head += `${C}▶${n}${X}` + (title ? ` ${D}${title}${X} ` : '');   // 제목=흐리게(번호·시간 먼저 눈에), 뒤 한 칸은 '재설계…·7분전'처럼 붙어 읽히지 않게
-    } else if (lc && lc.ship != null) {
-      const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
-      head += `${D}✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
-    } else {
-      // ★잡은 배도 없고 방금 끝낸 배도 없으면 **빈칸으로 두지 않는다** (GM 2026-07-25:
-      //   "작업이 없는건가? 없으면 없다고 아래에 보여줘"). 빈칸은 '일이 없다'와
-      //   '표시가 고장났다'를 구분해주지 못해서, GM이 매번 둘 중 뭔지 의심하게 만든다.
-      head += `${D}·작업없음${X}`;
-    }
-    // 시각 칸 — '방금 넘긴 단계'가 있으면 그걸 쓰고, 없을 때만 커밋 시각으로 폴백한다.
-    //   커밋은 일이 **끝나야** 찍히고 제목에 배 번호가 없을 때도 많아(오늘 10건 중 4건) 일하는
-    //   중에는 멈춰 보였다. 진행 한 줄은 단계마다 쓰이므로 이게 더 진실에 가깝다.
-    if (pg) {
-      const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
-      head += `${D}·${X}${icon}${pg.step ? `${D}${pg.step}${X}` : ''}${agoColor(pg.mins)}${agoText(pg.mins)}${X}`;
-    } else if (lc) {
-      head += `${D}·${X}${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
-    }
-    parts.push(head);
-    if (s) {
-      parts.push(`${D}항로${X}🚢${s.run}${D}⚓${s.wait}${X}`);
-      parts.push(`${D}오늘${X}🏁${s.done}`);
-    } else {
-      // 큐를 못 읽었을 때도 침묵하지 않는다 — '일이 0건'과 '못 읽었다'는 다른 말이다.
-      parts.push(`${D}항로${X}${Y}읽기실패${X}`);
-    }
-  } else {
-    // ★역할을 못 찾은 경우 — 예전엔 이 줄이 통째로 사라져 GM 화면에서 '작업 표시'가
-    //   없어졌다(GM 2026-07-25 "원래 bypass 아래칸에 계속 작업 잡히지 않나?").
-    //   사라지는 대신 왜 안 보이는지를 적는다. 역할 기억함(ROLE_CACHE)이 채워지면 저절로 복구된다.
-    parts.push(`${D}역할 확인중 · 작업표시 대기${X}`);
-  }
-
-  // 전사 — 나를 뺀 나머지가 지금 도는지. 자리 순서 고정(웰리·시토·시모·시우·시포 중 나 제외).
-  const alive = aliveRoles();
-  const dots = ROLES.filter((r) => r !== role)
-    .map((r) => (alive.has(r) ? `${G}●${X}` : `${D}○${X}`)).join('');
-  if (dots) parts.push(`${D}전사${X}${dots}`);
-
-  // ★같은 줄에 이어 붙이지 않고 **줄을 따로 뺀다** (GM 2026-07-24 '시모·시우·시포는 잘리는데?').
-  //   OMC HUD 는 서브에이전트가 돌면 그 목록까지 찍어 줄이 길어진다. 거기에 이어 붙이면
-  //   터미널 폭을 넘겨 **끝에 붙은 우리 부분부터 잘린다** — 정작 제일 보고 싶은 게 사라진다.
-  //   별도 줄이면 폭 경쟁이 없어 어느 창에서도 온전히 보인다(OMC 도 이미 여러 줄을 쓴다).
-  process.stdout.write(base + (parts.length ? '\n' + parts.join(`${D} · ${X}`) : ''));
+  // ★OMC 줄에 이어 붙이지 않고 **줄을 따로 뺀다** (GM 2026-07-24 '시모·시우·시포는 잘리는데?').
+  //   같은 줄이면 폭 경쟁으로 끝에 붙은 우리 부분부터 잘린다.
+  process.stdout.write(base + (line ? '\n' + line : ''));
 }
 
 main();
