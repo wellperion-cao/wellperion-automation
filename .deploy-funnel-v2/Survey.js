@@ -3140,6 +3140,7 @@ function _processAction(body) {
         _lsSet(['나이', '연령', '자녀'], _iAge);
         _lsSet(['강습 종목', '종목', '과목'], _isSummer ? ('여름방학특강 - ' + _iProgram) : _iProgram);
         _lsSet(['문의 경로', '경로', '채널'], _iChannel || _canonicalChannel_(_iUtmSource));
+        _lsSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '')) : (_iChannel || ''));  // UTM 3세그먼트 기록 — 멤버십과 동일 패턴. _LESSON_MGMT_FIELDS 등재(2026-07-21 GM) 후 배선 누락 수리. 2026-07-26 시모.
         _lsSet(['문의 사항', '문의사항', '내용'], _iMessage);
         // 배(희망 레슨시간 유실, 2026-07-20 실측규명): 구키 ['희망','레슨 시간','시간']는 '희망' 부분일치가
         //   idx5 종목칸("...강습 종목 (희망종목 모두 체크)")에 먼저 걸려 정답칸(idx9)에 도달 못하고 조용히 스킵됨
