@@ -193,10 +193,17 @@ def _queue_items() -> list[dict]:
 
 _CASE_MARKER_RE = re.compile(r"-CASE(\d{2})-")
 
-# 시리즈 종결 킬스위치(2026-07-22 신설) — 재고표 어디든 이 마커가 있으면 디스패처는
-# 선정·복구·발송 없이 즉시 휴면한다. "시리즈를 종결한다"는 전날 결정이 큐(ship)·폴더에만
+# 시리즈 종결 킬스위치(2026-07-22 신설) — 재고표에 이 마커가 있으면 디스패처는
+# 선정·복구·발송 없이 휴면한다. "시리즈를 종결한다"는 전날 결정이 큐(ship)·폴더에만
 # 남고 이 표(디스패처 유일 실행 SSOT)에는 안 박혀 옛 편이 재발송되던 사고의 구조적 차단 —
 # 종결 = 표 상단에 한 줄(예: `시리즈 상태: 종결(YYYY-MM-DD)`) 박으면 코드가 강제한다.
+#
+# ★적용 범위 = 평일(실전사례) 트랙 한정 (2026-07-25 수정).
+#   원래 이 마커는 '평일 실전사례 라인업 완결'을 뜻했는데 트랙 구분 없이 전체를 껐다.
+#   그 바람에 같은 표 안에서 따로 살아있던 `주말GM` 트랙(토=문제 보완 / 일=쉼·가족)까지
+#   함께 죽어 2026-07-25(토) 개인계정 발행이 0건이 됐다(GM 지적).
+#   → 주말에는 마커가 있어도 주말GM 트랙 선정을 계속한다. 다만 복구 패스는 트랙 무관
+#     전수 대상이라 종결된 평일 편을 되살릴 수 있어, 마커가 있으면 주말에도 건너뛴다.
 _SERIES_TERMINATED_RE = re.compile(r"시리즈\s*상태\s*[:：]\s*(종결|중단|폐기)")
 
 
@@ -581,30 +588,42 @@ def run(dry_run: bool, plan_only: bool) -> int:
         telegram(msg)
         return 1
 
-    # 1.4) 시리즈 종결 킬스위치 — 표에 '시리즈 상태: 종결' 마커가 있으면 아무것도 하지 않고
-    #      정상 종료(선정·복구·발송 없음). 텔레그램 스팸 방지 위해 조용히 로그만 남긴다.
+    # 1.4) 시리즈 종결 킬스위치 — 표에 '시리즈 상태: 종결' 마커가 있으면 **평일 트랙만** 휴면.
+    #      주말GM 트랙은 별도 트랙이라 계속 돈다(2026-07-25 범위 수정 · 상세 = 정규식 정의부 주석).
+    terminated = False
     try:
-        if _SERIES_TERMINATED_RE.search(INVENTORY.read_text(encoding="utf-8")):
-            print("[INFO] 시리즈 종결 마커 감지 — 디스패처 휴면(선정·복구·발송 없음). "
-                  "후속 시리즈는 신규 편성표로 별도 운영.")
-            # 결정 정합 신호(§4): 종결 마커에도 아직 '재고(대본완료)' 편이 표에 남아
-            # 있으면(휴면이 없었다면 재선정·재발송됐을 편) 실제 재생 차단으로 1줄 남긴다.
-            #   plan-only/dry-run(검사 모드)은 공용 로그를 더럽히지 않도록 제외.
-            if not (dry_run or plan_only):
-                pending = [r["num_raw"] for r in rows if r.get("status") == STOCK_STATUS]
-                if pending:
-                    _replay_append(
-                        "cmo-case-series-dispatch",
-                        subject="실전사례 시리즈(종결)",
-                        detail=f"종결 마커로 디스패처 휴면 — 재선정 차단된 잔여 재고편: {pending}",
-                    )
-            return 0
+        terminated = bool(_SERIES_TERMINATED_RE.search(INVENTORY.read_text(encoding="utf-8")))
     except Exception:
-        pass
+        terminated = False
+
+    if terminated and not is_weekend:
+        print("[INFO] 시리즈 종결 마커 감지 — 평일 디스패처 휴면(선정·복구·발송 없음). "
+              "후속 시리즈는 신규 편성표로 별도 운영.")
+        # 결정 정합 신호(§4): 종결 마커에도 아직 '재고(대본완료)' 편이 표에 남아
+        # 있으면(휴면이 없었다면 재선정·재발송됐을 편) 실제 재생 차단으로 1줄 남긴다.
+        #   plan-only/dry-run(검사 모드)은 공용 로그를 더럽히지 않도록 제외.
+        if not (dry_run or plan_only):
+            pending = [r["num_raw"] for r in rows
+                       if r.get("status") == STOCK_STATUS and r.get("track") == WEEKDAY_TRACK]
+            if pending:
+                _replay_append(
+                    "cmo-case-series-dispatch",
+                    subject="실전사례 시리즈(종결)",
+                    detail=f"종결 마커로 평일 디스패처 휴면 — 재선정 차단된 잔여 재고편: {pending}",
+                )
+        return 0
+
+    if terminated:
+        print(f"[INFO] 시리즈 종결 마커 있음 — 평일 트랙만 휴면. 오늘은 주말이라 "
+              f"{WEEKEND_TRACK} 트랙은 계속 진행한다.")
 
     # 1.5) 선등록(카드 보류) 복구 패스 — 요일 게이트·트랙과 무관하게 재고표 전체 대상.
     #      plan_only 는 부작용 없이 상태만 보여주므로 dry_run 취급(2026-07-19 CASE13 재발방지).
-    recover_stalled_cards(rows, today_iso, dry_run=(dry_run or plan_only))
+    #      ★종결 마커가 있으면 주말에도 건너뛴다 — 전수 대상이라 종결된 평일 편을 되살릴 수 있다.
+    if terminated:
+        print("[INFO] 종결 마커 — 복구 패스 생략(종결된 평일 편 부활 방지).")
+    else:
+        recover_stalled_cards(rows, today_iso, dry_run=(dry_run or plan_only))
 
     # 2) 다음 편 선정 (소진 시 생성 금지)
     nxt = pick_next_case(rows, track, log_replay=not (dry_run or plan_only))
