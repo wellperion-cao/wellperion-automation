@@ -312,6 +312,108 @@ def print_boot_candidate(clevel: str = "cto") -> None:
         print(f"| 사유 | {'; '.join(result['reasons'])} |")
 
 
+# ── 아침 집계(읽기전용) ────────────────────────────────────────────────────────
+# 배경: 약속 L20 — 웰리는 아침에 6역할이 올린 배를 모아 무엇을 어떤 순서로 풀지
+# 판단해야 하는데, 모아 보는 창이 없었다(부팅 때 본인 배만 봄). run_once()·
+# run_cycle()의 선별·게이트·park 로직은 전혀 건드리지 않는다 — 순수 읽기전용
+# 집계일 뿐, 큐·상태·로그 어느 것도 쓰지 않는다(boot_candidate와 같은 성격).
+def morning_intake(queue_path: str | None = None, today: str | None = None) -> dict:
+    """
+    부작용 0(읽기전용) — status/_queue.json에서 오늘(로컬 날짜) enqueued_at인 배 중
+    PENDING·IN_PROGRESS만 골라 역할별 판정 결과를 담는다.
+      - 기계 자동발행 배 제외: kpi_collector._is_machine_ship()을 그대로 재사용
+        (판정 로직 복제 금지 · 약속 L01).
+      - 비가역 신호 판정: welly_sweep_classifier.GATE_KEYWORDS + IRREVERSIBLE_KEYWORDS
+        (결제·보안·금지·전략·공식값 + 삭제·외부·발송·전송·배포 등)를 title+note에서
+        스캔 — 새 키워드 목록을 여기 새로 박지 않고 단일 지점을 재사용한다.
+    실패(큐 파일 없음·파싱 실패·재사용 대상 import 실패)는 fail-open —
+    {"ok": False, "reason": ...}만 반환하고 예외를 던지지 않는다(부팅을 막지 않음).
+    반환: {"ok": bool, "reason": str, "today": str, "ships": list[dict]}
+      ships 각 항목: clevel, nick, ship_no, title, priority, next, irreversible(bool),
+      irreversible_keyword(str|None).
+    """
+    queue_path = queue_path or DEFAULT_QUEUE_PATH
+    today = today or datetime.now().date().isoformat()
+    empty = {"ok": False, "reason": "", "today": today, "ships": []}
+    try:
+        queue = _load_queue(queue_path)
+    except Exception as e:  # noqa: BLE001 — fail-open(파일 없음·파싱 실패 등)
+        empty["reason"] = f"큐 로드 실패 — fail-open: {type(e).__name__}: {e}"
+        return empty
+
+    try:
+        from kpi_collector import _is_machine_ship  # noqa: E402  (지연 import — 판정 재사용, 약속 L01)
+        from welly_sweep_classifier import GATE_KEYWORDS, IRREVERSIBLE_KEYWORDS, _scan_keywords  # noqa: E402
+    except Exception as e:  # noqa: BLE001 — fail-open(재사용 대상 모듈 import 실패)
+        empty["reason"] = f"판정 재사용 모듈 import 실패 — fail-open: {type(e).__name__}: {e}"
+        return empty
+
+    gate_scan_keywords = GATE_KEYWORDS + IRREVERSIBLE_KEYWORDS
+    role_order = list(CLEVEL_NICKS.keys())
+
+    try:
+        ships = []
+        for ship in queue:
+            if not isinstance(ship, dict):
+                continue
+            if ship.get("enqueued_at") != today:
+                continue
+            if ship.get("status") not in ("PENDING", "IN_PROGRESS"):
+                continue
+            if _is_machine_ship(ship):
+                continue
+            clevel = ship.get("clevel") or ""
+            text = f"{ship.get('title', '') or ''} {ship.get('note', '') or ''}"
+            hit = _scan_keywords(text, gate_scan_keywords)
+            next_raw = (ship.get("next") or "").strip()
+            ships.append({
+                "clevel": clevel,
+                "nick": CLEVEL_NICKS.get(clevel, clevel.upper() if clevel else "?"),
+                "ship_no": ship.get("ship_no"),
+                "title": ship.get("title", ""),
+                "priority": ship.get("priority") or "—",
+                "next": next_raw[:40] if next_raw else "—",
+                "irreversible": bool(hit),
+                "irreversible_keyword": hit,
+            })
+        ships.sort(key=lambda s: role_order.index(s["clevel"]) if s["clevel"] in role_order else len(role_order))
+    except Exception as e:  # noqa: BLE001 — fail-open(예상 못 한 개별 배 데이터 결함)
+        empty["reason"] = f"집계 중 오류 — fail-open: {type(e).__name__}: {e}"
+        return empty
+
+    return {"ok": True, "reason": "", "today": today, "ships": ships}
+
+
+def print_morning_intake(queue_path: str | None = None) -> None:
+    """CLI 진입점(--morning-intake) — 오늘 새로 올라온 배(전 역할)를 역할별 표로 출력
+    (읽기전용 · 큐·상태·로그 무기록 · 실패해도 경고 1줄로 정상 종료 · fail-open)."""
+    result = morning_intake(queue_path)
+    print(f"## 🧭 웰리 아침 집계 — 오늘({result['today']}) 새로 올라온 배\n")
+    if not result["ok"]:
+        print(f"⚠️ {result['reason']}")
+        return
+
+    ships = result["ships"]
+    if not ships:
+        print("(오늘 새로 올라온 배 없음)")
+        return
+
+    print("| 역할 | 배 | 제목 | 무게 | 다음 한 걸음 |")
+    print("|---|---|---|---|---|")
+    for s in ships:
+        print(f"| {s['nick']} | {s['ship_no']} | {s['title']} | {s['priority']} | {s['next']} |")
+
+    counts: dict[str, int] = {}
+    for s in ships:
+        counts[s["nick"]] = counts.get(s["nick"], 0) + 1
+    dist = " · ".join(f"{nick} {n}척" for nick, n in counts.items())
+    n_irr = sum(1 for s in ships if s["irreversible"])
+    n_rev = len(ships) - n_irr
+    print(f"\n1. 오늘 올라온 배 총 {len(ships)}척 ({dist})")
+    print(f"2. 가역 {n_rev}척 · 비가역 신호 {n_irr}척"
+          + (f" ({', '.join(sorted({s['irreversible_keyword'] for s in ships if s['irreversible']}))})" if n_irr else ""))
+
+
 def _collect_parked_task_ids(queue_path: str) -> list[str]:
     queue = _load_queue(queue_path)
     return [s.get("task_id") for s in parked_interview_worklist(queue) if s.get("task_id")]
@@ -1340,6 +1442,11 @@ def main() -> int:
              "claude 미호출). 대화형 C-Level 세션이 부팅 직후 호출하고, 실행은 세션이 직접 한다.",
     )
     parser.add_argument(
+        "--morning-intake", action="store_true",
+        help="오늘(로컬 날짜) 새로 올라온 배(전 역할 PENDING·IN_PROGRESS, 기계발행 제외)를 "
+             "역할별 표로 출력(읽기전용 — 큐·상태·로그 무기록, claude 미호출, 약속 L20 웰리 몫).",
+    )
+    parser.add_argument(
         "--render-verify-url", default=None,
         help="주어진 URL을 render_verify_url로 단독 헤드리스 렌더해 결과만 출력(run_once 미가동). "
              "실제 ERP 페이지 수동 실측용.",
@@ -1352,6 +1459,10 @@ def main() -> int:
 
     if args.boot_candidate:
         print_boot_candidate(clevel=args.clevel)
+        return 0
+
+    if args.morning_intake:
+        print_morning_intake()
         return 0
 
     if args.render_verify_url:
