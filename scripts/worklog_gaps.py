@@ -283,6 +283,15 @@ def rule_ig_only_no_siblings() -> list[dict]:
     today = datetime.now(tz=KST).date()
     gaps: list[dict] = []
     for it in missing_items:
+        # 그리드 전용 포맷 제외(2026-07-25) — 프로필 그리드 N칸을 채우려고 한 장을 조각내
+        # 각 조각을 별도 IG 게시물로 올리는 형식이라, 애초에 블로그·카페에 낱개로 올릴
+        # 콘텐츠가 아니다. '형제채널 미등록'으로 잡으면 영원히 안 없어지는 경고가 된다
+        # (실제로 260616_웰페리온_프리미엄공간_3칸 left/center/right 3건이 한 달 넘게 떠 있었다).
+        # ★판정은 IG 게시 여부가 아니라 '조각 포맷인가'로 한다 — 폴더/식별자의 구조적 신호만 본다.
+        _sig = f"{it.get('folder', '')} {it.get('id', '')}".lower()
+        if "grid" in _sig or "그리드" in _sig or re.search(r"_\d+칸", _sig):
+            continue
+
         title = it.get("title", it.get("id", "?"))
         # age 판정 = published_at 우선, 없으면 folder 폴더명 날짜접두 폴백, 둘 다 없으면 '누적'.
         target_date = _parse_iso_date(it.get("published_at", "")) or _parse_folder_date(
