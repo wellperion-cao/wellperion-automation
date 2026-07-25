@@ -394,6 +394,38 @@ def _commit_queue(root: str, sha7: str, clevel: str) -> None:
         _gl.ACQUIRE_TIMEOUT = prev
 
 
+def _log_worklog_best_effort(clevel: str, item: dict, meta: dict) -> None:
+    """배를 만든 그 자리에서 status/worklog.jsonl 에도 1줄 남긴다(2026-07-25 시우 · GM 지적).
+
+    ★왜 필요했나: 배(_queue.json)와 작업 로그(worklog.jsonl)는 서로 다른 화면이 읽는 별개 기록인데,
+    작업 로그는 worklog.log() 를 직접 부르는 몇몇 스크립트만 채우고 있었다. 그래서 GM 이 O1
+    「작업 현황 로그」 패널에서 보는 건 정기 스크립트 줄뿐이고, 세션이 실제로 한 일(수리·재구성·
+    데이터 정정)은 한 줄도 없었다 — 실측 2026-07-25: 그날 시우 기록 4줄 전부가 스크립트 자동 줄.
+
+    ★여기 두는 이유(약속 L21 — 관문에만 박는다): 이 함수 바로 위에서 '이 커밋이 실제 작업인가'를
+    이미 판정했다(_should_skip 이 auto-log·자동 발행·erp_status·changelog 등 기계 커밋을 걸러낸다).
+    같은 판정을 worklog 쪽에 복제하지 않고 그 결과를 그대로 물려받는다 — 기계 발행이 로그를
+    덮어써 실제 일이 묻히는 것도 자동으로 막힌다.
+
+    best-effort: 로그 실패가 커밋·배 기록을 되돌리지 않는다.
+    """
+    try:
+        from worklog import log as worklog_log  # noqa: PLC0415 — scripts/ 는 상단에서 sys.path 삽입
+    except Exception:
+        return
+    try:
+        worklog_log(
+            clevel,
+            "작업",
+            _strip_conventional_prefix(str(meta.get("subject") or ""))[:120],
+            result="ok",
+            detail=f"커밋 {meta.get('short', '')} · 배 {item.get('ship_no', '')}",
+            ref=str(item.get("task_id") or ""),
+        )
+    except Exception:
+        pass
+
+
 def main() -> int:
     try:
         root = _repo_root()
@@ -449,6 +481,7 @@ def main() -> int:
                 return 0  # 쓰기 실패 → fail-open.
 
         _commit_queue(root, meta["short"], clevel)
+        _log_worklog_best_effort(clevel, item, meta)
         return 0
     except Exception:
         # 무엇이 됐든 커밋을 되돌리지 않는다.
