@@ -2380,19 +2380,21 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
       }).then(function(d){
         var items=((d||{}).strategy_roadmap||{}).items||[];
         if(!items.length) throw new Error('데이터 없음');
-        var q=items.filter(function(x){return /분기/.test(String(x.name||''));});
-        var st=items.filter(function(x){return !/분기/.test(String(x.name||''));});
+        // stage 필드가 'Q1'/'Q2' 면 분기 목표, 숫자 1~6 이면 6단계 (원천 스키마 그대로 사용).
+        var q=items.filter(function(x){return /^Q/i.test(String(x.stage));});
+        var st=items.filter(function(x){return !/^Q/i.test(String(x.stage));});
         var rows=st.map(function(x,i){
           var p=(typeof x.progress==='number')?x.progress:null;
           var s=String(x.status||'');
           var col=(s==='완료')?'#2E6E5B':(s==='진행'?'#ED5B3F':'var(--dim)');
-          return '<tr><td style="width:44px"><strong>'+('0'+(i+1)).slice(-2)+'</strong></td>'
-            +'<td>'+esc(x.name)+'</td>'
+          var no=(typeof x.stage==='number')?x.stage:(i+1);
+          return '<tr><td style="width:44px"><strong>'+('0'+no).slice(-2)+'</strong></td>'
+            +'<td>'+esc(x.title)+(x.goal?'<br><span style="font-size:12px;color:var(--dim)">'+esc(x.goal)+'</span>':'')+'</td>'
             +'<td style="width:92px;color:'+col+';font-weight:700">'+esc(s||'—')+'</td>'
             +'<td style="width:70px;text-align:right">'+(p===null?'—':p+'%')+'</td></tr>';
         }).join('');
         var qline=q.map(function(x){
-          return esc(x.name)+' '+(x.status==='완료'?'✅':'진행');
+          return esc(x.title)+' '+(x.status==='완료'?'✅':'진행');
         }).join(' · ');
         box.innerHTML='<table style="margin:0"><tr><th>단계</th><th>내용</th><th>상태</th><th style="text-align:right">진척</th></tr>'
           +rows+'</table>'
