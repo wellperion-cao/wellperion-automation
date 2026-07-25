@@ -4287,7 +4287,14 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         <div id="m1-perf-kpi-per" style="font-size:22px;font-weight:800;color:var(--accent);">···</div>
         <div style="font-size:10px;color:var(--dim);margin-top:4px;">게시물당 문의</div>
       </div>
+      <!-- 도달 칸 (2026-07-25 신설) — CMO 최우선 KPI '노출→문의 전환율'이 그동안 숫자를 못 가졌던 건
+           분모가 없어서가 아니라 **있는 줄 몰라서**였다. 도달은 2026-07-07부터 계속 쌓이고 있었다. -->
+      <div style="flex:1;min-width:110px;background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;">
+        <div id="m1-perf-kpi-reach" style="font-size:22px;font-weight:800;color:var(--accent);">···</div>
+        <div style="font-size:10px;color:var(--dim);margin-top:4px;">인스타 누적 도달</div>
+      </div>
     </div>
+    <div id="m1-perf-reach-note" style="font-size:12px;color:var(--dim);margin:-4px 0 14px;line-height:1.65;"></div>
 
     <div id="m1-perf-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
       <div style="color:var(--dim);font-size:12px;padding:10px 0;">채널별 성과 불러오는 중…</div>
@@ -4377,8 +4384,45 @@ memberNo:'회원번호', startDate:'시작일', period:'기간', reason:'사유'
         }
         var note=document.getElementById('m1-perf-note');
         if(note){
-          note.textContent=(fc?'':'채널별 문의 집계 실패 — 잠시 후 다시 시도 또는 상세 페이지 확인. ')+'기간 '+from+' ~ '+to+'(이번 달) · 데이터=review_queue.json 발행 실측 + funnel_conversion(GAS) 실측 · 콘텐츠 5채널 유입만 집계(소개·지인·오프라인 등 제외) · 노출(도달) 분모는 미측정.';
+          note.textContent=(fc?'':'채널별 문의 집계 실패 — 잠시 후 다시 시도 또는 상세 페이지 확인. ')+'기간 '+from+' ~ '+to+'(이번 달) · 데이터=review_queue.json 발행 실측 + funnel_conversion(GAS) 실측 · 콘텐츠 5채널 유입만 집계(소개·지인·오프라인 등 제외) · 도달=ig_reach_ledger.json 실측(노출은 수집 제외).';
         }
+
+        // ── 인스타 도달 → 문의 (2026-07-25 신설) ───────────────────────────────
+        // CMO 최우선 KPI('노출→문의 전환율')가 처음으로 숫자를 갖는 자리다.
+        // ★숫자를 크게 띄우지 않고 문장으로 쓰는 이유: 인스타는 게시글에 링크를 못 달아
+        //   프로필 링크로만 문의가 들어온다 → 귀속이 구조적으로 샌다. 이 전환율은 **하한선**이지
+        //   실제 성과가 아니다. 크게 띄우면 "인스타는 효과 없다"로 잘못 읽힌다.
+        // 발행 루트에 미러가 없는 파일이라 원본을 직접 읽는다(월간운영계획·S0와 같은 경로 방식).
+        fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/ig_reach_ledger.json?cb='+Date.now(),{cache:'no-store'})
+          .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+          .then(function(rl){
+            var snaps=(rl&&rl.media_snapshots)||[];
+            var total=0, cnt=0;
+            snaps.forEach(function(m){
+              var ss=(m&&m.snapshots)||[]; if(!ss.length) return;
+              var last=ss.reduce(function(a,b){ return String(b.date)>String(a.date)?b:a; });
+              if(typeof last.reach==='number'){ total+=last.reach; cnt++; }
+            });
+            if(!cnt) throw new Error('스냅샷 없음');
+            var avg=Math.round(total/cnt);
+            var elR=document.getElementById('m1-perf-kpi-reach');
+            if(elR) elR.textContent=total.toLocaleString('ko-KR');
+            var igInq=fc?(inqByCh[PUB2GAS['인스타그램']]||0):null;
+            var nb=document.getElementById('m1-perf-reach-note');
+            if(nb){
+              var rate=(igInq!=null&&total>0)?((igInq/total)*100).toFixed(2):null;
+              nb.innerHTML='인스타 게시물 <strong>'+cnt+'편</strong>이 지금까지 <strong>'+total.toLocaleString('ko-KR')
+                +'명</strong>에게 닿았습니다(편당 평균 '+avg.toLocaleString('ko-KR')+'명).'
+                +(rate!==null?' 그중 문의로 이어진 건 <strong>'+igInq+'건</strong> — 겉으로는 '+rate+'%입니다.':'')
+                +' <span style="color:var(--dim)">다만 인스타는 게시글에 링크를 달 수 없어 프로필 링크로만 문의가 들어옵니다 — '
+                +'실제로 인스타를 보고 왔어도 다른 경로로 기록될 수 있어, 이 비율은 <strong>바닥값</strong>으로 보십시오.</span>';
+            }
+          }).catch(function(e){
+            var elR=document.getElementById('m1-perf-kpi-reach');
+            if(elR) elR.textContent='—';
+            var nb=document.getElementById('m1-perf-reach-note');
+            if(nb) nb.textContent='도달 수치를 불러오지 못했습니다 ('+(e&&e.message||'')+').';
+          });
       }).catch(function(){
         var wrap=document.getElementById('m1-perf-table-wrap');
         if(wrap)wrap.innerHTML='<div style="color:var(--dim);font-size:12px;padding:10px 0;">채널별 성과 집계 실패 — <a href="cmo/funnel/콘텐츠문의현황.html" target="_blank" style="color:var(--accent);">콘텐츠 문의 현황 전체보기</a>에서 확인하세요.</div>';
