@@ -61,11 +61,14 @@ function readStdin() { try { return readFileSync(0, 'utf8'); } catch { return '{
 //   → 비용·사용량은 초 단위로 급변하는 값이 아니다. 짧게 캐시해 재사용한다.
 //     캐시가 살아있으면 프로세스를 아예 안 띄우므로 상태줄이 상한 안에 안정적으로 들어온다.
 //   ※ OMC HUD 파일 자체는 여전히 건드리지 않는다(업데이트 시 덮어써짐 — 이 파일 상단 원칙).
-const OMC_CACHE = 'tmp/hud_omc_cache.json';   // .gitignore 대상(tmp/)
 const OMC_CACHE_TTL_MS = 15000;               // 15초 — 비용 표시가 최대 15초 늦을 뿐, 값은 정확
+// 캐시 위치는 이 스크립트 위치에서 잡는다(<repo>/scripts/ → <repo>/tmp/).
+// 상태줄은 cwd 가 매번 다를 수 있어 상대경로로 두면 캐시가 흩어진다.
+const REPO_ROOT = path.dirname(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')));
+const OMC_CACHE = path.join(REPO_ROOT, 'tmp', 'hud_omc_cache.json');   // .gitignore 대상(tmp/)
 
 function omcHud(input) {
-  const cachePath = path.join(REPO, OMC_CACHE);
+  const cachePath = OMC_CACHE;
   // 1) 살아있는 캐시가 있으면 프로세스를 띄우지 않는다.
   try {
     const c = JSON.parse(readFileSync(cachePath, 'utf8'));
