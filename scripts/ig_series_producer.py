@@ -75,6 +75,15 @@ except Exception:
     def pace(*a, **k):
         return None
 
+try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백). 패턴 = scripts/publish_register.py 동일.
+    _TGB_DIR = str(Path(__file__).resolve().parent.parent / "telegram_bot")
+    if _TGB_DIR not in sys.path:
+        sys.path.insert(0, _TGB_DIR)
+    from notify_prefs import muted
+except Exception:
+    def muted(kind: str) -> bool:
+        return False
+
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
 
@@ -933,7 +942,13 @@ def run(dry_run: bool, plan_only: bool) -> int:
     if nxt is None:
         planned_nums = [e["num_raw"] for e in episodes if e["status"] == PLANNED_STATUS]
         print(f"[INFO] 기획예정 편 소진 — 생성 금지(쓰레기/중복 방지). (남은 기획예정: {planned_nums})")
-        telegram("📭 AI 시리즈 기획예정 편 소진(0건) — 로드맵 §5에 '기획예정' 행 추가 필요, 다음 편 자동 제작 중단")
+        # 정상·산출0(로드맵 미채움 지속) 상황은 저신호 — notify_prefs series_exhausted 로 흡수(배10188).
+        # 매일 동일문구 반복은 소음일 뿐 액션가능정보 없음(로드맵 §5 행 추가는 수동 편집 — 텔레그램으론 안 풀림).
+        # 진짜 오류(로드맵 파싱 실패 등, 위 RoadmapError 분기)는 이 가드와 무관 — 항상 발송.
+        if muted("series_exhausted"):
+            print("[INFO] [무음] series_exhausted 저신호 설정 — 소진 텔레그램 경고 스킵 (notify_prefs.py)")
+        else:
+            telegram("📭 AI 시리즈 기획예정 편 소진(0건) — 로드맵 §5에 '기획예정' 행 추가 필요, 다음 편 자동 제작 중단")
         return 0
 
     prev = prev_published_episode(episodes, nxt["num"])

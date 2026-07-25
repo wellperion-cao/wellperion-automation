@@ -2,15 +2,16 @@
 chcp 65001 >nul
 
 REM ============================================================
-REM AI series "next episode" PRODUCER launcher (21:00 batch)
+REM AI series "next episode" PRODUCER launcher (07:30 batch)
 REM Produces the next planned episode (Simo headless) -> builds
 REM slides -> registers to M5 review queue (status='검수대기').
-REM NEVER publishes. Publish stays GM-approved (07:30 dispatcher).
+REM NEVER publishes. Publish stays GM-approved (telegram card tap).
 REM
 REM This calls a headless `claude -p` (Simo) to write the new
 REM build_slides.py, so it must run as the logged-on GM user (so
 REM the claude CLI auth/session is available). Launched by the
-REM daily 21:00 scheduled task with /IT (interactive).
+REM daily 07:30 scheduled task (Wellperion-IG-Series-Produce-0730)
+REM with /IT (interactive).
 REM ASCII only (Korean comments break cmd on CP949 Windows).
 REM ============================================================
 
