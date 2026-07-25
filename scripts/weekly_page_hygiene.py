@@ -77,7 +77,7 @@ PAGE_TARGETS: list[dict] = [
     {"clevel": "cpo", "label": "강습회원관리", "path": "3. 웰페리온 가이드/cpo/member/강습회원관리.html"},
     {"clevel": "cpo", "label": "상품기획", "path": "3. 웰페리온 가이드/cpo/product/상품기획.html"},
     # ── CMO 7 (2026-07-14 추가) ──
-    {"clevel": "cmo", "label": "마케팅현황대시보드", "path": "3. 웰페리온 가이드/cmo/funnel/마케팅현황대시보드.html"},
+    {"clevel": "cmo", "label": "콘텐츠문의현황", "path": "3. 웰페리온 가이드/cmo/funnel/콘텐츠문의현황.html"},
     {"clevel": "cmo", "label": "문의흐름지도", "path": "3. 웰페리온 가이드/cmo/funnel/문의흐름지도.html"},
     {"clevel": "cmo", "label": "월간마케팅보고서", "path": "3. 웰페리온 가이드/cmo/funnel/월간마케팅보고서.html"},
     {"clevel": "cmo", "label": "홈페이지", "path": "3. 웰페리온 가이드/cmo/home/홈페이지.html"},
