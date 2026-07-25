@@ -6461,12 +6461,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <div id="o1-module-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
         <div style="color:var(--dim);">모듈 불러오는 중…</div>
       </div>
-      <!-- 전사일정·공지는 맨 링크에서 현황 카드로 승격(GM 지시 2026-07-25) — 위 카드 그리드가 렌더한다. -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:12px;font-weight:700;border-radius:9px;text-decoration:none;">🏢 운영부 체계</a>
-        <a href="https://wellperion-cao.github.io/wellperion-automation/coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);font-size:12px;font-weight:700;border-radius:9px;text-decoration:none;">🛎️ 리셉션 업무</a>
-        <span style="align-self:center;font-size:11.5px;color:var(--dim);">— 문서·절차 페이지(측정 지표 없음)</span>
-      </div>
+      <!-- 전사일정·공지·종합접수처·운영부·리셉션 전부 맨 링크에서 현황 카드로 승격
+           (GM 지시 2026-07-25) — 위 카드 그리드가 9장을 렌더한다. 별도 링크 줄 없음. -->
     </section>
     <script>
     // 프론트 등록부 구동은 웰리 공유 렌더러+등록부 Pages 서빙 후속(front_card 스키마 예약).
@@ -6481,6 +6477,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var PARKING_HREF  = BASE + "coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
       var SCHEDULE_HREF = BASE + "coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html";
       var NOTICE_HREF   = BASE + "coo/notice/notice_template.html";
+      var RECEPTION_HREF      = "/wellperion-automation/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html";
+      var OPS_HREF            = BASE + "coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html";
+      var RECEPTION_WORK_HREF = BASE + "coo/%EB%A6%AC%EC%85%89%EC%85%98%20%EC%97%85%EB%AC%B4/index.html";
+      // 종합접수처(VOC) 웹앱 — 점검·업무 GAS 와 또 다른 프로젝트다(섞으면 action 오류).
+      // 정본 = scripts/collectors/ops_shared.py VOC_EXEC_URL · 종합접수처_현황.html 과 동일 주소.
+      var VOC_API = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
       // status/*.json 은 Pages 발행루트에 없다 — 저장소 raw 를 직독한다(worklog_panel.js 와 동일 관례).
       var RAW_BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/";
       // 공지 목록(notice_list) 전용 — 점검 GAS(CHECK_API)와 다른 웹앱이다. 섞으면 '알 수 없는 action' 이 된다.
@@ -6538,7 +6540,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           + moduleCard({icon:'🚺',label:'지원(여)', caption:'오늘 점검 완료율', value:pctText(S.wPct), warn:wW.warn, warnLevel:wW.level, href:SUPPORT_HREF})
           + moduleCard({icon:'🅿️',label:'주차',    caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
           + moduleCard({icon:'📅',label:'전사 일정', caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
-          + moduleCard({icon:'📢',label:'공지·안내문',caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF});
+          + moduleCard({icon:'📢',label:'공지·안내문',caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
+          + moduleCard({icon:'🙋',label:'종합접수처', caption:'미처리 접수',     value:S.vocOpen,     warn:S.vocWarn,   warnLevel:S.vocLevel,   href:RECEPTION_HREF})
+          + moduleCard({icon:'🏢',label:'운영부',    caption:'실무진 진행 업무',  value:S.opsTask,     warn:S.opsWarn,   warnLevel:S.opsLevel,   href:OPS_HREF})
+          + moduleCard({icon:'🛎️',label:'리셉션',    caption:'라커 운영',        value:S.lockerVal,   warn:S.lockerWarn, warnLevel:'ok',        href:RECEPTION_WORK_HREF});
       }
       function won(n){ // 256만원 / 1,250원 — 큰 숫자 칸이 좁아 만원 단위로 접는다
         if(n==null || isNaN(n)) return null;
@@ -6561,7 +6566,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         // — 느린 GAS 콜에 링크가 막히지 않게. 한 소스가 죽어도 나머지 카드는 그대로 뜬다(개별 catch).
         var S = {fRow:null,mRow:null,wRow:null,fPct:null,mPct:null,wPct:null,
                  parkAmt:null,parkWarn:'',schedTotal:null,schedWarn:'',schedLevel:'ok',
-                 noticeTotal:null,noticeWarn:'',noticeLevel:'ok'};
+                 noticeTotal:null,noticeWarn:'',noticeLevel:'ok',
+                 vocOpen:null,vocWarn:'',vocLevel:'ok',
+                 opsTask:null,opsWarn:'',opsLevel:'ok',
+                 lockerVal:null,lockerWarn:''};
         var cached=null; try{ cached=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); }catch(e){}
         if(cached){ for(var k in cached){ if(cached.hasOwnProperty(k)) S[k]=cached[k]; } }
         render(S);
@@ -6573,9 +6581,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var parkP  = jget(RAW_BASE+"status/parking_revenue.json?_pv="+pv);
         var schedP = jget(RAW_BASE+"status/schedule_ssot.json?_pv="+pv);
         var noticeP= jget(TODO_API+"?action=notice_list&_pv="+pv);
+        var vocP   = jget(VOC_API+"?action=reg_list&_pv="+pv);
+        var todoP  = jget(TODO_API+"?action=todo_list&_pv="+pv);
 
-        Promise.all([fP,sP,parkP,schedP,noticeP]).then(function(res){
-          var facilityRow=res[0], supportRow=res[1], park=res[2], sched=res[3], notice=res[4];
+        Promise.all([fP,sP,parkP,schedP,noticeP,vocP,todoP]).then(function(res){
+          var facilityRow=res[0], supportRow=res[1], park=res[2], sched=res[3], notice=res[4],
+              voc=res[5], todo=res[6];
           S.fRow = facilityRow; S.fPct = pctOf(facilityRow);
           var byGender = supportRow && supportRow.byGender;
           S.mRow = byGender && byGender.m ? byGender.m : null; S.mPct = S.mRow ? pctOf(S.mRow) : null;
@@ -6605,6 +6616,36 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
               S.noticeLevel = (d!=null && d>30) ? 'bad' : 'ok';
             }
           }
+          /* 종합접수처 — 미처리(완료 계열이 아닌 것) 건수. 분류까지 한 줄로 붙여 무엇이 밀렸는지 보이게. */
+          var vrows = voc && (voc.data||voc.rows);
+          if(Array.isArray(vrows)){
+            var DONE = {'완료':1,'처리완료':1,'해결':1};
+            var open = vrows.filter(function(x){ return !DONE[String(x.status||'접수')]; });
+            S.vocOpen = open.length+'건';
+            var byCat = {};
+            open.forEach(function(x){ var c=String(x.category||'기타').replace(' 접수',''); byCat[c]=(byCat[c]||0)+1; });
+            var top = Object.keys(byCat).sort(function(a,b){return byCat[b]-byCat[a];}).slice(0,2)
+                        .map(function(k){ return k+' '+byCat[k]; }).join(' · ');
+            S.vocWarn  = open.length>0 ? ('⚠ '+top) : '✓ 밀린 접수 없음';
+            S.vocLevel = open.length>0 ? 'bad' : 'ok';
+          }
+          /* 운영부 — 실무진(최준용M·윤병현AM·이경연 실장) 담당 업무 중 완료 아닌 것.
+             ★종합접수처와 겹치지 않게 '업무판' 쪽만 센다(같은 숫자를 두 카드에 띄우지 않는다). */
+          var trows = todo && todo.data;
+          if(Array.isArray(trows)){
+            var OPS = {'최준용M':1,'윤병현AM':1,'이경연 실장':1};
+            var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS[String(t['담당자']||'').trim()]; });
+            S.opsTask = mine.length+'건';
+            var td = todayStr();
+            var over = mine.filter(function(t){ var e=String(t['종료일']||'').slice(0,10); return e && e<td; }).length;
+            S.opsWarn  = over>0 ? ('⚠ 마감 지남 '+over+'건') : '✓ 마감 초과 없음';
+            S.opsLevel = over>0 ? 'bad' : 'ok';
+          }
+          /* 리셉션 — 라커 현황은 웹앱이 비밀번호 POST 로만 내준다(세션 입력). 공개 화면에 비밀번호를
+             심지 않는다(🔒) → 숫자를 지어내지 않고 '들어가서 본다'고 정직하게 적는다. */
+          S.lockerVal  = '라커 관리';
+          S.lockerWarn = '열어서 확인 (비밀번호 필요)';
+
           render(S);
           try{ localStorage.setItem(CACHE_KEY, JSON.stringify(S)); }catch(e){}
         }).catch(function(){ if(!cached){ var el=document.getElementById('o1-module-cards'); if(el) el.innerHTML='<div style="color:var(--red);">운영 모듈 현황: (측정 실패 — 정직 표기)</div>'; } });
