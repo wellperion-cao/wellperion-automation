@@ -238,17 +238,14 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                             "reason": "dedup", "dedup_key": key})
             continue
 
-        # ★배10011 — 흡수 대상(자동화현황방 등)이면 직접 발송 대신 pending에 적재만.
-        #   sent=True 기록은 흡수한 메시지가 실제 발송에 성공한 뒤 mark_bundle_sent()가 한다
-        #   (여기서 먼저 sent 처리하면 흡수측이 실패해도 "보낸 걸로" 착각 — 순서 중요).
-        bundle_id = ABSORB_BUNDLES.get((cadence, bot_id))
-        if bundle_id:
-            _bundle.append(bundle_id, source=key, text=text, now=now)
-            results.append({"module": mid, "action": "absorbed",
-                            "bundle": bundle_id, "dedup_key": key})
-            continue
-
         # 라이브 게이트: bot_id None(미발효) 또는 방 미해소 → 발송 스킵
+        # ★배10191(2026-07-25) — 이 게이트가 아래 흡수 분기보다 **먼저** 와야 한다.
+        #   전에는 흡수 분기가 앞에 있어서, 흡수 대상(자동화현황방)인 모듈은 그 방의 chat_id 가
+        #   null 이어도 게이트를 지나치고 pending 번들에 쌓이기만 했다 — 로그에도 results 에도
+        #   'room_unresolved' 가 안 남는 **조용한 실패**. 번들도 결국 같은 방으로 나가므로 방을
+        #   못 찾으면 흡수해봤자 아무도 못 받는다. 그러니 못 찾으면 흡수 전에 정직하게 스킵한다.
+        #   (이 순서를 지키던 테스트 test_bot_id_str_unresolved_room_skips 가 흡수 분기 도입 때
+        #    빨간불이 됐고 그대로 방치돼 있었다 — 안전망이 꺼진 줄도 모르고 있었던 것.)
         if chat_id is None:
             reason = "bot_id_null" if bot_id is None else "room_unresolved"
             _append_log(log_path, {
@@ -257,6 +254,16 @@ def run_report(cadence, *, dry_run=False, only_module=None,
             })
             results.append({"module": mid, "action": "skip",
                             "reason": reason, "dedup_key": key})
+            continue
+
+        # ★배10011 — 흡수 대상(자동화현황방 등)이면 직접 발송 대신 pending에 적재만.
+        #   sent=True 기록은 흡수한 메시지가 실제 발송에 성공한 뒤 mark_bundle_sent()가 한다
+        #   (여기서 먼저 sent 처리하면 흡수측이 실패해도 "보낸 걸로" 착각 — 순서 중요).
+        bundle_id = ABSORB_BUNDLES.get((cadence, bot_id))
+        if bundle_id:
+            _bundle.append(bundle_id, source=key, text=text, now=now)
+            results.append({"module": mid, "action": "absorbed",
+                            "bundle": bundle_id, "dedup_key": key})
             continue
 
         ok = bool(sender(chat_id, text))
