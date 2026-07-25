@@ -9687,7 +9687,7 @@ function _tapClassifyLesson(today) {
   //   가장 오래된 몇 건만 매일 흘려보내 조금씩 소진한다(실측 377건 · 가장 오래된 2021-10-30).
   //   많이 보여주면 숫자가 굳어 무감각해지므로 하루 5건만 — 처리하면 다음 5건이 올라온다.
   //   판정 기준은 서버(cpo_report.unassigned_lesson_candidates)와 같은 '흔적 0'.
-  var stale = [];
+  var stale = [], staleExt = [];
   types.forEach(function(t){
     (_lessonState[t].rows || []).forEach(function(r){
       var blank = function(v){ return !String(v == null ? '' : v).trim(); };
@@ -9695,13 +9695,24 @@ function _tapClassifyLesson(today) {
         var d = String(r.timestamp || '').slice(0, 10);
         // time 에 문의일을 넣는다 — 목록에 날짜가 보여야 얼마나 묵은 건인지 알고 손이 간다
         // (다른 칸과 같은 자리에 표시되도록 기존 showTime 배선을 그대로 쓴다).
-        if (d) stale.push({ t: t, row: r, date: d, time: d });
+        if (!d) return;
+        // 외부 응대 강습(뮤지컬)은 우리가 연락할 몫이 아니라 따로 담는다 — 빼는 게 아니라 가른다.
+        (_isExternalLessonSport(r.sport) ? staleExt : stale).push({ t: t, row: r, date: d, time: d });
       }
     });
   });
-  stale.sort(function(a, b){ return a.date.localeCompare(b.date); });   // 오래된 것부터
+  var byDate = function(a, b){ return a.date.localeCompare(b.date); };   // 오래된 것부터
+  stale.sort(byDate); staleExt.sort(byDate);
   return { todayNew: todayNew, uncontacted: uncontacted, todaysConsult: todaysConsult,
-           staleAll: stale.length, stale: stale.slice(0, 5), types: types };
+           staleAll: stale.length, stale: stale.slice(0, 5),
+           staleExtAll: staleExt.length, staleExt: staleExt.slice(0, 5), types: types };
+}
+// 외부 파트너가 직접 응대하는 강습 — 지금은 뮤지컬(Brad Little Star Academy) 하나.
+//   2026-07-25 GM: 뮤지컬팀이 직접 응대하지만 문의·미응대 건도 운영부로 컨택이 오니
+//   우리가 계속 들고 보되(집계·목록에서 안 뺀다), '오늘 우리가 연락할 몫'과는 갈라 놓는다.
+//   서버 쪽 같은 규칙 = scripts/cpo_report.py is_external_lesson() — 한쪽 고치면 같이 고칠 것.
+function _isExternalLessonSport(sport) {
+  return String(sport == null ? '' : sport).indexOf('뮤지컬') >= 0;
 }
 // rowIndex 클릭(강습) → 유형탭+문의현황 서브카드 전환 → 행 하이라이트 → 기존 강습 CONTACT 모달(_lessonContactClick) 오픈.
 function _tapOpenLessonRow(t, rowIndex, sportKeyEnc) {
@@ -9780,7 +9791,12 @@ function renderTodayActionPanel() {
       { key: 'lres', icon: '📅', label: '오늘 상담 예약',           color: 'accent', items: clsL.todaysConsult, empty: '오늘 상담 예약 없음', showTime: true },
       // 오래된 미응대 — 하루 5건씩만(2026-07-25 GM). 전체 건수를 제목에 밝혀 숨은 재고가 없게 한다.
       { key: 'lold', icon: '🕰️', label: '오래된 미응대' + (clsL.staleAll ? ' (전체 ' + clsL.staleAll + '건 중 오래된 5건)' : ''),
-        color: 'accent', items: clsL.stale, empty: '오래된 미응대 없음 — 전부 손이 닿았습니다', showTime: true }
+        color: 'accent', items: clsL.stale, empty: '오래된 미응대 없음 — 전부 손이 닿았습니다', showTime: true },
+      // 외부 응대분은 따로 — 우리가 연락할 몫은 아니지만 운영부로 컨택이 오므로 계속 보인다(GM 2026-07-25).
+      { key: 'lext', icon: '🎭', label: '뮤지컬(외부 응대) 확인' + (clsL.staleExtAll ? ' · 미응대 ' + clsL.staleExtAll + '건' : ''),
+        color: 'accent', items: clsL.staleExt, empty: '외부 응대 미응대 없음',
+        caveat: '뮤지컬팀(Brad Little Star Academy)이 직접 응대합니다. 우리가 연락할 몫은 아니지만 문의가 운영부로도 오므로 컨택 여부를 여기서 확인합니다.',
+        showTime: true }
     ];
     if (_tapOpenKey === null && (clsL.uncontacted.length || clsL.todaysConsult.length)) _tapOpenKey = 'lunc';
     body.innerHTML = sectionsL.map(_tapSectionHtmlLesson).join('');

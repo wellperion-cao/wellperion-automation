@@ -156,6 +156,20 @@ def unassigned_lesson_candidates(rows: list[dict]) -> list[dict]:
     return out
 
 
+def is_external_lesson(sport) -> bool:
+    """외부 파트너가 직접 응대하는 강습인가 — 지금은 뮤지컬(Brad Little Star Academy) 하나.
+
+    2026-07-25 GM: "뮤지컬팀이 직접 응대를 하는데 문의랑 응대 안 한 것도 운영부로 컨택이 오니까
+    우리가 머금고 컨택 여하도 확인이 가능해야 해."
+      → 집계에서 빼지 않는다(우리가 계속 들고 본다). 다만 '오늘 우리 실무진이 컨택할 몫'과는
+        갈라 놓는다 — 안 그러면 미응대 377건 중 127건(34%)이 전부 앞줄을 차지해, 정작 우리가
+        연락해야 할 수영·스쿼시 건이 25일 뒤로 밀린다(실측).
+    판정은 종목 문자열의 '뮤지컬' 한 토큰뿐이다. 화면 쪽 같은 규칙 = membership.html
+    _isExternalLessonSport() — 둘 중 하나를 고치면 다른 쪽도 같이 고칠 것.
+    """
+    return "뮤지컬" in str(sport or "")
+
+
 def lesson_unassigned_summary(days: int = 30) -> dict | None:
     """최근 N일 강습 미응대(흔적 0) 집계 — 일과 정리용. 전 기간이 아니라 '지금 손쓸 수 있는'
     최근분만 센다(3~4개월 전 건까지 매일 세면 숫자가 굳어 무감각해진다).
@@ -167,7 +181,7 @@ def lesson_unassigned_summary(days: int = 30) -> dict | None:
     #   실측 377건(성인 188·유소년 189), 가장 오래된 2021-10-30. 숨은 재고가 되는 게 문제라
     #   ①숫자는 한 줄에 괄호로 병기하고 ②처리는 '오늘 할 일'에 매일 조금씩만 흘려보낸다.
     #   별도 목록·별도 화면은 만들지 않는다(볼 곳만 늘고 아무도 안 본다 — GM 지시).
-    total_all, oldest = 0, []
+    total_all, oldest, total_external = 0, [], 0
     for t in _LESSON_TYPES:
         rows = fetch_lesson_inquiries(t)
         if rows is None:
@@ -181,6 +195,9 @@ def lesson_unassigned_summary(days: int = 30) -> dict | None:
         total_all += len(cands)
         for r in cands:
             d = _lesson_date_str(r.get("timestamp"))
+            if is_external_lesson(r.get("sport")):
+                total_external += 1
+                continue   # 우리 실무진이 컨택할 몫이 아니다 — '오래된 순' 목록에는 넣지 않는다
             if d:
                 oldest.append({"date": d, "type": t, "name": str(r.get("name") or "").strip(),
                                 "sport": str(r.get("sport") or "").strip()})
@@ -188,7 +205,8 @@ def lesson_unassigned_summary(days: int = 30) -> dict | None:
         return None
     oldest.sort(key=lambda x: x["date"])
     return {"days": days, "total": total, "by_type": by_type,
-            "total_all": total_all, "oldest": oldest[:5]}
+            "total_all": total_all, "total_external": total_external,
+            "total_ours": total_all - total_external, "oldest": oldest[:5]}
 
 
 _MONTH_ABBR = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,

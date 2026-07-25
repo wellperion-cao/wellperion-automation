@@ -84,7 +84,12 @@ def collect(module=None) -> dict:
             if detail:
                 summary += f"({detail})"
             if isinstance(_all, int) and _all > lesson_un["total"]:
+                # 우리 몫과 외부 응대분(뮤지컬)을 갈라 밝힌다 — 합쳐 두면 우리가 연락해야 할
+                # 건이 몇 건인지 알 수 없다(2026-07-25 GM: 외부 응대분도 우리가 머금고 본다).
+                _ext = lesson_un.get("total_external") or 0
                 summary += f" · 전체 {_all}건"
+                if _ext:
+                    summary += f"(우리 {lesson_un.get('total_ours', _all - _ext)} · 뮤지컬 외부응대 {_ext})"
             summary += f" → {_LINK_LESSON}"   # 강습 건은 강습 화면으로(멤버십 링크로 보내지 않는다)
         elif isinstance(_all, int) and _all:
             # 최근 30일은 0이어도 옛 재고가 남아 있으면 그대로 밝힌다(0건으로 끝내면 또 숨는다).
