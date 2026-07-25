@@ -321,11 +321,17 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
         cb_reject  = f"pub:{item_id}:reject"
         ch_label = channel
 
+    # 발행 품질 게이트 경고(배10038) — review_queue_util._apply_quality_gate 가 등록 시점에
+    # item['qc_flags'] 로 남긴 것을 그대로 노출. 차단은 안 하되 GM이 승인 전에 보게 한다.
+    qc_flags = item.get("qc_flags") or []
+    qc_line = ("\n⚠️ <b>품질 경고</b> — " + " / ".join(qc_flags) + "\n") if qc_flags else ""
+
     caption = (
         f"🔎 <b>콘텐츠 검수 요청</b>\n"
         f"<b>{title}</b>\n"
         f"채널: {ch_label}\n"
-        f"폴더: {folder}\n\n"
+        f"폴더: {folder}\n"
+        f"{qc_line}\n"
         f"슬라이드 미리보기 ↑ · <a href=\"{M1_URL}\">M1에서 전체 보기</a>\n"
         f"확인 후 아래에서 바로 발행 승인하세요."
     )

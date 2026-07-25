@@ -22,8 +22,10 @@
 #   save_review_queue_atomic(items)    — tmp+os.replace 원자적 저장
 #   mutate_review_queue(mutator, holder) — 락 안에서 load→mutator→save
 #   update_review_post_url(...)        — 발행 URL 기록(위 관문 경유)
+import functools
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import date
@@ -52,6 +54,133 @@ __all__ = [
     "merge_save_review_queue",
     "update_review_post_url",
 ]
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# 발행 품질 게이트 — 금지어 · CTA 표준 · 과장 신호 (배10038, 2026-07-25 시모)
+#
+# 배경: 2026-07-24 회사소개서에서 금지어 6건(현대하이페리온·피트니스·하이엔드·사교)이
+#   사람 눈에만 발견됐다. 기계가 발행 전(M5 등록 시점)에 잡아야 한다.
+#
+# 새 관문 금지(약속 L21) — review_queue.json 을 쓰는 모든 경로가 예외 없이 지나는
+#   mutate_review_queue() 한 곳(위 21행 규칙 참조)에만 흡수한다. register_channel_review.py·
+#   publish_register.py 등 어떤 등록 헬퍼를 거치든 결국 이 함수를 통과하므로 우회로가 없다.
+#
+# 새 금지어 목록 금지(약속 L01) — 하드코딩 사본을 두지 않고 기존 단일 출처를 런타임 직독한다:
+#   CLAUDE.md §0 브랜드 용어 표 + ssot/약속.json L08(브랜드 말투). CTA 표준 문구는
+#   scripts/cta_utm.py CLEAN_CTA_TEXT(코드 정본, canon_values.json cta_channel_rules 확정)를
+#   그대로 재사용 — 재서술하지 않는다.
+#
+# 위반해도 저장을 막지 않는다(요구사항 ④) — status='검수대기' 항목에 qc_flags(list) 로
+# 경고만 남긴다. 통과하면 qc_flags 를 지운다(본문 수정 후 재검수 시 옛 경고가 안 남게).
+# ─────────────────────────────────────────────────────────────────────────
+
+_CLAUDE_MD_PATH = _ROOT / "CLAUDE.md"
+_YAKSOK_PATH = _ROOT / "ssot" / "약속.json"
+
+# 과장 신호 — 팀 지시 원문 예시(최고·1위·100%) 그대로. 별도 SSOT 없음(요구사항 원문 명시값).
+_OVERCLAIM_TERMS = ("최고", "1위", "100%")
+
+
+@functools.lru_cache(maxsize=1)
+def _load_banned_terms() -> tuple:
+    """금지어 목록 — CLAUDE.md §0 브랜드 용어 표 + ssot/약속.json L08 을 직독해 합집합.
+
+    새 금지어 SSOT 신설 금지(약속 L01) — 기존 두 출처만 파싱한다. 실패해도 예외로 죽지
+    않게 best-effort(파일 형식이 바뀌어도 등록 자체는 계속되게).
+    """
+    terms: set = set()
+    try:
+        text = _CLAUDE_MD_PATH.read_text(encoding="utf-8")
+        for line in text.splitlines():
+            if "브랜드 용어" not in line:
+                continue
+            # "X" 금지→"Y" 패턴에서 왼쪽(금지어)만 — 오른쪽(대체어)은 "금지"가 안 붙어 매칭 안 됨
+            for m in re.finditer(r'"([^"]+)"\s*금지', line):
+                t = m.group(1).strip()
+                if t:
+                    terms.add(t)
+    except Exception as exc:
+        print(f"[WARN] qc_gate: CLAUDE.md 금지어 표 파싱 실패(무시): {exc}")
+    try:
+        yaksok = json.loads(_YAKSOK_PATH.read_text(encoding="utf-8"))
+        for lesson in yaksok.get("lessons", []) or []:
+            if lesson.get("id") != "L08":
+                continue
+            m = re.search(r"외부엔\s*'([^']+)'", lesson.get("내용", "") or "")
+            if m:
+                for t in m.group(1).split("·"):
+                    t = t.strip()
+                    if t:
+                        terms.add(t)
+    except Exception as exc:
+        print(f"[WARN] qc_gate: 약속.json L08 파싱 실패(무시): {exc}")
+    return tuple(sorted(terms))
+
+
+@functools.lru_cache(maxsize=1)
+def _load_cta_standard() -> str:
+    """표준 CTA 문구 — scripts/cta_utm.py CLEAN_CTA_TEXT 를 그대로 재사용(코드 정본).
+
+    새로 재서술하지 않는다(약속 L01) — import 실패해도 등록은 계속되게 안전한 폴백만 둔다.
+    """
+    try:
+        _scripts_dir = str(Path(__file__).resolve().parent)
+        if _scripts_dir not in sys.path:
+            sys.path.insert(0, _scripts_dir)
+        from cta_utm import CLEAN_CTA_TEXT  # noqa: E402
+
+        return CLEAN_CTA_TEXT
+    except Exception as exc:
+        print(f"[WARN] qc_gate: cta_utm.CLEAN_CTA_TEXT import 실패 — 폴백 사용: {exc}")
+        return "문의: wellperion.com/ko/inquiry"
+
+
+def _qc_scan_item(item: dict) -> list:
+    """검수대기 항목 1건의 title/body/caption을 스캔해 경고 문구 리스트 반환(통과=[]).
+
+    CTA 검사는 URL-CTA 채널(블로그·카페·카카오·당근)에만 적용한다 — IG는 설계상(원칙 ⑤,
+    cta_utm.py) 캡션에 CTA URL 없이 bio 링크로 유도하므로 같은 검사를 적용하면 정상 IG
+    캡션마다 오탐이 난다.
+    """
+    text = " ".join(str(item.get(k) or "") for k in ("title", "body", "caption"))
+    flags: list = []
+
+    banned = [t for t in _load_banned_terms() if t and t in text]
+    if banned:
+        flags.append(f"금지어: {', '.join(banned)}")
+
+    channel = str(item.get("channel") or "")
+    is_ig = "인스타그램" in channel
+    if not is_ig and "문의" in text:
+        cta = _load_cta_standard()
+        if cta not in text:
+            if "문의 :" in text:  # 콜론 앞 공백 — 07-24 GM 결재로 폐기된 옛 표기(cta_utm.py 주석)
+                flags.append(f"CTA 문구가 옛 표기('문의 :' 공백) — 표준('{cta}')과 다름")
+            else:
+                flags.append(f"CTA 문구가 표준('{cta}')과 다름 — 확인 필요")
+
+    overclaim = [t for t in _OVERCLAIM_TERMS if t in text]
+    if overclaim:
+        flags.append(f"과장 표현: {', '.join(overclaim)}")
+
+    return flags
+
+
+def _apply_quality_gate(items: list) -> None:
+    """status='검수대기' 항목만 in-place 스캔해 qc_flags 갱신. 저장을 막지 않는다(플래그만)."""
+    for it in items:
+        if not isinstance(it, dict) or it.get("status") != "검수대기":
+            continue
+        try:
+            flags = _qc_scan_item(it)
+        except Exception as exc:
+            print(f"[WARN] qc_gate: 스캔 예외(등록은 계속) — {it.get('id')}: {exc}")
+            continue
+        if flags:
+            it["qc_flags"] = flags
+        elif "qc_flags" in it:
+            del it["qc_flags"]
 
 
 def review_queue_lock(holder: str = "?") -> QueueLock:
@@ -126,6 +255,13 @@ def mutate_review_queue(mutator, holder: str = "?") -> list:
         except SkipSave:
             return items
         new_items = result if result is not None else items
+        # 발행 품질 게이트 — 저장 직전, 검수대기 항목만 스캔해 qc_flags 갱신(차단 없음).
+        # 이 자리(락 임계구역 안, save 직전)가 모든 review_queue 쓰기가 예외 없이 지나는
+        # 지점이라 여기 한 곳에만 박으면 우회로가 없다(약속 L21).
+        try:
+            _apply_quality_gate(new_items)
+        except Exception as exc:
+            print(f"[WARN] qc_gate: 전체 예외(저장은 계속) — {exc}")
         save_review_queue_atomic(new_items)
         return new_items
 
