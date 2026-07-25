@@ -21,8 +21,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import requests
-
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
@@ -30,6 +28,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from report_stream_3_impl import build_digest  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
+from tg_outbound_log import send as _tg_gateway_send  # noqa: E402 — 발신 관문(페이싱+429재시도+계측, 배99)
 
 TELEGRAM_CHAT_ID = 8254867551  # GM 업무보고방 — 안전 우선 (실무진방 발송=GM go 후속)
 KAKAO_ROOMS = ["차의주 회장님", "웰페리온 관리부", "★ 운영부"]  # kakao_rooms.json 동일 순서
@@ -46,15 +45,14 @@ def _send_telegram_parts(parts: list[str]) -> bool:
     if not token:
         print("[stream3] TELEGRAM_BOT_TOKEN 미설정", flush=True)
         return False
+    # 배99(2026-07-25): 직접 requests.post → tg_outbound_log.send 관문 경유로 수렴.
+    # 전역 페이싱·429 자가재시도·logs/telegram_sent-*.log 계측이 자동 편입된다(L21).
     ok_all = True
     for i, text in enumerate(parts, 1):
-        r = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"},
-            timeout=20,
+        ok = _tg_gateway_send(
+            token, TELEGRAM_CHAT_ID, text,
+            source="report_stream_3_mgmt", extra={"parse_mode": "HTML"},
         )
-        r.raise_for_status()
-        ok = r.json().get("ok", False)
         if not ok:
             ok_all = False
         print(f"[stream3] 텔레그램 파트{i}/{len(parts)} {'완료' if ok else '실패'}", flush=True)

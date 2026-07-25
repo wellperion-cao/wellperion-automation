@@ -119,6 +119,39 @@ def kill_switch_enabled() -> bool:
         return False
 
 
+# ── 매출보고 정본 렌더 단일화(배99, 2026-07-25 시토) ─────────────────────────────
+# 같은 매출시트를 GAS(매출보고_자동발송.js, ~09:00 텔레그램 사진)와 이 파이프라인
+# (generate_sales_report_image.py, 09:30 카톡)이 **각각 따로** 렌더해 왔다(약속 L01 위반형).
+# 정본 렌더 = generate_sales_report_image.py 산출물(아카이브 PNG) 하나로 확정 —
+# 카톡 방향 재사용(봇이 자기 메시지를 getUpdates로 못 받아 텔레그램 사진의 무인 수신이
+# 불가)은 기술적으로 막혀 있어, 가능한 유일한 단일화 방향이 이쪽이다.
+# 텔레그램도 같은 PNG를 쓰도록 아래 게이트를 배선한다. 기본 OFF —
+# **GAS 09:00 사진 푸시 트리거를 끈 뒤에만** status/kakao_auto_send.json 에
+# "telegram_photo": true 로 켠다(이중 발송 방지 · 채널 변경이라 GM go 후 전환).
+def telegram_photo_enabled() -> bool:
+    """킬스위치 파일의 telegram_photo 필드(기본 false=GAS가 계속 담당)."""
+    try:
+        cfg = json.loads(KILL_SWITCH_FILE.read_text(encoding="utf-8"))
+        return bool(cfg.get("telegram_photo", False))
+    except Exception:
+        return False
+
+
+def send_telegram_photo(image_path: str, caption: str) -> bool:
+    """정본 PNG를 텔레그램(GM 보고방)에도 발송 — 기존 사진 관문
+    telegram_notifier.TelegramNotifier.send_photo 경유(전역 페이싱+발신 계측 자동 편입, L21)."""
+    try:
+        agents_dir = str(ROOT / "wellperion-agents")
+        if agents_dir not in sys.path:
+            sys.path.insert(0, agents_dir)
+        from telegram_notifier import TelegramNotifier
+        r = TelegramNotifier().send_photo(image_path, caption)
+        return bool(isinstance(r, dict) and r.get("ok"))
+    except Exception as exc:
+        log(f"[경고] 텔레그램 사진 발송 실패(카톡 전송은 계속 진행): {exc}")
+        return False
+
+
 def write_status(ok: bool, detail: str, kind: str = "IMAGE_REPORT") -> None:
     """status/kakao_last_send.json 갱신 — telegram_bot/bot.py의 _write_kakao_status와 동일 스키마
     ({ok, detail, at}) 재사용, T2 카톡전송관리 페이지가 이 파일을 그대로 읽는다.
@@ -305,6 +338,14 @@ def main() -> int:
 
     caption = build_caption(target)
     log(f"caption: {caption!r}")
+
+    # 정본 렌더 단일화(배99): 게이트 ON이면 같은 PNG를 텔레그램에도 발송(GAS 대체).
+    if telegram_photo_enabled():
+        if args.dry_run:
+            log("텔레그램 사진 게이트 ON — dry-run이라 발송 생략")
+        else:
+            tg_ok = send_telegram_photo(image_path, caption)
+            log(f"텔레그램 사진 발송 {'완료' if tg_ok else '실패'} — 정본 PNG 재사용({image_path})")
 
     ok, failures = run_sender(rooms, image_path, caption, args.dry_run)
     if ok:

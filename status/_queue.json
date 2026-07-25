@@ -1712,17 +1712,19 @@
     "task_id": "CTO-2026-07-25-매출보고-이중-제작-단일화-발신-계측-공백-웰리-대",
     "clevel": "cto",
     "title": "[시토] 매출보고 이중 제작 단일화 + 발신 계측 공백 (웰리 대조 실측 2026-07-25)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-25",
     "from": "ceo",
     "note": "[웰리 → 시토 전달 2026-07-25] 웰리가 GM 질문('텔레그램·카톡 알림이 같은 거냐')에 답하려고 전수 대조하다 발견. 전문 = status/briefs/웰리_텔레그램카톡_발신대조_20260725.md. [①매출보고 이중 제작] 같은 매출시트가 원천인데 텔레그램은 GAS(매출보고_자동발송.js)가 사진을 만들어 ~09:00 푸시하고, 카톡은 scripts/generate_sales_report_image.py 가 09:30에 이미지를 따로 다시 만든다. 같은 값을 두 코드가 각자 렌더 = 약속 L01 위반 형태. 한쪽이 바뀌면 다른 쪽이 조용히 어긋난다. 산출물이 실제로 같은지도 확인 안 됨. → 원천 렌더를 한 곳으로 모으고 다른 쪽은 그 결과를 쓰게 할 것(어느 쪽을 정본으로 할지는 시토 판단). [②발신 계측 공백] logs/telegram_sent-*.log 가 일부 경로만 잡는다 — report_stream_3_mgmt.py(09:30)·ceo_morning_pipeline.py(08:00)는 직접 requests.post 를 써서 로그에 안 남는다. 그래서 하루 통수 실측치가 하한선이다. 카톡은 하루 단위 발신 로그가 아예 없다(dedup 원장 2시간 창만). ★통수를 줄이는 게 목표인데 정확히 셀 수가 없다 — 줄이기 전에 세는 게 먼저다. 새 로거 신설이 아니라 이미 있는 발신 관문에 흡수시킬 것(L21). [모델 시험 · Fable 2026-07-25 GM go] 이 배는 Fable 로 진행한다 — 자율화 모듈·파이프라인을 만드는 일이라서다. ★그 과정의 판단·결정도 Fable 이 통째로 한다(별도로 Opus 에 올리지 않는다). 단 금지 5종(결제·보안·금지·전략·공식값)에 닿으면 GM 결재로 올린다. 기준 정본 = ERP S2 공통탭 ⑨ 토큰 라우팅 매트릭스 4계층. 같은 날 나머지 배는 기존 배분 유지 — 웰리가 결과를 비교해 GM께 보고한다.",
-    "next": "시토: ①매출보고 정본 렌더 한 곳 확정 → 다른 쪽은 재사용 ②텔레그램 직접 POST 2곳을 발신 관문 경유로 수렴해 계측 공백 제거 ③카톡 발신도 하루 단위로 셀 수 있게 — 셋 다 새 파일 0개",
+    "next": "GAS 매출보고_자동발송.js 09:00 사진 푸시 트리거 OFF → status/kakao_auto_send.json telegram_photo=true 전환(이중 발송 방지 순서 엄수, GM go). 이후 텔레그램·카톡 매출보고 = 픽셀 동일 단일 PNG.",
     "depends_on": "",
     "ship_no": 10221,
     "short_no": 99,
     "module": "home",
-    "surface": "autonomy"
+    "surface": "autonomy",
+    "done_at": "2026-07-25",
+    "result": "정본 렌더=generate_sales_report_image.py(아카이브 PNG)로 확정 — 카톡 방향 재사용은 봇이 자기 메시지를 getUpdates로 못 받아 기술적 불가, 가능한 유일한 단일화 방향. 텔레그램도 같은 PNG를 쓰는 게이트(kakao_auto_send.json telegram_photo, 기본 false) 배선 완료 — GAS 09:00 트리거 OFF 후 켠다. 계측: stream3 직접 POST→tg_outbound_log.send 관문 수렴(telegram_sent-*.log 기록), 08:00은 이미 telegram_notifier 관문 경유로 기록 중임을 로그로 실증(브리프의 미기록 판정은 구정보). 카톡=단일 관문 kakao_report_sender에 channel=kakao 계측 흡수→logs/kakao_sent-YYYY-MM-DD.log 하루 단위 집계 가능. 검증=발송 0으로 재현(urlopen 모킹·sha256 동일 산출물 실측) ALL PASS."
   },
   {
     "task_id": "COO-2026-07-25-ADHOC-4646b0e2d",
