@@ -5630,6 +5630,11 @@ function _lessonRegistryRender(t) {
   var st = _lessonState[t];
   var rows = st.registry || [];
   if (st.regSport) rows = rows.filter(function(r){ return String(r.종목 || '기타').trim() === st.regSport; });
+  // 최근 등록이 맨 위(2026-07-25 GM) — GAS가 주는 순서는 시트 행 순서(오래된 것부터)라
+  // 최신 건을 보려면 매번 맨 아래까지 내려가야 했다. 정렬만 하고 데이터는 건드리지 않는다.
+  rows = rows.slice().sort(function(a, b){
+    return String(b.등록일 || '').localeCompare(String(a.등록일 || ''));
+  });
   if (!rows.length) { tbody.innerHTML = _lessonRegRow('등록 없음', '선택한 기간에 등록한 회원이 없습니다.'); return; }
   var html = '';
   rows.forEach(function(r){
