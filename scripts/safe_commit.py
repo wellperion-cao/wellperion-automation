@@ -46,7 +46,9 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\jjky0\welperion-automation")
+# 저장소 루트 = 이 스크립트(scripts/)의 부모 — 작업트리를 어느 PC·경로에 클론했든 동일하게 동작
+# (구: 특정 PC 사용자 경로 하드코딩 → 다른 PC에서 PermissionError, 2026-07-25 CFO 실측 보정)
+ROOT = Path(__file__).resolve().parents[1]
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(_SCRIPTS_DIR) not in sys.path:

@@ -308,6 +308,86 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
     <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태를 바꾸거나 영수증을 올리면 시트에 실시간 반영됩니다.</div>
   </section>
 
+  <!-- ══ 직원용 확장 ②③ (?req=1 전용 — 관리자 TABS에 없어 관리자 모드에선 항상 숨김) · 2026-07-25 GM 지시 ══ -->
+  <style id="reqExtCss">
+  .prg-card{background:#fff;border-radius:16px;box-shadow:0 18px 44px -36px rgba(15,30,61,.5);padding:14px 18px;margin-bottom:12px}
+  .prg-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px}
+  .prg-no{font-weight:800;color:var(--gold-deep)}
+  .prg-item{font-weight:700;white-space:pre-line}
+  .prg-meta{font-size:12px;color:var(--ink-soft)}
+  .prg-track{display:flex;align-items:center;gap:0;margin-top:10px;flex-wrap:wrap}
+  .prg-stp{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-faint)}
+  .prg-stp .pdot{width:20px;height:20px;border-radius:50%;background:#EAE6DB;color:#8b8574;font:700 11px/20px inherit;text-align:center}
+  .prg-stp.on{color:#0F1E3D;font-weight:700}
+  .prg-stp.on .pdot{background:linear-gradient(135deg,#0F1E3D,#1B2E52);color:#fff}
+  .prg-stp.now{color:var(--gold-deep)}
+  .prg-stp.now .pdot{background:linear-gradient(135deg,#C69A54,#8A6630);color:#fff}
+  .prg-bar{width:26px;height:2px;background:#EAE6DB;margin:0 6px}
+  .prg-bar.on{background:#1B2E52}
+  .inb-btn{font-size:12px;padding:6px 13px;cursor:pointer;border:none;border-radius:99px;color:#fff;font-weight:700;background:linear-gradient(135deg,#3c7a4a,#2c5c38)}
+  .inb-done{font-size:12px;font-weight:700;color:var(--green)}
+  .sup-low td{background:#FDF3EC!important}
+  .sup-dead td{background:#F4F3EF!important;color:#9a958a}
+  .sup-dead input{color:#9a958a}
+  .supIn{width:100%;min-width:60px;border:1px solid transparent;border-radius:8px;padding:6px 8px;font:inherit;background:transparent}
+  .supIn:hover{border-color:var(--line)} .supIn:focus{border-color:var(--gold);outline:none;background:#fff}
+  .supIn.num{max-width:74px;text-align:right}
+  .sup-badge{display:inline-block;font-size:11px;font-weight:700;color:#b14238;background:#FDECEC;border-radius:99px;padding:2px 9px;white-space:nowrap}
+  .sup-act{font-size:11px;padding:4px 10px;cursor:pointer;border:1px solid var(--line);border-radius:99px;background:#fff;white-space:nowrap}
+  .sup-act.buy{border:none;color:#fff;font-weight:700;background:linear-gradient(135deg,#C69A54,#8A6630)}
+  #inbOv{display:none;position:fixed;inset:0;background:rgba(15,30,61,.45);z-index:90;align-items:center;justify-content:center;padding:16px}
+  #inbBox{background:#fff;border-radius:18px;max-width:440px;width:100%;padding:22px 24px;box-shadow:0 30px 80px -30px rgba(0,0,0,.5)}
+  #inbBox h3{margin:0 0 4px} #inbBox label{display:block;font-size:12px;color:var(--ink-soft);margin:12px 0 4px;font-weight:700}
+  #inbBox select,#inbBox input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;box-sizing:border-box}
+  </style>
+
+  <section class="panel" data-panel="progress">
+    <div class="sec-title">📦 내 구매요청 진행 현황</div>
+    <div class="card">
+      <div class="desc">제출한 품의가 어디까지 왔는지 단계별로 보여줍니다. <b>조회 전용</b> — 승인·반려는 부서장 결재로 진행됩니다. 물품을 실제로 받았으면 <b>[📦 입고 확인]</b>을 눌러 비품 원장에 반영해 주세요.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
+        <input type="text" id="progWho" placeholder="요청자 이름으로 필터 (비우면 전체)" style="padding:8px 12px;border:1px solid var(--line);border-radius:99px;font:inherit;min-width:220px">
+        <button class="btn" id="progRefresh" style="padding:8px 16px;font-size:12.5px">🔄 새로고침</button>
+        <span id="progMsg" style="font-size:12px;color:var(--ink-soft)"></span>
+      </div>
+    </div>
+    <div id="progList" style="margin-top:12px"></div>
+    <div class="notice">단계: 요청 → 검토(부서장 승인) → 승인(검토완료) → 발주(구매날짜 기재) → 입고(직원 확인). 반려·캔슬 건은 빨간 상태로 표시됩니다.</div>
+  </section>
+
+  <section class="panel" data-panel="supply">
+    <div class="sec-title">🗄 비품 현황 (전사 공유 원장)</div>
+    <div class="card">
+      <div class="desc">🔗 이 표는 <b>지원부 체계 ▸ 비품관리</b>와 <b>같은 원장을 실시간 공유</b>합니다 — 여기서 고치면 그쪽에도 바로 반영됩니다. 최초 품목은 지출관리 시트 「시설물&amp;비품 관리대장」에서 가져왔습니다. 수량이 발주점 이하로 내려가면 <b>발주 필요</b>로 표시됩니다.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
+        <input type="text" id="supSearch" placeholder="품명 검색" style="padding:8px 12px;border:1px solid var(--line);border-radius:99px;font:inherit;min-width:180px">
+        <div class="team-chips" id="supFilter" style="margin:0"></div>
+        <button class="btn" id="supAdd" style="padding:8px 16px;font-size:12.5px">＋ 품목 추가</button>
+        <span id="supMsg" style="font-size:12px;color:var(--ink-soft)"></span>
+      </div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:12px"><table id="supTbl"></table></div>
+    <div class="notice">불용 처리한 품목은 삭제되지 않고 「불용」 필터에 보관됩니다. 발주 필요 품목은 [🛒 구매요청으로]를 누르면 ①탭에 물품명이 자동 입력됩니다.</div>
+  </section>
+
+  <div id="inbOv">
+    <div id="inbBox">
+      <h3>📦 입고 확인</h3>
+      <div style="font-size:12.5px;color:var(--ink-soft)">받은 물품을 비품 원장에 더합니다: <b id="inbItem"></b></div>
+      <label>원장 품목 선택</label>
+      <select id="inbSel"></select>
+      <div id="inbNewWrap" style="display:none">
+        <label>새 품목명</label><input type="text" id="inbNewName">
+        <label>보관 위치 (선택)</label><input type="text" id="inbNewLoc" placeholder="예: B1-4. 운영사무실 옆창고">
+      </div>
+      <label>입고 수량</label><input type="number" id="inbQty" value="1" min="1">
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn" id="inbOk" style="flex:1">입고 반영</button>
+        <button class="sup-act" id="inbCancel" style="padding:9px 16px">취소</button>
+      </div>
+    </div>
+  </div>
+
   <section class="panel" data-panel="budget">
     <div class="card">
       <div class="bud-draft">⚠️ <b>잠정(초안) 예산 기준 · 매니저님 확정 전 · 참고용</b> — 아래 집행률은 미확정 예산안 초안에 대비한 값으로, 확정값으로 오인하지 마세요.</div>
@@ -618,9 +698,14 @@ async function startReqOnly(){
   document.getElementById("app").style.display="block";
   document.title="🛒 구매요청 · 웰페리온"; // 직원용 페이지 탭 이름
   var fav=document.getElementById("favicon"); if(fav) fav.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🛒</text></svg>"; // 지구본→장바구니
-  TABS=[{id:"request",label:"구매요청"}]; renderNav();
+  TABS=[{id:"request",label:"🛒 구매요청"},{id:"progress",label:"📦 구매진행"},{id:"supply",label:"🗄 비품관리"}]; renderNav();
+  // 진행·비품 탭은 첫 진입 시 지연 로드(구매요청 첫 화면 속도 유지) — renderNav의 onclick과 별개 리스너라 둘 다 동작
+  document.querySelectorAll("#nav .tab").forEach(function(b){b.addEventListener("click",function(){
+    if(b.dataset.p==="progress")loadProgress();
+    else if(b.dataset.p==="supply")loadSupply();
+  });});
   var h1=document.querySelector(".brand h1"); if(h1) h1.textContent="구매요청";
-  var hs=document.querySelector(".hd-sub"); if(hs) hs.textContent="웰페리온 구매 품의 · 직원용 · 제출하면 담당 부서장이 승인/반려";
+  var hs=document.querySelector(".hd-sub"); if(hs) hs.textContent="웰페리온 직원용 · 구매요청 → 진행 확인 → 비품 관리까지 한 화면";
   var sm=document.getElementById("syncMeta"); if(sm) sm.textContent="";
   document.getElementById("loading").style.display="none";
   document.getElementById("content").style.display="block";
@@ -1120,6 +1205,274 @@ async function doAct(row,next,needPw,btn){
   try{await procCall("status",{row:row,status:next});}catch(e){}
   loadReq();  // 서버 재확인
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   직원용 확장 ②구매진행 ③비품관리 (2026-07-25 GM 지시)
+   - ?req=1 전용. 관리자 모드 TABS에 없어 관리자 화면 무영향.
+   - 구매 데이터 = 기존 procCall(list) 재사용(백엔드 무변경).
+   - 비품 원장 = 지원부 체계.html 비품관리 탭과 같은 보드(SUPPORT_SUPPLY,
+     점검 GAS saveBoard) 공유 — 스키마 {id,cat,name,qty,reorder,loc,owner,note,updatedAt} 유지.
+   - '입고'는 12열 상태를 건드리지 않음(상태기계 변경 = 시토(CTO) 범위).
+     멱등성: 원장 비고의 [입고 날짜 #번호] 토큰으로 판정 — 중복 가산 차단.
+   ═══════════════════════════════════════════════════════════════ */
+var SUPPLY_API="https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"; // 지원부 체계와 동일(점검 GAS)
+var SUPPLY_KEY="SUPPORT_SUPPLY";
+var SUPPLY_ROWS=[],_supLoaded=false,_supSaveTimer=null,_supSeq=0,supFilter="전체";
+var PROG_DONE=[],_progDoneLoaded=false;
+
+function supNewId(){return 'sup_'+Date.now().toString(36)+'_'+(_supSeq++).toString(36);}
+function supNormRow(r){ // 지원부 applySupplyStored와 동일 정규화(스키마 계약 유지)
+  r=r||{};
+  var q=parseInt(r.qty,10); if(isNaN(q)||q<0)q=0;
+  var ro=parseInt(r.reorder,10); if(isNaN(ro)||ro<0)ro=0;
+  return {id:r.id||supNewId(),cat:(r.cat!=null&&r.cat!==''?String(r.cat):'기타'),name:(r.name!=null?String(r.name):''),qty:q,reorder:ro,loc:(r.loc!=null?String(r.loc):''),owner:(r.owner!=null?String(r.owner):''),note:(r.note!=null?String(r.note):''),updatedAt:r.updatedAt||''};
+}
+function supApply(board){
+  var rows=(board&&Array.isArray(board.rows))?board.rows:(Array.isArray(board)?board:[]);
+  SUPPLY_ROWS=rows.map(supNormRow);
+}
+function supIsDead(r){return /^\[불용 /.test(String(r.note||""));}
+function supIsLow(r){ // 지원부 supplyIsLow와 동일식(reorder>0 && qty<=reorder) + 불용 제외
+  if(supIsDead(r))return false;
+  var ro=parseInt(r&&r.reorder,10); if(isNaN(ro)||ro<0)ro=0;
+  var q=parseInt(r&&r.qty,10); if(isNaN(q)||q<0)q=0;
+  return ro>0&&q<=ro;
+}
+function todayStr(){var n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");}
+
+async function supFetch(){ // 서버 보드 GET (실패 시 null)
+  try{
+    var r=await fetch(SUPPLY_API+'?action=board&key='+encodeURIComponent(SUPPLY_KEY),{method:'GET',redirect:'follow'});
+    var d=await r.json();
+    if(d&&d.ok&&d.board&&typeof d.board==='object')return d.board;
+  }catch(e){}
+  return null;
+}
+async function loadSupply(force){
+  var msg=document.getElementById("supMsg");
+  if(_supLoaded&&!force){renderSupply();return;}
+  if(msg)msg.textContent="원장 불러오는 중…";
+  var b=await supFetch();
+  if(b){supApply(b);_supLoaded=true;if(msg)msg.textContent="";}
+  else if(msg)msg.textContent="⚠️ 원장 연결 실패 — 새로고침 해주세요";
+  renderSupply();
+}
+/* 저장 = 저장 직전 서버 재로드 후 id 병합(다른 표면(지원부)에서 추가된 행 보존) → 전체 저장.
+   타이핑 수정은 800ms 디바운스, 입고·불용 등 구조 변경은 즉시(immediate). */
+function supSave(immediate){
+  clearTimeout(_supSaveTimer);
+  if(immediate)return _supPush();
+  _supSaveTimer=setTimeout(_supPush,800);
+  return null;
+}
+async function _supPush(){
+  var msg=document.getElementById("supMsg");
+  if(msg)msg.textContent="저장 중…";
+  try{
+    var b=await supFetch(); // 병합: 내 행(id) 우선, 서버에만 있는 행은 보존(빈 이름 제외)
+    if(b&&Array.isArray(b.rows)){
+      var mine={};SUPPLY_ROWS.forEach(function(x){mine[x.id]=1;});
+      b.rows.forEach(function(s){if(s&&s.id&&!mine[s.id]&&String(s.name||"").trim()!=="")SUPPLY_ROWS.push(supNormRow(s));});
+    }
+    await fetch(SUPPLY_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'saveBoard',key:SUPPLY_KEY,board:{rows:SUPPLY_ROWS}})});
+    if(msg){msg.textContent="✅ 저장 완료 (지원부 화면에도 반영)";setTimeout(function(){if(msg.textContent.indexOf("저장 완료")>=0)msg.textContent="";},2200);}
+  }catch(e){if(msg)msg.textContent="⚠️ 저장 실패 — 네트워크 확인 후 다시 수정해주세요";}
+}
+
+var SUP_CATS=['청소','세탁/타월','어메니티/소모품','사무','비품','장비','기타'];
+function renderSupply(){
+  var fc=document.getElementById("supFilter");if(!fc)return;
+  var liveRows=SUPPLY_ROWS.filter(function(r){return !supIsDead(r);});
+  var lowN=SUPPLY_ROWS.filter(supIsLow).length,deadN=SUPPLY_ROWS.length-liveRows.length;
+  var FL=[{k:"전체",l:"전체 "+liveRows.length},{k:"발주필요",l:"🔴 발주 필요 "+lowN},{k:"불용",l:"불용 "+deadN}];
+  fc.innerHTML=FL.map(function(f){return '<button class="team-chip'+(f.k===supFilter?' on':'')+'" data-f="'+f.k+'">'+f.l+'</button>';}).join('');
+  fc.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){supFilter=b.dataset.f;renderSupply();};});
+  var q=(document.getElementById("supSearch").value||"").trim().toLowerCase();
+  var rows=SUPPLY_ROWS.filter(function(r){
+    if(supFilter==="불용"){if(!supIsDead(r))return false;}
+    else if(supFilter==="발주필요"){if(!supIsLow(r))return false;}
+    else if(supIsDead(r))return false;
+    return !q||(r.name||"").toLowerCase().indexOf(q)>=0;
+  });
+  var h='<thead><tr><th style="text-align:left">분류</th><th style="text-align:left">품명</th><th>수량</th><th>발주점</th><th style="text-align:left">위치</th><th style="text-align:left">담당</th><th style="text-align:left">비고</th><th style="text-align:center">상태 / 처리</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var dead=supIsDead(r),low=supIsLow(r);
+    var inCell=function(f,v,num){return '<input class="supIn'+(num?' num':'')+'" data-id="'+r.id+'" data-f="'+f+'"'+(num?' type="number" min="0"':' type="text"')+' value="'+escapeHtml(v==null?'':String(v))+'"'+(dead?' disabled':'')+'>';};
+    var act='';
+    if(dead)act='<button class="sup-act supRevive" data-id="'+r.id+'">↩ 복원</button>';
+    else{
+      if(low)act+='<span class="sup-badge">🔴 발주 필요</span> <button class="sup-act buy supToReq" data-id="'+r.id+'">🛒 구매요청으로</button> ';
+      act+='<button class="sup-act supDead" data-id="'+r.id+'">불용</button>';
+    }
+    h+='<tr class="'+(dead?'sup-dead':(low?'sup-low':''))+'">'
+      +'<td style="text-align:left;min-width:110px">'+inCell('cat',r.cat)+'</td>'
+      +'<td style="text-align:left;min-width:150px">'+inCell('name',r.name)+'</td>'
+      +'<td>'+inCell('qty',r.qty,1)+'</td>'
+      +'<td>'+inCell('reorder',r.reorder,1)+'</td>'
+      +'<td style="text-align:left;min-width:130px">'+inCell('loc',r.loc)+'</td>'
+      +'<td style="text-align:left;min-width:90px">'+inCell('owner',r.owner)+'</td>'
+      +'<td style="text-align:left;min-width:150px">'+inCell('note',r.note)+'</td>'
+      +'<td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+  });
+  if(!rows.length)h+='<tr><td colspan="8" style="color:var(--ink-faint)">'+(supFilter==="불용"?"불용 처리된 품목이 없습니다.":(q?"검색 결과가 없습니다.":"품목이 없습니다 — [＋ 품목 추가]로 시작하세요."))+'</td></tr>';
+  h+='</tbody>';
+  document.getElementById("supTbl").innerHTML=h;
+  // 입력 커밋(onchange=블러 시) → 모델 갱신·디바운스 저장. 수량/발주점은 해당 행 강조만 즉시 갱신(IME·포커스 보호 — 표 통째 재렌더 금지)
+  document.querySelectorAll("#supTbl .supIn").forEach(function(inp){inp.onchange=function(){
+    var row=SUPPLY_ROWS.filter(function(x){return x.id===inp.dataset.id;})[0];if(!row)return;
+    var f=inp.dataset.f,v=inp.value;
+    if(f==="qty"||f==="reorder"){var n=parseInt(v,10);if(isNaN(n)||n<0)n=0;row[f]=n;inp.value=n;}
+    else row[f]=String(v);
+    row.updatedAt=new Date().toISOString();
+    var tr=inp.closest("tr");if(tr&&!supIsDead(row))tr.className=supIsLow(row)?"sup-low":"";
+    supSave(false);
+  };});
+  document.querySelectorAll("#supTbl .supDead").forEach(function(b){b.onclick=function(){
+    var row=SUPPLY_ROWS.filter(function(x){return x.id===b.dataset.id;})[0];if(!row)return;
+    if(!confirm('"'+row.name+'" 을(를) 불용 처리할까요? (삭제 아님 — 불용 필터에 보관)'))return;
+    row.note="[불용 "+todayStr()+"] "+String(row.note||"");row.updatedAt=new Date().toISOString();
+    supSave(true);renderSupply();
+  };});
+  document.querySelectorAll("#supTbl .supRevive").forEach(function(b){b.onclick=function(){
+    var row=SUPPLY_ROWS.filter(function(x){return x.id===b.dataset.id;})[0];if(!row)return;
+    row.note=String(row.note||"").replace(/^\[불용 [^\]]*\]\s*/,"");row.updatedAt=new Date().toISOString();
+    supSave(true);renderSupply();
+  };});
+  document.querySelectorAll("#supTbl .supToReq").forEach(function(b){b.onclick=function(){
+    var row=SUPPLY_ROWS.filter(function(x){return x.id===b.dataset.id;})[0];if(!row)return;
+    navGo("request");
+    var it=document.getElementById("reqItem");if(it){it.value=row.name;it.focus();}
+    var m=document.getElementById("reqMsg");if(m)m.textContent="🗄 비품 「"+row.name+"」 보충 요청 — 수량·금액을 채워 제출하세요";
+  };});
+}
+function navGo(id){ // 직원용 탭 전환(네비 버튼 클릭과 동일 경로 — 지연 로더 포함)
+  var b=document.querySelector('#nav .tab[data-p="'+id+'"]');if(b)b.click();
+}
+
+/* ── ② 구매진행: 미완료(list active) + 최근 60일 완료·반려(list done) 병합 → 단계 트랙 ── */
+async function loadProgress(force){
+  var msg=document.getElementById("progMsg");if(msg)msg.textContent="불러오는 중…";
+  var jobs=[loadReq()]; // REQ_ACTIVE 갱신(경량 noimg — 기존 함수 재사용)
+  if(!_progDoneLoaded||force){
+    var to=todayStr(),fr=(function(){var n=new Date();n.setDate(n.getDate()-60);return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");})();
+    jobs.push(procCall("list",{mode:"done",from:fr,to:to,noimg:1}).then(function(d){PROG_DONE=(d&&d.ok&&d.data)||[];_progDoneLoaded=true;}).catch(function(){PROG_DONE=[];}));
+  }
+  if(!_supLoaded)jobs.push(supFetch().then(function(b){if(b){supApply(b);_supLoaded=true;}})); // 입고 판정(원장 비고 토큰)용
+  await Promise.all(jobs);
+  if(msg)msg.textContent="";
+  renderProgress();
+}
+function inbKey(r){return r.번호!=null&&String(r.번호)!==""?("#"+r.번호):("r"+r.row);}
+function inbRec(r){ // 원장 비고에서 [입고 … #N] 토큰 탐색 → 입고 날짜 반환(없으면 null)
+  var key=inbKey(r)+"]";
+  for(var i=0;i<SUPPLY_ROWS.length;i++){
+    var n=String(SUPPLY_ROWS[i].note||""),p=n.indexOf(key);
+    if(p>=0){var m=n.slice(0,p).match(/\[입고 (\d{4}-\d{2}-\d{2}) $/);return {date:(m?m[1]:""),item:SUPPLY_ROWS[i].name};}
+  }
+  return null;
+}
+function renderProgress(){
+  var box=document.getElementById("progList");if(!box)return;
+  var q=(document.getElementById("progWho").value||"").trim();
+  var all=REQ_ACTIVE.concat(PROG_DONE);
+  var seen={},items=[];
+  all.forEach(function(r){var k=String(r.row);if(seen[k])return;seen[k]=1;items.push(r);});
+  if(q)items=items.filter(function(r){return String(r.요청자||"").indexOf(q)>=0;});
+  items.sort(function(a,b){return (Number(b.row)||0)-(Number(a.row)||0);}); // 최신(아래 행)부터
+  var h="";
+  items.forEach(function(r){
+    var st=r.상태||"품의",rejected=(st==="반려"||st==="미승인"||st==="캔슬");
+    var hasPD=pdNum(r.구매날짜)>0,rec=inbRec(r);
+    var steps=[
+      {l:"요청",on:true},
+      {l:"검토",on:st!=="품의"&&!rejected},
+      {l:"승인",on:(st==="정산"||st==="완료")},
+      {l:"발주",on:hasPD&&!rejected},
+      {l:"입고",on:!!rec}
+    ];
+    var cur=-1;for(var i=steps.length-1;i>=0;i--){if(steps[i].on){cur=i;break;}}
+    var track=steps.map(function(s,i){
+      var cls=s.on?(i===cur?"prg-stp now":"prg-stp on"):"prg-stp";
+      return (i?'<span class="prg-bar'+(s.on?' on':'')+'"></span>':'')+'<span class="'+cls+'"><span class="pdot">'+(s.on?"✓":(i+1))+'</span>'+s.l+'</span>';
+    }).join("");
+    var inbCell="";
+    if(rec)inbCell='<span class="inb-done">✔ 입고완료 '+escapeHtml(rec.date||"")+(rec.item?(' → 원장 「'+escapeHtml(rec.item)+'」'):'')+'</span>';
+    else if(!rejected&&hasPD)inbCell='<button class="inb-btn" data-row="'+r.row+'">📦 입고 확인</button>';
+    else if(!rejected)inbCell='<span style="font-size:11.5px;color:var(--ink-faint)">발주(구매날짜 기재) 후 입고 확인 가능</span>';
+    var stChip=rejected?'<span class="chip no">'+escapeHtml(st)+'</span>':'<span class="chip '+({"품의":"wait","검토":"rev","정산":"set","완료":"ok"}[st]||"wait")+'">'+escapeHtml(st)+'</span>';
+    h+='<div class="prg-card"><div class="prg-top">'
+      +'<span class="prg-no">'+(r.번호?("#"+r.번호):"")+'</span>'
+      +'<span class="prg-item">'+escapeHtml(r.물품||"")+'</span>'+stChip
+      +'<span class="prg-meta">'+escapeHtml(r.요청자||"")+' · '+escapeHtml(r.소속||"")+' · '+won(r.가격)+' · 제출 '+escapeHtml(r.날짜||"")+(r.구매날짜?(' · 구매 '+escapeHtml(r.구매날짜)):'')+'</span>'
+      +'</div>'+(rejected?'':'<div class="prg-track">'+track+'</div>')
+      +'<div style="margin-top:8px">'+inbCell+'</div></div>';
+  });
+  if(!items.length)h='<div class="card" style="color:var(--ink-faint)">표시할 요청이 없습니다'+(q?' — 이름 필터를 확인하세요':'')+'.</div>';
+  box.innerHTML=h;
+  box.querySelectorAll(".inb-btn").forEach(function(b){b.onclick=function(){openInb(b.dataset.row);};});
+}
+
+/* ── 입고 확인 모달: 원장 품목 선택(또는 신규) + 수량 → 원장 qty 가산 + 비고 [입고 날짜 #번호] 토큰(멱등) ── */
+var _inbRow=null;
+function openInb(row){
+  var r=REQ_ACTIVE.concat(PROG_DONE).filter(function(x){return String(x.row)===String(row);})[0];
+  if(!r)return;
+  if(inbRec(r)){alert("이미 입고 처리된 품의입니다.");renderProgress();return;}
+  _inbRow=r;
+  document.getElementById("inbItem").textContent=(r.번호?("#"+r.번호+" "):"")+String(r.물품||"").split("\n")[0];
+  var sel=document.getElementById("inbSel");
+  var live=SUPPLY_ROWS.filter(function(x){return !supIsDead(x)&&String(x.name||"").trim()!=="";});
+  var term=String(r.물품||"").toLowerCase();
+  var guess="";live.forEach(function(x){if(!guess&&term.indexOf(String(x.name).toLowerCase())>=0)guess=x.id;}); // 물품명에 원장 품명 포함 시 자동 선택
+  sel.innerHTML='<option value="__new__">➕ 새 품목으로 등록</option>'+live.map(function(x){return '<option value="'+escapeHtml(x.id)+'"'+(x.id===guess?' selected':'')+'>'+escapeHtml(x.name)+' (현재 '+x.qty+(x.loc?' · '+x.loc:'')+')</option>';}).join('');
+  sel.onchange=function(){document.getElementById("inbNewWrap").style.display=(sel.value==="__new__")?"block":"none";};
+  document.getElementById("inbNewWrap").style.display=(sel.value==="__new__")?"block":"none";
+  document.getElementById("inbNewName").value=String(r.물품||"").split("\n")[0].slice(0,40);
+  document.getElementById("inbQty").value=1;
+  document.getElementById("inbOv").style.display="flex";
+}
+async function confirmInb(){
+  var r=_inbRow;if(!r)return;
+  var n=parseInt(document.getElementById("inbQty").value,10);
+  if(isNaN(n)||n<1){alert("입고 수량을 1 이상으로 입력하세요");return;}
+  var btn=document.getElementById("inbOk");btn.disabled=true;btn.textContent="반영 중…";
+  var b=await supFetch(); // 최신 원장 기준으로 가산(동시 편집 유실 방지) — 실패 시 중단(이중 가산 위험 차단)
+  if(!b){btn.disabled=false;btn.textContent="입고 반영";alert("원장 연결 실패 — 잠시 후 다시 시도해주세요");return;}
+  supApply(b);_supLoaded=true;
+  if(inbRec(r)){closeInb();renderProgress();renderSupply();return;} // 재확인(다른 기기서 처리됐으면 중단)
+  var token="[입고 "+todayStr()+" "+inbKey(r)+"]";
+  var sel=document.getElementById("inbSel"),target=null;
+  if(sel.value==="__new__"){
+    var nm=(document.getElementById("inbNewName").value||"").trim();
+    if(!nm){btn.disabled=false;btn.textContent="입고 반영";alert("새 품목명을 입력하세요");return;}
+    target={id:supNewId(),cat:'비품',name:nm,qty:0,reorder:0,loc:(document.getElementById("inbNewLoc").value||"").trim(),owner:String(r.요청자||""),note:'',updatedAt:''};
+    SUPPLY_ROWS.push(target);
+  } else target=SUPPLY_ROWS.filter(function(x){return x.id===sel.value;})[0];
+  if(!target){btn.disabled=false;btn.textContent="입고 반영";return;}
+  target.qty=(parseInt(target.qty,10)||0)+n;
+  target.note=(String(target.note||"")+" "+token).trim();
+  target.updatedAt=new Date().toISOString();
+  await _supPush();
+  btn.disabled=false;btn.textContent="입고 반영";
+  closeInb();renderProgress();renderSupply();
+}
+function closeInb(){_inbRow=null;document.getElementById("inbOv").style.display="none";}
+(function(){ // 확장 탭 컨트롤 바인딩(요소는 항상 존재 — 직원용에서만 노출됨)
+  var el;
+  if(el=document.getElementById("progRefresh"))el.onclick=function(){loadProgress(true);};
+  if(el=document.getElementById("progWho"))el.oninput=function(){renderProgress();};
+  if(el=document.getElementById("supSearch"))el.oninput=function(){renderSupply();};
+  if(el=document.getElementById("supAdd"))el.onclick=function(){
+    if(!_supLoaded){alert("원장을 불러온 뒤 추가할 수 있습니다");return;}
+    SUPPLY_ROWS.push({id:supNewId(),cat:'기타',name:'',qty:0,reorder:0,loc:'',owner:'',note:'',updatedAt:new Date().toISOString()});
+    supFilter="전체";renderSupply();
+    var first=document.querySelector('#supTbl .supIn[data-f="name"][value=""]');if(first)first.focus();
+  };
+  if(el=document.getElementById("inbOk"))el.onclick=confirmInb;
+  if(el=document.getElementById("inbCancel"))el.onclick=closeInb;
+  if(el=document.getElementById("inbOv"))el.onclick=function(ev){if(ev.target===el)closeInb();};
+})();
 
 (function(){
   if(/[?&]req=1/.test(location.search)){document.getElementById("gate").style.display="none";startReqOnly();return;} // 직원용 구매요청 전용
