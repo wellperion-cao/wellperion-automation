@@ -9693,7 +9693,9 @@ function _tapClassifyLesson(today) {
       var blank = function(v){ return !String(v == null ? '' : v).trim(); };
       if (blank(r.status) && blank(r.owner) && blank(r.memo) && blank(r.note) && !((r.contacts || []).length)) {
         var d = String(r.timestamp || '').slice(0, 10);
-        if (d) stale.push({ t: t, row: r, date: d });
+        // time 에 문의일을 넣는다 — 목록에 날짜가 보여야 얼마나 묵은 건인지 알고 손이 간다
+        // (다른 칸과 같은 자리에 표시되도록 기존 showTime 배선을 그대로 쓴다).
+        if (d) stale.push({ t: t, row: r, date: d, time: d });
       }
     });
   });
@@ -9778,7 +9780,7 @@ function renderTodayActionPanel() {
       { key: 'lres', icon: '📅', label: '오늘 상담 예약',           color: 'accent', items: clsL.todaysConsult, empty: '오늘 상담 예약 없음', showTime: true },
       // 오래된 미응대 — 하루 5건씩만(2026-07-25 GM). 전체 건수를 제목에 밝혀 숨은 재고가 없게 한다.
       { key: 'lold', icon: '🕰️', label: '오래된 미응대' + (clsL.staleAll ? ' (전체 ' + clsL.staleAll + '건 중 오래된 5건)' : ''),
-        color: 'accent', items: clsL.stale, empty: '오래된 미응대 없음 — 전부 손이 닿았습니다' }
+        color: 'accent', items: clsL.stale, empty: '오래된 미응대 없음 — 전부 손이 닿았습니다', showTime: true }
     ];
     if (_tapOpenKey === null && (clsL.uncontacted.length || clsL.todaysConsult.length)) _tapOpenKey = 'lunc';
     body.innerHTML = sectionsL.map(_tapSectionHtmlLesson).join('');
