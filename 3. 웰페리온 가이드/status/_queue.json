@@ -1173,16 +1173,17 @@
     "task_id": "COO-2026-07-25-운영부-주간보드-모듈-침묵감지-오판-수리",
     "clevel": "coo",
     "title": "[시우] 운영부 주간보드 모듈이 항상 정상으로 오판 — 침묵감지 근거 잘못 + 등록부 enabled 누락",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-07-25",
     "from": "coo",
-    "note": "[시우 아침 자가점검 2026-07-25 · 약속 L20] 실측 근거 2건.\n①status/module_silence_snapshot.json 에서 coo-ops-fill-board 판정 근거가 자기 산출물이 아니라 \"디렉터리 status 내 최신파일 mtime\" 폴백 → status 폴더는 다른 모듈이 수분마다 쓰므로 영구히 0.0h 전 = 이 모듈이 몇 주 멈춰도 계속 ok. 조용한 실패가 구조적으로 감지 불가.\n②status/module_registry.json 의 coo-ops-fill-board 에 enabled 필드가 아예 없음(나머지 coo 5개는 모두 enabled:true). 소비자가 enabled 로 거르면 누락 가능.\n영향: 주간 카카오 \"★ 운영부\" 발신 모듈이라 멈춰도 아무도 모른다.",
-    "next": "시우: ①scripts/ops_fill_board.py 가 실행 흔적을 남기는 하트비트 1개로 수렴 — 새 파일 늘리지 말고 status/heartbeats/coo-ops-fill-board.json 기존 관례에 합류(L21 net-zero) ②등록부 data_source.ref 를 그 하트비트로 교체해 폴백 판정 제거 ③enabled:true 명시 ④detector 재실행해 판정 근거가 실제로 바뀌는지 실측",
+    "note": "[시우 아침 자가점검 2026-07-25 · 약속 L20] 실측 근거 2건.\n①status/module_silence_snapshot.json 에서 coo-ops-fill-board 판정 근거가 자기 산출물이 아니라 \"디렉터리 status 내 최신파일 mtime\" 폴백 → status 폴더는 다른 모듈이 수분마다 쓰므로 영구히 0.0h 전 = 이 모듈이 몇 주 멈춰도 계속 ok. 조용한 실패가 구조적으로 감지 불가.\n②status/module_registry.json 의 coo-ops-fill-board 에 enabled 필드가 아예 없음(나머지 coo 5개는 모두 enabled:true). 소비자가 enabled 로 거르면 누락 가능.\n영향: 주간 카카오 \"★ 운영부\" 발신 모듈이라 멈춰도 아무도 모른다.\n\n[2026-07-25 시우 처리·입항] ①ops_fill_board.py main() 끝에 기존 관문 module_heartbeat.record_heartbeat 합류(새 파일 0·L21) — 실행마다 status/heartbeats/coo-ops-fill-board.json 갱신. ②등록부 enabled:true 명시(누락돼 있었음). ③data_source.ref 교체 — 원인이 하나 더 있었다: ref 를 화살표(→)로 이어 적어 감지기가 경로로 못 읽고 경로 조각을 뒤에서 줄여가다 status 디렉터리로 떨어져 폴백 판정했다. 감지기는 \" + \" 로 구분된 조각만 경로로 해석하고 괄호 안은 버린다 → 해석 가능한 경로가 하트비트 하나만 남도록 재작성. ④검증: 판정 근거가 \"디렉터리 status 내 최신파일 mtime\" → \"coo-ops-fill-board.json 내부 timestamp\" 로 교체 확인. 역검증도 실시 — 하트비트를 300시간 전으로 조작하니 [silent] 로 잡히고 원복하니 [ok] 복귀(즉 이제 진짜 멈추면 감지된다). 등록부 전체 디렉터리폴백 잔여 0건.",
+    "next": "🔗 다음: ref 를 화살표로 잇는 표기는 감지기가 조용히 디렉터리 폴백으로 떨어뜨린다 — 등록부 작성 관례로 시토에게 알릴지 판단(현재 전 모듈 잔여 0건이라 급하지 않음).",
     "depends_on": "",
     "module": "home",
     "surface": "autonomy",
-    "ship_no": 10185
+    "ship_no": 10185,
+    "completed_at": "2026-07-25"
   },
   {
     "task_id": "CMO-2026-07-25-WEEKEND-TRACK-DOWN",
@@ -2107,5 +2108,35 @@
     "artifact": "fix(s2): 시모 탭 필수 3항목 복구 — 중복 제거 시 핵심역할·핵심업무·협업리듬까지 딸려갔음 (GM 확인 요청으로 발견) (CLI ad-hoc · 커밋 db02c78a7)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "db02c78a760e37006cfeb2bb258ff2585104c970"
+  },
+  {
+    "task_id": "COO-2026-07-25-휴회-접수-가이드-필요-조기-방문-조정-처리방법-기",
+    "clevel": "coo",
+    "title": "[시우] 휴회 접수 가이드 필요 — 조기 방문 조정·처리방법 기준 없음 (실무진 피드백)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-25",
+    "from": "cpo",
+    "note": "[시포 → 시우 전달 2026-07-25] [시포 → 시우 전달 2026-07-25 · GM 지시] 실무진 피드백 FB260724-125420(이경연M, 2026-07-24 접수): '조기방문 시 조정 및 처리방법 찿아야 할듯'.\nGM 판단(2026-07-25): 이건 휴회 건으로 보이며 휴회 접수 관련 가이드가 필요하다. 운영 기준 사안이라 시우 소관.\n▸시포 확인: 화면(회원관리) 기능 문제가 아니라 '예약보다 일찍 오신 경우 어떻게 처리하는가'라는 운영 규칙이 정해져 있지 않은 것. 규칙이 서면 시포가 화면에 반영한다(회원 라이프사이클 화면은 시포 소관).\n▸피드백 시트에는 '접수(운영 협의 필요)'로 기록해 두었고, 이경연M께는 기준을 잡은 뒤 다시 안내드리겠다고 적었다 — 시우 쪽에서 기준이 서면 시포에게 알려주면 화면 반영 + 작성자 회신까지 마무리한다.\n▸참고: 종합접수처 휴회 접수 인라인 폼(2026-07-23 시우 작업)·회원화면 휴회 접수 관리 패널이 이미 있다. 가이드는 그 두 곳과 어긋나지 않게.",
+    "next": "휴회 접수 가이드(조기 방문 포함) 작성 → 실무진 공유 → 시포에게 화면 반영 필요분 회신",
+    "depends_on": "",
+    "ship_no": 10248,
+    "short_no": 111,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "COO-2026-07-25-ADHOC-e67ea5fbc",
+    "clevel": "coo",
+    "title": "[시우] 운영부 채움보드 모듈이 멈춰도 항상 정상으로 뜨던 문제 (배10185 입항)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10249,
+    "artifact": "침묵 감지기가 이 모듈의 자기 산출물이 없어 'status 디렉터리 최신파일 mtime' 으로 판정했다.\nstatus 폴더는 다른 모듈이 수분마다 쓰므로 영구히 0.0h 전 = 몇 주 멈춰도 계속 ok.\n주간 카톡 ★운영부 발신 모듈이라 멈춰도 아무도 모르는 상태였다(아침 자가점검 발견). (CLI ad-hoc · 커밋 e67ea5fbc)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "e67ea5fbc850a20769daf1931155ec03fc49aaca"
   }
 ]
