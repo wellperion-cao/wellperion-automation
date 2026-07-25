@@ -27,13 +27,21 @@
  *       무슨 일이 생겨도 statusline 이 비지 않게 — 실패하면 OMC 출력만이라도 낸다.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const OMC_HUD = 'C:/Users/jjky0/.claude/hud/omc-hud-cost.mjs';
 const PROJECT_LOGS = 'C:/Users/jjky0/.claude/projects/C--Users-jjky0-welperion-automation';
 const NODE = process.execPath;
 const ALIVE_MIN = 30;   // 이 시간 안에 움직인 세션 = 가동중(●)
+
+// 역할 기억함 — 한 번 알아낸 역할을 세션별로 적어둔다(2026-07-25 GM 지시).
+//   왜: roleOf 는 transcript **첫 60,000자**에서 부팅 문구(ai-<role>.md)를 찾는다. 대화가
+//   길어져 앞머리가 잘리거나 이어받은 창이면 그 문구가 사라져 역할을 못 찾고, 그러면 상태줄에서
+//   내 줄이 **통째로 사라진다**(GM 2026-07-25 "나올 때도 있고 안 나올 때도 있는데"). 한 번
+//   알아냈으면 기억해 두면 그 뒤로는 안 사라진다. 기억함이 없어도 동작은 같다(그냥 다시 찾는다).
+const ROLE_CACHE = 'tmp/hud_role_cache.json';   // .gitignore 대상(tmp/) — 커밋 오염 없음
+const ROLE_CACHE_MAX = 50;                       // 오래된 세션부터 버린다(무한 증식 방지)
 
 // 역할 고정 순서 — 점의 자리가 늘 같아야 눈이 익는다.
 // 시로(chro)·시뽀(cfo)는 GM 지시로 점에서 제외(2026-07-24). 순서 = 웰리·시토·시모·시우·시포.
@@ -45,11 +53,47 @@ const B = '\x1b[1m', X = '\x1b[0m';
 
 function readStdin() { try { return readFileSync(0, 'utf8'); } catch { return '{}'; } }
 
+// OMC HUD(비용·사용량 표시) 캐시 — 상태줄이 '나왔다 안 나왔다' 하던 진짜 원인 (2026-07-25 GM 지적).
+//   실측: 상태줄 1회 = 평균 845ms. 그중 이 중첩 spawnSync 하나가 616~769ms(전체의 75%).
+//   나머지는 node 기동 101ms · git 107ms · 큐 파싱 39ms 로 전부 합쳐도 250ms 남짓이다.
+//   상태줄 갱신에는 시간 상한이 있어서, PC가 바쁘면(작업이 많을수록!) 이 회차가 통째로
+//   건너뛰어져 화면이 비거나 옛 내용이 남는다 — 볼 게 제일 많을 때 안 보이는 역설.
+//   → 비용·사용량은 초 단위로 급변하는 값이 아니다. 짧게 캐시해 재사용한다.
+//     캐시가 살아있으면 프로세스를 아예 안 띄우므로 상태줄이 상한 안에 안정적으로 들어온다.
+//   ※ OMC HUD 파일 자체는 여전히 건드리지 않는다(업데이트 시 덮어써짐 — 이 파일 상단 원칙).
+const OMC_CACHE = 'tmp/hud_omc_cache.json';   // .gitignore 대상(tmp/)
+const OMC_CACHE_TTL_MS = 15000;               // 15초 — 비용 표시가 최대 15초 늦을 뿐, 값은 정확
+
 function omcHud(input) {
+  const cachePath = path.join(REPO, OMC_CACHE);
+  // 1) 살아있는 캐시가 있으면 프로세스를 띄우지 않는다.
   try {
-    const r = spawnSync(NODE, [OMC_HUD], { input, encoding: 'utf8', timeout: 5000 });
-    return (r.stdout || '').replace(/\s+$/, '');
-  } catch { return ''; }
+    const c = JSON.parse(readFileSync(cachePath, 'utf8'));
+    if (c && typeof c.out === 'string' && (Date.now() - (c.at || 0)) < OMC_CACHE_TTL_MS) return c.out;
+  } catch { /* 캐시 없음·깨짐 — 그냥 새로 계산한다 */ }
+
+  // 2) 새로 계산. timeout 을 5s → 2.5s 로 줄인다 — 5초를 다 쓰면 어차피 상태줄 상한을 넘겨
+  //    그 회차는 버려진다. 그럴 바엔 일찍 포기하고 직전 값이라도 내보내는 편이 화면이 안 빈다.
+  let out = '';
+  try {
+    const r = spawnSync(NODE, [OMC_HUD], { input, encoding: 'utf8', timeout: 2500 });
+    out = (r.stdout || '').replace(/\s+$/, '');
+  } catch { out = ''; }
+
+  // 3) 계산이 빈손이면 만료된 캐시라도 쓴다(빈 화면보다 조금 늦은 값이 낫다).
+  if (!out) {
+    try {
+      const c = JSON.parse(readFileSync(cachePath, 'utf8'));
+      if (c && typeof c.out === 'string') return c.out;
+    } catch { /* 없으면 빈 문자열 그대로 */ }
+    return out;
+  }
+
+  try {
+    mkdirSync(path.dirname(cachePath), { recursive: true });
+    writeFileSync(cachePath, JSON.stringify({ at: Date.now(), out }), 'utf8');
+  } catch { /* 캐시 못 써도 표시는 정상 — 다음 회차에 다시 계산할 뿐 */ }
+  return out;
 }
 
 function git(cwd, args) {
@@ -67,6 +111,65 @@ function roleOf(transcript) {
     const m = head.match(/ai-(ceo|cfo|chro|cmo|coo|cpo|cto)\.md/);
     return m ? m[1] : null;
   } catch { return null; }
+}
+
+/** 역할 — 찾아보고, 못 찾으면 기억함에서 꺼낸다. 찾았으면 기억함에 적어둔다.
+ *  기억함을 못 읽거나 못 쓰더라도 roleOf 결과 그대로 동작한다(기억함은 덤이지 의존이 아니다). */
+function resolveRole(cwd, transcript) {
+  const found = roleOf(transcript);
+  if (!transcript) return found;
+  // 기억함 열쇠는 경로 표기를 통일한다 — 같은 파일이 `C:\..\a.jsonl` 과 `C:/../a.jsonl` 로
+  // 들어오면 다른 세션으로 오인해 기억이 헛돈다(윈도우는 둘 다 유효한 표기다).
+  const key = String(transcript).replace(/\\/g, '/').toLowerCase();
+  const cachePath = path.join(cwd, ROLE_CACHE);
+
+  let cache = {};
+  try { cache = JSON.parse(readFileSync(cachePath, 'utf8')) || {}; } catch { /* 없으면 빈 것 */ }
+  if (typeof cache !== 'object' || Array.isArray(cache)) cache = {};
+
+  if (!found) return cache[key] || null;   // 못 찾았으면 기억해 둔 것으로 버틴다
+  if (cache[key] === found) return found;  // 이미 같은 값 — 쓰지 않는다(디스크 낭비 방지)
+
+  cache[key] = found;
+  const keys = Object.keys(cache);
+  if (keys.length > ROLE_CACHE_MAX) for (const k of keys.slice(0, keys.length - ROLE_CACHE_MAX)) delete cache[k];
+  try {
+    mkdirSync(path.dirname(cachePath), { recursive: true });
+    writeFileSync(cachePath, JSON.stringify(cache), 'utf8');
+  } catch { /* 못 써도 이번 판정은 이미 나왔다 */ }
+  return found;
+}
+
+/** 내가 방금 넘긴 단계 — AI 진행현황방으로 보낸 마지막 한 줄(status/progress_report_log.jsonl).
+ *  왜: 상태줄이 보던 건 '할 일 목록'과 '커밋'뿐이라 **일하는 동안에는 아무것도 안 움직였다**
+ *  (GM 2026-07-25 "나도 감이 안 잡히네"). 진행 한 줄은 단계를 넘길 때마다 쓰이므로 실제로 움직인다.
+ *  ship 칸이 "시토 81" 꼴이라 닉네임으로 내 것만 고른다. */
+function lastProgress(cwd, role) {
+  const nick = NICK[role];
+  if (!nick) return null;
+  try {
+    const p = path.join(cwd, 'status', 'progress_report_log.jsonl');
+    if (statSync(p).size > 2_000_000) return null;   // 비정상 비대 — 상태줄이 느려지면 안 된다
+    const lines = readFileSync(p, 'utf8').split('\n');
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const raw = lines[i].trim();
+      if (!raw) continue;
+      let rec;
+      try { rec = JSON.parse(raw); } catch { continue; }
+      if (!rec || !rec.sent) continue;                       // 실제로 나간 것만
+      if (!String(rec.ship || '').startsWith(nick)) continue; // 내 배만
+      const ts = Date.parse(rec.ts);
+      if (!Number.isFinite(ts)) continue;
+      return {
+        mins: Math.max(0, Math.round((Date.now() - ts) / 60000)),
+        // 단계 이름 6자 상한 — 규칙 ③(잘림 0). "진행 보고 배선"(7자) 같은 긴 이름을 그대로
+        // 실으면 80칸 창에서 줄 끝이 잘린다(실측: 상한 없으면 86칸). 코드포인트 단위로 자른다.
+        step: shortTitle(rec.step, 6),
+        state: String(rec.state || 'done'),
+      };
+    }
+  } catch { /* 없으면 커밋 시각으로 폴백 */ }
+  return null;
 }
 
 /** 지금 살아있는 역할 — 최근 움직인 transcript 들만 훑는다(오래된 파일은 건너뛰어 싸다). */
@@ -131,7 +234,9 @@ function myShips(cwd, role) {
     // ★커밋 제목에서 뽑던 번호(myLastCommit)는 '방금 끝낸 배'를 가리킬 수 있다 — 큐의 IN_PROGRESS 가 진실이다.
     const running = mine.filter((s) => s.status === 'IN_PROGRESS')
       .sort((a, b) => String(b.updated_at || b.enqueued_at || '').localeCompare(String(a.updated_at || a.enqueued_at || '')));
-    const cur = running[0] ? { no: running[0].ship_no, title: shortTitle(running[0].title) } : null;
+    // 제목은 원문 그대로 넘기고 자르는 건 main 이 한다 — 단계 칸이 함께 나올 때는 폭이 모자라
+    // 더 짧게 잘라야 하는데, 그 판단은 옆에 뭐가 붙는지 아는 쪽(main)만 할 수 있다.
+    const cur = running[0] ? { no: running[0].ship_no, title: running[0].title } : null;
     return { run, wait, done, shortOf, cur };
   } catch { return null; }
 }
@@ -184,23 +289,36 @@ function main() {
     transcript = j?.transcript_path || '';
   } catch { /* 기본값 사용 */ }
 
-  const role = roleOf(transcript);
+  const role = resolveRole(cwd, transcript);
   const parts = [];
 
   if (role) {
     const lc = myLastCommit(cwd, role);
     const s = myShips(cwd, role);
+    const pg = lastProgress(cwd, role);
     let head = `${B}${C}${NICK[role]}${X}`;
     // 지금 붙들고 있는 배(큐 IN_PROGRESS)를 우선 — 번호 + 무슨 일인지. 진행중이 없을 때만
     // 마지막 커밋에서 뽑은 번호로 폴백(그건 '방금 끝낸 배'일 수 있어 뒤로 뺀다).
     if (s && s.cur) {
       const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
-      head += `${C}▶${n}${X}` + (s.cur.title ? ` ${D}${s.cur.title}${X} ` : '');   // 제목=흐리게(번호·시간 먼저 눈에), 뒤 한 칸은 '재설계…·7분전'처럼 붙어 읽히지 않게
+      // 제목 상한은 옆에 단계 칸이 붙느냐에 따라 다르다 — 규칙 ③(잘림 0) 실측 기준:
+      // 단계 없이 12자 = 최대 77칸 / 단계까지 붙으면 12자는 85칸으로 넘친다 → 8자로 줄인다.
+      // 더 신선한 정보(방금 넘긴 단계)에 자리를 내주는 쪽이 맞다.
+      const title = shortTitle(s.cur.title, pg ? 8 : 12);
+      head += `${C}▶${n}${X}` + (title ? ` ${D}${title}${X} ` : '');   // 제목=흐리게(번호·시간 먼저 눈에), 뒤 한 칸은 '재설계…·7분전'처럼 붙어 읽히지 않게
     } else if (lc && lc.ship != null) {
       const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
       head += `${D}✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
     }
-    if (lc) head += `${D}·${X}${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
+    // 시각 칸 — '방금 넘긴 단계'가 있으면 그걸 쓰고, 없을 때만 커밋 시각으로 폴백한다.
+    //   커밋은 일이 **끝나야** 찍히고 제목에 배 번호가 없을 때도 많아(오늘 10건 중 4건) 일하는
+    //   중에는 멈춰 보였다. 진행 한 줄은 단계마다 쓰이므로 이게 더 진실에 가깝다.
+    if (pg) {
+      const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
+      head += `${D}·${X}${icon}${pg.step ? `${D}${pg.step}${X}` : ''}${agoColor(pg.mins)}${agoText(pg.mins)}${X}`;
+    } else if (lc) {
+      head += `${D}·${X}${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
+    }
     parts.push(head);
     if (s) {
       parts.push(`${D}항로${X}🚢${s.run}${D}⚓${s.wait}${X}`);
