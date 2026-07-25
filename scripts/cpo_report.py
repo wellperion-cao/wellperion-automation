@@ -162,19 +162,33 @@ def lesson_unassigned_summary(days: int = 30) -> dict | None:
     실패 시 None(미측정 — 0으로 날조하지 않는다)."""
     cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     total, by_type, ok_any = 0, {}, False
+    # 전체 재고(기간 무제한)와 '가장 오래된 순' 목록도 함께 낸다(2026-07-25 GM 확정).
+    #   최근 N일만 세던 탓에 30일이 지난 건은 어느 화면·지표에도 안 나타났다 —
+    #   실측 377건(성인 188·유소년 189), 가장 오래된 2021-10-30. 숨은 재고가 되는 게 문제라
+    #   ①숫자는 한 줄에 괄호로 병기하고 ②처리는 '오늘 할 일'에 매일 조금씩만 흘려보낸다.
+    #   별도 목록·별도 화면은 만들지 않는다(볼 곳만 늘고 아무도 안 본다 — GM 지시).
+    total_all, oldest = 0, []
     for t in _LESSON_TYPES:
         rows = fetch_lesson_inquiries(t)
         if rows is None:
             by_type[t] = None
             continue
         ok_any = True
-        recent = [r for r in unassigned_lesson_candidates(rows)
-                  if _lesson_date_str(r.get("timestamp")) >= cutoff]
+        cands = unassigned_lesson_candidates(rows)
+        recent = [r for r in cands if _lesson_date_str(r.get("timestamp")) >= cutoff]
         by_type[t] = len(recent)
         total += len(recent)
+        total_all += len(cands)
+        for r in cands:
+            d = _lesson_date_str(r.get("timestamp"))
+            if d:
+                oldest.append({"date": d, "type": t, "name": str(r.get("name") or "").strip(),
+                                "sport": str(r.get("sport") or "").strip()})
     if not ok_any:
         return None
-    return {"days": days, "total": total, "by_type": by_type}
+    oldest.sort(key=lambda x: x["date"])
+    return {"days": days, "total": total, "by_type": by_type,
+            "total_all": total_all, "oldest": oldest[:5]}
 
 
 _MONTH_ABBR = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,

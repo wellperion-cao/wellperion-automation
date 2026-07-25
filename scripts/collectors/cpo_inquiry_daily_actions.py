@@ -64,6 +64,10 @@ def collect(module=None) -> dict:
         {"label": "이탈위험 후보(추정)", "value": len(churn_cands)},
         {"label": "강습 미응대 30일(담당자 미배정)",
          "value": lesson_un["total"] if lesson_un else "미측정"},
+        # 숨은 재고를 지표에 드러낸다(2026-07-25 GM) — 30일이 지난 건은 그동안 어디에도
+        # 안 나타나 2021년 문의까지 남아 있었다. 별도 목록을 만들지 않고 이 한 칸으로 밝힌다.
+        {"label": "강습 미응대 전체(오래된 것 포함)",
+         "value": lesson_un.get("total_all", "미측정") if lesson_un else "미측정"},
     ]
     summary = (
         f"신규 {len(today_new)}건 · 미컨택 {len(uncontacted)}건 · "
@@ -74,13 +78,24 @@ def collect(module=None) -> dict:
         detail = " / ".join(
             f"{k} {v}" for k, v in bt.items() if isinstance(v, int)
         )
+        _all = lesson_un.get("total_all")
         if lesson_un["total"]:
             summary += f" · ⚠️ 강습 미응대 30일 {lesson_un['total']}건"
             if detail:
                 summary += f"({detail})"
+            if isinstance(_all, int) and _all > lesson_un["total"]:
+                summary += f" · 전체 {_all}건"
             summary += f" → {_LINK_LESSON}"   # 강습 건은 강습 화면으로(멤버십 링크로 보내지 않는다)
+        elif isinstance(_all, int) and _all:
+            # 최근 30일은 0이어도 옛 재고가 남아 있으면 그대로 밝힌다(0건으로 끝내면 또 숨는다).
+            summary += f" · 강습 미응대 30일 0건 · 전체 {_all}건 → {_LINK_LESSON}"
         else:
             summary += " · 강습 미응대 0건"
+        # 오늘 처리할 몫만 조금씩 — 별도 목록 대신 가장 오래된 몇 건만 이름을 밝혀 손이 가게 한다.
+        _old = lesson_un.get("oldest") or []
+        if _old:
+            _head = " / ".join(f"{o['date']} {o['name'] or '이름미상'}" for o in _old[:3])
+            summary += f"\n  ▸ 오래된 순: {_head}"
     else:
         summary += " · 강습 미응대 미측정(조회 실패)"
 
