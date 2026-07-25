@@ -1942,5 +1942,49 @@
     "artifact": "fix(cto): 상태줄 빈칸 제거 — 작업없음·읽기실패·역할확인중을 명시 표기 (GM: 없으면 없다고 보여줘) (CLI ad-hoc · 커밋 aa7708074)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
     "adhoc_commit": "aa77080748317666da6f3c62f779bcece4791c0a"
+  },
+  {
+    "task_id": "CTO-2026-07-25-한-일이-배로-안-남는-구조-SAFE-COMMIT-",
+    "clevel": "cto",
+    "title": "[시토] 한 일이 배로 안 남는 구조 — safe_commit 관문에 기록 흡수 (웰리 결정 2026-07-25 · 배103)",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-25",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-07-25] [웰리 결정] GM 지시로 시우가 실측해 올린 배103(전 C-Level 541건 커밋 중 308건 무흔적, 사람 작업만 보면 시모 1.5%·웰리 2.8%·시로 0%)에 대한 웰리 판단이다. ▶후보 3안 중 ⓐ 채택. ⓑ(부팅 때 배 선점 강제)는 건너뛸 수 있어 강제력이 없고, ⓒ(상태줄 폴백)는 표시일 뿐 기록을 만들지 않는다. ▶결정 = **모든 커밋이 반드시 지나가는 단 하나의 관문 safe_commit 에 흡수한다**(약속 L21 — 새 파일·새 모듈 0). 커밋 시점에 그 역할의 IN_PROGRESS 배가 있으면 커밋을 그 배에 자동 기록하고, 없으면 이미 있는 scripts/auto_log_adhoc_to_queue.py 를 태워 배를 만든다(신규 구현 아님·기존 재사용). ▶★도배 방지 필수 — 시포가 문의 스냅샷에서 겪은 사고(회차마다 새 배를 찍어 항로 도배)를 반복하지 말 것. 같은 성격의 연속 커밋은 새 배를 만들지 말고 상설 배 1척을 갱신하는 방식(시포 배10014 해법)을 그대로 재사용한다. ▶모델 = 자율화 파이프라인 재배선이라 S2 공통탭 ⑨ 4계층 기준상 **Fable**. 그 과정의 판단·결정도 Fable 이 한다(금지 5종에 닿을 때만 GM 결재).",
+    "next": "시토: ①safe_commit 에 기록 흡수 배선(새 파일 0) ②도배 방지 = 상설 배 갱신 방식 재사용 ③재현 검증 — 배 잡고 커밋/안 잡고 커밋 두 경우 모두 실측 ④무흔적률이 실제로 떨어지는지 하루 뒤 재측정해 웰리께 회신",
+    "depends_on": "",
+    "ship_no": 10237,
+    "short_no": 106,
+    "module": "home",
+    "surface": "autonomy"
+  },
+  {
+    "task_id": "CPO-2026-07-25-ADHOC-7b2b5ec9d",
+    "clevel": "cpo",
+    "title": "[시포] 저장 안내창 잘 보이게 — 하단 중앙·16px·단색 배경 흰글씨·표시시간 연장 (GM 07-25)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10238,
+    "artifact": "fix(cpo): 저장 안내창 잘 보이게 — 하단 중앙·16px·단색 배경 흰글씨·표시시간 연장 (GM 07-25) (CLI ad-hoc · 커밋 7b2b5ec9d)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "7b2b5ec9d5e297a2131be8ad4cd4ac49d0b8eec5"
+  },
+  {
+    "task_id": "CEO-2026-07-25-ADHOC-c954cc015",
+    "clevel": "ceo",
+    "title": "[웰리] 작업 표시 3건 — 빈칸 대신 '작업없음' 명시 · 역할 미확인시 사유 표시 · 오늘 입항 절반 누락(updated_at 미반영) 수정 (GM 지시)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-25",
+    "processed_at": "2026-07-25",
+    "ship_no": 10239,
+    "artifact": "fix(hud): 작업 표시 3건 — 빈칸 대신 '작업없음' 명시 · 역할 미확인시 사유 표시 · 오늘 입항 절반 누락(updated_at 미반영) 수정 (GM 지시) (CLI ad-hoc · 커밋 c954cc015)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "c954cc015c7ead493896c54eba87ecfb5d687134"
   }
 ]
