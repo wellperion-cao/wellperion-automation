@@ -5257,6 +5257,10 @@ function _processAction(body) {
     //    Contact1/2/3은 위에서 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
     var _muHistPrevCount = 0;
     var _muHistNewArr = null;
+    // 연락 이력 저장이 실패했는지 붙들어 둔다(2026-07-25 시포·GM · 실무진 피드백 FB260725-122608 외).
+    //   그동안은 아래 catch 가 Logger.log 만 하고 끝나 응답은 ok:true 로 나갔다 — 화면은 '저장'
+    //   토스트를 띄우고, 실무진은 저장된 줄 알고 창을 닫았다. 조용한 유실의 마지막 통로다.
+    var _muHistErr = '';
     // ★저장 위치 정정(2026-07-20 GM 지적) — 기존 Contact1/2/3(O·P·Q)가 정본이다.
     //   그동안 '연락이력'이라는 칸을 새로 만들어 JSON으로 쌓았는데, 멀쩡한 칸을 두고 새 칸을 만든 것이 잘못이었다.
     //   (실측: 연락이력이 있어 보이는 468행 중 454행은 실제로 Contact1/2/3에서 합성된 값이었고, 진짜 JSON은 17행뿐)
@@ -5295,7 +5299,11 @@ function _processAction(body) {
           muSh.getRange(muRow, _muHistCi3 + 1).setNumberFormat('@');
           muSh.getRange(muRow, _muHistCi3 + 1).setValue(_resStringify_(_muOverflow));
         }
-      } catch (eHist) { Logger.log('연락이력 저장 실패: ' + eHist.message); }
+      } catch (eHist) {
+        // ★삼키지 않는다(2026-07-25) — 실패는 응답에 실어 화면이 빨갛게 알리고 창을 열어두게 한다.
+        Logger.log('연락이력 저장 실패: ' + eHist.message);
+        _muHistErr = String(eHist && eHist.message ? eHist.message : eHist);
+      }
     }
     // 방문 완료 — 진행상황과 독립 칸(방문완료일). 등록(SUC)돼도 방문 기록 유지. body.visited 미전송이면 무변경.
     //   true=방문일자(없으면 오늘) 기록 / false=클리어. 칸 없으면 _miEnsureCol_이 생성. 2026-06-29 시포.
@@ -5370,6 +5378,12 @@ function _processAction(body) {
     }
     // 조회 캐시 무효화(축1) — 다음 목록 조회부터 최신 반영. 2026-07-08 시토.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
+    // 연락 이력 저장이 실패했으면 성공으로 답하지 않는다(2026-07-25 시포·GM). 다른 칸은 이미 저장됐지만
+    // 실무진이 알아야 할 것은 '적은 글이 안 들어갔다'는 사실이다 — 화면이 창을 닫지 않고 다시 시도할 수 있다.
+    if (_muHistErr) {
+      return _json({ ok: false, error: '연락 이력 저장 실패 — 적으신 내용이 저장되지 않았습니다. 창을 닫지 마시고 다시 시도해 주세요.',
+                     detail: _muHistErr, rowIndex: muRowRaw, partial: true });
+    }
     return _json({ ok: true, rowIndex: muRowRaw, message: '수정되었습니다.' });
   }
 
