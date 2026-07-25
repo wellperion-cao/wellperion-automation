@@ -486,13 +486,16 @@ tr:hover td{background:var(--accent-bg);}
             <tr><th>강습명</th><th class="num">회수</th><th class="num">정회원</th><th class="num">준회원</th><th>유효기간</th></tr>
           </thead>
           <tbody>
-            <tr><td>수영 1:1 강습</td><td class="num">4회</td><td class="num">374,000</td><td class="num">434,000</td><td>노블레스 유지</td></tr>
-            <tr><td>수영 1:2 강습</td><td class="num">4회</td><td class="num">308,000</td><td class="num">368,000</td><td></td></tr>
+            <!-- 개인레슨(1:1·1:2) 4회 = 2개월 (2026-07-25 GM 확정). 1:1 칸에 있던 비고('노블레스 유지')는
+                 지우지 않고 아래 작은 글씨로 내렸다 — 유효기간 칸은 유효기간만 담는다. -->
+            <tr><td>수영 1:1 강습</td><td class="num">4회</td><td class="num">374,000</td><td class="num">434,000</td><td>2개월<br><span class="dim" style="font-size:12px;">※ 노블레스 유지</span></td></tr>
+            <tr><td>수영 1:2 강습</td><td class="num">4회</td><td class="num">308,000</td><td class="num">368,000</td><td>2개월</td></tr>
             <!-- 유효기간 칸에 비고(준회원 +66,000)만 들어가 있어 정작 유효기간이 비어 있었다.
                  2026-07-25 GM 확정: (성인) 단체반 = 매월 1일~말일 = 1개월. 비고는 지우지 않고 함께 둔다. -->
             <tr><td>수영 단체반 (남)</td><td class="num">8회</td><td class="num">144,000</td><td class="num">330,000</td><td rowspan="2">1개월 (당월 말일)<br><span class="dim" style="font-size:12px;">※ 준회원 +66,000</span></td></tr>
             <tr><td>수영 단체반 (여, 10%↓)</td><td class="num">8회</td><td class="num dim">—</td><td class="num">297,000</td></tr>
-            <tr><td>아쿠아로빅</td><td class="num">8회</td><td class="num">132,000</td><td class="num">242,000</td><td></td></tr>
+            <!-- 아쿠아로빅 8회 = 단체 수업 → 단체반과 같이 당월 말일까지 (2026-07-25 GM 확정). -->
+            <tr><td>아쿠아로빅</td><td class="num">8회</td><td class="num">132,000</td><td class="num">242,000</td><td>1개월 (당월 말일)</td></tr>
           </tbody>
         </table>
       </div>
