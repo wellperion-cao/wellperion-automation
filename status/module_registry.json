@@ -684,6 +684,39 @@
       "note": "2026-07-25 시포 등록(배1) — 등록부에 없어 가동 신호를 보여줄 자리가 없었고, 그래서 회차마다 커밋이 완료-배를 낳아 G1을 도배했다(GM 07-24 지적). 가동 신호는 하트비트·자율현황 카드로 옮기고 배 생성은 중단."
     },
     {
+      "id": "cpo-staff-feedback-watch",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "실무진 피드백 감시 — 접수되면 즉시 시포 배로 올려 방치 0",
+      "data_source": {
+        "kind": "gas",
+        "ref": "Survey.js staff_feedback_list ('실무진 피드백' 탭) → status/_queue.json + status/heartbeats/cpo-staff-feedback-watch.json"
+      },
+      "notify_spec": {
+        "daily": false,
+        "weekly": false,
+        "monthly": false,
+        "channel": "none",
+        "notify_wired": false,
+        "note": "접수 알림은 GAS staff_feedback_submit 이 이미 업무보고방으로 보낸다 — 여기서 또 보내지 않는다(중복 발신 금지)."
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "sec-cpo-autonomy"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "피드백이 시트에 남고 텔레그램 알림이 가므로, 이 모듈이 멈춰도 접수 자체는 유실되지 않는다(배로 안 올라올 뿐).",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured",
+      "note": "2026-07-25 GM 지시 \"이건은 발생할때마다 체크해서 해줄순없나\" → 3분 주기 cpo_inquiry_snapshot.bat 에 얹어 함께 실행(새 예약작업 만들지 않음). 대조키=접수ID, 활성 큐+아카이브 양쪽 대조로 한 피드백=한 배."
+    },
+    {
       "id": "cto-weekly-page-hygiene",
       "owner_role": "cto",
       "owner_nick": "시토",
