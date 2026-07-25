@@ -644,8 +644,13 @@ def _format_alert(violations, test=False):
 
 
 def _send_alert(violations):
+    # 2026-07-25 배10194 2단계(GM 지시): 시트 계약 위반 경보 = AI 자동화 가동 현황이라
+    # AI 진행현황방(구 자동화현황방)으로 이동. hardcode 금지 — status/telegram_rooms.json
+    # 을 module_reporter.resolve_chat_id() 로 해소하는 단일 관문(notify_gm_progress.resolve_room)
+    # 을 재사용한다(약속 L01·L21). --test-notify(_send_test)는 GM 규칙대로 업무보고방 유지.
     from notify.telegram_send import send  # noqa: PLC0415
-    send(GM_CHAT_ID, _format_alert(violations))
+    from notify_gm_progress import resolve_room  # noqa: PLC0415
+    send(resolve_room(), _format_alert(violations))
 
 
 def _send_test(result):

@@ -146,13 +146,20 @@ def _alert(text: str) -> None:
         env = _ROOT / "telegram_bot" / ".env"
         if not env.exists():
             return
-        token = chat = None
+        token = None
         for ln in env.read_text(encoding="utf-8", errors="ignore").splitlines():
             ln = ln.strip()
             if ln.startswith("TELEGRAM_BOT_TOKEN="):
                 token = ln.split("=", 1)[1].strip().strip('"').strip("'")
-            elif ln.startswith("TELEGRAM_CHAT_ID="):
-                chat = ln.split("=", 1)[1].strip().strip('"').strip("'")
+                break
+        # 2026-07-25 배10194 2단계(GM 지시): 재발방지 회귀 경보 = AI 자동화 가동 현황이라
+        # AI 진행현황방(구 자동화현황방)으로 이동. chat_id 하드코딩 금지 — 판정 로직은
+        # notify_gm_progress.resolve_room() 단일 관문(약속 L01·L21) 재사용.
+        scripts_dir = str(_ROOT / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from notify_gm_progress import resolve_room  # noqa: PLC0415
+        chat = resolve_room()
         if not token or not chat:
             return
         import urllib.parse
