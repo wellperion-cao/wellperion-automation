@@ -1004,8 +1004,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 /* 강습 문의 테이블 — 제목(헤더)값 가운데 정렬 통일 + 성함칸 폭 확대(나이 병기). 배973 시포·GM 2026-07-14 */
 .lesson-inq-table thead th{text-align:center !important}
 .lesson-inq-table th:nth-child(2),.lesson-inq-table td:nth-child(2){min-width:132px;width:132px}
-/* CONTACT(연락이력·희망요일/시간 칸 추가로 9번째) 폭 고정 — 문의내용 칸 추가로 고정폭 합이 커져 CONTACT가 0폭으로 눌리던 것 방지. 표는 래퍼(reg-table-wrap overflow-x)로 가로스크롤. 2026-07-21 시포·GM */
-.lesson-inq-table th:nth-child(9),.lesson-inq-table td:nth-child(9){width:240px;min-width:240px}
+/* CONTACT(9번째)는 폭을 지정하지 않는다 — 남는 폭을 이 칸 하나가 흡수한다(멤버십 #dbTable과 같은 방식).
+   경위: 2026-07-09 설계가 원래 이랬는데(마지막 열 width 미지정 → 남는 폭 자동 흡수), 07-21에 CONTACT가
+   0폭으로 눌리는 걸 막으려 width:240px를 박으면서 9칸 전부가 폭을 갖게 됐다. table-layout:fixed + width:100%
+   에서 모든 칸에 폭이 있으면 브라우저가 남는 폭을 전 칸에 비례 분배한다 → 창을 넓히면 성함·연락처·진행상태
+   같은 칸까지 같이 늘어난다(2026-07-25 GM 지적: "멤버십은 고정인데 강습만 늘어난다").
+   눌림은 폭을 박아서가 아니라 표 최소폭으로 막는 게 맞다 — 아래 min-width가 그 역할(#dbTable의 min-width:1270px와 동일 원리).
+   2026-07-25 시포·GM */
+.lesson-inq-table th:nth-child(9),.lesson-inq-table td:nth-child(9){min-width:240px}
+/* 고정 8칸 합 1144px(문의일시142+성함132+연락처136+강습종목230+문의내용150+희망요일150+진행상태92+담당112)
+   + CONTACT 최소 260px = 1404px. 이보다 좁아지면 래퍼(.reg-table-wrap overflow-x)가 가로 스크롤을 낸다. */
+.lesson-inq-table{min-width:1404px}
 .lesson-inq-table th:nth-child(5),.lesson-inq-table td:nth-child(5){white-space:normal;word-break:break-word}
 /* 희망 요일/시간(6번째) — 줄바꿈 wrap. 2026-07-21 시포·GM */
 .lesson-inq-table th:nth-child(6),.lesson-inq-table td:nth-child(6){white-space:normal;word-break:break-word}
