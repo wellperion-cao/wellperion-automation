@@ -71,6 +71,10 @@ __all__ = [
 #   scripts/cta_utm.py CLEAN_CTA_TEXT(코드 정본, canon_values.json cta_channel_rules 확정)를
 #   그대로 재사용 — 재서술하지 않는다.
 #
+# 검사 항목: ①금지어 ②미기입 플레이스홀더('[GM 확인' — 대필방지용 자리가 안 채워진 채
+#   승인·발행된 2026-07-18/07-25 실사고 재발방지, 캡션/본문 + folder 내 *_diary_source.html
+#   모두 스캔) ③CTA 표준 문구 ④과장 신호.
+#
 # 위반해도 저장을 막지 않는다(요구사항 ④) — status='검수대기' 항목에 qc_flags(list) 로
 # 경고만 남긴다. 통과하면 qc_flags 를 지운다(본문 수정 후 재검수 시 옛 경고가 안 남게).
 # ─────────────────────────────────────────────────────────────────────────
@@ -149,6 +153,26 @@ def _qc_scan_item(item: dict) -> list:
     banned = [t for t in _load_banned_terms() if t and t in text]
     if banned:
         flags.append(f"금지어: {', '.join(banned)}")
+
+    # 미기입 플레이스홀더 — 대필 방지용 '[GM 확인: …]' 자리가 GM 미기입 채로 승인·발행된 실제
+    # 사고(2026-07-18 CASE12 캡션, 2026-07-25 CASE14 슬라이드) 재발방지. 캡션/본문뿐 아니라
+    # 개인계정 손글씨 슬라이드 원본(ep{NN}_diary_source.html)에도 같은 표기로 남으므로 함께 스캔.
+    placeholder_hits = []
+    if "[GM 확인" in text:
+        placeholder_hits.append("캡션/본문")
+    folder = item.get("folder")
+    if folder:
+        try:
+            for html_path in sorted((_ROOT / folder).glob("*_diary_source.html")):
+                try:
+                    if "[GM 확인" in html_path.read_text(encoding="utf-8"):
+                        placeholder_hits.append(html_path.name)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    if placeholder_hits:
+        flags.append(f"미기입 플레이스홀더([GM 확인] 남음): {', '.join(placeholder_hits)}")
 
     channel = str(item.get("channel") or "")
     is_ig = "인스타그램" in channel
