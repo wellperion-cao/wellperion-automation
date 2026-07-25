@@ -112,20 +112,39 @@ def main() -> int:
 
     # ── ② 검수대기 / 발행검증대기 ──────────────────────────────────
     waiting = _waiting()
+    # 수리 A(오탐 제거): 검수대기 중 '승인카드 미발송' 건은 아직 차례가 안 온 자동 드립
+    # 재고(정상) — scripts/.review_card_msgids.json(승인카드 발송 이력)에 id 가 있어야
+    # '진짜 대기'(GM 응답 대기). 원장 없음/깨짐이면 fail-open 으로 기존처럼 전부 ⚠️.
+    CARD_LEDGER = ROOT / "scripts" / ".review_card_msgids.json"
+    try:
+        card_sent_ids = set(json.loads(CARD_LEDGER.read_text(encoding="utf-8")).keys())
+    except Exception:
+        card_sent_ids = None
+
     for st in WAIT_STATUSES:
         items = waiting[st]
         print(f"\n[2] review_queue '{st}'")
         if not items:
             print("    ✅ 없음.")
             continue
-        flagged = True
-        print(f"    ⚠️  {len(items)}건 — 웰리 처리 필요:")
-        for item in items:
-            iid = item.get("id", "-")
-            title = item.get("title", "(제목 없음)")
-            channel = item.get("channel", "")
-            tail = f" / {channel}" if channel else ""
-            print(f"        [{iid}] {title}{tail}")
+        if st == "검수대기" and card_sent_ids is not None:
+            real = [it for it in items if it.get("id") in card_sent_ids]
+            drip = [it for it in items if it.get("id") not in card_sent_ids]
+        else:
+            real, drip = items, []
+        if real:
+            flagged = True
+            print(f"    ⚠️  {len(real)}건 — 웰리 처리 필요:")
+            for item in real:
+                iid = item.get("id", "-")
+                title = item.get("title", "(제목 없음)")
+                channel = item.get("channel", "")
+                tail = f" / {channel}" if channel else ""
+                print(f"        [{iid}] {title}{tail}")
+        else:
+            print("    ✅ 진짜 대기 없음(승인카드 발송 기준).")
+        if drip:
+            print(f"    ℹ️  자동 드립 대기 {len(drip)}건 — 카드 미발송, 순서대로 발송 예정.")
 
     # ── ③ 🔗 연동 다리 자가점검 ──────────────────────────────────────
     print("\n[3] 🔗 연동 다리 자가점검 (데이터 소스 간 다리 생존)")
@@ -133,9 +152,42 @@ def main() -> int:
         print("    ℹ️  점검 모듈 로드 불가 — scripts/integration_health.py 확인.")
     else:
         rows = check_bridges()
-        ok_n = sum(1 for _, ok, _ in rows if ok)
+        ok_n = 0
         for nm, ok, detail in rows:
+            # 수리 B(오탐 제거): '큐 미러 동기' 끊김은 pre-commit 훅(sync_queue_mirror.py)이
+            # 커밋 시점에만 동기화하므로, 로컬 큐에 미커밋 변경이 있으면 미러가 뒤처지는 게
+            # 정상 과도상태다 — 끊김이 아니라 정보로 내린다. 미커밋 변경이 없는데도 다르면
+            # 진짜 드리프트(INC-007 재발)이므로 기존처럼 ⚠️ 유지. git 실패 시 fail-open(⚠️ 유지).
+            if nm == "큐 미러 동기" and not ok:
+                uncommitted = None
+                try:
+                    gs = subprocess.run(
+                        ["git", "status", "--porcelain", "--", "status/_queue.json"],
+                        cwd=str(ROOT), capture_output=True, text=True, timeout=15,
+                    )
+                    if gs.returncode == 0:
+                        uncommitted = bool(gs.stdout.strip())
+                except Exception:
+                    uncommitted = None
+                if uncommitted:
+                    diff_n = None
+                    try:
+                        local_q = json.loads((ROOT / "status" / "_queue.json").read_text(encoding="utf-8"))
+                        mirror_q = json.loads(
+                            (ROOT / "3. 웰페리온 가이드" / "status" / "_queue.json").read_text(encoding="utf-8")
+                        )
+                        n_local = sum(1 for x in local_q if isinstance(x, dict) and x.get("status") in ("PENDING", "IN_PROGRESS"))
+                        n_mirror = sum(1 for x in mirror_q if isinstance(x, dict) and x.get("status") in ("PENDING", "IN_PROGRESS"))
+                        diff_n = abs(n_local - n_mirror)
+                    except Exception:
+                        diff_n = None
+                    difftxt = f"{diff_n}척" if diff_n else "변경"
+                    print(f"    ℹ️  큐 미러: 미커밋 {difftxt} 대기 — 커밋 시 자동 동기(정상).")
+                    ok_n += 1
+                    continue
             print(f"    {'✅' if ok else '⚠️'} {nm}: {detail}")
+            if ok:
+                ok_n += 1
         if ok_n < len(rows):
             flagged = True
             print(f"    ⚠️  다리 {len(rows) - ok_n}개 끊김 — 위 사유부터 복구할 것.")
