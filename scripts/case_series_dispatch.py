@@ -629,7 +629,16 @@ def run(dry_run: bool, plan_only: bool) -> int:
     nxt = pick_next_case(rows, track, log_replay=not (dry_run or plan_only))
     if nxt is None:
         if is_weekend:
-            print(f"[INFO] 주말({track}) 재고 없음 — 조용히 종료(알림 스팸 금지).")
+            # 조용히 죽지 않는다 (2026-07-25). 주말 재고가 비면 발행이 0건인데도 아무 신호가
+            # 없어 사흘간 아무도 몰랐다(배 10187). 텔레그램 스팸은 여전히 금지 —
+            # 대신 기존 정합 신호 로그에 1줄 남겨 '빠진 것' 감지기가 표면화하게 한다.
+            print(f"[INFO] 주말({track}) 재고 없음 — 발송 없음. 정합 신호 기록.")
+            if not (dry_run or plan_only):
+                _replay_append(
+                    "cmo-case-series-dispatch",
+                    subject=f"주말GM 재고 소진({today_iso})",
+                    detail=f"{track} 트랙 재고 0 — 오늘 개인계정 발행 없음. 다음 편 대본 제작 필요.",
+                )
             return 0
         stock_nums = [r["num_raw"] for r in rows if r["track"] == track and r["status"] == STOCK_STATUS]
         print(f"[INFO] 실전사례 대본 재고 소진 — 생성 금지. (재고 상태였던 잔여: {stock_nums})")
