@@ -5877,9 +5877,17 @@ function _lessonRosterRender(t, kind) {
       '<div class="empty-state-desc">' + _emptyDesc + '</div></div></td></tr>';
     return;
   }
-  // 정렬 고정(2026-07-23 GM '정렬 정리 좀') — 서버가 주는 순서는 팀시트·문의 소스가 섞여 뒤죽박죽이다.
-  //   ①종목 가나다 ②이름 가나다. 이름 없는 '정보 없음' 행은 각 종목 맨 뒤로 몰아 실명 회원이 먼저 보이게.
+  // 정렬 — 문의일 최신이 맨 위(2026-07-25 GM "문의일 최근을 최상단으로 셋업 필요해").
+  //   그전엔 ①종목 ②이름 가나다였다(2026-07-23 GM '정렬 정리 좀'). 그 결과 맨 위가 2023~2024년
+  //   문의와 2026년 문의가 뒤섞여, 최근 들어온 수강 회원을 명단에서 바로 볼 수 없었다.
+  //   문의일이 없는 행(옛 팀시트 유래 '정보 없음' 등)은 맨 뒤로 — 실체가 있는 회원이 먼저 보이게 한다.
+  //   ※ mem(수강 회원 명단) 뷰에만 문의일(inqDate)이 있다. reg 뷰는 기존대로 종목·이름 순.
   rows = rows.slice().sort(function(a, b){
+    if (kind === 'mem') {
+      var da = String(a.inqDate || '').trim(), db = String(b.inqDate || '').trim();
+      if (!da !== !db) return da ? -1 : 1;        // 문의일 있는 쪽 먼저
+      if (da !== db) return db.localeCompare(da); // 최신 → 과거
+    }
     var sa = String(a.sport || '').trim(), sb = String(b.sport || '').trim();
     if (sa !== sb) return sa.localeCompare(sb, 'ko');
     var na = String(a.name || '').trim(), nb = String(b.name || '').trim();
