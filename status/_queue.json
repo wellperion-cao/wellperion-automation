@@ -1285,7 +1285,7 @@
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-26",
     "from": "ceo",
-    "note": "[웰리 → 웰리 전달 2026-07-26] 2026-07-26 웰리 아침 자가점검 발견. wellperion-agents/scripts/clevel_post_action.py 의 update_queue_with_bridge() 는 --next 가 있고 --next-parent 가 없으면 무조건 새 NEXT- 배를 append 한다(262~272행). 동일 제목·동일 clevel 로 이미 열려 있는 배가 있는지 검사하지 않아, 2026-07-25 13:06 에 같은 문장의 배 5척(10208~10212)이 7초 만에 CEO 항로에 쌓였다. umbrella 흡수 경로(245~259행)는 --next-parent 를 명시했을 때만 동작한다. 약속 L21(관문에만 박는다·새 파일 0)에 따라 새 가드 파일을 만들지 말고 이 함수 한 곳에 흡수한다.",
+    "note": "[웰리 → 웰리 전달 2026-07-26] 2026-07-26 웰리 아침 자가점검 발견. wellperion-agents/scripts/clevel_post_action.py 의 update_queue_with_bridge() 는 --next 가 있고 --next-parent 가 없으면 무조건 새 NEXT- 배를 append 한다(262~272행). 동일 제목·동일 clevel 로 이미 열려 있는 배가 있는지 검사하지 않아, 2026-07-25 13:06 에 같은 문장의 배 5척(10208~10212)이 7초 만에 CEO 항로에 쌓였다. umbrella 흡수 경로(245~259행)는 --next-parent 를 명시했을 때만 동작한다. 약속 L21(관문에만 박는다·새 파일 0)에 따라 새 가드 파일을 만들지 말고 이 함수 한 곳에 흡수한다.\n[웰리 2026-07-27 아침 자가점검 — 같은 뿌리 흡수] 브릿지가 만든 배는 short_no·priority 가 비어 있다. 실측: 배10208·10299 두 척이 short_no=None·priority=None → 항로 표에서 '담당 닉네임+배번호'(약속 L16 필수 칸)가 빈칸으로 뜨고 난이도 아이콘도 못 붙는다. 도배(중복 생성)와 같은 지점 clevel_post_action.py::update_queue_with_bridge() 의 append 경로가 원인이므로 새 배를 만들지 않고 여기에 흡수한다(약속 L21). → dedup 흡수를 넣을 때 같은 함수에서 short_no 부여와 priority 기본값(⛵돛단배)도 같이 채운다. queue_dispatch.build_ship() 은 이미 둘 다 채우고 있으니 그 단일 지점을 재사용할 것(판정·계산 로직 복제 금지).",
     "next": "①update_queue_with_bridge() 의 append 직전에 '같은 clevel + 정규화한 동일 title 이 PENDING/IN_PROGRESS 로 이미 있으면 새 배 대신 그 배 note 에 한 줄 흡수'를 넣는다(umbrella 흡수와 같은 문구 형식·멱등). ② 2026-07-25 도배 5척으로 재현 테스트 — 같은 --next 를 두 번 실행해 배가 1척만 생기는지 확인. ③실행은 시토(CTO)에 위임 여부 웰리 판단.",
     "depends_on": "",
     "ship_no": 10290,
