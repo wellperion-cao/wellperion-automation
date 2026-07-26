@@ -515,11 +515,14 @@ def _load_queue() -> list[dict]:
 
 
 def _save_queue(items: list[dict]) -> bool:
-    """_queue.json 저장."""
+    """_queue.json 저장 (원자적 tmp+replace — 락 없는 reader도 반쪽 파일 안 봄)."""
     try:
-        QUEUE_FILE.write_text(
-            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        if queue_lock:
+            queue_lock.save_queue_atomic(items)
+        else:
+            QUEUE_FILE.write_text(
+                json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
         return True
     except Exception as e:
         log.error(f"_queue.json 저장 실패: {e}")
@@ -660,7 +663,7 @@ async def route_approval(update: Update, text: str) -> bool:
     target = matched[0]
     task_id = target.get("task_id", "")
     title = _page_title(target)
-    ok = _patch_approval(task_id, status_value, approval_result, comment)
+    ok = await asyncio.to_thread(_patch_approval, task_id, status_value, approval_result, comment)
     if ok:
         await update.message.reply_text(
             f"[AI CEO 자동 중계] 결재 반영 완료 — {title}\n"
@@ -785,7 +788,7 @@ async def route_northstar(update: Update, text: str) -> bool:
         )
         return True
 
-    ship_no = _ns_register_queue_bar(cand)
+    ship_no = await asyncio.to_thread(_ns_register_queue_bar, cand)
     if ship_no is None:
         await update.message.reply_text(
             "⚠️ 북극성 후보 승인 처리 중 _queue.json 쓰기에 실패했습니다. 로그 확인이 필요합니다."
@@ -898,7 +901,7 @@ async def cmd_northstar_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE)
         if cand.get("status") == "approved":
             await q.answer(f"후보 {idx+1} 은 이미 승인됨", show_alert=False)
             return
-        ship_no = _ns_register_queue_bar(cand)
+        ship_no = await asyncio.to_thread(_ns_register_queue_bar, cand)
         if ship_no is None:
             await ctx.bot.send_message(
                 chat_id=q.message.chat_id,
