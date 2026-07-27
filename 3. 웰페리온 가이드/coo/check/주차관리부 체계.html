@@ -651,6 +651,28 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
   </div>
+
+  <!-- ── 📢 주차장 이용 안내 공지문 (게시용 · 배93 · GM 결재 2026-07-27) ──
+       회원이 읽는 대외 공지문. 본문은 별도 페이지(주차장_이용안내_공지문.html)가 정본 —
+       여기서 사본을 만들지 않는다(사본을 두면 한쪽이 옛것으로 어긋난다). ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>📢 주차장 이용 안내 공지문 (게시용)</h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
+        회원께 게시·안내하는 대외 공지문입니다. <b>주차장 입구·엘리베이터 홀에 A4로 붙이고</b>, 회원 안내 채널에도 같은 내용을 씁니다.
+        사고·컴플레인 대응, 타 차량 쓰레기, CCTV 확인 요청, 주차장 내 음주운전 네 가지를 담았습니다.
+      </p>
+      <p style="font-size:12px;color:var(--dim);margin:0 0 12px;line-height:1.6;">
+        인용한 법 조항은 게시 전 대조를 마친 것만 넣었습니다(형법 제366조 · 경범죄 처벌법 제3조 제1항 제11호 ·
+        개인정보 보호법상 열람 회신 10일). 적용 범위에 다툼이 있는 조항은 넣지 않았습니다.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="util-btn print-btn" href="주차장_이용안내_공지문.html" target="_blank" rel="noopener">📄 공지문 열기 · 인쇄(A4)</a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="tab-manual" class="content hidden">
@@ -677,6 +699,39 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
       <div id="parking-supply-body"></div>
       <button type="button" class="quickadd-btn" style="width:auto;padding:8px 14px;margin-top:10px;" onclick="parkingAddRow('supply')">＋ 품목 추가</button>
+    </div>
+  </div>
+
+  <!-- ── 🧾 주차 결제 영수증 취소 절차 (직원 내부용 · GM 지시 2026-07-27) ──
+       ★계정 정보·거래취소 비밀번호는 여기 적지 않는다. 계정은 나우열 매니저 이메일로 개별 수신하고,
+         6자리 취소 비밀번호는 담당자가 직접 설정해 본인만 안다(문서에 적는 순간 공유 비밀번호가 된다). ── -->
+  <div class="manual-section" style="margin-top:16px;">
+    <div class="manual-header" onclick="togManual(this)">
+      <h3>🧾 주차 결제 영수증 취소 절차 <span style="font-size:12px;font-weight:600;color:var(--dim);">직원 내부용</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
+        결제 취소는 <b>스마일비즈</b> 관리자 화면에서 처리합니다. 처음 쓰실 때 <b>4번(거래취소 비밀번호 설정)</b>을 먼저 끝내야
+        7번에서 막히지 않습니다.
+      </p>
+      <table class="schedule-table">
+        <colgroup><col style="width:52px;"><col><col style="width:170px;"></colgroup>
+        <thead><tr><th>순서</th><th>할 일</th><th>위치</th></tr></thead>
+        <tbody>
+          <tr><td style="text-align:center;">1</td><td>스마일비즈 홈페이지 접속</td><td>www.smilebiz.co.kr</td></tr>
+          <tr><td style="text-align:center;">2</td><td>수신받은 계정 정보로 로그인 · 정보 입력</td><td>계정은 나우열 매니저 이메일로 수신</td></tr>
+          <tr><td style="text-align:center;">3</td><td>기본정보 열기</td><td>가맹점 → 가맹점 정보 → 기본정보</td></tr>
+          <tr><td style="text-align:center;">4</td><td><b>거래취소 비밀번호(6자리) 설정</b> — 최초 1회</td><td>기본정보 화면 아래로 스크롤</td></tr>
+          <tr><td style="text-align:center;">5</td><td>거래내역 조회 화면 열기</td><td>거래조회 → 통합거래조회 → 거래내역조회</td></tr>
+          <tr><td style="text-align:center;">6</td><td>취소할 거래 건 조회 후 <b>취소</b> 누르기</td><td>취소요청 란</td></tr>
+          <tr><td style="text-align:center;">7</td><td>사유 + 거래취소 비밀번호(6자리) 입력 → 취소 완료</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--dim);margin:10px 0 0;line-height:1.6;">
+        ⚠️ <b>거래취소 비밀번호는 어디에도 적어 두지 마십시오.</b> 이 문서에도 일부러 적지 않았습니다 —
+        적는 순간 모두의 비밀번호가 되고, 누가 취소했는지 가릴 수 없게 됩니다.
+        비밀번호를 잊으신 경우 3~4번 경로에서 다시 설정하시면 됩니다.
+      </p>
     </div>
   </div>
 
