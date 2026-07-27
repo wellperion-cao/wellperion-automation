@@ -651,6 +651,61 @@ function _collectLessonRoster_(type) {
       }
     } catch (e) {}
   });
+
+  // ── 팀시트 없는 종목(ledger:true — 발레·바레·뮤지컬) ────────────────────────────
+  // [배140 · GM 지시 2026-07-27] 위 루프는 item.sheet 가 있어야 돈다(cfg 없으면 return).
+  // 그래서 팀시트가 없는 종목은 roster 가 비고 → 원장에 행이 안 생기고 → 화면은 늘 0 이었다.
+  // 읽는 쪽(_ledgerRosterByType_)만 배선되고 쓰는 쪽이 없던 반쪽 상태(2026-07-15 이후).
+  //   실측 근거(2026-07-27): 뮤지컬 = 유소년 문의 146건 중 등록 14건인데 집계 0.
+  //   발레·바레 = 문의 9건·등록 0건이라 우연히 0 이 맞아떨어져 결함이 안 드러났다.
+  // GM 이 정본을 지정: 등록 정본 = 강습 '응답' 탭(성인 gid 111889422 / 유소년 268994754).
+  // 이미 시스템이 문의 집계에 쓰는 시트라 새 시트·새 연결·새 권한 0.
+  // 종목 판정은 표준 함수 _sportBuckets_ 를 그대로 호출한다 — 매칭 규칙을 여기 베끼면
+  // 두 벌이 되어 한쪽만 늙는다(약속 L01). 합쳐진 legacy 옵션('웰니스 프로그램(바레, 발레)')이
+  // 발레·바레 양쪽에 중복 계상되지 않는 처리도 그 함수가 이미 갖고 있다.
+  var ledgerItems = display.filter(function(it){ return !it.sheet && it.ledger; });
+  if (ledgerItems.length) {
+    try {
+      var wanted = {};
+      ledgerItems.forEach(function(it){ wanted[it.명] = 1; });
+      var inqGid = (type === '유소년강습') ? LESSON_GID_YOUTH : LESSON_GID;
+      var ish = _sheetByGid_(LESSON_SS_ID, inqGid);
+      if (ish) {
+        var ilast = ish.getLastRow(), ilastCol = ish.getLastColumn();
+        if (ilast >= 2 && ilastCol >= 1) {
+          var idata = ish.getRange(1, 1, ilast, ilastCol).getValues();
+          var ihdr  = idata[0];
+          // '성함' 우선 — 이 시트는 '성함'과 '이름'이 함께 있어 순서가 뒤바뀌면 엉뚱한 칸을 읽는다(기존 트랩).
+          var jName = _findCol_(ihdr, ['성함', '이름', '성명']);
+          var jPhone = _findCol_(ihdr, ['연락처', '휴대폰', '핸드폰', '전화']);
+          var jStat = _findCol_(ihdr, ['진행현황', '진행상황', '진행상태', '상태']);
+          var jProg = _findCol_(ihdr, ['성인 강습 종목', 'WSC 강습 종목', '종목', '과목']);
+          if (jStat >= 0 && jProg >= 0) {
+            var seenKey = {};   // 같은 사람이 같은 종목에 중복 접수한 경우 1회만
+            for (var r3 = 1; r3 < idata.length; r3++) {
+              var sv3 = idata[r3][jStat];
+              if (!_isLessonReg_(sv3)) continue;             // 등록 성공 행만
+              var buckets = _sportBuckets_(idata[r3][jProg]);
+              for (var b = 0; b < buckets.length; b++) {
+                if (!wanted[buckets[b]]) continue;           // 이 유형의 ledger 종목만
+                var ph3 = jPhone >= 0 ? _fmtPhone_(idata[r3][jPhone]) : '';
+                var dk = buckets[b] + '|' + _normPhone_(ph3);
+                if (seenKey[dk]) continue;
+                seenKey[dk] = 1;
+                roster.push({
+                  sport:  buckets[b],
+                  name:   jName >= 0 ? String(idata[r3][jName] || '') : '',
+                  phone:  ph3,
+                  status: String(sv3 == null ? '' : sv3).trim()
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (eLed) {}
+  }
+
   return roster;
 }
 
@@ -667,6 +722,16 @@ function _syncLessonRegistry_() {
     var last = sh.getLastRow();
     var seed = (last < 2);                              // 원장 빈 상태 → 기준선 시드 모드
     var rows = (last >= 2) ? sh.getRange(2, 1, last - 1, _LESSON_REG_HEADER.length).getValues() : [];
+    // [배140 · 2026-07-27] 종목 단위 기준선 판정. 원장에 그 종목 행이 0이면 이번에 들어오는
+    // 배치는 '오늘 등록'이 아니라 '이제야 연결된 과거 등록자'다 — 종목이 새로 배선될 때마다
+    // 그 인원이 당일 신규로 잡혀 KPI 를 부풀린다(뮤지컬 첫 편입 14건이 정확히 이 경우).
+    // 대량 신규 가드(_LESSON_BULK_NEW_GUARD=30)는 임계 미만이라 못 막는다 → 종목 단위로 막는다.
+    // 원장 전체 시드와 같은 취지·같은 값(2000-01-01)이라 새 규칙이 아니라 적용 범위 확장이다.
+    var sportSeen = {};
+    for (var s0 = 0; s0 < rows.length; s0++) {
+      var sp0 = String(rows[s0][1] || '').trim();
+      if (sp0) sportSeen[sp0] = 1;
+    }
     var keyIdx = {};
     for (var i = 0; i < rows.length; i++) {
       var k = String(rows[i][6] || '').trim();
@@ -685,7 +750,10 @@ function _syncLessonRegistry_() {
             rr[1] = m.sport; rr[2] = m.name; rr[4] = m.status; dirty = true;
           }
         } else {
-          rows.push([type, m.sport, m.name, m.phone, m.status, (seed ? '2000-01-01' : today), key]);
+          // 원장 전체가 비었거나(seed), 이 종목이 원장에 처음 들어오는 경우 → 기준선.
+          var firstOfSport = !sportSeen[String(m.sport || '').trim()];
+          rows.push([type, m.sport, m.name, m.phone, m.status,
+                     (seed || firstOfSport) ? '2000-01-01' : today, key]);
           newIdx.push(rows.length - 1);
           keyIdx[key] = rows.length - 1;
           dirty = true;
