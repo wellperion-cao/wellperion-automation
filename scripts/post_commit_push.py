@@ -346,6 +346,13 @@ _MACHINE_OUTPUTS = (
     "status/inquiry_snapshot_member.json",
     "3. 웰페리온 가이드/status/_queue.json",   # 큐 미러 — sync_queue_mirror 가 add 만 하고 커밋 안 함
     "3. 웰페리온 가이드/status/_queue_archive.json",
+    # 아래 3개는 2026-07-27 실측에서 실제로 통합을 막고 있던 것들 — 전부 기계가 쓰는 산출물이다.
+    #   status/_queue.json 은 사람이 아니라 도구(queue_dispatch·clevel_post_action·러너)가 쓰고
+    #   쓰기는 queue_lock 으로 직렬화된다. worklog·home_kpi 스냅샷도 마찬가지.
+    #   ※소스코드·문서·brief 는 여기 넣지 않는다 — 남의 미완성 작업을 커밋해 버리기 때문이다.
+    "status/_queue.json",
+    "status/worklog.jsonl",
+    "status/home_kpi_snapshot.json",
 )
 
 
@@ -426,7 +433,21 @@ def _sweep(root: str) -> int:
         return 0  # 밀린 것 없음
     # ★락을 잡기 **전에** 통합 방해물을 치운다 — safe_commit 이 자기 락을 잡으므로
     #   락 안에서 부르면 서로 기다리다 멈춘다(GitLock 은 재진입 불가).
-    _commit_machine_outputs(root)
+    #   그리고 **한 번으로는 부족하다**: 치운 직후 다시 더러워지는 경합이 실재한다
+    #   (큐 미러는 몇 분마다 다시 쓰인다 — 실측 2026-07-27, 적체 33건까지 늘었다).
+    #   그래서 '치우고 → 밀어보고 → 남았으면 다시 치우고' 를 몇 번 반복한다.
+    #   각 회차는 그 순간 막고 있는 산출물만 커밋하므로 반복해도 부작용이 없다(멱등).
+    for _round in range(1, 4):
+        _commit_machine_outputs(root)
+        rc = _sweep_once(root)
+        if _unpushed_count(root) == 0:
+            return rc
+        _log(f"PUSH_SWEEPER 재시도 {_round}/3 — 밀린 커밋 {_unpushed_count(root)}건 남음", root)
+    return 0
+
+
+def _sweep_once(root: str) -> int:
+    """한 회차 — 락을 잡고 통합·push 를 1회 시도한다."""
     import git_lock as _gl
     lock = GitLock("push-sweeper", root)
     prev = _gl.ACQUIRE_TIMEOUT
