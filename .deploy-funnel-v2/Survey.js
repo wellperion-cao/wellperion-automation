@@ -1183,6 +1183,23 @@ function _realLastDataRow_(sh, idxPhone, idxDate, idxMemo) {
   return 1;
 }
 
+// ─── 자체폼(웹) 접수분인가 — 폴러 제외 판정 (2026-07-27 시토 · GM 지적으로 발각) ───
+// 왜 태그만으로 부족한가: 자체폼 접수는 비고칸에 [웹접수] 표식을 남겨 폴러가 걸러낸다.
+//   그런데 **강습 2탭(성인·유소년)에는 비고 칸 자체가 없다** — 2026-07-18 GM 결정으로 강습
+//   자체폼 접수가 기존 구글폼 응답탭에 저장되도록 바뀌었는데, 그 탭에는 표식을 쓸 자리가 없다.
+//   결과: 자체폼 접수 알림(intake_submit)이 이미 나갔는데 폴러가 같은 행을 또 잡아 두 번 나갔고,
+//   형식도 달라 GM 이 "왜 이 건만 양식이 다르냐"고 지적하게 됐다(2026-07-27 4:49 유소년 건).
+// 대신 무엇을 보나: 자체폼은 '접수 담당자' 칸에 '웹 자동접수'를 반드시 남긴다(_imSet/_lsSet 공통).
+//   실측 확인 — 유소년 4615행·성인 3550행 모두 '웹 자동접수'. 이 값은 사람이 쓰지 않는다.
+function _isWebIntakeRow_(r, headers) {
+  try {
+    var iMemoW = _findCol_(headers, ['비고', '메모']);
+    if (iMemoW >= 0 && String(r[iMemoW] || '').indexOf(WEB_INTAKE_TAG) >= 0) return true;
+    var iOwnerW = _findCol_(headers, ['접수 담당자', '담당']);
+    if (iOwnerW >= 0 && String(r[iOwnerW] || '').trim() === '웹 자동접수') return true;
+  } catch (e) { /* 판정 실패 = 제외 안 함(알림을 잃지 않는 쪽) */ }
+  return false;
+}
 // ─── 신규 문의 감지 → 텔레그램 '문의 알림' 방 발송 (시모, 2026-06-24) ───
 // FORM_SHEETS 각 시트의 신규 행을 5분마다 감지해 TELEGRAM_INQUIRY_CHAT_ID 방으로 알림.
 // ScriptProperties INQ_LASTROW_<ssId>_<gid> 에 마지막 처리한 실데이터 행번호 저장 → 중복 방지.
@@ -1230,7 +1247,7 @@ function _notifyNewInquiries_() {
       var newRows = sh.getRange(storedRow + 1, 1, realLastRow - storedRow, lastCol).getValues();
       newRows.forEach(function(r) {
         // [웹접수] 미러 행 제외 (이미 submit_inquiry에서 발송)
-        if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;
+        if (_isWebIntakeRow_(r, headers)) return;   // 자체폼 접수분 — 접수 알림은 intake_submit 이 이미 보냈다
         // 완전 빈 행 스킵
         if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) return;
 
@@ -1420,7 +1437,7 @@ function onInquiryFormSubmit(e) {
     // 기준선 초과 신규 행 모두 처리 (동시 다중 제출 방어)
     var newRows = sheet.getRange(storedRow + 1, 1, realLastRow - storedRow, lastCol).getValues();
     newRows.forEach(function(r) {
-      if (idxMemo >= 0 && String(r[idxMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return; // 웹접수 미러 제외
+      if (_isWebIntakeRow_(r, headers)) return; // 자체폼 접수분 제외(비고 태그 없는 강습 탭 포함)
       if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) return;      // 빈 행 스킵
 
       var ts = idxDate >= 0 ? r[idxDate] : '';
@@ -3159,7 +3176,7 @@ function _processAction(body) {
             var d = _normTs_(raw);
             tsStr = !isNaN(d.getTime()) ? Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(raw).substring(0, 30);
           } catch(ex) { tsStr = String(raw || '').substring(0, 30); }
-          return {
+          var rrbRet = {
             row:      rowNum,
             type:     rrbCfg.type,
             name:     idxName  >= 0 ? String(r[idxName]  || '').trim() : '',
@@ -3167,6 +3184,19 @@ function _processAction(body) {
             channel:  idxChan  >= 0 ? String(r[idxChan]  || '').trim() : '',
             ts:       tsStr
           };
+          // full=1 이면 모든 칸을 헤더명과 함께 돌려준다(읽기 전용·발송 0).
+          //   왜: 4칸만으로는 이 문의가 어느 경로로 들어왔는지 못 가린다. 자체폼 유입은
+          //   '접수 담당자=웹 자동접수' / '유입경로(자동)=utm' / '비고=[웹접수]' 흔적을 남기는데
+          //   그 칸이 응답에 없어 매번 사람이 시트를 열어야 했다(GM 2026-07-27 질문에 근거로 답 못 한 이유).
+          if (String(body.full || '') === '1') {
+            var rrbAll = {};
+            for (var hc = 0; hc < lastCol; hc++) {
+              var hk = String(headers[hc] || ('col' + hc)).substring(0, 40);
+              rrbAll[hk] = String(r[hc] === null || r[hc] === undefined ? '' : r[hc]).substring(0, 120);
+            }
+            rrbRet.all = rrbAll;
+          }
+          return rrbRet;
         } catch(e2) { return { row: rowNum, error: e2.message }; }
       });
       return _json({ ok: true, type: rrbCfg.type, rows: rrbOut });
@@ -3226,7 +3256,11 @@ function _processAction(body) {
             + '유입채널: ' + chan
             + (content ? '\n내용: ' + content : '');
 
-          return { row: rowNum, msg: msg, prog_col_found: pvIdxProg >= 0 };
+          // 미리보기는 실제 발송 경로와 같은 제외 판정을 거쳐야 한다 — 안 거치면 '보내지 않을 것'을
+          // 보여줘 검증이 거짓이 된다(2026-07-27 실측으로 드러남).
+          return { row: rowNum, msg: msg, prog_col_found: pvIdxProg >= 0,
+                   excluded: _isWebIntakeRow_(r, pvHdrs),
+                   excluded_reason: _isWebIntakeRow_(r, pvHdrs) ? '자체폼 접수분(접수 알림은 intake_submit 담당)' : '' };
         } catch(e2) { return { row: rowNum, error: e2.message }; }
       });
       return _json({ ok: true, previews: pvOut });
@@ -6325,6 +6359,12 @@ function _processAction(body) {
       var _spExisting = (_spCi >= 0) ? _lessonContactCellParse_(luSh.getRange(luRow, _spCi + 1).getValue()) : [];
       var _spPrevCount = _spExisting.filter(_spIsThisSport).length;
       if (body.status !== undefined && body.status !== null) _luSet(['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], body.status);
+      // 연락처·비고 교정 경로(2026-07-27 시포). 지금까지 이 액션은 진행상태·담당·연락이력만 썼고, 번호와 메모가
+      //   한 칸에 섞인 행(예: '01052388823( 현재는 미국거주중6/16…)')을 고칠 방법이 아예 없어 수동으로 넘기고 있었다.
+      //   ★안전: 위 keyPhone 대조를 이미 통과한 행에만 쓴다(행번호만 믿지 않음 · INC-020 교훈).
+      //   setPhone 은 '번호를 바꾼다'는 뜻이 분명하도록 별도 키로 둔다(조회키 keyPhone 과 혼동 방지).
+      if (body.setPhone !== undefined && body.setPhone !== null) _luSet(['연락처', '전화', '휴대폰'], body.setPhone);
+      if (body.memo !== undefined && body.memo !== null) _luSet(['비고'], body.memo);
       if (body.owner  !== undefined && body.owner  !== null) _luSet(['지정 강사', '관리담당'], body.owner);
       var _spNewHistArr = null;
       if (body.contacts !== undefined) {
