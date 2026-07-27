@@ -47,6 +47,82 @@ var FORMS = [
   }
 ];
 
+// 방학특강 서베이 4종 — GM 지시 2026-07-27 ("방특서베이 같은 것도 자체폼으로 옮겨가게").
+//   위 FORMS 3종과 같은 처리(마감 + 안내). 종목별 utm_content 로 어느 폼에서 넘어왔는지 구분한다.
+//   ※utm_source 는 여전히 쓰지 않는다 — 고객이 고른 유입경로 칸을 덮어써 채널 집계가 오염된다(위 주의 참고).
+var SPECIAL_FORMS = [
+  { id: '1TTOJIYxA_MOxb1wNKXpZs4Zk4meTP3WSBR4lipl2Cok', name: '방특서베이(체조)',
+    url: 'http://wellperion.com/ko/inquiry-form/?type=youth&utm_medium=gform&utm_content=special_gym',
+    tail: '종목·자녀 연령까지 한 번에 남기실 수 있습니다.' },
+  { id: '1FgJyvml_OAEfPJ5lh85t4kO5s8f3JZleql7dNAa3m9k', name: '방특서베이(골프)',
+    url: 'http://wellperion.com/ko/inquiry-form/?type=youth&utm_medium=gform&utm_content=special_golf',
+    tail: '종목·자녀 연령까지 한 번에 남기실 수 있습니다.' },
+  { id: '15klYicfs2cMnOOed-JRAf4sVoLlQlnBgYIEfTr900xc', name: '방특서베이(유소년PT)',
+    url: 'http://wellperion.com/ko/inquiry-form/?type=youth&utm_medium=gform&utm_content=special_pt',
+    tail: '종목·자녀 연령까지 한 번에 남기실 수 있습니다.' },
+  { id: '1Ra6h_yotbYIGGRnYB5TnmuVEMXDSS9xLWmEPAnZB0o4', name: '방특서베이(수영)',
+    url: 'http://wellperion.com/ko/inquiry-form/?type=youth&utm_medium=gform&utm_content=special_swim',
+    tail: '종목·자녀 연령까지 한 번에 남기실 수 있습니다.' }
+];
+
+/** 방특 4종 현재 상태만 확인(읽기 전용). */
+function reportSpecialForms() {
+  var out = [];
+  for (var i = 0; i < SPECIAL_FORMS.length; i++) {
+    var f = SPECIAL_FORMS[i];
+    try {
+      var form = FormApp.openById(f.id);
+      out.push({ 폼: f.name, 제목: form.getTitle(), 응답받는중: form.isAcceptingResponses(),
+                 질문수: form.getItems().length });
+    } catch (e) { out.push({ 폼: f.name, 오류: String(e) }); }
+  }
+  Logger.log(JSON.stringify(out, null, 2));
+  return out;
+}
+
+/** 방특 4종 마감 + 안내 문구. 질문은 건드리지 않는다(되돌리기=reopenSpecialForms). */
+function closeSpecialForms() {
+  var out = [];
+  for (var i = 0; i < SPECIAL_FORMS.length; i++) {
+    try { out.push(_closeOne_(SPECIAL_FORMS[i])); }
+    catch (e) { out.push(SPECIAL_FORMS[i].name + ' — 실패: ' + e); }
+  }
+  Logger.log(out.join('\n'));
+  return out;
+}
+
+/** 되돌리기 — 방특 4종 다시 응답 받기. */
+function reopenSpecialForms() {
+  var out = [];
+  for (var i = 0; i < SPECIAL_FORMS.length; i++) {
+    try {
+      FormApp.openById(SPECIAL_FORMS[i].id).setAcceptingResponses(true);
+      out.push(SPECIAL_FORMS[i].name + ' — 다시 응답 받는 중');
+    } catch (e) { out.push(SPECIAL_FORMS[i].name + ' — 실패: ' + e); }
+  }
+  Logger.log(out.join('\n'));
+  return out;
+}
+
+/** ★질문 삭제 — 되돌릴 수 없다. GM 이 명시적으로 요청할 때만 실행한다(2026-07-27 GM 선택).
+ *  ※마감 상태에서는 방문자에게 질문이 애초에 보이지 않는다 → 삭제해도 화면상 달라지는 것은 없다.
+ *    그래서 기본 절차는 closeSpecialForms 까지이고, 이 함수는 별도 호출로만 돈다.
+ *  과거 응답은 시트에 그대로 남는다(폼 질문만 사라진다). */
+function deleteSpecialFormItems() {
+  var out = [];
+  for (var i = 0; i < SPECIAL_FORMS.length; i++) {
+    var f = SPECIAL_FORMS[i];
+    try {
+      var form = FormApp.openById(f.id);
+      var items = form.getItems();
+      for (var j = items.length - 1; j >= 0; j--) form.deleteItem(items[j]);
+      out.push(f.name + ' — 질문 ' + items.length + '개 삭제(복구 불가)');
+    } catch (e) { out.push(f.name + ' — 실패: ' + e); }
+  }
+  Logger.log(out.join('\n'));
+  return out;
+}
+
 // 안내 첫 줄 = 멱등 판정 표식. 이 문구가 이미 있으면 다시 붙이지 않는다.
 var NOTICE_HEAD = '🔗 홈페이지에서 접수하시면 더 빠르게 안내받으실 수 있습니다';
 var PROP_PREFIX = 'form_desc_backup_';
