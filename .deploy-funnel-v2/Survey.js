@@ -890,7 +890,16 @@ function _syncLessonRegistry_() {
         if (qk.indexOf('|' + qs) >= 0) continue;         // 스코프 키 = 정상 행
         _fixIdx.push(q);
       }
-      if (_fixIdx.length && _fixIdx.length <= 20) {      // 안전 상한 — 대량이면 손대지 않고 경보
+      // ★2026-07-27 즉시 중단(시모) — 아래 자동 복원은 라이브에서 오작동했다.
+      //   _sportBuckets_ 는 '체조'를 돌려주는데 LESSON_DISPLAY 유소년 종목명은 '체조&트램폴린'이라
+      //   이름이 안 맞아 매칭에 실패했고, 그 결과 체조로 되돌려야 할 2건이 엉뚱하게 수영·골프로
+      //   복원됐다(실측: 수영 1502→1504 · 골프 168→169 · 체조 369 그대로).
+      //   더 나쁜 건, 잘못 복원된 행은 '스코프 없는 키 + 팀시트 종목'이라 서명에 더는 안 걸려
+      //   정상 행과 구분되지 않는다 — 자동 로직이 스스로 만든 오염을 스스로 못 찾는다.
+      //   → 자동 복원은 끈다. 남은 3건 교정은 원장 백업을 먼저 뜬 뒤 대조키로 1회 처리한다(배140).
+      //   ①등록일 기준선 불변식(위)은 정상 동작 확인돼 그대로 둔다(뮤지컬 11건 전부 기준선 복귀).
+      var _AUTO_RESTORE_ENABLED = false;
+      if (_AUTO_RESTORE_ENABLED && _fixIdx.length && _fixIdx.length <= 20) {
         var _inqSport = {};                              // 유형 → (전화 → 응답 종목라벨)
         ['성인강습', '유소년강습'].forEach(function(t){
           _inqSport[t] = {};

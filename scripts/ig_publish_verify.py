@@ -453,7 +453,14 @@ def main() -> int:
                     help="그리드에서 수집할 게시물 상한(기본 18)")
     args = ap.parse_args()
     stamped = asyncio.run(run(args.id, args.dry_run, args.scrolls, args.max_posts))
-    if args.commit and not args.dry_run and stamped > 0:
+    # [2026-07-27 시모] stamped > 0 조건 삭제. 옛 코드는 "이번 실행에서 도장을 찍었을 때만"
+    # 커밋했다 — 도장은 찍혔는데 그 순간 커밋이 실패하면(락 경합 등) 변경이 작업트리에 고립되고,
+    # 다음 스윕은 로컬을 읽어 "발행검증대기 0건"이라 판단해 stamped=0 → 커밋 블록을 통째로
+    # 건너뛴다. "다음 스윕 재시도"라는 주석은 실제로는 지켜지지 않았다.
+    # 실측: AI하루 03(2026-07-27) 이 로컬만 발행완료·저장소는 발행검증대기로 남아 M1(GM 화면)이
+    # 하루 종일 옛 상태를 보였다. safe_commit 은 변경 없으면 무해 통과(committed=False)라
+    # 매번 호출해도 안전하다 → 조건을 없애는 쪽이 옳다(장치 추가 아님·조건 제거).
+    if args.commit and not args.dry_run:
         try:
             sys.path.insert(0, str(Path(__file__).parent))
             # 안전 커밋터(2026-07-23 배9820) — 임시 인덱스(read-tree HEAD) + 커밋 직전 HEAD
