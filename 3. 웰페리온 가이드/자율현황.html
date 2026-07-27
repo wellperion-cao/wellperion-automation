@@ -355,6 +355,34 @@
     <div class="feed-status" style="grid-column:1/-1;">정박·대기 배를 불러오는 중…</div>
   </div>
 
+  <!-- ════ 🗂 전체 배 정리 (GM 지시 2026-07-27 — 백엔드에 있는 배를 빠짐없이 보여주고, 무의미·중복은 GM이 직접 지운다) ════ -->
+  <h2 class="sec" id="sec-all-ships" style="margin-top:2px;">🗂 전체 배 정리 <span style="font-size:11px;font-weight:400;color:var(--dim);">(백엔드에 실제로 있는 배 전부 — 무의미·중복은 여기서 지웁니다)</span></h2>
+  <div class="sec-note">
+    위 두 구역은 <b>골라 보여주는</b> 화면이라 백엔드에 있는 배가 다 나오지 않습니다. 여기는 <code>status/_queue.json</code>에
+    <b>실제로 들어 있는 배 전부</b>입니다 — 화면과 백엔드가 같은지 여기서 확인하시면 됩니다.
+    <b>지우면 백엔드에서도 같이 빠지고</b>, 보관함에 남아 되돌릴 수 있습니다.
+  </div>
+  <div class="ships-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 8px;">
+    <input id="ship-search" type="search" placeholder="제목·담당·배 번호로 찾기" style="flex:1 1 220px;min-width:180px;padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
+    <select id="ship-filter" style="padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
+      <option value="all">전체 상태</option>
+      <option value="IN_PROGRESS">진행중만</option>
+      <option value="PENDING">대기만</option>
+      <option value="dup">중복 의심만</option>
+    </select>
+    <span id="ship-count" style="font-size:12px;color:var(--dim);"></span>
+  </div>
+  <div class="routines" id="all-ships">
+    <div class="feed-status" style="grid-column:1/-1;">전체 배를 불러오는 중…</div>
+  </div>
+
+  <!-- ════ 🗄 보관함 (지운 배 — 되돌리기 가능) ════ -->
+  <h2 class="sec" id="sec-trash" style="margin-top:2px;">🗄 보관함 <span style="font-size:11px;font-weight:400;color:var(--dim);">(지운 배 — 되돌릴 수 있습니다)</span></h2>
+  <div class="sec-note">지운 배는 사라지지 않고 여기 남습니다. 잘못 지웠으면 <b>되돌리기</b>를 누르면 원래 상태로 돌아갑니다.</div>
+  <div class="routines" id="trash-ships">
+    <div class="feed-status" style="grid-column:1/-1;">보관함을 불러오는 중…</div>
+  </div>
+
   <!-- ════ ⚙️ 자동화→자율화 4층 구조 (AI운영한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
   <h2 class="sec" style="margin-top:2px;">🏛️ 자율화를 떠받치는 4대 축</h2>
   <div class="sec-note">나란히 작동하는 4개 축 — 코드·훅 자동화 위에서 AI가 판단·완결.</div>
@@ -905,10 +933,11 @@
         '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong></td>' +
         '<td>' + esc(statusFn(s)) + '</td>' +
         '<td>' + (content || '<span style="color:var(--dim);">—</span>') + '</td>' +
+        '<td style="text-align:center;">' + trashBtn(s) + '</td>' +
       '</tr>';
     }).join('');
     return '<div class="gtbl-wrap"><table class="gtbl">' +
-      '<tr><th style="width:36px">배</th><th style="width:88px">담당</th><th>미션</th><th style="width:96px">상태</th><th>재개조건 · 다음</th></tr>' +
+      '<tr><th style="width:36px">배</th><th style="width:88px">담당</th><th>미션</th><th style="width:96px">상태</th><th>재개조건 · 다음</th><th style="width:56px">정리</th></tr>' +
       rows + '</table></div>';
   }
   function renderActiveMissions(queue){
@@ -930,7 +959,8 @@
   function renderParkedMissions(queue){
     var el = document.getElementById('parked-missions');
     if(!el) return;
-    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.surface === 'autonomy' && s.status !== 'DONE' && s.status !== 'IN_PROGRESS'; }) : [];
+    // 지운 배(폐기)는 여기 남지 않는다 — 아니면 '지웠는데 화면에 그대로'가 된다(GM 2026-07-27 일관성).
+    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.surface === 'autonomy' && s.status !== 'DONE' && s.status !== 'IN_PROGRESS' && !isTrashed(s); }) : [];
     if(!list.length){
       el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">정박·대기 배 없음 — 조건/시각 트리거 대기 배가 없습니다.</div>';
       return;
@@ -938,6 +968,168 @@
     list.sort(function(a, b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
     el.innerHTML = missionTableHtml(list, function(s){ return s.status === 'STANDBY' ? '⚓ 보류' : '⚓ 정박'; }, function(s){ return s.next || s.depends_on; });
   }
+
+  // ═══════════ 🗂 전체 배 정리 · 🗄 보관함 (GM 지시 2026-07-27) ═══════════
+  //  GM: "백그라운드는 모르는데 프론트에 똑같이 기록해서, 무분별·무의미·중복된 건 다 삭제처리할 수 있게.
+  //       삭제되면 백·프론트 두 곳 다 삭제돼야 해(일관성)."
+  //  ▸일관성은 '지운 뒤 맞추는' 게 아니라 **애초에 한 곳만 고쳐서** 얻는다 — 삭제는 저장소의
+  //    status/_queue.json 을 직접 고치고(GAS queue_trash), 이 화면은 그 파일을 다시 읽는다.
+  //    별도 삭제 목록을 두면 그게 곧 두 번째 진실이 되어 또 어긋난다.
+  //  ▸지우기 = 물리 삭제가 아니라 '폐기 표시'. 이유는 GAS 쪽 주석 참고(union 머지에서 되살아남).
+  //  ▸GM 비밀번호는 결재에 쓰는 그 번호. 한 번 넣으면 이 창을 닫을 때까지만 기억한다(저장 안 함).
+  var _queueAll = [];      // 백엔드에 실제로 있는 배 전부(폐기 포함)
+  var _busyShips = {};     // 처리 중인 배 — 두 번 눌림 방지
+
+  function gasPost(payload){
+    return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(payload)}).then(function(r){ return r.json(); });
+  }
+  function gmPin(){
+    var p = sessionStorage.getItem('wp_gm_pin');
+    if(p) return p;
+    p = window.prompt('GM 비밀번호를 넣어주세요 (결재에 쓰시는 번호입니다)');
+    if(p) sessionStorage.setItem('wp_gm_pin', p);
+    return p;
+  }
+  function isTrashed(s){ return !!(s && (s.trashed === true || s.status === '폐기')); }
+
+  // 중복 의심 — 같은 제목이 둘 이상이거나, 자동 생성된 잔소리 배([GM보좌 제안]).
+  //  '무분별·무의미·중복'을 GM이 눈으로 다 찾게 하지 않으려는 보조 필터일 뿐, 자동 삭제는 절대 안 한다.
+  function dupKeySet(list){
+    var cnt = {}, dup = {};
+    list.forEach(function(s){
+      var k = String(s.title||'').replace(/^\[[^\]]*\]\s*/,'').trim();
+      if(!k) return; cnt[k] = (cnt[k]||0) + 1;
+    });
+    Object.keys(cnt).forEach(function(k){ if(cnt[k] > 1) dup[k] = true; });
+    return dup;
+  }
+  function isSuspect(s, dup){
+    if(/\[GM보좌 제안\]/.test(String(s.title||''))) return true;
+    var k = String(s.title||'').replace(/^\[[^\]]*\]\s*/,'').trim();
+    return !!dup[k];
+  }
+
+  function shipStatusLabel(s){
+    if(s.status === 'IN_PROGRESS') return '🚢 진행중';
+    if(s.status === 'STANDBY') return '⚓ 보류';
+    if(s.status === 'DONE' || s.status === '완료') return '🏁 완료';
+    return '⚓ 대기';
+  }
+
+  function renderAllShips(){
+    var el = document.getElementById('all-ships'); if(!el) return;
+    var q = String((document.getElementById('ship-search')||{}).value || '').trim().toLowerCase();
+    var f = String((document.getElementById('ship-filter')||{}).value || 'all');
+    var live = _queueAll.filter(function(s){ return s && !isTrashed(s); });
+    var dup = dupKeySet(live);
+    var list = live.filter(function(s){
+      if(f === 'IN_PROGRESS' && s.status !== 'IN_PROGRESS') return false;
+      if(f === 'PENDING' && !(s.status === 'PENDING' || s.status === 'STANDBY')) return false;
+      if(f === 'dup' && !isSuspect(s, dup)) return false;
+      if(!q) return true;
+      var nick = MISSION_NICK[s.clevel] || s.clevel || '';
+      return (String(s.title||'') + ' ' + nick + ' ' + String(s.ship_no||'')).toLowerCase().indexOf(q) >= 0;
+    });
+    list.sort(function(a,b){
+      var r = (a.status === 'IN_PROGRESS' ? 0 : 1) - (b.status === 'IN_PROGRESS' ? 0 : 1);
+      return r || String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0));
+    });
+    var cnt = document.getElementById('ship-count');
+    if(cnt) cnt.textContent = list.length + '척 표시 · 백엔드 전체 ' + live.length + '척';
+    if(!list.length){ el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">해당하는 배가 없습니다.</div>'; return; }
+    var rows = list.map(function(s){
+      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+      var sus = isSuspect(s, dup);
+      return '<tr' + (sus ? ' style="background:rgba(255,196,0,.10);"' : '') + '>' +
+        '<td style="text-align:center;">' + missionBoat(s.priority) + '</td>' +
+        '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>' +
+        '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>' + (sus ? ' <span style="font-size:11px;color:#b07800;">중복 의심</span>' : '') + '</td>' +
+        '<td>' + esc(shipStatusLabel(s)) + '</td>' +
+        '<td style="text-align:center;">' + trashBtn(s) + '</td>' +
+      '</tr>';
+    }).join('');
+    el.innerHTML = '<div class="gtbl-wrap"><table class="gtbl">' +
+      '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th><th style="width:88px">상태</th><th style="width:64px">정리</th></tr>' +
+      rows + '</table></div>';
+  }
+
+  function trashBtn(s){
+    if(s.ship_no == null) return '<span style="color:var(--dim);">—</span>';
+    return '<button type="button" class="ship-trash" data-ship="' + esc(s.ship_no) + '" title="이 배를 보관함으로 옮깁니다"'
+      + ' style="border:1px solid var(--line,#ccc);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;">🗑</button>';
+  }
+
+  function renderTrash(){
+    var el = document.getElementById('trash-ships'); if(!el) return;
+    var list = _queueAll.filter(isTrashed);
+    if(!list.length){ el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함이 비어 있습니다 — 아직 지운 배가 없습니다.</div>'; return; }
+    list.sort(function(a,b){ return String(b.trashed_at||'').localeCompare(String(a.trashed_at||'')); });
+    var rows = list.map(function(s){
+      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+      return '<tr>' +
+        '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>' +
+        '<td>' + esc(missionCleanTitle(s.title)) + '</td>' +
+        '<td>' + fmtWhen(s.trashed_at) + '</td>' +
+        '<td>' + esc(s.trash_reason || '—') + '</td>' +
+        '<td style="text-align:center;"><button type="button" class="ship-restore" data-ship="' + esc(s.ship_no) + '"'
+          + ' style="border:1px solid var(--line,#ccc);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;">되돌리기</button></td>' +
+      '</tr>';
+    }).join('');
+    el.innerHTML = '<div class="gtbl-wrap"><table class="gtbl">' +
+      '<tr><th style="width:96px">담당</th><th>미션</th><th style="width:96px">지운 때</th><th style="width:140px">사유</th><th style="width:88px"></th></tr>' +
+      rows + '</table></div>';
+  }
+
+  // 저장소를 다시 읽어 화면 전체를 새로 그린다 — 화면과 백엔드가 어긋날 틈을 두지 않는다.
+  function reloadQueueAndRender(){
+    return gasReadText('status/_queue.json', 'status/_queue.json').then(function(txt){
+      var arr = parseJson(txt);
+      if(!Array.isArray(arr)) return;
+      _queueAll = arr;
+      try{ renderActiveMissions(arr); }catch(e){}
+      try{ renderParkedMissions(arr); }catch(e){}
+      renderAllShips(); renderTrash();
+    });
+  }
+
+  function onShipAction(shipNo, mode){
+    if(_busyShips[shipNo]) return;
+    var s = null;
+    _queueAll.forEach(function(x){ if(String(x.ship_no) === String(shipNo)) s = x; });
+    var name = s ? missionCleanTitle(s.title) : ('배 ' + shipNo);
+    var reason = '';
+    if(mode === 'trash'){
+      if(!window.confirm('이 배를 보관함으로 옮길까요?\n\n' + name + '\n\n(되돌릴 수 있습니다)')) return;
+      reason = window.prompt('왜 지우시는지 한 줄만 남겨주세요 (비워도 됩니다)', '무의미·중복') || '';
+    }
+    var pin = gmPin();
+    if(!pin) return;
+    _busyShips[shipNo] = true;
+    gasPost({ action: (mode === 'trash' ? 'queue_trash' : 'queue_restore'), ship_no: shipNo, reason: reason, pin: pin, by: 'GM' })
+      .then(function(res){
+        if(!res || !res.ok){
+          // 비밀번호가 틀렸으면 기억한 값을 버린다 — 다음에 다시 물어봐야 하므로.
+          if(res && /비밀번호/.test(String(res.error||''))) sessionStorage.removeItem('wp_gm_pin');
+          window.alert('처리하지 못했습니다.\n\n' + ((res && res.error) || '알 수 없는 오류'));
+          return;
+        }
+        return reloadQueueAndRender();
+      })
+      .catch(function(err){ window.alert('처리하지 못했습니다.\n\n' + err); })
+      .then(function(){ delete _busyShips[shipNo]; });
+  }
+
+  document.addEventListener('click', function(ev){
+    var t = ev.target.closest && ev.target.closest('.ship-trash, .ship-restore');
+    if(!t) return;
+    ev.preventDefault();
+    onShipAction(t.getAttribute('data-ship'), t.classList.contains('ship-trash') ? 'trash' : 'restore');
+  });
+  ['ship-search','ship-filter'].forEach(function(id){
+    document.addEventListener('input', function(ev){ if(ev.target && ev.target.id === id) renderAllShips(); });
+    document.addEventListener('change', function(ev){ if(ev.target && ev.target.id === id) renderAllShips(); });
+  });
 
   // ═══════════ 🤖 히어로: 결과물 중심 한 줄 요약(배237) ═══════════
   function renderHero(d){
@@ -2057,6 +2249,16 @@
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
     var _queueArr = parseJson(a[14]);
+    // 전체 배 정리·보관함이 같은 배열을 쓴다 — 화면들이 서로 다른 사본을 보지 않게 한 곳에 담는다.
+    _queueAll = Array.isArray(_queueArr) ? _queueArr : [];
+    try{ renderAllShips(); }catch(e){
+      var asEl = document.getElementById('all-ships');
+      if(asEl) asEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">전체 배 표시 오류.</div>';
+    }
+    try{ renderTrash(); }catch(e){
+      var tsEl = document.getElementById('trash-ships');
+      if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
+    }
     try{ renderActiveMissions(_queueArr); }catch(e){
       var amEl = document.getElementById('active-missions');
       if(amEl) amEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 표시 오류.</div>';
