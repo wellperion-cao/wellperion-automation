@@ -18,9 +18,10 @@
 //   토큰·챗ID 등 비밀값은 절대 repo 하드코딩 금지 — 전부 ScriptProperties 서버측 보관.
 
 // ─── 상수 ───
-// ★값 '접수 VOC' 는 실제 구글시트 탭 이름이다 — 코드에서만 바꾸면 시트를 못 찾는다.
-//   이름 정리는 구글시트 탭을 함께 바꿔야 완결되므로 별건으로 남긴다(2026-07-27 시우).
-var LEGACY_RECEPTION_SHEET = '접수 VOC';
+// 레거시 접수 원장 탭. 2026-07-27 실측 — 이 탭은 현재 스프레드시트에 없다(실제 탭 8개: 접수_청결·
+//   접수_시설고장·접수_분실물·접수_컴플레인·접수_칭찬·접수_쓴소리·휴회접수·습득물). 즉 옛 이름을
+//   바꿔도 옮길 대상이 없다 — 레거시 경로가 탭을 새로 만들 때만 쓰이는 이름이라 새 이름으로 둔다.
+var LEGACY_RECEPTION_SHEET = '접수 RECEPTION';
 var LEGACY_RECEPTION_HEADERS = [
   '접수ID', '접수일시', '유형', '위치', '사진URL',
   '내용', '연락처', '상태', '담당', '처리메모'
@@ -31,9 +32,12 @@ var LEGACY_RECEPTION_STATUS_COLORS = {
   '처리중': '#5b9fd5', // 파랑
   '완료':  '#6abf7b'  // 초록
 };
-// ★값 'VOC_Photos' 는 실제 구글드라이브 폴더 이름이다 — 코드만 바꾸면 새 폴더가 생겨
-//   기존 접수 사진과 갈라진다. 드라이브 폴더를 함께 바꿔야 완결(별건, 2026-07-27 시우).
-var RECEPTION_PHOTO_FOLDER_NAME = 'VOC_Photos';
+// 접수 사진 Drive 폴더 이름. 2026-07-27 GM 지시로 VOC_Photos → RECEPTION_Photos 개명.
+//   폴더는 실물 자원이라 '이름을 바꾸면 못 찾는' 위험이 있다 → 평소 조회는 ScriptProperty 에 저장된
+//   폴더 ID 로 하고(이름 무관), 이름 조회는 폴백일 뿐이며 새 이름→옛 이름 순으로 본다.
+//   실제 폴더 개명은 rename_legacy_resources 액션이 한 번 수행한다(사진·링크는 ID 기준이라 불변).
+var RECEPTION_PHOTO_FOLDER_NAME     = 'RECEPTION_Photos';
+var RECEPTION_PHOTO_FOLDER_NAME_OLD = 'VOC_Photos';
 
 // ─── 종합 접수처 상수 ───
 // REG_CATEGORIES: 카테고리 라우팅 SSOT. dept 변경 시 여기 한 줄만 수정.
@@ -466,6 +470,9 @@ function _vGetPhotoFolder() {
   }
   if (!folder) {
     var existing = DriveApp.getRootFolder().getFoldersByName(RECEPTION_PHOTO_FOLDER_NAME);
+    if (!existing.hasNext()) {   // 아직 개명 전이면 옛 이름으로 한 번 더 — 새 폴더를 만들어 갈라지지 않게
+      existing = DriveApp.getRootFolder().getFoldersByName(RECEPTION_PHOTO_FOLDER_NAME_OLD);
+    }
     folder = existing.hasNext() ? existing.next()
       : DriveApp.getRootFolder().createFolder(RECEPTION_PHOTO_FOLDER_NAME);
     PropertiesService.getScriptProperties().setProperty('RECEPTION_PHOTO_FOLDER', folder.getId());
@@ -899,6 +906,48 @@ function _regDelete(body) {
     return _vJson({ ok: true, id: id, category: cat.label, deleted: 1, message: '접수건이 삭제되었습니다.' });
   }
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
+}
+
+// ─── rename_legacy_resources — 구글 실물 자원(드라이브 폴더·시트 탭) 이름의 VOC 제거 (GATED·일회성) ───
+// 2026-07-27 GM 지시 '연결된 부분도 다 수정'. 코드 상수만 바꾸면 실물과 어긋나므로 실물을 여기서 바꾼다.
+// 안전: ①드라이브 폴더는 ID 로 잡아 rename 한다 — 폴더 ID·그 안 파일 ID·공개 사진 URL 전부 불변이라
+//   기존 접수 사진 링크가 깨지지 않는다. ②시트 탭은 있을 때만 바꾼다(없으면 건드리지 않고 보고만).
+// 멱등: 이미 새 이름이면 아무것도 안 한다. 두 번 돌려도 결과 같음.
+function _renameLegacyResources() {
+  var done = [];
+
+  // 1) 접수 사진 Drive 폴더
+  try {
+    var folder = _vGetPhotoFolder();   // ID 우선 → 이름 폴백(새→옛). 여기서 이미 올바른 폴더를 잡는다.
+    var curName = folder.getName();
+    if (curName === RECEPTION_PHOTO_FOLDER_NAME) {
+      done.push('드라이브 폴더: 이미 ' + RECEPTION_PHOTO_FOLDER_NAME + ' (변경 없음)');
+    } else {
+      folder.setName(RECEPTION_PHOTO_FOLDER_NAME);
+      done.push('드라이브 폴더: ' + curName + ' → ' + RECEPTION_PHOTO_FOLDER_NAME +
+                ' (폴더 ID ' + folder.getId() + ' 불변 · 사진 링크 영향 없음)');
+    }
+  } catch (e) {
+    done.push('드라이브 폴더: 실패 — ' + e);
+  }
+
+  // 2) 레거시 접수 원장 시트 탭 (있을 때만)
+  try {
+    var ss = _vGetSpreadsheet();
+    var old = ss.getSheetByName('접수 VOC');
+    if (!old) {
+      done.push("시트 탭: '접수 VOC' 없음 — 바꿀 대상 없음(현재 탭 " + ss.getSheets().length + '개)');
+    } else if (ss.getSheetByName(LEGACY_RECEPTION_SHEET)) {
+      done.push("시트 탭: '" + LEGACY_RECEPTION_SHEET + "' 가 이미 있어 자동 병합하지 않음 — 사람이 확인 필요");
+    } else {
+      old.setName(LEGACY_RECEPTION_SHEET);
+      done.push("시트 탭: '접수 VOC' → '" + LEGACY_RECEPTION_SHEET + "'");
+    }
+  } catch (e) {
+    done.push('시트 탭: 실패 — ' + e);
+  }
+
+  return _vJson({ ok: true, done: done });
 }
 
 // ─── reg_reprefix — 접수번호 앞글자만 교체 (GATED·일회성 마이그레이션) ───
@@ -1548,6 +1597,8 @@ function _vProcess(action, body, params) {
   if (action === 'rename_loc_header') return _regRenameLocHeader();
   // 접수번호 앞글자 VOC- → RECEPTION- (숫자 불변) · 일회성 · GATED. 2026-07-27 시우(GM 승인).
   if (action === 'reg_reprefix') return _regReprefix();
+  // 구글 실물 자원(드라이브 폴더·시트 탭) 이름의 VOC 제거 · 일회성 · GATED. 2026-07-27 시우(GM 지시).
+  if (action === 'rename_legacy_resources') return _renameLegacyResources();
 
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
