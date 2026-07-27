@@ -279,6 +279,17 @@ function _resolveInquiryChannelRaw_(headers, row, channelKeys) {
 // 자유라벨('성인 수영 (개인레슨/단체레슨)' 등)을 표준 종목으로 집계한다.
 // 라벨 통째 쪼개기 금지 — 한 응답이 여러 종목 다중체크면 각 버킷 +1(부분문자열 매칭).
 // 어느 버킷에도 안 걸리고 텍스트가 있으면 '기타'로 귀속(날조 금지).
+//
+// ★★이름 체계가 LESSON_DISPLAY 와 다르다 — 두 목록을 직접 조인하지 말 것(2026-07-27 실사고).
+//   이 함수가 내는 이름          : 수영 · 체조 · P.T · 골프 · 스쿼시 · 필라테스 · 아쿠아로빅
+//                                 · 발레 · 바레 · 뮤지컬 · 루프메소드(구 통합옵션) · 기타
+//   LESSON_DISPLAY 의 종목명     : 위와 같되 '체조' → '체조&트램폴린', 그리고 '모자수영' 별도
+//                                 (이 함수는 '모자수영'을 /수영/ 으로 잡아 '수영' 버킷에 넣는다)
+//   실사고: 배140 자동복원이 이 함수 결과('체조')를 LESSON_DISPLAY 명('체조&트램폴린')과
+//           정확일치로 맞추려다 실패해, 체조로 돌려야 할 2건이 수영·골프로 잘못 붙었다.
+//   두 이름공간을 이어야 하면 정확일치 대신 **명시적 별칭/부분일치**를 쓰고, 매칭 실패 시
+//   조용히 다른 값으로 폴백하지 말고 '미매칭'으로 남겨라(틀린 귀속 > 미집계).
+//   ※ 이 함수의 출력명을 바꾸는 것은 금지 — 퍼널·대시보드 집계가 이 이름으로 붙어 있다.
 function _sportBuckets_(raw) {
   var s = String(raw == null ? '' : raw);
   var out = [];
@@ -937,6 +948,74 @@ function _syncLessonRegistry_() {
         try { _notifyTelegram('⚠️ <b>강습원장 잔재 서명 다수 감지</b> — ' + _fixIdx.length + '건(상한 20 초과). 자동 정리하지 않음, 수동 확인 요망.'); } catch (eN2) {}
       }
     } catch (eFix) {}
+
+    // ─── [배140 · 2026-07-27] 1회성 교정 — 배포 사고 잔재 3행 (백업 후 실행·자기 종료형) ───
+    //   앞선 자동복원(@154)이 종목명 불일치('체조' vs '체조&트램폴린')로 오작동해, 체조로
+    //   돌려야 할 2행이 수영·골프로 잘못 붙었고 뮤지컬 전용 1행은 중복으로 남았다.
+    //   식별: 유소년 · 스코프 없는 키 · 같은 전화의 스코프 '뮤지컬' 행이 존재 · 현재 종목의
+    //         팀시트 명단에는 없음 → 사고로 라벨이 바뀐 행(정상 등록자는 팀시트에 있어 제외).
+    //   판정: 그 사람 문의 종목에 체조/트램폴린이 있으면 '체조&트램폴린' 복원, 없으면 잉여 행 제거
+    //         (같은 사람·같은 종목의 정상 스코프 행이 이미 있어 정보 손실 0).
+    //   안전: ①시트 백업 먼저 ②상한 5행 ③처리 내역 텔레그램 통보 ④ScriptProperties 로 1회만.
+    try {
+      var _P = PropertiesService.getScriptProperties();
+      if (_P.getProperty('LESSON_REG_FIX_20260727') !== 'done') {
+        var _BK = '강습 등록현황_백업_20260727';
+        var _ssB = SpreadsheetApp.openById(LESSON_SS_ID);
+        if (!_ssB.getSheetByName(_BK)) _ssB.getSheetByName(_LESSON_REG_SHEET).copyTo(_ssB).setName(_BK);
+
+        var _muPhone = {};                                  // 스코프 뮤지컬 행이 있는 전화
+        for (var m1 = 0; m1 < rows.length; m1++) {
+          if (String(rows[m1][6] || '').indexOf('|뮤지컬') >= 0) _muPhone[_normPhone_(rows[m1][3])] = 1;
+        }
+        var _teamHas = {};                                  // 팀시트 현재 명단(전화|종목)
+        (_collectLessonRoster_('유소년강습') || []).forEach(function(mm){
+          if (!mm.ledgerSrc) _teamHas[_normPhone_(mm.phone) + '|' + mm.sport] = 1;
+        });
+        var _inqLbl = {};                                   // 전화 → 문의 종목 라벨
+        (_lessonReadRows_(LESSON_GID_YOUTH) || []).forEach(function(ir){
+          var p = _normPhone_(ir.phone); if (p) _inqLbl[p] = String(ir.sport || '');
+        });
+
+        var _hit = [], _rm = {};
+        for (var v = 0; v < rows.length; v++) {
+          if (String(rows[v][0] || '').trim() !== '유소년강습') continue;
+          var vk = String(rows[v][6] || '');
+          if (vk.split('|').length !== 2) continue;         // 스코프 키(3토막)는 정상 행
+          var vp = _normPhone_(rows[v][3]), vs = String(rows[v][1] || '').trim();
+          if (!_muPhone[vp]) continue;                      // 뮤지컬 등록자가 아니면 무관
+          if (_teamHas[vp + '|' + vs]) continue;            // 팀시트에 실재 → 정상 행
+          _hit.push(v);
+        }
+        if (_hit.length && _hit.length <= 5) {
+          var _log = [];
+          _hit.forEach(function(v){
+            if (/체조|트램폴린/.test(_inqLbl[_normPhone_(rows[v][3])] || '')) {
+              _log.push(String(rows[v][2] || '') + ': ' + rows[v][1] + ' → 체조&트램폴린');
+              rows[v][1] = '체조&트램폴린'; dirty = true;
+            } else {
+              _log.push(String(rows[v][2] || '') + ': ' + rows[v][1] + ' 잉여행 제거(뮤지컬 정상행 유지)');
+              _rm[v] = 1;
+            }
+          });
+          var _rmN = 0; for (var rk in _rm) { if (_rm.hasOwnProperty(rk)) _rmN++; }
+          if (_rmN) {
+            var _keep = [];
+            for (var w2 = 0; w2 < rows.length; w2++) { if (!_rm[w2]) _keep.push(rows[w2]); }
+            rows = _keep; dirty = true;
+          }
+          _P.setProperty('LESSON_REG_FIX_20260727', 'done');
+          try {
+            _notifyTelegram('🧹 <b>강습원장 교정 완료</b>(배140 · 1회)\n백업: ' + _BK
+              + '\n' + _log.join('\n'));
+          } catch (eN3) {}
+        } else if (_hit.length > 5) {
+          try { _notifyTelegram('⚠️ <b>강습원장 교정 보류</b> — 대상 ' + _hit.length + '행(상한 5 초과). 자동 처리하지 않음.'); } catch (eN4) {}
+        } else {
+          _P.setProperty('LESSON_REG_FIX_20260727', 'done');   // 대상 0 = 이미 정상
+        }
+      }
+    } catch (eFix2) {}
 
     if (dirty && rows.length) {
       sh.getRange(2, 1, rows.length, _LESSON_REG_HEADER.length).setValues(rows);
