@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-cpo_staff_feedback_watch.py — 실무진 피드백이 들어오면 그 자리에서 시포 '배'로 띄운다.
+cpo_staff_feedback_watch.py — 실무진 피드백이 들어오면 그 자리에서 담당 C-Level '배'로 띄운다.
 
 왜 있나 (2026-07-25 GM 지시)
   "이건은 발생할때마다 체크해서 해줄순없나?"
@@ -11,9 +11,11 @@ cpo_staff_feedback_watch.py — 실무진 피드백이 들어오면 그 자리�
 
 무엇을 하나
   1. staff_feedback_list 로 전체 피드백을 읽는다(읽기 전용).
-  2. 처리상태가 아직 '접수'인 건 중 배가 없는 것만 status/_queue.json 에 시포 배로 올린다.
+  2. 처리상태가 아직 '접수'인 건 중 배가 없는 것만 status/_queue.json 에 배로 올린다.
      - 대조키 = 접수ID(FB…). 행번호로 찾지 않는다(실고객 오삭제 사고와 동종 위험 회피).
      - 활성 큐 + 아카이브 양쪽을 보고 중복을 막는다(한 피드백 = 한 배).
+     - 담당은 화면(업무 구분)·종류 키워드로 가른다(route_clevel, 2026-07-27 배10309) —
+       애매하면 시포(cpo)로 보낸다(안전 폴백). 화면이 어디든 무조건 시포로 서던 문제 수정.
   3. 하트비트를 남긴다(가동 신호는 배가 아니라 하트비트로 — 배9995 도배 사고 교훈).
 
 무엇을 안 하나
@@ -41,6 +43,7 @@ sys.path.insert(0, str(SCRIPTS))
 from queue_lock import mutate_queue, load_queue  # noqa: E402
 from module_heartbeat import record_heartbeat  # noqa: E402
 from assign_short_no import next_short_no  # noqa: E402
+from clevel_colors import nickname as clevel_nickname  # noqa: E402
 
 MODULE_ID = "cpo-staff-feedback-watch"
 ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"
@@ -62,6 +65,34 @@ OPEN_STATUS = ("PENDING", "IN_PROGRESS")
 #   순서 반영은 선별 게이트(welly_auto_runner._sort_key)가 이 칸을 읽어서 한다.
 DEFAULT_PRIORITY = "⛴️여객선"   # 접수 시점엔 실제 무게를 알 수 없음 — 중간값
 URGENCY_ALLOWED = ("급함", "보통", "천천히")
+
+# ★2026-07-27 배10309(시우→시포) — 화면이 무엇이든 전부 시포 배로 서던 문제를 고친다.
+#   '업무 구분'(screen) 선택값이 폼(실무진피드백.html)의 '어떤 업무인가요?'에서 담당을 가리려고
+#   있는 칸인데, build_ship() 이 clevel 을 'cpo' 로 하드코딩해 그 값을 제목에만 쓰고 버리고 있었다.
+#   이 폼은 여러 화면이 공유하는 단일 창구(멤버십·강습·종합접수처 + 앞으로 더 붙을 화면들)라
+#   화면값 문자열을 하나씩 나열하지 않고 키워드로 판정한다 — 새 화면이 붙어도 코드 재수정 없이 맞는다.
+#   매핑 근거는 지어내지 않고 이미 쓰는 도메인 정의 그대로 옮긴다:
+#     회원·문의·강습 = 시포(cpo) / 점검·공지·접수·VOC = 시우(coo) /
+#     시설 배선·자동화·화면 장애 = 시토(cto) / 마케팅·콘텐츠 = 시모(cmo).
+#   인사·재무(시로·시뽀)는 나우열M 관할이라 자동 배정 대상이 아니다 — 해당하면 시우로 보내 사람이 본다.
+#   순서가 먼저인 항목이 우선 매치된다. 어느 것도 안 맞으면 시포로 보낸다(지금 동작 유지 = 안전 폴백,
+#   잘못 보내 사라지는 것보다 낫다).
+_CLEVEL_KEYWORDS = (
+    ("cto", ("시설", "배선", "자동화", "장애")),
+    ("cmo", ("마케팅", "콘텐츠", "홍보")),
+    ("coo", ("인사", "재무", "급여", "채용", "회계")),  # 나우열M 관할 — 자동배정 아님, 시우가 사람에게 넘김
+    ("coo", ("점검", "공지", "접수", "VOC", "voc")),
+    ("cpo", ("회원", "강습", "문의", "멤버십")),
+)
+
+
+def route_clevel(screen: str, kind: str) -> str:
+    """화면(업무 구분)·종류 텍스트로 담당 C-Level 을 고른다. 애매하면 cpo(안전 폴백)."""
+    text = f"{screen} {kind}"
+    for clevel, keywords in _CLEVEL_KEYWORDS:
+        if any(k in text for k in keywords):
+            return clevel
+    return "cpo"
 
 
 def fetch_feedback(timeout=60):
@@ -117,6 +148,9 @@ def build_ship(row: dict, queue, today: str) -> dict:
     first = re.sub(r"\s+", " ", content)[:44]
     title = f"실무진 피드백 — {head}: {first}" if head else f"실무진 피드백 — {first}"
 
+    clevel = route_clevel(screen, kind)
+    nick = clevel_nickname(clevel)
+
     nos = [x.get("ship_no") or 0 for x in queue if isinstance(x, dict)]
     ship_no = (max(nos) + 1) if nos else 1
 
@@ -129,9 +163,9 @@ def build_ship(row: dict, queue, today: str) -> dict:
         "(대조키=접수ID). 실무진이 본인 화면에서 처리 결과를 확인할 수 있어야 완료다."
     )
     return {
-        "task_id": f"CPO-{today}-FB-{_slug(fid or first)}",
-        "clevel": "cpo",
-        "title": f"[시포] {title}",
+        "task_id": f"{clevel.upper()}-{today}-FB-{_slug(fid or first)}",
+        "clevel": clevel,
+        "title": f"[{nick}] {title}",
         "status": "PENDING",
         "priority": DEFAULT_PRIORITY,
         # 급한정도는 무게와 별개 칸으로 — 선별 게이트가 이 값을 먼저 보고 순서를 정한다(GM ①안 2026-07-27).
