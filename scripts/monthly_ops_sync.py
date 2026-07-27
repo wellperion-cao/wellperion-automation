@@ -429,6 +429,8 @@ def run(month: str | None, apply: bool) -> None:
     ) else None
 
     n_auto = n_observe = n_manual = n_gap = changed = obs_changed = honesty_changed = 0
+    n_basis = 0
+    basis_mismatch: list = []
     print(f"\n{'상태':<6} {'목표':<36} 내용")
     print("─" * 72)
     for o in objs:
@@ -466,14 +468,29 @@ def run(month: str | None, apply: bool) -> None:
                 write_back(o, v)
             print(f"{'👀상태만':<6} {v['title']:<36} {v['detail']}  [{v['src']}]")
         elif vd == "MANUAL":
-            n_manual += 1
-            print(f"{'✋수동':<6} {v['title']:<36} {v['detail']}")
+            basis = items_basis_verdict(o)
+            if basis is None:
+                n_manual += 1
+                print(f"{'✋수동':<6} {v['title']:<36} {v['detail']}")
+            else:
+                n_basis += 1
+                expected, detail = basis
+                if expected != o.get("progress"):
+                    basis_mismatch.append((v["title"], o.get("progress"), expected, detail))
+                    print(f"{'🧮근거':<6} {v['title']:<36} {detail} → 기록값 {o.get('progress')} ❌불일치")
+                else:
+                    print(f"{'🧮근거':<6} {v['title']:<36} {detail}")
         else:
             n_gap += 1
             print(f"{'⚠️미연동':<6} {v['title']:<36} {v['detail']}")
     print("─" * 72)
     print(f"요약: 🔄자동 {n_auto}(변경 {changed}) · 👀상태만 {n_observe} · "
-          f"✋수동 {n_manual} · ⚠️미연동 {n_gap}")
+          f"🧮근거계산 {n_basis} · ✋수동 {n_manual} · ⚠️미연동 {n_gap}")
+    if basis_mismatch:
+        print(f"\n❌ 근거와 숫자가 어긋난 목표 {len(basis_mismatch)}건 — 둘 중 하나는 틀렸습니다.")
+        for title, got, exp, detail in basis_mismatch:
+            print(f"   · {title:<38} 기록 {got} ≠ 근거계산 {exp}  ({detail})")
+        print("   → 항목 상태가 바뀌었으면 items_basis 를, 숫자가 틀렸으면 progress 를 고치세요.")
 
     total = len(objs)
     # 자동화율 정의(honesty_summary.자동화율) = 실측(measured=AUTO) ÷ 총. status_map 관찰(observed)은
@@ -483,6 +500,9 @@ def run(month: str | None, apply: bool) -> None:
     if live and (changed or obs_changed or honesty_changed):
         plan["honesty_summary"] = {
             "총": total, "실측": n_auto, "상태만": n_observe,
+            # 근거계산 = 연결 소스는 없지만 '몇 개 중 몇 개' 를 구조로 적어 엔진이 센 값(items_basis).
+            # 사람이 타이핑한 숫자(사람값)와 구분한다 — 근거가 있으면 어긋남을 기계가 잡는다(2026-07-27).
+            "근거계산": n_basis, "근거어긋남": len(basis_mismatch),
             "사람값": n_manual, "측정실패": n_gap,
             "자동화율": auto_rate, "at": datetime.now().strftime("%Y-%m-%d"),
         }
@@ -515,6 +535,51 @@ def run(month: str | None, apply: bool) -> None:
           f"🔧측정실패 {n_gap} → 자동화율 {round(auto_rate * 100)}%")
 
     warn_unbacked_approvals(objs)
+
+
+# ── items_basis — 손으로 쓴 숫자를 '근거에서 계산된 숫자'로 바꾸는 칸 ────────────
+# 왜 있나: 목표 21건 중 14건이 연결 소스가 없어 진척률이 사람이 타이핑한 값이었다. 근거가 note
+#   줄글에만 있어 숫자와 근거가 따로 놀았고, 2026-07-27 에 없는 승인을 근거로 삼은 숫자가 4건
+#   나왔다(INC-038). 소스가 없는 목표라도 '무엇을 몇 개 중 몇 개 했나' 는 사람이 구조적으로 적을 수
+#   있다 — 그러면 숫자는 사람이 아니라 엔진이 센다.
+# 쓰는 법 — 두 가지 중 목표에 맞는 쪽을 쓴다.
+#   ① 항목 세기: {"total": 4, "weight_pct": 25, "started": [...]}  (또는 "done")
+#   ② 하위 점수 평균: {"total": 4, "subs": {"지원부": 70, "시설부": 65, "주차": 35}}
+#      — 하위가 total 보다 적으면 '평균에서 빠진 것이 있다'고 같이 알린다(빠진 축이 평균을 부풀린다).
+# 판정: 센 값 ≠ 적힌 progress 면 '어긋남'으로 띄운다. 자동으로 덮어쓰지 않는다 —
+#   항목 상태가 바뀐 건지 숫자가 틀린 건지는 사람이 안다(가짜 자동화 금지·약속 L05).
+def items_basis_verdict(o: dict):
+    ib = o.get("items_basis")
+    if not isinstance(ib, dict):
+        return None
+    try:
+        total = int(ib.get("total") or 0)
+    except (TypeError, ValueError):
+        return None
+
+    subs = ib.get("subs")
+    if isinstance(subs, dict) and subs:
+        try:
+            vals = [float(x) for x in subs.values()]
+        except (TypeError, ValueError):
+            return None
+        expected = round(sum(vals) / len(vals))
+        detail = f"하위 {len(vals)}개 평균 = {expected}%"
+        if total and len(vals) < total:
+            detail += f" ⚠️{total}개 중 {total - len(vals)}개가 평균에서 빠짐"
+        return expected, detail
+
+    try:
+        weight = int(ib.get("weight_pct") or 0)
+    except (TypeError, ValueError):
+        return None
+    if total <= 0 or weight <= 0:
+        return None
+    hit = ib.get("started") or ib.get("done") or []
+    if not isinstance(hit, list):
+        return None
+    expected = len(hit) * weight
+    return expected, f"{total}항목 × {weight}% 중 {len(hit)}항목 = {expected}%"
 
 
 # ── 근거 없는 '승인' 기록 적발 (2026-07-27 GM 정정 3건 후속) ──────────────────
