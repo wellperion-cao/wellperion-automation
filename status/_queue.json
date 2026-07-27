@@ -1489,5 +1489,21 @@
     "module": "home",
     "surface": "autonomy",
     "audience": "office"
+  },
+  {
+    "task_id": "CMO-2026-07-27-모듈-살아있음-판정이-공유파일-MTIME에-기대-거",
+    "clevel": "cmo",
+    "title": "[시모] 모듈 살아있음 판정이 공유파일 mtime에 기대 '거짓 안심' — CMO 모듈 4건 감지 정합 수리",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-27",
+    "from": "",
+    "note": "2026-07-27 아침 자가점검(약속 L20)에서 발견. 뿌리 하나 — 모듈이 '내가 낸 산출물'이 아니라 '남들도 건드리는 공유 파일 mtime'을 살아있음 신호로 쓰고 있어, 실제로 멈춰도 감지기가 ok 로 뜬다.\n\n[근거·재현] status/module_silence_snapshot.json(07-26 09:11 스캔) + logs/ 실측 대조\n(1) cmo-case-series-dispatch = 스냅샷 'ok'(silence 0.7h). 근거 = review_queue.json mtime. 그런데 logs/case_series_dispatch.log 07-27 07:30 = '시리즈 종결 마커 감지 — 평일 디스패처 휴면(선정·복구·발송 없음)'. daily 선언 모듈이 오늘 아무 일도 안 했는데 ok 다. review_queue.json 은 AI하루 카드·발행 등 다른 경로가 계속 갱신하므로 이 모듈은 영원히 침묵 판정이 나지 않는다.\n(2) 같은 review_queue.json mtime 을 cmo-content-pipeline · cmo-eval-feedback-loop 도 신호로 쓴다 — 세 모듈이 한 파일에 의존해 하나만 움직여도 셋 다 살아있는 것으로 보인다.\n(3) cmo-content-intake = 'unmeasurable'(로컬 아티팩트 판정불가). 실제로는 15분마다 정상 가동 중(logs/cmo_intake_to_review.log 07-27 09:00 까지 정상 기록). 즉 지금은 잘 도는데 감지기가 못 보고, 반대로 진짜 멈춰도 못 본다. data_source.ref 가 산문 서술(GAS→스크립트→큐)이라 module_silence_detector.resolve_last_activity() 가 경로를 잡지 못한다.\n(4) cmo-publish-digest = 'active_no_cadence' · 마지막 신호 2026-07-23(67h 전). notify_spec 에 주기 미선언이라 침묵 판정 자체가 보류된다 — 얼마나 조용해야 이상인지 정의가 없다.\n(5) 등록 누락: 예약작업 Wellperion-IG-Series-Produce-0730 이 07-25·26·27 사흘 연속 '기획예정 편 소진 — 생성 금지'로 무산출 종료(logs/ig_series_producer.log). 경고는 notify_prefs 저신호 설정으로 무음. 이 파이프라인은 module_registry 에 cmo-* 모듈로 없어 침묵 감지 대상 밖이다.\n\n[원칙] 약속 L21 — 새 감시 장치를 만들지 않는다. 모든 판정이 이미 지나가는 관문 = module_silence_detector.resolve_last_activity() 와 status/module_registry.json 의 data_source.ref 한 곳. 거기서만 고치고 새 파일·새 스크립트는 만들지 않는다.",
+    "next": "① 각 cmo 모듈 data_source.ref 를 '그 모듈만 쓰는 자기 산출물'(전용 로그·상태파일)로 교체 — 공유 review_queue.json mtime 의존 해소 ② cmo-content-intake ref 를 logs/cmo_intake_to_review.log 로 교체(판정 가능화) ③ cmo-publish-digest 는 발행이 있을 때만 도는 이벤트형인지 확인 후, 주기를 선언하거나 침묵 판정 대상에서 명시적으로 뺀다(둘 중 하나 — 지금처럼 보류로 두지 않는다) ④ IG-Series-Produce-0730 무산출 사흘 — 등록부 편입 대신 배834 관찰루프가 '기획예정 소진'을 흡수할 수 있는지 먼저 검토(모듈 수 늘리지 않는 쪽 우선)",
+    "depends_on": "",
+    "ship_no": 10305,
+    "short_no": 125,
+    "module": "cmo-content-pipeline",
+    "surface": "M1"
   }
 ]
