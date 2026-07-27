@@ -346,6 +346,38 @@ def fetch_lesson_registry(date_from: str, date_to: str) -> dict | None:
         return None
 
 
+def fetch_lesson_collection_health() -> str:
+    """[배155 · 2026-07-27] 강습 등록 '수집이 성립하는지'를 매번 실측해 정직 꼬리표를 만든다.
+
+    왜 필요한가: 팀시트의 등록 행에 사람 정보(성함·휴대폰)가 비어 있으면 등록 원장은 전화가
+    키라서 그 행을 아예 못 담는다 → 보고서는 '강습 신규 등록 0건'을 사실처럼 낸다. 실제로
+    2026-07-20 이후 신규가 0건으로 찍혔고, 실측 결과 9개 팀시트 중 수영 2개만 정상이었다
+    (나머지는 등록 행 100%가 성함·휴대폰 공백 — 폼 응답 칸은 비고 팀 관리 칸만 채워진 상태).
+
+    이 꼬리표는 매번 라이브를 재서 붙는다 — 고쳐지면 저절로 사라진다(낡은 문구가 남지 않게).
+    수집 실패 시엔 빈 문자열(꼬리표 없음) — 진단이 안 됐다고 없는 문제를 지어내지 않는다.
+    """
+    try:
+        data = _http_get(f"{GAS_URL}?action=diag_team_sheet_headers", timeout=60)
+        if not data.get("ok"):
+            return ""
+        bad, total_blank = [], 0
+        for sh in data.get("sheets") or []:
+            blank = sh.get("blankNamePhone") or 0
+            if blank > 0:
+                bad.append(f"{sh.get('명')} {blank}")
+                total_blank += blank
+        if not bad:
+            return ""
+        head = " · ".join(bad[:5]) + (f" 외 {len(bad) - 5}종목" if len(bad) > 5 else "")
+        return (f"⚠️ 강습 신규 등록은 **부분 미측정** — 팀시트 {len(bad)}곳에서 등록 행에 "
+                f"성함·휴대폰이 비어 있어 등록 원장에 편입되지 않는다(총 {total_blank}행: {head}). "
+                "여기 찍힌 숫자는 '실제 0'이 아니라 '수집이 닿지 않은 몫이 빠진 값'이다. 해소 = 배155")
+    except Exception as e:
+        print(f"[WARN] 강습 수집 건강도 진단 실패(꼬리표 생략): {e}")
+        return ""
+
+
 def _member_registered_summary(mr: dict | None) -> dict | None:
     """member_registered_list 원응답 → {total, by_program}. program 칼럼이 실제로 채워진 경우만 세부 분해,
     아니면 by_program={} (단일 버킷 "멤버십"으로 표기하도록 상위에서 처리)."""
@@ -416,6 +448,10 @@ def _fmt_registration_detail_md(mr: dict | None, lr: dict | None, date_from: str
     # 날짜만 기준선(2000-01-01)으로 적재돼 있다 — 원장 2,504행 중 2,408행(96%)이 그 상태다.
     # 사람도 건수도 다 있고, '언제 등록했는지'만 모른다. 그래서 기간별 비교만 불가하고
     # 총계는 정상이다. 진짜 등록일은 팀시트에도 문의시트에도 없어(문의일≠등록일) 복원 불가.
+    # [배155] 수집 자체가 성립하는지 매번 실측 — 안 되면 그 사실을 숫자 옆에 붙인다(0 위장 금지).
+    _coll = fetch_lesson_collection_health()
+    if _coll:
+        lines.append("- " + _coll)
     lines.append(
         "- ⚠️ 강습 등록 원장: 2026-06-27 시드 시점에 있던 2,408명(전체의 96%)은 등록일이 "
         "기준선(2000-01-01)으로 적재됨 — **인원·총계는 정상, '언제 등록했는지'만 미상**. "
