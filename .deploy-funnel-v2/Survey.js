@@ -850,8 +850,91 @@ function _syncLessonRegistry_() {
         _notifyTelegram('⚠️ <b>강습원장 대량 신규 감지</b> — ' + newIdx.length + '건(임계 ' + _LESSON_BULK_NEW_GUARD + ' 초과) → 이관 간주, 등록일=기준선(2000-01-01) 적재(이번달 KPI 오염 방지). 실제 당일 신규라면 개별 확인 요망.');
       } catch (eBulk) {}
     }
+    // ─── [배140 · 2026-07-27 시모] 응답탭發 행 불변식 + 배포사고 잔재 정리(자기 소멸형) ───
+    //   ① 불변식: 응답탭에는 '등록일' 칸이 없다 → 응답탭發(키가 '전화|유형|종목') 행의 등록일은
+    //      언제나 기준선이어야 한다. 알 수 없는 날짜를 오늘로 찍으면 그날 신규가 부풀어 오른다.
+    //      실제로 2026-07-27 배포에서 11행이 오늘 날짜로 찍혔다. 매 sync 마다 되돌린다(자가치유).
+    //   ② 잔재 정리: 배선 첫 배포(@152)가 응답탭發 행을 '전화|유형' 키로 넣어 같은 사람의 팀시트
+    //      종목 행을 덮어썼다(수영 8·체조 2). @153 에서 키를 종목까지 스코프해 충돌은 막았지만,
+    //      @152 가 만든 옛 행이 고아로 남아 같은 사람이 2행이 됐다.
+    //      서명 = '키에 종목 스코프가 없는데 종목은 팀시트 없는 종목' — 이 조합은 그 사고로만
+    //      생긴다. 팀시트에 현재 등록돼 있으면 위 루프가 이미 종목을 원복시켰으므로 여기 안 걸린다.
+    //      처리: 그 사람의 문의 응답 종목에서 팀시트가 있는 종목을 되찾아 복원(= 사고 전 라벨),
+    //           되찾을 게 없으면(뮤지컬 전용) 스코프 행이 이미 있으므로 고아 행 제거.
+    //      정리 후엔 서명에 걸리는 행이 0이 되어 이 블록은 무해한 무동작 가드로 남는다.
+    try {
+      var _ledgerOnly = {}, _teamSport = {};
+      ['성인강습', '유소년강습'].forEach(function(t){
+        _ledgerOnly[t] = {}; _teamSport[t] = {};
+        (LESSON_DISPLAY[t] || []).forEach(function(it){
+          if (it.sheet) _teamSport[t][it.명] = 1;
+          else if (it.ledger) _ledgerOnly[t][it.명] = 1;
+        });
+      });
+      // ① 불변식 — 응답탭發 행 등록일 강제 기준선
+      for (var u = 0; u < rows.length; u++) {
+        var uk = String(rows[u][6] || '');
+        var ut = String(rows[u][0] || '').trim();
+        var us = String(rows[u][1] || '').trim();
+        if ((_ledgerOnly[ut] || {})[us] && uk.indexOf('|' + us) >= 0) {
+          if (String(rows[u][5] || '') !== '2000-01-01') { rows[u][5] = '2000-01-01'; dirty = true; }
+        }
+      }
+      // ② 잔재 정리 — 서명 행 수집
+      var _fixIdx = [];
+      for (var q = 0; q < rows.length; q++) {
+        var qt = String(rows[q][0] || '').trim();
+        var qs = String(rows[q][1] || '').trim();
+        var qk = String(rows[q][6] || '');
+        if (!(_ledgerOnly[qt] || {})[qs]) continue;      // 팀시트 없는 종목 행만
+        if (qk.indexOf('|' + qs) >= 0) continue;         // 스코프 키 = 정상 행
+        _fixIdx.push(q);
+      }
+      if (_fixIdx.length && _fixIdx.length <= 20) {      // 안전 상한 — 대량이면 손대지 않고 경보
+        var _inqSport = {};                              // 유형 → (전화 → 응답 종목라벨)
+        ['성인강습', '유소년강습'].forEach(function(t){
+          _inqSport[t] = {};
+          var gidT = (t === '유소년강습') ? LESSON_GID_YOUTH : LESSON_GID;
+          (_lessonReadRows_(gidT) || []).forEach(function(ir){
+            var p = _normPhone_(ir.phone);
+            if (p) _inqSport[t][p] = String(ir.sport || '');
+          });
+        });
+        var _drop = {};
+        _fixIdx.forEach(function(q){
+          var qt = String(rows[q][0] || '').trim();
+          var lbl = (_inqSport[qt] || {})[_normPhone_(rows[q][3])] || '';
+          var bk = _sportBuckets_(lbl), restore = '';
+          // 뒤에서부터 = 문의 라벨에서 팀시트 종목 중 마지막 것. 사고 전 라벨 복원용 —
+          // 실측 대조(체조&트램폴린 371→369)로 이 선택이 사고 전 값과 일치함을 확인했다.
+          for (var z = bk.length - 1; z >= 0; z--) {
+            if ((_teamSport[qt] || {})[bk[z]]) { restore = bk[z]; break; }
+          }
+          if (restore) { rows[q][1] = restore; dirty = true; }
+          else { _drop[q] = 1; }
+        });
+        var _dropN = 0;
+        for (var dk2 in _drop) { if (_drop.hasOwnProperty(dk2)) _dropN++; }
+        if (_dropN) {
+          var _kept = [];
+          for (var w = 0; w < rows.length; w++) { if (!_drop[w]) _kept.push(rows[w]); }
+          rows = _kept; dirty = true;
+          try {
+            _notifyTelegram('🧹 <b>강습원장 잔재 정리</b> — 2026-07-27 배선 배포 사고로 생긴 중복 고아 행 '
+              + _dropN + '건 제거(같은 사람·같은 종목의 정상 행은 그대로). 복원 ' + (_fixIdx.length - _dropN) + '건.');
+          } catch (eN) {}
+        }
+      } else if (_fixIdx.length > 20) {
+        try { _notifyTelegram('⚠️ <b>강습원장 잔재 서명 다수 감지</b> — ' + _fixIdx.length + '건(상한 20 초과). 자동 정리하지 않음, 수동 확인 요망.'); } catch (eN2) {}
+      }
+    } catch (eFix) {}
+
     if (dirty && rows.length) {
       sh.getRange(2, 1, rows.length, _LESSON_REG_HEADER.length).setValues(rows);
+      // 행이 줄었으면(잔재 제거) 남은 꼬리 행을 지운다 — 안 지우면 옛 행이 그대로 남아
+      // '지웠는데 그대로'가 된다. 전 데이터를 위에 다시 쓴 뒤의 꼬리만 지우므로 인덱스 안전.
+      var _tail = last - 1 - rows.length;               // last-1 = 기존 데이터 행수
+      if (_tail > 0 && _tail <= 20) sh.deleteRows(2 + rows.length, _tail);
     }
     cache.put('lesson_reg_synced', '1', 300);          // 5분 가드
   } catch (e) {
