@@ -535,6 +535,35 @@ def run(month: str | None, apply: bool) -> None:
           f"🔧측정실패 {n_gap} → 자동화율 {round(auto_rate * 100)}%")
 
     warn_unbacked_approvals(objs)
+    warn_status_progress_mismatch(objs)
+
+
+# ── 진척과 상태가 서로 다른 말을 하는 목표 적발 (2026-07-27) ─────────────────
+# 왜 있나: 100% 인데 상태가 '진행' 이면 보는 사람마다 다르게 읽는다 — 끝난 건지 계속되는 건지.
+#   실측 2026-07-27: 'CMO 마케팅 자동화' 가 7·8월 두 달 모두 100%+진행 이었다. 실제로는
+#   본질(마케터 200만원 절감)이 5월에 달성돼 끝났고 '지속' 성격만 남은 건인데, 숫자와 상태가
+#   엇갈린 채 다음 달로 계속 복사되고 있었다. 100% 짜리가 매달 목록에 남으면 할 일이 실제보다
+#   많아 보이고, 진짜 진행중인 것이 묻힌다.
+# 무엇을 하나: 어긋난 목표를 실행할 때마다 이름으로 띄운다. 고치지는 않는다 —
+#   '끝났다' 로 볼지 '계속되는 일이라 %가 안 맞는 것' 으로 볼지는 그 목표 주인이 판단할 몫이다.
+def warn_status_progress_mismatch(objs: list) -> None:
+    bad = []
+    for o in objs:
+        if not isinstance(o, dict):
+            continue
+        prog, status = o.get("progress"), str(o.get("status") or "")
+        title = str(o.get("title") or "")[:38]
+        if prog == 100 and status != "완료":
+            bad.append((title, f"100% 인데 상태가 '{status}'", str(o.get("owner") or "?")))
+        elif status == "완료" and isinstance(prog, int) and prog < 100:
+            bad.append((title, f"완료인데 진척 {prog}%", str(o.get("owner") or "?")))
+    if not bad:
+        print("숫자·상태: ✅ 어긋난 목표 없음")
+        return
+    print(f"\n⚠️ 숫자와 상태가 엇갈린 목표 {len(bad)}건 — 보는 사람마다 다르게 읽힙니다.")
+    for title, why, owner in bad:
+        print(f"   · {title:<40} {why}  (담당 {owner})")
+    print("   → 끝났으면 상태를 완료로, 계속되는 일이면 진척을 실제 값으로 내리세요.")
 
 
 # ── items_basis — 손으로 쓴 숫자를 '근거에서 계산된 숫자'로 바꾸는 칸 ────────────
