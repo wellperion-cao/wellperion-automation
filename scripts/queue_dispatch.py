@@ -61,7 +61,10 @@ def build_ship(args, queue):
 
     sender = ROLES.get((args.sender or "").lower(), args.sender or "")
     note = args.note or ""
-    if sender:
+    if getattr(args, "mine", False):
+        # 내가 내 배로 올리는 경우(약속 L20 아침 자가점검) — 전달 마커는 뜻이 없다.
+        note = ("[%s 자가점검 %s] " % (nick, today)) + note
+    elif sender:
         note = ("[%s → %s 전달 %s] " % (sender, nick, today)) + note
 
     return {
@@ -89,6 +92,8 @@ def main() -> int:
     ap.add_argument("--note", default="", help="맥락·재현 방법·근거")
     ap.add_argument("--next", default="", help="받는 쪽이 할 다음 한 걸음")
     ap.add_argument("--sender", default="ceo", help="보내는 역할 (기본 ceo)")
+    ap.add_argument("--mine", action="store_true",
+                    help="내가 찾은 문제를 내 배로 올린다(약속 L20 아침 자가점검). --to 와 --sender 가 같아도 허용")
     ap.add_argument("--priority", default="⛴️여객선", help="🛳️크루즈 / ⛴️여객선 / ⛵돛단배")
     ap.add_argument("--module", default="home")
     ap.add_argument("--surface", default="autonomy")
@@ -97,8 +102,9 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="큐에 쓰지 않고 미리보기만")
     args = ap.parse_args()
 
-    if args.to.lower() == (args.sender or "").lower():
-        print("! 받는 역할과 보내는 역할이 같습니다. 남에게 넘기는 배만 이 도구로 만듭니다.")
+    if args.to.lower() == (args.sender or "").lower() and not args.mine:
+        print("! 받는 역할과 보내는 역할이 같습니다.")
+        print("  내가 찾은 문제를 내 배로 올리는 거라면 --mine 을 붙이세요(약속 L20 아침 자가점검).")
         return 2
 
     made = {}
