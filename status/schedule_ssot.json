@@ -74,7 +74,7 @@
   "gate": {
     "auto_workapproval": false,
     "lead_days": 30,
-    "_note": "기본 OFF — 능동 결정(2026-07-27 시우): 정기점검(법정) 15건이 여전히 0건 기재라 켜도 의미있는 도래분이 없고, 현재 due_items()는 type 구분 없이 전체 items를 훑어 이벤트(청소·회식 등 실무 기록)까지 '업무·결재' 후보로 잡을 수 있어 그대로 켜면 법정 결재선이 아닌 팀 내부 기록까지 결재로 새 나가는 오탐 위험이 있음(후속: due_items 정기점검 한정 필터 필요, 이번 배는 미포함). 재검토 트리거=정기점검 실제 최근 점검일 확보 시. true 전까지 schedule_ssot.py는 '무엇을 만들지' 로그만 남기고 업무·결재 SSOT를 건드리지 않는다. 라이브 발효=GM go, 역롤백=이 값 false 한 줄."
+    "_note": "기본 OFF(예행). true 전까지 scripts/schedule_ssot.py 는 '무엇을 만들지' 로그만 남기고 업무·결재 SSOT를 건드리지 않는다. 라이브 발효=GM go, 역롤백=이 값 false 한 줄. ※2026-07-27 시우 정정: 여기 적혀 있던 compliance_calendar.py 는 저장소에 없는 파일이다(죽은 포인터) — 실제 구현은 scripts/schedule_ssot.py 다. 가리키는 곳이 없으면 다음 사람이 켤 방법을 못 찾는다."
   },
   "status_enum": [
     "scheduled",
