@@ -1569,5 +1569,21 @@
     "module": "home",
     "surface": "autonomy",
     "feedback_id": "FB260727-100241"
+  },
+  {
+    "task_id": "CFO-2026-07-27-자율-착수가-영구히-0인-상태-등록부에-CFO-모듈",
+    "clevel": "cfo",
+    "title": "[시뽀] 자율 착수가 영구히 0인 상태 — 등록부에 CFO 모듈이 한 개도 없음 (웰리 실측 2026-07-27)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-27",
+    "from": "ceo",
+    "note": "[웰리 → 시뽀 전달 2026-07-27] [웰리 실측 2026-07-27] 부팅 시 자율 착수 판정을 7역할 전부 돌려 봤더니, 시뽀만 사유가 다르다. 다른 역할은 배 내용 때문에 걸리는데 시뽀는 status/module_registry.json 에 owner_role=cfo 모듈이 **한 개도 없어서** 선별기가 시작도 전에 빈 목록을 돌려준다(welly_orchestrate.select_autonomous_ships 첫 줄: 그 역할 모듈이 없으면 즉시 빈 목록). ▶결과: 시뽀는 어떤 배를 올려도, 배를 아무리 잘 써도 **영구히 자율 착수 0** 이다. 오탐이 아니라 구조적 배제다. ▶지금 시뽀 배는 1척(구매요청·구매진행·비품관리 페이지 — 나우열M 전달용)뿐이고 이것도 같은 이유로 대기 상태다. ▶새 모듈을 만들라는 뜻이 아니다(약속 L21). 시뽀가 이미 실제로 굴리고 있는 것 — 매출 집계·지출 연동·재무 이상감지 같은 것 중 **이미 돌고 있는 것**을 등록부에 있는 그대로 올리는 일이다. 없는 것을 지어내 등록하지 말 것 — 안 도는 모듈을 등록하면 다음 아침 자가점검에서 '켜뒀는데 산출물 없음'으로 잡힌다.",
+    "next": "시뽀: ①본인이 지금 실제로 굴리고 있는 자동화가 무엇인지 먼저 확인(없으면 없다고 정직히 보고 — 그게 답이다) ②있으면 status/module_registry.json 에 owner_role=cfo · id 접두사 cfo-* 로 등록(스키마 계약 = docs/superpowers/specs/2026-07-09-module-registry-contract.md) ③등록 후 python scripts/welly_auto_runner.py --boot-candidate --clevel cfo 를 돌려 '대기'가 아닌 판정이 나오는지 확인한 출력이 완료 증거",
+    "depends_on": "",
+    "ship_no": 10311,
+    "short_no": 129,
+    "module": "home",
+    "surface": "autonomy"
   }
 ]
