@@ -34,10 +34,33 @@
 #   from safe_commit import safe_commit
 #   res = safe_commit(paths, message, holder="ig_publish_verify")
 #   res = {"ok":bool, "committed":bool, "sha":str, "attempts":int,
-#          "changed":[경로...], "foreign":[혼입경로...], "reason":str}
+#          "changed":[경로...], "foreign":[혼입경로...],
+#          "auto_included":[자동포함 append로그...],
+#          "concurrent_edit_warnings":[동시편집 경고...], "reason":str}
 #
 # CLI(자체 검증·수동 커밋용):
 #   python scripts/safe_commit.py -m "메시지" --no-push -- <경로1> <경로2>
+#
+# ── 배10291·배10314 흡수(2026-07-27 · 시토) ──────────────────────────────────
+# 두 배 모두 이 관문 한 곳에 흡수한다(약속 L21 — 새 가드 파일·새 모듈 금지).
+#
+# [배10291] 동시 편집 경고 — 공유 작업트리 사고(하루 4건, 배9226·10059·상태줄·10291)는
+#   전부 "문서로 금지"가 기계를 못 막아서 났다(약속 L02). 이 관문에서 잡되, 판단은
+#   보수적으로 정했다: **차단이 아니라 경고**로만 시작한다 — 오탐으로 정상 커밋을
+#   막으면 그게 더 큰 사고이기 때문이다(GM 지시 원문). 최근 N분 내 다른 커밋이 같은
+#   경로를 바꿨으면 경고하고, 그중에서도 내가 스테이징한 내용이 그 변경 '이전' 버전과
+#   완전히 같으면(=남의 최근 변경을 통째로 지움) 더 강한 경고를 남긴다. 오탐이 실측되면
+#   차단으로 강화할지 재판단한다(§_detect_concurrent_edit_warnings 참조).
+#
+# [배10314] append 로그 자동 포함 — status/worklog.jsonl 등 공용 작업 현황 로그는
+#   호출자가 경로에 안 넣으면 로컬에만 쌓여 GM 화면이 멈춘다(시포 실측 2026-07-27,
+#   커밋 283dd4669 로 1회 복구했지만 구조 문제는 그대로였음). status/*.jsonl(비재귀,
+#   backups/ 등 하위 폴더 제외)은 이미 .gitattributes 에 merge=union(2026-06-19)이 걸려
+#   있어 여러 세션이 동시에 이어써도 무손실 병합된다 — 그래서 "지정 경로만 담는다"
+#   계약을 이 카테고리 하나에 한해 완화해도 안전하다고 판단했다(§_auto_include_modified_logs
+#   참조). 작업트리에서 실제로 바뀐 로그만, 커밋 전에 rel_paths 에 편입시켜 이후 모든
+#   검증(선검증·훅가드·사후재확인)이 "지정 경로"로 그대로 인식하게 한다 — 별도 예외
+#   분기를 새로 안 만들고 기존 계약 흐름에 자연히 올라타는 방식.
 from __future__ import annotations
 
 import os
@@ -60,6 +83,14 @@ _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속
 _RETRY_WAIT_SEC = 0.4
 _INDEX_LOCK_WAIT_SEC = 0.5
 _INDEX_LOCK_RETRIES = 6   # index.lock 은 지우지 않는다 — 대기 후 재시도만 한다
+
+# 배10314 — append 로그 자동 포함 대상(비재귀 · status/ 바로 아래만).
+_AUTO_INCLUDE_LOG_DIR = "status"
+_AUTO_INCLUDE_LOG_SUFFIX = ".jsonl"
+
+# 배10291 — 동시편집 경고 판정 창(분). 짧으면 놓치고 길면 오탐만 늘어 하루 운영 주기
+# 감안 15분으로 시작(보수적 경고 임계값 — 오탐 실측 후 조정).
+_CONCURRENT_EDIT_WINDOW_MIN = 15
 
 
 def _git(args: list[str], root: Path, env: dict | None = None,
@@ -303,6 +334,94 @@ def _stage_with_retry(rel_paths: list[str], root: Path, env: dict) -> None:
     raise RuntimeError(f"git add 실패(index.lock 대기 초과): {last_err}")
 
 
+def _auto_include_modified_logs(root: Path, existing_rel_paths: list[str]) -> list[str]:
+    """append 전용 로그(status/*.jsonl, 비재귀) 중 작업트리에서 바뀐 것만 자동 포함 후보로 반환.
+
+    배10314(2026-07-27 · 시포 실측): worklog.jsonl 등은 호출자가 경로에 명시적으로
+    안 넣으면 로컬에만 쌓여 GM 화면(작업 현황 로그 패널)이 멈춘다. *.jsonl 은 이미
+    .gitattributes 에 merge=union(2026-06-19)이 걸려 있어 여러 세션이 동시에 이어써도
+    무손실 병합되므로 자동 포함해도 안전하다. status/ 바로 아래(비재귀)만 대상으로
+    좁혀 status/backups/ 스냅샷처럼 '로그가 아닌' *.jsonl 이 잘못 딸려오는 걸 막는다.
+    """
+    out = _git(["ls-tree", "--name-only", "HEAD", "--", f"{_AUTO_INCLUDE_LOG_DIR}/"], root)
+    if out.returncode != 0:
+        return []
+    found: list[str] = []
+    for name in out.stdout.splitlines():
+        path = name.strip()
+        if not path or not path.endswith(_AUTO_INCLUDE_LOG_SUFFIX):
+            continue
+        if path in existing_rel_paths:
+            continue  # 호출자가 이미 지정 — 중복 처리 불필요
+        diff = _git(["diff", "--name-only", "HEAD", "--", path], root)
+        if diff.returncode == 0 and diff.stdout.strip():
+            found.append(path)
+    return found
+
+
+def _detect_concurrent_edit_warnings(
+    rel_paths: list[str], root: Path, tree: str, head: str,
+    window_min: int = _CONCURRENT_EDIT_WINDOW_MIN,
+) -> list[str]:
+    """지정 경로가 최근 N분 내 다른 커밋으로 바뀐 적 있으면 경고 문자열 목록을 반환(차단 안 함).
+
+    배10291(2026-07-26 · 웰리 판단 배10226 회신): 공유 작업트리에서 한 세션이 편집 중인
+    파일을 다른 세션이 같이 고쳐 옛 사본이 최신 코드를 덮어쓴 사고가 실제로 났다(하루
+    4건). 문서에 "동시 편집 금지"라 적어도 기계가 못 막는다(약속 L02) — 이 관문 한
+    곳에서 잡는다.
+
+    ★차단이 아니라 경고로 시작한다 — 오탐으로 정상 커밋을 막으면 그게 더 큰 사고다.
+      오탐이 실측되면 차단(강화) 여부를 재판단한다. 그래서 이 함수는 safe_commit 의
+      ok/committed 판정에 절대 관여하지 않고, 발견한 사실만 result 와 stdout 에 남긴다.
+    ★자동 포함되는 append 로그(_auto_include_modified_logs)는 이 판정 대상에서 뺀다 —
+      그 카테고리는 설계상 여러 세션이 상시 동시 append 하는 게 정상이고 merge=union
+      으로 이미 무손실 병합되므로 여기서 또 경고하면 잡음만 늘어난다. 그래서 호출자는
+      auto-include 이전의 caller_rel_paths 만 넘긴다.
+    ★판정 2단계(약함→강함):
+      - 단순 동시편집: 최근 N분 내 남이 이 경로를 바꿨고, 내 스테이징도 그 커밋 이후
+        내용과 다르다 → 서로 다른 변경이 겹칠 수 있다는 사실만 경고.
+      - 되돌리기(강한 신호): 내 스테이징 blob 이 그 커밋 '이전' blob 과 정확히 같다
+        = 나는 그 변경을 모른 채 옛 버전을 그대로 다시 올리는 중 → 남의 변경을
+        고스란히 지운다. 문구를 구분해 우선순위를 알 수 있게 한다.
+    """
+    def _blob_at(rev: str, path: str) -> str:
+        r = _git(["ls-tree", rev, "--", path], root)
+        if r.returncode != 0 or not r.stdout.strip():
+            return ""
+        parts = r.stdout.strip().split()
+        return parts[2] if len(parts) >= 3 else ""
+
+    warnings: list[str] = []
+    since = f"{window_min}.minutes.ago"
+    for path in rel_paths:
+        log = _git(["log", f"--since={since}", "--format=%H", "-1", head, "--", path], root)
+        if log.returncode != 0 or not log.stdout.strip():
+            continue
+        recent_sha = log.stdout.strip().splitlines()[0]
+        after_blob = _blob_at(recent_sha, path)
+        if not after_blob:
+            continue  # 그 커밋 시점 이 경로 정보를 못 읽음 — 판단 근거 부족, 건너뜀
+        before_blob = _blob_at(f"{recent_sha}^", path)  # 루트 커밋이면 실패→"" (정상)
+        if after_blob == before_blob:
+            continue  # 이 커밋이 실제로 이 경로 내용을 바꾼 게 아님(로그만 걸림)
+        mine_blob = _blob_at(tree, path)
+        if not mine_blob or mine_blob == after_blob:
+            continue  # 내 스테이징이 이미 그 최신 내용과 같음 — 경고 불필요
+        if mine_blob == before_blob:
+            warnings.append(
+                f"[동시편집 경고·되돌림] {path} — 최근 {window_min}분 내 커밋 {recent_sha[:9]} "
+                f"이 바꾼 내용을 내 커밋이 그대로 지웁니다(스테이징 내용이 그 이전 버전과 "
+                f"동일). 차단하지 않고 통과시킵니다 — 내용 대조 요망."
+            )
+        else:
+            warnings.append(
+                f"[동시편집 경고] {path} — 최근 {window_min}분 내 커밋 {recent_sha[:9]} 이 이 "
+                f"경로를 바꿨습니다. 지금 내 커밋도 같은 경로를 바꿉니다 — 동시 편집 가능성, "
+                f"확인 요망."
+            )
+    return warnings
+
+
 def safe_commit(
     paths,
     message: str,
@@ -323,7 +442,8 @@ def safe_commit(
     root = Path(repo_root) if repo_root else ROOT
     rel_paths = [_rel(p, root) for p in paths if str(p).strip()]
     result = {"ok": False, "committed": False, "sha": "", "attempts": 0,
-              "changed": [], "foreign": [], "hook_violations": [], "index_synced": [], "reason": ""}
+              "changed": [], "foreign": [], "hook_violations": [], "index_synced": [],
+              "auto_included": [], "concurrent_edit_warnings": [], "reason": ""}
     if not rel_paths:
         result["ok"] = True
         result["reason"] = "대상 경로 없음"
@@ -334,6 +454,15 @@ def safe_commit(
 
     try:
         with GitLock(holder=holder, repo_root=str(root)):
+            # 배10314 — 호출자가 지정한 경로는 동시편집 경고(배10291) 판정 대상으로 그대로
+            # 남기고, append 로그는 여기서 rel_paths 에 편입시켜 이후 모든 검증(선검증·
+            # 훅가드·사후재확인)이 "지정 경로"로 자연히 인식하게 한다(별도 예외 분기 없음).
+            caller_rel_paths = list(rel_paths)
+            auto_paths = _auto_include_modified_logs(root, rel_paths)
+            if auto_paths:
+                rel_paths = list(dict.fromkeys(rel_paths + auto_paths))
+                result["auto_included"] = auto_paths
+
             for attempt in range(1, max_retries + 1):
                 result["attempts"] = attempt
                 # ① 임시 인덱스를 HEAD 트리로 시작(라이브 index 복사 금지)
@@ -375,6 +504,15 @@ def safe_commit(
                         + (f" 외 {len(hook_violations) - 1}건" if len(hook_violations) > 1 else "")
                     )
                     return result
+
+                # ②-d 동시편집 경고(배10291) — 차단하지 않는다. 호출자가 지정한 경로만
+                # 대상(caller_rel_paths — auto-include 된 append 로그는 상시 동시편집이
+                # 정상이라 대상에서 뺀다). 발견돼도 result 와 stdout 에만 남기고 계속 진행.
+                edit_warnings = _detect_concurrent_edit_warnings(caller_rel_paths, root, tree, head)
+                if edit_warnings:
+                    result["concurrent_edit_warnings"] = edit_warnings
+                    for w in edit_warnings:
+                        print(f"[WARN] {w}")
 
                 # ③ commit-tree 직전 HEAD 재검증 — 움직였으면 통째로 재시도(스테일 트리 차단)
                 head_now = _git_out(["rev-parse", "HEAD"], root)
@@ -482,6 +620,10 @@ def main() -> int:
         print(f"  ! 혼입 {f}")
     for h in res["hook_violations"]:
         print(f"  ! 훅가드 {h}")
+    for a in res["auto_included"]:
+        print(f"  ~ 자동포함(append 로그) {a}")
+    for w in res["concurrent_edit_warnings"]:
+        print(f"  ? {w}")
     return 0 if res["ok"] else 1
 
 
