@@ -423,6 +423,26 @@ function _regNotifySlaOverdue(dryRun) {
   return result;
 }
 
+// 시간 트리거 핸들러(실발송 고정) — installReceptionSlaTrigger()가 이 함수를 30분 주기로 건다.
+function _regSlaCheckTrigger() {
+  _regNotifySlaOverdue(false);
+}
+
+// 트리거 설치(멱등 — 기존 동일 핸들러 있으면 스킵). 배포 1회성 설치용, GAS 에디터 실행 또는
+// action=reg_install_sla_trigger(GATED) 경유로 1회만 호출한다. 2026-07-27 시토(GM 승인 배포).
+function installReceptionSlaTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === '_regSlaCheckTrigger') {
+      Logger.log('installReceptionSlaTrigger: 트리거 이미 존재 — 스킵');
+      return '이미 존재';
+    }
+  }
+  ScriptApp.newTrigger('_regSlaCheckTrigger').timeBased().everyMinutes(30).create();
+  Logger.log('installReceptionSlaTrigger: 30분 주기 트리거 설치 완료');
+  return '설치 완료';
+}
+
 // ─── 종합 접수처 라벨→키 별칭 (시트 실헤더 라벨 드리프트 흡수 · SSOT) ───
 // 시트 1행 실제 라벨이 REG_COMMON/EXTRA_HEADERS 정의 라벨과 다른 경우(예: 분실물 탭)를 흡수.
 var REG_LABEL_ALIASES = { '분실위치': 'loc', '위치': 'loc', '물품상세': 'content' };   // '위치'·'분실위치' = loc 구헤더 하위호환(장소 rename 전/후 모두 정독). '장소'는 REG_COMMON_HEADERS 정의라 자동 매핑.
@@ -1732,6 +1752,8 @@ function _vProcess(action, body, params) {
     var _slaDry = !(_slaDryRunFlag === '0' || _slaDryRunFlag.toLowerCase() === 'false');
     return _vJson(_regNotifySlaOverdue(_slaDry));
   }
+  // SLA 초과 알림 30분 트리거 설치(멱등·일회성·GATED). 배포 직후 1회만 호출. 2026-07-27 시토.
+  if (action === 'reg_install_sla_trigger') return _vJson({ ok: true, result: installReceptionSlaTrigger() });
 
   // ── 습득 분실물(Lost & Found) 액션 (시토 배1069 · 2026-07-15) ──
   if (action === 'lf_submit')   return _lfSubmit(body);            // 직원 등록(게이트+제출토큰)
