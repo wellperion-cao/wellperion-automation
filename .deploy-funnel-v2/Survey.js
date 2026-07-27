@@ -7428,7 +7428,12 @@ function _processAction(body) {
   if (action === 'delete_lesson_sheet_20260722') {
     if (String(body.key || '') !== 'wlp_delsheet_20260722') return _json({ ok: false, error: 'guard-mismatch' });
     var dsGid = parseInt(body.gid, 10);
-    var DS_PROTECTED = [111889422, 268994754, 1270425989, 537942806, 534686684, 1694057341, 1768753460, 2012342185];   // 311319200(1-1 성인영·0건)·931249179(2-1 WSC영·이관후)=GM 폐기 승인으로 보호 해제. 2026-07-22.
+    var DS_PROTECTED = [111889422, 268994754, 1270425989, 537942806, 534686684, 1694057341, 1768753460];   // 311319200(1-1 성인영·0건)·931249179(2-1 WSC영·이관후)=GM 폐기 승인으로 보호 해제. 2026-07-22.
+    // 2012342185('강습 신규문의')=보호 해제. 2026-07-27 GM 승인.
+    //   이 탭은 자체폼 강습 접수를 받던 곳이었으나, 2026-07-18 GM 결정으로 자체폼 강습도 구글폼 응답탭에
+    //   직접 쓰도록 통일됐다(위 intake_submit '강습 → 기존 구글폼 응답탭 저장으로 전환'). 그 뒤로 이 탭은
+    //   아무것도 받지 않는다 — 실측 2026-07-27: 데이터 0행이고, 같은 날 자체폼 강습 접수(임규현 09:18)는
+    //   '2. WSC 강습'(268994754)에서 발견됐다. 읽기 병합(_lessonReadRowsMerged_)은 탭이 없으면 조용히 건너뛴다.
     if (DS_PROTECTED.indexOf(dsGid) >= 0) return _json({ ok: false, error: 'protected-sheet', gid: dsGid, detail: '활성 소비 탭 — 삭제 금지' });
     var dsSs = SpreadsheetApp.openById(LESSON_SS_ID);
     var dsSh = null;
