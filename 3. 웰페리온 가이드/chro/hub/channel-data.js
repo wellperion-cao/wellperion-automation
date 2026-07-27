@@ -29,7 +29,7 @@
       heroSub:"프리미엄 사우나·스파를 책임질 남자사우나 주임을 모십니다.",
       heroBadge:"남자사우나·스파 관리 · 회원 응대 · 주임급",
       communityCafes:["sportsdream"],
-      salary:{label:"월 급여",unit:"/ 월",amount:"243만원",monthly:"월 243만원",
+      salary:{label:"월 급여",unit:"/ 월",amount:"250만원",monthly:"월 250만원",
         note:"수습기간 100% 지급 (감액 없음) · 주임 직급 · 유관업종 경력자 우대"},
       perkCards:[
         {icon:"▲",title:"명확한 진급 체계",desc:"주임 → 반장 → 팀장까지, 성과에 따라 공정하게 올라가는 3단계 진급 시스템"},
