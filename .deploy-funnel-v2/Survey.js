@@ -2750,6 +2750,27 @@ function _processAction(body) {
     }
   }
 
+  // ─── 알림 설정 보유 확인 (값은 절대 반환하지 않음 — 존재 여부 불리언만) ───
+  // [2026-07-27 시모] scripts/telegram_health_check.py 의 _check_gas_diag 는 VOC·점검 GAS 에서
+  //   hasToken/hasChatId 를 받아 '설정 누락'을 잡는데, Survey(퍼널) GAS 만 이 진단이 없어
+  //   bool_fields 가 비어 있었다 — 즉 문의 알림 백엔드의 토큰·방 설정이 빠져도 아무도 몰랐다.
+  //   같은 계약(hasToken/hasChatId)을 여기에도 채워 기존 헬스체크가 그대로 판정하게 한다.
+  //   ※ 토큰·chat_id 실값은 반환하지 않는다(공개 엔드포인트 — 존재 여부만).
+  if (action === 'diag_notify_config') {
+    try {
+      var _dTok = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN') || '';
+      var _dChat = _prop('TELEGRAM_INQUIRY_CHAT_ID') || '';
+      return _json({
+        ok: true,
+        hasToken: !!_dTok,
+        hasChatId: !!(_dChat || _INQUIRY_CHAT_ID_FALLBACK),
+        chatIdFromProperty: !!_dChat        // false = 코드 폴백값 사용 중
+      });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
   // ─── 현재 트리거 목록 조회 (핸들러명·타입·소스ID) ───
   if (action === 'list_inquiry_triggers') {
     try {

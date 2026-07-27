@@ -134,6 +134,11 @@ def _check_gas_diag() -> list[str]:
         # (이름, URL, action 파라미터, 불리언 필드 목록)
         ("VOC GAS",    _VOC_DIAG_URL,    "diag",               ["hasToken", "hasChatId"]),
         ("Survey GAS", _FUNNEL_DIAG_URL, "diag_inquiry_state", []),
+        # [2026-07-27 시모] 퍼널 GAS 만 hasToken/hasChatId 진단이 없어, 문의 알림 백엔드의
+        #   봇 토큰이 아예 없어도 아무도 모르는 상태였다. 실측으로 드러난 실제 값 = hasToken:false
+        #   (즉 v2 는 텔레그램을 못 보낸다 — 트리거만 옮겼으면 문의 알림이 전부 끊겼을 상황).
+        #   같은 계약을 퍼널에도 채워 다른 GAS 와 동일하게 판정한다.
+        ("Survey GAS 알림설정", _FUNNEL_DIAG_URL, "diag_notify_config", ["hasToken", "hasChatId"]),
         ("점검 GAS",   _CHECK_DIAG_URL,  "diag",               ["hasToken", "hasChatId"]),
     ]
     for name, url, action, bool_fields in probes:
