@@ -658,6 +658,20 @@
     </div>
   </section>
 
+  <!-- ════ 📣 시모(AI CMO) 자율 마케팅 (등록부 cmo-* 실값 렌더 · 2026-07-27 GM 지시 — 시토 공용 블록에 섞여 있어
+       시모 건만 따로 보기 어려웠던 것을 다른 역할과 동일 패턴으로 분리) ════ -->
+  <section>
+    <h2 class="sec" id="sec-cmo-autonomy">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(콘텐츠 제작→검수→발행→반응측정→기획환류 폐루프)</span></h2>
+    <div class="sec-note">노출을 회원으로 바꾸는 전환 설계가 본질 — 카드는 등록부(<code>cmo-*</code>) 실값 렌더. 배선 표는 하단 '📡 모듈 보고 현황'.</div>
+    <div id="registry-card-summary-cmo" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+    <div class="routines" id="registry-cards-cmo"></div>
+    <details class="coo-details" id="registry-cards-cmo-dormant-wrap" style="margin-top:10px;">
+      <summary id="registry-cards-cmo-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
+      <div class="routines" id="registry-cards-cmo-dormant" style="margin-top:9px;"></div>
+    </details>
+    <div class="sec-note" style="margin:8px 0 0;">게이트: 제작·검수·집계=자율 / <b>발행은 GM 텔레그램 [✅승인] 뒤</b>(무인 발행 없음) · 채널 자격증명·결제·공식값=GM 결재. 측정 못하는 값은 '미측정'으로 적는다(0 위장 금지).</div>
+  </section>
+
   <!-- ════ 🧑‍🤝‍🧑 시로(AI CHRO) 자율 인사 (상시 루프 3종 + Gmail 트리거 · 등록부 chro-* 실값 렌더 · 2026-07-16 매니저 지시) ════ -->
   <section>
     <h2 class="sec" id="sec-chro-autonomy">🧑‍🤝‍🧑 시로 (AI CHRO) 자율 인사 <span style="font-size:11px;font-weight:400;color:var(--dim);">(정합성 스윕·온보딩 워치·효율 리포트·공고명 자동취득)</span></h2>
@@ -2210,6 +2224,12 @@
     var elChroDormant = document.getElementById('registry-cards-chro-dormant');
     var elChroDormantWrap = document.getElementById('registry-cards-chro-dormant-wrap');
     var elChroDormantSum = document.getElementById('registry-cards-chro-dormant-summary');
+    // 시모(cmo) 전용 섹션 — 2026-07-27 GM 지시. 시로와 동일 패턴(분리 렌더).
+    var smCmo = document.getElementById('registry-card-summary-cmo');
+    var elCmo = document.getElementById('registry-cards-cmo');
+    var elCmoDormant = document.getElementById('registry-cards-cmo-dormant');
+    var elCmoDormantWrap = document.getElementById('registry-cards-cmo-dormant-wrap');
+    var elCmoDormantSum = document.getElementById('registry-cards-cmo-dormant-summary');
     if(!el) return;
     var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : null;
     if(!mods){
@@ -2225,13 +2245,18 @@
       return m && m.owner_role && m.front_card && m.front_card.window === '자율현황';
     });
     // 시로(chro) 모듈은 전용 섹션(sec-chro-autonomy)에 분리 렌더(2026-07-16 매니저 지시) — 나머지는 기존 시토 블록 유지.
+    // 시모(cmo)도 전용 섹션(sec-cmo-autonomy)으로 분리(2026-07-27 GM 지시) — 그전엔 시토 공용 블록에
+    // 섞여 있어 GM이 '시모 건'만 따로 보기 어려웠다. 다른 역할과 동일 패턴.
     var chroMods = mine.filter(function(m){ return m.owner_role === 'chro'; });
-    var restMods = mine.filter(function(m){ return m.owner_role !== 'chro'; });
+    var cmoMods  = mine.filter(function(m){ return m.owner_role === 'cmo'; });
+    var restMods = mine.filter(function(m){ return m.owner_role !== 'chro' && m.owner_role !== 'cmo'; });
     // 발효/미발효 분리(GM 지시 2026-07-21) — isDormantModule 판정만으로 두 배열로 나눠 각자 컨테이너에 append.
     var restActive  = restMods.filter(function(m){ return !isDormantModule(m); });
     var restDormant = restMods.filter(isDormantModule);
     var chroActive  = chroMods.filter(function(m){ return !isDormantModule(m); });
     var chroDormant = chroMods.filter(isDormantModule);
+    var cmoActive   = cmoMods.filter(function(m){ return !isDormantModule(m); });
+    var cmoDormant  = cmoMods.filter(isDormantModule);
     if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + restMods.length + '건 (전체 등록부 ' + mods.length + '건 중 · owner_role 보유 신규 스키마만 · 시로 모듈은 전용 섹션)';
     el.innerHTML = restActive.length ? restActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 발효 모듈이 아직 없습니다.</div>';
     if(elDormant) elDormant.innerHTML = restDormant.length ? restDormant.map(regCardHtml).join('') : '';
@@ -2242,6 +2267,11 @@
     if(elChroDormant) elChroDormant.innerHTML = chroDormant.length ? chroDormant.map(regCardHtml).join('') : '';
     if(elChroDormantSum) elChroDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + chroDormant.length + '개';
     if(elChroDormantWrap) elChroDormantWrap.style.display = chroDormant.length ? '' : 'none';
+    if(smCmo) smCmo.textContent = '등록부 시모(cmo) 모듈 ' + cmoMods.length + '건 — 제작·검수 디스패치 + 발행 요약 + 반응 측정 + 주간 환류 + 접수 수집';
+    if(elCmo) elCmo.innerHTML = cmoActive.length ? cmoActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 시모(cmo) 발효 모듈이 아직 없습니다.</div>';
+    if(elCmoDormant) elCmoDormant.innerHTML = cmoDormant.length ? cmoDormant.map(regCardHtml).join('') : '';
+    if(elCmoDormantSum) elCmoDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + cmoDormant.length + '개';
+    if(elCmoDormantWrap) elCmoDormantWrap.style.display = cmoDormant.length ? '' : 'none';
   }
 
   // ═══════════ ② 돌아가는 자동화: 상시가동 표 펼치기(구 T2 wpAutoToggle 이식) ═══════════
