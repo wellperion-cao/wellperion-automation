@@ -9452,7 +9452,7 @@ function _processAction(body) {
     }
     // 캐시 조회 (범위별 키 — 기간 필터 + 분자모드 버전)
     var fcCache = CacheService.getScriptCache();
-    var fcCacheKey = 'fc_v3_' + (fcPrecise ? 'reg_' : 'acc_') + fcFrom + '_' + fcTo;  // v3: 전환에 강습 등록 합산 반영(2026-07-03 시모) · 분자모드 분리(2026-07-04 시포) — 구캐시 무효화
+    var fcCacheKey = 'fc_v4_' + (fcPrecise ? 'reg_' : 'acc_') + fcFrom + '_' + fcTo;  // v4: byType(유형별) 추가 2026-07-27 배179 — 구조 변경이라 캐시키 올림(옛 캐시가 byType 없는 응답 반환 방지) / v3: 전환에 강습 등록 합산 반영(2026-07-03 시모) · 분자모드 분리(2026-07-04 시포) — 구캐시 무효화
     var fcHit = fcCache.get(fcCacheKey);
     if (fcHit && !_nc) return _json(JSON.parse(fcHit));
 
@@ -9543,17 +9543,26 @@ function _processAction(body) {
     //   항상 정합한다(2026-07-20 GM 실사용 제보로 통합 — 과거엔 이 블록이 아래 명단 액션과 각자 따로 순회).
     var totalInq = 0, totalConv = 0, totalConvMemberOnly = 0;  // memberOnly=구버전(멤버십만) 비교용 — 투명성 유지
     var byChannel = {};  // { 채널명: {inquiries, converted} }
+    // [배179 · 2026-07-27 GM 지시 '멤버십/성인강습/유소년강습 구분해서 확실하게']
+    //   같은 순회에서 유형별로도 담는다 — 새 순회·새 액션 없음(비용 0). row.type 은
+    //   _collectAllInquiryRows_ 가 이미 싣고 있던 값(문의유형/폼 유형)이라 새 원천도 아니다.
+    //   빈 값은 '(미분류)'로 모아 화면에서 보이게 한다 — 숨기면 합계가 안 맞아 더 헷갈린다.
+    var byType = {};
     _collectAllInquiryRows_(_fcInPeriod).forEach(function(row) {
       var channel = row.channel;
+      var ftype = String(row.type || '').trim() || '(미분류)';
       totalInq++;
       if (!byChannel[channel]) byChannel[channel] = { inquiries: 0, converted: 0 };
       byChannel[channel].inquiries++;
+      if (!byType[ftype]) byType[ftype] = { inquiries: 0, converted: 0, convertedMemberOnly: 0 };
+      byType[ftype].inquiries++;
 
       var fcConv = _fcConverted_(row.phone);
-      if (fcConv.memberOnly) totalConvMemberOnly++;   // 구버전(멤버십만) 비교용
+      if (fcConv.memberOnly) { totalConvMemberOnly++; byType[ftype].convertedMemberOnly++; }
       if (fcConv.any) {
         totalConv++;
         byChannel[channel].converted++;
+        byType[ftype].converted++;
       }
     });
 
@@ -9578,6 +9587,16 @@ function _processAction(body) {
         lessonAdded: totalConv - totalConvMemberOnly  // 강습 등록 union으로 추가된 순증분
       },
       byChannel: channelArr,
+      byType: Object.keys(byType).map(function(t) {
+        var d = byType[t];
+        return {
+          type: t,
+          inquiries: d.inquiries,
+          converted: d.converted,
+          convertedMemberOnly: d.convertedMemberOnly,
+          rate: d.inquiries > 0 ? Math.round((d.converted / d.inquiries) * 1000) / 10 : 0
+        };
+      }).sort(function(a, b) { return b.inquiries - a.inquiries; }),
       periodMode: fcPeriod,
       period: { from: fcFrom, to: fcTo },
       convBasis: fcPrecise
