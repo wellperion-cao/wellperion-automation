@@ -29,18 +29,38 @@ def _manual_close_dates() -> set[str]:
         return set()
 
 
+def _major_holiday_dates() -> set[str]:
+    """status/close_days.json 의 major_holiday_dates(dates 의 부분집합 — 설/추석 등
+    '연휴 대체'가 적용되는 명절만 표시) 로드. 파일 없음/파싱 실패 시 빈 집합(안전측
+    기본값 — 표시 없으면 2·4째 일요일 규칙을 그대로 적용)."""
+    try:
+        cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        return set(cfg.get("major_holiday_dates", []))
+    except Exception:
+        return set()
+
+
+def _month_has_major_holiday(d: date) -> bool:
+    """d와 같은 해·달(YYYY-MM)에 major_holiday_dates 항목이 하나라도 있는가(설/추석
+    대체 규칙 — 2026-07-27 GM 확정: 그 달의 2·4째 일요일은 둘 다 정상 운영)."""
+    prefix = d.strftime("%Y-%m")
+    return any(md.startswith(prefix) for md in _major_holiday_dates())
+
+
 def is_closed(d: date) -> bool:
     """d가 휴관일이면 True.
 
-    ① 신정(1/1)
+    ① 신정(1/1) — 대체 대상 아님(설/추석 대체 규칙과 무관하게 항상 휴관)
     ② 매월 2째·4째 일요일 — 그 달에서 몇 번째 일요일인가 = (d.day-1)//7 + 1
+       단, 그 달에 major_holiday_dates(설/추석)가 하나라도 있으면 이 규칙을
+       건너뛴다(그 달 2·4째 일요일은 정상 운영 — 2026-07-27 GM 확정).
     ③ status/close_days.json 의 dates(음력 설/추석·임시휴관 등 수동 등록분)
     """
     if d.month == 1 and d.day == 1:
         return True
     if d.weekday() == 6:  # 일요일
         nth = (d.day - 1) // 7 + 1
-        if nth in (2, 4):
+        if nth in (2, 4) and not _month_has_major_holiday(d):
             return True
     if d.strftime("%Y-%m-%d") in _manual_close_dates():
         return True
