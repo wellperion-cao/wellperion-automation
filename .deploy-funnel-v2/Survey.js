@@ -768,7 +768,8 @@ function _collectLessonRoster_(type) {
             sport:  buckets[b],
             name:   String(irow.name || ''),
             phone:  String(irow.phone || ''),
-            status: String(irow.status || '').trim()
+            status: String(irow.status || '').trim(),
+            ledgerSrc: true    // 원장 키를 종목까지 스코프하라는 표식 — 아래 _syncLessonRegistry_ 참조
           });
         }
       }
@@ -812,7 +813,16 @@ function _syncLessonRegistry_() {
       _collectLessonRoster_(type).forEach(function(m){
         var np = _normPhone_(m.phone);
         if (!np) return;                               // 전화 없으면 키 불가 → 스킵
-        var key = np + '|' + type;
+        // [배140 · 2026-07-27 회귀 수리] 원장 키는 원래 전화+유형뿐이라 한 사람이 원장에서 1행만
+        // 차지한다. 그래서 응답탭發 뮤지컬 행이 이미 수영·체조로 등록돼 있던 같은 사람의 키와
+        // 충돌해 그 행의 종목을 통째로 덮어썼다 — 배포 직후 실측에서 수영 1502→1494, 체조
+        // 371→369, 뮤지컬 +11(10건은 이동·1건만 진짜 신규)로 드러났다. 아이가 수영도 하고
+        // 뮤지컬도 하는 건 정상인데 원장이 그걸 표현하지 못한 것.
+        // → 응답탭發(ledgerSrc) 행만 키를 종목까지 스코프해 별도 행으로 앉힌다. 팀시트發 키는
+        //   그대로라 기존 2,504행은 손대지 않는다(다음 sync 에서 팀시트가 종목을 원복시킨다).
+        // ※ 팀시트끼리의 같은 충돌(수영+골프 동시 등록)은 이 배 이전부터 있던 별개 사안 — 여기서
+        //   건드리지 않는다(키 체계 전면 변경은 기존 전 행 재생성 위험).
+        var key = np + '|' + type + (m.ledgerSrc ? '|' + String(m.sport || '') : '');
         if (keyIdx.hasOwnProperty(key)) {
           var rr = rows[keyIdx[key]];                  // 기존 키 — 등록일 보존, 상태·이름·종목만 갱신
           if (rr[1] !== m.sport || rr[2] !== m.name || rr[4] !== m.status) {
