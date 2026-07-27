@@ -118,13 +118,6 @@ STATUS_DIR = REPO_ROOT / "status"
 QUOTES_FILE = STATUS_DIR / "quotes.json"
 QUEUE_FILE = STATUS_DIR / "_queue.json"
 CEO_LOG_FILE = STATUS_DIR / "_ceo_log.jsonl"
-# 북극성 추천기 2단계 (CTO 2026-06-29) — 카드 승인 회신 → _queue PENDING 배 등록
-NORTHSTAR_PENDING = STATUS_DIR / "northstar_pending.json"
-NORTHSTAR_LOG = STATUS_DIR / "northstar_log.jsonl"
-# 재설계(배420·GM go 2026-07-07 발효) 역롤백 단일 스위치(notify_prefs.py 중앙플래그 패턴과 동일).
-# False → 인라인버튼 콜백(ns:) 처리 중단, 텍스트 [승인N]/[보류] 경로(route_northstar, 기존 무파괴 경로)만 사용.
-# 다른 봇 코드변경과 동일하게 다음 봇 재기동 시점부터 반영.
-NORTHSTAR_NS_ENABLED = True
 
 WORKDIR = Path.home() / "welperion-automation"  # Claude 실행 기준 디렉토리 (2026-05-23 fix: Desktop → 메인 repo)
 
@@ -678,264 +671,6 @@ async def route_approval(update: Update, text: str) -> bool:
     return True
 
 
-# ─── 북극성 추천 카드 승인 회신 (CTO 2026-06-29, 2단계) ──────────────────────
-# 06:30 northstar_recommender.py --send 가 보낸 카드에 GM이 [승인]/[보류] 회신.
-# 승인 → 해당 후보를 status/_queue.json PENDING 배로 등록(read-before-write, ship_no=max+1)
-#       + northstar_pending.json 후보 status=approved. 보류 → status=held(무파괴).
-# 토큰: 대괄호 형태만 인식 → 결재 키워드("승인"/"보류" startswith) 라우터와 충돌 없음.
-_NS_APPROVE_RE = re.compile(r"^\[\s*승인\s*([123])\s*\]$")
-_NS_HOLD_RE = re.compile(r"^\[\s*보류\s*\]$")
-
-
-def _ns_log(event: str, **fields) -> None:
-    """status/northstar_log.jsonl 1행 append (폐루프 v1 — 적중률·기여 추적)."""
-    import datetime as _dt
-    rec = {"event": event, **fields, "logged_at": _dt.datetime.now().isoformat()}
-    try:
-        with open(NORTHSTAR_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    except Exception as e:
-        log.error(f"[북극성] 로그 append 실패: {e}")
-
-
-def _ns_register_queue_bar(cand: dict) -> int | None:
-    """승인된 후보를 _queue.json PENDING 배로 등록. read-before-write·ship_no=max+1.
-    성공 시 ship_no 반환, 실패 None."""
-    import datetime as _dt
-    with (queue_lock.queue_lock("bot:northstar") if queue_lock else nullcontext()):
-        items = _load_queue()
-        max_ship = max([int(x.get("ship_no") or 0) for x in items], default=0)
-        ship_no = max_ship + 1
-        role = (cand.get("role") or "ceo").lower()
-        today = _dt.date.today().isoformat()
-        title_raw = str(cand.get("title", "")).strip() or "(제목없음)"
-        note_parts = ["[웰리 북극성 추천 승인 2026-06-29]"]
-        if cand.get("path_map"):
-            note_parts.append(str(cand["path_map"]))
-        if cand.get("rationale"):
-            note_parts.append(f"근거: {cand['rationale']}")
-        bar = {
-            "task_id": f"{role.upper()}-{today}-NORTHSTAR-{ship_no}",
-            "clevel": role,
-            "title": f"[북극성추천] {title_raw}",
-            "status": "PENDING",
-            "priority": cand.get("difficulty", "⛴️여객선"),
-            "enqueued_at": today,
-            "ship_no": ship_no,
-            "note": " / ".join(note_parts),
-            "next": "",
-            "depends_on": "",
-        }
-        items.append(bar)
-        if not _save_queue(items):
-            return None
-        return ship_no
-
-
-async def route_northstar(update: Update, text: str) -> bool:
-    """북극성 추천 카드 회신 라우터. 매칭·처리 시 True(이후 흐름 skip), 미매칭 False.
-
-    충돌 회피: route_approval 보다 먼저 호출. 대괄호 토큰만 인식하므로 결재
-    키워드(startswith '승인'/'보류')와 겹치지 않는다. 진행 중 추천(northstar_pending.json
-    candidates)이 없으면 False 반환 — 일반 흐름으로 흘려보낸다(무파괴)."""
-    stripped = text.strip()
-    m_app = _NS_APPROVE_RE.match(stripped)
-    m_hold = _NS_HOLD_RE.match(stripped)
-    if not m_app and not m_hold:
-        return False
-    if not NORTHSTAR_PENDING.exists():
-        return False
-    try:
-        pending = json.loads(NORTHSTAR_PENDING.read_text(encoding="utf-8"))
-    except Exception as e:
-        log.error(f"[북극성] pending 로드 실패: {e}")
-        return False
-    cands = pending.get("candidates", [])
-    if not isinstance(cands, list) or not cands:
-        return False
-
-    import datetime as _dt
-
-    # 보류 — 전체 held (무파괴, _queue 등록 없음)
-    if m_hold:
-        pending["status"] = "held"
-        for c in cands:
-            if c.get("status") not in ("approved",):
-                c["status"] = "held"
-        pending["held_at"] = _dt.datetime.now().isoformat()
-        try:
-            NORTHSTAR_PENDING.write_text(
-                json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
-        except Exception as e:
-            log.error(f"[북극성] pending 저장 실패(보류): {e}")
-        _ns_log("held", date=pending.get("date"), candidate_count=len(cands))
-        await update.message.reply_text(
-            "🧭 북극성 추천 — 오늘 후보를 보류(held) 처리했습니다. 다음 추천 때 새로 제안드립니다."
-        )
-        return True
-
-    # 승인 N
-    idx = int(m_app.group(1)) - 1
-    if idx < 0 or idx >= len(cands):
-        await update.message.reply_text(
-            f"🧭 후보 번호가 범위를 벗어났습니다(1~{len(cands)}). 다시 확인해 주세요."
-        )
-        return True
-    cand = cands[idx]
-    if cand.get("status") == "approved":
-        await update.message.reply_text(
-            f"🧭 후보 {idx+1} 은 이미 승인되어 배로 등록되어 있습니다."
-        )
-        return True
-
-    ship_no = await asyncio.to_thread(_ns_register_queue_bar, cand)
-    if ship_no is None:
-        await update.message.reply_text(
-            "⚠️ 북극성 후보 승인 처리 중 _queue.json 쓰기에 실패했습니다. 로그 확인이 필요합니다."
-        )
-        return True
-    cand["status"] = "approved"
-    cand["approved_at"] = _dt.datetime.now().isoformat()
-    cand["ship_no"] = ship_no
-    pending["status"] = "approved"
-    try:
-        NORTHSTAR_PENDING.write_text(
-            json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
-    except Exception as e:
-        log.error(f"[북극성] pending 저장 실패(승인): {e}")
-    _ns_log(
-        "approved",
-        date=pending.get("date"),
-        role=cand.get("role"),
-        title=str(cand.get("title", ""))[:80],
-        ship_no=ship_no,
-    )
-    await update.message.reply_text(
-        f"✅ 북극성 후보 {idx+1} 승인 — [{str(cand.get('role','')).upper()}] 배 #{ship_no} 로 "
-        f"_queue 등록 완료.\n• {str(cand.get('title',''))[:80]}"
-    )
-    return True
-
-
-def _ns_build_keyboard(cands: list):
-    """미승인 후보만 남긴 인라인 승인버튼 재구성(승인된 건 버튼 소거). 없으면 None.
-    callback_data 규약 = ns:<idx>:approve / ns:hold (recommender.build_keyboard 와 동일)."""
-    medals = {0: "🥇", 1: "🥈", 2: "🥉"}
-    single = len(cands) <= 1
-    approve = []
-    for idx, c in enumerate(cands):
-        if c.get("status") == "approved":
-            continue
-        text = "✅ 승인" if single else f"{medals.get(idx, f'{idx+1}.')} {idx+1}순위 승인"
-        approve.append(InlineKeyboardButton(
-            text, callback_data=f"ns:{idx}:approve"))
-    if not approve:
-        return None
-    rows = [approve[i:i + 3] for i in range(0, len(approve), 3)]
-    rows.append([InlineKeyboardButton("⚓ 보류" if single else "⚓ 전체 보류", callback_data="ns:hold")])
-    return InlineKeyboardMarkup(rows)
-
-
-async def cmd_northstar_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """북극성 추천 카드 탭 인라인버튼 처리 — callback_data ns:<idx>:approve / ns:hold.
-
-    승인 → _ns_register_queue_bar(재사용)로 _queue PENDING 배 등록 + pending status 갱신
-           + _ns_git_seq_locked 커밋(GitLock 패턴 준용) + 해당 버튼 소거(나머지 승인 버튼은 유지).
-    보류 → pending held(무파괴) + 전체 버튼 소거.
-    ※ 텍스트 [승인N] 라우터(route_northstar)와 병존 — 콜백은 버튼 경로."""
-    q = update.callback_query
-    if not q or not q.data or not q.data.startswith("ns:"):
-        return
-    if not NORTHSTAR_NS_ENABLED:
-        # 역롤백 발동 중 — 인라인버튼 무시, 텍스트 [승인N]/[보류]로 안내(route_northstar 경로 무파괴 유지)
-        await q.answer("인라인 버튼 일시 비활성 — 텍스트 [승인1] 또는 [보류]로 회신해 주세요.", show_alert=True)
-        return
-    await q.answer()
-    parts = q.data.split(":")
-    action = parts[1] if len(parts) > 1 else ""
-
-    if not NORTHSTAR_PENDING.exists():
-        await q.answer("만료된 추천입니다", show_alert=False)
-        return
-    try:
-        pending = json.loads(NORTHSTAR_PENDING.read_text(encoding="utf-8"))
-    except Exception as e:
-        log.error(f"[북극성] 콜백 pending 로드 실패: {e}")
-        return
-    cands = pending.get("candidates", [])
-    if not isinstance(cands, list) or not cands:
-        await q.answer("후보가 없습니다", show_alert=False)
-        return
-
-    import datetime as _dt
-
-    # ── 보류 — 전체 held(무파괴), 버튼 전체 소거 ──
-    if action == "hold":
-        pending["status"] = "held"
-        for c in cands:
-            if c.get("status") != "approved":
-                c["status"] = "held"
-        pending["held_at"] = _dt.datetime.now().isoformat()
-        try:
-            NORTHSTAR_PENDING.write_text(
-                json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
-        except Exception as e:
-            log.error(f"[북극성] pending 저장 실패(보류): {e}")
-        _ns_log("held", date=pending.get("date"), candidate_count=len(cands))
-        try:
-            await q.edit_message_reply_markup(reply_markup=None)
-        except Exception:
-            pass
-        await ctx.bot.send_message(
-            chat_id=q.message.chat_id,
-            text="🧭 북극성 추천 — 오늘 후보를 보류(held) 처리했습니다. 다음 추천 때 새로 제안드립니다.")
-        return
-
-    # ── 승인 ns:<idx>:approve ──
-    if action.isdigit() and len(parts) >= 3 and parts[2] == "approve":
-        idx = int(action)
-        if idx < 0 or idx >= len(cands):
-            await q.answer(f"후보 번호 범위 초과(0~{len(cands)-1})", show_alert=False)
-            return
-        cand = cands[idx]
-        if cand.get("status") == "approved":
-            await q.answer(f"후보 {idx+1} 은 이미 승인됨", show_alert=False)
-            return
-        ship_no = await asyncio.to_thread(_ns_register_queue_bar, cand)
-        if ship_no is None:
-            await ctx.bot.send_message(
-                chat_id=q.message.chat_id,
-                text="⚠️ 북극성 승인 처리 중 _queue.json 쓰기 실패. 로그 확인 필요.")
-            return
-        cand["status"] = "approved"
-        cand["approved_at"] = _dt.datetime.now().isoformat()
-        cand["ship_no"] = ship_no
-        pending["status"] = "approved"
-        try:
-            NORTHSTAR_PENDING.write_text(
-                json.dumps(pending, ensure_ascii=False, indent=2), encoding="utf-8")
-        except Exception as e:
-            log.error(f"[북극성] pending 저장 실패(승인): {e}")
-        _ns_log("approved", date=pending.get("date"), role=cand.get("role"),
-                title=str(cand.get("title", ""))[:80], ship_no=ship_no, via="callback")
-        # git 커밋(GitLock 임계구역·봇 비차단)
-        msg = f"chore(northstar): 추천 승인 배 #{ship_no} _queue 등록 ({cand.get('role','')})"
-        try:
-            await asyncio.to_thread(_ns_git_seq_locked, msg)
-        except Exception as e:
-            log.error(f"[북극성] 승인 커밋 실패: {e}")
-        # 승인된 버튼만 소거(나머지 승인 버튼 유지 → 복수 승인 가능)
-        try:
-            await q.edit_message_reply_markup(reply_markup=_ns_build_keyboard(cands))
-        except Exception:
-            pass
-        await ctx.bot.send_message(
-            chat_id=q.message.chat_id,
-            text=(f"✅ 북극성 후보 {idx+1} 승인 — [{str(cand.get('role','')).upper()}] "
-                  f"배 #{ship_no} _queue 등록 완료.\n• {str(cand.get('title',''))[:80]}"))
-        return
-
-
 # ── [DEPRECATED] 이전 분류 게이트 (v1.0 양방향 통신으로 대체, 2026-05-25) ────
 # 아래 함수들은 현재 호출되지 않음. 향후 Claude CLI 직접 호출 복원 시 재활성화.
 _HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -1204,12 +939,6 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     state = load_state()
     session_id = state.get("session_id")
 
-    # ── 북극성 추천 카드 회신 라우터 (결재보다 우선 — 대괄호 토큰 전용) ────────────
-    if await route_northstar(update, prompt):
-        _inbox_log("out", "CEO", f"[북극성 추천 회신] {prompt[:60]}", msg_type="northstar")
-        return
-    # ────────────────────────────────────────────────────────────────────────
-
     # ── 결재 회신 라우터 (양방향 분류보다 우선) ────────────────────────────────
     routed = await route_approval(update, prompt)
     if routed:
@@ -1373,35 +1102,6 @@ def _git_seq_locked(commit_msg: str) -> None:
             _seq()
     except Exception as exc:  # 락 타임아웃 등 — 무방비 진행 금지, 다음 기회 재커밋
         log.error(f"[pub] git lock/seq 실패(커밋 건너뜀): {exc}")
-
-
-def _ns_git_seq_locked(commit_msg: str) -> None:
-    """북극성 승인 콜백 git 시퀀스 — _queue.json + northstar_pending.json 원자 커밋.
-    _git_seq_locked(pub) 와 동일 GitLock 패턴, 대상 파일만 다름. to_thread 로 호출."""
-    def _g(*args):
-        try:
-            subprocess.run(
-                ["git", "-C", str(WORKDIR), *args],
-                capture_output=True, text=True, encoding="utf-8", errors="replace",
-            )
-        except Exception as exc:
-            log.error(f"[북극성] git {args[:1]} 실패: {exc}")
-
-    def _seq():
-        _g("add", str(QUEUE_FILE), str(NORTHSTAR_PENDING), str(NORTHSTAR_LOG))
-        _g("commit", "-m", commit_msg)
-        _g("pull", "--rebase", "--autostash", "origin", "master")
-        _g("push", "origin", "master")
-
-    try:
-        if GitLock is not None:
-            with GitLock(holder="bot:northstar_callback", repo_root=str(WORKDIR)):
-                _seq()
-        else:
-            log.warning("[북극성] GitLock 미가용 — 무락 순차 커밋 폴백")
-            _seq()
-    except Exception as exc:
-        log.error(f"[북극성] git lock/seq 실패(커밋 건너뜀): {exc}")
 
 
 # ─── 네이버 URL 자동기록 (GM 손게시 → review_queue.json, 2026-06-26) ───────────
@@ -2242,9 +1942,6 @@ def main():
     # M1 웹 승인 신호 (/m1pub) — GAS _signalM1Publish() 가 보냄. 텔레그램 카드 승인과
     # 동일 발행 트리거로 수렴(2026-07-16 CMO, 배1170). 게이트=M1_AUTO_PUBLISH(기본 OFF).
     app.add_handler(CommandHandler("m1pub", cmd_m1_publish))
-    # 북극성 추천 카드 탭 인라인버튼 콜백 (ns:) — 텍스트 [승인N] 폐기 대체 (2026-07-04 CTO·배420).
-    # 코드만 등록 — 발효는 다음 봇 자동재기동 때(GM go). route_northstar 텍스트 경로와 병존.
-    app.add_handler(CallbackQueryHandler(cmd_northstar_callback, pattern=r"^ns:"))
     # 카톡 매출보고 원클릭 3방 전송 콜백 (kakao_send) — 2026-07-06 CTO, 배488.
     # 코드만 등록 — 발효는 다음 봇 자동재기동 때(GM PC 재부팅 또는 아침 자동재기동).
     app.add_handler(CallbackQueryHandler(cmd_kakao_send_callback, pattern=r"^kakao_send$"))

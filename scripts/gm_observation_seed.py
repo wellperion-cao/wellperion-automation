@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """GM 관찰 원장 시드 스크립트 (배237 · GM 보좌 자율화 MVP · 첫걸음).
 
-이미 존재하는 로그(northstar_log.jsonl, _queue.json, _queue_archive.json)를
+이미 존재하는 로그(_queue.json, _queue_archive.json)를
 스캔해 'GM 성향·습관' 관찰을 status/gm_observation_ledger.jsonl 에 append한다.
 
 원칙:
@@ -18,7 +18,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 STATUS_DIR = ROOT / "status"
-NORTHSTAR_LOG = STATUS_DIR / "northstar_log.jsonl"
 QUEUE_ACTIVE = STATUS_DIR / "_queue.json"
 QUEUE_ARCHIVE = STATUS_DIR / "_queue_archive.json"
 LEDGER = STATUS_DIR / "gm_observation_ledger.jsonl"
@@ -77,39 +76,6 @@ def make_row(source, signal_type, summary, evidence, pattern_hint, dedup_key):
         "pattern_hint": pattern_hint,
         "dedup_key": dedup_key,
     }
-
-
-def scan_northstar():
-    """추천 카드 승인/보류/자동만료 패턴 관찰."""
-    observations = []
-    events = read_jsonl(NORTHSTAR_LOG)
-    expired_events = [e for e in events if e.get("event") == "expired"]
-
-    for e in expired_events:
-        d = e.get("date", "unknown")
-        key = f"northstar_log|missed|{d}"
-        observations.append((key, make_row(
-            source="northstar_log",
-            signal_type="missed",
-            summary=f"{d} 일일 북극성 추천 카드 GM 미응답 → 자동만료",
-            evidence=f"date={d} candidate_count={e.get('candidate_count')} reason={e.get('reason')}",
-            pattern_hint="GM이 06:30 추천 카드에 응답(승인/보류) 없이 자동만료 — 도달/노출 방식 재점검 또는 웰리 선제 리마인드 후보",
-            dedup_key=key,
-        )))
-
-    if len(expired_events) >= 3:
-        recent = expired_events[-3:]
-        dates_str = "·".join(e.get("date", "?") for e in recent)
-        key = f"northstar_log|approval_pattern|{dates_str}"
-        observations.append((key, make_row(
-            source="northstar_log",
-            signal_type="approval_pattern",
-            summary=f"최근 {len(recent)}일({dates_str}) 연속 추천 카드 승인·보류 응답 0건 — 전부 자동만료",
-            evidence=f"expired_dates={[e.get('date') for e in recent]}",
-            pattern_hint="GM이 06:30 추천 카드에 미응답·자동만료 반복 — 도달/노출 방식 재점검 또는 웰리 선제 리마인드 후보",
-            dedup_key=key,
-        )))
-    return observations
 
 
 def scan_queue_decisions(items, source_label):
@@ -203,7 +169,6 @@ def main():
     archive_items = read_json_array(QUEUE_ARCHIVE)
 
     all_observations = []
-    all_observations += scan_northstar()
     all_observations += scan_queue_decisions(active_items, "queue_active")
     all_observations += scan_queue_decisions(archive_items, "queue_archive")
     all_observations += scan_drift(active_items, "queue_active")

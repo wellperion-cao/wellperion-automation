@@ -41,7 +41,6 @@ STATUS_DIR = ROOT / "status"
 LEDGER = STATUS_DIR / "gm_observation_ledger.jsonl"
 QUEUE_ACTIVE = STATUS_DIR / "_queue.json"
 QUEUE_ARCHIVE = STATUS_DIR / "_queue_archive.json"
-NORTHSTAR_LOG = STATUS_DIR / "northstar_log.jsonl"
 PROFILE_MD = STATUS_DIR / "gm_profile.md"
 
 LONG_PENDING_DAYS = 30
@@ -87,7 +86,7 @@ def read_json_array(path: Path) -> list:
 # ═══════════════════════════════════════════
 #  수치 카운터 (결정적 · 항상 계산)
 # ═══════════════════════════════════════════
-def compute_counters(ledger: list, active: list, archive: list, ns_log: list) -> dict:
+def compute_counters(ledger: list, active: list, archive: list) -> dict:
     by_type = Counter(r.get("signal_type") for r in ledger)
     by_source = Counter(r.get("source") for r in ledger)
 
@@ -116,30 +115,17 @@ def compute_counters(ledger: list, active: list, archive: list, ns_log: list) ->
             if not (x.get("next") or "").strip():
                 drift += 1
 
-    # 북극성 추천 미응답 연속 streak(최근 expired 연속)
-    missed_streak = 0
-    for e in reversed(ns_log):
-        if e.get("event") == "expired":
-            missed_streak += 1
-        elif e.get("event") == "proposed":
-            # proposed 이후 approved 없이 다음 expired 로만 이어지면 미응답 지속
-            continue
-        else:
-            break
-
     return {
         "observations_total": len(ledger),
         "observations_by_type": dict(by_type),
         "observations_by_source": dict(by_source),
         "gm_decisions": by_type.get("decision", 0),
-        "missed_recommendations": by_type.get("missed", 0),
         "drift_events_ledger": by_type.get("repeat", 0),
         "queue_active_total": len(active),
         "queue_status": dict(status_counter),
         "queue_archive_total": len(archive),
         "long_pending_live": long_pending,
         "drift_live": drift,
-        "northstar_missed_streak": missed_streak,
     }
 
 
@@ -166,7 +152,7 @@ GM(대표)을 보좌하기 위해, 관찰 원장과 업무 큐 지표를 근거�
 
 [수치 지표(관찰 원장·큐 집계)]
 - 총 관찰 {ct['observations_total']}건 (유형별: {ct['observations_by_type']})
-- GM 결정 이력 {ct['gm_decisions']}건 / 추천 카드 미응답 {ct['missed_recommendations']}건 (최근 연속 미응답 {ct['northstar_missed_streak']}일)
+- GM 결정 이력 {ct['gm_decisions']}건
 - 표류(완료 후 다음 미정) 관찰 {ct['drift_events_ledger']}건 / 라이브 표류 {ct['drift_live']}건
 - 활성 큐 {ct['queue_active_total']}척 (상태: {ct['queue_status']}) · 장기 대기(30일+) {ct['long_pending_live']}척
 
@@ -207,7 +193,6 @@ def brain_claude_cli(counters: dict, ledger: list) -> tuple[str | None, str | No
 # ═══════════════════════════════════════════
 def brain_fallback(counters: dict) -> str:
     ct = counters
-    streak = ct["northstar_missed_streak"]
     q = ct["queue_status"]
     pending = q.get("PENDING", 0)
     inprog = q.get("IN_PROGRESS", 0)
@@ -221,19 +206,16 @@ def brain_fallback(counters: dict) -> str:
     parts.append(f"- 완료 아카이브 {ct['queue_archive_total']}건 — 지속적으로 배를 완주·아카이브하는 흐름.")
     parts.append("")
     parts.append("## 자주 놓치는 것")
-    if streak >= 1:
-        parts.append(f"- 06:30 북극성 추천 카드 최근 {streak}일 연속 미응답 — 아침 카드 응답을 자주 놓침(로그 근거).")
     parts.append(f"- 표류(완료 후 다음 미정) 라이브 {ct['drift_live']}건 — 완료 시 '다음 한 수' 지정을 빠뜨리는 경향.")
     parts.append(f"- 장기 대기(30일+) {ct['long_pending_live']}척 — 우선순위 낮은 배의 정리·폐기 판단을 미룸.")
     parts.append("")
     parts.append("## 루틴 준수")
-    parts.append(f"- 추천 카드 미응답 {ct['missed_recommendations']}건 — 일일 추천 루틴 응답률 낮음(개선 여지).")
     parts.append("- (추정) 지시-실행-완료 사이클은 유지되나, 사후 '다음 정하기' 루틴은 느슨.")
     parts.append("")
     parts.append("## 핵심 수치지표 해석")
     parts.append(f"- 총 관찰 {ct['observations_total']}건 / 유형: {ct['observations_by_type']}")
-    parts.append(f"- 활성 {ct['queue_active_total']}척 · 장기대기 {ct['long_pending_live']} · 표류 {ct['drift_live']} · 미응답 연속 {streak}일")
-    parts.append("- 해석(추정): 개입 지점은 '완료 후 다음 정하기' + '아침 추천 응답' + '장기대기 정리' 3곳.")
+    parts.append(f"- 활성 {ct['queue_active_total']}척 · 장기대기 {ct['long_pending_live']} · 표류 {ct['drift_live']}")
+    parts.append("- 해석(추정): 개입 지점은 '완료 후 다음 정하기' + '장기대기 정리' 2곳.")
     return "\n".join(parts)
 
 
@@ -249,8 +231,6 @@ def render_counters_block(ct: dict) -> str:
         "|---|---|",
         f"| 총 관찰 | {ct['observations_total']}건 |",
         f"| GM 결정 이력 | {ct['gm_decisions']}건 |",
-        f"| 추천 카드 미응답 | {ct['missed_recommendations']}건 |",
-        f"| 추천 미응답 연속 | {ct['northstar_missed_streak']}일 |",
         f"| 표류(원장/라이브) | {ct['drift_events_ledger']} / {ct['drift_live']}건 |",
         f"| 활성 큐 | {ct['queue_active_total']}척 (PENDING {q.get('PENDING', 0)}·IN_PROGRESS {q.get('IN_PROGRESS', 0)}·DONE {q.get('DONE', 0)}) |",
         f"| 장기 대기(30일+) | {ct['long_pending_live']}척 |",
@@ -267,7 +247,7 @@ def build_markdown(narrative: str, counters: dict, generated_by: str) -> str:
         "# GM 프로필 (웰리 학습 · GM 보좌 자율화 phase 1)\n\n"
         f"- 생성: {now_str()}\n"
         f"- 생성 두뇌: {generated_by}\n"
-        f"- 근거: `status/gm_observation_ledger.jsonl` + `status/_queue*.json` + `status/northstar_log.jsonl`\n"
+        f"- 근거: `status/gm_observation_ledger.jsonl` + `status/_queue*.json`\n"
         "- 성격: 사람이 읽는 서술 프로필(일일 갱신·멱등). 라이브 부작용 0.\n"
         "- 배: CEO-2026-07-02-GM-AIDE-AUTONOMY (ship 237) · 스펙: `.omc/specs/deep-interview-gm-aide-autonomy.md`\n\n"
         "---\n\n"
@@ -283,10 +263,9 @@ def run(stdout_only: bool = False) -> str:
     ledger = read_jsonl(LEDGER)
     active = read_json_array(QUEUE_ACTIVE)
     archive = read_json_array(QUEUE_ARCHIVE)
-    ns_log = read_jsonl(NORTHSTAR_LOG)
     print(f"[1/3] 입력 로드 — 관찰 {len(ledger)}건 · 활성큐 {len(active)}척 · 아카이브 {len(archive)}건")
 
-    counters = compute_counters(ledger, active, archive, ns_log)
+    counters = compute_counters(ledger, active, archive)
 
     print("[2/3] 웰리 두뇌(claude CLI · model_router 폴백) 호출...")
     narrative, used_model = brain_claude_cli(counters, ledger)
@@ -301,7 +280,7 @@ def run(stdout_only: bool = False) -> str:
     md = build_markdown(narrative, counters, generated_by)
 
     print(f"\n[요약] 수치 카운터")
-    print(f"  · 총 관찰 {counters['observations_total']} · 결정 {counters['gm_decisions']} · 미응답 {counters['missed_recommendations']}(연속 {counters['northstar_missed_streak']}일)")
+    print(f"  · 총 관찰 {counters['observations_total']} · 결정 {counters['gm_decisions']}")
     print(f"  · 표류 라이브 {counters['drift_live']} · 장기대기 {counters['long_pending_live']} · 활성 {counters['queue_active_total']}")
 
     if stdout_only:

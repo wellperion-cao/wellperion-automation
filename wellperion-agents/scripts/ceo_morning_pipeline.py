@@ -1070,10 +1070,9 @@ def _is_settled_or_bridged(d: dict) -> bool:
 
 # ── 08:00 흡수 섹션 (2026-07-18 GM 승인 — GM DM 알림 홍수 축소) ─────────────────
 # 폐지된 GM DM 슬롯의 핵심값을 08:00 통합브리프로 접어 넣는다(값 유실 0).
-#   · 07시(어제결산·직원 공유카드) · 09시(매출 1줄) · 06:30(북극성 top 추천).
+#   · 07시(어제결산·직원 공유카드) · 09시(매출 1줄).
 # 소스는 전부 기존 것 재사용 — 새 채널·새 SSOT·새 스크립트 없음.
 QUOTES_PATH = STATUS_DIR / "quotes.json"
-NORTHSTAR_PENDING_PATH = STATUS_DIR / "northstar_pending.json"
 # home_kpi = 09시 _fetch_cfo_finance_block과 동일 소스(ERP home과 수치 일치). _G1_API와 같은 GAS 배포.
 _HOME_KPI_API = (
     "https://script.google.com/macros/s/"
@@ -1120,32 +1119,6 @@ def fetch_sales_oneline() -> str:
     if s_month is None and e_month is None:
         return ""
     return f"💰 이달 매출 {_kr_amt(s_month)} · 지출 {_kr_amt(e_month)}  (상세는 카톡 09:30)"
-
-
-def fetch_northstar_top() -> str:
-    """북극성 top 추천 1건 (구 06:30 카드 흡수). status/northstar_pending.json 재사용.
-    반환: 렌더 블록 또는 ''(파일 없음·후보 없음)."""
-    try:
-        data = json.loads(NORTHSTAR_PENDING_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return ""
-    # 오늘자 추천만 표시 — 06:30이 안 돌아 어제 것이 남았으면 생략(오해 방지).
-    if str(data.get("date", "")) != datetime.now().strftime("%Y-%m-%d"):
-        return ""
-    cands = data.get("candidates") or []
-    if not cands:
-        return ""
-    c = cands[0]
-    title = summarize_title(str(c.get("title", "")), limit=54)
-    fa = str(c.get("first_action", "")).strip()
-    diff = str(c.get("difficulty", "")).strip()
-    who = str(c.get("owner", "")).strip()
-    tag = " ✅승인됨" if str(data.get("status", "")) == "approved" else ""
-    head = f" {diff} {title}".rstrip() + (f" [{who}]" if who else "")
-    lines = [f"🧭 웰리의 오늘의 북극성 한 수{tag}", head]
-    if fa:
-        lines.append(f"   👉 첫 행동: {fa[:70]}")
-    return "\n".join(lines)
 
 
 def _staff_quote() -> str:
@@ -1287,7 +1260,7 @@ def _board_item_count(secs: dict) -> int:
 
 
 def _build_appendix_lines() -> list[str]:
-    """항로 블록 뒤 '── 부록 ──' — 매출·운영점검·북극성 한 수·직원카드 (구 06:30/07/09시 흡수).
+    """항로 블록 뒤 '── 부록 ──' — 매출·운영점검·직원카드 (구 07/09시 흡수).
     build_telegram_report / build_split_reports(업무보고방) 공유 — 부가내용 삭제 없음."""
     lines = ["", "━" * 14 + " 부록 " + "━" * 14]
 
@@ -1309,12 +1282,6 @@ def _build_appendix_lines() -> list[str]:
             lines.append("")
     except Exception as _e:
         lines.append(f"🏢 운영 점검: (합류 실패 — {type(_e).__name__})")
-        lines.append("")
-
-    # ── 🧭 웰리의 북극성 한 수 (구 06:30 추천 카드 흡수 · northstar_pending.json) ──
-    _ns_top = fetch_northstar_top()
-    if _ns_top:
-        lines.append(_ns_top)
         lines.append("")
 
     # ── 직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 부록 맨 아래 배치 ──
@@ -1350,7 +1317,7 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     save_plan()의 로컬 감사 JSON에는 계속 쓰이지만, 이 렌더 함수에는 더 이상
     관여하지 않는다(시그니처는 run_pipeline 호출부 호환을 위해 유지).
 
-    부가내용(매출·운영점검·북극성 한 수·직원카드)은 삭제하지 않고 항로 블록
+    부가내용(매출·운영점검·직원카드)은 삭제하지 않고 항로 블록
     뒤 '── 부록 ──' 아래로 명확히 분리해 GM이 항로/부가를 혼동하지 않게 한다.
 
     [2026-07-26 웰리 지시 배10244] 08:00 분리 발신(업무보고방/AI 진행현황방)의

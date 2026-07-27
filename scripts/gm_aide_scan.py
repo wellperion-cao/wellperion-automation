@@ -66,8 +66,6 @@ STATUS_DIR = ROOT / "status"
 LEDGER = STATUS_DIR / "gm_observation_ledger.jsonl"
 QUEUE_ACTIVE = STATUS_DIR / "_queue.json"
 QUEUE_ARCHIVE = STATUS_DIR / "_queue_archive.json"
-NORTHSTAR_LOG = STATUS_DIR / "northstar_log.jsonl"
-NORTHSTAR_PENDING = STATUS_DIR / "northstar_pending.json"
 PROFILE_MD = STATUS_DIR / "gm_profile.md"
 MATRIX_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "bootsetup_matrix.json"
 SCAN_LOG = STATUS_DIR / "gm_aide_scan_log.jsonl"
@@ -80,7 +78,6 @@ LONG_PENDING_DAYS = 30
 #   "방치"의 실측 경계값. 7일로 잡으면 정상 지연건까지 섞여 벽이 되고, 30일은 첫 적발까지 너무 늦다.
 STALE_APPROVAL_DAYS = 14
 SSOT_TODO_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
-UNAPPROVED_STREAK_GATE = 3     # 추천 미응답 연속 이만큼이면 '접근 재점검' 게이트 제안
 MAX_PROPOSALS_PER_RUN = 5      # 하루 과다등록 방지 cap
 PROPOSAL_TAG = "[GM보좌 제안]"
 
@@ -325,68 +322,6 @@ def scan_stale_approval(todo_rows: list) -> list:
     return caps
 
 
-def scan_unapproved_recommendation(ns_log: list, ns_pending: dict) -> list:
-    """북극성 추천 미응답. 최근 1회=가역 리마인드 / 연속 {GATE}일+=접근 재점검(게이트 제안)."""
-    caps = []
-    # 최근 연속 미응답(expired) streak
-    streak = 0
-    for e in reversed(ns_log):
-        if e.get("event") == "expired":
-            streak += 1
-        elif e.get("event") == "proposed":
-            continue
-        else:
-            break
-
-    pending_status = str(ns_pending.get("status")) if isinstance(ns_pending, dict) else ""
-    pending_date = ns_pending.get("date") if isinstance(ns_pending, dict) else None
-    aging_unapproved = pending_status == "proposed" and pending_date != today_str()
-
-    if streak >= UNAPPROVED_STREAK_GATE:
-        caps.append(make_capture(
-            ctype="unapproved_recommendation",
-            reversibility="비가역",   # '도달/노출 방식 재점검' = 전략·프로세스 결정 게이트 → 제안
-            target_role="ceo",
-            title=f"06:30 북극성 추천 카드 {streak}일 연속 미응답",
-            reason=f"추천 카드 {streak}일 연속 자동만료 — 도달/노출 방식 재점검이 필요한 구조 신호",
-            evidence=f"missed_streak={streak} pending_status={pending_status}",
-            remedy="GM 결정 필요: 추천 전달 방식·시점 재설계 여부(전략 게이트) → 제안만",
-            # 안정 키(날짜·streak숫자 미포함, 2026-07-04 수정) — 이 유형 열린 카드가 있는 한
-            # 매일 재등록되지 않도록 한다(구 키에 날짜가 껴 매일 새 카드 증식하던 버그 수정).
-            dedup_key="gmaide|unapproved_streak",
-        ))
-    elif aging_unapproved:
-        caps.append(make_capture(
-            ctype="unapproved_recommendation",
-            reversibility="가역",   # 단순 리마인드 → phase1 표시만
-            target_role="ceo",
-            title=f"미승인 추천 카드 대기({pending_date})",
-            reason="직전 추천 카드가 아직 미승인(proposed) 상태로 대기",
-            evidence=f"pending_date={pending_date} pending_status={pending_status}",
-            remedy="GM에 추천 카드 응답 리마인드(가역)",
-            dedup_key=f"gmaide|unapproved_pending|{pending_date}",
-        ))
-    return caps
-
-
-def scan_routine_missing(ns_pending: dict) -> list:
-    """루틴 누락 — 오늘 06:30 추천 카드가 아직 생성 안 됨(routine gap). 조치=리마인드(가역)."""
-    caps = []
-    pending_date = ns_pending.get("date") if isinstance(ns_pending, dict) else None
-    if pending_date != today_str():
-        caps.append(make_capture(
-            ctype="routine_missing",
-            reversibility="가역",
-            target_role="ceo",
-            title="오늘 북극성 추천 루틴 미생성",
-            reason="오늘자 northstar_pending 이 아직 없음 — 06:30 추천 루틴 미가동 가능성",
-            evidence=f"pending_date={pending_date} today={today_str()}",
-            remedy="추천기(northstar_recommender --send) 가동 확인 리마인드(가역)",
-            dedup_key=f"gmaide|routine_missing|{today_str()}",
-        ))
-    return caps
-
-
 def _parse_date_loose(s) -> "datetime.date | None":
     """'YYYY-MM-DD' 또는 'YYYY-MM-DDTHH:MM:SSZ' 형태를 느슨하게 date로 파싱. 실패 시 None(정직 미상)."""
     if not s:
@@ -400,77 +335,6 @@ def _parse_date_loose(s) -> "datetime.date | None":
         return None
 
 
-def scan_northstar_unstarted(active: list, ns_log: list) -> list:
-    """북극성 승인 배가 미착수로 조용히 썩는 빈틈 감지(surface-only).
-    기존 감지기(scan_drift=DONE만·scan_long_pending=30일+·scan_unapproved_recommendation=미승인만)가
-    전부 놓치는 사각: '승인됐고 최근(30일 미만)이며 아직 PENDING'인 북극성 배.
-    ★큐를 수정하지 않는다. 새 제안 배도 만들지 않는다(이미 배로 존재 — 표면화만 한다)."""
-    approved_dates: dict = {}
-    for e in ns_log:
-        if e.get("event") != "approved":
-            continue
-        sn = e.get("ship_no")
-        if isinstance(sn, int):
-            approved_dates[sn] = e.get("date") or ""
-    approved_ship_nos = set(approved_dates)
-
-    out = []
-    for x in active:
-        if x.get("status") != "PENDING":
-            continue  # IN_PROGRESS=착수됨(대상 아님) · DONE=완료(대상 아님)
-        tid = _ship_id(x)
-        note = x.get("note") or ""
-        ship_no = x.get("ship_no")
-        is_northstar_approved = (
-            (isinstance(ship_no, int) and ship_no in approved_ship_nos)
-            or "NORTHSTAR" in tid
-            or "[웰리 북극성 추천 승인" in note
-        )
-        if not is_northstar_approved:
-            continue
-        approved_date = approved_dates.get(ship_no) if isinstance(ship_no, int) else None
-        if not approved_date:
-            approved_date = x.get("enqueued_at")
-        d = _parse_date_loose(approved_date)
-        days_waiting = (TODAY - d).days if d else None
-        out.append({
-            "ship_no": ship_no,
-            "task_id": tid,
-            "clevel": (x.get("clevel") or "ceo").lower(),
-            "title": x.get("title") or "",
-            "approved_date": approved_date,
-            "days_waiting": days_waiting,
-        })
-    return out
-
-
-def northstar_unstarted_worklist(active: list, ns_log: list) -> list:
-    """scan_northstar_unstarted 결과를 담당별(days_waiting 내림차순)로 정렬한 세션 픽업 워크리스트.
-    부팅(웰리 STEP 0/§1 항로 출력 직후)이 호출하는 진입점 — 큐 뮤테이션 0."""
-    items = scan_northstar_unstarted(active, ns_log)
-    return sorted(
-        items,
-        key=lambda i: i["days_waiting"] if i["days_waiting"] is not None else -1,
-        reverse=True,
-    )
-
-
-def print_northstar_worklist() -> None:
-    """CLI 진입점(--northstar-worklist) — 세션 픽업 대상 워크리스트를 마크다운 표로 stdout 출력.
-    run()과 독립 경로(포착·제안등록·자율실행·게이트 전부 미가동) · 큐 읽기전용."""
-    active = read_json(QUEUE_ACTIVE, [])
-    ns_log = read_jsonl(NORTHSTAR_LOG)
-    items = northstar_unstarted_worklist(active, ns_log)
-    print(f"## 🚨 북극성 승인 미착수(세션 픽업 대상) — {len(items)}척\n")
-    if not items:
-        print("(없음 — 승인된 북극성 배가 전부 착수됨)")
-        return
-    print("| 배 | 담당 | 대기일수 | 승인일 | 제목 |")
-    print("|---|---|---|---|---|")
-    for i in items:
-        nick = ROLE_NICK.get(i["clevel"], i["clevel"].upper())
-        waited = f"{i['days_waiting']}일" if i["days_waiting"] is not None else "미상"
-        print(f"| #{i['ship_no']} `{i['task_id']}` | {nick} | {waited} | {i['approved_date'] or '-'} | {i['title']} |")
 
 
 # ═══════════════════════════════════════════
@@ -1170,8 +1034,6 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
 
     active = read_json(QUEUE_ACTIVE, [])
     archive = read_json(QUEUE_ARCHIVE, [])
-    ns_log = read_jsonl(NORTHSTAR_LOG)
-    ns_pending = read_json(NORTHSTAR_PENDING, {})
     kpi = read_json(STATUS_DIR / "kpi_values.json", {})
     ns_map = load_northstar_map()
     profile_exists = PROFILE_MD.exists()
@@ -1185,8 +1047,6 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     captures += scan_drift(active)
     captures += scan_long_pending(active)
     captures += scan_stale_approval(todo_rows)
-    captures += scan_unapproved_recommendation(ns_log, ns_pending)
-    captures += scan_routine_missing(ns_pending)
 
     rev = [c for c in captures if c["reversibility"] == "가역"]
     irr = [c for c in captures if c["reversibility"] == "비가역"]
@@ -1195,18 +1055,6 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         mark = "🔒비가역" if c["reversibility"] == "비가역" else "↩️가역"
         print(f"  {mark} [{c['type']}] {c['title']}")
         print(f"      사유: {c['reason'][:90]}")
-
-    # ── 북극성 승인 미착수(세션 픽업 대상) — surface-only · 큐 뮤테이션 0 · 새 제안 배 0 ──
-    # commit 여부와 무관하게 항상 계산·표출(surface는 안전 — 실제 조치는 웰리 세션 픽업 몫).
-    ns_unstarted = northstar_unstarted_worklist(active, ns_log)
-    if ns_unstarted:
-        print(f"\n🚨 북극성 승인 미착수(세션 픽업 대상) {len(ns_unstarted)}척")
-        for item in ns_unstarted:
-            nick = ROLE_NICK.get(item["clevel"], item["clevel"].upper())
-            waited = f"{item['days_waiting']}일째" if item["days_waiting"] is not None else "대기일수 미상"
-            print(f"  #{item['ship_no']} [{item['task_id']}] {nick} — {waited} 미착수 — {(item['title'] or '')[:60]}")
-    else:
-        print("\n✅ 북극성 승인 미착수(세션 픽업 대상) 없음")
 
     # ── 제안 배 등록: 비가역·게이트만 · dedup · cap ──
     existing = existing_proposal_keys(active)
@@ -1259,8 +1107,6 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         "auto_exec_on": auto_on,
         "auto_actions": len(auto_actions),
         "auto_applied": auto_applied,
-        "northstar_unstarted": len(ns_unstarted),
-        "northstar_unstarted_list": ns_unstarted,
         **gap_result,
         **verify_result,
     }
@@ -1308,8 +1154,6 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         gap_proposed=gap_result["gap_proposed"],
         resumable_apply_on=gap_result["resumable_apply_on"],
         gap_stall_list=gap_result["gap_stall_list"],  # 정체 surface-only 목록(보드 정보 표시용)
-        northstar_unstarted=result["northstar_unstarted"],
-        northstar_unstarted_list=result["northstar_unstarted_list"],  # 세션 픽업 대상(보드 정보 표시용)
     )
     print(f"[완료] ({now_str()}) — 스캔 로그: {SCAN_LOG.name}")
     return result
@@ -1325,13 +1169,7 @@ def main():
     parser.add_argument("--auto-exec", action="store_true",
                         help=f"phase2 가역 자율실행 라이브 발효(로컬 시뮬용). "
                              f"기본 휴면 · 상시 스위치=환경변수 {AUTO_EXEC_ENV}=1 (GM go 후에만)")
-    parser.add_argument("--northstar-worklist", action="store_true",
-                        help="북극성 승인 미착수(세션 픽업 대상) 워크리스트만 마크다운 표로 출력. "
-                             "run()과 독립 경로 · 큐 읽기전용(부팅·수동 확인용)")
     args = parser.parse_args()
-    if args.northstar_worklist:
-        print_northstar_worklist()
-        return
     run(commit=args.commit, auto_exec_flag=args.auto_exec)
 
 

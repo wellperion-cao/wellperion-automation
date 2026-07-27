@@ -478,7 +478,6 @@
   var _kpiValues = null;      // status/kpi_values.json roles{} — 현재 실측값(없으면 null)
   var _kpiGlobal = null;      // status/kpi_values.json global{} — 전역 실측값(unpushed·mirror_ok·health 등)
   var _queueCounts = null;    // status/_queue.json 집계 → role.id별 {active, doneToday}
-  var _pendingByRole = null;  // status/northstar_pending.json → role.id별 후보 1개
   var _incidents = null;      // ssot/incidents.json → role.id별 {guarded, recent}
   var _reachData = null;      // status/northstar_reach.json → role.id별 {reach_pct|null, mode, basis, milestones_done?, milestones_total?}
   var _ownershipData = null;  // ssot/ownership_map.json → role.id(title lowercase)별 {primary_surface, domain, executor} — GM확정 소유·역할 단일출처(2026-07-18)
@@ -512,12 +511,6 @@
       if(st === 'PENDING' || st === 'IN_PROGRESS') o.active++;
       else if(st === 'DONE' && String(t.processed_at || '').slice(0,10) === today) o.doneToday++;
     });
-    return m;
-  }
-  // northstar_pending.candidates → role별 첫 후보
-  function computePending(d){
-    var m = {}, arr = (d && d.candidates) || [];
-    arr.forEach(function(c){ if(c && c.role && !m[c.role]) m[c.role] = c; });
     return m;
   }
   // incidents.json → 역할 추론(명시 role 필드 없음 → watch_globs/본문 키워드).
@@ -879,14 +872,6 @@
     return lab + '<div class="pstat">📍 활성 <b>' + c.active + '</b> · 오늘 완료 <b>' + c.doneToday + '</b></div>';
   }
 
-  // 🌅 오늘 추천 — status/northstar_pending.json 후보 1개. 없으면 숨김.
-  function recommendBlock(role){
-    var cand = (_pendingByRole && _pendingByRole[role.id]) || null;
-    if(!cand || !cand.title) return '';
-    var lab = '<span class="dim-label">🌅 오늘 추천</span>';
-    return lab + '<div class="todaychip" title="' + esc(cand.rationale || '') + '">🌅 ' + esc(cand.title) + '</div>';
-  }
-
   // 🛡️ 재발방지 GUARDED — ssot/incidents.json 직독 집계. 역할 연관 봉인 건수 + 최근 1건. 없으면 숨김.
   function incidentsBlock(role){
     var c = (_incidents && _incidents[role.id]) || null;
@@ -1012,7 +997,7 @@
       //   → 작업 처리율(보조·강등) → 📍진행현황 → 🌅오늘 추천.
       // 2026-07-07 GM승인: 🗺️북극성 지도 + 🌟북극성 도달율 두 블록을 northStarBlock() 하나로 병합(축 값 이중나열 제거).
       var c1 = '<td>' + dimBlock(role, 0, '🌟 북극성') + northStarBlock(role) +
-               kpiBlock(role) + workRateBlock(role) + progressBlock(role) + recommendBlock(role) + '</td>';
+               kpiBlock(role) + workRateBlock(role) + progressBlock(role) + '</td>';
       // 칸2 일하는 법 = 📚읽는 정본(2) + 🗓️하루 루틴(1) — 카드화로 시각 빈약 완화(칸 밸런스 2026-07-18 · 콘텐츠 추가 없음)
       var c2 = '<td><div class="c2-card">' + dimBlock(role, 2, '📚 읽는 정본') + '</div>' +
                '<div class="c2-card">' + dimBlock(role, 1, '🗓️ 하루 루틴') + '</div></td>';
@@ -1273,7 +1258,7 @@
     fetchKpi().catch(function(){ return null; }),
     gasRead('status/kpi_values.json',     RAW_BASE + 'status/kpi_values.json').catch(function(){ return null; }),
     gasRead('status/_queue.json',         RAW_BASE + 'status/_queue.json').catch(function(){ return null; }),
-    gasRead('status/northstar_pending.json', RAW_BASE + 'status/northstar_pending.json').catch(function(){ return null; }),
+    Promise.resolve(null),  // 자리 유지(인덱스 정렬) — 북극성 추천 카드(northstar_pending.json) 기능 삭제(2026-07-27 GM), fetch 불필요
     gasRead('ssot/incidents.json',        RAW_BASE + 'ssot/incidents.json').catch(function(){ return null; }),
     gasRead('status/northstar_reach.json', RAW_BASE + 'status/northstar_reach.json').catch(function(){ return null; }),
     gasRead('ssot/canon_values.json',      RAW_BASE + 'ssot/canon_values.json').catch(function(){ return null; }),
@@ -1287,7 +1272,6 @@
       _kpiValues = (arr[2] && arr[2].roles) || {};
       _kpiGlobal = (arr[2] && arr[2].global) || {};
       _queueCounts = computeQueueCounts(arr[3]);
-      _pendingByRole = computePending(arr[4]);
       _incidents = computeIncidents(arr[5]);
       _reachData = (arr[6] && arr[6].roles) || {};
       var canonMap = {};

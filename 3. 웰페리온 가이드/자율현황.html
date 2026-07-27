@@ -1059,21 +1059,6 @@
         pill: autoOn ? ['on','자율 ON'] : ['idle','포착만'], rows: rows });
     })();
 
-    // 2) 06:30 북극성 추천
-    (function(){
-      var props = d.nsLog.filter(function(x){ return x.event === 'proposed'; });
-      var p = last(props);
-      var rows = [];
-      if(p){
-        rows.push(['마지막', '<b>' + fmtWhen(p.logged_at) + '</b>' + (p.sent ? ' · 발송됨' : '')]);
-        var roles = (p.roles || []).join('·');
-        rows.push(['결과', '추천 <b>' + ((p.titles || p.roles || []).length) + '</b>건 생성' + (roles ? ' <span style="color:var(--dim)">(' + esc(roles) + ')</span>' : '')]);
-        rows.push(['생성', esc(p['generated_by'] || '—')]);
-      } else { rows.push(['상태', '<span class="warn">추천 로그 없음</span>']); }
-      cards.push({ ico:'🌟', nm:'북극성 추천', cy:'매일 06:30 · 역할별 다음 한 칸 제안', rc:'var(--gold)',
-        pill:['on','상시'], rows: rows });
-    })();
-
     // 3) 일요일 자기학습
     (function(){
       var arr = d.learn;
@@ -1250,7 +1235,6 @@
   // ═══════════ 섹션 2: 통합 처리 이력 피드 ═══════════
   // 완료/대기 분류 규칙(배237) — 애매하면 항상 안전 기본값(대기)으로: 자율성을 과장하지 않는다.
   //  · 포착(scan)     : auto_applied>0 → 완료 / 그 외 → 대기 (아직 실행 안 된 포착일 뿐)
-  //  · 북극성 추천     : proposed → 대기 / approved(GM 채택) → 완료 / held(보류) → 대기(미실행)
   //  · 자기학습 제안    : status==='반영' → 완료 / 그 외('승인' 포함, 미반영) → 대기
   //  · 자기학습 반영    : 항상 완료(정의상 반영일시가 있을 때만 생성됨)
   //  · aide/관찰 신호   : signal_type이 auto_exec(자율실행 적용)·activation(자율실행 라이브 전환) → 완료 /
@@ -1266,22 +1250,6 @@
         what:'GM 보좌 06:30 스캔 실행',
         res:'포착 <b>' + cap + '</b>건 · 신규등록 ' + reg + (s.auto_exec_on ? ' · 자율실행 ON' : ''),
         done: (s.auto_applied|0) > 0 });
-    });
-    // 북극성 추천 (제안·승인·보류 = 진짜 자율 판단)
-    d.nsLog.forEach(function(x){
-      var ev = x.event, roleTxt = esc((x.roles || []).join('·') || x.title || '');
-      if(ev === 'proposed'){
-        var n = (x.titles || x.roles || []).length;
-        items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'🌟', tag:'추천', tagc:'var(--gold)',
-          what:'북극성 추천 ' + (x.sent ? '발송' : '생성'),
-          res:'<b>' + n + '</b>건 (' + esc((x.roles || []).join('·')) + ')', done:false });
-      } else if(ev === 'approved'){
-        items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'✅', tag:'승인', tagc:'var(--green)',
-          what:'북극성 추천 승인 — ' + roleTxt, res:'GM 채택', done:true });
-      } else if(ev === 'held'){
-        items.push({ t:ts(x.logged_at), when:x.logged_at, ico:'⚓', tag:'보류', tagc:'var(--dim)',
-          what:'북극성 추천 보류 — ' + roleTxt, res: esc(x.reason || ''), done:false });
-      }
     });
     // 자기학습 제안/반영
     d.learn.forEach(function(p){
@@ -2059,7 +2027,7 @@
   Promise.all([
     gasReadText('status/gm_aide_scan_log.jsonl',      'status/gm_aide_scan_log.jsonl').catch(function(){ return ''; }),
     gasReadText('status/gm_observation_ledger.jsonl', 'status/gm_observation_ledger.jsonl').catch(function(){ return ''; }),
-    gasReadText('status/northstar_log.jsonl',         'status/northstar_log.jsonl').catch(function(){ return ''; }),
+    Promise.resolve(''),  // a[2] 자리 유지(인덱스 정렬) — 북극성 추천 카드 기능 삭제(2026-07-27 GM), fetch 불필요
     gasReadText('status/learning_proposals.json',     'status/learning_proposals.json').catch(function(){ return ''; }),
     gasReadText('status/_queue_archive.json',         'status/_queue_archive.json').catch(function(){ return ''; }),
     Promise.resolve(''),  // a[5] 자리 유지(인덱스 정렬) — 구 northstar_pending 임베드 제거(2026-07-04 GM), fetch 불필요
@@ -2081,7 +2049,6 @@
     var d = {
       scanLog:  parseJsonl(a[0]),
       obsLedger:parseJsonl(a[1]),
-      nsLog:    parseJsonl(a[2]),
       learn:    Array.isArray(learnRaw) ? learnRaw : [],
       archive:  Array.isArray(archRaw) ? archRaw : (archRaw && Array.isArray(archRaw.items) ? archRaw.items : []),
       auditReg: parseJson(a[6]) || { pages: [] }

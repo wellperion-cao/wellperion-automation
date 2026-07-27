@@ -2,10 +2,10 @@
 """공유 모듈 매퍼 — 배(ship) → 북극성 모듈 단일 소스 (voyage_module_map.py)
 
 ★ 이 파일은 '배→모듈' 배정의 **단일 진실**이다. 재구축·중복 금지.
-  두 소비자가 **둘 다 이 파일을 import** 한다 (L01 한 곳만):
-    1. scripts/northstar_recommender.py — 일일 북극성 추천 카드(모듈 그룹핑)
-    2. (예정) 시토 '항해 지도' 페이지 빌더 — 스펙 .omc/specs/deep-interview-voyage-map-module-grouping.md
+  소비자는 이 파일을 import 한다 (L01 한 곳만):
+    1. (예정) 시토 '항해 지도' 페이지 빌더 — 스펙 .omc/specs/deep-interview-voyage-map-module-grouping.md
   ↳ 항해 지도 ship/스펙에 "이 헬퍼 공유·재구축 금지" 핸드오프 남김.
+  (구 소비자 scripts/northstar_recommender.py 는 06:30 추천 카드 기능 폐기로 삭제됨 — 2026-07-27 GM)
 
 설계 정본(잠금):
   - 대항목 = 북극성 모듈. 정의 = 3. 웰페리온 가이드/coo/bootsetup_matrix.json 의 role별 owns.
