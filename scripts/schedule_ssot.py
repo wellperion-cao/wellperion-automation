@@ -117,7 +117,7 @@ def plan_workapproval(cal: dict, today: date = None) -> dict:
         "title": f"[정기점검] {it['name']} — {it['dept']} · {it['cycle']}",
         "dept": it["dept"], "next_due": it.get("next_due", ""),
         "dday": it["dday"], "legal_basis": it.get("legal_basis", ""),
-        "source": "compliance_calendar", "item_id": it["id"],
+        "source": "schedule_ssot", "item_id": it["id"],
     } for it in cands]
     return {"dry_run": not live, "count": len(proposals), "proposals": proposals}
 
