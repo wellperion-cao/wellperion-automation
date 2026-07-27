@@ -539,7 +539,10 @@ def warn_unbacked_approvals(objs: list) -> None:
             continue
         # 이미 '사실 아님'으로 정정된 기록은 다시 세지 않는다(정정이 곧 처리 완료).
         hits = [w for w in _APPROVAL_CLAIM_WORDS if w in note]
-        if hits and "사실 아님" not in note:
+        # 이미 정정된 기록은 문구가 사람마다 달라진다("사실 아님"·"사실이 아니다"·"승인된 적 없음").
+        # 표현을 하나로 강제하면 정정해도 경고가 남아 진짜 미확인 건이 묻힌다(2026-07-27 실제 발생).
+        corrected = any(k in note for k in ("사실 아님", "사실이 아니", "승인된 적 없", "결재 종결된 적 없"))
+        if hits and not corrected:
             flagged.append((str(o.get("title") or "")[:38], hits[0]))
     if not flagged:
         print("승인근거: ✅ 근거 없는 승인 기록 없음")
