@@ -160,11 +160,28 @@ def _priority_rank(ship: dict) -> int:
     return _PRIORITY_WEIGHT.get(ship.get("priority"), 1)  # 미표기 배=중간 취급
 
 
+# ── 급한정도(urgency) — 무게와 다른 축. GM 결정 2026-07-27 ①안 "급함이면 다른 배보다 먼저 집는다".
+#   배경: 실무진 피드백이 급한정도를 무게 칸에 밀어넣어(급함→🛳️크루즈) 오히려 park 되던 것을 고치며
+#   ship['urgency'] 별도 칸으로 분리했다(cpo_staff_feedback_watch). 여기서는 그 칸이 '있을 때만' 읽는다.
+#   ★기존 배 무영향: urgency 칸이 없으면 전부 '보통'(1)로 같은 값이라 정렬 결과가 종전과 동일하다.
+_URGENCY_WEIGHT = {"급함": 0, "보통": 1, "천천히": 2}
+
+
+def _urgency_rank(ship: dict) -> int:
+    return _URGENCY_WEIGHT.get(ship.get("urgency"), 1)  # 미표기 배=보통 취급(종전 동작 보존)
+
+
+def _sort_key(ship: dict):
+    """선별 순서 = ①급한정도 ②무게. 급한정도가 없던 시절 배끼리는 ①이 동률이라 종전과 같은 순서."""
+    return (_urgency_rank(ship), _priority_rank(ship))
+
+
 def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=None):
     """
     welly_orchestrate.select_autonomous_ships(가역·해당clevel·활성·등록부존재) 결과에
-    저위험 추가 필터 + 쿨다운 배 제외를 적용하고, 난이도(priority) 오름차순 정렬 후
-    **1척만** 반환한다. 후보 없으면 None.
+    저위험 추가 필터 + 쿨다운 배 제외를 적용하고, **①급한정도(urgency) ②난이도(priority)** 순으로
+    오름차순 정렬 후 **1척만** 반환한다. 후보 없으면 None.
+    급한정도 칸이 없는 배는 전부 '보통'으로 같은 값이라 종전(난이도만 보던 때)과 순서가 같다.
     """
     cooldown_task_ids = cooldown_task_ids or set()
     candidates = select_autonomous_ships(clevel, queue, registry=registry)
@@ -176,7 +193,7 @@ def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=Non
     candidates = [s for s in candidates if not s.get("aide_interview_needed")]
     if not candidates:
         return None
-    candidates.sort(key=_priority_rank)
+    candidates.sort(key=_sort_key)   # 급한정도 먼저, 그 다음 무게(GM ①안 2026-07-27)
     return candidates[0]
 
 

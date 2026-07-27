@@ -53,7 +53,15 @@ FB_TOKEN = "wlp_intake_9f4c1b7e2a63"
 
 OPEN_STATUS = ("PENDING", "IN_PROGRESS")
 # 급한정도 → 배 무게. 값이 없거나 모르는 값이면 보통으로 본다.
-PRIORITY = {"급함": "🛳️크루즈", "보통": "⛴️여객선", "천천히": "⛵돛단배"}
+# ★2026-07-27 GM 결정(①안 "급함이면 다른 배보다 먼저 집는다") — 급한정도를 무게 칸에 넣지 않는다.
+#   전에는 급함→🛳️크루즈로 무게 칸에 밀어넣었다. 그런데 자율 착수 규칙은 "🛳️크루즈는 무거우니
+#   안전하게 멈춤(park)"이라 ★급하다고 표시할수록 자율 착수에서 빠지는★ 정반대 동작이 됐다(배10320 실측).
+#   본질 = 무게(얼마나 큰 일인가)와 급한정도(얼마나 급한가)는 다른 축인데 한 칸에 섞은 범주 오류.
+#   게다가 접수 시점에는 작업 무게를 알 수 없다 — 실무진이 고른 건 무게가 아니라 급한 정도다.
+#   그래서 무게는 접수 기본값(⛴️여객선)으로 두고, 급한정도는 ship['urgency'] 별도 칸에 그대로 남긴다.
+#   순서 반영은 선별 게이트(welly_auto_runner._sort_key)가 이 칸을 읽어서 한다.
+DEFAULT_PRIORITY = "⛴️여객선"   # 접수 시점엔 실제 무게를 알 수 없음 — 중간값
+URGENCY_ALLOWED = ("급함", "보통", "천천히")
 
 
 def fetch_feedback(timeout=60):
@@ -95,7 +103,10 @@ def _existing_ids(queue, archive) -> set:
 
 def build_ship(row: dict, queue, today: str) -> dict:
     fid = str(row.get("접수ID") or "").strip()
-    screen = str(row.get("화면") or "").strip()
+    # 화면 이름 칸은 2026-07-25 에 '화면' → '업무 구분' 으로 이름이 바뀌었는데 여기가 옛 이름만 읽고 있었다.
+    # 그래서 그 뒤 올라온 배는 제목에서 화면 이름이 통째로 빠졌다(예: 배10302 "실무진 피드백 — 불편해요: 행간격이…"
+    # — 멤버십인지 강습인지 제목만 보고 알 수 없었다). 두 이름 다 받아 옛 행도 그대로 읽는다. 2026-07-27 시포.
+    screen = str(row.get("업무 구분") or row.get("화면") or "").strip()
     kind = str(row.get("종류") or "").strip()
     urgency = str(row.get("급한정도") or "").strip()
     writer = str(row.get("작성자") or "").strip()
@@ -122,7 +133,9 @@ def build_ship(row: dict, queue, today: str) -> dict:
         "clevel": "cpo",
         "title": f"[시포] {title}",
         "status": "PENDING",
-        "priority": PRIORITY.get(urgency, "⛴️여객선"),
+        "priority": DEFAULT_PRIORITY,
+        # 급한정도는 무게와 별개 칸으로 — 선별 게이트가 이 값을 먼저 보고 순서를 정한다(GM ①안 2026-07-27).
+        "urgency": urgency if urgency in URGENCY_ALLOWED else "보통",
         "enqueued_at": today,
         "from": "실무진",
         "note": note,
