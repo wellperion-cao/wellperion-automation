@@ -370,6 +370,59 @@ function _regComputeSla(row) {
   return out;
 }
 
+// ─── SLA 초과 '전환 시점' 텔레그램 알림 (COO 배163 · 2026-07-27) ───
+// 기존 _vNotifyTelegram 재사용(신규 알림 채널·봇 없음). 매 호출마다 스팸 발송 방지를 위해
+// '이번에 새로 초과 전환된 건'만 알린다 — 직전 체크의 초과 ID 집합을 ScriptProperties에 저장해 비교.
+// 호출 경로: 시간 트리거(예: 30분마다) 설치가 필요(라이브 설정 — GM/웰리 승인 후 진행. 이 배포에선 미설치).
+var REG_SLA_NOTIFIED_PROP = 'REG_SLA_NOTIFIED_IDS';
+var REG_DASHBOARD_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/reception/종합접수처_현황.html';
+
+function _regSlaOverdueNow() {
+  var boardResult = JSON.parse(_regList({}).getContent());
+  var rows = (boardResult.data || []).map(_regComputeSla);
+  return rows.filter(function (r) { return r.slaStatus === '초과'; });
+}
+
+// dryRun=true(기본): 문구만 만들고 발송·상태저장 안 함(테스트 안전). dryRun=false: 실제 발송 + 상태 저장.
+function _regNotifySlaOverdue(dryRun) {
+  if (dryRun === undefined) dryRun = true;
+  var overdue = _regSlaOverdueNow();
+  var prevIds = [];
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(REG_SLA_NOTIFIED_PROP);
+    prevIds = raw ? JSON.parse(raw) : [];
+  } catch (e) { prevIds = []; }
+
+  var curIds = overdue.map(function (r) { return String(r.regId || ''); });
+  var newlyOverdue = overdue.filter(function (r) { return prevIds.indexOf(String(r.regId || '')) < 0; });
+  newlyOverdue.sort(function (a, b) { return (a.remainH || 0) - (b.remainH || 0); }); // 많이 밀린 순
+
+  var result = { ok: true, overdueTotal: overdue.length, newlyOverdue: newlyOverdue.length, notified: false, text: '' };
+
+  if (newlyOverdue.length > 0) {
+    var lines = [];
+    lines.push('⏰ <b>[종합접수처 SLA 초과]</b>');
+    lines.push('신규 초과 ' + newlyOverdue.length + '건 · 전체 초과 ' + overdue.length + '건');
+    newlyOverdue.slice(0, 10).forEach(function (r) {
+      var over = (r.remainH !== null && r.remainH !== undefined) ? Math.abs(Math.round(r.remainH)) + 'h' : '-';
+      lines.push('  🔴 [' + (r.category || '') + '] ' + String(r.content || '').slice(0, 24) +
+        ' — ' + over + ' 초과 (' + (r.regId || '') + (r.assignee ? ' · 담당 ' + r.assignee : ' · 미배정') + ')');
+    });
+    if (newlyOverdue.length > 10) lines.push('  … 외 ' + (newlyOverdue.length - 10) + '건');
+    lines.push('👉 확인: ' + REG_DASHBOARD_URL);
+    result.text = lines.join('\n');
+    if (!dryRun) {
+      _vNotifyTelegram(result.text);
+      result.notified = true;
+    }
+  }
+
+  if (!dryRun) {
+    try { PropertiesService.getScriptProperties().setProperty(REG_SLA_NOTIFIED_PROP, JSON.stringify(curIds)); } catch (e) {}
+  }
+  return result;
+}
+
 // ─── 종합 접수처 라벨→키 별칭 (시트 실헤더 라벨 드리프트 흡수 · SSOT) ───
 // 시트 1행 실제 라벨이 REG_COMMON/EXTRA_HEADERS 정의 라벨과 다른 경우(예: 분실물 탭)를 흡수.
 var REG_LABEL_ALIASES = { '분실위치': 'loc', '위치': 'loc', '물품상세': 'content' };   // '위치'·'분실위치' = loc 구헤더 하위호환(장소 rename 전/후 모두 정독). '장소'는 REG_COMMON_HEADERS 정의라 자동 매핑.
@@ -1630,6 +1683,13 @@ function _vProcess(action, body, params) {
   if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.
   if (action === 'reg_renumber') return _regRenumber(body); // 전체 통합 순번 RECEPTION-1.. 재부여(일회성·멱등·GATED). 2026-06-30 시토.
   if (action === 'reg_sort') return _vJson({ ok: true, sorted: _regSortAllDesc() }); // 전 접수시트 접수일시 desc 정렬(멱등·GATED). 이후 reg_submit이 자동 유지. 2026-07-15 시우.
+  // SLA 초과 전환 알림 체크(GATED). dryRun 파라미터 없으면 기본 dry-run(발송·상태저장 없음) — 실제 발송은 dryRun=0/false 명시 호출만. 2026-07-27 시우(배163).
+  if (action === 'reg_sla_check') {
+    var _slaP = params || body || {};
+    var _slaDryRunFlag = String(_slaP.dryRun || '');
+    var _slaDry = !(_slaDryRunFlag === '0' || _slaDryRunFlag.toLowerCase() === 'false');
+    return _vJson(_regNotifySlaOverdue(_slaDry));
+  }
 
   // ── 습득 분실물(Lost & Found) 액션 (시토 배1069 · 2026-07-15) ──
   if (action === 'lf_submit')   return _lfSubmit(body);            // 직원 등록(게이트+제출토큰)

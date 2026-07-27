@@ -477,6 +477,28 @@ function _slaBadge(r){
   return '<span class="card-sla" title="기한 ' + _esc(String(r.deadline||'')) + '" style="background:' + bg + ';color:' + color + ';">' + _esc(txt) + '</span>';
 }
 
+/* 담당·처리자 입력 = STAFF 드롭다운 + '기타(직접 입력)' 폴백(m_staff/m_staff_other 패턴 재사용).
+   옛 자유입력 데이터가 STAFF 명단에 없어도 '기타' 선택 + 값 유지로 깨지지 않음. */
+function _staffFieldHtml(kind, label, val){
+  val = String(val||'');
+  var inStaff = STAFF.indexOf(val) >= 0;
+  var opts = '<option value="">' + _esc(label) + ' 선택</option>';
+  STAFF.forEach(function(n){ opts += '<option value="' + _esc(n) + '"' + (n===val?' selected':'') + '>' + _esc(n) + '</option>'; });
+  opts += '<option value="__other__"' + (val && !inStaff ? ' selected' : '') + '>기타(직접 입력)</option>';
+  var showOther = (val && !inStaff);
+  var h = '<select data-reg-' + kind + '-sel>' + opts + '</select>';
+  h += '<input type="text" data-reg-' + kind + ' placeholder="직접 입력" value="' + (showOther ? _esc(val) : '') + '" style="display:' + (showOther?'block':'none') + ';flex-basis:100%;">';
+  return h;
+}
+/* 저장 시 담당·처리자 최종값: '기타' 선택이면 옆 텍스트칸, 아니면 select 값(명단 선택) 그대로 */
+function _staffFieldValue(card, kind){
+  var sel = card.querySelector('[data-reg-' + kind + '-sel]');
+  var inp = card.querySelector('[data-reg-' + kind + ']');
+  if(!sel) return inp ? inp.value : '';
+  if(sel.value === '__other__') return inp ? inp.value : '';
+  return sel.value;
+}
+
 /* ── 카테고리별 그룹 토글 상태 (기본 접힘) ── */
 var _openGroups = {};
 window.toggleGroup = function(btn){
@@ -621,12 +643,10 @@ function _card(r){
   h += '<select data-reg-action="status" data-reg-id="' + _esc(rawId) + '" data-reg-cat="' + _esc(rawCat) + '" data-prev-status="' + _esc(status) + '">' + opts + '</select></div>';
 
   /* 담당 */
-  h += '<div class="field-row"><label>담당</label>';
-  h += '<input type="text" data-reg-assignee placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
+  h += '<div class="field-row"><label>담당</label>' + _staffFieldHtml('assignee', '담당자', r.assignee) + '</div>';
 
   /* 처리자(실제 처리한) */
-  h += '<div class="field-row"><label>처리자</label>';
-  h += '<input type="text" data-reg-handler placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
+  h += '<div class="field-row"><label>처리자</label>' + _staffFieldHtml('handler', '처리자', r.handler) + '</div>';
 
   /* 메모 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
@@ -884,6 +904,16 @@ function _wireBoard(){
     if(e.target && e.target.dataset && e.target.dataset.regAction==='status'){
       var _sel = e.target;
       _update(_sel.dataset.regId, _sel.dataset.regCat, {status:_sel.value}, null, _sel, _sel.getAttribute('data-prev-status')||'');
+      return;
+    }
+    /* 담당·처리자 드롭다운: '기타(직접 입력)' 선택 시 옆 텍스트칸 노출, 명단 선택 시 숨김·비움 */
+    if(e.target && e.target.dataset && ('regAssigneeSel' in e.target.dataset || 'regHandlerSel' in e.target.dataset)){
+      var kind = ('regAssigneeSel' in e.target.dataset) ? 'assignee' : 'handler';
+      var card2 = e.target.closest('[data-reg-card]');
+      var inp2 = card2 && card2.querySelector('[data-reg-' + kind + ']');
+      if(!inp2) return;
+      if(e.target.value === '__other__'){ inp2.style.display = 'block'; inp2.focus(); }
+      else { inp2.style.display = 'none'; inp2.value = ''; }
     }
   });
   board.addEventListener('click', function(e){
@@ -892,12 +922,10 @@ function _wireBoard(){
       var card = saveBtn.closest('[data-reg-card]');
       if(!card) return;
       var payload = {};
-      var a = card.querySelector('[data-reg-assignee]');
       var m = card.querySelector('[data-reg-memo]');
-      var hd = card.querySelector('[data-reg-handler]');
-      if(a) payload.assignee = a.value;
+      payload.assignee = _staffFieldValue(card, 'assignee');
+      payload.handler = _staffFieldValue(card, 'handler');
       if(m) payload.memo = m.value;
-      if(hd) payload.handler = hd.value;
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
       return;
     }
