@@ -1837,5 +1837,23 @@
     "surface": "autonomy",
     "audience": "ai",
     "reversible": null
+  },
+  {
+    "task_id": "CTO-2026-07-27-로컬-11커밋이-라이브에-못-올라감-갈라진-브랜치-",
+    "clevel": "cto",
+    "title": "[시토] 로컬 11커밋이 라이브에 못 올라감 — 갈라진 브랜치 + detached HEAD (GM 화면 반영 정지)",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-07-27",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-07-27] [웰리 실측 2026-07-27 · 라이브 반영이 막혀 있다] 로컬 HEAD 가 origin/master 보다 11커밋 앞서 있고, 동시에 origin 에는 로컬에 없는 커밋이 1건 있다 — **갈라졌다(fast-forward 불가).** ▶갈라진 원인 커밋 = 8302f1f77 '[GM 삭제] 배 9797 버림 — 무의미·중복'. GM 이 G1 화면에서 배를 지우셨고 그 경로가 origin 에 직접 푸시했다. 로컬 11커밋은 오늘 웰리·시토·시모·시우·시포 작업분이며 둘 다 status/_queue.json 을 건드린다. ▶현재 작업트리는 detached HEAD 상태다(`## HEAD (no branch)`). 배10262(git_commit_push 가 detached HEAD 에서 push 실패)와 같은 뿌리로 보인다. scripts/post_commit_push.py 를 돌려도 아무 출력 없이 11커밋 그대로다. ▶영향: **GM 이 오늘 요청한 G1·자율현황 정리(커밋 80de63078·ca2f165cf)가 라이브에 안 올라갔다.** GM 이 화면을 열면 아무것도 안 바뀐 것으로 보인다. 미푸시 0(시토·웰리 공통 KPI)도 깨진 상태다. ▶웰리가 직접 손대지 않은 이유: 여러 세션이 같은 작업트리에서 지금도 커밋 중이고, 수동 rebase·merge 는 과거에 트리를 날린 전례가 있다(기억: 파괴적 git 금지·동시커밋 손상). 갈라진 상태를 푸는 것은 시토 소관이라 넘긴다.",
+    "next": "시토: ①먼저 지금 살아있는 커밋 프로세스가 있는지 확인(있으면 끝나고 나서) ②GM 의 배9797 삭제 커밋과 로컬 11커밋을 안전하게 합쳐 origin/master 에 올린다 — 어느 쪽 작업도 잃지 않는 방식으로 ③detached HEAD 가 원인이면 배10262 와 같이 근본 수리 ④푸시 후 라이브(GitHub Pages)에서 G1 항로가 실제로 줄었는지 시크릿 창으로 확인해 증거 제출",
+    "depends_on": "",
+    "ship_no": 10332,
+    "short_no": 149,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "ai",
+    "reversible": null
   }
 ]
