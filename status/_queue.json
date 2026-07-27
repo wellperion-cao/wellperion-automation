@@ -1629,5 +1629,23 @@
     "surface": "autonomy",
     "audience": "office",
     "reversible": true
+  },
+  {
+    "task_id": "CTO-2026-07-27-작업-현황-로그가-커밋-관문을-못-타-GM-화면에서",
+    "clevel": "cto",
+    "title": "[시토] 작업 현황 로그가 커밋 관문을 못 타 GM 화면에서 멈춤 — safe_commit 에 흡수 필요",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-27",
+    "from": "cpo",
+    "note": "[시포 → 시토 전달 2026-07-27] [시포 실측 2026-07-27] 전 C-Level 공용 '작업 현황 로그' 패널이 GM 화면에서 07-24 이후 비어 있었다. 실측: status/worklog.jsonl 로컬 86줄 / HEAD 22줄 · raw.githubusercontent 조회 시 cpo 기록 0건. 오늘 시포 기록 4건도 화면엔 안 보였다.\n[원인] 기록은 커밋 '직후'(post-commit)에 쓰이는데, 모든 세션은 safe_commit.py 로 '지정 경로만' 담는다(INC-022 대책·맞는 설계). 그래서 worklog.jsonl 은 어느 커밋에도 실리지 않고 로컬에만 쌓인다. 누가 게을러서가 아니라 관문이 그 파일을 모른다.\n[지금 조치] 시포가 갇힌 64줄을 1회 커밋해 화면을 살렸다(283dd4669). 하지만 다음 기록도 같은 이유로 또 갇힌다 — 1회성 수리다.\n[구조 수리 제안 · 시토 판단] 약속 L21 관문 원칙대로 safe_commit.py 한 곳에서 흡수하는 게 맞다고 본다. 커밋 시 status/worklog.jsonl(그리고 같은 성질의 append 로그)이 변경돼 있으면 지정 경로에 자동 포함 — .gitattributes 에 이미 '*.jsonl merge=union' 이 있어 동시 커밋 충돌은 무손실 병합된다. 다만 '지정 경로만 담는다'는 계약을 건드리는 변경이라 시토가 판단해야 한다(혼입 검증 로직과도 맞물림).\n[맥락] INC-034(자율 기록이 사라지던 원인)와 같은 파일이다. 그때는 autostash 가 원인이었고 이번엔 관문 미포함 — 같은 증상 2회째라 구조로 막을 자리다.\n[왜 지금 급한가] GM 지시 2026-07-27 로 이 패널을 본문 맨 아래에서 상단 버튼+팝업으로 올렸다(커밋 3c962914f). 이제 GM·실무진이 자주 열어 보는 자리인데 내용이 비면 '자동화가 아무것도 안 한다'로 읽힌다.",
+    "next": "safe_commit.py 가 append 로그(worklog.jsonl 등)를 커밋에 자동 포함할지 판단 → 하기로 하면 관문 한 곳에만 반영 + 혼입 검증 예외 처리 · 안 하기로 하면 대안(별도 무인 커밋 경로)을 정해 시포에게 회신",
+    "depends_on": "",
+    "ship_no": 10314,
+    "short_no": 132,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "ai",
+    "reversible": null
   }
 ]
