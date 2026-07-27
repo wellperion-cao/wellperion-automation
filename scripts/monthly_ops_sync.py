@@ -80,15 +80,28 @@ def load_json(p: Path) -> dict:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
+def _get_json_retry(url: str, timeout: int, retries: int = 2) -> dict | None:
+    """GET → JSON. GAS 콜드스타트 등 일시 타임아웃은 백오프(2s·4s) 재시도
+    (scripts/kpi_collector.py._http_get_json 과 동일 패턴 — 07:00 예약 실행 1회
+    타임아웃으로 그날치 실측이 통째로 '측정실패'로 떨어지는 것 방지)."""
+    last_exc: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read())
+        except Exception as e:
+            last_exc = e
+            if attempt < retries:
+                time.sleep(2 * (attempt + 1))
+    print(f"[WARN] {url.split('?')[0]} 조회 실패({retries + 1}회 시도): "
+          f"{type(last_exc).__name__}: {last_exc}")
+    return None
+
+
 def fetch_home_kpi() -> dict | None:
-    try:
-        req = urllib.request.Request(HOME_KPI_URL + "?action=home_kpi")
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read())
-        return data if isinstance(data, dict) and data.get("ok") else None
-    except Exception as e:
-        print(f"[WARN] home_kpi 조회 실패: {type(e).__name__}: {e}")
-        return None
+    data = _get_json_retry(HOME_KPI_URL + "?action=home_kpi", timeout=15)
+    return data if isinstance(data, dict) and data.get("ok") else None
 
 
 def dig(d: dict, dotted: str):
@@ -125,14 +138,8 @@ def fetch_todo() -> list:
     global _TODO_CACHE
     if _TODO_CACHE is not None:
         return _TODO_CACHE
-    try:
-        req = urllib.request.Request(TODO_URL + "?action=todo_list")
-        with urllib.request.urlopen(req, timeout=30) as r:
-            data = json.loads(r.read())
-        _TODO_CACHE = data.get("data", []) if isinstance(data, dict) else []
-    except Exception as e:
-        print(f"[WARN] todo_list 조회 실패: {type(e).__name__}: {e}")
-        _TODO_CACHE = []
+    data = _get_json_retry(TODO_URL + "?action=todo_list", timeout=30)
+    _TODO_CACHE = data.get("data", []) if isinstance(data, dict) else []
     return _TODO_CACHE
 
 
