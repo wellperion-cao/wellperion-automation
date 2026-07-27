@@ -786,7 +786,7 @@
         <tr><td><span class="tag db">db:eval</span></td><td>인사평가</td><td>평가 기록(3등급 · 다면평가)</td><td>평가 저장 · 평가지</td></tr>
         <tr><td><span class="tag db">db:onbo</span></td><td>입사 · 온보딩</td><td>체크 항목 · 주차 체크인 · 완료 여부</td><td>온보딩 · 성찰 · 워치</td></tr>
         <tr><td><span class="tag db">db:blacklist</span></td><td>채용블랙리스트</td><td>차단 대상(PII 최소화: 생년 · 연락처 뒤4)</td><td>재지원 자동 경고</td></tr>
-        <tr><td><span class="tag db">휴무 탭</span></td><td>휴무</td><td>월별 휴무(월 6회 + 법정공휴일) — 근무 스케줄 보드 셀 정본(2026-07-27 서버 동기화)</td><td>휴무 관리 · 스케줄 보드</td></tr>
+        <tr><td><span class="tag db">휴무 탭</span></td><td>휴무</td><td>월별 휴무(월 6회 + 법정공휴일) — 웰페리온 스케줄보드 셀 정본(2026-07-27 서버 동기화)</td><td>휴무 관리 · 스케줄보드</td></tr>
         <tr><td><span class="tag db">자동화로그 탭</span></td><td>자동화로그</td><td>주체 · 작업 · 상세 · 결과 · 일시</td><td>오피스 대시보드 · 이력 추적</td></tr>
         <tr><td><span class="tag db">업무평가 탭</span></td><td>업무평가</td><td>대상자 · 평가기간별 직무성과 · 업무목록JSON(관리자 전용, 공개 read 없음)</td><td>관리자 업무평가 · 정기평가지 가산점(≤+10) 프리필</td></tr>
         <tr><td><span class="tag db">자기평가 탭</span></td><td>자기평가</td><td>대상자 · 기간별 공통역량 5축 · 태도 · 자유서술(총점 · 등급 미산출, 관리자 전용)</td><td>정기평가지 갭 병렬표시</td></tr>
@@ -826,7 +826,7 @@
         <tr><td><span class="tag act">get-self-eval</span></td><td>최신 자기평가 조회(정기평가지 갭 병렬표시 연동, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td rowspan="2">리더십평가</td><td><span class="tag act">leadership-submit</span></td><td>부서원 익명 제출(성명+연락처뒤4 자가인증 후 폐기, append-only, 신원 미저장)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td><span class="tag act">get-leadership-eval</span></td><td>집계 조회(index/summary/raw, k=3 미만 비공개 게이트, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
-        <tr><td rowspan="3">휴무 · 스케줄 보드</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td rowspan="3">휴무 · 스케줄보드</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">schedboard-list</span></td><td>보드 셀 읽기(공개 · 성명·부서·날짜·값 4필드 화이트리스트 · 캐시 60초)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">schedboard-set</span></td><td>보드 셀 단건 upsert(공개 창구 — 게이트 전부 서버측: 유형 화이트리스트·25일~말일 윈도우·PIN 서버검증·쓰기 상한·Lock, 연차·반차는 결재 승인 반영/PIN 정정만)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td rowspan="2">블랙리스트</td><td><span class="tag act">add-blacklist</span></td><td>차단 대상 등록(PII 최소화)</td><td><span class="badge bg-a1">A-1</span></td></tr>

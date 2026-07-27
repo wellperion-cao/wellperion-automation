@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WELLPERION · 근무 스케줄 보드</title>
+<title>웰페리온 스케줄보드</title>
 <style>
   :root{
     --bg:#f3f0ea; --surface:#ffffff; --surface2:#f7f4ee; --raise:#efeae1;
@@ -258,7 +258,7 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">WELL<span>PERION</span> · 근무 스케줄 보드
+  <div class="brand">WELL<span>PERION</span> · 스케줄보드
     <small>한남점 · 월간 스케줄 / 오늘의 배치 타임라인 / 주간 편집 / 오픈·마감 공백 경고</small>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1496,7 +1496,7 @@ function printReqMonth(){
     `@media print{body{margin:10mm 8mm}}`+
     `</style></head><body>`+
     `<h1>🗓️ ${py}년 ${+pm}월 근무변경·연차 신청 내역</h1>`+
-    `<div class="meta">주식회사 웰페리온 · 근무 스케줄 보드 · 총 ${L.length}건 (승인 ${c("승인")} · 반려 ${c("반려")} · 대기 ${c("대기")})</div>`+
+    `<div class="meta">주식회사 웰페리온 · 웰페리온 스케줄보드 · 총 ${L.length}건 (승인 ${c("승인")} · 반려 ${c("반려")} · 대기 ${c("대기")})</div>`+
     `<table><thead><tr><th>No</th><th>대상일</th><th>부서</th><th>신청자</th><th>종류</th><th>근무시간</th><th>사유</th><th>상태</th><th>결재자 · 결재일</th></tr></thead>`+
     `<tbody>${rows}</tbody></table>`+
     `<div class="foot"><span>대상 일자 기준 · 결재일=승인/반려 처리일</span><span>출력일 ${todayYmd()}</span></div>`+
