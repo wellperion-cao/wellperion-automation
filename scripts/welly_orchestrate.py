@@ -24,7 +24,7 @@ ACTIVE_STATUSES = ("PENDING", "IN_PROGRESS")
 
 def _is_reversible(ship):
     """
-    배(dict)의 priority·title·note를 훑어 비가역 키워드가 없으면 가역으로 간주.
+    배(dict)의 priority·title·next를 훑어 비가역 키워드가 없으면 가역으로 간주.
     보수적 판단: 하나라도 매치되면 비가역(제외).
     """
     # 판정은 설명글이 아니라 배 작성자의 선언을 먼저 믿는다(2026-07-27 GM 지적·오탐 45척 실측).
@@ -34,10 +34,15 @@ def _is_reversible(ship):
         return True
     if reversible is False:
         return False
+    # 낱말 스캔 대상 = note 제외, title+next(2026-07-27 2차 지적·오탐 재실측).
+    # note는 맥락·경위·전례·타인 인용이 길게 쌓이는 곳이라 위험을 "경고하는" 문장·
+    # 남의 도메인 인용까지 위험 신호로 오인한다(실측: 삭제 경고문·타 clevel 인용·고유명사
+    # '전략로드맵'까지 오탐). title은 작업 성격을 압축하고, next는 실제로 할 일을 담아
+    # 앞으로 손댈 것을 더 정확히 반영한다 — note 전체보다 좁고 title보다 구체적이다.
     fields = (
         ship.get("priority") or "",
         ship.get("title") or "",
-        ship.get("note") or "",
+        ship.get("next") or "",
     )
     text = " ".join(fields)
     return not any(keyword in text for keyword in IRREVERSIBLE_KEYWORDS)

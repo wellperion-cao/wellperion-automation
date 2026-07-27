@@ -129,10 +129,13 @@ def _is_low_risk(ship: dict) -> bool:
         return True
     if reversible is False:
         return False
+    # 낱말 스캔 대상 = note 제외, title+next(welly_orchestrate._is_reversible과 동일 조치·
+    # 2026-07-27 2차 지적). note는 경위·전례·인용이 쌓여 오탐이 나고, next가 실제 작업
+    # 성격을 더 정확히 반영한다.
     fields = (
         ship.get("priority") or "",
         ship.get("title") or "",
-        ship.get("note") or "",
+        ship.get("next") or "",
     )
     text = " ".join(fields)
     return not any(keyword in text for keyword in EXTRA_LOW_RISK_EXCLUDE_KEYWORDS)
