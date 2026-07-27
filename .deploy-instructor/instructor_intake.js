@@ -136,6 +136,7 @@ function doGet(e) {
   try {
     if (action === 'diag') return _json(_intakeDiag_());
     if (action === 'rows') return _json(_intakeRows_(p));
+    if (action === 'diag_token_fp') return _tokenFingerprint(p.key || 'BOT_TOKEN');
     return _json({ ok: false, error: 'unknown_action' });
   } catch (err) { return _json({ ok: false, error: String(err) }); }
 }
@@ -216,6 +217,16 @@ function _intakeRows_(p) {
 
 function _json(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function _stamp() { return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMdd_HHmmss'); }
+
+// ─── 봇 토큰 지문 진단 (Survey.js/todo GAS 동형 · 배47 잔여작업 · 2026-07-27 시토) ───
+// 토큰 자체가 아니라 sha256 앞 8자리(지문)만 반환 — 값 비노출 원칙 유지. INTAKE_READ_TOKEN 게이트 하위.
+function _tokenFingerprint(key) {
+  var t = PropertiesService.getScriptProperties().getProperty(key || 'BOT_TOKEN');
+  if (!t) return _json({ ok: true, key: key || 'BOT_TOKEN', hasToken: false, fp: null });
+  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t, Utilities.Charset.UTF_8);
+  var hex = bytes.map(function (b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+  return _json({ ok: true, key: key || 'BOT_TOKEN', hasToken: true, fp: hex.slice(0, 8) });
+}
 
 // ─── 텔레그램 알림 (Survey.js _notifyTelegram 동형, .deploy-funnel/Survey.js:834-839) ───
 function _notifyTelegram(text) {

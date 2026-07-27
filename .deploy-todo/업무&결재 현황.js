@@ -524,6 +524,21 @@ function _githubCommitFile(path, contentText, message, key, allowQueue) {
   return { ok: false, error: 'GitHub ' + code + ': ' + putR.getContentText().slice(0, 160) };
 }
 
+// ═══ 봇 토큰 지문 진단 — 이 GAS 가 새 토큰을 들고 있는가 (2026-07-27 시토 · 배9952) ═══
+// 왜: 토큰 재발급 뒤 어느 GAS 가 옛 토큰을 들고 있는지 **밖에서는 알 방법이 없었다.**
+//   스크립트 속성은 API 로 못 읽고, 기존 diag 는 hasToken(있다/없다)만 줘서 새것/옛것 구분 불가.
+//   그래서 지금까지 'GM 이 설정 화면 6곳을 열어 확인'이 유일한 길이었다(GM 지적: 왜 자꾸 나에게 확인을 시키나).
+// 무엇을: 토큰 자체가 아니라 **sha256 앞 8자리(지문)만** 돌려준다. 지문으로는 토큰을 복원할 수 없고,
+//   저장소의 현재 토큰 지문과 대조하면 새것/옛것이 즉시 갈린다. 값 비노출 원칙 유지.
+// 새 액션 1개만 추가 — 기존 diag 계열에 얹는다(약속 L21).
+function _tokenFingerprint(key) {
+  var t = _prop(key || 'TELEGRAM_BOT_TOKEN');
+  if (!t) return _json({ ok: true, key: key || 'TELEGRAM_BOT_TOKEN', hasToken: false, fp: null });
+  var bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t, Utilities.Charset.UTF_8);
+  var hex = bytes.map(function (b) { return ('0' + (b & 0xFF).toString(16)).slice(-2); }).join('');
+  return _json({ ok: true, key: key || 'TELEGRAM_BOT_TOKEN', hasToken: true, fp: hex.slice(0, 8) });
+}
+
 // ═══ 배(항로) 휴지통 — GM 이 자율현황 화면에서 직접 배를 지우고 되돌린다 (2026-07-27 시토 · GM 지시) ═══
 // GM 지시: "무분별한·무의미한·중복된 것들은 다 삭제처리할 수 있게. 삭제되면 백·프론트 둘 다 삭제(일관성)."
 //
@@ -2165,6 +2180,12 @@ function doGet(e) {
     // 카테고리 목록 조회
     if (action === 'todo_categories') {
       return _json({ ok: true, data: CATEGORIES });
+    }
+
+    // ─── 봇 토큰 지문 진단 (디스패처 연결·배47 잔여작업 · 2026-07-27 시토) ───
+    // GET ?action=diag_token_fp[&key=PROP_KEY] → { ok, key, hasToken, fp }. 값 비노출·지문만 반환.
+    if (action === 'diag_token_fp') {
+      return _tokenFingerprint(e.parameter.key || '');
     }
 
     // ─── 콘텐츠 파일 읽기 (GM 편집 페이지용) — 2026-05-29 ───
