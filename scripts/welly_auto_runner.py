@@ -176,12 +176,13 @@ def _sort_key(ship: dict):
     return (_urgency_rank(ship), _priority_rank(ship))
 
 
-def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=None):
+def _sorted_low_risk_candidates(clevel, queue, registry=None, cooldown_task_ids=None):
     """
-    welly_orchestrate.select_autonomous_ships(가역·해당clevel·활성·등록부존재) 결과에
-    저위험 추가 필터 + 쿨다운 배 제외를 적용하고, **①급한정도(urgency) ②난이도(priority)** 순으로
-    오름차순 정렬 후 **1척만** 반환한다. 후보 없으면 None.
-    급한정도 칸이 없는 배는 전부 '보통'으로 같은 값이라 종전(난이도만 보던 때)과 순서가 같다.
+    select_one_low_risk_ship과 완전히 같은 필터·정렬을 적용하되, 1척으로 자르지 않고
+    **전체** 정렬된 후보 리스트를 반환한다(boot_candidate의 순회용 — 2026-07-27 GM 지적:
+    "배편이 있는데도 대기하는 건?" 대응). run_once() 등 기존 1척 계약은 그대로
+    select_one_low_risk_ship을 쓴다 — 필터·정렬 predicate 자체는 이 함수 하나로 공유해
+    두 곳이 갈라지지 않게 한다(게이트 중복 방지).
     """
     cooldown_task_ids = cooldown_task_ids or set()
     candidates = select_autonomous_ships(clevel, queue, registry=registry)
@@ -191,9 +192,22 @@ def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=Non
     # 이미 parked-interview 중인 배(aide_interview_needed=True)는 매 사이클 재선택해
     # 다른 후보를 막지 않도록 제외한다 — GM 답변 기록 시 플래그 해제되면 자연히 재후보군 복귀.
     candidates = [s for s in candidates if not s.get("aide_interview_needed")]
+    candidates.sort(key=_sort_key)   # 급한정도 먼저, 그 다음 무게(GM ①안 2026-07-27)
+    return candidates
+
+
+def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=None):
+    """
+    welly_orchestrate.select_autonomous_ships(가역·해당clevel·활성·등록부존재) 결과에
+    저위험 추가 필터 + 쿨다운 배 제외를 적용하고, **①급한정도(urgency) ②난이도(priority)** 순으로
+    오름차순 정렬 후 **1척만** 반환한다. 후보 없으면 None.
+    급한정도 칸이 없는 배는 전부 '보통'으로 같은 값이라 종전(난이도만 보던 때)과 순서가 같다.
+    """
+    candidates = _sorted_low_risk_candidates(
+        clevel, queue, registry=registry, cooldown_task_ids=cooldown_task_ids
+    )
     if not candidates:
         return None
-    candidates.sort(key=_sort_key)   # 급한정도 먼저, 그 다음 무게(GM ①안 2026-07-27)
     return candidates[0]
 
 
@@ -284,37 +298,85 @@ def print_interview_worklist(queue_path: str | None = None) -> None:
 # 쓰지 않는다(큐 park 미기록·쿨다운 미기록·로그 미기록·claude 미호출). 실제 실행은
 # 이 함수를 부른 대화형 C-Level 세션이 자기 손으로 한다 — 그래서 게이트는 한 곳(러너)
 # 뿐이고, 부팅 경로가 우회로가 되지 않는다(헌법 불변원리 1: 한 진실 = 한 곳).
+def _load_parked_task_ids_from_log(log_path: str) -> set:
+    """
+    읽기전용 헬퍼 — welly_auto_runner_log.jsonl에서 event=="parked_ambiguous"로 이미
+    실제 park 이력이 남은 task_id 집합을 모은다. boot_candidate 순회에서 "전부 모호"일 때
+    어떤 배를 park 대표로 보고할지 고를 때만 쓴다(이미 여러 날 보고돼 온 배 대신, 아직
+    한 번도 안 알려진 배가 있으면 그쪽을 대표로 삼아 매번 똑같은 보고만 반복하지 않는다).
+    ★is_ambiguous의 "go" 판정은 절대 덮어쓰지 않는다★ — 로그에 park 이력이 있어도
+    (예: GM 인터뷰 답변 후 재개 마커로 모호성이 해소된 배) is_ambiguous가 통과시키면
+    그대로 착수 후보다. 파일 없음·파싱 실패는 fail-open(빈 집합) — 로그 손상이 boot_candidate를
+    막지 않는다.
+    """
+    ids: set = set()
+    if not log_path or not os.path.exists(log_path):
+        return ids
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except (ValueError, TypeError):
+                    continue
+                if entry.get("event") == "parked_ambiguous":
+                    tid = entry.get("task_id")
+                    if tid:
+                        ids.add(tid)
+    except Exception:  # noqa: BLE001 — fail-open(읽기전용, 로그 손상돼도 boot_candidate를 막지 않음)
+        return ids
+    return ids
+
+
 def boot_candidate(
     clevel: str = "cto",
     queue_path: str | None = None,
     registry_path: str | None = None,
     state_path: str | None = None,
+    log_path: str | None = None,
 ) -> dict:
     """
     부팅 직후 자율 진행할 배 1척을 판정한다(읽기전용).
     반환: {clevel, ship(dict|None), verdict("go"|"park"|"none"), reasons(list[str])}
       - go   : 가역·저위험·모호성 없음 → 세션이 되묻지 말고 바로 착수
-      - park : 후보는 있으나 모호 → 착수 금지, GM 인터뷰 대상으로 보고만
+      - park : 후보는 있으나 (전부) 모호 → 착수 금지, GM 인터뷰 대상으로 보고만
       - none : 후보 0건 → 대기
+
+    ★영구 park 방지(2026-07-27 GM 지적 "배편이 있는데도 대기하는 건?")★
+    예전에는 정렬된 후보 중 1척만 뽑아, 그 1척이 park 판정이면 거기서 멈췄다. 게다가
+    이 함수는 부작용 0(기록 안 함)이라 다음 부팅에도 같은 배를 또 집어 영구 정지했다.
+    여기서는 정렬된 후보 **전체**(난이도 오름차순)를 순회하며 모호(park)면 다음 후보로
+    넘어간다. 선별기(select_autonomous_ships)·모호성 판정(is_ambiguous) 자체는 손대지
+    않는다 — 순회만 고쳤다. 전부 모호일 때만 park로 보고하며, 그 대표 배는 로그에
+    이력 없는(아직 한 번도 보고 안 된) 배를 우선한다(_load_parked_task_ids_from_log).
+    ★부작용 0 유지★ — 이 함수는 큐·상태·로그 어느 것도 쓰지 않는다(전부 읽기만).
     """
     queue = _load_queue(queue_path or DEFAULT_QUEUE_PATH)
     registry = load_registry(registry_path)
     state = _load_state(state_path or DEFAULT_STATE_PATH)
-    ship = select_one_low_risk_ship(
+    candidates = _sorted_low_risk_candidates(
         clevel, queue, registry=registry, cooldown_task_ids=_active_cooldown_ids(state)
     )
-    if ship is None:
+    if not candidates:
         return {
             "clevel": clevel, "ship": None, "verdict": "none",
             "reasons": ["가역·저위험 후보 0건(비가역·타clevel·완료·쿨다운·모호park 제외 후)"],
         }
-    ambiguity = is_ambiguous(ship)
-    return {
-        "clevel": clevel,
-        "ship": ship,
-        "verdict": "park" if ambiguity["ambiguous"] else "go",
-        "reasons": ambiguity["reasons"],
-    }
+
+    already_parked = _load_parked_task_ids_from_log(log_path or DEFAULT_LOG_PATH)
+    fallback = None  # 전부 모호일 때 보고할 park 대표(로그에 이력 없는 배 우선)
+    for ship in candidates:
+        ambiguity = is_ambiguous(ship)
+        if not ambiguity["ambiguous"]:
+            return {"clevel": clevel, "ship": ship, "verdict": "go", "reasons": []}
+        is_new = ship.get("task_id") not in already_parked
+        if fallback is None or (fallback[2] is False and is_new):
+            fallback = (ship, ambiguity["reasons"], is_new)
+    ship, reasons, _ = fallback
+    return {"clevel": clevel, "ship": ship, "verdict": "park", "reasons": reasons}
 
 
 def print_boot_candidate(clevel: str = "cto") -> None:

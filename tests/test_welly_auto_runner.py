@@ -597,6 +597,104 @@ def test_print_interview_worklist_empty_message(tmp_path, capsys):
     assert "없음" in out
 
 
+# ── boot_candidate: 순회(2026-07-27 GM 지적 "배편이 있는데도 대기하는 건?") ──
+def _queue_file(tmp_path, ships):
+    path = tmp_path / "_queue.json"
+    path.write_text(json.dumps(ships, ensure_ascii=False), encoding="utf-8")
+    return str(path)
+
+
+def _registry_file(tmp_path, roles=("cto", "cmo", "cfo")):
+    """FAKE_REGISTRY와 같은 모양의 임시 등록부 파일 — boot_candidate(registry_path=...) 테스트
+    격리용(실제 status/module_registry.json 미의존)."""
+    modules = [
+        {"id": f"{role}-fake-module", "owner_role": role, "owner_nick": role, "reversible": True}
+        for role in roles
+    ]
+    path = tmp_path / "module_registry.json"
+    path.write_text(json.dumps({"modules": modules}, ensure_ascii=False), encoding="utf-8")
+    return str(path)
+
+
+def test_boot_candidate_skips_ambiguous_top_pick_and_returns_next(tmp_path):
+    # 배9619 실사례와 동형: 1순위(가벼움)가 모호(park)라도, 2순위가 멀쩡하면 go로 넘어가야 한다.
+    ambiguous_top = _ship(
+        task_id="CTO-AMBIG", priority="⛵돛단배",
+        note="A/B(또는 남/여) 양쪽 입력칸 필요 — 화면 수리",
+    )
+    clean_next = _ship(task_id="CTO-CLEAN", priority="⛴️여객선", note="상태줄 충돌회피 대기 개선")
+    queue_path = _queue_file(tmp_path, [ambiguous_top, clean_next])
+    result = war.boot_candidate("cto", queue_path=queue_path, registry_path=_registry_file(tmp_path),
+                                 state_path=str(tmp_path / "state.json"),
+                                 log_path=str(tmp_path / "log.jsonl"))
+    assert result["verdict"] == "go"
+    assert result["ship"]["task_id"] == "CTO-CLEAN"
+
+
+def test_boot_candidate_all_ambiguous_reports_park(tmp_path):
+    only_heavy = _ship(task_id="CMO-HEAVY", clevel="cmo", priority="🛳️크루즈")
+    queue_path = _queue_file(tmp_path, [only_heavy])
+    result = war.boot_candidate("cmo", queue_path=queue_path, registry_path=_registry_file(tmp_path),
+                                 state_path=str(tmp_path / "state.json"),
+                                 log_path=str(tmp_path / "log.jsonl"))
+    assert result["verdict"] == "park"
+    assert result["ship"]["task_id"] == "CMO-HEAVY"
+
+
+def test_boot_candidate_no_candidates_returns_none(tmp_path):
+    queue_path = _queue_file(tmp_path, [_ship(clevel="cfo", status="DONE")])
+    result = war.boot_candidate("cfo", queue_path=queue_path, registry_path=_registry_file(tmp_path),
+                                 state_path=str(tmp_path / "state.json"),
+                                 log_path=str(tmp_path / "log.jsonl"))
+    assert result["verdict"] == "none"
+    assert result["ship"] is None
+
+
+def test_boot_candidate_prefers_never_logged_ship_as_park_representative(tmp_path):
+    # 둘 다 여전히 모호하지만, 하나는 이미 로그에 park 이력이 있다 — 대표 보고는 아직
+    # 한 번도 보고 안 된 쪽으로 돌아가야 한다(같은 배만 매번 반복 보고하지 않기 위함).
+    already_logged = _ship(task_id="CTO-OLD-PARK", priority="🛳️크루즈")
+    fresh_heavy = _ship(task_id="CTO-NEW-PARK", priority="🛳️크루즈")
+    queue_path = _queue_file(tmp_path, [already_logged, fresh_heavy])
+    log_path = tmp_path / "log.jsonl"
+    log_path.write_text(
+        json.dumps({"event": "parked_ambiguous", "task_id": "CTO-OLD-PARK"}, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    result = war.boot_candidate("cto", queue_path=queue_path, registry_path=_registry_file(tmp_path),
+                                 state_path=str(tmp_path / "state.json"),
+                                 log_path=str(log_path))
+    assert result["verdict"] == "park"
+    assert result["ship"]["task_id"] == "CTO-NEW-PARK"
+
+
+def test_boot_candidate_never_writes_queue_state_or_log(tmp_path):
+    """부작용 0 원칙 — boot_candidate 호출 전후 큐·상태·로그 파일 내용이 그대로여야 한다."""
+    ambiguous_top = _ship(task_id="CTO-AMBIG", priority="🛳️크루즈")
+    queue_path = tmp_path / "_queue.json"
+    state_path = tmp_path / "state.json"
+    log_path = tmp_path / "log.jsonl"
+    registry_path = _registry_file(tmp_path)
+    queue_path.write_text(json.dumps([ambiguous_top], ensure_ascii=False), encoding="utf-8")
+    state_path.write_text('{"cooldown": {}, "run_count": 0}', encoding="utf-8")
+    log_path.write_text("", encoding="utf-8")
+    before = {
+        "queue": queue_path.read_text(encoding="utf-8"),
+        "state": state_path.read_text(encoding="utf-8"),
+        "log": log_path.read_text(encoding="utf-8"),
+    }
+    war.boot_candidate("cto", queue_path=str(queue_path), registry_path=registry_path,
+                        state_path=str(state_path), log_path=str(log_path))
+    war.boot_candidate("cto", queue_path=str(queue_path), registry_path=registry_path,
+                        state_path=str(state_path), log_path=str(log_path))
+    after = {
+        "queue": queue_path.read_text(encoding="utf-8"),
+        "state": state_path.read_text(encoding="utf-8"),
+        "log": log_path.read_text(encoding="utf-8"),
+    }
+    assert before == after
+
+
 # ── 텔레그램 핑: dedup + 하루 cap (실전송 없음 — notifier=None/FakeNotifier만 사용) ──
 class _FakeNotifier:
     def __init__(self):
