@@ -4858,12 +4858,16 @@ function _lessonVisibleRows(t) {
   return _lessonState[t].rows.slice().sort(function(a,b){ return String(b.timestamp||'').localeCompare(String(a.timestamp||'')); });
 }
 
-// 강습 종목별 담당(강사) 명단 — status/lesson_instructor_roster.json 내용 그대로 임베드
-// (GitHub Pages는 status/ 미서빙 → 페이지 자체 JS const로 복사. 원본 갱신 시 이 블록도 함께 갱신). 축7, 2026-07-08 시포·GM.
+// ★강습 종목별 담당(강사) 명단 = 이 블록이 유일한 정본이다(약속 L01). 명단을 바꿀 곳은 여기 한 곳뿐.
+// 2026-07-27 시포: 원래 status/lesson_instructor_roster.json 을 여기 '복사'해 두는 구조였고, 예고대로 어긋났다 —
+//   페이지 사본에 김광수(P.T)·김태훈(골프)이 빠져 두 사람이 드롭다운에 아예 안 떴다(실무진 피드백 FB260725-114721).
+//   사본을 두 곳에 두면 한쪽이 옛것이 된다 → 읽는 곳이 없던 status/*.json 쪽을 없애고 이 블록을 정본으로 승격.
+//   (동기화 스크립트를 새로 만들지 않은 이유 = 약속 L21 '장치는 늘리지 않는다'. 한 곳이면 동기화가 필요 없다.)
+// ※옛 JSON 의 수영 배열에 들어 있던 '아쿠아'는 사람이 아니라 종목이라 옮기지 않았다(강사로 선택되던 오류).
 var LESSON_INSTRUCTOR_ROSTER = {
-  "P.T": ["김상식", "김종진", "최동오", "김혜진", "김재용", "김지훈", "이형진", "최도희", "양승문"],
+  "P.T": ["김상식", "김종진", "최동오", "김혜진", "김재용", "김지훈", "이형진", "최도희", "양승문", "김광수"],
   "필라테스": ["최은지", "조영은", "황동희"],
-  "골프": ["최현준", "김태엽", "박찬중"],
+  "골프": ["최현준", "김태엽", "박찬중", "김태훈"],
   "스쿼시": ["이상훈", "박상현"],
   "수영": ["박민서", "송민근", "강대경", "천주희", "구성우", "박주혜", "김성은", "강승구", "김형기"],
   "체조&트램폴린": ["이형주", "배자경", "김영운"],
@@ -4912,6 +4916,10 @@ function lessonExpireDate(regDateStr, monthsRule){
 // 문의 종목(원문 split 세그먼트) → 담당 명단 키 브릿지(포함매칭, 우선순위 고정). 미매칭=null(담당자 X만·정직표기). 축7, 2026-07-08 시포·GM.
 function _lessonRosterKeyOf(sportKey) {
   var s = String(sportKey || '');
+  // 아쿠아로빅 — 2026-07-27 시포. 여기서 안 잡혀 명단이 빈 채로 팀장(천주희) 1명만 뜨고 있었다(라이브 문의 18건).
+  //   수영팀으로 본 근거: 팀장 정의(_lessonTeamLeadOf 아쿠아=천주희)가 수영 명단 소속이고, GM 07-08 명단에서도
+  //   아쿠아가 수영 배열 안에 들어 있었다. 아쿠아로빅 전담 명단이 따로 있으면 이 줄만 바꾸면 된다.
+  if (/아쿠아/.test(s)) return '수영';
   if (/수영/.test(s)) return '수영';
   if (/P\.?T/i.test(s)) return 'P.T';
   if (/필라/.test(s)) return '필라테스';
@@ -4934,7 +4942,12 @@ function _lessonTeamLeadOf(sportKey) {
   if (/웰니스|wellness|루프/i.test(s)) return '루프메소드';
   return '';
 }
-// 종목별 강사 명단 = 종목탭 정본(지정강사 valid) 우선, 미로딩/탭없음이면 하드코딩 명단 폴백 + 팀장 항상 포함. 2026-07-16 GM
+// 종목별 강사 명단 = 종목탭(지정강사 valid) 우선, 없으면 위 LESSON_INSTRUCTOR_ROSTER + 팀장 항상 포함. 2026-07-16 GM
+// ★2026-07-27 시포 라이브 실측 — 종목탭 경로는 현재 통째로 무효다(코드는 남아 있으나 결과에 영향 0).
+//   강습 문의 관리 스프레드시트(1b0XU1o…)에 '수영'·'P.T'·'골프'·'스쿼시'·'아쿠아'·'WSC 수영'·'WSC 체조'
+//   7개 탭을 직접 조회해 보니 7개 전부 같은 시트(성인강습 문의 응답 506행)가 돌아왔다 = 그런 탭이 없다.
+//   구글은 없는 탭을 요청하면 오류가 아니라 첫 번째 시트를 조용히 준다(아래 5010행 가드가 이걸 잡아 버린다).
+//   따라서 실제로 쓰이는 명단은 항상 아래 폴백이다. 이 사실을 모르고 '탭이 정본'이라 읽으면 또 헛다리를 짚는다.
 function _lessonRosterFor(sportKey, isYouth) {
   if (isYouth === undefined) isYouth = /WSC/i.test(String(sportKey || ''));
   var list = null;
@@ -5458,7 +5471,7 @@ function _lessonContactClick(t, rowIndex, sportKeyEnc) {
   openContactModal({ rowIndex: row.rowIndex, name: row.name, contacts: _editContacts }, { source: 'lesson', type: st.type, t: t, sport: _ctxSport });
 }
 
-// 담당 = 종목별 명단(status/lesson_instructor_roster.json 임베드) 드롭다운 — 축7, 2026-07-08 시포·GM.
+// 담당 = 종목별 명단(정본 = 위 LESSON_INSTRUCTOR_ROSTER 한 곳) 드롭다운 — 축7, 2026-07-08 시포·GM.
 // 자유입력 인라인 편집(_lessonOwnerEdit)은 폐기 — 종목별 명단 정합 우선. 저장=lesson_inquiry_update(sport, owner).
 function _lessonOwnerSelectHtml(t, rowIndex, sportKey, current) {
   var cur = String(current || '').trim();

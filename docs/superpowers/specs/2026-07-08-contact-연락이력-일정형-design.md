@@ -84,7 +84,8 @@
   - `lesson_inquiry_update`: `(rowIndex, sport, {status|owner|contacts})` 수신 → `종목별관리[sport]` 갱신. keyPhone 행키 유지. 1차 컨택 알림=해당 종목 연락이력 0→1.
 - **분리 로직 = 프론트에서만**(백엔드/ gviz는 행당 sport문자열+bySport 반환, 프론트가 종목 분해해 N줄 렌더). gviz 어댑터(`gvizLessonRows_`)도 `종목별관리` 필드 읽게 동기(백엔드와 짝).
 - **진행상태 4종**: `컨택중 / 가망 / SUC / LOSS` (기존 5종 교체). SUC=등록(레지스트리 upsert 연동), LOSS=이탈.
-- **담당 드롭다운**: 종목별 명단(`status/lesson_instructor_roster.json`) + "담당자 X"(미배정). 종목→명단키 브릿지 매핑(수영/P.T/필라테스/골프/스쿼시/체조&트램폴린/뮤지컬팀/루프 매소드). 미매칭 종목=담당자 X만 + 정직표기.
+- **담당 드롭다운**: 종목별 명단 + "담당자 X"(미배정). 종목→명단키 브릿지 매핑(수영·아쿠아/P.T/필라테스/골프/스쿼시/체조&트램폴린/뮤지컬팀/웰니스). 미매칭 종목=담당자 X만 + 정직표기.
+  - ※명단 정본 위치 변경(2026-07-27 시포): `status/lesson_instructor_roster.json` → **`membership.html` 의 `LESSON_INSTRUCTOR_ROSTER` 블록 한 곳**. 페이지가 JSON을 '복사'해 두던 구조가 실제로 어긋나(김광수·김태훈 누락) 실무진 피드백으로 드러났고, 읽는 코드가 없던 JSON 쪽을 삭제했다(약속 L01·L21).
 - **순서**: 대시보드 배(문의회원.html 편집 중) 완료 후, 백엔드(Survey.js)+gviz 어댑터+프론트(lessonRender 분리·4종·담당)를 **한 조율 작업**으로. gviz 캐시버스터도 같은 패스에 추가.
 
 ## 5. 단계 (독립 배포 순서 제안)
