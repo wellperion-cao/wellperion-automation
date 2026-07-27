@@ -122,6 +122,13 @@ AMBIGUOUS_PING_DAILY_CAP = 2
 
 def _is_low_risk(ship: dict) -> bool:
     """welly_orchestrate._is_reversible보다 보수적인 저위험 판정(러너 전용 보강)."""
+    # 판정은 설명글이 아니라 배 작성자의 선언을 먼저 믿는다(2026-07-27 GM 지적·오탐 45척 실측).
+    # 선언이 없을 때만 낱말 스캔(EXTRA 키워드)으로 폴백.
+    reversible = ship.get("reversible")
+    if reversible is True:
+        return True
+    if reversible is False:
+        return False
     fields = (
         ship.get("priority") or "",
         ship.get("title") or "",

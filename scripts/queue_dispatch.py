@@ -82,6 +82,11 @@ def build_ship(args, queue):
         "short_no": short_no,
         "module": args.module,
         "surface": args.surface,
+        # 판정은 설명글이 아니라 배 작성자의 선언을 먼저 믿는다(2026-07-27 GM 지적·오탐 45척 실측).
+        # 선언이 없을 때만 낱말 스캔으로 폴백. audience 기본값 "ai"=AI 내부 살림,
+        # reversible 기본값 None=미선언(선별기가 낱말 스캔으로 폴백).
+        "audience": args.audience,
+        "reversible": args.reversible,
     }
 
 
@@ -100,7 +105,15 @@ def main() -> int:
     ap.add_argument("--depends-on", dest="depends_on", default="")
     ap.add_argument("--date", default="", help="YYYY-MM-DD (기본 오늘)")
     ap.add_argument("--dry-run", action="store_true", help="큐에 쓰지 않고 미리보기만")
+    # 선별기(welly_orchestrate._is_reversible / welly_auto_runner._is_low_risk)가 낱말 스캔보다
+    # 이 선언값을 먼저 믿게 하는 필드. 둘 다 선택(필수 금지) — 06:30·07:30 무인 경로가
+    # 이 스크립트를 프로그램으로 호출하므로 필수화하면 무인 가동이 죽는다.
+    ap.add_argument("--audience", choices=("office", "ai"), default="ai",
+                     help="office=실무진·GM이 볼 일 / ai=AI 내부 살림 (기본 ai)")
+    ap.add_argument("--reversible", choices=("yes", "no"), default=None,
+                     help="yes/no — 미지정이면 선별기가 낱말 스캔으로 폴백")
     args = ap.parse_args()
+    args.reversible = {"yes": True, "no": False, None: None}[args.reversible]
 
     if args.to.lower() == (args.sender or "").lower() and not args.mine:
         print("! 받는 역할과 보내는 역할이 같습니다.")
@@ -129,7 +142,8 @@ def main() -> int:
         q = load_queue()
         ship = build_ship(args, q)
         print("[미리보기 — 큐에 쓰지 않음]")
-        for k in ("task_id", "clevel", "title", "status", "priority", "ship_no", "short_no", "next"):
+        for k in ("task_id", "clevel", "title", "status", "priority", "ship_no", "short_no", "next",
+                  "audience", "reversible"):
             print("  %-10s %s" % (k, ship[k]))
         print("  note       %s" % (ship["note"][:160] or "(없음)"))
         return 0
