@@ -233,14 +233,16 @@
       "id": "cmo-case-series-dispatch",
       "owner_role": "cmo",
       "owner_nick": "시모",
-      "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 평일 07:30 재고(06~09) 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행",
+      "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 07:30 재고 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행. 평일 트랙은 2026-07-27 종결 마커로 휴면, 현재는 주말(토·일) GM 트랙만 가동",
       "data_source": {
         "kind": "json",
-        "ref": "instagram/_실전사례_2주플랜.md + 3. 웰페리온 가이드/cmo/review/review_queue.json (case_series_dispatch.py)"
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 review_queue.json 을 겹쳐 적어, 이 모듈이 휴면해도 남(AI하루 카드·발행)이 그 파일을 건드리면 항상 'ok' 로 떴다(거짓 안심). 이 모듈만 쓰는 자기 산출물 = 재고표 1개로 좁힌다.",
+        "ref": "instagram/_실전사례_2주플랜.md"
       },
       "notify_spec": {
-        "daily": true,
-        "weekly": false,
+        "_cadence_주석": "배125 — daily→weekly. 평일 트랙 종결로 이제 주말에만 산출물이 나온다. daily(30h)로 두면 평일마다 거짓 경보가 난다. bot_id=null 이라 발송 게이트는 닫힌 채이며 이 변경으로 새 발신은 생기지 않는다(감지 주기만 바로잡음).",
+        "daily": false,
+        "weekly": true,
         "monthly": false,
         "channel": "telegram",
         "bot_id": null
@@ -267,11 +269,13 @@
       "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
       "data_source": {
         "kind": "json",
-        "ref": "scripts/publish_digest.py + scripts/.publish_digest_sent.json (ig_review_publish_watcher.py:738 배선)"
+        "_ref_주석": "배125(2026-07-27) — .py 는 감지기가 신호로 안 쓴다(코드 수정≠가동 결과). 이 모듈의 자기 산출물 = 발신 원장 하나로 좁힌다.",
+        "ref": "scripts/.publish_digest_sent.json"
       },
       "notify_spec": {
+        "_cadence_주석": "배125 — 주기 미선언이라 'active_no_cadence'(판정 보류)로 빠져 67시간 침묵이 감지되지 않았다(2026-07-24~27 발행 4건에 디제스트 0건). 발행은 주 수회 있으므로 weekly(216h) 무신호면 확실한 고장. bot_id '문의·컨택·등록 알림' 은 status/telegram_rooms.json 키에 없어 미해소 → module_reporter 발송 게이트는 닫힌 채다(이 변경으로 새 발신 없음).",
         "daily": false,
-        "weekly": false,
+        "weekly": true,
         "monthly": false,
         "channel": "telegram",
         "bot_id": "문의·컨택·등록 알림"
@@ -298,7 +302,8 @@
       "feature": "【반응루프 층2 — 주간 종합·기획 반영】⑤ 평가 환류 자동화. 층1(cmo-reaction-loop)이 만든 편별 판정을 §5로 받아, 이번 주 공식 발행분·문의→전환(funnel GAS)·신규 등록과 함께 한 장으로 묶어 Top/Bottom 정성 판정 + 다음 편 제안을 낸다. 실행체=scripts/weekly_marketing_feedback.py(예약작업 Wellperion-CMO-Weekly-Marketing-Feedback, 월 09:00 라이브 · --mode daily 일일카드는 Wellperion-CMO-Daily-Marketing-2100). ※층1과 중복 아님 — 층1=편별 측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
       "data_source": {
         "kind": "json",
-        "ref": "3. 웰페리온 가이드/cmo/review/review_queue.json(공식 발행분) + 문의Survey GAS funnel_conversion·member_registered_list·lesson_registry_list + status/cmo_reaction_scorecard.json(층1 산출·§5 소비) → scripts/weekly_marketing_feedback.py → status/briefs/CMO-weekly-feedback-{date}.md"
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 입력(review_queue·GAS·층1 성적표)을 전부 겹쳐 적어 review_queue.json mtime 이 채택됐다. 남이 그 파일을 건드리면 이 루프가 안 돌아도 'ok'. 이 모듈이 직접 낳는 산출물 = 주간 브리프 하나로 좁힌다. (입력 계보는 feature 에 그대로 남는다)",
+        "ref": "status/briefs/CMO-weekly-feedback-{date}.md"
       },
       "notify_spec": {
         "daily": false,
@@ -338,7 +343,8 @@
       "feature": "【반응루프 층1 — 편별 측정·판정】발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력. 매일 09:45 IG 도달 수집(예약작업 Wellperion-IG-Reach-Collect-0945)에 편승 실행 · 관찰 모드 2026-08-20까지(판정·기록은 하되 알림 억제). 산출 성적표는 층2(cmo-eval-feedback-loop) 주간 브리프 §5와 M1 페이지가 소비한다. ※층2와 중복 아님 — 층1=측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
       "data_source": {
         "kind": "json",
-        "ref": "status/cmo_reaction_scorecard.json (status/ig_reach_ledger.json + 3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json 재조합, scripts/reaction_scorecard.py)"
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 경로 뒤에 설명 문구가 공백으로 붙어, 감지기가 경로를 뒤에서부터 줄이다 'status' 디렉터리로 떨어져 무관한 형제파일(module_report_log.jsonl) mtime 을 빌려 썼다. 성적표가 몇 달 멈춰도 영원히 'ok' 로 뜨는 자기지시 함정(감지기 소스 _resolve_segment 주석이 경고한 바로 그 케이스). 순수 경로 하나만 남긴다.",
+        "ref": "status/cmo_reaction_scorecard.json"
       },
       "notify_spec": {
         "daily": false,
@@ -880,10 +886,12 @@
       "feature": "강사·직원 콘텐츠 접수건 자동 수집 → 검수큐 등록 + GM 카드 발송 (별도 화면 없이 GM께 찾아옴)",
       "data_source": {
         "kind": "gas",
-        "ref": "instructor_intake GAS doGet(action=rows, 토큰가드) → scripts/cmo_intake_to_review.py → review_queue.json(status=접수검토) · exec URL 은 접수 페이지 HTML 에서 추출(단일 출처)"
+        "_ref_주석": "배125(2026-07-27) — 옛 ref 는 GAS→스크립트→큐 흐름을 산문으로만 적어 로컬 아티팩트가 하나도 잡히지 않았고, 판정이 'unmeasurable'(감시 사각지대)로 빠졌다. 실제로는 15분마다 정상 가동 중이었다 = 잘 돌 때 못 보면 멈출 때도 못 본다. 폴러가 매 실행 남기는 자기 로그를 신호로 쓴다(GAS 원격 소스는 mtime 이 없어 로컬 신호가 유일한 감지 지점). 흐름 계보는 feature·ai_free_fallback 에 남는다.",
+        "ref": "logs/cmo_intake_to_review.log"
       },
       "notify_spec": {
-        "daily": false,
+        "_cadence_주석": "배125 — 주기 미선언이라 ref 를 고쳐도 여전히 판정 보류였다. 15분 폴러이므로 daily(30h) 무신호면 확실한 정지. bot_id 'GM 업무보고봇' 은 status/telegram_rooms.json 키에 없어 미해소 → module_reporter 발송 게이트는 닫힌 채다(이 변경으로 새 발신 없음).",
+        "daily": true,
         "weekly": false,
         "monthly": false,
         "channel": "telegram",

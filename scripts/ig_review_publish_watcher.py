@@ -57,6 +57,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from git_lock import GitLock
 from safe_commit import safe_commit  # 스테일 트리 차단 커밋(2026-07-23 배9820)
 from publish_digest import send_publish_digest  # 발행완료→문의방 통합요약 자동발신(2026-07-15)
+# 발행 '완결' 판정 집합의 단일 출처 — 여기서 문자열을 다시 박지 않는다(배125 · 약속 L01).
+from publish_digest import _COMPLETE_STATUSES  # noqa: F401  (_dispatch_publish_digest 에서 사용)
 # review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
 from review_queue_util import merge_save_review_queue
 
@@ -322,8 +324,17 @@ def _notify_published(folder: str) -> None:
 def _dispatch_publish_digest(approved: list[dict]) -> int:
     """이번 사이클에 '발행완료'로 전환된 항목만 모아 통합요약 1장 자동발신
     (scripts/publish_digest.py → 문의·컨택·등록 알림방). GM 루틴: '콘텐츠 1건 = 통합요약 한 장'
-    (기존 per-channel _notify_published 와 별개). 실패해도 발행 파이프라인(커밋·푸시)엔 영향 없음."""
-    newly_published = [it for it in approved if it.get("status") == "발행완료"]
+    (기존 per-channel _notify_published 와 별개). 실패해도 발행 파이프라인(커밋·푸시)엔 영향 없음.
+
+    [배125 · 2026-07-27 시모] 판정 집합을 publish_digest._COMPLETE_STATUSES 단일 지점에서
+    빌려온다. 이전엔 여기서 "발행완료" 문자열을 따로 박아뒀는데, 2026-06-13(ceb2d2ad0)
+    '발행검증대기' 게이트가 생기면서 IG 발행은 더 이상 이 함수 시점에 '발행완료'로 끝나지
+    않게 됐다(dispatch_publish 의 IG 분기는 url 회수 성공/rc==9 양쪽 다 '발행검증대기').
+    publish_digest 쪽 _COMPLETE_STATUSES 는 그때 같이 넓혀졌지만 호출부인 여기가 안 따라와
+    newly_published 가 항상 빈 리스트 → 디제스트가 조용히 한 번도 안 나갔다. 실측: 2026-07-24
+    ~07-27 발행 4건 모두 원장(.publish_digest_sent.json)에 없고 보류(:held) 키도 0.
+    같은 판정을 두 곳에 두면 한쪽만 늙는다(약속 L01) — 사본을 없애고 한 곳을 읽는다."""
+    newly_published = [it for it in approved if it.get("status") in _COMPLETE_STATUSES]
     if not newly_published:
         return 0
     try:
