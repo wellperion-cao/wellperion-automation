@@ -357,7 +357,11 @@ def _blocking_machine_outputs(root: str) -> list:
         return {p for p in (r.stdout or "").split("\0") if p} if r.returncode == 0 else set()
 
     local = _paths(["diff", "--name-only", "-z", "HEAD"])          # 인덱스·작업트리 통틀어 HEAD 와 다른 것
-    upstream = _paths(["diff", "--name-only", "-z", f"HEAD...{REMOTE}/{BRANCH}"])
+    # ★두 점(트리 직접 비교)이어야 한다. 세 점(HEAD...origin)은 '합류점 이후 원격이 바꾼 것'만 주는데,
+    #   merge 가 거부하는 조건은 그게 아니라 **지금 HEAD 와 원격 트리가 다른 파일**이다.
+    #   실측 2026-07-27: 세 점으로는 차단 파일이 0건으로 보였는데 두 점으로는 잡혔고,
+    #   실제 merge 는 바로 그 파일을 이유로 거부했다("local changes would be overwritten").
+    upstream = _paths(["diff", "--name-only", "-z", "HEAD", f"{REMOTE}/{BRANCH}"])
     return [p for p in _MACHINE_OUTPUTS if p in local and p in upstream]
 
 
