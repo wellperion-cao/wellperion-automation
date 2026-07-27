@@ -1251,14 +1251,20 @@ function _notifyNewInquiries_() {
 
         var content = idxContent >= 0 ? String(r[idxContent] || '').trim() : '';
         if (content.length > 300) content = content.substring(0, 300) + '…';
-        var msg = '🔔 [신규 문의]\n'
+        // ★2026-07-23 GM 규칙 이식(2026-07-27 시토 · GM 지적 '양식 달리 들어오는 건 불편하다').
+//   실무진 '문의 알림' 방에는 자체폼(홈페이지 접수) 건만 넣는다. 이 폴러가 잡는 행은 구조상 전부
+//   '자체폼 외'다 — 자체폼 유입분은 비고의 WEB_INTAKE_TAG 로 이미 제외된다. 따라서 여기 남는 건
+//   = 구글폼 응답탭 직접 유입 → 접두사를 붙이고 GM 개인 업무보고방으로 보낸다.
+//   ※이 규칙이 구 퍼널(.deploy-funnel)에만 있고 v2 로 안 옮겨져, 구글폼 건이 접두사 없이
+//     실무진 방으로 들어가고 있었다(2026-07-27 04:49 유소년강습 WSC체조&트램폴린 건으로 발각).
+        var msg = '📥 [자체폼 외 유입] 🔔 [신규 문의]\n'
           + '유형: ' + cfg.type + '\n'
           + (prog ? '종목: ' + _teamChip(prog) + prog + '\n' : '')
           + '이름: ' + name + '\n'
           + '연락처: ' + phone + '\n'
           + '유입채널: ' + chan
           + (content ? '\n내용: ' + content : '');
-        _notifyTelegram(msg, inquiryChatId);
+        _notifyTelegram(msg)   /* 자체폼 외 = GM 개인 업무보고방(2026-07-23 GM 규칙) */;
       });
 
       // 기준선 갱신 — 실데이터 마지막 행번호로 저장 (빈행 포함 getLastRow 사용 금지)
@@ -1431,14 +1437,14 @@ function onInquiryFormSubmit(e) {
 
       var content = idxContent >= 0 ? String(r[idxContent] || '').trim() : '';
       if (content.length > 300) content = content.substring(0, 300) + '…';
-      var msg = '🔔 [신규 문의 — 즉시]\n'
+      var msg = '📥 [자체폼 외 유입] 🔔 [신규 문의 — 즉시]\n'
         + '유형: ' + cfg.type + '\n'
         + (prog ? '종목: ' + _teamChip(prog) + prog + '\n' : '')
         + '이름: ' + name + '\n'
         + '연락처: ' + phone + '\n'
         + '유입채널: ' + chan
         + (content ? '\n내용: ' + content : '');
-      _notifyTelegram(msg, inquiryChatId);
+      _notifyTelegram(msg)   /* 자체폼 외 = GM 개인 업무보고방(2026-07-23 GM 규칙) */;
     });
 
     // 기준선 갱신 — 실데이터 마지막 행번호로 저장 (폴링 백스톱 중복 발송 방지)
@@ -2750,6 +2756,10 @@ function _processAction(body) {
     }
   }
 
+  // [2026-07-27 시모] 봇 토큰 주입 경로는 사용 즉시 제거됨(@158에서 1회 사용·hasToken=true 확인).
+  //   공개 엔드포인트에 쓰기 경로를 남기지 않는다. 재발급 등으로 다시 필요하면 그때 1회용으로
+  //   다시 만들고 쓰자마자 지운다 — 상시 노출 금지.
+
   // ─── 알림 설정 보유 확인 (값은 절대 반환하지 않음 — 존재 여부 불리언만) ───
   // [2026-07-27 시모] scripts/telegram_health_check.py 의 _check_gas_diag 는 VOC·점검 GAS 에서
   //   hasToken/hasChatId 를 받아 '설정 누락'을 잡는데, Survey(퍼널) GAS 만 이 진단이 없어
@@ -2766,6 +2776,83 @@ function _processAction(body) {
         hasChatId: !!(_dChat || _INQUIRY_CHAT_ID_FALLBACK),
         chatIdFromProperty: !!_dChat        // false = 코드 폴백값 사용 중
       });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── 팀시트 칸 진단 (배155) — 이름·전화·상태 칸을 실제로 찾는지 확인 ───
+  //  왜: 팀시트 등록행 2,318 중 735(32%)가 이름·전화 둘 다 빈 채 '등록'으로 잡히고, 원장은
+  //      전화가 키라 그 행들이 못 들어간다 → 2026-07-20 이후 신규 강습 등록 0건.
+  //      원인 후보 (가)칸 탐색 실패 (나)상태열 오탐지 를 가르려면 실제 헤더를 봐야 한다.
+  //  ※ PII 미반환 — 헤더 문자열과 칸 인덱스·행수만.
+  if (action === 'diag_team_sheet_headers') {
+    try {
+      var _dOut = [];
+      LESSON_TEAM_SHEETS.forEach(function(cfg){
+        var rec = { 명: cfg.명, 유형: cfg.유형, gid: cfg.gid };
+        try {
+          var sh = _sheetByGid_(cfg.ssId, cfg.gid);
+          if (!sh) { rec.error = '시트 없음'; _dOut.push(rec); return; }
+          var last = sh.getLastRow(), lastCol = sh.getLastColumn();
+          rec.lastRow = last; rec.lastCol = lastCol;
+          if (last < 2 || lastCol < 1) { rec.error = '데이터 없음'; _dOut.push(rec); return; }
+          var data = sh.getRange(1, 1, last, lastCol).getValues();
+          var headers = data[0];
+          rec.headers = headers.map(function(h){ return String(h || ''); });
+          rec.iName  = _findCol_(headers, ['성함', '이름', '성명']);
+          rec.iPhone = _findCol_(headers, ['연락처', '전화', '휴대폰']);
+          // 상태열 자동탐지 재현 (_collectLessonRoster_ 와 동일 규칙)
+          var best = -1, bestCnt = 0, cand = [];
+          for (var c = 0; c < lastCol; c++) {
+            var cnt = 0, distinct = {}, dn = 0;
+            for (var r = 1; r < data.length; r++) {
+              var cv = String(data[r][c] || '').trim();
+              if (!cv) continue;
+              if (!distinct[cv]) { distinct[cv] = 1; dn++; }
+              if (_isLessonStatusVal_(cv)) cnt++;
+            }
+            if (dn >= 2 && dn <= 30 && cnt > 0) cand.push({ col: c, header: String(headers[c] || ''), sucLike: cnt, distinct: dn });
+            if (dn >= 2 && dn <= 30 && cnt > bestCnt) { bestCnt = cnt; best = c; }
+          }
+          rec.statusCol = best;
+          rec.statusHeader = best >= 0 ? String(headers[best] || '') : null;
+          rec.statusCandidates = cand;
+          // 등록으로 잡히는 행 중 이름·전화가 비는 비율
+          var regN = 0, blank = 0;
+          if (best >= 0) {
+            for (var r2 = 1; r2 < data.length; r2++) {
+              if (!_isLessonReg_(data[r2][best])) continue;
+              regN++;
+              var nm = rec.iName  >= 0 ? String(data[r2][rec.iName]  || '').trim() : '';
+              var ph = rec.iPhone >= 0 ? String(data[r2][rec.iPhone] || '').trim() : '';
+              if (!nm && !ph) blank++;
+            }
+          }
+          rec.regRows = regN; rec.blankNamePhone = blank;
+          // 이름·전화가 빈 '등록' 행에서 칸별로 값이 있는 개수 — 유령행인지(전부 빔),
+          // 특정 칸만 비는지(가져오기 실패 등) 가른다. 값 자체는 반환하지 않는다.
+          if (best >= 0 && blank > 0) {
+            var fill = [];
+            for (var c2 = 0; c2 < lastCol; c2++) fill.push(0);
+            var samples = [];
+            for (var r3 = 1; r3 < data.length; r3++) {
+              if (!_isLessonReg_(data[r3][best])) continue;
+              var nm2 = rec.iName  >= 0 ? String(data[r3][rec.iName]  || '').trim() : '';
+              var ph2 = rec.iPhone >= 0 ? String(data[r3][rec.iPhone] || '').trim() : '';
+              if (nm2 || ph2) continue;
+              for (var c3 = 0; c3 < lastCol; c3++) {
+                if (String(data[r3][c3] || '').trim()) fill[c3]++;
+              }
+              if (samples.length < 3) samples.push(r3 + 1);   // 시트 행번호(1-base)
+            }
+            rec.blankRowColFill = fill;      // 칸별로 값이 있던 행 수
+            rec.blankRowNumbers = samples;   // 사람이 눈으로 확인할 행번호 3개
+          }
+        } catch (e3) { rec.error = e3.message; }
+        _dOut.push(rec);
+      });
+      return _json({ ok: true, sheets: _dOut });
     } catch (e) {
       return _json({ ok: false, error: e.message });
     }
@@ -3131,7 +3218,7 @@ function _processAction(body) {
 
           var content = pvIdxContent >= 0 ? String(r[pvIdxContent] || '').trim() : '';
           if (content.length > 300) content = content.substring(0, 300) + '…';
-          var msg = '🔔 [신규 문의 — 즉시]\n'
+          var msg = '📥 [자체폼 외 유입] 🔔 [신규 문의 — 즉시]\n'
             + '유형: ' + pvCfg.type + '\n'
             + (prog ? '종목: ' + _teamChip(prog) + prog + '\n' : '')
             + '이름: ' + name + '\n'
