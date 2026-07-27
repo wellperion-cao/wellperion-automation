@@ -17,6 +17,11 @@
  *     시토▶81 「작업하는 중이야? /statusline에…」 ·🟢고치는중 wellperion_hud.mjs 6분49초
  *     └역할 └잡은 배  └지금 받은 지시            └하는 동작 └대상        └지시 시작 후 경과
  *   세 가지 상태만 있다: 🟢<동작>(일하는 중) · 💬GM대기(내 차례 끝) · ⏸멎음(15분+ 무반응·빨강).
+ *   ★시간 표기가 상태마다 다른 이유(GM 2026-07-27 "GM 대기 2초에서 멈춘거 아냐?"):
+ *     상태줄은 **스스로 초를 세지 못한다.** Claude 가 무슨 일을 할 때만 이 스크립트를 다시 부른다.
+ *     일하는 중 = 도구를 부를 때마다 다시 그려짐 → 경과 초가 실제로 움직인다(6분49초).
+ *     대기·멎음 = 다시 그릴 일이 없음 → 경과 초는 그 자리에 얼어붙어 거짓이 된다.
+ *     그래서 멈춘 상태는 '몇 시부터'로 적는다(10:14부터) — 얼어붙어도 언제 봐도 참인 값.
  *   ※형태는 GM 이 지목한 Claude 자체 작업표시(`… 구현  1m 18s`)를 따랐다.
  *   ※제목은 일하는 중일 때 **받은 지시**를, 대기 중일 때 **잡은 배 제목**을 쓴다 — 잡은 배와
  *     실제로 하는 일이 다를 때 배 제목만 보여주면 GM 이 여전히 뭘 하는지 모른다(실측 재현).
@@ -303,11 +308,23 @@ function liveAction(transcript) {
       working,
       idle: Math.max(0, Math.round((now - lastAt) / 1000)),                    // 마지막 움직임 이후
       elapsed: turnAt ? Math.max(0, Math.round((now - turnAt) / 1000)) : null, // 이번 지시 시작 후
+      at: lastAt,                                                              // 마지막 움직임의 실제 시각
       act: working ? act : null,
       ask,                                                                     // 지금 받은 지시 첫 줄
     };
   } catch { return null; }
   finally { if (fd !== null) { try { closeSync(fd); } catch { /* 닫기 실패는 무해 */ } } }
+}
+
+/** 벽시계 시각(HH:MM) — ★얼어붙어도 거짓말이 안 되는 값.
+ *  왜: 상태줄은 스스로 초를 세지 못한다. Claude 가 무슨 일을 할 때만 이 스크립트를 다시 부르는데,
+ *  내 차례가 끝나면 다시 부를 일이 없어 화면이 마지막으로 그려진 순간의 숫자에 그대로 멎는다
+ *  (GM 2026-07-27 "지금도 GM 대기 2초에서 멈춘거 아냐?" — 실제로 멎어 있었다).
+ *  경과 초는 그 순간 이후로 전부 거짓이 되지만, **몇 시에 그랬는지**는 언제 봐도 참이다.
+ *  → 일하는 중(도구 호출마다 다시 그려짐)에만 경과 초를 쓰고, 멈춰 있는 상태는 시각으로 적는다. */
+function clockText(ms) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 /** 경과시간 — GM 이 지목한 표시(1m 18s)의 한국어판. */
@@ -572,14 +589,18 @@ function buildLine(cwd, role, transcript) {
   if (lv) {
     if (!lv.working) {
       // 내 차례가 끝난 상태 — '멈춘 것'이 아니라 'GM 답을 기다리는 중'임을 분명히.
-      time = `${D}·${X}${D}💬GM대기 ${X}${agoColor(Math.round(lv.idle / 60))}${elapsedText(lv.idle)}${X}`;
+      // ★경과 초를 쓰지 않는다 — 이 상태에선 화면이 다시 그려지지 않아 숫자가 얼어붙는다.
+      //   대신 '몇 시부터 기다리는 중'인지를 적는다(얼어도 참인 값).
+      time = `${D}·${X}${D}💬GM대기 ${clockText(lv.at)}부터${X}`;
     } else {
       const stuck = lv.idle > 900;                       // 15분 넘게 아무 움직임 없음 = 멎었다
       const name = lv.act ? (ACT[lv.act.tool] || lv.act.tool) : '작업중';
       const tgt = (lv.act && lv.act.target) ? ` ${D}${shortTitle(lv.act.target, 12)}${X}` : '';
       const sec = lv.elapsed != null ? lv.elapsed : lv.idle;   // 지시 시작점을 못 찾으면 마지막 움직임 기준
       time = stuck
-        ? `${D}·${X}${Y}⏸멎음${X}${tgt} ${R}${elapsedText(lv.idle)}${X}`
+        // 멎은 상태도 다시 그려질 보장이 없다 → 경과 대신 '언제 멎었는지' 시각으로.
+        ? `${D}·${X}${Y}⏸멎음${X}${tgt} ${R}${clockText(lv.at)}부터${X}`
+        // 일하는 중에는 도구를 부를 때마다 다시 그려진다 — 여기서만 경과 초가 실제로 움직인다.
         : `${D}·${X}${G}🟢${name}${X}${tgt} ${G}${elapsedText(sec)}${X}`;
     }
   } else if (pg) {
