@@ -166,6 +166,11 @@ def run_git(args, cwd, check=True):
         cwd=cwd,
         capture_output=True,
         text=True,
+        # ★한글 출력(커밋메시지·한글경로)을 cp949 로 디코딩하다 죽는 것을 막는다.
+        #   text=True 만 쓰면 로케일(cp949) 로 디코딩 → UnicodeDecodeError 로 호출자가
+        #   통째로 죽고, 상위가 예외를 삼키면 조용히 멈춘다(배10015 실측).
+        encoding="utf-8",
+        errors="replace",
     )
     if check and result.returncode != 0:
         raise RuntimeError(

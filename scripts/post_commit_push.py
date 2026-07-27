@@ -122,7 +122,8 @@ def _clear_orphan_rebase(root: str) -> None:
     try:
         gd = subprocess.run(
             ["git", "rev-parse", "--git-dir"],
-            cwd=root, capture_output=True, text=True, timeout=10,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=10,
         )
         gitdir = (gd.stdout or "").strip() or ".git"
         if not os.path.isabs(gitdir):
@@ -142,7 +143,8 @@ def _is_dirty(root: str) -> bool:
     try:
         r = subprocess.run(
             ["git", "status", "--porcelain"],
-            cwd=root, capture_output=True, text=True, timeout=20,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=20,
         )
         if r.returncode != 0:
             return True
@@ -155,7 +157,8 @@ def _stash_count(root: str) -> int:
     """스태시 개수. 확인 불가면 -1(비교를 무의미하게 만들어 오탐을 막는다)."""
     try:
         r = subprocess.run(["git", "stash", "list"], cwd=root,
-                           capture_output=True, text=True, timeout=20)
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=20)
         if r.returncode != 0:
             return -1
         return len([x for x in (r.stdout or "").splitlines() if x.strip()])
@@ -176,7 +179,8 @@ def _reconcile(root: str) -> bool:
     try:
         f = subprocess.run(
             ["git", "fetch", REMOTE, BRANCH],
-            cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
         )
         if f.returncode != 0:
             return False
@@ -199,7 +203,8 @@ def _reconcile(root: str) -> bool:
             before = _stash_count(root)
             rb = subprocess.run(
                 ["git", "rebase", f"{REMOTE}/{BRANCH}"],
-                cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
+                cwd=root, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
             )
             if rb.returncode == 0:
                 # 방어 2겹: 그래도 스태시가 늘었다면 미커밋 변경이 갇힌 것이다. 조용히 넘기지 않는다.
@@ -211,7 +216,8 @@ def _reconcile(root: str) -> bool:
             # rebase 실패 → 원상복구(커밋·작업트리 보존) + 고아 상태 강제정리
             subprocess.run(
                 ["git", "rebase", "--abort"],
-                cwd=root, capture_output=True, text=True, timeout=20,
+                cwd=root, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=20,
             )
             _clear_orphan_rebase(root)
             _log("POST_COMMIT_PUSH rebase 실패; merge 폴백 시도", root)
@@ -220,7 +226,8 @@ def _reconcile(root: str) -> bool:
         # merge — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
         mg = subprocess.run(
             ["git", "merge", "--no-edit", f"{REMOTE}/{BRANCH}"],
-            cwd=root, capture_output=True, text=True, timeout=PUSH_TIMEOUT,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
             env={**os.environ, "GIT_EDITOR": "true"},
         )
         if mg.returncode == 0:
@@ -229,7 +236,8 @@ def _reconcile(root: str) -> bool:
         # merge 도 실패(진짜 내용 충돌·원격이 잠긴 파일 건드림 등) → 원상복구
         subprocess.run(
             ["git", "merge", "--abort"],
-            cwd=root, capture_output=True, text=True, timeout=20,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=20,
         )
         _clear_orphan_rebase(root)
         _log("POST_COMMIT_PUSH merge 폴백도 실패; aborted (fall back to warn)", root)
@@ -237,9 +245,11 @@ def _reconcile(root: str) -> bool:
     except subprocess.TimeoutExpired:
         try:
             subprocess.run(["git", "rebase", "--abort"], cwd=root,
-                           capture_output=True, text=True, timeout=15)
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=15)
             subprocess.run(["git", "merge", "--abort"], cwd=root,
-                           capture_output=True, text=True, timeout=15)
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=15)
         except Exception:
             pass
         _clear_orphan_rebase(root)
@@ -340,8 +350,18 @@ def main() -> int:
         try:
             return _sweep(root)
         except Exception as e:
+            # ★스위퍼가 예외로 죽으면 여기서 exit 0 이 되어 스케줄러는 '성공'으로 본다.
+            #   그 사이 밀린 커밋은 계속 쌓이는데 아무도 모른다(배10015 실측: cp949
+            #   디코딩 크래시가 이 자리에서 통째로 삼켜져 드레인이 조용히 멎었다).
+            #   → 밀린 커밋이 실제로 있을 때만 확인방에 1줄 알린다(없으면 무해하므로 침묵).
             try:
                 _log(f"PUSH_SWEEPER skip(err) {e}", root)
+                if _unpushed_count(root) != 0:
+                    _telegram_warn(
+                        root,
+                        "⚠️ 자동 push 스위퍼가 오류로 중단 — 밀린 커밋이 남아 있습니다.\n"
+                        f"{type(e).__name__}: {str(e)[:200]}",
+                    )
             except Exception:
                 pass
             return 0

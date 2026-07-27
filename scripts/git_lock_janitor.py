@@ -62,7 +62,9 @@ def live_git_pids() -> list[int]:
     out = subprocess.run(
         ["powershell", "-NoProfile", "-Command",
          "(Get-Process -Name git -ErrorAction SilentlyContinue).Id -join ','"],
-        capture_output=True, text=True, timeout=60,
+        # PowerShell 5.1 은 콘솔 코드페이지(cp949)로 출력하므로 encoding 은 고정하지 않고
+        # errors=replace 만 준다 — 어떤 바이트가 와도 디코딩으로 죽지 않게(배10015 동류).
+        capture_output=True, text=True, errors="replace", timeout=60,
     )
     if out.returncode != 0:
         raise RuntimeError(f"git 프로세스 조회 실패(rc={out.returncode})")
@@ -74,7 +76,7 @@ def pid_alive(pid: int) -> bool:
     out = subprocess.run(
         ["powershell", "-NoProfile", "-Command",
          f"if (Get-Process -Id {pid} -ErrorAction SilentlyContinue) {{ 'Y' }} else {{ 'N' }}"],
-        capture_output=True, text=True, timeout=60,
+        capture_output=True, text=True, errors="replace", timeout=60,
     )
     return (out.stdout or "").strip() == "Y"
 

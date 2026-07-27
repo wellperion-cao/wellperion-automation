@@ -34,7 +34,8 @@ DOC_EXTS = {
 def _staged_files(root: str) -> list[str]:
     r = subprocess.run(
         ["git", "diff", "--cached", "--name-only", "-z"],
-        cwd=root, capture_output=True, text=True, timeout=20,
+        cwd=root, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=20,
     )
     if r.returncode != 0:
         return []
@@ -63,7 +64,8 @@ def main() -> int:
     try:
         root = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=10,
         ).stdout.strip()
         if not root:
             return 0
@@ -75,13 +77,15 @@ def main() -> int:
             if _is_locked(os.path.join(root, rel)):
                 u = subprocess.run(
                     ["git", "restore", "--staged", "--", rel],
-                    cwd=root, capture_output=True, text=True, timeout=20,
+                    cwd=root, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=20,
                 )
                 if u.returncode != 0:
                     # restore 미지원 환경 폴백
                     subprocess.run(
                         ["git", "reset", "-q", "HEAD", "--", rel],
-                        cwd=root, capture_output=True, text=True, timeout=20,
+                        cwd=root, capture_output=True, text=True,
+                        encoding="utf-8", errors="replace", timeout=20,
                     )
                 skipped.append(rel)
         if skipped:

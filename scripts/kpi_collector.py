@@ -89,7 +89,8 @@ def _unpushed_count() -> int | None:
     try:
         r = subprocess.run(
             ["git", "rev-list", "origin/master..HEAD", "--count"],
-            cwd=str(ROOT), capture_output=True, text=True, timeout=30,
+            cwd=str(ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
         )
         if r.returncode == 0:
             return int((r.stdout or "0").strip() or "0")

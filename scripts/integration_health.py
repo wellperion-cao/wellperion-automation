@@ -78,6 +78,8 @@ def _unpushed_count() -> int:
             cwd=str(ROOT),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
         )
         if r.returncode != 0:
@@ -196,6 +198,8 @@ def check_unpushed() -> tuple[str, bool, str]:
             cwd=str(ROOT),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
         )
         if r.returncode != 0:
@@ -210,7 +214,8 @@ def check_unpushed() -> tuple[str, bool, str]:
         import time
         ar = subprocess.run(
             ["git", "log", f"{REMOTE}/{BRANCH}..HEAD", "--reverse", "--format=%ct"],
-            cwd=str(ROOT), capture_output=True, text=True, timeout=30,
+            cwd=str(ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
         )
         oldest = None
         if ar.returncode == 0 and ar.stdout.strip():
