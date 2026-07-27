@@ -13,6 +13,16 @@
  * 왜: 기존 statusline(OMC HUD)은 비용·모델·컨텍스트만 보여줘 GM 이 "지금 일이 돌고 있는지"를
  *     알 수 없었다("작업을 하는건지 마는건지 모르겠는데" — GM 2026-07-24).
  *
+ * ★맨 앞 칸 = '지금 무슨 일을 하는 중인가' (GM 지시 2026-07-27 — 07-24 에 이어 같은 지적 2회):
+ *     시토▶81 「작업하는 중이야? /statusline에…」 ·🟢고치는중 wellperion_hud.mjs 6분49초
+ *     └역할 └잡은 배  └지금 받은 지시            └하는 동작 └대상        └지시 시작 후 경과
+ *   세 가지 상태만 있다: 🟢<동작>(일하는 중) · 💬GM대기(내 차례 끝) · ⏸멎음(15분+ 무반응·빨강).
+ *   ※형태는 GM 이 지목한 Claude 자체 작업표시(`… 구현  1m 18s`)를 따랐다.
+ *   ※제목은 일하는 중일 때 **받은 지시**를, 대기 중일 때 **잡은 배 제목**을 쓴다 — 잡은 배와
+ *     실제로 하는 일이 다를 때 배 제목만 보여주면 GM 이 여전히 뭘 하는지 모른다(실측 재현).
+ *   ※신호 출처 = 세션 기록(transcript). 진행 한 줄·커밋은 **내가 보고해야** 움직여서 일하는
+ *     동안 멎어 보였다 — 그게 같은 지적이 두 번 나온 이유다(약속 L02 문서 말고 코드로).
+ *
  * 무엇을 보여주나 (웰리 결정 · GM 승인 D안 2026-07-25 — 배107):
  *     시토▶107 상태줄 재설계 — 한 줄에…·✅단계3분전 🆕2 · 항로🚢8⚓43·44·27+34 · 오늘🏁11 · ⚠️시우▸35 결재4일 ⏸시모▸10 16일 +7
  *     └역할 └잡은 배+제목(12자 상한 폐지 — 폭 가변·최소 20자) └새 지시 └대기 배 번호(무거운 순) └오늘 입항 └전사 '막힌 것 우선'
@@ -33,7 +43,7 @@
  *       무슨 일이 생겨도 statusline 이 비지 않게 — 실패하면 OMC 출력만이라도 낸다.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, statSync, writeFileSync, mkdirSync, openSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync, mkdirSync, openSync, readSync, closeSync, fstatSync } from 'node:fs';
 import path from 'node:path';
 import tty from 'node:tty';
 
@@ -174,6 +184,139 @@ function lastProgress(cwd, role) {
     }
   } catch { /* 없으면 커밋 시각으로 폴백 */ }
   return null;
+}
+
+// ── 지금 돌고 있나 · 무엇을 하는 중인가 (GM 지시 2026-07-27) ──────────────────────
+//  왜: 기존 '움직임' 신호 둘(진행 한 줄 lastProgress · 커밋 myLastCommit)은 **사람이 보고해야
+//  움직인다.** 보고를 잊거나 한 배가 길어지면 일하는 중에도 상태줄이 멎어 보였다 —
+//  GM 이 07-24 에 이어 07-27 에 똑같이 물으셨다("작업하는 중이야? 뭘 작업하는지 모르겠어").
+//  같은 지적 2회 = 문서·습관으로 못 막는다는 뜻이므로, **잊을 수가 없는 신호**로 바꾼다(약속 L02).
+//  세션 기록(transcript)은 도구를 부를 때마다 자동으로 쌓인다 — 보고와 무관하게 항상 진실이다.
+//  형태는 GM 이 지목한 Claude 자체 표시(`… 자율 착수 기준 개선 구현  1m 18s`)를 따른다:
+//  **무엇을 하는 중 + 이번 지시 시작 후 경과시간.**
+//  성능: 파일 끝 256KB 만 훑고, 필요한 줄만 JSON 파싱한다(수 MB 기록이어도 렌더 200ms 계약 안).
+const TAIL_BYTES = 1_500_000;   // 표식 검색만 하므로 창을 넓게 잡아도 렌더 시간이 늘지 않는다
+const ACT = {
+  Read: '읽는중', NotebookRead: '읽는중',
+  Edit: '고치는중', Write: '고치는중', NotebookEdit: '고치는중', MultiEdit: '고치는중',
+  Bash: '실행중', PowerShell: '실행중', BashOutput: '실행중',
+  Grep: '찾는중', Glob: '찾는중',
+  Task: '위임중', Agent: '위임중', Workflow: '위임중',
+  WebFetch: '조회중', WebSearch: '조회중',
+  Skill: '스킬', Artifact: '발행중', SendUserFile: '보내는중',
+};
+
+function actTarget(tu) {
+  const inp = (tu && tu.input) || {};
+  const f = inp.file_path || inp.path || inp.notebook_path;
+  if (f) return String(f).split(/[\\/]/).pop();
+  if (inp.command) return String(inp.command).trim().split(/\s+/).slice(0, 2).join(' ');
+  if (inp.description) return String(inp.description);
+  if (inp.pattern) return String(inp.pattern);
+  if (inp.skill) return String(inp.skill);
+  if (inp.subagent_type) return String(inp.subagent_type);
+  return '';
+}
+function toolUseOf(r) {
+  const c = r && r.message && r.message.content;
+  if (!Array.isArray(c)) return null;
+  for (let i = c.length - 1; i >= 0; i--) if (c[i] && c[i].type === 'tool_use') return c[i];
+  return null;
+}
+/** 도구 결과가 아니라 **사람이 실제로 친 지시**인 기록인가 — 경과시간의 기준점. */
+function isHumanTurn(r) {
+  if (!r || r.type !== 'user') return false;
+  const c = r.message && r.message.content;
+  if (typeof c === 'string') return c.trim().length > 0;
+  if (!Array.isArray(c)) return false;
+  return !c.some(b => b && b.type === 'tool_result');
+}
+/** 지금 받은 지시의 첫 줄 — '무슨 일을 하는 중인가'의 가장 정직한 답.
+ *  왜 큐의 배 제목을 안 쓰나: 잡아둔 배와 지금 실제로 하는 일이 다를 수 있다(실측 — 배81을
+ *  잡은 채 상태줄을 고치고 있었고, 상태줄엔 "텔레그램 방 재편"이 떠 있었다). 그러면 GM 이
+ *  화면을 봐도 여전히 뭘 하는지 모른다. 받은 지시는 언제나 지금 하는 일과 같다. */
+function askText(r) {
+  const c = r && r.message && r.message.content;
+  let t = '';
+  if (typeof c === 'string') t = c;
+  else if (Array.isArray(c)) t = c.filter(b => b && b.type === 'text').map(b => b.text || '').join(' ');
+  for (const raw of String(t).split('\n')) {
+    const s = raw.trim();
+    if (!s || s.startsWith('<')) continue;   // 시스템이 덧붙인 안내 블록은 지시가 아니다
+    return s.replace(/\s+/g, ' ');
+  }
+  return '';
+}
+
+function liveAction(transcript) {
+  if (!transcript) return null;
+  let fd = null;
+  try {
+    fd = openSync(transcript, 'r');
+    const size = fstatSync(fd).size;
+    const len = Math.min(TAIL_BYTES, size);
+    const buf = Buffer.allocUnsafe(len);
+    readSync(fd, buf, 0, len, size - len);
+    let str = buf.toString('utf8');
+    if (size > len) str = str.slice(str.indexOf('\n') + 1);   // 잘린 첫 줄은 버린다
+
+    // ★줄 단위로 전부 파싱하지 않는다 — 표식을 뒤에서부터 찾아 **그 줄만** 떼어 파싱한다.
+    //   기록이 수 MB 로 자라도 파싱은 서너 번뿐이라 렌더 시간이 늘지 않는다.
+    const lineAt = (i) => {
+      const a = str.lastIndexOf('\n', i) + 1;
+      const b = str.indexOf('\n', i);
+      return str.slice(a, b === -1 ? undefined : b);
+    };
+    const parseBack = (needle, from, test) => {
+      let i = from;
+      for (let n = 0; n < 40 && i > 0; n++) {          // 헛짚음 대비 40줄까지만 되짚는다
+        i = str.lastIndexOf(needle, i - 1);
+        if (i < 0) return null;
+        let r; try { r = JSON.parse(lineAt(i)); } catch { continue; }
+        if (!test || test(r)) return r;
+      }
+      return null;
+    };
+
+    // ① 마지막 기록 — 지금 움직이고 있는지 / 내 차례가 끝났는지
+    const last = parseBack('"type":"', str.length, r => r.type === 'user' || r.type === 'assistant');
+    if (!last) return null;
+    // ② 지금 부르고 있는 도구 — 무엇을 하는 중인가
+    const tuRec = parseBack('"type":"tool_use"', str.length);
+    const tu = tuRec ? toolUseOf(tuRec) : null;
+    const act = tu ? { tool: tu.name, target: actTarget(tu) } : null;
+    // ③ 이번 지시의 시작점 — 사람이 실제로 친 프롬프트에만 붙는 표식(promptSource)으로 찾는다.
+    //    표식이 없는 버전이면 '도구 결과가 아닌 user 기록'으로 폴백한다.
+    const human = parseBack('"promptSource"', str.length, isHumanTurn)
+      || parseBack('"type":"user"', str.length, isHumanTurn);
+    let turnAt = null, ask = '';
+    if (human) {
+      const t = Date.parse(human.timestamp || '');
+      if (Number.isFinite(t)) { turnAt = t; ask = askText(human); }
+    }
+    const lastAt = Date.parse(last.timestamp || '');
+    if (!Number.isFinite(lastAt)) return null;
+    const now = Date.now();
+    // 말만 하고 끝낸 응답이 마지막 = 내 차례가 끝났다는 뜻 → GM 입력 대기.
+    const working = !(last.type === 'assistant' && !toolUseOf(last));
+    return {
+      working,
+      idle: Math.max(0, Math.round((now - lastAt) / 1000)),                    // 마지막 움직임 이후
+      elapsed: turnAt ? Math.max(0, Math.round((now - turnAt) / 1000)) : null, // 이번 지시 시작 후
+      act: working ? act : null,
+      ask,                                                                     // 지금 받은 지시 첫 줄
+    };
+  } catch { return null; }
+  finally { if (fd !== null) { try { closeSync(fd); } catch { /* 닫기 실패는 무해 */ } } }
+}
+
+/** 경과시간 — GM 이 지목한 표시(1m 18s)의 한국어판. */
+function elapsedText(sec) {
+  if (sec < 60) return `${sec}초`;
+  const m = Math.floor(sec / 60);
+  if (m < 60) return `${m}분${sec % 60}초`;
+  const h = Math.floor(m / 60);
+  return h < 24 ? `${h}시간${m % 60}분` : `${Math.floor(h / 24)}일`;
 }
 
 /** 큐 한 번 읽기 — ★렌더당 파싱 1회만(성능 상한 200ms 계약 · 배107).
@@ -392,16 +535,20 @@ function termWidth() {
 
 /** 상태줄 한 줄 조립 — 웰리 결정 D안. 폭이 모자라면 **뒤에서부터** 접는다:
  *  전사(제목→번호→+N) → 오늘🏁 → 대기 번호목록(→개수) → 🆕 → 마지막까지 내 배(①②)만. */
-function buildLine(cwd, role) {
+function buildLine(cwd, role, transcript) {
   const W = termWidth() - 1;                    // 마지막 칸 자동줄바꿈 여유 1칸
   const q = loadQueue(cwd);
   const s = q ? myShips(q, cwd, role) : null;
-  const lc = myLastCommit(cwd, role);
-  const pg = lastProgress(cwd, role);
+  const lv = liveAction(transcript);            // ★지금 하는 일 — 보고와 무관하게 항상 움직이는 신호
+  // 커밋 조회(git 107ms)는 꼭 필요할 때만 — 잡은 배가 없어 '방금 끝낸 배'를 대신 보여줘야 하거나,
+  // 세션 기록을 못 읽어 시각 칸을 폴백해야 할 때.
+  const lc = (!(s && s.cur) || !lv) ? myLastCommit(cwd, role) : null;
+  const pg = lv ? null : lastProgress(cwd, role);
 
   // ① 닉네임 + ② 현재 배 번호 — 접지 않는 고정부. 제목은 폭 따라 가변(최소 20자).
   let head = `${B}${C}${NICK[role]}${X}`;
   let title = '';
+  const busy = !!(lv && lv.working);
   if (s && s.cur) {
     const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
     head += `${C}▶${n}${X}`;
@@ -409,14 +556,33 @@ function buildLine(cwd, role) {
   } else if (lc && lc.ship != null) {
     const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
     head += `${D}✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
-  } else {
+  } else if (!busy) {
     // ★잡은 배도 방금 끝낸 배도 없으면 **빈칸으로 두지 않는다** (GM 2026-07-25 "없으면 없다고").
+    //   단 지금 실제로 돌고 있으면 '작업없음'은 거짓말이다 — 아래 제목·시각 칸이 진실을 말한다.
     head += `${D}·작업없음${X}`;
   }
-  // 시각 칸 — '방금 넘긴 단계'가 있으면 그걸 쓰고, 없을 때만 커밋 시각으로 폴백한다.
-  //   커밋은 일이 **끝나야** 찍히므로 일하는 중에는 멈춰 보였다. 진행 한 줄이 더 진실에 가깝다.
+  // ★일하는 중이면 제목은 '잡아둔 배'가 아니라 **지금 받은 지시**를 쓴다(GM 지시 2026-07-27).
+  //   잡은 배와 실제로 하는 일이 다를 때 배 제목은 GM 을 오히려 헷갈리게 한다(실측 재현:
+  //   배81 을 잡은 채 상태줄을 고치고 있었는데 화면엔 "텔레그램 방 재편"이 떠 있었다).
+  if (busy && lv.ask) title = `「${lv.ask}」`;
+  // 시각 칸 — ★1순위는 세션 기록에서 읽은 '지금 하는 일 + 경과'(GM 지시 2026-07-27).
+  //   커밋은 일이 **끝나야** 찍히고, 진행 한 줄은 내가 손으로 써야 움직인다. 둘 다 일하는
+  //   동안에는 멎어 보였다. 세션 기록만이 보고와 무관하게 항상 움직인다 → 이걸 먼저 쓴다.
   let time = '';
-  if (pg) {
+  if (lv) {
+    if (!lv.working) {
+      // 내 차례가 끝난 상태 — '멈춘 것'이 아니라 'GM 답을 기다리는 중'임을 분명히.
+      time = `${D}·${X}${D}💬GM대기 ${X}${agoColor(Math.round(lv.idle / 60))}${elapsedText(lv.idle)}${X}`;
+    } else {
+      const stuck = lv.idle > 900;                       // 15분 넘게 아무 움직임 없음 = 멎었다
+      const name = lv.act ? (ACT[lv.act.tool] || lv.act.tool) : '작업중';
+      const tgt = (lv.act && lv.act.target) ? ` ${D}${shortTitle(lv.act.target, 12)}${X}` : '';
+      const sec = lv.elapsed != null ? lv.elapsed : lv.idle;   // 지시 시작점을 못 찾으면 마지막 움직임 기준
+      time = stuck
+        ? `${D}·${X}${Y}⏸멎음${X}${tgt} ${R}${elapsedText(lv.idle)}${X}`
+        : `${D}·${X}${G}🟢${name}${X}${tgt} ${G}${elapsedText(sec)}${X}`;
+    }
+  } else if (pg) {
     const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
     time = `${D}·${X}${icon}${pg.step ? `${D}${pg.step}${X}` : ''}${agoColor(pg.mins)}${agoText(pg.mins)}${X}`;
   } else if (lc) {
@@ -494,7 +660,7 @@ function main() {
   const role = resolveRole(cwd, transcript);
   // ★역할을 못 찾은 경우 — 사라지는 대신 왜 안 보이는지를 적는다(GM 2026-07-25).
   //   역할 기억함(ROLE_CACHE)이 채워지면 저절로 복구된다.
-  const line = role ? buildLine(cwd, role) : `${D}역할 확인중 · 작업표시 대기${X}`;
+  const line = role ? buildLine(cwd, role, transcript) : `${D}역할 확인중 · 작업표시 대기${X}`;
 
   // ★OMC 줄에 이어 붙이지 않고 **줄을 따로 뺀다** (GM 2026-07-24 '시모·시우·시포는 잘리는데?').
   //   같은 줄이면 폭 경쟁으로 끝에 붙은 우리 부분부터 잘린다.
