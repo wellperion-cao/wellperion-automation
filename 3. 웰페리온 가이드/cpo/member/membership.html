@@ -1159,7 +1159,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
    좁은 화면에서는 header-top의 기존 flex-wrap:wrap이 자연히 다음 줄로 흘려보낸다(가로 스크롤 없음).
    버튼 자체는 action-btn보다 한 단계 강조(솔리드 accent 배경+굵은 글씨) — 형광색·과한 그림자 없이 절제된 강조.
    GM 재지시(2026-07-24). */
-.header-feedback-slot{ flex:1 1 180px; display:flex; justify-content:center; align-items:center; min-width:0; }
+/* 2026-07-27 GM: 작업 현황 로그 버튼을 이 슬롯으로 — "피드백 옆에서 그래서 뭐가 됐나를 바로 본다".
+   종합접수처_현황.html 도 같은 배치(💬 피드백 · 📋 작업 현황 로그 나란히)라 두 화면이 같아진다. */
+.header-feedback-slot{ flex:1 1 180px; display:flex; justify-content:center; align-items:center; gap:8px; min-width:0; flex-wrap:wrap; }
 .feedback-cta-btn{
   display:inline-flex;align-items:center;gap:6px;
   font-size:12.5px;font-weight:800;
@@ -1171,6 +1173,13 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   transition:filter 0.15s,transform 0.15s;
 }
 .feedback-cta-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+/* 짝 버튼(작업 현황 로그) — 같은 크기·같은 자리지만 테두리형. 피드백 남기기가 주(主), 결과 보기가 부(副)라
+   둘 다 솔리드로 두면 어느 쪽이 할 일인지 흐려진다. 2026-07-27 시포·GM. */
+.feedback-cta-btn.is-secondary{
+  background:transparent; color:var(--accent); font-weight:700;
+  border:1px solid var(--accent-border); box-shadow:none;
+}
+.feedback-cta-btn.is-secondary:hover{ background:var(--accent-bg); filter:none; }
 .theme-toggle-btn{
   display:inline-flex;align-items:center;gap:5px;
   font-size:11px;font-weight:600;
@@ -1296,6 +1305,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
            팝업 = 모달 iframe(실무진피드백.html), openRenewDash 패턴 벤치마킹. -->
       <div class="header-feedback-slot">
         <button type="button" class="feedback-cta-btn" onclick="openStaffFeedback()">💬 실무진 피드백</button>
+        <!-- 작업 현황 로그 — 피드백을 남긴 다음 "그래서 뭐가 됐나"를 같은 자리에서 보게 한다(GM 지시 2026-07-27,
+             배10313 시우 전달). 종합접수처_현황.html 과 같은 배치. 배지=신규 '빠진 것' 건수(0건이면 숨김). -->
+        <button type="button" class="feedback-cta-btn is-secondary" id="btnWorklog" onclick="openWorklogModal()">📋 작업 현황 로그<span id="wlHeaderBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border)" hidden></span></button>
       </div>
       <div class="header-actions">
         <div class="hz-zone z-status">
@@ -1310,11 +1322,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <!-- 오늘 할 일 액션 패널 — 배754, 모달화(2026-07-09 GM 결정: 본문 상단 상시노출→헤더 버튼+모달, 스크롤 불만 해소).
                  카운트 뱃지=미컨택+오늘신규+오늘상담 합계(이탈위험 제거) — 안 열어도 한눈에. renderTodayActionPanel이 매 갱신 시 갱신. -->
             <button class="action-btn" id="btnTodayAction" onclick="openTodayActionModal()">🧭 오늘 할 일<span id="tapBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border);display:none">0</span></button>
-            <!-- 작업 현황 로그 — 본문 맨 아래 접힘 줄에서 상단 버튼+팝업으로 이전(GM 2026-07-27 "맨 하단이 아닌 상단 탭에,
-                 팝업으로 내용 볼 수 있으면 좋겠다"). 오늘 할 일이 같은 이유로 옮겨간 것과 같은 방식(배754·2026-07-09).
-                 멤버십·강습 어느 관리 화면에서도 이 헤더는 공통이라 버튼 하나로 양쪽에서 열린다.
-                 배지 = 신규 '빠진 것' 건수(공용 자산 worklog_panel.js 가 data-worklog-badge 로 채운다). -->
-            <button class="action-btn" id="btnWorklog" onclick="openWorklogModal()">📋 작업 현황 로그<span id="wlHeaderBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border)" hidden></span></button>
+            <!-- 작업 현황 로그 버튼은 여기 있다가 💬 실무진 피드백 옆으로 옮겼다(GM 2026-07-27 원 지시가
+                 "실무진 피드백 옆에", 배10313). 종합접수처_현황.html 과 같은 배치로 맞춤 — 위쪽 header-feedback-slot 참조. -->
           </div>
         </div>
         <div class="hz-zone z-guide">
