@@ -161,13 +161,16 @@ function _vRateLimitOk_(fp) {   // 전역 분당 상한 + 동일내용 60초 중
 function _vNow() {
   return Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
 }
-function _vGenId() {
-  return 'VOC-' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMddHHmmss')
-    + ('000' + new Date().getMilliseconds()).slice(-3);
-}
+// ─── 접수번호 접두사 — 화면·알림에 그대로 노출되는 값이라 여기 한 곳에서만 정한다 ───
+// 2026-07-27 GM 지시: 'VOC' 낱말 폐기 → 'RECEPTION'. 숫자는 건드리지 않는다(기존 참조 보존).
+// 옛 접두사는 이미 시트에 쌓인 값을 알아보기 위해 남겨둔다(reg_reprefix 마이그레이션이 쓴다).
+var REG_ID_PREFIX     = 'RECEPTION-';
+var REG_ID_PREFIX_OLD = 'VOC-';
 
-// ─── 전체 통합 순번 ID — VOC-1, VOC-2 … (식별자 겸 순번) ───
+// ─── 전체 통합 순번 ID — RECEPTION-1, RECEPTION-2 … (식별자 겸 순번) ───
 // ScriptProperties 'VOC_SEQ' 를 단조증가(monotonic) 카운터로 사용 → 행을 삭제해도 번호 재사용 안 함(식별자 안정).
+//   ※ 속성 키 이름(VOC_SEQ)은 화면에 안 보이는 내부 키라 그대로 둔다 — 바꾸면 값 이관이 필요해
+//     마이그레이션 위험만 늘고 얻는 게 없다(표기 정리는 값·화면 기준).
 // LockService 로 동시 접수 시 같은 번호 발급 충돌 방지. 6종 카테고리 통틀어 하나의 일련번호.
 function _vNextSeqId() {
   var lock = LockService.getScriptLock();
@@ -178,7 +181,7 @@ function _vNextSeqId() {
   var next = cur + 1;
   props.setProperty('VOC_SEQ', String(next));
   try { lock.releaseLock(); } catch (e) {}
-  return 'VOC-' + next;
+  return REG_ID_PREFIX + next;
 }
 
 // ─── CORS JSON 응답 ───
@@ -884,7 +887,56 @@ function _regDelete(body) {
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
 }
 
+// ─── reg_reprefix — 접수번호 앞글자만 교체 (GATED·일회성 마이그레이션) ───
+// 2026-07-27 GM 지시 'VOC 낱말 폐기 → RECEPTION'. 숫자는 절대 건드리지 않는다.
+// 왜 아래 reg_renumber 를 안 쓰나: 그건 접수일시 순서로 번호를 다시 매긴다. 라이브 65건 실측 결과
+//   65건 중 63건의 번호가 바뀐다(삭제된 행 때문에 최대번호 68 ≠ 건수 65) — 실무진이 알던 번호가
+//   전부 밀린다. 그래서 '접두사만 치환'하는 이 액션을 따로 둔다.
+// 멱등: 이미 RECEPTION- 인 행은 건너뛴다. 두 번 돌려도 결과 같음.
+function _regReprefix() {
+  var changed = 0, skipped = 0;
+
+  function reprefixCell(sheet, rowNum, idCol) {
+    var cell = sheet.getRange(rowNum, idCol);
+    var cur = String(cell.getValue() || '');
+    if (cur.indexOf(REG_ID_PREFIX_OLD) !== 0) { skipped += 1; return; }
+    cell.setValue(REG_ID_PREFIX + cur.slice(REG_ID_PREFIX_OLD.length));
+    changed += 1;
+  }
+
+  // 종합접수처 카테고리 시트들
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    var headers = _regHeadersFor(cat.key);
+    var idIdx = -1;
+    for (var i = 0; i < headers.length; i++) { if (headers[i].key === 'regId') idIdx = i; }
+    if (idIdx < 0) return;
+    var last = sh.getLastRow();
+    for (var r = 2; r <= last; r++) reprefixCell(sh, r, idIdx + 1);
+  });
+
+  // 레거시 '접수 VOC' 시트(있으면)
+  try {
+    var lss = _vGetSpreadsheet().getSheetByName(VOC_SHEET);
+    if (lss && lss.getLastRow() >= 2) {
+      var lIdCol = VOC_HEADERS.indexOf('접수ID') + 1;
+      if (lIdCol > 0) {
+        for (var k = 2; k <= lss.getLastRow(); k++) reprefixCell(lss, k, lIdCol);
+      }
+    }
+  } catch (e) {}
+
+  _regBoardCacheClear_();
+  return _vJson({
+    ok: true, changed: changed, skipped: skipped,
+    message: '접수번호 ' + changed + '건의 앞글자를 ' + REG_ID_PREFIX_OLD + ' → ' + REG_ID_PREFIX +
+             ' 로 바꿨습니다(숫자 불변). 이미 바뀐 행 ' + skipped + '건은 건너뜀.'
+  });
+}
+
 // ─── reg_renumber — 전체 접수 통합 순번 재부여 (GATED·일회성 마이그레이션) ───
+// ⚠️ 접두사만 바꾸려고 이걸 부르지 말 것 — 번호가 밀린다(위 reg_reprefix 주석 참고, 2026-07-27 실측).
 // 모든 카테고리 시트 + 레거시 '접수 VOC'의 전 행을 접수일시 오름차순으로 모아 VOC-1..N 재부여
 // (시트별 접수ID/regId 컬럼만 갱신, 다른 칸 불변) 후 VOC_SEQ=N 동기화 → 새 접수는 VOC-(N+1) 이어감.
 // 재실행해도 접수일시 순서가 같으면 같은 번호 → 멱등. 백업은 호출 전 외부(reg_list 덤프)에서 수행.
@@ -937,7 +989,7 @@ function _regRenumber(body) {
   var n = 0;
   entries.forEach(function (e) {
     n += 1;
-    e.sheet.getRange(e.rowNum, e.idCol).setValue('VOC-' + n);
+    e.sheet.getRange(e.rowNum, e.idCol).setValue(REG_ID_PREFIX + n);
   });
   PropertiesService.getScriptProperties().setProperty('VOC_SEQ', String(n));
 
@@ -1480,6 +1532,8 @@ function _vProcess(action, body, params) {
   if (action === 'clean_reg_columns') return _regCleanColumns();
   // loc 헤더 '위치'/'분실위치' → '장소' 통일(폼 라벨과 시트 헤더 문구 일치). 쓰기 무영향(인덱스기반). 일회성. 2026-07-08 시우.
   if (action === 'rename_loc_header') return _regRenameLocHeader();
+  // 접수번호 앞글자 VOC- → RECEPTION- (숫자 불변) · 일회성 · GATED. 2026-07-27 시우(GM 승인).
+  if (action === 'reg_reprefix') return _regReprefix();
 
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
