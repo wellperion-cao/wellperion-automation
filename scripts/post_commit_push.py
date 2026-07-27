@@ -16,6 +16,7 @@ origin/master..HEAD 가 1개 이상이면 `git push origin HEAD:master` 한다.
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -278,7 +279,7 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
         return
     if rc == 124:
         _log("POST_COMMIT_PUSH timeout", root)
-        if alert:
+        if alert and _alert_should_send(root, "timeout"):
             _telegram_warn(
                 root,
                 "⚠️ 자동 push 타임아웃 — 스위퍼 재시도도 실패. 수동 `git push` 필요.",
@@ -309,12 +310,95 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
 
     err = (err or "").strip()[:200]
     _log(f"POST_COMMIT_PUSH fail {err}", root)
-    if alert:
+    # 같은 사유가 5분마다 GM 화면에 도배되지 않게 억제한다(배147 — 실제로 그렇게 됐다).
+    # 사유가 바뀌면 바로 알린다. 억제해도 로그에는 매번 남으므로 흔적은 안 잃는다.
+    if alert and _alert_should_send(root, err):
         _telegram_warn(
             root,
             "⚠️ 자동 push 가 스위퍼 재시도에도 실패 — origin 미동기화(커밋 로컬 보존). "
             f"수동 `git push` 필요.\n{err}",
         )
+
+
+# ── 통합을 막는 '기계 산출물' 만 골라 먼저 커밋한다 (배147 · 2026-07-27) ──────────
+#  왜: git merge 는 **로컬에서 고쳐진 파일을 원격도 고쳤을 때** 'local changes would be
+#  overwritten' 으로 거부한다. 이 저장소에서 그 조건에 걸리는 건 거의 항상 3분·5분 주기
+#  자동 산출물(문의 스냅샷·큐 미러 등)이다. 게다가 일부 스크립트는 git add 까지만 하고
+#  커밋하지 않아(설계상 '커밋은 워처가') 공용 인덱스에 찌꺼기로 남는다 →
+#  통합 창이 영영 안 열리고 non-fast-forward 가 **영구 지속**된다.
+#  실측 2026-07-27: 미푸시 14건·26분 정체, 5분마다 같은 경보 반복, 라이브 Pages 가 최신 커밋 미수신.
+#  고침: 통합 직전, **아래 목록에 정확히 해당하는 기계 산출물만** 정상 관문(safe_commit)으로
+#  커밋해 길을 튼다. 소스코드·문서는 절대 손대지 않는다(남의 미완성 작업을 커밋해 버리는 사고 방지).
+_MACHINE_OUTPUTS = (
+    "status/inquiry_snapshot_lesson.json",
+    "status/inquiry_snapshot_member.json",
+    "3. 웰페리온 가이드/status/_queue.json",   # 큐 미러 — sync_queue_mirror 가 add 만 하고 커밋 안 함
+    "3. 웰페리온 가이드/status/_queue_archive.json",
+)
+
+
+def _blocking_machine_outputs(root: str) -> list:
+    """통합을 막고 있는 기계 산출물 경로 — '로컬에서 바뀌었고 origin 도 바꾼' 것만."""
+    def _paths(args):
+        r = subprocess.run(["git"] + args, cwd=root, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=30)
+        return {p for p in (r.stdout or "").split("\0") if p} if r.returncode == 0 else set()
+
+    local = _paths(["diff", "--name-only", "-z", "HEAD"])          # 인덱스·작업트리 통틀어 HEAD 와 다른 것
+    upstream = _paths(["diff", "--name-only", "-z", f"HEAD...{REMOTE}/{BRANCH}"])
+    return [p for p in _MACHINE_OUTPUTS if p in local and p in upstream]
+
+
+def _commit_machine_outputs(root: str) -> bool:
+    """막고 있는 기계 산출물을 safe_commit 으로 커밋. 하나도 없으면 False(무해한 no-op)."""
+    paths = _blocking_machine_outputs(root)
+    if not paths:
+        return False
+    msg = ("chore(auto): 통합을 막던 자동 산출물 커밋 — non-ff 해소 (배147)\n\n"
+           "3분·5분 주기 산출물이 커밋되지 않은 채 남아 git merge 가 거부되어 push 가 정체됨.\n"
+           "산출물 자체는 원래 커밋되는 자동 발행물이라 정상 관문으로 커밋해 통합 창을 연다.")
+    try:
+        r = subprocess.run(
+            [sys.executable, os.path.join(root, "scripts", "safe_commit.py"), "-m", msg, "--"] + paths,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=120,
+        )
+        ok = (r.returncode == 0)
+        _log(f"PUSH_SWEEPER 기계산출물 선커밋 {'ok' if ok else 'fail'} ({len(paths)}건: {', '.join(paths)})", root)
+        return ok
+    except Exception as e:
+        _log(f"PUSH_SWEEPER 기계산출물 선커밋 예외 {e}", root)
+        return False
+
+
+# ── 같은 사유 경보 도배 방지 (배147 · GM 이 5분마다 같은 문구를 받았다) ──────────────
+_ALERT_STATE = "tmp/push_alert_state.json"
+_ALERT_QUIET_SEC = 3600      # 같은 사유는 1시간에 1번만
+
+
+def _alert_should_send(root: str, reason: str) -> bool:
+    """같은 사유가 조용한 시간 안에 또 오면 보내지 않는다. 사유가 바뀌면 즉시 보낸다.
+    상태 파일을 못 읽고 못 써도 **보내는 쪽**으로 판단한다 — 경보를 잃는 것보다 낫다."""
+    import hashlib
+    import time
+    key = hashlib.sha256(reason.encode("utf-8", "replace")).hexdigest()[:16]
+    path = os.path.join(root, *_ALERT_STATE.split("/"))
+    now = time.time()
+    try:
+        with open(path, encoding="utf-8") as f:
+            st = json.load(f)
+        if st.get("key") == key and (now - float(st.get("at", 0))) < _ALERT_QUIET_SEC:
+            _log(f"POST_COMMIT_PUSH 경보 억제(같은 사유 {int(now - float(st['at']))}s 전 발신)", root)
+            return False
+    except Exception:
+        pass
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"key": key, "at": now, "reason": reason[:200]}, f, ensure_ascii=False)
+    except Exception:
+        pass
+    return True
 
 
 def _sweep(root: str) -> int:
@@ -324,6 +408,9 @@ def _sweep(root: str) -> int:
     진짜 실패(충돌·인증 등)만 경고한다(allow_reconcile=True · alert=True)."""
     if _unpushed_count(root) == 0:
         return 0  # 밀린 것 없음
+    # ★락을 잡기 **전에** 통합 방해물을 치운다 — safe_commit 이 자기 락을 잡으므로
+    #   락 안에서 부르면 서로 기다리다 멈춘다(GitLock 은 재진입 불가).
+    _commit_machine_outputs(root)
     import git_lock as _gl
     lock = GitLock("push-sweeper", root)
     prev = _gl.ACQUIRE_TIMEOUT
