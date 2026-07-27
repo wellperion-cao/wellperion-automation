@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>웰페리온 · 실무진 피드백</title>
 <!-- ══════════════════════════════════════════════════════════════════════════
-  실무진 피드백 접수 팝업 — membership.html 「💬 실무진 피드백」 버튼 → 모달 iframe으로 이 페이지를 연다.
-  GM 지시(2026-07-24, 우선순위 높음). 대상 실무진: 임정은M 등 회원관리 화면 사용 실무자.
+  실무진 피드백 접수 팝업 — 여러 화면이 공유하는 단 하나의 실무진 창구다. 사본을 만들지 말고 이 파일을 iframe으로 연다.
+  여는 곳: membership.html 「💬 실무진 피드백」(회원관리) · coo/reception/종합접수처_현황.html 「💬 실무진 피드백」(종합접수처).
+  GM 지시(2026-07-24 신설 · 2026-07-27 종합접수처 합류 — "배치·항목 같게, 시트 통합").
+  ★여는 쪽은 ?screen=<업무명> 을 붙인다(예: 실무진피드백.html?screen=종합접수처) — 그 업무가 미리 골라져 담당을 바로 가린다.
 
-  ★전송 배선 미완성(의도됨) — 저장 백엔드(GAS action staff_feedback_submit)는 시포가 별도로 만든다.
-    지금은 submitStaffFeedback()에서 실제 전송 대신 "준비 중" 안내만 띄우고 입력값은 그대로 둔다.
+  ★전송 배선 완료(2026-07-25) — submitStaffFeedback() → GAS action=staff_feedback_submit → 멤버십 스프레드시트
+    '실무진 피드백' 탭(접수ID FB…). 화면이 어디든 이 한 탭에 모인다(시트 통합).
+    거기서 scripts/collectors/cpo_staff_feedback_watch.py 가 3분마다 읽어 status/_queue.json 에 배로 세운다.
     저장 안 됐는데 됐다고 표시하지 않는다(이 저장소 반복 사고 유형 — 발행완료 오표기 재발방지 원칙과 동일 취지).
   ★외부 라이브러리·CDN 0 — 시스템 한글 폰트 스택만 사용, 완전 자체완결(오프라인에서도 동작).
   ★라이트/다크 자동 대응 — prefers-color-scheme(부모 페이지 테마 토글과 독립, 이 페이지는 iframe으로 단독 로드되므로
@@ -193,6 +196,22 @@ document.querySelectorAll('.choice-group').forEach(function(group){
     btn.classList.add('active');
   });
 });
+
+// 어느 화면에서 열렸는지를 ?screen= 으로 받아 미리 골라 둔다(2026-07-27 시우 · 종합접수처 합류).
+// 이 폼은 이제 멤버십·강습·종합접수처 여러 화면이 같이 쓰는 하나의 창구다 — 기본값이 늘 '멤버십'이면
+// 종합접수처에서 남긴 글이 멤버십 건으로 접수돼 담당을 잘못 가린다. 파라미터가 없으면 종전과 동일(멤버십 기본).
+try {
+  var _fbScreen = new URLSearchParams(location.search).get('screen');
+  if (_fbScreen) {
+    var _fbTarget = document.querySelector(
+      '.choice-group[data-field="screen"] .choice-btn[data-value="' + _fbScreen.replace(/"/g, '') + '"]');
+    if (_fbTarget) {
+      document.querySelectorAll('.choice-group[data-field="screen"] .choice-btn')
+        .forEach(function(b){ b.classList.remove('active'); });
+      _fbTarget.classList.add('active');
+    }
+  }
+} catch(e) {}
 
 // 접수 저장소 — 퍼널 GAS 웹앱(prod /exec). 문의 접수와 같은 엔드포인트를 쓰고,
 //   action=staff_feedback_submit 이 멤버십 스프레드시트 '실무진 피드백' 탭에 적는다.
