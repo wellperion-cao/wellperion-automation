@@ -8486,8 +8486,22 @@ function _hRowBox(inner) { return '<div style="display:flex;flex-wrap:wrap;align
 function _renderHoldIntake() {
   var el = document.getElementById('holdStatusCard'); if (!el) return;
   if (_activeScope !== 'valid') { el.style.display = 'none'; return; }
+  // ★휴회는 '휴회 회원 관리'에서만 보인다 — 멤버십 회원관리에 들어가자마자 휴회 현황이 뜨던 것을 끊는다.
+  //   GM 2026-07-27(FB260727-123951): "멤버십 회원관리에 들어가면 휴회 현황이 나오는데, 이건 휴회 회원
+  //   관리에 나와야 하는 거라서 서로 연동 안 되게 해줘". 카드 자체는 그대로 두고 노출 조건만 좁힌다
+  //   (휴회 회원 관리 버튼 → openHoldManage 가 setHoldOnlyView(true) 로 켠다 = 그때만 보인다).
+  if (typeof _holdOnlyView !== 'undefined' && !_holdOnlyView) { el.style.display = 'none'; return; }
   // 접수대기·반려 = intake 탭(_holdIntake) / 진행중·완료 = 회원DB(_activeRows 휴회접수상태). 승인 완료된 intake는 회원 진행중으로 승계되므로 중복 표시 안 함.
-  var intake = _holdIntake || [];
+  // 개통 검증용 테스트 접수는 화면에서 뺀다 — 실무진에겐 처리할 일처럼 보이는데 처리할 게 없다.
+  //   GM 2026-07-27: "반려건은 삭제해줘(테스트 2건)". 실측 2건 모두 이름 '[테스트]…' + 전화 010-0000-xxxx.
+  //   ★'반려' 자체를 없애지 않은 이유: 진짜 반려 건이 생기면 그건 계속 보여야 한다. 테스트만 가린다.
+  //   시트 실물 삭제는 종합접수처(시우 소관)라 여기서 하지 않고 대조키로 전달했다 — 화면에서만 거른다.
+  var _isHoldTestRow = function(r){
+    var nm = String((r && r.name) || '');
+    var ph = String((r && r.phone) || '').replace(/\D/g, '');
+    return nm.indexOf('[테스트]') === 0 || /^0100000/.test(ph);
+  };
+  var intake = (_holdIntake || []).filter(function(r){ return !_isHoldTestRow(r); });
   var pending = intake.filter(function(r){ return (r.status || '접수대기') === '접수대기'; });
   var rejected = intake.filter(function(r){ return r.status === '반려'; });
   var ongoing = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '진행중'; });
