@@ -112,7 +112,11 @@ def plan_workapproval(cal: dict, today: date = None) -> dict:
     gate.auto_workapproval=False면 dry_run=True로 계획만 반환(SSOT 무변경)."""
     gate = cal.get("gate", {})
     live = bool(gate.get("auto_workapproval"))
-    cands = due_items(cal, today)
+    # 정기점검(법정 의무)만 결재선에 올린다. due_items 는 type 을 안 가리므로 여기서 좁힌다
+    # — 이 파일에는 이벤트(청소·회식 등 팀 내부 기록)도 같이 들어 있어서, 안 거르면 그런 항목까지
+    #   "[정기점검] …" 제목을 달고 업무·결재로 새 나간다(게이트를 켜는 순간 실무진 화면에 오탐이 뜬다).
+    #   due_items 자체를 좁히지 않는 이유 = 요약·부서 뷰 등 다른 소비자가 전체 타입을 봐야 한다.
+    cands = [it for it in due_items(cal, today) if str(it.get("type") or "") == "정기점검"]
     proposals = [{
         "title": f"[정기점검] {it['name']} — {it['dept']} · {it['cycle']}",
         "dept": it["dept"], "next_due": it.get("next_due", ""),
