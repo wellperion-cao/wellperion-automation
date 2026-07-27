@@ -8,16 +8,18 @@ REM   - 09:30 runs the KakaoTalk sales report; the sender drives the KakaoTalk w
 REM     so two senders at once could paste into the wrong room. 10:00 is after it finishes.
 REM   - Staff are at their desks by then, so the message is actually read.
 REM Rollback = disable the scheduled task. Sending is skipped automatically when nothing is missing.
+REM
+REM 2026-07-27 FIX (siwoo): this file used to be LF-only AND contained Korean text on the
+REM   git commit line. cmd.exe chopped those lines into fragments, so the batch never ran -
+REM   yet the scheduled task still reported exit code 0 (success) and nobody noticed.
+REM   Measured: logs\ops_fill_board.log did not exist at all after the 10:00 run.
+REM   Now: ASCII only + CRLF, and the commit moved into ops_fill_board.py --commit
+REM   (Korean paths/messages are safe in Python, and it routes through safe_commit as required).
+REM   Keep this file ASCII-only. Do not put Korean text in a .bat.
 cd /d C:\Users\jjky0\welperion-automation
 set LOGFILE=C:\Users\jjky0\welperion-automation\logs\ops_fill_board.log
 echo. >> "%LOGFILE%"
 echo ===== RUN %date% %time% ===== >> "%LOGFILE%"
-C:\Python314\python.exe scripts\ops_fill_board.py --send >> "%LOGFILE%" 2>&1
-if exist ".git\index.lock" (
-  echo [SKIP] index.lock present - commit skipped >> "%LOGFILE%"
-  goto :done
-)
-git commit -q -m "chore(coo): 주간 채움 보드 갱신 (ops_fill_board)" -- "3. 웰페리온 가이드/coo/todo/업무판 채움 보드.html" "status/boards/s3_cleanup_board.html" >> "%LOGFILE%" 2>&1
-:done
+C:\Python314\python.exe scripts\ops_fill_board.py --send --commit >> "%LOGFILE%" 2>&1
 echo ===== END %date% %time% ===== >> "%LOGFILE%"
 exit /b 0

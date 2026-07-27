@@ -448,6 +448,13 @@ def main():
     ap.add_argument("--date", help="기준일 YYYY-MM-DD (기본=오늘)")
     ap.add_argument("--send", action="store_true",
                     help="카톡 ★운영부 방에 카드+안내 발송(빈칸 0이면 자동 생략)")
+    # 커밋을 여기로 들여온 이유(2026-07-27 시우): 예약 배치(.bat)가 git commit 을 직접 부르면서
+    #   한글 경로·한글 메시지를 담고 있었는데, .bat 이 LF 줄바꿈이라 cmd 가 그 줄을 토막 내
+    #   배치 전체가 깨졌다(그래도 작업 결과는 0=성공으로 찍혀 아무도 몰랐다). 한글은 파이썬이
+    #   다루는 게 안전하므로 .bat 은 영문만 남기고 커밋은 이 관문으로 옮긴다.
+    #   커밋 자체도 raw git 이 아니라 safe_commit 을 경유한다(공용 작업트리 규칙).
+    ap.add_argument("--commit", action="store_true",
+                    help="생성된 보드 파일을 safe_commit 경유로 커밋(예약 배치용)")
     a = ap.parse_args()
     today = (datetime.datetime.strptime(a.date, "%Y-%m-%d").date() if a.date
              else datetime.date.today())
@@ -494,6 +501,17 @@ def main():
     print(f"진행 {S['act']} · 완비 {S['complete']} · 미등록 {S['unlinked']} · "
           f"쉬는중 {S['rest']} · 마감일 {S['need_sched']} · 점수 {S['need_score']} "
           f"· 제외(경영진) {S['excluded']}")
+    if a.commit:
+        import subprocess  # noqa: PLC0415
+        cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                            "safe_commit.py"),
+               "-m", "chore(coo): 주간 채움 보드 갱신 (ops_fill_board)", "--"] + list(OUTS)
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=300)
+            print((r.stdout or "").strip() or (r.stderr or "").strip())
+        except Exception as exc:   # 커밋 실패가 보드 생성을 무효로 만들지는 않는다
+            print(f"[WARN] 커밋 건너뜀: {type(exc).__name__}: {exc}")
+
     if a.send:
         send_kakao(S)
 
