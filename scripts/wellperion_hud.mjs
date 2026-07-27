@@ -215,8 +215,10 @@ function actTarget(tu) {
   const inp = (tu && tu.input) || {};
   const f = inp.file_path || inp.path || inp.notebook_path;
   if (f) return String(f).split(/[\\/]/).pop();
-  if (inp.command) return String(inp.command).trim().split(/\s+/).slice(0, 2).join(' ');
+  // ★명령문보다 설명을 먼저 쓴다 — 명령 앞머리는 변수 대입·경로라서 GM 에게 아무 뜻이 없다
+  //   (실측: 'W="C:/Users/…' 가 떴다). 설명은 사람이 읽으라고 쓴 한 줄이라 그대로 쓸 수 있다.
   if (inp.description) return String(inp.description);
+  if (inp.command) return String(inp.command).trim().split(/\s+/).slice(0, 2).join(' ');
   if (inp.pattern) return String(inp.pattern);
   if (inp.skill) return String(inp.skill);
   if (inp.subagent_type) return String(inp.subagent_type);
@@ -345,6 +347,22 @@ function loadQueue(cwd) {
   } catch { return null; }
 }
 
+/** 'GM 답을 기다리는 배'를 가려내는 단 하나의 잣대 — 내 배 칸과 전사 칸이 같은 것을 쓴다(약속 L01).
+ *  큐에 전용 칸이 없어 제목·next 문구로 잡는다. "(GM 승인 2026-07-25)" 같은 **이미 승인된** 표기는 제외. */
+const GM_WAIT = /(GM\s?(go|승인|결재|결정))(\s?(승인|결재))?\s?(후|대기|필요|받|로|요청)|\[GM보좌 제안\]|(승인|결재|검수)\s?대기/i;
+
+/** '내 배가 GM(또는 웰리) 답을 기다리는 중'인가 — 위 GM_WAIT(전사 결재 대기)와 다른 개념이라 따로 둔다.
+ *  전사 칸 = 남의 배가 **결재**에 걸려 있나 / 이 칸 = 내 배가 **답을 못 받아** 못 나아가나.
+ *
+ *  ★설명글의 단어로 판정하지 않는다. next 앞머리의 ⏳ 표식 **하나만** 본다.
+ *    왜: 단어로 잡으면 부정문에 걸린다 — 배9260 의 next 는 "시토(**GM 결정 불필요**·먼저 진행)"
+ *    인데 'GM 결정'이 들어 있다는 이유로 '답 기다리는 중'으로 잡혔다(실측). 이건 배10024
+ *    ('자율 선별기 오탐 — 설명글 단어로 배를 거르고 있음')와 **같은 뿌리**의 두 번째 사례다.
+ *    ⏳ 는 사람이 일부러 붙이는 선언이라 부정문에 휘둘리지 않는다. 관례는 이미 쓰이고 있어
+ *    새 칸을 만들 필요도 없다(약속 L21 — 장치를 늘리지 않는다).
+ *  ▸규칙: GM·웰리 답이 있어야 진행되는 배는 next 를 ⏳ 로 시작한다. */
+const GM_ANSWER = /^[\s·]*⏳/;
+
 // 배 무게 — 대기 목록을 무거운 순으로 늘어놓기 위한 값(항해 세계관 priority).
 const WEIGHT = { '🛳️크루즈': 3, '⛴️여객선': 2, '⛵돛단배': 1 };
 function weightOf(s) { return WEIGHT[String(s.priority || '')] || 0; }
@@ -406,7 +424,28 @@ function myShips(q, cwd, role) {
     const running = mine.filter((s) => s.status === 'IN_PROGRESS')
       .sort((a, b) => String(b.updated_at || b.enqueued_at || '').localeCompare(String(a.updated_at || a.enqueued_at || '')));
     const cur = running[0] ? { no: running[0].ship_no, title: running[0].title } : null;
-    return { run, wait: waitNos.length, waitNos, fresh, done, shortOf, cur };
+    // ★내가 GM 답을 기다리는 배 — "어떤 답을 기다리는건데?"(GM 2026-07-27)에 답하기 위한 값.
+    //   답은 이미 큐에 적혀 있었다(열린 배 18척이 next 에 'GM 확인·결재 대기'를 적어둠).
+    //   상태줄이 그걸 안 읽어서 '💬GM대기'라고만 하고 무엇인지는 말하지 못했다.
+    //   진행중인 배를 먼저 본다 — 지금 붙들고 있는 일이 막힌 게 가장 급하다.
+    //   ★판단 근거는 next(다음 한 걸음) 한 곳만 본다 — 거기가 '무엇을 기다리는지'를 적는 자리다.
+    //     제목까지 보면 자동 생성된 잔소리 배([GM보좌 제안] '30일째 미착수')가 잡혀 GM 이 답할 게
+    //     없는데도 답을 기다리는 것처럼 보인다(실측으로 걸러냄).
+    const askShip = [...running, ...waiting]
+      .filter((s) => !String(s.title || '').includes('[GM보좌 제안]'))
+      .find((s) => GM_ANSWER.test(String(s.next || '')));
+    const ask = askShip ? {
+      no: (shortOf[askShip.ship_no] != null) ? shortOf[askShip.ship_no] : askShip.ship_no,
+      // 무엇을 기다리는지 = next 의 알맹이. 관례가 '⏳GM 확인 1건 — <실제 내용>' 꼴이라
+      // 앞머리('확인 1건')가 아니라 **줄표 뒤 실제 내용**을 보여줘야 GM 이 되묻지 않는다.
+      gist: (() => {
+        const raw = String(askShip.next || '').replace(/^[⏳👁⚓🚢·\s]*/, '');
+        const parts = raw.split('—');
+        const body = (parts.length > 1 ? parts.slice(1).join('—') : parts[0]);
+        return body.split(/[\n|]/)[0].replace(/^[\s:·]*/, '').trim();
+      })(),
+    } : null;
+    return { run, wait: waitNos.length, waitNos, fresh, done, shortOf, cur, ask };
   } catch { return null; }
 }
 
@@ -417,7 +456,7 @@ function myShips(q, cwd, role) {
  *    ※"(GM 승인 2026-07-25)" 같은 **이미 승인된** 표기는 잡지 않는다. */
 function companyItems(q, role) {
   const now = Date.now();
-  const gmWait = /(GM\s?(go|승인|결재|결정))(\s?(승인|결재))?\s?(후|대기|필요|받|로|요청)|\[GM보좌 제안\]|(승인|결재|검수)\s?대기/i;
+  const gmWait = GM_WAIT;
   const A = [], P = [], N = [];
   for (const s of q) {
     if (!s || s.clevel === role || !NICK[s.clevel]) continue;
@@ -587,21 +626,24 @@ function buildLine(cwd, role, transcript) {
   //   동안에는 멎어 보였다. 세션 기록만이 보고와 무관하게 항상 움직인다 → 이걸 먼저 쓴다.
   let time = '';
   if (lv) {
-    if (!lv.working) {
-      // 내 차례가 끝난 상태 — '멈춘 것'이 아니라 'GM 답을 기다리는 중'임을 분명히.
-      // ★경과 초를 쓰지 않는다 — 이 상태에선 화면이 다시 그려지지 않아 숫자가 얼어붙는다.
-      //   대신 '몇 시부터 기다리는 중'인지를 적는다(얼어도 참인 값).
-      time = `${D}·${X}${D}💬GM대기 ${clockText(lv.at)}부터${X}`;
-    } else {
-      const stuck = lv.idle > 900;                       // 15분 넘게 아무 움직임 없음 = 멎었다
+    const when = `${clockText(lv.at)}부터`;
+    if (lv.working && lv.idle <= 900) {
+      // ① 돌고 있음 — 도구를 부를 때마다 다시 그려지므로 여기서만 경과 초가 실제로 움직인다.
       const name = lv.act ? (ACT[lv.act.tool] || lv.act.tool) : '작업중';
       const tgt = (lv.act && lv.act.target) ? ` ${D}${shortTitle(lv.act.target, 12)}${X}` : '';
       const sec = lv.elapsed != null ? lv.elapsed : lv.idle;   // 지시 시작점을 못 찾으면 마지막 움직임 기준
-      time = stuck
-        // 멎은 상태도 다시 그려질 보장이 없다 → 경과 대신 '언제 멎었는지' 시각으로.
-        ? `${D}·${X}${Y}⏸멎음${X}${tgt} ${R}${clockText(lv.at)}부터${X}`
-        // 일하는 중에는 도구를 부를 때마다 다시 그려진다 — 여기서만 경과 초가 실제로 움직인다.
-        : `${D}·${X}${G}🟢${name}${X}${tgt} ${G}${elapsedText(sec)}${X}`;
+      time = `${D}·${X}${G}🟢${name}${X}${tgt} ${G}${elapsedText(sec)}${X}`;
+    } else if (s && s.ask) {
+      // ② GM 이 답해야 진행되는 상태 — ★무엇을 기다리는지까지 적는다(GM 2026-07-27
+      //    "어떤 답을 기다리는건데?"). 배 번호 + 제목 핵심이라 되물을 필요가 없다.
+      time = `${D}·${X}${Y}❓GM답 ${s.ask.no} ${shortTitle(s.ask.gist, 14)}${X} ${D}${when}${X}`;
+    } else if (lv.idle > 1800) {
+      // ③ 아무도 안 기다리는데 30분 넘게 멈춤 = **문제다**(GM 2026-07-27 "멎음은 문제인 것 같은데").
+      //    기다릴 답도 없는데 일이 안 도는 것이므로 눈에 띄게 — 2시간 넘으면 빨강.
+      time = `${D}·${X}${lv.idle > 7200 ? R : Y}⏸멈춤 ${when}${X}`;
+    } else {
+      // ④ 방금 끝냄 — 정상. 조용히 둔다.
+      time = `${D}·💤대기 ${when}${X}`;
     }
   } else if (pg) {
     const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
