@@ -876,9 +876,11 @@ def rule_hold_abandoned() -> list[dict]:
     지금까지 아무 규칙에도 안 걸린 이유다. 보류는 정당한 상태지만, 재개 조건 없이
     마감까지 지나면 그건 보류가 아니라 표류다.
 
-    ★재개조건 필드가 아직 없어(배9836 GM 결재 대기) 대리 신호로 '마감 경과 + 무갱신'을
-    쓴다 — 그 배가 재개조건 입력 게이트를 붙이면 이 규칙의 판정 근거를 그 필드로 바꾼다
-    (지금은 없는 필드를 있다고 가정하지 않는다).
+    ★판정 근거가 '마감 경과 + 무갱신'인 이유: 마감이 있는 보류만 이 규칙이 본다.
+    ※2026-07-27 정정 — 원래 여기 '재개조건 필드가 아직 없다'고 적혀 있었으나 실측 결과
+      업무·결재 SSOT 에 보류사유·재개조건 칸이 이미 있다(값이 비어 있을 뿐). 그 칸을 직접 보는
+      판정은 rule_hold_without_resume 으로 따로 뒀다 — 이 규칙은 '마감까지 지난 방치'라는
+      더 무거운 신호를 계속 담당한다(두 규칙은 겹치지 않고 사각지대를 나눠 맡는다).
     """
     rows = _todo_rows()
     today = datetime.now(tz=KST).date()
@@ -908,6 +910,47 @@ def rule_hold_abandoned() -> list[dict]:
             "hint": "재개 조건·중단 사유를 적거나, 되살릴 게 아니면 종결 처리 필요",
             "ref": f"{r.get('id', title)}::hold-abandoned",
             "age": _classify_age(mod_date, today),
+        })
+    return gaps
+
+
+def rule_hold_without_resume() -> list[dict]:
+    """보류인데 '재개조건'이 비어 있는 업무 적발 — 조용히 사라지는 것을 막는다.
+
+    ★왜 필요한가(GM 2026-07-23 지시 · 배9836): "운영계획에 꼭 필요한데 일단 보류로 넣는 경우,
+    이유를 확인해서 넣고 나중에 계속 푸시해줄 수 있는 방식" 을 원하셨다. 재개 조건이 없으면
+    보류는 '나중에 다시 본다' 가 아니라 '없어진다' 가 된다.
+
+    ★위 rule_hold_abandoned 와 다른 점: 그 규칙은 '마감 경과 + 무갱신' 이라는 **대리 신호**로
+    판정한다(마감이 없는 보류는 아예 판정 불가라 건너뛴다). 이 규칙은 재개조건 칸 자체를 본다
+    — 마감이 없어도, 어제 보류했어도, 조건이 없으면 잡힌다.
+    ※2026-07-27 실측: 보류 4건 전부 보류사유·재개조건이 빈칸이고 그중 최장 47일 무갱신이었다.
+      rule_hold_abandoned 의 옛 주석은 '재개조건 필드가 아직 없다' 고 적고 있었으나 실제로는
+      업무·결재 SSOT 에 보류사유·재개조건 두 칸이 이미 존재한다(비어 있을 뿐) — 주석이 낡았던 것.
+    """
+    rows = _todo_rows()
+    today = datetime.now(tz=KST).date()
+    gaps: list[dict] = []
+    for r in rows:
+        if str(r.get("상태") or "").strip() != "보류":
+            continue
+        resume = str(r.get("재개조건") or "").strip()
+        reason = str(r.get("보류사유") or "").strip()
+        if resume:
+            continue                      # 조건이 있으면 '멈춰둔 것' — 정상
+        mod_date = _parse_iso_date(str(r.get("수정일") or "")[:10])
+        stale = (today - mod_date).days if mod_date else None
+        title = r.get("업무명", r.get("id", "?"))
+        missing = "재개조건" + ("·보류사유" if not reason else "")
+        gaps.append({
+            "role": "coo",
+            "severity": "mid" if (stale or 0) >= 30 else "low",
+            "title": f"{_truncate_title(str(title))} — 보류인데 재개조건이 없음",
+            "detail": f"상태=보류 · 빈칸={missing}"
+                      + (f" · 마지막 수정 {mod_date.isoformat()}({stale}일 전)" if mod_date else ""),
+            "hint": "언제 다시 볼지(날짜 또는 선행조건)를 적거나, 되살릴 게 아니면 종결한다",
+            "ref": f"{r.get('id', title)}::hold-no-resume",
+            "age": _classify_age(mod_date, today) if mod_date else "신규",
         })
     return gaps
 
@@ -1346,6 +1389,7 @@ _RULES: dict[str, list] = {
         rule_approval_stale_pending,       # 2026-07-23 신설 — 결재 대기 N일 초과
         rule_task_deadline_passed_active,  # 2026-07-23 신설 — 업무 마감(종료일) 경과인데 방치
         rule_hold_abandoned,               # 2026-07-25 신설 — 보류인 채 마감 지나고 방치(위 규칙 사각지대)
+        rule_hold_without_resume,          # 2026-07-27 신설 — 보류인데 재개조건 빈칸(조용한 소멸 차단·GM 배9836)
         rule_reception_stale_unresolved,         # 2026-07-23 신설 — 접수 후 N일 미처리(분실물 제외)
     ],
     "cpo": [
