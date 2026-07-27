@@ -9323,11 +9323,34 @@ function _ctAddRow(item) {
   _resFillTimeOptions(ti, item.time);   // 06~22시 30분 단위 드롭다운 — 예약 모달과 동일 로직 재사용
   // 컨택한 사람(배101, 2026-07-25 시포·GM) — 자유메모 끝 '-이름' 수기 서명을 대체하는 구조화 필드.
   //   드롭다운=OWNER_OPTIONS 재사용(명단 이원화 방지). 과거 행에 명단 외 이름이 있으면 그 값을 옵션으로 살려 보존.
+  // ★강습 컨택은 그 종목 강사 명단으로 바꾼다 (GM 결정 A안 2026-07-27 · 최은지 강사 신고 FB260727-102857
+  //   "컨택 내용 추가에 담당자가 운영부 매니저밖에 없어서 설정이 불가합니다!").
+  //   원인: 여기가 강습이든 멤버십이든 무조건 OWNER_OPTIONS(운영부 8명)만 써서, 강사는 자기 이름을
+  //   고를 수가 없었다 — 강사가 컨택해도 누가 했는지 기록이 안 남는다.
+  //   명단은 새로 만들지 않고 강습 담당 드롭다운이 쓰는 _lessonRosterFor 를 그대로 재사용한다(정본 하나).
+  //   종목이 특정되지 않은 다종목 행은 그 회원의 종목들을 합쳐서 준다(엉뚱한 종목 강사는 안 섞인다).
+  //   기존 값 보존은 아래 그대로 — 예전에 운영부 이름으로 기록된 건 계속 남고 다시 고를 수도 있다.
   var bi = document.createElement('select'); bi.className = 'ct-by';
   bi.style.cssText = 'padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit';
   (function(){
     var b0 = document.createElement('option'); b0.value = ''; b0.textContent = '컨택한 사람 — 선택'; bi.appendChild(b0);
     var _names = OWNER_OPTIONS.slice();
+    try {
+      var _ctx = (_ctModal && _ctModal.ctx) || {};
+      if (_ctx.source === 'lesson' && typeof _lessonRosterFor === 'function') {
+        var _isY = (_ctx.t === 'youth');
+        var _sp = String(_ctx.sport || '').trim();
+        var _sports = _sp ? [_sp] : ((_ctModal && _ctModal.srcRow && typeof _lessonSportSplit === 'function')
+          ? _lessonSportSplit(_ctModal.srcRow.sport) : []);
+        var _seen = {}, _ros = [];
+        _sports.forEach(function(sk){
+          _lessonRosterFor(sk, _isY || /WSC/i.test(String(sk))).forEach(function(nm){
+            if (nm && !_seen[nm]) { _seen[nm] = 1; _ros.push(nm); }
+          });
+        });
+        if (_ros.length) _names = _ros;   // 종목을 못 가리면(_ros 비면) 운영부 명단 그대로 — 빈 드롭다운 방지
+      }
+    } catch (_byErr) { /* 명단 산출 실패해도 컨택 기록 자체는 막지 않는다 */ }
     var _cur = String(item.by || '').trim();
     if (_cur && _names.indexOf(_cur) < 0) _names.push(_cur);   // 명단 외 과거 값 보존
     _names.forEach(function(nm){ var o = document.createElement('option'); o.value = nm; o.textContent = nm; bi.appendChild(o); });
