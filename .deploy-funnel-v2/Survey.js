@@ -8487,29 +8487,28 @@ function _processAction(body) {
   //   ⚠️ 구 self-service 미리보기(member_hold_preview 이름+전화 본인조회)=GM 지시로 폐기(온라인 조회 금지) → 비활성 스텁.
   // ★저장 위치 이전(배9948 · GM A안 2026-07-23) — '접수는 종합접수처 시트로 통합, 관리는 멤버십 회원관리에서'.
   //   전: 회원 DB(MEMBER_SPREADSHEET_ID)의 '휴회접수' 탭 → 다른 접수(VOC·분실물 등)와 따로 놀았다.
-  //   후: 종합접수처 데이터 시트로 통합. 회원 DB 쪽 옛 탭은 지우지 않는다(원본 보존 · 이관은 대조키로만).
-  //   ⚠️ 이 스크립트(cao 실행)가 해당 시트에 편집 권한이 없으면 열 수 없다 → 열기 실패 시 옛 위치로
-  //      자동 폴백해 접수를 떨어뜨리지 않는다(회원 접수가 조용히 유실되는 것보다 낫다).
+  //   후: 종합접수처 데이터 시트로 통합. 이관 당시엔 회원 DB 쪽 옛 탭을 보존(원본 보존 · 이관은 대조키로만)했으나,
+  //      2026-07-24 실측(탭 42개 전수 확인 0건 + Sheets API 재확인) 결과 그 옛 탭은 이미 없다 — 갈 곳이 없는
+  //      죽은 폴백이라 배10041로 제거(2026-07-27). 종합접수처를 열 수 없으면 이제 그대로 null(명시적 실패).
   var HOLD_INTAKE_SS_ID = '17ly-_udUYgOoPZnv6FFV9vq_R2D41q4ZYrGaGYt9rto';   // 종합접수처 데이터 시트
   var HOLD_INTAKE_TAB = '휴회접수';
   // '휴회종료일' 신설(배9948 ②) — 회원 화면이 holdEnd 를 보내는데 받을 칸이 없어 유실되고 있었다.
   //   기간이 안 남으면 직원이 시작일+일수로 매번 역산해야 한다.
   var HOLD_INTAKE_HDR = ['접수일시', '성함', '연락처', '구분', '휴회시작일', '휴회종료일', '희망일수', '사유', '상태', '처리일시', '처리메모'];
-  // 접수 탭 열기 — 종합접수처 우선, 실패 시 회원 DB(옛 위치)로 폴백. create=true 면 없을 때 만든다.
+  // 접수 탭 열기 — 종합접수처(17ly…) 단일 위치. create=true 면 없을 때 만든다.
+  //   ※ 회원 DB(옛 위치) 폴백 분기 삭제(배10041·2026-07-27) — 회원 DB에 '휴회접수' 탭이 이미 없음을
+  //     실측 확인(탭 42개 전수 확인 0건 + Sheets API 메타데이터 조회로 재확인, 2026-07-24 시우 1차·시포 2차).
+  //     폴백은 항상 실패하는 죽은 분기였다 — 제거해도 동작 동일(주 경로 실패 시 그대로 null 반환).
   function _holdIntakeSheet_(create) {
-    var order = [HOLD_INTAKE_SS_ID, MEMBER_SPREADSHEET_ID];
-    for (var oi = 0; oi < order.length; oi++) {
-      try {
-        var ss = SpreadsheetApp.openById(order[oi]);
-        var sh = ss.getSheetByName(HOLD_INTAKE_TAB);
-        if (!sh && create && oi === 0) {   // 새 위치에만 자동 생성(옛 위치에 새로 만들지 않는다)
-          sh = ss.insertSheet(HOLD_INTAKE_TAB);
-          sh.getRange(1, 1, 1, HOLD_INTAKE_HDR.length).setValues([HOLD_INTAKE_HDR]);
-        }
-        if (sh) return sh;
-      } catch (e) { /* 권한 없음·시트 없음 → 다음 후보 */ }
-    }
-    return null;
+    try {
+      var ss = SpreadsheetApp.openById(HOLD_INTAKE_SS_ID);
+      var sh = ss.getSheetByName(HOLD_INTAKE_TAB);
+      if (!sh && create) {
+        sh = ss.insertSheet(HOLD_INTAKE_TAB);
+        sh.getRange(1, 1, 1, HOLD_INTAKE_HDR.length).setValues([HOLD_INTAKE_HDR]);
+      }
+      return sh || null;
+    } catch (e) { return null; /* 권한 없음·시트 없음 */ }
   }
   var HLD_MAX_COUNT = 3, HLD_MAX_TOTAL = 60, HLD_MIN_ONCE = 7, HLD_MAX_ONCE = 60;
   // ★신규/연장 구분(2026-07-23 GM 확정) — 실측 근거: 휴회신청 응답 시트에 '1회차 연장' 5일 건(김호선) 존재.
@@ -8671,7 +8670,7 @@ function _processAction(body) {
 
   // ERP 휴회 접수 관리 — '휴회접수' 탭 리스트 + 서버 자동판정(회원DB 전화 매칭·3회/총60일/1회 7~60). ERP 게이트 뒤 read 전용.
   if (action === 'member_hold_intake_list') {
-    // 접수 탭은 종합접수처(이전 후) / 회원 DB(옛 위치) 어느 쪽이든 같은 함수로 연다(배9948).
+    // 접수 탭은 종합접수처(17ly…) 단일 위치에서 연다(배9948 이전 · 배10041 옛 위치 폴백 제거).
     //   회원 매칭용 유효회원 시트는 계속 회원 DB에서 읽는다 — 두 시트를 섞지 않는다.
     var lss = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
     var lSh = _holdIntakeSheet_(false);
