@@ -155,6 +155,23 @@ def _derive_advice(item: dict) -> str:
     return _truncate_word(cleaned, 70)
 
 
+def _dedupe_advice(desc: str, advice: str) -> str:
+    """핵심조언이 간단설명과 같은 문장으로 시작하면 겹치는 앞부분을 걷어내고
+    다른 각도만 남긴다(웰리 결정 2026-07-27 — 한 줄에서 같은 말 두 번 읽지 않게).
+    걷어내고 남는 게 없으면 빈 문자열 — 억지로 채우지 않는다(빈 칸 > 중복)."""
+    d = str(desc or "").strip()
+    a = str(advice or "").strip()
+    if not d or not a:
+        return a
+    if a == d:
+        return ""
+    if a.startswith(d):
+        rest = a[len(d):].lstrip()
+        rest = re.sub(r"^[.·\-,:]+\s*", "", rest)
+        return rest
+    return a
+
+
 # ── 날짜 유틸 ──────────────────────────────────────────────────────────────
 def _to_kst_date(v: str) -> str:
     """GAS ISO datetime → KST YYYY-MM-DD (off-by-one 없이)."""
@@ -466,7 +483,7 @@ def _item_to_row(it: dict, ship_col_extra: str = "") -> tuple[str, str, str, str
     due_s = f" ~{due[5:10]}" if due and len(due) >= 10 else ""
     title_col  = f"{title}{badges}{due_s}".strip()
     desc       = _derive_desc(it)
-    advice     = _derive_advice(it)
+    advice     = _dedupe_advice(desc, _derive_advice(it))
     ship_col   = f"{icon} {ship_col_extra}".strip() if ship_col_extra else icon
     return (ship_col, nick, title_col, desc, advice)
 
@@ -583,7 +600,8 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
             done_rows.append(_item_to_row(it, ship_col_extra=tag))
         for it in secs["drift"]:
             # 표류: 🌀 꼬리표, 핵심조언에 👉 촉구 반드시 포함 (약속 L16)
-            advice = _derive_advice(it)
+            desc  = str(it.get("간단설명") or "").strip()
+            advice = _dedupe_advice(desc, _derive_advice(it))
             advice_col = f"{advice} — 👉 다음 뭐 할지 정하세요" if advice else "👉 다음 뭐 할지 정하세요"
             ship  = it["_ship"]
             icon  = ship["icon"]
@@ -591,7 +609,6 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
             title = str(it.get("title", ""))
             badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
             title_col = f"{title}{badges}".strip()
-            desc  = str(it.get("간단설명") or "").strip()
             done_rows.append((f"{icon} 🌀", nick, title_col, desc, advice_col))
         lines.append(_md_table(done_rows))
     else:

@@ -596,6 +596,8 @@ from hangro_board import (  # noqa: E402
     build_board as hangro_build_board,
     _md_table as hangro_md_table,
     _item_to_row as hangro_item_to_row,
+    STATUS_INPROGRESS as _hangro_status_inprogress,
+    _owner_label as _hangro_owner_label,
 )
 
 
@@ -1170,6 +1172,48 @@ TELEGRAM_MSG_LIMIT = 4096
 _DONE_SECTION_HEADER = "### 🏁 입항 완료 (오늘)"
 _DONE_FOLD_MAX_ROWS = 10
 
+# ── 대기중 접기 (2026-07-27 웰리 지시 — 업무보고방 32척 과다·GM "너무 많네") ──────
+# 진행중(🚢)은 전부 표로 남기고, 대기중(⚓)은 무게 무거운 순 상위 N척만 표로,
+# 나머지는 "그 외 N척 — 배 번호만" 한 줄로 접는다. 큐에서 배를 지우는 게 아니라
+# 텔레그램 렌더 방식만 바꾼다(secs 판정·집계는 100% 그대로) — done 접기와 동일 원리.
+_WAIT_SECTION_HEADER = "### ⚓ 대기중"
+_WAIT_NEXT_HEADER = _DONE_SECTION_HEADER
+_WAIT_FOLD_MAX_ROWS = 5
+
+
+def _fold_board_waiting_section(board_text: str, secs: dict, max_rows: int = _WAIT_FOLD_MAX_ROWS) -> str:
+    """
+    hangro_board.build_board() 결과의 '⚓ 대기중' 표만 무게 무거운 순(secs['today']가
+    이미 그 순서 — hangro_board._classify가 정렬) 상위 max_rows척 + '그 외 N척 —
+    배 번호만' 한 줄로 접는다. 진행중(🚢)·입항완료(🏁)는 손대지 않는다.
+    """
+    today = secs.get("today", [])
+    inprog = [it for it in today
+              if it["status"] in _hangro_status_inprogress
+              or str(it["status"]).upper() in _hangro_status_inprogress]
+    waiting = [it for it in today if it not in inprog]
+    if len(waiting) <= max_rows:
+        return board_text  # 접을 필요 없음 — 원문 그대로
+
+    head, sep, rest = board_text.partition(_WAIT_SECTION_HEADER)
+    if not sep:
+        return board_text  # 마커 미검출 — 크래시 방지, 원문 유지(fallback)
+    _wait_body, nsep, after = rest.partition(_WAIT_NEXT_HEADER)
+    if not nsep:
+        return board_text  # 다음 섹션 마커 미검출 — fallback
+
+    top = waiting[:max_rows]
+    remainder = waiting[max_rows:]
+    wait_rows = []
+    for it in top:
+        st = str(it.get("status", ""))
+        tag = "보류" if st in {"보류", "ON_HOLD"} else ""
+        wait_rows.append(hangro_item_to_row(it, ship_col_extra=tag))
+    remainder_nos = ", ".join(_hangro_owner_label(it) for it in remainder)
+
+    body = "\n" + hangro_md_table(wait_rows) + f"그 외 {len(remainder)}척 — {remainder_nos}\n\n"
+    return head + sep + body + nsep + after
+
 
 def _fold_board_done_section(board_text: str, secs: dict, max_rows: int = _DONE_FOLD_MAX_ROWS) -> str:
     """
@@ -1248,6 +1292,7 @@ def _board_text_and_secs(gas_items: list[dict], queue_items: list[dict]) -> tupl
     """hangro_board.build_board() 호출 + 텔레그램 길이 접기(공유 헬퍼).
     build_telegram_report / build_split_reports 양쪽이 동일 조립을 재사용(중복 구현 금지)."""
     board_text, secs = hangro_build_board(gas_items, queue_items)
+    board_text = _fold_board_waiting_section(board_text, secs)
     board_text = _fold_board_done_section(board_text, secs)
     return board_text, secs
 
