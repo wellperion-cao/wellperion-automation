@@ -65,10 +65,20 @@ def gas_get(
 
 
 def utc_iso_to_kst_date(iso_str: str) -> str:
-    """UTC ISO 8601 문자열(Z suffix) → KST YYYY-MM-DD."""
+    """문의 API '시각' 필드 → KST YYYY-MM-DD.
+    ★2026-07-27 시토(배10357): GAS inquiry_list가 그동안 Date를 그대로 JSON.stringify해
+    UTC ISO('...Z')로 내보내던 버그를 서버에서 KST 문자열('YYYY-MM-DD HH:mm:ss', Z 없음)로
+    고쳤다(.deploy-funnel-v2/Survey.js). 그 GAS 배포가 나가기 전까지는 라이브가 여전히
+    UTC를 준다 — 배포 시점과 이 코드 반영 시점이 어긋나도 이중변환 사고가 안 나도록
+    두 포맷을 모두 정확히 처리한다(Z 있으면 UTC로 보고 +9시간, 없으면 이미 KST이므로
+    그대로 날짜만 취한다)."""
+    s = str(iso_str or "").strip()
+    if not s:
+        return ""
     try:
-        s = str(iso_str).rstrip("Z").replace("T", " ")
-        dt_utc = datetime.fromisoformat(s).replace(tzinfo=timezone.utc)
-        return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
+        if s.endswith("Z"):
+            dt_utc = datetime.fromisoformat(s.rstrip("Z").replace("T", " ")).replace(tzinfo=timezone.utc)
+            return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
+        return s[:10]
     except Exception:
         return ""

@@ -591,6 +591,51 @@ function _collectLessonRegByName_() {
 // 강습 종목별 문의수 — 팀시트(LESSON_TEAM_SHEETS) 전체 행을 타임스탬프(B열 등) 기준 기간 집계.
 // 각 팀시트 = 통합 문의의 종목별 분배본 → 행 1개 = 문의 1건(상태 무관). from/to(YYYY-MM-DD KST) 범위만 카운트, 미지정=전체.
 // 반환: { '수영 성인': {명, 유형, inquiries|null, sheetFound}, ... } (시트 미발견=null, 정직표기).
+// ─── [배179 · 2026-07-27] 종목별 '문의'를 문의 응답 탭에서 집계한다 ──────────────────
+//  왜 바꿨나: 기존 _collectLessonInqByName_ 은 **팀시트**의 타임스탬프로 문의를 셌다. 그런데
+//  팀시트 11곳은 폼 응답 칸(타임스탬프·성함·휴대폰…)이 비어 있어(배155·배173) 타임스탬프가
+//  없다 → 수영을 뺀 전 종목이 '문의 0' 으로 나왔다. 화면 실측: 성인 골프·스쿼시·P.T·필라테스·
+//  아쿠아로빅 전부 0 인데 등록은 118·49·108·72·25. 문의보다 등록이 많은 불가능한 표였다.
+//  문의의 진짜 원천은 강습 '응답' 탭이다 — 거기서 종목을 표준 함수 _sportBuckets_ 로 센다.
+//
+//  ★이름 두 체계 주의(reference: _sportBuckets_ 주석). 버킷명 ≠ LESSON_DISPLAY 명 이라
+//  정확일치로 이으면 조용히 0 이 된다. 아래 별칭표로만 잇고, 못 이으면 null(미측정)로 둔다.
+//   · '체조'  → '체조&트램폴린'
+//   · '모자수영' 은 버킷이 없다(_sportBuckets_ 가 /수영/ 으로 잡아 '수영'에 합침) → null 로 둔다.
+//     0 으로 적으면 '문의가 없다'는 거짓말이 된다. 폼이 모자수영을 따로 받기 전엔 분리 불가.
+function _lessonInqBySportFromForms_(from, to) {
+  var out = {};   // { '성인강습': {'수영': 12, ...}, '유소년강습': {...} }
+  var cFrom = from ? new Date(from + 'T00:00:00+09:00') : null;
+  var cTo   = to   ? new Date(to   + 'T23:59:59+09:00') : null;
+  ['성인강습', '유소년강습'].forEach(function(type) {
+    var tally = {};
+    try {
+      var gid = (type === '유소년강습') ? LESSON_GID_YOUTH : LESSON_GID;
+      (_lessonReadRows_(gid) || []).forEach(function(r) {
+        if (cFrom || cTo) {
+          var ts = r.timestamp ? new Date(r.timestamp) : null;
+          if (!ts || isNaN(ts.getTime())) return;          // 시각 없으면 기간 판정 불가 → 제외
+          if (cFrom && ts < cFrom) return;
+          if (cTo   && ts > cTo)   return;
+        }
+        _sportBuckets_(r.sport).forEach(function(b) {
+          if (b === '기타') return;
+          tally[b] = (tally[b] || 0) + 1;
+        });
+      });
+    } catch (e) { return; }
+    out[type] = tally;
+  });
+  return out;
+}
+// 버킷명 → LESSON_DISPLAY 명. 못 이으면 null(미측정) — 다른 값으로 폴백하지 않는다.
+function _lessonInqLookup_(tally, 명) {
+  if (!tally) return null;
+  if (명 === '모자수영') return null;                 // 버킷이 '수영'에 합쳐져 분리 불가
+  var key = (명 === '체조&트램폴린') ? '체조' : 명;
+  return (tally[key] === undefined) ? null : tally[key];
+}
+
 function _collectLessonInqByName_(from, to) {
   var out = {};
   var cFrom = (from) ? new Date(from + 'T00:00:00+09:00') : null;
@@ -5329,6 +5374,10 @@ function _processAction(body) {
   }
 
   // ─── 문의 목록 ───
+  //   ★시각 직렬화 = KST 문자열 고정(배10357 시토 2026-07-27). Date 객체를 obj에 그대로 담아 _json()
+  //   (JSON.stringify)에 넘기면 Date.toJSON()이 UTC ISO('...Z')로 바꿔 화면이 9시간 어긋난다
+  //   (원본 시트 16:45:21 KST ↔ 과거 응답 07:45:21). lesson_inquiry_list가 이미 쓰는 _miToISOTime_
+  //   재사용(새 함수 금지·약속 L01) — Date getter가 스크립트 타임존(Asia/Seoul)을 그대로 읽어 KST 문자열로 낸다.
   if (action === 'inquiry_list') {
     const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
     const last = sh.getLastRow();
@@ -5338,12 +5387,13 @@ function _processAction(body) {
       data.forEach(row => {
         const obj = {};
         INQUIRY_HEADERS.forEach((h, i) => { obj[h] = row[i]; });
+        obj['시각'] = _miToISOTime_(obj['시각']);
         items.push(obj);
       });
     }
     // 구글폼 문의 합류 (개인정보 제외 — 시각·유형·채널만 노출)
     _collectFormInquiries_().forEach(function(f) {
-      items.push({ id: '', 시각: f.시각, 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
+      items.push({ id: '', 시각: _miToISOTime_(f.시각), 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
     });
     return _json({ ok: true, count: items.length, data: items });
   }
@@ -10268,7 +10318,8 @@ function _processAction(body) {
     if (lbHit && !_nc) return _json(JSON.parse(lbHit));
 
     var byName    = _collectLessonRegByName_();              // 등록(누적): { 'P.T 성인': {registered|null,...}, ... }
-    var byNameInq = _collectLessonInqByName_(lbFrom, lbTo);  // 문의(기간별): { 'P.T 성인': {inquiries|null,...}, ... }
+    var byNameInq = _collectLessonInqByName_(lbFrom, lbTo);  // (others 표기용 · 팀시트 기준 — 신뢰 낮음)
+    var inqBySport = _lessonInqBySportFromForms_(lbFrom, lbTo);  // [배179] 문의 정본 = 강습 응답 탭
     var usedSheets = {};
     var data = {};
 
@@ -10289,12 +10340,13 @@ function _processAction(body) {
           var rec  = byName[item.sheet];
           var recI = byNameInq[item.sheet];
           if (rec)  { reg = rec.registered; src = rec.statusHeader; }  // null이면 그대로(데이터 미연결)
-          if (recI) { inq = recI.inquiries; }
+          inq = _lessonInqLookup_(inqBySport[grp], item.명);   // [배179] 문의 = 응답 탭 기준
           sheetUrl = _lessonSheetUrl(item.sheet);
         } else if (item.ledger) {
           // 발레·바레(external 해제): 등록원장(강습 등록현황) SUC 카운트로 집계. roster 없으면 0(정직·날조 아님).
           if (ledgerRoster === null) ledgerRoster = _ledgerRosterByType_(grp);
           reg = (ledgerRoster[item.명] || []).length;
+          inq = _lessonInqLookup_(inqBySport[grp], item.명);   // [배179] 문의 = 응답 탭 기준
           src = '등록원장(강습 등록현황)';
         }
         return { 명: item.명, registered: reg, inquiries: inq, sheet: item.sheet || null, sheetUrl: sheetUrl, statusSource: src, external: !!item.external, note: item.note || '' };
@@ -10325,7 +10377,7 @@ function _processAction(body) {
       ok: true,
       generatedAt: _now(),
       range: { from: lbFrom, to: lbTo },
-      basis: '종목별 문의 = 팀시트 행을 타임스탬프 기준 기간 집계 · 등록 = 팀시트 상태열 수강등록(SUC/등록) 누적 · 팀시트 없는 종목(발레·바레)=등록원장(강습 등록현황) SUC 카운트 기반',
+      basis: '종목별 문의 = 강습 응답 탭(성인·유소년)을 종목 표준분류(_sportBuckets_)로 기간 집계 [2026-07-27 변경 — 종전 팀시트 타임스탬프 기준은 팀시트 응답칸 공백으로 수영 외 전 종목이 0 이었다] · 모자수영은 표준분류가 수영에 합쳐 분리 불가라 미측정 · 등록 = 팀시트 상태열 수강등록(SUC/등록) 누적 [주의: 팀시트 11곳은 등록 행에 성함·휴대폰이 비어 있어 실인원 확인 불가 — 배155/배173] · 팀시트 없는 종목(발레·바레·뮤지컬)=등록원장 SUC 카운트',
       data: data,
       others: others,
       unmatched: unmatched

@@ -206,11 +206,17 @@ except Exception:
         return None
 
     def _utc_iso_to_kst_date(iso_str: str) -> str:
+        # ops_shared.utc_iso_to_kst_date와 동일 로직(폴백 경로 — import 실패시만 사용).
+        # 2026-07-27 시토(배10357): GAS inquiry_list KST 직렬화 전환에 맞춰 Z유무 분기 추가(이중변환 방지).
         from datetime import timezone as _tz
+        s = str(iso_str or "").strip()
+        if not s:
+            return ""
         try:
-            s = str(iso_str).rstrip("Z").replace("T", " ")
-            dt_utc = datetime.fromisoformat(s).replace(tzinfo=_tz.utc)
-            return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
+            if s.endswith("Z"):
+                dt_utc = datetime.fromisoformat(s.rstrip("Z").replace("T", " ")).replace(tzinfo=_tz.utc)
+                return (dt_utc + timedelta(hours=9)).strftime("%Y-%m-%d")
+            return s[:10]
         except Exception:
             return ""
 
