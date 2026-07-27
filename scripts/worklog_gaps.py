@@ -955,6 +955,67 @@ def rule_hold_without_resume() -> list[dict]:
     return gaps
 
 
+def rule_hold_resume_due() -> list[dict]:
+    """보류 건의 재개조건이 충족됐는데 아직 보류인 것 적발 — '다시 볼 때' 가 됐다는 신호.
+
+    ★왜 필요한가(GM 2026-07-23 지시 · 배9836 ③): 보류하면서 조건을 적게 만드는 게이트는 이미 있다
+    (업무 현황 SSOT holdTask — 사유 5자 이상 + 재개조건 2형식 강제). 그런데 **조건이 충족돼도
+    아무도 다시 올려주지 않으면** 조건을 적는 의미가 없다. 사전(입력 게이트)과 사후(감지)가 둘 다
+    있어야 조용한 소멸이 막힌다.
+
+    조건 형식은 화면이 저장하는 그대로만 읽는다(새 형식을 발명하지 않는다):
+      · DATE:YYYY-MM  — 그 달의 1일이 지나면 충족
+      · AFTER:<배번호 또는 업무ID> — 그 배가 DONE 이거나 아카이브로 내려가면 충족
+    자유서술은 애초에 화면이 막으므로 여기서도 판정하지 않고 조용히 넘긴다
+    (판정 못 하는 값을 충족으로 치면 엉뚱한 걸 되살린다).
+    """
+    rows = _todo_rows()
+    today = datetime.now(tz=KST).date()
+
+    done_keys: set[str] = set()
+    for src in (_load_ship_queue(), _load_json(SHIP_QUEUE_ARCHIVE_PATH, [])):
+        for s in (src if isinstance(src, list) else []):
+            if not isinstance(s, dict):
+                continue
+            if str(s.get("status") or "") not in ("DONE", "ARCHIVED"):
+                continue
+            for k in ("ship_no", "short_no", "task_id"):
+                v = s.get(k)
+                if v not in (None, ""):
+                    done_keys.add(str(v).strip().upper())
+
+    gaps: list[dict] = []
+    for r in rows:
+        if str(r.get("상태") or "").strip() != "보류":
+            continue
+        cond = str(r.get("재개조건") or "").strip()
+        if not cond:
+            continue                       # 조건 없음 = rule_hold_without_resume 담당
+        title = _truncate_title(str(r.get("업무명", r.get("id", "?"))))
+        due_reason = None
+        m = re.match(r"^DATE:(\d{4})-(\d{2})$", cond)
+        if m:
+            y, mo = int(m.group(1)), int(m.group(2))
+            if (today.year, today.month) >= (y, mo):
+                due_reason = f"{y}년 {mo}월이 됐습니다"
+        else:
+            a = re.match(r"^AFTER:(.+)$", cond)
+            if a and a.group(1).strip().upper() in done_keys:
+                due_reason = f"기다리던 업무({a.group(1).strip()})가 끝났습니다"
+        if not due_reason:
+            continue
+        gaps.append({
+            "role": "coo",
+            "severity": "mid",
+            "title": f"{title} — 다시 볼 때가 됐습니다",
+            "detail": f"상태=보류 · 재개조건={cond} · {due_reason}",
+            "hint": "보류를 풀고 진행하거나, 더 미룰 거면 재개조건을 새로 적는다",
+            "ref": f"{r.get('id', title)}::hold-resume-due",
+            "age": "신규",
+        })
+    return gaps
+
+
 _RECEPTION_EXCLUDE_CATEGORY = "분실물 접수"  # 분실물=주인이 찾아갈 때까지 대기가 정상이라 미처리와 다름
 _RECEPTION_DONE_STATUSES = {"완료", "처리완료", "해결"}
 
@@ -1390,6 +1451,7 @@ _RULES: dict[str, list] = {
         rule_task_deadline_passed_active,  # 2026-07-23 신설 — 업무 마감(종료일) 경과인데 방치
         rule_hold_abandoned,               # 2026-07-25 신설 — 보류인 채 마감 지나고 방치(위 규칙 사각지대)
         rule_hold_without_resume,          # 2026-07-27 신설 — 보류인데 재개조건 빈칸(조용한 소멸 차단·GM 배9836)
+        rule_hold_resume_due,              # 2026-07-27 신설 — 재개조건 충족인데 아직 보류(다시 볼 때·GM 배9836 ③)
         rule_reception_stale_unresolved,         # 2026-07-23 신설 — 접수 후 N일 미처리(분실물 제외)
     ],
     "cpo": [
