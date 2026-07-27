@@ -1057,8 +1057,17 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         print(f"      사유: {c['reason'][:90]}")
 
     # ── 제안 배 등록: 비가역·게이트만 · dedup · cap ──
+    # ★long_pending 은 배를 만들지 않는다 (GM 지시 2026-07-27 "내가 다 확인해서 수동으로 정리해야 하나?").
+    #   기존 동작: 오래 멈춘 배마다 '[GM보좌 제안] N일째 미착수' 배를 **하나 더** 만들었다 →
+    #   목록이 두 배가 되고, 원본과 제안이 나란히 떠서 GM 이 둘을 대조해 골라내야 했다.
+    #   실측(2026-07-27): 열린 배 90척 중 진짜 정리 대상은 이 자동 생성분뿐이었다 —
+    #   즉 '정리할 쓰레기'를 만들어낸 게 이 줄이다. 포착 자체는 로그에 그대로 남기고(신호 유지),
+    #   화면에는 원본 배가 '오래 멈춤'으로 보이게 한다(자율현황 필터) — 배는 늘리지 않는다.
+    #   약속 L21(장치를 늘리지 않는다) · 기억 '배 중복생성 금지 — 하위단계는 기존 배에 append'.
+    NO_SHIP_TYPES = {"long_pending"}
     existing = existing_proposal_keys(active)
-    candidates = [c for c in irr if c["dedup_key"] not in existing]
+    candidates = [c for c in irr
+                  if c["dedup_key"] not in existing and c["type"] not in NO_SHIP_TYPES]
     skipped_dedup = len(irr) - len(candidates)
 
     to_register = candidates[:MAX_PROPOSALS_PER_RUN]
