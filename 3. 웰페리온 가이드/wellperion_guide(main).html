@@ -772,7 +772,7 @@
      집계 기준은 S3 KPI 스트립(#s4KpiCards)과 1:1 동일(workActive·apprPend). 실제 가져온 숫자만 표기, 실패 시 "—"(가짜 금지). */
   (function loadErpHomeStrip(){
     var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
+    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
     function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){ return STAFF.indexOf(x) >= 0; }); }
     function st(r){ return r.status || r['상태'] || '진행중'; }
     function as(r){ return r['결재상태'] || r.approvalStatus || ''; }
@@ -840,7 +840,7 @@
   (function loadHomeKpiOps(){
     var TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
     var SURVEY_URL   = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
-    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
+    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
     var _aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
 
     function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = (v === null || v === undefined) ? '—' : v; }
@@ -981,7 +981,7 @@
           });
           var names = Object.keys(map);
           if (!names.length){ body.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 6px;">—</td></tr>'; return; }
-          var ORDER = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원'];
+          var ORDER = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원'];
           names.sort(function(a,b){
             var ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
             if (ia === -1 && ib === -1) return 0;
@@ -6299,7 +6299,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   (function loadKpiStrip(){
     var WORK_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html';
     var APPR_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EA%B2%B0%EC%9E%AC%20%ED%98%84%ED%99%A9%20SSOT.html';
-    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','이지영 사원','이정헌 소장'];
+    var STAFF = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
     function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){ return STAFF.indexOf(x) >= 0; }); }
     function st(r){ return r.status || r['상태'] || '진행중'; }
     function as(r){ return r['결재상태'] || r.approvalStatus || ''; }
@@ -7286,7 +7286,7 @@ function crTab(btn, panelId) {
       const STAFF_LIST = [
         {name:'김남욱GM', cls:'gm'}, {name:'이경연 실장', cls:'dir'},
         {name:'최준용M', cls:'mgr'}, {name:'임정은M', cls:'mgr'},
-        {name:'윤병현AM', cls:'mgr'}, {name:'이지영 사원', cls:''},
+        {name:'윤병현AM', cls:'mgr'}, {name:'백승화 사원', cls:''},
         {name:'나우열M', cls:'mgr'}, {name:'이정헌 소장', cls:'dir'},
       ];
       const ownerWrap = card.querySelector('.task-meta > span:first-child');
@@ -7520,7 +7520,7 @@ function crTab(btn, panelId) {
       const filterWrap = document.createElement('div');
       filterWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px;align-items:center;';
 
-      const owners = ['전체','김남욱GM','이경연 실장','최준용M','임정은M','윤병현AM','이지영 사원','나우열M','이정헌 소장','대표님 결재건'];
+      const owners = ['전체','김남욱GM','이경연 실장','최준용M','임정은M','윤병현AM','백승화 사원','나우열M','이정헌 소장','대표님 결재건'];
       const ownerColors = {'김남욱GM':'gm','이경연 실장':'dir','나우열M':'mgr','최준용M':'mgr','임정은M':'mgr','윤병현AM':'mgr','이정헌 소장':'dir'};
       let activeFilter = '전체';
 
@@ -7779,7 +7779,7 @@ function crTab(btn, panelId) {
     const STAFF_LIST = [
       {name:'김남욱GM', cls:'gm'}, {name:'이경연 실장', cls:'dir'},
       {name:'나우열M', cls:'mgr'}, {name:'이정헌 소장', cls:'dir'},
-      {name:'이지영 사원', cls:''},
+      {name:'백승화 사원', cls:''},
     ];
     const CAT_MAP = {
       '[1] 매출 및 영업':'[1] 매출 및 영업',
