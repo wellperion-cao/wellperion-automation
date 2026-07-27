@@ -635,7 +635,12 @@ var LESSON_DISPLAY = {
     { 명: '체조&트램폴린', sheet: '유소년체조' },
     { 명: 'P.T',          sheet: 'P.T 유소년' },       // 누락 배선(팀시트 gid 1328034138) 2026-07-03
     { 명: '필라테스',      sheet: '필라테스 유소년' },  // 누락 배선(팀시트 gid 754969527) 2026-07-03
-    { 명: '모자수영',      sheet: '모자수영' }          // 누락 배선(팀시트 gid 1219410707) 2026-07-03
+    { 명: '모자수영',      sheet: '모자수영' },         // 누락 배선(팀시트 gid 1219410707) 2026-07-03
+    // 뮤지컬(Brad Little Star Academy) 배선 — GM 지시 2026-07-27(배140). 유소년만 운영.
+    //   실측 근거: 유소년 강습문의 146건이 뮤지컬을 언급, 그중 등록(SUC) 14건(전화 중복 제거 11명).
+    //   문의는 활발히 들어오는데 LESSON_DISPLAY 에 항목 자체가 없어 등록 집계에서 통째로 빠져 있었다.
+    //   팀시트가 없으므로 발레·바레와 동일 패턴(sheet:null + ledger:true) — 새 방식 만들지 않음.
+    { 명: '뮤지컬', sheet: null, ledger: true }
   ]
 };
 
@@ -725,6 +730,51 @@ function _collectLessonRoster_(type) {
       }
     } catch (e) {}
   });
+
+  // ── 팀시트 없는 종목(ledger:true — 발레·바레·뮤지컬) ────────────────────────────
+  // [배140 · GM 지시 2026-07-27] 위 루프는 item.sheet 가 있어야 돈다(cfg 없으면 return).
+  // 그래서 팀시트가 없는 종목은 roster 가 비고 → 원장에 행이 안 생기고 → 화면은 늘 0 이었다.
+  // 읽는 쪽(_ledgerRosterByType_)만 배선되고 쓰는 쪽이 없던 반쪽 상태(2026-07-15 이후).
+  //   실측 근거(2026-07-27): 뮤지컬 = 유소년 문의 중 등록(SUC) 11명인데 집계 0.
+  //   발레·바레 = 문의 9건·등록 0건이라 우연히 0 이 맞아떨어져 결함이 안 드러났다.
+  // GM 이 정본을 지정: 등록 정본 = 강습 '응답' 탭(성인 gid 111889422 / 유소년 268994754).
+  // 이미 시스템이 문의 집계에 쓰는 시트라 새 시트·새 연결·새 권한 0.
+  // 종목 판정은 표준 함수 _sportBuckets_ 를 그대로 호출한다 — 매칭 규칙을 여기 베끼면
+  // 두 벌이 되어 한쪽만 늙는다(약속 L01). 합쳐진 legacy 옵션('웰니스 프로그램(바레, 발레)')이
+  // 발레·바레 양쪽에 중복 계상되지 않는 처리도 그 함수가 이미 갖고 있다.
+  var ledgerItems = display.filter(function(it){ return !it.sheet && it.ledger; });
+  if (ledgerItems.length) {
+    try {
+      var wanted = {};
+      ledgerItems.forEach(function(it){ wanted[it.명] = 1; });
+      var inqGid = (type === '유소년강습') ? LESSON_GID_YOUTH : LESSON_GID;
+      // 시트를 직접 열어 칸을 찾지 않는다 — 응답탭 헤더는 탭마다 다르고(성인 '성인 강습 종목' vs
+      // 유소년 'WSC 강습 종류' 등) 관리칸이 우측에 멱등 생성되는 구조라, 칸 찾기 규칙을 여기 다시
+      // 적으면 반드시 한쪽만 늙는다. 실제로 첫 구현에서 유소년 종목 칸을 못 찾아 뮤지컬 0건이었다.
+      // 표준 리더 _lessonReadRows_ 가 헤더 별칭·정규화(sport/status/name/phone)를 이미 갖고 있으므로
+      // 그대로 재사용한다(약속 L01 — 판정·해석 로직은 단일 지점).
+      var inqRows = _lessonReadRows_(inqGid) || [];
+      var seenKey = {};   // 같은 사람이 같은 종목에 중복 접수한 경우 1회만
+      for (var r3 = 0; r3 < inqRows.length; r3++) {
+        var irow = inqRows[r3];
+        if (!_isLessonReg_(irow.status)) continue;          // 등록 성공 행만
+        var buckets = _sportBuckets_(irow.sport);
+        for (var b = 0; b < buckets.length; b++) {
+          if (!wanted[buckets[b]]) continue;                // 이 유형의 ledger 종목만
+          var dk = buckets[b] + '|' + _normPhone_(irow.phone);
+          if (seenKey[dk]) continue;
+          seenKey[dk] = 1;
+          roster.push({
+            sport:  buckets[b],
+            name:   String(irow.name || ''),
+            phone:  String(irow.phone || ''),
+            status: String(irow.status || '').trim()
+          });
+        }
+      }
+    } catch (eLed) {}
+  }
+
   return roster;
 }
 
@@ -741,6 +791,16 @@ function _syncLessonRegistry_() {
     var last = sh.getLastRow();
     var seed = (last < 2);                              // 원장 빈 상태 → 기준선 시드 모드
     var rows = (last >= 2) ? sh.getRange(2, 1, last - 1, _LESSON_REG_HEADER.length).getValues() : [];
+    // [배140 · 2026-07-27] 종목 단위 기준선 판정. 원장에 그 종목 행이 0이면 이번에 들어오는
+    // 배치는 '오늘 등록'이 아니라 '이제야 연결된 과거 등록자'다 — 종목이 새로 배선될 때마다
+    // 그 인원이 당일 신규로 잡혀 KPI 를 부풀린다(뮤지컬 첫 편입 11명이 정확히 이 경우).
+    // 대량 신규 가드(_LESSON_BULK_NEW_GUARD=30)는 임계 미만이라 못 막는다 → 종목 단위로 막는다.
+    // 원장 전체 시드와 같은 취지·같은 값(2000-01-01)이라 새 규칙이 아니라 적용 범위 확장이다.
+    var sportSeen = {};
+    for (var s0 = 0; s0 < rows.length; s0++) {
+      var sp0 = String(rows[s0][1] || '').trim();
+      if (sp0) sportSeen[sp0] = 1;
+    }
     var keyIdx = {};
     for (var i = 0; i < rows.length; i++) {
       var k = String(rows[i][6] || '').trim();
@@ -759,7 +819,10 @@ function _syncLessonRegistry_() {
             rr[1] = m.sport; rr[2] = m.name; rr[4] = m.status; dirty = true;
           }
         } else {
-          rows.push([type, m.sport, m.name, m.phone, m.status, (seed ? '2000-01-01' : today), key]);
+          // 원장 전체가 비었거나(seed), 이 종목이 원장에 처음 들어오는 경우 → 기준선.
+          var firstOfSport = !sportSeen[String(m.sport || '').trim()];
+          rows.push([type, m.sport, m.name, m.phone, m.status,
+                     (seed || firstOfSport) ? '2000-01-01' : today, key]);
           newIdx.push(rows.length - 1);
           keyIdx[key] = rows.length - 1;
           dirty = true;
