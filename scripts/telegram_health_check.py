@@ -149,6 +149,29 @@ def _check_gas_diag() -> list[str]:
             for field in bool_fields:
                 if not data.get(field):
                     issues.append(f"{name} 설정 누락({field}=false) — GAS ScriptProperties 미설정")
+            # [배140 · 2026-07-27 시모] 문의 알림 '도착 확인' — 지금까지 사각지대였다.
+            #   개별 문의 알림은 GAS 가 텔레그램으로 직접 쏘므로 이 저장소 발신 원장에 안 남는다.
+            #   → 봇·방·로컬 원장만 보던 이 헬스체크는 "알림이 안 가도 모르는" 상태였다.
+            #   diag_inquiry_state 가 이미 돌려주는 INQ_LASTROW 마커를 판정에 쓰면 새 장치 없이
+            #   그 사각지대가 메워진다(약속 L21 — 이미 지나가는 관문에 흡수).
+            #   marker_value=null  → 알림 파이프가 이 백엔드에서 한 번도 돈 적 없음(치명)
+            #   marker_vs_real≤-3 → 실데이터가 마커보다 앞섬 = 그만큼 미발송 적체
+            for sh in (data.get("sheets") or []):
+                if sh.get("real_lastDataRow") is None:
+                    continue                      # 데이터가 아예 없는 시트는 판정 대상 아님
+                stype = sh.get("type") or "?"
+                if sh.get("marker_value") is None:
+                    issues.append(
+                        f"{name} 문의알림 마커 미설정({stype}) — 이 백엔드에서 알림 파이프가 "
+                        "한 번도 돌지 않음(트리거 미설치 의심). 알림이 다른 스크립트에서 나가는지 확인 요망"
+                    )
+                    continue
+                lag = sh.get("marker_vs_real")
+                if isinstance(lag, (int, float)) and lag <= -3:
+                    issues.append(
+                        f"{name} 문의알림 적체({stype}) — 마커가 실데이터보다 {abs(int(lag))}행 뒤짐"
+                        f"(마지막 접수 {sh.get('real_lastDataTs')}). 미발송 가능성"
+                    )
         except Exception as e:
             print(f"[WARN] {name} diag 프로브 예외: {e} — 네트워크 이상(경보 제외)", flush=True)
     return issues
