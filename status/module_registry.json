@@ -837,14 +837,14 @@
         "anchor": "sec-chro-autonomy"
       },
       "autonomy": "mech",
-      "ai_free_fallback": "2026-07-20 확인: 다른 3개(스윕·온보딩워치·효율리포트)와 달리 이 모듈은 부정 증거도 긍정 증거도 없음 — cao 개인 Google 계정 소유 GAS 프로젝트로 추정되어 이 저장소에 .clasp.json·코드·매니페스트·manifest 산출물이 전혀 없다(전체 저장소 grep 0건). '진짜 구글 서버 전용이라 이 저장소가 안 닿는 경우'일 수 있으나, 앞선 3개가 근거 없이 '가동 중'이라 표기됐던 전례가 있어 이 표기도 검증 전까지 신뢰도를 낮춰 보아야 함 — 확인은 cao Google 계정에서 Apps Script 트리거 목록 직접 조회 필요(이 세션 권한 밖). enabled는 보수적으로 유지하되 미확인 표기 추가. INC-025 참조.",
+      "ai_free_fallback": "2026-07-27 하향(시로): 2026-07-20 INC-025 1차 확인에 이어 2회차 전수 재검색(clasp 설정 6개 폴더 전부·스크립트·로그·매니페스트·산출물) 전부 0건, 로컬 Windows 예약작업(schtasks) 33개 Wellperion-* 항목 중에도 gmail/잡코리아/공고 관련 0건. 이 세션은 외부 계정·GAS·Gmail 접속이 금지되어 cao 개인 Google 계정 원격 재확인은 여전히 불가(2차 연속 미확인). 실재 근거가 두 번의 조사에서 모두 전무한 채 enabled=true 로 방치하는 것은 약속 L21('꺼둔 것은 남기지 않는다') 위반이므로 enabled=false 로 내림. 추후 cao Google 계정에서 Apps Script 트리거 실가동이 직접 확인되면 재활성 검토. INC-025 참조.",
       "feedback": {
         "enabled": true,
         "audience": "gm+clevel",
         "entries": []
       },
       "reversible": true,
-      "enabled": true,
+      "enabled": false,
       "honesty_default": "measured"
     },
     {
