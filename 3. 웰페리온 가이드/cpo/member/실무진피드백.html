@@ -15,8 +15,9 @@
     거기서 scripts/collectors/cpo_staff_feedback_watch.py 가 3분마다 읽어 status/_queue.json 에 배로 세운다.
     저장 안 됐는데 됐다고 표시하지 않는다(이 저장소 반복 사고 유형 — 발행완료 오표기 재발방지 원칙과 동일 취지).
   ★외부 라이브러리·CDN 0 — 시스템 한글 폰트 스택만 사용, 완전 자체완결(오프라인에서도 동작).
-  ★라이트/다크 자동 대응 — prefers-color-scheme(부모 페이지 테마 토글과 독립, 이 페이지는 iframe으로 단독 로드되므로
-    OS 설정을 그대로 따른다).
+  ★라이트/다크 — 여는 쪽이 ?theme=dark|light 로 정해주면 그대로 따르고, 안 주면 OS 설정을 따른다(종전 동작).
+    iframe은 부모의 테마 토글을 물려받지 못한다 → 부모가 다크 고정인 화면은 theme=dark 를 같이 붙여야
+    폼만 밝게 떠 겉도는 일이 없다. 예: 실무진피드백.html?screen=종합접수처&theme=dark
 ═══════════════════════════════════════════════════════════════════════════ -->
 <style>
 :root{
@@ -32,19 +33,21 @@
   --red:#ED5B3F;--red-bg:rgba(237,91,63,0.10);--red-border:rgba(237,91,63,0.28);
   --warn-bg:rgba(230,200,78,0.16);--warn-border:rgba(230,200,78,0.4);--warn-text:#8a6d1a;
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --bg:#221F20;
-    --paper:#272422;
-    --paper-raised:#2e2b28;
-    --text:#f0ece7;
-    --dim:#9e9b93;
-    --border:#38322e;
-    --accent-bg:rgba(183,159,138,0.10);
-    --accent-border:rgba(183,159,138,0.25);
-    --red-bg:rgba(237,91,63,0.14);--red-border:rgba(237,91,63,0.32);
-    --warn-bg:rgba(230,200,78,0.10);--warn-border:rgba(230,200,78,0.3);--warn-text:#e6c84e;
-  }
+/* 다크 값은 여기 한 벌뿐이다. 어떤 조건에서 다크로 갈지는 CSS가 아니라 아래 스크립트가 정해
+   <html data-theme="dark"> 를 달아준다 — ①여는 쪽이 ?theme=dark 로 지정했으면 그대로 ②없으면 OS 설정.
+   (2026-07-27 시우) 부모가 다크 고정인 화면(종합접수처 현황 등) 안에 밝은 폼만 떠 이질감이 있었다.
+   미디어쿼리 한 벌 + 속성 한 벌로 값을 두 번 적으면 한쪽이 옛것으로 어긋난다 — 그래서 값은 한 곳만 둔다. */
+:root[data-theme="dark"]{
+  --bg:#221F20;
+  --paper:#272422;
+  --paper-raised:#2e2b28;
+  --text:#f0ece7;
+  --dim:#9e9b93;
+  --border:#38322e;
+  --accent-bg:rgba(183,159,138,0.10);
+  --accent-border:rgba(183,159,138,0.25);
+  --red-bg:rgba(237,91,63,0.14);--red-border:rgba(237,91,63,0.32);
+  --warn-bg:rgba(230,200,78,0.10);--warn-border:rgba(230,200,78,0.3);--warn-text:#e6c84e;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;overflow-x:hidden}
@@ -114,6 +117,21 @@ textarea.err{border-color:var(--red-border);box-shadow:0 0 0 3px var(--red-bg)}
   .btn{width:100%}
 }
 </style>
+<script>
+// 밝게 갈지 어둡게 갈지를 여기서 한 번 정한다(그리기 전에 정해야 깜빡임이 없어 head 안에 둔다).
+// 여는 쪽이 ?theme=dark|light 로 정해줬으면 그 말을 따르고, 안 정해줬으면 OS 설정을 따른다.
+// 부모 화면이 다크 고정인데 이 폼만 밝게 떠 생기던 이질감을 없애기 위함(2026-07-27 시우).
+(function(){
+  var want = 'light';
+  try{
+    want = new URLSearchParams(location.search).get('theme');
+    if (want !== 'dark' && want !== 'light'){
+      want = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+  }catch(e){ want = 'light'; }
+  document.documentElement.setAttribute('data-theme', want);
+})();
+</script>
 </head>
 <body>
 
