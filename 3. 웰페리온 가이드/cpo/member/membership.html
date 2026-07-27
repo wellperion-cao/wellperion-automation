@@ -8499,16 +8499,10 @@ function _renderHoldIntake() {
   //   여기서 배경으로 1회만 당겨온다 — 도착하면 _loadHoldIntake 가 이 함수를 다시 불러 숫자를 채운다.
   //   (_holdIntakeLoaded 가 켜지므로 반복 요청 없음 · 상세는 아래 _holdOnlyView 조건으로 계속 접힌다.)
   if (_holdIntake === null && !_holdIntakeLoading) { _loadHoldIntake(false); return; }
-  // 개통 검증용 테스트 접수는 화면에서 뺀다 — 실무진에겐 처리할 일처럼 보이는데 처리할 게 없다.
-  //   GM 2026-07-27: "반려건은 삭제해줘(테스트 2건)". 실측 2건 모두 이름 '[테스트]…' + 전화 010-0000-xxxx.
-  //   ★'반려' 자체를 없애지 않은 이유: 진짜 반려 건이 생기면 그건 계속 보여야 한다. 테스트만 가린다.
-  //   시트 실물 삭제는 종합접수처(시우 소관)라 여기서 하지 않고 대조키로 전달했다 — 화면에서만 거른다.
-  var _isHoldTestRow = function(r){
-    var nm = String((r && r.name) || '');
-    var ph = String((r && r.phone) || '').replace(/\D/g, '');
-    return nm.indexOf('[테스트]') === 0 || /^0100000/.test(ph);
-  };
-  var intake = (_holdIntake || []).filter(function(r){ return !_isHoldTestRow(r); });
+  // 개통 검증용 테스트 접수 2건(이름 '[테스트]…' + 전화 010-0000-xxxx)은 2026-07-27 시우가 종합접수처
+  //   시트에서 대조키(성함+연락처)로 실물 삭제 완료(배146) — 화면 필터는 걷는다(배174, 시포 실측 재확인:
+  //   hold_intake_test_rows 미리보기 재조회 0건). 남겨두면 나중에 같은 이름의 진짜 건이 안 보일 수 있다.
+  var intake = _holdIntake || [];
   var pending = intake.filter(function(r){ return (r.status || '접수대기') === '접수대기'; });
   var rejected = intake.filter(function(r){ return r.status === '반려'; });
   var ongoing = (_activeRows || []).filter(function(r){ return String(r['휴회접수상태'] || '').trim() === '진행중'; });
