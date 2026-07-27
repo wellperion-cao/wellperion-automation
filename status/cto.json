@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
-  "status": "DONE",
-  "task_id": "CTO-2026-07-18-REGLOSS-SCAFFOLD-HANDOFF",
-  "last_task_id": "CTO-2026-07-18-REGLOSS-SCAFFOLD-HANDOFF",
+  "status": "진행중",
+  "task_id": "CTO-2026-07-25-상태줄-추가개선-충돌회피-대기",
+  "last_task_id": "CTO-2026-07-25-상태줄-추가개선-충돌회피-대기",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-07-18T10:22:42Z",
+  "last_pushed_at": "2026-07-27T01:18:03Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -101,12 +101,28 @@
       "note": "GM 요청 기능 뼈대 구축: membership.html에 등록종목 입력칸(#cmRegProgramRow)+LOSS사유 모달(#lossReasonOverlay), .deploy-funnel-v2/Survey.js에 regProgram·lossReason 저장핸들러(+28줄). 라이브 페이지 무손상 실측(렌더정상·콘솔 파싱에러0·추가요소 숨김). ★핵심발견: 문의회원 라이브 GAS=v2(1BezMSW·5/200 여유)라 200버전 한도 무관·배포가능. 배선(LOSS모달 발동·등록종목 저장·행표시) 미완 — 시포가 이 파일 실시간 커밋 중이라 충돌방지 위해 시토 중단·인계(파괴적 git 미사용·INC-009).",
       "updated_at": "2026-07-18T10:22:42Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-07-24-시토-자동-푸시-스위퍼-2건-한글-로그-인코딩-크래",
+      "title": "자동 push 스위퍼가 조용히 멎던 원인 제거 — git 한글 출력을 cp949로 읽다 죽던 곳을 6개 파일 전수 고정(cp949 환경에서 수리 전 크래시 재현 / 수리 후 6파일 정상 실측), 스위퍼가 오류로 멈추면 밀린 커밋이 있을 때만 확인방에 1줄 알리도록 배선(백로그 0이면 침묵). 새 파일 0.",
+      "status": "DONE",
+      "note": "자동 push 스위퍼가 조용히 멎던 원인 제거 — git 한글 출력을 cp949로 읽다 죽던 곳을 6개 파일 전수 고정(cp949 환경에서 수리 전 크래시 재현 / 수리 후 6파일 정상 실측), 스위퍼가 오류로 멈추면 밀린 커밋이 있을 때만 확인방에 1줄 알리도록 배선(백로그 0이면 침묵). 새 파일 0.",
+      "updated_at": "2026-07-27T00:15:33Z",
+      "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-07-25-상태줄-추가개선-충돌회피-대기",
+      "title": "GM 지시로 상태줄 작업표시 전면 교체 — '지금 무슨 일을 하는 중 + 경과시간'이 실시간으로 보이게 함. 기존 신호는 제가 진행 보고를 손으로 써야 움직여서 일하는 중에도 멎어 보였고, 제목도 잡아둔 배라 실제 하는 일과 달랐음. 이제 세션 기록에서 직접 읽어 보고와 무관하게 항상 정확. 4개 창 폭 잘림 0·3개 상태 재현 확인.",
+      "status": "진행중",
+      "note": "GM 지시로 상태줄 작업표시 전면 교체 — '지금 무슨 일을 하는 중 + 경과시간'이 실시간으로 보이게 함. 기존 신호는 제가 진행 보고를 손으로 써야 움직여서 일하는 중에도 멎어 보였고, 제목도 잡아둔 배라 실제 하는 일과 달랐음. 이제 세션 기록에서 직접 읽어 보고와 무관하게 항상 정확. 4개 창 폭 잘림 0·3개 상태 재현 확인.",
+      "updated_at": "2026-07-27T01:18:03Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "[시토] 등록종목·LOSS사유 기록 뼈대 준비 + 시포 인계",
-  "artifact_url": "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html?manage=membership",
-"commit": "",
-  "note": "GM 요청 기능 뼈대 구축: membership.html에 등록종목 입력칸(#cmRegProgramRow)+LOSS사유 모달(#lossReasonOverlay), .deploy-funnel-v2/Survey.js에 regProgram·lossReason 저장핸들러(+28줄). 라이브 페이지 무손상 실측(렌더정상·콘솔 파싱에러0·추가요소 숨김). ★핵심발견: 문의회원 라이브 GAS=v2(1BezMSW·5/200 여유)라 200버전 한도 무관·배포가능. 배선(LOSS모달 발동·등록종목 저장·행표시) 미완 — 시포가 이 파일 실시간 커밋 중이라 충돌방지 위해 시토 중단·인계(파괴적 git 미사용·INC-009).",
-  "updated_at": "2026-07-18T10:22:42Z"
+  "title": "GM 지시로 상태줄 작업표시 전면 교체 — '지금 무슨 일을 하는 중 + 경과시간'이 실시간으로 보이게 함. 기존 신호는 제가 진행 보고를 손으로 써야 움직여서 일하는 중에도 멎어 보였고, 제목도 잡아둔 배라 실제 하는 일과 달랐음. 이제 세션 기록에서 직접 읽어 보고와 무관하게 항상 정확. 4개 창 폭 잘림 0·3개 상태 재현 확인.",
+  "artifact_url": "https://github.com/wellperion-cao/wellperion-automation/commit/009bd0354",
+  "commit": "",
+  "note": "GM 지시로 상태줄 작업표시 전면 교체 — '지금 무슨 일을 하는 중 + 경과시간'이 실시간으로 보이게 함. 기존 신호는 제가 진행 보고를 손으로 써야 움직여서 일하는 중에도 멎어 보였고, 제목도 잡아둔 배라 실제 하는 일과 달랐음. 이제 세션 기록에서 직접 읽어 보고와 무관하게 항상 정확. 4개 창 폭 잘림 0·3개 상태 재현 확인.",
+  "updated_at": "2026-07-27T01:18:03Z"
 }
