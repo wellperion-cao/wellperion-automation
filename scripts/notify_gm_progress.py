@@ -161,22 +161,50 @@ def resolve_room(rooms_path=None):
     return resolve_chat_id(ROOM_KEY, rooms)
 
 
+# 섹션 표기 — 순서 고정. GM 이 폰에서 훑는 순서와 같게 둔다(무엇을 왜 → 뭘 했나 → 진짜 되나 → 다음).
+_SECTIONS = (("cause", "🔎 원인"), ("fix", "🔧 고친 것"),
+             ("check", "📊 확인"), ("next", "👉 다음"))
+
+
+def _bullets(raw: str) -> str:
+    """'|' 로 나눈 항목을 한 줄에 하나씩. 폰에서 줄이 길면 안 읽히므로 문장을 쪼개 둔다."""
+    items = [x.strip() for x in str(raw).split("|") if x.strip()]
+    return "\n".join("· " + x for x in items)
+
+
 def build_text(summary: str, link: str | None = None, *,
                ship: str | None = None, step: str | None = None,
-               state: str = DEFAULT_STATE) -> str:
-    """한 줄 본문 조립: "{아이콘} {배} · {단계} — {요약} {링크}".
-    배·단계는 없으면 통째로 빠진다(기존 호출부의 짧은 완료 1줄과 호환)."""
+               state: str = DEFAULT_STATE, cause: str | None = None,
+               fix: str | None = None, check: str | None = None,
+               nxt: str | None = None) -> str:
+    """진행현황방 본문 조립.
+
+    ▸섹션 인자(cause·fix·check·nxt)를 하나라도 주면 **여러 줄 구조**로 낸다:
+        ✅ 시토 147 — 제목
+        (빈 줄)
+        🔎 원인 / 🔧 고친 것 / 📊 확인 / 👉 다음  — 각 항목 '· ' 불릿
+      왜: 한 줄에 [원인][고침][실측][다음]을 이어붙이면 폰에서 글벽이 된다(GM 2026-07-27
+      "명확하게, 가독성있게"). 약속 L12(짧고 한눈에)는 방 보고에도 그대로 적용된다.
+    ▸섹션을 하나도 안 주면 기존 그대로 한 줄 — 짧은 완료 보고를 쓰는 호출부와 호환."""
     icon = STATE_ICONS.get(state, STATE_ICONS[DEFAULT_STATE])
     head = " · ".join(p for p in ((ship or "").strip(), (step or "").strip()) if p)
     body = summary.strip()
-    text = f"{icon} {head} — {body}" if head else f"{icon} {body}"
-    return text + (" " + link.strip() if link else "")
+    title = f"{icon} {head} — {body}" if head else f"{icon} {body}"
+
+    vals = {"cause": cause, "fix": fix, "check": check, "next": nxt}
+    blocks = [f"{label}\n{_bullets(vals[key])}" for key, label in _SECTIONS if (vals.get(key) or "").strip()]
+    if not blocks:
+        return title + (" " + link.strip() if link else "")
+    text = title + "\n\n" + "\n\n".join(blocks)
+    return text + (("\n\n🔗 " + link.strip()) if link else "")
 
 
 def notify(summary: str, link: str | None = None, *, ship: str | None = None,
            step: str | None = None, state: str = DEFAULT_STATE,
            dry_run: bool = False, now: datetime | None = None,
-           sender=None, log_path=None, rooms_path=None) -> dict:
+           sender=None, log_path=None, rooms_path=None,
+           cause: str | None = None, fix: str | None = None,
+           check: str | None = None, nxt: str | None = None) -> dict:
     """
     AI 진행현황방으로 진행 1줄 발송.
 
@@ -188,7 +216,8 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
     """
     log_path = Path(log_path) if log_path else LOG_PATH
     now = now or _now_kst()
-    text = build_text(summary, link, ship=ship, step=step, state=state)
+    text = build_text(summary, link, ship=ship, step=step, state=state,
+                      cause=cause, fix=fix, check=check, nxt=nxt)
 
     if dry_run:
         return {"sent": False, "reason": "dry_run", "text": text,
@@ -238,11 +267,17 @@ def main(argv=None) -> int:
     ap.add_argument("--step", default=None, help='단계 이름 (예: "2단계")')
     ap.add_argument("--state", default=DEFAULT_STATE, choices=sorted(STATE_ICONS),
                     help="단계 상태 (start·doing·done·blocked, 기본 done)")
+    # 섹션 인자 — 여러 항목은 '|' 로 나눈다(한 줄에 하나씩 불릿으로 나간다).
+    ap.add_argument("--cause", default=None, help='원인 (여러 개면 "A|B")')
+    ap.add_argument("--fix", default=None, help='고친 것 (여러 개면 "A|B")')
+    ap.add_argument("--check", default=None, help='확인·실측 (여러 개면 "A|B")')
+    ap.add_argument("--next", dest="nxt", default=None, help='다음 (여러 개면 "A|B")')
     ap.add_argument("--dry-run", action="store_true", help="실제 발송 없이 payload 미리보기")
     args = ap.parse_args(argv)
 
     out = notify(args.summary, args.link, ship=args.ship, step=args.step,
-                 state=args.state, dry_run=args.dry_run)
+                 state=args.state, dry_run=args.dry_run,
+                 cause=args.cause, fix=args.fix, check=args.check, nxt=args.nxt)
     print(json.dumps(out, ensure_ascii=False, indent=2))
     if args.dry_run or out["reason"] in ("sent", "gate_off", "dedup", "daily_cap"):
         return 0

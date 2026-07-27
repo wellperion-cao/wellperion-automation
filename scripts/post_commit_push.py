@@ -169,7 +169,7 @@ def _stash_count(root: str) -> int:
 
 def _reconcile(root: str) -> bool:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
-    워킹트리 dirty(GM 편집 중) → 곧장 merge / 깨끗 → rebase(실패 시 merge 폴백).
+    ★언제나 merge 로만 통합한다(rebase 경로는 배147에서 껐다 — 아래 _ALLOW_REBASE 주석 참고).
     성공 True / 실패 False. 어떤 경우에도 half-state 안 남김(abort + 고아 강제정리).
     (호출자가 git_lock 임계구역 보유 상태에서만 호출 — 동시 로컬 git 없음 보장.)
 
@@ -188,7 +188,19 @@ def _reconcile(root: str) -> bool:
         # 워킹트리가 더러우면(=GM이 파일을 열어 편집 중) rebase 는 시작 시 워킹트리를
         # reset 하다 잠긴 파일에서 죽는다 → 처음부터 merge 로 간다(열린 파일 안 건드림).
         # 깨끗하면 rebase 로 선형 히스토리 유지, 실패해도 아래 merge 폴백.
-        if not _is_dirty(root):
+        # ★2026-07-27 (배147) — rebase 경로를 **완전히 끈다.** 기본은 merge 하나뿐이다.
+        #   왜: rebase 는 성공하든 중단(--abort)하든 **작업트리를 통째로 되감는다.** 이 저장소는
+        #   3분·5분 주기 자동화가 쉴 새 없이 파일을 쓰므로, '깨끗한지 확인'과 'rebase 시작' 사이
+        #   몇 초 안에 새 결과물이 쓰이고, 그 파일은 되감기에 휩쓸려 **조용히 옛 내용으로 돌아간다.**
+        #   실측 2026-07-27: kpi_values.json 이 05:58·07:52 정상 갱신 성공 로그를 남겼는데도 내용은
+        #   07-23 자로 되돌아가 있었다(95시간 정체로 오탐 경보까지 발생). 실패가 아니라 덮어쓰기였다.
+        #   같은 계열 전력: INC-034(autostash 가 미커밋 변경을 스태시에 가둠·자율 기록 소실),
+        #   INC-029(스테일 트리). 매번 '조건을 좁히는' 식으로 막았지만 되감기 자체가 남아 재발했다.
+        #   merge 는 작업트리를 되감지 않는다 — 통합할 수 없으면 **거부**할 뿐 조용히 잃지 않는다.
+        #   대가는 선형 히스토리 포기(머지 커밋 생김). 기록이 예뻐지는 것보다 결과물을 안 잃는 게 먼저다.
+        #   되돌리려면 아래 REBASE 상수를 True 로.
+        _ALLOW_REBASE = False
+        if _ALLOW_REBASE and not _is_dirty(root):
             # ★--autostash 를 쓰지 않는다 (2026-07-24 시토 · INC-034).
             #   왜: 이 저장소는 자동화 6곳 이상이 쉴 새 없이 파일을 쓴다. _is_dirty() 확인과
             #   rebase 사이 2초 안에도 트리가 더러워진다(실측 race). 그때 --autostash 가 붙어 있으면
@@ -223,7 +235,7 @@ def _reconcile(root: str) -> bool:
             _clear_orphan_rebase(root)
             _log("POST_COMMIT_PUSH rebase 실패; merge 폴백 시도", root)
         else:
-            _log("POST_COMMIT_PUSH 워킹트리 dirty; merge 로 통합(열린 파일 보호)", root)
+            _log("POST_COMMIT_PUSH merge 로 통합(작업트리 되감기 없음 — 배147)", root)
         # merge — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
         mg = subprocess.run(
             ["git", "merge", "--no-edit", f"{REMOTE}/{BRANCH}"],
