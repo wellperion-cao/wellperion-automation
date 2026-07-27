@@ -544,6 +544,18 @@ def send_publish_digest(
     sent = 0
     dirty = False
     for key, group in groups.items():
+        # [2026-07-27 GM 지시] "문의알림방에 개인계정 인스타그램은 무시해도 돼."
+        #   실무진 방(문의·컨택·등록 알림방)의 목적은 회사 콘텐츠를 함께 응원·확산하는 것이다.
+        #   개인계정(namuk) 발행물은 GM 개인 시리즈라 실무진이 받아도 할 일이 없다 — 방 품질만
+        #   깎인다. 그래서 실무진 방 발신 대상에서 제외한다(제작·검수·발행 파이프라인은 그대로).
+        #   원장에도 찍지 않는다: 안 보낸 걸 보낸 것으로 남기지 않는다(약속 L05).
+        #   ※ 공식(@wellperion) 그룹만 발신 — 판정은 기존 단일 지점 _group_is_official 재사용.
+        entries_for_scope = _group_all_entries(key, all_review_items) or group
+        if not _group_is_official(entries_for_scope):
+            if dry_run:
+                print(f"[DRY-RUN] 개인계정 그룹 → 실무진 방 발신 제외: {key}")
+            continue
+
         if key in ledger:
             # 이미 발신된 콘텐츠(그룹키 존재) — 항목 부분집합·해시 변동 무관 재스팸 방지.
             # 결정 정합 신호(§4): 이미 요약 발신된 콘텐츠가 재유입돼 재발송을 막은 순간을
