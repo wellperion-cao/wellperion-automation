@@ -247,6 +247,12 @@
     var newGaps = roleGaps.filter(isNewAge).sort(bySeverity);
     var oldGaps = roleGaps.filter(function(g){ return !isNewAge(g); }).sort(bySeverity);
 
+    // ★아무것도 없으면 구획 자체를 내지 않는다(GM 2026-07-27 · FB260727-153107
+    //   "0건인데도 계속 상시로 떠있는건 이상한 것 같은데?"). 07-23 에는 '조용함=정상 신호'로 한 줄 남겼는데,
+    //   매번 떠 있으니 오히려 눈에 걸린다는 지적이다. 나중 지시가 이긴다 — 신규·누적 모두 0이면 통째로 뺀다.
+    //   ※'한 일'은 그대로 남는다. 빠진 것이 생기면 그때 다시 나타난다.
+    if(!newGaps.length && !oldGaps.length) return '';
+
     var html = '<div class="wl-section">';
     // 상단(신규) — 0건이면 평상시 신호로 조용히 한 줄만. 1건 이상만 카드로 튀게(GM 07-23 지시).
     if(!newGaps.length){
