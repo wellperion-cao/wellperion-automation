@@ -8534,7 +8534,10 @@ function _renderHoldIntake() {
         var nm = esc(String(r['회원명'] || '—'));
         var period = esc(String(r['휴회시작일'] || '?') + ' ~ ' + String(r['휴회종료일'] || '?'));
         var rem = remainKey ? esc(String(r[remainKey] || '-')) : '-';
-        var actions = (st === '진행중') ? '<button onclick="holdComplete(' + r.rowIndex + ')" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + '">완료 처리</button>' : '';
+        var actions = (st === '진행중')
+          ? ('<button onclick="holdEarlyReturn(' + r.rowIndex + ')" style="' + _hbtn('var(--teal)') + '">조기 복귀 처리</button>'
+            + '<button onclick="holdComplete(' + r.rowIndex + ')" style="' + _hbtn('var(--dim-mid,#8a8a8a)') + '">완료 처리</button>')
+          : '';
         html += _hRowBox('<b style="min-width:56px">' + nm + '</b><span style="color:var(--dim)">' + period + '</span><span>잔여일 ' + rem + '</span>'
           + (actions ? '<span style="margin-left:auto;display:flex;gap:6px">' + actions + '</span>' : ''));
       });
@@ -8571,6 +8574,35 @@ function holdComplete(rowIndex) {
       }
       r['휴회접수상태'] = '완료';
       showToast('완료 처리', 'ok');
+      _renderHoldIntake();
+      if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
+    })
+    .catch(function(e){ showToast('처리 실패: ' + (e.message || ''), 'err'); });
+}
+// 조기 복귀 처리(휴회 기간 중 이용 재개, holdComplete와 별개) — 운영기준: 3. 웰페리온 가이드/coo/reception/휴회_조기방문_운영기준.md
+//   (배10248, GM 판단 2026-07-25 · 시우 작성 2026-07-27, 실무진 피드백 FB260724-125420 이경연M). holdComplete는 원래 종료일에
+//   도달해 자연 종료된 건 전용 — 이건 종료일 전에 회원이 복귀를 원할 때 전용(종료일을 오늘로 당김). 잔여 휴회일은 소멸(복원 없음)
+//   — 확인창에서 반드시 고지한다. 셀쓰기=member_active_update(휴회종료일·휴회접수상태 동시 저장) — 이 셀은 승인(member_hold_approve)
+//   시점에 이미 텍스트서식(@)이 걸려 있어(reqEnd 기록 시 setNumberFormat('@')) 날짜 자동변환 없이 그대로 저장된다. 2026-07-27 시포.
+function holdEarlyReturn(rowIndex) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; }); if (!r) return;
+  var d = new Date();
+  var today = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  var endStr = String(r['휴회종료일'] || '').trim();
+  var remain = null;
+  if (endStr) {
+    var endD = new Date(endStr + 'T00:00:00'), todayD = new Date(today + 'T00:00:00');
+    if (!isNaN(endD.getTime())) remain = Math.max(0, Math.round((endD - todayD) / 86400000));
+  }
+  var msg = '이 회원의 휴회를 오늘(' + today + ') 날짜로 조기 종료 처리하시겠습니까?'
+    + (remain ? ('\n남은 휴회일 ' + remain + '일이 소멸됩니다(복원 불가).') : '');
+  if (!confirm(msg)) return;
+  var kp = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  apiPost({ action: 'member_active_update', rowIndex: rowIndex, keyPhone: kp, rowKey: r.rowKey || '', fields: { '휴회종료일': today, '휴회접수상태': '완료' } })
+    .then(function(d){
+      if (d && d.ok === false) { throw new Error(d.detail || d.error || '처리 실패'); }
+      r['휴회종료일'] = today; r['휴회접수상태'] = '완료';
+      showToast('조기 복귀 처리 완료 (휴회 종료일 ' + today + ')', 'ok');
       _renderHoldIntake();
       if (_activeLoaded && document.getElementById('activeBody')) _activeRender(_activeRows);
     })
