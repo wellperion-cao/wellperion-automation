@@ -1912,5 +1912,23 @@
     "surface": "autonomy",
     "audience": "office",
     "reversible": true
+  },
+  {
+    "task_id": "CTO-2026-07-27-셸-보고-규칙-변경-완료-다음작업을-AI-진행-현황",
+    "clevel": "cto",
+    "title": "[시토] 셸 보고 규칙 변경 + 완료·다음작업을 'AI 진행 현황'으로 (GM 지시 · 시포 세션에 잘못 기록됨)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-27",
+    "from": "cpo",
+    "note": "[시포 → 시토 전달 2026-07-27] [시포 → 시토 전달 2026-07-27] GM 지시가 시포 세션에 잘못 기록됐다(\"이건 시토한테 전달해야 하는 내용인데 내가 여기다 기록한 듯\"). 시포는 착수하지 않고 원문 그대로 넘긴다.\n\n[GM 원문]\n\"셸에서는 작업 진행 및 GM 결정 필요한 것만 /deep-interview 방식으로 해줘 // 작업 완료 및 다음 작업도 AI 진행형환에 정리해서 피드백 해줘\"\n\n[시포 해석 — 참고만, 확정 아님]\n① 셸(CLI)에는 '지금 뭐 하는 중'과 'GM이 정해야 할 것'만 남긴다. 결정 건은 deep-interview 방식(한 번에 한 질문·모호도 좁히기)으로 묻는다.\n② 완료한 일과 다음 할 일은 셸에 늘어놓지 말고 'AI 진행 현황' 표면에 정리해 피드백한다.\n※ 'AI 진행형환'은 'AI 진행 현황'의 오타로 보인다. 어느 화면인지가 이 지시의 유일한 막힌 지점이라 GM 확인이 필요하다.\n\n[시포가 이미 실측한 것 — 시토가 다시 파지 않게 그대로 전달]\n후보 3곳의 현재 상태(2026-07-27 실측):\n· '3. 웰페리온 가이드/자율현황.html' (제목 '자율 작업 현황') — 섹션 실재: sec-active-missions · sec-all-ships · sec-module-registry · sec-parked-missions · sec-registry-cards · sec-routines · sec-weekly · sec-trash · sec-chro-autonomy.\n  ★죽은 포인터 발견: status/module_registry.json 의 CPO 모듈 5개가 front_card.anchor 로 'sec-cpo-autonomy' 를 가리키는데 그 앵커가 이 페이지에 실재하지 않는다(sec-chro-autonomy 만 있음). 즉 CPO 자율현황 카드는 갈 곳이 없다. 시토 도메인(등록부·자율현황 배선)이라 함께 넘긴다.\n· '3. 웰페리온 가이드/AI운영한장.html' (제목 'AI C-Level 운영 한 장') — 'cpo'·'시포' 언급 3회뿐, 사실상 비어 있음.\n· 회원관리 화면의 '📋 작업 현황 로그' 팝업 — 오늘(2026-07-27) GM 지시로 본문 맨 아래 접힘 → 상단 💬 실무진 피드백 옆 버튼+팝업으로 이전 완료. 공용 부품 _assets/worklog_panel.js. '한 일'(status/worklog.jsonl)과 '빠진 것'(worklog_gaps.json)은 이미 자동으로 쌓이지만 '다음 할 일' 칸은 없다. 오늘 화면별 스코프(멤버십/강습) 필터도 붙였다.\n\n[시포가 GM께 여쭈려다 만 질문 — 시토가 이어받으면 됨]\n· 세 후보 중 어디인가, 아니면 다른 화면인가\n· '다음 작업'을 어디까지 적을 것인가(담당이 정한 것까지 vs GM 결재 대기 건만)\n· 셸에서 완료 보고를 아예 뺄 것인가, 한 줄만 남길 것인가\n· 시포 것만인가, 7역할 공통 규칙인가\n\n[주의] 이건 전 C-Level 보고 방식을 바꾸는 규칙이라 시포가 혼자 정할 수 없다. 웰리 판단·GM 확정이 필요해 보인다.",
+    "next": "GM께 'AI 진행 현황'이 어느 화면인지 확인 → 표면 확정 후 배선. 덤: module_registry 의 CPO front_card anchor 'sec-cpo-autonomy' 가 자율현황.html 에 실재하지 않는 죽은 포인터 — 같이 해소",
+    "depends_on": "",
+    "ship_no": 10336,
+    "short_no": 157,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "ai",
+    "reversible": null
   }
 ]
