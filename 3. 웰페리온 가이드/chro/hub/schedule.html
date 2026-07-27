@@ -28,6 +28,8 @@
   .brand small{display:block;font-size:11px;font-weight:500;color:var(--dim);letter-spacing:0}
   .simbadge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#8a6a1f;background:rgba(176,138,46,.1);border:1px solid rgba(176,138,46,.35);border-radius:20px;padding:5px 13px}
   /* ===== 서버 동기화 · 편집 잠금 · PIN (2026-07 개편) ===== */
+  .guidechip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;border-radius:20px;padding:5px 13px;border:1px solid rgba(154,123,79,.35);background:rgba(154,123,79,.06);color:var(--bronze2);text-decoration:none;cursor:pointer}
+  .guidechip:hover{background:rgba(154,123,79,.12);border-color:var(--bronze)}
   .lockchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;border-radius:20px;padding:5px 13px;border:1px solid var(--line);background:var(--surface);color:var(--dim);cursor:pointer}
   .lockchip.locked{color:var(--red);border-color:rgba(192,70,61,.4);background:rgba(192,70,61,.07)}
   .lockchip.free{color:var(--green);border-color:rgba(47,138,90,.35);background:rgba(47,138,90,.07)}
@@ -266,6 +268,7 @@
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <div class="simbadge" id="syncBadge">● ERP 서버 연결 중…</div>
+    <a class="guidechip" href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule-guide.html" target="_blank" rel="noopener">📖 사용법 보기</a>
     <button class="lockchip" id="lockChip" onclick="lockChipClick()">…</button>
   </div>
 </header>
