@@ -473,10 +473,15 @@ function _ghPathAllowed(path) {
   if (p === 'status/module_registry.json') return true;  // 2026-07-09 자율현황 환류 칸(Task 7)
   return false;
 }
-function _githubReadFile(path) {
+// 배(항로) 파일 2개 — 일반 허용목록에 넣지 않는다. GM PIN 을 통과한 호출만 allowQueue=true 로 연다.
+function _ghQueuePathAllowed(path) {
+  var p = String(path);
+  return p === 'status/_queue.json' || p === 'status/_queue_archive.json';
+}
+function _githubReadFile(path, allowQueue) {
   const headers = _ghHeaders();
   if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정' };
-  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로' };
+  if (!_ghPathAllowed(path) && !(allowQueue && _ghQueuePathAllowed(path))) return { ok: false, error: '허용되지 않은 경로' };
   const branch = _prop('GITHUB_BRANCH') || 'master';
   const r = UrlFetchApp.fetch(_ghUrl(path) + '?ref=' + branch, { method: 'get', headers: headers, muteHttpExceptions: true });
   const code = r.getResponseCode();
@@ -488,14 +493,14 @@ function _githubReadFile(path) {
   if (code === 404) return { ok: true, content: '', sha: null };  // 아직 없음
   return { ok: false, error: 'GitHub ' + code };
 }
-function _githubCommitFile(path, contentText, message, key) {
+function _githubCommitFile(path, contentText, message, key, allowQueue) {
   const headers = _ghHeaders();
   if (!headers) return { ok: false, error: 'GITHUB_TOKEN 미설정 — Apps Script 속성에 추가 필요' };
   // [배1170 2026-07-16] EDIT_KEY 게이트 해제 — 허브 페이지 open-write 모델(빈 키)과 정합화.
   // ScriptProperty EDIT_KEY 설정이 M1 승인·SSOT 쓰기를 '편집 키 불일치'로 막던 버그 수정.
   // 쓰기 경로는 아래 _ghPathAllowed로 이미 제한(cmo/review·coo·module_registry). 근본 인증=9월 자체서버 JWT.
   // (기존: const editKey=_prop('EDIT_KEY'); if(editKey&&String(key)!==editKey) return 편집키불일치)
-  if (!_ghPathAllowed(path)) return { ok: false, error: '허용되지 않은 경로(coo 하위 .json·module_registry.json 만 가능)' };
+  if (!_ghPathAllowed(path) && !(allowQueue && _ghQueuePathAllowed(path))) return { ok: false, error: '허용되지 않은 경로(coo 하위 .json·module_registry.json 만 가능)' };
   const branch = _prop('GITHUB_BRANCH') || 'master';
   // 현재 sha 조회 (있으면 갱신, 없으면 신규 생성)
   let sha = null;
@@ -517,6 +522,140 @@ function _githubCommitFile(path, contentText, message, key) {
     return { ok: true, commit: (j.commit && j.commit.sha) || null, path: path };
   }
   return { ok: false, error: 'GitHub ' + code + ': ' + putR.getContentText().slice(0, 160) };
+}
+
+// ═══ 배(항로) 휴지통 — GM 이 자율현황 화면에서 직접 배를 지우고 되돌린다 (2026-07-27 시토 · GM 지시) ═══
+// GM 지시: "무분별한·무의미한·중복된 것들은 다 삭제처리할 수 있게. 삭제되면 백·프론트 둘 다 삭제(일관성)."
+//
+// ★왜 줄을 지우지 않고 '폐기 표시'를 하는가 (이게 이 기능의 핵심):
+//   status/_queue.json 에는 union 머지 드라이버(scripts/git_merge_queue.py)가 걸려 있다 —
+//   "두 쪽의 모든 task_id 를 보존(union), 어느 배도 잃지 않는다"가 규칙이다. 그래서 여기서
+//   줄을 물리적으로 지워도, 그 배를 아직 들고 있는 다른 세션의 사본과 합쳐지는 순간 **되살아난다.**
+//   반면 status='폐기' 는 그 드라이버의 _rank 에서 2점이라 진행중(1점) 사본을 **이긴다** → 삭제가 유지된다.
+//   게다가 폐기는 이미 '보관함으로 옮길 것'으로 취급된다(queue_archive_sweep.py TERMINAL_STATUSES)
+//   → GM 이 고른 '보관함 이동 · 되돌리기 가능'이 새 장치 없이 그대로 성립한다(약속 L21).
+//
+// ★보안: 파괴적 동작이라 GM PIN(ScriptProperty APPROVAL_PIN_GM) 필수.
+//   이 GAS 는 무인증 공개라 게이트 없이 열면 누구나 배를 지울 수 있다. PIN 미설정이면 아예 거부한다
+//   (열어둔 채로 두지 않는다). PIN 은 서버 속성에만 있고 코드·응답에 노출되지 않는다.
+//
+// ⚠️ 이 파일 변경은 GAS 재배포(새 /exec 버전)해야 발효된다.
+var _QUEUE_PATH = 'status/_queue.json';
+
+function _queuePinOk(pin) {
+  var want = _prop('APPROVAL_PIN_GM');
+  if (!want) return { ok: false, error: 'GM 비밀번호가 서버에 설정돼 있지 않습니다 — 삭제 창구를 열지 않습니다.' };
+  if (String(pin || '') !== String(want)) return { ok: false, error: '비밀번호가 맞지 않습니다.' };
+  return { ok: true };
+}
+
+function _queueLoad() {
+  var r = _githubReadFile(_QUEUE_PATH, true);
+  if (!r.ok) return { ok: false, error: r.error };
+  var arr;
+  try { arr = JSON.parse(r.content); } catch (e) { return { ok: false, error: '큐 파싱 실패' }; }
+  if (!Array.isArray(arr)) return { ok: false, error: '큐가 목록 형식이 아님' };
+  return { ok: true, list: arr };
+}
+
+// 파이썬 쓰기(json.dump ensure_ascii=False, indent=2 + 끝 개행 1줄)와 **바이트 동일**해야 한다.
+// 다르면 매 커밋이 전체 diff 가 되어 병합이 매번 충돌한다(저장소 블롭은 LF — 실측 확인함).
+function _queueSave(list, message) {
+  return _githubCommitFile(_QUEUE_PATH, JSON.stringify(list, null, 2) + '\n', message, '', true);
+}
+
+function _queueFind(list, shipNo) {
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && String(list[i].ship_no) === String(shipNo)) return i;
+  }
+  return -1;
+}
+
+/** 배 버리기 — 폐기 표시 + 되돌릴 정보 보관. */
+function _queueTrash(body) {
+  var gate = _queuePinOk(body.pin);
+  if (!gate.ok) return _json(gate);
+  var shipNo = body.ship_no;
+  if (!shipNo) return _json({ ok: false, error: '배 번호가 없습니다.' });
+
+  var q = _queueLoad();
+  if (!q.ok) return _json(q);
+  var i = _queueFind(q.list, shipNo);
+  if (i < 0) return _json({ ok: false, error: '배 ' + shipNo + ' 를 찾을 수 없습니다(이미 지워졌을 수 있습니다).' });
+  var s = q.list[i];
+  if (s.trashed) return _json({ ok: true, ship_no: shipNo, already: true, message: '이미 버려진 배입니다.' });
+
+  var now = Utilities.formatDate(new Date(), 'Asia/Seoul', "yyyy-MM-dd'T'HH:mm:ss");
+  s.prev_status = s.status || '';          // 되돌릴 때 쓸 원래 상태
+  s.status = '폐기';                        // union 머지에서 옛 사본을 이기는 유일한 표현
+  s.trashed = true;
+  s.trashed_at = now;
+  s.trashed_by = String(body.by || 'GM');
+  s.trash_reason = String(body.reason || '');
+  s.processed_at = now;                     // 보관함 스윕이 다음 회차에 옮겨가는 조건
+
+  var w = _queueSave(q.list, '[GM 삭제] 배 ' + shipNo + ' 버림 — ' + (s.trash_reason || '사유 미기재'));
+  if (!w.ok) return _json({ ok: false, error: '저장 실패: ' + w.error });
+  return _json({ ok: true, ship_no: shipNo, title: s.title || '', commit: w.commit, message: '보관함으로 옮겼습니다.' });
+}
+
+/** 되돌리기 — 폐기 표시 해제 + 원래 상태 복원. 보관함으로 이미 옮겨간 배도 되살린다. */
+function _queueRestore(body) {
+  var gate = _queuePinOk(body.pin);
+  if (!gate.ok) return _json(gate);
+  var shipNo = body.ship_no;
+  if (!shipNo) return _json({ ok: false, error: '배 번호가 없습니다.' });
+
+  var q = _queueLoad();
+  if (!q.ok) return _json(q);
+  var i = _queueFind(q.list, shipNo);
+  var s = null;
+
+  if (i >= 0) {
+    s = q.list[i];
+  } else {
+    // 큐에 없으면 보관함에서 찾아 큐로 되돌린다(데이터 보존 우선 — 큐에 먼저 넣는다).
+    var ar = _githubReadFile('status/_queue_archive.json', true);
+    if (!ar.ok) return _json({ ok: false, error: '보관함을 읽지 못했습니다: ' + ar.error });
+    var arr;
+    try { arr = JSON.parse(ar.content); } catch (e) { return _json({ ok: false, error: '보관함 파싱 실패' }); }
+    var j = _queueFind(arr, shipNo);
+    if (j < 0) return _json({ ok: false, error: '배 ' + shipNo + ' 를 어디에서도 찾지 못했습니다.' });
+    s = arr[j];
+    q.list.push(s);
+  }
+  if (!s.trashed) return _json({ ok: true, ship_no: shipNo, already: true, message: '버려지지 않은 배입니다.' });
+
+  s.status = s.prev_status || 'PENDING';
+  delete s.trashed; delete s.trashed_at; delete s.trashed_by; delete s.trash_reason; delete s.prev_status;
+  if (s.status !== 'DONE' && s.status !== '완료') delete s.processed_at;
+
+  var w = _queueSave(q.list, '[GM 되돌리기] 배 ' + shipNo + ' 복구 — 상태 ' + s.status);
+  if (!w.ok) return _json({ ok: false, error: '저장 실패: ' + w.error });
+  return _json({ ok: true, ship_no: shipNo, title: s.title || '', status: s.status, commit: w.commit, message: '되돌렸습니다.' });
+}
+
+/** 보관함 목록 — 버려진 배만. 읽기는 배 번호·제목뿐이라 PIN 없이 연다(화면 표시용). */
+function _queueTrashList() {
+  var out = [];
+  ['status/_queue.json', 'status/_queue_archive.json'].forEach(function (p) {
+    var r = _githubReadFile(p, true);
+    if (!r.ok || !r.content) return;
+    var arr; try { arr = JSON.parse(r.content); } catch (e) { return; }
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function (s) {
+      if (s && s.trashed) {
+        out.push({ ship_no: s.ship_no, title: s.title || '', clevel: s.clevel || '',
+                   trashed_at: s.trashed_at || '', trashed_by: s.trashed_by || '',
+                   trash_reason: s.trash_reason || '', prev_status: s.prev_status || '' });
+      }
+    });
+  });
+  // 같은 배가 큐·보관함 양쪽에 있으면 한 번만
+  var seen = {}, uniq = [];
+  out.forEach(function (x) { var k = String(x.ship_no); if (!seen[k]) { seen[k] = 1; uniq.push(x); } });
+  uniq.sort(function (a, b) { return String(b.trashed_at).localeCompare(String(a.trashed_at)); });
+  return _json({ ok: true, count: uniq.length, data: uniq });
 }
 
 // ─── M1 웹 승인 → 텔레그램 발행 트리거 신호 (2026-07-16 CMO, 배1170) ───────────
@@ -2198,6 +2337,13 @@ function doGet(e) {
       return _json({ ok: true, results: results });
     }
 
+    // ─── 배(항로) 휴지통 — GET 경로 (2026-07-27 시토) ───
+    //   화면은 POST 로 부르지만(doPost 는 _processTodoAction 으로 흘러 이미 동작), 점검·확인은
+    //   GET 이 편하다. doGet 은 if 사슬이라 여기에 붙이지 않으면 '알 수 없는 action' 으로 떨어진다.
+    if (action === 'queue_trash')       return _queueTrash(e.parameter);
+    if (action === 'queue_restore')     return _queueRestore(e.parameter);
+    if (action === 'queue_trash_list')  return _queueTrashList();
+
     return _json({ ok: false, error: '알 수 없는 action: ' + action });
   } catch (err) {
     return _json({ ok: false, error: err.message });
@@ -2218,6 +2364,14 @@ function _mapFields(body) {
 function _processTodoAction(body) {
   body = _mapFields(body);
   const action = body.action || '';
+
+    // ─── 배(항로) 휴지통 — GM 자율현황 화면용 (2026-07-27 시토 · GM 지시) ───
+    //   queue_trash    : POST {ship_no, reason, pin}  → 폐기 표시(보관함 이동 예약)
+    //   queue_restore  : POST {ship_no, pin}          → 원래 상태로 되돌리기
+    //   queue_trash_list: 조회 (PIN 불필요 — 번호·제목만)
+    if (action === 'queue_trash')       return _queueTrash(body);
+    if (action === 'queue_restore')     return _queueRestore(body);
+    if (action === 'queue_trash_list')  return _queueTrashList();
 
     // ─── 부서장 결재 PIN 등록 (관리자 1회 셋업) — 2026-06-17 시우(COO) B1 ───
     // 평문 PIN은 ScriptProperties 에만 저장(코드·커밋·로그 비노출). EDIT_KEY 게이트.
