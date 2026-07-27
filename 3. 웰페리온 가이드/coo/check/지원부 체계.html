@@ -1889,7 +1889,15 @@ let promoteSourceId = null;   // 원본 이슈 없음(매뉴얼 신규추가)시
    기준 벗어나면 클라에서 빨간 경고만 표시(저장은 그대로 — 거짓완료 유발 안 함). */
 const TEMP_CONFIG = {
   a1:   { fields:[ {key:'온탕',label:'온탕',min:38,max:41,unit:'℃'}, {key:'열탕',label:'열탕',min:41,max:44,unit:'℃'}, {key:'냉탕',label:'냉탕',min:21,max:24,unit:'℃'} ] },
-  a2:   { fields:[ {key:'건식',label:'건식',min:78,max:84,unit:'℃'}, {key:'습식',label:'습식',min:45,max:51,unit:'℃'} ] }
+  a2:   { fields:[ {key:'건식',label:'건식',min:78,max:84,unit:'℃'}, {key:'습식',label:'습식',min:45,max:51,unit:'℃'} ] },
+  /* B-4 찜질방(여) — 2026-07-27 GM 지적으로 추가.
+     그 전까지 이 항목은 detail 에 '온도/청결 관리' 라고 적혀 있는데 온도를 적을 칸이 없었다.
+     그래서 점검자가 온도를 '이슈' 칸에 적었고(2026-07-27 마감조 여: "온도. 70.3"),
+     기록값일 뿐인데 이슈 1건으로 올라가 마감 보고에 실렸다 — 항목 설계가 만든 오분류다.
+     ★기준(min·max)은 일부러 비워 뒀다: 찜질방 적정 온도 기준이 우리 매뉴얼 어디에도 없어
+       지어내면 멀쩡한 값에 경고가 뜬다. 지금은 숫자만 기록하고, 기준이 정해지면 여기 두 값만 넣으면
+       사우나·탕과 똑같이 경고까지 붙는다. */
+  b4_f: { fields:[ {key:'찜질방',label:'찜질방',unit:'℃'} ] }
 };
 function tempFieldsFor(id){ return (TEMP_CONFIG[id] && TEMP_CONFIG[id].fields) || null; }
 /* STATE 온도값 키: 회차 있으면 temp_<g>_<round>_<id>_<field>, 없으면 레거시 temp_<id>_<field>.
@@ -3974,12 +3982,17 @@ function renderItem(it,shift,gender,round){
       const val=round?STATE[tempKey(round,it.id,f.key,g)]:STATE['temp_'+it.id+'_'+f.key];
       const hasVal=val!==undefined&&val!==''&&val!==null;
       const num=hasVal?Number(val):NaN;
-      const bad=hasVal&&!isNaN(num)&&(num<f.min||num>f.max);
+      /* 기준(min·max)이 없는 항목도 받는다 — 기록만 하고 경고는 띄우지 않는다(2026-07-27 시우).
+         왜: 기준을 모르는 채 아무 숫자나 기준으로 박으면 멀쩡한 값에 빨간 경고가 뜨고,
+         현장은 곧 경고를 무시하게 된다. 기준이 정해지면 TEMP_CONFIG 에 min·max 만 넣으면 된다. */
+      const hasRange=(f.min!==undefined&&f.max!==undefined);
+      const bad=hasRange&&hasVal&&!isNaN(num)&&(num<f.min||num>f.max);
       const warn=bad?`<span style="color:#c0392b;font-weight:700;font-size:11px;margin-left:4px;">⚠ 기준 ${f.min}~${f.max}${f.unit}</span>`:'';
       const inStyle=bad?'border-color:#c0392b;color:#c0392b;background:#fce8e4;':'';
+      const ph=hasRange?`${f.min}~${f.max}`:'숫자만';
       return `<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">
         <span style="font-size:12px;color:var(--dim);min-width:48px;">${f.label}</span>
-        <input type="number" step="0.1" inputmode="decimal" class="temp-input" id="${tid}" value="${hasVal?esc(String(val)):''}" placeholder="${f.min}~${f.max}" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;${inStyle}" onchange="onTemp('${it.id}','${f.key}','${tid}','${g}'${_rArg})">
+        <input type="number" step="0.1" inputmode="decimal" class="temp-input" id="${tid}" value="${hasVal?esc(String(val)):''}" placeholder="${ph}" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;${inStyle}" onchange="onTemp('${it.id}','${f.key}','${tid}','${g}'${_rArg})">
         <span style="font-size:12px;color:var(--dim);">${f.unit}</span>${warn}
       </div>`;
     }).join('');
