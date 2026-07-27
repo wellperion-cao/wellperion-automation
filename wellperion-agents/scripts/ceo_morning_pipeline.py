@@ -74,6 +74,10 @@ _SCRIPTS_ROOT = str(REPO / "scripts")
 if _SCRIPTS_ROOT not in sys.path:
     sys.path.insert(0, _SCRIPTS_ROOT)
 
+# 휴관일 인지(2026-07-27 시토, 배10303) — 단일 판정 재사용, 새 판정 함수 신설 금지(약속 L21)
+from close_days import is_closed  # noqa: E402
+from kakao_auto_daily_report import build_holiday_notice  # noqa: E402
+
 # ── C-Level 닉네임 (spec ③ — 모든 항목 끝에 [닉네임] 부착) ─────────────────────
 CLEVEL_NICK = {
     "CEO": "웰리",
@@ -1318,6 +1322,18 @@ def _build_appendix_lines() -> list[str]:
     return lines
 
 
+def _yesterday_holiday_line() -> str:
+    """어제가 휴관일이면 08:00 보고 맨 위에 붙일 한 줄(배10303 · GM 확정 2026-07-27).
+    새 문구 생성 함수를 만들지 않고 kakao_auto_daily_report.build_holiday_notice()가
+    이미 만드는 첫 문장만 재사용한다(약속 L21). 어제가 정상 영업일이면 빈 문자열."""
+    yesterday = datetime.now() - timedelta(days=1)
+    if not is_closed(yesterday):
+        return ""
+    notice = build_holiday_notice(yesterday, datetime.now())
+    first_sentence = notice.split(". ", 1)[0].rstrip(".") + "."
+    return f"어제 {first_sentence}"
+
+
 def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
     GM 아침 보고 — '오늘의 항로' 레이아웃.
@@ -1345,7 +1361,8 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     gas_items = hangro_fetch_gas_items()
     queue_items = hangro_fetch_queue_items()
     board_text, _secs = _board_text_and_secs(gas_items, queue_items)
-    lines = [board_text] + _build_appendix_lines()
+    holiday_line = _yesterday_holiday_line()
+    lines = ([holiday_line, ""] if holiday_line else []) + [board_text] + _build_appendix_lines()
     return "\n".join(lines)
 
 
@@ -1370,6 +1387,30 @@ def _queue_origin_map() -> dict[str, str]:
     return m
 
 
+def _queue_audience_map() -> dict[str, str]:
+    """_queue.json 원본에서 task_id → audience(소문자) 맵. audience는 queue_dispatch.py의
+    build_ship()이 이미 써 넣는 필드(배10300 웰리 결정 · 배10301) — 배 작성자의 선언을
+    origin 낱말 추정보다 먼저 믿는다. 값 없음/공백은 빈 문자열(폴백 대상 표시)."""
+    m: dict[str, str] = {}
+    for q in load_queue():
+        tid = str(q.get("task_id") or "").strip()
+        if tid:
+            m[tid] = str(q.get("audience") or "").strip().lower()
+    return m
+
+
+def _count_unspecified_audience(queue_items: list[dict]) -> int:
+    """audience 필드가 office/ai 어느 쪽도 아닌(미표기) 배 수 — 소급 미표기 안전판(배10301
+    웰리 수정 ④). 이 수치가 안 줄면 웰리가 required 승격을 재판단한다."""
+    audience_map = _queue_audience_map()
+    n = 0
+    for it in queue_items:
+        tid = str(it.get("id") or "").strip()
+        if audience_map.get(tid, "") not in ("office", "ai"):
+            n += 1
+    return n
+
+
 # AI 진행현황방으로 보낼 자격이 있는 origin — '기계가 스스로 만든 배'만 확실히 여기 해당한다.
 # bridge   = 완료 훅이 '다음'으로 자동 생성한 포인터 배
 # self-audit = 아침 자가점검(약속 L20)이 스스로 띄운 배
@@ -1382,17 +1423,27 @@ _AI_ROOM_ORIGINS = ("bridge", "self-audit")
 def _split_queue_items_for_rooms(queue_items: list[dict]) -> tuple[list[dict], list[dict]]:
     """hangro_fetch_queue_items() 결과를 업무보고방/AI 진행현황방 배로 가른다.
 
-    ★기본값은 업무보고방이다(웰리 판단 2026-07-26 · 배10244). 큐에는 아직 '이 일이
-    누구를 위한 것인가'를 담은 칸이 없다 — 그래서 확실히 기계가 만든 배(_AI_ROOM_ORIGINS)만
-    AI 방으로 덜어내고, 판단이 안 서는 배는 전부 업무보고방에 남긴다. 잘못 덜어내면
-    실무진 일이 GM 시야에서 사라지지만, 안 덜어내면 그냥 지금과 같을 뿐이라
-    두 오류의 무게가 다르다(정보 손실 0 우선).
+    [2026-07-27 시토 배10301 — 웰리 결정 배10300 반영] audience 필드(선언값)를 먼저
+    믿는다: audience=="office" → 업무보고방 / audience=="ai" → AI 진행현황방.
+    값이 없는 배만 기존 origin 폴백을 탄다(퇴화 0·정보 손실 0 — 아래는 원본 그대로 보존).
+
+    ★기존 폴백(origin 기반) — 배10244: 큐에 '이 일이 누구를 위한 것인가'를 담은 칸이
+    없던 시절의 안전장치. 확실히 기계가 만든 배(_AI_ROOM_ORIGINS)만 AI 방으로 덜어내고,
+    판단이 안 서는 배는 전부 업무보고방에 남긴다. 잘못 덜어내면 실무진 일이 GM 시야에서
+    사라지지만, 안 덜어내면 그냥 지금과 같을 뿐이라 두 오류의 무게가 다르다.
     """
     origin_map = _queue_origin_map()
+    audience_map = _queue_audience_map()
     office, ai = [], []
     for it in queue_items:
         tid = str(it.get("id") or "").strip()
-        (ai if origin_map.get(tid, "") in _AI_ROOM_ORIGINS else office).append(it)
+        audience = audience_map.get(tid, "")
+        if audience == "office":
+            office.append(it)
+        elif audience == "ai":
+            ai.append(it)
+        else:
+            (ai if origin_map.get(tid, "") in _AI_ROOM_ORIGINS else office).append(it)
     return office, ai
 
 
@@ -1408,10 +1459,18 @@ def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str
     office_queue, ai_queue = _split_queue_items_for_rooms(all_queue_items)
 
     office_board, _office_secs = _board_text_and_secs(gas_items, office_queue)
-    office_report = "\n".join([office_board] + _build_appendix_lines())
+    holiday_line = _yesterday_holiday_line()
+    office_report = "\n".join(
+        ([holiday_line, ""] if holiday_line else []) + [office_board] + _build_appendix_lines()
+    )
 
     ai_board, ai_secs = _board_text_and_secs([], ai_queue)
     ai_report = ("🤖 AI C레벨 진행현황\n" + ai_board) if _board_item_count(ai_secs) > 0 else None
+    # 배10301 안전판(웰리 수정) — audience 미지정 배가 남아 있으면 AI방 표 맨 아래 1줄로 노출.
+    # 0척이면 줄을 붙이지 않는다(새 리포트 강제 생성 금지 — 0건 발신 억제 원칙 유지).
+    unspecified_n = _count_unspecified_audience(all_queue_items)
+    if unspecified_n and ai_report:
+        ai_report += f"\n\naudience 미표기 {unspecified_n}척"
 
     return office_report, ai_report
 
@@ -1584,6 +1643,20 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
         return 0
 
     print(f"=== CEO 아침 파이프라인 시작 (dry_run={dry_run}, once_per_day={once_per_day}) ===")
+
+    # [2026-07-27 시토 배10303 · GM 확정] 당일이 휴관일이면 08:00 항로 보고 전체를
+    # 휴관 안내문으로 대체한다. 문구는 새로 짓지 않고 kakao_auto_daily_report.py에
+    # 이미 있는 build_holiday_notice() 로직을 그대로 재사용(약속 L21).
+    _now = datetime.now()
+    if is_closed(_now):
+        notice = build_holiday_notice(_now, _now)
+        print(f"[HOLIDAY] 오늘({_now.strftime('%Y-%m-%d')})은 휴관일 — "
+              f"08:00 항로 보고를 휴관 안내문으로 대체: {notice!r}")
+        sent = send_reports(notice, "", dry_run)
+        print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — "
+              f"휴관 안내문 대체 {'OK' if sent else 'FAIL'}")
+        print(f"=== 파이프라인 종료 — {'성공' if sent else '실패'} (휴관 안내문) ===")
+        return 0 if sent else 1
 
     # ① 수집 + 분류 (3분류: GM 결정 / 자율 / 명확화 대기)
     s1 = stage1_collect_classify()
