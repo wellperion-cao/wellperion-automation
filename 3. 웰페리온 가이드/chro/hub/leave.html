@@ -82,6 +82,7 @@
   thead .sc-u,thead .sc-r,thead .sc-q{z-index:5}
   .sc-q{right:0;font-size:13px;border-left:2px solid var(--accent)} .sc-r{right:46px} .sc-u{right:92px}
   .sum-warn{color:var(--red)}
+  .ret-tag{color:var(--red);font-size:11px;font-weight:700}
   /* 휴무 개수 배지 — 한눈에: 충족=초록 / 불일치=빨강 */
   .q-ok{background:rgba(95,191,138,.18);color:#7fd3a3;font-weight:800} .q-bad{background:#c0463d;color:#fff;font-weight:800}
   /* 배치(커버리지) 행 */
@@ -313,6 +314,11 @@ const DEPTS = [
 ];
 const EMP_DEPT={}; DEPTS.forEach(([d,ns])=>ns.forEach(n=>EMP_DEPT[n]=d));
 const ALL_EMP=DEPTS.flatMap(d=>d[1]);
+/* 퇴사자 — 명단(DEPTS)에서 지우지 않고 남겨 이력을 보존한다(제거 금지). 화면 표기만 "(퇴사)" 태그를 붙인다.
+   데이터 키(leave·EMP_DEPT 등)는 그대로 "이지영"을 쓰므로 기존 연동은 전혀 안 건드림.
+   2026-07-27 시로 — 배158(시우 실측: 후임 백승화 현직 반영 완료·이지영 06-27 퇴사 미반영). */
+const RETIRED={"이지영":"2026-06-27"};
+function retTag(nm){return RETIRED[nm]?` <span class="ret-tag" title="퇴사일 ${RETIRED[nm]}">(퇴사)</span>`:"";}
 /* 연차 현황 (db:emp 입사일 기준 · 읽기 전용) */
 let EMP_JOIN={};      // 보드 성명 → 입사일("YYYY-MM-DD")
 let EMP_TYPE={};      // 보드 성명 → 고용형태(원문, 표시 시 프리랜서→파트너)
@@ -579,7 +585,7 @@ function showEmpDetail(nm){
   else { joinStr=`${ai.jd.getFullYear()}-${pad(ai.jd.getMonth()+1)}-${pad(ai.jd.getDate())}`;
     tenureStr=`${Math.floor(ai.months/12)}년 ${ai.months%12}개월`; totalStr=`${ai.grant}일`;
     const r=ai.grant-used; remainStr=`${r%1?r.toFixed(1):r}일`+(r<0?" (초과)":""); }
-  document.getElementById("ve_name").textContent=`${nm} · 연차 현황`;
+  document.getElementById("ve_name").textContent=`${nm}${RETIRED[nm]?" (퇴사)":""} · 연차 현황`;
   document.getElementById("ve_sub").textContent=`${dept} · ${type}`;
   const rows=[["입사일",joinStr],["근속",tenureStr],["고용형태",type],["총 연차",totalStr],["2026 사용",`${us}일`],["잔여",remainStr]];
   document.getElementById("ve_body").innerHTML=
@@ -629,7 +635,7 @@ function render(){
     }
     for(const nm of names){
       let used=0, off=0, huN=0;
-      let row=`<tr${_placed?'':" class='deptfirst'"}>${_placed?'':_deptCell}<td class='colName emp-link' onclick="showEmpDetail('${nm}')" title='연차 현황 보기'>${nm}</td>`; _placed=true;
+      let row=`<tr${_placed?'':" class='deptfirst'"}>${_placed?'':_deptCell}<td class='colName emp-link' onclick="showEmpDetail('${nm}')" title='연차 현황 보기'>${nm}${retTag(nm)}</td>`; _placed=true;
       for(let d=1;d<=days;d++){
         const dt=ymd(y,m,d), dow=new Date(y,m,d).getDay();
         const base=HOLIDAYS[dt]?"hol":(dow===0?"sun":dow===6?"sat":"");
