@@ -6403,6 +6403,10 @@ function _processAction(body) {
       _luSet(['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], body.status);  // '진행 상황'=GM flat O컬럼
       _luSet(['지정 강사', '관리담당'], body.owner);  // ★관리 담당 컬럼만. '지정 강사'=GM flat L컬럼(폼 원본 '접수담당자' 안 건드림)
       _luSet(['상담메모', '메모', '비고'], body.memo);
+      // 연락처 교정(2026-07-27 시포) — 번호와 메모가 한 칸에 섞인 행을 고칠 경로가 없어 수동으로 넘기고 있었다.
+      //   ★위 keyPhone/rowKey 대조를 통과한 행에만 쓴다(행번호만 믿지 않음 · INC-020). 조회키 keyPhone 과
+      //   구분되도록 setPhone 이라는 별도 키를 쓴다 — 값이 없으면 아무 일도 안 한다(_luSet 이 undefined 무시).
+      _luSet(['연락처', '전화', '휴대폰'], body.setPhone);
       _luSet(['상담예약', '상담 예약', '상담일정'], body.consult);
       _luSet(['방문상태', '방문'], body.visited);
       _luSet(['LOSS사유', '미등록 사유', '미등록사유'], body.lossReason);   // LOSS 사유 → 실제 칸 '미등록 사유'(LOSS사유 칸 미존재 불일치 수리). 2026-07-22 시포·GM.
