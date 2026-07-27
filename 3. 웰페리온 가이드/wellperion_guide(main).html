@@ -431,7 +431,7 @@
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;">
       <!-- 매출: 월(좌)/연간(우) 좌우 2열 = 지출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
       <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
-        <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 매출</div>
+        <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 매출<span id="heroKpiFreshnessBadge" style="display:none;font-size:9.5px;font-weight:700;color:var(--dim);background:var(--accent-bg,rgba(183,159,138,0.12));border-radius:9px;padding:1px 7px;margin-left:2px;"></span></div>
         <!-- 월 | 연간 좌우 배치 (세로로 안 늘어나게) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
           <div>
@@ -1187,8 +1187,27 @@
     // ── home_kpi: 매출·지출·이슈 연동 (2026-06-08) ─────────────────────────────
     (function loadHomeKpi(){
       var BASE = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+      /* 서버측 스냅샷(배9660, 2026-07-25 GM 착수 승인) — erp_status_publisher.py가 30분 주기로
+         GitHub raw에 발행. 콜드/시크릿 첫 로드(localStorage 캐시 없음)에서 8초 GAS 응답을
+         기다리지 않고 이 파일(~수십ms)로 먼저 페인트. 반드시 라이브로 덮어써 갱신 — 정확성 무손상. */
+      var SNAPSHOT_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/home_kpi_snapshot.json';
       function set(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
       function setTitle(id, v){ var el = document.getElementById(id); if(el) el.title = v; }
+      /* 스냅샷 표시 배지 — 숫자가 '옛것으로 굳어 보이는' 걸 막는다: 스냅샷을 보여주는 동안엔
+         반드시 이게 스냅샷임을 드러내고, 라이브 도착 즉시 사라진다(2026-07-27 GM 지시). */
+      function setFreshnessBadge(isSnapshot, generatedAtKst){
+        var el = document.getElementById('heroKpiFreshnessBadge');
+        if(!el) return;
+        if(isSnapshot){
+          el.style.display = 'inline-block';
+          el.textContent = '⏱ 스냅샷' + (generatedAtKst ? ' ' + generatedAtKst.slice(11) : '') + ' · 라이브 확인 중';
+          el.title = '서버 발행 스냅샷(' + (generatedAtKst || '') + ') — 라이브 값이 도착하면 자동 갱신됩니다.';
+        } else {
+          el.style.display = 'none';
+          el.textContent = '';
+          el.title = '';
+        }
+      }
 
       /* 한국식 금액 표기: 150317501 → "1억 5,032만" */
       function krAmt(n){
@@ -1213,9 +1232,11 @@
          home_kpi GAS는 '26년 매출 분석'·지출 ERP 시트 라이브 집계로 7~8초 소요 → home 히어로(매출·지출)가
          그만큼 '—'로 비어 보임. 이전 세션이 저장한 실측 스냅샷을 즉시 페인트(체감 즉시), 라이브 도착 시 덮어써 갱신.
          정확성 무손상 — 라이브 값이 항상 최종. 첫 콜드 로드는 서버측 스냅샷 발행(후속) 전까진 여전히 라이브 대기. */
-      function renderHomeKpi(results){
+      function renderHomeKpi(results, opts){
+          opts = opts || {};
           var d = results[0], tgt = results[1];
           if(!d || !d.ok) return;
+          setFreshnessBadge(!!opts.isSnapshot, opts.generatedAtKst);
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
           var monthlyTarget = (tgt && typeof tgt.monthly_target_total === 'number') ? tgt.monthly_target_total : null;
 
@@ -1381,15 +1402,28 @@
 
           /* 이슈(VOC) — 이슈 현황 카드는 종합접수처(reg_board) 카드로 흡수 (2026-06-17 GM). home_kpi의 voc는 미사용. */
       }
-      /* 1) 캐시 즉시 페인트 → 2) 라이브 갱신 + 캐시 write-through */
+      /* 1) 로컬 캐시(있으면 즉시 페인트, 직전 라이브값이라 배지 없음)
+         2) 로컬 캐시가 없는 콜드/시크릿 첫 로드만 서버 스냅샷으로 즉시 페인트(배지 표시)
+         3) 라이브 갱신 + 캐시 write-through(항상 실행 — 스냅샷/캐시 유무와 무관하게 최종값은 라이브) */
       try { var _hkC = localStorage.getItem('wp_home_kpi_cache'); if(_hkC){ renderHomeKpi(JSON.parse(_hkC)); } } catch(_e){}
+      if(!_hkC){
+        Promise.all([
+          fetch(SNAPSHOT_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+          fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+        ]).then(function(arr){
+          var snap = arr[0], tgt = arr[1];
+          if(snap && snap.data && snap.data.ok){
+            renderHomeKpi([snap.data, tgt], { isSnapshot:true, generatedAtKst: snap.generated_at_kst });
+          }
+        }).catch(function(){ /* 스냅샷 실패해도 라이브 대기로 자연 폴백 */ });
+      }
       Promise.all([
         fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }),
         fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
       ])
         .then(function(results){
           if(results && results[0] && results[0].ok){ try { localStorage.setItem('wp_home_kpi_cache', JSON.stringify(results)); } catch(_e){} }
-          renderHomeKpi(results);
+          renderHomeKpi(results, { isSnapshot:false });
         })
         .catch(function(){ /* "—" 유지 */ });
     })();

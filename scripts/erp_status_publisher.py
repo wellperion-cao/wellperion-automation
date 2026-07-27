@@ -31,6 +31,14 @@ OUT = STATUS_DIR / "erp_status.json"
 BRIDGE_LAST = STATUS_DIR / "_bridge_last.json"  # 직전 다리 상태(스팸 방지)
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
+# home 히어로 KPI 서버측 스냅샷 (배9660, 2026-07-27 시토 — GM 2026-07-25 착수 승인).
+# 신규 예약작업 없이 이 발행기의 기존 30분 주기(daily_scheduler.py IntervalTrigger)에
+# 편승한다(L21 net-zero). 콜드/시크릿 첫 로드가 home_kpi GAS 라이브 집계(7~8.6초)를
+# 기다리지 않고 GitHub raw(~수십ms)로 먼저 그려지게 하기 위함. 정확성은 무손상 —
+# 프론트가 이 스냅샷으로 먼저 페인트한 뒤 반드시 라이브 값으로 덮어써 갱신한다.
+HOME_KPI_GAS_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+HOME_KPI_OUT = STATUS_DIR / "home_kpi_snapshot.json"
+
 sys.path.insert(0, str(ROOT / "scripts"))
 try:
     from integration_health import check_bridges, check_queue_mirror  # 연동 다리 자가점검 단일 정의
@@ -384,6 +392,44 @@ def alert_newly_broken(bridges):
         pass
 
 
+def fetch_home_kpi():
+    """home_kpi GAS 라이브 호출(fail-safe). 실패 시 None — 호출부가 기존 파일을 보존한다."""
+    try:
+        url = HOME_KPI_GAS_URL + "?action=home_kpi&_pv=" + str(int(_now_kst().timestamp()))
+        req = urllib.request.Request(url, headers={"User-Agent": "wellperion-erp-publisher"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        if isinstance(data, dict) and data.get("ok"):
+            return data
+        return None
+    except Exception:
+        return None
+
+
+def publish_home_kpi_snapshot():
+    """home 히어로 KPI 스냅샷 발행 — status/home_kpi_snapshot.json.
+
+    실패해도 예외를 삼키고 기존 파일을 그대로 둔다(옛 값이라도 '스냅샷임을 표시한 옛 값'이
+    유지되는 게, 파일이 통째로 사라져 '—'로 굳는 것보다 안전). 성공 시에만 최신화한다.
+    """
+    try:
+        data = fetch_home_kpi()
+        if data is None:
+            return False
+        now = _now_kst()
+        payload = {
+            "_doc": "home 히어로 KPI 서버측 스냅샷 단일 출처. erp_status_publisher.py가 30분 주기로 발행. "
+                    "프론트는 이 값으로 먼저 페인트(스냅샷 표시) 후 반드시 라이브로 덮어써 갱신한다.",
+            "generated_at": now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "generated_at_kst": now.strftime("%Y-%m-%d %H:%M"),
+            "data": data,
+        }
+        HOME_KPI_OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        return True
+    except Exception:
+        return False
+
+
 def build():
     # 시스템 현황 = '기계 상태'만(봇·스케줄러·예약작업). 각 AI 업무는 G1 오늘의 항로가 단일 출처
     # → 여기서 중복 집계/표시하지 않는다(약속 L01 한 곳만, 2026-06-16 GM 지적).
@@ -417,6 +463,10 @@ def main():
     print(f"[erp_status] wrote {OUT}")
     print(f"[erp_status] summary: {payload['summary']}")
 
+    # home 히어로 KPI 스냅샷 — 같은 30분 주기에 편승(배9660). 실패해도 erp_status 발행에 무영향.
+    home_kpi_ok = publish_home_kpi_snapshot()
+    print(f"[erp_status] home_kpi_snapshot: {'갱신' if home_kpi_ok else '실패(기존 유지)'}")
+
     # 연동 다리 — 새로 깨진 것만 텔레그램 1줄 경고(실패해도 발행 무영향)
     alert_newly_broken(payload.get("bridges", []))
 
@@ -427,10 +477,16 @@ def main():
             #   동시에 작업하는 공용 워킹트리라, 남이 staged 해둔 낡은 파일까지 딸려 들어간다.
             #   실제 사고: f155761d 가 낡은 membership.html을 함께 커밋해 CPO 화면 수정(b8b1e3e7)을 통째로 되돌림.
             #   `-- <path>`를 주면 그 경로의 '워킹트리 내용만' 커밋하고 인덱스는 건드리지 않는다.
+            commit_paths = [str(OUT)]
+            if HOME_KPI_OUT.exists():
+                commit_paths.append(str(HOME_KPI_OUT))
+                # 신규 파일(첫 발행)은 아직 미추적 상태라 `git commit -- <path>`만으로는 안 잡힌다.
+                # 특정 경로만 add(=safe — `-A`처럼 남의 staged 변경을 끌어들이지 않음).
+                subprocess.run(["git", "add", str(HOME_KPI_OUT)], cwd=ROOT, check=False)
             subprocess.run(
                 ["git", "commit", "-m",
                  "chore(erp): 시스템 현황 자동 발행 (erp_status.json)",
-                 "--", str(OUT)],
+                 "--"] + commit_paths,
                 cwd=ROOT, check=True,
             )
             subprocess.run(["git", "pull", "--rebase", "--autostash",
