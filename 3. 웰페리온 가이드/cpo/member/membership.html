@@ -2904,7 +2904,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <span class="gdoc-modal-title">📋 작업 현황 로그</span>
       <button class="gdoc-close" type="button" onclick="closeWorklogModal()" aria-label="닫기">&times;</button>
     </div>
-    <div data-worklog="cpo" data-worklog-mode="modal" data-worklog-badge="#wlHeaderBadge"></div>
+    <!-- data-worklog-scope = 지금 보고 있는 화면(멤버십|강습). switchFamily 가 갈아끼우고 다시 그린다.
+         GM 지시 2026-07-27 "멤버십 회원관리는 멤버십 작업현황만, 강습 회원관리에서는 강습만".
+         양쪽에 다 걸리는 일(area=공통)은 두 화면에 다 보인다 — 한쪽에 억지로 넣으면 반대편에서 사라진다. -->
+    <div data-worklog="cpo" data-worklog-mode="modal" data-worklog-badge="#wlHeaderBadge"
+         data-worklog-scope="멤버십" data-worklog-scope-set="멤버십,강습"></div>
   </div>
 </div>
 <!-- defer: 페이지 본문을 다 그린 뒤 실행 — 패널 때문에 화면 뜨는 게 늦어지지 않게(2026-07-24 GM 확인).
@@ -4537,6 +4541,14 @@ function switchFamily(fam) {
   //   하나가 throw하면 switchFamily 자체가 던져, 호출부(init try)의 catch가 switchFamily('membership')로
   //   되돌리던 버그(카톡 비밀번호 후 강습→멤버십으로 새던 근본원인). family/label/chip 전환은 위에서
   //   이미 확정됐으므로 아래 렌더·로드는 best-effort로만 — 실패해도 family는 유지된다.
+  // 작업 현황 로그도 지금 보는 화면 것만 — GM 2026-07-27 "멤버십 회원관리는 멤버십 작업현황만, 강습은 강습만".
+  // 공용 패널(worklog_panel.js)은 그릴 때마다 이 속성을 다시 읽는다 → 속성만 갈아끼우고 다시 그리라고 부른다.
+  // best-effort: 패널 스크립트가 아직 안 왔어도(defer) family 전환이 깨지면 안 되므로 try 로 감싼다.
+  try {
+    var _wlBox = document.querySelector('[data-worklog]');
+    if (_wlBox) _wlBox.setAttribute('data-worklog-scope', (fam === 'lesson') ? '강습' : '멤버십');
+    if (typeof window.wlpRenderWorklog === 'function') window.wlpRenderWorklog();
+  } catch(_wlErr){}
   try {
     renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754)
     if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754)

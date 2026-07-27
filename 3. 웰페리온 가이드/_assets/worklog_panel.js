@@ -14,6 +14,17 @@
       0건이면 그 요소를 숨긴다(평상시 조용 — 기본 모드와 같은 규칙).
     - 이 두 속성이 없으면 동작·모양이 종전과 100% 동일하다(ERP 본 페이지 cmo·coo 무영향).
 
+  ★화면 스코프(선택 · 2026-07-27 GM 지시 "멤버십 회원관리는 멤버십 작업현황만, 강습은 강습만"):
+    <div data-worklog="cpo" data-worklog-scope="멤버십" data-worklog-scope-set="멤버십,강습"></div>
+    - scope-set = 이 페이지가 쓰는 화면 이름 전체. scope = 지금 보고 있는 화면.
+    - '한 일' 목록을 area 값으로 거른다:
+        area == scope            → 보인다
+        area == '공통'            → 보인다(두 화면에 다 걸리는 일 — 한쪽에 억지 배정하면 반대편에서 사라진다)
+        area ∈ scope-set 의 다른 화면 → 숨긴다(이게 GM이 요청한 분리)
+        area ∉ scope-set (옛 '작업') → 목록 아래 접힘 "화면 구분 이전 기록 N건"으로 남긴다(삭제·은폐 아님)
+    - 화면을 바꾸면 페이지가 data-worklog-scope 를 갈아끼우고 window.wlpRenderWorklog() 를 부른다.
+    - scope 속성이 없으면 거르지 않는다 = 종전과 동일.
+
   데이터 소스(고정 스키마 — 백엔드와 합의된 계약, 변경 금지):
     - status/worklog.jsonl      1줄 1 JSON: {ts,role,area,event,result,detail,ref,url}
         result ∈ ok|warn|fail
@@ -163,7 +174,11 @@
         ' font-size:10.5px; color:var(--dim,var(--wl-fb-dim));}' +
       // 모달 모드 — 이미 팝업이 테두리·배경·여백을 갖고 있으니 패널이 또 두르지 않는다(액자 겹침 방지).
       '.wl-panel-modal{margin:0; border:none; border-radius:0; background:none;}' +
-      '.wl-panel-modal > .wl-body{border-top:none; padding:0;}';
+      '.wl-panel-modal > .wl-body{border-top:none; padding:0;}' +
+      // 지금 어느 화면 기준으로 걸러 보고 있는지 — 제목 옆 작은 꼬리표(비어 보일 때 "왜 없지?"를 막는다).
+      '.wl-scope-tag{margin-left:6px; padding:1px 7px; border-radius:20px; font-size:10px; font-weight:700;' +
+        ' text-transform:none; letter-spacing:0; color:var(--accent,var(--wl-fb-accent));' +
+        ' border:1px solid var(--border,var(--wl-fb-border));}';
     var st = document.createElement('style');
     st.id = 'wl-style';
     st.textContent = css;
@@ -254,8 +269,20 @@
     return html + '</div>';
   }
 
-  function renderLogsSection(logsAll, role){
-    var html = '<div class="wl-section"><div class="wl-section-title">📋 한 일</div>';
+  // 화면 스코프 판정 — 이 줄을 지금 화면에서 보여줄지. 2026-07-27.
+  //   returns 'show' | 'hide' | 'legacy'(화면 구분이 생기기 전 기록 — 접어서 남긴다)
+  function scopeVerdict(area, scope, scopeSet){
+    if(!scope) return 'show';                       // 스코프 미지정 = 거르지 않음(종전 동작)
+    var a = String(area == null ? '' : area).trim();
+    if(a === scope) return 'show';
+    if(a === '공통') return 'show';                  // 두 화면에 다 걸리는 일
+    if(scopeSet.indexOf(a) >= 0) return 'hide';      // 다른 화면 일 = 이번 요청의 핵심(분리)
+    return 'legacy';                                 // 옛 '작업' 등 — 구분 이전 기록
+  }
+
+  function renderLogsSection(logsAll, role, scope, scopeSet){
+    var html = '<div class="wl-section"><div class="wl-section-title">📋 한 일'
+      + (scope ? ' <span class="wl-scope-tag">' + esc(scope) + ' 화면</span>' : '') + '</div>';
     if(logsAll === null){
       return html + '<div class="wl-error">작업 로그를 불러오지 못했습니다</div></div>';
     }
@@ -277,31 +304,56 @@
     if(!recent.length){
       return html + '<div class="wl-empty">최근 7일 내 기록이 없습니다</div></div>';
     }
-    var lastKey = '';
+    // 화면 스코프로 세 갈래 — 보임 / 다른 화면(숨김) / 구분 이전(접어서 남김). 2026-07-27.
+    var shown = [], legacy = [];
     recent.forEach(function(l){
-      var tp = tsParts(l.ts);
-      if(!tp) return;
-      if(tp.dateKey !== lastKey){
-        html += '<div class="wl-date-sep">' + tp.dateLabel + '</div>';
-        lastKey = tp.dateKey;
-      }
-      var icon = RESULT_ICON[l.result] || '';
-      var eventTxt = esc(l.event || '');
-      var eventHtml = l.url ? ('<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + eventTxt + '</a>') : eventTxt;
-      html += '<div class="wl-log-row wl-result-' + esc(l.result || '') + '"' + (l.ref ? ' title="' + esc(l.ref) + '"' : '') + '>' +
-        '<span class="wl-log-time">' + tp.time + '</span>' +
-        '<span class="wl-log-sep">·</span>' +
-        (l.area ? '<span class="wl-log-area">[' + esc(l.area) + ']</span>' : '') +
-        '<span class="wl-log-event">' + eventHtml + '</span>' +
-        (icon ? '<span class="wl-log-icon">' + icon + '</span>' : '') +
-        '</div>';
-      if(l.detail) html += '<div class="wl-log-detail">' + esc(l.detail) + '</div>';
+      var v = scopeVerdict(l.area, scope, scopeSet);
+      if(v === 'show') shown.push(l);
+      else if(v === 'legacy') legacy.push(l);
     });
+
+    function rowsHtml(list){
+      var out = '', lastKey = '';
+      list.forEach(function(l){
+        var tp = tsParts(l.ts);
+        if(!tp) return;
+        if(tp.dateKey !== lastKey){
+          out += '<div class="wl-date-sep">' + tp.dateLabel + '</div>';
+          lastKey = tp.dateKey;
+        }
+        var icon = RESULT_ICON[l.result] || '';
+        var eventTxt = esc(l.event || '');
+        var eventHtml = l.url ? ('<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + eventTxt + '</a>') : eventTxt;
+        out += '<div class="wl-log-row wl-result-' + esc(l.result || '') + '"' + (l.ref ? ' title="' + esc(l.ref) + '"' : '') + '>' +
+          '<span class="wl-log-time">' + tp.time + '</span>' +
+          '<span class="wl-log-sep">·</span>' +
+          (l.area ? '<span class="wl-log-area">[' + esc(l.area) + ']</span>' : '') +
+          '<span class="wl-log-event">' + eventHtml + '</span>' +
+          (icon ? '<span class="wl-log-icon">' + icon + '</span>' : '') +
+          '</div>';
+        if(l.detail) out += '<div class="wl-log-detail">' + esc(l.detail) + '</div>';
+      });
+      return out;
+    }
+
+    if(!shown.length){
+      html += '<div class="wl-empty">이 화면에서 한 일은 최근 7일 내 없습니다</div>';
+    } else {
+      html += rowsHtml(shown);
+    }
+    // 구분 이전 기록 — 지우지 않고 접어 둔다. 건수는 접힌 채로도 보인다(누적 gaps와 같은 방식).
+    if(legacy.length){
+      html += '<div class="wl-old-gaps">' +
+        '<button type="button" class="wl-old-toggle" aria-expanded="false">' +
+          '<span class="wl-old-caret">▸</span><span>화면 구분 이전 기록 ' + legacy.length + '건</span>' +
+        '</button>' +
+        '<div class="wl-old-list" hidden>' + rowsHtml(legacy) + '</div></div>';
+    }
     return html + '</div>';
   }
 
-  function renderBody(body, data, role){
-    var html = renderGapsSection(data.gaps, role) + renderLogsSection(data.logs, role);
+  function renderBody(body, data, role, scope, scopeSet){
+    var html = renderGapsSection(data.gaps, role) + renderLogsSection(data.logs, role, scope, scopeSet);
     var genAt = (data.gaps && data.gaps.generated_at) ? fmtGenAt(data.gaps.generated_at) : '';
     if(genAt) html += '<div class="wl-footer">마지막 점검: ' + esc(genAt) + '</div>';
     body.innerHTML = html;
@@ -367,11 +419,20 @@
       if(oc) oc.textContent = willOpen ? '▾' : '▸';
     });
 
-    loadData().then(function(data){
-      renderBody(body, data, role);
+    // 스코프는 '그릴 때마다' 컨테이너에서 다시 읽는다 — 페이지가 화면을 바꾸며 속성만 갈아끼우면 되게.
+    function paint(data){
+      var scope = String(container.getAttribute('data-worklog-scope') || '').trim();
+      var setRaw = String(container.getAttribute('data-worklog-scope-set') || '');
+      var scopeSet = setRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      renderBody(body, data, role, scope, scopeSet);
       updateBadge(badge, data, role);
-    });
+    }
+    _instances.push(function(){ loadData().then(paint); });   // 페이지가 다시 그리라고 할 때 쓰는 손잡이
+    loadData().then(paint);
   }
+
+  // 렌더된 인스턴스들 — window.wlpRenderWorklog() 가 전부 다시 그린다(데이터는 캐시 재사용, 재fetch 없음).
+  var _instances = [];
 
   // ── 전체 스캔(같은 페이지 복수 인스턴스 안전 — 이미 초기화된 컨테이너는 건너뜀) ──
   function scan(){
@@ -386,6 +447,11 @@
 
   // 재스캔 훅 공개 — 컨테이너를 나중에 동적으로 추가하는 페이지가 직접 호출 가능(기존 페이지엔 무영향).
   window.wlpRescanWorklog = scan;
+  // 다시 그리기 훅 — 페이지가 data-worklog-scope 를 바꾼 뒤 부른다(데이터 재요청 없음, 캐시 재사용).
+  window.wlpRenderWorklog = function(){
+    scan();                                    // 아직 안 만들어진 컨테이너가 있으면 먼저 만든다
+    _instances.forEach(function(f){ try{ f(); }catch(e){} });
+  };
 
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', scan);

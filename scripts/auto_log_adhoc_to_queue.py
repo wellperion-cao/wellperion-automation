@@ -403,6 +403,32 @@ def _commit_queue(root: str, sha7: str, clevel: str) -> None:
         _gl.ACQUIRE_TIMEOUT = prev
 
 
+# ── 작업 로그 분류 칸(area) — 화면 이름 채우기 (GM 지시 2026-07-27) ───────────────────────────
+# 왜: 회원관리 화면의 작업 현황 로그 팝업에 멤버십·강습 작업이 섞여 나와 "분리가 안 된 것 같다"는
+#   GM 피드백(FB260727-100241). 원인은 화면 쪽이 아니라 데이터였다 — 이 함수가 전 역할·전 작업에
+#   area="작업" 을 박고 있어서 기록만 봐서는 어느 화면 일인지 알 방법이 아예 없었다.
+# 범위: cpo 만 분류한다. 다른 역할은 "작업" 그대로 — 종전 동작 무변경(무회귀).
+# ★'공통'을 두는 이유: 실측(2026-07-27 · 기존 16줄) 결과 5줄이 두 화면에 다 걸리는 일이었다
+#   (작업 현황 로그 자체 손보기·급함 게이트 등). 이런 건을 한쪽으로 억지 배정하면 반대 화면에서
+#   일이 사라진 것처럼 보인다 → '공통'으로 두고 화면 양쪽에 다 보이게 한다. 숨기지 않는 게 원칙.
+_CPO_LESSON_KEYS = ("강습", "유소년", "WSC", "아쿠아", "담당강사", "종목", "수강")
+_CPO_MEMBER_KEYS = ("멤버십", "문의현황", "회원현황", "리드", "휴회", "재등록", "컨택", "예약달력", "문의회원")
+
+
+def _worklog_area(clevel: str, subject: str) -> str:
+    """작업 로그의 분류 칸 값. cpo=화면 이름(멤버십|강습|공통), 그 외 역할=종전 '작업'."""
+    if (clevel or "").strip().lower() != "cpo":
+        return "작업"
+    s = str(subject or "")
+    lesson = any(k in s for k in _CPO_LESSON_KEYS)
+    member = any(k in s for k in _CPO_MEMBER_KEYS)
+    if lesson and not member:
+        return "강습"
+    if member and not lesson:
+        return "멤버십"
+    return "공통"   # 둘 다 걸리거나 아무것도 안 걸림 = 양쪽에서 보여야 하는 일
+
+
 def _log_worklog_best_effort(clevel: str, item: dict, meta: dict) -> None:
     """배를 만든 그 자리에서 status/worklog.jsonl 에도 1줄 남긴다(2026-07-25 시우 · GM 지적).
 
@@ -423,10 +449,11 @@ def _log_worklog_best_effort(clevel: str, item: dict, meta: dict) -> None:
     except Exception:
         return
     try:
+        _subject = _strip_conventional_prefix(str(meta.get("subject") or ""))
         worklog_log(
             clevel,
-            "작업",
-            _strip_conventional_prefix(str(meta.get("subject") or ""))[:120],
+            _worklog_area(clevel, _subject),
+            _subject[:120],
             result="ok",
             detail=f"커밋 {meta.get('short', '')} · 배 {item.get('ship_no', '')}",
             ref=str(item.get("task_id") or ""),
