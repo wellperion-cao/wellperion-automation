@@ -678,44 +678,63 @@ function loadYtdTrend() {
   if (!el) return;
   var today = new Date();
   var y = today.getFullYear(), lastM = today.getMonth() + 1;
-  var jobs = [];
-  for (var mm = 1; mm <= lastM; mm++) {
-    var f = y + '-' + String(mm).padStart(2, '0') + '-01';
-    var isCur = (mm === lastM);
-    var t = isCur ? _fmtYMD(today)
-                  : y + '-' + String(mm).padStart(2, '0') + '-' + String(new Date(y, mm, 0).getDate()).padStart(2, '0');
-    jobs.push(fetchFunnelConversion(f, t));
+
+  // [2026-07-27] 표를 먼저 그리고 월별로 채운다. 7개월을 Promise.all 로 한꺼번에 기다리면
+  //   다 올 때까지 이 자리가 통째로 비어 있어, 방금 고친 '불러오는 중에서 안 변함'과 똑같이
+  //   고장으로 보인다. 도착하는 대로 그 줄만 갱신하면 첫 달부터 바로 보인다.
+  var html = '<table class="channel-table"><tr><th style="width:74px">월</th><th>문의</th>'
+           + '<th style="width:42%">추이</th><th>가입</th><th>전환율</th></tr>';
+  for (var i = 1; i <= lastM; i++) {
+    html += '<tr id="ytd-r' + i + '"><td>' + i + '월' + (i === lastM ? ' <span style="color:var(--dim);font-size:10px">(오늘까지)</span>' : '') + '</td>'
+          + '<td colspan="4" style="color:var(--dim)">불러오는 중…</td></tr>';
   }
-  Promise.all(jobs).then(function(list) {
-    var rows = [], maxInq = 0, failed = 0;
-    list.forEach(function(d, i) {
-      if (!d || !d.total) { failed++; rows.push({ m: i + 1, inq: null }); return; }
-      var inq = d.total.inquiries || 0;
-      if (inq > maxInq) maxInq = inq;
-      rows.push({ m: i + 1, inq: inq, conv: d.total.converted || 0, rate: d.total.rate });
-    });
-    var html = '<table class="channel-table"><tr><th style="width:70px">월</th><th>문의</th>'
-             + '<th style="width:44%">추이</th><th>가입</th><th>전환율</th></tr>';
-    rows.forEach(function(r) {
-      if (r.inq === null) {
-        html += '<tr><td>' + r.m + '월</td><td colspan="4" style="color:var(--dim)">미측정(수집 실패)</td></tr>';
-        return;
-      }
+  html += '</table><div id="ytd-note" style="font-size:10.5px;color:var(--dim);margin-top:6px"></div>';
+  el.innerHTML = html;
+
+  var got = [];            // {m, inq, conv, rate} — 도착한 것만
+  var failed = 0, done = 0;
+
+  function repaint() {
+    var maxInq = 0;
+    got.forEach(function(r) { if (r && r.inq > maxInq) maxInq = r.inq; });
+    got.forEach(function(r) {
+      if (!r) return;
+      var tr = document.getElementById('ytd-r' + r.m);
+      if (!tr) return;
       var pct = maxInq ? Math.round(r.inq / maxInq * 100) : 0;
-      var isCur = (r.m === lastM);
-      html += '<tr>'
-        + '<td>' + r.m + '월' + (isCur ? ' <span style="color:var(--dim);font-size:10px">(오늘까지)</span>' : '') + '</td>'
+      tr.innerHTML = '<td>' + r.m + '월' + (r.m === lastM ? ' <span style="color:var(--dim);font-size:10px">(오늘까지)</span>' : '') + '</td>'
         + '<td style="font-weight:700">' + r.inq + '</td>'
-        + '<td><div style="background:var(--line,#333);height:9px;border-radius:5px;overflow:hidden">'
-        + '<div style="width:' + pct + '%;height:100%;background:var(--accent,#c9a227);border-radius:5px"></div></div></td>'
+        + '<td><div style="background:rgba(255,255,255,.10);height:9px;border-radius:5px;overflow:hidden">'
+        + '<div style="width:' + pct + '%;height:100%;background:#c9a227;border-radius:5px"></div></div></td>'
         + '<td>' + r.conv + '건</td>'
-        + '<td>' + (typeof r.rate === 'number' ? r.rate + '%' : '—') + '</td>'
-        + '</tr>';
+        + '<td>' + (typeof r.rate === 'number' ? r.rate + '%' : '—') + '</td>';
     });
-    html += '</table>';
-    if (failed) html += '<div style="font-size:10.5px;color:var(--dim);margin-top:6px">※ ' + failed + '개월은 수집 실패로 미측정 — 0으로 세지 않았다.</div>';
-    el.innerHTML = html;
-  });
+    var note = document.getElementById('ytd-note');
+    if (note) {
+      note.textContent = done < lastM
+        ? ('불러오는 중 ' + done + '/' + lastM + '개월…')
+        : (failed ? ('※ ' + failed + '개월은 수집 실패로 미측정 — 0으로 세지 않았다.') : '');
+    }
+  }
+
+  for (var mm = 1; mm <= lastM; mm++) {
+    (function(m) {
+      var f = y + '-' + String(m).padStart(2, '0') + '-01';
+      var t = (m === lastM) ? _fmtYMD(today)
+            : y + '-' + String(m).padStart(2, '0') + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0');
+      fetchFunnelConversion(f, t).then(function(d) {
+        done++;
+        if (!d || !d.total) {
+          failed++;
+          var tr = document.getElementById('ytd-r' + m);
+          if (tr) tr.innerHTML = '<td>' + m + '월</td><td colspan="4" style="color:var(--dim)">미측정(수집 실패)</td>';
+        } else {
+          got.push({ m: m, inq: d.total.inquiries || 0, conv: d.total.converted || 0, rate: d.total.rate });
+        }
+        repaint();
+      });
+    })(mm);
+  }
 }
 
 function _setCacheBadge(show) {
