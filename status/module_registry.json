@@ -539,9 +539,11 @@
       "feature": "공지·안내문 서식 생성·저장 — 인쇄용 공지 템플릿(공용 GAS 저장목록)",
       "data_source": {
         "kind": "gas",
-        "ref": "TODO_API action=notice_list (저장 공지 목록)"
+        "_ref_주석": "배134(2026-07-27) — 시모 배125(a557506b5) 방식 그대로 적용. 옛 ref 는 원격 API 설명 산문이라 로컬 아티팩트가 하나도 잡히지 않아 판정이 'unmeasurable'(감시 사각지대)로 빠졌다. 실사용 여부와 무관하게 이 모듈은 구조적으로 로컬 흔적을 남길 수 없다 — 저장/조회/삭제 전부 공유 GAS Web App(notice_list/notice_save/notice_delete) 직접 호출이며(3. 웰페리온 가이드/coo/notice/notice_template.html), coo_registry.fetch_notice_status 도 매번 라이브 HTTP 조회만 하고 로컬 캐시를 쓰지 않는다(파일 확인 완료). .verify_screenshots/notice_*.png 는 수동 QA 스크린샷(scripts/verify_notice_wysiwyg.py, 비정기 수동실행)이라 가동 신호로 채택 불가(코드 수정/수동테스트≠가동 결과, chro-gmail-job-title-fetch 항목과 동일 원칙). ★원격 전용·로컬 감지 불가 — 사각지대인 줄 알고 두는 상태로 명시(지어내지 않음).",
+        "ref": "TODO_API action=notice_list (저장 공지 목록) — ★원격 전용·로컬 감지 불가"
       },
       "notify_spec": {
+        "_cadence_주석": "배134 — 켜지 않음. bot_id=null 은 status/telegram_rooms.json 어떤 키에도 해소되지 않아(미해소) 켜도 안전(module_reporter 발신 0 유지)하지만, judge_module 은 로컬 아티팩트를 못 찾으면 cadence 값과 무관하게 무조건 unmeasurable 을 반환한다(코드 확인: last_dt is None 분기가 cadence 체크보다 먼저 단락). 이 모듈은 구조적으로 로컬 아티팩트가 영원히 없으므로 daily/weekly 를 켜도 판정은 그대로 unmeasurable — 의미 없는 선언을 남기지 않는다.",
         "daily": false,
         "weekly": false,
         "monthly": false,
