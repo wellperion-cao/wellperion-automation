@@ -961,6 +961,46 @@ function _regDelete(body) {
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
 }
 
+// ─── hold_intake_test_rows — 휴회접수 탭의 테스트 행 조회·삭제 (GATED) ───
+// 2026-07-27 시포→시우 인계(배146). GM 지시로 반려된 테스트 접수 2건을 시트에서 지운다.
+// ★행번호로 지우지 않는다. INC-020(행 인덱스 삭제로 실고객 오삭제) 재발 방지 —
+//   '성함' 과 '연락처' 두 칸을 동시에 대조해 찾은 행만 지운다.
+// ★안전장치 3겹: ①이름이 '[테스트]' 로 시작 + 연락처가 010-0000- 로 시작하는 행만 후보
+//   ②confirm !== 'yes' 면 지우지 않고 후보 목록만 반환(기본이 미리보기)
+//   ③아래에서 위로 지운다(중간 삭제로 인덱스가 밀려 엉뚱한 행을 지우는 것 방지).
+var HOLD_INTAKE_SHEET = '휴회접수';
+function _holdIntakeTestRows(body) {
+  var ss = _vGetSpreadsheet();
+  var sh = ss.getSheetByName(HOLD_INTAKE_SHEET);
+  if (!sh) return _vJson({ ok: false, error: HOLD_INTAKE_SHEET + ' 탭이 없습니다' });
+  var last = sh.getLastRow();
+  if (last < 2) return _vJson({ ok: true, found: [], deleted: 0, message: '데이터 행 없음' });
+
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  var iName = headers.indexOf('성함');
+  var iTel  = headers.indexOf('연락처');
+  if (iName < 0 || iTel < 0) {
+    return _vJson({ ok: false, error: "'성함'·'연락처' 칸을 찾지 못했습니다 — 헤더: " + headers.join(',') });
+  }
+
+  var data = sh.getRange(2, 1, last - 1, headers.length).getValues();
+  var found = [];
+  for (var r = 0; r < data.length; r++) {
+    var nm = String(data[r][iName] || '').trim();
+    var tel = String(data[r][iTel] || '').trim();
+    if (nm.indexOf('[테스트]') === 0 && tel.indexOf('010-0000-') === 0) {
+      found.push({ row: r + 2, 성함: nm, 연락처: tel });
+    }
+  }
+  if (String((body && body.confirm) || '') !== 'yes') {
+    return _vJson({ ok: true, dryRun: true, found: found,
+                    message: '미리보기입니다. 실제 삭제는 confirm="yes" 를 함께 보내세요.' });
+  }
+  for (var k = found.length - 1; k >= 0; k--) sh.deleteRow(found[k].row);
+  _regBoardCacheClear_();
+  return _vJson({ ok: true, dryRun: false, deleted: found.length, found: found });
+}
+
 // ─── rename_legacy_resources — 구글 실물 자원(드라이브 폴더·시트 탭) 이름의 VOC 제거 (GATED·일회성) ───
 // 2026-07-27 GM 지시 '연결된 부분도 다 수정'. 코드 상수만 바꾸면 실물과 어긋나므로 실물을 여기서 바꾼다.
 // 안전: ①드라이브 폴더는 ID 로 잡아 rename 한다 — 폴더 ID·그 안 파일 ID·공개 사진 URL 전부 불변이라
@@ -1652,6 +1692,8 @@ function _vProcess(action, body, params) {
   if (action === 'reg_reprefix') return _regReprefix();
   // 구글 실물 자원(드라이브 폴더·시트 탭) 이름의 VOC 제거 · 일회성 · GATED. 2026-07-27 시우(GM 지시).
   if (action === 'rename_legacy_resources') return _renameLegacyResources();
+  // 휴회접수 탭 테스트 행 조회·삭제(키 대조) · GATED. 기본은 미리보기, confirm='yes' 일 때만 삭제. 2026-07-27 시우(배146).
+  if (action === 'hold_intake_test_rows') return _holdIntakeTestRows(body);
 
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
