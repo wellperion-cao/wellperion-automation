@@ -17,10 +17,16 @@ cpo_staff_feedback_watch.py — 실무진 피드백이 들어오면 그 자리�
      - 담당은 화면(업무 구분)·종류 키워드로 가른다(route_clevel, 2026-07-27 배10309) —
        애매하면 시포(cpo)로 보낸다(안전 폴백). 화면이 어디든 무조건 시포로 서던 문제 수정.
   3. 하트비트를 남긴다(가동 신호는 배가 아니라 하트비트로 — 배9995 도배 사고 교훈).
+  4. 나가는 쪽(2026-07-27 웰리 지시 — "반쪽만 자동인 루프는 자동이 아니다") — 접수ID로 만들어진
+     배가 status='DONE' 이 되면, 그 접수건을 시트에서 대조ID(FB…)로 찾아 처리상태를 '처리완료'로,
+     처리메모에 실무진이 이해할 한 줄을 staff_feedback_update 로 써넣는다(sync_closed_feedback).
+     멱등 판단은 그때그때 fetch 한 라이브 시트의 현재 처리상태로 한다(이미 '처리완료'면 건너뜀) —
+     로컬 마커에 기대지 않는다. 이전엔 이걸 사람이 매번 손으로 해 왔다(그래서 반쪽 자동이었다).
 
 무엇을 안 하나
   - 알림을 새로 보내지 않는다. 접수 알림은 GAS 가 이미 보낸다(중복 발신 금지).
-  - 시트를 고치지 않는다. 처리상태 갱신은 사람·시포가 staff_feedback_update 로 한다.
+  - status/_queue.json 을 회신 때문에 고치지 않는다(대표님 지시 — 큐는 웰리 중앙 갱신 전용).
+    회신은 시트에만 쓴다. 배 상태(DONE)는 이미 다른 경로로 정해진 값을 읽기만 한다.
   - 새 예약작업을 만들지 않는다. 3분 주기 cpo_inquiry_snapshot.bat 에 얹어 같이 돈다.
 
 실행: python scripts/collectors/cpo_staff_feedback_watch.py [--dry-run] [--no-push]
@@ -93,6 +99,177 @@ def route_clevel(screen: str, kind: str) -> str:
         if any(k in text for k in keywords):
             return clevel
     return "cpo"
+
+
+# ─── 나가는 쪽: 배가 DONE 되면 실무진 화면에 회신한다 (2026-07-27 웰리 지시) ──────────────────
+#   들어오는 쪽(위)은 이미 자동인데 나가는 쪽(고침 → 실무진 회신)은 사람이 매번 손으로
+#   staff_feedback_update 를 불러야 했다 — 반쪽만 자동인 루프. 여기서 마저 잇는다.
+#   ship['note'] 는 GM·다른 C-Level이 읽는 내부 감사 기록(커밋 해시·파일명·함수명 섞임)이라
+#   그대로 실무진에게 보낼 수 없다 — 아래는 그 note 에서 마지막 '완료' 계열 항목을 찾아
+#   기술 잡음만 걷어내고 한 줄로 다듬는다. 완벽한 존댓말 재작성은 아니지만(그건 이 배치
+#   스크립트 안에 AI 문장생성이 없어 불가능), 실무진이 읽고 이해할 수 있는 사실 그대로다.
+_FBID_RE = re.compile(r"FB\d{6}-\d{6}")
+_COMMIT_HASH_RE = re.compile(r"커밋\s*[0-9a-f]{6,12}(?:\s*[→\-]{1,2}>?\s*[0-9a-f]{6,12})*")
+_FILENAME_RE = re.compile(r"\b[\w\-]+\.(?:py|js|html|json|md)\b")
+_PATHLIKE_RE = re.compile(r"\b[a-z][a-z0-9_]*(?:/[a-z][a-z0-9_./]*)+\b")  # cmo/survey 같은 저장소 경로
+_IDENTIFIER_RE = re.compile(r"_[A-Za-z][A-Za-z0-9_]*")
+_ALLCAPS_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9_]{2,}\b")
+_PAREN_SPAN_RE = re.compile(r"\([^()]*\)")
+_GM_QUOTE_START_RE = re.compile(r'GM\s*(지시|판단|결정)\s*[:"“]')
+_CLOSING_TAG_RE = re.compile(r"\[[^\]\n]*(?:완료|확정|검수 통과|종결)[^\]\n]*\]")
+
+STAFF_REPLY_ALREADY_DONE = "처리완료"
+
+
+def _is_technical_snippet(s: str) -> bool:
+    return bool(
+        _COMMIT_HASH_RE.search(s) or _FILENAME_RE.search(s) or _PATHLIKE_RE.search(s)
+        or _IDENTIFIER_RE.search(s) or _ALLCAPS_TOKEN_RE.search(s)
+    )
+
+
+def _clean_staff_text(text: str) -> str:
+    """커밋 해시·파일명·함수명(류)을 걷어낸다. 그런 토큰만 든 괄호절은 통째로 지운다
+    (식별자만 지우면 '(_holdOnlyView 조건)' → '(조건)' 처럼 문장이 깨지기 때문)."""
+    protected = {}
+
+    def _protect(m):
+        key = f"\x00{len(protected)}\x00"
+        protected[key] = m.group(0)
+        return key
+
+    text = _FBID_RE.sub(_protect, text)  # 접수ID는 보존(오탐 방지 — FB260724 같은 토큰이 ALLCAPS로 오인되던 문제)
+    text = _PAREN_SPAN_RE.sub(lambda m: "" if _is_technical_snippet(m.group(0)) else m.group(0), text)
+    text = _COMMIT_HASH_RE.sub("", text)
+    text = _FILENAME_RE.sub("", text)
+    text = _PATHLIKE_RE.sub("", text)
+    text = _IDENTIFIER_RE.sub("", text)
+    text = _ALLCAPS_TOKEN_RE.sub("", text)
+    for key, val in protected.items():
+        text = text.replace(key, val)
+    text = re.sub(r"\s{2,}", " ", text)
+    text = re.sub(r"\(\s*\)", "", text)
+    return text.strip(" ·-→")
+
+
+def _last_closing_entry(note: str) -> str:
+    """note 안에서 가장 마지막 '완료/확정/검수 통과/종결' 계열 항목의 본문을 뽑는다.
+    그런 항목이 하나도 없으면(옛 형식 등) 마지막 문단으로 폴백."""
+    matches = list(_CLOSING_TAG_RE.finditer(note))
+    if not matches:
+        return note.split("\n\n")[-1]
+    m = matches[-1]
+    tail = note[m.end():]
+    nxt = tail.find("\n\n")
+    return (tail[:nxt] if nxt >= 0 else tail).strip()
+
+
+def build_staff_reply(ship: dict, today: str) -> str:
+    """DONE 배 하나 → 실무진이 읽을 한 줄 회신. 원 신고 문구(GM 지시 "…")는 재인용하지
+    않고, 실제로 뭘 어떻게 고쳤는지(▸ 항목 최대 2개)만 담는다."""
+    note = str(ship.get("note") or "")
+    block = _last_closing_entry(note)
+    lines = [ln.strip() for ln in block.split("\n")]
+
+    picked = []
+    bullets = 0
+    in_quote_skip = False
+    for ln in lines:
+        if not ln:
+            continue
+        if ln.startswith("[") or ln.startswith("★"):
+            break
+        if in_quote_skip:
+            if ln.count('"') % 2 == 1:
+                in_quote_skip = False
+            continue
+        if _GM_QUOTE_START_RE.search(ln):
+            if ln.count('"') % 2 == 1:
+                in_quote_skip = True
+            continue
+        if ln.startswith("▸"):
+            if bullets >= 2:
+                continue
+            bullets += 1
+        picked.append(ln)
+        if bullets >= 2:
+            break
+        if len(picked) >= 3:
+            break
+
+    # 도입부만 짧게 걸리는 경우(예: "원인을 찾았다." 한 줄) — 결론/조치 소단락이 있으면 덧붙인다.
+    # 실무진 입장에선 "찾았다"보다 "그래서 어떻게 했다"가 중요하다.
+    if len(picked) < 2:
+        for ln in lines:
+            ln = ln.strip()
+            m = re.match(r"^\[(처리|결론|조치|답변)[^\]]*\]\s*(.+)$", ln)
+            if m and m.group(2):
+                picked.append(m.group(2))
+                break
+
+    summary = _clean_staff_text(" ".join(picked))
+    if not summary:
+        title = str(ship.get("title") or "").split("—", 1)[-1].strip()
+        summary = f"확인해 처리했습니다{('(' + title + ')') if title else ''}."
+    if len(summary) > 150:
+        summary = summary[:150].rstrip() + "…"
+    return f"[{today} 처리완료] {summary}"
+
+
+def sync_closed_feedback(rows: list, queue: list, archive: list, today: str):
+    """접수ID로 배와 시트를 대조 — DONE 인데 시트가 아직 '처리완료' 가 아닌 것만 회신문 조립.
+    반환: [{id, status, memo, ship_title}] — 실제 GAS 호출은 호출부에서(멱등 판단은
+    라이브 시트의 현재 처리상태로 한다 — 로컬 마커에 기대지 않는다: 3분마다 도는 잡이라
+    로컬 상태와 시트가 어긋나도 다음 회차에 시트 기준으로 다시 판단하면 스스로 맞다)."""
+    by_fid = {}
+    for r in rows:
+        fid = str(r.get("접수ID") or "").strip()
+        if fid:
+            by_fid[fid] = r
+
+    seen_task_ids = set()
+    updates = []
+    for ship in list(queue) + list(archive):
+        if not isinstance(ship, dict):
+            continue
+        fid = str(ship.get("feedback_id") or "").strip()
+        if not fid or str(ship.get("status") or "") != "DONE":
+            continue
+        task_id = ship.get("task_id")
+        if task_id in seen_task_ids:
+            continue
+        seen_task_ids.add(task_id)
+
+        row = by_fid.get(fid)
+        if row is None:
+            continue  # 시트에서 못 찾음(삭제 등) — 안전하게 건너뜀, 다음 회차 재시도
+        current_status = str(row.get("처리상태") or "").strip()
+        if current_status.startswith(STAFF_REPLY_ALREADY_DONE):
+            continue  # 멱등 — 이미 회신됨
+
+        memo = build_staff_reply(ship, today)
+        updates.append({
+            "id": fid, "status": STAFF_REPLY_ALREADY_DONE, "memo": memo,
+            "ship_title": ship.get("title"), "task_id": task_id,
+        })
+    return updates
+
+
+def push_feedback_updates(updates: list, timeout=60):
+    """staff_feedback_update 호출 — 대조키=접수ID(행번호 아님). 실패 시 (None, 사유)."""
+    payload = [{"id": u["id"], "status": u["status"], "memo": u["memo"]} for u in updates]
+    body = json.dumps({"action": "staff_feedback_update", "t": FB_TOKEN, "updates": payload}).encode("utf-8")
+    req = urllib.request.Request(
+        FB_GAS_URL, data=body, headers={"Content-Type": "text/plain;charset=utf-8"}
+    )
+    try:
+        raw = urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8")
+        data = json.loads(raw)
+    except Exception as e:
+        return None, f"{type(e).__name__}: {str(e)[:120]}"
+    if not data.get("ok"):
+        return None, str(data.get("error") or "ok=false")
+    return data, None
 
 
 def fetch_feedback(timeout=60):
@@ -210,6 +387,12 @@ def main() -> int:
         print(f"전체 {len(rows)}건 · 미처리 {len(pending)}건 · 배 없는 신규 {len(new)}건")
         for r in new:
             print("  +", r.get("접수ID"), "|", str(r.get("내용") or "")[:60].replace("\n", " "))
+
+        sync_updates = sync_closed_feedback(rows, q, archive, today)
+        print(f"\n[나가는 쪽] DONE 인데 시트에 아직 회신 안 된 것 {len(sync_updates)}건")
+        for u in sync_updates:
+            print(f"  ~ {u['id']} ({u['task_id']}) → 처리상태='처리완료'")
+            print(f"    처리메모: {u['memo']}")
         return 0
 
     made = []
@@ -228,10 +411,34 @@ def main() -> int:
 
     mutate_queue(mutator, holder=MODULE_ID)
 
+    # 나가는 쪽 — 큐 파일은 안 건드린다(대표님 지시: _queue.json 은 웰리 중앙 갱신 전용).
+    # DONE 인데 시트가 아직 '처리완료' 가 아닌 것만 골라 staff_feedback_update 로 회신한다.
+    # 멱등 판단은 로컬 상태가 아니라 방금 fetch 한 라이브 시트 값 기준(sync_closed_feedback 내부).
+    queue_now = load_queue()
+    replied = []
+    reply_err = None
+    sync_updates = sync_closed_feedback(rows, queue_now, archive, today)
+    if sync_updates:
+        result, reply_err = push_feedback_updates(sync_updates)
+        if result is not None:
+            replied = result.get("updated") or []
+            missed = result.get("notFound") or []
+            for u in sync_updates:
+                tag = "OK" if u["id"] in replied else ("NOT_FOUND" if u["id"] in missed else "?")
+                print(f"[reply:{tag}] {u['id']} ({u['task_id']}) — {u['memo']}")
+        else:
+            print(f"[warn] staff_feedback_update 실패 — {reply_err} (다음 회차 재시도)")
+
     record_heartbeat(
         MODULE_ID,
-        detail=f"피드백 {len(rows)}건 · 미처리 {len(pending)}건 · 이번에 배로 올린 것 {len(made)}건",
-        extra={"전체": len(rows), "미처리": len(pending), "신규_배": len(made)},
+        detail=(
+            f"피드백 {len(rows)}건 · 미처리 {len(pending)}건 · 이번에 배로 올린 것 {len(made)}건"
+            f" · 회신 대상 {len(sync_updates)}건 · 회신 완료 {len(replied)}건"
+        ),
+        extra={
+            "전체": len(rows), "미처리": len(pending), "신규_배": len(made),
+            "회신_대상": len(sync_updates), "회신_완료": len(replied),
+        },
     )
 
     if not made:
