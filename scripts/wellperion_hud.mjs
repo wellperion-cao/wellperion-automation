@@ -255,6 +255,46 @@ function askText(r) {
   return '';
 }
 
+/** 지금 돌고 있는 백그라운드 에이전트 — 몇 척 · 가장 오래 돈 것의 시작 시각(GM 지시 2026-07-27 18:30).
+ *  왜: "말만 하고 끝낸 응답이 마지막 = 내 차례 끝"(위 working 판정)은 배경 에이전트를 띄워놓고
+ *  말을 마친 경우를 못 가린다 — 그러면 일이 도는데 상태줄은 '대기'라고 GM 께 거짓말을 한다
+ *  (GM 2026-07-27 "또 아래 대기 18:30부터 뜨네" — 그 시각 웰리는 에이전트 3척을 띄운 상태였다).
+ *  새 상태 파일은 만들지 않는다(약속 L21) — transcript 안에 이미 두 표식이 있다:
+ *   ① 에이전트를 띄운 직후 tool_result 에 "Async agent launched successfully … agentId: X" 가
+ *      찍힌다(비동기 시작 확인일 뿐 — 완료 여부와 무관하게 **항상** 바로 나타난다. 그래서 이
+ *      tool_result 유무만으로는 '아직 도는 중'을 못 가린다).
+ *   ② 그 에이전트가 끝나면(성공·실패 가리지 않고) 같은 transcript 뒤쪽에
+ *      `<task-notification><task-id>X</task-id>…<status>completed</status>…` 블록이 나타난다
+ *      (큐 enqueue/remove + attachment 로 최대 3벌 중복 — Set 으로 중복 제거).
+ *  판정: ①은 있는데 ②가 아직 없는 agentId = 아직 도는 중. (실측: 이 세션 자체로 검증 — 07-27
+ *  18:32 시점 배경 에이전트 4척이 떠 있었고 이 로직이 정확히 4를 셌다.) */
+function runningAgents(str) {
+  const launched = new Map();   // agentId → 시작 시각(ms)
+  const done = new Set();       // 완료 통보가 온 agentId
+  for (const line of str.split('\n')) {
+    if (!line) continue;
+    if (line.includes('Async agent launched successfully')) {
+      const m = line.match(/agentId:\s*([A-Za-z0-9]+)/);
+      if (m) {
+        let ts = null;
+        try { ts = Date.parse(JSON.parse(line).timestamp || ''); } catch { /* 파싱 실패 — 무시 */ }
+        if (Number.isFinite(ts)) launched.set(m[1], ts);
+      }
+    }
+    if (line.includes('<status>completed</status>')) {
+      const re = /<task-id>([^<]+)<\/task-id>/g;
+      let mm; while ((mm = re.exec(line))) done.add(mm[1]);
+    }
+  }
+  let count = 0, since = null;
+  for (const [id, ts] of launched) {
+    if (done.has(id)) continue;   // 이미 끝난 것까지 '도는 중'으로 세면 그게 더 나쁜 거짓말이다
+    count++;
+    if (since === null || ts < since) since = ts;
+  }
+  return count > 0 ? { count, since } : null;
+}
+
 function liveAction(transcript) {
   if (!transcript) return null;
   let fd = null;
@@ -305,6 +345,7 @@ function liveAction(transcript) {
     if (!Number.isFinite(lastAt)) return null;
     const now = Date.now();
     // 말만 하고 끝낸 응답이 마지막 = 내 차례가 끝났다는 뜻 → GM 입력 대기.
+    // ★단, 배경 에이전트가 돌고 있으면 얘기가 다르다 — 아래 agents 로 buildLine 에서 따로 가린다.
     const working = !(last.type === 'assistant' && !toolUseOf(last));
     return {
       working,
@@ -313,6 +354,7 @@ function liveAction(transcript) {
       at: lastAt,                                                              // 마지막 움직임의 실제 시각
       act: working ? act : null,
       ask,                                                                     // 지금 받은 지시 첫 줄
+      agents: runningAgents(str),                                             // 지금 도는 배경 에이전트
     };
   } catch { return null; }
   finally { if (fd !== null) { try { closeSync(fd); } catch { /* 닫기 실패는 무해 */ } } }
@@ -633,6 +675,12 @@ function buildLine(cwd, role, transcript) {
       const tgt = (lv.act && lv.act.target) ? ` ${D}${shortTitle(lv.act.target, 12)}${X}` : '';
       const sec = lv.elapsed != null ? lv.elapsed : lv.idle;   // 지시 시작점을 못 찾으면 마지막 움직임 기준
       time = `${D}·${X}${G}🟢${name}${X}${tgt} ${G}${elapsedText(sec)}${X}`;
+    } else if (lv.agents) {
+      // ★배경 에이전트가 하나라도 돌고 있으면 무조건 이 칸(웰리 결정 2026-07-27 18:30) — 아래
+      //   ②③④(GM답 대기·멎음·💤대기)는 전부 '내 차례가 끝났다'는 뜻인데, 에이전트가 도는 중이면
+      //   그건 거짓말이다. 전부 끝나고 웰리 차례일 때만 아래 branch 로 내려간다.
+      const sec = Math.max(0, Math.round((Date.now() - lv.agents.since) / 1000));
+      time = `${D}·${X}${G}🟢위임중 ${lv.agents.count}척${X} ${G}${elapsedText(sec)}${X}`;
     } else if (s && s.ask) {
       // ② GM 이 답해야 진행되는 상태 — ★무엇을 기다리는지까지 적는다(GM 2026-07-27
       //    "어떤 답을 기다리는건데?"). 배 번호 + 제목 핵심이라 되물을 필요가 없다.
