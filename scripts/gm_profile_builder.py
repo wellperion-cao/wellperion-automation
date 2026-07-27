@@ -90,6 +90,12 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
     by_type = Counter(r.get("signal_type") for r in ledger)
     by_source = Counter(r.get("source") for r in ledger)
 
+    # 근거 정직 표기용: GM이 세션에서 직접 남긴 신호(source에 "_session_" 포함,
+    # 예 cmo_session_2026-07-25) vs 시스템이 자기 가동/큐 상태를 스스로 적은 미러링.
+    session_sources = {s: n for s, n in by_source.items() if s and "_session_" in s}
+    session_signal_total = sum(session_sources.values())
+    machine_mirror_total = len(ledger) - session_signal_total
+
     # 활성 큐 상태 분포
     status_counter = Counter(x.get("status") for x in active)
 
@@ -119,6 +125,8 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
         "observations_total": len(ledger),
         "observations_by_type": dict(by_type),
         "observations_by_source": dict(by_source),
+        "session_signal_total": session_signal_total,
+        "machine_mirror_total": machine_mirror_total,
         "gm_decisions": by_type.get("decision", 0),
         "drift_events_ledger": by_type.get("repeat", 0),
         "queue_active_total": len(active),
@@ -242,6 +250,32 @@ def render_counters_block(ct: dict) -> str:
     return "\n".join(lines)
 
 
+def render_source_honesty_block(ct: dict) -> str:
+    """근거 정직 표기(결정적·계산 기반) — ship 10267.
+
+    LLM 서술에 맡기지 않고 코드로 매일 강제 표기한다:
+    관찰 원장이 실제로 무엇을 보고 있는지(세션에서 GM이 직접 남긴 신호 vs
+    시스템이 자기 가동·큐 상태를 스스로 적은 미러링)를 매 실행 재계산해 밝힌다.
+    """
+    total = ct["observations_total"] or 1
+    session_n = ct["session_signal_total"]
+    machine_n = ct["machine_mirror_total"]
+    pct = round(100 * session_n / total, 1)
+    lines = [
+        "## 근거 정직 표기 (기계 자기기록 vs GM 세션신호)",
+        "",
+        f"- 총 관찰 {ct['observations_total']}건 중 **GM이 세션에서 직접 남긴 신호는 {session_n}건({pct}%)** 뿐이다"
+        f"(source에 `_session_` 포함 — 예 `cmo_session_2026-07-25`).",
+        f"- 나머지 {machine_n}건은 시스템이 자기 가동(`gm_aide_auto_exec`)을 스스로 적거나,"
+        " 큐 상태(`queue_active`/`queue_archive`)를 그대로 미러링한 기록이다 — GM 행동을 관찰한 것이 아니다.",
+        "- **세션 대화 중 GM의 실시간 교정·선호를 원장에 자동으로 넣는 경로는 아직 없다.**"
+        " 지금까지는 사람(C-Level)이 대화 후 손으로 append 했다 — 세션이 끝나면 그 교정은 원장에 남지 않고 사라진다(ship 10267).",
+        "- 위 '선호·습관' 서술 중 이 정직 표기 이전 회차는 세션신호 비중이 낮았던 시점의 근거로 쓰였을 수 있다 — 날짜 표기 없는 해석은 재확인 전 잠정으로 읽는다.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def build_markdown(narrative: str, counters: dict, generated_by: str) -> str:
     header = (
         "# GM 프로필 (웰리 학습 · GM 보좌 자율화 phase 1)\n\n"
@@ -252,7 +286,15 @@ def build_markdown(narrative: str, counters: dict, generated_by: str) -> str:
         "- 배: CEO-2026-07-02-GM-AIDE-AUTONOMY (ship 237) · 스펙: `.omc/specs/deep-interview-gm-aide-autonomy.md`\n\n"
         "---\n\n"
     )
-    return header + render_counters_block(counters) + "\n---\n\n" + narrative.rstrip() + "\n"
+    return (
+        header
+        + render_counters_block(counters)
+        + "\n---\n\n"
+        + render_source_honesty_block(counters)
+        + "\n---\n\n"
+        + narrative.rstrip()
+        + "\n"
+    )
 
 
 # ═══════════════════════════════════════════
