@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 스케줄보드 사용 가이드</title>
+<meta name="description" content="웰페리온 스케줄보드를 처음 쓰는 직원을 위한 안내 — 월간 스케줄 보는 법, 휴무 입력, 연차·반차 신청 절차.">
+<style>
+  :root{
+    --bg:#f3f0ea; --surface:#ffffff; --surface2:#f7f4ee;
+    --ink:#26211d; --dim:#7a7468; --faint:#a29b8e;
+    --line:rgba(60,50,40,.16); --line2:rgba(60,50,40,.28);
+    --bronze:#9a7b4f; --bronze2:#7c6034;
+    --green:#2f8a5a; --blue:#3b6ea8; --amber:#a9842f; --red:#c0463d;
+    --hero:#221f1c; --hero-ink:#f5f2ea; --hero-dim:#a89a89; --hero-accent:#c9ac86;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{overflow-x:hidden}
+  body{font-family:"Pretendard",'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:15.5px;line-height:1.65;overflow-x:hidden}
+  a{color:inherit}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  /* ===== 상단 바 ===== */
+  header.top{background:var(--surface);border-bottom:1px solid var(--line2);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:10}
+  .brand{font-size:15.5px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
+  .brand span{color:var(--bronze)}
+  .topbtn{font-family:inherit;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--bronze2);border:1px solid rgba(154,123,79,.4);border-radius:20px;padding:7px 14px;white-space:nowrap;flex-shrink:0}
+  .topbtn:hover{background:rgba(154,123,79,.08)}
+
+  .wrap{max-width:600px;margin:0 auto;padding:0 0 60px}
+
+  /* ===== 히어로 ===== */
+  .hero{background:var(--hero);color:var(--hero-ink);padding:38px 20px 30px;text-align:center}
+  .hero .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:2px;color:var(--hero-accent);text-transform:uppercase;margin-bottom:14px}
+  .hero h1{font-size:26px;font-weight:800;line-height:1.35;margin-bottom:12px;letter-spacing:-.2px}
+  .hero h1 em{font-style:normal;color:var(--hero-accent)}
+  .hero p{font-size:14px;color:var(--hero-dim);max-width:420px;margin:0 auto 26px;line-height:1.7}
+
+  /* 시그니처 — 실제 보드 셀 색·표기를 그대로 축소한 미니 프리뷰 */
+  .minicals{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:6px;max-width:440px;margin:0 auto 8px}
+  .minicell{background:#2c2823;border:1px solid #423b33;border-radius:10px;padding:9px 4px 7px;text-align:center}
+  .minicell .d{font-size:10px;color:#8f8274;font-weight:700;margin-bottom:5px}
+  .minicell .v{display:inline-block;border-radius:6px;padding:4px 0;width:100%;font-size:13.5px;font-weight:800}
+  .mc-work .v{background:#f0e9da;color:#241d15}
+  .mc-off .v{background:#e3ddd3;color:#6b6156}
+  .mc-bc .v{background:#e2eef9;color:#3b6ea8}
+  .mc-today{position:relative}
+  .mc-today .v{outline:2px solid var(--red);outline-offset:-2px}
+  .minicap{font-size:11px;color:var(--hero-dim);margin-top:10px}
+
+  .cta{display:inline-flex;align-items:center;gap:7px;background:var(--hero-accent);color:#241d15;font-weight:800;font-size:14px;text-decoration:none;border-radius:12px;padding:13px 22px;margin-top:22px}
+  .cta:hover{background:#d8bd9c}
+  .ctaurl{display:block;font-size:11px;color:var(--hero-dim);margin-top:10px;word-break:break-all}
+
+  /* ===== 본문 공통 ===== */
+  section{padding:26px 18px 0}
+  .sectitle{font-size:12px;font-weight:800;color:var(--bronze2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+
+  .tabstrip{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+  .tabpill{background:var(--surface);border:1px solid var(--line2);border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:700;color:var(--dim)}
+  .tabpill b{color:var(--ink)}
+
+  .card{background:var(--surface);border:1px solid var(--line2);border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 2px 10px rgba(40,32,20,.05)}
+  .step{display:flex;gap:14px;align-items:flex-start}
+  .stepno{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--bronze);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .stepbody{flex:1;min-width:0}
+  .stepbody h3{font-size:16px;font-weight:800;margin-bottom:7px}
+  .stepbody p{color:var(--dim);font-size:14px;line-height:1.75}
+  .stepbody p+p{margin-top:8px}
+  .stepbody b{color:var(--ink)}
+
+  .codepill{display:inline-flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--line2);border-radius:7px;padding:3px 9px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .codepill.off{background:#e3ddd3;color:#6b6156;border-color:#cfc6b8}
+
+  .sublist{margin-top:12px;border-top:1px dashed var(--line2);padding-top:12px}
+  .subrow{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--dim);padding:5px 0}
+  .subrow .sn{flex-shrink:0;font-weight:800;color:var(--bronze2);width:16px}
+  .subrow .sx{flex:1;min-width:0}
+  .subrow b{color:var(--ink)}
+
+  .callout{background:var(--surface2);border:1px solid var(--line2);border-radius:11px;padding:12px 14px;font-size:13px;color:var(--dim);margin-top:12px;line-height:1.7}
+  .callout b{color:var(--ink)}
+  .callout.warn{background:rgba(192,70,61,.06);border-color:rgba(192,70,61,.3);color:#8a3a33}
+  .callout.warn b{color:var(--red)}
+  .callout.ok{background:rgba(47,138,90,.07);border-color:rgba(47,138,90,.28);color:#2c6b48}
+
+  /* ===== 색상 안내 ===== */
+  .legendlist{display:flex;flex-direction:column;gap:9px}
+  .legrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line2);border-radius:12px;padding:11px 14px}
+  .swatch{flex-shrink:0;width:42px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+  .sw-work{background:#f0e9da;color:#241d15;border:1px solid #d3c7ae}
+  .sw-off{background:#e3ddd3;color:#6b6156;border:1px solid #cfc6b8}
+  .sw-bc{background:#e2eef9;color:#3b6ea8;border:1px solid #bcd6ec}
+  .sw-today{background:transparent;border:2px solid var(--red)}
+  .legrow .lt{font-size:13.5px;font-weight:700}
+  .legrow .ls{font-size:11.5px;color:var(--dim);margin-top:1px}
+
+  /* ===== FAQ / 문의 ===== */
+  .faq{background:var(--surface2);border:1px solid var(--line2);border-radius:16px;padding:20px}
+  .faq h3{font-size:14.5px;font-weight:800;margin-bottom:8px}
+  .faq p{font-size:13.5px;color:var(--dim);line-height:1.75}
+
+  footer{padding:30px 18px 10px;text-align:center}
+  footer .fbrand{font-size:13px;font-weight:800;color:var(--bronze2);margin-bottom:6px}
+  footer .flink{display:inline-block;font-size:12.5px;color:var(--bronze2);text-decoration:none;border-bottom:1px dashed var(--bronze);margin-bottom:14px}
+  footer .fnote{font-size:11px;color:var(--faint)}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">WELL<span>PERION</span></div>
+  <a class="topbtn" href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule.html" target="_blank" rel="noopener">보드 바로가기 →</a>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">직원용 안내</div>
+    <h1>스케줄보드,<br><em>이렇게</em> 씁니다</h1>
+    <p>내 근무·휴무를 확인하고, 셀을 눌러 바로 입력하고, 연차·반차는 신청·결재로 처리하는 방법을 한 화면에 정리했습니다.</p>
+
+    <div class="minicals">
+      <div class="minicell mc-work"><div class="d">월</div><div class="v">5:40</div></div>
+      <div class="minicell mc-work mc-today"><div class="d">화</div><div class="v">13:30</div></div>
+      <div class="minicell mc-off"><div class="d">수</div><div class="v">휴</div></div>
+      <div class="minicell mc-bc"><div class="d">목</div><div class="v">반</div></div>
+      <div class="minicell mc-off"><div class="d">금</div><div class="v">공</div></div>
+      <div class="minicell mc-off"><div class="d">일</div><div class="v">관</div></div>
+    </div>
+    <div class="minicap">보드에 실제로 표시되는 색·표기 그대로입니다 — 아래 "색상 안내"에서 자세히</div>
+
+    <a class="cta" href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule.html" target="_blank" rel="noopener">스케줄보드 열기 →</a>
+    <span class="ctaurl">https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule.html</span>
+  </div>
+
+  <section>
+    <div class="sectitle">화면 구성</div>
+    <div class="tabstrip">
+      <span class="tabpill"><b>월간 스케줄</b> · 기본 화면</span>
+      <span class="tabpill"><b>오늘의 배치</b> · 시간대별</span>
+      <span class="tabpill"><b>주간 보드</b> · 7일 편집</span>
+      <span class="tabpill"><b>신청·결재</b> · 연차·반차</span>
+      <span class="tabpill"><b>설정</b></span>
+    </div>
+  </section>
+
+  <section>
+    <div class="sectitle">사용 순서</div>
+
+    <div class="card">
+      <div class="step">
+        <div class="stepno">1</div>
+        <div class="stepbody">
+          <h3>월간 스케줄 확인하기</h3>
+          <p>보드를 열면 <b>월간 스케줄</b> 탭이 기본으로 보입니다. 부서별로 전 직원의 이번 달 근무·휴무가 한 화면에 표에요.</p>
+          <p>상단 <b>부서 필터 칩</b>을 누르면 그 부서만 볼 수 있고, <b>‹ ›</b> 화살표나 "이번 달" 버튼으로 월을 이동합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step">
+        <div class="stepno">2</div>
+        <div class="stepbody">
+          <h3>휴·대휴·공휴는 칸을 눌러 직접 입력</h3>
+          <p>월간 스케줄이나 주간 보드에서 <b>본인 이름 줄의 날짜 칸을 클릭</b>하면 그 자리에서 바로 입력할 수 있습니다. 입력 후 <b>Enter</b>로 저장, 빈칸으로 두면 삭제됩니다.</p>
+          <p style="margin-top:10px">
+            <span class="codepill">540</span> 출근만&nbsp; ·
+            <span class="codepill">1330 2230</span> 출근·퇴근&nbsp; ·
+            <span class="codepill off">휴</span>&nbsp;
+            <span class="codepill off">공</span>(공휴)&nbsp;
+            <span class="codepill off">대</span>(대휴)&nbsp;
+            <span class="codepill off">관</span>(휴관)
+          </p>
+          <div class="callout">
+            <b>수정 가능 기간</b> — 매월 <b>25일부터 말일까지</b>는 별도 인증 없이 자유롭게 입력할 수 있습니다. 그 외 기간은 화면 상단이 <b>🔒 편집 잠김</b>으로 표시되며, 수정하려면 관리자의 PIN 해제가 필요합니다 — <b>관리자(매니저)에게 문의</b>해 주세요.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step">
+        <div class="stepno">3</div>
+        <div class="stepbody">
+          <h3>연차·반차는 신청·결재로만</h3>
+          <p>연차·반차는 스케줄 칸에 직접 입력할 수 <b>없습니다</b>. 반드시 <b>신청·결재</b> 탭에서 신청하고, 결재자의 승인을 받아야 보드에 반영됩니다.</p>
+          <div class="sublist">
+            <div class="subrow"><span class="sn">1</span><span class="sx">"신청·결재" 탭으로 이동합니다.</span></div>
+            <div class="subrow"><span class="sn">2</span><span class="sx">신청자와 종류(<b>연차 · 반차 오전 · 반차 오후</b>, 또는 근무 시간만 바꾸는 <b>근무변경</b>)를 고릅니다.</span></div>
+            <div class="subrow"><span class="sn">3</span><span class="sx">대상 일자를 선택합니다.</span></div>
+            <div class="subrow"><span class="sn">4</span><span class="sx">연차·반차는 결재자를 지정하고, 사유는 선택 입력합니다.</span></div>
+            <div class="subrow"><span class="sn">5</span><span class="sx">"신청하기"를 누르면 결재 대기 상태가 됩니다.</span></div>
+            <div class="subrow"><span class="sn">6</span><span class="sx">관리자가 승인하면 <b>자동으로 보드에 반영</b>됩니다. 반려되면 반영되지 않습니다.</span></div>
+          </div>
+          <div class="callout ok">
+            <b>남은 일수 확인</b> — 신청 화면에서 신청자와 종류를 고르면 <b>사용/잔여 연차 일수</b>가 바로 표시됩니다. 날짜별 상세 사용 이력 조회는 관리자 확인용 기능이니, 내 잔여일수는 이 신청 화면에서 확인하는 게 가장 빠릅니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step">
+        <div class="stepno">4</div>
+        <div class="stepbody">
+          <h3>휴관일은 자동으로 표시됩니다</h3>
+          <p><b>매월 둘째·넷째 일요일</b>은 휴관일로 보드에 <span class="codepill off">관</span>이 자동 표기됩니다. 따로 입력할 필요가 없습니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sectitle">색상 안내</div>
+    <div class="legendlist">
+      <div class="legrow">
+        <div class="swatch sw-work">5:40</div>
+        <div><div class="lt">근무</div><div class="ls">진한 글씨로 출근 시각이 표시됩니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-off">휴</div>
+        <div><div class="lt">쉬는 날 — 휴 · 연차 · 공휴 · 대휴 · 휴관</div><div class="ls">모두 같은 회색 계열로, 근무가 없는 날을 뜻합니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-bc">반</div>
+        <div><div class="lt">반차 (오전 · 오후)</div><div class="ls">하늘색으로 구분되며, 근무 시간이 함께 표시되기도 합니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-today"></div>
+        <div><div class="lt">오늘 날짜</div><div class="ls">붉은 테두리로 강조되어 표시됩니다</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sectitle">문의</div>
+    <div class="faq">
+      <h3>더 궁금한 점이 있다면</h3>
+      <p>편집 잠금 해제, 명단·연차 정정, 그 외 보드 사용 중 궁금한 점은 <b>관리자(매니저)</b>에게 문의해 주세요.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="fbrand">WELLPERION</div>
+    <a class="flink" href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule.html" target="_blank" rel="noopener">스케줄보드 바로가기</a>
+    <div class="fnote">웰페리온 인사 운영 허브 · 직원용 안내</div>
+  </footer>
+
+</div>
+</body>
+</html>
