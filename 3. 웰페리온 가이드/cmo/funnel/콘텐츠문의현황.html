@@ -702,18 +702,29 @@ function loadYtdTrend() {
       var tr = document.getElementById('ytd-r' + r.m);
       if (!tr) return;
       var pct = maxInq ? Math.round(r.inq / maxInq * 100) : 0;
+      // [2026-07-27] 전환율은 '그 달 문의자가 지금까지 가입한 비율'이라 코호트가 익을수록 올라간다.
+      //   실측(1월 문의자의 실제 가입 시점): 1월 29명 · 2월 16명 · 3월 1명 — 두 달에 걸쳐 들어온다.
+      //   그래서 최근 두 달은 구조상 낮게 보인다. 표시 없이 두면 '전환율이 무너졌다'로 읽힌다
+      //   (실제로 그렇게 잘못 읽은 적 있음). 아직 익는 중인 달은 숫자 옆에 그 사실을 붙인다.
+      var maturing = (r.m >= lastM - 1);
+      var rateTxt = (typeof r.rate === 'number' ? r.rate + '%' : '—');
+      if (maturing && typeof r.rate === 'number') {
+        rateTxt += ' <span style="color:var(--dim);font-size:10px">(익는 중)</span>';
+      }
       tr.innerHTML = '<td>' + r.m + '월' + (r.m === lastM ? ' <span style="color:var(--dim);font-size:10px">(오늘까지)</span>' : '') + '</td>'
         + '<td style="font-weight:700">' + r.inq + '</td>'
         + '<td><div style="background:rgba(255,255,255,.10);height:9px;border-radius:5px;overflow:hidden">'
         + '<div style="width:' + pct + '%;height:100%;background:#c9a227;border-radius:5px"></div></div></td>'
         + '<td>' + r.conv + '건</td>'
-        + '<td>' + (typeof r.rate === 'number' ? r.rate + '%' : '—') + '</td>';
+        + '<td>' + rateTxt + '</td>';
     });
     var note = document.getElementById('ytd-note');
     if (note) {
       note.textContent = done < lastM
         ? ('불러오는 중 ' + done + '/' + lastM + '개월…')
-        : (failed ? ('※ ' + failed + '개월은 수집 실패로 미측정 — 0으로 세지 않았다.') : '');
+        : ((failed ? ('※ ' + failed + '개월은 수집 실패로 미측정 — 0으로 세지 않았습니다. ') : '')
+           + '전환율 = 그 달 문의자가 지금까지 가입한 비율입니다. 문의 후 가입까지 보통 1~2개월이 걸려(1월 문의자 실측: 1월 29명·2월 16명·3월 1명) '
+           + '최근 두 달은 아직 덜 익어 낮게 보입니다 — 지난달과 이번달 전환율을 옛 달과 그대로 빼서 비교하지 마세요.');
     }
   }
 
