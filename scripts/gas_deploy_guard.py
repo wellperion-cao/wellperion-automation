@@ -26,7 +26,7 @@
     python scripts/gas_deploy_guard.py check --check-only          # 검증용 dry-run(배포 안 함)
     python scripts/gas_deploy_guard.py funnel --check-only --force # BLOCK 우회 분기 확인
 
-<project> = gas_version_monitor._PROJECTS 의 프로젝트명(check/funnel/funnel-v2/todo/voc)
+<project> = gas_version_monitor._PROJECTS 의 프로젝트명(check/funnel/funnel-v2/todo/reception)
             또는 로컬 clasp 폴더명(.deploy-check 등).
 
 에이전트는 이제 raw `clasp deploy` 대신 이 스크립트로 배포한다.
@@ -112,7 +112,7 @@ def main() -> int:
     )
     parser.add_argument(
         'project',
-        help='프로젝트명(check/funnel/funnel-v2/todo/voc) 또는 로컬 clasp 폴더명(.deploy-*)',
+        help='프로젝트명(check/funnel/funnel-v2/todo/reception) 또는 로컬 clasp 폴더명(.deploy-*)',
     )
     parser.add_argument(
         '--check-only', action='store_true',

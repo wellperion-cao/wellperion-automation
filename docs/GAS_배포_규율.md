@@ -11,7 +11,7 @@ funnel GAS(`.deploy-funnel`)가 배포 버전 200개 하드리밋에 걸려 신�
    소비하지 않는다. `clasp deploy`(프로덕션 배포)는 버전을 1개씩 생성한다.
 2. **프로덕션 배포는 완성된 기능 단위로 1회만.** 디버깅 중 반복 재배포 금지 —
    dev URL에서 충분히 검증한 뒤 1회 배포. (`-i <deploymentId>` 재사용은 `/exec`
-   URL만 보존할 뿐 버전 소비 자체는 막지 못한다 — `.deploy-voc/README.md` 참고.)
+   URL만 보존할 뿐 버전 소비 자체는 막지 못한다 — `.deploy-reception/README.md` 참고.)
 3. **200 근접(버전수 ≥180) 시 이사.** 새 GAS 프로젝트를 만들어 소스 이관 후
    `/exec` URL을 전환한다. 절차는 `#9001 funnel 이사` 완료 후
    `scripts/gas_migrate_project.py`로 일반화 예정(§이사 플레이북).
@@ -67,4 +67,4 @@ funnel 실제 이사(#9001)가 검증된 뒤 `scripts/gas_migrate_project.py`로
 | `.deploy-funnel` | `1A77oDRaa21K25c3-M1AgewNfUzfW-zamfRhYWjlYUrvIdPCYazs8KQru` | 회원문의(이사 중 — 버전 200 도달) |
 | `.deploy-funnel-v2` | `1BezMSW_rGi57IrC9IoxoQzczsATVzqwFa039cigvhad0wpCBdOmhHTjQ` | funnel 이사 신규 프로젝트 |
 | `.deploy-todo` | `1VUMgK-vJvxCUO_mjQPpTFLjtv3NWWt8ESkCHH-l3QyCYrpBw2RXsYFFg` | 업무&결재 현황 |
-| `.deploy-voc` | `1_jF5yhXZfBgw7KX9adW17ER0t_lQ8xrVaGsZBraUJ5AZZPzfIGuFKw9Y` | VOC 종합접수처 |
+| `.deploy-reception` | `1_jF5yhXZfBgw7KX9adW17ER0t_lQ8xrVaGsZBraUJ5AZZPzfIGuFKw9Y` | 종합접수처 |

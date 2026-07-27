@@ -1398,14 +1398,14 @@
   // ── 종합 접수처 KPI 카드 (home ops-detail-grid) ─────────────────────────
   // 공개 reg_board GET(무키·마스킹·집계) → 접수/처리중/완료 카운트. voc_list(키 게이트)에 의존하지 않음. 실패 시 "—" 유지.
   (function loadVocKpi(){
-    var VOC_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+    var RECEPTION_GAS = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
     function setV(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; }
     function curYM(){ var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
     // 접수일시 필드(reg_board 원본 영문키=createdAt) 기준 이번달 판정 — 완료(처리)일자 필드는 데이터원에 없어
     // "이번달 완료"는 접수월=이번달 & 현재상태=완료 근사치(정직 표기, title 캐비엇 병기). 2026-07-10 GM 지시.
     function isThisMonth(r){ return String(r['접수일시'] || r['createdAt'] || '').slice(0, 7) === curYM(); }
     // 6유형 아이콘·짧은이름 — O2 보드 _REG_CAT_META와 동일 정의(스크립트 스코프 분리로 값만 동기화 유지)
-    var VOC_CAT_META = [
+    var RECEPTION_CAT_META = [
       {cat:'분실물 접수',            icon:'📦', short:'분실'},
       {cat:'시설물 고장 접수',        icon:'🔧', short:'고장'},
       {cat:'청결 이슈 접수',          icon:'🧹', short:'청결'},
@@ -1432,7 +1432,7 @@
         var grid = document.getElementById('kpiVocCatGrid');
         if(grid){
           var html = '';
-          VOC_CAT_META.forEach(function(m){
+          RECEPTION_CAT_META.forEach(function(m){
             var catRows = rows.filter(function(r){ return (r['카테고리'] || r['category']) === m.cat; });
             var catMonthRows = catRows.filter(isThisMonth);
             var mNew  = catMonthRows.length;
@@ -1447,7 +1447,7 @@
         }
     }
     try { var _rbC = localStorage.getItem('wp_reg_board_cache'); if(_rbC){ renderVoc(JSON.parse(_rbC)); } } catch(_e){}
-    fetch(VOC_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
+    fetch(RECEPTION_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(d && d.ok){ try { localStorage.setItem('wp_reg_board_cache', JSON.stringify(d)); } catch(_e){} }

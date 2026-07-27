@@ -146,7 +146,7 @@ except Exception:
     _scs_merged_unchecked_names = None  # type: ignore[assignment]
 
 # 운영 다이제스트 공용 수집층 (scripts/collectors/ops_shared.py) — GAS URL 상수 3종
-# (FUNNEL_EXEC_URL·VOC_EXEC_URL·SSOT_API_URL)·재시도 GET 래퍼·UTC→KST 변환·업무완료
+# (FUNNEL_EXEC_URL·RECEPTION_EXEC_URL·SSOT_API_URL)·재시도 GET 래퍼·UTC→KST 변환·업무완료
 # 상태셋. scripts/ops_daily_digest.py(아침)와의 중복 정의를 여기로 수렴한다
 # (2026-07-21 순수 리팩터 — 값·동작 무변경). import 실패 시 원본과 완전히 동일한
 # 인라인 정의로 폴백(이 파일은 상주 봇이라 기동 실패를 절대 허용하지 않는다).
@@ -157,7 +157,7 @@ try:
         _sys4.path.insert(0, _scr4)
     from collectors.ops_shared import (
         FUNNEL_EXEC_URL,
-        VOC_EXEC_URL,
+        RECEPTION_EXEC_URL,
         SSOT_API_URL,
         TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
         gas_get as _gas_get_shared,
@@ -180,7 +180,7 @@ except Exception:
         "https://script.google.com/macros/s/"
         "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
     )
-    VOC_EXEC_URL = (
+    RECEPTION_EXEC_URL = (
         "https://script.google.com/macros/s/"
         "AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"
     )
@@ -2416,7 +2416,7 @@ CHECK_NUDGE_CHAT_ID = int(ENV.get("TELEGRAM_CHECK_CHAT_ID") or -5136037543)
 DIGEST_INQUIRY_CHAT_ID   = int(ENV.get("TELEGRAM_INQUIRY_CHAT_ID")   or -5516675010)
 DIGEST_CHECK_CHAT_ID     = int(ENV.get("TELEGRAM_CHECK_CHAT_ID")     or -5136037543)
 DIGEST_RECEPTION_CHAT_ID = int(ENV.get("TELEGRAM_RECEPTION_CHAT_ID") or -5065206276)
-# FUNNEL_EXEC_URL·VOC_EXEC_URL 정의는 collectors.ops_shared(위에서 import).
+# FUNNEL_EXEC_URL·RECEPTION_EXEC_URL 정의는 collectors.ops_shared(위에서 import).
 
 
 def _merged_unchecked_names(live: dict, shift: str) -> list[str]:

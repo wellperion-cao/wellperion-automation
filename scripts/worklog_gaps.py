@@ -738,7 +738,7 @@ def rule_orphan_automation() -> list[dict]:
 # 판정 조건을 그대로 재사용한다(중복 로직 새로 안 만든다).
 #
 # ★네트워크 호출 주의: 아래 4개 규칙 中 3개(결재·마감·VOC)는 CMO 규칙(전부 로컬 파일)과 달리
-#   TODO_API·VOC_EXEC_URL(GAS)을 스캔 시점에 직접 조회한다. worklog_gaps.py --scan 이 아직
+#   TODO_API·RECEPTION_EXEC_URL(GAS)을 스캔 시점에 직접 조회한다. worklog_gaps.py --scan 이 아직
 #   예약작업에 배선되지 않아(2026-07-23 기준 미확인) 지금은 문제 없으나, 나중에 이 스캔이
 #   빈번한 자동화(예: 07:30 다이제스트)에 얹히면 네트워크 지연·실패가 그 자동화에 영향을 줄 수
 #   있다 — 배선 전 웰리 판단 필요(보고에 명시).
@@ -912,19 +912,19 @@ def rule_hold_abandoned() -> list[dict]:
     return gaps
 
 
-_VOC_EXCLUDE_CATEGORY = "분실물 접수"  # 분실물=주인이 찾아갈 때까지 대기가 정상이라 미처리와 다름
-_VOC_DONE_STATUSES = {"완료", "처리완료", "해결"}
+_RECEPTION_EXCLUDE_CATEGORY = "분실물 접수"  # 분실물=주인이 찾아갈 때까지 대기가 정상이라 미처리와 다름
+_RECEPTION_DONE_STATUSES = {"완료", "처리완료", "해결"}
 
 
-def rule_voc_stale_unresolved() -> list[dict]:
-    """VOC·종합접수처(VOC_EXEC_URL reg_list) 중 분실물 제외 항목이 접수 후 오래 미처리인 것 적발.
+def rule_reception_stale_unresolved() -> list[dict]:
+    """종합접수처(RECEPTION_EXEC_URL reg_list) 중 분실물 제외 항목이 접수 후 오래 미처리인 것 적발.
     ★분실물 접수 제외 근거(실측 2026-07-23): 미해결 26건 中 14건이 분실물 — 그대로 넣으면
     "주인 대기 중"인 정상 상태가 진짜 이슈(컴플레인·청결·시설물고장 등)를 묻어버린다.
     ★PII 미노출(공개 화면 규격): title·detail에 접수자 이름·연락처·본문(content)을 절대 넣지
     않는다 — regId·category·dept·경과일만 사용."""
-    from collectors.ops_shared import VOC_EXEC_URL, gas_get  # noqa: PLC0415
+    from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get  # noqa: PLC0415
 
-    resp = gas_get(VOC_EXEC_URL, {"action": "reg_list"}, label="VOC")
+    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, label="종합접수처")
     if resp is None:
         return []
     data = resp.json()
@@ -933,10 +933,10 @@ def rule_voc_stale_unresolved() -> list[dict]:
     gaps: list[dict] = []
     for r in rows:
         category = str(r.get("category", "")).strip()
-        if category == _VOC_EXCLUDE_CATEGORY:
+        if category == _RECEPTION_EXCLUDE_CATEGORY:
             continue
         status = str(r.get("status", "")).strip()
-        if status in _VOC_DONE_STATUSES:
+        if status in _RECEPTION_DONE_STATUSES:
             continue
         created = str(r.get("createdAt", ""))[:10]
         target_date = _parse_iso_date(created)
@@ -954,7 +954,7 @@ def rule_voc_stale_unresolved() -> list[dict]:
             "title": f"{category} — 접수 {days}일째 미처리 (regId={reg_id})",
             "detail": f"dept={r.get('dept', '?')} · status={status or '접수'} · 접수일={created}",
             "hint": "종합접수처에서 처리 상태 갱신 필요",
-            "ref": f"{reg_id}::voc",
+            "ref": f"{reg_id}::reception",
             "age": _classify_age(target_date, today),
         })
     return gaps
@@ -1346,7 +1346,7 @@ _RULES: dict[str, list] = {
         rule_approval_stale_pending,       # 2026-07-23 신설 — 결재 대기 N일 초과
         rule_task_deadline_passed_active,  # 2026-07-23 신설 — 업무 마감(종료일) 경과인데 방치
         rule_hold_abandoned,               # 2026-07-25 신설 — 보류인 채 마감 지나고 방치(위 규칙 사각지대)
-        rule_voc_stale_unresolved,         # 2026-07-23 신설 — VOC 접수 후 N일 미처리(분실물 제외)
+        rule_reception_stale_unresolved,         # 2026-07-23 신설 — 접수 후 N일 미처리(분실물 제외)
     ],
     "cpo": [
         rule_inquiry_loss_no_reason,     # 2026-07-23 신설 — 문의 LOSS(미등록)인데 사유 미기록

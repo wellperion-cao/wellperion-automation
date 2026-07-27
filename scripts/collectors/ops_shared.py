@@ -25,10 +25,10 @@ FUNNEL_EXEC_URL = os.environ.get(
     "FUNNEL_EXEC_URL",
     "https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec",
 )
-# VOC·종합접수처 GAS(.deploy-voc/VOC_배포.js) — reg_list=6종 접수 카테고리(분실물/시설물고장/청결/칭찬/쓴소리/컴플레인).
-VOC_EXEC_URL = os.environ.get(
-    "VOC_EXEC_URL",
-    "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec",
+# 종합접수처 GAS(.deploy-reception/RECEPTION_배포.js) — reg_list=6종 접수 카테고리(분실물/시설물고장/청결/칭찬/쓴소리/컴플레인).
+RECEPTION_EXEC_URL = os.environ.get(
+    "RECEPTION_EXEC_URL",
+    os.environ.get("VOC_EXEC_URL", "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"),
 )
 # 실무진 업무현황(G1 항로 SSOT·S3) GAS — action=todo_list.
 SSOT_API_URL = os.environ.get(

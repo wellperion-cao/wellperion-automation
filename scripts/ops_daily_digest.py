@@ -58,13 +58,13 @@ SALES_TARGETS_PATH = ROOT / "status" / "sales_targets.json"  # 월 목표매출 
 
 RECENT_LEDGER_DAYS = 5  # 반복감지·미해결추적용으로 프롬프트에 주입할 과거 원장 기간
 
-# GAS URL 상수 3종(FUNNEL_EXEC_URL·VOC_EXEC_URL·SSOT_API_URL)·_TODO_DONE_STATUSES는
+# GAS URL 상수 3종(FUNNEL_EXEC_URL·RECEPTION_EXEC_URL·SSOT_API_URL)·_TODO_DONE_STATUSES는
 # telegram_bot/daily_scheduler.py와의 중복 정의를 scripts/collectors/ops_shared.py 공용
 # 수집층으로 수렴(2026-07-21 순수 리팩터 — 값·동작 무변경).
 try:
     from collectors.ops_shared import (
         FUNNEL_EXEC_URL,
-        VOC_EXEC_URL,
+        RECEPTION_EXEC_URL,
         SSOT_API_URL,
         TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
         gas_get as _gas_get,
@@ -74,7 +74,7 @@ except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from collectors.ops_shared import (
         FUNNEL_EXEC_URL,
-        VOC_EXEC_URL,
+        RECEPTION_EXEC_URL,
         SSOT_API_URL,
         TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
         gas_get as _gas_get,
@@ -92,7 +92,7 @@ def now_str() -> str:
 
 
 # ═══════════════════════════════════════════
-#  0) 공용 GAS 조회 래퍼(재시도) — 문의·VOC(종합접수)·예약·업무 블록 공용.
+#  0) 공용 GAS 조회 래퍼(재시도) — 문의·종합접수·예약·업무 블록 공용.
 #     숫자는 LLM에 맡기지 않고 결정론적 실측만. 실패=호출부에서 "측정 불가" 정직 표기.
 #     정의는 scripts/collectors/ops_shared.gas_get (위에서 _gas_get으로 import).
 # ═══════════════════════════════════════════
@@ -166,14 +166,14 @@ def build_inquiry_block(target_date: str) -> str:
 
 
 def build_reception_block(target_date: str) -> str:
-    """target_date(YYYY-MM-DD) 종합접수처 6종 통합 사실블록(VOC_EXEC_URL reg_list).
+    """target_date(YYYY-MM-DD) 종합접수처 6종 통합 사실블록(RECEPTION_EXEC_URL reg_list).
     createdAt="YYYY-MM-DD HH:MM:SS"(KST) 접두 매칭 — daily_scheduler._build_digest_reception 동일 패턴.
     resolved={"완료"}만(나머지 접수·처리중 등 전부 미해결 — 동일 근거)·14일 초과=대기·보류 자동 이관.
     배97 압축: ①어제 접수 숫자+전일 대비 한 줄 ②미해결(2주내)만 오래된 순 3건 펼침(=이상 신호)
     ③보류(2주+)는 건수 한 줄로 접는다(항목 나열 제거 — 상세는 종합접수처 현황 페이지)."""
     lines = ["📣 종합접수 현황"]
 
-    resp = _gas_get(VOC_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ops-digest 종합접수")
+    resp = _gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ops-digest 종합접수")
     if resp is None:
         lines.append(f" • {_NO_SOURCE}")
         return "\n".join(lines)

@@ -203,8 +203,8 @@ a{color:var(--accent);text-decoration:none}
 
 <script>
 (function(){
-  var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
   var STAFF = ['김남욱GM','이경연실장','나우열M','최준용M','임정은M','윤병현AM','백승화사원']; // GM 제공 목록(그대로) + '기타' 옵션
   var CACHE_KEY = 'wlp_lf_gallery_v1';
@@ -285,7 +285,7 @@ a{color:var(--accent);text-decoration:none}
     }
     if(_loading) return; _loading=true;
     if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML=_skeleton(6); }
-    fetch(VOC_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
+    fetch(RECEPTION_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){ _loading=false;
         if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; } return; }
@@ -312,7 +312,7 @@ a{color:var(--accent);text-decoration:none}
 
   // ── 폐기 임박(upcoming) — lf_disposal(공개). 처분 완료 기록·수령·삭제는 종합접수처(직원 게이트) 전용 ──
   function loadDisposal(){
-    fetch(VOC_API+'?action=lf_disposal&_='+Date.now(),{redirect:'follow',cache:'no-store'})
+    fetch(RECEPTION_API+'?action=lf_disposal&_='+Date.now(),{redirect:'follow',cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){
         if(!d||!d.ok) return; // 실패는 조용히 스킵 — 게시중 그리드는 그대로 유지
@@ -400,8 +400,8 @@ a{color:var(--accent);text-decoration:none}
     if(staffSel==='기타' && !handoverStaff){ toast('담당자 성함을 입력해 주세요',true); $('m_staff_other').focus(); return; }
     var sign=cv.toDataURL('image/png');
     var btn=this; btn.disabled=true; btn.textContent='처리 중…';
-    var payload={ action:'lf_handover', t:VOC_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
-    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    var payload={ action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+    fetch(RECEPTION_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
       .then(function(d){
         btn.disabled=false; btn.textContent='수령 완료';

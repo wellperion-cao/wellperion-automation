@@ -11,7 +11,7 @@
      ★ 2026-07-18 회원/직원 뷰 분리(시우): 습득물 보기(갤러리) 직원 진입 링크 추가(?staff=1, 라이브 WP URL).
      ★ 접근 게이트(비밀번호 커튼) 제거 (2026-07-15 시토·GM 지시 "비밀번호 없애줘"):
         직원이 현장에서 바로 등록하도록 무인증 접근. gate.js 인라인 커튼 삭제 —
-        단, 위조방지용 제출 토큰(VOC_SUBMIT_TOKEN=lf_submit)은 폼 내부에 그대로 유지(백엔드 보호).
+        단, 위조방지용 제출 토큰(RECEPTION_SUBMIT_TOKEN=lf_submit)은 폼 내부에 그대로 유지(백엔드 보호).
      ★ CSS 충돌 방지: 전 규칙을 .wlp-lfr 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
         WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-lfr-page 한정으로 숨김
         (body 클래스는 하단 스크립트가 부착 — 페이지 id 는 빌드 시점에 알 수 없으므로 클래스 방식 사용). -->
@@ -222,8 +222,8 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
 
 <script>
 (function(){
-  var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
-  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
   var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
 
   var photoData='', photoMime='image/jpeg', photoName='';
@@ -270,10 +270,10 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
     var foundLoc=$('f_foundLoc').value.trim(), itemDesc=$('f_itemDesc').value.trim();
     if(!foundLoc && !itemDesc){ toast('습득장소 또는 설명을 입력해 주세요',true); return; }
     var btn=this; btn.disabled=true; btn.textContent='등록 중…';
-    var payload={ action:'lf_submit', t:VOC_SUBMIT_TOKEN,
+    var payload={ action:'lf_submit', t:RECEPTION_SUBMIT_TOKEN,
       foundWhen:$('f_foundWhen').value.trim(), foundLoc:foundLoc, itemDesc:itemDesc,
       category:$('f_category').value, staff:$('f_staff').value.trim(), photo:photoData, fileName:photoName, mimeType:photoMime };
-    fetch(VOC_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    fetch(RECEPTION_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res&&res.ok){ toast('등록 완료 — '+res.id); resetForm(); }

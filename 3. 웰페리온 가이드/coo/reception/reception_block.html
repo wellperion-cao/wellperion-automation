@@ -2,7 +2,7 @@
      ★ 근본구조: iframe('미리보기 창') 폐기 → 폼을 페이지에 직접 인라인 주입.
         문의 페이지(8394)가 wp_inquiry_block.html 을 vc_raw_html 로 직접 심는 것과 완전히 동일한 방식.
         결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. "창 속의 창" 분리감 0.
-     ★ 기능: 폼 정의(FORMS)·JS·VOC_API·VOC_SUBMIT_TOKEN·LOCATIONS·reg_submit 제출·?loc 프리필·
+     ★ 기능: 폼 정의(FORMS)·JS·RECEPTION_API·RECEPTION_SUBMIT_TOKEN·LOCATIONS·reg_submit 제출·?loc 프리필·
         사진 FileReader 를 포함하는 단일 정본(self-contained).
         QR/페이지 URL 의 ?loc= 는 폼 JS가 location.search 에서 직접 읽음(iframe 중계 JS 불필요·제거).
      ★ CSS 충돌 방지: 전 규칙을 .wlp-recept 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
@@ -440,12 +440,12 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 <!-- ★ 이하 JS 블록 — 단일 정본(reception_block.html). ?loc 은 페이지 URL에서 직접 읽음. ★ -->
 <script>
 (function(){
-  var VOC_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
+  var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
   // 백엔드 위조방지 게이트용 숨김토큰 — ScriptProperties VOC_SUBMIT_TOKEN 값과 일치해야 함(없으면 코드 기본값).
-  var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+  var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
 
   /* 휴회 접수 전용 백엔드 (배9910 후속 · 2026-07-23) — 시포(회원) GAS.
-     ★위 VOC_API 와 다른 곳으로 보낸다: 휴회는 종합접수처 시트에 쌓지 않고 회원 쪽에서만 처리한다(배9910 원칙).
+     ★위 RECEPTION_API 와 다른 곳으로 보낸다: 휴회는 종합접수처 시트에 쌓지 않고 회원 쪽에서만 처리한다(배9910 원칙).
      규약: action=member_hold_apply · name/phone/holdKind/holdStart/holdDays/reason.
      서버가 'hold-gated' 를 주면 아직 온라인 접수 개통 전이라는 뜻 → 데스크 안내로 대체한다. */
   var HOLD_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
@@ -798,7 +798,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 
     var payload = {
       action: 'reg_submit',
-      t: VOC_SUBMIT_TOKEN,
+      t: RECEPTION_SUBMIT_TOKEN,
       category: selectedCategory,
       name: vals.name || '',
       contact: vals.contact || '',
@@ -810,7 +810,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
     };
     EXTRA_KEYS.forEach(function(k){ payload[k] = vals[k] || ''; });
 
-    fetch(VOC_API, {
+    fetch(RECEPTION_API, {
       method: 'POST',
       redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },

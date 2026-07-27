@@ -1,11 +1,11 @@
 // 웰페리온 회원 종합 접수처 전용 Apps Script (QR + 사진)
 // ⚠️ 점검 GAS(coo/check/apps_script_v3.js)·업무 GAS(coo/todo/apps_script_todo.js)와
 //    완전 독립 — 절대 그 위에 얹지 말 것. 신규 전용 GAS 프로젝트로 배포한다.
-// ⚠️ 라이브 '이슈 응답' 시트는 건드리지 않는다. VOC는 별도 시트 탭 「접수 VOC」.
+// ⚠️ 라이브 '이슈 응답' 시트는 건드리지 않는다. 접수는 별도 시트 탭 「접수 VOC」(레거시 탭명).
 //
 // 액션:
 //   voc_submit (POST) — 회원 모바일 폼 제출: 유형·위치·사진base64·내용·(선택)연락처
-//                       → Drive 'VOC_Photos' 저장 → 공개 URL → 시트 append (상태=접수)
+//                       → Drive 접수사진 폴더 저장 → 공개 URL → 시트 append (상태=접수)
 //                       → (설정 시) 텔레그램 핵심멤버방 알림
 //   voc_list   (GET)  — 현황 조회: 전체 또는 상태/유형 필터
 //   voc_update (POST) — 상태 전환(접수→처리중→완료) · 담당 배정 · 처리메모
@@ -14,22 +14,26 @@
 // 검증은 브라우저로 (curl -L은 GAS 302에서 POST 본문을 떨궈 검증 불가).
 //
 // 보안(후속 과제 · 이번 차단 아님): 무인증 공개 엔드포인트 → 변조·스팸 위험.
-//   최소 hidden token / rate-limit 은 ScriptProperties(VOC_SUBMIT_TOKEN) 기반으로 후속 적용.
+//   최소 hidden token / rate-limit 은 ScriptProperties(RECEPTION_SUBMIT_TOKEN) 기반으로 후속 적용.
 //   토큰·챗ID 등 비밀값은 절대 repo 하드코딩 금지 — 전부 ScriptProperties 서버측 보관.
 
 // ─── 상수 ───
-var VOC_SHEET = '접수 VOC';
-var VOC_HEADERS = [
+// ★값 '접수 VOC' 는 실제 구글시트 탭 이름이다 — 코드에서만 바꾸면 시트를 못 찾는다.
+//   이름 정리는 구글시트 탭을 함께 바꿔야 완결되므로 별건으로 남긴다(2026-07-27 시우).
+var LEGACY_RECEPTION_SHEET = '접수 VOC';
+var LEGACY_RECEPTION_HEADERS = [
   '접수ID', '접수일시', '유형', '위치', '사진URL',
   '내용', '연락처', '상태', '담당', '처리메모'
 ];
-var VOC_STATUSES = ['접수', '처리중', '완료'];
-var VOC_STATUS_COLORS = {
+var LEGACY_RECEPTION_STATUSES = ['접수', '처리중', '완료'];
+var LEGACY_RECEPTION_STATUS_COLORS = {
   '접수':  '#e6944e', // 주황
   '처리중': '#5b9fd5', // 파랑
   '완료':  '#6abf7b'  // 초록
 };
-var VOC_PHOTO_FOLDER_NAME = 'VOC_Photos';
+// ★값 'VOC_Photos' 는 실제 구글드라이브 폴더 이름이다 — 코드만 바꾸면 새 폴더가 생겨
+//   기존 접수 사진과 갈라진다. 드라이브 폴더를 함께 바꿔야 완결(별건, 2026-07-27 시우).
+var RECEPTION_PHOTO_FOLDER_NAME = 'VOC_Photos';
 
 // ─── 종합 접수처 상수 ───
 // REG_CATEGORIES: 카테고리 라우팅 SSOT. dept 변경 시 여기 한 줄만 수정.
@@ -123,17 +127,26 @@ function _regHeadersFor(catKey) {
 function _vprop(key) {
   return PropertiesService.getScriptProperties().getProperty(key) || '';
 }
+// 2026-07-27 'VOC' 낱말 폐기(GM 지시)로 속성 키 이름도 RECEPTION_* 로 옮긴다.
+// 다만 속성은 GAS 프로젝트에 저장된 '라이브 상태'라 코드만 바꾸면 값이 사라진 것처럼 보인다.
+// → 새 키를 먼저 보고, 없으면 옛 키를 본다. 속성을 손으로 옮기지 않아도 안 멈춘다(무중단 개명).
+// 옛 키를 지우는 건 나중에 해도 되고, 안 지워도 해가 없다.
+function _vpropCompat(newKey, oldKey) {
+  return _vprop(newKey) || _vprop(oldKey);
+}
 
 // ─── 접수 위조 방지 게이트 (시토 2026-06-29 GM '접수 막고 보완') ───
 // 공개 폼(voc_mobile_form.html)이 숨김토큰 t 를 함께 보내야 reg_submit/voc_submit 통과 + 속도제한.
-// 역롤백(즉시·재배포 불요): ScriptProperties VOC_GATE_OFF='1' 설정 → 게이트 해제. 토큰 교체=ScriptProperties VOC_SUBMIT_TOKEN(없으면 코드 기본).
+// 역롤백(즉시·재배포 불요): ScriptProperties RECEPTION_GATE_OFF='1'(옛 키 VOC_GATE_OFF 도 계속 인정) → 게이트 해제.
+//   토큰 교체=ScriptProperties RECEPTION_SUBMIT_TOKEN(옛 키 VOC_SUBMIT_TOKEN 폴백, 둘 다 없으면 코드 기본).
+// ★토큰 '값'은 폼 6개와 문자 그대로 대조된다 — 이름만 바꾸고 값은 절대 건드리지 않는다(바꾸면 접수가 즉시 막힌다).
 // ⚠ 한계: 토큰이 폼(클라이언트)에 노출 → 봇·무차별 위조는 막지만 소스를 본 사람은 우회 가능. 진짜 인증=자체서버 JWT(시토 21, 2026-09 통합).
-var VOC_SUBMIT_TOKEN_DEFAULT = 'wlp_voc_7b3f9a2e6c1d4085';
-var VOC_SUBMIT_GATE_ENFORCE  = true;   // 코드 기본 ON. OFF=ScriptProperties VOC_GATE_OFF='1'(즉시) 또는 이 값 false 후 재배포.
+var RECEPTION_SUBMIT_TOKEN_DEFAULT = 'wlp_voc_7b3f9a2e6c1d4085';
+var RECEPTION_SUBMIT_GATE_ENFORCE  = true;   // 코드 기본 ON. OFF=ScriptProperties RECEPTION_GATE_OFF='1'(즉시) 또는 이 값 false 후 재배포.
 function _vSubmitGateOk_(body) {
-  if (_vprop('VOC_GATE_OFF') === '1') return true;   // 즉시 역롤백 스위치
-  if (!VOC_SUBMIT_GATE_ENFORCE) return true;
-  var expected = _vprop('VOC_SUBMIT_TOKEN') || VOC_SUBMIT_TOKEN_DEFAULT;
+  if (_vpropCompat('RECEPTION_GATE_OFF', 'VOC_GATE_OFF') === '1') return true;   // 즉시 역롤백 스위치
+  if (!RECEPTION_SUBMIT_GATE_ENFORCE) return true;
+  var expected = _vpropCompat('RECEPTION_SUBMIT_TOKEN', 'VOC_SUBMIT_TOKEN') || RECEPTION_SUBMIT_TOKEN_DEFAULT;
   var got = String((body && (body.t || body.token)) || '');
   return got === expected;
 }
@@ -168,18 +181,19 @@ var REG_ID_PREFIX     = 'RECEPTION-';
 var REG_ID_PREFIX_OLD = 'VOC-';
 
 // ─── 전체 통합 순번 ID — RECEPTION-1, RECEPTION-2 … (식별자 겸 순번) ───
-// ScriptProperties 'VOC_SEQ' 를 단조증가(monotonic) 카운터로 사용 → 행을 삭제해도 번호 재사용 안 함(식별자 안정).
-//   ※ 속성 키 이름(VOC_SEQ)은 화면에 안 보이는 내부 키라 그대로 둔다 — 바꾸면 값 이관이 필요해
-//     마이그레이션 위험만 늘고 얻는 게 없다(표기 정리는 값·화면 기준).
+// ScriptProperties 'RECEPTION_SEQ'(옛 키 'VOC_SEQ' 폴백)를 단조증가(monotonic) 카운터로 사용
+//   → 행을 삭제해도 번호 재사용 안 함(식별자 안정).
+//   ※ 개명 무중단 방식: 읽을 땐 새 키→옛 키 순으로 보고, 쓸 땐 새 키에만 쓴다. 첫 접수 때
+//     옛 값(예 69)을 읽어 70을 새 키에 적으므로 번호가 되감기지 않는다. 속성 수동 이관 불요.
 // LockService 로 동시 접수 시 같은 번호 발급 충돌 방지. 6종 카테고리 통틀어 하나의 일련번호.
 function _vNextSeqId() {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(5000); } catch (e) {}
   var props = PropertiesService.getScriptProperties();
-  var cur = parseInt(props.getProperty('VOC_SEQ') || '0', 10);
+  var cur = parseInt(_vpropCompat('RECEPTION_SEQ', 'VOC_SEQ') || '0', 10);
   if (isNaN(cur)) cur = 0;
   var next = cur + 1;
-  props.setProperty('VOC_SEQ', String(next));
+  props.setProperty('RECEPTION_SEQ', String(next));
   try { lock.releaseLock(); } catch (e) {}
   return REG_ID_PREFIX + next;
 }
@@ -194,7 +208,7 @@ function _vJson(obj) {
 // ─── 스프레드시트 확보 ───
 // 독립형(standalone) 웹앱으로 배포 시 getActiveSpreadsheet()는 null을 반환하므로
 // ScriptProperties 'SPREADSHEET_ID' 로 openById() 한다.
-// GM 액션: 프로젝트 설정 → 스크립트 속성 → SPREADSHEET_ID = VOC 데이터를 넣을 시트의 ID
+// GM 액션: 프로젝트 설정 → 스크립트 속성 → SPREADSHEET_ID = 접수 데이터를 넣을 시트의 ID
 //   (시트 URL: https://docs.google.com/spreadsheets/d/<여기>/edit  ← 이 부분이 ID)
 function _vGetSpreadsheet() {
   var ssId = _vprop('SPREADSHEET_ID');
@@ -205,17 +219,17 @@ function _vGetSpreadsheet() {
 // ─── 시트 확보 (없으면 자동 생성 + 헤더) ───
 function _vGetSheet() {
   var ss = _vGetSpreadsheet();
-  var sh = ss.getSheetByName(VOC_SHEET);
+  var sh = ss.getSheetByName(LEGACY_RECEPTION_SHEET);
   if (sh) {
     // 헤더 누락 시 보강 (빈 시트 안전)
     if (sh.getLastRow() < 1) {
-      sh.getRange(1, 1, 1, VOC_HEADERS.length).setValues([VOC_HEADERS]);
+      sh.getRange(1, 1, 1, LEGACY_RECEPTION_HEADERS.length).setValues([LEGACY_RECEPTION_HEADERS]);
     }
     return sh;
   }
-  sh = ss.insertSheet(VOC_SHEET);
-  sh.getRange(1, 1, 1, VOC_HEADERS.length).setValues([VOC_HEADERS]);
-  sh.getRange(1, 1, 1, VOC_HEADERS.length)
+  sh = ss.insertSheet(LEGACY_RECEPTION_SHEET);
+  sh.getRange(1, 1, 1, LEGACY_RECEPTION_HEADERS.length).setValues([LEGACY_RECEPTION_HEADERS]);
+  sh.getRange(1, 1, 1, LEGACY_RECEPTION_HEADERS.length)
     .setFontWeight('bold')
     .setBackground('#B79F8A')
     .setFontColor('#ffffff');
@@ -403,7 +417,7 @@ function _regApplyStatusColor(sh, row, status, headers) {
     }
   }
   if (idx <= 0) return;
-  var color = VOC_STATUS_COLORS[status] || '#ffffff';
+  var color = LEGACY_RECEPTION_STATUS_COLORS[status] || '#ffffff';
   sh.getRange(row, idx).setBackground(color).setFontColor('#ffffff');
 }
 
@@ -411,10 +425,10 @@ function _regApplyStatusColor(sh, row, status, headers) {
 function _vReadAll(sh) {
   var last = sh.getLastRow();
   if (last < 2) return [];
-  var data = sh.getRange(2, 1, last - 1, VOC_HEADERS.length).getValues();
+  var data = sh.getRange(2, 1, last - 1, LEGACY_RECEPTION_HEADERS.length).getValues();
   return data.map(function (row) {
     var obj = {};
-    VOC_HEADERS.forEach(function (h, i) {
+    LEGACY_RECEPTION_HEADERS.forEach(function (h, i) {
       var v = row[i];
       if (v instanceof Date) {
         v = Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
@@ -438,23 +452,23 @@ function _vFindRow(sh, id) {
 
 // ─── 상태 셀 색상 ───
 function _vApplyStatusColor(sh, row, status) {
-  var colIdx = VOC_HEADERS.indexOf('상태') + 1;
-  var color = VOC_STATUS_COLORS[status] || '#ffffff';
+  var colIdx = LEGACY_RECEPTION_HEADERS.indexOf('상태') + 1;
+  var color = LEGACY_RECEPTION_STATUS_COLORS[status] || '#ffffff';
   sh.getRange(row, colIdx).setBackground(color).setFontColor('#ffffff');
 }
 
-// ─── VOC_Photos Drive 폴더 확보 (없으면 생성) ───
+// ─── 접수 사진 Drive 폴더 확보 (없으면 생성 · 폴더명 VOC_Photos = 기존 자원명) ───
 function _vGetPhotoFolder() {
-  var folderId = _vprop('VOC_PHOTO_FOLDER');
+  var folderId = _vpropCompat('RECEPTION_PHOTO_FOLDER', 'VOC_PHOTO_FOLDER');
   var folder = null;
   if (folderId) {
     try { folder = DriveApp.getFolderById(folderId); } catch (e) { folder = null; }
   }
   if (!folder) {
-    var existing = DriveApp.getRootFolder().getFoldersByName(VOC_PHOTO_FOLDER_NAME);
+    var existing = DriveApp.getRootFolder().getFoldersByName(RECEPTION_PHOTO_FOLDER_NAME);
     folder = existing.hasNext() ? existing.next()
-      : DriveApp.getRootFolder().createFolder(VOC_PHOTO_FOLDER_NAME);
-    PropertiesService.getScriptProperties().setProperty('VOC_PHOTO_FOLDER', folder.getId());
+      : DriveApp.getRootFolder().createFolder(RECEPTION_PHOTO_FOLDER_NAME);
+    PropertiesService.getScriptProperties().setProperty('RECEPTION_PHOTO_FOLDER', folder.getId());
   }
   return folder;
 }
@@ -555,15 +569,15 @@ function _vSubmit(body) {
   var sh = _vGetSheet();
   var id = _vNextSeqId();
   var now = _vNow();
-  var row = new Array(VOC_HEADERS.length).fill('');
-  row[VOC_HEADERS.indexOf('접수ID')]   = id;
-  row[VOC_HEADERS.indexOf('접수일시')] = now;
-  row[VOC_HEADERS.indexOf('유형')]     = type;
-  row[VOC_HEADERS.indexOf('위치')]     = loc;
-  row[VOC_HEADERS.indexOf('사진URL')]  = photoUrl;
-  row[VOC_HEADERS.indexOf('내용')]     = content;
-  row[VOC_HEADERS.indexOf('연락처')]   = contact;
-  row[VOC_HEADERS.indexOf('상태')]     = '접수';
+  var row = new Array(LEGACY_RECEPTION_HEADERS.length).fill('');
+  row[LEGACY_RECEPTION_HEADERS.indexOf('접수ID')]   = id;
+  row[LEGACY_RECEPTION_HEADERS.indexOf('접수일시')] = now;
+  row[LEGACY_RECEPTION_HEADERS.indexOf('유형')]     = type;
+  row[LEGACY_RECEPTION_HEADERS.indexOf('위치')]     = loc;
+  row[LEGACY_RECEPTION_HEADERS.indexOf('사진URL')]  = photoUrl;
+  row[LEGACY_RECEPTION_HEADERS.indexOf('내용')]     = content;
+  row[LEGACY_RECEPTION_HEADERS.indexOf('연락처')]   = contact;
+  row[LEGACY_RECEPTION_HEADERS.indexOf('상태')]     = '접수';
   var newRow = sh.getLastRow() + 1;
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
   _vApplyStatusColor(sh, newRow, '접수');
@@ -603,31 +617,31 @@ function _vUpdate(body) {
   var rowNum = _vFindRow(sh, id);
   if (rowNum < 0) return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
 
-  var existing = sh.getRange(rowNum, 1, 1, VOC_HEADERS.length).getValues()[0];
+  var existing = sh.getRange(rowNum, 1, 1, LEGACY_RECEPTION_HEADERS.length).getValues()[0];
 
   var newStatus = String(body.status || body['상태'] || '').trim();
   if (newStatus) {
-    if (VOC_STATUSES.indexOf(newStatus) < 0) {
+    if (LEGACY_RECEPTION_STATUSES.indexOf(newStatus) < 0) {
       return _vJson({ ok: false, error: '상태는 접수|처리중|완료 만 허용' });
     }
-    existing[VOC_HEADERS.indexOf('상태')] = newStatus;
+    existing[LEGACY_RECEPTION_HEADERS.indexOf('상태')] = newStatus;
   }
 
   var assignee = body.assignee !== undefined ? body.assignee
     : (body['담당'] !== undefined ? body['담당'] : undefined);
-  if (assignee !== undefined) existing[VOC_HEADERS.indexOf('담당')] = String(assignee);
+  if (assignee !== undefined) existing[LEGACY_RECEPTION_HEADERS.indexOf('담당')] = String(assignee);
 
   var memo = body.memo !== undefined ? body.memo
     : (body['처리메모'] !== undefined ? body['처리메모'] : undefined);
-  if (memo !== undefined) existing[VOC_HEADERS.indexOf('처리메모')] = String(memo);
+  if (memo !== undefined) existing[LEGACY_RECEPTION_HEADERS.indexOf('처리메모')] = String(memo);
 
-  sh.getRange(rowNum, 1, 1, VOC_HEADERS.length).setValues([existing]);
+  sh.getRange(rowNum, 1, 1, LEGACY_RECEPTION_HEADERS.length).setValues([existing]);
   if (newStatus) _vApplyStatusColor(sh, rowNum, newStatus);
 
   return _vJson({
     ok: true, id: id,
-    status: existing[VOC_HEADERS.indexOf('상태')],
-    assignee: existing[VOC_HEADERS.indexOf('담당')],
+    status: existing[LEGACY_RECEPTION_HEADERS.indexOf('상태')],
+    assignee: existing[LEGACY_RECEPTION_HEADERS.indexOf('담당')],
     message: '접수건이 갱신되었습니다.'
   });
 }
@@ -807,7 +821,7 @@ function _regUpdate(body) {
   if (!id) return _vJson({ ok: false, error: 'id 필수' });
 
   var newStatus = String(body.status || '').trim();
-  if (newStatus && VOC_STATUSES.indexOf(newStatus) < 0) {
+  if (newStatus && LEGACY_RECEPTION_STATUSES.indexOf(newStatus) < 0) {
     return _vJson({ ok: false, error: '상태는 접수|처리중|완료 만 허용' });
   }
 
@@ -918,9 +932,9 @@ function _regReprefix() {
 
   // 레거시 '접수 VOC' 시트(있으면)
   try {
-    var lss = _vGetSpreadsheet().getSheetByName(VOC_SHEET);
+    var lss = _vGetSpreadsheet().getSheetByName(LEGACY_RECEPTION_SHEET);
     if (lss && lss.getLastRow() >= 2) {
-      var lIdCol = VOC_HEADERS.indexOf('접수ID') + 1;
+      var lIdCol = LEGACY_RECEPTION_HEADERS.indexOf('접수ID') + 1;
       if (lIdCol > 0) {
         for (var k = 2; k <= lss.getLastRow(); k++) reprefixCell(lss, k, lIdCol);
       }
@@ -938,7 +952,7 @@ function _regReprefix() {
 // ─── reg_renumber — 전체 접수 통합 순번 재부여 (GATED·일회성 마이그레이션) ───
 // ⚠️ 접두사만 바꾸려고 이걸 부르지 말 것 — 번호가 밀린다(위 reg_reprefix 주석 참고, 2026-07-27 실측).
 // 모든 카테고리 시트 + 레거시 '접수 VOC'의 전 행을 접수일시 오름차순으로 모아 VOC-1..N 재부여
-// (시트별 접수ID/regId 컬럼만 갱신, 다른 칸 불변) 후 VOC_SEQ=N 동기화 → 새 접수는 VOC-(N+1) 이어감.
+// (시트별 접수ID/regId 컬럼만 갱신, 다른 칸 불변) 후 RECEPTION_SEQ=N 동기화 → 새 접수는 RECEPTION-(N+1) 이어감.
 // 재실행해도 접수일시 순서가 같으면 같은 번호 → 멱등. 백업은 호출 전 외부(reg_list 덤프)에서 수행.
 function _regRenumber(body) {
   var entries = [];   // {sheet, rowNum, idCol(1-based), createdAt}
@@ -966,11 +980,11 @@ function _regRenumber(body) {
 
   // 레거시 '접수 VOC' 시트(있으면)
   try {
-    var lss = _vGetSpreadsheet().getSheetByName(VOC_SHEET);
+    var lss = _vGetSpreadsheet().getSheetByName(LEGACY_RECEPTION_SHEET);
     if (lss && lss.getLastRow() >= 2) {
-      var lIdIdx = VOC_HEADERS.indexOf('접수ID');
-      var lCrIdx = VOC_HEADERS.indexOf('접수일시');
-      var ld = lss.getRange(2, 1, lss.getLastRow() - 1, VOC_HEADERS.length).getValues();
+      var lIdIdx = LEGACY_RECEPTION_HEADERS.indexOf('접수ID');
+      var lCrIdx = LEGACY_RECEPTION_HEADERS.indexOf('접수일시');
+      var ld = lss.getRange(2, 1, lss.getLastRow() - 1, LEGACY_RECEPTION_HEADERS.length).getValues();
       for (var k = 0; k < ld.length; k++) {
         var c2 = ld[k][lCrIdx];
         if (c2 instanceof Date) c2 = Utilities.formatDate(c2, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
@@ -991,10 +1005,10 @@ function _regRenumber(body) {
     n += 1;
     e.sheet.getRange(e.rowNum, e.idCol).setValue(REG_ID_PREFIX + n);
   });
-  PropertiesService.getScriptProperties().setProperty('VOC_SEQ', String(n));
+  PropertiesService.getScriptProperties().setProperty('RECEPTION_SEQ', String(n));
 
   _regBoardCacheClear_();
-  return _vJson({ ok: true, renumbered: n, message: '전체 접수 ' + n + '건을 VOC-1..VOC-' + n + '로 재부여했습니다.' });
+  return _vJson({ ok: true, renumbered: n, message: '전체 접수 ' + n + '건을 ' + REG_ID_PREFIX + '1..' + REG_ID_PREFIX + n + ' 로 재부여했습니다.' });
 }
 
 // ─── clean_reg_columns — 시트 잔재/빈 컬럼 정리 (GATED·일회성) ───
@@ -1003,7 +1017,7 @@ function _regRenumber(body) {
 // 화이트리스트: 빈 라벨('' 공백) · '접수문자'·'조치문자'·'처리자'·'접수 문자'·'조치 문자'.
 // 추가로 시트명이 '접수_칭찬'/'접수_쓴소리'면 '사진URL' 컬럼도 삭제(GM 결정: 칭찬·쓴소리 사진 미수집 —
 // _regHeadersFor 의 REG_NO_PHOTO_CATS 와 짝. 이 두 사이트만 물리 컬럼도 함께 없어져야 정합).
-// 공통12+카테고리 extras(데이터 컬럼)는 화이트리스트에 없으므로 항상 보존 — 지원부/점검 시트 무관(이 시트=VOC 전용).
+// 공통12+카테고리 extras(데이터 컬럼)는 화이트리스트에 없으므로 항상 보존 — 지원부/점검 시트 무관(이 시트=종합접수처 전용).
 // 오른쪽(높은 인덱스)부터 deleteColumn 해서 인덱스 밀림 방지.
 function _regCleanColumns() {
   var GHOST_LABELS = { '': true, '접수문자': true, '조치문자': true, '처리자': true, '접수 문자': true, '조치 문자': true };
@@ -1116,7 +1130,7 @@ var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', DISPOSED: '폐기
 var LF_PHOTO_FOLDER_NAME = 'LF_Photos';       // 공개 VIEW (갤러리용)
 var LF_SIGN_FOLDER_NAME  = 'LF_Signatures';   // 비공개 (수령 서명 = 분쟁 증거)
 
-// LF-n 전용 단조증가 순번 (VOC_SEQ 와 별개 번호공간) — LockService 로 동시 등록 충돌 방지
+// LF-n 전용 단조증가 순번 (RECEPTION_SEQ 와 별개 번호공간) — LockService 로 동시 등록 충돌 방지
 function _lfNextSeqId_() {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(5000); } catch (e) {}
@@ -1445,7 +1459,7 @@ function _lfDisposal() {
 //   ② 웹앱 새 버전 재배포
 //   ③ 직원 화면에서 열쇠 1회 입력 확인 (localStorage wp_access_token)
 //   ④ ScriptProperties TOKEN_ENFORCE = 1 설정 후 웹앱 새 버전 재배포 → 게이트 발효
-var _VOC_PUBLIC_ACTIONS = {
+var _RECEPTION_PUBLIC_ACTIONS = {
   voc_submit:  true,  // 회원 모바일 폼 제출 — 토큰 면제
   voc_types:   true,  // 유형·상태 목록 조회 — 토큰 면제
   reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
@@ -1463,7 +1477,7 @@ function _vAccessProp_(k) {
   try { return PropertiesService.getScriptProperties().getProperty(k) || ''; } catch (e) { return ''; }
 }
 function _vCheckAccess_(action, key) {
-  if (_VOC_PUBLIC_ACTIONS[action]) return true;            // 공개 액션은 항상 통과
+  if (_RECEPTION_PUBLIC_ACTIONS[action]) return true;            // 공개 액션은 항상 통과
   if (_vAccessProp_('TOKEN_ENFORCE') !== '1') return true; // 스위치 OFF(기본) = 현행 무중단
   var tok = _vAccessProp_('ACCESS_TOKEN');
   if (!tok) return true;                                   // 토큰 미설정 = 안전을 위해 통과
@@ -1476,11 +1490,11 @@ function _vCheckAccess_(action, key) {
 function _vDiag() {
   return _vJson({
     ok:               true,
-    system:           'voc',
+    system:           'reception',
     hasToken:         !!_vprop('TELEGRAM_BOT_TOKEN'),
     hasChatId:        !!_vprop('TELEGRAM_CHAT_ID'),
     hasSpreadsheetId: !!_vprop('SPREADSHEET_ID'),
-    seq:              parseInt(_vprop('VOC_SEQ') || '0', 10),
+    seq:              parseInt(_vpropCompat('RECEPTION_SEQ', 'VOC_SEQ') || '0', 10),
     lfSeq:            parseInt(_vprop('LF_SEQ') || '0', 10)
   });
 }
@@ -1563,7 +1577,7 @@ function _vProcess(action, body, params) {
   }
   if (action === 'reg_update') return _regUpdate(body);
   if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.
-  if (action === 'reg_renumber') return _regRenumber(body); // 전체 통합 순번 VOC-1.. 재부여(일회성·멱등·GATED). 2026-06-30 시토.
+  if (action === 'reg_renumber') return _regRenumber(body); // 전체 통합 순번 RECEPTION-1.. 재부여(일회성·멱등·GATED). 2026-06-30 시토.
   if (action === 'reg_sort') return _vJson({ ok: true, sorted: _regSortAllDesc() }); // 전 접수시트 접수일시 desc 정렬(멱등·GATED). 이후 reg_submit이 자동 유지. 2026-07-15 시우.
 
   // ── 습득 분실물(Lost & Found) 액션 (시토 배1069 · 2026-07-15) ──
@@ -1598,7 +1612,7 @@ function _vProcess(action, body, params) {
   }
   if (action === 'voc_types')  return _vJson({
     ok: true,
-    statuses:   VOC_STATUSES,
+    statuses:   LEGACY_RECEPTION_STATUSES,
     categories: REG_CATEGORIES
   });
   return _vJson({ ok: false, error: '알 수 없는 action: ' + action });

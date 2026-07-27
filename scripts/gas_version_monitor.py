@@ -44,7 +44,7 @@ _PROJECTS = [
     ("funnel", "1A77oDRaa21K25c3-M1AgewNfUzfW-zamfRhYWjlYUrvIdPCYazs8KQru", ".deploy-funnel"),
     ("funnel-v2", "1BezMSW_rGi57IrC9IoxoQzczsATVzqwFa039cigvhad0wpCBdOmhHTjQ", ".deploy-funnel-v2"),
     ("todo", "1VUMgK-vJvxCUO_mjQPpTFLjtv3NWWt8ESkCHH-l3QyCYrpBw2RXsYFFg", ".deploy-todo"),
-    ("voc", "1_jF5yhXZfBgw7KX9adW17ER0t_lQ8xrVaGsZBraUJ5AZZPzfIGuFKw9Y", ".deploy-voc"),
+    ("reception", "1_jF5yhXZfBgw7KX9adW17ER0t_lQ8xrVaGsZBraUJ5AZZPzfIGuFKw9Y", ".deploy-reception"),
     # 강사 콘텐츠 접수(마케팅 접수 폼) — 2026-07-24 등록. 미등록이라 배포 관문
     # (gas_deploy_guard)을 통과할 수 없었고, 그대로 두면 raw clasp deploy 로 새는
     # 우회로가 된다(버전 200 하드리밋 감시 사각). 배9888.

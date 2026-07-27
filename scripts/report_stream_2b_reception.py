@@ -32,7 +32,7 @@ REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from collectors.ops_shared import VOC_EXEC_URL, gas_get  # noqa: E402
+from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
 from tg_outbound_log import send as tg_send  # noqa: E402
 
@@ -55,7 +55,7 @@ _SLA_HOURS: dict[str, int | None] = {
 
 
 def _fetch_rows() -> list[dict] | None:
-    resp = gas_get(VOC_EXEC_URL, {"action": "reg_list"}, timeout=20, label="stream2b-voc")
+    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="stream2b-reception")
     if resp is None:
         return None
     try:

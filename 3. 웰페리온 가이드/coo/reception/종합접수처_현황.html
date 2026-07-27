@@ -319,8 +319,8 @@ var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5
 /* 직원 현황(gate.js 뒤) 사진 노출 키 — 이 값이면 reg_board가 사진 원본 반환(썸네일용). 공개는 계속 '비공개'. */
 var REG_PV = 'wlp_reg_pv_2026';
 
-/* 🧳 습득물 직원 처리(수령·삭제) — lost_found_gallery.html 포팅 상수 (REG_API=VOC_API 동일 GAS) */
-var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+/* 🧳 습득물 직원 처리(수령·삭제) — lost_found_gallery.html 포팅 상수 (REG_API=RECEPTION_API 동일 GAS) */
+var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
 var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
 var STAFF = ['김남욱GM','이경연실장','나우열M','최준용M','임정은M','윤병현AM','백승화사원'];
 
@@ -353,7 +353,7 @@ var EXTRA_LABEL = {
 };
 
 var _allItems = [];   // VOC 6종 + 습득물(매핑) + 휴회(매핑) 병합 결과
-var _vocItems = [];   // reg_board(VOC 6종)
+var _receptionItems = [];   // reg_board(VOC 6종)
 var _lfItems  = [];   // lf_list → 습득물 매핑(게시중→접수·수령완료→완료)
 var _holdItems = [];  // member_hold_intake_list → 휴회 매핑(읽기 전용·8번째 카드). 승인/반려는 회원 관리 화면 전용.
 var _curCat = '';
@@ -364,7 +364,7 @@ var _doneExpanded = false;
 var _loading = false;
 
 /* VOC + 습득물 + 휴회 병합 후 렌더 (하나만 갱신돼도 합쳐서 다시 그림) */
-function _merge(){ _allItems = _vocItems.concat(_lfItems).concat(_holdItems); _render(); }
+function _merge(){ _allItems = _receptionItems.concat(_lfItems).concat(_holdItems); _render(); }
 
 /* 검색·완료접기 */
 function setSearch(v){ _curSearch = String(v||'').trim().toLowerCase(); _render(); }
@@ -402,7 +402,7 @@ function regLoad(){
     .then(function(d){
       _loading = false;
       if(!d || !d.ok){ board.innerHTML = '<div class="state-msg">현황을 불러오지 못했습니다 — ' + _esc(d && d.error || '') + '</div>'; return; }
-      _vocItems = Array.isArray(d.data) ? d.data : [];
+      _receptionItems = Array.isArray(d.data) ? d.data : [];
       _merge();
     })
     .catch(function(){
@@ -866,7 +866,7 @@ $('mConfirm').addEventListener('click', function(){
   if($('m_pw').value.trim()!=='62611200'){ toast('비밀번호가 올바르지 않습니다', true); $('m_pw').focus(); return; }
   var sign = _signCv.toDataURL('image/png');
   var btn = this; btn.disabled = true; btn.textContent = '처리 중…';
-  var payload = { action:'lf_handover', t:VOC_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+  var payload = { action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
   fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify(payload), redirect:'follow' })
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -912,7 +912,7 @@ function _wireBoard(){
       var delId = delBtn.dataset.lfDel;
       if(!confirm('[' + delId + '] 습득물을 삭제할까요?')) return;
       delBtn.disabled = true;
-      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'lf_delete', t:VOC_SUBMIT_TOKEN, id:delId}), redirect:'follow' })
+      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'lf_delete', t:RECEPTION_SUBMIT_TOKEN, id:delId}), redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(d){
           if(d && d.ok){ toast(delId + ' 삭제 완료'); lfLoad(); }
