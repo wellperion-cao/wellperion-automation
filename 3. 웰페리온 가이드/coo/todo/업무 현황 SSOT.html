@@ -136,13 +136,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .wide-row .task-meta{margin-bottom:0;min-width:0}
 /* 내용 요약 한 줄 (상시 노출, 말줄임) */
 .task-summary-line{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* 결재 의견 읽기전용 표시 (부서장·GM, 반려이력과 별개) — 2026-07-02 COO 배64 */
+/* 결재 의견 있음 안내(원문은 비노출·결재 현황 SSOT 게이트 뒤에서만) — 2026-07-02 COO 배64 · 2026-07-27 게이트 정합 수리(배9819 결함⑦) */
 .appr-opinions{margin-top:8px;padding:8px 10px;border-left:3px solid var(--purple);background:var(--purple-bg);border-radius:6px}
 .appr-op-title{font-size:12px;font-weight:700;color:var(--purple);margin-bottom:5px}
-.appr-op-row{margin:4px 0}
-.appr-op-who{font-size:11px;font-weight:700;color:var(--purple)}
-.appr-op-time{font-size:10px;color:var(--dim);margin-left:5px}
-.appr-op-text{font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin-top:2px}
 
 /* ── 문서 서식(기획안·결과보고) 렌더 — HTML 문서는 흰 종이 위에 표시 (2026-07-15) ── */
 .doc-render{background:#fff;color:#111;border-radius:8px;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6}
@@ -1661,10 +1657,10 @@ function renderTaskCard(t, idx) {
   html += '</div>'; // task-meta
   html += '</div>'; // /wide-row (업무명+메타 가로 한 줄)
 
-  // 결재 의견 (부서장·GM) — 읽기전용 표시. 반려 건이 아니어도 의견 있으면 노출 (2026-07-02 COO 배64)
+  // 결재 의견(부서장·GM 실명 원문)은 이 페이지(무인증 공개)에서 렌더 금지 — 결재 현황 SSOT(비밀번호 게이트)에서만 표시 (2026-07-27 COO 배9819 결함⑦ 게이트 정합)
   var _ops = parseOpinions(t.opinions);
   if (_ops.length) {
-    html += '<div class="appr-opinions"><div class="appr-op-title">💬 결재 의견 (부서장·GM)</div>' + _ops.map(function(o){ return '<div class="appr-op-row"><span class="appr-op-who">'+esc(o.name||o.role||'')+'</span> <span class="appr-op-time">'+esc(String(o.time||'').slice(0,16))+'</span><div class="appr-op-text">'+esc(o.text||'')+'</div></div>'; }).join('') + '</div>';
+    html += '<div class="appr-opinions"><div class="appr-op-title">💬 결재 의견 있음 — <a href="결재 현황 SSOT.html" style="color:inherit;text-decoration:underline;" onclick="event.stopPropagation();">결재 현황 SSOT</a>에서 확인(비밀번호)</div></div>';
   }
 
   // 내용 요약 한 줄 (상시 노출 — 한 줄 말줄임). 본문 첫 줄을 요약으로 사용.
