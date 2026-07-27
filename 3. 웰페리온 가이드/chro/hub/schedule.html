@@ -1503,7 +1503,12 @@ function apprNameCheck(r,verb){
   return true;
 }
 /* [2026-07-27 B-1] 승인 = 서버 원자 트랜잭션(schedreq-approve: PIN 검증→잔여 검증→셀 upsert→상태 기입 1호출).
-   셀·상태 2호출 분리로 생기던 불일치 창 제거. 구 백엔드(unknown_action)면 기존 2호출 경로로 폴백(순서 사고 가드). */
+   셀·상태 2호출 분리로 생기던 불일치 창 제거.
+   [감사교정1 2026-07-27] 구 백엔드 폴백 판정 — @76 라이브 실측상 미배포 신규 액션은 "unknown_action"이 아니라
+   공개 라우팅을 지나 인증 게이트에 걸려 {ok:false,error:"unauthorized"}를 반환한다(A-6 실측). 폴백 조건을 두 응답
+   모두로 포괄. 신 백엔드의 approve/reject는 인증 게이트 앞(공개 블록)에서 처리돼 "unauthorized"를 절대 내지 않으므로
+   오폴백 없음. ⚠️ 이 폴백은 이중 방어일 뿐 — 배포 순서 정본 = "백엔드 @77 배포·검증 완료 후에만 프론트 push"(강제). */
+function isLegacyBackendResp(j){return !!(j&&j.ok!==true&&(j.error==="unknown_action"||j.error==="unauthorized"));}
 function approveReq(id){
   const r=REQS.find(x=>x.id===id); if(!r||r.status!=="대기")return;
   if(demoMode){alert("데모 미리보기 중에는 결재를 반영할 수 없습니다.\n설정 탭 → 서버 다시 불러오기로 복귀 후 진행하세요.");return;}
@@ -1521,7 +1526,7 @@ function approveReq(id){
           if(j.balanceUnknown)toast("ℹ 연차 부여 미확정 인원 — 잔여 검증 없이 승인 기록됨(매니저 확인 대기)");
           return;
         }
-        if(j&&j.error==="unknown_action"){legacyApprove(r);return;}   // 구 백엔드 폴백
+        if(isLegacyBackendResp(j)){legacyApprove(r);return;}   // 구 백엔드 폴백(unknown_action·unauthorized — 감사교정1)
         alert("승인이 반영되지 않았습니다.\n"+((j&&SB_ERR[j.error])||(j&&j.message)||"서버 오류"));
       })
       .catch(()=>{reqSynced=false;reqSyncBadge();alert("서버 연결 실패 — 승인이 반영되지 않았습니다.");});
@@ -1557,7 +1562,7 @@ function rejectReq(id){
           saveQ(); reqSynced=true; reqSyncBadge(); renderReq(); rqRemainInfo();
           return;
         }
-        if(j&&j.error==="unknown_action"){legacyReject(r);return;}   // 구 백엔드 폴백
+        if(isLegacyBackendResp(j)){legacyReject(r);return;}   // 구 백엔드 폴백(unknown_action·unauthorized — 감사교정1)
         alert("반려가 반영되지 않았습니다.\n"+((j&&SB_ERR[j.error])||(j&&j.message)||"서버 오류"));
       })
       .catch(()=>{reqSynced=false;reqSyncBadge();alert("서버 연결 실패 — 반려가 반영되지 않았습니다.");});
