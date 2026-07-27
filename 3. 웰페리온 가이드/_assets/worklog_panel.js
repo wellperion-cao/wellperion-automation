@@ -6,6 +6,14 @@
     <script src="/wellperion-automation/_assets/worklog_panel.js"></script>
   role 값: ceo|cfo|chro|cmo|coo|cpo|cto — 해당 role의 로그·빠진 것만 걸러 표시.
 
+  ★모달 모드(선택 · 2026-07-27 GM 지시 "맨 하단이 아닌 상단 탭 + 팝업으로 보게"):
+    <div data-worklog="cpo" data-worklog-mode="modal" data-worklog-badge="#wlHeaderBadge"></div>
+    - mode="modal" 이면 접힘 토글 줄(▸ 작업 현황 로그)을 만들지 않고 내용만 컨테이너에 채운다.
+      → 페이지가 이 컨테이너를 자기 팝업(모달) 안에 두고, 여는 버튼은 페이지가 상단에 배치한다.
+    - data-worklog-badge = 신규 '빠진 것' 개수를 표시할 요소의 CSS 선택자(상단 버튼 옆 배지).
+      0건이면 그 요소를 숨긴다(평상시 조용 — 기본 모드와 같은 규칙).
+    - 이 두 속성이 없으면 동작·모양이 종전과 100% 동일하다(ERP 본 페이지 cmo·coo 무영향).
+
   데이터 소스(고정 스키마 — 백엔드와 합의된 계약, 변경 금지):
     - status/worklog.jsonl      1줄 1 JSON: {ts,role,area,event,result,detail,ref,url}
         result ∈ ok|warn|fail
@@ -152,7 +160,10 @@
       '.wl-log-event a{color:inherit; text-decoration:underline; text-underline-offset:2px;}' +
       '.wl-log-detail{flex:0 0 100%; margin:1px 0 4px 17px; color:var(--dim,var(--wl-fb-dim)); font-size:11.5px;}' +
       '.wl-footer{margin-top:12px; padding-top:10px; border-top:1px dashed var(--border,var(--wl-fb-border));' +
-        ' font-size:10.5px; color:var(--dim,var(--wl-fb-dim));}';
+        ' font-size:10.5px; color:var(--dim,var(--wl-fb-dim));}' +
+      // 모달 모드 — 이미 팝업이 테두리·배경·여백을 갖고 있으니 패널이 또 두르지 않는다(액자 겹침 방지).
+      '.wl-panel-modal{margin:0; border:none; border-radius:0; background:none;}' +
+      '.wl-panel-modal > .wl-body{border-top:none; padding:0;}';
     var st = document.createElement('style');
     st.id = 'wl-style';
     st.textContent = css;
@@ -297,6 +308,7 @@
   }
 
   function updateBadge(badge, data, role){
+    if(!badge) return;
     if(data.gaps === null){ badge.hidden = true; return; }
     // 배지 = 신규만 카운트(누적이 아무리 많아도 배지엔 안 잡힘 — 평상시 조용해야 진짜 신규가 눈에 띈다).
     var n = (data.gaps.gaps || [])
@@ -311,27 +323,36 @@
     role = String(role || '').trim().toLowerCase();
     injectStyle();
 
+    // 모달 모드 = 접힘 토글 없이 내용만. 여는 버튼·팝업 껍데기는 페이지가 갖는다(2026-07-27 GM).
+    var isModal = String(container.getAttribute('data-worklog-mode') || '').toLowerCase() === 'modal';
     var wrap = document.createElement('div');
-    wrap.className = 'wl-panel';
-    wrap.innerHTML =
-      '<button type="button" class="wl-toggle" aria-expanded="false">' +
-        '<span class="wl-caret">▸</span><span>작업 현황 로그</span><span class="wl-badge" hidden></span>' +
-      '</button>' +
-      '<div class="wl-body" hidden><div class="wl-loading">불러오는 중…</div></div>';
+    wrap.className = 'wl-panel' + (isModal ? ' wl-panel-modal' : '');
+    wrap.innerHTML = isModal
+      ? '<div class="wl-body"><div class="wl-loading">불러오는 중…</div></div>'
+      : ('<button type="button" class="wl-toggle" aria-expanded="false">' +
+           '<span class="wl-caret">▸</span><span>작업 현황 로그</span><span class="wl-badge" hidden></span>' +
+         '</button>' +
+         '<div class="wl-body" hidden><div class="wl-loading">불러오는 중…</div></div>');
     container.appendChild(wrap);
 
-    var toggle = wrap.querySelector('.wl-toggle');
-    var caret = wrap.querySelector('.wl-caret');
-    var badge = wrap.querySelector('.wl-badge');
     var body = wrap.querySelector('.wl-body');
-    var opened = false;
+    // 배지 = 기본 모드는 토글 줄 안, 모달 모드는 페이지가 지정한 상단 버튼 옆 요소.
+    var badgeSel = container.getAttribute('data-worklog-badge');
+    var badge = isModal
+      ? (badgeSel ? document.querySelector(badgeSel) : null)
+      : wrap.querySelector('.wl-badge');
 
-    toggle.addEventListener('click', function(){
-      opened = !opened;
-      body.hidden = !opened;
-      toggle.setAttribute('aria-expanded', String(opened));
-      caret.textContent = opened ? '▾' : '▸';
-    });
+    if(!isModal){
+      var toggle = wrap.querySelector('.wl-toggle');
+      var caret = wrap.querySelector('.wl-caret');
+      var opened = false;
+      toggle.addEventListener('click', function(){
+        opened = !opened;
+        body.hidden = !opened;
+        toggle.setAttribute('aria-expanded', String(opened));
+        caret.textContent = opened ? '▾' : '▸';
+      });
+    }
 
     // 누적(밀린 것) 토글 — body.innerHTML이 데이터 로드 시 통째로 교체되므로 wrap(고정 요소)에
     // 위임 바인딩(1회)해 매 렌더마다 다시 붙일 필요 없게 한다.
