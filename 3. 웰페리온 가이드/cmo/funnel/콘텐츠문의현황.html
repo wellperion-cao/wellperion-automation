@@ -245,6 +245,19 @@ body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun G
   </div>
 
   <!-- ════════════════════════════════════════════
+       ②-2 올해 월별 추이 — 1월~이번 달 (GM 지시 2026-07-27 "1~7월 연치도 나와야")
+       선택 기간과 무관하게 항상 올해 전체를 보여준다. 월 하나당 funnel_conversion 1회
+       (서버 기존 액션 재사용 · 신규 집계 없음) — 병렬 호출 후 한 번에 렌더.
+       기간 버튼을 눌러도 다시 안 부른다(_ytdLoaded 가드) — 같은 값이라 재조회는 낭비.
+       ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">올해 월별 추이 <span style="font-size:10.5px;font-weight:400;color:var(--dim);">(문의 접수 기준 · 이번 달은 오늘까지)</span></div>
+    <div id="ytd-trend-wrap">
+      <div class="flow-skeleton sk-pulse"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
        ③ 채널별 성과 — 5채널 × (발행·경유문의·게시물당 문의·증감)
        증감 = 선택 기간과 동일 길이의 직전 기간 대비(문의 기준). 실측 두 번 조회.
        ════════════════════════════════════════════ -->
@@ -645,6 +658,63 @@ function refreshPeriodSections() {
     if (myToken !== _refreshToken) return; // 그 사이 기간이 바뀜 — 낡은 응답 폐기
     _setCacheBadge(false);
     _renderPeriod(res[0], res[1], res[2], res[3], from, to, prev);
+    // [2026-07-27 GM '안 뜨네'] 로드가 끝나도 상태줄이 '불러오는 중…'에 멈춰 있어 고장으로 보였다.
+    //   실제로는 값이 다 그려져 있었다. 상태줄을 끄는 곳을 여기 한 군데로 모은다 —
+    //   기존엔 각 기간 버튼이 refreshPeriodSections() 직후 '실측 완료'를 동기로 찍어서
+    //   아직 안 끝났는데 완료라고 말하고 있었고(거짓), 최초 로드 경로엔 그 코드가 아예 없었다.
+    var _st = document.getElementById('period-status');
+    if (_st) _st.textContent = _periodLabel + ' · 실측 완료';
+  });
+  loadYtdTrend();
+}
+
+// ─── 올해 월별 추이 (1월~이번 달) — GM 지시 2026-07-27 ───────────────
+// 월별로 funnel_conversion 1회씩(서버 기존 액션 재사용). 한 번 그리면 다시 안 부른다.
+var _ytdLoaded = false;
+function loadYtdTrend() {
+  if (_ytdLoaded) return;
+  _ytdLoaded = true;
+  var el = document.getElementById('ytd-trend-wrap');
+  if (!el) return;
+  var today = new Date();
+  var y = today.getFullYear(), lastM = today.getMonth() + 1;
+  var jobs = [];
+  for (var mm = 1; mm <= lastM; mm++) {
+    var f = y + '-' + String(mm).padStart(2, '0') + '-01';
+    var isCur = (mm === lastM);
+    var t = isCur ? _fmtYMD(today)
+                  : y + '-' + String(mm).padStart(2, '0') + '-' + String(new Date(y, mm, 0).getDate()).padStart(2, '0');
+    jobs.push(fetchFunnelConversion(f, t));
+  }
+  Promise.all(jobs).then(function(list) {
+    var rows = [], maxInq = 0, failed = 0;
+    list.forEach(function(d, i) {
+      if (!d || !d.total) { failed++; rows.push({ m: i + 1, inq: null }); return; }
+      var inq = d.total.inquiries || 0;
+      if (inq > maxInq) maxInq = inq;
+      rows.push({ m: i + 1, inq: inq, conv: d.total.converted || 0, rate: d.total.rate });
+    });
+    var html = '<table class="channel-table"><tr><th style="width:70px">월</th><th>문의</th>'
+             + '<th style="width:44%">추이</th><th>가입</th><th>전환율</th></tr>';
+    rows.forEach(function(r) {
+      if (r.inq === null) {
+        html += '<tr><td>' + r.m + '월</td><td colspan="4" style="color:var(--dim)">미측정(수집 실패)</td></tr>';
+        return;
+      }
+      var pct = maxInq ? Math.round(r.inq / maxInq * 100) : 0;
+      var isCur = (r.m === lastM);
+      html += '<tr>'
+        + '<td>' + r.m + '월' + (isCur ? ' <span style="color:var(--dim);font-size:10px">(오늘까지)</span>' : '') + '</td>'
+        + '<td style="font-weight:700">' + r.inq + '</td>'
+        + '<td><div style="background:var(--line,#333);height:9px;border-radius:5px;overflow:hidden">'
+        + '<div style="width:' + pct + '%;height:100%;background:var(--accent,#c9a227);border-radius:5px"></div></div></td>'
+        + '<td>' + r.conv + '건</td>'
+        + '<td>' + (typeof r.rate === 'number' ? r.rate + '%' : '—') + '</td>'
+        + '</tr>';
+    });
+    html += '</table>';
+    if (failed) html += '<div style="font-size:10.5px;color:var(--dim);margin-top:6px">※ ' + failed + '개월은 수집 실패로 미측정 — 0으로 세지 않았다.</div>';
+    el.innerHTML = html;
   });
 }
 
@@ -887,7 +957,6 @@ function runCustomQuery() {
   var navRow = document.getElementById('month-nav-row');
   if (navRow) navRow.style.display = 'none';
   refreshPeriodSections();
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
 }
 
 function switchPeriod(period) {
@@ -919,7 +988,6 @@ function switchPeriod(period) {
   }
   if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
   refreshPeriodSections();
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
 }
 
 function loadYearToDate() {
@@ -933,7 +1001,6 @@ function loadYearToDate() {
   var statusEl = document.getElementById('period-status');
   if (statusEl) statusEl.textContent = _periodLabel + ' · 불러오는 중…';
   refreshPeriodSections();
-  if (statusEl) statusEl.textContent = _periodLabel + ' · 실측 완료';
 }
 
 // ─── 월 네비게이터 ────────────────────────────────────────────
@@ -966,7 +1033,6 @@ function _loadMonthRange(year, month) {
   _rangeFromTo = { from: from, to: to };
   _periodLabel = rangeLabel;
   refreshPeriodSections();
-  if (statusEl) statusEl.textContent = rangeLabel + ' · 실측 완료';
 }
 
 function _initDash() {
