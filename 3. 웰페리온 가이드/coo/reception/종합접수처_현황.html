@@ -188,6 +188,9 @@ a { color:var(--accent); text-decoration:none; }
            폼 사본을 만들지 않고 cpo/member/실무진피드백.html 을 그대로 iframe 으로 연다(사본 0 = 어긋남 0).
            ?screen=종합접수처 로 업무를 미리 골라 보내 담당을 바로 가릴 수 있게 한다. -->
       <button onclick="openStaffFeedback()">💬 실무진 피드백</button>
+      <!-- 작업 현황 로그 — 피드백을 남긴 다음 "그래서 뭐가 됐나"를 같은 자리에서 보게 한다(GM 지시 2026-07-27).
+           패널 자체는 전 페이지 공용 부품(_assets/worklog_panel.js) 그대로 — 이 화면은 팝업으로 감싸기만 한다. -->
+      <button onclick="openWorklog()">📋 작업 현황 로그</button>
       <a href="http://wellperion.com/ko/reception/" target="_blank">📲 회원 접수 폼</a>
       <a href="/wellperion-automation/wellperion_guide(main).html#O1">🏠 ERP 허브</a>
       <button onclick="regLoad();lfLoad();holdLoad()">↻ 새로고침</button>
@@ -242,6 +245,20 @@ a { color:var(--accent); text-decoration:none; }
     <iframe id="staffFeedbackFrame" data-src="../../cpo/member/실무진피드백.html?screen=종합접수처&amp;theme=dark"
       title="실무진 피드백"
       style="width:100%;height:70vh;border:1px solid var(--border);border-radius:10px;display:block;background:var(--paper)"></iframe>
+  </div>
+</div>
+
+<!-- 📋 작업 현황 로그 모달 — 공용 부품 <div data-worklog="coo"> 를 그대로 담기만 한다.
+     화면·데이터·스타일 정본은 _assets/worklog_panel.js 하나뿐(여기서 다시 만들지 않는다). GM 지시 2026-07-27 -->
+<div class="modal-back" id="worklogBack">
+  <div class="modal" style="max-width:720px;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+      <h2 style="margin:0">📋 작업 현황 로그</h2>
+      <button type="button" onclick="closeWorklog()" aria-label="닫기"
+        style="background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
+    </div>
+    <div class="msub" style="margin-bottom:10px">운영(시우)이 무엇을 했고 무엇이 빠졌는지 — 남기신 피드백이 어떻게 처리되고 있는지 여기서 보입니다.</div>
+    <div data-worklog="coo"></div>
   </div>
 </div>
 
@@ -795,6 +812,28 @@ function openStaffFeedback(){
 function closeStaffFeedback(){ $('staffFeedbackBack').classList.remove('show'); }
 $('staffFeedbackBack').addEventListener('click', function(e){ if(e.target===this) closeStaffFeedback(); });
 
+/* ── 📋 작업 현황 로그 모달 (GM 지시 2026-07-27) ──
+   공용 패널은 원래 "▸ 작업 현황 로그" 한 줄로 접혀 있다. 팝업으로 열었다는 건 이미 보겠다는 뜻이라
+   처음 열 때 한 번만 대신 펼쳐준다(패널 코드는 손대지 않는다 — 다른 페이지 동작 그대로). */
+var _wlOpened = false;
+function openWorklog(){
+  $('worklogBack').classList.add('show');
+  if(_wlOpened) return;
+  // 패널 스크립트는 defer 로 늦게 붙는다 — 아직 없으면 잠깐 기다렸다 한 번 더 본다(최대 3초).
+  var tries = 0;
+  (function expand(){
+    var t = $('worklogBack').querySelector('.wl-toggle');
+    if(t){
+      _wlOpened = true;
+      if(t.getAttribute('aria-expanded') !== 'true') t.click();
+      return;
+    }
+    if(++tries < 30) setTimeout(expand, 100);
+  })();
+}
+function closeWorklog(){ $('worklogBack').classList.remove('show'); }
+$('worklogBack').addEventListener('click', function(e){ if(e.target===this) closeWorklog(); });
+
 /* ── 서명패드 (canvas + pointer → toDataURL PNG) ── */
 var _signCv = $('signPad'), _signCtx = _signCv.getContext('2d'), _signDrawing = false, _signHasInk = false, _signLastX = 0, _signLastY = 0;
 function resizePad(){
@@ -890,5 +929,9 @@ regLoad();
 lfLoad();
 holdLoad();
 </script>
+
+<!-- 전 C-Level 공통 '작업 현황 로그' 패널 부품 — 데이터·스타일 단일 출처. 위 모달 안의
+     <div data-worklog="coo"> 를 이 스크립트가 찾아 그린다(사본 금지). GM 지시 2026-07-27 -->
+<script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
 </body>
 </html>
