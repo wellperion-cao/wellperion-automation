@@ -456,6 +456,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 </div><!-- /sticky-top -->
 
+<!-- ⏰ 보류 재부상 — 보류로 넣어둔 결재사항이 사유·재개조건 없이 조용히 사라지지 않게 하는
+     감지 카드(GM 지시 2026-07-23·배9836). 이 화면(holdTask·_askResumeCond)이 보류 전환 시
+     사유·재개조건 2칸을 강제하는 입력 게이트이고, 아래 카드는 그 결과를 사후에 감시한다 —
+     새 화면·새 알림 만들지 않고 전 C-Level 공용 부품(_assets/worklog_panel.js·
+     status/worklog_gaps.json) 그대로 담기만 한다(사본 금지). -->
+<div style="max-width:1100px;margin:10px auto 0;padding:0 16px;">
+  <div style="font-size:12px;font-weight:700;color:var(--dim,#8a8478);margin-bottom:4px;">⏰ 보류 재부상</div>
+  <!-- gap-filter="::hold-" = 전체 coo 감지 중 보류 3겹(hold-abandoned·hold-no-resume·hold-resume-due)
+       ref만 뽑는다. gaps-only=한 일 로그 생략. mode=modal=접힘 없이 항상 펼침(진짜 카드).
+       세 속성 모두 _assets/worklog_panel.js 기존 기능 확장(2026-07-27 추가, 하위호환). -->
+  <div data-worklog="coo" data-worklog-mode="modal" data-worklog-gap-filter="::hold-" data-worklog-gaps-only="1"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div class="content" id="mainContent">
@@ -3737,6 +3750,9 @@ function printResultReport(taskId, override) {
 }
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
+    <!-- ⏰ 보류 재부상 카드(위 data-worklog="coo")가 그려지려면 이 공용 스크립트가 필요하다 —
+         데이터·스타일 정본은 _assets/worklog_panel.js 하나뿐(사본 금지, GM 지시 2026-07-23·배9836). -->
+    <script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
 
 </div><!-- /ssotViewTasks -->
 

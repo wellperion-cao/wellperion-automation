@@ -1002,6 +1002,18 @@
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
+    <!-- ⏰ 보류 재부상 — 핵심과제·전략로드맵에 필요한 결재사항을 일단 보류로 넣어둔 뒤 조용히
+         사라지지 않게 하는 감지 카드(GM 지시 2026-07-23·배9836). 새 화면·새 알림 만들지 않고 전
+         C-Level 공용 부품(_assets/worklog_panel.js·status/worklog_gaps.json) 그대로 담기만 한다
+         — 사본 금지. 보류사유·재개조건 빈칸(조용한 소멸)과 재개조건 충족(다시 볼 때)을 함께 보여준다. -->
+    <section class="blk" data-blkid="hold-resurface">
+      <h2 class="sec">⏰ 보류 재부상 <span class="lvb lvb-live" title="업무·결재 SSOT 보류 행을 매 실행마다 실측 — 게이트(입력 강제)·빈칸감지(사후)·재부상(조건충족) 3겹">🟢 라이브</span> <span class="stag">보류사유·재개조건 빈칸 + 재개조건 충족 감지</span></h2>
+      <!-- gap-filter="::hold-" = 전체 coo 감지(276건) 중 보류 3겹(hold-abandoned·hold-no-resume·
+           hold-resume-due) ref만 뽑는다. gaps-only=한 일 로그 생략. mode=modal=접힘 없이 항상 펼침
+           (진짜 카드). 세 속성 모두 _assets/worklog_panel.js 기존 기능 확장(2026-07-27 추가, 하위호환). -->
+      <div data-worklog="coo" data-worklog-mode="modal" data-worklog-gap-filter="::hold-" data-worklog-gaps-only="1"></div>
+    </section>
+
   </div>
 
 
@@ -3134,5 +3146,8 @@
 })();
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
+    <!-- ⏰ 보류 재부상 카드(위 data-worklog="coo")가 그려지려면 이 공용 스크립트가 필요하다 —
+         데이터·스타일 정본은 _assets/worklog_panel.js 하나뿐(사본 금지, GM 지시 2026-07-23·배9836). -->
+    <script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
 </body>
 </html>

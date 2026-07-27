@@ -14,6 +14,14 @@
       0건이면 그 요소를 숨긴다(평상시 조용 — 기본 모드와 같은 규칙).
     - 이 두 속성이 없으면 동작·모양이 종전과 100% 동일하다(ERP 본 페이지 cmo·coo 무영향).
 
+  ★부분 카드 모드(선택 · 2026-07-27 시우 · GM 지시 "월간 운영보고에도 이런 식으로 정리해 들어가면
+    좋겠다"·배9836): 276건 전체가 아니라 특정 신호(예: 보류 재부상)만 뽑아 상시 노출 카드로 쓰고 싶을 때.
+    <div data-worklog="coo" data-worklog-mode="modal" data-worklog-gap-filter="::hold-" data-worklog-gaps-only="1"></div>
+    - data-worklog-gap-filter = 이 문자열을 ref 에 포함하는 gap만 남긴다(신규·누적 모두). 없으면 전부(종전과 동일).
+    - data-worklog-gaps-only="1" = "📋 한 일" 로그 구획을 생략하고 "⚠️ 빠진 것"만 그린다(카드를 짧게 유지).
+    - mode="modal"과 함께 쓰면 접힘 토글 없이 항상 펼쳐진 상태로 박힌다(진짜 '카드').
+    - 두 속성 다 없으면 동작·모양이 종전과 100% 동일(기존 페이지 무영향).
+
   ★화면 스코프(선택 · 2026-07-27 GM 지시 "멤버십 회원관리는 멤버십 작업현황만, 강습은 강습만"):
     <div data-worklog="cpo" data-worklog-scope="멤버십" data-worklog-scope-set="멤버십,강습"></div>
     - scope-set = 이 페이지가 쓰는 화면 이름 전체. scope = 지금 보고 있는 화면.
@@ -238,12 +246,33 @@
       (since ? '<div class="wl-gap-since">(' + esc(since) + '부터)</div>' : '') +
       '</div>';
   }
-  function renderGapsSection(gapsObj, role){
+  function renderGapsSection(gapsObj, role, gapFilter){
     if(gapsObj === null){
       return '<div class="wl-section"><div class="wl-section-title">⚠️ 빠진 것</div>' +
         '<div class="wl-error">빠진 것 정보를 불러오지 못했습니다</div></div>';
     }
     var roleGaps = (gapsObj.gaps || []).filter(function(g){ return (g && g.role) === role; });
+
+    // gapFilter 전용 경로(선택 · 2026-07-27, 배9836) — 276건 role 전체가 아니라 ref 부분일치로 뽑은
+    // 소수(예: 보류 3겹 7건)를 "숫자만"이 아니라 항상 펼쳐진 평문 목록으로 보여준다. 신규·누적
+    // 아코디언(기본 경로)에 넣으면 사유(detail)가 클릭 한 번 뒤에 숨어 "N건 대기"만 보이는 실패가
+    // 재현된다(GM 2026-07-27 지적 — 숫자만 있으면 아무도 안 움직인다) — 그래서 이 경로만 따로 둔다.
+    if(gapFilter){
+      var picked = roleGaps.filter(function(g){ return String(g.ref || '').indexOf(gapFilter) >= 0; })
+        .sort(function(a, b){
+          var an = isNewAge(a) ? 0 : 1, bn = isNewAge(b) ? 0 : 1;
+          return an !== bn ? an - bn : bySeverity(a, b);
+        });
+      if(!picked.length){
+        return '<div class="wl-section"><div class="wl-section-title">⚠️ 빠진 것</div>' +
+          '<div class="wl-empty-ok">빠진 것 없음 ✅</div></div>';
+      }
+      var pickedHtml = '<div class="wl-section"><div class="wl-gaps-alert">' +
+        '<div class="wl-section-title">⚠️ ' + picked.length + '건</div>';
+      picked.forEach(function(g){ pickedHtml += gapItemHtml(g, isNewAge(g)); });
+      return pickedHtml + '</div></div>';
+    }
+
     var newGaps = roleGaps.filter(isNewAge).sort(bySeverity);
     var oldGaps = roleGaps.filter(function(g){ return !isNewAge(g); }).sort(bySeverity);
 
@@ -358,8 +387,9 @@
     return html + '</div>';
   }
 
-  function renderBody(body, data, role, scope, scopeSet){
-    var html = renderGapsSection(data.gaps, role) + renderLogsSection(data.logs, role, scope, scopeSet);
+  function renderBody(body, data, role, scope, scopeSet, gapFilter, gapsOnly){
+    var html = renderGapsSection(data.gaps, role, gapFilter);
+    if(!gapsOnly) html += renderLogsSection(data.logs, role, scope, scopeSet);
     var genAt = (data.gaps && data.gaps.generated_at) ? fmtGenAt(data.gaps.generated_at) : '';
     if(genAt) html += '<div class="wl-footer">마지막 점검: ' + esc(genAt) + '</div>';
     body.innerHTML = html;
@@ -430,7 +460,9 @@
       var scope = String(container.getAttribute('data-worklog-scope') || '').trim();
       var setRaw = String(container.getAttribute('data-worklog-scope-set') || '');
       var scopeSet = setRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-      renderBody(body, data, role, scope, scopeSet);
+      var gapFilter = String(container.getAttribute('data-worklog-gap-filter') || '').trim();
+      var gapsOnly = container.getAttribute('data-worklog-gaps-only') === '1';
+      renderBody(body, data, role, scope, scopeSet, gapFilter, gapsOnly);
       updateBadge(badge, data, role);
     }
     _instances.push(function(){ loadData().then(paint); });   // 페이지가 다시 그리라고 할 때 쓰는 손잡이
