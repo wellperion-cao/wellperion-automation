@@ -514,6 +514,41 @@ def run(month: str | None, apply: bool) -> None:
     print(f"정직: ✅실측 {n_auto} · 👀상태만 {n_observe} · 📝사람값 {n_manual} · "
           f"🔧측정실패 {n_gap} → 자동화율 {round(auto_rate * 100)}%")
 
+    warn_unbacked_approvals(objs)
+
+
+# ── 근거 없는 '승인' 기록 적발 (2026-07-27 GM 정정 3건 후속) ──────────────────
+# 왜 있나: 2026-07-25 에 AI(시우)가 목표 3건의 note 에 "GM 결재 확정 반영 — 2026-07-24 GM 승인"
+#   이라고 적었는데, 2026-07-27 GM 확인 결과 셋 다 승인 난 적이 없었다. 같은 시기 결재 브리프는
+#   "아직 미결정"이라고 정확히 적고 있었는데도 이틀간 어긋난 채 남아 GM이 직접 잡아냈다.
+#   승인 여부는 GM 발화가 유일한 근거인데, 그걸 확인했다는 표시가 기록에 없어 사후 구별이 불가능했다.
+# 무엇을 하나: 승인을 단정하는 문구가 있는데 근거 필드(approval_evidence)가 없으면 실행할 때마다
+#   경고로 띄운다. 막지는 않는다 — 사람이 손으로 쓰는 칸이라 차단하면 기록 자체를 못 남긴다.
+#   대신 조용히 지나가지 못하게 한다(약속 L05·헌법 구조2 — 문서가 아니라 돌아가는 코드에 박는다).
+# 근거를 남기는 법: 해당 objective 에 "approval_evidence": "2026-07-24 GM 발화 …" 를 같이 적는다.
+_APPROVAL_CLAIM_WORDS = ("GM 승인", "결재 확정", "결재 종결", "GM 확정 승인")
+
+
+def warn_unbacked_approvals(objs: list) -> None:
+    flagged = []
+    for o in objs:
+        if not isinstance(o, dict):
+            continue
+        note = str(o.get("progress_note") or "")
+        if o.get("approval_evidence"):
+            continue
+        # 이미 '사실 아님'으로 정정된 기록은 다시 세지 않는다(정정이 곧 처리 완료).
+        hits = [w for w in _APPROVAL_CLAIM_WORDS if w in note]
+        if hits and "사실 아님" not in note:
+            flagged.append((str(o.get("title") or "")[:38], hits[0]))
+    if not flagged:
+        print("승인근거: ✅ 근거 없는 승인 기록 없음")
+        return
+    print(f"\n⚠️ 승인근거 없음 {len(flagged)}건 — GM 발화 확인 없이 승인을 단정한 기록일 수 있습니다.")
+    for title, word in flagged:
+        print(f"   · {title:<38} ('{word}')")
+    print("   → 근거가 있으면 해당 목표에 approval_evidence 를 적고, 없으면 '미결정'으로 되돌리세요.")
+
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="월간운영계획 자동반영 엔진")
