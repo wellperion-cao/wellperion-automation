@@ -472,17 +472,20 @@ a.funnel-step:hover{background:rgba(183,159,138,0.08);color:var(--accent)}
 .db-table th{
   background:rgba(183,159,138,0.07);
   color:var(--accent);
-  padding:10px 12px;
+  /* 위아래 여백 10→7px. 행이 너무 넓다는 실무진 피드백(FB260727-074836 이경연). 2026-07-27 시포 */
+  padding:7px 12px;
   text-align:left;font-weight:700;
   border-bottom:2px solid var(--border);
   white-space:nowrap;font-size:11px;
   letter-spacing:0.04em;text-transform:uppercase;
 }
 .db-table td{
-  padding:11px 12px;
+  /* 위아래 여백 11→6px · 줄간격 1.4→1.35 = 한 행 약 40px → 30px(한 화면에 ~1/3 더 보인다).
+     글자 크기(13px)는 줄이지 않았다 — 읽기 힘들어지면 좁힌 의미가 없다. 2026-07-27 시포 */
+  padding:6px 12px;
   border-bottom:1px solid var(--border-subtle);
   vertical-align:middle;overflow:hidden;
-  line-height:1.4;
+  line-height:1.35;
 }
 .db-table tr:last-child td{border-bottom:none}
 .db-table tr:hover td{background:rgba(255,255,255,0.025)}
@@ -521,6 +524,50 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   width:0;max-width:0;
   padding-left:0;padding-right:0;border-left:none;border-right:none;
   overflow:hidden;visibility:hidden;white-space:nowrap;
+}
+
+/* ── 열 고정(문의일시·성함) — 실무진 피드백 FB260727-074836 이경연 "열고정이 있으면 좋겠슴". 2026-07-27 시포 ──
+   표가 1270px 이상이라 오른쪽(문의 내용·CONTACT·일정)을 보려고 옆으로 밀면 성함이 화면을 벗어나
+   "이게 누구 줄이었지"를 매번 되짚어야 했다. 앞 두 칸(문의일시 152 + 성함 92 = 244px)만 붙잡아 둔다.
+   ★고정 칸은 배경이 반드시 불투명해야 한다 — 반투명이면 밑으로 지나가는 글자가 겹쳐 보인다.
+     그래서 기존 반투명색(hover·등록행·편집중)을 'paper 위에 같은 색을 한 겹 깐' 형태로 다시 적어
+     원래 색감을 그대로 유지하면서 불투명하게 만든다(색이 바뀌는 게 아니라 뒤가 막히는 것). */
+.db-table thead th:nth-child(1),
+.db-table tbody td:nth-child(1){position:sticky;left:0}
+.db-table thead th:nth-child(2),
+.db-table tbody td:nth-child(2){position:sticky;left:152px}
+.db-table thead th:nth-child(1),
+.db-table thead th:nth-child(2){
+  z-index:3;
+  background-color:var(--paper);
+  background-image:linear-gradient(rgba(183,159,138,0.07),rgba(183,159,138,0.07));
+}
+.db-table tbody td:nth-child(1),
+.db-table tbody td:nth-child(2){z-index:2;background-color:var(--paper)}
+.db-table tbody tr:hover td:nth-child(1),
+.db-table tbody tr:hover td:nth-child(2){
+  background-image:linear-gradient(rgba(255,255,255,0.025),rgba(255,255,255,0.025));
+}
+.db-table tbody tr.editing td:nth-child(1),
+.db-table tbody tr.editing td:nth-child(2){
+  background-image:linear-gradient(rgba(78,196,196,0.04),rgba(78,196,196,0.04));
+}
+.db-table tbody tr.row-registered td:nth-child(1),
+.db-table tbody tr.row-registered td:nth-child(2){
+  background-image:linear-gradient(var(--accent-bg),var(--accent-bg));
+}
+/* 고정 블록이 끝나는 자리(성함 오른쪽)에 옅은 경계선 — 어디까지 붙잡혀 있는지 눈에 보이게.
+   border 로 그리지 않는 이유: border-collapse:collapse 표에서 고정 칸의 테두리는 안 그려지는 브라우저가 있다. */
+.db-table thead th:nth-child(2),
+.db-table tbody td:nth-child(2){box-shadow:1px 0 0 var(--border-subtle)}
+/* 등록행 첫 칸의 금색 띠(inset)는 유지 — 위 규칙과 칸이 달라 서로 덮지 않는다. */
+/* 화면이 좁으면 고정을 끈다 — 폰·좁은 창에서 244px을 붙잡으면 볼 수 있는 폭이 거의 남지 않는다. */
+@media(max-width:900px){
+  .db-table thead th:nth-child(1),.db-table tbody td:nth-child(1),
+  .db-table thead th:nth-child(2),.db-table tbody td:nth-child(2){
+    position:static;box-shadow:none;background-image:none;
+  }
+  .db-table tbody td:nth-child(1),.db-table tbody td:nth-child(2){background-color:transparent}
 }
 
 /* ── 편집 가능 셀 어포던스 ── */
