@@ -769,7 +769,7 @@ function roleActivity(cwd, role) {
         if (!Number.isFinite(ts)) continue;
         const m = String(rec.detail || '').match(/배\s?(\d{1,6})/);
         found.set(rec.role, {
-          event: shortTitle(rec.event, 16),
+          event: String(rec.event || '').trim(),   // ★여기서 자르지 않는다 — 폭을 아는 buildRoleLines 가 자른다
           mins: Math.max(0, Math.round((Date.now() - ts) / 60000)),
           ship: m ? m[1] : null,
         });
@@ -790,11 +790,15 @@ function buildRoleLines(cwd, role) {
   try {
     const acts = roleActivity(cwd, role);
     acts.sort((a, b) => (a.mins ?? Infinity) - (b.mins ?? Infinity));   // 최근 움직인 순
+    // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
+    //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
+    //   ● + 공백 + 닉4 + 공백 + [제목] + 2칸 + 'N시간전'(최대 7) + 2칸 + '배NNNNN'(최대 8) = 26
+    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 26));
     return acts.map((a) => {
       const has = a.event != null;
       const dot = has ? `${G}●${X}` : `${D}○${X}`;
       const nick = padDisp(NICK[a.role], 4);
-      const ev = padDisp(has ? a.event : `${D}—${X}`, 18);
+      const ev = padDisp(has ? shortTitle(a.event, evW) : `${D}—${X}`, evW);
       const ago = has ? `${D}${agoText(a.mins)}${X}` : '';
       const ship = has && a.ship ? `${D}배${a.ship}${X}` : '';
       return [`${dot} ${nick} ${ev}`, ago, ship].filter(Boolean).join('  ');
