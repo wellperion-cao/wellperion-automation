@@ -647,7 +647,7 @@ function applyServerMeta(j){
       Object.keys(RETIRED).forEach(k=>delete RETIRED[k]);
       Object.assign(RETIRED,ret);
       rosterFromServer=true;
-      rebuildRoster();renderFilter();renderRoster();
+      rebuildRoster();renderFilter();renderRoster();fillReqEmp();   // [2026-07-28] 서버 명단 도착 시 신청자 목록도 즉시 재생성(퇴사자 제외 반영)
     }
   }catch(_){}
 }
