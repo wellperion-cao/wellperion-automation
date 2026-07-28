@@ -376,6 +376,59 @@ def _apply_quality_gate(items: list) -> None:
             del it["qc_flags"]
 
 
+def _norm_channel(raw) -> str:
+    """채널 표기를 비교용 열쇠로 — '인스타그램 (wellperion 공식)'/'인스타그램 (wellperion)' 이
+    같은 채널로 잡히게 괄호·공백을 털고 대표어만 남긴다."""
+    s = str(raw or "").strip().lower()
+    for key in ("인스타", "블로그", "카페", "카카오", "당근"):
+        if key in s:
+            return key
+    return re.sub(r"[\s()]+", "", s)
+
+
+def _flag_duplicate_registrations(items: list) -> None:
+    """같은 폴더 + 같은 채널인데 id 가 다른 항목을 찾아 dup_flag 를 단다(차단 없음).
+
+    왜 필요한가 (배834 · 2026-07-28 실측):
+      등록은 id 기준 upsert 라서, **같은 콘텐츠를 다른 id 로 다시 등록하면 덮이지 않고
+      새 항목이 쌓인다.** 실제로 instagram/260717_L3_골프 가 그렇게 두 항목이 됐다 —
+      07-14 제작 때 'CMO-2026-07-14-LSERIES-L3-GOLF' 로 등록됐다가
+      07-18 발행 때 'CMO-2026-07-18-L3-GOLF-OFFICIAL-IG' 로 다시 등록돼 쌍둥이가 생겼고,
+      그 쌍둥이가 82초 간격 이중 발행 시도를 부르고 URL 미회수 유령 레코드로 남았다.
+      (L4·L5·L6 는 id 가 유지돼 멀쩡했다 — 즉 id 규칙이 바뀔 때만 터진다.)
+    한 폴더가 여러 항목을 갖는 것 자체는 **정상**이다(한 콘텐츠 → 5채널 발행).
+    그래서 폴더만으로 보지 않고 '폴더 + 채널' 이 겹칠 때만 잡는다.
+    실측 당시 폴더 중복 18건 중 진짜 중복은 이 1건뿐이었다.
+    차단하지 않고 플래그만 다는 이유 = 이미 발행된 과거 항목을 저장 시점에 막으면
+    무관한 쓰기가 전부 실패한다. 눈에 띄게만 해서 만들 때 잡는다.
+    """
+    seen = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        if it.get("status") == "폐기":       # 이미 정리된 것은 대상 아님
+            continue
+        folder = str(it.get("folder") or "").strip().rstrip("/")
+        if not folder:
+            continue
+        key = (folder, _norm_channel(it.get("channel")))
+        first = seen.get(key)
+        if first is None:
+            seen[key] = it
+            continue
+        if first.get("id") == it.get("id"):
+            continue                          # 같은 항목(있을 수 없지만 방어)
+        for dup in (first, it):
+            dup["dup_flag"] = (
+                f"같은 폴더·같은 채널에 항목이 2개 이상입니다 "
+                f"(id={first.get('id')} / {it.get('id')}). "
+                f"등록은 id 기준 덮어쓰기라 id 가 바뀌면 새 항목이 쌓입니다 — "
+                f"하나를 '폐기'로 정리하세요."
+            )
+        print(f"[WARN] review_queue 중복 등록: {folder} · "
+              f"{first.get('id')} ↔ {it.get('id')}")
+
+
 def review_queue_lock(holder: str = "?") -> QueueLock:
     """review_queue.json 전용 크로스-프로세스 락.
 
@@ -455,6 +508,11 @@ def mutate_review_queue(mutator, holder: str = "?") -> list:
             _apply_quality_gate(new_items)
         except Exception as exc:
             print(f"[WARN] qc_gate: 전체 예외(저장은 계속) — {exc}")
+        # 중복 등록 감지(배834) — 같은 관문·같은 자리에 흡수. 새 장치·새 파일 0.
+        try:
+            _flag_duplicate_registrations(new_items)
+        except Exception as exc:
+            print(f"[WARN] dup_gate: 전체 예외(저장은 계속) — {exc}")
         save_review_queue_atomic(new_items)
         return new_items
 
