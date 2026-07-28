@@ -8265,6 +8265,9 @@ function saveConsultModal() {
       _list.push({ date: ds, time: '', note: input, by: _cmBy });   // 컨택한 사람 동봉(배101)
     }
     payload.contacts = JSON.stringify(_list);
+    // 이 모달이 열릴 때 알고 있던 기존 건수 — 서버가 '덜 알고 보낸 것'과 '보고 나서 지운 것'을 가른다.
+    // 이 모달은 이력 전체를 싣고 있으므로(_cmHistOf) 여기서 줄어든 건 실무진이 일부러 지운 것이다.
+    payload.contactsPrev = (_consultHistOrig || []).length;
     delete payload.contact1; delete payload.contact2; delete payload.contact3;
   }
 
@@ -10292,6 +10295,14 @@ function _saveCell(rowIndex, patch, fallbackRow) {
   }
   var keyPhone = base.phone || '';   // 편집 전(로드된) 전화 = 행키. body.phone(새 값)과 별개 — 전화 수정 시에도 안전.
   var rowKey = base.rowKey || '';    // 지문키(§4 R1) — 편집 전 로드값 그대로(패치 전 캡처). 2026-07-22 시포.
+  // 연락 기록 '이전 건수' — 반드시 patch 를 덮기 전에 잰다(2026-07-28 시포). 서버가 이 값으로
+  // '덜 알고 보낸 쓰기'와 '보고 나서 지운 쓰기'를 가른다. 덮은 뒤에 재면 항상 새 값이라 무의미해진다.
+  var _contactsPrevCount = (function () {
+    var c = base.contacts;
+    if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = null; } }
+    return (c && c.length) ? c.length
+      : [base.contact1, base.contact2, base.contact3].filter(function (s) { return String(s || '').trim(); }).length;
+  })();
   Object.assign(base, patch);
   if (idx >= 0 && _tapReady) renderTodayActionPanel();   // 상태·CONTACT 저장 즉시 오늘 할 일 패널 재계산(배754) — 컨택 기록하면 바로 미컨택에서 빠짐
   var r = base;
@@ -10323,6 +10334,9 @@ function _saveCell(rowIndex, patch, fallbackRow) {
   });
   if (patch && Object.prototype.hasOwnProperty.call(patch, 'contacts')) {
     payload.contacts = JSON.stringify(r.contacts || []);
+    // contactsPrev = 이 화면이 알고 있던 기존 건수. 서버가 이 값으로 '덜 알고 보낸 것'과
+    // '보고 나서 지운 것'을 가른다(2026-07-28 시포). 안 보내면 서버가 줄어드는 쓰기를 거부한다.
+    payload.contactsPrev = _contactsPrevCount;
     delete payload.contact1; delete payload.contact2; delete payload.contact3;   // 두 벌 전송 금지(서버에서 뒤 블록이 이김)
   }
   // 배1037: 낙관 로컬반영은 위에서 이미 완료 → 버퍼에 enqueue(영속·백그라운드 flush·실패 표면화).

@@ -5782,6 +5782,26 @@ function _processAction(body) {
         _muHistPrevCount = _muPrevC123 + _muPrevHistArr.length;
         _muHistNewArr = _resParse_(body.contacts);
 
+        // ★★연락 기록이 줄어드는 쓰기는 거부한다 — 2026-07-28 시포(GM '새로고침하면 CONTACT 날아간다' 마지막 못).
+        //   이 블록은 받은 배열로 Contact1/2/3·연락이력을 통째로 다시 쓴다. 그래서 화면이 옛 상태(대개 빈 값)를
+        //   실어 보내면 멀쩡한 기록이 지워졌다. 실측 피해: 유경민·김정화·도자연님(세 분 다 '컨택중'인데 기록 0),
+        //   그리고 3칸이 찬 회원 65명은 4건째부터 매번 소실. 화면은 같은 날 고쳤지만, 실무진 브라우저에 옛 화면이
+        //   떠 있으면 그대로 재발한다 — 그래서 서버에서 막는다(문서가 아니라 코드로 · 약속 L02).
+        //   판정: 보낸 건수가 시트 현재 건수보다 적으면 '덜 알고 보낸 것'으로 보고 fail-closed.
+        //   ▸일부러 지우는 경우(오타 정리 등)는 화면이 contactsPrev(현재 건수)를 같이 보내 의도를 밝힌다.
+        //     그 값이 시트 실제와 맞으면 줄이는 것도 허용한다 — 지금 화면을 보고 지운 게 확실하기 때문이다.
+        //   ▸rowKey fail-closed(§4 R2)와 같은 방식 — 확신이 없으면 쓰지 않고 새로고침을 요구한다.
+        var _muCPrev = (body.contactsPrev === undefined || body.contactsPrev === null || body.contactsPrev === '')
+          ? null : parseInt(body.contactsPrev, 10);
+        var _muDeclared = (_muCPrev !== null && !isNaN(_muCPrev) && _muCPrev === _muHistPrevCount);
+        if (!_muDeclared && _muHistNewArr.length < _muHistPrevCount) {
+          return _json({
+            ok: false, error: 'contacts-would-shrink',
+            detail: '연락 기록이 지워질 뻔해 저장을 멈췄습니다 — 목록을 새로고침한 뒤 다시 저장해 주세요',
+            prev: _muHistPrevCount, incoming: _muHistNewArr.length
+          });
+        }
+
         // {date,time,note} → 사람이 읽는 한 줄. 날짜·시각이 없으면 내용만(기존 수기 표기와 같은 모양).
         var _muCFmt = function (e) {
           if (!e) return '';
