@@ -365,6 +365,7 @@
   .hbadge{display:inline-block; margin-left:6px; font-size:9.5px; font-weight:700; border-radius:999px; padding:1px 7px; line-height:1.5; white-space:nowrap; cursor:help; vertical-align:middle;}
   .hbadge.measured{color:var(--green); background:rgba(106,191,123,0.12); border:1px solid rgba(106,191,123,0.35);}
   .hbadge.observed{color:var(--blue); background:rgba(122,196,240,0.12); border:1px solid rgba(122,196,240,0.35);}
+  .hbadge.basis{color:var(--accent-soft); background:rgba(184,160,251,0.12); border:1px solid rgba(184,160,251,0.35);}
   .hbadge.manual{color:var(--dim); background:rgba(135,131,124,0.14); border:1px solid rgba(135,131,124,0.4);}
   .hbadge.unmeasured{color:var(--rose); background:rgba(221,127,110,0.12); border:1px solid rgba(221,127,110,0.35);}
   @media print{ .hbadge{font-size:6.5px !important; padding:0.5px 4px !important; margin-left:3px !important;} }
@@ -375,6 +376,7 @@
   .hgauge .hg-i{font-weight:600; white-space:nowrap;}
   .hgauge .hg-i.measured{color:var(--green);}
   .hgauge .hg-i.observed{color:var(--blue);}
+  .hgauge .hg-i.basis{color:var(--accent-soft);}
   .hgauge .hg-i.manual{color:var(--dim);}
   .hgauge .hg-i.unmeasured{color:var(--rose);}
   @media print{ .hgauge{font-size:8px !important; padding:3px 7px !important; margin-bottom:4px !important;} }
@@ -1816,7 +1818,10 @@
   // 정의는 status/monthly_ops_plan.json honesty_summary 와 동일: 자동화율 = 실측(measured) ÷ 총.
   // honesty 없는 옛 항목은 honestyBadge()와 동일하게 '사람값'으로 보수 집계(빈칸=문제없음 오인 방지).
   function honestyGauge(objs){
-    var n = {measured:0, observed:0, manual:0, unmeasured:0};
+    // basis(🧮 근거계산) = 연결 소스는 없지만 '몇 개 중 몇 개' 를 구조로 적어 엔진이 센 값.
+    //   2026-07-28 시우: 이 칸이 없어서 근거로 센 6건이 게이지에서 '사람값' 으로 흘러들어갔다 —
+    //   같은 화면에서 딱지는 🧮, 게이지는 📝 로 서로 다른 말을 하고 있었다.
+    var n = {measured:0, observed:0, basis:0, manual:0, unmeasured:0};
     objs.forEach(function(o){
       var lvl = (o.honesty && n[o.honesty.level] != null) ? o.honesty.level : 'manual';
       n[lvl]++;
@@ -1826,6 +1831,7 @@
     return '<div class="hgauge">자동화 <b>' + n.measured + '/' + total + '</b> (' + pct + '%) — ' +
       '<span class="hg-i measured">✅실측 ' + n.measured + '</span> · ' +
       '<span class="hg-i observed">👀상태만 ' + n.observed + '</span> · ' +
+      '<span class="hg-i basis">🧮근거계산 ' + n.basis + '</span> · ' +
       '<span class="hg-i manual">📝사람값 ' + n.manual + '</span> · ' +
       '<span class="hg-i unmeasured">🔧측정실패 ' + n.unmeasured + '</span></div>';
   }
