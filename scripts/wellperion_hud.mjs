@@ -29,12 +29,15 @@
  *     동안 멎어 보였다 — 그게 같은 지적이 두 번 나온 이유다(약속 L02 문서 말고 코드로).
  *
  * 무엇을 보여주나 (웰리 결정 · GM 승인 D안 2026-07-25 — 배107):
- *     시토▶107 상태줄 재설계 — 한 줄에…·✅단계3분전 🆕2 · 항로🚢8⚓43·44·27+34 · 오늘🏁11 · ⚠️시우▸35 결재4일 ⏸시모▸10 16일 +7
+ *     시토▶107 상태줄 재설계 — 한 줄에…·✅단계3분전 🆕2 · 항로🚢8⚓43·44·27+34 · 오늘🏁11 · ⏸시모▸10 16일 +7
  *     └역할 └잡은 배+제목(12자 상한 폐지 — 폭 가변·최소 20자) └새 지시 └대기 배 번호(무거운 순) └오늘 입항 └전사 '막힌 것 우선'
  *
  *   ★전사 가동 점(●●●●)은 삭제 — GM 판단 "정보량 0". 살아있음은 커밋 시각으로 이미 보이고,
  *     정작 안 보이던 건 "무엇이 멈춰 있나"였다(결재 60일·검수대기 8건). 그 자리를 이렇게 채운다:
- *     ① GM 결재 대기 배(⚠️ 역할▸번호 결재N일) ② N일 정지 배(⏸ 역할▸번호 N일) ③ 남는 폭에 정상 진행 배.
+ *     ① N일 정지 배(⏸ 역할▸번호 N일) ② 남는 폭에 정상 진행 배.
+ *   ★⚠️ GM 결재 대기 칸은 2026-07-28 GM 판정으로 삭제 — 낱말 스캔이라 오탐(제목·next 텍스트를
+ *     낱말로 잡다 보니 실제 결재 대기가 아닌 배까지 걸렸다). 결재 대기는 셸 보고·AI진행현황방
+ *     두 곳에서 이미 간다.
  *   ★폭 반응형: 터미널 폭을 읽어 **뒤에서부터 접는다**(전사→오늘→대기목록→🆕 → 마지막까지 내 배).
  *     상태줄은 비대화형이라 토글이 없다 — 창을 넓히면 저절로 더 보이는 것이 토글의 대체다.
  *
@@ -48,13 +51,13 @@
  *       무슨 일이 생겨도 statusline 이 비지 않게 — 실패하면 OMC 출력만이라도 낸다.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, statSync, writeFileSync, mkdirSync, openSync, readSync, closeSync, fstatSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync, mkdirSync, openSync, readSync, closeSync, fstatSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import tty from 'node:tty';
+import os from 'node:os';
 
 const OMC_HUD = 'C:/Users/jjky0/.claude/hud/omc-hud-cost.mjs';
 const NODE = process.execPath;
-const STALL_DAYS = 3;   // 진행중인데 이 날수 이상 안 움직인 배 = ⏸ 정지로 본다
 
 // 역할 기억함 — 한 번 알아낸 역할을 세션별로 적어둔다(2026-07-25 GM 지시).
 //   왜: roleOf 는 transcript **첫 60,000자**에서 부팅 문구(ai-<role>.md)를 찾는다. 대화가
@@ -295,6 +298,33 @@ function runningAgents(str) {
   return count > 0 ? { count, since } : null;
 }
 
+/** 배경 에이전트 — transcript 파싱(위 runningAgents) 대신 **실측**으로 가린다(GM 지적 2026-07-28
+ *  15:15 "대기 15:15부터 이것 좀 처리가 안 되나" — 그 순간에도 에이전트 3척이 돌고 있었다).
+ *  뿌리: transcript 꼬리 파싱은 표식 문구가 창 밖으로 밀려나거나 형식이 바뀌면 놓친다 — 추측이다.
+ *  각 배경 에이전트는 실행 중 자기 출력 파일을 갱신한다:
+ *    <tmp>/claude/<cwd 슬러그>/<session_id>/tasks/*.output
+ *  이 파일들 중 최근 BG_WINDOW_MS 안에 갱신된 것이 있으면 → 실제로 돌고 있다(추정이 아니라 실측).
+ *  ★내용은 읽지 않는다(대용량일 수 있음 · GM 지시) — statSync 로 mtime 만 본다. */
+const BG_WINDOW_MS = 90_000;   // GM 지시 — 최근 90초 안에 갱신되면 '일하는 중'
+function slugifyCwd(cwd) {
+  return String(cwd).replace(/\\/g, '/').replace(/^([A-Za-z]):/, '$1-').replace(/\//g, '-');
+}
+function backgroundAgents(cwd, sessionId) {
+  if (!sessionId) return null;
+  try {
+    const dir = path.join(os.tmpdir(), 'claude', slugifyCwd(cwd), sessionId, 'tasks');
+    const files = readdirSync(dir).filter((f) => f.endsWith('.output'));
+    const now = Date.now();
+    let count = 0;
+    for (const f of files) {
+      try {
+        if (now - statSync(path.join(dir, f)).mtimeMs < BG_WINDOW_MS) count++;
+      } catch { /* 파일 하나 못 읽어도 나머지는 센다 */ }
+    }
+    return count > 0 ? { count } : null;
+  } catch { return null; }   // 폴더 없음(백그라운드 없음) — 정상
+}
+
 function liveAction(transcript) {
   if (!transcript) return null;
   let fd = null;
@@ -389,12 +419,9 @@ function loadQueue(cwd) {
   } catch { return null; }
 }
 
-/** 'GM 답을 기다리는 배'를 가려내는 단 하나의 잣대 — 내 배 칸과 전사 칸이 같은 것을 쓴다(약속 L01).
- *  큐에 전용 칸이 없어 제목·next 문구로 잡는다. "(GM 승인 2026-07-25)" 같은 **이미 승인된** 표기는 제외. */
-const GM_WAIT = /(GM\s?(go|승인|결재|결정))(\s?(승인|결재))?\s?(후|대기|필요|받|로|요청)|\[GM보좌 제안\]|(승인|결재|검수)\s?대기/i;
-
-/** '내 배가 GM(또는 웰리) 답을 기다리는 중'인가 — 위 GM_WAIT(전사 결재 대기)와 다른 개념이라 따로 둔다.
- *  전사 칸 = 남의 배가 **결재**에 걸려 있나 / 이 칸 = 내 배가 **답을 못 받아** 못 나아가나.
+/** '내 배가 GM(또는 웰리) 답을 기다리는 중'인가 — 전사 '막힌 것 우선' 칸(2026-07-28 삭제된
+ *  ⚠️ 결재 대기 칸)과는 다른 개념이라 따로 둔다.
+ *  전사 칸 = 남의 배가 **결재**에 걸려 있나(삭제됨) / 이 칸 = 내 배가 **답을 못 받아** 못 나아가나.
  *
  *  ★설명글의 단어로 판정하지 않는다. next 앞머리의 ⏳ 표식 **하나만** 본다.
  *    왜: 단어로 잡으면 부정문에 걸린다 — 배9260 의 next 는 "시토(**GM 결정 불필요**·먼저 진행)"
@@ -409,12 +436,7 @@ const GM_ANSWER = /^[\s·]*⏳/;
 const WEIGHT = { '🛳️크루즈': 3, '⛴️여객선': 2, '⛵돛단배': 1 };
 function weightOf(s) { return WEIGHT[String(s.priority || '')] || 0; }
 
-// 배의 '마지막 움직임'이 며칠 전인가 — updated_at 이 있으면 그것, 없으면 enqueued_at.
-function idleDays(s, now) {
-  const t = Date.parse(String(s.updated_at || s.enqueued_at || ''));
-  return Number.isFinite(t) ? Math.max(0, Math.floor((now - t) / 86400000)) : 0;
-}
-// 표시용 배 번호 — 짧은번호 우선.
+// 배의 '마지막 움직임'이 며칠 전인가 — updated_at 이 있으면 그것, 없으면 enqueued_at.// 표시용 배 번호 — 짧은번호 우선.
 function noOf(s) { return s.short_no != null ? s.short_no : s.ship_no; }
 
 /** 내 항로 — 진행/대기/오늘 입항 + 대기 배 번호 목록 + 🆕(남이 띄웠는데 아직 안 잡은 배). */
@@ -489,61 +511,6 @@ function myShips(q, cwd, role) {
     } : null;
     return { run, wait: waitNos.length, waitNos, fresh, done, shortOf, cur, ask };
   } catch { return null; }
-}
-
-/** 전사 '막힌 것 우선' 목록 (웰리 결정 D안 · GM 승인 2026-07-25 — 전사 가동 점 ●●●● 대체).
- *  ① ⚠️ GM 결재 대기 배 ② ⏸ N일 정지 배 ③ 남는 폭에 정상 진행 배 — 나(role)는 뺀다(내 배는 앞에 있다).
- *  'GM 결재 대기' 판별은 큐에 전용 칸이 없어 제목·next 의 문구로 잡는다(기술 배선 = 시토):
- *    "GM go/승인/결재/결정 + 후·대기·필요·받·로·요청" 꼴, "[GM보좌 제안]", "승인/결재/검수 대기".
- *    ※"(GM 승인 2026-07-25)" 같은 **이미 승인된** 표기는 잡지 않는다. */
-function companyItems(q, role) {
-  const now = Date.now();
-  const gmWait = GM_WAIT;
-  const A = [], P = [], N = [];
-  for (const s of q) {
-    if (!s || s.clevel === role || !NICK[s.clevel]) continue;
-    const st = s.status;
-    if (st === 'PENDING' || st === 'STANDBY') {
-      if (!gmWait.test(`${s.title || ''} ${s.next || ''}`)) continue;
-      const d = idleDays(s, now);
-      A.push({ d, pre: `${Y}⚠️${NICK[s.clevel]}▸${noOf(s)}${X}`, label: `${Y}결재${d}일${X}` });
-    } else if (st === 'IN_PROGRESS') {
-      const d = idleDays(s, now);
-      if (d >= STALL_DAYS) P.push({ d, pre: `${Y}⏸${NICK[s.clevel]}▸${noOf(s)}${X}`, label: `${Y}${d}일${X}` });
-      else N.push({ d, pre: `${D}${NICK[s.clevel]}▸${noOf(s)}${X}`, label: `${D}${shortTitle(s.title, 6)}${X}` });
-    }
-  }
-  A.sort((a, b) => b.d - a.d);       // 오래 막힌 결재부터
-  P.sort((a, b) => b.d - a.d);       // 오래 멈춘 배부터
-  N.sort((a, b) => a.d - b.d);       // 정상 진행은 최근에 움직인 배부터
-  return [...A, ...P, ...N];
-}
-
-/** 전사 목록을 주어진 폭에 채운다 — 뒤에서부터 접기: 제목→번호→생략(+N). (웰리 결정 D안) */
-function buildCompany(items, budget) {
-  if (!items.length || budget < 4) return '';
-  const out = [];
-  let used = 0, withLabel = true;
-  for (let i = 0; i < items.length; i++) {
-    const it = items[i];
-    const restN = items.length - 1 - i;
-    const tail = restN > 0 ? dw(`+${restN}`) + 1 : 0;   // 뒤에 올 '+N' 자리 예약 — 잘림 0
-    let cand = withLabel ? `${it.pre} ${it.label}` : it.pre;
-    let cw = dw(cand) + (out.length ? 1 : 0);
-    if (withLabel && used + cw + tail > budget) {        // 제목부터 접는다
-      withLabel = false;
-      cand = it.pre;
-      cw = dw(cand) + (out.length ? 1 : 0);
-    }
-    if (used + cw + tail > budget) {                     // 번호도 안 들어가면 생략(+N)
-      if (!out.length) return '';                        // 한 척도 못 실으면 '+N'만 덜렁 내지 않는다 — 통째로 접는다
-      out.push(`${D}+${items.length - i}${X}`);
-      break;
-    }
-    out.push(cand);
-    used += cw;
-  }
-  return out.join(' ');
 }
 
 /** 내 마지막 커밋 — 몇 분 전인지 + 내가 붙들고 있는 배 번호. */
@@ -633,11 +600,12 @@ function termWidth() {
 
 /** 상태줄 한 줄 조립 — 웰리 결정 D안. 폭이 모자라면 **뒤에서부터** 접는다:
  *  전사(제목→번호→+N) → 오늘🏁 → 대기 번호목록(→개수) → 🆕 → 마지막까지 내 배(①②)만. */
-function buildLine(cwd, role, transcript) {
+function buildLine(cwd, role, transcript, sessionId) {
   const W = termWidth() - 1;                    // 마지막 칸 자동줄바꿈 여유 1칸
   const q = loadQueue(cwd);
   const s = q ? myShips(q, cwd, role) : null;
   const lv = liveAction(transcript);            // ★지금 하는 일 — 보고와 무관하게 항상 움직이는 신호
+  const bg = backgroundAgents(cwd, sessionId);  // ★실측 배경 에이전트(transcript 추측보다 우선)
   // 커밋 조회(git 107ms)는 꼭 필요할 때만 — 잡은 배가 없어 '방금 끝낸 배'를 대신 보여줘야 하거나,
   // 세션 기록을 못 읽어 시각 칸을 폴백해야 할 때.
   const lc = (!(s && s.cur) || !lv) ? myLastCommit(cwd, role) : null;
@@ -681,12 +649,15 @@ function buildLine(cwd, role, transcript) {
       const tgt = (lv.act && lv.act.target) ? ` ${D}${shortTitle(lv.act.target, 12)}${X}` : '';
       const sec = lv.elapsed != null ? lv.elapsed : lv.idle;   // 지시 시작점을 못 찾으면 마지막 움직임 기준
       time = `${D}·${X}${G}🟢${name}${X}${tgt} ${G}${elapsedText(sec)}${X}`;
-    } else if (lv.agents) {
+    } else if (lv.agents || bg) {
       // ★배경 에이전트가 하나라도 돌고 있으면 무조건 이 칸(웰리 결정 2026-07-27 18:30) — 아래
       //   ②③④(GM답 대기·멎음·💤대기)는 전부 '내 차례가 끝났다'는 뜻인데, 에이전트가 도는 중이면
       //   그건 거짓말이다. 전부 끝나고 웰리 차례일 때만 아래 branch 로 내려간다.
-      const sec = Math.max(0, Math.round((Date.now() - lv.agents.since) / 1000));
-      time = `${D}·${X}${G}🟢위임중 ${lv.agents.count}척${X} ${G}${elapsedText(sec)}${X}`;
+      // ★척수는 bg(출력 파일 mtime 실측)를 우선한다 — transcript 꼬리 파싱(lv.agents)은 표식이
+      //   창 밖으로 밀려나면 놓친다(GM 2026-07-28 15:15 오판의 뿌리). 실측이 있으면 실측을 믿는다.
+      const count = bg ? bg.count : lv.agents.count;
+      const elapsed = lv.agents ? ` ${G}${elapsedText(Math.max(0, Math.round((Date.now() - lv.agents.since) / 1000)))}${X}` : '';
+      time = `${D}·${X}${G}🟢위임중 ${count}척${X}${elapsed}`;
     } else if (s && s.ask) {
       // ② GM 이 답해야 진행되는 상태 — ★무엇을 기다리는지까지 적는다(GM 2026-07-27
       //    "어떤 답을 기다리는건데?"). 배 번호 + 제목 핵심이라 되물을 필요가 없다.
@@ -699,6 +670,9 @@ function buildLine(cwd, role, transcript) {
       // ④ 방금 끝냄 — 정상. 조용히 둔다.
       time = `${D}·💤GM답 기다림 ${when}${X}${idleLoad(s)}`;
     }
+  } else if (bg) {
+    // ★transcript 를 못 읽어도(유실 등) 배경 에이전트가 실측으로 살아있으면 대기로 보이면 안 된다.
+    time = `${D}·${X}${G}🟢위임중 ${bg.count}척${X}`;
   } else if (pg) {
     const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
     time = `${D}·${X}${icon}${pg.step ? `${D}${pg.step}${X}` : ''}${agoColor(pg.mins)}${agoText(pg.mins)}${X}`;
@@ -721,7 +695,6 @@ function buildLine(cwd, role, transcript) {
   // 큐를 못 읽었을 때도 침묵하지 않는다 — '일이 0건'과 '못 읽었다'는 다른 말이다.
   const waitCount = s ? `${D}항로${X}🚢${s.run}${D}⚓${s.wait}${X}` : `${D}항로${X}${Y}읽기실패${X}`;
   const segDone = s ? `${D}오늘${X}🏁${s.done}` : null;
-  const coItems = q ? companyItems(q, role) : [];
 
   // 제목 최소 폭(20자 확보 — 배107) — 제목이 그보다 짧으면 그 길이만큼만.
   const titleChars = Array.from(title);
@@ -733,7 +706,6 @@ function buildLine(cwd, role, transcript) {
 
   // 사다리 — 위에서부터 처음 폭에 들어가는 단을 쓴다. 마지막 단 = 내 배만.
   const ladder = [
-    ['new', 'waitN', 'done', 'co'],
     ['new', 'waitN', 'done'],
     ['new', 'waitC', 'done'],
     ['new', 'waitC'],
@@ -746,14 +718,7 @@ function buildLine(cwd, role, transcript) {
     if (lv.includes('new') && segNew) segs.push(segNew);
     if (lv.includes('waitN') && waitNums) segs.push(waitNums);
     if (lv.includes('waitC') && waitCount) segs.push(waitCount);
-    if (lv.includes('done') && segDone) segs.push(segDone);
-    if (lv.includes('co')) {
-      const budget = W - fixedW - minTitleW - segsW(segs) - SEPW;
-      const co = buildCompany(coItems, budget);
-      if (!co) continue;                        // 전사가 한 척도 안 들어가면 이 단은 접는다
-      segs.push(co);
-    }
-    if (fixedW + minTitleW + segsW(segs) <= W) { chosen = segs; break; }
+    if (lv.includes('done') && segDone) segs.push(segDone);    if (fixedW + minTitleW + segsW(segs) <= W) { chosen = segs; break; }
   }
   // 남는 폭은 전부 제목에게 — 12자 상한 폐지의 실체. (좁으면 20자 밑으로도 줄여 잘림만은 막는다)
   const titleBudget = W - dw(head) - dw(time) - (title ? 2 : 0) - segsW(chosen);
@@ -763,25 +728,96 @@ function buildLine(cwd, role, transcript) {
   return [first.replace(/ $/, ''), ...chosen].join(`${D} · ${X}`);
 }
 
+/** 나 빼고 6 C-Level 작업현황 — 역할마다 한 줄 (GM 지시 2026-07-28
+ *  "웰리가 각 C레벨 작업현황을 다 보려면, 한 칸씩 작업 내용 기준으로 나열돼야 한다").
+ *  데이터 = status/worklog.jsonl(safe_commit 마다 append) — ts·role·event·detail 이 이미 있다.
+ *  ★뒤에서부터 필요한 만큼만 — 6역할을 다 찾으면 그 자리에서 멈춘다(전체 파싱 금지).
+ *  ★정직 표기(GM 지시): ①토큰 수는 넣지 않는다 — 다른 세션 값은 알 수 없다(모르는 값을
+ *    그럴듯하게 채우는 게 오늘 지적받은 문제다). ②시간은 '마지막 기록' 개념이다 — worklog 는
+ *    커밋할 때만 쌓여 커밋 사이엔 조용해 보인다. '가동 중'이라고 쓰면 거짓말이 된다.
+ *    ③값이 없으면 빈칸 대신 —. */
+function roleActivity(cwd, role) {
+  const others = Object.keys(NICK).filter((r) => r !== role);
+  const found = new Map();
+  try {
+    const p = path.join(cwd, 'status', 'worklog.jsonl');
+    if (statSync(p).size <= 5_000_000) {   // 비정상 비대 — 상태줄이 느려지면 안 된다
+      const lines = readFileSync(p, 'utf8').split('\n');
+      for (let i = lines.length - 1; i >= 0 && found.size < others.length; i--) {
+        const raw = lines[i].trim();
+        if (!raw) continue;
+        let rec;
+        try { rec = JSON.parse(raw); } catch { continue; }
+        if (!rec || found.has(rec.role) || !others.includes(rec.role)) continue;
+        const ts = Date.parse(rec.ts || '');
+        if (!Number.isFinite(ts)) continue;
+        const m = String(rec.detail || '').match(/배\s?(\d{1,6})/);
+        found.set(rec.role, {
+          event: shortTitle(rec.event, 16),
+          mins: Math.max(0, Math.round((Date.now() - ts) / 60000)),
+          ship: m ? m[1] : null,
+        });
+      }
+    }
+  } catch { /* worklog 없거나 깨짐 — 아래서 전부 빈 값(—)으로 채운다 */ }
+  return others.map((r) => ({ role: r, ...(found.get(r) || {}) }));
+}
+
+/** 표시 폭(dw 기준) 만큼 공백을 채운다 — 여러 줄이 세로로 대략 맞춰 보이게. */
+function padDisp(s, width) {
+  const w = dw(s);
+  return w < width ? s + ' '.repeat(width - w) : s;
+}
+
+/** roleActivity 를 줄 배열로 조립 — 실패해도(❗) 빈 배열만 돌려준다(호출부에서 본 줄은 안 죽는다). */
+function buildRoleLines(cwd, role) {
+  try {
+    const acts = roleActivity(cwd, role);
+    acts.sort((a, b) => (a.mins ?? Infinity) - (b.mins ?? Infinity));   // 최근 움직인 순
+    return acts.map((a) => {
+      const has = a.event != null;
+      const dot = has ? `${G}●${X}` : `${D}○${X}`;
+      const nick = padDisp(NICK[a.role], 4);
+      const ev = padDisp(has ? a.event : `${D}—${X}`, 18);
+      const ago = has ? `${D}${agoText(a.mins)}${X}` : '';
+      const ship = has && a.ship ? `${D}배${a.ship}${X}` : '';
+      return [`${dot} ${nick} ${ev}`, ago, ship].filter(Boolean).join('  ');
+    });
+  } catch { return []; }
+}
+
 function main() {
   const input = readStdin();
   const base = omcHud(input);
 
-  let cwd = process.cwd(), transcript = '';
+  let cwd = process.cwd(), transcript = '', sessionId = '';
   try {
     const j = JSON.parse(input);
     cwd = j?.workspace?.current_dir || j?.cwd || cwd;
     transcript = j?.transcript_path || '';
+    sessionId = j?.session_id || '';
   } catch { /* 기본값 사용 */ }
 
   const role = resolveRole(cwd, transcript);
   // ★역할을 못 찾은 경우 — 사라지는 대신 왜 안 보이는지를 적는다(GM 2026-07-25).
   //   역할 기억함(ROLE_CACHE)이 채워지면 저절로 복구된다.
-  const line = role ? buildLine(cwd, role, transcript) : `${D}역할 확인중 · 작업표시 대기${X}`;
+  const line = role ? buildLine(cwd, role, transcript, sessionId) : `${D}역할 확인중 · 작업표시 대기${X}`;
+
+  // 6 C-Level 작업현황 — 폭이 좁으면(작은 창) 이 블록부터 접는다. worklog 가 없거나 깨져도
+  // 본 줄(line)은 절대 죽지 않게 try/catch 로 감싼다.
+  let roleBlock = '';
+  if (role) {
+    try {
+      if (termWidth() - 1 >= 40) {
+        const rl = buildRoleLines(cwd, role);
+        if (rl.length) roleBlock = '\n' + rl.join('\n');
+      }
+    } catch { /* 이 블록만 빠진다 */ }
+  }
 
   // ★OMC 줄에 이어 붙이지 않고 **줄을 따로 뺀다** (GM 2026-07-24 '시모·시우·시포는 잘리는데?').
   //   같은 줄이면 폭 경쟁으로 끝에 붙은 우리 부분부터 잘린다.
-  process.stdout.write(base + (line ? '\n' + line : ''));
+  process.stdout.write(base + (line ? '\n' + line : '') + roleBlock);
 }
 
 main();
