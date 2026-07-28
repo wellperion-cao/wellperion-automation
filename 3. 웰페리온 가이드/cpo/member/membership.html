@@ -10307,24 +10307,42 @@ function _saveCell(rowIndex, patch, fallbackRow) {
     channel:  r.channel || '',
     owner:    r.owner   || '',
     memo:     r.memo !== undefined ? r.memo : '',
-    contact1: r.contact1 !== undefined ? r.contact1 : '',
-    contact2: r.contact2 !== undefined ? r.contact2 : '',
-    contact3: r.contact3 !== undefined ? r.contact3 : '',
-    inquiryContent: r.inquiryContent !== undefined ? r.inquiryContent : '',   // 문의내용(N열) #1
-    contacts: r.contacts !== undefined ? JSON.stringify(r.contacts) : ''      // CONTACT(연락 이력) 배열 — 축2/3, 2026-07-08 시포·GM
+    inquiryContent: r.inquiryContent !== undefined ? r.inquiryContent : ''   // 문의내용(N열) #1
     // 일정(예약)은 예약 리스트 모달에서 body.reservations로 저장 — 인라인 셀 편집에서 제외(스테일 방지). 2026-07-03 시포·GM.
   };
+  // ★★연락 기록은 '이번에 실제로 바꾼 경우'에만 보낸다 — 2026-07-28 시포(GM '새로고침하면 날아간다' 근본수리 2/2).
+  //   전에는 이 함수가 진행상태·담당자 같은 칸 하나만 고쳐도 연락 기록까지 **매번 같이 보냈다.**
+  //   그런데 화면이 들고 있는 값(r.contacts)은 목록을 불러온 시점의 것이라, 그 뒤에 누가 컨택을
+  //   기록했으면 옛 값(대개 빈 값)으로 덮어썼다. 서버는 contacts 가 오면 Contact1/2/3·연락이력을
+  //   통째로 다시 쓰므로(''=전부 지움) **연락 기록만 골라 지우는 결과**가 됐다.
+  //   실측: 유경민·김정화·도자연님 세 분 모두 진행상태가 '컨택중'인데 연락 기록은 텅 비어 있다
+  //   — 컨택을 적은 뒤 상태를 바꾼 순간 그 기록이 지워진 것이다(도자연님은 2026-07-28 오늘 아침 재발).
+  //   서버 계약상 undefined = '그 칸 건드리지 않음' 이다. 안 바꿨으면 아예 안 보내는 게 맞다.
+  ['contact1', 'contact2', 'contact3'].forEach(function (k) {
+    if (patch && Object.prototype.hasOwnProperty.call(patch, k)) payload[k] = r[k] !== undefined ? r[k] : '';
+  });
+  if (patch && Object.prototype.hasOwnProperty.call(patch, 'contacts')) {
+    payload.contacts = JSON.stringify(r.contacts || []);
+    delete payload.contact1; delete payload.contact2; delete payload.contact3;   // 두 벌 전송 금지(서버에서 뒤 블록이 이김)
+  }
   // 배1037: 낙관 로컬반영은 위에서 이미 완료 → 버퍼에 enqueue(영속·백그라운드 flush·실패 표면화).
   // fieldset='row'(멤버십 인라인 전 필드 스냅샷) → 같은 행 재편집은 coalesce, 예약(reservations)은 별도 fieldset로 독립.
   WriteBuffer.enqueue(payload, {
     scope: 'member', phoneKey: keyPhone, fieldset: 'row',
     label: '저장', who: (r.name || ''),
-    overlay: {
-      name: r.name, phone: r.phone, program: r.program, status: r.status,
-      channel: r.channel, owner: r.owner, memo: r.memo,
-      contact1: r.contact1, contact2: r.contact2, contact3: r.contact3,
-      inquiryContent: r.inquiryContent, contacts: r.contacts
-    }
+    // overlay 도 payload 와 같은 것만 담는다 — 안 보낸 연락 기록을 여기에 실으면 재시도·병합 때
+    // 옛 값이 되살아나 같은 사고가 난다(2026-07-28 시포).
+    overlay: (function () {
+      var ov = {
+        name: r.name, phone: r.phone, program: r.program, status: r.status,
+        channel: r.channel, owner: r.owner, memo: r.memo,
+        inquiryContent: r.inquiryContent
+      };
+      ['contact1', 'contact2', 'contact3', 'contacts'].forEach(function (k) {
+        if (payload[k] !== undefined) ov[k] = r[k];
+      });
+      return ov;
+    })()
   });
   return true;   // 저장 요청이 실제로 큐에 들어갔다 — 호출부가 성공/실패를 구분할 수 있게.
 }
