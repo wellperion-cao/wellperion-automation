@@ -9482,6 +9482,9 @@ function openContactModal(row, ctx) {
   document.getElementById('ctTitle').textContent = (row.name ? row.name + '님 ' : '') + '연락 이력';
   var list = document.getElementById('ctList'); list.innerHTML = '';
   var contacts = _ctSort(_rowContacts(row));
+  // 이 모달이 열릴 때 알고 있던 건수 — 서버가 '덜 알고 보낸 쓰기'와 '보고 나서 지운 쓰기'를 가른다.
+  // 안 보내면 서버가 줄어드는 저장을 거부한다(2026-07-28 시포 · 멤버십·강습 공통).
+  _ctModal.prevCount = contacts.length;
   if (contacts.length) contacts.slice().reverse().forEach(function(c){ _ctAddRow(c); });   // 표시=최신 우선
   else _ctAddRow();   // 첫 연락 기록=오늘 기본(새 행 → 컨택자 필수, 배101)
   document.getElementById('contactOverlay').classList.add('open');
@@ -9510,7 +9513,7 @@ function saveContactModal() {
     }
     if (!row || !String(row.phone || '').trim()) { showToast('대조키(연락처)를 찾을 수 없어 저장하지 않았습니다', 'err'); saveBtn.disabled = false; return; }
     var _ctSport = ctx.sport || '';   // 종목별 컨택 분리(GM 2026-07-22): 클릭한 종목 줄 sportKey → 백엔드 종목별관리 경로. 미기재행은 ''(flat 유지)
-    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: _ctSport, contacts: JSON.stringify(contacts), gid: (row && row.gid) || undefined };
+    var payload = { action: 'lesson_inquiry_update', type: ctx.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: _ctSport, contacts: JSON.stringify(contacts), contactsPrev: (_ctModal && _ctModal.prevCount) || 0, gid: (row && row.gid) || undefined };
     // 배1037: 낙관 즉시 반영 + 버퍼 enqueue(fieldset=종목별 독립 → 종목 간·상태·담당과 독립 큐).
     _lessonApplyLocalMgmt(row, _ctSport, { contacts: contacts });
     // 명단(roster)에도 같은 행이 있으면 함께 갱신 — 회원 관리에서 고친 내용이 그 화면에 바로 보이게.

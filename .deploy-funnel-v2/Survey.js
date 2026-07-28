@@ -6454,6 +6454,20 @@ function _processAction(body) {
         var _spTagged = _spNewHistArr.map(function (c) {
           return { date: c.date || '', time: c.time || '', note: '[' + luSportKey + '] ' + String(c.note || '').trim(), by: c.by || '' };   // 컨택자 보존(배101)
         });
+        // ★연락 기록이 줄어드는 쓰기 거부 — 2026-07-28 시포(멤버십 member_inquiry_update 와 동일 규칙).
+        //   이 블록은 이 종목 태그 줄을 받은 배열로 통째 교체한다. 화면이 옛 상태를 실어 보내면 그만큼 지워진다.
+        //   멤버십에서 실제로 그렇게 세 분 기록이 사라졌다(유경민·김정화·도자연). 강습도 같은 구조라 같이 막는다.
+        //   ▸일부러 지우는 경우는 화면이 contactsPrev(이 종목 현재 건수)로 의도를 밝힌다.
+        var _spCPrev = (body.contactsPrev === undefined || body.contactsPrev === null || body.contactsPrev === '')
+          ? null : parseInt(body.contactsPrev, 10);
+        var _spDeclared = (_spCPrev !== null && !isNaN(_spCPrev) && _spCPrev === _spPrevCount);
+        if (!_spDeclared && _spTagged.length < _spPrevCount) {
+          return _json({
+            ok: false, error: 'contacts-would-shrink',
+            detail: '연락 기록이 지워질 뻔해 저장을 멈췄습니다 — 목록을 새로고침한 뒤 다시 저장해 주세요',
+            prev: _spPrevCount, incoming: _spTagged.length, sport: luSportKey
+          });
+        }
         var _spMerged = _spKept.concat(_spTagged);
         try {
           if (_spCi >= 0) {
@@ -6507,6 +6521,19 @@ function _processAction(body) {
           var _luPrevHistArr = (_luHistCi >= 0) ? _lessonContactCellParse_(luSh.getRange(luRow, _luHistCi + 1).getValue()) : [];  // 평문·레거시JSON 둘 다 인식(마이그레이션 중 카운트 정합)
           _luHistPrevCount = _luPrevHistArr.length;
           _luHistNewArr = _resParse_(body.contacts);  // 프론트 계약(배열/JSON 문자열) 그대로 수신·정규화 — 불변
+          // ★연락 기록이 줄어드는 쓰기 거부 — 2026-07-28 시포(멤버십·강습 종목별 경로와 동일 규칙).
+          //   이 경로는 연락이력 칸을 받은 배열로 통째 교체한다(태그줄 포함 전체 왕복 계약).
+          //   화면이 옛 상태를 실어 보내면 그만큼 지워진다 — 멤버십에서 실제로 세 분 기록이 그렇게 사라졌다.
+          var _luCPrev = (body.contactsPrev === undefined || body.contactsPrev === null || body.contactsPrev === '')
+            ? null : parseInt(body.contactsPrev, 10);
+          var _luDeclared = (_luCPrev !== null && !isNaN(_luCPrev) && _luCPrev === _luHistPrevCount);
+          if (!_luDeclared && _luHistNewArr.length < _luHistPrevCount) {
+            return _json({
+              ok: false, error: 'contacts-would-shrink',
+              detail: '연락 기록이 지워질 뻔해 저장을 멈췄습니다 — 목록을 새로고침한 뒤 다시 저장해 주세요',
+              prev: _luHistPrevCount, incoming: _luHistNewArr.length
+            });
+          }
           if (_luHistCi >= 0) {
             var _luHistCell = luSh.getRange(luRow, _luHistCi + 1);
             _luHistCell.setNumberFormat('@');
