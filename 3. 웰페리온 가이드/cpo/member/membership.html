@@ -8897,10 +8897,12 @@ function _lossModalFill(reason) {
   }
   document.getElementById('lossReasonOverlay').classList.add('open');
 }
-function openInquiryLossModal(rowIndex) {
+// pendingStatusSave=true: 신규 LOSS 전환 시 _saveCell 을 지연했음 → 모달 저장 시 status+lossReason 한번에 커밋(FB260728-141756).
+// prevStatus: 취소 시 DOM/in-memory 되돌리기용.
+function openInquiryLossModal(rowIndex, pendingStatusSave, prevStatus) {
   var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
   if (!r) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
-  _lossModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '' };
+  _lossModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '', pendingStatusSave: !!pendingStatusSave, prevStatus: prevStatus || '' };
   document.getElementById('lrMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '');
   _lossModalFill(r.lossReason);
 }
@@ -8914,6 +8916,12 @@ function openLessonLossModal(t, rowIndex) {
   _lossModalFill(r.lossReason);
 }
 function closeLossReasonModal() {
+  // 신규 LOSS 전환 취소 — status 저장을 미뤄둔 상태이므로 in-memory·DOM을 이전값으로 되돌린다(FB260728-141756).
+  if (_lossModal && _lossModal.pendingStatusSave && _lossModal.mode === 'member') {
+    var _rb = dbRows.find(function(x){ return x.rowIndex === _lossModal.rowIndex; });
+    if (_rb) { _rb.status = _lossModal.prevStatus; }
+    if (_tabLoaded && _tabLoaded.db) { try { renderDbTable(); } catch(e){} }
+  }
   document.getElementById('lossReasonOverlay').classList.remove('open');
   _lossModal = null;
 }
@@ -8931,6 +8939,8 @@ function saveLossReasonModal() {
   var _payload = _isLesson
     ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _lossModal.gid, lossReason: reason }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, lossReason: reason };
+  // 신규 LOSS 전환: _saveCell 을 지연했으므로 status=LOSS 도 같은 요청에 포함 — 사유 등록 후 카운트(FB260728-141756).
+  if (!_isLesson && _lossModal.pendingStatusSave) { _payload.status = 'LOSS'; }
   var _t = _isLesson ? _lossModal.t : null;
   // ★서버 왕복 대기 제거(2026-07-23 GM '저장 누른 속도') — 상태·담당·연락이력은 이미 버퍼를 타는데
   //   이 모달만 apiPost 로 응답을 기다려 저장 버튼이 몇 초씩 멈춰 있었다. 화면 먼저 반영하고
@@ -8941,11 +8951,15 @@ function saveLossReasonModal() {
     if (lr) { lr.lossReason = reason; }
   } else {
     var r0 = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
-    if (r0) { r0.lossReason = reason; }
+    if (r0) {
+      r0.lossReason = reason;
+      if (_lossModal.pendingStatusSave) { r0.status = 'LOSS'; }   // 지연된 status 로컬 반영
+    }
   }
+  var _overlay = _isLesson ? { lossReason: reason } : ((_lossModal.pendingStatusSave) ? { lossReason: reason, status: 'LOSS' } : { lossReason: reason });
   WriteBuffer.enqueue(_payload, {
     scope: _isLesson ? 'lesson' : 'member', phoneKey: keyPhone, fieldset: 'lossReason',
-    label: 'LOSS 사유', who: _who, overlay: { lossReason: reason }
+    label: 'LOSS 사유', who: _who, overlay: _overlay
   });
   showToast('LOSS 사유 저장', 'ok');
   closeLossReasonModal();
@@ -10589,10 +10603,12 @@ function _activateCellSelect(td, row, field, options) {
     } else {
       td.textContent = newVal || '—';
     }
-    if (newVal !== prevVal) { var p2 = {}; p2[field] = newVal; _saveCell(rowIndex, p2); }
+    // 신규 LOSS 전환은 _saveCell 지연 — 사유 모달 저장 시 status+lossReason 동시 커밋(FB260728-141756 이경연, 사유 전 카운트 방지).
+    var _isNewLoss = field === 'status' && newVal === 'LOSS' && newVal !== prevVal;
+    if (newVal !== prevVal && !_isNewLoss) { var p2 = {}; p2[field] = newVal; _saveCell(rowIndex, p2); }
     // 진행상황을 LOSS로 바꾸면 사유 모달 자동 발동(사유 미기록 방지). 이미 LOSS+사유 있으면 재촉발 안 함. 2026-07-18 시토(GM요청) 대행.
     if (field === 'status' && newVal === 'LOSS' && (newVal !== prevVal || !String(live.lossReason || '').trim())) {
-      try { openInquiryLossModal(rowIndex); } catch (e) {}
+      try { openInquiryLossModal(rowIndex, _isNewLoss, prevVal); } catch (e) {}
     }
     // 진행상황을 SUC(단기SUC 포함)로 바꾸면 등록종목 모달 자동 발동(LOSS와 대칭 — 종목 미기록 방지). 이미 등록종목 있으면 재촉발 안 함. 2026-07-20 시포(GM요청).
     if (field === 'status' && (newVal === 'SUC' || newVal === '단기SUC') && (newVal !== prevVal || !String(live.regProgram || '').trim())) {
