@@ -130,9 +130,16 @@ STAFF_REPLY_ALREADY_DONE = "처리완료"
 STAFF_STATUS_RECEIVED = "접수됨"
 STAFF_STATUS_IN_PROGRESS = "확인중"
 STAFF_STATUS_DONE = STAFF_REPLY_ALREADY_DONE  # "처리완료" — 기존 값과 동일 상수 재사용(중복 정의 금지)
+# ★2026-07-28 GM 지시 — "'접수했습니다' 이거 하지 말고, 바로 작업 진행해서 처리된 내용을 메모해줘."
+#   그동안 배가 생기는 순간 '접수됨 — 접수했습니다. 순서대로 확인해 처리하겠습니다'를 시트에 썼다.
+#   실무진 화면엔 그 문구만 며칠씩 떠 있고, 정작 데이터는 계속 문제였다(연락 기록 유실 3건이 그 상태로
+#   방치됐다 — GM 지적 "접수했습니다 순서대로 처리하겠다고만 적혀있고, 계속 CONTACT 내용 날아가는데").
+#   빈 약속은 신뢰만 깎는다 → 진행 단계 문구는 쓰지 않고, **실제로 처리된 내용만** 쓴다.
+#   PENDING/IN_PROGRESS 를 None 으로 두면 sync_feedback_status 가 그 배를 회신 대상에서 제외한다.
+#   ▸배 생성(들어오는 쪽)은 그대로다 — 접수 자체는 계속 자동으로 큐에 올라간다.
 _SHIP_STATUS_TO_STAGE = {
-    "PENDING": STAFF_STATUS_RECEIVED,
-    "IN_PROGRESS": STAFF_STATUS_IN_PROGRESS,
+    "PENDING": None,
+    "IN_PROGRESS": None,
     "DONE": STAFF_STATUS_DONE,
 }
 _STAGE_ORDER = (STAFF_STATUS_RECEIVED, STAFF_STATUS_IN_PROGRESS, STAFF_STATUS_DONE)
