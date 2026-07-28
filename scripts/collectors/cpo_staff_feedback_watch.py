@@ -18,10 +18,13 @@ cpo_staff_feedback_watch.py — 실무진 피드백이 들어오면 그 자리�
        애매하면 시포(cpo)로 보낸다(안전 폴백). 화면이 어디든 무조건 시포로 서던 문제 수정.
   3. 하트비트를 남긴다(가동 신호는 배가 아니라 하트비트로 — 배9995 도배 사고 교훈).
   4. 나가는 쪽(2026-07-27 웰리 지시 — "반쪽만 자동인 루프는 자동이 아니다") — 접수ID로 만들어진
-     배가 status='DONE' 이 되면, 그 접수건을 시트에서 대조ID(FB…)로 찾아 처리상태를 '처리완료'로,
-     처리메모에 실무진이 이해할 한 줄을 staff_feedback_update 로 써넣는다(sync_closed_feedback).
-     멱등 판단은 그때그때 fetch 한 라이브 시트의 현재 처리상태로 한다(이미 '처리완료'면 건너뜀) —
-     로컬 마커에 기대지 않는다. 이전엔 이걸 사람이 매번 손으로 해 왔다(그래서 반쪽 자동이었다).
+     배의 status 변화를 그대로 시트 처리상태 칸에 반영한다(sync_feedback_status). 처음엔 DONE
+     한 단계만 반영해 배가 IN_PROGRESS 인 동안은 실무진 화면에 접수 여부조차 안 보였다 — 유경민님
+     피드백 2건(배10205·10207)이 4일째 무응답으로 남은 원인(웰리 실측 2026-07-28). 지금은 3단계
+     모두 반영한다: 배 생성 시 '접수됨' → status IN_PROGRESS 면 '확인중' → status DONE 이면
+     '처리완료'(문구 조립은 기존 build_staff_reply 그대로 — 회귀 0).
+     멱등 판단은 그때그때 fetch 한 라이브 시트의 현재 처리상태 '단계 순위'로 한다(이미 같은
+     단계거나 더 앞선 단계면 건너뜀 — 반복 덮어쓰기 금지) — 로컬 마커에 기대지 않는다.
 
 무엇을 안 하나
   - 알림을 새로 보내지 않는다. 접수 알림은 GAS 가 이미 보낸다(중복 발신 금지).
@@ -120,6 +123,42 @@ _CLOSING_TAG_RE = re.compile(r"\[[^\]\n]*(?:완료|확정|검수 통과|종결)[
 
 STAFF_REPLY_ALREADY_DONE = "처리완료"
 
+# ── 3단계 상태 노출(2026-07-28 웰리 위임) ───────────────────────────────────
+#   배 status(PENDING/IN_PROGRESS/DONE)를 시트 처리상태 칸의 3단계 문구로 매핑한다.
+#   순위표는 멱등 판정용 — 시트 현재 값이 목표 단계보다 같거나 앞서 있으면 쓰지 않는다.
+#   사람이 직접 적은 임의 문구(이 표에 없는 값)는 안 건드리는 게 안전해 최고 순위로 본다.
+STAFF_STATUS_RECEIVED = "접수됨"
+STAFF_STATUS_IN_PROGRESS = "확인중"
+STAFF_STATUS_DONE = STAFF_REPLY_ALREADY_DONE  # "처리완료" — 기존 값과 동일 상수 재사용(중복 정의 금지)
+_SHIP_STATUS_TO_STAGE = {
+    "PENDING": STAFF_STATUS_RECEIVED,
+    "IN_PROGRESS": STAFF_STATUS_IN_PROGRESS,
+    "DONE": STAFF_STATUS_DONE,
+}
+_STAGE_ORDER = (STAFF_STATUS_RECEIVED, STAFF_STATUS_IN_PROGRESS, STAFF_STATUS_DONE)
+_UNKNOWN_STAGE_RANK = 99
+
+
+def _stage_rank(current_status: str) -> int:
+    """시트 현재 처리상태 문구 → 단계 순위. 빈칸·'접수'=0(아직 아무 단계도 안 씀).
+    startswith 로 판정(기존 DONE 판정이 그랬듯 접두 문구 뒤 추가 텍스트가 붙어도 인식)."""
+    s = current_status.strip()
+    if not s or s == "접수":
+        return 0
+    for rank, stage in enumerate(_STAGE_ORDER, start=1):
+        if s.startswith(stage):
+            return rank
+    return _UNKNOWN_STAGE_RANK  # 사람이 직접 적은 문구 — 자동화가 덮어쓰지 않는다
+
+
+def _stage_memo(stage: str, ship: dict, today: str) -> str:
+    """단계별 실무진 화면 문구. DONE 은 기존 build_staff_reply 그대로(회귀 0)."""
+    if stage == STAFF_STATUS_DONE:
+        return build_staff_reply(ship, today)
+    if stage == STAFF_STATUS_IN_PROGRESS:
+        return f"[{today} 확인중] 접수한 내용을 확인하고 있습니다. 처리되면 다시 안내드리겠습니다."
+    return f"[{today} 접수됨] 접수했습니다. 순서대로 확인해 처리하겠습니다."
+
 
 def _is_technical_snippet(s: str) -> bool:
     return bool(
@@ -216,11 +255,15 @@ def build_staff_reply(ship: dict, today: str) -> str:
     return f"[{today} 처리완료] {summary}"
 
 
-def sync_closed_feedback(rows: list, queue: list, archive: list, today: str):
-    """접수ID로 배와 시트를 대조 — DONE 인데 시트가 아직 '처리완료' 가 아닌 것만 회신문 조립.
+def sync_feedback_status(rows: list, queue: list, archive: list, today: str):
+    """접수ID로 배와 시트를 대조 — 배 status(PENDING→접수됨/IN_PROGRESS→확인중/DONE→처리완료)에
+    맞는 단계가 시트에 아직 안 쓰여 있으면 그 단계 하나만 조립한다(단계를 건너뛰지 않음 —
+    같은 회차에 배가 PENDING→DONE 으로 바로 잡혀 있어도 반환값은 목표 단계 하나뿐이라,
+    다음 회차가 실행되면서 자연히 다음 단계로 올라간다. 3분 주기 잡이라 문제 없음).
     반환: [{id, status, memo, ship_title}] — 실제 GAS 호출은 호출부에서(멱등 판단은
-    라이브 시트의 현재 처리상태로 한다 — 로컬 마커에 기대지 않는다: 3분마다 도는 잡이라
-    로컬 상태와 시트가 어긋나도 다음 회차에 시트 기준으로 다시 판단하면 스스로 맞다)."""
+    라이브 시트의 현재 처리상태 '단계 순위'로 한다 — 로컬 마커에 기대지 않는다: 3분마다 도는
+    잡이라 로컬 상태와 시트가 어긋나도 다음 회차에 시트 기준으로 다시 판단하면 스스로 맞다).
+    DONE 단계의 회신 문구·경로는 build_staff_reply 그대로 유지(회귀 0)."""
     by_fid = {}
     for r in rows:
         fid = str(r.get("접수ID") or "").strip()
@@ -233,7 +276,9 @@ def sync_closed_feedback(rows: list, queue: list, archive: list, today: str):
         if not isinstance(ship, dict):
             continue
         fid = str(ship.get("feedback_id") or "").strip()
-        if not fid or str(ship.get("status") or "") != "DONE":
+        ship_status = str(ship.get("status") or "")
+        target_stage = _SHIP_STATUS_TO_STAGE.get(ship_status)
+        if not fid or target_stage is None:
             continue
         task_id = ship.get("task_id")
         if task_id in seen_task_ids:
@@ -244,12 +289,12 @@ def sync_closed_feedback(rows: list, queue: list, archive: list, today: str):
         if row is None:
             continue  # 시트에서 못 찾음(삭제 등) — 안전하게 건너뜀, 다음 회차 재시도
         current_status = str(row.get("처리상태") or "").strip()
-        if current_status.startswith(STAFF_REPLY_ALREADY_DONE):
-            continue  # 멱등 — 이미 회신됨
+        if _stage_rank(current_status) >= _stage_rank(target_stage):
+            continue  # 멱등 — 이미 같은 단계거나 더 앞선 단계(사람이 직접 적은 값 포함)
 
-        memo = build_staff_reply(ship, today)
+        memo = _stage_memo(target_stage, ship, today)
         updates.append({
-            "id": fid, "status": STAFF_REPLY_ALREADY_DONE, "memo": memo,
+            "id": fid, "status": target_stage, "memo": memo,
             "ship_title": ship.get("title"), "task_id": task_id,
         })
     return updates
@@ -388,10 +433,10 @@ def main() -> int:
         for r in new:
             print("  +", r.get("접수ID"), "|", str(r.get("내용") or "")[:60].replace("\n", " "))
 
-        sync_updates = sync_closed_feedback(rows, q, archive, today)
-        print(f"\n[나가는 쪽] DONE 인데 시트에 아직 회신 안 된 것 {len(sync_updates)}건")
+        sync_updates = sync_feedback_status(rows, q, archive, today)
+        print(f"\n[나가는 쪽] 배 status 대비 시트 처리상태가 아직 안 따라간 것 {len(sync_updates)}건")
         for u in sync_updates:
-            print(f"  ~ {u['id']} ({u['task_id']}) → 처리상태='처리완료'")
+            print(f"  ~ {u['id']} ({u['task_id']}) → 처리상태='{u['status']}'")
             print(f"    처리메모: {u['memo']}")
         return 0
 
@@ -412,12 +457,13 @@ def main() -> int:
     mutate_queue(mutator, holder=MODULE_ID)
 
     # 나가는 쪽 — 큐 파일은 안 건드린다(대표님 지시: _queue.json 은 웰리 중앙 갱신 전용).
-    # DONE 인데 시트가 아직 '처리완료' 가 아닌 것만 골라 staff_feedback_update 로 회신한다.
-    # 멱등 판단은 로컬 상태가 아니라 방금 fetch 한 라이브 시트 값 기준(sync_closed_feedback 내부).
+    # 배 status(접수됨/확인중/처리완료)에 맞는 단계가 시트에 아직 안 쓰였으면 골라
+    # staff_feedback_update 로 반영한다. 멱등 판단은 로컬 상태가 아니라 방금 fetch 한
+    # 라이브 시트 값 기준(sync_feedback_status 내부).
     queue_now = load_queue()
     replied = []
     reply_err = None
-    sync_updates = sync_closed_feedback(rows, queue_now, archive, today)
+    sync_updates = sync_feedback_status(rows, queue_now, archive, today)
     if sync_updates:
         result, reply_err = push_feedback_updates(sync_updates)
         if result is not None:
