@@ -5768,7 +5768,18 @@ function _processAction(body) {
       try {
         var _muHistCi = _miColIdx_(muHdr, [CONTACT_HIST_COL]);
         var _muPrevHistArr = (_muHistCi >= 0) ? _resParse_(muSh.getRange(muRow, _muHistCi + 1).getValue()) : [];
-        _muHistPrevCount = _muPrevHistArr.length;
+        // ★이전 연락 건수는 Contact1/2/3 + 넘침칸을 '합쳐' 센다 (2026-07-28 시토 · GM 지적 '문의알림 또 막 날리네').
+        //   2026-07-20 정정으로 앞 3건은 Contact1/2/3 에 쓰고 넘침칸은 3건 이하면 비워 둔다. 그런데 이전 건수를
+        //   넘침칸 하나만 보고 세고 있어서, 연락이 1~3건인 회원은 이미 컨택했는데도 이전 건수가 늘 0으로 잡혔다.
+        //   → 아래 '1차 컨택 진행' 알림의 0→1 전이 조건이 매 저장마다 참이 되어 같은 사람이 반복 발송됐다
+        //   (2026-07-28 실측: 도자연·홍재영 두 건이 분 단위로 재발송). 데이터가 실제로 사는 곳을 세도록 고친다.
+        var _muPrevC123 = 0;
+        for (var _pci = 0; _pci < 3; _pci++) {
+          var _pcCol = _miColIdx_(muHdr, ['Contact' + (_pci + 1)]);
+          if (_pcCol < 0) continue;
+          if (String(muSh.getRange(muRow, _pcCol + 1).getValue() || '').trim()) _muPrevC123++;
+        }
+        _muHistPrevCount = _muPrevC123 + _muPrevHistArr.length;
         _muHistNewArr = _resParse_(body.contacts);
 
         // {date,time,note} → 사람이 읽는 한 줄. 날짜·시각이 없으면 내용만(기존 수기 표기와 같은 모양).
