@@ -83,6 +83,23 @@ def pick_next_candidate() -> dict | None:
     return candidates[0]
 
 
+def _log_series_exhausted() -> None:
+    """재고 소진(=시리즈 종결)을 작업현황에 하루 1회만 기록. best-effort — 실패해도 종료코드 무영향."""
+    try:
+        from worklog import log as worklog_log
+    except Exception:
+        return
+    today = datetime.now().strftime("%Y-%m-%d")
+    try:
+        worklog_log(
+            "cmo", "검수",
+            "AI하루 시리즈 재고 소진 — 종결(GM 2026-07-28 결정). 개인계정 평일 트랙 발송 없음.",
+            result="ok", ref=f"AIDAY-EXHAUSTED-{today}",
+        )
+    except Exception:
+        pass
+
+
 def _run_card_dispatch(args) -> int:
     today = datetime.now()
     if today.weekday() >= 5:  # 5=토, 6=일
@@ -91,7 +108,12 @@ def _run_card_dispatch(args) -> int:
 
     candidate = pick_next_candidate()
     if candidate is None:
-        print("[INFO] 발송 대상 없음(전부 발송 완료 또는 대기 항목 없음) — 조용히 종료.")
+        # 소진 = 시리즈 끝. 예전엔 여기서 그냥 return 0 이라 아무 신호 없이 멈췄다
+        # (07-25 주말 트랙 정지가 사흘간 안 보였던 것과 같은 종류의 침묵).
+        # GM 2026-07-28 결정 = 주말 2편 채우고 AI하루 시리즈 종결 — 종결은 '명시'돼야 하므로
+        # 작업현황에 1줄 남긴다. 새 알림·새 파일 없음(약속 L21 — 기존 worklog 관문 재사용).
+        _log_series_exhausted()
+        print("[INFO] AI하루 재고 소진 — 시리즈 종결(GM 2026-07-28 결정). 작업현황에 기록하고 종료.")
         return 0
 
     print(f"[INFO] 오늘 고를 항목 = {candidate.get('id')} / {candidate.get('title')}")
