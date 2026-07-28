@@ -10253,6 +10253,23 @@ function _processAction(body) {
     // 멤버십/강습 버킷(전체·이번달)
     var memT = _mkB_(), memM = _mkB_(), lesT = _mkB_(), lesM = _mkB_();
 
+    // ★ 2026-07-28 시모(GM 지시) — [웹접수] 미러 제외를 '조건부'로 바꾼다.
+    //   무엇이 잘못됐나: 아래 _sfProc_ 는 비고에 '[웹접수]' 가 있는 행을 무조건 건너뛰었다.
+    //   그 제외의 전제는 "웹문의는 ①-a 문의접수 시트로 이미 1회 집계된다" 였는데,
+    //   그 시트는 실제로 0행이다(바로 아래 ①-a 주석도 '현재 0행'이라고 적고 있다).
+    //   결과: 홈페이지 자체 폼(2026-07-15 라이브)으로 들어온 문의가 ①-a 에서도 0,
+    //   ①-b 에서도 제외 → 어디에서도 안 세어졌다. 2026-07 실측 멤버십 문의 52건 중
+    //   이 화면엔 34건만 떴다(35% 누락). 자체 폼 비중이 커질수록 갭도 계속 벌어진다.
+    //   고친 방식: '무조건 제외' 를 '진짜 중복일 때만 제외' 로 바꾼다.
+    //   ①-a 에서 문의접수 시트의 연락처를 모아 두고, ①-b 의 [웹접수] 미러 행은
+    //   그 연락처가 실제로 ①-a 에 있을 때만 건너뛴다.
+    //   → 문의접수가 웹문의를 다시 받기 시작하면 그때부터 자동으로 중복이 막히고(회귀 0),
+    //     지금처럼 안 받고 있으면 미러가 유일한 기록이므로 그대로 센다.
+    //   ※ 2026-07-28 실측: 문의접수 시트는 전체 2행뿐이고 둘 다 유입경로 '전화' 다.
+    //     즉 자체 폼(intake_submit)은 이 시트에 쓰지 않는다 — '이미 1회 집계된다' 는 전제가 사실이 아니었다.
+    var _sfInqPhones = {};           // ①-a 문의접수 시트에 실재하는 연락처 집합
+    function _sfIsDupWebMirror_(phone) { return !!(phone && _sfInqPhones[phone]); }
+
     // 시트 1개 처리 — headers·rows·칸키맵(keys)·대상버킷. 단계=상태칸+담당자/예약/방문 신호+회원매칭.
     function _sfProc_(headers, rows, keys, totB, monB) {
       var iStatus = _findCol_(headers, ['진행상태', '상태', '단계']);
@@ -10264,7 +10281,9 @@ function _processAction(body) {
       var iVisit  = _findCol_(headers, keys.visit);
       rows.forEach(function(r) {
         if (!r[iDate] && (iPhone < 0 || !r[iPhone])) return;                                   // 빈 행 스킵
-        if (iMemo >= 0 && String(r[iMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0) return;         // [웹접수] 미러 제외
+        var _ph0 = iPhone >= 0 ? normalizePhone_(r[iPhone]) : '';
+        if (iMemo >= 0 && String(r[iMemo] || '').indexOf(WEB_INTAKE_TAG) >= 0
+            && _sfIsDupWebMirror_(_ph0)) return;                                               // [웹접수] 미러 — ①-a에 같은 연락처가 실재할 때만 제외(위 주석)
         var rank = _stageOf_(iStatus >= 0 ? r[iStatus] : '');
         if (iOwner >= 0 && String(r[iOwner] || '').trim()) rank = Math.max(rank, 2);           // 담당배정 → 응대
         if (iBook  >= 0 && String(r[iBook]  || '').trim()) rank = Math.max(rank, 3);           // 예약/투어 → 예약
@@ -10284,7 +10303,16 @@ function _processAction(body) {
     try {
       var sfInqSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
       var sfInqLast = sfInqSh.getLastRow();
-      if (sfInqLast >= 2) _sfProc_(INQUIRY_HEADERS, sfInqSh.getRange(2, 1, sfInqLast - 1, INQUIRY_HEADERS.length).getValues(), MEM_KEYS, memT, memM);
+      if (sfInqLast >= 2) {
+        var sfInqRows = sfInqSh.getRange(2, 1, sfInqLast - 1, INQUIRY_HEADERS.length).getValues();
+        var sfInqPhoneCol = INQUIRY_HEADERS.indexOf('연락처');
+        if (sfInqPhoneCol >= 0) {
+          sfInqRows.forEach(function(r) {                       // ★ ①-b의 [웹접수] 미러 중복 판정용 연락처 집합
+            var n = normalizePhone_(r[sfInqPhoneCol]); if (n) _sfInqPhones[n] = true;
+          });
+        }
+        _sfProc_(INQUIRY_HEADERS, sfInqRows, MEM_KEYS, memT, memM);
+      }
     } catch (e) { /* 무중단 */ }
 
     // ①-b: FORM_SHEETS → gid로 멤버십/강습 분기

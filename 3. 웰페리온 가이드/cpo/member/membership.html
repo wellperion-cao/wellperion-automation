@@ -5582,7 +5582,16 @@ function _lessonContactClick(t, rowIndex, sportKeyEnc) {
     _editContacts = (row.contacts || []).slice();
     _ctxSport = '';
   }
-  openContactModal({ rowIndex: row.rowIndex, name: row.name, contacts: _editContacts }, { source: 'lesson', type: st.type, t: t, sport: _ctxSport });
+  // ★sport 를 같이 넘긴다 — 2026-07-28 시포(GM 지적 'CONTACT 담당자에 운영부 사람들이 뜬다').
+  //   컨택한 사람 드롭다운은 종목이 특정되면 그 종목 강사를, 못 하면 운영부 명단을 쓴다.
+  //   그런데 **단일 종목 회원은 _ctxSport 가 ''**(다종목만 종목별 저장하므로)이고, 폴백으로 읽는
+  //   srcRow.sport 를 여기서 안 넘겨 줘서 종목을 영영 못 가렸다 → 늘 운영부 8명만 떴다.
+  //   최은지 강사 신고(FB260727-102857 '운영부 매니저밖에 없어서 설정이 불가')가 바로 이 경로다.
+  //   07-27 수리는 다종목 경로만 고쳐 단일 종목(대다수)이 그대로 남아 있었다.
+  //   phone/rowKey/gid 도 같이 넘긴다 — 저장 때 대조키로 쓰는 값이라 모달 사본에도 있어야 안전하다.
+  openContactModal({ rowIndex: row.rowIndex, name: row.name, contacts: _editContacts,
+                     sport: row.sport, phone: row.phone, rowKey: row.rowKey, gid: row.gid },
+                   { source: 'lesson', type: st.type, t: t, sport: _ctxSport });
 }
 
 // 담당 = 종목별 명단(정본 = 위 LESSON_INSTRUCTOR_ROSTER 한 곳) 드롭다운 — 축7, 2026-07-08 시포·GM.
@@ -10309,21 +10318,20 @@ function _saveCell(rowIndex, patch, fallbackRow) {
   Object.assign(base, patch);
   if (idx >= 0 && _tapReady) renderTodayActionPanel();   // 상태·CONTACT 저장 즉시 오늘 할 일 패널 재계산(배754) — 컨택 기록하면 바로 미컨택에서 빠짐
   var r = base;
-  var payload = {
-    action:   'member_inquiry_update',
-    rowIndex: rowIndex,
-    keyPhone: keyPhone,
-    rowKey:   rowKey,
-    name:     r.name    || '',
-    phone:    r.phone   || '',
-    program:  r.program || '',
-    status:   r.status  || '미정',
-    channel:  r.channel || '',
-    owner:    r.owner   || '',
-    memo:     r.memo !== undefined ? r.memo : '',
-    inquiryContent: r.inquiryContent !== undefined ? r.inquiryContent : ''   // 문의내용(N열) #1
-    // 일정(예약)은 예약 리스트 모달에서 body.reservations로 저장 — 인라인 셀 편집에서 제외(스테일 방지). 2026-07-03 시포·GM.
-  };
+  // ★★바꾼 칸만 보낸다 — 2026-07-28 시포(GM '동기화 실패 1건 재시도 · 도자연 저장' 근본수리).
+  //   전에는 칸 하나를 고쳐도 이름·연락처·프로그램·유입경로·담당·비고까지 **행 전체를 다시 썼다.**
+  //   그런데 화면이 읽을 때 값을 표준형으로 바꿔 보여주는 칸이 있다 — 유입경로가 그렇다.
+  //   시트 원본은 '네이버 검색·플레이스' 같은 폼 선택지인데 화면엔 '네이버'로 줄여 보인다.
+  //   그 '네이버'를 그대로 되쓰면 그 칸에 걸린 드롭다운 규칙을 위반해 **시트가 저장을 거부한다.**
+  //   실측: 도자연님 행에 전체 저장을 보내면 'E642 데이터 확인 규칙 위반'으로 실패한다(전 회원 공통).
+  //   그 실패가 뒤따르는 연락 이력 저장까지 같이 무너뜨려 '동기화 실패 · 재시도'로 떴다.
+  //   서버 계약상 undefined = '그 칸 건드리지 않음' 이다. 안 바꾼 칸은 아예 안 보내는 게 맞다.
+  //   (연락 기록에만 적용했던 규칙을 전 칸으로 넓힌 것 — 같은 병이 칸마다 있었다.)
+  var payload = { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey };
+  ['name', 'phone', 'program', 'status', 'channel', 'owner', 'memo', 'inquiryContent'].forEach(function (k) {
+    if (patch && Object.prototype.hasOwnProperty.call(patch, k)) payload[k] = r[k] !== undefined ? r[k] : '';
+  });
+  // 일정(예약)은 예약 리스트 모달에서 body.reservations로 저장 — 인라인 셀 편집에서 제외(스테일 방지). 2026-07-03 시포·GM.
   // ★★연락 기록은 '이번에 실제로 바꾼 경우'에만 보낸다 — 2026-07-28 시포(GM '새로고침하면 날아간다' 근본수리 2/2).
   //   전에는 이 함수가 진행상태·담당자 같은 칸 하나만 고쳐도 연락 기록까지 **매번 같이 보냈다.**
   //   그런데 화면이 들고 있는 값(r.contacts)은 목록을 불러온 시점의 것이라, 그 뒤에 누가 컨택을
@@ -10349,13 +10357,11 @@ function _saveCell(rowIndex, patch, fallbackRow) {
     label: '저장', who: (r.name || ''),
     // overlay 도 payload 와 같은 것만 담는다 — 안 보낸 연락 기록을 여기에 실으면 재시도·병합 때
     // 옛 값이 되살아나 같은 사고가 난다(2026-07-28 시포).
+    // overlay 도 payload 와 같은 것만 담는다 — 안 보낸 칸을 여기 실으면 재시도·병합 때 옛 값이 되살아난다.
     overlay: (function () {
-      var ov = {
-        name: r.name, phone: r.phone, program: r.program, status: r.status,
-        channel: r.channel, owner: r.owner, memo: r.memo,
-        inquiryContent: r.inquiryContent
-      };
-      ['contact1', 'contact2', 'contact3', 'contacts'].forEach(function (k) {
+      var ov = {};
+      ['name', 'phone', 'program', 'status', 'channel', 'owner', 'memo',
+       'inquiryContent', 'contact1', 'contact2', 'contact3', 'contacts'].forEach(function (k) {
         if (payload[k] !== undefined) ov[k] = r[k];
       });
       return ov;
