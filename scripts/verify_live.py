@@ -77,7 +77,14 @@ async def run_verify(url: str, expect: str | None, out: Path, show: bool, timeou
         # 시크릿(clean) 컨텍스트 — 쿠키·캐시·로그인 0
         ctx = await browser.new_context(
             ignore_https_errors=True,
-            extra_http_headers={"Cache-Control": "no-cache", "Pragma": "no-cache"},
+            # ⚠️ 여기에 Cache-Control·Pragma 를 다시 넣지 마세요(2026-07-28 시우).
+            #   extra_http_headers 는 페이지가 보내는 모든 요청에 붙는다. 그 두 헤더가 붙으면
+            #   다른 도메인(raw.githubusercontent·GAS)으로 가는 데이터 요청이 'CORS 사전확인'
+            #   대상으로 바뀌는데, 그 도메인들은 사전확인에 답하지 않아 전부 실패한다.
+            #   결과: 멀쩡히 도는 페이지가 이 도구에서만 "정보를 불러오지 못했습니다" 로 찍혔다
+            #   (월간운영계획 검수에서 실측 — 같은 페이지가 일반 크롬에선 정상).
+            #   검수 도구가 거짓 실패를 내면 진짜 고장과 구별할 수 없다.
+            #   캐시 무력화는 이미 두 가지로 충분하다: 새 컨텍스트(캐시·쿠키 0) + URL 뒤 ?t= 시각.
             viewport={"width": 1400, "height": 900},
         )
         page = await ctx.new_page()
