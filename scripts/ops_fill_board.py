@@ -503,9 +503,16 @@ def main():
           f"· 제외(경영진) {S['excluded']}")
     if a.commit:
         import subprocess  # noqa: PLC0415
+        # 하트비트도 같이 담는다(2026-07-28 시우 · 아침 자가점검 발견).
+        #   07-27 10:00 예약분은 보드 생성·커밋·카톡 발송까지 전부 성공했는데, 방금 쓴
+        #   하트비트만 커밋 목록에 없어 미커밋으로 남았다 → 공용 작업트리를 쓰는 다른 세션의
+        #   git 복원에 그날 22:26 통째로 되돌아갔고, 침묵 감지기는 이 모듈을 3일째
+        #   멈춘 것으로 읽었다(실제론 정상 가동). 살아있음 신호가 커밋되지 않으면
+        #   그 신호는 없는 것과 같다.
         cmd = [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                             "safe_commit.py"),
-               "-m", "chore(coo): 주간 채움 보드 갱신 (ops_fill_board)", "--"] + list(OUTS)
+               "-m", "chore(coo): 주간 채움 보드 갱신 (ops_fill_board)", "--"] + list(OUTS) + [
+               os.path.join("status", "heartbeats", "coo-ops-fill-board.json")]
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=300)
             print((r.stdout or "").strip() or (r.stderr or "").strip())
