@@ -7772,11 +7772,26 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false, 
   // 완료 시점(원래도 9~11초라 체감상 무의미한 차이)은 그대로, 발사 순서만 벌려 카드가 진짜 먼저 뜨게 한다.
   loadCpoTodayStats();       // 상단 CPO 오늘 현황(오늘/이번달 문의·등록)
   loadMemberActiveSummary(); // 대기자·단기·유형별 카드 숫자를 전체 fetch보다 먼저 채움
-  setTimeout(function(){
-    loadCalendarData();  // 예약 달력 데이터 사전로드(기본 탭은 아래에서 '새 문의'로 지정 — 2026-07-18 GM 변경)
-    _tabLoaded.active = true; loadActiveMembers();  // 유효회원 사전로드 — pane 미개방에도 단기권 카드·통합검색 데이터 채움(배299, 2026-07-07 시포·GM)
-    _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — 통합검색·이번달 문의 집계 데이터 채움(배3, 2026-07-07 시포·GM)
-  }, 600);
+  // ★2026-07-28 시포(GM "멤버십 회원관리랑 강습 회원관리 페이지 키면 느려지네" 후속, 실측 기준선 = §2-A 표) —
+  //   아래 3개(달력·유효회원 전체행·문의DB)는 DOM상 전부 #type-membership 안에서만 쓰인다(pane-calendar·
+  //   pane-active·pane-db, switchTab이 그 안에서만 토글). 그런데 family(=?manage=lesson, 강습 회원관리)로
+  //   들어와도 이 블록은 family와 무관하게 항상 쐈다 — switchType이 #type-membership 자체를 숨겨 세 데이터
+  //   모두 화면에 한 번도 안 그려지는데 member_active_list(실측 9.4s)+member_inquiry_list(3.1s)+캘린더까지
+  //   태워 §2-A가 지적한 'GAS 동시발사 과밀'만 키웠다. 게다가 member_active_list?scope=valid는 강습
+  //   family에서 _oaPreload(담당자 배정 사전로드, switchFamily 안)가 이미 같은 데이터를 받고 있어 여기서
+  //   또 쏘면 완전 중복 fetch였다(강습 진입 시 같은 액션 2회 동시발사 실측 확인).
+  //   → family==='membership'일 때만 쏘도록 게이트. 강습 family는 이 블록 자체가 스킵되어 중복·낭비 fetch가
+  //   사라진다(§2-A 표의 member_active_list 9.4s·member_inquiry_list 3.1s가 강습 페이지에선 통째로 빠짐).
+  //   멤버십 family는 동작·화면 전부 그대로(달력·유효회원·문의DB 여전히 사전로드) — 회귀 없음.
+  //   달력·유효회원 탭을 나중에 직접 열어도 switchTab()의 기존 lazy-load 게이트(_tabLoaded)가 그대로 채운다
+  //   (탭을 열면 반드시 채워짐 — 기능 손실 없음, GM 지시 "지연 로드는 되지만 열면 반드시 채워져야").
+  if (_curFamily === 'membership') {
+    setTimeout(function(){
+      loadCalendarData();  // 예약 달력 데이터 사전로드(기본 탭은 아래에서 '새 문의'로 지정 — 2026-07-18 GM 변경)
+      _tabLoaded.active = true; loadActiveMembers();  // 유효회원 사전로드 — pane 미개방에도 단기권 카드·통합검색 데이터 채움(배299, 2026-07-07 시포·GM)
+      _tabLoaded.db = true; loadDbData();  // 문의 DB 사전로드 — 통합검색·이번달 문의 집계 데이터 채움(배3, 2026-07-07 시포·GM)
+    }, 600);
+  }
   // 신규 문의 & 등록 현황 대시보드 = 🆕 버튼 → 팝업(openInquiryDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
   if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
 })();
