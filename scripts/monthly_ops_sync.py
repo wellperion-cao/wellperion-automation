@@ -268,10 +268,11 @@ def _src_kind(src: str) -> str:
     return _SRC_KIND.get(key, key)
 
 
-def honesty_from_verdict(v: dict) -> dict:
+def honesty_from_verdict(v: dict, obj: dict | None = None) -> dict:
     """resolve() 판정 결과 v 하나에서 정직 딱지를 도출한다.
     · AUTO(metric_live·count_done·avg_progress 로 실제 값 갱신) → measured(✅ 실측)
     · OBSERVE(status_map — 상태만 관찰, 진척률은 사람 값 유지) → observed(👀 상태만)
+    · MANUAL + items_basis(몇 개 중 몇 개를 구조로 적음) → basis(🧮 근거계산)
     · MANUAL(연결 소스 없음) → manual(📝 사람값)
     · 그 외(소스는 있는데 조회 실패/연결 대상 없음 = verdict '미연동') → unmeasured(🔧 측정 실패)
     honesty_summary.자동화율 정의 = 실측(measured) ÷ 총. '상태만'(observed)은 숫자 자체는
@@ -288,6 +289,14 @@ def honesty_from_verdict(v: dict) -> dict:
         basis = f"{_src_kind(v.get('src', ''))} " + (" · ".join(parts) if parts else "관찰 없음")
         return {"level": "observed", "label": "👀 상태만", "basis": basis.strip(), "at": at}
     if verdict == "MANUAL":
+        # 연결 소스는 없어도 '몇 개 중 몇 개' 를 적어 둔 목표는 사람값이 아니다(2026-07-28 시우).
+        #   전에는 items_basis 로 엔진이 센 숫자까지 전부 '📝 사람값' 딱지가 붙었다 —
+        #   콘솔 요약은 '근거계산 6건' 이라고 말하는데 GM이 보는 페이지에는 6건 모두
+        #   사람이 손으로 쓴 숫자로 보였다. 같은 값이 화면과 원천에서 다르게 읽히던 자리다.
+        basis_v = items_basis_verdict(obj) if isinstance(obj, dict) else None
+        if basis_v:
+            return {"level": "basis", "label": "🧮 근거계산",
+                    "basis": basis_v[1], "at": at}
         return {"level": "manual", "label": "📝 사람값", "basis": "연결된 소스 없음", "at": at}
     # verdict == "미연동" — 소스는 연결돼 있는데 조회 실패/연결 대상 없음 → 조용히 감추지 않고 표기.
     return {"level": "unmeasured", "label": "🔧 측정 실패", "basis": v.get("detail", ""), "at": at}
@@ -438,7 +447,7 @@ def run(month: str | None, apply: bool) -> None:
         vd = v["verdict"]
         # 정직 딱지 — verdict 와 무관하게 모든 objective 에 매긴다(honesty 없는 옛 항목도 포함).
         # 'at' 는 비교에서 제외(당일 재실행은 무변경으로 취급 · sync_observed 비교와 동일 관례).
-        honesty = honesty_from_verdict(v)
+        honesty = honesty_from_verdict(v, o)
         prior_honesty = {k: val for k, val in (o.get("honesty") or {}).items() if k != "at"}
         new_honesty_cmp = {k: val for k, val in honesty.items() if k != "at"}
         if prior_honesty != new_honesty_cmp:
