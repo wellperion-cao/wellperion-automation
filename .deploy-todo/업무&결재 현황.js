@@ -221,6 +221,59 @@ function _genId() {
 }
 
 // 시트 데이터 → 객체 배열
+// ─── todo_list 캐시 (2026-07-28 시우 · GM "왜 이렇게 오래 걸리지") ───
+// 왜: 업무 현황 SSOT 로딩 3.95초 중 3.15초가 이 한 번의 시트 전량 읽기였다(183KB).
+// ★쪼개 담는 이유: 응답이 183KB 인데 GAS 캐시는 한 칸에 100KB 까지다. 통째로 넣으면 '조용히 실패'해
+//   캐시가 영영 안 먹는다(넣은 줄 알고 매번 시트를 다시 읽는다). 90KB 씩 잘라 담고 조각 수를 따로 센다.
+//   한 조각이라도 비면 캐시 없음으로 친다(반쪽 데이터를 내보내지 않는다).
+// 되돌리기: _todoCacheGet_ 이 null 만 반환하게 하면 즉시 옛 동작(캐시 없음).
+var _TODO_CACHE_KEY = 'todo_list_all_v1';
+var _TODO_CACHE_TTL = 300;      // 초 — 쓰기가 바로 지우므로 길어도 안전. 만약을 위한 상한.
+var _TODO_CACHE_CHUNK = 90000;
+var _TODO_CACHE_MAX_CHUNKS = 12;
+
+function _todoCacheGet_() {
+  try {
+    var c = CacheService.getScriptCache();
+    var n = parseInt(c.get(_TODO_CACHE_KEY + '_n') || '0', 10);
+    if (!n) return null;
+    var keys = [];
+    for (var i = 0; i < n; i++) keys.push(_TODO_CACHE_KEY + '_' + i);
+    var got = c.getAll(keys);
+    var out = '';
+    for (var j = 0; j < n; j++) {
+      var part = got[_TODO_CACHE_KEY + '_' + j];
+      if (part === null || part === undefined) return null;
+      out += part;
+    }
+    return out;
+  } catch (e) { return null; }
+}
+
+function _todoCacheSet_(payload) {
+  try {
+    if (!payload) return;
+    var n = Math.ceil(payload.length / _TODO_CACHE_CHUNK);
+    if (n > _TODO_CACHE_MAX_CHUNKS) return;
+    var c = CacheService.getScriptCache();
+    var obj = {};
+    for (var i = 0; i < n; i++) {
+      obj[_TODO_CACHE_KEY + '_' + i] = payload.substr(i * _TODO_CACHE_CHUNK, _TODO_CACHE_CHUNK);
+    }
+    c.putAll(obj, _TODO_CACHE_TTL);
+    c.put(_TODO_CACHE_KEY + '_n', String(n), _TODO_CACHE_TTL);
+  } catch (e) {}
+}
+
+function _todoCacheClear_() {
+  try {
+    var c = CacheService.getScriptCache();
+    var keys = [_TODO_CACHE_KEY + '_n'];
+    for (var i = 0; i < _TODO_CACHE_MAX_CHUNKS; i++) keys.push(_TODO_CACHE_KEY + '_' + i);
+    c.removeAll(keys);
+  } catch (e) {}
+}
+
 function _readAll(sh) {
   const last = sh.getLastRow();
   if (last < 2) return [];
@@ -2111,8 +2164,27 @@ function doGet(e) {
     const action = (e && e.parameter && e.parameter.action) || '';
 
     if (action === 'todo_list') {
+      // 필터 없는 전체 조회만 캐시한다 — 업무 현황 SSOT·G1 이 부르는 게 이 형태다.
+      //   실측 2026-07-28: 이 호출 하나가 페이지 로딩 3.95초 중 3.15초를 먹었다(183KB·매번 시트 전량 재읽기).
+      //   업무는 하루 몇 번 바뀌는데 화면은 수십 번 열린다 — 안 바뀐 동안 다시 읽을 이유가 없다.
+      //   '고쳤는데 옛것이 보이는' 위험은 쓰기가 지나가는 단 하나의 길(_processTodoAction)이
+      //   맨 앞에서 캐시를 지워 막는다(약속 L21 — 관문 한 곳).
+      const _noFilter = !(e.parameter.owner || e.parameter.status || e.parameter.category);
+      if (_noFilter) {
+        const _hit = _todoCacheGet_();
+        if (_hit) {
+          return ContentService.createTextOutput(_hit)
+                   .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
       const sh = initTodoSheet();
       let items = _readAll(sh);
+      if (_noFilter) {
+        const _payload = JSON.stringify({ ok: true, count: items.length, data: items });
+        _todoCacheSet_(_payload);
+        return ContentService.createTextOutput(_payload)
+                 .setMimeType(ContentService.MimeType.JSON);
+      }
 
       // owner 필터 (선택)
       const owner = e.parameter.owner || '';
@@ -2383,6 +2455,9 @@ function _mapFields(body) {
 
 // TODO action 처리 (doGet/doPost 공용)
 function _processTodoAction(body) {
+  // 쓰기는 전부 이 함수를 지난다(doPost · doGet 의 todo_* 우회 둘 다) — 캐시를 지우는 자리도 여기 하나뿐이다.
+  // 성공·실패를 가리지 않고 먼저 지운다: 실패했다고 옛 캐시가 남아 계속 옛 값을 주는 쪽이 더 나쁘다. (2026-07-28 시우)
+  _todoCacheClear_();
   body = _mapFields(body);
   const action = body.action || '';
 
