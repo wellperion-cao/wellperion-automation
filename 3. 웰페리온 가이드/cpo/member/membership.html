@@ -2478,15 +2478,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <span style="font-size:11px;color:var(--dim)">— 상담 내용 기록 시 필수</span>
     </span></div>
 
-    <div class="consult-field-label">연락 기록 (Contact 1·2·3 — 입력한 칸만 저장)</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
-      <input type="text" id="cmContact1" placeholder="Contact 1 — 1차 연락 기록" autocomplete="off"
-        style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
-      <input type="text" id="cmContact2" placeholder="Contact 2 — 2차 연락 기록" autocomplete="off"
-        style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
-      <input type="text" id="cmContact3" placeholder="Contact 3 — 3차 연락 기록" autocomplete="off"
-        style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
-    </div>
+    <!-- 연락 기록 — 누적 이력 전체를 보여준다(2026-07-28 시포, GM '새로고침하면 CONTACT 날아간다' 지적).
+         전에는 Contact 1·2·3 세 칸만 띄웠다. 그런데 저장은 4건째부터 '연락이력' 칸으로 넘어가고,
+         모달은 그 4건째 이후를 아예 모른 채 세 칸만 서버로 되돌려 보냈다 → 서버가 넘침분을 ''로 지웠다.
+         = 적을수록 지워지는 구조. 3칸이 다 찬 회원 65명은 다음 저장마다 방금 쓴 글이 사라졌다.
+         이제 이력 개수만큼 칸을 만들어 전부 싣고, 전부 되돌려 보낸다(유실 0).
+         한 줄 input → textarea: 시트에 여러 줄이 든 칸이 42개인데 input 은 HTML 사양상 개행을 지운다. -->
+    <div class="consult-field-label">연락 기록 <span id="cmContactCount" style="font-size:11px;color:var(--dim)"></span></div>
+    <div id="cmContactList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px"></div>
 
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeConsultModal()">취소</button>
@@ -3372,12 +3371,23 @@ function gvizMiRows_(headers, rows, gid) {
       if (_mo.exp2) _resArr.push({ date: _mo.exp2, time: _mo.exp2Time || '', note: '' });
     }
     _mo.reservations = _resArr;
-    var _histArr = _gzResParse_(iHist >= 0 ? row[iHist] : '');
-    if (!_histArr.length) {
-      [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
-        if (!cv) return;
-        var _cbs = _ctBySplit(cv);   // 컨택자(배101): 셀 끝 '(컨택:이름)' → by 분리 (Survey.js _miReadRows_ 정합)
-        _histArr.push({ date: '', time: '', note: _cbs.note, by: _cbs.by });
+    // 연락 이력 = Contact1/2/3(앞 3건) + 연락이력 칸(4건째~)을 **합친다**. 2026-07-28 시포.
+    //   전에는 연락이력 칸이 비었을 때만 Contact1/2/3 을 읽어서, 둘 다 있는 행은 앞 3건이 통째로 빠졌다.
+    //   서버 _miReadRows_(Survey.js 2133~2150)는 이미 합쳐서 주는데 이 직접 읽기 경로만 옛 로직이었다
+    //   — 같은 계산이 두 벌이라 한쪽만 늙은 것(약속 L01). 서버와 같은 규칙(내용 중복 제거)으로 맞춘다.
+    var _histArr = [];
+    [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
+      if (!cv) return;
+      var _cbs = _ctBySplit(cv);   // 컨택자(배101): 셀 끝 '(컨택:이름)' → by 분리 (Survey.js _miReadRows_ 정합)
+      _histArr.push({ date: '', time: '', note: _cbs.note, by: _cbs.by });
+    });
+    var _histOverflow = _gzResParse_(iHist >= 0 ? row[iHist] : '');
+    if (_histOverflow.length) {
+      var _seenNotes = {};
+      _histArr.forEach(function(e){ _seenNotes[String(e.note || '').trim()] = 1; });
+      _histOverflow.forEach(function(e){
+        if (_seenNotes[String(e && e.note || '').trim()]) return;   // 같은 내용 두 번 보이지 않게
+        _histArr.push(e);
       });
     }
     _mo.contacts = _histArr;
@@ -8055,6 +8065,59 @@ var _consultEv = null;   // 현재 모달이 다루는 달력 이벤트(rowIndex
 var _consultOrigTime = '';  // 모달 연 시점의 시간(변경 감지 기준)
 var _consultOrigDate = '';  // 모달 연 시점의 날짜(변경 감지 기준) 2026-07-03 시포
 
+/* ─── 연락 기록 이력 — 3칸 고정 → 누적 이력 (2026-07-28 시포 · GM 지적 근본수리) ───
+   _cmHistOf : 달력 이벤트에서 이력 배열을 만든다. 우선순위 = contacts(전체·넘침분 포함) → contact1/2/3(폴백).
+     contacts 를 우선하는 이유: Contact1/2/3 는 앞 3건뿐이고 4건째부터는 '연락이력' 칸에 있다.
+     세 칸만 읽으면 넘침분을 모른 채 저장하게 되고, 서버가 그 넘침분을 ''로 지운다(이번 사고의 물리 원인).
+   _cmRenderContacts : 이력 개수만큼 textarea 를 만든다(+ 항상 빈 칸 1개 = 다음 기록 자리).
+     input 이 아니라 textarea 인 이유: 시트 실측 42칸이 여러 줄인데 input 은 HTML 값 정제 규칙이 개행을 지운다.
+   _cmReadContacts : 화면의 모든 칸을 읽어 배열로 되돌린다. 빈 칸은 버린다(칸을 지우면 그 기록이 지워짐 = 기존 동작 유지). */
+var _consultHistOrig = [];
+function _cmHistOf(ev) {
+  var raw = ev && ev.contacts;
+  if (typeof raw === 'string' && raw.trim()) { try { raw = JSON.parse(raw); } catch (e) { raw = null; } }
+  if (raw && raw.length) {
+    return raw.map(function (e) {
+      if (e == null) return '';
+      if (typeof e === 'string') return e;
+      var pre = String((e.date || '') + ' ' + (e.time || '')).trim();
+      var bd = _ctByJoin(String(e.note || '').trim(), e.by);
+      return pre ? (pre + ' ' + bd).trim() : bd;
+    }).filter(function (s) { return String(s).trim(); });
+  }
+  return [ev && ev.contact1, ev && ev.contact2, ev && ev.contact3]
+    .map(function (s) { return String(s || '').trim(); })
+    .filter(function (s) { return s; });
+}
+function _cmRenderContacts(list) {
+  var box = document.getElementById('cmContactList');
+  var cnt = document.getElementById('cmContactCount');
+  if (!box) return;
+  box.innerHTML = '';
+  var items = (list || []).slice();
+  items.push('');   // 다음 기록 자리 — 항상 빈 칸 하나를 끝에 둔다
+  items.forEach(function (val, i) {
+    var ta = document.createElement('textarea');
+    ta.className = 'cm-contact-ta';
+    ta.rows = String(val).indexOf('\n') >= 0 ? 3 : 1;
+    ta.value = val;
+    ta.placeholder = (i === items.length - 1) ? '새 연락 기록 — 여기에 적으세요' : ('연락 기록 ' + (i + 1));
+    ta.setAttribute('autocomplete', 'off');
+    ta.style.cssText = 'padding:8px 10px;border-radius:8px;border:1px solid var(--border);'
+      + 'background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;resize:vertical;'
+      + 'min-height:34px;line-height:1.5;word-break:keep-all';
+    box.appendChild(ta);
+  });
+  if (cnt) cnt.textContent = (list && list.length) ? ('— 지금까지 ' + list.length + '건 (모두 보존됩니다)') : '— 아직 기록 없음';
+}
+function _cmReadContacts() {
+  var box = document.getElementById('cmContactList');
+  if (!box) return [];
+  return Array.prototype.slice.call(box.querySelectorAll('.cm-contact-ta'))
+    .map(function (ta) { return String(ta.value || '').trim(); })
+    .filter(function (s) { return s; });
+}
+
 function openConsultModal(ev) {
   // 재등록 상담(유효회원)은 전용 모달로 — 여긴 신규(문의) 전용. 2026-07-03 시포·GM
   if (ev && (ev.source === 'active' || ev.kind === '재등록상담')) { openReconModal(ev, ev.date); return; }
@@ -8096,10 +8159,9 @@ function openConsultModal(ev) {
     OWNER_OPTIONS.forEach(function(nm){ var o = document.createElement('option'); o.value = nm; o.textContent = nm; _bySel.appendChild(o); });
     try { _bySel.value = localStorage.getItem('wp_ct_by') || ''; } catch (e) { _bySel.value = ''; }
   })();
-  // 연락기록 3칸 — 모달 열 때 1회만 세팅(IME 안전). 달력 이벤트가 보유 시 채움, 없으면 빈칸.
-  document.getElementById('cmContact1').value = ev.contact1 || '';
-  document.getElementById('cmContact2').value = ev.contact2 || '';
-  document.getElementById('cmContact3').value = ev.contact3 || '';
+  // 연락기록 — 모달 열 때 1회만 세팅(IME 안전). 이력 전체(3칸 + 넘침분)를 칸 수만큼 만들어 보여준다.
+  _consultHistOrig = _cmHistOf(ev);
+  _cmRenderContacts(_consultHistOrig);
   // 시간 설정 드롭다운 — 06~22시(그리드와 동일). 현재 시간 프리셀렉트. 쓰기 가능한 칸(상담·체험1·2·3)만 활성. 2026-06-29 시포
   var tSel = document.getElementById('cmTimeSel'), tHint = document.getElementById('cmTimeHint');
   var _writable = ['exp1','exp2'].indexOf(ev.slot || '') >= 0;
@@ -8132,15 +8194,12 @@ function saveConsultModal() {
   var visited = document.getElementById('cmVisited').checked;
   var registered = document.getElementById('cmRegistered').checked;   // 등록 완료 → 진행상황 SUC
   var input = document.getElementById('cmMemoInput').value.trim();
-  // 연락기록 3칸 — 모달 연 시점 원본과 비교해 '바뀐 칸만' 전송(지워서 빈칸이 된 것도 변경 → '' 전송 → 서버가 클리어).
-  // 안 바뀐 칸은 생략(기존 값 보존). 2026-06-29 시포: 빈칸=무조건 생략 버그(삭제 저장 안됨) 수정.
-  var c1 = document.getElementById('cmContact1').value.trim();
-  var c2 = document.getElementById('cmContact2').value.trim();
-  var c3 = document.getElementById('cmContact3').value.trim();
-  var o1 = String(_consultEv.contact1 || '').trim();
-  var o2 = String(_consultEv.contact2 || '').trim();
-  var o3 = String(_consultEv.contact3 || '').trim();
-  var c1Changed = (c1 !== o1), c2Changed = (c2 !== o2), c3Changed = (c3 !== o3);
+  // 연락기록 — 화면의 모든 칸을 읽어 이력 전체를 되돌려 보낸다(2026-07-28 시포).
+  //   전에는 3칸만 읽어 보냈고, 서버는 받은 배열 기준으로 앞3=Contact1/2/3·나머지=연락이력으로 통째 다시 썼다.
+  //   그래서 4건째 이후를 안 실어 보내면 서버가 그 칸을 ''로 지웠다 = 저장할수록 지워지는 구조.
+  //   이제 화면이 이력 전부를 갖고 있으므로(_cmHistOf) 전부 되돌려 보낸다 → 유실 0.
+  var _histNow = _cmReadContacts();
+  var _histChanged = (_histNow.join(' ') !== (_consultHistOrig || []).join(' '));
   // 시간 설정 — 쓰기 가능한 칸(상담/체험1·2·3)에서 원본과 다르면 변경. 2026-06-29 시포
   var selTime = document.getElementById('cmTimeSel').value;
   var timeWritable = ['exp1','exp2'].indexOf(_consultEv.slot || '') >= 0;
@@ -8158,12 +8217,9 @@ function saveConsultModal() {
   var regProgram = document.getElementById('cmRegProgram').value.trim();
   var origRegProgram = String(_consultEv.regProgram || '').trim();
   var regProgramChanged = registered && (regProgram !== origRegProgram);
-  if (!visitedChanged && !regChanged && !input && !c1Changed && !c2Changed && !c3Changed && !timeChanged && !dateChanged && !regProgramChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
+  if (!visitedChanged && !regChanged && !input && !_histChanged && !timeChanged && !dateChanged && !regProgramChanged) { showToast('변경 사항이 없습니다', 'err'); return; }
 
   var payload = { action: 'member_inquiry_update', rowIndex: _consultEv.rowIndex, keyPhone: _consultEv.phone || '', rowKey: _consultEv.rowKey || '' };
-  if (c1Changed) payload.contact1 = c1;
-  if (c2Changed) payload.contact2 = c2;
-  if (c3Changed) payload.contact3 = c3;
   // 시간·날짜 변경 → 분리칸 전송(#4): 체험1=exp1Date/exp1Time(J/K), 체험2=exp2Date/exp2Time(L/M). 둘 중 하나만 바뀌어도 짝(날짜+시간) 함께 전송. 2026-07-02·2026-07-03 시포·GM.
   if (timeChanged || dateChanged) {
     var _newDate = selDate || _consultEv.date || '';
@@ -8188,15 +8244,8 @@ function saveConsultModal() {
   //   연락이력 칸에 넣는다(기존 계약 그대로 — 새 저장 경로를 만들지 않는다).
   //   contacts 를 보낼 땐 contact1/2/3 을 따로 보내지 않는다 — 서버에서 contacts 블록이 뒤에 실행돼
   //   덮어쓰므로 두 벌을 보내면 어느 쪽이 이겼는지 알 수 없게 된다.
-  if (input) {
-    // 컨택한 사람 필수(배101, 2026-07-25) — 상담 내용을 CONTACT로 쌓을 때 누가 컨택했는지 없이 저장하지 않는다.
-    var _cmByEl = document.getElementById('cmContactBy');
-    var _cmBy = _cmByEl ? String(_cmByEl.value || '').trim() : '';
-    if (!_cmBy) { showToast('컨택한 사람을 선택해주세요 — 상담 내용 기록 시 필수입니다', 'err'); return; }
-    try { localStorage.setItem('wp_ct_by', _cmBy); } catch (e) {}
-    var today = new Date();
-    var ds = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    // 화면에 지금 떠 있는 3칸(수정분 반영) → {date,time,note} 로 되돌린다. 'YYYY-MM-DD 내용' 모양이면
+  if (input || _histChanged) {
+    // 화면에 떠 있는 이력 전부(수정분 반영) → {date,time,note} 로 되돌린다. 'YYYY-MM-DD 내용' 모양이면
     // 날짜를 떼어 보존하고, 그 밖의 옛 수기 표기는 통째로 내용으로 둔다(형식을 강제해 지우지 않는다).
     var _toEntry = function (s) {
       var v = String(s || '').trim();
@@ -8204,9 +8253,17 @@ function saveConsultModal() {
       var m = v.match(/^(\d{4}-\d{2}-\d{2})\s*(.*)$/);
       return m ? { date: m[1], time: '', note: m[2] } : { date: '', time: '', note: v };
     };
-    var _list = [_toEntry(c1), _toEntry(c2), _toEntry(c3)].filter(function (e) { return e; });
-    // 4건째부터는 서버가 연락이력 칸으로 넘긴다 — 기존 기록을 밀어내지 않는다.
-    _list.push({ date: ds, time: '', note: input, by: _cmBy });   // 컨택한 사람 동봉(배101)
+    var _list = _histNow.map(_toEntry).filter(function (e) { return e; });
+    if (input) {
+      // 컨택한 사람 필수(배101, 2026-07-25) — 상담 내용을 CONTACT로 쌓을 때 누가 컨택했는지 없이 저장하지 않는다.
+      var _cmByEl = document.getElementById('cmContactBy');
+      var _cmBy = _cmByEl ? String(_cmByEl.value || '').trim() : '';
+      if (!_cmBy) { showToast('컨택한 사람을 선택해주세요 — 상담 내용 기록 시 필수입니다', 'err'); return; }
+      try { localStorage.setItem('wp_ct_by', _cmBy); } catch (e) {}
+      var today = new Date();
+      var ds = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+      _list.push({ date: ds, time: '', note: input, by: _cmBy });   // 컨택한 사람 동봉(배101)
+    }
     payload.contacts = JSON.stringify(_list);
     delete payload.contact1; delete payload.contact2; delete payload.contact3;
   }
@@ -8266,6 +8323,17 @@ function saveConsultModal() {
           if (payload.contact1 !== undefined) _dr.contact1 = payload.contact1;
           if (payload.contact2 !== undefined) _dr.contact2 = payload.contact2;
           if (payload.contact3 !== undefined) _dr.contact3 = payload.contact3;
+          // ★이력 전체를 원본 행에도 반영 — 2026-07-28 시포. 저장 직후 renderCalendarChips()가 달력을
+          //   dbRows 로 다시 만들기 때문에, 여기서 안 옮기면 모달을 다시 열 때 옛 이력이 올라온다.
+          //   그 상태로 또 저장하면 방금 쓴 기록이 빠진 채 서버에 덮여 진짜로 사라진다(사고 재현 경로).
+          //   contacts 를 보낼 땐 contact1/2/3 을 지워 보내므로(위 delete) 위 세 줄만으로는 절대 안 채워진다.
+          if (payload.contacts !== undefined) {
+            try {
+              var _drList = JSON.parse(payload.contacts) || [];
+              _dr.contacts  = _drList;
+              _dr.contact1 = evRef.contact1; _dr.contact2 = evRef.contact2; _dr.contact3 = evRef.contact3;
+            } catch (e) { /* 파싱 실패 → 다음 재조회에서 서버 값으로 맞춰진다 */ }
+          }
           if (payload.memo !== undefined) _dr.memo = payload.memo;
           if (payload.regProgram !== undefined) _dr.regProgram = payload.regProgram;   // 2026-07-18 시토(GM요청) 대행.
         }
@@ -9203,6 +9271,9 @@ function _syncCalendarForRow(source, rowIndex, reservations, meta) {
       name: meta.name || '', phone: meta.phone || '', program: meta.program || '',
       status: dr ? (dr.status || '') : '', rowIndex: rowIndex, memo: dr ? (dr.memo || '') : (res.note || ''), note: res.note || '',
       owner: dr ? (dr.owner || '') : '', contact1: dr ? (dr.contact1 || '') : '', contact2: dr ? (dr.contact2 || '') : '', contact3: dr ? (dr.contact3 || '') : '',
+      // ★contacts(이력 전체) 동봉 — 2026-07-28 시포. 이게 없으면 상담 모달이 앞 3건만 알고 저장해
+      //   4건째 이후를 서버가 ''로 지운다(GM '새로고침하면 CONTACT 날아간다'의 물리 원인).
+      contacts: dr ? (dr.contacts || '') : '',
       visited: dr ? !!dr.visited : false, visitDate: dr ? (dr.visitDate || '') : '',
       rowKey: (dr && dr.rowKey) || meta.rowKey || ''   // 지문키(§4 R1) — 로컬 재생성 이벤트도 유지(재조회 없이도 다음 저장에 사용). 2026-07-22 시포.
     };
