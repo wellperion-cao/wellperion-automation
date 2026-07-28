@@ -34,6 +34,9 @@
   .lockchip.locked{color:var(--red);border-color:rgba(192,70,61,.4);background:rgba(192,70,61,.07)}
   .lockchip.free{color:var(--green);border-color:rgba(47,138,90,.35);background:rgba(47,138,90,.07)}
   .lockchip.pinon{color:var(--bronze2);border-color:rgba(154,123,79,.5);background:rgba(154,123,79,.09)}
+  .lockchip.adminon{color:#fff;border-color:#9a7b4f;background:#9a7b4f}
+  .lockchip.adminon u{cursor:pointer;font-weight:800;margin-left:2px}
+  .rrow.retd{opacity:.62}
   .mcell.ghost,.wslot.ghost{background:#ece7df}
   .ghost .tx-hg{opacity:.55}
   .pin-input{width:100%;font-family:inherit;font-size:20px;letter-spacing:8px;text-align:center;padding:10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
@@ -269,6 +272,7 @@
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <div class="simbadge" id="syncBadge">● ERP 서버 연결 중…</div>
     <a class="guidechip" href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule-guide.html" target="_blank" rel="noopener">📖 사용법 보기</a>
+    <button class="lockchip" id="adminChip" onclick="adminChipClick()">🛡️ 관리자 로그인</button>
     <button class="lockchip" id="lockChip" onclick="lockChipClick()">…</button>
   </div>
 </header>
@@ -521,8 +525,13 @@ const DEFAULT_DEPTS = [
    2026-07-27 시로 — 배158(시우 실측: 후임 백승화 현직 반영 완료·이지영 06-27 퇴사 미반영). */
 /* [2026-07-27 매니저 확정] "이정헌"(시설, 정규직)과 "이정한"(퇴사한 PT 프리랜서)은 별개 인물 — 이 보드엔 이정헌만 존재.
    향후 명단·매핑 수정 시 두 이름을 혼동해 병합하지 말 것. */
-const RETIRED={"이지영":"2026-06-27"};
+const RETIRED={"이지영":"2026-06-12"};   // 폴백 전용 — 정본=서버 roster exitDate(applyServerMeta가 통째 교체). 06-27→06-12 정정(2026-07-28 시트 실측 대조)
 function retTag(nm){return RETIRED[nm]?` <span class="ret-tag" title="퇴사일 ${RETIRED[nm]}">(퇴사)</span>`:"";}
+/* [2026-07-28 매니저 정책] 퇴사자 보드 표시 = 퇴사일이 속한 월까지(과거 기록 보존), 다음 월부터 자동 제외.
+   정본 = 서버 roster exitDate(RETIRED 맵으로 수신). 과거 월로 이동하면 그대로 보인다 — 데이터 삭제 아님(표시 필터). */
+const exitYmOf=nm=>RETIRED[nm]?String(RETIRED[nm]).slice(0,7):null;
+const activeInYm=(nm,ym)=>{const x=exitYmOf(nm);return !x||ym<=x;};   // "YYYY-MM" 문자열 비교
+const nowYm=()=>ymdOf(new Date()).slice(0,7);
 const LS_R="wp_att_roster_v1";
 let DEPTS=null, EMP_DEPT={}, ALL_EMP=[], ANN={};   // ANN = 성명→총연차(기본 15)
 function rebuildRoster(){EMP_DEPT={};DEPTS.forEach(([d,ns])=>ns.forEach(n=>EMP_DEPT[n]=d));ALL_EMP=DEPTS.flatMap(d=>d[1]);}
@@ -616,8 +625,10 @@ function syncBadge(){
 /* [2026-07-27 B번들] 서버 동봉 메타 소비 — roster(보드명단)·holidays(공휴일)·ann(연차원장 산출)·year.
    서버 값이 있을 때만 교체(없거나 빈 값이면 기존 상수 폴백 유지 — 백엔드 미배포 순서 사고 가드). */
 let SRV_ANN=null, SRV_EXEMPT=null, rosterFromServer=false, ANN_YEAR=String(new Date().getFullYear());
+let SRV_ROSTER_EDIT=false;   // 서버가 schedboard-roster(명단 수동 정정) 액션을 지원할 때만 true — 구백엔드 순서 사고 가드
 function applyServerMeta(j){
   try{
+    SRV_ROSTER_EDIT=(j.rosterEdit===true);
     if(j.holidays&&typeof j.holidays==="object"&&Object.keys(j.holidays).length)HOL=j.holidays;
     if(j.year)ANN_YEAR=String(j.year);
     if(j.ann&&typeof j.ann==="object")SRV_ANN=j.ann;
@@ -636,7 +647,7 @@ function applyServerMeta(j){
       Object.keys(RETIRED).forEach(k=>delete RETIRED[k]);
       Object.assign(RETIRED,ret);
       rosterFromServer=true;
-      rebuildRoster();renderFilter();renderRoster();
+      rebuildRoster();renderFilter();renderRoster();fillReqEmp();   // [2026-07-28] 서버 명단 도착 시 신청자 목록도 즉시 재생성(퇴사자 제외 반영)
     }
   }catch(_){}
 }
@@ -668,7 +679,13 @@ const SB_ERR={
   not_found:"해당 신청을 서버에서 찾지 못했습니다 (새로고침 후 다시 시도)",
   bad_status:"이미 결재 완료된 신청입니다 (새로고침 후 확인)",
   bad_req_value:"신청 내용이 올바르지 않아 반영할 수 없습니다",
-  cell_write_failed:"보드 셀 반영에 실패했습니다 — 승인 미확정"
+  cell_write_failed:"보드 셀 반영에 실패했습니다 — 승인 미확정",
+  /* [2026-07-28] schedboard-roster(명단 수동 정정) 응답 코드 */
+  bad_exitDate:"퇴사일 형식이 올바르지 않습니다 (YYYY-MM-DD)",
+  bad_op:"지원하지 않는 명단 작업입니다",
+  roster_not_found:"보드명단(서버)에 없는 성명입니다",
+  duplicate:"이미 보드명단에 있는 성명입니다",
+  unknown_action:"서버가 이 기능을 아직 지원하지 않습니다 — 새 버전 배포 대기 중"
 };
 /* 단건 셀 쓰기 — 낙관적 반영 후 서버 upsert, 실패 시 원복 + 사유 토스트. 데모 모드는 로컬 전용. */
 function boardWrite(nm,dt,val){
@@ -685,7 +702,7 @@ function boardWrite(nm,dt,val){
     .then(res=>res.json())
     .then(j=>{
       if(!j||!j.ok){revert();toast("⚠ "+((j&&SB_ERR[j.error])||(j&&j.message)||"저장 실패"));return j||{ok:false};}
-      boardSynced=true;syncBadge();return j;
+      boardSynced=true;syncBadge();if(body.pin)adminTouch();return j;
     })
     .catch(()=>{revert();boardSynced=false;syncBadge();toast("⚠ "+SB_ERR.offline);return{ok:false,error:"offline"};});
   const next=writeChain.then(run,run);
@@ -708,7 +725,12 @@ const POLICY_PIN_TYPES={"연차":1,"반차오전":1,"반차오후":1};
 const POLICY_ADMIN_OVERRIDE=true;                    // 관리자 PIN 세션 중 연차·반차 직접 정정 허용
 function pinState(){try{return JSON.parse(sessionStorage.getItem(PIN_LS)||"{}");}catch(_){return{};}}
 function pinSave(st){try{sessionStorage.setItem(PIN_LS,JSON.stringify(st));}catch(_){}}
-function pinOk(kind){const st=pinState();return !!(st.pin&&st[kind+"Ts"]&&Date.now()-st[kind+"Ts"]<PIN_TTL[kind]);}
+function pinOk(kind){
+  const st=pinState(); if(!st.pin)return false;
+  if(st[kind+"Ts"]&&Date.now()-st[kind+"Ts"]<PIN_TTL[kind])return true;
+  /* 관리자 세션은 조회 권한을 포괄(30분) — 10분짜리 view 만료 후에도 관리자 모드 중엔 재입력 불요 */
+  return kind==="view"&&!!(st.adminTs&&Date.now()-st.adminTs<PIN_TTL.admin);
+}
 function curPin(){const st=pinState();if(!st.pin)return null;const a=st.adminTs&&Date.now()-st.adminTs<PIN_TTL.admin;const v=st.viewTs&&Date.now()-st.viewTs<PIN_TTL.view;return(a||v)?st.pin:null;}
 let pinCb=null,pinKind="admin";
 function pinEnsure(kind,cb){
@@ -736,7 +758,7 @@ function pinSubmit(){
       if(j&&j.ok&&j.verified){
         const st2=pinState();st2.pin=pin;st2.fails=0;st2.lockUntil=0;
         st2[pinKind+"Ts"]=Date.now(); if(pinKind==="admin")st2.viewTs=Date.now();
-        pinSave(st2);closeOv("ovPin");renderLockChip();
+        pinSave(st2);closeOv("ovPin");renderLockChip();renderAdminChip();renderRoster();
         const cb=pinCb;pinCb=null;if(cb)cb();
       }else{
         const st2=pinState();st2.fails=(st2.fails||0)+1;
@@ -757,7 +779,67 @@ function renderLockChip(){
   else if(pinOk("admin")){el.className="lockchip pinon";el.textContent="🔑 PIN 해제됨 — 관리자 수정 가능";}
   else{el.className="lockchip locked";el.textContent="🔒 편집 잠김 — 25일~말일 외 PIN 필요";}
 }
-function lockChipClick(){if(!editFree()&&!pinOk("admin"))pinEnsure("admin",renderLockChip);}
+function lockChipClick(){if(!editFree()&&!pinOk("admin"))pinEnsure("admin",adminUiRefresh);}
+
+/* ===== 관리자 모드 (2026-07-28 매니저 지시) — 기존 PIN 서버검증 세션의 "명시적 로그인" UI.
+   권한 실체는 종전대로 매 요청 서버 게이트(PIN 동반 검증) — 이 UI는 입장문·상태표시·로그아웃일 뿐,
+   클라이언트에서 서버 게이트를 우회하는 트릭 없음. 세션 30분(성공 쓰기 활동 시 자동 연장), 만료·로그아웃 즉시 일반 모드. */
+let admTicker=null;
+function adminChipClick(){
+  if(pinOk("admin")){if(confirm("관리자 모드를 종료할까요?"))adminLogout();return;}
+  pinEnsure("admin",()=>{toast("🛡️ 관리자 모드 시작 — 30분 유지(수정 활동 시 자동 연장)");adminUiRefresh();});
+}
+function adminLogout(){
+  const st=pinState();delete st.pin;delete st.adminTs;delete st.viewTs;pinSave(st);
+  toast("관리자 모드를 종료했습니다");adminUiRefresh();
+}
+function adminTouch(){const st=pinState();if(st.pin&&st.adminTs&&Date.now()-st.adminTs<PIN_TTL.admin){st.adminTs=Date.now();pinSave(st);renderAdminChip();}}
+function adminUiRefresh(){renderAdminChip();renderLockChip();renderRoster();renderMonth();renderDay();renderWeek();}
+function renderAdminChip(){
+  const el=document.getElementById("adminChip");if(!el)return;
+  if(pinOk("admin")){
+    const st=pinState(),rem=Math.max(0,PIN_TTL.admin-(Date.now()-st.adminTs));
+    el.className="lockchip adminon";
+    el.innerHTML=`🛡️ 관리자 모드 · ${Math.floor(rem/60000)}:${pad(Math.floor(rem%60000/1000))} <u>로그아웃</u>`;
+    if(!admTicker)admTicker=setInterval(()=>{
+      if(!pinOk("admin")){clearInterval(admTicker);admTicker=null;adminUiRefresh();return;}
+      renderAdminChip();
+    },1000);
+  }else{
+    if(admTicker){clearInterval(admTicker);admTicker=null;}
+    el.className="lockchip";el.textContent="🛡️ 관리자 로그인";
+  }
+}
+
+/* ===== 명단 수동 정정 (2026-07-28) — 서버 정본(보드명단 탭) 갱신, 성공 시 boardPull()로 서버본 재동기화.
+   로컬 저장만 바꾸는 구(delEmp) 방식 금지(기기마다 달라짐) — 반드시 서버 왕복. SRV_ROSTER_EDIT(서버 능력 플래그) 활성 시에만 버튼 노출. */
+function rosterCall(body,doneMsg){
+  const p=curPin();if(!p){pinEnsure("admin",()=>rosterCall(body,doneMsg));return;}
+  body.action="schedboard-roster";body.pin=p;
+  fetch(REQ_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(j=>{
+      if(!j||!j.ok){toast("⚠ "+((j&&SB_ERR[j.error])||(j&&j.message)||"명단 반영 실패"));return;}
+      adminTouch();toast(doneMsg);boardPull();
+    }).catch(()=>toast("⚠ "+SB_ERR.offline));
+}
+function rosterExclude(nm){
+  const xd=prompt(`${nm} 님을 명단에서 제외합니다.\n퇴사일(YYYY-MM-DD)을 입력하세요 — 그 달까지는 보드에 남고 다음 달부터 자동 제외됩니다.\n(서버 원장의 과거 스케줄 기록은 삭제되지 않습니다)`,ymdOf(new Date()));
+  if(xd===null)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(xd.trim())){alert("날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)");return;}
+  rosterCall({op:"exclude",name:nm,exitDate:xd.trim()},`✓ ${nm} — 퇴사일 기입 완료, 다음 달부터 보드에서 자동 제외`);
+}
+function rosterRestore(nm){
+  if(!confirm(`${nm} 님의 퇴사일을 해제하고 명단에 복원할까요? (서버 정본 즉시 갱신)`))return;
+  rosterCall({op:"restore",name:nm},`✓ ${nm} — 명단 복원 완료`);
+}
+function rosterAdd(dept){
+  const raw=prompt(`${dept} 부서에 추가할 직원 성명 — 서버 명단(보드명단 탭)에 등록됩니다.\n(휴무 탭 원장의 성명과 일치해야 스케줄이 연결됩니다)`);
+  if(raw===null)return;
+  const t=raw.trim();
+  if(!/^[가-힣A-Za-z0-9·()\s]{1,30}$/.test(t)){alert("성명은 1~30자(한글·영문·숫자)로 입력하세요");return;}
+  if(ALL_EMP.includes(t)){alert("이미 명단에 있는 이름입니다: "+t);return;}
+  rosterCall({op:"add",name:t,dept:dept},`✓ ${t} — 서버 명단 추가 완료`);
+}
 /* 신청 폼 프리필 이동 (연차·반차 직접 기입 차단 시 유도) */
 function goRequest(nm,dt,type){
   const tb=document.querySelector('.tab[data-tab="req"]'); if(tb)tb.click();
@@ -838,9 +920,15 @@ function renderRoster(){
   /* [2026-07-27 B-5] 서버 명단 활성 = 읽기 전용 패널 — 명단 정본이 보드명단 탭으로 이관됨.
      로컬 추가·개명·삭제는 다음 동기화 때 서버본으로 덮이므로 서버 모드에선 편집 UI를 내리고 안내한다. */
   if(rosterFromServer){
-    p.innerHTML=`<div class="roster"><h4>👥 ${filterDept} 직원 명단 (${members.length}명)</h4>`+
-      `<div class="rsub">명단 정본 = <b>서버(보드명단 탭)</b> — 입사·퇴사 처리 시 자동 갱신됩니다 · 표기·부서·연차적용 정정은 관리자(ERP 시트)에서 · 총연차/잔여 = 연차원장 서버 산출</div>`+
-      `<div class="rgrid">`+members.map(nm=>{
+    /* [2026-07-28] 퇴사자는 퇴사월 경과 시 기본 목록에서 숨김(보드와 동일 정책). 관리자 모드에선 전원 표시 + 제외/복원/추가(서버 정본 갱신). */
+    const adm=pinOk("admin"), ymN=nowYm();
+    const shown=adm?members:members.filter(nm=>activeInYm(nm,ymN));
+    const hiddenN=members.length-shown.length;
+    p.innerHTML=`<div class="roster"><h4>👥 ${filterDept} 직원 명단 (${shown.length}명${adm?` · 🛡️ 관리자 모드`:(hiddenN?` · 퇴사 ${hiddenN}명 자동 제외`:"")})</h4>`+
+      `<div class="rsub">명단 정본 = <b>서버(보드명단 탭)</b> — 입사·퇴사 처리 시 자동 갱신 · 퇴사자는 퇴사한 달까지 보드에 표시, 다음 달부터 자동 제외`+
+      (adm?` · <b>제외</b>=퇴사일 기입 · <b>복원</b>=퇴사일 해제 (서버 정본 즉시 갱신)`:` · 명단 정정은 헤더 <b>관리자 로그인</b> 후`)+
+      ` · 총연차/잔여 = 연차원장 서버 산출</div>`+
+      `<div class="rgrid">`+shown.map(nm=>{
         let info;
         if(isLeaveExempt(nm))info=`<span class="rexempt" title="연차 제도 미적용(보드명단 연차적용=N)">🎫 연차 미적용(프리랜서·외주)</span>`;
         else{
@@ -849,8 +937,17 @@ function renderRoster(){
             ?`<span class="rlbl">총연차</span><b style="color:var(--dim)" title="연차원장 부여 공란 — 매니저 확인 대기">미확정</b>`
             :`<span class="rlbl">총연차</span><b>${f(u.total)}일</b>&nbsp;<span class="rlbl">잔여</span><b style="color:${u.rem<0?'var(--red)':'var(--green)'}">${f(u.rem)}일</b>`;
         }
-        return `<div class="rrow"><span style="font-weight:700">${nm}</span>${retTag(nm)}${info}</div>`;
-      }).join("")+`</div></div>`;
+        const act=adm&&SRV_ROSTER_EDIT
+          ?(RETIRED[nm]
+            ?`<button class="rdel" onclick="rosterRestore('${nm}')" title="퇴사일 해제 — 명단 복원">복원</button>`
+            :`<button class="rdel" onclick="rosterExclude('${nm}')" title="퇴사일 기입 — 다음 달부터 보드 자동 제외">제외</button>`)
+          :"";
+        return `<div class="rrow${RETIRED[nm]?' retd':''}"><span style="font-weight:700">${nm}</span>${retTag(nm)}${info}${act}</div>`;
+      }).join("")+
+      (adm?(SRV_ROSTER_EDIT
+        ?`<button class="radd" onclick="rosterAdd('${filterDept}')">＋ 직원 추가 (서버 명단)</button>`
+        :`<div class="rsub" style="margin-top:8px">🛠 명단 제외·복원·추가 버튼은 백엔드 새 버전 반영 후 활성화됩니다 (배포 대기 중 — 그 외 관리자 기능은 사용 가능)</div>`):"")+
+      `</div></div>`;
     return;
   }
   /* R2 — 편집 잠금 기간엔 명단 수정 진입도 PIN 해제 후 */
@@ -1003,8 +1100,9 @@ function renderMonth(){
       if(s.state==="gap"){gapDays++;gapByDept[dept]=(gapByDept[dept]||0)+1;}
     }
   });
+  const ymM=y+"-"+pad(m+1);   // [2026-07-28] 이 달 기준 퇴사자 자동 제외(퇴사월까지 표시)
   let quotaBad=0, workEmp=0;
-  visDepts().flatMap(x=>x[1]).forEach(nm=>{
+  visDepts().flatMap(x=>x[1]).filter(nm=>activeInYm(nm,ymM)).forEach(nm=>{
     let off=0,any=false;
     for(let d=1;d<=meta.days;d++){
       const v=(schedD[nm]||{})[ymd(y,m,d)];
@@ -1042,7 +1140,7 @@ function renderMonth(){
       h+=`<div class="mcov ${dcls(d)}">${inner}</div>`;
     }
     h+=`</div>`;
-    names.forEach(nm=>{
+    names.filter(nm=>activeInYm(nm,ymM)).forEach(nm=>{
       let off=0,any=false,cells="";
       for(let d=1;d<=meta.days;d++){
         const dt=ymd(y,m,d);
@@ -1102,8 +1200,9 @@ function renderDay(){
     wrap.innerHTML=`<div class="closedbanner">🚪 휴관일 — ${Math.floor((d-1)/7)+1}번째 ${DOW[CLOSED_RULE.weekday]}요일 (매월 ${closedRuleLabel()} 휴관)</div>`;
     return;
   }
+  const ymDay=curDay.slice(0,7);   // [2026-07-28] 이 날짜의 월 기준 퇴사자 자동 제외
   let workN=0, offN=0, noneN=0;
-  visDepts().flatMap(x=>x[1]).forEach(nm=>{
+  visDepts().flatMap(x=>x[1]).filter(nm=>activeInYm(nm,ymDay)).forEach(nm=>{
     const sh=parseCell((schedD[nm]||{})[curDay]);
     if(!sh)noneN++; else if(sh.leave)offN++; else workN++;
   });
@@ -1122,7 +1221,7 @@ function renderDay(){
   const buckets=[];
   for(let t=T0;t<T1;t+=30){
     let c=0;
-    visDepts().flatMap(x=>x[1]).forEach(nm=>{
+    visDepts().flatMap(x=>x[1]).filter(nm=>activeInYm(nm,ymDay)).forEach(nm=>{
       const sh=parseCell((schedD[nm]||{})[curDay]);
       if(!sh||!sh.s)return;   // 휴무여도 반차처럼 근무시간이 있으면 인원에 포함
       const s=mins(sh.s), e=sh.e?mins(sh.e):mins(sh.s)+540;
@@ -1171,7 +1270,7 @@ function renderDay(){
 
   for(const [dept,names] of visDepts()){
     const rows=[],offs=[];
-    names.forEach(nm=>{
+    names.filter(nm=>activeInYm(nm,ymDay)).forEach(nm=>{
       const sh=parseCell((schedD[nm]||{})[curDay]);
       if(sh&&sh.s)rows.push({nm,sh});                       // 반차+근무시간도 막대로 표시
       else if(sh&&sh.leave)offs.push({nm,lv:sh.leave});
@@ -1233,7 +1332,8 @@ function renderWeek(){
       h+=`<div class="wcov">${inner}</div>`;
     });
     h+=`</div>`;
-    names.forEach(nm=>{
+    /* [2026-07-28] 주간이 두 달에 걸치면 그중 한 달이라도 재직 월이면 표시(6월 말~7월 초 주의 6월 퇴사자 기록 보존) */
+    names.filter(nm=>dates.some(d=>activeInYm(nm,ymdOf(d).slice(0,7)))).forEach(nm=>{
       let work=0,off=0,cells="";
       dates.forEach(d=>{
         const dt=ymdOf(d);
@@ -1358,7 +1458,7 @@ function openEdit(nm,dt){
 function openAssign(dept,dt){
   edEmp=null; edDate=dt; edDept=dept; edPick=true;
   document.getElementById("ed_title").textContent=`${dept} · 배치 추가`;
-  const members=DEPTS.find(x=>x[0]===dept)[1];
+  const members=DEPTS.find(x=>x[0]===dept)[1].filter(nm=>activeInYm(nm,dt.slice(0,7)));   // [2026-07-28] 배치 추가 후보에서 퇴사자 제외(대상일 월 기준)
   const free=members.filter(nm=>!((schedD[nm]||{})[dt]));
   const list=free.length?free:members;
   document.getElementById("ed_emp").innerHTML=list.map(n=>`<option>${n}</option>`).join("");
@@ -1427,8 +1527,12 @@ function reqPushDelete(id){
 const REQ_W={"연차":1,"반차오전":0.5,"반차오후":0.5};
 function pendingUseOf(nm){return REQS.filter(r=>r.emp===nm&&r.status==="대기").reduce((a,r)=>a+(REQ_W[r.type]||0),0);}
 function fillReqEmp(){
+  /* [2026-07-28] 신청자 목록에서 퇴사자 제외(현재 월 기준) — 빈 부서 그룹은 생략 */
   document.getElementById("rq_emp").innerHTML=
-    DEPTS.map(([d,ns])=>`<optgroup label="${d}">`+ns.map(n=>`<option>${n}</option>`).join("")+`</optgroup>`).join("");
+    DEPTS.map(([d,ns])=>{
+      const act=ns.filter(n=>activeInYm(n,nowYm()));
+      return act.length?`<optgroup label="${d}">`+act.map(n=>`<option>${n}</option>`).join("")+`</optgroup>`:"";
+    }).join("");
 }
 function rqTypeChange(){
   const t=document.getElementById("rq_type").value;
@@ -1753,7 +1857,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
 renderFilter(); renderRoster(); renderMonth(); renderDay(); renderWeek(); fillReqEmp(); rqTypeChange(); renderReq();
 document.getElementById("rq_date").value=ymdOf(new Date());
 reqSyncBadge(); reqPull();   // 공유 저장(구글시트)에서 신청·결재 정본 로드
-syncBadge(); renderLockChip(); boardPull();   // 셀 정본 = 서버 원장(휴무 탭) — 캐시 선표시 후 서버 동기화
+syncBadge(); renderLockChip(); renderAdminChip(); boardPull();   // 셀 정본 = 서버 원장(휴무 탭) — 캐시 선표시 후 서버 동기화
 document.getElementById("pin_inp").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();pinSubmit();}});
 </script>
 </body>

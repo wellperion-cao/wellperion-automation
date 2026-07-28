@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 스케줄보드 작성 가이드라인</title>
+<meta name="description" content="웰페리온 스케줄보드에 무엇을, 어떻게 적어야 하는지 정리한 전 직원용 작성 규칙 — 휴무 코드 7종, 출근시간 표기, 연차·반차 신청, 월 휴무 기준.">
+<style>
+  :root{
+    --bg:#f3f0ea; --surface:#ffffff; --surface2:#f7f4ee;
+    --ink:#26211d; --dim:#7a7468; --faint:#a29b8e;
+    --line:rgba(60,50,40,.16); --line2:rgba(60,50,40,.28);
+    --bronze:#9a7b4f; --bronze2:#7c6034;
+    --green:#2f8a5a; --blue:#3b6ea8; --amber:#a9842f; --red:#c0463d;
+    --hero:#221f1c; --hero-ink:#f5f2ea; --hero-dim:#a89a89; --hero-accent:#c9ac86;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{overflow-x:hidden}
+  body{font-family:"Pretendard",'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);font-size:15.5px;line-height:1.65;overflow-x:hidden}
+  a{color:inherit}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+  /* ===== 상단 바 ===== */
+  header.top{background:var(--surface);border-bottom:1px solid var(--line2);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:10}
+  .brand{font-size:15.5px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
+  .brand span{color:var(--bronze)}
+  .topbtn{font-family:inherit;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--bronze2);border:1px solid rgba(154,123,79,.4);border-radius:20px;padding:7px 14px;white-space:nowrap;flex-shrink:0}
+  .topbtn:hover{background:rgba(154,123,79,.08)}
+
+  .wrap{max-width:600px;margin:0 auto;padding:0 0 60px}
+
+  /* ===== 히어로 ===== */
+  .hero{background:var(--hero);color:var(--hero-ink);padding:38px 20px 30px;text-align:center}
+  .hero .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:2px;color:var(--hero-accent);text-transform:uppercase;margin-bottom:14px}
+  .hero h1{font-size:26px;font-weight:800;line-height:1.35;margin-bottom:12px;letter-spacing:-.2px}
+  .hero h1 em{font-style:normal;color:var(--hero-accent)}
+  .hero p{font-size:14px;color:var(--hero-dim);max-width:420px;margin:0 auto 24px;line-height:1.7}
+
+  /* 시그니처 — 잘못된 표기 → 올바른 표기 */
+  .fixes{display:flex;flex-direction:column;gap:7px;max-width:330px;margin:0 auto}
+  .fixrow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#2c2823;border:1px solid #423b33;border-radius:10px;padding:9px 14px;font-size:13.5px;font-weight:700}
+  .fixrow .bad{color:#dd8d84;text-decoration:line-through;text-decoration-thickness:2px}
+  .fixrow .arr{color:#8f8274;flex-shrink:0}
+  .fixrow .good{color:#9ecfb1}
+  .fixcap{font-size:11px;color:var(--hero-dim);margin-top:10px}
+
+  .cta{display:inline-flex;align-items:center;gap:7px;background:var(--hero-accent);color:#241d15;font-weight:800;font-size:14px;text-decoration:none;border-radius:12px;padding:13px 22px;margin-top:22px}
+  .cta:hover{background:#d8bd9c}
+  .ctasub{display:block;font-size:12px;color:var(--hero-dim);margin-top:12px}
+  .ctasub a{color:var(--hero-accent);font-weight:700}
+
+  /* ===== 본문 공통 ===== */
+  section{padding:26px 18px 0}
+  .sectitle{font-size:12px;font-weight:800;color:var(--bronze2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+
+  .card{background:var(--surface);border:1px solid var(--line2);border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 2px 10px rgba(40,32,20,.05)}
+  .card h3{font-size:15.5px;font-weight:800;margin-bottom:10px}
+  .card h3 small{font-weight:700;font-size:12px;color:var(--dim)}
+  .card p.lead{color:var(--dim);font-size:13.5px;line-height:1.75;margin-bottom:12px}
+  .card p.lead b{color:var(--ink)}
+
+  .codepill{display:inline-flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--line2);border-radius:7px;padding:2px 8px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+  .codepill.off{background:#e3ddd3;color:#6b6156;border-color:#cfc6b8}
+  .codepill.bc{background:#e2eef9;color:#3b6ea8;border-color:#bcd6ec}
+
+  /* 원칙 리스트 */
+  .plist{display:flex;flex-direction:column}
+  .prow{display:flex;gap:13px;align-items:flex-start;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .prow:last-child{border-bottom:none;padding-bottom:0}
+  .prow:first-child{padding-top:0}
+  .pno{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--bronze);color:#fff;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .ptext{flex:1;min-width:0;font-size:14px;color:var(--dim);line-height:1.7}
+  .ptext b{color:var(--ink)}
+
+  /* 표 */
+  .tcard{background:var(--surface);border:1px solid var(--line2);border-radius:16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(40,32,20,.05);overflow:hidden}
+  .tcard .thead{padding:16px 18px 4px}
+  .tcard .thead h3{font-size:15px;font-weight:800}
+  .tcard .thead p{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.65}
+  .twrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.gtab{width:100%;border-collapse:collapse;font-size:13px}
+  .gtab th{background:var(--surface2);font-size:11.5px;color:var(--dim);font-weight:800;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line2);white-space:nowrap;letter-spacing:.2px}
+  .gtab td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6;color:var(--dim)}
+  .gtab tr:last-child td{border-bottom:none}
+  .gtab td b{color:var(--ink)}
+  .gtab td.c{white-space:nowrap}
+  .ok-t{color:var(--green);font-weight:800}
+  .no-t{color:var(--red);font-weight:800}
+  .tfoot{padding:12px 18px 16px;font-size:12.5px;color:var(--dim);line-height:1.7;border-top:1px dashed var(--line)}
+  .tfoot b{color:var(--ink)}
+
+  .callout{background:var(--surface2);border:1px solid var(--line2);border-radius:11px;padding:12px 14px;font-size:13px;color:var(--dim);margin-top:12px;line-height:1.7}
+  .callout b{color:var(--ink)}
+  .callout.warn{background:rgba(192,70,61,.06);border-color:rgba(192,70,61,.3);color:#8a3a33}
+  .callout.warn b{color:var(--red)}
+  .callout.ok{background:rgba(47,138,90,.07);border-color:rgba(47,138,90,.28);color:#2c6b48}
+  .callout.ok b{color:var(--green)}
+
+  /* 수식 박스 */
+  .formula{background:var(--hero);color:var(--hero-ink);border-radius:12px;padding:14px 16px;text-align:center;font-weight:800;font-size:14px;letter-spacing:.2px;margin-bottom:12px}
+  .formula span{color:var(--hero-accent)}
+
+  .badge-ex{display:inline-block;border-radius:12px;padding:2px 9px;font-size:11.5px;font-weight:800}
+  .badge-ok{background:rgba(47,138,90,.12);color:var(--green)}
+  .badge-no{background:rgba(192,70,61,.1);color:var(--red)}
+
+  /* 색상 안내 */
+  .legendlist{display:flex;flex-direction:column;gap:9px}
+  .legrow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line2);border-radius:12px;padding:11px 14px}
+  .swatch{flex-shrink:0;width:42px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+  .sw-work{background:#fdfbf7;color:#241d15;border:1px solid #e5dcc9}
+  .sw-off{background:#e3ddd3;color:#6b6156;border:1px solid #cfc6b8}
+  .sw-dim{background:#efeae2;color:#b3aa9c;border:1px solid #ddd5c8}
+  .sw-bc{background:#e2eef9;color:#3b6ea8;border:1px solid #bcd6ec}
+  .sw-today{background:transparent;border:2px solid var(--red)}
+  .sw-slot{background:var(--surface2);color:var(--dim);border:1px solid var(--line2)}
+  .legrow .lt{font-size:13.5px;font-weight:700}
+  .legrow .ls{font-size:11.5px;color:var(--dim);margin-top:1px}
+
+  /* FAQ */
+  .faq{background:var(--surface2);border:1px solid var(--line2);border-radius:16px;padding:18px 20px;margin-bottom:12px}
+  .faq h3{font-size:14px;font-weight:800;margin-bottom:7px;line-height:1.5}
+  .faq h3 .q{color:var(--bronze2);margin-right:5px}
+  .faq p{font-size:13.5px;color:var(--dim);line-height:1.75}
+  .faq p b{color:var(--ink)}
+  .faq p+p{margin-top:7px}
+
+  footer{padding:30px 18px 10px;text-align:center}
+  footer .fbrand{font-size:13px;font-weight:800;color:var(--bronze2);margin-bottom:6px}
+  footer .flink{display:inline-block;font-size:12.5px;color:var(--bronze2);text-decoration:none;border-bottom:1px dashed var(--bronze);margin:0 6px 14px}
+  footer .fnote{font-size:11px;color:var(--faint)}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">WELL<span>PERION</span></div>
+  <a class="topbtn" href="schedule-guide.html">사용 가이드(조작 방법) →</a>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">직원용 안내 · 작성 규칙</div>
+    <h1>스케줄보드,<br><em>이렇게</em> 적습니다</h1>
+    <p>적는 방법이 사람마다 다르면 근무시간 집계와 휴무·연차 계산이 어긋납니다. 이 페이지는 <b style="color:var(--hero-ink)">무엇을, 어떻게 적어야 하는지</b>만 정리한 작성 규칙입니다.</p>
+
+    <div class="fixes">
+      <div class="fixrow"><span class="bad">마감</span><span class="arr">→</span><span class="good">13:30</span></div>
+      <div class="fixrow"><span class="bad">휴(7월소급)</span><span class="arr">→</span><span class="good">휴</span></div>
+      <div class="fixrow"><span class="bad">−</span><span class="arr">→</span><span class="good">빈칸</span></div>
+    </div>
+    <div class="fixcap">가장 자주 나오는 세 가지 — 아래에서 이유를 설명합니다</div>
+
+    <a class="cta" href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule.html" target="_blank" rel="noopener">스케줄보드 열기 →</a>
+    <span class="ctasub">칸 누르기·저장·인쇄 등 화면 조작 방법은 <a href="schedule-guide.html">사용 가이드</a>에서 확인하세요.</span>
+  </div>
+
+  <!-- ① 작성 원칙 -->
+  <section>
+    <div class="sectitle">① 한눈에 보는 작성 원칙</div>
+
+    <div class="card">
+      <h3>기억하실 것은 세 가지입니다</h3>
+      <div class="plist">
+        <div class="prow"><div class="pno" style="background:var(--green)">1</div><div class="ptext"><b>휴 · 대휴 · 공휴와 출근시간</b>은 별도 신청·결재가 필요 없습니다. <b>작성 기간(매월 25일~말일)</b>에 다음 달 휴무표를 만들면서 <b>본인이 직접</b> 적습니다.</div></div>
+        <div class="prow"><div class="pno" style="background:var(--blue)">2</div><div class="ptext"><b>연차 · 반차</b>만 <b>[신청·결재] 탭에서 신청 → 승인</b>되어야 반영됩니다.</div></div>
+        <div class="prow"><div class="pno" style="background:var(--amber)">3</div><div class="ptext"><b>잠긴 기간(1일~24일)에 근무시간을 바꿔야 하면</b> [신청·결재]의 <b>근무변경</b>으로 신청합니다 — 승인되면 잠금과 상관없이 반영됩니다.</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>작성 원칙 다섯 가지</h3>
+      <div class="plist">
+        <div class="prow"><div class="pno">1</div><div class="ptext"><b>한 칸 = 한 사람의 그날 기록 1건</b>입니다. 쉬는 날이면 <b>휴무 코드</b>, 일하는 날이면 <b>출근시간</b>(필요하면 출근·퇴근)을 적습니다.</div></div>
+        <div class="prow"><div class="pno">2</div><div class="ptext">휴무 코드는 정해진 <b>7가지 글자 그대로</b>만 씁니다. <span class="codepill off">휴</span> <span class="codepill off">연차</span> <span class="codepill off">반차오전</span> <span class="codepill off">반차오후</span> <span class="codepill off">공휴</span> <span class="codepill off">대휴</span> <span class="codepill off">휴관</span></div></div>
+        <div class="prow"><div class="pno">3</div><div class="ptext">출근시간은 <span class="codepill">05:40</span> 처럼 <b>두 자리 : 두 자리</b>로 적습니다. <b>오픈·마감 같은 조 이름은 쓰지 않습니다.</b></div></div>
+        <div class="prow"><div class="pno">4</div><div class="ptext"><b>연차와 반차는 칸에 직접 못 적습니다.</b> 반드시 <b>[신청·결재] 탭에서 신청 → 승인</b>을 받아야 반영됩니다.</div></div>
+        <div class="prow"><div class="pno">5</div><div class="ptext">아직 정해지지 않았거나 해당 없는 날은 <b>빈칸으로 두세요.</b> <span class="codepill">-</span> 같은 기호로 채우지 않습니다.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② 입력 값 표준표 -->
+  <section>
+    <div class="sectitle">② 입력 값 표준표</div>
+
+    <div class="tcard">
+      <div class="thead">
+        <h3>휴무 코드 7가지 <small>— 이 글자만 인정됩니다</small></h3>
+      </div>
+      <div class="twrap">
+        <table class="gtab">
+          <thead><tr><th>코드</th><th>언제 쓰나요</th><th>직접 적을 수 있나요</th></tr></thead>
+          <tbody>
+            <tr><td class="c"><span class="codepill off">휴</span></td><td>정기 휴무(그 달에 배정된 쉬는 날)</td><td><span class="ok-t">✅ 직접 입력</span></td></tr>
+            <tr><td class="c"><span class="codepill off">공휴</span></td><td><b>법정공휴일</b>에 쉬었을 때</td><td><span class="ok-t">✅ 직접 입력</span></td></tr>
+            <tr><td class="c"><span class="codepill off">대휴</span></td><td>공휴일에 근무했을 때 — <b>다른 날을 대휴로 대신 쉽니다</b></td><td><span class="ok-t">✅ 직접 입력</span></td></tr>
+            <tr><td class="c"><span class="codepill off">휴관</span></td><td>회사 휴관일</td><td><span class="ok-t">✅ 가능</span>하지만 <b>적을 필요 없음</b>(자동 표기, ⑤ 참고)</td></tr>
+            <tr><td class="c"><span class="codepill bc">연차</span></td><td>연차 1일 사용</td><td><span class="no-t">❌ 신청·결재 필요</span></td></tr>
+            <tr><td class="c"><span class="codepill bc">반차오전</span></td><td>오전 반차(0.5일)</td><td><span class="no-t">❌ 신청·결재 필요</span></td></tr>
+            <tr><td class="c"><span class="codepill bc">반차오후</span></td><td>오후 반차(0.5일)</td><td><span class="no-t">❌ 신청·결재 필요</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        화면에서는 <span class="codepill off">휴</span> <span class="codepill off">공</span> <span class="codepill off">대</span> <span class="codepill off">관</span> 처럼 한 글자로 입력해도 정식 코드로 자동 변환됩니다.
+        <div class="callout warn" style="margin-top:10px">코드에 <b>괄호나 메모를 붙이지 마세요.</b> 예를 들어 <b>휴(7월소급)</b> 은 <b>휴</b> 와 다른 값으로 저장되어 <b>휴무 개수 집계에서 빠집니다.</b></div>
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead">
+        <h3>출근시간(근무일) 표준형</h3>
+      </div>
+      <div class="twrap">
+        <table class="gtab">
+          <thead><tr><th>상황</th><th>이렇게 적어주세요</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>기본(출근시간만)</td><td class="c"><span class="codepill">05:40</span></td><td>24시간제 · 앞자리 0 포함 · 콜론(:) 사용</td></tr>
+            <tr><td>출근·퇴근을 같이 적을 때</td><td class="c"><span class="codepill">13:30 22:30</span></td><td>사이를 <b>공백 한 칸</b>으로 띄웁니다</td></tr>
+            <tr><td>근무 정보가 없거나 미정</td><td class="c"><b>빈칸</b></td><td>아무 기호도 넣지 않습니다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        · 화면에서는 숫자만 눌러도 자동으로 형식이 맞춰집니다. (540 → 05:40, 1330 2230 → 13:30 22:30)<br>
+        · 분 단위 제한은 없습니다. <b>실제 출근한 시각 그대로</b> 적어 주세요.<br>
+        · 한 칸에 들어가는 글자 수는 <b>30자까지</b>입니다.
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead">
+        <h3>이렇게 적어주세요 / 이렇게 적지 마세요</h3>
+        <p>실제 보드에서 발견된 표기를 기준으로 정리했습니다.</p>
+      </div>
+      <div class="twrap">
+        <table class="gtab">
+          <thead><tr><th>❌ 이렇게 적지 마세요</th><th>⭕ 이렇게 적어주세요</th><th>왜 안 되나요</th></tr></thead>
+          <tbody>
+            <tr><td><b>마감 · 오픈 · 오/마</b></td><td><span class="codepill">13:30</span> <span class="codepill">05:40</span> 처럼 <b>실제 출근시각</b></td><td>조 이름만으로는 몇 시에 나왔는지 알 수 없어 근무시간 집계가 안 됩니다</td></tr>
+            <tr><td><b>-</b></td><td><b>빈칸</b> (또는 정확한 코드)</td><td>휴무인지, 미정인지, 해당 없음인지 구분되지 않습니다</td></tr>
+            <tr><td><b>쇼</b> 등 부서에서만 쓰는 자체 약어</td><td>근무면 <b>출근시각</b>, 휴무면 <b>코드 7종</b></td><td>정의되지 않은 글자는 시스템이 근무/휴무를 판단하지 못합니다</td></tr>
+            <tr><td><b>휴(7월소급)</b></td><td><span class="codepill off">휴</span></td><td>괄호가 붙으면 다른 값이 되어 휴무 개수에서 누락됩니다</td></tr>
+            <tr><td>반차인데 <b>13:40 · 08:40 15:00</b> 처럼 단축 시간만 적기</td><td><b>신청·결재로</b> <span class="codepill bc">반차오전</span>/<span class="codepill bc">반차오후</span></td><td>연차 잔여에서 <b>0.5일이 차감되지 않습니다</b></td></tr>
+            <tr><td>연차·대휴를 그냥 <b>휴</b> 로 적기</td><td><b>연차</b>는 신청, 대휴는 <span class="codepill off">대휴</span> 로</td><td>연차 사용 이력이 남지 않고 잔여가 실제와 어긋납니다</td></tr>
+            <tr><td>법정공휴일이 아닌 날에 <b>공휴</b></td><td>정기 휴무면 <span class="codepill off">휴</span>, 대체휴무면 <span class="codepill off">대휴</span></td><td><b>공휴</b>는 법정공휴일 전용입니다</td></tr>
+            <tr><td>한 칸에 코드와 조 이름을 같이 적기</td><td>코드 <b>또는</b> 시간 하나만</td><td>칸 하나가 기록 한 줄입니다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        💡 반차일에 실제로 근무한 시간은 <b>신청서에 적으면</b> 승인될 때 자동으로 함께 표시됩니다. 칸에 직접 붙여 쓸 필요가 없습니다.<br>
+        💡 반차의 오전/오후는 시계 시각이 아니라 <b>그날 본인 근무시간</b> 기준입니다 — <b>오전 반차</b> = 근무 앞부분을 쉬고 <b>늦게 출근</b>, <b>오후 반차</b> = 정상 출근해 앞부분을 근무하고 <b>일찍 퇴근</b>.
+      </div>
+    </div>
+
+    <div class="tcard">
+      <div class="thead">
+        <h3>부서별 참고 시각 <small>— 값을 새로 만들지 마세요</small></h3>
+        <p>보드가 오픈·마감 공백을 판정할 때 쓰는 기준입니다.</p>
+      </div>
+      <div class="twrap">
+        <table class="gtab">
+          <thead><tr><th>부서</th><th>평일 오픈 / 마감(출근→퇴근)</th><th>주말·공휴일 오픈 / 마감(출근→퇴근)</th><th>특칙</th></tr></thead>
+          <tbody>
+            <tr><td class="c"><b>운영</b></td><td class="c">05:40 / 13:30 → 22:30</td><td class="c">07:40 / 13:00 → 20:00</td><td>—</td></tr>
+            <tr><td class="c"><b>시설</b></td><td class="c">05:00 / 13:00 → 22:00</td><td class="c">07:00 / 13:00 → 20:30</td><td>—</td></tr>
+            <tr><td class="c"><b>지원(남)</b></td><td class="c">06:00 / 14:00 → 22:40</td><td class="c">08:00 / 14:00 → 22:40</td><td>일요일·공휴일 <b>2인 필수</b></td></tr>
+            <tr><td class="c"><b>지원(여)</b></td><td class="c">06:00 / 14:00 → 22:40</td><td class="c">08:00 / 14:00 → 22:40</td><td>일요일·공휴일 <b>2인 필수</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        <b>부서별로 최근 실제 쓰이고 있는 출근시각</b>입니다. 새 값을 만들기 전에 먼저 확인해 주세요. (운영 부서는 시각 종류가 많아 아래 주의를 참고해 주세요.)
+      </div>
+      <div class="twrap">
+        <table class="gtab">
+          <thead><tr><th>부서</th><th>실제 사용 중인 출근시각</th></tr></thead>
+          <tbody>
+            <tr><td class="c"><b>시설</b></td><td>05:00 · 08:00 · 11:00 · 12:00 · 13:00</td></tr>
+            <tr><td class="c"><b>지원(남)</b></td><td>06:00 · 08:00 · 09:00 · 10:00 · 14:00</td></tr>
+            <tr><td class="c"><b>지원(여)</b></td><td>05:20 · 05:40 · 06:00 · 07:00 · 08:00 · 09:00 · 11:00 · 13:00 · 14:00</td></tr>
+            <tr><td class="c"><b>지원·주차</b></td><td>08:40</td></tr>
+            <tr><td class="c"><b>수영</b></td><td>05:30 · 08:00 · 14:00</td></tr>
+            <tr><td class="c"><b>PT</b></td><td>06:00 · 08:00 · 09:00 · 14:00 · 16:00</td></tr>
+            <tr><td class="c"><b>필라테스(PL)</b></td><td>08:00 · 10:00 · 14:00</td></tr>
+            <tr><td class="c"><b>골프</b></td><td>06:00 · 09:00 · 10:00 · 14:00</td></tr>
+            <tr><td class="c"><b>뮤지컬</b></td><td>10:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        <div class="callout warn" style="margin-top:0"><b>운영 부서 주의</b> — 교대·단축근무가 몰려 있어 사용하는 시각이 가장 많습니다. 오타가 가장 잦은 부서이니 저장 후 값을 한 번 더 확인해 주세요.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 직접 vs 신청 -->
+  <section>
+    <div class="sectitle">③ 직접 적는 것 vs 신청해야 하는 것</div>
+
+    <div class="tcard">
+      <div class="twrap" style="border-radius:16px 16px 0 0">
+        <table class="gtab">
+          <thead><tr><th>구분</th><th>처리 방법</th></tr></thead>
+          <tbody>
+            <tr><td>출근시간 (<span class="codepill">05:40</span>, <span class="codepill">13:30 22:30</span>)</td><td><b>칸에 직접 입력</b></td></tr>
+            <tr><td><span class="codepill off">휴</span> <span class="codepill off">공휴</span> <span class="codepill off">대휴</span> <span class="codepill off">휴관</span></td><td><b>칸에 직접 입력</b> — 별도 신청·결재가 필요 없습니다. 작성 기간에 휴무표를 만들면서 직접 배치합니다</td></tr>
+            <tr><td><span class="codepill bc">연차</span> <span class="codepill bc">반차오전</span> <span class="codepill bc">반차오후</span></td><td>⛔ 직접 입력 불가 → <b>[신청·결재] 탭에서 신청 → 승인</b></td></tr>
+            <tr><td>잠긴 기간(1일~24일)에 근무시간을 바꾸는 경우</td><td><b>[신청·결재] 탭 → "근무변경"</b> 으로 신청</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        ▸ <b>자유 수정 기간(25일~말일)</b> 에는 출근시간을 칸에서 바로 고치시면 됩니다. <b>잠긴 기간(1일~24일)</b> 에 시간을 바꿔야 하면 <b>근무변경</b> 으로 신청해 주세요 — 승인되면 잠금과 상관없이 반영됩니다.
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="lead" style="margin-bottom:0">연차·반차를 칸에 적으면 저장되지 않고 안내창이 뜨며, <b>[예]를 누르면 신청 화면으로 이동하면서 이름·종류·날짜가 자동으로 채워집니다.</b></p>
+    </div>
+
+    <div class="tcard">
+      <div class="thead"><h3>신청할 때 적는 것</h3></div>
+      <div class="twrap">
+        <table class="gtab">
+          <thead><tr><th>항목</th><th>내용</th></tr></thead>
+          <tbody>
+            <tr><td class="c"><b>신청자</b></td><td>본인 이름 선택</td></tr>
+            <tr><td class="c"><b>신청 종류</b></td><td>연차(1일) / 반차·오전(0.5일) / 반차·오후(0.5일) / 근무변경(시간 변경)</td></tr>
+            <tr><td class="c"><b>대상 일자</b></td><td><b>지난 날짜는 신청할 수 없습니다</b></td></tr>
+            <tr><td class="c"><b>결재자</b></td><td>연차·반차만 선택합니다 (근무변경은 결재자 칸이 없습니다)</td></tr>
+            <tr><td class="c"><b>근무시간</b></td><td>근무변경은 <b>출근시간 필수</b> · 반차는 그날 근무한 시간을 적으면 함께 표시됩니다</td></tr>
+            <tr><td class="c"><b>사유</b></td><td>선택 입력</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        <b>반차의 오전/오후 기준</b> — 반차는 그날 <b>본인 근무시간의 절반(0.5일)</b>을 쉬는 것입니다. 출근시간이 부서·개인마다 달라 <b>"몇 시부터가 오후" 같은 고정 기준은 없습니다.</b> 근무의 앞부분을 쉬고 늦게 출근하면 <b>반차·오전</b>, 정상 출근해 앞부분을 근무하고 일찍 퇴근하면 <b>반차·오후</b>를 선택하세요. 그날 <b>실제 근무한 시각은 신청서에 적어 주세요</b> — 승인되면 보드에 함께 표시됩니다(칸에 직접 붙여 쓰지 않습니다). 판단이 애매하면 관리자에게 문의해 주세요.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>알아두실 점</h3>
+      <div class="plist">
+        <div class="prow"><div class="pno">·</div><div class="ptext"><b>내 잔여 연차는 신청 화면에서 바로 확인됩니다.</b> 신청자와 종류를 고르면 사용·잔여·결재 대기 일수가 표시됩니다. (날짜별 사용 내역 조회는 관리자 확인용입니다)</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">잔여 연차가 부족하면 신청 단계에서 안내와 함께 막힙니다.</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext"><b>강습 6개 부서(수영 · PT · 필라테스 · 골프 · 체조 · 스쿼시)는 위탁 계약으로 연차 제도가 적용되지 않습니다.</b> 그 밖의 위탁·외주 계약 인원도 연차 제도가 적용되지 않습니다. <b>본인 적용 여부는 화면의 "연차 미적용" 표시로 확인</b>하실 수 있습니다.</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">신청은 <b>승인되어야</b> 보드에 반영됩니다. 반려되면 보드에는 아무것도 기록되지 않습니다. 다만 그 날짜에 <b>이미 직접 적어 둔 값이 있으면 그대로 남으므로</b>, 자유 수정 기간에 본인이 고치시거나 관리자에게 알려 주세요.</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">근무변경 신청은 연차를 차감하지 않습니다.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 기간 규칙 -->
+  <section>
+    <div class="sectitle">④ 작성(수정) 기간 규칙</div>
+    <div class="tcard">
+      <div class="twrap" style="border-radius:16px 16px 0 0">
+        <table class="gtab">
+          <thead><tr><th>기간</th><th>가능 여부</th></tr></thead>
+          <tbody>
+            <tr><td class="c"><b>매월 25일 ~ 말일</b></td><td>🔓 누구나 자유롭게 작성·수정할 수 있습니다</td></tr>
+            <tr><td class="c">그 밖의 기간(1일~24일)</td><td>🔒 잠겨 있습니다 — <b>관리자가 잠금을 해제해야</b> 수정할 수 있습니다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        · 기준은 <b>오늘 접속한 날짜</b>입니다. 편집하려는 칸이 몇 월인지는 상관없습니다.<br>
+        &nbsp;&nbsp;→ 25일에 접속하면 지난달·다음 달 칸도 모두 수정할 수 있고, 20일에 접속하면 어느 달 칸이든 잠겨 있습니다.<br>
+        · 화면 위쪽 자물쇠 표시로 현재 상태를 알 수 있습니다. <span class="badge-ex badge-ok">🔓 초록 = 자유 수정 기간</span> <span class="badge-ex badge-no">🔒 빨강 = 편집 잠김</span><br>
+        · 다음 달 휴무표(<b>휴 · 대휴</b> 배치)는 이 작성 기간에 <b>본인이 직접 작성</b>합니다 — 별도 신청·결재가 필요 없습니다.<br>
+        · <b>잠긴 기간에 급히 고쳐야 하면 관리자에게 문의해 주세요.</b> 잠긴 기간의 근무시간 변경은 <b>근무변경</b> 신청으로 처리됩니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ 월 휴무 기준 -->
+  <section>
+    <div class="sectitle">⑤ 월 휴무 기준과 휴관일</div>
+
+    <div class="card">
+      <h3>그 달에 필요한 휴무 일수</h3>
+      <div class="formula">필요 휴무 = <span>6일</span> + 그 달 공휴일 중 <span>월~금(평일)</span>인 날의 수</div>
+      <p class="lead" style="margin-bottom:0">토요일·일요일에 걸린 공휴일은 더하지 않습니다.<br>
+      이름 옆 <span class="badge-ex badge-ok">휴무 4/6</span> 배지는 <b>인정된 휴무 일수 / 그 달 필요한 일수</b>입니다. 왼쪽 숫자에는 직접 적은 <b>휴 · 공휴 · 대휴</b> 에 <b>그 달 휴관일 수가 자동으로 더해져</b> 있습니다. 숫자가 맞으면 초록, 다르면 빨강으로 표시됩니다.</p>
+    </div>
+
+    <div class="tcard">
+      <div class="thead"><h3>무엇이 이 개수에 들어가나요</h3></div>
+      <div class="twrap">
+        <table class="gtab">
+          <thead><tr><th>코드</th><th>휴무 개수 반영</th></tr></thead>
+          <tbody>
+            <tr><td class="c"><span class="codepill off">휴</span> <span class="codepill off">공휴</span> <span class="codepill off">대휴</span></td><td><span class="ok-t">✅ 포함</span></td></tr>
+            <tr><td class="c"><span class="codepill off">휴관</span></td><td>⭕ 그 달 휴관일 수만큼 <b>자동으로 더해집니다</b> (직접 적지 않아도 되고, <b>적어도 두 번 세지 않습니다</b>)</td></tr>
+            <tr><td class="c"><span class="codepill bc">연차</span> <span class="codepill bc">반차오전</span> <span class="codepill bc">반차오후</span></td><td><span class="no-t">❌ 포함되지 않습니다</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        연차를 많이 쓴 달에는 <b>휴무 N/M</b> 배지가 빨간색으로 보일 수 있습니다. 연차는 휴무 개수와 별개로 관리되기 때문입니다.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>휴관일</h3>
+      <div class="plist">
+        <div class="prow"><div class="pno">·</div><div class="ptext">보드가 <b>자동으로</b> 휴관 표시를 넣는 날은 <b>매월 둘째·넷째 일요일</b>입니다. 그 밖의 일요일은 정상 운영합니다.</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">신정·명절 연휴처럼 <b>별도로 정해지는 휴관일은 자동 표기되지 않으니</b>, 그날 표기는 <b>관리자 안내에 따라</b> 주세요.</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">보드에 <span class="codepill off">관</span> 이 자동으로 흐리게 표시됩니다. <b>따로 적지 않으셔도 됩니다.</b></div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">휴관일에 <span class="codepill off">휴</span> 를 <b>적지 마세요.</b> 휴관일은 개인 휴무를 소진하는 날이 아닙니다.</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">휴관일에 <b>근무하셨다면 출근시간을 적어 주세요.</b></div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">휴관일에는 오픈·마감 배치 경고가 계산되지 않습니다.</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>공휴일</h3>
+      <div class="plist">
+        <div class="prow"><div class="pno">·</div><div class="ptext">공휴일은 날짜 숫자가 <b style="color:var(--red)">빨간색</b>으로 표시되고, 주간 보드에는 공휴일 이름이 함께 나옵니다.</div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">공휴일이라고 칸이 자동으로 <span class="codepill off">공휴</span> 가 되지는 않습니다. <b>그날 쉬었으면 직접 공휴 를 적어 주세요.</b></div></div>
+        <div class="prow"><div class="pno">·</div><div class="ptext">공휴일에는 <b>주말과 같은 오픈·마감 기준</b>이 적용됩니다.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑥ 색상 안내 -->
+  <section>
+    <div class="sectitle">⑥ 색이 뜻하는 것</div>
+    <div class="legendlist">
+      <div class="legrow">
+        <div class="swatch sw-work">5:40</div>
+        <div><div class="lt">근무 — 출근시각</div><div class="ls">배경 없는 진한 숫자로 표시됩니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-off">휴</div>
+        <div><div class="lt">쉬는 날 (휴 · 연 · 공 · 대)</div><div class="ls">회색 칸 — 직접 적은 관(휴관)은 진한 회색으로 보입니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-dim">관</div>
+        <div><div class="lt">자동 표기된 휴관일</div><div class="ls">흐린 회색 — 따로 적지 않아도 표시됩니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-bc">반</div>
+        <div><div class="lt">반차 (오전 · 오후)</div><div class="ls">근무를 함께 하는 날이라 하늘색으로 구분됩니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-today"></div>
+        <div><div class="lt">오늘 날짜</div><div class="ls">빨간 테두리로 강조됩니다</div></div>
+      </div>
+      <div class="legrow">
+        <div class="swatch sw-slot">✓</div>
+        <div><div class="lt">✓ / 오 · 마 · 2</div><div class="ls">그 부서의 오픈·마감 인원이 채워졌는지 / 비었는지 표시입니다</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑦ Q&A -->
+  <section>
+    <div class="sectitle">⑦ 자주 하는 실수 Q&amp;A</div>
+
+    <div class="faq">
+      <h3><span class="q">Q1.</span>"오픈", "마감" 이라고 적으면 안 되나요?</h3>
+      <p>네, 안 됩니다. 조 이름만으로는 몇 시에 출근했는지 알 수 없어 근무시간이 집계되지 않습니다. <b>실제 출근시각</b>(05:40, 13:30)으로 적어 주세요. 오픈·마감 인원이 채워졌는지는 시스템이 시간을 보고 알아서 판정합니다.</p>
+    </div>
+
+    <div class="faq">
+      <h3><span class="q">Q2.</span>아직 안 정해진 날은 "-" 로 표시해도 되나요?</h3>
+      <p>아니요. <b>빈칸으로 두세요.</b> "-" 는 쉬는 날인지, 미정인지, 해당 없음인지 구분할 수 없습니다. 잘못 적은 값은 칸을 비우고 Enter를 누르면 지워집니다.</p>
+    </div>
+
+    <div class="faq">
+      <h3><span class="q">Q3.</span>반차 쓴 날, 실제 근무한 시간(13:40)만 적으면 되지 않나요?</h3>
+      <p>안 됩니다. 시간만 적으면 시스템은 <b>그냥 늦게 출근한 근무일</b>로 봅니다. 연차 잔여에서 0.5일이 차감되지 않습니다. 반차는 반드시 <b>[신청·결재]에서 반차오전/반차오후로 신청</b>하고, 그날 근무한 시간은 신청서 안에 적어 주세요.</p>
+      <p>오전/오후의 기준은 시계 시각이 아니라 <b>그날 본인 근무시간</b>입니다. 근무 앞부분을 쉬고 <b>늦게 출근</b>하면 반차오전, 정상 출근해 앞부분을 근무하고 <b>일찍 퇴근</b>하면 반차오후입니다. 출근시간이 부서·개인마다 달라 고정된 시각 경계는 없으며, 판단이 애매하면 관리자에게 문의해 주세요.</p>
+    </div>
+
+    <div class="faq">
+      <h3><span class="q">Q4.</span>연차나 대휴도 그냥 "휴" 로 적으면 안 되나요?</h3>
+      <p>안 됩니다. 셋은 성격이 다릅니다. <b>휴</b>는 정기 휴무, <b>대휴</b>는 공휴일 근무에 대한 대체 휴무, <b>연차</b>는 신청·결재로만 반영되는 연차 사용입니다. 휴 로 뭉뚱그리면 연차 사용 이력이 남지 않아 잔여가 실제와 달라집니다.</p>
+    </div>
+
+    <div class="faq">
+      <h3><span class="q">Q5.</span>휴관일에도 "휴관" 을 꼭 적어야 하나요?</h3>
+      <p>아니요. <b>자동으로 표시되므로 적지 않으셔도 됩니다.</b> 다만 휴관일에 휴 를 적는 것은 잘못된 표기입니다. 그날 근무하셨다면 출근시간을 적어 주세요.</p>
+    </div>
+
+    <div class="faq">
+      <h3><span class="q">Q6.</span>법정공휴일이 아닌 날에 특별히 쉬었는데 "공휴" 로 적어도 되나요?</h3>
+      <p>아니요. <b>공휴 는 법정공휴일 전용</b>입니다. 정기 휴무면 휴, 공휴일 근무에 대한 대체 휴무면 대휴 로 적어 주세요.</p>
+    </div>
+
+    <div class="faq">
+      <h3><span class="q">Q7.</span>저장이 안 되고 원래 값으로 되돌아갑니다.</h3>
+      <p>아래를 확인해 주세요.</p>
+      <p>· 형식이 맞나요 → 코드 7종 그대로이거나, 시각(HH:MM) 형태인지 (25:99 같은 시각은 저장되지 않습니다)<br>
+      · 오늘이 <b>25일 이전</b>인가요 → 잠금 기간입니다. 관리자에게 문의해 주세요<br>
+      · <b>연차·반차</b> 를 직접 적으셨나요 → 신청·결재로만 반영됩니다<br>
+      · 화면 위 안내 문구에 사유가 표시됩니다. 그대로 알려 주시면 빠르게 도와드릴 수 있습니다</p>
+    </div>
+
+    <div class="faq">
+      <h3><span class="q">Q8.</span>다른 사람이 방금 적었다는데 제 화면에 안 보입니다.</h3>
+      <p>서버 화면 갱신에 <b>최대 1분</b> 걸립니다. 잠시 후 새로고침해 주세요. 여러 명이 동시에 많이 저장하면 잠시 저장이 지연될 수 있으니, 그때는 조금 기다렸다 다시 시도해 주세요.</p>
+    </div>
+  </section>
+
+  <!-- ⑧ 문의처 -->
+  <section>
+    <div class="sectitle">⑧ 문의처</div>
+    <div class="tcard">
+      <div class="twrap" style="border-radius:16px 16px 0 0">
+        <table class="gtab">
+          <thead><tr><th>이런 경우</th><th>문의</th></tr></thead>
+          <tbody>
+            <tr><td>잠금 기간(1~24일)에 수정이 필요할 때</td><td class="c"><b>관리자(매니저)</b></td></tr>
+            <tr><td>이름·부서 표기가 실제와 다를 때</td><td class="c"><b>관리자(매니저)</b></td></tr>
+            <tr><td>연차 부여·잔여 숫자가 실제와 다를 때</td><td class="c"><b>관리자(매니저)</b></td></tr>
+            <tr><td>반려된 신청 관련 칸 정리가 필요할 때</td><td class="c"><b>관리자(매니저)</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tfoot">
+        이름은 보드 명단에 등록된 표기와 <b>정확히 일치</b>해야 기록이 연결됩니다. 표기가 다르면 직접 고치지 마시고 관리자에게 알려 주세요.
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="fbrand">WELLPERION</div>
+    <div>
+      <a class="flink" href="https://wellperion-cao.github.io/wellperion-automation/chro/hub/schedule.html" target="_blank" rel="noopener">스케줄보드 바로가기</a>
+      <a class="flink" href="schedule-guide.html">사용 가이드(조작 방법)</a>
+    </div>
+    <div class="fnote">웰페리온 인사 운영 허브 · 직원용 작성 가이드라인 · 2026-07-28</div>
+  </footer>
+
+</div>
+</body>
+</html>
