@@ -123,12 +123,27 @@ function _regCatByLabel(label) {
 var REG_NO_PHOTO_CATS = { praise: true, voice: true };
 
 // 카테고리 키에 대한 전체 헤더 배열 반환 ({key,label}[])
+// 맨 뒤에 붙는 칸 (2026-07-28 시우 · 점수 랭킹제 GM 지시).
+// ★왜 COMMON 이 아니라 TAIL 인가: _regGetSheet 는 시트가 새로 생길 때만 헤더를 쓴다.
+//   이미 데이터가 있는 시트의 헤더는 그대로 남는데, _regUpdate/_regSubmit 은 '코드의 헤더 순서'로
+//   열 번호를 계산한다. COMMON 중간에 칸을 넣으면 그 뒤의 카테고리별 추가칸(분실물품·분실시점 등)이
+//   한 칸씩 밀려 기존 데이터 위에 엉뚱한 값을 쓰게 된다. 맨 뒤에 붙이면 기존 열 번호가 하나도
+//   안 움직이고, 새 칸만 지금 마지막 열 다음에 생긴다(무중단).
+// handler=처리자: ★시트엔 '처리자' 칸이 이미 있었고 값도 들어 있었는데, 코드의 헤더 목록에 없어서
+//   _regReadAll 이 그 열을 통째로 버리고 있었다 — 화면·알림·집계 어디에도 안 보였다(2026-07-28 실측).
+//   저장이 안 된 게 아니라 '읽지를 않고' 있었다. 키를 등록하는 것만으로 옛 값까지 같이 살아난다.
+// reporter=접수자: 누가 적었는지. 점수의 절반(접수 1점)이 여기서 나온다.
+var REG_TAIL_HEADERS = [
+  { key: 'handler',  label: '처리자' },
+  { key: 'reporter', label: '접수자' }
+];
+
 function _regHeadersFor(catKey) {
   var extra = REG_EXTRA_HEADERS[catKey] || [];
   var common = REG_NO_PHOTO_CATS[catKey]
     ? REG_COMMON_HEADERS.filter(function (h) { return h.key !== 'photoUrl'; })
     : REG_COMMON_HEADERS;
-  return common.concat(extra);
+  return common.concat(extra).concat(REG_TAIL_HEADERS);
 }
 
 // ─── ScriptProperties 헬퍼 ───
@@ -258,6 +273,19 @@ function _regGetSheet(catKey) {
   if (sh) {
     if (sh.getLastRow() < 1) {
       sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+      return sh;
+    }
+    // 아직 없는 헤더 이름만 맨 뒤에 덧붙인다(2026-07-28 시우).
+    //   기존 헤더는 절대 건드리지 않는다 — 읽는 쪽(_regReadAll)이 한글 헤더 '이름'으로 찾기 때문에
+    //   이름을 바꾸거나 겹쳐 쓰면 그 조회가 조용히 끊긴다.
+    //   ★'있는지'로 판정한다(개수로 하지 않는다): 실측 2026-07-28 — '처리자' 칸은 이미 전 시트에
+    //   있었고 값도 들어 있었다(코드 헤더 목록에만 없어서 모든 화면·집계에서 안 보였을 뿐).
+    //   개수만 보고 뒤에 이어 쓰면 같은 이름이 두 개가 되고, 빈 쪽이 값을 덮어 읽힌다.
+    var have = sh.getLastColumn();
+    var existingLabels = have > 0 ? sh.getRange(1, 1, 1, have).getValues()[0].map(String) : [];
+    var missing = headers.filter(function (label) { return existingLabels.indexOf(label) < 0; });
+    if (missing.length) {
+      sh.getRange(1, have + 1, 1, missing.length).setValues([missing]);
     }
     return sh;
   }
@@ -454,6 +482,30 @@ var REG_LABEL_ALIASES = { '분실위치': 'loc', '위치': 'loc', '물품상세'
 // ─── 종합 접수처 시트 → 객체 배열 (헤더-이름 기준 매핑 · 컬럼 물리삭제/순서변경에 안전) ───
 // headers({key,label}[])로 라벨→키 맵을 만들고, 시트 1행 실제 헤더 라벨로 각 열의 키를 찾는다.
 // 매칭 안 되는 컬럼(빈칸·잔재 라벨)은 조용히 무시 — 위치기반이 아니므로 중간 컬럼 삭제에도 값이 안 밀림.
+// ─── 쓰기용 열 위치 맵 (2026-07-28 시우) ───
+// 읽기(_regReadAll)는 예전부터 '헤더 이름'으로 열을 찾아 안전했는데, 쓰기(_regSubmit·_regUpdate)는
+// '코드에 적힌 순서'로 열 번호를 셌다. 두 방식이 어긋나 있어도 읽을 땐 멀쩡해 보이니 아무도 몰랐다.
+// 실측 2026-07-28: 컴플레인 시트는 실제로 [… 처리자, 조치문자, 접수자] 순인데 코드 순서로는
+// 접수자가 '조치문자' 자리에 해당했다 — 그대로 뒀으면 새 접수마다 조치문자 칸을 덮어썼다.
+// 분실물 시트도 7번째가 '물품상세'(=내용 별칭)라 코드 순서와 다르다.
+// → 쓰기도 읽기와 똑같이 '헤더 이름'으로 찾는다. 한 곳에서 같은 규칙을 쓰면 어긋날 수가 없다.
+function _regKeyCols(sh, headers) {
+  var lastCol = sh.getLastColumn();
+  var label2key = {};
+  headers.forEach(function (h) { label2key[h.label] = h.key; });
+  Object.keys(REG_LABEL_ALIASES).forEach(function (label) {
+    if (!(label in label2key)) label2key[label] = REG_LABEL_ALIASES[label];
+  });
+  var out = {};
+  if (lastCol < 1) return out;
+  var labels = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  labels.forEach(function (label, i) {
+    var key = label2key[label];
+    if (key && !(key in out)) out[key] = i;   // 같은 이름이 둘이면 앞쪽(원본)을 쓴다
+  });
+  return out;
+}
+
 function _regReadAll(sh, headers) {
   var lastCol = sh.getLastColumn();
   var last = sh.getLastRow();
@@ -780,12 +832,14 @@ function _regSubmit(body) {
   var id  = _vNextSeqId();
   var now = _vNow();
 
-  // 행 구성 — 공통 컬럼 채우기
-  var row = new Array(headers.length).fill('');
+  // 행 구성 — 열 위치는 '시트 실제 헤더 이름' 기준(2026-07-28 시우, _regKeyCols).
+  //   전에는 코드에 적힌 순서로 넣었는데, 시트가 그 순서와 달라도 티가 안 났다
+  //   (읽기는 이름으로 찾으니 멀쩡해 보임). 컴플레인 시트에서 실제로 어긋나 있었다.
+  var _shForCols = _regGetSheet(cat.key);
+  var _keyCols = _regKeyCols(_shForCols, headers);
+  var row = new Array(Math.max(_shForCols.getLastColumn(), headers.length)).fill('');
   var _set = function (key, val) {
-    for (var i = 0; i < headers.length; i++) {
-      if (headers[i].key === key) { row[i] = val; return; }
-    }
+    if (key in _keyCols) { row[_keyCols[key]] = val; }
   };
   _set('regId',    id);
   _set('category', cat.label);
@@ -797,6 +851,10 @@ function _regSubmit(body) {
   _set('photoUrl', photoUrl);
   _set('status',   '접수');
   _set('dept',     cat.dept);
+  // 접수자 (2026-07-28 시우 · 점수 랭킹제) — 직원이 대신 적어 준 경우 그 직원 이름,
+  //   회원이 폼에서 직접 넣은 경우는 '회원'. 접수 1점의 근거가 되는 칸이라
+  //   비워 두면 점수가 안 붙는다(그래서 기본값을 반드시 남긴다).
+  _set('reporter', String(body.reporter || '').trim() || (isCheck ? '자동(점검)' : '회원'));
 
   // extras — 영문키로 body에서 꺼내 한글헤더 위치에 삽입
   var extras = REG_EXTRA_HEADERS[cat.key] || [];
@@ -804,7 +862,7 @@ function _regSubmit(body) {
     if (body[h.key] !== undefined) _set(h.key, String(body[h.key]));
   });
 
-  var sh = _regGetSheet(cat.key);
+  var sh = _shForCols;
   var newRow = sh.getLastRow() + 1;
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
   _regApplyStatusColor(sh, newRow, '접수', headers);
@@ -894,6 +952,70 @@ function _regList(params) {
   return _vJson({ ok: true, count: all.length, data: all });
 }
 
+// ─── reg_scoreboard — 접수·처리 점수판 (GM 지시 2026-07-28) ───
+// 왜 만들었나: 접수한 사람이 곧 처리까지 떠안는 구조라, 적을수록 손해가 되어 아예 안 적게 된다.
+//   GM: "접수받는거 1점 + 처리 완료 1점 등으로 점수 랭킹제로 하는건 어때?"
+//   → 적는 행위 자체에 점수를 붙여, 접수를 피할 이유를 없앤다.
+// 셈법(단순 유지 — 복잡해지면 아무도 안 믿는다):
+//   · 접수 1점 = reporter(접수자)에 직원 이름이 있는 건. '회원'·'자동(점검)'은 사람이 아니라 제외.
+//   · 완료 1점 = status='완료' 인 건의 처리자. handler 가 있으면 handler, 없으면 담당(assignee).
+//   한 건이 최대 2점(적은 사람 1 + 끝낸 사람 1). 같은 사람이 둘 다 하면 2점 다 가져간다.
+// period: week(이번 주 월요일부터) | month(이번 달 1일부터) | all. 기본 month.
+function _regScoreboard(params) {
+  var period = String((params && params.period) || 'month').trim().toLowerCase();
+  var tz = Session.getScriptTimeZone() || 'Asia/Seoul';
+  var now = new Date();
+  var since = null;
+  if (period === 'week') {
+    var dow = now.getDay();                    // 0=일
+    var back = (dow === 0) ? 6 : dow - 1;      // 이번 주 월요일까지 되감기
+    since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - back);
+  } else if (period === 'month') {
+    since = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  var sinceStr = since ? Utilities.formatDate(since, tz, 'yyyy-MM-dd') : '';
+
+  var NON_STAFF = { '회원': 1, '익명': 1, '자동(점검)': 1, '지원부 점검': 1 };
+  var tally = {};   // 이름 → {intake, done}
+  var _add = function (who, field) {
+    who = String(who || '').trim();
+    if (!who || NON_STAFF[who]) return;
+    if (!tally[who]) tally[who] = { intake: 0, done: 0 };
+    tally[who][field]++;
+  };
+
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    var rows = _regReadAll(sh, _regHeadersFor(cat.key));
+    rows.forEach(function (r) {
+      var created = String(r.createdAt || '').slice(0, 10);
+      if (sinceStr && created && created < sinceStr) return;
+      _add(r.reporter, 'intake');
+      if (String(r.status || '') === '완료') {
+        _add(String(r.handler || '').trim() || r.assignee, 'done');
+      }
+    });
+  });
+
+  var board = Object.keys(tally).map(function (name) {
+    return { name: name, intake: tally[name].intake,
+             done: tally[name].done, total: tally[name].intake + tally[name].done };
+  });
+  board.sort(function (a, b) {
+    if (b.total !== a.total) return b.total - a.total;
+    return b.done - a.done;   // 동점이면 '끝낸 것'이 많은 쪽이 위
+  });
+  // 공동 순위(같은 점수면 같은 등수)
+  var rank = 0, prev = null;
+  board.forEach(function (x, i) {
+    if (x.total !== prev) { rank = i + 1; prev = x.total; }
+    x.rank = rank;
+  });
+  return { ok: true, period: period, since: sinceStr,
+           at: Utilities.formatDate(now, tz, 'yyyy-MM-dd HH:mm'), board: board };
+}
+
 // ─── reg_update — 종합 접수처 갱신 (GATED) ───
 // reg_board 공개·직원(사진) 두 캐시 동시 무효화 — 쓰기 액션(submit/update/delete/renumber 등)마다 호출.
 function _regBoardCacheClear_() {
@@ -924,16 +1046,18 @@ function _regUpdate(body) {
     var rowNum = _vFindRow(sh, id);
     if (rowNum < 0) continue;
 
-    // 현재 행 읽기
-    var existing = sh.getRange(rowNum, 1, 1, headers.length).getValues()[0];
+    // 현재 행 읽기 — 열 폭·열 위치 모두 '시트 실제 헤더' 기준(2026-07-28 시우, _regKeyCols).
+    var width = Math.max(sh.getLastColumn(), headers.length);
+    var existing = sh.getRange(rowNum, 1, 1, width).getValues()[0];
+    var keyCols = _regKeyCols(sh, headers);
     var _idx = function (key) {
-      for (var j = 0; j < headers.length; j++) {
-        if (headers[j].key === key) return j;
-      }
-      return -1;
+      return (key in keyCols) ? keyCols[key] : -1;
     };
 
-    if (newStatus) existing[_idx('status')] = newStatus;
+    if (newStatus) {
+      var si = _idx('status');
+      if (si >= 0) existing[si] = newStatus;
+    }
 
     var assignee = body.assignee !== undefined ? body.assignee : undefined;
     if (assignee !== undefined) {
@@ -945,8 +1069,23 @@ function _regUpdate(body) {
       var mi = _idx('memo');
       if (mi >= 0) existing[mi] = String(memo);
     }
+    // 처리자 (2026-07-28 시우) — 화면은 예전부터 이 값을 보내고 있었는데 서버가 안 받아
+    //   저장되지 않았다. 시트엔 '처리자' 칸이 이미 있었으니 이제 그 칸에 들어간다.
+    var handler = body.handler !== undefined ? body.handler : undefined;
+    if (handler !== undefined) {
+      var hi = _idx('handler');
+      if (hi >= 0) existing[hi] = String(handler);
+    }
+    // 접수자 — 점수판의 '접수 1점'이 나오는 칸. 화면에서 나중에 채우거나 고칠 수 있어야 한다
+    //   (지금 쌓여 있는 옛 접수건은 이 칸이 비어 있어 접수 점수가 0이다). 2026-07-28 시우.
+    var reporter = body.reporter !== undefined ? body.reporter : undefined;
+    if (reporter !== undefined) {
+      var ri = _idx('reporter');
+      if (ri >= 0) existing[ri] = String(reporter);
+    }
 
-    sh.getRange(rowNum, 1, 1, headers.length).setValues([existing]);
+    // 읽은 폭 그대로 되쓴다 — headers.length 로 쓰면 시트가 더 넓을 때 뒤 칸이 잘린다.
+    sh.getRange(rowNum, 1, 1, existing.length).setValues([existing]);
     if (newStatus) _regApplyStatusColor(sh, rowNum, newStatus, headers);
 
     var statusIdx = _idx('status');
@@ -1744,6 +1883,20 @@ function _vProcess(action, body, params) {
       try { CacheService.getScriptCache().put(_rbCacheKey, JSON.stringify(_rbOut), 45); } catch (e) {}
     }
     return _vJson(_rbOut);
+  }
+  if (action === 'reg_scoreboard') return _vJson(_regScoreboard(params || body));  // 접수·처리 점수판(공개 read·PII 없음). 2026-07-28 시우.
+  // 시트 헤더 행 그대로 보기(읽기 전용·PII 없음) — 칸을 늘릴 때 '지금 실제로 뭐가 있는지'를
+  // 추측하지 않고 눈으로 확인하려고 둔다. 2026-07-28 시우(중복 헤더 사고 방지).
+  if (action === 'reg_headers') {
+    var _hOut = {};
+    REG_CATEGORIES.forEach(function (c) {
+      try {
+        var s = _regGetSheet(c.key);
+        var lc = s.getLastColumn();
+        _hOut[c.label] = lc > 0 ? s.getRange(1, 1, 1, lc).getValues()[0].map(String) : [];
+      } catch (e) { _hOut[c.label] = ['ERR: ' + e]; }
+    });
+    return _vJson({ ok: true, headers: _hOut });
   }
   if (action === 'reg_update') return _regUpdate(body);
   if (action === 'reg_delete') return _regDelete(body);   // 접수ID로 행 정밀 삭제(배포검증 더미 청소용·GATED). 2026-06-20 시우.

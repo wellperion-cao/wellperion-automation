@@ -107,6 +107,26 @@ a { color:var(--accent); text-decoration:none; }
 .lf-note a { color:var(--accent); font-weight:600; white-space:nowrap; }
 
 /* ── 상태 요약 + 검색(우측) 한 줄 ── */
+/* ── 🏆 점수판 (GM 지시 2026-07-28 · 접수 1점 + 처리 완료 1점) ──
+   왜: 접수한 사람이 곧 처리까지 떠안는 구조라 '적을수록 손해'가 됐다. 적는 행위 자체에
+   점수를 붙여 접수를 피할 이유를 없앤다. 기존 색 변수만 재사용(새 색 정의 없음). */
+.score-card { background:var(--paper); border:1px solid var(--border); border-left:4px solid var(--yellow); border-radius:12px; padding:12px 14px; margin-bottom:14px; }
+.score-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.score-title { font-size:15px; font-weight:800; color:var(--yellow); }
+.score-hint { font-size:11.5px; color:var(--dim); }
+.score-tabs { margin-left:auto; display:flex; gap:6px; }
+.score-tab { font-size:12px; font-weight:700; padding:4px 11px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--dim); cursor:pointer; font-family:inherit; }
+.score-tab.on { background:var(--yellow-bg); color:var(--yellow); border-color:rgba(230,200,78,0.45); }
+.score-list { display:flex; flex-wrap:wrap; gap:8px; }
+.score-item { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:7px 12px; }
+.score-item.top { border-color:rgba(230,200,78,0.5); background:var(--yellow-bg); }
+.score-rank { font-size:13px; font-weight:800; color:var(--dim); min-width:20px; }
+.score-item.top .score-rank { color:var(--yellow); }
+.score-name { font-size:13.5px; font-weight:700; color:var(--text); }
+.score-pt { font-size:13.5px; font-weight:800; color:var(--green); }
+.score-brk { font-size:11.5px; color:var(--dim); }
+.score-empty { font-size:12.5px; color:var(--dim); }
+
 .summary-bar { display:flex; align-items:center; gap:12px 18px; flex-wrap:wrap; margin-bottom:14px; }
 .summary-bar .summary-row { margin-bottom:0; }
 .summary-bar .search-input { margin-left:auto; flex:0 1 340px; min-width:200px; }
@@ -193,7 +213,7 @@ a { color:var(--accent); text-decoration:none; }
       <button onclick="openWorklog()">📋 작업 현황 로그</button>
       <a href="http://wellperion.com/ko/reception/" target="_blank">📲 회원 접수 폼</a>
       <a href="/wellperion-automation/wellperion_guide(main).html#O1">🏠 ERP 허브</a>
-      <button onclick="regLoad();lfLoad();holdLoad()">↻ 새로고침</button>
+      <button onclick="regLoad();lfLoad();holdLoad();scoreLoad(_scorePeriod())">↻ 새로고침</button>
     </div>
   </div>
 </div>
@@ -203,6 +223,20 @@ a { color:var(--accent); text-decoration:none; }
   <div class="summary-bar">
     <div class="summary-row" id="statusSummary"></div>
     <input type="text" id="searchBox" class="search-input" placeholder="🔍 이름·내용·장소·번호 검색…" oninput="setSearch(this.value)" autocomplete="off">
+  </div>
+
+  <!-- 🏆 점수판 — 접수 1점 + 처리 완료 1점 (GM 지시 2026-07-28) -->
+  <div class="score-card">
+    <div class="score-head">
+      <span class="score-title">🏆 접수·처리 점수판</span>
+      <span class="score-hint">접수 1점 + 처리 완료 1점</span>
+      <span class="score-tabs">
+        <button type="button" class="score-tab" data-period="week" onclick="scoreLoad('week')">이번 주</button>
+        <button type="button" class="score-tab on" data-period="month" onclick="scoreLoad('month')">이번 달</button>
+        <button type="button" class="score-tab" data-period="all" onclick="scoreLoad('all')">전체</button>
+      </span>
+    </div>
+    <div class="score-list" id="scoreList"><span class="score-empty">불러오는 중…</span></div>
   </div>
 
   <!-- 카테고리 필터 -->
@@ -342,7 +376,46 @@ var CAT_META = [
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','dept','slaHours','deadline','remainH','slaStatus'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','reporter','dept','slaHours','deadline','remainH','slaStatus'];
+
+/* ── 🏆 점수판 (GM 지시 2026-07-28) ──
+   셈법은 서버(reg_scoreboard) 한 곳에만 있다 — 화면에서 다시 계산하지 않는다.
+   화면이 따로 세면 텔레그램 발표와 숫자가 갈라지고, 그러면 아무도 점수를 안 믿는다. */
+function _scorePeriod(){
+  var on = document.querySelector('.score-tab.on');
+  return (on && on.getAttribute('data-period')) || 'month';
+}
+function scoreLoad(period){
+  period = period || 'month';
+  var box = document.getElementById('scoreList');
+  if(!box) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.score-tab'), function(b){
+    b.classList.toggle('on', b.getAttribute('data-period') === period);
+  });
+  box.innerHTML = '<span class="score-empty">불러오는 중…</span>';
+  fetch(REG_API + '?action=reg_scoreboard&period=' + encodeURIComponent(period) + '&cb=' + Date.now(),
+        { cache:'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var board = (d && d.board) || [];
+      if(!board.length){
+        box.innerHTML = '<span class="score-empty">아직 점수가 없습니다. 접수하거나 처리를 끝내면 쌓입니다.</span>';
+        return;
+      }
+      box.innerHTML = board.map(function(x){
+        var top = x.rank === 1;
+        return '<span class="score-item' + (top ? ' top' : '') + '">' +
+          '<span class="score-rank">' + (top ? '🎉' : x.rank) + '</span>' +
+          '<span class="score-name">' + _esc(x.name) + '</span>' +
+          '<span class="score-pt">' + x.total + '점</span>' +
+          '<span class="score-brk">접수 ' + x.intake + ' · 완료 ' + x.done + '</span>' +
+        '</span>';
+      }).join('');
+    })
+    .catch(function(){
+      box.innerHTML = '<span class="score-empty">점수를 불러오지 못했습니다.</span>';
+    });
+}
 var EXTRA_LABEL = {
   itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
   equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
@@ -648,6 +721,10 @@ function _card(r){
   /* 처리자(실제 처리한) */
   h += '<div class="field-row"><label>처리자</label>' + _staffFieldHtml('handler', '처리자', r.handler) + '</div>';
 
+  /* 접수자(적어 준 사람) — 점수판의 '접수 1점'이 이 칸에서 나온다(GM 지시 2026-07-28).
+     회원이 폼에서 직접 넣으면 '회원'으로 들어오고, 직원이 대신 적어 준 건 여기서 고른다. */
+  h += '<div class="field-row"><label>접수자</label>' + _staffFieldHtml('reporter', '접수자', r.reporter) + '</div>';
+
   /* 메모 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
   h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
@@ -673,13 +750,14 @@ function _update(id, cat, payload, btn, statusEl, statusPrev){
   if('assignee' in payload) body.assignee = payload.assignee;
   if('memo' in payload) body.memo = payload.memo;
   if('handler' in payload) body.handler = payload.handler;
+  if('reporter' in payload) body.reporter = payload.reporter;
 
   fetch(REG_API, {
     method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
     body:JSON.stringify(body), redirect:'follow'
   }).then(function(r){ return r.json(); }).then(function(d){
     if(d && d.ok){
-      if(isStatus){ regLoad(); }
+      if(isStatus){ regLoad(); scoreLoad(_scorePeriod()); }   /* 완료로 바뀌면 점수가 붙는다 — 바로 보이게 */
       else if(btn){
         btn.textContent='저장 완료 ✓';
         setTimeout(function(){ btn.textContent='저장'; btn.style.background=oBg; btn.style.color=oColor; btn.style.borderColor=oBorder; btn.style.pointerEvents='auto'; }, 2000);
@@ -925,6 +1003,7 @@ function _wireBoard(){
       var m = card.querySelector('[data-reg-memo]');
       payload.assignee = _staffFieldValue(card, 'assignee');
       payload.handler = _staffFieldValue(card, 'handler');
+      payload.reporter = _staffFieldValue(card, 'reporter');
       if(m) payload.memo = m.value;
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
       return;
@@ -956,6 +1035,7 @@ _wireBoard();
 regLoad();
 lfLoad();
 holdLoad();
+scoreLoad('month');
 </script>
 
 <!-- 전 C-Level 공통 '작업 현황 로그' 패널 부품 — 데이터·스타일 단일 출처. 위 모달 안의
