@@ -163,25 +163,51 @@ def main() -> int:
         print(f"[ERROR] 로컬 clasp 폴더 없음: {clasp_dir}", flush=True)
         return 2
 
-    print(f"[{name}] clasp push --force ...", flush=True)
-    push = subprocess.run(['clasp', 'push', '--force'], cwd=clasp_dir, shell=True)
-    if push.returncode != 0:
-        print("[ERROR] clasp push 실패 — 배포 중단.", flush=True)
-        return push.returncode
-
     deploy_cmd = ['clasp', 'deploy']
     if passthrough:
         deploy_cmd += passthrough
     elif args.description:
         deploy_cmd += ['-d', args.description]
 
-    print(f"[{name}] {' '.join(deploy_cmd)} ...", flush=True)
-    deploy = subprocess.run(deploy_cmd, cwd=clasp_dir, shell=True)
-    if deploy.returncode != 0:
-        print("[ERROR] clasp deploy 실패.", flush=True)
-        return deploy.returncode
+    # ★ 2026-07-28 시모 — push 와 deploy 를 **하나의 락 안에서** 붙여 실행한다.
+    #   왜: 배포는 두 단계다. clasp push(로컬 작업트리 → GAS) 다음에 clasp deploy(현재 GAS → /exec).
+    #   이 저장소는 여러 세션이 작업트리 하나를 공유하므로, 두 단계 **사이에** 다른 세션이
+    #   자기 사본을 push 하면 내 deploy 가 **남의 코드를 라이브로 올린다.**
+    #   2026-07-28 실제 발생: 시모가 네이버 채널 분리를 push·deploy 했는데 사이에 시포 세션이
+    #   끼어들어 라이브가 옛 코드로 되돌아갔다(같은 Survey.js 를 두 역할이 동시에 고치던 중).
+    #   재푸시·재배포로 복구했지만, 그 사이 화면 숫자가 잘못 나갔다.
+    #   고침: 커밋 직렬화에 쓰는 기존 GitLock 을 그대로 재사용한다(새 락 발명 금지·약속 L21).
+    #   같은 락이라 배포 중에는 다른 세션의 커밋도 대기한다 — 작업트리가 안 흔들려야
+    #   push 한 내용이 그대로 deploy 되기 때문이다.
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from git_lock import GitLock
+    except Exception as e:
+        print(f"[ERROR] 배포 락 로드 실패 — 직렬화 없이 배포하지 않는다: {e}", flush=True)
+        return 2
+
+    try:
+        with GitLock(holder=f"gas_deploy:{name}", repo_root=_ROOT_DIR):
+            print(f"[{name}] clasp push --force ... (배포 락 확보)", flush=True)
+            push = subprocess.run(['clasp', 'push', '--force'], cwd=clasp_dir, shell=True)
+            if push.returncode != 0:
+                print("[ERROR] clasp push 실패 — 배포 중단.", flush=True)
+                return push.returncode
+
+            print(f"[{name}] {' '.join(deploy_cmd)} ...", flush=True)
+            deploy = subprocess.run(deploy_cmd, cwd=clasp_dir, shell=True)
+            if deploy.returncode != 0:
+                print("[ERROR] clasp deploy 실패.", flush=True)
+                return deploy.returncode
+    except Exception as e:
+        # 락을 못 잡으면 배포하지 않는다 — 직렬화 없는 배포가 오늘 사고의 원인이었다.
+        print(f"[ERROR] 배포 락 획득 실패 — 다른 세션이 커밋/배포 중일 수 있다. "
+              f"잠시 후 다시 시도하라: {e}", flush=True)
+        return 2
 
     print(f"[OK] {name} 배포 완료.", flush=True)
+    print("  → 배포는 '올렸다'까지다. 라이브 응답을 실제로 호출해 값이 바뀌었는지 확인하라"
+          "(오늘 사고: 배포 성공 출력만 믿었다가 옛 코드가 라이브에 남아 있었다).", flush=True)
 
     try:
         results = gvm.collect()

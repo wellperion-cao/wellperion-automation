@@ -422,6 +422,33 @@ def _detect_concurrent_edit_warnings(
     return warnings
 
 
+_RECENT_TOUCH_SEC = 900   # 15분 — 이 안에 건드린 파일이 HEAD와 같으면 '편집 유실' 의심
+
+def _recently_touched(rel_paths: list, root: Path) -> list:
+    """지정 경로 중 최근 _RECENT_TOUCH_SEC 안에 수정된 것들(디렉터리는 그 안 파일까지).
+
+    '변경 없음'과 짝으로만 쓴다 — 방금 건드렸는데 내용이 HEAD와 같다면
+    내 편집이 사라졌을 가능성이 있다는 신호다(위 호출부 주석 참조).
+    판단 재료일 뿐 차단하지 않는다. 파일이 없거나 stat 실패는 조용히 건너뛴다.
+    """
+    import time as _time
+    now = _time.time()
+    out = []
+    for rel in rel_paths:
+        p = root / rel
+        try:
+            if p.is_dir():
+                for f in p.rglob("*"):
+                    if f.is_file() and now - f.stat().st_mtime <= _RECENT_TOUCH_SEC:
+                        out.append(_rel(f, root))
+                        break        # 폴더당 한 번만 알리면 충분
+            elif p.is_file() and now - p.stat().st_mtime <= _RECENT_TOUCH_SEC:
+                out.append(rel)
+        except OSError:
+            continue
+    return out
+
+
 def safe_commit(
     paths,
     message: str,
@@ -478,6 +505,16 @@ def safe_commit(
                 if tree == head_tree:
                     result["ok"] = True
                     result["reason"] = "변경 없음(nothing to commit)"
+                    # ★ 2026-07-28 시모 — '변경 없음'은 두 가지가 겹쳐 있다.
+                    #   (가) 이미 반영돼 있어 커밋할 게 없다 = 정상(멱등 재실행)
+                    #   (나) **내가 방금 고쳤는데 그 편집이 남의 커밋에 덮여 사라졌다** = 사고
+                    #   지금까지 둘 다 똑같이 [OK] 로 찍혀서 (나)를 조용히 통과시켰다.
+                    #   2026-07-28 하루에 두 번 발생했고(M1 화면·퍼널 GAS), 한 번은 놓쳐서
+                    #   라이브에는 있고 저장소엔 없는 상태로 몇 시간 갔다.
+                    #   가르는 신호 = **최근에 파일을 건드렸는데 내용이 HEAD와 똑같다.**
+                    #   방금 편집한 파일이 HEAD와 같다는 건 편집이 사라졌다는 뜻이다.
+                    #   차단하지 않는다(정상 케이스가 훨씬 많다) — 대신 출력에서 갈라 보여준다.
+                    result["suspect_lost_edit"] = _recently_touched(rel_paths, root)
                     return result
 
                 # ②-b 선검증(배10009) — commit-tree/update-ref *이전* 트리-트리 비교로
@@ -612,8 +649,20 @@ def main() -> int:
     args = p.parse_args()
 
     res = safe_commit(args.paths, args.message, holder=args.holder, push=not args.no_push)
-    print(f"[{'OK' if res['ok'] else 'FAIL'}] {res['reason']} "
+    # ★ '변경 없음'인데 방금 건드린 파일이 있으면 [OK] 로 찍지 않는다(2026-07-28 시모).
+    #   그 조합은 '내 편집이 남의 커밋에 덮여 사라졌다'는 뜻일 수 있고, 실제로 그날 두 번 났다.
+    _suspect = res.get("suspect_lost_edit") or []
+    _tag = "OK" if res["ok"] else "FAIL"
+    if res["ok"] and _suspect:
+        _tag = "확인필요"
+    print(f"[{_tag}] {res['reason']} "
           f"(시도 {res['attempts']}회 · sha={res['sha'][:9] or '-'})")
+    if _suspect:
+        print("  ! 방금 고친 파일인데 저장소 내용과 똑같습니다 — 편집이 덮여 사라졌을 수 있습니다:")
+        for s in _suspect:
+            print(f"      {s}")
+        print("  → 파일을 열어 내 수정이 남아 있는지 눈으로 확인하세요. "
+              "없으면 다시 넣고 커밋해야 합니다(문자열 검색 말고 실제 코드 줄로 확인).")
     for c in res["changed"]:
         print(f"  + {c}")
     for f in res["foreign"]:
