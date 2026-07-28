@@ -12,11 +12,15 @@
 #   나머지 규칙은 계속 실행한다(전체 실패 금지).
 #
 # 산출: status/worklog_gaps.json (고정 스키마 — 화면 담당 에이전트가 이 규격으로 렌더 중,
-#   기존 필드 절대 변경 금지 · first_seen/age 2필드는 2026-07-23 추가):
+#   기존 필드 절대 변경 금지 · first_seen/age 2필드는 2026-07-23 추가, area는 2026-07-28 추가):
 #   {"generated_at": "...",
-#    "gaps": [{"role","severity","title","detail","hint","ref","first_seen","age"}],
+#    "gaps": [{"role","severity","title","detail","hint","ref","first_seen","age","area"?}],
 #    "rules_run": [{"role","rule","ok","error"}],
 #    "summary": {"신규": N, "누적": M}}
+#   - area(선택 필드) = "멤버십"/"강습"/"공통" — worklog_panel.js 화면 스코프 필터가 '한 일'
+#     로그와 같은 기준으로 gap도 거를 수 있게 하는 근거값(2026-07-28, GM FB260728-110840
+#     "멤버십 화면인데 강습 gap이 보인다"). 없으면(구버전 규칙) 필터가 '공통'과 동일하게
+#     양쪽 화면에 다 보여준다 — 판정 근거가 없는 걸 억지로 한쪽에 배정하지 않는다.
 #   - first_seen(YYYY-MM-DD) = 이 gap 이 처음 발견된 날짜. status/worklog_gaps_state.json
 #     (role|rule|ref 키 → first_seen) 로 스캔 간 유지 — 이미 있던 키는 날짜 유지, 사라진 키는
 #     상태에서 제거(재발하면 그때가 새 first_seen).
@@ -1127,7 +1131,11 @@ def rule_inquiry_loss_no_reason() -> list[dict]:
     today = datetime.now(tz=KST).date()
     gaps: list[dict] = []
 
-    def _scan(rows: list[dict], source_label: str, ref_prefix: str) -> None:
+    # area(멤버십/강습) — 지어낸 판정이 아니라 이 함수가 이미 호출부마다 갖고 있던
+    # source_label/ref_prefix 구분(멤버십 문의="member" vs 강습={adult,youth}="lesson-*")을
+    # 그대로 옮겨 적는다(GM 2026-07-28 · worklog_panel.js 화면 스코프가 '한 일'만 걸러지고
+    # 이 '빠진 것' 목록엔 안 걸려 멤버십 화면에 강습 항목이 섞여 보이던 문제).
+    def _scan(rows: list[dict], source_label: str, ref_prefix: str, area: str) -> None:
         for r in rows:
             if str(r.get("status", "")).strip() != "LOSS":
                 continue
@@ -1145,11 +1153,12 @@ def rule_inquiry_loss_no_reason() -> list[dict]:
                 "hint": "문의 현황 표에서 진행상황 LOSS 재클릭 → 사유 입력",
                 "ref": f"{ref_prefix}::{r.get('rowIndex', ts)}::lossreason",
                 "age": _classify_age(target_date, today),
+                "area": area,
             })
 
-    _scan(_load_member_inquiry_rows(), "멤버십 문의", "member")
+    _scan(_load_member_inquiry_rows(), "멤버십 문의", "member", "멤버십")
     for key, rows in _load_lesson_inquiry_rows().items():
-        _scan(rows, f"강습({_LESSON_LABEL[key]}) 문의", f"lesson-{key}")
+        _scan(rows, f"강습({_LESSON_LABEL[key]}) 문의", f"lesson-{key}", "강습")
     return gaps
 
 
@@ -1176,6 +1185,8 @@ def rule_lesson_owner_unassigned() -> list[dict]:
                 "hint": "담당 강사 배정 필요(배정 안 되면 고객이 연락을 못 받는다)",
                 "ref": f"lesson-{key}::{r.get('rowIndex', ts)}::unassigned",
                 "age": _classify_age(target_date, today),
+                # 이 규칙은 _load_lesson_inquiry_rows()만 순회 — 강습 외 다른 값이 나올 수 없다.
+                "area": "강습",
             })
     return gaps
 
@@ -1202,7 +1213,8 @@ def rule_registration_no_trace() -> list[dict]:
     today = datetime.now(tz=KST).date()
     gaps: list[dict] = []
 
-    def _scan(rows: list[dict], source_label: str, ref_prefix: str) -> None:
+    # area — 위 rule_inquiry_loss_no_reason과 동일 원리(호출부 구분을 그대로 옮김, 새 판정 아님).
+    def _scan(rows: list[dict], source_label: str, ref_prefix: str, area: str) -> None:
         for r in rows:
             if str(r.get("status", "")).strip() not in _SUCCESS_STATUSES:
                 continue
@@ -1218,11 +1230,12 @@ def rule_registration_no_trace() -> list[dict]:
                 "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
                 "ref": f"{ref_prefix}::{r.get('rowIndex', ts)}::regtrace",
                 "age": _classify_age(target_date, today),
+                "area": area,
             })
 
-    _scan(_load_member_inquiry_rows(), "멤버십 문의", "member")
+    _scan(_load_member_inquiry_rows(), "멤버십 문의", "member", "멤버십")
     for key, rows in _load_lesson_inquiry_rows().items():
-        _scan(rows, f"강습({_LESSON_LABEL[key]}) 문의", f"lesson-{key}")
+        _scan(rows, f"강습({_LESSON_LABEL[key]}) 문의", f"lesson-{key}", "강습")
     return gaps
 
 

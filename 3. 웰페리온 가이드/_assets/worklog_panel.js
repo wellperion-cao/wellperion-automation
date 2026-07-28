@@ -30,6 +30,10 @@
         area == '공통'            → 보인다(두 화면에 다 걸리는 일 — 한쪽에 억지 배정하면 반대편에서 사라진다)
         area ∈ scope-set 의 다른 화면 → 숨긴다(이게 GM이 요청한 분리)
         area ∉ scope-set (옛 '작업') → 목록 아래 접힘 "화면 구분 이전 기록 N건"으로 남긴다(삭제·은폐 아님)
+    - ⚠️ 빠진 것(gaps)도 같은 scopeVerdict() 로 거른다(2026-07-28 GM FB260728-110840 실측 —
+      최초 구현은 '한 일'만 걸렀고 gaps는 그대로 새서 멤버십 화면에 강습 gap이 보였다).
+      단 gaps는 legacy(area 없음/구분 불가)도 숨기지 않고 그대로 보여준다(=공통 취급 —
+      건수가 적어 접어 버리면 '조용해서 못 본' 재사고 위험이 로그보다 크다). hide 판정만 숨김.
     - 화면을 바꾸면 페이지가 data-worklog-scope 를 갈아끼우고 window.wlpRenderWorklog() 를 부른다.
     - scope 속성이 없으면 거르지 않는다 = 종전과 동일.
 
@@ -246,12 +250,20 @@
       (since ? '<div class="wl-gap-since">(' + esc(since) + '부터)</div>' : '') +
       '</div>';
   }
-  function renderGapsSection(gapsObj, role, gapFilter){
+  function renderGapsSection(gapsObj, role, gapFilter, scope, scopeSet){
     if(gapsObj === null){
       return '<div class="wl-section"><div class="wl-section-title">⚠️ 빠진 것</div>' +
         '<div class="wl-error">빠진 것 정보를 불러오지 못했습니다</div></div>';
     }
     var roleGaps = (gapsObj.gaps || []).filter(function(g){ return (g && g.role) === role; });
+    // 화면 스코프 필터 — '한 일'과 같은 scopeVerdict() 재사용(약속 L01, 판정 로직 두 벌 금지).
+    // GM 실측(2026-07-28, FB260728-110840): 멤버십 화면인데 강습 gap이 그대로 보였다 — 이 주석
+    // 위 코드가 '한 일' 목록만 거르고 있었던 게 원인. gaps는 로그처럼 "구분 이전 기록"을 접어
+    // 남길 필요가 없다(건수가 적어 접으면 오히려 안 보임 위험) — legacy(area 없음)도
+    // hide만 아니면 그대로 보여준다(=공통 취급). scope 미지정 role(cmo·coo 등)은 no-op.
+    if(scope){
+      roleGaps = roleGaps.filter(function(g){ return scopeVerdict(g && g.area, scope, scopeSet) !== 'hide'; });
+    }
 
     // gapFilter 전용 경로(선택 · 2026-07-27, 배9836) — 276건 role 전체가 아니라 ref 부분일치로 뽑은
     // 소수(예: 보류 3겹 7건)를 "숫자만"이 아니라 항상 펼쳐진 평문 목록으로 보여준다. 신규·누적
@@ -388,7 +400,7 @@
   }
 
   function renderBody(body, data, role, scope, scopeSet, gapFilter, gapsOnly){
-    var html = renderGapsSection(data.gaps, role, gapFilter);
+    var html = renderGapsSection(data.gaps, role, gapFilter, scope, scopeSet);
     if(!gapsOnly) html += renderLogsSection(data.logs, role, scope, scopeSet);
     var genAt = (data.gaps && data.gaps.generated_at) ? fmtGenAt(data.gaps.generated_at) : '';
     if(genAt) html += '<div class="wl-footer">마지막 점검: ' + esc(genAt) + '</div>';
