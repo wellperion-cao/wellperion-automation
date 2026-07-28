@@ -720,6 +720,7 @@ const SB_ERR={
   duplicate:"이미 보드명단에 있는 성명입니다",
   /* [2026-07-28 회귀복구] setann/rename 응답 코드 */
   bad_granted:"총연차는 0~366 사이 숫자 또는 공란(미확정)이어야 합니다",
+  bad_name_chars:"성명에 쓸 수 없는 문자가 있습니다 (한글·영문·숫자·가운뎃점·괄호·공백만)",
   unknown_action:"서버가 이 기능을 아직 지원하지 않습니다 — 새 버전 배포 대기 중"
 };
 /* 단건 셀 쓰기 — 낙관적 반영 후 서버 upsert, 실패 시 원복 + 사유 토스트. 데모 모드는 로컬 전용. */
@@ -854,7 +855,8 @@ function rosterCall(body,doneMsg,onFail){
   fetch(REQ_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})
     .then(r=>r.json()).then(j=>{
       if(!j||!j.ok){toast("⚠ "+((j&&SB_ERR[j.error])||(j&&j.message)||"명단 반영 실패"));if(onFail)onFail();return;}
-      adminTouch();toast(doneMsg);boardPull();
+      /* doneMsg가 함수면 서버 응답을 넘겨 완료 안내를 서버 실측값으로 구성한다(개명의 잔여 기록 건수 등). */
+      adminTouch();toast(typeof doneMsg==="function"?doneMsg(j):doneMsg);boardPull();
     }).catch(()=>{toast("⚠ "+SB_ERR.offline);if(onFail)onFail();});
 }
 /* [2026-07-28 회귀복구] 총연차(연차원장 '부여') 수정 — 매니저가 쓰던 기능. 저장은 서버 연차원장(관리자 PIN 게이트).
@@ -869,12 +871,30 @@ function rosterSetAnn(nm,inp){
     `✓ ${nm} — 총연차 ${raw===""?"미확정":raw+"일"} 저장 (연차원장 ${ANN_YEAR})`,
     ()=>{inp.value=prev;});
 }
-/* [2026-07-28 회귀복구] 성명 표기 정정 — 서버 보드명단+연차원장 성명을 함께 갱신. 휴무 탭 기록은 무변경이라 확인창 고지 필수. */
+/* [2026-07-28 회귀복구 · A-6 감사 지적3 반영] 성명 표기 정정 — 서버 보드명단+연차원장 성명을 함께 갱신.
+   ⚠️ 휴무(스케줄) 기록은 옛 성명 그대로 남는다 → 그 해 사용 연차가 0으로 재집계돼 잔여가 실제보다 많게 보이고,
+      신청 승인의 '잔여 부족' 차단이 그 값을 쓰므로 초과 승인이 통과될 수 있다. 인사 정본(현재근무자) 성명과도 어긋난다.
+      막지는 않되 확인창(로컬 집계)·완료 안내(서버 실측)에서 남은 기록 건수를 반드시 고지한다. */
+function staleLeaveCount(nm){
+  const ds=Object.keys(schedD[nm]||{});
+  return{total:ds.length,thisYear:ds.filter(d=>String(d).slice(0,4)===String(ANN_YEAR)).length};
+}
 function rosterRename(nm,inp){
   const nu=String(inp.value).trim();
   if(!nu||nu===nm){inp.value=nm;return;}
-  if(!confirm(`성명을 "${nm}" → "${nu}" 로 바꿉니다.\n\n· 보드명단·연차원장 성명이 함께 바뀝니다.\n· 서버 원장(휴무 탭)의 과거 스케줄 기록은 "${nm}" 그대로 남아, 이 사람의 스케줄이 빈칸으로 보일 수 있습니다.\n  (휴무 탭 성명 정정은 관리자가 시트에서)\n\n계속할까요?`)){inp.value=nm;return;}
-  rosterCall({op:"rename",name:nm,newName:nu},`✓ ${nm} → ${nu} 성명 정정 완료`,()=>{inp.value=nm;});
+  /* 서버 화이트리스트와 동일 규칙의 사전 차단(정본 게이트는 서버 — 여기는 헛왕복 방지용) */
+  if(!/^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9·ㆍ()（） ]+$/.test(nu)||/^[=+\-@'"]/.test(nu)){
+    alert("성명에 쓸 수 없는 문자가 있습니다.\n한글·영문·숫자·가운뎃점·괄호·공백만 사용할 수 있습니다.");inp.value=nm;return;
+  }
+  const s=staleLeaveCount(nm);
+  if(!confirm(`성명을 "${nm}" → "${nu}" 로 바꿉니다.\n\n· 보드명단·연차원장 성명이 함께 바뀝니다.\n· ⚠️ 옛 성명 기록 ${s.total}건(올해 ${s.thisYear}건) — 휴무(스케줄) 탭은 "${nm}" 그대로 남습니다.\n  시트에서 성명 정정 전까지 이 사람의 스케줄이 빈칸으로 보이고,\n  올해 사용 연차가 0으로 집계돼 잔여 연차가 실제보다 많게 표시됩니다(신청 승인 시 초과 통과 위험).\n· 인사 정본(현재근무자) 성명도 함께 정정해야 합니다 — 어긋나면 퇴사 처리가 조용히 건너뛰거나 재등록 시 중복 행이 생깁니다.\n\n계속할까요?`)){inp.value=nm;return;}
+  rosterCall({op:"rename",name:nm,newName:nu},
+    j=>{
+      const n=j.staleLeave||0, ny=j.staleLeaveYear||0;
+      if(n>0)setTimeout(()=>alert(`성명 정정 완료: ${nm} → ${nu}\n\n⚠️ 옛 성명 기록 ${n}건(올해 ${ny}건)이 휴무 탭에 "${nm}"으로 남아 있습니다.\n시트에서 성명 정정 전까지 잔여 연차가 실제보다 많게 보이며, 신청 승인 시 초과 승인이 통과될 수 있습니다.\n인사 정본(현재근무자) 성명도 함께 정정해 주세요.`),150);
+      return n>0?`✓ ${nm} → ${nu} 정정 · 옛 성명 기록 ${n}건 남음(잔여 과다 표시 주의)`:`✓ ${nm} → ${nu} 성명 정정 완료`;
+    },
+    ()=>{inp.value=nm;});
 }
 function rosterExclude(nm){
   const xd=prompt(`${nm} 님을 명단에서 제외합니다.\n퇴사일(YYYY-MM-DD)을 입력하세요 — 그 달까지는 보드에 남고 다음 달부터 자동 제외됩니다.\n(서버 원장의 과거 스케줄 기록은 삭제되지 않습니다)`,ymdOf(new Date()));
