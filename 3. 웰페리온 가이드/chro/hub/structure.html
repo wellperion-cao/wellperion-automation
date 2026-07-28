@@ -787,8 +787,8 @@
         <tr><td><span class="tag db">db:onbo</span></td><td>입사 · 온보딩</td><td>체크 항목 · 주차 체크인 · 완료 여부</td><td>온보딩 · 성찰 · 워치</td></tr>
         <tr><td><span class="tag db">db:blacklist</span></td><td>채용블랙리스트</td><td>차단 대상(PII 최소화: 생년 · 연락처 뒤4)</td><td>재지원 자동 경고</td></tr>
         <tr><td><span class="tag db">휴무 탭</span></td><td>휴무</td><td>월별 휴무(월 6회 + 법정공휴일) — 웰페리온 스케줄보드 셀 정본(2026-07-27 서버 동기화)</td><td>휴무 관리 · 스케줄보드</td></tr>
-        <tr><td><span class="tag db">연차원장 탭</span></td><td>연차원장</td><td>(성명 · 연도) 단위 부여 · 이월 · 조정 — 잔여는 서버 결정적 산출(부여+이월+조정−연차−반차×0.5), 부여 공란=미확정 표기(2026-07-28 신설)</td><td>연차 부여/잔여 정본 · 승인 잔여 검증</td></tr>
-        <tr><td><span class="tag db">보드명단 탭</span></td><td>보드명단</td><td>스케줄보드 명단 정본(보드부서 · 표기명 · 연차적용 N=프리랜서/외주 · 퇴사일) — 입사/퇴사 액션이 자동 갱신 + 보드 관리자 모드에서 수동 제외 · 복원 · 추가(행 삭제 없음, 2026-07-28 신설)</td><td>보드 명단 · 연차 미적용 분기 · 퇴사자 자동 숨김</td></tr>
+        <tr><td><span class="tag db">연차원장 탭</span></td><td>연차원장</td><td>(성명 · 연도) 단위 부여 · 이월 · 조정 — 보드 관리자 모드에서 부여 직접 수정(@79), 잔여는 서버 결정적 산출(부여+이월+조정−연차−반차×0.5), 부여 공란=미확정 표기(2026-07-28 신설)</td><td>연차 부여/잔여 정본 · 승인 잔여 검증</td></tr>
+        <tr><td><span class="tag db">보드명단 탭</span></td><td>보드명단</td><td>스케줄보드 명단 정본(보드부서 · 표기명 · 연차적용 N=프리랜서/외주 · 퇴사일) — 입사/퇴사 액션이 자동 갱신 + 보드 관리자 모드에서 수동 제외 · 복원 · 추가 · 개명(행 삭제 없음, 2026-07-28 신설)</td><td>보드 명단 · 연차 미적용 분기 · 퇴사자 자동 숨김</td></tr>
         <tr><td><span class="tag db">공휴일 탭</span></td><td>공휴일</td><td>날짜 · 명칭(2026 · 2027 적재) — 연도 전환을 시트 입력만으로 반영, 코드 연도 리터럴 제거(2026-07-28 신설)</td><td>보드 공휴 판정 · 필요휴무 산정</td></tr>
         <tr><td><span class="tag db">자동화로그 탭</span></td><td>자동화로그</td><td>주체 · 작업 · 상세 · 결과 · 일시</td><td>오피스 대시보드 · 이력 추적</td></tr>
         <tr><td><span class="tag db">업무평가 탭</span></td><td>업무평가</td><td>대상자 · 평가기간별 직무성과 · 업무목록JSON(관리자 전용, 공개 read 없음)</td><td>관리자 업무평가 · 정기평가지 가산점(≤+10) 프리필</td></tr>
@@ -829,15 +829,15 @@
         <tr><td><span class="tag act">get-self-eval</span></td><td>최신 자기평가 조회(정기평가지 갭 병렬표시 연동, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td rowspan="2">리더십평가</td><td><span class="tag act">leadership-submit</span></td><td>부서원 익명 제출(성명+연락처뒤4 자가인증 후 폐기, append-only, 신원 미저장)</td><td><span class="badge bg-a4">A-4</span></td></tr>
         <tr><td><span class="tag act">get-leadership-eval</span></td><td>집계 조회(index/summary/raw, k=3 미만 비공개 게이트, 관리자 전용)</td><td><span class="badge bg-a4">A-4</span></td></tr>
-        <tr><td rowspan="10">휴무 · 스케줄보드</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td rowspan="10">휴무 · 스케줄보드</td><td><span class="tag act">set-leave-bulk</span></td><td>월 휴무 일괄 반영(병합 full-sync) — 기입한 날짜가 시트에서 날짜형으로 저장되므로 단건 쓰기는 반드시 날짜 정규화 경유(@79)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">schedboard-list</span></td><td>보드 셀 읽기(공개 · 캐시 60초) + roster(보드명단) · holidays(공휴일) · ann(연차 부여/잔여 산출) · year 동봉(2026-07-28 확장)</td><td><span class="badge bg-a5">A-5</span></td></tr>
-        <tr><td><span class="tag act">schedboard-set</span></td><td>보드 셀 단건 upsert(공개 창구 — 게이트 전부 서버측: 유형 화이트리스트·25일~말일 윈도우·PIN 서버검증·쓰기 상한·Lock, 연차·반차는 결재 승인 반영/PIN 정정만)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td><span class="tag act">schedboard-set</span></td><td>보드 셀 단건 upsert(공개 창구 — (성명 · 날짜) 키 정규화로 중복 행 방지 @79, 게이트 전부 서버측: 유형 화이트리스트·25일~말일 윈도우·PIN 서버검증·쓰기 상한·Lock, 연차·반차는 결재 승인 반영/PIN 정정만)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">schedreq-approve</span></td><td>신청 승인 서버 원자 처리(공개+PIN — 연차적용 · 잔여 검증 → 휴무 셀 upsert → 상태 · 결재일 기입을 Lock 1회에, 잔여 부족 시 거부, 2026-07-28 신설)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">schedreq-reject</span></td><td>신청 반려 서버 기입(공개+PIN — 상태 · 결재일만, 기반영 셀 삭제 없음)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">leave-balance</span></td><td>연차 부여/잔여 서버 산출 조회(연도 필터 · 연차 미적용 명단 동봉, 관리자 전용)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">ledger-set</span></td><td>연차원장 (성명 · 연도) upsert — 부여 공란=미확정 허용(관리자 전용)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">roster-set</span></td><td>보드명단 성명 upsert(행 순서=보드 표시 순서, 관리자 전용) — register/resign 후크가 자동 갱신</td><td><span class="badge bg-chro">CHRO</span></td></tr>
-        <tr><td><span class="tag act">schedboard-roster</span></td><td>보드 명단 수동 정정(공개+PIN — 제외=퇴사일 기입 · 복원=퇴사일 해제 · 추가=맨아래 신규 행, <b>행 삭제 없음</b> · 중복 성명 거부 · 쓰기 상한 공유, 2026-07-28 신설 @78)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td><span class="tag act">schedboard-roster</span></td><td>보드 명단 수동 정정 <b>5종</b>(공개+PIN — 제외=퇴사일 기입 · 복원=퇴사일 해제 · 추가=맨아래 신규 행 · <b>총연차(setann)</b>=연차원장 부여 셀만 갱신(이월 · 조정 보존) · <b>개명(rename)</b>=보드명단+연차원장 성명 동시 갱신(옛 성명 휴무 기록 건수 반환 · 경고), <b>행 삭제 없음</b> · 중복 성명 거부 · 성명 문자 화이트리스트(수식 주입 차단) · 쓰기 상한 공유, 2026-07-28 @79)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td><span class="tag act">holiday-set</span></td><td>공휴일 날짜 upsert(명칭 공란=삭제 · 달력 유효일 검증, 관리자 전용)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td rowspan="2">블랙리스트</td><td><span class="tag act">add-blacklist</span></td><td>차단 대상 등록(PII 최소화)</td><td><span class="badge bg-a1">A-1</span></td></tr>
         <tr><td><span class="tag act">remove-blacklist</span></td><td>차단 해제</td><td><span class="badge bg-a2">A-2</span></td></tr>
@@ -858,8 +858,8 @@
   <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">인프라</h3>
   <div class="grid">
     <div class="item">
-      <div class="item-head"><h3>Apps Script 백엔드 (@78 · 라이브)</h3></div>
-      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @78 = 보드 명단 수동 정정(제외 · 복원 · 추가) 신설분.</p>
+      <div class="item-head"><h3>Apps Script 백엔드 (@79 · 라이브)</h3></div>
+      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @79 = 명단 정정에 총연차 · 개명 2종 추가(성명 문자 화이트리스트 포함) + <b>휴무 단건 쓰기 날짜 정규화</b>(일괄동기화가 남긴 날짜형 셀을 못 찾아 같은 칸이 중복 행으로 쌓이던 결함 수정).</p>
       <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
     </div>
     <div class="item">

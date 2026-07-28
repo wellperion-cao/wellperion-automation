@@ -6099,7 +6099,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수',      value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
                         extra:{label:'📲 회원 접수 폼', href:'http://wellperion.com/ko/reception/'}})
           + moduleCard({icon:'🏢',label:'운영부 체계',     caption:'실무진 진행 업무',  value:S.opsTask,     warn:S.opsWarn,   warnLevel:S.opsLevel,   href:OPS_HREF})
-          + moduleCard({icon:'🛎️',label:'리셉션 업무',     caption:'라커 운영',        value:S.lockerVal,   warn:S.lockerWarn, warnLevel:'ok',        href:RECEPTION_WORK_HREF});
+          + moduleCard({icon:'🛎️',label:'리셉션',          caption:'리셉션 운영 시트',  value:S.lockerVal,   warn:S.lockerWarn, warnLevel:'ok',        href:RECEPTION_WORK_HREF});
       }
       function won(n){ // 256만원 / 1,250원 — 큰 숫자 칸이 좁아 만원 단위로 접는다
         if(n==null || isNaN(n)) return null;
@@ -6197,9 +6197,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             S.opsWarn  = over>0 ? ('⚠ 마감 지남 '+over+'건') : '✓ 마감 초과 없음';
             S.opsLevel = over>0 ? 'bad' : 'ok';
           }
-          /* 리셉션 — 라커 현황은 웹앱이 비밀번호 POST 로만 내준다(세션 입력). 공개 화면에 비밀번호를
-             심지 않는다(🔒) → 숫자를 지어내지 않고 '들어가서 본다'고 정직하게 적는다. */
-          S.lockerVal  = '라커 관리';
+          /* 리셉션 — 현황은 웹앱이 비밀번호 POST 로만 내준다(세션 입력). 공개 화면에 비밀번호를
+             심지 않는다(🔒) → 숫자를 지어내지 않고 '들어가서 본다'고 정직하게 적는다.
+             2026-07-28: 페이지가 라커 전용 → 리셉션 실무 시트 9종 허브로 교체되어 명칭 변경(GM 지시)
+             「리셉션 업무 / 라커 관리」 → 「리셉션 / 실무진 진행 업무」 */
+          S.lockerVal  = '실무진 진행 업무';
           S.lockerWarn = '열어서 확인 (비밀번호 필요)';
 
           render(S);
