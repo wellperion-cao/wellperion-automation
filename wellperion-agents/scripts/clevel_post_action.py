@@ -30,6 +30,7 @@ import argparse
 import io
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -192,6 +193,7 @@ def update_queue_with_bridge(
     artifact_url: str | None,
     dry_run: bool,
     next_parent: str | None = None,
+    summary: str | None = None,
 ) -> tuple[str, bool]:
     """
     일의 브릿지(Work Bridge): _queue.json(중앙 큐 = 단일 진실)에 완료 + '다음'을 구조로 기록.
@@ -232,6 +234,12 @@ def update_queue_with_bridge(
             # ④증거: 완료 단일 정의 4요건 — DONE 항목에 증거 URL 기록(거짓완료 추적)
             if artifact_url and artifact_url.strip():
                 t["artifact"] = artifact_url.strip()
+            # '봤다' 한 줄(saw) 자동 채움 — --summary 에 숫자나 http 링크가 있으면만.
+            # 그 외 추론 없음(추측으로 채우면 배지가 거짓말이 된다). 이미 있으면 덮어쓰지 않음.
+            if not t.get("saw") and summary and summary.strip():
+                _s = summary.strip()
+                if re.search(r"\d", _s) or "http" in _s.lower():
+                    t["saw"] = _s
             if next_desc:
                 t["next"] = next_desc
                 t.pop("next_missing", None)
@@ -510,6 +518,7 @@ def main() -> int:
         artifact_url=args.artifact_url,
         dry_run=args.dry_run,
         next_parent=args.next_parent,
+        summary=args.summary,
     )
 
     # ── 루틴/자동 완료 스팸 필터(2026-07-13, GM 지시) ───────────────────────

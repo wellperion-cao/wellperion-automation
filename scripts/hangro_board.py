@@ -310,6 +310,8 @@ def fetch_queue_items() -> list[dict]:
             "needs_gm_appr": False,
             "terminal": bool(q.get("terminal", False)),
             "next":     str(q.get("next") or "").strip(),
+            # '봤다' 한 줄(무엇을 보고 됐다고 했나) — 있으면 ✅, 없으면 🔍미확인 배지(막지 않음).
+            "saw":      str(q.get("saw") or "").strip(),
             # 선택 필드 간단설명·핵심조언 override (향후 배 등록 시 직접 채움)
             "간단설명": str(q.get("간단설명") or "").strip(),
             "핵심조언": str(q.get("핵심조언") or "").strip(),
@@ -471,6 +473,12 @@ def _md_table(rows: list[tuple[str, str, str, str, str]]) -> str:
     return f"{header}\n{sep}\n{body}\n"
 
 
+def _saw_badge(it: dict) -> str:
+    """완료 배 표시용 — 'saw'(무엇을 보고 됐다고 했나)가 있으면 ✅, 없으면 🔍미확인.
+    막지 않는다 — 표시만(웰리)."""
+    return "✅" if str(it.get("saw") or "").strip() else "🔍미확인"
+
+
 def _item_to_row(it: dict, ship_col_extra: str = "") -> tuple[str, str, str, str, str]:
     """아이템 dict → 5-tuple for _md_table.
     ship_col_extra: 꼬리표 (예: '보류', '🔗', '🌀') — 배 칸 아이콘 뒤에 붙음."""
@@ -596,7 +604,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
         done_rows = []
         for it in secs["done"]:
             has_next = bool(str(it.get("next") or "").strip())
-            tag = "🔗" if has_next else ""
+            tag = (("🔗 " if has_next else "") + _saw_badge(it)).strip()
             done_rows.append(_item_to_row(it, ship_col_extra=tag))
         for it in secs["drift"]:
             # 표류: 🌀 꼬리표, 핵심조언에 👉 촉구 반드시 포함 (약속 L16)
@@ -609,7 +617,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
             title = str(it.get("title", ""))
             badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
             title_col = f"{title}{badges}".strip()
-            done_rows.append((f"{icon} 🌀", nick, title_col, desc, advice_col))
+            done_rows.append((f"{icon} 🌀 {_saw_badge(it)}", nick, title_col, desc, advice_col))
         lines.append(_md_table(done_rows))
     else:
         lines.append("_(없음)_\n")
