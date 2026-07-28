@@ -3,15 +3,26 @@
 # inside Python (subprocess passes UTF-8 args), avoiding the CMD/CP949 .bat
 # breakage. Called by ops/start_engagement_collect.bat after collection.
 #
-# Behavior: git pull --autostash -> add ONLY the 3 engagement files
-# (never -A) -> commit if staged changes exist -> push. All git failures
-# are non-fatal (logged, exit 0) so the scheduled task never errors hard.
+# Behavior: delegate to scripts/safe_commit.py (the repo's single commit gate)
+# with ONLY the engagement files in scope. Failures are non-fatal (logged,
+# exit 0) so the scheduled task never errors hard.
+#
+# 2026-07-28 (시모 아침 자가점검 #8): 여기 있던 손수 만든 pull->add->commit->push
+# 를 safe_commit 호출로 바꿨다. 옛 코드는 맨 앞에서 `git pull --autostash` 를 돌리고
+# 실패하면 커밋을 통째로 건너뛰며 exit 0 을 냈다 — 이 저장소는 detached HEAD 로 도는
+# 구간이 있어 pull 이 "You are not currently on a branch" 로 죽었고, 그때부터
+# 참여도 데이터가 2026-07-23 이후 5일간 로컬에만 쌓인 채 GM 화면은 옛 숫자를 보였다
+# (조용한 실패 — 2026-07-27 'IG 도달 6일 미커밋'과 같은 부류).
+# safe_commit 은 락 직렬화·임시 인덱스·HEAD 재검증·push 를 이미 다 하고
+# detached HEAD 에서도 동작한다. 수동 pull 은 하지 않는다(공용 워크트리 규칙).
 
-import subprocess
 import sys
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+_SCRIPTS = ROOT / "scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
 FILES = [
     "3. 웰페리온 가이드/cmo/funnel/engagement/engagement_feed.json",
     "3. 웰페리온 가이드/cmo/funnel/engagement/danggn_snapshot.json",
@@ -20,36 +31,43 @@ FILES = [
 ]
 
 
-def _run(args):
-    return subprocess.run(
-        args, cwd=str(ROOT), capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
-    )
-
-
 def main() -> int:
-    pull = _run(["git", "pull", "--autostash"])
-    print("[commit_engagement] pull rc=%s %s" % (pull.returncode, ((pull.stderr or pull.stdout) or "").strip()[-200:]))
-    if pull.returncode != 0:
-        print("[commit_engagement] pull failed -> skip commit")
+    existing = [f for f in FILES if (ROOT / f).exists()]
+    if not existing:
+        print("[commit_engagement] no engagement files on disk -> nothing to commit")
         return 0
 
-    _run(["git", "add"] + FILES)
-    staged = _run(["git", "diff", "--cached", "--quiet"])
-    if staged.returncode == 0:
-        print("[commit_engagement] no engagement changes -> skip commit")
+    try:
+        from safe_commit import safe_commit
+    except Exception as exc:
+        print("[commit_engagement] safe_commit import failed: %s" % exc)
         return 0
 
-    # pathspec 강제(2026-07-20 시토·동시커밋 사고대응): FILES 로 커밋 스코프 —
-    # add~commit 사이 다른 세션이 스테이징해둔 무관 파일이 섞여 들어가지 않는다.
-    commit = _run(["git", "commit", "-m", "auto(cmo): scheduled engagement collect (danggn+blog+ig ledger)", "--"] + FILES)
-    print("[commit_engagement] commit rc=%s %s" % (commit.returncode, ((commit.stdout or commit.stderr) or "").strip()[-200:]))
-    if commit.returncode != 0:
-        print("[commit_engagement] commit failed -> skip push")
+    try:
+        res = safe_commit(
+            existing,
+            "auto(cmo): scheduled engagement collect (danggn+blog+ig ledger)",
+            holder="commit_engagement",
+        )
+    except Exception as exc:
+        # 비치명 유지(예약작업이 하드 에러로 죽지 않게) — 단 옛 코드와 달리
+        # 실패는 반드시 stdout 에 남는다. 조용한 건너뜀 금지.
+        print("[commit_engagement] commit FAILED (non-fatal): %s" % exc)
         return 0
 
-    push = _run(["git", "push"])
-    print("[commit_engagement] push rc=%s %s" % (push.returncode, ((push.stderr or push.stdout) or "").strip()[-200:]))
+    if not isinstance(res, dict):
+        print("[commit_engagement] unexpected result: %r" % (res,))
+        return 0
+
+    if not res.get("ok"):
+        print("[commit_engagement] commit FAILED: %s" % (res.get("reason") or res))
+    elif not res.get("committed"):
+        print("[commit_engagement] no engagement changes -> nothing committed")
+    else:
+        print("[commit_engagement] committed sha=%s (%d files)"
+              % (str(res.get("sha") or "")[:9], len(res.get("changed") or [])))
+    for f in res.get("foreign") or []:
+        print("[commit_engagement] ! 혼입 %s" % f)
     return 0
 
 
