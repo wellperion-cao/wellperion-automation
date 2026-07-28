@@ -70,6 +70,14 @@ NICK = {
 NICK_TO_ROLE = {v: k for k, v in NICK.items()}
 ROLES = tuple(NICK.keys())
 
+# 배제 역할(시로·시뽀 = 나우열M 관할) 단일 정본 — 복사 금지, import 만(약속 L01).
+try:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    from queue_dispatch import EXCLUDED_ROLES as _EXCLUDED_ROLES
+except Exception:
+    _EXCLUDED_ROLES = {"chro", "cfo"}
+
 # SKIP 2.c — 큐/자동발행 전용 파일 집합(실작업 파일이 하나도 없으면 skip, 재귀방지).
 AUTO_ONLY_PATHS = {
     "status/_queue.json",
@@ -201,20 +209,30 @@ def _attribute_clevel(root: str, subject: str, body: str) -> str:
                 idx = pos + 1
         return None
 
+    def _ok(role):
+        """시로(chro)·시뽀(cfo)로는 귀속하지 않는다 — 나우열M 관할이라 AI 큐에서 배제
+        (GM 확정 2026-07-28 · 정본 queue_dispatch.EXCLUDED_ROLES).
+
+        실사례(2026-07-28): "fix(queue): 시로·시뽀는 AI 큐에서 배제 …" 커밋이 제목 속
+        닉네임 '시뽀'에 걸려 **시뽀 배로 자동 기록**됐다 — 배제하는 작업이 배제 대상 배를
+        만든 것. 배제 역할이 잡히면 그 신호는 버리고 다음 단계로 넘어간다(오귀속 방지).
+        """
+        return role if role and role not in _EXCLUDED_ROLES else None
+
     # ① 명시 conventional-commit scope: "type(scope): ..." 선두 패턴에서만 추출.
     #    (예: "fix(cto): 웰리 …" → scope="cto" → cto. 본문 뒤쪽 우연한 role 단어는
     #    이 단계에서 안 봄 — 반드시 제목 선두 괄호 구조여야 최우선 신호로 인정.)
     m = re.match(r"^\s*[A-Za-z][A-Za-z0-9_-]*\(([^)]+)\)\s*:", low)
     if m:
-        scope_role = _bounded_role(m.group(1))
+        scope_role = _ok(_bounded_role(m.group(1)))
         if scope_role:
             return scope_role
     # ② 닉네임 토큰.
     for nick, role in NICK_TO_ROLE.items():
-        if nick in text:
+        if nick in text and _ok(role):
             return role
     # ③ 역할 토큰 (예: feat(S2-COO) / feat(S2/cto) / "COO" 단어) — 제목 전체에서.
-    role = _bounded_role(low)
+    role = _ok(_bounded_role(low))
     if role:
         return role
     # ④ 기본 — 전사 소유자 ceo(웰리). 세션마커 폴백 폐지(멀티세션 오귀속 방지).
