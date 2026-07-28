@@ -384,7 +384,7 @@
   {
     "task_id": "NEXT-20260722-075343",
     "clevel": "cto",
-    "title": "카카오3채널 GM go 승인 후 kakao_go=True 활성화",
+    "title": "[시토] 카카오 발송 경로 중복 정리 — 3채널 '활성화' 전제가 깨짐(점검은 이미 ON·매출은 별도경로로 이미 발송)",
     "status": "PENDING",
     "depends_on": "CTO-2026-07-21-REPORT-UNIFICATION",
     "from": "cto",
@@ -394,8 +394,8 @@
     "short_no": 35,
     "audience": "office",
     "reversible": false,
-    "note": "\n\n[2026-07-28 시토 — 배10367 실무 배 5척 분류]\n⚓ GM 결재 대기 — 카카오 3채널 활성화(kakao_go=True)는 외부 발신이라 비가역. GM go 없이는 열지 않는다. 2026-07-28 셸에서 GM께 결정 요청 상정.",
-    "next": "카카오 3채널 활성화(kakao_go=True)는 외부 발신이라 비가역. GM go 없이는 열지 않는다. 2026-07-28 셸에서 GM께 결정 요청 상정."
+    "note": "\n\n[2026-07-28 시토 — 배10367 실무 배 5척 분류]\n⚓ GM 결재 대기 — 카카오 3채널 활성화(kakao_go=True)는 외부 발신이라 비가역. GM go 없이는 열지 않는다. 2026-07-28 셸에서 GM께 결정 요청 상정.\n\n[2026-07-28 시토 — 정정] GM 지적(\"지금 잘하고 있는 것 같은데? 갑자기 킨다고?\")이 맞다. 켤까 말까를 물은 것 자체가 실측 없이 올린 것이었다. 실측 결과 이 배의 전제가 이미 깨져 있다:\n ① 3채널 중 점검(stream2)은 **이미 켜져 있다** — daily_scheduler.py:2461 KAKAO_GO_STREAM2=True, 2026-07-19 GM go 라이브 발효(모듈 cto-kakao-check-share).\n ② 매출은 이 경로가 아니라 **별도로 이미 카톡 3방(회장님·관리부·운영부)에 매일 09:30 이미지로 무인 발송 중**(모듈 cto-kakao-sales-report, autonomy=auto).\n ③ 그래서 남은 stream3(매출+운영+인사) 카톡을 켜면 매출이 **하루 두 번 다른 형식으로** 나간다 = 중복 발신. stream1(문의) 카톡도 문의알림방 텔레그램과 겹치는지 미확인.\n ▶판정: '켜기'는 답이 아니다. 이 배는 활성화 배가 아니라 **중복 정리 배**로 실체가 바뀌었다. 재정의 후 처리하며, 그때까지 kakao_go 는 손대지 않는다(현 상태가 옳다).",
+    "next": "시토: 카카오 발송 경로 전수 대조(stream1·2·3 ↔ cto-kakao-sales-report·cto-kakao-check-share)해 중복 지점을 표로 정리. 켜는 게 아니라 겹치는 것을 없애는 배로 재정의. kakao_go 는 그때까지 현 상태(False) 유지."
   },
   {
     "task_id": "CEO-2026-07-23-ERP-FEEDBACK-CIRCUIT",
