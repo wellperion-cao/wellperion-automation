@@ -155,6 +155,41 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
     return "\n".join(lines)
 
 
+def _score_block() -> str:
+    """🏆 이번 주 점수판 — 접수 1점 + 처리 완료 1점 (GM 지시 2026-07-28).
+
+    왜 여기에 붙나: 접수한 사람이 곧 처리까지 떠안는 구조라 '적을수록 손해'가 되어
+    아예 안 적게 된다. 적는 행위 자체에 점수를 붙이고, 그걸 같이 보며 칭찬한다.
+    ▸새 발송·새 예약을 만들지 않는다(약속 L21) — 이미 매일 밤 같은 방으로 나가는
+      이 메시지 끝에 얹는다. 알림이 하나 더 늘면 그만큼 안 읽힌다.
+    ▸셈법은 서버(reg_scoreboard) 한 곳뿐 — 여기서 다시 세지 않는다. 화면과 이 발표의
+      숫자가 갈라지면 아무도 점수를 안 믿는다.
+    """
+    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_scoreboard", "period": "week"},
+                   timeout=20, label="stream2b-score")
+    if resp is None:
+        return ""
+    try:
+        data = resp.json()
+        board = data.get("board", []) if data.get("ok") else []
+    except Exception:
+        return ""
+    if not board:
+        return (f"{_DIVIDER}\n🏆 이번 주 점수판 (접수 1점 + 완료 1점)\n\n"
+                "아직 점수가 없습니다. 접수하시거나 처리를 끝내시면 쌓입니다.")
+
+    lines = [_DIVIDER, "🏆 이번 주 점수판 (접수 1점 + 완료 1점)", ""]
+    top = board[0]["total"]
+    for x in board[:5]:
+        mark = "🎉" if x["total"] == top else "▪"
+        lines.append(f"{mark} {x['rank']}위 {x['name']} — {x['total']}점")
+        lines.append(f"   접수 {x['intake']} · 완료 {x['done']}")
+    winners = [x["name"] for x in board if x["total"] == top]
+    lines.append("")
+    lines.append(f"🎊 {' · '.join(winners)}님 수고하셨습니다! 이번 주 1위입니다 🎊")
+    return "\n".join(lines)
+
+
 def build_digest(today: str | None = None) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
@@ -162,7 +197,9 @@ def build_digest(today: str | None = None) -> str:
     rows = _fetch_rows()
     if rows is None:
         return f"{header}\n\n조회 실패 (GAS 응답 없음)"
-    return f"{header}\n\n{_today_section(rows, today)}\n\n{_DIVIDER}\n{_aging_block(rows)}"
+    body = f"{header}\n\n{_today_section(rows, today)}\n\n{_DIVIDER}\n{_aging_block(rows)}"
+    score = _score_block()
+    return f"{body}\n\n{score}" if score else body
 
 
 def run(today: str | None = None, dry_run: bool = True) -> str:
