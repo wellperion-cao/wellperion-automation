@@ -44,6 +44,11 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", "", s or "").lower()
 
 
+def _strip_role_tag(s: str) -> str:
+    """제목 맨 앞 '[시우]' 같은 역할 머리표를 뗀다. 중복 비교는 양쪽 다 떼고 한다."""
+    return re.sub(r"^\[[^\]]*\]\s*", "", s or "")
+
+
 def build_ship(args, queue):
     today = args.date or _dt.date.today().isoformat()
     role = args.to.lower()
@@ -123,13 +128,16 @@ def main() -> int:
     made = {}
 
     def mutator(queue):
-        # 중복 방지 — 같은 역할에 같은 제목의 열린 배가 있으면 그대로 둔다
-        want = _norm(args.title)
+        # 중복 방지 — 같은 역할에 같은 제목의 열린 배가 있으면 그대로 둔다.
+        # ★양쪽 다 '[시우]' 같은 역할 머리표를 떼고 비교한다 — 기존 배에서만 떼고
+        #   들어오는 제목은 안 떼서, 머리표가 붙은 제목이면 중복 감지가 한 번도 못 걸렸다
+        #   (2026-07-28 실사고: 같은 배가 2척 생성됨).
+        want = _norm(_strip_role_tag(args.title))
         for it in queue:
             if not isinstance(it, dict):
                 continue
             if it.get("clevel") == args.to.lower() and it.get("status") in OPEN_STATUS:
-                if _norm(re.sub(r"^\[[^\]]*\]\s*", "", it.get("title") or "")) == want:
+                if _norm(_strip_role_tag(it.get("title") or "")) == want:
                     made["dup"] = it
                     return queue
         ship = build_ship(args, queue)
