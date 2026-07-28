@@ -59,7 +59,11 @@ GAS_URL = (
 )
 
 # ── 상세 페이지(라이브 루트배포·월간보고 탭 앵커) ──
-PAGE_URL = "https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html#monthly"
+# 링크 안의 공백은 반드시 %20 로 — 텔레그램 자동링크가 공백에서 끊겨 404가 된다(2026-07-28 실측).
+PAGE_URL = (
+    "https://wellperion-cao.github.io/wellperion-automation/"
+    "coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html#monthly"
+)
 
 # ── 점검관리방 chat_id 폴백(3분류 분리 완료·INC-011) ──
 DEFAULT_CHECK_CHAT_ID = "-5136037543"
