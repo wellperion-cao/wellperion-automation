@@ -511,6 +511,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 }
 .cell-select:focus{border-color:var(--emerald);box-shadow:0 0 0 1px var(--emerald) inset}
 
+/* ── 드롭다운 옵션 팝업 흰 글씨+흰 바탕(2026-07-28 GM 지적: "이름 선택이 글자색 흰색 바탕색 흰색으로
+   되어있어서 이름이 잘 안보여") ── 원인: 이 페이지는 다크 테마가 기본(:root --text=거의 흰색)인데
+   :root에 color-scheme 선언이 없었다 → 네이티브 <select> 옵션 팝업은 브라우저 기본(라이트) 배색으로
+   렌더되고, 글자색만 CSS(var(--text))를 물려받는다. 라이트 팝업 배경 + 거의 흰 글자색이 겹쳐 안 보인 것.
+   color-scheme으로 네이티브 위젯 기본 배색을 현재 테마와 맞추고, 문제로 지목된 컨택한 사람 select
+   두 곳(#cmContactBy·.ct-by)에는 .contact-by-select 클래스로 옵션 색을 한 번 더 명시한다
+   (브라우저별 옵션 스타일 지원 편차 방어 — color-scheme 단독으로는 크로스브라우저 보장이 안 된다). */
+:root{ color-scheme:dark; }
+:root.theme-light{ color-scheme:light; }
+.contact-by-select, .contact-by-select option{ color:var(--text); background-color:var(--paper); }
+
 /* ── 멤버십 문의 현황표(#dbTable) 담당 칼럼 화면 숨김 — 데이터·저장은 유지, 표시만 제거. 강습표는 미적용(지시 범위). 2026-07-07 시포·GM ── */
 /* 담당 칸 숨김 — display:none 금지(2026-07-20 3차 · GM "우측에 빈틈 왜 만들어?").
    table-layout:fixed에서 display:none 셀은 박스를 만들지 않아 width 선언이 무시되고 auto 칸으로 취급된다.
@@ -2474,7 +2485,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <textarea class="consult-memo" id="cmMemoInput" placeholder="상담·통화 내용을 입력하세요."></textarea>
     <!-- 컨택한 사람(배101, 2026-07-25 시포·GM) — 상담 내용을 CONTACT에 쌓을 때 누가 컨택했는지 함께 기록(수기 '-이름' 서명 대체·평가 집계 기준). -->
     <div class="consult-row" id="cmContactByRow" style="margin-top:6px"><span class="ck">컨택한 사람</span><span class="cv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <select id="cmContactBy" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
+      <select id="cmContactBy" class="contact-by-select" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit"></select>
       <span style="font-size:11px;color:var(--dim)">— 상담 내용 기록 시 필수</span>
     </span></div>
 
@@ -2564,6 +2575,33 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeChurnModal()">취소</button>
       <button class="consult-btn-save" id="crSaveBtn" onclick="saveChurnModal()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOSS 재등록 처리 모달 — 종료회원(LOSS) 표 '재등록 처리' 버튼. GM 지시(2026-07-28). ★왜 필요한가:
+     서버 판정(Survey.js member_active_list, _AA_LOSS) = 잔여일>0 && 재등록분류 ∉ {LOSS,환불,양도LOSS}.
+     종료일자만 고치면 잔여일(시트 수식)은 살아나지만 재등록분류가 여전히 LOSS류면 그대로 종료회원에
+     남는다 — 실무진은 "왜 안 넘어가지" 하게 된다(더블클릭 인라인 편집도 발견하기 어려움).
+     이 모달은 새 유효기간(종료일자) + 재등록분류를 한 번에 저장해 두 조건을 동시에 채운다.
+     재등록분류 저장값='L재등록'(REACTIVATE_RECLASS_VALUE) — member_active_list 실데이터에 이미 쓰이는
+     값이며 _AA_LOSS에 없어 유효회원으로 잡힌다(새 값 발명 금지, GM 지시). 저장=기존 member_active_update
+     fields 경로 재사용(신규 액션 없음) · Survey.js 서버 판정 로직은 전혀 건드리지 않는다. ══ -->
+<div class="consult-overlay" id="reactivateOverlay" onclick="if(event.target===this)closeReactivateModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience">재등록</span>
+      <span class="consult-modal-title">재등록 처리</span>
+    </div>
+    <div class="consult-row"><span class="ck">회원</span><span class="cv" id="rvMemberFixed">—</span></div>
+
+    <div class="consult-field-label">새 유효기간(종료일자)</div>
+    <input type="date" id="rvEndDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+    <div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5">재등록하신 회원의 새 유효기간을 넣으면 멤버십 회원 명단으로 돌아갑니다.</div>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeReactivateModal()">취소</button>
+      <button class="consult-btn-save" id="rvSaveBtn" onclick="saveReactivateModal()">확인</button>
     </div>
   </div>
 </div>
@@ -7200,6 +7238,7 @@ function _activeDisplayCols() {
   if (_activeScope === 'ended') {
     var out = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL; });
     out.push('__churn__');
+    out.push('__reactivate__');   // 재등록 처리 버튼(GM 지시 2026-07-28) — 통합셀(정렬 대상 아님)
     return out;
   }
   if (_activeScope !== 'valid') return cols;
@@ -7248,6 +7287,7 @@ function _activeRender(rows, isFiltered) {
     var ths = displayCols.map(function(h){
       if (h === '__recon__') return '<th style="white-space:nowrap">재등록 상담</th>';   // 통합셀(정렬 대상 아님)
       if (h === '__churn__') return '<th style="white-space:nowrap">종료사유</th>';       // 통합셀(정렬 대상 아님) 2026-07-09 시포·GM
+      if (h === '__reactivate__') return '<th style="white-space:nowrap">재등록 처리</th>'; // 통합셀(정렬 대상 아님) 2026-07-28 시포·GM
       if (h === '__owners__') return '<th style="white-space:nowrap">담당자</th>';        // 종목별 담당자 요약(정렬 대상 아님) 2026-07-18 시포·GM
       var leftAlign = (h === '수강반종목명') ? ';text-align:left' : '';
       var arrow = (_activeSort.col === h) ? (_activeSort.dir < 0 ? ' ▼' : ' ▲') : '';
@@ -7286,6 +7326,7 @@ function _activeRender(rows, isFiltered) {
     displayCols.forEach(function(h){
       if (h === '__recon__') { html += _reconCellHtml(row); return; }
       if (h === '__churn__') { html += _churnCellHtml(row); return; }
+      if (h === '__reactivate__') { html += _reactivateCellHtml(row); return; }
       if (h === '__owners__') { html += _ownersCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
       // 수강반종목명(멤버십 상품명) = 원본이 장식·혜택·기간까지 길어 칸 넘침 → 폭 고정+말줄임+마우스오버 전체보기(표시전용·데이터 무변경). 2026-07-16 시토
@@ -8424,6 +8465,12 @@ function _churnCellHtml(row) {
   }
   return '<td class="churn-reason-cell churn-reason-empty" data-churn="' + ri + '" title="종료사유 입력" style="white-space:nowrap;cursor:pointer;color:var(--red);font-weight:600">＋ 사유 입력</td>';
 }
+// 재등록 처리 버튼 셀(GM 지시 2026-07-28) — openReactivateModal 참고 주석에 '왜' 상세.
+function _reactivateCellHtml(row) {
+  var ri = row.rowIndex != null ? row.rowIndex : 0;
+  return '<td style="white-space:nowrap"><button type="button" onclick="openReactivateModal(' + ri + ')" ' +
+    'style="padding:4px 10px;border-radius:7px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">재등록 처리</button></td>';
+}
 // '기타' 선택 시 메모 필수 유도(빨강 안내 + 저장 가드).
 function _crUpdateNoteReq() {
   var sel = document.getElementById('crReasonSel');
@@ -8478,6 +8525,59 @@ function saveChurnModal() {
   );
   showToast('종료사유 저장', 'ok');
   closeChurnModal();
+  saveBtn.disabled = false;
+}
+
+/* ─────────────────────────────────────────────
+   LOSS 재등록 처리 모달(2026-07-28 GM 지시) — 상세 배경은 위 reactivateOverlay HTML 주석 참고.
+   종료일자+재등록분류 컬럼명은 시트 헤더에 실제 개행이 섞여 있어(예: '종료\n일자'·'재등록\n분류')
+   하드코딩하지 않고 _capCol(공백/개행 무시 부분매칭, 기존 이탈방지 모듈 재사용)로 매 오픈마다
+   _activeHeaders에서 찾는다 — 시트 헤더가 바뀌어도 여기 수정 불필요. ───────────────────────────────────────────── */
+var REACTIVATE_RECLASS_VALUE = 'L재등록';   // member_active_list 실사용값 재사용(신규 값 발명 금지, GM 지시)
+var _reactivateModal = null;   // { rowIndex, keyPhone, rowKey, name, endCol, reCol }
+function openReactivateModal(rowIndex) {
+  var r = _churnFindMember(rowIndex);   // 종료회원 조회 — 종료사유 모달과 동일 소스(_activeRows/_endedRowsBg)
+  if (!r) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
+  var endCol = _capCol(_activeHeaders, '종료일자');
+  var reCol = _capCol(_activeHeaders, '재등록분류');
+  if (!endCol || !reCol) { showToast('종료일자/재등록분류 컬럼을 찾지 못했습니다 — 시트 헤더를 확인하세요', 'err'); return; }
+  var name = String(r['회원명'] || '').trim();
+  var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  _reactivateModal = { rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, endCol: endCol, reCol: reCol };
+  document.getElementById('rvMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '');
+  var cur = String(r[endCol] || '').trim();
+  var dm = cur.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);   // 기존 종료일자를 date input 값으로 프리필(형식 다양성 방어)
+  document.getElementById('rvEndDate').value = dm ? (dm[1] + '-' + ('0' + dm[2]).slice(-2) + '-' + ('0' + dm[3]).slice(-2)) : '';
+  document.getElementById('reactivateOverlay').classList.add('open');
+}
+function closeReactivateModal() {
+  document.getElementById('reactivateOverlay').classList.remove('open');
+  _reactivateModal = null;
+}
+function saveReactivateModal() {
+  if (!_reactivateModal) return;
+  var val = document.getElementById('rvEndDate').value;
+  if (!val) { showToast('새 유효기간을 입력해 주세요', 'err'); return; }
+  var m = _reactivateModal, rowIndex = m.rowIndex, keyPhone = m.keyPhone;
+  var fields = {}; fields[m.endCol] = val; fields[m.reCol] = REACTIVATE_RECLASS_VALUE;
+  var saveBtn = document.getElementById('rvSaveBtn'); saveBtn.disabled = true;
+  var _ov = {}; _ov[m.endCol] = val; _ov[m.reCol] = REACTIVATE_RECLASS_VALUE;
+  // 낙관적 갱신(기존 셀 편집·종료사유 모달과 동일 철학, 화면 먼저·기록은 WriteBuffer가 뒤에서 재시도) —
+  //   단 이 저장은 값 패치가 아니라 LOSS→유효 '이동'이라, 종료회원 표에서 행을 통째로 빼야 GM이 지시한
+  //   "목록 갱신"이 체감된다(값만 바꾸면 여전히 종료회원 표에 남아 있는 것처럼 보인다).
+  [(_activeScope === 'ended' ? _activeRows : null), _endedRowsBg].forEach(function(arr){
+    if (!arr) return;
+    var idx = arr.findIndex(function(x){ return x.rowIndex == rowIndex; });
+    if (idx >= 0) arr.splice(idx, 1);
+  });
+  if (_activeScope === 'ended' && _activeLoaded && document.getElementById('activeBody')) { _activeRender(_activeRows); renderActiveSummary(); }
+  if (_tapReady) renderTodayActionPanel();
+  WriteBuffer.enqueue(
+    { action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: m.rowKey || '', fields: fields },
+    { scope: 'active', phoneKey: keyPhone, fieldset: 'reactivate', label: '재등록 처리', who: m.name || '', overlay: _ov }
+  );
+  showToast((m.name || '회원') + '님이 유효회원으로 이동했습니다', 'ok');
+  closeReactivateModal();
   saveBtn.disabled = false;
 }
 
@@ -9411,7 +9511,7 @@ function _ctAddRow(item) {
   //   명단은 새로 만들지 않고 강습 담당 드롭다운이 쓰는 _lessonRosterFor 를 그대로 재사용한다(정본 하나).
   //   종목이 특정되지 않은 다종목 행은 그 회원의 종목들을 합쳐서 준다(엉뚱한 종목 강사는 안 섞인다).
   //   기존 값 보존은 아래 그대로 — 예전에 운영부 이름으로 기록된 건 계속 남고 다시 고를 수도 있다.
-  var bi = document.createElement('select'); bi.className = 'ct-by';
+  var bi = document.createElement('select'); bi.className = 'ct-by contact-by-select';
   bi.style.cssText = 'padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit';
   (function(){
     var b0 = document.createElement('option'); b0.value = ''; b0.textContent = '컨택한 사람 — 선택'; bi.appendChild(b0);
@@ -9580,8 +9680,12 @@ function _shortProgram(p){
 // 2026-07-28 GM 지시 — 멤버십 CONTACT 담당자에서 '고수자'·'강경희' 제거(회원 컨택을 하지 않는 분들).
 //   과거에 이 두 이름으로 기록된 행이 있으면 buildSelect()/_ctAddRow 의 '현재값 보존' 로직이 옵션에 되살려
 //   기록은 그대로 남는다 — 지우는 건 앞으로의 선택지뿐이다(과거 데이터 무손실).
+// 2026-07-28 GM 2차 지시 — '김남욱'(GM 본인)도 제거. GM은 회원 컨택을 하지 않는데 선택지에 남아있어
+//   마지막 선택을 기억하는 기본값 로직(localStorage wp_ct_by)과 겹쳐 수영 컨택자로 오기록 3건이 났다
+//   (강습 드롭다운이 운영부 명단만 쓰던 시절 단일 경로 누락 — 오늘 오전 별도 수정·조치 완료).
+//   여기서도 같은 이유로 선택지에서 뺀다 — 기록 보존 규칙은 위와 동일, 과거 값은 그대로 남는다.
 // 2026-06-27 '이지영' 퇴사 → '백승화'로 교체(홈 허브 배10348과 표기 통일).
-var OWNER_OPTIONS = ['임정은','최준용','이경연','백승화','김남욱','윤병현'];
+var OWNER_OPTIONS = ['임정은','최준용','이경연','백승화','윤병현'];
 // 유입채널 표준 10버킷 — Survey.js CANONICAL_CHANNELS·_canonicalChannel_와 실제로 동일(2026-07-20 정합 확인·
 //   과거엔 '유선전화'가 여기에만 있고 서버 쪽엔 없어 "동일하다"는 주석이 거짓이었음 — 서버에 10번째 버킷 추가로 통일).
 var CHANNEL_OPTIONS = ['네이버','동부이촌동 커뮤니티','인스타그램','카카오톡','당근마켓',
