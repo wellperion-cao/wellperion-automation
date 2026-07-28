@@ -398,6 +398,16 @@ var PUB_TO_GAS_CHANNEL = {
   '카카오': '카카오톡',
   '당근': '당근마켓'
 };
+// ─── 귀속 신뢰도 (2026-07-28 시모) ───────────────────────────────
+// 왜 필요한가: 위 매핑에서 '네이버 블로그' → 문의 자기신고 '네이버' 는 1:1 이 아니다.
+// 문의 폼의 '네이버' 선택지는 플레이스·검색·블로그가 한 칸에 묶여 있고(분리는 측정불가·아래 ③-a 각주),
+// 방문 트래픽의 약 82%가 네이버 플레이스다. 그래서 네이버 문의 전부를 '블로그 발행 성과'로 세면
+// 우리가 만들지 않은 유입이 콘텐츠 성과로 둔갑한다 — 실제로 그렇게 집계돼 왔고, 그 결과 요약 카드와
+// 인사이트가 "네이버 블로그가 게시물당 7.1건, 발행 비중을 늘리세요" 라는 잘못된 신호를 냈다.
+// 조치: 숫자를 지우지 않는다(정보 손실 0). '확인' 과 '추정' 으로 갈라 보여주고, 판정(🟢/🔴)에는
+// 확인 채널만 쓴다. 네이버 유입 자체는 ③-a '전 유입채널 실측' 표에 그대로 남는다.
+var LOW_CONFIDENCE_CHANNELS = { '네이버 블로그': '네이버 선택지에 플레이스·검색이 함께 묶여 있어 블로그 몫만 뗄 수 없음' };
+function isConfidentChannel(ch) { return !LOW_CONFIDENCE_CHANNELS[ch]; }
 // ─── 채널 로고(인라인 SVG, CSP상 외부 이미지 금지) — 브랜드색 근사, 접근성은 title/aria-label로 ──
 var _iconSeq = 0;
 function chipIconSvg(ch) {
@@ -807,7 +817,7 @@ function _renderPeriod(rq, fcCur, fcPrev, lb, from, to, prev) {
   var prevInqByCh = _fcChannelMap(fcPrev);
   var curStatsByCh = _fcChannelStatsMap(fcCur);  // {inquiries, converted, rate} — 가입전환 상세 드릴다운용
 
-  renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null);
+  renderSummary(curItems.length, _contentInquirySum(curInqByCh), fcCur === null, curInqByCh);
   renderTypeSplit(fcCur);
   renderConvBasis(fcCur, fcCur === null);
   renderChannelPerf(curPubByCh, prevPubByCh, curInqByCh, prevInqByCh, fcCur === null, curStatsByCh);
@@ -876,14 +886,53 @@ function renderLessonBreakdown(lb) {
   el.innerHTML = html;
 }
 
-function renderSummary(pubCount, inqSum, fcFailed) {
+// 확인 채널(귀속 신뢰도 높음)만 합산 — 네이버 블로그 제외.
+function _confidentInquirySum(fcChannelMap) {
+  var sum = 0;
+  CONTENT_CHANNELS.forEach(function(c) {
+    if (isConfidentChannel(c)) sum += (fcChannelMap[PUB_TO_GAS_CHANNEL[c]] || 0);
+  });
+  return sum;
+}
+
+function renderSummary(pubCount, inqSum, fcFailed, inqByCh) {
   var el = document.getElementById('summary-kpi-row');
   if (!el) return;
-  var perPost = pubCount > 0 ? (inqSum / pubCount).toFixed(1) : null;
+  inqByCh = inqByCh || {};
+  var confirmed = _confidentInquirySum(inqByCh);
+  var estimated = inqSum - confirmed;   // 네이버(플레이스·검색 섞임) 몫
+  var perPost = pubCount > 0 ? (confirmed / pubCount).toFixed(2) : null;
+
+  function card(num, label, sub, tone) {
+    var toneStyle = tone === 'weak' ? 'color:var(--bad,#e5654a)' : (tone === 'dim' ? 'color:var(--dim)' : '');
+    return '<div class="kpi-card"><div class="num" style="' + toneStyle + '">' + num + '</div>' +
+      '<div class="label">' + label + '</div><div class="sub">' + sub + '</div></div>';
+  }
+
+  if (fcFailed) {
+    el.innerHTML =
+      card(pubCount.toLocaleString('ko-KR'), '발행 게시물', esc(_periodLabel) + ' · 콘텐츠 5채널') +
+      card('<span class="placeholder" style="font-size:14px">집계 실패</span>', '확인된 콘텐츠 문의', '문의 집계를 못 불러왔습니다') +
+      card('—', '게시물당 문의', '집계 실패');
+    return;
+  }
+
+  // 게시물당 문의 톤 — 절대 기준(채널끼리 비교하면 전부 바닥이어도 하나는 1등이 된다)
+  var tone = 'dim';
+  if (perPost != null) tone = (confirmed / pubCount) >= 0.3 ? '' : 'weak';
+
   el.innerHTML =
-    '<div class="kpi-card"><div class="num">' + pubCount.toLocaleString('ko-KR') + '</div><div class="label">발행 게시물</div><div class="sub">' + esc(_periodLabel) + ' · 콘텐츠 5채널</div></div>' +
-    '<div class="kpi-card"><div class="num">' + (fcFailed ? '<span class="placeholder" style="font-size:14px">집계 실패</span>' : inqSum.toLocaleString('ko-KR')) + '</div><div class="label">콘텐츠 경유 문의</div><div class="sub">' + esc(_periodLabel) + ' · 5채널 유입 합</div></div>' +
-    '<div class="kpi-card"><div class="num">' + (perPost != null ? perPost : '—') + '</div><div class="label">게시물당 문의</div><div class="sub">' + (pubCount > 0 ? '경유문의 ÷ 발행' : '발행 없음') + '</div></div>';
+    card(pubCount.toLocaleString('ko-KR'), '발행 게시물', esc(_periodLabel) + ' · 콘텐츠 5채널') +
+    card(confirmed.toLocaleString('ko-KR'), '확인된 콘텐츠 문의',
+         '인스타 · 카카오 · 당근 · 네이버 카페 <b>(귀속 확실)</b>', confirmed > 0 ? '' : 'weak') +
+    card(perPost != null ? perPost : '—', '게시물당 문의',
+         pubCount > 0 ? '확인된 문의 ÷ 발행' : '발행 없음', tone) +
+    '<div class="kpi-card" style="grid-column:1/-1;text-align:left">' +
+      '<div class="label" style="margin-bottom:4px">네이버 유입 ' + estimated.toLocaleString('ko-KR') + '건 — 콘텐츠 성과로 세지 않았습니다</div>' +
+      '<div class="sub" style="line-height:1.6">문의 폼의 <b>네이버</b> 칸은 플레이스 · 검색 · 블로그가 한 칸에 묶여 있어 블로그 몫만 뗄 수 없습니다. ' +
+      '방문 트래픽의 약 82%가 네이버 플레이스라 이 숫자 대부분은 우리가 발행한 글이 아니라 <b>플레이스 · 검색</b>에서 옵니다. ' +
+      '숫자는 아래 <b>전 유입채널 실측</b> 표에 그대로 있습니다 — 여기 요약에서만 뺐습니다.</div>' +
+    '</div>';
 }
 
 function _deltaHtml(cur, prev) {
@@ -986,16 +1035,40 @@ function renderInsight(pubByCh, inqByCh) {
     el.innerHTML = '<div class="measure-pending">' + esc(_periodLabel) + ' 발행이 없어 채널별 비교가 측정 준비중입니다.</div>';
     return;
   }
-  ranked.sort(function(a, b) { return b.ratio - a.ratio; });
-  var best = ranked[0];
-  var worst = ranked[ranked.length - 1];
+  // ★ 판정은 '확인 채널'로만 한다 (2026-07-28 시모).
+  // 이전 판정은 5채널을 서로 비교해 1등을 무조건 🟢 잘됨으로 뽑았다. 그래서 전 채널이 바닥이어도
+  // 화면엔 늘 초록 카드가 떴고, 게다가 1등은 거의 항상 '네이버 블로그'(= 플레이스·검색 유입이
+  // 얹혀 부풀려진 채널)라 "네이버 블로그 발행을 늘리세요" 라는 잘못된 지시가 나갔다.
+  // 바꾼 규칙: ①귀속이 불확실한 채널은 판정에서 뺀다 ②상대 순위가 아니라 절대 기준으로 본다.
+  var judged = ranked.filter(function(r) { return isConfidentChannel(r.ch); });
+  var GOOD_BAR = 0.3;   // 게시물당 문의 — 이 아래면 '사실상 문의를 못 만들고 있다'
+  var totalPub = judged.reduce(function(s, r) { return s + r.pub; }, 0);
+  var totalInq = judged.reduce(function(s, r) { return s + r.inq; }, 0);
+  var overall = totalPub > 0 ? totalInq / totalPub : null;
+
+  judged.sort(function(a, b) { return b.ratio - a.ratio; });
+  var best = judged.filter(function(r) { return r.ratio >= GOOD_BAR; })[0] || null;
 
   var html = '<div class="insight-grid">';
-  html += '<div class="insight-card good"><h4>🟢 잘됨 — 더하기</h4><p><b>' + esc(best.ch) + '</b> 채널이 게시물당 <b>' + best.ratio.toFixed(1) + '건</b> 문의로 가장 효율적입니다(발행 ' + best.pub + '건 · 경유문의 ' + best.inq + '건, ' + esc(_periodLabel) + '). 이 채널 발행 비중을 늘려보세요.</p></div>';
-  if (worst.ch !== best.ch) {
-    html += '<div class="insight-card weak"><h4>🔴 약함 — 손보기</h4><p><b>' + esc(worst.ch) + '</b> 채널은 게시물당 <b>' + worst.ratio.toFixed(1) + '건</b>으로 상대적으로 약합니다(발행 ' + worst.pub + '건 · 경유문의 ' + worst.inq + '건, ' + esc(_periodLabel) + '). 콘텐츠 각도·CTA 위치를 점검해보세요.</p></div>';
-  } else {
-    html += '<div class="insight-card weak"><h4>🔴 약함 — 손보기</h4><p>이번 기간엔 발행한 채널이 1곳뿐이라 비교 대상이 없습니다 — 다른 채널도 발행해야 손볼 곳이 보입니다.</p></div>';
+
+  if (best) {
+    html += '<div class="insight-card good"><h4>🟢 잘됨 — 더하기</h4><p><b>' + esc(best.ch) + '</b> 채널이 게시물당 <b>' + best.ratio.toFixed(2) + '건</b> 문의를 만들고 있습니다(발행 ' + best.pub + '건 · 문의 ' + best.inq + '건, ' + esc(_periodLabel) + '). 기준(0.3건)을 넘는 유일한 축이니 여기에 더 실어보세요.</p></div>';
+  } else if (overall !== null) {
+    html += '<div class="insight-card weak"><h4>🔴 잘되는 채널 없음</h4><p>' + esc(_periodLabel) + ' 귀속이 확실한 채널 <b>전부</b>가 기준(게시물당 0.3건) 아래입니다 — 발행 <b>' + totalPub + '건</b>에 문의 <b>' + totalInq + '건</b>(게시물당 ' + overall.toFixed(2) + '건). <b>더 잘 만드는 문제가 아니라 보는 사람이 없는 문제</b>일 수 있습니다. 발행량을 늘리기 전에 아래 <b>전 유입채널 실측</b>에서 전환율이 높은 축(소개·지인 · 기존·과거 회원)에 먼저 손대는 편이 빠릅니다.</p></div>';
+  }
+
+  var worst = judged[judged.length - 1];
+  if (worst && (!best || worst.ch !== best.ch)) {
+    html += '<div class="insight-card weak"><h4>🔴 약함 — 손보기</h4><p><b>' + esc(worst.ch) + '</b> 채널은 발행 ' + worst.pub + '건에 문의 <b>' + worst.inq + '건</b>(게시물당 ' + worst.ratio.toFixed(2) + '건)입니다. 이 정도면 콘텐츠 각도보다 <b>도달 자체</b>를 먼저 의심할 자리입니다.</p></div>';
+  }
+
+  var excluded = ranked.filter(function(r) { return !isConfidentChannel(r.ch); });
+  if (excluded.length) {
+    html += '<div class="insight-card"><h4>⚪ 판정에서 뺀 채널</h4><p>' +
+      excluded.map(function(r) {
+        return '<b>' + esc(r.ch) + '</b>(발행 ' + r.pub + '건 · 연결된 문의 ' + r.inq + '건) — ' + esc(LOW_CONFIDENCE_CHANNELS[r.ch]);
+      }).join('<br>') +
+      '<br><span style="color:var(--dim)">숫자를 지운 게 아니라 <b>성과 판정에만</b> 안 씁니다. 이 채널을 섞으면 우리가 만들지 않은 유입이 콘텐츠 성과로 잡힙니다.</span></p></div>';
   }
   var noPub = CONTENT_CHANNELS.filter(function(c) { return !(pubByCh[c] > 0); });
   if (noPub.length) {
