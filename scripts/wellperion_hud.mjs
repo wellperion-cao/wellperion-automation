@@ -313,15 +313,26 @@ function backgroundAgents(cwd, sessionId) {
   if (!sessionId) return null;
   try {
     const dir = path.join(os.tmpdir(), 'claude', slugifyCwd(cwd), sessionId, 'tasks');
-    const files = readdirSync(dir).filter((f) => f.endsWith('.output'));
+    // ★.output 은 에이전트만 쓰는 게 아니다 — 일반 명령(Bash 등) 출력도 같은 폴더에 쌓인다.
+    //   그래서 파일 이름으로 가린다: 에이전트 id 는 'a'+16자리 16진수(예 a8abf02a21406b615),
+    //   명령 출력은 짧은 임의 문자열(예 bvxrj2da4). 안 가리면 명령 하나만 돌려도 '위임중'이 뜬다
+    //   (GM 지적 2026-07-28 "202 위임중 27분18초? 어떤 내용을 위임하는거지" — 그때 도는 건 없었다).
+    const AGENT_ID = /^a[0-9a-f]{16}\.output$/;
+    const files = readdirSync(dir).filter((f) => AGENT_ID.test(f));
     const now = Date.now();
-    let count = 0;
+    let count = 0, since = null;
     for (const f of files) {
       try {
-        if (now - statSync(path.join(dir, f)).mtimeMs < BG_WINDOW_MS) count++;
+        const st = statSync(path.join(dir, f));
+        if (now - st.mtimeMs >= BG_WINDOW_MS) continue;
+        count++;
+        // 경과는 이 파일이 처음 생긴 시각으로 잰다 — transcript 에서 주워온 값은 이미 끝난
+        // 에이전트의 시작시각이라 계속 늘어나며 거짓이 된다(같은 GM 지적).
+        const born = st.birthtimeMs || st.mtimeMs;
+        if (since === null || born < since) since = born;
       } catch { /* 파일 하나 못 읽어도 나머지는 센다 */ }
     }
-    return count > 0 ? { count } : null;
+    return count > 0 ? { count, since } : null;
   } catch { return null; }   // 폴더 없음(백그라운드 없음) — 정상
 }
 
@@ -656,7 +667,10 @@ function buildLine(cwd, role, transcript, sessionId) {
       // ★척수는 bg(출력 파일 mtime 실측)를 우선한다 — transcript 꼬리 파싱(lv.agents)은 표식이
       //   창 밖으로 밀려나면 놓친다(GM 2026-07-28 15:15 오판의 뿌리). 실측이 있으면 실측을 믿는다.
       const count = bg ? bg.count : lv.agents.count;
-      const elapsed = lv.agents ? ` ${G}${elapsedText(Math.max(0, Math.round((Date.now() - lv.agents.since) / 1000)))}${X}` : '';
+      // ★경과도 실측(bg.since = 지금 도는 에이전트 파일이 생긴 시각) 우선. 실측이 없으면
+      //   경과를 아예 적지 않는다 — 모르는 값을 그럴듯하게 적는 게 오늘 지적받은 문제다.
+      const since = (bg && bg.since) ? bg.since : null;
+      const elapsed = since ? ` ${G}${elapsedText(Math.max(0, Math.round((Date.now() - since) / 1000)))}${X}` : '';
       time = `${D}·${X}${G}🟢위임중 ${count}척${X}${elapsed}`;
     } else if (s && s.ask) {
       // ② GM 이 답해야 진행되는 상태 — ★무엇을 기다리는지까지 적는다(GM 2026-07-27
