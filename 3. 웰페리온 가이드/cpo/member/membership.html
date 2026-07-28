@@ -9433,9 +9433,20 @@ function _ctAddRow(item) {
       }
     } catch (_byErr) { /* 명단 산출 실패해도 컨택 기록 자체는 막지 않는다 */ }
     var _cur = String(item.by || '').trim();
-    if (_cur && _names.indexOf(_cur) < 0) _names.push(_cur);   // 명단 외 과거 값 보존
+    if (_cur && _names.indexOf(_cur) < 0) _names.push(_cur);   // 명단 외 과거 값 보존(기록은 안 지운다)
     _names.forEach(function(nm){ var o = document.createElement('option'); o.value = nm; o.textContent = nm; bi.appendChild(o); });
     bi.value = _cur;
+    // ★기본값은 '지금 이 종목 명단에 있는 사람'일 때만 쓴다 — 2026-07-28 GM 지적
+    //   ("CONTACT에 수영인데 내 이름이 들어가 있는 건 안 되는 거야").
+    //   원인: 마지막에 고른 사람을 localStorage 에 기억해 다음 기록의 기본값으로 넣는데, 그게 종목과
+    //   무관하게 적용됐다. 강습 드롭다운이 운영부만 보여주던 시절(단일 종목 경로 누락)에 GM 이 고른
+    //   '김남욱'이 그대로 굳어 수영 컨택자로 3건 기록됐다. 명단 밖 이름은 기본값으로 쓰지 않는다.
+    if (!_cur) {
+      try {
+        var _last = localStorage.getItem('wp_ct_by') || '';
+        if (_last && _names.indexOf(_last) >= 0) bi.value = _last;
+      } catch (e) {}
+    }
     bi.addEventListener('change', function(){ try { if (bi.value) localStorage.setItem('wp_ct_by', bi.value); } catch (e) {} });   // 다음 기록 기본값(개인 편의)
   })();
   rowDT.appendChild(di); rowDT.appendChild(ti); rowDT.appendChild(bi);
@@ -9566,7 +9577,11 @@ function _shortProgram(p){
   if (s.indexOf('플래티넘') >= 0) return golf ? '플래티넘+골프' : '플래티넘';
   return s;
 }
-var OWNER_OPTIONS = ['임정은','최준용','이경연','백승화','김남욱','고수자','강경희','윤병현'];  // 2026-06-27 '이지영' 퇴사 → '백승화'로 교체(홈 허브 배10348과 표기 통일). 과거 '이지영' 담당 회원 행은 buildSelect()의 현재값 보존 로직(9496행)이 옵션에 되살려 기록 유지.
+// 2026-07-28 GM 지시 — 멤버십 CONTACT 담당자에서 '고수자'·'강경희' 제거(회원 컨택을 하지 않는 분들).
+//   과거에 이 두 이름으로 기록된 행이 있으면 buildSelect()/_ctAddRow 의 '현재값 보존' 로직이 옵션에 되살려
+//   기록은 그대로 남는다 — 지우는 건 앞으로의 선택지뿐이다(과거 데이터 무손실).
+// 2026-06-27 '이지영' 퇴사 → '백승화'로 교체(홈 허브 배10348과 표기 통일).
+var OWNER_OPTIONS = ['임정은','최준용','이경연','백승화','김남욱','윤병현'];
 // 유입채널 표준 10버킷 — Survey.js CANONICAL_CHANNELS·_canonicalChannel_와 실제로 동일(2026-07-20 정합 확인·
 //   과거엔 '유선전화'가 여기에만 있고 서버 쪽엔 없어 "동일하다"는 주석이 거짓이었음 — 서버에 10번째 버킷 추가로 통일).
 var CHANNEL_OPTIONS = ['네이버','동부이촌동 커뮤니티','인스타그램','카카오톡','당근마켓',

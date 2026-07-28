@@ -5709,7 +5709,29 @@ function _processAction(body) {
     _muSet(['연락처','전화','휴대폰'], _fmtPhoneOrUndef_(body.phone));  // 하이픈 텍스트 저장 → 앞 0 보존(undefined는 스킵)
     _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
     _muSet(['진행현황','진행상황','진행상태','상태'], body.status);
-    _muSet(['문의채널','유입채널','채널','경로'], body.channel);
+    // ★유입경로 쓰기는 폼 소유 칸을 깨지 않는다 — 2026-07-28 시포(GM '계속 동기화 실패 뜨는데' 근본수리).
+    //   '4. 웰페리온을 어떤 경로로 알게 되셨나요?'(E열)는 **구글폼이 만든 칸이라 드롭다운 데이터 확인 규칙**이 걸려 있다.
+    //   그런데 화면은 이 값을 표준 10버킷으로 줄여 보여준다('네이버 검색·플레이스' → '네이버').
+    //   그 줄인 값을 그대로 되쓰면 규칙 위반으로 시트가 거부하고, GAS 는 그 예외를 다음 flush 시점에 던져
+    //   **뒤따르던 연락 이력 저장까지 통째로 무너뜨렸다**(실측: 'E642에 입력한 데이터가 데이터 확인 규칙을 위반').
+    //   화면엔 '동기화 실패 · 재시도'로만 떠서 원인을 알 수 없었고, 실패한 요청이 큐에 남아 무한 재시도됐다.
+    //   ▸처리: 폼 칸에 먼저 쓰되 flush 로 즉시 판정하고, 거부되면 '유입경로(자동)' 칸에 남긴다.
+    //     그 칸은 화면 읽기의 3순위 override 라 값이 정상 반영된다(_resolveInquiryChannelRaw_).
+    //     어느 쪽도 안 되면 조용히 넘어간다 — 유입경로 하나 때문에 컨택 기록을 잃지 않는다(우선순위 명시).
+    if (body.channel !== undefined && body.channel !== null) {
+      var _muChanOk = true;
+      try {
+        _muSet(['문의채널','유입채널','채널','경로'], body.channel);
+        SpreadsheetApp.flush();   // 지연 반영이라 여기서 강제해야 이 자리에서 예외를 잡는다
+      } catch (eChan) {
+        _muChanOk = false;
+        Logger.log('유입경로 폼칸 쓰기 거부(데이터 확인 규칙) → 자동칸으로 우회: ' + eChan.message);
+      }
+      if (!_muChanOk) {
+        try { _muSet(['유입경로(자동)','유입경로자동','유입경로_자동'], body.channel); SpreadsheetApp.flush(); }
+        catch (eChan2) { Logger.log('유입경로 자동칸 쓰기도 실패 — 건너뜀: ' + eChan2.message); }
+      }
+    }
     _muSet(['메모','비고','담당자메모'], body.memo);
     _muSet(['담당','담당자'], body.owner);
     // 체험 일정 분리 저장(#4): 체험1 날짜→J, 시간→K / 체험2 날짜→L, 시간→M. 상담=체험1. 2026-07-02 시포·GM.
