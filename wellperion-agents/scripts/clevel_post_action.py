@@ -75,7 +75,9 @@ except Exception:
     def _next_short_no(_queue):  # 폴백: 짧은 번호 없이 진행(동작은 유지)
         return None
 try:
-    from queue_dispatch import ROLES as _ROLE_NICK, _norm as _norm_title, _strip_role_tag
+    from queue_dispatch import (ROLES as _ROLE_NICK, _norm as _norm_title,
+                                _strip_role_tag, EXCLUDED_ROLES as _EXCLUDED_ROLES,
+                                excluded_role_notice as _excluded_notice)
 except Exception:
     _ROLE_NICK = {"ceo": "웰리", "cfo": "시뽀", "chro": "시로", "cmo": "시모",
                   "coo": "시우", "cpo": "시포", "cto": "시토"}
@@ -85,6 +87,11 @@ except Exception:
 
     def _strip_role_tag(s: str) -> str:
         return re.sub(r"^\[[^\]]*\]\s*", "", s or "")
+
+    _EXCLUDED_ROLES = {"chro", "cfo"}
+
+    def _excluded_notice(role: str) -> str:
+        return ("%s 는 나우열M 관할이라 AI 큐에서 배제합니다(GM 확정 2026-07-28)." % role)
 
 # 부서 색동그라미 정본(단일 딕셔너리) — scripts/clevel_colors.py. 복사 금지, import 만.
 try:
@@ -284,6 +291,20 @@ def update_queue_with_bridge(
         if line not in prev_note:  # 멱등
             umbrella["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
         label = "다음(umbrella " + str(next_parent) + " 흡수)→ " + next_desc
+    elif next_desc and (next_clevel or clevel).lower() in _EXCLUDED_ROLES:
+        # 인사(시로)·재무(시뽀)는 나우열M 관할 — AI 큐에 배를 만들지 않는다(GM 확정 2026-07-28).
+        # 다만 '다음'을 버리지도 않는다: 끝난 배 안에 한 줄로 남겨 사람이 볼 수 있게 한다.
+        nclevel = (next_clevel or clevel).lower()
+        for t in queue:
+            if isinstance(t, dict) and t.get("task_id") == task_id:
+                prev_note = str(t.get("note") or "")
+                line = ("- [" + today + "] 다음(배 안 만듦 · "
+                        + _ROLE_NICK.get(nclevel, nclevel) + "=나우열M 관할): " + next_desc)
+                if line not in prev_note:  # 멱등
+                    t["note"] = (prev_note + ("\n" if prev_note else "") + line).strip()
+                break
+        label = "다음(배 배제 · " + _excluded_notice(nclevel) + ")→ " + next_desc
+
     elif next_desc:
         nclevel = (next_clevel or clevel).lower()
         nick = _ROLE_NICK.get(nclevel, nclevel.upper())

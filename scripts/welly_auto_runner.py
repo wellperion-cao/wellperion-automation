@@ -56,6 +56,7 @@ if _SCRIPTS_DIR not in sys.path:
 
 from welly_orchestrate import select_autonomous_ships  # noqa: E402  (기존 선별기 재사용)
 from module_registry import load_registry  # noqa: E402
+from queue_dispatch import EXCLUDED_ROLES as _EXCLUDED_ROLES  # noqa: E402  (배제 역할 단일 정본)
 
 # ── 경로 상수 ──
 DEFAULT_QUEUE_PATH = os.path.join(_PROJECT_ROOT, "status", "_queue.json")
@@ -85,7 +86,12 @@ MAX_SHIPS_PER_RUN = 1  # 선별기 구조가 항상 1척만 반환하므로 이 
 # 러너의 선별 대상을 CTO 1개→7 C-Level 전체로 넓힌다. run_once() 자체의 안전 로직은
 # 손대지 않는다(재귀 방지·클린트리·모호성 park·쿨다운·1clevel당 1척 전부 그대로) —
 # run_cycle()은 그 위에 clevel 순회 + 사이클 총 상한만 얹는 얇은 래퍼.
-DEFAULT_CLEVELS = ("cmo", "coo", "cto", "cpo", "ceo", "cfo", "chro")
+# 시뽀(cfo)·시로(chro) 제외 — 나우열M 이 직접 운영하는 영역이라 AI 가 자율로 배를 집지
+# 않는다(GM 확정 2026-07-28). 배제 정본 = queue_dispatch.EXCLUDED_ROLES (복사 금지·import).
+DEFAULT_CLEVELS = tuple(
+    r for r in ("cmo", "coo", "cto", "cpo", "ceo", "cfo", "chro")
+    if r not in _EXCLUDED_ROLES
+)
 CLEVEL_NICKS = {
     "ceo": "웰리",
     "cfo": "시뽀",

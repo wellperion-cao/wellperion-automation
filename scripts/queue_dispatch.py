@@ -34,6 +34,29 @@ ROLES = {
 }
 OPEN_STATUS = ("PENDING", "IN_PROGRESS")
 
+# ── AI 큐에서 배제하는 역할 (GM 확정 2026-07-28) ────────────────────────────
+# 인사(시로)·재무(시뽀)는 나우열M 이 직접 운영하는 영역이다. AI 가 이 두 역할 앞으로
+# 배를 만들면 G1 에 '담당이 사람인 일'이 AI 항로로 섞여 들어와 GM 이 매번 걸러야 한다.
+#
+# 왜 여기 있나: 이 규칙은 2026-07-27 에 정해졌지만 문서(스킬·kpi.json 서술)에만 있었고
+# 코드엔 한 줄도 없었다. 게다가 문장이 "웰리는 시로·시뽀를 건드리지 않는다"로 웰리에게만
+# 걸려 있어, 다른 역할이 큐를 정리할 때는 규칙이 적용되지 않았다(2026-07-28 시토가 그대로 밟음).
+# 그래서 역할과 무관한 '배를 만드는 관문' 한 곳에 박는다(약속 L02·L21).
+#
+# 예외: 사람(GM·나우열M)이 손으로 큐를 고치는 것은 막지 않는다 — 여기서 막는 것은
+# AI 가 자동으로 배를 만드는 경로뿐이다.
+EXCLUDED_ROLES = {"chro", "cfo"}
+EXCLUDED_OWNER = "나우열M"
+
+
+def excluded_role_notice(role: str) -> str:
+    """배제 역할로 배를 띄우려 할 때 사람에게 보이는 한 줄. 문구 정본(복사 금지)."""
+    return (
+        "배를 만들지 않았습니다 — %s(%s)는 %s 관할이라 AI 큐에서 배제합니다"
+        "(GM 확정 2026-07-28). 알릴 일이면 GM께 한 줄로 알리고 끝냅니다."
+        % (ROLES.get(role, role), role, EXCLUDED_OWNER)
+    )
+
 
 def _slug(title: str) -> str:
     s = re.sub(r"[^0-9A-Za-z가-힣]+", "-", title).strip("-")
@@ -119,6 +142,11 @@ def main() -> int:
                      help="yes/no — 미지정이면 선별기가 낱말 스캔으로 폴백")
     args = ap.parse_args()
     args.reversible = {"yes": True, "no": False, None: None}[args.reversible]
+
+    if args.to.lower() in EXCLUDED_ROLES:
+        print(excluded_role_notice(args.to.lower()))
+        print("  제목: %s" % args.title)
+        return 0
 
     if args.to.lower() == (args.sender or "").lower() and not args.mine:
         print("! 받는 역할과 보내는 역할이 같습니다.")
