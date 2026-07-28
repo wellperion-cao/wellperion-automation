@@ -79,7 +79,11 @@ _LOG_PATH = _REPO_ROOT / "logs" / "enforcement.log"
 FORBIDDEN_PATH_GLOBS = [
     # 결재 GAS — 결재현황 게이트 핵심. 무단 변경 감지.
     ".deploy-todo/*결재*",
-    "*/coo/todo/apps_script_todo.js",
+    # (제거 2026-07-28 시우 · GM 지시) "*/coo/todo/apps_script_todo.js" 는 부분 사본(미끼)이라
+    #   변경 감지만 걸어 두고 파일은 남겨 뒀었다. 그러다 실제로 그 파일을 정본으로 착각해
+    #   고치는 사고가 났다(라이브 무반영). 감지로 막을 게 아니라 사본 자체를 지우는 게 맞다 —
+    #   파일을 삭제했으므로 이 글롭도 같이 뺀다(지킬 대상이 없어진 규칙은 남기지 않는다·약속 L21).
+    #   정본·배포 절차 = .deploy-todo/README.md
     # 구버전 미끼 파일 (reference_facility_check_live_gas: apps_script_v3.js=구버전 미끼)
     "*apps_script_v3.js",
 ]
