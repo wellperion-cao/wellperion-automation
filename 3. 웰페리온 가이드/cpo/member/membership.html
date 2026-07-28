@@ -6036,8 +6036,13 @@ function openRosterContact(t, rowIndex) {
   var st = _lessonState[t]; if (!st) return;
   var r = (st.roster || []).find(function (x) { return x.rowIndex === rowIndex; });
   if (!r) { showToast('원본 문의 행을 찾을 수 없습니다', 'err'); return; }
+  // ★sport 동봉(2026-07-28 GM 2차 지적 — "강습 CONTACT 컨택자에 아직 운영부가 뜹니다") — 문의 현황 경로
+  //   (_lessonContactClick)는 같은 날 먼저 sport를 넘기도록 고쳤는데 회원현황(여기)은 그때 빠졌다.
+  //   item.sport가 없으면 _ctAddRow의 _lessonSportSplit(_ctModal.srcRow.sport)가 빈 배열이 되어 종목을
+  //   영영 못 가리고 항상 운영부로 폴백했다(성인 수영 문의건에서 임정은 등 운영부만 뜬 원인).
+  //   roster 항목엔 이미 sport 칼럼이 있다(종목칩·정렬·필터에 기존에도 쓰던 값 — 새 필드 아님).
   openContactModal(
-    { rowIndex: r.rowIndex, name: r.name, phone: r.phone, contacts: r.contacts || [] },
+    { rowIndex: r.rowIndex, name: r.name, phone: r.phone, contacts: r.contacts || [], sport: r.sport || '' },
     { source: 'lesson', t: t, type: r.inqType || st.type, sport: '' }
   );
 }
@@ -9514,8 +9519,10 @@ function _ctAddRow(item) {
   var bi = document.createElement('select'); bi.className = 'ct-by contact-by-select';
   bi.style.cssText = 'padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:inherit';
   (function(){
-    var b0 = document.createElement('option'); b0.value = ''; b0.textContent = '컨택한 사람 — 선택'; bi.appendChild(b0);
+    var b0 = document.createElement('option'); b0.value = ''; bi.appendChild(b0);
     var _names = OWNER_OPTIONS.slice();
+    // 종목을 못 가려 운영부로 조용히 폴백하면 또 오기록이 난다(GM 2차 지적 2026-07-28) — 폴백 여부를 첫 옵션 문구로 드러낸다.
+    var _fallback = false;
     try {
       var _ctx = (_ctModal && _ctModal.ctx) || {};
       if (_ctx.source === 'lesson' && typeof _lessonRosterFor === 'function') {
@@ -9529,9 +9536,10 @@ function _ctAddRow(item) {
             if (nm && !_seen[nm]) { _seen[nm] = 1; _ros.push(nm); }
           });
         });
-        if (_ros.length) _names = _ros;   // 종목을 못 가리면(_ros 비면) 운영부 명단 그대로 — 빈 드롭다운 방지
+        if (_ros.length) _names = _ros; else _fallback = true;   // 종목을 못 가리면(_ros 비면) 운영부 명단 그대로 — 빈 드롭다운 방지
       }
     } catch (_byErr) { /* 명단 산출 실패해도 컨택 기록 자체는 막지 않는다 */ }
+    b0.textContent = _fallback ? '컨택한 사람 — 종목 미확인, 운영부 명단' : '컨택한 사람 — 선택';
     var _cur = String(item.by || '').trim();
     if (_cur && _names.indexOf(_cur) < 0) _names.push(_cur);   // 명단 외 과거 값 보존(기록은 안 지운다)
     _names.forEach(function(nm){ var o = document.createElement('option'); o.value = nm; o.textContent = nm; bi.appendChild(o); });
