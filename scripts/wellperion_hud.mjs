@@ -669,6 +669,12 @@ function buildLine(cwd, role, transcript) {
   let time = '';
   if (lv) {
     const when = `${clockText(lv.at)}부터`;
+    /** 멈춰 있을 때도 **안고 있는 일**을 같이 적는다 (GM 결정 2026-07-28 · B안).
+     *  왜: '대기'는 그 창이 GM 말을 기다린다는 뜻인데, GM 은 '회사가 일하고 있나'로 읽으신다.
+     *  실제로 시포는 열린 배 17척(진행 5)을 안고도 화면엔 '대기'만 떠 노는 것처럼 보였다
+     *  (GM 2026-07-28 "시포 13건 진행중이라는데 statusline엔 계속 대기로만 남는데").
+     *  항로 칸(🚢⚓)은 폭이 좁으면 접히지만 이 칸은 안 접히므로 여기 붙인다. */
+    const idleLoad = (st) => (st && st.run > 0) ? `${D} · 진행${X}${st.run}${D}척${X}` : '';
     if (lv.working && lv.idle <= 900) {
       // ① 돌고 있음 — 도구를 부를 때마다 다시 그려지므로 여기서만 경과 초가 실제로 움직인다.
       const name = lv.act ? (ACT[lv.act.tool] || lv.act.tool) : '작업중';
@@ -688,10 +694,10 @@ function buildLine(cwd, role, transcript) {
     } else if (lv.idle > 1800) {
       // ③ 아무도 안 기다리는데 30분 넘게 멈춤 = **문제다**(GM 2026-07-27 "멎음은 문제인 것 같은데").
       //    기다릴 답도 없는데 일이 안 도는 것이므로 눈에 띄게 — 2시간 넘으면 빨강.
-      time = `${D}·${X}${lv.idle > 7200 ? R : Y}⏸멈춤 ${when}${X}`;
+      time = `${D}·${X}${lv.idle > 7200 ? R : Y}⏸멈춤 ${when}${X}${idleLoad(s)}`;
     } else {
       // ④ 방금 끝냄 — 정상. 조용히 둔다.
-      time = `${D}·💤대기 ${when}${X}`;
+      time = `${D}·💤GM답 기다림 ${when}${X}${idleLoad(s)}`;
     }
   } else if (pg) {
     const icon = { start: '🚀', doing: '⏳', done: '✅', blocked: '⚓' }[pg.state] || '✅';
