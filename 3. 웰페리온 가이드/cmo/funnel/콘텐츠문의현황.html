@@ -392,8 +392,11 @@ function canonPubChannel(raw) {
 }
 // 발행 채널(콘텐츠 5채널) → GAS 문의 유입채널 표준 버킷(funnel_conversion byChannel의 channel 값과 정합)
 var PUB_TO_GAS_CHANNEL = {
+  // ★ 2026-07-28 시모 — '네이버 블로그' → '네이버' 였던 매핑을 정확 매핑으로 바꿨다.
+  //   그동안 네이버 자기신고 전체(플레이스·검색·블로그 합)를 우리 블로그 발행 성과로 세고 있었다.
+  //   백엔드 분류를 나눠 배포(@182)하니 1~7월 네이버 706건 = 검색·플레이스 701 + 블로그 5 로 갈렸다.
   '인스타그램': '인스타그램',
-  '네이버 블로그': '네이버',
+  '네이버 블로그': '네이버 블로그',
   '네이버 카페': '동부이촌동 커뮤니티',
   '카카오': '카카오톡',
   '당근': '당근마켓'
@@ -406,7 +409,12 @@ var PUB_TO_GAS_CHANNEL = {
 // 인사이트가 "네이버 블로그가 게시물당 7.1건, 발행 비중을 늘리세요" 라는 잘못된 신호를 냈다.
 // 조치: 숫자를 지우지 않는다(정보 손실 0). '확인' 과 '추정' 으로 갈라 보여주고, 판정(🟢/🔴)에는
 // 확인 채널만 쓴다. 네이버 유입 자체는 ③-a '전 유입채널 실측' 표에 그대로 남는다.
-var LOW_CONFIDENCE_CHANNELS = { '네이버 블로그': '네이버 선택지에 플레이스·검색이 함께 묶여 있어 블로그 몫만 뗄 수 없음' };
+// ▸2026-07-28 해소: '네이버 블로그' 가 여기 있었으나 백엔드 채널 분리(배포 @182)로 정확 귀속이 됐다.
+//   폼은 원래부터 '네이버 검색·플레이스'/'네이버 블로그' 를 따로 물었고 시트에 원문도 남아 있었다 —
+//   서버 분류만 둘을 합치고 있었을 뿐이라, 분류를 고치자 과거분까지 소급으로 갈렸다(1~7월 706 = 701 + 5).
+//   지금은 5채널 전부 귀속이 확실해 이 목록이 비어 있다. 빈 채로 두는 게 정상이며,
+//   앞으로 귀속이 불확실한 채널이 생기면 여기에만 추가하면 요약·판정이 자동으로 그 채널을 갈라낸다.
+var LOW_CONFIDENCE_CHANNELS = {};
 function isConfidentChannel(ch) { return !LOW_CONFIDENCE_CHANNELS[ch]; }
 // ─── 채널 로고(인라인 SVG, CSP상 외부 이미지 금지) — 브랜드색 근사, 접근성은 title/aria-label로 ──
 var _iconSeq = 0;
@@ -921,18 +929,23 @@ function renderSummary(pubCount, inqSum, fcFailed, inqByCh) {
   var tone = 'dim';
   if (perPost != null) tone = (confirmed / pubCount) >= 0.3 ? '' : 'weak';
 
+  // 귀속이 불확실한 채널이 있을 때만 '뺀 몫' 안내를 띄운다.
+  // 2026-07-28 네이버 분리 이후 5채널 전부 확실해져 estimated=0 → 이 블록은 안 뜬다(정상).
+  var estBlock = estimated > 0
+    ? '<div class="kpi-card" style="grid-column:1/-1;text-align:left">' +
+        '<div class="label" style="margin-bottom:4px">귀속 불확실 ' + estimated.toLocaleString('ko-KR') + '건 — 콘텐츠 성과로 세지 않았습니다</div>' +
+        '<div class="sub" style="line-height:1.6">아래 <b>판정에서 뺀 채널</b> 카드에 어떤 채널이 왜 빠졌는지 적혀 있습니다. ' +
+        '숫자를 지운 게 아니라 <b>전 유입채널 실측</b> 표에 그대로 있습니다 — 여기 요약에서만 뺐습니다.</div>' +
+      '</div>'
+    : '';
+
   el.innerHTML =
     card(pubCount.toLocaleString('ko-KR'), '발행 게시물', esc(_periodLabel) + ' · 콘텐츠 5채널') +
-    card(confirmed.toLocaleString('ko-KR'), '확인된 콘텐츠 문의',
-         '인스타 · 카카오 · 당근 · 네이버 카페 <b>(귀속 확실)</b>', confirmed > 0 ? '' : 'weak') +
+    card(confirmed.toLocaleString('ko-KR'), '콘텐츠 경유 문의',
+         '5채널 전부 <b>귀속 확실</b> (2026-07-28 네이버 분리 완료)', confirmed > 0 ? '' : 'weak') +
     card(perPost != null ? perPost : '—', '게시물당 문의',
-         pubCount > 0 ? '확인된 문의 ÷ 발행' : '발행 없음', tone) +
-    '<div class="kpi-card" style="grid-column:1/-1;text-align:left">' +
-      '<div class="label" style="margin-bottom:4px">네이버 유입 ' + estimated.toLocaleString('ko-KR') + '건 — 콘텐츠 성과로 세지 않았습니다</div>' +
-      '<div class="sub" style="line-height:1.6">문의 폼의 <b>네이버</b> 칸은 플레이스 · 검색 · 블로그가 한 칸에 묶여 있어 블로그 몫만 뗄 수 없습니다. ' +
-      '방문 트래픽의 약 82%가 네이버 플레이스라 이 숫자 대부분은 우리가 발행한 글이 아니라 <b>플레이스 · 검색</b>에서 옵니다. ' +
-      '숫자는 아래 <b>전 유입채널 실측</b> 표에 그대로 있습니다 — 여기 요약에서만 뺐습니다.</div>' +
-    '</div>';
+         pubCount > 0 ? '경유 문의 ÷ 발행 · 기준 0.3건' : '발행 없음', tone) +
+    estBlock;
 }
 
 function _deltaHtml(cur, prev) {
