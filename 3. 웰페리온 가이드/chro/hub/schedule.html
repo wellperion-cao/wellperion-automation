@@ -980,8 +980,10 @@ function renderRoster(){
     const adm=pinOk("admin"), ymN=nowYm();
     const shown=adm?members:members.filter(nm=>activeInYm(nm,ymN));
     const hiddenN=members.length-shown.length;
-    const canAnn=canRosterOp("setann"), canRen=canRosterOp("rename"), canExc=canRosterOp("exclude");
-    const pend=adm&&!(canAnn&&canRen&&canExc);
+    /* 제외/복원/추가는 라이브 백엔드(@78)가 이미 지원 → 기존 SRV_ROSTER_EDIT 게이트 그대로(기능 후퇴 금지).
+       총연차·성명만 신규 op라 rosterOps 능력 목록 도착 후 활성(미배포 백엔드에 쓰기를 쏘지 않는 가드). */
+    const canAnn=canRosterOp("setann"), canRen=canRosterOp("rename"), canExc=SRV_ROSTER_EDIT;
+    const pend=adm&&!(canAnn&&canRen);
     p.innerHTML=`<div class="roster"><h4>👥 ${filterDept} 직원 명단 (${shown.length}명${adm?` · 🛡️ 관리자 모드`:(hiddenN?` · 퇴사 ${hiddenN}명 자동 제외`:"")})</h4>`+
       `<div class="rsub">명단 정본 = <b>서버(보드명단 탭)</b> — 입사·퇴사 처리 시 자동 갱신 · 퇴사자는 퇴사한 달까지 보드에 표시, 다음 달부터 자동 제외`+
       (adm?` · <b>총연차 칸에 입력 → 서버 연차원장 즉시 저장</b> · <b>제외</b>=퇴사일 기입(옛 ✕ 삭제 대체 — 기록은 지우지 않음) · <b>복원</b>=퇴사일 해제`:` · 명단·연차 정정은 헤더 <b>관리자 로그인</b> 후`)+
@@ -1013,9 +1015,9 @@ function renderRoster(){
           :"";
         return `<div class="rrow${RETIRED[nm]?' retd':''}">${nameCell}${retTag(nm)}${info}${act}</div>`;
       }).join("")+
-      (adm&&canRosterOp("add")?`<button class="radd" onclick="rosterAdd('${filterDept}')">＋ 직원 추가 (서버 명단)</button>`:"")+
+      (adm&&SRV_ROSTER_EDIT?`<button class="radd" onclick="rosterAdd('${filterDept}')">＋ 직원 추가 (서버 명단)</button>`:"")+
       `</div>`+
-      (pend?`<div class="rsub" style="margin-top:8px">🛠 총연차·성명·제외/복원/추가 중 일부는 <b>백엔드 새 버전 반영 후</b> 활성화됩니다 (배포 대기 중 — 값은 정상 표시되며 그 외 관리자 기능은 사용 가능)</div>`:"")+
+      (pend?`<div class="rsub" style="margin-top:8px">🛠 <b>총연차·성명 수정</b>은 백엔드 새 버전 반영 후 활성화됩니다 (배포 대기 중 — 값은 정상 표시되며 제외·복원·추가 등 그 외 관리자 기능은 사용 가능)</div>`:"")+
       `</div>`;
     return;
   }
