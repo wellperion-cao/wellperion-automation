@@ -10909,7 +10909,19 @@ var WriteBuffer = (function(){
   function _load() {
     try {
       var raw = JSON.parse(localStorage.getItem(QKEY) || '[]');
-      if (Array.isArray(raw)) queue = raw.map(function(it){ it.inflight = false; it.nextTry = it.nextTry || 0; return it; });
+      // ★새로고침하면 멈춘 건도 한 번 더 시도한다 — 2026-07-28 시포(GM '동기화 실패 1건 재시도, 도자연 저장,
+      //   이거 계속 뜨는데?').
+      //   재시도 상한을 넘긴 건은 park(정지) 상태가 되는데, 그 상태가 localStorage 에 그대로 저장되고
+      //   불러올 때도 그대로 복원됐다 → '새로고침하면 자동 flush 로 복구'된다는 주석과 달리 **영영 재시도하지
+      //   않았다.** 서버 원인을 고쳐도 화면의 실패 칩은 그대로 남는다(오늘 유입경로 건이 정확히 그랬다).
+      //   ▸행 확정 실패(오지목 계열)로 park 된 건은 그대로 둔다 — 그건 재시도해도 결과가 같고, 되살리면
+      //     경고 팝업이 새로고침마다 다시 뜬다. 그 분기는 parkedHard 로 표시해 구분한다.
+      if (Array.isArray(raw)) queue = raw.map(function(it){
+        it.inflight = false;
+        it.nextTry = 0;
+        if (it.parked && !it.parkedHard) { it.parked = false; it.attempts = 0; }
+        return it;
+      });
     } catch (e) { queue = []; }
   }
   function _save() { try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch (e) {} }
@@ -11007,6 +11019,7 @@ var WriteBuffer = (function(){
           //   + 명확 경고(alert). 큐 자체는 남겨 실패 칩·수동 재시도 경로(기존)로 계속 보인다.
           //   rowkey-not-found/rowkey-ambiguous = 지문키(§4 R2) 경로 거부코드(2026-07-22 시포, 오지목 근본수리) — 동일 취급.
           item.parked = true;
+          item.parkedHard = true;   // 새로고침해도 되살리지 않는다(재시도해도 결과 동일 · 2026-07-28 시포)
           item.overlay = null;
           var _hfMsg = (data.error === 'duplicate-phone-ambiguous' || data.error === 'rowkey-ambiguous')
             ? '동일 연락처를 가진 회원이 여러 명이라 어느 행인지 확정할 수 없습니다.'
