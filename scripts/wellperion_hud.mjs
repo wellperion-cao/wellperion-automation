@@ -786,22 +786,60 @@ function padDisp(s, width) {
 }
 
 /** roleActivity 를 줄 배열로 조립 — 실패해도(❗) 빈 배열만 돌려준다(호출부에서 본 줄은 안 죽는다). */
+/** 역할별 **지금 움직이는가** 실측 (GM 2026-07-28 "1분전·4분전 말고 진행중 녹색으로 직관적으로").
+ *  worklog 는 '커밋했을 때'만 쌓여서 실시간이 아니다 — 커밋 사이엔 일해도 조용해 보인다.
+ *  실제 신호 = 각 C-Level 창의 대화기록 파일이다. 그 창이 무언가 할 때마다 append 되므로
+ *  파일 수정시각이 곧 '그 창이 마지막으로 움직인 시각'이다(추측 아니라 실측).
+ *  역할↔세션 대응은 이미 있는 역할 기억함(ROLE_CACHE)이 갖고 있다 — 키가 대화기록 전체 경로다.
+ *  ★내용은 읽지 않는다(수 MB) — statSync 로 mtime 만 본다. */
+const LIVE_MS = 120_000;      // 2분 안에 움직였으면 '지금 하는 중'
+const PAUSE_MS = 1_800_000;   // 30분 안이면 '잠시 멈춤', 그 뒤는 조용함
+function roleLiveness(cwd) {
+  const out = {};
+  try {
+    const cache = JSON.parse(readFileSync(path.join(cwd, ROLE_CACHE), 'utf8'));
+    const now = Date.now();
+    for (const [file, r] of Object.entries(cache)) {
+      if (typeof r !== 'string') continue;
+      let age;
+      try { age = now - statSync(file).mtimeMs; } catch { continue; }
+      // 같은 역할의 창이 여럿이면 가장 최근 것만 — 어제 창이 오늘을 가리면 안 된다.
+      if (out[r] == null || age < out[r]) out[r] = age;
+    }
+  } catch { /* 기억함 없음 — 아래서 상태 없이(회색) 표시된다 */ }
+  return out;
+}
+
+/** 멈춰 있은 '길이' — agoText 는 '~전'(시점)이라 여기엔 안 맞는다. */
+function durText(ms) {
+  return String(agoText(Math.round(ms / 60000))).replace(/전$/, '');
+}
+
 function buildRoleLines(cwd, role) {
   try {
     const acts = roleActivity(cwd, role);
-    acts.sort((a, b) => (a.mins ?? Infinity) - (b.mins ?? Infinity));   // 최근 움직인 순
+    const live = roleLiveness(cwd);
+    for (const a of acts) a.age = live[a.role];          // ms · 없으면 undefined
+    // 지금 움직이는 창부터 위로. 같으면 마지막 기록이 최근인 순.
+    acts.sort((a, b) => (a.age ?? Infinity) - (b.age ?? Infinity) || (a.mins ?? Infinity) - (b.mins ?? Infinity));
     // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
     //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
     //   ● + 공백 + 닉4 + 공백 + [제목] + 2칸 + 'N시간전'(최대 7) + 2칸 + '배NNNNN'(최대 8) = 26
     const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 26));
     return acts.map((a) => {
       const has = a.event != null;
-      const dot = has ? `${G}●${X}` : `${D}○${X}`;
+      // ★점 = 지금 상태(실측), 오른쪽 글자 = 그 상태를 말로. 시각(N분전)은 '멈춘 뒤'에만 쓴다 —
+      //   움직이는 중에 '0분전'을 적으면 무슨 뜻인지 알 수 없다(GM 지적 2026-07-28).
+      let dot, state;
+      if (a.age == null)            { dot = `${D}○${X}`; state = `${D}—${X}`; }
+      else if (a.age < LIVE_MS)     { dot = `${G}●${X}`; state = `${G}진행중${X}`; }
+      // '전'을 뗀다 — '멈춤 8분전'은 어색하다. 여기 숫자는 시점이 아니라 **멈춰 있은 길이**다.
+      else if (a.age < PAUSE_MS)    { dot = `${Y}◐${X}`; state = `${Y}멈춤 ${durText(a.age)}${X}`; }
+      else                          { dot = `${D}○${X}`; state = `${D}쉼 ${durText(a.age)}${X}`; }
       const nick = padDisp(NICK[a.role], 4);
       const ev = padDisp(has ? shortTitle(a.event, evW) : `${D}—${X}`, evW);
-      const ago = has ? `${D}${agoText(a.mins)}${X}` : '';
       const ship = has && a.ship ? `${D}배${a.ship}${X}` : '';
-      return [`${dot} ${nick} ${ev}`, ago, ship].filter(Boolean).join('  ');
+      return [`${dot} ${nick} ${ev}`, padDisp(state, 10), ship].filter(Boolean).join('  ');
     });
   } catch { return []; }
 }
