@@ -11226,15 +11226,20 @@ var WriteBuffer = (function(){
 
   function _verifyFetchList(key) {
     if (GAS_URL === GAS_PLACEHOLDER) return Promise.resolve(null);
+    // ★nocache=1 필수(2026-07-28 실측) — member_inquiry_list/lesson_inquiry_list는 서버측 60초 캐시(micache/licache)를
+    //   쓴다. 쓰기 성공 시 즉시 무효화하지만, 이 서버는 동시에 여러 세션·자동화가 같은 액션을 호출하는 라이브
+    //   운영 시스템이라 "무효화 직후 다른(동시) 조회가 옛 값을 다시 캐시에 채워 넣는" 경합이 실측 재현됐다
+    //   (저장 직후 read-back이 '불일치'로 오탐 — 저장은 성공했는데 캐시가 옛 값을 돌려준 것이었다).
+    //   read-back은 신뢰가 핵심이라 캐시를 아예 우회해 시트 원본을 direct로 읽는다(서버는 이미 지원하는 기존 파라미터 — GAS 미변경).
     if (key === 'member_inquiry') {
-      return fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam())
+      return fetch(GAS_URL + '?action=member_inquiry_list&nocache=1' + _wpKeyParam())
         .then(function (r) { return r.json(); })
         .then(function (d) { return (d && d.ok) ? (d.data || []) : null; })
         .catch(function () { return null; });
     }
     if (key.indexOf('lesson_inquiry:') === 0) {
       var type = key.slice('lesson_inquiry:'.length);
-      return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(type))
+      return fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(type) + '&nocache=1')
         .then(function (r) { return r.json(); })
         .then(function (d) { return (d && d.ok) ? (d.data || []) : null; })
         .catch(function () { return null; });
