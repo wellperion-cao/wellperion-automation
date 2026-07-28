@@ -1202,5 +1202,21 @@
     "module": "home",
     "surface": "autonomy",
     "feedback_id": "FB260728-141756"
+  },
+  {
+    "task_id": "CFO-2026-07-28-ADHOC-DAILY",
+    "clevel": "cfo",
+    "title": "[시뽀] 시로·시뽀는 AI 큐에서 배제 — 문서 규칙을 코드 관문에 박음 (GM 지적 '왜 계속 잊어버리나')",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-07-28",
+    "processed_at": "2026-07-28",
+    "ship_no": 10388,
+    "artifact": "원인: 규칙이 문서에만 있었고, 문장이 '웰리는 …'으로 시작해 다른 역할엔 안 걸렸다.\n- queue_dispatch.EXCLUDED_ROLES 신설(단일 정본) — 배 생성 두 관문 + 자율 러너가 import\n- clevel_post_action 브릿지: chro/cfo 로 가는 '다음'은 배를 안 만들고 부모 배 설명에 한 줄로 남김\n- welly_auto_runner.DEFAULT_CLEVELS 에서 cfo/chro 제외\n- 열린 배 3척(1241·9433·10307) 삭제 아닌 보관함 보존(status=EXCLUDED)  (CLI ad-hoc · 커밋 6562515de)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "6562515decf09fe0edb66d6fc09ab2be6b40dfd5",
+    "note": "- [2026-07-28] 시로·시뽀는 AI 큐에서 배제 — 문서 규칙을 코드 관문에 박음 (GM 지적 '왜 계속 잊어버리나') (커밋 6562515de)",
+    "adhoc_count": 1
   }
 ]
