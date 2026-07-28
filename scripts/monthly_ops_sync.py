@@ -607,7 +607,13 @@ def items_basis_verdict(o: dict):
     hit = ib.get("started") or ib.get("done") or []
     if not isinstance(hit, list):
         return None
-    expected = len(hit) * weight
+    # 몫은 total 로 나눠 센다 — weight_pct 는 사람이 읽는 배점 표시일 뿐이다(2026-07-28 시우).
+    #   전에는 '완료 개수 × weight_pct' 였는데, 3항목짜리 목표는 weight_pct 가 33 이라
+    #   전부 끝내도 99% 가 나와 100 이 될 수 없었다(전사회의 목표에서 실제로 발생 —
+    #   다 끝난 일이 영원히 '근거와 숫자가 어긋남' 으로 떴다). 100 을 항목 수로 나눌 때
+    #   나머지가 생기는 모든 목표가 같은 함정에 빠진다.
+    #   기존 값은 그대로다: 3항목 중 1 = 33, 4항목 중 2 = 50(계산 방식만 나눗셈으로 통일).
+    expected = round(len(hit) / total * 100)
     return expected, f"{total}항목 × {weight}% 중 {len(hit)}항목 = {expected}%"
 
 
