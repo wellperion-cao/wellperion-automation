@@ -664,9 +664,15 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 }
 
 /* ── 동기화 배지(배1037 · 버퍼 write-back 표면화, INC-013) — 헤더 큐카운트 + 실패 상세.
-     낙관 저장은 즉시 화면반영되고, 시트 동기화 상태(진행/실패/재시도)를 이 칩으로 표면화한다. ── */
+     낙관 저장은 즉시 화면반영되고, 시트 동기화 상태(진행/실패/재시도)를 이 칩으로 표면화한다.
+   ▸ 2026-07-28 GM "저장동기화랑 저장중 이것도 같은 위치에 배치되는게 좋을 것 같아" — 저장 표시 두 개가
+     화면 아래 가운데(save-toast)·아래 왼쪽 구석(sync-chip)으로 따로 떠서 시선이 갈렸다. 실측(Playwright
+     boundingBox, 1440×900): 기존 save-toast bottom≈34px·중앙(x 676~764) / sync-chip bottom≈28px·좌측(x 28~163).
+     ▸ save-toast는 사흘 전(2026-07-25) GM 지시로 "시선이 가는 화면 아래 가운데"로 이미 옮겨진 자리 —
+       그 결정을 다시 뒤집지 않기 위해 save-toast는 그대로 두고, sync-chip을 같은 가운데 축(left:50%)으로
+       옮겨 save-toast 바로 위에 쌓았다(덜 움직이는 쪽 유지 + 더 눈에 띄는 자리로 합류). ── */
 .sync-chip{
-  position:fixed;bottom:28px;left:28px;z-index:9998;
+  position:fixed;bottom:104px;left:50%;transform:translateX(-50%);z-index:9998;
   display:none;align-items:center;gap:8px;
   padding:9px 14px;border-radius:var(--radius-card);
   font-size:12.5px;font-weight:700;
@@ -686,6 +692,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 }
 .sync-chip .sc-retry:hover{background:rgba(255,255,255,0.08)}
 .sync-chip .sc-detail{font-weight:500;opacity:0.85;font-size:11px}
+@media(max-width:520px){
+  /* save-toast가 모바일에서 bottom:20px로 낮아지므로(위 규칙) 칩도 같은 비율로 따라 내려온다 — 겹침 방지 */
+  .sync-chip{bottom:80px;max-width:min(300px,calc(100vw - 40px))}
+}
 @media print{.sync-chip{display:none!important}}
 
 /* ═══════════════════════════════════════
@@ -2430,7 +2440,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 
 </div><!-- /content -->
 
-<!-- 저장 토스트 -->
+<!-- 저장 표시 2종 — 화면 아래 가운데 한 자리에 세로로 쌓는다(2026-07-28 GM 지시, CSS 위치 근거는 .sync-chip 규칙 주석) -->
 <div class="save-toast" id="saveToast"></div>
 <div class="sync-chip" id="syncChip"><span class="sc-dot"></span><span id="syncChipMsg"></span></div>
 
