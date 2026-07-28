@@ -737,7 +737,9 @@ function buildLine(cwd, role, transcript, sessionId) {
  *    커밋할 때만 쌓여 커밋 사이엔 조용해 보인다. '가동 중'이라고 쓰면 거짓말이 된다.
  *    ③값이 없으면 빈칸 대신 —. */
 function roleActivity(cwd, role) {
-  const others = Object.keys(NICK).filter((r) => r !== role);
+  // 시로(chro)·시뽀(cfo)는 뺀다 — 나우열M 관할이라 AI 큐·화면에서 전원 배제(GM 확정 2026-07-28).
+  const EXCLUDED = ['chro', 'cfo'];
+  const others = Object.keys(NICK).filter((r) => r !== role && !EXCLUDED.includes(r));
   const found = new Map();
   try {
     const p = path.join(cwd, 'status', 'worklog.jsonl');
