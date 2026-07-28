@@ -43,7 +43,11 @@ var RECEPTION_PHOTO_FOLDER_NAME_OLD = 'VOC_Photos';
 // REG_CATEGORIES: 카테고리 라우팅 SSOT. dept 변경 시 여기 한 줄만 수정.
 // slaHours: 처리기한(SLA) SSOT — 보드에 하드코딩 복사 금지. null = SLA 없음(칭찬: 표시·계산 제외).
 var REG_CATEGORIES = [
-  { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부', slaHours: 168 },
+  // 분실물 720h(30일) — GM 확정 2026-07-28. 원래 168h(7일)였는데, 습득물은 주인이 찾아갈
+  // 때까지 보관하는 성격이라 7일이 지나면 전부 '초과'로 잡혔다. 실측(2026-07-28) 기한초과
+  // 29건 중 12건이 이것이어서 진짜 방치된 컴플레인 10건이 숫자에 묻혔다. 30일 = 보관 기간
+  // 개념(넘으면 폐기·기증 등 정리 대상). 기한 개념을 없애지 않은 이유 = 영원히 쌓이는 것도 막아야 해서.
+  { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부', slaHours: 720 },
   { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24 },
   { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부', slaHours: 12 },
   { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부', slaHours: null },
