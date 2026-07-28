@@ -35,10 +35,54 @@ SETTINGS = Path.home() / ".claude" / "settings.json"
 NODE = Path(r"C:\Program Files\nodejs\node.exe")
 HUD = ROOT / "scripts" / "wellperion_hud.mjs"
 
+# ── 턴 끝나면 다음 배로 이어가기(Stop 훅) 자가복구 — GM 결정 2026-07-28 A안 ──────────
+#   왜 여기 얹나: 이 설정이 사는 `<저장소>/.claude/settings.local.json` 은 **git 이 무시하는
+#   파일**이라(.gitignore `.claude/*`) PC 를 새로 깔면 그냥 없다. statusLine 이 같은 이유로
+#   사라질 뻔했던 것과 똑같은 자리다. 새 점검기·새 예약작업을 만들지 않고 이미 7개 부팅
+#   .bat 이 전부 지나가는 이 관문에 흡수한다(약속 L21 — 장치는 늘리지 않는다).
+LOCAL_SETTINGS = ROOT / ".claude" / "settings.local.json"
+STOP_HOOK_CMD = 'cmd /c "%USERPROFILE%\\welperion-automation\\scripts\\auto_next_ship_hook.cmd"'
+STOP_HOOK_SCRIPT = ROOT / "scripts" / "auto_next_ship_hook.cmd"
+
 
 def wanted_command() -> str:
     # 경로에 공백이 있어 각각 따옴표로 감싼다. HUD 경로는 슬래시로 통일(윈도우도 인식).
     return '"%s" "%s"' % (NODE, HUD.as_posix())
+
+
+def ensure_stop_hook(check_only: bool) -> None:
+    """Stop 훅이 걸려 있는지 확인하고, 없으면 걸어 놓는다(멱등).
+    hooks 안의 Stop 키 하나만 건드린다 — SessionStart/SessionEnd 등 나머지는 그대로 둔다."""
+    try:
+        if not STOP_HOOK_SCRIPT.exists():
+            print("[다음배] 훅 스크립트가 없어 건너뜁니다: %s" % STOP_HOOK_SCRIPT)
+            return
+        if not LOCAL_SETTINGS.exists():
+            print("[다음배] settings.local.json 이 없어 건너뜁니다")
+            return
+        data = json.loads(LOCAL_SETTINGS.read_text(encoding="utf-8"))
+        hooks = data.get("hooks")
+        if not isinstance(hooks, dict):
+            hooks = {}
+        cur = ""
+        try:
+            cur = hooks["Stop"][0]["hooks"][0]["command"]
+        except Exception:  # noqa: BLE001
+            cur = ""
+        if cur == STOP_HOOK_CMD:
+            print("[다음배] 정상 — 손댈 것 없음")
+            return
+        if check_only:
+            print("[다음배] 어긋남\n  현재: %s\n  기대: %s" % (cur or "(없음)", STOP_HOOK_CMD))
+            return
+        shutil.copy2(LOCAL_SETTINGS, LOCAL_SETTINGS.with_name(
+            LOCAL_SETTINGS.name + ".bak_" + datetime.now().strftime("%Y%m%d_%H%M%S")))
+        hooks["Stop"] = [{"hooks": [{"type": "command", "command": STOP_HOOK_CMD, "timeout": 40}]}]
+        data["hooks"] = hooks
+        LOCAL_SETTINGS.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        print("[다음배] 복구함\n  전: %s\n  후: %s" % (cur or "(없음)", STOP_HOOK_CMD))
+    except Exception as exc:  # noqa: BLE001
+        print("[다음배] 점검 건너뜀(부팅 계속): %s: %s" % (type(exc).__name__, exc))
 
 
 def main() -> int:
@@ -49,6 +93,8 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
+
+    ensure_stop_hook(args.check)
 
     try:
         if not HUD.exists():
