@@ -805,10 +805,12 @@ function main() {
   //   역할 기억함(ROLE_CACHE)이 채워지면 저절로 복구된다.
   const line = role ? buildLine(cwd, role, transcript, sessionId) : `${D}역할 확인중 · 작업표시 대기${X}`;
 
-  // 6 C-Level 작업현황 — 폭이 좁으면(작은 창) 이 블록부터 접는다. worklog 가 없거나 깨져도
-  // 본 줄(line)은 절대 죽지 않게 try/catch 로 감싼다.
+  // 6 C-Level 작업현황 — ★웰리(ceo) 창에서만 보인다.
+  //   같은 PC 의 셸 5개가 이 스크립트 하나를 공유하므로, 막지 않으면 시모·시우·시포·시토 창에도
+  //   똑같이 뜬다(GM 지적 2026-07-28). 전사 현황을 보는 건 웰리 역할이라 웰리 창에만 남긴다.
+  // 폭이 좁으면(작은 창) 이 블록부터 접는다. worklog 가 없거나 깨져도 본 줄(line)은 절대 죽지 않게 try/catch.
   let roleBlock = '';
-  if (role) {
+  if (role === 'ceo') {
     try {
       if (termWidth() - 1 >= 40) {
         const rl = buildRoleLines(cwd, role);
