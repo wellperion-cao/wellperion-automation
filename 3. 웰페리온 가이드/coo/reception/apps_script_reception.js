@@ -952,6 +952,26 @@ function _regList(params) {
   return _vJson({ ok: true, count: all.length, data: all });
 }
 
+// ─── 직원 이름 표기 통일 (2026-07-28 시우) ───
+// 왜: 예전엔 담당·처리자를 손으로 타이핑해서 같은 사람이 여러 이름으로 남았다
+//   (최준용/최준용M · 백승화/벡승화(오타)/백승화사원 · 윤병현/윤병현AM · 이경연/이경연실장).
+//   점수판에서 한 사람이 둘로 갈라지면 순위가 거짓이 되고, 그 순간 아무도 점수를 안 믿는다.
+//   지금은 화면이 드롭다운이라 새 값은 안 갈라진다 — 이 표는 옛 기록을 흡수하는 용도다.
+// ▸판정은 여기 한 곳에서만 한다(점수판·보드·알림이 각자 세면 또 갈라진다).
+var REG_STAFF_ALIASES = {
+  '최준용': '최준용M',
+  '백승화': '백승화사원', '벡승화': '백승화사원',
+  '윤병현': '윤병현AM',
+  '이경연': '이경연실장',
+  '김남욱': '김남욱GM',
+  '임정은': '임정은M',
+  '나우열': '나우열M'
+};
+function _regStaffCanon(name) {
+  name = String(name || '').trim();
+  return REG_STAFF_ALIASES[name] || name;
+}
+
 // ─── reg_scoreboard — 접수·처리 점수판 (GM 지시 2026-07-28) ───
 // 왜 만들었나: 접수한 사람이 곧 처리까지 떠안는 구조라, 적을수록 손해가 되어 아예 안 적게 된다.
 //   GM: "접수받는거 1점 + 처리 완료 1점 등으로 점수 랭킹제로 하는건 어때?"
@@ -978,7 +998,7 @@ function _regScoreboard(params) {
   var NON_STAFF = { '회원': 1, '익명': 1, '자동(점검)': 1, '지원부 점검': 1 };
   var tally = {};   // 이름 → {intake, done}
   var _add = function (who, field) {
-    who = String(who || '').trim();
+    who = _regStaffCanon(String(who || '').trim());
     if (!who || NON_STAFF[who]) return;
     if (!tally[who]) tally[who] = { intake: 0, done: 0 };
     tally[who][field]++;
