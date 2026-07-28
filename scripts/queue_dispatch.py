@@ -138,6 +138,25 @@ def main() -> int:
                 continue
             if it.get("clevel") == args.to.lower() and it.get("status") in OPEN_STATUS:
                 if _norm(_strip_role_tag(it.get("title") or "")) == want:
+                    # 중복을 막을 때 함께 보낸 지시(--note·--next)를 버리지 않는다.
+                    # 버리면 "이미 같은 배가 있습니다"만 뜨고 지시 내용이 사라져,
+                    # 보낸 쪽이 손으로 다시 붙여야 했다(2026-07-28 웰리 실측 · 배10290).
+                    today = args.date or _dt.date.today().isoformat()
+                    sender_nick = ROLES.get((args.sender or "").lower(), args.sender or "")
+                    add = []
+                    if (args.note or "").strip():
+                        add.append((args.note or "").strip())
+                    if (args.next or "").strip():
+                        add.append("다음: " + (args.next or "").strip())
+                    if add:
+                        line = "- [%s%s] %s" % (
+                            today, (" " + sender_nick) if sender_nick else "", " / ".join(add))
+                        prev = str(it.get("note") or "")
+                        if line not in prev:  # 멱등
+                            it["note"] = (prev + ("\n" if prev else "") + line).strip()
+                            made["absorbed"] = True
+                        if (args.next or "").strip():
+                            it["next"] = (args.next or "").strip()
                     made["dup"] = it
                     return queue
         ship = build_ship(args, queue)
@@ -163,6 +182,8 @@ def main() -> int:
         disp = d.get("short_no") if d.get("short_no") is not None else d.get("ship_no")
         print("이미 같은 배가 떠 있습니다 — 새로 만들지 않았습니다.")
         print("  배 %s · %s · %s" % (disp, d.get("status"), d.get("title")))
+        if made.get("absorbed"):
+            print("  보낸 내용(맥락·다음)은 그 배 설명에 붙였습니다 — 유실 없음.")
         return 0
 
     s = made["ship"]
