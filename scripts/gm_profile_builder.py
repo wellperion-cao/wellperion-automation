@@ -46,6 +46,33 @@ PROFILE_MD = STATUS_DIR / "gm_profile.md"
 LONG_PENDING_DAYS = 30
 TODAY = datetime.now().date()
 
+# ── GM 표면 점검(2026-07-29 GM go · 웰리 제안) ──
+# 배경: 2026-07-29 GM이 짚은 5건 중 4건(공개홈 글꼴 정본 이탈·핵심과제 칸 3,418자·브로제이 분리 필요·
+# 보류 재부상 접기)을 아침 점검이 먼저 찾았어야 했는데 놓쳤다 — 점검이 "내 모듈이 도는가"만 보고
+# "GM이 여는 화면이 읽히는가"를 안 봤기 때문. 새 스크립트·새 예약작업 0(약속 L21) — 이미 06:30에
+# 도는 이 파일(gm_profile_builder.py)에 얹는다. 산출도 새 파일 0: JSON=기존 LEDGER에 append,
+# 사람 요약=기존 PROFILE_MD에 새 섹션.
+GM_SURFACE_CELL_MAX = 300     # 칸 하나 최대 가시 글자수 기준. 근거=2026-07-29 실측: 접힘 적용 후
+                              # 정상 상태 최대 칸이 254자(핵심과제 title cell)였다 — 그 위에 여유를 둠.
+GM_SURFACE_BLOCK_MAX = 5000   # 블록 하나 최대 가시 글자수 기준. 근거=2026-07-29 실측: 접힘 적용 후
+                              # 정상 상태 최대 블록이 3,422자(월간운영계획 obj-board 전체)였다 —
+                              # 접힘 전 옛 상태(13,293자)는 이 기준에 확실히 걸린다.
+GM_SURFACE_STALE_DAYS = 2     # 값이 이 일수 이상 그대로면 "갱신 정지" 의심으로 본다.
+
+GM_SURFACE_PAGES = [
+    # mode='plain' = 그 URL 자체가 화면 · mode='anchor' = wellperion_guide(main).html 안 탭
+    {"label": "월간운영계획", "mode": "plain",
+     "url": "https://wellperion-cao.github.io/wellperion-automation/%EC%9B%94%EA%B0%84%EC%9A%B4%EC%98%81%EA%B3%84%ED%9A%8D.html"},
+    {"label": "브로제이 업무분장", "mode": "plain",
+     "url": "https://wellperion-cao.github.io/wellperion-automation/coo/brojay/%EB%B8%8C%EB%A1%9C%EC%A0%9C%EC%9D%B4_%EC%97%85%EB%AC%B4%EB%B6%84%EC%9E%A5.html"},
+    {"label": "자율현황", "mode": "plain",
+     "url": "https://wellperion-cao.github.io/wellperion-automation/%EC%9E%90%EC%9C%A8%ED%98%84%ED%99%A9.html"},
+    {"label": "G1 오늘의 항로", "mode": "anchor", "anchor": "G1",
+     "url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html"},
+    {"label": "업무·결재 SSOT", "mode": "anchor", "anchor": "S3",
+     "url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html"},
+]
+
 
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -276,7 +303,210 @@ def render_source_honesty_block(ct: dict) -> str:
     return "\n".join(lines)
 
 
-def build_markdown(narrative: str, counters: dict, generated_by: str) -> str:
+# ═══════════════════════════════════════════
+#  GM 표면 점검 — 실제 렌더해서 3질문(읽히는가·사실인가·GM 일인가)을 잰다.
+#  정적 grep이 아니라 Playwright 렌더를 쓴다 — 오늘 문제(핵심과제 칸 등)는 전부 JS 렌더 후에만
+#  보였다(정적 HTML엔 안 보임). 저장소에 이미 설치된 Playwright 재사용(새 의존성 0).
+# ═══════════════════════════════════════════
+def _measure_root(page, root_sel: str) -> dict:
+    """블록(section/.blk) 단위·칸(td/li 등) 단위 가시(innerText) 최대 글자수를 잰다."""
+    return page.evaluate(
+        """(sel) => {
+            const root = document.querySelector(sel) || document.body;
+            const blocks = Array.from(root.querySelectorAll('section, .blk'));
+            const cells = Array.from(root.querySelectorAll('td, .r-title, .broj-list li, li'));
+            const blockLens = blocks.map(b => (b.innerText||'').length).filter(n => n > 0);
+            const cellLens = cells.map(c => (c.innerText||'').length).filter(n => n > 0);
+            const wholeLen = (root.innerText||'').length;
+            return {
+                whole_len: wholeLen,
+                max_block_len: blockLens.length ? Math.max(...blockLens) : wholeLen,
+                max_cell_len: cellLens.length ? Math.max(...cellLens) : 0,
+                block_count: blocks.length,
+            };
+        }""",
+        root_sel,
+    )
+
+
+def run_gm_surface_check() -> tuple[list, bool]:
+    """GM 표면 3질문 점검 — ①읽히는가(칸·블록 글자수) ②GM 일인가(G1 audience 비율).
+    '사실인가'(원천 대조·갱신정지)는 화면별 원천 매핑이 필요해 이번 회차는 범위 밖으로 남기고
+    findings에 scope 한계로 명시한다(지어낸 판정 금지 — 다음 회차 과제).
+    반환: (findings 리스트, ok=점검 자체가 정상 수행됐는가).
+    """
+    findings: list = []
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception as e:
+        return [{"kind": "check_unavailable", "detail": f"Playwright 임포트 실패: {e}"}], False
+
+    ok = True
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            # gm1_auth=1 — G1(김남욱 GM 전용) 세션 게이트 사전 통과(비번 커튼, GM1_PW SSOT는
+            # wellperion_guide(main).html 안·이 스크립트가 값을 복제하지 않는다 — 세션키만 심는다).
+            ctx = browser.new_context()
+            ctx.add_init_script("try{sessionStorage.setItem('gm1_auth','1')}catch(e){}")
+            for spec in GM_SURFACE_PAGES:
+                label = spec["label"]
+                try:
+                    page = ctx.new_page()
+                    page.goto(spec["url"], wait_until="load", timeout=45000)
+                    page.wait_for_timeout(2000)  # 비동기 fetch 렌더 대기(오늘 문제 전부 이 타이밍에만 보였음)
+                    if spec["mode"] == "anchor":
+                        page.evaluate(
+                            "(id) => { const el = document.querySelector('[data-id=\"'+id+'\"]'); if(el) el.click(); }",
+                            spec["anchor"],
+                        )
+                        page.wait_for_timeout(2000)
+                        root_sel = "#" + spec["anchor"]
+                    else:
+                        page.wait_for_timeout(1500)
+                        root_sel = "body"
+                    m = _measure_root(page, root_sel)
+                    page.close()
+
+                    if m["whole_len"] == 0:
+                        findings.append({"kind": "page_render_fail", "page": label,
+                                          "detail": "렌더 후 가시 텍스트 0자 — 게이트·로드 실패 의심"})
+                        ok = False
+                        continue
+                    if m["max_cell_len"] > GM_SURFACE_CELL_MAX:
+                        findings.append({"kind": "cell_too_long", "page": label,
+                                          "value": m["max_cell_len"], "limit": GM_SURFACE_CELL_MAX})
+                    if m["max_block_len"] > GM_SURFACE_BLOCK_MAX:
+                        findings.append({"kind": "block_too_long", "page": label,
+                                          "value": m["max_block_len"], "limit": GM_SURFACE_BLOCK_MAX})
+                except Exception as e:
+                    findings.append({"kind": "page_render_fail", "page": label, "detail": str(e)[:200]})
+                    ok = False
+            browser.close()
+    except Exception as e:
+        return [{"kind": "check_crash", "detail": str(e)[:200]}], False
+
+    # ── "GM 일인가" — G1 항로가 AI 살림에 밀렸는지(렌더 아닌 큐 원천 직접 계산 — 더 정확) ──
+    try:
+        active = read_json_array(QUEUE_ACTIVE)
+        open_items = [it for it in active if it.get("status") in ("PENDING", "IN_PROGRESS")]
+        ai_n = sum(1 for it in open_items if it.get("audience") == "ai")
+        office_n = sum(1 for it in open_items if it.get("audience") == "office")
+        if ai_n > office_n:
+            findings.append({"kind": "ai_over_office", "ai": ai_n, "office": office_n})
+    except Exception as e:
+        findings.append({"kind": "audience_check_fail", "detail": str(e)[:200]})
+
+    findings.append({"kind": "scope_note",
+                      "detail": "'사실인가'(원천 대조·갱신정지)는 화면별 원천 매핑이 필요해 이번 회차 범위 밖 — 다음 과제"})
+    return findings, ok
+
+
+def log_surface_check(findings: list, ok: bool) -> dict:
+    real_findings = [f for f in findings if f.get("kind") != "scope_note"]
+    if not ok:
+        summary = "점검 실패(렌더 불가) — 별도 확인 필요"
+    elif not real_findings:
+        summary = "없음 — 점검한 화면 전부 기준 이내"
+    else:
+        summary = f"{len(real_findings)}건 발견"
+    rec = {
+        "observed_at": now_str(),
+        "source": "gm_surface_scan",
+        "signal_type": "surface_check",
+        "summary": summary,
+        "evidence": findings,
+        "pattern_hint": "3질문: 읽히는가(칸·블록 글자수)·사실인가(범위밖·다음과제)·GM 일인가(G1 audience 비율)",
+        "dedup_key": f"surfacecheck|{today_str()}",
+    }
+    try:
+        with open(LEDGER, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[WARN] 표면점검 원장 기록 실패: {e}")
+    return rec
+
+
+def render_gm_surface_block(rec: dict) -> str:
+    findings = [f for f in (rec.get("evidence") or []) if f.get("kind") != "scope_note"]
+    lines = [
+        "## 🔍 GM 표면 점검 (오늘 · \"GM이 여는 화면이 읽히는가\")",
+        "",
+        f"대상: {', '.join(s['label'] for s in GM_SURFACE_PAGES)}",
+        "",
+    ]
+    if not findings:
+        lines.append(f"**없음** — 점검한 화면 전부 기준 이내(칸 ≤{GM_SURFACE_CELL_MAX}자·블록 ≤{GM_SURFACE_BLOCK_MAX}자·AI배<실무배).")
+    else:
+        for f in findings:
+            kind = f.get("kind")
+            if kind == "cell_too_long":
+                lines.append(f"- ⚠️ **{f['page']}** 칸 하나가 {f['value']}자(기준 {f['limit']}자 초과) — 압축 필요")
+            elif kind == "block_too_long":
+                lines.append(f"- ⚠️ **{f['page']}** 블록이 {f['value']}자(기준 {f['limit']}자 초과) — 압축 필요")
+            elif kind == "ai_over_office":
+                lines.append(f"- ⚠️ G1 항로: AI배 {f['ai']}척 > 실무배 {f['office']}척 — GM 화면이 AI 살림에 밀림")
+            elif kind == "page_render_fail":
+                lines.append(f"- 🔧 **{f['page']}** 렌더 실패(점검 못함): {f.get('detail','')}")
+            elif kind == "check_unavailable" or kind == "check_crash":
+                lines.append(f"- 🔧 점검 자체 불가: {f.get('detail','')}")
+            elif kind == "audience_check_fail":
+                lines.append(f"- 🔧 GM 일인가 판정 실패: {f.get('detail','')}")
+            else:
+                lines.append(f"- {kind}: {f}")
+    lines.append("")
+    lines.append("*'사실인가'(원천 대조·갱신정지)는 화면별 원천 매핑이 필요해 이번 회차 범위 밖 — 다음 과제.*")
+    lines.append(f"*측정: {rec.get('observed_at')} · 근거 = `{LEDGER.name}` 최신 surface_check 항목*")
+    lines.append("")
+    return "\n".join(lines)
+
+
+# ═══════════════════════════════════════════
+#  북극성 지표 — "GM이 하루에 개입한 일 중 GM만 할 수 있었던 일의 비율"
+#  자동집계는 원장의 GM 세션신호 비율이 3.8%뿐이라 불가(ship 10267 — GM 성향 학습기 별개 과제).
+#  이번 회차는 웰리가 하루 끝에 채워 넣는 "칸"까지만 만든다. 새 원장 0 — 기존 LEDGER 재사용.
+# ═══════════════════════════════════════════
+def record_northstar_ratio(total: int, gm_only: int, note: str = "") -> dict:
+    """정직 조건: 분모를 숨기지 않는다 — GM이 그날 짚은 것은 전부 센다."""
+    pct = round(gm_only / total * 100) if total else 0
+    rec = {
+        "observed_at": now_str(),
+        "source": "welly_daily_northstar",
+        "signal_type": "gm_only_ratio",
+        "summary": f"GM 개입 {total}건 중 GM 전용 {gm_only}건 ({pct}%)" + (f" — {note}" if note else ""),
+        "evidence": {"total": total, "gm_only": gm_only, "pct": pct, "note": note},
+        "pattern_hint": "분모=그날 GM이 짚은 것 전부(숨김 금지) · 자동집계 전까지 웰리 수기 기록 · ship 10267과 연동",
+        "dedup_key": f"northstar|{today_str()}",
+    }
+    try:
+        with open(LEDGER, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        print(f"[북극성 기록] {rec['summary']}")
+    except Exception as e:
+        print(f"[WARN] 북극성 기록 실패: {e}")
+    return rec
+
+
+def render_northstar_block(ledger: list) -> str:
+    entries = [r for r in ledger if r.get("source") == "welly_daily_northstar"]
+    header = "## 🌟 북극성 — GM 전용 개입 비율\n"
+    cmd = ('다음 기록: `python scripts/gm_profile_builder.py --record-northstar '
+           '<총건수> <GM전용건수> "<한줄메모>"`')
+    if not entries:
+        return (f"{header}\n**미기록** — 오늘 GM이 개입한 일 중 몇 건이 GM만 할 수 있었는지 적어 주세요.\n\n{cmd}\n")
+    latest = entries[-1]
+    is_today = str(latest.get("observed_at", "")).startswith(today_str())
+    badge = "오늘" if is_today else f"최근({str(latest.get('observed_at',''))[:10]})"
+    return (
+        f"{header}\n**{badge}: {latest['summary']}**\n\n"
+        "*정직 조건: 분모는 그날 GM이 짚은 것 전부(좋아 보이게 줄이지 않음). "
+        "자동집계는 아직 불가(원장 GM세션신호 비율 낮음 — ship 10267에서 별도 진행 중).*\n\n"
+        f"{cmd}\n"
+    )
+
+
+def build_markdown(narrative: str, counters: dict, generated_by: str,
+                    surface_rec: dict | None = None, ledger_with_surface: list | None = None) -> str:
     header = (
         "# GM 프로필 (웰리 학습 · GM 보좌 자율화 phase 1)\n\n"
         f"- 생성: {now_str()}\n"
@@ -286,21 +516,20 @@ def build_markdown(narrative: str, counters: dict, generated_by: str) -> str:
         "- 배: CEO-2026-07-02-GM-AIDE-AUTONOMY (ship 237) · 스펙: `.omc/specs/deep-interview-gm-aide-autonomy.md`\n\n"
         "---\n\n"
     )
-    return (
-        header
-        + render_counters_block(counters)
-        + "\n---\n\n"
-        + render_source_honesty_block(counters)
-        + "\n---\n\n"
-        + narrative.rstrip()
-        + "\n"
-    )
+    parts = [header, render_counters_block(counters), "\n---\n\n",
+             render_source_honesty_block(counters), "\n---\n\n"]
+    if surface_rec is not None:
+        parts += [render_gm_surface_block(surface_rec), "\n---\n\n"]
+    if ledger_with_surface is not None:
+        parts += [render_northstar_block(ledger_with_surface), "\n---\n\n"]
+    parts += [narrative.rstrip(), "\n"]
+    return "".join(parts)
 
 
 # ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
-def run(stdout_only: bool = False) -> str:
+def run(stdout_only: bool = False, skip_surface_check: bool = False) -> str:
     print(f"[시작] GM 프로필 생성기 — {now_str()}")
     ledger = read_jsonl(LEDGER)
     active = read_json_array(QUEUE_ACTIVE)
@@ -308,6 +537,15 @@ def run(stdout_only: bool = False) -> str:
     print(f"[1/3] 입력 로드 — 관찰 {len(ledger)}건 · 활성큐 {len(active)}척 · 아카이브 {len(archive)}건")
 
     counters = compute_counters(ledger, active, archive)
+
+    print("[1.5/3] GM 표면 점검(렌더 · 2026-07-29 GM go)...")
+    if skip_surface_check:
+        surface_rec = {"observed_at": now_str(), "summary": "생략(--skip-surface-check)", "evidence": []}
+    else:
+        findings, ok = run_gm_surface_check()
+        surface_rec = log_surface_check(findings, ok)
+        ledger = ledger + [surface_rec]  # 이번 실행분도 북극성 블록·다음 실행 근거에 즉시 반영
+        print(f"  → {surface_rec['summary']}")
 
     print("[2/3] 웰리 두뇌(claude CLI · model_router 폴백) 호출...")
     narrative, used_model = brain_claude_cli(counters, ledger)
@@ -319,7 +557,7 @@ def run(stdout_only: bool = False) -> str:
         generated_by = f"ClaudeCLI({used_model})"
         print(f"  → ClaudeCLI 서술 생성(model={used_model}, {len(narrative)}자)")
 
-    md = build_markdown(narrative, counters, generated_by)
+    md = build_markdown(narrative, counters, generated_by, surface_rec, ledger)
 
     print(f"\n[요약] 수치 카운터")
     print(f"  · 총 관찰 {counters['observations_total']} · 결정 {counters['gm_decisions']}")
@@ -343,8 +581,20 @@ def main():
     )
     parser.add_argument("--stdout-only", action="store_true", dest="stdout_only",
                         help="파일 기록 없이 콘솔 미리보기만(드라이)")
+    parser.add_argument("--skip-surface-check", action="store_true", dest="skip_surface_check",
+                        help="GM 표면 렌더 점검 생략(디버그·속도용 — 정식 실행은 기본대로 항상 켜둘 것)")
+    parser.add_argument("--record-northstar", nargs="+", metavar=("TOTAL", "GM_ONLY"),
+                        help="북극성 지표 수기 기록: <총건수> <GM전용건수> [\"한줄메모\"] — 그 자리에서 기록만 하고 종료")
     args = parser.parse_args()
-    run(stdout_only=args.stdout_only)
+    if args.record_northstar:
+        vals = args.record_northstar
+        if len(vals) < 2:
+            parser.error("--record-northstar 는 최소 <총건수> <GM전용건수> 2개가 필요합니다")
+        total, gm_only = int(vals[0]), int(vals[1])
+        note = " ".join(vals[2:]) if len(vals) > 2 else ""
+        record_northstar_ratio(total, gm_only, note)
+        return
+    run(stdout_only=args.stdout_only, skip_surface_check=args.skip_surface_check)
 
 
 if __name__ == "__main__":
