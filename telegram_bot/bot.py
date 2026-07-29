@@ -916,7 +916,41 @@ def is_important(text: str) -> bool:
     return any(p.lower() in t for p in IMPORTANT_PATTERNS)
 
 
+def _log_group_message(update: Update) -> None:
+    """그룹 채팅 수신 원문을 _ceo_log.jsonl 에 GROUP_MSG 로 보존 (2026-07-29, 배10392).
+
+    authorized() 게이트보다 먼저 호출 — 지금까지 owner(GM) 아닌 발신자는 authorized()가
+    False 를 반환하는 즉시 handle_message 가 return 해 본문이 어디에도 안 남았다
+    (실측: 2026-07-22 종합접수처방 user_id=8845322391 — 로그엔 메타뿐 본문 0건).
+    이 함수는 순수 추가(additive)다 — 기존 흐름·회신·분류는 한 글자도 안 바꾸고,
+    이 호출 다음 줄부터 원래 경로(authorized → 분류 → 자동회신)가 그대로 이어진다.
+    소비자(읽어서 담당자에게 넘기는 쪽)는 다음 회차 과제 — 이번엔 적재만."""
+    try:
+        chat = update.effective_chat
+        if not chat or chat.type not in ("group", "supergroup"):
+            return
+        msg = update.message
+        text = msg.text if msg else None
+        if not text:
+            return
+        user = update.effective_user
+        state = load_state()
+        is_owner = bool(user) and user.id == state.get("owner_id")
+        _ceo_log_append(
+            "GROUP_MSG",
+            chat_id=chat.id,
+            chat_title=getattr(chat, "title", None),
+            sender_id=user.id if user else None,
+            sender_name=(user.username or user.first_name) if user else None,
+            is_owner=is_owner,
+            text=text[:1000],
+        )
+    except Exception as e:
+        log.error(f"GROUP_MSG 로깅 실패(비치명적 — 원 흐름은 계속 진행): {e}")
+
+
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    _log_group_message(update)
     if not await authorized(update):
         return
 
