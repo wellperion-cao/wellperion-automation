@@ -14,8 +14,8 @@
     --gold:#e8b84b; --green:#5fbf82; --blue:#6fb4e8; --rose:#dd7f6e;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.5; font-size:13px; -webkit-font-smoothing:antialiased; padding:18px 18px 40px;}
-  .wrap{max-width:900px; margin:0 auto;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.6; font-size:15px; -webkit-font-smoothing:antialiased; padding:20px clamp(16px,1.6vw,32px) 48px;}
+  .wrap{max-width:none; margin:0;}
   header.page-head{margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px;}
   header.page-head .htitles{flex:1; min-width:200px; display:flex; flex-direction:column; gap:3px;}
   header.page-head h1{font-size:20px; font-weight:800; letter-spacing:-0.02em;}
@@ -43,7 +43,8 @@
   .broj-role-table{width:100%; border-collapse:collapse; margin:6px 0 12px; font-size:12px;}
   .broj-role-table th, .broj-role-table td{border:1px solid var(--border); padding:6px 9px; text-align:left;}
   .broj-role-table th{background:var(--surface); color:var(--text-soft); font-weight:700;}
-  .broj-dept{border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:10px; padding:10px 13px; margin-bottom:10px; background:var(--surface);}
+  #broj-depts{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr)); gap:12px; align-items:start;}
+  .broj-dept{margin-bottom:0 !important; border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:10px; padding:10px 13px; margin-bottom:10px; background:var(--surface);}
   .broj-dept h4{font-size:13px; font-weight:800; color:var(--text); display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; margin-bottom:4px;}
   .broj-dept-sub{font-size:11px; font-weight:400; color:var(--dim);}
   .broj-dept-count{margin-left:auto; font-size:12px; font-weight:800; color:var(--accent-soft); font-variant-numeric:tabular-nums;}
