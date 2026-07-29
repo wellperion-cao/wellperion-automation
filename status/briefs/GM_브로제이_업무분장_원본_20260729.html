@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>웰페리온 · 브로제이 업무 분장</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "맑은 고딕", "Malgun Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 24px;
+    color: #222;
+    background: #f6f7f9;
+    line-height: 1.55;
+  }
+  h1 {
+    text-align: center;
+    color: #1F4E79;
+    font-size: 26px;
+    margin: 0 0 6px;
+    padding: 4px;
+    border-radius: 4px;
+    outline: none;
+  }
+  h1[contenteditable]:focus,
+  .subtitle[contenteditable]:focus,
+  section h2[contenteditable]:focus,
+  section h3[contenteditable]:focus { background: #fff7d6; }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    margin: 0 0 20px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    outline: none;
+  }
+  .meta {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+  }
+  .meta label { color: #666; margin-right: 6px; }
+  .meta [contenteditable] {
+    display: inline-block;
+    min-width: 100px;
+    padding: 2px 6px;
+    border-bottom: 1px dashed #bbb;
+    outline: none;
+  }
+  .meta [contenteditable]:focus { background: #fff7d6; }
+
+  .controls {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .controls button {
+    padding: 8px 14px;
+    margin: 0 4px;
+    border: 1px solid #1F4E79;
+    background: #1F4E79;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .controls button.ghost {
+    background: #fff;
+    color: #1F4E79;
+  }
+  .controls button:hover { opacity: 0.85; }
+
+  section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  section h2 {
+    color: #fff;
+    background: var(--accent, #1F4E79);
+    margin: -18px -20px 14px;
+    padding: 12px 18px;
+    border-radius: 8px 8px 0 0;
+    font-size: 17px;
+  }
+  section h3 {
+    color: var(--accent, #1F4E79);
+    font-size: 15px;
+    margin: 16px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #eee;
+  }
+
+  section.coo { --accent: #1F4E79; }
+  section.cfo { --accent: #ED7D31; }
+  section.cpo { --accent: #70AD47; }
+  section.rec { --accent: #7030A0; }
+  section.cross { --accent: #17A2B8; }
+  section.broj { --accent: #C00000; }
+
+  ul.tasks {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  ul.tasks li {
+    display: flex;
+    align-items: flex-start;
+    padding: 6px 0;
+    border-bottom: 1px dotted #eee;
+    gap: 10px;
+    cursor: grab;
+  }
+  ul.tasks li.dragging { opacity: 0.4; cursor: grabbing; }
+  ul.tasks li:last-child { border: none; }
+  ul.tasks .drag-handle {
+    color: #ccc;
+    font-size: 14px;
+    padding: 0 2px;
+    user-select: none;
+    line-height: 1.5;
+  }
+  ul.tasks li:hover .drag-handle { color: #666; }
+  ul.tasks.drag-over {
+    background: #fffde6;
+    border: 2px dashed #ED7D31;
+    border-radius: 4px;
+    min-height: 40px;
+  }
+  section h3.drag-over-header {
+    background: #fffde6;
+    padding-left: 12px;
+    border-left: 4px solid #ED7D31;
+  }
+  ul.tasks input[type=checkbox] {
+    margin-top: 4px;
+    width: 16px; height: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  ul.tasks .task-text {
+    flex: 1;
+    outline: none;
+    padding: 2px 6px;
+    border-radius: 3px;
+    min-height: 20px;
+  }
+  ul.tasks .task-text:focus { background: #fff7d6; }
+  ul.tasks li.done .task-text {
+    text-decoration: line-through;
+    color: #999;
+  }
+  ul.tasks .del {
+    color: #bbb;
+    cursor: pointer;
+    padding: 0 6px;
+    font-size: 14px;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  ul.tasks .del:hover { color: #c00; }
+
+  .add-btn {
+    margin-top: 8px;
+    padding: 4px 10px;
+    background: #fff;
+    border: 1px dashed #999;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #666;
+    font-family: inherit;
+  }
+  .add-btn:hover { background: #f0f0f0; }
+
+  table.role {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+  }
+  table.role th, table.role td {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+    text-align: left;
+  }
+  table.role th { background: #1F4E79; color: #fff; }
+  table.role td[contenteditable]:focus { background: #fff7d6; outline: none; }
+
+  .priority {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 6px;
+  }
+  .p1 { background: #C00000; color: #fff; }
+  .p2 { background: #ED7D31; color: #fff; }
+
+  .footer {
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    margin-top: 20px;
+  }
+
+  @media print {
+    body { background: #fff; margin: 0; padding: 12px; max-width: none; }
+    .controls, .add-btn, ul.tasks .del { display: none !important; }
+    section { border: 1px solid #999; break-inside: avoid; page-break-inside: avoid; }
+    section h2 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    input[type=checkbox] { -webkit-print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<h1 contenteditable="true">웰페리온 ↔ 브로제이  업무 분장</h1>
+<p class="subtitle" contenteditable="true">2026-07-29 · 시스템 도입 후 실무 이슈 대응</p>
+
+<div class="meta">
+  <div><label>작성:</label> <span contenteditable="true">김남욱 GM</span></div>
+  <div><label>작성일:</label> <span contenteditable="true">2026-07-29</span></div>
+  <div><label>대상:</label> <span contenteditable="true">COO · CHRO+CFO · CPO · 리셉션 (총 5명)</span></div>
+  <div><label>버전:</label> <span contenteditable="true">v1.0</span></div>
+</div>
+
+<div class="controls">
+  <button onclick="window.print()">🖨 인쇄</button>
+  <button class="ghost" onclick="localStorage.setItem('wellperion-broj', document.querySelector('main').innerHTML); alert('저장 완료 (브라우저 로컬)')">💾 저장</button>
+  <button class="ghost" onclick="if(confirm('저장된 내용 불러올까요?')){const d=localStorage.getItem('wellperion-broj');if(d)document.querySelector('main').innerHTML=d;bindEvents();}">📂 불러오기</button>
+  <button class="ghost" onclick="if(confirm('전부 지우고 원본으로 복원할까요?')){location.reload();}">🔄 원본 복원</button>
+</div>
+
+<main>
+
+<!-- 5인 역할 매핑 -->
+<section>
+  <h2 contenteditable="true">5인 역할 매핑</h2>
+  <table class="role">
+    <thead>
+      <tr>
+        <th style="width:15%">역할</th>
+        <th style="width:25%">이름</th>
+        <th style="width:60%">담당 영역</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>COO</strong></td>
+        <td contenteditable="true">최준용 매니저 + 윤병현 어시스트매니저</td>
+        <td contenteditable="true">운영 · 기술 · 시설 총괄</td>
+      </tr>
+      <tr>
+        <td><strong>CHRO + CFO</strong></td>
+        <td contenteditable="true">나우열 매니저</td>
+        <td contenteditable="true">인사 · 재무 · 시스템 권한</td>
+      </tr>
+      <tr>
+        <td><strong>CPO</strong></td>
+        <td contenteditable="true">임정은 F.C 매니저</td>
+        <td contenteditable="true">상품 · 프로그램 · 강습</td>
+      </tr>
+      <tr>
+        <td><strong>리셉션 관리</strong></td>
+        <td contenteditable="true">백승화 사원</td>
+        <td contenteditable="true">프런트 응대 · 실무</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- CHRO+CFO -->
+<section class="cfo">
+  <h2 contenteditable="true">🟠 CHRO + CFO — 나우열M  ·  인사·재무·시스템 권한  【최우선】</h2>
+
+  <h3 contenteditable="true">★ A. 시스템 권한 관리 (최우선 과제)</h3>
+  <ul class="tasks">
+    <li draggable="true" style="background:#FFF2CC; padding:8px; border-radius:4px; border:2px solid #C00000; margin-bottom:4px;"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p1">최우선</span><strong>space.broj.co.kr 접근 권한 매트릭스 확정 및 셋팅 (GM 제어 / 나머지 팀 레슨 권한)</strong></span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">각 팀 계정 발급 · 초기 비밀번호 배포 · 로그인 확인</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">B. 재무 · 견적 검증</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">티업 제어가 견적서 [별첨1]에 포함되어 있는지 확인 → COO에 회신 (미포함 시 유상 개발 협의)</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">계약금 60% (₩23,430,000) 이체 실행 상태 재확인</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">BROJ PASS&GOLF 월 정기결제 카드 등록 확인</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">잔금 40% (₩15,620,000) 지급 준비 (정상작동 확인 후 7일)</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+</section>
+
+<!-- COO -->
+<section class="coo">
+  <h2 contenteditable="true">🔵 COO — 최준용M · 윤병현AM  ·  운영·기술 총괄</h2>
+
+  <h3 contenteditable="true">A. 골프타석 시스템 (브로제이 개선 요청 취합·전달)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">예약 시 스크린 화면에 핸드폰번호 노출 → 비노출로 변경 요청</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">얼굴 인증 후 확인 버튼 → 필수 여부 확인·간소화 요청</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">대기자 예약 현황에 시간만 → 이름(김*욱) 표시로 개선 (복수 대기자 대응)</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">55인치 교체 시 벽 고정 설치 요청 (시설 협의)</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">티업 제어 견적 포함 여부 확인 → CFO에게 견적서 대조 요청</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">빔프로젝트 절전모드 → 안 됨. 재확인 및 재설정 요청</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">무료타석 배정 기능 → 개발/설정 가능 여부 확인</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">비회원 로그인 다음 화면 진입 → QED 관련 문의</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">키오스크 화면 좌상단 GDR / 우상단 QED + 8번타석 좌/우 표시 · 좌타석 이용 중 대기예약 X 가이드 요청</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">B. 출석 체크 (기술 셋팅·문의)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">성인/유소년 입장 시 촬영거리 멀게 셋팅 — 방법 브로제이에 요청</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">번호 중복 시 / 부모님과 같이 쓸 경우 얼굴 따로 등록 가능 여부 확인</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">웰페리온 메인입구 브로제이 얼굴인증 시 자동문 작동 안 됨 → 시설·브로제이 합동 확인</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">C. 락커 배정 (운영·실물 확인)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">골프 락커 / 개인 락커 / 스쿼시 락커 배정 작업</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">유효기간 정책 확인 + 실물 락커까지 매핑 확인 (프런트·시설 합동)</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+</section>
+
+
+
+<!-- CPO -->
+<section class="cpo">
+  <h2 contenteditable="true">🟢 CPO — 임정은M  ·  상품·프로그램</h2>
+
+  <h3 contenteditable="true">A. 상품 등록 (브로제이 CRM에서 직접 등록)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">멤버십(성인) 상품 등록 — 헬스·수영·사우나 등</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">멤버십(유소년) 상품 등록 — 수영 준회원 · 유소년 강습 등</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">강습(성인) 상품 등록 — PT · 필라테스 · 스쿼시 · 골프 준회원 등</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">강습(유소년) 상품 등록 — 유소년 전용 프로그램</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">사우나 포함/미포함 옵션별 매핑 (SRS-A04)</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">B. 등록 · 정책 정의</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">출석 화면 수강 정보 표시 정책 정의 (표시 필드·표시 시간) → COO에 개선 요청 전달</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">부모님-유소년 얼굴 연동 등록 규칙 (부모님 미등록 + 유소년 강습 등록 시 처리 방식) → 리셉션에 실무 절차 공유</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책)</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+</section>
+
+<!-- 리셉션 -->
+<section class="rec">
+  <h2 contenteditable="true">🟣 리셉션 관리 — 백승화 사원  ·  프런트 실무</h2>
+
+  <h3 contenteditable="true">A. 결제 시스템 매뉴얼 숙지</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">카드 단말기 지원 여부 확인 (브로제이 회신 대기)</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">키오스크·단말기 전원 on/off · 설정 방법 매뉴얼 숙지</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">결제 상품 등록 방식 및 회원 결제 방법 숙지 (CPO 상품 등록 후 실습)</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">B. 계약서 · 회원 셋팅 (프런트 실무)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">멤버십 + 강습(성인·유소년) 계약서 셋팅 — 회원 개인정보 재동의·계약 서명 처리</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">결제 시스템 체크 → 계약 서명 확인까지 프런트 원스톱 응대</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">상품 등록 완료 후 신규·재등록 회원 실무 응대</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">C. 부모님-유소년 등록 응대</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">부모님 1명 + 유소년 1명 연동 얼굴 등록 절차 실무 응대</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">부모님 미등록 + 유소년 강습 등록 시 학부모 방문 유도 안내</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+</section>
+
+<!-- 크로스팀 -->
+<section class="cross">
+  <h2 contenteditable="true">🔷 크로스팀 협업 항목 (2명 이상 관여)</h2>
+  <table class="role">
+    <thead>
+      <tr>
+        <th style="width:45%">업무</th>
+        <th style="width:27%">주담당</th>
+        <th style="width:28%">부담당</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td contenteditable="true">계약서 · 상품 셋팅 → 회원 응대 흐름</td>
+        <td contenteditable="true">CPO 임정은 (상품 등록)</td>
+        <td contenteditable="true">리셉션 백승화 (실무 응대)</td>
+      </tr>
+      <tr>
+        <td contenteditable="true">부모님-유소년 연동 등록</td>
+        <td contenteditable="true">CPO 임정은 (규칙 정의)</td>
+        <td contenteditable="true">리셉션 백승화 (응대)</td>
+      </tr>
+      <tr>
+        <td contenteditable="true">락커 배정 정책 · 실물 확인</td>
+        <td contenteditable="true">COO 최준용 (운영)</td>
+        <td contenteditable="true">CPO 임정은 (상품 매핑)</td>
+      </tr>
+      <tr>
+        <td contenteditable="true">티업 제어 견적 확인</td>
+        <td contenteditable="true">CFO 나우열 (견적 대조)</td>
+        <td contenteditable="true">COO 최준용 (기술 실행 확인)</td>
+      </tr>
+      <tr>
+        <td contenteditable="true">space.broj 계정 권한 셋팅</td>
+        <td contenteditable="true">CFO 나우열 (권한 매트릭스)</td>
+        <td contenteditable="true">각 담당자 (자기 계정 확인)</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 브로제이 요청 리스트 -->
+<section class="broj">
+  <h2 contenteditable="true">📤 브로제이(손영인 주임)에 취합 전달할 요청 리스트  (COO 김남욱 취합)</h2>
+
+  <h3 contenteditable="true">우선순위 P1 (오늘~내일 회신 필요)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p1">P1</span>골프타석 핸드폰번호 스크린 노출 비노출 처리</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p1">P1</span>얼굴 인증 후 확인 버튼 간소화 여부</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p1">P1</span>웰페리온 메인입구 자동문 작동 안 됨 (긴급)</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p1">P1</span>티업 제어 견적 포함 여부 확답</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">우선순위 P2 (이번 주 회신)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>대기자 이름 표시 UI 개선</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>55인치 벽 고정 설치 방식</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>빔프로젝트 절전모드 재설정</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>무료타석 배정 기능</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>비회원 QED 로그인 이슈</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>키오스크 화면 GDR/QED + 대기예약 가이드</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>촬영거리 셋팅 방법</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true"><span class="priority p2">P2</span>번호 중복/부모님 얼굴 등록 방식</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+</section>
+
+</main>
+
+<div class="footer">
+  ※ 이 문서는 브라우저에서 직접 편집 가능합니다. 우측 상단 「저장」 버튼으로 로컬 저장, 「인쇄」 버튼으로 프린트 가능합니다.
+</div>
+
+<script>
+let dragged = null;
+
+function bindEvents() {
+  // 체크박스 → 취소선
+  document.querySelectorAll('ul.tasks input[type=checkbox]').forEach(cb => {
+    cb.onchange = e => {
+      const li = e.target.closest('li');
+      li.classList.toggle('done', e.target.checked);
+    };
+  });
+
+  // 삭제 버튼
+  document.querySelectorAll('ul.tasks .del').forEach(btn => {
+    btn.onclick = e => {
+      if (confirm('삭제하시겠습니까?')) e.target.closest('li').remove();
+    };
+  });
+
+  // 드래그 시작 (개별 항목)
+  document.querySelectorAll('ul.tasks li').forEach(li => {
+    li.setAttribute('draggable', 'true');
+    li.ondragstart = e => {
+      // 편집 중이면 드래그 금지
+      if (document.activeElement && document.activeElement.hasAttribute('contenteditable')) {
+        e.preventDefault();
+        return;
+      }
+      dragged = li;
+      li.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    };
+    li.ondragend = () => {
+      li.classList.remove('dragging');
+      document.querySelectorAll('.drag-over, .drag-over-header').forEach(el => {
+        el.classList.remove('drag-over', 'drag-over-header');
+      });
+    };
+  });
+
+  // 드롭 존 (모든 ul.tasks + h3 소제목)
+  document.querySelectorAll('ul.tasks').forEach(ul => {
+    ul.ondragover = e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      ul.classList.add('drag-over');
+    };
+    ul.ondragleave = e => {
+      if (!ul.contains(e.relatedTarget)) ul.classList.remove('drag-over');
+    };
+    ul.ondrop = e => {
+      e.preventDefault();
+      ul.classList.remove('drag-over');
+      if (!dragged) return;
+
+      // 특정 li 위에 드롭했으면 그 위치에 삽입, 아니면 마지막에
+      const targetLi = e.target.closest('li');
+      if (targetLi && targetLi !== dragged && ul.contains(targetLi)) {
+        const rect = targetLi.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        if (e.clientY < midY) {
+          ul.insertBefore(dragged, targetLi);
+        } else {
+          ul.insertBefore(dragged, targetLi.nextSibling);
+        }
+      } else {
+        ul.appendChild(dragged);
+      }
+      dragged = null;
+    };
+  });
+
+  // h3 소제목 위에 드롭 → 그 소제목 바로 아래 ul로 이동
+  document.querySelectorAll('section h3').forEach(h3 => {
+    h3.ondragover = e => {
+      e.preventDefault();
+      h3.classList.add('drag-over-header');
+    };
+    h3.ondragleave = () => h3.classList.remove('drag-over-header');
+    h3.ondrop = e => {
+      e.preventDefault();
+      h3.classList.remove('drag-over-header');
+      if (!dragged) return;
+      // h3 다음 ul 찾기
+      let next = h3.nextElementSibling;
+      while (next && next.tagName !== 'UL') next = next.nextElementSibling;
+      if (next && next.classList.contains('tasks')) {
+        next.appendChild(dragged);
+      }
+      dragged = null;
+    };
+  });
+}
+
+function addTask(btn) {
+  const ul = btn.previousElementSibling;
+  const li = document.createElement('li');
+  li.setAttribute('draggable', 'true');
+  li.innerHTML = '<span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">새 항목</span><button class="del">✕</button>';
+  ul.appendChild(li);
+  bindEvents();
+  li.querySelector('.task-text').focus();
+  // 텍스트 전체 선택
+  const range = document.createRange();
+  range.selectNodeContents(li.querySelector('.task-text'));
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+bindEvents();
+</script>
+</body>
+</html>
