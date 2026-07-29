@@ -9757,7 +9757,13 @@ function buildSelect(field, options, current) {
   var opts = options.slice();
   var cur = current || '';
   if (field === 'status') cur = _memStatusDisplay(cur);   // 레거시 신규/예약/방문/빈값 → '미정' 선택(옵션에 존재)
-  if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);
+  // 관심 프로그램 = 괄호 설명 포함 레거시 원문값을 축약형과 비교 없이 그대로 unshift하면, 축약형이 이미
+  // PROGRAM_OPTIONS에 있어도 같은 항목이 옵션에 두 번(레거시 원문 1 + 축약 옵션 1) 나열된다 — 다시 선택할 때
+  // "종목이 다 나열되서 칸 오바됨" 버그(FB260729-105748, 실측 재현: '노블레스+골프' 6개 중 2줄 중복).
+  // 축약형이 이미 옵션에 있으면 그 축약형을 선택 대상으로 써서 중복을 없앤다. 2026-07-29 시포
+  var curShort = (field === 'program' && cur) ? _shortProgram(cur) : cur;
+  if (cur && opts.indexOf(curShort) >= 0) cur = curShort;
+  else if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);
   opts.unshift('');
   opts.forEach(function(o){
     var op = document.createElement('option');
