@@ -216,12 +216,43 @@ def save_queue_atomic(items, repo_root=None):
     raise last_err
 
 
-def mutate_queue(mutator, holder="?", repo_root=None):
+def _validate_queue_shape(new_items, before_count, allow_shrink):
+    """저장 직전 가드 (INC-039 · 2026-07-29) — mutate_queue 저장 계약을 어기면 예외로 막는다.
+    사고: mutator 가 새 배열이 아니라 True 를 반환했는데 그대로 저장돼 공용 큐 65척이
+    4바이트 'true' 로 덮어써지고 origin 까지 push 됐다. mutator 계약은 'items 를
+    in-place 로 고치고 None 반환'이다 — None 이 아닌 값을 반환하면 그 값이 그대로 저장되므로
+    여기서 모양을 검사한다."""
+    if not isinstance(new_items, list):
+        raise TypeError(
+            "mutate_queue: 저장 직전 검사 실패 — 큐가 list 가 아니라 "
+            f"{type(new_items).__name__} 입니다(값={new_items!r}). "
+            "mutator(items) 는 items 를 in-place 로 수정한 뒤 None 을 반환해야 합니다"
+            "(새 리스트를 반환하려면 그 리스트 자체를 반환)."
+        )
+    for i, it in enumerate(new_items):
+        if not isinstance(it, dict):
+            raise TypeError(
+                f"mutate_queue: 저장 직전 검사 실패 — {i}번째 배가 dict 가 아니라 "
+                f"{type(it).__name__} 입니다. mutator 반환값 계약(in-place 수정 후 None 반환)을 확인하세요."
+            )
+    if not allow_shrink and before_count is not None and len(new_items) < before_count:
+        raise ValueError(
+            f"mutate_queue: 저장 직전 검사 실패 — 배 수가 {before_count}→{len(new_items)} 로 "
+            "줄었습니다(대량 유실 의심). 의도된 축소(예: 완료건 아카이브 이관)라면 "
+            "mutate_queue(..., allow_shrink=True) 로 명시하세요."
+        )
+
+
+def mutate_queue(mutator, holder="?", repo_root=None, allow_shrink=False):
     """락 임계구역에서 load→mutator(items)→원자적 save.
-    mutator(items): 새 리스트 반환 또는 items in-place 수정 후 None 반환."""
+    mutator(items): 새 리스트 반환 또는 items in-place 수정 후 None 반환.
+    저장 직전 _validate_queue_shape 가 계약 위반(비-list·비-dict 원소·대량 축소)을 예외로 막는다
+    (INC-039 — allow_shrink=True 없이 배 수가 줄면 차단)."""
     with QueueLock(holder, repo_root):
         items = load_queue(repo_root)
+        before_count = len(items) if isinstance(items, list) else None
         result = mutator(items)
         new_items = result if result is not None else items
+        _validate_queue_shape(new_items, before_count, allow_shrink)
         save_queue_atomic(new_items, repo_root)
         return new_items
