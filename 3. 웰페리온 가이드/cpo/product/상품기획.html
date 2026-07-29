@@ -52,6 +52,32 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .action-btn.green{background:var(--green-bg);color:var(--green);border-color:var(--green-border);}
 .action-btn.green:hover{background:rgba(106,191,123,0.2);}
 
+/* ─── 실무진 피드백 CTA — membership.html(멤버십 회원관리) 패턴 그대로 이식. 제목↔우측 버튼묶음 사이
+   가운데 슬롯(header-actions 밖 형제) — 잘 보이는 자리에 두라는 GM 지시(2026-07-24 원지시). 2026-07-29 시포 ─── */
+.header-feedback-slot{flex:1 1 180px;display:flex;justify-content:center;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;}
+.feedback-cta-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:800;
+  height:34px;padding:0 18px;border-radius:var(--radius-btn);
+  background:var(--accent);color:#1a1918;
+  border:1px solid var(--accent-border);
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(183,159,138,0.25);
+  transition:filter 0.15s,transform 0.15s;
+}
+.feedback-cta-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+
+/* ─── 피드백 모달 오버레이 — membership.html의 gdoc-overlay/gdoc-modal 패턴 그대로(신규 디자인 없음) ─── */
+.gdoc-overlay{display:none;position:fixed;inset:0;z-index:520;background:rgba(0,0,0,0.55);
+  align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.gdoc-overlay.open{display:flex}
+.gdoc-modal{background:var(--paper);border:1px solid var(--border);border-radius:14px;
+  max-width:820px;width:100%;padding:22px 24px 28px;box-shadow:0 18px 50px rgba(0,0,0,0.5)}
+.gdoc-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.gdoc-modal-title{font-size:16px;font-weight:800;color:var(--text)}
+.gdoc-close{background:none;border:none;color:var(--dim);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px}
+.gdoc-close:hover{color:var(--text)}
+
 /* ─── 탭 내비게이션 ─── */
 /* .tab-bar-row = 탭목록(.tab-nav)+인쇄버튼(.tab-dropdown) 공통 행. 인쇄버튼을 .tab-nav의
    overflow-x:auto 클리핑 컨텍스트 밖에 두기 위해 분리(그 안에 있으면 po-panel 드롭다운이
@@ -321,6 +347,11 @@ tr:hover td{background:var(--accent-bg);}
       <div class="header-brand">
         <h1>🏷️ 스포츠클럽 상품 기획 <span class="badge">AI CPO v1.0</span></h1>
         <div class="sub">AI CPO (시포) · 현행 상품 정리 + 요금 정책 + 신규 기획 작업대</div>
+      </div>
+      <!-- 실무진 피드백 버튼 — membership.html(멤버십 회원관리)과 동일 패턴 이식. 오늘부터 상품 등록 담당이 된
+           이경연 실장(운영부)이 이 화면을 기준 문서로 쓰기 시작 — 막히는 지점을 바로 남길 자리. 2026-07-29 시포 -->
+      <div class="header-feedback-slot">
+        <button type="button" class="feedback-cta-btn" onclick="openStaffFeedback()">💬 실무진 피드백</button>
       </div>
       <div class="header-actions">
         <a href="../../wellperion_guide(main).html" class="action-btn">← ERP 홈</a>
@@ -728,6 +759,22 @@ tr:hover td{background:var(--accent-bg);}
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
       <button class="btn-primary" onclick="submitPlan()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 실무진 피드백 모달 (헤더 버튼 💬 실무진 피드백 → openStaffFeedback). membership.html(멤버십 회원관리)의
+     모달 iframe 패턴 그대로(신규 디자인 없음). 본문 = ../member/실무진피드백.html을 iframe으로 로드,
+     모달을 처음 열 때만 data-src→src 승격(지연 로드). 2026-07-29 시포 · GM 지시 ══ -->
+<div class="gdoc-overlay" id="staffFeedbackModalOverlay" onclick="if(event.target===this)closeStaffFeedback()">
+  <div class="gdoc-modal" role="dialog" aria-modal="true" style="max-width:560px">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title">💬 실무진 피드백</span>
+      <button class="gdoc-close" type="button" onclick="closeStaffFeedback()" aria-label="닫기">&times;</button>
+    </div>
+    <div id="staffFeedbackModalBody">
+      <iframe id="staffFeedbackIframe" data-src="../member/실무진피드백.html" title="실무진 피드백"
+        style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px;display:block;background:var(--paper)"></iframe>
     </div>
   </div>
 </div>
@@ -1207,6 +1254,36 @@ function submitPlan() {
   // ★저장에 성공해야 창을 닫는다(2026-07-24 시포). 먼저 닫아버리면 저장이 실패했을 때
   //   공들여 적은 기획안이 화면에서 사라져 다시 쓸 수도 없다 — 오늘 회원 컨택 기록을 날린 구조와 같다.
   savePlan(item).then(function(ok){ if (ok) closeModal(); });
+}
+
+/* ── 실무진 피드백 모달 — 진입 버튼(💬 실무진 피드백) → #staffFeedbackModalOverlay. 본문은
+   ../member/실무진피드백.html을 iframe으로 로드. lazy load(모달 첫 오픈 시 data-src→src 승격).
+   membership.html과 동일 함수(신규 로직 없음). 2026-07-29 시포 ── */
+var _staffFeedbackLoaded = false;
+function openStaffFeedback(){
+  var ov = document.getElementById('staffFeedbackModalOverlay');
+  if (!ov) return;
+  ov.classList.add('open');
+  if (!_staffFeedbackLoaded) { _staffFeedbackLoaded = true; _staffFeedbackLoadIframe(); }
+}
+function closeStaffFeedback(){
+  var ov = document.getElementById('staffFeedbackModalOverlay');
+  if (ov) ov.classList.remove('open');
+}
+function _staffFeedbackLoadIframe(){
+  var f = document.getElementById('staffFeedbackIframe');
+  if (!f) return;
+  var src = f.getAttribute('data-src');
+  f.onerror = function(){ _staffFeedbackFail(); };
+  f.src = src;
+}
+function _staffFeedbackFail(){
+  var body = document.getElementById('staffFeedbackModalBody');
+  if (!body) return;
+  body.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--dim);font-size:13px">' +
+    '피드백 화면을 불러오지 못했습니다.<br><br>' +
+    '<a href="../member/실무진피드백.html" target="_blank" rel="noopener" style="color:var(--text);font-weight:700">직접 열기 ↗</a>' +
+    '</div>';
 }
 
 // ── 초기화: 카테고리 셀렉트 옵션 구성 ──────────────────────────────────
