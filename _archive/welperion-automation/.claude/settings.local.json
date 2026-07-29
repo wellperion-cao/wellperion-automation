@@ -1,0 +1,33 @@
+{
+    "permissions":  {
+                        "allow":  [
+                                      "Bash(python -c ' *)",
+                                      "PowerShell(Get-Process *)",
+                                      "PowerShell(Get-CimInstance *)",
+                                      "Bash(.venv/Scripts/python.exe *)"
+                                  ],
+                        "defaultMode":  "bypassPermissions"
+                    },
+    "hooks":  {
+                  "SessionStart":  [
+                                       {
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "cmd /c \"%USERPROFILE%\\welperion-automation\\scripts\\morning_pipeline_session_hook.cmd\""
+                                                         }
+                                                     ]
+                                       }
+                                   ],
+                  "SessionEnd":  [
+                                     {
+                                         "hooks":  [
+                                                       {
+                                                           "type":  "command",
+                                                           "command":  "cmd /c \"%USERPROFILE%\\welperion-automation\\scripts\\evening_wrap_session_hook.cmd\""
+                                                       }
+                                                   ]
+                                     }
+                                 ]
+              }
+}

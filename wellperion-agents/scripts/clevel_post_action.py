@@ -523,6 +523,48 @@ def send_telegram(
         return False
 
 
+_LEDGER_PATH = _STATUS_DIR / "gm_observation_ledger.jsonl"
+
+
+def record_gm_signal(clevel: str, signal: str, signal_type: str, dry_run: bool) -> bool:
+    """
+    세션 중 GM이 남긴 교정·선호 한 줄을 gm_observation_ledger.jsonl 에 append (배 10267).
+
+    배경: 원장 대부분(기존 실측 96%+)이 시스템 자기가동 미러링이라 GM 성향 프로필이
+    GM을 관찰하지 못했다 — 세션 교정이 대화에만 존재하다 세션 종료와 함께 사라졌기
+    때문. 새 파일·새 감시기를 만들지 않고(약속 L21) 전 C-Level이 이미 반드시 지나가는
+    이 관문(post-action)에 흡수한다.
+
+    - 호출자가 --gm-signal 을 주지 않으면 이 함수 자체가 호출되지 않는다
+      (기존 호출 100% 무영향 — main() 참고).
+    - append-only. 기존 원장 줄은 절대 읽거나 고치지 않는다.
+    - source = f"{clevel}_session_{YYYY-MM-DD}" — gm_profile_builder.py 의 세션신호
+      판정("_session_" 포함, 예 cmo_session_2026-07-25)과 그대로 맞물린다(집계 코드 추가 0).
+    """
+    if not signal or not signal.strip():
+        return False
+    local_now = datetime.now(timezone.utc).astimezone()
+    entry = {
+        "observed_at": local_now.strftime("%Y-%m-%d %H:%M:%S"),
+        "source": clevel.lower() + "_session_" + local_now.strftime("%Y-%m-%d"),
+        "signal_type": signal_type or "correction",
+        "summary": signal.strip(),
+    }
+    if dry_run:
+        print("[DRY-RUN] gm_observation_ledger.jsonl append 예정:")
+        print(json.dumps(entry, ensure_ascii=False))
+        return True
+    try:
+        _STATUS_DIR.mkdir(parents=True, exist_ok=True)
+        with open(_LEDGER_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        print("[GM신호] gm_observation_ledger append 완료 — source=" + entry["source"])
+        return True
+    except OSError as e:
+        print("[ERROR] gm_observation_ledger append 실패: " + str(e), file=sys.stderr)
+        return False
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="C-Level .bat post-action 표준 훅 (hook) — status json + 텔레그램(Telegram) 보고 (외부 DB 의존 없음)"
@@ -554,6 +596,13 @@ def parse_args() -> argparse.Namespace:
                    help="[완료 시] 다음이 없고 여기서 종결됨을 명시(--next 대체). 빈칸 통과 금지용.")
     p.add_argument("--dry-run", action="store_true",
                    help="실제 발송/파일쓰기 없이 stdout 출력만 (안전 검증 모드)")
+    # ── 세션 GM 신호 흡수(배 10267) — 완전 선택 인자, 생략 시 무동작 ──────────
+    p.add_argument("--gm-signal", dest="gm_signal", default=None,
+                   help="[선택] 이번 세션에서 GM이 직접 남긴 교정·선호 한 줄. 있으면 "
+                        "gm_observation_ledger.jsonl 에 세션신호로 append(없으면 아무 일도 "
+                        "안 일어남 — 기존 호출 무영향).")
+    p.add_argument("--gm-signal-type", dest="gm_signal_type", default="correction",
+                   help="--gm-signal 의 유형(correction|preference|missed 등). 기본값: correction")
     return p.parse_args()
 
 
@@ -637,6 +686,15 @@ def main() -> int:
             artifact_url=args.artifact_url or "",
             next_desc=args.next_desc or "",
             terminal=args.terminal,
+        )
+
+    # ── 세션 GM 신호 흡수(배 10267): --gm-signal 없으면 완전 무동작 ──────────
+    if args.gm_signal:
+        record_gm_signal(
+            clevel=args.clevel,
+            signal=args.gm_signal,
+            signal_type=args.gm_signal_type,
+            dry_run=args.dry_run,
         )
 
     if args.dry_run:
