@@ -367,6 +367,21 @@ function _fbGroupValue(field){
   return active ? active.getAttribute('data-value') : '';
 }
 
+// 어느 화면·주소·창 크기에서 남겼는지 자동 기록(2026-07-29 GM 지시 — "다른 페이지 피드백은
+// 그 현재 페이지 사진도 남겨주면 더 좋긴하겠다"). 실제 화면 캡처(스크린샷)는 외부 라이브러리 없이는
+// 만들 수 없고(이 파일은 CDN 0 원칙 유지), getDisplayMedia는 매번 사용자 허용 팝업이 떠 피드백을
+// 남기는 흐름을 막는다 — 그래서 최소한 "어디서 남겼는지"(주소·창 크기)만 자동 기록한다.
+// 이 폼은 부모 화면 위에 iframe으로 열리므로 window.parent 의 주소·크기를 읽는다(동일 출처 전제 —
+// 실패해도 접수 자체는 막지 않는다).
+function _fbPageContext(){
+  try {
+    var w = (window.parent && window.parent !== window) ? window.parent : window;
+    return '[화면정보] ' + w.location.href + ' · ' + w.innerWidth + 'x' + w.innerHeight;
+  } catch(e) {
+    return '[화면정보] (읽기 실패 — 다른 출처)';
+  }
+}
+
 function submitStaffFeedback(){
   var contentEl = document.getElementById('fbContent');
   var content = (contentEl.value || '').trim();
@@ -400,7 +415,9 @@ function submitStaffFeedback(){
     t: FB_TOKEN,
     screen: _fbGroupValue('screen'),
     kind: _fbGroupValue('type'),
-    content: content,
+    // 사용자가 쓴 내용 뒤에 화면정보를 자동으로 덧붙인다(2026-07-29 GM 지시) — 입력칸에는 안 보이고
+    // 전송 시에만 붙는다. 어디서 남겼는지 알면 재현·확인이 훨씬 빨라진다.
+    content: content + '\n\n' + _fbPageContext(),
     urgency: _fbGroupValue('urgency'),
     writer: author,
     // 같은 글의 재시도는 같은 번호로 보낸다 → 두 번 눌러도 시트엔 한 줄만 남는다.
