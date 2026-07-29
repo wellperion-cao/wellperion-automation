@@ -357,7 +357,9 @@
         id: itemId, origin: 'gm', deptId: deptId, groupTitle: groupTitle,
         text: (overlay.text != null && overlay.text !== '') ? overlay.text : base.text,
         hot: base.hot,
-        checked: !!overlay.checked, deleted: !!overlay.deleted,
+        // 레거시 hidden:true 도 삭제로 취급(2026-07-29 밤 "숨김→삭제" 전환 전에 이미 hidden 처리된
+        // 실사용 데이터가 있었다 — 그 항목이 되살아나 보이면 안 된다. 하위호환).
+        checked: !!overlay.checked, deleted: !!(overlay.deleted || overlay.hidden),
         transferred: overlay.transferred || null,
         updated_by: overlay.updated_by || '', updated_at: overlay.updated_at || ''
       };
@@ -366,7 +368,7 @@
       return {
         id: itemId, origin: 'staff', deptId: raw.dept, groupTitle: raw.transferred ? '🔀 다른 담당에서 이관' : (raw.group || '🆕 현장 추가 항목'),
         text: raw.text || '', hot: false,
-        checked: !!raw.checked, deleted: !!raw.deleted,
+        checked: !!raw.checked, deleted: !!(raw.deleted || raw.hidden),
         transferred: raw.transferred || null,
         added_by: raw.added_by || '', updated_by: raw.updated_by || '', updated_at: raw.updated_at || ''
       };
