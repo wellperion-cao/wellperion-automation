@@ -12,6 +12,11 @@
 //   doPost — 강사가 프론트(instructor_intake.html)에서 이름·팀·사진(3~5)·영상(선택)·소개·
 //            회원가치·동의를 JSON POST → 파일은 base64 → Drive 강사별 폴더 저장 → 「강사접수」
 //            시트에 메타 append → 텔레그램 접수 알림.
+//   doPost(action:'staff_feedback_photo') — 2026-07-29 GM 지시(사진 첨부 확정). 실무진
+//            피드백(cpo/member/실무진피드백.html) 사진을 staff_feedback/<접수ID> 하위폴더에
+//            저장하고 공개 링크만 반환한다. 콘텐츠 접수 시트에는 쓰지 않는다 — 링크를
+//            피드백 시트 10번째 칸("첨부사진")에 쓰는 건 funnel-v2 Survey.js 의
+//            staff_feedback_update 몫이다(§ _handleFeedbackPhotoUpload_ 참고).
 //
 // 계약(doPost body, JSON):
 //   { name, team, intro, benefit, agree,
@@ -19,6 +24,10 @@
 //     video: {b64, mime, fname} | null,             // 50MB 이하만 base64 첨부(폼 단에서 가드)
 //     videoLink: "" }                                // video 없을 때 대용량 링크 폴백
 //   응답: {ok:true, drive_folder, sheet_row} | {ok:false, err}
+//
+// 계약(doPost body, staff_feedback_photo, JSON):
+//   { action:'staff_feedback_photo', feedbackId:'FB260729-132718', photos:[{b64,mime,fname}] }
+//   응답: {ok:true, urls:[...], folder} | {ok:false, err}
 //
 // 필요 ScriptProperties(배포 시 GM이 등록 — 4개):
 //   BOT_TOKEN, INTAKE_CHAT_ID, INTAKE_SHEET_ID, INTAKE_DRIVE_FOLDER_ID
@@ -98,6 +107,9 @@ function _saveFile_(b64, mime, fname, folder) {
 function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
+    // ★2026-07-29 GM 지시(사진 첨부 확정) — 실무진 피드백 사진은 이 경로로 분기.
+    //   기존 콘텐츠 접수(강사) 흐름은 이 분기 아래로 손대지 않는다(action 미지정 시 그대로 진행).
+    if (d.action === 'staff_feedback_photo') return _handleFeedbackPhotoUpload_(d);
     if (!d.name || !d.team || !d.agree) return _json({ ok: false, err: '필수 항목 누락' });
     var root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('INTAKE_DRIVE_FOLDER_ID'));
     var folder = root.createFolder(d.team + '_' + d.name + '_' + _stamp());
@@ -111,6 +123,91 @@ function doPost(e) {
     _notifyTelegram('🎬 새 강사 콘텐츠 접수: ' + d.name + ' / ' + d.team + ' (사진 ' + urls.length + '장' + (vurl ? '·영상' : '') + ')');
     return _json({ ok: true, drive_folder: folder.getUrl(), sheet_row: sh.getLastRow() });
   } catch (err) { return _json({ ok: false, err: String(err) }); }
+}
+
+// ─── 실무진 피드백 사진 첨부 (2026-07-29 GM 지시 — 콘텐츠 접수 GAS 재사용) ───
+// 목적: 사진 업로드→드라이브 저장→공개 링크 회수→피드백 시트 10번째 칸 기록까지 전부
+//   이 프로젝트 하나가 맡는다. funnel-v2 Survey.js(피드백 제출·조회·처리 뒷단, 188/200)는
+//   ★손대지 않는다·배포 0회 소모★(GM 확정 구조 원문) — 같은 스프레드시트(_MI_SS_ID,
+//   Survey.js 의 MEMBER_SPREADSHEET_ID 와 동일 ID)를 이 GAS가 직접 열어 쓰기만 한다.
+// 순서 계약(클라이언트): ① staff_feedback_submit(Survey.js, 기존·무변경)으로 먼저 피드백
+//   텍스트를 접수해 접수ID 를 받는다 → ② 사진이 있으면 그 접수ID 로 이 액션을 호출한다.
+//   접수ID 가 아직 시트에 없으면(순서가 바뀌면) sheetWrite.ok=false 로 알리고 사진 저장
+//   자체는 성공 처리한다(사진을 잃지 않는다 — 재조회로 나중에도 복구 가능).
+// 저장 위치: 콘텐츠 접수 폴더(INTAKE_DRIVE_FOLDER_ID)와 안 섞이게 전용 하위 폴더
+//   staff_feedback/<접수ID> 로 분리한다(GM 지시 원문 그대로).
+// 계약: { action:'staff_feedback_photo', feedbackId:'FB260729-132718', photos:[{b64,mime,fname}] }
+//   응답: {ok:true, urls:[...], folder, sheetWrite:{ok,...}} | {ok:false, err}
+var FEEDBACK_PHOTO_ROOT_NAME = 'staff_feedback';
+var FEEDBACK_PHOTO_MAX_COUNT = 5;
+var FEEDBACK_PHOTO_MAX_B64_LEN = 4000000;   // base64 약 4MB ≈ 원본 3MB — 1600px 리사이즈 결과물엔 넉넉한 여유치
+// 실무진 피드백 탭이 있는 스프레드시트 — Survey.js _MI_SS_ID/MEMBER_SPREADSHEET_ID 와 동일(단일 출처 재사용, 새 시트 아님).
+var FEEDBACK_SHEET_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
+var FEEDBACK_SHEET_TAB = '실무진 피드백';
+var FEEDBACK_PHOTO_COLUMN = '첨부사진';   // 10번째 칸 이름 — 기존 9칸 이름·순서는 절대 바꾸지 않고 맨 오른쪽에만 추가
+
+function _getOrCreateSubfolder_(parent, name) {
+  var it = parent.getFoldersByName(name);
+  if (it.hasNext()) return it.next();
+  return parent.createFolder(name);
+}
+
+// 접수ID 대조로 「첨부사진」 칸에 링크를 쓴다. 칸이 없으면 맨 오른쪽에 새로 만든다(기존 9칸 불변).
+function _writeFeedbackPhotoColumn_(feedbackId, urls) {
+  var sh;
+  try { sh = SpreadsheetApp.openById(FEEDBACK_SHEET_ID).getSheetByName(FEEDBACK_SHEET_TAB); }
+  catch (e) { return { ok: false, err: '피드백 시트를 열 수 없습니다: ' + String(e) }; }
+  if (!sh) return { ok: false, err: "'" + FEEDBACK_SHEET_TAB + "' 탭을 찾을 수 없습니다" };
+  var lastCol = sh.getLastColumn();
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+  var ix = function (name) { for (var i = 0; i < hdr.length; i++) if (String(hdr[i]).trim() === name) return i; return -1; };
+  var cId = ix('접수ID');
+  if (cId < 0) return { ok: false, err: "'접수ID' 헤더를 찾을 수 없습니다" };
+  var cPhoto = ix(FEEDBACK_PHOTO_COLUMN);
+  if (cPhoto < 0) {
+    cPhoto = lastCol;   // 기존 9칸 뒤 = 10번째 칸(맨 오른쪽 추가만·기존 칸 이동 없음)
+    sh.getRange(1, cPhoto + 1).setValue(FEEDBACK_PHOTO_COLUMN);
+  }
+  var last = sh.getLastRow();
+  if (last < 2) return { ok: false, err: '피드백 데이터가 없습니다' };
+  var ids = sh.getRange(2, cId + 1, last - 1, 1).getValues();
+  var rowNo = -1;
+  for (var r = 0; r < ids.length; r++) { if (String(ids[r][0]).trim() === feedbackId) { rowNo = r + 2; break; } }
+  if (rowNo < 0) return { ok: false, err: '접수ID를 시트에서 찾을 수 없습니다: ' + feedbackId };
+  sh.getRange(rowNo, cPhoto + 1).setValue(urls.join('\n'));
+  return { ok: true, row: rowNo, col: cPhoto + 1 };
+}
+
+function _handleFeedbackPhotoUpload_(d) {
+  var feedbackId = String(d.feedbackId || '').trim();
+  if (!/^FB\d{6}-\d{6}$/.test(feedbackId)) {
+    return _json({ ok: false, err: '올바르지 않은 접수ID 형식입니다 (예: FB260729-132718)' });
+  }
+  var photos = d.photos || [];
+  if (!photos.length) return _json({ ok: false, err: '첨부할 사진이 없습니다' });
+  if (photos.length > FEEDBACK_PHOTO_MAX_COUNT) {
+    return _json({ ok: false, err: '사진은 최대 ' + FEEDBACK_PHOTO_MAX_COUNT + '장까지 첨부할 수 있습니다' });
+  }
+  for (var i = 0; i < photos.length; i++) {
+    var raw = String(photos[i].b64 || '');
+    if (raw.length > FEEDBACK_PHOTO_MAX_B64_LEN) {
+      return _json({ ok: false, err: (i + 1) + '번째 사진이 너무 큽니다. 화면을 새로고침한 뒤 다시 시도해 주세요(자동 축소 실패로 추정).' });
+    }
+  }
+  try {
+    var rootId = PropertiesService.getScriptProperties().getProperty('INTAKE_DRIVE_FOLDER_ID');
+    if (!rootId) return _json({ ok: false, err: 'INTAKE_DRIVE_FOLDER_ID 미설정' });
+    var root = DriveApp.getFolderById(rootId);
+    var fbRoot = _getOrCreateSubfolder_(root, FEEDBACK_PHOTO_ROOT_NAME);
+    var folder = _getOrCreateSubfolder_(fbRoot, feedbackId);
+    var urls = photos.map(function (p) { return _saveFile_(p.b64, p.mime, p.fname || 'photo.jpg', folder); });
+    var sheetWrite;
+    try { sheetWrite = _writeFeedbackPhotoColumn_(feedbackId, urls); }
+    catch (eW) { sheetWrite = { ok: false, err: String(eW) }; }
+    return _json({ ok: true, urls: urls, folder: folder.getUrl(), sheetWrite: sheetWrite });
+  } catch (err) {
+    return _json({ ok: false, err: '사진 저장에 실패했습니다: ' + String(err) });
+  }
 }
 
 // ─── 조회 액션 (읽기 전용 · 토큰 가드) — 2026-07-23 GM 승인 ───
