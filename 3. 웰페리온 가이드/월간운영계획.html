@@ -1759,7 +1759,9 @@
     var displayProg = (hasSub && !_editMode)
       ? Math.round(o.sub.reduce(function(s, x){ return s + clampPct(x.progress); }, 0) / o.sub.length)
       : o.progress;
-    var titleCell = '<div class="r-title">' + esc(o.title) + honestyBadge(o) + '</div>' + metricBlock(o) + (o.cycle ? cycleBlock(o.cycle) : '');
+    // 📋 과제명 60자 말줄임(2026-07-29 웰리 확정규칙 ①) — 칸에 보이는 것은 과제명 한 줄뿐, 전체는 title 속성(호버)·edit 모드에서 그대로.
+    var _titleShort = (o.title && o.title.length > 60) ? (o.title.slice(0, 60) + '…') : (o.title || '');
+    var titleCell = '<div class="r-title" title="' + esc(o.title || '') + '">' + esc(_titleShort) + honestyBadge(o) + '</div>' + metricBlock(o) + (o.cycle ? cycleBlock(o.cycle) : '');
     var noteCell;
     if(_editMode){
       noteCell = '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
