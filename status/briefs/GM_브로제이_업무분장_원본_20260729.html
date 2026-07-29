@@ -106,9 +106,11 @@
   section.coo { --accent: #1F4E79; }
   section.cfo { --accent: #ED7D31; }
   section.cpo { --accent: #70AD47; }
+  section.lky { --accent: #B8860B; }
   section.rec { --accent: #7030A0; }
   section.cross { --accent: #17A2B8; }
   section.broj { --accent: #C00000; }
+  .change-note { background:#FFF7E0; border:1px solid #E6C84E; border-radius:6px; padding:8px 14px; margin-bottom:14px; font-size:12.5px; color:#5a4a12; }
 
   ul.tasks {
     list-style: none;
@@ -239,6 +241,8 @@
   <div><label>버전:</label> <span contenteditable="true">v1.0</span></div>
 </div>
 
+<div class="change-note">📌 <strong>2026-07-29 GM 담당 변경 반영</strong> — 상품 등록 5건(멤버십 성인/유소년·강습 성인/유소년·사우나 옵션 매핑) 담당을 임정은M → 이경연 실장(운영부 리더)으로 이관. 임정은M은 신규·재등록 상담에 집중. 상품 등록 기준 문서(ERP 상품 기획) 링크·조건 추가. 실제 편집·저장 가능한 최신본 = <code>3. 웰페리온 가이드/coo/brojay/브로제이_업무분장.html</code>(체크·저장 라이브) — 이 파일은 GM 원본 보관용 사본.</div>
+
 <div class="controls">
   <button onclick="window.print()">🖨 인쇄</button>
   <button class="ghost" onclick="localStorage.setItem('wellperion-broj', document.querySelector('main').innerHTML); alert('저장 완료 (브라우저 로컬)')">💾 저장</button>
@@ -273,7 +277,12 @@
       <tr>
         <td><strong>CPO</strong></td>
         <td contenteditable="true">임정은 F.C 매니저</td>
-        <td contenteditable="true">상품 · 프로그램 · 강습</td>
+        <td contenteditable="true">상품 · 프로그램 · 강습 (2026-07-29 GM 담당변경 — 상품 등록 제외·신규·재등록 상담 집중)</td>
+      </tr>
+      <tr>
+        <td><strong>운영부 리더</strong></td>
+        <td contenteditable="true">이경연 실장</td>
+        <td contenteditable="true">상품 등록 (2026-07-29 GM 확정 — 임정은M → 이경연 실장 이관)</td>
       </tr>
       <tr>
         <td><strong>리셉션 관리</strong></td>
@@ -343,23 +352,29 @@
 
 <!-- CPO -->
 <section class="cpo">
-  <h2 contenteditable="true">🟢 CPO — 임정은M  ·  상품·프로그램</h2>
-
-  <h3 contenteditable="true">A. 상품 등록 (브로제이 CRM에서 직접 등록)</h3>
-  <ul class="tasks">
-    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">멤버십(성인) 상품 등록 — 헬스·수영·사우나 등</span><button class="del">✕</button></li>
-    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">멤버십(유소년) 상품 등록 — 수영 준회원 · 유소년 강습 등</span><button class="del">✕</button></li>
-    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">강습(성인) 상품 등록 — PT · 필라테스 · 스쿼시 · 골프 준회원 등</span><button class="del">✕</button></li>
-    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">강습(유소년) 상품 등록 — 유소년 전용 프로그램</span><button class="del">✕</button></li>
-    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">사우나 포함/미포함 옵션별 매핑 (SRS-A04)</span><button class="del">✕</button></li>
-  </ul>
-  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+  <h2 contenteditable="true">🟢 CPO — 임정은M  ·  신규·재등록 상담 집중 (2026-07-29 GM 담당변경)</h2>
 
   <h3 contenteditable="true">B. 등록 · 정책 정의</h3>
   <ul class="tasks">
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">출석 화면 수강 정보 표시 정책 정의 (표시 필드·표시 시간) → COO에 개선 요청 전달</span><button class="del">✕</button></li>
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">부모님-유소년 얼굴 연동 등록 규칙 (부모님 미등록 + 유소년 강습 등록 시 처리 방식) → 리셉션에 실무 절차 공유</span><button class="del">✕</button></li>
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책)</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+</section>
+
+<!-- 운영부 리더(이경연 실장) — 2026-07-29 GM 담당변경: 상품 등록 임정은M → 이경연 실장 -->
+<section class="lky">
+  <h2 contenteditable="true">🟡 운영부 리더 — 이경연 실장  ·  상품 등록 (2026-07-29 GM 담당변경)</h2>
+
+  <h3 contenteditable="true">A. 상품 등록 (브로제이 CRM에서 직접 등록)</h3>
+  <p style="font-size:12.5px; background:#FFF9E8; border:1px solid #E6C84E; border-radius:6px; padding:7px 12px; margin:0 0 8px;">기준 = <a href="https://wellperion-cao.github.io/wellperion-automation/cpo/product/%EC%83%81%ED%92%88%EA%B8%B0%ED%9A%8D.html" target="_blank">ERP 「상품 기획」</a> — 브로제이 CRM 상품 등록은 상품 기획의 상품 구성·명칭·옵션과 동일하게 맞춘다.</p>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">멤버십(성인) 상품 등록 — 헬스·수영·사우나 등</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">멤버십(유소년) 상품 등록 — 수영 준회원 · 유소년 강습 등</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">강습(성인) 상품 등록 — PT · 필라테스 · 스쿼시 · 골프 준회원 등</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">강습(유소년) 상품 등록 — 유소년 전용 프로그램</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">사우나 포함/미포함 옵션별 매핑 (SRS-A04)</span><button class="del">✕</button></li>
   </ul>
   <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
 </section>
@@ -406,7 +421,7 @@
     <tbody>
       <tr>
         <td contenteditable="true">계약서 · 상품 셋팅 → 회원 응대 흐름</td>
-        <td contenteditable="true">CPO 임정은 (상품 등록)</td>
+        <td contenteditable="true">이경연 실장 (상품 등록)</td>
         <td contenteditable="true">리셉션 백승화 (실무 응대)</td>
       </tr>
       <tr>

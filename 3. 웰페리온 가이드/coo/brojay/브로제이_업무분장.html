@@ -47,6 +47,8 @@
   .broj-dept-count{margin-left:auto; font-size:12px; font-weight:800; color:var(--accent-soft); font-variant-numeric:tabular-nums;}
   .broj-group{margin-top:6px;}
   .broj-group-title{font-size:11.5px; font-weight:700; color:var(--dim); margin:8px 0 3px;}
+  .broj-group-note{font-size:11px; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:5px 9px; margin-bottom:5px; line-height:1.5;}
+  .broj-group-note a{color:var(--accent-soft); font-weight:700;}
   .broj-list{list-style:none; display:flex; flex-direction:column; gap:2px;}
   .broj-list li{padding:2px 0; border-bottom:1px dotted var(--border);}
   .broj-list li:last-child{border-bottom:none;}
@@ -92,7 +94,8 @@
     roleMap: [
       {role:'COO', name:'최준용 매니저 + 윤병현 어시스트매니저', scope:'운영 · 기술 · 시설 총괄'},
       {role:'CHRO+CFO', name:'나우열 매니저', scope:'인사 · 재무 · 시스템 권한'},
-      {role:'CPO', name:'임정은 F.C 매니저', scope:'상품 · 프로그램 · 강습'},
+      {role:'CPO', name:'임정은 F.C 매니저', scope:'상품 · 프로그램 · 강습 (2026-07-29 GM 담당 변경 — 상품 등록 제외·신규·재등록 상담 집중)'},
+      {role:'운영부 리더', name:'이경연 실장', scope:'상품 등록 (2026-07-29 GM 확정 — 임정은M → 이경연 실장 이관)'},
       {role:'리셉션', name:'백승화 사원', scope:'프런트 응대 · 실무'}
     ],
     depts: [
@@ -130,18 +133,20 @@
           {id:'coo-c2', text:'유효기간 정책 확인 + 실물 락커까지 매핑 확인 (프런트·시설 합동)'}
         ]}
       ]},
-      { id:'cpo', label:'CPO — 임정은M', sub:'상품·프로그램', color:'#70AD47', groups:[
-        {title:'A. 상품 등록 (브로제이 CRM에서 직접 등록)', items:[
+      { id:'cpo', label:'CPO — 임정은M', sub:'신규·재등록 상담 집중 (GM 2026-07-29 담당 변경)', color:'#70AD47', groups:[
+        {title:'B. 등록 · 정책 정의', items:[
+          {id:'cpo-b1', text:'출석 화면 수강 정보 표시 정책 정의 (표시 필드·표시 시간) → COO에 개선 요청 전달'},
+          {id:'cpo-b2', text:'부모님-유소년 얼굴 연동 등록 규칙 (부모님 미등록 + 유소년 강습 등록 시 처리 방식) → 리셉션에 실무 절차 공유'},
+          {id:'cpo-b3', text:'락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책)'}
+        ]}
+      ]},
+      { id:'lky', label:'이경연 실장 — 운영부 리더', sub:'상품 등록 (2026-07-29 GM 담당 변경 · 임정은M → 이경연 실장)', color:'#B8860B', groups:[
+        {title:'A. 상품 등록 (브로제이 CRM에서 직접 등록)', note:'기준 = <a href="https://wellperion-cao.github.io/wellperion-automation/cpo/product/%EC%83%81%ED%92%88%EA%B8%B0%ED%9A%8D.html" target="_blank">ERP 「상품 기획」</a> — 브로제이 CRM 상품 등록은 상품 기획의 상품 구성·명칭·옵션과 동일하게 맞춘다.', items:[
           {id:'cpo-a1', text:'멤버십(성인) 상품 등록 — 헬스·수영·사우나 등'},
           {id:'cpo-a2', text:'멤버십(유소년) 상품 등록 — 수영 준회원 · 유소년 강습 등'},
           {id:'cpo-a3', text:'강습(성인) 상품 등록 — PT · 필라테스 · 스쿼시 · 골프 준회원 등'},
           {id:'cpo-a4', text:'강습(유소년) 상품 등록 — 유소년 전용 프로그램'},
           {id:'cpo-a5', text:'사우나 포함/미포함 옵션별 매핑 (SRS-A04)'}
-        ]},
-        {title:'B. 등록 · 정책 정의', items:[
-          {id:'cpo-b1', text:'출석 화면 수강 정보 표시 정책 정의 (표시 필드·표시 시간) → COO에 개선 요청 전달'},
-          {id:'cpo-b2', text:'부모님-유소년 얼굴 연동 등록 규칙 (부모님 미등록 + 유소년 강습 등록 시 처리 방식) → 리셉션에 실무 절차 공유'},
-          {id:'cpo-b3', text:'락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책)'}
         ]}
       ]},
       { id:'rec', label:'리셉션 관리 — 백승화 사원', sub:'프런트 실무', color:'#7030A0', groups:[
@@ -162,7 +167,7 @@
       ]}
     ],
     cross: [
-      {task:'계약서 · 상품 셋팅 → 회원 응대 흐름', main:'CPO 임정은 (상품 등록)', sub:'리셉션 백승화 (실무 응대)'},
+      {task:'계약서 · 상품 셋팅 → 회원 응대 흐름', main:'이경연 실장 (상품 등록)', sub:'리셉션 백승화 (실무 응대)'},
       {task:'부모님-유소년 연동 등록', main:'CPO 임정은 (규칙 정의)', sub:'리셉션 백승화 (응대)'},
       {task:'락커 배정 정책 · 실물 확인', main:'COO 최준용 (운영)', sub:'CPO 임정은 (상품 매핑)'},
       {task:'티업 제어 견적 확인', main:'CFO 나우열 (견적 대조)', sub:'COO 최준용 (기술 실행 확인)'},
@@ -223,7 +228,9 @@
       var p = brojDeptProgress(d);
       return '<div class="broj-dept" style="--dc:' + d.color + '"><h4>' + esc(d.label) + ' <span class="broj-dept-sub">' + esc(d.sub) + '</span><span class="broj-dept-count">' + p.done + '/' + p.total + '</span></h4>' +
         d.groups.map(function(g){
-          return '<div class="broj-group"><div class="broj-group-title">' + esc(g.title) + '</div><ul class="broj-list">' +
+          // g.note = 신뢰 문자열(코드에서 직접 작성한 링크+조건 한 줄) — 항목 5개 각각에 반복 붙이지 않고 소제목 옆 1곳에만(GM 지시 2026-07-29).
+          var noteHtml = g.note ? '<div class="broj-group-note">' + g.note + '</div>' : '';
+          return '<div class="broj-group"><div class="broj-group-title">' + esc(g.title) + '</div>' + noteHtml + '<ul class="broj-list">' +
             g.items.map(function(it){
               var checked = !!_brojState[it.id];
               return '<li class="' + (checked ? 'done' : '') + (it.hot ? ' hot' : '') + '"><label><input type="checkbox" data-broj-id="' + it.id + '"' + (checked ? ' checked' : '') + '> ' + esc(it.text) + '</label></li>';
