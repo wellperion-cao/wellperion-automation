@@ -332,8 +332,111 @@ function backgroundAgents(cwd, sessionId) {
         if (since === null || born < since) since = born;
       } catch { /* 파일 하나 못 읽어도 나머지는 센다 */ }
     }
+    const sub = mySubagents(cwd, sessionId);
+    if (sub) {
+      count += sub.count;
+      if (since === null || (sub.since && sub.since < since)) since = sub.since;
+    }
     return count > 0 ? { count, since } : null;
-  } catch { return null; }   // 폴더 없음(백그라운드 없음) — 정상
+  } catch {
+    // tasks 폴더가 없어도(이름 붙인 에이전트는 여기 안 쓴다) 서브에이전트는 따로 세야 한다.
+    try { return mySubagents(cwd, sessionId); } catch { return null; }
+  }
+}
+
+/** 내가 띄운 서브에이전트 — 이름 붙인 에이전트는 위 tasks/*.output 이 아니라
+ *  <projects>/<내 세션id>/subagents/*.jsonl 에 기록을 쌓는다(2026-07-29 실측).
+ *  그래서 tasks 폴더만 보던 기존 판정은 6척이 돌아도 0으로 셌다. */
+function mySubagents(cwd, sessionId) {
+  if (!sessionId) return null;
+  try {
+    const cache = JSON.parse(readFileSync(path.join(cwd, ROLE_CACHE), 'utf8'));
+    const anyKey = Object.keys(cache)[0];
+    if (!anyKey) return null;
+    const dir = path.join(path.dirname(String(anyKey)), String(sessionId), 'subagents');
+    const now = Date.now();
+    let count = 0, since = null;
+    for (const f of readdirSync(dir)) {
+      if (!f.toLowerCase().endsWith('.jsonl')) continue;
+      let st;
+      try { st = statSync(path.join(dir, f)); } catch { continue; }
+      if (now - st.mtimeMs >= SUBAGENT_LIVE_MS) continue;
+      count++;
+      const born = st.birthtimeMs || st.mtimeMs;
+      if (since === null || born < since) since = born;
+    }
+    return count > 0 ? { count, since } : null;
+  } catch { return null; }
+}
+
+/** 위임해서 돌고 있는 일 — **서브에이전트 대화기록**을 실측한다 (GM 지적 2026-07-29
+ *  "병렬로 가동 중인데 /statusline 에는 다 쉼 07-28 23:43 으로 되어있는데?").
+ *
+ *  뿌리: 상태줄의 C레벨 줄은 '그 역할의 **창**이 움직였나'만 봤다. 그런데 2026-07-29 GM 지시로
+ *  시토가 창을 안 열고 **대신 돌리는 방식**으로 바뀌었다 — 그 순간 6척이 실제로 돌고 있는데
+ *  화면은 전부 '쉼'이었다. 일이 도는데 안 돈다고 말하는 거짓 표시다.
+ *
+ *  신호: 위임한 에이전트는 각자 자기 대화기록을 쌓는다 —
+ *    <projects>/<세션id>/subagents/agent-a<이름>-<해시>.jsonl
+ *  파일 **이름에 내가 붙인 이름**(예 siwoo-9678)이 그대로 들어 있고, 수정시각이 곧 '지금 움직임'이다.
+ *  ★내용은 읽지 않는다(수 MB) — 이름과 mtime 만 본다.
+ *  ★역할 판정: ①이름에 닉네임이 들어 있으면 그 역할 ②없으면 그 에이전트를 띄운 **창의 역할**
+ *    (경로의 세션id ↔ 역할 기억함). 둘 다 안 되면 세지 않는다(모르는 걸 지어내지 않는다). */
+// 10분 — 창(2분)보다 넉넉히 잡는다. 위임한 에이전트는 오래 걸리는 도구 하나(라이브 조회·큰 파일
+// 검색)에 몇 분씩 조용해진다. 2분으로 재면 실제로 일하는 중인데 '쉼'으로 보인다 — GM 이 지적한 바로
+// 그 증상이다(2026-07-29 실측: 시우 두 척이 273·285초 침묵 중이었고 둘 다 살아 있었다).
+// 대가: 이미 끝난 에이전트가 최대 10분간 남아 보일 수 있다. '돌고 있는데 안 돈다고 하는 것'보다 낫다.
+const SUBAGENT_LIVE_MS = 600_000;
+const NAME_ROLE = [
+  [/welly|웰리/i, 'ceo'], [/sito|시토/i, 'cto'], [/simo|시모/i, 'cmo'],
+  [/siwoo|시우/i, 'coo'], [/sipo|시포/i, 'cpo'],
+];
+function delegatedAgents(cwd) {
+  const out = {};
+  try {
+    const cache = JSON.parse(readFileSync(path.join(cwd, ROLE_CACHE), 'utf8'));
+    const sessRole = {};
+    let projDir = null;
+    for (const [file, r] of Object.entries(cache)) {
+      if (typeof r !== 'string') continue;
+      const base = path.basename(String(file));
+      if (!base.toLowerCase().endsWith('.jsonl')) continue;
+      sessRole[base.slice(0, -6).toLowerCase()] = r;
+      if (!projDir) projDir = path.dirname(String(file));
+    }
+    if (!projDir) return out;
+    const now = Date.now();
+    // ★훑을 대상 = **역할 기억함이 아는 창**뿐이다(최대 50개). 폴더 전체를 훑으면 지난 몇 주치
+    //   죽은 세션 수백 개를 먼저 세다가 정작 지금 도는 창에 닿기도 전에 상한에 걸린다
+    //   — 실측으로 그래서 6척이 돌아도 0으로 셌다(2026-07-29).
+    for (const sess of Object.keys(sessRole)) {
+      let files;
+      try { files = readdirSync(path.join(projDir, sess, 'subagents')); } catch { continue; }
+      let scanned = 0;
+      for (const f of files) {
+        if (++scanned > 200) break;                       // 폴더당 상한 — 렌더 200ms 계약
+        if (!f.toLowerCase().endsWith('.jsonl')) continue;
+        let st;
+        try { st = statSync(path.join(projDir, sess, 'subagents', f)); } catch { continue; }
+        if (now - st.mtimeMs >= SUBAGENT_LIVE_MS) continue;
+        // 파일명 = agent-a<내가 붙인 이름>-<16자리 해시>.jsonl
+        // ★해시를 먼저 떼어낸다 — 안 떼면 해시 속 숫자가 배 번호로 둔갑한다
+        //   (실측: agent-aa598695f4782f2c3 → '배598695', sipo-product-54f3afb1890… → '배1890').
+        const nm = f.replace(/^agent-a?/i, '').replace(/-?[0-9a-f]{16}\.jsonl$/i, '').replace(/\.jsonl$/i, '');
+        let role = null;
+        for (const [re, r] of NAME_ROLE) if (re.test(nm)) { role = r; break; }
+        if (!role) role = sessRole[String(sess).toLowerCase()] || null;
+        if (!role) continue;
+        const e = out[role] || (out[role] = { count: 0, ships: [], since: null });
+        e.count++;
+        const m = nm.match(/(?:^|-)(\d{3,6})(?:-|$)/);    // 이름 마디로 떨어지는 숫자만 배 번호로 본다
+        if (m && !e.ships.includes(m[1])) e.ships.push(m[1]);
+        const born = st.birthtimeMs || st.mtimeMs;
+        if (e.since === null || born < e.since) e.since = born;
+      }
+    }
+  } catch { /* 기억함 없음·폴더 없음 — 위임 표시만 빠진다 */ }
+  return out;
 }
 
 function liveAction(transcript) {
@@ -423,11 +526,14 @@ function elapsedText(sec) {
 
 /** 큐 한 번 읽기 — ★렌더당 파싱 1회만(성능 상한 200ms 계약 · 배107).
  *  내 항로·🆕배지·전사 막힌 배가 전부 이 한 번의 파싱을 나눠 쓴다. 추가 전수 훑기 금지. */
+let _queueCache;   // 렌더당 1회만 파싱 — 프로세스가 렌더 한 번마다 새로 뜨므로 오래된 값이 남지 않는다
 function loadQueue(cwd) {
+  if (_queueCache !== undefined) return _queueCache;
   try {
     const q = JSON.parse(readFileSync(path.join(cwd, 'status', '_queue.json'), 'utf8'));
-    return Array.isArray(q) ? q : null;
-  } catch { return null; }
+    _queueCache = Array.isArray(q) ? q : null;
+  } catch { _queueCache = null; }
+  return _queueCache;
 }
 
 /** '내 배가 GM(또는 웰리) 답을 기다리는 중'인가 — 전사 '막힌 것 우선' 칸(2026-07-28 삭제된
@@ -833,8 +939,6 @@ function buildRoleLines(cwd, role) {
     const acts = roleActivity(cwd, role);
     const live = roleLiveness(cwd);
     for (const a of acts) a.age = live[a.role];          // ms · 없으면 undefined
-    // 지금 움직이는 창부터 위로. 같으면 마지막 기록이 최근인 순.
-    acts.sort((a, b) => (a.age ?? Infinity) - (b.age ?? Infinity) || (a.mins ?? Infinity) - (b.mins ?? Infinity));
     // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
     //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
     //   ●(2) + 공백 + 닉4 + 공백 + [제목] + 2칸 + 상태칸 + 2칸 + '배NNNNNN'(최대 8) = 20 + 상태칸
@@ -844,7 +948,14 @@ function buildRoleLines(cwd, role) {
     //     처럼 길어질 수 있어, 10 으로 가정하면 그만큼 줄이 창 밖으로 넘친다.
     // ★점 = 지금 상태(실측), 오른쪽 글자 = 그 상태를 말로. 시각(N분전)은 '멈춘 뒤'에만 쓴다 —
     //   움직이는 중에 '0분전'을 적으면 무슨 뜻인지 알 수 없다(GM 지적 2026-07-28).
+    // ★위임해서 도는 일이 최우선 신호 — 창이 닫혀 있어도 그 역할의 일은 돌고 있다(GM 2026-07-29).
+    const deleg = delegatedAgents(cwd);
+    for (const a of acts) a.deleg = deleg[a.role] || null;
+    // 위임 중인 역할을 맨 위로. 그 다음이 창이 움직이는 역할.
+    acts.sort((a, b) => (b.deleg ? 1 : 0) - (a.deleg ? 1 : 0)
+      || (a.age ?? Infinity) - (b.age ?? Infinity) || (a.mins ?? Infinity) - (b.mins ?? Infinity));
     const marks = acts.map((a) => {
+      if (a.deleg)                return { dot: `${G}●${X}`, state: `${G}위임 ${a.deleg.count}척${X}` };
       if (a.age == null)          return { dot: `${D}○${X}`, state: `${D}—${X}` };
       if (a.age < LIVE_MS)        return { dot: `${G}●${X}`, state: `${G}진행중${X}` };
       // '전'을 뗀다 — '멈춤 8분전'은 어색하다. 여기 숫자는 시점이 아니라 **멈춰 있은 길이**다.
@@ -852,8 +963,18 @@ function buildRoleLines(cwd, role) {
       // 오래 조용한 창은 길이 대신 **마지막으로 움직인 시각** — 위 sinceText 주석 참고.
       return { dot: `${D}○${X}`, state: `${D}쉼 ${sinceText(a.age)}${X}` };
     });
+    // 배 번호 칸 — 위임 중이면 여러 척이 붙어 길어진다. 폭 계산에 실제 길이를 넣지 않으면 그만큼 넘친다.
+    //   길어지지 않게 두 척까지만 적고 나머지는 +N 으로 줄인다.
+    const shipText = (a) => {
+      if (a.deleg && a.deleg.ships.length) {
+        const s = a.deleg.ships;
+        return `배${s.slice(0, 2).join('·')}${s.length > 2 ? `+${s.length - 2}` : ''}`;
+      }
+      return (a.event != null && a.ship) ? `배${a.ship}` : '';
+    };
     const stateW = Math.max(10, ...marks.map((m) => dw(m.state)));
-    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 20 - stateW));
+    const shipW = Math.max(0, ...acts.map((a) => dw(shipText(a))));
+    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 12 - stateW - shipW));
     return acts.map((a, i) => {
       const has = a.event != null;
       const { dot, state } = marks[i];
@@ -862,9 +983,22 @@ function buildRoleLines(cwd, role) {
       //   한글·이모지는 한 글자가 2칸이라 글자 수로 자르면 폭이 최대 두 배가 되어 줄이 창 밖으로
       //   넘쳤다(2026-07-29 실측: 100칸 창에서 시모 줄이 130칸을 넘겨 다음 줄로 말려 내려감).
       //   padDisp 는 폭 기준으로 채우는데 자르기만 글자 수 기준이라 둘의 잣대가 어긋나 있었다.
-      const evText = String(a.event || '').replace(/^\[[^\]]*\]\s*/, '').trim();
-      const ev = padDisp(has ? fitCols(evText, evW) : `${D}—${X}`, evW);
-      const ship = has && a.ship ? `${D}배${a.ship}${X}` : '';
+      // ★위임 중이면 **지금 위임한 배**의 제목·번호를 보여준다 — worklog 의 '마지막 커밋 때 한 일'은
+      //   어제 것이라, 옆에 '위임 1척'을 달아 두면 GM 이 어제 일을 지금 하는 줄로 읽는다.
+      let evText;
+      if (a.deleg && a.deleg.ships.length) {
+        const q = loadQueue(cwd) || [];
+        const titles = a.deleg.ships.map((n) => {
+          const s = q.find((x) => x && (String(x.ship_no) === n || String(x.short_no) === n));
+          return s ? String(s.title || '').replace(/^\[[^\]]*\]\s*/, '').trim() : '';
+        }).filter(Boolean);
+        evText = titles.length ? titles.join(' · ') : String(a.event || '').replace(/^\[[^\]]*\]\s*/, '').trim();
+      } else {
+        evText = String(a.event || '').replace(/^\[[^\]]*\]\s*/, '').trim();
+      }
+      const ev = padDisp((has || a.deleg) ? fitCols(evText, evW) : `${D}—${X}`, evW);
+      const st = shipText(a);
+      const ship = st ? `${D}${st}${X}` : '';
       return [`${dot} ${nick} ${ev}`, padDisp(state, stateW), ship].filter(Boolean).join('  ');
     });
   } catch { return []; }
