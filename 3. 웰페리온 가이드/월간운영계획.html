@@ -911,6 +911,47 @@
     .sm-prac-ns{color:#555 !important; font-size:8.5px;}
     .sm-foot{color:#555 !important; font-size:8px; border-top-color:#bbb !important; margin-top:6px; padding-top:4px;}
   }
+
+  /* ── 🤝 브로제이 업무분장 체크보드 (배214·2026-07-29 GM 지시) — 실무 5인이 본인 항목을 체크하는 자리.
+       저장 = 부서보드 공용 GAS(CHECK_GAS action=board/saveBoard, key=BROJ_TASK_BOARD) 재사용 — 새 저장소 신설 없음(약속 L21). ── */
+  .blk.broj-wrap{border:1px solid var(--border-strong); background:var(--paper); border-radius:14px; padding:5px 14px 12px; margin-bottom:4px;}
+  .blk.broj-wrap h2.sec{margin-top:8px;}
+  .broj-p1box{border:1px solid var(--rose); background:rgba(221,127,110,0.10); border-radius:10px; padding:10px 14px; margin:6px 0 12px;}
+  .broj-p1head{font-size:12.5px; font-weight:800; color:var(--rose); margin-bottom:6px;}
+  .broj-p1list{list-style:none; display:flex; flex-direction:column; gap:4px;}
+  .broj-p1list li label{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--text); cursor:pointer;}
+  .broj-p1list li label input{margin-top:2px; flex-shrink:0; cursor:pointer;}
+  .broj-p1list li.done label{color:var(--dim); text-decoration:line-through;}
+  .broj-progress-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .broj-progress-chip{flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:9px; padding:8px 11px; display:flex; flex-direction:column; gap:3px;}
+  .broj-progress-chip b{font-size:12px; color:var(--text);}
+  .broj-progress-chip span{font-size:14px; font-weight:800; color:var(--text-soft); font-variant-numeric:tabular-nums;}
+  .broj-progress-chip i{display:block; height:4px; border-radius:3px; background:var(--dc,var(--accent)); margin-top:2px;}
+  .broj-role-table{width:100%; border-collapse:collapse; margin:6px 0 12px; font-size:12px;}
+  .broj-role-table th, .broj-role-table td{border:1px solid var(--border); padding:6px 9px; text-align:left;}
+  .broj-role-table th{background:var(--surface); color:var(--text-soft); font-weight:700;}
+  .broj-dept{border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:10px; padding:10px 13px; margin-bottom:10px; background:var(--surface);}
+  .broj-dept h4{font-size:13px; font-weight:800; color:var(--text); display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; margin-bottom:4px;}
+  .broj-dept-sub{font-size:11px; font-weight:400; color:var(--dim);}
+  .broj-dept-count{margin-left:auto; font-size:12px; font-weight:800; color:var(--accent-soft); font-variant-numeric:tabular-nums;}
+  .broj-group{margin-top:6px;}
+  .broj-group-title{font-size:11.5px; font-weight:700; color:var(--dim); margin:8px 0 3px;}
+  .broj-list{list-style:none; display:flex; flex-direction:column; gap:2px;}
+  .broj-list li{padding:2px 0; border-bottom:1px dotted var(--border);}
+  .broj-list li:last-child{border-bottom:none;}
+  .broj-list li label{display:flex; gap:8px; align-items:flex-start; font-size:12px; color:var(--text-soft); cursor:pointer;}
+  .broj-list li label input{margin-top:2px; flex-shrink:0; cursor:pointer;}
+  .broj-list li.done label{color:var(--dim); text-decoration:line-through;}
+  .broj-list li.hot label{color:var(--rose);}
+  .broj-cross-title{font-size:11.5px; font-weight:700; color:var(--dim); margin:10px 0 4px;}
+  @media print{
+    .blk.broj-wrap{column-span:all; break-inside:avoid; background:#fff !important; border:1px solid #999 !important; border-radius:6px; padding:2px 8px 5px !important; margin-bottom:2px;}
+    .broj-p1box{border:1px solid #c00 !important; background:#fff5f3 !important;}
+    .broj-p1head{color:#c00 !important;}
+    .broj-list li label, .broj-p1list li label{color:#222 !important; font-size:9px;}
+    .broj-dept{background:#fff !important; border-color:#999 !important;}
+    .broj-role-table th{background:#eee !important; color:#111 !important;}
+  }
 </style>
 <link rel="stylesheet" href="assets/wp-typography.css">
 </head>
@@ -1002,6 +1043,20 @@
       <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-half" title="일부 목표는 실무 SSOT·채용공고·연동 배 상태에서 자동 연동(🔄 자동 배지 병기·배9678), 나머지는 수동 관리 — 사람 진척은 시우 검수로 보정">🟠 반반</span> <span class="stag">요약 + 신규·이월 상세 · 🔄 자동연동 병기</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
+    </section>
+
+    <!-- 🤝 브로제이 시스템 업무분장 — GM 원본(status/briefs/GM_브로제이_업무분장_원본_20260729.html, 2026-07-29 11:54 작성)을
+         실무진 5명이 직접 체크하는 자리로 이관(GM 지시·배214). 새 페이지 신설 없음(약속 L21) — 이 페이지 안에 얹음.
+         체크 상태 저장 = 부서보드가 이미 쓰는 공용 GAS(CHECK_GAS action=board/saveBoard, key=BROJ_TASK_BOARD) 재사용 —
+         새 저장소·새 시트·새 스크립트 신설 없음. GM은 담당별 진척(예: COO 4/14)만 한눈에, P1 회신대기 4건은 상단에 별도 표시. -->
+    <section class="blk broj-wrap" data-blkid="broj">
+      <h2 class="sec">🤝 브로제이 시스템 업무분장 <span class="lvb lvb-live" title="체크 즉시 공용 GAS(부서보드와 동일 저장소)에 저장 — 새로고침해도 유지">🟢 라이브</span> <span class="stag">실무 5인 담당 체크리스트 · 2026-07-29 GM 원본</span></h2>
+      <div id="broj-p1-alert"></div>
+      <div id="broj-progress"></div>
+      <div id="broj-role-map"></div>
+      <div id="broj-depts"></div>
+      <div id="broj-cross"></div>
+      <div id="broj-p2"></div>
     </section>
 
     <!-- ⏰ 보류 재부상 — 핵심과제·전략로드맵에 필요한 결재사항을 일단 보류로 넣어둔 뒤 조용히
@@ -3125,6 +3180,9 @@
       _nsMap = v;
       if(_data){ renderTop3(); renderBoard(); renderDeptTable(); renderSummaryBoard(); renderSummaryStrip(); }
     });
+
+    // 8) 🤝 브로제이 업무분장 체크보드 — 정본(plan)과 독립적으로 즉시 로드(체크 상태만 공유 GAS에서 조회). (배214·2026-07-29)
+    loadBrojBoard();
   }
 
   // ── 하단 점검·이슈 보드 로드: 부팅 시 즉시(eager) kpi/voc fetch — GM 지시 2026-07-06: 舊 IntersectionObserver 지연로드(스크롤해야 발동)는
@@ -3146,6 +3204,199 @@
          이 시점 전에 그려진 카드는 값을 못 받아 '측정 준비 중'으로 굳어 있었다(지원부 오표기 원인). */
       if(_data){ renderCheckStatus(); renderIssues(); renderSummaryBoard(); renderSummaryStrip(); renderDeptTable(); }
     });
+  }
+
+  // ══════════ 🤝 브로제이 업무분장 체크보드 (배214·2026-07-29 GM 지시) ══════════
+  // 원본: status/briefs/GM_브로제이_업무분장_원본_20260729.html (GM 2026-07-29 11:54 작성 — 그대로 이관, 재작성 금지).
+  // 저장 = 부서보드 공용 GAS 재사용(CHECK_GAS·action=board/saveBoard·key=BROJ_TASK_BOARD) — 새 저장소 신설 없음(약속 L21).
+  var BROJ_STORAGE_KEY = 'BROJ_TASK_BOARD';
+  var BROJ_DATA = {
+    roleMap: [
+      {role:'COO', name:'최준용 매니저 + 윤병현 어시스트매니저', scope:'운영 · 기술 · 시설 총괄'},
+      {role:'CHRO+CFO', name:'나우열 매니저', scope:'인사 · 재무 · 시스템 권한'},
+      {role:'CPO', name:'임정은 F.C 매니저', scope:'상품 · 프로그램 · 강습'},
+      {role:'리셉션', name:'백승화 사원', scope:'프런트 응대 · 실무'}
+    ],
+    depts: [
+      { id:'cfo', label:'CHRO+CFO — 나우열M', sub:'인사·재무·시스템 권한 【최우선】', color:'#ED7D31', groups:[
+        {title:'★ A. 시스템 권한 관리 (최우선 과제)', items:[
+          {id:'cfo-a1', text:'space.broj.co.kr 접근 권한 매트릭스 확정 및 셋팅 (GM 제어 / 나머지 팀 레슨 권한)', hot:true},
+          {id:'cfo-a2', text:'각 팀 계정 발급 · 초기 비밀번호 배포 · 로그인 확인'}
+        ]},
+        {title:'B. 재무 · 견적 검증', items:[
+          {id:'cfo-b1', text:'티업 제어가 견적서 [별첨1]에 포함되어 있는지 확인 → COO에 회신 (미포함 시 유상 개발 협의)'},
+          {id:'cfo-b2', text:'계약금 60% (₩23,430,000) 이체 실행 상태 재확인'},
+          {id:'cfo-b3', text:'BROJ PASS&GOLF 월 정기결제 카드 등록 확인'},
+          {id:'cfo-b4', text:'잔금 40% (₩15,620,000) 지급 준비 (정상작동 확인 후 7일)'}
+        ]}
+      ]},
+      { id:'coo', label:'COO — 최준용M · 윤병현AM', sub:'운영·기술 총괄', color:'#1F4E79', groups:[
+        {title:'A. 골프타석 시스템 (브로제이 개선 요청 취합·전달)', items:[
+          {id:'coo-a1', text:'예약 시 스크린 화면에 핸드폰번호 노출 → 비노출로 변경 요청'},
+          {id:'coo-a2', text:'얼굴 인증 후 확인 버튼 → 필수 여부 확인·간소화 요청'},
+          {id:'coo-a3', text:'대기자 예약 현황에 시간만 → 이름(김*욱) 표시로 개선 (복수 대기자 대응)'},
+          {id:'coo-a4', text:'55인치 교체 시 벽 고정 설치 요청 (시설 협의)'},
+          {id:'coo-a5', text:'티업 제어 견적 포함 여부 확인 → CFO에게 견적서 대조 요청'},
+          {id:'coo-a6', text:'빔프로젝트 절전모드 → 안 됨. 재확인 및 재설정 요청'},
+          {id:'coo-a7', text:'무료타석 배정 기능 → 개발/설정 가능 여부 확인'},
+          {id:'coo-a8', text:'비회원 로그인 다음 화면 진입 → QED 관련 문의'},
+          {id:'coo-a9', text:'키오스크 화면 좌상단 GDR / 우상단 QED + 8번타석 좌/우 표시 · 좌타석 이용 중 대기예약 X 가이드 요청'}
+        ]},
+        {title:'B. 출석 체크 (기술 셋팅·문의)', items:[
+          {id:'coo-b1', text:'성인/유소년 입장 시 촬영거리 멀게 셋팅 — 방법 브로제이에 요청'},
+          {id:'coo-b2', text:'번호 중복 시 / 부모님과 같이 쓸 경우 얼굴 따로 등록 가능 여부 확인'},
+          {id:'coo-b3', text:'웰페리온 메인입구 브로제이 얼굴인증 시 자동문 작동 안 됨 → 시설·브로제이 합동 확인', hot:true}
+        ]},
+        {title:'C. 락커 배정 (운영·실물 확인)', items:[
+          {id:'coo-c1', text:'골프 락커 / 개인 락커 / 스쿼시 락커 배정 작업'},
+          {id:'coo-c2', text:'유효기간 정책 확인 + 실물 락커까지 매핑 확인 (프런트·시설 합동)'}
+        ]}
+      ]},
+      { id:'cpo', label:'CPO — 임정은M', sub:'상품·프로그램', color:'#70AD47', groups:[
+        {title:'A. 상품 등록 (브로제이 CRM에서 직접 등록)', items:[
+          {id:'cpo-a1', text:'멤버십(성인) 상품 등록 — 헬스·수영·사우나 등'},
+          {id:'cpo-a2', text:'멤버십(유소년) 상품 등록 — 수영 준회원 · 유소년 강습 등'},
+          {id:'cpo-a3', text:'강습(성인) 상품 등록 — PT · 필라테스 · 스쿼시 · 골프 준회원 등'},
+          {id:'cpo-a4', text:'강습(유소년) 상품 등록 — 유소년 전용 프로그램'},
+          {id:'cpo-a5', text:'사우나 포함/미포함 옵션별 매핑 (SRS-A04)'}
+        ]},
+        {title:'B. 등록 · 정책 정의', items:[
+          {id:'cpo-b1', text:'출석 화면 수강 정보 표시 정책 정의 (표시 필드·표시 시간) → COO에 개선 요청 전달'},
+          {id:'cpo-b2', text:'부모님-유소년 얼굴 연동 등록 규칙 (부모님 미등록 + 유소년 강습 등록 시 처리 방식) → 리셉션에 실무 절차 공유'},
+          {id:'cpo-b3', text:'락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책)'}
+        ]}
+      ]},
+      { id:'rec', label:'리셉션 관리 — 백승화 사원', sub:'프런트 실무', color:'#7030A0', groups:[
+        {title:'A. 결제 시스템 매뉴얼 숙지', items:[
+          {id:'rec-a1', text:'카드 단말기 지원 여부 확인 (브로제이 회신 대기)'},
+          {id:'rec-a2', text:'키오스크·단말기 전원 on/off · 설정 방법 매뉴얼 숙지'},
+          {id:'rec-a3', text:'결제 상품 등록 방식 및 회원 결제 방법 숙지 (CPO 상품 등록 후 실습)'}
+        ]},
+        {title:'B. 계약서 · 회원 셋팅 (프런트 실무)', items:[
+          {id:'rec-b1', text:'멤버십 + 강습(성인·유소년) 계약서 셋팅 — 회원 개인정보 재동의·계약 서명 처리'},
+          {id:'rec-b2', text:'결제 시스템 체크 → 계약 서명 확인까지 프런트 원스톱 응대'},
+          {id:'rec-b3', text:'상품 등록 완료 후 신규·재등록 회원 실무 응대'}
+        ]},
+        {title:'C. 부모님-유소년 등록 응대', items:[
+          {id:'rec-c1', text:'부모님 1명 + 유소년 1명 연동 얼굴 등록 절차 실무 응대'},
+          {id:'rec-c2', text:'부모님 미등록 + 유소년 강습 등록 시 학부모 방문 유도 안내'}
+        ]}
+      ]}
+    ],
+    cross: [
+      {task:'계약서 · 상품 셋팅 → 회원 응대 흐름', main:'CPO 임정은 (상품 등록)', sub:'리셉션 백승화 (실무 응대)'},
+      {task:'부모님-유소년 연동 등록', main:'CPO 임정은 (규칙 정의)', sub:'리셉션 백승화 (응대)'},
+      {task:'락커 배정 정책 · 실물 확인', main:'COO 최준용 (운영)', sub:'CPO 임정은 (상품 매핑)'},
+      {task:'티업 제어 견적 확인', main:'CFO 나우열 (견적 대조)', sub:'COO 최준용 (기술 실행 확인)'},
+      {task:'space.broj 계정 권한 셋팅', main:'CFO 나우열 (권한 매트릭스)', sub:'각 담당자 (자기 계정 확인)'}
+    ],
+    brojReq: {
+      p1: [
+        {id:'broj-p1-1', text:'골프타석 핸드폰번호 스크린 노출 비노출 처리'},
+        {id:'broj-p1-2', text:'얼굴 인증 후 확인 버튼 간소화 여부'},
+        {id:'broj-p1-3', text:'웰페리온 메인입구 자동문 작동 안 됨 (긴급)'},
+        {id:'broj-p1-4', text:'티업 제어 견적 포함 여부 확답'}
+      ],
+      p2: [
+        {id:'broj-p2-1', text:'대기자 이름 표시 UI 개선'},
+        {id:'broj-p2-2', text:'55인치 벽 고정 설치 방식'},
+        {id:'broj-p2-3', text:'빔프로젝트 절전모드 재설정'},
+        {id:'broj-p2-4', text:'무료타석 배정 기능'},
+        {id:'broj-p2-5', text:'비회원 QED 로그인 이슈'},
+        {id:'broj-p2-6', text:'키오스크 화면 GDR/QED + 대기예약 가이드'},
+        {id:'broj-p2-7', text:'촬영거리 셋팅 방법'},
+        {id:'broj-p2-8', text:'번호 중복/부모님 얼굴 등록 방식'}
+      ]
+    }
+  };
+  var _brojState = {}; // {itemId:true/false} — GAS board(key=BROJ_TASK_BOARD)에서 로드한 체크 상태
+  var _brojSaveTimer = null;
+
+  function brojDeptProgress(d){
+    var total = 0, done = 0;
+    d.groups.forEach(function(g){ g.items.forEach(function(it){ total++; if(_brojState[it.id]) done++; }); });
+    return {done:done, total:total};
+  }
+  function renderBrojP1Alert(){
+    var el = document.getElementById('broj-p1-alert'); if(!el) return;
+    var openCount = BROJ_DATA.brojReq.p1.filter(function(it){ return !_brojState[it.id]; }).length;
+    var rows = BROJ_DATA.brojReq.p1.map(function(it){
+      var checked = !!_brojState[it.id];
+      return '<li class="' + (checked ? 'done' : '') + '"><label><input type="checkbox" data-broj-id="' + it.id + '"' + (checked ? ' checked' : '') + '> ' + esc(it.text) + '</label></li>';
+    }).join('');
+    el.innerHTML = '<div class="broj-p1box"><div class="broj-p1head">🔴 브로제이(손영인 주임) 회신 대기 — P1 미회신 ' + openCount + '/4</div><ul class="broj-p1list">' + rows + '</ul></div>';
+  }
+  function renderBrojProgress(){
+    var el = document.getElementById('broj-progress'); if(!el) return;
+    el.innerHTML = '<div class="broj-progress-row">' + BROJ_DATA.depts.map(function(d){
+      var p = brojDeptProgress(d), pct = p.total ? Math.round(p.done / p.total * 100) : 0;
+      return '<div class="broj-progress-chip" style="--dc:' + d.color + '"><b>' + esc(d.label.split(' — ')[0]) + '</b><span>' + p.done + '/' + p.total + '</span><i style="width:' + pct + '%"></i></div>';
+    }).join('') + '</div>';
+  }
+  function renderBrojRoleMap(){
+    var el = document.getElementById('broj-role-map'); if(!el) return;
+    el.innerHTML = '<table class="broj-role-table"><thead><tr><th style="width:15%">역할</th><th style="width:30%">담당</th><th>영역</th></tr></thead><tbody>' +
+      BROJ_DATA.roleMap.map(function(r){ return '<tr><td><b>' + esc(r.role) + '</b></td><td>' + esc(r.name) + '</td><td>' + esc(r.scope) + '</td></tr>'; }).join('') +
+      '</tbody></table>';
+  }
+  function renderBrojDepts(){
+    var el = document.getElementById('broj-depts'); if(!el) return;
+    el.innerHTML = BROJ_DATA.depts.map(function(d){
+      var p = brojDeptProgress(d);
+      return '<div class="broj-dept" style="--dc:' + d.color + '"><h4>' + esc(d.label) + ' <span class="broj-dept-sub">' + esc(d.sub) + '</span><span class="broj-dept-count">' + p.done + '/' + p.total + '</span></h4>' +
+        d.groups.map(function(g){
+          return '<div class="broj-group"><div class="broj-group-title">' + esc(g.title) + '</div><ul class="broj-list">' +
+            g.items.map(function(it){
+              var checked = !!_brojState[it.id];
+              return '<li class="' + (checked ? 'done' : '') + (it.hot ? ' hot' : '') + '"><label><input type="checkbox" data-broj-id="' + it.id + '"' + (checked ? ' checked' : '') + '> ' + esc(it.text) + '</label></li>';
+            }).join('') + '</ul></div>';
+        }).join('') + '</div>';
+    }).join('');
+  }
+  function renderBrojCross(){
+    var el = document.getElementById('broj-cross'); if(!el) return;
+    el.innerHTML = '<div class="broj-cross-title">🔷 크로스팀 협업 항목 (참고용 — 담당별 항목에 이미 포함)</div><table class="broj-role-table"><thead><tr><th>업무</th><th>주담당</th><th>부담당</th></tr></thead><tbody>' +
+      BROJ_DATA.cross.map(function(r){ return '<tr><td>' + esc(r.task) + '</td><td>' + esc(r.main) + '</td><td>' + esc(r.sub) + '</td></tr>'; }).join('') +
+      '</tbody></table>';
+  }
+  function renderBrojP2(){
+    var el = document.getElementById('broj-p2'); if(!el) return;
+    el.innerHTML = '<div class="broj-group-title">🟠 브로제이 요청 P2 (이번 주 회신)</div><ul class="broj-list">' +
+      BROJ_DATA.brojReq.p2.map(function(it){
+        var checked = !!_brojState[it.id];
+        return '<li class="' + (checked ? 'done' : '') + '"><label><input type="checkbox" data-broj-id="' + it.id + '"' + (checked ? ' checked' : '') + '> ' + esc(it.text) + '</label></li>';
+      }).join('') + '</ul>';
+  }
+  function bindBrojCheckboxes(){
+    var boxes = document.querySelectorAll('[data-broj-id]');
+    Array.prototype.forEach.call(boxes, function(cb){
+      cb.onchange = function(){
+        _brojState[cb.getAttribute('data-broj-id')] = cb.checked;
+        renderBrojAll();
+        saveBrojBoard();
+      };
+    });
+  }
+  function renderBrojAll(){
+    renderBrojP1Alert(); renderBrojProgress(); renderBrojRoleMap(); renderBrojDepts(); renderBrojCross(); renderBrojP2();
+    bindBrojCheckboxes();
+  }
+  function loadBrojBoard(){
+    return fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(BROJ_STORAGE_KEY), {method:'GET', redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data && data.ok && data.board && typeof data.board === 'object'){ _brojState = data.board; }
+        renderBrojAll();
+      })
+      .catch(function(){ renderBrojAll(); });
+  }
+  function saveBrojBoard(){
+    clearTimeout(_brojSaveTimer);
+    _brojSaveTimer = setTimeout(function(){
+      fetch(CHECK_GAS, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'saveBoard', key:BROJ_STORAGE_KEY, board:_brojState})
+      }).catch(function(){});
+    }, 400);
   }
 
   boot();
