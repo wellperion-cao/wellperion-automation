@@ -60,6 +60,12 @@
   .fb-memo-label{font-size:11px; color:var(--dim); font-weight:700; margin-bottom:2px;}
   .fb-empty{color:var(--dim); font-size:13.5px; text-align:center; padding:40px 0;}
   .fb-photo-note{font-size:11px; color:var(--dim); font-style:italic; margin-top:6px;}
+  /* 첨부사진 썸네일(2026-07-29 GM 지시) — 눌러서 원본. 사진이 조용히 사라지면 안 되므로
+     로드 실패해도 링크 텍스트로 폴백해 항상 원본에 닿을 길을 남긴다. */
+  .fb-photos{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .fb-photo-thumb{width:72px; height:72px; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:var(--paper); display:block;}
+  .fb-photo-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .fb-photo-fallback{font-size:11.5px; color:var(--accent-soft);}
 
   @media (max-width:420px){
     .fb-card-head{gap:6px;}
@@ -136,7 +142,8 @@
           return {
             at: cellStr(r, 0), id: cellStr(r, 1), screen: cellStr(r, 2) || '(미기재)',
             kind: cellStr(r, 3), urgency: cellStr(r, 4), author: cellStr(r, 5) || '(무기명)',
-            content: cellStr(r, 6), status: cellStr(r, 7) || '접수', memo: cellStr(r, 8)
+            content: cellStr(r, 6), status: cellStr(r, 7) || '접수', memo: cellStr(r, 8),
+            photos: cellStr(r, 9).split('\n').map(function(s){ return s.trim(); }).filter(Boolean)   // 10번째 칸("첨부사진")
           };
         });
         buildFilters();
@@ -174,6 +181,25 @@
     });
   }
 
+  // 첨부사진 → 썸네일 HTML(2026-07-29 GM 지시). Drive 파일 링크에서 ID만 뽑아 thumbnail 엔드포인트로
+  // 그려 넣고, 클릭하면 원본(view) 링크로 새 탭이 열린다. ID를 못 뽑으면(형식이 다른 링크 등) 텍스트
+  // 링크로라도 남긴다 — 썸네일이 안 그려진다고 사진 자체가 사라진 것처럼 보이면 안 된다(GM 지시 원문).
+  function photoHtml(urls){
+    if(!urls || !urls.length) return '';
+    var thumbs = urls.map(function(u){
+      var m = u.match(/\/d\/([^/]+)/);
+      if(m){
+        var thumbSrc = 'https://drive.google.com/thumbnail?id=' + esc(m[1]) + '&sz=w300';
+        return '<a class="fb-photo-thumb" href="' + esc(u) + '" target="_blank" rel="noopener">' +
+          '<img src="' + thumbSrc + '" alt="첨부사진" loading="lazy" ' +
+          'onerror="this.parentElement.outerHTML=\'<a class=&quot;fb-photo-fallback&quot; href=&quot;' + esc(u) + '&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;📎 사진 열기&lt;/a&gt;\'">' +
+        '</a>';
+      }
+      return '<a class="fb-photo-fallback" href="' + esc(u) + '" target="_blank" rel="noopener">📎 사진 열기</a>';
+    }).join('');
+    return '<div class="fb-photos">' + thumbs + '</div>';
+  }
+
   function render(){
     var authorQuery = (document.getElementById('authorSearch').value || '').trim();
     var filtered = _all.filter(function(r){
@@ -205,7 +231,7 @@
         '</div>' +
         '<div class="fb-content">' + esc(r.content) + '</div>' +
         memoHtml +
-        '<div class="fb-photo-note">📎 사진 첨부는 준비 중입니다(다음 업데이트에서 표시됩니다).</div>' +
+        photoHtml(r.photos) +
       '</div>';
     }).join('');
   }
