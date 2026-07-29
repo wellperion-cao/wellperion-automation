@@ -241,7 +241,7 @@
   <div><label>버전:</label> <span contenteditable="true">v1.0</span></div>
 </div>
 
-<div class="change-note">📌 <strong>2026-07-29 GM 담당 변경 반영</strong> — 상품 등록 5건(멤버십 성인/유소년·강습 성인/유소년·사우나 옵션 매핑) 담당을 임정은M → 이경연 실장(운영부 리더)으로 이관. 임정은M은 신규·재등록 상담에 집중. 상품 등록 기준 문서(ERP 상품 기획) 링크·조건 추가. 실제 편집·저장 가능한 최신본 = <code>3. 웰페리온 가이드/coo/brojay/브로제이_업무분장.html</code>(체크·저장 라이브) — 이 파일은 GM 원본 보관용 사본.</div>
+<div class="change-note">📌 <strong>2026-07-29 GM 담당 변경 반영</strong> — 상품 등록 5건(멤버십 성인/유소년·강습 성인/유소년·사우나 옵션 매핑) 담당을 임정은M → 이경연 실장(운영부 리더)으로 이관. 임정은M은 신규·재등록 상담에 집중. 상품 등록 기준 문서(ERP 상품 기획) 링크·조건 추가. 락커권 상품 정의를 임정은M → 윤병현AM(COO)로 이관(실물 확인·응대는 백승화 사원과 함께). 가이드 작성 항목 2건 추가(골프 타석 이용 가이드=COO, 부모님-유소년 얼굴연동 가이드=백승화). 실제 편집·저장 가능한 최신본 = <code>3. 웰페리온 가이드/coo/brojay/브로제이_업무분장.html</code>(체크·저장·가이드 작성·실무진 피드백·브로제이 확인목록 이관 전부 라이브) — 이 파일은 GM 원본 보관용 사본(정적).</div>
 
 <div class="controls">
   <button onclick="window.print()">🖨 인쇄</button>
@@ -277,7 +277,7 @@
       <tr>
         <td><strong>CPO</strong></td>
         <td contenteditable="true">임정은 F.C 매니저</td>
-        <td contenteditable="true">상품 · 프로그램 · 강습 (2026-07-29 GM 담당변경 — 상품 등록 제외·신규·재등록 상담 집중)</td>
+        <td contenteditable="true">신규 회원 관리 · 기존 회원 재등록 집중 (2026-07-29 GM 담당변경 — 상품 등록·락커권 정의 제외)</td>
       </tr>
       <tr>
         <td><strong>운영부 리더</strong></td>
@@ -344,6 +344,13 @@
   <ul class="tasks">
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">골프 락커 / 개인 락커 / 스쿼시 락커 배정 작업</span><button class="del">✕</button></li>
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">유효기간 정책 확인 + 실물 락커까지 매핑 확인 (프런트·시설 합동)</span><button class="del">✕</button></li>
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책) — 2026-07-29 GM 지시로 임정은M→윤병현AM 이관. 실물 확인·회원 응대는 백승화 사원과 함께</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">D. 가이드 작성 (2026-07-29 GM 지시 — 실무 절차 문서화)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">골프 타석 예약 이용 가이드 작성 → 완료 시 라이브 페이지의 「📘 실무 가이드」 자리에 내용 등록</span><button class="del">✕</button></li>
   </ul>
   <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
 </section>
@@ -352,13 +359,12 @@
 
 <!-- CPO -->
 <section class="cpo">
-  <h2 contenteditable="true">🟢 CPO — 임정은M  ·  신규·재등록 상담 집중 (2026-07-29 GM 담당변경)</h2>
+  <h2 contenteditable="true">🟢 CPO — 임정은M  ·  신규 회원 관리 · 기존 회원 재등록 집중 (2026-07-29 GM 담당변경)</h2>
 
   <h3 contenteditable="true">B. 등록 · 정책 정의</h3>
   <ul class="tasks">
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">출석 화면 수강 정보 표시 정책 정의 (표시 필드·표시 시간) → COO에 개선 요청 전달</span><button class="del">✕</button></li>
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">부모님-유소년 얼굴 연동 등록 규칙 (부모님 미등록 + 유소년 강습 등록 시 처리 방식) → 리셉션에 실무 절차 공유</span><button class="del">✕</button></li>
-    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책)</span><button class="del">✕</button></li>
   </ul>
   <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
 </section>
@@ -405,6 +411,12 @@
     <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">부모님 미등록 + 유소년 강습 등록 시 학부모 방문 유도 안내</span><button class="del">✕</button></li>
   </ul>
   <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
+
+  <h3 contenteditable="true">D. 가이드 작성 (2026-07-29 GM 지시 — 실무 절차 문서화)</h3>
+  <ul class="tasks">
+    <li draggable="true"><span class="drag-handle">⋮⋮</span><input type="checkbox"><span class="task-text" contenteditable="true">부모님-유소년 얼굴 연동 등록 가이드 작성 (규칙 확정 임정은M 후 작성) → 완료 시 라이브 페이지의 「📘 실무 가이드」 자리에 내용 등록</span><button class="del">✕</button></li>
+  </ul>
+  <button class="add-btn" onclick="addTask(this)">+ 항목 추가</button>
 </section>
 
 <!-- 크로스팀 -->
@@ -431,8 +443,8 @@
       </tr>
       <tr>
         <td contenteditable="true">락커 배정 정책 · 실물 확인</td>
-        <td contenteditable="true">COO 최준용 (운영)</td>
-        <td contenteditable="true">CPO 임정은 (상품 매핑)</td>
+        <td contenteditable="true">COO 윤병현AM (정책 정의)</td>
+        <td contenteditable="true">백승화 사원 (실물 확인·회원 응대)</td>
       </tr>
       <tr>
         <td contenteditable="true">티업 제어 견적 확인</td>
