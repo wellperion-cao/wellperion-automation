@@ -815,6 +815,19 @@ function durText(ms) {
   return String(agoText(Math.round(ms / 60000))).replace(/전$/, '');
 }
 
+/** 오래 조용한 창은 **길이 대신 마지막으로 움직인 시각**을 적는다 (GM 2026-07-29 "웰리만 진행하는데?").
+ *  왜: '쉼 14시간'은 길이만 말해서 GM 이 "그 창이 일을 안 하는 건가, 고장인가"를 못 가른다. 실측해 보면
+ *  시모·시우·시포 창은 **어제 23:43(PC 종료 시각) 이후 한 번도 안 움직였다** — 오늘 안 연 창이다.
+ *  시각을 그대로 보여주면 '어제 밤 이후 아무 일도 안 했다'가 한눈에 읽힌다(값도 얼어붙지 않는다).
+ *  같은 날이면 시:분만, 날짜가 넘어가면 월-일까지. */
+function sinceText(ms) {
+  const d = new Date(Date.now() - ms);
+  const now = new Date();
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  return sameDay ? hm : `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${hm}`;
+}
+
 function buildRoleLines(cwd, role) {
   try {
     const acts = roleActivity(cwd, role);
@@ -824,20 +837,26 @@ function buildRoleLines(cwd, role) {
     acts.sort((a, b) => (a.age ?? Infinity) - (b.age ?? Infinity) || (a.mins ?? Infinity) - (b.mins ?? Infinity));
     // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
     //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
-    //   ●(2) + 공백 + 닉4 + 공백 + [제목] + 2칸 + 상태칸(항상 10으로 채움) + 2칸 + '배NNNNNN'(최대 8) = 30
+    //   ●(2) + 공백 + 닉4 + 공백 + [제목] + 2칸 + 상태칸 + 2칸 + '배NNNNNN'(최대 8) = 20 + 상태칸
     //   ★2026-07-29 시토 — 고정폭을 26→30으로 정정. 26은 ●를 1칸으로, 상태를 7칸으로 세었는데
-    //     실제로는 ●가 2칸이고 상태는 padDisp(…,10) 으로 항상 10칸이라 매 줄이 4칸씩 넘쳤다.
-    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 30));
-    return acts.map((a) => {
-      const has = a.event != null;
-      // ★점 = 지금 상태(실측), 오른쪽 글자 = 그 상태를 말로. 시각(N분전)은 '멈춘 뒤'에만 쓴다 —
-      //   움직이는 중에 '0분전'을 적으면 무슨 뜻인지 알 수 없다(GM 지적 2026-07-28).
-      let dot, state;
-      if (a.age == null)            { dot = `${D}○${X}`; state = `${D}—${X}`; }
-      else if (a.age < LIVE_MS)     { dot = `${G}●${X}`; state = `${G}진행중${X}`; }
+    //     실제로는 ●가 2칸이고 상태는 padDisp 로 채워져 매 줄이 4칸씩 넘쳤다.
+    //   ★상태칸을 10 고정이 아니라 **실제로 가장 긴 상태 글자에 맞춘다** — 아래에서 '쉼 07-28 23:43'
+    //     처럼 길어질 수 있어, 10 으로 가정하면 그만큼 줄이 창 밖으로 넘친다.
+    // ★점 = 지금 상태(실측), 오른쪽 글자 = 그 상태를 말로. 시각(N분전)은 '멈춘 뒤'에만 쓴다 —
+    //   움직이는 중에 '0분전'을 적으면 무슨 뜻인지 알 수 없다(GM 지적 2026-07-28).
+    const marks = acts.map((a) => {
+      if (a.age == null)          return { dot: `${D}○${X}`, state: `${D}—${X}` };
+      if (a.age < LIVE_MS)        return { dot: `${G}●${X}`, state: `${G}진행중${X}` };
       // '전'을 뗀다 — '멈춤 8분전'은 어색하다. 여기 숫자는 시점이 아니라 **멈춰 있은 길이**다.
-      else if (a.age < PAUSE_MS)    { dot = `${Y}◐${X}`; state = `${Y}멈춤 ${durText(a.age)}${X}`; }
-      else                          { dot = `${D}○${X}`; state = `${D}쉼 ${durText(a.age)}${X}`; }
+      if (a.age < PAUSE_MS)       return { dot: `${Y}◐${X}`, state: `${Y}멈춤 ${durText(a.age)}${X}` };
+      // 오래 조용한 창은 길이 대신 **마지막으로 움직인 시각** — 위 sinceText 주석 참고.
+      return { dot: `${D}○${X}`, state: `${D}쉼 ${sinceText(a.age)}${X}` };
+    });
+    const stateW = Math.max(10, ...marks.map((m) => dw(m.state)));
+    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 20 - stateW));
+    return acts.map((a, i) => {
+      const has = a.event != null;
+      const { dot, state } = marks[i];
       const nick = padDisp(NICK[a.role], 4);
       // ★제목은 **표시 폭**으로 자른다(fitCols) — shortTitle 은 글자 수로 자른다.
       //   한글·이모지는 한 글자가 2칸이라 글자 수로 자르면 폭이 최대 두 배가 되어 줄이 창 밖으로
@@ -846,7 +865,7 @@ function buildRoleLines(cwd, role) {
       const evText = String(a.event || '').replace(/^\[[^\]]*\]\s*/, '').trim();
       const ev = padDisp(has ? fitCols(evText, evW) : `${D}—${X}`, evW);
       const ship = has && a.ship ? `${D}배${a.ship}${X}` : '';
-      return [`${dot} ${nick} ${ev}`, padDisp(state, 10), ship].filter(Boolean).join('  ');
+      return [`${dot} ${nick} ${ev}`, padDisp(state, stateW), ship].filter(Boolean).join('  ');
     });
   } catch { return []; }
 }
