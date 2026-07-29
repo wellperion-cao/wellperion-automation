@@ -27,9 +27,10 @@
   /* ── 🤝 브로제이 업무분장 체크보드 (배214·2026-07-29 GM 지시 → 오후 별도 페이지 분리 → 저녁 실무진 편집기능 추가) ──
        원본: status/briefs/GM_브로제이_업무분장_원본_20260729.html. 저장 = 부서보드 공용 GAS 재사용
        (CHECK_GAS action=board/saveBoard, key=BROJ_TASK_BOARD) — 새 저장소 신설 없음(약속 L21).
-       2026-07-29 저녁: 실무진 추가·수정·이동·숨김 가능하게 확장. 항목 상태를 bool→object로 승격
+       2026-07-29 저녁: 실무진 추가·수정·담당이관·삭제 가능하게 확장. 항목 상태를 bool→object로 승격
        (레거시 bool 값도 그대로 읽힘 — 하위호환). GM 원본 텍스트·구성은 코드(BROJ_DATA)에 그대로
-       남아 있어 "삭제"돼도 데이터가 사라지지 않는다(숨김=hidden 플래그일 뿐). ── */
+       남아 있어 "삭제"돼도 실제로는 deleted 플래그만 켜질 뿐 데이터는 안 사라진다 —
+       휴지통(전역·페이지 맨 아래)에서 복원 가능(GM 지시로 "숨김"을 대체 — 약속 L21 net-zero). ── */
   .broj-p1box{border:1px solid var(--rose); background:rgba(221,127,110,0.10); border-radius:10px; padding:12px 16px; margin:8px 0 14px;}
   .broj-p1head{font-size:14.5px; font-weight:800; color:var(--rose); margin-bottom:7px;}
   .broj-p1list{list-style:none; display:flex; flex-direction:column; gap:5px;}
@@ -113,6 +114,7 @@
   .broj-guide-card{border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:10px; padding:13px 16px; margin-top:10px; background:var(--surface);}
   .broj-guide-title{font-size:14.5px; font-weight:800; display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; margin-bottom:6px;}
   .broj-guide-owner{font-size:12px; font-weight:400; color:var(--dim);}
+  .broj-guide-draft-badge{font-size:11px; font-weight:700; color:var(--rose); background:rgba(221,127,110,0.14); border:1px solid var(--rose); border-radius:20px; padding:1px 9px; margin-left:auto; white-space:nowrap;}
   .broj-guide-empty{font-size:13.5px; color:var(--dim); font-style:italic; margin-bottom:8px;}
   .broj-guide-text{font-size:14px; color:var(--text-soft); line-height:1.7; white-space:pre-wrap; margin-bottom:6px;}
   .broj-guide-textarea{width:100%; min-height:110px; font:inherit; font-size:14px; padding:9px 11px; border-radius:8px; border:1px solid var(--accent-soft); background:var(--paper); color:var(--text); resize:vertical;}
@@ -154,8 +156,9 @@
   <div id="broj-guides"></div>
   <div id="broj-vendor-queue"></div>
   <div id="broj-cross"></div>
+  <div id="broj-trash"></div>
 
-  <div class="footnote">체크·추가·수정·숨김은 즉시 저장됩니다(부서보드와 동일 공용 저장소). 🆕 표시는 현장에서 새로 추가한 항목입니다. GM 원본 항목은 숨겨도 지워지지 않고 "숨김 항목"에서 복원됩니다. 원본 문서: <code>status/briefs/GM_브로제이_업무분장_원본_20260729.html</code></div>
+  <div class="footnote">체크·추가·수정·담당이관·삭제는 즉시 저장됩니다(부서보드와 동일 공용 저장소). 🆕 표시는 현장에서 새로 추가한 항목, 🔀는 다른 담당에서 이관된 항목입니다. 삭제해도 실제로 지워지지 않고 페이지 맨 아래 휴지통에서 복원할 수 있습니다. 원본 문서: <code>status/briefs/GM_브로제이_업무분장_원본_20260729.html</code></div>
 </div>
 
 <!-- ══ 실무진 피드백 모달 (membership.html·상품기획.html과 동일 패턴 그대로 벤치마킹 · 새 컴포넌트 0).
@@ -237,13 +240,17 @@
           {id:'cpo-b3', text:'락커권 상품 정의 (골프 락커·개인 락커·스쿼시 락커 유효기간 정책) — 2026-07-29 GM 지시로 임정은M→윤병현AM 이관(락커 배정 실물·정책을 한 사람 손에 모음). 실물 확인·회원 응대는 백승화 사원과 함께'}
         ]},
         {title:'D. 가이드 작성 (2026-07-29 GM 지시 — 실무 절차 문서화)', items:[
-          {id:'coo-guide-1', text:'골프 타석 예약 이용 가이드 작성 → 완료 시 아래 「📘 실무 가이드」 자리에 내용 등록'}
+          {id:'coo-guide-1', text:'골프 타석 예약 이용 가이드 작성 → 완료 시 아래 「📘 실무 가이드」 자리에 내용 등록'},
+          {id:'coo-guide-2', text:'강사 앱 설치 가이드 작성(회원용과 별도 문서) → 완료 시 아래 「📘 실무 가이드」 자리에 내용 등록'}
         ]}
       ]},
       { id:'cpo', label:'CPO — 임정은M', sub:'신규 회원 관리 · 기존 회원 재등록 집중 (GM 2026-07-29 담당 변경)', color:'#70AD47', groups:[
         {title:'B. 등록 · 정책 정의', items:[
           {id:'cpo-b1', text:'출석 화면 수강 정보 표시 정책 정의 (표시 필드·표시 시간) → COO에 개선 요청 전달'},
           {id:'cpo-b2', text:'부모님-유소년 얼굴 연동 등록 규칙 (부모님 미등록 + 유소년 강습 등록 시 처리 방식) → 리셉션에 실무 절차 공유'}
+        ]},
+        {title:'C. 가이드 작성 (2026-07-29 GM 지시 — 실무 절차 문서화)', items:[
+          {id:'cpo-guide-1', text:'회원 앱 설치 가이드 작성(강사용과 별도 문서) → 완료 시 아래 「📘 실무 가이드」 자리에 내용 등록'}
         ]}
       ]},
       { id:'lky', label:'이경연 실장 — 운영부 리더', sub:'상품 등록 (2026-07-29 GM 담당 변경 · 임정은M → 이경연 실장)', color:'#B8860B', groups:[
@@ -315,7 +322,7 @@
 
   var _brojBoard = {};        // GAS에서 받은 원본 보드(키=itemId, 값=bool(레거시) 또는 object(신규))
   var _editingItemId = null;  // 지금 인라인 편집 중인 항목(재렌더해도 편집 인풋 유지)
-  var _hiddenSectionOpen = {}; // deptId → 숨김 목록 펼침 여부
+  var _trashOpen = false;     // 휴지통(전역·페이지 맨 아래) 펼침 여부
 
   // ── 이름(작성자) — 실무진피드백.html과 동일 localStorage 키. 한 번 적으면 계속 재사용 ──
   function getStaffName(){
@@ -342,19 +349,25 @@
     var raw = _brojBoard[itemId];
     var overlay = (raw && typeof raw === 'object') ? raw : {checked: !!raw};
     if(base){
+      // overlay.dept 가 있으면 다른 담당에게 이관된 것 — 원래 그룹은 의미가 없어지므로
+      // "🔀 다른 담당에서 이관" 그룹으로 옮겨 보여준다(원본 정의(base)는 그대로 보존).
+      var deptId = overlay.dept || base.deptId;
+      var groupTitle = overlay.dept ? '🔀 다른 담당에서 이관' : base.groupTitle;
       return {
-        id: itemId, origin: 'gm', deptId: base.deptId, groupTitle: base.groupTitle,
+        id: itemId, origin: 'gm', deptId: deptId, groupTitle: groupTitle,
         text: (overlay.text != null && overlay.text !== '') ? overlay.text : base.text,
         hot: base.hot,
-        checked: !!overlay.checked, hidden: !!overlay.hidden,
+        checked: !!overlay.checked, deleted: !!overlay.deleted,
+        transferred: overlay.transferred || null,
         updated_by: overlay.updated_by || '', updated_at: overlay.updated_at || ''
       };
     }
     if(raw && typeof raw === 'object' && raw.origin === 'staff'){
       return {
-        id: itemId, origin: 'staff', deptId: raw.dept, groupTitle: raw.group || '🆕 현장 추가 항목',
+        id: itemId, origin: 'staff', deptId: raw.dept, groupTitle: raw.transferred ? '🔀 다른 담당에서 이관' : (raw.group || '🆕 현장 추가 항목'),
         text: raw.text || '', hot: false,
-        checked: !!raw.checked, hidden: !!raw.hidden,
+        checked: !!raw.checked, deleted: !!raw.deleted,
+        transferred: raw.transferred || null,
         added_by: raw.added_by || '', updated_by: raw.updated_by || '', updated_at: raw.updated_at || ''
       };
     }
@@ -422,21 +435,54 @@
     _editingItemId = null;
     renderBrojAll();
   }
-  function hideItem(id){
-    if(!confirm('이 항목을 숨길까요?\n완전히 지워지지 않고 "숨김 항목"에서 다시 복원할 수 있습니다.')) return;
+  // ── 삭제(진짜 삭제 · GM 지시 2026-07-29 밤 — 숨김 대체) ──
+  // GM: "숨기는게 아니라 삭제할 수 있게 해줘." 목록에서 완전히 사라지되, 저장소 데이터는 안 지운다
+  // (deleted 플래그만 · 실제 파괴 삭제는 하지 않음). 되돌릴 길 = 페이지 맨 아래 전역 휴지통(기본 접힘).
+  // 기존 "숨김" 장치는 완전히 대체한다(같은 일 하는 장치 둘 금지 · 약속 L21 net-zero).
+  function deleteItem(id){
+    var it = resolveItem(id);
+    if(!it) return;
+    var shortText = it.text.length > 40 ? it.text.slice(0, 40) + '…' : it.text;
+    var warn = it.origin === 'gm' ? '\n\n⚠️ GM 원본 항목입니다.' : '';
+    if(!confirm('"' + shortText + '" 항목을 삭제할까요?' + warn + '\n목록에서 사라지지만 완전히 지워지지 않고 아래 휴지통에서 복원할 수 있습니다.')) return;
     var name = ensureStaffName();
     mutateBrojBoard(function(board){
       var obj = upgradeToObject(board[id]);
-      obj.hidden = true;
+      obj.deleted = true;
       obj.updated_by = name; obj.updated_at = nowStr();
       board[id] = obj;
     });
   }
-  function restoreItem(id){
+  function restoreFromTrash(id){
     var name = ensureStaffName();
     mutateBrojBoard(function(board){
       var obj = upgradeToObject(board[id]);
-      obj.hidden = false;
+      obj.deleted = false;
+      obj.updated_by = name; obj.updated_at = nowStr();
+      board[id] = obj;
+    });
+  }
+  function toggleTrash(){
+    _trashOpen = !_trashOpen;
+    renderTrash();
+  }
+  // ── 담당 넘기기(GM 지시 2026-07-29 밤) — "이건 내 일이 아니다"는 대개 지울 일이 아니라 넘길
+  //    일이다. 대상 명단은 BROJ_DATA.depts 하나만 본다(약속 L01 — 화면마다 따로 명단 안 둠). ──
+  function transferItem(id){
+    var it = resolveItem(id);
+    if(!it) return;
+    var options = BROJ_DATA.depts.map(function(d, i){ return (i + 1) + '. ' + d.label.split(' — ')[0]; }).join('\n');
+    var choice = prompt('어느 담당으로 넘길까요?\n' + options + '\n\n번호를 입력하세요:', '');
+    if(choice === null) return;
+    var idx = parseInt(choice, 10) - 1;
+    if(isNaN(idx) || idx < 0 || idx >= BROJ_DATA.depts.length){ alert('올바른 번호를 입력해 주세요.'); return; }
+    var targetDept = BROJ_DATA.depts[idx];
+    if(targetDept.id === it.deptId) return;
+    var name = ensureStaffName();
+    mutateBrojBoard(function(board){
+      var obj = upgradeToObject(board[id]);
+      obj.dept = targetDept.id;
+      obj.transferred = {from: it.deptId, from_group: it.groupTitle, by: name, at: nowStr()};
       obj.updated_by = name; obj.updated_at = nowStr();
       board[id] = obj;
     });
@@ -449,18 +495,14 @@
     var name = ensureStaffName();
     var id = 'staff-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     mutateBrojBoard(function(board){
-      board[id] = {checked:false, hidden:false, text:text, dept:deptId, group:'🆕 현장 추가 항목',
+      board[id] = {checked:false, deleted:false, text:text, dept:deptId, group:'🆕 현장 추가 항목',
                    origin:'staff', added_by:name, updated_by:name, updated_at:nowStr()};
     });
     input.value = '';
   }
-  function toggleHiddenSection(deptId){
-    _hiddenSectionOpen[deptId] = !_hiddenSectionOpen[deptId];
-    renderBrojDepts();
-  }
 
   function brojDeptProgress(d){
-    var items = itemsForDept(d.id).filter(function(it){ return !it.hidden; });
+    var items = itemsForDept(d.id).filter(function(it){ return !it.deleted; });
     var total = items.length, done = items.filter(function(it){ return it.checked; }).length;
     return {done: done, total: total};
   }
@@ -482,7 +524,7 @@
       var raw = _brojBoard[id];
       if(raw && typeof raw === 'object' && raw.escalated){
         var it = resolveItem(id);
-        if(it && !it.hidden){
+        if(it && !it.deleted){
           out.push({
             id: id, tier: raw.escalated.urgency || 'P2', text: it.text,
             checked: it.checked, response: raw.response || '',
@@ -524,6 +566,7 @@
     var escTag = escalated ? '<span class="broj-item-escalated-tag" title="브로제이 확인 목록으로 이관됨(아래 🔺 확인 목록에서도 보임)">🔺 ' + esc(escalated.urgency) + ' 회신대기</span>' : '';
     var metaBits = [];
     if(it.origin === 'staff' && it.added_by) metaBits.push('추가: ' + esc(it.added_by));
+    if(it.transferred) metaBits.push('이관: ' + esc(it.transferred.from_group || it.transferred.from) + ' → 여기 · ' + esc(it.transferred.by) + (it.transferred.at ? ' · ' + esc(it.transferred.at) : ''));
     if(it.updated_by) metaBits.push('수정: ' + esc(it.updated_by) + (it.updated_at ? ' · ' + esc(it.updated_at) : ''));
     var meta = metaBits.length ? '<div class="broj-item-meta">' + metaBits.join(' · ') + '</div>' : '';
     var escalateBtn = escalated
@@ -537,7 +580,8 @@
         '<span class="broj-item-btns">' +
           '<button type="button" class="broj-mini-btn" data-action="edit" data-item-id="' + it.id + '" title="문구 수정">✏️</button>' +
           escalateBtn +
-          '<button type="button" class="broj-mini-btn" data-action="hide" data-item-id="' + it.id + '" title="숨기기(삭제 아님)">🗑</button>' +
+          '<button type="button" class="broj-mini-btn" data-action="transfer" data-item-id="' + it.id + '" title="다른 담당에게 넘기기">🔀</button>' +
+          '<button type="button" class="broj-mini-btn" data-action="delete" data-item-id="' + it.id + '" title="삭제(휴지통에서 복원 가능)">🗑</button>' +
         '</span>' +
       '</div>' + meta +
     '</li>';
@@ -546,15 +590,23 @@
     var el = document.getElementById('broj-depts'); if(!el) return;
     el.innerHTML = BROJ_DATA.depts.map(function(d){
       var p = brojDeptProgress(d);
-      var staffItems = itemsForDept(d.id).filter(function(it){ return it.origin === 'staff' && !it.hidden; });
-      var hiddenItems = itemsForDept(d.id).filter(function(it){ return it.hidden; });
+      // 이관돼 나간 항목은 원래 그룹에서 빠지고(deptId 가 바뀌므로 자연히 필터됨), 현재 이 부서
+      // 소속인 것만 그린다. 삭제된 것은 어디에도 안 보이고 전역 휴지통에서만 보인다.
+      var staffItems = itemsForDept(d.id).filter(function(it){ return it.origin === 'staff' && !it.deleted && !it.transferred; });
+      var transferredIn = itemsForDept(d.id).filter(function(it){ return it.transferred && !it.deleted; });
 
       var groupsHtml = d.groups.map(function(g){
         var noteHtml = g.note ? '<div class="broj-group-note">' + g.note + '</div>' : '';
-        var itemsHtml = g.items.map(function(baseIt){ return renderItemLi(resolveItem(baseIt.id)); }).join('');
+        var visibleItems = g.items.map(function(baseIt){ return resolveItem(baseIt.id); })
+          .filter(function(it){ return it && !it.deleted && it.deptId === d.id; });
+        if(!visibleItems.length) return '';
         return '<div class="broj-group"><div class="broj-group-title">' + esc(g.title) + '</div>' + noteHtml +
-          '<ul class="broj-list">' + itemsHtml + '</ul></div>';
+          '<ul class="broj-list">' + visibleItems.map(renderItemLi).join('') + '</ul></div>';
       }).join('');
+
+      var transferredGroupHtml = transferredIn.length ?
+        '<div class="broj-group"><div class="broj-group-title">🔀 다른 담당에서 이관 (' + transferredIn.length + '건)</div>' +
+        '<ul class="broj-list">' + transferredIn.map(renderItemLi).join('') + '</ul></div>' : '';
 
       var staffGroupHtml =
         '<div class="broj-group broj-group-staff"><div class="broj-group-title">🆕 현장 추가 항목' +
@@ -565,24 +617,24 @@
           '<button type="button" class="broj-add-btn" data-action="add" data-add-dept="' + d.id + '">+ 추가</button>' +
         '</div></div>';
 
-      var hiddenHtml = '';
-      if(hiddenItems.length){
-        var open = !!_hiddenSectionOpen[d.id];
-        hiddenHtml = '<div class="broj-hidden-block">' +
-          '<button type="button" class="broj-hidden-toggle" data-action="toggle-hidden" data-dept="' + d.id + '">' +
-            (open ? '▾' : '▸') + ' 숨김 항목 ' + hiddenItems.length + '건' +
-          '</button>' +
-          (open ? '<ul class="broj-list broj-hidden-list">' + hiddenItems.map(function(it){
-            return '<li data-item-id="' + it.id + '"><span class="broj-item-text">' + esc(it.text) + '</span>' +
-              '<button type="button" class="broj-mini-btn" data-action="restore" data-item-id="' + it.id + '" title="복원">↩</button></li>';
-          }).join('') + '</ul>' : '') +
-        '</div>';
-      }
-
       return '<div class="broj-dept" style="--dc:' + d.color + '"><h4>' + esc(d.label) +
         ' <span class="broj-dept-sub">' + esc(d.sub) + '</span><span class="broj-dept-count">' + p.done + '/' + p.total + '</span></h4>' +
-        groupsHtml + staffGroupHtml + hiddenHtml + '</div>';
+        groupsHtml + transferredGroupHtml + staffGroupHtml + '</div>';
     }).join('');
+  }
+  function renderTrash(){
+    var el = document.getElementById('broj-trash'); if(!el) return;
+    var trashed = allItemIds().map(resolveItem).filter(function(it){ return it && it.deleted; });
+    el.innerHTML = '<div class="broj-hidden-block">' +
+      '<button type="button" class="broj-hidden-toggle" data-action="toggle-trash">' +
+        (_trashOpen ? '▾' : '▸') + ' 🗑 휴지통 (' + trashed.length + '건)' +
+      '</button>' +
+      (_trashOpen ? '<ul class="broj-list broj-hidden-list">' + (trashed.length ? trashed.map(function(it){
+        return '<li data-item-id="' + it.id + '"><span class="broj-item-text">' + esc(it.text) +
+          '</span><span class="broj-item-meta">' + (it.updated_by ? '삭제: ' + esc(it.updated_by) + (it.updated_at ? ' · ' + esc(it.updated_at) : '') : '') + '</span>' +
+          '<button type="button" class="broj-mini-btn" data-action="restore-trash" data-item-id="' + it.id + '" title="복원">↩</button></li>';
+      }).join('') : '<li style="opacity:.6;">비어 있습니다.</li>') + '</ul>' : '') +
+    '</div>';
   }
   function renderBrojCross(){
     var el = document.getElementById('broj-cross'); if(!el) return;
@@ -664,41 +716,109 @@
     });
   }
 
-  // ── 📘 실무 가이드(GM 지시 2026-07-29 밤) — 브로제이 사용법은 지어내지 않는다(약속 L05).
-  //    자리와 담당만 만들고 절차 본문은 현장이 채운다. 비어 있으면 명시적으로 "작성 전"이라 적는다
-  //    (빈칸=없음과 고장을 구분 못 함 · GM 선호). 편집기는 항목 편집(.broj-edit-input)과 별개 —
-  //    가이드 본문은 여러 줄이라 textarea + 명시적 "저장" 버튼(엔터로 즉시 저장 안 함). ──
+  // ── 📘 실무 가이드 4종(GM 지시 2026-07-29 밤) — 브로제이 사용법은 지어내지 않는다(약속 L05).
+  //    아는 것만 문장으로 쓰고, 모르는 자리는 "⬜ 확인 필요 — 무엇을"로 남긴다(빈칸=없음과 고장을
+  //    구분 못 함 · GM 선호). defaultText = 뼈대 초안(GM 원본에서 확인된 사실만) — GAS에 아직 아무
+  //    값도 없을 때만 이 뼈대를 보여준다(수정하기를 누르면 이 뼈대에서 시작해 고쳐 쓸 수 있다).
+  //    한 번이라도 저장되면 그 다음부터는 저장된 값이 정본. 편집기는 항목 편집(.broj-edit-input)과
+  //    별개 — 가이드 본문은 여러 줄이라 textarea + 명시적 "저장" 버튼(엔터로 즉시 저장 안 함). ──
   var GUIDES = [
-    {id:'guide-golf-tee', title:'⛳ 골프 타석 예약 이용 가이드', ownerLabel:'COO (최준용M·윤병현AM)'},
-    {id:'guide-parent-kid', title:'👨‍👧 부모님-유소년 얼굴 연동 등록 가이드', ownerLabel:'백승화 사원', prereq:'규칙 확정(임정은M) 후 작성'}
+    {id:'guide-golf-tee', title:'⛳ 골프 타석 예약 이용 가이드', ownerLabel:'COO (최준용M·윤병현AM)',
+     defaultText:
+'[근거 있는 사실 — GM 원본 확인]\n' +
+'· 예약 시 스크린 화면에 핸드폰번호가 노출됨(비노출 처리 요청 중)\n' +
+'· 도착 후 얼굴 인증 → 확인 버튼을 누르는 절차가 있음\n' +
+'· 대기자 예약 현황은 시간만 표시됨(이름 표시 요청 중)\n' +
+'· 키오스크 화면에 GDR/QED 구분이 있고, 8번 타석은 좌/우 구분\n' +
+'· 좌타석 이용 중에는 대기예약이 안 됨\n' +
+'· 무료타석 배정 기능은 가능 여부 확인 중\n' +
+'· 비회원은 QED 로그인 관련 이슈가 있음\n\n' +
+'[절차 뼈대]\n' +
+'1. 예약하기\n2. 도착·입장(얼굴 인증)\n3. 타석 확인(GDR/QED·좌우)\n4. 대기/취소\n5. 자주 막히는 것\n\n' +
+'⬜ 확인 필요 — 예약을 어디서 하는지(앱/키오스크/프런트)\n' +
+'⬜ 확인 필요 — 예약 가능 시간 단위\n' +
+'⬜ 확인 필요 — 취소·노쇼 규정\n' +
+'⬜ 확인 필요 — 무료타석 조건'},
+    {id:'guide-parent-kid', title:'👨‍👧 부모님-유소년 얼굴 연동 등록 가이드', ownerLabel:'백승화 사원', prereq:'규칙 확정(임정은M) 후 확정',
+     defaultText:
+'[근거 있는 사실 — GM 원본 확인]\n' +
+'· 부모님 1명 + 유소년 1명 연동 얼굴 등록 절차가 있음\n' +
+'· 부모님 미등록 상태에서 유소년만 강습 등록하는 경우 처리 방식은 아직 미정(임정은M 규칙 정의 대기)\n' +
+'· 같은 번호를 부모와 공유하는 경우 얼굴 별도 등록 가능 여부 확인 중\n' +
+'· 성인/유소년 입장 시 촬영 거리 조정 요청 중\n\n' +
+'[절차 뼈대]\n' +
+'1. 누가 등록해야 하나\n2. 무엇을 준비\n3. 등록 절차\n4. 부모님 미등록일 때\n5. 자주 묻는 것\n\n' +
+'⬜ 확인 필요 — 부모님 미등록 시 처리 규칙(임정은M 확정 대기)\n' +
+'⬜ 확인 필요 — 번호 공유 시 얼굴 별도 등록 절차'},
+    {id:'guide-member-app', title:'📱 회원 앱 설치 가이드', ownerLabel:'CPO (임정은M)',
+     defaultText:
+'[근거 있는 사실 — 거의 없음. 앱 이름·스토어를 추측해서 쓰지 않습니다]\n' +
+'· 시스템 주소: space.broj.co.kr\n' +
+'· BROJ PASS&GOLF 월 정기결제가 있음\n\n' +
+'[절차 뼈대]\n' +
+'1. 설치\n2. 가입·로그인\n3. 얼굴/결제 등록\n4. 예약\n5. 안 될 때\n\n' +
+'⬜ 확인 필요 — 앱 이름·스토어(안드로이드/아이폰)\n' +
+'⬜ 확인 필요 — 가입·로그인 방법\n' +
+'⬜ 확인 필요 — 회원 인증 방식\n' +
+'⬜ 확인 필요 — 얼굴 등록을 앱에서 하는지\n' +
+'⬜ 확인 필요 — 예약을 앱에서 하는지\n' +
+'⬜ 확인 필요 — 결제 카드 등록 위치\n' +
+'⬜ 확인 필요 — 안 될 때 문의처'},
+    {id:'guide-instructor-app', title:'👔 강사 앱 설치 가이드', ownerLabel:'COO (최준용M·윤병현AM)', prereq:'회원용과 별도 문서 — 강사는 보는 화면·권한이 다름',
+     defaultText:
+'[근거 있는 사실 — GM 원본 확인]\n' +
+'· 팀별 계정 발급·초기 비밀번호 배포·로그인 확인이 나우열M 항목에 있음\n' +
+'· 권한 매트릭스(GM 제어 / 나머지 팀 레슨 권한)가 확정 대기\n\n' +
+'[절차 뼈대]\n' +
+'1. 계정 받기\n2. 로그인\n3. 출결·수업 확인\n4. 변경·대타 처리\n5. 안 될 때\n\n' +
+'⬜ 확인 필요 — 강사용 앱·웹 중 무엇인지\n' +
+'⬜ 확인 필요 — 계정을 누가 주는지\n' +
+'⬜ 확인 필요 — 출결 확인 방법\n' +
+'⬜ 확인 필요 — 수업 명단 보기\n' +
+'⬜ 확인 필요 — 대타·변경 처리\n' +
+'⬜ 확인 필요 — 안 될 때 연락처'}
   ];
   var _editingGuideId = null;
   function renderGuides(){
     var el = document.getElementById('broj-guides'); if(!el) return;
-    el.innerHTML = '<div class="broj-guides-head">📘 실무 가이드<span class="broj-guides-sub">브로제이 사용법은 저희가 지어내지 않습니다 — 실제로 써 보신 분이 적어 주세요.</span></div>' +
+    el.innerHTML = '<div class="broj-guides-head">📘 실무 가이드<span class="broj-guides-sub">브로제이 사용법은 저희가 지어내지 않습니다 — 실제로 써 보신 분이 ⬜ 확인 필요 줄을 채워 주세요.</span></div>' +
       GUIDES.map(function(g){
         var raw = _brojBoard[g.id];
         var data = (raw && typeof raw === 'object') ? raw : null;
-        var hasContent = data && data.text;
+        var hasSaved = data && data.text;
+        var confirmed = !!(data && data.confirmed);
         var editing = _editingGuideId === g.id;
+        var statusLabel = confirmed ? '확정' : (hasSaved ? '확인중' : '초안');
+        var draftBadge = confirmed ? '' : '<span class="broj-guide-draft-badge">초안 · 현장 확인 전</span>';
         var body;
         if(editing){
-          body = '<textarea class="broj-guide-textarea" data-guide-id="' + g.id + '" placeholder="여기에 실제 절차를 적어 주세요">' + esc((data && data.text) || '') + '</textarea>' +
+          body = '<textarea class="broj-guide-textarea" data-guide-id="' + g.id + '" placeholder="여기에 실제 절차를 적어 주세요">' + esc((data && data.text) || g.defaultText || '') + '</textarea>' +
             '<div class="broj-guide-editbar"><button type="button" class="broj-add-btn" data-action="save-guide" data-guide-id="' + g.id + '">저장</button>' +
             '<button type="button" class="broj-mini-btn" data-action="cancel-guide" data-guide-id="' + g.id + '">취소</button></div>';
-        } else if(hasContent){
-          body = '<div class="broj-guide-text">' + esc(data.text) + '</div>' +
-            '<div class="broj-item-meta">작성: ' + esc(data.updated_by || '') + (data.updated_at ? ' · ' + esc(data.updated_at) : '') + '</div>' +
-            '<button type="button" class="broj-mini-btn" data-action="edit-guide" data-guide-id="' + g.id + '" title="수정">✏️ 수정</button>';
         } else {
-          body = '<div class="broj-guide-empty">아직 작성 전 — 먼저 써 보신 분이 적어 주세요.' + (g.prereq ? ' (' + esc(g.prereq) + ')' : '') + '</div>' +
-            '<button type="button" class="broj-add-btn" data-action="edit-guide" data-guide-id="' + g.id + '">✏️ 작성하기</button>';
+          var shownText = hasSaved ? data.text : (g.defaultText || '');
+          body = '<div class="broj-guide-text">' + esc(shownText) + '</div>' +
+            (hasSaved ? '<div class="broj-item-meta">최종수정: ' + esc(data.updated_by || '') + (data.updated_at ? ' · ' + esc(data.updated_at) : '') + '</div>' :
+              '<div class="broj-guide-empty">↑ 뼈대 초안입니다(GM 원본 근거만) — 아직 현장이 확인·수정하지 않았습니다.' + (g.prereq ? ' (' + esc(g.prereq) + ')' : '') + '</div>') +
+            '<div class="broj-guide-editbar">' +
+              '<button type="button" class="broj-mini-btn" data-action="edit-guide" data-guide-id="' + g.id + '" title="수정">✏️ 수정</button>' +
+              (!confirmed ? '<button type="button" class="broj-mini-btn" data-action="confirm-guide" data-guide-id="' + g.id + '" title="현장 확인 완료 — 초안 배지 제거">✅ 확인 완료</button>' : '') +
+            '</div>';
         }
-        return '<div class="broj-guide-card"><div class="broj-guide-title">' + esc(g.title) + '<span class="broj-guide-owner">' + esc(g.ownerLabel) + '</span></div>' + body + '</div>';
+        return '<div class="broj-guide-card"><div class="broj-guide-title">' + esc(g.title) + '<span class="broj-guide-owner">' + esc(g.ownerLabel) + ' · ' + statusLabel + '</span>' + draftBadge + '</div>' + body + '</div>';
       }).join('');
   }
   function startEditGuide(id){ _editingGuideId = id; renderGuides(); var ta = document.querySelector('.broj-guide-textarea[data-guide-id="' + id + '"]'); if(ta) ta.focus(); }
   function cancelEditGuide(){ _editingGuideId = null; renderGuides(); }
+  function confirmGuide(id){
+    var name = ensureStaffName();
+    mutateBrojBoard(function(board){
+      var obj = (board[id] && typeof board[id] === 'object') ? board[id] : {kind:'guide', text:''};
+      obj.confirmed = true;
+      obj.updated_by = name; obj.updated_at = nowStr();
+      board[id] = obj;
+    });
+  }
   function saveGuide(id){
     var ta = document.querySelector('.broj-guide-textarea[data-guide-id="' + id + '"]');
     if(!ta) return;
@@ -707,12 +827,13 @@
     if(!text){ renderGuides(); return; }
     var name = ensureStaffName();
     mutateBrojBoard(function(board){
-      board[id] = {text: text, updated_by: name, updated_at: nowStr(), kind: 'guide'};
+      var prevConfirmed = !!(board[id] && typeof board[id] === 'object' && board[id].confirmed);
+      board[id] = {text: text, updated_by: name, updated_at: nowStr(), kind: 'guide', confirmed: prevConfirmed};
     });
   }
 
   function renderBrojAll(){
-    renderVendorSummary(); renderBrojProgress(); renderBrojRoleMap(); renderBrojDepts(); renderGuides(); renderVendorQueue(); renderBrojCross();
+    renderVendorSummary(); renderBrojProgress(); renderBrojRoleMap(); renderBrojDepts(); renderGuides(); renderVendorQueue(); renderBrojCross(); renderTrash();
   }
 
   // ── 이벤트 위임(document 1곳에 1회만 바인딩) — 매 렌더마다 리스너 재부착 불필요.
@@ -726,10 +847,11 @@
     });
     document.addEventListener('click', function(e){
       var editBtn = e.target.closest && e.target.closest('[data-action="edit"]');
-      var hideBtn = e.target.closest && e.target.closest('[data-action="hide"]');
-      var restoreBtn = e.target.closest && e.target.closest('[data-action="restore"]');
+      var deleteBtn = e.target.closest && e.target.closest('[data-action="delete"]');
+      var transferBtn = e.target.closest && e.target.closest('[data-action="transfer"]');
+      var restoreTrashBtn = e.target.closest && e.target.closest('[data-action="restore-trash"]');
       var addBtn = e.target.closest && e.target.closest('[data-action="add"]');
-      var toggleHiddenBtn = e.target.closest && e.target.closest('[data-action="toggle-hidden"]');
+      var toggleTrashBtn = e.target.closest && e.target.closest('[data-action="toggle-trash"]');
       var escalateBtn = e.target.closest && e.target.closest('[data-action="escalate"]');
       var unescalateBtn = e.target.closest && e.target.closest('[data-action="unescalate"]');
       var editRespBtn = e.target.closest && e.target.closest('[data-action="edit-response"]');
@@ -738,11 +860,13 @@
       var editGuideBtn = e.target.closest && e.target.closest('[data-action="edit-guide"]');
       var saveGuideBtn = e.target.closest && e.target.closest('[data-action="save-guide"]');
       var cancelGuideBtn = e.target.closest && e.target.closest('[data-action="cancel-guide"]');
+      var confirmGuideBtn = e.target.closest && e.target.closest('[data-action="confirm-guide"]');
       if(editBtn){ startEditItem(editBtn.getAttribute('data-item-id')); return; }
-      if(hideBtn){ hideItem(hideBtn.getAttribute('data-item-id')); return; }
-      if(restoreBtn){ restoreItem(restoreBtn.getAttribute('data-item-id')); return; }
+      if(deleteBtn){ deleteItem(deleteBtn.getAttribute('data-item-id')); return; }
+      if(transferBtn){ transferItem(transferBtn.getAttribute('data-item-id')); return; }
+      if(restoreTrashBtn){ restoreFromTrash(restoreTrashBtn.getAttribute('data-item-id')); return; }
       if(addBtn){ addItem(addBtn.getAttribute('data-add-dept')); return; }
-      if(toggleHiddenBtn){ toggleHiddenSection(toggleHiddenBtn.getAttribute('data-dept')); return; }
+      if(toggleTrashBtn){ toggleTrash(); return; }
       if(escalateBtn){ escalateItem(escalateBtn.getAttribute('data-item-id')); return; }
       if(unescalateBtn){ unescalateItem(unescalateBtn.getAttribute('data-item-id')); return; }
       if(editRespBtn){ startEditResponse(editRespBtn.getAttribute('data-item-id')); return; }
@@ -751,6 +875,7 @@
       if(editGuideBtn){ startEditGuide(editGuideBtn.getAttribute('data-guide-id')); return; }
       if(saveGuideBtn){ saveGuide(saveGuideBtn.getAttribute('data-guide-id')); return; }
       if(cancelGuideBtn){ cancelEditGuide(); return; }
+      if(confirmGuideBtn){ confirmGuide(confirmGuideBtn.getAttribute('data-guide-id')); return; }
     });
     document.addEventListener('keydown', function(e){
       if(e.target && e.target.matches && e.target.matches('.broj-add-input') && e.key === 'Enter'){
