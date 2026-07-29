@@ -1985,6 +1985,11 @@ var ACT_RES_COL = '재등록예약목록';
 //  하위호환(비파괴): '연락이력'이 비어 있고 옛 Contact1/2/3에 값이 있으면 각각 {date:'',time:'',note:Cn}으로 합성해 표시.
 //  Contact1/2/3 컬럼은 절대 삭제·덮어쓰지 않음(원복 안전) — '연락이력'이 있으면 그것을 우선 사용.
 var CONTACT_HIST_COL = '연락이력';
+// ═══ 1차 컨택 알림 — 발신 기록(멱등 가드) — 2026-07-29 시토 · GM 재지적(배10379) ═══
+//  세는 값(_muHistPrevCount===0)만으로는 동시 저장 두 요청이 같은 순간에 나란히 0을 읽어 둘 다 보내는
+//  레이스를 못 막는다(실측: 같은 분에 2회 재발). '보낸 기록' 자체를 이 칸에 남기고, 다음 요청은 그 표시를
+//  보고 건너뛴다 — 세는 로직이 다시 틀려도 이 표시가 최후 방어선(약속 L21: 관문 하나에만 박는다).
+var FIRST_CONTACT_SENT_COL = '1차컨택알림발송';
 // ═══ 컨택자(컨택한 사람) 구조화 — 배101(2026-07-25 시포·GM) ═══
 //  '누가 컨택했는지'를 메모 끝 수기 서명(-이름) 대신 구조화 필드(by)로 기록한다.
 //  시트 저장 = 사람이 읽는 평문 유지(GM: 시트 JSON 금지) — 노트 끝 '(컨택:이름)' 마커 한 가지.
@@ -5932,13 +5937,35 @@ function _processAction(body) {
     }
     // 1차 컨택 알림(축6, 이력-기준으로 일원화): 연락이력 0건 → ≥1건 전이 시 1회만. 2026-07-08 시포·GM.
     //   구 '컨택 시작'(상태=상담중 등 진입 기준) 알림은 중복 방지를 위해 이 이력-기준 알림으로 대체(제거).
+    // ★발신 1회 보장(멱등 가드, 2026-07-29 시토·GM 재지적·배10379): 세는 값(_muHistPrevCount===0)이 다시
+    //   틀리거나, 동시 저장 두 요청이 같은 순간 나란히 0을 읽어도 두 번 나가지 않도록 '보낸 기록'을
+    //   시트에 남기고 잠금 안에서 확인→표시(check-and-set)한다. 표시가 이미 있으면 무조건 건너뛴다.
     if (_muHistNewArr && _muHistPrevCount === 0 && _muHistNewArr.length >= 1) {
-      try {
-        var _histFirst = _muHistNewArr[0];
-        var _histWhen = ((_histFirst.date || '') + ' ' + (_histFirst.time || '')).trim();
-        var _histChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
-        _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + (_coName || '-') + ' (' + _teamChip(_coProg) + (_progNameOnly_(_coProg) || '-') + ')\n일시: ' + (_histWhen || '-') + '\n내용: ' + (_histFirst.note || '-') + (_histFirst.by ? '\n컨택: ' + _histFirst.by : '') + (_coOwner ? '\n배정 담당: ' + _coOwner : ''), _histChatId);
-      } catch (e) {}
+      var _fcLock = LockService.getScriptLock();
+      if (_fcLock.tryLock(5000)) {
+        try {
+          var _fcCi = _miEnsureCol_(muSh, muHdr, FIRST_CONTACT_SENT_COL);
+          var _fcCell = muSh.getRange(muRow, _fcCi + 1);
+          var _fcAlready = String(_fcCell.getValue() || '').trim();
+          if (!_fcAlready) {
+            // 먼저 표시한 뒤 보낸다 — 발송 자체가 실패해도(네트워크 등) 중복 발신보다 표시 우선(1회 보장이 목적).
+            _fcCell.setValue(_korDateTime_(new Date()));
+            SpreadsheetApp.flush();
+            try {
+              var _histFirst = _muHistNewArr[0];
+              var _histWhen = ((_histFirst.date || '') + ' ' + (_histFirst.time || '')).trim();
+              var _histChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+              _notifyTelegram('📞 <b>1차 컨택 진행</b> — ' + (_coName || '-') + ' (' + _teamChip(_coProg) + (_progNameOnly_(_coProg) || '-') + ')\n일시: ' + (_histWhen || '-') + '\n내용: ' + (_histFirst.note || '-') + (_histFirst.by ? '\n컨택: ' + _histFirst.by : '') + (_coOwner ? '\n배정 담당: ' + _coOwner : ''), _histChatId);
+            } catch (eNotify) {
+              Logger.log('1차 컨택 알림 발송 실패: ' + eNotify.message);
+            }
+          }
+        } finally {
+          _fcLock.releaseLock();
+        }
+      } else {
+        Logger.log('1차 컨택 알림 락 획득 실패(5s) — 이번 저장은 건너뜀(표시 없이 종료, 다음 저장에서 재평가)');
+      }
     }
     // 등록 해제(이전 SUC → 신규 비SUC, status 명시 전송 시) — 잘못 등록 되돌리기: 등록현황에서 제거. 2026-06-29 시포.
     if (_wasSuc && !_isSucNew && body.status !== undefined) {
