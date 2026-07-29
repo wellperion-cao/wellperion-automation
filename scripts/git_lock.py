@@ -189,7 +189,9 @@ def git_commit_push(
     cwd=None,
 ):
     """
-    GitLock 임계구역 안에서 add→commit→(pull --rebase --autostash)→push 실행.
+    GitLock 임계구역 안에서 add→commit→(pull_rebase_safe)→push 실행.
+    ※인자 이름 pull_autostash 는 호출 호환을 위해 남겼지만 **--autostash 는 더 이상 쓰지 않는다**
+      (2026-07-29 · INC-034 뿌리 제거). True 면 '더러우면 건너뛰는 안전 pull' 을 한다는 뜻이다.
     paths: List[str] — git add 대상 경로 목록.
     nothing-to-commit은 무해 통과.
     원격 없음/pull 실패는 경고 로그 후 통과.
@@ -233,24 +235,41 @@ def git_commit_push(
                     f"git commit 실패 (rc={result.returncode}): {result.stderr.strip()}"
                 )
 
-        # git pull --rebase --autostash
+        # git pull --rebase (★--autostash 제거 — 아래 pull_rebase_safe 주석 참고)
         if pull_autostash:
-            pr = subprocess.run(
-                ["git", "pull", "--rebase", "--autostash"],
-                cwd=work_dir,
-                capture_output=True,
-                text=True, encoding="utf-8", errors="replace",
-            )
-            if pr.returncode != 0:
-                _log(
-                    f"PULL_WARN holder={holder} rc={pr.returncode} "
-                    f"stderr={pr.stderr.strip()[:120]}",
-                    root,
-                )
+            pull_rebase_safe(work_dir, root, holder)
 
         # git push
         if push:
             run_git(["push"], cwd=work_dir)
+
+
+def pull_rebase_safe(work_dir, root=None, holder="?") -> bool:
+    """작업트리를 절대 건드리지 않는 pull — `--autostash` 대체 (2026-07-29 시토 · INC-034 뿌리 제거).
+
+    ★왜 --autostash 를 쓰면 안 되나(실사고):
+      이 저장소는 여러 세션이 **작업트리 하나를 공유**한다. `--autostash` 는 pull 직전 남의
+      미커밋 변경까지 통째로 stash 했다가 끝나고 되돌리는데, 되돌리기(pop)가 한 파일이라도
+      충돌하면 **변경은 stash 에 갇힌 채 작업트리는 옛 내용으로 돌아가고, rebase 는 exit 0 을
+      낸다.** 즉 아무도 모르게 남의 일이 사라진다. 실제로 그렇게 자율 기록이 통째로 유실됐고
+      (자율현황이 '포착 0건'으로 보이던 원인), 스태시가 35개까지 쌓였다.
+
+    ▸그래서 여기서는 **더러우면 아예 당기지 않는다.** 최신화가 한 회차 늦는 것은 되돌릴 수
+      있지만, 남의 미커밋 변경이 사라지는 것은 되돌릴 수 없다. 다음 회차에 깨끗해지면 당겨진다.
+    ▸반환: True=당김 / False=건너뜀·실패(호출부는 실패해도 계속 진행하게 설계할 것).
+    """
+    st = subprocess.run(["git", "status", "--porcelain"], cwd=work_dir,
+                        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if st.returncode == 0 and st.stdout.strip():
+        n = len(st.stdout.strip().splitlines())
+        _log(f"PULL_SKIP_DIRTY holder={holder} files={n} (작업트리 보호 — 당기지 않음)", root)
+        return False
+    pr = subprocess.run(["git", "pull", "--rebase"], cwd=work_dir,
+                        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if pr.returncode != 0:
+        _log(f"PULL_WARN holder={holder} rc={pr.returncode} stderr={pr.stderr.strip()[:120]}", root)
+        return False
+    return True
 
 
 # ── 편의 함수 ──────────────────────────────────────────────────────────────

@@ -54,7 +54,7 @@ except Exception:
 # 동시커밋 직렬화 lock (P2, 2026-06-15) — git_lock.py는 같은 scripts/ 폴더.
 # 하드 임포트(실패 시 시끄럽게): 락 없이 무방비 커밋되면 동시성 손상 방지 목적이 무력화됨.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from git_lock import GitLock
+from git_lock import GitLock, pull_rebase_safe
 from safe_commit import safe_commit  # 스테일 트리 차단 커밋(2026-07-23 배9820)
 from publish_digest import send_publish_digest  # 발행완료→문의방 통합요약 자동발신(2026-07-15)
 # 발행 '완결' 판정 집합의 단일 출처 — 여기서 문자열을 다시 박지 않는다(배125 · 약속 L01).
@@ -495,11 +495,17 @@ def git(*args: str, check: bool = False) -> subprocess.CompletedProcess:
 
 
 def pull_latest() -> None:
-    """승인 신호 동기화 — dirty tree여도 autostash로 안전 rebase (메모리 git 원샷 원칙)."""
+    """승인 신호 동기화 — ★작업트리가 더러우면 당기지 않는다(2026-07-29 시토 · INC-034 뿌리 제거).
+
+    옛 주석은 'dirty tree여도 autostash로 안전 rebase'였는데 그 전제가 틀렸다. --autostash 는
+    pop 이 충돌하면 남의 미커밋 변경을 stash 에 가둔 채 작업트리를 되돌리고도 exit 0 을 낸다
+    — 공유 작업트리에서 조용한 유실의 원인이었다. 승인 신호가 한 회차 늦는 것은 다음 회차에
+    회복되지만, 사라진 남의 일은 회복되지 않는다. 판단 근거·구현 = git_lock.pull_rebase_safe.
+    """
     with GitLock(holder="ig_review_publish:pull", repo_root=str(ROOT)):
         git("fetch", "origin", "master")
-        r = git("pull", "--rebase", "--autostash", "origin", "master")
-    _safe_print(f"[INFO] git pull: {(r.stdout + r.stderr).strip().splitlines()[-1:] or ['(no output)']}")
+        pulled = pull_rebase_safe(str(ROOT), str(ROOT), "ig_review_publish:pull")
+    _safe_print(f"[INFO] git pull: {'당김' if pulled else '건너뜀(작업트리 사용 중 또는 실패) — 다음 회차 재시도'}")
 
 
 def load_queue() -> list:

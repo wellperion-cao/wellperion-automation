@@ -489,8 +489,13 @@ def main():
                  "--"] + commit_paths,
                 cwd=ROOT, check=True,
             )
-            subprocess.run(["git", "pull", "--rebase", "--autostash",
-                            "origin", "master"], cwd=ROOT, check=True)
+            # ★--autostash 제거(2026-07-29 시토 · INC-034 뿌리): 공유 작업트리에서 pop 이
+            #   충돌하면 남의 미커밋 변경이 stash 에 갇힌 채 트리가 되돌아가고도 exit 0 이 난다.
+            #   더러우면 당기지 않는다 — 이번 회차 push 가 non-ff 로 실패해도 다음 회차에 회복되지만,
+            #   사라진 남의 일은 회복되지 않는다. 구현·근거 = scripts/git_lock.pull_rebase_safe.
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from git_lock import pull_rebase_safe  # noqa: E402
+            pull_rebase_safe(str(ROOT), str(ROOT), "erp_status_publisher")
             subprocess.run(["git", "push", "origin", "master"], cwd=ROOT, check=True)
             print("[erp_status] pushed")
         except subprocess.CalledProcessError as e:
