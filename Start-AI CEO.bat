@@ -47,7 +47,23 @@ echo  ----------------------------------------
 echo.
 
 cd /d "%WORK%"
-git pull --rebase origin master
+REM -- git 부팅 관문 자가복구 (GM 2026-07-30, 7개 부팅 배치 멈춤 사고) --
+REM    왜: 자동화가 detached HEAD 로 커밋을 쌓아왔고, 그 상태의 pull --rebase 가
+REM    미커밋 대용량 바이너리까지 autostash 로 삼키다 부팅이 멈췄다(stash 35개·287MB).
+REM    1) detached 면 master 로 되돌린다 2) autostash 를 끈다 3) 실패해도 부팅은 계속한다.
+git symbolic-ref -q HEAD >nul 2>&1
+if errorlevel 1 (
+  echo   [self-heal] detached HEAD 감지 - master 로 복귀합니다
+  git checkout -B master HEAD
+)
+set DIRTY=0
+for /f %%c in ('git status --porcelain ^| find /c /v ""') do set DIRTY=%%c
+if %DIRTY% GTR 200 (
+  echo   [warn] 미커밋 %DIRTY%개 - pull 건너뜀 ^(대용량 autostash 사고 방지^)
+) else (
+  git pull --rebase --autostash origin master
+  if errorlevel 1 echo   [warn] git pull 실패 - 부팅은 계속합니다
+)
 REM statusline self-heal (bae10026 / GM 2026-07-24): keep statusLine pointing at
 REM scripts\wellperion_hud.mjs. Idempotent, never blocks boot.
 C:\Python314\python.exe scripts\ensure_statusline.py
