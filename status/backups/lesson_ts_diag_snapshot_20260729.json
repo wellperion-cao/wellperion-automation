@@ -1,0 +1,57 @@
+{
+  "_meta": {
+    "purpose": "배9260 강습 타임스탬프/행순서 진단 — 기준선 스냅샷(재발방지: 07-25 세션이 API 응답만 보고 파일로 안 남겨 '판정 불가'가 났던 것 방지)",
+    "ship_no": 9260,
+    "generated_at": "2026-07-29T00:00:00+09:00",
+    "generated_by": "cto(시토)",
+    "method": "GAS .deploy-funnel-v2/Survey.js doGet 읽기전용 재사용 — action=cpo_lesson_ts_scan, action=cpo_diag_wsc_legacy_inversions. 쓰기·행이동·삭제 0건.",
+    "exec_url_id": "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo",
+    "pii_note": "cpo_lesson_ts_scan 원본 응답에는 성함·연락처가 포함되나, 저장소 커밋 파일에는 PII를 전량 제거(행번호·값형식·원시값만 보존)."
+  },
+  "ts_scan": {
+    "action": "cpo_lesson_ts_scan",
+    "sheets": [
+      {
+        "gid": 111889422,
+        "type": "성인강습",
+        "sheetName": "1. 성인강습",
+        "lastRow": 3558,
+        "totalRows": 3557,
+        "missingCount": 38,
+        "missing_rows_sample_no_pii": [
+          {"row": 108, "valType": "string", "raw": "2021.12.10"},
+          {"row": 3530, "valType": "Date", "raw": "2026-07-18 00:00:00"}
+        ],
+        "note": "missing_rows 전체 38건의 행번호·값형식(레거시 108~172 구간 14건 + 122~3530 구간 24건, 최신은 2026-07-18까지)은 실측 완료(GAS 응답 확인) — 커밋 파일엔 PII 제거를 위해 대표 샘플만 남기고 전량 나열은 생략."
+      },
+      {
+        "gid": 268994754,
+        "type": "유소년강습(WSC)",
+        "sheetName": "2. WSC 강습",
+        "lastRow": 4622,
+        "totalRows": 4621,
+        "missingCount": 11
+      }
+    ],
+    "total_missing": 49
+  },
+  "wsc_legacy_inversions": {
+    "action": "cpo_diag_wsc_legacy_inversions",
+    "runs": [
+      {"from": 16, "to": 1694, "scannedRows": 1679, "blankOrUnparsed": 0, "inversionCount": 0, "label": "legacy 구간(note 기재 범위와 동일)"},
+      {"from": 16, "to": 4622, "scannedRows": 4607, "blankOrUnparsed": 0, "inversionCount": 1, "label": "전체범위", "detail": [{"row": 4595, "thisDate": "2026-07-20 09:47:59", "prevRow": 4594, "prevDate": "2026-07-23 17:46:30"}]}
+    ]
+  },
+  "comparison_to_2026-07-25_session": {
+    "ts_scan_then": {"성인_missing": 38, "성인_lastRow": 3547, "WSC_missing": 11, "WSC_lastRow": 4609, "total": 49},
+    "ts_scan_now_20260729": {"성인_missing": 38, "성인_lastRow": 3558, "WSC_missing": 11, "WSC_lastRow": 4622, "total": 49},
+    "delta": "missingCount 완전 동일(49=49) · lastRow만 증가(성인+11, WSC+13 — 4일간 신규유입, 전부 정상시각 확인됨) → 결손 49건은 안정적 재현값, 최근 데이터 변화 없음",
+    "wsc_inversions_then": {"range": "16~1694", "inversionCount": 0},
+    "wsc_inversions_now": {"range": "16~1694", "inversionCount": 0},
+    "delta_note": "완전 동일 재현 — legacy 구간 실제 행순서 정상 재확인"
+  },
+  "root_cause_conclusion": {
+    "43_vs_49": "데이터 변화 아님(나: 산식/기준 문제). '43'은 도구 실측치가 아니라 07-18~20 세션이 '54(최초 총결손, 성인41+WSC13) - 4(접수ID 복구 완료건)' 손계산으로 note에 적은 값. 그 산식 자체가 54-4=50으로 43과도 안 맞아(07-25 기지적) 애초 손계산 오류. cpo_lesson_ts_scan 으로 07-25·07-29 이틀간격 재측정한 결과가 정확히 49=49로 일치하고, 그 사이 신규유입 24건(성인11+WSC13, lastRow 증가분)은 전부 정상시각이 찍혀 결손건수가 늘지도 줄지도 않았다 — 49가 안정적 실측 기준값.",
+    "243_vs_0": "데이터 변화 아님(나: 측정기준 상이). note 기술상 243은 '날짜 문자열 사전식 정렬' 문제 — zero-pad 없는 문자열을 그대로 알파벳순 비교했을 때 어색해 보이는 건수(표기상 부작용, 예: '10.19'가 문자열비교로는 '10.2'보다 작게 취급됨)로 추정. cpo_diag_wsc_legacy_inversions 는 각 셀을 실제 Date로 파싱한 뒤 인접행의 진짜 시간순서 역전만 센다 — 서로 다른 질문에 대한 답이라 243(문자열 표기상 이상)과 0(실제 행순서 정상)이 동시에 참일 수 있다. legacy 구간(16~1694) 실제 행순서는 전혀 깨지지 않았음이 이틀 간격 재현으로 재확인. 전체범위로 넓히면 1건 나오나 legacy 구간이 아니라 최근 유입 구간(행4594↔4595, 07-20/07-23)이라 legacy 결함과 무관."
+  }
+}
