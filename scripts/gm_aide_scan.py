@@ -239,11 +239,32 @@ def scan_drift(active: list) -> list:
     return caps
 
 
-def scan_long_pending(active: list) -> list:
-    """PENDING 장기 대기 = 우선순위 재확인 또는 폐기 판단 필요. 폐기=삭제(비가역)·GM 결정 → 게이트 제안."""
+#  ★정박 선언 = ⚓ (약속 L16 아이콘 표준 · '대기/정박'). next 가 이 표식으로 시작하면
+#  담당이 **의도적으로 세워 둔 배**다(재개조건이 붙어 있다). 그런 배까지 매일 '장기 미착수'로
+#  다시 잡으면 자율 스캔이 헛돈다 — 2026-07-29 실측: 최근 5회 포착이 전부 같은 2건
+#  (배101 AWS 9월 대기 · 배21 그 후속)이었고 자율 처리는 0건이었다. 포착은 매일 2건인데
+#  아무 일도 안 일어나니 자율현황 화면엔 '포착 2 · 처리 0'만 반복됐다.
+#  ▸낱말로 판정하지 않는다(설명글에 '대기'가 들어갔다고 걸면 오탐 — 같은 뿌리의 실패가
+#    자율 착수 선별기에서 이미 있었다). 사람이 일부러 붙이는 **표식 하나**만 본다.
+#  ▸숨기지 않는다: 건너뛴 수는 parked_skipped 로 로그에 남겨 '몇 척이 정박 중인지' 보이게 한다.
+_PARKED = re.compile(r"^[\s·]*⚓")
+
+
+def _is_parked(item: dict) -> bool:
+    return bool(_PARKED.match(str(item.get("next") or "")))
+
+
+def scan_long_pending(active: list, parked_out: list | None = None) -> list:
+    """PENDING 장기 대기 = 우선순위 재확인 또는 폐기 판단 필요. 폐기=삭제(비가역)·GM 결정 → 게이트 제안.
+    ★next 가 ⚓ 로 시작하는 배(정박 선언)는 건너뛴다 — 담당이 재개조건을 적어 세워 둔 것이라
+    매일 다시 잡을 이유가 없다. 건너뛴 배 id 는 parked_out 에 담아 로그에 남긴다."""
     caps = []
     for x in active:
         if x.get("status") != "PENDING":
+            continue
+        if _is_parked(x):
+            if parked_out is not None:
+                parked_out.append(_ship_id(x))
             continue
         enq = x.get("enqueued_at")
         if not enq:
@@ -1044,9 +1065,12 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
 
     # ── 포착 ──
     captures = []
+    parked_ids: list[str] = []          # ⚓ 정박 선언으로 건너뛴 배 — 숨기지 않고 로그에 남긴다
     captures += scan_drift(active)
-    captures += scan_long_pending(active)
+    captures += scan_long_pending(active, parked_out=parked_ids)
     captures += scan_stale_approval(todo_rows)
+    if parked_ids:
+        print(f"  ⚓ 정박 선언(next 가 ⚓ 로 시작) {len(parked_ids)}척은 장기미착수 포착에서 제외 — {', '.join(parked_ids[:5])}")
 
     rev = [c for c in captures if c["reversibility"] == "가역"]
     irr = [c for c in captures if c["reversibility"] == "비가역"]
@@ -1150,6 +1174,8 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
         irreversible=result["irreversible"],
         registered=result["registered"],
         skipped_dedup=skipped_dedup,
+        parked_skipped=len(parked_ids),      # ⚓ 정박 선언으로 제외한 배 수(숨기지 않고 기록)
+        parked_ids=parked_ids,
         overflow=[c["dedup_key"] for c in overflow],
         capture_keys=[c["dedup_key"] for c in captures],
         auto_exec_on=auto_on,
