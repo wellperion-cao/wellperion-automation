@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WELLPERION - 프라이빗 멤버십 스포츠클럽</title>
+<meta name="description" content="웰페리온. 회원 한 사람의 건강한 하루를 완성합니다. 서울 용산구 한남동, 9년째 이어온 프라이빗 멤버십 스포츠클럽.">
+<meta property="og:title" content="WELLPERION - A Day, Well Completed. 하루의 완성, 웰페리온">
+<meta property="og:description" content="프라이빗 멤버십 스포츠클럽. 회원 한 사람의 건강한 하루를 완성합니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0908;
+  --surface: #141210;
+  --card: #1A1816;
+  --gold: #B79F8A;
+  --gold-light: #D4C4B0;
+  --gold-dark: #8A7562;
+  --text: #E8E4DF;
+  --dim: #6B6560;
+  --white: #F5F2EF;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); overflow-x: hidden; word-break: keep-all; }
+a { color: var(--gold); text-decoration: none; }
+
+/* ── Nav ── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 20px 40px; display: flex; align-items: center; justify-content: space-between;
+  transition: background 0.4s, padding 0.4s;
+}
+.nav.scrolled { background: rgba(10,9,8,0.92); backdrop-filter: blur(12px); padding: 14px 40px; }
+.nav-logo {
+  font-family: var(--serif); font-size: 18px; letter-spacing: 6px;
+  color: var(--gold); text-transform: uppercase; font-weight: 400;
+}
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  font-size: 12px; letter-spacing: 2px; color: var(--dim);
+  text-transform: uppercase; transition: color 0.3s; font-weight: 500;
+}
+.nav-links a:hover { color: var(--gold); }
+.nav-cta {
+  font-size: 12px; letter-spacing: 1px; padding: 10px 24px;
+  border: 1px solid var(--gold); color: var(--gold); border-radius: 2px;
+  transition: all 0.3s; text-transform: uppercase;
+}
+.nav-cta:hover { background: var(--gold); color: var(--bg); }
+.nav-mobile { display: none; background: none; border: none; color: var(--gold); font-size: 24px; cursor: pointer; }
+
+/* ── Hero ── */
+.hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 120px 24px 80px;
+  background: radial-gradient(ellipse at 50% 20%, rgba(183,159,138,0.06) 0%, transparent 60%);
+  position: relative;
+}
+.hero::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 120px; background: linear-gradient(transparent, var(--bg));
+}
+.hero-overtitle {
+  font-family: var(--serif); font-size: 13px; letter-spacing: 8px;
+  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 40px;
+  font-weight: 400;
+}
+.hero-title {
+  font-family: var(--serif); font-size: clamp(42px, 9vw, 88px);
+  font-weight: 300; color: var(--white); line-height: 1.15;
+  letter-spacing: 4px; margin-bottom: 28px;
+}
+.hero-title em { font-style: italic; color: var(--gold); font-weight: 300; }
+.hero-sub {
+  font-size: 16px; color: var(--dim); max-width: 520px;
+  line-height: 1.9; letter-spacing: 1px; margin-bottom: 56px;
+}
+.hero-cta {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 18px 48px; border: 1px solid rgba(183,159,138,0.4);
+  color: var(--gold-light); font-size: 13px; letter-spacing: 3px;
+  text-transform: uppercase; transition: all 0.4s; border-radius: 2px;
+}
+.hero-cta:hover {
+  background: rgba(183,159,138,0.1); border-color: var(--gold);
+  transform: translateY(-2px); box-shadow: 0 12px 40px rgba(183,159,138,0.1);
+}
+.hero-scroll {
+  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase;
+  z-index: 2;
+}
+.hero-scroll::after {
+  content: ''; display: block; width: 1px; height: 40px;
+  background: var(--gold-dark); margin: 12px auto 0; opacity: 0.4;
+}
+
+/* ── Section Common ── */
+.section {
+  padding: 120px 40px; max-width: 1200px; margin: 0 auto;
+}
+.section-label {
+  font-family: var(--serif); font-size: 12px; letter-spacing: 6px;
+  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--serif); font-size: clamp(28px, 5vw, 48px);
+  font-weight: 300; color: var(--white); letter-spacing: 2px;
+  line-height: 1.3; margin-bottom: 20px;
+}
+.section-desc {
+  font-size: 15px; color: var(--dim); line-height: 1.9;
+  max-width: 620px; letter-spacing: 0.3px;
+}
+.divider {
+  width: 40px; height: 1px; background: var(--gold-dark);
+  margin: 32px 0; opacity: 0.5;
+}
+
+/* ── Member Preview (3관점 중 회원 관점만 축약) ── */
+.member-preview { background: var(--surface); padding: 64px 40px; text-align: center; }
+.member-preview-inner { max-width: 720px; margin: 0 auto; }
+.member-preview-tag {
+  font-family: var(--serif); font-size: 12px; letter-spacing: 5px;
+  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 18px;
+}
+.member-preview-line {
+  font-family: var(--serif); font-size: clamp(20px, 3vw, 28px);
+  font-weight: 300; color: var(--white); line-height: 1.6; letter-spacing: 0.5px;
+}
+
+/* ── About / Brand Story ── */
+.about { background: var(--bg); padding: 120px 40px; }
+.about-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.about-visual {
+  height: 500px; background: var(--card); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(183,159,138,0.08); overflow: hidden;
+}
+.about-visual img { width: 100%; height: 100%; object-fit: cover; }
+.about-stats { display: flex; gap: 40px; margin-top: 40px; flex-wrap: wrap; }
+.stat { text-align: center; }
+.stat-num { font-family: var(--serif); font-size: 36px; color: var(--gold); font-weight: 300; }
+.stat-label { font-size: 11px; color: var(--dim); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+
+/* ── Timeline (9년 궤적 압축) ── */
+.timeline { background: var(--surface); padding: 100px 40px; }
+.timeline-grid {
+  max-width: 1200px; margin: 60px auto 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+}
+.tl-item {
+  border-top: 2px solid var(--gold-dark); padding-top: 20px;
+}
+.tl-year { font-family: var(--serif); font-size: 20px; color: var(--gold); letter-spacing: 1px; margin-bottom: 8px; }
+.tl-name { font-size: 13px; color: var(--white); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+.tl-desc { font-size: 13px; color: var(--dim); line-height: 1.7; }
+
+/* ── Facilities Gallery (16가지 경험) ── */
+.facilities { background: var(--bg); }
+.gallery-grid {
+  max-width: 1200px; margin: 60px auto 0; padding: 0 40px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+}
+.g-item { position: relative; border-radius: 4px; overflow: hidden; background: var(--card); aspect-ratio: 4/3; }
+.g-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
+.g-item:hover img { transform: scale(1.06); }
+.g-item.span-2 { grid-column: span 2; }
+.g-item.span-3 { grid-column: span 3; }
+.g-caption {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+}
+.g-label-ko { font-size: 13px; color: var(--white); letter-spacing: 0.5px; }
+
+/* ── Sub-brand Architecture ── */
+.subbrand { background: var(--surface); padding: 100px 40px; }
+.subbrand-grid {
+  max-width: 1200px; margin: 60px auto 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.sb-chip {
+  background: var(--card); border: 1px solid rgba(183,159,138,0.08);
+  border-radius: 4px; padding: 24px 20px; display: flex; align-items: center; gap: 14px;
+}
+.sb-swatch { width: 10px; height: 32px; border-radius: 2px; flex-shrink: 0; }
+.sb-name { font-family: var(--serif); font-size: 16px; color: var(--white); letter-spacing: 0.5px; }
+.sb-desc { font-size: 12px; color: var(--dim); margin-top: 2px; }
+
+/* ── CTA Band ── */
+.cta-band {
+  background: var(--surface); padding: 100px 40px; text-align: center;
+  border-top: 1px solid rgba(183,159,138,0.1);
+}
+.cta-band-inner { max-width: 640px; margin: 0 auto; }
+.cta-band-tag {
+  font-family: var(--serif); font-size: 12px; letter-spacing: 5px;
+  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 18px;
+}
+.cta-band-title {
+  font-family: var(--serif); font-size: clamp(26px, 4vw, 40px);
+  font-weight: 300; color: var(--white); margin-bottom: 18px; line-height: 1.3;
+}
+.cta-band-desc { font-size: 14px; color: var(--dim); line-height: 1.8; margin-bottom: 36px; }
+.cta-band-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.cta-primary {
+  padding: 16px 36px; background: var(--gold); color: var(--bg);
+  font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; border-radius: 999px; transition: opacity 0.3s;
+}
+.cta-primary:hover { opacity: 0.85; }
+.cta-secondary {
+  padding: 16px 36px; background: transparent; color: var(--white);
+  border: 1px solid rgba(183,159,138,0.4);
+  font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; border-radius: 999px; transition: all 0.3s;
+}
+.cta-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── Info / Footer ── */
+.info-section {
+  background: var(--bg); padding: 80px 40px;
+  border-top: 1px solid rgba(183,159,138,0.06);
+}
+.info-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 60px;
+}
+.info-group h4 {
+  font-family: var(--serif); font-size: 14px; letter-spacing: 3px;
+  color: var(--gold); text-transform: uppercase; margin-bottom: 20px;
+}
+.info-group p { font-size: 14px; color: var(--dim); line-height: 1.9; }
+.info-group a { color: var(--gold-light); }
+
+.footer {
+  padding: 40px; text-align: center; font-size: 11px;
+  color: rgba(107,101,96,0.4); letter-spacing: 2px;
+  border-top: 1px solid rgba(183,159,138,0.04);
+}
+
+/* ── Animations ── */
+.fade-in {
+  opacity: 0; transform: translateY(30px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .nav { padding: 16px 20px; }
+  .nav.scrolled { padding: 12px 20px; }
+  .nav-links { display: none; }
+  .nav-mobile { display: block; }
+  .hero { padding: 100px 20px 60px; }
+  .section { padding: 80px 20px; }
+  .about { padding: 80px 20px; }
+  .about-inner { grid-template-columns: 1fr; gap: 40px; }
+  .about-visual { height: 280px; }
+  .about-stats { gap: 24px; }
+  .timeline { padding: 80px 20px; }
+  .timeline-grid { grid-template-columns: 1fr 1fr; gap: 28px 20px; }
+  .facilities { padding: 0; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); padding: 0 20px; }
+  .g-item.span-2, .g-item.span-3 { grid-column: span 2; }
+  .subbrand { padding: 80px 20px; }
+  .subbrand-grid { grid-template-columns: 1fr; }
+  .cta-band { padding: 80px 20px; }
+  .cta-band-actions { flex-direction: column; }
+  .info-inner { grid-template-columns: 1fr; gap: 40px; }
+  .info-section { padding: 60px 20px; }
+}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-logo">Wellperion</a>
+  <div class="nav-links">
+    <a href="#about">소개</a>
+    <a href="#facilities">시설</a>
+    <a href="#brands">브랜드</a>
+    <a href="http://wellperion.com/ko/inquiry/" class="nav-cta">문의하기</a>
+  </div>
+  <button class="nav-mobile" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'">&#9776;</button>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-overtitle">Premium Lifestyle Club &middot; Since 2017</div>
+  <h1 class="hero-title">A Day,<br><em>Well Completed.</em></h1>
+  <p class="hero-sub">
+    회원 한 사람의 건강한 하루를 완성합니다.<br>
+    한남동에서 시작해 9년째 이어온 프라이빗 멤버십 스포츠클럽입니다.
+  </p>
+  <a href="http://wellperion.com/ko/inquiry/" class="hero-cta">
+    투어 예약하기 <span style="font-size:16px;">&#8594;</span>
+  </a>
+  <div class="hero-scroll">Scroll</div>
+</section>
+
+<!-- Member Preview (3관점 중 회원 관점만) -->
+<section class="member-preview">
+  <div class="member-preview-inner fade-in">
+    <div class="member-preview-tag">For Members</div>
+    <div class="member-preview-line">하루의 완성도를 설계하는,<br>회원을 위한 건강 &amp; 힐링 커뮤니티.</div>
+  </div>
+</section>
+
+<!-- About / Brand Story -->
+<section class="about" id="about">
+  <div class="about-inner">
+    <div class="about-visual">
+      <img src="../../회사문서/assets/profile/02-lounge-gallery.jpg" alt="웰페리온 라운지">
+    </div>
+    <div>
+      <div class="section-label fade-in">Our Story</div>
+      <h2 class="section-title fade-in">한남동에서 시작된<br>프리미엄 라이프스타일의 새 기준</h2>
+      <div class="divider fade-in"></div>
+      <p class="section-desc fade-in">
+        웰페리온은 &lsquo;운동하러 가는 곳&rsquo;이 아니라 &lsquo;하루의 품질을 설계하는 곳&rsquo;입니다.
+        스포츠, 스파, 커뮤니티, 공간이 하나로 통합된 라이프스타일 인프라 —
+        이것이 웰페리온이 지난 9년간 지켜온 방향입니다.
+      </p>
+      <p class="section-desc fade-in" style="margin-top:16px;">
+        3,000평의 공간은 하루의 리듬에 맞춰 흐르도록 설계되었습니다.
+        도착의 라운지, 집중의 운동 코어, 회복의 스파, 머무름의 라운지 —
+        한남동이라는 동네의 결을 따라, 웰페리온은 이 장소의 일부가 되었습니다.
+      </p>
+      <div class="about-stats fade-in">
+        <div class="stat">
+          <div class="stat-num">2017</div>
+          <div class="stat-label">설립</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">3,000</div>
+          <div class="stat-label">평 · 한남동</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">1,000</div>
+          <div class="stat-label">회원 정원</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Timeline (9년 궤적 압축) -->
+<section class="timeline">
+  <div class="section" style="padding:0 40px;">
+    <div class="section-label fade-in">Journey · 2017 &rarr; Now</div>
+    <h2 class="section-title fade-in">9년의 궤적</h2>
+    <div class="divider fade-in"></div>
+    <p class="section-desc fade-in">한남동 오픈부터 지금의 AI·시스템 고도화까지 — 각 전환점이 웰페리온을 지금의 모습으로 만들었습니다.</p>
+  </div>
+  <div class="timeline-grid">
+    <div class="tl-item fade-in">
+      <div class="tl-year">2017</div>
+      <div class="tl-name">Origin</div>
+      <div class="tl-desc">한남동 웰페리온 오픈. 3,000평 프리미엄 스포츠클럽으로 출발.</div>
+    </div>
+    <div class="tl-item fade-in">
+      <div class="tl-year">2019</div>
+      <div class="tl-name">Expansion</div>
+      <div class="tl-desc">WSC 유소년 클래스 런칭. 체조 &middot; 트램폴린 &middot; 스쿼시 &middot; 골프.</div>
+    </div>
+    <div class="tl-item fade-in">
+      <div class="tl-year">2024</div>
+      <div class="tl-name">Refresh</div>
+      <div class="tl-desc">브랜드 시스템 정립. 9개 서브 브랜드 체계 완성.</div>
+    </div>
+    <div class="tl-item fade-in">
+      <div class="tl-year">2026</div>
+      <div class="tl-name">Transformation</div>
+      <div class="tl-desc">AI &middot; 시스템 기반 서비스 고도화 착수.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Facilities Gallery (16가지 경험) -->
+<section class="facilities" id="facilities">
+  <div class="section" style="padding-bottom:0;">
+    <div class="section-label fade-in">Facilities &middot; Tour</div>
+    <h2 class="section-title fade-in">한 공간, 열여섯 가지 경험</h2>
+    <div class="divider fade-in"></div>
+    <p class="section-desc fade-in">헬스 · 수영 · 골프 · 스쿼시부터 스파 · 필라테스 · 유소년 체조까지 — 하루의 모든 루틴이 한곳에 있습니다.</p>
+  </div>
+  <div class="gallery-grid">
+    <div class="g-item span-3 fade-in">
+      <img src="../../회사문서/assets/profile/01-hero-photo-layer.jpg" alt="헬스 · 트레드밀 라인">
+      <div class="g-caption"><div class="g-label-ko">헬스 · 트레드밀 라인</div></div>
+    </div>
+    <div class="g-item span-3 fade-in">
+      <img src="../../회사문서/assets/profile/20-pool.jpg" alt="수영 25m 메인 풀">
+      <div class="g-caption"><div class="g-label-ko">수영 · 25m 메인 풀</div></div>
+    </div>
+    <div class="g-item span-2 fade-in">
+      <img src="../../회사문서/assets/profile/21-golf.jpg" alt="골프 GDR 시스템">
+      <div class="g-caption"><div class="g-label-ko">골프 · 15 오토티업</div></div>
+    </div>
+    <div class="g-item span-2 fade-in">
+      <img src="../../회사문서/assets/profile/22-squash.jpg" alt="스쿼시 정식 코트">
+      <div class="g-caption"><div class="g-label-ko">스쿼시 · 국제 규격</div></div>
+    </div>
+    <div class="g-item span-2 fade-in">
+      <img src="../../회사문서/assets/profile/23-technogym.jpg" alt="테크노짐 머신 라인">
+      <div class="g-caption"><div class="g-label-ko">머신 · 풀라인업</div></div>
+    </div>
+    <div class="g-item span-3 fade-in">
+      <img src="../../회사문서/assets/profile/24-sauna.jpg" alt="사우나 및 스파">
+      <div class="g-caption"><div class="g-label-ko">사우나 · 온탕 · 스파</div></div>
+    </div>
+    <div class="g-item span-3 fade-in">
+      <img src="../../회사문서/assets/profile/25-cold-bath.jpg" alt="냉탕">
+      <div class="g-caption"><div class="g-label-ko">냉탕 · 모자이크 타일</div></div>
+    </div>
+    <div class="g-item span-2 fade-in">
+      <img src="../../회사문서/assets/profile/26-pilates-stability-chair.jpg" alt="필라테스 스튜디오">
+      <div class="g-caption"><div class="g-label-ko">필라테스 · STOTT</div></div>
+    </div>
+    <div class="g-item span-2 fade-in">
+      <img src="../../회사문서/assets/profile/27-pilates-ladder-barrel.jpg" alt="필라테스 래더 배럴">
+      <div class="g-caption"><div class="g-label-ko">필라테스 · 래더 배럴</div></div>
+    </div>
+    <div class="g-item span-2 fade-in">
+      <img src="../../회사문서/assets/profile/28-gymnastics-studio.jpg" alt="유소년 체조 스튜디오">
+      <div class="g-caption"><div class="g-label-ko">체조 · 유소년 스튜디오</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Sub-brand Architecture -->
+<section class="subbrand" id="brands">
+  <div class="section" style="padding:0 40px;">
+    <div class="section-label fade-in">Brand Architecture</div>
+    <h2 class="section-title fade-in">하나의 철학, 9개의 얼굴</h2>
+    <div class="divider fade-in"></div>
+    <p class="section-desc fade-in">웰페리온의 통합 철학 아래, 각 전문 영역은 고유한 컬러와 개성을 갖고 있습니다.</p>
+  </div>
+  <div class="subbrand-grid">
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#B79F8A;"></span><div><div class="sb-name">WELLPERION</div><div class="sb-desc">Master · Black &amp; Beige</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#B54840;"></span><div><div class="sb-name">PT</div><div class="sb-desc">Red &amp; Wine</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#3F71B0;"></span><div><div class="sb-name">Sports Club · WSC</div><div class="sb-desc">Sky Blue &amp; Blue</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#C44558;"></span><div><div class="sb-name">Pilates</div><div class="sb-desc">Red &amp; Pink</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#215768;"></span><div><div class="sb-name">Swimming</div><div class="sb-desc">Blue &amp; Navy</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#77968E;"></span><div><div class="sb-name">Squash</div><div class="sb-desc">Grey &amp; Mint</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#C2BAD6;"></span><div><div class="sb-name">Golf</div><div class="sb-desc">Purple &amp; Dark Purple</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#8F9AB6;"></span><div><div class="sb-name">Gymnastic</div><div class="sb-desc">Purple &amp; Light Purple</div></div></div>
+    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#000000; border:1px solid rgba(255,255,255,0.2);"></span><div><div class="sb-name">Brad Little&rsquo;s</div><div class="sb-desc">Star Academy · Black &amp; White</div></div></div>
+  </div>
+</section>
+
+<!-- CTA Band -->
+<section class="cta-band">
+  <div class="cta-band-inner fade-in">
+    <div class="cta-band-tag">Get in Touch</div>
+    <h2 class="cta-band-title">하루의 완성, 여기서 시작하세요.</h2>
+    <p class="cta-band-desc">투어·상담은 사전 예약제입니다. 회원 문의와, 함께할 동료(강사·팀)의 합류까지 — 아래에서 이어집니다.</p>
+    <div class="cta-band-actions">
+      <a href="http://wellperion.com/ko/inquiry/" target="_blank" class="cta-primary">투어 · 상담 예약 &rarr;</a>
+      <a href="../../chro/recruiting/index.html" target="_blank" class="cta-secondary">함께할 동료 찾기 (채용) &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- Info -->
+<section class="info-section">
+  <div class="info-inner">
+    <div class="info-group">
+      <h4>Location</h4>
+      <p>
+        서울특별시 용산구 서빙고로 413<br>
+        101동 지1층 101호 (한남동)<br><br>
+        <a href="https://map.naver.com/p/search/웰페리온" target="_blank">네이버 지도로 보기 &#8594;</a>
+      </p>
+    </div>
+    <div class="info-group">
+      <h4>Hours</h4>
+      <p>
+        평일 &nbsp;&nbsp; 06:00 - 22:30<br>
+        주말·공휴일 &nbsp;&nbsp; 08:00 - 20:00<br><br>
+        휴관: 신정 / 명절 /<br>매월 둘째·넷째 일요일
+      </p>
+    </div>
+    <div class="info-group">
+      <h4>Contact</h4>
+      <p>
+        <a href="tel:02-795-0220">02-795-0220</a><br>
+        <a href="https://instagram.com/namuk.wellperion" target="_blank">@namuk.wellperion</a><br><br>
+        <a href="http://wellperion.com/ko/inquiry/">온라인 문의하기 &#8594;</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  &copy; 2026 WELLPERION. All rights reserved. — 파생 초안(공개 전 GM 확인용)
+</footer>
+
+<script>
+// Nav scroll effect
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// Fade-in on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.15 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
