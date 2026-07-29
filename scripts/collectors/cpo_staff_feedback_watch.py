@@ -121,6 +121,15 @@ _PAREN_SPAN_RE = re.compile(r"\([^()]*\)")
 _GM_QUOTE_START_RE = re.compile(r'GM\s*(지시|판단|결정)\s*[:"“]')
 _CLOSING_TAG_RE = re.compile(r"\[[^\]\n]*(?:완료|확정|검수 통과|종결)[^\]\n]*\]")
 
+# ─── 약속-표현 게이트 (2026-07-29 GM·웰리 지적 — FB260729-132718 실사고) ───────────────────
+#   사고: 배 10399 회신에 "검토해서 반영하겠습니다"(미래형 약속)라고 적어 놓고 그 순간 배를
+#   DONE 으로 닫아버렸다 — 실제 반영은 없었는데 시트 처리상태만 '처리완료'로 바뀌어 완료로
+#   보고됐다(GM: "거짓말로 일하지마"). 회신문에 약속 표현이 있으면 그 약속을 추적할 '다른'
+#   배(후속)가 있어야 한다 — 없으면 이 회신은 내보내지 않는다(관문 한 곳, 새 감시기 신설 없음).
+#   "-겠습니다"는 한국어에서 미래·의지형 어미다("반영했습니다"류 완료형과 뚜렷이 구분되는
+#   문법 표지라 오탐이 적다) — 이미 끝난 일을 적을 때는 쓰이지 않는다.
+_PROMISE_RE = re.compile(r"겠습니다")
+
 STAFF_REPLY_ALREADY_DONE = "처리완료"
 
 # ── 3단계 상태 노출(2026-07-28 웰리 위임) ───────────────────────────────────
@@ -262,6 +271,22 @@ def build_staff_reply(ship: dict, today: str) -> str:
     return f"[{today} 처리완료] {summary}"
 
 
+def _has_tracked_followup(feedback_id: str, queue: list, archive: list, exclude_task_id) -> bool:
+    """이 접수ID의 약속을 추적하는 '다른' 배가 있는지 본다(닫히는 배 자기 자신은 제외).
+    feedback_id 필드로 연결되거나, note·title 안에 그 접수ID 문자열이 있으면 인정한다
+    (_existing_ids 와 같은 관용 — 옛 배는 feedback_id 필드가 없을 수 있다)."""
+    if not feedback_id:
+        return False
+    for it in list(queue) + list(archive):
+        if not isinstance(it, dict) or it.get("task_id") == exclude_task_id:
+            continue
+        if str(it.get("feedback_id") or "").strip() == feedback_id:
+            return True
+        if feedback_id in (str(it.get("note") or "") + " " + str(it.get("title") or "")):
+            return True
+    return False
+
+
 def sync_feedback_status(rows: list, queue: list, archive: list, today: str):
     """접수ID로 배와 시트를 대조 — 배 status(PENDING→접수됨/IN_PROGRESS→확인중/DONE→처리완료)에
     맞는 단계가 시트에 아직 안 쓰여 있으면 그 단계 하나만 조립한다(단계를 건너뛰지 않음 —
@@ -300,6 +325,13 @@ def sync_feedback_status(rows: list, queue: list, archive: list, today: str):
             continue  # 멱등 — 이미 같은 단계거나 더 앞선 단계(사람이 직접 적은 값 포함)
 
         memo = _stage_memo(target_stage, ship, today)
+        # 약속-표현 게이트 — DONE 회신에 미래형 약속("...겠습니다")이 있는데 그 약속을
+        # 추적하는 다른 배가 없으면 내보내지 않는다(배10399 재발방지 · GM 2026-07-29).
+        if target_stage == STAFF_STATUS_DONE and _PROMISE_RE.search(memo) \
+                and not _has_tracked_followup(fid, queue, archive, task_id):
+            print(f"[blocked] {fid} ({task_id}) — 회신에 약속 표현이 있는데 후속 배가 없습니다. "
+                  f"회신을 보내지 않습니다: {memo[:100]}")
+            continue
         updates.append({
             "id": fid, "status": target_stage, "memo": memo,
             "ship_title": ship.get("title"), "task_id": task_id,
