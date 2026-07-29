@@ -287,6 +287,46 @@ def _has_tracked_followup(feedback_id: str, queue: list, archive: list, exclude_
     return False
 
 
+def detect_done_reopen_drift(rows: list, queue: list, archive: list) -> list:
+    """배가 DONE 이 아닌데(재오픈 등) 실무진 시트는 이미 '처리완료' 단계인 어긋남을 찾는다.
+    (2026-07-28 웰리 지시 ③ 구조 차단 — 배10205·10207 실사고: 배는 IN_PROGRESS 인데 시트엔
+    '처리완료'가 찍혀 있었다. sync_feedback_status 는 target_stage=None(PENDING/IN_PROGRESS)
+    이면 그 배를 곧장 건너뛰어(위 316행) 이 어긋남을 원래 보지 못했다 — 그 사각을 여기서 메운다.
+    자동으로 시트를 되돌리지 않는다: 되돌림은 실제로 안 고쳐졌을 때만 맞는데 그 판단은 매번
+    라이브 재확인이 필요하다(약속 L03) — 잘못 자동 되돌리면 이미 고쳐진 건까지 실무진에게
+    '확인중'으로 되비쳐 오히려 신뢰를 깎는다. 여기서는 어긋남을 놓치지 않고 표면화만 한다."""
+    by_fid = {}
+    for r in rows:
+        fid = str(r.get("접수ID") or "").strip()
+        if fid:
+            by_fid[fid] = r
+
+    # 같은 접수ID로 배가 여러 번(재오픈 등) 있을 수 있다 — 활성 큐를 아카이브보다 우선한다.
+    latest_by_fid = {}
+    for ship in list(archive) + list(queue):  # queue를 나중에 덮어써 활성 큐 우선
+        if not isinstance(ship, dict):
+            continue
+        fid = str(ship.get("feedback_id") or "").strip()
+        if fid:
+            latest_by_fid[fid] = ship
+
+    drift = []
+    for fid, ship in latest_by_fid.items():
+        row = by_fid.get(fid)
+        if row is None:
+            continue
+        current_status = str(row.get("처리상태") or "").strip()
+        if _stage_rank(current_status) < _stage_rank(STAFF_STATUS_DONE):
+            continue  # 시트가 아직 처리완료 단계가 아니면 이 감시 대상 아님
+        if str(ship.get("status") or "") == "DONE":
+            continue  # 정상 — 배도 DONE
+        drift.append({
+            "id": fid, "task_id": ship.get("task_id"),
+            "ship_status": ship.get("status"), "sheet_status": current_status,
+        })
+    return drift
+
+
 def sync_feedback_status(rows: list, queue: list, archive: list, today: str):
     """접수ID로 배와 시트를 대조 — 배 status(PENDING→접수됨/IN_PROGRESS→확인중/DONE→처리완료)에
     맞는 단계가 시트에 아직 안 쓰여 있으면 그 단계 하나만 조립한다(단계를 건너뛰지 않음 —
@@ -477,6 +517,11 @@ def main() -> int:
         for u in sync_updates:
             print(f"  ~ {u['id']} ({u['task_id']}) → 처리상태='{u['status']}'")
             print(f"    처리메모: {u['memo']}")
+
+        drift = detect_done_reopen_drift(rows, q, archive)
+        print(f"\n[재발방지 어긋남] 배 DONE 아닌데 시트는 이미 처리완료 {len(drift)}건")
+        for d in drift:
+            print(f"  ! {d['id']} ({d['task_id']}) — 배 status={d['ship_status']} / 시트='{d['sheet_status']}'")
         return 0
 
     made = []
@@ -514,15 +559,22 @@ def main() -> int:
         else:
             print(f"[warn] staff_feedback_update 실패 — {reply_err} (다음 회차 재시도)")
 
+    drift = detect_done_reopen_drift(rows, queue_now, archive)
+    for d in drift:
+        print(f"[drift] {d['id']} ({d['task_id']}) — 배 status={d['ship_status']} 인데 시트는 "
+              f"이미 '{d['sheet_status']}' 입니다. 실제로 다시 문제가 있는지 재확인하세요.")
+
     record_heartbeat(
         MODULE_ID,
         detail=(
             f"피드백 {len(rows)}건 · 미처리 {len(pending)}건 · 이번에 배로 올린 것 {len(made)}건"
             f" · 회신 대상 {len(sync_updates)}건 · 회신 완료 {len(replied)}건"
+            f" · 재발방지 어긋남 {len(drift)}건"
         ),
         extra={
             "전체": len(rows), "미처리": len(pending), "신규_배": len(made),
             "회신_대상": len(sync_updates), "회신_완료": len(replied),
+            "재발방지_어긋남": len(drift),
         },
     )
 
