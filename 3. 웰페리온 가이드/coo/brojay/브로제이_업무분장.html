@@ -14,13 +14,14 @@
     --gold:#e8b84b; --green:#5fbf82; --blue:#6fb4e8; --rose:#dd7f6e;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.6; font-size:15px; -webkit-font-smoothing:antialiased; padding:20px clamp(16px,1.6vw,32px) 48px;}
-  .wrap{max-width:none; margin:0;}
+  html, body{overflow-x:hidden;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; color:var(--text); background:var(--bg); line-height:1.6; font-size:15px; -webkit-font-smoothing:antialiased; padding:20px clamp(16px,1.6vw,32px) 48px; width:100%;}
+  .wrap{max-width:none; margin:0; width:100%;}
   header.page-head{margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--border-strong); display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px;}
   header.page-head .htitles{flex:1; min-width:200px; display:flex; flex-direction:column; gap:3px;}
-  header.page-head h1{font-size:20px; font-weight:800; letter-spacing:-0.02em;}
-  header.page-head .slogan{font-size:11px; color:var(--dim);}
-  header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:5px 12px; white-space:nowrap;}
+  header.page-head h1{font-size:26px; font-weight:800; letter-spacing:-0.02em;}
+  header.page-head .slogan{font-size:13px; color:var(--dim);}
+  header.page-head .back{font-size:13.5px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:6px 14px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
   /* ── 🤝 브로제이 업무분장 체크보드 (배214·2026-07-29 GM 지시 → 오후 별도 페이지 분리 → 저녁 실무진 편집기능 추가) ──
@@ -29,68 +30,69 @@
        2026-07-29 저녁: 실무진 추가·수정·이동·숨김 가능하게 확장. 항목 상태를 bool→object로 승격
        (레거시 bool 값도 그대로 읽힘 — 하위호환). GM 원본 텍스트·구성은 코드(BROJ_DATA)에 그대로
        남아 있어 "삭제"돼도 데이터가 사라지지 않는다(숨김=hidden 플래그일 뿐). ── */
-  .broj-p1box{border:1px solid var(--rose); background:rgba(221,127,110,0.10); border-radius:10px; padding:10px 14px; margin:6px 0 12px;}
-  .broj-p1head{font-size:12.5px; font-weight:800; color:var(--rose); margin-bottom:6px;}
-  .broj-p1list{list-style:none; display:flex; flex-direction:column; gap:4px;}
-  .broj-p1list li label{display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--text); cursor:pointer;}
-  .broj-p1list li label input{margin-top:2px; flex-shrink:0; cursor:pointer;}
+  .broj-p1box{border:1px solid var(--rose); background:rgba(221,127,110,0.10); border-radius:10px; padding:12px 16px; margin:8px 0 14px;}
+  .broj-p1head{font-size:14.5px; font-weight:800; color:var(--rose); margin-bottom:7px;}
+  .broj-p1list{list-style:none; display:flex; flex-direction:column; gap:5px;}
+  .broj-p1list li label{display:flex; gap:9px; align-items:flex-start; font-size:14px; color:var(--text); cursor:pointer;}
+  .broj-p1list li label input{margin-top:3px; width:19px; height:19px; flex-shrink:0; cursor:pointer;}
   .broj-p1list li.done label{color:var(--dim); text-decoration:line-through;}
-  .broj-progress-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
-  .broj-progress-chip{flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:9px; padding:8px 11px; display:flex; flex-direction:column; gap:3px;}
-  .broj-progress-chip b{font-size:12px; color:var(--text);}
-  .broj-progress-chip span{font-size:14px; font-weight:800; color:var(--text-soft); font-variant-numeric:tabular-nums;}
-  .broj-progress-chip i{display:block; height:4px; border-radius:3px; background:var(--dc,var(--accent)); margin-top:2px;}
-  .broj-role-table{width:100%; border-collapse:collapse; margin:6px 0 12px; font-size:12px;}
-  .broj-role-table th, .broj-role-table td{border:1px solid var(--border); padding:6px 9px; text-align:left;}
+  .broj-progress-row{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px;}
+  .broj-progress-chip{flex:1; min-width:170px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:9px; padding:9px 13px; display:flex; flex-direction:column; gap:4px;}
+  .broj-progress-chip b{font-size:13.5px; color:var(--text);}
+  .broj-progress-chip span{font-size:16px; font-weight:800; color:var(--text-soft); font-variant-numeric:tabular-nums;}
+  .broj-progress-chip i{display:block; height:5px; border-radius:3px; background:var(--dc,var(--accent)); margin-top:2px;}
+  .broj-role-table{width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:13.5px;}
+  .broj-role-table th, .broj-role-table td{border:1px solid var(--border); padding:8px 11px; text-align:left;}
   .broj-role-table th{background:var(--surface); color:var(--text-soft); font-weight:700;}
-  #broj-depts{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr)); gap:12px; align-items:start;}
-  .broj-dept{margin-bottom:0 !important; border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:10px; padding:10px 13px; margin-bottom:10px; background:var(--surface);}
-  .broj-dept h4{font-size:13px; font-weight:800; color:var(--text); display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; margin-bottom:4px;}
-  .broj-dept-sub{font-size:11px; font-weight:400; color:var(--dim);}
-  .broj-dept-count{margin-left:auto; font-size:12px; font-weight:800; color:var(--accent-soft); font-variant-numeric:tabular-nums;}
-  .broj-group{margin-top:6px;}
-  .broj-group-title{font-size:11.5px; font-weight:700; color:var(--dim); margin:8px 0 3px;}
-  .broj-group-note{font-size:11px; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:5px 9px; margin-bottom:5px; line-height:1.5;}
+  #broj-depts{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr)); gap:14px; align-items:start;}
+  .broj-dept{border:1px solid var(--border); border-left:3px solid var(--dc,var(--accent)); border-radius:10px; padding:13px 16px; background:var(--surface);}
+  .broj-dept h4{font-size:16px; font-weight:800; color:var(--text); display:flex; flex-wrap:wrap; align-items:baseline; gap:9px; margin-bottom:5px;}
+  .broj-dept-sub{font-size:12.5px; font-weight:400; color:var(--dim);}
+  .broj-dept-count{margin-left:auto; font-size:14px; font-weight:800; color:var(--accent-soft); font-variant-numeric:tabular-nums;}
+  .broj-group{margin-top:8px;}
+  .broj-group-title{font-size:13px; font-weight:700; color:var(--dim); margin:10px 0 4px;}
+  .broj-group-note{font-size:12.5px; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:7px 11px; margin-bottom:6px; line-height:1.55;}
   .broj-group-note a{color:var(--accent-soft); font-weight:700;}
   .broj-list{list-style:none; display:flex; flex-direction:column; gap:2px;}
-  .broj-list li{padding:3px 0; border-bottom:1px dotted var(--border);}
+  .broj-list li{padding:4px 0; border-bottom:1px dotted var(--border);}
   .broj-list li:last-child{border-bottom:none;}
-  .broj-list li label{display:flex; gap:8px; align-items:flex-start; font-size:12px; color:var(--text-soft); cursor:pointer;}
-  .broj-list li label input{margin-top:2px; flex-shrink:0; cursor:pointer;}
+  .broj-list li label{display:flex; gap:9px; align-items:flex-start; font-size:14px; color:var(--text-soft); cursor:pointer;}
+  .broj-list li label input{margin-top:3px; width:18px; height:18px; flex-shrink:0; cursor:pointer;}
   .broj-list li.done label{color:var(--dim); text-decoration:line-through;}
   .broj-list li.hot label{color:var(--rose);}
-  .broj-cross-title{font-size:11.5px; font-weight:700; color:var(--dim); margin:10px 0 4px;}
-  .footnote{font-size:11px; color:var(--dim); margin-top:18px; padding-top:10px; border-top:1px solid var(--border); line-height:1.7;}
+  .broj-cross-title{font-size:13px; font-weight:700; color:var(--dim); margin:12px 0 5px;}
+  .footnote{font-size:12.5px; color:var(--dim); margin-top:20px; padding-top:12px; border-top:1px solid var(--border); line-height:1.75;}
 
   /* ── 실무진 편집 기능(추가·수정·숨김·복원 · GM 지시 2026-07-29 저녁) ── */
-  .broj-item-row{display:flex; align-items:center; gap:7px;}
-  .broj-item-row input[type=checkbox]{flex-shrink:0; width:17px; height:17px; cursor:pointer;}
-  .broj-item-text{flex:1; font-size:12px; color:var(--text-soft); line-height:1.5; word-break:break-word;}
+  .broj-item-row{display:flex; align-items:center; gap:8px;}
+  .broj-item-row input[type=checkbox]{flex-shrink:0; width:19px; height:19px; cursor:pointer;}
+  .broj-item-text{flex:1; font-size:14.5px; color:var(--text-soft); line-height:1.55; word-break:break-word;}
   .broj-list li.done .broj-item-text{color:var(--dim); text-decoration:line-through;}
   .broj-list li.hot .broj-item-text{color:var(--rose);}
-  .broj-item-btns{display:flex; gap:2px; flex-shrink:0;}
-  .broj-mini-btn{background:none; border:1px solid var(--border); border-radius:7px; color:var(--dim); font-size:12.5px; cursor:pointer; min-width:30px; min-height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .broj-item-btns{display:flex; gap:3px; flex-shrink:0;}
+  .broj-mini-btn{background:none; border:1px solid var(--border); border-radius:7px; color:var(--dim); font-size:14px; cursor:pointer; min-width:34px; min-height:34px; display:inline-flex; align-items:center; justify-content:center; padding:0;}
   .broj-mini-btn:hover{background:var(--paper); color:var(--text); border-color:var(--border-strong);}
-  .broj-item-meta{font-size:10px; color:var(--dim); margin:2px 0 4px 24px;}
-  .broj-badge-staff{font-size:11px; flex-shrink:0;}
-  .broj-edit-input{width:100%; font:inherit; font-size:12px; padding:7px 9px; border-radius:7px; border:1px solid var(--accent-soft); background:var(--paper); color:var(--text);}
-  .broj-group-staff{border-top:1px dashed var(--border); padding-top:7px; margin-top:9px;}
-  .broj-add-row{display:flex; gap:6px; margin-top:7px;}
-  .broj-add-input{flex:1; min-height:38px; padding:7px 11px; border-radius:8px; border:1px solid var(--border); background:var(--paper); color:var(--text); font-size:12.5px; font-family:inherit;}
+  .broj-item-meta{font-size:11.5px; color:var(--dim); margin:2px 0 5px 27px;}
+  .broj-badge-staff{font-size:13px; flex-shrink:0;}
+  .broj-edit-input{width:100%; font:inherit; font-size:14.5px; padding:8px 10px; border-radius:7px; border:1px solid var(--accent-soft); background:var(--paper); color:var(--text);}
+  .broj-group-staff{border-top:1px dashed var(--border); padding-top:8px; margin-top:10px;}
+  .broj-add-row{display:flex; gap:7px; margin-top:8px;}
+  .broj-add-input{flex:1; min-height:42px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--paper); color:var(--text); font-size:14px; font-family:inherit;}
   .broj-add-input::placeholder{color:var(--dim);}
-  .broj-add-btn{min-height:38px; padding:0 15px; border-radius:8px; border:1px solid var(--accent-soft); background:var(--surface); color:var(--accent-soft); font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap; font-family:inherit;}
+  .broj-add-btn{min-height:42px; padding:0 17px; border-radius:8px; border:1px solid var(--accent-soft); background:var(--surface); color:var(--accent-soft); font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap; font-family:inherit;}
   .broj-add-btn:hover{background:var(--paper);}
-  .broj-hidden-block{margin-top:9px; padding-top:7px; border-top:1px dashed var(--border);}
-  .broj-hidden-toggle{background:none; border:none; color:var(--dim); font-size:11px; cursor:pointer; padding:5px 2px; font-family:inherit; min-height:30px;}
+  .broj-hidden-block{margin-top:10px; padding-top:8px; border-top:1px dashed var(--border);}
+  .broj-hidden-toggle{background:none; border:none; color:var(--dim); font-size:12.5px; cursor:pointer; padding:6px 2px; font-family:inherit; min-height:34px;}
   .broj-hidden-toggle:hover{color:var(--text-soft);}
   .broj-hidden-list{margin-top:4px;}
-  .broj-hidden-list li{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; opacity:0.75; border-bottom:1px dotted var(--border);}
-  .broj-hidden-list .broj-item-text{text-decoration:line-through; font-size:11.5px; color:var(--dim); flex:1;}
+  .broj-hidden-list li{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; opacity:0.75; border-bottom:1px dotted var(--border);}
+  .broj-hidden-list .broj-item-text{text-decoration:line-through; font-size:13px; color:var(--dim); flex:1;}
   @media (max-width:420px){
-    .broj-mini-btn{min-width:34px; min-height:34px; font-size:14px;}
-    .broj-add-btn{min-height:42px; padding:0 16px;}
-    .broj-add-input{min-height:42px;}
-    .broj-item-row{gap:8px;}
+    #broj-depts{grid-template-columns:1fr;}
+    .broj-mini-btn{min-width:38px; min-height:38px; font-size:15px;}
+    .broj-add-btn{min-height:44px; padding:0 18px;}
+    .broj-add-input{min-height:44px;}
+    .broj-item-row{gap:9px;}
   }
 </style>
 </head>
