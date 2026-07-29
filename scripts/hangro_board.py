@@ -280,8 +280,29 @@ def fetch_gas_items() -> list[dict]:
     return items
 
 
+def _queue_row_to_item(q: dict) -> dict | None:
+    """_queue.json / _queue_archive.json 한 줄 → 보드 항목. 대상 아니면 None."""
+    st = str(q.get("status", ""))
+    if "폐기" in st:
+        return None
+    if st.upper() not in {"PENDING", "IN_PROGRESS", "ON_HOLD", "DONE", "완료", "진행중", "대기"}:
+        return None
+    title = str(q.get("title", "")).strip()
+    if not title:
+        return None
+    return _build_item(q, st, title)
+
+
 def fetch_queue_items() -> list[dict]:
-    """_queue.json → PENDING·IN_PROGRESS AI 배만 (DONE·폐기 제외)."""
+    """_queue.json → PENDING·IN_PROGRESS AI 배 + 보관함의 '오늘 입항' 배.
+
+    ★보관함을 같이 보는 이유(2026-07-29 시토 · 배10369): 완료한 배는 곧
+      status/_queue_archive.json 으로 옮겨진다. 살아있는 큐만 보면 **오늘 끝낸 배가
+      보관되는 순간 사라져** 🏁 칸이 사실상 항상 0이 된다 — 일한 사람에게 '오늘 한 게 없다'고
+      말하는 거짓 0이다(아침 자가점검 #7 '0 위장'과 같은 부류). 상태줄(wellperion_hud.mjs)은
+      같은 이유로 이미 보관함을 함께 본다 — 여기만 안 보고 있었다.
+      비용 방어: 보관함 파일이 **오늘 바뀌었을 때만** 연다(오늘 보관된 게 없으면 열 이유가 없다).
+    """
     if not QUEUE_PATH.exists():
         return []
     try:
@@ -289,23 +310,43 @@ def fetch_queue_items() -> list[dict]:
     except Exception as e:
         print(f"[WARN] _queue.json 읽기 실패: {e}", file=sys.stderr)
         return []
-    items = []
-    for q in rows:
-        st = str(q.get("status", ""))
-        if "폐기" in st:
-            continue
-        if st.upper() not in {"PENDING", "IN_PROGRESS", "ON_HOLD", "DONE", "완료", "진행중", "대기"}:
-            continue
-        title = str(q.get("title", "")).strip()
-        if not title:
-            continue
-        items.append({
+    items = [it for it in (_queue_row_to_item(q) for q in rows if isinstance(q, dict)) if it]
+
+    today = dt.datetime.now().strftime("%Y-%m-%d")
+    arc_path = _REPO / "status" / "_queue_archive.json"
+    try:
+        if arc_path.exists() and dt.datetime.fromtimestamp(
+                arc_path.stat().st_mtime).strftime("%Y-%m-%d") == today:
+            seen = {str(q.get("task_id", "")) for q in rows if isinstance(q, dict)}
+            for q in json.loads(arc_path.read_text(encoding="utf-8")):
+                if not isinstance(q, dict) or str(q.get("task_id", "")) in seen:
+                    continue
+                if str(q.get("status", "")).upper() not in {"DONE", "완료"}:
+                    continue
+                stamp = str(q.get("processed_at") or q.get("done_at") or q.get("updated_at") or "")
+                if not stamp.startswith(today):
+                    continue
+                it = _queue_row_to_item(q)
+                if it:
+                    items.append(it)
+    except Exception as e:   # 보관함이 없거나 깨져도 살아있는 큐 기준으로는 정상 동작한다
+        print(f"[WARN] _queue_archive.json 읽기 건너뜀: {e}", file=sys.stderr)
+
+    return items
+
+
+def _build_item(q: dict, st: str, title: str) -> dict:
+    """큐 한 줄 → 보드 항목(칸 매핑 단일 지점 — 큐·보관함이 같은 잣대를 쓰게)."""
+    return {
             "id":       str(q.get("task_id", "")),
             "title":    title,
             "owner":    str(q.get("clevel", "")).upper(),
             "status":   st,
             "end_date": str(q.get("deadline") or ""),
-            "mod_date": str(q.get("processed_at") or ""),
+            # 완료일 — processed_at 이 정확하지만 배마다 칸이 제각각이라 done_at·updated_at 까지
+            # 차례로 본다(2026-07-29 배10369). 안 그러면 완료 도장은 찍혔는데 날짜 칸이 비어
+            # 🏁 섹션에서 조용히 빠진다. 상태줄이 이미 쓰는 것과 같은 우선순위다.
+            "mod_date": str(q.get("processed_at") or q.get("done_at") or q.get("updated_at") or ""),
             "priority": str(q.get("priority", "NORMAL")),
             "needs_gm_appr": False,
             "terminal": bool(q.get("terminal", False)),
@@ -325,8 +366,7 @@ def fetch_queue_items() -> list[dict]:
             # _owner_label만 이 값을 우선 표시(없으면 ship_no 폴백).
             "short_no": q.get("short_no", ""),
             "source":   "queue",
-        })
-    return items
+    }
 
 
 # ── 섹션 분류 ──────────────────────────────────────────────────────────────
@@ -645,6 +685,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="항로 보드 생성기")
     parser.add_argument("--json", action="store_true", help="JSON도 출력")
     parser.add_argument("--dry-run", action="store_true", help="네트워크 없이 _queue만")
+    parser.add_argument(
+        "--role", default="",
+        help="본인 역할 배만 잘라서 출력 (ceo·cmo·coo·cpo·cto). 부팅 슬라이스 — "
+             "원본은 한 벌 그대로, 읽을 때만 자른다(배10369).",
+    )
     args = parser.parse_args()
 
     if args.dry_run:
@@ -654,7 +699,25 @@ def main() -> None:
 
     queue_items = fetch_queue_items()
 
+    # ── 역할 슬라이스 (배10369 · 2026-07-29 시토) ────────────────────────────
+    #  왜: 부팅 (4)단계가 status/_queue.json 을 통째로 읽어 창 하나당 20만 자를 먹었다.
+    #  GM 은 늘 셸 5개로 일하므로 실제로는 그 5배다(웰리 실측 101만 자).
+    #  ★파일을 역할별로 쪼개지 않는다 — 진실이 7벌이 되면 약속 L01 위반이다.
+    #    원본(_queue.json)은 한 벌 그대로 두고 **읽는 순간에만** 잘라 준다.
+    #  ★새 스크립트를 만들지 않는다(약속 L21) — 항로를 뽑는 단일 지점이 이미 여기라 여기에 흡수.
+    if args.role:
+        target = _nick(args.role.strip())
+        gas_items = [it for it in gas_items if _nick(str(it.get("owner", ""))) == target]
+        queue_items = [it for it in queue_items if _nick(str(it.get("owner", ""))) == target]
+
     board_text, secs = build_board(gas_items, queue_items)
+    if args.role:
+        # 정보 손실 0 — 잘라 냈다는 사실과 전체를 어디서 보는지 같이 알린다.
+        board_text += (
+            f"\n※ {target} 배만 잘라 낸 화면입니다(부팅 슬라이스). "
+            "전 역할 항로는 `python scripts/hangro_board.py --dry-run`, "
+            "특정 배의 전체 기록은 그 배 하나만 status/_queue.json 에서 찾아 읽으세요."
+        )
     print(board_text)
 
     if args.json:

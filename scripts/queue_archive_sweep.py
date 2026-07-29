@@ -109,16 +109,34 @@ def _sweep():
 
     active_keep = []
     to_archive = []
+    stamped = 0          # 날짜 칸을 채워 준 입항 배 수(아래 저장 여부 판단에 쓴다)
     for it in queue:
         if not _is_terminal(it):
             active_keep.append(it)            # PENDING / IN_PROGRESS / 기타
             continue
+        # ★입항 도장은 찍혔는데 날짜 칸이 빈 배는 '오늘 막 끝난 배'다 — 여기서 날짜를 찍어 준다
+        #   (2026-07-29 시토 · 배10369). 그 전엔 날짜가 없으면 곧장 '지난 입항'으로 분류돼
+        #   끝낸 그 순간 보관함으로 사라졌고, G1·부팅 항로의 🏁 칸은 늘 0으로 보였다
+        #   — 일한 사람에게 '오늘 한 게 없다'고 말하는 거짓 0(아침 자가점검 #7).
+        #   배를 닫는 곳이 여러 군데라 닫는 쪽마다 도장을 요구하는 대신, 모든 완료가 반드시
+        #   지나가는 이 관문 한 곳에서 채운다(약속 L21 — 새 장치 0).
+        if isinstance(it, dict) and not _processed_day(it):
+            stamp = str(it.get("done_at") or it.get("updated_at") or "")[:10]
+            it["processed_at"] = stamp if stamp else today
+            stamped += 1
         if _processed_day(it) == today:
             active_keep.append(it)            # 오늘 입항 — G1 '오늘' 칸 보존
         else:
-            to_archive.append(it)             # 지난 terminal (processed_at 없는 것 포함)
+            to_archive.append(it)             # 지난 terminal
 
     if not to_archive:
+        # 옮길 건 없어도 **날짜를 채워 준 배가 있으면 저장한다** — 저장을 건너뛰면 방금 찍은
+        # 도장이 사라져 그 배는 다음 회차에도 똑같이 날짜 없는 상태로 돌아온다(위 거짓 0 재발).
+        if stamped:
+            _dump_atomic(qpath, active_keep)
+            _git_add(_root(), [QUEUE_REL])
+            sys.stderr.write(f"[queue-sweep] 입항 날짜 채움 {stamped}건 (옮길 지난 입항 0건)\n")
+            return
         sys.stderr.write("[queue-sweep] no-op (옮길 지난 입항 0건)\n")
         return
 
