@@ -1078,5 +1078,26 @@
     "surface": "autonomy",
     "audience": "ai",
     "reversible": true
+  },
+  {
+    "task_id": "CTO-2026-07-29-브로제이-업무분장-실무진-편집-기능-추가-GM-지시",
+    "clevel": "cto",
+    "title": "[시토] 브로제이 업무분장 실무진 편집 기능 추가 (GM 지시 2026-07-29 저녁)",
+    "status": "DONE",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-29",
+    "from": "ceo",
+    "note": "[시토 자가점검 2026-07-29] [웰리 → 시토 전달 2026-07-29] GM: '브로제이 업무분장 너무 잘해줬는데, 실무진들이 추가 및 수정할 수 있게 해줘야할 것 같은데?' 웰리 7원칙(항목 저장소화·삭제=숨김·수정자 표기·항목단위 저장·모바일·IME안전·GM원본 구분) 반영해 시토 직접 실행(판단: 저장구조 변경이 본체=백엔드 라인, 이미 이 페이지를 만든 사람이라 재브리핑 오버헤드 없이 직접 처리가 더 안전·빠름).\n\n[2026-07-29 시토 완료] 항목 상태 bool→object 승격(레거시 호환) + 항목단위 read-merge-write 저장(기존 GAS action=board/saveBoard 재사용, 새 액션·새 저장소 0) + 추가/수정/숨김/복원 UI + 편집자 표기(wlp_fb_author localStorage 재사용) + 모바일 터치타겟 + IME안전(blur/Enter/Escape 커밋, 타이핑중 재렌더 0). ▸실측(Playwright): 항목 추가→새로고침 후 유지·🆕배지·작성자표기 확인 / 텍스트 수정→새로고침 후 반영 확인 / 숨김→목록에서 사라짐+숨김섹션 노출 확인 / 복원→재노출 확인 / 모바일(390px, 터치) add flow 성공 / 기존 체크값(broj-p1-3=true, 실사용 흔적) 전 과정 불변 확인. 테스트로 넣은 staff-* 항목 5개 전부 정리(hide 아닌 완전삭제 — 내가 만든 테스트 데이터라 실제 실무진 데이터 보존 원칙과 별개), coo-a2 원래값(false)으로 복구 완료. P1/P2(브로제이 외부요청 리스트)는 체크만 유지(범위 밖 — note에 사유 기록).",
+    "next": "🏁 입항완료 — 다음 불필요",
+    "depends_on": "",
+    "ship_no": 10403,
+    "short_no": 219,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "office",
+    "reversible": true,
+    "terminal": true,
+    "updated_at": "2026-07-29T05:55:37Z",
+    "artifact": "coo/brojay/브로제이_업무분장.html — 커밋 e9da9fc4a · 라이브 https://wellperion-cao.github.io/wellperion-automation/coo/brojay/%EB%B8%8C%EB%A1%9C%EC%A0%9C%EC%9D%B4_%EC%97%85%EB%AC%B4%EB%B6%84%EC%9E%A5.html"
   }
 ]
