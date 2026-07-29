@@ -120,6 +120,14 @@
   .c-ns{min-width:150px;}
   .r-note{font-size:11.5px; color:var(--dim); line-height:1.5; white-space:pre-wrap; margin-top:4px;}
   .c-note{max-width:280px;}
+  /* 📋 핵심과제 칸 압축(2026-07-29 GM 지적 "읽지도 못하겠네") — 칸에는 결론(제목·담당·목표치·상태·진척%,
+     이미 별도 칼럼)만 보이게 하고, 근거·정정 경위 같은 긴 글은 접기로 내린다(삭제 아님·약속 L12⑤). */
+  .r-note-fold{margin-top:4px;}
+  .r-note-fold summary{font-size:11px; color:var(--accent-soft); cursor:pointer; list-style:none;}
+  .r-note-fold summary::-webkit-details-marker{display:none;}
+  .r-note-fold summary::before{content:'▸ '; }
+  .r-note-fold[open] summary::before{content:'▾ '; }
+  .r-note-fold .r-note{margin-top:6px; padding-left:10px; border-left:2px solid var(--border);}
 
   .chip{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap;}
   .chip.own{color:var(--accent-soft); background:var(--surface); border:1px solid var(--border-strong);}
@@ -1757,7 +1765,9 @@
       noteCell = '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
         'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.progress_note || '') + '</div>';
     } else {
-      noteCell = o.progress_note ? '<div class="r-note">' + esc(o.progress_note) + '</div>' : '';
+      // 📋 칸 압축(2026-07-29 GM 지적) — 결론(제목·담당·목표치·상태·진척%)은 이미 별도 칼럼에 있으니
+      // 근거·정정 경위 긴 글은 기본 접힘으로 내린다. 정보 손실 0(삭제 아님·L12⑤) — 펼치면 그대로 보인다.
+      noteCell = o.progress_note ? '<details class="r-note-fold"><summary>진행 근거·경위</summary><div class="r-note">' + esc(o.progress_note) + '</div></details>' : '';
     }
 
     var ownCell = '<span class="chip own">' + esc(nickOf(o.owner)) + '</span>' +
