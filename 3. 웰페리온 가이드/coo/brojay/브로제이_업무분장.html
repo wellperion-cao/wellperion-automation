@@ -94,6 +94,45 @@
     .broj-add-input{min-height:44px;}
     .broj-item-row{gap:9px;}
   }
+
+  /* ── 실무진 피드백 버튼·모달(membership.html 패턴 그대로 벤치마킹 · GM 지시 2026-07-29 밤) ── */
+  .feedback-cta-btn{display:inline-flex; align-items:center; gap:6px; font-size:13.5px; font-weight:800; height:38px; padding:0 18px; border-radius:9px; background:var(--accent); color:#1a1918; border:1px solid var(--accent-soft); cursor:pointer; font-family:inherit; white-space:nowrap;}
+  .feedback-cta-btn:hover{filter:brightness(1.08);}
+  .gdoc-overlay{display:none; position:fixed; inset:0; z-index:120; background:rgba(0,0,0,0.55); align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;}
+  .gdoc-overlay.open{display:flex;}
+  .gdoc-modal{background:var(--paper); border:1px solid var(--border); border-radius:14px; max-width:560px; width:100%; padding:22px 24px 28px; box-shadow:0 18px 50px rgba(0,0,0,0.5);}
+  .gdoc-modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .gdoc-modal-title{font-size:17px; font-weight:800; color:var(--text);}
+  .gdoc-close{background:none; border:none; color:var(--dim); font-size:24px; cursor:pointer; line-height:1; padding:2px 6px;}
+  .gdoc-close:hover{color:var(--text);}
+
+  /* ── 📘 실무 가이드(GM 지시 2026-07-29 밤 — 내용은 지어내지 않고 현장이 채운다) ── */
+  #broj-guides{margin-top:16px;}
+  .broj-guides-head{font-size:16px; font-weight:800; margin-bottom:4px;}
+  .broj-guides-sub{font-size:12.5px; font-weight:400; color:var(--dim); display:block; margin-top:2px;}
+  .broj-guide-card{border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:10px; padding:13px 16px; margin-top:10px; background:var(--surface);}
+  .broj-guide-title{font-size:14.5px; font-weight:800; display:flex; flex-wrap:wrap; align-items:baseline; gap:8px; margin-bottom:6px;}
+  .broj-guide-owner{font-size:12px; font-weight:400; color:var(--dim);}
+  .broj-guide-empty{font-size:13.5px; color:var(--dim); font-style:italic; margin-bottom:8px;}
+  .broj-guide-text{font-size:14px; color:var(--text-soft); line-height:1.7; white-space:pre-wrap; margin-bottom:6px;}
+  .broj-guide-textarea{width:100%; min-height:110px; font:inherit; font-size:14px; padding:9px 11px; border-radius:8px; border:1px solid var(--accent-soft); background:var(--paper); color:var(--text); resize:vertical;}
+  .broj-guide-editbar{display:flex; gap:8px; margin-top:8px;}
+
+  /* ── 🔺 브로제이 확인 목록(P1/P2 통합 · GM 지시 2026-07-29 밤) ── */
+  #broj-vendor-queue{margin-top:16px;}
+  .broj-vq-head{font-size:16px; font-weight:800; margin-bottom:8px;}
+  .broj-vq-badge{font-size:13px; font-weight:700; color:var(--rose); margin-left:8px;}
+  .broj-vq-tier{margin-top:10px;}
+  .broj-vq-tier-title{font-size:13px; font-weight:700; color:var(--dim); margin-bottom:5px;}
+  .broj-vq-row{border:1px solid var(--border); border-left:3px solid var(--rose); border-radius:9px; padding:10px 13px; margin-bottom:7px; background:var(--surface);}
+  .broj-vq-row.done{border-left-color:var(--green); opacity:0.8;}
+  .broj-vq-text{font-size:14px; color:var(--text-soft); flex:1;}
+  .broj-vq-row.done .broj-vq-text{text-decoration:line-through; color:var(--dim);}
+  .broj-vq-src{font-size:11.5px; color:var(--dim); margin-top:3px;}
+  .broj-vq-response{font-size:13px; color:var(--text-soft); margin-top:6px; padding:7px 10px; background:var(--paper); border-radius:7px; border:1px solid var(--border);}
+  .broj-vq-response-empty{font-size:12.5px; color:var(--dim); font-style:italic;}
+  .broj-escalate-btn{font-size:11px !important;}
+  .broj-item-escalated-tag{font-size:11px; font-weight:700; color:var(--rose); background:rgba(221,127,110,0.14); border:1px solid var(--rose); border-radius:20px; padding:1px 8px; margin-left:4px; white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -103,6 +142,7 @@
       <h1>🤝 브로제이 시스템 업무분장</h1>
       <div class="slogan">실무 담당 체크리스트 · 항목 추가·수정·숨김 가능 · 2026-07-29 GM 원본 기반</div>
     </div>
+    <button type="button" class="feedback-cta-btn" onclick="openStaffFeedback()">💬 실무진 피드백</button>
     <a class="back" href="../../월간운영계획.html">◂ 월간운영계획으로</a>
   </header>
 
@@ -110,10 +150,27 @@
   <div id="broj-progress"></div>
   <div id="broj-role-map"></div>
   <div id="broj-depts"></div>
+  <div id="broj-guides"></div>
+  <div id="broj-vendor-queue"></div>
   <div id="broj-cross"></div>
-  <div id="broj-p2"></div>
 
   <div class="footnote">체크·추가·수정·숨김은 즉시 저장됩니다(부서보드와 동일 공용 저장소). 🆕 표시는 현장에서 새로 추가한 항목입니다. GM 원본 항목은 숨겨도 지워지지 않고 "숨김 항목"에서 복원됩니다. 원본 문서: <code>status/briefs/GM_브로제이_업무분장_원본_20260729.html</code></div>
+</div>
+
+<!-- ══ 실무진 피드백 모달 (membership.html·상품기획.html과 동일 패턴 그대로 벤치마킹 · 새 컴포넌트 0).
+     본문 = cpo/member/실무진피드백.html 을 iframe으로 로드, 모달을 처음 열 때만 data-src→src 승격.
+     이 페이지엔 보안 커튼(gate.js)이 없어 강사진 포함 누구나 접근 가능(웰리 확인 필요 지점 — 보고에 기재). ══ -->
+<div class="gdoc-overlay" id="staffFeedbackModalOverlay" onclick="if(event.target===this)closeStaffFeedback()">
+  <div class="gdoc-modal" role="dialog" aria-modal="true" style="max-width:560px">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title">💬 실무진 피드백</span>
+      <button class="gdoc-close" type="button" onclick="closeStaffFeedback()" aria-label="닫기">&times;</button>
+    </div>
+    <div id="staffFeedbackModalBody">
+      <iframe id="staffFeedbackIframe" data-src="../../cpo/member/실무진피드백.html?screen=브로제이" title="실무진 피드백"
+        style="width:100%;height:70vh;border:1px solid var(--border);border-radius:8px;display:block;background:var(--paper)"></iframe>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -406,14 +463,41 @@
     var total = items.length, done = items.filter(function(it){ return it.checked; }).length;
     return {done: done, total: total};
   }
-  function renderBrojP1Alert(){
+  // ── 🔺 브로제이 확인 목록(P1/P2 통합 · GM 지시 2026-07-29 밤) ──
+  // "우리가 할 일"(체크리스트)과 "브로제이(외부업체)가 답해야 할 일"을 같은 진척률에 섞으면
+  // 진척이 거짓이 된다(우리가 아무리 잘해도 안 올라가는 항목이 섞이므로) — 그래서 분리해서 센다.
+  // 기존 P1 4건/P2 8건이 시작 항목, 부서 항목도 escalated 플래그로 이 목록에 "이관"될 수 있다
+  // (원래 자리에선 사라지지 않는다 — 태그로만 표시). 값은 여기 한 곳에서만 계산한다(약속 L01).
+  function vqResolveNative(base, tier){
+    var raw = _brojBoard[base.id];
+    var overlay = (raw && typeof raw === 'object') ? raw : {checked: !!raw};
+    return {id: base.id, tier: tier, text: base.text, checked: !!overlay.checked, response: overlay.response || '', isEscalated: false};
+  }
+  function vendorQueueItems(){
+    var out = [];
+    BROJ_DATA.brojReq.p1.forEach(function(base){ out.push(vqResolveNative(base, 'P1')); });
+    BROJ_DATA.brojReq.p2.forEach(function(base){ out.push(vqResolveNative(base, 'P2')); });
+    allItemIds().forEach(function(id){
+      var raw = _brojBoard[id];
+      if(raw && typeof raw === 'object' && raw.escalated){
+        var it = resolveItem(id);
+        if(it && !it.hidden){
+          out.push({
+            id: id, tier: raw.escalated.urgency || 'P2', text: it.text,
+            checked: it.checked, response: raw.response || '',
+            fromGroup: raw.escalated.from_group, escalated_by: raw.escalated.escalated_by,
+            escalated_at: raw.escalated.escalated_at, isEscalated: true
+          });
+        }
+      }
+    });
+    return out;
+  }
+  function renderVendorSummary(){
     var el = document.getElementById('broj-p1-alert'); if(!el) return;
-    var openCount = BROJ_DATA.brojReq.p1.filter(function(it){ return !isChecked(it.id); }).length;
-    var rows = BROJ_DATA.brojReq.p1.map(function(it){
-      var checked = isChecked(it.id);
-      return '<li class="' + (checked ? 'done' : '') + '"><label><input type="checkbox" data-broj-id="' + it.id + '"' + (checked ? ' checked' : '') + '> ' + esc(it.text) + '</label></li>';
-    }).join('');
-    el.innerHTML = '<div class="broj-p1box"><div class="broj-p1head">🔴 브로제이(손영인 주임) 회신 대기 — P1 미회신 ' + openCount + '/4</div><ul class="broj-p1list">' + rows + '</ul></div>';
+    var p1 = vendorQueueItems().filter(function(it){ return it.tier === 'P1'; });
+    var openP1 = p1.filter(function(it){ return !it.checked; }).length;
+    el.innerHTML = '<div class="broj-p1box"><div class="broj-p1head">🔴 브로제이(손영인 주임) 회신 대기 — P1 미회신 ' + openP1 + '/' + p1.length + '</div></div>';
   }
   function renderBrojProgress(){
     var el = document.getElementById('broj-progress'); if(!el) return;
@@ -432,19 +516,26 @@
     if(_editingItemId === it.id){
       return '<li class="editing" data-item-id="' + it.id + '"><input type="text" class="broj-edit-input" data-item-id="' + it.id + '" value="' + esc(it.text) + '"></li>';
     }
+    var raw = _brojBoard[it.id];
+    var escalated = (raw && typeof raw === 'object' && raw.escalated) ? raw.escalated : null;
     var cls = (it.checked ? 'done' : '') + (it.hot ? ' hot' : '');
     var badge = it.origin === 'staff' ? '<span class="broj-badge-staff" title="현장에서 추가된 항목">🆕</span>' : '';
+    var escTag = escalated ? '<span class="broj-item-escalated-tag" title="브로제이 확인 목록으로 이관됨(아래 🔺 확인 목록에서도 보임)">🔺 ' + esc(escalated.urgency) + ' 회신대기</span>' : '';
     var metaBits = [];
     if(it.origin === 'staff' && it.added_by) metaBits.push('추가: ' + esc(it.added_by));
     if(it.updated_by) metaBits.push('수정: ' + esc(it.updated_by) + (it.updated_at ? ' · ' + esc(it.updated_at) : ''));
     var meta = metaBits.length ? '<div class="broj-item-meta">' + metaBits.join(' · ') + '</div>' : '';
+    var escalateBtn = escalated
+      ? '<button type="button" class="broj-mini-btn broj-escalate-btn" data-action="unescalate" data-item-id="' + it.id + '" title="확인 목록에서 되돌리기">↩</button>'
+      : '<button type="button" class="broj-mini-btn broj-escalate-btn" data-action="escalate" data-item-id="' + it.id + '" title="브로제이 확인 요청으로 보내기(외부업체 답변 필요)">🔺</button>';
     return '<li class="' + cls + '" data-item-id="' + it.id + '">' +
       '<div class="broj-item-row">' +
         '<input type="checkbox" data-broj-id="' + it.id + '"' + (it.checked ? ' checked' : '') + '>' +
         badge +
-        '<span class="broj-item-text">' + esc(it.text) + '</span>' +
+        '<span class="broj-item-text">' + esc(it.text) + '</span>' + escTag +
         '<span class="broj-item-btns">' +
           '<button type="button" class="broj-mini-btn" data-action="edit" data-item-id="' + it.id + '" title="문구 수정">✏️</button>' +
+          escalateBtn +
           '<button type="button" class="broj-mini-btn" data-action="hide" data-item-id="' + it.id + '" title="숨기기(삭제 아님)">🗑</button>' +
         '</span>' +
       '</div>' + meta +
@@ -498,16 +589,129 @@
       BROJ_DATA.cross.map(function(r){ return '<tr><td>' + esc(r.task) + '</td><td>' + esc(r.main) + '</td><td>' + esc(r.sub) + '</td></tr>'; }).join('') +
       '</tbody></table>';
   }
-  function renderBrojP2(){
-    var el = document.getElementById('broj-p2'); if(!el) return;
-    el.innerHTML = '<div class="broj-group-title">🟠 브로제이 요청 P2 (이번 주 회신)</div><ul class="broj-list">' +
-      BROJ_DATA.brojReq.p2.map(function(it){
-        var checked = isChecked(it.id);
-        return '<li class="' + (checked ? 'done' : '') + '"><label><input type="checkbox" data-broj-id="' + it.id + '"' + (checked ? ' checked' : '') + '> ' + esc(it.text) + '</label></li>';
-      }).join('') + '</ul>';
+  var _editingResponseId = null; // 지금 회신 적는 중인 확인목록 항목(재렌더해도 유지)
+
+  function renderVqRow(it){
+    var editingResp = _editingResponseId === it.id;
+    var srcHtml = it.isEscalated ? '<div class="broj-vq-src">↪ ' + esc(it.fromGroup || '') + ' 에서 이관 · ' + esc(it.escalated_by || '') + (it.escalated_at ? ' · ' + esc(it.escalated_at) : '') + '</div>' : '';
+    var respHtml;
+    if(editingResp){
+      respHtml = '<textarea class="broj-guide-textarea" data-response-id="' + it.id + '" placeholder="브로제이 회신 내용을 적으세요" style="min-height:60px;margin-top:6px;">' + esc(it.response) + '</textarea>' +
+        '<div class="broj-guide-editbar"><button type="button" class="broj-add-btn" data-action="save-response" data-item-id="' + it.id + '">저장</button>' +
+        '<button type="button" class="broj-mini-btn" data-action="cancel-response" data-item-id="' + it.id + '">취소</button></div>';
+    } else if(it.response){
+      respHtml = '<div class="broj-vq-response">💬 ' + esc(it.response) + '</div>';
+    } else {
+      respHtml = '<div class="broj-vq-response-empty">회신 없음</div>';
+    }
+    var undoBtn = it.isEscalated ? '<button type="button" class="broj-mini-btn" data-action="unescalate" data-item-id="' + it.id + '" title="원래 자리로 되돌리기">↩</button>' : '';
+    var editRespBtn = editingResp ? '' : '<button type="button" class="broj-mini-btn" data-action="edit-response" data-item-id="' + it.id + '" title="회신 적기">💬</button>';
+    return '<div class="broj-vq-row' + (it.checked ? ' done' : '') + '" data-item-id="' + it.id + '">' +
+      '<div class="broj-item-row">' +
+        '<input type="checkbox" data-broj-id="' + it.id + '"' + (it.checked ? ' checked' : '') + '>' +
+        '<span class="broj-vq-text">' + esc(it.text) + '</span>' +
+        '<span class="broj-item-btns">' + editRespBtn + undoBtn + '</span>' +
+      '</div>' + srcHtml + respHtml +
+    '</div>';
   }
+  function renderVendorQueue(){
+    var el = document.getElementById('broj-vendor-queue'); if(!el) return;
+    var items = vendorQueueItems();
+    function tierBlock(tier, label){
+      var list = items.filter(function(it){ return it.tier === tier; });
+      if(!list.length) return '';
+      return '<div class="broj-vq-tier"><div class="broj-vq-tier-title">' + label + ' (' + list.length + '건)</div>' +
+        list.map(renderVqRow).join('') + '</div>';
+    }
+    el.innerHTML = '<div class="broj-vq-head">🔺 브로제이 확인 목록 <span class="broj-vq-badge">외부 업체 회신 대기 — 우리가 못 고치는 일</span></div>' +
+      tierBlock('P1', '🔴 P1 (오늘~내일 회신 필요)') + tierBlock('P2', '🟠 P2 (이번 주 회신)');
+  }
+  function startEditResponse(id){ _editingResponseId = id; renderBrojAll(); var ta = document.querySelector('.broj-guide-textarea[data-response-id="' + id + '"]'); if(ta) ta.focus(); }
+  function cancelEditResponse(){ _editingResponseId = null; renderBrojAll(); }
+  function saveResponse(id){
+    var ta = document.querySelector('.broj-guide-textarea[data-response-id="' + id + '"]');
+    if(!ta) return;
+    var text = (ta.value || '').trim();
+    _editingResponseId = null;
+    var name = ensureStaffName();
+    mutateBrojBoard(function(board){
+      var obj = upgradeToObject(board[id]);
+      obj.response = text;
+      obj.updated_by = name; obj.updated_at = nowStr();
+      board[id] = obj;
+    });
+  }
+  function escalateItem(id){
+    var it = resolveItem(id);
+    if(!it) return;
+    var toP1 = confirm('브로제이 확인 요청으로 옮길까요?\n확인 = 🔴 P1(오늘~내일 회신 필요) · 취소 = 🟠 P2(이번 주 회신)');
+    var name = ensureStaffName();
+    mutateBrojBoard(function(board){
+      var obj = upgradeToObject(board[id]);
+      obj.escalated = {urgency: toP1 ? 'P1' : 'P2', escalated_by: name, escalated_at: nowStr(), from_group: it.groupTitle};
+      obj.updated_by = name; obj.updated_at = nowStr();
+      board[id] = obj;
+    });
+  }
+  function unescalateItem(id){
+    var name = ensureStaffName();
+    mutateBrojBoard(function(board){
+      var obj = upgradeToObject(board[id]);
+      delete obj.escalated;
+      obj.updated_by = name; obj.updated_at = nowStr();
+      board[id] = obj;
+    });
+  }
+
+  // ── 📘 실무 가이드(GM 지시 2026-07-29 밤) — 브로제이 사용법은 지어내지 않는다(약속 L05).
+  //    자리와 담당만 만들고 절차 본문은 현장이 채운다. 비어 있으면 명시적으로 "작성 전"이라 적는다
+  //    (빈칸=없음과 고장을 구분 못 함 · GM 선호). 편집기는 항목 편집(.broj-edit-input)과 별개 —
+  //    가이드 본문은 여러 줄이라 textarea + 명시적 "저장" 버튼(엔터로 즉시 저장 안 함). ──
+  var GUIDES = [
+    {id:'guide-golf-tee', title:'⛳ 골프 타석 예약 이용 가이드', ownerLabel:'COO (최준용M·윤병현AM)'},
+    {id:'guide-parent-kid', title:'👨‍👧 부모님-유소년 얼굴 연동 등록 가이드', ownerLabel:'백승화 사원', prereq:'규칙 확정(임정은M) 후 작성'}
+  ];
+  var _editingGuideId = null;
+  function renderGuides(){
+    var el = document.getElementById('broj-guides'); if(!el) return;
+    el.innerHTML = '<div class="broj-guides-head">📘 실무 가이드<span class="broj-guides-sub">브로제이 사용법은 저희가 지어내지 않습니다 — 실제로 써 보신 분이 적어 주세요.</span></div>' +
+      GUIDES.map(function(g){
+        var raw = _brojBoard[g.id];
+        var data = (raw && typeof raw === 'object') ? raw : null;
+        var hasContent = data && data.text;
+        var editing = _editingGuideId === g.id;
+        var body;
+        if(editing){
+          body = '<textarea class="broj-guide-textarea" data-guide-id="' + g.id + '" placeholder="여기에 실제 절차를 적어 주세요">' + esc((data && data.text) || '') + '</textarea>' +
+            '<div class="broj-guide-editbar"><button type="button" class="broj-add-btn" data-action="save-guide" data-guide-id="' + g.id + '">저장</button>' +
+            '<button type="button" class="broj-mini-btn" data-action="cancel-guide" data-guide-id="' + g.id + '">취소</button></div>';
+        } else if(hasContent){
+          body = '<div class="broj-guide-text">' + esc(data.text) + '</div>' +
+            '<div class="broj-item-meta">작성: ' + esc(data.updated_by || '') + (data.updated_at ? ' · ' + esc(data.updated_at) : '') + '</div>' +
+            '<button type="button" class="broj-mini-btn" data-action="edit-guide" data-guide-id="' + g.id + '" title="수정">✏️ 수정</button>';
+        } else {
+          body = '<div class="broj-guide-empty">아직 작성 전 — 먼저 써 보신 분이 적어 주세요.' + (g.prereq ? ' (' + esc(g.prereq) + ')' : '') + '</div>' +
+            '<button type="button" class="broj-add-btn" data-action="edit-guide" data-guide-id="' + g.id + '">✏️ 작성하기</button>';
+        }
+        return '<div class="broj-guide-card"><div class="broj-guide-title">' + esc(g.title) + '<span class="broj-guide-owner">' + esc(g.ownerLabel) + '</span></div>' + body + '</div>';
+      }).join('');
+  }
+  function startEditGuide(id){ _editingGuideId = id; renderGuides(); var ta = document.querySelector('.broj-guide-textarea[data-guide-id="' + id + '"]'); if(ta) ta.focus(); }
+  function cancelEditGuide(){ _editingGuideId = null; renderGuides(); }
+  function saveGuide(id){
+    var ta = document.querySelector('.broj-guide-textarea[data-guide-id="' + id + '"]');
+    if(!ta) return;
+    var text = (ta.value || '').trim();
+    _editingGuideId = null;
+    if(!text){ renderGuides(); return; }
+    var name = ensureStaffName();
+    mutateBrojBoard(function(board){
+      board[id] = {text: text, updated_by: name, updated_at: nowStr(), kind: 'guide'};
+    });
+  }
+
   function renderBrojAll(){
-    renderBrojP1Alert(); renderBrojProgress(); renderBrojRoleMap(); renderBrojDepts(); renderBrojCross(); renderBrojP2();
+    renderVendorSummary(); renderBrojProgress(); renderBrojRoleMap(); renderBrojDepts(); renderGuides(); renderVendorQueue(); renderBrojCross();
   }
 
   // ── 이벤트 위임(document 1곳에 1회만 바인딩) — 매 렌더마다 리스너 재부착 불필요.
@@ -525,11 +729,27 @@
       var restoreBtn = e.target.closest && e.target.closest('[data-action="restore"]');
       var addBtn = e.target.closest && e.target.closest('[data-action="add"]');
       var toggleHiddenBtn = e.target.closest && e.target.closest('[data-action="toggle-hidden"]');
+      var escalateBtn = e.target.closest && e.target.closest('[data-action="escalate"]');
+      var unescalateBtn = e.target.closest && e.target.closest('[data-action="unescalate"]');
+      var editRespBtn = e.target.closest && e.target.closest('[data-action="edit-response"]');
+      var saveRespBtn = e.target.closest && e.target.closest('[data-action="save-response"]');
+      var cancelRespBtn = e.target.closest && e.target.closest('[data-action="cancel-response"]');
+      var editGuideBtn = e.target.closest && e.target.closest('[data-action="edit-guide"]');
+      var saveGuideBtn = e.target.closest && e.target.closest('[data-action="save-guide"]');
+      var cancelGuideBtn = e.target.closest && e.target.closest('[data-action="cancel-guide"]');
       if(editBtn){ startEditItem(editBtn.getAttribute('data-item-id')); return; }
       if(hideBtn){ hideItem(hideBtn.getAttribute('data-item-id')); return; }
       if(restoreBtn){ restoreItem(restoreBtn.getAttribute('data-item-id')); return; }
       if(addBtn){ addItem(addBtn.getAttribute('data-add-dept')); return; }
       if(toggleHiddenBtn){ toggleHiddenSection(toggleHiddenBtn.getAttribute('data-dept')); return; }
+      if(escalateBtn){ escalateItem(escalateBtn.getAttribute('data-item-id')); return; }
+      if(unescalateBtn){ unescalateItem(unescalateBtn.getAttribute('data-item-id')); return; }
+      if(editRespBtn){ startEditResponse(editRespBtn.getAttribute('data-item-id')); return; }
+      if(saveRespBtn){ saveResponse(saveRespBtn.getAttribute('data-item-id')); return; }
+      if(cancelRespBtn){ cancelEditResponse(); return; }
+      if(editGuideBtn){ startEditGuide(editGuideBtn.getAttribute('data-guide-id')); return; }
+      if(saveGuideBtn){ saveGuide(saveGuideBtn.getAttribute('data-guide-id')); return; }
+      if(cancelGuideBtn){ cancelEditGuide(); return; }
     });
     document.addEventListener('keydown', function(e){
       if(e.target && e.target.matches && e.target.matches('.broj-add-input') && e.key === 'Enter'){
@@ -538,9 +758,14 @@
       } else if(e.target && e.target.matches && e.target.matches('.broj-edit-input')){
         if(e.key === 'Enter'){ e.preventDefault(); commitEditItem(e.target.getAttribute('data-item-id'), e.target.value); }
         else if(e.key === 'Escape'){ e.preventDefault(); cancelEditItem(); }
+      } else if(e.target && e.target.matches && e.target.matches('.broj-guide-textarea[data-guide-id]') && e.key === 'Escape'){
+        e.preventDefault(); cancelEditGuide();
+      } else if(e.target && e.target.matches && e.target.matches('.broj-guide-textarea[data-response-id]') && e.key === 'Escape'){
+        e.preventDefault(); cancelEditResponse();
       }
+      // 가이드·회신 textarea는 여러 줄 입력이라 Enter=줄바꿈으로 두고 저장은 버튼으로만(오입력 방지).
     });
-    // blur는 버블링하지 않으므로 캡처 단계에서 위임
+    // blur는 버블링하지 않으므로 캡처 단계에서 위임(단일행 편집 인풋만 — 여러줄 textarea는 명시적 저장버튼만 씀)
     document.addEventListener('blur', function(e){
       if(e.target && e.target.matches && e.target.matches('.broj-edit-input')){
         commitEditItem(e.target.getAttribute('data-item-id'), e.target.value);
@@ -557,6 +782,37 @@
       })
       .catch(function(){ renderBrojAll(); });
   }
+
+  // ── 실무진 피드백 모달 — membership.html 패턴 그대로(신규 컴포넌트 0). 헤더 버튼(onclick)이
+  //    IIFE 밖에서 호출하므로 window에 노출한다. ──
+  var _staffFeedbackLoaded = false;
+  function openStaffFeedback(){
+    var ov = document.getElementById('staffFeedbackModalOverlay');
+    if(!ov) return;
+    ov.classList.add('open');
+    if(!_staffFeedbackLoaded){ _staffFeedbackLoaded = true; _staffFeedbackLoadIframe(); }
+  }
+  function closeStaffFeedback(){
+    var ov = document.getElementById('staffFeedbackModalOverlay');
+    if(ov) ov.classList.remove('open');
+  }
+  function _staffFeedbackLoadIframe(){
+    var f = document.getElementById('staffFeedbackIframe');
+    if(!f) return;
+    var src = f.getAttribute('data-src');
+    f.onerror = function(){ _staffFeedbackFail(); };
+    f.src = src;
+  }
+  function _staffFeedbackFail(){
+    var body = document.getElementById('staffFeedbackModalBody');
+    if(!body) return;
+    body.innerHTML = '<div style="padding:32px 16px;text-align:center;color:var(--dim);font-size:13px">' +
+      '피드백 화면을 불러오지 못했습니다.<br><br>' +
+      '<a href="../../cpo/member/실무진피드백.html" target="_blank" rel="noopener" style="color:var(--text);font-weight:700">직접 열기 ↗</a>' +
+      '</div>';
+  }
+  window.openStaffFeedback = openStaffFeedback;
+  window.closeStaffFeedback = closeStaffFeedback;
 
   bindBrojEvents();
   loadBrojBoard();
