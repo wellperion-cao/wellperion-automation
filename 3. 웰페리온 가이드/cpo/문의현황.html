@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>문의 현황 · AI CPO</title>
+<!--
+  신설(2026-07-29) — GM 지시(2026-07-28, CMO 이관): "시포 멤버십 + 강습 회원관리 칸에 문의가 찍히는 것을
+  기준으로 현황 하나로 통합. 너무 정신없게 해놨으니 다 삭제하고 본질에만 집중. 지금 있는 것들 다 시포한테
+  넘기고, 보고서는 시포용 A3 한 장으로 파악할 수 있게."
+  통합 대상 3개(3. 웰페리온 가이드/cmo/funnel/): ①콘텐츠문의현황.html ②월간마케팅보고서.html ③문의흐름지도.html
+  (③은 이미 리다이렉트만 남은 죽은 껍데기 — 참고만 하고 로직 재사용 없음).
+  본질 3가지만: ①이번 달 문의 몇 건 ②어디서 왔나(채널별) ③몇 명 등록했나(채널별 전환율).
+  데이터·액션은 새로 만들지 않고 ①이 이미 쓰는 GAS action(funnel_conversion)을 그대로 재사용한다
+  (약속 L01 — 판정 로직 두 벌 금지). GAS URL·action 이름·필드(byType/byChannel/total)는
+  콘텐츠문의현황.html 339행·548~556행·787~812행·1001~1035행·702~777행 그대로.
+  기존 3개 파일은 이번 작업에서 삭제·수정하지 않음(GM이 이 페이지를 확인한 뒤 다음 단계).
+-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  --bg:#1c1a1b;--paper:#252220;--paper2:#2d2a28;--text:#f0ede8;--dim:#7a7870;
+  --accent:#C4A882;--accent-bg:rgba(196,168,130,0.10);--border:#3a3633;
+  --green:#5fb870;--red:#e85540;
+  background:var(--bg);color:var(--text);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  min-height:100vh;padding:18px 16px 40px;line-height:1.55;font-size:14px;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1400px;margin:0 auto}
+.notice{background:var(--accent-bg);border:1px solid rgba(196,168,130,.35);border-radius:10px;
+  padding:10px 16px;font-size:12px;color:var(--accent);margin-bottom:16px;line-height:1.6}
+.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 20px;margin-bottom:18px}
+.header h1{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.header .sub{font-size:11px;color:var(--dim);margin-top:3px}
+.month-nav{display:flex;align-items:center;gap:8px}
+.month-nav-btn{background:var(--paper2);border:1px solid var(--border);color:var(--dim);font-size:13px;font-weight:700;
+  width:28px;height:28px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.month-nav-btn:hover:not(:disabled){background:var(--accent-bg);color:var(--accent)}
+.month-nav-btn:disabled{opacity:.3;cursor:default}
+.month-nav-label{font-size:14px;font-weight:700;min-width:100px;text-align:center}
+.print-btn{padding:6px 14px;border-radius:20px;border:1px solid rgba(196,168,130,.4);background:var(--accent-bg);
+  color:var(--accent);font-size:12px;font-weight:700;cursor:pointer}
+.print-btn:hover{background:rgba(196,168,130,.18)}
+.grid-top{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.section{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+.section-title{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;
+  margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--border)}
+.kpi-block-title{font-size:13px;font-weight:800;margin-bottom:10px;color:var(--accent)}
+.kpi-nums{display:flex;gap:10px}
+.kpi-num{flex:1;background:var(--paper2);border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center}
+.kpi-num .n{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.kpi-num .l{font-size:10.5px;color:var(--dim);margin-top:4px}
+.foot-note{font-size:10.5px;color:var(--dim);margin-top:10px;line-height:1.6}
+.ch-table{width:100%;border-collapse:collapse;font-size:13px}
+.ch-table th{background:var(--paper2);padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--dim);
+  border-bottom:1px solid var(--border);letter-spacing:.04em;text-transform:uppercase}
+.ch-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.ch-table tr:last-child td{border-bottom:none}
+.dim{color:var(--dim);font-size:11px}
+.data-none{color:var(--dim);font-style:italic;font-size:12px;padding:8px 0}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:760px){
+  .grid-top{grid-template-columns:1fr}
+  .kpi-num .n{font-size:18px}
+}
+
+/* ── 인쇄: 가로 A3 1장 (GM 표준 — 이 저장소 다른 A3 페이지의 @page 패턴 참고: 콘텐츠문의현황.html
+   @page{size:A3 portrait} · 운영부 체계.html a3-manual-mode @page{size:A3 landscape}) ── */
+@media print{
+  .print-btn,.month-nav-btn{display:none !important}
+  @page{ size:A3 landscape; margin:8mm; }
+  body{background:#fff !important;color:#1a1816 !important;font-size:10px;line-height:1.3;padding:0}
+  body *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  .notice{background:#f4ede2;border-color:#c9a877;color:#5a4626;font-size:9px;margin-bottom:8px;padding:6px 10px}
+  .header{background:#fff;border-color:#c9c4bc;padding:4px 0 8px;margin-bottom:10px}
+  .header h1{font-size:15px}
+  .header .sub{color:#5a5850}
+  .section{background:#fff;border-color:#c9c4bc;padding:8px 10px;margin-bottom:8px;break-inside:avoid}
+  .section-title{font-size:8.5px;margin-bottom:6px;color:#5a5850}
+  .section-title::after{background:#c9c4bc}
+  .kpi-num{background:#f4f2ee;border-color:#c9c4bc;padding:7px 5px}
+  .kpi-num .n{font-size:16px;color:#1a1816}
+  .kpi-num .l{font-size:7.5px;color:#5a5850}
+  .kpi-block-title{color:#8a6d3f;font-size:11px}
+  .ch-table th{background:#f4f2ee;color:#5a5850;padding:4px 6px;font-size:7.5px}
+  .ch-table td{padding:4px 6px;font-size:8.5px;border-color:#c9c4bc}
+  .foot-note,.dim{font-size:7px;color:#5a5850}
+  .grid-top{grid-template-columns:1fr 1fr;gap:8px}
+}
+</style>
+<link rel="stylesheet" href="../assets/wp-typography.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="notice">이 페이지는 <b>콘텐츠문의현황.html · 월간마케팅보고서.html · 문의흐름지도.html</b> 3개를 통합한 시포(AI CPO)용 단일 화면입니다(2026-07-29). 기존 3개 화면은 이 페이지 확인 후 정리될 예정이며, 아직 삭제되지 않았습니다.</div>
+
+  <div class="header">
+    <div>
+      <h1>📋 문의 현황 — 시포(AI CPO)</h1>
+      <div class="sub">멤버십 + 강습 문의 → 등록 전환 · 실무진: 김남욱 GM</div>
+    </div>
+    <div class="month-nav">
+      <button class="month-nav-btn" id="btn-prev" title="이전 달">&#9664;</button>
+      <span class="month-nav-label" id="period-label">—</span>
+      <button class="month-nav-btn" id="btn-next" title="다음 달">&#9654;</button>
+    </div>
+    <button class="print-btn" id="print-btn">🖨 인쇄(가로 A3)</button>
+  </div>
+
+  <!-- 상단: 이번(선택) 달 문의·등록·전환율 — 멤버십 / 강습 나란히 -->
+  <div class="grid-top" id="kpi-wrap">
+    <div class="section"><div class="data-none">불러오는 중…</div></div>
+    <div class="section"><div class="data-none">불러오는 중…</div></div>
+  </div>
+  <div class="foot-note" id="kpi-foot" style="margin:-10px 0 18px 4px"></div>
+
+  <!-- 중단: 채널별 표 — 문의·등록·전환율, 전환율 높은 순 -->
+  <div class="section">
+    <div class="section-title">채널별 현황 <span style="font-weight:400;text-transform:none;letter-spacing:0">(전환율 높은 순 · 선택 월 기준)</span></div>
+    <div class="table-scroll" id="channel-wrap"><div class="data-none">불러오는 중…</div></div>
+    <div class="foot-note" id="channel-foot"></div>
+  </div>
+
+  <!-- 하단: 올해 월별 추이 12칸 -->
+  <div class="section">
+    <div class="section-title">월별 추이 <span style="font-weight:400;text-transform:none;letter-spacing:0">(올해 1월~이번 달)</span></div>
+    <div class="table-scroll" id="trend-wrap"><div class="data-none">불러오는 중…</div></div>
+    <div class="foot-note" id="trend-foot"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+// ─── 이 페이지가 재사용하는 GAS 소스 — 콘텐츠문의현황.html과 동일(신규 action·신규 배포 없음) ───
+// URL: 콘텐츠문의현황.html 339행 FUNNEL_APPS_SCRIPT_URL 그대로.
+// action=funnel_conversion: 콘텐츠문의현황.html 548~556행 fetchFunnelConversion()과 동일 호출·동일 필드
+//   (total.inquiries/converted/rate, byType[].{type,inquiries,converted,rate}, byChannel[].{channel,inquiries,converted,rate}).
+// byType 합산(멤버십/성인강습/유소년강습 구분): 콘텐츠문의현황.html renderTypeSplit() 787~812행 로직 재사용.
+// 월별 추이 루프: 콘텐츠문의현황.html loadYtdTrend() 702~777행과 동일 패턴(월 1회씩 조회·도착 순 렌더).
+var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtN(n){ return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('ko-KR'); }
+function fmtPct(n){ return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + '%'; }
+function pad2(n){ return String(n).padStart(2, '0'); }
+function fmtYMD(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+
+function fetchFunnelConversion(from, to) {
+  var url = FUNNEL_APPS_SCRIPT_URL + '?action=funnel_conversion';
+  if (from && to) url += '&from=' + from + '&to=' + to;
+  return fetch(url, { redirect: 'follow' })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) { if (!data || !data.ok) throw new Error('ok=false'); return data; })
+    .catch(function(e) { console.warn('[funnel_conversion] 실패:', e && e.message); return null; });
+}
+
+var today = new Date();
+var _navYear = today.getFullYear();
+var _navMonth = today.getMonth() + 1;
+
+function isFutureMonth(y, m) {
+  if (y > today.getFullYear()) return true;
+  if (y === today.getFullYear() && m > (today.getMonth() + 1)) return true;
+  return false;
+}
+function monthRange(y, m) {
+  var isCurrent = (y === today.getFullYear() && m === (today.getMonth() + 1));
+  var lastDay = new Date(y, m, 0).getDate();
+  var to = isCurrent ? fmtYMD(today) : (y + '-' + pad2(m) + '-' + pad2(lastDay));
+  return { from: y + '-' + pad2(m) + '-01', to: to };
+}
+
+function renderMonthLabel() {
+  document.getElementById('period-label').textContent = _navYear + '년 ' + _navMonth + '월';
+  var ny = _navMonth === 12 ? _navYear + 1 : _navYear;
+  var nm = _navMonth === 12 ? 1 : _navMonth + 1;
+  document.getElementById('btn-next').disabled = isFutureMonth(ny, nm);
+}
+
+function shiftMonth(delta) {
+  var y = _navYear, m = _navMonth + delta;
+  if (m < 1) { m = 12; y--; }
+  if (m > 12) { m = 1; y++; }
+  if (isFutureMonth(y, m)) return; // 미래 달로는 이동 금지(가드)
+  _navYear = y; _navMonth = m;
+  renderMonthLabel();
+  loadMonth();
+}
+
+// ─── 상단 KPI: 멤버십 / 강습(성인+유소년 합산) — funnel_conversion byType 재사용(신규 집계 없음) ───
+function renderKpi(data, r) {
+  var wrap = document.getElementById('kpi-wrap');
+  var foot = document.getElementById('kpi-foot');
+  if (!data || !Array.isArray(data.byType) || !data.byType.length) {
+    wrap.innerHTML = '<div class="section"><div class="data-none">데이터 없음 — funnel_conversion byType 응답을 받지 못했습니다.</div></div>'
+      + '<div class="section"><div class="data-none">데이터 없음</div></div>';
+    if (foot) foot.textContent = '';
+    return;
+  }
+  // '강습' 문자열 포함 여부로 분류(정확 일치 대신 포함 매칭) — 서버가 '성인강습'·'유소년강습' 외에
+  // '멤버십 상담' 같은 멤버십 계열 세부 유형을 추가해도(실측 확인됨, 2026-07-29) 조용히 누락되지 않도록.
+  var lessonRows = data.byType.filter(function(t) { return t && /강습/.test(t.type || ''); });
+  var memRows = data.byType.filter(function(t) { return t && !/강습/.test(t.type || ''); });
+  function sumRows(rows) {
+    var inq = rows.reduce(function(s, t) { return s + (t.inquiries || 0); }, 0);
+    var conv = rows.reduce(function(s, t) { return s + (t.converted || 0); }, 0);
+    var rate = inq > 0 ? Math.round((conv / inq) * 1000) / 10 : 0;
+    return { inquiries: inq, converted: conv, rate: rate };
+  }
+  var mem = sumRows(memRows);
+  var les = sumRows(lessonRows);
+
+  function block(title, inq, conv, rate) {
+    return '<div class="section">'
+      + '<div class="kpi-block-title">' + esc(title) + '</div>'
+      + '<div class="kpi-nums">'
+      + '<div class="kpi-num"><div class="n">' + fmtN(inq) + '</div><div class="l">문의</div></div>'
+      + '<div class="kpi-num"><div class="n">' + fmtN(conv) + '</div><div class="l">등록</div></div>'
+      + '<div class="kpi-num"><div class="n">' + fmtPct(rate) + '</div><div class="l">전환율</div></div>'
+      + '</div></div>';
+  }
+  wrap.innerHTML = block('멤버십', mem.inquiries, mem.converted, mem.rate)
+    + block('강습(성인+유소년 합산)', les.inquiries, les.converted, les.rate);
+  if (foot) foot.textContent = '출처: action=funnel_conversion → byType(유형명에 "강습" 포함=강습, 그 외 전부=멤버십 계열 합산) · '
+    + esc(r.from) + ' ~ ' + esc(r.to) + ' · 등록=전화매칭 기준 회원전환(전 페이지와 동일 판정)';
+}
+
+// ─── 중단: 채널별 표 — funnel_conversion byChannel 재사용(전 유입채널, 전환율 높은 순) ───
+function renderChannelTable(data, r) {
+  var wrap = document.getElementById('channel-wrap');
+  var foot = document.getElementById('channel-foot');
+  if (!data || !Array.isArray(data.byChannel) || !data.byChannel.length) {
+    wrap.innerHTML = '<div class="data-none">데이터 없음 — 채널별 집계를 받지 못했습니다.</div>';
+    if (foot) foot.textContent = '';
+    return;
+  }
+  var rows = data.byChannel.slice().sort(function(a, b) { return (b.rate || 0) - (a.rate || 0); });
+  var thead = '<thead><tr><th>채널</th><th style="text-align:right">문의</th><th style="text-align:right">등록</th><th style="text-align:right">전환율</th></tr></thead>';
+  var body = rows.map(function(row) {
+    var inq = row.inquiries || 0, conv = row.converted || 0;
+    var rate = (row.rate == null) ? 0 : row.rate;
+    return '<tr>'
+      + '<td>' + esc(row.channel || '기타') + '</td>'
+      + '<td style="text-align:right;' + (inq === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + fmtN(inq) + '</td>'
+      + '<td style="text-align:right;' + (conv === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + fmtN(conv) + '</td>'
+      + '<td style="text-align:right;' + (rate === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + fmtPct(rate) + '</td>'
+      + '</tr>';
+  }).join('');
+  wrap.innerHTML = '<table class="ch-table">' + thead + '<tbody>' + body + '</tbody></table>';
+  if (foot) foot.textContent = '출처: action=funnel_conversion → byChannel(전 유입채널 · 문의 시점 자기신고 기준) · '
+    + esc(r.from) + ' ~ ' + esc(r.to) + ' · 전환율 높은 순 정렬';
+}
+
+function loadMonth() {
+  var r = monthRange(_navYear, _navMonth);
+  document.getElementById('kpi-wrap').innerHTML = '<div class="section"><div class="data-none">불러오는 중…</div></div><div class="section"><div class="data-none">불러오는 중…</div></div>';
+  document.getElementById('channel-wrap').innerHTML = '<div class="data-none">불러오는 중…</div>';
+  fetchFunnelConversion(r.from, r.to).then(function(data) {
+    renderKpi(data, r);
+    renderChannelTable(data, r);
+  });
+}
+
+// ─── 하단: 올해 월별 추이 — funnel_conversion을 월별로 1회씩(콘텐츠문의현황.html loadYtdTrend와 동일 패턴) ───
+function loadTrend() {
+  var year = today.getFullYear();
+  var lastM = today.getMonth() + 1;
+  var wrap = document.getElementById('trend-wrap');
+  var html = '<table class="ch-table"><thead><tr><th style="width:80px">월</th><th style="text-align:right">문의</th><th style="text-align:right">등록</th><th style="text-align:right">전환율</th></tr></thead><tbody>';
+  for (var m = 1; m <= 12; m++) {
+    var isFuture = m > lastM;
+    html += '<tr id="trend-r' + m + '"><td>' + m + '월' + (m === lastM ? ' <span class="dim">(오늘까지)</span>' : '') + '</td>'
+      + (isFuture ? '<td colspan="3" class="dim">— (아직 도래 전)</td>' : '<td colspan="3" class="dim">불러오는 중…</td>')
+      + '</tr>';
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  for (var mm = 1; mm <= lastM; mm++) {
+    (function(m) {
+      var r = monthRange(year, m);
+      fetchFunnelConversion(r.from, r.to).then(function(d) {
+        var tr = document.getElementById('trend-r' + m);
+        if (!tr) return;
+        if (!d || !d.total) {
+          tr.innerHTML = '<td>' + m + '월</td><td colspan="3" class="dim">데이터 없음(수집 실패 — 0으로 채우지 않음)</td>';
+          return;
+        }
+        var t = d.total;
+        var maturing = (m >= lastM - 1);
+        var rateTxt = fmtPct(t.rate) + (maturing ? ' <span class="dim">(집계 중)</span>' : '');
+        tr.innerHTML = '<td>' + m + '월' + (m === lastM ? ' <span class="dim">(오늘까지)</span>' : '') + '</td>'
+          + '<td style="text-align:right;font-weight:600">' + fmtN(t.inquiries) + '</td>'
+          + '<td style="text-align:right;font-weight:600">' + fmtN(t.converted) + '</td>'
+          + '<td style="text-align:right">' + rateTxt + '</td>';
+      });
+    })(mm);
+  }
+  var foot = document.getElementById('trend-foot');
+  if (foot) foot.textContent = '출처: action=funnel_conversion → total(월 1회씩 조회, ' + year + '년 1월~' + lastM + '월) · '
+    + '전환율=그 달 문의자가 지금까지 가입한 비율이라 최근 1~2개월은 아직 덜 익어 낮게 보일 수 있음(날조 아님, 집계 중 표기)';
+}
+
+document.getElementById('btn-prev').addEventListener('click', function() { shiftMonth(-1); });
+document.getElementById('btn-next').addEventListener('click', function() { shiftMonth(1); });
+document.getElementById('print-btn').addEventListener('click', function() { window.print(); });
+
+renderMonthLabel();
+loadMonth();
+loadTrend();
+})();
+</script>
+</body>
+</html>
