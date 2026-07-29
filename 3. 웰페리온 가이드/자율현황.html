@@ -313,6 +313,19 @@
   .loop-arrow{display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:16px; flex:0 0 20px;}
   .loop-feedback-note{margin:0 0 14px; font-size:11px; color:#f0c674; line-height:1.5;}
   @media (max-width:640px){ .loop-strip{flex-direction:column;} .loop-arrow{display:none;} }
+
+  /* 긴 표 칸 접기 (배10026 결함3 · 2026-07-29 시토) — 세 줄만 보이고 누르면 펼쳐진다.
+     본문을 지우지 않는 방식이라(잘라내기 아님) 검색·복사·화면낭독 모두 그대로 된다. */
+  td.cellclamp{
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    overflow:hidden; cursor:pointer; position:relative;
+    word-break:keep-all;            /* 낱말 중간에서 끊기지 않게(GM 2026-07-22 '글 끊김 금지') */
+  }
+  td.cellclamp::after{
+    content:'⌄ 더보기'; display:block; font-size:10px; color:var(--dim); margin-top:2px;
+  }
+  td.cellclamp-open{ -webkit-line-clamp:unset; overflow:visible; }
+  td.cellclamp-open::after{ content:'⌃ 접기'; }
 </style>
 <link rel="stylesheet" href="assets/wp-typography.css">
 </head>
@@ -2284,6 +2297,33 @@
     }
   };
 
+  /* 긴 표 칸 접기 (2026-07-29 시토 · 배10026 결함3).
+     왜: 표 한 칸에 큐 note·모듈 설명 원문이 통째로 들어가 최대 890자까지 갔다(실측).
+     표가 글벽이 되면 GM 이 훑을 수 없다(약속 L12 — 결론 먼저·한눈에).
+     ▸지우지 않는다. 세 줄만 보이게 접고 누르면 펼친다 — 본문은 DOM 에 그대로 있어
+       검색·복사·화면낭독 어느 것도 잃지 않는다(정보 손실 0).
+     ▸HTML 을 다시 쓰지 않는다(innerHTML 교체 금지) — 칸 안의 링크·배지 마크업이 깨지면
+       그게 더 나쁜 회귀다. 순수 표시(CSS 클래스)만 얹는다. */
+  var CLAMP_MIN = 160;   // 이보다 긴 칸만 접는다(짧은 칸까지 건드리면 오히려 산만)
+  function clampLongCells(){
+    try{
+      var cells = document.querySelectorAll('table td');
+      for(var i=0;i<cells.length;i++){
+        var c = cells[i];
+        if(c.dataset.clamped) continue;
+        var t = (c.textContent || '').trim();
+        if(t.length <= CLAMP_MIN) continue;
+        c.dataset.clamped = '1';
+        c.classList.add('cellclamp');
+        c.title = '눌러서 전체 보기 (' + t.length + '자)';
+        c.addEventListener('click', function(){
+          this.classList.toggle('cellclamp-open');
+          this.title = this.classList.contains('cellclamp-open') ? '눌러서 접기' : '눌러서 전체 보기';
+        });
+      }
+    }catch(e){ /* 접기 실패해도 표 자체는 그대로 보인다 */ }
+  }
+
   // ═══════════ 로드 ═══════════
   Promise.all([
     gasReadText('status/gm_aide_scan_log.jsonl',      'status/gm_aide_scan_log.jsonl').catch(function(){ return ''; }),
@@ -2364,6 +2404,7 @@
       var rcEl = document.getElementById('registry-cards');
       if(rcEl) rcEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부 모듈 카드 표시 오류.</div>';
     }
+    try{ clampLongCells(); }catch(e){ /* 표시용이라 실패해도 본문은 그대로 */ }
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
