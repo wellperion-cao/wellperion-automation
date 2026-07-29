@@ -1041,18 +1041,19 @@
     "task_id": "CPO-2026-07-29-상품기획-페이지에-실무진-피드백-버튼-추가-GM-지",
     "clevel": "cpo",
     "title": "[시포] 상품기획 페이지에 실무진 피드백 버튼 추가 (GM 지시 2026-07-29)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-07-29",
     "from": "ceo",
-    "note": "[웰리 → 시포 전달 2026-07-29] [웰리 → 시토 → 시포 전달 2026-07-29] GM 지시: '스포츠클럽 상품 기획 페이지 실무진 피드백 버튼 하나 넣어줘, 업데이트도 해주고.' 웰리가 이미 실측·설계 완료 — 그대로 실행만 하면 됩니다.\n▸대상: 3. 웰페리온 가이드/cpo/product/상품기획.html (라이브 200 확인·「🏷️ 스포츠클럽 상품 기획 — AI CPO」). 현재 피드백 버튼 0건.\n▸패턴 재사용(새로 만들지 말 것·약속 L21): cpo/member/membership.html 에 완성형이 있음 — 헤더 <button class=\"feedback-cta-btn\" onclick=\"openStaffFeedback()\">💬 실무진 피드백</button> + 모달 오버레이 + iframe 지연로드(data-src→src 승격) + openStaffFeedback()/closeStaffFeedback() 함수까지 그대로 존재. 그대로 복제.\n▸경로 주의: 상품기획은 cpo/product/ 에 있으니 iframe src는 ../member/실무진피드백.html 로 상대경로가 달라짐 — 반드시 열어서 빈 모달이 아닌지 확인.\n▸버튼 위치: membership과 동일하게 제목 옆 잘 보이는 자리(헤더 구석에 숨기지 말 것).\n▸실무진피드백.html 업무구분 선택지(현재: 멤버십 회원관리/강습 회원관리/종합접수처/그 외) 4개에 '상품 기획' 추가. 담당 라우팅(scripts/collectors/cpo_staff_feedback_watch.py route_clevel())은 매칭 실패 시 cpo 폴백이라 손대지 않아도 맞게 감(웰리 확인 완료).\n▸'업데이트도 해주고' = 버튼만 넣고 끝내지 말고 커밋·푸시→GitHub Pages 배포 완료까지 확인하라는 뜻(페이지 내용 자체 변경 아님).\n▸배경: 오늘 GM이 상품 등록 담당을 이경연 실장(운영부 리더)으로 옮겼고 그 기준 문서가 이 페이지라, 새 담당이 쓰기 시작하며 막히는 지점을 바로 남길 자리가 필요.",
-    "next": "1) membership.html 패턴 그대로 복제해 상품기획.html에 버튼+모달 추가 2) 실무진피드백.html 업무구분에 '상품 기획' 추가 3) 라이브에서 버튼 클릭→폼 실제로 뜨는지 실측(빈 iframe 아님) 4) 배포 완료 후 재확인 5) 커밋·푸시",
+    "note": "[웰리 → 시포 전달 2026-07-29] [웰리 → 시토 → 시포 전달 2026-07-29] GM 지시: '스포츠클럽 상품 기획 페이지 실무진 피드백 버튼 하나 넣어줘, 업데이트도 해주고.' 웰리가 이미 실측·설계 완료 — 그대로 실행만 하면 됩니다.\n▸대상: 3. 웰페리온 가이드/cpo/product/상품기획.html (라이브 200 확인·「🏷️ 스포츠클럽 상품 기획 — AI CPO」). 현재 피드백 버튼 0건.\n▸패턴 재사용(새로 만들지 말 것·약속 L21): cpo/member/membership.html 에 완성형이 있음 — 헤더 <button class=\"feedback-cta-btn\" onclick=\"openStaffFeedback()\">💬 실무진 피드백</button> + 모달 오버레이 + iframe 지연로드(data-src→src 승격) + openStaffFeedback()/closeStaffFeedback() 함수까지 그대로 존재. 그대로 복제.\n▸경로 주의: 상품기획은 cpo/product/ 에 있으니 iframe src는 ../member/실무진피드백.html 로 상대경로가 달라짐 — 반드시 열어서 빈 모달이 아닌지 확인.\n▸버튼 위치: membership과 동일하게 제목 옆 잘 보이는 자리(헤더 구석에 숨기지 말 것).\n▸실무진피드백.html 업무구분 선택지(현재: 멤버십 회원관리/강습 회원관리/종합접수처/그 외) 4개에 '상품 기획' 추가. 담당 라우팅(scripts/collectors/cpo_staff_feedback_watch.py route_clevel())은 매칭 실패 시 cpo 폴백이라 손대지 않아도 맞게 감(웰리 확인 완료).\n▸'업데이트도 해주고' = 버튼만 넣고 끝내지 말고 커밋·푸시→GitHub Pages 배포 완료까지 확인하라는 뜻(페이지 내용 자체 변경 아님).\n▸배경: 오늘 GM이 상품 등록 담당을 이경연 실장(운영부 리더)으로 옮겼고 그 기준 문서가 이 페이지라, 새 담당이 쓰기 시작하며 막히는 지점을 바로 남길 자리가 필요.\n[시포 처리·라이브검증 2026-07-29] ①상품기획.html 헤더에 membership.html과 동일한 feedback-cta-btn 버튼(제목 옆, header-feedback-slot) 추가 ②동일 gdoc-overlay 모달+iframe(data-src=../member/실무진피드백.html, 지연로드)+openStaffFeedback/closeStaffFeedback 함수 그대로 이식 ③실무진피드백.html 업무구분에 '상품 기획' 옵션 추가(라우팅 route_clevel 미변경 — 매칭실패 cpo 폴백 확인). 커밋 c50b3c29a → push → GitHub Pages Deploy 워크플로 success(run 30424127772) 확인 후 Playwright로 라이브 재검증: 버튼 노출(visible=True) → 클릭 시 모달 오픈(open=True) → iframe src=.../cpo/member/실무진피드백.html 실제 로드 → 폼 5개 legend 전부 렌더(빈 iframe 아님) → 업무구분 선택지 5개 확인(멤버십 회원관리/강습 회원관리/종합접수처/상품 기획/기타). 스크린샷으로 육안 확인 완료.",
+    "next": "🏁 입항완료 — 상품기획 페이지 피드백 버튼 라이브 반영 완료, 후속 없음",
     "depends_on": "",
     "ship_no": 10401,
     "short_no": 217,
     "module": "home",
     "surface": "autonomy",
     "audience": "office",
-    "reversible": true
+    "reversible": true,
+    "processed_at": "2026-07-29"
   }
 ]
