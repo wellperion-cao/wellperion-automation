@@ -1,522 +1,800 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WELLPERION - 프라이빗 멤버십 스포츠클럽</title>
+<title>WELLPERION · 하루의 완성</title>
 <meta name="description" content="웰페리온. 회원 한 사람의 건강한 하루를 완성합니다. 서울 용산구 한남동, 9년째 이어온 프라이빗 멤버십 스포츠클럽.">
-<meta property="og:title" content="WELLPERION - A Day, Well Completed. 하루의 완성, 웰페리온">
-<meta property="og:description" content="프라이빗 멤버십 스포츠클럽. 회원 한 사람의 건강한 하루를 완성합니다.">
+<meta property="og:title" content="WELLPERION — A Day, Well Completed. 하루의 완성, 웰페리온">
+<meta property="og:description" content="프리미엄 라이프스타일 클럽. 회원 한 사람의 건강한 하루를 완성합니다.">
+
+<!-- 폰트 정본 : 회사소개서 v2.19와 동일한 배선 (Playfair Display · Jost · Pretendard) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
 <style>
-:root {
-  --bg: #0A0908;
-  --surface: #141210;
-  --card: #1A1816;
-  --gold: #B79F8A;
-  --gold-light: #D4C4B0;
-  --gold-dark: #8A7562;
-  --text: #E8E4DF;
-  --dim: #6B6560;
-  --white: #F5F2EF;
-  --serif: 'Cormorant Garamond', Georgia, serif;
-  --sans: 'Pretendard', -apple-system, 'Malgun Gothic', sans-serif;
+/* ══════════════════════════════════════════════════════════
+   웰페리온 공개 홈 · 파생 초안
+   지면 = 밝은 종이(paper/white). 어두운 면은 풀블리드 사진 위 오버레이에만.
+   ══════════════════════════════════════════════════════════ */
+:root{
+  color-scheme: light;
+  /* 색 — 회사소개서 v2.19 · 브랜드가이드 공통 정본 */
+  --beige:#B79F8A;
+  --beige-soft:#E8DFD4;
+  --beige-pale:#F7F2EC;
+  --black:#221F20;
+  --black-soft:#3A3536;
+  --gray:#8A8587;
+  --line:#D9CFC3;
+  --white:#FBF9F6;
+  --paper:#F4F0EB;
+  --coral:#ED5B3F;
+
+  /* 글꼴 */
+  --serif:"Playfair Display","Hudson NY Serif",Georgia,"Noto Serif KR",serif;
+  --sans:"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --label:"Jost","ITC Avant Garde",-apple-system,system-ui,sans-serif;
+
+  /* 여백 척도 — 좁으면 싸구려로 읽힌다 */
+  --pad-y:clamp(96px,12vw,200px);
+  --pad-x:clamp(24px,5vw,72px);
 }
 
-* { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--sans); background: var(--bg); color: var(--text); overflow-x: hidden; word-break: keep-all; }
-a { color: var(--gold); text-decoration: none; }
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth; word-break:keep-all;}
+body{
+  background:var(--white); color:var(--black);
+  font-family:var(--sans); font-weight:400; line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+img{display:block; max-width:100%;}
+a{color:inherit; text-decoration:none;}
+p,li,h1,h2,h3,h4,figcaption{word-break:keep-all; overflow-wrap:break-word; text-wrap:pretty;}
+h1,h2,h3{text-wrap:balance;}
+.nb{white-space:nowrap;}
 
-/* ── Nav ── */
-.nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 20px 40px; display: flex; align-items: center; justify-content: space-between;
-  transition: background 0.4s, padding 0.4s;
-}
-.nav.scrolled { background: rgba(10,9,8,0.92); backdrop-filter: blur(12px); padding: 14px 40px; }
-.nav-logo {
-  font-family: var(--serif); font-size: 18px; letter-spacing: 6px;
-  color: var(--gold); text-transform: uppercase; font-weight: 400;
-}
-.nav-links { display: flex; gap: 32px; align-items: center; }
-.nav-links a {
-  font-size: 12px; letter-spacing: 2px; color: var(--dim);
-  text-transform: uppercase; transition: color 0.3s; font-weight: 500;
-}
-.nav-links a:hover { color: var(--gold); }
-.nav-cta {
-  font-size: 12px; letter-spacing: 1px; padding: 10px 24px;
-  border: 1px solid var(--gold); color: var(--gold); border-radius: 2px;
-  transition: all 0.3s; text-transform: uppercase;
-}
-.nav-cta:hover { background: var(--gold); color: var(--bg); }
-.nav-mobile { display: none; background: none; border: none; color: var(--gold); font-size: 24px; cursor: pointer; }
+/* ── 공통 조판 ─────────────────────────────────────────── */
+.wrap{width:100%; padding-left:var(--pad-x); padding-right:var(--pad-x);}
+.wrap-inner{max-width:1440px; margin:0 auto;}
 
-/* ── Hero ── */
-.hero {
-  min-height: 100vh; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; text-align: center;
-  padding: 120px 24px 80px;
-  background: radial-gradient(ellipse at 50% 20%, rgba(183,159,138,0.06) 0%, transparent 60%);
-  position: relative;
+/* Jost 대문자 소형 라벨 + 1px 헤어라인 = 고급감의 핵심 */
+.eyebrow{
+  font-family:var(--label); font-size:11px; font-weight:600;
+  letter-spacing:0.26em; text-transform:uppercase; color:var(--beige);
+  display:flex; align-items:center; gap:16px;
 }
-.hero::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-  height: 120px; background: linear-gradient(transparent, var(--bg));
-}
-.hero-overtitle {
-  font-family: var(--serif); font-size: 13px; letter-spacing: 8px;
-  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 40px;
-  font-weight: 400;
-}
-.hero-title {
-  font-family: var(--serif); font-size: clamp(42px, 9vw, 88px);
-  font-weight: 300; color: var(--white); line-height: 1.15;
-  letter-spacing: 4px; margin-bottom: 28px;
-}
-.hero-title em { font-style: italic; color: var(--gold); font-weight: 300; }
-.hero-sub {
-  font-size: 16px; color: var(--dim); max-width: 520px;
-  line-height: 1.9; letter-spacing: 1px; margin-bottom: 56px;
-}
-.hero-cta {
-  display: inline-flex; align-items: center; gap: 12px;
-  padding: 18px 48px; border: 1px solid rgba(183,159,138,0.4);
-  color: var(--gold-light); font-size: 13px; letter-spacing: 3px;
-  text-transform: uppercase; transition: all 0.4s; border-radius: 2px;
-}
-.hero-cta:hover {
-  background: rgba(183,159,138,0.1); border-color: var(--gold);
-  transform: translateY(-2px); box-shadow: 0 12px 40px rgba(183,159,138,0.1);
-}
-.hero-scroll {
-  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-  font-size: 11px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase;
-  z-index: 2;
-}
-.hero-scroll::after {
-  content: ''; display: block; width: 1px; height: 40px;
-  background: var(--gold-dark); margin: 12px auto 0; opacity: 0.4;
-}
+.eyebrow::after{content:""; flex:1; height:1px; background:var(--line); max-width:220px;}
+.eyebrow.solo::after{display:none;}
 
-/* ── Section Common ── */
-.section {
-  padding: 120px 40px; max-width: 1200px; margin: 0 auto;
+/* 한글 헤드라인은 반드시 Pretendard.
+   Playfair Display에는 한글 글리프가 없어 시스템 명조(바탕)로 떨어진다. */
+.h-title{
+  font-family:var(--sans); font-weight:600;
+  font-size:clamp(1.65rem,3.6vw,3rem); line-height:1.34;
+  letter-spacing:-0.035em; color:var(--black);
 }
-.section-label {
-  font-family: var(--serif); font-size: 12px; letter-spacing: 6px;
-  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 16px;
+.body-ko{
+  font-size:clamp(15px,1.15vw,17px); line-height:1.95;
+  color:var(--black-soft); letter-spacing:-0.005em;
 }
-.section-title {
-  font-family: var(--serif); font-size: clamp(28px, 5vw, 48px);
-  font-weight: 300; color: var(--white); letter-spacing: 2px;
-  line-height: 1.3; margin-bottom: 20px;
-}
-.section-desc {
-  font-size: 15px; color: var(--dim); line-height: 1.9;
-  max-width: 620px; letter-spacing: 0.3px;
-}
-.divider {
-  width: 40px; height: 1px; background: var(--gold-dark);
-  margin: 32px 0; opacity: 0.5;
-}
+.body-ko + .body-ko{margin-top:1.5em;}
+.rule{height:1px; background:var(--line); border:0;}
 
-/* ── Member Preview (3관점 중 회원 관점만 축약) ── */
-.member-preview { background: var(--surface); padding: 64px 40px; text-align: center; }
-.member-preview-inner { max-width: 720px; margin: 0 auto; }
-.member-preview-tag {
-  font-family: var(--serif); font-size: 12px; letter-spacing: 5px;
-  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 18px;
+/* ── 상단 내비 ─────────────────────────────────────────── */
+.nav{
+  position:fixed; inset:0 0 auto 0; z-index:60;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:22px var(--pad-x);
+  transition:background .45s ease, padding .45s ease, border-color .45s ease, color .45s ease;
+  border-bottom:1px solid transparent; color:var(--white);
 }
-.member-preview-line {
-  font-family: var(--serif); font-size: clamp(20px, 3vw, 28px);
-  font-weight: 300; color: var(--white); line-height: 1.6; letter-spacing: 0.5px;
+.nav.scrolled{
+  background:rgba(251,249,246,.94); backdrop-filter:blur(14px);
+  border-bottom-color:var(--line); color:var(--black); padding:15px var(--pad-x);
 }
+.nav-logo{font-family:var(--label); font-weight:700; letter-spacing:0.34em; font-size:16px;}
+.nav-logo .dot{color:var(--coral);}
+.nav-menu{display:flex; align-items:center; gap:clamp(20px,2.6vw,40px);}
+.nav-menu a{
+  font-family:var(--label); font-size:11px; font-weight:500;
+  letter-spacing:0.2em; text-transform:uppercase; opacity:.78;
+  transition:opacity .3s;
+}
+.nav-menu a:hover{opacity:1;}
+.nav-menu .nav-cta{
+  border:1px solid currentColor; padding:9px 20px; opacity:1;
+  transition:background .3s, color .3s;
+}
+.nav.scrolled .nav-menu .nav-cta:hover{background:var(--black); color:var(--white);}
+.nav-menu .nav-cta:hover{background:var(--white); color:var(--black);}
+.nav-burger{display:none; background:none; border:0; color:inherit; font-size:20px; cursor:pointer; line-height:1;}
 
-/* ── About / Brand Story ── */
-.about { background: var(--bg); padding: 120px 40px; }
-.about-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
-.about-visual {
-  height: 500px; background: var(--card); border-radius: 4px;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(183,159,138,0.08); overflow: hidden;
+/* ── 히어로 : 풀블리드 사진 ─────────────────────────────── */
+.hero{
+  position:relative; min-height:100svh; display:flex; align-items:flex-end;
+  overflow:hidden; background:var(--black);
 }
-.about-visual img { width: 100%; height: 100%; object-fit: cover; }
-.about-stats { display: flex; gap: 40px; margin-top: 40px; flex-wrap: wrap; }
-.stat { text-align: center; }
-.stat-num { font-family: var(--serif); font-size: 36px; color: var(--gold); font-weight: 300; }
-.stat-label { font-size: 11px; color: var(--dim); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+.hero-media{position:absolute; inset:0;}
+.hero-media img{width:100%; height:100%; object-fit:cover; object-position:center 42%;}
+.hero-media::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(to top,
+    rgba(24,21,20,.86) 0%, rgba(24,21,20,.55) 34%,
+    rgba(24,21,20,.18) 62%, rgba(24,21,20,.42) 100%);
+}
+.hero-inner{
+  position:relative; z-index:2; width:100%;
+  padding:0 var(--pad-x) clamp(88px,11vh,140px);
+  color:var(--white);
+}
+.hero-eyebrow{
+  font-family:var(--label); font-size:11px; font-weight:600;
+  letter-spacing:0.3em; text-transform:uppercase;
+  color:var(--beige-soft); margin-bottom:clamp(24px,3vw,38px);
+}
+.hero-en{
+  font-family:var(--serif); font-weight:400; color:var(--white);
+  font-size:clamp(3rem,8vw,7.5rem); line-height:1.02;
+  letter-spacing:-0.035em;
+}
+.hero-en em{font-style:italic; color:var(--beige-soft);}
+.hero-ko{
+  margin-top:clamp(20px,2.4vw,32px);
+  font-family:var(--sans); font-weight:500;
+  font-size:clamp(1.1rem,2.1vw,1.7rem); line-height:1.65;
+  letter-spacing:0.01em; color:rgba(251,249,246,.92);
+}
+.hero-sub{
+  margin-top:18px; max-width:44ch;
+  font-size:clamp(14px,1.05vw,16px); line-height:1.95;
+  color:rgba(251,249,246,.7);
+}
+.hero-scroll{
+  position:absolute; z-index:2; left:var(--pad-x); bottom:30px;
+  font-family:var(--label); font-size:10px; font-weight:500;
+  letter-spacing:0.3em; text-transform:uppercase;
+  color:rgba(251,249,246,.6); display:flex; align-items:center; gap:12px;
+}
+.hero-scroll::after{
+  content:""; width:56px; height:1px; background:rgba(251,249,246,.45);
+  transform-origin:left center; animation:scrollLine 2.4s ease-in-out infinite;
+}
+@keyframes scrollLine{0%,100%{transform:scaleX(.35); opacity:.4;} 50%{transform:scaleX(1); opacity:1;}}
 
-/* ── Timeline (9년 궤적 압축) ── */
-.timeline { background: var(--surface); padding: 100px 40px; }
-.timeline-grid {
-  max-width: 1200px; margin: 60px auto 0;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+/* ── 스테이트먼트 : 회원 관점 한 줄 ─────────────────────── */
+.statement{background:var(--white); padding:var(--pad-y) 0;}
+.statement .wrap-inner{max-width:1180px;}
+.statement-line{
+  margin-top:clamp(28px,3.5vw,48px);
+  font-family:var(--sans); font-weight:500;
+  font-size:clamp(1.35rem,3.1vw,2.6rem); line-height:1.6;
+  letter-spacing:-0.025em; color:var(--black);
 }
-.tl-item {
-  border-top: 2px solid var(--gold-dark); padding-top: 20px;
-}
-.tl-year { font-family: var(--serif); font-size: 20px; color: var(--gold); letter-spacing: 1px; margin-bottom: 8px; }
-.tl-name { font-size: 13px; color: var(--white); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
-.tl-desc { font-size: 13px; color: var(--dim); line-height: 1.7; }
+/* 한글 강조는 Pretendard 그대로 — 색과 굵기로만 준다 */
+.statement-line em{font-style:normal; font-weight:600; color:var(--beige);}
 
-/* ── Facilities Gallery (16가지 경험) ── */
-.facilities { background: var(--bg); }
-.gallery-grid {
-  max-width: 1200px; margin: 60px auto 0; padding: 0 40px;
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+/* ── 철학 ──────────────────────────────────────────────── */
+.philosophy{background:var(--paper); padding:var(--pad-y) 0;}
+.philo-grid{
+  display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+  gap:clamp(40px,6vw,96px); align-items:start;
 }
-.g-item { position: relative; border-radius: 4px; overflow: hidden; background: var(--card); aspect-ratio: 4/3; }
-.g-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
-.g-item:hover img { transform: scale(1.06); }
-.g-item.span-2 { grid-column: span 2; }
-.g-item.span-3 { grid-column: span 3; }
-.g-caption {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+.philo-block + .philo-block{margin-top:clamp(36px,4vw,56px);}
+.philo-h{
+  font-family:var(--label); font-size:12px; font-weight:600;
+  letter-spacing:0.2em; text-transform:uppercase; color:var(--beige);
+  margin-bottom:14px;
 }
-.g-label-ko { font-size: 13px; color: var(--white); letter-spacing: 0.5px; }
-
-/* ── Sub-brand Architecture ── */
-.subbrand { background: var(--surface); padding: 100px 40px; }
-.subbrand-grid {
-  max-width: 1200px; margin: 60px auto 0;
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+/* 인용은 한글 — Pretendard로 두고 왼쪽 헤어라인으로 격을 준다 */
+.philo-quote{
+  font-family:var(--sans); font-weight:500;
+  font-size:clamp(1.05rem,1.7vw,1.45rem); line-height:1.7;
+  color:var(--black); letter-spacing:-0.03em;
+  border-left:1px solid var(--beige); padding-left:clamp(18px,2vw,28px);
 }
-.sb-chip {
-  background: var(--card); border: 1px solid rgba(183,159,138,0.08);
-  border-radius: 4px; padding: 24px 20px; display: flex; align-items: center; gap: 14px;
+.philo-media{position:relative;}
+.philo-media img{
+  width:100%; aspect-ratio:3/4; object-fit:cover; background:var(--beige-pale);
 }
-.sb-swatch { width: 10px; height: 32px; border-radius: 2px; flex-shrink: 0; }
-.sb-name { font-family: var(--serif); font-size: 16px; color: var(--white); letter-spacing: 0.5px; }
-.sb-desc { font-size: 12px; color: var(--dim); margin-top: 2px; }
-
-/* ── CTA Band ── */
-.cta-band {
-  background: var(--surface); padding: 100px 40px; text-align: center;
-  border-top: 1px solid rgba(183,159,138,0.1);
-}
-.cta-band-inner { max-width: 640px; margin: 0 auto; }
-.cta-band-tag {
-  font-family: var(--serif); font-size: 12px; letter-spacing: 5px;
-  color: var(--gold-dark); text-transform: uppercase; margin-bottom: 18px;
-}
-.cta-band-title {
-  font-family: var(--serif); font-size: clamp(26px, 4vw, 40px);
-  font-weight: 300; color: var(--white); margin-bottom: 18px; line-height: 1.3;
-}
-.cta-band-desc { font-size: 14px; color: var(--dim); line-height: 1.8; margin-bottom: 36px; }
-.cta-band-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-.cta-primary {
-  padding: 16px 36px; background: var(--gold); color: var(--bg);
-  font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; border-radius: 999px; transition: opacity 0.3s;
-}
-.cta-primary:hover { opacity: 0.85; }
-.cta-secondary {
-  padding: 16px 36px; background: transparent; color: var(--white);
-  border: 1px solid rgba(183,159,138,0.4);
-  font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; border-radius: 999px; transition: all 0.3s;
-}
-.cta-secondary:hover { border-color: var(--gold); color: var(--gold); }
-
-/* ── Info / Footer ── */
-.info-section {
-  background: var(--bg); padding: 80px 40px;
-  border-top: 1px solid rgba(183,159,138,0.06);
-}
-.info-inner {
-  max-width: 1200px; margin: 0 auto;
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 60px;
-}
-.info-group h4 {
-  font-family: var(--serif); font-size: 14px; letter-spacing: 3px;
-  color: var(--gold); text-transform: uppercase; margin-bottom: 20px;
-}
-.info-group p { font-size: 14px; color: var(--dim); line-height: 1.9; }
-.info-group a { color: var(--gold-light); }
-
-.footer {
-  padding: 40px; text-align: center; font-size: 11px;
-  color: rgba(107,101,96,0.4); letter-spacing: 2px;
-  border-top: 1px solid rgba(183,159,138,0.04);
+.philo-cap{
+  margin-top:14px; font-family:var(--label); font-size:11px; font-weight:500;
+  letter-spacing:0.18em; text-transform:uppercase; color:var(--gray);
 }
 
-/* ── Animations ── */
-.fade-in {
-  opacity: 0; transform: translateY(30px);
-  transition: opacity 0.8s ease, transform 0.8s ease;
+/* ── 지표 : 풀블리드 사진 위 카운트업 ───────────────────── */
+.metrics{position:relative; overflow:hidden; background:var(--black);}
+.metrics-media{position:absolute; inset:0;}
+.metrics-media img{width:100%; height:100%; object-fit:cover;}
+.metrics-media::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(to bottom, rgba(24,21,20,.82), rgba(24,21,20,.72));
 }
-.fade-in.visible { opacity: 1; transform: translateY(0); }
+.metrics-inner{
+  position:relative; z-index:2; color:var(--white);
+  padding:var(--pad-y) var(--pad-x);
+}
+.metrics-lede{
+  max-width:52ch; margin-top:clamp(26px,3vw,40px);
+  font-size:clamp(15px,1.15vw,17px); line-height:1.95;
+  color:rgba(251,249,246,.78);
+}
+.metrics-grid{
+  margin-top:clamp(54px,7vw,96px);
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(28px,4vw,56px);
+}
+.metric{border-top:1px solid rgba(232,223,212,.28); padding-top:clamp(20px,2.4vw,30px);}
+.metric-num{
+  font-family:var(--serif); font-weight:400; color:var(--white);
+  font-size:clamp(2.6rem,6vw,5rem); line-height:1; letter-spacing:-0.03em;
+  display:flex; align-items:baseline; gap:.14em;
+}
+.metric-unit{
+  font-family:var(--sans); font-weight:500;
+  font-size:clamp(.9rem,1.4vw,1.3rem); letter-spacing:0; color:var(--beige-soft);
+}
+.metric-label{
+  margin-top:16px; font-size:14px; line-height:1.7; color:rgba(251,249,246,.66);
+}
+.metric-en{
+  margin-top:6px; font-family:var(--label); font-size:10px; font-weight:500;
+  letter-spacing:0.24em; text-transform:uppercase; color:rgba(183,159,138,.9);
+}
 
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .nav { padding: 16px 20px; }
-  .nav.scrolled { padding: 12px 20px; }
-  .nav-links { display: none; }
-  .nav-mobile { display: block; }
-  .hero { padding: 100px 20px 60px; }
-  .section { padding: 80px 20px; }
-  .about { padding: 80px 20px; }
-  .about-inner { grid-template-columns: 1fr; gap: 40px; }
-  .about-visual { height: 280px; }
-  .about-stats { gap: 24px; }
-  .timeline { padding: 80px 20px; }
-  .timeline-grid { grid-template-columns: 1fr 1fr; gap: 28px 20px; }
-  .facilities { padding: 0; }
-  .gallery-grid { grid-template-columns: repeat(2, 1fr); padding: 0 20px; }
-  .g-item.span-2, .g-item.span-3 { grid-column: span 2; }
-  .subbrand { padding: 80px 20px; }
-  .subbrand-grid { grid-template-columns: 1fr; }
-  .cta-band { padding: 80px 20px; }
-  .cta-band-actions { flex-direction: column; }
-  .info-inner { grid-template-columns: 1fr; gap: 40px; }
-  .info-section { padding: 60px 20px; }
+/* ── 궤적 : 핵심 마디만 ────────────────────────────────── */
+.journey{background:var(--white); padding:var(--pad-y) 0;}
+.journey-list{margin-top:clamp(44px,5vw,72px); border-top:1px solid var(--line);}
+.journey-row{
+  display:grid; grid-template-columns:130px 200px minmax(0,1fr);
+  gap:clamp(16px,3vw,48px); align-items:baseline;
+  padding:clamp(24px,3vw,38px) 0; border-bottom:1px solid var(--line);
+}
+.journey-year{
+  font-family:var(--serif); font-size:clamp(1.3rem,2.2vw,1.9rem);
+  font-weight:400; color:var(--beige); letter-spacing:-0.01em;
+}
+.journey-name{
+  font-family:var(--label); font-size:12px; font-weight:600;
+  letter-spacing:0.22em; text-transform:uppercase; color:var(--black);
+}
+.journey-desc{font-size:15px; line-height:1.9; color:var(--black-soft);}
+
+/* ── 시설 갤러리 (핵심) ────────────────────────────────── */
+.facilities{background:var(--paper); padding:var(--pad-y) 0 0;}
+.gallery{
+  margin-top:clamp(48px,6vw,84px);
+  display:grid; grid-template-columns:repeat(12,1fr); gap:clamp(8px,0.9vw,14px);
+}
+.tile{
+  position:relative; overflow:hidden; background:var(--beige-pale);
+  display:block;
+}
+.tile img{
+  width:100%; height:100%; object-fit:cover;
+  transition:transform .85s cubic-bezier(.16,.84,.44,1);
+}
+.tile:hover img{transform:scale(1.04);}
+.tile::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(to top, rgba(24,21,20,.72) 0%, rgba(24,21,20,.12) 46%, transparent 72%);
+  opacity:0; transition:opacity .55s ease;
+}
+.tile:hover::after{opacity:1;}
+.tile-cap{
+  position:absolute; z-index:2; left:0; right:0; bottom:0;
+  padding:clamp(18px,2vw,30px); color:var(--white);
+  opacity:0; transform:translateY(14px);
+  transition:opacity .5s ease, transform .55s cubic-bezier(.16,.84,.44,1);
+}
+.tile:hover .tile-cap{opacity:1; transform:translateY(0);}
+.tile-en{
+  font-family:var(--label); font-size:10px; font-weight:600;
+  letter-spacing:0.26em; text-transform:uppercase; color:var(--beige-soft);
+}
+.tile-ko{
+  margin-top:8px; font-family:var(--sans); font-weight:600;
+  font-size:clamp(15px,1.3vw,19px); letter-spacing:-0.015em;
+}
+.tile-note{margin-top:4px; font-size:13px; color:rgba(251,249,246,.74); line-height:1.6;}
+
+.t-7{grid-column:span 7; aspect-ratio:16/10;}
+.t-5{grid-column:span 5; aspect-ratio:4/5;}
+.t-4{grid-column:span 4; aspect-ratio:1/1;}
+.t-6{grid-column:span 6; aspect-ratio:3/2;}
+.t-12{grid-column:span 12; aspect-ratio:21/9;}
+/* 같은 줄의 짝 타일 — 비율을 버리고 줄 높이에 맞춰 늘어난다(줄 밑이 비지 않게) */
+.tile.fill{aspect-ratio:auto; height:100%;}
+
+/* ── 서브 브랜드 (축약) ────────────────────────────────── */
+.brands{background:var(--white); padding:var(--pad-y) 0;}
+.brand-grid{
+  margin-top:clamp(40px,5vw,64px);
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  column-gap:clamp(32px,4vw,64px);
+  border-top:1px solid var(--line);
+}
+.brand-row{
+  display:flex; align-items:center; gap:16px;
+  padding:22px 0; border-bottom:1px solid var(--line);
+}
+.brand-swatch{width:4px; height:34px; flex:0 0 auto;}
+.brand-name{
+  font-family:var(--label); font-size:13px; font-weight:600;
+  letter-spacing:0.16em; text-transform:uppercase; color:var(--black);
+}
+.brand-ko{margin-top:3px; font-size:13px; color:var(--gray); line-height:1.5;}
+
+/* ── CTA 밴드 ──────────────────────────────────────────── */
+.cta{background:var(--beige-pale); padding:var(--pad-y) 0; border-top:1px solid var(--line);}
+.cta-inner{max-width:900px;}
+.cta-title{
+  margin-top:clamp(26px,3vw,40px);
+  font-family:var(--serif); font-weight:400;
+  font-size:clamp(1.9rem,4.4vw,3.4rem); line-height:1.18; letter-spacing:-0.025em;
+}
+.cta-ko{
+  margin-top:18px; font-family:var(--sans); font-weight:500;
+  font-size:clamp(1.05rem,1.8vw,1.4rem); line-height:1.6; letter-spacing:-0.02em;
+}
+.cta-desc{margin-top:20px; max-width:48ch; font-size:15px; line-height:1.95; color:var(--black-soft);}
+.cta-actions{margin-top:clamp(34px,4vw,52px); display:flex; flex-wrap:wrap; gap:12px;}
+.btn{
+  display:inline-flex; align-items:center; gap:12px;
+  padding:18px 34px; font-family:var(--label); font-size:12px; font-weight:600;
+  letter-spacing:0.16em; text-transform:uppercase;
+  border:1px solid var(--black); transition:background .35s ease, color .35s ease;
+}
+.btn-solid{background:var(--black); color:var(--white);}
+.btn-solid:hover{background:transparent; color:var(--black);}
+.btn-line{background:transparent; color:var(--black);}
+.btn-line:hover{background:var(--black); color:var(--white);}
+
+/* ── 정보 · 푸터 ───────────────────────────────────────── */
+.info{background:var(--white); padding:clamp(72px,9vw,120px) 0 clamp(48px,6vw,72px); border-top:1px solid var(--line);}
+.info-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:clamp(28px,4vw,56px);}
+.info-h{
+  font-family:var(--label); font-size:11px; font-weight:600;
+  letter-spacing:0.24em; text-transform:uppercase; color:var(--beige);
+  padding-bottom:14px; border-bottom:1px solid var(--line); margin-bottom:18px;
+}
+.info-body{font-size:14px; line-height:2; color:var(--black-soft);}
+.info-body a{border-bottom:1px solid var(--line); transition:border-color .3s;}
+.info-body a:hover{border-bottom-color:var(--black);}
+.footer{
+  padding:26px var(--pad-x) 40px;
+  display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;
+  font-family:var(--label); font-size:10px; font-weight:500;
+  letter-spacing:0.18em; text-transform:uppercase; color:var(--gray);
+  border-top:1px solid var(--line);
+}
+
+/* ── 스크롤 리빌 ───────────────────────────────────────── */
+.reveal{opacity:0; transform:translateY(28px); transition:opacity .9s cubic-bezier(.16,.84,.44,1), transform .9s cubic-bezier(.16,.84,.44,1);}
+.reveal.on{opacity:1; transform:none;}
+
+/* ── 반응형 ────────────────────────────────────────────── */
+@media (max-width:1024px){
+  .philo-grid{grid-template-columns:1fr;}
+  .philo-media img{aspect-ratio:16/10;}
+  .brand-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .info-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .journey-row{grid-template-columns:104px 150px minmax(0,1fr);}
+}
+@media (max-width:768px){
+  .nav-menu{display:none;}
+  .nav-menu.open{
+    display:flex; flex-direction:column; align-items:flex-start; gap:18px;
+    position:absolute; top:100%; left:0; right:0;
+    background:rgba(251,249,246,.98); backdrop-filter:blur(14px);
+    color:var(--black); padding:24px var(--pad-x) 30px; border-bottom:1px solid var(--line);
+  }
+  .nav-menu.open a{opacity:1;}
+  .nav-menu.open .nav-cta{border-color:var(--black);}
+  .nav-burger{display:block;}
+  .hero-inner{padding-bottom:clamp(96px,15vh,132px);}
+  .hero-ko{font-size:1.15rem;}
+  .metrics-grid{grid-template-columns:1fr; gap:0;}
+  .metric{padding:26px 0;}
+  .metric + .metric{border-top:1px solid rgba(232,223,212,.22);}
+  .journey-row{grid-template-columns:1fr; gap:6px; padding:26px 0;}
+  .gallery{grid-template-columns:1fr; gap:10px;}
+  .t-7,.t-5,.t-4,.t-6,.t-12,.gallery .tile.fill{grid-column:span 1; aspect-ratio:4/3; height:auto;}
+  /* 모바일에는 호버가 없다 — 캡션 상시 노출 */
+  .tile::after{opacity:1;}
+  .tile-cap{opacity:1; transform:none;}
+  .brand-grid{grid-template-columns:1fr;}
+  .info-grid{grid-template-columns:1fr;}
+  .cta-actions .btn{width:100%; justify-content:space-between;}
+  .footer{flex-direction:column; gap:8px;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  .reveal{opacity:1; transform:none; transition:none;}
+  .tile img,.tile::after,.tile-cap{transition:none;}
+  .hero-scroll::after{animation:none; transform:none;}
 }
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
 <body>
 
-<!-- Nav -->
+<!-- ══ 내비 ══ -->
 <nav class="nav" id="nav">
-  <a href="#" class="nav-logo">Wellperion</a>
-  <div class="nav-links">
-    <a href="#about">소개</a>
-    <a href="#facilities">시설</a>
-    <a href="#brands">브랜드</a>
-    <a href="http://wellperion.com/ko/inquiry/" class="nav-cta">문의하기</a>
+  <a href="#top" class="nav-logo">Wellperion<span class="dot">.</span></a>
+  <div class="nav-menu" id="navMenu">
+    <a href="#philosophy">Philosophy</a>
+    <a href="#facilities">Facilities</a>
+    <a href="#brands">Brands</a>
+    <a href="#visit">Visit</a>
+    <a href="http://wellperion.com/ko/inquiry/" class="nav-cta">Reserve</a>
   </div>
-  <button class="nav-mobile" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'">&#9776;</button>
+  <button class="nav-burger" id="navBurger" aria-label="메뉴 열기" aria-expanded="false">&#9776;</button>
 </nav>
 
-<!-- Hero -->
-<section class="hero">
-  <div class="hero-overtitle">Premium Lifestyle Club &middot; Since 2017</div>
-  <h1 class="hero-title">A Day,<br><em>Well Completed.</em></h1>
-  <p class="hero-sub">
-    회원 한 사람의 건강한 하루를 완성합니다.<br>
-    한남동에서 시작해 9년째 이어온 프라이빗 멤버십 스포츠클럽입니다.
-  </p>
-  <a href="http://wellperion.com/ko/inquiry/" class="hero-cta">
-    투어 예약하기 <span style="font-size:16px;">&#8594;</span>
-  </a>
-  <div class="hero-scroll">Scroll</div>
-</section>
-
-<!-- Member Preview (3관점 중 회원 관점만) -->
-<section class="member-preview">
-  <div class="member-preview-inner fade-in">
-    <div class="member-preview-tag">For Members</div>
-    <div class="member-preview-line">하루의 완성도를 설계하는,<br>회원을 위한 건강 &amp; 힐링 커뮤니티.</div>
+<!-- ══ 히어로 · 풀블리드 ══ -->
+<header class="hero" id="top">
+  <div class="hero-media">
+    <img src="../../회사문서/assets/profile/01-hero-photo-layer.jpg" alt="웰페리온 한남동 운동 코어 전경">
   </div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Premium Lifestyle Club &middot; Since 2017</div>
+    <h1 class="hero-en">A Day,<br><em>Well Completed.</em></h1>
+    <p class="hero-ko">하루의 완성, 웰페리온</p>
+    <p class="hero-sub">회원 한 사람의 건강한 하루를 완성합니다.<br>한남동에서 9년째 이어온 프라이빗 멤버십 스포츠클럽.</p>
+  </div>
+  <div class="hero-scroll">Scroll</div>
+</header>
+
+<!-- ══ 스테이트먼트 · 회원 관점 한 줄 ══ -->
+<section class="statement">
+  <div class="wrap"><div class="wrap-inner">
+    <div class="eyebrow reveal">For Members</div>
+    <p class="statement-line reveal">
+      하루의 완성도를 <em>설계하는</em> 곳.<br>
+      운동하러 가는 곳이 아니라, 하루의 품질이 달라지는 곳입니다.
+    </p>
+  </div></div>
 </section>
 
-<!-- About / Brand Story -->
-<section class="about" id="about">
-  <div class="about-inner">
-    <div class="about-visual">
-      <img src="../../회사문서/assets/profile/02-lounge-gallery.jpg" alt="웰페리온 라운지">
+<!-- ══ 철학 ══ -->
+<section class="philosophy" id="philosophy">
+  <div class="wrap"><div class="wrap-inner">
+    <div class="eyebrow reveal">Philosophy</div>
+    <div class="philo-grid" style="margin-top:clamp(34px,4vw,56px);">
+
+      <div class="philo-media reveal">
+        <img src="../../회사문서/assets/profile/17-cinq-mondes-lounge.jpg" alt="머무름의 라운지" loading="lazy">
+        <div class="philo-cap">Ⅳ &middot; Stay &mdash; Lounge</div>
+      </div>
+
+      <div>
+        <h2 class="h-title reveal">한남동에서 시작된<br>프리미엄 라이프스타일의 새 기준.</h2>
+
+        <div class="philo-block reveal">
+          <div class="philo-h">창업 철학</div>
+          <p class="philo-quote">
+            단순한 운동이 아닌, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고
+            그날의 완성도를 채워주는 공간 &mdash; 그것이 웰페리온이 태어난 이유입니다.
+          </p>
+          <p class="body-ko" style="margin-top:22px;">
+            웰페리온은 &lsquo;운동하러 가는 곳&rsquo;이 아니라 &lsquo;하루의 품질을 설계하는 곳&rsquo;입니다.<br>
+            스포츠 &middot; 스파 &middot; 커뮤니티 &middot; 공간이 하나로 통합된 라이프스타일 인프라 &mdash;<br>
+            이것이 웰페리온이 지난 9년간 지켜온 방향입니다.
+          </p>
+        </div>
+
+        <div class="philo-block reveal">
+          <div class="philo-h">공간의 철학</div>
+          <p class="body-ko">
+            웰페리온은 시설이 아니라 장소입니다.<br>
+            <span class="nb">3,000평</span>의 면적을 단순히 분할하지 않고, 하루의 리듬에 맞춰 읽히는 시퀀스로 구성했습니다.<br>
+            도착의 라운지, 집중의 운동 코어, 회복의 스파, 머무름의 카페 &mdash;<br>
+            각 공간은 독립된 동시에 서로 연결되어 있습니다.
+          </p>
+          <p class="body-ko">
+            한남동이라는 동네의 결을 따라, 웰페리온은 장소의 일부가 되었습니다.<br>
+            간판이 아닌 공간이 말하고, 이름이 아닌 이곳을 부르는 방식으로 자리 잡았습니다.
+          </p>
+        </div>
+      </div>
+
     </div>
-    <div>
-      <div class="section-label fade-in">Our Story</div>
-      <h2 class="section-title fade-in">한남동에서 시작된<br>프리미엄 라이프스타일의 새 기준</h2>
-      <div class="divider fade-in"></div>
-      <p class="section-desc fade-in">
-        웰페리온은 &lsquo;운동하러 가는 곳&rsquo;이 아니라 &lsquo;하루의 품질을 설계하는 곳&rsquo;입니다.
-        스포츠, 스파, 커뮤니티, 공간이 하나로 통합된 라이프스타일 인프라 —
-        이것이 웰페리온이 지난 9년간 지켜온 방향입니다.
-      </p>
-      <p class="section-desc fade-in" style="margin-top:16px;">
-        3,000평의 공간은 하루의 리듬에 맞춰 흐르도록 설계되었습니다.
-        도착의 라운지, 집중의 운동 코어, 회복의 스파, 머무름의 라운지 —
-        한남동이라는 동네의 결을 따라, 웰페리온은 이 장소의 일부가 되었습니다.
-      </p>
-      <div class="about-stats fade-in">
-        <div class="stat">
-          <div class="stat-num">2017</div>
-          <div class="stat-label">설립</div>
+  </div></div>
+</section>
+
+<!-- ══ 지표 · 풀블리드 사진 위 카운트업 ══ -->
+<section class="metrics">
+  <div class="metrics-media">
+    <img src="../../회사문서/assets/profile/24-sauna.jpg" alt="회복의 스파 · 대욕장 전경" loading="lazy">
+  </div>
+  <div class="metrics-inner"><div class="wrap-inner">
+    <div class="eyebrow reveal" style="color:var(--beige-soft);">In Numbers</div>
+    <p class="metrics-lede reveal">
+      한 공간에서 9년.<br>
+      숫자는 규모를 말하기 위해서가 아니라, 그동안 지켜온 밀도를 말하기 위해 있습니다.
+    </p>
+    <div class="metrics-grid">
+      <div class="metric reveal">
+        <div class="metric-num"><span data-count="3000">0</span><span class="metric-unit">평</span></div>
+        <div class="metric-label">한남동 단일 공간</div>
+        <div class="metric-en">Single Space</div>
+      </div>
+      <div class="metric reveal">
+        <div class="metric-num"><span data-count="9">0</span><span class="metric-unit">년</span></div>
+        <div class="metric-label">한자리에서 이어온 시간</div>
+        <div class="metric-en">Since 2017</div>
+      </div>
+      <div class="metric reveal">
+        <div class="metric-num"><span data-count="1000">0</span><span class="metric-unit">명</span></div>
+        <div class="metric-label">회원 정원 &middot; 대기 멤버십 운영</div>
+        <div class="metric-en">Member Capacity</div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ══ 궤적 · 핵심 마디만 ══ -->
+<section class="journey">
+  <div class="wrap"><div class="wrap-inner">
+    <div class="eyebrow reveal">Journey &middot; 2017 &rarr; Now</div>
+    <h2 class="h-title reveal" style="margin-top:clamp(24px,3vw,36px);">9년의 궤적</h2>
+    <div class="journey-list">
+      <div class="journey-row reveal">
+        <div class="journey-year">2017</div>
+        <div class="journey-name">Origin</div>
+        <div class="journey-desc">한남동 웰페리온 오픈. <span class="nb">3,000평</span> 프리미엄 스파 &amp; 스포츠클럽으로 출발했습니다.</div>
+      </div>
+      <div class="journey-row reveal">
+        <div class="journey-year">2019</div>
+        <div class="journey-name">Expansion</div>
+        <div class="journey-desc">유소년 클래스(WSC) 런칭 &mdash; 체조 &amp; 트램폴린 &middot; 스쿼시 &middot; 골프.</div>
+      </div>
+      <div class="journey-row reveal">
+        <div class="journey-year">2024</div>
+        <div class="journey-name">Refresh</div>
+        <div class="journey-desc">브랜드 시스템 개편. 하나의 철학 아래 서브 브랜드 체계를 정립했습니다.</div>
+      </div>
+      <div class="journey-row reveal">
+        <div class="journey-year">2026</div>
+        <div class="journey-name">Maturity</div>
+        <div class="journey-desc">프리미엄 밀도를 지키기 위해 정원을 조정하고, 서비스 고도화를 이어갑니다.</div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ══ 시설 갤러리 (핵심) ══ -->
+<section class="facilities" id="facilities">
+  <div class="wrap"><div class="wrap-inner">
+    <div class="eyebrow reveal">Facilities</div>
+    <h2 class="h-title reveal" style="margin-top:clamp(24px,3vw,36px);">한 공간, 열여섯 가지 경험.</h2>
+    <p class="body-ko reveal" style="margin-top:22px; max-width:56ch;">
+      수영 &middot; 골프 &middot; 스쿼시 &middot; 머신 트레이닝부터 스파 &middot; 필라테스 &middot; 유소년 체조까지 &mdash;<br>
+      하루 루틴의 모든 조각이 한 건물 안에 있습니다.
+    </p>
+
+    <div class="gallery">
+      <a class="tile t-7 reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/20-pool.jpg" alt="25m 메인 수영장" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Water</div>
+          <div class="tile-ko">25m 메인 풀</div>
+          <div class="tile-note">7m 이상의 층고 아래, 프로페셔널한 물의 공간.</div>
         </div>
-        <div class="stat">
-          <div class="stat-num">3,000</div>
-          <div class="stat-label">평 · 한남동</div>
+      </a>
+      <a class="tile t-5 fill reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/21-golf.jpg" alt="GDR 골프 스튜디오" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Swing</div>
+          <div class="tile-ko">GDR 골프 스튜디오</div>
+          <div class="tile-note">15개 오토티업 &middot; 퍼팅 그린.</div>
         </div>
-        <div class="stat">
-          <div class="stat-num">1,000</div>
-          <div class="stat-label">회원 정원</div>
+      </a>
+
+      <a class="tile t-4 reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/22-squash.jpg" alt="스쿼시 코트" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Court</div>
+          <div class="tile-ko">스쿼시 코트</div>
+          <div class="tile-note">국제 규격 전용 코트.</div>
+        </div>
+      </a>
+      <a class="tile t-4 reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/23-technogym.jpg" alt="테크노짐 머신 라인" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Training</div>
+          <div class="tile-ko">테크노짐 풀라인업</div>
+          <div class="tile-note">근력 &middot; 유산소 전 구간 커버.</div>
+        </div>
+      </a>
+      <a class="tile t-4 reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/12-cinq-mondes-treatment.jpg" alt="생크몽드 트리트먼트 룸" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Ritual</div>
+          <div class="tile-ko">Cinq Mondes 스파</div>
+          <div class="tile-note">파리에서 시작된 스킨 스파, 한국 운영 파트너 공간.</div>
+        </div>
+      </a>
+
+      <a class="tile t-5 reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/26-pilates-stability-chair.jpg" alt="필라테스 스튜디오" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Balance</div>
+          <div class="tile-ko">STOTT 필라테스 스튜디오</div>
+          <div class="tile-note">정품 기구 기반의 소수 정예 클래스.</div>
+        </div>
+      </a>
+      <a class="tile t-7 fill reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/25-cold-bath.jpg" alt="냉탕" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Contrast</div>
+          <div class="tile-ko">냉탕 &middot; 모자이크 타일</div>
+          <div class="tile-note">온&middot;냉 교차로 마무리하는 회복 의식.</div>
+        </div>
+      </a>
+
+      <a class="tile t-12 reveal" href="#visit">
+        <img src="../../회사문서/assets/profile/28-gymnastics-studio.jpg" alt="유소년 체조 스튜디오" loading="lazy">
+        <div class="tile-cap">
+          <div class="tile-en">Next Generation</div>
+          <div class="tile-ko">유소년 체조 스튜디오</div>
+          <div class="tile-note">체조 &amp; 트램폴린 &mdash; 아이의 첫 운동 습관이 시작되는 자리.</div>
+        </div>
+      </a>
+    </div>
+  </div></div>
+</section>
+
+<!-- ══ 서브 브랜드 (축약) ══ -->
+<section class="brands" id="brands">
+  <div class="wrap"><div class="wrap-inner">
+    <div class="eyebrow reveal">Brand Architecture</div>
+    <h2 class="h-title reveal" style="margin-top:clamp(24px,3vw,36px);">하나의 철학, 아홉 개의 얼굴.</h2>
+    <p class="body-ko reveal" style="margin-top:22px; max-width:52ch;">
+      통합된 철학 아래, 각 전문 영역은 고유한 색과 개성을 갖습니다.
+    </p>
+    <div class="brand-grid">
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#B79F8A;"></span><div><div class="brand-name">Wellperion</div><div class="brand-ko">마스터 브랜드</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#3F71B0;"></span><div><div class="brand-name">Sports Club &middot; WSC</div><div class="brand-ko">유소년 클래스</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#215768;"></span><div><div class="brand-name">Swimming</div><div class="brand-ko">수영</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#B54840;"></span><div><div class="brand-name">Personal Training</div><div class="brand-ko">퍼스널 트레이닝</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#C44558;"></span><div><div class="brand-name">Pilates</div><div class="brand-ko">필라테스</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#77968E;"></span><div><div class="brand-name">Squash</div><div class="brand-ko">스쿼시</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#C2BAD6;"></span><div><div class="brand-name">Golf</div><div class="brand-ko">골프</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#8F9AB6;"></span><div><div class="brand-name">Gymnastic</div><div class="brand-ko">체조 &amp; 트램폴린</div></div></div>
+      <div class="brand-row reveal"><span class="brand-swatch" style="background:#221F20;"></span><div><div class="brand-name">Brad Little&rsquo;s</div><div class="brand-ko">스타 아카데미</div></div></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ══ CTA 밴드 ══ -->
+<section class="cta" id="visit">
+  <div class="wrap"><div class="wrap-inner cta-inner">
+    <div class="eyebrow reveal solo">Visit</div>
+    <h2 class="cta-title reveal">Begin Your Day Here.</h2>
+    <p class="cta-ko reveal">하루의 완성, 여기서 시작하세요.</p>
+    <p class="cta-desc reveal">
+      투어와 상담은 사전 예약제로 운영합니다.<br>
+      공간을 직접 걸어보시고, 하루의 동선이 어떻게 이어지는지 확인해 보세요.
+    </p>
+    <div class="cta-actions reveal">
+      <a class="btn btn-solid" href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">투어 &middot; 상담 예약 <span>&rarr;</span></a>
+      <a class="btn btn-line" href="../../chro/recruiting/index.html" target="_blank" rel="noopener">함께할 동료 찾기 <span>&rarr;</span></a>
+    </div>
+  </div></div>
+</section>
+
+<!-- ══ 정보 ══ -->
+<section class="info">
+  <div class="wrap"><div class="wrap-inner">
+    <div class="info-grid">
+      <div>
+        <div class="info-h">Location</div>
+        <div class="info-body">
+          서울특별시 용산구 서빙고로 413<br>
+          101동 지1층 101호 (한남동)<br>
+          <a href="https://map.naver.com/p/search/웰페리온" target="_blank" rel="noopener">네이버 지도 &rarr;</a>
+        </div>
+      </div>
+      <div>
+        <div class="info-h">Hours</div>
+        <div class="info-body">
+          평일 <span class="nb">06:00 &ndash; 22:30</span><br>
+          주말 &middot; 공휴일 <span class="nb">08:00 &ndash; 20:00</span><br>
+          휴관 &mdash; 신정 &middot; 명절 &middot; 매월 둘째 &middot; 넷째 일요일
+        </div>
+      </div>
+      <div>
+        <div class="info-h">Contact</div>
+        <div class="info-body">
+          <a href="tel:02-795-0220">02-795-0220</a><br>
+          <a href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">온라인 문의 &rarr;</a><br>
+          <a href="https://instagram.com/wellperion" target="_blank" rel="noopener">@wellperion</a>
+        </div>
+      </div>
+      <div>
+        <div class="info-h">Membership</div>
+        <div class="info-body">
+          정원제로 운영합니다.<br>
+          현재 대기 멤버십을 함께 운영하고 있으며,<br>
+          안내는 상담 시 드립니다.
         </div>
       </div>
     </div>
-  </div>
+  </div></div>
 </section>
 
-<!-- Timeline (9년 궤적 압축) -->
-<section class="timeline">
-  <div class="section" style="padding:0 40px;">
-    <div class="section-label fade-in">Journey · 2017 &rarr; Now</div>
-    <h2 class="section-title fade-in">9년의 궤적</h2>
-    <div class="divider fade-in"></div>
-    <p class="section-desc fade-in">한남동 오픈부터 지금의 AI·시스템 고도화까지 — 각 전환점이 웰페리온을 지금의 모습으로 만들었습니다.</p>
-  </div>
-  <div class="timeline-grid">
-    <div class="tl-item fade-in">
-      <div class="tl-year">2017</div>
-      <div class="tl-name">Origin</div>
-      <div class="tl-desc">한남동 웰페리온 오픈. 3,000평 프리미엄 스포츠클럽으로 출발.</div>
-    </div>
-    <div class="tl-item fade-in">
-      <div class="tl-year">2019</div>
-      <div class="tl-name">Expansion</div>
-      <div class="tl-desc">WSC 유소년 클래스 런칭. 체조 &middot; 트램폴린 &middot; 스쿼시 &middot; 골프.</div>
-    </div>
-    <div class="tl-item fade-in">
-      <div class="tl-year">2024</div>
-      <div class="tl-name">Refresh</div>
-      <div class="tl-desc">브랜드 시스템 정립. 9개 서브 브랜드 체계 완성.</div>
-    </div>
-    <div class="tl-item fade-in">
-      <div class="tl-year">2026</div>
-      <div class="tl-name">Transformation</div>
-      <div class="tl-desc">AI &middot; 시스템 기반 서비스 고도화 착수.</div>
-    </div>
-  </div>
-</section>
-
-<!-- Facilities Gallery (16가지 경험) -->
-<section class="facilities" id="facilities">
-  <div class="section" style="padding-bottom:0;">
-    <div class="section-label fade-in">Facilities &middot; Tour</div>
-    <h2 class="section-title fade-in">한 공간, 열여섯 가지 경험</h2>
-    <div class="divider fade-in"></div>
-    <p class="section-desc fade-in">헬스 · 수영 · 골프 · 스쿼시부터 스파 · 필라테스 · 유소년 체조까지 — 하루의 모든 루틴이 한곳에 있습니다.</p>
-  </div>
-  <div class="gallery-grid">
-    <div class="g-item span-3 fade-in">
-      <img src="../../회사문서/assets/profile/01-hero-photo-layer.jpg" alt="헬스 · 트레드밀 라인">
-      <div class="g-caption"><div class="g-label-ko">헬스 · 트레드밀 라인</div></div>
-    </div>
-    <div class="g-item span-3 fade-in">
-      <img src="../../회사문서/assets/profile/20-pool.jpg" alt="수영 25m 메인 풀">
-      <div class="g-caption"><div class="g-label-ko">수영 · 25m 메인 풀</div></div>
-    </div>
-    <div class="g-item span-2 fade-in">
-      <img src="../../회사문서/assets/profile/21-golf.jpg" alt="골프 GDR 시스템">
-      <div class="g-caption"><div class="g-label-ko">골프 · 15 오토티업</div></div>
-    </div>
-    <div class="g-item span-2 fade-in">
-      <img src="../../회사문서/assets/profile/22-squash.jpg" alt="스쿼시 정식 코트">
-      <div class="g-caption"><div class="g-label-ko">스쿼시 · 국제 규격</div></div>
-    </div>
-    <div class="g-item span-2 fade-in">
-      <img src="../../회사문서/assets/profile/23-technogym.jpg" alt="테크노짐 머신 라인">
-      <div class="g-caption"><div class="g-label-ko">머신 · 풀라인업</div></div>
-    </div>
-    <div class="g-item span-3 fade-in">
-      <img src="../../회사문서/assets/profile/24-sauna.jpg" alt="사우나 및 스파">
-      <div class="g-caption"><div class="g-label-ko">사우나 · 온탕 · 스파</div></div>
-    </div>
-    <div class="g-item span-3 fade-in">
-      <img src="../../회사문서/assets/profile/25-cold-bath.jpg" alt="냉탕">
-      <div class="g-caption"><div class="g-label-ko">냉탕 · 모자이크 타일</div></div>
-    </div>
-    <div class="g-item span-2 fade-in">
-      <img src="../../회사문서/assets/profile/26-pilates-stability-chair.jpg" alt="필라테스 스튜디오">
-      <div class="g-caption"><div class="g-label-ko">필라테스 · STOTT</div></div>
-    </div>
-    <div class="g-item span-2 fade-in">
-      <img src="../../회사문서/assets/profile/27-pilates-ladder-barrel.jpg" alt="필라테스 래더 배럴">
-      <div class="g-caption"><div class="g-label-ko">필라테스 · 래더 배럴</div></div>
-    </div>
-    <div class="g-item span-2 fade-in">
-      <img src="../../회사문서/assets/profile/28-gymnastics-studio.jpg" alt="유소년 체조 스튜디오">
-      <div class="g-caption"><div class="g-label-ko">체조 · 유소년 스튜디오</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- Sub-brand Architecture -->
-<section class="subbrand" id="brands">
-  <div class="section" style="padding:0 40px;">
-    <div class="section-label fade-in">Brand Architecture</div>
-    <h2 class="section-title fade-in">하나의 철학, 9개의 얼굴</h2>
-    <div class="divider fade-in"></div>
-    <p class="section-desc fade-in">웰페리온의 통합 철학 아래, 각 전문 영역은 고유한 컬러와 개성을 갖고 있습니다.</p>
-  </div>
-  <div class="subbrand-grid">
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#B79F8A;"></span><div><div class="sb-name">WELLPERION</div><div class="sb-desc">Master · Black &amp; Beige</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#B54840;"></span><div><div class="sb-name">PT</div><div class="sb-desc">Red &amp; Wine</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#3F71B0;"></span><div><div class="sb-name">Sports Club · WSC</div><div class="sb-desc">Sky Blue &amp; Blue</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#C44558;"></span><div><div class="sb-name">Pilates</div><div class="sb-desc">Red &amp; Pink</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#215768;"></span><div><div class="sb-name">Swimming</div><div class="sb-desc">Blue &amp; Navy</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#77968E;"></span><div><div class="sb-name">Squash</div><div class="sb-desc">Grey &amp; Mint</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#C2BAD6;"></span><div><div class="sb-name">Golf</div><div class="sb-desc">Purple &amp; Dark Purple</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#8F9AB6;"></span><div><div class="sb-name">Gymnastic</div><div class="sb-desc">Purple &amp; Light Purple</div></div></div>
-    <div class="sb-chip fade-in"><span class="sb-swatch" style="background:#000000; border:1px solid rgba(255,255,255,0.2);"></span><div><div class="sb-name">Brad Little&rsquo;s</div><div class="sb-desc">Star Academy · Black &amp; White</div></div></div>
-  </div>
-</section>
-
-<!-- CTA Band -->
-<section class="cta-band">
-  <div class="cta-band-inner fade-in">
-    <div class="cta-band-tag">Get in Touch</div>
-    <h2 class="cta-band-title">하루의 완성, 여기서 시작하세요.</h2>
-    <p class="cta-band-desc">투어·상담은 사전 예약제입니다. 회원 문의와, 함께할 동료(강사·팀)의 합류까지 — 아래에서 이어집니다.</p>
-    <div class="cta-band-actions">
-      <a href="http://wellperion.com/ko/inquiry/" target="_blank" class="cta-primary">투어 · 상담 예약 &rarr;</a>
-      <a href="../../chro/recruiting/index.html" target="_blank" class="cta-secondary">함께할 동료 찾기 (채용) &rarr;</a>
-    </div>
-  </div>
-</section>
-
-<!-- Info -->
-<section class="info-section">
-  <div class="info-inner">
-    <div class="info-group">
-      <h4>Location</h4>
-      <p>
-        서울특별시 용산구 서빙고로 413<br>
-        101동 지1층 101호 (한남동)<br><br>
-        <a href="https://map.naver.com/p/search/웰페리온" target="_blank">네이버 지도로 보기 &#8594;</a>
-      </p>
-    </div>
-    <div class="info-group">
-      <h4>Hours</h4>
-      <p>
-        평일 &nbsp;&nbsp; 06:00 - 22:30<br>
-        주말·공휴일 &nbsp;&nbsp; 08:00 - 20:00<br><br>
-        휴관: 신정 / 명절 /<br>매월 둘째·넷째 일요일
-      </p>
-    </div>
-    <div class="info-group">
-      <h4>Contact</h4>
-      <p>
-        <a href="tel:02-795-0220">02-795-0220</a><br>
-        <a href="https://instagram.com/namuk.wellperion" target="_blank">@namuk.wellperion</a><br><br>
-        <a href="http://wellperion.com/ko/inquiry/">온라인 문의하기 &#8594;</a>
-      </p>
-    </div>
-  </div>
-</section>
-
-<!-- Footer -->
 <footer class="footer">
-  &copy; 2026 WELLPERION. All rights reserved. — 파생 초안(공개 전 GM 확인용)
+  <div>&copy; 2026 Wellperion</div>
+  <div>파생 초안 &middot; 공개 전 GM 확인용</div>
 </footer>
 
 <script>
-// Nav scroll effect
-window.addEventListener('scroll', () => {
-  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 60);
-});
+(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Fade-in on scroll
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
-}, { threshold: 0.15 });
-document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  /* 내비 — 스크롤 시 종이 배경으로 전환 */
+  var nav = document.getElementById('nav');
+  window.addEventListener('scroll', function(){
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+  }, {passive:true});
+
+  /* 모바일 메뉴 */
+  var burger = document.getElementById('navBurger'), menu = document.getElementById('navMenu');
+  burger.addEventListener('click', function(){
+    var open = menu.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  menu.addEventListener('click', function(e){
+    if (e.target.tagName === 'A') menu.classList.remove('open');
+  });
+
+  /* 스크롤 리빌 — 섹션 진입 시 순차(stagger) 페이드업 */
+  var items = document.querySelectorAll('.reveal');
+  if (reduced) {
+    items.forEach(function(el){ el.classList.add('on'); });
+  } else {
+    var seen = new WeakMap();
+    var io = new IntersectionObserver(function(entries){
+      entries.filter(function(e){ return e.isIntersecting; })
+        .forEach(function(e, i){
+          if (seen.has(e.target)) return;
+          seen.set(e.target, 1);
+          e.target.style.transitionDelay = (i * 75) + 'ms';
+          e.target.classList.add('on');
+          io.unobserve(e.target);
+        });
+    }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    items.forEach(function(el){ io.observe(el); });
+  }
+
+  /* 숫자 카운트업 — 화면 진입 시 1회만 */
+  var nums = document.querySelectorAll('[data-count]');
+  function fmt(n){ return n.toLocaleString('ko-KR'); }
+  var cio = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (!e.isIntersecting) return;
+      var el = e.target, target = parseInt(el.dataset.count, 10);
+      cio.unobserve(el);
+      if (reduced) { el.textContent = fmt(target); return; }
+      var start = null, dur = 1600;
+      requestAnimationFrame(function step(ts){
+        if (start === null) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(Math.round(target * eased));
+        if (p < 1) requestAnimationFrame(step);
+      });
+    });
+  }, {threshold:0.4});
+  nums.forEach(function(el){ cio.observe(el); });
+})();
 </script>
 </body>
 </html>
