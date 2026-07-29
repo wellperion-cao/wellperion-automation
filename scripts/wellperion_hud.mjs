@@ -824,8 +824,10 @@ function buildRoleLines(cwd, role) {
     acts.sort((a, b) => (a.age ?? Infinity) - (b.age ?? Infinity) || (a.mins ?? Infinity) - (b.mins ?? Infinity));
     // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
     //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
-    //   ● + 공백 + 닉4 + 공백 + [제목] + 2칸 + 'N시간전'(최대 7) + 2칸 + '배NNNNN'(최대 8) = 26
-    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 26));
+    //   ●(2) + 공백 + 닉4 + 공백 + [제목] + 2칸 + 상태칸(항상 10으로 채움) + 2칸 + '배NNNNNN'(최대 8) = 30
+    //   ★2026-07-29 시토 — 고정폭을 26→30으로 정정. 26은 ●를 1칸으로, 상태를 7칸으로 세었는데
+    //     실제로는 ●가 2칸이고 상태는 padDisp(…,10) 으로 항상 10칸이라 매 줄이 4칸씩 넘쳤다.
+    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 30));
     return acts.map((a) => {
       const has = a.event != null;
       // ★점 = 지금 상태(실측), 오른쪽 글자 = 그 상태를 말로. 시각(N분전)은 '멈춘 뒤'에만 쓴다 —
@@ -837,7 +839,12 @@ function buildRoleLines(cwd, role) {
       else if (a.age < PAUSE_MS)    { dot = `${Y}◐${X}`; state = `${Y}멈춤 ${durText(a.age)}${X}`; }
       else                          { dot = `${D}○${X}`; state = `${D}쉼 ${durText(a.age)}${X}`; }
       const nick = padDisp(NICK[a.role], 4);
-      const ev = padDisp(has ? shortTitle(a.event, evW) : `${D}—${X}`, evW);
+      // ★제목은 **표시 폭**으로 자른다(fitCols) — shortTitle 은 글자 수로 자른다.
+      //   한글·이모지는 한 글자가 2칸이라 글자 수로 자르면 폭이 최대 두 배가 되어 줄이 창 밖으로
+      //   넘쳤다(2026-07-29 실측: 100칸 창에서 시모 줄이 130칸을 넘겨 다음 줄로 말려 내려감).
+      //   padDisp 는 폭 기준으로 채우는데 자르기만 글자 수 기준이라 둘의 잣대가 어긋나 있었다.
+      const evText = String(a.event || '').replace(/^\[[^\]]*\]\s*/, '').trim();
+      const ev = padDisp(has ? fitCols(evText, evW) : `${D}—${X}`, evW);
       const ship = has && a.ship ? `${D}배${a.ship}${X}` : '';
       return [`${dot} ${nick} ${ev}`, padDisp(state, 10), ship].filter(Boolean).join('  ');
     });
@@ -861,12 +868,20 @@ function main() {
   //   역할 기억함(ROLE_CACHE)이 채워지면 저절로 복구된다.
   const line = role ? buildLine(cwd, role, transcript, sessionId) : `${D}역할 확인중 · 작업표시 대기${X}`;
 
-  // 6 C-Level 작업현황 — ★웰리(ceo) 창에서만 보인다.
-  //   같은 PC 의 셸 5개가 이 스크립트 하나를 공유하므로, 막지 않으면 시모·시우·시포·시토 창에도
-  //   똑같이 뜬다(GM 지적 2026-07-28). 전사 현황을 보는 건 웰리 역할이라 웰리 창에만 남긴다.
+  // 6 C-Level 작업현황 — ★시토(cto) 창에서만 보인다 (GM 지시 2026-07-29).
+  //   같은 PC 의 셸 5개가 이 스크립트 하나를 공유하므로, 막지 않으면 모든 창에 똑같이 뜬다
+  //   (GM 지적 2026-07-28). 그래서 한 역할 창에만 남긴다 — 문제는 '어느 역할이냐'였다.
+  //   2026-07-28 까지는 웰리(ceo) 창이었다. 2026-07-29 GM 지시로 시토(cto) 창으로 옮긴다:
+  //   "시토는 AI 관련된 배편 진행 / 웰리는 실무 관련 내용 체크 및 지시사항 정리해서 전달 /
+  //    시토가 statusline 에 AI C레벨들 작업들 나오게 셋팅하면 최고일듯."
+  //   근거 정합: 2026-07-27 GM 확정 역할분담(ssot/kpi.json `_역할분담_2026_07_27`) —
+  //   시토=전사 AI 업무 총괄 / 웰리=실무진의 현실 업무. 전 역할의 AI 창이 지금 무엇을 하고
+  //   있는지는 **총괄하는 쪽**이 봐야 하는 화면이다. 웰리 창은 본 줄(자기 항로)만 남는다.
+  //   ※표시 항목 소유(이 파일 상단 ①웰리 단독)는 GM 직접 지시가 상위라 그대로 반영했다 —
+  //     경위는 배10341(전사 AI 업무 총괄) note 에 기록.
   // 폭이 좁으면(작은 창) 이 블록부터 접는다. worklog 가 없거나 깨져도 본 줄(line)은 절대 죽지 않게 try/catch.
   let roleBlock = '';
-  if (role === 'ceo') {
+  if (role === 'cto') {
     try {
       if (termWidth() - 1 >= 40) {
         const rl = buildRoleLines(cwd, role);
