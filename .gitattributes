@@ -6,3 +6,8 @@ _queue.json merge=queuejson
 _queue_archive.json merge=queuejson
 # append-only 로그(.jsonl): 양쪽 추가분을 union 으로 자동 결합(git 내장 드라이버).
 *.jsonl merge=union
+# 배치는 반드시 CRLF — LF 로 저장되면 cmd 가 첫 줄부터 실패해 '창이 뜨자마자 닫힘'이 된다.
+#   2026-07-30 사고: Start-AI *.bat 7종 + wellperion.bat 이 LF 로 저장돼 C-Level 부팅 전멸.
+#   core.autocrlf=true 는 git 체크아웃만 보호할 뿐, 도구가 파일을 직접 쓰면 막지 못한다.
+*.bat text eol=crlf
+*.cmd text eol=crlf
