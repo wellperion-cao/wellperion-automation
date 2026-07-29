@@ -4954,9 +4954,20 @@ function _lessonOwnerSummaryRender(t) {
   var sport = _lessonState[t].sport;
   if (!sport) { box.innerHTML = ''; return; }   // '전체' 선택 시엔 숨김 — 종목 선택 시에만 노출(GM 지시)
   var rows = _lessonState[t].rows;
+  var isYouth = (t === 'youth');
+  // 이 종목 정규 강사 명단(교차종목 판별용) — 다종목 회원(예: 유소년 수영+체조 동시 신청)은 owner가
+  // 행 전체 공유값(flat)이라 다른 종목 담당이 그대로 이 종목 집계에 섞여 들어온다. 실무진 피드백
+  // FB260729-110043(GM, 2026-07-29) "체조 종목 눌렀는데 담당자가 다른종목 담당자까지 나온다" —
+  // 실측: 체조&트램폴린 요약에 수영 담당 박민서 116명이 큰 비중으로 잡혀 있었고, 해당 39건 전수 확인
+  // 결과 100%가 수영↔체조 등 다종목 회원(단일종목 오분류 0건)이었다. row.owner 원본은 안 건드린다
+  // (2026-07-27 결정 — 개별 행 표시는 시트 값 그대로 유지) — 이 요약 카드(집계·표시전용)에서만 '이 종목
+  // 명단에 없는 담당'을 별도 표시로 분리해 실제 이 종목 코치 실적과 섞이지 않게 한다.
+  var rosterSet = {};
+  _lessonRosterFor(sport, isYouth).forEach(function(n){ rosterSet[n] = 1; });
   var byOwner = {};
   function bucketOf(owner) {
-    var k = String(owner || '').trim() || LESSON_UNASSIGNED_OPTION;
+    var k0 = String(owner || '').trim() || LESSON_UNASSIGNED_OPTION;
+    var k = (k0 !== LESSON_UNASSIGNED_OPTION && !rosterSet[k0]) ? (k0 + ' (타종목 담당)') : k0;
     if (!byOwner[k]) byOwner[k] = { count: 0, statusCounts: {} };
     return byOwner[k];
   }
@@ -4972,7 +4983,7 @@ function _lessonOwnerSummaryRender(t) {
     });
   });
   // 명단에는 있으나 관리 회원 0인 담당자도 표시(부하 파악 목적) — 종목탭 정본 강사(valid) 우선·오염 하드코딩 명단 대체. 2026-07-16 GM
-  _lessonRosterFor(sport, t === 'youth').forEach(function(name){ bucketOf(name); });
+  _lessonRosterFor(sport, isYouth).forEach(function(name){ bucketOf(name); });
   var owners = Object.keys(byOwner).sort(function(a, b){
     if (byOwner[b].count !== byOwner[a].count) return byOwner[b].count - byOwner[a].count;
     return a.localeCompare(b);
