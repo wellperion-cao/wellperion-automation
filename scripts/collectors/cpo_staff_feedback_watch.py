@@ -86,18 +86,28 @@ URGENCY_ALLOWED = ("급함", "보통", "천천히")
 #   인사·재무(시로·시뽀)는 나우열M 관할이라 자동 배정 대상이 아니다 — 해당하면 시우로 보내 사람이 본다.
 #   순서가 먼저인 항목이 우선 매치된다. 어느 것도 안 맞으면 시포로 보낸다(지금 동작 유지 = 안전 폴백,
 #   잘못 보내 사라지는 것보다 낫다).
+# ★2026-07-30(시토) — 배231·232(FB260730-083916/084209) "골프장 빔프로젝트 + PC 전원 제어
+#   시간 설정"이 시포로 갔다. 원인 실측: screen="브로제이"(화면 이름) · kind="그 외" — 둘 다
+#   업무 도메인을 담지 않는 값이라 어떤 키워드도 못 맞고 기본값(cpo)으로 떨어졌다. 실제 신호는
+#   자유서술 content("전원"·"PC")에만 있었는데 route_clevel 이 content 를 아예 보지 않고 있었다
+#   — 이 자리가 그 판정 지점(약속 L21, 새 매핑 파일 만들지 않음). content 를 판정 대상에
+#   더하고, 시설계 키워드(설비·전원·PC·프로젝터·조명·공조·누수·고장)를 cto 버킷에 보강한다.
+#   나머지 버킷도 같은 자리에서 함께 보강(회원=상담·등록·CS / 점검=근무·부서 운영 / 마케팅=발행).
 _CLEVEL_KEYWORDS = (
-    ("cto", ("시설", "배선", "자동화", "장애")),
-    ("cmo", ("마케팅", "콘텐츠", "홍보")),
+    ("cto", ("시설", "배선", "자동화", "장애", "설비", "전원", "PC", "프로젝터", "조명", "공조", "누수", "고장")),
+    ("cmo", ("마케팅", "콘텐츠", "홍보", "발행")),
     ("coo", ("인사", "재무", "급여", "채용", "회계")),  # 나우열M 관할 — 자동배정 아님, 시우가 사람에게 넘김
-    ("coo", ("점검", "공지", "접수", "VOC", "voc")),
-    ("cpo", ("회원", "강습", "문의", "멤버십")),
+    ("coo", ("점검", "공지", "접수", "VOC", "voc", "근무", "부서 운영")),
+    ("cpo", ("회원", "강습", "문의", "멤버십", "상담", "등록", "CS")),
 )
 
 
-def route_clevel(screen: str, kind: str) -> str:
-    """화면(업무 구분)·종류 텍스트로 담당 C-Level 을 고른다. 애매하면 cpo(안전 폴백)."""
-    text = f"{screen} {kind}"
+def route_clevel(screen: str, kind: str, content: str = "") -> str:
+    """화면(업무 구분)·종류·내용(content) 텍스트로 담당 C-Level 을 고른다.
+    content 를 보는 이유(2026-07-30) — screen/kind 가 화면 이름·'그 외' 처럼 도메인을
+    담지 않는 값일 때도, 실무진이 실제로 적은 자유서술에는 신호가 있다(예: "PC 전원 제어").
+    애매하면 cpo(안전 폴백)."""
+    text = f"{screen} {kind} {content}"
     for clevel, keywords in _CLEVEL_KEYWORDS:
         if any(k in text for k in keywords):
             return clevel
@@ -449,7 +459,7 @@ def build_ship(row: dict, queue, today: str) -> dict:
     first = re.sub(r"\s+", " ", content)[:44]
     title = f"실무진 피드백 — {head}: {first}" if head else f"실무진 피드백 — {first}"
 
-    clevel = route_clevel(screen, kind)
+    clevel = route_clevel(screen, kind, content)
     nick = clevel_nickname(clevel)
 
     nos = [x.get("ship_no") or 0 for x in queue if isinstance(x, dict)]
