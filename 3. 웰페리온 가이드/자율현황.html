@@ -1892,7 +1892,14 @@
     var okN = 0, badN = 0, idleN = 0;
     var rows = mods.map(function(m){
       m = m || {};
-      var name  = esc(m.name || m.feature || m.id || '—');
+      // feature 는 등록부 변경이력·모듈 내부명까지 섞여 수백~수천자가 될 수 있다(GM 화면 표면 감사
+      // 2026-07-30). 표 칸도 카드와 같은 방식(missionSnippet + cellmore 접기)으로 통일 — 한 줄만
+      // 보이고 전문은 펼쳐보기로 남긴다(정보 손실 0).
+      var nameFull = missionSummary(m.name || m.feature || m.id || '—');
+      var nameHead = missionSnippet(nameFull, 90);
+      var name = (nameHead === nameFull) ? esc(nameFull)
+        : '<details class="cellmore"><summary>' + esc(nameHead) + '</summary>'
+          + '<div class="cellfull">' + esc(nameFull) + '</div></details>';
       var owner = esc(m.owner_nick || m.owner_role || '—');
       var ns = (m.notify_spec && typeof m.notify_spec === 'object') ? m.notify_spec : null;
       var cycles = [];
@@ -2220,9 +2227,17 @@
     var rowsHtml = rows.map(function(r){
       return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
     }).join('');
+    // feature 는 등록부 변경이력·모듈 내부명까지 섞여 있어 그대로 찍으면 칸이 수백~수천자가 된다
+    // (GM 화면 표면 감사 2026-07-30). 표 칸과 같은 방식(missionSnippet + cellmore 접기)으로
+    // 한 줄만 보이고 전문은 펼쳐보기로 남긴다 — 잘라내는 게 아니라 접는 것(정보 손실 0).
+    var featureFull = missionSummary(m.feature || m.id || '');
+    var featureHead = missionSnippet(featureFull, 90);
+    var nameHtml = (featureHead === featureFull) ? esc(featureFull)
+      : '<details class="cellmore"><summary>' + esc(featureHead) + '</summary>'
+        + '<div class="cellfull">' + esc(featureFull) + '</div></details>';
     return '<div class="rcard">' +
       '<div class="rcard-top"><span class="rcard-ico">' + ico + '</span>' +
-        '<span class="rcard-tt"><span class="rcard-nm">' + esc(m.feature || m.id || '') + '</span>' +
+        '<span class="rcard-tt"><span class="rcard-nm">' + nameHtml + '</span>' +
           '<span class="rcard-meta"><span class="rcard-cy">' + cy + '</span><span class="pill ' + au.pill + '">' + esc(au.label) + '</span></span>' +
         '</span></div>' +
       rowsHtml + '</div>';
