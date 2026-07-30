@@ -14,6 +14,7 @@ import os
 import re
 import json
 import logging
+import subprocess
 from datetime import datetime, timezone, timedelta
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -128,6 +129,76 @@ def is_h15_window(exec_text: str, now: datetime) -> bool:
     return lo <= now <= hi
 
 
+# ── 교차검증 게이트(2026-07-30 시토·배39) ─────────────────────────────────────
+#   실사고: schedule.json 항목 7건(대응하는 실제 Windows 예약작업이 없는 유령)에
+#   대해 "곧 실행됩니다" 알림이 실제로 GM·C-레벨에게 나갔다(state.json 2026-07-05~06
+#   발송 이력 실측). 원인 = 이 파일이 schedule.json 만 보고 "그 실행이 진짜 있는가"를
+#   한 번도 확인하지 않았기 때문. 새 파일·새 검사기를 만들지 않고 이 소비처 하나
+#   (약속 L21 — schedule.json 의 유일 소비자)에 발송 직전 존재확인만 끼워 넣는다.
+_WEL_TASK_NAME_RE = re.compile(r'(?i)wel.?perion')  # Wellperion·Welperion(오타 L한개) 둘 다
+_TOKEN_STOPWORDS = {'cto', 'cmo', 'coo', 'cpo', 'chro', 'cfo', 'ceo'}
+
+
+def _fetch_windows_task_names():
+    """Wellperion*·Welperion* 예약작업 이름 전체 조회.
+
+    Get-ScheduledTask(CIM) 사용 — `schtasks /tn`의 'Access is denied'를 '작업 없음'으로
+    오독하지 않기 위해서다(2026-07-30 배39 실측 교훈: 권한 오류를 없음으로 읽으면 없는
+    버그를 보고하게 된다). 조회 자체가 실패하면 None을 반환한다 — 호출부는 None이면
+    게이트를 건너뛰고 기존 동작(발송)을 유지해야 한다(조회 실패로 정상 알림까지
+    끊기면 안 된다)."""
+    try:
+        # TaskName(리프 이름)뿐 아니라 TaskPath(폴더)도 본다 — \Welperion\Auto-Shutdown-2330
+        # 처럼 이름 자체엔 Welperion이 없고 폴더에만 있는 작업이 있다(scripts/schedule_
+        # inventory.py 와 동일 교훈, 2026-07-30 배39).
+        ps_cmd = (
+            "Get-ScheduledTask -ErrorAction Stop | "
+            "Where-Object { $_.TaskName -match '(?i)wel.?perion' -or $_.TaskPath -match '(?i)wel.?perion' } | "
+            "Select-Object -ExpandProperty TaskName"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
+        )
+        if result.returncode != 0:
+            logger.warning(f'[게이트] Windows 예약작업 조회 실패(rc={result.returncode}) — 게이트 건너뜀(기존 발송 유지): {result.stderr.strip()[:200]}')
+            return None
+        names = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+        return names
+    except Exception as e:
+        logger.warning(f'[게이트] Windows 예약작업 조회 예외 — 게이트 건너뜀(기존 발송 유지): {e}')
+        return None
+
+
+def _name_tokens(text: str) -> set:
+    """비교용 토큰화 — 접두사(Wellperion-/Welperion-) 제거, 소문자, 비영숫자 분리,
+    1자 이하·순수숫자·직함 불용어 제거(잡음 매칭 방지). 'AI'처럼 2자라도 이 저장소
+    맥락에선 뜻있는 토큰이라 2자부터 허용한다(3자 컷은 'AI'만 지워 유효매칭을 깨뜨렸다
+    — 2026-07-30 배39 dry-run 실측 중 발견·수정)."""
+    t = _WEL_TASK_NAME_RE.sub('', text or '')
+    toks = set(re.split(r'[^a-z0-9]+', t.lower()))
+    return {w for w in toks if len(w) > 1 and not w.isdigit() and w not in _TOKEN_STOPWORDS}
+
+
+def has_matching_scheduled_task(rec: dict, task_names) -> bool:
+    """rec(schedule.json 항목)에 대응하는 실제 Windows 예약작업이 있는지 이름 기준으로
+    판정한다. sid·name 양쪽에서 토큰을 뽑아 실제 작업명 토큰과 2개 이상 겹치면 '있음'.
+    이 저장소의 sid 체계상 사람이 붙인 슬러그(예: cto-2026-06-23-ai-education-auto-learner)는
+    실제 작업명(Wellperion-AI-Education-Weekly)과 토큰이 겹치고, 노션 이관 시절 UUID형
+    sid(예: 3500407d-a948-...)는 애초에 의미있는 토큰이 없어 자동으로 매칭 실패(=스킵)
+    한다 — 정확히 오늘 확인된 유령 7건이 이 경로로 걸러진다. 겹치는 게 없으면(확신
+    없으면) '없음' 쪽으로 기울인다(보수적)."""
+    if task_names is None:
+        return True  # 조회 실패 — 게이트 무력화, 기존 발송 동작 유지
+    cand = _name_tokens(str(rec.get('id', ''))) | _name_tokens(str(rec.get('name', '')))
+    if not cand:
+        return False  # 비교할 토큰 자체가 없음 — 확신 없으므로 보수적으로 '없음'
+    for tn in task_names:
+        if len(cand & _name_tokens(tn)) >= 2:
+            return True
+    return False
+
+
 def fetch_scheduled_records() -> list[dict]:
     """status/schedule.json (실행시간 SSOT) 정기 루틴 레코드 전체 조회.
 
@@ -229,6 +300,20 @@ def check_and_notify():
     today_str = now.strftime('%Y-%m-%d')
     notified_count = 0
 
+    # 교차검증 게이트용 — 5분마다 매번 PowerShell 을 돌리지 않게 실제로 H-15 창에
+    # 걸린 레코드가 나올 때만 지연 조회한다(1회만, 이 함수 호출 안에서 캐시).
+    task_names_cache = {}
+
+    def _task_names():
+        if 'v' not in task_names_cache:
+            tn = _fetch_windows_task_names()
+            if tn is None:
+                logger.warning('[게이트] Windows 예약작업 조회 불가 — 이번 회차는 교차검증 없이 기존 동작으로 진행')
+            else:
+                logger.info(f'[게이트] Windows 예약작업 {len(tn)}건 조회(Wellperion+Welperion)')
+            task_names_cache['v'] = tn
+        return task_names_cache['v']
+
     for rec in records:
         exec_text = rec.get('exec_time', '')
         page_id   = rec['id']
@@ -243,6 +328,12 @@ def check_and_notify():
             continue
 
         if not is_h15_window(exec_text, now):
+            continue
+
+        # 교차검증 게이트 — 대응하는 실제 Windows 예약작업이 없으면 발송하지 않는다
+        # (2026-07-30 배39: 유령 7건 실오발송 확인 후 신설). 조회 실패 시엔 통과(기존 동작).
+        if not has_matching_scheduled_task(rec, _task_names()):
+            logger.info(f'[게이트 스킵] 대응 Windows 예약작업 없음 — 발송 안 함: {name} (sid={page_id})')
             continue
 
         # 오늘 이미 알림 발송한 경우 스킵

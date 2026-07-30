@@ -42,7 +42,14 @@ _EXCLUDED_JOB_IDS = {"test_hourly"}
 # ── PowerShell: Windows 예약작업 수집(읽기 전용) ────────────────────────────
 _PS_SCRIPT = r"""
 $ErrorActionPreference = 'Stop'
-$tasks = @(Get-ScheduledTask -TaskName 'Wellperion*')
+# 2026-07-30 배39: 'Welperion'(L 한 개 오타)로 등록된 작업 2개(Auto-Shutdown-2330·
+# Ep3-Review-Reminder-0701-1000)가 'Wellperion*' 단일 패턴에서 빠져 집계가 33→실제
+# 35건과 어긋났었다(실측 확인). 이름 자체는 안 고친다(재등록은 별건) — 집계만 양쪽 다.
+# ★-TaskName 파라미터는 리프 이름만 보고 폴더(TaskPath)는 안 본다 — Auto-Shutdown-2330
+# 은 TaskName 자체엔 'Welperion'이 없고 TaskPath('\Welperion\')에만 있어 -TaskName
+# 필터로는 두 스펠링을 다 줘도 여전히 빠진다. 그래서 전체 조회 후 이름+경로 양쪽을
+# 정규식으로 본다(대소문자 무관·L 한 개도 매칭).
+$tasks = @(Get-ScheduledTask | Where-Object { $_.TaskName -match '(?i)wel.?perion' -or $_.TaskPath -match '(?i)wel.?perion' })
 $out = foreach ($t in $tasks) {
     try { $info = Get-ScheduledTaskInfo -TaskName $t.TaskName -TaskPath $t.TaskPath } catch { $info = $null }
     try { $xml = Export-ScheduledTask -TaskName $t.TaskName -TaskPath $t.TaskPath } catch { $xml = '' }
