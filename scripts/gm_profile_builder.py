@@ -145,9 +145,21 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
     status_counter = Counter(x.get("status") for x in active)
 
     # 장기 대기(라이브 재계산)
+    # ★정박 선언(next 가 ⚓ 로 시작)한 배는 세지 않는다 — 담당이 재개조건을 적어 의도적으로
+    # 세워 둔 것이고, GM 결재도 이미 끝나 있다(예: AWS 가용 ≈2026-09 · PII D안 9월까지 현상유지).
+    # 이걸 안 걸러서 프로필이 매일 "처분 판단이 미뤄져 있다"고 GM께 잘못 말해 왔다.
+    # 판정은 복제하지 않고 gm_aide_scan._is_parked 단일 지점을 재사용한다(약속 L01·L21).
+    try:
+        from gm_aide_scan import _is_parked as _parked
+    except Exception:
+        _parked = None
     long_pending = 0
+    parked_skipped = 0
     for x in active:
         if x.get("status") != "PENDING":
+            continue
+        if _parked is not None and _parked(x):
+            parked_skipped += 1
             continue
         enq = x.get("enqueued_at")
         if not enq:
@@ -180,6 +192,7 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
         "queue_status": dict(status_counter),
         "queue_archive_total": len(archive),
         "long_pending_live": long_pending,
+        "long_pending_parked_skipped": parked_skipped,
         "drift_live": drift,
     }
 
@@ -262,7 +275,11 @@ def brain_fallback(counters: dict) -> str:
     parts.append("")
     parts.append("## 자주 놓치는 것")
     parts.append(f"- 표류(완료 후 다음 미정) 라이브 {ct['drift_live']}건 — 완료 시 '다음 한 수' 지정을 빠뜨리는 경향.")
-    parts.append(f"- 장기 대기(30일+) {ct['long_pending_live']}척 — 우선순위 낮은 배의 정리·폐기 판단을 미룸.")
+    parts.append(
+        f"- 장기 대기(30일+) {ct['long_pending_live']}척 — 우선순위 낮은 배의 정리·폐기 판단을 미룸."
+        + (f" (정박 선언 {ct.get('long_pending_parked_skipped', 0)}척은 제외했다 — 재개조건이 적혀 있고 GM 결재도 끝난 배)"
+           if ct.get("long_pending_parked_skipped") else "")
+    )
     parts.append("")
     parts.append("## 루틴 준수")
     parts.append("- (추정) 지시-실행-완료 사이클은 유지되나, 사후 '다음 정하기' 루틴은 느슨.")
@@ -288,7 +305,10 @@ def render_counters_block(ct: dict) -> str:
         f"| GM 결정 이력 | {ct['gm_decisions']}건 |",
         f"| 표류(원장/라이브) | {ct['drift_events_ledger']} / {ct['drift_live']}건 |",
         f"| 활성 큐 | {ct['queue_active_total']}척 (PENDING {q.get('PENDING', 0)}·IN_PROGRESS {q.get('IN_PROGRESS', 0)}·DONE {q.get('DONE', 0)}) |",
-        f"| 장기 대기(30일+) | {ct['long_pending_live']}척 |",
+        f"| 장기 대기(30일+) | {ct['long_pending_live']}척"
+        + (f" (정박 선언 {ct.get('long_pending_parked_skipped', 0)}척은 제외 — 재개조건 대기·결재 완료)"
+           if ct.get("long_pending_parked_skipped") else "")
+        + " |",
         f"| 완료 아카이브 | {ct['queue_archive_total']}건 |",
         "",
         f"관찰 유형별: `{ct['observations_by_type']}`",
