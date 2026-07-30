@@ -194,6 +194,23 @@ def _stash_count(root: str) -> int:
         return -1
 
 
+def _dirty_vs_head(root: str) -> list:
+    """HEAD 와 다른 트래킹 파일 목록(인덱스·워킹트리 통틀어) — merge 가 보는 것과 같은 기준.
+    ★두 점 diff(HEAD 하나만)라 staged(add 만 되고 커밋 안 된 것)도 잡는다(2026-07-30).
+    실패 시 빈 리스트가 아니라 판단 불가 신호가 필요한 자리는 아니므로 조용히 []."""
+    try:
+        r = subprocess.run(
+            ["git", "diff", "--name-only", "-z", "HEAD"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        if r.returncode != 0:
+            return []
+        return [p for p in (r.stdout or "").split("\0") if p]
+    except Exception:
+        return []
+
+
 def _reconcile(root: str) -> tuple[bool, str]:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
     ★언제나 merge 로만 통합한다(rebase 경로는 배147에서 껐다 — 아래 _ALLOW_REBASE 주석 참고).
@@ -271,6 +288,24 @@ def _reconcile(root: str) -> tuple[bool, str]:
             _log("POST_COMMIT_PUSH rebase 실패; merge 폴백 시도", root)
         else:
             _log("POST_COMMIT_PUSH merge 로 통합(작업트리 되감기 없음 — 배147)", root)
+        # ★2026-07-30(GM 승인 · B안, 시토 안전조정) — merge 직전에 아직도 더러우면(화이트리스트
+        # 밖 파일이 섞였거나 미러가 그새 재경합) 무리하게 merge 하지 않는다. 사유만 남기고 다음
+        # 주기(다음 커밋 훅 또는 5분 스위퍼)로 넘긴다 — 사람이 편집 중인 파일을 이 경로가 절대
+        # 커밋하지 않기 위한 안전판. ★기계 산출물 선커밋(_commit_machine_outputs) 자체는 여기(락
+        # 보유 구간) 안에서 부르지 않는다 — safe_commit.py 가 같은 GitLock 파일을 다시 잡으려 하고
+        # (재진입 불가) 자기 자신이 든 락을 기다리며 최대 90초씩 자가교착된다(실측 확인 후 조정).
+        # 그래서 선커밋은 main()/스위퍼에서 **락을 잡기 전**에 이미 끝내고, 여기서는 그 결과만
+        # git diff 로 읽기만 한다(락 불필요).
+        still_dirty = _dirty_vs_head(root)
+        if still_dirty:
+            non_machine = [p for p in still_dirty if not _is_machine_output(p)]
+            reason = _tail(
+                "아직 더러움(" + str(len(still_dirty)) + "건, 비기계 " +
+                str(len(non_machine)) + "건) — merge 보류·다음 주기로: " +
+                ", ".join(still_dirty[:5])
+            )
+            _log(f"POST_COMMIT_PUSH {reason}", root)
+            return False, reason
         # merge — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
         mg = subprocess.run(
             ["git", "merge", "--no-edit", f"{REMOTE}/{BRANCH}"],
@@ -459,8 +494,17 @@ def _blocking_machine_outputs(root: str) -> list:
     return [p for p in (local & upstream) if _is_machine_output(p)]
 
 
-def _commit_machine_outputs(root: str) -> bool:
-    """막고 있는 기계 산출물을 safe_commit 으로 커밋. 하나도 없으면 False(무해한 no-op)."""
+def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
+    """막고 있는 기계 산출물을 safe_commit 으로 커밋. 하나도 없으면 False(무해한 no-op).
+
+    lock_timeout: safe_commit.py 서브프로세스가 GitLock 을 기다릴 최대 초.
+    None 이면 safe_commit 기본값(90s) 그대로. ★2026-07-30(GM 승인 · B안) —
+    post-commit 훅 경로에서 부를 때는 짧게(2s) 준다: 이 훅은 "commit 을 만든 부모
+    프로세스가 아직 같은 GitLock 을 쥔 채" 발화하는 경우가 흔하다(자동 커밋 경로 —
+    safe_commit_cli 가 `git commit` 을 자기 lock 안에서 실행 → 그 commit 이 이 훅을
+    동기 호출). 그 상황에서 90초씩 기다리면 매 커밋마다 스톨이 생긴다 — main() 이
+    "post-commit-push" lock 을 2초로 시도하는 것과 같은 이유·같은 값이다. 짧게 실패해도
+    무해(fail-open) — 다음 커밋 훅이나 5분 스위퍼가 다시 시도한다."""
     paths = _blocking_machine_outputs(root)
     if not paths:
         return False
@@ -468,10 +512,13 @@ def _commit_machine_outputs(root: str) -> bool:
            "3분·5분 주기 산출물이 커밋되지 않은 채 남아 git merge 가 거부되어 push 가 정체됨.\n"
            "산출물 자체는 원래 커밋되는 자동 발행물이라 정상 관문으로 커밋해 통합 창을 연다.")
     try:
+        env = os.environ.copy()
+        if lock_timeout is not None:
+            env["GIT_LOCK_ACQUIRE_TIMEOUT"] = str(lock_timeout)
         r = subprocess.run(
             [sys.executable, os.path.join(root, "scripts", "safe_commit.py"), "-m", msg, "--"] + paths,
             cwd=root, capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=120,
+            encoding="utf-8", errors="replace", timeout=120, env=env,
         )
         ok = (r.returncode == 0)
         _log(f"PUSH_SWEEPER 기계산출물 선커밋 {'ok' if ok else 'fail'} ({len(paths)}건: {', '.join(paths)})", root)
@@ -581,6 +628,17 @@ def main() -> int:
     if n == 0:
         # 이미 동기화됨 — push 불필요(무한/불필요 push 방지).
         return 0
+
+    # ★2026-07-30(GM 승인 · B안) — per-commit 훅 경로에도 스위퍼와 동일하게, 락을 잡기
+    # **전에** 막고 있는 기계 산출물을 먼저 커밋해 둔다. 예전엔 이 선커밋이 5분 스위퍼에만
+    # 있어서, 매 커밋마다 도는 이 훅은 미러(예: "3. 웰페리온 가이드/status/_queue.json" —
+    # sync_queue_mirror.py 설계상 add 만 되고 커밋 안 됨)가 더러운 채로 매번 merge 에
+    # 들어가 실패했다(실측). ★반드시 아래 lock 획득 **전**에 부른다 — safe_commit.py 가
+    # 같은 GitLock 파일을 다시 잡으려 하므로(재진입 불가) lock 을 쥔 채로 부르면 자기 자신이
+    # 든 락을 기다리며 자가교착된다(스위퍼의 기존 주석과 동일 원칙 — sync_queue_mirror.py
+    # 자체는 손대지 않는다, INC-007 차단장치). lock_timeout=2 — main() 이 아래에서
+    # "post-commit-push" lock 을 시도할 때와 같은 값·같은 이유(부모가 아직 쥐고 있을 수 있음).
+    _commit_machine_outputs(root, lock_timeout=2)
 
     # 【재진입 안전】 자동 커밋 경로(ig_review_publish_watcher·bot 등)는 GitLock
     # 임계구역 *안에서* commit 하고, post-commit 훅은 그 commit 도중에 발화한다.
