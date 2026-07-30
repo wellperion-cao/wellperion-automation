@@ -1116,6 +1116,41 @@ function _getSheet(name, headers) {
   return sh;
 }
 
+// ─── 문의접수 원시 읽기 단일 지점 — 테스트행 제외(2026-07-30 시토, 배209 GM승인) ───
+//   inquiry_list·type_channel_breakdown·period_breakdown·stage_funnel·weekly_trend 5곳이
+//   각자 _getSheet(INQUIRY_SHEET,...)+getRange().getValues() 를 불러 테스트 태그가 그대로
+//   집계에 섞였다(배209 실측 — [UTF8검증]·[진단209검증] 4행이 문의 건수·전환율에 포함됨).
+//   판정 로직을 여기 한 곳에만 두고 5곳이 재사용한다(약속 L01·L21 — 복사 금지).
+//   제외 기준 = 이름 칸의 명시적 테스트 표시. 'INQ-' id접두는 안 쓴다 — 그건 '이 액션이
+//   만든 행'이라는 뜻일 뿐 '테스트'가 아니라서, 나중에 이 액션으로 실제 문의가 들어오면
+//   그 행까지 잘못 걸러진다(배209 GM 확정 판단).
+var _INQ_TEST_NAME_MARKERS_ = ['[UTF8검증]', '[진단209검증', '자동QA', '[자동QA]'];
+function _isTestInquiryName_(name) {
+  var s = String(name || '');
+  for (var i = 0; i < _INQ_TEST_NAME_MARKERS_.length; i++) {
+    if (s.indexOf(_INQ_TEST_NAME_MARKERS_[i]) >= 0) return true;
+  }
+  return false;
+}
+// 반환 행은 기존 5곳과 동일 폭·순서(INQUIRY_HEADERS.length 컬럼) — 그 계약은 안 건드리고
+// 테스트행만 뺀다. 이름 칸 인덱스는 상수(INQUIRY_HEADERS)가 아니라 시트 실제 헤더 행을
+// 매 호출 스캔해 찾는다(열 번호 하드코딩 금지 — reference_inquiry_sheet_write_read_column_mismatch
+// 전례: 쓰는 칸과 읽는 칸이 어긋난 적이 있다). 이름 칸을 못 찾으면 거르지 않고 그대로 반환한다
+// (과다제외=실고객 누락이 더 나쁘다 — 조용히 통과, throw 금지).
+function _readInquirySheetRows_() {
+  var sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  var liveHeaders = sh.getRange(1, 1, 1, INQUIRY_HEADERS.length).getValues()[0];
+  var nameIdx = -1;
+  for (var hi = 0; hi < liveHeaders.length; hi++) {
+    if (String(liveHeaders[hi] || '').trim() === '이름') { nameIdx = hi; break; }
+  }
+  var rows = sh.getRange(2, 1, last - 1, INQUIRY_HEADERS.length).getValues();
+  if (nameIdx < 0) return rows;
+  return rows.filter(function(r) { return !_isTestInquiryName_(r[nameIdx]); });
+}
+
 function initSheets() {
   _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
   return 'OK';
@@ -5408,18 +5443,14 @@ function _processAction(body) {
   //   (원본 시트 16:45:21 KST ↔ 과거 응답 07:45:21). lesson_inquiry_list가 이미 쓰는 _miToISOTime_
   //   재사용(새 함수 금지·약속 L01) — Date getter가 스크립트 타임존(Asia/Seoul)을 그대로 읽어 KST 문자열로 낸다.
   if (action === 'inquiry_list') {
-    const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    const last = sh.getLastRow();
+    const data = _readInquirySheetRows_();   // 테스트행 제외 단일헬퍼(배209 GM승인 2026-07-30)
     const items = [];
-    if (last >= 2) {
-      const data = sh.getRange(2, 1, last - 1, INQUIRY_HEADERS.length).getValues();
-      data.forEach(row => {
-        const obj = {};
-        INQUIRY_HEADERS.forEach((h, i) => { obj[h] = row[i]; });
-        obj['시각'] = _miToISOTime_(obj['시각']);
-        items.push(obj);
-      });
-    }
+    data.forEach(row => {
+      const obj = {};
+      INQUIRY_HEADERS.forEach((h, i) => { obj[h] = row[i]; });
+      obj['시각'] = _miToISOTime_(obj['시각']);
+      items.push(obj);
+    });
     // 구글폼 문의 합류 (개인정보 제외 — 시각·유형·채널만 노출)
     _collectFormInquiries_().forEach(function(f) {
       items.push({ id: '', 시각: _miToISOTime_(f.시각), 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
@@ -9934,18 +9965,14 @@ function _processAction(body) {
       }
       tcRows.push({ 유형: tp, 채널: _canonicalChannel_(채널raw), 연락처: 연락처, 시각: 시각 });
     }
-    var tcInqSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    var tcIL = tcInqSh.getLastRow();
-    if (tcIL >= 2) {
-      var tcID = tcInqSh.getRange(2, 1, tcIL - 1, INQUIRY_HEADERS.length).getValues();
-      var tcChI = INQUIRY_HEADERS.indexOf('유입채널');
-      var tcTpI = INQUIRY_HEADERS.indexOf('문의유형');
-      var tcPhI = INQUIRY_HEADERS.indexOf('연락처');
-      var tcDtI = INQUIRY_HEADERS.indexOf('시각');
-      tcID.forEach(function(r) {
-        _tcPush_(r[tcTpI], r[tcChI], r[tcPhI], _parseAnyDate_(r[tcDtI]));
-      });
-    }
+    var tcID = _readInquirySheetRows_();   // 테스트행 제외 단일헬퍼(배209 GM승인 2026-07-30)
+    var tcChI = INQUIRY_HEADERS.indexOf('유입채널');
+    var tcTpI = INQUIRY_HEADERS.indexOf('문의유형');
+    var tcPhI = INQUIRY_HEADERS.indexOf('연락처');
+    var tcDtI = INQUIRY_HEADERS.indexOf('시각');
+    tcID.forEach(function(r) {
+      _tcPush_(r[tcTpI], r[tcChI], r[tcPhI], _parseAnyDate_(r[tcDtI]));
+    });
     _collectFormInquiries_().forEach(function(f) {
       _tcPush_(f.문의유형, f.유입채널, f.연락처, f.시각);
     });
@@ -10095,13 +10122,11 @@ function _processAction(body) {
     // ── inquiries 집계 — _collectFormInquiries_ 한 번만 호출 ──
     var formInquiries = _collectFormInquiries_(); // 【중복 제거】 단일 호출 후 재사용
 
-    var inqSh2   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    var inqLast2 = inqSh2.getLastRow();
     var inqTs    = [];
     var inqMonthRows = []; // {유입채널, 문의유형} — 이번달만 보관
     var inqSheetRows = []; // {시각(Date), 연락처, 유입채널, 문의유형} — conversion·custom용
-    if (inqLast2 >= 2) {
-      var inqData2 = inqSh2.getRange(2, 1, inqLast2 - 1, INQUIRY_HEADERS.length).getValues();
+    {
+      var inqData2 = _readInquirySheetRows_();   // 테스트행 제외 단일헬퍼(배209 GM승인 2026-07-30)
       var idxChanI  = INQUIRY_HEADERS.indexOf('유입채널'); // 6
       var idxTypeI  = INQUIRY_HEADERS.indexOf('문의유형'); // 4
       var idxPhoneI = INQUIRY_HEADERS.indexOf('연락처');   // 3
@@ -10382,12 +10407,10 @@ function _processAction(body) {
     var LES_KEYS = { owner: ['관리담당', '접수 담당자', '진행 상황'], book: ['상담예약'], visit: ['방문상태'] };
     var LES_GIDS = { 111889422: 1, 268994754: 1 };
 
-    // 멤버십 ①-a: INQUIRY_SHEET(문의접수 — 현재 0행이나 부활 대비 유지)
+    // 멤버십 ①-a: INQUIRY_SHEET(문의접수) — 테스트행 제외 단일헬퍼(배209 GM승인 2026-07-30)
     try {
-      var sfInqSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-      var sfInqLast = sfInqSh.getLastRow();
-      if (sfInqLast >= 2) {
-        var sfInqRows = sfInqSh.getRange(2, 1, sfInqLast - 1, INQUIRY_HEADERS.length).getValues();
+      var sfInqRows = _readInquirySheetRows_();
+      if (sfInqRows.length >= 1) {
         var sfInqPhoneCol = INQUIRY_HEADERS.indexOf('연락처');
         if (sfInqPhoneCol >= 0) {
           sfInqRows.forEach(function(r) {                       // ★ ①-b의 [웹접수] 미러 중복 판정용 연락처 집합
@@ -10453,22 +10476,18 @@ function _processAction(body) {
     }
 
     // ── 문의 타임스탬프 집계 — 문의접수 시트 + 구글폼 합산 ──
-    var wtInqSh   = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    var wtInqLast = wtInqSh.getLastRow();
-    if (wtInqLast >= 2) {
-      var wtInqData = wtInqSh.getRange(2, 1, wtInqLast - 1, INQUIRY_HEADERS.length).getValues();
-      wtInqData.forEach(function(r) {
-        if (!r[1]) return;
-        var d = _wtToDate_(r[1]);
-        if (isNaN(d.getTime())) return;
-        for (var bi = 0; bi < wtBuckets.length; bi++) {
-          if (d >= wtBuckets[bi].start && d < wtBuckets[bi].end) {
-            wtBuckets[bi].inquiries++;
-            break;
-          }
+    var wtInqData = _readInquirySheetRows_();   // 테스트행 제외 단일헬퍼(배209 GM승인 2026-07-30)
+    wtInqData.forEach(function(r) {
+      if (!r[1]) return;
+      var d = _wtToDate_(r[1]);
+      if (isNaN(d.getTime())) return;
+      for (var bi = 0; bi < wtBuckets.length; bi++) {
+        if (d >= wtBuckets[bi].start && d < wtBuckets[bi].end) {
+          wtBuckets[bi].inquiries++;
+          break;
         }
-      });
-    }
+      }
+    });
 
     // 구글폼 문의 합산
     _collectFormInquiries_().forEach(function(f) {
