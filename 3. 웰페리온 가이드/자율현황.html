@@ -2327,6 +2327,11 @@
       for(var i=0;i<cells.length;i++){
         var c = cells[i];
         if(c.dataset.clamped) continue;
+        // 2026-07-30(시토): 등록부 feature/name 칸은 이제 렌더 시점에 이미 접혀 있다
+        // (missionSnippet+cellmore, 한 줄 요약+펼쳐보기). textContent 는 접힌 전문까지 합산해
+        // 여전히 길게 잡히므로, 여기서 또 3줄-클램프를 씌우면 접기 위에 접기가 겹친다.
+        // 이미 자체 접힘이 있는 칸은 건드리지 않는다.
+        if(c.querySelector('details.cellmore')) continue;
         var t = (c.textContent || '').trim();
         if(t.length <= CLAMP_MIN) continue;
         c.dataset.clamped = '1';
