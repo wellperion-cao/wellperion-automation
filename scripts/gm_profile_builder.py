@@ -73,6 +73,50 @@ GM_SURFACE_PAGES = [
      "url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html"},
 ]
 
+# ── '사실인가' 원천 매핑(2026-07-31 · 배 10418 「GM 표면·G1 위생」 다음 과제 이행) ──
+# 배경: 위 점검은 '읽히는가'(글자수)·'GM 일인가'(audience 비율) 둘만 재고, 3질문의 가운데인
+# '사실인가'는 "화면별 원천 매핑이 필요"하다는 이유로 매일 범위 밖으로 남아 있었다.
+# 그래서 화면 숫자가 며칠 굳어 있어도 점검은 매일 "기준 이내"를 냈다(2026-07-27 실측:
+# GM 일일 요약이 7일째 옛 숫자였다 — 그때도 이 점검은 통과였다).
+#
+# 매핑 원칙 3가지:
+#  1) 저장소 파일만 잰다. 화면 대부분은 GAS(구글 앱스스크립트)·시트에서 값을 받아오는데,
+#     그건 이 스크립트가 못 본다 — 못 본 것은 `external` 로 적어 "측정 못 함"으로 낸다.
+#     통과로 위장하지 않는다(0 위장 방지 · wellperion-boot §2-1 #7).
+#  2) 신선도 기준은 파일 mtime 이 아니라 **git 커밋 시각**이다. 라이브 화면은 GitHub raw 를
+#     읽으므로, 로컬에서 아무리 갱신돼도 커밋 안 됐으면 GM 화면은 옛 값이다(§2-1 #8 작업트리 고립).
+#  3) 매일 갱신되는 것(`daily`)만 신선도를 따진다. 사람이 필요할 때만 고치는 것(`manual`)은
+#     오래됐다고 문제가 아니다 — 그걸 경보로 내면 매일 거짓 경보가 뜬다.
+GM_SURFACE_SOURCES = {
+    "월간운영계획": {
+        "repo": [("status/kpi_values.json", "daily")],           # kpi_collector.py 일 2회
+        "manual": ["3. 웰페리온 가이드/coo/bootsetup_matrix.json"],  # GM 인라인 편집
+        "external": ["점검 GAS(board·monthly_report·today_live)", "매출 GAS(home_kpi·sales_monthly·team_sales)"],
+    },
+    "자율현황": {
+        "repo": [("status/erp_status.json", "daily"),
+                 ("status/gm_observation_ledger.jsonl", "daily"),
+                 ("status/module_silence_snapshot.json", "daily")],
+        "manual": ["status/module_registry.json", "status/notify_registry.json", "status/audit_registry.json"],
+        "external": ["회원 이탈 GAS(cpo_churn_stats)"],
+    },
+    "G1 오늘의 항로": {
+        # G1 은 발행 루트 안 미러를 읽는다(INC-007 이후 구조). 원천은 저장소 루트 큐다.
+        "repo": [("3. 웰페리온 가이드/status/_queue.json", "daily")],
+        "manual": [],
+        "external": [],
+        "parity": ("status/_queue.json", "3. 웰페리온 가이드/status/_queue.json"),
+    },
+    "업무·결재 SSOT": {
+        "repo": [], "manual": [],
+        "external": ["업무현황 GAS(todo_list)"],
+    },
+    "브로제이 업무분장": {
+        "repo": [], "manual": [],
+        "external": ["점검 GAS(board · 브로제이 저장키)"],
+    },
+}
+
 
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -380,10 +424,75 @@ def _measure_root(page, root_sel: str) -> dict:
     )
 
 
+def _git_commit_age_days(rel_path: str) -> int | None:
+    """그 파일이 저장소에 마지막으로 커밋된 지 며칠 됐나. 못 재면 None(추측하지 않는다)."""
+    import subprocess
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%cI", "--", rel_path],
+            cwd=str(ROOT), capture_output=True, text=True, timeout=20,
+        )
+        stamp = (out.stdout or "").strip()
+        if not stamp:
+            return None
+        committed = datetime.fromisoformat(stamp).date()
+        return (TODAY - committed).days
+    except Exception:
+        return None
+
+
+def _open_ship_count(rel_path: str) -> int | None:
+    p = ROOT / rel_path
+    if not p.exists():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    items = data.get("tasks") if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        return None
+    return sum(1 for it in items if isinstance(it, dict) and it.get("status") in ("PENDING", "IN_PROGRESS"))
+
+
+def run_fact_check() -> list:
+    """3질문 중 '사실인가' — 화면이 읽는 원천이 ①굳어 있지 않은가 ②사본끼리 어긋나지 않는가.
+
+    두 가지만 잰다(잴 수 있는 것만):
+      · source_stale  — 매일 갱신돼야 할 원천이 커밋 기준 GM_SURFACE_STALE_DAYS 일 이상 그대로
+      · mirror_drift  — 화면이 읽는 사본과 원천의 열린 배 수가 다름(INC-007 부류)
+    GAS·시트에서 오는 값은 여기서 못 본다 — fact_unmeasured 로 남겨 통과로 위장하지 않는다.
+    """
+    findings: list = []
+    unmeasured: list = []
+    for label, spec in GM_SURFACE_SOURCES.items():
+        for rel, cadence in spec.get("repo", []):
+            if cadence != "daily":
+                continue
+            age = _git_commit_age_days(rel)
+            if age is None:
+                unmeasured.append(f"{label}: {rel}(커밋 이력 못 읽음)")
+            elif age >= GM_SURFACE_STALE_DAYS:
+                findings.append({"kind": "source_stale", "page": label, "source": rel,
+                                 "days": age, "limit": GM_SURFACE_STALE_DAYS})
+        parity = spec.get("parity")
+        if parity:
+            src_n, mir_n = _open_ship_count(parity[0]), _open_ship_count(parity[1])
+            if src_n is None or mir_n is None:
+                unmeasured.append(f"{label}: 사본 대조 불가({parity[0]} 또는 {parity[1]} 못 읽음)")
+            elif src_n != mir_n:
+                findings.append({"kind": "mirror_drift", "page": label,
+                                 "source": parity[0], "source_n": src_n,
+                                 "mirror": parity[1], "mirror_n": mir_n})
+        for ext in spec.get("external", []):
+            unmeasured.append(f"{label}: {ext} — 저장소 밖(측정 못 함)")
+    findings.append({"kind": "fact_unmeasured", "items": unmeasured})
+    return findings
+
+
 def run_gm_surface_check() -> tuple[list, bool]:
-    """GM 표면 3질문 점검 — ①읽히는가(칸·블록 글자수) ②GM 일인가(G1 audience 비율).
-    '사실인가'(원천 대조·갱신정지)는 화면별 원천 매핑이 필요해 이번 회차는 범위 밖으로 남기고
-    findings에 scope 한계로 명시한다(지어낸 판정 금지 — 다음 회차 과제).
+    """GM 표면 3질문 점검 — ①읽히는가(칸·블록 글자수) ②사실인가(원천 갱신정지·사본 어긋남)
+    ③GM 일인가(G1 audience 비율).
     반환: (findings 리스트, ok=점검 자체가 정상 수행됐는가).
     """
     findings: list = []
@@ -453,13 +562,17 @@ def run_gm_surface_check() -> tuple[list, bool]:
     except Exception as e:
         findings.append({"kind": "audience_check_fail", "detail": str(e)[:200]})
 
-    findings.append({"kind": "scope_note",
-                      "detail": "'사실인가'(원천 대조·갱신정지)는 화면별 원천 매핑이 필요해 이번 회차 범위 밖 — 다음 과제"})
+    # ── "사실인가" — 원천 갱신정지·사본 어긋남(2026-07-31 이행) ──
+    try:
+        findings.extend(run_fact_check())
+    except Exception as e:
+        findings.append({"kind": "fact_check_fail", "detail": str(e)[:200]})
+
     return findings, ok
 
 
 # 위반이 아니라 '측정 한계'로 분류하는 종류 — 발견 건수에 넣지 않되 숨기지도 않는다.
-NON_VIOLATION_KINDS = ("scope_note", "block_unmeasurable")
+NON_VIOLATION_KINDS = ("scope_note", "block_unmeasurable", "fact_unmeasured")
 
 
 def log_surface_check(findings: list, ok: bool) -> dict:
@@ -476,7 +589,7 @@ def log_surface_check(findings: list, ok: bool) -> dict:
         "signal_type": "surface_check",
         "summary": summary,
         "evidence": findings,
-        "pattern_hint": "3질문: 읽히는가(칸·블록 글자수)·사실인가(범위밖·다음과제)·GM 일인가(G1 audience 비율)",
+        "pattern_hint": "3질문: 읽히는가(칸·블록 글자수)·사실인가(원천 갱신정지·사본 어긋남)·GM 일인가(G1 audience 비율)",
         "dedup_key": f"surfacecheck|{today_str()}",
     }
     try:
@@ -492,13 +605,14 @@ def render_gm_surface_block(rec: dict) -> str:
     findings = [f for f in evidence if f.get("kind") not in NON_VIOLATION_KINDS]
     unmeasured = [f for f in evidence if f.get("kind") == "block_unmeasurable"]
     lines = [
-        "## 🔍 GM 표면 점검 (오늘 · \"GM이 여는 화면이 읽히는가\")",
+        "## 🔍 GM 표면 점검 (오늘 · 읽히는가 · 사실인가 · GM 일인가)",
         "",
         f"대상: {', '.join(s['label'] for s in GM_SURFACE_PAGES)}",
         "",
     ]
     if not findings:
-        lines.append(f"**없음** — 점검한 화면 전부 기준 이내(칸 ≤{GM_SURFACE_CELL_MAX}자·블록 ≤{GM_SURFACE_BLOCK_MAX}자·AI배<실무배).")
+        lines.append(f"**없음** — 점검한 화면 전부 기준 이내(칸 ≤{GM_SURFACE_CELL_MAX}자·블록 ≤{GM_SURFACE_BLOCK_MAX}자"
+                     f"·원천 {GM_SURFACE_STALE_DAYS}일 내 갱신·화면 사본 일치·AI배<실무배).")
     else:
         for f in findings:
             kind = f.get("kind")
@@ -514,13 +628,29 @@ def render_gm_surface_block(rec: dict) -> str:
                 lines.append(f"- 🔧 점검 자체 불가: {f.get('detail','')}")
             elif kind == "audience_check_fail":
                 lines.append(f"- 🔧 GM 일인가 판정 실패: {f.get('detail','')}")
+            elif kind == "source_stale":
+                lines.append(f"- ⚠️ **{f['page']}** 가 읽는 값이 {f['days']}일째 그대로다"
+                             f"(`{f['source']}` · 기준 {f['limit']}일) — 화면 숫자가 굳었을 수 있음")
+            elif kind == "mirror_drift":
+                lines.append(f"- ⚠️ **{f['page']}** 화면이 읽는 사본과 원천이 다르다 — "
+                             f"원천 {f['source_n']}척 vs 화면 사본 {f['mirror_n']}척")
+            elif kind == "fact_check_fail":
+                lines.append(f"- 🔧 사실인가 점검 실패: {f.get('detail','')}")
             else:
                 lines.append(f"- {kind}: {f}")
     lines.append("")
     if unmeasured:
         detail = " · ".join(f"{f['page']}(전체 {f['whole']}자·최대 칸 {f['max_cell']}자)" for f in unmeasured)
         lines.append(f"*블록 기준으로 못 잰 화면: {detail} — 그 화면엔 블록 마크업(section/.blk)이 없어 칸 기준만 적용했다(위반 아님·측정 한계).*")
-    lines.append("*'사실인가'(원천 대조·갱신정지)는 화면별 원천 매핑이 필요해 이번 회차 범위 밖 — 다음 과제.*")
+    unmeasured_fact = next((f for f in evidence if f.get("kind") == "fact_unmeasured"), None)
+    if unmeasured_fact and unmeasured_fact.get("items"):
+        lines.append("<details><summary>'사실인가' — 못 잰 것 "
+                     f"{len(unmeasured_fact['items'])}건 (대부분 저장소 밖 구글 시트·GAS 값)</summary>")
+        lines.append("")
+        for it in unmeasured_fact["items"]:
+            lines.append(f"- {it}")
+        lines.append("")
+        lines.append("</details>")
     lines.append(f"*측정: {rec.get('observed_at')} · 근거 = `{LEDGER.name}` 최신 surface_check 항목*")
     lines.append("")
     return "\n".join(lines)
