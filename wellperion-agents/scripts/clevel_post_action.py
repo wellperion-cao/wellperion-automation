@@ -467,6 +467,69 @@ def build_telegram_message(
     return "\n".join(lines)
 
 
+# ── 완료보고 목적지 분리 (2026-07-30 배202 ①·팀리드 지시) ──────────────────────
+# 배경: 이 파일의 정식 L18 완료보고가 audience 와 무관하게 전부 업무보고방(8254867551)
+# 으로 나갔고, notify_registry.json 에도 등록이 안 돼 있었다 — GM 2026-07-25 확정 규칙
+# ("업무보고방=현실업무만·AI진행건=AI진행현황방")을 이 관문만 안 지키고 있었다(오늘 실측:
+# 부분로그만으로도 6건). 그 배의 audience 로 갈라 보낸다. audience 판정이 없거나 못 읽으면
+# 지금까지와 동일하게 업무보고방(안전측 폴백 — 조용히 사라지는 경로를 만들지 않는다).
+def _lookup_audience(task_id: str) -> str | None:
+    """큐에서 task_id 하나의 audience 필드만 읽는다. 없거나 못 읽으면 None."""
+    try:
+        if not _QUEUE_PATH.exists():
+            return None
+        queue = json.loads(_QUEUE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    for t in queue:
+        if isinstance(t, dict) and t.get("task_id") == task_id:
+            aud = t.get("audience")
+            return aud.strip().lower() if isinstance(aud, str) and aud.strip() else None
+    return None
+
+
+def send_ai_progress_report(
+    clevel: str,
+    task_id: str,
+    status: str,
+    summary: str,
+    dry_run: bool,
+    title: str = "",
+    artifact_url: str = "",
+    next_desc: str = "",
+    terminal: bool = False,
+) -> bool:
+    """AI 진행현황방 완료보고 — notify_gm_progress.notify() 단일 관문 재사용(새 발신 함수
+    신설 금지 · 약속 L21). audience=ai 인 배만 여기로 온다. dedup·daily_cap·게이트는
+    notify_gm_progress.py 의 기존 동작을 그대로 따른다(여기서 재구현하지 않는다)."""
+    try:
+        from notify_gm_progress import notify as _notify_ai  # noqa: PLC0415
+    except Exception as e:
+        print("[ERROR] notify_gm_progress import 실패: " + str(e), file=sys.stderr)
+        return False
+
+    nick = _ROLE_NICK.get(clevel.lower(), clevel.upper())
+    state = "done" if normalize_status(status) == "DONE" else "doing"
+    nxt = next_desc or ("🌀 여기서 종결" if terminal else None)
+    result = _notify_ai(
+        summary=title or summary,
+        link=artifact_url or None,
+        ship=nick,
+        state=state,
+        dry_run=dry_run,
+        nxt=nxt,
+    )
+    if dry_run:
+        print("[DRY-RUN] would send (AI진행현황방):\n" + result.get("text", ""))
+        return True
+    if result.get("sent"):
+        print("[AI진행현황방] 보고 완료: " + task_id)
+        return True
+    print("[WARN] AI진행현황방 미발송(reason=" + str(result.get("reason")) + ") — " + task_id,
+          file=sys.stderr)
+    return False
+
+
 def send_telegram(
     clevel: str,
     task_id: str,
@@ -682,20 +745,35 @@ def main() -> int:
         print("[Telegram] 루틴/자동 완료 — GM 채널 보고 스킵(스팸 방지): " + args.task_id)
         ok_telegram = True
     else:
-        ok_telegram = send_telegram(
-            clevel=args.clevel,
-            task_id=args.task_id,
-            status=args.status,
-            summary=args.summary,
-            dry_run=args.dry_run,
-            bridge_label=bridge_label,
-            title=title,
-            version=args.version,
-            changelog=args.changelog,
-            artifact_url=args.artifact_url or "",
-            next_desc=args.next_desc or "",
-            terminal=args.terminal,
-        )
+        audience = _lookup_audience(args.task_id)
+        print("[라우팅] audience=" + (audience or "(없음→업무보고방 폴백)"))
+        if audience == "ai":
+            ok_telegram = send_ai_progress_report(
+                clevel=args.clevel,
+                task_id=args.task_id,
+                status=args.status,
+                summary=args.summary,
+                dry_run=args.dry_run,
+                title=title,
+                artifact_url=args.artifact_url or "",
+                next_desc=args.next_desc or "",
+                terminal=args.terminal,
+            )
+        else:
+            ok_telegram = send_telegram(
+                clevel=args.clevel,
+                task_id=args.task_id,
+                status=args.status,
+                summary=args.summary,
+                dry_run=args.dry_run,
+                bridge_label=bridge_label,
+                title=title,
+                version=args.version,
+                changelog=args.changelog,
+                artifact_url=args.artifact_url or "",
+                next_desc=args.next_desc or "",
+                terminal=args.terminal,
+            )
 
     # ── 세션 GM 신호 흡수(배 10267): --gm-signal 없으면 완전 무동작 ──────────
     if args.gm_signal:

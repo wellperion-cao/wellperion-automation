@@ -584,6 +584,21 @@
       "state": "live",
       "state_note": "텔레그램 문의알림방 다이제스트와 같은 작업에서 동시 발신 · 카톡 방 창 미개방 시 best-effort 실패(텔레그램엔 무영향)",
       "source": "telegram_bot/daily_scheduler.py:2507,2614-2627"
+    },
+    {
+      "id": "clevel-l18-completion-report",
+      "when": "매 작업 완료 시(부정기)",
+      "when_sort": null,
+      "freq": "event",
+      "channel": "telegram",
+      "room": "GM_DM(audience=office 또는 미판정) / 자동화현황방(audience=ai)",
+      "chat_id": null,
+      "what": "전 C-Level 정식 L18 완료보고(.bat/큐 흐름) — 그 배의 audience 로 목적지를 가름",
+      "owner": "전 C-Level",
+      "trigger": "manual",
+      "state": "live",
+      "state_note": "2026-07-30 배202 ① 신설 등록(그 전엔 등록부에 아예 없이 전량 업무보고방으로 나가고 있었음 — 오늘 실측으로 발견). audience=ai 는 notify_gm_progress.notify() 경유(dedup·daily_cap 그대로 적용) · audience=office/없음은 기존 telegram_notifier 경유. 루틴/자동완료(is_routine)는 여전히 스킵.",
+      "source": "wellperion-agents/scripts/clevel_post_action.py:_lookup_audience,send_ai_progress_report,send_telegram"
     }
   ]
 }
