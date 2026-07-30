@@ -194,23 +194,6 @@ def _stash_count(root: str) -> int:
         return -1
 
 
-def _dirty_vs_head(root: str) -> list:
-    """HEAD 와 다른 트래킹 파일 목록(인덱스·워킹트리 통틀어) — merge 가 보는 것과 같은 기준.
-    ★두 점 diff(HEAD 하나만)라 staged(add 만 되고 커밋 안 된 것)도 잡는다(2026-07-30).
-    실패 시 빈 리스트가 아니라 판단 불가 신호가 필요한 자리는 아니므로 조용히 []."""
-    try:
-        r = subprocess.run(
-            ["git", "diff", "--name-only", "-z", "HEAD"],
-            cwd=root, capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=30,
-        )
-        if r.returncode != 0:
-            return []
-        return [p for p in (r.stdout or "").split("\0") if p]
-    except Exception:
-        return []
-
-
 def _reconcile(root: str) -> tuple[bool, str]:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
     ★언제나 merge 로만 통합한다(rebase 경로는 배147에서 껐다 — 아래 _ALLOW_REBASE 주석 참고).
@@ -296,11 +279,23 @@ def _reconcile(root: str) -> tuple[bool, str]:
         # (재진입 불가) 자기 자신이 든 락을 기다리며 최대 90초씩 자가교착된다(실측 확인 후 조정).
         # 그래서 선커밋은 main()/스위퍼에서 **락을 잡기 전**에 이미 끝내고, 여기서는 그 결과만
         # git diff 로 읽기만 한다(락 불필요).
-        still_dirty = _dirty_vs_head(root)
+        # ★2026-07-31(시토 · 배245) — 판정 기준을 "더러운 파일이 하나라도 있나"에서
+        #   "**merge 가 실제로 건드릴 파일**이 더러운가"로 좁힌다.
+        #   왜: 이 저장소는 3분·5분 자동화가 20건 넘는 산출물을 상시 더럽게 유지한다
+        #   (실측 2026-07-31: 상시 23건). 예전 기준은 그중 단 하나만 더러워도 merge 를
+        #   건너뛰었는데, 그 23건 중 원격도 건드리는 건 5건뿐이었다. 즉 merge 는
+        #   **한 번도 시도되지 않았고** non-fast-forward 가 영구 지속됐다 — 그러는 동안
+        #   커밋 훅·스위퍼는 매 주기 '기계 산출물 선커밋'만 반복해 새 커밋을 찍었다
+        #   (실측: 미푸시 900건 중 588건이 그 자동 커밋 · 라이브 화면 8시간 정지).
+        #   git merge 가 거부하는 조건은 "더러움" 자체가 아니라 **merge 가 덮어써야 할
+        #   파일이 더러움**이다. 그래서 _blocking_machine_outputs 와 **같은 두 점 기준**
+        #   (HEAD vs origin — 이유는 그 함수 주석 참고)으로 교집합만 본다.
+        #   교집합에 남은 게 있으면 그대로 보류한다(사람이 편집 중인 파일 보호 — 원래 목적 유지).
+        still_dirty = _merge_blocking_paths(root)
         if still_dirty:
             non_machine = [p for p in still_dirty if not _is_machine_output(p)]
             reason = _tail(
-                "아직 더러움(" + str(len(still_dirty)) + "건, 비기계 " +
+                "merge 대상 파일이 더러움(" + str(len(still_dirty)) + "건, 비기계 " +
                 str(len(non_machine)) + "건) — merge 보류·다음 주기로: " +
                 ", ".join(still_dirty[:5])
             )
@@ -478,8 +473,13 @@ def _is_machine_output(p: str) -> bool:
     return any(p.startswith(d) for d in _MACHINE_OUTPUT_DIRS)
 
 
-def _blocking_machine_outputs(root: str) -> list:
-    """통합을 막고 있는 기계 산출물 경로 — '로컬에서 바뀌었고 origin 도 바꾼' 것만."""
+def _merge_blocking_paths(root: str) -> list:
+    """통합을 막고 있는 경로 전부 — '로컬에서 바뀌었고(더러움) origin 도 바꾼' 것만.
+
+    이것이 git merge 가 실제로 거부하는 조건이다("local changes would be overwritten
+    by merge"). 단순히 '작업트리가 더러운가'가 아니다 — 이 저장소는 자동화 때문에
+    항상 더럽기 때문에 그 기준으로는 merge 가 영원히 안 열린다(배245).
+    """
     def _paths(args):
         r = subprocess.run(["git"] + args, cwd=root, capture_output=True,
                            text=True, encoding="utf-8", errors="replace", timeout=30)
@@ -491,7 +491,12 @@ def _blocking_machine_outputs(root: str) -> list:
     #   실측 2026-07-27: 세 점으로는 차단 파일이 0건으로 보였는데 두 점으로는 잡혔고,
     #   실제 merge 는 바로 그 파일을 이유로 거부했다("local changes would be overwritten").
     upstream = _paths(["diff", "--name-only", "-z", "HEAD", f"{REMOTE}/{BRANCH}"])
-    return [p for p in (local & upstream) if _is_machine_output(p)]
+    return sorted(local & upstream)
+
+
+def _blocking_machine_outputs(root: str) -> list:
+    """통합을 막고 있는 것 중 **기계 산출물만** — 선커밋으로 길을 틀 수 있는 것들."""
+    return [p for p in _merge_blocking_paths(root) if _is_machine_output(p)]
 
 
 def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
