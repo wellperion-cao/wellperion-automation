@@ -123,6 +123,24 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
     session_signal_total = sum(session_sources.values())
     machine_mirror_total = len(ledger) - session_signal_total
 
+    # 경로가 '있다'와 '쓰인다'는 다르다 — 최근 7일 실제 사용량·사용 역할을 따로 센다(ship 10267).
+    # 2026-07-29 발효한 흡수 경로(clevel_post_action.py --gm-signal)가 실제로 원장을 채우는지
+    # 매 실행 재측정한다. 이 값이 안 오르면 경로가 있어도 학습기는 여전히 GM을 못 본다.
+    session_recent_cut = TODAY - timedelta(days=7)
+    session_recent = 0
+    session_roles: set[str] = set()
+    for r in ledger:
+        src = r.get("source") or ""
+        if "_session_" not in src:
+            continue
+        session_roles.add(src.split("_session_")[0])
+        try:
+            d = datetime.strptime(str(r.get("observed_at", ""))[:10], "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if d >= session_recent_cut:
+            session_recent += 1
+
     # 활성 큐 상태 분포
     status_counter = Counter(x.get("status") for x in active)
 
@@ -154,6 +172,8 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
         "observations_by_source": dict(by_source),
         "session_signal_total": session_signal_total,
         "machine_mirror_total": machine_mirror_total,
+        "session_signal_recent7": session_recent,
+        "session_signal_roles": sorted(session_roles),
         "gm_decisions": by_type.get("decision", 0),
         "drift_events_ledger": by_type.get("repeat", 0),
         "queue_active_total": len(active),
@@ -295,8 +315,12 @@ def render_source_honesty_block(ct: dict) -> str:
         f"(source에 `_session_` 포함 — 예 `cmo_session_2026-07-25`).",
         f"- 나머지 {machine_n}건은 시스템이 자기 가동(`gm_aide_auto_exec`)을 스스로 적거나,"
         " 큐 상태(`queue_active`/`queue_archive`)를 그대로 미러링한 기록이다 — GM 행동을 관찰한 것이 아니다.",
-        "- **세션 대화 중 GM의 실시간 교정·선호를 원장에 자동으로 넣는 경로는 아직 없다.**"
-        " 지금까지는 사람(C-Level)이 대화 후 손으로 append 했다 — 세션이 끝나면 그 교정은 원장에 남지 않고 사라진다(ship 10267).",
+        "- **세션 교정을 원장에 남기는 경로는 있다**(2026-07-29 발효): 전 C-Level 이 작업 종료 직전 반드시"
+        " 지나가는 관문 `clevel_post_action.py` 에 `--gm-signal \"<GM이 남긴 한 줄>\"` 을 붙이면 이 원장에"
+        " 세션신호로 쌓인다(새 파일·새 감시기 0).",
+        f"- 다만 **경로가 있다 ≠ 쓰인다.** 최근 7일 실제 사용 = **{ct.get('session_signal_recent7', 0)}건**,"
+        f" 남긴 역할 = {', '.join(ct.get('session_signal_roles') or []) or '없음'}."
+        " 붙이는 것이 아직 각 역할의 판단에 달려 있어, 안 붙인 세션의 교정은 대화에만 남아 사라진다(ship 10267).",
         "- 위 '선호·습관' 서술 중 이 정직 표기 이전 회차는 세션신호 비중이 낮았던 시점의 근거로 쓰였을 수 있다 — 날짜 표기 없는 해석은 재확인 전 잠정으로 읽는다.",
         "",
     ]
@@ -484,7 +508,7 @@ def render_gm_surface_block(rec: dict) -> str:
 
 # ═══════════════════════════════════════════
 #  북극성 지표 — "GM이 하루에 개입한 일 중 GM만 할 수 있었던 일의 비율"
-#  자동집계는 원장의 GM 세션신호 비율이 3.8%뿐이라 불가(ship 10267 — GM 성향 학습기 별개 과제).
+#  자동집계는 원장의 GM 세션신호가 아직 얇아 불가(비율은 render 시점에 실측해 표기 — 하드코딩 금지).
 #  이번 회차는 웰리가 하루 끝에 채워 넣는 "칸"까지만 만든다. 새 원장 0 — 기존 LEDGER 재사용.
 # ═══════════════════════════════════════════
 def record_northstar_ratio(total: int, gm_only: int, note: str = "") -> dict:
@@ -510,6 +534,9 @@ def record_northstar_ratio(total: int, gm_only: int, note: str = "") -> dict:
 
 def render_northstar_block(ledger: list) -> str:
     entries = [r for r in ledger if r.get("source") == "welly_daily_northstar"]
+    # 자동집계 가능 여부의 근거를 실측해 적는다(하드코딩된 옛 비율 금지).
+    sess_n = sum(1 for r in ledger if "_session_" in str(r.get("source") or ""))
+    sess_pct = round(100 * sess_n / len(ledger), 1) if ledger else 0.0
     header = "## 🌟 북극성 — GM 전용 개입 비율\n"
     cmd = ('다음 기록: `python scripts/gm_profile_builder.py --record-northstar '
            '<총건수> <GM전용건수> "<한줄메모>"`')
@@ -521,7 +548,7 @@ def render_northstar_block(ledger: list) -> str:
     return (
         f"{header}\n**{badge}: {latest['summary']}**\n\n"
         "*정직 조건: 분모는 그날 GM이 짚은 것 전부(좋아 보이게 줄이지 않음). "
-        "자동집계는 아직 불가(원장 GM세션신호 비율 낮음 — ship 10267에서 별도 진행 중).*\n\n"
+        f"자동집계는 아직 불가 — 원장의 GM 세션신호가 {sess_n}건({sess_pct}%)뿐이다(ship 10267 진행 중).*\n\n"
         f"{cmd}\n"
     )
 

@@ -652,6 +652,15 @@ def main() -> int:
         print('  → 권장: --next "다음 할 일 한 줄"  또는  --terminal',
               file=sys.stderr)
         print("=" * 60, file=sys.stderr)
+    # ── GM 신호 누락 알림(배 10267) — 사람이 낀 완료에만, 막지는 않는다 ────────
+    # 배경: --gm-signal 흡수 경로는 2026-07-29 발효했는데 저장소 어디에서도 이 인자를
+    # 부르지 않아 24시간 동안 실제 기록이 1건뿐이었다(경로는 있고 아무도 몰랐다).
+    # 그래서 경로가 이미 지나가는 이 자리에서 한 줄로 알린다. 루틴·기계 완료
+    # (welly_auto_runner·ADHOC 등)는 GM 교정이 나올 자리가 아니라 제외 — 스팸 방지.
+    if is_done and not args.gm_signal and not is_routine(args.task_id, args.changelog):
+        print('[GM신호 알림] 이번 세션에서 GM이 교정·선호를 남겼으면 원장에 함께 남기세요 '
+              '— 안 남기면 그 교정은 세션 종료와 함께 사라집니다.')
+        print('  → 예: --gm-signal "GM: 완료 보고는 표로만" --gm-signal-type preference')
     bridge_label, _ = update_queue_with_bridge(
         task_id=args.task_id,
         clevel=args.clevel,
