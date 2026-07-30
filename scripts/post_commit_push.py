@@ -398,7 +398,49 @@ _MACHINE_OUTPUTS = (
     "status/_queue.json",
     "status/worklog.jsonl",
     "status/home_kpi_snapshot.json",
+    # ── 2026-07-30(GM 승인 · CTO 실측) 추가 — 새 로깅(위 _reconcile 수정)으로 잡은 실제
+    #   차단 파일이 "3. 웰페리온 가이드/status/_queue.json"(이미 위에 있었는데도 막혔다 — 몇 초
+    #   간격으로 다시 더러워지는 경합. _sweep() 의 재시도 루프가 이걸 흡수한다)이었던 것을 계기로,
+    #   상시 더러운 나머지 기계 산출물도 전수 확인해 추가했다. 전부 grep 으로 쓰기 스크립트를
+    #   실측 확인(사람이 손으로 고치는 파일 아님) — 판정 근거는 각 줄 주석.
+    "logs/.tg_last_send",                        # scripts/tg_outbound_log.py
+    "status/cmo_reaction_scorecard.json",         # scripts/reaction_scorecard.py 등
+    "status/erp_status.json",                     # scripts/erp_status_publisher.py
+    "status/incident_health.md",                  # ssot/incident_regression_monitor.py
+    "status/kakao_dedup_ledger.json",             # scripts/kakao_report_sender.py
+    "status/kakao_last_send.json",                # scripts/kakao_auto_daily_report.py 등
+    "status/kpi_values.json",                     # scripts/build_voyage_map.py 등
+    "status/module_silence_snapshot.json",        # scripts/module_silence_detector.py
+    "status/northstar_reach.json",                # scripts/northstar_reach.py
+    "status/parking_revenue.json",                # scripts/parking_revenue_crawler.py
+    "status/publish_audit_state.json",            # scripts/publish_status_audit.py 등
+    "status/weekly_bundle_pending_stream3_daily.json",
+    "status/welly_auto_runner_ping_state.json",   # scripts/welly_auto_runner.py
+    "status/welly_auto_runner_state.json",        # scripts/welly_auto_runner.py
+    "telegram_bot/bot_heartbeat.txt",             # scripts/telegram_health_check.py 등
+    # status/{role}.json 7종 — wellperion-agents/scripts/clevel_post_action.py 가 쓰는
+    # C-Level 보조(메타) 상태(CLAUDE.md §5 · "완료건 부활 금지, 큐가 정본"). 사람이 직접 고치지 않는다.
+    "status/ceo.json",
+    "status/cfo.json",
+    "status/chro.json",
+    "status/cmo.json",
+    "status/coo.json",
+    "status/cpo.json",
+    "status/cto.json",
 )
+
+# status/heartbeats/*.json — 전 C-Level 모듈 하트비트(각 collector 가 자기 것만 씀).
+# 개별 나열 대신 디렉터리 전체를 기계 산출물로 취급한다 — 새 하트비트가 추가돼도(각 모듈이
+# 자기 id 로 파일 하나씩 늘 뿐) 그때마다 이 목록을 또 고치지 않아도 되게(2026-07-30).
+_MACHINE_OUTPUT_DIRS = (
+    "status/heartbeats/",
+)
+
+
+def _is_machine_output(p: str) -> bool:
+    if p in _MACHINE_OUTPUTS:
+        return True
+    return any(p.startswith(d) for d in _MACHINE_OUTPUT_DIRS)
 
 
 def _blocking_machine_outputs(root: str) -> list:
@@ -414,7 +456,7 @@ def _blocking_machine_outputs(root: str) -> list:
     #   실측 2026-07-27: 세 점으로는 차단 파일이 0건으로 보였는데 두 점으로는 잡혔고,
     #   실제 merge 는 바로 그 파일을 이유로 거부했다("local changes would be overwritten").
     upstream = _paths(["diff", "--name-only", "-z", "HEAD", f"{REMOTE}/{BRANCH}"])
-    return [p for p in _MACHINE_OUTPUTS if p in local and p in upstream]
+    return [p for p in (local & upstream) if _is_machine_output(p)]
 
 
 def _commit_machine_outputs(root: str) -> bool:
