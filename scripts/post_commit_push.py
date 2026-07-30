@@ -140,6 +140,20 @@ def _is_nonff(err: str) -> bool:
     )
 
 
+def _rev_parse(root: str, ref: str) -> str:
+    """ref 의 커밋 해시(40자). 실패하면 빈 문자열 — 호출자가 그때는 통합을 시도하지 않는다."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--verify", f"{ref}^{{commit}}"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=20,
+        )
+        s = (r.stdout or "").strip()
+        return s if r.returncode == 0 and len(s) == 40 else ""
+    except Exception:
+        return ""
+
+
 def _clear_orphan_rebase(root: str) -> None:
     """rebase --abort 가 못 치운 고아 rebase 상태(.git/rebase-merge|rebase-apply)를
     강제 제거. 잠긴 바이너리(PowerPoint 등 열린 파일)로 autostash reset --hard 가
@@ -192,6 +206,63 @@ def _stash_count(root: str) -> int:
         return len([x for x in (r.stdout or "").splitlines() if x.strip()])
     except Exception:
         return -1
+
+
+def _clear_stale_index_entries(root: str) -> list:
+    """공용 인덱스에 남은 **증명 가능한 찌꺼기 스테이징**만 골라 HEAD 기준으로 되돌린다.
+
+    ★배245 근본원인(2026-07-31 실측). 이 저장소는 여러 세션이 같은 작업트리를 쓰고,
+    일부 스크립트는 `git add` 만 하고 커밋하지 않는다(설계상 '커밋은 워처가'). 그렇게 남은
+    인덱스 항목은 **옛 blob 을 가리킨 채 영구히 남아** 이후 모든 merge 를 거부시킨다
+    ("local changes would be overwritten by merge") — 통합 창이 영영 안 열린다.
+    실측 피해: origin/master 8시간 정지, 미푸시 919건, 그중 588건이 그 정체 때문에
+    찍힌 '기계 산출물 선커밋' 자동 커밋. safe_commit.py 는 원인이 아니다(임시 인덱스를
+    `read-tree HEAD` 로 시작해 라이브 인덱스를 안 건드린다) — 맨손 `git add` 가 원인이다.
+
+    ★안전 조건(이것 하나로 유실 가능성이 0이다): **작업트리 내용이 HEAD 와 같은 경로만**
+    되돌린다. 그런 경로의 인덱스 항목은 정의상 아무도 원하지 않는 옛 blob 이고, HEAD 가
+    이미 작업트리와 같으므로 되돌려도 잃을 내용이 없다.
+    작업트리가 HEAD 와 다르면(=진짜 진행 중인 작업) **손대지 않는다** — 기존처럼 보류한다.
+
+    쓰는 명령은 경로 한정 `git reset -- <경로>` 뿐이다. 이건 인덱스만 HEAD 로 맞추고
+    **작업트리는 건드리지 않는다**(`reset --hard`·`checkout --` 와 다르다 — 공용 작업트리
+    금지선 안쪽). 호출자가 GitLock 을 쥔 구간에서만 부른다.
+    """
+    def _paths(args):
+        r = subprocess.run(["git"] + args, cwd=root, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=30)
+        return [p for p in (r.stdout or "").split("\0") if p] if r.returncode == 0 else []
+
+    try:
+        staged = _paths(["diff", "--cached", "--name-only", "-z"])
+        if not staged:
+            return []
+        stale = []
+        for p in staged:
+            # HEAD ↔ 작업트리 비교. 차이가 없으면(rc=0) 인덱스 항목만 옛것 = 순수 찌꺼기.
+            r = subprocess.run(
+                ["git", "diff", "--quiet", "HEAD", "--", p],
+                cwd=root, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=30,
+            )
+            if r.returncode == 0:
+                stale.append(p)
+        if not stale:
+            return []
+        r = subprocess.run(
+            ["git", "reset", "-q", "--"] + stale,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=60,
+        )
+        if r.returncode != 0:
+            _log(f"POST_COMMIT_PUSH 찌꺼기 스테이징 해제 실패 — {_tail(r.stderr or r.stdout)}", root)
+            return []
+        _log(f"POST_COMMIT_PUSH 찌꺼기 스테이징 해제 {len(stale)}건(작업트리=HEAD 인 것만): "
+             f"{', '.join(stale[:5])}", root)
+        return stale
+    except Exception as e:
+        _log(f"POST_COMMIT_PUSH 찌꺼기 스테이징 해제 예외 {e}", root)
+        return []
 
 
 def _reconcile(root: str) -> tuple[bool, str]:
@@ -291,17 +362,73 @@ def _reconcile(root: str) -> tuple[bool, str]:
         #   파일이 더러움**이다. 그래서 _blocking_machine_outputs 와 **같은 두 점 기준**
         #   (HEAD vs origin — 이유는 그 함수 주석 참고)으로 교집합만 본다.
         #   교집합에 남은 게 있으면 그대로 보류한다(사람이 편집 중인 파일 보호 — 원래 목적 유지).
+        # 통합을 막는 것이 '아무도 원하지 않는 옛 스테이징 찌꺼기'뿐이면 먼저 치운다(배245).
+        # 진짜 진행 중인 작업은 건드리지 않는다 — 아래 판정에 그대로 남아 보류된다.
+        _clear_stale_index_entries(root)
         still_dirty = _merge_blocking_paths(root)
         if still_dirty:
             non_machine = [p for p in still_dirty if not _is_machine_output(p)]
-            reason = _tail(
-                "merge 대상 파일이 더러움(" + str(len(still_dirty)) + "건, 비기계 " +
-                str(len(non_machine)) + "건) — merge 보류·다음 주기로: " +
-                ", ".join(still_dirty[:5])
+            if non_machine:
+                # 사람이 편집 중일 수 있는 파일이 merge 대상과 겹친다 → 원래대로 보류.
+                reason = _tail(
+                    "merge 대상에 비기계 파일이 더러움(" + str(len(non_machine)) +
+                    "건) — merge 보류·다음 주기로: " + ", ".join(non_machine[:5])
+                )
+                _log(f"POST_COMMIT_PUSH {reason}", root)
+                return False, reason
+            # ★2026-07-31(시토 · 배245·배242 근본) — 겹치는 게 **기계 산출물뿐**이면 보류하지
+            #   않는다. 여기서 보류하면 영원히 안 열리기 때문이다: 선커밋이 성공해도 3분·5분
+            #   자동화가 몇 초 안에 같은 파일을 다시 써서(실측: 선커밋 ok 직후 같은 3건이 다시
+            #   더러워짐) merge 직전 재확인에서 매번 다시 걸린다. 경쟁을 이길 수 없는 구조다.
+            _log(
+                "POST_COMMIT_PUSH 겹침 " + str(len(still_dirty)) +
+                "건 전부 기계 산출물 — 작업트리 무접촉 통합으로 진행(배245)", root,
             )
-            _log(f"POST_COMMIT_PUSH {reason}", root)
-            return False, reason
-        # merge — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
+        # ★통합은 작업트리를 아예 건드리지 않고 한다 (2026-07-31 · 배245 근본 수리).
+        #   `git merge` 는 작업트리·인덱스를 만지므로, 더러운 파일이 대상에 하나라도 있으면
+        #   거부한다("local changes would be overwritten"). 이 저장소는 자동화가 쉴 새 없이
+        #   써서 그 조건을 **피할 수 없다** — 배242 note 가 요구한 "임시 인덱스로 병합 트리를
+        #   만들어 update-ref" 경로가 이것이다.
+        #   ▸merge-tree --write-tree: 작업트리·인덱스·HEAD 어느 것도 안 건드리고 병합 트리만
+        #     계산한다(충돌이면 0 아닌 종료코드 — 그때는 자동 해결하지 않고 보류한다).
+        #   ▸commit-tree + update-ref: 커밋을 만들고 브랜치만 옮긴다. 미커밋 변경은 그대로
+        #     미커밋으로 남는다(유실 0 · 되감기 0 — rebase 를 끈 이유와 같은 안전선).
+        #   ▸update-ref 는 **직전에 읽은 HEAD 를 old-value 로 넘겨** 원자적으로 바꾼다. 그
+        #     사이 다른 세션이 커밋했으면 실패하고 다음 주기로 넘어간다(남의 커밋 유실 방지).
+        head = _rev_parse(root, "HEAD")
+        theirs = _rev_parse(root, f"{REMOTE}/{BRANCH}")
+        if head and theirs:
+            mt = subprocess.run(
+                ["git", "merge-tree", "--write-tree", head, theirs],
+                cwd=root, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
+            )
+            tree = (mt.stdout or "").strip().splitlines()
+            if mt.returncode == 0 and tree and len(tree[0].strip()) == 40:
+                ct = subprocess.run(
+                    ["git", "commit-tree", tree[0].strip(), "-p", head, "-p", theirs,
+                     "-m", f"Merge {REMOTE}/{BRANCH} — 작업트리 무접촉 통합 (배245)"],
+                    cwd=root, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
+                )
+                new = (ct.stdout or "").strip()
+                if ct.returncode == 0 and len(new) == 40:
+                    ur = subprocess.run(
+                        ["git", "update-ref", f"refs/heads/{BRANCH}", new, head],
+                        cwd=root, capture_output=True, text=True,
+                        encoding="utf-8", errors="replace", timeout=30,
+                    )
+                    if ur.returncode == 0:
+                        _log("POST_COMMIT_PUSH ok(작업트리 무접촉 통합 — 배245)", root)
+                        return True, ""
+                    reason = _tail("update-ref 실패(그새 HEAD 이동): "
+                                   + (ur.stderr or ur.stdout or "").strip())
+                    _log(f"POST_COMMIT_PUSH {reason}", root)
+                    return False, reason
+            else:
+                # 진짜 내용 충돌 — 자동 해결하지 않는다. 아래 일반 merge 로 내려가 사유를 남긴다.
+                _log("POST_COMMIT_PUSH merge-tree 충돌/불가 — 일반 merge 로 사유 확인", root)
+        # 폴백: merge — 워킹트리 reset 없이 통합(잠긴 바이너리와 무관)
         mg = subprocess.run(
             ["git", "merge", "--no-edit", f"{REMOTE}/{BRANCH}"],
             cwd=root, capture_output=True, text=True,
@@ -485,7 +612,15 @@ def _merge_blocking_paths(root: str) -> list:
                            text=True, encoding="utf-8", errors="replace", timeout=30)
         return {p for p in (r.stdout or "").split("\0") if p} if r.returncode == 0 else set()
 
-    local = _paths(["diff", "--name-only", "-z", "HEAD"])          # 인덱스·작업트리 통틀어 HEAD 와 다른 것
+    # ★로컬측은 **두 갈래를 합쳐야** 한다(2026-07-31 실측 · 배245).
+    #   `git diff HEAD` 는 HEAD↔**작업트리** 비교라서, 작업트리는 HEAD 와 같은데 **인덱스에만**
+    #   옛 blob 이 스테이징돼 남은 경우를 통째로 놓친다. 그런데 git merge 는 바로 그 경우에도
+    #   "local changes would be overwritten by merge" 로 거부한다.
+    #   실측: 이 판정이 차단 0건이라고 답한 그 순간 실제 merge 는 4건을 대며 거부했고
+    #   (gm_profile_builder.py·gm_profile.md·gm_observation_ledger.jsonl·큐 미러),
+    #   그 4건은 전부 '인덱스에만 남은 옛 blob' 이었다. → --cached 갈래를 합집합으로 더한다.
+    local = (_paths(["diff", "--name-only", "-z", "HEAD"])          # HEAD ↔ 작업트리
+             | _paths(["diff", "--cached", "--name-only", "-z"]))  # HEAD ↔ 인덱스(스테이징 찌꺼기)
     # ★두 점(트리 직접 비교)이어야 한다. 세 점(HEAD...origin)은 '합류점 이후 원격이 바꾼 것'만 주는데,
     #   merge 가 거부하는 조건은 그게 아니라 **지금 HEAD 와 원격 트리가 다른 파일**이다.
     #   실측 2026-07-27: 세 점으로는 차단 파일이 0건으로 보였는데 두 점으로는 잡혔고,
