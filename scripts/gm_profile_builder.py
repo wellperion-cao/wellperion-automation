@@ -58,6 +58,7 @@ GM_SURFACE_BLOCK_MAX = 5000   # 블록 하나 최대 가시 글자수 기준. �
                               # 정상 상태 최대 블록이 3,422자(월간운영계획 obj-board 전체)였다 —
                               # 접힘 전 옛 상태(13,293자)는 이 기준에 확실히 걸린다.
 GM_SURFACE_STALE_DAYS = 2     # 값이 이 일수 이상 그대로면 "갱신 정지" 의심으로 본다.
+GM_SURFACE_PUSH_STALE_HOURS = 6  # 올린 지 이 시간 이상 지났는데 올릴 것이 남아 있으면 "GM 화면 멈춤".
 
 GM_SURFACE_PAGES = [
     # mode='plain' = 그 URL 자체가 화면 · mode='anchor' = wellperion_guide(main).html 안 탭
@@ -424,21 +425,54 @@ def _measure_root(page, root_sel: str) -> dict:
     )
 
 
-def _git_commit_age_days(rel_path: str) -> int | None:
-    """그 파일이 저장소에 마지막으로 커밋된 지 며칠 됐나. 못 재면 None(추측하지 않는다)."""
+def _git(*args: str, timeout: int = 30) -> str | None:
     import subprocess
     try:
-        out = subprocess.run(
-            ["git", "log", "-1", "--format=%cI", "--", rel_path],
-            cwd=str(ROOT), capture_output=True, text=True, timeout=20,
-        )
-        stamp = (out.stdout or "").strip()
-        if not stamp:
-            return None
-        committed = datetime.fromisoformat(stamp).date()
-        return (TODAY - committed).days
+        out = subprocess.run(["git", *args], cwd=str(ROOT),
+                             capture_output=True, text=True, timeout=timeout)
+        return (out.stdout or "").strip()
     except Exception:
         return None
+
+
+def _git_commit_age_days(rel_path: str) -> int | None:
+    """GM 화면이 읽는 값이 며칠째 그대로인가.
+
+    ★기준은 로컬 HEAD 가 아니라 **origin/master** 다. 라이브 화면은 GitHub 에서 받아 가므로,
+    로컬에서 아무리 갱신·커밋해도 올라가지 않았으면 GM 이 보는 값은 옛것이다. 2026-07-31 이 함수를
+    처음 넣을 때 HEAD 로 쟀다가 바로 그 함정을 밟았다 — 그날 로컬은 전부 '어제 커밋'으로 신선했는데
+    origin 은 8시간 넘게 멈춰 있었고, 점검은 '기준 이내'를 냈다. 못 재면 None(추측하지 않는다).
+    """
+    stamp = _git("log", "-1", "--format=%cI", "origin/master", "--", rel_path)
+    if not stamp:
+        return None
+    try:
+        return (TODAY - datetime.fromisoformat(stamp).date()).days
+    except Exception:
+        return None
+
+
+def _push_gap() -> dict | None:
+    """올리지 못한 것이 쌓여 GM 화면이 멈춰 있지 않은가(wellperion-boot §2-1 #8 작업트리 고립).
+
+    읽기 전용만 한다 — fetch(원격 참조 갱신)까지이고 작업트리·브랜치는 건드리지 않는다.
+    """
+    _git("fetch", "origin", "master", timeout=90)  # best-effort · 실패해도 옛 참조로 잰다
+    ahead = _git("rev-list", "--count", "origin/master..HEAD")
+    behind = _git("rev-list", "--count", "HEAD..origin/master")
+    stamp = _git("log", "-1", "--format=%cI", "origin/master")
+    if not ahead or not ahead.isdigit() or not stamp:
+        return None
+    try:
+        origin_age_h = (datetime.now().astimezone() - datetime.fromisoformat(stamp)).total_seconds() / 3600
+    except Exception:
+        return None
+    if int(ahead) > 0 and origin_age_h >= GM_SURFACE_PUSH_STALE_HOURS:
+        return {"kind": "push_stalled", "ahead": int(ahead),
+                "behind": int(behind) if (behind or "").isdigit() else None,
+                "origin_age_h": round(origin_age_h, 1),
+                "limit_h": GM_SURFACE_PUSH_STALE_HOURS}
+    return None
 
 
 def _open_ship_count(rel_path: str) -> int | None:
@@ -465,6 +499,9 @@ def run_fact_check() -> list:
     """
     findings: list = []
     unmeasured: list = []
+    gap = _push_gap()
+    if gap:
+        findings.append(gap)
     for label, spec in GM_SURFACE_SOURCES.items():
         for rel, cadence in spec.get("repo", []):
             if cadence != "daily":
@@ -634,6 +671,11 @@ def render_gm_surface_block(rec: dict) -> str:
             elif kind == "mirror_drift":
                 lines.append(f"- ⚠️ **{f['page']}** 화면이 읽는 사본과 원천이 다르다 — "
                              f"원천 {f['source_n']}척 vs 화면 사본 {f['mirror_n']}척")
+            elif kind == "push_stalled":
+                behind = f" · 반대로 못 받은 것 {f['behind']}건" if f.get("behind") else ""
+                lines.append(f"- ⚠️ **GM 화면이 멈춰 있다** — 올리지 못한 작업 {f['ahead']}건, "
+                             f"마지막으로 올라간 지 {f['origin_age_h']}시간{behind}. "
+                             f"라이브 페이지·G1 은 그 시점 값을 보여준다")
             elif kind == "fact_check_fail":
                 lines.append(f"- 🔧 사실인가 점검 실패: {f.get('detail','')}")
             else:
