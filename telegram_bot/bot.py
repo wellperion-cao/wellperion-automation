@@ -58,9 +58,10 @@ except Exception:
         pass
 
 try:  # 동시커밋 직렬화 lock (P3, 2026-06-16) — scripts/ 경로는 위 블록에서 이미 삽입
-    from git_lock import GitLock
+    from git_lock import GitLock, pull_rebase_safe
 except Exception:
     GitLock = None
+    pull_rebase_safe = None
 
 try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — scripts/ 경로는 위 블록에서 이미 삽입
     import queue_lock
@@ -1110,7 +1111,9 @@ def _git_seq_locked(commit_msg: str) -> None:
     """승인 콜백 git 시퀀스 — GitLock 임계구역에서 add→commit→pull→push 원자 실행.
     동기·블로킹이므로 반드시 asyncio.to_thread로 호출(봇 이벤트 루프 비차단).
     P3(2026-06-16): 4개 분리 git 호출 사이로 IG 발행엔진(--once)이 끼어들던
-    위험쌍#1을 단일 락으로 차단. 설계: docs/git_serialize_lock_design.md §3."""
+    위험쌍#1을 단일 락으로 차단. 설계: docs/git_serialize_lock_design.md §3.
+    pull 은 --autostash 대신 pull_rebase_safe 사용(2026-07-30·INC-034 잔존 제거) —
+    봇은 상시가동 프로세스라 남의 미커밋 변경을 stash 에 가두는 사고 위험이 가장 컸다."""
     def _g(*args):
         try:
             subprocess.run(
@@ -1124,7 +1127,10 @@ def _git_seq_locked(commit_msg: str) -> None:
     def _seq():
         _g("add", str(REVIEW_QUEUE))
         _g("commit", "-m", commit_msg)
-        _g("pull", "--rebase", "--autostash", "origin", "master")
+        if pull_rebase_safe is not None:
+            pull_rebase_safe(str(WORKDIR), str(WORKDIR), "bot:publish_callback")
+        else:
+            log.warning("[pub] pull_rebase_safe 미가용 — pull 건너뜀(--autostash 재도입 금지)")
         _g("push", "origin", "master")
 
     try:
@@ -1567,19 +1573,13 @@ def _git_pull_locked() -> None:
     """GAS가 GitHub에 직접 커밋한 review_queue.json status='승인'을 로컬로 당긴다.
     _git_seq_locked 와 동일 GitLock 임계구역(파괴적 옵션 없음) — 동시 커밋으로 인한
     레포 손상 방지(reference_guidehub_concurrent_commit_corruption 교훈). 동기·블로킹
-    이므로 asyncio.to_thread 로 호출."""
-    def _g(*args):
-        try:
-            subprocess.run(
-                ["git", "-C", str(WORKDIR), *args],
-                capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
-            )
-        except Exception as exc:
-            log.error(f"[m1pub] git {args[:1]} 실패: {exc}")
-
+    이므로 asyncio.to_thread 로 호출.
+    pull 은 --autostash 대신 pull_rebase_safe 사용(2026-07-30·INC-034 잔존 제거)."""
     def _seq():
-        _g("pull", "--rebase", "--autostash", "origin", "master")
+        if pull_rebase_safe is not None:
+            pull_rebase_safe(str(WORKDIR), str(WORKDIR), "bot:m1pub")
+        else:
+            log.warning("[m1pub] pull_rebase_safe 미가용 — pull 건너뜀(--autostash 재도입 금지)")
 
     try:
         if GitLock is not None:
