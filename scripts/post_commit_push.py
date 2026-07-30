@@ -612,21 +612,27 @@ def _merge_blocking_paths(root: str) -> list:
                            text=True, encoding="utf-8", errors="replace", timeout=30)
         return {p for p in (r.stdout or "").split("\0") if p} if r.returncode == 0 else set()
 
-    # ★로컬측은 **두 갈래를 합쳐야** 한다(2026-07-31 실측 · 배245).
-    #   `git diff HEAD` 는 HEAD↔**작업트리** 비교라서, 작업트리는 HEAD 와 같은데 **인덱스에만**
-    #   옛 blob 이 스테이징돼 남은 경우를 통째로 놓친다. 그런데 git merge 는 바로 그 경우에도
-    #   "local changes would be overwritten by merge" 로 거부한다.
-    #   실측: 이 판정이 차단 0건이라고 답한 그 순간 실제 merge 는 4건을 대며 거부했고
-    #   (gm_profile_builder.py·gm_profile.md·gm_observation_ledger.jsonl·큐 미러),
-    #   그 4건은 전부 '인덱스에만 남은 옛 blob' 이었다. → --cached 갈래를 합집합으로 더한다.
-    local = (_paths(["diff", "--name-only", "-z", "HEAD"])          # HEAD ↔ 작업트리
-             | _paths(["diff", "--cached", "--name-only", "-z"]))  # HEAD ↔ 인덱스(스테이징 찌꺼기)
-    # ★두 점(트리 직접 비교)이어야 한다. 세 점(HEAD...origin)은 '합류점 이후 원격이 바꾼 것'만 주는데,
-    #   merge 가 거부하는 조건은 그게 아니라 **지금 HEAD 와 원격 트리가 다른 파일**이다.
-    #   실측 2026-07-27: 세 점으로는 차단 파일이 0건으로 보였는데 두 점으로는 잡혔고,
-    #   실제 merge 는 바로 그 파일을 이유로 거부했다("local changes would be overwritten").
+    # git 이 실제로 거부하는 조건은 **두 가지**다(2026-07-31 격리 재현으로 확정 · 배245).
+    #
+    #  ⓐ 스테이징된 경로는 **원격이 그 파일을 건드렸든 말든 전부** 막는다.
+    #     merge(ort)는 인덱스가 HEAD 와 일치할 것을 요구하기 때문이다. 격리 재현: 원격이
+    #     손대지도 않은 f.txt 를 인덱스에만 스테이징해 두자 merge 가 f.txt 를 대며 거부했다.
+    #     ★예전 판정이 이걸 놓친 두 겹의 이유 — `git diff HEAD` 는 HEAD↔**작업트리** 비교라
+    #     인덱스에만 남은 옛 blob 을 아예 못 보고, 설령 봤어도 아래 upstream 과 교집합을
+    #     내면 '원격이 안 건드린 파일'이라 걸러져 버린다. 실제로 판정이 "차단 0건"이라고
+    #     답한 그 순간 merge 는 4건을 대며 거부했다(gm_profile_builder.py·gm_profile.md·
+    #     gm_observation_ledger.jsonl·큐 미러 — 전부 인덱스에만 남은 찌꺼기).
+    #
+    #  ⓑ 작업트리만 더러운 경로는 **merge 가 그 파일을 덮어써야 할 때만** 막는다.
+    #     이 저장소는 자동화 때문에 상시 20건 넘게 더러우므로(실측 23건), 여기서 교집합을
+    #     안 내면 merge 창이 영영 안 열린다 — 그게 배245 정체의 절반이었다.
+    #     교집합 상대는 두 점(HEAD↔origin 트리 직접 비교)이다. 세 점(HEAD...origin)은
+    #     '합류점 이후 원격이 바꾼 것'만 주는데 merge 가 보는 건 **지금 두 트리의 차이**다
+    #     (실측 2026-07-27: 세 점 0건 → 두 점에서 잡힘 → 실제 merge 도 그 파일로 거부).
+    staged = _paths(["diff", "--cached", "--name-only", "-z"])         # HEAD ↔ 인덱스
+    worktree = _paths(["diff", "--name-only", "-z", "HEAD"])           # HEAD ↔ 작업트리
     upstream = _paths(["diff", "--name-only", "-z", "HEAD", f"{REMOTE}/{BRANCH}"])
-    return sorted(local & upstream)
+    return sorted(staged | (worktree & upstream))
 
 
 def _blocking_machine_outputs(root: str) -> list:
