@@ -83,6 +83,11 @@ a { color:var(--accent); text-decoration:none; }
 .card-extras .k { font-size:11px; color:var(--dim); }
 .card-extras .v { font-size:11px; color:var(--text); }
 .card-sla { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; white-space:nowrap; }
+.sla-edit { display:inline-flex; align-items:center; gap:3px; }
+.sla-edit .u { font-size:10px; color:var(--dim); font-weight:700; }
+.sla-edit input { width:40px; font-size:11px; font-weight:700; padding:1px 4px; border:1px solid var(--border); border-radius:8px; background:var(--paper); color:var(--text); font-family:inherit; text-align:center; -moz-appearance:textfield; }
+.sla-edit input::-webkit-outer-spin-button, .sla-edit input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.sla-edit input:focus { outline:none; border-color:var(--accent); }
 .divider { border-top:1px solid var(--border); margin:8px 0; }
 .field-row { display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
 .field-row label { font-size:12px; font-weight:700; color:var(--dim); white-space:nowrap; }
@@ -303,7 +308,7 @@ var CAT_META = [
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','dept','slaHours','deadline','remainH','slaStatus'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved'];
 var EXTRA_LABEL = {
   itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
   equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
@@ -549,6 +554,9 @@ function _card(r){
   if(catLabel) h += '<span class="badge" style="background:' + catBg + ';color:' + catColor + ';">' + catIcon + ' ' + _esc(catLabel) + '</span>';
   var sla = _slaBadge(r);
   if(sla) h += sla;
+  /* 기한(일) 인라인 수정 — SLA 배지 옆. 비우면 카테고리 기본값 */
+  var _defDays = (r.slaHours===null||r.slaHours===undefined||r.slaHours==='') ? '' : Math.round(Number(r.slaHours)/24);
+  h += '<span class="sla-edit" title="이 건 기한(일). 비우면 기본값' + (_defDays!==''?(' '+_defDays+'일'):'(없음)') + '"><span class="u">기한</span><input type="number" min="0" step="1" inputmode="numeric" data-reg-sladays placeholder="' + _esc(String(_defDays)) + '" value="' + _esc(String(r.slaDays==null?'':r.slaDays)) + '"><span class="u">일</span></span>';
   if(r.dept) h += '<span class="card-when">' + _esc(String(r.dept)) + '</span>';
   if(id) h += '<span class="card-id">#' + id + '</span>';
   h += '</div>';
@@ -575,11 +583,6 @@ function _card(r){
   /* 처리자(실제 처리한) */
   h += '<div class="field-row"><label>처리자</label>';
   h += '<input type="text" data-reg-handler placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
-
-  /* 기한(일) — 이 건만 조정. 비우면 카테고리 기본값 사용 */
-  var _slaPh = (r.slaHours===null||r.slaHours===undefined||r.slaHours==='') ? '기한 없음' : ('기본 ' + Math.round(Number(r.slaHours)/24) + '일');
-  h += '<div class="field-row"><label>기한(일)</label>';
-  h += '<input type="number" min="0" step="1" inputmode="numeric" data-reg-sladays placeholder="' + _slaPh + '" value="' + _esc(String(r.slaDays==null?'':r.slaDays)) + '"></div>';
 
   /* 메모 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
