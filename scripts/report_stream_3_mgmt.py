@@ -31,8 +31,29 @@ from publish_digest import _load_env_val  # noqa: E402
 from tg_outbound_log import send as _tg_gateway_send  # noqa: E402 — 발신 관문(페이싱+429재시도+계측, 배99)
 
 TELEGRAM_CHAT_ID = 8254867551  # GM 업무보고방 — 안전 우선 (실무진방 발송=GM go 후속)
-KAKAO_ROOMS = ["차의주 회장님", "웰페리온 관리부", "★ 운영부"]  # kakao_rooms.json 동일 순서
 _SENDER = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+
+
+def _load_kakao_room_names() -> list[str] | None:
+    """카카오 3방 이름을 kakao_rooms.json에서 읽는다(2026-07-30 배202 ④).
+
+    이전엔 KAKAO_ROOMS 상수로 이 파일과 별개로 하드코딩돼 있었다 — 방 목록이라는
+    한 진실이 두 곳에 있으면, kakao_rooms.json이 바뀌어도 이 상수는 안 따라가다가
+    나중에(kakao_go=True 전환 시) 발신이 엉뚱한 방으로 새는 사고가 난다. 새 로더를
+    만들지 않고 kakao_report_sender.py의 기존 load_rooms_config/load_rooms를
+    그대로 재사용한다(약속 L01·L21).
+
+    반환: 방 이름 리스트, 또는 로드 실패 시 None — 호출측은 None이면 발신을
+    시도하지 말아야 한다(빈 목록으로 조용히 진행 금지·옛 하드코딩 폴백 금지)."""
+    try:
+        import kakao_report_sender as _krs
+        cfg = _krs.load_rooms_config()
+        rooms = _krs.load_rooms(cfg, only_room=None)
+        names = [r["name"] for r in rooms if r.get("name")]
+        return names or None
+    except Exception as e:
+        print(f"[stream3] kakao_rooms.json 로드 실패: {e}", flush=True)
+        return None
 
 
 def _strip_html(text: str) -> str:
@@ -61,7 +82,11 @@ def _send_telegram_parts(parts: list[str]) -> bool:
 
 def _send_kakao(parts: list[str]) -> None:
     plain = "\n\n".join(_strip_html(p) for p in parts)
-    for room in KAKAO_ROOMS:
+    rooms = _load_kakao_room_names()
+    if rooms is None:
+        print("[stream3] 카카오 방 목록 로드 실패 — 발신 시도 안 함(옛 하드코딩 폴백 금지)", flush=True)
+        return
+    for room in rooms:
         try:
             env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
             subprocess.run(
