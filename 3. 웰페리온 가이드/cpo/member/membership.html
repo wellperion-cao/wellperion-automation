@@ -11190,19 +11190,25 @@ function apiPost(payload) {
   if (GAS_URL === GAS_PLACEHOLDER) {
     return Promise.reject(new Error('GAS 미연동 — URL 교체 후 사용 가능'));
   }
+  // ★2026-07-30 웰리 — 응답이 영영 안 오면 저장 항목이 inflight 로 굳어 큐 전체가 멈춘다(무한 대기).
+  //   30초 넘으면 끊고 실패로 넘겨 재시도 경로를 태운다.
+  var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var _to = _ac ? setTimeout(function(){ try { _ac.abort(); } catch (e) {} }, 30000) : null;
   return fetch(GAS_URL, {
     method: 'POST',
     redirect: 'follow',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: _ac ? _ac.signal : undefined
   }).then(function(r){
+    if (_to) clearTimeout(_to);
     return r.text().then(function(txt){
       var data;
       try { data = JSON.parse(txt); }
       catch (e) { data = { ok: false, error: '응답 파싱 실패' }; }   // 판독 불가 = 성공 단정 금지(INC-013)
       return data;   // 실제 {ok,error}
     });
-  });
+  }).catch(function(e){ if (_to) clearTimeout(_to); throw e; });
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -11371,21 +11377,26 @@ var WriteBuffer = (function(){
           alert('⚠️ 저장 실패 — ' + (item.who ? item.who + ' ' : '') + (item.label || '') + '\n' + _hfMsg + '\n목록을 새로고침한 뒤 대상을 다시 확인하고 저장하세요.');
           showToast('저장 거부 — 새로고침 필요', 'err');
         } else {
-          _fail(item);
+          // ★2026-07-30 웰리 — 서버가 준 실패 사유를 버리지 않는다.
+          //   전에는 여기서 data.error 를 통째로 버려서, 시트 보호 거부·칸 미발견 같은 진짜 이유가
+          //   화면엔 그냥 "동기화 실패"로만 뭉개졌다(원인을 아무도 못 봄).
+          _fail(item, data && data.error);
         }
         _save(); renderChip(); scheduleNext();
       })
-      .catch(function(){
+      .catch(function(err){
         item.inflight = false; running = false;
-        _fail(item);
+        _fail(item, (err && err.name === 'AbortError') ? '응답 없음(시간 초과)' : '네트워크 오류');
         _save(); renderChip(); scheduleNext();
       });
   }
 
-  function _fail(item) {
+  function _fail(item, reason) {
     item.attempts = (item.attempts || 0) + 1;
+    if (reason) item.lastError = String(reason).slice(0, 120);   // 실패 사유 보존(칩·재시도 안내에 표시)
     if (item.attempts >= MAX_ATTEMPTS) {
       item.parked = true;   // 상한 초과 → park(무한루프 방지). 수동 재시도/새로고침 자동 flush로 복구.
+      if (item.lastError) showToast('저장 실패 — ' + item.lastError, 'err');
     } else {
       item.nextTry = _now() + (BACKOFF[Math.min(item.attempts - 1, BACKOFF.length - 1)]);
     }
@@ -11396,7 +11407,12 @@ var WriteBuffer = (function(){
   }
 
   function scheduleNext() {
-    var actives = queue.filter(function(it){ return !it.parked && !it.inflight; });
+    // ★2026-07-30 웰리 — verifying(저장확인 대조 중)을 반드시 제외한다.
+    //   빼지 않으면: 대조 중인 항목이 actives 에 남음 → nextTry 가 이미 지났으므로 delay 0
+    //   → scheduleFlush(0) → flush()는 verifying 을 건너뛰어 할 일이 없음 → 다시 scheduleNext()
+    //   → 0ms 타이머가 대조가 끝날 때까지(실측 최대 19.5초) 쉬지 않고 돈다.
+    //   GM 증상 "일자 수정하려고 하는데 멈춘다" = 이 헛돌기로 화면이 잠긴 것이었다.
+    var actives = queue.filter(function(it){ return !it.parked && !it.inflight && !it.verifying; });
     if (!actives.length) { renderChip(); return; }
     var soonest = Math.min.apply(null, actives.map(function(it){ return it.nextTry || 0; }));
     var delay = Math.max(0, soonest - _now());
@@ -11425,7 +11441,8 @@ var WriteBuffer = (function(){
     return null;   // 대조 매핑 없는 액션(향후 확장 대비) — 기존 동작(무대조 성공)으로 폴백
   }
 
-  function _verifyFetchList(key) {
+  // items = 이 배치의 대조 대상들(유효 목록에서 전부 찾았으면 종료 목록 조회를 건너뛴다 · 2026-07-30 웰리)
+  function _verifyFetchList(key, items) {
     if (GAS_URL === GAS_PLACEHOLDER) return Promise.resolve(null);
     // ★nocache=1 필수(2026-07-28 실측) — member_inquiry_list/lesson_inquiry_list는 서버측 60초 캐시(micache/licache)를
     //   쓴다. 쓰기 성공 시 즉시 무효화하지만, 이 서버는 동시에 여러 세션·자동화가 같은 액션을 호출하는 라이브
@@ -11446,12 +11463,19 @@ var WriteBuffer = (function(){
         .catch(function () { return null; });
     }
     if (key === 'member_active') {
-      // 재등록 처리(LOSS→유효 이동, saveReactivateModal)로 스코프가 바뀔 수 있어 유효+종료 둘 다 확인.
+      // 재등록 처리(LOSS→유효 이동, saveReactivateModal)로 스코프가 바뀔 수 있어 유효+종료 둘 다 봐야 한다.
+      // ★2026-07-30 웰리 — 다만 '둘 다 매번'은 비싸다(실측 유효 6.3초 + 종료 13.2초 = 저장 1건에 19.5초).
+      //   그래서 유효를 먼저 받고, 거기서 대상 행을 찾으면 종료 조회를 아예 건너뛴다(흔한 경우 = 6.3초).
+      //   못 찾을 때만 종료를 마저 받는다 — 스코프 이동 건도 그대로 잡히므로 정확도 손실 0.
       return fetch(GAS_URL + '?action=member_active_list&scope=valid' + _wpKeyParam())
         .then(function (r) { return r.json(); })
         .then(function (d) { return (d && d.ok) ? (d.data || []) : []; })
         .catch(function () { return []; })
         .then(function (validRows) {
+          // 이 배치의 모든 대상이 유효 목록 안에 있으면 종료 목록은 안 받아도 된다(흔한 경우 = 13초 절약).
+          var allFound = validRows.length && (items || []).length &&
+            (items || []).every(function (it) { return !!_verifyFindRow(validRows, it); });
+          if (allFound) return validRows;
           return fetch(GAS_URL + '?action=member_active_list&scope=ended' + _wpKeyParam())
             .then(function (r2) { return r2.json(); })
             .then(function (d2) { return validRows.concat((d2 && d2.ok) ? (d2.data || []) : []); })
@@ -11477,6 +11501,16 @@ var WriteBuffer = (function(){
     return null;
   }
 
+  // ★2026-07-30 웰리 — 날짜는 표기가 갈린다. 사람은 '8/1'·'2026.8.1'·'2026-08-01' 로 적고,
+  //   시트는 되읽을 때 'yyyy-MM-dd' 로 돌려준다. 그대로 비교하면 저장이 멀쩡한데도 '불일치' 경보가 뜬다.
+  //   날짜로 읽히는 값만 yyyy-MM-dd 로 맞춰 비교한다(날짜가 아니면 원문 그대로 — 다른 칸엔 영향 0).
+  function _verifyNormDate(s) {
+    var t = String(s).trim();
+    var m = t.match(/^(\d{4})[.\-\/년\s]+(\d{1,2})[.\-\/월\s]+(\d{1,2})\s*일?\.?$/);
+    if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    return null;
+  }
+
   // 배열·객체도 안정적으로 비교(키 정렬 — 순서차 오탐 방지).
   function _verifyCanon(v) {
     if (v === undefined || v === null) return '';
@@ -11485,7 +11519,8 @@ var WriteBuffer = (function(){
       var ks = Object.keys(v).sort();
       return '{' + ks.map(function (k) { return JSON.stringify(k) + ':' + _verifyCanon(v[k]); }).join(',') + '}';
     }
-    return String(v).trim();
+    var s = String(v).trim();
+    return _verifyNormDate(s) || s;
   }
 
   // 이번 저장이 서버로 실제 보낸 칸 이름 집합 — overlay 중 이 집합에 없는 칸은 대조하지 않는다(GM 지시).
@@ -11497,6 +11532,10 @@ var WriteBuffer = (function(){
       for (var fk in payload.fields) { if (payload.fields.hasOwnProperty(fk)) set[fk] = true; }
     }
     if (payload.action === 'member_owner_save' && payload.field) set[payload.field] = true;
+    // ★2026-07-30 웰리 — 표 인라인 편집(일자 포함)은 {col:'등록\n일자', value:'...'} 형태로 보낸다.
+    //   전에는 'col'·'value' 라는 이름만 집합에 들어가 overlay 키('등록\n일자')와 절대 안 맞았고,
+    //   그래서 대조가 0건 → 무조건 '일치'로 통과했다. 19.5초를 쓰면서 아무것도 확인 안 하고 있었다.
+    if (payload.col) set[payload.col] = true;
     if (payload.reservations !== undefined) { set.exp1 = true; set.exp1Time = true; set.exp2 = true; set.exp2Time = true; }   // 예약 저장의 파생칸(서버가 reservations로부터 같이 채움)
     return set;
   }
@@ -11541,7 +11580,8 @@ var WriteBuffer = (function(){
     var items = verifyBatches[key] || [];
     delete verifyBatches[key]; delete verifyTimers[key];
     if (!items.length) return;
-    _verifyFetchList(key)
+    // 이 배치 전체를 넘긴다 — '유효 목록에서 전부 찾았을 때만' 종료 조회를 생략한다(2026-07-30 웰리).
+    _verifyFetchList(key, items)
       .then(function (rows) {
         items.forEach(function (item) {
           if (!rows) { _verifyFinish(item, 'unknown'); return; }
