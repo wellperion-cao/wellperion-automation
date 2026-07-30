@@ -351,14 +351,14 @@
       "when_sort": null,
       "freq": "weekly",
       "channel": "telegram",
-      "room": "GM_DM",
+      "room": "자동화현황방",
       "chat_id": null,
       "what": "AI 교육자료 아카이브 정리",
       "owner": "시토",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "",
-      "source": "Wellperion-Education-Archive-Weekly"
+      "state_note": "2026-07-30 정정 — room을 GM_DM에서 자동화현황방으로 정정(문서만, 배선 무변경). 실제로는 배10011(2026-07-24 GM 승인)로 직접발송(send_telegram) 대신 weekly_bundle_pending 에 적재만 하고, 10:30 win-weekly-sun1030-selfreview 카드에 흡수돼 그쪽 resolve_room()이 나가는 자동화현황방으로 이미 가고 있었다 — 문서만 옛 GM_DM 그대로 남아 있었다.",
+      "source": "scripts/education_archive_weekly.py → weekly_bundle_pending → Wellperion-Weekly-Self-Review-Sunday(10:30)에서 발신"
     },
     {
       "id": "win-weekly-sun0900-module",
@@ -381,14 +381,14 @@
       "when_sort": null,
       "freq": "weekly",
       "channel": "telegram",
-      "room": "GM_DM",
+      "room": "자동화현황방",
       "chat_id": null,
-      "what": "주간 자기정리(AI 학습제안 카드 흡수)",
+      "what": "주간 자기정리(AI 학습제안 카드 흡수) — weekly_page_hygiene·education_archive_weekly·ai_education_auto_learner 흡수분 포함",
       "owner": "시토",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "",
-      "source": "Wellperion-Weekly-Self-Review-Sunday"
+      "state_note": "2026-07-30 정정 — room을 GM_DM에서 자동화현황방으로 정정(문서만, 배선 무변경). scripts/weekly_self_review.py:send_telegram()이 notify_gm_progress.resolve_room()으로 chat_id를 해소(하드코딩 아님) — 이미 배10011(2026-07-24 GM 승인)부터 자동화현황방으로 발송 중이었다.",
+      "source": "scripts/weekly_self_review.py:1124-1150 (resolve_room→자동화현황방) · Wellperion-Weekly-Self-Review-Sunday"
     },
     {
       "id": "win-monthly-1st0900-marketing",
@@ -599,6 +599,21 @@
       "state": "live",
       "state_note": "2026-07-30 배202 ① 신설 등록(그 전엔 등록부에 아예 없이 전량 업무보고방으로 나가고 있었음 — 오늘 실측으로 발견). audience=ai 는 notify_gm_progress.notify() 경유(dedup·daily_cap 그대로 적용) · audience=office/없음은 기존 telegram_notifier 경유. 루틴/자동완료(is_routine)는 여전히 스킵.",
       "source": "wellperion-agents/scripts/clevel_post_action.py:_lookup_audience,send_ai_progress_report,send_telegram"
+    },
+    {
+      "id": "ig-publish-multichannel-summary",
+      "when": "발행 사이클마다(부정기, --once 러너)",
+      "when_sort": null,
+      "freq": "event",
+      "channel": "telegram",
+      "room": "자동화현황방(순수 성공) / GM_DM(실패·수동대기·보류·확인필요 등 섞이면)",
+      "chat_id": null,
+      "what": "멀티채널(블로그·카페·카카오·당근) 발행 결과 요약",
+      "owner": "시모",
+      "trigger": "manual",
+      "state": "live",
+      "state_note": "2026-07-30 배202 ③ 팀리드 지시로 목적지 분리(신설 등록 — 이전엔 옛 GM 지시 2026-06-24대로 성공·실패 구분 없이 전부 GM_DM 이었음, 그 문구는 코드에 경위로 보존). 판정: events 전부 '✅'로 시작하면 순수성공→자동화현황방(notify_gm_progress.notify), 하나라도 다른 마커(⚠️·⛔·📦·🚫·⏳·🛑)면 GM_DM 그대로. AI방 발송이 실패(reason이 dedup/daily_cap 아닌 경우)하거나 예외 시 GM_DM으로 폴백(조용한 소멸 금지).",
+      "source": "scripts/ig_review_publish_watcher.py (multichannel summary 발신부, safe_commit 직후)"
     }
   ]
 }
