@@ -606,13 +606,13 @@
       "when_sort": null,
       "freq": "event",
       "channel": "telegram",
-      "room": "자동화현황방(순수 성공) / GM_DM(실패·수동대기·보류·확인필요 등 섞이면)",
+      "room": "GM_DM",
       "chat_id": null,
       "what": "멀티채널(블로그·카페·카카오·당근) 발행 결과 요약",
       "owner": "시모",
       "trigger": "manual",
       "state": "live",
-      "state_note": "2026-07-30 배202 ③ 팀리드 지시로 목적지 분리(신설 등록 — 이전엔 옛 GM 지시 2026-06-24대로 성공·실패 구분 없이 전부 GM_DM 이었음, 그 문구는 코드에 경위로 보존). 판정: events 전부 '✅'로 시작하면 순수성공→자동화현황방(notify_gm_progress.notify), 하나라도 다른 마커(⚠️·⛔·📦·🚫·⏳·🛑)면 GM_DM 그대로. AI방 발송이 실패(reason이 dedup/daily_cap 아닌 경우)하거나 예외 시 GM_DM으로 폴백(조용한 소멸 금지).",
+      "state_note": "2026-07-30 신설 등록(이전엔 이 발신경로 자체가 미등록이었음 — 등록은 유지). GM 지시(2026-06-24) — 성공/실패 구분 없이 전부 GM_DM 1건. [2026-07-30] 순수 성공만 자동화현황방으로 옮겼다가 되돌림 — 발행 성공은 AI 살림이 아니라 현실 업무 결과라 GM_DM이 맞다(시토 오지시 정정). 완료보고(audience=ai) 라우팅과 혼동 금지.",
       "source": "scripts/ig_review_publish_watcher.py (multichannel summary 발신부, safe_commit 직후)"
     }
   ]

@@ -1097,33 +1097,19 @@ def _run_once_inner(dry_run: bool) -> int:
         _safe_print(f"[{'INFO' if res['ok'] else 'WARN'}] 커밋: {res['reason']}"
                     + (f" · 혼입 {res['foreign']}" if res["foreign"] else ""))
 
-        # 알림 라우팅 원칙 — 원래 GM 지시(2026-06-24)는 "성공/실패 모두 GM 채널".
-        # [2026-07-30 배202 ③ 팀리드 지시로 갱신] 순수 성공(전 이벤트 ✅)만 AI진행현황방으로,
-        # 실패·수동대기·보류·확인필요 등 GM이 봐야 할 게 하나라도 섞이면 지금처럼 GM 채널
-        # 그대로(애매하면 GM방 — 안전측). ★2026-06-24 GM 지시와 상충하는 부분(순수성공 이동)은
-        # 이번 지시로 갱신한 것 — 옛 지시 문구를 지우지 않고 이 변경 옆에 남겨 경위를 보존한다.
+        # 알림 라우팅 원칙(GM 지시 2026-06-24):
+        # - 실패·수동대기 포함 → GM 채널 발송.
+        # - 성공 요약 → GM 채널 발송(항상 1건 전달).
+        # - IG 발행검증대기(shortcode 미회수 등) → 텔레그램 발송 없음. 로그·큐 상태로만 처리.
+        # [2026-07-30] 성공 요약을 AI방으로 옮겼다가 되돌림 — 발행 성공은 AI 살림이 아니라
+        # 현실 업무 결과라 업무보고방이 맞다(시토 오지시 정정). 완료보고(audience=ai) 라우팅과
+        # 혼동 금지.
         failed_events = [e for e in events if e.startswith("⚠️") or e.startswith("⛔")]
         verify_events = [e for e in events if "발행검증대기" in e]
 
         summary_text = "📲 멀티채널 발행 결과\n" + "\n".join(events)
-        all_success = bool(events) and all(e.startswith("✅") for e in events)
-        if all_success:
-            # [2026-07-30 배202 — 조용한 소멸 구멍 폐쇄] gate_off·daily_cap·room_unresolved·
-            # send_failed 전부 폴백 대상이다(dedup 만 예외). 이 판단 자체는 여기서 복제하지
-            # 않고 notify_gm_progress.notify_or_fallback() 한 곳만 쓴다(clevel_post_action.py
-            # 도 같은 함수를 쓴다 — 약속 L01·L21, "각자 따로 처리하지 말고 한 지점만").
-            try:
-                import notify_gm_progress as _ngp  # noqa: PLC0415
-                _ngp.notify_or_fallback(
-                    summary_text, state="done",
-                    fallback=lambda text: (telegram(text) or True),
-                )
-            except Exception as exc:
-                _safe_print(f"[WARN] AI진행현황방 발송 예외 — GM 채널로 폴백: {exc}")
-                telegram(summary_text)
-        else:
-            # 실패·수동대기·보류·확인필요 등 GM이 봐야 할 이벤트가 섞임 → GM 채널 그대로
-            telegram(summary_text)
+        # 성공/실패 모두 GM 채널로 1건 발송
+        telegram(summary_text)
 
         # 발행완료 → 콘텐츠 1건 통합요약 자동발신(문의·컨택·등록 알림방, GM 루틴 박제 2026-07-15)
         _dispatch_publish_digest(approved)
