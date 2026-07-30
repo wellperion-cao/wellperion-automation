@@ -848,5 +848,23 @@
     "surface": "autonomy",
     "audience": "office",
     "reversible": true
+  },
+  {
+    "task_id": "CEO-2026-07-30-GM-아침-부팅-경로-원복-시작프로그램-바로가기로-",
+    "clevel": "ceo",
+    "title": "[웰리] GM 아침 부팅 경로 원복 — 시작프로그램 바로가기로 되돌림 (GM 지시)",
+    "status": "DONE",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-07-30",
+    "from": "ceo",
+    "note": "[웰리 자가점검 2026-07-30] GM 지적 2026-07-30: '이거 파워셸 Start-AI CEO.bat이 아닌데? 자동으로 켜지긴 했는데.'\n\n▸실측(프로세스 계보로 확인): 이 CEO 창은 배치 파일 자체는 맞았다 — cmd /c \"Start-AI CEO.bat\"(PID 25380)의 부모가 작업 스케줄러였다. 오늘 08:33 에 예약작업 WellperionStartAICEO(로그온 2분 후·최고권한)가 새로 만들어져 09:42:30 에 이 창을 띄웠고, 같은 시각 GM 시작프로그램의 「Start-AI CEO」 바로가기는 _archive/startup_lnk_20260730/ 로 옮겨져 있었다. 그래서 평소와 다른 창처럼 보였다.\n▸문제였던 점: ①GM 이 매일 쓰는 실행 경로가 알림 없이 바뀌었다 ②그 예약작업을 등록하는 스크립트가 저장소에 없어 PC 재세팅 시 조용히 사라질 상태였다(약속 L02) ③보관 폴더가 깃 추적 밖이었다.\n▸GM 선택(선택 카드): 「원래대로 — 바로가기 복원」.\n▸한 것: (1) 바로가기를 시작프로그램으로 되돌렸다 — 대상 = C:\\Users\\jjky0\\welperion-automation\\Start-AI CEO.bat, 작업폴더 동일. (2) 예약작업 WellperionStartAICEO 를 비활성 후 삭제했다(등록 없음 확인). (3) 비게 된 _archive/startup_lnk_20260730 폴더를 지웠다(기억 규칙: _archive 에 남기지 않는다).\n▸검증: 시작프로그램에 Start-AI CEO.lnk + Wellperion Token-Cache Live.lnk 2개 실재 · 바로가기 대상 실측 확인 · Get-ScheduledTask 결과 해당 작업 없음 · 삭제 후에도 현재 세션(PID 25380) 생존·claude 프로세스 9개 유지(끊김 0).\n▸같이 관측된 것(이 배 범위 밖·시토 백엔드 라인): ①부팅 시 클로드 자동 업데이트가 오늘 3회 전부 건너뛰어짐 — 가드가 'claude.exe 가 하나라도 살아있으면 건너뜀'이고 지금 창이 9개다(logs/claude_update.log). ②예약작업 Wellperion-PC-Boot-Greeting 이 0x80070002(파일 없음)로 계속 실패 — 죽은 작업.\n\n[웰리 완결 2026-07-30] GM 지시 실행 완료·증거 위 검증줄 그대로. 바로가기 복원·예약작업 삭제·빈 폴더 정리 3건 모두 실측 확인. 이 배 닫음.",
+    "next": "없음(GM 지시 완결). ▸시토 백엔드 라인 몫으로 남긴 관측 2건 = 부팅 자동 업데이트가 창 9개 때문에 매번 건너뛰어지는 문제 · 죽은 예약작업 Wellperion-PC-Boot-Greeting 정리.",
+    "depends_on": "",
+    "ship_no": 10419,
+    "short_no": 234,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "office",
+    "reversible": true
   }
 ]
