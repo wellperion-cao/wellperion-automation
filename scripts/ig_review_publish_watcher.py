@@ -1108,12 +1108,16 @@ def _run_once_inner(dry_run: bool) -> int:
         summary_text = "📲 멀티채널 발행 결과\n" + "\n".join(events)
         all_success = bool(events) and all(e.startswith("✅") for e in events)
         if all_success:
+            # [2026-07-30 배202 — 조용한 소멸 구멍 폐쇄] gate_off·daily_cap·room_unresolved·
+            # send_failed 전부 폴백 대상이다(dedup 만 예외). 이 판단 자체는 여기서 복제하지
+            # 않고 notify_gm_progress.notify_or_fallback() 한 곳만 쓴다(clevel_post_action.py
+            # 도 같은 함수를 쓴다 — 약속 L01·L21, "각자 따로 처리하지 말고 한 지점만").
             try:
                 import notify_gm_progress as _ngp  # noqa: PLC0415
-                _result = _ngp.notify(summary=summary_text, state="done")
-                if not _result.get("sent") and _result.get("reason") not in ("dedup", "daily_cap"):
-                    # AI방 발송이 진짜 실패(방 미해소 등)했으면 조용히 사라지지 않게 GM 채널로 폴백.
-                    telegram(summary_text)
+                _ngp.notify_or_fallback(
+                    summary_text, state="done",
+                    fallback=lambda text: (telegram(text) or True),
+                )
             except Exception as exc:
                 _safe_print(f"[WARN] AI진행현황방 발송 예외 — GM 채널로 폴백: {exc}")
                 telegram(summary_text)

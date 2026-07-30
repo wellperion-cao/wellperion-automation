@@ -498,36 +498,64 @@ def send_ai_progress_report(
     artifact_url: str = "",
     next_desc: str = "",
     terminal: bool = False,
+    bridge_label: str = "",
+    version: str = "",
+    changelog: str = "",
 ) -> bool:
-    """AI 진행현황방 완료보고 — notify_gm_progress.notify() 단일 관문 재사용(새 발신 함수
-    신설 금지 · 약속 L21). audience=ai 인 배만 여기로 온다. dedup·daily_cap·게이트는
-    notify_gm_progress.py 의 기존 동작을 그대로 따른다(여기서 재구현하지 않는다)."""
+    """AI 진행현황방 완료보고 — notify_gm_progress.notify_or_fallback() 단일 관문 재사용
+    (새 발신 함수 신설 금지 · 약속 L21). audience=ai 인 배만 여기로 온다.
+
+    [2026-07-30 배202 팀리드 지시 — 조용한 소멸 구멍 폐쇄, 폴백 판단은 한 지점(notify_
+    gm_progress.notify_or_fallback)에만] gate_off·daily_cap·room_unresolved·send_failed
+    는 조용히 사라지지 않게 업무보고방(send_telegram)으로 폴백. dedup 만 소멸이 아니라
+    폴백하지 않는다 — 이 구분 로직 자체는 여기서 복제하지 않고 notify_gm_progress.py 에
+    한 곳만 둔다(ig_review_publish_watcher.py 도 같은 함수를 쓴다)."""
     try:
-        from notify_gm_progress import notify as _notify_ai  # noqa: PLC0415
+        from notify_gm_progress import notify_or_fallback as _notify_or_fallback  # noqa: PLC0415
     except Exception as e:
-        print("[ERROR] notify_gm_progress import 실패: " + str(e), file=sys.stderr)
-        return False
+        print("[ERROR] notify_gm_progress import 실패 — 업무보고방으로 폴백: " + str(e),
+              file=sys.stderr)
+        return send_telegram(
+            clevel=clevel, task_id=task_id, status=status, summary=summary, dry_run=dry_run,
+            bridge_label=bridge_label, title=title, version=version, changelog=changelog,
+            artifact_url=artifact_url or "", next_desc=next_desc or "", terminal=terminal,
+        )
 
     nick = _ROLE_NICK.get(clevel.lower(), clevel.upper())
     state = "done" if normalize_status(status) == "DONE" else "doing"
     nxt = next_desc or ("🌀 여기서 종결" if terminal else None)
-    result = _notify_ai(
-        summary=title or summary,
-        link=artifact_url or None,
-        ship=nick,
-        state=state,
-        dry_run=dry_run,
-        nxt=nxt,
+
+    def _fallback_to_gm_dm(_text: str) -> bool:
+        print("[폴백] AI진행현황방 미발송(조용한 소멸 방지) → 업무보고방으로 폴백: " + task_id,
+              file=sys.stderr)
+        ok = send_telegram(
+            clevel=clevel, task_id=task_id, status=status, summary=summary, dry_run=dry_run,
+            bridge_label=bridge_label, title=title, version=version, changelog=changelog,
+            artifact_url=artifact_url or "", next_desc=next_desc or "", terminal=terminal,
+        )
+        if not ok:
+            print("[ERROR] 폴백(업무보고방)도 실패 — 완료보고가 어디에도 전달되지 않음: " + task_id,
+                  file=sys.stderr)
+        return ok
+
+    result = _notify_or_fallback(
+        title or summary, artifact_url or None,
+        ship=nick, state=state, dry_run=dry_run, nxt=nxt,
+        fallback=_fallback_to_gm_dm,
     )
     if dry_run:
         print("[DRY-RUN] would send (AI진행현황방):\n" + result.get("text", ""))
+        print("[DRY-RUN] notify_gm_progress reason=" + str(result.get("reason")))
         return True
     if result.get("sent"):
         print("[AI진행현황방] 보고 완료: " + task_id)
         return True
-    print("[WARN] AI진행현황방 미발송(reason=" + str(result.get("reason")) + ") — " + task_id,
-          file=sys.stderr)
-    return False
+    if result.get("reason") == "dedup":
+        print("[AI진행현황방] 중복 억제(dedup) — 같은 내용이 최근에 이미 전달됨(소멸 아님): "
+              + task_id)
+        return True
+    # 위 두 경우가 아니면 notify_or_fallback 이 이미 _fallback_to_gm_dm 을 호출했다.
+    return bool(result.get("fallback_ok"))
 
 
 def send_telegram(
@@ -758,6 +786,9 @@ def main() -> int:
                 artifact_url=args.artifact_url or "",
                 next_desc=args.next_desc or "",
                 terminal=args.terminal,
+                bridge_label=bridge_label,
+                version=args.version,
+                changelog=args.changelog,
             )
         else:
             ok_telegram = send_telegram(

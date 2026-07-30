@@ -259,6 +259,35 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
             "text": text, "chat_id": chat_id}
 
 
+def notify_or_fallback(summary: str, link: str | None = None, *, fallback=None, **kwargs) -> dict:
+    """notify() 를 부르고, 조용히 사라질 위험이 있는 결과면 fallback 을 호출하는 단일
+    관문(2026-07-30 배202 팀리드 지시 — 조용한 소멸 구멍 폐쇄).
+
+    notify() 의 미발송 사유 4가지(gate_off·dedup·daily_cap·room_unresolved, 그 외
+    send_failed 포함) 중 **dedup 만 소멸이 아니다**(같은 내용이 최근에 이미 전달됨).
+    나머지는 전부 fallback(text) 을 호출해 다른 경로(보통 업무보고방)로 반드시 내보낸다.
+    호출부를 여러 곳에서 각자 이 판단을 복제하지 않도록, 그 판단 자체를 여기 하나로
+    모은다(약속 L01·L21) — clevel_post_action.py·ig_review_publish_watcher.py 둘 다
+    이 함수를 통해서만 AI방 발송을 시도한다.
+
+    fallback: (text: str) -> bool. None 이면 폴백 없이 notify() 결과 그대로 반환(호출부가
+    직접 처리해야 하면 이 경우에 한해 자체 판단 — 새 호출부를 늘릴 땐 이 함수를 쓸 것).
+    dry_run=True 면 fallback 을 부르지 않는다(payload 미리보기만, 부작용 0).
+    반환에 notify() 의 필드 + fell_back(bool) + fallback_ok(bool|None) 를 더해 돌려준다.
+    """
+    result = notify(summary, link, **kwargs)
+    result["fell_back"] = False
+    result["fallback_ok"] = None
+    if kwargs.get("dry_run"):
+        return result
+    if result.get("sent") or result.get("reason") == "dedup":
+        return result
+    if fallback is not None:
+        result["fell_back"] = True
+        result["fallback_ok"] = bool(fallback(result.get("text", summary)))
+    return result
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="AI 진행현황방 진행 보고 1줄 발송 헬퍼")
     ap.add_argument("summary", help='보고 요약 1줄 (예: "AI 백엔드 발신 6건 이동")')
