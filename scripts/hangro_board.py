@@ -110,10 +110,37 @@ def _clean_summary(text: str) -> str:
     return s.strip()
 
 
+def _is_sentence_period(text: str, i: int) -> bool:
+    """text[i] 가 '.' 일 때, 그것이 정말 문장 끝인가.
+
+    2026-07-31 — 아니면 문장이 엉뚱한 자리에서 잘린다. 그날 08:00 GM 보고에서 실제로 두 번 났다:
+    「접수 2026. 7. 28」이 '2026' 에서 잘려 날짜가 두 칸으로 쪼개졌고, 「각 강사(P.T·수영」이
+    '(P' 에서 잘렸다. GM 이 반복해 지적한 '문장·단어 중간 잘림'이 여기서 만들어지고 있었다.
+    한국어 업무 기록에는 날짜·약어·소수점이 마침표를 그대로 쓰기 때문에 '.' 만으로는 문장을
+    가를 수 없다. 아래 두 경우는 문장 끝이 아니다:
+      · 마침표 뒤가 공백이 아님 — P.T · 1.5 · v2.0
+      · 마침표 앞뒤가 숫자 — 2026. 7. 28
+    """
+    nxt = text[i + 1:i + 2]
+    if nxt and not nxt.isspace():
+        return False
+    prev = text[i - 1:i] if i else ""
+    if prev.isdigit():
+        after = text[i + 1:].lstrip()
+        if after[:1].isdigit():
+            return False
+    return True
+
+
 def _first_sentence(text: str) -> str:
-    """정제된 텍스트의 첫 문장(. ! 。 — 또는 개행 기준)."""
-    m = re.search(r"[.!。—\n]", text)
-    return text[: m.start()].strip() if m else text.strip()
+    """정제된 텍스트의 첫 문장(. ! 。 — 또는 개행 기준).
+    '.' 는 진짜 문장 끝일 때만 경계로 본다(_is_sentence_period — 날짜·약어 중간 잘림 방지)."""
+    for i, ch in enumerate(text):
+        if ch in "!。—\n":
+            return text[:i].strip()
+        if ch == "." and _is_sentence_period(text, i):
+            return text[:i].strip()
+    return text.strip()
 
 
 def _truncate_word(text: str, max_len: int, suffix: str = "…") -> str:
