@@ -309,7 +309,14 @@ def render_source_honesty_block(ct: dict) -> str:
 #  보였다(정적 HTML엔 안 보임). 저장소에 이미 설치된 Playwright 재사용(새 의존성 0).
 # ═══════════════════════════════════════════
 def _measure_root(page, root_sel: str) -> dict:
-    """블록(section/.blk) 단위·칸(td/li 등) 단위 가시(innerText) 최대 글자수를 잰다."""
+    """블록(section/.blk) 단위·칸(td/li 등) 단위 가시(innerText) 최대 글자수를 잰다.
+
+    ★블록이 0개면 max_block_len 은 null 이다 — 페이지 전체 길이로 대신 채우지 않는다.
+    (2026-07-30 실측: 5개 화면 중 3개가 section/.blk 마크업이 아예 없다. 옛 코드는 그때
+    페이지 전체 글자수를 '블록 하나'로 착각해 블록 기준(5000자)과 견줬고, 그래서
+    브로제이 업무분장을 '블록 6,239자 초과'로 잘못 신고했다 — 실제 그 화면의 최대 칸은
+    146자였다. 없는 것은 없다고 적고, 못 잰 것은 못 쟀다고 적는다.)
+    """
     return page.evaluate(
         """(sel) => {
             const root = document.querySelector(sel) || document.body;
@@ -320,7 +327,7 @@ def _measure_root(page, root_sel: str) -> dict:
             const wholeLen = (root.innerText||'').length;
             return {
                 whole_len: wholeLen,
-                max_block_len: blockLens.length ? Math.max(...blockLens) : wholeLen,
+                max_block_len: blockLens.length ? Math.max(...blockLens) : null,
                 max_cell_len: cellLens.length ? Math.max(...cellLens) : 0,
                 block_count: blocks.length,
             };
@@ -376,7 +383,12 @@ def run_gm_surface_check() -> tuple[list, bool]:
                     if m["max_cell_len"] > GM_SURFACE_CELL_MAX:
                         findings.append({"kind": "cell_too_long", "page": label,
                                           "value": m["max_cell_len"], "limit": GM_SURFACE_CELL_MAX})
-                    if m["max_block_len"] > GM_SURFACE_BLOCK_MAX:
+                    if m["max_block_len"] is None:
+                        # 블록 마크업이 없는 화면 = 블록 기준으로 잴 수 없다. 통과로 위장하지 않고
+                        # '못 쟀다'를 남긴다(칸 기준은 위에서 그대로 잰다).
+                        findings.append({"kind": "block_unmeasurable", "page": label,
+                                          "whole": m["whole_len"], "max_cell": m["max_cell_len"]})
+                    elif m["max_block_len"] > GM_SURFACE_BLOCK_MAX:
                         findings.append({"kind": "block_too_long", "page": label,
                                           "value": m["max_block_len"], "limit": GM_SURFACE_BLOCK_MAX})
                 except Exception as e:
@@ -402,8 +414,12 @@ def run_gm_surface_check() -> tuple[list, bool]:
     return findings, ok
 
 
+# 위반이 아니라 '측정 한계'로 분류하는 종류 — 발견 건수에 넣지 않되 숨기지도 않는다.
+NON_VIOLATION_KINDS = ("scope_note", "block_unmeasurable")
+
+
 def log_surface_check(findings: list, ok: bool) -> dict:
-    real_findings = [f for f in findings if f.get("kind") != "scope_note"]
+    real_findings = [f for f in findings if f.get("kind") not in NON_VIOLATION_KINDS]
     if not ok:
         summary = "점검 실패(렌더 불가) — 별도 확인 필요"
     elif not real_findings:
@@ -428,7 +444,9 @@ def log_surface_check(findings: list, ok: bool) -> dict:
 
 
 def render_gm_surface_block(rec: dict) -> str:
-    findings = [f for f in (rec.get("evidence") or []) if f.get("kind") != "scope_note"]
+    evidence = rec.get("evidence") or []
+    findings = [f for f in evidence if f.get("kind") not in NON_VIOLATION_KINDS]
+    unmeasured = [f for f in evidence if f.get("kind") == "block_unmeasurable"]
     lines = [
         "## 🔍 GM 표면 점검 (오늘 · \"GM이 여는 화면이 읽히는가\")",
         "",
@@ -455,6 +473,9 @@ def render_gm_surface_block(rec: dict) -> str:
             else:
                 lines.append(f"- {kind}: {f}")
     lines.append("")
+    if unmeasured:
+        detail = " · ".join(f"{f['page']}(전체 {f['whole']}자·최대 칸 {f['max_cell']}자)" for f in unmeasured)
+        lines.append(f"*블록 기준으로 못 잰 화면: {detail} — 그 화면엔 블록 마크업(section/.blk)이 없어 칸 기준만 적용했다(위반 아님·측정 한계).*")
     lines.append("*'사실인가'(원천 대조·갱신정지)는 화면별 원천 매핑이 필요해 이번 회차 범위 밖 — 다음 과제.*")
     lines.append(f"*측정: {rec.get('observed_at')} · 근거 = `{LEDGER.name}` 최신 surface_check 항목*")
     lines.append("")
