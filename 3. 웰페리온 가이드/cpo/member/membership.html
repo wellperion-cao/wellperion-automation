@@ -1569,8 +1569,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <a class="dash-card" data-kind="reg" data-tab="registered" href="javascript:void(0)" onclick="switchTab('registered');_memHighlight(this)">
       <div class="dash-head"><span class="dash-dot reg"></span><span class="dash-title">신규 멤버십 등록현황</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dRegToday">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dRegMonth">–</b> 명</span></div>
       </div>
     </a>
     <!-- 카드4: 멤버십 회원 관리 (유효회원 명단 — 내부 탭). setActiveSeg('valid')로 scope/대기자필터를 항상 리셋
@@ -1579,9 +1579,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <a class="dash-card" data-kind="mem" data-tab="active" href="javascript:void(0)" onclick="switchTab('active');setActiveSeg('valid');_memHighlight(this)">
       <div class="dash-head"><span class="dash-dot mem"></span><span class="dash-title">멤버십 회원 관리</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">–</b> 명</span></div>
         <!-- 유효(위 줄)=server memberActive+memberCorp(법인, 총 유효회원 수에 합산) 단일 소스=요약카드 총유효와 동일. 단기=유효의 부분집합(중단기 카운트), 법인 단독표기(dMemCorp)는 하단에 별도 유지. 2026-07-18 시포·GM -->
-        <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">0</b>명</span></div>
+        <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">–</b>명</span></div>
       </div>
     </a>
     <!-- 휴회 회원 관리(2026-07-23 GM) — 기능은 있었는데 유효회원 목록 안 카드로만 존재해 진입점이 없었다
@@ -1606,8 +1606,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <a class="dash-card" data-kind="loss" href="javascript:void(0)" onclick="switchTab('active');setActiveSeg('ended');_memHighlight(this)">
       <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
       <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dMemLossToday">0</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dMemLossMonth">0</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dMemLossToday">–</b> 명</span></div>
+        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dMemLossMonth">–</b> 명</span></div>
       </div>
     </a>
   </div>
