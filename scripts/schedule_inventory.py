@@ -33,6 +33,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SCHEDULER_SRC = ROOT / "telegram_bot" / "daily_scheduler.py"
 OUT_PATH = ROOT / "status" / "schedule_inventory.json"
+SCHEDULE_JSON_PATH = ROOT / "status" / "schedule.json"
+NOTIFY_REGISTRY_PATH = ROOT / "status" / "notify_registry.json"
 
 # apscheduler 로 넘어가는 즉시(--test 전용) 잡 — 무인자 vbs 실행에서는 비활성.
 # 조사 문서(표2 각주)와 동일 기준으로 인벤토리에서도 제외.
@@ -540,6 +542,121 @@ def _print_diff(old: dict, new: dict) -> None:
             print(f"  apscheduler_jobs[{jid}] 내용 변경")
 
 
+# ── 선언(status/schedule.json·notify_registry.json) ↔ 실제(Windows 예약작업) 대조 ──
+# 2026-07-30 배202 ⓿ 팀리드 지시 — 같은 부류(문서=일요일, 실제=월요일 등 요일 드리프트)가
+# 사람 눈으로 세 번 잡혔다(모듈 주간·AI 자기학습·재발방지 회귀감시). 매번 사람이 찾는 구조라
+# 계속 새므로 기존 --check 관문에 흡수한다(새 파일·새 예약작업 0 · 약속 L21).
+# 설계: 매칭은 명시적 표(curated mapping)로만 한다 — 이름 유사도로 자동매칭하면 헛경보가
+# 나서(팀리드 지시: 헛경보 확인 필수) 오히려 신뢰를 깎는다. 새 정기 발신이 생기면 이 표에
+# 한 줄 추가하는 게 유지보수 방식이다.
+_KOREAN_WEEKDAY = {
+    "일": "Sunday", "월": "Monday", "화": "Tuesday", "수": "Wednesday",
+    "목": "Thursday", "금": "Friday", "토": "Saturday",
+}
+
+# (표시 라벨, 대조 대상 windows 작업명) — schedule.json 은 sid, notify_registry.json 은 id 로 조회.
+_SCHEDULE_JSON_MAP = {
+    "cto-2026-06-23-ai-education-auto-learner": "Wellperion-AI-Education-Weekly",
+    "cto-2026-06-23-ai-learning-proposer": "Wellperion-AI-Learning-Proposer-Weekly",
+    "cto-regression-monitor-0915": None,  # 독립 예약작업 없음(알려진 편승 사례) — 대조불가로 남김
+}
+_NOTIFY_REGISTRY_MAP = {
+    "win-0730-ig-review": "Wellperion-IG-Series-Produce-0730",
+    "win-0730-ops-digest": "Wellperion-Ops-Morning-Digest-0730",
+    "win-0800-ceo": "Wellperion-CEO-Morning-Brief-0800-Live",
+    "win-0845-lseries": "Wellperion-LSeries-Daily-Card-0845",
+    "win-0910-module-daily": "Wellperion-Module-Report-Daily",
+    "win-0930-kakao-sales": "Wellperion-Kakao-Sales-Report-0930",
+    "win-1300-healthcheck": "Wellperion-Telegram-HealthCheck-1300",
+    "win-2100-cmo-daily": "Wellperion-CMO-Daily-Marketing-2100",
+    "win-weekly-mon0900-marketing": "Wellperion-CMO-Weekly-Marketing-Feedback",
+    "win-weekly-sun0900-education": "Wellperion-Education-Archive-Weekly",
+    "win-weekly-sun0900-module": "Wellperion-Module-Report-Weekly",
+    "win-weekly-sun1030-selfreview": "Wellperion-Weekly-Self-Review-Sunday",
+    "win-monthly-1st0900-marketing": "Wellperion-CMO-Monthly-Report",
+    "win-monthly-1st0900-checksummary": "Wellperion-MonthlyCheckReport-0900-D1",
+    "win-monthly-1st0900-opsplan": "Wellperion-MonthlyOps-Start-0900",
+    "win-monthly-lastday2100-opsclose": "Wellperion-MonthlyOps-End-2100",
+    "win-monthly-module": "Wellperion-Module-Report-Monthly",
+    "win-monthly-4thmon1000-memberexpiry": "Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000",
+}
+
+
+def _parse_declared_text(text: str):
+    """자유서술 한글 일정 텍스트 → (요일영문_또는_None, 'HH:MM'_또는_None). 모르면 (None, None)."""
+    if not text:
+        return (None, None)
+    weekday = None
+    m = re.search(r"(매주\s*)?([일월화수목금토])요일", text)
+    if not m:
+        m = re.search(r"(?:^|[\s/·])([일월화수목금토])(?:\s|$)", text)
+    if m:
+        weekday = _KOREAN_WEEKDAY.get(m.group(m.lastindex))
+    tm = re.search(r"(\d{1,2}):(\d{2})", text)
+    hhmm = f"{int(tm.group(1)):02d}:{tm.group(2)}" if tm else None
+    return (weekday, hhmm)
+
+
+def _actual_from_task(task: dict):
+    """windows_tasks 항목(triggers 포함) → (요일영문_또는_None, 'HH:MM'_또는_None). CalendarTrigger 1개 기준."""
+    for t in task.get("triggers", []):
+        if t.get("type") != "CalendarTrigger":
+            continue
+        days = t.get("days_of_week") or []
+        weekday = days[0] if len(days) == 1 else None  # 복수요일·월간패턴은 요일단정 안 함(대조불가로 자연 처리)
+        start = t.get("start_boundary") or ""
+        m = re.search(r"T(\d{2}):(\d{2})", start)
+        hhmm = f"{m.group(1)}:{m.group(2)}" if m else None
+        return (weekday, hhmm)
+    return (None, None)
+
+
+def check_declared_vs_actual(windows_tasks: list[dict]) -> dict:
+    """선언(schedule.json·notify_registry.json) ↔ 실제(windows_tasks) 요일·시각 대조.
+    반환: {'rows': [...], 'ok': N, 'drift': M, 'unmatched': K}. 매칭 실패는 어긋남과 절대 안 섞는다."""
+    by_name = {t.get("name"): t for t in windows_tasks}
+    rows = []
+
+    def _eval(label, declared_text, task_name):
+        if not task_name or task_name not in by_name:
+            rows.append((label, declared_text or "(선언값 없음)", "—", "대조불가"))
+            return
+        dweek, dtime = _parse_declared_text(declared_text or "")
+        aweek, atime = _actual_from_task(by_name[task_name])
+        if aweek is None and atime is None:
+            rows.append((label, f"{dweek or '?'} {dtime or '?'}", "(요일·시각 추출 불가)", "대조불가"))
+            return
+        declared_s = f"{dweek or '?'} {dtime or '?'}"
+        actual_s = f"{aweek or '?'} {atime or '?'}"
+        mismatch = (dweek and aweek and dweek != aweek) or (dtime and atime and dtime != atime)
+        rows.append((label, declared_s, actual_s, "어긋남" if mismatch else "정상"))
+
+    if SCHEDULE_JSON_PATH.exists():
+        for item in json.loads(SCHEDULE_JSON_PATH.read_text(encoding="utf-8")):
+            sid = item.get("sid")
+            if sid in _SCHEDULE_JSON_MAP:
+                _eval(item.get("name") or sid, item.get("exec_time"), _SCHEDULE_JSON_MAP[sid])
+
+    if NOTIFY_REGISTRY_PATH.exists():
+        reg = json.loads(NOTIFY_REGISTRY_PATH.read_text(encoding="utf-8"))
+        for item in reg.get("items", []):
+            iid = item.get("id")
+            if iid in _NOTIFY_REGISTRY_MAP:
+                _eval(iid, item.get("when"), _NOTIFY_REGISTRY_MAP[iid])
+
+    ok = sum(1 for r in rows if r[3] == "정상")
+    drift = sum(1 for r in rows if r[3] == "어긋남")
+    unmatched = sum(1 for r in rows if r[3] == "대조불가")
+    return {"rows": rows, "ok": ok, "drift": drift, "unmatched": unmatched}
+
+
+def _print_declared_vs_actual(result: dict) -> None:
+    print(f"[선언↔실제 대조] 정상 {result['ok']} · 어긋남 {result['drift']} · 대조불가 {result['unmatched']}")
+    for label, declared, actual, verdict in result["rows"]:
+        mark = {"정상": "✅", "어긋남": "⚠️", "대조불가": "❔"}.get(verdict, "?")
+        print(f"  {mark} {label} | 선언={declared} | 실제={actual} | {verdict}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="Windows 예약작업 + apscheduler 잡 인벤토리를 status/schedule_inventory.json 으로 "
@@ -552,6 +669,9 @@ def main() -> None:
     data = build_inventory()
 
     if args.check:
+        drift_result = check_declared_vs_actual(data["windows_tasks"])
+        _print_declared_vs_actual(drift_result)
+
         if not OUT_PATH.exists():
             print(f"[check] 기존 인벤토리 없음: {OUT_PATH}")
             sys.exit(1)
