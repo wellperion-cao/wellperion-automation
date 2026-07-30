@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
-"""전사 일정 SSOT — 로더·검증·업무결재 연동(예행).
+"""전사 일정 SSOT — 로더·검증·상태판정.
 SSOT = status/schedule_ssot.json (반복 의무·이벤트, type으로 종류 구분·현재=정기점검).
-정본은 JSON, 이 모듈은 소비자. gate.auto_workapproval=False(기본)면 '무엇을 만들지'만
-반환/로그하고 업무·결재를 건드리지 않는다."""
+정본은 JSON, 이 모듈은 소비자(읽기전용 — 항목 검증·상태(tbd/scheduled/due_soon/overdue)
+판정·요약만 한다).
+
+[2026-07-30 시토·웰리] 업무·결재 자동상신 서브기능(plan_workapproval()·gate.auto_workapproval
+소비)을 제거했다 — 실배선(이 함수를 실제로 호출해 업무·결재에 반영하는 코드)이 저장소 전체에
+0곳이었다(자기 테스트 파일 제외 — 전수 grep 재확인). 죽어 있는데 "켜면 뭔가 될 것 같은 스위치"로
+남겨두면 나중에 배선을 만드는 사람이 GM 결정 없이 그냥 켤 위험이 있다(약속 L21 '꺼둔 것은
+남기지 않는다'). 자동상신이 필요해지면 그때 GM 결정과 함께 다시 설계한다.
+status/schedule_ssot.json 의 gate.auto_workapproval 키·값과 3개 라이브 화면
+(전사_일정.html·시설부 체계.html·wellperion_guide(main).html)은 이 삭제와 무관 — 그대로 살아있다."""
 import json
 import sys
 from datetime import date, datetime, timedelta, timezone
@@ -107,25 +115,6 @@ def due_items(cal: dict, today: date = None, lead_days: int = None) -> list:
     return out
 
 
-def plan_workapproval(cal: dict, today: date = None) -> dict:
-    """기한 도래분 → 업무·결재 배 생성 '계획' 산출.
-    gate.auto_workapproval=False면 dry_run=True로 계획만 반환(SSOT 무변경)."""
-    gate = cal.get("gate", {})
-    live = bool(gate.get("auto_workapproval"))
-    # 정기점검(법정 의무)만 결재선에 올린다. due_items 는 type 을 안 가리므로 여기서 좁힌다
-    # — 이 파일에는 이벤트(청소·회식 등 팀 내부 기록)도 같이 들어 있어서, 안 거르면 그런 항목까지
-    #   "[정기점검] …" 제목을 달고 업무·결재로 새 나간다(게이트를 켜는 순간 실무진 화면에 오탐이 뜬다).
-    #   due_items 자체를 좁히지 않는 이유 = 요약·부서 뷰 등 다른 소비자가 전체 타입을 봐야 한다.
-    cands = [it for it in due_items(cal, today) if str(it.get("type") or "") == "정기점검"]
-    proposals = [{
-        "title": f"[정기점검] {it['name']} — {it['dept']} · {it['cycle']}",
-        "dept": it["dept"], "next_due": it.get("next_due", ""),
-        "dday": it["dday"], "legal_basis": it.get("legal_basis", ""),
-        "source": "schedule_ssot", "item_id": it["id"],
-    } for it in cands]
-    return {"dry_run": not live, "count": len(proposals), "proposals": proposals}
-
-
 def summarize(cal: dict, dept: str = None, today: date = None) -> dict:
     today = today or _kst_today()
     lead = cal.get("gate", {}).get("lead_days", 30)
@@ -142,16 +131,15 @@ if __name__ == "__main__":
     errs = validate(cal)
     print("검증:", "통과 ✓" if not errs else errs)
     print("요약(전체):", summarize(cal))
-    plan = plan_workapproval(cal)
-    print(f"업무·결재 연동: dry_run={plan['dry_run']} · 도래 {plan['count']}건 "
-          f"(gate.auto_workapproval={cal['gate']['auto_workapproval']})")
-    for p in plan["proposals"]:
-        print("  →", p["title"], f"(D-{p['dday']})" if p["dday"] is not None else "")
+    due = due_items(cal)
+    print(f"기한 도래(임박·초과): {len(due)}건")
+    for it in due:
+        print("  →", it["name"], f"(D-{it['dday']})" if it["dday"] is not None else "")
 
     # 작업 현황 로그(best-effort) — 실행 1회당 선별 결과 요약 1줄
     worklog_log(
         "coo", "일정",
-        f"전사 일정 기한 도래 선별 — 임박·초과 {plan['count']}건 확인",
+        f"전사 일정 기한 도래 선별 — 임박·초과 {len(due)}건 확인",
         result=("warn" if errs else "ok"),
         detail=("; ".join(errs[:3]) if errs else f"검증 통과 · 등록 {summarize(cal)['total']}건 대상"),
         ref="schedule_ssot",

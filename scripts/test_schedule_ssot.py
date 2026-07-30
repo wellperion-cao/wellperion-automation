@@ -22,21 +22,6 @@ def test_no_fabricated_dates():
     assert all(not it["next_due"] for it in checks)
 
 
-def test_workapproval_only_legal_checks():
-    """결재 후보에는 정기점검만 오른다 — 이벤트가 '[정기점검]' 딱지를 달고 새 나가면 안 된다.
-
-    2026-07-27 실측: 기한 도래 15건이 전부 이벤트였다. 필터가 없었다면 게이트를 켜는 순간
-    팀 내부 기록 15건이 결재선에 올라갔다.
-    """
-    cal = C.load()
-    cal = {**cal, "items": list(cal["items"]) + [{
-        "id": "test-event", "type": "이벤트", "name": "테스트 이벤트", "dept": "운영부",
-        "cycle": "수시", "next_due": date.today().isoformat(), "applies": "해당",
-    }]}
-    for p in C.plan_workapproval(cal)["proposals"]:
-        assert p["item_id"] != "test-event"
-
-
 def test_status_thresholds():
     base = {"next_due": "2026-07-25"}
     t = date(2026, 7, 10)
@@ -46,10 +31,12 @@ def test_status_thresholds():
     assert C.status_of({"next_due": ""}, t)["status"] == "tbd"
 
 
-def test_gate_off_dry_run():
+def test_gate_off():
+    """gate.auto_workapproval 는 여전히 JSON에 남아있는 정본 값(false) — 이걸 소비하던
+    plan_workapproval() 은 2026-07-30 삭제(실배선 0곳 확인, GM/웰리 판단). 이 값 자체는
+    schedule_ssot.json 정본 문서화 값이라 회귀 감시만 계속한다."""
     cal = C.load()
     assert cal["gate"]["auto_workapproval"] is False
-    assert C.plan_workapproval(cal)["dry_run"] is True
 
 
 def test_dept_filter_summary():
