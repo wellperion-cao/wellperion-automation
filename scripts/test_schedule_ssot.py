@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-"""schedule_ssot 계약 테스트 — 정직성(지어낸 날짜 0)·판정·게이트 OFF 고정."""
+"""schedule_ssot 계약 테스트 — 정직성(지어낸 날짜 0)·판정.
+2026-07-30: gate.auto_workapproval 를 지키던 테스트는 그 키 자체를 삭제하며 함께 뺐다
+(plan_workapproval() 실배선 0곳 확인 후 제거, 웰리 결정)."""
 from datetime import date
 import schedule_ssot as C
 
@@ -29,14 +31,6 @@ def test_status_thresholds():
     assert C.status_of({"next_due": "2026-07-01"}, t)["status"] == "overdue"
     assert C.status_of({"next_due": "2026-12-01"}, t)["status"] == "scheduled"
     assert C.status_of({"next_due": ""}, t)["status"] == "tbd"
-
-
-def test_gate_off():
-    """gate.auto_workapproval 는 여전히 JSON에 남아있는 정본 값(false) — 이걸 소비하던
-    plan_workapproval() 은 2026-07-30 삭제(실배선 0곳 확인, GM/웰리 판단). 이 값 자체는
-    schedule_ssot.json 정본 문서화 값이라 회귀 감시만 계속한다."""
-    cal = C.load()
-    assert cal["gate"]["auto_workapproval"] is False
 
 
 def test_dept_filter_summary():

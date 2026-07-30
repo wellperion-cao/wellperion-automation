@@ -5,12 +5,16 @@ SSOT = status/schedule_ssot.json (반복 의무·이벤트, type으로 종류 �
 판정·요약만 한다).
 
 [2026-07-30 시토·웰리] 업무·결재 자동상신 서브기능(plan_workapproval()·gate.auto_workapproval
-소비)을 제거했다 — 실배선(이 함수를 실제로 호출해 업무·결재에 반영하는 코드)이 저장소 전체에
-0곳이었다(자기 테스트 파일 제외 — 전수 grep 재확인). 죽어 있는데 "켜면 뭔가 될 것 같은 스위치"로
-남겨두면 나중에 배선을 만드는 사람이 GM 결정 없이 그냥 켤 위험이 있다(약속 L21 '꺼둔 것은
-남기지 않는다'). 자동상신이 필요해지면 그때 GM 결정과 함께 다시 설계한다.
-status/schedule_ssot.json 의 gate.auto_workapproval 키·값과 3개 라이브 화면
-(전사_일정.html·시설부 체계.html·wellperion_guide(main).html)은 이 삭제와 무관 — 그대로 살아있다."""
+소비 및 그 키 자체)을 제거했다 — 실배선(이 함수를 실제로 호출해 업무·결재에 반영하는 코드)이
+저장소 전체에 0곳이었다(자기 테스트 파일 제외 — 전수 grep 재확인, 화면·GAS 포함). 죽어 있는데
+"켜면 뭔가 될 것 같은 스위치"로 남겨두면 나중에 배선을 만드는 사람이 GM 결정 없이 그냥 켤
+위험이 있다(약속 L21 '꺼둔 것은 남기지 않는다'). 자동상신이 필요해지면 그때 GM 결정과 함께
+다시 설계한다. status/schedule_ssot.json 의 gate 객체에서 auto_workapproval 키 자체도 제거했다
+(같은 이유 — 값만 지우고 스위치 모양(키)을 남기면 되살릴 여지가 남는다). gate.lead_days·_note
+와 3개 라이브 화면(전사_일정.html·시설부 체계.html·wellperion_guide(main).html)은 이 삭제와
+무관 — 그대로 살아있다. 되돌리려면: gate 객체에 "auto_workapproval": false 한 줄을 다시 넣고
+(git 이력의 삭제 전 커밋에서 복사 가능), plan_workapproval() 은 필요해질 때 새로 설계한다(그대로
+되살리지 않는다 — 그때 상황에 맞게 다시 판단)."""
 import json
 import sys
 from datetime import date, datetime, timedelta, timezone
@@ -61,8 +65,6 @@ def validate(cal: dict) -> list:
             errors.append(f"[{iid}] 미등록 부서: {it.get('dept')}")
         if it.get("category") not in cats:
             errors.append(f"[{iid}] 미등록 분류: {it.get('category')}")
-    if "gate" not in cal or "auto_workapproval" not in cal.get("gate", {}):
-        errors.append("gate.auto_workapproval 누락")
     return errors
 
 
