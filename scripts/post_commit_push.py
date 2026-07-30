@@ -34,6 +34,32 @@ PUSH_TIMEOUT = int(os.environ.get("POST_COMMIT_PUSH_TIMEOUT", 30))
 REMOTE = "origin"
 BRANCH = "master"
 
+# ── 실패 사유 로깅용 마스킹·절단 (2026-07-30 GM 승인 · CTO) ──────────────────────
+#  왜: fetch/merge/push 실패의 진짜 stderr 를 로그에 남기지 않아 non-ff 가 며칠씩
+#  막혀도 원인을 알 수 없었다(2026-07-30 실측·GM 지적). 이제 남기되, git 원격 URL에
+#  자격증명이 박혀 있을 수 있어(https://user:token@host) 로그에 쓰기 전 반드시 마스킹한다.
+import re as _re_mask
+
+
+def _mask_secrets(s: str) -> str:
+    """git stderr 등에 섞일 수 있는 자격증명을 로그에 쓰기 전 가린다."""
+    try:
+        s = _re_mask.sub(r'://[^/\s@]+@', '://***@', s)
+        s = _re_mask.sub(r'(x-access-token|token)[:=][A-Za-z0-9_\-]+', r'\1:***', s, flags=_re_mask.IGNORECASE)
+        s = _re_mask.sub(r'\b(ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{10,}\b', r'\1_***', s)
+        return s
+    except Exception:
+        return s
+
+
+def _tail(s: str, n: int = 500) -> str:
+    """로그용 — 마스킹 후 뒤에서 n자만(긴 stderr 도배 방지). 실패해도 빈 문자열."""
+    try:
+        s = _mask_secrets(s or "")
+        return s[-n:] if len(s) > n else s
+    except Exception:
+        return ""
+
 
 def _unpushed_count(root: str) -> int:
     """origin/master..HEAD 커밋 수. 원격 ref 없으면 -1(=알 수 없음→push 시도)."""
@@ -90,7 +116,8 @@ def _telegram_warn(root: str, text: str) -> None:
 
 
 def _push_once(root: str) -> tuple[int, str]:
-    """git push 1회. (returncode, stderr) 반환. 타임아웃은 rc=124."""
+    """git push 1회. (returncode, stderr) 반환. 타임아웃은 rc=124.
+    반환 문자열은 로그에 그대로 쓰일 수 있으므로 마스킹·절단(_tail) 처리해서 준다."""
     try:
         r = subprocess.run(
             ["git", "push", REMOTE, f"HEAD:{BRANCH}"],
@@ -99,7 +126,7 @@ def _push_once(root: str) -> tuple[int, str]:
             text=True, encoding="utf-8", errors="replace",
             timeout=PUSH_TIMEOUT,
         )
-        return r.returncode, (r.stderr or r.stdout).strip()
+        return r.returncode, _tail((r.stderr or r.stdout).strip())
     except subprocess.TimeoutExpired:
         return 124, "timeout"
 
@@ -167,11 +194,17 @@ def _stash_count(root: str) -> int:
         return -1
 
 
-def _reconcile(root: str) -> bool:
+def _reconcile(root: str) -> tuple[bool, str]:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
     ★언제나 merge 로만 통합한다(rebase 경로는 배147에서 껐다 — 아래 _ALLOW_REBASE 주석 참고).
-    성공 True / 실패 False. 어떤 경우에도 half-state 안 남김(abort + 고아 강제정리).
+    반환 = (성공 여부, 실패 사유 — 성공 시 빈 문자열). 어떤 경우에도 half-state 안 남김
+    (abort + 고아 강제정리).
     (호출자가 git_lock 임계구역 보유 상태에서만 호출 — 동시 로컬 git 없음 보장.)
+
+    ★2026-07-30(GM 지시): 예전엔 bool 만 반환해 실패해도 진짜 사유(git stderr)가 로그에
+    안 남았다(non-ff 가 며칠 막혀도 원인불명). 이제 각 실패 지점에서 사유 문자열을 함께
+    반환한다 — 호출자가 최종 로그에 "그 시도의 실제 사유"를 쓸 수 있게(첫 push 거부
+    메시지 재사용 금지). 문자열은 _tail() 로 이미 마스킹·절단돼 있다.
 
     merge 폴백 사유: 열린 앱이 추적 바이너리(예: 작업 중 .pptx)를 잠그면 rebase 가
     시작 시 워킹트리를 reset --hard 하다 잠긴 파일 unlink 실패로 죽는다. 원격이 그
@@ -184,7 +217,9 @@ def _reconcile(root: str) -> bool:
             encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
         )
         if f.returncode != 0:
-            return False
+            reason = _tail("fetch 실패: " + (f.stderr or f.stdout or "").strip())
+            _log(f"POST_COMMIT_PUSH {reason}", root)
+            return False, reason
         # 워킹트리가 더러우면(=GM이 파일을 열어 편집 중) rebase 는 시작 시 워킹트리를
         # reset 하다 잠긴 파일에서 죽는다 → 처음부터 merge 로 간다(열린 파일 안 건드림).
         # 깨끗하면 rebase 로 선형 히스토리 유지, 실패해도 아래 merge 폴백.
@@ -225,7 +260,7 @@ def _reconcile(root: str) -> bool:
                 if before >= 0 and after >= 0 and after > before:
                     _log(f"POST_COMMIT_PUSH ★경고 스태시 증가 {before}->{after} — "
                          f"미커밋 변경이 갇혔을 수 있음(git stash list 확인 필요)", root)
-                return True
+                return True, ""
             # rebase 실패 → 원상복구(커밋·작업트리 보존) + 고아 상태 강제정리
             subprocess.run(
                 ["git", "rebase", "--abort"],
@@ -245,16 +280,20 @@ def _reconcile(root: str) -> bool:
         )
         if mg.returncode == 0:
             _log("POST_COMMIT_PUSH ok(after merge fallback)", root)
-            return True
-        # merge 도 실패(진짜 내용 충돌·원격이 잠긴 파일 건드림 등) → 원상복구
+            return True, ""
+        # merge 도 실패(진짜 내용 충돌·원격이 잠긴 파일 건드림·워킹트리 더러움 등) → 원상복구
+        # ★실제 git stderr 를 남긴다(2026-07-30 GM 지시) — 예전엔 정적 문구만 남아 사유를
+        # 알 수 없었다. mg.stderr 가 비면 stdout 으로 폴백(merge 는 충돌 요약을 stdout 에
+        # 쓰는 경우가 있다).
+        merge_reason = _tail("merge 실패: " + (mg.stderr or mg.stdout or "").strip())
         subprocess.run(
             ["git", "merge", "--abort"],
             cwd=root, capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=20,
         )
         _clear_orphan_rebase(root)
-        _log("POST_COMMIT_PUSH merge 폴백도 실패; aborted (fall back to warn)", root)
-        return False
+        _log(f"POST_COMMIT_PUSH merge 폴백도 실패; aborted — {merge_reason}", root)
+        return False, merge_reason
     except subprocess.TimeoutExpired:
         try:
             subprocess.run(["git", "rebase", "--abort"], cwd=root,
@@ -267,14 +306,15 @@ def _reconcile(root: str) -> bool:
             pass
         _clear_orphan_rebase(root)
         _log("POST_COMMIT_PUSH reconcile timeout; aborted", root)
-        return False
+        return False, "reconcile timeout"
     except Exception as e:
+        reason = f"reconcile err {e}"
         try:
             _clear_orphan_rebase(root)
-            _log(f"POST_COMMIT_PUSH reconcile err {e}", root)
+            _log(f"POST_COMMIT_PUSH {reason}", root)
         except Exception:
             pass
-        return False
+        return False, reason
 
 
 def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> None:
@@ -308,7 +348,12 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
         retries = int(os.environ.get("POST_COMMIT_PUSH_RETRIES", 5))
         for attempt in range(1, retries + 1):
             _log(f"POST_COMMIT_PUSH non-ff; reconcile+재시도 {attempt}/{retries}", root)
-            if not _reconcile(root):
+            reconciled, reconcile_reason = _reconcile(root)
+            if not reconciled:
+                # ★2026-07-30(GM 지시): 예전엔 여기서 err 를 안 바꿔 최종 로그가 맨 처음
+                # push 거부 메시지("[rejected] non-fast-forward")를 그대로 재사용했다 —
+                # 실제로 막은 건 fetch/merge 실패인데 그 사유가 안 보였다. reconcile 사유로 갱신한다.
+                err = reconcile_reason or err
                 break  # reconcile 자체 실패(진짜 충돌·타임아웃) → 경고 경로로
             rc2, err2 = _push_once(root)
             if rc2 == 0:
