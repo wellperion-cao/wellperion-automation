@@ -126,6 +126,17 @@
   #broj-vendor-queue{margin-top:16px;}
   .broj-vq-head{font-size:16px; font-weight:800; margin-bottom:8px;}
   .broj-vq-badge{font-size:13px; font-weight:700; color:var(--rose); margin-left:8px;}
+  /* ── 탭 (GM 2026-07-30 "또 분리해서 새로 만들면 복잡하지 않나") — 주소는 하나, 화면만 갈아 끼운다.
+       세로로 이어 붙이면 8화면 분량이 되어 급한 확인 건이 아래로 묻힌다(실측: 업무분장 5.7화면 + 확인목록 2.3화면). ── */
+  .broj-tabs{display:flex; gap:8px; margin:4px 0 16px; border-bottom:1px solid var(--border); padding-bottom:0;}
+  .broj-tab{appearance:none; background:none; border:1px solid transparent; border-bottom:none; color:var(--dim);
+            font-family:inherit; font-size:14.5px; font-weight:700; padding:9px 20px; border-radius:9px 9px 0 0; cursor:pointer;
+            margin-bottom:-1px; white-space:nowrap;}
+  .broj-tab:hover{color:var(--text);}
+  .broj-tab.on{color:var(--text); background:var(--surface); border-color:var(--border); border-bottom:1px solid var(--surface);}
+  .broj-tab .cnt{font-size:11.5px; font-weight:700; color:var(--rose); margin-left:6px;}
+  #tab-confirm iframe{width:100%; border:0; display:block; background:var(--bg);}
+
   .broj-vq-link{display:block; text-decoration:none; border:1px solid var(--border); border-left:3px solid var(--rose); border-radius:10px; padding:13px 16px; background:var(--surface);}
   .broj-vq-link:hover{border-color:var(--accent-soft); background:var(--paper);}
   .broj-vq-link-main{display:block; font-size:14.5px; font-weight:800; color:var(--accent-soft);}
@@ -147,14 +158,28 @@
     <a class="back" href="../../월간운영계획.html">◂ 월간운영계획으로</a>
   </header>
 
-  <div id="broj-p1-alert"></div>
-  <div id="broj-progress"></div>
-  <div id="broj-role-map"></div>
-  <div id="broj-depts"></div>
-  <div id="broj-guides"></div>
-  <div id="broj-vendor-queue"></div>
-  <div id="broj-cross"></div>
-  <div id="broj-trash"></div>
+  <nav class="broj-tabs" id="broj-tabs">
+    <button type="button" class="broj-tab on" data-tab="assign">📋 업무분장</button>
+    <button type="button" class="broj-tab" data-tab="confirm">🔺 브로제이 확인</button>
+  </nav>
+
+  <div id="tab-assign">
+    <div id="broj-p1-alert"></div>
+    <div id="broj-progress"></div>
+    <div id="broj-role-map"></div>
+    <div id="broj-depts"></div>
+    <div id="broj-guides"></div>
+    <div id="broj-vendor-queue"></div>
+    <div id="broj-cross"></div>
+    <div id="broj-trash"></div>
+  </div>
+
+  <!-- 브로제이 확인 목록 — 같은 폴더의 브로제이_확인목록.html 을 그대로 끼워 넣는다.
+       코드를 이 페이지로 옮겨 붙이지 않는 이유: 두 벌이 같은 저장소에 동시에 쓰면 서로 덮어쓴다.
+       한 벌만 두고 화면만 갈아 끼운다(약속 L01·L21). 처음 탭을 누를 때만 로드한다. -->
+  <div id="tab-confirm" style="display:none;">
+    <iframe id="confirmFrame" data-src="브로제이_확인목록.html?embed=1" title="브로제이 확인 목록" style="height:1200px;"></iframe>
+  </div>
 
   <div class="footnote">체크·추가·수정·담당이관·삭제는 즉시 저장됩니다(부서보드와 동일 공용 저장소). 🆕 표시는 현장에서 새로 추가한 항목, 🔀는 다른 담당에서 이관된 항목입니다. 삭제해도 실제로 지워지지 않고 페이지 맨 아래 휴지통에서 복원할 수 있습니다. 원본 문서: <code>status/briefs/GM_브로제이_업무분장_원본_20260729.html</code></div>
 </div>
@@ -541,7 +566,7 @@
     // 2026-07-30: 회신 대기 건수는 「브로제이 확인 목록」 페이지가 브로제이 시트를 직접 읽어 센다.
     // 여기서 옛 하드코딩 목록으로 다시 세면 두 화면 숫자가 어긋난다 — 세는 곳은 한 군데만 둔다(약속 L01).
     el.innerHTML = '<div class="broj-p1box"><div class="broj-p1head">' +
-      '🔴 브로제이 회신 대기 — <a href="브로제이_확인목록.html" style="color:inherit;">확인 목록에서 보기 →</a></div></div>';
+      '🔴 브로제이 회신 대기 — <a href="#확인" data-goto-tab="confirm" style="color:inherit;">확인 목록에서 보기 →</a></div></div>';
   }
   function renderBrojProgress(){
     var el = document.getElementById('broj-progress'); if(!el) return;
@@ -655,7 +680,7 @@
     //      숫자가 어긋난다. 틀린 숫자를 보여주느니 세는 곳을 한 군데(확인목록 페이지)로 둔다(약속 L01).
     el.innerHTML =
       '<div class="broj-vq-head">🔺 브로제이 확인 목록 <span class="broj-vq-badge">외부 업체 회신 대기 — 우리가 못 고치는 일</span></div>' +
-      '<a class="broj-vq-link" href="브로제이_확인목록.html">' +
+      '<a class="broj-vq-link" href="#확인" data-goto-tab="confirm">' +
         '<span class="broj-vq-link-main">확인 목록 열기 →</span>' +
         '<span class="broj-vq-link-sub">브로제이와 주고받는 구글 시트를 그대로 읽어 급한 순서로 보여줍니다. ' +
           '담당자를 정하고, 확인·조치가 끝나면 체크해서 담당자별 완료 칸으로 넘깁니다.</span>' +
@@ -817,6 +842,49 @@
     });
   }
 
+  // ── 탭 (GM 2026-07-30) — 주소 하나로 두고 화면만 갈아 끼운다.
+  //    확인 목록은 처음 눌렀을 때만 로드하고(첫 화면 부담 0), 안쪽 높이에 맞춰 늘려
+  //    스크롤이 두 겹으로 겹치지 않게 한다. ──
+  function showTab(name){
+    var isConfirm = name === 'confirm';
+    var a = document.getElementById('tab-assign'), c = document.getElementById('tab-confirm');
+    if(!a || !c) return;
+    a.style.display = isConfirm ? 'none' : '';
+    c.style.display = isConfirm ? '' : 'none';
+    Array.prototype.forEach.call(document.querySelectorAll('.broj-tab'), function(b){
+      b.classList.toggle('on', b.getAttribute('data-tab') === name);
+    });
+    if(isConfirm){
+      var f = document.getElementById('confirmFrame');
+      if(f && !f.src){ f.src = f.getAttribute('data-src'); }   // 처음 눌렀을 때만 로드
+      fitConfirmFrame();
+    }
+    try{ history.replaceState(null, '', isConfirm ? '#확인' : '#분장'); }catch(e){}
+    window.scrollTo(0, 0);
+  }
+  function fitConfirmFrame(){
+    var f = document.getElementById('confirmFrame'); if(!f || !f.src) return;
+    try{
+      var d = f.contentDocument;
+      if(d && d.body){
+        var h = Math.max(d.body.scrollHeight, d.documentElement.scrollHeight);
+        if(h > 200) f.style.height = (h + 40) + 'px';
+      }
+    }catch(e){ /* 아직 로드 전 — 다음 주기에 다시 잰다 */ }
+  }
+  function bindTabs(){
+    document.addEventListener('click', function(e){
+      var tab = e.target.closest && e.target.closest('.broj-tab');
+      if(tab){ showTab(tab.getAttribute('data-tab')); return; }
+      var go = e.target.closest && e.target.closest('[data-goto-tab]');
+      if(go){ e.preventDefault(); showTab(go.getAttribute('data-goto-tab')); return; }
+    });
+    var f = document.getElementById('confirmFrame');
+    if(f) f.addEventListener('load', function(){ fitConfirmFrame(); setTimeout(fitConfirmFrame, 1200); setTimeout(fitConfirmFrame, 3500); });
+    setInterval(function(){ if(document.getElementById('tab-confirm').style.display !== 'none') fitConfirmFrame(); }, 2000);
+    if((location.hash || '').indexOf('확인') >= 0) showTab('confirm');
+  }
+
   // ── 입력칸이 내용만큼 저절로 늘어난다 — 스크롤 없이 다 보이게(GM 2026-07-30 "수정칸 위아래가 너무 작아").
   //    타이핑 중에는 재렌더하지 않고 높이만 바꾼다(한글 입력 조합이 끊기지 않게). ──
   function autoGrow(ta){ if(!ta) return; ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
@@ -927,6 +995,7 @@
   window.closeStaffFeedback = closeStaffFeedback;
 
   bindBrojEvents();
+  bindTabs();
   loadBrojBoard();
 })();
 </script>

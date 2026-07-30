@@ -96,6 +96,14 @@
   .vq-trash-list li span.t{flex:1; word-break:keep-all; overflow-wrap:anywhere;}
 
   .vq-status{font-size:13px; color:var(--dim); margin:10px 0;}
+
+  /* ── 업무분장 페이지의 「🔺 브로제이 확인」 탭 안에 끼워 넣어 볼 때(?embed=1).
+       바깥 페이지에 이미 있는 제목·돌아가기 링크를 두 번 보여주지 않는다. ── */
+  body.embed{padding:0 0 12px;}
+  /* 제목·돌아가기 링크만 감춘다 — 「시트 열기」 버튼은 바깥에 없으므로 그대로 둔다. */
+  body.embed header.page-head{margin-bottom:10px; padding-bottom:0; border-bottom:none; justify-content:flex-end;}
+  body.embed header.page-head .htitles,
+  body.embed header.page-head .back{display:none;}
   .footnote{margin-top:22px; font-size:12.5px; color:var(--dim); line-height:1.8; border-top:1px solid var(--border); padding-top:12px;}
   .footnote code{background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:1px 6px; font-size:12px;}
 </style>
@@ -135,6 +143,9 @@
 
 <script>
 (function(){
+  // 업무분장 페이지의 탭 안에서 열렸을 때는 제목·안내를 숨긴다(바깥에 이미 있다).
+  try{ if(location.search.indexOf('embed=1') >= 0) document.body.classList.add('embed'); }catch(e){}
+
   // ── 원본 = 브로제이가 만든 구글 시트(브로제이가 '가능 여부·검토 의견·해결 방안'을 직접 채운다).
   //    우리는 그 시트를 읽기만 하고, 우리 쪽 값(담당자·완료·메모)만 우리 저장소에 적는다.
   //    → 진실이 두 벌이 되지 않는다(약속 L01). 저장소는 업무분장과 같은 공용 GAS·같은 key(신설 0 · L21). ──
