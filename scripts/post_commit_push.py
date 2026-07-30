@@ -485,6 +485,7 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
     rc, err = _push_once(root)
     if rc == 0:
         _log("POST_COMMIT_PUSH ok", root)
+        _push_succeeded(root)
         return
     if rc == 124:
         _log("POST_COMMIT_PUSH timeout", root)
@@ -515,6 +516,7 @@ def _do_push(root: str, allow_reconcile: bool = True, alert: bool = False) -> No
             rc2, err2 = _push_once(root)
             if rc2 == 0:
                 _log(f"POST_COMMIT_PUSH ok(after reconcile, try {attempt})", root)
+                _push_succeeded(root)
                 return
             err = err2 or err
             if rc2 == 124 or not _is_nonff(err):
@@ -654,6 +656,26 @@ def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
     paths = _blocking_machine_outputs(root)
     if not paths:
         return False
+    # ★2026-07-31(시토 · 배242 3번) — 효과 없는 반복을 멈춘다.
+    #   왜: 2026-07-31 이 선커밋이 85초마다 돌며 'non-ff 해소' 커밋을 **589건**까지 찍었는데
+    #   push 는 한 번도 성공하지 않았다. 길을 트는 커밋이 길을 안 트면 그건 더 이상 해결이
+    #   아니라 증식이다. 연속 _PRECOMMIT_MAX_STREAK 회를 넘기면 커밋을 그만 찍고 알린다.
+    #   카운터는 push 성공(_push_succeeded) 한 곳에서만 0 으로 돌아간다.
+    st = _alert_state_read(root)
+    streak = int(st.get("precommit_streak") or 0)
+    if streak >= _PRECOMMIT_MAX_STREAK:
+        if streak == _PRECOMMIT_MAX_STREAK:  # 넘어서는 순간 딱 한 번만 알린다
+            _log(f"PUSH_SWEEPER 선커밋 중단 — {streak}회 연속 찍고도 push 실패(배242)", root)
+            _telegram_warn(
+                root,
+                f"⚠️ 자동 push 가 {streak}회 연속 막혀 '통합 여는 커밋'을 중단했습니다.\n"
+                "커밋은 로컬에 안전히 남아 있습니다 — 원인 확인이 필요합니다.",
+            )
+        st["precommit_streak"] = streak + 1
+        _alert_state_write(root, st)
+        return False
+    st["precommit_streak"] = streak + 1
+    _alert_state_write(root, st)
     msg = ("chore(auto): 통합을 막던 자동 산출물 커밋 — non-ff 해소 (배147)\n\n"
            "3분·5분 주기 산출물이 커밋되지 않은 채 남아 git merge 가 거부되어 push 가 정체됨.\n"
            "산출물 자체는 원래 커밋되는 자동 발행물이라 정상 관문으로 커밋해 통합 창을 연다.")
@@ -677,30 +699,77 @@ def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
 # ── 같은 사유 경보 도배 방지 (배147 · GM 이 5분마다 같은 문구를 받았다) ──────────────
 _ALERT_STATE = "tmp/push_alert_state.json"
 _ALERT_QUIET_SEC = 3600      # 같은 사유는 1시간에 1번만
+_ALERT_STUCK_MAX_SEC = 1800  # 단 정체가 30분을 넘기면 같은 사유라도 반드시 알린다(배242)
+_PRECOMMIT_MAX_STREAK = 20   # 선커밋을 20회 연속 찍고도 push 가 안 되면 멈추고 알린다(배242)
+
+
+def _alert_state_read(root: str) -> dict:
+    try:
+        with open(os.path.join(root, *_ALERT_STATE.split("/")), encoding="utf-8") as f:
+            st = json.load(f)
+        return st if isinstance(st, dict) else {}
+    except Exception:
+        return {}
+
+
+def _alert_state_write(root: str, st: dict) -> None:
+    path = os.path.join(root, *_ALERT_STATE.split("/"))
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(st, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def _push_succeeded(root: str) -> None:
+    """push 가 실제로 성공했을 때만 부른다 — 정체 시계와 선커밋 연속 카운터를 0으로 되돌린다.
+    이 두 값이 리셋되는 자리는 여기 하나뿐이다(정체 판정의 단일 기준점)."""
+    st = _alert_state_read(root)
+    if st.get("stuck_since") or st.get("precommit_streak"):
+        st.pop("stuck_since", None)
+        st.pop("precommit_streak", None)
+        st.pop("forced_at", None)
+        _alert_state_write(root, st)
 
 
 def _alert_should_send(root: str, reason: str) -> bool:
     """같은 사유가 조용한 시간 안에 또 오면 보내지 않는다. 사유가 바뀌면 즉시 보낸다.
-    상태 파일을 못 읽고 못 써도 **보내는 쪽**으로 판단한다 — 경보를 잃는 것보다 낫다."""
+    상태 파일을 못 읽고 못 써도 **보내는 쪽**으로 판단한다 — 경보를 잃는 것보다 낫다.
+
+    ★2026-07-31(시토 · 배242 2번) — 억제에 **지속시간 상한**을 뒀다.
+      왜: 2026-07-30~31 밤사이 같은 사유로 계속 억제되는 동안 라이브 화면이 **8시간+**
+      멈춰 있었는데 아무에게도 알려지지 않았다. 억제는 도배를 막으려는 것이지 침묵하려는
+      것이 아니다. 그래서 '같은 사유라도 정체가 _ALERT_STUCK_MAX_SEC 을 넘기면 반드시
+      보낸다'를 얹는다(그 뒤로도 같은 간격으로만 — 도배 방지는 유지).
+    """
     import hashlib
     import time
     key = hashlib.sha256(reason.encode("utf-8", "replace")).hexdigest()[:16]
-    path = os.path.join(root, *_ALERT_STATE.split("/"))
     now = time.time()
-    try:
-        with open(path, encoding="utf-8") as f:
-            st = json.load(f)
-        if st.get("key") == key and (now - float(st.get("at", 0))) < _ALERT_QUIET_SEC:
-            _log(f"POST_COMMIT_PUSH 경보 억제(같은 사유 {int(now - float(st['at']))}s 전 발신)", root)
-            return False
-    except Exception:
-        pass
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump({"key": key, "at": now, "reason": reason[:200]}, f, ensure_ascii=False)
-    except Exception:
-        pass
+    st = _alert_state_read(root)
+
+    # 정체 시계는 '연속 실패의 시작'을 기록한다 — 사유가 바뀌어도 이어진다(같은 정체이므로).
+    stuck_since = float(st.get("stuck_since") or 0) or now
+    stuck_for = now - stuck_since
+
+    quiet = (st.get("key") == key and (now - float(st.get("at") or 0)) < _ALERT_QUIET_SEC)
+    if quiet:
+        forced_at = float(st.get("forced_at") or 0)
+        if stuck_for >= _ALERT_STUCK_MAX_SEC and (now - forced_at) >= _ALERT_STUCK_MAX_SEC:
+            _log(f"POST_COMMIT_PUSH 억제 해제 — 정체 {int(stuck_for / 60)}분 지속(상한 초과)", root)
+            st.update({"key": key, "at": now, "forced_at": now,
+                       "stuck_since": stuck_since, "reason": reason[:200]})
+            _alert_state_write(root, st)
+            return True
+        _log(f"POST_COMMIT_PUSH 경보 억제(같은 사유 {int(now - float(st['at']))}s 전 발신 · "
+             f"정체 {int(stuck_for / 60)}분)", root)
+        st["stuck_since"] = stuck_since
+        _alert_state_write(root, st)
+        return False
+
+    st.update({"key": key, "at": now, "stuck_since": stuck_since, "reason": reason[:200]})
+    _alert_state_write(root, st)
     return True
 
 
