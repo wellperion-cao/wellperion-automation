@@ -795,14 +795,22 @@
         var confirmed = !!(data && data.confirmed);
         var editing = _editingGuideId === g.id;
         var statusLabel = confirmed ? '확정' : (hasSaved ? '확인중' : '초안');
-        var draftBadge = confirmed ? '' : '<span class="broj-guide-draft-badge">초안 · 현장 확인 전</span>';
+        // 2026-07-31 — 배지에 '남은 ⬜ 확인 필요 줄 수 + 누구 차례'를 적는다. 그 전엔 전부
+        // '초안 · 현장 확인 전'로 똑같아서, 카드를 열어 끝까지 읽기 전에는 내 차례인지·몇 줄
+        // 남았는지 알 수 없었다(가이드 3종이 뼈대인 채 그대로 있던 이유). 새 요소 0 — 있던 배지의
+        // 문구만 바꾼다.
+        var shownText = hasSaved ? data.text : (g.defaultText || '');
+        var pendingCount = (shownText.match(/⬜ 확인 필요/g) || []).length;
+        var draftBadge = confirmed ? ''
+          : '<span class="broj-guide-draft-badge">' +
+            (pendingCount ? '⬜ 확인 필요 ' + pendingCount + '줄 남음'
+                          : '초안 · 현장 확인 전') + '</span>';
         var body;
         if(editing){
           body = '<textarea class="broj-guide-textarea" data-guide-id="' + g.id + '" placeholder="여기에 실제 절차를 적어 주세요">' + esc((data && data.text) || g.defaultText || '') + '</textarea>' +
             '<div class="broj-guide-editbar"><button type="button" class="broj-add-btn" data-action="save-guide" data-guide-id="' + g.id + '">저장</button>' +
             '<button type="button" class="broj-mini-btn" data-action="cancel-guide" data-guide-id="' + g.id + '">취소</button></div>';
         } else {
-          var shownText = hasSaved ? data.text : (g.defaultText || '');
           body = '<div class="broj-guide-text">' + esc(shownText) + '</div>' +
             (hasSaved ? '<div class="broj-item-meta">최종수정: ' + esc(data.updated_by || '') + (data.updated_at ? ' · ' + esc(data.updated_at) : '') + '</div>' :
               '<div class="broj-guide-empty">↑ 뼈대 초안입니다(GM 원본 근거만) — 아직 현장이 확인·수정하지 않았습니다.' + (g.prereq ? ' (' + esc(g.prereq) + ')' : '') + '</div>') +
