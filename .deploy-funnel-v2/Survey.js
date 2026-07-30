@@ -5,6 +5,11 @@
 // ─── 상수 ───
 const LANDING_SPREADSHEET_ID = '1g9Ohmd8C_WxyvWt9EX58oEFZLiOAJ_EG7t7XteJFuGE';
 const INQUIRY_SHEET = '문의접수';
+// QA 격리 전용 탭(2026-07-30 시토, 배195) — submit_inquiry 를 qa=1+토큰으로 부르면 여기로만 쓴다.
+// 라이브 문의접수 시트·26년 신규문의 미러·텔레그램 발송을 전혀 안 타서, 애초에 실무진 화면·KPI를
+// 더럽히지 않는다(가 안: "쓰기 자체를 생략"은 저장 왕복 검증을 못 해 기각 — 배195 note 참고).
+// _getSheet()가 없으면 INQUIRY_HEADERS 그대로 자동 생성한다(첫 QA 호출 시점, 배포 전엔 생성 안 함).
+const QA_INQUIRY_SHEET = '문의접수_QA';
 
 // 회원부 시트 (유효회원 탭)
 const MEMBER_SPREADSHEET_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
@@ -1149,6 +1154,16 @@ function _readInquirySheetRows_() {
   var rows = sh.getRange(2, 1, last - 1, INQUIRY_HEADERS.length).getValues();
   if (nameIdx < 0) return rows;
   return rows.filter(function(r) { return !_isTestInquiryName_(r[nameIdx]); });
+}
+
+// QA 전용 탭 읽기(배195) — QA_INQUIRY_SHEET 는 QA 행만 들어가므로 이름태그 필터가 필요 없다.
+// inquiry_list 가 _isQaInquiryCall_(body) 일 때만 이 헬퍼를 쓴다 — 라이브 화면·집계 5곳은
+// 이 함수를 절대 호출하지 않는다(QA_INQUIRY_SHEET 를 참조하는 곳은 이 함수 하나뿐).
+function _readQaInquirySheetRows_() {
+  var sh = _getSheet(QA_INQUIRY_SHEET, INQUIRY_HEADERS);
+  var last = sh.getLastRow();
+  if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, INQUIRY_HEADERS.length).getValues();
 }
 
 function initSheets() {
@@ -2619,6 +2634,16 @@ var LESSON_INTAKE_HEADERS = ['타임스탬프','성함','연락처','자녀 나�
 
 function _intakeToken_() { return _accessProp_('INTAKE_SUBMIT_TOKEN') || INTAKE_SUBMIT_TOKEN; }
 
+// ─── QA 격리 판정(2026-07-30 시토, 배195) ───────────────────────────────────
+//   submit_inquiry 는 방문자 공개 액션이라(_SURVEY_PUBLIC_ACTIONS 토큰 면제) 진짜 손님이 실수로
+//   qa=1 을 붙여도 격리로 새지 않아야 하고, 반대로 qa=1 만으로 아무나 격리 경로를 추측해 쓰면
+//   안 된다 — 그래서 새 비밀값을 코드에 평문으로 넣는 대신 이미 있는 토큰(_intakeToken_, 다른
+//   비공개 액션 전부가 재사용 중)과 qa=1 을 **둘 다** 요구한다. 판정 로직은 여기 한 곳뿐 —
+//   submit_inquiry·inquiry_list 양쪽이 이 함수 하나를 재사용한다(약속 L01·L21).
+function _isQaInquiryCall_(body) {
+  return String(body.qa || '') === '1' && String(body.t || '') === _intakeToken_();
+}
+
 // (폐기 2026-07-24 GM) _quarantineIntake_ / 접수 보류함 = 사후 안전망이라 삭제. 근본 셋팅으로 전환:
 //   허니팟 걸림도 버리지 않고 정상 저장 + 비고 '⚠️스팸의심' 표시(intake_submit 참조). 별도 탭 안 생김.
 
@@ -3456,8 +3481,12 @@ function _processAction(body) {
 
   // ─── 문의 접수 ───
   if (action === 'submit_inquiry') {
-    const sh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
-    const id = _genId('INQ-');
+    // QA 격리(배195) — qa=1+토큰 일치 시 전용 탭(QA_INQUIRY_SHEET)에만 쓰고, 실무진 미러·
+    // 텔레그램 발송은 아예 안 탄다(그게 새 실서비스 코드경로가 아니라 '안 부르기'라 회귀위험 0).
+    // 일반 방문자는 qa 파라미터 자체를 안 보내므로 이 분기에 절대 안 걸린다.
+    const _isQa = _isQaInquiryCall_(body);
+    const sh = _getSheet(_isQa ? QA_INQUIRY_SHEET : INQUIRY_SHEET, INQUIRY_HEADERS);
+    const id = _genId(_isQa ? 'QA-' : 'INQ-');
     const row = [
       id,
       _now(),
@@ -3473,20 +3502,22 @@ function _processAction(body) {
     ];
     sh.getRange(sh.getLastRow() + 1, 1, 1, row.length).setValues([row]);
 
-    // GM A안(2026-06-20): 실무진 처리 화면(문의DB=26년 신규문의)에도 미러 기록 → 즉시 처리 가능. fail-soft.
-    _mirrorInquiryToStaffLog_(body, id);
+    if (!_isQa) {
+      // GM A안(2026-06-20): 실무진 처리 화면(문의DB=26년 신규문의)에도 미러 기록 → 즉시 처리 가능. fail-soft.
+      _mirrorInquiryToStaffLog_(body, id);
 
-    _notifyTelegram(
-      '🔔 <b>[신규 문의]</b>\n'
-      + '이름: ' + (body.name || '-') + '\n'
-      + '연락처: ' + (body.phone || '-') + '\n'
-      + '유형: ' + (body.type || '-') + '\n'
-      + '유입채널: ' + (body.inflow || '-') + '\n'
-      + '내용: ' + (body.message || '-').substring(0, 100),
-      _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK
-    );
+      _notifyTelegram(
+        '🔔 <b>[신규 문의]</b>\n'
+        + '이름: ' + (body.name || '-') + '\n'
+        + '연락처: ' + (body.phone || '-') + '\n'
+        + '유형: ' + (body.type || '-') + '\n'
+        + '유입채널: ' + (body.inflow || '-') + '\n'
+        + '내용: ' + (body.message || '-').substring(0, 100),
+        _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK
+      );
+    }
 
-    return _json({ ok: true, id: id, message: '문의가 접수되었습니다.' });
+    return _json({ ok: true, id: id, message: '문의가 접수되었습니다.', qa: _isQa });
   }
 
   // ─── 유입 자체 Survey 폼 제출 (배1037 갈래B · 시포 2026-07-15) ───
@@ -5443,7 +5474,10 @@ function _processAction(body) {
   //   (원본 시트 16:45:21 KST ↔ 과거 응답 07:45:21). lesson_inquiry_list가 이미 쓰는 _miToISOTime_
   //   재사용(새 함수 금지·약속 L01) — Date getter가 스크립트 타임존(Asia/Seoul)을 그대로 읽어 KST 문자열로 낸다.
   if (action === 'inquiry_list') {
-    const data = _readInquirySheetRows_();   // 테스트행 제외 단일헬퍼(배209 GM승인 2026-07-30)
+    // QA 격리(배195) — qa=1+토큰 일치 시 QA_INQUIRY_SHEET만 읽는다(구글폼 합류·라이브 문의접수
+    // 미조회 — QA 저장 왕복 검증 전용 경로. 조건 불일치(=일반 조회)면 기존 동작 그대로).
+    const _isQa = _isQaInquiryCall_(body);
+    const data = _isQa ? _readQaInquirySheetRows_() : _readInquirySheetRows_();   // 테스트행 제외 단일헬퍼(배209 GM승인 2026-07-30)
     const items = [];
     data.forEach(row => {
       const obj = {};
@@ -5451,10 +5485,12 @@ function _processAction(body) {
       obj['시각'] = _miToISOTime_(obj['시각']);
       items.push(obj);
     });
-    // 구글폼 문의 합류 (개인정보 제외 — 시각·유형·채널만 노출)
-    _collectFormInquiries_().forEach(function(f) {
-      items.push({ id: '', 시각: _miToISOTime_(f.시각), 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
-    });
+    if (!_isQa) {
+      // 구글폼 문의 합류 (개인정보 제외 — 시각·유형·채널만 노출)
+      _collectFormInquiries_().forEach(function(f) {
+        items.push({ id: '', 시각: _miToISOTime_(f.시각), 이름: '', 연락처: '', 문의유형: f.문의유형, 내용: '', 유입채널: f.유입채널, 상태: '신규', 메모: '구글폼' });
+      });
+    }
     return _json({ ok: true, count: items.length, data: items });
   }
 

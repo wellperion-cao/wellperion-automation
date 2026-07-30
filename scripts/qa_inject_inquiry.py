@@ -12,6 +12,13 @@
 
 ■ 발송 코드는 정상 — 손대지 않는다. 수정 대상은 '주입 인코딩' 뿐(시모 진단 확정).
 
+■ QA 격리(2026-07-30 시토, 배195) — verify() 는 이제 라이브 '문의접수' 시트에 안 쓴다.
+  submit_inquiry 에 qa=1 + 내부토큰(_INTAKE_TOKEN)을 같이 보내면 GAS(Survey.js)가 전용 탭
+  '문의접수_QA' 로만 쓰고, 실무진 처리화면(26년 신규문의) 미러·텔레그램 발송도 건너뛴다
+  (Survey.js:_isQaInquiryCall_ 참고). readback(inquiry_list)도 같은 qa+토큰을 보내야 그
+  QA 탭만 조회한다 — 안 보내면 빈 결과(라이브 문의접수엔 이제 QA 행이 안 남으므로).
+  실고객 데이터·실무진 화면·문의 KPI가 이 스크립트 실행으로 더 이상 오염되지 않는다.
+
 사용법:
   python scripts/qa_inject_inquiry.py scan            # 폼시트 깨진 행 스캔(읽기전용·미발송)
   python scripts/qa_inject_inquiry.py verify          # UTF-8 테스트 문의 1건 주입→알림 실측+readback
@@ -27,6 +34,10 @@ FUNNEL_EXEC_URL = (
     "https://script.google.com/macros/s/"
     "AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec"
 )
+
+# QA 격리 토큰 — Survey.js INTAKE_SUBMIT_TOKEN 기본값과 동일(기존 관례 재사용, 새 비밀값 아님).
+# scripts/collectors/cpo_sheet_contract.py·cpo_staff_feedback_watch.py 도 같은 값을 쓴다.
+_INTAKE_TOKEN = "wlp_intake_9f4c1b7e2a63"
 
 # FORM_SHEETS (Survey.js 정본과 동기) — gid = 폼 응답탭
 FORM_SHEETS = [
@@ -80,25 +91,28 @@ def scan(max_row=400):
 
 
 def verify():
-    """UTF-8 테스트 문의 1건 주입 → 신규문의 알림 실발송 + readback 무결성 확인."""
+    """UTF-8 테스트 문의 1건 QA 전용 탭에 주입 → readback 무결성 확인(배195, 라이브 미접촉)."""
     name = "[UTF8검증]한글자동테스트"
     params = {
         "action": "submit_inquiry",
+        "qa": "1", "t": _INTAKE_TOKEN,   # QA 격리(배195) — 문의접수_QA 로만 쓰고 미러·발송 생략
         "name": name,
         "phone": "010-0000-0000",
         "type": "멤버십 상담",
         "inflow": "전화",
-        "message": "한글 인코딩 검증 — 종목·유입채널·내용 정상 렌더 확인용(자동 삭제 대상)",
+        "message": "한글 인코딩 검증 — 종목·유입채널·내용 정상 렌더 확인용(QA 전용 탭·라이브 미접촉)",
     }
-    print("── 주입 파라미터(UTF-8) ──")
+    print("── 주입 파라미터(UTF-8·QA 격리) ──")
     print(json.dumps(params, ensure_ascii=False, indent=2))
     code, data = _get(params)
     print(f"\n주입 응답: HTTP {code} · {json.dumps(data, ensure_ascii=False)}")
     inq_id = data.get("id") if isinstance(data, dict) else None
+    if not (isinstance(data, dict) and data.get("qa") is True):
+        print("  ⚠ 응답에 qa:true 가 없음 — QA 격리가 안 걸렸을 수 있음(라이브 오염 가능성, 즉시 확인 필요)")
 
     time.sleep(2)
-    print("\n── readback (inquiry_list 에서 방금 행 조회) ──")
-    code2, data2 = _get({"action": "inquiry_list"})
+    print("\n── readback (QA 탭에서 방금 행 조회) ──")
+    code2, data2 = _get({"action": "inquiry_list", "qa": "1", "t": _INTAKE_TOKEN})
     ok = False
     if isinstance(data2, dict) and data2.get("ok"):
         for row in data2.get("data", []):
@@ -109,11 +123,11 @@ def verify():
                 ok = clean
                 break
         else:
-            print("  방금 행을 목록에서 못 찾음(캐시 지연 가능) — 텔레그램 알림 육안 확인")
+            print("  방금 행을 목록에서 못 찾음(캐시 지연 가능)")
     else:
-        print(f"  inquiry_list 응답 이상: {str(data2)[:200]}")
-    print("\n※ 문의 알림방(-5516675010)에 방금 [UTF8검증] 알림이 한글 정상으로 떴는지 육안 확인하세요.")
-    print("※ 이 테스트 행은 '문의접수' 시트에 남습니다([UTF8검증] 태그로 식별·정리 가능).")
+        print(f"  inquiry_list(QA) 응답 이상: {str(data2)[:200]}")
+    print("\n※ QA 격리 경로라 텔레그램 발송·실무진 화면 미러 자체가 없다(육안 확인 불필요, 배195).")
+    print("※ 이 테스트 행은 전용 탭 '문의접수_QA'에만 남는다 — 실무진 화면·문의 KPI 무관, 정리 안 해도 무해.")
     return ok
 
 
