@@ -10,14 +10,18 @@
     <div data-worklog="cpo" data-worklog-mode="modal" data-worklog-badge="#wlHeaderBadge"></div>
     - mode="modal" 이면 접힘 토글 줄(▸ 작업 현황 로그)을 만들지 않고 내용만 컨테이너에 채운다.
       → 페이지가 이 컨테이너를 자기 팝업(모달) 안에 두고, 여는 버튼은 페이지가 상단에 배치한다.
-    - data-worklog-badge = 신규 '빠진 것' 개수를 표시할 요소의 CSS 선택자(상단 버튼 옆 배지).
-      0건이면 그 요소를 숨긴다(평상시 조용 — 기본 모드와 같은 규칙).
+    - data-worklog-badge = '빠진 것' 개수를 표시할 요소의 CSS 선택자(상단 버튼 옆 배지).
+      0건이면 그 요소를 숨긴다(평상시 조용 — 기본 모드와 같은 규칙). data-worklog-gap-filter가
+      없으면 신규만 센다(아래 참고). gap-filter가 있으면 그 필터로 뽑힌 전체(신규+누적)를 센다 —
+      본문 섹션제목의 '⚠️ N건'과 항상 같은 수(2026-07-30 시토 수리: 전에는 gap-filter를 무시하고
+      role 전체 신규건수를 세서, 예를 들어 보류 재부상 배지에 보류와 무관한 신규 건수가 뜨는 실사고가 있었다).
     - 이 두 속성이 없으면 동작·모양이 종전과 100% 동일하다(ERP 본 페이지 cmo·coo 무영향).
 
   ★부분 카드 모드(선택 · 2026-07-27 시우 · GM 지시 "월간 운영보고에도 이런 식으로 정리해 들어가면
     좋겠다"·배9836): 276건 전체가 아니라 특정 신호(예: 보류 재부상)만 뽑아 상시 노출 카드로 쓰고 싶을 때.
     <div data-worklog="coo" data-worklog-mode="modal" data-worklog-gap-filter="::hold-" data-worklog-gaps-only="1"></div>
     - data-worklog-gap-filter = 이 문자열을 ref 에 포함하는 gap만 남긴다(신규·누적 모두). 없으면 전부(종전과 동일).
+      data-worklog-badge와 같이 쓰면 배지 카운트도 이 필터를 따른다(위 참고).
     - data-worklog-gaps-only="1" = "📋 한 일" 로그 구획을 생략하고 "⚠️ 빠진 것"만 그린다(카드를 짧게 유지).
     - mode="modal"과 함께 쓰면 접힘 토글 없이 항상 펼쳐진 상태로 박힌다(진짜 '카드').
     - 두 속성 다 없으면 동작·모양이 종전과 100% 동일(기존 페이지 무영향).
@@ -407,13 +411,22 @@
     body.innerHTML = html;
   }
 
-  function updateBadge(badge, data, role){
+  function updateBadge(badge, data, role, gapFilter){
     if(!badge) return;
     if(data.gaps === null){ badge.hidden = true; return; }
-    // 배지 = 신규만 카운트(누적이 아무리 많아도 배지엔 안 잡힘 — 평상시 조용해야 진짜 신규가 눈에 띈다).
-    var n = (data.gaps.gaps || [])
-      .filter(function(g){ return (g && g.role) === role; })
-      .filter(isNewAge).length;
+    var roleGaps = (data.gaps.gaps || []).filter(function(g){ return (g && g.role) === role; });
+    var n;
+    if(gapFilter){
+      // ★부분 카드 모드(배9836, 보류 재부상 등) — 배지가 본문(renderGapsSection의 '⚠️ N건')과
+      //   다른 숫자를 보여주던 실사고 수리(2026-07-30 시토, 라이브 실측: 업무 현황 SSOT '⚠️ 8'
+      //   이 실제로는 gapFilter 무시한 채 role 전체 신규건수를 세고 있었다 — 그날 보류 신규 0건인데
+      //   무관한 접수·회의지연 8건이 대신 떠서 '보류 재부상' 배지의 의미가 깨져 있었다). gapFilter가
+      //   있으면 그 필터로 뽑힌 전체(신규+누적)를 센다 — 본문 섹션제목·월간운영계획 접힘줄과 동일 수.
+      n = roleGaps.filter(function(g){ return String(g.ref || '').indexOf(gapFilter) >= 0; }).length;
+    } else {
+      // 배지 = 신규만 카운트(누적이 아무리 많아도 배지엔 안 잡힘 — 평상시 조용해야 진짜 신규가 눈에 띈다).
+      n = roleGaps.filter(isNewAge).length;
+    }
     if(n > 0){ badge.hidden = false; badge.textContent = '⚠️ ' + n; }
     else { badge.hidden = true; }
   }
@@ -475,7 +488,7 @@
       var gapFilter = String(container.getAttribute('data-worklog-gap-filter') || '').trim();
       var gapsOnly = container.getAttribute('data-worklog-gaps-only') === '1';
       renderBody(body, data, role, scope, scopeSet, gapFilter, gapsOnly);
-      updateBadge(badge, data, role);
+      updateBadge(badge, data, role, gapFilter);
     }
     _instances.push(function(){ loadData().then(paint); });   // 페이지가 다시 그리라고 할 때 쓰는 손잡이
     loadData().then(paint);
