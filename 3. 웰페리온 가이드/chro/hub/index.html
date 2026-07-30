@@ -2318,15 +2318,57 @@ function obParseCheckNote(note){
       out.action=seg.replace(/^조치:\s*/,"").trim();
     } else if(/^수습판정:\s*/.test(seg)){
       out.verdict=seg.replace(/^수습판정:\s*/,"").trim();
+    } else if(/^게이트4:/.test(seg)){
+      /* [추가 2026-07-30 A-5] 4주차 게이트 판단(진행/1주 순연/2주 순연)+승인 라인 — 신규 세그먼트, 기존 파싱 무변경 */
+      var g4=seg.replace(/^게이트4:\s*/,"");
+      var m4=g4.match(/^([^(]*)(?:\(부서장\s*([^→]*)→\s*GM\s*([^)]*)\))?/);
+      if(m4){ out.gate4Decision=(m4[1]||"").trim(); out.gate4Dept=(m4[2]||"").trim(); out.gate4Gm=(m4[3]||"").trim(); }
+    } else if(/^게이트8:/.test(seg)){
+      /* [추가 2026-07-30 A-5] 8주차 게이트 실현가능성 판정+실무지도 매니저 — 신규 세그먼트, 기존 파싱 무변경 */
+      var g8=seg.replace(/^게이트8:\s*/,"");
+      var m8=g8.match(/^([^(]*)(?:\(실무지도:\s*([^)]*)\))?/);
+      if(m8){ out.gate8Decision=(m8[1]||"").trim(); out.gate8Mentor=(m8[2]||"").trim(); }
     }
   });
   return out;
+}
+// [추가 2026-07-30 A-5] 게이트 화면 보강 — 이전 주차 기록 열람(표시 전용) + 부서 재직자 안내(표시 전용).
+// drafts\온보딩3단계_최종스펙.md 흡수용 별도 면담지(HTML) 폐기 후 허브 체크인 화면으로 정본 일원화.
+function obGateKind_(item){ var s=String(item||""); if(s==="4주차 체크인") return "4"; if(s==="8주차 체크인") return "8"; return null; }
+function obPrevWeeksHtml_(name,beforeWeek){
+  /* 면담(주간 체크인) + 성찰(주간 성찰) 둘 다 포함 — 게이트 판단은 본인 성찰도 참고 재료(폐기된 별도 면담지의 취지 흡수) */
+  var rows=(DB.onbo||[]).filter(function(x){var cat=String(x["카테고리"]||"").trim();return String(x["대상 신입 직원"]||"").trim()===String(name||"").trim() && (cat==="주간 체크인"||cat==="주간 성찰");});
+  var items=[];
+  rows.forEach(function(x){ var wk=obReflectWeek_(x["체크 항목"]); var cat=String(x["카테고리"]||"").trim(); if(wk && wk<beforeWeek) items.push({wk:wk,cat:cat,row:x}); });
+  items.sort(function(a,b){ return (a.wk-b.wk) || (a.cat===b.cat?0:(a.cat==="주간 체크인"?-1:1)); });
+  if(!items.length) return "";
+  return items.map(function(it){
+    var x=it.row, done=isYes(x["완료 여부"]);
+    if(it.cat==="주간 체크인"){
+      var pf=obParseCheckNote(x["비고"]), g=(OB_GUIDE&&OB_GUIDE[x["체크 항목"]])||null, qaHtml="";
+      if(pf.qa&&pf.qa.length){ qaHtml=pf.qa.map(function(v,qi){ if(!v) return ""; var qt=(g&&g.q&&g.q[qi])||("질문 "+(qi+1)); return '<div style="margin-top:3px"><b style="color:#8a6f3f">'+esc(qt)+'</b><div style="white-space:pre-wrap">'+esc(v)+'</div></div>'; }).join(""); }
+      if(!qaHtml) qaHtml='<div style="color:#aaa">기록 없음</div>';
+      return '<div style="border-bottom:1px solid #eee;padding:6px 0 8px"><div style="font-weight:700;font-size:12px">📋 '+esc(x["체크 항목"]||"")+(done?' <span style="color:#1a7f5a">✓</span>':' <span style="color:#b08d57">미완료</span>')+'</div>'+qaHtml+'</div>';
+    } else {
+      var qs=WEEK_QUESTIONS_MINI[it.wk]||["",""], body="";
+      if(done){ var pf2=obParseReflectNote_(x["비고"]); body='<div style="margin-top:3px"><b style="color:#8a6f3f">'+esc(qs[0])+'</b><div style="white-space:pre-wrap">'+esc(pf2.a1)+'</div></div><div style="margin-top:3px"><b style="color:#8a6f3f">'+esc(qs[1])+'</b><div style="white-space:pre-wrap">'+esc(pf2.a2)+'</div></div>'; } else { body='<div style="color:#aaa">본인 작성 대기</div>'; }
+      return '<div style="border-bottom:1px solid #eee;padding:6px 0 8px"><div style="font-weight:700;font-size:12px">🪞 '+esc(x["체크 항목"]||"")+(done?' <span style="color:#1a7f5a">✓</span>':' <span style="color:#b08d57">미완료</span>')+'</div>'+body+'</div>';
+    }
+  }).join("");
+}
+function obDeptRosterHtml_(name){
+  var er=(DB.emp||[]).filter(function(e){return String(e["성명"]||e["이름"]||"").trim()===String(name||"").trim();})[0];
+  var dept=er?String(er["부서"]||"").trim():"";
+  if(!dept) return "";
+  var names=(DB.emp||[]).filter(function(e){return String(e["부서"]||"").trim()===dept && e["재직 상태"]!=="퇴사" && String(e["성명"]||e["이름"]||"").trim()!==String(name||"").trim();}).map(function(e){return String(e["성명"]||e["이름"]||"").trim();}).filter(function(x){return x;});
+  if(!names.length) return "";
+  return '<div style="margin-top:4px;font-size:11px;color:#6b5a32">'+esc(dept)+' 재직자('+names.length+'명, 본인 제외 — 주멘토는 목록에서 제외 권장): '+esc(names.join(", "))+'</div>';
 }
 function obCheck(row){
   obInjectModals();
   var r=(DB.onbo||[]).filter(function(x){return x["_sheet_row"]==row;})[0];
   if(!r) return;
-  window.__obRow=row;var __it=String(r["체크 항목"]||"");var __g=(OB_GUIDE&&OB_GUIDE[__it])||null;var __ge=document.getElementById("obcGuide");if(__ge){__ge.innerHTML=__g?("<b>"+esc(__it)+"</b> — "+esc(__g.focus)):"";__ge.style.display=__g?"block":"none";}var __cl=document.getElementById("obcChecklist");if(__cl){__cl.innerHTML=__g?('<div style="font-size:11px;color:#8a6f3f;font-weight:700;margin:6px 0 3px">📋 면담 체크리스트 (멘토 작성)</div>'+__g.q.map(function(x,qi){return '<div style="margin:5px 0"><div style="font-size:11.5px;color:#444;margin-bottom:2px">'+esc(x)+'</div><textarea id="obcq'+qi+'" rows="2" style="width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:6px;font-size:12px" placeholder="면담 내용·답변 기록"></textarea></div>';}).join("")):"";window.__obcQN=__g?__g.q.length:0;}var __vw=document.getElementById("obcVerdictWrap");if(__vw){__vw.style.display=(__g&&__g.verdict)?"block":"none";}var __vs=document.getElementById("obcVerdict");if(__vs)__vs.value="";
+  window.__obRow=row;var __it=String(r["체크 항목"]||"");window.__obItem=__it;var __g=(OB_GUIDE&&OB_GUIDE[__it])||null;var __wkNum=obReflectWeek_(__it);var __gateKind=obGateKind_(__it);var __ge=document.getElementById("obcGuide");if(__ge){__ge.innerHTML=__g?("<b>"+esc(__it)+"</b> — "+esc(__g.focus)):"";__ge.style.display=__g?"block":"none";}var __cl=document.getElementById("obcChecklist");if(__cl){var __isGateWk=__g&&((__g.q&&__g.q.length>=6)||__g.verdict);var __prevHtml=(__isGateWk&&__wkNum)?obPrevWeeksHtml_(r["대상 신입 직원"],__wkNum):"";var __prevBlock=__prevHtml?('<details style="margin-bottom:8px;background:#faf9f6;border:1px solid #efece4;border-radius:6px;padding:6px 10px"><summary style="cursor:pointer;font-weight:700;font-size:12px;color:#8a6f3f">📖 이전 주차 기록 보기 (게이트 판단 참고)</summary><div style="margin-top:6px;max-height:240px;overflow:auto">'+__prevHtml+'</div></details>'):"";__cl.innerHTML=__g?(__prevBlock+'<div style="font-size:11px;color:#8a6f3f;font-weight:700;margin:6px 0 3px">📋 면담 체크리스트 (멘토 작성)</div>'+__g.q.map(function(x,qi){var extra="";if(__gateKind==="4"&&qi===4){extra='<div style="margin-top:4px;padding:8px;background:#faf7f0;border:1px solid #ecdfc4;border-radius:6px"><label style="font-size:11px;color:#6b5a32;display:block;margin-bottom:3px">게이트 판단</label><select id="obcGateDecision" style="width:100%;padding:5px;border:1px solid #ccc;border-radius:5px;font-size:12px;margin-bottom:5px"><option value="">선택</option><option value="진행">진행</option><option value="1주 순연">1주 순연</option><option value="2주 순연">2주 순연</option></select><div style="display:flex;gap:6px"><input id="obcGateDept" placeholder="부서장 1차 판단자" style="flex:1;padding:5px;border:1px solid #ccc;border-radius:5px;font-size:12px"><input id="obcGateGM" placeholder="GM 승인자" style="flex:1;padding:5px;border:1px solid #ccc;border-radius:5px;font-size:12px"></div></div>';}else if(__gateKind==="4"&&qi===5){extra=obDeptRosterHtml_(r["대상 신입 직원"]);}else if(__gateKind==="8"&&qi===4){extra='<div style="margin-top:4px;padding:8px;background:#faf7f0;border:1px solid #ecdfc4;border-radius:6px"><label style="font-size:11px;color:#6b5a32;display:block;margin-bottom:3px">실현가능성 판정</label><select id="obcGateDecision" style="width:100%;padding:5px;border:1px solid #ccc;border-radius:5px;font-size:12px;margin-bottom:5px"><option value="">선택</option><option value="가능">가능</option><option value="부분 가능">부분 가능</option><option value="현재 불가">현재 불가</option></select><input id="obcGateMentorName" placeholder="3개월차 실무지도 매니저 이름 (가능·부분 가능 시 필수)" style="width:100%;padding:5px;border:1px solid #ccc;border-radius:5px;font-size:12px"></div>';}return '<div style="margin:5px 0"><div style="font-size:11.5px;color:#444;margin-bottom:2px">'+esc(x)+'</div><textarea id="obcq'+qi+'" rows="2" style="width:100%;box-sizing:border-box;padding:6px;border:1px solid #ccc;border-radius:6px;font-size:12px" placeholder="면담 내용·답변 기록"></textarea>'+extra+'</div>';}).join("")):"";window.__obcQN=__g?__g.q.length:0;}var __vw=document.getElementById("obcVerdictWrap");if(__vw){__vw.style.display=(__g&&__g.verdict)?"block":"none";}var __vs=document.getElementById("obcVerdict");if(__vs)__vs.value="";
   document.getElementById("obcTitle").textContent=(r["대상 신입 직원"]||"")+" · "+(r["체크 항목"]||"체크인");
   document.getElementById("obcSub").textContent="기한 "+obFmt(r["완료 기한"]);
   ["obcWork","obcRel","obcCul"].forEach(function(i){document.getElementById(i).value="";});
@@ -2338,6 +2380,8 @@ function obCheck(row){
   if(__pf.rel){var __pr=document.getElementById("obcRel");if(obSelHasVal(__pr,__pf.rel))__pr.value=__pf.rel;}
   if(__pf.cul){var __pc=document.getElementById("obcCul");if(obSelHasVal(__pc,__pf.cul))__pc.value=__pf.cul;}
   if(__pf.qa){__pf.qa.forEach(function(v,qi){if(v){var __qe2=document.getElementById("obcq"+qi);if(__qe2)__qe2.value=v;}});}
+  if(__pf.gate4Decision){var __gdSel=document.getElementById("obcGateDecision");if(__gdSel&&obSelHasVal(__gdSel,__pf.gate4Decision))__gdSel.value=__pf.gate4Decision;var __gdp=document.getElementById("obcGateDept");if(__gdp)__gdp.value=__pf.gate4Dept||"";var __ggm=document.getElementById("obcGateGM");if(__ggm)__ggm.value=__pf.gate4Gm||"";}
+  if(__pf.gate8Decision){var __gd8=document.getElementById("obcGateDecision");if(__gd8&&obSelHasVal(__gd8,__pf.gate8Decision))__gd8.value=__pf.gate8Decision;var __gm8=document.getElementById("obcGateMentorName");if(__gm8)__gm8.value=__pf.gate8Mentor||"";}
   if(__pf.issue)document.getElementById("obcIssue").value=__pf.issue;
   if(__pf.action)document.getElementById("obcAction").value=__pf.action;
   if(__pf.verdict){var __pv=document.getElementById("obcVerdict");if(obSelHasVal(__pv,__pf.verdict))__pv.value=__pf.verdict;}
@@ -2400,7 +2444,25 @@ async function obSubmitCheck(){
   if(issue) note+=" | 어려운점: "+issue;
   if(act) note+=" | 조치: "+act;
   if(risk) note+=" [위험]";var __v=document.getElementById("obcVerdict");if(__v&&__v.value)note+=" | 수습판정: "+__v.value;
-  var msg=document.getElementById("obcMsg"); var btn=document.getElementById("obcSubmit"); btn.disabled=true; btn.textContent="저장 중…";
+  var msg=document.getElementById("obcMsg"); var btn=document.getElementById("obcSubmit");
+  /* [추가 2026-07-30 A-5] 4·8주차 게이트 판단 — 신규 세그먼트로 note에 추가(기존 세그먼트 형식·순서 무변경). */
+  var __item=window.__obItem||"";var __gdSel=document.getElementById("obcGateDecision");
+  if(__gdSel && __gdSel.value){
+    if(__item==="4주차 체크인"){
+      var __gDept=(document.getElementById("obcGateDept")||{}).value||"",__gGm=(document.getElementById("obcGateGM")||{}).value||"";
+      var __seg4="게이트4: "+__gdSel.value; if(__gDept.trim()||__gGm.trim()) __seg4+=" (부서장 "+__gDept.trim()+" → GM "+__gGm.trim()+")";
+      note+=" | "+__seg4;
+    } else if(__item==="8주차 체크인"){
+      var __gMentor=(document.getElementById("obcGateMentorName")||{}).value||"";
+      if((__gdSel.value==="가능"||__gdSel.value==="부분 가능") && !__gMentor.trim()){
+        msg.style.color="#c0392b"; msg.textContent="실현가능성 판정이 가능·부분 가능이면 실무지도 매니저 이름을 입력해 주세요.";
+        return;
+      }
+      var __seg8="게이트8: "+__gdSel.value; if(__gMentor.trim()) __seg8+=" (실무지도: "+__gMentor.trim()+")";
+      note+=" | "+__seg8;
+    }
+  }
+  btn.disabled=true; btn.textContent="저장 중…";
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-onboarding",adminPassword:SESSION_PW,sheetRow:row,done:true,note:note,owner:owner})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
