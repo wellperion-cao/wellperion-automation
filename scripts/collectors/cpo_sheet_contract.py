@@ -168,7 +168,12 @@ ENRICHMENT_RULES = [
     ("lesson_register", "이름", {"req": True}),
     ("lesson_register", "전화", {"req": True}),
     ("lesson_register", "상태", {"req": True}),
-    ("lesson_register", "등록일", {"req": True, "date_col": True}),
+    # date_col=False(2026-07-30 배77, 시토 근본수리) — 이 시트는 sync-on-load(_syncLessonRegistry_,
+    # lesson_registry_list 호출 시에만 팀시트 SUC roster→원장 upsert)라 사람이 그 화면을 안 열면
+    # 며칠씩 새 행이 없는 게 정상 구간이다(시포 진단 · 오늘 재현: recent7=0인데 실제 이번달 강습
+    # 가입 17건이 team sheet 기준으로는 정상 발생 중이었음 — stage_funnel 실측 대조). "최근7일_0건"은
+    # 실시간 폼저장 시트(inquiry_2026 등) 전제라 이 시트엔 안 맞는다 — req(칸 존재)만 계속 지킨다.
+    ("lesson_register", "등록일", {"req": True, "date_col": False}),
 ]
 
 # 금지 칸(refs.forbid) — member_active 시트에 휴회 칸이 생길 뻔한 사고(v28→v29 철회) 재발방지.
