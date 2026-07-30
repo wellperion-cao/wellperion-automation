@@ -146,6 +146,56 @@ def collect_tasks():
     return items
 
 
+# git 푸시 동기화 판정 기준값 — 한 곳(2026-07-30 GM 승인). 미푸시가 이 값 초과거나
+# origin 최신 커밋이 이만큼(분) 넘게 과거면 '경고'. (2026-07-30 실측: 42→64건까지 밀리며
+# 약 4시간 아무 화면에도 안 보였다 — 이 기준이면 30분 안에 잡힌다.)
+GIT_UNPUSHED_WARN = 10
+GIT_STALE_WARN_MIN = 60
+
+
+def collect_git_sync():
+    """git 푸시 동기화 상태 — 미푸시 커밋 수 · origin 최신 커밋 시각 · 판정.
+    ★새 fetch 를 강제하지 않는다(GM 지시 2026-07-30 — 부하 추가 금지). post_commit_push.py
+    워처가 이미 수시로 fetch 하므로 로컬에 남아 있는 origin/master ref 를 그대로 읽는다
+    (부하 0 추가). 조회 자체가 실패하면 '불명'으로 떨어진다(정상으로 위장하지 않음)."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-list", "--count", "origin/master..HEAD"],
+            cwd=ROOT, capture_output=True, text=True, timeout=15,
+        )
+        if r.returncode != 0:
+            return {"state": "불명", "detail": "미푸시 조회 실패", "unpushed": None, "origin_at": None}
+        unpushed = int((r.stdout or "0").strip() or "0")
+    except Exception:
+        return {"state": "불명", "detail": "미푸시 조회 실패", "unpushed": None, "origin_at": None}
+
+    origin_at_str = None
+    origin_age_min = None
+    try:
+        r2 = subprocess.run(
+            ["git", "log", "-1", "--format=%cI", "origin/master"],
+            cwd=ROOT, capture_output=True, text=True, timeout=15,
+        )
+        if r2.returncode == 0 and (r2.stdout or "").strip():
+            origin_at_str = r2.stdout.strip()
+            origin_dt = datetime.fromisoformat(origin_at_str)
+            origin_age_min = (_now_kst() - origin_dt.astimezone(KST)).total_seconds() / 60.0
+    except Exception:
+        pass
+
+    warn = unpushed > GIT_UNPUSHED_WARN or (
+        origin_age_min is not None and origin_age_min > GIT_STALE_WARN_MIN
+    )
+    state = "경고" if warn else "정상"
+    age_txt = f"{int(origin_age_min)}분 전" if origin_age_min is not None else "확인 불가"
+    return {
+        "state": state,
+        "detail": f"미푸시 {unpushed}건 · origin 최신 {age_txt}",
+        "unpushed": unpushed,
+        "origin_at": origin_at_str,
+    }
+
+
 def _self_heal_queue_mirror():
     """큐 미러 드리프트 자가치유: sync_queue_mirror(단방향·멱등) 자동 실행.
     실패해도 예외를 삼킨다(fail-soft) — 실패 시 재확인에서 여전히 '이상'으로 남을 뿐."""
@@ -436,8 +486,11 @@ def build():
     systems = collect_processes() + collect_tasks()
     bridges = collect_bridges()
     automation_health = collect_automation_health()
+    git_sync = collect_git_sync()
     broken_bridges = [b["name"] for b in bridges if b["state"] == "이상"]
     abnormal = [s["name"] for s in systems if s["state"] == "이상"] + broken_bridges
+    if git_sync["state"] == "경고":
+        abnormal.append("git 푸시 동기화")
     if abnormal:
         summary = "⚠️ 점검 필요: " + ", ".join(abnormal)
     elif any(s["state"] == "불명" for s in systems):
@@ -453,6 +506,7 @@ def build():
         "systems": systems,
         "bridges": bridges,
         "automation_health": automation_health,
+        "git_sync": git_sync,
     }
 
 

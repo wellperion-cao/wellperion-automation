@@ -1727,7 +1727,21 @@
       var anomTxt = sysAnom.length
         ? ('런타임 이상 ' + sysAnom.length + '(' + sysAnom.map(function(s){ return s.name; }).join('·') + ')')
         : '런타임 이상 0';
-      hl.textContent = ah.total ? ('예약작업 ' + ah.healthy + '/' + ah.total + ' 정상 · ' + anomTxt) : '집계 중';
+      // ★2026-07-30(GM 승인) — git 푸시 동기화 한 줄 추가. 오늘 4시간 동안 push 가 막혔는데
+      // 어느 화면에도 안 보여 아무도 몰랐다(GM 지적 "푸시 뚫리는지 계속 확인해줘"를 사람 폴링이
+      // 아니라 장치로). 정상일 땐 짧게(칸 글자수 방어), 경고일 때만 눈에 띄게.
+      var gs = d.git_sync || null;
+      var gsTxt = '';
+      if(gs){
+        if(gs.state === '경고'){
+          gsTxt = ' · <span style="color:#ff8a80;font-weight:700;">⚠️ 미푸시 ' + esc(gs.unpushed == null ? '?' : gs.unpushed) + '건</span>';
+        } else if(gs.state === '불명'){
+          gsTxt = ' · 미푸시 불명';
+        } else {
+          gsTxt = ' · 미푸시 ' + esc(gs.unpushed == null ? 0 : gs.unpushed);
+        }
+      }
+      hl.innerHTML = (ah.total ? ('예약작업 ' + ah.healthy + '/' + ah.total + ' 정상 · ' + esc(anomTxt)) : '집계 중') + gsTxt;
     }
     if(body){
       // 실패를 맨 위로(눈에 띄게) · 예정/정상은 아래. 원본 순서는 동률 유지.
