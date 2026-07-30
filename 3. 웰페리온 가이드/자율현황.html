@@ -483,18 +483,31 @@
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
   </div>
 
-  <!-- 📌 매출보고 카톡 3방 발송 설정 가이드 (배488 · ★이름 접두) -->
-  <details class="coo-details" style="margin-top:12px;">
-    <summary>📌 매출보고 카톡 3방 설정 — GM은 ★별명만 한 번, 방 열기·발송은 시토 자동</summary>
-    <div style="font-size:12.5px;line-height:1.7;padding:6px 2px;">
-      <p style="margin:4px 0 8px;">09:30 자동발송이 <b>카톡 방을 '창 제목'으로</b> 찾습니다. GM은 <b>★ 별명</b>만 한 번 설정 — 방 열기·발송은 시토 자동.</p>
-      <p style="margin:8px 0 4px;"><b>✍️ GM 한 번만</b></p>
-      <ul style="margin:0 0 8px;padding-left:20px;">
-        <li>각 방 이름 편집 → 별명을 <code>★회장님</code>·<code>★관리부</code>·<code>★운영부</code>처럼 <b>★로 시작</b>하게 저장(나만 보임).</li>
-      </ul>
-      <p style="margin:4px 0;color:var(--dim);">※ 방 이름 변경 시 <code>scripts/kakao_rooms.json</code>도 맞춤(시토에게 말하면 즉시 반영). 현재: 차의주 회장님 · 웰페리온 관리부 · ★ 운영부.</p>
+  <!-- ══ 📋 텔레그램·카카오톡 전 방 한 장 (배202 · GM 지시 2026-07-28 · 실측) ══ -->
+  <section style="margin-top:14px;">
+    <h2 class="sec" id="sec-room-ledger">📋 텔레그램·카카오톡 전 방 한 장</h2>
+    <div class="sec-note" style="margin:0 0 8px;">실측 12방(텔레그램 6 · 카카오 6, ★운영부 중복 1) — 방 이름·용도·발신주체·수신자. SSOT: <code>status/telegram_rooms.json</code>(텔레그램 전체) · <code>scripts/kakao_rooms.json</code>(카카오는 매출보고 3방만 — 나머지 4방은 코드 상수·GAS에 흩어짐, 다음 회차 과제).</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="width:40px">채널</th><th style="width:150px">방 이름</th><th>용도</th><th style="width:190px">발신 주체</th><th style="width:120px">수신자</th></tr></thead>
+        <tbody>
+          <tr><td>📨</td><td>GM_DM</td><td>GM 개인 1:1 — 아침/저녁 루틴·🧭 오늘의 항로·승인·결재 중계·헬스체크 등 정시 다수</td><td>웰리·시토 외(daily_scheduler.py)</td><td>GM</td></tr>
+          <tr><td>📨</td><td>점검관리방<br><span style="color:var(--dim);font-size:11px;">-5136037543</span></td><td>점검 독려·이슈 알림·월간 점검 리포트</td><td>시우(daily_scheduler.py·GAS 이슈 트리거)</td><td>실무진(지원팀)</td></tr>
+          <tr><td>📨</td><td>문의알림방<br><span style="color:var(--dim);font-size:11px;">-5516675010</span></td><td>문의 5종 신규·컨택/등록 다이제스트·CMO 일일/주간 마케팅카드</td><td>시포·시모(report_stream_1_inquiry.py·GAS)</td><td>실무진(CPO·CMO팀)</td></tr>
+          <tr><td>📨</td><td>종합접수처<br><span style="color:var(--dim);font-size:11px;">-5065206276</span></td><td>종합접수 신규+미처리 적체 리마인드</td><td>시토(report_stream_2b_reception.py)</td><td>실무진</td></tr>
+          <tr><td>📨</td><td>자동화현황방<br><span style="color:var(--dim);font-size:11px;">-5498808140 · 표시명 AI진행현황</span></td><td>모듈 일일/주간 보고·자동화 건강 다이제스트</td><td>시토(module_reporter.py·cto_automation_health)</td><td>GM·AI팀(관측)</td></tr>
+          <tr><td>📨</td><td>시설팀알람방<br><span style="color:var(--dim);font-size:11px;">-5493956598</span></td><td>시설팀 앞 임시 전달(법정점검 실시일 요청 등) — 정기 발신 미배선, 2026-07-28 신규 등록</td><td>시우·시토(수동)</td><td>실무진(시설팀) ⚠배208 — 회신유실 로깅만 완료</td></tr>
+          <tr><td>💛</td><td>차의주 회장님</td><td>매출·운영·인사 보고(스트림3 이미지)</td><td>시토(kakao_report_sender.py)</td><td>경영진</td></tr>
+          <tr><td>💛</td><td>웰페리온 관리부</td><td>매출·운영·인사 보고(스트림3 이미지)</td><td>시토(kakao_report_sender.py)</td><td>경영진</td></tr>
+          <tr><td>💛</td><td>★운영부<br><span style="color:var(--dim);font-size:11px;">파일표기 '★ 운영부'(공백) — 실제 창 제목 미확인</span></td><td>매출보고(경영) + 아침 종합운영다이제스트·점검/접수 현황(실무) — 이중용도 ⚠용도 안 갈라짐</td><td>시토(kakao_report_sender.py+send_ops_digest.py+daily_scheduler.py)</td><td>경영진+실무진 겹침</td></tr>
+          <tr><td>💛</td><td>★부서장</td><td>문의 정리 다이제스트(문의알림방과 동시발송)</td><td>시포(daily_scheduler.py)</td><td>실무진(부서장)</td></tr>
+          <tr><td>💛</td><td>★운영+시설+지원+주차</td><td>점검·접수 현황 통합 다이제스트</td><td>시토(daily_scheduler.py KAKAO_GO_STREAM2)</td><td>실무진(4부서)</td></tr>
+          <tr><td>💛</td><td>★중간관리자</td><td>코드 SSOT 없음 — 2026-07-28 웰리 1회 수동 발송(--only-room, 시설 3종 요청)</td><td>미등록(수동)</td><td>실무진(중간관리자) ⚠구멍</td></tr>
+        </tbody>
+      </table>
     </div>
-  </details>
+    <div class="sec-note" style="margin:6px 0 0;">✍️ GM 한 번만 — 카톡 방 이름 편집 시 별명을 <code>★</code>로 시작하게 저장(창 제목 탐색용). 위 표의 ⚠ 3건(★운영부 이중용도·표기공백·★중간관리자 미등록)은 코드 통합이 필요해 이번 회차 화면 정리 범위 밖 — 다음 회차 과제로 넘김.</div>
+  </section>
 
   <!-- ════ 🛠️ 시토 (AI CTO) 자율 자동화 (status/module_registry.json 신규 스키마 · owner_role 있는 이 창 소속만 · additive · 계약 2026-07-09 · 2026-07-13 전용 섹션 격상) ════ -->
   <section>
@@ -807,23 +820,11 @@
     <!-- ② 지금 돌고 있는 자동화 -->
     <h3>🟢 지금 돌고 있는 자동화 <span class="statchip static">📄 설명(정적)</span></h3>
 
-    <h4>상시 가동 <span class="statchip static">📄 설명</span></h4>
-    <div class="tbl-wrap"><table>
-      <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>텔레그램 봇</td><td>인프라</td><td>상시</td><td style="color:var(--accent-soft);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> bot.py — C-Level 보고·GM 지시 중계. @namuki_report_bot 단일 채널.</td></tr>
-      <tr onclick="wpAutoToggle(this)" style="cursor:pointer;"><td>🟢</td><td>일일 스케줄러</td><td>인프라</td><td>상시</td><td style="color:var(--accent-soft);font-size:12px;">펼치기 ▾</td></tr>
-      <tr class="auto-detail" style="display:none;"><td colspan="5" style="background:var(--paper);padding:10px 14px;font-size:13px;color:var(--dim);"> daily_scheduler.py — 정각 보고 발사(06/12/18/21/23시). 슬롯·발신 정본 = 위 '📨 통합 알림 보드'.</td></tr>
-    </table></div>
-
-    <h4>매일 <span class="statchip static">📄 설명</span> <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순</span></h4>
-    <p class="sec-note" style="margin:2px 0 8px;">예약작업 시각순(이른→늦은). 텔레그램 정각 보고 발신 목록·상태는 위 '📨 통합 알림 보드'(정본).</p>
+    <h4>매일 <span class="statchip static">📄 설명</span> <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 · 텔레그램·카카오 정시 발신 전체는 위 '📨 통합 알림 보드'·'📋 텔레그램·카카오톡 전 방 한 장'</span></h4>
     <div class="tbl-wrap"><table>
       <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
       <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
       <tr><td>🟢 <strong>부팅 시</strong></td><td>OMC 자동 업데이트</td><td>CTO</td><td>PC 부팅·CEO(웰리) 배치 시작 시 OMC(플러그인) 1회 자동 업데이트. 실행 중 Claude는 못 바꿔 <strong>창 0개일 때만</strong>(logs\claude_update.log). 검은 창은 숨김 런처(vbs)로 제거. <span style="color:var(--dim);">모델은 세션 선택이라 업데이트 대상 아님.</span></td></tr>
-      <tr><td>🟢 <strong>07:30</strong></td><td>IG AI시리즈 제작·검수카드</td><td>CMO</td><td>다음 편 자동 제작 → M5 검수큐 등록 → 텔레그램 [✅승인]/[❌반려] 카드 발송. <strong>발행은 [✅승인] 탭에서만</strong>(무폴링). 안전판: <code>큐레이션_추천.md</code> 자동생성 · 소진 시 생성 중지</td></tr>
-      <tr><td>🟢 <strong>08:00</strong></td><td>CEO 통합보고</td><td>AI CEO</td><td><code>ceo_morning_pipeline.py</code> — 🧭 오늘의 항로 <strong>단일 텔레그램 1건</strong>(전날 정리·오늘 업무·이슈). 🔴 선장(GM) 결정은 항로 보고 <strong>안에 인라인 포함</strong> — 별도 '선장 결정카드' 2차 발송 폐지(2026-06-23 GM 요청·중복 제거).</td></tr>
       <tr><td>🟢 <strong>22:00</strong></td><td>C-Level 진행 체크</td><td>AI CEO</td><td>일일 C-Level 진행현황 자동 점검</td></tr>
       <tr><td>🟢 <strong>00:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30 조기종료 사고 후 <strong>00:30로 단일화</strong>(2026-06-16). 자정 전 23:00 마감점검까지 발송 후 종료. <strong>종료 인사는 22:00 취침 슬롯에 통합.</strong></td></tr>
     </table></div>
