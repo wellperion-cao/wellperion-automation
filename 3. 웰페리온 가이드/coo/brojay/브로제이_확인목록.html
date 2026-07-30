@@ -117,7 +117,8 @@
     <span class="who">브로제이가 만든 구글 시트</span>가 원본입니다. 이 화면은 그 시트를 <b>실시간으로 읽어</b> 급한 순서로 보여줍니다.<br>
     <b>여기서 하는 일</b> — ① 담당자 정하기 ② 우리 내부 메모 적기(글자를 눌러 화면에서 바로 쓰고, 칸은 내용만큼 저절로 늘어납니다)
     ③ 확인·조치가 끝나면 왼쪽 네모 체크 → <b>담당자별 완료 칸</b>으로 넘어갑니다.<br>
-    <b>문제점 문장 자체를 고치려면</b> 위 초록 버튼으로 시트를 여세요(브로제이도 같은 시트를 봅니다).
+    <b>문제점 문장 자체를 고치거나 항목을 새로 넣으려면</b> 위 초록 버튼으로 시트를 여세요 — 브로제이는 시트만 봅니다.
+    회신이 오면 카드 안에 <span class="who">초록 상자</span>로 뜹니다.
   </div>
 
   <div id="vq-status" class="vq-status">불러오는 중…</div>
@@ -314,9 +315,10 @@
       if(it.fix)     rows += '<div class="vq-reply-row"><b>해결 방안</b> — ' + esc(it.fix) + '</div>';
       replyHtml = '<div class="vq-reply"><div class="vq-reply-head">💬 브로제이 회신</div>' + rows + '</div>';
     } else if(it.source === 'sheet'){
-      replyHtml = '<div class="vq-reply-none">💬 브로제이 회신 아직 없음 — 시트의 «가능 여부·검토 의견·해결 방안» 칸이 비어 있습니다</div>';
+      // 회신 대기는 대부분이라 한 줄로 짧게 — 같은 안내를 카드마다 길게 반복하지 않는다(약속 L12 ⑥).
+      replyHtml = '<div class="vq-reply-none">💬 회신 대기</div>';
     } else {
-      replyHtml = '';
+      replyHtml = '<div class="vq-reply-none">📌 시트에 없는 항목 — 브로제이는 못 봅니다. 전달하려면 시트에 옮겨 적어 주세요.</div>';
     }
 
     var memoHtml;
