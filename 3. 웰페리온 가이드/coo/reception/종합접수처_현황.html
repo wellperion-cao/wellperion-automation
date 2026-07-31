@@ -97,7 +97,7 @@ a { color:var(--accent); text-decoration:none; }
 }
 .field-row select, .field-row input { flex:1; min-width:80px; }
 .card textarea { width:100%; box-sizing:border-box; resize:vertical; }
-.save-row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.save-row { display:flex; justify-content:flex-end; }
 .save-btn {
   font-size:12px; font-weight:700; padding:5px 14px; border-radius:7px;
   background:var(--accent-bg); color:var(--accent); border:1px solid rgba(183,159,138,0.4);
@@ -286,10 +286,6 @@ var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5
 /* 직원 현황(gate.js 뒤) 사진 노출 키 — 이 값이면 reg_board가 사진 원본 반환(썸네일용). 공개는 계속 '비공개'. */
 var REG_PV = 'wlp_reg_pv_2026';
 
-/* 접수 삭제 비밀번호 (GM 지정 2026-07-31) — 테스트 접수 정리용.
-   화면 커튼이자 서버가 같은 값을 다시 확인한다(GAS _regDelete). 둘 다 맞아야 지워진다. */
-var REG_DEL_PIN = '1200';
-
 /* 🧳 습득물 직원 처리(수령·삭제) — lost_found_gallery.html 포팅 상수 (REG_API=VOC_API 동일 GAS) */
 var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
 var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
@@ -312,7 +308,7 @@ var CAT_META = [
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','reporter'];
 var EXTRA_LABEL = {
   itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
   equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
@@ -522,6 +518,9 @@ function _card(r){
     if(lwhen) lh += '<div class="card-loc" style="margin-bottom:6px;">🕒 ' + lwhen + '</div>';
     if(r.content) lh += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
     if(r.loc) lh += '<div class="card-loc">습득장소: ' + _esc(String(r.loc)) + '</div>';
+    if(r.staff) lh += '<div class="card-loc">등록직원: ' + _esc(String(r.staff)) + '</div>';
+    if(r.ownerName || r.ownerContact) lh += '<div class="card-loc">주인: ' + _esc(String(r.ownerName||'')) + (r.ownerContact?(' · ' + _esc(String(r.ownerContact))):'') + '</div>';
+    if(r.memo) lh += '<div class="card-content" style="background:var(--accent-bg);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;"><b style="color:var(--accent);">내부메모 </b>' + _esc(String(r.memo)) + '</div>';
     lh += '<div class="divider"></div>';
     lh += '<div class="lf-note">습득 다음 달 공지 → 그다음 달 폐기(월 사이클). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_guide.html" target="_blank" rel="noopener">운영 가이드</a></div>';
     lh += '<div class="lf-ctrl-row">';
@@ -580,26 +579,20 @@ function _card(r){
   h += '<div class="field-row"><label>상태</label>';
   h += '<select data-reg-action="status" data-reg-id="' + _esc(rawId) + '" data-reg-cat="' + _esc(rawCat) + '" data-prev-status="' + _esc(status) + '">' + opts + '</select></div>';
 
-  /* 담당 — list= 로 '이미 쓰인 이름'을 제안한다(2026-07-31 웰리).
-     선택제(드롭다운)로 막지 않는다: 담당자가 회원일 수 있다는 GM 제약 그대로 자유 입력이며,
-     제안은 고르면 표기가 통일되고 새 이름은 그냥 쳐 넣으면 된다. 같은 사람이 '최준용'·'최준용M'
-     두 갈래로 쌓여 점수·적체가 갈라지던 것을 입력 단계에서 줄인다. */
+  /* 담당 */
   h += '<div class="field-row"><label>담당</label>';
-  h += '<input type="text" data-reg-assignee list="reg-staff-names" placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
+  h += '<input type="text" data-reg-assignee placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
 
   /* 처리자(실제 처리한) */
   h += '<div class="field-row"><label>처리자</label>';
-  h += '<input type="text" data-reg-handler list="reg-staff-names" placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
+  h += '<input type="text" data-reg-handler placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
 
   /* 메모 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
   h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
 
   /* 저장 */
-  /* 삭제(테스트 접수 정리용) — 비밀번호 확인 후에만. 접수ID 정확일치 1건만 지운다.
-     ★행 번호로 지우지 않는다(실고객 오삭제 재발 방지 · INC-020). */
-  h += '<div class="save-row"><button type="button" class="lf-btn lf-del" data-reg-del="' + _esc(rawId) + '" data-reg-del-cat="' + _esc(rawCat) + '" data-reg-del-desc="' + _esc(String(r.content||r.name||'').slice(0,40)) + '" title="테스트 접수 삭제(비밀번호 필요)">🗑 삭제</button>';
-  h += '<button data-reg-save type="button" class="save-btn">저장</button></div>';
+  h += '<div class="save-row"><button data-reg-save type="button" class="save-btn">저장</button></div>';
   h += '</div>';
   return h;
 }
@@ -675,7 +668,11 @@ function lfLoad(){
           loc:      r.foundLoc || '',
           foundWhen:r.foundWhen|| '',
           createdAt:r.createdAt|| '',
-          photoUrl: r.photoUrl || ''
+          photoUrl: r.photoUrl || '',
+          staff:    r.staff || '',
+          memo:     r.memo || '',
+          ownerName: r.ownerName || '',
+          ownerContact: r.ownerContact || ''
         };
       });
       _merge();
@@ -788,30 +785,6 @@ function _wireBoard(){
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
       return;
     }
-    /* 접수 삭제 — 테스트 접수 정리용. 비밀번호 확인 후 접수ID 정확일치 1건만.
-       ★안전 3겹: ①무엇을 지우는지 보여주고 확인 ②비밀번호 ③서버가 접수ID로만 찾아 1행 삭제
-       (행 번호로 지우지 않는다 — 실고객 오삭제 재발 방지). */
-    var regDelBtn = e.target.closest('[data-reg-del]');
-    if(regDelBtn){
-      var rId = regDelBtn.dataset.regDel;
-      var rCat = regDelBtn.dataset.regDelCat || '';
-      var rDesc = regDelBtn.dataset.regDelDesc || '';
-      if(!rId) return;
-      if(!confirm('아래 접수를 삭제합니다. 되돌릴 수 없습니다.\n\n접수ID: ' + rId + (rDesc ? ('\n내용: ' + rDesc) : ''))) return;
-      var pin = prompt('삭제 비밀번호를 입력해 주세요.');
-      if(pin === null) return;
-      if(String(pin).trim() !== REG_DEL_PIN){ toast('비밀번호가 올바르지 않습니다', true); return; }
-      regDelBtn.disabled = true;
-      fetch(REG_API, {
-        method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
-        body:JSON.stringify({ action:'reg_delete', id:rId, category:rCat, pin:String(pin).trim() }),
-        redirect:'follow'
-      }).then(function(r){ return r.json(); }).then(function(d){
-        if(d && d.ok){ toast(rId + ' 삭제 완료'); regLoad(); }
-        else { toast((d && d.error) || '삭제 실패', true); regDelBtn.disabled = false; }
-      }).catch(function(){ toast('네트워크 오류 — 삭제되지 않았습니다.', true); regDelBtn.disabled = false; });
-      return;
-    }
     var claimBtn = e.target.closest('[data-lf-claim]');
     if(claimBtn){
       _cur = { id: claimBtn.dataset.lfClaim, desc: claimBtn.dataset.lfDesc, loc: claimBtn.dataset.lfLoc, photo: claimBtn.dataset.lfPhoto };
@@ -835,32 +808,9 @@ function _wireBoard(){
   });
 }
 
-/* 담당자·처리자 입력 제안 목록(2026-07-31 웰리).
-   지금까지 실제로 쓰인 이름을 서버가 통일된 표기로 돌려준다 — 여기서 이름을 만들지 않는다.
-   실패하면 그냥 제안이 없을 뿐, 입력은 평소대로 된다(자유 입력을 막지 않는다). */
-function loadStaffSuggest(){
-  var dl = document.getElementById('reg-staff-names');
-  if(!dl){   // 이 스크립트가 datalist 보다 먼저 실행되는 경우 — 없으면 만들어 쓴다
-    dl = document.createElement('datalist');
-    dl.id = 'reg-staff-names';
-    document.body.appendChild(dl);
-  }
-  fetch(REG_API + '?action=reg_staff_suggest', {redirect:'follow', cache:'no-store'})
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if(!d || !d.ok || !d.names) return;
-      dl.innerHTML = d.names.map(function(n){
-        return '<option value="' + _esc(String(n)) + '"></option>';
-      }).join('');
-    })
-    .catch(function(){ /* 제안 없이 진행 */ });
-}
-
 _wireBoard();
 regLoad();
 lfLoad();
-loadStaffSuggest();
 </script>
-<datalist id="reg-staff-names"></datalist>
 </body>
 </html>
