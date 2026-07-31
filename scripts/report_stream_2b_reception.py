@@ -197,9 +197,17 @@ def build_digest(today: str | None = None) -> str:
     rows = _fetch_rows()
     if rows is None:
         return f"{header}\n\n조회 실패 (GAS 응답 없음)"
-    body = f"{header}\n\n{_today_section(rows, today)}\n\n{_DIVIDER}\n{_aging_block(rows)}"
+    # 2026-07-31 GM 지시 — 점수판을 맨 위로 올린다.
+    #   "점수 랭킹하는 걸 상단에 알림으로 올려주고, 더 활성화될 수 있게."
+    #   맨 아래에 있으면 스크롤 끝까지 내려야 보인다 = 사실상 없는 것과 같았다. 접수를 피할
+    #   이유를 없애려고 만든 장치라, 방을 열자마자 눈에 들어와야 제 일을 한다.
     score = _score_block()
-    return f"{body}\n\n{score}" if score else body
+    parts = [header]
+    if score:
+        parts.append(score.lstrip("\n").removeprefix(_DIVIDER).strip())
+    parts.append(f"{_DIVIDER}\n{_today_section(rows, today)}")
+    parts.append(f"{_DIVIDER}\n{_aging_block(rows)}")
+    return "\n\n".join(parts)
 
 
 def run(today: str | None = None, dry_run: bool = True) -> str:
