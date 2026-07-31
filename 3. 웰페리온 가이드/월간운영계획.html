@@ -752,8 +752,17 @@
     /* ★끊는 자리는 '앞'에 건다(break-before) — 실측(2026-07-31) 결과 break-after/page-break-after 는
        break-inside:avoid 가 걸린 섹션에서 크롬 인쇄 엔진이 무시했다(8섹션이 4장에 뭉침).
        다음 섹션의 앞에 걸면 확실히 끊긴다. 첫 섹션에는 걸지 않는다(맨 앞 빈 장 방지). */
-    .report-grid > .blk{break-before:page; page-break-before:always;}
-    .report-grid > .blk:first-child{break-before:auto; page-break-before:auto;}
+    /* 장 구성 = GM 지정(2026-07-31): 1장 매출+점검 / 2장 부서별 / 3장~ 로드맵+핵심과제 상세(이어서).
+       그래서 '부서별'과 '전략 로드맵' 앞에서만 끊는다 — 나머지는 흐르게 둔다.
+       (전 섹션마다 끊었더니 로드맵이 짧은데 혼자 한 장을 먹어 다음 장이 빽빽해졌다.) */
+    .report-grid > .blk{break-before:auto; page-break-before:auto;}
+    .report-grid > .blk[data-blkid="deptcards"],
+    .report-grid > .blk[data-blkid="roadmap"]{break-before:page; page-break-before:always;}
+    /* 로드맵 바로 뒤 '핵심 과제 상세'는 같은 장에서 이어 붙는다(GM: "4번에서 바로 끊기지 말고 4+5 붙여줘").
+       상세는 길어서 통째로 유지하려 하면 다음 장으로 통으로 밀린다 — 넘치는 만큼만 흘러가게 푼다.
+       줄 중간이 갈라지지 않게 표의 행 단위만 붙잡는다. */
+    .blk.sum-hero, .blk.sum-hero > *{break-inside:auto !important;}
+    .blk.sum-hero tr, .blk.sum-hero li{break-inside:avoid;}
     .annual-board{break-after:page; page-break-after:always;}
     /* 전폭 지정(column-span)은 단이 없어졌으니 무의미 — 상속만 막아 둔다. */
     .blk.mband-wrap, .blk.fin-primary, .blk.top3-wrap{column-span:none !important;}
