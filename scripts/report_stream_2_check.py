@@ -74,13 +74,38 @@ def build_digest(today: str | None = None) -> str:
 _SCHEDULE_SSOT = REPO_ROOT / "status" / "schedule_ssot.json"
 
 
-def _legal_check_blank_block() -> str:
+# 살아있는 원천 = 전사 일정 GAS. 저장소 파일(status/schedule_ssot.json)은 GAS 가 죽었을 때만 쓰는
+# 씨앗이다 — 실무진이 화면에서 실시일을 넣으면 **GAS 에만 저장**되고 저장소 파일은 안 바뀐다.
+# ★2026-07-31 웰리 실측: GAS 에는 이미 10건이 채워져 있는데 저장소 파일은 0건이었다. 저장소를 읽으면
+#   답을 이미 준 항목까지 매일 밤 다시 물어보게 된다 — 그러면 실무진은 "말해도 안 듣는다"고 느끼고
+#   그 순간 이 알림은 죽는다. 물어보는 쪽과 답을 받는 쪽이 같은 한 곳을 봐야 고리가 닫힌다(약속 L01).
+_SCHEDULE_GAS = ("https://script.google.com/macros/s/"
+                 "AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec")
+
+
+def _load_schedule_items():
+    """살아있는 일정(GAS) 우선 · 실패 시 저장소 씨앗. (items, 출처라벨) 반환."""
+    try:
+        r = requests.get(_SCHEDULE_GAS, params={"action": "load_schedule"},
+                         timeout=20, allow_redirects=True)
+        data = r.json()
+        items = (data.get("data") or {}).get("items")
+        if isinstance(items, list) and items:
+            return items, "live"
+    except Exception:
+        pass
     try:
         import json
         data = json.loads(_SCHEDULE_SSOT.read_text(encoding="utf-8"))
+        return (data.get("items") if isinstance(data, dict) else data), "seed"
     except Exception:
+        return None, "none"
+
+
+def _legal_check_blank_block() -> str:
+    items, src = _load_schedule_items()
+    if items is None:
         return ""   # 원천을 못 읽으면 조용히 뺀다(있는 보고를 깨뜨리지 않는다)
-    items = data.get("items") if isinstance(data, dict) else data
     if not isinstance(items, list):
         return ""
     blank: dict[str, list[str]] = {}
@@ -110,7 +135,11 @@ def _legal_check_blank_block() -> str:
         for nm in blank[dept]:
             lines.append(f"   · {nm}")
         lines.append("")
-    lines.append("👉 전사 일정 https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_일정.html")
+    lines.append("👉 여기서 날짜를 넣으시면 다음 날부터 이 목록에서 빠집니다")
+    lines.append("   https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_일정.html")
+    if src == "seed":
+        # 조용한 폴백을 숨기지 않는다 — 씨앗을 읽었다면 이미 답한 항목이 다시 떴을 수 있다.
+        lines.append("(※ 일정 서버 응답이 없어 예비 자료로 만들었습니다 — 이미 알려주신 건이 다시 보이면 알려주세요)")
     return "\n".join(lines)
 
 
