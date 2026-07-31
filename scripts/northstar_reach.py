@@ -176,6 +176,19 @@ _ROLE_LABEL = {
 _BLOCK_EXCLUDED = ("chro", "cfo")
 
 
+def _trim(text: str, limit: int) -> str:
+    """길면 줄이되 낱말·문장 중간에서 자르지 않는다(GM 반복 지적 '문장 중간 잘림').
+    자연스러운 경계가 앞쪽밖에 없으면 자르지 않고 통째로 둔다 — 뜻이 끊기는 것보다 낫다."""
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    window = text[:limit]
+    cut = max(window.rfind(c) for c in (" ", "—", "·", ",", "(", "[", ":", "/", "→", "+"))
+    if cut < limit // 2:
+        return text
+    return window[:cut].rstrip(" —·,([:/→+") + "…"
+
+
 def _bar(pct: float | int | None, width: int = 9) -> str:
     """도달율 막대. 못 잰 값은 막대 대신 빈칸(가짜로 채우지 않는다)."""
     if not isinstance(pct, (int, float)):
@@ -192,22 +205,102 @@ def _row(label: str, pct: float | int | None, tail: str = "") -> str:
     return f"{label} {_bar(pct)} {round(pct):>3}%{(' ' + tail) if tail else ''}"
 
 
-def _sales_rows(home: dict | None) -> list[tuple[str, float | None, str]]:
-    """회사 북극성(매출) 줄. home_kpi_snapshot 직독 — 없으면 빈 리스트(줄 자체를 안 낸다)."""
+PLAN_PATH = ROOT / "status" / "monthly_ops_plan.json"
+
+
+def _plan_month_target(plan: dict | None, mkey: str) -> float | None:
+    """그 달 운영계획이 잡아 둔 월 매출 목표(원). 계획에 없으면 None — 지어내지 않는다.
+
+    ★연 72억 ÷ 12 = 6억이 아니다. 상반기 부족분을 하반기에 얹어 계획이 6.5~6.6억으로 잡혀
+    있다(GM 2026-07-31 '부족분이 있으니 더 채워야겠지'). 그 판단은 이미 월간 운영계획에
+    들어 있으므로 여기서 다시 계산하지 않고 **계획을 읽는다**(약속 L01).
+    """
+    try:
+        for o in ((plan or {}).get("months") or {}).get(mkey, {}).get("objectives") or []:
+            met = o.get("metric") or {}
+            if str(met.get("name") or "").replace(" ", "") in ("월매출", "매출") \
+                    and isinstance(met.get("target"), (int, float)):
+                return float(met["target"])
+    except Exception:
+        pass
+    return None
+
+
+def _sales_rows(home: dict | None, plan: dict | None, mkey: str) -> list[tuple[str, float | None, str]]:
+    """회사 북극성(매출) 줄 — 연 목표·이번 달 목표 대비·남은 달에 필요한 월 매출.
+
+    ★2026-07-31 GM 지적으로 다시 짰다: "연간 72억이면 월은 6억이겠지? 근데 부족분이 있으니
+    더 채워야겠지?" — 예전 블록은 월 목표를 못 찾으면 '미설정'이라고만 적고 끝냈다. 목표
+    대비가 없으면 그 줄은 그냥 현황 숫자다. 이제 ①계획의 이번 달 목표 대비 ②연 목표까지
+    남은 달에 **월 얼마씩 필요한지**를 같이 낸다(부족분이 자동으로 드러난다).
+    """
     d = ((home or {}).get("data") or {}).get("sales") or {}
     rows: list[tuple[str, float | None, str]] = []
-    year_rate, year_target = d.get("yearRate"), d.get("yearTarget")
+    year, year_rate, year_target = d.get("year"), d.get("yearRate"), d.get("yearTarget")
     if isinstance(year_rate, (int, float)) and isinstance(year_target, (int, float)):
-        rows.append((f"매출 연{round(year_target / 100000000)}억", float(year_rate), ""))
-    month, m_target = d.get("month"), d.get("target")
+        amt = f"{year / 100000000:.1f}억 / {year_target / 100000000:.0f}억" if isinstance(year, (int, float)) else ""
+        rows.append((f"매출 연{year_target / 100000000:.0f}억", float(year_rate), amt))
+
+    month, cur = d.get("month"), d.get("curMonth")
+    m_target = _plan_month_target(plan, mkey) or (d.get("target") if isinstance(d.get("target"), (int, float)) else None)
     if isinstance(month, (int, float)):
-        if isinstance(m_target, (int, float)) and m_target:
-            rows.append((f"{d.get('curMonth', '')}월 매출", month / m_target * 100, ""))
+        if m_target:
+            gap = (month - m_target) / 100000000
+            rows.append((f"{cur}월 {m_target / 100000000:.1f}억", month / m_target * 100,
+                         f"{month / 100000000:.2f}억 ({gap:+.2f}억)"))
         else:
-            # 월 목표가 시트에 없다 — 비율을 지어내지 않고 금액만 적는다.
-            rows.append((f"{d.get('curMonth', '')}월 매출", None,
-                         f"{round(month / 100000000, 1)}억 (월 목표 미설정)"))
+            rows.append((f"{cur}월 매출", None, f"{month / 100000000:.2f}억 (이번 달 목표가 계획에 없음)"))
+
+    # 남은 달에 월 얼마씩 필요한가 — '부족분을 어디서 메우나'가 한 줄로 보이게.
+    if isinstance(year, (int, float)) and isinstance(year_target, (int, float)) and isinstance(cur, int):
+        left_months = 12 - cur
+        if left_months > 0 and year_target > year:
+            need = (year_target - year) / left_months / 100000000
+            rows.append((f"남은 {left_months}개월", None, f"월 {need:.2f}억씩 필요"))
     return rows
+
+
+def _plan_rows(plan: dict | None, mkey: str, label: str) -> list[str]:
+    """그 달 운영계획의 진척 요약 + 가장 뒤처진 것.
+
+    ★2026-07-31 GM 지적 — "AI C레벨들 % 만들어두면 뭐해? 그건 의미가 없을 것 같은데,
+      7월 / 8월 월간계획보고가 반영이 되어야 할 것 같은데."
+      역할별 북극성 도달율(웰리 50%·시토 0%…)을 걷어내고 그 자리를 **월간 운영계획 진척**으로
+      바꾼다. GM 이 보는 것은 AI 가 몇 % 인지가 아니라 이 달에 하기로 한 일이 어디까지 갔나다.
+    """
+    m = ((plan or {}).get("months") or {}).get(mkey)
+    if not isinstance(m, dict):
+        return []
+    objs = [o for o in (m.get("objectives") or []) if isinstance(o, dict)]
+    if not objs:
+        return []
+    nick = (plan or {}).get("owner_nick") or {}
+    cnt: dict[str, int] = {}
+    for o in objs:
+        s = str(o.get("status") or "?")
+        cnt[s] = cnt.get(s, 0) + 1
+    prog = [o["progress"] for o in objs if isinstance(o.get("progress"), (int, float))]
+    avg = round(sum(prog) / len(prog)) if prog else None
+
+    head = f"📋 {label} 운영계획 — 목표 {len(objs)}개"
+    parts = [f"{k} {v}" for k, v in sorted(cnt.items(), key=lambda x: -x[1])]
+    if parts:
+        head += " · " + " · ".join(parts)
+    if avg is not None:
+        head += f" · 평균 {avg}%"
+    out = ["", head]
+    if m.get("theme"):
+        out.append("   " + _trim(str(m["theme"]), 52))
+
+    stalled = [o for o in objs if isinstance(o.get("progress"), (int, float)) and o["progress"] <= 10]
+    if stalled:
+        stalled.sort(key=lambda o: o["progress"])
+        for o in stalled[:2]:
+            who = nick.get(str(o.get("owner") or ""), str(o.get("owner") or ""))
+            out.append(f"   📉 {o['progress']}% {_trim(str(o.get('title') or ''), 34)} — {who}")
+        if len(stalled) > 2:
+            out.append(f"   그 외 손 안 댄 것 {len(stalled) - 2}건")
+    return out
 
 
 def _prev_snapshot() -> dict:
@@ -243,43 +336,24 @@ def record_history(data: dict) -> None:
 def build_northstar_block(title: str = "북극성 대비") -> str:
     """모든 보고 맨 위에 붙는 '목표 대비 어디쯤' 블록. 실패해도 빈 문자열(보고를 끊지 않는다)."""
     try:
-        data = _load_json(OUT_PATH) or {}
         home = _load_json(HOME_KPI_PATH)
-        roles = data.get("roles") or {}
+        plan = _load_json(PLAN_PATH)
         now = datetime.now(KST)
+        mkey = now.strftime("%Y-%m")
+        nxt = (now.replace(day=1) + timedelta(days=32)).strftime("%Y-%m")
 
         lines = [f"🌟 {title} — {now.month}/{now.day}"
                  f"({'월화수목금토일'[now.weekday()]})", ""]
 
-        for label, pct, tail in _sales_rows(home):
+        for label, pct, tail in _sales_rows(home, plan, mkey):
             lines.append(_row(label, pct, tail))
 
-        scored: list[tuple[str, float, str]] = []
-        for rid, v in roles.items():
-            if rid in _BLOCK_EXCLUDED:
-                continue
-            pct = v.get("reach_pct")
-            label = _ROLE_LABEL.get(rid, rid)
-            lines.append(_row(label, pct))
-            if isinstance(pct, (int, float)):
-                scored.append((label, float(pct), str(v.get("basis") or "")))
-
-        if scored:
-            worst = min(scored, key=lambda x: x[1])
-            lines += ["", f"📉 가장 벌어진 곳 — {worst[0]} {round(worst[1])}%"]
-            if worst[2]:
-                lines.append(f"   {worst[2][:60]}")
-
-            prev = _prev_snapshot()
-            gains = [(lbl, p - float(prev[rid])) for rid, v in roles.items()
-                     if rid not in _BLOCK_EXCLUDED
-                     and isinstance(v.get("reach_pct"), (int, float))
-                     and isinstance(prev.get(rid), (int, float))
-                     for lbl, p in [(_ROLE_LABEL.get(rid, rid), float(v["reach_pct"]))]]
-            gains = [g for g in gains if g[1] > 0]
-            if gains:
-                best = max(gains, key=lambda x: x[1])
-                lines += ["", f"📈 가장 좁혀진 곳 — {best[0]} +{round(best[1])}%p (어제 대비)"]
+        # ★역할별 도달율(웰리 50%·시토 0%…)은 뺐다 — GM 2026-07-31: "AI C레벨들 % 만들어두면
+        #   뭐해? 그건 의미가 없을 것 같은데, 7월/8월 월간계획보고가 반영이 되어야 할 것 같은데."
+        #   그 자리를 이 달·다음 달 운영계획 진척으로 바꾼다. (역할 도달율 계산 자체는
+        #   compute() 에 그대로 살아 있어 다른 화면·집계는 무영향.)
+        lines += _plan_rows(plan, mkey, f"{now.month}월")
+        lines += _plan_rows(plan, nxt, f"{int(nxt[5:])}월")
 
         return "\n".join(lines)
     except Exception:
