@@ -279,12 +279,13 @@ body{background:#1c1a1b;font-family:"Pretendard","Apple SD Gothic Neo","Malgun G
   </div>
 
   <!-- ════════════════════════════════════════════
-       ③-c 콘텐츠(게시물) 단위 귀속 — 측정 가능 여부 (2026-07-31 배252 시모, GM 지시)
+       ③-c 콘텐츠(게시물) 단위 귀속 — 배포 완료·데이터 쌓이는 중 (2026-07-31 배252 시모, GM 지시)
        GM: "어느 콘텐츠가 문의를 만들었는지 한 장으로." 위 '채널별 성과'는 채널 단위(예: 인스타그램 5건)까지만
        잡는다 — "어느 게시물이" 만들었는지는 지금 화면 어디에도 없다. 실측 원인: 블로그·카페는 발행 시 게시물마다
        고유 캠페인 태그가 이미 링크에 심어지는데(scripts/cta_utm.py slugify_campaign), 문의 폼(wp_inquiry_form.html)이
        그 태그를 안 읽어 접수 시점에 100% 유실되고 있었다 — 새 대시보드를 만들기 전에 먼저 확인해야 했던 근본 원인.
-       숫자를 지어내지 않는다: 오늘 코드는 수리했지만(아래 참고) 배포 전이라 여전히 0건이고, 과거분은 소급 불가.
+       2026-07-31 조치 완료: 폼 2종 + 서버 수리, funnel-v2 @193 배포 완료(시토). 배포 이전 누적 39건 소급 불가.
+       이후 블로그·카페 발행 게시물에서 문의가 들어오면 V열 4번째 세그먼트에 식별자가 쌓이기 시작한다.
        ════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-title">콘텐츠(게시물) 단위 귀속 <span style="font-size:10.5px;font-weight:400;color:var(--dim);">(어느 게시물이 문의를 만들었나 — 채널 단위 아님)</span></div>
@@ -1020,24 +1021,25 @@ function renderContentAttribution(curPubByCh, totalPub) {
   var trackable = (curPubByCh['네이버 블로그'] || 0) + (curPubByCh['네이버 카페'] || 0);
   var untrackable = totalPub - trackable;
   el.innerHTML =
-    '<div class="measure-pending" style="border-left-color:var(--red)">' +
-      '<b>지금은 게시물 단위 귀속 0건</b> — "이번 주 문의를 만든 콘텐츠 상위 3개"를 이 화면에서 답할 수 없습니다. ' +
-      '위 <b>채널별 성과</b>는 채널 단위(예: 인스타그램 전체 5건)까지만 잡고, 그 안의 <b>어느 게시물</b>인지는 애초에 데이터가 없습니다.' +
+    '<div class="measure-pending" style="border-left-color:var(--yellow)">' +
+      '<b>게시물 단위 귀속 — 배포 완료 · 데이터 쌓이는 중</b><br>' +
+      '"이번 주 문의를 만든 게시물 상위 3개"는 배포 이후 블로그·카페 게시물에서 문의가 들어올 때 처음 쌓입니다. ' +
+      '<b>배포 이전 누적 39건(카카오 26 · 당근 8 · 인스타 5)은 채널 단위까지만</b> 잡혀 있어 게시물까지 소급은 불가합니다.' +
     '</div>' +
     '<div style="font-size:12px;line-height:1.8;color:var(--text);margin-top:10px">' +
       '<b>원인(실측):</b> 블로그·카페는 발행할 때마다 게시물 고유 캠페인 태그가 문의 링크에 이미 심어지고 있었는데, ' +
       '문의 폼(<code style="color:var(--accent)">wp_inquiry_form.html</code>)이 그 태그를 읽지 않아 접수 순간 100% 버려지고 있었습니다 — ' +
       '카카오·당근·인스타그램 문제가 아니라 이 한 지점의 배선 누락이었습니다.<br>' +
-      '<b>오늘 조치:</b> 코드는 수리했습니다(폼 2종 + 서버). <b>배포는 아직입니다</b>(이 배 규칙상 GAS 배포 금지 — 시토가 모아서 배포). ' +
-      '배포 전까지는 여전히 0건이고, <b>배포 이후 새로 발행되는 글부터만</b> 게시물 단위로 쌓입니다(과거분 소급 불가).' +
+      '<b>2026-07-31 조치 완료:</b> 폼 2종 + 서버 코드 수리, <b>funnel-v2 @193 배포 완료(시토)</b>. ' +
+      '다음 진짜 문의부터 V열 4번째 세그먼트에 게시물 식별자가 쌓입니다(블로그·카페 한정 — 아래 구조적 한계 참고).' +
     '</div>' +
     '<div style="font-size:12px;line-height:1.8;color:var(--text);margin-top:10px">' +
-      '<b>배포돼도 전부 되진 않습니다(구조적 한계):</b> ' +
+      '<b>구조적 한계(배포 후에도):</b> ' +
       '카카오·당근은 원칙상 CTA에 추적 링크를 안 심습니다(주소가 그대로 보이는 깨끗함이 우선 — scripts/cta_utm.py 설계 ④). ' +
       '인스타그램은 게시물 링크 자체가 클릭이 안 돼(피드 특성) 계정 단위(공식/개인)까지만 잡히고 게시물 단위는 구조적으로 불가합니다. ' +
-      '그래서 배포 후에도 <b>게시물 단위 귀속이 가능한 채널은 블로그·카페뿐</b>입니다.' +
+      '그래서 <b>게시물 단위 귀속이 가능한 채널은 블로그·카페뿐</b>입니다.' +
     '</div>' +
-    '<div style="font-size:10.5px;color:var(--dim);margin-top:10px">' + esc(_periodLabel) + ' 발행 ' + totalPub + '건 중 게시물 단위 귀속이 가능해질 채널(블로그+카페) ' + trackable + '건 · ' +
+    '<div style="font-size:10.5px;color:var(--dim);margin-top:10px">' + esc(_periodLabel) + ' 발행 ' + totalPub + '건 중 게시물 단위 귀속 가능 채널(블로그+카페) ' + trackable + '건 · ' +
       '구조상 채널 단위까지만 가능한 채널(카카오·당근·인스타그램) ' + untrackable + '건.' +
     '</div>';
 }
