@@ -767,7 +767,7 @@
     <!-- ══ 📨 통합 알림 보드 (status/notify_registry.json 단일 SSOT · GM 지시 2026-07-20 · 카톡·텔레그램 발신 전체 한눈) ══ -->
     <div id="notify-board" class="autopanel" style="border-left-color:var(--gold);">
       <h2 class="sec" style="margin-top:0;">📨 통합 알림 보드 <span style="font-size:12px;font-weight:400;color:var(--dim);">(카톡·텔레그램 발신 전체 — 정기·조건부·이벤트)</span></h2>
-      <div class="sec-note" style="margin:0 0 10px;">아래=발신 전체 SSOT(<code>notify_registry.json</code>). 🟢 <b>가동</b> · 🟡 <b>조건부/킬스위치</b>(안 보내는 게 정상일 수 있음) · 🔴 <b>꺼짐</b>(게이트 OFF) · ⚫ <b>죽은 배선</b>(발송 안 감). <code>notify_registry_check.py</code>가 코드↔등록부 드리프트를 상시 대조.</div>
+      <div class="sec-note" style="margin:0 0 10px;">아래=발신 전체 SSOT(<code>notify_registry.json</code>). 🟢 <b>가동</b> · 🟡 <b>조건부/킬스위치</b>(안 보내는 게 정상일 수 있음) · 🔴 <b>꺼짐</b>(게이트 OFF) · ⚫ <b>죽은 배선</b>(발송 안 감). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
       <div id="notify-drift-banner" style="display:none;"></div>
       <div id="notify-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
       <div class="notify-filters" id="notify-filters">
@@ -2096,7 +2096,27 @@
     notifyWireDeadToggle(tbody);
   }
 
+  /* ★2026-07-31 시토(GM 표면 점검) — 여기 안내가 "notify_registry_check.py 가 상시 대조" 라고
+     단정하고 있었는데, 실측하니 그 이름의 예약작업이 하나도 없고 대조 결과 파일도 11일째
+     멈춰 있었다. 화면이 사실이 아닌 것을 사실처럼 말하고 있었던 것 — 라이브 화면의 신뢰는
+     숫자 하나가 아니라 이런 문장에서 깎인다.
+     ▸이제 단정하지 않고 **마지막 대조 시각을 그대로 보여준다.** 오래되면 오래됐다고 적는다. */
+  function renderNotifyDriftNote(drift){
+    var el = document.getElementById('notifyDriftNote');
+    if(!el) return;
+    var at = drift && (drift.generated_at_kst || drift.generated_at || drift.updated_at);
+    if(!at){ el.innerHTML = '코드↔등록부 대조 <b>기록 없음</b> — 최근 대조 이력을 찾지 못했습니다.'; return; }
+    var d = new Date(String(at).replace(' ', 'T'));
+    var days = isNaN(d) ? null : Math.floor((Date.now() - d.getTime()) / 86400000);
+    var when = String(at).slice(0, 16);
+    if(days === null){ el.innerHTML = '코드↔등록부 대조 기준 ' + when + '.'; return; }
+    el.innerHTML = days >= 2
+      ? '코드↔등록부 대조가 <b style="color:var(--yellow)">' + days + '일째 멈춰</b> 있습니다 (마지막 ' + when + ').'
+      : '코드↔등록부 대조 <b>' + when + '</b> 기준.';
+  }
+
   function renderNotifyBoard(reg, drift, erp, kakaoLast){
+    renderNotifyDriftNote(drift);
     var tbody = document.getElementById('notify-board-tbody');
     var summaryEl = document.getElementById('notify-board-summary');
     var bannerEl = document.getElementById('notify-drift-banner');
