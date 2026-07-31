@@ -97,7 +97,7 @@ a { color:var(--accent); text-decoration:none; }
 }
 .field-row select, .field-row input { flex:1; min-width:80px; }
 .card textarea { width:100%; box-sizing:border-box; resize:vertical; }
-.save-row { display:flex; justify-content:flex-end; }
+.save-row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
 .save-btn {
   font-size:12px; font-weight:700; padding:5px 14px; border-radius:7px;
   background:var(--accent-bg); color:var(--accent); border:1px solid rgba(183,159,138,0.4);
@@ -285,6 +285,10 @@ a { color:var(--accent); text-decoration:none; }
 var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
 /* 직원 현황(gate.js 뒤) 사진 노출 키 — 이 값이면 reg_board가 사진 원본 반환(썸네일용). 공개는 계속 '비공개'. */
 var REG_PV = 'wlp_reg_pv_2026';
+
+/* 접수 삭제 비밀번호 (GM 지정 2026-07-31) — 테스트 접수 정리용.
+   화면 커튼이자 서버가 같은 값을 다시 확인한다(GAS _regDelete). 둘 다 맞아야 지워진다. */
+var REG_DEL_PIN = '1200';
 
 /* 🧳 습득물 직원 처리(수령·삭제) — lost_found_gallery.html 포팅 상수 (REG_API=VOC_API 동일 GAS) */
 var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
@@ -589,7 +593,10 @@ function _card(r){
   h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
 
   /* 저장 */
-  h += '<div class="save-row"><button data-reg-save type="button" class="save-btn">저장</button></div>';
+  /* 삭제(테스트 접수 정리용) — 비밀번호 확인 후에만. 접수ID 정확일치 1건만 지운다.
+     ★행 번호로 지우지 않는다(실고객 오삭제 재발 방지 · INC-020). */
+  h += '<div class="save-row"><button type="button" class="lf-btn lf-del" data-reg-del="' + _esc(rawId) + '" data-reg-del-cat="' + _esc(rawCat) + '" data-reg-del-desc="' + _esc(String(r.content||r.name||'').slice(0,40)) + '" title="테스트 접수 삭제(비밀번호 필요)">🗑 삭제</button>';
+  h += '<button data-reg-save type="button" class="save-btn">저장</button></div>';
   h += '</div>';
   return h;
 }
@@ -776,6 +783,30 @@ function _wireBoard(){
       if(hd) payload.handler = hd.value;
       if(sd) payload.slaDays = sd.value;
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
+      return;
+    }
+    /* 접수 삭제 — 테스트 접수 정리용. 비밀번호 확인 후 접수ID 정확일치 1건만.
+       ★안전 3겹: ①무엇을 지우는지 보여주고 확인 ②비밀번호 ③서버가 접수ID로만 찾아 1행 삭제
+       (행 번호로 지우지 않는다 — 실고객 오삭제 재발 방지). */
+    var regDelBtn = e.target.closest('[data-reg-del]');
+    if(regDelBtn){
+      var rId = regDelBtn.dataset.regDel;
+      var rCat = regDelBtn.dataset.regDelCat || '';
+      var rDesc = regDelBtn.dataset.regDelDesc || '';
+      if(!rId) return;
+      if(!confirm('아래 접수를 삭제합니다. 되돌릴 수 없습니다.\n\n접수ID: ' + rId + (rDesc ? ('\n내용: ' + rDesc) : ''))) return;
+      var pin = prompt('삭제 비밀번호를 입력해 주세요.');
+      if(pin === null) return;
+      if(String(pin).trim() !== REG_DEL_PIN){ toast('비밀번호가 올바르지 않습니다', true); return; }
+      regDelBtn.disabled = true;
+      fetch(REG_API, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
+        body:JSON.stringify({ action:'reg_delete', id:rId, category:rCat, pin:String(pin).trim() }),
+        redirect:'follow'
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if(d && d.ok){ toast(rId + ' 삭제 완료'); regLoad(); }
+        else { toast((d && d.error) || '삭제 실패', true); regDelBtn.disabled = false; }
+      }).catch(function(){ toast('네트워크 오류 — 삭제되지 않았습니다.', true); regDelBtn.disabled = false; });
       return;
     }
     var claimBtn = e.target.closest('[data-lf-claim]');

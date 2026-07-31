@@ -1122,10 +1122,22 @@ function _regUpdate(body) {
   return _vJson({ ok: false, error: '해당 접수ID를 찾을 수 없습니다: ' + id });
 }
 
+// 접수 삭제 비밀번호 기본값 (GM 지정 2026-07-31). ScriptProperties 의 REG_DELETE_PIN 이 있으면 그쪽이 이긴다.
+var REG_DELETE_PIN_DEFAULT = '1200';
+
 // ─── reg_delete — 접수ID로 행 정밀 삭제 (GATED·내부) ───
 // category 지정 시 해당 시트만, 없으면 전 reg 시트 순회하며 첫 일치 행 삭제. 배포검증 더미 청소용.
 // 안전: id 정확매칭(_vFindRow, col A) 1행만 삭제. id 없으면 거부. GATED(공개 액션 목록 미포함).
+// ★2026-07-31(GM 지정) — 현황 화면에 삭제 버튼이 생기면서 비밀번호 확인을 **서버에서도** 한다.
+//   화면에서만 물으면 액션 이름을 아는 누구나 그냥 부를 수 있다(TOKEN_ENFORCE 는 기본 OFF).
+//   pin 은 ScriptProperties 의 REG_DELETE_PIN 을 우선 쓰고, 없으면 GM 이 정한 기본값을 쓴다
+//   — 나중에 값을 바꿀 때 코드 재배포 없이 속성만 고치면 되게.
 function _regDelete(body) {
+  var _pinWant = _vAccessProp_('REG_DELETE_PIN') || REG_DELETE_PIN_DEFAULT;
+  var _pinGot = String((body && (body.pin || body.pw)) || '').trim();
+  if (_pinGot !== String(_pinWant)) {
+    return _vJson({ ok: false, error: '삭제 비밀번호가 올바르지 않습니다.', code: 'BAD_PIN' });
+  }
   var id = String((body && (body.id || body['접수ID'])) || '').trim();
   if (!id) return _vJson({ ok: false, error: 'id 필수' });
   var catRaw = String((body && body.category) || '').trim();
