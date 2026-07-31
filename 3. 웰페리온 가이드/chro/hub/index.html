@@ -342,6 +342,9 @@
   .modal-act .btn{flex:1;justify-content:center;text-align:center}
 
   /* ---- 조직 운영가이드 모달 본문(og-*) — 표·중첩리스트 렌더용(2026-07-31 개정2 A-5, 개정3 백엔드전환 A-5) ---- */
+  /* [개정4 2026-07-31 A-5] "운영기준 보기" 중복 라벨 제거(매니저 지시) — 카드 자체 클릭으로 열림을
+     hover 시 테두리 강조로만 신호. 별도 안내 텍스트 없음. */
+  .org-guide-card:hover{border-color:var(--gold)!important}
   #orgGuideModal .modal{max-width:900px}
   .og-item{margin-bottom:19px}
   .og-item:last-child{margin-bottom:2px}
@@ -1242,7 +1245,6 @@ function orgChartHtml(active,opts){
         :'<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px">';
       c+='<div style="font-size:12.5px;font-weight:800;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline;gap:6px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:7px">'+esc(dn)+'<span style="font-size:10px;color:var(--ink-faint);font-weight:600">'+mem.length+'명</span></div>';
       c+=mem.map(function(p){return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:2px 0"><span style="color:var(--ink);font-weight:600">'+esc(p.nm)+'</span><span style="color:var(--ink-soft);text-align:right">'+esc(p.jg||"—")+'</span></div>';}).join("");
-      if(opts.clickable) c+='<div style="margin-top:6px;padding-top:5px;border-top:1px dashed var(--line);font-size:10.5px;color:var(--gold-deep);font-weight:700;text-align:right">▸ 운영기준 보기</div>';
       c+='</div>';
       return c;
     }).filter(Boolean).join("");
