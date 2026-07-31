@@ -949,27 +949,86 @@ function _regList(params) {
     return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1;
   });
 
+  // 담당·처리자 이름을 통일한 값을 같이 실어 보낸다(2026-07-31 웰리).
+  // ★소비자(알림·보드)는 이 값으로 묶기만 하고 판정을 다시 만들지 않는다 — 규칙이 두 벌이 되면
+  //   지금과 똑같이 갈라진다(약속 L01). 실제로 점수판은 통일하고 22:30 적체 알림은 안 해서
+  //   같은 메시지 안에서 최준용M(3건)·최준용(5건)이 따로 떴다.
+  all.forEach(function (r) {
+    r.assigneeCanon = _regStaffCanonList(r.assignee);
+    r.handlerCanon  = _regStaffCanonList(r.handler);
+  });
+
   return _vJson({ ok: true, count: all.length, data: all });
 }
 
-// ─── 직원 이름 표기 통일 (2026-07-28 시우) ───
-// 왜: 예전엔 담당·처리자를 손으로 타이핑해서 같은 사람이 여러 이름으로 남았다
+// 담당자 입력 자동완성용 — 지금까지 실제로 쓰인 이름(통일된 표기)을 많이 쓰인 순으로.
+// 드롭다운(선택제)이 아니라 '제안'이다. GM 제약: 담당자가 회원일 수 있어 자유 입력을 막지 않는다.
+// 고르는 사람은 표기가 통일되고, 새 이름은 그냥 쳐 넣으면 된다.
+function _regStaffSuggest() {
+  var count = {};
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    _regReadAll(sh, _regHeadersFor(cat.key)).forEach(function (r) {
+      _regStaffCanonList(r.assignee).concat(_regStaffCanonList(r.handler)).forEach(function (n) {
+        count[n] = (count[n] || 0) + 1;
+      });
+    });
+  });
+  var names = Object.keys(count).sort(function (a, b) { return count[b] - count[a]; });
+  return _vJson({ ok: true, names: names.slice(0, 40) });
+}
+
+// ─── 직원 이름 표기 통일 (2026-07-28 시우 · 2026-07-31 웰리 규칙화) ───
+// 왜: 담당·처리자를 손으로 타이핑해서 같은 사람이 여러 이름으로 남는다
 //   (최준용/최준용M · 백승화/벡승화(오타)/백승화사원 · 윤병현/윤병현AM · 이경연/이경연실장).
-//   점수판에서 한 사람이 둘로 갈라지면 순위가 거짓이 되고, 그 순간 아무도 점수를 안 믿는다.
-//   지금은 화면이 드롭다운이라 새 값은 안 갈라진다 — 이 표는 옛 기록을 흡수하는 용도다.
+//   한 사람이 둘로 갈라지면 순위가 거짓이 되고, 그 순간 아무도 점수를 안 믿는다.
 // ▸판정은 여기 한 곳에서만 한다(점수판·보드·알림이 각자 세면 또 갈라진다).
-var REG_STAFF_ALIASES = {
-  '최준용': '최준용M',
-  '백승화': '백승화사원', '벡승화': '백승화사원',
-  '윤병현': '윤병현AM',
-  '이경연': '이경연실장',
-  '김남욱': '김남욱GM',
-  '임정은': '임정은M',
-  '나우열': '나우열M'
+//
+// ★2026-07-31 웰리 — 명단 방식을 규칙 방식으로 바꿨다. GM 실측 지적:
+//   "알림방 보니까 최준용M 3건, 최준용 3건 이렇게 같은 사람 체크가 안 된다."
+//   옛 주석은 "화면이 드롭다운이라 새 값은 안 갈라진다"고 적혀 있었지만 사실이 아니었다 —
+//   담당자 칸은 자유 입력이고(회원이 담당이 될 수 있어 GM 이 선택제를 안 쓰기로 함),
+//   그래서 명단에 없는 표기는 계속 새로 갈라졌다. 명단 7명으로는 못 막는다.
+// 규칙: 공백을 없애고 끝의 직급 표기를 떼서 남는 것이 같으면 같은 사람으로 본다.
+//   최준용M · 최준용 · '최준용 M' → 전부 열쇠 '최준용'.
+//   회원 이름은 직급이 안 붙으므로 규칙을 그대로 통과한다(회원 담당을 막지 않는다).
+var REG_STAFF_TITLE_RE = /(GM|AM|M|매니저|사원|주임|대리|과장|차장|부장|실장|소장|팀장|님)$/;
+// 규칙으로 못 잡는 것만 남긴다(오타 등). 명단이 아니라 예외표다 — 늘리지 말 것.
+var REG_STAFF_TYPO = { '벡승화': '백승화' };
+// 열쇠 → 화면에 보여줄 대표 표기(직급 포함). 없으면 열쇠를 그대로 쓴다(회원·외부인).
+var REG_STAFF_DISPLAY = {
+  '최준용': '최준용M', '백승화': '백승화사원', '윤병현': '윤병현AM',
+  '이경연': '이경연실장', '김남욱': '김남욱GM', '임정은': '임정은M', '나우열': '나우열M'
 };
+
+function _regStaffKey(name) {
+  var s = String(name || '').replace(/\s+/g, '');
+  if (!s) return '';
+  var prev;
+  do {                       // '최준용 M님' 처럼 두 겹으로 붙는 경우까지 벗긴다
+    prev = s;
+    if (s.length > 2) s = s.replace(REG_STAFF_TITLE_RE, '');
+  } while (s !== prev);
+  return REG_STAFF_TYPO[s] || s;
+}
+
 function _regStaffCanon(name) {
-  name = String(name || '').trim();
-  return REG_STAFF_ALIASES[name] || name;
+  var key = _regStaffKey(name);
+  if (!key) return '';
+  return REG_STAFF_DISPLAY[key] || key;
+}
+
+// 한 칸에 두 사람이 적히는 경우('이경연/ 임정은')를 각각으로 나눈다 — 지금은 그 표기가
+// 제3의 사람처럼 잡혀 두 사람 어느 쪽 목록에도 안 뜬다. 2026-07-31 실측 확인.
+function _regStaffCanonList(raw) {
+  var parts = String(raw || '').split(/[\/,·]|및/);
+  var out = [], seen = {};
+  parts.forEach(function (p) {
+    var c = _regStaffCanon(p);
+    if (c && !seen[c]) { seen[c] = 1; out.push(c); }
+  });
+  return out;
 }
 
 // ─── reg_scoreboard — 접수·처리 점수판 (GM 지시 2026-07-28) ───
@@ -998,7 +1057,8 @@ function _regScoreboard(params) {
   var NON_STAFF = { '회원': 1, '익명': 1, '자동(점검)': 1, '지원부 점검': 1 };
   var tally = {};   // 이름 → {intake, done}
   var _add = function (who, field) {
-    who = _regStaffCanon(String(who || '').trim());
+    // 한 칸에 두 사람이면 대표(첫 사람)에게만 준다 — 한 건 1점 원칙을 지킨다(2026-07-31 웰리).
+    who = (_regStaffCanonList(who)[0] || '');
     if (!who || NON_STAFF[who]) return;
     if (!tally[who]) tally[who] = { intake: 0, done: 0 };
     tally[who][field]++;
@@ -1893,6 +1953,7 @@ function _vProcess(action, body, params) {
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
+  if (action === 'reg_staff_suggest') return _regStaffSuggest();  // 담당자 입력 자동완성 제안(공개 read·PII 없음). 2026-07-31 웰리.
   if (action === 'reg_board') {
     // 마스킹 공개 보드 — _regList 결과에 _regMask 적용 후 카드별 SLA(처리기한) 계산
     // 필터 없는 호출(페이지 실사용 경로)만 45초 서버 캐시 — 재조회·다수 열람 즉답. 쓰기(reg_submit/update/delete/renumber) 시 즉시 무효화.

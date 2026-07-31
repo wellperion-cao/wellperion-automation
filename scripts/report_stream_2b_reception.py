@@ -117,7 +117,11 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
             overdue.append({
                 "regId": str(r.get("regId") or ""),
                 "cat": cat,
-                "assignee": str(r.get("assignee") or "").strip(),
+                # 서버가 통일해 준 담당자 표기를 그대로 쓴다(2026-07-31 웰리).
+                # ★여기서 이름을 다시 판정하지 않는다 — 규칙이 두 벌이 되면 또 갈라진다(약속 L01).
+                #   서버가 아직 그 값을 안 주면(옛 배포) 원문으로 떨어져 지금 동작을 유지한다.
+                "owners": [str(x).strip() for x in (r.get("assigneeCanon") or []) if str(x).strip()]
+                          or ([str(r.get("assignee") or "").strip()] if str(r.get("assignee") or "").strip() else []),
                 "content": " ".join(str(r.get("content") or "").split())[:28],  # 개행 제거 — 1건 1줄 유지
                 "elapsed_h": elapsed_h,
                 "sla": sla,
@@ -133,10 +137,12 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
         flag = "🔴" if ratio >= 3 else "⚠️"
         return f"  {flag} [{it['cat']}] {it['content']} — {_fmt_age(it['elapsed_h'])} 경과 ({it['regId']})"
 
+    # 한 건에 담당이 둘이면 양쪽 목록에 모두 띄운다 — 그 전엔 '이경연/ 임정은' 이 제3의
+    # 사람처럼 잡혀 두 사람 어느 쪽 목록에도 안 떴다(2026-07-31 실측).
     by_owner: dict[str, list[dict]] = {}
     for it in overdue:
-        owner = it["assignee"] or "미배정"
-        by_owner.setdefault(owner, []).append(it)
+        for owner in (it["owners"] or ["미배정"]):
+            by_owner.setdefault(owner, []).append(it)
 
     # 미배정을 맨 위(별도 표기)로 두고, 이후 담당자는 최고령 건 기준 오래된 순.
     if "미배정" in by_owner:
