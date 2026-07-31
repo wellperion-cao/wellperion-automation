@@ -187,6 +187,25 @@ def _field_for(kind: str) -> str:
     return "program" if kind == "membership" else "sport"
 
 
+# 종목 표기가 두 벌로 갈리는 것을 한 이름으로 모은다(2026-07-31 GM 지시).
+# GM: "뮤지컬이랑 영어뮤지컬이랑은 같은 건데, 영어뮤지컬로 다 통일 시켜줘."
+# 원천(유소년 문의 시트)에는 '뮤지컬 (Brad Little Star Academy)' 로 들어오고, 화면에서는
+# 앞부분만 잘려 '뮤지컬'·'영어 뮤지컬' 두 갈래로 보였다 — 같은 반이 두 팀처럼 갈라져
+# 각각 7건·3건으로 떴다. 갈라지면 어느 쪽도 자기 일로 안 읽는다.
+# ★표기 통일이지 판정 로직이 아니다 — 시트 값은 건드리지 않는다(원천 불변).
+_SPORT_CANON = (
+    ("뮤지컬", "영어 뮤지컬"),
+)
+
+
+def _sport_canon(sport: str) -> str:
+    s = (sport or "").strip()
+    for needle, canon in _SPORT_CANON:
+        if needle in s:
+            return canon
+    return s
+
+
 def _team_for(kind: str, sport: str = "") -> str:
     """그 문의를 실제로 맡는 팀 — 2026-07-31 GM 확정.
 
@@ -197,7 +216,7 @@ def _team_for(kind: str, sport: str = "") -> str:
     """
     if kind == "membership":
         return "운영부(멤버십)"
-    sp = (sport or "").strip()
+    sp = _sport_canon(sport)
     return f"강습팀·{sp}" if sp and sp != "-" else "강습팀"
 
 
@@ -300,7 +319,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
             d = _days_since(str(r.get("timestamp", "") or ""), today)
             if _is_unassigned_active(r, kind != "membership") and 3 <= d <= 30:
                 nm = str(r.get("name", "") or "-").strip() or "-"
-                sp = _short_program(str(r.get(_field_for(kind), "") or "").strip())
+                sp = _sport_canon(_short_program(str(r.get(_field_for(kind), "") or "").strip()))
                 sub = f"{_type_label(kind)}·{sp}" if sp and sp != "-" else _type_label(kind)
                 stale_unassigned.append((nm, sub))
                 stale_by_team.setdefault(_team_for(kind, sp), []).append(nm)
