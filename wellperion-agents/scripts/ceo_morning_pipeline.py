@@ -1288,13 +1288,103 @@ def split_for_telegram(text: str, limit: int = TELEGRAM_MSG_LIMIT) -> list[str]:
     return messages
 
 
+# ── 텔레그램용 렌더 (2026-07-31 GM 결정 "읽힐 모양으로 바꿔라") ──
+# 배경: 08:00 보고가 마크다운 표(| 배 | 담당 | …)를 그대로 보내고 있었다. 텔레그램은 표를 그리지
+# 못해 GM 화면엔 파이프 기호가 그대로 찍혔고, 칸이 좁아 문장이 잘려 무슨 일인지 읽히지 않았다.
+# 읽히게 만드는 수단은 텔레그램에선 줄바꿈·기호·들여쓰기 셋뿐이다(AI 진행현황방 양식과 같은 규칙).
+# ★웹 G1 보드·셸 항로는 그대로 표를 쓴다(약속 L16) — 바꾸는 것은 텔레그램 발신 경로 한 곳뿐이다.
+_TG_BOX_CHARS = "┌┬┐├┼┤└┴┘│─"
+_ROLE_TAG = re.compile(r"^\[(웰리|시우|시포|시모|시토|시뽀|시로)\]\s*")
+
+
+def _tg_row(cells: list[str]) -> list[str]:
+    """표 한 행(배·담당·진행명·간단설명·핵심조언) → 텔레그램 2줄."""
+    ship, owner, title, desc, advice = (cells + [""] * 5)[:5]
+    title = _ROLE_TAG.sub("", title).strip()
+    # 제목이 길면 폰에서 서너 줄로 접혀 훑기가 안 된다 — 제목 줄만 봐도 뜻이 통하게 앞부분만.
+    if len(title) > 46:
+        cut = title[:46]
+        sp = max(cut.rfind(" "), cut.rfind("—"))
+        title = (cut[:sp] if sp > 23 else cut).rstrip(" —") + "…"
+    # 배 칸에서 난이도 아이콘을 뺀 꼬리표(보류·🔗·🌀·🔍미확인)만 뜻을 갖는다 — 그것만 남긴다.
+    tags = " ".join(t for t in ship.split() if t not in ("⛵", "⛴️", "🛳️")).strip()
+    head = f"▪ {title} — {owner}" + (f" {tags}" if tags else "")
+    body = (desc or advice or "").strip()
+    return [head] + ([f"   {body}"] if body else [])
+
+
+def _board_to_telegram(board_text: str) -> str:
+    """항로 보드 텍스트의 표·상단 박스를 텔레그램에서 읽히는 모양으로 바꾼다.
+
+    표를 못 만나면 원문을 그대로 흘려보낸다(양식이 바뀌어도 보고가 끊기지 않게).
+    """
+    out: list[str] = []
+    pending_header: str | None = None
+    pending_rows: list[str] = []
+
+    def flush_header():
+        """섹터는 '제목 N척' 을 먼저 내보내야 하므로, 행을 다 센 뒤 한꺼번에 편다."""
+        nonlocal pending_header, pending_rows
+        if pending_header is not None:
+            n = sum(1 for r in pending_rows if r.startswith("▪"))
+            out.append(pending_header + (f" {n}척" if n else ""))
+            out.append("")
+            out.extend(pending_rows)
+            pending_header = None
+            pending_rows = []
+
+    lines = board_text.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        if stripped and all(c in _TG_BOX_CHARS + " " for c in stripped):
+            i += 1  # 상단 요약 박스 — 텔레그램에선 칸이 안 맞아 글자 쓰레기가 된다
+            continue
+        if stripped.startswith("│"):
+            i += 1
+            continue
+        if stripped.startswith("### "):
+            flush_header()
+            pending_header = stripped[4:].strip()
+            i += 1
+            continue
+        if stripped.startswith("|"):
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            if len(cells) == 5 and cells[0] in ("배", "---") or set(stripped) <= set("|- "):
+                i += 1   # 머리글·구분줄
+                continue
+            if len(cells) == 5:
+                rendered = _tg_row(cells) + [""]
+                if pending_header is not None:
+                    pending_rows.extend(rendered)
+                else:
+                    out.extend(rendered)
+                i += 1
+                continue
+        if stripped and pending_header is not None:
+            # 표 다음에 붙는 꼬리줄(그 외 N척 …)은 그 섹터 안에 남긴다
+            pending_rows.append(line.replace("_(없음)_", "(없음)"))
+            i += 1
+            continue
+        flush_header()
+        out.append(line.replace("_(없음)_", "(없음)"))
+        i += 1
+    flush_header()
+
+    text = "\n".join(out)
+    # 마크다운 기울임 표시(_…_)는 텔레그램에서 밑줄 기호가 그대로 보인다 — 걷어낸다.
+    text = re.sub(r"_([^_\n]{1,80})_", r"\1", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
+
+
 def _board_text_and_secs(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, dict]:
     """hangro_board.build_board() 호출 + 텔레그램 길이 접기(공유 헬퍼).
     build_telegram_report / build_split_reports 양쪽이 동일 조립을 재사용(중복 구현 금지)."""
     board_text, secs = hangro_build_board(gas_items, queue_items)
     board_text = _fold_board_waiting_section(board_text, secs)
     board_text = _fold_board_done_section(board_text, secs)
-    return board_text, secs
+    return _board_to_telegram(board_text), secs
 
 
 def _board_item_count(secs: dict) -> int:
