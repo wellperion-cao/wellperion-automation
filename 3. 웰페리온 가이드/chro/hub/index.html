@@ -341,6 +341,39 @@
   .modal-act{display:flex;gap:8px;margin-top:16px}
   .modal-act .btn{flex:1;justify-content:center;text-align:center}
 
+  /* ---- 조직 운영가이드 모달 본문(og-*) — 표·중첩리스트 렌더용(2026-07-31 개정2 A-5) ---- */
+  #orgGuideModal .modal{max-width:640px}
+  .og-item{margin-bottom:19px}
+  .og-item:last-child{margin-bottom:2px}
+  .og-item-title{font-family:var(--serif);font-size:13.5px;font-weight:700;color:var(--gold-deep);
+    letter-spacing:.01em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--line-soft)}
+  .og-p{font-size:13px;color:var(--ink);line-height:1.68;margin:4px 0}
+  .og-p.muted{color:var(--ink-faint)}
+  .og-subhead{font-size:11px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;
+    letter-spacing:.03em;margin:11px 0 5px}
+  .og-subhead:first-child{margin-top:0}
+  .og-ol{margin:2px 0 6px;padding-left:18px}
+  .og-ol>li{font-size:13px;color:var(--ink);line-height:1.62;margin:7px 0;font-weight:700}
+  .og-sub{list-style:disc;margin:4px 0 2px 3px;padding-left:16px}
+  .og-sub>li{font-size:12.5px;color:var(--ink-soft);font-weight:400;line-height:1.6;margin:3px 0}
+  .og-flat{list-style:disc;margin:2px 0 6px;padding-left:18px}
+  .og-flat>li{font-size:13px;color:var(--ink);line-height:1.62;margin:5px 0;font-weight:500}
+  .og-flat>li.og-note{color:var(--ink-soft);font-size:12.5px;font-weight:400;font-style:italic;list-style:circle}
+  .og-sub>li.og-note{font-style:italic}
+  .og-tbl-wrap{overflow-x:auto;margin:2px 0 6px;border:1px solid var(--line);border-radius:9px}
+  .og-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+  .og-tbl th{background:var(--surface-2);color:var(--gold-deep);font-weight:700;text-align:left;
+    padding:7px 11px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .og-tbl td{padding:7px 11px;border-bottom:1px solid var(--line-soft);color:var(--ink);
+    vertical-align:top;line-height:1.55}
+  .og-tbl tr:last-child td{border-bottom:none}
+  .og-tbl td.og-role{font-weight:700;color:var(--ink);white-space:nowrap;background:var(--bg-soft)}
+  @media(max-width:680px){
+    #orgGuideModal .modal{max-width:94vw;padding:20px 15px 16px}
+    .og-tbl th,.og-tbl td{padding:6px 8px;font-size:11.5px}
+    .og-tbl th,.og-tbl td.og-role{white-space:normal}
+  }
+
   /* ---- 온보딩 신입 카드 내부 ---- */
   .ob-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
   .ob-card-id{min-width:0}
@@ -1220,6 +1253,63 @@ function orgChartHtml(active,opts){
   return h;
 }
 
+/* [추가 2026-07-31 개정2 A-5] 운영기준 값(줄 단위 마크업)을 실제 표/리스트 HTML로 그리는 렌더러.
+   문법은 org_guide_data.js 파일 상단 주석 참고. 화면 로직은 여기 1곳에만 — 파싱 규칙 변경 시
+   이 두 함수만 고치면 6개 팀 전체에 일괄 반영된다. */
+function ogTable_(key,raw){
+  var rows=String(raw||"").split("\n").map(function(s){return s.trim();}).filter(Boolean)
+    .map(function(l){return l.split("|").map(function(c){return c.trim();});});
+  if(!rows.length)return "";
+  var cols=rows[0].length;
+  var head=(key==="휴무 기준")?["역할","휴무"]:(cols>=3?["역할","평일","주말"]:["역할","근무 시간"]);
+  var h='<div class="og-tbl-wrap"><table class="og-tbl"><thead><tr>'+
+    head.map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+'</tr></thead><tbody>';
+  rows.forEach(function(r){
+    h+='<tr>'+r.map(function(c,i){return '<td'+(i===0?' class="og-role"':'')+'>'+esc(c)+'</td>';}).join("")+'</tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+function ogRich_(raw){
+  var lines=String(raw||"").split("\n");
+  var html="",olOpen=false,liOpen=false,subUlOpen=false,flatUlOpen=false;
+  function closeSub(){if(subUlOpen){html+="</ul>";subUlOpen=false;}}
+  function closeLi(){closeSub();if(liOpen){html+="</li>";liOpen=false;}}
+  function closeOl(){closeLi();if(olOpen){html+="</ol>";olOpen=false;}}
+  function closeFlat(){if(flatUlOpen){html+="</ul>";flatUlOpen=false;}}
+  function closeAll(){closeOl();closeFlat();}
+  lines.forEach(function(raw0){
+    var l=raw0.trim();
+    if(!l){closeAll();return;}
+    if(/^#\s?/.test(l)){closeAll();html+='<div class="og-subhead">'+esc(l.replace(/^#\s?/,""))+'</div>';return;}
+    var mNum=l.match(/^(\d+)\.\s*(.*)$/);
+    if(mNum){
+      closeFlat();closeLi();
+      if(!olOpen){html+='<ol class="og-ol">';olOpen=true;}
+      html+='<li>'+esc(mNum[2]);liOpen=true;
+      return;
+    }
+    var mB=l.match(/^[-*]\s*(.*)$/);
+    if(mB){
+      var isNote=l.charAt(0)==="*";
+      var cls=isNote?' class="og-note"':'';
+      if(olOpen&&liOpen){
+        if(!subUlOpen){html+='<ul class="og-sub">';subUlOpen=true;}
+        html+='<li'+cls+'>'+esc(mB[1])+'</li>';
+      } else {
+        closeOl();
+        if(!flatUlOpen){html+='<ul class="og-flat">';flatUlOpen=true;}
+        html+='<li'+cls+'>'+esc(mB[1])+'</li>';
+      }
+      return;
+    }
+    closeAll();
+    html+='<p class="og-p">'+esc(l)+'</p>';
+  });
+  closeAll();
+  return html;
+}
+
 /* [추가 2026-07-31 A-5] 조직 운영가이드 — 조직도 카드 클릭 시 해당 부서 운영기준 모달.
    내용은 org_guide_data.js(ORG_GUIDE) 1곳에서만 옴 — 이 함수에는 본문을 하드코딩하지 않는다. */
 function openOrgGuideModal(dept){
@@ -1242,10 +1332,11 @@ function openOrgGuideModal(dept){
   } else if(!hasAny){
     body+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a6a2f;text-align:center">⚠ 이 조직은 아직 운영기준 내용이 없습니다(매니저 확인 대기). 내용이 들어오면 이 화면에 자동 반영됩니다.</div>';
   } else {
+    var isTableItem={"근무 시간·교대":1,"휴무 기준":1};
     body+=items.map(function(k){
       var v=String((data[k]||"")).trim();
-      return '<div style="margin-bottom:13px"><div style="font-size:12.5px;font-weight:800;color:var(--gold-deep);margin-bottom:3px">'+esc(k)+'</div>'+
-        '<div style="font-size:13px;color:'+(v?"var(--ink)":"var(--ink-faint)")+';white-space:pre-wrap;line-height:1.6">'+(v?esc(v):"작성 예정")+'</div></div>';
+      var inner=v?(isTableItem[k]?ogTable_(k,v):ogRich_(v)):'<p class="og-p muted">작성 예정</p>';
+      return '<div class="og-item"><div class="og-item-title">'+esc(k)+'</div>'+inner+'</div>';
     }).join("");
   }
   var bEl=document.getElementById("orgGuideBody");if(bEl)bEl.innerHTML=body;
@@ -4349,7 +4440,7 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
 
 <!-- ★ 조직 운영가이드 모달 (2026-07-31 A-5 신설) ★ -->
 <div class="modal-bg" id="orgGuideModal" style="display:none" onclick="if(event.target.id==='orgGuideModal')closeOrgGuideModal()">
-  <div class="modal" style="max-width:560px;max-height:85vh;overflow-y:auto">
+  <div class="modal" style="max-height:85vh;overflow-y:auto">
     <h3 id="orgGuideTitle" style="margin:0 0 12px">조직 운영기준</h3>
     <div id="orgGuideBody"></div>
     <div class="modal-act" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
