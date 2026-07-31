@@ -93,3 +93,21 @@
 위치: `3. 웰페리온 가이드/wellperion_guide(main).html`
 배포: https://wellperion-cao.github.io/wellperion-automation/
 GM 업무·AI C-Level 협업 매뉴얼·교육자료·고도화 프롬프트 단일 마스터. 세부 지식은 허브를 펼쳐 참조 (허브=원본, CLAUDE.md=인덱스).
+
+## 7. 외부 도구 3종 (2026-07-31 GM 지시로 설치)
+
+| 도구 | 무엇 | 언제 |
+|---|---|---|
+| **ponytail** | 최소 구현 강제(가장 게으른 시니어) — 스킬 6종 | 코드 쓰기·리팩터·리뷰 시 자동. `/ponytail-review`(과설계 리뷰)·`/ponytail-audit`(전체 감사) |
+| **graphify** | `scripts/` 코드 그래프(4,275노드·9,489엣지) — grep 여러 번 대신 1회 조회 | 코드 위치·호출관계 질문 시 |
+| **headroom** | 도구 출력·로그를 LLM 전에 압축(로컬) | 프록시 경유 시 발효 — **미가동(GM 결재 대기)** |
+
+**graphify 사용법(그래프 위치 = `scripts/graphify-out/graph.json`)**
+```
+graphify explain "함수명"  --graph scripts/graphify-out/graph.json
+graphify path "A" "B"      --graph scripts/graphify-out/graph.json
+graphify update scripts    # 코드 고친 뒤 갱신(AST만·토큰 0)
+```
+- 범위를 `scripts/` 로 잡은 이유 = 저장소 전체를 넣으면 250KB HTML·3MB JSON 까지 빨아들여 느리고 쓸모가 준다. 코드 탐색이 필요한 곳은 `scripts/` 다.
+- 산출물(12MB)은 `.gitignore` — 언제든 재생성.
+- **매 도구호출 훅은 제거했다**(약속 L21). 호출당 210ms 를 모든 Bash·Grep·Read 에 물리는데, 그래프가 커버하는 범위는 `scripts/` 뿐이라 값을 못 한다. 스킬은 그대로 살아 있어 필요할 때 뜬다.

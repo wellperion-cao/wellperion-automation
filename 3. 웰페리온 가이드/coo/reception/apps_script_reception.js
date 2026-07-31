@@ -1934,6 +1934,11 @@ function _vDiag() {
     system:           'reception',
     hasToken:         !!_vprop('TELEGRAM_BOT_TOKEN'),
     hasChatId:        !!_vprop('TELEGRAM_CHAT_ID'),
+    // 어느 방으로 나가는지 — 발신 등록부의 room 값이 실제와 맞는지 대조하려면 이게 필요하다.
+    // 2026-07-31 실측: 등록부에는 '핵심멤버방'(2026-06-24 3분류로 사라진 옛 이름)이 적혀 있는데
+    // 실제 목적지를 확인할 방법이 없어 대조가 불가능했다. chat_id 는 방 식별자일 뿐 개인정보가
+    // 아니므로 그대로 노출한다(그룹 chat_id 는 이미 저장소 여러 곳에 공개돼 있다).
+    chatId:           String(_vprop('TELEGRAM_CHAT_ID') || ''),
     hasSpreadsheetId: !!_vprop('SPREADSHEET_ID'),
     seq:              parseInt(_vpropCompat('RECEPTION_SEQ', 'VOC_SEQ') || '0', 10),
     lfSeq:            parseInt(_vprop('LF_SEQ') || '0', 10)
