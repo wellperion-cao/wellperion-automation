@@ -1225,6 +1225,19 @@ function _cacheGetJson_(cache, key) {
   } catch (e) { return null; }
 }
 
+// ★2026-07-31 시토 — 유효회원 목록 캐시 무효화(한 곳). 유효회원 시트를 바꾸는 경로는 전부
+//   이걸 부른다. 캐시 TTL 이 60초라 안 불러도 1분이면 사라지지만, 편집 직후 옛 값이 보이면
+//   실무진은 "저장이 안 됐다"고 읽는다(오늘 GM 지적 부류). 그래서 즉시 지운다.
+function _aaCacheClear_() {
+  try {
+    var c = CacheService.getScriptCache();
+    _cacheInvalidateJson_(c, 'aacache|valid');
+    _cacheInvalidateJson_(c, 'aacache|ended');
+    _cacheInvalidateJson_(c, 'aacache|corp');
+  } catch (e) {}
+}
+
+
 function _cacheInvalidateJson_(cache, key) {
   try {
     var meta = cache.get(key + '__meta');
@@ -8784,6 +8797,21 @@ function _processAction(body) {
       }
       return _json({ ok: true, scope: 'corp', headers: cpHdrs, count: cpRows.length, data: cpRows });
     }
+    // ★2026-07-31 시토(GM '속도 근본적으로') — 조회 캐시(TTL 60초). 문의 목록(micache)·강습
+    //   목록(licache)이 이미 쓰는 것과 **같은 헬퍼·같은 방식**을 그대로 쓴다(약속 L01 — 새 캐시
+    //   장치 만들지 않는다). 이 액션만 캐시가 없어서, 회원관리 화면을 열 때마다 시트를 통째로
+    //   다시 읽고 있었다.
+    //   실측(웰리 2026-07-30 · 라이브 3회 중앙값): scope=valid 응답 **15.7초 / 1.18MB**.
+    //   같은 부팅에서 6개 요청이 계단식(1.6→16.4초)으로 끝나 GAS 가 사실상 직렬 처리한다 —
+    //   병렬을 늘려도 안 빨라지고 **서버 총 작업량을 줄여야** 한다는 뜻이다. 캐시가 그 답이다.
+    //   ▸미스·실패 시 그대로 시트 재조회 폴백(무중단) · nocache=1 로 우회 가능.
+    //   ▸쓰기(member_active_update 등)에서 무효화하므로 편집 직후 옛 값이 보이지 않는다.
+    var aaCache = CacheService.getScriptCache();
+    var aaCacheKey = 'aacache|' + aaScope;
+    if (!_nc) {
+      var aaHit = _cacheGetJson_(aaCache, aaCacheKey);
+      if (aaHit) return _json(aaHit);
+    }
     var aaSh = aaSs0.getSheetByName(MEMBER_SHEET);
     if (!aaSh) return _json({ ok: false, error: '유효회원 시트 없음' });
     var aaLast = aaSh.getLastRow();
@@ -8856,7 +8884,9 @@ function _processAction(body) {
       var aiEndKey = aaHdrRaw[aiEnd];
       aaRows.sort(function(a, b){ var av = String(a[aiEndKey] || ''); var bv = String(b[aiEndKey] || ''); return av < bv ? 1 : (av > bv ? -1 : 0); });
     }
-    return _json({ ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows });
+    var aaResult = { ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows };
+    _cachePutJson_(aaCache, aaCacheKey, aaResult, 60);
+    return _json(aaResult);
   }
 
   // ─── 멤버십 회원관리: 셀 인라인 수정(유효회원 시트 write-back · 전화 컬럼 제외) 2026-06-24 GM ───
@@ -8977,12 +9007,14 @@ function _processAction(body) {
           if (mi >= 0) _auWriteCell(mi, pair[0], pair[1]);
         });
       }
+      _aaCacheClear_();
       return _json({ ok: true, rowIndex: auRow, cols: _auWrote });
     }
     if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 시트에서 직접 수정해주세요' });
     var auIdx = _auFindCol(auCol);
     if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
     _auWriteCell(auIdx, auCol, body.value);
+    _aaCacheClear_();
     return _json({ ok: true, rowIndex: auRow, col: auCol });
   }
 
@@ -9010,6 +9042,7 @@ function _processAction(body) {
     }
     if (mosRow < 0) return _json({ ok: false, error: 'no member' });
     mosSh.getRange(mosRow, mosFieldIdx + 1).setValue(mosValue);
+    _aaCacheClear_();
     return _json({ ok: true, phone: mosPhone, field: mosField, value: mosValue, rowIndex: mosRow });
   }
 
