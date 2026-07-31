@@ -2532,6 +2532,21 @@ def run_daily_digest(early: bool = False) -> None:
     # 트레이 최소화·포커스 경합 등으로 실패할 수 있다(배9423, 07-22 아침 09:30 3방 발송 실패
     # 전례). 주경로=카톡 창을 미리 열어둔 상태 유지. 실패해도 텔레그램 발송(위)은 이미 완료된
     # 상태이므로 GM은 텔레그램으로 항상 현황을 받는다. 역롤백(1줄): KAKAO_GO_STREAM2 = False.
+    def _kakao_fail_notify(tag: str, detail: str) -> None:
+        """카톡 발송 실패 1회 알림 — 실무진 방이 아니라 GM 업무보고방으로(실무진에겐 소음)."""
+        try:
+            send_telegram(
+                _GM_REPORT_CHAT_ID,
+                "⚠️ 카톡 발송이 안 나갔습니다\n"
+                f"▪ {KAKAO_OPS_ROOM} · {tag}\n"
+                f"   {detail}\n"
+                "   PC 카카오톡에서 그 방 창이 열려 있는지 확인해 주세요.\n"
+                "   (텔레그램 쪽은 이미 정상 발송됐습니다)",
+                parse_mode=None,
+            )
+        except Exception as e:
+            logger.error(f"카톡 실패 알림 자체 실패: {e}")
+
     if KAKAO_GO_STREAM2:
         _kakao_sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
         _kakao_env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
@@ -2545,8 +2560,15 @@ def run_daily_digest(early: bool = False) -> None:
                 )
                 tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
                 logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송: {tail[0]}")
+                # ★2026-07-31 웰리 — 실패를 조용히 넘기지 않는다.
+                #   카톡 발송은 PC 카톡 앱 UI 자동화라 창이 닫혀 있으면 그냥 안 나간다. 지금까지는
+                #   로그에만 남아서, 실무진 방에 아무것도 안 갔는데 아무도 몰랐다(GM 이 다음 날 물어야
+                #   드러났다). 실패했을 때만 GM 업무보고방에 한 줄 — 성공하면 완전 침묵.
+                if proc.returncode != 0:
+                    _kakao_fail_notify(tag, tail[0])
             except Exception as e:
                 logger.error(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송 예외: {e}")
+                _kakao_fail_notify(tag, str(e)[:120])
 
         if s2_msg:
             _send_ops_kakao(s2_msg, "점검현황")

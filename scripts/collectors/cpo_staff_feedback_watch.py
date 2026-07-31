@@ -489,6 +489,11 @@ def build_ship(row: dict, queue, today: str) -> dict:
         "short_no": next_short_no(queue),
         "module": "home",
         "surface": "autonomy",
+        # ★2026-07-31 웰리 — 실무진이 손들어 올린 신고는 언제나 사람 일(office)이다.
+        #   그동안 이 칸이 비어 나가서 08:00 보고가 "audience 미표기"로 흘렸고, 실무진 신고가
+        #   AI 살림 쪽 화면에 섞여 뜰 수 있었다(오늘 실측 2척). 두 건만 고치지 않고 만드는 자리에
+        #   박는다 — 앞으로 들어오는 신고는 전부 붙어서 온다(약속 L21 관문).
+        "audience": "office",
         "feedback_id": fid,
     }
 
