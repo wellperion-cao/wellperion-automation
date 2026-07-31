@@ -165,6 +165,12 @@ def _legal_check_blank_block() -> str:
         for _d, _f in (("시설부", "시설부 체계"), ("운영부", "운영부 체계"),
                        ("지원부", "지원부 체계"), ("주차관리부", "주차관리부 체계")):
             lines.append(f"   · {_d} https://wellperion-cao.github.io/wellperion-automation/coo/check/{_f}.html")
+        # 브로제이 실무 가이드 — 하달 대상은 선임자 윤병현AM(2026-07-31 GM 지시).
+        # 가이드 카드에 '⬜ 확인 필요 N줄 남음' 이 떠 있어도 화면을 안 열면 모른다 — 여기서 같이 알린다.
+        lines.append("")
+        lines.append("🅱 브로제이 실무 가이드 — 아직 비어 있는 항목이 있습니다 (윤병현AM)")
+        lines.append("   회원앱·강사앱·부모님-유소년 얼굴연동 — 아시는 것부터 채워 주시면 됩니다")
+        lines.append("   https://wellperion-cao.github.io/wellperion-automation/coo/brojay/브로제이_업무분장.html")
     if src == "seed":
         # 조용한 폴백을 숨기지 않는다 — 씨앗을 읽었다면 이미 답한 항목이 다시 떴을 수 있다.
         lines.append("(※ 일정 서버 응답이 없어 예비 자료로 만들었습니다 — 이미 알려주신 건이 다시 보이면 알려주세요)")

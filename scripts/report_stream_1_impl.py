@@ -187,6 +187,20 @@ def _field_for(kind: str) -> str:
     return "program" if kind == "membership" else "sport"
 
 
+def _team_for(kind: str, sport: str = "") -> str:
+    """그 문의를 실제로 맡는 팀 — 2026-07-31 GM 확정.
+
+    GM: "이게 임정은M 한테만 해당되는 거야? 강습팀은? 멤버십은 운영부, 강습팀은 각 강습팀
+         이런 식으로 알려줘야 해."
+    그 전엔 묵은 문의를 이름만 죽 나열하고 '👉 배정 필요'로 끝냈다 — 방에 있는 누구도
+    자기 일이라고 읽지 않는다. 받는 사람이 자기 줄을 찾을 수 있어야 움직인다.
+    """
+    if kind == "membership":
+        return "운영부(멤버십)"
+    sp = (sport or "").strip()
+    return f"강습팀·{sp}" if sp and sp != "-" else "강습팀"
+
+
 def _type_label(kind: str) -> str:
     return {"membership": "멤버십", "adult": "성인강습", "youth": "유소년강습"}[kind]
 
@@ -278,6 +292,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
 
     # 담당배정 3일+ 지연(최근 30일 내, 전체 리스트 기준) → 별도 "참고" 라인으로 분리 표기(당일 아님).
     stale_unassigned: list[tuple[str, str]] = []
+    stale_by_team: dict[str, list[str]] = {}
     for kind, rows in raw_groups.items():
         for r in rows:
             if _is_test_row(r):
@@ -288,6 +303,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
                 sp = _short_program(str(r.get(_field_for(kind), "") or "").strip())
                 sub = f"{_type_label(kind)}·{sp}" if sp and sp != "-" else _type_label(kind)
                 stale_unassigned.append((nm, sub))
+                stale_by_team.setdefault(_team_for(kind, sp), []).append(nm)
     special = _special_notes(groups, raw_groups, today)
 
     header = (
@@ -309,11 +325,14 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
             f"\n🆕 담당배정 필요 {len(unassigned_today)}건 — {html.escape(names)} 👉 배정 필요"
         )
     if stale_unassigned:
-        head = ", ".join(f"{nm}({tp})" for nm, tp in stale_unassigned[:5])
-        tail = f" 외 {len(stale_unassigned) - 5}건" if len(stale_unassigned) > 5 else ""
-        section_new += (
-            f"\n📌 누적 미배정(참고, 최근30일) {len(stale_unassigned)}건 — {head}{tail} 👉 배정 필요"
-        )
+        # 팀별로 갈라 적는다(2026-07-31 GM 확정) — 이름만 나열하면 누구 일인지 아무도 안 읽는다.
+        section_new += f"\n📌 3일 넘게 담당이 안 정해진 문의 {len(stale_unassigned)}건 — 팀별로 나눕니다"
+        for team in sorted(stale_by_team, key=lambda t: -len(stale_by_team[t])):
+            names = stale_by_team[team]
+            head = ", ".join(names[:5])
+            tail = f" 외 {len(names) - 5}건" if len(names) > 5 else ""
+            section_new += f"\n   ▪ {html.escape(team)} {len(names)}건 — {html.escape(head)}{tail}"
+        section_new += "\n   👉 각 팀에서 담당을 정해 주세요"
 
     # 컨택&등록 현황 — 3리스트 통합, "실제 진전"(컨택이력≥1 또는 등록판정) 있는 행만.
     # 담당배정 필요 건은 위 신규 문의 섹션(🆕)으로 이전했다 — 정의상 진전이 없는 건이라
