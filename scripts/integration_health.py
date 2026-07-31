@@ -70,6 +70,34 @@ def _local_active_count() -> int:
         return -1
 
 
+# 자가복구 창(초) — 동시 커밋(여러 C-Level·auto-log·ERP 발행)이 같은 순간에 몰리면 post-commit
+# push 가 락·경합으로 잠깐 밀린다. 다음 커밋의 push 또는 5분 스위퍼가 곧 비우므로, 이 창 안의
+# 순간 미푸시는 '정체'가 아니라 '진행 중'이다. 5분 스위퍼 주기 + 여유.
+PUSH_SETTLE_SEC = 600
+
+
+def _unpushed_settle_age() -> int | None:
+    """아직 못 올린 커밋 중 **가장 오래된 것**의 나이(초). 미푸시 0이거나 확인 불가면 None.
+
+    ★이 계산은 여기 한 곳에만 둔다(약속 L01). 예전엔 ⑤ 미푸시 점검 안에만 있어서,
+    같은 사실을 보는 ① G1 큐 라이브 점검은 창 없이 즉시 경보했다 — 두 점검이 같은 상태를
+    다르게 판정해 확인방에 오탐이 반복됐다(2026-07-31 GM 지적).
+    """
+    try:
+        r = subprocess.run(
+            ["git", "log", f"{REMOTE}/{BRANCH}..HEAD", "--reverse", "--format=%ct"],
+            cwd=str(ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        if r.returncode != 0 or not (r.stdout or "").strip():
+            return None
+        import time
+        oldest = int(r.stdout.strip().splitlines()[0])
+        return int(time.time() - oldest)
+    except Exception:
+        return None
+
+
 def _unpushed_count() -> int:
     """origin/master..HEAD 커밋 수. 확인 불가 시 -1."""
     try:
@@ -111,6 +139,20 @@ def check_queue_live() -> tuple[str, bool, str]:
             # 미푸시 여부로 진짜 끊김 vs CDN 캐시 지연 구분 (INC-007 후속)
             unpushed = _unpushed_count()
             if unpushed > 0:
+                # ★2026-07-31 시토(GM "AI진행현황에 이게 너무 많이 뜬다") — 자가복구 창을 여기에도 적용.
+                #   왜: 아래 ⑤ 미푸시 커밋 점검은 이미 600초 창을 두고 "그 안의 순간 미푸시는 정상"으로
+                #   보는데, 이 ① 점검만 창 없이 **미푸시가 1건이라도 보이면 즉시 경보**했다. 커밋은
+                #   몇 초 뒤 스스로 push 되므로, 그 순간을 스쳐 본 점검이 확인방에 '다리 끊김'을
+                #   띄우고 정작 GM 이 열어볼 땐 이미 0건이다(실측 2026-07-31 11:27 경보 → 확인 시 0건).
+                #   같은 판정을 두 곳이 다르게 하고 있었으므로 창 계산은 한 곳(_unpushed_settle_age)만 쓴다.
+                age = _unpushed_settle_age()
+                if age is not None and age < PUSH_SETTLE_SEC:
+                    return (
+                        name,
+                        True,
+                        f"동기화 진행 중 — 라이브 {live_active}건 ≠ 로컬 {local_active}건"
+                        f" (미푸시 {unpushed}건 · {age}s, 자가복구 창 내) — 정상",
+                    )
                 return (
                     name,
                     False,
@@ -207,23 +249,10 @@ def check_unpushed() -> tuple[str, bool, str]:
         n = int((r.stdout or "0").strip() or "0")
         if n == 0:
             return name, True, "없음 — 로컬=origin/master 동기화"
-        # 자가복구 창: 동시 커밋(여러 C-Level·auto-log·ERP 발행)이 거의 같은 순간에 일어나면
-        # post-commit push 가 락/non-ff 경합으로 잠깐 밀린다. 다음 커밋 push 또는 5분 스위퍼가
-        # 곧 드레인하므로, 창 안의 순간 미푸시는 정상 상태 — 알림하지 않는다(노이즈 제거).
-        # 창을 넘겨 묵으면(스위퍼가 못 비움) 그때만 진짜 stale 로 보고.
-        import time
-        ar = subprocess.run(
-            ["git", "log", f"{REMOTE}/{BRANCH}..HEAD", "--reverse", "--format=%ct"],
-            cwd=str(ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=30,
-        )
-        oldest = None
-        if ar.returncode == 0 and ar.stdout.strip():
-            oldest = int(ar.stdout.strip().splitlines()[0])
-        SETTLE = 600  # 초. 5분 스위퍼 + 여유. 이 안이면 자가복구 진행 중으로 간주.
-        if oldest is not None:
-            age = int(time.time() - oldest)
-            if age < SETTLE:
+        # 자가복구 창 — 판정은 _unpushed_settle_age() 한 곳만 쓴다(위 ① 점검과 공용 · 약속 L01).
+        age = _unpushed_settle_age()
+        if age is not None:
+            if age < PUSH_SETTLE_SEC:
                 return name, True, f"{n}건 동기화 진행 중({age}s, 자가복구 창 내) — 정상"
             return name, False, f"{n}건 미푸시 {age // 60}분+ 정체 — 스위퍼 미작동 의심, 즉시 push 필요"
         return name, False, f"{n}건 미푸시 — 라이브 stale 위험, 즉시 push 필요"

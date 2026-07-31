@@ -42,6 +42,25 @@ EXCLUDE_DIRS = {
     "worktrees",
 }
 
+# ★기록물 경로 — 스캔 대상이 아니다 (2026-07-31 시토 · GM "AI진행현황에 이게 너무 많이 뜬다").
+#   이 스캐너의 목적은 "공식값·규칙이 **살아 있는 코드·설정**에 베껴져 나중에 원본과 어긋나는 것"을
+#   잡는 것이다. 아래는 전부 **지나간 일의 기록**이라 베낀 게 아니라 적힌 것이며, 고칠 대상도 아니다.
+#   실측(2026-07-31): 신규 드리프트로 보고된 135건 중 절대다수가 여기였고, 그중 카카오톡 아카이브는
+#   **날마다 새 파일이 하나씩 생겨** baseline 을 매일 초과한다 — 구조적으로 영원히 꺼지지 않는 경보였다.
+#   ▸살아 있는 코드·설정(scripts/·ssot/·telegram_bot/·.deploy-*/·가이드 페이지)은 그대로 스캔한다.
+EXCLUDE_PATH_PREFIXES = (
+    "1. AI자료_아카이브/",          # 카톡 대화 원문 등 — 매일 새 파일이 쌓이는 아카이브
+    "status/backups/",              # 시점 백업(과거 상태 그대로 보존이 목적)
+    "status/briefs/",               # AI가 쓴 분석·보고 문서(사람이 읽는 기록)
+    "status/incident_health.md",    # 이 감시기 자신의 출력 — 스스로를 드리프트로 셌다
+    "tmp/",                         # 임시 산출물
+    ".omc/",                        # 세션 상태·설계 메모
+    "status/_queue.json",           # 업무 기록(배 note 에 규칙을 인용해 적는 게 정상)
+    "status/_queue_archive.json",
+    "3. 웰페리온 가이드/status/_queue.json",
+    "3. 웰페리온 가이드/status/_queue_archive.json",
+)
+
 # 제외 파일 확장자 (바이너리)
 BINARY_EXTENSIONS = {
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp",
@@ -74,6 +93,11 @@ def is_excluded_path(path: Path, repo_root: Path) -> bool:
             return True
         # memory/ 경로 패턴 (웰리 메모리)
         if part == "memory":
+            return True
+
+    rel_str = rel.as_posix()
+    for prefix in EXCLUDE_PATH_PREFIXES:
+        if rel_str == prefix or rel_str.startswith(prefix):
             return True
 
     return False

@@ -94,11 +94,35 @@ def _missing_assets() -> list[str]:
 
 
 def _unguarded() -> list[str]:
+    """★박제 '깨짐' = 한때 GUARDED 였던 인시던트가 더 이상 GUARDED 가 아닌 것.
+
+    2026-07-31 시토(GM "AI진행현황에 이게 너무 많이 뜬다") — 예전엔 상태가 GUARDED 가
+    아니면 **무엇이든** 깨짐으로 셌다. 그래서 애초에 GUARDED 였던 적이 없는 OPEN 인시던트
+    (아직 못 막은 것 · '의식적 예외 — GM 수용' 처럼 일부러 열어둔 것 포함)까지 매일 12건이
+    같은 목록으로 경보됐다. 회귀가 아닌 것을 회귀라 부르면 진짜 회귀가 묻힌다.
+    이제 baseline 에 적힌 '그때 GUARDED 였던 id' 와 대조해 **떨어진 것만** 깨짐으로 본다.
+    baseline 에 기록이 없으면(구 baseline) 아무것도 깨짐으로 보지 않는다 — 다음
+    --set-baseline 때 채워진다(없는 정보로 경보하지 않는다).
+    """
     try:
         d = json.loads((_ROOT / "ssot" / "incidents.json").read_text(encoding="utf-8"))
-        return [f"{i.get('id')}({i.get('상태')})" for i in d.get("incidents", []) if i.get("상태") != "GUARDED"]
+        now_guarded = {i.get("id") for i in d.get("incidents", []) if i.get("상태") == "GUARDED"}
+        was_guarded = set(_baseline_raw().get("guarded_ids") or [])
+        if not was_guarded:
+            return []
+        state = {i.get("id"): i.get("상태") for i in d.get("incidents", [])}
+        return [f"{i}({state.get(i, '삭제됨')})" for i in sorted(was_guarded - now_guarded)]
     except Exception:
         return ["incidents.json 읽기 실패"]
+
+
+def _current_guarded_ids() -> list[str]:
+    """--set-baseline 이 적립할 '지금 GUARDED 인 id' 목록."""
+    try:
+        d = json.loads((_ROOT / "ssot" / "incidents.json").read_text(encoding="utf-8"))
+        return sorted(i.get("id") for i in d.get("incidents", []) if i.get("상태") == "GUARDED")
+    except Exception:
+        return []
 
 
 def _leaked_today() -> list[str]:
@@ -127,17 +151,27 @@ def _leaked_today() -> list[str]:
     return out
 
 
-def _load_baseline() -> dict | None:
+def _baseline_raw() -> dict:
+    """baseline 파일 통째. 없거나 깨졌으면 빈 dict(경보 없음 쪽으로)."""
     try:
-        return json.loads(BASELINE_FILE.read_text(encoding="utf-8")).get("divergence")
+        d = json.loads(BASELINE_FILE.read_text(encoding="utf-8"))
+        return d if isinstance(d, dict) else {}
     except Exception:
-        return None
+        return {}
+
+
+def _load_baseline() -> dict | None:
+    return _baseline_raw().get("divergence")
 
 
 def _save_baseline(div: dict) -> None:
     payload = {"divergence": {k: sorted(v) for k, v in div.items()},
-               "_doc": "재발방지 회귀감시 baseline — 이 시점의 수용된 캐논 발산(주로 콘텐츠·아카이브 FP). "
-                       "이 목록 초과분만 회귀로 경보. 코드 드리프트를 고치면 --set-baseline 로 재설정."}
+               # ★2026-07-31 시토 — '그때 GUARDED 였던 id' 를 같이 적립한다. 박제 '깨짐' 판정이
+               #   이 목록과의 차집합이라, 이게 없으면 판정 자체를 하지 않는다(오탐 0 쪽으로).
+               "guarded_ids": _current_guarded_ids(),
+               "_doc": "재발방지 회귀감시 baseline — 이 시점의 수용된 캐논 발산(주로 콘텐츠·아카이브 FP)과 "
+                       "이 시점 GUARDED 인시던트 id. 발산은 이 목록 초과분만, 박제는 이 목록에서 "
+                       "떨어진 것만 회귀로 경보. 코드 드리프트를 고치면 --set-baseline 로 재설정."}
     BASELINE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
