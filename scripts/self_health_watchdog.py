@@ -47,8 +47,19 @@ cto-automation-health 의 §자가건강(build_digest 재사용)으로 09:10 하
   §8 🌉 연동 다리    — integration_health.check_bridges() 재사용(재점검 없음),
                       ok=False 인 다리만 요약.
 
+★2026-07-31 GM 결정 — **이 스크립트의 단독 발신(--live)은 은퇴했다. 다시 켜지 마라.**
+  2026-07-22 에 같은 내용이 cto-automation-health 의 09:10 다이제스트로 합쳐졌고
+  (collectors/cto_automation_health.py 가 아래 build_digest() 를 그대로 재사용한다),
+  13:00 단독 발신은 그때부터 같은 방에 하루 두 통을 보내는 중복이라 꺼졌다.
+  그런데 '꺼둔 채' 두었더니 열흘 동안 "검증 끝나고 GM go 기다리는 기능"처럼 보였다 —
+  기다리던 게 아니라 이미 대체된 것이었다. GM: "일주일 이상 작동이 안 된 거면 무의미·
+  무분별·중복 셋 중 하나다. 혼란스럽지 않게 폐기해라."
+  → 호출부(scripts/telegram_health_check.bat)의 주석 처리된 실행 줄을 지웠다.
+  **살아 있는 것은 build_digest() 뿐이고, 그건 09:10 다이제스트가 쓴다.** 자가건강을 더
+  드러내야 하면 새 발신을 만들지 말고 그 09:10 다이제스트를 고친다(약속 L21).
+
 발신: notify.telegram_send.send() → 자동화현황방(기존 채널 재사용).
-게이트: SELF_HEALTH_WATCHDOG_LIVE 환경변수(기본 OFF)일 때만 --live 가 실발신.
+게이트: SELF_HEALTH_WATCHDOG_LIVE 환경변수(기본 OFF) — 위 은퇴로 상시 OFF. 수동 점검용 잔존.
 멱등: 날짜 dedup(하루 최대 1통) — status/self_health_watchdog_log.jsonl.
 자가증명: 매 실행(라이브) module_heartbeat.record_heartbeat("cto-self-health-watchdog", ...).
 """

@@ -6,10 +6,11 @@ cd /d C:\Users\jjky0\welperion-automation
 set PYTHONIOENCODING=utf-8
 C:\Python314\python.exe -u scripts\telegram_health_check.py >> logs\telegram_health_check.log 2>&1
 
-REM [2026-07-21 merge 9420 #1] Self-health watchdog daily digest (piggyback, no new task).
-REM [2026-07-22 GM order - merge B into A] This 13:00 direct send now duplicates the
-REM   self-health section folded into cto-automation-health's 09:10 daily digest
-REM   (collectors/cto_automation_health.py reuses self_health_watchdog.build_digest()).
-REM   Disabled here to stop the 2nd daily message in room 4. Rollback = uncomment next 2 lines.
-REM set SELF_HEALTH_WATCHDOG_LIVE=1
-REM C:\Python314\python.exe -u scripts\self_health_watchdog.py --live >> logs\self_health_watchdog.log 2>&1
+REM [2026-07-31 GM order] Retired for good - the commented-out block that used to live here
+REM   (SELF_HEALTH_WATCHDOG_LIVE + self_health_watchdog.py --live) is DELETED, not kept off.
+REM   Reason: that 13:00 send was superseded on 2026-07-22 when the same self-health digest was
+REM   folded into cto-automation-health's 09:10 message. Leaving it commented made it look like
+REM   a feature "waiting for GM go" for 10 days - it was not waiting, it was already replaced.
+REM   GM: "a week-plus of not running means it is pointless, careless, or duplicated - retire it."
+REM   The useful part still lives: collectors/cto_automation_health.py reuses build_digest().
+REM   Do NOT re-add a second daily send here. If self-health must be louder, change the 09:10 digest.
