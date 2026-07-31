@@ -2459,6 +2459,27 @@ KAKAO_DEPTHEAD_ROOM = "★부서장"
 # 이름은 scripts/kakao_rooms.json 등록값과 글자까지 같아야 창-제목 탐색이 맞는다.
 KAKAO_OPS_DEPT_ROOM = "★ 운영부"
 
+
+def _kakao_fail_notify(tag: str, detail: str, room: str = "") -> None:
+    """카톡 발송 실패 1회 알림 — 실무진 방이 아니라 GM 업무보고방으로(실무진에겐 소음).
+
+    ★모듈 수준에 둔다(2026-07-31) — 처음엔 run_daily_digest 안 지역 함수로 넣었다가,
+    다른 발신(회차 제출누락 알림)에서 부르면 이름을 못 찾는 상태였다. 카톡을 쓰는 곳이
+    늘어나는데 실패 알림이 한 곳에만 묶여 있으면 나머지는 조용히 실패한다(약속 L21 관문).
+    """
+    try:
+        send_telegram(
+            _GM_REPORT_CHAT_ID,
+            "⚠️ 카톡 발송이 안 나갔습니다\n"
+            f"▪ {room or KAKAO_OPS_ROOM} · {tag}\n"
+            f"   {detail}\n"
+            "   PC 카카오톡에서 그 방 창이 열려 있는지 확인해 주세요.\n"
+            "   (텔레그램 쪽은 이미 정상 발송됐습니다)",
+            parse_mode=None,
+        )
+    except Exception as e:
+        logger.error(f"카톡 실패 알림 자체 실패: {e}")
+
 # 카카오톡 ★운영+시설+지원+주차 방 — 점검현황·종합접수현황 분리 발송 게이트(GM 2026-07-22 go).
 # --only-room 매칭이라 방 이름은 열린 채팅창 제목과 정확히 일치해야 함(실측 검증됨,
 # scripts/poc-evidence/kakao_send_★운영+시설+지원+주차_*.png). 역롤백(1줄): 아래를 False로.
@@ -2536,21 +2557,6 @@ def run_daily_digest(early: bool = False) -> None:
     # 트레이 최소화·포커스 경합 등으로 실패할 수 있다(배9423, 07-22 아침 09:30 3방 발송 실패
     # 전례). 주경로=카톡 창을 미리 열어둔 상태 유지. 실패해도 텔레그램 발송(위)은 이미 완료된
     # 상태이므로 GM은 텔레그램으로 항상 현황을 받는다. 역롤백(1줄): KAKAO_GO_STREAM2 = False.
-    def _kakao_fail_notify(tag: str, detail: str) -> None:
-        """카톡 발송 실패 1회 알림 — 실무진 방이 아니라 GM 업무보고방으로(실무진에겐 소음)."""
-        try:
-            send_telegram(
-                _GM_REPORT_CHAT_ID,
-                "⚠️ 카톡 발송이 안 나갔습니다\n"
-                f"▪ {KAKAO_OPS_ROOM} · {tag}\n"
-                f"   {detail}\n"
-                "   PC 카카오톡에서 그 방 창이 열려 있는지 확인해 주세요.\n"
-                "   (텔레그램 쪽은 이미 정상 발송됐습니다)",
-                parse_mode=None,
-            )
-        except Exception as e:
-            logger.error(f"카톡 실패 알림 자체 실패: {e}")
-
     if KAKAO_GO_STREAM2:
         _kakao_sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
         _kakao_env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
@@ -3046,7 +3052,26 @@ def main():
             body.append("")
             body.append("👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html")
             # parse_mode=None = 평문. 본문에 '—'·'('·'.' 가 있어 MarkdownV2 로 보내면 파싱 오류가 난다.
-            ok = send_telegram(DIGEST_CHECK_CHAT_ID, "\n".join(body), parse_mode=None)
+            text = "\n".join(body)
+            ok = send_telegram(DIGEST_CHECK_CHAT_ID, text, parse_mode=None)
+            # ★카톡에도 같은 문구로 보낸다(2026-07-31 GM: "웰리는 카카오톡 전달을 집중해서
+            #   실무진들이 놓치는 부분을 확실하게 체크해서 리마인드 전달을 계속해줘").
+            #   실무진이 실제로 보는 곳은 카톡 ★운영+시설+지원+주차다 — 텔레그램 점검관리방에만
+            #   보내면 정작 손을 움직일 사람에게 안 닿는다. 본문은 다시 만들지 않고 그대로 쓴다.
+            try:
+                kproc = subprocess.run(
+                    [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
+                     "--message", text, "--only-room", KAKAO_OPS_ROOM],
+                    cwd=str(REPO_ROOT), capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=180,
+                    env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+                )
+                ktail = (kproc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+                logger.info(f"[zero-zone {shift_key}] 카톡 {KAKAO_OPS_ROOM}: {ktail[0]}")
+                if kproc.returncode != 0:
+                    _kakao_fail_notify(f"회차 제출누락({shift_key})", ktail[0])
+            except Exception as ke:
+                logger.error(f"[zero-zone {shift_key}] 카톡 발송 예외: {ke}")
             if ok:
                 state[today] = sorted(sent | {f"{g['zone']}|{g['shift']}" for g in fresh})
                 _ZERO_ALERT_STATE.write_text(
