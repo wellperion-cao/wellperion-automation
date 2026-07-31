@@ -77,8 +77,8 @@ a { color:var(--accent); text-decoration:none; }
 .card-id { font-size:10px; color:var(--dim); margin-left:auto; }
 .card-name { font-size:13px; font-weight:600; margin-bottom:4px; }
 .card-name .contact { font-size:12px; color:var(--dim); font-weight:400; margin-left:8px; }
-.card-content { font-size:13px; color:var(--text); line-height:1.5; margin-bottom:6px; word-break:break-word; }
-.card-loc { font-size:11px; color:var(--dim); margin-bottom:5px; }
+.card-content { font-size:15px; color:var(--text); line-height:1.55; margin-bottom:6px; word-break:break-word; }
+.card-loc { font-size:14px; color:var(--dim); margin-bottom:6px; }
 .card-extras { margin-bottom:6px; display:flex; flex-wrap:wrap; gap:5px; }
 .card-extras .k { font-size:11px; color:var(--dim); }
 .card-extras .v { font-size:11px; color:var(--text); }
@@ -97,7 +97,7 @@ a { color:var(--accent); text-decoration:none; }
 }
 .field-row select, .field-row input { flex:1; min-width:80px; }
 .card textarea { width:100%; box-sizing:border-box; resize:vertical; }
-.save-row { display:flex; justify-content:flex-end; }
+.save-row { display:flex; justify-content:space-between; align-items:center; gap:10px; }
 .save-btn {
   font-size:12px; font-weight:700; padding:5px 14px; border-radius:7px;
   background:var(--accent-bg); color:var(--accent); border:1px solid rgba(183,159,138,0.4);
@@ -112,6 +112,26 @@ a { color:var(--accent); text-decoration:none; }
 .lf-note a { color:var(--accent); font-weight:600; white-space:nowrap; }
 
 /* ── 상태 요약 + 검색(우측) 한 줄 ── */
+/* ── 🏆 점수판 (GM 지시 2026-07-28 · 접수 1점 + 처리 완료 1점) ──
+   왜: 접수한 사람이 곧 처리까지 떠안는 구조라 '적을수록 손해'가 됐다. 적는 행위 자체에
+   점수를 붙여 접수를 피할 이유를 없앤다. 기존 색 변수만 재사용(새 색 정의 없음). */
+.score-card { background:var(--paper); border:1px solid var(--border); border-left:4px solid var(--yellow); border-radius:12px; padding:12px 14px; margin-bottom:14px; }
+.score-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.score-title { font-size:15px; font-weight:800; color:var(--yellow); }
+.score-hint { font-size:11.5px; color:var(--dim); }
+.score-tabs { margin-left:auto; display:flex; gap:6px; }
+.score-tab { font-size:12px; font-weight:700; padding:4px 11px; border-radius:999px; border:1px solid var(--border); background:transparent; color:var(--dim); cursor:pointer; font-family:inherit; }
+.score-tab.on { background:var(--yellow-bg); color:var(--yellow); border-color:rgba(230,200,78,0.45); }
+.score-list { display:flex; flex-wrap:wrap; gap:8px; }
+.score-item { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:7px 12px; }
+.score-item.top { border-color:rgba(230,200,78,0.5); background:var(--yellow-bg); }
+.score-rank { font-size:13px; font-weight:800; color:var(--dim); min-width:20px; }
+.score-item.top .score-rank { color:var(--yellow); }
+.score-name { font-size:13.5px; font-weight:700; color:var(--text); }
+.score-pt { font-size:13.5px; font-weight:800; color:var(--green); }
+.score-brk { font-size:11.5px; color:var(--dim); }
+.score-empty { font-size:12.5px; color:var(--dim); }
+
 .summary-bar { display:flex; align-items:center; gap:12px 18px; flex-wrap:wrap; margin-bottom:14px; }
 .summary-bar .summary-row { margin-bottom:0; }
 .summary-bar .search-input { margin-left:auto; flex:0 1 340px; min-width:200px; }
@@ -178,19 +198,27 @@ a { color:var(--accent); text-decoration:none; }
 </style>
 <!-- 🔒 사내 전용 커튼(GM 승인 2026-07-07) — 접수 회원 성함·연락처·내용(실명 포함) 대외 공개 차단. 인증 후 열람. (진짜 잠금=JWT ≈2026-09) -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
 <body>
 
 <div class="sticky-top">
   <div class="header">
     <div>
-      <h1>🙋 웰페리온 종합접수처 현황 <span title="7종 접수·습득물 모두 GAS 실시간 자동 반영(사람 손 없이 갱신)" style="font-size:13px;font-weight:700;color:#1f7a3d;background:rgba(46,160,86,0.14);border:1px solid rgba(46,160,86,0.45);border-radius:999px;padding:2px 10px;vertical-align:middle;white-space:nowrap;">🟢 라이브</span></h1>
-      <div class="header-meta">COO 관할 · 7종 접수 통합 칸반(습득물 포함) · GAS 실시간 (단일 SSOT)</div>
+      <h1>🙋 웰페리온 종합접수처 현황 <span title="8종 접수·습득물·휴회 모두 GAS 실시간 자동 반영(사람 손 없이 갱신)" style="font-size:13px;font-weight:700;color:#1f7a3d;background:rgba(46,160,86,0.14);border:1px solid rgba(46,160,86,0.45);border-radius:999px;padding:2px 10px;vertical-align:middle;white-space:nowrap;">🟢 라이브</span></h1>
+      <div class="header-meta">COO 관할 · 8종 접수 통합 칸반(습득물·휴회 포함) · GAS 실시간 (단일 SSOT)</div>
     </div>
     <div class="header-btns">
+      <!-- 실무진 피드백 — 멤버십 회원관리 화면과 같은 창구·같은 항목·같은 시트(GM 지시 2026-07-27).
+           폼 사본을 만들지 않고 cpo/member/실무진피드백.html 을 그대로 iframe 으로 연다(사본 0 = 어긋남 0).
+           ?screen=종합접수처 로 업무를 미리 골라 보내 담당을 바로 가릴 수 있게 한다. -->
+      <button onclick="openStaffFeedback()">💬 실무진 피드백</button>
+      <!-- 작업 현황 로그 — 피드백을 남긴 다음 "그래서 뭐가 됐나"를 같은 자리에서 보게 한다(GM 지시 2026-07-27).
+           패널 자체는 전 페이지 공용 부품(_assets/worklog_panel.js) 그대로 — 이 화면은 팝업으로 감싸기만 한다. -->
+      <button onclick="openWorklog()">📋 작업 현황 로그</button>
       <a href="http://wellperion.com/ko/reception/" target="_blank">📲 회원 접수 폼</a>
-      <a href="/wellperion-automation/wellperion_guide(main).html#O2">🏠 ERP 허브</a>
-      <button onclick="regLoad();lfLoad()">↻ 새로고침</button>
+      <a href="/wellperion-automation/wellperion_guide(main).html#O1">🏠 ERP 허브</a>
+      <button onclick="regLoad();lfLoad();holdLoad();scoreLoad(_scorePeriod())">↻ 새로고침</button>
     </div>
   </div>
 </div>
@@ -200,6 +228,20 @@ a { color:var(--accent); text-decoration:none; }
   <div class="summary-bar">
     <div class="summary-row" id="statusSummary"></div>
     <input type="text" id="searchBox" class="search-input" placeholder="🔍 이름·내용·장소·번호 검색…" oninput="setSearch(this.value)" autocomplete="off">
+  </div>
+
+  <!-- 🏆 점수판 — 접수 1점 + 처리 완료 1점 (GM 지시 2026-07-28) -->
+  <div class="score-card">
+    <div class="score-head">
+      <span class="score-title">🏆 접수·처리 점수판</span>
+      <span class="score-hint">접수 1점 + 처리 완료 1점</span>
+      <span class="score-tabs">
+        <button type="button" class="score-tab" data-period="week" onclick="scoreLoad('week')">이번 주</button>
+        <button type="button" class="score-tab on" data-period="month" onclick="scoreLoad('month')">이번 달</button>
+        <button type="button" class="score-tab" data-period="all" onclick="scoreLoad('all')">전체</button>
+      </span>
+    </div>
+    <div class="score-list" id="scoreList"><span class="score-empty">불러오는 중…</span></div>
   </div>
 
   <!-- 카테고리 필터 -->
@@ -228,6 +270,36 @@ a { color:var(--accent); text-decoration:none; }
 
 <!-- 🍞 토스트 -->
 <div class="toast" id="toast"></div>
+
+<!-- 💬 실무진 피드백 모달 — membership.html 의 모달 iframe 패턴 그대로. 본문은 이 저장소에 하나뿐인
+     실무진 피드백 폼(cpo/member/실무진피드백.html)을 지연 로드한다(모달을 처음 열 때 data-src→src).
+     신규 디자인 없음: 기존 .modal-back/.modal 클래스를 그대로 쓰고 폭만 넓힌다. GM 지시 2026-07-27 -->
+<div class="modal-back" id="staffFeedbackBack">
+  <div class="modal" style="max-width:560px;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+      <h2 style="margin:0">💬 실무진 피드백</h2>
+      <button type="button" onclick="closeStaffFeedback()" aria-label="닫기"
+        style="background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
+    </div>
+    <iframe id="staffFeedbackFrame" data-src="../../cpo/member/실무진피드백.html?screen=종합접수처&amp;theme=dark"
+      title="실무진 피드백"
+      style="width:100%;height:70vh;border:1px solid var(--border);border-radius:10px;display:block;background:var(--paper)"></iframe>
+  </div>
+</div>
+
+<!-- 📋 작업 현황 로그 모달 — 공용 부품 <div data-worklog="coo"> 를 그대로 담기만 한다.
+     화면·데이터·스타일 정본은 _assets/worklog_panel.js 하나뿐(여기서 다시 만들지 않는다). GM 지시 2026-07-27 -->
+<div class="modal-back" id="worklogBack">
+  <div class="modal" style="max-width:720px;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+      <h2 style="margin:0">📋 작업 현황 로그</h2>
+      <button type="button" onclick="closeWorklog()" aria-label="닫기"
+        style="background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
+    </div>
+    <div class="msub" style="margin-bottom:10px">운영(시우)이 무엇을 했고 무엇이 빠졌는지 — 남기신 피드백이 어떻게 처리되고 있는지 여기서 보입니다.</div>
+    <div data-worklog="coo"></div>
+  </div>
+</div>
 
 <!-- 🖊️ 습득물 수령 서명 모달 (gallery 포팅) -->
 <div class="modal-back" id="modalBack">
@@ -286,8 +358,12 @@ var REG_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5
 /* 직원 현황(gate.js 뒤) 사진 노출 키 — 이 값이면 reg_board가 사진 원본 반환(썸네일용). 공개는 계속 '비공개'. */
 var REG_PV = 'wlp_reg_pv_2026';
 
-/* 🧳 습득물 직원 처리(수령·삭제) — lost_found_gallery.html 포팅 상수 (REG_API=VOC_API 동일 GAS) */
-var VOC_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
+/* 접수 삭제 비밀번호 (GM 지정 2026-07-31) — 테스트 접수 정리용.
+   화면 커튼이자 서버가 같은 값을 다시 확인한다(GAS _regDelete). 둘 다 맞아야 지워진다. */
+var REG_DEL_PIN = '1200';
+
+/* 🧳 습득물 직원 처리(수령·삭제) — lost_found_gallery.html 포팅 상수 (REG_API=RECEPTION_API 동일 GAS) */
+var RECEPTION_SUBMIT_TOKEN = 'wlp_voc_7b3f9a2e6c1d4085';
 var LOCATIONS = ['헬스장','수영장','남자사우나','여자사우나','골프장','스쿼시장','체조장','G.X룸','락커','리셉션','주차장','카페','기타'];
 var STAFF = ['김남욱GM','이경연실장','나우열M','최준용M','임정은M','윤병현AM','백승화사원'];
 
@@ -303,23 +379,65 @@ var CAT_META = [
   {label:'청결 이슈 접수',        icon:'🧹', dept:'지원부', color:'var(--green)',  bg:'var(--green-bg)'},
   {label:'컴플레인 접수',        icon:'📣', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
   {label:'직원·강사 칭찬합니다',   icon:'⭐', dept:'운영부', color:'var(--green)',  bg:'var(--green-bg)'},
-  {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'}
+  {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
+  {label:'휴회 접수',            icon:'⏸️', dept:'운영부', color:'var(--yellow)', bg:'var(--yellow-bg)'}
 ];
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','reporter'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved'];
+
+/* ── 🏆 점수판 (GM 지시 2026-07-28) ──
+   셈법은 서버(reg_scoreboard) 한 곳에만 있다 — 화면에서 다시 계산하지 않는다.
+   화면이 따로 세면 텔레그램 발표와 숫자가 갈라지고, 그러면 아무도 점수를 안 믿는다. */
+function _scorePeriod(){
+  var on = document.querySelector('.score-tab.on');
+  return (on && on.getAttribute('data-period')) || 'month';
+}
+function scoreLoad(period){
+  period = period || 'month';
+  var box = document.getElementById('scoreList');
+  if(!box) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.score-tab'), function(b){
+    b.classList.toggle('on', b.getAttribute('data-period') === period);
+  });
+  box.innerHTML = '<span class="score-empty">불러오는 중…</span>';
+  fetch(REG_API + '?action=reg_scoreboard&period=' + encodeURIComponent(period) + '&cb=' + Date.now(),
+        { cache:'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var board = (d && d.board) || [];
+      if(!board.length){
+        box.innerHTML = '<span class="score-empty">아직 점수가 없습니다. 접수하거나 처리를 끝내면 쌓입니다.</span>';
+        return;
+      }
+      box.innerHTML = board.map(function(x){
+        var top = x.rank === 1;
+        return '<span class="score-item' + (top ? ' top' : '') + '">' +
+          '<span class="score-rank">' + (top ? '🎉' : x.rank) + '</span>' +
+          '<span class="score-name">' + _esc(x.name) + '</span>' +
+          '<span class="score-pt">' + x.total + '점</span>' +
+          '<span class="score-brk">접수 ' + x.intake + ' · 완료 ' + x.done + '</span>' +
+        '</span>';
+      }).join('');
+    })
+    .catch(function(){
+      box.innerHTML = '<span class="score-empty">점수를 불러오지 못했습니다.</span>';
+    });
+}
 var EXTRA_LABEL = {
   itemName:'분실물품', lostWhen:'분실시점', keepWhere:'보관요청',
   equipName:'고장설비', severity:'위험도', usable:'사용가능여부',
   issueKind:'유형', urgency:'시급도',
   targetStaff:'대상직원·강사', episode:'사례', anonymousPref:'익명희망',
-  area:'분야', occurredAt:'발생시점'
+  area:'분야', occurredAt:'발생시점',
+  holdKind:'구분', holdStart:'휴회시작일', holdEnd:'휴회종료일', wishDays:'희망일수', holdReason:'사유'
 };
 
-var _allItems = [];   // VOC 6종 + 습득물(매핑) 병합 결과
-var _vocItems = [];   // reg_board(VOC 6종)
+var _allItems = [];   // VOC 6종 + 습득물(매핑) + 휴회(매핑) 병합 결과
+var _receptionItems = [];   // reg_board(VOC 6종)
 var _lfItems  = [];   // lf_list → 습득물 매핑(게시중→접수·수령완료→완료)
+var _holdItems = [];  // member_hold_intake_list → 휴회 매핑(읽기 전용·8번째 카드). 승인/반려는 회원 관리 화면 전용.
 var _curCat = '';
 var _curDept = '';
 var _curMonth = '';
@@ -327,8 +445,8 @@ var _curSearch = '';
 var _doneExpanded = false;
 var _loading = false;
 
-/* VOC + 습득물 병합 후 렌더 (둘 중 하나만 갱신돼도 합쳐서 다시 그림) */
-function _merge(){ _allItems = _vocItems.concat(_lfItems); _render(); }
+/* VOC + 습득물 + 휴회 병합 후 렌더 (하나만 갱신돼도 합쳐서 다시 그림) */
+function _merge(){ _allItems = _receptionItems.concat(_lfItems).concat(_holdItems); _render(); }
 
 /* 검색·완료접기 */
 function setSearch(v){ _curSearch = String(v||'').trim().toLowerCase(); _render(); }
@@ -336,6 +454,7 @@ function toggleDone(){ _doneExpanded = !_doneExpanded; _render(); }
 function _hay(r){ var s=''; for(var k in r){ if(r.hasOwnProperty(k) && k.charAt(0)!=='_' && r[k]!=null) s += ' ' + r[k]; } return s.toLowerCase(); }
 
 function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function _fmtTel(v){ var d=String(v||'').replace(/\D/g,''); if(d.length===10 && d.charAt(0)==='1') d='0'+d; if(d.length===11) return d.replace(/(\d{3})(\d{4})(\d{4})/,'$1-$2-$3'); if(d.length===10) return d.charAt(1)==='2'?d.replace(/(\d{2})(\d{4})(\d{4})/,'$1-$2-$3'):d.replace(/(\d{3})(\d{3})(\d{4})/,'$1-$2-$3'); return String(v||''); }
 function _catMeta(label){ for(var i=0;i<CAT_META.length;i++){ if(CAT_META[i].label===label) return CAT_META[i]; } return null; }
 function $(id){ return document.getElementById(id); }
 function toast(msg, isErr){ var t=$('toast'); if(!t) return; t.textContent = msg; t.className = 'toast show' + (isErr?' err':''); setTimeout(function(){ t.className = 'toast' + (isErr?' err':''); }, 2600); }
@@ -365,7 +484,7 @@ function regLoad(){
     .then(function(d){
       _loading = false;
       if(!d || !d.ok){ board.innerHTML = '<div class="state-msg">현황을 불러오지 못했습니다 — ' + _esc(d && d.error || '') + '</div>'; return; }
-      _vocItems = Array.isArray(d.data) ? d.data : [];
+      _receptionItems = Array.isArray(d.data) ? d.data : [];
       _merge();
     })
     .catch(function(){
@@ -438,6 +557,28 @@ function _slaBadge(r){
   else if(st==='임박'){ bg='var(--orange-bg)'; color='var(--orange)'; txt='임박' + (rem!==null?' '+(rem<1?Math.round(rem*60)+'분':Math.round(rem)+'h'):''); }
   else { bg='var(--border)'; color='var(--dim)'; txt='기한 ' + (rem!==null?(rem<24?Math.round(rem)+'h':'D-'+Math.floor(rem/24)):''); }
   return '<span class="card-sla" title="기한 ' + _esc(String(r.deadline||'')) + '" style="background:' + bg + ';color:' + color + ';">' + _esc(txt) + '</span>';
+}
+
+/* 담당·처리자 입력 = STAFF 드롭다운 + '기타(직접 입력)' 폴백(m_staff/m_staff_other 패턴 재사용).
+   옛 자유입력 데이터가 STAFF 명단에 없어도 '기타' 선택 + 값 유지로 깨지지 않음. */
+function _staffFieldHtml(kind, label, val){
+  val = String(val||'');
+  var inStaff = STAFF.indexOf(val) >= 0;
+  var opts = '<option value="">' + _esc(label) + ' 선택</option>';
+  STAFF.forEach(function(n){ opts += '<option value="' + _esc(n) + '"' + (n===val?' selected':'') + '>' + _esc(n) + '</option>'; });
+  opts += '<option value="__other__"' + (val && !inStaff ? ' selected' : '') + '>기타(직접 입력)</option>';
+  var showOther = (val && !inStaff);
+  var h = '<select data-reg-' + kind + '-sel>' + opts + '</select>';
+  h += '<input type="text" data-reg-' + kind + ' placeholder="직접 입력" value="' + (showOther ? _esc(val) : '') + '" style="display:' + (showOther?'block':'none') + ';flex-basis:100%;">';
+  return h;
+}
+/* 저장 시 담당·처리자 최종값: '기타' 선택이면 옆 텍스트칸, 아니면 select 값(명단 선택) 그대로 */
+function _staffFieldValue(card, kind){
+  var sel = card.querySelector('[data-reg-' + kind + '-sel]');
+  var inp = card.querySelector('[data-reg-' + kind + ']');
+  if(!sel) return inp ? inp.value : '';
+  if(sel.value === '__other__') return inp ? inp.value : '';
+  return sel.value;
 }
 
 /* ── 카테고리별 그룹 토글 상태 (기본 접힘) ── */
@@ -518,9 +659,10 @@ function _card(r){
     if(lwhen) lh += '<div class="card-loc" style="margin-bottom:6px;">🕒 ' + lwhen + '</div>';
     if(r.content) lh += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
     if(r.loc) lh += '<div class="card-loc">습득장소: ' + _esc(String(r.loc)) + '</div>';
-    if(r.staff) lh += '<div class="card-loc">등록직원: ' + _esc(String(r.staff)) + '</div>';
-    if(r.ownerName || r.ownerContact) lh += '<div class="card-loc">주인: ' + _esc(String(r.ownerName||'')) + (r.ownerContact?(' · ' + _esc(String(r.ownerContact))):'') + '</div>';
-    if(r.memo) lh += '<div class="card-content" style="background:var(--accent-bg);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:2px;"><b style="color:var(--accent);">내부메모 </b>' + _esc(String(r.memo)) + '</div>';
+    if(r.staff) lh += '<div class="card-loc">🧑 등록직원: ' + _esc(String(r.staff)) + '</div>';
+    if(r.keepLoc) lh += '<div class="card-loc">📦 보관위치: ' + _esc(String(r.keepLoc)) + '</div>';
+    if(r.memo) lh += '<div class="card-loc">🔒 메모: ' + _esc(String(r.memo)) + '</div>';
+    if(r.ownerName || r.ownerContact) lh += '<div class="card-loc">👤 주인: ' + _esc(String((r.ownerName || '') + (r.ownerContact ? ' · ' + _fmtTel(r.ownerContact) : ''))) + '</div>';
     lh += '<div class="divider"></div>';
     lh += '<div class="lf-note">습득 다음 달 공지 → 그다음 달 폐기(월 사이클). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_guide.html" target="_blank" rel="noopener">운영 가이드</a></div>';
     lh += '<div class="lf-ctrl-row">';
@@ -574,25 +716,40 @@ function _card(r){
 
   h += '<div class="divider"></div>';
 
+  /* ⏸️ 휴회 접수 = 읽기 전용 현황만(승인·반려는 회원 관리 화면 전용 — 여기서 기능 추가 금지) */
+  if(catLabel === '휴회 접수'){
+    h += '<div class="lf-note">⏸️ 승인·반려는 회원 관리 화면에서 처리합니다. <a href="../../cpo/member/membership.html#holdStatusCard" target="_blank" rel="noopener">휴회 회원 관리 바로가기 →</a></div>';
+    h += '</div>';
+    return h;
+  }
+
   /* 상태 */
   var opts = STATUS_LIST.map(function(s){ return '<option value="' + _esc(s) + '"' + (s===status?' selected':'') + '>' + _esc(s) + '</option>'; }).join('');
   h += '<div class="field-row"><label>상태</label>';
   h += '<select data-reg-action="status" data-reg-id="' + _esc(rawId) + '" data-reg-cat="' + _esc(rawCat) + '" data-prev-status="' + _esc(status) + '">' + opts + '</select></div>';
 
-  /* 담당 */
-  h += '<div class="field-row"><label>담당</label>';
-  h += '<input type="text" data-reg-assignee placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
+  /* 담당 — list= 로 '이미 쓰인 이름'을 제안한다(2026-07-31 웰리).
+     선택제(드롭다운)로 막지 않는다: 담당자가 회원일 수 있다는 GM 제약 그대로 자유 입력이며,
+     제안은 고르면 표기가 통일되고 새 이름은 그냥 쳐 넣으면 된다. 같은 사람이 '최준용'·'최준용M'
+     두 갈래로 쌓여 점수·적체가 갈라지던 것을 입력 단계에서 줄인다. */
+  h += '<input type="text" data-reg-assignee list="reg-staff-names" placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
 
   /* 처리자(실제 처리한) */
-  h += '<div class="field-row"><label>처리자</label>';
-  h += '<input type="text" data-reg-handler placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
+  h += '<input type="text" data-reg-handler list="reg-staff-names" placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
+
+  /* 접수자(적어 준 사람) — 점수판의 '접수 1점'이 이 칸에서 나온다(GM 지시 2026-07-28).
+     회원이 폼에서 직접 넣으면 '회원'으로 들어오고, 직원이 대신 적어 준 건 여기서 고른다. */
+  h += '<div class="field-row"><label>접수자</label>' + _staffFieldHtml('reporter', '접수자', r.reporter) + '</div>';
 
   /* 메모 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
   h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
 
   /* 저장 */
-  h += '<div class="save-row"><button data-reg-save type="button" class="save-btn">저장</button></div>';
+  /* 삭제(테스트 접수 정리용) — 비밀번호 확인 후에만. 접수ID 정확일치 1건만 지운다.
+     ★행 번호로 지우지 않는다(실고객 오삭제 재발 방지 · INC-020). */
+  h += '<div class="save-row"><button type="button" class="lf-btn lf-del" data-reg-del="' + _esc(rawId) + '" data-reg-del-cat="' + _esc(rawCat) + '" data-reg-del-desc="' + _esc(String(r.content||r.name||'').slice(0,40)) + '" title="테스트 접수 삭제(비밀번호 필요)">🗑 삭제</button>';
+  h += '<button data-reg-save type="button" class="save-btn">저장</button></div>';
   h += '</div>';
   return h;
 }
@@ -612,6 +769,7 @@ function _update(id, cat, payload, btn, statusEl, statusPrev){
   if('assignee' in payload) body.assignee = payload.assignee;
   if('memo' in payload) body.memo = payload.memo;
   if('handler' in payload) body.handler = payload.handler;
+  if('reporter' in payload) body.reporter = payload.reporter;
   if('slaDays' in payload) body.slaDays = payload.slaDays;
 
   fetch(REG_API, {
@@ -619,7 +777,7 @@ function _update(id, cat, payload, btn, statusEl, statusPrev){
     body:JSON.stringify(body), redirect:'follow'
   }).then(function(r){ return r.json(); }).then(function(d){
     if(d && d.ok){
-      if(isStatus){ regLoad(); }
+      if(isStatus){ regLoad(); scoreLoad(_scorePeriod()); }   /* 완료로 바뀌면 점수가 붙는다 — 바로 보이게 */
       else if(btn){
         btn.textContent='저장 완료 ✓';
         setTimeout(function(){ btn.textContent='저장'; btn.style.background=oBg; btn.style.color=oColor; btn.style.borderColor=oBorder; btn.style.pointerEvents='auto'; }, 2000);
@@ -669,15 +827,60 @@ function lfLoad(){
           foundWhen:r.foundWhen|| '',
           createdAt:r.createdAt|| '',
           photoUrl: r.photoUrl || '',
-          staff:    r.staff || '',
-          memo:     r.memo || '',
-          ownerName: r.ownerName || '',
+          staff:    r.staff    || '',
+          keepLoc:      r.keepLoc      || '',
+          memo:         r.memo         || '',
+          ownerName:    r.ownerName    || '',
           ownerContact: r.ownerContact || ''
         };
       });
       _merge();
     })
     .catch(function(){ _lfLoading = false; /* 습득물 실패는 6종 보드 유지, 조용히 스킵 */ });
+}
+
+/* ═══════════════════════════════════════════
+   ⏸️ 휴회 접수 = 8번째 카테고리로 통합 (같은 접수/처리중/완료 보드 · 읽기 전용)
+   데이터: 회원쪽 GAS(REG_API와 다른 배포 — cpo/member/membership.html GAS_URL과 동일)
+           member_hold_intake_list(ERP read + 서버 자동판정 · _SURVEY_PUBLIC_ACTIONS 등재로 토큰 게이트 면제).
+   상태 매핑: 접수대기→접수 · 승인(휴회 진행중)→처리중 · 반려·완료(휴회 종료)→완료. 그 외 값=접수(보수적 폴백).
+   승인/반려 기능 없음(회원 관리 화면 전용) — 카드에 바로가기 링크만 제공.
+   ═══════════════════════════════════════════ */
+var HOLD_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+var HOLD_STATUS_MAP = { '접수대기':'접수', '승인':'처리중', '반려':'완료', '완료':'완료' };
+var _holdLoading = false;
+function holdLoad(){
+  if(_holdLoading) return;
+  _holdLoading = true;
+  var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
+  var url = HOLD_API + '?action=member_hold_intake_list' + (key ? ('&key=' + encodeURIComponent(key)) : '') + '&_=' + Date.now();
+  fetch(url, {redirect:'follow', cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _holdLoading = false;
+      if(!d || !d.ok){ _holdItems = []; _merge(); return; }
+      var rows = Array.isArray(d.data) ? d.data : [];
+      _holdItems = rows.map(function(r){
+        var vtxt = '판정: ' + (r.verdict || '-') + (r.verdictReason ? ' — ' + r.verdictReason : '');
+        return {
+          regId:     'H' + (r.intakeRow || ''),
+          category:  '휴회 접수',
+          dept:      '운영부',
+          status:    HOLD_STATUS_MAP[String(r.status || '접수대기')] || '접수',
+          createdAt: r.appliedAt || '',
+          name:      r.name  || '',
+          contact:   r.phone || '',
+          content:   vtxt,
+          holdKind:  r.kind  || '',
+          holdStart: r.start || '',
+          holdEnd:   r.end   || '',
+          wishDays:  (r.wishDays != null ? r.wishDays + '일' : ''),
+          holdReason:r.reason|| ''
+        };
+      });
+      _merge();
+    })
+    .catch(function(){ _holdLoading = false; /* 휴회 실패는 나머지 7종 보드 유지, 조용히 스킵(실패 격리) */ });
 }
 
 /* ═══════════════════════════════════════════
@@ -716,6 +919,40 @@ function closeModal(){ $('modalBack').classList.remove('show'); _cur = null; }
 $('mCancel').addEventListener('click', closeModal);
 $('modalBack').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
 
+/* ── 💬 실무진 피드백 모달 (GM 지시 2026-07-27) ──
+   membership.html openStaffFeedback 패턴 그대로. 폼은 cpo/member/실무진피드백.html 하나뿐이고
+   여기선 iframe으로 빌려 쓴다 — 항목·시트가 저절로 같아진다(사본을 두면 그 순간부터 어긋난다).
+   지연 로드: 모달을 처음 열 때만 data-src→src 로 승격(페이지 첫 로딩을 무겁게 하지 않는다). */
+function openStaffFeedback(){
+  var fr = $('staffFeedbackFrame');
+  if (fr && !fr.getAttribute('src')) fr.setAttribute('src', fr.getAttribute('data-src'));
+  $('staffFeedbackBack').classList.add('show');
+}
+function closeStaffFeedback(){ $('staffFeedbackBack').classList.remove('show'); }
+$('staffFeedbackBack').addEventListener('click', function(e){ if(e.target===this) closeStaffFeedback(); });
+
+/* ── 📋 작업 현황 로그 모달 (GM 지시 2026-07-27) ──
+   공용 패널은 원래 "▸ 작업 현황 로그" 한 줄로 접혀 있다. 팝업으로 열었다는 건 이미 보겠다는 뜻이라
+   처음 열 때 한 번만 대신 펼쳐준다(패널 코드는 손대지 않는다 — 다른 페이지 동작 그대로). */
+var _wlOpened = false;
+function openWorklog(){
+  $('worklogBack').classList.add('show');
+  if(_wlOpened) return;
+  // 패널 스크립트는 defer 로 늦게 붙는다 — 아직 없으면 잠깐 기다렸다 한 번 더 본다(최대 3초).
+  var tries = 0;
+  (function expand(){
+    var t = $('worklogBack').querySelector('.wl-toggle');
+    if(t){
+      _wlOpened = true;
+      if(t.getAttribute('aria-expanded') !== 'true') t.click();
+      return;
+    }
+    if(++tries < 30) setTimeout(expand, 100);
+  })();
+}
+function closeWorklog(){ $('worklogBack').classList.remove('show'); }
+$('worklogBack').addEventListener('click', function(e){ if(e.target===this) closeWorklog(); });
+
 /* ── 서명패드 (canvas + pointer → toDataURL PNG) ── */
 var _signCv = $('signPad'), _signCtx = _signCv.getContext('2d'), _signDrawing = false, _signHasInk = false, _signLastX = 0, _signLastY = 0;
 function resizePad(){
@@ -748,7 +985,7 @@ $('mConfirm').addEventListener('click', function(){
   if($('m_pw').value.trim()!=='62611200'){ toast('비밀번호가 올바르지 않습니다', true); $('m_pw').focus(); return; }
   var sign = _signCv.toDataURL('image/png');
   var btn = this; btn.disabled = true; btn.textContent = '처리 중…';
-  var payload = { action:'lf_handover', t:VOC_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+  var payload = { action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
   fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify(payload), redirect:'follow' })
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -766,6 +1003,16 @@ function _wireBoard(){
     if(e.target && e.target.dataset && e.target.dataset.regAction==='status'){
       var _sel = e.target;
       _update(_sel.dataset.regId, _sel.dataset.regCat, {status:_sel.value}, null, _sel, _sel.getAttribute('data-prev-status')||'');
+      return;
+    }
+    /* 담당·처리자 드롭다운: '기타(직접 입력)' 선택 시 옆 텍스트칸 노출, 명단 선택 시 숨김·비움 */
+    if(e.target && e.target.dataset && ('regAssigneeSel' in e.target.dataset || 'regHandlerSel' in e.target.dataset)){
+      var kind = ('regAssigneeSel' in e.target.dataset) ? 'assignee' : 'handler';
+      var card2 = e.target.closest('[data-reg-card]');
+      var inp2 = card2 && card2.querySelector('[data-reg-' + kind + ']');
+      if(!inp2) return;
+      if(e.target.value === '__other__'){ inp2.style.display = 'block'; inp2.focus(); }
+      else { inp2.style.display = 'none'; inp2.value = ''; }
     }
   });
   board.addEventListener('click', function(e){
@@ -774,15 +1021,38 @@ function _wireBoard(){
       var card = saveBtn.closest('[data-reg-card]');
       if(!card) return;
       var payload = {};
-      var a = card.querySelector('[data-reg-assignee]');
       var m = card.querySelector('[data-reg-memo]');
-      var hd = card.querySelector('[data-reg-handler]');
       var sd = card.querySelector('[data-reg-sladays]');
-      if(a) payload.assignee = a.value;
+      payload.assignee = _staffFieldValue(card, 'assignee');
+      payload.handler = _staffFieldValue(card, 'handler');
+      payload.reporter = _staffFieldValue(card, 'reporter');
       if(m) payload.memo = m.value;
-      if(hd) payload.handler = hd.value;
       if(sd) payload.slaDays = sd.value;
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
+      return;
+    }
+    /* 접수 삭제 — 테스트 접수 정리용. 비밀번호 확인 후 접수ID 정확일치 1건만.
+       ★안전 3겹: ①무엇을 지우는지 보여주고 확인 ②비밀번호 ③서버가 접수ID로만 찾아 1행 삭제
+       (행 번호로 지우지 않는다 — 실고객 오삭제 재발 방지). */
+    var regDelBtn = e.target.closest('[data-reg-del]');
+    if(regDelBtn){
+      var rId = regDelBtn.dataset.regDel;
+      var rCat = regDelBtn.dataset.regDelCat || '';
+      var rDesc = regDelBtn.dataset.regDelDesc || '';
+      if(!rId) return;
+      if(!confirm('아래 접수를 삭제합니다. 되돌릴 수 없습니다.\n\n접수ID: ' + rId + (rDesc ? ('\n내용: ' + rDesc) : ''))) return;
+      var pin = prompt('삭제 비밀번호를 입력해 주세요.');
+      if(pin === null) return;
+      if(String(pin).trim() !== REG_DEL_PIN){ toast('비밀번호가 올바르지 않습니다', true); return; }
+      regDelBtn.disabled = true;
+      fetch(REG_API, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
+        body:JSON.stringify({ action:'reg_delete', id:rId, category:rCat, pin:String(pin).trim() }),
+        redirect:'follow'
+      }).then(function(r){ return r.json(); }).then(function(d){
+        if(d && d.ok){ toast(rId + ' 삭제 완료'); regLoad(); }
+        else { toast((d && d.error) || '삭제 실패', true); regDelBtn.disabled = false; }
+      }).catch(function(){ toast('네트워크 오류 — 삭제되지 않았습니다.', true); regDelBtn.disabled = false; });
       return;
     }
     var claimBtn = e.target.closest('[data-lf-claim]');
@@ -796,7 +1066,7 @@ function _wireBoard(){
       var delId = delBtn.dataset.lfDel;
       if(!confirm('[' + delId + '] 습득물을 삭제할까요?')) return;
       delBtn.disabled = true;
-      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'lf_delete', t:VOC_SUBMIT_TOKEN, id:delId}), redirect:'follow' })
+      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'lf_delete', t:RECEPTION_SUBMIT_TOKEN, id:delId}), redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(d){
           if(d && d.ok){ toast(delId + ' 삭제 완료'); lfLoad(); }
@@ -808,9 +1078,38 @@ function _wireBoard(){
   });
 }
 
+/* 담당자·처리자 입력 제안 목록(2026-07-31 웰리).
+   지금까지 실제로 쓰인 이름을 서버가 통일된 표기로 돌려준다 — 여기서 이름을 만들지 않는다.
+   실패하면 그냥 제안이 없을 뿐, 입력은 평소대로 된다(자유 입력을 막지 않는다). */
+function loadStaffSuggest(){
+  var dl = document.getElementById('reg-staff-names');
+  if(!dl){   // 이 스크립트가 datalist 보다 먼저 실행되는 경우 — 없으면 만들어 쓴다
+    dl = document.createElement('datalist');
+    dl.id = 'reg-staff-names';
+    document.body.appendChild(dl);
+  }
+  fetch(REG_API + '?action=reg_staff_suggest', {redirect:'follow', cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok || !d.names) return;
+      dl.innerHTML = d.names.map(function(n){
+        return '<option value="' + _esc(String(n)) + '"></option>';
+      }).join('');
+    })
+    .catch(function(){ /* 제안 없이 진행 */ });
+}
+
 _wireBoard();
 regLoad();
 lfLoad();
+holdLoad();
+scoreLoad('month');
+loadStaffSuggest();
 </script>
+
+<!-- 전 C-Level 공통 '작업 현황 로그' 패널 부품 — 데이터·스타일 단일 출처. 위 모달 안의
+     <div data-worklog="coo"> 를 이 스크립트가 찾아 그린다(사본 금지). GM 지시 2026-07-27 -->
+<script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
+<datalist id="reg-staff-names"></datalist>
 </body>
 </html>
