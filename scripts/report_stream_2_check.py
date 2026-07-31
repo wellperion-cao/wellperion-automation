@@ -137,6 +137,17 @@ def _legal_check_blank_block() -> str:
         lines.append("")
     lines.append("👉 여기서 날짜를 넣으시면 다음 날부터 이 목록에서 빠집니다")
     lines.append("   https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_일정.html")
+    # 부서 체계 페이지 — 주 1회(월요일)만 같이 안내한다(2026-07-31 GM 지시
+    # "각 체계 페이지 공유해서 작성하라고 하는 구조도 있어야 할 듯").
+    # ▸매일 붙이면 소음이 되어 안 읽힌다. 주 1회면 집요하되 견딜 만하다.
+    # ▸무엇이 비었는지까지 세는 것은 각 체계 보드(GAS)를 읽어야 해서 시우 배(4부서 체계) 몫이다 —
+    #   지금은 '자리와 방법'만 정확히 알린다. 세는 것이 붙으면 이 줄에 건수를 넣는다.
+    if datetime.now().weekday() == 0:
+        lines.append("")
+        lines.append("📄 부서 체계 페이지 — 이번 주에 바뀐 것·빠진 것이 있으면 직접 적어 주세요")
+        for _d, _f in (("시설부", "시설부 체계"), ("운영부", "운영부 체계"),
+                       ("지원부", "지원부 체계"), ("주차관리부", "주차관리부 체계")):
+            lines.append(f"   · {_d} https://wellperion-cao.github.io/wellperion-automation/coo/check/{_f}.html")
     if src == "seed":
         # 조용한 폴백을 숨기지 않는다 — 씨앗을 읽었다면 이미 답한 항목이 다시 떴을 수 있다.
         lines.append("(※ 일정 서버 응답이 없어 예비 자료로 만들었습니다 — 이미 알려주신 건이 다시 보이면 알려주세요)")
