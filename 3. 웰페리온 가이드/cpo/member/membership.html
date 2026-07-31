@@ -2594,7 +2594,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 </div>
 
 <!-- ══ LOSS 재등록 처리 모달 — 종료회원(LOSS) 표 '재등록 처리' 버튼. GM 지시(2026-07-28). ★왜 필요한가:
-     서버 판정(Survey.js member_active_list, _AA_LOSS) = 잔여일>0 && 재등록분류 ∉ {LOSS,환불,양도LOSS}.
+     서버 판정(Survey.js member_active_list, _AA_LOSS) = 잔여일>=0 && 재등록분류 ∉ {LOSS,환불,양도LOSS}(2026-07-31 경계 정정).
      종료일자만 고치면 잔여일(시트 수식)은 살아나지만 재등록분류가 여전히 LOSS류면 그대로 종료회원에
      남는다 — 실무진은 "왜 안 넘어가지" 하게 된다(더블클릭 인라인 편집도 발견하기 어려움).
      이 모달은 새 유효기간(종료일자) + 재등록분류를 한 번에 저장해 두 조건을 동시에 채운다.
@@ -6624,7 +6624,7 @@ var _cpoStats      = null;   // cpo_today_stats 결과 보관(교차 구성 요�
 var _activeHeaders = [];
 var _activeLoaded  = false;
 var _activeComposing = false;
-var _activeScope   = 'valid';   // 'valid'(잔여일>0 유효회원) | 'ended'(종료·이탈)
+var _activeScope   = 'valid';   // 'valid'(잔여일>=0 유효회원, 2026-07-31 경계 정정) | 'ended'(종료·이탈)
 var _activeReqSeq  = 0;         // 토글 빠르게 누를 때 느린 이전 응답이 최신을 덮지 않게(경쟁 가드)
 var _activeStartFilter = 'started';   // 대기자 버킷(2026-07-16 GM 지시) — 'started'(시작일 도래분만·기본) | 'waiting'(미래시작만) | 'all'(전체)
 
@@ -6721,17 +6721,19 @@ function _activeSortBy(col) {
 function _remainSortKey(v) {
   var n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
   if (isNaN(n)) return 1e15;   // 미상(빈칸·비숫자) → 맨뒤
-  if (n <= 0)   return 1e14;   // 만료·이탈(잔여일 ≤ 0) → 양수 뒤로
-  return n;                    // 양수: 작을수록(임박) 위로
+  if (n < 0)    return 1e14;   // 만료·이탈(잔여일 < 0) → 양수 뒤로. 2026-07-31 경계 정정(구: n<=0) — 0=만료 당일까지 유효라 임박순에 포함.
+  return n;                    // 0 이상: 작을수록(임박) 위로
 }
 // 잔여일 색상(§2-D, GM 지시 2026-07-20) — 10일 이내=빨강 / 30일 이내=주황 / 그 외=null(현행 기본 스타일 유지).
-// 만료(0 이하)는 임박(빨강)과 다른 회색으로 확실히 구분 + 아이콘·굵기 병기(색만으로 구분 금지 — 색각 이상 대비).
-// 파싱은 _remainSortKey와 동일 정규식(일관성) — 기존 토큰(--red/--orange/--dim-mid)만 사용, 새 색 발명 금지.
+// 만료(0 미만)는 임박(빨강)과 다른 회색으로 확실히 구분 + 아이콘·굵기 병기(색만으로 구분 금지 — 색각 이상 대비).
+// 2026-07-31 경계 정정(FB260731-090542) — 잔여일 0=만료 당일까지 유효(LOSS 전환은 -1일부터, Survey.js와 동일 기준)라
+// 0은 더 이상 회색 '만료'가 아니라 임박(빨강)으로 표시한다. 파싱은 _remainSortKey와 동일 정규식(일관성)
+// — 기존 토큰(--red/--orange/--dim-mid)만 사용, 새 색 발명 금지.
 function _remainColorInfo(v) {
   var n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
   if (isNaN(n)) return null;
-  if (n <= 0)  return { color: 'var(--dim-mid)', icon: '⏹ ', weight: 700 };   // 만료 — 회색+정지 아이콘
-  if (n <= 10) return { color: 'var(--red)',    icon: '🔴 ', weight: 800 };   // 10일 이내 — 빨강
+  if (n < 0)   return { color: 'var(--dim-mid)', icon: '⏹ ', weight: 700 };   // 만료 — 회색+정지 아이콘
+  if (n <= 10) return { color: 'var(--red)',    icon: '🔴 ', weight: 800 };   // 10일 이내(0 포함) — 빨강
   if (n <= 30) return { color: 'var(--orange)', icon: '🟠 ', weight: 700 };   // 30일 이내 — 주황
   return null;
 }

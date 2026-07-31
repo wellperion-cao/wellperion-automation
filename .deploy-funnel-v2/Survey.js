@@ -3596,6 +3596,11 @@ function _processAction(body) {
     //   V열 3번째 세그먼트로 기록 → 'instagram|bio|official'. 채널 판정은 split('|')[0]만 보므로 영향 없음.
     //   2026-07-20 시모: 이 값을 안 받아 적으면 '인스타 1건'이 어느 계정 기여인지 영영 알 수 없다.
     var _iUtmContent = String(body.utmContent || '').trim();
+    // utm_campaign = 콘텐츠(게시물) 단위 식별자(scripts/cta_utm.py slugify_campaign). 클라이언트(wp_inquiry_form(.html/_en.html))가
+    //   2026-07-31까지 이 값을 안 읽어 URL까지는 왔는데 여기서 버려지고 있었다 — '어느 콘텐츠가 문의를 만들었나'가
+    //   채널 단위까지만 측정되던 근본 원인(배252 시모 실측). V열(유입경로자동) 4번째 세그먼트로만 추가 —
+    //   채널 판정(_resolveInquiryChannelRaw_)은 split('|')[0]만 읽으므로 기존 로직 영향 0.
+    var _iUtmCampaign = String(body.utmCampaign || '').trim();
     // 유입언어(KO/EN) — 영문 자체폼(wp_inquiry_form_en.html)이 payload.lang:'en' 을 보낸다. 없으면 KO(한글폼·기존).
     //   영문 문의도 같은 category(membership/adult/youth)·같은 시트에 append 되므로, 이 값으로 KO/EN 을 구분한다(배9674 시모).
     //   아래 _imSet/_lsSet 은 '유입언어' 칸이 있을 때만 기록 → 칸 없으면 무기록(현행 KO 트래픽 무영향, 컷오버 시 칸 추가로 활성).
@@ -3639,7 +3644,7 @@ function _processAction(body) {
         _imSet(['접수 담당자', '담당'], '웹 자동접수');
         _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], _dateOnlyStrip_(body.exp1Date));  // 날짜 전용 칸 — 시각 혼입 방어(2026-07-20)
         _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
-        _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20, content 세그먼트 추가). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
+        _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '') + (_iUtmCampaign ? '|' + _iUtmCampaign : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20 content 세그먼트, 2026-07-31 campaign 4번째 세그먼트 추가). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
         _imSet(['비고', '메모', '담당자메모'], WEB_INTAKE_TAG + (_iReviewFlag ? ' ' + _iReviewFlag : ''));   // [웹접수] 유지(집계 중복방지) + 스팸의심 표시. utm 원문은 위 유입경로(자동)로 이관 — 비고엔 더 이상 처박지 않음(2026-07-20)
         _imSet(['개인정보 수집·이용 동의'], '동의');   // U열 — 검증만 하고 미기록이던 버그 수리(2026-07-20 시포). 강습·공간렌트·비즈니스 분기와 동일 표기 '동의' 통일. 헤더가 매우 긴 문장이라 짧은 키(동의·개인정보)는 다른 칸과 충돌 위험 있어 실헤더 대조로 확인한 고유 서두 구절만 사용. 과거 행은 무변경(신규 append만).
         _imSet(['유입언어'], _iLang);   // KO/EN — 영문 자체폼 통합(배9674 시모). 정확일치 우선(_miColIdx_) + '유입언어'는 부분일치 충돌 없음. 칸 없으면 무기록(컷오버 전엔 no-op).
@@ -3679,7 +3684,7 @@ function _processAction(body) {
         _lsSet(['나이', '연령', '자녀'], _iAge);
         _lsSet(['강습 종목', '종목', '과목'], _isSummer ? ('여름방학특강 - ' + _iProgram) : _iProgram);
         _lsSet(['문의 경로', '경로', '채널'], _iChannel || _canonicalChannel_(_iUtmSource));
-        _lsSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '')) : (_iChannel || ''));  // UTM 3세그먼트 기록 — 멤버십과 동일 패턴. _LESSON_MGMT_FIELDS 등재(2026-07-21 GM) 후 배선 누락 수리. 2026-07-26 시모.
+        _lsSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '') + (_iUtmCampaign ? '|' + _iUtmCampaign : '')) : (_iChannel || ''));  // UTM 4세그먼트 기록(2026-07-31 campaign 추가) — 멤버십과 동일 패턴. _LESSON_MGMT_FIELDS 등재(2026-07-21 GM) 후 배선 누락 수리. 2026-07-26 시모.
         _lsSet(['문의 사항', '문의사항', '내용'], _iMessage);
         // 배(희망 레슨시간 유실, 2026-07-20 실측규명): 구키 ['희망','레슨 시간','시간']는 '희망' 부분일치가
         //   idx5 종목칸("...강습 종목 (희망종목 모두 체크)")에 먼저 걸려 정답칸(idx9)에 도달 못하고 조용히 스킵됨
@@ -8757,7 +8762,8 @@ function _processAction(body) {
   }
 
   // ─── 회원관리 페이지(CPO): 멤버십 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───
-  //   scope=valid(기본): 잔여일>0 유효회원(2026-06-24 GM) / scope=ended: 종료·이탈(잔여일≤0 또는 LOSS·환불·양도LOSS)
+  //   scope=valid(기본): 잔여일>=0 유효회원(2026-06-24 GM 최초 기준=잔여일>0 → 2026-07-31 실무진 신고로 경계 정정:
+  //   잔여일 0=만료 당일까지 유효, LOSS 전환은 잔여일 -1일부터) / scope=ended: 종료·이탈(잔여일<0 또는 LOSS·환불·양도LOSS)
   //   ★빈 헤더·쓰레기 날짜헤더(GMT/표준시) 컬럼 제외 + 회원명 없는 빈/이상 행 제외(전체 컬럼은 그대로 노출).
   if (action === 'member_active_list') {
     var aaScope = String(body.scope || 'valid'); if (aaScope !== 'ended' && aaScope !== 'corp') aaScope = 'valid';
@@ -8853,7 +8859,7 @@ function _processAction(body) {
         var remRaw = aiRem >= 0 ? String(arow[aiRem] == null ? '' : arow[aiRem]).replace(/[^0-9\-]/g, '') : '';
         var rem = (remRaw === '' || remRaw === '-') ? NaN : parseInt(remRaw, 10);
         var reV = aiRe >= 0 ? String(arow[aiRe] == null ? '' : arow[aiRe]).trim() : '';
-        var isValid = !isNaN(rem) && rem > 0 && !_AA_LOSS[reV];  // 유효 = 잔여일>0 & 이탈표시 없음
+        var isValid = !isNaN(rem) && rem >= 0 && !_AA_LOSS[reV];  // 유효 = 잔여일>=0(만료 당일까지 유효) & 이탈표시 없음. 2026-07-31 실무진 신고로 경계 정정(구: rem>0).
         if (aaScope === 'valid' && !isValid) continue;
         if (aaScope === 'ended' && isValid) continue;   // 종료 = 유효가 아닌 모든 회원명 보유 행
         var obj = { rowIndex: ai + 2 };   // 시트 실제 행번호(인라인 수정 저장용)
@@ -9049,7 +9055,7 @@ function _processAction(body) {
   // ─── 멤버십 담당자 열 일괄 배치 쓰기(단일 setValues 1회) — 행단위 POST 1,006회(약 50분) → 1회(수 초) 전환.
   //   ⚠️ field 화이트리스트: '담당자'(A열, 멤버십 담당)만 허용 — 강습 담당 5칸(PT/골프/P.L/스쿼시/수영)은 절대 불허.
   //   ⚠️ 헤더 정확일치만 매칭(INC-020 재발방지 — 부분일치 indexOf 오매칭 금지, 쓸 필드 한정).
-  //   scope=valid: member_active_list 와 동일 판정기준(잔여일>0 & 재등록분류 이탈표시 없음)으로 대상 행만
+  //   scope=valid: member_active_list 와 동일 판정기준(잔여일>=0 & 재등록분류 이탈표시 없음, 2026-07-31 경계 정정)으로 대상 행만
   //   값 교체, 범위밖(유효 아님) 행은 원값 그대로 같이 써 무변경. 단일 열 range 로만 setValues
   //   (행 추가·삭제 0, 다른 열 무손상). 2026-07-20 GM 지시(대량 변경 배치화 — 6.1초/건→일괄).
   if (action === 'member_owner_bulk_set') {
@@ -9085,7 +9091,7 @@ function _processAction(body) {
       var mbRemRaw = mbRemIdx >= 0 ? String(mbRowArr[mbRemIdx] == null ? '' : mbRowArr[mbRemIdx]).replace(/[^0-9\-]/g, '') : '';
       var mbRem = (mbRemRaw === '' || mbRemRaw === '-') ? NaN : parseInt(mbRemRaw, 10);
       var mbReV = mbReIdx >= 0 ? String(mbRowArr[mbReIdx] == null ? '' : mbRowArr[mbReIdx]).trim() : '';
-      var mbIsValid = !isNaN(mbRem) && mbRem > 0 && !mbLoss[mbReV];
+      var mbIsValid = !isNaN(mbRem) && mbRem >= 0 && !mbLoss[mbReV];  // 2026-07-31 경계 정정(구: mbRem>0)
       if (!mbIsValid) { mbOut.push([mbCur]); continue; }  // 범위밖(유효회원 아님) — 원값 그대로, 집계 제외
       mbTotal++;
       var mbKey = mbCur || '(빈값)';
@@ -9102,7 +9108,7 @@ function _processAction(body) {
   // ─── 멤버십 회원관리 요약 집계(§2-A 로딩속도) — 2026-07-20 시포 ───
   //   목적: 화면이 카드 숫자를 세려고 member_active_list(1,006행×37열, 콜드 ~11초)를 통째로 기다리던 것을
   //   서버 집계 작은 응답으로 대체. 계약 = docs/superpowers/specs/2026-07-20-member-active-summary-contract.md
-  //   ★ 유효성 판정은 cpo_today_stats와 100% 동일 공식 재사용(재정의 금지) — 회원명 있는 행만, 잔여일>0, 이탈표시 없음.
+  //   ★ 유효성 판정은 cpo_today_stats와 100% 동일 공식 재사용(재정의 금지) — 회원명 있는 행만, 잔여일>=0(2026-07-31 경계 정정), 이탈표시 없음.
   //   ★ member_active_list는 그대로 둔다(표·검색·인라인편집·담당자배정이 실레코드를 쓰므로). 이 액션은 부가 최적화.
   if (action === 'member_active_summary') {
     var maCache = CacheService.getScriptCache();
@@ -9167,7 +9173,7 @@ function _processAction(body) {
         var maRemRaw = maRemI >= 0 ? String(mrow[maRemI] == null ? '' : mrow[maRemI]).replace(/[^0-9\-]/g, '') : '';
         var maRem = (maRemRaw === '' || maRemRaw === '-') ? NaN : parseInt(maRemRaw, 10);
         var maReV = maReI >= 0 ? String(mrow[maReI] == null ? '' : mrow[maReI]).trim() : '';
-        var maValid = !isNaN(maRem) && maRem > 0 && !_MA_LOSS[maReV];
+        var maValid = !isNaN(maRem) && maRem >= 0 && !_MA_LOSS[maReV];  // 2026-07-31 경계 정정(구: maRem>0)
         if (maValid) {
           maRes.validTotal++;
           var mv = maTypI >= 0 ? String(mrow[maTypI] == null ? '' : mrow[maTypI]).trim() : '';
@@ -9593,13 +9599,13 @@ function _processAction(body) {
             if (crD === ctToday) ctTR++;
             if (crD && crD.slice(0, 7) === ctMonth) ctMR++;
           }
-          // 회원 현황(회원명 있는 행만): 유효 = 잔여일>0 & 이탈표시 없음
+          // 회원 현황(회원명 있는 행만): 유효 = 잔여일>=0(만료 당일까지 유효) & 이탈표시 없음. 2026-07-31 경계 정정.
           var crNm = crNmI >= 0 ? String(crow[crNmI] == null ? '' : crow[crNmI]).trim() : '';
           if (!crNm) continue;
           var crRemRaw = crRemI >= 0 ? String(crow[crRemI] == null ? '' : crow[crRemI]).replace(/[^0-9\-]/g, '') : '';
           var crRem = (crRemRaw === '' || crRemRaw === '-') ? NaN : parseInt(crRemRaw, 10);
           var crReV = crReI >= 0 ? String(crow[crReI] == null ? '' : crow[crReI]).trim() : '';
-          var crValid = !isNaN(crRem) && crRem > 0 && !_CR_LOSS[crReV];
+          var crValid = !isNaN(crRem) && crRem >= 0 && !_CR_LOSS[crReV];  // 2026-07-31 경계 정정(구: crRem>0)
           if (crValid) ctActive++; else ctEnded++;
           // 금일 LOSS: 이탈일(또는 해지/종료일)이 오늘 + 유효 아님 — 날짜 칸 없으면 0 유지
           if (crLossI >= 0 && !crValid) {
@@ -9654,7 +9660,7 @@ function _processAction(body) {
           var czRemRaw = czRem >= 0 ? String(czrow[czRem] == null ? '' : czrow[czRem]).replace(/[^0-9\-]/g, '') : '';
           var czRemN = (czRemRaw === '' || czRemRaw === '-') ? NaN : parseInt(czRemRaw, 10);
           var czReV = czRe >= 0 ? String(czrow[czRe] == null ? '' : czrow[czRe]).trim() : '';
-          var czIsLoss = !!_CZ_LOSS[czReV] || (!isNaN(czRemN) && czRemN <= 0);
+          var czIsLoss = !!_CZ_LOSS[czReV] || (!isNaN(czRemN) && czRemN < 0);  // 2026-07-31 경계 정정 — LOSS 전환은 잔여일 -1일부터(구: czRemN<=0). 실무진 신고 FB260731-090542.
           if (czIsLoss) {
             czLoss++;
             // 당월 LOSS: LOSS일자(이탈일/해지일/종료일)가 현재 연-월인 건만
@@ -9666,7 +9672,7 @@ function _processAction(body) {
             continue;
           }
           czActive++;
-          if (!isNaN(czRemN) && czRemN > 0 && czRemN <= 30) {
+          if (!isNaN(czRemN) && czRemN >= 0 && czRemN <= 30) {  // 갱신임박 목록도 새 유효경계(잔여일>=0)와 일치시킴 — 만료 당일(0)도 목록에 포함
             czRenew.push({ name: czName, rem: czRemN, program: czPg >= 0 ? String(czrow[czPg] || '').trim() : '' });
           }
         }
