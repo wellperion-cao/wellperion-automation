@@ -385,7 +385,7 @@ var CAT_META = [
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','memo','handler','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','assigneeCanon','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved'];
 
 /* ── 🏆 점수판 (GM 지시 2026-07-28) ──
    셈법은 서버(reg_scoreboard) 한 곳에만 있다 — 화면에서 다시 계산하지 않는다.
@@ -732,9 +732,11 @@ function _card(r){
      선택제(드롭다운)로 막지 않는다: 담당자가 회원일 수 있다는 GM 제약 그대로 자유 입력이며,
      제안은 고르면 표기가 통일되고 새 이름은 그냥 쳐 넣으면 된다. 같은 사람이 '최준용'·'최준용M'
      두 갈래로 쌓여 점수·적체가 갈라지던 것을 입력 단계에서 줄인다. */
+  h += '<div class="field-row"><label>담당</label>';
   h += '<input type="text" data-reg-assignee list="reg-staff-names" placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
 
   /* 처리자(실제 처리한) */
+  h += '<div class="field-row"><label>처리자</label>';
   h += '<input type="text" data-reg-handler list="reg-staff-names" placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
 
   /* 접수자(적어 준 사람) — 점수판의 '접수 1점'이 이 칸에서 나온다(GM 지시 2026-07-28).
