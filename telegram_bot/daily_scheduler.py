@@ -2947,53 +2947,67 @@ def main():
     # 판정은 support_check_summary.zero_zones() 한 곳(22:30 보고와 같은 원천 · 약속 L01).
     _ZERO_ALERT_STATE = REPO_ROOT / "status" / "check_zero_alert.json"
 
-    def _zero_zone_alert(slot: str):
+    def _zero_zone_alert(shift_key: str):
         try:
             import sys as _s
             _sp = str(REPO_ROOT / "scripts")
             if _sp not in _s.path:
                 _s.path.insert(0, _sp)
-            from support_check_summary import zero_zones
+            from support_check_summary import shift_gaps
             today = datetime.now().strftime("%Y-%m-%d")
-            zones = zero_zones(today)
-            if not zones:
+            gaps = shift_gaps(today, shift_key)
+            if not gaps:
                 return                      # 정상 — 아무 말도 하지 않는다
             try:
                 state = json.loads(_ZERO_ALERT_STATE.read_text(encoding="utf-8"))
             except Exception:
                 state = {}
             sent = set(state.get(today) or [])
-            fresh = [(lbl, n) for lbl, n in zones if lbl not in sent]
+            fresh = [g for g in gaps if f"{g['zone']}|{g['shift']}" not in sent]
             if not fresh:
-                return                      # 오늘 이미 알린 구역 — 두 번 보내지 않는다
-            body = ["🔔 오늘 아직 한 건도 안 된 구역이 있습니다",
-                    "— 웰페리온 AI 운영지원 '웰리'가 보내드립니다.", ""]
-            for lbl, n in fresh:
-                body.append(f"▪ {lbl} — 예정 {n}건 중 0건")
+                return                      # 오늘 이미 짚은 회차 — 두 번 보내지 않는다
+            # ★사람이 옆에서 짚어주듯 쓴다(2026-07-31 GM 지시). 숫자만 던지면 받는 사람은
+            #   무엇을 하라는 건지 모른다. '무슨 일이 일어난 것 같은지'까지 말해 준다.
+            miss = [g for g in fresh if g["likely"] == "제출누락"]
+            head = ("🔔 점검은 도신 것 같은데 제출이 안 들어왔습니다"
+                    if miss else "🔔 아직 시작 전인 회차가 있습니다")
+            body = [head, "— 웰페리온 AI 운영지원 '웰리'가 보내드립니다.", ""]
+            for g in fresh:
+                body.append(f"▪ {g['zone']} {g['shift']} — {g['total']}건 예정인데 제출 0건")
+                if g["likely"] == "제출누락":
+                    other = "여성구역" if g["zone"] == "남성구역" else "남성구역"
+                    # 받침 유무로 은/는을 고른다 — 조사가 틀리면 '사람이 짚어준 느낌'이 깨진다.
+                    _josa = "은" if (ord(other[-1]) - 0xAC00) % 28 else "는"
+                    body.append(f"   같은 {g['shift']}에 {other}{_josa} 들어와 있어서,")
+                    body.append("   하시고 입력만 못 하신 것 같습니다. 확인 부탁드립니다.")
+                else:
+                    body.append("   아직 시작 전이시면 그대로 두셔도 됩니다.")
+                    body.append("   이미 하셨다면 제출만 부탁드립니다.")
             body.append("")
-            body.append("덜 된 것이 아니라 아직 시작 전이라 알려드립니다. 확인 부탁드립니다.")
+            body.append("👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html")
             # parse_mode=None = 평문. 본문에 '—'·'('·'.' 가 있어 MarkdownV2 로 보내면 파싱 오류가 난다.
             ok = send_telegram(DIGEST_CHECK_CHAT_ID, "\n".join(body), parse_mode=None)
             if ok:
-                state[today] = sorted(sent | {lbl for lbl, _ in fresh})
+                state[today] = sorted(sent | {f"{g['zone']}|{g['shift']}" for g in fresh})
                 _ZERO_ALERT_STATE.write_text(
                     json.dumps(state, ensure_ascii=False), encoding="utf-8")
-                logger.info(f"[zero-zone {slot}] 알림 발송: {[l for l, _ in fresh]}")
+                logger.info(f"[zero-zone {shift_key}] 발송: {[(g['zone'], g['likely']) for g in fresh]}")
             else:
-                logger.error(f"[zero-zone {slot}] 발송 실패 — 상태 미기록(다음 슬롯 재시도)")
+                logger.error(f"[zero-zone {shift_key}] 발송 실패 — 상태 미기록(다음 슬롯 재시도)")
         except Exception as e:
-            logger.error(f"[zero-zone {slot}] 예외: {e}")
+            logger.error(f"[zero-zone {shift_key}] 예외: {e}")
 
-    for _h, _slot in ((14, "오전조 마감 후"), (20, "오후조 마감 후")):
+    # 14:00 = 오전조가 끝난 뒤 / 20:00 = 오후조가 끝난 뒤. 마감조는 22:30 하루 정리가 담당한다.
+    for _h, _sk in ((14, "am"), (20, "pm")):
         scheduler.add_job(
             _zero_zone_alert,
             trigger=CronTrigger(hour=_h, minute=0),
             id=f"zero_zone_alert_{_h}",
-            args=[_slot],
+            args=[_sk],
             misfire_grace_time=1800,
             coalesce=True,
         )
-    logger.info("구역 전체 미점검 알림 등록 완료 (14:00·20:00 · 0건일 때만 · 구역당 하루 1회)")
+    logger.info("회차 제출누락 알림 등록 완료 (14:00 오전조·20:00 오후조 · 0건일 때만 · 회차당 하루 1회)")
 
     # ── 시트 칸 계약 점검 (매일 07:50 — 08:00 통합 브리프 직전) — CPO 2026-07-20 ──
     # 재발방지 A안 0단계(GM 확정, 값 규칙 포함). 정상이면 완전 침묵 — 어긋남만 업무보고방 알림.

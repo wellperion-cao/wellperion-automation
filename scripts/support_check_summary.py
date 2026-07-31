@@ -653,20 +653,40 @@ def zero_zones(today: str, url: str = DEFAULT_GAS_URL, data: dict | None = None)
       **하루 종일 손도 안 댄 구역**만이 진짜 이상이고, 그때만 알린다.
     ▸판정은 여기 한 곳에서만 한다 — 22:30 보고와 낮 알림이 각자 세면 숫자가 갈라진다(약속 L01).
     """
+    return shift_gaps(today, "am", url, data) + shift_gaps(today, "pm", url, data)
+
+
+def shift_gaps(today: str, shift_key: str, url: str = DEFAULT_GAS_URL,
+               data: dict | None = None):
+    """그 회차에서 **제출이 0건인 구역**을 회차 단위로 짚는다.
+
+    반환: [{zone, shift, total, likely}] — likely 는 무슨 일이 일어난 것 같은지.
+      · "제출누락"  = 같은 회차에 **다른 구역은 됐는데** 이 구역만 0건.
+                      사람은 출근해 그 회차를 돌았다는 뜻이라, 안 한 게 아니라 **입력만 빠진** 쪽이 유력하다.
+      · "미시작"    = 그 회차가 양쪽 구역 모두 0건. 아직 시작 전일 수 있다.
+
+    ★2026-07-31 GM 지시로 구역 합계(52건 중 0건)에서 회차 단위로 바꿨다:
+      "여성구역 52건 중 0건이 아니라, 오전 회차가 진행되었는데 제출이 안 된 것 같다고
+       진짜 사람이 짚어준 것처럼 옆에서 짚어줘야 해."
+      합계로 뭉치면 받는 사람이 무엇을 해야 하는지 모른다 — 현장이 일하는 단위가 회차다.
+    """
     d = data if data is not None else fetch_gas(
         {"action": "today_live", "dept": "support", "date": today}, url)
     if not isinstance(d, dict):
         return []
-    out = []
+    label = dict(_SHIFTS).get(shift_key, shift_key)
     g = d.get("byGender", {}) or {}
+    stat = {}
     for gk, glabel in (("m", "남성구역"), ("f", "여성구역")):
         part = g.get(gk, {}) or {}
-        # 서버가 구역 합계를 직접 준다(done/total) — 그걸 쓴다. 회차를 내가 더하면 서버가 나중에
-        # 회차를 하나 늘렸을 때 조용히 빠뜨린다(실측: night 회차가 이미 응답에 들어 있다).
-        g_t = int(part.get("total", 0) or 0) or sum(int(part.get(k + "Total", 0) or 0) for k, _ in _SHIFTS)
-        g_d = int(part.get("done", 0) or 0)
-        if g_t > 0 and g_d == 0:      # 예정은 있는데 한 건도 안 됨
-            out.append((glabel, g_t))
+        stat[glabel] = (int(part.get(shift_key, 0) or 0),
+                        int(part.get(shift_key + "Total", 0) or 0))
+    any_done = any(dn > 0 for dn, tt in stat.values())
+    out = []
+    for glabel, (dn, tt) in stat.items():
+        if tt > 0 and dn == 0:
+            out.append({"zone": glabel, "shift": label, "total": tt,
+                        "likely": "제출누락" if any_done else "미시작"})
     return out
 
 
