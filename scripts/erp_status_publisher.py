@@ -49,6 +49,10 @@ try:
     import sync_queue_mirror  # 큐 미러 단방향·멱등 동기화(자가치유용)
 except Exception:
     sync_queue_mirror = None
+try:
+    import notify_registry_check as _nrc  # 알림 등록부 드리프트 체커(배NOTI, 2026-08-01)
+except Exception:
+    _nrc = None
 
 # 감시할 예약작업 (작업명 → 사람이 읽을 이름)
 WATCH_TASKS = {
@@ -552,6 +556,14 @@ def main():
     home_kpi_ok = publish_home_kpi_snapshot()
     print(f"[erp_status] home_kpi_snapshot: {'갱신' if home_kpi_ok else '실패(기존 유지)'}")
 
+    # 알림 등록부 드리프트 체크 — 30분 주기에 편승(배NOTI, 2026-08-01 시토). 신규 예약작업 없음(L21).
+    if _nrc is not None:
+        try:
+            _nrc.main(write_json=True)
+            print("[erp_status] notify_registry_check: 갱신")
+        except Exception as e:
+            print(f"[erp_status] notify_registry_check: 실패({e})")
+
     # 연동 다리 — 새로 깨진 것만 텔레그램 1줄 경고(실패해도 발행 무영향)
     alert_newly_broken(payload.get("bridges", []))
 
@@ -568,6 +580,9 @@ def main():
                 # 신규 파일(첫 발행)은 아직 미추적 상태라 `git commit -- <path>`만으로는 안 잡힌다.
                 # 특정 경로만 add(=safe — `-A`처럼 남의 staged 변경을 끌어들이지 않음).
                 subprocess.run(["git", "add", str(HOME_KPI_OUT)], cwd=ROOT, check=False)
+            drift_out = STATUS_DIR / "notify_drift.json"
+            if drift_out.exists():
+                commit_paths.append(str(drift_out))
             subprocess.run(
                 ["git", "commit", "-m",
                  "chore(erp): 시스템 현황 자동 발행 (erp_status.json)",

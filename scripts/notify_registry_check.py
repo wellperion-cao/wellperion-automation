@@ -82,8 +82,8 @@ def load_json(path):
         return None
 
 
-def main():
-    as_json = '--json' in sys.argv
+def main(write_json=None):
+    as_json = write_json if write_json is not None else '--json' in sys.argv
 
     registry = load_json(REGISTRY_PATH) or {}
     reg_items = registry.get('items', [])
