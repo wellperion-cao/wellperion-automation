@@ -94,15 +94,17 @@ def _legal_check_blank_block() -> str:
     if not blank:
         return ""
     total = sum(len(v) for v in blank.values())
-    lines = ["", "━" * 10, f"🏛 최근 실시일이 비어 있는 법정·정기점검 {total}건",
-             "각 부서에서 마지막으로 언제 했는지만 알려주시면 저희가 채워 넣겠습니다.", ""]
-    for dept in sorted(blank):
-        lines.append(f"▪ {dept} ({len(blank[dept])}건)")
-        for nm in blank[dept]:
-            lines.append(f"   · {nm}")
-    lines.append("")
-    lines.append("👉 전사 일정: https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_점검일정.html")
-    return "\n".join(lines)
+    # ★목록을 통째로 붙이지 않는다(2026-07-31 GM 지적 "이러면 실무진은 혼란만 가중된다").
+    #   ★운영+시설+지원+주차 는 네 부서가 함께 쓰는 '한 방'이다 — 15줄을 매일 밤 쏟으면
+    #   대부분이 남의 부서 줄이라 아무도 안 읽고, 채워질 때까지 매일 반복돼 소음이 된다.
+    #   그래서 부서별 건수 한 줄 + 링크만 남긴다. 상세는 일정 페이지에서 본다.
+    counts = " · ".join(f"{d} {len(v)}" for d, v in sorted(blank.items(), key=lambda kv: -len(kv[1])))
+    return "\n".join([
+        "", "━" * 10,
+        f"🏛 법정·정기점검 실시일이 아직 비어 있습니다 — {total}건 ({counts})",
+        "마지막으로 언제 하셨는지만 알려주시면 저희가 채워 넣겠습니다.",
+        "👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_일정.html",
+    ])
 
 
 def _send_telegram(text: str) -> bool:
