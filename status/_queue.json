@@ -835,5 +835,23 @@
     "module": "home",
     "surface": "autonomy",
     "feedback_id": "FB260731-090542"
+  },
+  {
+    "task_id": "CTO-2026-07-31-종합접수처-현황-테스트-접수-삭제-버튼-비밀번호-1",
+    "clevel": "cto",
+    "title": "[시토] 종합접수처 현황 — 테스트 접수 삭제 버튼(비밀번호 1200)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-07-31",
+    "from": "gm",
+    "note": "[gm → 시토 전달 2026-07-31] GM 지시 2026-07-31: '종합접수처 현황에 테스트 관련해서는 삭제가 될 수 있게 해줘, 삭제 시 비밀번호 1200 으로 설정해주고'. ▸화면(종합접수처_현황.html): 접수 카드마다 '🗑 삭제' 버튼 + 확인창(접수ID·내용 표시) + 비밀번호 1200. 커밋 e6b7e8121. ▸서버(GAS _regDelete): 비밀번호를 서버에서도 검사하도록 추가(ScriptProperties REG_DELETE_PIN 우선·없으면 기본 1200). 화면에서만 물으면 액션명을 아는 누구나 호출 가능하기 때문(TOKEN_ENFORCE 기본 OFF). ▸삭제 방식은 기존 그대로 접수ID 정확일치 1행만 — 행 번호로 지우지 않는다(INC-020 재발 방지). ▸실측: 라이브 GAS 에 없는 ID 로 호출 → '해당 접수ID를 찾을 수 없습니다' (아무것도 안 지움·도달 확인). 단 BAD_PIN 이 아니라 이 응답이 온 것 = 서버측 비밀번호 검사는 아직 라이브 아님.",
+    "next": "GAS 재배포만 남음 — clasp 인증이 만료(invalid_rapt)돼 GM 1회 로그인 필요. 그 전까지 비밀번호는 화면 단계에서만 걸린다.",
+    "depends_on": "",
+    "ship_no": 10434,
+    "short_no": 248,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "office",
+    "reversible": false
   }
 ]
