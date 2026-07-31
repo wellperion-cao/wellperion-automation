@@ -1231,9 +1231,12 @@ function _cacheGetJson_(cache, key) {
 function _aaCacheClear_() {
   try {
     var c = CacheService.getScriptCache();
-    _cacheInvalidateJson_(c, 'aacache|valid');
-    _cacheInvalidateJson_(c, 'aacache|ended');
-    _cacheInvalidateJson_(c, 'aacache|corp');
+    var scopes = ['valid', 'ended', 'corp'], fmts = ['obj', 'rows'];
+    for (var si = 0; si < scopes.length; si++) {
+      for (var fi = 0; fi < fmts.length; fi++) {
+        _cacheInvalidateJson_(c, 'aacache|' + scopes[si] + '|' + fmts[fi]);
+      }
+    }
   } catch (e) {}
 }
 
@@ -8813,7 +8816,9 @@ function _processAction(body) {
     //   ▸미스·실패 시 그대로 시트 재조회 폴백(무중단) · nocache=1 로 우회 가능.
     //   ▸쓰기(member_active_update 등)에서 무효화하므로 편집 직후 옛 값이 보이지 않는다.
     var aaCache = CacheService.getScriptCache();
-    var aaCacheKey = 'aacache|' + aaScope;
+    // ★형식별로 키를 가른다 — 안 가르면 배열 요청에 객체 응답(또는 그 반대)이 캐시에서
+    //   그대로 나가 화면이 조용히 빈다. 2026-07-31 시토.
+    var aaCacheKey = 'aacache|' + aaScope + '|' + (String(body.format || '') === 'rows' ? 'rows' : 'obj');
     if (!_nc) {
       var aaHit = _cacheGetJson_(aaCache, aaCacheKey);
       if (aaHit) return _json(aaHit);
@@ -8890,7 +8895,30 @@ function _processAction(body) {
       var aiEndKey = aaHdrRaw[aiEnd];
       aaRows.sort(function(a, b){ var av = String(a[aiEndKey] || ''); var bv = String(b[aiEndKey] || ''); return av < bv ? 1 : (av > bv ? -1 : 0); });
     }
-    var aaResult = { ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows };
+    // ★2026-07-31 시토(GM '속도 근본적으로') — format=rows 면 **행을 배열로** 보낸다.
+    //   왜: 응답 1,158KB 를 뜯어 보니 997행 × 36칸을 전부 객체로 보내느라 **칸 이름이
+    //   369KB(32%)** 를 차지하고 있었다. 같은 이름을 997번 반복해 실어 보낸 것이다.
+    //   columns 한 줄 + 행은 값만 배열로 보내면 **1,158KB → 526KB(55% 감소)**(실측).
+    //   전송이 지금의 병목이라(캐시로 시트 재조회는 이미 없앴다) 이게 가장 큰 남은 덩이다.
+    //   ▸정보 손실 0 — 같은 값을 순서로 전달할 뿐이고, 화면이 columns 로 다시 이름을 붙인다.
+    //   ▸format 미지정이면 종전 그대로(하위호환) — 옛 화면·다른 소비자 무영향.
+    //   ▸참고: 애초 계획이던 '칸 화이트리스트'는 전제가 틀렸다. 화면(_activeDisplayCols)은
+    //     서버가 준 헤더를 거의 다 쓰고 9칸 남짓만 숨긴다 — 줄여도 25% 정도라 효과가 작다.
+    var aaResult;
+    if (String(body.format || '') === 'rows') {
+      var aaCols = aaHdrs.slice();
+      var aaArr = [];
+      for (var ar = 0; ar < aaRows.length; ar++) {
+        var aRow = aaRows[ar], aOut = [aRow.rowIndex, aRow.rowKey || ''];
+        for (var ac = 0; ac < aaCols.length; ac++) aOut.push(aRow[aaCols[ac]] === undefined ? '' : aRow[aaCols[ac]]);
+        aaArr.push(aOut);
+      }
+      // meta = 앞 2칸이 무엇인지 알려 준다(화면이 순서를 추측하지 않게).
+      aaResult = { ok: true, scope: aaScope, format: 'rows', meta: ['rowIndex', 'rowKey'],
+                   columns: aaCols, count: aaArr.length, rows: aaArr };
+    } else {
+      aaResult = { ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows };
+    }
     _cachePutJson_(aaCache, aaCacheKey, aaResult, 60);
     return _json(aaResult);
   }
