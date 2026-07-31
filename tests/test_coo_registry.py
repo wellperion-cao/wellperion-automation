@@ -22,9 +22,12 @@ def test_cto_modules_preserved_not_touched_by_coo_consumer():
     # 훼손하지 않는지)는 그대로.
     reg = R.load_registry()
     ids = [m["id"] for m in reg["modules"]]
+    # 2026-07-31: cto-inquiry-read-snapshot 삭제(중복 등록). 같은 GAS 호출·같은 산출물
+    # (inquiry_snapshot_*.json)·같은 3분 예약작업을 cpo-inquiry-snapshot 과 둘이 등록하고
+    # 있었다. 하트비트를 실제로 남기는 쪽은 cpo 하나뿐이었다 — cto 항목은 종이 등록이었다.
     assert "cto-automation-health" in ids
     assert "cto-weekly-page-hygiene" in ids
-    assert "cto-inquiry-read-snapshot" in ids
+    assert "cto-inquiry-read-snapshot" not in ids
 
 
 def test_iter_coo_returns_only_coo_owned_modules():

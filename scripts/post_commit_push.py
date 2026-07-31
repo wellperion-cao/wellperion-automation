@@ -367,15 +367,23 @@ def _reconcile(root: str) -> tuple[bool, str]:
         _clear_stale_index_entries(root)
         still_dirty = _merge_blocking_paths(root)
         if still_dirty:
-            non_machine = [p for p in still_dirty if not _is_machine_output(p)]
-            if non_machine:
-                # 사람이 편집 중일 수 있는 파일이 merge 대상과 겹친다 → 원래대로 보류.
-                reason = _tail(
-                    "merge 대상에 비기계 파일이 더러움(" + str(len(non_machine)) +
-                    "건) — merge 보류·다음 주기로: " + ", ".join(non_machine[:5])
-                )
-                _log(f"POST_COMMIT_PUSH {reason}", root)
-                return False, reason
+            # ★2026-07-31 시토(GM "AI진행현황방에 계속 알림 뜨는데 좋은 내용이 아니다") —
+            #   '비기계 파일이 겹치면 보류' 가드를 **뺐다.**
+            #   왜: 이 가드는 `git merge` 가 작업트리를 덮어쓸 때를 막으려던 것이다. 그런데
+            #   아래 통합은 merge-tree/commit-tree/update-ref 로 **작업트리를 아예 안 만진다.**
+            #   덮어쓸 일이 없으니 막을 이유도 없는데, 남은 가드가 미커밋 파일 하나만 있으면
+            #   전체 push 를 세웠다.
+            #   실측 2026-07-31: 종합접수처 화면 파일이 스테이지에 옛 blob 으로 남아 **74분간
+            #   모든 push 를 막았고**, 그동안 30분마다 같은 경보가 확인방에 반복 발신됐다.
+            #   막힌 것은 한 파일인데 대가는 저장소 전체 정지였다.
+            #   ▸미커밋 변경은 통합 뒤에도 **미커밋 그대로 남는다**(내용 무손실). 사람이 편집
+            #     중인 파일을 이 경로가 커밋하는 일은 여전히 없다 — 커밋 대상은 기계 산출물뿐.
+            #   ▸진짜 내용 충돌이면 merge-tree 가 0 아닌 코드로 거부하고 그때 보류한다(그 방어는 유지).
+            _log(
+                "POST_COMMIT_PUSH 겹침 " + str(len(still_dirty)) +
+                "건(비기계 " + str(sum(1 for p in still_dirty if not _is_machine_output(p))) +
+                "건) — 작업트리 무접촉 통합이라 그대로 진행", root,
+            )
             # ★2026-07-31(시토 · 배245·배242 근본) — 겹치는 게 **기계 산출물뿐**이면 보류하지
             #   않는다. 여기서 보류하면 영원히 안 열리기 때문이다: 선커밋이 성공해도 3분·5분
             #   자동화가 몇 초 안에 같은 파일을 다시 써서(실측: 선커밋 ok 직후 같은 3건이 다시
@@ -724,13 +732,31 @@ def _alert_state_write(root: str, st: dict) -> None:
 
 def _push_succeeded(root: str) -> None:
     """push 가 실제로 성공했을 때만 부른다 — 정체 시계와 선커밋 연속 카운터를 0으로 되돌린다.
-    이 두 값이 리셋되는 자리는 여기 하나뿐이다(정체 판정의 단일 기준점)."""
+    이 두 값이 리셋되는 자리는 여기 하나뿐이다(정체 판정의 단일 기준점).
+
+    ★2026-07-31 시토(GM "계속 들어오는 것 같은데?") — 풀렸으면 **풀렸다고 알린다.**
+      그동안 확인방에는 '막혔다'만 가고 회복은 침묵이었다. 그래서 마지막 경보 뒤에 조용히
+      해결돼도 GM 화면에는 나쁜 소식만 쌓인 채 남아, 이미 끝난 일이 계속 진행 중처럼 보였다
+      (실측: 16:11~16:26 경보 3통 → 16:28 해소, 그런데 해소를 아무도 말해 주지 않았다).
+      알림을 늘리는 게 아니라 **이미 보낸 경보를 닫아 주는 짝**이다 — 경보를 실제로 보낸
+      적이 있을 때만(1통 나갔으면 1통 닫는다), 그리고 딱 한 번만 보낸다.
+    """
     st = _alert_state_read(root)
+    was_alerted = bool(st.get("key")) and bool(st.get("stuck_since"))
     if st.get("stuck_since") or st.get("precommit_streak"):
+        import time
+        stuck_min = int((time.time() - float(st.get("stuck_since") or 0)) / 60) if st.get("stuck_since") else 0
         st.pop("stuck_since", None)
         st.pop("precommit_streak", None)
         st.pop("forced_at", None)
         _alert_state_write(root, st)
+        if was_alerted:
+            _log(f"POST_COMMIT_PUSH 회복 — 정체 {stuck_min}분 만에 해소, 확인방에 닫힘 1통", root)
+            _telegram_warn(
+                root,
+                f"✅ 자동 push 정상화 — 밀려 있던 것이 모두 올라갔습니다(정체 {stuck_min}분).\n"
+                "앞서 보낸 push 실패 알림은 해소된 건입니다.",
+            )
 
 
 def _alert_should_send(root: str, reason: str) -> bool:
