@@ -56,7 +56,53 @@ def build_digest(today: str | None = None) -> str:
         f"📊 [하루 일과 정리] {today}({weekday})\n"
         "🏗️ 시설&지원&주차 점검 및 이슈 현황"
     )
-    return f"{header}\n\n{_check_section(today)}"
+    return f"{header}\n\n{_check_section(today)}{_legal_check_blank_block()}"
+
+
+# ── 실시일이 비어 있는 법정·정기점검 (2026-07-31 GM 결정) ──
+# 배경: 전사 일정 SSOT 34건의 '최근 실시일'이 전부 공란인데, 그걸 채워 달라고 자동으로 묻는
+#   알림이 어디에도 없었다(시설팀 알람방은 방만 등록돼 있고 정기 발신 0건). 회신이 0인 게
+#   아니라 질문이 0이었다. GM: "★운영+시설+지원+주차 방을 고정하고, 알림해줘."
+# ▸새 발송·새 예약을 만들지 않는다(약속 L21) — 이미 매일 밤 그 4방으로 나가는 이 점검 현황
+#   메시지 끝에 얹는다. 알림이 하나 더 늘면 그만큼 안 읽힌다.
+# ▸부서 라벨을 달아 한 통에 담는다 — 각자 자기 부서 줄만 보면 된다.
+_SCHEDULE_SSOT = REPO_ROOT / "status" / "schedule_ssot.json"
+
+
+def _legal_check_blank_block() -> str:
+    try:
+        import json
+        data = json.loads(_SCHEDULE_SSOT.read_text(encoding="utf-8"))
+    except Exception:
+        return ""   # 원천을 못 읽으면 조용히 뺀다(있는 보고를 깨뜨리지 않는다)
+    items = data.get("items") if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        return ""
+    blank: dict[str, list[str]] = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        if str(it.get("last_done") or "").strip():
+            continue                      # 이미 채워진 것은 묻지 않는다
+        cycle = str(it.get("cycle") or "").strip()
+        if not cycle:
+            continue                      # 주기가 없는 것(회의·행사)은 법정·정기점검이 아니다
+        name = str(it.get("name") or "").strip()
+        dept = str(it.get("dept") or it.get("owner") or "미지정").strip()
+        if name:
+            blank.setdefault(dept, []).append(f"{name} ({cycle})")
+    if not blank:
+        return ""
+    total = sum(len(v) for v in blank.values())
+    lines = ["", "━" * 10, f"🏛 최근 실시일이 비어 있는 법정·정기점검 {total}건",
+             "각 부서에서 마지막으로 언제 했는지만 알려주시면 저희가 채워 넣겠습니다.", ""]
+    for dept in sorted(blank):
+        lines.append(f"▪ {dept} ({len(blank[dept])}건)")
+        for nm in blank[dept]:
+            lines.append(f"   · {nm}")
+    lines.append("")
+    lines.append("👉 전사 일정: https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_점검일정.html")
+    return "\n".join(lines)
 
 
 def _send_telegram(text: str) -> bool:
