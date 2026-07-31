@@ -341,8 +341,11 @@
   .modal-act{display:flex;gap:8px;margin-top:16px}
   .modal-act .btn{flex:1;justify-content:center;text-align:center}
 
-  /* ---- 조직 운영가이드 모달 본문(og-*) — 표·중첩리스트 렌더용(2026-07-31 개정2 A-5) ---- */
-  #orgGuideModal .modal{max-width:640px}
+  /* ---- 조직 운영가이드 모달 본문(og-*) — 표·중첩리스트 렌더용(2026-07-31 개정2 A-5, 개정3 백엔드전환 A-5) ---- */
+  /* [개정4 2026-07-31 A-5] "운영기준 보기" 중복 라벨 제거(매니저 지시) — 카드 자체 클릭으로 열림을
+     hover 시 테두리 강조로만 신호. 별도 안내 텍스트 없음. */
+  .org-guide-card:hover{border-color:var(--gold)!important}
+  #orgGuideModal .modal{max-width:900px}
   .og-item{margin-bottom:19px}
   .og-item:last-child{margin-bottom:2px}
   .og-item-title{font-family:var(--serif);font-size:13.5px;font-weight:700;color:var(--gold-deep);
@@ -368,6 +371,8 @@
     vertical-align:top;line-height:1.55}
   .og-tbl tr:last-child td{border-bottom:none}
   .og-tbl td.og-role{font-weight:700;color:var(--ink);white-space:nowrap;background:var(--bg-soft)}
+  .og-tbl th.num,.og-tbl td.num{text-align:right;white-space:nowrap}
+  .og-loading{padding:24px 0;text-align:center;color:var(--ink-faint);font-size:12.5px}
   @media(max-width:680px){
     #orgGuideModal .modal{max-width:94vw;padding:20px 15px 16px}
     .og-tbl th,.og-tbl td{padding:6px 8px;font-size:11.5px}
@@ -685,7 +690,6 @@
 </div>
 
 <script src="ob_guide_data.js"></script>
-<script src="org_guide_data.js"></script>
 <script src="channel-data.js"></script>
 <script>
 "use strict";
@@ -1241,7 +1245,6 @@ function orgChartHtml(active,opts){
         :'<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px">';
       c+='<div style="font-size:12.5px;font-weight:800;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline;gap:6px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:7px">'+esc(dn)+'<span style="font-size:10px;color:var(--ink-faint);font-weight:600">'+mem.length+'명</span></div>';
       c+=mem.map(function(p){return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:2px 0"><span style="color:var(--ink);font-weight:600">'+esc(p.nm)+'</span><span style="color:var(--ink-soft);text-align:right">'+esc(p.jg||"—")+'</span></div>';}).join("");
-      if(opts.clickable) c+='<div style="margin-top:6px;padding-top:5px;border-top:1px dashed var(--line);font-size:10.5px;color:var(--gold-deep);font-weight:700;text-align:right">▸ 운영기준 보기</div>';
       c+='</div>';
       return c;
     }).filter(Boolean).join("");
@@ -1253,19 +1256,44 @@ function orgChartHtml(active,opts){
   return h;
 }
 
-/* [추가 2026-07-31 개정2 A-5] 운영기준 값(줄 단위 마크업)을 실제 표/리스트 HTML로 그리는 렌더러.
-   문법은 org_guide_data.js 파일 상단 주석 참고. 화면 로직은 여기 1곳에만 — 파싱 규칙 변경 시
-   이 두 함수만 고치면 6개 팀 전체에 일괄 반영된다. */
-function ogTable_(key,raw){
-  var rows=String(raw||"").split("\n").map(function(s){return s.trim();}).filter(Boolean)
-    .map(function(l){return l.split("|").map(function(c){return c.trim();});});
-  if(!rows.length)return "";
-  var cols=rows[0].length;
-  var head=(key==="휴무 기준")?["역할","휴무"]:(cols>=3?["역할","평일","주말"]:["역할","근무 시간"]);
+/* [개정 2026-07-31 A-5, 백엔드 전환] 운영기준 — 항목 라벨(구조, 비민감)만 프론트에 남기고 본문 내용은
+   전부 백엔드(admin 전용 action org-guide-read)로 이관했다. 공개 저장소(org_guide_data.js)에는
+   더 이상 급여·수수료율·강사 성명 등을 커밋하지 않는다(파일 자체를 제거함 — 삭제 사유·경위는
+   drafts\운영기준_백엔드전환_result.md 참고). ORG_GUIDE_ITEMS는 6개 팀 항목 초집합(조직마다
+   빈 항목이 있어도 됨 — 항목 자체는 라벨일 뿐 값이 아니라 비민감). */
+var ORG_GUIDE_ITEMS_DRAFT=false;
+var ORG_GUIDE_ITEMS=[
+  "부서 방향","손익 현황·목표","직급별 조건","근무 시간·교대","휴무 기준","정착 지원금 조건",
+  "팀 리더 역할","팀원 역할","일일·주간 미션","운영 시간·비고","위탁 운영 계약 진행 절차",
+  "기타 사항","진행 체크 리스트","수익 시뮬레이션","요금표·기타 표"
+];
+var ORG_GUIDE_CACHE_=null;   // {dept:{item:content}} — admin 세션당 1회 로드 후 재사용
+var ORG_GUIDE_LOADING_=false;
+var ORG_GUIDE_ERR_="";
+
+/* [개정 2026-07-31 A-5] 운영기준 값(줄 단위 마크업)을 실제 표/리스트 HTML로 그리는 렌더러.
+   화면 로직은 여기 1곳에만 — 파싱 규칙 변경 시 이 함수들만 고치면 전체 조직에 일괄 반영된다.
+   문법(v2, 백엔드 전환과 함께 표 렌더 일반화 — 매니저 지시 "최대한 다 표로"):
+     항목 값 = 빈 줄로 구분되는 블록들의 나열. 블록 종류는 첫 줄로 자동 판별:
+       1) 표 블록 — 첫 줄이 "@table 헤더1|헤더2|..." (헤더 셀 앞에 ">" = 그 열 우측정렬/숫자용).
+          이어지는 줄은 데이터 행(파이프 구분, 헤더와 같은 열 수). 셀 안에서 줄바꿈이 필요하면
+          "^"를 쓴다(렌더 시 <br>로 치환 — 원문 문구 자체는 그대로, 표시 줄바꿈 표기일 뿐).
+       2) 리스트 블록 — "# 소제목", "N. 상위항목"(번호, 그 아래 "- "/"* "는 하위 불릿),
+          번호 없이 "- "/"* "만 있으면 평박스 불릿("*"=og-note 스타일).
+       3) 그 외 — 일반 문단(줄마다 <p>). */
+function ogTable2_(headerLine,rowLines){
+  var heads=String(headerLine||"").split("|").map(function(s){return s.trim();});
+  var align=heads.map(function(h){return /^>/.test(h);});
+  heads=heads.map(function(h){return h.replace(/^>\s*/,"");});
+  var rows=rowLines.map(function(l){return l.split("|").map(function(c){return c.trim();});});
+  function cellHtml(c){return esc(c).replace(/\^/g,"<br>");}
   var h='<div class="og-tbl-wrap"><table class="og-tbl"><thead><tr>'+
-    head.map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+'</tr></thead><tbody>';
+    heads.map(function(c,i){return '<th'+(align[i]?' class="num"':'')+'>'+esc(c)+'</th>';}).join("")+'</tr></thead><tbody>';
   rows.forEach(function(r){
-    h+='<tr>'+r.map(function(c,i){return '<td'+(i===0?' class="og-role"':'')+'>'+esc(c)+'</td>';}).join("")+'</tr>';
+    h+='<tr>'+r.map(function(c,i){
+      var cls=[];if(i===0)cls.push("og-role");if(align[i])cls.push("num");
+      return '<td'+(cls.length?' class="'+cls.join(" ")+'"':'')+'>'+cellHtml(c)+'</td>';
+    }).join("")+'</tr>';
   });
   h+='</tbody></table></div>';
   return h;
@@ -1282,7 +1310,7 @@ function ogRich_(raw){
     var l=raw0.trim();
     if(!l){closeAll();return;}
     if(/^#\s?/.test(l)){closeAll();html+='<div class="og-subhead">'+esc(l.replace(/^#\s?/,""))+'</div>';return;}
-    var mNum=l.match(/^(\d+)\.\s*(.*)$/);
+    var mNum=l.match(/^(\d+(?:-\d+)?)\.\s*(.*)$/);
     if(mNum){
       closeFlat();closeLi();
       if(!olOpen){html+='<ol class="og-ol">';olOpen=true;}
@@ -1309,38 +1337,77 @@ function ogRich_(raw){
   closeAll();
   return html;
 }
+// [추가 2026-07-31 A-5] 블록 분리 디스패처 — 빈 줄로 블록을 나눈 뒤 각 블록을 표/리스트/문단으로 렌더.
+function ogRender_(raw){
+  var text=String(raw||"");
+  var blocks=text.split(/\n\s*\n/);
+  var html="";
+  blocks.forEach(function(block){
+    var lines=block.split("\n");
+    while(lines.length&&!lines[0].trim())lines.shift();
+    while(lines.length&&!lines[lines.length-1].trim())lines.pop();
+    if(!lines.length)return;
+    var first=lines[0].trim();
+    if(/^@table\s+/.test(first)){
+      var headerLine=first.replace(/^@table\s+/,"");
+      var rowLines=lines.slice(1).map(function(l){return l.trim();}).filter(Boolean);
+      html+=ogTable2_(headerLine,rowLines);
+    } else {
+      html+=ogRich_(lines.join("\n"));
+    }
+  });
+  return html;
+}
 
-/* [추가 2026-07-31 A-5] 조직 운영가이드 — 조직도 카드 클릭 시 해당 부서 운영기준 모달.
-   내용은 org_guide_data.js(ORG_GUIDE) 1곳에서만 옴 — 이 함수에는 본문을 하드코딩하지 않는다. */
-function openOrgGuideModal(dept){
+/* [개정 2026-07-31 A-5, 백엔드 전환] 조직 운영가이드 — 조직도 카드 클릭 시 해당 부서 운영기준 모달.
+   ⚠ 뷰어 차단(매니저 명시 지시) — 기존 "인사카드는 관리자 로그인 시 열람 가능합니다" 알림 분기와
+   동일 관례로, admin이 아니면 백엔드 호출조차 하지 않고 즉시 alert+return(네트워크에 내용이
+   실리는 일 자체를 차단 — 서버측 admin 게이트와 이중 방어). 내용은 org-guide-read 1회 호출로
+   전체 조직을 받아 세션 캐시(ORG_GUIDE_CACHE_)에 저장하고 이후 클릭은 캐시만 사용한다. */
+async function openOrgGuideModal(dept){
+  if(SESSION_ROLE!=="admin"){alert("운영기준 내용은 관리자 로그인 시 열람 가능합니다.");return;}
   var disp={"시설":"시설부","주차 관리":"주차관리","지원":"지원부 · 사우나"}; // orgChartHtml과 동일 표시명 매핑(상수 중복, 의미 무변경)
   var dn=disp[dept]||dept;
   var tEl=document.getElementById("orgGuideTitle");if(tEl)tEl.textContent=dn+" 운영기준";
-  var items=(typeof ORG_GUIDE_ITEMS!=="undefined")?ORG_GUIDE_ITEMS:[];
-  var data=(typeof ORG_GUIDE!=="undefined"&&ORG_GUIDE[dept])||{};
-  var structDraft=(typeof ORG_GUIDE_ITEMS_DRAFT!=="undefined")&&ORG_GUIDE_ITEMS_DRAFT;
-  /* [추가 2026-07-31 A-5, 개정] 항목 구조가 PDF 실측으로 확정된 뒤로는 "구조 초안" 배너 대신
-     조직별 콘텐츠 유무로 배너를 판단한다 — 내용이 하나라도 있으면 배너 없이 항목을 보여주고,
-     전부 비어 있으면 "아직 운영기준 내용이 없습니다" 안내만 표시(빈 항목 나열 대신). */
-  var hasAny=items.some(function(k){return String((data[k]||"")).trim();});
+  var bEl=document.getElementById("orgGuideBody");
+  var mEl=document.getElementById("orgGuideModal");
+  if(!ORG_GUIDE_CACHE_&&!ORG_GUIDE_LOADING_){
+    if(bEl)bEl.innerHTML='<div class="og-loading">불러오는 중…</div>';
+    if(mEl)mEl.style.display="flex";
+    ORG_GUIDE_LOADING_=true;
+    try{
+      var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify({action:"org-guide-read",password:SESSION_PW})}).then(function(x){return x.json();});
+      if(r&&r.ok&&r.data){ORG_GUIDE_CACHE_=r.data;}
+      else{ORG_GUIDE_ERR_=(r&&(r.message||r.error))||"권한 없음";}
+    }catch(e){ORG_GUIDE_ERR_=String((e&&e.message)||e);}
+    finally{ORG_GUIDE_LOADING_=false;}
+  } else if(ORG_GUIDE_LOADING_){
+    // 이미 로딩 중(연타 클릭) — 짧게 대기 후 캐시 재확인
+    if(bEl)bEl.innerHTML='<div class="og-loading">불러오는 중…</div>';
+    if(mEl)mEl.style.display="flex";
+    var __tries=0;
+    while(ORG_GUIDE_LOADING_&&__tries<50){await new Promise(function(res){setTimeout(res,100);});__tries++;}
+  }
+  if(mEl)mEl.style.display="flex";
+  var items=ORG_GUIDE_ITEMS;
+  var data=(ORG_GUIDE_CACHE_&&ORG_GUIDE_CACHE_[dept])||{};
   var body="";
-  if(structDraft){
-    body+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:9px 12px;font-size:11.5px;color:#8a6a2f;margin-bottom:12px">⚠ 항목 구조가 아직 확정되지 않았습니다. 매니저님 확인 후 변경될 수 있습니다.</div>';
-  }
-  if(!items.length){
-    body+='<div class="muted" style="padding:20px 0;text-align:center;color:var(--ink-faint)">항목 구조 확정 대기 — 아직 정해진 운영기준 항목이 없습니다.</div>';
-  } else if(!hasAny){
-    body+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a6a2f;text-align:center">⚠ 이 조직은 아직 운영기준 내용이 없습니다(매니저 확인 대기). 내용이 들어오면 이 화면에 자동 반영됩니다.</div>';
+  if(!ORG_GUIDE_CACHE_){
+    body='<div class="callout" style="background:#fbeaea;border:1px solid #e3b8b8;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a2f2f;text-align:center">운영기준을 불러오지 못했습니다'+(ORG_GUIDE_ERR_?"("+esc(ORG_GUIDE_ERR_)+")":"")+'. 다시 시도해 주세요.</div>';
   } else {
-    var isTableItem={"근무 시간·교대":1,"휴무 기준":1};
-    body+=items.map(function(k){
-      var v=String((data[k]||"")).trim();
-      var inner=v?(isTableItem[k]?ogTable_(k,v):ogRich_(v)):'<p class="og-p muted">작성 예정</p>';
-      return '<div class="og-item"><div class="og-item-title">'+esc(k)+'</div>'+inner+'</div>';
-    }).join("");
+    var hasAny=items.some(function(k){return String((data[k]||"")).trim();});
+    if(!hasAny){
+      body='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a6a2f;text-align:center">⚠ 이 조직은 아직 운영기준 내용이 없습니다(매니저 확인 대기). 내용이 들어오면 이 화면에 자동 반영됩니다.</div>';
+    } else {
+      body=items.map(function(k){
+        var v=String((data[k]||"")).trim();
+        var inner=v?ogRender_(v):'<p class="og-p muted">작성 예정</p>';
+        return '<div class="og-item"><div class="og-item-title">'+esc(k)+'</div>'+inner+'</div>';
+      }).join("");
+    }
   }
-  var bEl=document.getElementById("orgGuideBody");if(bEl)bEl.innerHTML=body;
-  var mEl=document.getElementById("orgGuideModal");if(mEl)mEl.style.display="flex";
+  if(bEl)bEl.innerHTML=body;
 }
 function closeOrgGuideModal(){var m=document.getElementById("orgGuideModal");if(m)m.style.display="none";}
 
@@ -3775,8 +3842,9 @@ function renderStd(){
     '<div class="card"><h3>사람이 결정</h3><div style="font-size:12.5px;color:var(--ink-soft);line-height:1.85">'+
     '채용 확정·불합격 최종 결정 · 처우(연봉·타임비) 확정 · 해고·징계 결정 · 비용 집행 및 계약 서명</div></div>'+
     '</div>';
-  /* [추가 2026-07-31 A-5] 조직 운영가이드 — 조직도(대시보드 orgChartHtml 재사용, opts.clickable=true만 추가)
-     + 클릭 시 조직별 운영기준 모달(org_guide_data.js SSOT, 본문은 전부 "작성 예정" — 하드코딩 0). */
+  /* [개정 2026-07-31 A-5, 백엔드 전환] 조직 운영가이드 — 조직도(대시보드 orgChartHtml 재사용, opts.clickable=true만 추가)
+     + 클릭 시 조직별 운영기준 모달(admin 전용, 내용은 백엔드 org-guide-read에서 로드 — 프론트 하드코딩 0,
+     뷰어는 openOrgGuideModal 진입 시점에 즉시 차단되어 카드를 눌러도 fetch 자체가 발생하지 않는다). */
   var __ogActive=(DB.emp||[]).filter(function(e){return e["재직 상태"]!=="퇴사";});
   html+='<div class="sec-title">조직 운영가이드 <span class="muted" style="font-weight:400;font-size:11px">· 조직 카드를 클릭하면 운영기준이 열립니다</span></div>';
   if(typeof ORG_GUIDE_ITEMS_DRAFT!=="undefined"&&ORG_GUIDE_ITEMS_DRAFT){
