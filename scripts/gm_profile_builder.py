@@ -534,6 +534,7 @@ def run_fact_check() -> list:
         for ext in spec.get("external", []):
             unmeasured.append(f"{label}: {ext} — 저장소 밖(측정 못 함)")
     findings.extend(_dead_links())
+    findings.extend(_stale_progress())
     findings.append({"kind": "fact_unmeasured", "items": unmeasured})
     return findings
 
@@ -554,6 +555,47 @@ GM_LINKS = [
     ("재등록 대시보드", "https://wellperion-cao.github.io/wellperion-automation/cpo/member/renewal.html"),
     ("멤버십 회원관리", "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"),
 ]
+
+
+# ── 월간 진척이 굳어 있지 않은가 (2026-07-31 GM 지시) ──────────────────────
+# GM: "시우가 할 수 있게 해줘. 그리고 그 부분을 웰리가 체크 관리할 수 있어야겠지?"
+# 월간운영계획의 진척률(%)은 사람이 손으로 다시 세는 값이다. 다시 센 날짜는 각 항목의
+# honesty.at 에 이미 남고 있다 — 그걸 읽어 **며칠째 안 세었는지**만 본다(새 필드 0).
+# ▸왜 필요한가: 7월에 근거 없이 '80%'로 굳어 있다가 33%로 정정된 일이 있었다. 굳은 숫자는
+#   틀린 숫자가 되고, 굳었다는 사실 자체가 아무 화면에도 안 보였다.
+# ▸갱신은 시우(4부서 소관)가, 굳었는지 보는 것은 웰리가 — 역할이 갈린다.
+MONTHLY_PLAN = STATUS_DIR / "monthly_ops_plan.json"
+PROGRESS_STALE_DAYS = 7
+
+
+def _stale_progress() -> list:
+    try:
+        data = json.loads(MONTHLY_PLAN.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    key = TODAY.strftime("%Y-%m")
+    month = (data.get("months") or {}).get(key)
+    if not isinstance(month, dict):
+        return []
+    stale = []
+    for o in month.get("objectives") or []:
+        if not isinstance(o, dict):
+            continue
+        if str(o.get("status") or "") == "완료":
+            continue                       # 끝난 것은 다시 셀 필요가 없다
+        at = str(((o.get("honesty") or {}).get("at")) or "")[:10]
+        try:
+            days = (TODAY - datetime.fromisoformat(at).date()).days
+        except Exception:
+            days = None
+        if days is None or days >= PROGRESS_STALE_DAYS:
+            stale.append({"title": str(o.get("title") or "")[:40],
+                          "owner": str(o.get("owner") or ""), "days": days})
+    if not stale:
+        return []
+    stale.sort(key=lambda x: -(x["days"] or 999))
+    return [{"kind": "stale_progress", "month": key, "count": len(stale),
+             "worst": stale[0], "items": stale[:5]}]
 
 
 def _dead_links() -> list:
@@ -720,6 +762,12 @@ def render_gm_surface_block(rec: dict) -> str:
                 lines.append(f"- ⚠️ **GM 화면이 멈춰 있다** — 올리지 못한 작업 {f['ahead']}건, "
                              f"마지막으로 올라간 지 {f['origin_age_h']}시간{behind}. "
                              f"라이브 페이지·G1 은 그 시점 값을 보여준다")
+            elif kind == "stale_progress":
+                w = f.get("worst") or {}
+                d = w.get("days")
+                lines.append(f"- ⚠️ **{f['month']} 월간계획 진척**이 {f['count']}건 오래 안 세어졌다"
+                             f"(가장 오래된 것 {d if d is not None else '기록 없음'}일 · {w.get('title','')})"
+                             " — 갱신=시우, 확인=웰리")
             elif kind == "dead_link":
                 lines.append(f"- ⚠️ **{f['page']}** 링크가 열리지 않는다(응답 {f['code']}) — "
                              "실무진 알림에 이 주소가 들어간다")

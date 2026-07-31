@@ -1434,12 +1434,22 @@ function _kpiSales() {
       if (extraCats.musical != null) bd.push({ name: '뮤지컬', today: null, month: extraCats.musical, target: null, rate: null });
     }
 
-    // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입(없으면 맨 끝). 시트 총합/hero 값은 불변.
+    // 주차 매출을 breakdown 'GXE' 행 바로 아래에 삽입.
+    // ★2026-07-31 GM 결정 — 주차 매출을 **월 합계(month)에도 포함**한다.
+    //   그 전에는 breakdown 에만 넣고 총합은 건드리지 않아, 화면에서 항목을 다 더한 값과
+    //   합계가 주차 금액만큼 어긋났다(실측 2026-07-31: 항목합 554,327,264 vs 합계 551,114,264,
+    //   차이 3,213,000 = 주차 정확히 일치). GM 이 "포함"으로 확정.
+    //   ▸연 합계(year)는 건드리지 않는다 — parking_revenue.json 은 월 단위만 있어 연 누계를
+    //     만들 근거가 없다. 없는 숫자를 지어내지 않는다(약속 L05). 연 누계 포함이 필요하면
+    //     주차 연 누계 원천부터 만들어야 한다.
     var park = _kpiParkingRevenueRow();
     if (park) {
       var gi = -1;
       for (var bi = 0; bi < bd.length; bi++) { if (bd[bi].name === 'GXE') { gi = bi; break; } }
       if (gi >= 0) bd.splice(gi + 1, 0, park); else bd.push(park);
+      if (hasCurMonth && month !== null && typeof park.month === 'number') {
+        month += park.month;
+      }
     }
 
     // '오늘' 칸 대체 — AV열에 일 단위 데이터가 없어 today는 계속 null 유지(비파괴),
