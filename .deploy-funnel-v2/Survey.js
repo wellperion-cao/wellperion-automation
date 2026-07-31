@@ -8921,8 +8921,16 @@ function _processAction(body) {
         // 전화 칸 미발견/행범위초과 → 대조 불가능. 예약 쓰기면 raw rowIndex 맹목 쓰기 금지(B1). 2026-07-22 시포.
         return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
       }
-    } else if (_auIsReservationWrite) {
-      // B1: keyPhone 없음 + 예약(재등록예약목록) 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 2026-07-22 시포(GM 지시).
+    } else {
+      // ★2026-07-31 시토(배239 근본) — 예전엔 이 거부가 **예약 쓰기일 때만** 걸렸다
+      //   (`else if (_auIsReservationWrite)`). 그래서 예약이 아닌 보통 칸 수정은 대조키가
+      //   하나도 없어도 **검증 없이 raw rowIndex 로 그대로 썼다** — '행 번호로 남의 줄에
+      //   쓴다'는 사고 부류(INC-013·INC-020·INC-037·이번 예약자 뒤바뀜)의 마지막 통로다.
+      //   이제 쓰기 종류를 가리지 않고 거부한다. 대조할 수 없으면 쓰지 않는다.
+      //   ▸막히는 저장이 생기나: 실측 2026-07-31 — 유효회원 997행 전부 휴대폰 칸이 차 있고,
+      //     이 액션을 부르는 곳 8군데(회원관리 5·재등록 1·정리 스크립트 2) 전부 keyPhone 을
+      //     동봉한다. 즉 지금 라이브에서 이 분기로 오는 정상 저장은 0건이다.
+      //   ▸되돌리려면 이 블록을 `else if (_auIsReservationWrite)` 로 되돌리면 된다.
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
     }
     }
