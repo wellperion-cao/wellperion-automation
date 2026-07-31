@@ -95,10 +95,20 @@ GM_SURFACE_SOURCES = {
         "external": ["점검 GAS(board·monthly_report·today_live)", "매출 GAS(home_kpi·sales_monthly·team_sales)"],
     },
     "자율현황": {
+        # ★2026-07-31 시토 — 화면이 실제로 읽는 13개 중 3개만 재고 있었다. 오늘 GM 께서
+        #   찾아내신 두 건이 정확히 그 사각에서 나왔다: ①"카톡 매출보고 239시간 멈춤"이라는
+        #   거짓 빨간불(원천이 이틀째 저장소에 못 올라가 있었다) ②"코드↔등록부를 상시 대조
+        #   중"이라는 거짓 안내(대조 결과가 8일째 굳어 있었다 — 이 파일은 아예 목록에 없었다).
+        #   화면이 읽는데 아무도 신선도를 안 보는 파일이 있으면, 그 화면은 조용히 옛 값을
+        #   사실처럼 말한다. **매일 갱신돼야 하는 것만** 아래에 넣는다(설정 파일은 manual 로
+        #   그대로 둔다 — 안 바뀌는 게 정상인 것을 '멈췄다'고 부르면 그게 새 오탐이 된다).
         "repo": [("status/erp_status.json", "daily"),
                  ("status/gm_observation_ledger.jsonl", "daily"),
-                 ("status/module_silence_snapshot.json", "daily")],
-        "manual": ["status/module_registry.json", "status/notify_registry.json", "status/audit_registry.json"],
+                 ("status/module_silence_snapshot.json", "daily"),
+                 ("status/notify_drift.json", "daily"),      # 코드↔등록부 대조 결과
+                 ("status/kakao_last_send.json", "daily")],  # 카톡 발신 기록(멈춤 판정 근거)
+        "manual": ["status/module_registry.json", "status/notify_registry.json", "status/audit_registry.json",
+                   "status/telegram_rooms.json"],
         "external": ["회원 이탈 GAS(cpo_churn_stats)"],
     },
     "G1 오늘의 항로": {
@@ -523,8 +533,42 @@ def run_fact_check() -> list:
                                  "mirror": parity[1], "mirror_n": mir_n})
         for ext in spec.get("external", []):
             unmeasured.append(f"{label}: {ext} — 저장소 밖(측정 못 함)")
+    findings.extend(_dead_links())
     findings.append({"kind": "fact_unmeasured", "items": unmeasured})
     return findings
+
+
+# ── 실무진에게 보내는 링크가 살아 있는가 (2026-07-31 웰리) ──────────────────
+# 2026-07-31, 밤 알림에 넣은 링크가 없는 페이지(404)였다 — 내가 파일명을 잘못 적었고,
+# GM 이 "혼란만 가중된다"고 짚어서야 확인했다. 링크는 넣기 전에 열어보면 되는 일이고,
+# 사람이 매번 기억할 일이 아니다. 하루 한 번 기계가 대신 연다.
+# ▸대상 = 실무진·GM 에게 실제로 보내는 링크만(전수 크롤 아님 — 그건 소음이다).
+# ▸새 스크립트·새 예약 0(약속 L21): 이미 06:30 에 도는 이 파일의 표면 점검에 얹는다.
+GM_LINKS = [
+    ("전사 일정(법정점검 회신)", "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html"),
+    ("지원부 체계(점검 제출)", "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"),
+    ("시설부 체계", "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"),
+    ("운영부 체계", "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%9A%B4%EC%98%81%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"),
+    ("주차관리부 체계", "https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html"),
+    ("종합접수처 현황", "https://wellperion-cao.github.io/wellperion-automation/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html"),
+    ("재등록 대시보드", "https://wellperion-cao.github.io/wellperion-automation/cpo/member/renewal.html"),
+    ("멤버십 회원관리", "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"),
+]
+
+
+def _dead_links() -> list:
+    import urllib.request
+    out = []
+    for label, url in GM_LINKS:
+        try:
+            req = urllib.request.Request(url, method="GET")
+            with urllib.request.urlopen(req, timeout=20) as r:
+                code = r.status
+        except Exception as e:
+            code = getattr(e, "code", None) or 0
+        if code != 200:
+            out.append({"kind": "dead_link", "page": label, "url": url, "code": code})
+    return out
 
 
 def run_gm_surface_check() -> tuple[list, bool]:
@@ -676,6 +720,9 @@ def render_gm_surface_block(rec: dict) -> str:
                 lines.append(f"- ⚠️ **GM 화면이 멈춰 있다** — 올리지 못한 작업 {f['ahead']}건, "
                              f"마지막으로 올라간 지 {f['origin_age_h']}시간{behind}. "
                              f"라이브 페이지·G1 은 그 시점 값을 보여준다")
+            elif kind == "dead_link":
+                lines.append(f"- ⚠️ **{f['page']}** 링크가 열리지 않는다(응답 {f['code']}) — "
+                             "실무진 알림에 이 주소가 들어간다")
             elif kind == "fact_check_fail":
                 lines.append(f"- 🔧 사실인가 점검 실패: {f.get('detail','')}")
             else:
