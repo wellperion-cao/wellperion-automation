@@ -763,6 +763,15 @@
        줄 중간이 갈라지지 않게 표의 행 단위만 붙잡는다. */
     .blk.sum-hero, .blk.sum-hero > *{break-inside:auto !important;}
     .blk.sum-hero tr, .blk.sum-hero li{break-inside:avoid;}
+    /* ★제목만 남고 내용이 다음 장으로 넘어가는 것 방지(2026-07-31 GM 지적 — "이월 연속 과제가
+       제목이랑 내용칸이랑 따로 노네(인쇄시)"). 위에서 sum-hero 를 흐르게 풀었더니 소제목이
+       페이지 끝에 혼자 남았다. 제목 뒤에서는 끊지 않는다 — 제목은 내용과 같은 장에 붙는다. */
+    .obj-split-h, .blk.sum-hero h3, .blk.sum-hero h2, .blk.sum-hero thead{
+      break-after:avoid !important; page-break-after:avoid !important;
+      break-inside:avoid !important;
+    }
+    /* 제목 + 바로 뒤 표/목록을 한 덩어리로 잡아 둔다(크롬은 제목 단독 avoid 만으로는 부족할 때가 있다). */
+    .obj-split-h + table, .obj-split-h + .obj-empty, .obj-split-h + div{break-before:avoid !important; page-break-before:avoid !important;}
     .annual-board{break-after:page; page-break-after:always;}
     /* 전폭 지정(column-span)은 단이 없어졌으니 무의미 — 상속만 막아 둔다. */
     .blk.mband-wrap, .blk.fin-primary, .blk.top3-wrap{column-span:none !important;}
@@ -797,10 +806,15 @@
     .rep-empty{color:#555 !important;}
     /* 🔧 점검 현황 & 종합 접수처 = 두 단 전폭 상단·4카드 한 줄(시설부·지원부 남/여·종합접수처 · GM 지시 2026-07-07: 인쇄 시 카드가 아래로 내려가던 것 방지 — 반쪽 폭 2단 안에서 wrap 발생) */
     .blk[data-blkid="check"]{column-span:all; break-inside:avoid; margin-bottom:2px;}
-    .chk-grid{flex-wrap:nowrap; gap:5px; margin-bottom:6px;}
-    .chk-card{background:#f7f7f7 !important; border:1px solid #999 !important; padding:5px 8px; min-width:0; flex:1 1 0;}
-    .chk-card .cl, .chk-card .csub{color:#444 !important;}
-    .chk-card .cv{color:#111 !important; font-size:14px;}
+    /* ★점검·종합접수 칸을 크게 — 1장(매출+점검)을 꽉 채운다(2026-07-31 GM: "조금 더 크게 해줘
+       1장 꽉차게 해줘도 되"). 카드가 5개(시설·지원남·지원여·종합접수·휴회)로 늘어 한 줄에 다 넣으면
+       글자가 작아지므로 줄바꿈을 허용하고 카드 최소폭을 준다. */
+    .chk-grid{flex-wrap:wrap !important; gap:8px; margin-bottom:8px;}
+    .chk-card{background:#f7f7f7 !important; border:1px solid #999 !important; padding:10px 14px;
+              min-width:calc(33.33% - 8px); flex:1 1 calc(33.33% - 8px);}
+    .chk-card .cl{color:#222 !important; font-size:11px;}
+    .chk-card .csub{color:#444 !important; font-size:9px; line-height:1.45;}
+    .chk-card .cv{color:#111 !important; font-size:26px;}
     .chk-card .clink{display:none !important;}
     /* 이월 과제 서브항목·부서별 지출/순액 placeholder 인쇄 대비 */
     tr.obj-sub td.sub-cell{color:#333 !important;}
@@ -1333,6 +1347,16 @@
     return fetch(REG_API + '?action=reg_board&_=' + Date.now(), {redirect:'follow', cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){ return (d && d.ok && Array.isArray(d.data)) ? d.data : null; })
+      .catch(function(){ return null; });
+  }
+  // ── 휴회 접수(hold_intake_stats) — 2026-07-31 GM 지시 "종합접수처 칸에 휴회도 넣어줘".
+  //    건수 집계만 받는다(PII 없음). 처리상태 칸이 시트에 없으면 서버가 hasStatus:false 로 알려주고,
+  //    화면도 상태 분해 없이 총건수만 적는다(없는 칸을 지어내지 않는다 · 약속 L05). 실패=null ──
+  var _holdStats = null;
+  function readHoldIntake(){
+    return fetch(REG_API + '?action=hold_intake_stats&_=' + Date.now(), {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ return (d && d.ok) ? d : null; })
       .catch(function(){ return null; });
   }
   // ── 종합접수처 습득물(lf_list) — 게시중→접수·수령완료→완료 매핑(철회 제외). 카테고리·상태 집계만(사진·PII 미사용). 실패=[] ──
@@ -2574,6 +2598,32 @@
       );
     }
 
+    // ⑤ 휴회 접수 — 2026-07-31 GM 지시("종합접수처 칸에 휴회도 넣어줘").
+    //    종합접수처 GAS 의 '휴회접수' 탭 집계(hold_intake_stats). 건수만 — PII 미사용.
+    //    처리상태 칸이 시트에 없으면(hasStatus:false) 상태 분해를 적지 않는다(없는 칸 지어내기 금지).
+    if(_holdStats){
+      var hsub = (_holdStats.hasDate ? ('이번 달 ' + (_holdStats.thisMonth || 0) + '건 · 누적 ' + (_holdStats.total || 0) + '건')
+                                     : ('누적 ' + (_holdStats.total || 0) + '건'));
+      if(_holdStats.hasStatus){
+        var hp = Object.keys(_holdStats.byStatus || {}).map(function(k){ return k + ' ' + _holdStats.byStatus[k]; }).join(' · ');
+        if(hp) hsub += ' · ' + hp;
+      } else {
+        hsub += ' · 처리상태 칸 없음';
+      }
+      cards.push(
+        '<div class="chk-card"><span class="cl">휴회 접수 <span style="font-weight:400;color:var(--dim)">(실시간)</span></span>' +
+        '<div class="cv">' + (_holdStats.thisMonth != null ? _holdStats.thisMonth : (_holdStats.total || 0)) + '건</div>' +
+        '<span class="csub">' + esc(hsub) + '</span>' +
+        '<a class="clink" href="coo/reception/종합접수처_현황.html" target="_blank">접수 현황 →</a></div>'
+      );
+    } else {
+      cards.push(
+        '<div class="chk-card"><span class="cl">휴회 접수</span>' +
+        '<div class="cv pending">측정 개통 전</div>' +
+        '<span class="csub">휴회 조회 실패 — 가짜값 없음</span></div>'
+      );
+    }
+
     // ⑤ 웰페리온 ERP 개발 카드 = 폐지(GM 승인 2026-07-08) — 전략 로드맵·핵심 과제와 중복이라 점검 현황에서 제거.
 
     var cap = '';
@@ -3232,9 +3282,10 @@
     Promise.all([
       withTimeout(readKpiValues(), 8000, null),
       withTimeout(readVocBoard(), 8000, null),
-      withTimeout(readLfBoard(), 8000, [])
+      withTimeout(readLfBoard(), 8000, []),
+      withTimeout(readHoldIntake(), 8000, null)
     ]).then(function(a){
-      _kpiValues = a[0]; _receptionBoard = a[1];
+      _kpiValues = a[0]; _receptionBoard = a[1]; _holdStats = a[3];
       // 습득물(lf) 병합 — VOC 보드가 정상 로드됐을 때만 덧붙인다(VOC 실패 시 습득물만 부분표시=오해 방지, ④ 카드 '측정 개통 전' 유지).
       if(_receptionBoard && Array.isArray(a[2]) && a[2].length){ _receptionBoard = _receptionBoard.concat(a[2]); }
       _checkReady = true;

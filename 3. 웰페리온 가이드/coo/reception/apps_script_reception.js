@@ -1224,6 +1224,50 @@ function _regDelete(body) {
 //   ②confirm !== 'yes' 면 지우지 않고 후보 목록만 반환(기본이 미리보기)
 //   ③아래에서 위로 지운다(중간 삭제로 인덱스가 밀려 엉뚱한 행을 지우는 것 방지).
 var HOLD_INTAKE_SHEET = '휴회접수';
+
+// ─── hold_intake_stats — 휴회접수 집계 (2026-07-31 GM 지시 · 월간운영계획 종합접수처 칸용) ───
+// GM: "월간운영계획에 종합접수처 칸에 휴회도 넣어줄 수 있지?"
+// ▸건수만 돌려준다 — 성함·연락처(PII)는 절대 싣지 않는다. 월간운영계획은 집계만 쓴다.
+// ▸테스트 행([테스트] + 010-0000-)은 빼고 센다(가짜 숫자 방지).
+// ▸상태 칸이 없으면 상태 분해 없이 총건수만 — 없는 칸을 지어내지 않는다(약속 L05).
+function _holdIntakeStats() {
+  var ss = _vGetSpreadsheet();
+  var sh = ss.getSheetByName(HOLD_INTAKE_SHEET);
+  if (!sh) return _vJson({ ok: false, error: HOLD_INTAKE_SHEET + ' 탭이 없습니다' });
+  var last = sh.getLastRow();
+  if (last < 2) return _vJson({ ok: true, total: 0, byStatus: {}, thisMonth: 0 });
+
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  var iName = headers.indexOf('성함');
+  var iTel = headers.indexOf('연락처');
+  var iStat = headers.indexOf('처리상태');
+  var iWhen = -1;
+  for (var h = 0; h < headers.length; h++) {
+    if (/타임스탬프|접수일|신청일/.test(headers[h])) { iWhen = h; break; }
+  }
+  var data = sh.getRange(2, 1, last - 1, headers.length).getValues();
+  var tz = Session.getScriptTimeZone() || 'Asia/Seoul';
+  var ym = Utilities.formatDate(new Date(), tz, 'yyyy-MM');
+  var total = 0, thisMonth = 0, byStatus = {};
+  for (var r = 0; r < data.length; r++) {
+    var nm = iName >= 0 ? String(data[r][iName] || '').trim() : '';
+    var tel = iTel >= 0 ? String(data[r][iTel] || '').trim() : '';
+    if (nm.indexOf('[테스트]') === 0 && tel.indexOf('010-0000-') === 0) continue;
+    if (!nm && !tel) continue;                    // 빈 행 제외
+    total++;
+    if (iStat >= 0) {
+      var st = String(data[r][iStat] || '').trim() || '접수';
+      byStatus[st] = (byStatus[st] || 0) + 1;
+    }
+    if (iWhen >= 0) {
+      var w = data[r][iWhen];
+      var ws = (w instanceof Date) ? Utilities.formatDate(w, tz, 'yyyy-MM') : String(w || '').slice(0, 7).replace('.', '-');
+      if (ws === ym) thisMonth++;
+    }
+  }
+  return _vJson({ ok: true, total: total, byStatus: byStatus, thisMonth: thisMonth,
+                  hasStatus: iStat >= 0, hasDate: iWhen >= 0, month: ym });
+}
 function _holdIntakeTestRows(body) {
   var ss = _vGetSpreadsheet();
   var sh = ss.getSheetByName(HOLD_INTAKE_SHEET);
@@ -1954,6 +1998,7 @@ function _vProcess(action, body, params) {
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
   if (action === 'reg_staff_suggest') return _regStaffSuggest();  // 담당자 입력 자동완성 제안(공개 read·PII 없음). 2026-07-31 웰리.
+  if (action === 'hold_intake_stats') return _holdIntakeStats();  // 휴회접수 건수 집계(공개 read·PII 없음). 2026-07-31 웰리.
   if (action === 'reg_board') {
     // 마스킹 공개 보드 — _regList 결과에 _regMask 적용 후 카드별 SLA(처리기한) 계산
     // 필터 없는 호출(페이지 실사용 경로)만 45초 서버 캐시 — 재조회·다수 열람 즉답. 쓰기(reg_submit/update/delete/renumber) 시 즉시 무효화.
