@@ -19,6 +19,7 @@ scripts/report_stream_2b_reception.py 참조.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime
@@ -54,9 +55,13 @@ def build_digest(today: str | None = None) -> str:
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
     header = (
         f"📊 [하루 일과 정리] {today}({weekday})\n"
-        "🏗️ 시설&지원&주차 점검 및 이슈 현황"
+        "🏗️ 시설&지원&주차 점검 및 이슈 현황\n"
+        f"{_SENDER_LINE}"
     )
-    return f"{header}\n\n{_check_section(today)}{_legal_check_blank_block()}"
+    section = _check_section(today)
+    praise = _praise_block(section)
+    top = f"{header}\n\n{praise}\n" if praise else f"{header}\n\n"
+    return f"{top}{section}{_legal_check_blank_block()}"
 
 
 # ── 실시일이 비어 있는 법정·정기점검 (2026-07-31 GM 결정) ──
@@ -94,17 +99,44 @@ def _legal_check_blank_block() -> str:
     if not blank:
         return ""
     total = sum(len(v) for v in blank.values())
-    # ★목록을 통째로 붙이지 않는다(2026-07-31 GM 지적 "이러면 실무진은 혼란만 가중된다").
-    #   ★운영+시설+지원+주차 는 네 부서가 함께 쓰는 '한 방'이다 — 15줄을 매일 밤 쏟으면
-    #   대부분이 남의 부서 줄이라 아무도 안 읽고, 채워질 때까지 매일 반복돼 소음이 된다.
-    #   그래서 부서별 건수 한 줄 + 링크만 남긴다. 상세는 일정 페이지에서 본다.
-    counts = " · ".join(f"{d} {len(v)}" for d, v in sorted(blank.items(), key=lambda kv: -len(kv[1])))
-    return "\n".join([
-        "", "━" * 10,
-        f"🏛 법정·정기점검 실시일이 아직 비어 있습니다 — {total}건 ({counts})",
-        "마지막으로 언제 하셨는지만 알려주시면 저희가 채워 넣겠습니다.",
-        "👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_일정.html",
-    ])
+    # ★상세를 그대로 담는다(2026-07-31 GM 확정). 한 번 줄여 봤다가 되돌린 이유:
+    #   "나만 보는 게 아니고, 상세 내용이 있어야 이해를 하기 때문에." 건수만 적으면 실무진은
+    #   무엇을 답해야 하는지 모른다. 대신 부서를 또렷이 갈라 자기 줄만 찾게 한다.
+    lines = ["", "━" * 10,
+             f"🏛 법정·정기점검 — 최근 실시일이 비어 있는 {total}건",
+             "아래 항목을 마지막으로 하신 날짜만 알려주시면 저희가 채워 넣겠습니다.", ""]
+    for dept in sorted(blank, key=lambda d: -len(blank[d])):
+        lines.append(f"【{dept}】 {len(blank[dept])}건")
+        for nm in blank[dept]:
+            lines.append(f"   · {nm}")
+        lines.append("")
+    lines.append("👉 전사 일정 https://wellperion-cao.github.io/wellperion-automation/coo/check/전사_일정.html")
+    return "\n".join(lines)
+
+
+# ── 상단 인사 — 누가 보냈는지 + 오늘 수고하신 것 (2026-07-31 GM 지시) ──
+# GM: "랭킹이나 고생했다 등의 격려 포인트도 상단에 있으면 좋을 것 같아, 웰리가 보냈다는 것도
+#      인지시켜야 하고."
+# ▸격려는 실제 숫자에서만 뽑는다(약속 L05 — 안 한 건 지어내지 않는다). 오늘 잘된 것이 없으면
+#   격려 줄을 아예 빼고 인사만 남긴다. 없는 칭찬을 지어내면 그 순간 아무도 안 믿는다.
+# ▸독려·미체크는 아래 본문이 이미 하고 있다 — 위에서 또 하지 않는다(같은 말 두 번 금지).
+_SENDER_LINE = "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다."
+
+
+def _praise_block(section_text: str) -> str:
+    praise: list[str] = []
+    m = re.search(r"🏗 시설부 현황\s*(\d+)회차\s*·\s*이상 없음", section_text)
+    if m:
+        praise.append(f"▪ 시설부 — 오늘 {m.group(1)}회차 점검까지 이상 없음. 고생하셨습니다.")
+    for label, emoji in (("지원부", "🛠"),):
+        m2 = re.search(rf"{emoji} {label} 현황\s*\d+/\d+\((\d+)%\)", section_text)
+        if m2 and int(m2.group(1)) >= 90:
+            praise.append(f"▪ {label} — 오늘 {m2.group(1)}% 완료. 고생하셨습니다.")
+    if re.search(r"🅿 주차부 이슈사항:\s*없음", section_text):
+        praise.append("▪ 주차부 — 오늘 이슈 없이 마감. 고생하셨습니다.")
+    if not praise:
+        return ""
+    return "\n".join(["🏆 오늘 수고하신 곳"] + praise) + "\n"
 
 
 def _send_telegram(text: str) -> bool:

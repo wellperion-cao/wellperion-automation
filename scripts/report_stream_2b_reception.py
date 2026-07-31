@@ -199,7 +199,10 @@ def _score_block() -> str:
 def build_digest(today: str | None = None) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
-    header = f"📊 [하루 일과 정리] {today}({weekday})\n📮 종합접수 현황"
+    # 보낸이를 밝힌다(2026-07-31 GM 지시 "웰리가 보냈다는 것도 인지시켜야 하고").
+    # 실무진 방에 뜨는 메시지가 누가 보낸 것인지 모르면 답할 곳도 모른다.
+    header = (f"📊 [하루 일과 정리] {today}({weekday})\n📮 종합접수 현황\n"
+              "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다.")
     rows = _fetch_rows()
     if rows is None:
         return f"{header}\n\n조회 실패 (GAS 응답 없음)"
