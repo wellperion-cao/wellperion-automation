@@ -479,6 +479,12 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
   // UTM_CONTENT = 같은 채널 안의 세부 출처. IG는 계정 구분(official=@wellperion / namuk=@namuk.wellperion).
   //   정본 = scripts/cta_utm.py build_ig_bio_url. 2026-07-20 시모.
   var UTM_MEDIUM = qp('utm_medium') || '', UTM_CONTENT = qp('utm_content') || '';
+  // UTM_CAMPAIGN = 콘텐츠(게시물) 단위 식별자(scripts/cta_utm.py slugify_campaign, 블로그·카페 발행 시 링크카드에 이미 부착).
+  //   문의 페이지(wp_inquiry_block.html wpToSurvey)가 URL로 여기까지 넘겨주는데, 이 줄이 없어 그동안
+  //   조용히 버려지고 있었다 — '어느 콘텐츠가 문의를 만들었나'가 채널 단위까지만 잡히고 게시물 단위로는
+  //   전혀 잡히지 않던 근본 원인(2026-07-31 배252 시모 실측). utm_source/medium/content와 동일하게 캡처만
+  //   추가 — 새 필드 없이 기존 payload에 실어 보낸다.
+  var UTM_CAMPAIGN = qp('utm_campaign') || '';
 
   // ── 가이드 렌더(약간의 소개) ──
   function renderGuide(cat){
@@ -768,7 +774,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
       space:vals.space||'', purpose:vals.purpose||'', wishDate:vals.wishDate||'', headcount:vals.headcount||'',
       company:vals.company||'', contactName:vals.contactName||'', partnerType:vals.partnerType||'', docLink:vals.docLink||'', proposal:vals.proposal||'',
       consent:true, hp:vals.hp||'', fillMs:(formShownAt? (Date.now()-formShownAt) : 0),
-      utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM
+      utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM, utmCampaign:UTM_CAMPAIGN
     };
     activeSid = sid;
     var item = { payload:payload, attempts:0, nextAt:0 };

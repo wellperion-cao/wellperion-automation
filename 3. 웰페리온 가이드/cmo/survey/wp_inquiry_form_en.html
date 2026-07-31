@@ -471,6 +471,8 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
 
   var UTM_SOURCE = qp('utm_source') || '';
   var UTM_MEDIUM = qp('utm_medium') || '', UTM_CONTENT = qp('utm_content') || '';
+  // UTM_CAMPAIGN = 콘텐츠(게시물) 단위 식별자 — 한글폼과 동일 수리(2026-07-31 배252 시모).
+  var UTM_CAMPAIGN = qp('utm_campaign') || '';
 
   function renderGuide(cat){
     var box = $('guideBox');
@@ -764,7 +766,7 @@ body.page-id-8408 .wlp-inq { margin-bottom: -75px !important; }
       program:vals.program||'', channel:vals.channel||'', message:vals.message||'',
       wishTime:vals.wishTime||'', age:vals.age||'', exp1Date:vals.exp1Date||'',
       consent:true, hp:vals.hp||'', fillMs:(formShownAt? (Date.now()-formShownAt) : 0),
-      utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM
+      utmSource:UTM_SOURCE, utmContent:UTM_CONTENT, utmMedium:UTM_MEDIUM, utmCampaign:UTM_CAMPAIGN
     };
     activeSid = sid;
     var item = { payload:payload, attempts:0, nextAt:0 };
