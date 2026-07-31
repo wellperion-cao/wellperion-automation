@@ -1945,7 +1945,21 @@ function ensureAllHeaders(dept) {
 // 미사용 '점검자' 시트를 전환(rename) 또는 신규 생성. 1행=1업체, 전체 교체 저장(레이스 없음).
 // ════════════════════════════════════════════
 var SHEET_VENDOR = '시설_거래업체';
-var VENDOR_HEADERS = ['id', '분류', 'colKey', '업체명', '담당자', '연락처', '계약형태', '단가', '갱신일', '거래상태', '비고', '생성일', '수정일'];
+// ★2026-07-31 시토 — '소속부서' 칸 신설(GM 지적 "업체가 한개도 없다").
+//   화면(전사_거래업체.html)은 처음부터 ?dept= 로 부서를 걸러 보여주는데, 서버에는 부서 칸이
+//   아예 없었다. vendor_list 가 depts 를 한 번도 준 적이 없으니 어느 부서로 걸러도 결과는 0건 —
+//   업체 25곳이 실제로 등록돼 있는데 부서 탭에서는 전부 안 보였다. 저장(vendorSave)도 마찬가지로
+//   부서를 버리고 있어, 화면에서 부서를 지정해도 다음 조회 때 사라졌다.
+//   ▸맨 뒤에 붙인다 — _vendorSheet() 가 헤더가 짧으면 자동으로 늘려 주므로 기존 25행은 무손상이고
+//     빈 값(=미지정)으로 읽힌다. 기존 칸 순서는 그대로라 다른 소비자도 안 깨진다.
+var VENDOR_HEADERS = ['id', '분류', 'colKey', '업체명', '담당자', '연락처', '계약형태', '단가', '갱신일', '거래상태', '비고', '생성일', '수정일', '소속부서'];
+
+// 소속부서 셀(쉼표 구분) ↔ 배열. 빈 값이면 [] (미지정) — 없는 소속을 지어내지 않는다.
+function _vdepts(cell) {
+  return String(cell == null ? '' : cell).split(',')
+    .map(function (s) { return String(s).trim(); })
+    .filter(function (s) { return s !== ''; });
+}
 function _vendorSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SHEET_VENDOR);
@@ -1972,7 +1986,8 @@ function vendorList() {
       name: _vstr(r[3]), manager: _vstr(r[4]), contact: _vstr(r[5]),
       contract: _vstr(r[6]), price: _vstr(r[7]), renewal: _vstr(r[8]),
       status: _vstr(r[9]) || '거래중', note: _vstr(r[10]),
-      createdAt: _vstr(r[11]), updatedAt: _vstr(r[12])
+      createdAt: _vstr(r[11]), updatedAt: _vstr(r[12]),
+      depts: _vdepts(r[13])
     });
   }
   return jsonRes({ ok: true, vendors: out });
@@ -1988,7 +2003,10 @@ function vendorSave(body) {
       return [String(v.id || ''), String(v.label || ''), String(v.col || ''), String(v.name || ''),
         String(v.manager || ''), String(v.contact || ''), String(v.contract || ''), String(v.price || ''),
         String(v.renewal || ''), String(v.status || '거래중'), String(v.note || ''),
-        String(v.createdAt || ''), String(v.updatedAt || '')];
+        String(v.createdAt || ''), String(v.updatedAt || ''),
+        // 소속부서 — 배열이면 쉼표로 합치고, 이미 문자열이면 그대로. 없으면 빈칸(=미지정).
+        (Object.prototype.toString.call(v.depts) === '[object Array]'
+          ? v.depts.join(',') : String(v.depts || ''))];
     });
     var rng = sh.getRange(2, 1, rows.length, VENDOR_HEADERS.length);
     rng.setNumberFormat('@');   // 텍스트 고정 — 날짜(생성일 등) 자동변환 방지

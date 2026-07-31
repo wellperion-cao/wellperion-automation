@@ -117,6 +117,18 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 body.embed nav[aria-label="운영 흐름"],body.embed .honesty,body.embed footer,body.embed #chips,body.embed .sub{display:none!important}
 body.embed .wrap{padding:12px 14px 24px}
 body.embed h1{font-size:16px}
+/* ★2026-07-31 시토(GM "버튼 배치가 엉망") — 부서 탭 안에 끼워 넣은 화면이라 자기 헤더 링크는
+   군더더기다. 감싸는 페이지에 이미 같은 'ERP' 링크가 있어 두 번 나오고, 제목 옆에 떠서
+   아래 동작 버튼들과 줄이 어긋나 보였다. 임베드에서는 숨긴다(단독으로 열면 그대로 나온다). */
+body.embed .sheet-links{display:none!important}
+body.embed .vendor-actions{margin-top:2px}
+/* 동작 버튼 줄 — 왼쪽=보기 전환 / 오른쪽=관리. 좁은 화면에서 흩어지지 않게 묶어 둔다. */
+.vendor-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.vendor-actions .va-right{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}
+@media (max-width:560px){
+  .vendor-actions .va-right{margin-left:0;width:100%}
+  .vendor-actions .va-right button{flex:1}
+}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
@@ -149,12 +161,16 @@ body.embed h1{font-size:16px}
   <div class="chips" id="chips"></div>
 
   <!-- 뷰 전환 + 업체 등록 -->
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+  <div class="vendor-actions">
     <button type="button" id="vendorViewKanban" class="mgmt-btn save" style="padding:8px 16px;" onclick="vendorSetView('kanban')">칸반</button>
     <button type="button" id="vendorViewList"   class="mgmt-btn"      style="padding:8px 16px;" onclick="vendorSetView('list')">목록</button>
-    <button type="button" class="mgmt-btn" style="padding:8px 16px;margin-left:auto;" onclick="vendorToggleCatMgmt()">⚙ 분류 관리</button>
-    <button type="button" class="mgmt-btn add" style="padding:8px 16px;" onclick="vendorOpenAddForm()">＋ 업체 등록</button>
+    <div class="va-right">
+      <button type="button" class="mgmt-btn" style="padding:8px 16px;" onclick="vendorToggleCatMgmt()">⚙ 분류 관리</button>
+      <button type="button" class="mgmt-btn add" style="padding:8px 16px;" onclick="vendorOpenAddForm()">＋ 업체 등록</button>
+    </div>
   </div>
+  <!-- 소속부서 미지정 안내 — 지정할 것이 있을 때만 뜬다(0건이면 아무 것도 안 보인다). -->
+  <div id="vendorUnassignedNote" class="hidden" style="margin:0 0 12px;padding:9px 12px;border:1px solid rgba(230,200,78,.35);border-radius:9px;background:rgba(230,200,78,.10);font-size:12.5px;line-height:1.6;word-break:keep-all;"></div>
 
   <!-- 분류 관리 폼 (기본 숨김) -->
   <div id="vendor-cat-form" class="admin-mgmt-form hidden" style="margin-bottom:16px;">
@@ -256,7 +272,18 @@ function showToast(m){toast(m);}
 function requireEditAuth(){return true;}   /* 전사 보드 = 게이트 없음(전사_일정과 동일 철학). */
 
 /* 부서 필터 — 임베드/칩 선택된 부서(CUR_DEPT)에 속한 업체만 표시. '전체'면 모두. */
-function vendorVisible(v){ if(CUR_DEPT==="전체") return true; var ds=(v&&v.depts)||[]; return ds.indexOf(CUR_DEPT)>=0; }
+/* ★2026-07-31 시토(GM "업체가 한개도 없다") — 소속부서가 **아직 지정되지 않은** 업체는
+   숨기지 않고 보여준다. 지금까지 서버에 부서 칸이 아예 없어(오늘 신설) 등록된 25곳 전부가
+   미지정이었고, 부서 탭은 그걸 전부 걸러내 늘 '0건'이었다. 안 보이면 아무도 못 채운다 —
+   보여야 실무진이 그 자리에서 소속을 지정할 수 있다.
+   ▸소속이 한 번이라도 지정된 업체는 종전대로 자기 부서에서만 보인다(오염 없음). */
+function vendorVisible(v){
+  if(CUR_DEPT==="전체") return true;
+  var ds=(v&&v.depts)||[];
+  if(!ds.length) return true;          // 미지정 = 모든 부서에서 보이게(지정 유도)
+  return ds.indexOf(CUR_DEPT)>=0;
+}
+function vendorUnassigned(v){ return !((v&&v.depts)||[]).length; }
 function vendorDeptDefaults(){ return (CUR_DEPT!=="전체")?[CUR_DEPT]:[]; }
 
 /* ── 저장키(로컬 캐시. 정본은 서버) ── */
@@ -507,12 +534,29 @@ function deptChecksHTML(cid){
   }).join('')+'</div>';
 }
 
+/* 소속부서가 아직 비어 있는 업체 수를 세어 안내 한 줄을 띄운다(0건이면 아무 것도 안 띄운다).
+   2026-07-31 시토 — 서버에 부서 칸이 없어 25곳 전부가 미지정이던 것을 GM 이 '업체가 한개도
+   없다'로 발견하셨다. 숫자를 눈에 보이게 두어야 실무진이 그 자리에서 채운다. */
+function vendorRenderUnassignedNote(){
+  var el=document.getElementById('vendorUnassignedNote'); if(!el) return;
+  var n=0;
+  Object.keys(VENDOR_DATA||{}).forEach(function(k){
+    (VENDOR_DATA[k]||[]).forEach(function(v){ if(vendorUnassigned(v)) n++; });
+  });
+  if(!n){ el.className='hidden'; el.textContent=''; return; }
+  el.className='';
+  el.innerHTML='🏢 <b>소속부서가 지정되지 않은 업체 '+n+'곳</b>이 있습니다. '
+             + '부서를 정하기 전까지는 모든 부서 화면에 함께 보입니다 — '
+             + '카드의 <b>편집</b>에서 부서를 체크해 저장하면 그 부서에만 남습니다.';
+}
+
 function renderVendorBoard(){
   var wrap=document.getElementById('vendor-board'); if(!wrap) return;
   if(!VENDOR_COLS.length){ wrap.innerHTML='<div class="mgmt-empty" style="padding:32px 0;text-align:center;">등록된 거래업체 분류가 없습니다 — ⚙ 분류 관리에서 추가해 보세요.</div>'; fitFrame(); return; }
   var filtered=(CUR_DEPT!=="전체");
   var html='';
   var shown=0;
+  vendorRenderUnassignedNote();
   VENDOR_COLS.forEach(function(col){
     var cards=(VENDOR_DATA[col.key]||[]).filter(vendorVisible);
     if(filtered && !cards.length) return;   /* 부서 필터 시 빈 분류는 숨김(가독성) */
