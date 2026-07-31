@@ -1411,6 +1411,24 @@ def _board_text_and_secs(gas_items: list[dict], queue_items: list[dict]) -> tupl
     return _board_to_telegram(board_text), secs
 
 
+def _northstar_head() -> list[str]:
+    """보고 맨 위 '북극성 대비 위치' 블록 (GM 확정 2026-07-31 — 선택 카드).
+
+    GM: 여섯 보고가 전부 '현황만 던진 것 같다' → 맨 위를 '무엇이 있나'가 아니라
+    '목표 대비 어디쯤이고 어디가 벌어졌나'로 바꾼다. 블록 본문은
+    northstar_reach.build_northstar_block() **한 곳**에서만 만든다(약속 L01) —
+    여섯 군데 보고가 같은 함수를 부르므로 모양을 고칠 땐 거기만 고친다.
+    실패해도 빈 리스트(보고 자체는 절대 끊지 않는다)."""
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "..", "..", "scripts"))
+        from northstar_reach import build_northstar_block
+        block = build_northstar_block()
+        return [block, ""] if block else []
+    except Exception:
+        return []
+
+
 def _board_item_count(secs: dict) -> int:
     """항로 3섹터(+긴급·결재) 표시 항목 총합. 0이면 '빈 표' — 발신 금지 판정에 사용
     (자율화 미션 secs['autonomy']은 애초 항로 제외 대상이라 카운트에서 뺀다)."""
@@ -1587,7 +1605,9 @@ def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str
     office_board, _office_secs = _board_text_and_secs(gas_items, office_queue)
     holiday_line = _yesterday_holiday_line()
     office_report = "\n".join(
-        ([holiday_line, ""] if holiday_line else []) + [office_board] + _build_appendix_lines()
+        ([holiday_line, ""] if holiday_line else [])
+        + _northstar_head()
+        + [office_board] + _build_appendix_lines()
     )
 
     ai_board, ai_secs = _board_text_and_secs([], ai_queue)
