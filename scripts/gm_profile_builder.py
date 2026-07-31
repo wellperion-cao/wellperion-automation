@@ -499,6 +499,52 @@ def _open_ship_count(rel_path: str) -> int | None:
     return sum(1 for it in items if isinstance(it, dict) and it.get("status") in ("PENDING", "IN_PROGRESS"))
 
 
+GM_DUP_MIN_BYTES = 1024 * 1024      # 1MB 넘는 것만 본다(작은 파일은 중복이어도 무해·스캔만 느려진다)
+GM_DUP_WARN_MB = 100                # 낭비가 이만큼 넘으면 표면화
+
+
+def check_duplicate_assets() -> dict | None:
+    """같은 내용을 두 벌 이상 들고 있는 큰 파일 — 쌓이는 것을 **쌓인 뒤에 찾지 않게** 매일 잰다.
+
+    ★2026-07-31 시토(GM '불필요·중복된 데이터가 쌓이지 않도록') — 그날 실측에서 시설 사진이
+      두 폴더에 통째로 두 벌(42개·574MB) 있었고, 아무도 몇 달째 몰랐다. 정리는 했지만 정리보다
+      중요한 건 **다시 쌓이지 않는 것**이다. 새 감시기를 만들지 않고 이미 매일 06:30 도는
+      이 점검에 얹는다(약속 L21).
+    ▸판정은 sha256 완전일치만 — '비슷한 파일'은 사람이 판단할 일이라 건드리지 않는다.
+    ▸1MB 이하는 세지 않는다(무해하고 스캔만 느려진다).
+    ▸경보가 아니라 표면화다. 지우는 것은 사람·담당이 참조를 확인한 뒤에 한다.
+    """
+    import hashlib
+    import subprocess
+    try:
+        r = subprocess.run(["git", "ls-files"], cwd=str(ROOT), capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=120)
+        if r.returncode != 0:
+            return None
+        seen: dict[str, list[str]] = {}
+        waste = 0
+        for rel in (r.stdout or "").splitlines():
+            p = ROOT / rel
+            try:
+                if not p.is_file() or p.stat().st_size <= GM_DUP_MIN_BYTES:
+                    continue
+                digest = hashlib.sha256(p.read_bytes()).hexdigest()
+            except Exception:
+                continue
+            if digest in seen:
+                waste += p.stat().st_size
+            seen.setdefault(digest, []).append(rel)
+        groups = [v for v in seen.values() if len(v) > 1]
+        mb = round(waste / 1024 / 1024)
+        if mb < GM_DUP_WARN_MB:
+            return None
+        top = sorted(groups, key=len, reverse=True)[:3]
+        return {"kind": "duplicate_assets", "groups": len(groups), "waste_mb": mb,
+                "examples": [v[0] for v in top]}
+    except Exception:
+        return None
+
+
 def run_fact_check() -> list:
     """3질문 중 '사실인가' — 화면이 읽는 원천이 ①굳어 있지 않은가 ②사본끼리 어긋나지 않는가.
 
@@ -512,6 +558,9 @@ def run_fact_check() -> list:
     gap = _push_gap()
     if gap:
         findings.append(gap)
+    dup = check_duplicate_assets()
+    if dup:
+        findings.append(dup)
     for label, spec in GM_SURFACE_SOURCES.items():
         for rel, cadence in spec.get("repo", []):
             if cadence != "daily":
