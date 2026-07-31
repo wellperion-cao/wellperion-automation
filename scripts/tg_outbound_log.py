@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """텔레그램 발신 메시지 공용 로깅 + 30일 자동 정리.
 best-effort: 로깅 실패가 실제 발신을 절대 막지 않는다(전부 예외 무시)."""
-import os, json, glob, datetime, time
+import os, json, glob, datetime, time, re
 
 _LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
 _RETAIN_DAYS = 30
@@ -75,11 +75,67 @@ def pace(min_interval=_MIN_INTERVAL):
             pass
 
 
+# ── 발신 전 자동 검수 (2026-07-31 웰리) ────────────────────────────────
+# 왜: 2026-07-31 하루에 실무진·GM 화면으로 나가는 메시지 결함 4건을 **전부 GM이 먼저 찾았다** —
+#   ①08:00 보고에 마크다운 표 기호가 그대로 찍힘(텔레그램은 표를 못 그린다) ②문장이 날짜·약어의
+#   마침표에서 잘림 ③목록 15줄을 한 방에 통째로 쏟음 ④내가 넣은 링크가 없는 페이지(404).
+#   ①②④는 사람이 눈으로 볼 일이 아니라 기계가 보내기 전에 잡을 일이다.
+# ▸새 감시기·새 예약을 만들지 않는다(약속 L21) — 이미 모든 발신이 지나가는 이 함수 안에서 잰다.
+# ▸막지 않는다(1단계). 발신은 그대로 하고 status/outbound_lint.jsonl 에 적기만 한다 —
+#   오탐이 남아 있는 채로 실무진 알림을 끊는 것이 더 나쁘다. 아침 자가점검이 이 기록을 읽는다.
+#   무결이 쌓이면 그때 차단으로 올린다(라이브 검증 무조건 → 신뢰 후 점감).
+_LINT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          'status', 'outbound_lint.jsonl')
+_MD_TABLE_RE = re.compile(r'^\s*\|[\s:|-]+\|\s*$', re.M)   # |---|---| 구분줄
+_MD_EMPH_RE = re.compile(r'(\*\*[^*\n]{1,60}\*\*)|(_[^_\n]{1,60}_)')
+_SENDER_HINT = ('웰리', '시우', '시포', '시모', '시토', '봇', 'AI')
+
+
+def lint_outbound(text, chat_id, source=''):
+    """보내기 전에 텍스트를 잰다. 반환 = 문제 목록(빈 리스트면 이상 없음).
+
+    텔레그램에서 읽히게 만드는 수단은 줄바꿈·기호·들여쓰기뿐이다 — 표·굵게는 안 먹는다.
+    """
+    issues = []
+    t = str(text or '')
+    if _MD_TABLE_RE.search(t):
+        issues.append({'kind': 'md_table', 'detail': '마크다운 표 구분줄 — 텔레그램에선 파이프 기호가 그대로 보인다'})
+    m = _MD_EMPH_RE.search(t)
+    if m and 'HTML' not in str(source):
+        issues.append({'kind': 'md_emphasis', 'detail': '마크다운 강조 잔재 %r — 평문 발신이면 기호가 그대로 보인다' % (m.group(0)[:30],)})
+    if len(t) > 4096:
+        issues.append({'kind': 'too_long', 'detail': '%d자 — 4096자 상한 초과(분할 위치가 표·문단 중간이면 맥락이 끊긴다)' % len(t)})
+    # 실무진 방(= 개인 DM 이 아닌 그룹)으로 나가는데 보낸이가 안 밝혀져 있으면 짚는다.
+    try:
+        is_group = int(str(chat_id)) < 0
+    except Exception:
+        is_group = False
+    if is_group and not any(h in t[:400] for h in _SENDER_HINT):
+        issues.append({'kind': 'no_sender', 'detail': '실무진 방인데 앞부분에 보낸이 표기가 없다 — 받는 사람이 어디에 답할지 모른다'})
+    return issues
+
+
+def _log_lint(issues, chat_id, source):
+    if not issues:
+        return
+    try:
+        os.makedirs(os.path.dirname(_LINT_PATH), exist_ok=True)
+        with open(_LINT_PATH, 'a', encoding='utf-8') as f:
+            f.write(json.dumps({
+                'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                'chat_id': str(chat_id), 'source': str(source),
+                'issues': issues,
+            }, ensure_ascii=False) + '\n')
+    except Exception:
+        pass   # 검수 실패가 발신을 막지 않는다
+
+
 def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
          min_interval=_MIN_INTERVAL, max_attempts=6, timeout=15):
     """페이싱 + 429 자가재시도(retry_after 존중) + 로깅 통합 발송. return ok(bool).
     각 루틴이 자체 urlopen 대신 이 함수를 쓰면 전역 페이싱에 자동 편입된다."""
     import urllib.request, urllib.parse, urllib.error
+    _log_lint(lint_outbound(text, chat_id, source), chat_id, source)
     payload = {'chat_id': chat_id, 'text': text}
     if extra:
         payload.update(extra)
