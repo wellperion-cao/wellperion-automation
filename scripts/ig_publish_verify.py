@@ -375,6 +375,9 @@ async def run(target_id: str | None, dry_run: bool,
     #   덮어써, 대조가 도는 몇 분 사이 다른 프로세스가 채운 값이 지워진다
     #   (실측: 13:28 회수기가 채운 카카오 post_url 을 13:30 이 스윕이 되돌림).
     changed_items: list[dict] = []
+    # 이번 스윕에서 처음 '발행완료'가 된 것만(주소 백필은 이미 발행완료였으므로 제외).
+    # 아래에서 통합요약 발신 대상으로 쓴다 — 2026-07-31 시토(재발 수리, 주석은 저장부 참고).
+    newly_complete: list[dict] = []
     for account, items in by_acct.items():
         if not _profile_dir(account).exists():
             print(f"[WARN] 프로필 미존재(account={account}) — 건너뜀 {len(items)}건")
@@ -422,6 +425,8 @@ async def run(target_id: str | None, dry_run: bool,
                     it["note"] = (prev + " | " + stamp) if prev else stamp
                     stamped += 1
                     changed_items.append(it)
+                    if not was_backfill:
+                        newly_complete.append(it)
         finally:
             try:
                 if context:
@@ -436,6 +441,26 @@ async def run(target_id: str | None, dry_run: bool,
         # id 없는 항목은 id 병합이 불가하므로 그때만 종전처럼 큐 전체를 넘긴다(변경 유실 방지).
         payload = changed_items if all(it.get("id") for it in changed_items) else queue
         merge_save_review_queue(payload, holder="ig_publish_verify")
+
+    # ★2026-07-31 시토 — 발행완료 통합요약을 **이 경로에서도** 보낸다(재발 수리).
+    #   왜: '발행완료' 도장은 두 곳에서 찍힌다. ①승인 워처(ig_review_publish_watcher)가
+    #   그 사이클에 승인한 건 ②여기, 30분 주기 스윕이 인스타 그리드와 대조해 찍는 건.
+    #   통합요약 발신은 ①에만 붙어 있었다 — 그런데 실제 IG 발행은 '발행검증대기'로 끝나고
+    #   ②가 나중에 완료 도장을 찍으므로, **대부분의 발행이 요약 없이 지나갔다.**
+    #   실측 2026-07-31: AIDAY04(07-28 발행완료)·AIDAY06(07-30 발행완료) 둘 다 발신 원장
+    #   (.publish_digest_sent.json)에 없고, 그 파일 자체가 07-27 이후 갱신 0이었다.
+    #   2026-07-27 배125 수리는 ①경로의 판정 집합만 고쳤고 ②경로는 손대지 않아 재발했다 —
+    #   '터진 경로 하나만 막아 다음 경로에서 또 난다'의 같은 부류다.
+    #   ▸중복 걱정 없음: send_publish_digest 가 자기 원장으로 id 중복을 거른다(멱등).
+    #   ▸실패해도 발행 파이프라인엔 영향 없다(요약은 부가 발신).
+    if newly_complete and not dry_run:
+        try:
+            sys.path.insert(0, str(Path(__file__).parent))
+            from publish_digest import send_publish_digest  # noqa: PLC0415
+            sent = send_publish_digest(newly_complete)
+            print(f"→ 발행완료 통합요약 발신 {sent}건")
+        except Exception as exc:
+            print(f"[WARN] 발행완료 통합요약 발신 실패(발행 흐름 무영향): {exc}")
     print(f"\n→ 대조 {len(targets)}건 / 발행완료 도장 {stamped}건"
           + (" (dry-run, 미반영)" if dry_run else ""))
     return stamped
