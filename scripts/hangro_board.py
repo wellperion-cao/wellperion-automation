@@ -592,6 +592,57 @@ def _box_table(rows: list[tuple[str, str]]) -> str:
 
 
 # ── 메인 렌더 (3섹터 마크다운 표, 약속 L16) ─────────────────────
+# ── 정체 추적 (2026-07-31 GM 지시) ──────────────────────────────────────────
+# "업무 및 진행 안 된 건에 대해서는 집요하게 체크해서 완료할 수 있도록 서포트해줘."
+# ▸며칠째 움직임이 없는지 잰다. 큐에 `updated_at` 은 32척 중 9척에만 있어(실측 2026-07-31)
+#   그것만으로는 못 잰다 → **기록(note)에 붙는 날짜 마커**를 마지막 움직임으로 본다.
+#   이 저장소는 모든 역할이 note 에 `[… 2026-07-31]` 형태로 덧붙이는 관례라 이게 가장 정확하다.
+#   마커가 하나도 없으면 배를 띄운 날(enqueued_at)을 쓴다.
+# ▸단계로 집요해진다: 3일=담당 차례 · 7일=웰리가 본다 · 14일=GM께 올린다.
+#   같은 줄에 단계가 보여야 "언제까지 방치할 것인가"가 스스로 드러난다.
+_STALL_MIN_DAYS = 3
+_RE_DATE = re.compile(r"(20\d{2})-(\d{2})-(\d{2})")
+
+
+def _last_touch(item: dict) -> dt.date | None:
+    """그 배가 마지막으로 움직인 날(기록에 남은 가장 늦은 날짜)."""
+    blob = " ".join(str(item.get(k) or "") for k in ("note", "_raw_summary", "updated_at"))
+    best = None
+    for y, m, d in _RE_DATE.findall(blob):
+        try:
+            cand = dt.date(int(y), int(m), int(d))
+        except ValueError:
+            continue
+        if cand <= dt.date.today() and (best is None or cand > best):
+            best = cand
+    if best:
+        return best
+    raw = str(item.get("enqueued_at") or "")[:10]
+    try:
+        return dt.datetime.strptime(raw, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+
+def _stall_days(item: dict) -> int | None:
+    last = _last_touch(item)
+    return None if last is None else (dt.date.today() - last).days
+
+
+def _stall_tag(item: dict) -> str:
+    d = _stall_days(item) or 0
+    if d >= 14:
+        return f"{d}일🔴GM"
+    if d >= 7:
+        return f"{d}일🟠웰리"
+    return f"{d}일🟡담당"
+
+
+def _stalled(items: list[dict], min_days: int = _STALL_MIN_DAYS) -> list[dict]:
+    out = [it for it in items if (_stall_days(it) or 0) >= min_days]
+    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+
+
 def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, dict]:
     """보드 텍스트 + 섹션 dict 반환.
     3섹터: 🚢 진행중 / ⚓ 대기중 / 🏁 입항 완료 (오늘)
@@ -642,6 +693,16 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
             lines.append(_bn)
     except Exception:
         pass
+
+    # ── 🔔 멈춰 있는 배 (2026-07-31 GM 지시 "진행 안 된 건은 집요하게 체크해서 완료하게 서포트") ──
+    #   새 알림·새 예약을 만들지 않는다(약속 L21) — 모든 표면(부팅 셸·G1 보드·08:00 보고)이 이미
+    #   지나가는 이 보드에 얹는다. 한 곳에만 띄우면 그 화면을 안 여는 날 그냥 넘어간다.
+    stalled = _stalled(secs["today"])
+    if stalled:
+        lines.append("")
+        lines.append(f"### 🔔 멈춰 있는 배 {len(stalled)}척 — 마지막 기록 이후 오래된 순")
+        lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+                                for it in stalled]))
 
     # ── 🔴 급한 입항 (별도 알림) ──
     if secs["urgent"]:

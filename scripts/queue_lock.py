@@ -251,8 +251,48 @@ def mutate_queue(mutator, holder="?", repo_root=None, allow_shrink=False):
     with QueueLock(holder, repo_root):
         items = load_queue(repo_root)
         before_count = len(items) if isinstance(items, list) else None
+        before_snap = _snapshot_for_touch(items)
         result = mutator(items)
         new_items = result if result is not None else items
+        _stamp_touched(before_snap, new_items)
         _validate_queue_shape(new_items, before_count, allow_shrink)
         save_queue_atomic(new_items, repo_root)
         return new_items
+
+
+# ── 마지막 움직임 도장 (2026-07-31 웰리) ───────────────────────────────────
+# GM: "업무 및 진행 안 된 건에 대해서는 집요하게 체크해서 완료할 수 있도록 서포트해줘."
+# 집요하려면 '며칠째 안 움직였나'를 정확히 알아야 하는데, 실측(2026-07-31) 열린 배 32척 중
+# `updated_at` 을 가진 것은 9척뿐이었다. 그래서 지금은 기록(note) 안 날짜를 근사로 쓰는데,
+# 그건 본문에 인용된 날짜까지 '움직임'으로 오인한다.
+# ▸도장은 여기 한 곳에서만 찍는다(약속 L21) — 큐를 고치는 모든 경로가 이 함수를 지난다.
+#   각 호출부에 넣으면 빠뜨린 경로가 생기고, 그 배는 영영 '안 움직인 것'으로 남는다.
+# ▸실제로 바뀐 배에만 찍는다(전체 도장 금지 — 전부 오늘로 덮이면 정체가 사라진다).
+def _snapshot_for_touch(items):
+    snap = {}
+    if not isinstance(items, list):
+        return snap
+    for it in items:
+        if isinstance(it, dict) and it.get("task_id"):
+            body = {k: v for k, v in it.items() if k != "updated_at"}
+            try:
+                snap[it["task_id"]] = json.dumps(body, ensure_ascii=False, sort_keys=True)
+            except Exception:
+                pass
+    return snap
+
+
+def _stamp_touched(before_snap, new_items):
+    if not isinstance(new_items, list):
+        return
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    for it in new_items:
+        if not isinstance(it, dict) or not it.get("task_id"):
+            continue
+        body = {k: v for k, v in it.items() if k != "updated_at"}
+        try:
+            cur = json.dumps(body, ensure_ascii=False, sort_keys=True)
+        except Exception:
+            continue
+        if before_snap.get(it["task_id"]) != cur:
+            it["updated_at"] = today
