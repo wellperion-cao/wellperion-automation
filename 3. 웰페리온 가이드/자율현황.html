@@ -265,11 +265,7 @@
   #layer-automation .callout strong{color:var(--text);}
 
   /* ── 채널 인라인 SVG 로고 (일 흐름 시각표에서 이식 · 2026-07-15) + 방 이름 라벨 ── */
-  .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 3px 0 0; flex:none;}
-  .chroom{font-size:11.5px; color:var(--text-soft);}
-  .chroom.idle-room{color:var(--dim);}
-
-  /* ── 📨 통합 알림 보드 필터·배너 (배1307 · 2026-07-20) ── */
+  /* ── 📨 알림 한 장 필터·배너 (배1307 · 2026-07-20 신설 · 배10437 · 2026-07-31 방 축 통합) ── */
   .notify-filters{display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:0 0 10px;}
   .nf-btn{font-size:11.5px; font-weight:700; color:var(--text-soft); background:var(--surface); border:1px solid var(--border-strong); border-radius:20px; padding:5px 12px; cursor:pointer; white-space:nowrap;}
   .nf-btn:hover{border-color:var(--accent-soft);}
@@ -483,36 +479,10 @@
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
   </div>
 
-  <!-- ══ 📋 텔레그램·카카오톡 전 방 한 장 (배202 · GM 지시 2026-07-28 · 실측) ══ -->
-  <section style="margin-top:14px;">
-    <h2 class="sec" id="sec-room-ledger">📋 텔레그램·카카오톡 전 방 한 장</h2>
-    <div class="sec-note" style="margin:0 0 8px;">실측 12방(텔레그램 6 · 카카오 6, ★운영부 중복 1) — 방 이름·용도·발신주체·수신자. SSOT: <code>status/telegram_rooms.json</code>(텔레그램 전체) · <code>scripts/kakao_rooms.json</code>(카카오는 매출보고 3방만 — 나머지 4방은 코드 상수·GAS에 흩어짐, 다음 회차 과제).</div>
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr><th style="width:40px">채널</th><th style="width:150px">방 이름</th><th>용도</th><th style="width:190px">발신 주체</th><th style="width:120px">수신자</th></tr></thead>
-        <tbody>
-          <tr><td>📨</td><td>GM_DM</td><td>GM 개인 1:1 — 아침/저녁 루틴·🧭 오늘의 항로·승인·결재 중계·헬스체크 등 정시 다수</td><td>웰리·시토 외(daily_scheduler.py)</td><td>GM</td></tr>
-          <tr><td>📨</td><td>점검관리방<br><span style="color:var(--dim);font-size:11px;">-5136037543</span></td><td>점검 독려·이슈 알림·월간 점검 리포트</td><td>시우(daily_scheduler.py·GAS 이슈 트리거)</td><td>실무진(지원팀)</td></tr>
-          <tr><td>📨</td><td>문의알림방<br><span style="color:var(--dim);font-size:11px;">-5516675010</span></td><td>문의 5종 신규·컨택/등록 다이제스트·CMO 일일/주간 마케팅카드</td><td>시포·시모(report_stream_1_inquiry.py·GAS)</td><td>실무진(CPO·CMO팀)</td></tr>
-          <tr><td>📨</td><td>종합접수처<br><span style="color:var(--dim);font-size:11px;">-5065206276</span></td><td>종합접수 신규+미처리 적체 리마인드</td><td>시토(report_stream_2b_reception.py)</td><td>실무진</td></tr>
-          <tr><td>📨</td><td>자동화현황방<br><span style="color:var(--dim);font-size:11px;">-5498808140 · 표시명 AI진행현황</span></td><td>모듈 일일/주간 보고·자동화 건강 다이제스트</td><td>시토(module_reporter.py·cto_automation_health)</td><td>GM·AI팀(관측)</td></tr>
-          <tr><td>📨</td><td>시설팀알람방<br><span style="color:var(--dim);font-size:11px;">-5493956598</span></td><td>시설팀 앞 임시 전달(법정점검 실시일 요청 등) — 정기 발신 미배선, 2026-07-28 신규 등록</td><td>시우·시토(수동)</td><td>실무진(시설팀) ⚠배208 — 회신유실 로깅만 완료</td></tr>
-          <tr><td>💛</td><td>차의주 회장님</td><td>매출·운영·인사 보고(스트림3 이미지)</td><td>시토(kakao_report_sender.py)</td><td>경영진</td></tr>
-          <tr><td>💛</td><td>웰페리온 관리부</td><td>매출·운영·인사 보고(스트림3 이미지)</td><td>시토(kakao_report_sender.py)</td><td>경영진</td></tr>
-          <tr><td>💛</td><td>★운영부<br><span style="color:var(--dim);font-size:11px;">파일표기 '★ 운영부'(공백) — 실제 창 제목 미확인</span></td><td>매출보고(경영) + 아침 종합운영다이제스트·점검/접수 현황(실무) — 이중용도 ⚠용도 안 갈라짐</td><td>시토(kakao_report_sender.py+send_ops_digest.py+daily_scheduler.py)</td><td>경영진+실무진 겹침</td></tr>
-          <tr><td>💛</td><td>★부서장</td><td>문의 정리 다이제스트(문의알림방과 동시발송)</td><td>시포(daily_scheduler.py)</td><td>실무진(부서장)</td></tr>
-          <tr><td>💛</td><td>★운영+시설+지원+주차</td><td>점검·접수 현황 통합 다이제스트</td><td>시토(daily_scheduler.py KAKAO_GO_STREAM2)</td><td>실무진(4부서)</td></tr>
-          <tr><td>💛</td><td>★중간관리자</td><td>코드 SSOT 없음 — 2026-07-28 웰리 1회 수동 발송(--only-room, 시설 3종 요청)</td><td>미등록(수동)</td><td>실무진(중간관리자) ⚠구멍</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="sec-note" style="margin:6px 0 0;">✍️ GM 한 번만 — 카톡 방 이름 편집 시 별명을 <code>★</code>로 시작하게 저장(창 제목 탐색용). 위 표의 ⚠ 3건(★운영부 이중용도·표기공백·★중간관리자 미등록)은 코드 통합이 필요해 이번 회차 화면 정리 범위 밖 — 다음 회차 과제로 넘김.</div>
-  </section>
-
   <!-- ════ 🛠️ 시토 (AI CTO) 자율 자동화 (status/module_registry.json 신규 스키마 · owner_role 있는 이 창 소속만 · additive · 계약 2026-07-09 · 2026-07-13 전용 섹션 격상) ════ -->
   <section>
     <h2 class="sec" id="sec-registry-cards">🛠️ 시토 (AI CTO) 자율 자동화 <span style="font-size:11px;font-weight:400;color:var(--dim);">(등록부 모듈 카드 · 특징기능·자율수준·정직 꼬리표)</span></h2>
-    <div class="sec-note">시토가 상시 돌리는 자동화 모듈 — 특징기능·자율수준·정직 꼬리표. 카톡·텔레그램 발신 전체 목록은 '📨 통합 알림 보드'(② 돌아가는 자동화). 배선 표는 하단 '📡 모듈 보고 현황'.</div>
+    <div class="sec-note">시토가 상시 돌리는 자동화 모듈 — 특징기능·자율수준·정직 꼬리표. 카톡·텔레그램 발신 전체(방·배선·상태)는 하단 '📨 알림 한 장'(② 돌아가는 자동화).</div>
     <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards"></div>
     <details class="coo-details" id="registry-cards-dormant-wrap" style="margin-top:10px;">
@@ -688,7 +658,7 @@
        시모 건만 따로 보기 어려웠던 것을 다른 역할과 동일 패턴으로 분리) ════ -->
   <section>
     <h2 class="sec" id="sec-cmo-autonomy">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(콘텐츠 제작→검수→발행→반응측정→기획환류 폐루프)</span></h2>
-    <div class="sec-note">노출을 회원으로 바꾸는 전환 설계가 본질 — 카드는 등록부(<code>cmo-*</code>) 실값 렌더. 배선 표는 하단 '📡 모듈 보고 현황'.</div>
+    <div class="sec-note">노출을 회원으로 바꾸는 전환 설계가 본질 — 카드는 등록부(<code>cmo-*</code>) 실값 렌더. 발신 배선·상태는 하단 '📨 알림 한 장'.</div>
     <div id="registry-card-summary-cmo" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards-cmo"></div>
     <details class="coo-details" id="registry-cards-cmo-dormant-wrap" style="margin-top:10px;">
@@ -701,7 +671,7 @@
   <!-- ════ 🧑‍🤝‍🧑 시로(AI CHRO) 자율 인사 (상시 루프 3종 + Gmail 트리거 · 등록부 chro-* 실값 렌더 · 2026-07-16 매니저 지시) ════ -->
   <section>
     <h2 class="sec" id="sec-chro-autonomy">🧑‍🤝‍🧑 시로 (AI CHRO) 자율 인사 <span style="font-size:11px;font-weight:400;color:var(--dim);">(정합성 스윕·온보딩 워치·효율 리포트·공고명 자동취득)</span></h2>
-    <div class="sec-note">인사 데이터 정합성·온보딩 진척·채용 파이프라인을 무인 감시 — 카드는 등록부(<code>chro-*</code>) 실값 렌더. 배선 표는 하단 '📡 모듈 보고 현황'.</div>
+    <div class="sec-note">인사 데이터 정합성·온보딩 진척·채용 파이프라인을 무인 감시 — 카드는 등록부(<code>chro-*</code>) 실값 렌더. 발신 배선·상태는 하단 '📨 알림 한 장'.</div>
     <div id="registry-card-summary-chro" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards-chro"></div>
     <details class="coo-details" id="registry-cards-chro-dormant-wrap" style="margin-top:10px;">
@@ -764,12 +734,12 @@
     </div>
     <!-- ══ /자동화 건강 점수판 ══ -->
 
-    <!-- ══ 📨 통합 알림 보드 (status/notify_registry.json 단일 SSOT · GM 지시 2026-07-20 · 카톡·텔레그램 발신 전체 한눈) ══ -->
-    <div id="notify-board" class="autopanel" style="border-left-color:var(--gold);">
-      <h2 class="sec" style="margin-top:0;">📨 통합 알림 보드 <span style="font-size:12px;font-weight:400;color:var(--dim);">(카톡·텔레그램 발신 전체 — 정기·조건부·이벤트)</span></h2>
-      <div class="sec-note" style="margin:0 0 10px;">아래=발신 전체 SSOT(<code>notify_registry.json</code>). 🟢 <b>가동</b> · 🟡 <b>조건부/킬스위치</b>(안 보내는 게 정상일 수 있음) · 🔴 <b>꺼짐</b>(게이트 OFF) · ⚪ <b>폐지됨</b>(중복이라 없앤 것 — 고장 아님, 왜 없앴는지 기록으로 남겨 둠). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
+    <!-- ══ 📨 알림 한 장 (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · GM 지시 2026-07-31 · 구 3섹션[📋 텔레그램·카카오톡 전 방 한 장·📨 통합 알림 보드·📡 모듈 보고 현황] 통합) ══ -->
+    <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);">
+      <h2 class="sec" style="margin-top:0;">📨 알림 한 장 — 어느 방으로 · 누가 · 살아있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(방 기준 · 카톡·텔레그램 발신 전체)</span></h2>
+      <div class="sec-note" style="margin:0 0 10px;">방을 펼치면 그 방으로 나가는 발신이 한 줄씩. 🟢 <b>가동</b> · 🟡 <b>조건부</b>(안 오면 정상일 수 있음) · 🔴 <b>꺼짐</b>(GM 킬스위치 OFF) · ⚫ <b>죽은배선</b>(실행 실패·스케줄러 정지·방 매핑 끊김). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
       <div id="notify-drift-banner" style="display:none;"></div>
-      <div id="notify-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+      <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
       <div class="notify-filters" id="notify-filters">
         <button type="button" class="nf-btn active" data-f="all">전체</button>
         <button type="button" class="nf-btn" data-f="telegram">텔레그램</button>
@@ -779,23 +749,14 @@
         <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
       </div>
       <div id="notify-owner-filters" class="notify-filters" style="display:none;"></div>
-      <div class="tbl-wrap" id="notify-board-wrap">
-        <table>
-          <thead>
-            <tr><th style="width:120px">시각</th><th style="width:44px">채널</th><th style="width:150px">방</th><th>내용</th><th style="width:70px">담당</th><th style="width:150px">상태</th></tr>
-          </thead>
-          <tbody id="notify-board-tbody">
-            <tr><td colspan="6" style="color:var(--dim);">불러오는 중…</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-note" style="margin:6px 0 0;">📨 텔레그램 · 💛 카카오톡 (채널 칸=이모지)</div>
+      <div id="alert-board-rooms">불러오는 중…</div>
+      <div class="sec-note" style="margin:6px 0 0;">📨 텔레그램 · 💛 카카오톡 · 소스: <code>telegram_rooms.json</code>(방·chat_id) · <code>notify_registry.json</code>(발신 배선·상태) · <code>module_registry.json</code>(모듈·소유) — <span id="alert-unwired-note"></span></div>
     </div>
-    <!-- ══ /통합 알림 보드 ══ -->
+    <!-- ══ /알림 한 장 ══ -->
 
-    <!-- ════ 📄 정적 설계표 3종(상시가동·매주) 묶어 기본 접힘 — 건강판·통합 알림 보드·모듈표와 중복이라 축소 (2026-07-15) ════ -->
+    <!-- ════ 📄 정적 설계표 3종(상시가동·매주) 묶어 기본 접힘 — 건강판·알림 한 장과 중복이라 축소 (2026-07-15) ════ -->
     <details id="static-fold-details">
-    <summary>📄 설계 참고 — 무엇이 어떻게 돌도록 설계됐나(정적) <span class="fold-sub">— 상시가동·매일 타임라인·매주. 실측은 위 🤖 건강 점수판·📨 통합 알림 보드·📡 모듈 보고 현황</span></summary>
+    <summary>📄 설계 참고 — 무엇이 어떻게 돌도록 설계됐나(정적) <span class="fold-sub">— 상시가동·매일 타임라인·매주. 실측은 위 🤖 건강 점수판·📨 알림 한 장</span></summary>
 
     <div class="callout" style="margin-top:12px;">
       <strong>📄 설계 문서(정적)</strong> — 🟢=설계상 상시가동, 실측 아님. 실제 가동은 위 🤖 건강 점수판.
@@ -820,7 +781,7 @@
     <!-- ② 지금 돌고 있는 자동화 -->
     <h3>🟢 지금 돌고 있는 자동화 <span class="statchip static">📄 설명(정적)</span></h3>
 
-    <h4>매일 <span class="statchip static">📄 설명</span> <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 · 텔레그램·카카오 정시 발신 전체는 위 '📨 통합 알림 보드'·'📋 텔레그램·카카오톡 전 방 한 장'</span></h4>
+    <h4>매일 <span class="statchip static">📄 설명</span> <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 · 텔레그램·카카오 정시 발신 전체는 위 '📨 알림 한 장'</span></h4>
     <div class="tbl-wrap"><table>
       <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
       <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
@@ -853,22 +814,6 @@
     </details>
     <!-- ════ /📄 정적 설계표 3종 접힘 ════ -->
 
-    <!-- ══ 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · additive · 2026-07-09) ══ -->
-    <h3 id="sec-module-registry" style="margin-top:28px;border-top:1px solid var(--border-strong);padding-top:24px;">📡 모듈 보고 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">— 모듈 등록부 관점(누가 만들었나·자율수준). 카톡·텔레그램 발신 전체는 위 '📨 통합 알림 보드'</span></h3>
-    <p class="sec-note" style="margin:0 0 6px;">모듈이 봇ID·주기 등록 시 자동 보고. 아래=등록 현황 + 마지막 발송·건강 실측.</p>
-    <p class="sec-note" style="margin:0 0 10px;">🟢 <b>발효</b> = 방 배정 완료(배지 아래 부기로 정상/첫 실행 대기/발송이력 미측정 구분) · 🔴 <b>발효·실패/지연</b> = 발효인데 실행 실패 · ⚪ <b>미발효</b> = 방 미배정(억지 초록 금지)</p>
-    <div class="tbl-wrap" id="module-registry-wrap">
-      <table>
-        <thead>
-          <tr><th style="width:210px">모듈</th><th style="width:74px">담당</th><th style="width:84px">주기</th><th style="width:178px">채널·봇</th><th style="width:124px">마지막 발송</th><th style="width:138px">상태·건강</th></tr>
-        </thead>
-        <tbody id="module-registry-tbody">
-          <tr><td colspan="6" style="color:var(--dim);">불러오는 중…</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="sec-note" style="margin:8px 0 0;">소스: <code>module_registry.json</code>(등록·주기·채널) · <code>erp_status.json</code> automation_health(마지막 실행·건강) · <code>kakao_last_send.json</code>(카톡 3방 발송). 발송 로그 없는 항목은 <b>⚪ 측정불가/예정</b>.</div>
-    <!-- ══ /모듈 보고 현황 ══ -->
   </details>
 
   <footer class="foot">
@@ -1880,13 +1825,8 @@
     if(t) t.textContent = '기준: ' + esc(snap.generated_at_kst || '') + '  |  ※ 로컬 아티팩트를 못 찾은 모듈은 "모름"으로 표기(정상 아님) · 아티팩트는 최근인데 갱신주기 미선언인 모듈은 "활동(주기미선언)"으로 구분(모름과 다름) · 등록부 enabled:false 모듈은 "휴면(미가동)"으로 구분';
   }
 
-  // ═══════════ ② 돌아가는 자동화: 📡 모듈 보고 현황 (status/module_registry.json 실값 렌더 · 2026-07-09) ═══════════
-  // 채널 인라인 SVG 브랜드 로고 — wellperion_guide '일 흐름 시각표'(commit d138a013)에서 이식(16px급, TG 파랑·KT 노랑).
-  var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
-  var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
-  var CYCLE_LABEL = { daily:'매일', weekly:'주간', monthly:'월간' };
+  // ═══════════ ② 돌아가는 자동화: 📨 알림 한 장 — 공용 헬퍼 ═══════════
   // "2026-07-15 오전 9:30:01"(Task Scheduler 한글) → "07/15 09:30". 1999(첫 실행 전 placeholder)=없음.
-  // (구 🔔 알림 보드에서 이식 — 병합 표의 마지막 실행 시각 포맷에 재사용 · 2026-07-15)
   function fmtKAmPm(s){
     s = String(s || '');
     var d = s.match(/(\d{4})-(\d{2})-(\d{2})/);
@@ -1897,117 +1837,30 @@
     else { var t = s.match(/(\d{1,2}):(\d{2})/); if(t){ hh = String(+t[1]).padStart(2, '0'); mm = t[2]; } }
     return d[2] + '/' + d[3] + ' ' + hh + ':' + mm;
   }
-  // 모듈 → automation_health 예약작업 매칭(마지막 발송·건강 실측 소스). 전용 잡이 있으면 그것, 없으면 cadence→공용 모듈리포터 잡, 그래도 없으면 측정불가.
-  var MOD_AH = {
-    'cto-kakao-sales-report':   { kakao:true, ah:'Wellperion-Kakao-Sales-Report-0930' },
-    // cto-kakao-check-share: 전용 예약작업 Wellperion-Kakao-CheckStatus-Share-2300 은
-    // 배10008(2026-07-24)로 삭제됨(카톡 23:00 중복 발송 경로 제거, 텔레그램 22:30/20:00만
-    // 존속). 전용 잡이 없어졌으므로 매핑 제거 — cadence 기반 공용 모듈리포터로 폴백.
-    'cto-ops-morning-digest':   { ah:'Wellperion-Ops-Morning-Digest-0730' },
-    // cto-aide-gap-detector: 2026-07-24 웰리 승인 병합(34→26)으로 ceo-gm-aide 로 등록부 흡수됨
-    // (같은 06:30 gm_aide_scan.bat 한 파이프라인) — 키를 survivor id 로 이전, 삭제 아님.
-    'ceo-gm-aide':              { ah:'Wellperion-GM-Aide-Scan-0630' },
-    'cmo-case-series-dispatch': { ah:'Wellperion-IG-Series-Produce-0730' },
-    'cto-weekly-self-review':   { ah:'Wellperion-Weekly-Self-Review-Sunday' },
-    'cto-weekly-page-hygiene':  { ah:'Wellperion-Weekly-Page-Hygiene-Sun-0900' }
-  };
-  // cadence → 공용 모듈 리포터 예약작업(자동화현황방 발송). 발효 모듈의 마지막 발송·건강 실측 소스.
-  var CADENCE_AH = { daily:'Wellperion-Module-Report-Daily', weekly:'Wellperion-Module-Report-Weekly', monthly:'Wellperion-Module-Report-Monthly' };
-  function renderModuleRegistry(reg, erp, kakaoLast){
-    var tbody = document.getElementById('module-registry-tbody');
-    if(!tbody) return;
-    var mods = (reg && Array.isArray(reg.modules)) ? reg.modules : null;
-    if(!mods){
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
-      return;
-    }
-    if(!mods.length){
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록된 모듈이 없습니다.</td></tr>';
-      return;
-    }
-    // erp automation_health 이름→항목 룩업(마지막 실행·상태)
-    var ahMap = {};
-    var ahItems = (erp && erp.automation_health && Array.isArray(erp.automation_health.items)) ? erp.automation_health.items : [];
-    ahItems.forEach(function(it){ if(it && it.name) ahMap[it.name] = it; });
-    var okN = 0, badN = 0, idleN = 0;
-    var rows = mods.map(function(m){
-      m = m || {};
-      // feature 는 등록부 변경이력·모듈 내부명까지 섞여 수백~수천자가 될 수 있다(GM 화면 표면 감사
-      // 2026-07-30). 표 칸도 카드와 같은 방식(missionSnippet + cellmore 접기)으로 통일 — 한 줄만
-      // 보이고 전문은 펼쳐보기로 남긴다(정보 손실 0).
-      var nameFull = missionSummary(m.name || m.feature || m.id || '—');
-      var nameHead = missionSnippet(nameFull, 90);
-      var name = (nameHead === nameFull) ? esc(nameFull)
-        : '<details class="cellmore"><summary>' + esc(nameHead) + '</summary>'
-          + '<div class="cellfull">' + esc(nameFull) + '</div></details>';
-      var owner = esc(m.owner_nick || m.owner_role || '—');
-      var ns = (m.notify_spec && typeof m.notify_spec === 'object') ? m.notify_spec : null;
-      var cycles = [];
-      if(ns){ ['daily','weekly','monthly'].forEach(function(k){ if(ns[k]) cycles.push(CYCLE_LABEL[k]); }); }
-      var cycleTxt = cycles.length ? cycles.join(', ') : '—';
-
-      // 발효(active) 판정: 텔레그램+봇ID / 카톡 / 전용 예약작업 보유 중 하나
-      var ovr = MOD_AH[m.id] || null;
-      var active = !!(ns && ((ns.channel === 'telegram' && ns.bot_id) || ns.channel === 'kakao' || ovr));
-
-      // 채널·봇 셀
-      var chLogo = (ns && ns.channel === 'telegram') ? TG_LOGO : ((ns && ns.channel === 'kakao') ? KT_LOGO : '');
-      var channelCell;
-      if(!ns || !ns.channel){
-        channelCell = '—';
-      } else if(ns.channel === 'kakao'){
-        channelCell = chLogo + '<span class="chroom">' + esc(ns.bot_id || '카톡 3방') + '</span>';
-      } else if(ns.channel === 'telegram'){
-        var room = ns.bot_id ? esc(ns.bot_id) : (active ? '자체발신' : '미발효');
-        channelCell = chLogo + '<span class="chroom' + (active ? '' : ' idle-room') + '">' + room + '</span>';
-      } else {
-        channelCell = esc(ns.channel);
-      }
-
-      // 마지막 발송 시각 소스 = 전용 잡 > cadence 공용 리포터 잡
-      var ahName = ovr && ovr.ah ? ovr.ah : (active ? (ns && ns.daily ? CADENCE_AH.daily : (ns && ns.weekly ? CADENCE_AH.weekly : (ns && ns.monthly ? CADENCE_AH.monthly : null))) : null);
-      var ah = ahName ? ahMap[ahName] : null;
-
-      // 발효 하위 3종(정상/측정불가/예정)은 전부 "배선 완료" 상태라 상위 🟢 발효 배지 하나로 통합,
-      // 세부는 배지 아래 회색 부기로 구분(GM 지적 2026-07-22 — 발효 표기 3분열 혼란 근본수리). 실패(🔴)만 별도 유지.
-      var SUB = '<div style="font-size:10px;color:var(--dim);margin-top:2px;">';
-      var lastCell, statusCell;
-      if(!active){
-        lastCell = '<span style="color:var(--dim)">—</span>';
-        statusCell = '<span class="statchip idle">⚪ 미발효</span>'; idleN++;
-      } else if(ovr && ovr.kakao && kakaoLast && kakaoLast.at){
-        // 카톡 3방 발송 = kakao_last_send.json 실측 우선
-        var okSend = kakaoLast.ok !== false;
-        lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtWhen(kakaoLast.at)) + (okSend ? ' <span style="color:var(--green)">✓</span>' : ' <span style="color:#ff8a80">⚠</span>') + '</span>';
-        if(ah && ah.state === '실패'){ statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++; }
-        else if(okSend){ statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '정상</div>'; okN++; }
-        else { statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++; }
-      } else if(!ah){
-        lastCell = '<span style="color:var(--dim)">결과 확인 안 됨</span>';
-        statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '발송이력 미측정</div>'; okN++;
-      } else if(ah.state && ah.state.indexOf('실패') === 0){
-        lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
-        statusCell = '<span class="statchip bad">🔴 발효·실패</span>'; badN++;
-      } else if(ah.state && ah.state.indexOf('정상') === 0){
-        lastCell = '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
-        statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '정상</div>'; okN++;
-      } else {
-        // 대기(첫 실행 전) 등 — 억지 초록 금지, 다만 배선은 정상 완료라 발효로 집계
-        lastCell = '<span style="color:var(--dim);font-variant-numeric:tabular-nums;">예정 ' + esc(fmtKAmPm(ah.next_run)) + '</span>';
-        statusCell = '<span class="statchip ok">🟢 발효</span>' + SUB + '첫 실행 대기</div>'; okN++;
-      }
-
-      return '<tr><td><strong>' + name + '</strong></td><td>' + owner + '</td><td>' + cycleTxt + '</td><td>' + channelCell + '</td><td>' + lastCell + '</td><td>' + statusCell + '</td></tr>';
-    }).join('');
-    tbody.innerHTML = rows;
+  // ★ 뒤 공백 변주 통일(예: '★ 운영부' ↔ '★운영부' — 등록부 항목마다 표기가 갈려 있다, 같은 방).
+  function roomKey(name){
+    name = String(name || '').trim();
+    return name.replace(/^★\s+/, '★');
   }
+  // 방 용도 — 구 '📋 텔레그램·카카오톡 전 방 한 장' 표(배202·GM 지시 2026-07-28)에서 이식.
+  // 표에 없던 방(CFO 채널·핵심멤버방 등 신규 발견)은 렌더 시 그 방의 첫 발신 내용으로 대체.
+  var ROOM_PURPOSE = {
+    'GM_DM': 'GM 개인 1:1 — 아침/저녁 루틴·🧭 오늘의 항로·승인·결재 중계·헬스체크 등 정시 다수',
+    '점검관리방': '점검 독려·이슈 알림·월간 점검 리포트',
+    '문의알림방': '문의 5종 신규·컨택/등록 다이제스트·CMO 일일/주간 마케팅카드',
+    '종합접수처': '종합접수 신규+미처리 적체 리마인드',
+    '자동화현황방': '모듈 일일/주간/월간 보고·자동화 건강 다이제스트',
+    '시설팀알람방': '시설팀 앞 임시 전달(정기 발신 미배선)',
+    '차의주 회장님': '매출·운영·인사 보고(스트림3 이미지)',
+    '웰페리온 관리부': '매출·운영·인사 보고(스트림3 이미지)',
+    '★운영부': '매출보고(경영) + 아침 종합운영다이제스트·점검/접수 현황(실무) — 이중용도',
+    '★부서장': '문의 정리 다이제스트(문의알림방과 동시발송)',
+    '★운영+시설+지원+주차': '점검·접수 현황 통합 다이제스트'
+  };
 
-  // ═══════════ ② 돌아가는 자동화: 📨 통합 알림 보드 (status/notify_registry.json 단일 SSOT · GM 지시 2026-07-20) ═══════════
-  // 구 카톡 3종 표·통합보고 10슬롯 표·조건부·상주 알림 3건을 여기로 통합. 발송 로직 무변경 — 표시만.
-  var NOTIFY_FREQ_RANK = { daily:0, weekly:1, monthly:2, conditional:3, event:4 };
+  // ═══════════ ② 돌아가는 자동화: 📨 알림 한 장 (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · 2026-07-31 · 구 3섹션[방 한 장·통합 알림 보드·모듈 보고 현황] 통합) ═══════════
   var NOTIFY_FREQ_LABEL = { daily:'매일', weekly:'매주', monthly:'매월', conditional:'조건부', event:'이벤트' };
-  var NOTIFY_GRP_LABEL = { daily:'🟦 매일', weekly:'🟩 매주', monthly:'🟪 매월', conditional:'🟨 조건부', event:'⚡ 이벤트' };
-  var NOTIFY_NIGHT_DIGEST_SORT = '2030';  // 20:00/22:30 동일 잡 5발신 묶음(휴일20:00·평일22:30 중 하나) — 시각 그룹핑 전용(발신 통합 아님)
+  var NOTIFY_CH_EMOJI = { telegram:'📨', kakao:'💛' };
   var _notifyState = { channel:'all', owner:'all', problemOnly:false };
 
   function _notifySchtasksName(source){
@@ -2015,117 +1868,117 @@
     return String(source).split(/\s*·\s*/)[0].trim();
   }
 
-  // item(state·freq) + erp automation_health + kakao_last_send 실측을 병합해 표시용 판정(ok|warn|bad|dead) 산출.
-  function notifySeverity(item, ahMap, schedAlive, kakaoLast){
-    /* ★2026-07-31 시토(GM "정리된 걸 내가 이해할 수 있게") — '죽은 배선'이라는 이름을 바꾼다.
-       실측하니 이 4건은 고장이 아니라 **중복이라 일부러 없앤 것**이었다(전부 배 번호와 사유가
-       등록부에 적혀 있다: 12시 점검·18시 퇴근인사·23시 점검DM·23시 카톡점검 — 각각 다른 발신에
-       흡수되거나 같은 방 중복이라 폐지). 그런데 화면이 '죽은 배선(발송 안 감)'이라 불러서
-       GM 이 볼 때마다 고장 4건이 방치된 것처럼 보였다. 없앤 기록을 지우면 왜 없앴는지가 사라져
-       누군가 다시 만든다 — 그래서 기록은 남기되 **이름을 사실대로** 바꾼다. */
-    if(item.state === 'dead') return { sev:'dead', label:'⚪ 폐지됨' };
-    // state==='off' = GM이 의도적으로 끈 것(킬스위치 ENABLED=False 등) — 진짜 실패(🔴)와 구분해 ⚪로(GM 지적 2026-07-22).
-    if(item.state === 'off')  return { sev:'idle', label:'⚪ 꺼둠(의도적)' };
-    // state === 'live' 이후 — 런타임 실측으로 강등 여부 확인
+  // item(state·freq) + telegram_rooms.json 매핑 + erp automation_health + kakao_last_send 실측을 병합해
+  // 4분류(ok|warn|bad|dead) 판정. bad='🔴 꺼짐'(GM 킬스위치), dead='⚫ 죽은배선'(실행 실패·방 매핑 끊김).
+  function notifySeverity(item, ahMap, schedAlive, kakaoLast, troom){
+    if(item.state === 'dead') return { sev:'dead', label:'⚫ 죽은배선' };
+    if(item.state === 'off')  return { sev:'bad', label:'🔴 꺼짐' };
     if(item.trigger === 'apscheduler' && !schedAlive){
-      return { sev:'bad', label:'🔴 스케줄러 정지' };
+      return { sev:'dead', label:'⚫ 죽은배선(스케줄러 정지)' };
     }
     if(item.trigger === 'schtasks'){
       var tn = _notifySchtasksName(item.source);
       var ah = tn ? ahMap[tn] : null;
       if(ah && ah.state && String(ah.state).indexOf('실패') === 0){
-        return { sev:'bad', label:'🔴 실행 실패' };
+        return { sev:'dead', label:'⚫ 죽은배선(실행 실패)' };
       }
     }
     if(item.id === 'win-0930-kakao-sales' && kakaoLast && kakaoLast.at && kakaoLast.ok === false){
-      return { sev:'bad', label:'🔴 발송 실패' };
+      return { sev:'dead', label:'⚫ 죽은배선(발송 실패)' };
     }
-    if(item.freq === 'conditional'){
+    // 텔레그램 단일방(콤보 표기 아님)인데 telegram_rooms.json(SSOT)에 그 방이 없으면 실제 chat_id를 못 구한다.
+    if(item.channel === 'telegram' && !item.chat_id && !/[\/·]/.test(item.room || '') && (troom || {})[roomKey(item.room)] == null){
+      return { sev:'dead', label:'⚫ 죽은배선(방 미등록)' };
+    }
+    if(item.freq === 'conditional' || item.freq === 'event'){
       return { sev:'warn', label:'🟡 조건부' };
     }
     return { sev:'ok', label:'🟢 가동' };
   }
 
-  // 채널 칸 = 이모지만(글자가 칸을 넘쳐 짤리는 문제 해소 · GM 지시 2026-07-22). 방 이름은 별도 칸에 그대로 표시.
-  var NOTIFY_CH_EMOJI = { telegram:'📨', kakao:'💛' };
-  function notifyChannelCell(item){
-    var chName = item.channel === 'telegram' ? '텔레그램' : (item.channel === 'kakao' ? '카카오톡' : (item.channel || '—'));
-    var emo = NOTIFY_CH_EMOJI[item.channel] || '❔';
-    return '<span title="' + esc(chName) + '" style="font-size:15px;">' + emo + '</span>';
+  // 실제 마지막 발신 시각 — schtasks 트리거는 erp_status.json automation_health 실측과 매칭 가능(정직).
+  // apscheduler·gas 트리거는 건별 발신 로그가 없어 예약 시각만 표시(추정 아님, 미측정을 미측정으로).
+  function alertLastSentCell(item, ahMap){
+    if(item.trigger === 'schtasks'){
+      var tn = _notifySchtasksName(item.source);
+      var ah = tn ? ahMap[tn] : null;
+      if(ah && ah.last_run && ah.last_run.indexOf('1999') !== 0){
+        return '<span style="font-variant-numeric:tabular-nums;">' + esc(fmtKAmPm(ah.last_run)) + '</span>';
+      }
+      if(ah && ah.next_run){
+        return '<span style="color:var(--dim);font-variant-numeric:tabular-nums;">예정 ' + esc(fmtKAmPm(ah.next_run)) + '</span>';
+      }
+    }
+    return '<span style="color:var(--dim);font-variant-numeric:tabular-nums;">' + esc(item.when || '—') + '</span>';
   }
 
-  function notifyRowHtml(item, sevInfo){
-    var sevCls = sevInfo.sev;
-    var whenTxt = esc(item.when || '') + (item.freq && item.freq !== 'daily' ? ' <span style="color:var(--dim);font-size:10.5px;">(' + esc(NOTIFY_FREQ_LABEL[item.freq] || item.freq) + ')</span>' : '');
+  function alertRowHtml(item, sevInfo, ahMap){
+    var what = esc(item.what || '') + '<div style="font-size:10.5px;color:var(--dim);margin-top:2px;">' + esc(item.owner || '—') + '</div>';
+    var freqTxt = esc(NOTIFY_FREQ_LABEL[item.freq] || item.freq || '—');
     var noteTxt = item.state_note ? '<div style="font-size:10.5px;color:var(--dim);margin-top:3px;">' + esc(item.state_note) + '</div>' : '';
-    return '<tr data-channel="' + esc(item.channel || '') + '" data-owner="' + esc(item.owner || '') + '" data-sev="' + sevInfo.sev + '">' +
-      '<td style="font-variant-numeric:tabular-nums;">' + whenTxt + '</td>' +
-      '<td>' + notifyChannelCell(item) + '</td>' +
-      '<td>' + esc(item.room || '—') + '</td>' +
-      '<td>' + esc(item.what || '') + '</td>' +
-      '<td>' + esc(item.owner || '—') + '</td>' +
-      '<td><span class="statchip ' + sevCls + '">' + esc(sevInfo.label) + '</span>' + noteTxt + '</td>' +
+    return '<tr data-channel="' + esc(item.channel || '') + '" data-owner="' + esc(item.owner || '') + '">' +
+      '<td>' + what + '</td>' +
+      '<td>' + freqTxt + '</td>' +
+      '<td>' + alertLastSentCell(item, ahMap) + '</td>' +
+      '<td><span class="statchip ' + sevInfo.sev + '">' + esc(sevInfo.label) + '</span>' + noteTxt + '</td>' +
       '</tr>';
   }
 
-  var _notifyRowsCache = []; // [{item, sevInfo, html}]
+  var _alertRowsCache = []; // [{item, sevInfo, html}]
 
-  // 주기(freq) 그룹 소제목 행 삽입 + 22:30 동시발신 5건 시각 하위그룹 + 죽은배선 접힘(GM 지시 2026-07-22).
-  // items는 이미 NOTIFY_FREQ_RANK → when_sort 순 정렬 상태로 들어온다(호출부 renderNotifyBoard) — 그 순서를 그대로 신뢰.
-  function notifyGroupedHtml(rows){
-    var alive = rows.filter(function(r){ return r.sevInfo.sev !== 'dead'; });
-    var dead  = rows.filter(function(r){ return r.sevInfo.sev === 'dead'; });
-    var html = '';
-    var curFreq = null, prevWhenSort = null;
-    alive.forEach(function(r){
-      var freq = r.item.freq;
-      if(freq !== curFreq){
-        curFreq = freq;
-        prevWhenSort = null;
-        var cnt = alive.filter(function(x){ return x.item.freq === freq; }).length;
-        html += '<tr class="notify-grp-row"><td colspan="6" style="background:var(--surface);color:var(--text-soft);font-weight:700;font-size:11.5px;padding:6px 10px;border-top:1px solid var(--border-strong);">' +
-          esc(NOTIFY_GRP_LABEL[freq] || freq) + ' <span style="color:var(--dim);font-weight:400;">(' + cnt + '건)</span></td></tr>';
-      }
-      if(r.item.when_sort === NOTIFY_NIGHT_DIGEST_SORT && prevWhenSort !== NOTIFY_NIGHT_DIGEST_SORT){
-        var nightCnt = alive.filter(function(x){ return x.item.freq === freq && x.item.when_sort === NOTIFY_NIGHT_DIGEST_SORT; }).length;
-        if(nightCnt > 1){
-          html += '<tr class="notify-subgrp-row"><td colspan="6" style="color:var(--dim);font-size:10.5px;padding:4px 10px 4px 22px;">🌙 밤 일과정리(같은 잡 ' + nightCnt + '발신 — 발신 통합 아님, 표시만 묶음)</td></tr>';
-        }
-      }
-      prevWhenSort = r.item.when_sort;
-      html += r.html;
+  // 방(room) 기준으로 접어 묶는다 — 문제(🔴+⚫) 많은 방을 위로. troom에는 있는데 발신 0건인 방(구멍)도 숨기지 않고 얹는다.
+  function alertRoomsHtml(rows, troom){
+    var groups = {}, order = [];
+    rows.forEach(function(r){
+      var key = roomKey(r.item.room);
+      if(!groups[key]){ groups[key] = []; order.push(key); }
+      groups[key].push(r);
     });
-    if(dead.length){
-      html += '<tr class="notify-grp-row notify-grp-dead" style="background:var(--surface);color:var(--dim);font-weight:700;font-size:11.5px;padding:6px 10px;border-top:1px solid var(--border-strong);cursor:pointer;" data-expanded="0">' +
-        '<td colspan="6">⚪ 폐지됨 (' + dead.length + '건) — 중복이라 없앤 것, 사유는 눌러서 보기 ▸</td></tr>';
-      html += dead.map(function(r){ return r.html.replace('<tr ', '<tr class="notify-dead-row" style="display:none;" '); }).join('');
+    if(_notifyState.channel !== 'kakao'){
+      Object.keys(troom || {}).forEach(function(name){
+        var key = roomKey(name);
+        if(!groups[key]){ groups[key] = []; order.push(key); }
+      });
     }
-    return html;
-  }
-
-  function notifyWireDeadToggle(tbody){
-    var header = tbody.querySelector('.notify-grp-dead');
-    if(!header) return;
-    header.addEventListener('click', function(){
-      var expand = header.getAttribute('data-expanded') !== '1';
-      header.setAttribute('data-expanded', expand ? '1' : '0');
-      tbody.querySelectorAll('.notify-dead-row').forEach(function(tr){ tr.style.display = expand ? '' : 'none'; });
-      var td = header.querySelector('td');
-      td.textContent = td.textContent.replace(expand ? '▸' : '▾', expand ? '▾' : '▸').replace(expand ? '펼치기' : '접기', expand ? '접기' : '펼치기');
+    order.sort(function(a, b){
+      function problemCnt(k){ return groups[k].filter(function(r){ return r.sevInfo.sev === 'bad' || r.sevInfo.sev === 'dead'; }).length; }
+      var pa = problemCnt(a), pb = problemCnt(b);
+      if(pa !== pb) return pb - pa;
+      return groups[b].length - groups[a].length;
     });
+    return order.map(function(key){
+      var list = groups[key];
+      var emo = list.length ? (NOTIFY_CH_EMOJI[list[0].item.channel] || '❔') : '📨';
+      var todayCnt = list.filter(function(r){ return r.item.freq === 'daily' && r.item.state === 'live'; }).length;
+      var problemCnt = list.filter(function(r){ return r.sevInfo.sev === 'bad' || r.sevInfo.sev === 'dead'; }).length;
+      var purpose = ROOM_PURPOSE[key] || (list[0] ? list[0].item.what : '등록된 발신 없음(구멍)');
+      var body = list.length
+        ? '<div class="coo-tbl-wrap"><table>' +
+            '<tr><th>보내는 것</th><th style="width:64px">주기</th><th style="width:120px">발신 시각</th><th style="width:150px">상태</th></tr>' +
+            list.map(function(r){ return r.html; }).join('') +
+          '</table></div>'
+        : '<div class="sec-note" style="margin-top:6px;">텔레그램 방 등록부에는 있는데 <code>notify_registry.json</code>에 이 방으로 나가는 발신이 없습니다.</div>';
+      return '<details class="coo-details" style="margin-top:8px;">' +
+        '<summary>' + emo + ' ' + esc(key) +
+          '<span style="color:var(--dim);font-weight:400;"> — ' + esc(purpose) + '</span>' +
+          '<span style="float:right;color:var(--dim);font-weight:400;">오늘 ' + todayCnt + '건' +
+            (problemCnt ? ' · <span style="color:#ff8a80;">문제 ' + problemCnt + '건</span>' : '') + '</span>' +
+        '</summary>' + body +
+        '</details>';
+    }).join('');
   }
 
-  function notifyApplyFilters(){
-    var tbody = document.getElementById('notify-board-tbody');
-    if(!tbody) return;
-    var shown = _notifyRowsCache.filter(function(r){
+  var _alertTroom = {};
+  function alertApplyFilters(){
+    var wrap = document.getElementById('alert-board-rooms');
+    if(!wrap) return;
+    var shown = _alertRowsCache.filter(function(r){
       if(_notifyState.channel !== 'all' && r.item.channel !== _notifyState.channel) return false;
       if(_notifyState.owner !== 'all' && r.item.owner !== _notifyState.owner) return false;
       if(_notifyState.problemOnly && r.sevInfo.sev !== 'bad' && r.sevInfo.sev !== 'dead') return false;
       return true;
     });
-    tbody.innerHTML = shown.length ? notifyGroupedHtml(shown) : '<tr><td colspan="6" style="color:var(--dim);">조건에 맞는 알림이 없습니다.</td></tr>';
-    notifyWireDeadToggle(tbody);
+    wrap.innerHTML = shown.length ? alertRoomsHtml(shown, _alertTroom) : '<div class="feed-status">조건에 맞는 알림이 없습니다.</div>';
   }
 
   /* ★2026-07-31 시토(GM 표면 점검) — 여기 안내가 "notify_registry_check.py 가 상시 대조" 라고
@@ -2147,42 +2000,35 @@
       : '코드↔등록부 대조 <b>' + when + '</b> 기준.';
   }
 
-  function renderNotifyBoard(reg, drift, erp, kakaoLast){
+  function renderAlertBoard(troomsRaw, reg, drift, erp, kakaoLast, modReg){
     renderNotifyDriftNote(drift);
-    var tbody = document.getElementById('notify-board-tbody');
-    var summaryEl = document.getElementById('notify-board-summary');
+    var wrap = document.getElementById('alert-board-rooms');
+    var summaryEl = document.getElementById('alert-board-summary');
     var bannerEl = document.getElementById('notify-drift-banner');
-    if(!tbody) return;
+    if(!wrap) return;
     var items = (reg && Array.isArray(reg.items)) ? reg.items.slice() : null;
     if(!items){
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">알림 등록부를 불러오지 못했습니다.</td></tr>';
+      wrap.innerHTML = '<div class="feed-status">알림 등록부를 불러오지 못했습니다.</div>';
       if(summaryEl) summaryEl.textContent = '';
       return;
     }
+    _alertTroom = troomsRaw || {};
     var ahMap = {};
     var ahItems = (erp && erp.automation_health && Array.isArray(erp.automation_health.items)) ? erp.automation_health.items : [];
     ahItems.forEach(function(it){ if(it && it.name) ahMap[it.name] = it; });
     function ahAlive(name){ var a = ahMap[name]; return !!(a && String(a.state || '').indexOf('정상') === 0); }
     var schedAlive = ahAlive('WellperionDailyScheduler');
 
-    items.sort(function(x, y){
-      var rx = NOTIFY_FREQ_RANK[x.freq] != null ? NOTIFY_FREQ_RANK[x.freq] : 9;
-      var ry = NOTIFY_FREQ_RANK[y.freq] != null ? NOTIFY_FREQ_RANK[y.freq] : 9;
-      if(rx !== ry) return rx - ry;
-      var sx = x.when_sort || '9999';
-      var sy = y.when_sort || '9999';
-      return sx < sy ? -1 : (sx > sy ? 1 : 0);
-    });
-
-    var counts = { ok:0, warn:0, bad:0, dead:0, idle:0 };
-    _notifyRowsCache = items.map(function(item){
-      var sevInfo = notifySeverity(item, ahMap, schedAlive, kakaoLast);
+    var counts = { ok:0, warn:0, bad:0, dead:0 };
+    _alertRowsCache = items.map(function(item){
+      var sevInfo = notifySeverity(item, ahMap, schedAlive, kakaoLast, _alertTroom);
       counts[sevInfo.sev]++;
-      return { item:item, sevInfo:sevInfo, html:notifyRowHtml(item, sevInfo) };
+      return { item:item, sevInfo:sevInfo, html:alertRowHtml(item, sevInfo, ahMap) };
     });
 
     if(summaryEl){
-      summaryEl.innerHTML = '총 <b>' + items.length + '건</b> · 🟢 가동 ' + counts.ok + ' · 🟡 조건부 ' + counts.warn + ' · 🔴 실패 ' + counts.bad + ' · ⚪ 꺼둠(의도적) ' + counts.idle + ' · ⚫ 죽은배선 ' + counts.dead;
+      var roomSet = {}; _alertRowsCache.forEach(function(r){ roomSet[roomKey(r.item.room)] = 1; });
+      summaryEl.innerHTML = '방 <b>' + Object.keys(roomSet).length + '개</b> · 발신 총 <b>' + items.length + '건</b> · 🟢 가동 ' + counts.ok + ' · 🟡 조건부 ' + counts.warn + ' · 🔴 꺼짐 ' + counts.bad + ' · ⚫ 죽은배선 ' + counts.dead;
     }
 
     // 담당자 필터 버튼(동적)
@@ -2199,12 +2045,20 @@
           ownerWrap.querySelectorAll('.nf-btn').forEach(function(b){ b.classList.remove('active'); });
           btn.classList.add('active');
           _notifyState.owner = btn.getAttribute('data-owner');
-          notifyApplyFilters();
+          alertApplyFilters();
         });
       });
     }
 
-    notifyApplyFilters();
+    alertApplyFilters();
+
+    // module_registry.json — 방 미배정(notify_wired:false) 모듈은 방 표에 얹을 방이 없어 부기로만 알린다.
+    var unwiredNote = document.getElementById('alert-unwired-note');
+    if(unwiredNote){
+      var mods = (modReg && Array.isArray(modReg.modules)) ? modReg.modules : [];
+      var unwired = mods.filter(function(m){ return m && m.notify_spec && m.notify_spec.notify_wired === false; }).length;
+      unwiredNote.textContent = '미발효(방 미배정) 모듈 ' + unwired + '개는 이 표에 없음(모듈 등록부 기준)';
+    }
 
     // 드리프트 배너 — notify_registry_check.py 결과(불일치 있을 때만 노출)
     if(bannerEl){
@@ -2228,7 +2082,7 @@
         wrap.querySelectorAll('.nf-btn[data-f]').forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
         _notifyState.channel = btn.getAttribute('data-f');
-        notifyApplyFilters();
+        alertApplyFilters();
       });
     });
     var ownerToggleBtn = wrap.querySelector('[data-owner-toggle]');
@@ -2244,7 +2098,7 @@
       problemBtn.addEventListener('click', function(){
         _notifyState.problemOnly = !_notifyState.problemOnly;
         problemBtn.classList.toggle('active', _notifyState.problemOnly);
-        notifyApplyFilters();
+        alertApplyFilters();
       });
     }
   })();
@@ -2431,7 +2285,8 @@
     gasReadText('status/_queue.json',                  'status/_queue.json').catch(function(){ return ''; }),
     gasReadText('status/module_silence_snapshot.json', 'status/module_silence_snapshot.json').catch(function(){ return ''; }),
     gasReadText('status/notify_registry.json',         'status/notify_registry.json').catch(function(){ return ''; }),
-    gasReadText('status/notify_drift.json',            'status/notify_drift.json').catch(function(){ return ''; })
+    gasReadText('status/notify_drift.json',            'status/notify_drift.json').catch(function(){ return ''; }),
+    gasReadText('status/telegram_rooms.json',          'status/telegram_rooms.json').catch(function(){ return ''; })
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -2483,13 +2338,9 @@
     try{ renderAutomationHealth(erpStatus); }catch(e){ document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">건강 점수판 표시 오류.</span>'; }
     var moduleRegistry = parseJson(a[12]);
     try{ renderModuleSilence(parseJson(a[15]), moduleRegistry); }catch(e){ document.getElementById('erp-ah-silence-headline').innerHTML = '<span style="color:var(--dim);">모듈 결과 산출 표시 오류.</span>'; }
-    try{ renderModuleRegistry(moduleRegistry, erpStatus, parseJson(a[13])); }catch(e){
-      var mrt = document.getElementById('module-registry-tbody');
-      if(mrt) mrt.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
-    }
-    try{ renderNotifyBoard(parseJson(a[16]), parseJson(a[17]), erpStatus, parseJson(a[13])); }catch(e){
-      var nbt = document.getElementById('notify-board-tbody');
-      if(nbt) nbt.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">통합 알림 보드 표시 오류.</td></tr>';
+    try{ renderAlertBoard(parseJson(a[18]), parseJson(a[16]), parseJson(a[17]), erpStatus, parseJson(a[13]), moduleRegistry); }catch(e){
+      var abEl = document.getElementById('alert-board-rooms');
+      if(abEl) abEl.innerHTML = '<div class="feed-status">알림 한 장 표시 오류.</div>';
     }
     try{ renderRegistryCards(moduleRegistry); }catch(e){
       var rcEl = document.getElementById('registry-cards');
@@ -2510,10 +2361,8 @@
     document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">집계 중 (데이터 로드 전)</span>';
     var ahSilHl = document.getElementById('erp-ah-silence-headline');
     if(ahSilHl) ahSilHl.innerHTML = '<span style="color:var(--dim);">집계 중 (데이터 로드 전)</span>';
-    var mrt = document.getElementById('module-registry-tbody');
-    if(mrt) mrt.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">등록부를 불러오지 못했습니다.</td></tr>';
-    var nbt0 = document.getElementById('notify-board-tbody');
-    if(nbt0) nbt0.innerHTML = '<tr><td colspan="6" style="color:var(--dim);">통합 알림 보드를 불러오지 못했습니다.</td></tr>';
+    var abEl0 = document.getElementById('alert-board-rooms');
+    if(abEl0) abEl0.innerHTML = '<div class="feed-status">알림 한 장을 불러오지 못했습니다.</div>';
   });
 })();
 </script>
