@@ -143,16 +143,26 @@ def _first_sentence(text: str) -> str:
     return text.strip()
 
 
+# 자를 수 있는 자리 — 여기서만 끊는다. 한국어 업무 제목은 공백 없이 길게 이어지는 구간이 많아
+# 공백 하나만 보면 결국 글자 한가운데를 자르게 된다(2026-07-31 GM 지적 "문장 중간에서 끊긴다").
+_CUT_BOUNDARIES = (" ", "—", "·", ",", "(", "[", ":", "/", "→")
+
+
 def _truncate_word(text: str, max_len: int, suffix: str = "…") -> str:
-    """어절(공백) 경계에서 max_len 이하로 자르기. 중간 글자 잘림 금지."""
+    """자연스러운 경계에서 max_len 이하로 자르기. **중간 글자 잘림 금지.**
+
+    ★2026-07-31 — 예전엔 공백만 찾았고, 못 찾으면 max_len 자리에서 그냥 끊었다. 그래서
+    「…게이트 17일…」 「…단순화하던데 우린…」 「…웰리 배…」 처럼 뜻이 사라진 채 끝나는 줄이
+    08:00 GM 보고에 여럿 나왔다. 이제 ①경계 후보를 넓히고 ②쓸 만한 경계가 앞쪽밖에 없으면
+    (=자르면 뜻이 안 남으면) **자르지 않고 통째로 둔다.** 조금 긴 줄이 끊긴 뜻보다 낫다.
+    """
     if len(text) <= max_len:
         return text
-    cut = text[:max_len]
-    # 마지막 공백 위치에서 자르기
-    sp = cut.rfind(" ")
-    if sp > max_len // 2:
-        cut = cut[:sp]
-    return cut.rstrip() + suffix
+    window = text[:max_len]
+    cut = max(window.rfind(c) for c in _CUT_BOUNDARIES)
+    if cut < max_len // 2:
+        return text
+    return window[:cut].rstrip("".join(_CUT_BOUNDARIES)) + suffix
 
 
 def _derive_desc(item: dict) -> str:

@@ -1297,15 +1297,33 @@ _TG_BOX_CHARS = "┌┬┐├┼┤└┴┘│─"
 _ROLE_TAG = re.compile(r"^\[(웰리|시우|시포|시모|시토|시뽀|시로)\]\s*")
 
 
+def _tg_trim(text: str, limit: int) -> str:
+    """길면 줄이되 **낱말·문장 중간에서 자르지 않는다** (2026-07-31 GM 지적).
+
+    예전 식은 정확히 46자에서 끊고 그 앞의 공백이나 '—' 만 찾았다. 한국어 업무 제목은
+    공백 없이 길게 이어지는 구간이 많아 그 둘을 못 찾으면 **글자 한가운데를 잘랐다**.
+    실측(오늘 08:00 보고): 「…게이트 17일…」 「…단순화하던데 우린…」 「…웰리 배…」 —
+    무슨 말인지 알 수 없게 끝났다. GM 이 반복해 지적한 '문장 중간 잘림'이 여기다.
+    ▸이제 끊을 자리를 자연스러운 경계(공백·—··,·(·[·:·/)에서만 찾고,
+      경계가 너무 앞에만 있으면(=자르면 뜻이 사라지면) **자르지 않고 통째로 둔다.**
+      한 줄이 조금 길어지는 것이 뜻이 끊기는 것보다 낫다.
+    """
+    text = (text or "").strip()
+    if len(text) <= limit:
+        return text
+    window = text[:limit]
+    cut = max(window.rfind(c) for c in (" ", "—", "·", ",", "(", "[", ":", "/"))
+    # 경계가 제목의 절반보다 앞이면 잘라 봐야 뜻이 안 남는다 → 원문 유지.
+    if cut < limit // 2:
+        return text
+    return window[:cut].rstrip(" —·,([:/") + "…"
+
+
 def _tg_row(cells: list[str]) -> list[str]:
     """표 한 행(배·담당·진행명·간단설명·핵심조언) → 텔레그램 2줄."""
     ship, owner, title, desc, advice = (cells + [""] * 5)[:5]
     title = _ROLE_TAG.sub("", title).strip()
-    # 제목이 길면 폰에서 서너 줄로 접혀 훑기가 안 된다 — 제목 줄만 봐도 뜻이 통하게 앞부분만.
-    if len(title) > 46:
-        cut = title[:46]
-        sp = max(cut.rfind(" "), cut.rfind("—"))
-        title = (cut[:sp] if sp > 23 else cut).rstrip(" —") + "…"
+    title = _tg_trim(title, 46)
     # 배 칸에서 난이도 아이콘을 뺀 꼬리표(보류·🔗·🌀·🔍미확인)만 뜻을 갖는다 — 그것만 남긴다.
     tags = " ".join(t for t in ship.split() if t not in ("⛵", "⛴️", "🛳️")).strip()
     head = f"▪ {title} — {owner}" + (f" {tags}" if tags else "")
@@ -1374,7 +1392,13 @@ def _board_to_telegram(board_text: str) -> str:
 
     text = "\n".join(out)
     # 마크다운 기울임 표시(_…_)는 텔레그램에서 밑줄 기호가 그대로 보인다 — 걷어낸다.
-    text = re.sub(r"_([^_\n]{1,80})_", r"\1", text)
+    # ★2026-07-31 시토(GM "진짜가 맞는지도 모르겠어") — 앞뒤가 글자면 기울임이 아니다.
+    #   예전 식은 밑줄 두 개만 보이면 걷어내서 **파일·함수 이름을 훼손**했다. 실측: 오늘 08:00
+    #   보고에 qa_inject_inquiry.py 가 'qainjectinquiry.py' 로, status/inquiry_snapshot_lesson.json 이
+    #   'status/inquirysnapshotlesson.json' 으로 찍혔다. GM 화면의 글자가 실제와 다르면 보고 전체를
+    #   못 믿게 된다 — 읽기 좋게 만들려던 처리가 사실을 바꾸고 있었다.
+    #   기울임은 낱말 경계에서만 열고 닫힌다. 낱말 안(qa_inject_…)의 밑줄은 그대로 둔다.
+    text = re.sub(r"(?<![0-9A-Za-z가-힣])_([^_\n]{1,80})_(?![0-9A-Za-z가-힣])", r"\1", text)
     return re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
 
 
