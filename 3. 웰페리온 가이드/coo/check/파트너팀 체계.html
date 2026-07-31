@@ -700,8 +700,28 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     });
   };
 
-  function renderWork(){
-    var arr=[];try{arr=JSON.parse(localStorage.getItem('todo_tasks')||'[]');}catch(e){}
+  // ★2026-07-31 시토 — 이 탭은 지금까지 다른 페이지가 남긴 localStorage('todo_tasks') 캐시만
+  // 읽었다. 그런데 그 키를 실제로 쓰는 곳은 'coo/todo/업무 현황 SSOT.html' 뿐이라, 그 페이지를
+  // 먼저 들르지 않은 방문(시크릿 창 포함, GM 라이브 확인 표준 방식)에서는 캐시가 항상 비어
+  // '기본 데이터'(SEED, 최신 2026-06 항목까지)로 조용히 대체되어 있었다 — 실제 업무 SSOT과
+  // 무관하게 매번 같은 옛 데이터만 보인 것. 다른 페이지들처럼 GAS 업무 SSOT를 직접 불러온다.
+  var WORK_TODO_API='https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  function fetchWorkLive(){
+    fetch(WORK_TODO_API+'?action=todo_list',{redirect:'follow'}).then(function(r){return r.json();}).then(function(d){
+      if(!(d&&(d.ok||d.success)&&(d.data||d.todos)))return;
+      var raw=d.data||d.todos;
+      var arr=raw.map(function(r){return{
+        id:r.id||r.ID||'', title:r['업무명']||r.title||'', category:r['카테고리']||r.category||'',
+        owner:r['담당자']||r.owner||'', startDate:r['시작일']||r.startDate||'', endDate:r['종료일']||r.endDate||'',
+        status:r['상태']||r.status||'', 중요도:r['난이도']||r.중요도||''
+      };});
+      try{localStorage.setItem('todo_tasks',JSON.stringify(arr));}catch(e){}
+      renderWork(arr,true);
+    }).catch(function(){/* 오프라인 — 이미 그려둔 캐시/SEED 그대로 유지 */});
+  }
+  function renderWork(liveArr,isLive){
+    var arr=liveArr;
+    if(!arr){arr=[];try{arr=JSON.parse(localStorage.getItem('todo_tasks')||'[]');}catch(e){}}
     var hr=arr.filter(function(t){return /파트너팀/.test((t.category||'')+'');});
     var cache=hr.length>0;if(!cache)hr=SEED;
     var g={'진행중':[],'완료':[],'보류':[]};
@@ -710,12 +730,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     var diff={'상':'var(--red)','중':'var(--yellow)','하':'var(--green)'};
     var cols=[['진행중','var(--blue)'],['완료','var(--green)'],['보류','var(--orange)']];
     document.getElementById('workBoard').innerHTML=cols.map(function(cc){var list=g[cc[0]];return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:700;display:flex;justify-content:space-between"><span style="color:'+cc[1]+'">'+cc[0]+'</span><span style="color:var(--dim)">'+list.length+'</span></div><div style="padding:8px;display:flex;flex-direction:column;gap:8px">'+(list.length?list.map(function(t){var d=(''+(t.startDate||'')).slice(0,10)+(t.endDate?' ~ '+(''+t.endDate).slice(0,10):'');var lv=(t.중요도||t.난이도||'').trim();return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 10px"><div style="font-weight:600;font-size:13px;line-height:1.45">'+esc(t.title||'')+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center">'+(lv?'<span style="font-size:10px;border-radius:5px;padding:1px 6px;background:var(--border);color:'+(diff[lv]||'var(--dim)')+'">중요도 '+lv+'</span>':'')+'<span style="flex:1"></span><span style="font-size:10px;color:var(--dim)">'+esc(t.owner||'')+'</span></div>'+(d.replace(/[~ ]/g,'')?'<div style="font-size:10px;color:var(--dim);margin-top:4px">📅 '+esc(d)+'</div>':'')+'</div>';}).join(''):'<div style="color:var(--dim);font-size:12px;text-align:center;padding:14px">없음</div>')+'</div></div>';}).join('');
-    document.getElementById('workUpdated').textContent=cache?'ERP 동기화':'기본 데이터';
+    document.getElementById('workUpdated').textContent=isLive?'ERP 동기화(실시간)':(cache?'ERP 동기화(저장본)':'기본 데이터 — 불러오는 중…');
   }
 
   // 로컬 캐시(저장본) 즉시 표시 → 네트워크 갱신은 배경 진행(완료 시 데이터·표기 최신 교체)
   (function(){var c=readSalesCache();if(!c)return;try{MODEL=c.model;SALES_FROM_CACHE=true;SALES_SAVED_AT=c.savedAt||null;buildSeg();renderPeriod();document.getElementById('salesUpdated').textContent=savedLabel()+' 표시 · 갱신 중…';}catch(e){MODEL=null;SALES_FROM_CACHE=false;}})();
-  loadSales(false);renderWork();
+  loadSales(false);renderWork();fetchWorkLive();
 })();</script>
 <script>function tog(h){var b=h.nextElementSibling;b.classList.toggle("open");var a=h.querySelector(".arrow");if(a)a.style.transform=b.classList.contains("open")?"rotate(180deg)":"";}</script>    <script src="/wellperion-automation/_assets/print_options.js"></script>
 </body>

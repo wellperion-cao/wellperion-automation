@@ -134,6 +134,11 @@ body.embed .honesty,body.embed footer,body.embed #chips,body.embed .sub{display:
 body.embed .wrap{padding:12px 14px 24px}
 body.embed h1{font-size:16px}
 body.embed .calwrap{margin-top:8px}
+/* ★2026-07-31 시토 — 부서 체계 페이지가 이 화면을 iframe 으로 끼워 넣는데, 감싸는 페이지에
+   이미 같은 '웰페리온 ERP' 링크가 있어 두 번 나오고 제목 옆에 떠서 아래 버튼 줄과 어긋나
+   보였다(전사_거래업체 임베드에서 GM 지적된 것과 동일한 원인). '➕ 일정 추가'는 임베드에서도
+   써야 하니 그대로 두고, 중복되는 ERP 링크만 숨긴다(단독으로 열면 그대로 나온다). */
+body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
