@@ -2455,6 +2455,10 @@ _GM_REPORT_CHAT_ID = int(ENV.get("TELEGRAM_CHAT_ID") or 8254867551)
 # GM이 2026-07-18 개설. 창 제목이 다르면 이 값을 실제 제목으로 맞출 것.
 KAKAO_DEPTHEAD_ROOM = "★부서장"
 
+# 업무 SSOT 09:30 보고를 받는 방(2026-07-31 GM 지시 · GM 정정 "부서장방이 아니라 운영부방").
+# 이름은 scripts/kakao_rooms.json 등록값과 글자까지 같아야 창-제목 탐색이 맞는다.
+KAKAO_OPS_DEPT_ROOM = "★ 운영부"
+
 # 카카오톡 ★운영+시설+지원+주차 방 — 점검현황·종합접수현황 분리 발송 게이트(GM 2026-07-22 go).
 # --only-room 매칭이라 방 이름은 열린 채팅창 제목과 정확히 일치해야 함(실측 검증됨,
 # scripts/poc-evidence/kakao_send_★운영+시설+지원+주차_*.png). 역롤백(1줄): 아래를 False로.
@@ -2623,7 +2627,41 @@ def run_stream_3_mgmt() -> None:
         if absorbed:
             keys = [it["source"] for it in absorbed]
             _mr.mark_bundle_sent(keys, cadence="daily")
-        logger.info(f"{label} 완료 (업무보고방 발송 · 흡수 {len(absorbed)}건 · 카카오=GM go 후속)")
+        logger.info(f"{label} 완료 (업무보고방 발송 · 흡수 {len(absorbed)}건)")
+
+        # ── 업무 SSOT 를 ★부서장 카톡방에도 (2026-07-31 GM 지시) ──
+        # GM: "업무 SSOT 도 카카오톡방에 보고를 해주면 좋을 것 같아."
+        # 이 본문의 '⏰ 지연' 목록은 전부 실무진·부서장 이름이다(실측 2026-07-31: 15건 — 이정헌
+        # 소장·최준용M·나우열M·윤병현AM·이경연 실장). 그런데 지금까지 GM 만 봤다. 본인이 봐야
+        # 본인 지연을 안다.
+        # ▸보내는 곳 = ★ 운영부 (2026-07-31 GM 정정 — 웰리가 처음에 ★부서장으로 잡았으나
+        #   GM: "부서장방이 아니라 운영부방인데?"). 방 이름은 scripts/kakao_rooms.json 의
+        #   등록값 그대로 써야 창-제목 탐색이 맞는다.
+        # ▸2026-07-31 웰리가 등록부에서 뺀 kakao-stream3-mgmt 와 다른 건이다 — 그건 회장님·관리부·
+        #   ★운영부 3방 09:30 이라 같은 시각 매출보고(win-0930-kakao-sales)와 중복이었다.
+        # ▸본문을 다시 만들지 않는다(약속 L01) — 방금 보낸 것과 같은 조립을 그대로 쓴다.
+        try:
+            import report_stream_3_impl as _s3i
+            body = _s3i.build_digest()
+            if isinstance(body, list):
+                body = "\n".join(body)
+            body = re.sub(r"</?pre>", "", str(body))   # 카톡은 HTML 태그를 못 그린다
+            proc = subprocess.run(
+                [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
+                 "--message", body, "--only-room", KAKAO_OPS_DEPT_ROOM],
+                cwd=str(REPO_ROOT), capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=180,
+                env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+            )
+            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+            logger.info(f"{label} 카톡 {KAKAO_OPS_DEPT_ROOM} 발송: {tail[0]}")
+            if proc.returncode != 0:
+                send_telegram(_GM_REPORT_CHAT_ID,
+                              f"⚠️ 업무 SSOT 카톡 발송이 안 나갔습니다\n▪ {KAKAO_OPS_DEPT_ROOM}\n   {tail[0]}\n"
+                              "   PC 카카오톡에서 그 방 창이 열려 있는지 확인해 주세요.",
+                              parse_mode=None)
+        except Exception as e:
+            logger.error(f"{label} 카톡 {KAKAO_OPS_DEPT_ROOM} 발송 예외: {e}")
     except Exception as e:
         logger.error(f"{label} 예외: {e}")
 

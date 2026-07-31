@@ -539,6 +539,21 @@
       "state": "live",
       "state_note": "2026-07-30 신설 등록(이전엔 이 발신경로 자체가 미등록이었음 — 등록은 유지). GM 지시(2026-06-24) — 성공/실패 구분 없이 전부 GM_DM 1건. [2026-07-30] 순수 성공만 자동화현황방으로 옮겼다가 되돌림 — 발행 성공은 AI 살림이 아니라 현실 업무 결과라 GM_DM이 맞다(시토 오지시 정정). 완료보고(audience=ai) 라우팅과 혼동 금지.",
       "source": "scripts/ig_review_publish_watcher.py (multichannel summary 발신부, safe_commit 직후)"
+    },
+    {
+      "id": "kakao-0930-worksot-ops",
+      "when": "09:30",
+      "when_sort": "0930",
+      "freq": "daily",
+      "channel": "kakao",
+      "room": "★ 운영부",
+      "chat_id": null,
+      "what": "업무 SSOT 현황(지연·임박·결재대기·분기목표) — 텔레그램 업무보고방과 동일 본문",
+      "owner": "웰리",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "2026-07-31 GM 지시 — 지연 목록이 전부 실무진·부서장 이름인데 GM만 보고 있었다. 본인이 봐야 본인 지연을 안다. GM 정정으로 ★부서장 아닌 ★ 운영부.",
+      "source": "telegram_bot/daily_scheduler.py run_stream_3_mgmt 말미 + scripts/kakao_report_sender.py"
     }
   ],
   "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다."
