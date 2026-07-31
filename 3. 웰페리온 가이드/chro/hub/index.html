@@ -652,6 +652,7 @@
 </div>
 
 <script src="ob_guide_data.js"></script>
+<script src="org_guide_data.js"></script>
 <script src="channel-data.js"></script>
 <script>
 "use strict";
@@ -1161,7 +1162,10 @@ function groupCount(arr,key){
   var m={};arr.forEach(function(r){var v=r[key]||"미지정";m[v]=(m[v]||0)+1;});return m;
 }
 /* 조직도 — 라이브 emp 데이터로 렌더(코드만, 실명은 파일에 저장 안 됨). 겸직은 주 소속에 1회 표시. */
-function orgChartHtml(active){
+function orgChartHtml(active,opts){
+  /* [추가 2026-07-31 A-5] opts.clickable=true면 부서 카드에 조직 운영가이드 클릭 진입을 얹는다.
+     opts 생략 시(대시보드 기존 호출) 동작·출력 100% 동일 — 새 인자 추가만, 기존 로직 무변경. */
+  opts=opts||{};
   var norm=function(s){return String(s==null?"":s).replace(/\n/g," ").trim();};
   var by={};active.forEach(function(e){var d=norm(e["부서"]);(by[d]=by[d]||[]).push({nm:norm(e["성명"]||e["이름"]),jg:norm(e["직급"])});});
   // 회장/대표(이사)만 상단 전체 리드 스트립에 표시. 이사·GM은 각자 소속 부서 카드 안에서 상단 고정(2026-07-25 매니저 지시 —
@@ -1199,9 +1203,12 @@ function orgChartHtml(active){
       mem.sort(function(a,b){return (deptTopRank[a.jg]!=null?deptTopRank[a.jg]:99)-(deptTopRank[b.jg]!=null?deptTopRank[b.jg]:99);});
       if(!mem.length)return"";
       var dn=disp[dept]||dept;
-      var c='<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px">';
+      var c=opts.clickable
+        ?'<div class="org-guide-card" onclick="openOrgGuideModal(\''+dept.replace(/'/g,"\\'")+'\')" style="cursor:pointer;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px;transition:border-color .12s">'
+        :'<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px">';
       c+='<div style="font-size:12.5px;font-weight:800;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline;gap:6px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:7px">'+esc(dn)+'<span style="font-size:10px;color:var(--ink-faint);font-weight:600">'+mem.length+'명</span></div>';
       c+=mem.map(function(p){return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:2px 0"><span style="color:var(--ink);font-weight:600">'+esc(p.nm)+'</span><span style="color:var(--ink-soft);text-align:right">'+esc(p.jg||"—")+'</span></div>';}).join("");
+      if(opts.clickable) c+='<div style="margin-top:6px;padding-top:5px;border-top:1px dashed var(--line);font-size:10.5px;color:var(--gold-deep);font-weight:700;text-align:right">▸ 운영기준 보기</div>';
       c+='</div>';
       return c;
     }).filter(Boolean).join("");
@@ -1212,6 +1219,33 @@ function orgChartHtml(active){
   h+='</div>';
   return h;
 }
+
+/* [추가 2026-07-31 A-5] 조직 운영가이드 — 조직도 카드 클릭 시 해당 부서 운영기준 모달.
+   내용은 org_guide_data.js(ORG_GUIDE) 1곳에서만 옴 — 이 함수에는 본문을 하드코딩하지 않는다. */
+function openOrgGuideModal(dept){
+  var disp={"시설":"시설부","주차 관리":"주차관리","지원":"지원부 · 사우나"}; // orgChartHtml과 동일 표시명 매핑(상수 중복, 의미 무변경)
+  var dn=disp[dept]||dept;
+  var tEl=document.getElementById("orgGuideTitle");if(tEl)tEl.textContent=dn+" 운영기준";
+  var items=(typeof ORG_GUIDE_ITEMS!=="undefined")?ORG_GUIDE_ITEMS:[];
+  var data=(typeof ORG_GUIDE!=="undefined"&&ORG_GUIDE[dept])||{};
+  var draft=(typeof ORG_GUIDE_ITEMS_DRAFT!=="undefined")&&ORG_GUIDE_ITEMS_DRAFT;
+  var body="";
+  if(draft){
+    body+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:9px 12px;font-size:11.5px;color:#8a6a2f;margin-bottom:12px">⚠ 아래 항목 구조는 부서 체계 화면 실측 기반 <b>초안</b>이며 아직 확정되지 않았습니다. 항목명·개수 모두 매니저님 확인 후 변경될 수 있습니다.</div>';
+  }
+  if(!items.length){
+    body+='<div class="muted" style="padding:20px 0;text-align:center;color:var(--ink-faint)">항목 구조 확정 대기 — 아직 정해진 운영기준 항목이 없습니다.</div>';
+  } else {
+    body+=items.map(function(k){
+      var v=String((data[k]||"")).trim();
+      return '<div style="margin-bottom:13px"><div style="font-size:12.5px;font-weight:800;color:var(--gold-deep);margin-bottom:3px">'+esc(k)+'</div>'+
+        '<div style="font-size:13px;color:'+(v?"var(--ink)":"var(--ink-faint)")+';white-space:pre-wrap;line-height:1.6">'+(v?esc(v):"작성 예정")+'</div></div>';
+    }).join("");
+  }
+  var bEl=document.getElementById("orgGuideBody");if(bEl)bEl.innerHTML=body;
+  var mEl=document.getElementById("orgGuideModal");if(mEl)mEl.style.display="flex";
+}
+function closeOrgGuideModal(){var m=document.getElementById("orgGuideModal");if(m)m.style.display="none";}
 
 /* ============ EMPLOYEES ============ */
 // 고용형태 표기 고정: 백엔드 캐시/시트에 '프리랜서'가 남아 있어도 화면엔 '파트너'로(상시 규칙)
@@ -3644,6 +3678,14 @@ function renderStd(){
     '<div class="card"><h3>사람이 결정</h3><div style="font-size:12.5px;color:var(--ink-soft);line-height:1.85">'+
     '채용 확정·불합격 최종 결정 · 처우(연봉·타임비) 확정 · 해고·징계 결정 · 비용 집행 및 계약 서명</div></div>'+
     '</div>';
+  /* [추가 2026-07-31 A-5] 조직 운영가이드 — 조직도(대시보드 orgChartHtml 재사용, opts.clickable=true만 추가)
+     + 클릭 시 조직별 운영기준 모달(org_guide_data.js SSOT, 본문은 전부 "작성 예정" — 하드코딩 0). */
+  var __ogActive=(DB.emp||[]).filter(function(e){return e["재직 상태"]!=="퇴사";});
+  html+='<div class="sec-title">조직 운영가이드 <span class="muted" style="font-weight:400;font-size:11px">· 조직 카드를 클릭하면 운영기준이 열립니다</span></div>';
+  if(typeof ORG_GUIDE_ITEMS_DRAFT!=="undefined"&&ORG_GUIDE_ITEMS_DRAFT){
+    html+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:9px 12px;font-size:11.5px;color:#8a6a2f;margin-bottom:10px">⚠ 운영기준 항목 구조는 아직 <b>초안</b>입니다(부서 체계 화면 실측 기반, 매니저 확인 대기). 본문 내용은 전부 "작성 예정" 상태입니다.</div>';
+  }
+  html+=__ogActive.length?orgChartHtml(__ogActive,{clickable:true}):'<div class="card">'+emptyState("임직원 데이터가 없어 조직도를 표시할 수 없습니다.","◔")+'</div>';
   setPanel("std",html);
 }
 function renderDocs(){
@@ -4298,6 +4340,17 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
   else{showGate();document.getElementById("gatePw").focus();}
 })();
 </script>
+
+<!-- ★ 조직 운영가이드 모달 (2026-07-31 A-5 신설) ★ -->
+<div class="modal-bg" id="orgGuideModal" style="display:none" onclick="if(event.target.id==='orgGuideModal')closeOrgGuideModal()">
+  <div class="modal" style="max-width:560px;max-height:85vh;overflow-y:auto">
+    <h3 id="orgGuideTitle" style="margin:0 0 12px">조직 운영기준</h3>
+    <div id="orgGuideBody"></div>
+    <div class="modal-act" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeOrgGuideModal()">닫기</button>
+    </div>
+  </div>
+</div>
 
 <!-- ★ 지원자 상세 모달 ★ -->
 <div class="modal-bg" id="aiModal" style="display:none">
