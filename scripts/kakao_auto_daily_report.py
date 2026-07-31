@@ -174,10 +174,28 @@ def write_status(ok: bool, detail: str, kind: str = "IMAGE_REPORT") -> None:
         log(f"[경고] status/kakao_last_send.json 기록 실패(무시): {exc}")
 
 
+def _northstar_prefix() -> str:
+    """보고 맨 위 '북극성 대비' 블록 (GM 확정 2026-07-31) — 실패해도 빈 문자열
+    (보고를 절대 끊지 않는다). 블록 본문은 northstar_reach.build_northstar_block()
+    한 곳에서만 만든다(약속 L01) — wellperion-agents/scripts/ceo_morning_pipeline.py
+    의 _northstar_head() 와 동일한 안전 패턴(지연 임포트 + try/except)."""
+    try:
+        _here = str(Path(__file__).resolve().parent)
+        if _here not in sys.path:
+            sys.path.insert(0, _here)
+        from northstar_reach import build_northstar_block
+        block = build_northstar_block()
+        return f"{block}\n\n" if block else ""
+    except Exception:
+        return ""
+
+
 def build_caption(target_date: datetime) -> str:
-    """보고 대상일(통상 오늘-1일) 기준 "M.D(요일) 매출 및 운영사항 보고드립니다." 생성."""
+    """보고 대상일(통상 오늘-1일) 기준 "M.D(요일) 매출 및 운영사항 보고드립니다." 생성.
+    맨 위에 북극성 대비 블록을 얹는다(텔레그램 sendPhoto 캡션 1024자 한도 여유 있음)."""
     weekday_kr = _WEEKDAY_KR[target_date.weekday()]
-    return f"{target_date.month}.{target_date.day}({weekday_kr}) 매출 및 운영사항 보고드립니다."
+    line = f"{target_date.month}.{target_date.day}({weekday_kr}) 매출 및 운영사항 보고드립니다."
+    return f"{_northstar_prefix()}{line}"
 
 
 def build_holiday_notice(target: datetime, as_of: datetime) -> str:

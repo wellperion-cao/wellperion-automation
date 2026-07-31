@@ -148,6 +148,22 @@ def _append_log(log_path, record):
         pass
 
 
+# ── 북극성 대비 블록(GM 확정 2026-07-31) ─────────────────────────────────────
+def _northstar_prefix(cadence):
+    """daily·weekly 리포터 실행에서, 이번 실행 중 실제로 발송되는(=흡수 안 된) 첫
+    메시지 맨 위에만 1회 붙일 블록. monthly 는 대상 아님(GM 지정 범위). 실패해도
+    빈 문자열(보고를 절대 끊지 않는다). 블록 본문은 northstar_reach.build_northstar_block()
+    한 곳에서만 만든다(약속 L01) — ceo_morning_pipeline.py._northstar_head() 와 동일 패턴."""
+    if cadence not in ("daily", "weekly"):
+        return ""
+    try:
+        from northstar_reach import build_northstar_block  # noqa: PLC0415
+        block = build_northstar_block()
+        return f"{block}\n\n" if block else ""
+    except Exception:
+        return ""
+
+
 # ── 핵심 실행 ────────────────────────────────────────────────────────────────
 def run_report(cadence, *, dry_run=False, only_module=None,
                registry_path=None, rooms_path=ROOMS_PATH,
@@ -174,6 +190,8 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         from notify.telegram_send import send as sender  # noqa: PLC0415
 
     results = []
+    ns_block = _northstar_prefix(cadence)
+    ns_applied = False
 
     for mod in modules:
         mid = mod.get("id")
@@ -224,6 +242,13 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                               owner_role=mod.get("owner_role"))
         bot_id = (mod.get("notify_spec") or {}).get("bot_id")
         chat_id = resolve_chat_id(bot_id, rooms)
+
+        # 북극성 블록 — 흡수 대상(ABSORB_BUNDLES)은 다른 보고 쪽에 이미 블록이 있으므로
+        # 여기서 붙이지 않는다(중복 방지). 흡수 안 되는(=이 실행에서 진짜로 나가는) 첫
+        # 메시지에만 1회 적용.
+        if ns_block and not ns_applied and (cadence, bot_id) not in ABSORB_BUNDLES:
+            text = f"{ns_block}{text}"
+            ns_applied = True
 
         # dry-run: 프리뷰만(네트워크·로그 부작용 0)
         if dry_run:

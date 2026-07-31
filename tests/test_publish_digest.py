@@ -100,7 +100,9 @@ def test_group_published_merges_5_channels_into_1_content():
         assert url in msg, f"메시지에 채널 링크 누락: {url}"
 
     # 리치 포맷 헤더 — 📢 웰페리온 공식 · {digest_title} 발행 완료 — 응원 부탁드려요!
-    assert msg.startswith("📢 웰페리온 공식 · 성인 수영 강습(디지털 디톡스) 발행 완료 — 응원 부탁드려요!")
+    # (2026-07-31 GM 확정: 보고 맨 위에 북극성 대비 블록이 붙을 수 있어 startswith 대신
+    #  포함 여부로 검증 — northstar_reach.build_northstar_block() 은 이 헤더보다 앞선다)
+    assert "📢 웰페리온 공식 · 성인 수영 강습(디지털 디톡스) 발행 완료 — 응원 부탁드려요!" in msg
     # digest_intro 반영
     assert "하루 30분, 휴대폰이 멈추는 시간. 한남동에서 성인도 0에서 천천히 시작하는 수영 강습을 소개했습니다." in msg
     # 좋아요·댓글 유도 문구

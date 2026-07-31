@@ -40,6 +40,23 @@ _SENDER = REPO_ROOT / "scripts" / "kakao_report_sender.py"
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 
 
+def _northstar_prefix() -> str:
+    """보고 맨 위 '북극성 대비' 블록 (GM 확정 2026-07-31) — 실패해도 빈 문자열
+    (보고를 절대 끊지 않는다). 블록 본문은 northstar_reach.build_northstar_block()
+    한 곳에서만 만든다(약속 L01) — wellperion-agents/scripts/ceo_morning_pipeline.py
+    의 _northstar_head() 와 동일한 안전 패턴(지연 임포트 + try/except)."""
+    try:
+        import sys as _sys, os as _os
+        _here = _os.path.dirname(_os.path.abspath(__file__))
+        if _here not in _sys.path:
+            _sys.path.insert(0, _here)
+        from northstar_reach import build_northstar_block
+        block = build_northstar_block()
+        return f"{block}\n\n" if block else ""
+    except Exception:
+        return ""
+
+
 def _check_section(today: str) -> str:
     """support_check_summary 공용 모듈로 3섹션 핵심요약 렌더."""
     try:
@@ -61,7 +78,7 @@ def build_digest(today: str | None = None) -> str:
     section = _check_section(today)
     praise = _praise_block(section)
     top = f"{header}\n\n{praise}\n" if praise else f"{header}\n\n"
-    return f"{top}{section}{_legal_check_blank_block()}"
+    return f"{_northstar_prefix()}{top}{section}{_legal_check_blank_block()}"
 
 
 # ── 실시일이 비어 있는 법정·정기점검 (2026-07-31 GM 결정) ──

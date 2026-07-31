@@ -313,12 +313,29 @@ def _digest_intro(group: list[dict]) -> str:
     return _DEFAULT_DIGEST_INTRO
 
 
+def _northstar_prefix() -> str:
+    """보고 맨 위 '북극성 대비' 블록 (GM 확정 2026-07-31) — 실패해도 빈 문자열
+    (보고를 절대 끊지 않는다). 블록 본문은 northstar_reach.build_northstar_block()
+    한 곳에서만 만든다(약속 L01) — wellperion-agents/scripts/ceo_morning_pipeline.py
+    의 _northstar_head() 와 동일한 안전 패턴(지연 임포트 + try/except)."""
+    try:
+        import sys as _sys, os as _os
+        _here = _os.path.dirname(_os.path.abspath(__file__))
+        if _here not in _sys.path:
+            _sys.path.insert(0, _here)
+        from northstar_reach import build_northstar_block
+        block = build_northstar_block()
+        return f"{block}\n\n" if block else ""
+    except Exception:
+        return ""
+
+
 def build_digest(group: list[dict]) -> str:
     """콘텐츠 1건 통합요약 메시지 — 📢헤더 · 설명 · 채널이모지 링크(고정순서) · 응원 CTA."""
     title = _digest_title(group)
     intro = _digest_intro(group)
     lines = [
-        f"📢 웰페리온 공식 · {title} 발행 완료 — 응원 부탁드려요!",
+        f"{_northstar_prefix()}📢 웰페리온 공식 · {title} 발행 완료 — 응원 부탁드려요!",
         "",
         intro,
         "아래 링크에서 ❤️ 좋아요 · 💬 댓글 남겨주시면 큰 힘이 됩니다 🙏",
