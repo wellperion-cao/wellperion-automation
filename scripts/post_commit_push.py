@@ -773,11 +773,74 @@ def _alert_should_send(root: str, reason: str) -> bool:
     return True
 
 
+_STALE_OUTPUT_SEC = 7200  # 2시간. 이만큼 미커밋으로 묵은 자동 산출물은 스스로 올린다.
+
+
+def _commit_stale_machine_outputs(root: str) -> None:
+    """★2026-07-31 시토 — **아무도 커밋하지 않는 자동 산출물**을 올린다.
+
+    왜: 지금까지 자동 산출물은 '통합을 막을 때'만 커밋됐다(_commit_machine_outputs 는
+    local ∩ upstream 만 본다). 그런데 원격이 건드리지 않는 파일은 영원히 그 교집합에
+    들어가지 않는다 → 로컬에서만 매일 갱신되고 **한 번도 올라가지 않는다.**
+    실측 2026-07-31: status/module_silence_snapshot.json 이 07-29 이후 이틀째 미커밋이라
+    자율현황 라이브가 '카톡 매출보고 239시간 멈춤' 이라는 **거짓 빨간불**을 띄우고 있었다
+    (같은 페이지의 예약작업 칸은 같은 시각 '정상'이라 서로 모순됐다). 파일은 멀쩡히
+    갱신되고 있었고, 못 간 것은 저장소까지였다 — 자가점검이 말하는 '작업트리 고립'.
+
+    안전: 대상은 이미 손으로 골라 둔 _MACHINE_OUTPUTS 목록뿐이다(사람이 편집하는 파일
+    아님이 확인된 것들). 방금 쓰인 것은 건드리지 않고 _STALE_OUTPUT_SEC 이상 묵은 것만
+    올린다 — 쓰는 중인 파일을 중간 상태로 커밋하지 않기 위해서다.
+    """
+    import time
+    try:
+        # HEAD 와 다른 추적 파일 전부(작업트리+인덱스). _merge_blocking_paths 는 '원격도 바꾼 것'
+        # 교집합이라 여기 쓸 수 없다 — 여기서 찾는 건 정반대로 **아무도 안 건드려서 남은 것**이다.
+        r = subprocess.run(
+            ["git", "diff", "--name-only", "-z", "HEAD"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        if r.returncode != 0:
+            return
+        dirty = [p for p in (r.stdout or "").split("\0") if p]
+    except Exception:
+        return
+    now = time.time()
+    stale = []
+    for p in dirty:
+        if not _is_machine_output(p):
+            continue
+        try:
+            if now - os.path.getmtime(os.path.join(root, p)) >= _STALE_OUTPUT_SEC:
+                stale.append(p)
+        except Exception:
+            continue
+    if not stale:
+        return
+    msg = ("chore(auto): 자동 산출물 적재 — 저장소까지 못 가던 것 올림\n\n"
+           "원격이 건드리지 않는 산출물은 '통합을 막는' 경우에만 커밋되던 구조라, 로컬에서만\n"
+           "갱신되고 며칠씩 안 올라갔다. 그동안 라이브 화면은 옛 값을 사실처럼 보여준다.\n"
+           f"{_STALE_OUTPUT_SEC // 3600}시간 이상 묵은 자동 산출물만 올린다.")
+    try:
+        r = subprocess.run(
+            [sys.executable, os.path.join(root, "scripts", "safe_commit.py"), "-m", msg, "--"] + stale,
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=120,
+        )
+        _log(f"PUSH_SWEEPER 묵은 산출물 적재 {'ok' if r.returncode == 0 else 'fail'} "
+             f"({len(stale)}건: {', '.join(stale[:6])})", root)
+    except Exception as e:
+        _log(f"PUSH_SWEEPER 묵은 산출물 적재 예외 {e}", root)
+
+
 def _sweep(root: str) -> int:
     """푸시 스위퍼 — 밀린 커밋을 안전하게 드레인(5분 주기 스케줄러용).
     부모 lock 밖에서 독립 실행되므로 GitLock 을 정상 타임아웃으로 획득해 fetch+rebase+push
     한다. 부모 lock 안에서 rebase 없이 실패한 커밋들을 여기서 확실히 올린다.
     진짜 실패(충돌·인증 등)만 경고한다(allow_reconcile=True · alert=True)."""
+    # 밀린 커밋이 0이어도 여기는 먼저 본다 — '올릴 커밋이 없다'와 '올려야 할 산출물이
+    # 커밋조차 안 됐다'는 다른 상태이고, 후자가 라이브를 옛 값으로 굳힌다.
+    _commit_stale_machine_outputs(root)
     if _unpushed_count(root) == 0:
         return 0  # 밀린 것 없음
     # ★락을 잡기 **전에** 통합 방해물을 치운다 — safe_commit 이 자기 락을 잡으므로
