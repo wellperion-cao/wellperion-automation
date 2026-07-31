@@ -4245,7 +4245,10 @@ function _processAction(body) {
       if (_auPhI >= 0 && auRow <= auSh.getLastRow()) {
         var _auRowPh = _normPhone_(auSh.getRange(auRow, _auPhI + 1).getValue());
         var _auKeyPh = _normPhone_(body.keyPhone);
-        if (_auRowPh && _auKeyPh && _auRowPh !== _auKeyPh) {
+        // ★2026-07-31 시토(배239) — v2(라이브)와 같은 fail-closed 로 맞춘다. 이 프로젝트는 200버전
+        //   한도로 은퇴한 백업이라 배포되지 않지만, 버그가 남은 사본은 다음 사람이 그대로 베껴 간다.
+        //   상세 경위 = .deploy-funnel-v2/Survey.js 같은 자리 주석.
+        if (_auKeyPh && _auRowPh !== _auKeyPh) {
           return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
         }
       } else if (_auIsReservationWrite) {

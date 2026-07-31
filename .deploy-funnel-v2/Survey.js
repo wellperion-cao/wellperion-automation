@@ -8906,7 +8906,15 @@ function _processAction(body) {
       if (_auPhI >= 0 && auRow <= auSh.getLastRow()) {
         var _auRowPh = _normPhone_(auSh.getRange(auRow, _auPhI + 1).getValue());
         var _auKeyPh = _normPhone_(body.keyPhone);
-        if (_auRowPh && _auKeyPh && _auRowPh !== _auKeyPh) {
+        // ★2026-07-31 시토(배239) — 조건에서 `_auRowPh &&` 를 뺐다. fail-open → fail-closed.
+        //   왜: 대상 행의 휴대폰 칸이 **비어 있으면** _auRowPh 가 거짓이라 조건 전체가 false 가 되어
+        //   검증을 통째로 건너뛰고 **밀린 rowIndex 에 그대로 썼다.** 그래서 2026-07-27~28 예약 달력의
+        //   예약자 이름이 다른 사람으로 바뀌었다(실무진 신고 FB260728-112703).
+        //   같은 파일 문의 경로(위 _muKeyPh 블록)는 처음부터 `_muKeyPh &&` 만 보는 fail-closed 인데,
+        //   2026-07-22 두 경로를 같은 날 손보면서 여기만 `_auRowPh &&` 한 조각이 남았다.
+        //   이제 대상 행 전화가 비면 '빈 값 ≠ 키' 로 불일치가 되어 **거부**된다(맹목 쓰기 금지).
+        //   막히는 저장이 생기는 것은 감수한다 — 남의 줄을 덮어쓰는 것보다 낫다.
+        if (_auKeyPh && _auRowPh !== _auKeyPh) {
           return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
         }
       } else if (_auIsReservationWrite) {
