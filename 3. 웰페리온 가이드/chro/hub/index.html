@@ -1378,7 +1378,7 @@ async function openOrgGuideModal(dept){
     try{
       var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
         body:JSON.stringify({action:"org-guide-read",password:SESSION_PW})}).then(function(x){return x.json();});
-      if(r&&r.ok&&r.role==="admin"&&r.data){ORG_GUIDE_CACHE_=r.data;}
+      if(r&&r.ok&&r.data){ORG_GUIDE_CACHE_=r.data;}
       else{ORG_GUIDE_ERR_=(r&&(r.message||r.error))||"권한 없음";}
     }catch(e){ORG_GUIDE_ERR_=String((e&&e.message)||e);}
     finally{ORG_GUIDE_LOADING_=false;}
