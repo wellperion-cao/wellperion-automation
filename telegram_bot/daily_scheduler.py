@@ -2939,6 +2939,62 @@ def main():
     )
     logger.info("kpi_collector 등록 완료 (07:50·21:00 일 2회) — S2 KPI 라이브 배지")
 
+    # ── 구역 전체 미점검 알림 (14:00·20:00 · 0건일 때만 · 구역당 하루 1회) — 웰리 2026-07-31 ──
+    # GM 지시: "실무진에서 매일 돌아가야 하는 부분이 안 돌아가면 알림 줘야 할 것 같은데 —
+    #   오늘은 여자 지원부 점검을 안 했는데." 그날 실측 = 여성구역 0/52(전 회차 0).
+    # ★2026-07-23 GM 이 없앤 17시·22시 고정 독려를 되살리는 것이 아니다(그건 매일 떠서 소음이었다).
+    #   여기는 **한 구역이 통째로 0건**일 때만 뜬다 — 덜 된 것은 안 알린다. 평소엔 완전 침묵.
+    # 판정은 support_check_summary.zero_zones() 한 곳(22:30 보고와 같은 원천 · 약속 L01).
+    _ZERO_ALERT_STATE = REPO_ROOT / "status" / "check_zero_alert.json"
+
+    def _zero_zone_alert(slot: str):
+        try:
+            import sys as _s
+            _sp = str(REPO_ROOT / "scripts")
+            if _sp not in _s.path:
+                _s.path.insert(0, _sp)
+            from support_check_summary import zero_zones
+            today = datetime.now().strftime("%Y-%m-%d")
+            zones = zero_zones(today)
+            if not zones:
+                return                      # 정상 — 아무 말도 하지 않는다
+            try:
+                state = json.loads(_ZERO_ALERT_STATE.read_text(encoding="utf-8"))
+            except Exception:
+                state = {}
+            sent = set(state.get(today) or [])
+            fresh = [(lbl, n) for lbl, n in zones if lbl not in sent]
+            if not fresh:
+                return                      # 오늘 이미 알린 구역 — 두 번 보내지 않는다
+            body = ["🔔 오늘 아직 한 건도 안 된 구역이 있습니다",
+                    "— 웰페리온 AI 운영지원 '웰리'가 보내드립니다.", ""]
+            for lbl, n in fresh:
+                body.append(f"▪ {lbl} — 예정 {n}건 중 0건")
+            body.append("")
+            body.append("덜 된 것이 아니라 아직 시작 전이라 알려드립니다. 확인 부탁드립니다.")
+            # parse_mode=None = 평문. 본문에 '—'·'('·'.' 가 있어 MarkdownV2 로 보내면 파싱 오류가 난다.
+            ok = send_telegram(DIGEST_CHECK_CHAT_ID, "\n".join(body), parse_mode=None)
+            if ok:
+                state[today] = sorted(sent | {lbl for lbl, _ in fresh})
+                _ZERO_ALERT_STATE.write_text(
+                    json.dumps(state, ensure_ascii=False), encoding="utf-8")
+                logger.info(f"[zero-zone {slot}] 알림 발송: {[l for l, _ in fresh]}")
+            else:
+                logger.error(f"[zero-zone {slot}] 발송 실패 — 상태 미기록(다음 슬롯 재시도)")
+        except Exception as e:
+            logger.error(f"[zero-zone {slot}] 예외: {e}")
+
+    for _h, _slot in ((14, "오전조 마감 후"), (20, "오후조 마감 후")):
+        scheduler.add_job(
+            _zero_zone_alert,
+            trigger=CronTrigger(hour=_h, minute=0),
+            id=f"zero_zone_alert_{_h}",
+            args=[_slot],
+            misfire_grace_time=1800,
+            coalesce=True,
+        )
+    logger.info("구역 전체 미점검 알림 등록 완료 (14:00·20:00 · 0건일 때만 · 구역당 하루 1회)")
+
     # ── 시트 칸 계약 점검 (매일 07:50 — 08:00 통합 브리프 직전) — CPO 2026-07-20 ──
     # 재발방지 A안 0단계(GM 확정, 값 규칙 포함). 정상이면 완전 침묵 — 어긋남만 업무보고방 알림.
     def _check_sheet_contract():

@@ -641,6 +641,35 @@ def build_summary_lines(now: datetime | None = None, date: str | None = None,
     return (lines, {**fac_f, **sup_f, **par_f})
 
 
+def zero_zones(today: str, url: str = DEFAULT_GAS_URL, data: dict | None = None):
+    """오늘 **한 건도 안 된 구역**만 골라낸다 — [(구역라벨, 예정건수), …].
+
+    2026-07-31 GM 지시("실무진에서 매일 돌아가야 하는 부분이 안 돌아가면 알림 줘야 할 것 같은데
+    — 오늘은 여자 지원부 점검을 안 했는데"). 그날 실측이 정확히 그 모습이었다:
+    남성구역 17/53, **여성구역 0/52(오전·오후·마감 전부 0)** — 덜 한 게 아니라 통째로 빠졌다.
+
+    ▸'덜 됨'은 여기서 잡지 않는다. 부분 미완은 하루가 흘러가며 채워지는 정상 흐름이고,
+      그걸 낮에 알리면 매일 떠서 소음이 된다(2026-07-23 GM 이 17시·22시 고정 독려를 없앤 이유).
+      **하루 종일 손도 안 댄 구역**만이 진짜 이상이고, 그때만 알린다.
+    ▸판정은 여기 한 곳에서만 한다 — 22:30 보고와 낮 알림이 각자 세면 숫자가 갈라진다(약속 L01).
+    """
+    d = data if data is not None else fetch_gas(
+        {"action": "today_live", "dept": "support", "date": today}, url)
+    if not isinstance(d, dict):
+        return []
+    out = []
+    g = d.get("byGender", {}) or {}
+    for gk, glabel in (("m", "남성구역"), ("f", "여성구역")):
+        part = g.get(gk, {}) or {}
+        # 서버가 구역 합계를 직접 준다(done/total) — 그걸 쓴다. 회차를 내가 더하면 서버가 나중에
+        # 회차를 하나 늘렸을 때 조용히 빠뜨린다(실측: night 회차가 이미 응답에 들어 있다).
+        g_t = int(part.get("total", 0) or 0) or sum(int(part.get(k + "Total", 0) or 0) for k, _ in _SHIFTS)
+        g_d = int(part.get("done", 0) or 0)
+        if g_t > 0 and g_d == 0:      # 예정은 있는데 한 건도 안 됨
+            out.append((glabel, g_t))
+    return out
+
+
 def _weekday_kor(date: str) -> str:
     try:
         return ["월", "화", "수", "목", "금", "토", "일"][datetime.strptime(date, "%Y-%m-%d").weekday()]
