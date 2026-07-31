@@ -9732,7 +9732,7 @@ function _ctAddRow(item) {
   // 새 연락(＋추가 버튼=인자없음)=오늘 날짜 기본값. 로드된 기존 행은 item(c)을 넘겨 받으므로 그대로(과거 오염 0).
   // 연락이력 날짜 100% 빈칸 데이터품질 갭 근본수리 — 컨택 정체·팔로업 정확도 회복. 2026-07-14 시포.
   var isNew = !item;   // 배101: 새 행(＋추가·첫 기록)만 컨택자 필수. 로드된 과거 행(by 없음)은 저장을 막지 않는다.
-  item = item || { date: (typeof _tapToday === 'function' ? _tapToday() : ''), time: '', note: '', by: (function(){ try { return localStorage.getItem('wp_ct_by') || ''; } catch (e) { return ''; } })() };
+  item = item || { date: (typeof _tapToday === 'function' ? _tapToday() : ''), time: '', note: '', by: '' };  // ponytail: by는 IIFE 내 roster 필터 가드(if(!_cur))에서 채움 — 여기서 localStorage 주입 시 가드가 건너뛰어져 임정은 등 운영부가 강습 명단에 끼어드는 버그 원인(FB260731-115427)
   var list = document.getElementById('ctList');
   var el = document.createElement('div');
   el.className = 'res-item';
