@@ -345,38 +345,65 @@
   /* [개정4 2026-07-31 A-5] "운영기준 보기" 중복 라벨 제거(매니저 지시) — 카드 자체 클릭으로 열림을
      hover 시 테두리 강조로만 신호. 별도 안내 텍스트 없음. */
   .org-guide-card:hover{border-color:var(--gold)!important}
-  #orgGuideModal .modal{max-width:900px}
-  .og-item{margin-bottom:19px}
-  .og-item:last-child{margin-bottom:2px}
-  .og-item-title{font-family:var(--serif);font-size:13.5px;font-weight:700;color:var(--gold-deep);
-    letter-spacing:.01em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--line-soft)}
-  .og-p{font-size:13px;color:var(--ink);line-height:1.68;margin:4px 0}
+  /* [개정6 2026-07-31 A-5] 매니저 피드백 "PDF만큼 편하게" — 페이지급 모달(폭 min(1400px,95vw)) +
+     좌측 항목 네비/우측 본문 2단 구성으로 정보 설계 자체를 재구성(항목 15개가 한 화면에 끝없이
+     세로 나열되던 문제 해소). 표는 표답게(줄무늬·헤더 강조·칸별 자동 줄바꿈판정), 서술은 문단답게
+     구분을 키움, 제목 위계(조직명>항목명>내용) 강화. 데이터·백엔드 무변경 — 렌더링 레이어만 재구성. */
+  #orgGuideModal .modal{max-width:min(1400px,95vw);max-height:90vh;padding:0;
+    display:flex;flex-direction:column;overflow:hidden}
+  .og-modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:22px 30px 16px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .og-modal-head h3{margin:0}
+  .og-modal-head .btn{flex:0 0 auto;padding:8px 18px}
+  .og-modal-split{display:flex;flex:1 1 auto;min-height:0}
+  .og-nav{flex:0 0 224px;overflow-y:auto;padding:16px 10px;background:var(--surface-2);
+    border-right:1px solid var(--line)}
+  .og-nav-item{display:block;padding:9px 13px;border-radius:7px;font-size:12.5px;font-weight:600;
+    color:var(--ink-soft);line-height:1.4;margin-bottom:2px;cursor:pointer;transition:background .12s,color .12s}
+  .og-nav-item:hover{background:var(--surface);color:var(--ink)}
+  .og-nav-item.active{background:var(--gold);color:#fff}
+  .og-nav-item.empty{color:var(--ink-faint);font-weight:400;font-style:italic}
+  .og-content{flex:1 1 auto;overflow-y:auto;padding:22px 34px 30px;scroll-behavior:smooth}
+  .og-item{margin-bottom:34px;scroll-margin-top:6px}
+  .og-item:last-child{margin-bottom:4px}
+  .og-item-title{font-family:var(--serif);font-size:17px;font-weight:700;color:var(--gold-deep);
+    letter-spacing:.01em;margin-bottom:13px;padding-bottom:8px;border-bottom:2px solid var(--gold)}
+  .og-p{font-size:14px;color:var(--ink);line-height:1.75;margin:5px 0}
   .og-p.muted{color:var(--ink-faint)}
-  .og-subhead{font-size:11px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;
-    letter-spacing:.03em;margin:11px 0 5px}
+  .og-subhead{font-size:11.5px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;
+    letter-spacing:.03em;margin:16px 0 6px}
   .og-subhead:first-child{margin-top:0}
-  .og-ol{margin:2px 0 6px;padding-left:18px}
-  .og-ol>li{font-size:13px;color:var(--ink);line-height:1.62;margin:7px 0;font-weight:700}
-  .og-sub{list-style:disc;margin:4px 0 2px 3px;padding-left:16px}
-  .og-sub>li{font-size:12.5px;color:var(--ink-soft);font-weight:400;line-height:1.6;margin:3px 0}
-  .og-flat{list-style:disc;margin:2px 0 6px;padding-left:18px}
-  .og-flat>li{font-size:13px;color:var(--ink);line-height:1.62;margin:5px 0;font-weight:500}
-  .og-flat>li.og-note{color:var(--ink-soft);font-size:12.5px;font-weight:400;font-style:italic;list-style:circle}
+  .og-ol{margin:3px 0 8px;padding-left:19px}
+  .og-ol>li{font-size:14px;color:var(--ink);line-height:1.68;margin:8px 0;font-weight:700}
+  .og-sub{list-style:disc;margin:4px 0 4px 3px;padding-left:17px}
+  .og-sub>li{font-size:13px;color:var(--ink-soft);font-weight:400;line-height:1.64;margin:4px 0}
+  .og-flat{list-style:disc;margin:3px 0 8px;padding-left:19px}
+  .og-flat>li{font-size:14px;color:var(--ink);line-height:1.68;margin:6px 0;font-weight:500}
+  .og-flat>li.og-note{color:var(--ink-soft);font-size:13px;font-weight:400;font-style:italic;list-style:circle}
   .og-sub>li.og-note{font-style:italic}
-  .og-tbl-wrap{overflow-x:auto;margin:2px 0 6px;border:1px solid var(--line);border-radius:9px}
+  .og-tbl-wrap{overflow-x:auto;margin:6px 0 10px;border:1px solid var(--line);border-radius:9px;
+    box-shadow:0 1px 3px rgba(26,23,18,.06)}
   .og-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+  .og-tbl thead th{position:sticky;top:0;z-index:1}
   .og-tbl th{background:var(--surface-2);color:var(--gold-deep);font-weight:700;text-align:left;
-    padding:7px 11px;border-bottom:1px solid var(--line);white-space:nowrap}
-  .og-tbl td{padding:7px 11px;border-bottom:1px solid var(--line-soft);color:var(--ink);
-    vertical-align:top;line-height:1.55}
+    padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .og-tbl td{padding:6px 10px;border-bottom:1px solid var(--line-soft);color:var(--ink);
+    vertical-align:top;line-height:1.45;white-space:nowrap}
+  .og-tbl td.wrap,.og-tbl th.wrap{white-space:normal}
   .og-tbl tr:last-child td{border-bottom:none}
+  .og-tbl tbody tr:nth-child(even) td:not(.og-role){background:var(--bg-soft)}
   .og-tbl td.og-role{font-weight:700;color:var(--ink);white-space:nowrap;background:var(--bg-soft)}
   .og-tbl th.num,.og-tbl td.num{text-align:right;white-space:nowrap}
   .og-loading{padding:24px 0;text-align:center;color:var(--ink-faint);font-size:12.5px}
   @media(max-width:680px){
-    #orgGuideModal .modal{max-width:94vw;padding:20px 15px 16px}
+    #orgGuideModal .modal{max-width:94vw;max-height:92vh}
+    .og-modal-head{padding:16px 16px 12px}
+    .og-modal-split{flex-direction:column}
+    .og-nav{flex:0 0 auto;display:flex;overflow-x:auto;overflow-y:visible;border-right:none;
+      border-bottom:1px solid var(--line);white-space:nowrap;padding:8px 10px}
+    .og-nav-item{display:inline-block;margin-right:5px;margin-bottom:0;white-space:nowrap}
+    .og-content{padding:16px 15px 16px}
     .og-tbl th,.og-tbl td{padding:6px 8px;font-size:11.5px}
-    .og-tbl th,.og-tbl td.og-role{white-space:normal}
   }
 
   /* ---- 온보딩 신입 카드 내부 ---- */
@@ -1270,6 +1297,7 @@ var ORG_GUIDE_ITEMS=[
 var ORG_GUIDE_CACHE_=null;   // {dept:{item:content}} — admin 세션당 1회 로드 후 재사용
 var ORG_GUIDE_LOADING_=false;
 var ORG_GUIDE_ERR_="";
+var ORG_GUIDE_NAV_BOUND_=false;  // [개정6 2026-07-31 A-5] 좌측 항목 네비 스크롤 리스너 1회만 부착
 
 /* [개정 2026-07-31 A-5] 운영기준 값(줄 단위 마크업)을 실제 표/리스트 HTML로 그리는 렌더러.
    화면 로직은 여기 1곳에만 — 파싱 규칙 변경 시 이 함수들만 고치면 전체 조직에 일괄 반영된다.
@@ -1286,12 +1314,38 @@ function ogTable2_(headerLine,rowLines){
   var align=heads.map(function(h){return /^>/.test(h);});
   heads=heads.map(function(h){return h.replace(/^>\s*/,"");});
   var rows=rowLines.map(function(l){return l.split("|").map(function(c){return c.trim();});});
+  var nCols=heads.length;
+  /* [개정6 2026-07-31 A-5] 열별 줄바꿈/정렬 자동 판정 — 원문(80행)은 1글자도 바꾸지 않고 렌더링만
+     최적화(매니저 지적: "표 셀이 좁아 짧은 값이 세로로 길게 감김"). 규칙:
+       ①헤더가 이미 ">"로 표시한 열은 그대로 숫자 취급(우측정렬+줄바꿈금지) — 기존 계약 유지.
+       ②표시 없는 열도 모든 셀이 숫자·콤마·%·원·만·명·~·- 등 숫자성 기호로만 구성되면 자동 숫자 취급.
+       ③그 외 열은 셀 내용("^" 줄바꿈 표기로 나눈 세그먼트) 최대 길이가 짧으면 줄바꿈 금지(폭=내용
+         크기), 길면 줄바꿈 허용 — table-layout:auto가 남는 폭을 서술형 열에 자동으로 몰아준다.
+     첫 열(og-role, 직급/항목 라벨)은 항상 줄바꿈 금지로 고정(길이 판정 대상에서 제외). */
+  var WRAP_THRESHOLD=12;
+  var numAuto=[],wrapCol=[];
+  for(var c=0;c<nCols;c++){
+    if(c===0){numAuto[c]=align[c];wrapCol[c]=false;continue;}
+    if(align[c]){numAuto[c]=true;wrapCol[c]=false;continue;}
+    var cellsC=rows.map(function(r){return r[c]||"";}).filter(Boolean);
+    if(cellsC.length&&cellsC.every(function(v){return /^[0-9,.%~\-\s원만명]+$/.test(v);})){
+      numAuto[c]=true;wrapCol[c]=false;
+    } else {
+      numAuto[c]=false;
+      var maxSeg=0;
+      cellsC.forEach(function(v){v.split("^").forEach(function(seg){if(seg.length>maxSeg)maxSeg=seg.length;});});
+      wrapCol[c]=maxSeg>WRAP_THRESHOLD;
+    }
+  }
   function cellHtml(c){return esc(c).replace(/\^/g,"<br>");}
   var h='<div class="og-tbl-wrap"><table class="og-tbl"><thead><tr>'+
-    heads.map(function(c,i){return '<th'+(align[i]?' class="num"':'')+'>'+esc(c)+'</th>';}).join("")+'</tr></thead><tbody>';
+    heads.map(function(c,i){
+      var cls=[];if(numAuto[i])cls.push("num");if(wrapCol[i])cls.push("wrap");
+      return '<th'+(cls.length?' class="'+cls.join(" ")+'"':'')+'>'+esc(c)+'</th>';
+    }).join("")+'</tr></thead><tbody>';
   rows.forEach(function(r){
     h+='<tr>'+r.map(function(c,i){
-      var cls=[];if(i===0)cls.push("og-role");if(align[i])cls.push("num");
+      var cls=[];if(i===0)cls.push("og-role");if(numAuto[i])cls.push("num");if(wrapCol[i])cls.push("wrap");
       return '<td'+(cls.length?' class="'+cls.join(" ")+'"':'')+'>'+cellHtml(c)+'</td>';
     }).join("")+'</tr>';
   });
@@ -1364,13 +1418,39 @@ function ogRender_(raw){
    동일 관례로, admin이 아니면 백엔드 호출조차 하지 않고 즉시 alert+return(네트워크에 내용이
    실리는 일 자체를 차단 — 서버측 admin 게이트와 이중 방어). 내용은 org-guide-read 1회 호출로
    전체 조직을 받아 세션 캐시(ORG_GUIDE_CACHE_)에 저장하고 이후 클릭은 캐시만 사용한다. */
+/* [추가 2026-07-31 A-5 개정6] 좌측 항목 네비 — 클릭 시 우측 본문 해당 항목으로 스크롤 이동 +
+   스크롤 위치에 따라 현재 항목 자동 하이라이트(PDF 목차 열람 경험 목표, 매니저 지시). 데이터는
+   전혀 건드리지 않고 이미 그려진 .og-item 블록 사이를 이동만 시킨다. */
+function ogNavGo_(idx){
+  var t=document.getElementById("og-sec-"+idx);
+  var cEl=document.getElementById("orgGuideBody");
+  if(t&&cEl){cEl.scrollTop=t.offsetTop-4;}
+  ogMarkNavActive_(idx);
+}
+function ogMarkNavActive_(idx){
+  var nEl=document.getElementById("orgGuideNav");
+  if(!nEl)return;
+  var navItems=nEl.querySelectorAll(".og-nav-item");
+  for(var j=0;j<navItems.length;j++){navItems[j].classList.toggle("active",j===idx);}
+}
+function ogSyncNavActive_(){
+  var cEl=document.getElementById("orgGuideBody");
+  if(!cEl)return;
+  var items=cEl.querySelectorAll(".og-item");
+  if(!items.length)return;
+  var top=cEl.scrollTop+8,curIdx=0;
+  for(var i=0;i<items.length;i++){if(items[i].offsetTop<=top)curIdx=i;else break;}
+  ogMarkNavActive_(curIdx);
+}
 async function openOrgGuideModal(dept){
   if(SESSION_ROLE!=="admin"){alert("운영기준 내용은 관리자 로그인 시 열람 가능합니다.");return;}
   var disp={"시설":"시설부","주차 관리":"주차관리","지원":"지원부 · 사우나"}; // orgChartHtml과 동일 표시명 매핑(상수 중복, 의미 무변경)
   var dn=disp[dept]||dept;
   var tEl=document.getElementById("orgGuideTitle");if(tEl)tEl.textContent=dn+" 운영기준";
   var bEl=document.getElementById("orgGuideBody");
+  var nEl=document.getElementById("orgGuideNav");
   var mEl=document.getElementById("orgGuideModal");
+  if(nEl)nEl.innerHTML="";
   if(!ORG_GUIDE_CACHE_&&!ORG_GUIDE_LOADING_){
     if(bEl)bEl.innerHTML='<div class="og-loading">불러오는 중…</div>';
     if(mEl)mEl.style.display="flex";
@@ -1392,7 +1472,7 @@ async function openOrgGuideModal(dept){
   if(mEl)mEl.style.display="flex";
   var items=ORG_GUIDE_ITEMS;
   var data=(ORG_GUIDE_CACHE_&&ORG_GUIDE_CACHE_[dept])||{};
-  var body="";
+  var body="",navHtml="";
   if(!ORG_GUIDE_CACHE_){
     body='<div class="callout" style="background:#fbeaea;border:1px solid #e3b8b8;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a2f2f;text-align:center">운영기준을 불러오지 못했습니다'+(ORG_GUIDE_ERR_?"("+esc(ORG_GUIDE_ERR_)+")":"")+'. 다시 시도해 주세요.</div>';
   } else {
@@ -1400,14 +1480,22 @@ async function openOrgGuideModal(dept){
     if(!hasAny){
       body='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a6a2f;text-align:center">⚠ 이 조직은 아직 운영기준 내용이 없습니다(매니저 확인 대기). 내용이 들어오면 이 화면에 자동 반영됩니다.</div>';
     } else {
-      body=items.map(function(k){
+      // 항목 전부(15개, 내용 없어도) 네비+본문에 그대로 노출 — 누락 없이 "작성 예정" 표시로 대체.
+      body=items.map(function(k,idx){
         var v=String((data[k]||"")).trim();
         var inner=v?ogRender_(v):'<p class="og-p muted">작성 예정</p>';
-        return '<div class="og-item"><div class="og-item-title">'+esc(k)+'</div>'+inner+'</div>';
+        return '<div class="og-item" id="og-sec-'+idx+'"><div class="og-item-title">'+esc(k)+'</div>'+inner+'</div>';
+      }).join("");
+      navHtml=items.map(function(k,idx){
+        var v=String((data[k]||"")).trim();
+        return '<div class="og-nav-item'+(v?"":" empty")+'" onclick="ogNavGo_('+idx+')">'+esc(k)+'</div>';
       }).join("");
     }
   }
-  if(bEl)bEl.innerHTML=body;
+  if(bEl){bEl.innerHTML=body;bEl.scrollTop=0;}
+  if(nEl)nEl.innerHTML=navHtml;
+  if(navHtml)ogMarkNavActive_(0);
+  if(!ORG_GUIDE_NAV_BOUND_&&bEl){bEl.addEventListener("scroll",ogSyncNavActive_);ORG_GUIDE_NAV_BOUND_=true;}
 }
 function closeOrgGuideModal(){var m=document.getElementById("orgGuideModal");if(m)m.style.display="none";}
 
@@ -4506,13 +4594,16 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
 })();
 </script>
 
-<!-- ★ 조직 운영가이드 모달 (2026-07-31 A-5 신설) ★ -->
+<!-- ★ 조직 운영가이드 모달 (2026-07-31 A-5 신설, 개정6 A-5: 페이지급 확대 + 좌측 항목 네비 재설계) ★ -->
 <div class="modal-bg" id="orgGuideModal" style="display:none" onclick="if(event.target.id==='orgGuideModal')closeOrgGuideModal()">
-  <div class="modal" style="max-height:85vh;overflow-y:auto">
-    <h3 id="orgGuideTitle" style="margin:0 0 12px">조직 운영기준</h3>
-    <div id="orgGuideBody"></div>
-    <div class="modal-act" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+  <div class="modal og-modal">
+    <div class="og-modal-head">
+      <h3 id="orgGuideTitle">조직 운영기준</h3>
       <button class="btn btn-ghost" onclick="closeOrgGuideModal()">닫기</button>
+    </div>
+    <div class="og-modal-split">
+      <nav class="og-nav" id="orgGuideNav"></nav>
+      <div class="og-content" id="orgGuideBody"></div>
     </div>
   </div>
 </div>
