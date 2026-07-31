@@ -1228,13 +1228,19 @@ function openOrgGuideModal(dept){
   var tEl=document.getElementById("orgGuideTitle");if(tEl)tEl.textContent=dn+" 운영기준";
   var items=(typeof ORG_GUIDE_ITEMS!=="undefined")?ORG_GUIDE_ITEMS:[];
   var data=(typeof ORG_GUIDE!=="undefined"&&ORG_GUIDE[dept])||{};
-  var draft=(typeof ORG_GUIDE_ITEMS_DRAFT!=="undefined")&&ORG_GUIDE_ITEMS_DRAFT;
+  var structDraft=(typeof ORG_GUIDE_ITEMS_DRAFT!=="undefined")&&ORG_GUIDE_ITEMS_DRAFT;
+  /* [추가 2026-07-31 A-5, 개정] 항목 구조가 PDF 실측으로 확정된 뒤로는 "구조 초안" 배너 대신
+     조직별 콘텐츠 유무로 배너를 판단한다 — 내용이 하나라도 있으면 배너 없이 항목을 보여주고,
+     전부 비어 있으면 "아직 운영기준 내용이 없습니다" 안내만 표시(빈 항목 나열 대신). */
+  var hasAny=items.some(function(k){return String((data[k]||"")).trim();});
   var body="";
-  if(draft){
-    body+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:9px 12px;font-size:11.5px;color:#8a6a2f;margin-bottom:12px">⚠ 아래 항목 구조는 부서 체계 화면 실측 기반 <b>초안</b>이며 아직 확정되지 않았습니다. 항목명·개수 모두 매니저님 확인 후 변경될 수 있습니다.</div>';
+  if(structDraft){
+    body+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:9px 12px;font-size:11.5px;color:#8a6a2f;margin-bottom:12px">⚠ 항목 구조가 아직 확정되지 않았습니다. 매니저님 확인 후 변경될 수 있습니다.</div>';
   }
   if(!items.length){
     body+='<div class="muted" style="padding:20px 0;text-align:center;color:var(--ink-faint)">항목 구조 확정 대기 — 아직 정해진 운영기준 항목이 없습니다.</div>';
+  } else if(!hasAny){
+    body+='<div class="callout" style="background:#fbf3e6;border:1px solid #ecd9b8;border-radius:8px;padding:12px 14px;font-size:12px;color:#8a6a2f;text-align:center">⚠ 이 조직은 아직 운영기준 내용이 없습니다(매니저 확인 대기). 내용이 들어오면 이 화면에 자동 반영됩니다.</div>';
   } else {
     body+=items.map(function(k){
       var v=String((data[k]||"")).trim();
