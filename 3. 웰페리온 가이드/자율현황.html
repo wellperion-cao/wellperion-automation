@@ -1365,15 +1365,26 @@
 
     // 5) 하이진 자동 아카이브 (6h)
     (function(){
+      /* ★2026-07-31 시토(GM '자율현황도 항상 단순화') — 이 카드는 숫자 **셋**만 쓴다
+         (총건수·입항완료·마지막 정리시각). 그런데 그걸 얻으려고 보관함 3,162건
+         `_queue_archive.json` **3.2MB** 를 통째로 내려받고 있었다 — 이 화면이 한 번 열릴 때
+         받는 3.86MB 중 **83%가 이 한 파일**이었다(실측).
+         → 30분마다 도는 발행기가 미리 세어 erp_status.json 에 담아 준다(그 파일은 어차피
+           받고 있으므로 새 요청 0). 요약이 없으면 종전처럼 보관함을 읽는 폴백 유지. */
+      var sum = d.archiveSummary || null;
       var arr = d.archive;
       var rows = [];
-      if(arr && arr.length){
+      if(sum && typeof sum.total === 'number'){
+        rows.push(['마지막', '<b>' + fmtWhen(sum.latest_processed_at) + '</b>']);
+        rows.push(['결과', '지금까지 <b>' + sum.total + '</b>건 정리 완료 (입항완료 ' + sum.done + ')']);
+        rows.push(['대상', '끝난 일들을 자동으로 보관함에 정리해 목록을 깔끔하게 유지']);
+      } else if(arr && arr.length){
         var done = arr.filter(function(t){ return t.status === 'DONE'; });
         var latest = arr.slice().sort(function(a,b){ return ts(a.processed_at) - ts(b.processed_at); }).pop();
         rows.push(['마지막', '<b>' + fmtWhen(latest && latest.processed_at) + '</b>']);
         rows.push(['결과', '지금까지 <b>' + arr.length + '</b>건 정리 완료 (입항완료 ' + done.length + ')']);
         rows.push(['대상', '끝난 일들을 자동으로 보관함에 정리해 목록을 깔끔하게 유지']);
-      } else { rows.push(['상태', '<span class="warn">아직 정리한 일 없음</span>']); }
+      } else { rows.push(['상태', '<span class="warn">요약 준비 중 — 다음 발행(30분 주기) 후 표시</span>']); }
       cards.push({ ico:'🧹', nm:'완료된 일 자동 정리', cy:'6시간마다 · 끝난 일 정리', rc:'var(--green)',
         pill:['on','상시'], rows: rows });
     })();
@@ -2406,7 +2417,8 @@
     gasReadText('status/gm_observation_ledger.jsonl', 'status/gm_observation_ledger.jsonl').catch(function(){ return ''; }),
     Promise.resolve(''),  // a[2] 자리 유지(인덱스 정렬) — 북극성 추천 카드 기능 삭제(2026-07-27 GM), fetch 불필요
     gasReadText('status/learning_proposals.json',     'status/learning_proposals.json').catch(function(){ return ''; }),
-    gasReadText('status/_queue_archive.json',         'status/_queue_archive.json').catch(function(){ return ''; }),
+    Promise.resolve(''),  // a[4] 자리 유지 — 보관함(3.2MB) fetch 중단(2026-07-31 시토). 이 화면이 쓰던 것은
+                          //   숫자 셋뿐이라 erp_status.archive_summary 로 대체했다(새 요청 0·83% 감량).
     Promise.resolve(''),  // a[5] 자리 유지(인덱스 정렬) — 구 northstar_pending 임베드 제거(2026-07-04 GM), fetch 불필요
     gasReadText('status/audit_registry.json',         'status/audit_registry.json').catch(function(){ return ''; }),
     Promise.resolve(''),  // a[7] 자리 유지 — 구 CMO review_queue fetch 제거(마케팅 CMO 이관 2026-07-15)
@@ -2431,6 +2443,9 @@
       auditReg: parseJson(a[6]) || { pages: [] }
     };
     var erpStatus = parseJson(a[8]);
+    // 보관함 요약(총건수·입항완료·마지막) — 발행기가 미리 세어 erp_status 에 담아 준다.
+    // 이걸 d 에 실어 넘겨야 buildFeed 안에서 쓸 수 있다(erpStatus 는 그 함수 스코프 밖).
+    d.archiveSummary = (erpStatus && erpStatus.archive_summary) || null;
     var feedItems = [];
     try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
     var _queueArr = parseJson(a[14]);

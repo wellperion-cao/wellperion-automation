@@ -257,6 +257,36 @@ def _live_task_names():
         return None
 
 
+def collect_archive_summary():
+    """완료 보관함 요약 3개(총건수·입항완료·마지막 정리시각).
+
+    ★2026-07-31 시토(GM '자율현황도 항상 단순화') — 자율현황 화면이 이 세 숫자를 얻으려고
+      `status/_queue_archive.json` **3.2MB 를 통째로 내려받고 있었다.** 그 화면이 한 번 열릴 때
+      받는 3.86MB 중 83%가 이 한 파일이었다(실측). 쓰는 것은 arr.length · DONE 개수 ·
+      가장 최근 processed_at 셋뿐인데 3,162건 전체를 실어 나른 것이다.
+      → 여기(이미 30분마다 도는 발행기)에서 미리 세어 erp_status.json 에 담는다. 화면은
+        이미 그 파일을 받고 있으므로 **새 파일도 새 요청도 늘지 않는다**(약속 L21).
+      읽기 실패해도 None 을 돌려 화면이 종전 경로로 폴백하게 둔다(무중단).
+    """
+    try:
+        p = ROOT / "status" / "_queue_archive.json"
+        raw = json.loads(p.read_text(encoding="utf-8"))
+        items = raw if isinstance(raw, list) else (raw.get("items") or [])
+        if not isinstance(items, list):
+            return None
+        done = sum(1 for t in items if isinstance(t, dict) and t.get("status") == "DONE")
+        latest = ""
+        for t in items:
+            if not isinstance(t, dict):
+                continue
+            v = str(t.get("processed_at") or "")
+            if v > latest:
+                latest = v
+        return {"total": len(items), "done": done, "latest_processed_at": latest}
+    except Exception:
+        return None
+
+
 def collect_automation_health():
     """Task Scheduler Wellperion 작업 → 자동화 건강 집계.
     결과코드 0 = 정상, 0 아님 = 실패, 한 번도 안 돎(1999년 기본값) = 미실행.
@@ -507,6 +537,7 @@ def build():
         "bridges": bridges,
         "automation_health": automation_health,
         "git_sync": git_sync,
+        "archive_summary": collect_archive_summary(),
     }
 
 
