@@ -9,7 +9,7 @@
 <meta property="og:title" content="WELLPERION — A Day, Well Completed. 하루의 완성, 웰페리온">
 <meta property="og:description" content="프리미엄 라이프스타일 클럽. 회원 한 사람의 건강한 하루를 완성합니다.">
 
-<!-- 폰트 정본 : 회사소개서 v2.19와 동일한 배선 (Playfair Display · Jost · Pretendard) -->
+<!-- 폰트 정본 : 회사소개서(통합본 v2.2)와 동일한 배선 (Playfair Display · Jost · Pretendard) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -310,6 +310,30 @@ h1,h2,h3{text-wrap:balance;}
 /* 같은 줄의 짝 타일 — 비율을 버리고 줄 높이에 맞춰 늘어난다(줄 밑이 비지 않게) */
 .tile.fill{aspect-ratio:auto; height:100%;}
 
+/* ── 입점 파트너 브랜드 ────────────────────────────────── */
+.partners{background:var(--white); padding:var(--pad-y) 0; border-top:1px solid var(--line);}
+.partner-grid{
+  margin-top:clamp(40px,5vw,64px);
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(32px,4vw,56px);
+  border-top:1px solid var(--line);
+}
+.partner{border-top:1px solid var(--line); padding-top:26px;}
+.partner-tag{
+  font-family:var(--label); font-size:11px; font-weight:600;
+  letter-spacing:0.2em; text-transform:uppercase; color:var(--beige);
+  margin-bottom:12px;
+}
+.partner-name{
+  font-family:var(--sans); font-weight:600;
+  font-size:clamp(1.15rem,1.7vw,1.55rem); letter-spacing:-0.02em; color:var(--black);
+}
+.partner-en{
+  margin-top:5px; font-family:var(--label); font-size:11px; font-weight:500;
+  letter-spacing:0.14em; text-transform:uppercase; color:var(--gray);
+}
+.partner-desc{margin-top:16px; font-size:14px; line-height:1.9; color:var(--black-soft);}
+
 /* ── 서브 브랜드 (축약) ────────────────────────────────── */
 .brands{background:var(--white); padding:var(--pad-y) 0;}
 .brand-grid{
@@ -381,7 +405,7 @@ h1,h2,h3{text-wrap:balance;}
 @media (max-width:1024px){
   .philo-grid{grid-template-columns:1fr;}
   .philo-media img{aspect-ratio:16/10;}
-  .brand-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .brand-grid,.partner-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .info-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .journey-row{grid-template-columns:104px 150px minmax(0,1fr);}
 }
@@ -407,7 +431,7 @@ h1,h2,h3{text-wrap:balance;}
   /* 모바일에는 호버가 없다 — 캡션 상시 노출 */
   .tile::after{opacity:1;}
   .tile-cap{opacity:1; transform:none;}
-  .brand-grid{grid-template-columns:1fr;}
+  .brand-grid,.partner-grid{grid-template-columns:1fr;}
   .info-grid{grid-template-columns:1fr;}
   .cta-actions .btn{width:100%; justify-content:space-between;}
   .footer{flex-direction:column; gap:8px;}
@@ -430,6 +454,7 @@ h1,h2,h3{text-wrap:balance;}
   <div class="nav-menu" id="navMenu">
     <a href="#philosophy">Philosophy</a>
     <a href="#facilities">Facilities</a>
+    <a href="#partners">Partners</a>
     <a href="#brands">Brands</a>
     <a href="#visit">Visit</a>
     <a href="http://wellperion.com/ko/inquiry/" class="nav-cta">Reserve</a>
@@ -651,6 +676,38 @@ h1,h2,h3{text-wrap:balance;}
   </div></div>
 </section>
 
+<!-- ══ 입점 파트너 브랜드 ══ -->
+<section class="partners" id="partners">
+  <div class="wrap"><div class="wrap-inner">
+    <div class="eyebrow reveal">Partner Brands</div>
+    <h2 class="h-title reveal" style="margin-top:clamp(24px,3vw,36px);">한 공간 안의, 세 전문 브랜드.</h2>
+    <p class="body-ko reveal" style="margin-top:22px; max-width:56ch;">
+      운동 다음의 시간도 같은 동선 안에서 이어집니다.<br>
+      검증된 공간 위에, 각 분야의 전문 브랜드를 들였습니다.
+    </p>
+    <div class="partner-grid">
+      <div class="partner reveal">
+        <div class="partner-tag">Restore &middot; Spa</div>
+        <div class="partner-name">생크몽드</div>
+        <div class="partner-en">Cinq Mondes &middot; Paris</div>
+        <p class="partner-desc">파리의 스파 브랜드. 트리트먼트 &middot; 페이셜 &middot; 보디로 회복의 깊이를 더합니다.</p>
+      </div>
+      <div class="partner reveal">
+        <div class="partner-tag">Grooming &middot; Beauty</div>
+        <div class="partner-name">부티부</div>
+        <div class="partner-en">beaut&eacute;vu &middot; Hair &middot; Makeup &middot; Nail</div>
+        <p class="partner-desc">하루의 마지막 디테일을 다듬는 그루밍 &middot; 뷰티 큐레이션 공간입니다.</p>
+      </div>
+      <div class="partner reveal">
+        <div class="partner-tag">Rest &middot; Caf&eacute;</div>
+        <div class="partner-name">컵스</div>
+        <div class="partner-en">Cups &middot; Caf&eacute; &amp; Terrace</div>
+        <p class="partner-desc">머무름의 자리. 카페와 야외 테라스가 운동 전후의 대기와 만남을 받아냅니다.</p>
+      </div>
+    </div>
+  </div></div>
+</section>
+
 <!-- ══ 서브 브랜드 (축약) ══ -->
 <section class="brands" id="brands">
   <div class="wrap"><div class="wrap-inner">
@@ -713,7 +770,7 @@ h1,h2,h3{text-wrap:balance;}
       <div>
         <div class="info-h">Contact</div>
         <div class="info-body">
-          <a href="tel:02-795-0220">02-795-0220</a><br>
+          <a href="tel:02-6261-1200">02-6261-1200</a><br>
           <a href="http://wellperion.com/ko/inquiry/" target="_blank" rel="noopener">온라인 문의 &rarr;</a><br>
           <a href="https://instagram.com/wellperion" target="_blank" rel="noopener">@wellperion</a>
         </div>
