@@ -1225,6 +1225,29 @@ function _kpiParkingRevenueRow() {
   } catch (e) { return null; }
 }
 
+// 주차 매출 월별 확정 이력(연 누계·월별 마감 배열 가산용) — status/parking_revenue_monthly.json
+// (2026-01~ 확정본, GM 결재 2026-07-31·재확인 2026-08-01) 직독. {'2026-01': amount, ...} 맵 반환.
+// _kpiParkingRevenueRow()(당월 실시간·parking_revenue.json)와는 별개 소스 — 이 맵은 "확정된 과거 달"만
+// 채워지므로(크롤러가 매월 1~3일에만 전월을 확정), 당월(진행 중)과 겹쳐 중복 가산되지 않는다.
+// 실패(404·파싱오류)는 null → 호출부에서 가산 생략(fail-safe, 기존 값 그대로).
+function _kpiParkingRevenueMonthlyMap() {
+  try {
+    var url = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/parking_revenue_monthly.json';
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    if (resp.getResponseCode() !== 200) return null;
+    var j = JSON.parse(resp.getContentText());
+    var byMonth = (j && j['월별']) ? j['월별'] : null;
+    if (!byMonth) return null;
+    var out = {};
+    for (var k in byMonth) {
+      if (!byMonth.hasOwnProperty(k)) continue;
+      var amt = Number(byMonth[k] && byMonth[k]['매출금액']);
+      if (!isNaN(amt)) out[k] = amt;
+    }
+    return out;
+  } catch (e) { return null; }
+}
+
 // ── 어제(최신 확정) 일일 매출 — 2026-07-10 GM 지시 ──
 // AV열(월간 정본)은 일 단위 데이터가 없어 '오늘' 칸이 항상 null이었다. 대신 '보고' 탭
 // (SALES_DAILY_REPORT_SHEET_ID·9시 텔레그램/PNG 일일보고와 동일 소스, 2026-07-10 시뽀
@@ -1367,9 +1390,16 @@ function _kpiSales() {
           var avVals = anaTab.getRange(3, 48, 12, 1).getValues();
           var sum = 0;
           var validMonths = 0;
+          // 주차 매출 확정 이력 — 마감된(값 있는) 달에만 가산(2026-08-01, sales_includes_parking).
+          var parkHist = _kpiParkingRevenueMonthlyMap();
           for (var ai = 0; ai < avVals.length; ai++) {
             var v = _kpiNum(avVals[ai][0]);
-            if (v !== null && v > 0) { sum += v; validMonths++; lastFilledMonth = ai + 1; }
+            if (v !== null && v > 0) {
+              sum += v;
+              var pk = '2026-' + ('0' + (ai + 1)).slice(-2);
+              if (parkHist && typeof parkHist[pk] === 'number') sum += parkHist[pk];
+              validMonths++; lastFilledMonth = ai + 1;
+            }
           }
           // 값 있는 달이 1개라도 있어야 연간 확정(없으면 null 유지 = 집계 보완 중).
           if (validMonths > 0) year = sum;
@@ -1439,9 +1469,9 @@ function _kpiSales() {
     //   그 전에는 breakdown 에만 넣고 총합은 건드리지 않아, 화면에서 항목을 다 더한 값과
     //   합계가 주차 금액만큼 어긋났다(실측 2026-07-31: 항목합 554,327,264 vs 합계 551,114,264,
     //   차이 3,213,000 = 주차 정확히 일치). GM 이 "포함"으로 확정.
-    //   ▸연 합계(year)는 건드리지 않는다 — parking_revenue.json 은 월 단위만 있어 연 누계를
-    //     만들 근거가 없다. 없는 숫자를 지어내지 않는다(약속 L05). 연 누계 포함이 필요하면
-    //     주차 연 누계 원천부터 만들어야 한다.
+    //   ▸연 합계(year)는 위 avVals 루프에서 parkHist(월별 확정 이력)로 이미 가산됨(2026-08-01,
+    //     status/parking_revenue_monthly.json 신설로 근거 확보). 이 아래 블록은 당월(month)에만
+    //     실시간(parking_revenue.json) 값을 더한다 — 서로 다른 소스라 중복 가산 아님(주석 위 참고).
     var park = _kpiParkingRevenueRow();
     if (park) {
       var gi = -1;
@@ -1489,9 +1519,18 @@ function _kpiSalesMonthly() {
       if (anaTab) {
         // AV = 48번째 컬럼. AV3:AV14 = 1~12월.
         var avVals = anaTab.getRange(3, 48, 12, 1).getValues();
+        // 주차 매출 확정 이력 가산(2026-08-01, sales_includes_parking) — 마감된(값 있는) 달만,
+        // 미마감 달은 null 그대로(정직 표기, 위조 금지).
+        var parkHist2 = _kpiParkingRevenueMonthlyMap();
         for (var ai = 0; ai < 12; ai++) {
           var v = _kpiNum(avVals[ai][0]);
-          months[ai].value = (v !== null && v > 0) ? v : null;
+          if (v !== null && v > 0) {
+            var pk2 = year + '-' + ('0' + (ai + 1)).slice(-2);
+            if (parkHist2 && typeof parkHist2[pk2] === 'number') v += parkHist2[pk2];
+            months[ai].value = v;
+          } else {
+            months[ai].value = null;
+          }
         }
       }
     }
