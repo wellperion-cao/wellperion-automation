@@ -200,16 +200,22 @@
     return '<div class="fb-photos">' + thumbs + '</div>';
   }
 
+  // 처리완료 판정 = 접두 매치(2026-08-01 GM 지적 — 담당자가 "처리완료(원인 수리)"처럼 상세를
+  // 덧붙이면 정확일치 비교로는 미처리로 오집계됐다. 표기를 강제하지 않고 여기 한 곳에서만 인정한다.
+  function isDoneStatus(r){ return (r.status || '').indexOf('처리완료') === 0; }
+
   function render(){
     var authorQuery = (document.getElementById('authorSearch').value || '').trim();
     var filtered = _all.filter(function(r){
       if(_screen !== '전체' && r.screen !== _screen) return false;
-      if(_status !== '전체' && (r.status || '접수') !== _status) return false;
+      if(_status !== '전체'){
+        if(_status === '처리완료' ? !isDoneStatus(r) : (r.status || '접수') !== _status) return false;
+      }
       if(authorQuery && r.author.indexOf(authorQuery) === -1) return false;
       return true;
     });
 
-    var unprocessed = _all.filter(function(r){ return (r.status || '접수') !== '처리완료'; }).length;
+    var unprocessed = _all.filter(function(r){ return !isDoneStatus(r); }).length;
     document.getElementById('unprocCount').textContent = unprocessed;
     document.getElementById('totalLine').textContent = '전체 접수 ' + _all.length + '건 중 미처리 ' + unprocessed + '건';
     document.getElementById('countLine').textContent = '필터 결과: ' + filtered.length + '건 / 전체 ' + _all.length + '건';
@@ -218,7 +224,7 @@
     if(!filtered.length){ list.innerHTML = '<div class="fb-empty">해당하는 접수가 없습니다.</div>'; return; }
 
     list.innerHTML = filtered.map(function(r){
-      var stCls = 'st-' + (r.status || '접수');
+      var stCls = 'st-' + (isDoneStatus(r) ? '처리완료' : (r.status || '접수'));
       var memoHtml = r.memo ? '<div class="fb-memo"><div class="fb-memo-label">처리메모(회신)</div>' + esc(r.memo) + '</div>' : '';
       return '<div class="fb-card ' + stCls + '">' +
         '<div class="fb-card-head">' +
