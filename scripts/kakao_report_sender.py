@@ -1082,15 +1082,28 @@ def _selftest() -> None:
         # 보류 후 기준선을 갱신해 다음 회차부터 자동 재개
         assert chairman_content_allows(chairman_text) is True, "최초 실행인데 보류됨(평소 발신을 막으면 안 됨)"
         assert len(calls) == 0, "최초 실행인데 미리보기가 나감(불필요)"
+        print("  [기준선 없음(파일 삭제 상태 시뮬레이션)] 첫 실행: 통과(발신)")
         assert chairman_content_allows(chairman_text) is True, "동일 구성 재실행인데 보류됨"
 
-        tomorrow = chairman_text.replace("56%", "61%").replace("40.5억", "41.2억")
-        assert chairman_content_allows(tomorrow) is True, "숫자만 바뀐 다음 회차인데 보류됨(매일 발신이 멈추면 실패)"
+        # 연속 3일 시뮬레이션 — 날짜·매출 숫자만 바뀌는 realistic 시나리오, 3번 다 통과해야 함
+        day_variants = [
+            chairman_text,
+            chairman_text.replace("56%", "61%").replace("40.5억", "41.2억"),
+            chairman_text.replace("56%", "48%").replace("40.5억", "35.9억").replace("8/1(토)", "8/3(월)"),
+        ]
+        for i, day_text in enumerate(day_variants, 1):
+            ok = chairman_content_allows(day_text)
+            print(f"  [3일 시뮬레이션] {i}일차: {'통과(발신)' if ok else '보류'}")
+            assert ok is True, f"{i}일차(숫자만 다름)인데 보류됨(매일 발신이 멈추면 실패)"
 
         new_section = chairman_text + "\n🆕 신규 섹션 테스트\n"
-        assert chairman_content_allows(new_section) is False, "새 구성이 생겼는데 통과됨"
+        held = chairman_content_allows(new_section)
+        print(f"  [구성 변경(신규 섹션 추가)] 그 회차: {'통과(발신)' if held else '보류'} (보류 기대)")
+        assert held is False, "새 구성이 생겼는데 통과됨"
         assert len(calls) == 1, "새 구성 발견 시 미리보기가 안 감"
-        assert chairman_content_allows(new_section) is True, "미리보기 이후 기준선이 안 바뀌어 다음 회차도 계속 보류됨"
+        resumed = chairman_content_allows(new_section)
+        print(f"  [구성 변경 다음 회차(동일 신규 섹션)] {'통과(발신·자동재개)' if resumed else '보류'} (통과 기대)")
+        assert resumed is True, "미리보기 이후 기준선이 안 바뀌어 다음 회차도 계속 보류됨"
         assert len(calls) == 1, "이미 기준선에 반영된 구성인데 미리보기가 또 감"
 
         print("SELFTEST OK: 회장님 새내용게이트/정제/평균정확성 정상(발신 0건)")
