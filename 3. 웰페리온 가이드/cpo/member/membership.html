@@ -1834,6 +1834,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <input id="regAddPhone" type="text" placeholder="전화 010-0000-0000" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:160px">
         <input id="regAddProg" type="text" placeholder="프로그램(예: 플래티넘+골프 12개월)" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px">
         <input id="regAddDate" type="date" title="등록일자" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <input id="regAddMonths" type="number" min="1" placeholder="개월수" title="계약 개월수 — 종료일·잔여일 자동계산(비우면 나중에 수기입력 필요)" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:80px">
         <button class="btn-query" onclick="submitRegAdd()">추가</button>
         <button class="btn-refresh" onclick="toggleRegAdd(false)">취소</button>
       </div>
@@ -6475,9 +6476,10 @@ function submitRegAdd() {
   var phone = document.getElementById('regAddPhone').value.trim();
   var prog  = document.getElementById('regAddProg').value.trim();
   var date  = document.getElementById('regAddDate').value;
+  var months = document.getElementById('regAddMonths').value.trim();  // 선택 — 있으면 서버가 종료일·잔여일 자동계산(배286)
   if (!phone) { showToast('전화번호는 필수입니다(중복 방지 키)', 'err'); return; }
   if (!name)  { showToast('이름을 입력하세요', 'err'); return; }
-  apiPost({ action: 'member_registered_add', name: name, phone: phone, program: prog, regDate: date })
+  apiPost({ action: 'member_registered_add', name: name, phone: phone, program: prog, regDate: date, months: months })
     .then(function(d){
       // ★ok:false도 실패로(2026-07-30 시토) — apiPost는 서버가 {ok:false}를 줘도 resolve한다(reject 아님,
       //   위 apiPost 정의). 이 체크가 없으면 서버가 논리적으로 거부해도 여기 성공 분기(필드 비우기+"🎉" 토스트)가
@@ -6487,6 +6489,7 @@ function submitRegAdd() {
       document.getElementById('regAddName').value = '';
       document.getElementById('regAddPhone').value = '';
       document.getElementById('regAddProg').value = '';
+      document.getElementById('regAddMonths').value = '';
       toggleRegAdd(false);
       loadRegistered();        // 명단 갱신
       loadCpoTodayStats();     // 카드 금일/월간 등록 수 갱신
