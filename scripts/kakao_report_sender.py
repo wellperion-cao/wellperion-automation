@@ -97,11 +97,12 @@ import hashlib
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # Windows 콘솔(cp949) 한글 깨짐 방지
@@ -668,12 +669,60 @@ def _sanitize_for_chairman(text: str) -> str:
     return out
 
 
+# 회장님 방 평균% 정확성(2026-08-01 GM 정정) — 📋 운영계획 줄의 "평균 NN%"는 진척을
+# 못 잰 항목(honesty.level=manual/observed/기타 — "정직하게 0%로 표기"일 뿐 실제로
+# 안 했다는 뜻이 아님, status/monthly_ops_plan.json 실측 확인)까지 포함해 계산된
+# 값이라 회장님께 그대로 내보내면 부정확하다. 신뢰 가능한 등급(measured=실측·
+# basis=근거계산)만으로 다시 계산해 대체한다. 모르는 등급이 나와도 안전측(=제외)으로
+# 떨어진다(allowlist 방식). 내부 방은 원본 그대로 둔다(_sanitize_for_chairman과
+# 마찬가지로 회장님 방에서만 적용).
+MONTHLY_PLAN_PATH = ROOT / "status" / "monthly_ops_plan.json"
+_TRUSTED_HONESTY_LEVELS = {"measured", "basis"}
+_AVG_LINE_RE = re.compile(r" · 평균 \d+%")
+
+
+def _trusted_month_avg(mkey: str) -> "tuple[int, int, int] | None":
+    """(신뢰평균%, 신뢰건수, 전체건수). 계획을 못 읽거나 신뢰 가능한 값이 하나도
+    없으면 None(지어내지 않는다)."""
+    try:
+        plan = json.loads(MONTHLY_PLAN_PATH.read_text(encoding="utf-8"))
+        objs = [o for o in (plan.get("months", {}).get(mkey, {}).get("objectives") or []) if isinstance(o, dict)]
+        all_n = sum(1 for o in objs if isinstance(o.get("progress"), (int, float)))
+        trusted = [o["progress"] for o in objs
+                   if isinstance(o.get("progress"), (int, float))
+                   and (o.get("honesty") or {}).get("level") in _TRUSTED_HONESTY_LEVELS]
+        if not trusted:
+            return None
+        return round(sum(trusted) / len(trusted)), len(trusted), all_n
+    except Exception:
+        return None
+
+
+def _fix_avg_for_chairman(text: str) -> str:
+    """" · 평균 NN%" 조각을 신뢰 등급만의 평균으로 교체(제외된 건이 있으면 "(M건 기준)"
+    표기). 신뢰 가능한 값이 없으면 조각째 뺀다. 본문 안 " · 평균 NN%" 등장 순서 =
+    이번 달 블록 → 다음 달 블록(build_northstar_block 호출 순서와 동일)."""
+    now = datetime.now()
+    mkeys = iter([now.strftime("%Y-%m"), (now.replace(day=1) + timedelta(days=32)).strftime("%Y-%m")])
+
+    def _sub(_m: "re.Match") -> str:
+        stat = _trusted_month_avg(next(mkeys, ""))
+        if not stat:
+            return ""
+        avg, trusted_n, all_n = stat
+        suffix = f"({trusted_n}건 기준)" if trusted_n < all_n else ""
+        return f" · 평균 {avg}%{suffix}"
+
+    return _AVG_LINE_RE.sub(_sub, text)
+
+
 def build_caption(room: dict, base_caption: str) -> str:
     """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
-    _sanitize_for_chairman()을 거친다(다른 방은 무영향)."""
+    _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향)."""
     text = base_caption
     if room.get("name") == CHAIRMAN_ROOM_NAME:
         text = _sanitize_for_chairman(text)
+        text = _fix_avg_for_chairman(text)
     return f"{room.get('prefix', '')}{text}"
 
 
@@ -777,78 +826,93 @@ def check_and_record_dedup(
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# 회장님 방 미리보기 게이트(2026-08-01 GM 직접 지시) — 회장님 방으로 실제 전송되기
-# 전에, GM이 먼저 텔레그램 업무보고방(8254867551)에서 본문을 확인해야 한다.
-# ("먼저 나한테 테스트버전 보내주고 보냈으면 좋았을 텐데.")
+# 회장님 방 "새 내용" 게이트(2026-08-01 GM 정정판) — ①안(매 회 GM 승인)은 폐기.
+# GM: "매출보고는 계속 해야지" — 매일 발신은 평소대로 나간다. 막는 건 직전 발신에
+# 없던 **새 종류의 줄(구성)**이 이번에 생겼을 때뿐이다("오늘은 새로운 내용이니까
+# 미리 알려줬으면 좋았던거지"). 숫자·날짜·요일은 매일 바뀌는 게 당연하므로 그것만
+# 다르면 그냥 나간다.
 #
-# 새 상시 프로세스·새 폴러 없이(GM 지시) 게이트 파일 1개로 처리한다: 오늘 날짜+본문
-# 서명이 게이트 파일과 일치하고 approved=true 일 때만 통과. 처음 걸리면(파일 없음/
-# 서명 불일치) 미리보기를 GM 업무보고방으로 보내고 게이트 파일을 pending으로 써 둔 뒤
-# 이번 실행에서는 회장님 방으로 보내지 않는다 — GM이 게이트 파일의 approved를 true로
-# 바꾸고 이 스크립트를 다시 실행(--only-room "차의주 회장님")하면 통과한다. 이 발신
-# 관문(kakao_report_sender.py) 안에서만 처리해 앞으로 어떤 새 발신 경로가 추가돼도
-# 회장님 방은 자동으로 같이 보호된다.
+# 판정: 줄마다 숫자·요일·진행바를 지운 "줄 종류"의 집합을 만들어(_content_signature)
+# 직전 발신 기준선(status/kakao_chairman_content_baseline.json, 새 파일 1개)과 비교.
+# 새 종류가 있으면 이번 회차만 보류하고 GM 업무보고방(8254867551)에 미리보기+무엇이
+# 새로운지 알린 뒤, **기준선을 즉시 이번 내용으로 갱신**한다 — 그래서 다음 회차는
+# 자동으로 다시 정상 발신된다(사람이 매번 풀어줄 필요 없음). 새 폴러·새 프로세스 없음
+# — 이 발신 관문 안에서 매 실행마다 1회 비교할 뿐이다.
 # ══════════════════════════════════════════════════════════════════════════
-CHAIRMAN_GATE_PATH = ROOT / "status" / "kakao_chairman_gate.json"
-GM_REPORT_CHAT_ID = "8254867551"  # 업무보고방 — 테스트/미리보기는 항상 여기(실무진방 아님)
+CHAIRMAN_BASELINE_PATH = ROOT / "status" / "kakao_chairman_content_baseline.json"
+_NUM_RE = re.compile(r"[0-9][0-9,.]*")
+_BAR_RE = re.compile(r"[▓░]+")
+_WEEKDAY_RE = re.compile(r"\([월화수목금토일]\)")
 
 
-def _chairman_gate_signature(date_str: str, text: str) -> str:
-    h = hashlib.sha256()
-    h.update(date_str.encode("utf-8"))
-    h.update(b"\x00")
-    h.update(text.strip().encode("utf-8"))
-    return h.hexdigest()[:24]
+def _line_kind(line: str) -> str:
+    """줄에서 매일 바뀌는 숫자·요일·진행바를 지우고 '구성'만 남긴다."""
+    k = _WEEKDAY_RE.sub("(요일)", line.strip())
+    k = _BAR_RE.sub("#bar#", k)
+    return _NUM_RE.sub("#", k)
 
 
-def _load_chairman_gate() -> dict:
+def _content_signature(text: str) -> list[str]:
+    """줄 종류의 정렬된 목록 — 새 종류의 줄(섹션)이 생기면 이 목록이 바뀐다."""
+    return sorted({_line_kind(ln) for ln in text.splitlines() if ln.strip()})
+
+
+def _load_chairman_baseline() -> list[str]:
     try:
-        if CHAIRMAN_GATE_PATH.exists():
-            return json.loads(CHAIRMAN_GATE_PATH.read_text(encoding="utf-8"))
+        if CHAIRMAN_BASELINE_PATH.exists():
+            return json.loads(CHAIRMAN_BASELINE_PATH.read_text(encoding="utf-8")).get("kinds", [])
     except Exception as exc:
-        log(f"[chairman-gate] 게이트 파일 읽기 실패(미승인으로 취급): {exc}")
-    return {}
+        log(f"[chairman-content] 기준선 읽기 실패(신규로 취급): {exc}")
+    return []
 
 
-def _save_chairman_gate(entry: dict) -> None:
+def _save_chairman_baseline(kinds: list[str]) -> None:
     try:
-        CHAIRMAN_GATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        CHAIRMAN_GATE_PATH.write_text(json.dumps(entry, ensure_ascii=False, indent=2), encoding="utf-8")
+        CHAIRMAN_BASELINE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CHAIRMAN_BASELINE_PATH.write_text(
+            json.dumps({"kinds": kinds, "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+                       ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
     except Exception as exc:
-        log(f"[chairman-gate] 게이트 파일 저장 실패(무시 — 승인 전까지는 계속 보류됨): {exc}")
+        log(f"[chairman-content] 기준선 저장 실패(무시): {exc}")
 
 
-def _send_chairman_preview(text: str) -> None:
-    """GM 업무보고방으로 회장님 방 발신 예정 본문 전문을 미리 보낸다(best-effort —
-    실패해도 회장님 방 발신은 어차피 보류 상태이므로 안전)."""
+def _send_chairman_preview(text: str, new_kinds: list[str]) -> None:
+    """GM 업무보고방으로 '새 구성이 생겨 이번 회차를 보류했다'는 미리보기를 보낸다
+    (best-effort — 실패해도 회장님 방 발신은 어차피 보류 상태이므로 안전)."""
     try:
         agents_dir = str(ROOT / "wellperion-agents")
         if agents_dir not in sys.path:
             sys.path.insert(0, agents_dir)
         from telegram_notifier import TelegramNotifier
-        preview = "⚠️ 회장님 방 발신 대기 — 확인 후 보내드립니다\n\n" + text
+        new_lines = "\n".join(f"  + {k}" for k in new_kinds)
+        preview = (
+            "⚠️ 새 내용이 포함돼 회장님 발신을 한 회 보류했습니다 — 확인해 주세요\n"
+            f"새로 생긴 줄:\n{new_lines}\n\n{text}"
+        )
         TelegramNotifier().send(preview)
     except Exception as exc:
-        log(f"[chairman-gate] 미리보기 발송 실패(무시): {exc}")
+        log(f"[chairman-content] 미리보기 발송 실패(무시): {exc}")
 
 
-def chairman_gate_allows(text: str) -> bool:
-    """True=승인됨(회장님 방으로 진행) · False=미승인(보류 — 처음이면 미리보기 발송)."""
-    today = datetime.now().strftime("%Y-%m-%d")
-    sig = _chairman_gate_signature(today, text)
-    gate = _load_chairman_gate()
-    if gate.get("date") == today and gate.get("sig") == sig and gate.get("approved") is True:
+def chairman_content_allows(text: str) -> bool:
+    """True=평소대로 발신 진행. False=새 구성 발견 — 이번 회차만 보류(미리보기 발송 +
+    기준선 갱신, 다음 회차부터 자동 재개)."""
+    kinds = _content_signature(text)
+    baseline = _load_chairman_baseline()
+    if not baseline:
+        # 기준선이 아예 없으면(최초 실행) 비교 대상이 없다 — 매번 "전부 새 것"으로
+        # 오판해 평소 발신까지 막는 것을 피하기 위해 기준선만 세우고 통과시킨다.
+        _save_chairman_baseline(kinds)
         return True
-    if gate.get("date") == today and gate.get("sig") == sig:
-        log("[chairman-gate] 회장님 방 발신 보류 중(이미 미리보기 발송됨) — GM 승인 대기")
+    new_kinds = [k for k in kinds if k not in baseline]
+    if new_kinds:
+        _send_chairman_preview(text, new_kinds)
+        _save_chairman_baseline(kinds)  # 다음 회차부터는 이 구성이 기준 — 자동 재개
+        log(f"[chairman-content] 새 구성 {len(new_kinds)}건 발견 — 이번 회차 보류, 미리보기 발송, 기준선 갱신")
         return False
-    _save_chairman_gate({
-        "date": today, "sig": sig, "approved": False,
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    })
-    _send_chairman_preview(text)
-    log("[chairman-gate] 회장님 방 발신 보류 — GM 업무보고방에 미리보기 발송함(승인 전 발신 안 함)")
-    return False
+    return True
 
 
 def open_or_find_room(room_name: str):
@@ -879,7 +943,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     text = build_caption(room, base_message)
     log(f"── {room_name} 텍스트 전용 처리 시작 (dry_run={dry_run}, text={text!r}) ──")
 
-    if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_gate_allows(text):
+    if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(text):
         return False
 
     if check_and_record_dedup(room_name, text=text, dry_run=dry_run):
@@ -914,7 +978,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     caption = build_caption(room, base_caption)
     log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
 
-    if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_gate_allows(caption):
+    if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(caption):
         return False
 
     if check_and_record_dedup(room_name, text=caption, image_path=image_path, dry_run=dry_run):
@@ -967,49 +1031,72 @@ def resolve_image_path(cfg: dict, args) -> Path:
 
 
 def _selftest() -> None:
-    """회장님 게이트·정제 로직 자가검사(assert 기반, 실제 발신 0건). 텔레그램 전송을
-    가짜 함수로 바꿔치기하고 게이트 파일도 임시 경로로 돌려 실제 부작용을 만들지 않는다."""
+    """회장님 정제·평균 정확성·새내용 게이트 자가검사(assert 기반, 실제 발신 0건).
+    텔레그램 전송·기준선 파일·계획 파일을 전부 가짜/임시로 바꿔치기해 부작용 0."""
     import tempfile
-    global CHAIRMAN_GATE_PATH, _send_chairman_preview
-    orig_gate_path = CHAIRMAN_GATE_PATH
+    global CHAIRMAN_BASELINE_PATH, MONTHLY_PLAN_PATH, _send_chairman_preview
+    orig_baseline_path = CHAIRMAN_BASELINE_PATH
+    orig_plan_path = MONTHLY_PLAN_PATH
     orig_preview_fn = _send_chairman_preview
     calls = []
-    _send_chairman_preview = lambda text: calls.append(text)  # noqa: E731
-    tmp_dir = Path(tempfile.mkdtemp(prefix="kakao_chairman_gate_selftest_"))
-    CHAIRMAN_GATE_PATH = tmp_dir / "gate.json"
+    _send_chairman_preview = lambda text, new_kinds: calls.append((text, new_kinds))  # noqa: E731
+    tmp_dir = Path(tempfile.mkdtemp(prefix="kakao_chairman_selftest_"))
+    CHAIRMAN_BASELINE_PATH = tmp_dir / "baseline.json"
+    MONTHLY_PLAN_PATH = tmp_dir / "plan.json"
     try:
-        # ① 정제 — 회장님 방은 📉·손 안 댄 것 줄 제거 + 닉네임 치환, 다른 방은 그대로
-        raw = ("🌟 북극성 대비\n"
-               "매출 ▓░ 80%\n"
+        mkey = datetime.now().strftime("%Y-%m")
+        MONTHLY_PLAN_PATH.write_text(json.dumps({"months": {mkey: {"objectives": [
+            {"progress": 80, "honesty": {"level": "measured"}},
+            {"progress": 0, "honesty": {"level": "manual"}},
+        ]}}}, ensure_ascii=False), encoding="utf-8")
+
+        raw = ("🌟 북극성 대비 — 8/1(토)\n"
+               "매출 연72억   ▓▓▓▓▓░░░░  56% 40.5억 / 72억\n"
                "\n"
-               "📋 8월 운영계획 — 목표 21개\n"
+               "📋 8월 운영계획 — 목표 21개 · 평균 40%\n"
                "   📉 0% 목욕탕 허가건 진행 (7월 이월) — 시토\n"
                "   그 외 손 안 댄 것 3건\n")
+
+        # ① 정제 — 회장님 방은 📉·손 안 댄 것·닉네임·None/null류 제거, 내부 방은 그대로
         chairman_text = build_caption({"name": CHAIRMAN_ROOM_NAME, "prefix": "회장님, "}, raw)
-        assert "📉" not in chairman_text, "회장님 본문에 📉 줄이 남음"
-        assert "손 안 댄 것" not in chairman_text, "회장님 본문에 '손 안 댄 것' 줄이 남음"
-        assert "시토" not in chairman_text, "회장님 본문에 내부 닉네임(시토)이 남음"
+        assert "📉" not in chairman_text and "손 안 댄 것" not in chairman_text and "시토" not in chairman_text
+        for bad in ("None", "null", "NaN", "undefined"):
+            assert bad not in chairman_text, f"회장님 본문에 '{bad}'가 남음(정확성 위반)"
         internal_text = build_caption({"name": "웰페리온 관리부", "prefix": ""}, raw)
         assert "📉" in internal_text and "시토" in internal_text, "내부 방 본문에서 원래 있던 줄이 회귀로 사라짐"
 
-        # ② 게이트 — 미승인 상태면 항상 차단 + 미리보기는 동일 서명에 1번만
-        assert chairman_gate_allows(chairman_text) is False, "미승인인데 통과됨"
-        assert len(calls) == 1, f"미리보기 발송 횟수 이상(1회 기대, 실제 {len(calls)}회)"
-        assert chairman_gate_allows(chairman_text) is False, "재확인 미승인인데 통과됨"
-        assert len(calls) == 1, "이미 보류 중인데 미리보기가 중복 발송됨"
+        # ② 평균 정확성 — 신뢰불가(manual) 항목이 섞인 원래 평균(40%) 대신 신뢰 등급만의
+        # 평균(80%, 1건 기준)으로 바뀌었는지
+        assert "평균 40%" not in chairman_text, "신뢰 불가 항목이 섞인 원래 평균이 그대로 나감"
+        assert "평균 80%(1건 기준)" in chairman_text, f"신뢰 평균 재계산 결과가 다름: {chairman_text!r}"
 
-        gate = json.loads(CHAIRMAN_GATE_PATH.read_text(encoding="utf-8"))
-        gate["approved"] = True
-        CHAIRMAN_GATE_PATH.write_text(json.dumps(gate, ensure_ascii=False), encoding="utf-8")
-        assert chairman_gate_allows(chairman_text) is True, "승인(approved=true)+서명 일치인데 차단됨"
-        assert len(calls) == 1, "승인 후 통과 시 미리보기가 다시 발송됨(불필요)"
+        # 신뢰 가능한 값이 하나도 없으면 평균 조각 자체를 뺀다(지어내지 않는다)
+        MONTHLY_PLAN_PATH.write_text(json.dumps({"months": {mkey: {"objectives": [
+            {"progress": 40, "honesty": {"level": "manual"}},
+            {"progress": 20, "honesty": {"level": "observed"}},
+        ]}}}, ensure_ascii=False), encoding="utf-8")
+        no_trust_text = build_caption({"name": CHAIRMAN_ROOM_NAME, "prefix": ""}, raw)
+        assert "평균" not in no_trust_text, f"신뢰 가능한 값이 없는데 평균이 남음: {no_trust_text!r}"
 
-        assert chairman_gate_allows(chairman_text + "\n다른 내용") is False, "본문이 바뀌었는데(서명 불일치) 통과됨"
-        assert len(calls) == 2, "서명이 바뀐 새 내용인데 새 미리보기가 안 감"
+        # ③ 새 내용 게이트 — 평소(숫자만 다름)엔 정상 발신, 새 구성이 생겼을 때만 1회
+        # 보류 후 기준선을 갱신해 다음 회차부터 자동 재개
+        assert chairman_content_allows(chairman_text) is True, "최초 실행인데 보류됨(평소 발신을 막으면 안 됨)"
+        assert len(calls) == 0, "최초 실행인데 미리보기가 나감(불필요)"
+        assert chairman_content_allows(chairman_text) is True, "동일 구성 재실행인데 보류됨"
 
-        print("SELFTEST OK: 회장님 게이트/정제 정상(발신 0건)")
+        tomorrow = chairman_text.replace("56%", "61%").replace("40.5억", "41.2억")
+        assert chairman_content_allows(tomorrow) is True, "숫자만 바뀐 다음 회차인데 보류됨(매일 발신이 멈추면 실패)"
+
+        new_section = chairman_text + "\n🆕 신규 섹션 테스트\n"
+        assert chairman_content_allows(new_section) is False, "새 구성이 생겼는데 통과됨"
+        assert len(calls) == 1, "새 구성 발견 시 미리보기가 안 감"
+        assert chairman_content_allows(new_section) is True, "미리보기 이후 기준선이 안 바뀌어 다음 회차도 계속 보류됨"
+        assert len(calls) == 1, "이미 기준선에 반영된 구성인데 미리보기가 또 감"
+
+        print("SELFTEST OK: 회장님 새내용게이트/정제/평균정확성 정상(발신 0건)")
     finally:
-        CHAIRMAN_GATE_PATH = orig_gate_path
+        CHAIRMAN_BASELINE_PATH = orig_baseline_path
+        MONTHLY_PLAN_PATH = orig_plan_path
         _send_chairman_preview = orig_preview_fn
         try:
             for f in tmp_dir.glob("*"):
