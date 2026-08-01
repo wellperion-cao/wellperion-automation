@@ -674,10 +674,16 @@ def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
     if streak >= _PRECOMMIT_MAX_STREAK:
         if streak == _PRECOMMIT_MAX_STREAK:  # 넘어서는 순간 딱 한 번만 알린다
             _log(f"PUSH_SWEEPER 선커밋 중단 — {streak}회 연속 찍고도 push 실패(배242)", root)
+            # ★2026-08-01(시토 · 배265) — '무엇이 막고 있는지'를 경고에 같이 보낸다.
+            #   왜: 2026-08-01 경보를 받고도 원인(종합접수처 파일 merge 충돌)을 찾는 데
+            #   따로 실측이 필요했다. 막은 이유는 이미 이 상태파일에 적혀 있었는데
+            #   경고 문구에만 없었다 — 새 수집기 없이 있는 값을 한 줄 더 보낸다(약속 L21).
+            why = str(st.get("reason") or "").strip()
             _telegram_warn(
                 root,
                 f"⚠️ 자동 push 가 {streak}회 연속 막혀 '통합 여는 커밋'을 중단했습니다.\n"
-                "커밋은 로컬에 안전히 남아 있습니다 — 원인 확인이 필요합니다.",
+                + (f"막은 이유: {why[:180]}\n" if why else "")
+                + "커밋은 로컬에 안전히 남아 있습니다 — 원인 확인이 필요합니다.",
             )
         st["precommit_streak"] = streak + 1
         _alert_state_write(root, st)
