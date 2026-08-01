@@ -1687,20 +1687,18 @@
     return s + '~' + u;
   }
 
-  // ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04 · 북극성 기여도 반영 2026-08-01) ──
-  // 중요도 산식(문서화·결정적·랜덤 없음 · 지어내기 금지=기존 objective 필드만 사용):
-  //   ① 매출 과제(💰 0순위 별도 섹션) 제외 →
-  //   ② score = 북극성 기여도(objective.northstar_contribution — high=10000·mid=5000·low=1000 · 1순위 요인 · GM 승인 2026-08-01)
-  //             + 상태가중(진행3·이월2·계획1·완료0 — 舊 300/200/100은 기여도를 압도해 top3가 '오래 진행 중인 것' 위주로만
-  //               뽑히던 원인이었다. tie-break 수준으로 낮춘다 · GM 지적 2026-08-01)
-  //             + 전사/핵심 여부(dept에 '전사' 또는 '전 부서' 포함 시 +40)
-  //             + 북극성 직접연결(북극성 지도에 role 문구 존재 시 +20)
-  //             + 진척 가중(progress × 0.01 = 0~1 · 최소 영향·tie-break)
-  //             + 기한 임박 가산(deadlineBonus — target 문장 속 '(기한: ...)'을 파싱해 마감이 가까울수록 최대 60점.
-  //               기여도 등급차(4000+)를 뒤집진 못하지만, 같은 등급 안에서 기한 있는 신규 지시(예: 회장님 지시)가
-  //               기한 없는 옛 과제에 묻히지 않게 한다. 못 읽으면 0 — 지어내기 금지.)
-  //   ③ 정렬 = score 내림차순 → 진척 내림차순(동점 규칙) → 원배열 순서(안정 정렬).
-  //   ⚠ 기여도 미배정(옛 항목) = 안전 기본값 mid 취급(완전 배제·과대평가 둘 다 피함 · 지어내기 아님, 등급 3단 중 중간값).
+  // ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · GM 직접 지정 우선 · GM 확정 2026-07-04 · 북극성 기여도 2026-08-01 · GM 직접지정 2026-08-01) ──
+  // 선정 규칙(문서화·결정적·랜덤 없음 · 지어내기 금지=기존 objective 필드만 사용):
+  //   ① GM 직접 지정 경로 — objective.northstar_contribution='high' 인 과제가 정확히 3건이고 전부
+  //      gm_top3_rank(1~3)를 가지면 그 순서를 그대로 쓴다(산식으로 재정렬 금지 · GM 2026-08-01
+  //      "핵심과제 Top3: ①매출&지출 ②브로제이 시스템 ③밸류업"을 직접 지정). 이 경로는 매출 제외 규칙도
+  //      적용 안 함 — 매출&지출 자체가 GM 지정 1순위이기 때문.
+  //   ② 폴백(①이 성립하지 않는 달 — high 가 3건이 아닌 과거/미래월) — 기존 자동 산식:
+  //      매출 과제(💰 0순위 별도 섹션) 제외 → score = 북극성 기여도(high=10000·mid=5000·low=1000)
+  //      + 상태가중(진행3·이월2·계획1·완료0·tie-break) + 전사 여부(+40) + 북극성 직접연결(+20)
+  //      + 진척 가중(progress×0.01·tie-break) → score 내림차순 → 진척 내림차순 → 원배열 순서.
+  //   ⚠ 기여도 미배정(옛 항목) = 안전 기본값 mid 취급(완전 배제·과대평가 둘 다 피함).
+  //   ⚠ 기한 임박 가산은 2026-08-01 도입 후 같은 날 철회(GM 직접 지정 방식이라 불필요·지정을 흔듦).
   //   ⚠ 난이도(priority 🛳️/⛴️/⛵)는 objectives 스키마에 필드가 없어 미사용(지어내기 금지). status로 대체 반영.
   var CONTRIB_W = {high:10000, mid:5000, low:1000};
   var CONTRIB_LABEL = {high:'🔥 상', mid:'◐ 중', low:'▫ 하'};
@@ -1719,46 +1717,25 @@
     var c = o && o.northstar_contribution;
     return (c === 'high' || c === 'mid' || c === 'low') ? c : 'mid';
   }
-  // 기한 파싱 — target 속 '(기한: ...)'만 읽는다. 'M월 N주'=그 주 중간일(±3일) 근사(연도=선택월 _sel 기준).
-  // 'N주'(월 미기재)=progress_note의 'GM 전달 YYYY-MM-DD' 기준일 + N주(회장님 지시 3건 표기 방식). 둘 다 아니면 null(가산 0).
-  function parseDeadline(o){
-    var m = /기한\s*[:：]\s*([^)]+)/.exec((o && o.target) || '');
-    if(!m) return null;
-    var spec = m[1].trim();
-    var mm = /^(\d{1,2})월\s*(\d{1,2})주/.exec(spec);
-    if(mm){
-      var yr = _sel ? Number(String(_sel).split('-')[0]) : new Date().getFullYear();
-      return new Date(yr, Number(mm[1]) - 1, (Number(mm[2]) - 1) * 7 + 4);
-    }
-    var wm = /^(\d{1,2})\s*주/.exec(spec);
-    if(wm){
-      var bm = /전달\s*(\d{4})-(\d{2})-(\d{2})/.exec((o && o.progress_note) || '');
-      if(!bm) return null;
-      var base = new Date(Number(bm[1]), Number(bm[2]) - 1, Number(bm[3]));
-      base.setDate(base.getDate() + Number(wm[1]) * 7);
-      return base;
-    }
-    return null;
-  }
-  function deadlineBonus(o){
-    var d = parseDeadline(o);
-    if(!d) return 0;
-    var days = Math.round((d.getTime() - Date.now()) / 86400000);
-    return Math.max(0, Math.min(60, 60 - days));
-  }
   function top3Score(o){
     var sw = (TOP3_STATUS_W[o.status] != null) ? TOP3_STATUS_W[o.status] : 1;
     var cw = isCompanyWide(o) ? 40 : 0;
     var ns = (o.northstar && _nsMap && _nsMap[o.northstar]) ? 20 : 0;
-    return CONTRIB_W[contribOf(o)] + sw + cw + ns + clampPct(o.progress) * 0.01 + deadlineBonus(o);
+    return CONTRIB_W[contribOf(o)] + sw + cw + ns + clampPct(o.progress) * 0.01;
   }
-  // 북극성 기여도 배지(상/중/하) — top3 산식 1순위 요인을 GM이 한눈에 보게(top3 카드·상세표 공용).
+  // 북극성 기여도 배지(상/중/하) — GM 직접 지정 top3는 순위도 함께 표기(top3 카드·상세표 공용).
   function contribBadge(o){
     var c = contribOf(o);
-    return '<span class="chip contrib contrib-' + c + '" title="북극성 기여도 — top3 산식 1순위 요인(GM 승인 2026-08-01)">' + CONTRIB_LABEL[c] + '</span>';
+    var extra = (typeof o.gm_top3_rank === 'number') ? (' · GM 지정 top3 ' + o.gm_top3_rank + '순위') : '';
+    return '<span class="chip contrib contrib-' + c + '" title="북극성 기여도' + extra + '(GM 2026-08-01)">' + CONTRIB_LABEL[c] + '</span>';
   }
   function selectTop3(objs){
-    return (objs || []).filter(function(o){ return !isSalesObj(o); })
+    var list = objs || [];
+    var highs = list.filter(function(o){ return contribOf(o) === 'high'; });
+    if(highs.length === 3 && highs.every(function(o){ return typeof o.gm_top3_rank === 'number'; })){
+      return highs.slice().sort(function(a, b){ return a.gm_top3_rank - b.gm_top3_rank; });
+    }
+    return list.filter(function(o){ return !isSalesObj(o); })
       .map(function(o, i){ return {o:o, i:i, s:top3Score(o)}; })
       .sort(function(a, b){
         if(b.s !== a.s) return b.s - a.s;
