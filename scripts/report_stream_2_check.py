@@ -40,21 +40,7 @@ _SENDER = REPO_ROOT / "scripts" / "kakao_report_sender.py"
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 
 
-def _northstar_prefix() -> str:
-    """보고 맨 위 '북극성 대비' 블록 (GM 확정 2026-07-31) — 실패해도 빈 문자열
-    (보고를 절대 끊지 않는다). 블록 본문은 northstar_reach.build_northstar_block()
-    한 곳에서만 만든다(약속 L01) — wellperion-agents/scripts/ceo_morning_pipeline.py
-    의 _northstar_head() 와 동일한 안전 패턴(지연 임포트 + try/except)."""
-    try:
-        import sys as _sys, os as _os
-        _here = _os.path.dirname(_os.path.abspath(__file__))
-        if _here not in _sys.path:
-            _sys.path.insert(0, _here)
-        from northstar_reach import build_northstar_block
-        block = build_northstar_block()
-        return f"{block}\n\n" if block else ""
-    except Exception:
-        return ""
+# 2026-08-01 GM 지시 — 북극성 대비 블록 제외(하루 일과 정리는 그대로 진행)
 
 
 def _check_section(today: str) -> str:
@@ -78,7 +64,8 @@ def build_digest(today: str | None = None) -> str:
     section = _check_section(today)
     praise = _praise_block(section)
     top = f"{header}\n\n{praise}\n" if praise else f"{header}\n\n"
-    return f"{_northstar_prefix()}{top}{section}{_legal_check_blank_block()}"
+    # 2026-08-01 GM 지시 — 법정·정기점검 공백 안내는 본문에서 빼고 run()에서 별도 메시지로 발송
+    return f"{top}{section}"
 
 
 # ── 실시일이 비어 있는 법정·정기점검 (2026-07-31 GM 결정) ──
@@ -144,7 +131,7 @@ def _legal_check_blank_block() -> str:
     # ★상세를 그대로 담는다(2026-07-31 GM 확정). 한 번 줄여 봤다가 되돌린 이유:
     #   "나만 보는 게 아니고, 상세 내용이 있어야 이해를 하기 때문에." 건수만 적으면 실무진은
     #   무엇을 답해야 하는지 모른다. 대신 부서를 또렷이 갈라 자기 줄만 찾게 한다.
-    lines = ["", "━" * 10,
+    lines = ["━" * 10,
              f"🏛 법정·정기점검 — 최근 실시일이 비어 있는 {total}건",
              "아래 항목을 마지막으로 하신 날짜만 알려주시면 저희가 채워 넣겠습니다.", ""]
     for dept in sorted(blank, key=lambda d: -len(blank[d])):
@@ -232,8 +219,13 @@ def _send_kakao(text: str) -> None:
 def run(today: str | None = None, dry_run: bool = True, kakao_go: bool = False) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     text = build_digest(today)
+    # 2026-08-01 GM 지시 — 법정·정기점검 공백 안내는 하루 일과 정리와 별도 메시지로 발송
+    # (같은 목적지·같은 발신 함수 재사용, 새 발신 헬퍼 없음 — 약속 L21). 공백이 없으면 미발송.
+    legal_alert = _legal_check_blank_block()
     if dry_run:
         print(f"[stream2] DRY-RUN — chat_id={TELEGRAM_CHAT_ID} 발송 안 함", flush=True)
+        if legal_alert:
+            print("\n=== 법정·정기점검 안내(별도 발송분) ===\n" + legal_alert, flush=True)
         return text
     ok = _send_telegram(text)
     print(f"[stream2] 텔레그램 {'완료' if ok else '실패'} → {TELEGRAM_CHAT_ID}", flush=True)
@@ -242,6 +234,12 @@ def run(today: str | None = None, dry_run: bool = True, kakao_go: bool = False) 
         print(f"[stream2] 카카오 → {KAKAO_ROOM}", flush=True)
     else:
         print(f"[stream2] 카카오 SKIP (kakao_go=False — GM go 게이트)", flush=True)
+    if legal_alert:
+        ok2 = _send_telegram(legal_alert)
+        print(f"[stream2] 법정·정기점검 안내 텔레그램 {'완료' if ok2 else '실패'} → {TELEGRAM_CHAT_ID}", flush=True)
+        if kakao_go:
+            _send_kakao(legal_alert)
+            print(f"[stream2] 법정·정기점검 안내 카카오 → {KAKAO_ROOM}", flush=True)
     return text
 
 

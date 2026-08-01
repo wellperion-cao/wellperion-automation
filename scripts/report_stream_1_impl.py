@@ -65,21 +65,7 @@ _PRE_CONTACT_STATUSES = {"", "신규", "가망", "대기"}
 _AUTO_OWNER_VALUES = ("웹 자동접수", "자동접수", "-")
 
 
-def _northstar_prefix() -> str:
-    """보고 맨 위 '북극성 대비' 블록 (GM 확정 2026-07-31) — 실패해도 빈 문자열
-    (보고를 절대 끊지 않는다). 블록 본문은 northstar_reach.build_northstar_block()
-    한 곳에서만 만든다(약속 L01) — wellperion-agents/scripts/ceo_morning_pipeline.py
-    의 _northstar_head() 와 동일한 안전 패턴(지연 임포트 + try/except)."""
-    try:
-        import sys as _sys, os as _os
-        _here = _os.path.dirname(_os.path.abspath(__file__))
-        if _here not in _sys.path:
-            _sys.path.insert(0, _here)
-        from northstar_reach import build_northstar_block
-        block = build_northstar_block()
-        return f"{block}\n\n" if block else ""
-    except Exception:
-        return ""
+# 2026-08-01 GM 지시 — 북극성 대비 블록 제외(하루 일과 정리는 그대로 진행)
 
 
 def _disp_width(s: str) -> int:
@@ -546,7 +532,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     completion = "" if sample else _completion_block(raw_groups)
     tail = f"\n\n{completion}" if completion else ""
     return (
-        f"{_northstar_prefix()}{header}\n\n{section_new}\n\n"
+        f"{header}\n\n{section_new}\n\n"
         f"━━━━━━━━━━\n{section_contact}{tail}"
     )
 
