@@ -258,7 +258,13 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
         dept = str(r.get("dept") or "기타").strip() or "기타"
         cat = str(r.get("category") or "").strip()
         content = " ".join(str(r.get("content") or "").split())[:24]
-        who = str(r.get("handler") or r.get("assignee") or "").strip() or "담당"
+        # 서버가 통일해 준 표기(handlerCanon/assigneeCanon)를 쓴다(2026-08-01) — 원문을 여기서
+        # 다시 판정하면 '최준용'/'최준용M' 이 또 갈라진다(약속 L01, _aging_block과 동일 원칙).
+        # 서버가 아직 그 값을 안 주면(옛 배포) 원문으로 떨어져 지금 동작을 유지한다.
+        who_list = ([str(x).strip() for x in (r.get("handlerCanon") or []) if str(x).strip()]
+                    or [str(x).strip() for x in (r.get("assigneeCanon") or []) if str(x).strip()])
+        who = "/".join(who_list) if who_list else (
+            str(r.get("handler") or r.get("assignee") or "").strip() or "담당")
         remain = remain_by_dept.get(dept, 0)
         return f"✅ [{dept}] {cat} {content} · 처리 {who} · 남은 미처리 {remain}건"
 
