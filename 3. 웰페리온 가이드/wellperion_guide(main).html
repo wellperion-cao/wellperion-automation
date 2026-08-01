@@ -1234,7 +1234,7 @@
          정확성 무손상 — 라이브 값이 항상 최종. 첫 콜드 로드는 서버측 스냅샷 발행(후속) 전까진 여전히 라이브 대기. */
       function renderHomeKpi(results, opts){
           opts = opts || {};
-          var d = results[0], tgt = results[1];
+          var d = results[0], tgt = results[1], monthlyResp = results[2];
           if(!d || !d.ok) return;
           setFreshnessBadge(!!opts.isSnapshot, opts.generatedAtKst);
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
@@ -1256,9 +1256,30 @@
             set('heroSalesTarget', '—');
           }
           if (s.hasCurMonth === false) {
-            set('heroSalesMonth', '이번달 미마감');
-            setTitle('heroSalesMonth', '분석시트 AV(이번달=' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ') 마감값이 아직 없습니다 — 스테일 방지로 이전달 값을 쓰지 않음');
-            set('heroSalesRate', '—');
+            /* 당월 미마감 — 숫자 없이 '—'만 띄우면 GM 눈에 볼 게 없다(2026-08-01 GM 지적).
+               '이번달인 척' 하지 않으면서(정직 유지) 마지막으로 마감된 달 실적을 그 달 이름표를 달고 보여준다.
+               소스 = sales_monthly(AV3:AV14 12개월 배열) 중 값 있는 마지막 항목 — 새 엔드포인트 아님(약속 L21). */
+            var lastClosed = null;
+            if (monthlyResp && monthlyResp.ok && Array.isArray(monthlyResp.months)) {
+              for (var _mi = monthlyResp.months.length - 1; _mi >= 0; _mi--) {
+                if (monthlyResp.months[_mi] && monthlyResp.months[_mi].value != null) { lastClosed = monthlyResp.months[_mi]; break; }
+              }
+            }
+            if (lastClosed) {
+              set('salesMonthLabel', ' (' + lastClosed.m + '월 마감)');
+              set('heroSalesMonth', krAmt(lastClosed.value));
+              setTitle('heroSalesMonth', krExact(lastClosed.value) + ' · ' + lastClosed.m + '월 마감 실적 — 이번달(' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ')은 아직 미마감이라 최근 마감월로 대체 표시');
+              if (monthlyTarget != null && monthlyTarget > 0) {
+                set('heroSalesRate', pct(lastClosed.value / monthlyTarget * 100));
+                setTitle('heroSalesRate', lastClosed.m + '월 마감 매출 ÷ 월목표(정본)');
+              } else {
+                set('heroSalesRate', '목표 미설정');
+              }
+            } else {
+              set('heroSalesMonth', '이번달 미마감');
+              setTitle('heroSalesMonth', '분석시트 AV(이번달=' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ') 마감값이 아직 없습니다 — 스테일 방지로 이전달 값을 쓰지 않음');
+              set('heroSalesRate', '—');
+            }
           } else {
             var smVal = krAmt(s.month);
             set('heroSalesMonth', smVal);
@@ -1419,7 +1440,9 @@
       }
       Promise.all([
         fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }),
-        fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+        fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+        /* 당월 미마감 시 마지막 마감월 표시용(2026-08-01 GM 지적) — home_kpi와 병렬, 실패해도 조용히 폴백 */
+        fetch(BASE + '?action=sales_monthly&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
       ])
         .then(function(results){
           if(results && results[0] && results[0].ok){ try { localStorage.setItem('wp_home_kpi_cache', JSON.stringify(results)); } catch(_e){} }
