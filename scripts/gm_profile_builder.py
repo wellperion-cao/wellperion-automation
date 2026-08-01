@@ -875,7 +875,11 @@ def run_gm_surface_check() -> tuple[list, bool]:
                     else:
                         page.wait_for_timeout(1500)
                         root_sel = "body"
-                    _wait_until_rendered(page, root_sel)
+                    # 다 안 그려진 채 시간이 끝나면 그것 자체가 결함이다(2026-08-01 실측:
+                    # S2 매트릭스가 GAS 경합으로 30초 넘게 '불러오는 중'에 머물렀는데, 그 칸엔
+                    # 글자가 있으니 빈칸 검사도 글자수 기준도 전부 통과했다 — 아무도 못 잡았다).
+                    if not _wait_until_rendered(page, root_sel):
+                        findings.append({"kind": "render_timeout", "page": label})
                     m = _measure_root(page, root_sel)
                     table_bal = _measure_table_balance(page, root_sel)   # 창 닫기 전에 잰다
                     empty_slots = _empty_fill_slots(page, root_sel, _fill_slot_ids(spec["url"]))
@@ -984,7 +988,9 @@ def render_gm_surface_block(rec: dict) -> str:
     else:
         for f in findings:
             kind = f.get("kind")
-            if kind == "empty_fill_slot":
+            if kind == "render_timeout":
+                lines.append(f"- 🔴 **{f['page']}** 가 시간 안에 다 안 그려진다 — 아직 「불러오는 중」인 칸이 남아 있음(느린 받아오기)")
+            elif kind == "empty_fill_slot":
                 lines.append(f"- 🔴 **{f['page']}** {f.get('detail','')}")
             elif kind == "cell_too_long":
                 lines.append(f"- ⚠️ **{f['page']}** 칸 하나가 {f['value']}자(기준 {f['limit']}자 초과) — 압축 필요")
