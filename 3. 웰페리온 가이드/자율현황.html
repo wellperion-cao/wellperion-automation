@@ -1855,8 +1855,16 @@
     }
     // 텔레그램 단일방(콤보 표기 아님)인데 telegram_rooms.json(SSOT)에 그 방이 없으면 실제 chat_id를 못 구한다.
     // troom이 null(그 파일 fetch 자체가 실패)이면 이 판정은 건너뛴다 — 내 요청 실패를 남의 방 삭제로 오판하지 않는다.
-    if(item.channel === 'telegram' && !item.chat_id && !/[\/·]/.test(item.room || '') && troom && troom[roomKey(item.room)] == null){
-      return { sev:'dead', label:'⚫ 죽은배선(방 미등록)' };
+    // ★2026-08-01(시토 · 배202) '목록에 없음'과 '방 번호를 여기서 모름'을 갈랐다.
+    //   핵심멤버방·CFO 채널은 구글 스크립트가 직접 쏘는 방이라 chat_id 가 그쪽 속성에만 있다 —
+    //   실제로 잘 나가는데 ⚫죽은배선으로 떴다. 목록에 아예 없을 때만 죽은배선이다.
+    if(item.channel === 'telegram' && !item.chat_id && !/[\/·]/.test(item.room || '') && troom){
+      var _rk = roomKey(item.room);
+      var _known = Object.keys(troom).some(function(k){ return k.charAt(0) !== '_' && roomKey(k) === _rk; });
+      if(!_known) return { sev:'dead', label:'⚫ 죽은배선(방 미등록)' };
+      if(troom[_rk] == null && troom[item.room] == null){
+        return { sev:'warn', label:'🟡 조건부(방 번호는 구글 스크립트에)' };
+      }
     }
     if(item.freq === 'conditional' || item.freq === 'event'){
       return { sev:'warn', label:'🟡 조건부' };
@@ -1934,8 +1942,10 @@
       var purpose = roomPurpose(key) || (list[0] ? list[0].item.what : '자동 발신 없음 — 사람이 필요할 때만 쓰는 방');
       // 사람이 보는 이름(display)을 앞에, 코드가 쓰는 내부 키가 다르면 뒤에 작게.
       // 예: 방 이름은 'AI 진행현황'인데 저장소 134곳이 '자동화현황방' 키를 쓴다(GM 확정 2026-07-28 — 키는 안 바꾼다).
+      //   ※ 공백만 다른 경우('★ 운영부' vs 키 '★운영부')는 같은 이름이라 안 붙인다.
+      var _same = roomDisplay(key).replace(/\s+/g, '') === key.replace(/\s+/g, '');
       var shownName = esc(roomDisplay(key))
-        + (roomDisplay(key) !== key ? ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(내부 이름 ' + esc(key) + ')</span>' : '');
+        + (_same ? '' : ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(내부 이름 ' + esc(key) + ')</span>');
       var body = list.length
         ? '<div class="coo-tbl-wrap"><table>' +
             '<tr><th>보내는 것</th><th style="width:64px">주기</th><th style="width:120px">발신 시각</th><th style="width:150px">상태</th></tr>' +
