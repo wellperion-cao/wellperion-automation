@@ -136,6 +136,19 @@
   .r-note-fold summary::before{content:'▸ '; }
   .r-note-fold[open] summary::before{content:'▾ '; }
   .r-note-fold .r-note{margin-top:6px; padding-left:10px; border-left:2px solid var(--border);}
+  /* 👑🤝 회장님 지시사항 + 브로제이 업무분장 — 요약 토글 2개 나란히(GM 지시 2026-08-01: "핵심과제 상세
+     윗칸에 2개 배치"). r-note-fold(위)를 그대로 재사용 — 새 접힘 컴포넌트 만들지 않음. 박스 톤만
+     .broj-entry(아래)에서 차용. 인쇄는 화면 전용(아래 @media print에서 숨김 — 페이지 수 불변). */
+  .toggle-row-2{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;}
+  .toggle-row-2 .tg-card{flex:1 1 320px; min-width:260px; margin-top:0; border:1px solid var(--border-strong); background:var(--paper); border-radius:12px; padding:10px 16px;}
+  .toggle-row-2 .tg-card summary{font-size:13px; font-weight:800; color:var(--text); list-style:none;}
+  .toggle-row-2 .tg-card summary::-webkit-details-marker{display:none;}
+  .toggle-row-2 .tg-card .r-note{margin-top:8px; padding-left:0; border-left:none; font-size:12.5px; line-height:1.6;}
+  .toggle-row-2 .tg-line{display:flex; justify-content:space-between; gap:8px; padding:3px 0; border-bottom:1px dashed var(--border);}
+  .toggle-row-2 .tg-line:last-of-type{border-bottom:none;}
+  .toggle-row-2 .tg-link{display:inline-block; margin-top:6px; color:var(--accent-soft); font-weight:700; text-decoration:none; font-size:12px;}
+  .toggle-row-2 .tg-link:hover{text-decoration:underline;}
+  @media print{ .toggle-row-2{display:none !important;} }
 
   .chip{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap;}
   .chip.own{color:var(--accent-soft); background:var(--surface); border:1px solid var(--border-strong);}
@@ -1075,24 +1088,31 @@
       <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
     </section>
 
+    <!-- 👑🤝 회장님 지시사항 + 브로제이 업무분장 — 요약 토글 2개, 핵심 과제 상세 바로 위(GM 직접 지시
+         2026-08-01: "회장님것도 따로 토글 하나 분리, 핵심과제 상세 윗칸에 2개 배치"). 옛 브로제이 한 줄
+         요약(broj-entry, 舊 위치=이 상세표 바로 아래·2026-07-29 분리)을 이 자리 토글로 승격 이관 — 새
+         컴포넌트 0(위 r-note-fold 재사용), 새 데이터소스 0(둘 다 기존 CHECK_GAS 공용보드 그대로: 회장님=
+         coo/chairman/회장님_지시사항.html·CHAIRMAN_DIRECTIVES_2026_08, 브로제이=coo/brojay/브로제이_업무
+         분장.html과 동일 BROJ_TASK_BOARD). 접었을 때도 summary 안 배지로 건수가 보인다(hold-resurface와
+         동일 패턴). 인쇄는 화면 전용(.toggle-row-2 @media print 숨김) — A3 페이지 수 불변. -->
+    <section class="blk" data-blkid="exec-toggles">
+      <div class="toggle-row-2">
+        <details class="r-note-fold tg-card" id="chairman-fold">
+          <summary>👑 회장님 지시사항 <span class="be-badge" id="chairman-badge">불러오는 중…</span></summary>
+          <div class="r-note" id="chairman-body">불러오는 중…</div>
+        </details>
+        <details class="r-note-fold tg-card" id="broj-fold">
+          <summary>🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> <span class="be-badge be-p1" id="broj-fold-p1"></span></summary>
+          <div class="r-note" id="broj-fold-body">불러오는 중…</div>
+        </details>
+      </div>
+    </section>
+
     <!-- 📋 이달 핵심 과제 상세 (신규/이월 상세표 + 콤팩트 요약 · 舊 sum-hero — 상단 top3 아래 상세) -->
     <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
       <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-half" title="일부 목표는 실무 SSOT·채용공고·연동 배 상태에서 자동 연동(🔄 자동 배지 병기·배9678), 나머지는 수동 관리 — 사람 진척은 시우 검수로 보정">🟠 반반</span> <span class="stag">요약 + 신규·이월 상세 · 🔄 자동연동 병기</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
-    </section>
-
-    <!-- 🤝 브로제이 업무분장 — 진입 한 줄(2026-07-29 오후 GM 지적으로 별도 페이지 분리). 본문은
-         coo/brojay/브로제이_업무분장.html. 07-29 13:23 카카오톡 ★운영부 방에 이미 이 페이지 링크로
-         공지가 나가 있어(웰리) 자리를 통째로 지우지 않고 진입줄만 남긴다. 저장 GAS·key(BROJ_TASK_BOARD)는
-         그대로 재사용 — 기존 체크값 보존. -->
-    <section class="blk" data-blkid="broj">
-      <div class="broj-entry" id="broj-entry">
-        <b>🤝 브로제이 시스템 업무분장</b>
-        <span class="be-badge" id="broj-entry-progress">불러오는 중…</span>
-        <span class="be-badge be-p1" id="broj-entry-p1"></span>
-        <a class="be-link" href="coo/brojay/브로제이_업무분장.html" target="_blank">담당별 체크리스트 열기 →</a>
-      </div>
     </section>
 
     <!-- ⏰ 보류 재부상 — 핵심과제·전략로드맵에 필요한 결재사항을 일단 보류로 넣어둔 뒤 조용히
@@ -3409,8 +3429,11 @@
       if(_data) renderSummaryStrip();
     });
 
-    // 8) 🤝 브로제이 업무분장 — 진입 한 줄 진척 요약만 로드(본문은 별도 페이지). (배214·2026-07-29 → 오후 분리)
+    // 8) 🤝 브로제이 업무분장 — 진입 토글 요약만 로드(본문은 별도 페이지). (배214·2026-07-29 → 오후 분리 → 08-01 토글 승격)
     loadBrojEntry();
+
+    // 8-1) 👑 회장님 지시사항 — 진입 토글 요약만 로드(본문은 별도 페이지, coo/chairman/회장님_지시사항.html). (GM 지시 2026-08-01)
+    loadChairmanFold();
 
     // 9) ⏰ 보류 재부상 — 접힌 상태에서도 건수 배지 표시(GM 지시 2026-07-29 "보류 재부상도 토글로").
     watchHoldResurfaceBadge();
@@ -3463,9 +3486,11 @@
   var BROJ_DEPT_TOTAL = 36;     // cfo 6 + coo 14 + cpo 3 + 이경연실장 5 + rec 8 (2026-07-29 GM 담당변경: 상품등록 5건 임정은M→이경연실장 · 총계는 불변)
   var BROJ_P1_IDS = ['broj-p1-1','broj-p1-2','broj-p1-3','broj-p1-4'];
   function loadBrojEntry(){
-    var pEl = document.getElementById('broj-entry-progress');
-    var p1El = document.getElementById('broj-entry-p1');
-    if(!pEl || !p1El) return;
+    var pEl = document.getElementById('broj-fold-badge');
+    var p1El = document.getElementById('broj-fold-p1');
+    var bodyEl = document.getElementById('broj-fold-body');
+    if(!pEl) return;
+    var link = '<a class="tg-link" href="coo/brojay/브로제이_업무분장.html" target="_blank">담당별 체크리스트 열기 →</a>';
     fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(BROJ_STORAGE_KEY), {method:'GET', redirect:'follow'})
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -3474,9 +3499,49 @@
         for(var k in board){ if(board[k] && k.indexOf('broj-p') !== 0) done++; }
         var p1Open = BROJ_P1_IDS.filter(function(id){ return !board[id]; }).length;
         pEl.textContent = done + '/' + BROJ_DEPT_TOTAL + ' 체크';
-        p1El.textContent = 'P1 회신대기 ' + p1Open + '/4';
+        if(p1El) p1El.textContent = p1Open ? ('P1 회신대기 ' + p1Open + '/4') : '';
+        if(bodyEl) bodyEl.innerHTML =
+          '<div class="tg-line"><span>담당별 체크</span><span>' + done + '/' + BROJ_DEPT_TOTAL + '</span></div>' +
+          '<div class="tg-line"><span>P1 회신대기</span><span>' + p1Open + '/4</span></div>' + link;
       })
-      .catch(function(){ pEl.textContent = '진척 불러오기 실패'; p1El.textContent = ''; });
+      .catch(function(){
+        pEl.textContent = '불러오지 못함'; if(p1El) p1El.textContent = '';
+        if(bodyEl) bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>' + link;
+      });
+  }
+  // 👑 회장님 지시사항 — coo/chairman/회장님_지시사항.html 과 동일 CHECK_GAS 공용보드(BOARD_KEY) 재사용,
+  // 새 GAS·새 저장소 없음(약속 L21). 항목 제목·기한은 그 페이지 고정 본문을 그대로 미러(사본 아님·정본은
+  // 그 페이지) — 보드 응답에는 상태값만 있고 제목은 없어 여기서도 나열해 둬야 요약을 만들 수 있다.
+  var CHAIRMAN_BOARD_KEY = 'CHAIRMAN_DIRECTIVES_2026_08';
+  var CHAIRMAN_ITEMS = [
+    {id:'d1', title:'파우더룸 소독기 증설', when:'8월 1주 완료'},
+    {id:'d2', title:'사우나 입구 정비', when:'8월 2~3주'},
+    {id:'d3', title:'파우더룸 헤어드라이기 교체 검토', when:'8월 중 보고'},
+    {id:'d4', title:'회원 감소 원인 분석', when:'8월 착수 · 9월 보고'}
+  ];
+  function loadChairmanFold(){
+    var badge = document.getElementById('chairman-badge');
+    var bodyEl = document.getElementById('chairman-body');
+    if(!badge || !bodyEl) return;
+    var link = '<a class="tg-link" href="coo/chairman/회장님_지시사항.html" target="_blank">자세히 보기 →</a>';
+    fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(CHAIRMAN_BOARD_KEY), {method:'GET', redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var board = (data && data.ok && data.board && typeof data.board === 'object') ? data.board : {};
+        var done = 0;
+        var lines = CHAIRMAN_ITEMS.map(function(it){
+          var st = (board[it.id] && board[it.id].status) || '착수';
+          if(st === '완료') done++;
+          var cls = st === '완료' ? '완료' : (st === '진행' ? '진행' : '계획');
+          return '<div class="tg-line"><span>' + esc(it.title) + ' <span style="color:var(--dim);font-size:11px;">· ' + esc(it.when) + '</span></span><span class="obadge ' + cls + '">' + esc(st) + '</span></div>';
+        }).join('');
+        badge.textContent = done + '/' + CHAIRMAN_ITEMS.length + ' 완료';
+        bodyEl.innerHTML = lines + link;
+      })
+      .catch(function(){
+        badge.textContent = '불러오지 못함';
+        bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>' + link;
+      });
   }
   /* ── (구) 전체 체크보드 렌더 로직은 여기 있었다 — coo/brojay/브로제이_업무분장.html 로 그대로 이관(사본 아님, 본문 삭제). ── */
 
