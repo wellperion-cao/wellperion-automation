@@ -253,7 +253,10 @@ def _sales_rows(home: dict | None, plan: dict | None, mkey: str) -> list[tuple[s
 
     # 남은 달에 월 얼마씩 필요한가 — '부족분을 어디서 메우나'가 한 줄로 보이게.
     if isinstance(year, (int, float)) and isinstance(year_target, (int, float)) and isinstance(cur, int):
-        left_months = 12 - cur
+        # year(연 누계)가 이번 달분을 아직 안 반영했으면(hasCurMonth False) 이번 달을
+        # 남은 달에 포함해야 분자·분모가 짝이 맞는다. 그냥 12-cur 로 되돌리지 말 것 —
+        # 8월 1일 GM 지적: 7월까지만 합산된 분자에서 8월을 남은 달에서도 빼면 이중차감.
+        left_months = 12 - cur + (0 if d.get("hasCurMonth") else 1)
         if left_months > 0 and year_target > year:
             need = (year_target - year) / left_months / 100000000
             rows.append((f"남은 {left_months}개월", None, f"월 {need:.2f}억씩 필요"))
