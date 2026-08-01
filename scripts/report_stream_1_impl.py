@@ -30,6 +30,7 @@ requests.post 로 직접 sendMessage(parse_mode="HTML") 한다.
 from __future__ import annotations
 
 import html
+import json
 import re
 import sys
 import unicodedata
@@ -39,6 +40,7 @@ from pathlib import Path
 import requests
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
@@ -277,6 +279,125 @@ def _special_notes(
     return " · ".join(notes) if notes else "없음"
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 부서(팀) 톡방 처리완료 통보(2026-08-01 GM 지시) — 종합접수처와 같은 원칙: 개인 회신이
+# 아니라 팀 방으로. "배정·등록이 진행되면 그 팀 방에 한 줄." 새 발신경로 없음(약속 L21) —
+# report_stream_1_inquiry.py 가 이 build_digest() 결과를 문의알림방(텔레그램)+★부서장
+# (카카오, kakao-depthead-inquiry)에 그대로 보내는 기존 배선에 얹는다. 킬스위치·멱등커서
+# = status/dept_completion_notify.json(종합접수처와 동일 파일 공용 — 새 레지스트리 안 만듦).
+# 문의행에는 고유 id가 없어(_id 칸 미제공, tests/test_report_stream_1_impl.py 확인) 키를
+# kind|name|timestamp 로 합성한다(한 사람이 같은 시각에 같은 유형으로 두 번 접수하는 사례는
+# 실질적으로 없음). 완료시각 칸도 없어 "직전 실행 이후 새로 배정/등록된 것"만 커서로 가른다.
+# ══════════════════════════════════════════════════════════════════════════
+COMPLETION_STATE_PATH = REPO_ROOT / "status" / "dept_completion_notify.json"
+_COMPLETION_CAP = 6
+
+
+def _load_completion_state() -> dict:
+    try:
+        if COMPLETION_STATE_PATH.exists():
+            return json.loads(COMPLETION_STATE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {"enabled": False, "reception_seen_done_ids": [], "inquiry_seen_keys": []}
+
+
+def _save_completion_state(state: dict) -> None:
+    try:
+        COMPLETION_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        COMPLETION_STATE_PATH.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def _row_key(kind: str, row: dict) -> str:
+    name = str(row.get("name") or "").strip()
+    ts = str(row.get("timestamp") or "").strip()
+    return f"{kind}|{name}|{ts}"
+
+
+def _completion_block(raw_groups: dict[str, list[dict]], state: dict | None = None,
+                       persist: bool = True) -> str:
+    """새로 배정되거나 등록판정된 문의를 팀별로 묶어 알림 블록으로 렌더."""
+    state = state if state is not None else _load_completion_state()
+    if not state.get("enabled"):
+        return ""
+    seen = set(state.get("inquiry_seen_keys") or [])
+    all_true_keys: set[str] = set()
+    assigned_now: list[tuple[str, dict, str]] = []
+    registered_now: list[tuple[str, dict, str]] = []
+
+    for kind, rows in raw_groups.items():
+        is_lesson = kind != "membership"
+        field = _field_for(kind)
+        for r in rows:
+            if _is_test_row(r):
+                continue
+            key = _row_key(kind, r)
+            owner = str(r.get("owner", "") or "").strip()
+            team = _team_for(kind, str(r.get(field, "") or ""))
+            if owner and owner not in _AUTO_OWNER_VALUES:
+                akey = "A:" + key
+                all_true_keys.add(akey)
+                if akey not in seen:
+                    assigned_now.append((team, r, owner))
+            if _is_registered(r, is_lesson):
+                rkey = "R:" + key
+                all_true_keys.add(rkey)
+                if rkey not in seen:
+                    registered_now.append((team, r, owner))
+
+    if persist:
+        state["inquiry_seen_keys"] = sorted(seen | all_true_keys)
+        _save_completion_state(state)
+
+    events = [("배정", team, r, who) for team, r, who in assigned_now]
+    events += [("등록", team, r, who) for team, r, who in registered_now]
+    if not events:
+        return ""
+
+    def _fmt(label: str, team: str, r: dict, who: str) -> str:
+        name = str(r.get("name") or "-").strip() or "-"
+        return f"✅ 문의 {label} — {name}({team}) · 담당 {who or '-'}"
+
+    shown = events[:_COMPLETION_CAP]
+    lines = [f"━━━━━━━━━━\n✅ 처리 완료 알림 {len(events)}건"]
+    lines += [_fmt(*e) for e in shown]
+    if len(events) > _COMPLETION_CAP:
+        lines.append(f"  …외 {len(events) - _COMPLETION_CAP}건 더")
+    return "\n".join(lines)
+
+
+def seed_completion_cursor() -> int:
+    """처리완료 통보를 켜기(enabled:true) 직전 1회 실행 — 지금 이미 배정/등록된 건 전부를
+    커서에 채워, 켜는 첫 회차에 오래된 배정·등록건이 한꺼번에 '신규 완료'로 통보되는 것을
+    막는다. enabled 값 자체는 건드리지 않는다."""
+    mem_raw = _fetch_list("member_inquiry_list")
+    adult_raw = _fetch_list("lesson_inquiry_list", type="성인강습")
+    youth_raw = _fetch_list("lesson_inquiry_list", type="유소년강습")
+    raw_groups = {"membership": mem_raw, "adult": adult_raw, "youth": youth_raw}
+
+    all_true_keys: set[str] = set()
+    for kind, rows in raw_groups.items():
+        is_lesson = kind != "membership"
+        for r in rows:
+            if _is_test_row(r):
+                continue
+            key = _row_key(kind, r)
+            owner = str(r.get("owner", "") or "").strip()
+            if owner and owner not in _AUTO_OWNER_VALUES:
+                all_true_keys.add("A:" + key)
+            if _is_registered(r, is_lesson):
+                all_true_keys.add("R:" + key)
+
+    state = _load_completion_state()
+    state["inquiry_seen_keys"] = sorted(all_true_keys)
+    _save_completion_state(state)
+    return len(all_true_keys)
+
+
 def build_digest(today: str | None = None, sample: bool = False, sample_n: int = 15) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
@@ -422,9 +543,11 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         )
     section_contact = f"{contact_head}\n{contact_body}"
 
+    completion = "" if sample else _completion_block(raw_groups)
+    tail = f"\n\n{completion}" if completion else ""
     return (
         f"{_northstar_prefix()}{header}\n\n{section_new}\n\n"
-        f"━━━━━━━━━━\n{section_contact}"
+        f"━━━━━━━━━━\n{section_contact}{tail}"
     )
 
 

@@ -25,7 +25,7 @@ REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from report_stream_1_impl import build_digest  # noqa: E402
+from report_stream_1_impl import build_digest, seed_completion_cursor  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
 
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_INQUIRY_CHAT_ID") or -5516675010)  # 문의알림방
@@ -90,7 +90,13 @@ if __name__ == "__main__":
     p.add_argument("--live", action="store_true", help="실발송 (기본=dry_run)")
     p.add_argument("--kakao-go", action="store_true", help="카카오 실발송 (GM go 게이트)")
     p.add_argument("--today", default=None, help="날짜 YYYY-MM-DD (기본=오늘)")
+    p.add_argument("--seed-completion", action="store_true",
+                    help="처리완료 통보 커서 시딩(enabled:true 켜기 직전 1회 — 백로그 통보 방지)")
     a = p.parse_args()
+    if a.seed_completion:
+        n = seed_completion_cursor()
+        print(f"[stream1] 완료 커서 시딩 완료 — 현재 배정·등록 {n}건을 '이미 통보됨'으로 표시")
+        sys.exit(0)
     result = run(today=a.today, dry_run=not a.live, kakao_go=a.kakao_go)
     print("\n=== 렌더 ===")
     print(result)

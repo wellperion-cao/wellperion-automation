@@ -27,6 +27,7 @@ GM 2026-07-22 지시: 배9424(2026-07-21)의 '종합접수 현황 → 점검현�
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 from datetime import datetime
@@ -196,6 +197,79 @@ def _score_block() -> str:
     return "\n".join(lines)
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 부서 톡방 처리완료 통보(2026-08-01 GM 지시) — 개인 회신이 아니라 부서 단위로.
+# GM: "접수한 사람으로 하는것보단, 톡방(부서 단위)으로 하는게 좋을 것 같아" — 접수자가
+# 익명 회원인 접수도 많아 개인 회신 자체가 불가능하고, 처리도 팀 단위로 움직인다.
+# 새 방·새 발신 경로를 만들지 않는다(약속 L21) — 이 다이제스트 본문에 블록 하나만 얹어
+# 기존 배선(텔레그램 종합접수처방 + kakao-ops-stream2가 재사용하는 ★운영+시설+지원+주차
+# 카톡방)을 그대로 탄다. 킬스위치=status/dept_completion_notify.json{"enabled":false}
+# (기본 꺼짐 — GM go 전 실무진·부서 방 노출 금지). 완료건에 처리시각 칸이 없어(시트에
+# completedAt 없음) "며칠 전 완료"를 못 구하는 대신, 직전 발신 이후 새로 status='완료'가
+# 된 건만 골라 부서별로 묶는다(멱등 커서=reception_seen_done_ids, 매 실행 갱신) — 그래서
+# 한 번에 최대 _COMPLETION_CAP건만 보이고 나머지는 "…외 N건"으로 접는다(폭주 방지).
+# ══════════════════════════════════════════════════════════════════════════
+COMPLETION_STATE_PATH = REPO_ROOT / "status" / "dept_completion_notify.json"
+_COMPLETION_CAP = 6  # 한 회차 최대 노출 건수(10줄 예산 안)
+
+
+def _load_completion_state() -> dict:
+    try:
+        if COMPLETION_STATE_PATH.exists():
+            return json.loads(COMPLETION_STATE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {"enabled": False, "reception_seen_done_ids": [], "inquiry_seen_keys": []}
+
+
+def _save_completion_state(state: dict) -> None:
+    try:
+        COMPLETION_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        COMPLETION_STATE_PATH.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def _completion_block(rows: list[dict], state: dict | None = None, persist: bool = True) -> str:
+    """새로 완료된 종합접수 건을 부서별로 묶어 알림 블록으로 렌더. state 미지정 시 파일에서
+    읽는다. persist=False면 커서를 갱신하지 않는다(검증·시뮬레이션에서 반복 실행해도 같은
+    결과가 나와야 하므로 — 실제 22:30 다이제스트 발신 시에만 persist=True로 커서를 전진)."""
+    state = state if state is not None else _load_completion_state()
+    if not state.get("enabled"):
+        return ""
+    seen = set(state.get("reception_seen_done_ids") or [])
+    done_now = [r for r in rows if str(r.get("status", "")) == "완료" and str(r.get("regId") or "")]
+    new_done = [r for r in done_now if str(r["regId"]) not in seen]
+    if persist:
+        state["reception_seen_done_ids"] = sorted({str(r["regId"]) for r in done_now})
+        _save_completion_state(state)
+    if not new_done:
+        return ""
+
+    remain_by_dept: dict[str, int] = {}
+    for r in rows:
+        if str(r.get("status", "")) != "완료":
+            dept = str(r.get("dept") or "기타").strip() or "기타"
+            remain_by_dept[dept] = remain_by_dept.get(dept, 0) + 1
+
+    def _fmt(r: dict) -> str:
+        dept = str(r.get("dept") or "기타").strip() or "기타"
+        cat = str(r.get("category") or "").strip()
+        content = " ".join(str(r.get("content") or "").split())[:24]
+        who = str(r.get("handler") or r.get("assignee") or "").strip() or "담당"
+        remain = remain_by_dept.get(dept, 0)
+        return f"✅ [{dept}] {cat} {content} · 처리 {who} · 남은 미처리 {remain}건"
+
+    shown = new_done[:_COMPLETION_CAP]
+    lines = [f"{_DIVIDER}\n✅ 처리 완료 알림 {len(new_done)}건"]
+    lines += [_fmt(r) for r in shown]
+    if len(new_done) > _COMPLETION_CAP:
+        lines.append(f"  …외 {len(new_done) - _COMPLETION_CAP}건 더")
+    return "\n".join(lines)
+
+
 def build_digest(today: str | None = None) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
@@ -216,7 +290,24 @@ def build_digest(today: str | None = None) -> str:
         parts.append(score.lstrip("\n").removeprefix(_DIVIDER).strip())
     parts.append(f"{_DIVIDER}\n{_today_section(rows, today)}")
     parts.append(f"{_DIVIDER}\n{_aging_block(rows)}")
+    completion = _completion_block(rows)
+    if completion:
+        parts.append(completion)
     return "\n\n".join(parts)
+
+
+def seed_completion_cursor() -> int:
+    """처리완료 통보를 켜기(enabled:true) 직전 1회 실행 — 지금 이미 '완료'인 건 전부를
+    커서에 채워 넣어, 켜는 첫 회차에 오래된 완료건(현재 실측 43건)이 한꺼번에 '신규
+    완료'로 통보되는 것을 막는다(활성화 당일 백로그 통보 방지 — 진짜 새 완료건만
+    그 다음부터 나간다). enabled 값 자체는 건드리지 않는다(그건 GM go 별도 승인)."""
+    rows = _fetch_rows() or []
+    state = _load_completion_state()
+    done_ids = {str(r["regId"]) for r in rows
+                if str(r.get("status", "")) == "완료" and str(r.get("regId") or "")}
+    state["reception_seen_done_ids"] = sorted(done_ids)
+    _save_completion_state(state)
+    return len(done_ids)
 
 
 def run(today: str | None = None, dry_run: bool = True) -> str:
@@ -240,7 +331,13 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description="스트림 #2b 종합접수 현황+미처리 적체 리마인드 보고")
     p.add_argument("--live", action="store_true", help="실발송")
     p.add_argument("--today", default=None, help="날짜 YYYY-MM-DD (기본=오늘)")
+    p.add_argument("--seed-completion", action="store_true",
+                    help="처리완료 통보 커서 시딩(enabled:true 켜기 직전 1회 — 백로그 통보 방지)")
     a = p.parse_args()
+    if a.seed_completion:
+        n = seed_completion_cursor()
+        print(f"[stream2b] 완료 커서 시딩 완료 — 현재 완료 {n}건을 '이미 통보됨'으로 표시")
+        sys.exit(0)
     result = run(today=a.today, dry_run=not a.live)
     print("\n=== 렌더 ===")
     print(result)
