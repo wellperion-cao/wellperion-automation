@@ -284,7 +284,7 @@
       "trigger": "schtasks",
       "state": "live",
       "state_note": "2026-07-30 정정 — room을 GM_DM에서 자동화현황방으로 정정(문서만, 배선 무변경). 실제로는 배10011(2026-07-24 GM 승인)로 직접발송(send_telegram) 대신 weekly_bundle_pending 에 적재만 하고, 10:30 win-weekly-sun1030-selfreview 카드에 흡수돼 그쪽 resolve_room()이 나가는 자동화현황방으로 이미 가고 있었다 — 문서만 옛 GM_DM 그대로 남아 있었다.",
-      "source": "Wellperion-Education-Archive-Weekly · scripts/education_archive_weekly.py → weekly_bundle_pending → Wellperion-Weekly-Self-Review-Sunday(10:30)에서 발신"
+      "source": "Wellperion-AI-Education-Weekly · scripts/education_archive_weekly.py → weekly_bundle_pending → Wellperion-Weekly-Self-Review-Sunday(10:30)에서 발신"
     },
     {
       "id": "win-weekly-sun0900-module",
@@ -297,8 +297,8 @@
       "what": "모듈 주간 보고",
       "owner": "시토",
       "trigger": "schtasks",
-      "state": "live",
-      "state_note": "2026-07-30 정정 — 문서는 '일요일'로 적혀 있었으나 실제 Wellperion-Module-Report-Weekly 예약작업 트리거는 월요일(days_of_week=Monday, schtasks 실측·최근실행 07-27). 예약작업은 안 바꾸고(실제로 도는 쪽이 진실) 문서만 실제에 맞춤(배202 ⓿).",
+      "state": "dead",
+      "state_note": "2026-08-02 시토 — 예약작업 Wellperion-Module-Report-Weekly 가 실재하지 않음(Get-ScheduledTask 실측). 주간 모듈 보고 기능은 Wellperion-Module-Report-Daily(win-0910-module-daily)가 흡수해 가동 중. 이 등록부 항목이 live 로 남아 있어 매일 MISSING_IN_REALITY 경보 발생(경보 피로 원인) → dead 로 변경.",
       "source": "Wellperion-Module-Report-Weekly"
     },
     {
@@ -387,8 +387,8 @@
       "what": "모듈 월간 보고",
       "owner": "시토",
       "trigger": "schtasks",
-      "state": "live",
-      "state_note": "",
+      "state": "dead",
+      "state_note": "2026-08-02 시토 — 예약작업 Wellperion-Module-Report-Monthly 가 실재하지 않음(Get-ScheduledTask 실측). 실재 월간 보고는 Wellperion-Module-Report-Daily(win-0910-module-daily)가 --cadence monthly 로 처리. 이 항목이 live 로 남아 매일 MISSING_IN_REALITY 경보 발생 → dead 로 변경.",
       "source": "Wellperion-Module-Report-Monthly"
     },
     {

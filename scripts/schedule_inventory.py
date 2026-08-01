@@ -570,14 +570,12 @@ _NOTIFY_REGISTRY_MAP = {
     "win-1300-healthcheck": "Wellperion-Telegram-HealthCheck-1300",
     "win-2100-cmo-daily": "Wellperion-CMO-Daily-Marketing-2100",
     "win-weekly-mon0900-marketing": "Wellperion-CMO-Weekly-Marketing-Feedback",
-    "win-weekly-sun0900-education": "Wellperion-Education-Archive-Weekly",
-    "win-weekly-sun0900-module": "Wellperion-Module-Report-Weekly",
+    "win-weekly-sun0900-education": "Wellperion-AI-Education-Weekly",
     "win-weekly-sun1030-selfreview": "Wellperion-Weekly-Self-Review-Sunday",
     "win-monthly-1st0900-marketing": "Wellperion-CMO-Monthly-Report",
     "win-monthly-1st0900-checksummary": "Wellperion-MonthlyCheckReport-0900-D1",
     "win-monthly-1st0900-opsplan": "Wellperion-MonthlyOps-Start-0900",
     "win-monthly-lastday2100-opsclose": "Wellperion-MonthlyOps-End-2100",
-    "win-monthly-module": "Wellperion-Module-Report-Monthly",
     "win-monthly-4thmon1000-memberexpiry": "Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000",
 }
 
