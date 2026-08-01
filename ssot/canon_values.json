@@ -243,6 +243,24 @@
         ".omc/**"
       ],
       "note": "GM 결재 2026-06-20 확정(연 매출 목표), 정본 재확인 2026-08-01. 월 목표(status/sales_targets.json monthly_target_total=6.105억, GM 결재 2026-07-03)를 12개월 환산하면 73.26억으로 연 72억보다 1.26억 높다 — 연 72억이 정본이고 월 목표는 상반기 부족분을 하반기에 채우려 배분한 팀별 목표라 여유분이 있는 구조로 읽는다(월 목표 파일 자체는 이번 등록에서 변경하지 않음)"
+    },
+    {
+      "key": "sales_includes_parking",
+      "이름": "주차 매출의 매출 마감값 포함 여부",
+      "value": "웰페리온 매출 마감값에는 주차 매출을 포함한다",
+      "source": ".deploy-todo/업무&결재 현황.js:1438 (GM 결재 2026-07-31) → status/parking_revenue_monthly.json(월별 이력, 확정본) + status/parking_revenue.json(당월 실시간)",
+      "allow_globs": [
+        "ssot/**",
+        ".deploy-todo/**",
+        "status/parking_revenue.json",
+        "status/parking_revenue_monthly.json",
+        "scripts/parking_revenue_crawler.py",
+        "3. 웰페리온 가이드/**",
+        "status/briefs/**",
+        "tmp/**",
+        ".omc/**"
+      ],
+      "note": "GM 결재 2026-07-31(당월 매출에 포함) · 재확인 2026-08-01(GM: '정합 및 더이상 안묻게 해줘'). 두 번 물으신 이유: 07-31 결정이 당월(month) 계산에만 반영되고 연 누계(year)·월별 마감값 배열(sales_monthly)엔 안 들어가 화면마다 값이 갈렸다(parking_revenue.json은 월 단위 스냅샷만 있고 과거 이력이 없어 연 누계를 만들 근거가 없었음). 2026-08-01 해소: status/parking_revenue_monthly.json 월별 이력(2026-01~07 백필) 신설로 연 누계 원천 확보. 적용 범위 = 당월 매출·월별 마감값·연 누계·달성률·카톡 북극성 보고 전부. 부수 발견(2026-08-01): 매달 말일 아침에 크롤링하면 그 달 마지막날 매출이 아직 안 쌓여 통째로 빠지는 구조적 문제 확인(07월 실측 3,213,000→완전마감 3,334,500, 차이 121,500=07-31 하루치) — parking_revenue_crawler.py에 매월 1~3일 지난달 재수집·확정(확정:true) 로직 추가로 재발방지(새 스크립트·예약 신설 없이 기존 일일 크롤러 안에서 처리)."
     }
   ]
 }

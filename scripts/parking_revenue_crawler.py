@@ -39,6 +39,7 @@ KST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 STATUS_DIR = ROOT / "status"
 OUT = STATUS_DIR / "parking_revenue.json"
+MONTHLY = STATUS_DIR / "parking_revenue_monthly.json"  # 월별 이력(2026-08-01) — 확정 전까지 append/갱신
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 DEFAULTS = {
@@ -181,6 +182,33 @@ def collect(month_str=None):
     return out
 
 
+def _finalize_prev_month():
+    """매월 1~3일(KST)에 지난달을 한 번 더 수집해 월별 이력을 '확정'으로 갱신한다.
+    말일 아침에 크롤링하면 그 달 마지막날 매출이 아직 안 쌓여 통째로 빠지는 문제(2026-08-01 실측:
+    07월 3,213,000→완전마감 3,334,500) 재발방지. 이미 확정된 달은 다시 건드리지 않는다(append 방향 고정)."""
+    now = _now_kst()
+    if now.day > 3:
+        return
+    y, m = (now.year, now.month - 1) if now.month > 1 else (now.year - 1, 12)
+    prev = f"{y:04d}-{m:02d}"
+    try:
+        doc = json.loads(MONTHLY.read_text(encoding="utf-8")) if MONTHLY.exists() else {
+            "_doc": "주차 매출 월별 이력(누적). 확정=false→true 방향의 갱신만 허용.",
+            "월별": {},
+        }
+        if doc["월별"].get(prev, {}).get("확정"):
+            return  # 이미 확정 — 재수집 불필요
+        data = collect(prev)
+        if data["status"] != "정상":
+            return  # 실패한 달은 그대로 두고 다음 회차에 재시도(값 지어내지 않음)
+        doc["월별"][prev] = {
+            "매출금액": data["매출금액"], "결제건수": data["결제건수"], "월": prev, "확정": True,
+        }
+        MONTHLY.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass  # fail-safe — 이력 갱신 실패가 당월 수집을 막지 않는다
+
+
 def _git_push():
     import subprocess
     try:
@@ -213,6 +241,8 @@ def main():
     STATUS_DIR.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[parking_revenue] {data['status']} — {data['메시지']}")
+    if month is None:  # 지정월 단발 수집(--month)일 땐 이력 확정을 건드리지 않는다 — 정기 자동수집에서만
+        _finalize_prev_month()
     if "--push" in sys.argv:
         _git_push()
 
