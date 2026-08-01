@@ -470,6 +470,7 @@
   .rm-qhead{font-size:11px; font-weight:800; color:var(--text); margin:0 0 7px; display:flex; align-items:center; gap:4px; white-space:nowrap;}
   .rm-quarters .rm-time{flex-direction:column; flex-wrap:nowrap; gap:6px;}
   .rm-quarters .rm-step{min-width:0; flex:0 0 auto; padding:9px 10px 8px; gap:4px;}
+  .rm-quarters .rm-step .rtop{flex-wrap:wrap; row-gap:2px;}
   .rm-quarters .rm-step .rtitle{font-size:11.5px;}
   .rm-quarters .rm-step .rgoal{font-size:9.5px;}
   @media (max-width:640px){ .rm-qhead{font-size:9.5px;} .rm-quarters{gap:4px;} .rm-qgroup{padding-left:4px;} }
@@ -502,7 +503,8 @@
   .t3-own{font-size:10.5px; color:var(--dim); margin-left:auto; white-space:nowrap; text-align:right;}
   .t3-title{font-size:13.5px; font-weight:700; color:var(--text); line-height:1.35;}
   .t3-prog .prog{min-width:0;}
-  .t3-ns{display:flex;}
+  .t3-ns{display:flex; min-width:0;}
+  .t3-ns .chip.ns{white-space:normal; word-break:keep-all; overflow-wrap:break-word;}
   .t3-legend{font-size:10.5px; color:var(--dim); line-height:1.5; margin-top:9px;}
   @media (max-width:720px){ .t3-card{min-width:calc(50% - 5px);} }
 
