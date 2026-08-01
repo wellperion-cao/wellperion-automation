@@ -338,12 +338,41 @@ def mark_bundle_sent(dedup_keys: list[str], *, cadence: str, log_path=REPORT_LOG
         })
 
 
+def _cadences_due_today(today=None) -> list:
+    """오늘 돌려야 할 주기 목록. daily 는 매일, weekly 는 월요일, monthly 는 1일.
+
+    ★2026-08-01(시토 · GM 승인 "예약작업 묶기") — 예전엔 같은 이 스크립트를 주기만 바꿔
+      **예약작업 세 개**로 따로 등록해 뒀다(Daily 09:10 · Weekly 월 09:00 · Monthly 1일 09:10).
+      하는 일이 같은데 등록만 셋이라, 하나가 죽어도 다른 게 도는 것처럼 보여 알아채기 어려웠다.
+      날짜 판단을 여기 한 곳에 두고 예약작업은 하나만 남긴다(약속 L21 — 관문에만).
+      요일·날짜 기준은 원래 예약작업이 잡혀 있던 값 그대로다(월요일·매월 1일).
+    """
+    from datetime import date as _date
+    d = today or _date.today()
+    due = ["daily"]
+    if d.weekday() == 0:      # 월요일
+        due.append("weekly")
+    if d.day == 1:
+        due.append("monthly")
+    return due
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="범용 모듈 자동보고 리포터(공유 SSOT 소비)")
-    ap.add_argument("--cadence", required=True, choices=VALID_CADENCES)
+    ap.add_argument("--cadence", required=True, choices=VALID_CADENCES + ("auto",),
+                    help="auto = 오늘 해당하는 주기를 모두 실행(매일 + 월요일이면 주간 + 1일이면 월간)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--module", default=None)
     args = ap.parse_args(argv)
+
+    if args.cadence == "auto":
+        rc = 0
+        for cad in _cadences_due_today():
+            print(f"=== cadence={cad} ===")
+            rc |= main(["--cadence", cad]
+                       + (["--dry-run"] if args.dry_run else [])
+                       + (["--module", args.module] if args.module else []))
+        return rc
 
     out = run_report(args.cadence, dry_run=args.dry_run, only_module=args.module, heartbeat=True)
 
