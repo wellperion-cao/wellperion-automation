@@ -217,6 +217,18 @@ def _clean_staff_text(text: str) -> str:
     return text.strip(" ·-→")
 
 
+# 접수 시 note 끝에 붙는 정형 안내문 — build_ship 이 새 배를 만들 때 쓰는 문구와 동일 상수.
+# 완료 기록을 안 남기고 배를 닫으면 _last_closing_entry 가 이 문단을 "마지막 문단"으로 폴백해
+# 뽑아오는데, 이건 우리 내부 지시문이라 실무진에게 그대로 보내면 안 된다(웰리 반려 2026-08-01,
+# FB260731-115427 — "▸ 처리 후 staff_feedback_update 로..." 문구가 그대로 GM 화면에 나감).
+_INTAKE_INSTRUCTION_LINE = (
+    "▸ 처리 후 staff_feedback_update 로 시트의 처리상태·처리메모를 채운다"
+    "(대조키=접수ID). 실무진이 본인 화면에서 처리 결과를 확인할 수 있어야 완료다."
+)
+# 실제 완료 내용에서는 절대 안 나올 만큼 특이한 문장이라 이 부분 문자열 하나로 정형 문구를 판별한다.
+_INTAKE_INSTRUCTION_MARK = "실무진이 본인 화면에서 처리 결과를 확인할 수 있어야 완료다"
+
+
 def _last_closing_entry(note: str) -> str:
     """note 안에서 가장 마지막 '완료/확정/검수 통과/종결' 계열 항목의 본문을 뽑는다.
     그런 항목이 하나도 없으면(옛 형식 등) 마지막 문단으로 폴백."""
@@ -234,6 +246,12 @@ def build_staff_reply(ship: dict, today: str) -> str:
     않고, 실제로 뭘 어떻게 고쳤는지(▸ 항목 최대 2개)만 담는다."""
     note = str(ship.get("note") or "")
     block = _last_closing_entry(note)
+    if _INTAKE_INSTRUCTION_MARK in block:
+        # 완료 기록이 없어 접수 안내문(정형 문구)만 뽑힌 경우 — 뜻 모를 내부 지시문을 실무진에게
+        # 보내느니 "메모를 안 남겼다"를 드러내는 게 낫다(웰리 반려 2026-08-01).
+        title = str(ship.get("title") or "").split("—", 1)[-1].strip()
+        base = f"확인해 처리했습니다{('(' + title + ')') if title else ''}."
+        return f"[{today} 처리완료] {base} (담당자가 상세 처리 메모를 남기지 않았습니다.)"
     lines = [ln.strip() for ln in block.split("\n")]
 
     picked = []
@@ -470,8 +488,7 @@ def build_ship(row: dict, queue, today: str) -> dict:
         f" · 작성자 {writer or '(미기재 — 되묻기 불가)'}"
         f"{' · 급한정도 ' + urgency if urgency else ''}\n\n"
         f"{content}\n\n"
-        "▸ 처리 후 staff_feedback_update 로 시트의 처리상태·처리메모를 채운다"
-        "(대조키=접수ID). 실무진이 본인 화면에서 처리 결과를 확인할 수 있어야 완료다."
+        f"{_INTAKE_INSTRUCTION_LINE}"
     )
     return {
         "task_id": f"{clevel.upper()}-{today}-FB-{_slug(fid or first)}",
@@ -498,11 +515,36 @@ def build_ship(row: dict, queue, today: str) -> dict:
     }
 
 
+def _selftest() -> int:
+    """자기검사(웰리 반려 2026-08-01 후속) — 안내문구만 있는 note 는 회신으로 안 나가고,
+    정상 완료 기록이 있으면 그대로 나가는지. 프레임워크 없이 assert 두 개."""
+    boiler_note = (
+        "[실무진 피드백 자동 접수 2026-08-01] 접수ID FB000000-000000 · 접수 x · 작성자 테스트\n\n"
+        "테스트 내용\n\n" + _INTAKE_INSTRUCTION_LINE
+    )
+    out1 = build_staff_reply({"note": boiler_note, "title": "[시포] 테스트"}, "2026-08-01")
+    assert "staff_feedback_update" not in out1, out1
+    assert "메모를 남기지 않았습니다" in out1, out1
+
+    good_note = boiler_note + "\n\n[처리완료 2026-08-01] 버튼 색을 파란색으로 바꿨습니다."
+    out2 = build_staff_reply({"note": good_note, "title": "[시포] 테스트"}, "2026-08-01")
+    assert "버튼 색을 파란색으로 바꿨습니다" in out2, out2
+
+    print("selftest OK")
+    print("  안내문구만 있을 때:", out1)
+    print("  완료 기록 있을 때 :", out2)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="큐에 쓰지 않고 무엇이 올라갈지만 출력")
     ap.add_argument("--no-push", action="store_true", help="큐만 갱신하고 커밋·푸시 생략")
+    ap.add_argument("--selftest", action="store_true", help="build_staff_reply 안내문구 가드 자기검사만 실행")
     args = ap.parse_args()
+
+    if args.selftest:
+        return _selftest()
 
     rows, err = fetch_feedback()
     if rows is None:
