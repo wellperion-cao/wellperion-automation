@@ -446,6 +446,60 @@ def _wait_until_rendered(page, root_sel: str, timeout_ms: int = 95000) -> bool:
     return False
 
 
+def _measure_table_balance(page, root_sel: str) -> list:
+    """표의 칸 폭이 내용에 견줘 균형이 맞는지 잰다.
+
+    ★왜 있나(2026-08-01 GM 지적): "이런 표에 대한 칸까지도 내가 다 짚는 건 아닌 것 같은데."
+      맞다. 그날 GM 이 두 번 짚은 것이 둘 다 칸 폭이었다(상태칸이 좁아 줄이 길어짐 →
+      '보내는 것'만 넓고 상태가 좁음). 사람 눈에는 바로 보이는데 점검기는 글자수만 재고
+      **폭은 아예 안 봤다.** 그래서 매번 GM 이 감지기 노릇을 했다.
+
+    판정: 칸마다 '글자밀도 = 평균 글자수 ÷ 렌더 폭(px)'을 낸다. 한 표 안에서 가장 빽빽한
+      칸이 가장 헐거운 칸보다 _DENSITY_RATIO 배 넘게 빽빽하면 폭 배분이 틀어진 것으로 본다.
+      폭 자체가 아니라 '내용 대비 폭'을 보므로 화면 크기와 무관하다.
+    반환: [{table, dense_col, dense_ratio, sparse_col}] — 없으면 빈 목록.
+    """
+    try:
+        return page.evaluate(
+            """(sel) => {
+                const root = document.querySelector(sel) || document.body;
+                const RATIO = 3.0, MIN_ROWS = 3;
+                const out = [];
+                Array.from(root.querySelectorAll('table')).forEach((tb, ti) => {
+                    const rows = Array.from(tb.rows).filter(r => r.cells.length > 1);
+                    if (rows.length < MIN_ROWS) return;
+                    const head = rows[0], body = rows.slice(1);
+                    const n = head.cells.length;
+                    const stat = [];
+                    for (let c = 0; c < n; c++) {
+                        let chars = 0, cnt = 0, w = 0;
+                        body.forEach(r => {
+                            const cell = r.cells[c];
+                            if (!cell) return;
+                            chars += (cell.innerText || '').length; cnt++;
+                            w = Math.max(w, cell.getBoundingClientRect().width);
+                        });
+                        if (!cnt || w < 20) continue;
+                        stat.push({ i: c, name: (head.cells[c] ? head.cells[c].innerText : '') .trim().slice(0, 14),
+                                    density: (chars / cnt) / w, width: Math.round(w) });
+                    }
+                    if (stat.length < 2) return;
+                    stat.sort((a, b) => b.density - a.density);
+                    const hi = stat[0], lo = stat[stat.length - 1];
+                    if (lo.density > 0 && hi.density / lo.density > RATIO) {
+                        out.push({ table: ti, dense_col: hi.name, dense_w: hi.width,
+                                   sparse_col: lo.name, sparse_w: lo.width,
+                                   ratio: Math.round((hi.density / lo.density) * 10) / 10 });
+                    }
+                });
+                return out;
+            }""",
+            root_sel,
+        )
+    except Exception:
+        return []
+
+
 def _measure_root(page, root_sel: str) -> dict:
     """블록(section/.blk) 단위·칸(td/li 등) 단위 가시(innerText) 최대 글자수를 잰다.
 
@@ -738,6 +792,7 @@ def run_gm_surface_check() -> tuple[list, bool]:
                         root_sel = "body"
                     _wait_until_rendered(page, root_sel)
                     m = _measure_root(page, root_sel)
+                    table_bal = _measure_table_balance(page, root_sel)   # 창 닫기 전에 잰다
                     page.close()
 
                     if m["whole_len"] == 0:
@@ -748,6 +803,14 @@ def run_gm_surface_check() -> tuple[list, bool]:
                     if m["max_cell_len"] > GM_SURFACE_CELL_MAX:
                         findings.append({"kind": "cell_too_long", "page": label,
                                           "value": m["max_cell_len"], "limit": GM_SURFACE_CELL_MAX})
+                    # 표 칸 폭 균형(2026-08-01 신설) — GM 이 두 번 짚은 것이 둘 다 칸 폭이었다.
+                    for tb in table_bal:
+                        findings.append({
+                            "kind": "table_columns_unbalanced", "page": label,
+                            "detail": (f"「{tb['dense_col']}」 칸이 「{tb['sparse_col']}」 보다 "
+                                       f"{tb['ratio']}배 빽빽한데 폭은 {tb['dense_w']}px vs {tb['sparse_w']}px "
+                                       f"— 내용 많은 칸에 폭을 더 주는 게 맞다"),
+                        })
                     if m["max_block_len"] is None:
                         # 블록 마크업이 없는 화면 = 블록 기준으로 잴 수 없다. 통과로 위장하지 않고
                         # '못 쟀다'를 남긴다(칸 기준은 위에서 그대로 잰다).

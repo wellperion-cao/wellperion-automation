@@ -1976,9 +1976,11 @@
         + (_same ? '' : ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(내부 이름 ' + esc(key) + ')</span>');
       var body = list.length
         ? '<div class="coo-tbl-wrap"><table>' +
-            // 상태칸을 넓혔다(150px→240px · GM 지적 2026-08-01) — 라벨이 '⚫ 죽은배선(스케줄러 정지)'처럼
-            // 길어 좁은 칸에서 두세 줄로 접히며 그 줄 전체를 밀어 올렸다.
-            '<tr><th>보내는 것</th><th style="width:58px">주기</th><th style="width:112px">발신 시각</th><th style="width:240px">상태</th></tr>' +
+            // 칸 폭(GM 지적 2026-08-01 2차) — '보내는 것'이 남는 폭을 전부 가져가 혼자 넓고,
+            // 정작 접기(펼쳐보기)가 들어가는 '상태'가 좁았다. 내용이 많은 칸에 폭을 준다.
+            // 백분율로 고정해 화면 폭이 달라져도 비율이 유지되게 한다.
+            '<tr><th style="width:32%">보내는 것</th><th style="width:13%">주기</th>' +
+            '<th style="width:13%">발신 시각</th><th style="width:42%">상태</th></tr>' +
             list.map(function(r){ return r.html; }).join('') +
           '</table></div>'
         : '<div class="sec-note" style="margin-top:6px;">방 목록에는 있는데 <code>notify_registry.json</code>에 이 방으로 나가는 <b>자동 발신이 하나도 없습니다</b> — 사람이 손으로만 쓰는 방이거나, 배선이 등록 안 된 구멍입니다.</div>';
