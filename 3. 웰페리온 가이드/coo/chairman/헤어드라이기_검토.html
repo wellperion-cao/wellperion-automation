@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파우더룸 헤어드라이기 도입 검토 (A3 세로) · WELLPERION</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+  @page { size: A3 portrait; margin: 10mm; }
+
+  :root{
+    --deep:#22322D; --mid:#3D5A4F; --grey:#727B76; --line:#CBD2CD;
+    --steam:#EDF1EE; --brass:#96762F;
+    --alert:#A04E24; --alert-bg:#FBF1E7; --ink:#131B18;
+    --pick:#E7EEE9;
+    --font:'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+           'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#8B948F;}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;}
+
+  .sheet{
+    width:277mm; min-height:397mm;
+    margin:16px auto;
+    background:#fff;
+    padding:11mm 12mm 9mm;
+    box-shadow:0 3px 22px rgba(0,0,0,.3);
+  }
+
+  /* ---- header ---- */
+  .hd{display:flex;justify-content:space-between;align-items:flex-end;
+      border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:16px;}
+  .hd .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-size:30px;font-weight:800;letter-spacing:-.025em;margin:0 0 4px;}
+  .hd .sub{font-size:15px;color:var(--grey);margin:0;}
+  .hd .rt{text-align:right;font-size:13.5px;line-height:1.85;white-space:nowrap;}
+  .hd .rt b{color:var(--grey);font-weight:600;font-size:11.5px;letter-spacing:.08em;margin-right:7px;}
+
+  h2{font-size:16px;font-weight:800;letter-spacing:-.01em;margin:22px 0 9px;
+     padding-bottom:5px;border-bottom:1.5px solid var(--deep);}
+  h2 span{font-size:12.5px;font-weight:500;color:var(--grey);margin-left:9px;letter-spacing:0;}
+
+  /* ---- product cards ---- */
+  .strip{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+  .card{border:1px solid var(--line);display:flex;flex-direction:column;}
+  .card.pick{border:2px solid var(--mid);}
+  .card .ph{height:112px;background:var(--steam);display:flex;align-items:center;justify-content:center;
+            font-size:12px;color:var(--grey);padding:6px;overflow:hidden;}
+  .card .ph img{max-width:100%;max-height:100%;object-fit:contain;}
+  .card .tx{padding:9px 10px 10px;flex:1;display:flex;flex-direction:column;}
+  .card .tier{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--brass);margin:0 0 4px;}
+  .card.pick .tier{color:var(--mid);}
+  .card .nm{font-size:14.5px;font-weight:700;line-height:1.3;margin:0 0 3px;}
+  .card .md{font-size:11.5px;color:var(--grey);margin:0 0 9px;line-height:1.4;}
+  .card .pr{font-size:21px;font-weight:800;letter-spacing:-.02em;margin:auto 0 0;}
+  .card .pr small{font-size:12px;font-weight:600;color:var(--grey);}
+  .card .ws{font-size:11px;color:var(--grey);margin:2px 0 0;}
+
+  /* ---- table ---- */
+  table{width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.5;}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+  thead th{background:var(--deep);color:#fff;font-size:12.5px;font-weight:700;text-align:center;}
+  thead th:first-child{background:var(--mid);text-align:left;width:98px;}
+  tbody th{background:var(--steam);font-weight:600;font-size:12.5px;white-space:nowrap;}
+  td.p{background:var(--pick);}
+  td.b{font-weight:700;}
+  .cap{font-size:11px;color:var(--grey);line-height:1.6;margin:8px 0 0;}
+
+  /* ---- cost ---- */
+  .cost{border:1px solid var(--line);margin-top:12px;}
+  .cost table{font-size:12.5px;}
+  .cost thead th{background:var(--mid);}
+  .cost thead th:first-child{background:var(--deep);width:78px;}
+
+  /* ---- blocks ---- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;}
+  .blk{border:1px solid var(--line);padding:14px 16px;}
+  .blk.dark{border:2px solid var(--deep);}
+  .blk.warn{background:var(--alert-bg);border-color:#E5D1BC;}
+  .blk h4{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 10px;}
+  .blk.dark h4{color:var(--brass);}
+  .blk.warn h4{color:var(--alert);}
+  .blk p{font-size:13px;line-height:1.65;margin:0 0 10px;}
+  .blk p:last-child{margin-bottom:0;}
+  .blk.warn p{color:#5E3418;}
+  .blk strong{font-weight:700;}
+  .blk.warn strong{color:var(--alert);}
+  .blk ul{margin:0;padding-left:17px;}
+  .blk li{font-size:13px;line-height:1.6;margin-bottom:6px;}
+  .blk li:last-child{margin-bottom:0;}
+
+  .propose{border:2px solid var(--mid);background:var(--pick);padding:14px 18px;margin-top:12px;}
+  .propose h4{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--mid);margin:0 0 9px;}
+  .propose p{font-size:13.5px;line-height:1.65;margin:0 0 7px;}
+  .propose p:last-child{margin-bottom:0;}
+
+  .ft{border-top:1px solid var(--line);margin-top:18px;padding-top:8px;
+      display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);gap:16px;}
+
+  .bar{width:277mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;}
+  .bar button, .bar a{
+    font-family:var(--font);font-size:13px;font-weight:600;
+    padding:8px 16px;border:1px solid rgba(255,255,255,.45);
+    background:rgba(255,255,255,.14);color:#fff;cursor:pointer;
+    text-decoration:none;border-radius:2px;transition:.15s;
+  }
+  .bar button:hover, .bar a:hover{background:#fff;color:var(--deep);}
+
+  .ref{font-size:11px;color:var(--grey);margin:0 0 10px;padding-bottom:8px;
+       border-bottom:1px dashed var(--line);letter-spacing:.02em;}
+
+  @media print{
+    html,body{background:#fff;}
+    .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
+    .grid2,.strip,table,.propose,.blk{break-inside:avoid;}
+    .bar{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+  <a href="회장님_지시사항.html">← 회장님 지시사항으로 돌아가기</a>
+</div>
+
+<div class="sheet">
+  <p class="ref">별첨 · 2026년 8월 월간계획보고 — 회장님 지시사항 03. 파우더룸 헤어드라이기 교체 검토</p>
+
+  <div class="hd">
+    <div>
+      <p class="brand">WELLPERION</p>
+      <h1>파우더룸 헤어드라이기 도입 검토</h1>
+      <p class="sub">후보 5종 사양 · 가격 · 업소 적합성 비교 &nbsp;|&nbsp; 사우나 환경 개선 관련</p>
+    </div>
+    <div class="rt">
+      <div><b>보고일</b>2026. 08. 01.</div>
+      <div><b>지시</b>차의주 회장님</div>
+      <div><b>보고</b>김남욱 GM &nbsp;·&nbsp; 운영부</div>
+    </div>
+  </div>
+
+  <h2>후보 5종 <span>가격대 8만원 ~ 63만원</span></h2>
+
+  <div class="strip">
+
+    <div class="card">
+      <div class="ph">
+        <img src="https://cdn-pro-web-223-233.cdn-nhncommerce.com/jmwkorea00_godomall_com/data/goods/26/07/28/1000000723/1000000723_main_017.jpg"
+             alt="JMW 케어부스터 FV" onerror="this.replaceWith(document.createTextNode('제품 사진'))">
+      </div>
+      <div class="tx">
+        <p class="tier">A · 실속형</p>
+        <p class="nm">JMW<br>케어부스터 FV</p>
+        <p class="md">프리볼트 · 국내 BLDC 1위</p>
+        <p class="pr">79,900<small>원</small></p>
+        <p class="ws">정가 179,000원 · 쿠폰가</p>
+      </div>
+    </div>
+
+    <div class="card pick">
+      <div class="ph">제품 사진</div>
+      <div class="tx">
+        <p class="tier">B · 균형형 ★</p>
+        <p class="nm">블라우풍트<br>에어이지 프로</p>
+        <p class="md">BLP-HD7300 · 거치대 세트</p>
+        <p class="pr">79,800<small>원</small></p>
+        <p class="ws">정가 139,800원 · 거치대 포함</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ph">제품 사진</div>
+      <div class="tx">
+        <p class="tier">C · 프리미엄</p>
+        <p class="nm">샤크<br>스피드스타일</p>
+        <p class="md">3in1 · iQ 자동 세팅</p>
+        <p class="pr">399,000<small>원</small></p>
+        <p class="ws">국내 출고가 기준</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ph">제품 사진</div>
+      <div class="tx">
+        <p class="tier">D · 프리미엄</p>
+        <p class="nm">다이슨<br>슈퍼소닉 뉴럴</p>
+        <p class="md">두피보호 모드 · 케이스 포함</p>
+        <p class="pr">479,000<small>원</small></p>
+        <p class="ws">정가 599,000원 · 12만원 인하</p>
+      </div>
+    </div>
+
+    <div class="card pick">
+      <div class="ph">제품 사진</div>
+      <div class="tx">
+        <p class="tier">E · 업소 전용 ★</p>
+        <p class="nm">다이슨<br>슈퍼소닉 r 프로</p>
+        <p class="md">살롱 전용 · 코드 3.2m</p>
+        <p class="pr">629,000<small>원</small></p>
+        <p class="ws">스탠드 별매 70,000원</p>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>사양 비교</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th>A · JMW 케어부스터 FV</th>
+        <th>B · 블라우풍트 HD7300</th>
+        <th>C · 샤크 스피드스타일</th>
+        <th>D · 다이슨 뉴럴</th>
+        <th>E · 다이슨 r 프로</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th>구매가</th>
+        <td class="b">79,900원</td><td class="p b">79,800원</td><td>399,000원</td><td>479,000원</td><td class="p">629,000원</td></tr>
+      <tr><th>정가 대비</th>
+        <td>179,000원 → 55%↓</td><td class="p">139,800원 → 43%↓</td><td>할인 없음</td><td>599,000원 → 20%↓</td><td class="p">할인 없음</td></tr>
+      <tr><th>모터</th>
+        <td>BLDC</td><td class="p">BLDC</td><td>고속 BLDC</td><td>하이퍼디미엄</td><td class="p b">하이퍼디미엄<br>최대 11만 rpm</td></tr>
+      <tr><th>소비전력</th>
+        <td>1,500W급</td><td class="p">1,500W</td><td>1,600W급</td><td>1,600W</td><td class="p">1,700W</td></tr>
+      <tr><th>무게</th>
+        <td>약 360g</td><td class="p b">330g</td><td>약 500g대</td><td>660g</td><td class="p">다이슨 최경량 본체<br>(표기 850g, 코드 포함)</td></tr>
+      <tr><th>풍온 / 풍속</th>
+        <td>3단 / 2단</td><td class="p">4단 / 3단</td><td>3단 / 3단</td><td>4단 / 3단</td><td class="p">3단 / 3단</td></tr>
+      <tr><th>온도 제어</th>
+        <td>냉온풍 자동순환<br>LED 온도 표시</td>
+        <td class="p">온도제어 시스템<br>냉온풍 순환모드</td>
+        <td>초당 1,000회 이상 측정</td>
+        <td>28~100℃<br>두피보호 모드 55℃ 유지</td>
+        <td class="p">히터 포일 10개<br>균일 가열 설계</td></tr>
+      <tr><th>노즐</th>
+        <td>2개 (자석형)</td><td class="p">1개 (자석형)</td><td>3개 (툴 자동 인식)</td><td>5개 (자석형)</td><td class="p b">5개 (RFID 자동 인식)</td></tr>
+      <tr><th>거치대</th>
+        <td>별매 +9,900원</td><td class="p b">마그네틱 거치대<br>기본 포함</td><td>미포함</td><td>보관 케이스 포함<br>(거치대 별매)</td><td class="p">전용 스탠드 별매<br>70,000원</td></tr>
+      <tr><th>코드 길이</th>
+        <td>2.0m</td><td class="p">1.85m</td><td>약 2.5m</td><td>1.8m</td><td class="p b">3.2m (살롱 대응)</td></tr>
+      <tr><th>보증 / A/S</th>
+        <td>12개월<br>국내 택배 접수</td><td class="p">국내 A/S<br>리뷰 258건</td><td>국내 정식 지사</td><td>2년<br>다이슨 서비스센터</td><td class="p b">2년<br>기업고객 전용 지원</td></tr>
+      <tr><th>업소 적합성</th>
+        <td>가정용 설계</td><td class="p">가정용 설계<br>약 60dB 저소음</td><td>가정용 설계</td><td>가정용 설계<br>필터 월 1회 청소</td><td class="p b">살롱 환경 테스트 완료<br>내구성 강화 필터</td></tr>
+      <tr><th>구매 조건</th>
+        <td>제한 없음</td><td class="p">제한 없음</td><td>제한 없음</td><td>제한 없음</td><td class="p b">헤어 전문가 전용<br>사업자등록증 필요</td></tr>
+    </tbody>
+  </table>
+
+  <p class="cap">
+    ※ 가격은 2026. 8. 1. 기준이며 쿠폰·할인 기간에 따라 변동될 수 있음. JMW 케어부스터 FV 및 샤크 일부 수치는 직전 모델·공개 자료 기준으로 발주 전 제조사 확인 필요.<br>
+    ※ 기타 검토 후보 — 파나소닉 나노케어 EH-NA0J(약 398,000원, 모발 케어 특화이나 풍량이 약해 공용 회전율에 불리) / 다이슨 슈퍼소닉 HD15(실구매 46~48만원대, 뉴럴 직전 세대).
+  </p>
+
+  <h2>수량별 예상 소요액</h2>
+
+  <div class="cost">
+    <table>
+      <thead>
+        <tr><th>수량</th><th>A · JMW</th><th>B · 블라우풍트</th><th>C · 샤크</th><th>D · 다이슨 뉴럴</th><th>E · 다이슨 r 프로</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>4대</th><td>319,600원</td><td class="p">319,200원</td><td>1,596,000원</td><td>1,916,000원</td><td class="p">2,516,000원</td></tr>
+        <tr><th>6대</th><td>479,400원</td><td class="p">478,800원</td><td>2,394,000원</td><td>2,874,000원</td><td class="p">3,774,000원</td></tr>
+        <tr><th>8대</th><td>639,200원</td><td class="p">638,400원</td><td>3,192,000원</td><td>3,832,000원</td><td class="p">5,032,000원</td></tr>
+        <tr><th>10대</th><td>799,000원</td><td class="p">798,000원</td><td>3,990,000원</td><td>4,790,000원</td><td class="p">6,290,000원</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="cap">
+    ※ A안은 거치대 별매(대당 9,900원), E안은 전용 스탠드 별매(대당 70,000원) 추가 반영 필요. 남·여 파우더룸 배치 대수 확정 후 최종 산출 예정.
+  </p>
+
+  <h2>업소 설치 관점 검토</h2>
+
+  <div class="grid2">
+
+    <div class="blk warn">
+      <h4>반드시 확인할 사항</h4>
+      <p><strong>A~D안은 모두 가정용 제품입니다.</strong> 파우더룸은 하루 수십 회 연속 사용되므로 가정 기준 수명이 그대로 적용되지 않습니다. 1년 내외 교체 주기를 전제로 예산을 잡아야 합니다.</p>
+      <p><strong>E안만 업소용으로 설계됐습니다.</strong> 살롱 환경 테스트를 거쳤고 필터 내구성이 강화돼 있어, 헤어스프레이·먼지가 많은 파우더룸에서 유일하게 수명 문제가 해소됩니다.</p>
+      <p><strong>단, E안은 일반 판매를 하지 않습니다.</strong> 헤어 전문가 전용 제품으로 사업자등록증 확인이 필요하며, 다이슨 기업고객 채널로 별도 문의해야 합니다. 이 경로에서 대량 견적 협의가 가능합니다.</p>
+      <p><strong>고가 제품은 도난 대책이 함께 가야 합니다.</strong> 개방된 파우더룸에 47~63만원 제품을 비치할 경우 고정형 거치대가 필수이며, 1대 분실이 B안 6~8대분입니다.</p>
+    </div>
+
+    <div class="blk dark">
+      <h4>검토 의견</h4>
+      <p><strong>가성비 기준 — B안 (블라우풍트 HD7300)</strong><br>
+      A안과 가격이 사실상 같으나 거치대가 기본 포함되고 풍온 4단·풍속 3단으로 조작 폭이 넓습니다. 330g으로 가장 가볍고 약 60dB 저소음이라 공용 공간에 적합합니다.</p>
+      <p><strong>업소 내구성 기준 — E안 (다이슨 r 프로)</strong><br>
+      코드 3.2m로 콘센트 위치 제약이 없고, 강화 필터로 교체 주기가 길어집니다. 두피보호 모드는 없으나 회원이 직접 세팅해 쓰지 않는 공용 시설에서는 내구성 쪽 실익이 더 큽니다.</p>
+      <p><strong>중간 대안 — C안 (샤크 스피드스타일)</strong><br>
+      다이슨 뉴럴 대비 8만원 저렴하면서 브랜드 인지도가 있어, 예산은 낮추되 급은 유지하고자 할 때 현실적인 선택지입니다.</p>
+    </div>
+
+  </div>
+
+  <div class="propose">
+    <h4>제안 · 구역 이원화</h4>
+    <p><strong>일반 파우더룸 — B안 전면 교체 (대당 79,800원, 거치대 포함)</strong></p>
+    <p><strong>VIP 구역 — E안 소수 배치 (업소용 설계, 2년 보증)</strong></p>
+    <p>전 구역 프리미엄 일괄 도입 대비 예산을 크게 억제하면서, 시설 격 상승 효과는 확보하는 구조입니다. 회원 체감이 가장 큰 구역에 자원을 집중하는 방식입니다.</p>
+  </div>
+
+  <div class="blk" style="margin-top:12px;">
+    <h4>확인 필요 사항 · 후속 조치</h4>
+    <ul>
+      <li>남·여 파우더룸별 필요 대수 및 현재 설치 대수 확인</li>
+      <li>콘센트 위치 및 회로 용량 점검 — 1,500W급 동시 사용 시 부하 확인 필요</li>
+      <li>거치 방식 확정 및 도난 방지 대책 수립 (벽면 고정형 여부)</li>
+      <li>다이슨 기업고객 채널 대량 구매 견적 문의</li>
+      <li>블라우풍트 대량 구매 할인 가능 여부 문의</li>
+    </ul>
+  </div>
+
+  <div class="ft">
+    <span>A · jmwmall.co.kr &nbsp;|&nbsp; B · blaupunkt-life.kr &nbsp;|&nbsp; C · sharkninja.co.kr &nbsp;|&nbsp; D · dyson.co.kr &nbsp;|&nbsp; E · dyson.co.kr/for-business</span>
+    <span>WELLPERION 운영부 · 내부 검토 자료 · A3 세로 1매</span>
+  </div>
+
+</div>
+</body>
+</html>
