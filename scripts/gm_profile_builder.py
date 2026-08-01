@@ -72,6 +72,11 @@ GM_SURFACE_PAGES = [
      "url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html"},
     {"label": "업무·결재 SSOT", "mode": "anchor", "anchor": "S3",
      "url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html"},
+    # 2026-08-01 추가 — AI C-Level 운영 한 장(AI운영한장.html)을 여기로 흡수하면서 같이 넣었다.
+    # 그 페이지가 감시 목록 밖이라 조용히 굳어도 아무도 몰랐던 것이 폐지 사유 중 하나였으므로,
+    # 옮긴 자리도 같은 사각이 되면 안 된다.
+    {"label": "AI C-Level 운영 가이드", "mode": "anchor", "anchor": "S2",
+     "url": "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html"},
 ]
 
 # ── '사실인가' 원천 매핑(2026-07-31 · 배 10418 「GM 표면·G1 위생」 다음 과제 이행) ──
@@ -413,11 +418,19 @@ def _wait_until_rendered(page, root_sel: str, timeout_ms: int = 95000) -> bool:
 
     ★왜 필요한가(2026-08-01 시토 실측 · GM 지적 "내가 발견하는 게 아니라 시토가 찾아줘야").
       이 점검은 고정 3.5초만 기다린 뒤 쟀다. 그런데 GM 화면들은 저장소 파일을 여러 개
-      받아 그리므로 데이터가 다 붙는 데 60~90초가 걸린다(자율현황 실측). 그래서 점검은
-      **아직 비어 있는 화면**을 재고 매일 '기준 이내'를 냈다 — 0 위장의 교과서 사례다.
-      증거: 2026-08-01 06:30 프로필이 'G1 오늘의 항로 최대 칸 2자 · 업무·결재 SSOT 최대 칸
-      0자'로 적었다. 칸이 0~2자일 리 없다. 빈 화면을 잰 것이다.
-      같은 날 사람이 렌더를 기다려 재니 자율현황에 1,110자짜리 칸이 있었다.
+      받아 그리므로 데이터가 다 붙는 데 60~90초가 걸린다(자율현황 실측 — 사람이 렌더를
+      기다려 재니 1,110자짜리 칸이 있었다). 그래서 점검은 아직 덜 그려진 화면을 쟀다.
+
+    ★정정(2026-08-01 시토 · 같은 날 재측정).
+      이 함수를 처음 넣을 때 근거로 'G1 최대 칸 2자 · 업무·결재 SSOT 최대 칸 0자'를 들며
+      "탭 안쪽을 빈 화면으로 잰다"고 적었다. **틀렸다.** 실측하니 두 탭 다 정상으로 그려진다
+      (G1 1,969자 · 업무·결재 SSOT 1,411자 · 클릭 후 2.5초면 완성, 75초까지 변화 0).
+      0~2자는 `max_cell_len`(표의 td 최대 글자수)일 뿐이다 — G1 은 달력 칸이 1~2자라 2,
+      업무·결재 SSOT 는 표가 아예 없고 div 피드라 0. **표 칸 글자수를 화면 생사 지표로
+      읽은 것이 오독이었다.** 렌더 대기 자체는 그대로 값을 하지만(자율현황), 탭 화면이
+      비어 있다는 진단은 취소한다.
+      ↳ 그러면서 **진짜 결함은 못 잡고 있었다**: 업무·결재 SSOT 의 좌우 6개 피드 상자가
+      라이브에서 통째로 비어 있다. 그래서 아래 `_empty_fill_slots()` 를 새로 넣었다.
     반환: True=다 그려짐 / False=시간 초과(그래도 잰다 — 대신 호출부가 판단할 수 있게 알린다).
     """
     prev, stable = -1, 0
@@ -444,6 +457,57 @@ def _wait_until_rendered(page, root_sel: str, timeout_ms: int = 95000) -> bool:
         page.wait_for_timeout(2500)
         waited += 2500
     return False
+
+
+def _fill_slot_ids(url: str) -> list:
+    """그 화면의 '채워질 예정' 칸 id 목록 — 원본 HTML 에서 「불러오는 중…」 자리표시자를 찾는다.
+
+    자리표시자가 박혀 있다 = 만든 사람이 "여기는 데이터가 들어온다"고 선언한 곳이다.
+    그러니 다 그려진 뒤에도 그 칸이 비어 있으면 **받아오기가 조용히 실패한 것**이다.
+    (빈 div 를 전수로 훑지 않는 이유 = 여백용 빈 칸이 흔해 오탐 천지가 된다.)
+    """
+    import urllib.request, re as _re
+    try:
+        with urllib.request.urlopen(url, timeout=30) as r:
+            html = r.read().decode("utf-8", "replace")
+    except Exception:
+        return []
+    out = []
+    for m in _re.finditer(r'\bid="([A-Za-z0-9_\-]+)"', html):
+        window = html[m.end():m.end() + 400]
+        nxt = window.find(' id="')
+        if nxt >= 0:
+            window = window[:nxt]        # 다음 id 를 넘어가면 남의 칸이다
+        if "불러오는 중" in window or "집계 중" in window:
+            out.append(m.group(1))
+    return out
+
+
+def _empty_fill_slots(page, root_sel: str, slot_ids: list) -> list:
+    """다 그려진 뒤에도 비어 있는 '채워질 예정' 칸 = 조용한 수집 실패.
+
+    ★왜 있나(2026-08-01 시토 실측). 이 점검은 '글자가 너무 많은가'만 재고 **'있어야 할 것이
+      아예 없는가'는 안 봤다.** 그래서 업무·결재 SSOT 의 좌우 6개 피드(업무 최근변동·마감임박·
+      완료 / 결재 최근변동·대기·완료)가 라이브에서 통째로 빈 채 며칠을 지나도 매일 '기준 이내'가
+      나왔다. 글자가 0 인 화면은 기준을 못 넘으니 영원히 통과한다 — 0 위장의 다른 얼굴이다.
+    """
+    if not slot_ids:
+        return []
+    return page.evaluate(
+        """([sel, ids]) => {
+            const root = document.querySelector(sel) || document.body;
+            const out = [];
+            for (const id of ids) {
+                const el = document.getElementById(id);
+                if (!el || !root.contains(el)) continue;   // 이 화면(탭) 밖은 안 본다
+                if (el.offsetParent === null) continue;    // 숨은 칸은 뺀다
+                if (el.closest('details:not([open])')) continue;  // 접어 둔 칸 = 안 보이는 게 정상
+                if (((el.innerText || '').trim()).length === 0) out.push(id);
+            }
+            return out;
+        }""",
+        [root_sel, slot_ids],
+    )
 
 
 def _measure_table_balance(page, root_sel: str) -> list:
@@ -814,6 +878,7 @@ def run_gm_surface_check() -> tuple[list, bool]:
                     _wait_until_rendered(page, root_sel)
                     m = _measure_root(page, root_sel)
                     table_bal = _measure_table_balance(page, root_sel)   # 창 닫기 전에 잰다
+                    empty_slots = _empty_fill_slots(page, root_sel, _fill_slot_ids(spec["url"]))
                     page.close()
 
                     if m["whole_len"] == 0:
@@ -821,6 +886,13 @@ def run_gm_surface_check() -> tuple[list, bool]:
                                           "detail": "렌더 후 가시 텍스트 0자 — 게이트·로드 실패 의심"})
                         ok = False
                         continue
+                    if empty_slots:
+                        findings.append({
+                            "kind": "empty_fill_slot", "page": label,
+                            "slots": empty_slots,
+                            "detail": (f"데이터가 들어와야 할 칸 {len(empty_slots)}개가 다 그려진 뒤에도 "
+                                       f"비어 있다 — 받아오기가 조용히 실패한 것 ({', '.join(empty_slots[:6])})"),
+                        })
                     if m["max_cell_len"] > GM_SURFACE_CELL_MAX:
                         findings.append({"kind": "cell_too_long", "page": label,
                                           "value": m["max_cell_len"], "limit": GM_SURFACE_CELL_MAX})
@@ -912,7 +984,9 @@ def render_gm_surface_block(rec: dict) -> str:
     else:
         for f in findings:
             kind = f.get("kind")
-            if kind == "cell_too_long":
+            if kind == "empty_fill_slot":
+                lines.append(f"- 🔴 **{f['page']}** {f.get('detail','')}")
+            elif kind == "cell_too_long":
                 lines.append(f"- ⚠️ **{f['page']}** 칸 하나가 {f['value']}자(기준 {f['limit']}자 초과) — 압축 필요")
             elif kind == "block_too_long":
                 lines.append(f"- ⚠️ **{f['page']}** 블록이 {f['value']}자(기준 {f['limit']}자 초과) — 압축 필요")
