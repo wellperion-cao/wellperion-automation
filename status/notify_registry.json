@@ -481,21 +481,6 @@
       "source": "Survey.js 결재 발행 트리거"
     },
     {
-      "id": "gas-cfo-procurement",
-      "when": "조달 요청 발생 시",
-      "when_sort": null,
-      "freq": "event",
-      "channel": "telegram",
-      "room": "미확인 — 구글 스크립트 속성",
-      "chat_id": null,
-      "what": "조달 발송",
-      "owner": "시뽀",
-      "trigger": "gas_event",
-      "state": "unknown",
-      "state_note": "GM 확인 2026-08-01 — GM 이 모르는 방이다. 실측: .deploy-procurement/procurement.js 가 TG_BOT_TOKEN·TG_CHAT_ID 속성이 있을 때만 발신하는데 그 값은 구글 스크립트 안에 있어 저장소에서 알 수 없다. \"CFO 채널\"이라는 방 이름은 근거 없이 붙어 있던 것이라 지웠다 — 실재 확인 전까지 미확인으로 둔다.",
-      "source": "Survey.js CFO 조달 트리거"
-    },
-    {
       "id": "kakao-depthead-inquiry",
       "when": "휴일 20:00 / 평일 22:30",
       "when_sort": "2030",
@@ -556,5 +541,29 @@
       "source": "telegram_bot/daily_scheduler.py run_stream_3_mgmt 말미 + scripts/kakao_report_sender.py"
     }
   ],
-  "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다."
+  "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다.",
+  "_removed": [
+    {
+      "id": "gas-cfo-procurement",
+      "removed_at": "2026-08-01",
+      "by": "시토",
+      "why": "GM 지시 2026-08-01 — 죽은 배선이라 정본까지 삭제. 실측: 저장소 전체에 \"CFO 채널\"이라는 방의 근거가 0건이고, 가리키던 코드(.deploy-procurement/procurement.js tgSend)는 조달 전용 발신이 아니라 그냥 텔레그램 보내기 도구다. 어디로 가는지는 구글 스크립트 속성(TG_CHAT_ID)에 달려 있어 저장소에서 확인 불가. 없는 방을 등록부에 두면 화면과 배경이 어긋난다.",
+      "restore": "되살리려면 이 블록을 items 로 옮기면 된다",
+      "snapshot": {
+        "id": "gas-cfo-procurement",
+        "when": "조달 요청 발생 시",
+        "when_sort": null,
+        "freq": "event",
+        "channel": "telegram",
+        "room": "미확인 — 구글 스크립트 속성",
+        "chat_id": null,
+        "what": "조달 발송",
+        "owner": "시뽀",
+        "trigger": "gas_event",
+        "state": "unknown",
+        "state_note": "GM 확인 2026-08-01 — GM 이 모르는 방이다. 실측: .deploy-procurement/procurement.js 가 TG_BOT_TOKEN·TG_CHAT_ID 속성이 있을 때만 발신하는데 그 값은 구글 스크립트 안에 있어 저장소에서 알 수 없다. \"CFO 채널\"이라는 방 이름은 근거 없이 붙어 있던 것이라 지웠다 — 실재 확인 전까지 미확인으로 둔다.",
+        "source": "Survey.js CFO 조달 트리거"
+      }
+    }
+  ]
 }

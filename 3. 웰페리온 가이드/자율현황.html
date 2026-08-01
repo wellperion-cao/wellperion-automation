@@ -1781,11 +1781,26 @@
        · 텔레그램 = status/telegram_rooms.json 의 _purpose / _display
        · 카카오톡 = scripts/kakao_rooms.json 의 all_rooms[].purpose
      ROOM_META 는 그 둘을 합쳐 런타임에 채운다 — 화면에 사본을 두지 않는다. */
-  var ROOM_META = {};   // { 방이름: {purpose, display, category, hasSender} }
+  var ROOM_META = {};   // { 방이름: {purpose, display, category, channel} }
+  var ROOM_ORDER = [];  // 화면에 보일 순서 — 카카오톡 먼저(차의주 회장님부터), 그다음 텔레그램
+  /* ★2026-08-01(시토 · GM 지시 "차의주 회장님을 맨 위로 해서 카카오톡방을 위에서부터 셋팅")
+     예전엔 '문제 많은 방'을 위로 올려 매일 순서가 바뀌었다 — 같은 방을 찾을 때마다 눈이 헤맸다.
+     이제 순서는 고정이다: 카카오톡(scripts/kakao_rooms.json all_rooms 적힌 순서) → 텔레그램
+     (status/telegram_rooms.json 적힌 순서). 순서를 바꾸려면 그 파일에서 줄을 옮기면 된다. */
   function buildRoomMeta(trooms, kakao){
-    ROOM_META = {};
+    ROOM_META = {}; ROOM_ORDER = [];
     var tp = (trooms && trooms._purpose) || {};
     var td = (trooms && trooms._display) || {};
+    ((kakao && kakao.all_rooms) || []).forEach(function(r){
+      if(!r || !r.name) return;
+      var k = roomKey(r.name);
+      if(ROOM_ORDER.indexOf(k) < 0) ROOM_ORDER.push(k);
+    });
+    Object.keys(trooms || {}).forEach(function(k){
+      if(k.charAt(0) === '_') return;
+      var rk = roomKey(k);
+      if(ROOM_ORDER.indexOf(rk) < 0) ROOM_ORDER.push(rk);
+    });
     // 키는 반드시 roomKey() 를 통과시킨다 — 화면이 방을 묶는 키와 같아야 용도가 붙는다
     // (카톡 '★ 운영부'는 roomKey 에서 '★운영부'로 정규화된다).
     Object.keys(tp).forEach(function(k){ ROOM_META[roomKey(k)] = { purpose: tp[k], display: td[k] || k, channel:'telegram' }; });
@@ -1928,11 +1943,14 @@
       var key = roomKey(name);
       if(!groups[key]){ groups[key] = []; order.push(key); }
     });
+    /* 순서 = ROOM_ORDER 고정(카카오톡 먼저 · 차의주 회장님부터 → 텔레그램) — GM 지시 2026-08-01.
+       예전엔 '문제 많은 방'을 위로 올려 매일 순서가 바뀌었고, 같은 방을 찾을 때마다 눈이 헤맸다.
+       ROOM_ORDER 에 없는 방(등록부에만 있는 것)은 뒤로 보낸다 — 숨기지는 않는다. */
     order.sort(function(a, b){
-      function problemCnt(k){ return groups[k].filter(function(r){ return r.sevInfo.sev === 'bad' || r.sevInfo.sev === 'dead'; }).length; }
-      var pa = problemCnt(a), pb = problemCnt(b);
-      if(pa !== pb) return pb - pa;
-      return groups[b].length - groups[a].length;
+      var ia = ROOM_ORDER.indexOf(a), ib = ROOM_ORDER.indexOf(b);
+      if(ia < 0) ia = 9999;
+      if(ib < 0) ib = 9999;
+      return ia - ib;
     });
     return order.map(function(key){
       var list = groups[key];
