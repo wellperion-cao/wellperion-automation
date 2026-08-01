@@ -116,12 +116,15 @@
   .c-own{white-space:nowrap;}
   .c-own .r-dept{font-size:10.5px; color:var(--dim); margin-top:4px;}
   .c-prog{min-width:150px;}
-  .c-title{max-width:360px; white-space:normal;}
+  .c-title{max-width:260px; white-space:normal; word-break:keep-all;}
   .c-ns{min-width:150px;}
+  .c-id{white-space:nowrap;}
   .r-note{font-size:11.5px; color:var(--dim); line-height:1.5; white-space:pre-wrap; margin-top:4px;}
-  .c-note{max-width:280px;}
-  /* 📋 핵심과제 칸 압축(2026-07-29 GM 지적 "읽지도 못하겠네") — 칸에는 결론(제목·담당·목표치·상태·진척%,
-     이미 별도 칼럼)만 보이게 하고, 근거·정정 경위 같은 긴 글은 접기로 내린다(삭제 아님·약속 L12⑤). */
+  /* 📋 목표치 & 진행 근거·경위 통합 칸(2026-08-01 GM 지적 "목표치 칸이 제일 길어서... 제일 긴 칸으로") —
+     표에서 가장 넓은 칸으로 두고, 근거 한줄요약(r-note-sum)은 항상 펼쳐 보이고 원문 전문만 접기(r-note-fold). */
+  .c-target{max-width:480px; white-space:normal; word-break:keep-all;}
+  .r-target-val{font-weight:600; color:var(--text);}
+  .r-note-sum{font-size:12px; color:var(--text-soft); line-height:1.5; margin-top:4px; word-break:keep-all;}
   .r-note-fold{margin-top:4px;}
   .r-note-fold summary{font-size:11px; color:var(--accent-soft); cursor:pointer; list-style:none;}
   .r-note-fold summary::-webkit-details-marker{display:none;}
@@ -134,6 +137,10 @@
   .chip.dept{color:var(--dim); background:var(--surface); border:1px solid var(--border);}
   .chip.ns{color:var(--link); background:rgba(184,160,251,0.08); border:1px solid rgba(184,160,251,0.30); text-decoration:none;}
   .chip.ns:hover{border-color:var(--link);}
+  /* 🔖 식별자 칩 — 클릭 복사(GM "식별자 칸이 있어야 계속 알려줄 수 있을 것 같다" 2026-08-01). id는 데이터 원본 그대로(새 번호 체계 금지·약속 L21). */
+  .chip.idc{cursor:pointer; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:10.5px; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
+  .chip.idc:hover{border-color:var(--accent-soft); color:var(--accent-soft);}
+  .chip.idc.copied{color:var(--green); border-color:var(--green);}
 
   .obadge{display:inline-block; font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px; white-space:nowrap;}
   .obadge.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
@@ -887,9 +894,10 @@
     table.rpt tbody td{padding:1px 4px; font-size:8px;}
     table.rpt tbody td, table.rpt tbody tr:hover td, .fin tr.cur-m td{background:#fff !important; color:#222 !important; border-color:#ccc !important;}
     .r-title{font-size:8.5px;} .r-note{font-size:7.5px; line-height:1.32;}
+    .r-target-val{font-size:8.5px;} .r-note-sum{font-size:7.5px; line-height:1.32; margin-top:1px;}
     .fin tr.fin-tot td{background:#f2f2f2 !important;}
-    .r-title, .metric-meta, .metric-meta b, h2.sec, .fmo, .fin b, .prog .pnum, .erp-step .ep, .erp-step .em{color:#111 !important;}
-    .r-note, .metric-h, .fin-sub, .erp-step .enote{color:#333 !important;}
+    .r-title, .r-target-val, .metric-meta, .metric-meta b, h2.sec, .fmo, .fin b, .prog .pnum, .erp-step .ep, .erp-step .em{color:#111 !important;}
+    .r-note, .r-note-sum, .metric-h, .fin-sub, .erp-step .enote{color:#333 !important;}
     .prog .track, .mbar, .erp-step .ebar{background:#eee !important; border-color:#999 !important;}
     .prog .track>i, .erp-step .ebar>i{background:#555 !important;}
     .erp-step.tgt .ebar>i{background:#999 !important;}
@@ -925,6 +933,8 @@
     .dg-subgrid{gap:4px 6px !important;} .dg-subgrp{gap:4px !important;} .dg-subgrp-h{font-size:8.5px !important; color:#7a5c10 !important; padding-bottom:2px !important;}
     #obj-board .metric{margin-top:2px !important; padding:2px 5px !important;} #obj-board .metric-h{margin-bottom:1px !important;} #obj-board .mbar{margin:1px 0 !important;}
     #obj-board .r-note{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
+    #obj-board .r-note-sum{font-size:7px !important; line-height:1.12 !important; margin-top:1px !important;}
+    #obj-board .chip.idc{font-size:6.5px !important; padding:1px 5px !important;}
     #obj-board .cyc{padding:2px 5px !important; margin-top:2px !important;} #obj-board .cyc-h{margin-bottom:1px !important;} #obj-board .cyc-flow{font-size:7px !important; margin-bottom:2px !important;} #obj-board .cyc-d{font-size:7px !important;} #obj-board .cyc-d .cyc-nt{font-size:6.5px !important;}
     #obj-board table.rpt tbody td{padding:0.5px 4px !important;}
     #obj-board .metric-meta{line-height:1.2 !important;}
@@ -1810,6 +1820,29 @@
     var basis = (h && h.basis) || '옛 항목 — 아직 정직 판정 미기록(엔진 재실행 시 자동 채움)';
     return '<span class="hbadge ' + esc(lvl) + '" title="' + esc(basis) + '">' + esc(label) + '</span>';
   }
+  // 🔖 식별자 클릭 복사 — 원본 id(예: 2026-08-21) 그대로 클립보드에(가짜 번호 체계 생성 없음).
+  function copyObjId(el){
+    var id = el.getAttribute('data-id');
+    function done(){ el.textContent = '복사됨'; el.classList.add('copied'); setTimeout(function(){ el.textContent = id; el.classList.remove('copied'); }, 900); }
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(id).then(done, function(){ prompt('복사하세요:', id); }); }
+    else { prompt('복사하세요:', id); }
+  }
+  // 📋 진행 근거·경위 2층 요약 — 원문 첫 문장(.!?) 또는 첫 '(' 앞까지 기계적으로 자름(지어내기 없음·약속 L05).
+  // 자른 결과가 너무 짧으면(의미 파손) 절단하지 않고 전문을 그대로 요약으로 쓴다 — 정보 손실 0.
+  function noteSummary(text){
+    if(!text) return {sum:text || '', full:text || '', cut:false};
+    var m = text.match(/^[^.!?]*[.!?]/);
+    var idxS = m ? m[0].length : -1;
+    var idxP = text.indexOf('(');
+    var cut = -1;
+    if(idxP > 0 && (idxS === -1 || idxP < idxS)) cut = idxP;
+    else if(idxS > 0) cut = idxS;
+    if(cut > 0 && cut < text.length){
+      var s = text.slice(0, cut).trim();
+      if(s.length >= 6) return {sum:s, full:text, cut:(s.length < text.length)};
+    }
+    return {sum:text, full:text, cut:false};
+  }
   function objRow(o, withDelta){
     // 서브항목(부모-자식)이 있으면 부모 진척% = 서브 %의 집계(평균) — 렌더에서 계산(GM 지시 2026-07-06 3차).
     var hasSub = o.sub && o.sub.length;
@@ -1818,24 +1851,29 @@
       : o.progress;
     // 📋 과제명 60자 말줄임(2026-07-29 웰리 확정규칙 ①) — 칸에 보이는 것은 과제명 한 줄뿐, 전체는 title 속성(호버)·edit 모드에서 그대로.
     var _titleShort = (o.title && o.title.length > 60) ? (o.title.slice(0, 60) + '…') : (o.title || '');
-    var titleCell = '<div class="r-title" title="' + esc(o.title || '') + '">' + esc(_titleShort) + honestyBadge(o) + '</div>' + metricBlock(o) + (o.cycle ? cycleBlock(o.cycle) : '');
-    var noteCell;
-    if(_editMode){
-      noteCell = '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
-        'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.progress_note || '') + '</div>';
-    } else {
-      // 📋 칸 압축(2026-07-29 GM 지적) — 결론(제목·담당·목표치·상태·진척%)은 이미 별도 칼럼에 있으니
-      // 근거·정정 경위 긴 글은 기본 접힘으로 내린다. 정보 손실 0(삭제 아님·L12⑤) — 펼치면 그대로 보인다.
-      noteCell = o.progress_note ? '<details class="r-note-fold"><summary>진행 근거·경위</summary><div class="r-note">' + esc(o.progress_note) + '</div></details>' : '';
-    }
+    var titleCell = '<div class="r-title" title="' + esc(o.title || '') + '">' + esc(_titleShort) + '</div>' + metricBlock(o) + (o.cycle ? cycleBlock(o.cycle) : '');
+
+    var idCell = '<span class="chip idc" data-id="' + esc(o.id) + '" onclick="copyObjId(this)" title="클릭해 복사">' + esc(o.id) + '</span>';
 
     var ownCell = '<span class="chip own">' + esc(nickOf(o.owner)) + '</span>' +
       '<div class="r-dept">' + esc(o.dept || '') + '</div>';
 
-    var targetCell = o.target ? esc(o.target) : '—';
-    if(_editMode && o.metric && !((o.metric.unit === '원') && /매출/.test(o.metric.name || ''))){
-      var cv = (typeof o.metric.current === 'number') ? o.metric.current : '';
-      targetCell += '<div class="mc-edit">✍ <input type="number" data-id="' + esc(o.id) + '" data-f="current" value="' + esc(cv) + '" placeholder="미입력"> ' + esc(o.metric.unit || '') + '</div>';
+    // 🎯 목표치 & 진행 근거·경위 통합 칸(2026-08-01 GM 지적) — 정직 딱지를 여기로 옮겨 '0%'가 못 잰 값인지
+    // 정말 안 한 것인지 목표치 바로 옆에서 구분되게 하고, 근거 한줄요약은 접지 않고 기본 펼침으로 보인다.
+    var targetCell = '<div class="r-target-val">' + (o.target ? esc(o.target) : '—') + honestyBadge(o) + '</div>';
+    if(_editMode){
+      if(o.metric && !((o.metric.unit === '원') && /매출/.test(o.metric.name || ''))){
+        var cv = (typeof o.metric.current === 'number') ? o.metric.current : '';
+        targetCell += '<div class="mc-edit">✍ <input type="number" data-id="' + esc(o.id) + '" data-f="current" value="' + esc(cv) + '" placeholder="미입력"> ' + esc(o.metric.unit || '') + '</div>';
+      }
+      targetCell += '<div class="note-edit" contenteditable="true" data-id="' + esc(o.id) + '" data-f="progress_note" ' +
+        'oncompositionstart="window._compOn()" oncompositionend="window._compOff()">' + esc(o.progress_note || '') + '</div>';
+    } else if(o.progress_note){
+      var ns = noteSummary(o.progress_note);
+      targetCell += '<div class="r-note-sum">' + esc(ns.sum) + '</div>';
+      if(ns.cut){
+        targetCell += '<details class="r-note-fold"><summary>전문 보기</summary><div class="r-note">' + esc(ns.full) + '</div></details>';
+      }
     }
 
     var statusCell;
@@ -1868,9 +1906,10 @@
     var nsCell = nsBadge(o);
 
     var mainRow = '<tr>' +
-      '<td class="c-title">' + titleCell + noteCell + '</td>' +
+      '<td class="c-id">' + idCell + '</td>' +
+      '<td class="c-title">' + titleCell + '</td>' +
       '<td class="c-own">' + ownCell + '</td>' +
-      '<td>' + targetCell + '</td>' +
+      '<td class="c-target">' + targetCell + '</td>' +
       '<td>' + statusCell + '</td>' +
       '<td class="c-prog">' + progCell + '</td>' +
       '<td class="c-ns">' + nsCell + '</td>' +
@@ -1880,6 +1919,7 @@
     if(hasSub && !_editMode){
       subRows = o.sub.map(function(s){
         return '<tr class="obj-sub">' +
+          '<td></td>' +
           '<td class="c-title sub-cell">↳ ' + esc(s.title) + '</td>' +
           '<td></td><td></td><td></td>' +
           '<td class="c-prog">' + progBar(s.progress, '진행', false, '', false) + '</td>' +
@@ -1907,7 +1947,7 @@
     if(!list.length) return head + '<div class="obj-empty">해당 과제가 없습니다.</div>';
     var sorted = sortObjsByStatus(list);
     return head + '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
-      '<th>핵심 과제</th><th>담당</th><th>목표치</th><th>상태</th><th>진척' + (withDelta ? ' · 궤적' : '') + '</th><th>→ 북극성</th>' +
+      '<th class="c-id">식별자</th><th>핵심 과제</th><th>담당</th><th class="c-target">목표치 &amp; 진행 근거·경위</th><th>상태</th><th>진척' + (withDelta ? ' · 궤적' : '') + '</th><th>→ 북극성</th>' +
       '</tr></thead><tbody>' + sorted.map(function(o){ return objRow(o, withDelta); }).join('') + '</tbody></table></div>';
   }
   // 🎚️ 자동화 달성률 게이지 — 목표 목록 맨 위 한 줄(GM이 매일 보는 목표 달성 게이지 · 2026-07-24).
