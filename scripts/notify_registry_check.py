@@ -186,9 +186,15 @@ def main(write_json=None):
     # ── 4-2) 모듈 등록부의 발신 방(bot_id/bot_room) → 방 SSOT 존재 확인 (2026-08-01) ──
     #   왜: 발신 방 이름이 두 곳에 적힌다 — notify_registry.json(room) 과
     #   module_registry.json(notify_spec.bot_id). 4번 검사는 앞의 것만 봤다.
-    #   실사고: cmo-publish-digest 의 bot_id 가 '문의·컨택·등록 알림' 인데 방 목록엔 그런 키가
-    #   없어 chat_id 를 못 구했고, 그래서 **발송 문이 닫힌 채** 5일간(발행 3건) 요약이 안 나갔다.
-    #   등록부 주석엔 이미 적혀 있었지만 아무도 안 읽었다 — 문서는 기계를 못 막는다(약속 L02).
+    #   ★정정(2026-08-01 시토). 이 검사를 넣을 때 근거로 "cmo-publish-digest 의 발송 문이 닫힌 채
+    #   5일간 요약이 안 나갔다"고 적었다. **틀렸다.** ①그 모듈은 `module_reporter` 를 거치지 않고
+    #   `publish_digest.py` 가 `.env` 로 직접 보낸다 — 여기서 이름을 못 찾아도 발송은 막히지 않는다.
+    #   ②안 나간 진짜 이유는 GM 지시(2026-07-27 · 커밋 7c2c5e92f)로 **개인계정(namuk) 발행은
+    #   실무진 방 발신에서 제외**됐고, 그 5일간 발행이 전부 개인계정이었기 때문이다(공식계정 0건).
+    #   재기 전에 말한 것이 원인이다.
+    #   ▸그래서 이 검사가 잡는 범위도 좁다: **`module_reporter.resolve_chat_id` 를 타는 모듈만**
+    #     실제로 발송이 막힌다. 그 밖의 모듈은 '이름이 방 목록에 없다'는 표기 불일치일 뿐이다.
+    #     검사는 그대로 두되(이름은 맞춰 두는 게 맞다) **막힌다고 단정하지 않는다.**
     mod_reg = load_json(ROOT / 'status' / 'module_registry.json') or {}
     for mod in (mod_reg.get('modules') or []):
         if not mod.get('enabled'):
@@ -206,7 +212,8 @@ def main(write_json=None):
             'registry_id': mod.get('id'),
             'task_name': room,
             'detail': f"모듈 '{mod.get('id')}' 의 발신 방 '{room}' 이 status/telegram_rooms.json 에 없음 — "
-                      f"방 번호를 못 구해 **발송이 조용히 막힌다**(모듈은 '정상'으로 보인다)",
+                      f"이름을 맞춰야 한다. ※`module_reporter` 를 거쳐 보내는 모듈이면 방 번호를 못 구해 "
+                      f"발송이 조용히 막히고, 직접 보내는 모듈이면 표기 불일치다(발송 여부는 별도 확인)",
         })
 
     # ── 5) 발신 코드가 박아 둔 카톡 방 이름 → 방 SSOT 존재 확인 (2026-08-01 · 배202) ──
