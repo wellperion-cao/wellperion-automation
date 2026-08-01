@@ -315,6 +315,33 @@ def _has_tracked_followup(feedback_id: str, queue: list, archive: list, exclude_
     return False
 
 
+def _ships_by_feedback_id(queue: list, archive: list) -> dict:
+    """접수ID → 그 접수ID와 관련된 배 전부(feedback_id 필드 매치 + note·title 안 접수ID 문자열
+    언급). 한 접수ID가 배 하나에만 묶인다고 가정하면 안 된다 — 2026-08-01 배10371③ 점검에서
+    두 실사례로 확인:
+      · FB260730-084209(배232) — 배231에 병합, 실제 처리·회신은 231(DONE)이 대조키로 수행.
+        232 자신은 status='MERGED'로 남는다.
+      · FB260801-152607(배274, 시포) — 시포 배는 원인만 찾고 시토에 인계(GAS 배포는 시포
+        금지), 실제 배포·검증·회신은 시토가 새로 연 배(배276, feedback_id 필드 없이 note에만
+        접수ID 언급)에서 했다.
+    두 경우 다 시트 '처리완료'는 사실이었다 — 완료가 '다른' 배에서 일어난 것뿐이다. 그래서
+    한 접수ID에 딸린 배를 전부 모아, 그중 하나라도 DONE 이면 정상으로 본다(_has_tracked_followup
+    과 같은 관용: feedback_id 필드가 없는 옛/인계 배도 note 안 접수ID 텍스트로 잡는다)."""
+    idx: dict = {}
+    for s in list(archive) + list(queue):
+        if not isinstance(s, dict):
+            continue
+        fids = set()
+        fid_field = str(s.get("feedback_id") or "").strip()
+        if fid_field:
+            fids.add(fid_field)
+        text = str(s.get("note") or "") + " " + str(s.get("title") or "")
+        fids.update(m.group(0) for m in _FBID_RE.finditer(text))
+        for fid in fids:
+            idx.setdefault(fid, []).append(s)
+    return idx
+
+
 def detect_done_reopen_drift(rows: list, queue: list, archive: list) -> list:
     """배가 DONE 이 아닌데(재오픈 등) 실무진 시트는 이미 '처리완료' 단계인 어긋남을 찾는다.
     (2026-07-28 웰리 지시 ③ 구조 차단 — 배10205·10207 실사고: 배는 IN_PROGRESS 인데 시트엔
@@ -322,7 +349,15 @@ def detect_done_reopen_drift(rows: list, queue: list, archive: list) -> list:
     이면 그 배를 곧장 건너뛰어(위 316행) 이 어긋남을 원래 보지 못했다 — 그 사각을 여기서 메운다.
     자동으로 시트를 되돌리지 않는다: 되돌림은 실제로 안 고쳐졌을 때만 맞는데 그 판단은 매번
     라이브 재확인이 필요하다(약속 L03) — 잘못 자동 되돌리면 이미 고쳐진 건까지 실무진에게
-    '확인중'으로 되비쳐 오히려 신뢰를 깎는다. 여기서는 어긋남을 놓치지 않고 표면화만 한다."""
+    '확인중'으로 되비쳐 오히려 신뢰를 깎는다. 여기서는 어긋남을 놓치지 않고 표면화만 한다.
+
+    ★2026-08-01 시포(배10371③ 마무리) — 접수ID 하나에 배 하나만 대응한다고 가정한 첫 버전은
+    병합·타 C-Level 인계를 오탐(false positive)으로 매번 잡았다(가짜 어긋남 2건 상시 표시,
+    라이브 재확인해 보니 둘 다 시트가 맞고 실제로 다 처리돼 있었음). 감시 대상 범위(= 이
+    watch 가 build_ship 으로 직접 만든 배 — feedback_id 필드 있는 것)는 그대로 두고,
+    '해결됐는지' 판정만 _ships_by_feedback_id(같은 접수ID를 언급하는 배 전부 — 병합 대상·
+    인계받은 배 포함)로 넓힌다. 감시 범위까지 넓히면(시트 전체 접수ID로 돌면) 접수ID를 그저
+    목록에 나열만 한 무관한 배(예: 전수점검 배)까지 오탐으로 걸린다 — 확인해서 뺐다."""
     by_fid = {}
     for r in rows:
         fid = str(r.get("접수ID") or "").strip()
@@ -338,6 +373,8 @@ def detect_done_reopen_drift(rows: list, queue: list, archive: list) -> list:
         if fid:
             latest_by_fid[fid] = ship
 
+    ships_idx = _ships_by_feedback_id(queue, archive)
+
     drift = []
     for fid, ship in latest_by_fid.items():
         row = by_fid.get(fid)
@@ -346,8 +383,9 @@ def detect_done_reopen_drift(rows: list, queue: list, archive: list) -> list:
         current_status = str(row.get("처리상태") or "").strip()
         if _stage_rank(current_status) < _stage_rank(STAFF_STATUS_DONE):
             continue  # 시트가 아직 처리완료 단계가 아니면 이 감시 대상 아님
-        if str(ship.get("status") or "") == "DONE":
-            continue  # 정상 — 배도 DONE
+        related = ships_idx.get(fid) or [ship]
+        if any(str(s.get("status") or "") == "DONE" for s in related):
+            continue  # 정상 — 관련 배 중 하나(병합 대상·인계받은 배 포함)가 DONE
         drift.append({
             "id": fid, "task_id": ship.get("task_id"),
             "ship_status": ship.get("status"), "sheet_status": current_status,
