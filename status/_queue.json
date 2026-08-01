@@ -1314,5 +1314,25 @@
     "reversible": true,
     "work_type": "update",
     "updated_at": "2026-08-01"
+  },
+  {
+    "task_id": "CMO-2026-08-01-발행-요약-반응-접수-3개-모듈이-발송-문이-닫힌-",
+    "clevel": "cmo",
+    "title": "[시모] 발행 요약·반응·접수 3개 모듈이 '발송 문이 닫힌 채' 돌고 있다 — 방 이름 불일치",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-01",
+    "from": "cto",
+    "note": "[시토 → 시모 전달 2026-08-01] 시토 대조기 자동 탐지 2026-08-01(모듈 등록부 방 이름 검사 첫 실적). ▸증상: 모듈은 '정상'으로 보이고 산출물도 나오는데 **사람에게만 안 간다.** module_reporter.resolve_chat_id 는 bot_id 로 적힌 방 이름을 telegram_rooms.json 에서 못 찾으면 조용히 스킵한다. ▸해당 3건(전부 시모): ①cmo-publish-digest bot_id='문의·컨택·등록 알림' ②cmo-reaction-loop bot_id='GM 업무보고봇방(TELEGRAM_CHAT_ID)' ③cmo-content-intake bot_id='GM 업무보고봇' — 셋 다 그런 이름의 방이 목록에 없어 해소 결과 None. ▸실측 피해: 발행은 계속됐다(7/25·26·27·28·30·31 6건). 그런데 발행요약 마지막 발신은 **7/27**(scripts/.publish_digest_sent.json) — 7/28·7/30·7/31 발행 3건에 요약 0건. 2026-07-27 에도 같은 부류로 4일 무발신 사고가 있었고 등록부 주석에 원인이 이미 적혀 있었으나 고쳐지지 않았다. ▸실재하는 방 이름(정본 status/telegram_rooms.json): 점검관리방·문의알림방·종합접수처·GM_DM·자동화현황방. ▸주의: 이름만 바꾸면 **그 순간부터 실제 발신이 시작된다**(실무진 방 포함) — 어느 방으로 보낼지는 GM 확인 후 바꿀 것. ▸별건: 검수큐에 '발행실패' 1건(CMO-2026-08-01-CASE16-놓친문의 · 게시 URL 미회수) 남아 있음. ▸재발방지는 이미 코드로: scripts/notify_registry_check.py MODULE_ROOM_NOT_IN_SSOT(30분마다 자동).",
+    "next": "3개 모듈의 bot_id 를 실재하는 방 이름으로 바로잡기 — 단 어느 방으로 보낼지 GM 확인 후. 발행실패 1건 URL 회수도 같이.",
+    "depends_on": "",
+    "ship_no": 10471,
+    "short_no": 284,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "office",
+    "reversible": false,
+    "work_type": null,
+    "updated_at": "2026-08-01"
   }
 ]
