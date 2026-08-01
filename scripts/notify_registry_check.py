@@ -183,6 +183,32 @@ def main(write_json=None):
                           f"오타·표기 드리프트이거나 미등록 방(카톡은 창 제목 불일치 = 발송 실패)",
             })
 
+    # ── 4-2) 모듈 등록부의 발신 방(bot_id/bot_room) → 방 SSOT 존재 확인 (2026-08-01) ──
+    #   왜: 발신 방 이름이 두 곳에 적힌다 — notify_registry.json(room) 과
+    #   module_registry.json(notify_spec.bot_id). 4번 검사는 앞의 것만 봤다.
+    #   실사고: cmo-publish-digest 의 bot_id 가 '문의·컨택·등록 알림' 인데 방 목록엔 그런 키가
+    #   없어 chat_id 를 못 구했고, 그래서 **발송 문이 닫힌 채** 5일간(발행 3건) 요약이 안 나갔다.
+    #   등록부 주석엔 이미 적혀 있었지만 아무도 안 읽었다 — 문서는 기계를 못 막는다(약속 L02).
+    mod_reg = load_json(ROOT / 'status' / 'module_registry.json') or {}
+    for mod in (mod_reg.get('modules') or []):
+        if not mod.get('enabled'):
+            continue
+        spec = mod.get('notify_spec') or {}
+        if spec.get('channel') != 'telegram':
+            continue
+        room = spec.get('bot_id') or spec.get('bot_room')
+        # 숫자로 준 것은 chat_id 그대로라 방 이름 대조 대상이 아니다(resolve_chat_id 와 같은 규칙).
+        # None 은 '아직 안 켠 것'이라 결함이 아니다 — 이름을 적었는데 그 방이 없을 때만 잡는다.
+        if not isinstance(room, str) or not room or room in known_tg:
+            continue
+        mismatches.append({
+            'kind': 'MODULE_ROOM_NOT_IN_SSOT',
+            'registry_id': mod.get('id'),
+            'task_name': room,
+            'detail': f"모듈 '{mod.get('id')}' 의 발신 방 '{room}' 이 status/telegram_rooms.json 에 없음 — "
+                      f"방 번호를 못 구해 **발송이 조용히 막힌다**(모듈은 '정상'으로 보인다)",
+        })
+
     # ── 5) 발신 코드가 박아 둔 카톡 방 이름 → 방 SSOT 존재 확인 (2026-08-01 · 배202) ──
     #   등록부만 맞춰 두면 반쪽이다. 실제로 창을 찾아 보내는 건 코드에 박힌 문자열이고,
     #   카톡은 창 제목 정확 일치라 여기 오타 한 칸이 곧 발송 실패다. 코드를 SSOT 를 읽도록
