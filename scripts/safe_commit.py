@@ -306,13 +306,26 @@ def _sync_live_index(rel_paths: list[str], root: Path, old_head: str, new_sha: s
             # stdin 은 반드시 bytes — text=True 로 주면 Windows 에서 "\n"→"\r\n" 로 번역돼
             # 경로 끝에 CR 이 붙고 update-index 가 조용히 실패한다(2026-07-23 격리 테스트로 실측).
             payload = ("\n".join(add_lines) + "\n").encode("utf-8")
-            r = subprocess.run(
-                ["git", "-C", str(root), "update-index", "--add", "--index-info"],
-                input=payload, capture_output=True, timeout=60,
-            )
-            if r.returncode != 0:
-                print(f"[WARN] 라이브 인덱스 동기화 실패(best-effort): "
-                      f"{r.stderr.decode('utf-8', 'replace').strip()}")
+            # ★2026-08-01(시토 · 배265) — index.lock 경합이면 기다렸다 재시도한다.
+            #   왜: 한 방에 실패하면 라이브 인덱스에 **커밋 전 옛 사본이 남는다.**
+            #   그 상태로 다른 세션이 커밋하면 방금 고친 코드가 되돌아가고, 자동
+            #   reconcile 은 그 파일에서 매번 충돌해 push 가 막힌다(2026-08-01 실사고:
+            #   옛 사본 37건 누적 → 자동 push 20회 연속 차단). 임시 인덱스 stage 가
+            #   이미 쓰는 것과 같은 대기·재시도를 여기에도 준다(_stage_with_retry 동일 상수).
+            for attempt in range(_INDEX_LOCK_RETRIES):
+                r = subprocess.run(
+                    ["git", "-C", str(root), "update-index", "--add", "--index-info"],
+                    input=payload, capture_output=True, timeout=60,
+                )
+                if r.returncode == 0:
+                    break
+                err = r.stderr.decode("utf-8", "replace").strip()
+                if "index.lock" not in err.lower() or attempt == _INDEX_LOCK_RETRIES - 1:
+                    print(f"[WARN] 라이브 인덱스 동기화 실패(best-effort): {err}\n"
+                          f"       ↳ 옛 사본이 인덱스에 남았을 수 있습니다. "
+                          f"확인: git diff --cached --name-only")
+                    break
+                time.sleep(_INDEX_LOCK_WAIT_SEC)
         if remove_paths:
             _git(["update-index", "--force-remove", "--", *remove_paths], root)
     except Exception as exc:  # best-effort — 커밋은 이미 성공했다
