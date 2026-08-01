@@ -432,15 +432,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <!-- 운영 기준(정본) — 등록·결재·점수·일정·보류·정체·담당표기 한 장 (2026-07-23 시우 신설).
            기존 doc_guide.html(기획안·결과보고 서식)은 어디서도 링크되지 않은 고아 페이지였어서
            운영 기준 페이지 안에서 함께 걸어 찾을 수 있게 했다. -->
-      <!-- ⏰ 보류 재부상 — 상단 버튼 + 팝업 (GM 지시 2026-07-28 "따로 상단에 탭으로해서 팝업으로").
-           전엔 이 카드가 헤더 바로 아래 본문 위에 항상 펼쳐져 있어, 볼 게 없는 날에도 자리를 먹고
-           정작 업무 목록을 밀어냈다. 배지 숫자(신규 건수)만 상단에 두고 내용은 눌러서 본다.
-           ※ 새 부품 안 만든다 — _assets/worklog_panel.js 가 이미 갖고 있는 mode="modal" +
-             data-worklog-badge 를 그대로 쓴다(멤버십 화면이 쓰는 것과 같은 것). -->
-      <button type="button" class="sheet-link" id="btnHoldResurface" onclick="openHoldModal()"
-              style="background:var(--red-bg,rgba(232,85,85,0.12));color:var(--red,#e85555);border-color:rgba(232,85,85,0.3);">
-        ⏰ 보류 재부상<span id="wlHoldBadge" style="margin-left:4px;font-weight:800;" hidden></span>
-      </button>
       <a class="sheet-link" href="업무·결재 운영 기준.html" style="background:var(--yellow-bg);color:var(--yellow);border-color:rgba(224,179,65,0.3);">
         <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
         운영 기준
@@ -464,33 +455,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="filter-row" id="searchRow" style="padding-top:2px;"></div>
 </div>
 </div><!-- /sticky-top -->
-
-<!-- ⏰ 보류 재부상 팝업 — 보류로 넣어둔 결재사항이 사유·재개조건 없이 조용히 사라지지 않게 하는
-     감지 카드(GM 지시 2026-07-23·배9836 / 2026-07-28 GM "상단 탭 + 팝업으로" 반영).
-     이 화면(holdTask·_askResumeCond)이 보류 전환 시 사유·재개조건 2칸을 강제하는 입력 게이트이고,
-     이 카드는 그 결과를 사후에 감시한다 — 새 화면·새 알림 만들지 않고 전 C-Level 공용 부품
-     (_assets/worklog_panel.js · status/worklog_gaps.json) 그대로 담기만 한다(사본 금지).
-     gap-filter="::hold-" = coo 감지 중 보류 3겹(hold-abandoned·hold-no-resume·hold-resume-due)만.
-     gaps-only=한 일 로그 생략 / mode=modal=접힘 토글 없이 내용만(껍데기는 이 팝업이 갖는다).
-     badge=상단 버튼 옆 신규 건수(0건이면 자동 숨김 — 평상시 조용). -->
-<div class="modal-overlay" id="holdModal" onclick="if(event.target===this)closeHoldModal()">
-  <div class="modal" style="max-width:900px;">
-    <h2 style="display:flex;align-items:center;justify-content:space-between;">
-      <span>⏰ 보류 재부상</span>
-      <button type="button" class="modal-btn cancel" onclick="closeHoldModal()" style="padding:4px 12px;">닫기</button>
-    </h2>
-    <div data-worklog="coo" data-worklog-mode="modal" data-worklog-gap-filter="::hold-"
-         data-worklog-gaps-only="1" data-worklog-badge="#wlHoldBadge"></div>
-  </div>
-</div>
-<script>
-/* 보류 재부상 팝업 열고 닫기 — 이 페이지의 기존 modal-overlay/.show 규칙 그대로 쓴다(새 CSS 0). */
-function openHoldModal(){ document.getElementById('holdModal').classList.add('show'); }
-function closeHoldModal(){ document.getElementById('holdModal').classList.remove('show'); }
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape') closeHoldModal();
-});
-</script>
 
 <div class="toast" id="toast"></div>
 
@@ -3773,9 +3737,6 @@ function printResultReport(taskId, override) {
 }
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
-    <!-- ⏰ 보류 재부상 카드(위 data-worklog="coo")가 그려지려면 이 공용 스크립트가 필요하다 —
-         데이터·스타일 정본은 _assets/worklog_panel.js 하나뿐(사본 금지, GM 지시 2026-07-23·배9836). -->
-    <script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
 
 </div><!-- /ssotViewTasks -->
 

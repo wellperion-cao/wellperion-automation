@@ -1093,8 +1093,8 @@
          요약(broj-entry, 舊 위치=이 상세표 바로 아래·2026-07-29 분리)을 이 자리 토글로 승격 이관 — 새
          컴포넌트 0(위 r-note-fold 재사용), 새 데이터소스 0(둘 다 기존 CHECK_GAS 공용보드 그대로: 회장님=
          coo/chairman/회장님_지시사항.html·CHAIRMAN_DIRECTIVES_2026_08, 브로제이=coo/brojay/브로제이_업무
-         분장.html과 동일 BROJ_TASK_BOARD). 접었을 때도 summary 안 배지로 건수가 보인다(hold-resurface와
-         동일 패턴). 인쇄는 화면 전용(.toggle-row-2 @media print 숨김) — A3 페이지 수 불변. -->
+         분장.html과 동일 BROJ_TASK_BOARD). 접었을 때도 summary 안 배지로 건수가 보인다.
+         인쇄는 화면 전용(.toggle-row-2 @media print 숨김) — A3 페이지 수 불변. -->
     <section class="blk" data-blkid="exec-toggles">
       <div class="toggle-row-2">
         <details class="r-note-fold tg-card" id="chairman-fold">
@@ -1113,24 +1113,6 @@
       <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-half" title="일부 목표는 실무 SSOT·채용공고·연동 배 상태에서 자동 연동(🔄 자동 배지 병기·배9678), 나머지는 수동 관리 — 사람 진척은 시우 검수로 보정">🟠 반반</span> <span class="stag">요약 + 신규·이월 상세 · 🔄 자동연동 병기</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
-    </section>
-
-    <!-- ⏰ 보류 재부상 — 핵심과제·전략로드맵에 필요한 결재사항을 일단 보류로 넣어둔 뒤 조용히
-         사라지지 않게 하는 감지 카드(GM 지시 2026-07-23·배9836). 새 화면·새 알림 만들지 않고 전
-         C-Level 공용 부품(_assets/worklog_panel.js·status/worklog_gaps.json) 그대로 담기만 한다
-         — 사본 금지. 보류사유·재개조건 빈칸(조용한 소멸)과 재개조건 충족(다시 볼 때)을 함께 보여준다.
-         2026-07-29 GM 지시("보류 재부상도 토글로") — 핵심과제 칸에 쓴 것과 같은 <details> 접힘을
-         그대로 재사용(새 컴포넌트 0·약속 L21). 위젯 자체(mode=modal)는 그대로 두고 페이지가 바깥에서
-         한 겹 더 접는다 — 위젯 내부 로직·다른 페이지의 동일 위젯은 미변경. -->
-    <section class="blk" data-blkid="hold-resurface">
-      <h2 class="sec">⏰ 보류 재부상 <span class="lvb lvb-live" title="업무·결재 SSOT 보류 행을 매 실행마다 실측 — 게이트(입력 강제)·빈칸감지(사후)·재부상(조건충족) 3겹">🟢 라이브</span> <span class="stag">보류사유·재개조건 빈칸 + 재개조건 충족 감지</span></h2>
-      <details class="r-note-fold" id="hold-resurface-fold">
-        <summary>보류 현황 <span class="be-badge be-p1" id="hold-resurface-badge">불러오는 중…</span></summary>
-        <!-- gap-filter="::hold-" = 전체 coo 감지(276건) 중 보류 3겹(hold-abandoned·hold-no-resume·
-             hold-resume-due) ref만 뽑는다. gaps-only=한 일 로그 생략. mode=modal=위젯 내부 토글 없이
-             내용만 채움(바깥 <details>가 접고 펼치는 걸 대신 맡는다). -->
-        <div data-worklog="coo" data-worklog-mode="modal" data-worklog-gap-filter="::hold-" data-worklog-gaps-only="1"></div>
-      </details>
     </section>
 
   </div>
@@ -3435,26 +3417,6 @@
     // 8-1) 👑 회장님 지시사항 — 진입 토글 요약만 로드(본문은 별도 페이지, coo/chairman/회장님_지시사항.html). (GM 지시 2026-08-01)
     loadChairmanFold();
 
-    // 9) ⏰ 보류 재부상 — 접힌 상태에서도 건수 배지 표시(GM 지시 2026-07-29 "보류 재부상도 토글로").
-    watchHoldResurfaceBadge();
-  }
-
-  // ⏰ 보류 재부상 접힘 배지 — _assets/worklog_panel.js(공용·사본 금지)가 이미 계산해 렌더한 텍스트
-  // ("⚠️ N건" 또는 "빠진 것 없음 ✅")를 그대로 옮겨 붙인다(계산 로직 재복제 0·약속 L21). 위젯은 비동기로
-  // 내용을 채우므로 MutationObserver로 처음 채워질 때 + 이후 갱신될 때마다 배지를 동기화한다.
-  function watchHoldResurfaceBadge(){
-    var badge = document.getElementById('hold-resurface-badge');
-    var container = document.querySelector('#hold-resurface-fold [data-worklog]');
-    if(!badge || !container) return;
-    function sync(){
-      var titleEl = container.querySelector('.wl-section-title');
-      var text = titleEl ? titleEl.textContent.trim() : '';
-      if(/없음/.test(text)) badge.className = 'be-badge';       // 없음=조용한 회색
-      else if(text) badge.className = 'be-badge be-p1';         // N건=경보색 유지
-      badge.textContent = text || '집계 중…';
-    }
-    new MutationObserver(sync).observe(container, {childList:true, subtree:true});
-    sync();
   }
 
   // ── 하단 점검·이슈 보드 로드: 부팅 시 즉시(eager) kpi/voc fetch — GM 지시 2026-07-06: 舊 IntersectionObserver 지연로드(스크롤해야 발동)는
@@ -3557,8 +3519,5 @@
 })();
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
-    <!-- ⏰ 보류 재부상 카드(위 data-worklog="coo")가 그려지려면 이 공용 스크립트가 필요하다 —
-         데이터·스타일 정본은 _assets/worklog_panel.js 하나뿐(사본 금지, GM 지시 2026-07-23·배9836). -->
-    <script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
 </body>
 </html>
