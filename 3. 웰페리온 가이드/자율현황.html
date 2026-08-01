@@ -1789,21 +1789,32 @@
     name = String(name || '').trim();
     return name.replace(/^★\s+/, '★');
   }
-  // 방 용도 — 구 '📋 텔레그램·카카오톡 전 방 한 장' 표(배202·GM 지시 2026-07-28)에서 이식.
-  // 표에 없던 방(CFO 채널·핵심멤버방 등 신규 발견)은 렌더 시 그 방의 첫 발신 내용으로 대체.
-  var ROOM_PURPOSE = {
-    'GM_DM': 'GM 개인 1:1 — 아침/저녁 루틴·🧭 오늘의 항로·승인·결재 중계·헬스체크 등 정시 다수',
-    '점검관리방': '점검 독려·이슈 알림·월간 점검 리포트',
-    '문의알림방': '문의 5종 신규·컨택/등록 다이제스트·CMO 일일/주간 마케팅카드',
-    '종합접수처': '종합접수 신규+미처리 적체 리마인드',
-    '자동화현황방': '모듈 일일/주간/월간 보고·자동화 건강 다이제스트',
-    '시설팀알람방': '시설팀 앞 임시 전달(정기 발신 미배선)',
-    '차의주 회장님': '매출·운영·인사 보고(스트림3 이미지)',
-    '웰페리온 관리부': '매출·운영·인사 보고(스트림3 이미지)',
-    '★운영부': '매출보고(경영) + 아침 종합운영다이제스트·점검/접수 현황(실무) — 이중용도',
-    '★부서장': '문의 정리 다이제스트(문의알림방과 동시발송)',
-    '★운영+시설+지원+주차': '점검·접수 현황 통합 다이제스트'
-  };
+  /* ★2026-08-01(시토 · 배202) — 방 용도·표시명을 이 페이지에 하드코딩하지 않는다.
+     전에는 여기 표가 정본이라, 방 이름이 바뀌거나 새 방이 생겨도 화면만 옛말을 했다
+     (실제로 '★운영부'로 적혀 있었는데 발신 코드가 쓰는 진짜 창 제목은 '★ 운영부'라
+      용도 설명이 그 방에 안 붙었다). 이제 두 SSOT 에서 읽는다(약속 L01):
+       · 텔레그램 = status/telegram_rooms.json 의 _purpose / _display
+       · 카카오톡 = scripts/kakao_rooms.json 의 all_rooms[].purpose
+     ROOM_META 는 그 둘을 합쳐 런타임에 채운다 — 화면에 사본을 두지 않는다. */
+  var ROOM_META = {};   // { 방이름: {purpose, display, category, hasSender} }
+  function buildRoomMeta(trooms, kakao){
+    ROOM_META = {};
+    var tp = (trooms && trooms._purpose) || {};
+    var td = (trooms && trooms._display) || {};
+    // 키는 반드시 roomKey() 를 통과시킨다 — 화면이 방을 묶는 키와 같아야 용도가 붙는다
+    // (카톡 '★ 운영부'는 roomKey 에서 '★운영부'로 정규화된다).
+    Object.keys(tp).forEach(function(k){ ROOM_META[roomKey(k)] = { purpose: tp[k], display: td[k] || k, channel:'telegram' }; });
+    Object.keys(trooms || {}).forEach(function(k){
+      if(k.charAt(0) === '_') return;               // _doc·_purpose·_display 는 방이 아니다
+      if(!ROOM_META[roomKey(k)]) ROOM_META[roomKey(k)] = { purpose:'', display: td[k] || k, channel:'telegram' };
+    });
+    ((kakao && kakao.all_rooms) || []).forEach(function(r){
+      if(!r || !r.name) return;
+      ROOM_META[roomKey(r.name)] = { purpose: r.purpose || '', display: r.name, category: r.category || '', channel:'kakao' };
+    });
+  }
+  function roomPurpose(key){ return (ROOM_META[key] || {}).purpose || ''; }
+  function roomDisplay(key){ return (ROOM_META[key] || {}).display || key; }
 
   // ═══════════ ② 돌아가는 자동화: 📨 알림 한 장 (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · 2026-07-31 · 구 3섹션[방 한 장·통합 알림 보드·모듈 보고 현황] 통합) ═══════════
   var NOTIFY_FREQ_LABEL = { daily:'매일', weekly:'매주', monthly:'매월', conditional:'조건부', event:'이벤트' };
@@ -1887,16 +1898,27 @@
   function alertRoomsHtml(rows, troom){
     var groups = {}, order = [];
     rows.forEach(function(r){
-      var key = roomKey(r.item.room);
-      if(!groups[key]){ groups[key] = []; order.push(key); }
-      groups[key].push(r);
-    });
-    if(_notifyState.channel !== 'kakao'){
-      Object.keys(troom || {}).forEach(function(name){
-        var key = roomKey(name);
+      // 한 발신이 여러 방으로 나가면(예: 매출보고 3방) 방마다 각각 걸어 준다 —
+      // 예전엔 "차의주 회장님·웰페리온 관리부·★운영부(3방)" 같은 문장이 통째로 방 하나로
+      // 세어져, 방 개수도 틀리고 그 방들을 펼쳐도 그 발신이 안 보였다(2026-08-01 시토·배202).
+      String(r.item.room || '').split(/\s*\/\s*/).forEach(function(nm){
+        var key = roomKey(nm);
+        if(!key) return;
         if(!groups[key]){ groups[key] = []; order.push(key); }
+        groups[key].push(r);
       });
-    }
+    });
+    // 등록부에 발신이 0건인 방도 숨기지 않고 얹는다 — '구멍'이 안 보이면 못 고친다.
+    // ★2026-08-01(시토 · 배202) 두 가지 고침:
+    //   ①밑줄(_)로 시작하는 키(_doc·_purpose·_display)를 방으로 세던 것 — 가짜 방이 화면에 떴다.
+    //   ②카카오톡 방은 얹지 않아 자동 발신이 없는 방(★중간관리자)이 아예 안 보였다.
+    //     등록 없이 아무 방에나 쏠 수 있던 구멍이 화면에도 안 보이면 영영 안 잡힌다(배202 지시).
+    Object.keys(ROOM_META).forEach(function(name){
+      var ch = ROOM_META[name].channel;
+      if(_notifyState.channel !== 'all' && _notifyState.channel !== ch) return;
+      var key = roomKey(name);
+      if(!groups[key]){ groups[key] = []; order.push(key); }
+    });
     order.sort(function(a, b){
       function problemCnt(k){ return groups[k].filter(function(r){ return r.sevInfo.sev === 'bad' || r.sevInfo.sev === 'dead'; }).length; }
       var pa = problemCnt(a), pb = problemCnt(b);
@@ -1905,18 +1927,23 @@
     });
     return order.map(function(key){
       var list = groups[key];
-      var emo = list.length ? (NOTIFY_CH_EMOJI[list[0].item.channel] || '❔') : '📨';
+      var meta = ROOM_META[key] || {};
+      var emo = list.length ? (NOTIFY_CH_EMOJI[list[0].item.channel] || '❔') : (NOTIFY_CH_EMOJI[meta.channel] || '📨');
       var todayCnt = list.filter(function(r){ return r.item.freq === 'daily' && r.item.state === 'live'; }).length;
       var problemCnt = list.filter(function(r){ return r.sevInfo.sev === 'bad' || r.sevInfo.sev === 'dead'; }).length;
-      var purpose = ROOM_PURPOSE[key] || (list[0] ? list[0].item.what : '등록된 발신 없음(구멍)');
+      var purpose = roomPurpose(key) || (list[0] ? list[0].item.what : '자동 발신 없음 — 사람이 필요할 때만 쓰는 방');
+      // 사람이 보는 이름(display)을 앞에, 코드가 쓰는 내부 키가 다르면 뒤에 작게.
+      // 예: 방 이름은 'AI 진행현황'인데 저장소 134곳이 '자동화현황방' 키를 쓴다(GM 확정 2026-07-28 — 키는 안 바꾼다).
+      var shownName = esc(roomDisplay(key))
+        + (roomDisplay(key) !== key ? ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(내부 이름 ' + esc(key) + ')</span>' : '');
       var body = list.length
         ? '<div class="coo-tbl-wrap"><table>' +
             '<tr><th>보내는 것</th><th style="width:64px">주기</th><th style="width:120px">발신 시각</th><th style="width:150px">상태</th></tr>' +
             list.map(function(r){ return r.html; }).join('') +
           '</table></div>'
-        : '<div class="sec-note" style="margin-top:6px;">텔레그램 방 등록부에는 있는데 <code>notify_registry.json</code>에 이 방으로 나가는 발신이 없습니다.</div>';
+        : '<div class="sec-note" style="margin-top:6px;">방 목록에는 있는데 <code>notify_registry.json</code>에 이 방으로 나가는 <b>자동 발신이 하나도 없습니다</b> — 사람이 손으로만 쓰는 방이거나, 배선이 등록 안 된 구멍입니다.</div>';
       return '<details class="coo-details" style="margin-top:8px;">' +
-        '<summary>' + emo + ' ' + esc(key) +
+        '<summary>' + emo + ' ' + shownName +
           '<span style="color:var(--dim);font-weight:400;"> — ' + esc(purpose) + '</span>' +
           '<span style="float:right;color:var(--dim);font-weight:400;">오늘 ' + todayCnt + '건' +
             (problemCnt ? ' · <span style="color:#ff8a80;">문제 ' + problemCnt + '건</span>' : '') + '</span>' +
@@ -1983,7 +2010,11 @@
     });
 
     if(summaryEl){
-      var roomSet = {}; _alertRowsCache.forEach(function(r){ roomSet[roomKey(r.item.room)] = 1; });
+      var roomSet = {};
+      _alertRowsCache.forEach(function(r){
+        String(r.item.room || '').split(/\s*\/\s*/).forEach(function(nm){ if(roomKey(nm)) roomSet[roomKey(nm)] = 1; });
+      });
+      Object.keys(ROOM_META).forEach(function(k){ roomSet[k] = 1; });   // 발신 0건인 방도 방은 방이다
       summaryEl.innerHTML = '방 <b>' + Object.keys(roomSet).length + '개</b> · 발신 총 <b>' + items.length + '건</b> · 🟢 가동 ' + counts.ok + ' · 🟡 조건부 ' + counts.warn + ' · 🔴 꺼짐 ' + counts.bad + ' · ⚫ 죽은배선 ' + counts.dead;
     }
 
@@ -2249,7 +2280,8 @@
     gasReadText('status/module_silence_snapshot.json', 'status/module_silence_snapshot.json').catch(function(){ return ''; }),
     gasReadText('status/notify_registry.json',         'status/notify_registry.json').catch(function(){ return ''; }),
     gasReadText('status/notify_drift.json',            'status/notify_drift.json').catch(function(){ return ''; }),
-    gasReadText('status/telegram_rooms.json',          'status/telegram_rooms.json').catch(function(){ return ''; })
+    gasReadText('status/telegram_rooms.json',          'status/telegram_rooms.json').catch(function(){ return ''; }),
+    gasReadText('scripts/kakao_rooms.json',            'scripts/kakao_rooms.json').catch(function(){ return ''; })
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -2293,6 +2325,8 @@
     try{ renderAutomationHealth(erpStatus); }catch(e){ document.getElementById('erp-ah-headline').innerHTML = '<span style="color:var(--dim);">건강 점수판 표시 오류.</span>'; }
     var moduleRegistry = parseJson(a[12]);
     try{ renderModuleSilence(parseJson(a[15]), moduleRegistry); }catch(e){ document.getElementById('erp-ah-silence-headline').innerHTML = '<span style="color:var(--dim);">모듈 결과 산출 표시 오류.</span>'; }
+    // 방 용도·표시명은 두 SSOT 에서 읽어 먼저 채운다(a[18]=텔레그램 방 · a[19]=카톡 방).
+    try{ buildRoomMeta(parseJson(a[18]), parseJson(a[19])); }catch(e){}
     try{ renderAlertBoard(parseJson(a[18]), parseJson(a[16]), parseJson(a[17]), erpStatus, parseJson(a[13]), moduleRegistry); }catch(e){
       var abEl = document.getElementById('alert-board-rooms');
       if(abEl) abEl.innerHTML = '<div class="feed-status">알림 한 장 표시 오류.</div>';

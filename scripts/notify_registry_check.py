@@ -150,6 +150,37 @@ def main(write_json=None):
                           f"안 걸림 — 신규 발신이면 등록부에 추가 필요(이름 휴리스틱, 오탐 가능)",
             })
 
+    # ── 4) 등록부 room → 방 SSOT 존재 확인 (2026-08-01 시토 · 배202) ──────────
+    #   왜: 방 이름이 등록부·발신 코드·화면에 제각각 적혀 있었다. 실측 3건 —
+    #     ①'★운영부'(공백 없음) vs 발신 코드가 실제로 찾는 창 제목 '★ 운영부'(공백 있음)
+    #     ②방 칸에 "차의주 회장님·웰페리온 관리부·★운영부(3방)" 같은 문장이 들어가 방 개수가 틀림
+    #     ③★중간관리자 는 어디에도 등록 안 된 채 발신만 나감
+    #   카톡 전송기는 **창 제목 정확 일치**로 방을 찾으므로 공백 한 칸이 곧 발송 실패다.
+    #   새 감시기를 만들지 않고 이미 도는 이 대조기에 얹는다(약속 L21 — 관문에만).
+    kakao_rooms = load_json(ROOT / 'scripts' / 'kakao_rooms.json') or {}
+    troom = load_json(ROOT / 'status' / 'telegram_rooms.json') or {}
+    known_kakao = {r.get('name') for r in (kakao_rooms.get('all_rooms') or []) if r.get('name')}
+    known_tg = {k for k in troom if not k.startswith('_')}
+    for item in reg_items:
+        if item.get('state') == 'dead':
+            continue
+        ch = item.get('channel')
+        known = known_kakao if ch == 'kakao' else (known_tg if ch == 'telegram' else None)
+        if known is None:
+            continue
+        # 한 발신이 여러 방으로 나가면 ' / ' 로 나눠 적는다(문장 금지 — 그래야 셀 수 있다).
+        for name in [n.strip() for n in str(item.get('room', '')).split('/') if n.strip()]:
+            if name in known:
+                continue
+            where = 'scripts/kakao_rooms.json all_rooms' if ch == 'kakao' else 'status/telegram_rooms.json'
+            mismatches.append({
+                'kind': 'ROOM_NOT_IN_SSOT',
+                'registry_id': item.get('id'),
+                'task_name': name,
+                'detail': f"등록부 '{item.get('id')}'의 방 '{name}'이 방 SSOT({where})에 없음 — "
+                          f"오타·표기 드리프트이거나 미등록 방(카톡은 창 제목 불일치 = 발송 실패)",
+            })
+
     result = {
         'generated_at': datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S'),
         'registry_items': len(reg_items),
