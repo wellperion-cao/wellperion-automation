@@ -53,14 +53,11 @@ from review_queue_util import (  # noqa: E402
     QueueLockTimeout,
 )
 
-try:  # 전역 발송 페이싱(프로세스 간 429 방지) — best-effort
-    from tg_outbound_log import log_outbound, pace as _tg_pace
+try:  # 발신 공용 관문(페이싱+429재시도+검수+로깅) — best-effort
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-
-    def _tg_pace(*a, **k):
-        return None
+    def _tg_send(token, chat_id, text, **k):
+        return False
 
 # 시트 헤더 정본(.deploy-instructor/instructor_intake.js INTAKE_HEADER 와 동일 순서) —
 # 헤더가 깨져 조회 응답이 col1..col9 로 올 때 이 순서로 이름을 되붙인다.
@@ -200,21 +197,8 @@ def _send_telegram_card(bot_token: str, chat_id: str, item: dict) -> bool:
     if intake.get("접수일시"):
         lines.append(f"접수일시: {intake['접수일시']}")
     message = "\n".join(lines)
-    try:
-        data = urllib.parse.urlencode({
-            "chat_id": chat_id, "text": message,
-            "disable_web_page_preview": "true",
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{bot_token}/sendMessage", data=data, method="POST")
-        _tg_pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            ok = resp.status == 200
-            log_outbound(message, chat_id=chat_id, source="cmo_intake_to_review", ok=ok, kind="sendMessage")
-            return ok
-    except Exception:
-        log_outbound(message, chat_id=chat_id, source="cmo_intake_to_review", ok=False, kind="sendMessage")
-        return False
+    return _tg_send(bot_token, chat_id, message, source="cmo_intake_to_review",
+                     extra={"disable_web_page_preview": "true"}, timeout=10)
 
 
 def _load_sent_state() -> dict:

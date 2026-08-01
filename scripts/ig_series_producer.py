@@ -67,13 +67,11 @@ NAMUK_DIR = INSTAGRAM_DIR / "namuk.wellperion"
 PY = ROOT / ".venv" / "Scripts" / "python.exe"
 ENV_PATH = ROOT / "telegram_bot" / ".env"
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 공용 관문(페이싱+429재시도+검수+로깅, best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(token, chat_id, text, **k):
+        return False
 
 try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백). 패턴 = scripts/publish_register.py 동일.
     _TGB_DIR = str(Path(__file__).resolve().parent.parent / "telegram_bot")
@@ -134,22 +132,11 @@ def telegram(message: str) -> None:
     if not token:
         print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
         return
-    try:
-        import urllib.parse
-        import urllib.request
-
-        data = urllib.parse.urlencode(
-            {"chat_id": TELEGRAM_CHAT_ID, "text": message, "disable_web_page_preview": "true"}
-        ).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
-        )
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
-            log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_series_producer.telegram", ok=(resp.status == 200), kind="sendMessage")
-    except Exception:
-        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="ig_series_producer.telegram", ok=False, kind="sendMessage")
+    ok = _tg_send(token, TELEGRAM_CHAT_ID, message, source="ig_series_producer.telegram",
+                  extra={"disable_web_page_preview": "true"}, timeout=10)
+    if ok:
+        print("[INFO] 텔레그램 보고 성공")
+    else:
         print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지)")
 
 

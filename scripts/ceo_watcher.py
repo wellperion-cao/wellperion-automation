@@ -11,15 +11,12 @@ from contextlib import nullcontext
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
-import requests
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 공용 관문(페이싱+429재시도+검수+로깅, best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(token, chat_id, text, **k):
+        return False
 
 try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — 같은 scripts/ 디렉토리
     import queue_lock
@@ -120,19 +117,10 @@ def notify_telegram(text: str) -> bool:
     if not TELEGRAM_TOKEN:
         logger.warning('TELEGRAM_BOT_TOKEN 미설정')
         return False
-    try:
-        pace()
-        r = requests.post(
-            f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage',
-            json={'chat_id': CHAT_ID, 'text': text},
-            timeout=10,
-        )
-        log_outbound(text, chat_id=CHAT_ID, source='ceo_watcher.notify_telegram', ok=(r.status_code == 200), kind='sendMessage')
-        return r.status_code == 200
-    except Exception as e:
-        log_outbound(text, chat_id=CHAT_ID, source='ceo_watcher.notify_telegram', ok=False, kind='sendMessage')
-        logger.warning(f'텔레그램 송부 실패: {e}')
-        return False
+    ok = _tg_send(TELEGRAM_TOKEN, CHAT_ID, text, source='ceo_watcher.notify_telegram', timeout=10)
+    if not ok:
+        logger.warning('텔레그램 송부 실패')
+    return ok
 
 
 def process_task(task: dict, logged: set) -> bool:

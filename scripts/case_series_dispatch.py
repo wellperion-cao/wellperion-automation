@@ -48,13 +48,11 @@ ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 공용 관문(페이싱+429재시도+검수+로깅, best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(token, chat_id, text, **k):
+        return False
 
 try:  # 결정 정합 게이트 공용 신호(§4) — 가드가 재생을 막을 때 1줄 남긴다(best-effort)
     from decision_replay_log import append as _replay_append
@@ -109,25 +107,9 @@ def telegram(message: str) -> None:
     if not token:
         print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
         return
-    try:
-        import urllib.parse
-        import urllib.request
-
-        data = urllib.parse.urlencode(
-            {"chat_id": TELEGRAM_CHAT_ID, "text": message, "disable_web_page_preview": "true"}
-        ).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
-        )
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'}")
-            log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="case_series_dispatch.telegram",
-                         ok=(resp.status == 200), kind="sendMessage")
-    except Exception:
-        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="case_series_dispatch.telegram",
-                     ok=False, kind="sendMessage")
-        print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지)")
+    ok = _tg_send(token, TELEGRAM_CHAT_ID, message, source="case_series_dispatch.telegram",
+                  extra={"disable_web_page_preview": "true"}, timeout=10)
+    print(f"[INFO] 텔레그램 보고 {'성공' if ok else '실패'}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

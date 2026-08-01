@@ -30,13 +30,11 @@ from pathlib import Path
 
 import requests
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향 (daily_scheduler.py 패턴 재사용)
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 공용 관문(페이싱+429재시도+검수+로깅, best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(token, chat_id, text, **k):
+        return False
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = REPO_ROOT / "telegram_bot" / ".env"
@@ -452,16 +450,7 @@ def build_monthly_report(today: str | None = None) -> str:
 def _send_telegram(chat_id: int, text: str) -> bool:
     if not TELEGRAM_TOKEN:
         return False
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    try:
-        pace()
-        resp = requests.post(url, json={"chat_id": chat_id, "text": text}, timeout=15)
-        ok = resp.status_code == 200 and bool(resp.json().get("ok"))
-        log_outbound(text, chat_id=chat_id, source="cpo_report._send_telegram", ok=ok, kind="sendMessage")
-        return ok
-    except Exception:
-        log_outbound(text, chat_id=chat_id, source="cpo_report._send_telegram", ok=False, kind="sendMessage")
-        return False
+    return _tg_send(TELEGRAM_TOKEN, chat_id, text, source="cpo_report._send_telegram", timeout=15)
 
 
 def _write_state(kind: str, chat_label: str, ok: bool, sent: bool, detail: str = "") -> None:

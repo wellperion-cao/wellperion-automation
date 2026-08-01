@@ -37,13 +37,11 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 공용 관문(페이싱+429재시도+검수+로깅, best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(token, chat_id, text, **k):
+        return False
 
 try:  # 작업 현황 로그(best-effort) — 임포트 실패해도 발행 흐름 무영향
     from worklog import log as worklog_log
@@ -285,21 +283,11 @@ def telegram(message: str, chat_id: str | None = None) -> None:
     if not token:
         _safe_print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
         return
-    try:
-        import urllib.parse
-        import urllib.request
-        data = urllib.parse.urlencode({
-            "chat_id": target_chat_id, "text": message,
-            "disable_web_page_preview": "true",
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            _safe_print(f"[INFO] 텔레그램 보고 {'성공' if resp.status == 200 else '실패'} chat_id={target_chat_id}")
-            log_outbound(message, chat_id=target_chat_id, source="ig_review_publish_watcher.telegram", ok=(resp.status == 200), kind="sendMessage")
-    except Exception:
-        log_outbound(message, chat_id=target_chat_id, source="ig_review_publish_watcher.telegram", ok=False, kind="sendMessage")
+    ok = _tg_send(token, target_chat_id, message, source="ig_review_publish_watcher.telegram",
+                  extra={"disable_web_page_preview": "true"}, timeout=10)
+    if ok:
+        _safe_print(f"[INFO] 텔레그램 보고 성공 chat_id={target_chat_id}")
+    else:
         _safe_print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지로 상세 미출력)")
 
 
