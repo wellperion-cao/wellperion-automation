@@ -32,6 +32,8 @@
 
   h2.sec{font-size:15px; font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
+  /* 채널 로고(인라인 SVG) — 이모지 대신 실제 카카오톡·텔레그램 로고. AI운영한장.html 과 같은 규격. */
+  .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 4px 0 0; flex:none;}
 
   /* ── 히어로 슬롯: renderHero()가 결과물 중심 한 줄 요약을 채움(배237) ── */
   .hero:empty{display:none;}
@@ -347,6 +349,29 @@
     </div>
   </div>
 
+  <!-- ★2026-08-01(시토 · GM 지시 "알림 한 장을 페이지 상단부에") — ② 돌아가는 자동화 안쪽
+       맨 아래에 있던 것을 페이지 최상단으로 올렸다. 방·발신은 매일 확인하는 것이라 스크롤
+       끝까지 내려야 보이면 안 본다. 내용·컨테이너 id·렌더 함수는 그대로다. -->
+  <!-- ══ 📨 알림 한 장 (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · GM 지시 2026-07-31 · 구 3섹션[📋 텔레그램·카카오톡 전 방 한 장·📨 통합 알림 보드·📡 모듈 보고 현황] 통합) ══ -->
+  <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);">
+    <h2 class="sec" style="margin-top:0;">📨 알림 한 장 — 어느 방으로 · 누가 · 살아있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(방 기준 · 카톡·텔레그램 발신 전체)</span></h2>
+    <div class="sec-note" style="margin:0 0 10px;">방을 펼치면 그 방으로 나가는 발신이 한 줄씩. 🟢 <b>가동</b> · 🟡 <b>조건부</b>(안 오면 정상일 수 있음) · 🔴 <b>꺼짐</b>(GM 킬스위치 OFF) · ⚫ <b>죽은배선</b>(실행 실패·스케줄러 정지·방 매핑 끊김) · ⚪ <b>못 잼</b>(대조·확인 자체가 멈춰 진짜인지 알 수 없음). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
+    <div id="notify-drift-banner" style="display:none;"></div>
+    <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+    <div class="notify-filters" id="notify-filters">
+      <button type="button" class="nf-btn active" data-f="all">전체</button>
+      <button type="button" class="nf-btn" data-f="telegram">텔레그램</button>
+      <button type="button" class="nf-btn" data-f="kakao">카카오톡</button>
+      <button type="button" class="nf-btn" data-owner-toggle="1">담당자별 ▾</button>
+      <span class="nf-sep"></span>
+      <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
+    </div>
+    <div id="notify-owner-filters" class="notify-filters" style="display:none;"></div>
+    <div id="alert-board-rooms">불러오는 중…</div>
+  <div class="sec-note" style="margin:6px 0 0;">소스: <code>telegram_rooms.json</code>·<code>kakao_rooms.json</code>(방·용도) · <code>notify_registry.json</code>(발신 배선·상태) · <code>module_registry.json</code>(모듈·소유) — <span id="alert-unwired-note"></span><span id="alert-freshness-note"></span></div>
+  </div>
+  <!-- ══ /알림 한 장 ══ -->
+
   <div id="layer-autonomy">
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
@@ -477,10 +502,10 @@
     <h2 class="sec" id="sec-registry-cards">🛠️ 등록된 자율 자동화 모듈 <span style="font-size:11px;font-weight:400;color:var(--dim);">(카드마다 담당 표시 · 특징기능·자율수준·정직 꼬리표)</span></h2>
     <div class="sec-note">상시 돌아가는 자동화 모듈 — 카드 아이콘이 담당(🛠️시토 · 👥시포 · 🌟웰리 · 🧑‍🤝‍🧑시로)입니다. 카톡·텔레그램 발신 전체(방·배선·상태)는 하단 '📨 알림 한 장'(② 돌아가는 자동화).</div>
     <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
-    <div class="routines" id="registry-cards"></div>
+    <div id="registry-cards"></div>
     <details class="coo-details" id="registry-cards-dormant-wrap" style="margin-top:10px;">
       <summary id="registry-cards-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
-      <div class="routines" id="registry-cards-dormant" style="margin-top:9px;"></div>
+      <div id="registry-cards-dormant" style="margin-top:9px;"></div>
     </details>
     <div class="sec-note" style="margin:8px 0 0;">자율수준: <b>자율ON</b>=무개입 판단·실행 · <b>반자율</b>=일부 확인 · <b>자동집계</b>=기계 집계 · <b>부분</b>=일부 자동 · <b>수동</b>=사람.</div>
   </section>
@@ -653,10 +678,10 @@
     <h2 class="sec" id="sec-cmo-autonomy">📣 시모 (AI CMO) 자율 마케팅 <span style="font-size:11px;font-weight:400;color:var(--dim);">(콘텐츠 제작→검수→발행→반응측정→기획환류 폐루프)</span></h2>
     <div class="sec-note">노출을 회원으로 바꾸는 전환 설계가 본질 — 카드는 등록부(<code>cmo-*</code>) 실값 렌더. 발신 배선·상태는 하단 '📨 알림 한 장'.</div>
     <div id="registry-card-summary-cmo" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
-    <div class="routines" id="registry-cards-cmo"></div>
+    <div id="registry-cards-cmo"></div>
     <details class="coo-details" id="registry-cards-cmo-dormant-wrap" style="margin-top:10px;">
       <summary id="registry-cards-cmo-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
-      <div class="routines" id="registry-cards-cmo-dormant" style="margin-top:9px;"></div>
+      <div id="registry-cards-cmo-dormant" style="margin-top:9px;"></div>
     </details>
     <div class="sec-note" style="margin:8px 0 0;">게이트: 제작·검수·집계=자율 / <b>발행은 GM 텔레그램 [✅승인] 뒤</b>(무인 발행 없음) · 채널 자격증명·결제·공식값=GM 결재. 측정 못하는 값은 '미측정'으로 적는다(0 위장 금지).</div>
   </section>
@@ -725,25 +750,6 @@
     </div>
     <!-- ══ /자동화 건강 점수판 ══ -->
 
-    <!-- ══ 📨 알림 한 장 (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · GM 지시 2026-07-31 · 구 3섹션[📋 텔레그램·카카오톡 전 방 한 장·📨 통합 알림 보드·📡 모듈 보고 현황] 통합) ══ -->
-    <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);">
-      <h2 class="sec" style="margin-top:0;">📨 알림 한 장 — 어느 방으로 · 누가 · 살아있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(방 기준 · 카톡·텔레그램 발신 전체)</span></h2>
-      <div class="sec-note" style="margin:0 0 10px;">방을 펼치면 그 방으로 나가는 발신이 한 줄씩. 🟢 <b>가동</b> · 🟡 <b>조건부</b>(안 오면 정상일 수 있음) · 🔴 <b>꺼짐</b>(GM 킬스위치 OFF) · ⚫ <b>죽은배선</b>(실행 실패·스케줄러 정지·방 매핑 끊김) · ⚪ <b>못 잼</b>(대조·확인 자체가 멈춰 진짜인지 알 수 없음). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
-      <div id="notify-drift-banner" style="display:none;"></div>
-      <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
-      <div class="notify-filters" id="notify-filters">
-        <button type="button" class="nf-btn active" data-f="all">전체</button>
-        <button type="button" class="nf-btn" data-f="telegram">텔레그램</button>
-        <button type="button" class="nf-btn" data-f="kakao">카카오톡</button>
-        <button type="button" class="nf-btn" data-owner-toggle="1">담당자별 ▾</button>
-        <span class="nf-sep"></span>
-        <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
-      </div>
-      <div id="notify-owner-filters" class="notify-filters" style="display:none;"></div>
-      <div id="alert-board-rooms">불러오는 중…</div>
-      <div class="sec-note" style="margin:6px 0 0;">📨 텔레그램 · 💛 카카오톡 · 소스: <code>telegram_rooms.json</code>(방·chat_id) · <code>notify_registry.json</code>(발신 배선·상태) · <code>module_registry.json</code>(모듈·소유) — <span id="alert-unwired-note"></span><span id="alert-freshness-note"></span></div>
-    </div>
-    <!-- ══ /알림 한 장 ══ -->
 
     <!-- ════ 📄 정적 설계표 3종(상시가동·매주) 묶어 기본 접힘 — 건강판·알림 한 장과 중복이라 축소 (2026-07-15) ════ -->
     <details id="static-fold-details">
@@ -1810,7 +1816,9 @@
     });
     ((kakao && kakao.all_rooms) || []).forEach(function(r){
       if(!r || !r.name) return;
-      ROOM_META[roomKey(r.name)] = { purpose: r.purpose || '', display: r.name, category: r.category || '', channel:'kakao' };
+      // display 우선 — 창 제목(name)과 사람이 부르는 이름이 다를 수 있다.
+      // 예: 창 제목은 '★ 운영부'(별표 뒤 공백 한 칸)인데 방 이름은 '★운영부'다(GM 지적 2026-08-01).
+      ROOM_META[roomKey(r.name)] = { purpose: r.purpose || '', display: r.display || r.name, category: r.category || '', channel:'kakao' };
     });
   }
   function roomPurpose(key){ return (ROOM_META[key] || {}).purpose || ''; }
@@ -1818,7 +1826,11 @@
 
   // ═══════════ ② 돌아가는 자동화: 📨 알림 한 장 (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · 2026-07-31 · 구 3섹션[방 한 장·통합 알림 보드·모듈 보고 현황] 통합) ═══════════
   var NOTIFY_FREQ_LABEL = { daily:'매일', weekly:'매주', monthly:'매월', conditional:'조건부', event:'이벤트' };
-  var NOTIFY_CH_EMOJI = { telegram:'📨', kakao:'💛' };
+  /* 채널 로고 — 이모지(📨·💛) 대신 실제 카카오톡·텔레그램 로고를 쓴다(GM 지적 2026-08-01).
+     정본 = AI운영한장.html 의 TG_LOGO·KT_LOGO 인라인 SVG(같은 모양을 쓰려고 그대로 가져옴). */
+  var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
+  var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
+  var NOTIFY_CH_EMOJI = { telegram: TG_LOGO, kakao: KT_LOGO };
   var _notifyState = { channel:'all', owner:'all', problemOnly:false };
 
   // 원천 신선도 판정 — GM 지시 2026-07-31(notify_drift.json 11일째 정지·0건을 진짜 0처럼 표시하던 함정).
@@ -2153,33 +2165,34 @@
     if(ns.monthly) parts.push('매월');
     return parts.join('·');
   }
-  function regCardHtml(m){
+  // (구 regCardHtml — 카드 렌더. 2026-08-01 표로 바꾸며 삭제. 표 렌더 = regRowHtml/regTableHtml)
+
+  /* ★2026-08-01(시토 · GM 지시 "칸반(카드) 말고 표로 — 항목값이 통일돼야 보기 편하다")
+     등록부 모듈은 칸이 전부 같은 종류라 표가 맞다. 카드가 저마다 높이가 달라 눈이 줄을 못 따라갔다.
+     칸: 담당 | 하는 일 | 주기 | 자율수준 | AI 없이도 | 정직표기 — 여섯 칸 고정.
+     긴 글은 기존과 같은 방식으로 접는다(cellmore) — 잘라내지 않으니 정보 손실 0. */
+  function regRowHtml(m){
     var au  = REG_AUTONOMY[m.autonomy] || { label: esc(m.autonomy || '미표기'), pill:'idle' };
     var ico = REG_ICO[m.owner_role] || '📦';
-    var cad = registryCadenceTxt(m.notify_spec);
-    var cy  = esc(m.owner_nick || m.owner_role || '') + (cad ? (' · ' + cad) : '');
-    var rows = [];
-    rows.push(['AI 없이도', esc(m.ai_free_fallback || '미표기')]);
-    if(m.honesty_default){
-      rows.push(['정직표기', esc(REG_HONESTY[m.honesty_default] || m.honesty_default)]);
-    }
-    var rowsHtml = rows.map(function(r){
-      return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
-    }).join('');
-    // feature 는 등록부 변경이력·모듈 내부명까지 섞여 있어 그대로 찍으면 칸이 수백~수천자가 된다
-    // (GM 화면 표면 감사 2026-07-30). 표 칸과 같은 방식(missionSnippet + cellmore 접기)으로
-    // 한 줄만 보이고 전문은 펼쳐보기로 남긴다 — 잘라내는 게 아니라 접는 것(정보 손실 0).
-    var featureFull = missionSummary(m.feature || m.id || '');
-    var featureHead = missionSnippet(featureFull, 90);
-    var nameHtml = (featureHead === featureFull) ? esc(featureFull)
-      : '<details class="cellmore"><summary>' + esc(featureHead) + '</summary>'
-        + '<div class="cellfull">' + esc(featureFull) + '</div></details>';
-    return '<div class="rcard">' +
-      '<div class="rcard-top"><span class="rcard-ico">' + ico + '</span>' +
-        '<span class="rcard-tt"><span class="rcard-nm">' + nameHtml + '</span>' +
-          '<span class="rcard-meta"><span class="rcard-cy">' + cy + '</span><span class="pill ' + au.pill + '">' + esc(au.label) + '</span></span>' +
-        '</span></div>' +
-      rowsHtml + '</div>';
+    var full = missionSummary(m.feature || m.id || '');
+    var head = missionSnippet(full, 78);
+    var nameHtml = (head === full) ? esc(full)
+      : '<details class="cellmore"><summary>' + esc(head) + '</summary><div class="cellfull">' + esc(full) + '</div></details>';
+    return '<tr>' +
+      '<td style="white-space:nowrap;">' + ico + ' ' + esc(m.owner_nick || m.owner_role || '—') + '</td>' +
+      '<td>' + nameHtml + '</td>' +
+      '<td style="white-space:nowrap;">' + esc(registryCadenceTxt(m.notify_spec) || '—') + '</td>' +
+      '<td style="white-space:nowrap;"><span class="pill ' + au.pill + '">' + esc(au.label) + '</span></td>' +
+      '<td>' + nextCellHtml(m.ai_free_fallback || '') + '</td>' +
+      '<td>' + esc(REG_HONESTY[m.honesty_default] || m.honesty_default || '—') + '</td>' +
+    '</tr>';
+  }
+  function regTableHtml(list, emptyMsg){
+    if(!list.length) return '<div class="feed-status">' + esc(emptyMsg) + '</div>';
+    return '<div class="gtbl-wrap"><table class="gtbl">' +
+      '<tr><th style="width:82px">담당</th><th>하는 일</th><th style="width:104px">주기</th>' +
+      '<th style="width:78px">자율수준</th><th style="width:26%">AI 없이도</th><th style="width:88px">정직표기</th></tr>' +
+      list.map(regRowHtml).join('') + '</table></div>';
   }
   function renderRegistryCards(reg){
     var sm = document.getElementById('registry-card-summary');
@@ -2216,13 +2229,13 @@
     var cmoActive   = cmoMods.filter(function(m){ return !isDormantModule(m); });
     var cmoDormant  = cmoMods.filter(isDormantModule);
     if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + restMods.length + '건 (전체 등록부 ' + mods.length + '건 중 · 시모 모듈은 아래 전용 섹션)';
-    el.innerHTML = restActive.length ? restActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 발효 모듈이 아직 없습니다.</div>';
-    if(elDormant) elDormant.innerHTML = restDormant.length ? restDormant.map(regCardHtml).join('') : '';
+    el.innerHTML = regTableHtml(restActive, '등록부에 이 창(자율현황) 소속 발효 모듈이 아직 없습니다.');
+    if(elDormant) elDormant.innerHTML = restDormant.length ? regTableHtml(restDormant, '') : '';
     if(elDormantSum) elDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + restDormant.length + '개';
     if(elDormantWrap) elDormantWrap.style.display = restDormant.length ? '' : 'none';
     if(smCmo) smCmo.textContent = '등록부 시모(cmo) 모듈 ' + cmoMods.length + '건 — 제작·검수 디스패치 + 발행 요약 + 반응 측정 + 주간 환류 + 접수 수집';
-    if(elCmo) elCmo.innerHTML = cmoActive.length ? cmoActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 시모(cmo) 발효 모듈이 아직 없습니다.</div>';
-    if(elCmoDormant) elCmoDormant.innerHTML = cmoDormant.length ? cmoDormant.map(regCardHtml).join('') : '';
+    if(elCmo) elCmo.innerHTML = regTableHtml(cmoActive, '등록부에 시모(cmo) 발효 모듈이 아직 없습니다.');
+    if(elCmoDormant) elCmoDormant.innerHTML = cmoDormant.length ? regTableHtml(cmoDormant, '') : '';
     if(elCmoDormantSum) elCmoDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + cmoDormant.length + '개';
     if(elCmoDormantWrap) elCmoDormantWrap.style.display = cmoDormant.length ? '' : 'none';
   }
