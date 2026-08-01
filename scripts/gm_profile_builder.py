@@ -407,6 +407,45 @@ def render_source_honesty_block(ct: dict) -> str:
 #  정적 grep이 아니라 Playwright 렌더를 쓴다 — 오늘 문제(핵심과제 칸 등)는 전부 JS 렌더 후에만
 #  보였다(정적 HTML엔 안 보임). 저장소에 이미 설치된 Playwright 재사용(새 의존성 0).
 # ═══════════════════════════════════════════
+def _wait_until_rendered(page, root_sel: str, timeout_ms: int = 95000) -> bool:
+    """화면이 '실제로 다 그려질 때까지' 기다린다. 다 그려졌다 = 「불러오는 중…」이 사라지고
+    글자 수가 더 늘지 않는 상태.
+
+    ★왜 필요한가(2026-08-01 시토 실측 · GM 지적 "내가 발견하는 게 아니라 시토가 찾아줘야").
+      이 점검은 고정 3.5초만 기다린 뒤 쟀다. 그런데 GM 화면들은 저장소 파일을 여러 개
+      받아 그리므로 데이터가 다 붙는 데 60~90초가 걸린다(자율현황 실측). 그래서 점검은
+      **아직 비어 있는 화면**을 재고 매일 '기준 이내'를 냈다 — 0 위장의 교과서 사례다.
+      증거: 2026-08-01 06:30 프로필이 'G1 오늘의 항로 최대 칸 2자 · 업무·결재 SSOT 최대 칸
+      0자'로 적었다. 칸이 0~2자일 리 없다. 빈 화면을 잰 것이다.
+      같은 날 사람이 렌더를 기다려 재니 자율현황에 1,110자짜리 칸이 있었다.
+    반환: True=다 그려짐 / False=시간 초과(그래도 잰다 — 대신 호출부가 판단할 수 있게 알린다).
+    """
+    prev, stable = -1, 0
+    waited = 0
+    while waited < timeout_ms:
+        try:
+            st = page.evaluate(
+                """(sel) => {
+                    const root = document.querySelector(sel) || document.body;
+                    const t = root.innerText || '';
+                    return { len: t.length, loading: (t.indexOf('불러오는 중') >= 0 || t.indexOf('집계 중') >= 0) };
+                }""",
+                root_sel,
+            )
+        except Exception:
+            return False
+        if st["len"] == prev and not st["loading"]:
+            stable += 1
+            if stable >= 2:          # 두 번 연속 그대로 = 다 그려졌다
+                return True
+        else:
+            stable = 0
+        prev = st["len"]
+        page.wait_for_timeout(2500)
+        waited += 2500
+    return False
+
+
 def _measure_root(page, root_sel: str) -> dict:
     """블록(section/.blk) 단위·칸(td/li 등) 단위 가시(innerText) 최대 글자수를 잰다.
 
@@ -697,6 +736,7 @@ def run_gm_surface_check() -> tuple[list, bool]:
                     else:
                         page.wait_for_timeout(1500)
                         root_sel = "body"
+                    _wait_until_rendered(page, root_sel)
                     m = _measure_root(page, root_sel)
                     page.close()
 
