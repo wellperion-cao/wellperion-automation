@@ -32,12 +32,47 @@ import cpo_report  # noqa: E402 — 기존 fetch 로직 재사용(중복 복사 
 _LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"
 
 
+def _norm_key(k) -> str:
+    return str(k).replace(" ", "").replace("\n", "")
+
+
+def _find_col(row: dict, fragment: str):
+    frag = _norm_key(fragment)
+    for k in row.keys():
+        if frag in _norm_key(k):
+            return k
+    return None
+
+
+def _missing_duration_members(active_rows: list[dict]) -> list[str]:
+    """유효회원 중 시작일자·잔여일 둘 다(또는 하나라도) 비어 있는 회원 이름.
+    배286 근본수리(2026-08-01)로 이런 회원도 이제 화면엔 보이지만, 기간이 없으면
+    만료일을 못 잡는다 — 신고 안 해도 놓치지 않게 여기서 상시 센다. 정지원님이 나흘간
+    무신고로 방치됐던 재발방지(GM 지적)."""
+    out = []
+    for r in active_rows:
+        if not isinstance(r, dict):
+            continue
+        name_k = _find_col(r, "회원명")
+        start_k = _find_col(r, "시작일자")
+        rem_k = _find_col(r, "잔여일")
+        name = str(r.get(name_k, "")).strip() if name_k else ""
+        if not name:
+            continue
+        start_v = str(r.get(start_k, "")).strip() if start_k else ""
+        rem_v = str(r.get(rem_k, "")).strip() if rem_k else ""
+        if not start_v or not rem_v:
+            out.append(name)
+    return out
+
+
 def collect(module=None) -> dict:
     """표준 payload 반환. today_stats(월간 GAS 집계)·churn(이탈 GAS 집계)·
     rows(예약활성 카운트용)를 cpo_report.py fetch 함수로 그대로 가져온다."""
     today_stats = cpo_report.fetch_cpo_today_stats()
     churn = cpo_report.fetch_cpo_churn_stats()
     rows = cpo_report.fetch_member_inquiries()
+    active_rows = cpo_report.fetch_active_members()
 
     if today_stats is None and churn is None and rows is None:
         return make_payload(
@@ -90,6 +125,15 @@ def collect(module=None) -> dict:
         )
     else:
         metrics.append({"label": "이탈방지 성과", "value": "미측정"})
+
+    if active_rows is not None:
+        missing = _missing_duration_members(active_rows)
+        val = f"{len(missing)}명" + (f" ({'·'.join(missing[:5])})" if missing else "")
+        metrics.append({"label": "기간(시작일·잔여일) 미기재 회원", "value": val})
+        if missing:
+            summary_parts.append(f"기간 미기재 {len(missing)}명 확인 필요")
+    else:
+        metrics.append({"label": "기간(시작일·잔여일) 미기재 회원", "value": "미측정"})
 
     summary = " · ".join(summary_parts) if summary_parts else "데이터 없음"
 

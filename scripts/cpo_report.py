@@ -122,6 +122,15 @@ def fetch_member_inquiries() -> list[dict] | None:
     return data.get("data", [])
 
 
+def fetch_active_members(scope: str = "valid") -> list[dict] | None:
+    """유효회원 명단 원본 행(member_active_list). 실패 시 None. 배286 후속(2026-08-01) —
+    기간(시작일자·잔여일) 미기재 회원 감시(cpo_member_rollup)가 이 함수를 쓴다."""
+    data = _gas_get("member_active_list", {"scope": scope}, timeout=60)
+    if data is None:
+        return None
+    return data.get("data", [])
+
+
 _LESSON_TYPES = ("성인강습", "유소년강습")
 
 
