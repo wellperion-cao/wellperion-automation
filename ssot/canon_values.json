@@ -227,6 +227,22 @@
       "source": "WordPress 관리자 화면 — WPML > Languages > 브라우저 언어 리다이렉트 (저장소 파일 아님, 관리자 설정값)",
       "allow_globs": ["ssot/**", "status/_queue.json", "3. 웰페리온 가이드/**", "tmp/**"],
       "note": "2026-07-20 GM 승인으로 변경 — 이전값: '번역이 존재하는 경우에만 자동전환'. 방문자 브라우저가 한국어일 때 영문 문의 페이지(/en/inquiry/)에 처음 들어가면 자동으로 한글 페이지로 튕겨서, 그날 새로 만든 KOR/ENG 언어전환 버튼이 무력화되는 문제 때문. 사이트 전역 설정(문의 페이지 한정 아님). 되돌리는 법: 워드프레스 관리자 > WPML > Languages > '브라우저 언어 리다이렉트'에서 '번역이 존재하는 경우에만 브라우저 언어에 따라 방문자 리다이렉트'를 다시 선택 후 저장. 상세 경위·검증 스크린샷 = status/_queue.json ship 9242"
+    },
+    {
+      "key": "sales_year_target",
+      "이름": "2026년 연 매출 목표",
+      "value": "7200000000",
+      "source": ".deploy-todo/업무&결재 현황.js:937 KPI_YEAR_TARGET 상수(GAS, GM 결재 2026-06-20) → GAS 실행 결과가 status/home_kpi_snapshot.json data.sales.yearTarget 로 라이브 반영. 주석 근거: 3. 웰페리온 가이드/wellperion_guide(main).html 1294행 부근('연 목표 72억 = GM 결재 2026-06-20 확정(KPI_YEAR_TARGET 상수)')",
+      "allow_globs": [
+        "ssot/**",
+        ".deploy-todo/**",
+        "status/home_kpi_snapshot.json",
+        "3. 웰페리온 가이드/**",
+        "scripts/test_northstar_reach.py",
+        "tmp/**",
+        ".omc/**"
+      ],
+      "note": "GM 결재 2026-06-20 확정(연 매출 목표), 정본 재확인 2026-08-01. 월 목표(status/sales_targets.json monthly_target_total=6.105억, GM 결재 2026-07-03)를 12개월 환산하면 73.26억으로 연 72억보다 1.26억 높다 — 연 72억이 정본이고 월 목표는 상반기 부족분을 하반기에 채우려 배분한 팀별 목표라 여유분이 있는 구조로 읽는다(월 목표 파일 자체는 이번 등록에서 변경하지 않음)"
     }
   ]
 }
