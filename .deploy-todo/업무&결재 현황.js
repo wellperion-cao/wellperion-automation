@@ -1573,6 +1573,29 @@ function _kpiSalesMonthlyFileId(year, month) {
   return _kpiSalesFileByTitle(year, month);
 }
 
+// ── 09:30 매출보고 이미지(scripts/generate_sales_report_image.py) 시트 자동해석 — 2026-08-01 시토(배277) ──
+// GET ?action=daily_report_sheet[&year=2026&month=8&tab=보고] → { ok, fileId, gid, tabName, fileName } | { ok:false, error }
+// 위 MONTHLY_SALES_FILE_MAP/_kpiSalesFileByTitle 과 동일 fileId 해석 재사용(월별 "N월 매출 보고" 제목 규칙).
+// tab 지정 시 그 이름 탭의 gid를, 없으면 fileId·fileName만 반환(호출측에서 실패 처리).
+function _kpiDailyReportSheet(params) {
+  try {
+    var year = parseInt((params && params.year) || _kpiToday().y, 10);
+    var month = parseInt((params && params.month) || _kpiToday().m, 10);
+    var fileId = _kpiSalesMonthlyFileId(year, month);
+    if (!fileId) return _json({ ok: false, error: 'monthly_sales_file_not_found: ' + year + '-' + month });
+    var ss = SpreadsheetApp.openById(fileId);
+    var out = { ok: true, fileId: fileId, fileName: ss.getName() };
+    var tabName = (params && params.tab) || '보고';
+    var tab = ss.getSheetByName(tabName);
+    if (!tab) return _json({ ok: false, error: 'tab_not_found: ' + tabName, fileId: fileId, fileName: ss.getName() });
+    out.gid = tab.getSheetId();
+    out.tabName = tabName;
+    return _json(out);
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
 // 요약 탭 선택: 모든 달 공통 '31'(그 달 실제 일수와 무관하게 고정 템플릿명·1·4·6월 실측 검증) 우선.
 // 혹시 없는(구조가 다른) 파일 대비 옛 '말일 숫자' 탭 폴백 유지(방어적, 정상 파일에선 안 탐).
 function _kpiSalesLastDayTab(ss, year, month) {
@@ -2279,6 +2302,12 @@ function doGet(e) {
     // GET ?action=team_sales_h1[&year=2026]. 월간운영계획·전사회의 강습팀표 공유 정본.
     if (action === 'team_sales_h1') {
       return _kpiTeamSalesH1(e.parameter);
+    }
+
+    // ─── 09:30 매출보고 이미지 시트 자동해석(fileId+tab gid) — 2026-08-01 시토(배277) ───
+    // GET ?action=daily_report_sheet[&year=2026&month=8&tab=보고]. 읽기전용.
+    if (action === 'daily_report_sheet') {
+      return _kpiDailyReportSheet(e.parameter);
     }
 
     // ─── G1 '오늘의 항로' 서버 단일 머지 (2026-06-11 시토 · ②a 미사용·비파괴) ───

@@ -47,18 +47,38 @@ ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 # ══════════════════════════════════════════════════════════════════════════
 # 매출보고 시트 좌표 — GAS 매출보고_자동발송.js(9시 텔레그램 발송)와 동일 범위(H2:S21).
-# 시트id·gid·range·export 파라미터는 여기 상수로만 관리(하드코딩 산재 금지).
+# 시트id·gid는 "202X년 N월 매출 보고" 제목 규칙으로 매달 자동 해석(resolve_sheet 참조, 배277
+# 2026-08-01 시토) — 매달 손으로 SHEET_ID 갱신하던 병(7월 시트가 8월인 것처럼 나감) 근본 차단.
+# 해석 경로 = 이미 배포된 GAS(.deploy-todo/업무&결재 현황.js, action=daily_report_sheet).
 # ══════════════════════════════════════════════════════════════════════════
-SHEET_ID = "1ycSEBbXjcU_suNu9B5HsEXQW0XosaW8fGtO0XfGprqc"
-SHEET_GID = "2009735088"
 SHEET_RANGE = "H2:S21"
-SHEET_EDIT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit"
-EXPORT_URL = (
-    f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=pdf"
-    f"&gid={SHEET_GID}&range={SHEET_RANGE}&size=A3&portrait=false&scale=4"
-    f"&top_margin=0.05&bottom_margin=0.05&left_margin=0.05&right_margin=0.05"
-    f"&gridlines=false&printtitle=false&sheetnames=false&fzr=false"
-)
+GAS_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+
+
+def resolve_sheet(target_date: datetime) -> "tuple[str, str, str]":
+    """해당 달 "202X년 N월 매출 보고" 시트를 GAS(daily_report_sheet)로 찾는다.
+    반환: (sheet_id, gid, 실패사유) — 실패 시 sheet_id/gid는 빈 문자열(폴백 절대 금지,
+    지난달로 조용히 넘어가면 지금 고치는 병이 되살아난다 — 못 찾으면 멈추고 알린다)."""
+    import requests
+    year, month = target_date.year, target_date.month
+    try:
+        resp = requests.get(GAS_URL, params={"action": "daily_report_sheet", "year": year, "month": month},
+                             timeout=30)
+        data = resp.json()
+    except Exception as exc:
+        return "", "", f"시트 해석 GAS 호출 실패: {exc}"
+    if not data.get("ok"):
+        return "", "", f"시트 해석 실패({year}-{month:02d}): {data.get('error', '')}"
+    return data["fileId"], str(data["gid"]), ""
+
+
+def export_url_for(sheet_id: str, gid: str) -> str:
+    return (
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=pdf"
+        f"&gid={gid}&range={SHEET_RANGE}&size=A3&portrait=false&scale=4"
+        f"&top_margin=0.05&bottom_margin=0.05&left_margin=0.05&right_margin=0.05"
+        f"&gridlines=false&printtitle=false&sheetnames=false&fzr=false"
+    )
 
 ARCHIVE_FILENAME_FMT = "웰페리온_일일보고_%Y%m%d.png"
 DEFAULT_ARCHIVE_DIR = ROOT / "1. AI자료_아카이브" / "10_매출보고"
@@ -182,9 +202,12 @@ def close_profile_chrome() -> int:
     return len(pids)
 
 
-def export_pdf(out_pdf: Path) -> "tuple[bool, str]":
+def export_pdf(out_pdf: Path, sheet_id: str, gid: str) -> "tuple[bool, str]":
     """Google Sheets export를 PDF로 받아 저장. 반환: (성공여부, 실패사유)."""
     from playwright.sync_api import sync_playwright
+
+    edit_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
+    export_url = export_url_for(sheet_id, gid)
 
     close_profile_chrome()  # 남아 있는 로그인 창 때문에 통째로 실패하지 않게
 
@@ -195,7 +218,7 @@ def export_pdf(out_pdf: Path) -> "tuple[bool, str]":
 
             # 1차 시그널: 시트 편집 페이지 안착 확인(로그인 리다이렉트=세션만료를 export 요청 전에 조기 탐지)
             page = context.pages[0] if context.pages else context.new_page()
-            page.goto(SHEET_EDIT_URL, wait_until="domcontentloaded", timeout=45_000)
+            page.goto(edit_url, wait_until="domcontentloaded", timeout=45_000)
             page.wait_for_timeout(2500)
             cur_url = page.url
             log(f"시트 편집 페이지 현재 URL: {cur_url}")
@@ -203,7 +226,7 @@ def export_pdf(out_pdf: Path) -> "tuple[bool, str]":
                 return False, f"구글 세션만료(cao 재로그인 필요) — 로그인 페이지로 리다이렉트됨({cur_url})"
 
             # 2차 시그널(최종 판정): export 응답 content-type이 pdf가 아니면 실패
-            resp = context.request.get(EXPORT_URL, timeout=60_000)
+            resp = context.request.get(export_url, timeout=60_000)
             ct = resp.headers.get("content-type", "")
             status = resp.status
             log(f"export 응답 status={status} content-type={ct}")
@@ -257,12 +280,21 @@ def main() -> int:
             print(f"FAILED: --date 형식 오류({args.date}, YYYYMMDD 필요)")
             return 1
 
+    sheet_id, gid, resolve_fail = resolve_sheet(target_date)
+    if resolve_fail:
+        msg = f"⚠️ 매출보고 자동생성 중단 — {resolve_fail} (지난달 시트로 대체 발송하지 않음, 그 달 시트를 확인/생성해주세요)"
+        log(msg)
+        send_owner_alert(msg)
+        print(f"FAILED: {resolve_fail}")
+        return 1
+    log(f"시트 해석: {target_date.year}-{target_date.month:02d} → fileId={sheet_id} gid={gid}")
+
     archive_dir = get_archive_dir()
     month_dir = archive_dir / target_date.strftime("%Y-%m")
     png_path = month_dir / target_date.strftime(ARCHIVE_FILENAME_FMT)
     pdf_tmp = month_dir / (target_date.strftime("웰페리온_일일보고_%Y%m%d") + "_tmp.pdf")
 
-    ok, reason = export_pdf(pdf_tmp)
+    ok, reason = export_pdf(pdf_tmp, sheet_id, gid)
     if not ok:
         msg = f"⚠️ 매출보고 자동생성 실패 — {reason}"
         log(msg)
