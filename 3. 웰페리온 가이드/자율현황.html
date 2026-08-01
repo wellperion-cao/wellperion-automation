@@ -355,25 +355,14 @@
   <details class="hist-fold" id="ships-summary-fold">
     <summary id="ships-summary-line">배 현황 불러오는 중…</summary>
 
-  <!-- ════ 🚢 진행·상시 미션 (status/_queue.json status==IN_PROGRESS · 항로에서 이관 2026-07-15 · 배237) ════ -->
-  <h2 class="sec" id="sec-active-missions" style="margin-top:2px;">🚢 진행·상시 미션 <span style="font-size:11px;font-weight:400;color:var(--dim);">(지금 굴리는 지속 시스템)</span></h2>
-  <div class="sec-note"><code>status/_queue.json</code> IN_PROGRESS 자동 판정.</div>
-  <div class="routines" id="active-missions">
-    <div class="feed-status" style="grid-column:1/-1;">진행·상시 미션을 불러오는 중…</div>
-  </div>
-
-  <!-- ════ ⚓ 정박·대기 (status/_queue.json surface==autonomy · 조건/시각 트리거 대기 · 항로에서 이관 2026-07-15 · 배237) ════ -->
-  <h2 class="sec" id="sec-parked-missions" style="margin-top:2px;">⚓ 정박·대기 <span style="font-size:11px;font-weight:400;color:var(--dim);">(조건·시각 되면 자율현황에서 깨어남)</span></h2>
-  <div class="sec-note"><code>status/_queue.json</code> <code>surface="autonomy"</code> 자동 판정 — 시각·조건 트리거 대기 배(항로 대기 섹터에서 이관).</div>
-  <div class="routines" id="parked-missions">
-    <div class="feed-status" style="grid-column:1/-1;">정박·대기 배를 불러오는 중…</div>
-  </div>
-
-  <!-- ════ 🗂 전체 배 정리 (GM 지시 2026-07-27 — 백엔드에 있는 배를 빠짐없이 보여주고, 무의미·중복은 GM이 직접 지운다) ════ -->
-  <h2 class="sec" id="sec-all-ships" style="margin-top:2px;">🗂 전체 배 정리 <span style="font-size:11px;font-weight:400;color:var(--dim);">(백엔드에 실제로 있는 배 전부 — 무의미·중복은 여기서 지웁니다)</span></h2>
+  <!-- ════ 🗂 전체 배 정리 (GM 지시 2026-07-27 — 백엔드에 있는 배를 빠짐없이 보여주고, 무의미·중복은 GM이 직접 지운다)
+       ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 구 「🚢 진행·상시 미션」·「⚓ 정박·대기」 두 구역을 이 표로 합쳤다.
+         두 구역은 이 표를 상태별로 걸러 보여주던 것뿐이라, 아래 상태 고르기에 같은 조건을 넣어 정보 손실 없이 없앴다
+         (진행중만 = 구 진행·상시 / 정박·대기(자율) = 구 정박·대기). '재개조건 · 다음' 칸도 그대로 옮겼다. ════ -->
+  <h2 class="sec" id="sec-all-ships" style="margin-top:2px;">🗂 전체 배 <span style="font-size:11px;font-weight:400;color:var(--dim);">(백엔드에 실제로 있는 배 전부 — 무의미·중복은 여기서 지웁니다)</span></h2>
   <div class="sec-note">
-    위 두 구역은 <b>골라 보여주는</b> 화면이라 백엔드에 있는 배가 다 나오지 않습니다. 여기는 <code>status/_queue.json</code>에
-    <b>실제로 들어 있는 배 전부</b>입니다 — 화면과 백엔드가 같은지 여기서 확인하시면 됩니다.
+    <code>status/_queue.json</code>에 <b>실제로 들어 있는 배 전부</b>입니다 — 화면과 백엔드가 같은지 여기서 확인하시면 됩니다.
+    상태를 골라 <b>진행중만</b>·<b>정박·대기</b>만 볼 수 있습니다.
     <b>지우면 백엔드에서도 같이 빠지고</b>, 보관함에 남아 되돌릴 수 있습니다.
   </div>
   <div class="ships-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 8px;">
@@ -381,6 +370,7 @@
     <select id="ship-filter" style="padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
       <option value="all">전체 상태</option>
       <option value="IN_PROGRESS">진행중만</option>
+      <option value="parked">정박·대기(자율)</option>
       <option value="PENDING">대기만</option>
       <option value="stale">오래 멈춤(14일+)</option>
       <option value="dup">중복 의심만</option>
@@ -473,16 +463,19 @@
   </div>
 
 
-  <!-- ════ 섹션 1 · 이 루프를 돌리는 자율 기계(라이브) ════ -->
-  <h2 class="sec" id="sec-routines">🔴 상시 자율 체계 <span style="font-size:11px;font-weight:400;color:var(--dim);">(라이브 엔진 · 축②③④)</span></h2>
+  <!-- ════ 섹션 1 · 이 루프를 돌리는 자율 기계(라이브) ════
+       ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 바로 위 「🏛️ 자율화를 떠받치는 4대 축」의
+         설명과 이 라이브 목록이 같은 것을 두 섹션에 나눠 적고 있었다(제목부터 '축②③④'). 별도 h2 를
+         없애고 4대 축 안의 소제목으로 내려 한 덩어리로 읽히게 했다. 컨테이너 id·렌더는 그대로. -->
+  <h3 class="sec" id="sec-routines" style="margin-top:14px;">🔴 지금 살아 돌아가는 축 <span style="font-size:11px;font-weight:400;color:var(--dim);">(위 축②③④의 라이브 상태)</span></h3>
   <div class="routines" id="routines">
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
   </div>
 
   <!-- ════ 🛠️ 시토 (AI CTO) 자율 자동화 (status/module_registry.json 신규 스키마 · owner_role 있는 이 창 소속만 · additive · 계약 2026-07-09 · 2026-07-13 전용 섹션 격상) ════ -->
   <section>
-    <h2 class="sec" id="sec-registry-cards">🛠️ 시토 (AI CTO) 자율 자동화 <span style="font-size:11px;font-weight:400;color:var(--dim);">(등록부 모듈 카드 · 특징기능·자율수준·정직 꼬리표)</span></h2>
-    <div class="sec-note">시토가 상시 돌리는 자동화 모듈 — 특징기능·자율수준·정직 꼬리표. 카톡·텔레그램 발신 전체(방·배선·상태)는 하단 '📨 알림 한 장'(② 돌아가는 자동화).</div>
+    <h2 class="sec" id="sec-registry-cards">🛠️ 등록된 자율 자동화 모듈 <span style="font-size:11px;font-weight:400;color:var(--dim);">(카드마다 담당 표시 · 특징기능·자율수준·정직 꼬리표)</span></h2>
+    <div class="sec-note">상시 돌아가는 자동화 모듈 — 카드 아이콘이 담당(🛠️시토 · 👥시포 · 🌟웰리 · 🧑‍🤝‍🧑시로)입니다. 카톡·텔레그램 발신 전체(방·배선·상태)는 하단 '📨 알림 한 장'(② 돌아가는 자동화).</div>
     <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div class="routines" id="registry-cards"></div>
     <details class="coo-details" id="registry-cards-dormant-wrap" style="margin-top:10px;">
@@ -668,18 +661,13 @@
     <div class="sec-note" style="margin:8px 0 0;">게이트: 제작·검수·집계=자율 / <b>발행은 GM 텔레그램 [✅승인] 뒤</b>(무인 발행 없음) · 채널 자격증명·결제·공식값=GM 결재. 측정 못하는 값은 '미측정'으로 적는다(0 위장 금지).</div>
   </section>
 
-  <!-- ════ 🧑‍🤝‍🧑 시로(AI CHRO) 자율 인사 (상시 루프 3종 + Gmail 트리거 · 등록부 chro-* 실값 렌더 · 2026-07-16 매니저 지시) ════ -->
-  <section>
-    <h2 class="sec" id="sec-chro-autonomy">🧑‍🤝‍🧑 시로 (AI CHRO) 자율 인사 <span style="font-size:11px;font-weight:400;color:var(--dim);">(정합성 스윕·온보딩 워치·효율 리포트·공고명 자동취득)</span></h2>
-    <div class="sec-note">인사 데이터 정합성·온보딩 진척·채용 파이프라인을 무인 감시 — 카드는 등록부(<code>chro-*</code>) 실값 렌더. 발신 배선·상태는 하단 '📨 알림 한 장'.</div>
-    <div id="registry-card-summary-chro" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
-    <div class="routines" id="registry-cards-chro"></div>
-    <details class="coo-details" id="registry-cards-chro-dormant-wrap" style="margin-top:10px;">
-      <summary id="registry-cards-chro-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
-      <div class="routines" id="registry-cards-chro-dormant" style="margin-top:9px;"></div>
-    </details>
-    <div class="sec-note" style="margin:8px 0 0;">게이트: 오피스 명령큐=온디맨드(무인 자동실행 금지) · 비가역 쓰기·발송=매니저/GM 승인 · PII 마스킹 유지 · 고위험 4종=A-6 사전 감사.</div>
-  </section>
+  <!-- ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 구 「🧑‍🤝‍🧑 시로(AI CHRO) 자율 인사」 전용 섹션 삭제.
+       ▸이유: 이 섹션이 안고 있던 모듈은 chro-gmail-job-title-fetch 1건뿐인데, 전용 h2 + 요약줄 + 휴면 접기 +
+         게이트 설명까지 달고 있어 화면에서 한 섹션을 통째로 차지했다. 게다가 "⏸️ GM 결정 대기(미발효·휴면)"로
+         보여 이미 끝난 결정을 기다리는 것처럼 읽혔다.
+       ▸★모듈은 끄지 않았다. 그 1건은 위 등록부 모듈 카드 블록으로 그대로 합쳐져 화면에 계속 보인다
+         (나우열M 이 실제로 쓰는 채용 자동화 — 2026-07-27 '흔적 없다고 끄지 마라' 교훈).
+       ▸GM 확정 2026-07-28: 시로·시뽀는 AI 큐에서 배제(담당=나우열M)이나 **자동화 모듈은 미변경**이 원칙이다. -->
 
   <!-- ════ 섹션 2 · 루프가 만든 성과 ════ -->
   <h2 class="sec">📊 성과 요약 <span style="font-size:11px;font-weight:400;color:var(--dim);">(루프가 만든 결과)</span></h2>
@@ -705,8 +693,12 @@
     <div class="sec-note" style="margin:2px 0 10px;">📤 카톡 매출보고 3방 관리 = <a href="cto/automation/카톡전송관리.html" style="color:var(--accent-soft);">카톡 전송 관리 →</a></div>
 
     <!-- ══ 🖥️ 시스템 현황 (status/erp_status.json native 렌더 · 구 T2 이식) ══ -->
+    <!-- ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 구 「🖥️ 시스템 현황」과 「🤖 자동화 건강 점수판」이
+         둘 다 '지금 잘 돌고 있나'에 답하는 별개 h2 섹션이었다. 제목 하나로 합치고 세 가지를 ①②③ 로 세웠다.
+         패널·컨테이너 id·렌더 함수는 그대로 — 제목 층위만 정리. -->
     <div id="erp-sysstatus" class="autopanel">
-      <h2 class="sec" style="margin-top:0;">🖥️ 시스템 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">(지금 잘 돌고 있나 — 서버가 자동 발행)</span></h2>
+      <h2 class="sec" style="margin-top:0;">🖥️ 지금 잘 돌고 있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(①서버 상태 · ②예약작업이 떴나 · ③그래서 결과가 나왔나)</span></h2>
+      <h3 style="margin:12px 0 4px;">① 시스템 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">서버가 자동 발행</span></h3>
       <div id="erp-sys-summary" class="autopanel-headline">불러오는 중…</div>
       <div id="erp-sys-body" class="autopanel-body"></div>
       <div class="sec-note" style="margin-bottom:0;">🤖 각 AI가 맡은 일·할 일은 <strong>G1 ▸ 오늘의 항로</strong>에서 봅니다 (한 곳만 — 여기 중복 표시 안 함).</div>
@@ -716,15 +708,14 @@
 
     <!-- ══ 🤖 자동화 건강 점수판 (automation_health · 구 T2 이식) ══ -->
     <div id="erp-autohealth" class="autopanel health">
-      <h2 class="sec" style="margin-top:0;">🤖 자동화 건강 점수판</h2>
-      <div class="sec-note" style="margin:0 0 10px;">아래 두 숫자는 <strong>서로 다른 것</strong>을 잽니다 — ①은 "프로그램이 켜졌는가", ②는 "그래서 결과가 나왔는가". ①만 보고 정상이라 믿으면 안 됩니다(실제로 여러 건이 켜지긴 했는데 결과는 며칠씩 안 나온 사고가 있었습니다).</div>
+      <div class="sec-note" style="margin:0 0 10px;">아래 두 숫자는 <strong>서로 다른 것</strong>을 잽니다 — ②는 "프로그램이 켜졌는가", ③은 "그래서 결과가 나왔는가". ②만 보고 정상이라 믿으면 안 됩니다(실제로 여러 건이 켜지긴 했는데 결과는 며칠씩 안 나온 사고가 있었습니다).</div>
 
-      <h3 style="margin:14px 0 4px;">① 예약작업 실행 <span style="font-size:12px;font-weight:400;color:var(--dim);">Windows가 프로그램을 띄웠는지만 확인 · 30분 자동 갱신</span></h3>
+      <h3 style="margin:14px 0 4px;">② 예약작업 실행 <span style="font-size:12px;font-weight:400;color:var(--dim);">Windows가 프로그램을 띄웠는지만 확인 · 30분 자동 갱신</span></h3>
       <div id="erp-ah-headline" class="autopanel-headline health">집계 중…</div>
       <div id="erp-ah-body" class="autopanel-body"></div>
       <div id="erp-ah-time" class="autopanel-time"></div>
 
-      <h3 style="margin:20px 0 4px;">② 모듈 결과 산출 <span style="font-size:12px;font-weight:400;color:var(--dim);">떠서 진짜 결과물을 냈는지 — 침묵 감지기 실측(눌러서 펼치기)</span></h3>
+      <h3 style="margin:20px 0 4px;">③ 모듈 결과 산출 <span style="font-size:12px;font-weight:400;color:var(--dim);">떠서 진짜 결과물을 냈는지 — 침묵 감지기 실측(눌러서 펼치기)</span></h3>
       <details class="coo-details" id="module-silence-toggle">
         <summary id="erp-ah-silence-headline" style="font-size:14px;">집계 중…</summary>
         <div id="erp-ah-silence-body" class="autopanel-body" style="margin-top:9px;"></div>
@@ -792,13 +783,8 @@
 
     <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 소스</strong> — 할일=<code>todo_list</code> · 명언=<code>quotes.json</code> · 진행=<code>status/*.json</code>·git.<br><strong>🔄 재기동</strong> — <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code></div>
 
-    <!-- ══ 📣 마케팅 발행 파이프라인 → AI CMO(시모) 이관 (2026-07-15 · 구 M5 파이프라인 삭제) ══ -->
-    <div class="callout" style="border-left-color:var(--pink);background:rgba(232,138,192,0.07);margin-top:20px;">
-      📣 <strong>마케팅 자율 = AI CMO(시모) 관리</strong> —
-      <a href="wellperion_guide(main).html#M1" style="color:var(--accent-soft);font-weight:700;">마케팅 현황 대시보드</a> ·
-      <a href="cmo/series/AI시리즈보드.html" style="color:var(--accent-soft);font-weight:700;">콘텐츠·AI시리즈 보드</a> ·
-      <a href="cmo/funnel/문의흐름지도.html" style="color:var(--accent-soft);font-weight:700;">문의 흐름 지도</a>.
-    </div>
+    <!-- ★2026-08-01(시토) — 같은 「📣 마케팅 자율 = 시모 관리 + 링크 3개」 안내가 위(① 자율로 한 일)에
+         이미 똑같이 있어 여기 사본을 지웠다. 링크는 위 한 곳에서만 본다(GM "겹치는 것 전부 합치기"). -->
 
     <!-- ══ 매주 (7 C-Level 컨텍스트 정비 · AI 교육자료 자동 정리) — T2 원본에서 이식 2026-07-03 ══ -->
     <h4 id="sec-weekly">매주 <span class="statchip static">📄 설명</span></h4>
@@ -910,62 +896,20 @@
     return (best > 0 ? t.slice(0, best + 1) : t.slice(0, max)).replace(/\s+$/, '') + '…';
   }
   function missionCleanTitle(t){ return String(t || '').replace(/^\[[^\]]+\]\s*/, ''); }
-  // 진행중·정박 공용 표 렌더(GM 지시 2026-07-22 — 카드 나열 대신 표로 한눈 스캔). 컬럼: 배|담당|미션|상태|재개조건·다음.
-  function missionTableHtml(list, statusFn, contentFn){
-    var rows = list.map(function(s){
-      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
-      var owner = esc(nick + (s.ship_no != null ? ' ' + s.ship_no : ''));
-      var full = missionSummary(contentFn(s));
-      var head = missionSnippet(full, 95);
-      // 한 칸에 원문을 통째로 넣으면 표가 글벽이 된다(GM 2026-07-24 지적). 요약만 보이고
-      // 전문은 접어 둔다 — 잘라내는 게 아니라 접는 것이라 정보는 하나도 안 잃는다.
-      var content = !full ? '' : (head === full ? esc(full)
-        : '<details class="cellmore"><summary>' + esc(head) + '</summary>'
-          + '<div class="cellfull">' + esc(full) + '</div></details>');
-      return '<tr>' +
-        '<td style="text-align:center;">' + missionBoat(s.priority) + '</td>' +
-        '<td>' + owner + '</td>' +
-        '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong></td>' +
-        '<td>' + esc(statusFn(s)) + '</td>' +
-        '<td>' + (content || '<span style="color:var(--dim);">—</span>') + '</td>' +
-        '<td style="text-align:center;">' + trashBtn(s) + '</td>' +
-      '</tr>';
-    }).join('');
-    return '<div class="gtbl-wrap"><table class="gtbl">' +
-      '<tr><th style="width:36px">배</th><th style="width:88px">담당</th><th>미션</th><th style="width:96px">상태</th><th>재개조건 · 다음</th><th style="width:56px">정리</th></tr>' +
-      rows + '</table></div>';
+  // '재개조건 · 다음' 한 칸 렌더 — 요약만 보이고 원문은 접는다(GM 2026-07-24 지적: 한 칸에
+  // 원문을 통째로 넣으면 표가 글벽이 된다). 잘라내는 게 아니라 접는 것이라 정보 손실 0.
+  // ★2026-08-01 — 구 missionTableHtml(진행·정박 전용 표)에서 이 칸 로직만 남기고 표 자체는
+  //   「🗂 전체 배」 하나로 합쳤다(GM "겹치는 것 전부 합치기"). 판정·컬럼은 그 표가 이어받음.
+  function nextCellHtml(raw){
+    var full = missionSummary(raw);
+    if(!full) return '<span style="color:var(--dim);">—</span>';
+    var head = missionSnippet(full, 95);
+    if(head === full) return esc(full);
+    return '<details class="cellmore"><summary>' + esc(head) + '</summary>'
+      + '<div class="cellfull">' + esc(full) + '</div></details>';
   }
-  function renderActiveMissions(queue){
-    var el = document.getElementById('active-missions');
-    if(!el) return;
-    // IN_PROGRESS는 surface 무관 전부 여기(진행) 표시 — 정박 패널은 대기(PENDING·STANDBY)만 전담(GM 지적 2026-07-22, 정박 과다 근본수리).
-    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.status === 'IN_PROGRESS'; }) : [];
-    if(!list.length){
-      el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 없음 — 지금 굴러가는 진행중(IN_PROGRESS) 배가 없습니다.</div>';
-      return;
-    }
-    list.sort(function(a, b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
-    el.innerHTML = missionTableHtml(list, function(){ return '🚢 진행중'; }, function(s){ return s.next || s.note; });
-  }
-
-  // ═══════════ ⚓ 정박·대기 (status/_queue.json surface==autonomy · 조건/시각 트리거 대기 · 항로 이관 2026-07-15 · 배237) ═══════════
-  //   명시 플래그(surface==='autonomy')로 1차 판정 + status로 2차 거름 — IN_PROGRESS(진행중이라 위 진행 패널로)·
-  //   DONE(입항 완료라 대기 아님)은 제외, PENDING·STANDBY(보류)만 정박(GM 지적 2026-07-22, 정박 과다 근본수리).
-  function renderParkedMissions(queue){
-    var el = document.getElementById('parked-missions');
-    if(!el) return;
-    // 지운 배(폐기)는 여기 남지 않는다 — 아니면 '지웠는데 화면에 그대로'가 된다(GM 2026-07-27 일관성).
-    var list = Array.isArray(queue) ? queue.filter(function(s){ return s && s.surface === 'autonomy' && s.status !== 'DONE' && s.status !== 'IN_PROGRESS' && !isTrashed(s); }) : [];
-    if(!list.length){
-      el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">정박·대기 배 없음 — 조건/시각 트리거 대기 배가 없습니다.</div>';
-      return;
-    }
-    list.sort(function(a, b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
-    el.innerHTML = missionTableHtml(list, function(s){ return s.status === 'STANDBY' ? '⚓ 보류' : '⚓ 정박'; }, function(s){ return s.next || s.depends_on; });
-  }
-
   // ═══════════ 🔢 배 3숫자 요약 (GM 지시 2026-07-27 — "나열 대신 숫자·기본은 접힌 목록") ═══════════
-  //   지금 돌고 있음=renderActiveMissions과 동일 판정(IN_PROGRESS) · 막혀 있음=renderParkedMissions과 동일 판정
+  //   지금 돌고 있음=IN_PROGRESS · 막혀 있음=「🗂 전체 배」의 '정박·대기(자율)' 필터와 동일 판정
   //   (surface==='autonomy' 대기·보류) · 오늘 끝남=오늘 처리 완료(DONE·완료, processed_at 오늘). 새 집계 로직 아님 —
   //   이미 있는 두 목록의 개수를 그대로 재사용 + '오늘 끝남'만 추가.
   function renderShipsSummary(queue){
@@ -1049,6 +993,8 @@
     var dup = dupKeySet(live);
     var list = live.filter(function(s){
       if(f === 'IN_PROGRESS' && s.status !== 'IN_PROGRESS') return false;
+      // 정박·대기(자율) — 구 renderParkedMissions 와 같은 판정을 그대로 옮겨 왔다(2026-08-01 섹션 병합).
+      if(f === 'parked' && !(s.surface === 'autonomy' && s.status !== 'DONE' && s.status !== 'IN_PROGRESS')) return false;
       if(f === 'PENDING' && !(s.status === 'PENDING' || s.status === 'STANDBY')) return false;
       if(f === 'dup' && !isSuspect(s, dup)) return false;
       if(f === 'stale' && staleDays(s) < 14) return false;
@@ -1072,11 +1018,14 @@
         '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>' + (sus ? ' <span style="font-size:11px;color:#b07800;">중복 의심</span>' : '') + '</td>' +
         '<td>' + esc(shipStatusLabel(s)) + (staleDays(s) >= 14
             ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '') + '</td>' +
+        // 재개조건 · 다음 — 구 진행/정박 두 표에만 있던 칸을 병합하며 옮겨 왔다(2026-08-01).
+        //   긴 원문은 접는다(잘라내는 게 아니라 접는 것 — 정보 손실 0, 구 표와 동일 동작).
+        '<td>' + nextCellHtml(s.next || s.depends_on || s.note) + '</td>' +
         '<td style="text-align:center;">' + trashBtn(s) + '</td>' +
       '</tr>';
     }).join('');
     el.innerHTML = '<div class="gtbl-wrap"><table class="gtbl">' +
-      '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th><th style="width:88px">상태</th><th style="width:64px">정리</th></tr>' +
+      '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th><th style="width:88px">상태</th><th>재개조건 · 다음</th><th style="width:64px">정리</th></tr>' +
       rows + '</table></div>';
   }
 
@@ -1113,8 +1062,6 @@
       var arr = parseJson(txt);
       if(!Array.isArray(arr)) return;
       _queueAll = arr;
-      try{ renderActiveMissions(arr); }catch(e){}
-      try{ renderParkedMissions(arr); }catch(e){}
       try{ renderShipsSummary(arr); }catch(e){}
       renderAllShips(); renderTrash();
     });
@@ -2196,15 +2143,10 @@
   function renderRegistryCards(reg){
     var sm = document.getElementById('registry-card-summary');
     var el = document.getElementById('registry-cards');
-    var smChro = document.getElementById('registry-card-summary-chro');
-    var elChro = document.getElementById('registry-cards-chro');
     var elDormant = document.getElementById('registry-cards-dormant');
     var elDormantWrap = document.getElementById('registry-cards-dormant-wrap');
     var elDormantSum = document.getElementById('registry-cards-dormant-summary');
-    var elChroDormant = document.getElementById('registry-cards-chro-dormant');
-    var elChroDormantWrap = document.getElementById('registry-cards-chro-dormant-wrap');
-    var elChroDormantSum = document.getElementById('registry-cards-chro-dormant-summary');
-    // 시모(cmo) 전용 섹션 — 2026-07-27 GM 지시. 시로와 동일 패턴(분리 렌더).
+    // 시모(cmo) 전용 섹션 — 2026-07-27 GM 지시(모듈 6건이라 따로 볼 값이 있다).
     var smCmo = document.getElementById('registry-card-summary-cmo');
     var elCmo = document.getElementById('registry-cards-cmo');
     var elCmoDormant = document.getElementById('registry-cards-cmo-dormant');
@@ -2215,38 +2157,28 @@
     if(!mods){
       if(sm) sm.textContent = '등록부를 불러오지 못했습니다.';
       el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부를 불러오지 못했습니다.</div>';
-      if(smChro) smChro.textContent = '등록부를 불러오지 못했습니다.';
-      if(elChro) elChro.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">등록부를 불러오지 못했습니다.</div>';
       if(elDormantWrap) elDormantWrap.style.display = 'none';
-      if(elChroDormantWrap) elChroDormantWrap.style.display = 'none';
       return;
     }
     var mine = mods.filter(function(m){
       return m && m.owner_role && m.front_card && m.front_card.window === '자율현황';
     });
-    // 시로(chro) 모듈은 전용 섹션(sec-chro-autonomy)에 분리 렌더(2026-07-16 매니저 지시) — 나머지는 기존 시토 블록 유지.
-    // 시모(cmo)도 전용 섹션(sec-cmo-autonomy)으로 분리(2026-07-27 GM 지시) — 그전엔 시토 공용 블록에
-    // 섞여 있어 GM이 '시모 건'만 따로 보기 어려웠다. 다른 역할과 동일 패턴.
-    var chroMods = mine.filter(function(m){ return m.owner_role === 'chro'; });
+    // 시모(cmo)는 전용 섹션(sec-cmo-autonomy)으로 분리(2026-07-27 GM 지시) — 그전엔 공용 블록에
+    // 섞여 있어 GM이 '시모 건'만 따로 보기 어려웠다(모듈 6건이라 한 섹션 값을 한다).
+    // ★2026-08-01 — 시로(chro) 전용 분리는 되돌려 공용 블록으로 합쳤다: 모듈이 1건뿐인데 섹션 하나를
+    //   통째로 쓰고 있었다(GM "겹치는 것 전부 합치기"). 모듈은 그대로 뜬다 — 끄지 않았다.
     var cmoMods  = mine.filter(function(m){ return m.owner_role === 'cmo'; });
-    var restMods = mine.filter(function(m){ return m.owner_role !== 'chro' && m.owner_role !== 'cmo'; });
+    var restMods = mine.filter(function(m){ return m.owner_role !== 'cmo'; });
     // 발효/미발효 분리(GM 지시 2026-07-21) — isDormantModule 판정만으로 두 배열로 나눠 각자 컨테이너에 append.
     var restActive  = restMods.filter(function(m){ return !isDormantModule(m); });
     var restDormant = restMods.filter(isDormantModule);
-    var chroActive  = chroMods.filter(function(m){ return !isDormantModule(m); });
-    var chroDormant = chroMods.filter(isDormantModule);
     var cmoActive   = cmoMods.filter(function(m){ return !isDormantModule(m); });
     var cmoDormant  = cmoMods.filter(isDormantModule);
-    if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + restMods.length + '건 (전체 등록부 ' + mods.length + '건 중 · owner_role 보유 신규 스키마만 · 시로 모듈은 전용 섹션)';
+    if(sm) sm.textContent = '이 창 소속 등록 모듈 ' + restMods.length + '건 (전체 등록부 ' + mods.length + '건 중 · 시모 모듈은 아래 전용 섹션)';
     el.innerHTML = restActive.length ? restActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 이 창(자율현황) 소속 발효 모듈이 아직 없습니다.</div>';
     if(elDormant) elDormant.innerHTML = restDormant.length ? restDormant.map(regCardHtml).join('') : '';
     if(elDormantSum) elDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + restDormant.length + '개';
     if(elDormantWrap) elDormantWrap.style.display = restDormant.length ? '' : 'none';
-    if(smChro) smChro.textContent = '등록부 시로(chro) 모듈 ' + chroMods.length + '건 — 상시 루프 3종(Windows 스케줄러) + GAS 트리거';
-    if(elChro) elChro.innerHTML = chroActive.length ? chroActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 시로(chro) 발효 모듈이 아직 없습니다.</div>';
-    if(elChroDormant) elChroDormant.innerHTML = chroDormant.length ? chroDormant.map(regCardHtml).join('') : '';
-    if(elChroDormantSum) elChroDormantSum.textContent = '⏸️ GM 결정 대기 (미발효·휴면) — ' + chroDormant.length + '개';
-    if(elChroDormantWrap) elChroDormantWrap.style.display = chroDormant.length ? '' : 'none';
     if(smCmo) smCmo.textContent = '등록부 시모(cmo) 모듈 ' + cmoMods.length + '건 — 제작·검수 디스패치 + 발행 요약 + 반응 측정 + 주간 환류 + 접수 수집';
     if(elCmo) elCmo.innerHTML = cmoActive.length ? cmoActive.map(regCardHtml).join('') : '<div class="feed-status" style="grid-column:1/-1;">등록부에 시모(cmo) 발효 모듈이 아직 없습니다.</div>';
     if(elCmoDormant) elCmoDormant.innerHTML = cmoDormant.length ? cmoDormant.map(regCardHtml).join('') : '';
@@ -2345,14 +2277,6 @@
       var tsEl = document.getElementById('trash-ships');
       if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
     }
-    try{ renderActiveMissions(_queueArr); }catch(e){
-      var amEl = document.getElementById('active-missions');
-      if(amEl) amEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션 표시 오류.</div>';
-    }
-    try{ renderParkedMissions(_queueArr); }catch(e){
-      var pmEl = document.getElementById('parked-missions');
-      if(pmEl) pmEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">정박·대기 표시 오류.</div>';
-    }
     try{ renderShipsSummary(_queueArr); }catch(e){
       var ssEl = document.getElementById('ships-summary-line');
       if(ssEl) ssEl.textContent = '배 현황 요약 표시 오류.';
@@ -2382,8 +2306,8 @@
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
     document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
-    var amEl0 = document.getElementById('active-missions');
-    if(amEl0) amEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">진행·상시 미션을 불러오지 못했습니다.</div>';
+    var asEl0 = document.getElementById('all-ships');
+    if(asEl0) asEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">배 목록을 불러오지 못했습니다.</div>';
     document.getElementById('routines').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.</div>';
     document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
