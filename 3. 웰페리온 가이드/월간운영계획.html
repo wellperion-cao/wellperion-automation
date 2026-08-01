@@ -146,6 +146,11 @@
   .chip.idc{cursor:pointer; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:10.5px; color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
   .chip.idc:hover{border-color:var(--accent-soft); color:var(--accent-soft);}
   .chip.idc.copied{color:var(--green); border-color:var(--green);}
+  /* 🌟 북극성 기여도 배지(상/중/하) — top3 산식 1순위 요인(GM 승인 2026-08-01). idOwnCell·top3 카드 공용. */
+  .chip.contrib{font-weight:700;}
+  .chip.contrib-high{color:var(--rose); background:rgba(221,127,110,0.10); border:1px solid rgba(221,127,110,0.35);}
+  .chip.contrib-mid{color:var(--gold); background:rgba(232,184,75,0.10); border:1px solid rgba(232,184,75,0.35);}
+  .chip.contrib-low{color:var(--dim); background:var(--surface); border:1px solid var(--border);}
 
   .obadge{display:inline-block; font-size:11px; font-weight:700; border-radius:20px; padding:2px 10px; white-space:nowrap;}
   .obadge.계획{color:var(--dim); background:var(--surface); border:1px solid var(--border-strong);}
@@ -1682,16 +1687,24 @@
     return s + '~' + u;
   }
 
-  // ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04 월별 상단 재구성) ──
+  // ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · 중요도 자동 선정 · GM 확정 2026-07-04 · 북극성 기여도 반영 2026-08-01) ──
   // 중요도 산식(문서화·결정적·랜덤 없음 · 지어내기 금지=기존 objective 필드만 사용):
   //   ① 매출 과제(💰 0순위 별도 섹션) 제외 →
-  //   ② score = 상태가중(진행 300 · 이월 200 · 계획 100 · 완료 0)
+  //   ② score = 북극성 기여도(objective.northstar_contribution — high=10000·mid=5000·low=1000 · 1순위 요인 · GM 승인 2026-08-01)
+  //             + 상태가중(진행3·이월2·계획1·완료0 — 舊 300/200/100은 기여도를 압도해 top3가 '오래 진행 중인 것' 위주로만
+  //               뽑히던 원인이었다. tie-break 수준으로 낮춘다 · GM 지적 2026-08-01)
   //             + 전사/핵심 여부(dept에 '전사' 또는 '전 부서' 포함 시 +40)
   //             + 북극성 직접연결(북극성 지도에 role 문구 존재 시 +20)
-  //             + 진척 가중(progress × 0.1 = 0~10 · 최소 영향·tie-break)
+  //             + 진척 가중(progress × 0.01 = 0~1 · 최소 영향·tie-break)
+  //             + 기한 임박 가산(deadlineBonus — target 문장 속 '(기한: ...)'을 파싱해 마감이 가까울수록 최대 60점.
+  //               기여도 등급차(4000+)를 뒤집진 못하지만, 같은 등급 안에서 기한 있는 신규 지시(예: 회장님 지시)가
+  //               기한 없는 옛 과제에 묻히지 않게 한다. 못 읽으면 0 — 지어내기 금지.)
   //   ③ 정렬 = score 내림차순 → 진척 내림차순(동점 규칙) → 원배열 순서(안정 정렬).
+  //   ⚠ 기여도 미배정(옛 항목) = 안전 기본값 mid 취급(완전 배제·과대평가 둘 다 피함 · 지어내기 아님, 등급 3단 중 중간값).
   //   ⚠ 난이도(priority 🛳️/⛴️/⛵)는 objectives 스키마에 필드가 없어 미사용(지어내기 금지). status로 대체 반영.
-  var TOP3_STATUS_W = {'진행':300, '이월':200, '계획':100, '완료':0};
+  var CONTRIB_W = {high:10000, mid:5000, low:1000};
+  var CONTRIB_LABEL = {high:'🔥 상', mid:'◐ 중', low:'▫ 하'};
+  var TOP3_STATUS_W = {'진행':3, '이월':2, '계획':1, '완료':0};
   function isSalesObj(o){
     if(!o) return false;
     if(o.metric && /매출/.test(o.metric.name || '')) return true;
@@ -1702,11 +1715,47 @@
     var d = (o && o.dept) || '';
     return d.indexOf('전사') >= 0 || d.indexOf('전 부서') >= 0;
   }
+  function contribOf(o){
+    var c = o && o.northstar_contribution;
+    return (c === 'high' || c === 'mid' || c === 'low') ? c : 'mid';
+  }
+  // 기한 파싱 — target 속 '(기한: ...)'만 읽는다. 'M월 N주'=그 주 중간일(±3일) 근사(연도=선택월 _sel 기준).
+  // 'N주'(월 미기재)=progress_note의 'GM 전달 YYYY-MM-DD' 기준일 + N주(회장님 지시 3건 표기 방식). 둘 다 아니면 null(가산 0).
+  function parseDeadline(o){
+    var m = /기한\s*[:：]\s*([^)]+)/.exec((o && o.target) || '');
+    if(!m) return null;
+    var spec = m[1].trim();
+    var mm = /^(\d{1,2})월\s*(\d{1,2})주/.exec(spec);
+    if(mm){
+      var yr = _sel ? Number(String(_sel).split('-')[0]) : new Date().getFullYear();
+      return new Date(yr, Number(mm[1]) - 1, (Number(mm[2]) - 1) * 7 + 4);
+    }
+    var wm = /^(\d{1,2})\s*주/.exec(spec);
+    if(wm){
+      var bm = /전달\s*(\d{4})-(\d{2})-(\d{2})/.exec((o && o.progress_note) || '');
+      if(!bm) return null;
+      var base = new Date(Number(bm[1]), Number(bm[2]) - 1, Number(bm[3]));
+      base.setDate(base.getDate() + Number(wm[1]) * 7);
+      return base;
+    }
+    return null;
+  }
+  function deadlineBonus(o){
+    var d = parseDeadline(o);
+    if(!d) return 0;
+    var days = Math.round((d.getTime() - Date.now()) / 86400000);
+    return Math.max(0, Math.min(60, 60 - days));
+  }
   function top3Score(o){
-    var sw = (TOP3_STATUS_W[o.status] != null) ? TOP3_STATUS_W[o.status] : 100;
+    var sw = (TOP3_STATUS_W[o.status] != null) ? TOP3_STATUS_W[o.status] : 1;
     var cw = isCompanyWide(o) ? 40 : 0;
     var ns = (o.northstar && _nsMap && _nsMap[o.northstar]) ? 20 : 0;
-    return sw + cw + ns + clampPct(o.progress) * 0.1;
+    return CONTRIB_W[contribOf(o)] + sw + cw + ns + clampPct(o.progress) * 0.01 + deadlineBonus(o);
+  }
+  // 북극성 기여도 배지(상/중/하) — top3 산식 1순위 요인을 GM이 한눈에 보게(top3 카드·상세표 공용).
+  function contribBadge(o){
+    var c = contribOf(o);
+    return '<span class="chip contrib contrib-' + c + '" title="북극성 기여도 — top3 산식 1순위 요인(GM 승인 2026-08-01)">' + CONTRIB_LABEL[c] + '</span>';
   }
   function selectTop3(objs){
     return (objs || []).filter(function(o){ return !isSalesObj(o); })
@@ -1730,6 +1779,7 @@
       var st = o.status || '';
       return '<div class="t3-card st-' + esc(st) + '">' +
         '<div class="t3-top"><span class="t3-rank t3-r' + rank + '">' + rank + '순위</span>' +
+          contribBadge(o) +
           '<span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
           '<span class="t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + '</span></div>' +
         '<div class="t3-title">' + esc(o.title) + '</div>' +
@@ -1907,7 +1957,7 @@
     var _idLabel = _idNick ? (_idNick + '-' + _idNum) : _idNum;
     var idOwnCell = '<span class="chip idc' + (_idNick ? '' : ' no-owner') + '" data-id="' + esc(_idLabel) +
       '" onclick="copyObjId(this)" title="클릭해 복사' + (_idNick ? '' : ' · 담당 미지정(원본 id: ' + esc(o.id) + ')') + '">' +
-      esc(_idLabel) + '</span>' + '<div class="r-dept">' + esc(o.dept || '') + '</div>';
+      esc(_idLabel) + '</span>' + contribBadge(o) + '<div class="r-dept">' + esc(o.dept || '') + '</div>';
 
     // 🎯 목표치 & 진행 근거·경위 통합 칸(2026-08-01 GM 지적) — 정직 딱지를 여기로 옮겨 '0%'가 못 잰 값인지
     // 정말 안 한 것인지 목표치 바로 옆에서 구분되게 하고, 근거 한줄요약은 접지 않고 기본 펼침으로 보인다.
@@ -2953,6 +3003,7 @@
     var t3 = top.length ? top.map(function(o, i){
       return '<div class="sm-t3 st-' + esc(o.status || '') + '">' +
         '<div class="sm-t3-top"><span class="sm-t3-rank">' + (i + 1) + '순위</span>' +
+          contribBadge(o) +
           '<span class="obadge ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span></div>' +
         '<div class="sm-t3-title">' + esc(o.title) + '</div>' +
         '<div class="sm-t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + ' · 진척 ' + clampPct(o.progress) + '%</div>' +
