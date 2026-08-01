@@ -121,13 +121,16 @@
   /* 🔖 식별자+담당 병합 칸(2026-08-01 GM 지시 "식별자+담당 합치자·닉네임-번호") — 좁게 두고, 빈 폭은 .c-target에. */
   .chip.idc.no-owner{border-style:dashed; color:var(--dim);}
   .c-prog{min-width:150px;}
-  .c-title{max-width:260px; white-space:normal; word-break:keep-all;}
+  .c-title{white-space:normal; word-break:keep-all;}
   .c-ns{min-width:150px;}
   .r-note{font-size:11.5px; color:var(--dim); line-height:1.5; white-space:pre-wrap; margin-top:4px;}
   /* 📋 목표치 & 진행 근거·경위 통합 칸(2026-08-01 GM 지적 "목표치 칸이 제일 길어서... 제일 긴 칸으로") —
      표에서 가장 넓은 칸으로 두고, 근거 한줄요약(r-note-sum)은 항상 펼쳐 보이고 원문 전문만 접기(r-note-fold).
-     식별자+담당 병합(같은 날 2차 지시)으로 칸 하나 줄어든 폭도 여기로: 480→580px. */
-  .c-target{max-width:580px; white-space:normal; word-break:keep-all;}
+     🔧 2026-08-02 GM 표면점검: max-width 캡만 늘려서는 실효가 없었다(auto 표 레이아웃이라 칸이 실제로
+     그 폭까지 안 자람 — 실측 287px). table.rpt.obj-tbl에 table-layout:fixed + th % 폭(아래 objSplitSection)으로
+     교체해 이 칸에 진짜 36%를 배정한다. max-width 캡은 제거(고정폭이 이제 상한 역할). */
+  .c-target{white-space:normal; word-break:keep-all;}
+  table.rpt.obj-tbl{table-layout:fixed;}
   .r-target-val{font-weight:600; color:var(--text);}
   .r-note-sum{font-size:12px; color:var(--text-soft); line-height:1.5; margin-top:4px; word-break:keep-all;}
   .r-note-fold{margin-top:4px;}
@@ -2035,8 +2038,8 @@
       esc(label) + ' <span class="cnt">' + list.length + '건</span></div>';
     if(!list.length) return head + '<div class="obj-empty">해당 과제가 없습니다.</div>';
     var sorted = sortObjsByStatus(list);
-    return head + '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
-      '<th class="c-own">담당·번호</th><th>핵심 과제</th><th class="c-target">목표치 &amp; 진행 근거·경위</th><th>상태</th><th>진척' + (withDelta ? ' · 궤적' : '') + '</th><th>→ 북극성</th>' +
+    return head + '<div class="rpt-wrap"><table class="rpt obj-tbl"><thead><tr>' +
+      '<th class="c-own" style="width:8%">담당·번호</th><th style="width:18%">핵심 과제</th><th class="c-target" style="width:36%">목표치 &amp; 진행 근거·경위</th><th style="width:6%">상태</th><th style="width:16%">진척' + (withDelta ? ' · 궤적' : '') + '</th><th style="width:16%">→ 북극성</th>' +
       '</tr></thead><tbody>' + sorted.map(function(o){ return objRow(o, withDelta); }).join('') + '</tbody></table></div>';
   }
   // 🎚️ 자동화 달성률 게이지(honestyGauge) — 2026-08-01 삭제: 최상단 밴드 '전 부서 핵심 과제 진척' 칸(ss-top3)이
