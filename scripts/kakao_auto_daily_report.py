@@ -192,10 +192,16 @@ def _northstar_prefix() -> str:
 
 def build_caption(target_date: datetime) -> str:
     """보고 대상일(통상 오늘-1일) 기준 "M.D(요일) 매출 및 운영사항 보고드립니다." 생성.
-    맨 위에 북극성 대비 블록을 얹는다(텔레그램 sendPhoto 캡션 1024자 한도 여유 있음)."""
+    인사말이 맨 위, 북극성 대비 블록이 그 아래다 (GM 지시 2026-08-02).
+
+    ※ 순서 주의 — 방 이름 prefix("회장님, ")는 kakao_report_sender 가 캡션 맨
+    앞에 붙인다. 그래서 첫 줄이 무엇이냐가 곧 회장님이 처음 읽는 문장이 된다.
+    2026-08-01 발신은 북극성 블록이 먼저라 "회장님, 🌟 북극성 대비 — 8/1(토)"
+    으로 시작하고 정작 인사말은 맨 아래에 묻혔다(GM 지적)."""
     weekday_kr = _WEEKDAY_KR[target_date.weekday()]
     line = f"{target_date.month}.{target_date.day}({weekday_kr}) 매출 및 운영사항 보고드립니다."
-    return f"{_northstar_prefix()}{line}"
+    block = _northstar_prefix().rstrip()
+    return f"{line}\n\n{block}" if block else line
 
 
 def build_holiday_notice(target: datetime, as_of: datetime) -> str:
