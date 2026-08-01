@@ -2362,7 +2362,10 @@ function _regRemove_(phone) {
 //   실제 회원 DB에 안 들어가는 게 진짜 버그(임정은M 신고 3건 원인). 유효회원은 수기 관리 명단이라 헤더에
 //   줄바꿈이 섞여있어(예 '등록\n일자') member_registered_list와 동일하게 공백 제거 후 부분일치로 찾는다.
 //   전화 키로 멱등(기존행=갱신, 신규=추가) — 중복 행 안 생김. 필수 칸(회원명·휴대폰) 없으면 조용히 skip(무중단).
-function _memberActiveUpsert_(name, phone, program, regDate) {
+// months(개월수, 선택) — 2026-08-01 시토(배286) — 있으면 시작일자·종료일자·잔여일을 계산해 채운다.
+//   "+직접등록" 폼이 원래 이름·전화·프로그램·등록일 4칸뿐이라 기간을 몰라 이 칸들이 항상 비어 있었다
+//   (오분류의 근본원인). 폼에 개월수 칸이 붙기 전까지는 안 와도 무중단(비어도 안전망은 member_active_list 쪽에 있음).
+function _memberActiveUpsert_(name, phone, program, regDate, months) {
   var key = _regNormPhone_(phone);
   if (!key) return;
   var sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
@@ -2377,8 +2380,22 @@ function _memberActiveUpsert_(name, phone, program, regDate) {
   var nmI = _idx('회원명');
   var phI = _idx('휴대폰'); if (phI < 0) phI = _idx('연락처'); if (phI < 0) phI = _idx('전화');
   var regI = _idx('등록일자');
+  var stI = _idx('시작일자');
+  var endI = _idx('종료일자'); if (endI < 0) endI = _idx('종료일');
+  var remI = _idx('잔여일');
   var pgI = _idx('수강반종목'); if (pgI < 0) pgI = _idx('종목명'); if (pgI < 0) pgI = _idx('회원권'); if (pgI < 0) pgI = _idx('상품'); if (pgI < 0) pgI = _idx('프로그램');
   if (nmI < 0 || phI < 0) return;  // 필수 칸 없음 — 시트 구조사고 방지(칸 자동생성 안 함)
+  var startDate = regDate || _todayKR_();
+  var moN = parseInt(months, 10);
+  var endDateStr = '', remN = null;
+  if (moN > 0) {
+    var sd = new Date(startDate + 'T00:00:00+09:00');
+    if (!isNaN(sd.getTime())) {
+      var ed = new Date(sd.getTime()); ed.setMonth(ed.getMonth() + moN);
+      endDateStr = Utilities.formatDate(ed, 'Asia/Seoul', 'yyyy-MM-dd');
+      remN = Math.round((ed.getTime() - Date.now()) / 86400000);
+    }
+  }
   var last = sh.getLastRow();
   if (last >= 2) {
     var phVals = sh.getRange(2, phI + 1, last - 1, 1).getValues();
@@ -2388,6 +2405,9 @@ function _memberActiveUpsert_(name, phone, program, regDate) {
         if (name) sh.getRange(row, nmI + 1).setValue(name);
         if (program && pgI >= 0) sh.getRange(row, pgI + 1).setValue(program);
         if (regDate && regI >= 0) { var _rc = sh.getRange(row, regI + 1); _rc.setNumberFormat('@'); _rc.setValue(regDate); }
+        if (moN > 0 && stI >= 0) sh.getRange(row, stI + 1).setValue(startDate);
+        if (moN > 0 && endI >= 0) sh.getRange(row, endI + 1).setValue(endDateStr);
+        if (moN > 0 && remI >= 0) sh.getRange(row, remI + 1).setValue(remN);
         return;
       }
     }
@@ -2396,6 +2416,9 @@ function _memberActiveUpsert_(name, phone, program, regDate) {
   newRow[nmI] = name || '';
   if (regI >= 0) newRow[regI] = regDate || _todayKR_();
   if (pgI >= 0 && program) newRow[pgI] = program;
+  if (moN > 0 && stI >= 0) newRow[stI] = startDate;
+  if (moN > 0 && endI >= 0) newRow[endI] = endDateStr;
+  if (moN > 0 && remI >= 0) newRow[remI] = remN;
   sh.appendRow(newRow);
   // 전화·등록일자는 appendRow 직후 텍스트서식(@)을 강제해 다시 쓴다 — 숫자로만 보이는 문자열을 Sheets가
   // 자동으로 숫자로 바꾸며 010 앞자리 0이 사라지는 사고 실측(2026-08-01, 정지원 등 3건 · 복구는 member_active_phone_fix).
@@ -8561,11 +8584,12 @@ function _processAction(body) {
     var raPhone = String(body.phone   || '').trim();
     var raProg  = String(body.program || '').trim();
     var raDate  = String(body.regDate || '').trim() || _todayKR_();
+    var raMonths = parseInt(body.months, 10) || 0;  // 개월수(선택) — 2026-08-01 시토(배286), 있으면 종료일자·잔여일 계산
     if (!raPhone) return _json({ ok: false, error: '전화번호 필수(중복 방지 키)' });
     _regUpsert_(raName, raPhone, raProg, raDate);  // 월별체크용 '26년 등록현황' 갱신(기존 유지, 기존 전화면 갱신·없으면 등록일 도장 추가)
     // ★배276 근본수리(2026-08-01 시토) — 화면(회원관리·신규등록현황)은 유효회원 탭을 읽는다. 위 한 줄만으로는
     //   '26년 등록현황'에만 쌓여 화면에 안 보인다(임정은M 신고 FB260801-152607/141856). 유효회원에도 같은 전화키로 upsert.
-    try { _memberActiveUpsert_(raName, raPhone, raProg, raDate); } catch (e) {}
+    try { _memberActiveUpsert_(raName, raPhone, raProg, raDate, raMonths); } catch (e) {}
     // 등록 추가 알림 → '문의 알림' 방(전환 3경로와 정합). override 누락 시 개인 OWNER방으로 새던 버그 수정 — 직접·법인 등록건도 문의알림방에 통보. 2026-07-06 시토·GM.
     try {
       var _raRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
@@ -8939,7 +8963,12 @@ function _processAction(body) {
         var remRaw = aiRem >= 0 ? String(arow[aiRem] == null ? '' : arow[aiRem]).replace(/[^0-9\-]/g, '') : '';
         var rem = (remRaw === '' || remRaw === '-') ? NaN : parseInt(remRaw, 10);
         var reV = aiRe >= 0 ? String(arow[aiRe] == null ? '' : arow[aiRe]).trim() : '';
-        var isValid = !isNaN(rem) && rem >= 0 && !_AA_LOSS[reV];  // 유효 = 잔여일>=0(만료 당일까지 유효) & 이탈표시 없음. 2026-07-31 실무진 신고로 경계 정정(구: rem>0).
+        // 유효 = (잔여일>=0 또는 잔여일 미기재) & 이탈표시 없음. 2026-07-31 실무진 신고로 경계 정정(구: rem>0).
+        //   ★2026-08-01 신규등록 오분류 근본수리(GM 신고, 배286) — 잔여일 미기재(NaN)를 '종료'로 밀어내던 것을
+        //   '유효'로 바꾼다. 신규 등록 직후(기간 미입력)엔 잔여일이 비어있는데, 종전 로직(!isNaN(rem))이 이걸
+        //   그대로 종료회원 취급해 오늘 등록한 회원이 화면에서 사라졌다. 데이터 미비 ≠ 계약 종료 — 진짜 종료는
+        //   잔여일이 음수로 "계산된" 경우뿐이다(쓰기 경로 보강은 _memberActiveUpsert_ months 파라미터, 이건 안전망).
+        var isValid = (isNaN(rem) || rem >= 0) && !_AA_LOSS[reV];
         if (aaScope === 'valid' && !isValid) continue;
         if (aaScope === 'ended' && isValid) continue;   // 종료 = 유효가 아닌 모든 회원명 보유 행
         var obj = { rowIndex: ai + 2 };   // 시트 실제 행번호(인라인 수정 저장용)
