@@ -181,6 +181,32 @@ def main(write_json=None):
                           f"오타·표기 드리프트이거나 미등록 방(카톡은 창 제목 불일치 = 발송 실패)",
             })
 
+    # ── 5) 발신 코드가 박아 둔 카톡 방 이름 → 방 SSOT 존재 확인 (2026-08-01 · 배202) ──
+    #   등록부만 맞춰 두면 반쪽이다. 실제로 창을 찾아 보내는 건 코드에 박힌 문자열이고,
+    #   카톡은 창 제목 정확 일치라 여기 오타 한 칸이 곧 발송 실패다. 코드를 SSOT 를 읽도록
+    #   바꾸는 대신(발신 경로 회귀 위험) 대조만 한다 — 어긋나면 여기서 잡힌다.
+    CODE_ROOM_CONSTS = [
+        ('telegram_bot/daily_scheduler.py', r'KAKAO_DEPTHEAD_ROOM\s*=\s*"([^"]+)"'),
+        ('telegram_bot/daily_scheduler.py', r'KAKAO_OPS_ROOM\s*=\s*"([^"]+)"'),
+        ('scripts/kakao_summary_card_auto.py', r'TARGET_ROOM\s*=\s*"([^"]+)"'),
+        ('scripts/send_ops_digest.py', r'TARGET_ROOM\s*=\s*"([^"]+)"'),
+        ('scripts/kakao_report_sender.py', r'CHAIRMAN_ROOM_NAME\s*=\s*"([^"]+)"'),
+    ]
+    for rel, pat in CODE_ROOM_CONSTS:
+        f = ROOT / rel
+        if not f.exists():
+            continue
+        for name in re.findall(pat, f.read_text(encoding='utf-8')):
+            if name in known_kakao:
+                continue
+            mismatches.append({
+                'kind': 'CODE_ROOM_NOT_IN_SSOT',
+                'registry_id': None,
+                'task_name': name,
+                'detail': f"{rel} 이 발신 대상으로 쓰는 카톡 방 '{name}'이 "
+                          f"scripts/kakao_rooms.json all_rooms 에 없음 — 창 제목 불일치면 발송이 조용히 실패한다",
+            })
+
     result = {
         'generated_at': datetime.now(KST).strftime('%Y-%m-%d %H:%M:%S'),
         'registry_items': len(reg_items),
