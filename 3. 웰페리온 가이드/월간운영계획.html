@@ -1607,8 +1607,18 @@
     var keys = Object.keys((_data && _data.months) || {}).sort();
     if(!keys.length){ sel.innerHTML = '<option>—</option>'; return; }
     if(!_sel || keys.indexOf(_sel) < 0){
-      var running = keys.filter(function(k){ return _data.months[k].month_status === '진행'; });
-      _sel = running.length ? running[running.length-1] : keys[keys.length-1];
+      // 기본 선택 = ①오늘이 속한 달 ②없으면 '진행'인 마지막 달 ③없으면 마지막 달.
+      // ★①이 1순위인 이유(GM 지적 2026-08-01 "지금 8월인데 계속 7월이 열린다"): 예전엔 month_status
+      //   가 '진행'인 달만 골랐는데, 달이 바뀌어도 그 값을 아무도 안 넘겨 7월이 계속 열렸다.
+      //   달력은 사람 손을 안 타므로 오늘 날짜를 먼저 본다 — 상태값 갱신이 늦어도 이번 달이 열린다.
+      var _now = new Date();
+      var thisMon = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0');
+      if(keys.indexOf(thisMon) >= 0){
+        _sel = thisMon;
+      } else {
+        var running = keys.filter(function(k){ return _data.months[k].month_status === '진행'; });
+        _sel = running.length ? running[running.length-1] : keys[keys.length-1];
+      }
     }
     sel.innerHTML = keys.map(function(k){
       var ms = _data.months[k].month_status || '';
