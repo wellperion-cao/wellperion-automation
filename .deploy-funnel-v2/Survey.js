@@ -2355,6 +2355,54 @@ function _regRemove_(phone) {
     if (_regNormPhone_(sh.getRange(i, 2).getValue()) === key) sh.deleteRow(i);
   }
 }
+// ★2026-08-01 시토(배276) — "+직접등록"(member_registered_add)이 실제 회원 DB(유효회원)에도 반영되게.
+//   근본원인: 회원관리·신규등록현황 화면은 유효회원 탭만 읽는데(member_registered_list, 2026-06-25 GM),
+//   등록 3경로가 전부 _regUpsert_로 '26년 등록현황' 탭에만 썼다 — 그중 SUC 자동이관 2경로는 A안(GM 결재)대로
+//   유효회원 미반영이 의도된 동작이지만, "+직접등록"(사람이 계약 확정 후 넣는 경로)까지 같은 함수를 써서
+//   실제 회원 DB에 안 들어가는 게 진짜 버그(임정은M 신고 3건 원인). 유효회원은 수기 관리 명단이라 헤더에
+//   줄바꿈이 섞여있어(예 '등록\n일자') member_registered_list와 동일하게 공백 제거 후 부분일치로 찾는다.
+//   전화 키로 멱등(기존행=갱신, 신규=추가) — 중복 행 안 생김. 필수 칸(회원명·휴대폰) 없으면 조용히 skip(무중단).
+function _memberActiveUpsert_(name, phone, program, regDate) {
+  var key = _regNormPhone_(phone);
+  if (!key) return;
+  var sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+  if (!sh) return;
+  var cols = sh.getLastColumn();
+  var hdr = sh.getRange(1, 1, 1, cols).getValues()[0].map(function (v) { return String(v).trim(); });
+  function _idx(want) {
+    var w = String(want).replace(/\s/g, '');
+    for (var i = 0; i < hdr.length; i++) { if (hdr[i] && hdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+    return -1;
+  }
+  var nmI = _idx('회원명');
+  var phI = _idx('휴대폰'); if (phI < 0) phI = _idx('연락처'); if (phI < 0) phI = _idx('전화');
+  var regI = _idx('등록일자');
+  var pgI = _idx('수강반종목'); if (pgI < 0) pgI = _idx('종목명'); if (pgI < 0) pgI = _idx('회원권'); if (pgI < 0) pgI = _idx('상품'); if (pgI < 0) pgI = _idx('프로그램');
+  if (nmI < 0 || phI < 0) return;  // 필수 칸 없음 — 시트 구조사고 방지(칸 자동생성 안 함)
+  var last = sh.getLastRow();
+  if (last >= 2) {
+    var phVals = sh.getRange(2, phI + 1, last - 1, 1).getValues();
+    for (var i = 0; i < phVals.length; i++) {
+      if (_regNormPhone_(phVals[i][0]) === key) {
+        var row = i + 2;
+        if (name) sh.getRange(row, nmI + 1).setValue(name);
+        if (program && pgI >= 0) sh.getRange(row, pgI + 1).setValue(program);
+        if (regDate && regI >= 0) { var _rc = sh.getRange(row, regI + 1); _rc.setNumberFormat('@'); _rc.setValue(regDate); }
+        return;
+      }
+    }
+  }
+  var newRow = new Array(cols).fill('');
+  newRow[nmI] = name || '';
+  if (regI >= 0) newRow[regI] = regDate || _todayKR_();
+  if (pgI >= 0 && program) newRow[pgI] = program;
+  sh.appendRow(newRow);
+  // 전화·등록일자는 appendRow 직후 텍스트서식(@)을 강제해 다시 쓴다 — 숫자로만 보이는 문자열을 Sheets가
+  // 자동으로 숫자로 바꾸며 010 앞자리 0이 사라지는 사고 실측(2026-08-01, 정지원 등 3건 · 복구는 member_active_phone_fix).
+  var _newRow = sh.getLastRow();
+  var _pc = sh.getRange(_newRow, phI + 1); _pc.setNumberFormat('@'); _pc.setValue(phone || '');
+  if (regI >= 0) { var _rc2 = sh.getRange(_newRow, regI + 1); _rc2.setNumberFormat('@'); _rc2.setValue(regDate || _todayKR_()); }
+}
 
 // ═══════════════════════════════════════════
 //  강습문의 페이지 전용 — 성인 강습 문의 시트 CRM (CPO cpo/member/강습문의.html)
@@ -8514,13 +8562,40 @@ function _processAction(body) {
     var raProg  = String(body.program || '').trim();
     var raDate  = String(body.regDate || '').trim() || _todayKR_();
     if (!raPhone) return _json({ ok: false, error: '전화번호 필수(중복 방지 키)' });
-    _regUpsert_(raName, raPhone, raProg, raDate);  // 기존 전화면 갱신, 없으면 등록일 도장 추가
+    _regUpsert_(raName, raPhone, raProg, raDate);  // 월별체크용 '26년 등록현황' 갱신(기존 유지, 기존 전화면 갱신·없으면 등록일 도장 추가)
+    // ★배276 근본수리(2026-08-01 시토) — 화면(회원관리·신규등록현황)은 유효회원 탭을 읽는다. 위 한 줄만으로는
+    //   '26년 등록현황'에만 쌓여 화면에 안 보인다(임정은M 신고 FB260801-152607/141856). 유효회원에도 같은 전화키로 upsert.
+    try { _memberActiveUpsert_(raName, raPhone, raProg, raDate); } catch (e) {}
     // 등록 추가 알림 → '문의 알림' 방(전환 3경로와 정합). override 누락 시 개인 OWNER방으로 새던 버그 수정 — 직접·법인 등록건도 문의알림방에 통보. 2026-07-06 시토·GM.
     try {
       var _raRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
       _notifyTelegram('➕ <b>등록 추가</b> — 직접/법인 등록\n· 이름: ' + (raName || '-') + '\n· 프로그램: ' + _teamChip(raProg) + (raProg || '-') + '\n· 등록일: ' + raDate, _raRegChatId);
     } catch (e) {}
     return _json({ ok: true, message: '등록 추가되었습니다.' });
+  }
+
+  // ─── (관리) 유효회원 전화 칸 텍스트서식 강제 재기록(내부토큰) — 2026-08-01 시토, 배276 복구용 ───
+  //   _memberActiveUpsert_ 신설 직후 appendRow가 "01063165386" 같은 숫자형 문자열을 Sheets가
+  //   자동으로 숫자로 바꿔 앞자리 0을 지워버린 사고 실측(정지원·최기원·박지윤 3건) → 함수는 고쳤지만
+  //   이미 쓰인 3행은 그대로 남아 복구 필요. rowIndex+name 대조(오지목 방지) 확인 후에만 재기록.
+  if (action === 'member_active_phone_fix') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var pfRow = parseInt(body.rowIndex, 10);
+    var pfName = String(body.name || '').trim();
+    var pfPhone = String(body.phone || '').trim();
+    if (!pfRow || pfRow < 2 || !pfName || !pfPhone) return _json({ ok: false, error: 'rowIndex·name·phone 필수' });
+    var pfSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!pfSh || pfRow > pfSh.getLastRow()) return _json({ ok: false, error: '유효회원 시트·행 확인 불가' });
+    var pfHdr = pfSh.getRange(1, 1, 1, pfSh.getLastColumn()).getValues()[0].map(function (v) { return String(v).trim(); });
+    function _pfIdx(want) { var w = String(want).replace(/\s/g, ''); for (var i = 0; i < pfHdr.length; i++) { if (pfHdr[i] && pfHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
+    var pfNmI = _pfIdx('회원명'), pfPhI = _pfIdx('휴대폰');
+    if (pfNmI < 0 || pfPhI < 0) return _json({ ok: false, error: '회원명·휴대폰 칸을 찾을 수 없습니다.' });
+    var pfCurName = String(pfSh.getRange(pfRow, pfNmI + 1).getValue() || '').trim();
+    if (pfCurName !== pfName) return _json({ ok: false, error: 'row-key-mismatch', detail: '이름 대조 실패(' + pfCurName + ') — rowIndex 확인 필요' });
+    var pfCell = pfSh.getRange(pfRow, pfPhI + 1);
+    pfCell.setNumberFormat('@');
+    pfCell.setValue(pfPhone);
+    return _json({ ok: true, rowIndex: pfRow, name: pfName, phone: pfPhone });
   }
 
   // ─── 휴회 시트 구조 조사 (읽기 전용·일회성·내부토큰) ───
