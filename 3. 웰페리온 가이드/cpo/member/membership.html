@@ -7603,11 +7603,36 @@ function _activeHeaderCount(hi) {
   }
   return null;
 }
+// 대기자 인원체크판(FB260731-161102, 임정은M) — 회원권 수강반종목명 그대로 묶어 종목별 대기 인원수.
+//   내부 버킷명 매핑(_lessonSportSplit 등)을 쓰지 않고 화면에 이미 표시되는 원본 칸 값을 그대로 묶는다 —
+//   교차 매핑이 없으니 '종목명 두 벌' 불일치가 날 수 없고, 합계가 항상 대기자 총원과 정확히 같다.
+//   빈 값은 '미분류'로 드러낸다(조용한 누락 금지).
+function _waitBoardHtml(rows) {
+  if (!rows || !rows.length) return '';
+  var col = _capCol(_activeHeaders, '수강반종목명');
+  var counts = {}, order = [];
+  rows.forEach(function(r){
+    var v = col ? String(r[col] || '').trim() : '';
+    if (!v) v = '미분류';
+    if (!counts[v]) { counts[v] = 0; order.push(v); }
+    counts[v]++;
+  });
+  order.sort(function(a, b){ return counts[b] - counts[a]; });   // 인원 많은 순
+  var chips = order.map(function(k){
+    return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px">' +
+      '<span style="color:var(--text);word-break:keep-all">' + esc(k) + '</span><span style="font-weight:800;color:var(--accent);flex-shrink:0">' + counts[k] + '명</span></div>';
+  }).join('');
+  return '<div style="margin-top:10px">' +
+      '<div style="font-size:10.5px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:6px">🧮 종목별 대기 인원체크판 (합계 ' + rows.length + '명)</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px">' + chips + '</div>' +
+    '</div>';
+}
 function _memberOverviewHtml() {
   var hi = _activeHeaderInfo();
   if (hi) {
     var cnt = _activeHeaderCount(hi);
     var cntTxt = (cnt == null) ? '–' : cnt.toLocaleString();
+    var waitReady = (hi.periodKey === 'waitPeriods' && _activeLoaded && _activeScope === 'valid' && _activeStartFilter === 'waiting');
     return '<div>' +
         '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
           '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
@@ -7617,6 +7642,7 @@ function _memberOverviewHtml() {
           '</div>' +
         '</div>' +
         _actPeriodTabsHtml() +
+        (waitReady ? _waitBoardHtml(_activeBaseRows()) : '') +
       '</div>';
   }
   var d = _cpoStats || {};
