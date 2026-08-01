@@ -34,6 +34,11 @@
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
   /* 채널 로고(인라인 SVG) — 이모지 대신 실제 카카오톡·텔레그램 로고. AI운영한장.html 과 같은 규격. */
   .chlogo{width:15px; height:15px; vertical-align:-3px; margin:0 4px 0 0; flex:none;}
+  /* 알림 한 장 상태칸(GM 지적 2026-08-01) — 상태 밑 설명을 접어 한 줄만 보인다.
+     그 설명이 최대 302자라 좁은 칸에서 글벽이 되어 줄 높이를 밀고 있었다.
+     (상태 라벨 자체의 nowrap 은 아래 .statchip 규칙에 이미 있다 — 중복으로 두지 않는다.) */
+  .statnote{font-size:10.5px; color:var(--dim); margin-top:3px; line-height:1.35;}
+  .statnote .cellmore summary{cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
   /* ── 히어로 슬롯: renderHero()가 결과물 중심 한 줄 요약을 채움(배237) ── */
   .hero:empty{display:none;}
@@ -1903,7 +1908,17 @@
   function alertRowHtml(item, sevInfo, ahMap){
     var what = esc(item.what || '') + '<div style="font-size:10.5px;color:var(--dim);margin-top:2px;">' + esc(item.owner || '—') + '</div>';
     var freqTxt = esc(NOTIFY_FREQ_LABEL[item.freq] || item.freq || '—');
-    var noteTxt = item.state_note ? '<div style="font-size:10.5px;color:var(--dim);margin-top:3px;">' + esc(item.state_note) + '</div>' : '';
+    /* ★2026-08-01(시토 · GM 지적 "상태칸 때문에 세로칸이 길어진다") — 상태 밑 설명을 접는다.
+       실측: state_note 가 최대 302자, 100자 넘는 것이 10건이라 좁은 상태칸에서 글벽이 되어
+       그 줄 전체 높이를 밀고 있었다. 이 페이지가 이미 쓰는 접기(cellmore)와 같은 방식 —
+       한 줄만 보이고 전문은 눌러서 펼친다(잘라내는 게 아니라 접는 것 · 정보 손실 0). */
+    var noteTxt = '';
+    if(item.state_note){
+      var nFull = String(item.state_note);
+      var nHead = missionSnippet(nFull, 42);
+      noteTxt = '<div class="statnote">' + (nHead === nFull ? esc(nFull)
+        : '<details class="cellmore"><summary>' + esc(nHead) + '</summary><div class="cellfull">' + esc(nFull) + '</div></details>') + '</div>';
+    }
     return '<tr data-channel="' + esc(item.channel || '') + '" data-owner="' + esc(item.owner || '') + '">' +
       '<td>' + what + '</td>' +
       '<td>' + freqTxt + '</td>' +
@@ -1960,7 +1975,9 @@
         + (_same ? '' : ' <span style="font-size:11px;color:var(--dim);font-weight:400;">(내부 이름 ' + esc(key) + ')</span>');
       var body = list.length
         ? '<div class="coo-tbl-wrap"><table>' +
-            '<tr><th>보내는 것</th><th style="width:64px">주기</th><th style="width:120px">발신 시각</th><th style="width:150px">상태</th></tr>' +
+            // 상태칸을 넓혔다(150px→240px · GM 지적 2026-08-01) — 라벨이 '⚫ 죽은배선(스케줄러 정지)'처럼
+            // 길어 좁은 칸에서 두세 줄로 접히며 그 줄 전체를 밀어 올렸다.
+            '<tr><th>보내는 것</th><th style="width:58px">주기</th><th style="width:112px">발신 시각</th><th style="width:240px">상태</th></tr>' +
             list.map(function(r){ return r.html; }).join('') +
           '</table></div>'
         : '<div class="sec-note" style="margin-top:6px;">방 목록에는 있는데 <code>notify_registry.json</code>에 이 방으로 나가는 <b>자동 발신이 하나도 없습니다</b> — 사람이 손으로만 쓰는 방이거나, 배선이 등록 안 된 구멍입니다.</div>';
