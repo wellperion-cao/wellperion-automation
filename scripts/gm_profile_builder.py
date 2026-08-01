@@ -471,24 +471,45 @@ def _measure_table_balance(page, root_sel: str) -> list:
                     const head = rows[0], body = rows.slice(1);
                     const n = head.cells.length;
                     const stat = [];
+                    // 한 줄 높이 기준 = 그 표에서 가장 낮은 칸(=한 줄짜리)
+                    let unit = Infinity;
+                    body.forEach(r => Array.from(r.cells).forEach(c2 => {
+                        const h = c2.getBoundingClientRect().height;
+                        if (h > 8 && h < unit) unit = h;
+                    }));
+                    if (!isFinite(unit)) return;
                     for (let c = 0; c < n; c++) {
-                        let chars = 0, cnt = 0, w = 0;
+                        let chars = 0, cnt = 0, w = 0, hsum = 0;
                         body.forEach(r => {
                             const cell = r.cells[c];
                             if (!cell) return;
+                            const rc = cell.getBoundingClientRect();
                             chars += (cell.innerText || '').length; cnt++;
-                            w = Math.max(w, cell.getBoundingClientRect().width);
+                            hsum += rc.height;
+                            w = Math.max(w, rc.width);
                         });
                         if (!cnt || w < 20) continue;
                         stat.push({ i: c, name: (head.cells[c] ? head.cells[c].innerText : '') .trim().slice(0, 14),
-                                    density: (chars / cnt) / w, width: Math.round(w) });
+                                    density: (chars / cnt) / w, width: Math.round(w),
+                                    lines: (hsum / cnt) / unit });
                     }
                     if (stat.length < 2) return;
                     stat.sort((a, b) => b.density - a.density);
                     const hi = stat[0], lo = stat[stat.length - 1];
-                    if (lo.density > 0 && hi.density / lo.density > RATIO) {
+                    /* 세 조건을 다 만족할 때만 잡는다 — 아무거나 잡으면 매일 헛경보가 뜨고
+                       그러면 아무도 안 본다(2026-08-01 1차 가동에서 아이콘 칸 오탐 실측).
+                        ①빽빽함 차이가 RATIO 배 넘고
+                        ②빽빽한 칸이 실제로 **두 줄 이상 접히고**(안 접히면 좁아도 문제 아님)
+                        ③그 칸이 그 표에서 **이미 가장 넓은 칸이 아니다**(제일 넓은데도 접힌다면
+                          폭 배분이 아니라 내용을 줄이거나 접을 문제라 여기서 잡을 게 아니다).
+                          ※처음엔 ③을 '가장 헐거운 칸과 비교'로 뒀다가 아이콘 칸(50px)이 기준이 돼
+                            멀쩡한 표를 잡았다 — 비교 대상을 표의 최대 폭으로 바꿨다(2026-08-01 실측). */
+                    const maxW = Math.max.apply(null, stat.map(s => s.width));
+                    if (lo.density > 0 && hi.density / lo.density > RATIO
+                        && hi.lines >= 1.8 && hi.width < maxW * 0.9) {
                         out.push({ table: ti, dense_col: hi.name, dense_w: hi.width,
                                    sparse_col: lo.name, sparse_w: lo.width,
+                                   lines: Math.round(hi.lines * 10) / 10,
                                    ratio: Math.round((hi.density / lo.density) * 10) / 10 });
                     }
                 });
@@ -807,9 +828,9 @@ def run_gm_surface_check() -> tuple[list, bool]:
                     for tb in table_bal:
                         findings.append({
                             "kind": "table_columns_unbalanced", "page": label,
-                            "detail": (f"「{tb['dense_col']}」 칸이 「{tb['sparse_col']}」 보다 "
-                                       f"{tb['ratio']}배 빽빽한데 폭은 {tb['dense_w']}px vs {tb['sparse_w']}px "
-                                       f"— 내용 많은 칸에 폭을 더 주는 게 맞다"),
+                            "detail": (f"「{tb['dense_col']}」 칸이 평균 {tb.get('lines','?')}줄로 접힌다 — "
+                                       f"「{tb['sparse_col']}」 보다 {tb['ratio']}배 빽빽한데 폭은 "
+                                       f"{tb['dense_w']}px vs {tb['sparse_w']}px. 내용 많은 칸에 폭을 더 줄 것"),
                         })
                     if m["max_block_len"] is None:
                         # 블록 마크업이 없는 화면 = 블록 기준으로 잴 수 없다. 통과로 위장하지 않고
