@@ -643,9 +643,38 @@ def screenshot(room_win, room_name: str, tag: str) -> Path:
     return path
 
 
+CHAIRMAN_ROOM_NAME = "차의주 회장님"
+
+# 회장님 방 본문 정제(2026-08-01 GM 지시) — northstar_reach.build_northstar_block()이
+# 진척 10% 이하 항목을 자동으로 골라 낮은 순 2건("📉"줄)+"그 외 손 안 댄 것 N건"을
+# 붙이는데, 무엇이 뽑힐지 사람이 안 보고 그대로 회장님 방에 나갔다(오늘 목욕탕 허가건이
+# 뽑혀 GM 지적). 관리부·운영부 등 내부 방에서는 그대로 유용해 그쪽은 건드리지 않는다 —
+# 회장님 방으로 나가는 본문에서만 뺀다.
+_CLEVEL_NICKNAME_TO_TITLE = {
+    "웰리": "AI CEO", "시우": "AI COO", "시토": "AI CTO",
+    "시모": "AI CMO", "시포": "AI CPO", "시뽀": "AI CFO", "시로": "AI CHRO",
+}
+
+
+def _sanitize_for_chairman(text: str) -> str:
+    """회장님 방 전용 정제. ① '📉' 줄·'그 외 손 안 댄 것' 줄 제거 ② 남는 본문에 내부
+    AI 닉네임이 있으면 직함으로 치환(회장님 화면에 닉네임 노출 금지, 방어적 안전망 —
+    현재는 ①에서 같이 빠지지만 이 필터가 앞으로 다른 줄에도 자동 적용된다)."""
+    lines = [ln for ln in text.splitlines()
+             if not ln.strip().startswith("📉") and "손 안 댄 것" not in ln]
+    out = "\n".join(lines)
+    for nick, title in _CLEVEL_NICKNAME_TO_TITLE.items():
+        out = out.replace(nick, title)
+    return out
+
+
 def build_caption(room: dict, base_caption: str) -> str:
-    """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합."""
-    return f"{room.get('prefix', '')}{base_caption}"
+    """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
+    _sanitize_for_chairman()을 거친다(다른 방은 무영향)."""
+    text = base_caption
+    if room.get("name") == CHAIRMAN_ROOM_NAME:
+        text = _sanitize_for_chairman(text)
+    return f"{room.get('prefix', '')}{text}"
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -747,6 +776,81 @@ def check_and_record_dedup(
     return False
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 회장님 방 미리보기 게이트(2026-08-01 GM 직접 지시) — 회장님 방으로 실제 전송되기
+# 전에, GM이 먼저 텔레그램 업무보고방(8254867551)에서 본문을 확인해야 한다.
+# ("먼저 나한테 테스트버전 보내주고 보냈으면 좋았을 텐데.")
+#
+# 새 상시 프로세스·새 폴러 없이(GM 지시) 게이트 파일 1개로 처리한다: 오늘 날짜+본문
+# 서명이 게이트 파일과 일치하고 approved=true 일 때만 통과. 처음 걸리면(파일 없음/
+# 서명 불일치) 미리보기를 GM 업무보고방으로 보내고 게이트 파일을 pending으로 써 둔 뒤
+# 이번 실행에서는 회장님 방으로 보내지 않는다 — GM이 게이트 파일의 approved를 true로
+# 바꾸고 이 스크립트를 다시 실행(--only-room "차의주 회장님")하면 통과한다. 이 발신
+# 관문(kakao_report_sender.py) 안에서만 처리해 앞으로 어떤 새 발신 경로가 추가돼도
+# 회장님 방은 자동으로 같이 보호된다.
+# ══════════════════════════════════════════════════════════════════════════
+CHAIRMAN_GATE_PATH = ROOT / "status" / "kakao_chairman_gate.json"
+GM_REPORT_CHAT_ID = "8254867551"  # 업무보고방 — 테스트/미리보기는 항상 여기(실무진방 아님)
+
+
+def _chairman_gate_signature(date_str: str, text: str) -> str:
+    h = hashlib.sha256()
+    h.update(date_str.encode("utf-8"))
+    h.update(b"\x00")
+    h.update(text.strip().encode("utf-8"))
+    return h.hexdigest()[:24]
+
+
+def _load_chairman_gate() -> dict:
+    try:
+        if CHAIRMAN_GATE_PATH.exists():
+            return json.loads(CHAIRMAN_GATE_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log(f"[chairman-gate] 게이트 파일 읽기 실패(미승인으로 취급): {exc}")
+    return {}
+
+
+def _save_chairman_gate(entry: dict) -> None:
+    try:
+        CHAIRMAN_GATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CHAIRMAN_GATE_PATH.write_text(json.dumps(entry, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as exc:
+        log(f"[chairman-gate] 게이트 파일 저장 실패(무시 — 승인 전까지는 계속 보류됨): {exc}")
+
+
+def _send_chairman_preview(text: str) -> None:
+    """GM 업무보고방으로 회장님 방 발신 예정 본문 전문을 미리 보낸다(best-effort —
+    실패해도 회장님 방 발신은 어차피 보류 상태이므로 안전)."""
+    try:
+        agents_dir = str(ROOT / "wellperion-agents")
+        if agents_dir not in sys.path:
+            sys.path.insert(0, agents_dir)
+        from telegram_notifier import TelegramNotifier
+        preview = "⚠️ 회장님 방 발신 대기 — 확인 후 보내드립니다\n\n" + text
+        TelegramNotifier().send(preview)
+    except Exception as exc:
+        log(f"[chairman-gate] 미리보기 발송 실패(무시): {exc}")
+
+
+def chairman_gate_allows(text: str) -> bool:
+    """True=승인됨(회장님 방으로 진행) · False=미승인(보류 — 처음이면 미리보기 발송)."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    sig = _chairman_gate_signature(today, text)
+    gate = _load_chairman_gate()
+    if gate.get("date") == today and gate.get("sig") == sig and gate.get("approved") is True:
+        return True
+    if gate.get("date") == today and gate.get("sig") == sig:
+        log("[chairman-gate] 회장님 방 발신 보류 중(이미 미리보기 발송됨) — GM 승인 대기")
+        return False
+    _save_chairman_gate({
+        "date": today, "sig": sig, "approved": False,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    })
+    _send_chairman_preview(text)
+    log("[chairman-gate] 회장님 방 발신 보류 — GM 업무보고방에 미리보기 발송함(승인 전 발신 안 함)")
+    return False
+
+
 def open_or_find_room(room_name: str):
     """방 창-제목 탐색(주 경로) → 실패 시 카톡 메인창 검색으로 자동 열기(폴백).
     send_to_room·send_message_to_room 공용 — 방 열기 로직 중복 방지."""
@@ -774,6 +878,9 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     room_name = room["name"]
     text = build_caption(room, base_message)
     log(f"── {room_name} 텍스트 전용 처리 시작 (dry_run={dry_run}, text={text!r}) ──")
+
+    if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_gate_allows(text):
+        return False
 
     if check_and_record_dedup(room_name, text=text, dry_run=dry_run):
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
@@ -806,6 +913,9 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     room_name = room["name"]
     caption = build_caption(room, base_caption)
     log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
+
+    if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_gate_allows(caption):
+        return False
 
     if check_and_record_dedup(room_name, text=caption, image_path=image_path, dry_run=dry_run):
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
@@ -856,9 +966,64 @@ def resolve_image_path(cfg: dict, args) -> Path:
     return candidate
 
 
+def _selftest() -> None:
+    """회장님 게이트·정제 로직 자가검사(assert 기반, 실제 발신 0건). 텔레그램 전송을
+    가짜 함수로 바꿔치기하고 게이트 파일도 임시 경로로 돌려 실제 부작용을 만들지 않는다."""
+    import tempfile
+    global CHAIRMAN_GATE_PATH, _send_chairman_preview
+    orig_gate_path = CHAIRMAN_GATE_PATH
+    orig_preview_fn = _send_chairman_preview
+    calls = []
+    _send_chairman_preview = lambda text: calls.append(text)  # noqa: E731
+    tmp_dir = Path(tempfile.mkdtemp(prefix="kakao_chairman_gate_selftest_"))
+    CHAIRMAN_GATE_PATH = tmp_dir / "gate.json"
+    try:
+        # ① 정제 — 회장님 방은 📉·손 안 댄 것 줄 제거 + 닉네임 치환, 다른 방은 그대로
+        raw = ("🌟 북극성 대비\n"
+               "매출 ▓░ 80%\n"
+               "\n"
+               "📋 8월 운영계획 — 목표 21개\n"
+               "   📉 0% 목욕탕 허가건 진행 (7월 이월) — 시토\n"
+               "   그 외 손 안 댄 것 3건\n")
+        chairman_text = build_caption({"name": CHAIRMAN_ROOM_NAME, "prefix": "회장님, "}, raw)
+        assert "📉" not in chairman_text, "회장님 본문에 📉 줄이 남음"
+        assert "손 안 댄 것" not in chairman_text, "회장님 본문에 '손 안 댄 것' 줄이 남음"
+        assert "시토" not in chairman_text, "회장님 본문에 내부 닉네임(시토)이 남음"
+        internal_text = build_caption({"name": "웰페리온 관리부", "prefix": ""}, raw)
+        assert "📉" in internal_text and "시토" in internal_text, "내부 방 본문에서 원래 있던 줄이 회귀로 사라짐"
+
+        # ② 게이트 — 미승인 상태면 항상 차단 + 미리보기는 동일 서명에 1번만
+        assert chairman_gate_allows(chairman_text) is False, "미승인인데 통과됨"
+        assert len(calls) == 1, f"미리보기 발송 횟수 이상(1회 기대, 실제 {len(calls)}회)"
+        assert chairman_gate_allows(chairman_text) is False, "재확인 미승인인데 통과됨"
+        assert len(calls) == 1, "이미 보류 중인데 미리보기가 중복 발송됨"
+
+        gate = json.loads(CHAIRMAN_GATE_PATH.read_text(encoding="utf-8"))
+        gate["approved"] = True
+        CHAIRMAN_GATE_PATH.write_text(json.dumps(gate, ensure_ascii=False), encoding="utf-8")
+        assert chairman_gate_allows(chairman_text) is True, "승인(approved=true)+서명 일치인데 차단됨"
+        assert len(calls) == 1, "승인 후 통과 시 미리보기가 다시 발송됨(불필요)"
+
+        assert chairman_gate_allows(chairman_text + "\n다른 내용") is False, "본문이 바뀌었는데(서명 불일치) 통과됨"
+        assert len(calls) == 2, "서명이 바뀐 새 내용인데 새 미리보기가 안 감"
+
+        print("SELFTEST OK: 회장님 게이트/정제 정상(발신 0건)")
+    finally:
+        CHAIRMAN_GATE_PATH = orig_gate_path
+        _send_chairman_preview = orig_preview_fn
+        try:
+            for f in tmp_dir.glob("*"):
+                f.unlink()
+            tmp_dir.rmdir()
+        except Exception:
+            pass
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="텔레그램 매출보고 이미지를 카톡 방(들)에 전송(카톡 PC 앱 UI 자동화)")
+        description="텔레그램 매출보고 이미지를 카톡 방(들)에 전송(카카오톡 PC 앱 UI 자동화)")
+    ap.add_argument("--selftest", action="store_true",
+                     help="회장님 게이트·정제 로직 자가검사만 실행(실제 발신 없음)")
     ap.add_argument("--image", default=None, help="전송할 이미지 파일 경로(미지정 시 --from-folder 필요)")
     ap.add_argument("--from-folder", action="store_true",
                      help="--image 미지정 시 kakao_rooms.json의 archive_dir/YYYY-MM/에서 오늘 날짜 파일 자동 선택")
@@ -869,6 +1034,10 @@ def main() -> int:
                      help="방 열기+클립보드+미리보기까지만, 실제 전송(Enter) 안 함")
     ap.add_argument("--only-room", default=None, help="지정한 방 1개만 처리(검증용)")
     args = ap.parse_args()
+
+    if args.selftest:
+        _selftest()
+        return 0
 
     if sys.platform != "win32":
         print("BLOCKED: 이 스크립트는 Windows(카카오톡 PC 앱) 전용입니다.")
@@ -895,7 +1064,7 @@ def main() -> int:
     room_names = [r["name"] for r in rooms]
 
     failures = []
-    dedup_skipped = []  # 중복 발신 가드로 스킵된 방(실패 아님 — 의도된 차단)
+    dedup_skipped = []  # 발신 안 함(실패 아님 — 중복 발신 가드 또는 회장님 방 승인 대기)
 
     if args.message:
         log(f"대상 방 {len(rooms)}개: {room_names} / message={args.message!r} / dry_run={args.dry_run}")
@@ -912,7 +1081,7 @@ def main() -> int:
         if failures:
             print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
             return 1
-        note = f" (중복 발신 가드 스킵 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""
+        note = f" (미발신 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""
         print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방{note}")
         return 0
 
