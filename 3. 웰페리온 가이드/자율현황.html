@@ -498,7 +498,7 @@
          설명과 이 라이브 목록이 같은 것을 두 섹션에 나눠 적고 있었다(제목부터 '축②③④'). 별도 h2 를
          없애고 4대 축 안의 소제목으로 내려 한 덩어리로 읽히게 했다. 컨테이너 id·렌더는 그대로. -->
   <h3 class="sec" id="sec-routines" style="margin-top:14px;">🔴 지금 살아 돌아가는 축 <span style="font-size:11px;font-weight:400;color:var(--dim);">(위 축②③④의 라이브 상태)</span></h3>
-  <div class="routines" id="routines">
+  <div id="routines">
     <div class="feed-status" style="grid-column:1/-1;">상시 체계 상태를 불러오는 중…</div>
   </div>
 
@@ -552,37 +552,9 @@
       <div class="sec-note" style="margin:6px 0 0;">지원부=<code>today_live</code>·<code>monthly_report&dept=support</code> 실측(남/여). 시설부=입력률 구조(완료율 아님). 주차=체계 외.</div>
     </div>
 
-    <div class="routines" id="coo-routines-static">
-      <div class="rcard" style="--rc:var(--blue)">
-        <div class="rcard-top"><span class="cmo-stage live">②</span><span class="rcard-ico">✅</span>
-          <span class="rcard-tt"><span class="rcard-nm">today_live 점검 집계 (GAS)</span><span class="rcard-cy">매 요청</span></span>
-          <span class="pill on">라이브</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">성별·요일·회차 필터로 시트 기준 완료율 실시간 집계 → 화면·텔레그램·독려 단일 소스</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--blue)">
-        <div class="rcard-top"><span class="cmo-stage live">③</span><span class="rcard-ico">📢</span>
-          <span class="rcard-tt"><span class="rcard-nm">점검 독려 알림</span><span class="rcard-cy">매일(daily_scheduler)</span></span>
-          <span class="pill on">라이브</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">미완료 점검 점검관리방(-5136037543) 자동 독려, 스팸 dedup</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--blue)">
-        <div class="rcard-top"><span class="cmo-stage live">④</span><span class="rcard-ico">📅</span>
-          <span class="rcard-tt"><span class="rcard-nm">월간 점검 리포트 발송</span><span class="rcard-cy">매월 1일 09:00</span></span>
-          <span class="pill on">라이브(신규)</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">Wellperion-MonthlyCheckReport-0900-D1 — 전월 집계→점검관리방 텔레그램 요약(첫 발송 8/1)</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--gold)">
-        <div class="rcard-top"><span class="cmo-stage partial">④</span><span class="rcard-ico">📋</span>
-          <span class="rcard-tt"><span class="rcard-nm">월간보고 A3 페이지</span><span class="rcard-cy">상시</span></span>
-          <span class="pill warn">부분</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">지원부=라이브·시설부=GAS 배포 대기. 월 선택→KPI·이슈·구역/회차·개선시사 A3 인쇄</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--border-strong)">
-        <div class="rcard-top"><span class="cmo-stage wait">—</span><span class="rcard-ico">🔗</span>
-          <span class="rcard-tt"><span class="rcard-nm">4부서 체계 페이지 정합</span><span class="rcard-cy">지시형</span></span>
-          <span class="pill idle">지시 시</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">페이지↔시트 동기·정렬(구체 지시 시에만 실행 — 상시 자율 보강 폐지)</span></div>
-      </div>
+    <div id="coo-routines-static">
+      <div class="gtbl-wrap"><table class="gtbl"><tr><th style="width:42px">단계</th><th style="width:26%">체계</th><th style="width:17%">주기</th><th style="width:82px">상태</th><th>무엇을</th></tr><tr><td style="text-align:center;"><span class="cmo-stage live">②</span></td><td>✅ today_live 점검 집계 (GAS)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 성별·요일·회차 필터로 시트 기준 완료율 실시간 집계 → 화면·텔레그램·독려 단일 소스</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">③</span></td><td>📢 점검 독려 알림</td><td>매일(daily_scheduler)</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 미완료 점검 점검관리방(-5136037543) 자동 독려, 스팸 dedup</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">④</span></td><td>📅 월간 점검 리포트 발송</td><td>매월 1일 09:00</td><td><span class="pill on">라이브(신규)</span></td><td><span class="rk">무엇을</span> Wellperion-MonthlyCheckReport-0900-D1 — 전월 집계→점검관리방 텔레그램 요약(첫 발송 8/1)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage partial">④</span></td><td>📋 월간보고 A3 페이지</td><td>상시</td><td><span class="pill warn">부분</span></td><td><span class="rk">무엇을</span> 지원부=라이브·시설부=GAS 배포 대기. 월 선택→KPI·이슈·구역/회차·개선시사 A3 인쇄</td></tr><tr><td style="text-align:center;"><span class="cmo-stage wait">—</span></td><td>🔗 4부서 체계 페이지 정합</td><td>지시형</td><td><span class="pill idle">지시 시</span></td><td><span class="rk">무엇을</span> 페이지↔시트 동기·정렬(구체 지시 시에만 실행 — 상시 자율 보강 폐지)</td></tr></table></div>
+    
     </div>
 
     <!-- ════ 2층 · 실무진 점검 업무·역할(접기 · SUPPORT_STAFF 조편성·monthly_ops_plan practitioner_goals 실측 기반) ════ -->
@@ -643,37 +615,9 @@
       <span class="cmo-loop-arrow back pending" title="↻ 이탈신호→선제 케어 자동 연결 시 닫힘(갱신 D-7 알림=브로제이 이관 예정·현재 미연결)">↻ 이탈신호→선제 케어 (대기)</span>
     </div>
     <div class="cmo-loop-status">현재 열린 루프 — ⑤ 측정은 <b>라이브</b>·↻ 자동 케어 환류 대기(케어 자동화 연결 시 폐루프)</div>
-    <div class="routines" id="cpo-routines-static">
-      <div class="rcard" style="--rc:var(--teal)">
-        <div class="rcard-top"><span class="cmo-stage live">①</span><span class="rcard-ico">🔔</span>
-          <span class="rcard-tt"><span class="rcard-nm">문의 접수 자동 알림 (_notifyNewInquiries_)</span><span class="rcard-cy">매 5분(트리거)</span></span>
-          <span class="pill on">라이브</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">문의 5종(멤버십·성인·유소년·공간렌트·비즈니스) 신규 자동 감지 → 문의알림방(-5516675010) 5분 폴링 알림</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--teal)">
-        <div class="rcard-top"><span class="cmo-stage live">②</span><span class="rcard-ico">📋</span>
-          <span class="rcard-tt"><span class="rcard-nm">CPO 문의 관리 대시보드 (membership.html)</span><span class="rcard-cy">매 요청</span></span>
-          <span class="pill on">라이브</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">5종 문의 목록·상태·전환을 실데이터로 렌더. 공간렌트·비즈니스 관리패널 추가 → 관리 커버리지 5종 완성(상태 분류는 수기)</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--teal)">
-        <div class="rcard-top"><span class="cmo-stage live">⑤</span><span class="rcard-ico">📉</span>
-          <span class="rcard-tt"><span class="rcard-nm">이탈·갱신 측정 (cpo_churn_stats GAS)</span><span class="rcard-cy">매 요청</span></span>
-          <span class="pill on">라이브</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">유효회원·LOSS율(당월/누적)·갱신 임박 D-7/14/30 실측 렌더. 실측 2신호+미측정 7신호 정직 태그(억지 생성 금지)</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--gold)">
-        <div class="rcard-top"><span class="cmo-stage partial">③④</span><span class="rcard-ico">📅</span>
-          <span class="rcard-tt"><span class="rcard-nm">통합회원 상태·등록 sync-on-load</span><span class="rcard-cy">카드 로드시</span></span>
-          <span class="pill warn">부분</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">달력 방문완료 도장·등록 carry-over 멱등 배관은 라이브. 예약·전환 판단은 수기 운영 의존</span></div>
-      </div>
-      <div class="rcard" style="--rc:var(--border-strong)">
-        <div class="rcard-top"><span class="cmo-stage wait">↻</span><span class="rcard-ico">💌</span>
-          <span class="rcard-tt"><span class="rcard-nm">이탈방지 자동 케어 (갱신 D-7 임박 알림)</span><span class="rcard-cy">대기</span></span>
-          <span class="pill idle">환류 대기</span></div>
-        <div class="rrow"><span class="rk">무엇을</span><span class="rv">실측 갱신임박 신호로 선제 케어 알림 = 브로제이(AWS 회원관리 이전 시스템) 담당 예정 → 자동 환류 미연결(대기)</span></div>
-      </div>
+    <div id="cpo-routines-static">
+      <div class="gtbl-wrap"><table class="gtbl"><tr><th style="width:42px">단계</th><th style="width:26%">체계</th><th style="width:17%">주기</th><th style="width:82px">상태</th><th>무엇을</th></tr><tr><td style="text-align:center;"><span class="cmo-stage live">①</span></td><td>🔔 문의 접수 자동 알림 (_notifyNewInquiries_)</td><td>매 5분(트리거)</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 문의 5종(멤버십·성인·유소년·공간렌트·비즈니스) 신규 자동 감지 → 문의알림방(-5516675010) 5분 폴링 알림</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">②</span></td><td>📋 CPO 문의 관리 대시보드 (membership.html)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 5종 문의 목록·상태·전환을 실데이터로 렌더. 공간렌트·비즈니스 관리패널 추가 → 관리 커버리지 5종 완성(상태 분류는 수기)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">⑤</span></td><td>📉 이탈·갱신 측정 (cpo_churn_stats GAS)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 유효회원·LOSS율(당월/누적)·갱신 임박 D-7/14/30 실측 렌더. 실측 2신호+미측정 7신호 정직 태그(억지 생성 금지)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage partial">③④</span></td><td>📅 통합회원 상태·등록 sync-on-load</td><td>카드 로드시</td><td><span class="pill warn">부분</span></td><td><span class="rk">무엇을</span> 달력 방문완료 도장·등록 carry-over 멱등 배관은 라이브. 예약·전환 판단은 수기 운영 의존</td></tr><tr><td style="text-align:center;"><span class="cmo-stage wait">↻</span></td><td>💌 이탈방지 자동 케어 (갱신 D-7 임박 알림)</td><td>대기</td><td><span class="pill idle">환류 대기</span></td><td><span class="rk">무엇을</span> 실측 갱신임박 신호로 선제 케어 알림 = 브로제이(AWS 회원관리 이전 시스템) 담당 예정 → 자동 환류 미연결(대기)</td></tr></table></div>
+    
     </div>
   </section>
 
@@ -1030,14 +974,37 @@
         '<td>' + esc(shipStatusLabel(s)) + (staleDays(s) >= 14
             ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '') + '</td>' +
         // 재개조건 · 다음 — 구 진행/정박 두 표에만 있던 칸을 병합하며 옮겨 왔다(2026-08-01).
-        //   긴 원문은 접는다(잘라내는 게 아니라 접는 것 — 정보 손실 0, 구 표와 동일 동작).
-        '<td>' + nextCellHtml(s.next || s.depends_on || s.note) + '</td>' +
+        //   ★같은 날 수리: note 폴백을 뺐다. note 는 그 배의 누적 기록이라 1,000자가 넘는 것이
+        //   있고(실무진 피드백 배 실측 1,110자), 그게 이 칸에 통째로 들어가 표가 무너졌다
+        //   (GM 지적 "전체 배가 정리가 하나도 안 된 것 같다"). 이 칸이 답할 것은
+        //   '다음에 뭘 하나'뿐이다 — next·depends_on 만 쓴다. 기록은 배를 열어서 본다.
+        '<td>' + nextCellHtml(s.next || s.depends_on) + '</td>' +
         '<td style="text-align:center;">' + trashBtn(s) + '</td>' +
       '</tr>';
+    });
+    /* ★2026-08-01(시토 · GM 지적 "전체 배가 정리가 하나도 안 된 것 같다")
+       49척을 한 표에 쏟아부으니 스크롤만 길고 훑을 수가 없었다. 알림 한 장과 같은 방식으로
+       담당별로 접어 묶는다 — 담당 줄만 보면 누가 몇 척을 지고 있는지 한눈에 들어오고,
+       필요한 담당만 펼친다. 진행중이 많은 담당을 위로. 검색·상태 고르기는 그대로 동작한다
+       (걸러진 결과를 다시 묶는 것뿐이라 판정 로직은 손대지 않았다). */
+    var byOwner = {}, owners = [];
+    list.forEach(function(s, i){
+      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+      if(!byOwner[nick]){ byOwner[nick] = { rows:[], running:0 }; owners.push(nick); }
+      byOwner[nick].rows.push(rows[i]);
+      if(s.status === 'IN_PROGRESS') byOwner[nick].running++;
+    });
+    owners.sort(function(a,b){ return byOwner[b].running - byOwner[a].running || byOwner[b].rows.length - byOwner[a].rows.length; });
+    var HEAD = '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th>' +
+      '<th style="width:88px">상태</th><th style="width:28%">재개조건 · 다음</th><th style="width:64px">정리</th></tr>';
+    el.innerHTML = owners.map(function(nick){
+      var g = byOwner[nick];
+      return '<details class="coo-details" style="margin-top:8px;" open>' +
+        '<summary>' + esc(nick) + '<span style="float:right;color:var(--dim);font-weight:400;">' +
+          g.rows.length + '척 · 진행중 ' + g.running + '</span></summary>' +
+        '<div class="gtbl-wrap"><table class="gtbl">' + HEAD + g.rows.join('') + '</table></div>' +
+      '</details>';
     }).join('');
-    el.innerHTML = '<div class="gtbl-wrap"><table class="gtbl">' +
-      '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th><th style="width:88px">상태</th><th>재개조건 · 다음</th><th style="width:64px">정리</th></tr>' +
-      rows + '</table></div>';
   }
 
   function trashBtn(s){
@@ -1307,16 +1274,23 @@
         pill: total ? ['na','실행 시 산출'] : ['idle','기록 없음'], rows: rows });
     })();
 
-    el.innerHTML = cards.map(function(c){
-      var rows = c.rows.map(function(r){
-        return '<div class="rrow"><span class="rk">' + esc(r[0]) + '</span><span class="rv">' + r[1] + '</span></div>';
-      }).join('');
-      return '<div class="rcard" style="--rc:' + c.rc + '">' +
-        '<div class="rcard-top"><span class="rcard-ico">' + c.ico + '</span>' +
-          '<span class="rcard-tt"><span class="rcard-nm">' + esc(c.nm) + '</span><span class="rcard-cy">' + esc(c.cy) + '</span></span>' +
-          '<span class="pill ' + c.pill[0] + '">' + esc(c.pill[1]) + '</span></div>' +
-        rows + '</div>';
-    }).join('');
+    /* ★2026-08-01(시토 · GM 지시 "카드 말고 표로 — 항목값이 통일돼야 보기 편하다")
+       카드마다 안쪽 줄 수가 달라 높이가 들쭉날쭉했다. 네 칸 고정 표로 통일한다:
+       체계 | 주기 | 상태 | 실측. 실측 칸은 원래 카드 안 줄(키·값)을 한 줄로 이어 붙인 것 —
+       값은 하나도 안 뺐다. 등록부 모듈 표·전체 배 표와 같은 규격(gtbl). */
+    el.innerHTML = '<div class="gtbl-wrap"><table class="gtbl">' +
+      '<tr><th style="width:26%">체계</th><th style="width:20%">주기</th><th style="width:96px">상태</th><th>실측</th></tr>' +
+      cards.map(function(c){
+        var facts = c.rows.map(function(r){
+          return '<span class="rk">' + esc(r[0]) + '</span> ' + r[1];
+        }).join('<span style="color:var(--dim);"> · </span>');
+        return '<tr>' +
+          '<td>' + c.ico + ' ' + esc(c.nm) + '</td>' +
+          '<td>' + esc(c.cy) + '</td>' +
+          '<td><span class="pill ' + c.pill[0] + '">' + esc(c.pill[1]) + '</span></td>' +
+          '<td>' + (facts || '<span style="color:var(--dim);">—</span>') + '</td>' +
+        '</tr>';
+      }).join('') + '</table></div>';
   }
 
   // ═══════════ 📣 시모(CMO) 자율 마케팅 → AI CMO 페이지로 이관(2026-07-15) · 렌더 삭제 ═══════════
