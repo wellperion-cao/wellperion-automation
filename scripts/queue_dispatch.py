@@ -115,6 +115,9 @@ def build_ship(args, queue):
         # reversible 기본값 None=미선언(선별기가 낱말 스캔으로 폴백).
         "audience": args.audience,
         "reversible": args.reversible,
+        # 신규 생성 게이트(2026-08-01) — "work_type" is None(미선언)이면 선별기는
+        # 기존 동작 그대로(가역만 보고 통과). "new"만 자율 후보에서 제외된다.
+        "work_type": args.work_type,
     }
 
 
@@ -140,6 +143,11 @@ def main() -> int:
                      help="office=실무진·GM이 볼 일 / ai=AI 내부 살림 (기본 ai)")
     ap.add_argument("--reversible", choices=("yes", "no"), default=None,
                      help="yes/no — 미지정이면 선별기가 낱말 스캔으로 폴백")
+    # 아침 루틴 4단계 권한 분기(2026-08-01 GM 확정 · 웰리 판단은 doc/wellperion-boot SKILL.md
+    # §2-1 참조): update=기존 수정·고도화(가역이면 자율) / new=신규 생성(가역이어도 GM 승인).
+    # 미지정(None)이면 선별기가 기존대로 통과시킨다(회귀 0 — 큐의 기존 배는 이 칸이 없다).
+    ap.add_argument("--work-type", dest="work_type", choices=("update", "new"), default=None,
+                     help="update=기존 수정 / new=신규 생성(미지정=선별기 기존 동작 유지)")
     args = ap.parse_args()
     args.reversible = {"yes": True, "no": False, None: None}[args.reversible]
 
@@ -198,7 +206,7 @@ def main() -> int:
         ship = build_ship(args, q)
         print("[미리보기 — 큐에 쓰지 않음]")
         for k in ("task_id", "clevel", "title", "status", "priority", "ship_no", "short_no", "next",
-                  "audience", "reversible"):
+                  "audience", "reversible", "work_type"):
             print("  %-10s %s" % (k, ship[k]))
         print("  note       %s" % (ship["note"][:160] or "(없음)"))
         return 0
