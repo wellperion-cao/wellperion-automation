@@ -2394,6 +2394,7 @@
 
     // 회색 범례(.flegend/.fnote) 제거(GM 지시 2026-07-06 가독성 정리) — 소스·범위·목표 설명은 헤더 stag·CFO 링크로 안내. 데이터(누계·목표·부족분·연 72억 대비)는 위 summary(fhist-sum)에 유지.
     host.innerHTML = '<div class="fchart hist">' + cols + '</div>' + summary;
+    var _fc = host.querySelector('.fchart.hist'); if (_fc) _fc.scrollLeft = _fc.scrollWidth;
   }
 
   // ── 🗂️ 부서별 내용 표 (실무 도달율 + AI 활용% + 월 목표·진척 + 체계 페이지 매핑 · GM 지시 2026-07-07 3차: 카드 그리드 → 표 전환·A3 1p 맞춤) ──
