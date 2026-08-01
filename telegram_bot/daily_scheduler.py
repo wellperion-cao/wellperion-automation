@@ -63,8 +63,14 @@ def _check_pid_lock() -> None:
     if _PID_FILE.exists():
         try:
             old_pid = int(_PID_FILE.read_text().strip())
+            # ★2026-08-01(시토 · 배265) — PID 재사용 오탐 차단.
+            #   실사고: 어제 죽은 스케줄러의 PID 2824 를 윈도우가 svchost 에 재배정했고,
+            #   "그 PID 가 살아있다"만 보던 이 검사가 '이미 실행 중'으로 오판해
+            #   로그온 재기동을 12시간 넘게 막았다(00:28~13:00 전 예약작업 정지).
+            #   PID 존재만이 아니라 **그게 우리 프로세스인지**까지 본다.
             result = subprocess.run(
-                ["tasklist", "/FI", f"PID eq {old_pid}", "/FO", "CSV"],
+                ["tasklist", "/FI", f"PID eq {old_pid}",
+                 "/FI", "IMAGENAME eq python*", "/FO", "CSV"],
                 capture_output=True, text=True, shell=True
             )
             if str(old_pid) in result.stdout:

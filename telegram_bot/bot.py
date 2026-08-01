@@ -1892,8 +1892,13 @@ def _check_pid_lock() -> None:
             if old_pid == my_pid:
                 # 자기 자신 — 재진입 없음
                 return
+            # ★2026-08-01(시토 · 배265) — PID 재사용 오탐 차단.
+            #   여기선 오탐이 더 위험하다: 재배정된 PID 를 '옛 봇'으로 보고
+            #   taskkill /F 하면 **엉뚱한 시스템 프로세스를 죽인다**(같은 날
+            #   daily_scheduler 쪽 PID 2824 가 실제로 svchost 였다).
             result = subprocess.run(
-                ["tasklist", "/FI", f"PID eq {old_pid}", "/FO", "CSV"],
+                ["tasklist", "/FI", f"PID eq {old_pid}",
+                 "/FI", "IMAGENAME eq python*", "/FO", "CSV"],
                 capture_output=True, text=True, shell=True,
             )
             if str(old_pid) in result.stdout:
