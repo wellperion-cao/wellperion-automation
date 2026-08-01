@@ -162,7 +162,9 @@ def main(write_json=None):
     known_kakao = {r.get('name') for r in (kakao_rooms.get('all_rooms') or []) if r.get('name')}
     known_tg = {k for k in troom if not k.startswith('_')}
     for item in reg_items:
-        if item.get('state') == 'dead':
+        # dead=죽었다고 확정한 것, unknown=방이 어디인지 저장소에서 확인 불가라고 정직 표기한 것.
+        # 둘 다 '아직 모른다'를 이미 적어 둔 상태라 매번 다시 걸리면 영구 오탐이 된다(2026-08-01).
+        if item.get('state') in ('dead', 'unknown'):
             continue
         ch = item.get('channel')
         known = known_kakao if ch == 'kakao' else (known_tg if ch == 'telegram' else None)
