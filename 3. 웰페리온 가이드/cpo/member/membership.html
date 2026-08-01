@@ -911,10 +911,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 @media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr}}
 /* 현황카드 일원화(한 줄) — 2026-07-15 GM 지시. 전환보드 삭제 후 멤버십 6카드·강습 6카드(2026-07-18 담당자 배정 카드를 멤버십→강습 family로 이동)를 각각 한 줄로. */
-/* 멤버십 카드 7장(휴회 추가 2026-07-23) — 6칸으로 두면 마지막 장이 다음 줄로 떨어진다(GM 지적).
-   칸수를 카드 수에 맞추고, 카드가 늘어도 한 줄을 유지하도록 최소폭 기반 auto-fit 으로 둔다. */
-#memberTabNav{grid-template-columns:repeat(7,minmax(0,1fr))}
-/* 7장을 한 줄에 넣으면 칸이 좁아진다 → 여백을 조이고 제목이 길면 말줄임(줄바꿈으로 카드 높이가
+/* 멤버십 카드 5장(대기자·LOSS 카드 삭제 2026-08-01, FB260801-141806) — 칸수를 카드 수에 맞춰
+   한 줄을 유지한다(6칸으로 두면 빈 칸이 남거나 마지막 장이 다음 줄로 떨어짐, GM 지적 이력). */
+#memberTabNav{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* 여러 장을 한 줄에 넣으면 칸이 좁아진다 → 여백을 조이고 제목이 길면 말줄임(줄바꿈으로 카드 높이가
    들쭉날쭉해지는 것 방지). 숫자는 그대로 크게 유지 — 한눈에 봐야 하는 건 숫자다. */
 #memberTabNav .dash-card{padding:13px 11px 13px}
 #memberTabNav .dash-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1543,13 +1543,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <!-- ══════════════════════════════ 유형: 멤버십 (문의현황·달력·등록현황·회원관리) ══════════════════════════════ -->
   <div id="type-membership" class="type-pane active">
 
-  <!-- ══ 현황카드 6종(1줄) — 2026-07-18 GM 지시로 한 줄 재배치·대기자/LOSS 카드 재복원. 순서: 새 문의·오늘 예약·
-       신규 멤버십 등록현황·멤버십 회원 관리·대기자 회원 관리·LOSS 회원 관리. 하단 4소트 세그먼트(.active-toggle)는
-       삭제되고 스코프 전환(유효/법인)은 '멤버십 회원 관리' 요약카드 칩 클릭(setActiveScope)으로 이관, 대기자/LOSS는
-       각각 상단 카드(showWaitMembers·setActiveSeg('ended'))로 진입. 카드1·2(새 문의·오늘 예약)는 구 #cpoTodayStrip
-       히어로 카드(sumNewCard·sumBookCard) 이관(id·onclick·클릭동작 보존). 카드3·4는 기존 #memberTabNav 배선 유지,
-       카드5(대기자)=dMemWait(renderActiveSummary)·카드6(LOSS)=dMemLossToday/Month(loadCpoTodayStats) 기존 소스 재활용
-       (신규 fetch 없음). ══ -->
+  <!-- ══ 현황카드 5종(1줄) — 새 문의·오늘 예약·신규 멤버십 등록현황·멤버십 회원 관리·휴회 회원 관리.
+       대기자/LOSS 전용 카드는 2026-08-01 삭제(FB260801-141806, 임정은M 요청) — 두 진입점 모두 '멤버십 회원
+       관리' 카드 진입 후 요약카드의 '회원 구분 선택칸'(setActiveTypeFilter)으로 흡수. 스코프 전환(유효/법인)도
+       동일 선택칸에서 처리. 카드1·2(새 문의·오늘 예약)는 구 #cpoTodayStrip 히어로 카드(sumNewCard·sumBookCard)
+       이관(id·onclick·클릭동작 보존). ══ -->
   <div class="dash-grid" id="memberTabNav">
     <!-- 카드1: 새 문의 (구 히어로 sumNewCard → 2026-07-16 GM 지시로 카드3과 동일한 dash-card 금일/월간 형식 통일. id sumNew 유지=데이터배선 보존) -->
     <a class="dash-card" data-kind="inq" href="javascript:void(0)" onclick="heroCardClick('new');_memHighlight(this)">
@@ -1595,23 +1593,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">진행중</span><span class="dash-v"><b id="dHoldOngoing" style="font-size:13px">–</b>명</span></div>
       </div>
     </a>
-    <!-- 카드5: 대기자 회원 관리 (유효 스코프 미래시작 분리 — showWaitMembers). 2026-07-18 GM 지시로 재복원.
-         대기 수=renderActiveSummary가 dMemWait에 기록(_waitMembers 재사용, 신규 fetch 없음). -->
-    <a class="dash-card" data-kind="wait" href="javascript:void(0)" onclick="showWaitMembers();_memHighlight(this)">
-      <div class="dash-head"><span class="dash-dot wait" style="background:var(--accent)"></span><span class="dash-title">🕐 대기자 회원 관리</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">대기</span><span class="dash-v"><b class="lead" id="dMemWait">0</b> 명</span></div>
-      </div>
-    </a>
-    <!-- 카드6: LOSS 회원 관리 (종료회원 scope=ended — setActiveSeg('ended')). 2026-07-18 GM 지시로 재복원.
-         금일/월간 LOSS=loadCpoTodayStats가 dMemLossToday/dMemLossMonth에 기록(gToLoss/gMoLoss와 동일 소스). -->
-    <a class="dash-card" data-kind="loss" href="javascript:void(0)" onclick="switchTab('active');setActiveSeg('ended');_memHighlight(this)">
-      <div class="dash-head"><span class="dash-dot loss" style="background:#c8756f"></span><span class="dash-title">LOSS 회원 관리</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">금일</span><span class="dash-v"><b class="lead" id="dMemLossToday">–</b> 명</span></div>
-        <div class="dash-line"><span class="dash-k">월간</span><span class="dash-v"><b id="dMemLossMonth">–</b> 명</span></div>
-      </div>
-    </a>
+    <!-- 카드5·6(대기자/LOSS 회원 관리) 삭제(FB260801-141806, 2026-08-01 GM 승인) — '멤버십 회원 관리' 카드
+         진입 후 요약카드의 '회원 구분 선택칸'(대기/LOSS 포함)으로 진입점 이관. 데이터 배선(dMemWait·
+         dMemLossToday/Month 기록 로직)은 다른 화면(오늘 할 일 등)이 재사용할 수 있어 JS는 그대로 둔다 —
+         해당 id의 DOM만 없어 _setTxt가 조용히 no-op(회귀 없음). -->
   </div>
   <!-- 참고(정직 기록, 배754): 구 카드1·2(멤버십 문의/예약)의 '월간' 보조수치(dInqMonth·dTourMon)는 위 히어로가
        '오늘' 지표에 집중하며 표면에서 제거 — 계획서 의도(Architecture 문단)에 따른 의도된 단순화.
@@ -1684,18 +1669,17 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="db-toolbar">
         <div class="db-toolbar-search-group">
           <input class="db-search" id="dbSearch" type="text" placeholder="이름·연락처·프로그램·메모 전체 검색…" autocomplete="off">
+          <!-- 진행상황 SORT 필터 = 3종만(미정/컨택중/LOSS)로 단순화(FB260801-141806, 임정은M 요청 · GM 승인).
+               SUC·단기SUC·결제완납·재문의로 종결은 '진행중만 보기'가 기본으로 숨기는 종결값이라 여기서 고를 일이 없다.
+               행별 진행상황 편집칸(STATUS_OPTIONS)은 그대로 6종 유지 — 이 select는 조회 필터 전용. -->
           <select class="db-filter" id="dbFilter">
             <option value="">전체 상태</option>
             <option value="미정">미정</option>
             <option value="컨택중">컨택중</option>
-            <option value="SUC">SUC(등록)</option>
-            <option value="단기SUC">단기SUC</option>
-            <option value="결제완납">결제완납</option>
             <option value="LOSS">LOSS</option>
-            <option value="재문의로 종결">재문의로 종결</option>
           </select>
-          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록(SUC·단기SUC·결제완납)·재문의로 종결된 건을 숨겨 진행 중·LOSS 건만 봅니다. 지난 문의는 '전체 상태' 필터에서 '재문의로 종결' 선택으로 확인.">
-            <input type="checkbox" id="dbHideRegistered" checked onchange="_dbLimit=200;renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료·재문의종결 숨김 · LOSS 노출)</span>
+          <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);cursor:pointer;white-space:nowrap" title="등록 완료된 건을 숨겨 진행 중·LOSS 건만 봅니다.">
+            <input type="checkbox" id="dbHideRegistered" checked onchange="_dbLimit=200;renderDbTable()" style="cursor:pointer"> 진행중만 보기 <span style="font-size:11px;color:var(--dim)">(가입완료 숨김 · LOSS 노출)</span>
           </label>
         </div>
         <div class="db-toolbar-actions">
@@ -6546,14 +6530,24 @@ function loadRegistered() {
     });
 }
 
+// 로딩 지연 안내 타이머(FB260801-141806, 임정은M "불러오는중이 오래걸리나?") — 실측 GAS 응답이 시트 전체
+// 스캔이라 10~20초대가 정상(백엔드 구조상 이 파일에서 단축 불가, GAS 변경 금지 범위). 그동안 화면이 멈춘
+// 걸로 보이지 않도록 4초 뒤 "정상 대기" 안내만 얹는다(거짓 진행률 표시 금지 — 실측 없는 %는 지어내지 않음).
+var _regLoadTimer = null;
 function _regSetLoading(on) {
+  if (_regLoadTimer) { clearTimeout(_regLoadTimer); _regLoadTimer = null; }
   if (on) {
     document.getElementById('regBody').innerHTML =
       '<tr><td colspan="4"><div class="empty-state">' +
       '<div class="loading-spinner" id="regSpinner"></div>' +
       '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div>' +
+      '<div class="empty-state-desc" id="regLoadingHint"></div>' +
       '</div></td></tr>';
     document.getElementById('regCount').textContent = '';
+    _regLoadTimer = setTimeout(function(){
+      var hint = document.getElementById('regLoadingHint');
+      if (hint) hint.textContent = '서버 응답 대기 중입니다 — 시트 전체를 조회해 다소 걸릴 수 있어요(정상 동작).';
+    }, 4000);
   }
 }
 
@@ -6573,7 +6567,10 @@ function _regRender() {
   tbody.innerHTML = '';
 
   if (_regRows.length === 0) {
-    _regRenderEmpty('등록 없음', '선택한 기간에 등록한 회원이 없습니다.');
+    // 기간별 문구(FB260801-141806) — '선택한 기간' 뭉뚱그린 표현 대신 실제 보고 있는 범위를 즉시 밝힌다.
+    var _emptyDesc = { day: '오늘 등록한 회원이 없습니다.', week: '이번 주 등록한 회원이 없습니다.', month: '이번 달 등록한 회원이 없습니다.' }[_regRangeMode]
+      || '선택한 기간에 등록한 회원이 없습니다.';
+    _regRenderEmpty('등록 없음', _emptyDesc);
     return;
   }
 
@@ -6641,6 +6638,7 @@ var _activeComposing = false;
 var _activeScope   = 'valid';   // 'valid'(잔여일>=0 유효회원, 2026-07-31 경계 정정) | 'ended'(종료·이탈)
 var _activeReqSeq  = 0;         // 토글 빠르게 누를 때 느린 이전 응답이 최신을 덮지 않게(경쟁 가드)
 var _activeStartFilter = 'started';   // 대기자 버킷(2026-07-16 GM 지시) — 'started'(시작일 도래분만·기본) | 'waiting'(미래시작만) | 'all'(전체)
+var _activeTypeFilter = '';   // 회원 구분 선택칸(FB260801-141806) — ''=전체, 아니면 멤버십/입주민/중단기/보증금/FAN VIP/기타 중 하나(valid 스코프 전용)
 
 // 대기자 버킷 헬퍼 — _activeRows(유효회원)의 '시작\n일자' 컬럼으로 미래시작 회원 판별. 신규 GAS 액션 없음(기존 member_active_list 데이터 재사용).
 function _memStartKey(row) {
@@ -6664,6 +6662,23 @@ function _activeStartFilterApply(rows) {
   if (_activeStartFilter === 'waiting') return rows.filter(_isFutureStart);
   if (_activeStartFilter === 'all') return rows;
   return rows.filter(function(row){ return !_isFutureStart(row); });   // 기본 'started'
+}
+// 회원 구분 정규화(요약카드 유형별 집계·회원 구분 선택칸 필터 공용, 2026-08-01 배10459) — 오타 정규화·미분류→기타.
+// 두 곳(renderActiveSummary 집계·_activeTypeFilterApply)이 각자 계산하면 갈릴 수 있어 한 곳으로 통일.
+var MEMBER_TYPE_KNOWN = ['멤버십', '입주민', '중단기', '보증금', 'FAN VIP'];
+var MEMBER_TYPE_TYPO_MAP = { '맴버십': '멤버십', '멥버십': '멤버십' };   // 회원구분 오타 정규화(배299, 2026-07-03 시포)
+function _memberTypeOf(row) {
+  var v = String(row['회원\n구분'] || row['회원구분'] || '').trim() || '기타';
+  if (MEMBER_TYPE_TYPO_MAP[v]) v = MEMBER_TYPE_TYPO_MAP[v];
+  if (MEMBER_TYPE_KNOWN.indexOf(v) < 0) v = '기타';
+  return v;
+}
+// 회원 구분 선택칸 필터(FB260801-141806) — 검색·대기자필터·월단위보기와 AND 결합. valid 스코프 전용
+// (법인/대기/LOSS는 setActiveTypeFilter가 기존 scope 전환 함수로 라우팅 — 여기 안 옴).
+function _activeTypeFilterApply(rows) {
+  if (_activeScope !== 'valid' || !_activeTypeFilter) return rows;
+  var want = (_activeTypeFilter === '단기') ? '중단기' : _activeTypeFilter;
+  return rows.filter(function(row){ return _memberTypeOf(row) === want; });
 }
 
 /* LOSS·대기자 카드 월 단위 보기(2026-07-20 GM 지시) — 헤더가 항상 '총 유효회원'으로 고정 표시되던 결함(§2-B·§2-C)과
@@ -6713,7 +6728,7 @@ function _actSetPeriod(period) {
 // 대기자 필터 + 월단위 보기 결합(신규 fetch 없이 로드분만 재필터) — loadActiveMembers·_activeFilter·헤더 카운트 공용.
 // 헤더 건수(§2-B·§2-C)와 표에 실제 뿌려지는 행이 항상 같은 값을 쓰도록 단일 함수로 통일.
 function _activeBaseRows() {
-  return _actPeriodFilter(_activeStartFilterApply(_activeRows));
+  return _actPeriodFilter(_activeTypeFilterApply(_activeStartFilterApply(_activeRows)));
 }
 var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
@@ -6827,6 +6842,25 @@ function setActiveSeg(seg, btn) {
     _activeStartFilter = 'started';
     setActiveScope(seg, btn);
   }
+}
+
+// 회원 구분 선택칸(FB260801-141806, 2026-08-01) — 대기자/LOSS 상단카드 삭제 후 유일 진입점.
+// 법인·대기·LOSS는 새 필터를 만들지 않고 기존 scope 전환 함수(setActiveScope/setActiveSeg)를 그대로 재사용한다
+// (신규 fetch 로직 0, 회귀 방지). 나머지(멤버십/입주민/단기/보증금/FAN VIP/기타)는 로드된 valid 행을 클라에서만
+// 재필터(_activeTypeFilterApply) — 신규 fetch 없음.
+function setActiveTypeFilter(val) {
+  if (val === '법인') { _activeTypeFilter = ''; setActiveScope('corp'); return; }
+  if (val === '대기') { _activeTypeFilter = ''; setActiveSeg('waiting'); return; }
+  if (val === 'LOSS') { _activeTypeFilter = ''; setActiveSeg('ended'); return; }
+  _activeTypeFilter = val || '';
+  if (_activeScope !== 'valid' || _activeStartFilter !== 'started') {
+    _activeStartFilter = 'started';
+    setActiveScope('valid');   // valid로 전환 + 재조회(전환 중에도 renderActiveSummary가 select를 다시 그려 선택값 보존)
+    return;
+  }
+  renderActiveSummary();
+  var si = document.getElementById('activeSearch');
+  _activeFilter(si ? si.value : '');
 }
 
 function loadActiveMembers() {
@@ -7373,11 +7407,8 @@ function _mregSaveOwner(sel){
   showToast('담당자 저장 · ' + String(field).replace(' 담당자', '') + ' → ' + (newVal || '미배정'), 'ok');
 }
 
-// 대기자(미래시작) 카드 클릭 → 멤버십 회원 관리 탭으로 전환·대기자만 표시(2026-07-16 GM 지시). 신규 fetch 없음(_activeRows 재사용).
-function showWaitMembers() {
-  switchTab('active');
-  setActiveSeg('waiting');   // 대기자 진입(valid 재조회·미래시작만 렌더). 세그 버튼 삭제(2026-07-18) — 상단 대기자 카드가 진입점
-}
+// 구 showWaitMembers(대기자 카드 클릭 진입점)는 2026-08-01 카드 삭제(FB260801-141806)로 유일 호출부가
+// 사라져 제거 — 대기자 진입은 이제 회원 구분 선택칸(setActiveTypeFilter('대기') → setActiveSeg('waiting'))뿐.
 function _activeWireSearch() {
   var input = document.getElementById('activeSearch');
   if (!input || input.dataset.wired) return;
@@ -7407,12 +7438,30 @@ function _activeFilter(query) {
   _activeRender(filtered, true);
 }
 
+// 항상 숨김(원본 시트 칸은 그대로, 화면 렌더에서만 제외 — 데이터 손실 0). FB260801-141806(임정은M) · GM 승인.
+// '담당자'=종목별 담당자 5칸(PT/골프/P.L/스쿼시/수영)과 별개인 총괄 칸(항상 빈값, 노이즈만 됨).
+// '강습팀 참고사항'=강습 화면(성인·유소년 강습 문의)에서 이미 다루는 내용과 중복 — 요청대로 삭제.
+var ALWAYS_HIDE_COLS = ['담당자', '강습팀\n참고사항(이용 시간 기록)'];
+// 칸 축소 — 데이터는 그대로, 폭만 좁혀 말줄임(overflow ellipsis) + 마우스오버로 전체값 확인. 값=max-width(px).
+// '비고(운영부 참고사항)'가 요청 원문상 "가장 많이 축소" 대상이라 가장 좁다.
+var NARROW_COL_WIDTHS = {
+  '수강반종목명': 240,
+  '락커': 60,
+  '비고(운영부 참고사항)': 90,
+  '주소': 140,
+  'PT Contact': 90,
+  'GOLF Contact': 90,
+  'P.L Contact': 90,
+  '스쿼시 Contact': 90,
+  '수영 Contact': 90
+};
 /* ── 표 컬럼 표시 순서(커스텀) — 유효회원 스코프에서만.
       · 재등록상담 원본 3칸(날짜/시간/내용)은 숨기고 '잔여일' 바로 뒤에 통합셀('__recon__') 1칸으로.
-      · '미등록사유' 칸은 맨 우측으로 이동.
-      · 그 외 컬럼은 시트 원순서 유지(누락 없음). corp/ended 스코프는 제네릭(원순서). 2026-07-03 시포·GM */
+      · 그 외 컬럼은 시트 원순서 유지(누락 없음). corp/ended 스코프는 제네릭(원순서). 2026-07-03 시포·GM
+      · ALWAYS_HIDE_COLS·종료사유(+메모)·미등록사유는 모든 스코프에서 공통 처리(아래) — '미등록사유'만
+        LOSS(ended) 스코프에 한해 노출 유지(FB260801-141806, 사유별 현황판=_unregReasonBoardHtml). */
 function _activeDisplayCols() {
-  var cols = _activeHeaders.slice();
+  var cols = _activeHeaders.slice().filter(function(h){ return ALWAYS_HIDE_COLS.indexOf(h) < 0; });
   // 종료 스코프: '종료사유'(+메모) 원본 칸은 숨기고 전용 통합셀('__churn__')로 대체(정형 드롭다운+메모 모달). 2026-07-09 시포·GM
   if (_activeScope === 'ended') {
     var out = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL; });
@@ -7420,18 +7469,18 @@ function _activeDisplayCols() {
     out.push('__reactivate__');   // 재등록 처리 버튼(GM 지시 2026-07-28) — 통합셀(정렬 대상 아님)
     return out;
   }
+  // valid/corp: 종료사유(+메모)는 항상 빈값이라 숨김·미등록사유는 LOSS 탭 전용으로 여기서도 숨김. 2026-08-01
+  cols = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL && !/미등록/.test(h); });
   if (_activeScope !== 'valid') return cols;
   var reconRaw = [RECON_COLS.date, RECON_COLS.time, RECON_COLS.note];
   var hasRecon = (cols.indexOf(ACT_RES_KEY) >= 0) || reconRaw.some(function(h){ return cols.indexOf(h) >= 0; });
-  var remainCol = null, unregCol = null;
+  var remainCol = null;
   cols.forEach(function(h){
     if (remainCol === null && /잔여일/.test(h)) remainCol = h;
-    if (unregCol  === null && /미등록/.test(h)) unregCol = h;
   });
   var base = cols.filter(function(h){
     if (hasRecon && reconRaw.indexOf(h) >= 0) return false;   // 재등록 원본 3칸 숨김
     if (h === ACT_RES_KEY) return false;                       // 재등록예약목록(JSON 원본) 숨김 — 통합셀로 표시. 2026-07-03 시포·GM
-    if (h === unregCol) return false;                          // 미등록사유는 맨뒤로
     if (OWNER_SPORT_COLS.indexOf(h) >= 0) return false;        // 종목별 담당자 5칸 숨김 → 통합 요약셀('__owners__')로 표시. 2026-07-18 시포·GM
     return true;
   });
@@ -7442,7 +7491,6 @@ function _activeDisplayCols() {
   });
   if (hasRecon && !remainCol) out.push('__recon__');           // 잔여일 컬럼 없으면 폴백(뒤)
   out.push('__owners__');                                       // 종목별 담당자 통합 요약셀(비어있지 않은 종목만 칩). 2026-07-18 시포·GM
-  if (unregCol) out.push(unregCol);                            // 미등록사유 맨뒤
   return out;
 }
 
@@ -7451,7 +7499,9 @@ function _reconCellHtml(row) {
   var list = _rowReservations(row, 'active');
   var ri = row.rowIndex != null ? esc(String(row.rowIndex)) : '';
   if (list.length) {
-    return '<td class="recon-cell" data-recon="' + ri + '" title="재등록 예약 수정" style="white-space:nowrap;cursor:pointer;color:var(--accent);font-weight:600">' + esc(_resSummary(list)) + '</td>';
+    // 칸 축소(FB260801-141806) — 예약이 여러 건 쌓이면 길어져 max-width+ellipsis, 전체는 title(마우스오버)로.
+    var _summary = _resSummary(list);
+    return '<td class="recon-cell" data-recon="' + ri + '" title="' + esc(_summary) + '" style="white-space:nowrap;cursor:pointer;color:var(--accent);font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis">' + esc(_summary) + '</td>';
   }
   return '<td class="recon-cell recon-empty" data-recon="' + ri + '" title="재등록 예약 잡기" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 상담 잡기</td>';
 }
@@ -7508,12 +7558,12 @@ function _activeRender(rows, isFiltered) {
       if (h === '__reactivate__') { html += _reactivateCellHtml(row); return; }
       if (h === '__owners__') { html += _ownersCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
-      // 수강반종목명(멤버십 상품명) = 원본이 장식·혜택·기간까지 길어 칸 넘침 → 폭 고정+말줄임+마우스오버 전체보기(표시전용·데이터 무변경). 2026-07-16 시토
-      var isSport = (h === '수강반종목명');
-      var leftStyle = isSport ? 'text-align:left;max-width:240px;overflow:hidden;text-overflow:ellipsis;' : '';
+      // 칸 축소(FB260801-141806, 2026-08-01) — NARROW_COL_WIDTHS에 등록된 칸은 폭 고정+말줄임+마우스오버 전체보기(표시전용·데이터 무변경).
+      var narrowW = NARROW_COL_WIDTHS[h];
+      var leftStyle = narrowW ? ('text-align:left;max-width:' + narrowW + 'px;overflow:hidden;text-overflow:ellipsis;') : '';
       var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
       var _cv = row[h] != null ? row[h] : '—';
-      var titleAttr = isSport ? ' title="' + esc(_cv) + '"' : '';
+      var titleAttr = narrowW ? ' title="' + esc(_cv) + '"' : '';
       // 잔여일 색상(GM 지시 2026-07-20): 10일 이내=빨강·30일 이내=주황·만료(0 이하)=회색(임박과 확실히 구분).
       // 색만으로 구분하지 않도록 아이콘+굵기 병기(색각 이상 대비). 기존 토큰(--red/--orange/--dim-mid) 재사용, 새 색 발명 금지.
       if (/잔여일/.test(h)) {
@@ -7627,12 +7677,35 @@ function _waitBoardHtml(rows) {
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px">' + chips + '</div>' +
     '</div>';
 }
+// 미등록사유 현황판(LOSS 탭 전용, FB260801-141806 임정은M 요청) — _waitBoardHtml과 동일 패턴(신규 fetch 0),
+// 로드된 종료회원 행의 '미등록사유' 칸을 사유별로 묶어 건수로 보여준다. 사유 미기록은 '미기록'으로 드러낸다.
+function _unregReasonBoardHtml(rows) {
+  if (!rows || !rows.length) return '';
+  var col = _capCol(_activeHeaders, '미등록사유');
+  if (!col) return '';
+  var counts = {}, order = [];
+  rows.forEach(function(r){
+    var v = String(r[col] || '').trim() || '미기록';
+    if (!counts[v]) { counts[v] = 0; order.push(v); }
+    counts[v]++;
+  });
+  order.sort(function(a, b){ return counts[b] - counts[a]; });
+  var chips = order.map(function(k){
+    return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px">' +
+      '<span style="color:var(--text);word-break:keep-all">' + esc(k) + '</span><span style="font-weight:800;color:#c8756f;flex-shrink:0">' + counts[k] + '건</span></div>';
+  }).join('');
+  return '<div style="margin-top:10px">' +
+      '<div style="font-size:10.5px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:6px">🧮 미등록사유별 현황 (합계 ' + rows.length + '건)</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px">' + chips + '</div>' +
+    '</div>';
+}
 function _memberOverviewHtml() {
   var hi = _activeHeaderInfo();
   if (hi) {
     var cnt = _activeHeaderCount(hi);
     var cntTxt = (cnt == null) ? '–' : cnt.toLocaleString();
     var waitReady = (hi.periodKey === 'waitPeriods' && _activeLoaded && _activeScope === 'valid' && _activeStartFilter === 'waiting');
+    var lossReady = (hi.periodKey === 'lossPeriods' && _activeLoaded && _activeScope === 'ended');
     return '<div>' +
         '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
           '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
@@ -7643,35 +7716,43 @@ function _memberOverviewHtml() {
         '</div>' +
         _actPeriodTabsHtml() +
         (waitReady ? _waitBoardHtml(_activeBaseRows()) : '') +
+        (lossReady ? _unregReasonBoardHtml(_activeBaseRows()) : '') +
       '</div>';
   }
   var d = _cpoStats || {};
-  var tc = _validTypeCounts;
   var hasSrv = _cpoStats && (d.memberActive != null || d.memberCorp != null || d.memberEnded != null);
-  if (!hasSrv && !tc) return '';
+  if (!hasSrv && !_validTypeCounts) return '';
   var corp = Number(d.memberCorp) || 0;
   var totalValid = ((d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0)) + corp;
-  var g = function(k){ return tc ? (tc[k] || 0) : '—'; };
-  var typeChips =
-    _memberChip('멤버십', g('멤버십'), 'type') +
-    _memberChip('입주민', g('입주민'), 'type') +
-    _memberChip('법인', corp, 'type', "setActiveScope('corp')") +
-    _memberChip('단기',   g('중단기'), 'type') +
-    _memberChip('보증금', g('보증금'), 'type') +
-    _memberChip('FAN VIP', g('FAN VIP'), 'type') +
-    ((tc && (tc['기타'] || 0) > 0) ? _memberChip('기타', tc['기타'], 'type') : '');
-  // 대기자·LOSS 칩은 2026-07-18 GM 지시로 삭제 — 멤버십 회원 관리 탭의 4소트 세그먼트(유효/대기자/법인/LOSS)와 중복.
-  var foot = tc ? '' : '<div style="font-size:10px;color:var(--dim);margin-top:4px">※ 유형별 수치는 유효회원 명단 로드 후 표시됩니다</div>';
+  // 유형별 칩 나열은 2026-08-01 삭제(FB260801-141806) — 아래 '회원 구분 선택칸'(_memberTypeSelectHtml)이
+  // 같은 기능(유형별로 골라 보기)을 select 하나로 대체. 총 유효회원 숫자만 남긴다.
+  return '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+      '<div role="button" tabindex="0" title="클릭하여 유효회원 전체 명단 보기" onclick="setActiveScope(\'valid\')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:64px">' +
+        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">총 유효회원</div>' +
+        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + totalValid.toLocaleString() + '</div>' +
+        '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
+      '</div>' +
+    '</div>';
+}
+
+// 회원 구분 선택칸(FB260801-141806, 2026-08-01) — 대기자/LOSS 상단카드 삭제 후 유일 진입점.
+// 멤버십/입주민/단기/보증금/FAN VIP/기타=실제 '회원\n구분' 값(_memberTypeOf), 법인/대기/LOSS=기존 scope.
+var MEMBER_TYPE_SELECT_OPTIONS = ['멤버십', '입주민', '법인', '단기', '보증금', 'FAN VIP', '기타', '대기', 'LOSS'];
+function _activeTypeSelectValue() {
+  if (_activeScope === 'ended') return 'LOSS';
+  if (_activeScope === 'corp') return '법인';
+  if (_activeScope === 'valid' && _activeStartFilter === 'waiting') return '대기';
+  return (_activeTypeFilter === '중단기') ? '단기' : (_activeTypeFilter || '');
+}
+function _memberTypeSelectHtml() {
+  var cur = _activeTypeSelectValue();
+  var opts = '<option value=""' + (cur === '' ? ' selected' : '') + '>전체 유형</option>' +
+    MEMBER_TYPE_SELECT_OPTIONS.map(function(o){
+      return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(o) + '</option>';
+    }).join('');
   return '<div>' +
-      '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
-        '<div role="button" tabindex="0" title="클릭하여 유효회원 명단 보기" onclick="setActiveScope(\'valid\')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:64px">' +
-          '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">총 유효회원</div>' +
-          '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + totalValid.toLocaleString() + '</div>' +
-          '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
-        '</div>' +
-        '<div style="width:1px;height:52px;background:var(--border);flex-shrink:0"></div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">' + typeChips + '</div>' +
-      '</div>' + foot +
+      '<label style="display:block;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px">회원 구분 선택</label>' +
+      '<select onchange="setActiveTypeFilter(this.value)" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12.5px;font-family:inherit;min-width:140px">' + opts + '</select>' +
     '</div>';
 }
 
@@ -7681,21 +7762,14 @@ function renderActiveSummary() {
   var rows = _activeRows || [];
 
   // valid 스코프 데이터 도착 시에만 유형 집계 캐시 갱신(대기자 포함 전량 기준). corp/ended/대기자 필터로 이동해도
-  // 현황카드 유형 수치는 이 캐시로 안정 유지. 카드4/5 배선(dMemActive/dMemWait/dMemShort)도 여기서 갱신(기존 동작 보존).
+  // 현황카드 유형 수치는 이 캐시로 안정 유지. 카드4 배선(dMemActive/dMemShort)도 여기서 갱신(기존 동작 보존).
+  // 유형 판정=_memberTypeOf 공용 함수(회원 구분 선택칸 필터·_activeTypeFilterApply와 동일 로직, 2026-08-01 배10459).
   if (_activeScope === 'valid' && rows.length) {
     var counts = {};
-    var KNOWN = ['멤버십','입주민','중단기','보증금','FAN VIP'];
-    var TYPO_MAP = { '맴버십': '멤버십', '멥버십': '멤버십' };   // 회원구분 오타 정규화(배299, 2026-07-03 시포)
-    rows.forEach(function(row){
-      var v = String(row['회원\n구분'] || row['회원구분'] || '').trim() || '기타';
-      if (TYPO_MAP[v]) v = TYPO_MAP[v];
-      if (KNOWN.indexOf(v) < 0) v = '기타';
-      counts[v] = (counts[v] || 0) + 1;
-    });
+    rows.forEach(function(row){ var v = _memberTypeOf(row); counts[v] = (counts[v] || 0) + 1; });
     _validTypeCounts = counts;
     _validTotal = rows.length;
     _validWaitCnt = _waitMembers().length;
-    _setTxt('dMemWait', _validWaitCnt);              // 카드5(대기자) 배선 유지
     _setTxt('dMemShort', counts['중단기'] || 0);      // 카드4 단기 배선 유지(배299)
     // 카드4 유효 = server memberActive+memberCorp(법인, 총 유효회원 수에 합산·요약카드 '총 유효회원'과 동일값 고정). 대기자는 별도 지표로만 표기. 2026-07-18 시포·GM
     if (_cpoStats) _setTxt('dMemActive', (Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0));
@@ -7703,11 +7777,14 @@ function renderActiveSummary() {
 
   var overview = _memberOverviewHtml();
   var cross = _composeHtml();
+  var typeSelect = _memberTypeSelectHtml();
   if (!overview && !cross) { el.style.display = 'none'; return; }
   // 휴회 전용 보기 중엔 백그라운드 fetch가 늦게 도착해도 계속 숨겨둔다 — setHoldOnlyView(false)가 복귀 시 이 함수를
   // 다시 불러 최신 데이터로 재계산한다(2026-07-24 GM, 스냅샷 복원 대신 재계산으로 데이터 갱신과 어긋남 방지).
   el.style.display = (typeof _holdOnlyView !== 'undefined' && _holdOnlyView) ? 'none' : '';
-  el.innerHTML = overview + ((overview && cross) ? '<div style="height:1px;background:var(--border);margin:11px 0"></div>' : '') + cross;
+  // 배치 순서(GM 지시 2026-08-01, FB260801-141806): 총 유효회원 → 회원 구성 → 회원 구분 선택칸.
+  var div = '<div style="height:1px;background:var(--border);margin:11px 0"></div>';
+  el.innerHTML = overview + ((overview && cross) ? div : '') + cross + ((overview || cross) ? div : '') + typeSelect;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -9946,7 +10023,10 @@ var dbRows = [];         // 현재 로드된 행 배열
 var dbSaveTimer = null;  // 디바운스 타이머 (셀 자동저장용)
 
 // 실무진 실제 사용 코드 (2026-06-20 GM 확정). 등록=SUC, 이탈=LOSS 등 시트 어휘 그대로.
-var STATUS_OPTIONS = ['미정','컨택중','가망','SUC','단기SUC','LOSS','재문의로 종결'];   // 신규·예약·방문 제거→미정(첫). 예약/방문은 달력 예약종류이지 진행상황 아님. 2026-07-18 GM. '재문의로 종결'=같은 사람이 다른 행으로 재문의·등록해 이 행이 종결됨(GM 확정, 2026-07-20)
+// 2026-08-01 FB260801-141806(임정은M) — '결제완납'·'재문의로 종결'은 옵션에서 제거(무슨 뜻인지 헷갈림 · 종결건은
+// SUC 계열로 충분). 과거 이 값으로 저장된 행은 데이터 그대로 남고, buildSelect()가 현재값을 자동으로 옵션에
+// 되살려 보여준다(옵션 목록에서만 빠짐 — 데이터 손실 0, 위 STATUS_OPTIONS 트리밍 관례와 동일).
+var STATUS_OPTIONS = ['미정','컨택중','가망','SUC','단기SUC','LOSS'];   // 신규·예약·방문 제거→미정(첫). 예약/방문은 달력 예약종류이지 진행상황 아님. 2026-07-18 GM.
 // 관심 프로그램 = 4종 축약(노블레스/플래티넘/±골프). 상세설명 괄호 제거. 2026-07-08 시포·GM
 var PROGRAM_OPTIONS = ['노블레스', '플래티넘', '노블레스+골프', '플래티넘+골프'];
 // 저장값(구 상세 라벨 포함)을 4종 표시로 정규화 — 표시만 축약, 저장값 보존. 알 수 없는 값은 원본 유지. 2026-07-08 시포·GM
