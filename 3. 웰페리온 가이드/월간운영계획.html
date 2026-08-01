@@ -28,14 +28,17 @@
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
-  /* ── 📊 최상단 4지표 요약 스트립(A안 정보 위계 강화 · 실측만 · 배685 · 2026-07-14) ── */
+  /* ── 📊 최상단 핵심 밴드(월+연 병기 · 실측만 · 배685 · 2026-08-01 GM 지시로 5칸 확장: 매출·전부서 핵심과제·업무&결재SSOT·시설지원부 이행·로드맵) ── */
   .sumstrip{display:flex; flex-wrap:wrap; gap:0; margin:0 0 14px; border:1px solid var(--border); border-radius:11px; overflow:hidden; background:var(--surface);}
-  .ss-i{flex:1; min-width:150px; padding:9px 14px; border-right:1px solid var(--border);}
+  .ss-i{flex:1; min-width:170px; padding:9px 14px; border-right:1px solid var(--border);}
   .ss-i:last-child{border-right:none;}
   .ss-l{font-size:9.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.05em;}
   .ss-v{font-size:15px; font-weight:800; margin-top:2px; font-variant-numeric:tabular-nums; color:var(--text);}
   .ss-v.gold{color:var(--gold);}
+  .ss-v .ss-sub2{font-size:11px; font-weight:600; color:var(--dim);}
+  .ss-v .ss-sub{display:block; font-size:10px; font-weight:500; color:var(--dim); margin-top:3px; line-height:1.4; letter-spacing:0;}
   @media (max-width:720px){ .ss-i{min-width:calc(50% - 1px);} }
+  @media print{ .ss-v{font-size:11px !important;} .ss-v .ss-sub{font-size:7.5px !important; margin-top:1px !important;} .ss-v .ss-sub2{font-size:8px !important;} }
 
   /* ── 🔥 임팩트 현황 4칸(최상단 · 계층 띠 바로 아래 · GM 지시 2026-07-03) ── */
   .impact-grid{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 14px;}
@@ -388,15 +391,7 @@
   @media print{ .hbadge{font-size:6.5px !important; padding:0.5px 4px !important; margin-left:3px !important;} }
 
   /* 🎚️ 자동화 달성률 게이지 — obj-board 맨 위 한 줄(honesty_summary와 같은 정의: 실측÷총 · GM 1단계 2026-07-24) */
-  .hgauge{font-size:11.5px; font-weight:700; color:var(--text-soft); background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:8px 13px; margin:0 0 10px; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center;}
-  .hgauge b{color:var(--text); font-size:13px;}
-  .hgauge .hg-i{font-weight:600; white-space:nowrap;}
-  .hgauge .hg-i.measured{color:var(--green);}
-  .hgauge .hg-i.observed{color:var(--blue);}
-  .hgauge .hg-i.basis{color:var(--accent-soft);}
-  .hgauge .hg-i.manual{color:var(--dim);}
-  .hgauge .hg-i.unmeasured{color:var(--rose);}
-  @media print{ .hgauge{font-size:8px !important; padding:3px 7px !important; margin-bottom:4px !important;} }
+  /* .hgauge 삭제(2026-08-01) — 최상단 밴드(ss-top3)로 이관, obj-board 로직은 renderBoard() 참고 */
   /* ── 🚀 ERP 월별 진척 타임라인 ── */
   .erp-time{display:flex; gap:10px; align-items:stretch; position:relative;}
   .erp-step{flex:1; min-width:0; background:var(--paper); border:1px solid var(--border); border-radius:12px; padding:13px 14px 12px; position:relative; display:flex; flex-direction:column; gap:7px;}
@@ -1019,12 +1014,15 @@
 
   <!-- 🎯 1장 요약 뷰 = 폐지(GM 지시 2026-07-06 2차) — 연간 A3 뷰가 월별 상세를 포함하도록 전환 -->
 
-  <!-- 📊 최상단 4지표 요약 스트립(A안 정보 위계 강화 · 스크롤 없이 결론 먼저 · 전부 실측 · renderSummaryStrip()가 채움 · 배685) -->
+  <!-- 📊 최상단 핵심 밴드(스크롤 없이 결론 먼저 · 전부 실측 · renderSummaryStrip()가 채움 · 배685 · 2026-08-01 GM 지시로 확장:
+       매출은 기존 유지 + 전 부서 핵심 과제 진척/업무&결재 SSOT 현황/시설부·지원부 이행 현황/로드맵 현황 4칸 — home 히어로 KPI 밴드와 같은 결.
+       각 칸 월값 옆에 연(또는 전체 누적) 값을 ss-sub 서브라인으로 병기 — 연 데이터가 없는 지표는 그 사실을 그대로 적는다(지어내지 않음). -->
   <div class="sumstrip" id="sumstrip">
     <div class="ss-i"><div class="ss-l">매출 페이스</div><div class="ss-v gold" id="ss-fin">불러오는 중…</div></div>
-    <div class="ss-i"><div class="ss-l">핵심 과제 진척</div><div class="ss-v" id="ss-top3">불러오는 중…</div></div>
-    <div class="ss-i"><div class="ss-l">지원부 이행률</div><div class="ss-v" id="ss-check">불러오는 중…</div></div>
-    <div class="ss-i"><div class="ss-l">로드맵 단계</div><div class="ss-v" id="ss-roadmap">불러오는 중…</div></div>
+    <div class="ss-i"><div class="ss-l">전 부서 핵심 과제 진척</div><div class="ss-v" id="ss-top3">불러오는 중…</div></div>
+    <div class="ss-i"><div class="ss-l">업무&amp;결재 SSOT 현황</div><div class="ss-v" id="ss-work">불러오는 중…</div></div>
+    <div class="ss-i"><div class="ss-l">시설부·지원부 이행 현황</div><div class="ss-v" id="ss-check">불러오는 중…</div></div>
+    <div class="ss-i"><div class="ss-l">로드맵 현황</div><div class="ss-v" id="ss-roadmap">불러오는 중…</div></div>
   </div>
 
   <!-- 경영진 A3 결론 = 아래 report-grid (월별 뷰 = 이것만 / 연간 뷰 = annual-board + 이것) -->
@@ -1219,6 +1217,8 @@
   var _finReady = false;      // CFO 재무 미러 도착 여부(false=로딩 중 — fin/sales-history 보드는 '불러오는 중' 표기, 첫 렌더에서 실패 오인 방지)
   var _checkTriggered = false; // 하단 점검·이슈 보드 로드(부팅 시 eager) 중복호출 방지 — 페이지당 1회만 발동
   var _checkReady = false;    // 점검·이슈 소스(kpi/support/voc) 도착 여부(true일 때만 render()에서 재렌더)
+  var _workApprRows = null;   // GAS action=todo_list(업무현황 SSOT · home과 동일 GAS_URL) — AI배 제외 실무진 행. 조회 실패=null(가짜값 없음)
+  var _workApprReady = false; // 업무&결재 SSOT 도착 여부(false=최상단 밴드 '불러오는 중')
 
   // ── 경영진 보고 = 상시(토글 없음): C-Level 표기 항상 공식 직함. 닉네임 뷰 미노출. ──
   var TITLE_MAP = {ceo:"AI CEO", cmo:"AI CMO", coo:"AI COO", cto:"AI CTO", cpo:"AI CPO", cfo:"AI CFO", chro:"AI CHRO", gm:"대표(GM)"};
@@ -1383,6 +1383,23 @@
           .map(function(r){ return { category:'습득물 접수', dept:'운영부', status:MAP[String(r.status||'')] }; });
       })
       .catch(function(){ return []; });
+  }
+  // ── 업무&결재 SSOT(GAS action=todo_list) — home(wellperion_guide(main).html loadHomeKpiOps)과 동일 GAS_URL·동일 필드 정의 재사용
+  //    (약속 L21 — 새 GAS·새 수집기 미신설, 이미 이 페이지가 쓰는 GAS_URL에 action만 하나 더 붙임). AI배(C레벨) 행 제외 = 실무진 업무·결재만.
+  //    실패/미측정=null(가짜값 없음).
+  function readWorkApproval(){
+    return fetch(GAS_URL + '?action=todo_list', {method:'GET', redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(!res || !(res.ok || res.success) || !Array.isArray(res.data || res.todos)) return null;
+        var aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
+        return (res.data || res.todos).filter(function(r){
+          var cat = String(r['카테고리'] || r.category || '').trim();
+          var owner = String(r['담당자'] || r.owner || '').trim();
+          return cat !== '[7]AI배(C레벨)' && !aiOwnerRe.test(owner);
+        });
+      })
+      .catch(function(){ return null; });
   }
   // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
   function readHomeSales(){
@@ -1983,27 +2000,8 @@
       '<th class="c-own">담당·번호</th><th>핵심 과제</th><th class="c-target">목표치 &amp; 진행 근거·경위</th><th>상태</th><th>진척' + (withDelta ? ' · 궤적' : '') + '</th><th>→ 북극성</th>' +
       '</tr></thead><tbody>' + sorted.map(function(o){ return objRow(o, withDelta); }).join('') + '</tbody></table></div>';
   }
-  // 🎚️ 자동화 달성률 게이지 — 목표 목록 맨 위 한 줄(GM이 매일 보는 목표 달성 게이지 · 2026-07-24).
-  // 정의는 status/monthly_ops_plan.json honesty_summary 와 동일: 자동화율 = 실측(measured) ÷ 총.
-  // honesty 없는 옛 항목은 honestyBadge()와 동일하게 '사람값'으로 보수 집계(빈칸=문제없음 오인 방지).
-  function honestyGauge(objs){
-    // basis(🧮 근거계산) = 연결 소스는 없지만 '몇 개 중 몇 개' 를 구조로 적어 엔진이 센 값.
-    //   2026-07-28 시우: 이 칸이 없어서 근거로 센 6건이 게이지에서 '사람값' 으로 흘러들어갔다 —
-    //   같은 화면에서 딱지는 🧮, 게이지는 📝 로 서로 다른 말을 하고 있었다.
-    var n = {measured:0, observed:0, basis:0, manual:0, unmeasured:0};
-    objs.forEach(function(o){
-      var lvl = (o.honesty && n[o.honesty.level] != null) ? o.honesty.level : 'manual';
-      n[lvl]++;
-    });
-    var total = objs.length;
-    var pct = total ? Math.round(n.measured / total * 100) : 0;
-    return '<div class="hgauge">자동화 <b>' + n.measured + '/' + total + '</b> (' + pct + '%) — ' +
-      '<span class="hg-i measured">✅실측 ' + n.measured + '</span> · ' +
-      '<span class="hg-i observed">👀상태만 ' + n.observed + '</span> · ' +
-      '<span class="hg-i basis">🧮근거계산 ' + n.basis + '</span> · ' +
-      '<span class="hg-i manual">📝사람값 ' + n.manual + '</span> · ' +
-      '<span class="hg-i unmeasured">🔧측정실패 ' + n.unmeasured + '</span></div>';
-  }
+  // 🎚️ 자동화 달성률 게이지(honestyGauge) — 2026-08-01 삭제: 최상단 밴드 '전 부서 핵심 과제 진척' 칸(ss-top3)이
+  // 같은 정의(honesty.level 카운트)로 같은 숫자를 이미 상시 노출해 이 자리는 중복이었다(renderSummaryStrip 참고).
   function renderBoard(){
     var board = document.getElementById('obj-board');
     var m = _data.months[_sel];
@@ -2012,7 +2010,6 @@
     var neu = objs.filter(function(o){ return !o.initiative_id; });
     var carry = objs.filter(function(o){ return !!o.initiative_id; });
     board.innerHTML =
-      honestyGauge(objs) +
       objSplitSection('🆕 당월 신규 과제', 'new', neu, false) +
       objSplitSection('🔁 이월·연속 과제', 'carry', carry, true);
   }
@@ -3043,9 +3040,6 @@
     var m = _data.months[_sel];
     if(!m){ el.innerHTML = ''; return; }
 
-    var avg = avgProgress(_sel);
-    var pmKey = prevMonthKey(_sel);
-    var prevAvg = pmKey ? avgProgress(pmKey) : null;
     var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
     var fin = calcFinance(mnum);
     var erpPct = computeErpPctFor(_sel);
@@ -3053,13 +3047,13 @@
 
     if(wrap) wrap.classList.toggle('is-done', isDone);
 
+    //舊①목표 평균 달성률 = 2026-08-01 삭제(최상단 밴드 ss-top3가 avgProgress+전월대비 없이도 같은 숫자를 이미 상시 노출 — 중복).
     // ② = 당월 매출만 표기(GM 정정 2026-07-04) — 지출은 구조개선 중이라 순액 산출이 무의미했고, 라벨('지출 미반영')과 계산(매출−지출)이 모순이었음. 순액 삭제 정책과 일치.
     var salesTxt = (fin && typeof fin.sales === 'number') ? fmtWon(fin.sales) : '측정 전';
 
     el.innerHTML = '<div class="sum-compact">' +
-      '<span>① 목표 평균 달성률 <b>' + (avg != null ? avg + '%' : '—') + '</b>' + deltaBadge(avg, prevAvg) + '</span>' +
-      '<span>② 당월 매출 <b>' + salesTxt + '</b></span>' +
-      '<span>③ 웰페리온 ERP 당월 진척 <b>' + (erpPct != null ? erpPct + '%' : '미기록') + '</b></span>' +
+      '<span>① 당월 매출 <b>' + salesTxt + '</b></span>' +
+      '<span>② 웰페리온 ERP 당월 진척 <b>' + (erpPct != null ? erpPct + '%' : '미기록') + '</b></span>' +
     '</div>';
   }
 
@@ -3099,30 +3093,77 @@
       }catch(e){ finEl.textContent = '—'; }
     }
 
-    // ② 핵심 과제 진척 = 선택월 objectives 중 착수됨(진행·이월·완료, 계획 제외) 건수/전체(정본 그대로 카운트만 · 신규 계산 없음)
+    // ② 전 부서 핵심 과제 진척 = 선택월 평균 진척%(avgProgress 재사용) + 착수 건수/전체 + 정직 딱지 기준(honestyGauge와 동일 정의 재사용
+    //    — 21건 중 실측 1건뿐인 걸 숨기지 않고 병기·GM 지시) + 연 누적 평균(같은 해 다른 달들의 avgProgress 평균·신규 계산 없음, 순수 재사용).
+    //    이 칸이 생기며 하단 obj-board 맨 위 honestyGauge 한 줄·report-area '①목표 평균 달성률'은 같은 숫자 중복이라 제거(renderBoard·renderReport 참고).
     var t3El = document.getElementById('ss-top3');
     if(t3El){
       try{
         var objs = (m && m.objectives) || [];
         if(objs.length){
           var active = objs.filter(function(o){ return o.status && o.status !== '계획'; }).length;
-          t3El.textContent = active + '/' + objs.length + '건 진행중';
+          var avgT3 = avgProgress(_sel);
+          var hn = {measured:0, observed:0, basis:0, manual:0, unmeasured:0};
+          objs.forEach(function(o){
+            var lvl = (o.honesty && hn[o.honesty.level] != null) ? o.honesty.level : 'manual';
+            hn[lvl]++;
+          });
+          var yrT3 = _sel ? String(_sel).split('-')[0] : '';
+          var yKeysT3 = Object.keys((_data && _data.months) || {}).filter(function(k){ return k.indexOf(yrT3 + '-') === 0; }).sort();
+          var yValsT3 = yKeysT3.map(function(k){ return avgProgress(k); }).filter(function(v){ return typeof v === 'number'; });
+          var yAvgT3 = yValsT3.length ? Math.round(yValsT3.reduce(function(a, b){ return a + b; }, 0) / yValsT3.length) : null;
+          t3El.innerHTML = (avgT3 != null ? avgT3 + '%' : '—') +
+            ' <span class="ss-sub2">(' + active + '/' + objs.length + '건 착수)</span>' +
+            '<div class="ss-sub">기준 — ✅실측' + hn.measured + '·🧮근거' + hn.basis + '·👀상태' + hn.observed + '·📝사람값' + hn.manual + '·🔧실패' + hn.unmeasured +
+            ' · 연 누적 평균 ' + (yAvgT3 != null ? yAvgT3 + '%(' + yValsT3.length + '개월)' : '—') + '</div>';
         } else { t3El.textContent = '—'; }
       }catch(e){ t3El.textContent = '—'; }
     }
 
-    // ③ 점검 이행률 = 지원부 월간 이행률(_checkMonthlyCache 재사용 · renderSummaryBoard의 ④와 동일 소스)
+    // ②-2 업무&결재 SSOT 현황 = GAS todo_list(_workApprRows·home과 동일 정의) 선택월 생성분 vs 전체 누적 병기.
+    //    home loadHomeKpiOps()의 workStats/apprStats와 같은 필드·같은 판정(apprPending)만 재사용 — 새 집계 로직 없음.
+    var wkEl = document.getElementById('ss-work');
+    if(wkEl){
+      try{
+        if(!_workApprReady){ wkEl.textContent = '불러오는 중…'; }
+        else if(_workApprRows){
+          var getStatus = function(r){ return String(r.status || r['상태'] || '진행중').trim(); };
+          var getApprStatus = function(r){ return String(r['결재상태'] || r.approvalStatus || '').trim(); };
+          var getApprReq = function(r){ return String(r['결재요청'] || r.approval || '').trim(); };
+          var getCreated = function(r){ return String(r['생성일'] || r.createdAt || r.startDate || '').trim().slice(0, 10); };
+          var apprPendFn = function(r){ return getApprReq(r) && getApprStatus(r) !== '결재완료' && !/반려/.test(getApprStatus(r)); };
+          var activeFn = function(r){ var st = getStatus(r); return st !== '완료' && st !== '보류'; };
+          var rowsMonth = _sel ? _workApprRows.filter(function(r){ return getCreated(r).slice(0, 7) === _sel; }) : [];
+          var workActiveM = rowsMonth.filter(activeFn).length;
+          var apprPendM = rowsMonth.filter(apprPendFn).length;
+          var workActiveAll = _workApprRows.filter(activeFn).length;
+          var apprPendAll = _workApprRows.filter(apprPendFn).length;
+          var mLabelW = _sel ? (Number(String(_sel).split('-')[1]) + '월') : '';
+          wkEl.innerHTML = '업무 진행 ' + workActiveM + '건 · 결재대기 ' + apprPendM + '건' +
+            '<div class="ss-sub">' + esc(mLabelW) + ' 생성분(실무진 기준) · 전체 누적 진행 ' + workActiveAll + '건·결재대기 ' + apprPendAll + '건</div>';
+        } else { wkEl.textContent = '측정 못 함(SSOT 조회 실패)'; }
+      }catch(e){ wkEl.textContent = '—'; }
+    }
+
+    // ③ 시설부·지원부 이행 현황 = 지원부 월간 이행률(_checkMonthlyCache monthTotals) + 시설부 입력률(facilityReport monthTotals·
+    //    renderSummaryBoard④·renderCheckStatus①과 동일 소스). 연간 집계는 두 소스 다 월간 GAS만 있어 없음 — 지어내지 않고 그대로 표기.
     var chkEl = document.getElementById('ss-check');
     if(chkEl){
       try{
         var cmEntry = _checkMonthlyCache[_sel];
         var cmData = (cmEntry && cmEntry.status === 'done') ? cmEntry.data : null;
         var mtSum = (cmData && cmData.monthTotals) ? cmData.monthTotals : null;
-        chkEl.textContent = mtSum ? (mtSum.avgPct + '%') : (_checkReady ? '측정 개통 전' : '불러오는 중…');
+        var fRepC = (cmData && cmData.facilityReport) ? cmData.facilityReport : null;
+        var fMtC = (fRepC && fRepC.monthTotals) ? fRepC.monthTotals : null;
+        var supTxt = mtSum ? ('지원부 ' + mtSum.avgPct + '%') : (_checkReady ? '지원부 측정 개통 전' : '지원부 불러오는 중…');
+        var facTxt = (fMtC && fMtC.sessionCount) ? ('시설부 입력률 ' + fMtC.avgPct + '%(점검 ' + fMtC.sessionCount + '회)')
+          : (_checkReady ? '시설부 데이터 축적 중' : '시설부 불러오는 중…');
+        chkEl.innerHTML = supTxt + '<div class="ss-sub">' + facTxt + ' · 연간 집계 미구축(월간만 실측)</div>';
       }catch(e){ chkEl.textContent = '—'; }
     }
 
-    // ④ 로드맵 단계 = 전략 로드맵 정본(strategy_roadmap.items)의 현재 진행 단계/전체(roadmapStripHtml과 동일 정본 재사용)
+    // ④ 로드맵 현황 = 전략 로드맵 정본(strategy_roadmap.items)의 현재 진행 단계/전체(roadmapStripHtml과 동일 정본 재사용) + 현재 단계의 분기 라벨
+    //    병기(items[].quarter — 로드맵 자체가 원래 연 단위 구조라 새 연산 없이 그대로 드러냄).
     var rmEl = document.getElementById('ss-roadmap');
     if(rmEl){
       try{
@@ -3133,7 +3174,10 @@
           var curIdx = -1;
           for(var i = 0; i < items.length; i++){ if(items[i].status === '진행'){ curIdx = i; break; } }
           if(curIdx < 0){ curIdx = items.filter(function(it){ return it.status === '완료'; }).length; }
-          rmEl.textContent = Math.min(curIdx + 1, total) + '/' + total + '단계';
+          var curItemR = items[Math.min(Math.max(curIdx, 0), total - 1)];
+          var qTxtR = (curItemR && curItemR.quarter) ? curItemR.quarter : '2026 로드맵';
+          rmEl.innerHTML = Math.min(curIdx + 1, total) + '/' + total + '단계' +
+            '<div class="ss-sub">' + esc(qTxtR) + '</div>';
         } else { rmEl.textContent = '—'; }
       }catch(e){ rmEl.textContent = '—'; }
     }
@@ -3319,6 +3363,12 @@
     withTimeout(readNsMap(), 8000, null).then(function(v){
       _nsMap = v;
       if(_data){ renderTop3(); renderBoard(); renderDeptTable(); renderSummaryBoard(); renderSummaryStrip(); }
+    });
+
+    // 7-1) 업무&결재 SSOT(todo_list) — 최상단 밴드 '업무&결재 SSOT 현황' 칸. 도착 시 밴드만 재렌더.
+    withTimeout(readWorkApproval(), 8000, null).then(function(rows){
+      _workApprRows = rows; _workApprReady = true;
+      if(_data) renderSummaryStrip();
     });
 
     // 8) 🤝 브로제이 업무분장 — 진입 한 줄 진척 요약만 로드(본문은 별도 페이지). (배214·2026-07-29 → 오후 분리)
