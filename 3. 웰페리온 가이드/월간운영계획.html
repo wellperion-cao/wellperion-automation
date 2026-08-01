@@ -1827,18 +1827,28 @@
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(id).then(done, function(){ prompt('복사하세요:', id); }); }
     else { prompt('복사하세요:', id); }
   }
-  // 📋 진행 근거·경위 2층 요약(2026-08-01 팀리드 반려 반영) — "N월로 계속/이월 — N월 종료 시점
-  // 진행률 N%에서 이어감." 상투구(옆 진척% 칸과 중복)와 뒤이은 "(N월 근거: " 래퍼를 걷어내고
-  // 그 다음 알맹이 문장부터 뽑는다. 문장이 15자 미만이면(예: "GM 직접 관장.") 다음 문장까지
-  // 이어 붙여 정보량을 확보하고, 60자 넘으면 단어 경계에서 자른다 — 재작문 없이 원문 절단만(약속 L05).
-  // 상투구를 걷어내고도 남는 게 없으면 지어내지 않고 '없다'는 사실 그대로 표기.
+  // 📋 진행 근거·경위 2층 요약(2026-08-01 팀리드 반려 반영 · 2차 다듬기) — 상투 도입부(진척%가
+  // 옆 칸과 중복되거나, 제목에 이미 있는 출처 태그)를 한 곳(STOCK_PREFIXES)에서 걷어내고 그 다음
+  // 알맹이 문장부터 뽑는다. 문장이 15자 미만이면 다음 문장까지 이어 붙여 정보량을 확보하고,
+  // 60자 넘으면 단어 경계에서 자른다 — 재작문 없이 원문 절단만(약속 L05). 걷어내고도 남는 게
+  // 없으면 지어내지 않고 '없다'는 사실 그대로 표기. 절단으로 짝 안 맞는 닫는 괄호는 뗀다.
+  var STOCK_PREFIXES = [
+    /^\d+월\s*(?:로\s*계속|이월)\s*—\s*\d+월\s*종료\s*시점\s*진행률\s*\d+%에서\s*이어감\.\s*/, // "N월로 계속/이월 — N월 종료 시점 진행률 N%에서 이어감."
+    /^\[회장님\s*지시[^\]]*\]\s*조치\s*계획\s*원문\s*[:：]\s*/, // "[회장님 지시 · GM 전달 …] 조치 계획 원문:" — 제목에 이미 [회장님 지시] 있어 중복
+    /^\(\s*\d*월?\s*근거\s*[:：]\s*/ // "(N월 근거: "
+  ];
+  function stripTrailingLoneParen(s){
+    var open = (s.match(/\(/g) || []).length, close = (s.match(/\)/g) || []).length;
+    while(close > open && /\)\s*$/.test(s)){ s = s.replace(/\)\s*$/, '').trim(); close--; }
+    return s;
+  }
   function noteSummary(text){
     if(!text) return {sum:'— 근거 기록 없음', full:'', cut:false};
-    var LEAD_RE = /^\d+월\s*(?:로\s*계속|이월)\s*—\s*\d+월\s*종료\s*시점\s*진행률\s*\d+%에서\s*이어감\.\s*/;
-    var WRAP_RE = /^\(\s*\d*월?\s*근거\s*[:：]\s*/;
     var SENT_RE = /^[^.!?]*[.!?]/;
     var MIN_LEN = 15, CAP = 60;
-    var work = text.replace(LEAD_RE, '').replace(WRAP_RE, '').trim();
+    var work = text;
+    STOCK_PREFIXES.forEach(function(re){ work = work.replace(re, ''); });
+    work = work.trim();
     if(!work) return {sum:'— 근거 기록 없음', full:text, cut:true};
     var acc = '', rem = work;
     while(rem && acc.length < MIN_LEN){
@@ -1848,11 +1858,12 @@
       acc = acc ? (acc + ' ' + piece) : piece;
       rem = m ? rem.slice(m[0].length).trim() : '';
     }
+    acc = stripTrailingLoneParen(acc);
     if(acc.length > CAP){
       var cutStr = acc.slice(0, CAP);
       var lastSp = cutStr.lastIndexOf(' ');
       if(lastSp > CAP - 20) cutStr = cutStr.slice(0, lastSp);
-      acc = cutStr.trim() + '…';
+      acc = stripTrailingLoneParen(cutStr.trim()) + '…';
     }
     return {sum: acc, full: text, cut: (acc !== text.trim())};
   }
