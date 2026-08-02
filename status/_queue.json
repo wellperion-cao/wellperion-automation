@@ -908,5 +908,25 @@
     "reversible": false,
     "work_type": "update",
     "updated_at": "2026-08-03"
+  },
+  {
+    "task_id": "CTO-2026-08-03-무인-러너가-남의-도메인-파일-삭제를-커밋에-쓸어담",
+    "clevel": "cto",
+    "title": "[시토] 무인 러너가 남의 도메인 파일 삭제를 커밋에 쓸어담았다 — 자동 되돌리기 실패 (오늘 07:47 실사고)",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-08-03",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-03] 웰리 실측 2026-08-03. 오늘 아침 무인 러너(07:30 예약, RUNNER_LIVE=1)가 CPO 배를 처리하며 커밋 31841eec1 (feat(cpo): 강습 등록 수 클라이언트 카운트…) 에 **인사 허브 사진 2장 삭제**('3. 웰페리온 가이드/chro/hub/photos/r125.jpg · r126.jpg')를 딸려 넣었다. 러너 자신은 이를 감지해 status/welly_auto_runner_log.jsonl 에 event=sweep_violation 으로 적었고 되돌리기를 시도했으나 **revert.ok=False** — 삭제는 그대로 HEAD 에 남았다.\n· 하필 시로(CHRO) 영역이다. AI 전원이 손대지 않기로 코드로 막아 둔 유일한 도메인인데, 큐 게이트(EXCLUDED_ROLES)는 '배를 만드는 것'만 막고 **커밋이 그 도메인 파일을 쓸어 담는 것**은 못 막는다.\n· 뿌리: 여러 세션이 작업트리·인덱스 하나를 공유하는 구조(2026-07-23 하루 5회 발생한 그 부류). safe_commit.py 는 임시 인덱스로 이걸 막는데, 러너가 위임한 headless 세션이 그 관문을 안 지나간 것으로 보인다.\n· 같은 로그에 event=working_tree_baseline_dirty 가 반복 기록돼 있다 — 러너는 더러운 트리를 알고도 진행했다.\n· 수리 방향(새 장치 만들지 말 것): ①headless 세션 커밋도 safe_commit 관문을 반드시 지나가게 ②sweep 되돌리기 실패 시 조용히 넘어가지 말고 배로 올라오게 ③기왕이면 EXCLUDED_ROLES 경로를 커밋 경로에서도 재사용(복사 금지).\n· 남은 흔적: r121~r124 삭제가 아직 작업트리에 미커밋으로 남아 있다. 사람이 지운 것인지 러너가 만든 것인지 아직 못 갈랐다 — 시로 영역이라 웰리가 손대지 않고 GM께 알렸다.",
+    "next": "커밋 31841eec1 의 사진 2장 삭제가 의도된 것인지 GM·나우열M 확인 → 아니면 원복 / 그와 별개로 headless 세션 커밋 경로를 safe_commit 관문으로 수렴",
+    "depends_on": "",
+    "ship_no": 10485,
+    "short_no": 296,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "ai",
+    "reversible": false,
+    "work_type": "update",
+    "updated_at": "2026-08-03"
   }
 ]
