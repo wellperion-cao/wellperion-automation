@@ -174,20 +174,10 @@ def write_status(ok: bool, detail: str, kind: str = "IMAGE_REPORT") -> None:
         log(f"[경고] status/kakao_last_send.json 기록 실패(무시): {exc}")
 
 
-def _northstar_prefix() -> str:
-    """보고 맨 위 '북극성 대비' 블록 (GM 확정 2026-07-31) — 실패해도 빈 문자열
-    (보고를 절대 끊지 않는다). 블록 본문은 northstar_reach.build_northstar_block()
-    한 곳에서만 만든다(약속 L01) — wellperion-agents/scripts/ceo_morning_pipeline.py
-    의 _northstar_head() 와 동일한 안전 패턴(지연 임포트 + try/except)."""
-    try:
-        _here = str(Path(__file__).resolve().parent)
-        if _here not in sys.path:
-            sys.path.insert(0, _here)
-        from northstar_reach import build_northstar_block
-        block = build_northstar_block()
-        return f"{block}\n\n" if block else ""
-    except Exception:
-        return ""
+# 북극성 대비 블록 헬퍼(_northstar_prefix)는 지웠다 — GM 지시 2026-08-02 로 회장님
+# 매출보고에서 이 블록을 빼면서 호출부가 사라졌다. 꺼둔 채 남기면 죽은 코드가 되고
+# 나중에 누가 다시 켠다(약속 L21). 블록 자체는 northstar_reach.build_northstar_block()
+# 에 그대로 살아 있고, 거기서 매월 1일에만 나가도록 막혀 있다.
 
 
 def build_caption(target_date: datetime) -> str:

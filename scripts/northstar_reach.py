@@ -336,8 +336,19 @@ def record_history(data: dict) -> None:
         pass
 
 
-def build_northstar_block(title: str = "북극성 대비") -> str:
-    """모든 보고 맨 위에 붙는 '목표 대비 어디쯤' 블록. 실패해도 빈 문자열(보고를 끊지 않는다)."""
+def build_northstar_block(title: str = "북극성 대비", force: bool = False) -> str:
+    """'목표 대비 어디쯤' 블록. 실패해도 빈 문자열(보고를 끊지 않는다).
+
+    ★매월 1일에만 나간다 (GM 지시 2026-08-02). 다른 날은 빈 문자열이라
+    이 블록을 쓰는 보고들이 자동으로 안 붙인다 — 호출부는 이미 전부 빈 문자열을
+    정상 처리하므로 손댈 곳이 여기 한 곳뿐이다(약속 L21 관문에만).
+    배경: 2026-07-31 에 보고 5종에 한꺼번에 얹었더니 매일 같은 블록이 여러 방에
+    반복돼 정작 각 보고의 본문을 밀어냈다(회장님 매출보고는 인사말이 맨 아래로
+    밀려났다). GM: "북극성대비는 한번 정비하고 매 월 1일에만 보내는걸로."
+    ※ force=True 는 정비·검수용 수동 렌더 전용 — 예약 보고 경로에서 쓰지 말 것.
+    """
+    if not force and datetime.now(KST).day != 1:
+        return ""
     try:
         home = _load_json(HOME_KPI_PATH)
         plan = _load_json(PLAN_PATH)
