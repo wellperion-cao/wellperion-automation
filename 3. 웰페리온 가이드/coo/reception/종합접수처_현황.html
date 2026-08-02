@@ -237,8 +237,8 @@ a { color:var(--accent); text-decoration:none; }
       <span class="score-hint">접수 1점 + 처리 완료 1점</span>
       <span class="score-tabs">
         <button type="button" class="score-tab" data-period="week" onclick="scoreLoad('week')">이번 주</button>
-        <button type="button" class="score-tab on" data-period="month" onclick="scoreLoad('month')">이번 달</button>
-        <button type="button" class="score-tab" data-period="all" onclick="scoreLoad('all')">전체</button>
+        <button type="button" class="score-tab" data-period="month" onclick="scoreLoad('month')">이번 달</button>
+        <button type="button" class="score-tab on" data-period="all" onclick="scoreLoad('all')">전체</button>
       </span>
     </div>
     <div class="score-list" id="scoreList"><span class="score-empty">불러오는 중…</span></div>
@@ -1121,7 +1121,10 @@ _wireBoard();
 regLoad();
 lfLoad();
 holdLoad();
-scoreLoad('month');
+/* 기본 탭 = 전체. 2026-08-03 웰리 — '이번 달'이 기본이라 매달 1~3일에는 완료 0건이라 점수판이 항상
+   빈칸으로 열렸다(8/3 실측: month·week 0건 / all 36건). GM 원칙 "정직 표기가 아무것도 안 보여주기가
+   되면 안 된다" — 탭은 그대로 두고 처음 보이는 화면만 바꾼다. */
+scoreLoad('all');
 loadStaffSuggest();
 </script>
 
