@@ -6879,33 +6879,50 @@ function setActiveTypeFilter(val) {
   _activeFilter(si ? si.value : '');
 }
 
+/* 스코프별 마지막 응답 보관(2026-08-03 웰리 · GM "너무 느려서 CRM 관리가 안 된다").
+   실측(라이브): member_active_list 응답이 scope=valid 13.9초/502KB · ended 9.3초/335KB · corp 3.6초.
+   그런데 스코프를 바꿀 때마다(유효↔법인↔LOSS↔대기자, 그리고 '회원 구분 선택'의 법인·대기·LOSS)
+   매번 처음부터 다시 받아서, 왔던 화면으로 돌아가도 또 10초 넘게 기다렸다. 여기서 고치는 건
+   '기다림'뿐이다 — 한 번 받아 둔 스코프는 즉시 그려 놓고, 서버 조회는 그대로 뒤에서 돌려 최신값으로
+   덮는다(stale-while-revalidate). 조회 횟수·데이터 신선도는 이전과 완전히 같아 낡은 값이 남을 위험이 없다.
+   응답 자체가 14초인 것은 서버(GAS) 문제라 시토 배로 따로 넘겼다. */
+var _activeCache = {};   // scope -> {headers, rows}
+function _activeApplyData(headers, rows) {
+  _activeHeaders = headers || [];
+  _activeRows    = rows    || [];
+  _activeLoaded  = true;
+  if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
+  else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
+  _activeRender(_activeBaseRows());   // 대기자 필터 + 월단위 보기 결합(2026-07-20 시포·GM, 기존 2026-07-16 GM 지시 위에 확장)
+  renderActiveSummary();
+  renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
+  if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
+  _activeWireSearch();
+  _wireActiveDblclick();
+}
 function loadActiveMembers() {
   if (GAS_URL === GAS_PLACEHOLDER) {
     _activeRenderState('unlinked');
     return;
   }
-  _activeRenderState('loading');
+  var scope = _activeScope || 'valid';
+  var cached = _activeCache[scope];
+  if (cached) _activeApplyData(cached.headers, cached.rows, true);   // 먼저 그린다(체감 0초)
+  else _activeRenderState('loading');
   var _seq = ++_activeReqSeq;
-  return fetch(GAS_URL + '?action=member_active_list&scope=' + (_activeScope || 'valid') + '&format=rows' + _wpKeyParam())
+  return fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
     .then(function(r){ return r.json(); })
     .then(function(data){
       data = _maDecodeRowsFormat(data);   // format='rows' 배열응답 → 기존 {headers, data:[{...}]} 모양으로 복원
       if (_seq !== _activeReqSeq) return;   // 더 최신 요청이 있으면 이 응답 무시(경쟁 가드)
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
-      _activeHeaders = data.headers || [];
-      _activeRows    = data.data    || [];
-      _activeLoaded  = true;
-      if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
-      else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
-      _activeRender(_activeBaseRows());   // 대기자 필터 + 월단위 보기 결합(2026-07-20 시포·GM, 기존 2026-07-16 GM 지시 위에 확장)
-      renderActiveSummary();
-      renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
-      if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
-      _activeWireSearch();
-      _wireActiveDblclick();
+      _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
+      if ((_activeScope || 'valid') !== scope) return;   // 기다리는 사이 다른 스코프로 옮겼으면 화면은 건드리지 않고 보관만
+      _activeApplyData(data.headers, data.data, false);
     })
     .catch(function(err){
       if (_seq !== _activeReqSeq) return;
+      if (cached) return;   // 이미 보관분으로 그려 둔 화면은 지우지 않는다(빈 화면 대신 직전 값 유지)
       _activeRenderState('error', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
     });
 }
