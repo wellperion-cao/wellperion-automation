@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 import urllib.parse
@@ -379,7 +380,40 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
             print(f"[INFO] 이전 카드 자동 삭제: {item_id} msg_id={prev_id}")
     store[item_id] = {"msg_id": new_id, "sig": sig, "ts": time.time()}
     _save_msgids(store)
+    _mark_card_sent([item_id, *(group_ids or [])])
     return True
+
+
+def _mark_card_sent(item_ids: list) -> None:
+    """review_queue.json 에 card_sent_at 기록 — G1 알림(gm1RenderAlertSignal)이
+    '카드 발송·GM 응답대기'와 '차례 대기(카드 미발송 재고)'를 구분하게 한다.
+
+    배경(배292, 2026-08-02): AI하루 시리즈는 하루 1장만 발송하는 설계라 status='검수대기'
+    항목 중 다수가 아직 카드조차 안 나간 재고인데, G1 화면은 이를 전부 'GM 승인 대기'로
+    세어 GM이 방치한 것처럼 보이는 착시를 만들었다. 새 감시기 신설 없이 기존 단일 쓰기
+    관문(review_queue_util.mutate_review_queue)에 필드 하나만 얹는다(약속 L21).
+    best-effort — 실패해도 카드 발송 결과(반환값)에는 영향 없음."""
+    try:
+        from review_queue_util import mutate_review_queue, SkipSave
+    except Exception as exc:
+        print(f"[WARN] card_sent_at 기록 스킵(review_queue_util 임포트 실패, 무시): {exc}")
+        return
+    ids = set(item_ids)
+    now_iso = datetime.now().isoformat(timespec="seconds")
+
+    def _apply(items):
+        changed = False
+        for it in items:
+            if it.get("id") in ids and not it.get("card_sent_at"):
+                it["card_sent_at"] = now_iso
+                changed = True
+        if not changed:
+            raise SkipSave
+
+    try:
+        mutate_review_queue(_apply, holder="send_review_card")
+    except Exception as exc:
+        print(f"[WARN] card_sent_at 기록 실패(무시, 카드 발송 자체는 완료됨): {exc}")
 
 
 def load_queue() -> list:
