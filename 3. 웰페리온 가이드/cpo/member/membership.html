@@ -7610,12 +7610,28 @@ function _composeHtml() {
       '<div style="width:' + pv + '%;background:var(--teal)"></div>' +
       '<div style="width:' + pc + '%;background:var(--accent)"></div>' +
       '<div style="width:' + pe + '%;background:var(--dim-mid)"></div></div>';
+  // 구분별 내역(GM 지시 2026-08-03 "입주민·단기·보증금 등등도 다 몇 명인지 기록") — 유효회원 명단(_validTypeCounts)
+  // 실측. 명단이 아직 안 왔으면 0을 만들어 내지 않고 '불러오는 중'으로 둔다(0 위장 금지).
+  var tc = _validTypeCounts, typeLine;
+  if (tc) {
+    var TYPE_ORDER = ['멤버십', '입주민', '중단기', '보증금', 'FAN VIP', '기타'];
+    var TYPE_LABEL = { '중단기': '단기' };
+    var listedSum = TYPE_ORDER.reduce(function(a, k){ return a + (tc[k] || 0); }, 0);
+    var parts = TYPE_ORDER.map(function(k){
+      return '<span style="white-space:nowrap">' + (TYPE_LABEL[k] || k) + ' <b style="color:var(--text)">' + (tc[k] || 0).toLocaleString() + '</b></span>';
+    }).join('<span style="color:var(--dim-mid)"> · </span>');
+    typeLine = '<div style="font-size:12px;color:var(--dim);margin-top:3px;word-break:keep-all;line-height:1.7">' +
+      '유효 내역(명단 ' + listedSum.toLocaleString() + '명 실측) · ' + parts + '</div>';
+  } else {
+    typeLine = '<div style="font-size:12px;color:var(--dim);margin-top:3px">유효 내역 — 명단 불러오는 중</div>';
+  }
   return '<div>' +
       '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px">' +
         '<span style="font-size:11px;font-weight:800;color:var(--text);letter-spacing:0.04em">회원 구성</span>' +
         '<span style="font-size:12px;color:var(--dim)">합계 <b style="color:var(--text)">' + total.toLocaleString() + '</b> 명</span>' +
       '</div>' +
       '<div style="font-size:13px;font-weight:700;color:var(--text)">유효 <b style="color:var(--teal)">' + v.toLocaleString() + '</b> · 법인 <b style="color:var(--accent)">' + c + '</b> · 종료 <b style="color:var(--dim-mid)">' + e.toLocaleString() + '</b></div>' +
+      typeLine +
       bar +
       '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · LOSS <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
     '</div>';
@@ -7798,9 +7814,16 @@ function renderActiveSummary() {
   // 휴회 전용 보기 중엔 백그라운드 fetch가 늦게 도착해도 계속 숨겨둔다 — setHoldOnlyView(false)가 복귀 시 이 함수를
   // 다시 불러 최신 데이터로 재계산한다(2026-07-24 GM, 스냅샷 복원 대신 재계산으로 데이터 갱신과 어긋남 방지).
   el.style.display = (typeof _holdOnlyView !== 'undefined' && _holdOnlyView) ? 'none' : '';
-  // 배치 순서(GM 지시 2026-08-01, FB260801-141806): 총 유효회원 → 회원 구성 → 회원 구분 선택칸.
-  var div = '<div style="height:1px;background:var(--border);margin:11px 0"></div>';
-  el.innerHTML = overview + ((overview && cross) ? div : '') + cross + ((overview || cross) ? div : '') + typeSelect;
+  // 가로 한 줄 배치(GM 지시 2026-08-03) — 전엔 셋이 세로로 쌓이고 사이에 가로줄이 들어가 카드가 길었다.
+  // 이제 [총 유효회원] │ [회원 구성] … [회원 구분 선택]을 한 줄에 두고, 선택칸만 맨 우측으로 민다.
+  // 좁은 화면(모바일)에서는 flex-wrap 이 알아서 다시 세로로 접는다.
+  var vdiv = '<div style="align-self:stretch;width:1px;background:var(--border);flex:0 0 auto"></div>';
+  el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap">' +
+      (overview ? '<div style="flex:0 0 auto">' + overview + '</div>' : '') +
+      ((overview && cross) ? vdiv : '') +
+      (cross ? '<div style="flex:1 1 300px;min-width:250px">' + cross + '</div>' : '') +
+      '<div style="margin-left:auto;flex:0 0 auto">' + typeSelect + '</div>' +
+    '</div>';
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
