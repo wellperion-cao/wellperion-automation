@@ -4351,6 +4351,11 @@ function _lessonFetchRegistry(lsType, from, to, cb){
     .then(function(d){ cb(d && d.ok ? d : null); })
     .catch(function(){ cb(null); });
 }
+// 배198: 등록원장에 등록일 칸 미존재 → 타임스탬프 폴백으로 클라이언트 구간 카운트.
+// GAS에 등록일 칸이 추가되면 이 헬퍼는 그대로 유지(등록일이 있으면 그쪽 우선).
+function _lessonRegDateStr(r) {
+  return String(r.등록일 || r.타임스탬프 || '').substring(0, 10);
+}
 
 // 강습 현황카드 "신규 등록 현황"(성인+유소년, 금일) — 위 _lessonFetchRegistry(기존 유틸, loadLessonDash·구 전환보드에서도
 // 재사용 중) 그대로 호출만 추가. 신규 GAS 액션 없음. family당 1회만(guarded) — switchFamily가 lesson 진입 시 양쪽 타입 호출.
@@ -4383,38 +4388,43 @@ function loadLessonDash(t){
   body.innerHTML =
     '<div class="mdash-sec"><div class="mdash-sec-hd">① 이번달 성과</div>' +
       '<div id="lessonDashSecPerf_' + t + '" class="mdash-metrics cols2">' + _ld + '</div>' +
-      '<div class="mdash-caveat">문의=강습 문의 접수 실측(lesson_stats, 등록일 기준 지난달 비교 미지원 — 델타 "–") · 등록=강습 등록 원장 실측(lesson_registry_list, 등록일 기준) · 지난달 델타=같은 일자까지 공정 비교 · 올해=1월~오늘 누적(추세·작년비 없음). 문의↔등록 코호트가 매칭되지 않아 전환율은 표시하지 않음(강습 전용 매칭 액션 없음).</div></div>' +
+      '<div class="mdash-caveat">문의=강습 문의 접수 실측(lesson_stats) · 등록=강습 등록 원장(lesson_registry_list) 클라이언트 구간 집계 — 등록일 칸 미존재 시 타임스탬프 폴백(배198 우회) · 지난달 델타=같은 일자까지 공정 비교 · 올해=1월~오늘 누적. 문의↔등록 코호트 미매칭으로 전환율 미표시.</div></div>' +
     '<div class="mdash-sec"><div class="mdash-sec-hd">② 채널 효율 (올해 누적)</div>' +
       '<div id="lessonDashSecChannel_' + t + '">' + _ld + '</div></div>' +
     '<div class="mdash-sec"><div class="mdash-sec-hd">③ 회원 구성 (수강 중)</div>' +
       '<div id="lessonDashSecMember_' + t + '">' + _ld + '</div></div>';
-  // ── §1 이번달·지난달·올해 문의(lesson_stats, from/to 미지원=연도 스코프 고정) + 등록(lesson_registry_list, from/to 실측) ──
+  // ── §1 이번달·지난달·올해 문의(lesson_stats) + 등록(lesson_registry_list) ──
+  // 배198 우회: 등록원장에 등록일 칸이 아직 없어 GAS date 필터가 0을 반환 — YTD 전체를 1회 fetch해
+  // 클라이언트에서 _lessonRegDateStr(r)(등록일 || 타임스탬프)로 구간 카운트한다.
+  // GAS 등록일 칸 추가 후에도 동작은 보장됨(등록일이 있으면 그쪽 우선, 타임스탬프 무시).
   var now = new Date();
-  var mStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  var lStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  var today   = _mdashYmd(now);
+  var mStart  = _mdashYmd(new Date(now.getFullYear(), now.getMonth(), 1));
+  var lStart  = _mdashYmd(new Date(now.getFullYear(), now.getMonth() - 1, 1));
   var _prevLen = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-  var lEnd = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(now.getDate(), _prevLen));
-  var yStart = new Date(now.getFullYear(), 0, 1);
-  var res = { stats: undefined, regNow: undefined, regPrev: undefined, regYtd: undefined };
+  var lEnd    = _mdashYmd(new Date(now.getFullYear(), now.getMonth() - 1, Math.min(now.getDate(), _prevLen)));
+  var yStart  = _mdashYmd(new Date(now.getFullYear(), 0, 1));
+  var res = { stats: undefined, regAll: undefined };
   function _perfReady(){
-    if (res.stats === undefined || res.regNow === undefined || res.regPrev === undefined || res.regYtd === undefined) return;
+    if (res.stats === undefined || res.regAll === undefined) return;
     var el = document.getElementById('lessonDashSecPerf_' + t); if (!el) return;
     var inqNow = res.stats ? res.stats.thisMonth : null;
     var inqYtd = res.stats ? res.stats.total : null;   // 백엔드 기본 scope=올해(연도 필터), 전체누적 아님
-    var regNowN = res.regNow ? res.regNow.count : null;
-    var regPrevN = res.regPrev ? res.regPrev.count : null;
-    var regYtdN = res.regYtd ? res.regYtd.count : null;
+    var allRows = (res.regAll && res.regAll.data) ? res.regAll.data : [];
+    var regNowN  = allRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=mStart && d<=today; }).length || null;
+    var regPrevN = allRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=lStart && d<=lEnd;  }).length || null;
+    var regYtdN  = allRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=yStart && d<=today; }).length || null;
+    // 날짜 정보가 전혀 없으면 전체 count로 폴백 — 최소한 수강 규모라도 보여줌
+    if (!regNowN && !regYtdN && allRows.length) { regYtdN = allRows.length; }
     el.innerHTML =
       _mdashMetric('신규 문의', inqNow, null, inqYtd, false, false) +
-      _mdashMetric('등록', regNowN, regPrevN, regYtdN, false, !!res.regPrev);
+      _mdashMetric('등록', regNowN, regPrevN, regYtdN, false, !!regPrevN);
     // §2 채널 — lesson_stats.byChannel(연도 스코프) 재사용, 별도 fetch 없음
     _lessonDashRenderChannel(t, res.stats);
   }
   fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(lsType))
     .then(function(r){ return r.json(); }).then(function(d){ res.stats = (d && d.ok) ? d : null; _perfReady(); }).catch(function(){ res.stats = null; _perfReady(); });
-  _lessonFetchRegistry(lsType, _mdashYmd(mStart), _mdashYmd(now),  function(d){ res.regNow = d; _perfReady(); });
-  _lessonFetchRegistry(lsType, _mdashYmd(lStart), _mdashYmd(lEnd), function(d){ res.regPrev = d; _perfReady(); });
-  _lessonFetchRegistry(lsType, _mdashYmd(yStart), _mdashYmd(now),  function(d){ res.regYtd = d; _perfReady(); });
+  _lessonFetchRegistry(lsType, yStart, today, function(d){ res.regAll = d; _perfReady(); });
   // §3 회원 구성 — 독립 fetch(수강 중 headcount, roster 전체명단 재사용 없음)
   _lessonDashRenderMember(t, lsType);
 }
@@ -5968,7 +5978,7 @@ function _lessonRegistryRender(t) {
   // 최근 등록이 맨 위(2026-07-25 GM) — GAS가 주는 순서는 시트 행 순서(오래된 것부터)라
   // 최신 건을 보려면 매번 맨 아래까지 내려가야 했다. 정렬만 하고 데이터는 건드리지 않는다.
   rows = rows.slice().sort(function(a, b){
-    return String(b.등록일 || '').localeCompare(String(a.등록일 || ''));
+    return String(b.등록일 || b.타임스탬프 || '').localeCompare(String(a.등록일 || a.타임스탬프 || ''));
   });
   if (!rows.length) { tbody.innerHTML = _lessonRegRow('등록 없음', '선택한 기간에 등록한 회원이 없습니다.'); return; }
   var html = '';
@@ -6019,14 +6029,17 @@ function lessonRegSetRange(t, mode) {
     '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div></div></td></tr>';
   var reqId = (st._regReqId || 0) + 1;   // 범위 빠른전환 시 느린 응답이 최신 선택을 덮어쓰는 경합 방지(stale-response guard)
   st._regReqId = reqId;
-  _lessonFetchRegistry(st.type, from, to, function (d) {
+  // 배198 우회: GAS date 필터가 등록일 칸 미존재로 0 반환 가능 → YTD 전체 fetch 후 클라이언트 구간 필터.
+  var fetchFrom = _mdashYmd(new Date(now.getFullYear(), 0, 1));
+  _lessonFetchRegistry(st.type, fetchFrom, _mdashYmd(now), function (d) {
     if (st._regReqId !== reqId) return;   // 그 사이 다른 범위가 선택됨 — 이 응답은 폐기
-    st.registry = (d && d.data) || [];
+    var allRows = (d && d.data) || [];
+    var filtered = allRows.filter(function(r){ var dt = _lessonRegDateStr(r); return dt >= from && dt <= to; });
+    st.registry = filtered;
     _lessonRegistryChips(t);
     _lessonRegistryRender(t);
     var rs = document.getElementById('lessonRegStatLine_' + t);
-    if (rs) rs.textContent = ({ day: '오늘', month: '이번달', year: '올해' }[mode] || '') +
-      ' 등록 ' + ((d && d.count) != null ? d.count : st.registry.length) + '명';
+    if (rs) rs.textContent = ({day:'오늘', month:'이번달', year:'올해'}[mode] || '') + ' 등록 ' + filtered.length + '명';
   });
 }
 
