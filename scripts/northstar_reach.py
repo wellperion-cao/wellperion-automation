@@ -226,6 +226,13 @@ def _plan_month_target(plan: dict | None, mkey: str) -> float | None:
     return None
 
 
+def _left_months(cur: int, has_cur_month: bool) -> int:
+    """연 누계(year)에 이번 달(cur)이 이미 반영됐으면(has_cur_month) 남은 달=이번 달 제외,
+    아직 반영 전이면 이번 달도 남은 달에 넣는다(2026-08-01 GM 지적 — 이중차감 금지).
+    월 경계 회귀 방지용 검산 = _selftest()."""
+    return 12 - cur + (0 if has_cur_month else 1)
+
+
 def _sales_rows(home: dict | None, plan: dict | None, mkey: str) -> list[tuple[str, float | None, str]]:
     """회사 북극성(매출) 줄 — 연 목표·이번 달 목표 대비·남은 달에 필요한 월 매출.
 
@@ -253,10 +260,7 @@ def _sales_rows(home: dict | None, plan: dict | None, mkey: str) -> list[tuple[s
 
     # 남은 달에 월 얼마씩 필요한가 — '부족분을 어디서 메우나'가 한 줄로 보이게.
     if isinstance(year, (int, float)) and isinstance(year_target, (int, float)) and isinstance(cur, int):
-        # year(연 누계)가 이번 달분을 아직 안 반영했으면(hasCurMonth False) 이번 달을
-        # 남은 달에 포함해야 분자·분모가 짝이 맞는다. 그냥 12-cur 로 되돌리지 말 것 —
-        # 8월 1일 GM 지적: 7월까지만 합산된 분자에서 8월을 남은 달에서도 빼면 이중차감.
-        left_months = 12 - cur + (0 if d.get("hasCurMonth") else 1)
+        left_months = _left_months(cur, bool(d.get("hasCurMonth")))
         if left_months > 0 and year_target > year:
             need = (year_target - year) / left_months / 100000000
             rows.append((f"남은 {left_months}개월", None, f"월 {need:.2f}억씩 필요"))
@@ -291,6 +295,16 @@ def _plan_rows(plan: dict | None, mkey: str, label: str) -> list[str]:
         head += " · " + " · ".join(parts)
     if avg is not None:
         head += f" · 평균 {avg}%"
+    ua = (plan or {}).get("updated_at")
+    if isinstance(ua, str) and len(ua) >= 10:
+        # 진척(%) 이 이 계획 파일이 마지막으로 손 탄 날짜 그대로일 수 있다 — 월 1회만
+        # 나가는 블록이라 그 시점 값이 오래됐으면 그렇다고 밝힌다(지어내지 않는다 · 약속 L05).
+        try:
+            age = (datetime.now(KST).date() - datetime.strptime(ua[:10], "%Y-%m-%d").date()).days
+            if age >= 1:
+                head += f" · 계획 {age}일 전 갱신"
+        except ValueError:
+            pass
     out = ["", head]
     if m.get("theme"):
         out.append("   " + _trim(str(m["theme"]), 52))
@@ -374,6 +388,17 @@ def build_northstar_block(title: str = "북극성 대비", force: bool = False) 
         return ""
 
 
+def _selftest() -> None:
+    """월 경계 '남은 개월' 자가검사(assert 기반) — 2026-08-01 GM 지적(4→5 오류) 재발 방지."""
+    assert _left_months(1, False) == 12, "1월 1일(연 누계 아직 1월 미반영) — 남은 12개월이어야 함"
+    assert _left_months(1, True) == 11, "1월 1일(연 누계 1월 반영됨) — 남은 11개월이어야 함"
+    assert _left_months(8, False) == 5, "8월(연 누계 7월까지만) — 남은 5개월이어야 함(4로 세면 회귀)"
+    assert _left_months(8, True) == 4, "8월(연 누계 8월까지 반영) — 남은 4개월이어야 함"
+    assert _left_months(12, False) == 1, "12월(연 누계 11월까지만) — 남은 1개월이어야 함"
+    assert _left_months(12, True) == 0, "12월(연 누계 12월까지 반영) — 남은 0개월이어야 함"
+    print("SELFTEST OK: 월 경계 남은개월 계산 정상")
+
+
 def main() -> None:
     data = compute()
     OUT_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -387,4 +412,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if "--selftest" in sys.argv:
+        _selftest()
+    else:
+        main()
