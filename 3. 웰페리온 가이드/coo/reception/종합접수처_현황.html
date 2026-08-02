@@ -581,6 +581,18 @@ function _staffFieldValue(card, kind){
   return sel.value;
 }
 
+/* 담당 기본값 기억(카테고리별, 이 브라우저 한정 · 2026-08-02).
+   같은 카테고리는 대개 같은 사람이 맡는다 — 방금 저장한 담당자를 기억해 두었다가
+   다음 신규(접수 상태·미배정) 카드에 미리 채워 준다. 선택제(드롭다운 강제)는 아니다:
+   그냥 채워진 값일 뿐이라 회원 이름 등 얼마든지 지우고 다시 쓸 수 있다. */
+function _regLastAssigneeGet(cat){
+  try{ return localStorage.getItem('reg_last_assignee_' + cat) || ''; }catch(e){ return ''; }
+}
+function _regLastAssigneeSet(cat, val){
+  if(!val) return;
+  try{ localStorage.setItem('reg_last_assignee_' + cat, val); }catch(e){}
+}
+
 /* ── 카테고리별 그룹 토글 상태 (기본 접힘) ── */
 var _openGroups = {};
 window.toggleGroup = function(btn){
@@ -732,8 +744,11 @@ function _card(r){
      선택제(드롭다운)로 막지 않는다: 담당자가 회원일 수 있다는 GM 제약 그대로 자유 입력이며,
      제안은 고르면 표기가 통일되고 새 이름은 그냥 쳐 넣으면 된다. 같은 사람이 '최준용'·'최준용M'
      두 갈래로 쌓여 점수·적체가 갈라지던 것을 입력 단계에서 줄인다. */
+  /* 미배정 신규건('접수' 상태 · 담당 공백)은 같은 카테고리에서 방금 쓴 이름을 기본값으로 미리
+     채운다 — 대개 같은 담당이 반복돼 매번 새로 타이핑하던 것을 줄인다(2026-08-02). */
+  var _defAssignee = r.assignee || (status==='접수' ? _regLastAssigneeGet(rawCat) : '');
   h += '<div class="field-row"><label>담당</label>';
-  h += '<input type="text" data-reg-assignee list="reg-staff-names" placeholder="담당자" value="' + _esc(String(r.assignee||'')) + '"></div>';
+  h += '<input type="text" data-reg-assignee list="reg-staff-names" placeholder="담당자" value="' + _esc(String(_defAssignee)) + '"></div>';
 
   /* 처리자(실제 처리한) */
   h += '<div class="field-row"><label>처리자</label>';
@@ -1030,6 +1045,7 @@ function _wireBoard(){
       payload.reporter = _staffFieldValue(card, 'reporter');
       if(m) payload.memo = m.value;
       if(sd) payload.slaDays = sd.value;
+      _regLastAssigneeSet(card.dataset.regCat, payload.assignee);
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
       return;
     }
