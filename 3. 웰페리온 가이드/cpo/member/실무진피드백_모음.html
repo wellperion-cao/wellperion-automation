@@ -158,7 +158,20 @@
   function buildFilters(){
     var screens = ['전체'];
     _all.forEach(function(r){ if(screens.indexOf(r.screen) < 0) screens.push(r.screen); });
-    var statuses = ['전체', '접수', '진행중', '처리완료'];
+    // 상태 칩은 시트에 실제로 있는 값에서 뽑는다(2026-08-03 GM 지적).
+    // 전엔 ['접수','진행중','처리완료'] 4개가 박혀 있어서, 담당자가 '확인중'처럼 다른 말로 적어 두면
+    // 그 건은 어느 칩으로도 못 찾았다 — 오늘 실측에서 '확인중' 1건이 정확히 그렇게 숨어 있었다.
+    // 처리완료 계열(상세 덧붙임 포함)은 '처리완료' 하나로 묶고 항상 맨 뒤에 둔다.
+    var statuses = ['전체'];
+    _all.forEach(function(r){
+      var s = isDoneStatus(r) ? '처리완료' : ((r.status || '').trim() || '접수');
+      if (statuses.indexOf(s) < 0) statuses.push(s);
+    });
+    statuses.sort(function(a, b){
+      if (a === '전체') return -1;  if (b === '전체') return 1;
+      if (a === '처리완료') return 1;  if (b === '처리완료') return -1;
+      return 0;
+    });
 
     var sf = document.getElementById('screenFilter');
     sf.innerHTML = '<span class="fb-filter-label">업무구분</span>' + screens.map(function(s){
@@ -215,10 +228,24 @@
       return true;
     });
 
-    var unprocessed = _all.filter(function(r){ return !isDoneStatus(r); }).length;
+    // 안 채워진 건을 항상 맨 위로(2026-08-03 GM 지시). 그 안에서는 최신 접수가 먼저 —
+    // 접수ID(FByyMMdd-HHmmss)가 시각 그대로라 사전순 내림차순 = 시간 내림차순이다.
+    filtered.sort(function(a, b){
+      var da = isDoneStatus(a) ? 1 : 0, db = isDoneStatus(b) ? 1 : 0;
+      if (da !== db) return da - db;
+      return (a.id < b.id) ? 1 : ((a.id > b.id) ? -1 : 0);
+    });
+
+    var openRows = _all.filter(function(r){ return !isDoneStatus(r); });
+    var unprocessed = openRows.length;
     document.getElementById('unprocCount').textContent = unprocessed;
-    document.getElementById('totalLine').textContent = '전체 접수 ' + _all.length + '건 중 미처리 ' + unprocessed + '건';
-    document.getElementById('countLine').textContent = '필터 결과: ' + filtered.length + '건 / 전체 ' + _all.length + '건';
+    document.getElementById('totalLine').textContent = unprocessed
+      ? ('아직 답을 못 드린 건입니다 — 처리상태·처리메모를 채워 주세요 · ' +
+         openRows.map(function(r){ return esc(r.author) + '(' + esc((r.status || '접수')) + ')'; }).join(' · '))
+      : ('전체 접수 ' + _all.length + '건 · 답을 못 드린 건 없습니다');
+    document.getElementById('unprocBanner').style.display = unprocessed ? '' : 'none';
+    document.getElementById('countLine').textContent = '필터 결과: ' + filtered.length + '건 / 전체 ' + _all.length + '건' +
+      (unprocessed ? ' · 안 채워진 ' + unprocessed + '건을 맨 위로 올렸습니다' : '');
 
     var list = document.getElementById('fbList');
     if(!filtered.length){ list.innerHTML = '<div class="fb-empty">해당하는 접수가 없습니다.</div>'; return; }
