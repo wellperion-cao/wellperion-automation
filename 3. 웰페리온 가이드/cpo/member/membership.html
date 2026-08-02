@@ -7612,26 +7612,25 @@ function _composeHtml() {
       '<div style="width:' + pe + '%;background:var(--dim-mid)"></div></div>';
   // 구분별 내역(GM 지시 2026-08-03 "입주민·단기·보증금 등등도 다 몇 명인지 기록") — 유효회원 명단(_validTypeCounts)
   // 실측. 명단이 아직 안 왔으면 0을 만들어 내지 않고 '불러오는 중'으로 둔다(0 위장 금지).
-  var tc = _validTypeCounts, typeLine;
+  // 별도 줄 없이 '유효 · 법인 · 종료' 한 줄 안에 괄호로 끼워 넣는다(GM 지시 2026-08-03 — 줄 수를 더 줄인다).
+  // 합계·'회원 구성' 제목은 왼쪽 큰 숫자 블록(_memberOverviewHtml)이 이미 말하므로 여기서 뺐다.
+  var tc = _validTypeCounts, typeInline;
   if (tc) {
     var TYPE_ORDER = ['멤버십', '입주민', '중단기', '보증금', 'FAN VIP', '기타'];
     var TYPE_LABEL = { '중단기': '단기' };
-    var listedSum = TYPE_ORDER.reduce(function(a, k){ return a + (tc[k] || 0); }, 0);
-    var parts = TYPE_ORDER.map(function(k){
-      return '<span style="white-space:nowrap">' + (TYPE_LABEL[k] || k) + ' <b style="color:var(--text)">' + (tc[k] || 0).toLocaleString() + '</b></span>';
-    }).join('<span style="color:var(--dim-mid)"> · </span>');
-    typeLine = '<div style="font-size:12px;color:var(--dim);margin-top:3px;word-break:keep-all;line-height:1.7">' +
-      '유효 내역(명단 ' + listedSum.toLocaleString() + '명 실측) · ' + parts + '</div>';
+    typeInline = '<span style="font-size:12px;font-weight:600;color:var(--dim)"> (' +
+      TYPE_ORDER.map(function(k){
+        return '<span style="white-space:nowrap">' + (TYPE_LABEL[k] || k) + ' ' + (tc[k] || 0).toLocaleString() + '</span>';
+      }).join(' · ') + ')</span>';
   } else {
-    typeLine = '<div style="font-size:12px;color:var(--dim);margin-top:3px">유효 내역 — 명단 불러오는 중</div>';
+    typeInline = '<span style="font-size:12px;font-weight:600;color:var(--dim)"> (구분별 — 명단 불러오는 중)</span>';
   }
   return '<div>' +
-      '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px">' +
-        '<span style="font-size:11px;font-weight:800;color:var(--text);letter-spacing:0.04em">회원 구성</span>' +
-        '<span style="font-size:12px;color:var(--dim)">합계 <b style="color:var(--text)">' + total.toLocaleString() + '</b> 명</span>' +
+      '<div style="font-size:13px;font-weight:700;color:var(--text);word-break:keep-all;line-height:1.75">' +
+        '<span role="button" tabindex="0" title="클릭하여 유효회원 전체 명단 보기" onclick="setActiveScope(\'valid\')" style="cursor:pointer">유효 <b style="color:var(--teal)">' + v.toLocaleString() + '</b></span>' +
+        typeInline +
+        ' · 법인 <b style="color:var(--accent)">' + c + '</b> · 종료 <b style="color:var(--dim-mid)">' + e.toLocaleString() + '</b>' +
       '</div>' +
-      '<div style="font-size:13px;font-weight:700;color:var(--text)">유효 <b style="color:var(--teal)">' + v.toLocaleString() + '</b> · 법인 <b style="color:var(--accent)">' + c + '</b> · 종료 <b style="color:var(--dim-mid)">' + e.toLocaleString() + '</b></div>' +
-      typeLine +
       bar +
       '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · LOSS <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
     '</div>';
@@ -7755,13 +7754,15 @@ function _memberOverviewHtml() {
   var hasSrv = _cpoStats && (d.memberActive != null || d.memberCorp != null || d.memberEnded != null);
   if (!hasSrv && !_validTypeCounts) return '';
   var corp = Number(d.memberCorp) || 0;
-  var totalValid = ((d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0)) + corp;
-  // 유형별 칩 나열은 2026-08-01 삭제(FB260801-141806) — 아래 '회원 구분 선택칸'(_memberTypeSelectHtml)이
-  // 같은 기능(유형별로 골라 보기)을 select 하나로 대체. 총 유효회원 숫자만 남긴다.
+  // 유형별 칩 나열은 2026-08-01 삭제(FB260801-141806) — 오른쪽 '회원 구분 선택칸'이 같은 기능을 대체.
+  // 2026-08-03 GM 지시 — 이 큰 숫자를 '총 유효회원'에서 '회원 구성 합계'로 바꿨다. 오른쪽 블록이 갖고 있던
+  // '회원 구성 / 합계 N명' 제목줄이 이 자리로 흡수돼 한 줄이 더 줄었다. 유효회원 명단 진입은 오른쪽 '유효 999'
+  // 클릭으로 옮겼다(_composeHtml) — 합계를 눌러 유효 명단이 뜨면 숫자와 결과가 어긋나기 때문.
+  var totalAll = ((d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0)) + corp + (Number(d.memberEnded) || 0);
   return '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
-      '<div role="button" tabindex="0" title="클릭하여 유효회원 전체 명단 보기" onclick="setActiveScope(\'valid\')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:64px">' +
-        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">총 유효회원</div>' +
-        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + totalValid.toLocaleString() + '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
+        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">회원 구성</div>' +
+        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + totalAll.toLocaleString() + '</div>' +
         '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
       '</div>' +
     '</div>';
