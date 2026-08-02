@@ -23,6 +23,21 @@ IRREVERSIBLE_KEYWORDS = (
 
 ACTIVE_STATUSES = ("PENDING", "IN_PROGRESS")
 
+# ── 신규 생성 낱말 폴백(work_type 미선언 시만 사용) ──
+# 실측(2026-08-02): 열린 배 44척 중 35척이 work_type 미선언 → 게이트를 그냥 통과.
+# 바로 '신규'를 쓰면 "신규저장"(매뉴얼 재저장)·"신규 등록"(등록 건수) 같은 무관한
+# 문맥까지 걸린다(실측 오탐 2건) — 그래서 배 생성을 가리키는 구체 표현만 쓴다.
+NEW_SHIP_KEYWORDS = (
+    "신설",
+    "배신규",
+    "신규 생성",
+    "신규 개설",
+    "새로 만들",
+    "새 페이지",
+    "새 모듈",
+    "새 화면",
+)
+
 
 def _is_reversible(ship):
     """
@@ -54,10 +69,19 @@ def _is_new_ship(ship):
     """
     work_type=="new"(신규 생성)로 선언된 배는 가역이어도 자율 후보에서 제외한다
     (2026-08-01 GM 아침 루틴 공통 규약 — 신규 생성은 항상 GM 승인: 프론트=웰리 / 백엔드=시토).
-    미선언(None)·"update"는 기존 동작 그대로 통과시킨다(회귀 0 — 큐의 기존 배 다수가
-    이 칸을 아직 안 갖고 있다).
+
+    판정은 선언을 먼저 믿는다(_is_reversible과 동일 패턴 · 2026-07-27 정답 재사용).
+    work_type이 선언돼 있으면 그 값이 항상 이긴다("update" 선언 배는 낱말이 있어도
+    스캔에 안 걸린다). 미선언(None)일 때만 title+next 낱말 스캔으로 폴백한다 —
+    실측 84%(38/45척)가 미선언이라 게이트를 그냥 통과하던 구멍(2026-08-02 웰리 지적).
     """
-    return ship.get("work_type") == "new"
+    work_type = ship.get("work_type")
+    if work_type is not None:
+        return work_type == "new"
+
+    fields = (ship.get("title") or "", ship.get("next") or "")
+    text = " ".join(fields)
+    return any(keyword in text for keyword in NEW_SHIP_KEYWORDS)
 
 
 def select_autonomous_ships(clevel, queue, registry=None):
@@ -113,7 +137,8 @@ def verify_reversible_meta(ship):
 
 
 if __name__ == "__main__":
-    # 자기검사(assert 기반, 프레임워크 없음) — work_type 게이트 3케이스(2026-08-01).
+    # 자기검사(assert 기반, 프레임워크 없음) — work_type 게이트 3케이스(2026-08-01)
+    # + 낱말 폴백 3케이스(2026-08-02, 배290).
     _reg = {"modules": [{"owner_role": "cto"}]}
     _base = {"clevel": "cto", "status": "PENDING", "priority": "⛴️여객선",
              "title": "테스트", "next": "테스트"}
@@ -128,3 +153,21 @@ if __name__ == "__main__":
     assert "T-UPDATE" in _ids, "work_type=update 이 통과하지 않음(회귀)"
     assert "T-UNSET" in _ids, "미선언 배가 통과하지 않음(회귀)"
     print("OK — work_type 게이트 3케이스(new 제외 · update/미선언 통과) 통과")
+
+    # 낱말 폴백: 미선언 + 신규 생성 낱말 → new 로 간주(제외).
+    _unset_new_word = {**_base, "task_id": "T-UNSET-NEW", "title": "새 페이지 신설"}
+    # 낱말 폴백: 미선언 + 무관 낱말("신규 등록" 등) → 통과(오탐 방지, 2026-08-02 실측).
+    _unset_irrelevant = {**_base, "task_id": "T-UNSET-IRRELEVANT",
+                          "next": "이번 달 신규 등록 몇 건인지 화면에서 바로 답한다"}
+    # 선언 우선: work_type=update 면 낱말이 있어도 통과(회귀 없음).
+    _declared_wins = {**_base, "task_id": "T-DECLARED-WINS", "work_type": "update",
+                       "title": "페이지 신설"}
+
+    _out2 = select_autonomous_ships(
+        "cto", [_unset_new_word, _unset_irrelevant, _declared_wins], registry=_reg
+    )
+    _ids2 = {s["task_id"] for s in _out2}
+    assert "T-UNSET-NEW" not in _ids2, "미선언+신규 낱말이 걸러지지 않음"
+    assert "T-UNSET-IRRELEVANT" in _ids2, "무관 낱말('신규 등록')에 오탐"
+    assert "T-DECLARED-WINS" in _ids2, "선언값이 낱말 스캔에 밀림(선언 우선 회귀)"
+    print("OK — work_type 낱말 폴백 3케이스(신규 낱말 제외 · 무관낱말 통과 · 선언 우선) 통과")
