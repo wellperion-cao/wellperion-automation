@@ -191,17 +191,16 @@ def _northstar_prefix() -> str:
 
 
 def build_caption(target_date: datetime) -> str:
-    """보고 대상일(통상 오늘-1일) 기준 "M.D(요일) 매출 및 운영사항 보고드립니다." 생성.
-    인사말이 맨 위, 북극성 대비 블록이 그 아래다 (GM 지시 2026-08-02).
+    """보고 대상일(통상 오늘-1일) 기준 "M.D(요일) 매출 및 운영사항 보고드립니다." 한 줄.
 
-    ※ 순서 주의 — 방 이름 prefix("회장님, ")는 kakao_report_sender 가 캡션 맨
-    앞에 붙인다. 그래서 첫 줄이 무엇이냐가 곧 회장님이 처음 읽는 문장이 된다.
-    2026-08-01 발신은 북극성 블록이 먼저라 "회장님, 🌟 북극성 대비 — 8/1(토)"
-    으로 시작하고 정작 인사말은 맨 아래에 묻혔다(GM 지적)."""
+    ★북극성 대비 블록을 여기에 넣지 않는다 (GM 지시 2026-08-02).
+    기준 = 2026-07-30 자 보고 형식(= 2026-07-31 09:30 발신) — 인사말 한 줄뿐이었다.
+    2026-07-31 커밋 05a6d5fd5 가 백그라운드 보고 5종에 북극성 블록을 얹으면서
+    이 캡션도 "회장님, 🌟 북극성 대비 — …" 로 시작하고 인사말이 맨 아래로 밀렸다
+    (08-01 09:30 발신 1회가 그렇게 나갔다). GM 이 그 형식을 되돌리도록 지시했고,
+    북극성 대비는 정비 후 매월 1일에만 별도로 보낸다 — 일일 매출보고에는 안 붙는다."""
     weekday_kr = _WEEKDAY_KR[target_date.weekday()]
-    line = f"{target_date.month}.{target_date.day}({weekday_kr}) 매출 및 운영사항 보고드립니다."
-    block = _northstar_prefix().rstrip()
-    return f"{line}\n\n{block}" if block else line
+    return f"{target_date.month}.{target_date.day}({weekday_kr}) 매출 및 운영사항 보고드립니다."
 
 
 def build_holiday_notice(target: datetime, as_of: datetime) -> str:
