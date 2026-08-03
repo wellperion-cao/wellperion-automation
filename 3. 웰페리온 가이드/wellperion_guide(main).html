@@ -9107,11 +9107,17 @@ function crTab(btn, panelId) {
         gm1InProgressCount = 0;
         gm1ParkedCount = 0;
         queue.forEach(function(q){
-          // ── ⚓ 정박·대기(surface==='autonomy') 항로 제외 → 자율현황.html#sec-hangro 위임 (2026-07-15 GM·배237) ──
-          //   surface 로만 판정해 G1 3섹터에서는 항상 제외(양 페이지 배치 일치·중복 방지) — DONE·폐기여도 자율현황 위임 유지.
-          //   ★단, 배지 숫자(gm1ParkedCount)는 열린 배(PENDING·IN_PROGRESS)만 카운트 — status 무관 전량 합산 시
+          // ── ⚓ AI 배(audience==='ai')만 항로 제외 → 자율현황.html#sec-hangro 위임 ──
+          //   ★2026-08-03 시토 기준 정정(GM 지적 "실무 내용 맞나"). 배10510 의 결정문은 「G1 은 남기고
+          //   **AI 배만** 자율현황으로 이사」였는데, 구현이 판정을 surface 로 잡았다. surface 는
+          //   queue_lock 이 **모든** 큐 항목에 'autonomy' 를 기본으로 찍는 값이라, 실무 배까지 통째로
+          //   G1 에서 사라졌다 — 실측 열린 배 67척 중 66척 제외, 그중 50척이 실무(office) 배.
+          //   판정을 audience 로 바꾼다. audience 는 배를 만들 때 office/ai 를 사람이 정하는 값이다.
+          //   ★미지정은 G1 에 남긴다(안전측) — 분류를 빠뜨린 배가 GM 화면에서 조용히 사라지는 것보다
+          //   한 번 더 보이는 편이 낫다. 실측 미지정 4척은 전부 실무 건이었다.
+          //   ★배지 숫자(gm1ParkedCount)는 열린 배(PENDING·IN_PROGRESS)만 카운트 — status 무관 전량 합산 시
           //   아카이브(_queue_archive.json)의 종결(DONE·완료·STANDBY)건까지 섞여 실제보다 부풀려짐(2026-07-24 GM 지적·웰리 수정).
-          if (q.surface === 'autonomy') {
+          if (q.audience === 'ai') {
             if (q.status === 'PENDING' || q.status === 'IN_PROGRESS') gm1ParkedCount++;
             return;
           }

@@ -197,14 +197,12 @@ def save_queue_atomic(items, repo_root=None):
     """tmp+os.replace 원자적 쓰기 — 락 없는 reader도 반쪽 파일을 안 본다.
     윈도우: 대상 파일을 AV·인덱서가 순간 잡으면 os.replace가 WinError 5로 실패 →
     짧은 backoff 재시도(표준 우회). 실패 시 tmp 청소."""
-    # surface 기본값 — 배 10510(웰리 결정 2, 2026-08-03). surface 는 '어느 화면에 그릴까'이고
-    # G1 렌더(:9603)가 'autonomy'면 자율현황으로 위임한다. 생성 경로마다 인자를 붙이는 방식은
-    # 계속 샜다(실측: 붙이는 곳 2곳 · 안 붙은 배 18척). 모든 쓰기가 지나는 이 관문에서 채운다.
-    # 큐의 배는 전부 AI 것이다(clevel = ceo/cmo/coo/cpo/cto — GM 본인 할 일은 큐가 아니라
-    # todo_list 시트에 있다). GM 배가 들어올 일이 생기면 surface 를 명시하면 이 기본값은 안 탄다.
-    for _it in items if isinstance(items, list) else []:
-        if isinstance(_it, dict) and not _it.get("surface"):
-            _it["surface"] = "autonomy"
+    # ★surface 기본값 스탬프 제거 (2026-08-03 시토 · GM 지적 "무의미·무분별한 내용 정리").
+    #   배10510 이 이 자리에 'autonomy' 기본값을 박았는데, 그 전제("큐의 배는 전부 AI 것")가
+    #   틀렸다 — 실측 열린 배 67척 중 50척이 실무(office) 배였다. 그래서 G1 이 실무 배까지
+    #   전부 자율현황으로 넘겨 GM 항로가 비었다. 화면 판정은 audience 로 되돌렸고(양 페이지 동시 수정),
+    #   surface 를 읽는 코드는 이제 저장소에 0곳이다 → 안 쓰는 값을 매 저장마다 찍지 않는다.
+    #   기존 배에 남아 있는 surface 값은 아무도 안 읽으므로 그대로 둔다(일괄 수정 불필요).
     p = queue_path(repo_root)
     tmp = f"{p}.tmp.{os.getpid()}"
     with open(tmp, "w", encoding="utf-8") as f:

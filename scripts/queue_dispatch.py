@@ -109,10 +109,9 @@ def build_ship(args, queue):
         "ship_no": ship_no,
         "short_no": short_no,
         "module": args.module,
-        "surface": args.surface,
         # 판정은 설명글이 아니라 배 작성자의 선언을 먼저 믿는다(2026-07-27 GM 지적·오탐 45척 실측).
-        # 선언이 없을 때만 낱말 스캔으로 폴백. audience 기본값 "ai"=AI 내부 살림,
-        # reversible 기본값 None=미선언(선별기가 낱말 스캔으로 폴백).
+        # 선언이 없을 때만 낱말 스캔으로 폴백. audience·reversible 둘 다 기본 미선언
+        # (audience 미선언=GM 항로에 남음 · reversible 미선언=선별기가 낱말 스캔으로 폴백).
         "audience": args.audience,
         "reversible": args.reversible,
         # 신규 생성 게이트(2026-08-01) — "work_type" is None(미선언)이면 선별기는
@@ -132,15 +131,18 @@ def main() -> int:
                     help="내가 찾은 문제를 내 배로 올린다(약속 L20 아침 자가점검). --to 와 --sender 가 같아도 허용")
     ap.add_argument("--priority", default="⛴️여객선", help="🛳️크루즈 / ⛴️여객선 / ⛵돛단배")
     ap.add_argument("--module", default="home")
-    ap.add_argument("--surface", default="autonomy")
     ap.add_argument("--depends-on", dest="depends_on", default="")
     ap.add_argument("--date", default="", help="YYYY-MM-DD (기본 오늘)")
     ap.add_argument("--dry-run", action="store_true", help="큐에 쓰지 않고 미리보기만")
     # 선별기(welly_orchestrate._is_reversible / welly_auto_runner._is_low_risk)가 낱말 스캔보다
     # 이 선언값을 먼저 믿게 하는 필드. 둘 다 선택(필수 금지) — 06:30·07:30 무인 경로가
     # 이 스크립트를 프로그램으로 호출하므로 필수화하면 무인 가동이 죽는다.
-    ap.add_argument("--audience", choices=("office", "ai"), default="ai",
-                     help="office=실무진·GM이 볼 일 / ai=AI 내부 살림 (기본 ai)")
+    # ★기본값을 "ai" → 미지정으로 (2026-08-03 시토 · GM 지적 "실무 내용 맞나").
+    #   audience 는 이제 **GM 항로(G1)에 보일지**를 가르는 값이다 — ai 면 자율현황으로 빠진다.
+    #   기본이 "ai" 이면 분류를 빠뜨린 배가 GM 화면에서 조용히 사라진다. 미지정으로 두면
+    #   G1 에 남고(안전측), 아침 보고의 '미표기 배 수'가 그걸 세어 표면화한다(이미 있는 장치).
+    ap.add_argument("--audience", choices=("office", "ai"), default=None,
+                     help="office=실무진·GM이 볼 일 / ai=AI 내부 살림 (미지정=GM 항로에 남음)")
     ap.add_argument("--reversible", choices=("yes", "no"), default=None,
                      help="yes/no — 미지정이면 선별기가 낱말 스캔으로 폴백")
     # 아침 루틴 4단계 권한 분기(2026-08-01 GM 확정 · 웰리 판단은 doc/wellperion-boot SKILL.md

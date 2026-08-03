@@ -1337,14 +1337,14 @@
   }
   // ═══════════ 🔢 배 3숫자 요약 (GM 지시 2026-07-27 — "나열 대신 숫자·기본은 접힌 목록") ═══════════
   //   지금 돌고 있음=IN_PROGRESS · 막혀 있음=「🗂 전체 배」의 '정박·대기(자율)' 필터와 동일 판정
-  //   (surface==='autonomy' 대기·보류) · 오늘 끝남=오늘 처리 완료(DONE·완료, processed_at 오늘). 새 집계 로직 아님 —
+  //   (AI 배 대기·보류) · 오늘 끝남=오늘 처리 완료(DONE·완료, processed_at 오늘). 새 집계 로직 아님 —
   //   이미 있는 두 목록의 개수를 그대로 재사용 + '오늘 끝남'만 추가.
   function renderShipsSummary(queue){
     var sm = document.getElementById('ships-summary-line');
     if(!sm) return;
     var list = Array.isArray(queue) ? queue : [];
     var running = list.filter(function(s){ return s && s.status === 'IN_PROGRESS'; }).length;
-    var blocked = list.filter(function(s){ return s && s.surface === 'autonomy' && s.status !== 'DONE' && s.status !== 'IN_PROGRESS' && !isTrashed(s); }).length;
+    var blocked = list.filter(function(s){ return isAiShip(s) && s.status !== 'DONE' && s.status !== 'IN_PROGRESS' && !isTrashed(s); }).length;
     var t0 = localTodayMs(), t1 = t0 + 86400000;
     var doneToday = list.filter(function(s){
       if(!s || (s.status !== 'DONE' && s.status !== '완료')) return false;
@@ -1412,13 +1412,21 @@
     return '⚓ 대기';
   }
 
+  // ★AI 배 판정 단일 기준 (2026-08-03 시토 · GM 지적 "실무 내용 맞나").
+  //   배10510 결정문 = 「G1 은 남기고 **AI 배만** 자율현황으로 이사」. 그런데 구현이 surface 로 갈랐고,
+  //   surface 는 queue_lock 이 모든 큐 항목에 기본으로 찍는 값이라 실무 배까지 다 넘어왔다
+  //   (실측: 열린 배 67척 중 66척 · 그중 50척이 실무 배). 판정을 audience 로 되돌린다.
+  //   미지정은 AI 가 아니다 = G1 에 남는다(안전측 — 분류를 빠뜨린 배가 GM 화면에서 사라지지 않게).
+  //   ★G1 렌더(wellperion_guide(main).html)와 **같은 한 줄**을 써야 두 화면이 안 겹치고 안 새다.
+  function isAiShip(s){ return !!s && s.audience === 'ai'; }
+
   // ═══════════ 🧭 항로 — AI 배 3섹터 (G1 이관 · 배10510) ═══════════
-  //  대상 = surface==='autonomy' 인 배만(G1 렌더 :9603 과 같은 기준 — 두 화면이 서로 안 겹친다).
+  //  대상 = AI 배(isAiShip)만. G1 은 그 나머지를 그린다 — 두 화면이 서로 안 겹친다.
   //  섹터 판정도 status 필드만 본다: 🚢 IN_PROGRESS · ⚓ 그 외 열린 배 · 🏁 오늘 처리된 완료.
   //  행 렌더는 「🗂 전체 배」가 쓰는 헬퍼(missionBoat·missionCleanTitle·nextCellHtml)를 그대로 재사용.
   function renderHangro(){
     var el = document.getElementById('hangro-board'); if(!el) return;
-    var live = _queueAll.filter(function(s){ return s && s.surface === 'autonomy' && !isTrashed(s); });
+    var live = _queueAll.filter(function(s){ return isAiShip(s) && !isTrashed(s); });
     var t0 = localTodayMs(), t1 = t0 + 86400000;
     var isDone = function(s){ return s.status === 'DONE' || s.status === '완료'; };
     var secs = [
@@ -1456,7 +1464,7 @@
     var list = live.filter(function(s){
       if(f === 'IN_PROGRESS' && s.status !== 'IN_PROGRESS') return false;
       // 정박·대기(자율) — 구 renderParkedMissions 와 같은 판정을 그대로 옮겨 왔다(2026-08-01 섹션 병합).
-      if(f === 'parked' && !(s.surface === 'autonomy' && s.status !== 'DONE' && s.status !== 'IN_PROGRESS')) return false;
+      if(f === 'parked' && !(isAiShip(s) && s.status !== 'DONE' && s.status !== 'IN_PROGRESS')) return false;
       if(f === 'PENDING' && !(s.status === 'PENDING' || s.status === 'STANDBY')) return false;
       if(f === 'dup' && !isSuspect(s, dup)) return false;
       if(f === 'stale' && staleDays(s) < 14) return false;
