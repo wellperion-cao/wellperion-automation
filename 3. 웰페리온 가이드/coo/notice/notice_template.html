@@ -171,12 +171,19 @@
 <div class="topbar">
   <div class="left">
     <a class="back" href="../../wellperion_guide(main).html#gcoo-notice">← 웰페리온 ERP</a>
-    <h1>WELLPERION 공지 서식 v2.1</h1>
+    <h1>WELLPERION 내부게시물 생성 v2.2</h1>
   </div>
   <span class="path">3. 웰페리온 가이드 / coo / notice / notice_template.html</span>
 </div>
 
 <div class="wrap">
+
+  <!-- ══ 카테고리 선택 ══ 게시물 종류를 눌러 해당 서식으로 전환. 새 종류는 CATS 배열에 한 줄 추가하면 된다. -->
+  <div id="catBar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 16px">
+    <span style="font-size:12px;color:var(--dim);margin-right:2px">게시물 종류</span>
+  </div>
+
+  <div id="cat-notice" class="cat-pane">
   <div class="ntool-wrap" id="noticeToolWrap">
     <div class="ntool-form">
       <div class="ntool-row">
@@ -313,7 +320,63 @@
       </div>
     </div>
   </div>
+  </div><!-- /cat-notice -->
+
+  <!-- 프로필월 서식 — 단독 페이지(게시물_프로필월.html)를 그대로 불러온다. 서식은 한 곳에서만 관리. -->
+  <div id="cat-profile" class="cat-pane" style="display:none">
+    <iframe id="profileFrame" data-src="게시물_프로필월.html" title="프로필월 생성" style="width:100%;height:88vh;border:1px solid var(--border);border-radius:12px;background:#fff;display:block"></iframe>
+  </div>
 </div>
+
+<script>
+/* ══ 게시물 카테고리 전환 ══
+   새 종류를 늘릴 때는 ①CATS 에 한 줄 추가 ②본문에 <div id="cat-{id}" class="cat-pane"> 추가.
+   iframe 은 data-src 로 두고 해당 카테고리를 처음 눌렀을 때만 로드한다(첫 진입 속도 보존). */
+(function(){
+  var CATS = [
+    { id:'notice',  icon:'📢', label:'공지글' },
+    { id:'profile', icon:'🖼', label:'프로필월' }
+  ];
+  var bar = document.getElementById('catBar');
+  if (!bar) return;
+
+  function paint(id, keepUrl){
+    CATS.forEach(function(c){
+      var pane = document.getElementById('cat-' + c.id);
+      var btn  = document.getElementById('catbtn-' + c.id);
+      var on   = (c.id === id);
+      if (pane) pane.style.display = on ? '' : 'none';
+      if (btn){
+        btn.style.background   = on ? 'var(--accent-bg)' : 'var(--paper)';
+        btn.style.color        = on ? '#8a6b4c' : 'var(--dim)';
+        btn.style.borderColor  = on ? 'var(--accent)' : 'var(--border)';
+        btn.style.fontWeight   = on ? '700' : '600';
+      }
+    });
+    var f = document.getElementById('profileFrame');   // 처음 열 때만 로드
+    if (id === 'profile' && f && !f.src && f.getAttribute('data-src')) f.src = f.getAttribute('data-src');
+    // ★첫 로드에서는 주소를 건드리지 않는다(keepUrl) — 문서 URL 에 프래그먼트가 생기는 순간
+    //   브라우저가 그 요소로 스크롤해 상단 바가 화면 밖으로 밀려나는 문제가 있었다(실측).
+    //   사용자가 직접 눌렀을 때만 남겨 딥링크(#cat-profile)를 지원한다.
+    if (!keepUrl) { try { history.replaceState(null, '', '#cat-' + id); } catch(e){} }
+  }
+  window.switchCat = paint;
+
+  CATS.forEach(function(c){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'catbtn-' + c.id;
+    b.textContent = c.icon + ' ' + c.label;
+    b.style.cssText = 'padding:8px 16px;border:1px solid var(--border);border-radius:99px;background:var(--paper);' +
+                      'color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer';
+    b.onclick = function(){ paint(c.id); };
+    bar.appendChild(b);
+  });
+
+  var h = (location.hash || '').replace('#cat-', '');
+  paint(CATS.some(function(c){ return c.id === h; }) ? h : 'notice', true);   // true=첫 로드, 주소 미변경
+})();
+</script>
 
 <script>
 (function(){
