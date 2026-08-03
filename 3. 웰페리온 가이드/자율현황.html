@@ -184,16 +184,6 @@
   footer.foot b{color:var(--text-soft);}
   code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
 
-  /* ── ⚙️ 자동화→자율화 4층 개요 다이어그램 (AI운영한장.html 병합 · 2026-07-03) ── */
-  .autoflow{display:flex; flex-wrap:wrap; align-items:stretch; gap:6px; margin:4px 0 10px;}
-  .autolayer{flex:1 1 190px; min-width:170px; background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent-soft); border-radius:10px; padding:9px 11px; display:flex; flex-direction:column; gap:2px;}
-  .autolayer .al-n{font-size:10px; font-weight:800; color:var(--accent-soft); text-transform:uppercase; letter-spacing:0.02em;}
-  .autolayer .al-h{font-size:12.5px; font-weight:700; color:var(--text);}
-  .autolayer .al-d{font-size:11px; color:var(--text-soft); line-height:1.4;}
-  .autolayer a.al-link{font-size:10px; color:var(--accent-soft); text-decoration:none; margin-top:2px;}
-  .autolayer a.al-link:hover{text-decoration:underline;}
-  .autoarrow{display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--dim); padding:0 2px;}
-  @media (max-width:640px){ .autoflow{flex-direction:column;} .autoarrow{transform:rotate(90deg);} }
 
   /* ── 🤖 자율 처리 토글(히어로 하위 · 오늘 판단형 자율 실행 내역 + 증거) ── */
   .auto-detail{margin:2px 0 14px; font-size:12px;}
@@ -210,27 +200,6 @@
   .ax-ev{color:var(--dim); font-size:10.5px;}
   .ax-routine{color:var(--dim); font-size:11px; margin-top:8px; padding-top:6px; border-top:1px dashed var(--border);}
 
-  /* ── 🌟 북극성 지향 제작 루프 프레임 ── */
-  .loop-frame{margin:2px 0 20px; padding:14px 16px; border:1px solid var(--border-strong); border-radius:12px; background:linear-gradient(135deg,rgba(124,58,237,0.10),rgba(240,198,116,0.05));}
-  .loop-head{display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; margin-bottom:11px;}
-  .loop-head .lh-t{font-size:14px; font-weight:800; letter-spacing:-0.01em; white-space:nowrap;}
-  .loop-head .lh-s{font-size:11.5px; color:var(--text-soft); line-height:1.45; flex:1; min-width:220px;}
-  .loop-head .lh-s b{color:var(--text);}
-  .loop-flow{display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap;}
-  .loop-group{display:flex; flex-direction:column; gap:5px; padding:7px 9px 8px; border-radius:9px; border:1px dashed var(--border-strong); background:rgba(255,255,255,0.02);}
-  .loop-glabel{font-size:9px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--dim);}
-  .loop-grow{display:flex; align-items:center; gap:5px; flex-wrap:wrap;}
-  .loop-group.lg-goal{border-color:rgba(240,198,116,0.45); background:rgba(240,198,116,0.06);}
-  .loop-group.lg-goal .loop-glabel{color:var(--gold);}
-  .loop-group.lg-loop{border-style:solid; border-color:rgba(124,58,237,0.35); background:rgba(124,58,237,0.05);}
-  .loop-group.lg-loop .loop-glabel{color:var(--accent-soft);}
-  .loop-step{font-size:11.5px; font-weight:700; border:1px solid var(--border-strong); border-radius:8px; padding:5px 10px; background:var(--paper); white-space:nowrap;}
-  .loop-step.ns{border-color:var(--gold); color:var(--gold); background:rgba(240,198,116,0.08);}
-  .loop-step.prep{border-color:var(--border); color:var(--text-soft); background:var(--surface); font-weight:600;}
-  .loop-step.num{border-color:var(--accent); color:var(--accent-soft); background:rgba(124,58,237,0.10);}
-  .loop-step.repeat{border-color:var(--green); color:var(--green); background:rgba(106,191,123,0.10);}
-  .loop-arrow{color:var(--dim); font-size:13px; flex-shrink:0;}
-  .loop-arrow.lg-connector{align-self:center; font-size:15px; color:var(--accent-soft);}
 
   /* ── ② 돌아가는 자동화 (구 T2 위젯 이식 · 배237 · 2026-07-03) ── */
   .autopanel{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:14px 18px; margin:8px 0 18px;}
@@ -305,17 +274,6 @@
     .routines{grid-template-columns:1fr;}
   }
 
-  /* ── 🔁 자율화 루프 5단계 (AI운영한장에서 이관 · 2026-07-15) ── */
-  .loop-strip{display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin:4px 0 8px;}
-  .loop-step{flex:1 1 150px; background:var(--paper); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
-  .loop-step .lsnum{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:800; margin-bottom:5px;}
-  .loop-step.feedback{border-color:rgba(240,198,116,0.4);}
-  .loop-step.feedback .lsnum{background:#f0c674; color:#221F20;}
-  .loop-step h4{font-size:12.5px; font-weight:700; margin-bottom:3px;}
-  .loop-step p{font-size:11px; color:var(--dim); line-height:1.4;}
-  .loop-arrow{display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:16px; flex:0 0 20px;}
-  .loop-feedback-note{margin:0 0 14px; font-size:11px; color:#f0c674; line-height:1.5;}
-  @media (max-width:640px){ .loop-strip{flex-direction:column;} .loop-arrow{display:none;} }
 
   /* 긴 표 칸 접기 (배10026 결함3 · 2026-07-29 시토) — 세 줄만 보이고 누르면 펼쳐진다.
      본문을 지우지 않는 방식이라(잘라내기 아님) 검색·복사·화면낭독 모두 그대로 된다. */
@@ -341,6 +299,31 @@
     <a class="back" href="wellperion_guide(main).html#T2">← T2 업무자동화SSOT</a>
     <a class="back" href="wellperion_guide(main).html#S2">📋 AI C-Level 운영 가이드(S2)</a>
   </header>
+
+  <!-- ══ 🌟 북극성 — 페이지 맨 위 (GM 지시 2026-08-03 "목표가 정말 중요하다 · 북극성을 최상단으로").
+       아래 모든 배·모듈은 이 목적지로 가는 수단이다. 목적지를 먼저 보고 나머지를 본다. ══ -->
+  <!-- ══ 🌟 전사 북극성 + 항해 세계관 범례 — G1 에서 이관(웰리 결정 5·6 · 배10510 · 2026-08-03) ══
+       G1 의 🌟 자리는 「GM 개인 북극성」으로 비워 두고, 전사 비전(=AI 배가 향하는 목적지)과
+       공용 항해 범례 정본은 여기 한 벌만 둔다. G1 에는 링크 한 줄만 남긴다(두 벌 금지). ══ -->
+    <!-- ══ 🌟 북극성 — 우리가 가는 곳 (비전·목적지 정의 본체 · 홈→G1 이관 단일 배치 · 웰리·GM 2026-06-12) ══ -->
+    <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;margin:8px 0 16px;">
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:22px;">🌟</span>
+        <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:-0.01em;">북극성 — 우리가 가는 곳</span>
+      </div>
+      <p style="color:#e7e1f5;font-size:15px;font-weight:700;line-height:1.55;margin:0 0 12px;">웰페리온 ERP를 정말 잘 만들어, <span style="color:#cbb6f0;">모든 스포츠클럽이 이 ERP로 운영되게 한다.</span></p>
+      <p style="color:#cfc7e8;font-size:13px;line-height:1.75;margin:0;">운영의 잡무는 시스템이 책임집니다. 그래서 사람은 <strong style="color:#fff;">사람을 키우는 일</strong> — 회원의 <strong style="color:#fff;">정신적·육체적 성장</strong>이라는 본질에 몰입합니다. 그렇게 <strong style="color:#cbb6f0;">성장이 지속되는 비즈니스 생태계</strong>를 만듭니다.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);">
+        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">① 시스템이 잡무를</span>
+        <span style="font-size:11.5px;color:#8c8b9a;align-self:center;">→</span>
+        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">② 사람은 사람을 키우는 일에</span>
+        <span style="font-size:11.5px;color:#8c8b9a;align-self:center;">→</span>
+        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">③ 성장이 지속되는 생태계</span>
+      </div>
+      <p style="color:#cfc7e8;font-size:12px;margin:14px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:#bbb;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><span>🌟 <strong style="color:#cbb6f0;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무(난이도 ⛵·⛴️·🛳️)</span><span>⚓ <strong style="color:#8ca6d6;">닻</strong>=대기/정박</span><span>🏁 완료</span><span>🔗 항로점=완료하며 남긴 다음</span><span>🌀 표류=완료인데 다음없음</span></div>
+    </div>
+    <!-- ══ /북극성 ══ -->
 
   <section id="hero-autonomy" class="hero">
     <!-- renderHero() 채움 -->
@@ -380,28 +363,6 @@
   <div id="layer-autonomy">
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
-  <!-- ══ 🌟 전사 북극성 + 항해 세계관 범례 — G1 에서 이관(웰리 결정 5·6 · 배10510 · 2026-08-03) ══
-       G1 의 🌟 자리는 「GM 개인 북극성」으로 비워 두고, 전사 비전(=AI 배가 향하는 목적지)과
-       공용 항해 범례 정본은 여기 한 벌만 둔다. G1 에는 링크 한 줄만 남긴다(두 벌 금지). ══ -->
-    <!-- ══ 🌟 북극성 — 우리가 가는 곳 (비전·목적지 정의 본체 · 홈→G1 이관 단일 배치 · 웰리·GM 2026-06-12) ══ -->
-    <div style="background:linear-gradient(135deg,#1a1830 0%,#2a2545 100%);border:1px solid var(--accent);border-radius:16px;padding:18px 22px;margin:8px 0 16px;">
-      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px;">
-        <span style="font-size:22px;">🌟</span>
-        <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:-0.01em;">북극성 — 우리가 가는 곳</span>
-      </div>
-      <p style="color:#e7e1f5;font-size:15px;font-weight:700;line-height:1.55;margin:0 0 12px;">웰페리온 ERP를 정말 잘 만들어, <span style="color:#cbb6f0;">모든 스포츠클럽이 이 ERP로 운영되게 한다.</span></p>
-      <p style="color:#cfc7e8;font-size:13px;line-height:1.75;margin:0;">운영의 잡무는 시스템이 책임집니다. 그래서 사람은 <strong style="color:#fff;">사람을 키우는 일</strong> — 회원의 <strong style="color:#fff;">정신적·육체적 성장</strong>이라는 본질에 몰입합니다. 그렇게 <strong style="color:#cbb6f0;">성장이 지속되는 비즈니스 생태계</strong>를 만듭니다.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);">
-        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">① 시스템이 잡무를</span>
-        <span style="font-size:11.5px;color:#8c8b9a;align-self:center;">→</span>
-        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">② 사람은 사람을 키우는 일에</span>
-        <span style="font-size:11.5px;color:#8c8b9a;align-self:center;">→</span>
-        <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">③ 성장이 지속되는 생태계</span>
-      </div>
-      <p style="color:#cfc7e8;font-size:12px;margin:14px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:#bbb;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><span>🌟 <strong style="color:#cbb6f0;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무(난이도 ⛵·⛴️·🛳️)</span><span>⚓ <strong style="color:#8ca6d6;">닻</strong>=대기/정박</span><span>🏁 완료</span><span>🔗 항로점=완료하며 남긴 다음</span><span>🌀 표류=완료인데 다음없음</span></div>
-    </div>
-    <!-- ══ /북극성 ══ -->
 
     <!-- ══ 🏁 일 끝낼 땐 '다음'을 남긴다 (아이콘 표준 A안) — 북극성과 글꼴·사이즈 통일 (2026-06-06 · A안 2026-06-18) ══ -->
     <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:14px 18px;margin:0 0 16px;">
@@ -891,73 +852,10 @@
   </div>
   </details>
 
-  <!-- ════ ⚙️ 자동화→자율화 4층 구조 (AI운영한장.html 병합 · 2026-07-03 · 개요를 라이브 데이터보다 앞으로 재배치 · 배339) ════ -->
-  <h2 class="sec" style="margin-top:2px;">🏛️ 자율화를 떠받치는 4대 축</h2>
-  <div class="sec-note">나란히 작동하는 4개 축 — 코드·훅 자동화 위에서 AI가 판단·완결.</div>
-  <div class="autoflow">
-    <div class="autolayer" style="border-left-color:#7ac4f0;">
-      <span class="al-n">축 ① · 제작 루프</span><span class="al-h">🎨 GM 주도</span>
-      <span class="al-d">모든 산출물의 표준 라이프사이클 — 기획→초안→디자인→고도화→단순화→피드백</span>
-      <a class="al-link" href="#loop-frame">↓ 제작 루프 상세</a>
-    </div>
-    <div class="autolayer" style="border-left-color:#7C3AED;">
-      <span class="al-n">축 ② · 오케스트레이션</span><span class="al-h">🧭 웰리</span>
-      <span class="al-d">7 C-Level 위임·완결검증·G1 통합보고(웰리는 지시·검증만, 직접실행 금지)</span>
-    </div>
-    <div class="autolayer" style="border-left-color:#f0c674;">
-      <span class="al-n">축 ③ · GM 보좌 자율화</span><span class="al-h">🤝 웰리</span>
-      <span class="al-d">GM 성향 학습→선제 포착·실행(가역=자율 / 비가역=제안, 금지5종만 게이트)</span>
-      <a class="al-link" href="#sec-routines">↓ 상시 자율 체계 카드</a>
-    </div>
-    <div class="autolayer" style="border-left-color:#6abf7b;">
-      <span class="al-n">축 ④ · 차등 점검</span><span class="al-h">🔍 규모 게이트</span>
-      <span class="al-d">안정 페이지 제외·신규/변경분만 점검</span>
-      <a class="al-link" href="#sec-routines">↓ 바뀐 페이지만 점검 카드</a>
-    </div>
-  </div>
-
-  <!-- ════ 🌟 북극성 지향 제작 루프 프레임 ════ -->
-  <section class="loop-frame" id="loop-frame">
-    <div class="loop-head">
-      <span class="lh-t">🌟 북극성 지향 제작 루프 <span style="font-size:10px;font-weight:700;color:var(--accent-soft);">(축①)</span></span>
-      <span class="lh-s">완료 시 다음 단계를 자동 촉발.</span>
-    </div>
-    <div class="loop-flow">
-      <div class="loop-group lg-goal">
-        <div class="loop-glabel">목표</div>
-        <div class="loop-grow">
-          <span class="loop-step ns">🌟 북극성</span>
-        </div>
-      </div>
-      <span class="loop-arrow lg-connector">→</span>
-      <div class="loop-group lg-prep">
-        <div class="loop-glabel">준비 (무번호)</div>
-        <div class="loop-grow">
-          <span class="loop-step prep">기획·설계</span>
-          <span class="loop-arrow">→</span>
-          <span class="loop-step prep">초안</span>
-        </div>
-      </div>
-      <span class="loop-arrow lg-connector">→</span>
-      <div class="loop-group lg-loop">
-        <div class="loop-glabel">반복 루프</div>
-        <div class="loop-grow">
-          <span class="loop-step num">① 기능·UI/UX 디자인</span>
-          <span class="loop-arrow">→</span>
-          <span class="loop-step num">② 고도화</span>
-          <span class="loop-arrow">→</span>
-          <span class="loop-step num">③ 단순화</span>
-          <span class="loop-arrow">→</span>
-          <span class="loop-step num">④ 실무 진행 및 피드백</span>
-          <span class="loop-arrow">→</span>
-          <span class="loop-step num">⑤ 피드백 AI 검토 후 반영 설계</span>
-          <span class="loop-arrow">↻</span>
-          <span class="loop-step repeat">⑥ ①~⑤ 루프</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
+  <!-- ★2026-08-03 시토 — 「🏛️ 자율화를 떠받치는 4대 축」과 「🌟 북극성 지향 제작 루프」 삭제(GM 지시).
+       체계 설명의 정본은 ssot/자율화규약.md 다. GM: "정본이 따로 있는데 링크로 이어가는건 의미 없다"
+       → 요약도 링크도 남기지 않는다. 페이지 안에 있던 설명은 규약과 내용도 어긋나 있었다(누가 이끄는가).
+       읽는 데이터 0 · 하드코딩 설명문이라 사라져도 잃는 값이 없다. ══ -->
   <!-- ════ 정직 프레이밍 노트(배237) ════ -->
   <div class="honest-note">
     <span class="hn-ico">ℹ️</span>
@@ -1179,22 +1077,6 @@
     <div class="callout" style="margin-top:12px;">
       <strong>📄 설계 문서(정적)</strong> — 🟢=설계상 상시가동, 실측 아님. 실제 가동은 위 🤖 건강 점수판.
     </div>
-
-    <!-- ════ 🔁 자율화 루프 5단계 + 환류 (AI운영한장에서 이관 · 닫힌 고리 · 2026-07-15) ════ -->
-    <h3 style="margin-top:20px;">🔁 자율화 루프 5단계 <span style="font-size:12px;font-weight:400;color:var(--dim);">닫힌 고리(환류 → 다음 루프 입력)</span></h3>
-    <p class="sec-note" style="margin:2px 0 8px;">근거: docs/superpowers/plans/2026-07-09-clevel-autonomous-execution-loop.md · 불변 전제는 <a href="AI운영한장.html" style="color:var(--accent-soft);">🌟 헌법 › 공통 헌법</a> 참조</p>
-    <div class="loop-strip">
-      <div class="loop-step"><span class="lsnum">1</span><h4>모듈 등록부</h4><p>status/module_registry.json — 화면·알림·자율 루프의 단일 출처</p></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step"><span class="lsnum">2</span><h4>프론트 카드</h4><p>AI운영한장·자율현황 창이 등록부를 읽어 렌더(하드코딩 금지)</p></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step"><span class="lsnum">3</span><h4>웰리 오케스트레이션</h4><p>가역 배 선별 → 담당 C레벨에 위임 → 실행(웰리 직접 실행 금지)</p></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step"><span class="lsnum">4</span><h4>검증</h4><p>시크릿 크롬 라이브 실측 일치 확인(거짓 완료 0)</p></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step feedback"><span class="lsnum">5</span><h4>환류</h4><p>결과·피드백을 다음 루프 입력으로 등록부에 되먹임</p></div>
-    </div>
-    <div class="loop-feedback-note">↩︎ ⑤ 환류가 ①로 되먹여 닫힌 고리를 이룬다 — 매 사이클 "이 검증을 코드·게이트로 굳힐 수 있나?" 자문(부트스트랩 이관).</div>
 
     <!-- ② 지금 돌고 있는 자동화 -->
     <h3>🟢 지금 돌고 있는 자동화 <span class="statchip static">📄 설명(정적)</span></h3>
