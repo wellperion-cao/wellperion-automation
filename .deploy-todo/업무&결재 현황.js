@@ -2247,6 +2247,15 @@ function _gmHangro() {
   }
 }
 
+// GM 행 통로 열쇠 — 값은 **스크립트 속성 GM_TODO_KEY 한 곳에만** 둔다.
+// 코드·저장소에 문자열로 적지 않는다: 이 저장소는 공개고, 그게 GM1_PW='1234' 가 만든 문제다.
+// 속성이 비어 있으면 항상 false → GM 행은 안 나간다(안전 기본).
+function _gmKeyOk_(p) {
+  if (!p || String(p.include_gm || '') !== '1') return false;
+  var k = PropertiesService.getScriptProperties().getProperty('GM_TODO_KEY');
+  return !!k && String(p.gmkey || '') === k;
+}
+
 // ═══════════════════════════════════════════
 //  doGet — 조회
 // ═══════════════════════════════════════════
@@ -2260,8 +2269,11 @@ function doGet(e) {
       //   업무는 하루 몇 번 바뀌는데 화면은 수십 번 열린다 — 안 바뀐 동안 다시 읽을 이유가 없다.
       //   '고쳤는데 옛것이 보이는' 위험은 쓰기가 지나가는 단 하나의 길(_processTodoAction)이
       //   맨 앞에서 캐시를 지워 막는다(약속 L21 — 관문 한 곳).
+      // GM 행은 열쇠가 있을 때만 — 이 중계가 무인증이라 주소만 알면 열렸다(배326 · GM 결재 2026-08-03).
+      // 열쇠 경로는 캐시를 안 탄다(캐시 payload = GM 제외본). 하루 몇 번이라 무해.
+      const _gmOK = _gmKeyOk_(e.parameter);
       const _noFilter = !(e.parameter.owner || e.parameter.status || e.parameter.category);
-      if (_noFilter) {
+      if (_noFilter && !_gmOK) {
         const _hit = _todoCacheGet_();
         if (_hit) {
           return ContentService.createTextOutput(_hit)
@@ -2270,7 +2282,8 @@ function doGet(e) {
       }
       const sh = initTodoSheet();
       let items = _readAll(sh);
-      if (_noFilter) {
+      if (!_gmOK) items = items.filter(r => String(r['담당자'] || '').indexOf('김남욱GM') < 0);
+      if (_noFilter && !_gmOK) {
         const _payload = JSON.stringify({ ok: true, count: items.length, data: items });
         _todoCacheSet_(_payload);
         return ContentService.createTextOutput(_payload)
