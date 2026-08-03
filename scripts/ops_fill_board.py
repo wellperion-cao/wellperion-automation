@@ -211,76 +211,60 @@ def build_html(S, items, unlinked):
 <div class="wrap">
 <header>
   <div class="eyebrow">운영 · 시우 (AI COO)</div>
-  <h1>업무판을 같이 채워요 — 두 칸이면 끝나는 것들</h1>
-  <p class="lede">혼내려고 만든 표가 아닙니다. 지금 <b>{S['act']}건</b>이 살아 움직이고 있는데,
-  그중 몇 개는 <b>업무판에 아직 안 올라와 있고</b> 몇 개는 <b>잠시 쉬는 중</b>입니다.
-  칸만 채워지면 각자 한 일이 <b>제대로 남고 평가에도 그대로 반영</b>됩니다.</p>
-  <div class="stamp">실측 {S['date']} · 원천 = 업무 현황 SSOT + {mm}월 운영계획 · 실무진 기준</div>
-  <p class="lede" style="margin-top:10px;font-size:13px">※ 경영진 담당 <b>{S['excluded']}건</b>은
-  <b>월간 운영계획에서 부서 목표로 관리</b>하므로 이 보드에서 제외했습니다 —
-  같은 일을 두 곳에서 챙기지 않기 위해서입니다.</p>
+  <h1>업무판 채움 보드</h1>
+  <div class="stamp">실측 {S['date']} 기준 · 업무 현황 SSOT + {mm}월 운영계획 · 실무진 {S['act']}건
+    (경영진 {S['excluded']}건은 월간 운영계획에서 따로 관리)</div>
 </header>
 
 <div class="cta">
-  <span class="lbl"><b>채우는 곳은 업무판입니다.</b> 아래에서 본인 업무를 열어 마감일·점수를 넣거나,
-    멈춘 일은 「보류」를 눌러 이유와 다시 볼 시점을 남겨주세요.</span>
+  <span class="lbl"><b>고칠 곳은 업무판입니다.</b> 본인 업무를 열어 마감일·점수를 넣거나, 멈춘 일은 「보류」에 이유 한 줄.</span>
   <a href="{LINK_TODO}">📋 업무판 열기</a>
-  <a class="ghost" href="{LINK_RULE}">📖 적는 기준 보기</a>
+  <a class="ghost" href="{LINK_RULE}">📖 적는 기준</a>
 </div>
 
 <div class="period">
   <div class="p-card today"><span class="k">오늘 · {dd}</span>
     <span class="v">{S['done_today']}</span><span class="n">건 끝냄</span>
     <span class="hint">{hint}</span></div>
-  <div class="p-card"><span class="k">이번 달 · {mm}월</span>
+  <div class="p-card"><span class="k">{mm}월 누적</span>
     <span class="v good">{S['done_month']}</span><span class="n">건 끝냄</span>
-    <span class="hint">가장 많이 끝낸 날 {best} · {S['best_n']}건 · 지난달 {S['done_prev']}건</span></div>
-  <div class="p-card"><span class="k">{mm}월에 새로 올린 일</span>
-    <span class="v">{S['new_month']}</span><span class="n">건</span>
-    <span class="hint">업무판에 새로 등록된 수</span></div>
-  <div class="p-card"><span class="k">{mm}월 결재 완료</span>
-    <span class="v">{S['appr_month']}</span><span class="n">건</span>
-    <span class="hint">요청·처리 짝 100% 일치 👏</span></div>
+    <span class="hint">새로 올린 일 {S['new_month']}건 · 결재 완료 {S['appr_month']}건 · 지난달 {S['done_prev']}건</span></div>
   <div class="p-card"><span class="k">지금 진행 중</span>
     <span class="v">{S['act']}</span><span class="n">건</span>
-    <span class="hint">빈칸 없이 완비 {S['complete']}건 · 시작일은 전부 기록됨</span></div>
+    <span class="hint">빈칸 없이 완비 {S['complete']}건</span></div>
 </div>
 
 <section>
-  <div class="sec-h"><span class="num">포인트 1</span><h2>업무판에 아직 안 올라온 일</h2>
-    <span class="sub">{mm}월 운영계획에는 있는데 업무판에서는 안 보이는 {S['unlinked']}건</span></div>
-  <p class="ask">이건 <b>안 하고 있다는 뜻이 아닙니다</b> — 하고 있는데 기록될 자리가 없는 것뿐입니다.
-  업무판에 올려두면 <b>진척이 자동으로 운영계획에 반영</b>되고, 매번 따로 보고하지 않아도 됩니다.</p>
-  <div class="panel"><ul>{unlink_rows}</ul></div>
+  <div class="sec-h"><span class="num">1</span><h2>오래 멈춘 일</h2>
+    <span class="sub">{S['rest']}건 · 숫자는 마지막으로 손댄 뒤 지난 날 — 끝났으면 「완료」, 기다리는 중이면 「보류」에 이유 한 줄</span></div>
+  <details open><summary class="fold">{S['rest']}건 보기</summary>
+  <div class="panel"><ul>{rest_rows}</ul></div></details>
 </section>
 
 <section>
-  <div class="sec-h"><span class="num">포인트 2</span><h2>올라왔는데 잠시 쉬고 있는 일</h2>
-    <span class="sub">{S['rest']}건 · 숫자는 마지막으로 손댄 뒤 지난 날</span></div>
-  <p class="ask">쉬는 게 문제가 아니라 <b>왜 쉬는지가 안 적혀 있는 게</b> 문제입니다.
-  이유가 적혀 있으면 조건이 갖춰졌을 때 <b>시스템이 알아서 다시 올려드립니다.</b>
-  업무판에서 <b>보류</b>를 누르면 <b>이유</b>와 <b>다시 볼 시점</b>을 물어봅니다.
-  이미 끝난 건 <b>완료</b>로 바꿔 주시면 됩니다.</p>
-  <div class="panel"><ul>{rest_rows}</ul></div>
+  <div class="sec-h"><span class="num">2</span><h2>마감일·점수가 빈 일</h2>
+    <span class="sub">마감일 {S['need_sched']}건 · 점수 {S['need_score']}건 — 점수는 그대로 인사평가 가중점수(혼자 <b>하</b> · 두 팀 <b>중</b> · 전사 <b>상</b>)</span></div>
+  <details><summary class="fold">담당자별로 보기</summary>
+  <div class="grid">{''.join(cards)}</div></details>
 </section>
 
 <section>
-  <div class="sec-h"><span class="num">두 칸</span><h2>마감일과 점수만 채우면 완성</h2>
-    <span class="sub">마감일 {S['need_sched']}건 · 점수 {S['need_score']}건 남았습니다</span></div>
-  <p class="ask"><b>마감일</b>이 있어야 언제 도와드릴지 알 수 있고,
-  <b>점수</b>(하·중·상)는 <b>그대로 인사평가 가중점수</b>가 됩니다 —
-  비워두면 <b>애써 한 일이 평가에서 그만큼 빠집니다.</b> 기준은 간단합니다:
-  혼자·한 팀에서 끝나면 <b>하</b>, 두 팀이 얽히면 <b>중</b>, 전사·여러 부서면 <b>상</b>.</p>
-  <div class="grid">{''.join(cards)}</div>
+  <div class="sec-h"><span class="num">3</span><h2>업무판에 아직 없는 일</h2>
+    <span class="sub">{mm}월 운영계획에는 있는데 업무판에서는 안 보이는 {S['unlinked']}건 — 올려두면 진척이 자동 반영됩니다</span></div>
+  <details><summary class="fold">{S['unlinked']}건 보기</summary>
+  <div class="panel"><ul>{unlink_rows}</ul></div></details>
 </section>
 
-<footer>이 보드는 실행할 때마다 업무판을 다시 세어 만듭니다 —
-<code>scripts/ops_fill_board.py</code> · 기준 = <code>coo/todo/업무·결재 운영 기준.html</code></footer>
+<footer>실행할 때마다 업무판을 다시 세어 만듭니다 — <code>scripts/ops_fill_board.py</code></footer>
 </div>
 """
 
 
 CSS = """
+summary.fold{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--accent);margin:6px 0 8px;list-style:none}
+summary.fold::before{content:"▸ "}
+details[open]>summary.fold::before{content:"▾ "}
+
 :root{--ground:#F5F7F8;--surface:#FFFFFF;--surface-2:#FAFBFC;--ink:#171B1F;--ink-soft:#5A656D;
   --ink-faint:#8B959C;--line:#DDE2E5;--line-soft:#EAEEF0;--accent:#8A6A21;
   --good:#2F7A63;--mid:#AC7524;--low:#A6603A;--cool:#3A6B96}
