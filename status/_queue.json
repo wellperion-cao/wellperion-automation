@@ -1276,5 +1276,25 @@
     "reversible": false,
     "work_type": "update",
     "updated_at": "2026-08-03"
+  },
+  {
+    "task_id": "CTO-2026-08-03-습득물-접수-폼-워드프레스에-옛-본문이-그대로다-저",
+    "clevel": "cto",
+    "title": "[시토] 습득물 접수 폼 — 워드프레스에 옛 본문이 그대로다 (저장소만 고쳐선 안 바뀜)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-03",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-03] GM 지적 2026-08-03 '수정이 안 된 거 같은데?' — 원인 확정.\n· 웰리가 고친 것: 저장소의 두 파일(coo/reception/lost_found_register.html · wp_lost_found_register_block.html). GitHub Pages 쪽은 반영됨(실측 '접수 직원' 3곳).\n· **안 바뀐 곳: http://wellperion.com/ko/lost-found-register/** — 라이브 실측에서 여전히  이고 input 도  로 옛 상태다(required 없음).\n· 뿌리: 워드프레스 페이지는 **주입된 사본**이라 저장소 블록 파일을 고쳐도 저절로 안 바뀐다. 다시 주입해야 한다(기억: WP 주입=draft-page 경로 · 발행된 페이지 편집은 즉시 라이브라 특히 조심).\n· scripts/wordpress_admin_playwright.py 에는 inquiry 계열 모드만 있고 **습득물 접수 페이지용 주입 모드가 없다** — 그래서 웰리가 임의로 밀어넣지 않았다(대외 페이지 배포는 비가역).\n\n[바꿔야 하는 내용 — 저장소 wp_lost_found_register_block.html 이 정본]\n· 라벨: 「등록 직원 (선택)」 → 「접수 직원 *필수」\n· 입력칸: placeholder '접수한 직원 성함 (예: 리셉션 김OO)' · required\n· 검증: 비어 있으면 '접수 직원 성함을 입력해 주세요' 토스트 후 제출 중단(staffName 변수)\n· 이유(GM): 누가 받았는지가 없으면 나중에 물어볼 사람이 없어 분실물 책임 추적이 끊긴다.\n\n[같이 볼 것] check_reception_wp_drift.py 가 종합접수처 인라인 사본 드리프트를 잡는데, **습득물 접수 페이지도 같은 드리프트가 나고 있다** — 감시 범위에 넣을지 검토.",
+    "next": "습득물 접수 WP 페이지에 최신 블록 주입 → 라이브에서 '접수 직원 *필수' 와 required 확인 → 빈 값 제출이 막히는지 실제로 눌러 확인",
+    "depends_on": "",
+    "ship_no": 10504,
+    "short_no": 315,
+    "module": "home",
+    "surface": "autonomy",
+    "audience": "office",
+    "reversible": false,
+    "work_type": "update",
+    "updated_at": "2026-08-03"
   }
 ]
