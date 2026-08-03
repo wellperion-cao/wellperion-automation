@@ -182,9 +182,13 @@
     return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
   function getStaffName(){ try{ return localStorage.getItem(STAFF_NAME_KEY) || ''; }catch(e){ return ''; } }
+  /* ★배10520 수리(2026-08-04) — 취소하거나 빈칸으로 닫으면 저장할 게 없어 **저장할 때마다 다시 물었다.**
+     물었다는 사실을 남겨 브라우저당 한 번만 묻는다(이름을 적으면 그때부터 자동으로 채워진다). */
   function ensureStaffName(){
     var cur = getStaffName(); if(cur) return cur;
+    try{ if(localStorage.getItem(STAFF_NAME_KEY + '_asked')) return '이름미상'; }catch(e){}
     var name = '';
+    try{ localStorage.setItem(STAFF_NAME_KEY + '_asked', '1'); }catch(e){}
     try{ name = prompt('이름을 입력해 주세요 (한 번 적으면 다음부터 자동으로 채워집니다)', '') || ''; }catch(e){}
     name = name.trim();
     if(name){ try{ localStorage.setItem(STAFF_NAME_KEY, name); }catch(e){} }

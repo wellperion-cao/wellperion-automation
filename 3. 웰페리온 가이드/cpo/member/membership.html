@@ -11923,11 +11923,15 @@ function _unifiedSearchGoto(r) {
 //   GAS 302를 브라우저가 자동 추종 → 응답 JSON {ok,error} 실판독. 백엔드 거부(row-key-mismatch 등)를 프론트가 실제로 읽는다.
 //   S0 라이브 스파이크(2026-07-15 시크릿/headless)로 판독 가능 확정(type:'cors', body 판독됨). '조용한 낙관' 폐기.
 /* 회원 변경 이력 '누가'(배327) — 기존 키 wellperion_staff_name 재사용(새 키 안 만듦).
-   비어 있으면 한 번 묻고 저장. 그래도 없으면 서버가 '이름미상'으로 남긴다(기록은 건너뛰지 않음). */
+   비어 있으면 한 번 묻고 저장. 그래도 없으면 서버가 '이름미상'으로 남긴다(기록은 건너뛰지 않음).
+   ★배10520 수리(2026-08-04 · 박민서M 신고 "계속 창이 떠서 불편합니다") —
+   취소하거나 빈칸으로 닫으면 저장할 게 없어 **저장할 때마다 다시 물었다.** 칸을 여러 개 고치는
+   화면이라 사실상 매번 뜬다. 물었다는 사실 자체를 남겨 **브라우저당 한 번만** 묻는다. */
 function memberStaffName() {
   try {
     var n = (localStorage.getItem('wellperion_staff_name') || '').trim();
-    if (!n) {
+    if (!n && !localStorage.getItem('wellperion_staff_name_asked')) {
+      localStorage.setItem('wellperion_staff_name_asked', '1');
       n = (prompt('이름을 알려주세요 (변경 이력에 남습니다)') || '').trim();
       if (n) localStorage.setItem('wellperion_staff_name', n);
     }
