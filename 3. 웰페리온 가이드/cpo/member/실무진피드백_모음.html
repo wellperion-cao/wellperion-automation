@@ -48,16 +48,6 @@
   .fb-card.st-진행중{border-left-color:var(--gold);}
   .fb-card.st-처리완료{border-left-color:var(--green);}
   .fb-card-head{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:6px;}
-  /* ★2026-08-03 시토(배299) — 처리상태·처리메모를 이 화면에서 직접 채우는 칸.
-     여태 이 화면은 읽기 전용이라 실무진이 답을 적을 자리가 없었다(GM 지시로 신설). */
-  .fb-save{margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start;}
-  .fb-save select{padding:7px 10px; border:1px solid var(--border); border-radius:7px; background:var(--surface); color:inherit; font:inherit; min-width:104px;}
-  .fb-save textarea{flex:1 1 260px; min-height:38px; padding:7px 10px; border:1px solid var(--border); border-radius:7px; background:var(--surface); color:inherit; font:inherit; resize:vertical; line-height:1.5; word-break:keep-all;}
-  .fb-save button{padding:7px 16px; border:1px solid var(--border-strong); border-radius:7px; background:var(--surface); color:inherit; font:inherit; cursor:pointer; white-space:nowrap;}
-  .fb-save button:hover{background:var(--border);}
-  .fb-save button[disabled]{opacity:.5; cursor:default;}
-  .fb-save-msg{flex-basis:100%; font-size:13px; color:var(--dim); min-height:0;}
-  .fb-save-msg.ok{color:var(--green);} .fb-save-msg.err{color:var(--rose);}
   .fb-tag{font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px; background:var(--paper); border:1px solid var(--border); color:var(--text-soft); white-space:nowrap;}
   .fb-tag.status{font-weight:800;}
   .fb-tag.st-접수{color:var(--rose); border-color:var(--rose);}
@@ -275,80 +265,8 @@
         '<div class="fb-content">' + esc(r.content) + '</div>' +
         memoHtml +
         photoHtml(r.photos) +
-        saveHtml(r) +
       '</div>';
     }).join('');
-    bindSave();
-  }
-
-  // ─── 처리상태·처리메모 직접 채우기 (2026-08-03 시토 · 배299 · GM 지시) ────────────
-  //   여태 이 화면은 GVIZ 로 시트를 읽기만 했다 — 실무진이 답을 적을 자리가 없어
-  //   "안 채워진 건" 배너만 뜨고 채울 방법이 없었다.
-  //   ▸열쇠: gate.js 가 이미 전역에 심어 둔 커튼 비밀번호(window.WELP_GATE_PW)만 동봉한다.
-  //     마스터 토큰(다른 액션 다수를 함께 여는 값)은 이 페이지에 심지 않는다 — 그게 여태 막혀 있던 이유다.
-  //   ▸서버는 이 열쇠로 **update 만** 받는다(전체 조회·시트 재정렬은 거부) · 쓰는 칸은 처리상태·처리메모 둘뿐 ·
-  //     대조키는 접수ID 라 행번호로 남의 줄을 건드릴 수 없다.
-  var EXEC_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
-  var STATUS_OPTIONS = ['접수', '확인중', '처리완료'];
-
-  function saveHtml(r){
-    var cur = String(r.status || '접수').trim() || '접수';
-    var opts = STATUS_OPTIONS.map(function(s){
-      return '<option value="' + esc(s) + '"' + (s === cur ? ' selected' : '') + '>' + esc(s) + '</option>';
-    }).join('');
-    // 목록에 없는 값(사람이 직접 적은 문구)도 잃지 않게 첫 항목으로 살려 둔다.
-    if (STATUS_OPTIONS.indexOf(cur) < 0) {
-      opts = '<option value="' + esc(cur) + '" selected>' + esc(cur) + '</option>' + opts;
-    }
-    var id = esc(r.id);
-    return '<div class="fb-save" data-id="' + id + '">' +
-      '<select class="fb-st" aria-label="처리상태">' + opts + '</select>' +
-      '<textarea class="fb-mm" rows="1" placeholder="처리메모 — 무엇을 어떻게 처리했는지 한두 줄">' + esc(r.memo || '') + '</textarea>' +
-      '<button type="button" class="fb-go">저장</button>' +
-      '<div class="fb-save-msg"></div>' +
-    '</div>';
-  }
-
-  function bindSave(){
-    Array.prototype.forEach.call(document.querySelectorAll('.fb-save'), function(box){
-      box.querySelector('.fb-go').addEventListener('click', function(){
-        var btn = this, msg = box.querySelector('.fb-save-msg');
-        var payload = {
-          action: 'staff_feedback_update',
-          password: window.WELP_GATE_PW || '',
-          updates: [{
-            id:     box.getAttribute('data-id'),
-            status: box.querySelector('.fb-st').value,
-            memo:   box.querySelector('.fb-mm').value
-          }]
-        };
-        btn.disabled = true;
-        msg.className = 'fb-save-msg';
-        msg.textContent = '저장하는 중…';
-        fetch(EXEC_URL, {
-          method: 'POST', redirect: 'follow',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        })
-        .then(function(res){ return res.json(); })
-        .then(function(j){
-          if (j && j.ok) {
-            msg.className = 'fb-save-msg ok';
-            msg.textContent = '저장했습니다. 목록을 새로 불러옵니다…';
-            setTimeout(loadFeedback, 700);
-          } else {
-            msg.className = 'fb-save-msg err';
-            msg.textContent = '저장하지 못했습니다 — ' + ((j && (j.error || j.detail)) || '알 수 없는 오류');
-            btn.disabled = false;
-          }
-        })
-        .catch(function(e){
-          msg.className = 'fb-save-msg err';
-          msg.textContent = '저장하지 못했습니다 — ' + e.message;
-          btn.disabled = false;
-        });
-      });
-    });
   }
 
   document.getElementById('authorSearch').addEventListener('input', function(){ render(); });
