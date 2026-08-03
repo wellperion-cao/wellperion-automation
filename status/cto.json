@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
   "status": "DONE",
-  "task_id": "CTO-2026-08-01-GM-표면점검이-탭-안쪽-화면-G1-업무결재SSOT",
-  "last_task_id": "CTO-2026-08-01-GM-표면점검이-탭-안쪽-화면-G1-업무결재SSOT",
+  "task_id": "CTO-2026-08-02-콘텐츠-발행-승인이-GM께-안-닿는다-큐엔-4건인데",
+  "last_task_id": "CTO-2026-08-02-콘텐츠-발행-승인이-GM께-안-닿는다-큐엔-4건인데",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-08-03T21:22:35Z",
+  "last_pushed_at": "2026-08-03T23:07:57Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -197,12 +197,20 @@
       "note": "표 없는 GM 화면의 '읽히는가'가 매일 0으로 자동통과하던 것 수리. 배 note 전제('탭을 빈 화면으로 잰다')는 오진이었고(2026-08-01 코드 주석에 이미 정정됨) 진짜 결함은 칸 측정 범위였다 — td/li 밖 글자 덩어리까지 재고 줄바꿈 유무로 칸/블록 분류. 라이브 실측(playwright, 시크릿 컨텍스트): 업무·결재 SSOT 0→61자, G1 2→96자, 브로제이 828자 안내문은 블록으로 분류해 오탐 방지, 월간운영계획·자율현황 블록도 '못잼'→4089/1530자로 측정 개통. 새 오탐 0. 자체점검 --selftest-cells 동봉(통과). 커밋 c9f2c8242 · 미푸시 0",
       "updated_at": "2026-08-03T21:22:35Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-08-02-콘텐츠-발행-승인이-GM께-안-닿는다-큐엔-4건인데",
+      "title": "남아 있던 마지막 항목(발행완료인데 URL 회수 안 됨 · CASE14·15·17)이 이미 해소돼 있었다. 라이브 실측(publish_status_audit.py 전체 감사 · HTTP 확인 포함): 발행완료 건 중 공개 URL 이 전무한 것 0건, 과대보고 의심 0건. CASE14·15·17 세 건 모두 인스타그램 공개 URL 보유 확인. ▸주의로 남길 것: URL 은 published_url 이 아니라 post_url 칸에 들어간다 — published_url 만 보면 20건이 비어 보인다(실제로는 감사기가 세 칸을 다 본다). 이 배 note 의 'published_url 이 비어 있다' 서술이 그 착시였다. 발신·카드 정상은 2026-08-03 확인분 유지.",
+      "status": "DONE",
+      "note": "남아 있던 마지막 항목(발행완료인데 URL 회수 안 됨 · CASE14·15·17)이 이미 해소돼 있었다. 라이브 실측(publish_status_audit.py 전체 감사 · HTTP 확인 포함): 발행완료 건 중 공개 URL 이 전무한 것 0건, 과대보고 의심 0건. CASE14·15·17 세 건 모두 인스타그램 공개 URL 보유 확인. ▸주의로 남길 것: URL 은 published_url 이 아니라 post_url 칸에 들어간다 — published_url 만 보면 20건이 비어 보인다(실제로는 감사기가 세 칸을 다 본다). 이 배 note 의 'published_url 이 비어 있다' 서술이 그 착시였다. 발신·카드 정상은 2026-08-03 확인분 유지.",
+      "updated_at": "2026-08-03T23:07:57Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "표 없는 GM 화면의 '읽히는가'가 매일 0으로 자동통과하던 것 수리. 배 note 전제('탭을 빈 화면으로 잰다')는 오진이었고(2026-08-01 코드 주석에 이미 정정됨) 진짜 결함은 칸 측정 범위였다 — td/li 밖 글자 덩어리까지 재고 줄바꿈 유무로 칸/블록 분류. 라이브 실측(playwright, 시크릿 컨텍스트): 업무·결재 SSOT 0→61자, G1 2→96자, 브로제이 828자 안내문은 블록으로 분류해 오탐 방지, 월간운영계획·자율현황 블록도 '못잼'→4089/1530자로 측정 개통. 새 오탐 0. 자체점검 --selftest-cells 동봉(통과). 커밋 c9f2c8242 · 미푸시 0",
-  "artifact_url": "https://github.com/wellperion-cao/wellperion-automation/commit/c9f2c8242",
+  "title": "남아 있던 마지막 항목(발행완료인데 URL 회수 안 됨 · CASE14·15·17)이 이미 해소돼 있었다. 라이브 실측(publish_status_audit.py 전체 감사 · HTTP 확인 포함): 발행완료 건 중 공개 URL 이 전무한 것 0건, 과대보고 의심 0건. CASE14·15·17 세 건 모두 인스타그램 공개 URL 보유 확인. ▸주의로 남길 것: URL 은 published_url 이 아니라 post_url 칸에 들어간다 — published_url 만 보면 20건이 비어 보인다(실제로는 감사기가 세 칸을 다 본다). 이 배 note 의 'published_url 이 비어 있다' 서술이 그 착시였다. 발신·카드 정상은 2026-08-03 확인분 유지.",
+  "artifact_url": "https://github.com/wellperion-cao/wellperion-automation/blob/master/scripts/publish_status_audit.py",
   "commit": "",
-  "note": "표 없는 GM 화면의 '읽히는가'가 매일 0으로 자동통과하던 것 수리. 배 note 전제('탭을 빈 화면으로 잰다')는 오진이었고(2026-08-01 코드 주석에 이미 정정됨) 진짜 결함은 칸 측정 범위였다 — td/li 밖 글자 덩어리까지 재고 줄바꿈 유무로 칸/블록 분류. 라이브 실측(playwright, 시크릿 컨텍스트): 업무·결재 SSOT 0→61자, G1 2→96자, 브로제이 828자 안내문은 블록으로 분류해 오탐 방지, 월간운영계획·자율현황 블록도 '못잼'→4089/1530자로 측정 개통. 새 오탐 0. 자체점검 --selftest-cells 동봉(통과). 커밋 c9f2c8242 · 미푸시 0",
-  "updated_at": "2026-08-03T21:22:35Z"
+  "note": "남아 있던 마지막 항목(발행완료인데 URL 회수 안 됨 · CASE14·15·17)이 이미 해소돼 있었다. 라이브 실측(publish_status_audit.py 전체 감사 · HTTP 확인 포함): 발행완료 건 중 공개 URL 이 전무한 것 0건, 과대보고 의심 0건. CASE14·15·17 세 건 모두 인스타그램 공개 URL 보유 확인. ▸주의로 남길 것: URL 은 published_url 이 아니라 post_url 칸에 들어간다 — published_url 만 보면 20건이 비어 보인다(실제로는 감사기가 세 칸을 다 본다). 이 배 note 의 'published_url 이 비어 있다' 서술이 그 착시였다. 발신·카드 정상은 2026-08-03 확인분 유지.",
+  "updated_at": "2026-08-03T23:07:57Z"
 }
