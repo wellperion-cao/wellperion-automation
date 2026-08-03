@@ -191,6 +191,19 @@ pyautogui = _DEPS["pyautogui"]
 from pywinauto import Desktop  # noqa: E402
 
 KAKAO_ROOM_WINDOW_CLASS = "EVA_Window_Dblclk"  # 메인창·채팅방 창 공통 클래스(제목으로 구분)
+
+
+def _title_key(s: str) -> str:
+    """방 이름 대조용 정규화 — 공백만 지운다.
+
+    ★왜(2026-08-04 시토 · 배314·202). 방 찾기가 창 제목 완전일치였다. 그래서 카톡에서
+    방 이름을 바꾸거나 별표 뒤 공백 한 칸이 다르면 **매출보고가 그 방을 못 찾고 조용히
+    실패**한다 — 2026-08-01 「★ 운영부」가 정확히 그 사고였고, 그때는 목록 쪽에
+    '공백 한 칸 있음' 주석을 다는 것으로 넘겼다(방마다 주석 = 다음 방에서 또 터진다).
+    공백만 지우고 대조하면 「★관리부」·「★ 관리부」가 같은 방으로 잡혀 이 부류가 끝난다.
+    ▸공백만 지운다(글자·기호는 그대로) — 현재 방 4개는 공백을 지워도 서로 안 겹친다.
+    """
+    return "".join(str(s or "").split())
 KAKAO_MAIN_WINDOW_TITLE = "카카오톡"
 
 
@@ -304,7 +317,7 @@ def find_room_window(room_name: str, timeout: float = 3.0):
     deadline = time.time() + timeout
     while True:
         for hwnd, title, cls in _enum_visible_top_level_windows():
-            if cls == KAKAO_ROOM_WINDOW_CLASS and title.strip() == room_name:
+            if cls == KAKAO_ROOM_WINDOW_CLASS and _title_key(title) == _title_key(room_name):
                 return Desktop(backend="uia").window(handle=hwnd)
         if time.time() >= deadline:
             raise RoomNotOpenError(
@@ -525,7 +538,7 @@ def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
         for hwnd, title, cls in _enum_visible_top_level_windows():
-            if cls == KAKAO_ROOM_WINDOW_CLASS and title.strip() == room_name:
+            if cls == KAKAO_ROOM_WINDOW_CLASS and _title_key(title) == _title_key(room_name):
                 room_win = Desktop(backend="uia").window(handle=hwnd)
                 focus_window(room_win, room_name)
                 return room_win
