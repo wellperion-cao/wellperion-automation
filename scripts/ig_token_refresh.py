@@ -36,6 +36,13 @@ try:
 except ImportError:
     requests = None
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 경보 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
+
 ROOT = Path(__file__).resolve().parent.parent
 ENV_PATH = ROOT / "scripts" / ".env"
 TG_ENV_PATH = ROOT / "telegram_bot" / ".env"  # 봇 토큰 SSOT(CLAUDE.md §3) — .env 직독, 하드코딩 금지
@@ -93,14 +100,9 @@ def _send_owner_alert(message: str, dry_run: bool = False) -> None:
         print("[WARN] OWNER 경보 발송 불가 — TELEGRAM_BOT_TOKEN/OWNER_ID 미설정 또는 requests 없음", flush=True)
         return
     try:
-        resp = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": int(owner_id), "text": message},
-            timeout=15,
-        )
-        ok = resp.status_code == 200 and resp.json().get("ok", False)
+        ok = _tg_send(token, int(owner_id), message, source="ig_token_refresh._send_owner_alert", timeout=15)
         if not ok:
-            print(f"[WARN] 경보 발송 실패: status={resp.status_code} body={resp.text[:200]}", flush=True)
+            print("[WARN] 경보 발송 실패", flush=True)
     except Exception as e:
         print(f"[WARN] 경보 발송 예외: {e}", flush=True)
 

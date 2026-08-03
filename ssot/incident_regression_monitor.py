@@ -196,12 +196,8 @@ def _alert(text: str) -> None:
         chat = resolve_room()
         if not token or not chat:
             return
-        import urllib.parse
-        import urllib.request
-        data = urllib.parse.urlencode({"chat_id": chat, "text": text}).encode("utf-8")
-        urllib.request.urlopen(
-            urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data), timeout=10
-        ).read()
+        from tg_outbound_log import send as _tg_send  # noqa: PLC0415
+        _tg_send(token, chat, text, source="incident_regression_monitor", timeout=10)
     except Exception:
         pass
 

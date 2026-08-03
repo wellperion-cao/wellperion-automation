@@ -18,8 +18,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import requests
-
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
@@ -27,6 +25,11 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from report_stream_1_impl import build_digest, seed_completion_cursor  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
 
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_INQUIRY_CHAT_ID") or -5516675010)  # 문의알림방
 KAKAO_ROOM = "★부서장"
@@ -46,13 +49,8 @@ def _send_telegram(html_text: str) -> bool:
     if not token:
         print("[stream1] TELEGRAM_BOT_TOKEN 미설정", flush=True)
         return False
-    r = requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data={"chat_id": TELEGRAM_CHAT_ID, "text": html_text, "parse_mode": "HTML"},
-        timeout=20,
-    )
-    r.raise_for_status()
-    return r.json().get("ok", False)
+    return _tg_send(token, TELEGRAM_CHAT_ID, html_text, source="report_stream_1_inquiry._send_telegram",
+                     extra={"parse_mode": "HTML"}, timeout=20)
 
 
 def _send_kakao(plain_text: str) -> None:

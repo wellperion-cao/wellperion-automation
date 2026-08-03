@@ -26,6 +26,13 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
+
 REPO = Path(r"C:\Users\jjky0\welperion-automation")
 MEM_DIR = Path(r"C:\Users\jjky0\.claude\projects\C--Users-jjky0-welperion-automation\memory")
 OUT = REPO / "status" / "context_budget.json"
@@ -150,7 +157,6 @@ def _notify(total, overs, items):
     try:
         from dotenv import load_dotenv
         load_dotenv(REPO / "telegram_bot" / ".env")
-        import requests
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         chat = os.environ.get("OWNER_ID") or os.environ.get("TELEGRAM_CHAT_ID")
         if not token or not chat:
@@ -158,8 +164,7 @@ def _notify(total, overs, items):
         msg = "🗜️ 상시 컨텍스트 budget: 합계 ~%d tok" % total
         if overs:
             msg += "\n임계초과: " + ", ".join(overs) + " → 일요일 정비 슬림화"
-        requests.post("https://api.telegram.org/bot%s/sendMessage" % token,
-                      data={"chat_id": chat, "text": msg}, timeout=10)
+        _tg_send(token, chat, msg, source="context_budget_report._notify", timeout=10)
     except Exception:
         pass
 

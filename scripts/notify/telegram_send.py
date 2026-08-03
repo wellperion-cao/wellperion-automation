@@ -14,6 +14,7 @@ leaf 원칙:
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 _ENV_FILE = Path(__file__).resolve().parent.parent.parent / "telegram_bot" / ".env"
@@ -37,24 +38,14 @@ def _read_token() -> str:
 
 
 def send(chat_id, text: str) -> bool:
-    """Bot API sendMessage 1회 POST(실패 시 1회 재시도). chat_id=None → False."""
+    """Bot API sendMessage 관문(scripts/tg_outbound_log.send) 경유. chat_id=None → False."""
     if chat_id is None:
         return False
     token = _read_token()
     if not token:
         return False
 
-    import requests  # noqa: PLC0415 — 발송 시점에만 import(테스트·dry-run 무접촉)
+    sys.path.insert(0, str(_ENV_FILE.resolve().parent.parent / "scripts"))  # noqa: PLC0415
+    from tg_outbound_log import send as _tg_send  # noqa: PLC0415 — 발송 시점에만 import
 
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text}
-    for attempt in range(2):
-        try:
-            resp = requests.post(url, json=payload, timeout=_TIMEOUT)
-            if resp.status_code == 200 and resp.json().get("ok"):
-                return True
-            print(f"[telegram_send] 실패 attempt={attempt + 1} "
-                  f"status={resp.status_code} body={resp.text[:160]}")
-        except Exception as e:
-            print(f"[telegram_send] 요청 예외 attempt={attempt + 1}: {e}")
-    return False
+    return _tg_send(token, chat_id, text, source="notify.telegram_send.send", timeout=_TIMEOUT)

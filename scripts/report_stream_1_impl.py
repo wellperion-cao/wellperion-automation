@@ -46,6 +46,11 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 from collectors.ops_shared import FUNNEL_EXEC_URL, gas_get  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
 
 GM_CHAT_ID = "8254867551"  # GM 개인 업무보고방(@namuki_report_bot) — 고정, override 불가
 
@@ -537,22 +542,12 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     )
 
 
-def send_test(text: str) -> dict:
+def send_test(text: str) -> bool:
     token = _load_env_val("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN 미설정 — telegram_bot/.env 확인 필요")
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    resp = requests.post(
-        url,
-        data={
-            "chat_id": GM_CHAT_ID,
-            "text": text,
-            "parse_mode": "HTML",
-        },
-        timeout=15,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    return _tg_send(token, GM_CHAT_ID, text, source="report_stream_1_impl.send_test",
+                     extra={"parse_mode": "HTML"}, timeout=15)
 
 
 def main() -> None:

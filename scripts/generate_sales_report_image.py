@@ -33,6 +33,13 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 경보 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
+
 # Windows 콘솔(cp949) 한글 깨짐 방지
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -121,22 +128,14 @@ def _load_env(path: Path) -> dict:
 def send_owner_alert(message: str) -> None:
     """OWNER 텔레그램 DM으로 실패 경보(best-effort — 경보 발송 자체 실패는 무시하고 계속 진행)."""
     try:
-        import requests
         env = _load_env(ENV_PATH)
         token = env.get("TELEGRAM_BOT_TOKEN", "")
         owner_id = env.get("OWNER_ID") or env.get("TELEGRAM_CHAT_ID", "")
         if not token or not owner_id:
             log("[경고] TELEGRAM_BOT_TOKEN/OWNER_ID(.env) 없음 — 경보 발송 생략")
             return
-        resp = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": int(owner_id), "text": message},
-            timeout=15,
-        )
-        if resp.status_code != 200 or not resp.json().get("ok", False):
-            log(f"[경고] 경보 발송 실패: status={resp.status_code} body={resp.text[:200]}")
-        else:
-            log("OWNER 텔레그램 경보 발송 완료")
+        ok = _tg_send(token, int(owner_id), message, source="generate_sales_report_image.send_owner_alert", timeout=15)
+        log("OWNER 텔레그램 경보 발송 완료" if ok else "[경고] 경보 발송 실패")
     except Exception as exc:
         log(f"[경고] 경보 발송 예외(무시): {exc}")
 

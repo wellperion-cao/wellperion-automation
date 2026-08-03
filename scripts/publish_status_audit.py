@@ -31,6 +31,13 @@ import sys
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 감사 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
+
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 # 감사 결과 보관소 — 09:45 수집기 편승 실행이 여기 남기고, worklog_gaps 스캔(07:30)이 읽어
@@ -176,10 +183,7 @@ def _alert_telegram(suspects: list[dict]) -> None:
     ids = ", ".join(s["id"].split("-")[-1] for s in suspects[:6])
     msg = f"🔴 발행완료 과대보고 의심 {n}건 감지 — {ids} (publish_status_audit)"
     try:
-        import urllib.parse
-        data = urllib.parse.urlencode({"chat_id": chat, "text": msg}).encode()
-        urllib.request.urlopen(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data, timeout=10)
+        _tg_send(token, chat, msg, source="publish_status_audit._alert_telegram", timeout=10)
     except Exception:
         pass
 

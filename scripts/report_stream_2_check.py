@@ -33,6 +33,11 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from publish_digest import _load_env_val  # noqa: E402
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
 
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_CHECK_CHAT_ID") or -5136037543)  # 점검현황방
 KAKAO_ROOM = "★운영+시설+지원+주차"
@@ -195,13 +200,7 @@ def _send_telegram(text: str) -> bool:
         print("[stream2] TELEGRAM_BOT_TOKEN 미설정", flush=True)
         return False
     # parse_mode 미지정 = 평문 전송(점검요약 내 특수문자 MarkdownV2 이스케이프 불필요)
-    r = requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data={"chat_id": TELEGRAM_CHAT_ID, "text": text},
-        timeout=20,
-    )
-    r.raise_for_status()
-    return r.json().get("ok", False)
+    return _tg_send(token, TELEGRAM_CHAT_ID, text, source="report_stream_2_check._send_telegram", timeout=20)
 
 
 def _send_kakao(text: str) -> None:

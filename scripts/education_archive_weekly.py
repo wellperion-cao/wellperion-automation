@@ -37,13 +37,11 @@ load_dotenv(_BASE_DIR / "telegram_bot" / ".env")
 
 import requests  # send_telegram 발송용
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(*a, **k):
+        return False
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")
@@ -111,16 +109,8 @@ def send_telegram(msg: str) -> bool:
         print("[ERROR] TELEGRAM_BOT_TOKEN/OWNER_ID 미설정 — 발송 생략")
         return False
     try:
-        pace()
-        resp = requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-            json={"chat_id": OWNER_ID, "text": msg},
-            timeout=10,
-        )
-        log_outbound(msg, chat_id=OWNER_ID, source="education_archive_weekly.send_telegram", ok=(resp.status_code == 200), kind="sendMessage")
-        return resp.status_code == 200
+        return _tg_send(TELEGRAM_TOKEN, OWNER_ID, msg, source="education_archive_weekly.send_telegram", timeout=10)
     except Exception as e:
-        log_outbound(msg, chat_id=OWNER_ID, source="education_archive_weekly.send_telegram", ok=False, kind="sendMessage")
         print(f"[ERROR] 텔레그램 발송 실패: {e}")
         return False
 

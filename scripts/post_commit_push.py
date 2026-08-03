@@ -101,16 +101,8 @@ def _telegram_warn(root: str, text: str) -> None:
             chat_id = route(TECH_CHECK)
         except Exception:
             pass  # 라우터를 못 읽으면 기존 대상 유지 — 알림 자체를 잃지 않는다
-        import urllib.parse
-        import urllib.request
-
-        data = urllib.parse.urlencode(
-            {"chat_id": chat_id, "text": text}
-        ).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data
-        )
-        urllib.request.urlopen(req, timeout=10).read()
+        from tg_outbound_log import send as _tg_send
+        _tg_send(token, chat_id, text, source="post_commit_push._telegram_warn", timeout=10)
     except Exception:
         pass
 

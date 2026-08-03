@@ -25,6 +25,13 @@ import sys
 import json
 import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
+
 # Windows 콘솔(cp949)·예약작업 환경에서도 이모지·한글 print가 깨지거나 죽지 않도록
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -95,19 +102,10 @@ def _send_telegram_fallback(text):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("[WARN] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID 미설정 — 텔레그램 발송 생략")
         return False
-    url     = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = json.dumps({
-        "chat_id":    TELEGRAM_CHAT_ID,
-        "text":       text,
-        "parse_mode": "HTML",
-    }).encode("utf-8")
     try:
-        import urllib.request
-        req  = urllib.request.Request(url, data=payload,
-                                      headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            return result.get("ok", False)
+        return _tg_send(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, text,
+                         source="monthly_marketing_report._send_telegram_fallback",
+                         extra={"parse_mode": "HTML"}, timeout=10)
     except Exception as e:
         print(f"[ERROR] 텔레그램 발송 실패: {e}")
         return False

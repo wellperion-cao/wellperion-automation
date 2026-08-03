@@ -24,6 +24,13 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발행 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
+
 KST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 STATUS_DIR = ROOT / "status"
@@ -438,12 +445,7 @@ def _send_telegram(text, kind="tech_check"):
             chat = route(kind)
         except Exception:
             pass  # 라우터를 못 읽으면 기존 대상 유지 — 알림 자체를 잃지 않는다
-        data = urllib.parse.urlencode({"chat_id": chat, "text": text}).encode()
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data
-        )
-        with urllib.request.urlopen(req, timeout=10) as r:
-            return r.status == 200
+        return _tg_send(token, chat, text, source="erp_status_publisher._send_telegram", timeout=10)
     except Exception:
         return False
 

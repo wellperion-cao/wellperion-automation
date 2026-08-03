@@ -152,13 +152,11 @@ TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 # 역롤백: 이 값을 "" 로 바꾸면 즉시 미발송(브리프 생성·저장은 그대로 계속됨).
 WEEKLY_SUMMARY_CHAT_ID = "-5516675010"  # 문의알림방(시모 담당) — 메모리 project_telegram_3room_split
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(*a, **k):
+        return False
 
 
 def _load_env_value(key: str) -> str:
@@ -216,26 +214,13 @@ def send_telegram_summary(text: str) -> bool:
         print("[WARN] TELEGRAM_BOT_TOKEN 미설정 — 텔레그램 요약 발송 생략")
         return False
     try:
-        import urllib.parse
-        import urllib.request
-
-        data = urllib.parse.urlencode(
-            {"chat_id": WEEKLY_SUMMARY_CHAT_ID, "text": text, "disable_web_page_preview": "true"}
-        ).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
-        )
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            ok = resp.status == 200
-            print(f"[INFO] 텔레그램 주간 요약 {'발송 성공' if ok else '발송 실패'} (문의알림방)")
-            log_outbound(text, chat_id=WEEKLY_SUMMARY_CHAT_ID,
-                         source="weekly_marketing_feedback.send_telegram_summary", ok=ok, kind="sendMessage")
-            return ok
+        ok = _tg_send(token, WEEKLY_SUMMARY_CHAT_ID, text,
+                      source="weekly_marketing_feedback.send_telegram_summary",
+                      extra={"disable_web_page_preview": "true"}, timeout=10)
+        print(f"[INFO] 텔레그램 주간 요약 {'발송 성공' if ok else '발송 실패'} (문의알림방)")
+        return ok
     except Exception as e:
         print(f"[WARN] 텔레그램 주간 요약 발송 실패: {e} (브리프 생성은 계속됨)")
-        log_outbound(text, chat_id=WEEKLY_SUMMARY_CHAT_ID,
-                     source="weekly_marketing_feedback.send_telegram_summary", ok=False, kind="sendMessage")
         return False
 
 

@@ -35,7 +35,16 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 경보 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
 
 # ── 폴백 체인 (단일 출처) ───────────────────────────────────────────────
 # 순서 = 우선순위. 1순위(opus)가 "모델 자체 차단" 신호일 때만 다음으로 강등.
@@ -111,12 +120,7 @@ def _alert(text: str) -> None:
         chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
         if not token or not chat_id:
             return
-        import httpx  # type: ignore
-        httpx.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": text},
-            timeout=10,
-        )
+        _tg_send(token, chat_id, text, source="model_router._alert", timeout=10)
     except Exception:
         pass  # 경보 실패가 운영을 막지 않는다
 

@@ -85,13 +85,11 @@ OUTPUT_SUBDIR_NAME = "output(카카오 채널)"
 COPY_FILENAME = "kakao_copy.md"
 DEFAULT_IMAGE_GLOB = "*.jpg"
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(*a, **k):
+        return False
 
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 TELEGRAM_CHAT_ID_ENV_KEY = "TELEGRAM_CHAT_ID"
@@ -245,22 +243,11 @@ def telegram_report(message: str) -> None:
         print("[WARN] 텔레그램 토큰 미설정 — 보고 생략 (env: TELEGRAM_BOT_TOKEN)")
         return
     try:
-        import urllib.parse
-        import urllib.request
-        url = f"https://api.telegram.org/bot{token}/sendMessage"
-        data = urllib.parse.urlencode({
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": message,
-            "disable_web_page_preview": "true",
-        }).encode("utf-8")
-        req = urllib.request.Request(url, data=data, method="POST")
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            ok = resp.status == 200
-        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="kakao_channel_upload_playwright.telegram_report", ok=ok, kind="sendMessage")
+        ok = _tg_send(token, TELEGRAM_CHAT_ID, message,
+                       source="kakao_channel_upload_playwright.telegram_report",
+                       extra={"disable_web_page_preview": "true"}, timeout=10)
         print(f"[INFO] 텔레그램 보고 {'성공' if ok else '실패'} (chat={TELEGRAM_CHAT_ID})")
     except Exception:
-        log_outbound(message, chat_id=TELEGRAM_CHAT_ID, source="kakao_channel_upload_playwright.telegram_report", ok=False, kind="sendMessage")
         print("[WARN] 텔레그램 보고 실패 (상세 미출력 — 토큰 trace 노출 방지)")
 
 

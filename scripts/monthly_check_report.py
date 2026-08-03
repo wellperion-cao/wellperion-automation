@@ -45,6 +45,13 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
+
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 # ── 경로 상수 ──
@@ -245,19 +252,11 @@ def send_card(text: str) -> bool:
     if not token:
         print("[WARN] 텔레그램 토큰 미설정(.env) — 카드 발송 생략")
         return False
-    data = urllib.parse.urlencode({
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": "true",
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            ok = resp.status == 200
-            print(f"[INFO] 점검 월간 카드 발송 {'성공' if ok else '실패'} (chat={chat_id})")
-            return ok
+        ok = _tg_send(token, chat_id, text, source="monthly_check_report.send_card",
+                      extra={"parse_mode": "HTML", "disable_web_page_preview": "true"}, timeout=15)
+        print(f"[INFO] 점검 월간 카드 발송 {'성공' if ok else '실패'} (chat={chat_id})")
+        return ok
     except Exception:
         print("[WARN] 카드 발송 실패 (토큰 trace 노출 방지로 상세 미출력)")
         return False

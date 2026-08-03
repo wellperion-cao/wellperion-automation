@@ -36,12 +36,16 @@ import io
 import re
 import subprocess
 import uuid
-import urllib.request
-import urllib.parse
 from datetime import datetime
 from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
 
 # ── 경로 상수 ──
 BASE_DIR = Path(r"C:\Users\jjky0\welperion-automation")
@@ -472,18 +476,10 @@ def send_telegram(message: str) -> bool:
     if len(message) > 4000:
         message = message[:3990] + "\n...(잘림)"
 
-    payload = json.dumps({"chat_id": chat_id, "text": message}).encode("utf-8")
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    req = urllib.request.Request(
-        url, data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            ok = json.loads(resp.read().decode()).get("ok", False)
-            print(f"[텔레그램 {'발송 성공' if ok else '발송 실패'}]")
-            return ok
+        ok = _tg_send(token, chat_id, message, source="ai_learning_proposer.send_telegram", timeout=15)
+        print(f"[텔레그램 {'발송 성공' if ok else '발송 실패'}]")
+        return ok
     except Exception as e:
         print(f"[ERROR] 텔레그램 발송 실패: {type(e).__name__}")
         return False

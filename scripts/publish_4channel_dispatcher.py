@@ -43,13 +43,11 @@ try:
 except Exception:
     pass
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-    def pace(*a, **k):
-        return None
+    def _tg_send(*a, **k):
+        return False
 
 # ─────────────────────────────────────────────
 # 경로 상수
@@ -136,22 +134,14 @@ TELEGRAM_CHAT_ID: str = _env_val(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bot/.env 
 
 def _send_telegram(text: str) -> None:
     """텔레그램 1줄 보고 (실패해도 디스패처 정상 종료)."""
-    import urllib.parse
-    import urllib.request
-
     tok = _telegram_token()
     if not tok:
         print("[텔레그램] 토큰 없음 — 보고 생략")
         return
-    url = f"https://api.telegram.org/bot{tok}/sendMessage"
-    data = urllib.parse.urlencode({"chat_id": TELEGRAM_CHAT_ID, "text": text}).encode()
     try:
-        pace()
-        urllib.request.urlopen(url, data=data, timeout=10)
-        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_4channel_dispatcher._send_telegram", ok=True, kind="sendMessage")
-        print("[텔레그램] 보고 완료")
+        ok = _tg_send(tok, TELEGRAM_CHAT_ID, text, source="publish_4channel_dispatcher._send_telegram", timeout=10)
+        print("[텔레그램] 보고 완료" if ok else "[텔레그램] 보고 실패(무시)")
     except Exception as e:
-        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_4channel_dispatcher._send_telegram", ok=False, kind="sendMessage")
         print(f"[텔레그램] 보고 실패(무시): {e}")
 
 

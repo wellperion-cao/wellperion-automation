@@ -48,14 +48,11 @@ import requests
 
 from cpo_report import GM_CHAT_ID, TELEGRAM_TOKEN, _gas_get, _today_str
 
-try:  # 발신 공용 로깅·페이싱(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-
-    def pace(*a, **k):
-        return None
+    def _tg_send(*a, **k):
+        return False
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SUMMARY_PATH = REPO_ROOT / "status" / "member_expiry_summary.json"
@@ -186,18 +183,12 @@ def _send_telegram(chat_id: int, text: str) -> tuple[int | None, str | None]:
     """단순 텍스트 발신(요약 메시지는 HTML 마크업 불필요). 성공 시 (message_id, None)."""
     if not TELEGRAM_TOKEN:
         return None, "TELEGRAM_BOT_TOKEN 미설정"
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     try:
-        pace()
-        resp = requests.post(url, json={"chat_id": chat_id, "text": text}, timeout=15)
-        data = resp.json()
-        ok = resp.status_code == 200 and bool(data.get("ok"))
-        log_outbound(text, chat_id=chat_id, source="member_expiry_alert", ok=ok, kind="sendMessage")
+        ok = _tg_send(TELEGRAM_TOKEN, chat_id, text, source="member_expiry_alert", timeout=15)
         if ok:
-            return data.get("result", {}).get("message_id"), None
-        return None, data.get("description") or f"http {resp.status_code}"
+            return None, None  # 관문은 message_id를 반환하지 않음 — 호출부는 성공 신호만 사용
+        return None, "발송 실패"
     except Exception as exc:  # noqa: BLE001 — 정직 실패 신호로 반환(지어내지 않음)
-        log_outbound(text, chat_id=chat_id, source="member_expiry_alert", ok=False, kind="sendMessage")
         return None, str(exc)
 
 
@@ -224,8 +215,8 @@ if __name__ == "__main__":
         print(json.dumps(summary, ensure_ascii=False, indent=2))
 
     if args.send:
-        msg_id, err = _send_telegram(GM_CHAT_ID, text)
-        if msg_id is not None:
-            print(f"\n[발신 성공] message_id={msg_id} chat_id={GM_CHAT_ID}")
+        _, err = _send_telegram(GM_CHAT_ID, text)
+        if err is None:
+            print(f"\n[발신 성공] chat_id={GM_CHAT_ID}")
         else:
             print(f"\n[발신 실패] {err}")

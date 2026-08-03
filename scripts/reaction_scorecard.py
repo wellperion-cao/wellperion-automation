@@ -59,9 +59,6 @@ import json
 import os
 import re
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -72,14 +69,11 @@ except Exception:
     pass
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향(기존 스크립트들과 동일 패턴)
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향(기존 스크립트들과 동일 패턴)
+    from tg_outbound_log import send as _tg_send
 except Exception:
-    def log_outbound(*a, **k):
-        pass
-
-    def pace(*a, **k):
-        return None
+    def _tg_send(*a, **k):
+        return False
 
 # ── 경로 (기존 구조 그대로 — 새 폴더 없음) ─────────────────────────────
 _SCRIPT_DIR = Path(__file__).resolve().parent
@@ -498,16 +492,9 @@ def _send_gm(text: str) -> bool:
         print("[ERROR] TELEGRAM_BOT_TOKEN 또는 TELEGRAM_CHAT_ID 미설정 — GM 알림 발송 불가", file=sys.stderr)
         return False
     try:
-        data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode("utf-8")
-        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            ok = resp.status == 200
-            log_outbound(text, chat_id=chat_id, source="reaction_scorecard._send_gm", ok=ok, kind="sendMessage")
-            return ok
+        return _tg_send(token, chat_id, text, source="reaction_scorecard._send_gm", timeout=10)
     except Exception as e:
         print(f"[WARN] GM 알림 발송 실패: {e}", file=sys.stderr)
-        log_outbound(text, chat_id=chat_id, source="reaction_scorecard._send_gm", ok=False, kind="sendMessage")
         return False
 
 

@@ -34,10 +34,10 @@ _LOG_DIR = os.path.join(_ROOT_DIR, 'logs')
 # ── tg_outbound_log 임포트 (best-effort — 없으면 무음 fallback) ───────────────
 try:
     sys.path.insert(0, _SCRIPT_DIR)
-    from tg_outbound_log import log_outbound as _log_outbound
+    from tg_outbound_log import send as _tg_send
 except ImportError:
-    def _log_outbound(*args, **kwargs):  # type: ignore[misc]
-        pass
+    def _tg_send(*args, **kwargs):  # type: ignore[misc]
+        return False
 
 
 # ── .env 로더 ─────────────────────────────────────────────────────────────────
@@ -319,15 +319,9 @@ def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
         print(f"[DRY-RUN] 메시지:\n{message}", flush=True)
         return
     try:
-        resp = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={'chat_id': owner_id, 'text': message},
-            timeout=15,
-        )
-        ok = resp.status_code == 200 and resp.json().get('ok', False)
-        _log_outbound(message, chat_id=owner_id, source='telegram_health_check', ok=ok, kind='sendMessage')
+        ok = _tg_send(token, owner_id, message, source='telegram_health_check', timeout=15)
         if not ok:
-            print(f"[WARN] 경보 발송 실패: status={resp.status_code} body={resp.text[:200]}", flush=True)
+            print("[WARN] 경보 발송 실패", flush=True)
     except Exception as e:
         print(f"[WARN] 경보 발송 예외: {e}", flush=True)
 

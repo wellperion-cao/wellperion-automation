@@ -15,10 +15,15 @@ import argparse
 import json
 import os
 import sys
-import urllib.parse
-import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import send as _tg_send
+except Exception:
+    def _tg_send(*a, **k):
+        return False
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 QUEUE = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
@@ -167,18 +172,8 @@ def _format_summary_message(group: list[dict]) -> str:
 # ---------------------------------------------------------------------------
 def _send(token: str, chat_id: str, text: str) -> bool:
     try:
-        data = urllib.parse.urlencode({
-            "chat_id": chat_id,
-            "text": text,
-            "disable_web_page_preview": "true",
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data=data,
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
+        return _tg_send(token, chat_id, text, source="notify_published_links._send",
+                         extra={"disable_web_page_preview": "true"}, timeout=10)
     except Exception as exc:
         print(f"[WARN] 텔레그램 전송 실패: {exc}", file=sys.stderr)
         return False

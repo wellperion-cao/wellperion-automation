@@ -43,7 +43,6 @@ import os
 import re
 import subprocess
 import sys
-import urllib.request
 import zipfile
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -1138,20 +1137,11 @@ def send_telegram(message: str) -> bool:
         return False
     if len(message) > 4000:
         message = message[:3990] + "\n...(잘림)"
-    payload = json.dumps({"chat_id": chat_id, "text": message}).encode("utf-8")
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            ok = json.loads(resp.read().decode()).get("ok", False)
-            try:
-                from tg_outbound_log import log_outbound
-                log_outbound(message, chat_id=chat_id, source="weekly_self_review.send_telegram",
-                              ok=ok, kind="sendMessage")
-            except Exception:
-                pass
-            print(f"[텔레그램 {'발송 성공' if ok else '발송 실패'}]")
-            return ok
+        from tg_outbound_log import send as _tg_send
+        ok = _tg_send(token, chat_id, message, source="weekly_self_review.send_telegram", timeout=15)
+        print(f"[텔레그램 {'발송 성공' if ok else '발송 실패'}]")
+        return ok
     except Exception as e:
         print(f"[ERROR] 텔레그램 발송 실패: {type(e).__name__}")
         return False
