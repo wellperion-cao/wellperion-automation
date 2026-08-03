@@ -1,5 +1,5 @@
 {
-  "_comment": "카톡 매출보고 3방 전송기(kakao_report_sender.py) 대상 방 목록. 순서대로 전송. 이름은 열려 있는 카톡 채팅방 창 제목과 정확히 일치해야 함(전송 전 GM이 3방을 미리 열어둘 것 — kakao_report_sender.py가 창-제목으로 탐색). prefix=그 방 캡션 앞에 붙는 문구(원본 캡션은 그대로, prefix만 앞에 결합). archive_dir=텔레그램 봇이 매출보고 사진을 저장하는 로컬 월 폴더 루트(2026-07-06부터 저장소 내부 .gitignore 대상 폴더로 이전 — 매출 데이터 비공개 유지).",
+  "_comment": "카톡 매출보고 3방 전송기(kakao_report_sender.py) 대상 방 목록. 순서대로 전송. 이름은 열려 있는 카톡 채팅방 창 제목과 맞아야 함(공백은 무시하고 대조한다 — _title_key)(전송 전 GM이 3방을 미리 열어둘 것 — kakao_report_sender.py가 창-제목으로 탐색). prefix=그 방 캡션 앞에 붙는 문구(원본 캡션은 그대로, prefix만 앞에 결합). archive_dir=텔레그램 봇이 매출보고 사진을 저장하는 로컬 월 폴더 루트(2026-07-06부터 저장소 내부 .gitignore 대상 폴더로 이전 — 매출 데이터 비공개 유지).",
   "archive_dir": "C:\\Users\\jjky0\\welperion-automation\\1. AI자료_아카이브\\10_매출보고",
   "rooms": [
     {
@@ -7,11 +7,11 @@
       "prefix": "회장님, "
     },
     {
-      "name": "웰페리온 관리부",
+      "name": "★관리부",
       "prefix": ""
     },
     {
-      "name": "★ 운영부",
+      "name": "★운영부",
       "prefix": ""
     },
     {
@@ -28,18 +28,17 @@
       "purpose": "회장님께 매일 매출·운영 보고(이미지 1통)"
     },
     {
-      "name": "웰페리온 관리부",
+      "name": "★관리부",
       "category": "보고",
       "sales_report": true,
       "purpose": "관리부 대상 매일 매출·운영 보고"
     },
     {
-      "name": "★ 운영부",
+      "name": "★운영부",
       "category": "보고+실무진",
       "sales_report": true,
       "purpose": "운영부 실무진 공용방 — 매출보고·아침 종합 다이제스트·업무 현황이 모두 여기로",
-      "display": "★운영부",
-      "name_note": "창 제목에 별표 뒤 공백이 한 칸 있다(name). 사람이 부르는 이름은 ★운영부(display)다. GM 지적 2026-08-01로 확인 — 화면엔 display, 창 찾기엔 name 을 쓴다. 근거: 2026-08-01 09:31 매출보고 로그 「[★ 운영부] 방 창 발견(창-제목 탐색 성공)」 — find_room_window 는 title.strip()==name 정확 일치라 공백을 지우면 발송이 조용히 실패한다."
+      "name_note": "이름 대조는 공백을 지우고 한다(kakao_report_sender._title_key) — 창 제목에 별표 뒤 공백이 있든 없든 같은 방으로 찾는다. 2026-08-04 GM 확인: 실제 이름은 ★관리부·★운영부(공백 없음)."
     },
     {
       "name": "★부서장",
