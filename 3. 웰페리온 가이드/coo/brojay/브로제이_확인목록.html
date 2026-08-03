@@ -319,11 +319,15 @@
     var editing = _editing && _editing.id === it.id;
 
     var replyHtml;
-    if(it.can || it.opinion || it.fix){
+    /* 2026-08-03 — 시트에 「해결 여부」·「실무진 결과 피드백」 칸이 있는데 화면이 아예 안 보여줬다.
+       열 밀림을 바로잡으면서 두 칸도 같이 띄운다(실측: 해결 8 · 개발필요 3 · 실무진 피드백 19행). */
+    if(it.solved || it.can || it.opinion || it.fix || it.staffFb){
       var rows = '';
+      if(it.solved)  rows += '<div class="vq-reply-row"><b>해결 여부</b> — ' + esc(it.solved) + '</div>';
       if(it.can)     rows += '<div class="vq-reply-row"><b>가능 여부</b> — ' + esc(it.can) + '</div>';
       if(it.opinion) rows += '<div class="vq-reply-row"><b>검토 의견</b> — ' + esc(it.opinion) + '</div>';
       if(it.fix)     rows += '<div class="vq-reply-row"><b>해결 방안</b> — ' + esc(it.fix) + '</div>';
+      if(it.staffFb) rows += '<div class="vq-reply-row"><b>우리 쪽 피드백</b> — ' + esc(it.staffFb) + '</div>';
       replyHtml = '<div class="vq-reply"><div class="vq-reply-head">💬 브로제이 회신</div>' + rows + '</div>';
     } else if(it.source === 'sheet'){
       // 회신 대기는 대부분이라 한 줄로 짧게 — 같은 안내를 카드마다 길게 반복하지 않는다(약속 L12 ⑥).
@@ -541,8 +545,16 @@
     if(csv){
       var rows = parseCsv(csv);
       _sheet = rows.slice(1).map(function(r){
+        /* 2026-08-03 웰리 — 열이 한 칸씩 밀려 있었다(GM 지시로 시트 재대조 중 발견).
+           시트 실제 칸 순서: 0순번 · 1구분 · 2문제점 · 3원하는 방향 · 4해결 여부 · 5가능 여부 ·
+                            6검토 의견 · 7해결 방안 · 8웰페리온 실무진 결과 피드백 · 9~11사진
+           브로제이가 나중에 「해결 여부」 칸을 끼워 넣으면서 그 뒤가 전부 한 칸씩 밀렸는데
+           읽는 쪽이 옛 위치 그대로였다. 그래서 화면의 「가능 여부」 칸에 **해결 여부 값**이 뜨고
+           (실측 12행: '해결'·'개발필요'가 가능 여부로 표시됨), 우선순위는 시트에 없는 칸(r[7])을
+           읽어 37행 전부 '미정'이 됐다. 라벨과 값을 제자리로 맞춘다. */
         return {kind:(r[1]||'').trim(), problem:(r[2]||'').trim(), want:(r[3]||'').trim(),
-                can:(r[4]||'').trim(), opinion:(r[5]||'').trim(), fix:(r[6]||'').trim(), prio:(r[7]||'').trim()};
+                solved:(r[4]||'').trim(), can:(r[5]||'').trim(), opinion:(r[6]||'').trim(),
+                fix:(r[7]||'').trim(), staffFb:(r[8]||'').trim(), prio:''};
       }).filter(function(r){ return r.problem; });
       setStatus('');
     } else {
