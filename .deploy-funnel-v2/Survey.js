@@ -7925,8 +7925,8 @@ function _processAction(body) {
   // 회원 변경 이력 읽기(배327) — 화면이 이 한 곳만 읽는다. 읽기 전용(삭제·수정 없음).
   //   scope=멤버십|강습 · limit 기본 200(최근순). 탭이 아직 없으면 빈 배열 + started 로 정직 응답.
   if (action === 'member_log_list') {
-    var mlScope = String(e.parameter.scope || '').trim();
-    var mlLimit = Math.min(parseInt(e.parameter.limit, 10) || 200, 500);
+    var mlScope = String(body.scope || '').trim();
+    var mlLimit = Math.min(parseInt(body.limit, 10) || 200, 500);
     var mlSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_LOG_SHEET);
     if (!mlSh || mlSh.getLastRow() < 2) return _json({ ok: true, data: [], started: MEMBER_LOG_STARTED });
     var mlAll = mlSh.getRange(2, 1, mlSh.getLastRow() - 1, 8).getValues();
