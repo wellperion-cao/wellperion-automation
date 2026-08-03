@@ -10498,6 +10498,25 @@ function warmDashboardCache() {
       UrlFetchApp.fetch(_WARM_EXEC_URL + '?' + q + '&nocache=1', { muteHttpExceptions: true, followRedirects: true });
     } catch (e) { /* 개별 실패 무시 — 다음 주기 재시도 */ }
   });
+
+  // ★대기→멤버십 자동 해제를 여기에 얹는다(2026-08-04 시토 · 배302).
+  //   원래는 매일 02:00 memberMatchAutostamp 트리거에 달았는데, **그 트리거가 라이브에
+  //   실제로 설치돼 있는지 밖에서 확인할 방법이 없다**(clasp run 권한 없음 · 트리거 목록은
+  //   API 로 안 나온다). 확인 못 하는 트리거에 기대면 '등록돼 있고 코드도 있는데 한 번도
+  //   작동한 적 없는 장치'가 된다 — 2026-08-03 하루에 같은 부류를 셋 잡았다.
+  //   이 워머는 5분마다 도는 것이 실측으로 확인된 자리다(배298 성능 수리 때 히트 확인).
+  //   ▸5분마다 시트를 통째로 읽으면 낭비이므로 **하루 한 번만** 돌게 날짜 도장으로 막는다
+  //     — 도장 읽기는 속성 1건이라 사실상 공짜다. 02:00 트리거가 살아 있어도 멱등이라 무해.
+  try {
+    var _wrTz = 'Asia/Seoul';
+    var _wrToday = Utilities.formatDate(new Date(), _wrTz, 'yyyy-MM-dd');
+    var _wrProps = PropertiesService.getScriptProperties();
+    if (_wrProps.getProperty('WAIT_RELEASE_LAST') !== _wrToday) {
+      var _wr = member_wait_auto_release_();
+      _wrProps.setProperty('WAIT_RELEASE_LAST', _wrToday);
+      Logger.log('member_wait_auto_release_(warm): checked=' + _wr.checked + ' released=' + _wr.released);
+    }
+  } catch (e) { /* 워머가 죽어도 캐시 예열은 이미 끝났다 — 다음 주기 재시도 */ }
 }
 
 // 워머 트리거 설치/제거 — GM이 GAS 에디터에서 1회 실행(ScriptApp 스코프 인가).
