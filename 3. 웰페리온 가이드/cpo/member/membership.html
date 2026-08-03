@@ -6502,9 +6502,17 @@ function _regAddProgSyncUI() {
   if (!sel || !txt) return;
   var col = _capCol(_activeHeaders, '수강반종목명');
   if (!col || !_activeRows || !_activeRows.length) return;
+  // ★2026-08-03 시토 — 후보에서 **웹접수형 표기는 뺀다.**
+  //   시트에 이미 있는 값을 그대로 쓰되, `노블레스 (Gym + G.X + Swimming + Sauna)` 처럼
+  //   웹 문의 원문이 그대로 들어간 것(실측 1,001건 중 3건)은 **오염된 값**이라 후보에 두면
+  //   직원이 다시 고르게 되고 오염이 이어진다 — GM 이 "형식이 하나도 안 맞네"라고 한 그 값들이다.
+  //   판정은 지어내지 않고 데이터로: 시트 표준형은 `▶` 를 가진다(1,001건 중 998건). 없으면 제외.
+  //   ▸그래도 필요하면 '직접 입력…' 으로 무엇이든 넣을 수 있다(막지 않는다).
+  //   ▸새 표준형이 생기면 자동으로 후보에 들어온다(목록을 코드에 박지 않았다).
   var seen = {}, opts = [];
   _activeRows.forEach(function(r){
     var v = String(r[col] || '').trim();
+    if (v && v.indexOf('▶') < 0) return;          // 웹접수형·비표준 표기 제외
     if (v && !seen[v]) { seen[v] = true; opts.push(v); }
   });
   opts.sort(function(a, b){ return a.localeCompare(b, 'ko'); });
