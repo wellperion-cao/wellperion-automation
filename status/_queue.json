@@ -1607,5 +1607,24 @@
     "reversible": true,
     "work_type": "update",
     "updated_at": "2026-08-03"
+  },
+  {
+    "task_id": "CTO-2026-08-03-회원-변경-이력-이름미상-자동-경로는-자동-으로-배",
+    "clevel": "cto",
+    "title": "[시토] 회원 변경 이력 '이름미상' → 자동 경로는 '자동'으로 (배327 후속 · 배포만 남음)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-03",
+    "from": "cto",
+    "note": "[시토 자가점검 2026-08-03] [시토 2026-08-03] 웰리 실측 — 붙인 지 몇 분 만에 웹 자동접수 4줄이 이력에 쌓였는데(이전값 정확),\n직원명이 전부 '이름미상'이라 '사람이 했는데 이름을 못 잡았다'로 읽혔다.\n■ 고친 것(커밋 완료 · 배포 대기)\n · `_logWho_(body)` 한 함수로 통일 — 판정은 **호출 경로**로만.\n   프론트(apiPost)는 staff 키를 항상 실어 보내고, 자동접수·스크립트는 아예 안 보낸다.\n   키 없음 → '자동' / 키 있는데 빈 값 → '이름미상'. 값을 지어내지 않는다.\n · 적용 4곳: member_active_update · member_owner_save · lesson_inquiry_update · member_owner_bulk_set.\n   bulk_set 은 스크립트 전용이라 자동으로 '자동'이 된다.\n■ 남은 것 = **배포뿐**. 오늘 GAS 배포 상한(웰리 지시: @127·@209·@210 세 번)이라 커밋까지만 했다.\n 내일 다른 funnel-v2 배포에 묻어 나가면 된다. 배포 후 확인: 자동접수 새 줄의 직원명이 '자동'인지.\n■ 참고: 이미 쌓인 4줄은 '이름미상'으로 남는다. 과거 기록은 고치지 않는다(이력은 읽기 전용).",
+    "next": "내일 funnel-v2 배포에 묻어 올린 뒤, 자동접수 새 줄 직원명이 '자동'인지 라이브 확인.",
+    "depends_on": "",
+    "ship_no": 10519,
+    "short_no": 330,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "updated_at": "2026-08-03"
   }
 ]
