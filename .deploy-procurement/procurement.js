@@ -8,6 +8,10 @@ var TAB = "지출품의";
 // 비번은 스크립트 속성에만 둔다(평문 금지 — 배328, 배326 과 같은 계열). 배포 시 Script Properties 에 PROC_PW 설정 필요.
 function _prop(key){ return PropertiesService.getScriptProperties().getProperty(key) || ""; }
 var PW = _prop("PROC_PW");
+// ★막힌 채로 실패한다(fail-closed). PROC_PW 를 안 넣고 배포하면 PW 가 "" 가 되는데,
+// 그때 빈 비밀번호를 보낸 요청이 그대로 통과한다 — 평문을 없애려다 문을 여는 셈이다.
+// 그래서 비번 대조는 반드시 이 함수 하나로만 한다(호출부마다 조건을 복사하지 않는다 · 약속 L21).
+function _badPw(v){ return !PW || String(v) !== PW; }
 var RECEIPT_FOLDER = "1WmKrK4cbbZWLluozwkLi_RslGeRL1Vqa"; // cfo ▸ 구매요청 사진백업 폴더(첨부·영수증 원본, 2026-07-04 매니저님 지시로 분리)
 var FIRST_ROW = 3; // 헤더 2행, 데이터 3행부터 (배포 후 실데이터로 검증·보정)
 var REVIEW_SHEET_ID = "1rUjnf_oxVTnT89B1aU46Z2txYc8k_MdKYdwhulpgw48"; // 검토결과 시트(별도·cao 소유)
@@ -24,7 +28,7 @@ function route(p){
   if (p.action === "lowprice_del") return lowpriceDel(p); // 검토결과 행삭제(별도 시트·adminPassword) — 기존 게이트 앞 분기
   if (p.action === "sales_dept_pub") return salesDeptPub(p); // 공개 강습 팀집계(무인증·운영부/PII 제외) — 공개 페이지(파트너팀 체계.html)용, 2026-07-14
   if (p.action === "sales_instr_pub") return salesInstrPub(p); // 공개 강사별(무인증·6팀·진행월) — 파트너팀 페이지 강사별 실시간(매니저 승인 2026-07-14, 강습부 시트로 이미 공개중), 노출증가0
-  if (String(p.password) !== PW) return out({ ok:false, error:"unauthorized" });
+  if (_badPw(p.password)) return out({ ok:false, error:"unauthorized" });
   switch (p.action){
     case "diag_naver": return diagNaver(p); // 진단(2026-07-06 감사: 무인증→비번 게이트 뒤로 이동)
     case "list":    return listItems(p);
@@ -596,7 +600,7 @@ function laborTime(p){
 /** 퇴사자 지급 정리 — 인건비마스터 해당 강사 행의 from월~12월을 0 고정(수식 잔재·선입력 제거, 이전 지급내역 보존).
  *  adminPassword 필수 · 대상 시트=인건비마스터 한정 · before 반환(감사 로그용). */
 function laborZero(p){
-  if (String(p.adminPassword) !== PW) return out({ ok:false });
+  if (_badPw(p.adminPassword)) return out({ ok:false });
   var name = String(p.name||"").replace(/\s+/g,"");
   var from = parseInt(p.from,10);
   if (!name || !(from>=1 && from<=12)) return out({ ok:false, error:"name/from" });
@@ -682,7 +686,7 @@ function tgSend(p){ // 텔레그램 발송 — ①자체 키(Script Properties) 
 // 신규 액션: 검토결과 upsert (기존 add/list/status/photo/delete 무변경)
 // 검토시트 컬럼(1-base): A품의행 B품의물품 C동일제품 D최저가 E판매처링크 F품의가 G품의가대비 H신뢰도 I검토일 J비고 (헤더 1행)
 function lowpriceSet(p){
-  if (String(p.adminPassword) !== PW) return out({ ok:false }); // 비번 자체검증(불일치 시 ok:false)
+  if (_badPw(p.adminPassword)) return out({ ok:false }); // 비번 자체검증(불일치 시 ok:false)
   var row = parseInt(p.row, 10); if (!row) return out({ ok:false, error:"no row" });
   var bj = [ p.품의물품||"", p.제품||"", p.최저가||"", p.판매처||"", p.품의가||"",
              p.품의가대비||"", p.신뢰도||"", p.검토일||"", p.비고||"" ]; // B~J
@@ -715,7 +719,7 @@ function reviewUpsert_(row, bj, no){
 
 // 신규 액션: 검토결과 행삭제 (검토시트 실제 행번호 배열·adminPassword 자체검증)
 function lowpriceDel(p){
-  if (String(p.adminPassword) !== PW) return out({ ok:false });
+  if (_badPw(p.adminPassword)) return out({ ok:false });
   var rows = p.reviewRows; // 검토시트 실제 행번호 배열(1-base)
   if (!rows || !rows.length) return out({ ok:false, error:"no rows" });
   var sheet = SpreadsheetApp.openById(REVIEW_SHEET_ID).getSheets()[0];
