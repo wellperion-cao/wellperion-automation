@@ -307,6 +307,13 @@ def fetch_gas_items() -> list[dict]:
         print(f"[WARN] GAS fetch 실패: {e}", file=sys.stderr)
         rows = []
 
+    # 열쇠를 붙였는데도 GM 행이 0건 = GAS 스크립트 속성값과 불일치. 미설정만 잡으면
+    # '틀린 열쇠'가 조용히 통과해 GM 할 일이 통째로 사라져도 아무도 모른다(0 위장).
+    if _k and rows and not any("김남욱GM" in str(r.get("담당자", "")) for r in rows):
+        print("[WARN] GM_TODO_KEY 불일치 추정 — 열쇠를 붙였는데 GM 행이 0건입니다(배326). "
+              "GAS 스크립트 속성 GM_TODO_KEY 와 telegram_bot/.env 값이 같은지 확인하세요.",
+              file=sys.stderr)
+
     items = []
     for row in rows:
         owner = str(row.get("담당자", ""))
