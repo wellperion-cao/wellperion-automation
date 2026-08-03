@@ -378,14 +378,57 @@
 
 
   <!-- ════ 🧭 항로 — AI 배 목록 (G1 에서 이관 · GM 결정 2026-08-03 "GM 것만 G1, AI 건들은 다 자율현황으로" · 배10510) ════
-       판정은 큐 필드 하나(surface==='autonomy')로만 한다 — G1 렌더(:9603)와 같은 기준이라 두 화면이 자동으로 안 겹친다.
-       데이터는 아래 「🗂 전체 배」가 이미 받아 둔 _queueAll 을 그대로 쓴다(새 fetch·새 엔진 없음). ════ -->
+       판정은 담당 구분(audience==='ai') 하나로만 — G1 렌더·아침 텔레그램 보고와 같은 기준이라 세 표면이
+       자동으로 안 겹치고 안 샌다. 데이터는 아래 「🗂 배 정리」가 받아 둔 _queueAll 재사용(새 fetch 0). ════ -->
   <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:11px;font-weight:400;color:var(--dim);">(AI 배 — 북극성으로 가는 오늘의 뱃길)</span></h2>
   <div class="sec-note">⚓ 대기 · 🚢 진행중 · 🏁 오늘 입항 세 칸. GM 본인 할 일과 개인 북극성·루틴은 <strong>G1 김남욱 GM</strong>에 있습니다.</div>
   <div id="hangro-board"><div class="feed-status">항로를 불러오는 중…</div></div>
   <!-- GM 본인 할 일은 여기로 옮기지 않는다 — 개수·링크만. 본문은 G1 비번 뒤에 그대로 둔다
        (웰리 결정 2026-08-03 · 배10510). 이 페이지는 잠금이 없어 본문을 올리면 새로 공개된다. -->
   <div id="gm-todo-link" class="sec-note" style="margin-top:8px;"></div>
+
+  <!-- ════ 🗂 배 정리·보관함 (접힘) — 위 「🧭 항로」와 **같은 데이터**의 관리 도구 면이다. ════
+       ★2026-08-03 시토(GM 지시 "중복 정리") — ①위치: 항로에서 멀리 떨어져 있어 같은 자료인 줄
+         모르게 돼 있었다 → 항로 바로 아래로 붙였다. ②제목의 숫자 3개 삭제: 항로 3섹터와 같은
+         이름을 쓰면서 **다른 것을 세고 있었다**(항로=AI 배만 / 요약=전 배 67척). 같은 이름 다른
+         숫자는 중복보다 나쁘다. 숫자는 항로 섹터 머리 하나만 남긴다. ════ -->
+  <!-- 데이터는 그대로 — 보여주는 방식만 접었다(숨김≠삭제). 아래 4구역(진행·정박·전체정리·보관함) 내용 무변경. -->
+  <details class="hist-fold" id="ships-summary-fold">
+    <summary>🗂 배 정리·보관함 <span class="hist-sub">— 백엔드에 실제로 있는 배 전부 · 무의미·중복은 여기서 지웁니다</span></summary>
+
+  <!-- ════ 🗂 전체 배 정리 (GM 지시 2026-07-27 — 백엔드에 있는 배를 빠짐없이 보여주고, 무의미·중복은 GM이 직접 지운다)
+       ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 구 「🚢 진행·상시 미션」·「⚓ 정박·대기」 두 구역을 이 표로 합쳤다.
+         두 구역은 이 표를 상태별로 걸러 보여주던 것뿐이라, 아래 상태 고르기에 같은 조건을 넣어 정보 손실 없이 없앴다
+         (진행중만 = 구 진행·상시 / 정박·대기(자율) = 구 정박·대기). '재개조건 · 다음' 칸도 그대로 옮겼다. ════ -->
+  <h2 class="sec" id="sec-all-ships" style="margin-top:2px;">🗂 전체 배 <span style="font-size:11px;font-weight:400;color:var(--dim);">(백엔드에 실제로 있는 배 전부 — 무의미·중복은 여기서 지웁니다)</span></h2>
+  <div class="sec-note">
+    <code>status/_queue.json</code>에 <b>실제로 들어 있는 배 전부</b>입니다 — 화면과 백엔드가 같은지 여기서 확인하시면 됩니다.
+    상태를 골라 <b>진행중만</b>·<b>정박·대기</b>만 볼 수 있습니다.
+    <b>지우면 백엔드에서도 같이 빠지고</b>, 보관함에 남아 되돌릴 수 있습니다.
+  </div>
+  <div class="ships-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 8px;">
+    <input id="ship-search" type="search" placeholder="제목·담당·배 번호로 찾기" style="flex:1 1 220px;min-width:180px;padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
+    <select id="ship-filter" style="padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
+      <option value="all">전체 상태</option>
+      <option value="IN_PROGRESS">진행중만</option>
+      <option value="parked">정박·대기(자율)</option>
+      <option value="PENDING">대기만</option>
+      <option value="stale">오래 멈춤(14일+)</option>
+      <option value="dup">중복 의심만</option>
+    </select>
+    <span id="ship-count" style="font-size:12px;color:var(--dim);"></span>
+  </div>
+  <div class="routines" id="all-ships">
+    <div class="feed-status" style="grid-column:1/-1;">전체 배를 불러오는 중…</div>
+  </div>
+
+  <!-- ════ 🗄 보관함 (지운 배 — 되돌리기 가능) ════ -->
+  <h2 class="sec" id="sec-trash" style="margin-top:2px;">🗄 보관함 <span style="font-size:11px;font-weight:400;color:var(--dim);">(지운 배 — 되돌릴 수 있습니다)</span></h2>
+  <div class="sec-note">지운 배는 사라지지 않고 여기 남습니다. 잘못 지웠으면 <b>되돌리기</b>를 누르면 원래 상태로 돌아갑니다.</div>
+  <div class="routines" id="trash-ships">
+    <div class="feed-status" style="grid-column:1/-1;">보관함을 불러오는 중…</div>
+  </div>
+  </details>
 
   <!-- ══ 🗺️ 북극성별 보기 — G1 에서 이관(AI 배를 북극성 모듈별로 조망 · 배10510 · 2026-08-03) ══
        소스 = status/voyage_map.json(scripts/build_voyage_map.py 발행). 렌더는 G1 에 있던 것 그대로 —
@@ -816,44 +859,6 @@
     </script>
     <!-- ══ /🧠 AI 자기학습 제안 ══ -->
 
-  <!-- ════ 🔢 배 3숫자 요약 + 접힌 목록 (GM 지시 2026-07-27 — "너무 많다·나열 대신 직관적으로" · 기본=숫자 3개, 펼쳐야 목록) ════ -->
-  <!-- 데이터는 그대로 — 보여주는 방식만 접었다(숨김≠삭제). 아래 4구역(진행·정박·전체정리·보관함) 내용 무변경. -->
-  <details class="hist-fold" id="ships-summary-fold">
-    <summary id="ships-summary-line">배 현황 불러오는 중…</summary>
-
-  <!-- ════ 🗂 전체 배 정리 (GM 지시 2026-07-27 — 백엔드에 있는 배를 빠짐없이 보여주고, 무의미·중복은 GM이 직접 지운다)
-       ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 구 「🚢 진행·상시 미션」·「⚓ 정박·대기」 두 구역을 이 표로 합쳤다.
-         두 구역은 이 표를 상태별로 걸러 보여주던 것뿐이라, 아래 상태 고르기에 같은 조건을 넣어 정보 손실 없이 없앴다
-         (진행중만 = 구 진행·상시 / 정박·대기(자율) = 구 정박·대기). '재개조건 · 다음' 칸도 그대로 옮겼다. ════ -->
-  <h2 class="sec" id="sec-all-ships" style="margin-top:2px;">🗂 전체 배 <span style="font-size:11px;font-weight:400;color:var(--dim);">(백엔드에 실제로 있는 배 전부 — 무의미·중복은 여기서 지웁니다)</span></h2>
-  <div class="sec-note">
-    <code>status/_queue.json</code>에 <b>실제로 들어 있는 배 전부</b>입니다 — 화면과 백엔드가 같은지 여기서 확인하시면 됩니다.
-    상태를 골라 <b>진행중만</b>·<b>정박·대기</b>만 볼 수 있습니다.
-    <b>지우면 백엔드에서도 같이 빠지고</b>, 보관함에 남아 되돌릴 수 있습니다.
-  </div>
-  <div class="ships-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 8px;">
-    <input id="ship-search" type="search" placeholder="제목·담당·배 번호로 찾기" style="flex:1 1 220px;min-width:180px;padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
-    <select id="ship-filter" style="padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
-      <option value="all">전체 상태</option>
-      <option value="IN_PROGRESS">진행중만</option>
-      <option value="parked">정박·대기(자율)</option>
-      <option value="PENDING">대기만</option>
-      <option value="stale">오래 멈춤(14일+)</option>
-      <option value="dup">중복 의심만</option>
-    </select>
-    <span id="ship-count" style="font-size:12px;color:var(--dim);"></span>
-  </div>
-  <div class="routines" id="all-ships">
-    <div class="feed-status" style="grid-column:1/-1;">전체 배를 불러오는 중…</div>
-  </div>
-
-  <!-- ════ 🗄 보관함 (지운 배 — 되돌리기 가능) ════ -->
-  <h2 class="sec" id="sec-trash" style="margin-top:2px;">🗄 보관함 <span style="font-size:11px;font-weight:400;color:var(--dim);">(지운 배 — 되돌릴 수 있습니다)</span></h2>
-  <div class="sec-note">지운 배는 사라지지 않고 여기 남습니다. 잘못 지웠으면 <b>되돌리기</b>를 누르면 원래 상태로 돌아갑니다.</div>
-  <div class="routines" id="trash-ships">
-    <div class="feed-status" style="grid-column:1/-1;">보관함을 불러오는 중…</div>
-  </div>
-  </details>
 
   <!-- ★2026-08-03 시토 — 「🏛️ 자율화를 떠받치는 4대 축」과 「🌟 북극성 지향 제작 루프」 삭제(GM 지시).
        체계 설명의 정본은 ssot/자율화규약.md 다. GM: "정본이 따로 있는데 링크로 이어가는건 의미 없다"
@@ -1216,25 +1221,6 @@
     return '<details class="cellmore"><summary>' + esc(head) + '</summary>'
       + '<div class="cellfull">' + esc(full) + '</div></details>';
   }
-  // ═══════════ 🔢 배 3숫자 요약 (GM 지시 2026-07-27 — "나열 대신 숫자·기본은 접힌 목록") ═══════════
-  //   지금 돌고 있음=IN_PROGRESS · 막혀 있음=「🗂 전체 배」의 '정박·대기(자율)' 필터와 동일 판정
-  //   (AI 배 대기·보류) · 오늘 끝남=오늘 처리 완료(DONE·완료, processed_at 오늘). 새 집계 로직 아님 —
-  //   이미 있는 두 목록의 개수를 그대로 재사용 + '오늘 끝남'만 추가.
-  function renderShipsSummary(queue){
-    var sm = document.getElementById('ships-summary-line');
-    if(!sm) return;
-    var list = Array.isArray(queue) ? queue : [];
-    var running = list.filter(function(s){ return s && s.status === 'IN_PROGRESS'; }).length;
-    var blocked = list.filter(function(s){ return isAiShip(s) && s.status !== 'DONE' && s.status !== 'IN_PROGRESS' && !isTrashed(s); }).length;
-    var t0 = localTodayMs(), t1 = t0 + 86400000;
-    var doneToday = list.filter(function(s){
-      if(!s || (s.status !== 'DONE' && s.status !== '완료')) return false;
-      var m = ts(s.processed_at);
-      return m >= t0 && m < t1;
-    }).length;
-    sm.innerHTML = '🔄 지금 돌고 있음 <b>' + running + '</b>척 · 🚧 막혀 있음 <b>' + blocked + '</b>척 · 🏁 오늘 끝남 <b>' + doneToday + '</b>척'
-      + ' <span class="hist-sub">— 눌러서 목록 펼치기</span>';
-  }
 
   // ═══════════ 🗂 전체 배 정리 · 🗄 보관함 (GM 지시 2026-07-27) ═══════════
   //  GM: "백그라운드는 모르는데 프론트에 똑같이 기록해서, 무분별·무의미·중복된 건 다 삭제처리할 수 있게.
@@ -1451,7 +1437,6 @@
       var arr = parseJson(txt);
       if(!Array.isArray(arr)) return;
       _queueAll = arr;
-      try{ renderShipsSummary(arr); }catch(e){}
       renderAllShips(); renderTrash();
     });
   }
@@ -2651,10 +2636,6 @@
     try{ renderTrash(); }catch(e){
       var tsEl = document.getElementById('trash-ships');
       if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
-    }
-    try{ renderShipsSummary(_queueArr); }catch(e){
-      var ssEl = document.getElementById('ships-summary-line');
-      if(ssEl) ssEl.textContent = '배 현황 요약 표시 오류.';
     }
     try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
     try{ renderCooLiveMetrics(a[9], a[10]); }catch(e){
