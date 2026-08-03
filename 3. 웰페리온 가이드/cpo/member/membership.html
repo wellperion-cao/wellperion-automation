@@ -7589,7 +7589,7 @@ function _activeRender(rows, isFiltered) {
       if (h === '__recon__') return '<th style="white-space:nowrap;text-align:center">재등록 상담</th>';   // 통합셀(정렬 대상 아님)
       if (h === '__churn__') return '<th style="white-space:nowrap;text-align:center">종료사유</th>';       // 통합셀(정렬 대상 아님) 2026-07-09 시포·GM
       if (h === '__reactivate__') return '<th style="white-space:nowrap;text-align:center">재등록 처리</th>'; // 통합셀(정렬 대상 아님) 2026-07-28 시포·GM
-      if (h === '__owners__') return '<th style="white-space:nowrap;text-align:center">담당자</th>';        // 종목별 담당자 요약(정렬 대상 아님) 2026-07-18 시포·GM
+      if (h === '__owners__') return '<th style="white-space:nowrap;text-align:center">담당 강사</th>';      // 종목별 담당 강사 요약(정렬 대상 아님) · 이름 변경 GM 지시 2026-08-03
       // 머리칸은 전부 가운데 정렬(GM 지시 2026-08-03) — 값 칸 정렬은 그대로 둔다.
       var arrow = (_activeSort.col === h) ? (_activeSort.dir < 0 ? ' ▼' : ' ▲') : '';
       return '<th data-sortcol="' + esc(h) + '" title="클릭하여 정렬" style="white-space:nowrap;cursor:pointer;user-select:none;text-align:center">' + esc(h) + arrow + '</th>';
