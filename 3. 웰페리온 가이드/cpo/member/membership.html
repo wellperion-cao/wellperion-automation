@@ -6674,6 +6674,29 @@ function _memStartKey(row) {
 function _memClassKeys(row) {
   return Object.keys(row || {}).filter(function(k){ return k.replace(/\s/g, '').indexOf('분류') >= 0; });
 }
+
+/* ═══ 분류 두 칸 → 「등록 분류」 한 칸으로 (GM 결정 2026-08-03) ═══
+   실측 1,002명: 881명(88%)은 두 칸이 같은 말이거나 둘째 칸이 빈칸이고, 둘째 칸만 아는 값은
+   L재등록 92·단기재등록 3 뿐이며, 4명은 앞뒤가 안 맞았다(신규↔재등록).
+   ▸시트 값은 아직 하나도 옮기지 않았다. **화면에서 먼저 합친다** — 데이터를 건드리지 않으니
+     되돌릴 것이 없고, 실제 이관은 백업을 뜬 뒤 시토가 한다(배303).
+   ▸합치는 규칙: 둘째 칸이 비었거나 같은 말이면 첫째 칸 / 둘째 칸만 아는 값이면 그 값 /
+     앞뒤가 안 맞으면 숨기지 않고 둘 다 보여주며 ⚠ 를 단다(사람이 바로잡을 자리를 드러낸다). */
+var REG_CLASS_COL = '등록 분류';
+function _regReclassKey(row) {
+  return Object.keys(row || {}).find(function(k){
+    var f = k.replace(/\s/g, '');
+    return f.indexOf('재등록') >= 0 && f.indexOf('분류') >= 0;
+  });
+}
+function _regClassMerged(row) {
+  var a = String(row[REG_CLASS_COL] || '').trim();
+  var bKey = _regReclassKey(row);
+  var b = bKey ? String(row[bKey] || '').trim() : '';
+  if (!b || b === a) return { text: a, conflict: false };
+  if (a === '신규' && b === '재등록') return { text: a + ' / ' + b, conflict: true };   // 둘 중 하나가 틀렸다
+  return { text: b, conflict: false };   // 둘째 칸만 아는 값(L재등록·단기재등록·대기)
+}
 function _isFutureStart(row) {   // 이름은 그대로 둔다(호출부 6곳) — 판정 기준만 바뀌었다
   var keys = _memClassKeys(row);
   for (var i = 0; i < keys.length; i++) {
@@ -7516,6 +7539,9 @@ function _activeDisplayCols() {
   }
   // valid/corp: 종료사유(+메모)는 항상 빈값이라 숨김·미등록사유는 LOSS 탭 전용으로 여기서도 숨김. 2026-08-01
   cols = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL && !/미등록/.test(h); });
+  // 「재등록 분류」 칸은 화면에서 뺀다 — 값은 「등록 분류」 칸에 합쳐 보인다(GM 결정 2026-08-03).
+  //   시트 원본 칸은 그대로 남아 있다(숨기기만 · 되돌리려면 이 한 줄만 지우면 된다).
+  cols = cols.filter(function(h){ var f = h.replace(/\s/g, ''); return !(f.indexOf('재등록') >= 0 && f.indexOf('분류') >= 0); });
   if (_activeScope !== 'valid') return cols;
   var reconRaw = [RECON_COLS.date, RECON_COLS.time, RECON_COLS.note];
   var hasRecon = (cols.indexOf(ACT_RES_KEY) >= 0) || reconRaw.some(function(h){ return cols.indexOf(h) >= 0; });
@@ -7673,6 +7699,15 @@ function _activeRowHtml(row, displayCols) {
       if (h === '수강반종목명') _cv = String(_cv).replace(/★/g, '').replace(/\s*▶\s*\d+\s*개월\s*$/, '').trim() || '—';
       // 휴대폰 번호는 잘려 보이면 대조가 안 된다 — 한 줄로 넉넉히(GM 지시 2026-08-03).
       if (isPhone) return void (html += '<td style="white-space:nowrap;min-width:132px;text-align:center">' + esc(_cv) + '</td>');
+      // 분류 통합 표시(GM 결정 2026-08-03) — 「재등록 분류」에만 있던 값을 이 칸에서 같이 보여준다.
+      if (h === REG_CLASS_COL) {
+        var mg = _regClassMerged(row);
+        html += '<td style="white-space:nowrap"' + editAttr +
+          (mg.conflict ? ' title="등록 분류와 재등록 분류가 서로 다릅니다 — 어느 쪽이 맞는지 확인이 필요합니다"' : '') + '>' +
+          (mg.conflict ? '<span style="color:var(--orange,#c8912b);font-weight:800">⚠ </span>' : '') +
+          esc(mg.text || '—') + '</td>';
+        return;
+      }
       var titleAttr = narrowW ? ' title="' + esc(_cv) + '"' : '';
       // 잔여일 색상(GM 지시 2026-07-20): 10일 이내=빨강·30일 이내=주황·만료(0 이하)=회색(임박과 확실히 구분).
       // 색만으로 구분하지 않도록 아이콘+굵기 병기(색각 이상 대비). 기존 토큰(--red/--orange/--dim-mid) 재사용, 새 색 발명 금지.
@@ -8119,6 +8154,20 @@ function _wireActiveDblclick(){
         { action: 'member_active_update', rowIndex: rowIndex, col: col, value: newVal, keyPhone: _keyPhone, rowKey: (r && r.rowKey) || '' },
         { scope: 'active', phoneKey: _keyPhone, fieldset: 'cell:' + col, label: col, who: _who, overlay: _ov }
       );
+      /* 분류를 한 칸으로 합쳤으므로(GM 결정 2026-08-03), 「등록 분류」를 고치면 옛 「재등록 분류」 값도
+         같이 비운다. 안 비우면 화면은 옛 값을 계속 보여줘서 방금 고친 게 안 먹은 것처럼 보인다.
+         쓰기는 실무진이 늘 쓰던 같은 경로(대조키 포함 WriteBuffer)를 그대로 쓴다 — 새 통로 안 만든다. */
+      if (col === REG_CLASS_COL && r) {
+        var _rk = _regReclassKey(r);
+        if (_rk && String(r[_rk] || '').trim()) {
+          r[_rk] = '';
+          var _ov2 = {}; _ov2[_rk] = '';
+          WriteBuffer.enqueue(
+            { action: 'member_active_update', rowIndex: rowIndex, col: _rk, value: '', keyPhone: _keyPhone, rowKey: (r && r.rowKey) || '' },
+            { scope: 'active', phoneKey: _keyPhone, fieldset: 'cell:' + _rk, label: '재등록 분류(합침)', who: _who, overlay: _ov2 }
+          );
+        }
+      }
     }
 
     // 입력기가 바뀔 수 있어(분류값 select → '직접 입력' 선택 시 글자 입력으로 교체) 배선을 함수로 묶는다.
@@ -8155,11 +8204,20 @@ function _colChoices(col) {
   var rows = _activeRows || [];
   if (rows.length < 20) return null;                 // 표본이 적으면 판단하지 않는다
   if (/비고|메모|참고|주소|내용|이름|성함|회원명|번호/.test(col)) return null;
+  // 「등록 분류」는 두 칸을 합친 칸이라(GM 결정 2026-08-03) 옛 「재등록 분류」에만 있던 값
+  //   (L재등록·단기재등록)도 고를 수 있어야 한다 — 두 칸 값을 합쳐서 후보를 만든다.
+  var cols = [col];
+  if (col === REG_CLASS_COL) {
+    var rk = _regReclassKey(rows[0] || {});
+    if (rk) cols.push(rk);
+  }
   var seen = {}, out = [];
   for (var i = 0; i < rows.length; i++) {
-    var v = String(rows[i][col] == null ? '' : rows[i][col]).trim();
-    if (!v) continue;
-    if (!seen[v]) { seen[v] = 1; out.push(v); if (out.length > 12) return null; }
+    for (var c = 0; c < cols.length; c++) {
+      var v = String(rows[i][cols[c]] == null ? '' : rows[i][cols[c]]).trim();
+      if (!v) continue;
+      if (!seen[v]) { seen[v] = 1; out.push(v); if (out.length > 12) return null; }
+    }
   }
   return out.length ? out.sort() : null;
 }
