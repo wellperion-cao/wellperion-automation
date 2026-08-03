@@ -395,8 +395,12 @@ def _build_item(q: dict, st: str, title: str) -> dict:
             "핵심조언": str(q.get("핵심조언") or "").strip(),
             # 정제 원본 보존 — _derive_desc/_derive_advice가 파생 시 사용
             "_raw_summary": str(q.get("note") or q.get("summary") or "").strip(),
-            # 보드 소속(GM 2026-07-15): '자율현황'=자율화되어 스스로 도는 미션 → 항로 제외·자율현황行
-            "board":    str(q.get("board") or "").strip(),
+            # 담당 구분(office=실무진·GM이 볼 일 / ai=AI 내부 살림). AI 배는 항로에서 빼고
+            # 자율현황行으로 보낸다 — 화면 두 곳(G1·자율현황)과 **같은 기준**이어야 세 표면이 안 어긋난다.
+            # ★구 'board' 칸 폐기(2026-08-03 시토): 판정을 board=='자율현황' 으로 했는데 그 칸이
+            #   열린 배 67척 **전부 비어** 있어 한 건도 안 걸러졌다 — 아침 보고는 AI 배까지 다 싣고,
+            #   화면은 빼고 있었다. 아무도 안 채우는 칸으로 판정하던 것이 원인이라 칸째로 뺀다.
+            "audience": str(q.get("audience") or "").strip(),
             # 담당 식별번호(약속 L16: 담당=닉네임+ship_no·배마다 고정). _queue 배만 보유.
             "ship_no":  q.get("ship_no", ""),
             # 화면표시 전용 짧은 번호(배10012 2단계) — 내부 조인은 위 ship_no 그대로,
@@ -458,8 +462,9 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
                 continue
             seen_titles.add(_tkey)
 
-        # 자율화 미션(board='자율현황')은 항로 전 섹터에서 제외 → 자율현황 보드로 (GM 2026-07-15)
-        if str(item.get("board", "")) == "자율현황":
+        # AI 배는 항로 전 섹터에서 제외 → 자율현황 보드로 (GM 2026-07-15 · 기준 교정 2026-08-03)
+        #   미지정은 AI 가 아니다 = 항로에 남는다(화면과 동일한 안전측 판정).
+        if item.get("audience") == "ai":
             sections["autonomy"].append(item)
             continue
 
