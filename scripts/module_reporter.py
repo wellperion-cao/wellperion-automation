@@ -52,6 +52,27 @@ ABSORB_BUNDLES = {
     ("weekly", "자동화현황방"): "monday_weekly_bundle",  # 월요일 모듈위클리 → AI자기학습제안에 흡수
 }
 
+# ★2026-08-03(시토) — GM_DM 은 (cadence, bot_id) 단위로 묶을 수 없다: 이 방으로 daily 가는
+#   모듈이 5개(coo-check-status·coo-work-approval·cmo-content-pipeline·cpo-inquiry-daily-actions·
+#   cmo-content-intake)라 위 2튜플 방식을 그대로 쓰면 무관한 2개(멀쩡히 매일 발신 중)까지 같이
+#   묶여 침묵한다. 그래서 이 케이스만 (cadence, bot_id, module_id) 3튜플로 모듈 단위 지정한다
+#   (조회는 3튜플 우선 → 없으면 기존 2튜플 폴백, 아래 참고).
+_COVERED_ELSEWHERE = "__covered__"  # bundle_id 자리에 이 값이면 적재(append)하지 않고 그냥 건너뛴다.
+ABSORB_BUNDLES.update({
+    # 08:00 아침보고 「🏢 운영 점검」이 coo_report_line.build_coo_daily_lines() 로 이 두 모듈을
+    # 이미 싣는다 — 09:10 독립 발신은 GM 방 하루 2회 중복(2026-08-03 시토 실측). 소비자가 없어
+    # weekly_bundle_pending 에 적재하면 영영 안 소비돼 새는 곳이 하나 더 생긴다 — 그래서 적재가
+    # 아니라 건너뜀(action="covered")으로 처리한다.
+    ("daily", "GM_DM", "coo-check-status"): _COVERED_ELSEWHERE,
+    ("daily", "GM_DM", "coo-work-approval"): _COVERED_ELSEWHERE,
+})
+
+
+def _resolve_absorb(cadence, bot_id, mid):
+    """(cadence, bot_id, module_id) 3튜플(모듈 단위) 우선 조회 → 없으면 기존 (cadence, bot_id)
+    2튜플(방 단위) 폴백. 둘 다 없으면 None(흡수 대상 아님)."""
+    return ABSORB_BUNDLES.get((cadence, bot_id, mid), ABSORB_BUNDLES.get((cadence, bot_id)))
+
 _STATUS_DIR = os.path.join(_PROJECT_ROOT, "status")
 ROOMS_PATH = os.path.join(_STATUS_DIR, "telegram_rooms.json")
 REPORT_LOG_PATH = os.path.join(_STATUS_DIR, "module_report_log.jsonl")
@@ -246,7 +267,7 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         # 북극성 블록 — 흡수 대상(ABSORB_BUNDLES)은 다른 보고 쪽에 이미 블록이 있으므로
         # 여기서 붙이지 않는다(중복 방지). 흡수 안 되는(=이 실행에서 진짜로 나가는) 첫
         # 메시지에만 1회 적용.
-        if ns_block and not ns_applied and (cadence, bot_id) not in ABSORB_BUNDLES:
+        if ns_block and not ns_applied and _resolve_absorb(cadence, bot_id, mid) is None:
             text = f"{ns_block}{text}"
             ns_applied = True
 
@@ -284,7 +305,13 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         # ★배10011 — 흡수 대상(자동화현황방 등)이면 직접 발송 대신 pending에 적재만.
         #   sent=True 기록은 흡수한 메시지가 실제 발송에 성공한 뒤 mark_bundle_sent()가 한다
         #   (여기서 먼저 sent 처리하면 흡수측이 실패해도 "보낸 걸로" 착각 — 순서 중요).
-        bundle_id = ABSORB_BUNDLES.get((cadence, bot_id))
+        bundle_id = _resolve_absorb(cadence, bot_id, mid)
+        if bundle_id == _COVERED_ELSEWHERE:
+            # 다른 보고(예: 08:00 아침보고)가 이미 실었다 — 적재할 소비자가 없으므로 pending에
+            # 쌓지 않고 건너뛴다. 조용히 사라지지 않게 흔적만 남긴다.
+            results.append({"module": mid, "action": "covered",
+                            "by": "morning_brief_0800", "dedup_key": key})
+            continue
         if bundle_id:
             _bundle.append(bundle_id, source=key, text=text, now=now)
             results.append({"module": mid, "action": "absorbed",
