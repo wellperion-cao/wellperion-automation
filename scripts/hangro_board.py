@@ -25,6 +25,7 @@ import datetime as dt
 from datetime import timezone
 import io
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -271,10 +272,34 @@ def _next_approver(row: dict):
 
 
 # ── 데이터 fetch ───────────────────────────────────────────────────────────
+def _gm_key() -> str:
+    """GM 행 열쇠 — 환경변수 우선, 없으면 telegram_bot/.env(저장소 밖·gitignore 실측 확인) 한 줄.
+    값은 저장소에 두지 않는다(배326 — 그게 GM1_PW='1234' 가 만든 문제였다).
+    열쇠를 아는 프로세스는 여기 하나뿐 — 08:00 보고·G1 머지가 전부 이 함수를 지난다."""
+    k = os.environ.get("GM_TODO_KEY", "").strip()
+    if k:
+        return k
+    try:
+        for line in (_HERE.parent / "telegram_bot" / ".env").read_text(encoding="utf-8").splitlines():
+            if line.startswith("GM_TODO_KEY="):
+                return line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    return ""
+
+
 def fetch_gas_items() -> list[dict]:
     """GAS todo_list → GM·AI C레벨 전체 항목(완료 포함)."""
+    # 열쇠 없으면 GM 행이 안 온다 — 조용히 비면 GM 할 일이 사라져도 아무도 모른다. 반드시 남긴다.
+    _k = _gm_key()
+    if not _k:
+        print("[WARN] GM_TODO_KEY 미설정 — GM 행 제외된 채로 집계합니다(배326). "
+              "telegram_bot/.env 에 GM_TODO_KEY= 한 줄을 넣으세요.", file=sys.stderr)
     try:
-        req = urllib.request.Request(GAS_URL + "?action=todo_list")
+        req = urllib.request.Request(
+            GAS_URL + "?action=todo_list"
+            + (f"&include_gm=1&gmkey={urllib.parse.quote(_k)}" if _k else "")
+        )
         with urllib.request.urlopen(req, timeout=20) as r:
             data = json.loads(r.read())
         rows = data.get("data", [])

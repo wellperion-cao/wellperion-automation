@@ -2252,8 +2252,9 @@ function _gmHangro() {
 // 속성이 비어 있으면 항상 false → GM 행은 안 나간다(안전 기본).
 function _gmKeyOk_(p) {
   if (!p || String(p.include_gm || '') !== '1') return false;
-  var k = PropertiesService.getScriptProperties().getProperty('GM_TODO_KEY');
-  return !!k && String(p.gmkey || '') === k;
+  // 양쪽 trim — 속성값·쿼리값에 붙은 공백/개행 하나로 조용히 안 열리는 것을 막는다(가장 흔한 원인).
+  var k = String(PropertiesService.getScriptProperties().getProperty('GM_TODO_KEY') || '').trim();
+  return !!k && String(p.gmkey || '').trim() === k;
 }
 
 // ═══════════════════════════════════════════
