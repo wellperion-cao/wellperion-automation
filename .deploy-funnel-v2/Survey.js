@@ -3948,7 +3948,27 @@ function _processAction(body) {
   //   update : 처리상태·처리메모를 적는다. ★대조키 = 접수ID(FB…) — 행번호로 찾지 않는다.
   //            행번호 기준은 중간에 행이 지워지면 엉뚱한 줄을 고친다(실고객 오삭제 사고와 동종).
   if (action === 'staff_feedback_list' || action === 'staff_feedback_update') {
-    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    // ★2026-08-03 시토(배299 · GM "실무진이 처리상태를 화면에서 채우게 해줘") — 쓰기 통로를 연다.
+    //   막혀 있던 이유: 이 액션은 _intakeToken_ 게이트인데, 그 토큰 하나가 다른 액션 다수를 함께 열어
+    //   브라우저 페이지에 심을 수 없었다. 그래서 화면에 저장 버튼을 못 붙이고 있었다.
+    //   ▸여는 방식: 이미 13개 페이지가 쓰는 커튼 비밀번호(_assets/gate.js)를 **이 액션 하나에만**
+    //     대체 열쇠로 인정한다. 새 비밀값·새 액션·새 인증 체계를 만들지 않는다(약속 L21).
+    //     같은 패턴 선례 = .deploy-procurement/procurement.js 의 password 검증.
+    //   ▸좁혀 둔 것(중요): 커튼 열쇠로는 **update 만** 된다. list(전체 조회)와 resort(시트 전체 재정렬)는
+    //     여전히 마스터 토큰만 — 커튼 열쇠로 시트를 뒤섞지 못하게 막았다.
+    //   ▸쓰기 범위 자체도 이미 좁다: 처리상태·처리메모 두 칸뿐이고, 대조키가 접수ID(FB…)라
+    //     행번호로 남의 줄을 건드릴 수 없다(아래 update 분기 참조).
+    //   ▸정직하게 적어 둔다: 이 커튼 비밀번호는 GitHub Pages 에 평문 공개돼 있어 **진짜 인증이 아니다.**
+    //     이 조치의 값은 '무단 접근 차단'이 아니라 **마스터 토큰을 브라우저에 심지 않는 것**이다.
+    //     제대로 된 로그인은 배24(무인증 노출 근본 차단)에서 별도로 한다.
+    //   ▸되돌리기: 아래 _fbGateOk 항을 지우고 원래 한 줄로 되돌리면 된다.
+    var _fbGatePw = _accessProp_('STAFF_GATE_PW') || 'wellperion!@345';
+    var _fbGateOk = (action === 'staff_feedback_update')
+                 && (body.resort !== true)
+                 && String(body.password || '') === _fbGatePw;
+    if (String(body.t || '') !== _intakeToken_() && !_fbGateOk) {
+      return _json({ ok: false, error: 'bad-token', noRetry: true });
+    }
     var _fbSh = SpreadsheetApp.openById(_MI_SS_ID).getSheetByName('실무진 피드백');
     if (!_fbSh) return _json({ ok: true, rows: [], note: '아직 접수 없음(탭 미생성)' });
     var _fbLast = _fbSh.getLastRow();
