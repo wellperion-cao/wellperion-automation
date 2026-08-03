@@ -2368,10 +2368,15 @@ function _regRemove_(phone) {
 //   { owner(담당자) · kind(회원구분) · age(나이) · regClass(등록분류) · locker(락커) } 를 받아 유효회원 칸에 함께 쓴다.
 //   등록회차는 여기서 자동 — 신규=1 / 재등록=기존행 값+1(기존행 없으면 1). 사람이 세던 칸이라 자동이 아니면 늘 빈다.
 //   ★안 온 칸은 건드리지 않는다(undefined=무변경). 사람이 손으로 채운 값을 빈 값으로 덮지 않기 위함.
+// ★담당자는 항상 임정은 (GM 지시 2026-08-03). 실측 1,001명 중 996명이 이미 임정은이고, 나머지도
+//   회원 담당은 임정은M 1인이다 — 문의 접수자를 회원 담당자로 흘려 넣던 것이 빈칸·오기의 원인이었다.
+//   여기 한 곳에 두면 SUC·직접등록 등 모든 쓰기 경로가 같은 값을 쓴다(담당이 바뀌면 이 줄만 고친다).
+var MEMBER_DEFAULT_OWNER = '임정은';
 function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var key = _regNormPhone_(phone);
   if (!key) return;
   opts = opts || {};
+  opts.owner = MEMBER_DEFAULT_OWNER;
   var sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
   if (!sh) return;
   var cols = sh.getLastColumn();
@@ -5182,7 +5187,6 @@ function _processAction(body) {
         try {
           _memberActiveUpsert_(_coName, _coPhone, String(body.activeProgram).trim(),
                                body.regDate || _todayKR_(), body.months, {
-            owner:     body.memOwner || _coOwner || '',
             kind:      body.memKind,
             age:       body.memAge,
             regClass:  body.memRegClass,

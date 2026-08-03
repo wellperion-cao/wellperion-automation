@@ -1843,9 +1843,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <input id="regAddName" type="text" placeholder="이름" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:110px">
         <input id="regAddPhone" type="text" placeholder="전화 010-0000-0000" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:160px">
         <!-- 종목 드롭다운(GM 지시 2026-08-03) — 시트에 이미 있는 값만 고르게 해 웹접수형 등 지어낸 표기 유입을 막는다.
-             _activeRows 도착 전엔 아래 자유입력이 그대로 보인다(_regAddProgSyncUI). '직접 입력…' 선택 시 자유입력으로 복귀. -->
+             SUC 창과 같은 4등급 목록(PROGRAM_OPTIONS). '직접 입력…' 선택 시 아래 자유입력으로 복귀. -->
         <select id="regAddProgSel" onchange="_regAddProgSelChange()" style="display:none;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px"><option value="">프로그램 선택</option></select>
-        <input id="regAddProg" type="text" placeholder="프로그램(예: 플래티넘+골프 12개월)" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px">
+        <input id="regAddProg" type="text" placeholder="프로그램(예: 플래티넘+골프)" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px">
         <input id="regAddDate" type="date" title="등록일자" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
         <input id="regAddMonths" type="number" min="1" placeholder="개월수" title="계약 개월수 — 종료일·잔여일 자동계산(비우면 나중에 수기입력 필요)" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:80px">
         <button class="btn-query" onclick="submitRegAdd()">추가</button>
@@ -2657,14 +2657,14 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-row"><span class="ck">문의</span><span class="cv" id="rpMemberFixed">—</span></div>
 
     <div class="consult-field-label">등록 종목</div>
-    <select id="rpProgramSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regFillCountOptions();_rpSyncProgPreview()"></select>
+    <select id="rpProgramSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regFillCountOptions()"></select>
 
     <!-- 멤버십 전용 — 회원 DB(유효회원 시트)에 그대로 들어가는 칸. GM 지시 2026-08-03
          ("새 문의에서 SUC하면 채워야하는 항목값들도 다 들어갈 수 있게"). 강습 모드에서는 숨김.
          종료일자·잔여일·등록회차·담당자는 서버가 자동으로 채운다(여기서 묻지 않는다). -->
     <div id="rpMemGrid" style="display:none;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:10px">
       <div><div class="consult-field-label" style="margin-top:0">계약 기간</div>
-        <select id="rpMonths" class="rp-in" onchange="_rpSyncProgPreview()">
+        <select id="rpMonths" class="rp-in">
           <option value="12">12개월</option><option value="3">3개월</option><option value="1">1개월</option>
         </select></div>
       <div><div class="consult-field-label" style="margin-top:0">회원 구분</div>
@@ -2686,8 +2686,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div style="grid-column:1/-1"><div class="consult-field-label" style="margin-top:0">락커 <span style="font-weight:400;color:var(--dim)">(없으면 비워두세요)</span></div>
         <input id="rpLocker" type="text" class="rp-in" placeholder="예: 슈(279)"></div>
       <div style="grid-column:1/-1;font-size:11.5px;color:var(--dim);line-height:1.6;padding:8px 10px;border-radius:7px;background:var(--accent-bg);border:1px solid var(--accent-border)">
-        회원 DB에 기록될 종목명 → <b id="rpProgPreview" style="color:var(--accent)">—</b><br>
-        종료일자 · 잔여일 · 등록회차 · 담당자는 자동으로 채워집니다.
+        종료일자 · 잔여일 · 등록회차는 계약 기간으로 자동 계산되고, 담당자는 임정은으로 들어갑니다.
       </div>
     </div>
 
@@ -6529,39 +6528,25 @@ function toggleRegAdd(show) {
     var t = new Date();
     document.getElementById('regAddDate').value = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
     document.getElementById('regAddName').focus();
-    _regAddProgSyncUI();   // 열 때마다 재확인 — _activeRows 가 그 사이 도착했으면 드롭다운으로 전환
+    _regAddProgSyncUI();   // 폼 열 때 종목 드롭다운 구성
   }
 }
-// 종목 드롭다운 채우기(GM 지시 2026-08-03) — 후보 = _activeRows(유효회원)의 '수강반종목명' 실제값만(중복 제거).
-// _activeRows 미도착 시 아무것도 안 하고 리턴 — 기존 자유입력 그대로 유지(입력 막힘 없음).
+// 종목 드롭다운 채우기 — 후보 = PROGRAM_OPTIONS(4등급). SUC 창과 **같은 목록**을 쓴다.
+//   ★2026-08-03 2차: 원래는 유효회원 시트의 실제값을 긁어 후보로 썼는데, 종목명이 등급만 쓰는 것으로
+//   바뀌면서(GM 지시) 긁어올 것이 등급 4개뿐이라 시트를 훑을 이유가 사라졌다. 두 입력 창이 서로
+//   다른 목록을 보여주던 것도 같이 없어진다. 기간은 옆 '개월수' 칸이 따로 받는다.
 function _regAddProgSyncUI() {
   var sel = document.getElementById('regAddProgSel');
   var txt = document.getElementById('regAddProg');
   if (!sel || !txt) return;
-  var col = _capCol(_activeHeaders, '수강반종목명');
-  if (!col || !_activeRows || !_activeRows.length) return;
-  // ★2026-08-03 시토 — 후보에서 **웹접수형 표기는 뺀다.**
-  //   시트에 이미 있는 값을 그대로 쓰되, `노블레스 (Gym + G.X + Swimming + Sauna)` 처럼
-  //   웹 문의 원문이 그대로 들어간 것(실측 1,001건 중 3건)은 **오염된 값**이라 후보에 두면
-  //   직원이 다시 고르게 되고 오염이 이어진다 — GM 이 "형식이 하나도 안 맞네"라고 한 그 값들이다.
-  //   판정은 지어내지 않고 데이터로: 시트 표준형은 `▶` 를 가진다(1,001건 중 998건). 없으면 제외.
-  //   ▸그래도 필요하면 '직접 입력…' 으로 무엇이든 넣을 수 있다(막지 않는다).
-  //   ▸새 표준형이 생기면 자동으로 후보에 들어온다(목록을 코드에 박지 않았다).
-  var seen = {}, opts = [];
-  _activeRows.forEach(function(r){
-    var v = String(r[col] || '').trim();
-    if (v && v.indexOf('▶') < 0) return;          // 웹접수형·비표준 표기 제외
-    if (v && !seen[v]) { seen[v] = true; opts.push(v); }
-  });
-  opts.sort(function(a, b){ return a.localeCompare(b, 'ko'); });
   sel.innerHTML = '<option value="">프로그램 선택</option>' +
-    opts.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('') +
+    PROGRAM_OPTIONS.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('') +
     '<option value="__custom__">직접 입력…</option>';
   sel.style.display = '';
   txt.style.display = 'none';
 }
 // 드롭다운 선택 반영 — 실제 제출값은 그대로 #regAddProg(hidden text)에 담는다(submitRegAdd 무변경).
-// '직접 입력…' 선택 시 자유입력으로 복귀(폴백). 선택값에 'N개월'이 있으면 개월수 칸 자동 채움(수기 편집 가능).
+// '직접 입력…' 선택 시 자유입력으로 복귀(폴백).
 function _regAddProgSelChange() {
   var sel = document.getElementById('regAddProgSel');
   var txt = document.getElementById('regAddProg');
@@ -6574,9 +6559,6 @@ function _regAddProgSelChange() {
     return;
   }
   txt.value = v;
-  var mo = v.match(/(\d+)\s*개월/);
-  var moEl = document.getElementById('regAddMonths');
-  if (moEl) moEl.value = mo ? mo[1] : '';
 }
 function submitRegAdd() {
   var name  = document.getElementById('regAddName').value.trim();
@@ -7026,7 +7008,6 @@ function _activeApplyData(headers, rows) {
   else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
   _activeRender(_activeBaseRows());   // 대기자 필터 + 월단위 보기 결합(2026-07-20 시포·GM, 기존 2026-07-16 GM 지시 위에 확장)
   renderActiveSummary();
-  _regAddProgSyncUI();   // 유효회원 데이터 도착 시 "+직접등록" 종목칸을 드롭다운으로 전환(GM 지시 2026-08-03)
   renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
   if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
   _activeWireSearch();
@@ -7497,8 +7478,9 @@ function _mregEnsureMembersThen(cb){
 // ★2026-08-03 시토(GM 지적 "프로그램 명이 좀 이상한데?") — 시트 내부 표기를 사람이 읽는 이름으로.
 //   시트 원본은 `★(정)플래티넘+골프 ▶ GYM+골프+사우나 ▶ 12개월` 처럼 내부 기호(★·(정)/(단)·▶)와
 //   시설 나열이 그대로 들어 있어, 신규 등록현황 표에 그 문자열이 통째로 노출되고 있었다.
-//   ▸(정)/(단) 은 기간(12개월/1·3개월)이 이미 말해 주므로 뺀다. 가운데 시설 나열
-//     (GYM+골프+사우나)은 상품명에서 이미 알 수 있어 뺀다 → `플래티넘+골프 · 12개월`.
+//   ▸★2026-08-03 2차(GM "12개월 또 넣었다고? 다 빼도 될 것 같은데?") — 개월수도 뺀다. 계약 기간은
+//     시작일자·종료일자 칸이 이미 정확히 갖고 있어 종목명에 또 적을 이유가 없다 → `플래티넘+골프`.
+//     실측: 저장소에서 이 칸의 시설·개월수를 뽑아 쓰는 코드 0곳(등급 포함 여부만 두 곳에서 본다).
 //   ▸표기 체계가 두 벌 섞여 있다(실측): 시트 표준형 1,688건 + 웹접수형 3건
 //     (`노블레스 (Gym + G.X + Swimming + Sauna)`). 웹접수형은 상품명만 남긴다 → `노블레스`.
 //   ▸★모르는 표기는 손대지 않고 원문 그대로 낸다(조용히 빈칸이 되는 것 금지).
@@ -7507,8 +7489,8 @@ function _mregEnsureMembersThen(cb){
 function _mregProgLabel(raw){
   var s = String(raw || '').trim();
   if (!s) return '—';
-  var m = s.match(/^★?\s*\((?:정|단)\)\s*([^▶]+?)\s*▶[^▶]*▶\s*(.+)$/);   // 시트 표준형
-  if (m) return m[1].trim() + ' · ' + m[2].trim();
+  var m = s.match(/^★?\s*\((?:정|단)\)\s*([^▶]+?)\s*▶/);                 // 시트 옛 표기 → 등급만
+  if (m) return m[1].trim();
   var w = s.match(/^([^(]+?)\s*\(/);                                     // 웹접수형
   if (w) return w[1].trim();
   return s;                                                              // 모르는 표기 = 원문 유지
@@ -9757,36 +9739,14 @@ function saveLossReasonModal() {
    GM 요청 사양(2026-07-20, 시포). ───────────────────────────────────────────── */
 var _regProgramModal = null;   // { mode, rowIndex/t, keyPhone, name, gid, type }
 
-/* ★회원 DB 종목명 조립 (2026-08-03 시토 · GM 지시 "프로그램명도 좀 수정해주고").
-   유효회원 시트의 수강반종목명은 표기 규칙이 하나뿐이다 — 실측 1,690행에 나타난 값이 정확히 12가지
-   (4등급 × 1·3·12개월)이고 예외가 없다: `★(정|단){등급} ▶ {시설} ▶ {N}개월`.
-   화면은 등급(노블레스/플래티넘/±골프)만 고르게 하고 시설·정단 표기는 여기서 규칙대로 붙인다.
-   ▸사람에게 시설 나열을 고르게 하면 반드시 어긋난다 — 실제로 그렇게 오염된 행을 08-02에 수리했다.
-   ▸(정)=12개월 / (단)=그 외. 실측에서 이 경계를 벗어난 값 0건.
-   ▸모르는 등급이 오면 조립하지 않고 빈 문자열 — 지어낸 표기를 시트에 넣느니 안 쓰는 편이 낫다
-     (서버는 activeProgram 이 비면 유효회원 쓰기를 건너뛴다). */
-var MEM_PROG_FACILITY = {
-  '노블레스':      'GYM+수영+사우나',
-  '플래티넘':      'GYM+사우나',
-  '노블레스+골프': 'GYM+수영+골프+사우나',
-  '플래티넘+골프': 'GYM+골프+사우나'
-};
-function _memProgCompose(grade, months) {
-  var g = String(grade || '').trim();
-  var f = MEM_PROG_FACILITY[g];
-  var mo = parseInt(months, 10);
-  if (!f || !(mo > 0)) return '';
-  return '★(' + (mo >= 12 ? '정' : '단') + ')' + g + ' ▶ ' + f + ' ▶ ' + mo + '개월';
-}
-// 조립 결과 미리보기 — 등급·기간을 바꿀 때마다 '시트에 이렇게 들어갑니다'를 그 자리에서 보여준다.
-function _rpSyncProgPreview() {
-  var el = document.getElementById('rpProgPreview'); if (!el) return;
-  var g = (document.getElementById('rpProgramSel') || {}).value || '';
-  var mo = (document.getElementById('rpMonths') || {}).value || '';
-  var composed = _memProgCompose(g, mo);
-  el.textContent = composed || '— 등록 종목을 선택하세요';
-  el.style.color = composed ? 'var(--accent)' : 'var(--dim)';
-}
+/* ★종목명은 등급만 쓴다 (2026-08-03 시토 · GM 지시 "12개월 또 넣었다고? 다 빼도 될 것 같은데?").
+   시트 옛 표기는 `★(정)노블레스 ▶ GYM+수영+사우나 ▶ 12개월` 인데, 이 안의 ★·(정)/(단)·시설 나열·개월수는
+   전부 다른 칸이 이미 갖고 있다 — 기간=시작일자·종료일자, 정/단=그 기간, 시설=등급이 결정.
+   ▸실측(2026-08-03): 저장소 전체에서 이 칸을 읽는 코드는 '플래티넘'·'노블레스' 포함 여부 두 곳뿐이고
+     시설·개월수를 뽑아 쓰는 곳은 0곳이다. 즉 지금까지 아무도 안 읽던 장식이다.
+   ▸그래서 앞으로 들어가는 값은 `노블레스+골프` 처럼 등급만 쓴다. 기존 1,690행은 건드리지 않는다
+     (아무도 안 읽는 값을 살아있는 회원 DB에서 일괄 수정할 이유가 없다) — 화면은 아래 _mregProgLabel 이
+     옛 표기도 등급만 남겨 보여주므로 신·구가 똑같이 보인다. */
 
 // 등록종목 모달 셀렉트 채우기 공통(멤버십·강습 공유) — _lossModalFill 대칭.
 function _regProgramModalFill(options, current) {
@@ -9819,7 +9779,6 @@ function _regProgramModalFill(options, current) {
     _validityRow.style.display = 'none';
     _typeLabel.style.display = 'none';
     _typeSel.style.display = 'none';
-    _rpSyncProgPreview();
   }
   document.getElementById('regProgramOverlay').classList.add('open');
 }
@@ -9944,8 +9903,8 @@ function saveRegProgramModal() {
         var _v = function(id){ var el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
         var _mo = _v('rpMonths');
         return { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, regProgram: program,
-                 activeProgram: _memProgCompose(program, _mo),
-                 months: _mo,
+                 activeProgram: program,   // 회원 DB 수강반종목명 = 등급 그대로. 이 값이 있어야 서버가 회원 DB에 쓴다.
+                 months: _mo,              // 종료일자·잔여일 계산용 — 종목명에는 넣지 않는다
                  regDate:      _v('rpRegDate'),
                  memStartDate: _v('rpStartDate'),
                  memKind:      _v('rpKind'),
