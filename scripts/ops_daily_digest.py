@@ -48,12 +48,11 @@ LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
 PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
 
 # 지출품의 GAS(배97 · 매출/지출/구매물품 정본) — 매출지출현황.html PROC_API와 동일 배포본.
-# 비밀번호는 정본(.deploy-procurement/procurement.js)에서 직독(사본 하드코딩 금지).
+# 비밀번호는 telegram_bot/.env(저장소 밖)에서 읽는다(배328 — .js 소스 평문 노출 제거, 배326 과 같은 계열).
 PROC_EXEC_URL = os.environ.get(
     "PROC_EXEC_URL",
     "https://script.google.com/macros/s/AKfycbxUAQ3DefJt13z5Bsz5KlGw6BwS2lDeLgHDMeTHjifLYGuk1lNyEpARYQ20XcjJXNj5/exec",
 )
-PROC_JS_PATH = ROOT / ".deploy-procurement" / "procurement.js"
 SALES_TARGETS_PATH = ROOT / "status" / "sales_targets.json"  # 월 목표매출 정본(GM 결재 2026-07-03)
 
 RECENT_LEDGER_DAYS = 5  # 반복감지·미해결추적용으로 프롬프트에 주입할 과거 원장 기간
@@ -353,12 +352,18 @@ def build_work_block(target_date: str) -> str:
 #      같은 달 스냅샷이 없으면(첫날·월초) 방향을 생략한다 — 숫자 날조 금지.
 # ═══════════════════════════════════════════
 def _proc_password() -> str | None:
-    """지출품의 GAS 비밀번호 — 정본(.deploy-procurement/procurement.js)에서 직독."""
+    """지출품의 GAS 비밀번호 — 환경변수 우선, 없으면 telegram_bot/.env(저장소 밖) 한 줄.
+    값은 저장소에 두지 않는다(배328 — .deploy-procurement/procurement.js 평문 노출이 문제였다)."""
+    k = os.environ.get("PROC_PW", "").strip()
+    if k:
+        return k
     try:
-        m = re.search(r'var PW = "([^"]+)"', PROC_JS_PATH.read_text(encoding="utf-8"))
-        return m.group(1) if m else None
+        for line in (ROOT / "telegram_bot" / ".env").read_text(encoding="utf-8").splitlines():
+            if line.startswith("PROC_PW="):
+                return line.split("=", 1)[1].strip()
     except Exception:
-        return None
+        pass
+    return None
 
 
 def _fmt_won(v) -> str:
