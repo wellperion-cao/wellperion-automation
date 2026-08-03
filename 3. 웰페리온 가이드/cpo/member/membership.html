@@ -7555,6 +7555,19 @@ var NARROW_COL_WIDTHS = {
       · 그 외 컬럼은 시트 원순서 유지(누락 없음). corp/ended 스코프는 제네릭(원순서). 2026-07-03 시포·GM
       · ALWAYS_HIDE_COLS·종료사유(+메모)·미등록사유는 모든 스코프에서 공통 처리(아래) — '미등록사유'만
         LOSS(ended) 스코프에 한해 노출 유지(FB260801-141806, 사유별 현황판=_unregReasonBoardHtml). */
+// ★2026-08-03 시토(GM 지시) — 날짜 표기 통일: 연도 2자리(2026-10-14 → 26-10-14).
+//   시트에는 형식이 섞여 있다(실측): '2026-10-14' 다수 · '25. 10 .15' 처럼 손으로 적은 것도 존재.
+//   둘 다 'YY-MM-DD' 한 모양으로 그린다. **모르는 표기는 손대지 않고 원문 그대로** 낸다
+//   (조용히 빈칸이 되거나 엉뚱한 날짜로 바뀌는 것 금지). 원본은 셀 data-raw·title 에 그대로 보존.
+function _actDateLabel(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s || s === '—') return '—';
+  var m = s.match(/^(\d{2,4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
+  if (!m) return s;
+  var y = m[1].length >= 4 ? m[1].slice(-2) : ('0' + m[1]).slice(-2);
+  return y + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+}
+
 function _activeDisplayCols() {
   var cols = _activeHeaders.slice().filter(function(h){ return ALWAYS_HIDE_COLS.indexOf(h) < 0; });
   // 종료 스코프: '종료사유'(+메모) 원본 칸은 숨기고 전용 통합셀('__churn__')로 대체(정형 드롭다운+메모 모달). 2026-07-09 시포·GM
@@ -7726,6 +7739,16 @@ function _activeRowHtml(row, displayCols) {
       if (h === '수강반종목명') _cv = String(_cv).replace(/★/g, '').replace(/\s*▶\s*\d+\s*개월\s*$/, '').trim() || '—';
       // 휴대폰 번호는 잘려 보이면 대조가 안 된다 — 한 줄로 넉넉히(GM 지시 2026-08-03).
       if (isPhone) return void (html += '<td style="white-space:nowrap;min-width:132px;text-align:center">' + esc(_cv) + '</td>');
+      // 날짜 칸(등록·시작·종료 일자) — 연도 2자리 + 칸 넉넉히(GM 지시 2026-08-03).
+      //   ▸시트 값이 제각각이다(실측): '2026-10-14' 가 대부분인데 '25. 10 .15'(김영경1님)처럼 사람이
+      //     손으로 적은 것도 섞여 있어 자릿수·구분자가 안 맞고 줄바꿈으로 잘려 보였다. 화면에서만 통일한다.
+      //   ▸★시트 원본은 손대지 않는다 — data-raw 에 원본을 담아 두고, 이 칸을 눌러 수정할 때는
+      //     보이는 글자가 아니라 그 원본을 seed 로 쓴다(안 그러면 표기가 시트에 덮여 저장된다).
+      if (/일자/.test(h)) {
+        return void (html += '<td style="white-space:nowrap;min-width:96px;text-align:center"' + editAttr +
+          ' data-raw="' + esc(row[h] == null ? '' : row[h]) + '" title="' + esc(_cv) + '">' +
+          esc(_actDateLabel(_cv)) + '</td>');
+      }
       // 분류 통합 표시(GM 결정 2026-08-03) — 「재등록 분류」에만 있던 값을 이 칸에서 같이 보여준다.
       if (h === REG_CLASS_COL) {
         var mg = _regClassMerged(row);
@@ -8177,8 +8200,11 @@ function _wireActiveDblclick(){
     var rowIndex = parseInt(tr.dataset.rowindex, 10);
     if (!rowIndex) return;
 
-    // 원본값
-    var origText = td.textContent === '—' ? '' : td.textContent;
+    // 원본값 — ★날짜 칸처럼 화면 표기를 다듬은 칸은 **보이는 글자가 아니라 시트 원본**을 seed 로 쓴다.
+    //   (2026-08-03 시토) 안 그러면 사용자가 날짜 칸을 눌렀다 그대로 저장만 해도 화면 표기('26-10-14')가
+    //   시트에 덮여 저장 형식이 조용히 바뀐다. data-raw 가 있는 칸만 그 값을 쓰고, 없으면 종전대로.
+    var origText = (td.dataset.raw != null) ? td.dataset.raw
+                 : (td.textContent === '—' ? '' : td.textContent);
 
     td.dataset.editing = '1';
     td.classList.add('cell-active');
@@ -8204,7 +8230,9 @@ function _wireActiveDblclick(){
       td.classList.remove('cell-active');
       var newVal = inp.value;
       td.innerHTML = '';
-      td.textContent = newVal || '—';
+      // 표기를 다듬는 칸(data-raw 보유)은 원본을 갱신하고 화면엔 다듬은 값을 그린다. 그 외는 종전대로.
+      if (td.dataset.raw != null) { td.dataset.raw = newVal; td.textContent = _actDateLabel(newVal); }
+      else { td.textContent = newVal || '—'; }
       if (newVal === origText) return;
       // 로컬 _activeRows 갱신
       var r = _activeRows.find(function(x){ return x.rowIndex == rowIndex; });
