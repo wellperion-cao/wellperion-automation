@@ -274,17 +274,22 @@ def _check_gas_versions() -> list[str]:
     except Exception:
         pass  # 하트비트 실패가 헬스체크 본 작업을 막지 않는다(fail-soft)
 
-    # [2026-07-21 병합] gas 버전경보는 self_health_watchdog 일일 디제스트로 이관, 역롤백=주석해제
-    # issues: list[str] = []
-    # for r in results:
-    #     count = r.get('version_count')
-    #     if count is None:
-    #         print(f"[WARN] {r['project']} 버전 조회 실패 — 경보 제외", flush=True)
-    #         continue
-    #     if count >= _ALERT_THRESHOLD:
-    #         issues.append(f"⚠️ GAS 버전 임박: {r['project']} {count}/{_HARD_LIMIT}")
-    # return issues
-    return []
+    # [2026-08-03 원복·CTO] 2026-07-21 에 "self_health_watchdog 일일 디제스트로 이관"한다며 이 블록을
+    # 주석 처리했는데, **이관 대상이 한 번도 라이브로 켜진 적이 없다**(게이트 상시 OFF · 예약작업 0건 ·
+    # 하트비트 07-25 이후 정지). 그래서 07-21~08-03 **13일간 GAS 버전경보가 어디로도 0건** 나갔고,
+    # 그 사이 funnel-v2 가 190→197(🔴)로 올라 배포 3회를 남긴 것을 아무도 몰랐다(GM 질문으로 발견).
+    # 이관이 아니라 삭제였다 → 07-21 자기 주석("역롤백=주석해제")대로 원복하고,
+    # 죽은 이관처(self_health_watchdog.build_section_gas_version)는 같은 커밋에서 제거했다
+    # (약속 L21 — 꺼둔 것은 남기지 않는다 · 경보 관문은 하나만).
+    issues: list[str] = []
+    for r in results:
+        count = r.get('version_count')
+        if count is None:
+            print(f"[WARN] {r['project']} 버전 조회 실패 — 경보 제외", flush=True)
+            continue
+        if count >= _ALERT_THRESHOLD:
+            issues.append(f"⚠️ GAS 버전 임박: {r['project']} {count}/{_HARD_LIMIT}")
+    return issues
 
 
 # ── 기본 점검 방 목록 (self_health_watchdog 재사용용으로 추출 · 동작 불변) ────────

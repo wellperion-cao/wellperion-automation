@@ -72,7 +72,6 @@ def test_sheet_contract_failsoft_on_bad_state(monkeypatch):
 def test_digest_includes_sheet_contract_section(monkeypatch):
     # 다른 섹션은 정상(None)으로 눌러 §5 만 이상으로 만든다
     monkeypatch.setattr(W, "build_section_silence", lambda now=None: None)
-    monkeypatch.setattr(W, "build_section_gas_version", lambda: None)
     monkeypatch.setattr(W, "build_section_erp_status", lambda: None)
     monkeypatch.setattr(W, "build_section_page_hygiene", lambda now=None: None)
     _patch_state(monkeypatch, {
@@ -89,7 +88,6 @@ def test_digest_includes_sheet_contract_section(monkeypatch):
 def test_live_gate_off_blocks_send_even_with_issues(monkeypatch, tmp_path):
     # §5 이상 상태를 만들고, 나머지는 None
     monkeypatch.setattr(W, "build_section_silence", lambda now=None: None)
-    monkeypatch.setattr(W, "build_section_gas_version", lambda: None)
     monkeypatch.setattr(W, "build_section_erp_status", lambda: None)
     monkeypatch.setattr(W, "build_section_page_hygiene", lambda now=None: None)
     _patch_state(monkeypatch, {
@@ -110,7 +108,6 @@ def test_live_gate_off_blocks_send_even_with_issues(monkeypatch, tmp_path):
 def test_no_issue_is_noop_no_send(monkeypatch, tmp_path):
     for name in ("build_section_silence", "build_section_page_hygiene"):
         monkeypatch.setattr(W, name, lambda now=None: None)
-    monkeypatch.setattr(W, "build_section_gas_version", lambda: None)
     monkeypatch.setattr(W, "build_section_erp_status", lambda: None)
     monkeypatch.setattr(W, "build_section_sheet_contract", lambda: None)
     # §6/§7/§8 도 전부 눌러야 "전 섹션 정상" 시나리오가 결정론적이다(실 저장소/네트워크

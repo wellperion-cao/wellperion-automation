@@ -27,9 +27,11 @@ cto-automation-health 의 §자가건강(build_digest 재사용)으로 09:10 하
 경보는 telegram_health_check.py 자체의 13시 OWNER 즉시경보 경로를 그대로
 남긴다(약화 금지) — §7 은 그 경로를 대체하지 않고 일일 요약 가시성만 더한다.
 
-섹션 8개, 이상 있는 섹션만 노출(전부 정상이면 무발신):
+섹션 7개, 이상 있는 섹션만 노출(전부 정상이면 무발신):
   §1 🔇 침묵 모듈   — module_silence_detector.scan_registry() 재사용(등록부 전수)
-  §2 📦 GAS 버전    — gas_version_monitor.collect() 재사용, 임계(>=180)만
+  §2 📦 GAS 버전    — 삭제됨(2026-08-03). 게이트 OFF·예약 0건·하트비트 07-25 정지로
+                      13일간 경보 0건이었다 — telegram_health_check._check_gas_versions
+                      (예약 가동 중)로 원복하고 여기 사본은 지웠다(약속 L21).
   §3 🩹 자동화 건강 — status/erp_status.json 읽기 전용(재수집 금지).
                       systems/bridges state=="이상" + automation_health
                       items state in (실패·미실행·불명)만 요약.
@@ -79,7 +81,6 @@ if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
 import module_silence_detector as _silence  # noqa: E402
-import gas_version_monitor as _gasmon  # noqa: E402
 from module_heartbeat import record_heartbeat  # noqa: E402
 # [전사 무결성 표준 편입 2026-07-22] 시포 시트 계약 점검기(07:50)의 상태파일·임계·로더를
 # 재사용해 STATE_PATH/threshold 드리프트 없이 읽기만 한다(재점검·네트워크 호출 없음).
@@ -131,19 +132,14 @@ def build_section_silence(now=None):
     return lines
 
 
-# ── §2 📦 GAS 버전 (gas_version_monitor 재사용) ──────────────────────────────
-def build_section_gas_version():
-    """임계(>=180) 프로젝트만 → 라인 리스트. 없으면 None."""
-    results = _gasmon.collect()
-    alerts = [r for r in results
-              if r.get("version_count") is not None
-              and r["version_count"] >= _gasmon._ALERT_THRESHOLD]
-    if not alerts:
-        return None
-    lines = [f"📦 GAS 버전 임박 {len(alerts)}건(하드리밋 {_gasmon._HARD_LIMIT})"]
-    for r in alerts:
-        lines.append(f"  · {r['project']} {r['version_count']}/{_gasmon._HARD_LIMIT}")
-    return lines
+# ── §2 📦 GAS 버전 — 삭제됨(2026-08-03·CTO) ──────────────────────────────────
+# 2026-07-21 에 telegram_health_check 의 GAS 버전경보를 "여기 일일 디제스트로 이관"했는데,
+# 이 워치독은 게이트(SELF_HEALTH_WATCHDOG_LIVE) 상시 OFF · 예약작업 0건 · 하트비트 07-25 정지로
+# **한 번도 라이브로 켜진 적이 없다.** 결과: 07-21~08-03 13일간 GAS 버전경보 0건, 그 사이
+# funnel-v2 가 190→197(🔴)에 닿은 것을 아무도 몰랐다. 이관이 아니라 삭제였다.
+# → 경보는 원래 자리(telegram_health_check._check_gas_versions, 예약 가동 중)로 원복하고
+#   여기 사본은 지운다. 남겨두면 나중에 이 워치독을 켤 때 **경보가 두 곳에서 두 번 나간다**
+#   (약속 L21 — 관문 하나 · 꺼둔 것은 남기지 않는다).
 
 
 # ── §3 🩹 자동화 건강 (status/erp_status.json 읽기 전용) ─────────────────────
@@ -355,7 +351,7 @@ def build_digest(now=None):
     now = _now_utc(now)
     sections = {
         "silence": build_section_silence(now=now),
-        "gas_version": build_section_gas_version(),
+        # gas_version 섹션 삭제(2026-08-03) — 경보 정본 = telegram_health_check (§2 주석 참조)
         "erp_status": build_section_erp_status(),
         "page_hygiene": build_section_page_hygiene(now=now),
         "sheet_contract": build_section_sheet_contract(),
