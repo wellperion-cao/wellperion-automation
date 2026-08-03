@@ -8349,6 +8349,14 @@ function _processAction(body) {
       mbAfter[mbAK] = (mbAfter[mbAK] || 0) + 1;
     }
     if (mbChanged > 0) mbSh.getRange(2, mbFieldIdx + 1, mbRows, 1).setValues(mbOut);  // 단일 열 range 1회 — 다른 열 무손상
+    // 배327 — 일괄 배치는 요약 1줄만 남긴다. 개별 1,000줄은 개별 수정 추적을 노이즈로 덮는다.
+    // 건수(mbChanged)는 위에서 이미 세어 둔 값 — 열을 다시 읽지 않는다(느려지면 안 된다).
+    // 이전값은 행마다 달라 '각각 다름'으로 둔다(없는 값을 지어내지 않는다).
+    if (mbChanged > 0) {
+      _memberLog_([[new Date(), String(body.staff || '').trim() || '이름미상',
+                    '— 전체 ' + mbChanged + '건', '', '일괄 배치 · ' + mbField,
+                    '각각 다름(' + mbChanged + '건)', mbValue, '멤버십']]);
+    }
     return _json({ ok: true, scope: mbScope, field: mbField, value: mbValue, total: mbTotal, changed: mbChanged, skipped: mbSkipped, before: mbBefore, after: mbAfter });
   }
 
