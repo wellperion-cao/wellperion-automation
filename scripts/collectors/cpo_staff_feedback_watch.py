@@ -567,7 +567,21 @@ def main() -> int:
         print(f"[error] 피드백 조회 실패 — {err}")
         return 0  # fail-soft: 3분마다 도는 잡이라 다음 회차에 재시도한다.
 
-    pending = [r for r in rows if str(r.get("처리상태") or "").strip() in ("", "접수")]
+    # ★2026-08-03 시토(배299 · 0 위장 수리) — '미처리 집계'와 '배 생성 대상'을 갈랐다.
+    #   종전엔 하나였고 판정이 빈칸·'접수' 두 값뿐이라, 실무진이 손든 건이 **집계에서 사라졌다**:
+    #   라이브 40건 중 '확인중' 1·'진행중' 1 이 미처리인데 하트비트는 **미처리 0·회신_대상 0**.
+    #   0 위장이라 어떤 감시기도 안 잡는다(아침 자가점검 #7 그 부류).
+    #   ▸미처리 = **'처리완료'에 도달하지 않은 전부.** 사람이 직접 적은 임의 문구('진행중' 등)도
+    #     미처리로 센다 — 사람이 손든 신호는 숨기는 쪽보다 한 번 더 보이는 쪽이 낫다.
+    #   ▸배 생성 대상은 **넓히지 않는다**(rank<=1 = 빈칸·접수·접수됨). '확인중'은 이미 배가 붙어
+    #     진행 중이라는 뜻이라 여기서 또 배를 만들면 중복이 된다. 대신 '접수됨'을 새로 포함했다 —
+    #     종전 판정이 상수(STAFF_STATUS_RECEIVED="접수됨")와 안 맞아 신규 접수건이 배 없이
+    #     샐 수 있었다(현재 시트엔 해당 행 0건이라 즉시 영향은 없고 구멍만 막는다).
+    _DONE_RANK = len(_STAGE_ORDER)  # '처리완료' 순위
+    pending = [r for r in rows
+               if _stage_rank(str(r.get("처리상태") or "")) != _DONE_RANK]
+    ship_targets = [r for r in rows
+                    if _stage_rank(str(r.get("처리상태") or "")) <= 1]
 
     from datetime import datetime, timedelta, timezone
     today = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
@@ -580,7 +594,7 @@ def main() -> int:
     if args.dry_run:
         q = load_queue()
         have = _existing_ids(q, archive)
-        new = [r for r in pending if str(r.get("접수ID") or "").strip() not in have]
+        new = [r for r in ship_targets if str(r.get("접수ID") or "").strip() not in have]
         print(f"전체 {len(rows)}건 · 미처리 {len(pending)}건 · 배 없는 신규 {len(new)}건")
         for r in new:
             print("  +", r.get("접수ID"), "|", str(r.get("내용") or "")[:60].replace("\n", " "))
@@ -601,7 +615,7 @@ def main() -> int:
 
     def mutator(queue):
         have = _existing_ids(queue, archive)
-        for r in pending:
+        for r in ship_targets:
             fid = str(r.get("접수ID") or "").strip()
             if not fid or fid in have:
                 continue
