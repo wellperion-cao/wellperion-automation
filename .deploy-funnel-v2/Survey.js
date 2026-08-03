@@ -9023,7 +9023,15 @@ function _processAction(body) {
     } else {
       aaResult = { ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows };
     }
-    _cachePutJson_(aaCache, aaCacheKey, aaResult, 60);
+    // ★2026-08-03 시토(배298) — TTL 60 → 360초. 워머(warmDashboardCache)가 5분마다 도는데
+    //   TTL 이 60초면 5분 중 1분만 뜨겁고 나머지 4분은 미스라 워밍이 헛돈다. 360초로 두면
+    //   워머 주기(300초)보다 길어 **항상 히트**한다(경계 race 없음).
+    //   ▸신선도 영향: 쓰기 액션(member_active_update 등)은 그대로 즉시 무효화하므로 화면에서
+    //     고친 값은 바로 반영된다. 늦어지는 것은 **시트를 직접 손으로 고쳤을 때뿐**이고,
+    //     그 경우 최대 6분 지연(종전 1분). 이 칸은 조회용이라 감수 가능하다고 판단했으나,
+    //     회원 데이터 신선도는 시포 도메인이라 다르면 시포·GM 이 한 줄로 정정한다.
+    //   ▸다른 캐시(문의 micache·강습 licache)는 60초 그대로 — 이 액션만 워머에 물렸다.
+    _cachePutJson_(aaCache, aaCacheKey, aaResult, 360);
     return _json(aaResult);
   }
 
@@ -11317,7 +11325,17 @@ function warmDashboardCache() {
   var qs = [
     'action=funnel_conversion',                 // fc_v1 (범위 무관)
     'action=type_channel_breakdown' + range,    // tc — 가장 무거움
-    'action=period_breakdown' + range
+    'action=period_breakdown' + range,
+    // ★2026-08-03 시토(배298 · GM '너무 느려 CRM 관리가 안 된다') — 회원 목록 2스코프 추가.
+    //   실측(라이브 curl, 중앙값): 플랫폼 고정비용 2.28초 · 캐시 히트 3.18초 · 캐시 미스 8.35초.
+    //   더 큰 문제는 동시성이었다 — 화면이 valid·ended 를 근접 시점에 같이 프리페치하는데
+    //   GAS 가 스크립트당 동시실행을 제한해 초과분을 큐잉한다. 5개 동시발사 실측에서 한 건이
+    //   **65.5초**까지 밀렸다(코드 주석 8913줄의 07-31 '6개 요청 계단식 1.6→16.4초'와 같은 현상).
+    //   → 캐시를 상시 뜨겁게 유지하면 미스 자체가 안 생겨 경합도 함께 사라진다.
+    //   format=rows 로 warm 하는 이유 = 화면이 그 형식만 부른다(membership.html:6948).
+    //   형식별로 캐시 키가 갈리므로(8921줄) obj 형식을 warm 하면 헛돈다.
+    'action=member_active_list&scope=valid&format=rows',
+    'action=member_active_list&scope=ended&format=rows'
   ];
   qs.forEach(function(q) {
     try {
