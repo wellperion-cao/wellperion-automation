@@ -1444,6 +1444,9 @@ def _board_summary_lines(secs: dict) -> list[str]:
         "상세 목록 → 자율 작업 현황 ▸ 🧭 항로",
         _HANGRO_URL,
     ]
+    # 🌀 표류는 링크 너머로 밀지 않는다 — CLAUDE.md §3-1 "그냥 두지 않는다"(촉구 의무).
+    if secs.get("drift"):
+        out.append(f"🌀 표류 {len(secs['drift'])}건 — 완료인데 '다음'이 없습니다. 👉 다음 정하세요")
     if secs.get("urgent"):
         out.append(f"🔴 마감 임박 {len(secs['urgent'])}건 — 자율현황에서 확인")
     if secs.get("appr"):
