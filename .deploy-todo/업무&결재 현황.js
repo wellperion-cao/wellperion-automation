@@ -928,7 +928,10 @@ var KPI_SALES_SHEET_ID   = '1oG63rj17-RMk2cdiVbwp4TOp-yN73uc04jDV7RfN9BI'; // �
 // '보고' 탭(일자별 스냅샷 원본) — 9시 텔레그램·PNG 일일보고(scripts/generate_sales_report_image.py)와
 // 동일 소스로 2026-07-10 시뽀 실측 확인(라이브 대조: 7/9 누적 216,057,540 그대로 일치).
 // KPI_SALES_SHEET_ID(위, 죽은 참조)와는 다른 시트 — '어제 일일 매출' 전용, 월/연 정본(AV열)은 무변경.
-var SALES_DAILY_REPORT_SHEET_ID = '1ycSEBbXjcU_suNu9B5HsEXQW0XosaW8fGtO0XfGprqc';
+// ⚠️ 파일 ID 하드코딩 금지 — '보고' 탭은 월마다 새 파일("2026년 N월 매출 보고")로 갈아탄다.
+//    2026-08-03 실측: 7월 파일에 고정돼 있어 8/3 home '어제 매출'이 "7/2 기준"으로 굳었다.
+//    파일 해석은 _kpiSalesReportTab() 하나로 단일화(=_kpiSalesMonthlyFileId 제목 규칙 재사용).
+//    GID 는 탭 이름('보고')을 못 찾을 때만 쓰는 폴백으로 남긴다(1~8월 파일 모두 동일 gid 실측).
 var SALES_DAILY_REPORT_GID      = 2009735088;
 // 26년 매출 분석 시트 — 1~5월 월별 마감 총합(AV3:AV7) 출처 (2026-06-20 GM 제공, 시뽀 연동).
 // 탭명: '26년 매출 분석' (gid=195790960). AV열 3~7행 = 1월~5월 순서(GM 확인).
@@ -1045,7 +1048,7 @@ var BREAKDOWN_NAME_MAP = {
 //   일치함을 실측 확인 — 이중집계 아님, 같은 데이터의 다른 재집계일 뿐).
 //   ⚠ 이 시트엔 GXE·뮤지컬 열 자체가 없음(1~48열 전부 확인, 두 카테고리 데이터가 없음) —
 //   "합계식에서 빠짐"이 아니라 애초에 이 시트가 추적하지 않는 카테고리. 시트 구조를 건드리지
-//   않고 '보고' 탭(SALES_DAILY_REPORT_SHEET_ID, 이미 sales.yesterday에 쓰는 소스)에서 GXE·
+//   않고 '보고' 탭(_kpiSalesReportTab(), 이미 sales.yesterday에 쓰는 소스)에서 GXE·
 //   뮤지컬 당월 누적을 읽어 GAS 응답 단계에서만 가산한다(2026-07-10 GM 결정, 시트 무변경).
 var SALES_TEAM_COLS = [
   { name: '회원권',   col: 12 }, // 멤버십 합계(매출) — 신규·재등록·양도·환불·옵션 포함
@@ -1171,20 +1174,34 @@ function _kpiParseSalesTab(sheet) {
   };
 }
 
+// 일일 '보고' 탭 해석 — 매출보고는 달마다 새 파일("2026년 N월 매출 보고")이 만들어진다.
+// 파일 ID 를 상수로 박아두면 달이 바뀐 순간부터 계속 지난달을 읽는다(2026-08-03 GM 지적:
+// 8/3 home '어제 매출'이 "7/2 기준"). 파일 해석은 이미 있는 _kpiSalesMonthlyFileId(제목 규칙)로
+// 통일 — 새 엔드포인트·새 맵 만들지 않는다. 실패는 null(정직, 호출부가 fail-safe 처리).
+function _kpiSalesReportTab(month) {
+  try {
+    var t = _kpiToday();
+    var fid = _kpiSalesMonthlyFileId(t.y, month || t.m);
+    if (!fid) return null;
+    var ss = SpreadsheetApp.openById(fid);
+    var sh = ss.getSheetByName('보고');
+    if (sh) return sh;
+    var sheets = ss.getSheets();
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].getSheetId() === SALES_DAILY_REPORT_GID) return sheets[i];
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
 // GXE·뮤지컬 당월 누적 — '26년 매출 분석'(AV열 정본) 시트엔 이 두 카테고리 열 자체가 없음
 // (2026-07-10 시뽀 getFormula/전체열 probe로 확인). 시트 구조는 건드리지 않고 '보고' 탭
-// (SALES_DAILY_REPORT_SHEET_ID, sales.yesterday와 동일 소스)의 당월 최신 블록에서 GXE·뮤지컬
+// (_kpiSalesReportTab(), sales.yesterday와 동일 소스)의 당월 최신 블록에서 GXE·뮤지컬
 // 항목만 뽑아 sales.month에 가산(2026-07-10 GM 결정). 실패·당월 블록 없음·두 항목 다 없음 → null
 // (정직 — AV열 원값 그대로 유지, 0 위조 금지).
 function _kpiSalesExtraCategoriesMonth() {
   try {
-    if (!SALES_DAILY_REPORT_SHEET_ID) return null;
-    var ss = SpreadsheetApp.openById(SALES_DAILY_REPORT_SHEET_ID);
-    var sheets = ss.getSheets();
-    var sh = null;
-    for (var i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === SALES_DAILY_REPORT_GID) { sh = sheets[i]; break; }
-    }
+    var sh = _kpiSalesReportTab();
     if (!sh) return null;
     var parsed = _kpiParseSalesTab(sh);
     if (!parsed || !parsed.hasCurMonth || !Array.isArray(parsed.breakdown)) return null;
@@ -1250,7 +1267,7 @@ function _kpiParkingRevenueMonthlyMap() {
 
 // ── 어제(최신 확정) 일일 매출 — 2026-07-10 GM 지시 ──
 // AV열(월간 정본)은 일 단위 데이터가 없어 '오늘' 칸이 항상 null이었다. 대신 '보고' 탭
-// (SALES_DAILY_REPORT_SHEET_ID·9시 텔레그램/PNG 일일보고와 동일 소스, 2026-07-10 시뽀
+// (_kpiSalesReportTab()·9시 텔레그램/PNG 일일보고와 동일 소스, 2026-07-10 시뽀
 // 라이브 대조로 확인)의 날짜별 블록에서 최근 2일 누적차를 역산해 '어제 하루치'를 구하고,
 // 거기에 그날의 주차 매출을 더해 "주차 통합 어제 매출"을 만든다.
 // ⚠ 월/연 정본(AV열, KPI_SALES_ANALYSIS_SHEET_ID)은 무변경 — 이 값은 오직 '오늘' 칸을
@@ -1331,15 +1348,17 @@ function _kpiParkingDayAmount(dateStr) {
 // sales.yesterday — {date, core, parking, amount, sheetToday, mismatch}. 실패는 null(정직, 프론트 자동 폴백).
 function _kpiSalesYesterday() {
   try {
-    if (!SALES_DAILY_REPORT_SHEET_ID) return null;
-    var ss = SpreadsheetApp.openById(SALES_DAILY_REPORT_SHEET_ID);
-    var sheets = ss.getSheets();
-    var sh = null;
-    for (var i = 0; i < sheets.length; i++) {
-      if (sheets[i].getSheetId() === SALES_DAILY_REPORT_GID) { sh = sheets[i]; break; }
-    }
+    var sh = _kpiSalesReportTab();
     if (!sh) return null;
     var blocks = _kpiSalesDailyBlocks(sh);
+    // 매달 1일 새벽 — 이번달 파일에 아직 블록이 없으면 지난달 파일 마지막 날(=진짜 어제)로 폴백.
+    if (!blocks.length) {
+      var pm = _kpiToday().m - 1;
+      if (pm >= 1) {
+        var psh = _kpiSalesReportTab(pm);
+        if (psh) blocks = _kpiSalesDailyBlocks(psh);
+      }
+    }
     if (!blocks.length) return null;
     var latest = blocks[blocks.length - 1];
     var prev = blocks.length >= 2 ? blocks[blocks.length - 2] : null;

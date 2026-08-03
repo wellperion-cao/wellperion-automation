@@ -1234,7 +1234,7 @@
          정확성 무손상 — 라이브 값이 항상 최종. 첫 콜드 로드는 서버측 스냅샷 발행(후속) 전까진 여전히 라이브 대기. */
       function renderHomeKpi(results, opts){
           opts = opts || {};
-          var d = results[0], tgt = results[1], monthlyResp = results[2];
+          var d = results[0], tgt = results[1], monthlyResp = results[2], snapResp = results[3];
           if(!d || !d.ok) return;
           setFreshnessBadge(!!opts.isSnapshot, opts.generatedAtKst);
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
@@ -1265,7 +1265,26 @@
                 if (monthlyResp.months[_mi] && monthlyResp.months[_mi].value != null) { lastClosed = monthlyResp.months[_mi]; break; }
               }
             }
-            if (lastClosed) {
+            /* ★당월 진행중 누적 우선(2026-08-03 GM 지적 — 8월인데 화면이 8월을 못 읽었다).
+               소스 = erp_status_publisher.py 가 스냅샷에 실어 보내는 s.monthInProgress
+               (= ★운영부 아침 정리가 쓰는 sales_month 그대로 — 새 엔드포인트 아님).
+               마감본인 척하지 않는다: 라벨·툴팁에 '진행중'을 명시. 달이 마감되면 AV값이
+               채워져 hasCurMonth=true 로 넘어가 이 분기 자체를 안 탄다(자동 승계). */
+            var mip = (s.monthInProgress)
+                   || (snapResp && snapResp.data && snapResp.data.sales && snapResp.data.sales.monthInProgress)
+                   || null;
+            if (mip && typeof mip.value === 'number' && mip.month === s.curMonth) {
+              set('salesMonthLabel', ' (' + mip.month + '월 진행중)');
+              set('heroSalesMonth', krAmt(mip.value));
+              setTitle('heroSalesMonth', krExact(mip.value) + ' · ' + mip.month + '월 누적(진행중 — 아직 마감 아님)'
+                + ' · 소스 ' + (mip.source || 'sales_month') + (mip.asOf ? (' · ' + mip.asOf + ' 기준') : ''));
+              if (monthlyTarget != null && monthlyTarget > 0) {
+                set('heroSalesRate', pct(mip.value / monthlyTarget * 100));
+                setTitle('heroSalesRate', mip.month + '월 진행중 누적 ÷ 월목표(정본) — 월말까지 계속 오릅니다');
+              } else {
+                set('heroSalesRate', '목표 미설정');
+              }
+            } else if (lastClosed) {
               set('salesMonthLabel', ' (' + lastClosed.m + '월 마감)');
               set('heroSalesMonth', krAmt(lastClosed.value));
               setTitle('heroSalesMonth', krExact(lastClosed.value) + ' · ' + lastClosed.m + '월 마감 실적 — 이번달(' + (s.curMonth != null ? s.curMonth + '월' : '현재월') + ')은 아직 미마감이라 최근 마감월로 대체 표시');
@@ -1301,11 +1320,19 @@
           if (s.yesterday && typeof s.yesterday.amount === 'number') {
             var yd = s.yesterday;
             var ydLabel = yd.date ? (Number(yd.date.slice(5, 7)) + '/' + Number(yd.date.slice(8, 10)) + ' 기준') : '어제';
+            /* 며칠 묵은 값을 '어제'처럼 보이게 두지 않는다(2026-08-03 GM 지적: 8/3에 "7/2 기준"이
+               떠 있었다). 2일 넘게 밀렸으면 라벨에 '지연'을 붙여 눈으로 바로 잡히게 한다. */
+            var ydStale = 0;
+            if (yd.date) {
+              ydStale = Math.floor((Date.now() - new Date(yd.date + 'T00:00:00+09:00').getTime()) / 86400000);
+              if (ydStale > 2) ydLabel += ' ⚠ 지연';
+            }
             set('heroSalesDayLabel', ydLabel);
             set('heroSalesDay', krAmt(yd.amount));
             setTitle('heroSalesDay', krExact(yd.amount)
               + (typeof yd.parking === 'number' ? (' (주차 ' + krExact(yd.parking) + ' 포함)') : '')
-              + ' · ' + (yd.date || '') + ' 확정치(보고 탭 누적차 역산)');
+              + ' · ' + (yd.date || '') + ' 확정치(보고 탭 누적차 역산)'
+              + (ydStale > 2 ? (' · ⚠ ' + ydStale + '일 지난 값 — 일일 매출보고 시트 갱신/배선 확인 필요') : ''));
           } else {
             set('heroSalesDayLabel', '오늘');
             set('heroSalesDay', '—');
@@ -1442,7 +1469,10 @@
         fetch(BASE + '?action=home_kpi&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }),
         fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
         /* 당월 미마감 시 마지막 마감월 표시용(2026-08-01 GM 지적) — home_kpi와 병렬, 실패해도 조용히 폴백 */
-        fetch(BASE + '?action=sales_monthly&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
+        fetch(BASE + '?action=sales_monthly&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
+        /* 당월 진행중 누적(monthInProgress)은 GAS home_kpi가 아니라 서버 스냅샷에만 실려 온다
+           (2026-08-03) — 라이브가 스냅샷을 덮어써도 당월 숫자가 사라지지 않도록 같이 읽는다. */
+        fetch(SNAPSHOT_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
       ])
         .then(function(results){
           if(results && results[0] && results[0].ok){ try { localStorage.setItem('wp_home_kpi_cache', JSON.stringify(results)); } catch(_e){} }

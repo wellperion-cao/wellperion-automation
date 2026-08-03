@@ -492,6 +492,43 @@ def fetch_home_kpi():
         return None
 
 
+def fetch_sales_month_in_progress():
+    """당월 '진행중' 누적 매출 — ★운영부 아침 정리(ops_daily_digest)가 이미 쓰는 sales_month 재사용.
+
+    home 매출 정본(AV열)은 달이 끝나야 채워져 당월엔 항상 null → 히어로가 "이번달 미마감"으로
+    굳는다(2026-08-03 GM 지적). 같은 값을 이미 매일 정확히 뽑고 있는 소스를 그대로 실어 보낸다
+    — 새 엔드포인트·새 헬퍼 없음(약속 L21). 실패는 None(정직 — 숫자 위조 금지).
+    """
+    try:
+        from collectors.ops_shared import gas_get
+        from ops_daily_digest import PROC_EXEC_URL, _proc_password
+
+        pw = _proc_password()
+        if not pw:
+            return None
+        resp = gas_get(
+            PROC_EXEC_URL, {"action": "sales_month", "password": pw},
+            timeout=60, label="home_kpi 당월매출",
+        )
+        if resp is None:
+            return None
+        d = resp.json()
+        if not d.get("ok"):
+            return None
+        m = _now_kst().month
+        v = (d.get("total") or [None] * 12)[m - 1]
+        if v is None:
+            return None
+        return {
+            "month": m,
+            "value": int(v),
+            "source": "sales_month(월별 매출보고 말일탭 Y70:Y80) — 마감 전 진행중 누적",
+            "asOf": _now_kst().strftime("%Y-%m-%d %H:%M"),
+        }
+    except Exception:
+        return None
+
+
 def publish_home_kpi_snapshot():
     """home 히어로 KPI 스냅샷 발행 — status/home_kpi_snapshot.json.
 
@@ -502,6 +539,11 @@ def publish_home_kpi_snapshot():
         data = fetch_home_kpi()
         if data is None:
             return False
+        # 당월 진행중 누적 — 프론트가 "이번달 미마감" 대신 실제 숫자를 띄우는 데 쓴다.
+        # AV열(마감 정본)은 손대지 않는다 — 달이 마감되면 기존 hasCurMonth 분기로 자동 승계.
+        mip = fetch_sales_month_in_progress()
+        if mip is not None and isinstance(data.get("sales"), dict):
+            data["sales"]["monthInProgress"] = mip
         now = _now_kst()
         payload = {
             "_doc": "home 히어로 KPI 서버측 스냅샷 단일 출처. erp_status_publisher.py가 30분 주기로 발행. "
