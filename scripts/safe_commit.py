@@ -63,6 +63,7 @@
 #   분기를 새로 안 만들고 기존 계약 흐름에 자연히 올라타는 방식.
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -82,7 +83,24 @@ from git_lock import GitLock  # noqa: E402  (같은 scripts/ 폴더 — 락 로�
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
 _RETRY_WAIT_SEC = 0.4
 _INDEX_LOCK_WAIT_SEC = 0.5
-_INDEX_LOCK_RETRIES = 6   # index.lock 은 지우지 않는다 — 대기 후 재시도만 한다
+# ★2026-08-03 시토(GM "커밋 안 되는 건들이 많은 것 같은데") — 6회(=3초)는 너무 짧았다.
+#   이 저장소는 예약작업·세션이 동시에 커밋해 index.lock 이 수 초씩 잡혀 있는 게 정상이다.
+#   실측: 로그 전체에 커밋 실패·잠금 충돌 **266건** · 하루 넘게 고립된 산출물 5건.
+#   기다리는 비용은 초 단위인데 포기하는 비용은 '며칠 동안 GM 화면이 옛것'이다 — 40회(=20초)로
+#   늘린다. **락은 여전히 지우지 않는다**(다른 세션이 실제로 커밋 중일 수 있다).
+_INDEX_LOCK_RETRIES = 40  # index.lock 은 지우지 않는다 — 대기 후 재시도만 한다(0.5s × 40 = 20초)
+
+# ★2026-08-03 시토 — 실패한 커밋을 '다음 커밋'이 대신 밀어 올리는 자가치유 원장.
+#   문제: safe_commit 이 ok=False 를 돌려줘도 호출자 대부분은 로그만 찍고 끝낸다. 그러면
+#   그 산출물은 아무도 다시 시도하지 않아 며칠씩 작업트리에 고립된다(오늘 실사고 2건 —
+#   월간운영계획 이틀·GAS 버전상태 사흘). 호출자를 하나씩 고치는 건 우회로만 늘린다(약속 L21).
+#   해법: **모든 커밋이 지나가는 이 관문**에 실패 경로를 적어 두고, 다음번 아무 커밋이나
+#   들어올 때 그것부터 따로 밀어 올린다. 저장소엔 하루에도 수십 번 커밋이 나므로 사실상
+#   즉시 치유된다. 새 예약작업·새 감시기 0.
+#   ★섞지 않는다: 잔여분은 **별도 커밋**으로 올린다. 지금 호출자의 커밋에 합치면 그게 바로
+#   '남의 파일 쓸어담기'(2026-08-03 07:47 실사고)와 같은 짓이 된다.
+_PENDING_LEDGER = "status/_safe_commit_pending.json"
+_FLUSHING = False  # 재귀 가드 — 잔여분 커밋이 다시 잔여분 플러시를 부르지 않게
 
 # 배10314 — append 로그 자동 포함 대상(비재귀 · status/ 바로 아래만).
 _AUTO_INCLUDE_LOG_DIR = "status"
@@ -462,6 +480,70 @@ def _recently_touched(rel_paths: list, root: Path) -> list:
     return out
 
 
+def _ledger_path(root: Path) -> Path:
+    return root / _PENDING_LEDGER
+
+
+def _ledger_read(root: Path) -> list:
+    try:
+        return json.loads(_ledger_path(root).read_text(encoding="utf-8"))
+    except Exception:
+        return []
+
+
+def _ledger_write(root: Path, entries: list) -> None:
+    try:
+        p = _ledger_path(root)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(entries, ensure_ascii=False, indent=1) + "\n",
+                     encoding="utf-8")
+    except Exception:
+        pass  # 원장 기록 실패가 본 커밋을 막지 않는다(fail-soft)
+
+
+def _ledger_remember(root: Path, rel_paths: list, message: str, reason: str) -> None:
+    """커밋 실패분을 원장에 적는다. 같은 경로는 갱신만(무한 증식 방지)."""
+    entries = [e for e in _ledger_read(root)
+               if sorted(e.get("paths") or []) != sorted(rel_paths)]
+    entries.append({"paths": rel_paths, "message": message, "reason": reason[:200]})
+    _ledger_write(root, entries[-50:])  # 상한 — 원장 자체가 새는 곳이 되지 않게
+
+
+def _flush_pending(root: Path, push: bool) -> list:
+    """원장에 쌓인 지난 실패분을 **각각 별도 커밋으로** 밀어 올린다.
+
+    지금 호출자의 커밋에 절대 합치지 않는다 — 합치면 '남의 파일 쓸어담기'가 된다.
+    이미 커밋됐거나 사라진 경로는 '변경 없음'으로 통과하므로 원장에서 조용히 빠진다.
+    """
+    global _FLUSHING
+    entries = _ledger_read(root)
+    if not entries or _FLUSHING:
+        return []
+    _FLUSHING = True
+    healed, left = [], []
+    try:
+        for e in entries:
+            paths, msg = e.get("paths") or [], e.get("message") or "(지난 실패분 재시도)"
+            if not paths:
+                continue
+            try:
+                r = safe_commit(paths, f"{msg} [지연 재시도]", holder="safe_commit_flush",
+                                repo_root=str(root), push=push)
+            except Exception as ex:  # noqa: BLE001
+                e["reason"] = f"재시도 예외: {type(ex).__name__}"
+                left.append(e)
+                continue
+            if r.get("ok"):
+                healed.append({"paths": paths, "sha": r.get("sha", "")})
+            else:
+                e["reason"] = str(r.get("reason", ""))[:200]
+                left.append(e)
+    finally:
+        _FLUSHING = False
+        _ledger_write(root, left)
+    return healed
+
+
 def safe_commit(
     paths,
     message: str,
@@ -491,6 +573,13 @@ def safe_commit(
 
     index_path = root / ".git" / f"safe_commit_index_{os.getpid()}"
     env = {"GIT_INDEX_FILE": str(index_path)}
+
+    # ★자가치유 — 지난 실패분을 **먼저 별도 커밋으로** 밀어 올린다(락 잡기 전에 호출해야
+    #   재귀 진입 시 같은 락을 두 번 잡지 않는다). 이 커밋에 섞지 않는다.
+    healed = _flush_pending(root, push)
+    if healed:
+        print(f"[자가치유] 지난 커밋 실패분 {len(healed)}건 밀어 올림 — "
+              + ", ".join(h["sha"][:9] for h in healed if h.get("sha")))
 
     try:
         with GitLock(holder=holder, repo_root=str(root)):
@@ -612,6 +701,14 @@ def safe_commit(
             index_path.unlink(missing_ok=True)
         except Exception:
             pass
+
+    # ★자가치유 — 실패했으면 원장에 적어 둔다. 다음 커밋이 대신 밀어 올린다.
+    #   '변경 없음'(committed=False·ok=True)은 실패가 아니므로 적지 않는다.
+    #   플러시 중 실패는 _flush_pending 이 이미 원장에 남기므로 여기서 또 적지 않는다(중복 방지).
+    if not result["ok"] and not _FLUSHING:
+        _ledger_remember(root, rel_paths, message, result.get("reason", ""))
+        print(f"[자가치유] 커밋 실패 — 원장에 적어 뒀습니다. 다음 커밋이 재시도합니다: "
+              f"{result.get('reason','')[:80]}")
 
     # ★배10009: committed 만 보면 혼입이 감지돼(ok=False) 이미 만들어진 나쁜 커밋이
     # 그대로 push 될 수 있었다 — 검증 통과 여부(ok)를 게이트로 쓴다.
