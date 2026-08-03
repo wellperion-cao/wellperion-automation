@@ -530,6 +530,12 @@ def _flush_pending(root: Path, push: bool) -> list:
             return []
     except Exception:  # noqa: BLE001
         pass
+    # ★2026-08-03 시토 — **한 번에 1건만.** 발효 직후 실측에서 3건을 연달아 치유하느라
+    #   평범한 커밋 하나가 2분 넘게 붙잡혔다(각 건이 락을 최대 90초 기다린다). 치유가 본 작업을
+    #   느리게 만들면 그 자체가 새 문제다. 저장소엔 하루 수십 번 커밋이 나므로 1건씩만 밀어도
+    #   금세 빠진다 — 급하지 않은 일을 급하게 하지 않는다.
+    entries, deferred = entries[:1], entries[1:]
+
     _FLUSHING = True
     healed, left = [], []
     try:
@@ -551,7 +557,7 @@ def _flush_pending(root: Path, push: bool) -> list:
                 left.append(e)
     finally:
         _FLUSHING = False
-        _ledger_write(root, left)
+        _ledger_write(root, left + deferred)  # 이번에 안 건드린 나머지는 그대로 보존
     return healed
 
 
