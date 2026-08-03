@@ -380,6 +380,13 @@
   <div id="layer-autonomy">
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
+  <!-- ════ 🧭 항로 — AI 배 목록 (G1 에서 이관 · GM 결정 2026-08-03 "GM 것만 G1, AI 건들은 다 자율현황으로" · 배10510) ════
+       판정은 큐 필드 하나(surface==='autonomy')로만 한다 — G1 렌더(:9603)와 같은 기준이라 두 화면이 자동으로 안 겹친다.
+       데이터는 아래 「🗂 전체 배」가 이미 받아 둔 _queueAll 을 그대로 쓴다(새 fetch·새 엔진 없음). ════ -->
+  <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:11px;font-weight:400;color:var(--dim);">(AI 배 — 북극성으로 가는 오늘의 뱃길)</span></h2>
+  <div class="sec-note">⚓ 대기 · 🚢 진행중 · 🏁 오늘 입항 세 칸. GM 본인 할 일과 개인 북극성·루틴은 <strong>G1 김남욱 GM</strong>에 있습니다.</div>
+  <div id="hangro-board"><div class="feed-status">항로를 불러오는 중…</div></div>
+
   <!-- ════ 🔢 배 3숫자 요약 + 접힌 목록 (GM 지시 2026-07-27 — "너무 많다·나열 대신 직관적으로" · 기본=숫자 3개, 펼쳐야 목록) ════ -->
   <!-- 데이터는 그대로 — 보여주는 방식만 접었다(숨김≠삭제). 아래 4구역(진행·정박·전체정리·보관함) 내용 무변경. -->
   <details class="hist-fold" id="ships-summary-fold">
@@ -653,7 +660,7 @@
   <!-- ════ 섹션 3 · 루프가 돈 흔적 (기본 접힘 · 2026-07-15) ════ -->
   <details class="hist-fold">
     <summary>📁 최근 자율 처리 이력 (펼치기) <span class="hist-sub">— 루프가 돈 흔적</span></summary>
-    <div class="sec-note" style="margin-top:6px;">자율 판단·실행만 시간 역순 · 루틴 완료는 제외(G1).</div>
+    <div class="sec-note" style="margin-top:6px;">자율 판단·실행만 시간 역순 · 루틴 완료는 제외(GM 개인 루틴 = G1).</div>
     <div class="feed" id="feed">
       <div class="feed-status">처리 이력을 불러오는 중…</div>
     </div>
@@ -675,7 +682,7 @@
       <h3 style="margin:12px 0 4px;">① 시스템 현황 <span style="font-size:12px;font-weight:400;color:var(--dim);">서버가 자동 발행</span></h3>
       <div id="erp-sys-summary" class="autopanel-headline">불러오는 중…</div>
       <div id="erp-sys-body" class="autopanel-body"></div>
-      <div class="sec-note" style="margin-bottom:0;">🤖 각 AI가 맡은 일·할 일은 <strong>G1 ▸ 오늘의 항로</strong>에서 봅니다 (한 곳만 — 여기 중복 표시 안 함).</div>
+      <div class="sec-note" style="margin-bottom:0;">🤖 각 AI가 맡은 일·할 일은 이 페이지 위 <strong><a href="#sec-hangro">🧭 항로</a></strong>에서 봅니다 (한 곳만 · GM 결정 2026-08-03 이관). GM 본인 할 일은 G1.</div>
       <div id="erp-sys-time" class="autopanel-time"></div>
     </div>
     <!-- ══ /시스템 현황 ══ -->
@@ -938,6 +945,41 @@
     if(s.status === 'STANDBY') return '⚓ 보류';
     if(s.status === 'DONE' || s.status === '완료') return '🏁 완료';
     return '⚓ 대기';
+  }
+
+  // ═══════════ 🧭 항로 — AI 배 3섹터 (G1 이관 · 배10510) ═══════════
+  //  대상 = surface==='autonomy' 인 배만(G1 렌더 :9603 과 같은 기준 — 두 화면이 서로 안 겹친다).
+  //  섹터 판정도 status 필드만 본다: 🚢 IN_PROGRESS · ⚓ 그 외 열린 배 · 🏁 오늘 처리된 완료.
+  //  행 렌더는 「🗂 전체 배」가 쓰는 헬퍼(missionBoat·missionCleanTitle·nextCellHtml)를 그대로 재사용.
+  function renderHangro(){
+    var el = document.getElementById('hangro-board'); if(!el) return;
+    var live = _queueAll.filter(function(s){ return s && s.surface === 'autonomy' && !isTrashed(s); });
+    var t0 = localTodayMs(), t1 = t0 + 86400000;
+    var isDone = function(s){ return s.status === 'DONE' || s.status === '완료'; };
+    var secs = [
+      { key:'run',  title:'🚢 진행중', list: live.filter(function(s){ return s.status === 'IN_PROGRESS'; }) },
+      { key:'wait', title:'⚓ 대기·정박', list: live.filter(function(s){ return !isDone(s) && s.status !== 'IN_PROGRESS'; }) },
+      { key:'done', title:'🏁 오늘 입항', list: live.filter(function(s){ var m = ts(s.processed_at); return isDone(s) && m >= t0 && m < t1; }) }
+    ];
+    var HEAD = '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th><th style="width:30%">다음</th></tr>';
+    el.innerHTML = secs.map(function(sec){
+      var rows = sec.list
+        .sort(function(a,b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); })
+        .map(function(s){
+          var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+          return '<tr><td style="text-align:center;">' + missionBoat(s.priority) + '</td>'
+            + '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>'
+            + '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>'
+            + (staleDays(s) >= 14 ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '') + '</td>'
+            + '<td>' + nextCellHtml(s.next || s.depends_on) + '</td></tr>';
+        });
+      return '<details class="coo-details" style="margin-top:8px;"' + (sec.key === 'done' ? '' : ' open') + '>'
+        + '<summary>' + sec.title + '<span style="float:right;color:var(--dim);font-weight:400;">' + rows.length + '척</span></summary>'
+        + (rows.length
+            ? '<div class="gtbl-wrap"><table class="gtbl">' + HEAD + rows.join('') + '</table></div>'
+            : '<div class="feed-status">없습니다.</div>')
+        + '</details>';
+    }).join('');
   }
 
   function renderAllShips(){
@@ -2344,6 +2386,10 @@
     var _queueArr = parseJson(a[14]);
     // 전체 배 정리·보관함이 같은 배열을 쓴다 — 화면들이 서로 다른 사본을 보지 않게 한 곳에 담는다.
     _queueAll = Array.isArray(_queueArr) ? _queueArr : [];
+    try{ renderHangro(); }catch(e){
+      var hgEl = document.getElementById('hangro-board');
+      if(hgEl) hgEl.innerHTML = '<div class="feed-status">항로 표시 오류.</div>';
+    }
     try{ renderAllShips(); }catch(e){
       var asEl = document.getElementById('all-ships');
       if(asEl) asEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">전체 배 표시 오류.</div>';
