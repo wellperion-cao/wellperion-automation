@@ -2938,8 +2938,38 @@ function _rentbizHasStatusCol_(gid) {
   return _findCol_(hdr, ['진행상태', '진행현황', '진행상황', '진행 상황', '상태']) >= 0;
 }
 
+// ★2026-08-03 시토 — 끝난 일회성 정리·이관 액션 은퇴 목록.
+//   왜: 이 액션들은 `_intakeToken_` 하나로 열리는데, **그 토큰이 공개 페이지 3곳에 평문으로 박혀 있다**
+//   (cmo/survey/wp_inquiry_form.html · wp_inquiry_form_en.html · cpo/member/실무진피드백.html —
+//   앞의 둘은 wellperion.com 문의 폼이라 누구나 소스에서 읽을 수 있다).
+//   실측(2026-08-03): 그 토큰으로 열리는 액션 38개 중 **22개가 파괴적**이다 — 행 삭제·열 삭제·
+//   행 재배열·전화번호 일괄수정·시트 이관. 즉 공개 폼을 연 사람 누구나 회원·강습 시트를 지우거나
+//   뒤섞을 수 있는 상태였다.
+//   조사 결과 그중 **21개는 2026-07 에 끝난 일회성 작업**이라 살아 있는 호출부가 없다
+//   (남은 1개 loss_reason_setup 은 scripts/collectors/cpo_sheet_contract.py 가 쓰므로 제외).
+//   → 새 비밀값을 하나 더 만드는 대신 **없앤다**(삭제가 최선의 차단). 되돌리려면 이 목록에서 빼면 된다.
+// ponytail: 지금은 이름만 막는다 — 본문 코드는 남아 있다. 한 번 더 훑어 실제로 지우는 게 다음 단계.
+var _RETIRED_ACTIONS_ = {
+  'clear_lesson_sport_mgmt_residue': 1, 'cpo_clear_wsc_auto_json': 1,
+  'cpo_delete_blank_membership_cols': 1, 'cpo_delete_old_lesson_reg': 1,
+  'cpo_delete_test_rows_0000': 1, 'cpo_fix_hold_sheet': 1,
+  'cpo_lesson_adult_sport_normalize_0721': 1, 'cpo_lesson_clear_filter_0721': 1,
+  'cpo_lesson_col_cleanup_0721': 1, 'cpo_lesson_delete_testrow_0721': 1,
+  'cpo_lesson_row_reorder_0720': 1, 'cpo_lesson_row_restore_0720': 1,
+  'cpo_lesson_test_delete': 1, 'cpo_migrate_intake_to_formtabs': 1,
+  'cpo_migrate_lesson_reg': 1, 'cpo_restore_lost_timestamps_0718': 1,
+  'cpo_wsc_contact_migrate13': 1, 'member_active_phone_fix': 1,
+  'member_hold_intake_migrate': 1, 'migrate_lesson_contact_json_to_plain': 1,
+  'migrate_member_reservations_plain_gj': 1
+};
+
 function _processAction(body) {
   const action = body.action || '';
+  // 은퇴 액션은 토큰이 맞아도 실행하지 않는다(위 주석 참조 — 공개 토큰으로 열리던 파괴 경로 차단).
+  if (_RETIRED_ACTIONS_[action]) {
+    return _json({ ok: false, error: 'retired',
+                   detail: '끝난 일회성 정리 작업이라 은퇴했습니다(2026-08-03). 필요하면 시토에게 요청하세요.' });
+  }
   // nocache=1 → 캐시 읽기 우회(강제 재계산·재캐싱). 워머 트리거가 캐시를 미리 데우는 용도(2026-06-19 시토).
   var _nc = (body.nocache === '1');
   // ─── 접근 게이트 확인 ───
