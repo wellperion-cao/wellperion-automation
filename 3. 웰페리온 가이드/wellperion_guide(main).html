@@ -1466,12 +1466,20 @@
       /* ★캐시 페인트는 반드시 '직전 확인값' 배지를 켠 채로 그린다(2026-08-03 GM 지적).
          opts 없이 부르면 배지가 꺼져 옛 숫자가 지금 값처럼 보였다 — 라이브가 덮어쓰면서 사라진다. */
       try { var _hkC = localStorage.getItem('wp_home_kpi_cache'); if(_hkC){ renderHomeKpi(JSON.parse(_hkC), { cached:true }); } } catch(_e){}
-      if(!_hkC){
+      /* ★2026-08-03 시토(GM "계속 강제새로고침해도 7월 마감이 나온다") — `if(!_hkC)` 게이트 제거.
+         실측(라이브 헤드리스): 스냅샷 페인트 2.7초 · 라이브 도착 **67초**. 그런데 캐시가 있으면 이 블록을
+         통째로 건너뛰어, 서버 스냅샷(30분마다 발행·신선)을 두고도 **브라우저에 굳은 옛 캐시만** 띄운 채
+         67초를 기다렸다. 그 전에 다시 새로고침하면 타이머가 처음부터라 라이브에 영영 도달하지 못한다.
+         → 캐시가 있어도 스냅샷을 덮어 그린다. 순서 = 캐시(즉시) → 스냅샷(~1초·신선) → 라이브(최종).
+         라이브가 이미 도착했으면 뒤늦은 스냅샷이 되돌리지 않게 _hkLiveDone 으로 막는다. */
+      var _hkLiveDone = false;
+      {
         Promise.all([
           fetch(SNAPSHOT_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
           fetch(TARGETS_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
         ]).then(function(arr){
           var snap = arr[0], tgt = arr[1];
+          if(_hkLiveDone) return;                 /* 라이브가 먼저 도착했으면 되돌리지 않는다 */
           if(snap && snap.data && snap.data.ok){
             renderHomeKpi([snap.data, tgt], { isSnapshot:true, generatedAtKst: snap.generated_at_kst });
           }
@@ -1487,6 +1495,7 @@
         fetch(SNAPSHOT_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; })
       ])
         .then(function(results){
+          _hkLiveDone = true;
           if(results && results[0] && results[0].ok){ try { localStorage.setItem('wp_home_kpi_cache', JSON.stringify(results)); } catch(_e){} }
           renderHomeKpi(results, { isSnapshot:false });
         })
