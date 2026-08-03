@@ -938,7 +938,11 @@ def test_run_cycle_passes_correct_nick_per_clevel(tmp_path, monkeypatch):
         ping_state_path=str(tmp_path / "ping_state.json"), live=False,
     )
 
-    assert seen_nicks == war.CLEVEL_NICKS
+    # run_cycle()은 CLEVEL_NICKS(닉네임 조회표, 7역할) 전체가 아니라 DEFAULT_CLEVELS(실제
+    # 순회 대상)만 돈다 — cfo·chro는 AI 큐 배제 정책(2026-07-28 GM 확정·정본=
+    # queue_dispatch.EXCLUDED_ROLES)으로 애초에 순회에서 빠진다.
+    assert seen_nicks == {c: war.CLEVEL_NICKS[c] for c in war.DEFAULT_CLEVELS}
+    assert "cfo" not in seen_nicks and "chro" not in seen_nicks
 
 
 def test_run_once_live_ambiguous_ship_parks_flag_and_previews_ping_without_real_send(tmp_path, monkeypatch):
