@@ -1341,7 +1341,7 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
         <!-- 실무진 피드백 모음 페이지 링크(GM 지시 2026-07-29 밤 — "내가 남긴 게 어떻게 됐나"를 같은 자리에서). -->
 <!-- 작업 현황 로그 — 피드백을 남긴 다음 "그래서 뭐가 됐나"를 같은 자리에서 보게 한다(GM 지시 2026-07-27,
              배10313 시우 전달). 종합접수처_현황.html 과 같은 배치. 배지=신규 '빠진 것' 건수(0건이면 숨김). -->
-        <button type="button" class="feedback-cta-btn is-secondary" id="btnWorklog" onclick="openWorklogModal()">📋 작업 현황 로그<span id="wlHeaderBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border)" hidden></span></button>
+        <button type="button" class="feedback-cta-btn is-secondary" id="btnWorklog" onclick="openWorklogModal()">📋 회원 변경 이력<span id="wlHeaderBadge" class="badge" style="margin-left:2px;background:var(--red-bg);color:var(--red);border-color:var(--red-border)" hidden></span></button>
       </div>
       <div class="header-actions">
         <div class="hz-zone z-status">
@@ -3068,19 +3068,19 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 <div class="gdoc-overlay" id="worklogModalOverlay" onclick="if(event.target===this)closeWorklogModal()">
   <div class="gdoc-modal" role="dialog" aria-modal="true">
     <div class="gdoc-modal-head">
-      <span class="gdoc-modal-title">📋 작업 현황 로그</span>
+      <span class="gdoc-modal-title">📋 회원 변경 이력</span>
       <button class="gdoc-close" type="button" onclick="closeWorklogModal()" aria-label="닫기">&times;</button>
     </div>
     <!-- data-worklog-scope = 지금 보고 있는 화면(멤버십|강습). switchFamily 가 갈아끼우고 다시 그린다.
          GM 지시 2026-07-27 "멤버십 회원관리는 멤버십 작업현황만, 강습 회원관리에서는 강습만".
          양쪽에 다 걸리는 일(area=공통)은 두 화면에 다 보인다 — 한쪽에 억지로 넣으면 반대편에서 사라진다. -->
-    <div data-worklog="cpo" data-worklog-mode="modal" data-worklog-badge="#wlHeaderBadge"
-         data-worklog-scope="멤버십" data-worklog-scope-set="멤버십,강습"></div>
+    <!-- 배327 — AI 개발 기록(worklog_panel) 대신 회원 변경 이력. _assets/worklog_panel.js 는
+         다른 페이지도 쓰므로 손대지 않고, 이 화면에서만 내용 소스를 갈아끼운다. -->
+    <div id="memberLogBody" style="font-size:13px;line-height:1.7;">불러오는 중…</div>
   </div>
 </div>
 <!-- defer: 페이지 본문을 다 그린 뒤 실행 — 패널 때문에 화면 뜨는 게 늦어지지 않게(2026-07-24 GM 확인).
      실측(같은 날): 스크립트 7.2KB + 데이터 5.2KB = 12.4KB·91ms, 전부 백그라운드. -->
-<script defer src="/wellperion-automation/_assets/worklog_panel.js"></script>
 
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
@@ -3887,8 +3887,33 @@ function openWorklogModal(){
   var ov = document.getElementById('worklogModalOverlay');
   if (!ov) return;
   ov.classList.add('open');
-  // 스크립트가 늦게 도착했거나 컨테이너가 아직 초기화 안 됐으면 한 번 더 스캔(공용 자산이 공개한 훅 재사용).
-  if (typeof window.wlpRescanWorklog === 'function') window.wlpRescanWorklog();
+  renderMemberLog();
+}
+/* 회원 변경 이력(배327) — 지금 보고 있는 화면 것만. 과거는 복원 불가라 시작일을 정직하게 적는다. */
+function renderMemberLog(){
+  var box = document.getElementById('memberLogBody');
+  if (!box) return;
+  var scope = (_curFamily === 'lesson') ? '강습' : '멤버십';
+  box.textContent = '불러오는 중…';
+  fetch(GAS_URL + '?action=member_log_list&scope=' + encodeURIComponent(scope) + '&_=' + Date.now(),
+        { redirect:'follow' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var rows = (d && d.data) || [];
+      var head = '<div style="color:var(--dim);font-size:12px;margin-bottom:10px;">'
+        + esc(scope) + ' 화면의 변경만 표시합니다 · '
+        + esc((d && d.started) || '2026-08-03') + '부터 쌓기 시작했습니다(그 이전 기록은 없습니다).</div>';
+      if (!rows.length) { box.innerHTML = head + '<div style="color:var(--dim);">아직 기록된 변경이 없습니다.</div>'; return; }
+      box.innerHTML = head + rows.map(function(r){
+        var at = String(r.at || '').replace('T',' ').slice(5,16);
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border);">'
+          + '<b>' + esc(r.staff || '이름미상') + '</b> · ' + esc(at)
+          + ' · ' + esc(r.member || '') + ' <span style="color:var(--dim);">' + esc(r.phone || '') + '</span><br>'
+          + esc(r.field || '') + ' 「' + esc(r.before || '(빈칸)') + ' → ' + esc(r.after || '(빈칸)') + '」'
+          + '</div>';
+      }).join('');
+    })
+    .catch(function(){ box.textContent = '이력을 불러오지 못했습니다.'; });
 }
 function closeWorklogModal(){
   var ov = document.getElementById('worklogModalOverlay');
@@ -4762,13 +4787,12 @@ function switchFamily(fam) {
   //   하나가 throw하면 switchFamily 자체가 던져, 호출부(init try)의 catch가 switchFamily('membership')로
   //   되돌리던 버그(카톡 비밀번호 후 강습→멤버십으로 새던 근본원인). family/label/chip 전환은 위에서
   //   이미 확정됐으므로 아래 렌더·로드는 best-effort로만 — 실패해도 family는 유지된다.
-  // 작업 현황 로그도 지금 보는 화면 것만 — GM 2026-07-27 "멤버십 회원관리는 멤버십 작업현황만, 강습은 강습만".
-  // 공용 패널(worklog_panel.js)은 그릴 때마다 이 속성을 다시 읽는다 → 속성만 갈아끼우고 다시 그리라고 부른다.
-  // best-effort: 패널 스크립트가 아직 안 왔어도(defer) family 전환이 깨지면 안 되므로 try 로 감싼다.
+  // 변경 이력도 지금 보는 화면 것만 — GM 2026-07-27 "멤버십은 멤버십만, 강습은 강습만".
+  //   renderMemberLog 가 _curFamily 를 직접 읽으므로 여기서 속성을 갈아끼울 필요가 없다(배327).
+  //   팝업이 열려 있는 동안 전환하면 바로 다시 그린다.
   try {
-    var _wlBox = document.querySelector('[data-worklog]');
-    if (_wlBox) _wlBox.setAttribute('data-worklog-scope', (fam === 'lesson') ? '강습' : '멤버십');
-    if (typeof window.wlpRenderWorklog === 'function') window.wlpRenderWorklog();
+    var _wlOv = document.getElementById('worklogModalOverlay');
+    if (_wlOv && _wlOv.classList.contains('open')) renderMemberLog();
   } catch(_wlErr){}
   try {
     renderTodayActionPanel();   // 오늘 할 일 패널도 family 전환에 맞춰 스코프 갱신(배754)
@@ -8370,9 +8394,15 @@ function _wireActiveDblclick(){
       /* 분류를 한 칸으로 합쳤으므로(GM 결정 2026-08-03), 「등록 분류」를 고치면 옛 「재등록 분류」 값도
          같이 비운다. 안 비우면 화면은 옛 값을 계속 보여줘서 방금 고친 게 안 먹은 것처럼 보인다.
          쓰기는 실무진이 늘 쓰던 같은 경로(대조키 포함 WriteBuffer)를 그대로 쓴다 — 새 통로 안 만든다. */
+      /* 지우기 전에 한 번 알린다(웰리 결정 2026-08-03, 배10496). 값이 조용히 사라지면 실무진은 알 수 없다 —
+         특히 '대기'는 이 칸에만 있어서, 여기서 지워지면 대기자 명단에서 소리 없이 빠진다(박기순님 건 원인 후보 ⓓ).
+         되돌리기는 만들지 않는다 — 회원 변경 이력(배327)이 그 역할을 한다. */
       if (col === REG_CLASS_COL && r) {
         var _rk = _regReclassKey(r);
-        if (_rk && String(r[_rk] || '').trim()) {
+        var _rkOld = _rk ? String(r[_rk] || '').trim() : '';
+        if (_rkOld && confirm('옛 「재등록 분류」에 적힌 \'' + _rkOld + '\' 도 같이 지워집니다.\n'
+              + (_rkOld === '대기' ? '\n※ 이 회원은 대기자 명단에서 빠집니다.\n' : '')
+              + '\n지우지 않으면 화면에는 \'' + _rkOld + '\' 이(가) 계속 보입니다.\n\n지울까요?')) {
           r[_rk] = '';
           var _ov2 = {}; _ov2[_rk] = '';
           WriteBuffer.enqueue(

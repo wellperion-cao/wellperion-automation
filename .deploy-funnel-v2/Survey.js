@@ -1110,6 +1110,8 @@ function _syncLessonRegistry_() {
 // 저장은 유효회원과 **같은 파일 안 탭 하나**(새 스프레드시트·새 GAS 없음).
 // 기록 실패가 저장을 깨면 안 된다 — 전부 삼킨다. 읽기 전용(삭제·되돌리기 없음).
 var MEMBER_LOG_SHEET = '회원변경이력';
+// 과거 이력은 복원할 수 없다 — 화면에 "언제부터 쌓기 시작했는지"를 정직하게 띄우기 위한 값.
+var MEMBER_LOG_STARTED = '2026-08-03';
 // 뒤 4자리만 가린다 — 동명이인이 있어 사람이 누구 건지는 알아볼 수 있어야 한다(웰리 2026-08-03).
 function _logMaskPhone_(v) {
   var d = String(v == null ? '' : v).replace(/[^0-9]/g, '');
@@ -7920,6 +7922,24 @@ function _processAction(body) {
   //   scope=valid(기본): 잔여일>=0 유효회원(2026-06-24 GM 최초 기준=잔여일>0 → 2026-07-31 실무진 신고로 경계 정정:
   //   잔여일 0=만료 당일까지 유효, LOSS 전환은 잔여일 -1일부터) / scope=ended: 종료·이탈(잔여일<0 또는 LOSS·환불·양도LOSS)
   //   ★빈 헤더·쓰레기 날짜헤더(GMT/표준시) 컬럼 제외 + 회원명 없는 빈/이상 행 제외(전체 컬럼은 그대로 노출).
+  // 회원 변경 이력 읽기(배327) — 화면이 이 한 곳만 읽는다. 읽기 전용(삭제·수정 없음).
+  //   scope=멤버십|강습 · limit 기본 200(최근순). 탭이 아직 없으면 빈 배열 + started 로 정직 응답.
+  if (action === 'member_log_list') {
+    var mlScope = String(e.parameter.scope || '').trim();
+    var mlLimit = Math.min(parseInt(e.parameter.limit, 10) || 200, 500);
+    var mlSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_LOG_SHEET);
+    if (!mlSh || mlSh.getLastRow() < 2) return _json({ ok: true, data: [], started: MEMBER_LOG_STARTED });
+    var mlAll = mlSh.getRange(2, 1, mlSh.getLastRow() - 1, 8).getValues();
+    var mlOut = [];
+    for (var mi = mlAll.length - 1; mi >= 0 && mlOut.length < mlLimit; mi--) {
+      var rw = mlAll[mi];
+      if (mlScope && String(rw[7] || '') !== mlScope) continue;
+      mlOut.push({ at: rw[0], staff: rw[1], member: rw[2], phone: rw[3],
+                   field: rw[4], before: rw[5], after: rw[6], screen: rw[7] });
+    }
+    return _json({ ok: true, data: mlOut, started: MEMBER_LOG_STARTED });
+  }
+
   if (action === 'member_active_list') {
     var aaScope = String(body.scope || 'valid'); if (aaScope !== 'ended' && aaScope !== 'corp') aaScope = 'valid';
     var aaSs0 = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
