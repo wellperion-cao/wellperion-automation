@@ -519,6 +519,17 @@ def _flush_pending(root: Path, push: bool) -> list:
     entries = _ledger_read(root)
     if not entries or _FLUSHING:
         return []
+    # ★2026-08-03 시토 — **급한 자리에서는 치유하지 않는다.** post_commit_push 의 기계산출물
+    #   선커밋처럼 '락이 잡혀 있으면 바로 포기'하도록 일부러 짧은 타임아웃(GIT_LOCK_ACQUIRE_TIMEOUT)을
+    #   물려 부르는 경로가 있다. 그 자리에서 치유를 시도하면 2초 만에 실패하고 원장에 실패 사유만
+    #   덧칠돼 영영 안 빠진다(발효 직후 실측 — 3건이 그 상태로 남았다).
+    #   치유는 **여유 있는 일반 커밋**에서만 한다. 저장소엔 하루 수십 번 그런 커밋이 나므로
+    #   기회는 충분하다 — 급할 때 억지로 하지 않는 게 오히려 빨리 낫는다.
+    try:
+        if int(os.environ.get("GIT_LOCK_ACQUIRE_TIMEOUT", "90")) < 30:
+            return []
+    except Exception:  # noqa: BLE001
+        pass
     _FLUSHING = True
     healed, left = [], []
     try:
