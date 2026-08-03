@@ -383,6 +383,9 @@
   <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:11px;font-weight:400;color:var(--dim);">(AI 배 — 북극성으로 가는 오늘의 뱃길)</span></h2>
   <div class="sec-note">⚓ 대기 · 🚢 진행중 · 🏁 오늘 입항 세 칸. GM 본인 할 일과 개인 북극성·루틴은 <strong>G1 김남욱 GM</strong>에 있습니다.</div>
   <div id="hangro-board"><div class="feed-status">항로를 불러오는 중…</div></div>
+  <!-- GM 본인 할 일은 여기로 옮기지 않는다 — 개수·링크만. 본문은 G1 비번 뒤에 그대로 둔다
+       (웰리 결정 2026-08-03 · 배10510). 이 페이지는 잠금이 없어 본문을 올리면 새로 공개된다. -->
+  <div id="gm-todo-link" class="sec-note" style="margin-top:8px;"></div>
 
   <!-- ══ 🗺️ 북극성별 보기 — G1 에서 이관(AI 배를 북극성 모듈별로 조망 · 배10510 · 2026-08-03) ══
        소스 = status/voyage_map.json(scripts/build_voyage_map.py 발행). 렌더는 G1 에 있던 것 그대로 —
@@ -1335,6 +1338,21 @@
             : '<div class="feed-status">없습니다.</div>')
         + '</details>';
     }).join('');
+  }
+
+  // GM 본인 할 일 — 개수·링크만(본문은 G1 비번 뒤). 열린 건 = 상태가 '완료'가 아닌 것.
+  // 주소는 이 페이지가 이미 쓰는 GAS_URL 재사용(같은 배포본 · 새 상수 안 만듦).
+  function renderGmTodoLink(){
+    var el = document.getElementById('gm-todo-link'); if(!el) return;
+    fetch(GAS_URL + '?action=todo_list&_=' + Date.now(), {redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var open = (d && d.data || []).filter(function(x){
+          return String(x['담당자']||'').indexOf('김남욱GM') >= 0 && String(x['상태']||'') !== '완료';
+        }).length;
+        el.innerHTML = '👤 GM 본인 할 일 <b>' + open + '건</b> — 본문은 <a href="wellperion_guide(main).html#G1">G1 김남욱 GM</a>에서 확인합니다 (여기엔 개수만).';
+      })
+      .catch(function(){ el.textContent = '👤 GM 본인 할 일 — 개수를 불러오지 못했습니다. G1 김남욱 GM에서 확인하세요.'; });
   }
 
   function renderAllShips(){
@@ -2741,6 +2759,7 @@
     var _queueArr = parseJson(a[14]);
     // 전체 배 정리·보관함이 같은 배열을 쓴다 — 화면들이 서로 다른 사본을 보지 않게 한 곳에 담는다.
     _queueAll = Array.isArray(_queueArr) ? _queueArr : [];
+    try{ renderGmTodoLink(); }catch(e){}
     try{ renderHangro(); }catch(e){
       var hgEl = document.getElementById('hangro-board');
       if(hgEl) hgEl.innerHTML = '<div class="feed-status">항로 표시 오류.</div>';

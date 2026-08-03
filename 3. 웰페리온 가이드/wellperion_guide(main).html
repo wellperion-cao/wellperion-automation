@@ -5612,6 +5612,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <div id="gm1-cruise-summary" style="margin:6px 0 10px;"></div>
       <!-- ⚠️ 주의 신호 — 지금 GM이 행동할 신호(승인·대조)만 라이브 표시. 내부 운영신호(미푸시 등)는 금지(약속 L10). 2026-06-17 -->
       <div id="gm1-alert-signal" style="margin:6px 0 14px;"><div style="color:var(--dim);font-size:13px;">신호 확인 중…</div></div>
+      <!-- 빈 판이 '고장'으로 보이지 않게 — 접수 자리를 알려 준다(웰리 배324 · 2026-08-03). 값 없음, 문구만. -->
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">GM 님 할 일은 <strong>업무 시트에 담당자를 '김남욱GM'</strong> 으로 적으면 여기 뜹니다. AI 배는 <a href="자율현황.html#sec-hangro" style="color:var(--accent);font-weight:700;">자율 작업 현황 ▸ 🧭 항로</a>에 있습니다.</p>
       <div id="today-task-list">
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 (상태별 뷰 · 무변경) -->
       </div>
@@ -6555,7 +6557,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           + moduleCard({icon:'🚺',label:'지원부 체계(여)', caption:'오늘 점검 완료율', value:pctText(S.wPct), warn:wW.warn, warnLevel:wW.level, href:SUPPORT_HREF})
           + moduleCard({icon:'🅿️',label:'주차관리부 체계', caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
           + moduleCard({icon:'📅',label:'전사 일정',       caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
-          + moduleCard({icon:'📢',label:'내부게시물 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
+          + moduleCard({icon:'📢',label:'공지·안내문 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
           + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수',      value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
                         extra:{label:'📲 회원 접수 폼', href:'http://wellperion.com/ko/reception/'}})
           + moduleCard({icon:'🏢',label:'운영부 체계',     caption:'실무진 진행 업무',  value:S.opsTask,     warn:S.opsWarn,   warnLevel:S.opsLevel,   href:OPS_HREF})
