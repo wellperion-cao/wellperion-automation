@@ -1105,6 +1105,25 @@ function _syncLessonRegistry_() {
   }
 }
 
+// ─── 회원 변경 이력 (배327) ───
+// 이전값을 남기는 것이 이 기능의 전부다 — 새값만 남기면 "왜 이렇게 됐지"를 못 푼다.
+// 저장은 유효회원과 **같은 파일 안 탭 하나**(새 스프레드시트·새 GAS 없음).
+// 기록 실패가 저장을 깨면 안 된다 — 전부 삼킨다. 읽기 전용(삭제·되돌리기 없음).
+var MEMBER_LOG_SHEET = '회원변경이력';
+function _memberLog_(rows) {
+  try {
+    if (!rows || !rows.length) return;
+    var ss = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var sh = ss.getSheetByName(MEMBER_LOG_SHEET);
+    if (!sh) {
+      sh = ss.insertSheet(MEMBER_LOG_SHEET);
+      sh.getRange(1, 1, 1, 8).setValues([['시각', '직원', '회원명', '연락처', '항목', '이전값', '새값', '화면']]);
+      sh.setFrozenRows(1);
+    }
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
+  } catch (e) { /* 기록 실패가 회원 저장을 막지 않는다 */ }
+}
+
 // ─── 시트 초기화 ───
 function _getSheet(name, headers) {
   const ss = SpreadsheetApp.openById(LANDING_SPREADSHEET_ID);
@@ -8142,11 +8161,26 @@ function _processAction(body) {
     }
     // 셀 쓰기 — 재등록상담 칸(날짜·시간·내용)은 텍스트 서식(@) 강제 후 기록. '09:00'·'2026-07-15'가 시간/날짜 값으로
     //   자동 변환(구글시트 LMT 오프셋으로 09:00→09:05 드리프트)되는 것을 차단 → 입력값 그대로 보존. 2026-07-03 시포·GM.
+    // 변경 이력 재료(배327) — 직원 이름은 프론트가 wellperion_staff_name 을 실어 보낸다(새 키 없음).
+    // 비어 오면 '이름미상'으로 남긴다 — 기록 자체를 건너뛰지 않는다.
+    var _auStaff = String(body.staff || '').trim() || '이름미상';
+    var _auNameI = -1;
+    for (var _an = 0; _an < auHdr.length; _an++) {
+      var _anh = auHdr[_an].replace(/\s/g, '');
+      if (_anh === '성명' || _anh === '이름' || _anh.indexOf('회원명') >= 0) { _auNameI = _an; break; }
+    }
+    var _auMember = _auNameI >= 0 ? String(auSh.getRange(auRow, _auNameI + 1).getValue() || '') : '';
+    var _auPhone = _auPhI >= 0 ? String(auSh.getRange(auRow, _auPhI + 1).getValue() || '') : '';
+    var _auLog = [];
     function _auWriteCell(ix, colName, val) {
       var cell = auSh.getRange(auRow, ix + 1);
+      var _old = String(cell.getValue() == null ? '' : cell.getValue());
       var _cn = String(colName).replace(/\s/g, '');
       if (_cn.indexOf('재등록상담') >= 0 || _cn.indexOf('재등록예약목록') >= 0) cell.setNumberFormat('@');
-      cell.setValue(val == null ? '' : String(val));
+      var _new = val == null ? '' : String(val);
+      cell.setValue(_new);
+      // 안 바뀐 칸은 안 남긴다 — 이력이 노이즈가 되면 아무도 안 본다.
+      if (_old !== _new) _auLog.push([new Date(), _auStaff, _auMember, _auPhone, colName, _old, _new, '멤버십']);
     }
     if (auFields) {
       var _auWrote = [];
@@ -8169,6 +8203,7 @@ function _processAction(body) {
           if (mi >= 0) _auWriteCell(mi, pair[0], pair[1]);
         });
       }
+      _memberLog_(_auLog);
       _aaCacheClear_();
       return _json({ ok: true, rowIndex: auRow, cols: _auWrote });
     }
@@ -8176,6 +8211,7 @@ function _processAction(body) {
     var auIdx = _auFindCol(auCol);
     if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
     _auWriteCell(auIdx, auCol, body.value);
+    _memberLog_(_auLog);
     _aaCacheClear_();
     return _json({ ok: true, rowIndex: auRow, col: auCol });
   }
@@ -8203,7 +8239,21 @@ function _processAction(body) {
       if (_normPhone_(mosPhones[mosI][0]) === mosPhone) { mosRow = mosI + 2; break; }
     }
     if (mosRow < 0) return _json({ ok: false, error: 'no member' });
-    mosSh.getRange(mosRow, mosFieldIdx + 1).setValue(mosValue);
+    // 배327 — 두 번째 쓰기 관문. 매칭 가드가 서로 달라 액션은 합치지 않고 기록 함수만 공유한다.
+    var _mosCell = mosSh.getRange(mosRow, mosFieldIdx + 1);
+    var _mosOld = String(_mosCell.getValue() == null ? '' : _mosCell.getValue());
+    _mosCell.setValue(mosValue);
+    if (_mosOld !== mosValue) {
+      var _mosNameI = -1;
+      for (var _mn = 0; _mn < mosHdr.length; _mn++) {
+        var _mnh = mosHdr[_mn].replace(/\s/g, '');
+        if (_mnh === '성명' || _mnh === '이름' || _mnh.indexOf('회원명') >= 0) { _mosNameI = _mn; break; }
+      }
+      _memberLog_([[new Date(), String(body.staff || '').trim() || '이름미상',
+                    _mosNameI >= 0 ? String(mosSh.getRange(mosRow, _mosNameI + 1).getValue() || '') : '',
+                    String(mosSh.getRange(mosRow, mosPhoneIdx + 1).getValue() || ''),
+                    mosField, _mosOld, mosValue, '멤버십']]);
+    }
     _aaCacheClear_();
     return _json({ ok: true, phone: mosPhone, field: mosField, value: mosValue, rowIndex: mosRow });
   }
