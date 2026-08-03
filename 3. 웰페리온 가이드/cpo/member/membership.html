@@ -6716,13 +6716,20 @@ function _activeStartFilterApply(rows) {
 }
 // 회원 구분 정규화(요약카드 유형별 집계·회원 구분 선택칸 필터 공용, 2026-08-01 배10459) — 오타 정규화·미분류→기타.
 // 두 곳(renderActiveSummary 집계·_activeTypeFilterApply)이 각자 계산하면 갈릴 수 있어 한 곳으로 통일.
-var MEMBER_TYPE_KNOWN = ['멤버십', '입주민', '중단기', '보증금', 'FAN VIP'];
+/* 2026-08-03 GM 지적 "회원구분에 왜 기타가 있지?" — '기타'는 시트에 있는 값이 아니라, 이 목록에 없는 값을
+   화면이 뭉개서 만든 이름이었다. 실측 결과 뭉개진 3건의 정체:
+     · 법인 2명(이정희·박영하) — GM 이 방금 '기타'에서 '법인'으로 고친 그 두 분이다.
+       고쳤는데도 목록에 '법인'이 없어서 화면이 다시 '기타'로 되돌려 보여주고 있었다.
+     · 빈칸 1명 — 정지원 중복행(별건, 시토 배 306)
+   그래서 '법인'을 목록에 넣고, **'기타'라는 뭉뚱그린 이름은 없앤다**. 값이 비면 지어내지 않고 '미기재'로 적는다. */
+var MEMBER_TYPE_KNOWN = ['멤버십', '입주민', '중단기', '보증금', 'FAN VIP', '법인'];
+var MEMBER_TYPE_UNSET = '미기재';
 var MEMBER_TYPE_TYPO_MAP = { '맴버십': '멤버십', '멥버십': '멤버십' };   // 회원구분 오타 정규화(배299, 2026-07-03 시포)
 function _memberTypeOf(row) {
-  var v = String(row['회원\n구분'] || row['회원구분'] || '').trim() || '기타';
+  var v = String(row['회원\n구분'] || row['회원구분'] || '').trim();
   if (MEMBER_TYPE_TYPO_MAP[v]) v = MEMBER_TYPE_TYPO_MAP[v];
-  if (MEMBER_TYPE_KNOWN.indexOf(v) < 0) v = '기타';
-  return v;
+  if (!v) return MEMBER_TYPE_UNSET;                       // 빈칸 = 미기재(뭉개지 않는다)
+  return v;                                                // 목록에 없는 값도 **적힌 그대로** 보여준다
 }
 // 회원 구분 선택칸 필터(FB260801-141806) — 검색·대기자필터·월단위보기와 AND 결합. valid 스코프 전용
 // (법인/대기/LOSS는 setActiveTypeFilter가 기존 scope 전환 함수로 라우팅 — 여기 안 옴).
@@ -7759,12 +7766,16 @@ function _composeHtml() {
   // 합계·'회원 구성' 제목은 왼쪽 큰 숫자 블록(_memberOverviewHtml)이 이미 말하므로 여기서 뺐다.
   var tc = _validTypeCounts, typeInline;
   if (tc) {
-    var TYPE_ORDER = ['멤버십', '입주민', '중단기', '보증금', 'FAN VIP', '기타'];
+    // 목록을 코드에 박지 않는다(2026-08-03 GM "기타가 왜 있지?") — 명단에 **실제로 있는 구분값**을
+    //   많은 순으로 그대로 낸다. 새 구분이 생기면 저절로 따라오고, '기타'로 뭉개는 일이 없다.
     var TYPE_LABEL = { '중단기': '단기' };
+    var TYPE_ORDER = Object.keys(tc).filter(function(k){ return tc[k]; })
+      .sort(function(a, b){ return tc[b] - tc[a]; });
     typeInline = '<div style="font-size:12.5px;font-weight:600;color:var(--text);word-break:keep-all;line-height:1.75">' +
       TYPE_ORDER.map(function(k){
-        return '<span style="white-space:nowrap">' + (TYPE_LABEL[k] || k) +
-               ' <b style="color:var(--teal)">' + (tc[k] || 0).toLocaleString() + '</b></span>';
+        var warn = (k === MEMBER_TYPE_UNSET);
+        return '<span style="white-space:nowrap' + (warn ? ';color:#c8756f' : '') + '">' + (warn ? '⚠ ' : '') + (TYPE_LABEL[k] || k) +
+               ' <b style="color:' + (warn ? '#c8756f' : 'var(--teal)') + '">' + tc[k].toLocaleString() + '</b></span>';
       }).join('<span style="color:var(--dim-mid)"> · </span>') + '</div>';
   } else {
     typeInline = '<div style="font-size:12.5px;color:var(--dim)">회원 구분별 — 명단 불러오는 중</div>';
@@ -7944,7 +7955,7 @@ function _memberOverviewHtml() {
 
 // 회원 구분 선택칸(FB260801-141806, 2026-08-01) — 대기자/LOSS 상단카드 삭제 후 유일 진입점.
 // 멤버십/입주민/단기/보증금/FAN VIP/기타=실제 '회원\n구분' 값(_memberTypeOf), 법인/대기/LOSS=기존 scope.
-var MEMBER_TYPE_SELECT_OPTIONS = ['멤버십', '입주민', '법인', '단기', '보증금', 'FAN VIP', '기타', '대기', 'LOSS'];
+var MEMBER_TYPE_SELECT_OPTIONS = ['멤버십', '입주민', '법인', '단기', '보증금', 'FAN VIP', '미기재', '대기', 'LOSS'];
 function _activeTypeSelectValue() {
   if (_activeScope === 'ended') return 'LOSS';
   if (_activeScope === 'corp') return '법인';
