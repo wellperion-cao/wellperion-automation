@@ -10155,6 +10155,96 @@ var MATCH_SHEET_GID = 1902010032;
 var MATCH_STAMP_COL  = '등록매칭(자동)';
 var MATCH_DATE_COL   = '등록일(자동)';
 
+// ═══ 대기→멤버십 자동전환 (2026-08-04 GM 지시) ═══
+//   회원구분('멤버십'등)을 '대기'·'LOSS'로 바꾸는 건 사람 전담(자동화 금지) — 반대로
+//   '분류'가 든 칸(등록분류/재등록분류)에 실무진이 적어둔 '대기'는, 시작일자가 도래하면
+//   더는 대기가 아니므로 그 칸만 비운다. 회원구분 칸·LOSS 값은 절대 건드리지 않는다.
+//   화면 판정 = _isFutureStart(membership.html:6802) — '분류' 든 칸 중 하나라도 정확히 '대기'면 대기자.
+//   이 함수가 그 칸을 지우면 화면에서도 자동으로 대기자 명단을 빠진다(별도 화면 수정 불필요).
+
+// 순수판정(시트 I/O 없음) — 본체·자체점검이 공유. headers=트림된 헤더 배열, rowValues=해당 행 값 배열,
+// todayIso='YYYY-MM-DD'. 반환: null=대상 아님(시작일자 칸 없음/빈값/파싱불가/미도래 — 절대 건드리지 않음),
+// 배열(빈 배열 포함)=시작일자 도래 — 배열 원소는 지워야 할 '분류' 칸의 0-based 인덱스.
+function _memberWaitReleaseCols_(headers, rowValues, todayIso) {
+  var startIdx = -1;
+  for (var si = 0; si < headers.length; si++) {
+    if (String(headers[si]).replace(/\s/g, '').indexOf('시작일자') >= 0) { startIdx = si; break; }
+  }
+  if (startIdx < 0) return null;
+  var startIso = _miToISO_(rowValues[startIdx]);           // 기존 관례 재사용(느슨 파싱, 실패 시 '')
+  if (!startIso || startIso > todayIso) return null;       // 미도래·미기재·파싱불가 — 건드리지 않음(<=today만 대상)
+  var cols = [];
+  for (var hi = 0; hi < headers.length; hi++) {
+    if (String(headers[hi]).replace(/\s/g, '').indexOf('분류') >= 0     // _memClassKeys(membership.html:6776)와 동일 판정
+        && String(rowValues[hi] || '').trim() === '대기') cols.push(hi);
+  }
+  return cols;
+}
+
+/**
+ * member_wait_auto_release_(opts)
+ * 유효회원 시트를 순회해 시작일자가 도래(<=오늘)했는데 '분류' 칸에 아직 '대기'가 남은 행의
+ * 그 칸(들)만 비운다. dry:true면 쓰기 없이 대상만 반환(검증용). 멱등 — 지울 게 없으면 쓰기 0회.
+ * 회원구분 칸은 절대 읽고 쓰지 않는다(GM 지시: 회원구분↔대기/LOSS 전환은 사람 전담).
+ */
+function member_wait_auto_release_(opts) {
+  var dry = !!(opts && opts.dry);
+  var tz = 'Asia/Seoul';
+  var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  var out = { checked: 0, released: 0, targets: [], dry: dry };
+  var sh;
+  try {
+    sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+  } catch (e) {
+    out.error = e.message;
+    return out;
+  }
+  if (!sh || sh.getLastRow() < 2) return out;
+
+  var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+  var data = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+
+  var writes = [];  // { row(1-based), col(1-based), before }
+  for (var r = 0; r < data.length; r++) {
+    var cols = _memberWaitReleaseCols_(headers, data[r], today);
+    if (cols === null) continue;
+    out.checked++;   // 시작일자 도래한 행(대기 유무 무관 — 실측 정답=0)
+    cols.forEach(function(ci) {
+      writes.push({ row: r + 2, col: ci + 1, before: String(data[r][ci] || '').trim() });
+    });
+  }
+  out.released = writes.length;
+  out.targets = writes.map(function(w) { return { row: w.row, col: w.col, before: w.before }; });
+  if (!dry) writes.forEach(function(w) { sh.getRange(w.row, w.col).setValue(''); });
+  return out;
+}
+
+/** 자체점검(프레임워크 없음) — _memberWaitReleaseCols_ 판정 6분기 단독 확인(시트 I/O 없음).
+ *  Apps Script 편집기에서 수동 실행. 실패 시 throw, 통과 시 Logger.log('[OK] ...'). */
+function member_wait_auto_release_selfcheck_() {
+  var H = ['회원명', '등록분류', '재등록분류', '회원구분', '시작\n일자'];
+  var TODAY = '2026-08-04';
+  function eq(label, actual, expected) {
+    var a = JSON.stringify(actual), e = JSON.stringify(expected);
+    if (a !== e) throw new Error('[FAIL] ' + label + ' — got ' + a + ' want ' + e);
+  }
+  eq('미도래-건드리지않음',
+     _memberWaitReleaseCols_(H, ['홍길동', '신규', '대기', '멤버십', '2026-08-10'], TODAY), null);
+  eq('도래+재등록분류대기-해당칸만',
+     _memberWaitReleaseCols_(H, ['김철수', '신규', '대기', '멤버십', '2026-08-01'], TODAY), [2]);
+  eq('오늘정확히도래(<=포함)',
+     _memberWaitReleaseCols_(H, ['이영희', '신규', '대기', '멤버십', TODAY], TODAY), [2]);
+  eq('도래+정상값-빈배열(건드릴칸없음)',
+     _memberWaitReleaseCols_(H, ['박민수', '신규', '재등록', '멤버십', '2026-08-01'], TODAY), []);
+  eq('시작일자빈칸-건드리지않음',
+     _memberWaitReleaseCols_(H, ['최영', '신규', '대기', '멤버십', ''], TODAY), null);
+  eq('등록재등록둘다대기-두칸모두',
+     _memberWaitReleaseCols_(H, ['정하나', '대기', '대기', '멤버십', '2026-08-01'], TODAY), [1, 2]);
+  Logger.log('[OK] member_wait_auto_release_selfcheck_ 6건 통과');
+  return true;
+}
+
 /**
  * member_match_autostamp_()
  * 유효회원 시트(MEMBER_SPREADSHEET_ID/유효회원 탭)에서 (정규화 전화 → 등록일) 맵을 구성하고,
@@ -10290,8 +10380,17 @@ function member_match_autostamp_() {
   return { matched: matched, total: rowCount };
 }
 
-/** 공개 트리거용 래퍼 (Apps Script 트리거는 인자 없는 최상위 함수여야 함) */
+/** 공개 트리거용 래퍼 (Apps Script 트리거는 인자 없는 최상위 함수여야 함)
+ *  ★2026-08-04 시토 — 새 트리거를 만들지 않고(약속 L21) 이미 설치된 매일 02:00(KST) 트리거에
+ *  대기→멤버십 자동전환(member_wait_auto_release_)을 얹는다. member_match_autostamp_ 자체는
+ *  2026-07-22 은퇴(no-op)라 이 트리거는 지금 이 자동전환의 유일한 실행 경로가 된다. */
 function memberMatchAutostamp() {
+  try {
+    var wr = member_wait_auto_release_();
+    Logger.log('member_wait_auto_release_: checked=' + wr.checked + ' released=' + wr.released + (wr.error ? ' error=' + wr.error : ''));
+  } catch (e) {
+    Logger.log('member_wait_auto_release_ 실패: ' + e.message);
+  }
   return member_match_autostamp_();
 }
 
