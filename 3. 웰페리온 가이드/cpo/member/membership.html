@@ -521,6 +521,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
 :root{ color-scheme:dark; }
 :root.theme-light{ color-scheme:light; }
 .contact-by-select, .contact-by-select option{ color:var(--text); background-color:var(--paper); }
+/* 표 안에서 칸을 고칠 때 뜨는 분류값 선택칸도 같은 방어를 받는다(2026-08-03 GM 재지적 — 같은 증상 두 번째다).
+   원인: 새로 만든 select 에 .cell-input(background:transparent) 을 그대로 물려 글자·바탕이 겹쳐 보였다.
+   이 페이지엔 이미 select 전용 .cell-select 가 있었는데 쓰지 않은 것이 잘못이다. */
+.cell-select, .cell-select option{ color:var(--text); background-color:var(--paper); }
 
 /* ── 멤버십 문의 현황표(#dbTable) 담당 칼럼 화면 숨김 — 데이터·저장은 유지, 표시만 제거. 강습표는 미적용(지시 범위). 2026-07-07 시포·GM ── */
 /* 담당 칸 숨김 — display:none 금지(2026-07-20 3차 · GM "우측에 빈틈 왜 만들어?").
@@ -8087,7 +8091,8 @@ function _wireActiveDblclick(){
        뽑는다(_colChoices) — 새 분류가 생기면 저절로 따라오고, 옛 목록이 굳는 일이 없다.
        고를 게 없거나 형식이 안 맞으면 예전처럼 그냥 글자 입력이다(기능이 줄지 않는다). */
     var inp = _cellEditorFor(col, origText);
-    inp.className = 'cell-input';
+    // select 는 이 페이지에 이미 있는 select 전용 스타일을 쓴다(.cell-input 은 바탕이 투명이라 글자가 묻힌다).
+    inp.className = (inp.tagName === 'SELECT') ? 'cell-select' : 'cell-input';
     inp.style.minWidth = '80px';
     td.appendChild(inp);
 
