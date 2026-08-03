@@ -2693,7 +2693,15 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <!-- 강습 전용 — 회수·유효기간(멤버십은 숨김). 2026-07-21 시포·GM. -->
     <div class="consult-field-label" id="regCountLabel" style="display:none">회수</div>
     <select id="regCountSel" style="display:none;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regValidityUpdate()"></select>
-    <div class="consult-row" id="regValidityRow" style="display:none"><span class="ck">유효기간</span><span class="cv" id="regValidityText">—</span></div>
+    <!-- 유효기간 — 규칙이 있으면 자동으로 채우고, 없거나 다르면 그 자리에서 고친다. GM 지시 2026-08-03
+         ("강습 유효기간도 SUC 누르면 필요 항목값 기입할 수 있도록"). 전에는 읽기 전용 글자라
+         규칙 미등재 종목(체조&트램폴린·뮤지컬팀·웰니스 등)은 '수동/해당없음'만 뜨고 빈 채로 저장됐다 — 배10266
+         "강습 유효기간이 등록 97%에서 빔"의 물리적 원인이 여기다. -->
+    <div id="regValidityRow" style="display:none">
+      <div class="consult-field-label">유효기간 (만료일)</div>
+      <input id="regExpireInput" type="date" class="rp-in" style="width:100%">
+      <div id="regValidityText" style="font-size:11.5px;color:var(--dim);margin-top:5px;line-height:1.5">—</div>
+    </div>
 
     <!-- 강습 전용 — 구분: 개인레슨/단체레슨(멤버십은 숨김). 저장=payload.lessonType 별도 필드(백엔드 미사용 필드는 무해하게 무시). 2026-07-21 시포·GM. -->
     <div class="consult-field-label" id="regLessonTypeLabel" style="display:none">구분</div>
@@ -9808,14 +9816,18 @@ function _regValidityUpdate() {
   var txt = document.getElementById('regValidityText');
   var isYouth = (_regProgramModal.type === '유소년강습' || _regProgramModal.type === '유소년' || _regProgramModal.t === 'youth');
   var rule = (countSel.value && countSel.value !== '기타') ? lessonValidityMonths(progSel.value, countSel.value, isYouth) : null;
+  var inp = document.getElementById('regExpireInput');
   if (rule === null || rule === undefined) {
-    txt.textContent = '수동/해당없음';
+    // 규칙이 없는 종목·회수 — 만료일을 지어내지 않는다. 비워 두고 사람이 넣게 한다(정직).
+    //   사람이 이미 손으로 넣은 값이 있으면 지우지 않는다(회수만 바꿔도 입력이 날아가면 안 된다).
+    txt.textContent = '이 종목·회수는 자동 규칙이 없습니다 — 만료일을 직접 넣어 주세요';
   } else {
     var exp = lessonExpireDate(_mdashYmd(new Date()), rule);
     var _ruleText = (rule === '1일') ? '자동: 당일'
                   : (rule === '월말') ? '자동: 이번 달 말일까지'
                   : ('자동: ' + rule + '개월');
-    txt.textContent = _ruleText + (exp ? ' (만료 ' + exp + ')' : '');
+    txt.textContent = _ruleText + (exp ? ' (만료 ' + exp + ') — 다르면 위 칸에서 고치세요' : '');
+    if (inp && exp) inp.value = exp;   // 자동값은 채워 주되 잠그지 않는다
   }
 }
 // 유효회원(회원 DB)에서 같은 전화번호 행 찾기 — 재등록 판정·기존값 이어받기용. 미도착이면 null(무해).
@@ -9871,6 +9883,7 @@ function openLessonRegProgramModal(t, rowIndex, sportKey) {
   // 회수·유효기간·구분 필드는 신규 모달 오픈 시 항상 초기화(이전 건 값 잔류 방지). 2026-07-21 시포·GM.
   document.getElementById('regCountSel').value = '';
   document.getElementById('regLessonType').value = '';
+  document.getElementById('regExpireInput').value = '';   // 앞 건의 만료일이 남지 않게(2026-08-03)
   _regValidityUpdate();
 }
 function closeRegProgramModal() {
@@ -9890,13 +9903,10 @@ function saveRegProgramModal() {
         lessonType: document.getElementById('regLessonType').value.trim(),
         // 강습 전용 — 회수·유효기간(자동계산=명확 종목만, 그 외 수동/빈값). 2026-07-21 시포·GM.
         regCount: document.getElementById('regCountSel').value.trim(),
-        regExpire: (function(){
-          var _cnt = document.getElementById('regCountSel').value.trim();
-          if (!_cnt || _cnt === '기타') return '';
-          var _isYouth = (_regProgramModal.type === '유소년강습' || _regProgramModal.type === '유소년' || _regProgramModal.t === 'youth');
-          var _rule = lessonValidityMonths(program, _cnt, _isYouth);
-          return lessonExpireDate(_mdashYmd(new Date()), _rule);
-        })() }
+        // 유효기간 = 화면에 보이는 그 값 그대로 저장한다(GM 지시 2026-08-03).
+        //   전에는 저장 시점에 규칙으로 '다시' 계산해서 ⓐ사람이 고쳐도 반영이 안 되고
+        //   ⓑ규칙 미등재 종목·'기타' 회수는 무조건 빈값으로 나갔다(배10266).
+        regExpire: (function(){ var _e = document.getElementById('regExpireInput'); return _e ? String(_e.value || '').trim() : ''; })() }
     // 멤버십 — regProgram(등급, 문의 시트 표기 그대로) + 회원 DB 칸. activeProgram 은 조립된 시트 표준형이며,
     //   서버는 이 값이 있을 때만 유효회원에 쓴다(빈 껍데기 행 방지). GM 지시 2026-08-03.
     : (function(){
