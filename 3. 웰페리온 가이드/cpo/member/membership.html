@@ -1836,6 +1836,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div id="regAddForm" style="display:none;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;padding:10px;border:1px solid var(--accent-border);border-radius:8px;background:var(--accent-bg)">
         <input id="regAddName" type="text" placeholder="이름" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:110px">
         <input id="regAddPhone" type="text" placeholder="전화 010-0000-0000" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:160px">
+        <!-- 종목 드롭다운(GM 지시 2026-08-03) — 시트에 이미 있는 값만 고르게 해 웹접수형 등 지어낸 표기 유입을 막는다.
+             _activeRows 도착 전엔 아래 자유입력이 그대로 보인다(_regAddProgSyncUI). '직접 입력…' 선택 시 자유입력으로 복귀. -->
+        <select id="regAddProgSel" onchange="_regAddProgSelChange()" style="display:none;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px"><option value="">프로그램 선택</option></select>
         <input id="regAddProg" type="text" placeholder="프로그램(예: 플래티넘+골프 12개월)" autocomplete="off" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:240px">
         <input id="regAddDate" type="date" title="등록일자" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
         <input id="regAddMonths" type="number" min="1" placeholder="개월수" title="계약 개월수 — 종료일·잔여일 자동계산(비우면 나중에 수기입력 필요)" style="padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;width:80px">
@@ -6488,7 +6491,46 @@ function toggleRegAdd(show) {
     var t = new Date();
     document.getElementById('regAddDate').value = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
     document.getElementById('regAddName').focus();
+    _regAddProgSyncUI();   // 열 때마다 재확인 — _activeRows 가 그 사이 도착했으면 드롭다운으로 전환
   }
+}
+// 종목 드롭다운 채우기(GM 지시 2026-08-03) — 후보 = _activeRows(유효회원)의 '수강반종목명' 실제값만(중복 제거).
+// _activeRows 미도착 시 아무것도 안 하고 리턴 — 기존 자유입력 그대로 유지(입력 막힘 없음).
+function _regAddProgSyncUI() {
+  var sel = document.getElementById('regAddProgSel');
+  var txt = document.getElementById('regAddProg');
+  if (!sel || !txt) return;
+  var col = _capCol(_activeHeaders, '수강반종목명');
+  if (!col || !_activeRows || !_activeRows.length) return;
+  var seen = {}, opts = [];
+  _activeRows.forEach(function(r){
+    var v = String(r[col] || '').trim();
+    if (v && !seen[v]) { seen[v] = true; opts.push(v); }
+  });
+  opts.sort(function(a, b){ return a.localeCompare(b, 'ko'); });
+  sel.innerHTML = '<option value="">프로그램 선택</option>' +
+    opts.map(function(v){ return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('') +
+    '<option value="__custom__">직접 입력…</option>';
+  sel.style.display = '';
+  txt.style.display = 'none';
+}
+// 드롭다운 선택 반영 — 실제 제출값은 그대로 #regAddProg(hidden text)에 담는다(submitRegAdd 무변경).
+// '직접 입력…' 선택 시 자유입력으로 복귀(폴백). 선택값에 'N개월'이 있으면 개월수 칸 자동 채움(수기 편집 가능).
+function _regAddProgSelChange() {
+  var sel = document.getElementById('regAddProgSel');
+  var txt = document.getElementById('regAddProg');
+  var v = sel.value;
+  if (v === '__custom__') {
+    sel.style.display = 'none';
+    txt.style.display = '';
+    txt.value = '';
+    txt.focus();
+    return;
+  }
+  txt.value = v;
+  var mo = v.match(/(\d+)\s*개월/);
+  var moEl = document.getElementById('regAddMonths');
+  if (moEl) moEl.value = mo ? mo[1] : '';
 }
 function submitRegAdd() {
   var name  = document.getElementById('regAddName').value.trim();
@@ -6622,13 +6664,14 @@ function _regRender() {
     var tdProg = document.createElement('td');
     tdProg.style.fontSize = '11px';
     tdProg.style.color = 'var(--dim)';
-    tdProg.textContent = member.program || '—';
+    tdProg.title = member.program || '';   // 원문 보존(마우스오버) — mregBody와 동일 패턴(2026-08-03 시토)
+    tdProg.textContent = _mregProgLabel(member.program) || '—';
     tr.appendChild(tdProg);
 
     var tdDate = document.createElement('td');
     tdDate.style.fontSize = '12px';
     tdDate.style.color = 'var(--dim)';
-    tdDate.textContent = member.regDate || '—';
+    tdDate.textContent = _actDateLabel(member.regDate) || '—';
     tr.appendChild(tdDate);
 
     tbody.appendChild(tr);
@@ -6937,6 +6980,7 @@ function _activeApplyData(headers, rows) {
   else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
   _activeRender(_activeBaseRows());   // 대기자 필터 + 월단위 보기 결합(2026-07-20 시포·GM, 기존 2026-07-16 GM 지시 위에 확장)
   renderActiveSummary();
+  _regAddProgSyncUI();   // 유효회원 데이터 도착 시 "+직접등록" 종목칸을 드롭다운으로 전환(GM 지시 2026-08-03)
   renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
   if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
   _activeWireSearch();
