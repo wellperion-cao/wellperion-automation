@@ -204,18 +204,32 @@ function renderKpi(data, r) {
     if (foot) foot.textContent = '';
     return;
   }
-  // '강습' 문자열 포함 여부로 분류(정확 일치 대신 포함 매칭) — 서버가 '성인강습'·'유소년강습' 외에
-  // '멤버십 상담' 같은 멤버십 계열 세부 유형을 추가해도(실측 확인됨, 2026-07-29) 조용히 누락되지 않도록.
-  var lessonRows = data.byType.filter(function(t) { return t && /강습/.test(t.type || ''); });
-  var memRows = data.byType.filter(function(t) { return t && !/강습/.test(t.type || ''); });
+  // ★2026-08-03 GM 지적 — "멤버십이랑 강습(성인&유소년) 다 별도로 해줘야 하는데 뭘 다 합산시켜
+  //   놓으니 정리가 안 된다." 종전엔 '강습' 포함 여부로 2덩어리(멤버십 / 강습 성인+유소년 합산)만
+  //   냈다. 서버(funnel_conversion byType)는 원래 유형별로 다 내려준다 — 화면이 합치고 있었을 뿐이다.
+  //   ▸이제 **멤버십 · 성인강습 · 유소년강습 세 축을 따로** 낸다(GM 이 실제로 나눠 보는 단위).
+  //   ▸'멤버십 상담'처럼 멤버십 계열 세부 유형은 멤버십에 합치되 **아래 각주에 무엇을 합쳤는지 밝힌다**
+  //     (조용히 삼키지 않는다). 그 외 유형(기타 등)은 맨 아래 한 줄로 따로 보여 준다 — 누락 0.
+  //   ▸블록을 3개로 유지하는 이유 = GM "간단명료해서 좋긴한데". 유형마다 블록을 늘리면 3건·1건짜리가
+  //     화면을 어지럽힌다.
   function sumRows(rows) {
     var inq = rows.reduce(function(s, t) { return s + (t.inquiries || 0); }, 0);
     var conv = rows.reduce(function(s, t) { return s + (t.converted || 0); }, 0);
     var rate = inq > 0 ? Math.round((conv / inq) * 1000) / 10 : 0;
     return { inquiries: inq, converted: conv, rate: rate };
   }
-  var mem = sumRows(memRows);
-  var les = sumRows(lessonRows);
+  function pick(pred) { return data.byType.filter(function(t) { return t && pred(String(t.type || '')); }); }
+
+  var youthRows  = pick(function(s) { return /강습/.test(s) && /유소년|유아|주니어/.test(s); });
+  var adultRows  = pick(function(s) { return /강습/.test(s) && !/유소년|유아|주니어/.test(s); });
+  var memRows    = pick(function(s) { return /멤버십/.test(s); });
+  var usedTypes  = youthRows.concat(adultRows, memRows).map(function(t) { return t.type; });
+  var otherRows  = data.byType.filter(function(t) { return t && usedTypes.indexOf(t.type) < 0; });
+
+  var mem   = sumRows(memRows);
+  var adult = sumRows(adultRows);
+  var youth = sumRows(youthRows);
+  var other = sumRows(otherRows);
 
   function block(title, inq, conv, rate) {
     return '<div class="section">'
@@ -227,9 +241,20 @@ function renderKpi(data, r) {
       + '</div></div>';
   }
   wrap.innerHTML = block('멤버십', mem.inquiries, mem.converted, mem.rate)
-    + block('강습(성인+유소년 합산)', les.inquiries, les.converted, les.rate);
-  if (foot) foot.textContent = '출처: action=funnel_conversion → byType(유형명에 "강습" 포함=강습, 그 외 전부=멤버십 계열 합산) · '
-    + esc(r.from) + ' ~ ' + esc(r.to) + ' · 등록=전화매칭 기준 회원전환(전 페이지와 동일 판정)';
+    + block('성인강습', adult.inquiries, adult.converted, adult.rate)
+    + block('유소년강습', youth.inquiries, youth.converted, youth.rate)
+    + (other.inquiries > 0
+        ? '<div class="section"><div class="kpi-block-title">그 외 ' + fmtN(other.inquiries) + '건</div>'
+          + '<div class="kpi-nums"><div class="kpi-num"><div class="l">'
+          + esc(otherRows.map(function(t) { return t.type + ' ' + (t.inquiries || 0); }).join(' · '))
+          + '</div></div></div></div>'
+        : '');
+  if (foot) foot.textContent = '출처: action=funnel_conversion → byType 유형별 분리(합산 안 함) · '
+    + '멤버십 = ' + esc(memRows.map(function(t) { return t.type; }).join('+') || '없음')
+    + ' / 성인강습 = ' + esc(adultRows.map(function(t) { return t.type; }).join('+') || '없음')
+    + ' / 유소년강습 = ' + esc(youthRows.map(function(t) { return t.type; }).join('+') || '없음')
+    + ' · ' + esc(r.from) + ' ~ ' + esc(r.to)
+    + ' · 등록=전화매칭 기준 회원전환(전 페이지와 동일 판정)';
 }
 
 // ─── 중단: 채널별 표 — funnel_conversion byChannel 재사용(전 유입채널, 전환율 높은 순) ───
