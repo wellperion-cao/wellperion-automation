@@ -1429,6 +1429,31 @@ def _northstar_head() -> list[str]:
         return []
 
 
+# ── 항로 = 요약 + 자율현황 링크 (GM 지시 2026-08-03 · 배10510) ──
+# "딱 개인용 빼곤 다 자율현황으로" — 배 목록 나열을 자율현황 🧭 항로로 넘긴다.
+# 통째로 지우지 않는다: 몇 척이 어떤 상태인지 한 줄과, GM 이 직접 손댈 것(🔴 결재·마감임박)은 남긴다.
+# secs 는 hangro_board 가 이미 분류한 그 결과 — 새 집계 로직 없음.
+_HANGRO_URL = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#sec-hangro"
+
+
+def _board_summary_lines(secs: dict) -> list[str]:
+    out = [
+        "🧭 오늘의 항로",
+        f"진행·대기 {len(secs.get('today', []))}척 · 🏁 오늘 입항 "
+        f"{len(secs.get('done', [])) + len(secs.get('drift', []))}척",
+        "상세 목록 → 자율 작업 현황 ▸ 🧭 항로",
+        _HANGRO_URL,
+    ]
+    if secs.get("urgent"):
+        out.append(f"🔴 마감 임박 {len(secs['urgent'])}건 — 자율현황에서 확인")
+    if secs.get("appr"):
+        out.append(f"🔴 GM 결재 {len(secs['appr'])}건 — 결재 현황 SSOT에서 확인·결재")
+    if secs.get("appr_inflight"):
+        out.append(f"⏳ 결재 진행 중 {len(secs['appr_inflight'])}건 (타 결재자 대기)")
+    out.append("")
+    return out
+
+
 def _board_item_count(secs: dict) -> int:
     """항로 3섹터(+긴급·결재) 표시 항목 총합. 0이면 '빈 표' — 발신 금지 판정에 사용
     (자율화 미션 secs['autonomy']은 애초 항로 제외 대상이라 카운트에서 뺀다)."""
@@ -1504,9 +1529,9 @@ def build_telegram_report(s1: dict, assigned: list[dict], orch: dict) -> str:
     """
     gas_items = hangro_fetch_gas_items()
     queue_items = hangro_fetch_queue_items()
-    board_text, _secs = _board_text_and_secs(gas_items, queue_items)
+    _board_text, _secs = _board_text_and_secs(gas_items, queue_items)
     holiday_line = _yesterday_holiday_line()
-    lines = ([holiday_line, ""] if holiday_line else []) + [board_text] + _build_appendix_lines()
+    lines = ([holiday_line, ""] if holiday_line else []) + _board_summary_lines(_secs) + _build_appendix_lines()
     return "\n".join(lines)
 
 
@@ -1602,12 +1627,12 @@ def build_split_reports(s1: dict, assigned: list[dict], orch: dict) -> tuple[str
     all_queue_items = hangro_fetch_queue_items()
     office_queue, ai_queue = _split_queue_items_for_rooms(all_queue_items)
 
-    office_board, _office_secs = _board_text_and_secs(gas_items, office_queue)
+    _office_board, _office_secs = _board_text_and_secs(gas_items, office_queue)
     holiday_line = _yesterday_holiday_line()
     office_report = "\n".join(
         ([holiday_line, ""] if holiday_line else [])
         + _northstar_head()
-        + [office_board] + _build_appendix_lines()
+        + _board_summary_lines(_office_secs) + _build_appendix_lines()
     )
 
     ai_board, ai_secs = _board_text_and_secs([], ai_queue)

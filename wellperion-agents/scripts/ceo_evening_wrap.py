@@ -204,6 +204,11 @@ def build_evening_report(commits: list[str], done_q: list[dict],
         lines.append("✅ 오늘 한 일: 기록된 완료 없음")
     lines.append("")
 
+    # 상세 목록은 자율현황 🧭 항로 (GM 지시 2026-08-03 · 배10510) — 여기는 개수·대표만.
+    lines.append("상세 → 자율 작업 현황 ▸ 🧭 항로")
+    lines.append("https://wellperion-cao.github.io/wellperion-automation/자율현황.html#sec-hangro")
+    lines.append("")
+
     # ── 내일 이어서 할 일 (사람별 개수 + 대표 — '…외 N건' 숨김 제거) ──
     todo_items = autonomous + deep_interview  # GM결정 제외
     if todo_items:
