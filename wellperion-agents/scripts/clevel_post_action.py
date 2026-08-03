@@ -774,6 +774,15 @@ def main() -> int:
         ok_telegram = True
     else:
         audience = _lookup_audience(args.task_id)
+        # ★2026-08-03 GM 지시 — "시토 일이 다 업무보고방으로 들어오는데, AI 진행현황방으로 옮겨줘."
+        #   시토(CTO)는 백엔드 라인·전사 AI 업무 총괄이라 완료보고가 사실상 전부 AI 살림이다.
+        #   그런데 배에 audience 가 안 박혀 있으면 폴백이 업무보고방이라, 실무진·GM 이 보는 방이
+        #   시토 작업 보고로 채워지고 있었다(오늘 실측: 배294·298 등이 그 경로로 들어감).
+        #   ▸시토 보고는 audience 선언과 무관하게 AI 진행현황방으로 보낸다.
+        #   ▸되돌리기 = 이 두 줄을 지우면 종전 동작(배의 audience 판정)으로 복귀.
+        #   ▸다른 역할은 손대지 않는다 — 그들의 폴백 정책은 그대로다.
+        if args.clevel == "cto":
+            audience = "ai"
         print("[라우팅] audience=" + (audience or "(없음→업무보고방 폴백)"))
         if audience == "ai":
             ok_telegram = send_ai_progress_report(
