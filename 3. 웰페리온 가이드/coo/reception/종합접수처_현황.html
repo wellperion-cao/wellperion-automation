@@ -262,6 +262,10 @@ a { color:var(--accent); text-decoration:none; }
     <div class="chips" id="monthChips"></div>
   </div>
 
+  <!-- 담당 미지정 한 줄(GM 지시 2026-08-03) — 칸반 '안'이 아니라 '위'에 둔다.
+       처음엔 board 안에 넣었더니 첫 칸(접수) 왼쪽에 끼어 들어갔다(GM 지적). -->
+  <div id="noAsgBar"></div>
+
   <!-- 칸반 -->
   <div class="board" id="board">
     <div class="state-msg">불러오는 중…</div>
@@ -639,16 +643,26 @@ function _render(){
 
   /* 담당 미지정 한 줄(GM 지적 2026-08-03) — 배지만으로는 몇 건인지 세어야 알 수 있다.
      아직 안 끝난 것 중 담당이 빈 건수를 맨 위에 한 줄로. 0이면 줄 자체를 안 만든다(잔소리 방지). */
+  /* 세는 대상 = **아직 안 끝난 접수 건만.** 2026-08-03 GM 지적으로 두 가지를 바로잡았다:
+     ①습득물(습득물 접수·분실물)은 담당 배정 개념이 없는데 같이 세어 숫자가 부풀었다(70건으로 보였다).
+     ②줄이 칸반 '안'에 들어가 첫 칸 왼쪽에 끼었다 → 칸반 위 #noAsgBar 로 옮겼다. */
   var _noAsg = 0;
   STATUS_LIST.forEach(function(st){
     if(st === '완료' || st === '처리완료' || st === '종결') return;
-    (groups[st]||[]).forEach(function(rr){ if(!String(rr.assignee||'').trim()) _noAsg++; });
+    (groups[st]||[]).forEach(function(rr){
+      if(rr._lfLabel !== undefined) return;                        // 습득물 = 담당 개념 없음
+      if(String(rr.category||'').indexOf('습득물') >= 0) return;
+      if(String(rr.category||'').indexOf('휴회') >= 0) return;      // 휴회는 회원관리 화면에서 처리
+      if(!String(rr.assignee||'').trim()) _noAsg++;
+    });
   });
-  var html = _noAsg
-    ? '<div style="grid-column:1/-1;margin-bottom:10px;padding:9px 14px;border-radius:10px;' +
+  var _bar = document.getElementById('noAsgBar');
+  if(_bar) _bar.innerHTML = _noAsg
+    ? '<div style="margin-bottom:12px;padding:9px 14px;border-radius:10px;' +
       'background:rgba(200,117,111,.12);border:1px solid #c8756f;color:#c8756f;font-size:13px;font-weight:700">' +
       '⚠ 담당이 정해지지 않은 접수 ' + _noAsg + '건 — 카드에 「담당 미지정」이 붙어 있습니다. 담당 칸에 이름을 넣어 주세요.</div>'
     : '';
+  var html = '';
   STATUS_LIST.forEach(function(status){
     var list = groups[status]||[];
     var color = STATUS_COLOR[status]||'var(--accent)';
@@ -734,8 +748,9 @@ function _card(r){
      새 칸·새 조회를 만들지 않고, 이미 받아 오는 assignee 값을 머리줄에 배지로 한 번 더 보여준다. */
   var _asg = String(r.assignee || '').trim();
   var _closed = (status === '완료' || status === '처리완료' || status === '종결');
+  var _noOwnerKind = (catLabel.indexOf('휴회') >= 0);   // 휴회는 회원관리 화면에서 처리 — 담당 배정 대상 아님
   if(_asg) h += '<span class="badge" style="background:var(--paper);color:var(--dim);">👤 ' + _esc(_asg) + '</span>';
-  else if(!_closed) h += '<span class="badge" style="background:rgba(200,117,111,.14);color:#c8756f;font-weight:800;">⚠ 담당 미지정</span>';
+  else if(!_closed && !_noOwnerKind) h += '<span class="badge" style="background:rgba(200,117,111,.14);color:#c8756f;font-weight:800;">⚠ 담당 미지정</span>';
   if(r.dept) h += '<span class="card-when">' + _esc(String(r.dept)) + '</span>';
   if(id) h += '<span class="card-id">#' + id + '</span>';
   h += '</div>';
