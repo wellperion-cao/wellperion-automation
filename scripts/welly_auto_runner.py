@@ -1094,45 +1094,77 @@ def _check_sweep_violation(baseline_foreign_files: list[str], changed_files: lis
     return sorted(set(baseline_foreign_files) & set(changed_files))
 
 
-def _attempt_safe_revert(repo_root: str, commit: str) -> dict:
+def _sweep_recovery(repo_root: str, before: str | None, after: str | None,
+                    swept_files: list[str]) -> dict:
     """
-    스코프 이탈 커밋 감지 시 안전 되돌림 시도. git revert는 새 커밋을 만들 뿐 히스토리를
-    지우지 않으므로 파괴적 명령이 아니다(reset --hard·강제 푸시 금지 원칙과 무관).
-    충돌 등으로 revert 자체가 실패하면 즉시 --abort로 중간상태를 방치하지 않는다
-    (공유 워크트리 — 다른 세션이 동시에 작업 중일 수 있음).
-    반환: {attempted, ok, revert_commit, stderr}.
+    스코프 이탈(sweep) 확정 시 **되돌리지 않고**, 사람이 1분 안에 복구할 수 있는
+    정확한 좌표(진짜 스윕 커밋 + 복구 명령)를 만들어 돌려준다. 읽기 전용(부작용 0).
+
+    ★왜 자동 revert 를 걷어냈나 (2026-08-03 시토 · 배296 실사고 수리):
+      ① **엉뚱한 커밋을 겨냥했다.** 이전 코드는 범위 끝 커밋(after)만 revert 했는데,
+         스윕은 before~after 구간 *안쪽* 커밋에서 일어난다(3~5분 주기 자동커밋이 그 뒤에
+         여러 개 낀다). 2026-08-03 07:47 사고에서 실제 스윕 커밋은 31841eec1 인데
+         revert 대상은 18223f4d2(큐·워크로그만 건드린 무관 커밋)였다.
+      ② **고쳐도 성공할 수 없는 구조였다.** 스윕 파일은 정의상 '다른 세션이 지금
+         작업 중인 미커밋 파일'이라 워크트리가 항상 더럽다 → git revert 는 매번
+         "your local changes would be overwritten" 로 실패한다.
+      ③ **실측이 그걸 증명한다.** sweep_violation 로그 전수(07-23·07-26·07-27·07-29·
+         08-02) 에서 revert.ok 가 true 인 적이 **한 번도 없다(0/5)**.
+      → 공유 워크트리를 무인 프로세스가 되돌리려 드는 것 자체가 위험이다
+        (약속: 파괴적 git 금지 · 락/rebase 중간상태 방치 금지). 감지는 5/5 정확하니
+        감지는 남기고, 손대는 대신 **좌표를 남겨 사람이 복구**하게 바꿨다(L21 — 장치 순감).
+
+    반환: {attempted(False), ok(False), sweep_commits, restore_cmds, note}.
     """
+    result: dict = {
+        "attempted": False, "ok": False,
+        "sweep_commits": [], "restore_cmds": [],
+        "note": "자동 되돌림 안 함(공유 워크트리) — 아래 복구 명령을 사람이 실행",
+    }
+    if not before or not after or not swept_files:
+        return result
     try:
         out = subprocess.run(
-            ["git", "revert", "--no-edit", commit],
+            ["git", "log", "--format=%H", f"{before}..{after}", "--", *swept_files],
             cwd=repo_root, capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=30,
+            encoding="utf-8", errors="replace", timeout=15,
         )
         if out.returncode == 0:
-            return {
-                "attempted": True, "ok": True,
-                "revert_commit": _git_head(repo_root), "stderr": "",
-            }
-        subprocess.run(
-            ["git", "revert", "--abort"], cwd=repo_root,
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
-        )
-        return {
-            "attempted": True, "ok": False, "revert_commit": None,
-            "stderr": (out.stderr or "").strip()[:300],
-        }
+            result["sweep_commits"] = [h.strip() for h in out.stdout.splitlines() if h.strip()]
     except Exception as e:  # noqa: BLE001
-        try:
-            subprocess.run(
-                ["git", "revert", "--abort"], cwd=repo_root,
-                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15,
-            )
-        except Exception:  # noqa: BLE001
-            pass
-        return {
-            "attempted": True, "ok": False, "revert_commit": None,
-            "stderr": f"{type(e).__name__}: {e}",
-        }
+        result["note"] = f"스윕 커밋 특정 실패: {type(e).__name__}: {e}"
+        return result
+    if result["sweep_commits"]:
+        # 복구 기준은 세션 시작 직전 커밋(before). 스윕 커밋의 부모(`^`)를 쓰지 않는 이유 =
+        # 같은 파일을 여러 커밋이 연달아 건드리면 부모가 이미 오염돼 있을 수 있고,
+        # before 는 정의상 이 세션이 손대기 전이라 항상 안전한 기준점이다.
+        result["restore_cmds"] = [
+            f'git show {before}:"{f}" > "{f}"' for f in swept_files[:10]
+        ]
+    return result
+
+
+def _notify_sweep(swept_files: list[str], recovery: dict) -> None:
+    """스윕 확정을 AI 진행현황방에 1건 알린다(best-effort · 실패해도 러너를 막지 않는다).
+
+    이전에는 로그 파일에만 남아 아무도 못 봤다 — 2026-08-03 07:47 사고도 사흘 치 로그가
+    쌓인 뒤 사람이 발견했다. 발신은 기존 관문 하나만 쓴다(새 헬퍼 금지 · 약속 L21).
+    """
+    try:
+        commits = recovery.get("sweep_commits") or []
+        summary = (
+            f"무인 러너 스코프 이탈 — 남의 미커밋 파일 {len(swept_files)}건이 커밋에 섞였습니다"
+        )
+        args = [
+            sys.executable, os.path.join(_PROJECT_ROOT, "scripts", "notify_gm_progress.py"),
+            summary, "--ship", "시토 296", "--state", "blocked",
+            "--cause", (commits[-1][:9] if commits else "커밋 특정 실패"),
+            "--check", " | ".join(swept_files[:5]),
+            "--next", "복구 명령은 status/welly_auto_runner_log.jsonl 의 recovery.restore_cmds",
+        ]
+        subprocess.run(args, cwd=_PROJECT_ROOT, capture_output=True, timeout=30)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def _append_log(entry: dict, path: str) -> None:
@@ -1164,7 +1196,8 @@ def run_once(
     mode=="parked"일 때만 ambiguous_reasons(list[str])·parked(bool)·ping(dict) 추가.
     LIVE 실행됐을 때만 baseline_foreign_files(list[str], 세션 시작 전 이미 미커밋이던 무관
     파일)·swept_files(list[str], 커밋에 섞인 베이스라인 파일 — 빈 리스트=위반 없음)·
-    revert_result(dict|None, swept_files 있을 때만) 추가.
+    revert_result(dict|None, swept_files 있을 때만 — 되돌림이 아니라 복구 좌표:
+    sweep_commits·restore_cmds) 추가.
     """
     queue_path = queue_path or DEFAULT_QUEUE_PATH
     state_path = state_path or DEFAULT_STATE_PATH
@@ -1325,14 +1358,18 @@ def run_once(
     if new_commit:
         swept_files = _check_sweep_violation(baseline_foreign_files, changed_files)
         if swept_files:
-            revert_result = _attempt_safe_revert(_PROJECT_ROOT, new_commit)
+            revert_result = _sweep_recovery(
+                _PROJECT_ROOT, before_commit, new_commit, swept_files,
+            )
             _append_log(
                 {
                     "event": "sweep_violation", "task_id": ship.get("task_id"),
-                    "commit": new_commit, "swept_files": swept_files, "revert": revert_result,
+                    "commit": new_commit, "swept_files": swept_files,
+                    "recovery": revert_result,
                 },
                 log_path,
             )
+            _notify_sweep(swept_files, revert_result)
 
     # ── 증분2: 자동 검수(세션 stdout 구조화 검증 결과 파싱) → 완료 신뢰 판정 ──
     # sweep 위반이 확인되면 검수 결과와 무관하게 실행 자체를 실패로 취급한다(안전이 완료보다 우선).
@@ -1358,7 +1395,9 @@ def run_once(
     if not execution_ok:
         if swept_files:
             # 스코프 이탈 확정 — 검수 이전 문제(안전 최우선). revert 성공 여부와 무관하게 실패 처리.
-            revert_note = "자동 되돌림 성공" if (revert_result or {}).get("ok") else "자동 되돌림 실패 — GM 수동 확인 필요"
+            _cs = (revert_result or {}).get("sweep_commits") or []
+            revert_note = (f"스윕 커밋 {_cs[-1][:9]} — 복구 명령 로그에 기록됨"
+                           if _cs else "스윕 커밋 특정 실패 — 사람 확인 필요")
             _mark_cooldown(
                 state, ship["task_id"],
                 reason=(f"스코프 이탈 — 베이스라인 무관 파일 혼입({revert_note}): "

@@ -1264,7 +1264,7 @@ def test_check_sweep_violation_empty_when_no_baseline():
     assert swept == []
 
 
-# ── _attempt_safe_revert: 실제 격리 tmp git 저장소로 성공/충돌 두 경로를 실측 ──
+# ── _sweep_recovery: 격리 tmp git 저장소로 '진짜 스윕 커밋 특정'을 실측 ──
 def _run_git(args, cwd):
     import subprocess as sp
 
@@ -1275,53 +1275,66 @@ def _run_git(args, cwd):
     return out.stdout.strip()
 
 
-def test_attempt_safe_revert_succeeds_on_clean_history(tmp_path):
+def test_sweep_recovery_finds_inner_commit_not_range_end(tmp_path):
+    """★배296 회귀 방어 — 스윕은 범위 *안쪽* 커밋에서 일어나고 그 뒤에 무관한 자동커밋이 낀다.
+
+    옛 코드는 범위 끝(after)만 되돌리려 해서 애초에 엉뚱한 커밋을 겨냥했다
+    (2026-08-03 07:47: 실제 스윕=31841eec1, 겨냥=18223f4d2 큐·워크로그 전용 커밋).
+    """
     _init_git_repo(tmp_path)
-    (tmp_path / "file.txt").write_text("A\n", encoding="utf-8")
-    _run_git(["add", "file.txt"], tmp_path)
-    _run_git(["commit", "-m", "c1"], tmp_path)
+    (tmp_path / "photo.jpg").write_text("PHOTO\n", encoding="utf-8")
+    (tmp_path / "queue.json").write_text("{}\n", encoding="utf-8")
+    _run_git(["add", "."], tmp_path)
+    _run_git(["commit", "-m", "c1 기준"], tmp_path)
+    before = _run_git(["rev-parse", "HEAD"], tmp_path)
 
-    (tmp_path / "file.txt").write_text("B\n", encoding="utf-8")
-    _run_git(["add", "file.txt"], tmp_path)
-    _run_git(["commit", "-m", "c2 (스코프 이탈로 가정)"], tmp_path)
-    swept_commit = _run_git(["rev-parse", "HEAD"], tmp_path)
+    # c2 = 진짜 스윕(남의 파일 photo.jpg 삭제가 섞임)
+    (tmp_path / "photo.jpg").unlink()
+    _run_git(["add", "-A"], tmp_path)
+    _run_git(["commit", "-m", "c2 스윕 — 남의 사진 삭제 혼입"], tmp_path)
+    sweep_commit = _run_git(["rev-parse", "HEAD"], tmp_path)
 
-    result = war._attempt_safe_revert(str(tmp_path), swept_commit)
-    assert result["attempted"] is True
-    assert result["ok"] is True
-    assert result["revert_commit"] is not None
-    # 실제로 되돌려져 원래 내용(A)으로 복원됐는지 확인(파일 시스템 실측).
-    assert (tmp_path / "file.txt").read_text(encoding="utf-8") == "A\n"
+    # c3 = 그 뒤에 낀 무관한 자동커밋(3~5분 주기). 범위 끝은 이쪽이다.
+    (tmp_path / "queue.json").write_text('{"x":1}\n', encoding="utf-8")
+    _run_git(["add", "queue.json"], tmp_path)
+    _run_git(["commit", "-m", "c3 auto — 큐만 건드림"], tmp_path)
+    after = _run_git(["rev-parse", "HEAD"], tmp_path)
+
+    result = war._sweep_recovery(str(tmp_path), before, after, ["photo.jpg"])
+
+    # 범위 끝(after)이 아니라 진짜 스윕 커밋(c2)을 짚어야 한다.
+    assert result["sweep_commits"] == [sweep_commit]
+    assert after not in result["sweep_commits"]
+    assert result["restore_cmds"] and before[:8] in result["restore_cmds"][0]
+    # 되돌림을 시도하지 않는다(공유 워크트리 무접촉) — HEAD·워킹트리 불변.
+    assert result["attempted"] is False and result["ok"] is False
+    assert _run_git(["rev-parse", "HEAD"], tmp_path) == after
+    assert _run_git(["status", "--porcelain"], tmp_path) == ""
 
 
-def test_attempt_safe_revert_aborts_cleanly_on_conflict(tmp_path):
+def test_sweep_recovery_restore_cmd_actually_restores(tmp_path):
+    """복구 명령이 말뿐이 아니라 실제로 파일을 되살리는지 그대로 실행해 확인한다."""
+    import subprocess as sp
+
     _init_git_repo(tmp_path)
-    (tmp_path / "file.txt").write_text("A\n", encoding="utf-8")
-    _run_git(["add", "file.txt"], tmp_path)
+    (tmp_path / "photo.jpg").write_text("PHOTO\n", encoding="utf-8")
+    _run_git(["add", "."], tmp_path)
     _run_git(["commit", "-m", "c1"], tmp_path)
+    before = _run_git(["rev-parse", "HEAD"], tmp_path)
 
-    (tmp_path / "file.txt").write_text("B\n", encoding="utf-8")
-    _run_git(["add", "file.txt"], tmp_path)
-    _run_git(["commit", "-m", "c2 (스코프 이탈로 가정)"], tmp_path)
-    swept_commit = _run_git(["rev-parse", "HEAD"], tmp_path)
+    (tmp_path / "photo.jpg").unlink()
+    _run_git(["add", "-A"], tmp_path)
+    _run_git(["commit", "-m", "c2 스윕"], tmp_path)
+    after = _run_git(["rev-parse", "HEAD"], tmp_path)
 
-    # c3: 같은 줄을 또 바꿔 c2를 되돌리면 충돌하게 만든다(동시 작업 시나리오 재현).
-    (tmp_path / "file.txt").write_text("C\n", encoding="utf-8")
-    _run_git(["add", "file.txt"], tmp_path)
-    _run_git(["commit", "-m", "c3 (다른 세션의 그 이후 정상 커밋)"], tmp_path)
-    head_before_revert = _run_git(["rev-parse", "HEAD"], tmp_path)
+    result = war._sweep_recovery(str(tmp_path), before, after, ["photo.jpg"])
+    assert not (tmp_path / "photo.jpg").exists()
 
-    result = war._attempt_safe_revert(str(tmp_path), swept_commit)
-    assert result["attempted"] is True
-    assert result["ok"] is False
-    assert result["revert_commit"] is None
-    # --abort로 중간상태를 방치하지 않았는지 확인: HEAD 불변 + 워킹트리 클린.
-    assert _run_git(["rev-parse", "HEAD"], tmp_path) == head_before_revert
-    status = _run_git(["status", "--porcelain"], tmp_path)
-    assert status == ""
+    sp.run(result["restore_cmds"][0], cwd=str(tmp_path), shell=True, check=True)
+    assert (tmp_path / "photo.jpg").read_text(encoding="utf-8") == "PHOTO\n"
 
 
-# ── run_once LIVE 통합: sweep 위반 감지 → 실패 강제 + 되돌림 시도(모킹) ──
+# ── run_once LIVE 통합: sweep 위반 감지 → 실패 강제 + 복구 좌표 기록(모킹) ──
 def test_run_once_live_sweep_violation_forces_failure_and_logs(tmp_path, monkeypatch):
     queue = [_ship(note="충분히 구체적인 내부 점검 스크립트 patch 절차")]
     queue_path = tmp_path / "_queue.json"
@@ -1344,13 +1357,15 @@ def test_run_once_live_sweep_violation_forces_failure_and_logs(tmp_path, monkeyp
         war, "_commit_changed_files",
         lambda root, b, a: ["scripts/x.py", "status/other_clevel_proposal.md"],
     )
-    revert_calls = []
+    recovery_calls = []
 
-    def _fake_revert(root, commit):
-        revert_calls.append(commit)
-        return {"attempted": True, "ok": True, "revert_commit": "c" * 40, "stderr": ""}
+    def _fake_recovery(root, before, after, files):
+        recovery_calls.append((before, after, files))
+        return {"attempted": False, "ok": False, "sweep_commits": ["d" * 40],
+                "restore_cmds": ['git show dddd^:"x" > "x"'], "note": "테스트"}
 
-    monkeypatch.setattr(war, "_attempt_safe_revert", _fake_revert)
+    monkeypatch.setattr(war, "_sweep_recovery", _fake_recovery)
+    monkeypatch.setattr(war, "_notify_sweep", lambda files, rec: None)
 
     stdout = 'WELLY_VERIFY: {"verified": true, "kind": "script", "evidence": "pytest 3 passed"}\n'
     monkeypatch.setattr(war.subprocess, "run", lambda *a, **kw: _fake_proc(0, stdout))
@@ -1362,10 +1377,15 @@ def test_run_once_live_sweep_violation_forces_failure_and_logs(tmp_path, monkeyp
     )
 
     assert result["swept_files"] == ["status/other_clevel_proposal.md"]
-    assert result["revert_result"]["ok"] is True
+    # 되돌리지 않고 복구 좌표만 남긴다.
+    assert result["revert_result"]["attempted"] is False
+    assert result["revert_result"]["sweep_commits"] == ["d" * 40]
     # 검수(WELLY_VERIFY)는 통과였지만 sweep 위반이 우선해 success는 여전히 False.
     assert result["success"] is False
-    assert revert_calls == ["b" * 40]
+    # 범위 끝 하나가 아니라 before~after 구간 전체 + 스윕 파일을 넘겨 진짜 커밋을 찾게 한다.
+    assert recovery_calls == [
+        ("a" * 40, "b" * 40, ["status/other_clevel_proposal.md"]),
+    ]
 
     state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     cooldown_reason = state["cooldown"]["CTO-2026-07-13-A"]["reason"]
