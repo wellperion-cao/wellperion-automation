@@ -451,7 +451,15 @@ def escape_md_v2(text: str) -> str:
 def send_telegram(chat_id: int, text: str, parse_mode: str = "MarkdownV2") -> bool:
     """HTTP POST. 재시도 3회 지수 백오프. ok:true 검증. 연속 실패 시 fallback."""
     url = f"{TELEGRAM_API}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
+    # ★2026-08-03 시토 — parse_mode=None 이면 **키 자체를 빼야 한다.**
+    #   종전엔 None 도 그대로 실어 보내 텔레그램에 `"parse_mode": null` 이 갔고,
+    #   텔레그램은 그걸 400 `unsupported parse_mode` 로 거절한다(평문 발송이 통째로 실패).
+    #   실사고: 2026-08-03 14:00 「회차 제출누락 알림」이 3회 재시도 전부 이 오류로 실패해
+    #   점검관리방에 안 갔고, GM 데스크톱 경보만 떴다. 평문으로 보내려던 호출 3곳
+    #   (2484·2674·3062줄)이 전부 같은 구멍을 통과하고 있었다 — 관문 한 곳에서 막는다(약속 L21).
+    payload = {"chat_id": chat_id, "text": text}
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     for attempt in range(1, 4):
         try:
             pace()
