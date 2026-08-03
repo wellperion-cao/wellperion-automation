@@ -1118,6 +1118,13 @@ function _logMaskPhone_(v) {
   if (d.length < 8) return String(v == null ? '' : v);
   return d.slice(0, d.length - 4).replace(/(\d{3})(\d+)/, '$1-$2') + '-****';
 }
+// '자동'과 '이름미상'은 다르다(웰리 2026-08-03) — 전자는 사람이 안 한 것, 후자는 사람이 했는데
+// 이름을 못 받은 것. 판정은 호출 경로로만 한다: 프론트(apiPost)는 staff 키를 항상 실어 보내고,
+// 자동접수·스크립트는 아예 안 보낸다. 키가 없으면 자동. 값을 지어내지 않는다.
+function _logWho_(body) {
+  if (!body || !Object.prototype.hasOwnProperty.call(body, 'staff')) return '자동';
+  return String(body.staff || '').trim() || '이름미상';
+}
 function _memberLog_(rows) {
   try {
     if (!rows || !rows.length) return;
@@ -5783,7 +5790,7 @@ function _processAction(body) {
     }
     }
     // 강습 변경 이력(배327) — 멤버십과 같은 파일·같은 패턴이라 같이 넣는다. 쓰기는 이 함수 하나를 지난다.
-    var _luStaff = String(body.staff || '').trim() || '이름미상';
+    var _luStaff = _logWho_(body);
     var _luNameCi = _findCol_(luHdr, ['성명', '이름', '회원명', '신청자']);
     var _luLog = [];
     function _luSet(colNames, val) {
@@ -8203,8 +8210,8 @@ function _processAction(body) {
     // 셀 쓰기 — 재등록상담 칸(날짜·시간·내용)은 텍스트 서식(@) 강제 후 기록. '09:00'·'2026-07-15'가 시간/날짜 값으로
     //   자동 변환(구글시트 LMT 오프셋으로 09:00→09:05 드리프트)되는 것을 차단 → 입력값 그대로 보존. 2026-07-03 시포·GM.
     // 변경 이력 재료(배327) — 직원 이름은 프론트가 wellperion_staff_name 을 실어 보낸다(새 키 없음).
-    // 비어 오면 '이름미상'으로 남긴다 — 기록 자체를 건너뛰지 않는다.
-    var _auStaff = String(body.staff || '').trim() || '이름미상';
+    // 사람인데 이름을 못 받으면 '이름미상', 자동 경로면 '자동'. 기록은 건너뛰지 않는다.
+    var _auStaff = _logWho_(body);
     var _auNameI = -1;
     for (var _an = 0; _an < auHdr.length; _an++) {
       var _anh = auHdr[_an].replace(/\s/g, '');
@@ -8290,7 +8297,7 @@ function _processAction(body) {
         var _mnh = mosHdr[_mn].replace(/\s/g, '');
         if (_mnh === '성명' || _mnh === '이름' || _mnh.indexOf('회원명') >= 0) { _mosNameI = _mn; break; }
       }
-      _memberLog_([[new Date(), String(body.staff || '').trim() || '이름미상',
+      _memberLog_([[new Date(), _logWho_(body),
                     _mosNameI >= 0 ? String(mosSh.getRange(mosRow, _mosNameI + 1).getValue() || '') : '',
                     _logMaskPhone_(mosSh.getRange(mosRow, mosPhoneIdx + 1).getValue()),
                     mosField, _mosOld, mosValue, '멤버십']]);
@@ -8353,7 +8360,7 @@ function _processAction(body) {
     // 건수(mbChanged)는 위에서 이미 세어 둔 값 — 열을 다시 읽지 않는다(느려지면 안 된다).
     // 이전값은 행마다 달라 '각각 다름'으로 둔다(없는 값을 지어내지 않는다).
     if (mbChanged > 0) {
-      _memberLog_([[new Date(), String(body.staff || '').trim() || '이름미상',
+      _memberLog_([[new Date(), _logWho_(body),
                     '— 전체 ' + mbChanged + '건', '', '일괄 배치 · ' + mbField,
                     '각각 다름(' + mbChanged + '건)', mbValue, '멤버십']]);
     }
