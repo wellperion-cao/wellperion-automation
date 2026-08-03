@@ -682,7 +682,10 @@ function _card(r){
     if(lwhen) lh += '<div class="card-loc" style="margin-bottom:6px;">🕒 ' + lwhen + '</div>';
     if(r.content) lh += '<div class="card-content">' + _esc(String(r.content)) + '</div>';
     if(r.loc) lh += '<div class="card-loc">습득장소: ' + _esc(String(r.loc)) + '</div>';
-    if(r.staff) lh += '<div class="card-loc">🧑 등록직원: ' + _esc(String(r.staff)) + '</div>';
+    /* '등록직원' → '접수직원'(GM 지시 2026-08-03). 접수 폼에서 필수로 바뀌었으므로 비어 있으면
+       그건 필수화 이전에 들어온 옛 건이다 — 숨기지 않고 그대로 드러낸다. */
+    lh += '<div class="card-loc">🧑 접수직원: ' + (String(r.staff || '').trim()
+      ? _esc(String(r.staff)) : '<span style="color:#c8756f;font-weight:700">미기재(필수화 이전 접수)</span>') + '</div>';
     if(r.keepLoc) lh += '<div class="card-loc">📦 보관위치: ' + _esc(String(r.keepLoc)) + '</div>';
     if(r.memo) lh += '<div class="card-loc">🔒 메모: ' + _esc(String(r.memo)) + '</div>';
     if(r.ownerName || r.ownerContact) lh += '<div class="card-loc">👤 주인: ' + _esc(String((r.ownerName || '') + (r.ownerContact ? ' · ' + _fmtTel(r.ownerContact) : ''))) + '</div>';

@@ -176,8 +176,8 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
         <div class="fl-help">소모품만 처분월에 폐기됩니다. 일반·고가품은 관할 경찰서·LOST112로 인계됩니다. 고가·중요품은 접수 즉시 별도 보관·책임자 보고.</div>
       </div>
       <div class="field">
-        <label class="fl" for="f_staff">등록 직원 <span class="opt">(선택)</span></label>
-        <input type="text" id="f_staff" placeholder="예: 리셉션 김OO" autocomplete="off">
+        <label class="fl" for="f_staff">접수 직원 <span class="opt" style="color:#c8756f;font-weight:800">*필수</span></label>
+        <input type="text" id="f_staff" placeholder="접수한 직원 성함 (예: 리셉션 김OO)" autocomplete="off" required>
       </div>
     </div>
     <div class="submit-wrap">
@@ -237,10 +237,14 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
     if(!photoData){ toast('습득물 사진을 첨부해 주세요',true); return; }
     var foundLoc=$('f_foundLoc').value.trim(), itemDesc=$('f_itemDesc').value.trim();
     if(!foundLoc && !itemDesc){ toast('습득장소 또는 설명을 입력해 주세요',true); return; }
+    /* 접수 직원 필수(GM 지시 2026-08-03) — 전엔 '등록 직원(선택)'이라 비워도 접수됐다.
+       누가 받았는지가 없으면 나중에 물어볼 사람이 없어 분실물 책임 추적이 끊긴다. */
+    var staffName=$('f_staff').value.trim();
+    if(!staffName){ toast('접수 직원 성함을 입력해 주세요',true); $('f_staff').focus(); return; }
     var btn=this; btn.disabled=true; btn.textContent='등록 중…';
     var payload={ action:'lf_submit', t:RECEPTION_SUBMIT_TOKEN,
       foundWhen:$('f_foundWhen').value.trim(), foundLoc:foundLoc, itemDesc:itemDesc,
-      category:$('f_category').value, staff:$('f_staff').value.trim(), photo:photoData, fileName:photoName, mimeType:photoMime };
+      category:$('f_category').value, staff:staffName, photo:photoData, fileName:photoName, mimeType:photoMime };
     fetch(RECEPTION_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
       .then(function(res){
