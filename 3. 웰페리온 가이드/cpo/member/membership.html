@@ -1581,7 +1581,9 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
       <div class="dash-metrics">
         <div class="dash-line"><span class="dash-k">유효</span><span class="dash-v"><b class="lead" id="dMemActive">–</b> 명</span></div>
         <!-- 유효(위 줄)=server memberActive+memberCorp(법인, 총 유효회원 수에 합산) 단일 소스=요약카드 총유효와 동일. 단기=유효의 부분집합(중단기 카운트), 법인 단독표기(dMemCorp)는 하단에 별도 유지. 2026-07-18 시포·GM -->
-        <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">–</b>명</span></div>
+        <!-- 대기자 추가(GM 지시 2026-08-03) — 단기·법인만 있어 '대기가 몇 명인지'를 카드에서 알 수 없었다.
+             값은 이미 계산해 두던 _validWaitCnt 를 그대로 쓴다(새 조회 0). -->
+        <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">대기자</span><span class="dash-v"><b id="dMemWait" style="font-size:13px">–</b>명</span></div>
       </div>
     </a>
     <!-- 휴회 회원 관리(2026-07-23 GM) — 기능은 있었는데 유효회원 목록 안 카드로만 존재해 진입점이 없었다
@@ -7581,8 +7583,46 @@ function _activeRender(rows, isFiltered) {
     return;
   }
 
+  /* ★한 번에 다 그리지 않는다 (2026-08-03 웰리 · GM "누르고 나면 PC가 심할 정도로 버벅거린다").
+     실측: 유효회원 1,002행 × 표시 36칸 = 3만6천 개가 넘는 칸을 innerHTML 한 방에 만들어 붙여 왔다.
+     그래서 검색 한 글자, 정렬 한 번, 칸 수정 한 번마다 그 3만6천 칸을 통째로 다시 만든다 —
+     느린 게 아니라 브라우저가 그 사이 아무것도 못 하는 것이다(그게 GM 이 느낀 '버벅임'이다).
+     고치는 방법은 화면에 보이는 만큼만 먼저 그리고, 아래로 내려가면 이어 붙이는 것.
+     외부 라이브러리 없이 브라우저 기본 기능(IntersectionObserver)만 쓴다. */
+  _activeRenderQueue = { rows: rows.slice(), cols: displayCols };
+  tbody.innerHTML = '';
+  _activeRenderChunk();
+}
+
+var ACTIVE_CHUNK = 120;          // 한 번에 붙이는 행 수 — 첫 화면을 채우고도 남는 양
+var _activeRenderQueue = null;   // {rows: 아직 안 그린 행, cols: 표시 칸}
+var _activeMoreObserver = null;
+
+function _activeRenderChunk() {
+  var q = _activeRenderQueue;
+  var tbody = document.getElementById('activeBody');
+  if (!q || !tbody) return;
+  var old = document.getElementById('activeMoreSentinel');
+  if (old) old.parentNode.removeChild(old);
+  var slice = q.rows.splice(0, ACTIVE_CHUNK);
+  tbody.insertAdjacentHTML('beforeend', slice.map(function(row){ return _activeRowHtml(row, q.cols); }).join(''));
+  if (!q.rows.length) return;
+  tbody.insertAdjacentHTML('beforeend',
+    '<tr id="activeMoreSentinel"><td colspan="' + (q.cols.length || 1) + '" ' +
+    'style="text-align:center;color:var(--dim);font-size:12px;padding:10px">아래로 내리면 ' +
+    q.rows.length.toLocaleString() + '명 더 보입니다…</td></tr>');
+  var sentinel = document.getElementById('activeMoreSentinel');
+  if (!_activeMoreObserver) {
+    _activeMoreObserver = new IntersectionObserver(function(entries){
+      if (entries.some(function(en){ return en.isIntersecting; })) _activeRenderChunk();
+    }, { rootMargin: '400px' });
+  }
+  _activeMoreObserver.observe(sentinel);
+}
+
+function _activeRowHtml(row, displayCols) {
   var html = '';
-  rows.forEach(function(row){
+  {
     var ri = row.rowIndex != null ? String(row.rowIndex) : '';
     html += '<tr data-rowindex="' + esc(ri) + '">';
     displayCols.forEach(function(h){
@@ -7593,7 +7633,10 @@ function _activeRender(rows, isFiltered) {
       var isPhone = (h === '휴대폰 번호');
       // 칸 축소(FB260801-141806, 2026-08-01) — NARROW_COL_WIDTHS에 등록된 칸은 폭 고정+말줄임+마우스오버 전체보기(표시전용·데이터 무변경).
       var narrowW = NARROW_COL_WIDTHS[h];
-      var leftStyle = narrowW ? ('text-align:left;max-width:' + narrowW + 'px;overflow:hidden;text-overflow:ellipsis;') : '';
+      // 2026-08-03 GM 지시 — 말줄임(…)으로 자르지 않고 줄바꿈한다. 폭은 그대로 두되 글자는 다 보인다.
+      //   전: overflow:hidden + text-overflow:ellipsis → 마우스를 올려야 전체가 보였다("글자들이 다 짤린다").
+      //   후: 폭 안에서 여러 줄로 접힌다. 단어 중간에서 끊기지 않게 keep-all.
+      var leftStyle = narrowW ? ('text-align:left;max-width:' + narrowW + 'px;white-space:normal;word-break:keep-all;') : '';
       var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
       var _cv = row[h] != null ? row[h] : '—';
       var titleAttr = narrowW ? ' title="' + esc(_cv) + '"' : '';
@@ -7607,11 +7650,11 @@ function _activeRender(rows, isFiltered) {
       if (h === '회원명' && _holdActive(row)) {
         html += '<td style="white-space:nowrap"' + editAttr + '><span style="color:var(--orange,#c80);font-weight:800">⏸ 휴회중</span> ' + esc(_cv) + '</td>'; return;
       }
-      html += '<td style="white-space:nowrap;' + leftStyle + '"' + editAttr + titleAttr + '>' + esc(_cv) + '</td>';
+      html += '<td style="' + leftStyle + '"' + editAttr + titleAttr + '>' + esc(_cv) + '</td>';
     });
     html += '</tr>';
-  });
-  tbody.innerHTML = html;
+  }
+  return html;
 }
 
 /* ─── 멤버십 현황 요약 카드 ─── */
@@ -7642,14 +7685,26 @@ function _composeHtml() {
   } else {
     typeInline = '<span style="font-size:12px;font-weight:600;color:var(--dim)"> (구분별 — 명단 불러오는 중)</span>';
   }
-  return '<div>' +
-      '<div style="font-size:13px;font-weight:700;color:var(--text);word-break:keep-all;line-height:1.75">' +
-        '<span role="button" tabindex="0" title="클릭하여 유효회원 전체 명단 보기" onclick="setActiveScope(\'valid\')" style="cursor:pointer">유효 <b style="color:var(--teal)">' + v.toLocaleString() + '</b></span>' +
+  /* 2026-08-03 GM 지시 — ①유효는 '멤버십 999 + 법인 32 = 1,031명'으로 합쳐 보여준다(카드4 '유효'와 같은 값).
+     ②'종료'라는 말을 쓰지 않고 LOSS 로 부르고, 유효 줄에 섞지 않고 옆에 따로 둔다. LOSS 를 누르면
+     아래 표가 LOSS 명단으로 바뀐다(회원 구분 선택칸의 LOSS 와 같은 동작 — 새 경로 안 만든다). */
+  var validAll = v + c;
+  return '<div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
+      '<div style="flex:1 1 240px;min-width:220px">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text);word-break:keep-all;line-height:1.75">' +
+          '<span role="button" tabindex="0" title="클릭하여 유효회원 전체 명단 보기" onclick="setActiveScope(\'valid\')" style="cursor:pointer">유효 <b style="color:var(--teal)">' + validAll.toLocaleString() + '</b></span>' +
+          '<span style="font-size:12px;font-weight:600;color:var(--dim)"> (유효 ' + v.toLocaleString() + ' + 법인 ' + c + ')</span>' +
+        '</div>' +
         typeInline +
-        ' · 법인 <b style="color:var(--accent)">' + c + '</b> · 종료 <b style="color:var(--dim-mid)">' + e.toLocaleString() + '</b>' +
+        bar +
+        '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · LOSS <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
       '</div>' +
-      bar +
-      '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · LOSS <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
+      '<div role="button" tabindex="0" title="클릭하여 LOSS 명단 보기" onclick="setActiveSeg(\'ended\')" ' +
+        'style="cursor:pointer;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;padding:6px 14px;border-radius:10px;border:1px solid #c8756f;background:rgba(200,117,111,.10)">' +
+        '<div style="font-size:10px;font-weight:800;color:#c8756f;letter-spacing:0.08em">LOSS</div>' +
+        '<div style="font-size:22px;font-weight:800;color:#c8756f;line-height:1.2">' + e.toLocaleString() + '</div>' +
+        '<div style="font-size:10px;color:var(--dim)">명</div>' +
+      '</div>' +
     '</div>';
 }
 
@@ -7821,6 +7876,7 @@ function renderActiveSummary() {
     _validTotal = rows.length;
     _validWaitCnt = _waitMembers().length;
     _setTxt('dMemShort', counts['중단기'] || 0);      // 카드4 단기 배선 유지(배299)
+    _setTxt('dMemWait', _validWaitCnt);               // 카드4 대기자 배선(GM 지시 2026-08-03) — 이미 센 값 재사용
     // 카드4 유효 = server memberActive+memberCorp(법인, 총 유효회원 수에 합산·요약카드 '총 유효회원'과 동일값 고정). 대기자는 별도 지표로만 표기. 2026-07-18 시포·GM
     if (_cpoStats) _setTxt('dMemActive', (Number(_cpoStats.memberActive) || 0) + (Number(_cpoStats.memberCorp) || 0));
   }
@@ -7995,17 +8051,17 @@ function _wireActiveDblclick(){
     td.classList.add('cell-active');
     td.innerHTML = '';
 
-    var inp = document.createElement('input');
+    /* 칸 성격에 맞는 입력기(2026-08-03 GM 지시 "일자면 달력, 분류값은 고를 수 있게").
+       새 라이브러리 없이 브라우저 기본 요소만 쓴다 — 날짜=<input type=date>(달력이 딸려 온다),
+       분류값=<select>. 어떤 칸이 분류값인지는 목록을 박아 두지 않고 **그 칸에 실제로 들어 있는 값**에서
+       뽑는다(_colChoices) — 새 분류가 생기면 저절로 따라오고, 옛 목록이 굳는 일이 없다.
+       고를 게 없거나 형식이 안 맞으면 예전처럼 그냥 글자 입력이다(기능이 줄지 않는다). */
+    var inp = _cellEditorFor(col, origText);
     inp.className = 'cell-input';
-    inp.type = 'text';
-    inp.value = origText;
     inp.style.minWidth = '80px';
     td.appendChild(inp);
 
     var composing = false;
-    inp.addEventListener('compositionstart', function(){ composing = true; });
-    inp.addEventListener('compositionend', function(){ composing = false; });
-
     var committed = false;
     function commit() {
       if (committed) return;
@@ -8030,13 +8086,73 @@ function _wireActiveDblclick(){
       );
     }
 
-    inp.addEventListener('keydown', function(e){
-      if (e.key === 'Enter' && !composing) { e.preventDefault(); inp.blur(); }
-      if (e.key === 'Escape') { committed = true; delete td.dataset.editing; td.classList.remove('cell-active'); td.innerHTML = ''; td.textContent = origText || '—'; }
-    });
-    inp.addEventListener('blur', commit);
+    // 입력기가 바뀔 수 있어(분류값 select → '직접 입력' 선택 시 글자 입력으로 교체) 배선을 함수로 묶는다.
+    // commit()은 호출 시점의 inp.value 를 읽으므로 교체돼도 저장되는 값은 항상 화면에 있는 그 입력기의 값이다.
+    function wireEditor(el) {
+      el.addEventListener('compositionstart', function(){ composing = true; });
+      el.addEventListener('compositionend', function(){ composing = false; });
+      el.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' && !composing) { e.preventDefault(); el.blur(); }
+        if (e.key === 'Escape') { committed = true; delete td.dataset.editing; td.classList.remove('cell-active'); td.innerHTML = ''; td.textContent = origText || '—'; }
+      });
+      el.addEventListener('blur', commit);
+      if (el.tagName === 'SELECT') {
+        el.addEventListener('change', function(){
+          if (el.value !== CELL_FREE_TEXT) return;
+          var free = document.createElement('input');
+          free.className = 'cell-input'; free.type = 'text'; free.value = origText; free.style.minWidth = '80px';
+          td.replaceChild(free, el);
+          inp = free; wireEditor(free); free.focus();
+        });
+      }
+    }
+    wireEditor(inp);
     inp.focus();
   });
+}
+
+/* 칸에 맞는 입력기를 만든다(2026-08-03 GM 지시) — 날짜 칸은 달력, 분류값 칸은 고르기, 나머지는 글자. */
+var CELL_FREE_TEXT = '__직접 입력__';
+function _cellIsDateCol(col) { return /일자|날짜/.test(col); }
+// 분류값 후보 = 그 칸에 실제로 들어 있는 서로 다른 값. 목록을 코드에 박지 않는다(새 분류가 생기면 저절로 따라온다).
+//   자유 서술 칸(비고·메모 등)은 값이 제각각이라 후보가 12개를 넘고, 그때는 select 를 안 만든다.
+function _colChoices(col) {
+  var rows = _activeRows || [];
+  if (rows.length < 20) return null;                 // 표본이 적으면 판단하지 않는다
+  if (/비고|메모|참고|주소|내용|이름|성함|회원명|번호/.test(col)) return null;
+  var seen = {}, out = [];
+  for (var i = 0; i < rows.length; i++) {
+    var v = String(rows[i][col] == null ? '' : rows[i][col]).trim();
+    if (!v) continue;
+    if (!seen[v]) { seen[v] = 1; out.push(v); if (out.length > 12) return null; }
+  }
+  return out.length ? out.sort() : null;
+}
+function _cellEditorFor(col, origText) {
+  if (_cellIsDateCol(col)) {
+    var m = String(origText || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+    if (m || !String(origText || '').trim()) {       // 빈칸이거나 날짜로 읽히면 달력
+      var d = document.createElement('input');
+      d.type = 'date';
+      if (m) d.value = m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+      return d;                                       // 형식이 다르면 아래 글자 입력으로 떨어진다(값 손실 0)
+    }
+  }
+  var choices = _colChoices(col);
+  if (choices) {
+    var s = document.createElement('select');
+    var cur = String(origText || '').trim();
+    var opts = choices.slice();
+    if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 지금 값이 후보에 없으면 잃지 않게 맨 앞에
+    s.innerHTML = '<option value="">(비움)</option>' +
+      opts.map(function(o){ return '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') +
+      '<option value="' + CELL_FREE_TEXT + '">✏️ 직접 입력…</option>';
+    return s;
+  }
+  var t = document.createElement('input');
+  t.type = 'text';
+  t.value = origText;
+  return t;
 }
 
 function _activeRenderState(state, msg) {
