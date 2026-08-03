@@ -593,20 +593,52 @@ def _measure_root(page, root_sel: str) -> dict:
     페이지 전체 글자수를 '블록 하나'로 착각해 블록 기준(5000자)과 견줬고, 그래서
     브로제이 업무분장을 '블록 6,239자 초과'로 잘못 신고했다 — 실제 그 화면의 최대 칸은
     146자였다. 없는 것은 없다고 적고, 못 잰 것은 못 쟀다고 적는다.)
+
+    ★표 밖 글자도 잰다(2026-08-04 시토 · 배 280). 예전엔 `td, li` 계열만 칸으로 셌다.
+    그런데 GM 화면 6개 중 둘(업무·결재 SSOT · 브로제이 업무분장)은 표가 아예 없고 인라인
+    style 의 div 로만 그려져 **max_cell_len 이 늘 0** 이었고, 표가 있는 G1 도 달력 칸이
+    1~2자라 사실상 같았다. 0 은 기준(300자)을 절대 못 넘으니 그 화면의 '읽히는가'는 매일
+    자동 통과였다 — 잰 적이 없는데 통과로 보이는 0 위장이다. 블록도 마찬가지로 5개 화면이
+    `section/.blk` 마크업이 없어 '못 잼'으로 매일 빠져 있었다.
+
+    그래서 **'더 안 쪼개지는 글자 덩어리'**(자식 중 글자를 가진 요소가 없는 요소)를 같이 재되,
+    줄바꿈 유무로 갈라 넣는다 — 한 줄짜리는 **칸**(300자 기준), 여러 줄짜리는 **블록**(5000자
+    기준). 이 구분이 없으면 브로제이의 828자 안내문(골프장 운영 규정 · 줄바꿈으로 짜인 문서)이
+    '칸 하나가 828자, 압축 필요'로 잘못 신고된다 — 2026-07-30 에 페이지 전체를 블록 하나로
+    착각해 잘못 신고했던 것과 정확히 같은 부류의 오진이다.
+    실측(2026-08-04 · 6개 화면): 칸 0→61(업무·결재 SSOT) · 2→96(G1) · 328→422(운영 가이드,
+    이미 신고 중이던 건이 더 정확해짐) · 월간운영계획 240 불변. 새 오탐 0.
     """
     return page.evaluate(
         """(sel) => {
             const root = document.querySelector(sel) || document.body;
+            const mx = (arr) => arr.length ? Math.max(...arr) : 0;
+            const lenOf = (els) => els.map(c => (c.innerText || '').length).filter(n => n > 0);
+
+            const tableMax = mx(lenOf(Array.from(root.querySelectorAll('td, .r-title, .broj-list li, li'))));
+
+            // 더 안 쪼개지는 글자 덩어리 = 자식 중 글자를 가진 요소가 없는 요소(=겉 상자 제외)
+            const leaves = Array.from(root.querySelectorAll('div, span, p, dd, figcaption')).filter(el => {
+                if (!((el.innerText || '').trim())) return false;
+                if (el.offsetParent === null) return false;              // 숨은 칸
+                if (el.closest('details:not([open])')) return false;     // 접어 둔 칸
+                if (el.closest('[role=dialog], .modal, .gdoc-modal')) return false;  // 눌러야 열리는 안내 상자
+                return !Array.from(el.children).some(c => ((c.innerText || '').trim()));
+            }).map(el => (el.innerText || '').trim());
+
+            const leafCellMax  = mx(leaves.filter(t => t.indexOf('\\n') < 0).map(t => t.length));
+            const leafBlockLens = leaves.filter(t => t.indexOf('\\n') >= 0).map(t => t.length);
+
             const blocks = Array.from(root.querySelectorAll('section, .blk'));
-            const cells = Array.from(root.querySelectorAll('td, .r-title, .broj-list li, li'));
-            const blockLens = blocks.map(b => (b.innerText||'').length).filter(n => n > 0);
-            const cellLens = cells.map(c => (c.innerText||'').length).filter(n => n > 0);
-            const wholeLen = (root.innerText||'').length;
+            const blockLens = lenOf(blocks).concat(leafBlockLens);
+
+            const cellMax = Math.max(tableMax, leafCellMax);
             return {
-                whole_len: wholeLen,
+                whole_len: (root.innerText||'').length,
                 max_block_len: blockLens.length ? Math.max(...blockLens) : null,
-                max_cell_len: cellLens.length ? Math.max(...cellLens) : 0,
-                block_count: blocks.length,
+                max_cell_len: cellMax,
+                cell_basis: cellMax === 0 ? 'none' : (tableMax >= leafCellMax ? 'table' : 'leaf'),
+                block_count: blocks.length + leafBlockLens.length,
             };
         }""",
         root_sel,
@@ -912,7 +944,8 @@ def run_gm_surface_check() -> tuple[list, bool]:
                         # 블록 마크업이 없는 화면 = 블록 기준으로 잴 수 없다. 통과로 위장하지 않고
                         # '못 쟀다'를 남긴다(칸 기준은 위에서 그대로 잰다).
                         findings.append({"kind": "block_unmeasurable", "page": label,
-                                          "whole": m["whole_len"], "max_cell": m["max_cell_len"]})
+                                          "whole": m["whole_len"], "max_cell": m["max_cell_len"],
+                                          "cell_basis": m.get("cell_basis", "table")})
                     elif m["max_block_len"] > GM_SURFACE_BLOCK_MAX:
                         findings.append({"kind": "block_too_long", "page": label,
                                           "value": m["max_block_len"], "limit": GM_SURFACE_BLOCK_MAX})
@@ -1030,8 +1063,13 @@ def render_gm_surface_block(rec: dict) -> str:
                 lines.append(f"- {kind}: {f}")
     lines.append("")
     if unmeasured:
-        detail = " · ".join(f"{f['page']}(전체 {f['whole']}자·최대 칸 {f['max_cell']}자)" for f in unmeasured)
-        lines.append(f"*블록 기준으로 못 잰 화면: {detail} — 그 화면엔 블록 마크업(section/.blk)이 없어 칸 기준만 적용했다(위반 아님·측정 한계).*")
+        _BASIS_KO = {"table": "표·목록 칸", "leaf": "글자 칸(표 없음)", "none": "칸 없음"}
+        detail = " · ".join(
+            f"{f['page']}(전체 {f['whole']}자·최대 {_BASIS_KO.get(f.get('cell_basis','table'),'칸')} {f['max_cell']}자)"
+            for f in unmeasured
+        )
+        lines.append(f"*블록 기준으로 못 잰 화면: {detail} — 그 화면엔 여러 줄짜리 덩어리가 없어"
+                     " 칸 기준만 적용했다(위반 아님·측정 한계). 칸은 표 칸과 한 줄짜리 글자 칸 중 큰 쪽이다.*")
     unmeasured_fact = next((f for f in evidence if f.get("kind") == "fact_unmeasured"), None)
     if unmeasured_fact and unmeasured_fact.get("items"):
         lines.append("<details><summary>'사실인가' — 못 잰 것 "
@@ -1162,6 +1200,35 @@ def run(stdout_only: bool = False, skip_surface_check: bool = False) -> str:
     return md
 
 
+def selftest_cells() -> int:
+    """`_measure_root` 칸 기준 자체 점검 — 라이브 접속 없이 세 조각만 그려 확인한다.
+    ①표 칸이 더 길면 표 칸을 낸다(회귀 0) ②표가 없으면 0 이 아니라 글자 칸을 낸다
+    ③칸을 감싸는 겉 상자는 안 센다(가장 안쪽 글자 칸만 — 안 그러면 페이지 전체가 한 칸이 된다).
+    """
+    from playwright.sync_api import sync_playwright
+    cases = [
+        ("표 칸이 더 김", "<table><tr><td>가나다라마바사</td></tr></table><div>짧다</div>", "table", 7),
+        ("표 없음(div 피드)",
+         "<div><div><span>대기</span><span>업무제목이다</span></div></div>", "leaf", 6),
+        ("겉 상자 제외", "<div><p>바깥이더길어보이는겉상자</p></div>", "leaf", 12),
+    ]
+    fails = []
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        pg = b.new_page()
+        for name, html, want_basis, want_max in cases:
+            pg.set_content(f"<body>{html}</body>")
+            m = _measure_root(pg, "body")
+            if m["cell_basis"] != want_basis or m["max_cell_len"] != want_max:
+                fails.append(f"{name}: basis={m['cell_basis']}(기대 {want_basis}) "
+                             f"max_cell={m['max_cell_len']}(기대 {want_max})")
+        b.close()
+    for f in fails:
+        print("  ❌", f)
+    print("칸 기준 자체점검:", "통과" if not fails else f"실패 {len(fails)}건")
+    return 1 if fails else 0
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="GM 프로필 생성기 phase1 — 관찰 원장+큐 → gm_profile.md(수치+LLM 서술 하이브리드)",
@@ -1173,7 +1240,11 @@ def main():
                         help="GM 표면 렌더 점검 생략(디버그·속도용 — 정식 실행은 기본대로 항상 켜둘 것)")
     parser.add_argument("--record-northstar", nargs="+", metavar=("TOTAL", "GM_ONLY"),
                         help="북극성 지표 수기 기록: <총건수> <GM전용건수> [\"한줄메모\"] — 그 자리에서 기록만 하고 종료")
+    parser.add_argument("--selftest-cells", action="store_true", dest="selftest_cells",
+                        help="칸 기준(표 있음/없음) 자체 점검만 하고 종료 — 라이브 접속 없음")
     args = parser.parse_args()
+    if args.selftest_cells:
+        raise SystemExit(selftest_cells())
     if args.record_northstar:
         vals = args.record_northstar
         if len(vals) < 2:
