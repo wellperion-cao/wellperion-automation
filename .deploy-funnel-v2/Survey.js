@@ -1110,6 +1110,12 @@ function _syncLessonRegistry_() {
 // 저장은 유효회원과 **같은 파일 안 탭 하나**(새 스프레드시트·새 GAS 없음).
 // 기록 실패가 저장을 깨면 안 된다 — 전부 삼킨다. 읽기 전용(삭제·되돌리기 없음).
 var MEMBER_LOG_SHEET = '회원변경이력';
+// 뒤 4자리만 가린다 — 동명이인이 있어 사람이 누구 건지는 알아볼 수 있어야 한다(웰리 2026-08-03).
+function _logMaskPhone_(v) {
+  var d = String(v == null ? '' : v).replace(/[^0-9]/g, '');
+  if (d.length < 8) return String(v == null ? '' : v);
+  return d.slice(0, d.length - 4).replace(/(\d{3})(\d+)/, '$1-$2') + '-****';
+}
 function _memberLog_(rows) {
   try {
     if (!rows || !rows.length) return;
@@ -5774,10 +5780,24 @@ function _processAction(body) {
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
     }
     }
+    // 강습 변경 이력(배327) — 멤버십과 같은 파일·같은 패턴이라 같이 넣는다. 쓰기는 이 함수 하나를 지난다.
+    var _luStaff = String(body.staff || '').trim() || '이름미상';
+    var _luNameCi = _findCol_(luHdr, ['성명', '이름', '회원명', '신청자']);
+    var _luLog = [];
     function _luSet(colNames, val) {
       if (val === undefined || val === null) return;
       var ci = _findCol_(luHdr, colNames);
-      if (ci >= 0) luSh.getRange(luRow, ci + 1).setValue(val);
+      if (ci < 0) return;
+      var cell = luSh.getRange(luRow, ci + 1);
+      var _old = String(cell.getValue() == null ? '' : cell.getValue());
+      var _new = String(val);
+      cell.setValue(val);
+      if (_old !== _new) {
+        _luLog.push([new Date(), _luStaff,
+          _luNameCi >= 0 ? String(luSh.getRange(luRow, _luNameCi + 1).getValue() || '') : '',
+          _luPhCi >= 0 ? _logMaskPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue()) : '',
+          String(luHdr[ci] || colNames[0]), _old, _new, '강습']);
+      }
     }
     // ★종목별 독립 관리(축7, GM 2026-07-08 확정) 라우팅: body.sport(sportKey) 동봉 시 종목별 경로,
     //  없으면 기존 row-level 경로(하위호환) — 두 경로는 완전히 분기(서로 컬럼 침범 없음).
@@ -5934,6 +5954,7 @@ function _processAction(body) {
       _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|year');
       _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|all');
     } catch (e) {}
+    _memberLog_(_luLog);
     return _json({ ok: true, rowIndex: luRowRaw, message: '수정되었습니다.' });
   }
 
@@ -8180,7 +8201,7 @@ function _processAction(body) {
       var _new = val == null ? '' : String(val);
       cell.setValue(_new);
       // 안 바뀐 칸은 안 남긴다 — 이력이 노이즈가 되면 아무도 안 본다.
-      if (_old !== _new) _auLog.push([new Date(), _auStaff, _auMember, _auPhone, colName, _old, _new, '멤버십']);
+      if (_old !== _new) _auLog.push([new Date(), _auStaff, _auMember, _logMaskPhone_(_auPhone), colName, _old, _new, '멤버십']);
     }
     if (auFields) {
       var _auWrote = [];
@@ -8251,7 +8272,7 @@ function _processAction(body) {
       }
       _memberLog_([[new Date(), String(body.staff || '').trim() || '이름미상',
                     _mosNameI >= 0 ? String(mosSh.getRange(mosRow, _mosNameI + 1).getValue() || '') : '',
-                    String(mosSh.getRange(mosRow, mosPhoneIdx + 1).getValue() || ''),
+                    _logMaskPhone_(mosSh.getRange(mosRow, mosPhoneIdx + 1).getValue()),
                     mosField, _mosOld, mosValue, '멤버십']]);
     }
     _aaCacheClear_();

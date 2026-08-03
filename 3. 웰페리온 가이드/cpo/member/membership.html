@@ -11912,7 +11912,7 @@ function apiPost(payload) {
   /* 쓰기 액션에만 직원 이름을 붙인다 — 호출부 9곳을 고치지 않고 이 관문 한 곳에서(배327). */
   try {
     var _a = payload && payload.action;
-    if (_a === 'member_active_update' || _a === 'member_owner_save') payload.staff = memberStaffName();
+    if (_a === 'member_active_update' || _a === 'member_owner_save' || _a === 'lesson_inquiry_update') payload.staff = memberStaffName();
   } catch (e) {}
   // ★2026-07-30 웰리 — 응답이 영영 안 오면 저장 항목이 inflight 로 굳어 큐 전체가 멈춘다(무한 대기).
   //   30초 넘으면 끊고 실패로 넘겨 재시도 경로를 태운다.
