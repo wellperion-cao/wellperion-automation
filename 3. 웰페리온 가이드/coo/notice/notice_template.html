@@ -31,19 +31,6 @@
   .topbar .back:hover{background:#B79F8A;color:#221F20;opacity:1;}
   .topbar .path{font-size:11px;opacity:0.55;font-family:"Consolas",monospace;}
   .wrap{max-width:1400px;margin:0 auto;padding:28px 24px 60px;}
-  /* 게시물 종류 카드 — 한눈에 '고를 수 있다'가 보이도록 크게. 2026-08-03 GM 지시 */
-  .cat-card{display:flex;align-items:center;gap:10px;min-width:200px;padding:12px 18px;cursor:pointer;
-            border:1.5px solid var(--border);border-radius:12px;background:var(--paper);
-            font-family:inherit;text-align:left;transition:border-color .12s,background .12s;}
-  .cat-card:hover{border-color:var(--accent);}
-  .cat-card .ci{font-size:22px;line-height:1;}
-  .cat-card .cl{font-size:14px;font-weight:700;color:var(--text);}
-  .cat-card .cd{font-size:11.5px;color:var(--dim);margin-top:2px;}
-  .cat-card.on{border-color:var(--accent);background:var(--accent-bg);box-shadow:0 0 0 3px rgba(183,159,138,.18);}
-  .cat-card.on .cl{color:#8a6b4c;}
-  .vendor-link{font-size:12px;font-weight:600;color:#8a6b4c;text-decoration:none;padding:5px 12px;
-               border:1px solid var(--accent-border,#e0d3c4);border-radius:99px;background:var(--accent-bg);white-space:nowrap;}
-  .vendor-link:hover{background:var(--accent);color:#fff;}
   .ntool-wrap{display:flex;gap:24px;}
   .ntool-form{flex:1;min-width:0;background:#fff;padding:24px;border-radius:14px;border:1px solid var(--border);}
   .ntool-preview-area{flex:1;min-width:0;position:sticky;top:20px;align-self:flex-start;}
@@ -184,33 +171,12 @@
 <div class="topbar">
   <div class="left">
     <a class="back" href="../../wellperion_guide(main).html#gcoo-notice">← 웰페리온 ERP</a>
-    <h1>WELLPERION 내부게시물 생성 v2.2</h1>
+    <h1>WELLPERION 공지 서식 v2.1</h1>
   </div>
   <span class="path">3. 웰페리온 가이드 / coo / notice / notice_template.html</span>
 </div>
 
 <div class="wrap">
-
-  <!-- ══ 카테고리 선택 ══ 게시물 종류를 눌러 해당 서식으로 전환. 새 종류는 CATS 배열에 한 줄 추가하면 된다.
-       ★처음 오는 사람이 '공지글만 쓰는 도구'로 오해하지 않도록 카드형으로 크게 노출한다(GM 지시). -->
-  <div style="margin:0 0 18px">
-    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">① 만들 게시물을 고르세요</div>
-    <div style="font-size:12px;color:var(--dim);margin-bottom:10px">종류에 따라 아래 서식이 바뀝니다.</div>
-    <div id="catBar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:stretch"></div>
-  </div>
-
-  <!-- ══ 인쇄 발주처 바로가기 ══ 디자인이 끝나면 바로 발주할 수 있게. 거래 업체 4곳(GM 지정). -->
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 18px;padding:10px 14px;
-              background:var(--paper);border:1px solid var(--border);border-radius:10px">
-    <span style="font-size:12.5px;font-weight:700;color:var(--text)">🖨 인쇄 발주처</span>
-    <span style="font-size:11.5px;color:var(--dim);margin-right:4px">디자인이 완성되면 바로 발주하세요</span>
-    <a href="https://www.aprint1.com/" target="_blank" rel="noopener" class="vendor-link">에이프린트 ↗</a>
-    <a href="https://www.eprinting.co.kr/" target="_blank" rel="noopener" class="vendor-link">이프린팅 ↗</a>
-    <a href="https://www.swadpia.co.kr/" target="_blank" rel="noopener" class="vendor-link">성원애드피아 ↗</a>
-    <a href="https://www.adpiamall.com/" target="_blank" rel="noopener" class="vendor-link">애드피아몰 ↗</a>
-  </div>
-
-  <div id="cat-notice" class="cat-pane">
   <div class="ntool-wrap" id="noticeToolWrap">
     <div class="ntool-form">
       <div class="ntool-row">
@@ -347,59 +313,7 @@
       </div>
     </div>
   </div>
-  </div><!-- /cat-notice -->
-
-  <!-- 프로필월 서식 — 단독 페이지(게시물_프로필월.html)를 그대로 불러온다. 서식은 한 곳에서만 관리. -->
-  <div id="cat-profile" class="cat-pane" style="display:none">
-    <iframe id="profileFrame" data-src="게시물_프로필월.html" title="프로필월 생성" style="width:100%;height:88vh;border:1px solid var(--border);border-radius:12px;background:#fff;display:block"></iframe>
-  </div>
 </div>
-
-<script>
-/* ══ 게시물 카테고리 전환 ══
-   새 종류를 늘릴 때는 ①CATS 에 한 줄 추가 ②본문에 <div id="cat-{id}" class="cat-pane"> 추가.
-   iframe 은 data-src 로 두고 해당 카테고리를 처음 눌렀을 때만 로드한다(첫 진입 속도 보존). */
-(function(){
-  var CATS = [
-    { id:'notice',  icon:'📢', label:'공지글',   desc:'회원 안내·휴관 공지' },
-    { id:'profile', icon:'🖼', label:'프로필월', desc:'파트너강사 프로필' }
-  ];
-  var bar = document.getElementById('catBar');
-  if (!bar) return;
-
-  function paint(id, keepUrl){
-    CATS.forEach(function(c){
-      var pane = document.getElementById('cat-' + c.id);
-      var btn  = document.getElementById('catbtn-' + c.id);
-      var on   = (c.id === id);
-      if (pane) pane.style.display = on ? '' : 'none';
-      if (btn){ btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
-    });
-    var f = document.getElementById('profileFrame');   // 처음 열 때만 로드
-    if (id === 'profile' && f && !f.src && f.getAttribute('data-src')) f.src = f.getAttribute('data-src');
-    // ★첫 로드에서는 주소를 건드리지 않는다(keepUrl) — 문서 URL 에 프래그먼트가 생기는 순간
-    //   브라우저가 그 요소로 스크롤해 상단 바가 화면 밖으로 밀려나는 문제가 있었다(실측).
-    //   사용자가 직접 눌렀을 때만 남겨 딥링크(#cat-profile)를 지원한다.
-    if (!keepUrl) { try { history.replaceState(null, '', '#cat-' + id); } catch(e){} }
-  }
-  window.switchCat = paint;
-
-  CATS.forEach(function(c){
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.id = 'catbtn-' + c.id;
-    b.className = 'cat-card';
-    b.innerHTML = '<span class="ci">' + c.icon + '</span>' +
-                  '<span><span class="cl">' + c.label + '</span>' +
-                  '<span class="cd" style="display:block">' + c.desc + '</span></span>';
-    b.onclick = function(){ paint(c.id); };
-    bar.appendChild(b);
-  });
-
-  var h = (location.hash || '').replace('#cat-', '');
-  paint(CATS.some(function(c){ return c.id === h; }) ? h : 'notice', true);   // true=첫 로드, 주소 미변경
-})();
-</script>
 
 <script>
 (function(){

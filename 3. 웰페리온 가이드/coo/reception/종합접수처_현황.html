@@ -389,7 +389,7 @@ var CAT_META = [
 var DEPT_LIST = ['운영부','시설부','지원부'];
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','assigneeCanon','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','assigneeCanon','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved'];
 
 /* ── 🏆 점수판 (GM 지시 2026-07-28) ──
    셈법은 서버(reg_scoreboard) 한 곳에만 있다 — 화면에서 다시 계산하지 않는다.
@@ -799,10 +799,6 @@ function _card(r){
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
   h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
 
-  /* 회원 안내 — 회원 셀프 조회에 노출되는 문구(처리메모와 별개). 비우면 조회화면에서 상태 기본문구가 대신 표시됨. 2026-08-03 */
-  h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--green);display:block;margin-bottom:4px;">📣 회원 안내 <span style="font-weight:500;color:var(--dim);">(회원이 조회 시 봅니다)</span></label>';
-  h += '<textarea data-reg-memberreply rows="2" placeholder="회원에게 보일 안내 문구 (비우면 상태 기본문구 표시)">' + _esc(String(r.memberReply||'')) + '</textarea></div>';
-
   /* 저장 */
   /* 삭제(테스트 접수 정리용) — 비밀번호 확인 후에만. 접수ID 정확일치 1건만 지운다.
      ★행 번호로 지우지 않는다(실고객 오삭제 재발 방지 · INC-020). */
@@ -826,7 +822,6 @@ function _update(id, cat, payload, btn, statusEl, statusPrev){
   if('status' in payload) body.status = payload.status;
   if('assignee' in payload) body.assignee = payload.assignee;
   if('memo' in payload) body.memo = payload.memo;
-  if('memberReply' in payload) body.memberReply = payload.memberReply;
   if('handler' in payload) body.handler = payload.handler;
   if('reporter' in payload) body.reporter = payload.reporter;
   if('slaDays' in payload) body.slaDays = payload.slaDays;
@@ -1081,13 +1076,11 @@ function _wireBoard(){
       if(!card) return;
       var payload = {};
       var m = card.querySelector('[data-reg-memo]');
-      var mr = card.querySelector('[data-reg-memberreply]');
       var sd = card.querySelector('[data-reg-sladays]');
       payload.assignee = _staffFieldValue(card, 'assignee');
       payload.handler = _staffFieldValue(card, 'handler');
       payload.reporter = _staffFieldValue(card, 'reporter');
       if(m) payload.memo = m.value;
-      if(mr) payload.memberReply = mr.value;
       if(sd) payload.slaDays = sd.value;
       _regLastAssigneeSet(card.dataset.regCat, payload.assignee);
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);

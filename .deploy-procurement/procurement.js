@@ -2,8 +2,6 @@
  * 시트: 1. 웰페리온 지출 관리 및 현황
  * 컬럼(1-base): 1날짜 2타임 3요청자 4소속 5물품 6링크 7가격 8목적 9승인자 10비고 11이미지 12진행상황 13승인날짜 14배송 15지출증빙 16항목1 17항목2
  *   확장열: 25번호(#) 26구매날짜 27배송비(참고 — 가격=총액에 이미 포함) 28결제수단(카드/현금) — 2026-07-14 배송비·결제 신설
- *           29자산여부(Y=자산성 물품·라벨 관리 대상) — 2026-08-03 신설
- * 별도 탭 '자산대장': 라벨 1장 = 1행(개별 자산). 입고 확인 시 수량만큼 라벨 발급.
  */
 var SHEET_ID = "1umSF9rf3K0TuAvR5l0F_gvXHxcOLVKKvkSUfTtbRhdc";
 var TAB = "지출품의";
@@ -43,11 +41,6 @@ function route(p){
     case "sales_month": return salesMonthTot(p);
     case "labor_zero": return laborZero(p);
     case "labor_time": return laborTime(p);
-    case "asset_list":   return assetList(p);   // 자산대장 조회 (2026-08-03 신설)
-    case "asset_issue":  return assetIssue(p);  // 입고 시 라벨 N장 발급(연도별 일련·품의키 멱등)
-    case "asset_label":  return assetLabel(p);  // 라벨 부착완료 표시
-    case "asset_update": return assetUpdate(p); // 위치·관리자·상태·비고 수정
-    case "asset_del":    return assetDel(p);    // 오발급 라벨 회수(미부착만 — 실물 부착분은 불용 처리로)
     case "receipt": return addReceipt(p);
     case "photo":   return addPhoto(p);
     case "delete":  return delRow(p);
@@ -122,7 +115,6 @@ function listItems(p){
   var pds = lc >= 26 ? s.getRange(FIRST_ROW, 26, lr - FIRST_ROW + 1, 1).getValues() : null; // 구매날짜열(26, 2026-07-08 신설)
   var shp = lc >= 27 ? s.getRange(FIRST_ROW, 27, lr - FIRST_ROW + 1, 1).getValues() : null; // 배송비열(27, 2026-07-14 신설 — 가격=총액에 포함된 참고값)
   var pys = lc >= 28 ? s.getRange(FIRST_ROW, 28, lr - FIRST_ROW + 1, 1).getValues() : null; // 결제수단열(28, 카드/현금 — 빈값=카드 취급)
-  var ass = lc >= 29 ? s.getRange(FIRST_ROW, 29, lr - FIRST_ROW + 1, 1).getValues() : null; // 자산여부열(29, Y=자산성 물품 — 2026-08-03 신설, 빈값=일반)
   var fromN = p.from ? dateNum(p.from) : 0, toN = p.to ? dateNum(p.to) : 0;
   var data = [];
   for (var i=0;i<v.length;i++){
@@ -142,8 +134,7 @@ function listItems(p){
       번호: nos ? nos[i][0] : "",
       구매날짜: pds ? fmtDate(pds[i][0]) : "",
       배송비: shp ? shp[i][0] : "",
-      결제: pys ? String(pys[i][0]||"") : "",
-      자산: ass ? (String(ass[i][0]||"").trim().toUpperCase()==="Y" ? "Y" : "") : ""
+      결제: pys ? String(pys[i][0]||"") : ""
     });
   }
   return out({ ok:true, count:data.length, mode:mode, data:data });
@@ -172,7 +163,6 @@ function addItem(p){
   if (shipAmt > 0){ var r27 = s.getRange(row, 27); r27.setNumberFormat("#,##0"); r27.setValue(shipAmt); } // 배송비(참고) — 가격(7열)=총액에 이미 포함, 회계 집계 무변경. 숫자서식 강제(미지정 시 시트가 날짜로 오인한 실측 버그, 2026-07-14)
   var payKind = String(p.결제||"").trim();
   if (payKind === "현금" || payKind === "카드") s.getRange(row, 28).setValue(payKind); // 결제수단 — 빈값=카드 취급
-  if (String(p.자산||"").trim().toUpperCase() === "Y") s.getRange(row, 29).setValue("Y"); // 자산성 물품 — 입고 시 라벨 발급 대상(2026-08-03). 새 행 29열만 기록, 회계열 무관
   if (locked) { try { lock.releaseLock(); } catch(eL2){} }
   if (p.fileData) putPhoto(s, row, p); // 품의 첨부사진 → 이미지 열(=IMAGE 썸네일)
   var instant = null;
@@ -303,123 +293,6 @@ function colProbe(p){
     }
   }
   return out({ ok:true, lastRow:lr, lastCol:lc, header2:head, nonEmpty:counts });
-}
-
-/* ═══════════ 자산대장 (2026-08-03 매니저 지시 — 자산성 물품 개별 라벨 관리) ═══════════
- *  라벨 1장 = 1행. 입고 확인 시 수량만큼 발급되고, 각 행이 실물 스티커 한 장에 대응한다.
- *  저장소를 시트 탭으로 잡은 이유 = 비품 원장(ScriptProperties 보드)은 9KB 한도라
- *  해마다 누적되는 자산대장을 담을 수 없다. 시트는 무제한 + 버전기록으로 복구 가능.
- *  회계열(지출품의 탭)과 완전 분리 — 이 탭 조작은 기존 집계에 영향 없음.
- */
-var ASSET_TAB  = "자산대장";
-var ASSET_HEAD = ["라벨번호","품명","분류","관리부서","보관위치","관리자","취득일","품의번호","취득금액","라벨부착","부착일","상태","비고"];
-var ASSET_COLS = ASSET_HEAD.length;
-
-function assetSh_(){ // 탭 없으면 헤더와 함께 생성(최초 1회)
-  var ss = SpreadsheetApp.openById(SHEET_ID);
-  var s = ss.getSheetByName(ASSET_TAB);
-  if (!s){
-    s = ss.insertSheet(ASSET_TAB);
-    s.getRange(1, 1, 1, ASSET_COLS).setValues([ASSET_HEAD]).setFontWeight("bold").setBackground("#0F1E3D").setFontColor("#FFFFFF");
-    s.setFrozenRows(1);
-    s.getRange(1, 9, s.getMaxRows(), 1).setNumberFormat("#,##0"); // 취득금액
-  }
-  return s;
-}
-function assetRows_(s){
-  var lr = s.getLastRow(); if (lr < 2) return [];
-  var v = s.getRange(2, 1, lr - 1, ASSET_COLS).getValues();
-  var arr = [];
-  for (var i = 0; i < v.length; i++){
-    if (!String(v[i][0]).trim()) continue; // 라벨번호 없으면 빈행
-    arr.push({
-      row: i + 2, 라벨: String(v[i][0]).trim(), 품명: String(v[i][1]), 분류: String(v[i][2]),
-      부서: String(v[i][3]), 위치: String(v[i][4]), 관리자: String(v[i][5]),
-      취득일: fmtDate(v[i][6]), 품의번호: String(v[i][7]), 금액: v[i][8],
-      부착: String(v[i][9]||"").trim().toUpperCase() === "Y",
-      부착일: fmtDate(v[i][10]), 상태: String(v[i][11]||"사용중"), 비고: String(v[i][12]||"")
-    });
-  }
-  return arr;
-}
-function assetList(p){
-  var arr = assetRows_(assetSh_());
-  if (p && p.품의번호) arr = arr.filter(function(r){ return r.품의번호 === String(p.품의번호); });
-  return out({ ok:true, count:arr.length, data:arr });
-}
-/** 라벨 발급 — 연도별 일련(WP-2026-0001). 같은 품의키로 이미 발급됐으면 재발급하지 않고 기존 라벨 반환(멱등). */
-function assetIssue(p){
-  var n = parseInt(p.수량, 10) || 0;
-  if (n < 1 || n > 100) return out({ ok:false, error:"bad_qty" }); // 상한 = 오입력 폭주 방지
-  var 품의 = String(p.품의번호||"").trim();
-  if (!품의) return out({ ok:false, error:"no_req_key" }); // 멱등 판정 키 — 없으면 중복 발급 위험이라 거부
-  var lock = LockService.getScriptLock(); var locked = false;
-  try { locked = lock.tryLock(10000); } catch(e){}
-  try {
-    var s = assetSh_();
-    var rows = assetRows_(s);
-    var dup = rows.filter(function(r){ return r.품의번호 === 품의; });
-    if (dup.length) return out({ ok:true, already:true, labels: dup.map(function(r){ return r.라벨; }) });
-    var pre = "WP-" + Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy") + "-";
-    var mx = 0;
-    rows.forEach(function(r){
-      if (r.라벨.indexOf(pre) === 0){ var x = parseInt(r.라벨.slice(pre.length), 10); if (x > mx) mx = x; }
-    });
-    var 취득일 = String(p.취득일||"") || today();
-    var vals = [], labels = [];
-    for (var i = 1; i <= n; i++){
-      var lb = pre + ("0000" + (mx + i)).slice(-4);
-      labels.push(lb);
-      vals.push([ lb, p.품명||"", p.분류||"비품", p.부서||"", p.위치||"", p.관리자||"",
-                  취득일, 품의, p.단가||"", "", "", "사용중", p.비고||"" ]);
-    }
-    s.getRange(s.getLastRow() + 1, 1, vals.length, ASSET_COLS).setValues(vals);
-    return out({ ok:true, labels: labels });
-  } finally { if (locked){ try { lock.releaseLock(); } catch(e2){} } }
-}
-/** 라벨 부착완료 — 라벨번호(콤마 구분 다건) 기준. 이미 부착된 건은 건너뜀(부착일 보존). */
-function assetLabel(p){
-  var s = assetSh_(), rows = assetRows_(s);
-  var want = {};
-  String(p.라벨||"").split(",").forEach(function(x){ x = x.trim(); if (x) want[x] = 1; });
-  var undo = String(p.해제||"") === "Y";
-  var done = [];
-  rows.forEach(function(r){
-    if (!want[r.라벨]) return;
-    if (undo && r.부착){ s.getRange(r.row, 10).setValue(""); s.getRange(r.row, 11).setValue(""); done.push(r.라벨); }
-    else if (!undo && !r.부착){ s.getRange(r.row, 10).setValue("Y"); s.getRange(r.row, 11).setValue(today()); done.push(r.라벨); }
-  });
-  return out({ ok:true, updated: done, count: done.length });
-}
-/** 위치·관리자·상태·비고 수정 (라벨번호·품의번호·취득일 등 식별·회계 성격 필드는 변경 불가) */
-function assetUpdate(p){
-  var s = assetSh_(), rows = assetRows_(s);
-  var t = rows.filter(function(r){ return r.라벨 === String(p.라벨||"").trim(); })[0];
-  if (!t) return out({ ok:false, error:"not_found" });
-  var MAP = { 위치:5, 관리자:6, 상태:12, 비고:13 };
-  var ch = [];
-  Object.keys(MAP).forEach(function(k){
-    if (p[k] != null){ s.getRange(t.row, MAP[k]).setValue(String(p[k])); ch.push(k); }
-  });
-  return out({ ok:true, 라벨:t.라벨, changed:ch });
-}
-
-/** 오발급 라벨 회수 — 수량 오입력 등으로 잘못 발급된 라벨을 대장에서 제거한다.
- *  안전장치: 이미 '부착완료'된 라벨은 실물 스티커가 붙어 있으므로 삭제 불가(불용 처리 경로를 쓸 것).
- *  행을 실제로 지우므로 번호가 비고, 다음 발급이 그 번호를 재사용한다(대장 최대값 기준 채번).
- */
-function assetDel(p){
-  var s = assetSh_(), rows = assetRows_(s);
-  var want = {};
-  String(p.라벨||"").split(",").forEach(function(x){ x = x.trim(); if (x) want[x] = 1; });
-  var del = [], blocked = [];
-  rows.forEach(function(r){
-    if (!want[r.라벨]) return;
-    if (r.부착) blocked.push(r.라벨); else del.push(r);
-  });
-  del.sort(function(a,b){ return b.row - a.row; }); // 아래 행부터 지워야 행번호가 밀리지 않음
-  del.forEach(function(r){ s.deleteRow(r.row); });
-  return out({ ok:true, deleted: del.map(function(r){ return r.라벨; }), blocked: blocked });
 }
 
 // 날짜(1열) 설정 — 서베이 등으로 날짜 없이 들어온 건 보정용. password 게이트(switch 진입 전 검증).

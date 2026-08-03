@@ -497,7 +497,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <button class="tab" id="tab-btn-work" onclick="switchTab('work')">🗂️ 업무현황</button>
     <button class="tab" id="tab-btn-schedule" onclick="switchTab('schedule')">🗓️ 일정</button>
     <button class="tab" id="tab-btn-vendorboard" onclick="switchTab('vendorboard')">🏢 거래업체</button>
-    <button class="tab" id="tab-btn-profilewall" onclick="switchTab('profilewall')">🖼 프로필월</button>
     <span style="flex:1"></span>
     <button class="util-btn print-btn" onclick="window.print()">🖨 인쇄</button>
   </div>
@@ -531,17 +530,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=파트너팀&embed=1" title="파트너팀 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
-
-<!-- ══ 🖼 프로필월 ══ 서식 정본 = coo/notice/게시물_프로필월.html (내부게시물 생성과 공용).
-     여기서 마크업을 따로 들고 있지 않는다 — 한 곳만 고치면 양쪽이 같이 바뀐다. -->
-<div id="tab-profilewall" class="content hidden">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
-    <span>🖼 <b style="color:var(--text)">프로필월 생성</b> — 이름·경력·자격을 넣고 사진을 올리면 기존 판형(938×760)으로 자동 생성됩니다.</span>
-    <a href="../notice/게시물_프로필월.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">새 창으로 열기 ↗</a>
-  </div>
-  <iframe id="profilewallFrame" data-src="../notice/게시물_프로필월.html" title="프로필월 생성" style="width:100%;height:88vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
-</div>
-
 <script>(function PAGE(){
   var SALES_ID='1nL1-Co-4VyNH_jPk0EVtKhxsWbKwTJ6E3tX91YH_qBo', SALES_GID='218650435';
   var SALES_CSV='https://docs.google.com/spreadsheets/d/'+SALES_ID+'/export?format=csv&gid='+SALES_GID;
@@ -569,7 +557,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   function card(label,val,sub,color){return '<div class="dash-stat-card" style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="color:var(--dim);font-size:12px">'+esc(label)+'</div><div style="font-size:20px;font-weight:700;color:'+(color||'var(--text)')+';margin-top:3px">'+esc(val)+'</div>'+(sub?'<div style="color:var(--dim);font-size:11px;margin-top:2px">'+esc(sub)+'</div>':'')+'</div>';}
   function panel(title,inner){return '<div class="panel"><div class="sectit">'+title+'</div>'+inner+'</div>';}
 
-  window.switchTab=function(id){['ptpolicy','ptguide','sales','work','schedule','vendorboard','profilewall'].forEach(function(t){var c=document.getElementById('tab-'+t);var b=document.getElementById('tab-btn-'+t);if(c)c.classList.toggle('hidden',t!==id);if(b)b.classList.toggle('active',t===id);});if(id==='schedule'){var _f=document.getElementById('scheduleFrame');if(_f&&!_f.src&&_f.getAttribute('data-src'))_f.src=_f.getAttribute('data-src');}if(id==='vendorboard'){var _vf=document.getElementById('vendorboardFrame');if(_vf&&!_vf.src&&_vf.getAttribute('data-src'))_vf.src=_vf.getAttribute('data-src');}if(id==='profilewall'){var _pf=document.getElementById('profilewallFrame');if(_pf&&!_pf.src&&_pf.getAttribute('data-src'))_pf.src=_pf.getAttribute('data-src');}};
+  window.switchTab=function(id){['ptpolicy','ptguide','sales','work','schedule','vendorboard'].forEach(function(t){var c=document.getElementById('tab-'+t);var b=document.getElementById('tab-btn-'+t);if(c)c.classList.toggle('hidden',t!==id);if(b)b.classList.toggle('active',t===id);});if(id==='schedule'){var _f=document.getElementById('scheduleFrame');if(_f&&!_f.src&&_f.getAttribute('data-src'))_f.src=_f.getAttribute('data-src');}if(id==='vendorboard'){var _vf=document.getElementById('vendorboardFrame');if(_vf&&!_vf.src&&_vf.getAttribute('data-src'))_vf.src=_vf.getAttribute('data-src');}};
 
   var MODEL=null, CUR='전체', INSTEAM='전체';
   window.selectPeriod=function(p){CUR=p;[].forEach.call(document.querySelectorAll('#salesSeg button'),function(b){b.classList.toggle('on',b.getAttribute('data-p')===p);});renderPeriod();};
