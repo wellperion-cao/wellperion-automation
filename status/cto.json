@@ -1,10 +1,10 @@
 {
   "clevel": "cto",
-  "status": "DONE",
-  "task_id": "CTO-2026-08-02-콘텐츠-발행-승인이-GM께-안-닿는다-큐엔-4건인데",
-  "last_task_id": "CTO-2026-08-02-콘텐츠-발행-승인이-GM께-안-닿는다-큐엔-4건인데",
+  "status": "IN_PROGRESS",
+  "task_id": "CTO-2026-08-03-카톡-방-2건-09-30-매출보고에-부서장-추가-관",
+  "last_task_id": "CTO-2026-08-03-카톡-방-2건-09-30-매출보고에-부서장-추가-관",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-08-03T23:07:57Z",
+  "last_pushed_at": "2026-08-03T23:09:38Z",
   "active_tasks": [
     {
       "task_id": "CTO-2026-06-29-NORTHSTAR-RECOMMENDER",
@@ -205,12 +205,20 @@
       "note": "남아 있던 마지막 항목(발행완료인데 URL 회수 안 됨 · CASE14·15·17)이 이미 해소돼 있었다. 라이브 실측(publish_status_audit.py 전체 감사 · HTTP 확인 포함): 발행완료 건 중 공개 URL 이 전무한 것 0건, 과대보고 의심 0건. CASE14·15·17 세 건 모두 인스타그램 공개 URL 보유 확인. ▸주의로 남길 것: URL 은 published_url 이 아니라 post_url 칸에 들어간다 — published_url 만 보면 20건이 비어 보인다(실제로는 감사기가 세 칸을 다 본다). 이 배 note 의 'published_url 이 비어 있다' 서술이 그 착시였다. 발신·카드 정상은 2026-08-03 확인분 유지.",
       "updated_at": "2026-08-03T23:07:57Z",
       "blocks": []
+    },
+    {
+      "task_id": "CTO-2026-08-03-카톡-방-2건-09-30-매출보고에-부서장-추가-관",
+      "title": "[1] 09:30 매출보고 ★부서장 방 추가 완료 — 편집 SSOT 인 T2 카톡전송관리 GAS 시트에 kakao_rooms_save 로 등록, GET 재조회로 4방 확인(회장님·관리부·★운영부·★부서장). 로컬 폴백 캐시 scripts/kakao_rooms.json 도 동기(sales_report false→true). 실발송 0건 · --selftest 로 회장님 게이트·정제 로직 정상 확인. 커밋 98f5c56c0. [2] 관리부→★관리부 이름 변경은 미착수 — note 대로 GM 이 카톡에서 이름을 바꾸는 그 순간 목록도 같이 저장해야 발송이 안 끊긴다(find_room_window 가 창 제목 완전일치로 방을 찾음). 시토가 저장 명령을 대기 상태로 들고 있으며 GM 신호 즉시 저장한다.",
+      "status": "IN_PROGRESS",
+      "note": "[1] 09:30 매출보고 ★부서장 방 추가 완료 — 편집 SSOT 인 T2 카톡전송관리 GAS 시트에 kakao_rooms_save 로 등록, GET 재조회로 4방 확인(회장님·관리부·★운영부·★부서장). 로컬 폴백 캐시 scripts/kakao_rooms.json 도 동기(sales_report false→true). 실발송 0건 · --selftest 로 회장님 게이트·정제 로직 정상 확인. 커밋 98f5c56c0. [2] 관리부→★관리부 이름 변경은 미착수 — note 대로 GM 이 카톡에서 이름을 바꾸는 그 순간 목록도 같이 저장해야 발송이 안 끊긴다(find_room_window 가 창 제목 완전일치로 방을 찾음). 시토가 저장 명령을 대기 상태로 들고 있으며 GM 신호 즉시 저장한다.",
+      "updated_at": "2026-08-03T23:09:38Z",
+      "blocks": []
     }
   ],
   "agent": "cto",
-  "title": "남아 있던 마지막 항목(발행완료인데 URL 회수 안 됨 · CASE14·15·17)이 이미 해소돼 있었다. 라이브 실측(publish_status_audit.py 전체 감사 · HTTP 확인 포함): 발행완료 건 중 공개 URL 이 전무한 것 0건, 과대보고 의심 0건. CASE14·15·17 세 건 모두 인스타그램 공개 URL 보유 확인. ▸주의로 남길 것: URL 은 published_url 이 아니라 post_url 칸에 들어간다 — published_url 만 보면 20건이 비어 보인다(실제로는 감사기가 세 칸을 다 본다). 이 배 note 의 'published_url 이 비어 있다' 서술이 그 착시였다. 발신·카드 정상은 2026-08-03 확인분 유지.",
-  "artifact_url": "https://github.com/wellperion-cao/wellperion-automation/blob/master/scripts/publish_status_audit.py",
+  "title": "[1] 09:30 매출보고 ★부서장 방 추가 완료 — 편집 SSOT 인 T2 카톡전송관리 GAS 시트에 kakao_rooms_save 로 등록, GET 재조회로 4방 확인(회장님·관리부·★운영부·★부서장). 로컬 폴백 캐시 scripts/kakao_rooms.json 도 동기(sales_report false→true). 실발송 0건 · --selftest 로 회장님 게이트·정제 로직 정상 확인. 커밋 98f5c56c0. [2] 관리부→★관리부 이름 변경은 미착수 — note 대로 GM 이 카톡에서 이름을 바꾸는 그 순간 목록도 같이 저장해야 발송이 안 끊긴다(find_room_window 가 창 제목 완전일치로 방을 찾음). 시토가 저장 명령을 대기 상태로 들고 있으며 GM 신호 즉시 저장한다.",
+  "artifact_url": null,
   "commit": "",
-  "note": "남아 있던 마지막 항목(발행완료인데 URL 회수 안 됨 · CASE14·15·17)이 이미 해소돼 있었다. 라이브 실측(publish_status_audit.py 전체 감사 · HTTP 확인 포함): 발행완료 건 중 공개 URL 이 전무한 것 0건, 과대보고 의심 0건. CASE14·15·17 세 건 모두 인스타그램 공개 URL 보유 확인. ▸주의로 남길 것: URL 은 published_url 이 아니라 post_url 칸에 들어간다 — published_url 만 보면 20건이 비어 보인다(실제로는 감사기가 세 칸을 다 본다). 이 배 note 의 'published_url 이 비어 있다' 서술이 그 착시였다. 발신·카드 정상은 2026-08-03 확인분 유지.",
-  "updated_at": "2026-08-03T23:07:57Z"
+  "note": "[1] 09:30 매출보고 ★부서장 방 추가 완료 — 편집 SSOT 인 T2 카톡전송관리 GAS 시트에 kakao_rooms_save 로 등록, GET 재조회로 4방 확인(회장님·관리부·★운영부·★부서장). 로컬 폴백 캐시 scripts/kakao_rooms.json 도 동기(sales_report false→true). 실발송 0건 · --selftest 로 회장님 게이트·정제 로직 정상 확인. 커밋 98f5c56c0. [2] 관리부→★관리부 이름 변경은 미착수 — note 대로 GM 이 카톡에서 이름을 바꾸는 그 순간 목록도 같이 저장해야 발송이 안 끊긴다(find_room_window 가 창 제목 완전일치로 방을 찾음). 시토가 저장 명령을 대기 상태로 들고 있으며 GM 신호 즉시 저장한다.",
+  "updated_at": "2026-08-03T23:09:38Z"
 }
