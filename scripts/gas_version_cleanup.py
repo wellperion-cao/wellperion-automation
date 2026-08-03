@@ -47,6 +47,10 @@ STATUS_PATH = SCRATCH / "gas_cleanup_status.json"
 SHOT_DIR = SCRATCH / "gas_cleanup_shots"
 
 PROJECTS = {
+    # ★2026-08-03 시토 — funnel-v2 누락 수리. 정리가 정작 필요한 프로젝트가 목록에 없어
+    # 이 도구가 만들어진 뒤로 한 번도 실제 대상을 겨냥하지 못했다(funnel=은퇴한 v1·버전 1개).
+    # 버전수 이력 실측: 07-24 145 → 08-03 197 단조 증가, 감소 구간 0 = 삭제가 한 번도 안 돌았다.
+    "funnel-v2": "1BezMSW_rGi57IrC9IoxoQzczsATVzqwFa039cigvhad0wpCBdOmhHTjQ",
     "funnel": "1A77oDRaa21K25c3-M1AgewNfUzfW-zamfRhYWjlYUrvIdPCYazs8KQru",
     "check": "1FLQAzjq6IME2A41QZlfZZSzzAeaFFDAr58M6T-JzDtzzbC4gEKuQFNp6",
 }
