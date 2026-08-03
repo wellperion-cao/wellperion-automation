@@ -1195,10 +1195,20 @@
       function setTitle(id, v){ var el = document.getElementById(id); if(el) el.title = v; }
       /* 스냅샷 표시 배지 — 숫자가 '옛것으로 굳어 보이는' 걸 막는다: 스냅샷을 보여주는 동안엔
          반드시 이게 스냅샷임을 드러내고, 라이브 도착 즉시 사라진다(2026-07-27 GM 지시). */
-      function setFreshnessBadge(isSnapshot, generatedAtKst){
+      /* ★2026-08-03 시토(GM 지적 "강제새로고침하면 월매출이 7월 마감으로 잡힌다") — cached 인자 추가.
+         원인: 아래 localStorage 캐시 페인트가 opts 없이 렌더를 불러 이 배지가 **꺼진 채로** 옛 숫자를
+         그렸다. 그래서 브라우저에 남아 있던 직전 값(당월 진행중 누적이 실리기 전 모양)이 '지금 값'과
+         구별이 안 됐다. 값 자체는 정상이다 — 스냅샷·라이브 전 칸 대조 결과 어긋난 칸 0개.
+         배지는 2026-07-27 GM 지시("숫자가 옛것으로 굳어 보이는 걸 막는다")로 만든 장치인데,
+         정작 가장 흔한 경로(캐시 첫 페인트)에서만 꺼져 있었다. */
+      function setFreshnessBadge(isSnapshot, generatedAtKst, cached){
         var el = document.getElementById('heroKpiFreshnessBadge');
         if(!el) return;
-        if(isSnapshot){
+        if(cached){
+          el.style.display = 'inline-block';
+          el.textContent = '⏱ 직전 확인값 · 라이브 확인 중';
+          el.title = '이 브라우저에 남아 있던 직전 값입니다 — 라이브 값이 도착하면 자동으로 바뀝니다.';
+        } else if(isSnapshot){
           el.style.display = 'inline-block';
           el.textContent = '⏱ 스냅샷' + (generatedAtKst ? ' ' + generatedAtKst.slice(11) : '') + ' · 라이브 확인 중';
           el.title = '서버 발행 스냅샷(' + (generatedAtKst || '') + ') — 라이브 값이 도착하면 자동 갱신됩니다.';
@@ -1236,7 +1246,7 @@
           opts = opts || {};
           var d = results[0], tgt = results[1], monthlyResp = results[2], snapResp = results[3];
           if(!d || !d.ok) return;
-          setFreshnessBadge(!!opts.isSnapshot, opts.generatedAtKst);
+          setFreshnessBadge(!!opts.isSnapshot, opts.generatedAtKst, !!opts.cached);
           var s = d.sales || {}, e = d.expense || {}, v = d.voc || {};
           var monthlyTarget = (tgt && typeof tgt.monthly_target_total === 'number') ? tgt.monthly_target_total : null;
 
@@ -1453,7 +1463,9 @@
       /* 1) 로컬 캐시(있으면 즉시 페인트, 직전 라이브값이라 배지 없음)
          2) 로컬 캐시가 없는 콜드/시크릿 첫 로드만 서버 스냅샷으로 즉시 페인트(배지 표시)
          3) 라이브 갱신 + 캐시 write-through(항상 실행 — 스냅샷/캐시 유무와 무관하게 최종값은 라이브) */
-      try { var _hkC = localStorage.getItem('wp_home_kpi_cache'); if(_hkC){ renderHomeKpi(JSON.parse(_hkC)); } } catch(_e){}
+      /* ★캐시 페인트는 반드시 '직전 확인값' 배지를 켠 채로 그린다(2026-08-03 GM 지적).
+         opts 없이 부르면 배지가 꺼져 옛 숫자가 지금 값처럼 보였다 — 라이브가 덮어쓰면서 사라진다. */
+      try { var _hkC = localStorage.getItem('wp_home_kpi_cache'); if(_hkC){ renderHomeKpi(JSON.parse(_hkC), { cached:true }); } } catch(_e){}
       if(!_hkC){
         Promise.all([
           fetch(SNAPSHOT_URL + '?t=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.json(); }).catch(function(){ return null; }),
@@ -6557,7 +6569,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           + moduleCard({icon:'🚺',label:'지원부 체계(여)', caption:'오늘 점검 완료율', value:pctText(S.wPct), warn:wW.warn, warnLevel:wW.level, href:SUPPORT_HREF})
           + moduleCard({icon:'🅿️',label:'주차관리부 체계', caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
           + moduleCard({icon:'📅',label:'전사 일정',       caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
-          + moduleCard({icon:'📢',label:'내부게시물 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
+          + moduleCard({icon:'📢',label:'공지·안내문 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
           + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수',      value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
                         extra:{label:'📲 회원 접수 폼', href:'http://wellperion.com/ko/reception/'}})
           + moduleCard({icon:'🏢',label:'운영부 체계',     caption:'실무진 진행 업무',  value:S.opsTask,     warn:S.opsWarn,   warnLevel:S.opsLevel,   href:OPS_HREF})
