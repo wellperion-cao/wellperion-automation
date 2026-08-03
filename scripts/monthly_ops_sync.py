@@ -32,6 +32,7 @@ import argparse
 import io
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.request
@@ -531,6 +532,21 @@ def run(month: str | None, apply: bool) -> None:
             ref=month,
         )
     elif live:
+        # ★2026-08-03 시토(배선 수리) — '변경 없음'일 때 **어제 커밋 못 한 반영분을 먼저 재시도**한다.
+        #   실사고: 2026-08-02 07:00 실행이 계산·저장까지 성공하고 .git/index.lock 1분 대기 끝에
+        #   커밋만 실패했다. 다음날 07:00 실행은 "변경 0 → 저장 생략"으로 끝나 **재시도를 아예
+        #   안 했고**, 그 결과 GM 이 보는 라이브 월간운영계획이 **이틀 동안 08-01 에 멈춰 있었다**.
+        #   판정이 '새 diff 가 있나'만 보고 '아직 커밋 안 된 잔여분이 있나'는 안 봤던 것이 구멍이다.
+        #   ▸변경이 있을 때는 원래 경로가 파일 전체를 커밋하므로 잔여분이 자동으로 함께 실린다 —
+        #     구멍은 이 '변경 없음' 가지 하나뿐이라 여기만 막는다(새 감시기·새 스크립트 0 · 약속 L21).
+        _leftover = subprocess.run(
+            ["git", "status", "--porcelain", "--", str(PLAN_FILE)],
+            cwd=str(BASE_DIR), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=15,
+        ).stdout.strip()
+        if _leftover:
+            print(f"[복구] 커밋 안 된 지난 반영분 발견 — 재시도합니다: {_leftover}")
+            commit_plan(month, 0, 0)
         print("[반영] 변경 없음 — 저장 생략.")
         worklog_log(
             "coo", "월간계획", "월간 운영계획 자동 반영 실행 — 갱신된 목표 없음",
