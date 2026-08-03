@@ -7253,7 +7253,9 @@ function _ownersCellHtml(row){
       parts.push('<span style="display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--teal-bg);color:var(--teal);white-space:nowrap;margin:1px 3px 1px 0">' + esc(s.label) + ':' + esc(v) + '</span>');
     }
   });
-  if (!parts.length) return '<td style="white-space:nowrap;color:var(--dim)">—</td>';
+  // 2026-08-03 GM 지시 — 담당이 없으면 빈칸(—)으로 두지 않고 눈에 띄게 알린다.
+  //   Contact 칸을 화면에서 뺐으므로, 이 칸이 '담당 강사가 정해졌나'를 보는 유일한 자리가 됐다.
+  if (!parts.length) return '<td style="white-space:nowrap"><span style="color:#c8756f;font-weight:800">⚠ 미지정</span></td>';
   return '<td style="white-space:normal;min-width:130px;max-width:300px">' + parts.join('') + '</td>';
 }
 
@@ -7536,7 +7538,11 @@ function _activeFilter(query) {
 // 항상 숨김(원본 시트 칸은 그대로, 화면 렌더에서만 제외 — 데이터 손실 0). FB260801-141806(임정은M) · GM 승인.
 // '담당자'=종목별 담당자 5칸(PT/골프/P.L/스쿼시/수영)과 별개인 총괄 칸(항상 빈값, 노이즈만 됨).
 // '강습팀 참고사항'=강습 화면(성인·유소년 강습 문의)에서 이미 다루는 내용과 중복 — 요청대로 삭제.
-var ALWAYS_HIDE_COLS = ['담당자', '강습팀\n참고사항(이용 시간 기록)'];
+/* 2026-08-03 GM 지시 — 각 강습 Contact 는 「강습 회원관리 → 유효회원 종목별 담당자 배정」 칸에서 본다.
+   멤버십 회원관리 표에서는 빼고, 여기서는 '담당 강사가 지정됐는지'만 확인한다.
+   ※화면 표시에서만 제외 — 시트 원본 칸은 그대로다(되돌리려면 이 목록에서 빼면 된다). */
+var ALWAYS_HIDE_COLS = ['담당자', '강습팀\n참고사항(이용 시간 기록)',
+                        'PT Contact', 'GOLF Contact', 'P.L Contact', '스쿼시 Contact', '수영 Contact'];
 // 칸 축소 — 데이터는 그대로, 폭만 좁혀 말줄임(overflow ellipsis) + 마우스오버로 전체값 확인. 값=max-width(px).
 // '비고(운영부 참고사항)'가 요청 원문상 "가장 많이 축소" 대상이라 가장 좁다.
 var NARROW_COL_WIDTHS = {
@@ -7733,6 +7739,15 @@ function _activeRowHtml(row, displayCols) {
       var leftStyle = narrowW ? ('text-align:left;max-width:' + narrowW + 'px;white-space:normal;word-break:keep-all;') : '';
       var editAttr = (!isPhone && _activeScope !== 'corp') ? ' data-col="' + esc(h) + '"' : '';
       var _cv = row[h] != null ? row[h] : '—';
+      /* 일자 칸(GM 지시 2026-08-03) — ③좁아서 읽기 불편하던 것을 넓히고 ④'2026-'을 '26-'으로 줄인다.
+         Contact 5칸을 뺀 자리를 여기에 쓴다. 표시만 바꾸고 저장 값은 네 자리 연도 그대로다
+         (달력으로 고치면 다시 2026-08-03 형태로 저장된다). */
+      if (/일자|날짜/.test(h) && !/잔여/.test(h)) {
+        var _dv = String(_cv == null ? '' : _cv).trim();
+        var _dm = _dv.match(/^(\d{2})(\d{2})([-.\/])(\d{1,2})\3(\d{1,2})/);
+        if (_dm) _dv = _dm[2] + '-' + ('0' + _dm[4]).slice(-2) + '-' + ('0' + _dm[5]).slice(-2);
+        return void (html += '<td style="white-space:nowrap;min-width:92px;text-align:center"' + editAttr + '>' + esc(_dv || '—') + '</td>');
+      }
       // 종목 표기 정리(GM 지시 2026-08-03) — 화면에서만 다듬는다. 시트 원본 값은 손대지 않는다.
       //   원본: '★(정)플래티넘+골프 ▶ GYM+골프+사우나 ▶ 12개월'  →  화면: '(정)플래티넘+골프 ▶ GYM+골프+사우나'
       //   ★ 는 모든 행에 붙어 있어 구분에 도움이 안 되고, 개월수는 옆의 시작·종료일자가 이미 말한다.
@@ -8315,7 +8330,13 @@ function _colChoices(col) {
 }
 function _cellEditorFor(col, origText) {
   if (_cellIsDateCol(col)) {
+    // 화면이 '26-08-03' 으로 줄여 보여주므로(GM 지시 2026-08-03) 두 자리 연도도 받는다.
+    //   두 자리로 오면 2000년대로 되돌려 달력에 넣는다 — 저장은 네 자리로 나간다.
     var m = String(origText || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+    if (!m) {
+      var m2 = String(origText || '').match(/^(\d{2})\D+(\d{1,2})\D+(\d{1,2})/);
+      if (m2) m = [m2[0], '20' + m2[1], m2[2], m2[3]];
+    }
     if (m || !String(origText || '').trim()) {       // 빈칸이거나 날짜로 읽히면 달력
       var d = document.createElement('input');
       d.type = 'date';
