@@ -60,11 +60,29 @@ def _ship(**overrides):
 
 
 # ── select_one_low_risk_ship: 저위험 추가 필터 ──
+# 2026-07-27 재설계로 낱말 스캔 대상은 title+next뿐이고 note는 제외됐다(오탐 45척 실측 —
+# note는 경위·인용이 쌓여 오탐이 난다). 아래 테스트들은 그 전에 쓰여 note에 위험 낱말을
+# 넣고 차단을 기대했던 낡은 가정을 title로 옮겨 원래 의도(차단)를 그대로 검증한다.
 def test_select_excludes_extra_low_risk_keywords():
     for keyword in ("라이브 배포 아님 라이브 점검", "GAS 스크립트 수정", "시트쓰기 반영"):
-        queue = [_ship(note=keyword)]
+        queue = [_ship(title=keyword)]
         result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
         assert result is None, f"저위험 추가 필터 미차단: {keyword}"
+
+
+def test_select_reversible_false_blocks_regardless_of_keywords():
+    # 현행 계약: reversible=False 선언은 낱말 스캔보다 먼저 이기고 무조건 차단한다.
+    queue = [_ship(reversible=False, title="평범한 내부 정리")]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is None
+
+
+def test_select_keyword_in_note_only_passes():
+    # 현행 계약: 위험 낱말이 note에만 있고 title/next·reversible 선언이 없으면 통과가 정상이다
+    # (2026-07-27 GM 지적 — note 스캔은 경위·인용이 쌓여 오탐 45척을 냈다).
+    queue = [_ship(note="보안 설정 변경 관련 과거 논의 인용")]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is not None
 
 
 def test_select_still_uses_base_irreversible_filter():
@@ -194,7 +212,7 @@ def test_run_once_dry_run_never_calls_subprocess(tmp_path, monkeypatch):
 
 
 def test_run_once_dry_run_no_ship_when_only_irreversible_present(tmp_path, monkeypatch):
-    queue = [_ship(note="보안 설정 변경")]
+    queue = [_ship(title="보안 설정 변경")]
     queue_path = tmp_path / "_queue.json"
     queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
 
@@ -409,7 +427,7 @@ def test_run_once_live_blocked_by_working_tree_git_error(tmp_path, monkeypatch):
 def test_run_once_live_does_not_block_on_baseline_dirty_real_work_files(tmp_path, monkeypatch):
     # 2026-07-20 재설계: real_work_files(베이스라인 foreign 파일)가 있어도 더 이상 사전
     # 차단하지 않는다 — 선별 단계까지 진행한다(비가역 배만 있으니 claude는 여전히 안 불림).
-    queue = [_ship(note="보안 설정 변경")]
+    queue = [_ship(title="보안 설정 변경")]
     queue_path = tmp_path / "_queue.json"
     queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
 
@@ -441,7 +459,7 @@ def test_run_once_live_does_not_block_on_baseline_dirty_real_work_files(tmp_path
 
 def test_run_once_live_passes_guard_then_proceeds_to_selection(tmp_path, monkeypatch):
     # 비가역 배만 있어 후보 0건 — 워킹트리 가드는 통과했지만 claude는 호출되지 않아야 함
-    queue = [_ship(note="보안 설정 변경")]
+    queue = [_ship(title="보안 설정 변경")]
     queue_path = tmp_path / "_queue.json"
     queue_path.write_text(json.dumps(queue, ensure_ascii=False), encoding="utf-8")
 
