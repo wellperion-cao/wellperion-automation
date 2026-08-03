@@ -5621,7 +5621,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
 
     <!-- ══ 🧠 AI 자기학습 제안 → 자율현황으로 이관 (AI 살림 · 배10510 · 2026-08-03) ══ -->
-    <p style="font-size:13px;color:var(--dim);margin:8px 0 24px;">🧠 AI 자기학습 제안(AI C-Level이 스스로 올린 개선 아이디어)은 <strong>자율 작업 현황</strong>에서 봅니다 → <a href="자율현황.html#sec-hangro" style="color:var(--accent);font-weight:700;">바로가기</a></p>
+    <p style="font-size:13px;color:var(--dim);margin:8px 0 24px;">🧠 AI 자기학습 제안(AI C-Level이 스스로 올린 개선 아이디어)은 <strong>자율 작업 현황</strong>에서 봅니다 → <a href="자율현황.html#sec-learning" style="color:var(--accent);font-weight:700;">바로가기</a></p>
 
     <!-- ░░ 재발방지 현황 → S2 공통탭으로 이전 (2026-06-15) ░░ -->
     <p style="font-size:13px;color:var(--dim);margin:8px 0 24px;">🛡️ 같은 실수 막기·점검 현황은 <strong>AI C-Level 운영 가이드(S2 공통탭)</strong>에서 봅니다 → <a href="#" onclick="(function(){var t=document.querySelector('[data-panel=common]');if(t){var s=document.querySelector('.tab-btn[data-target=common]');if(s)s.click();}var el=document.getElementById('common-incidents');if(el)el.scrollIntoView({behavior:'smooth'});})();return false;" style="color:var(--accent);font-weight:700;">바로가기</a></p>
@@ -6555,7 +6555,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           + moduleCard({icon:'🚺',label:'지원부 체계(여)', caption:'오늘 점검 완료율', value:pctText(S.wPct), warn:wW.warn, warnLevel:wW.level, href:SUPPORT_HREF})
           + moduleCard({icon:'🅿️',label:'주차관리부 체계', caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
           + moduleCard({icon:'📅',label:'전사 일정',       caption:'등록된 법정·정기',  value:S.schedTotal,  warn:S.schedWarn, warnLevel:S.schedLevel, href:SCHEDULE_HREF})
-          + moduleCard({icon:'📢',label:'내부게시물 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
+          + moduleCard({icon:'📢',label:'공지·안내문 생성', caption:'저장된 공지',      value:S.noticeTotal, warn:S.noticeWarn, warnLevel:S.noticeLevel, href:NOTICE_HREF})
           + moduleCard({icon:'🙋',label:'종합접수처',      caption:'미처리 접수',      value:S.receptionOpen,     warn:S.receptionWarn,   warnLevel:S.receptionLevel,   href:RECEPTION_HREF,
                         extra:{label:'📲 회원 접수 폼', href:'http://wellperion.com/ko/reception/'}})
           + moduleCard({icon:'🏢',label:'운영부 체계',     caption:'실무진 진행 업무',  value:S.opsTask,     warn:S.opsWarn,   warnLevel:S.opsLevel,   href:OPS_HREF})
@@ -9107,7 +9107,7 @@ function crTab(btn, panelId) {
         gm1InProgressCount = 0;
         gm1ParkedCount = 0;
         queue.forEach(function(q){
-          // ── ⚓ 정박·대기(surface==='autonomy') 항로 제외 → 자율현황.html#sec-parked-missions 위임 (2026-07-15 GM·배237) ──
+          // ── ⚓ 정박·대기(surface==='autonomy') 항로 제외 → 자율현황.html#sec-hangro 위임 (2026-07-15 GM·배237) ──
           //   surface 로만 판정해 G1 3섹터에서는 항상 제외(양 페이지 배치 일치·중복 방지) — DONE·폐기여도 자율현황 위임 유지.
           //   ★단, 배지 숫자(gm1ParkedCount)는 열린 배(PENDING·IN_PROGRESS)만 카운트 — status 무관 전량 합산 시
           //   아카이브(_queue_archive.json)의 종결(DONE·완료·STANDBY)건까지 섞여 실제보다 부풀려짐(2026-07-24 GM 지적·웰리 수정).
@@ -9517,7 +9517,7 @@ function crTab(btn, panelId) {
       // ── 🚢 진행·상시 미션 포인터 — _queue IN_PROGRESS는 항로 제외, 자율현황에서 관리 (GM 2026-07-15·배237) ──
       //   status==IN_PROGRESS 개수(gm1InProgressCount)를 안내 한 줄로 대체(하드코딩 목록 없음·라이브 자동 정합).
       if (gm1InProgressCount) {
-        html += '<a href="자율현황.html#sec-active-missions" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(167,139,218,0.35);border-radius:10px;background:rgba(167,139,218,0.07);text-decoration:none;flex-wrap:wrap;">';
+        html += '<a href="자율현황.html#sec-hangro" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(167,139,218,0.35);border-radius:10px;background:rgba(167,139,218,0.07);text-decoration:none;flex-wrap:wrap;">';
         html += '<span style="flex:1;font-size:13.5px;font-weight:700;color:#a78bda;">🚢 지금 굴러가는 것 — 상시 자동 ' + gm1InProgressCount + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">(각 AI가 자율현황에서 관리 · 오늘 신규 진행 배는 아래)</span></span>';
         html += '<span style="font-size:12px;color:#a78bda;font-weight:600;">자율현황에서 관리 →</span>';
         html += '</a>';
@@ -9722,7 +9722,7 @@ function crTab(btn, panelId) {
         s += '<div style="font-size:12.5px;font-weight:700;color:#8ca6d6;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>항로 대기 ' + list.length + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 오늘 볼 것 (각 예정일 있음)</span></div>';
         // ── ⚓ 정박·대기 포인터 — surface==='autonomy' 배는 자율현황 위임(항로 대기 섹터 제외·카운트만) (2026-07-15 GM·배237) ──
         if (gm1ParkedCount) {
-          s += '<a href="자율현황.html#sec-parked-missions" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:9px 12px;border:1px solid rgba(140,166,214,0.35);border-radius:8px;background:rgba(140,166,214,0.07);text-decoration:none;flex-wrap:wrap;">' +
+          s += '<a href="자율현황.html#sec-hangro" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:9px 12px;border:1px solid rgba(140,166,214,0.35);border-radius:8px;background:rgba(140,166,214,0.07);text-decoration:none;flex-wrap:wrap;">' +
             '<span style="flex:1;font-size:12.5px;font-weight:700;color:#8ca6d6;">⚓ 정박 ' + gm1ParkedCount + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 자율현황·미래 (조건·시각 트리거 대기)</span></span>' +
             '<span style="font-size:12px;color:#8ca6d6;font-weight:600;">자율현황에서 관리 →</span></a>';
         }
