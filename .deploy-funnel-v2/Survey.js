@@ -2364,9 +2364,14 @@ function _regRemove_(phone) {
 // months(개월수, 선택) — 2026-08-01 시토(배286) — 있으면 시작일자·종료일자·잔여일을 계산해 채운다.
 //   "+직접등록" 폼이 원래 이름·전화·프로그램·등록일 4칸뿐이라 기간을 몰라 이 칸들이 항상 비어 있었다
 //   (오분류의 근본원인). 폼에 개월수 칸이 붙기 전까지는 안 와도 무중단(비어도 안전망은 member_active_list 쪽에 있음).
-function _memberActiveUpsert_(name, phone, program, regDate, months) {
+// opts(선택) — 2026-08-03 시토(GM 지시 "SUC하면 채워야하는 항목값들도 다 들어가게").
+//   { owner(담당자) · kind(회원구분) · age(나이) · regClass(등록분류) · locker(락커) } 를 받아 유효회원 칸에 함께 쓴다.
+//   등록회차는 여기서 자동 — 신규=1 / 재등록=기존행 값+1(기존행 없으면 1). 사람이 세던 칸이라 자동이 아니면 늘 빈다.
+//   ★안 온 칸은 건드리지 않는다(undefined=무변경). 사람이 손으로 채운 값을 빈 값으로 덮지 않기 위함.
+function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var key = _regNormPhone_(phone);
   if (!key) return;
+  opts = opts || {};
   var sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
   if (!sh) return;
   var cols = sh.getLastColumn();
@@ -2383,8 +2388,18 @@ function _memberActiveUpsert_(name, phone, program, regDate, months) {
   var endI = _idx('종료일자'); if (endI < 0) endI = _idx('종료일');
   var remI = _idx('잔여일');
   var pgI = _idx('수강반종목'); if (pgI < 0) pgI = _idx('종목명'); if (pgI < 0) pgI = _idx('회원권'); if (pgI < 0) pgI = _idx('상품'); if (pgI < 0) pgI = _idx('프로그램');
+  // 추가 칸(2026-08-03) — 없으면 -1로 조용히 건너뛴다(칸 자동생성 금지 정책 유지).
+  //   '등록분류'는 '재등록분류'와도 부분일치하지만 헤더 순서상 '등록 분류'(앞칸)가 먼저 잡힌다.
+  var ownI  = _idx('담당자');     // ★'PT 담당자'보다 앞칸이라 먼저 잡힌다
+  var kndI  = _idx('회원구분');
+  var ageI  = _idx('나이');
+  var clsI  = _idx('등록분류');
+  var seqI  = _idx('등록회차');
+  var lckI  = _idx('락커');
   if (nmI < 0 || phI < 0) return;  // 필수 칸 없음 — 시트 구조사고 방지(칸 자동생성 안 함)
-  var startDate = regDate || _todayKR_();
+  function _put(row, ci, v) { if (ci >= 0 && v !== undefined && v !== null && String(v) !== '') sh.getRange(row, ci + 1).setValue(v); }
+  // 시작일자는 등록일자와 다를 수 있다(계약일 ≠ 이용 시작일 — 실측 다수). opts.startDate 우선.
+  var startDate = opts.startDate || regDate || _todayKR_();
   var moN = parseInt(months, 10);
   var endDateStr = '', remN = null;
   if (moN > 0) {
@@ -2407,6 +2422,16 @@ function _memberActiveUpsert_(name, phone, program, regDate, months) {
         if (moN > 0 && stI >= 0) sh.getRange(row, stI + 1).setValue(startDate);
         if (moN > 0 && endI >= 0) sh.getRange(row, endI + 1).setValue(endDateStr);
         if (moN > 0 && remI >= 0) sh.getRange(row, remI + 1).setValue(remN);
+        _put(row, ownI, opts.owner);
+        _put(row, kndI, opts.kind);
+        _put(row, ageI, opts.age);
+        _put(row, clsI, opts.regClass);
+        _put(row, lckI, opts.locker);
+        // 등록회차 — 재등록이면 기존 회차+1(사람이 세던 칸). 신규 재계약도 회차가 오르는 게 맞다.
+        if (seqI >= 0 && String(opts.regClass || '').indexOf('재등록') >= 0) {
+          var _prevSeq = parseInt(sh.getRange(row, seqI + 1).getValue(), 10);
+          sh.getRange(row, seqI + 1).setValue((_prevSeq > 0 ? _prevSeq : 1) + 1);
+        }
         return;
       }
     }
@@ -2418,6 +2443,12 @@ function _memberActiveUpsert_(name, phone, program, regDate, months) {
   if (moN > 0 && stI >= 0) newRow[stI] = startDate;
   if (moN > 0 && endI >= 0) newRow[endI] = endDateStr;
   if (moN > 0 && remI >= 0) newRow[remI] = remN;
+  if (ownI >= 0 && opts.owner)    newRow[ownI] = opts.owner;
+  if (kndI >= 0 && opts.kind)     newRow[kndI] = opts.kind;
+  if (ageI >= 0 && opts.age)      newRow[ageI] = opts.age;
+  if (clsI >= 0 && opts.regClass) newRow[clsI] = opts.regClass;
+  if (lckI >= 0 && opts.locker)   newRow[lckI] = opts.locker;
+  if (seqI >= 0) newRow[seqI] = 1;   // 새 행 = 첫 등록
   sh.appendRow(newRow);
   // 전화·등록일자는 appendRow 직후 텍스트서식(@)을 강제해 다시 쓴다 — 숫자로만 보이는 문자열을 Sheets가
   // 자동으로 숫자로 바꾸며 010 앞자리 0이 사라지는 사고 실측(2026-08-01, 정지원 등 3건 · 복구는 member_active_phone_fix).
@@ -5142,6 +5173,24 @@ function _processAction(body) {
       var _coRegProg = (body.regProgram !== undefined && String(body.regProgram).trim()) ? String(body.regProgram).trim() : _coProg;
       // _regUpsert_는 멱등(전화키 존재 시 갱신·없으면 today 도장 추가) → SUC 저장 시 항상 등록현황 보장(과거 누락 건도 재저장으로 복구).
       try { _regUpsert_(_coName, _coPhone, _coRegProg, body.regDate); } catch (e) {}
+      // ★A안 해제(2026-08-03 GM 지시) — "새 문의에서 SUC하면 채워야하는 항목값들도 다 들어갈 수 있게".
+      //   그동안 SUC는 '26년 등록현황' 탭에만 썼고 유효회원(회원 DB)에는 사람이 나중에 손으로 넣었다.
+      //   화면(신규 등록현황·회원관리)은 유효회원만 읽으므로, SUC 처리한 회원이 화면에 안 뜨는 게 그 구조의 결과였다.
+      //   ★조건: 화면이 회원 DB 칸(activeProgram)을 실어 보낸 경우에만 쓴다 — 옛 화면·달력 모달처럼 status만
+      //   보내는 경로가 빈 껍데기 행을 만들지 않게 한다. 전화키 멱등이라 재저장해도 행이 늘지 않는다.
+      if (String(body.activeProgram || '').trim()) {
+        try {
+          _memberActiveUpsert_(_coName, _coPhone, String(body.activeProgram).trim(),
+                               body.regDate || _todayKR_(), body.months, {
+            owner:     body.memOwner || _coOwner || '',
+            kind:      body.memKind,
+            age:       body.memAge,
+            regClass:  body.memRegClass,
+            locker:    body.memLocker,
+            startDate: body.memStartDate
+          });
+        } catch (eMa) { Logger.log('SUC 유효회원 반영 실패: ' + eMa.message); }
+      }
       // 등록 전환 전용 알림은 '실제 전환(이전≠SUC)' 1회만 — 매 저장 중복 알림 방지. '문의 알림' 방.
       if (!_wasSuc) {
         try {

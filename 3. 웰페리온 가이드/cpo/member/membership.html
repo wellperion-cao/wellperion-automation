@@ -738,6 +738,12 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   font-size:12px;font-weight:700;color:var(--accent);
   margin:16px 0 7px;letter-spacing:0.02em;
 }
+/* SUC 모달 회원 DB 입력칸 — 기존 모달 인풋과 같은 톤(별도 디자인 언어 만들지 않음). 2026-08-03 시토 */
+.rp-in{
+  width:100%;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg);color:var(--text);
+  font-size:13px;font-family:inherit;
+}
 .consult-visit-toggle{
   display:flex;align-items:center;gap:9px;cursor:pointer;
   padding:11px 13px;border-radius:var(--radius-btn);
@@ -2651,7 +2657,39 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
     <div class="consult-row"><span class="ck">문의</span><span class="cv" id="rpMemberFixed">—</span></div>
 
     <div class="consult-field-label">등록 종목</div>
-    <select id="rpProgramSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regFillCountOptions()"></select>
+    <select id="rpProgramSel" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regFillCountOptions();_rpSyncProgPreview()"></select>
+
+    <!-- 멤버십 전용 — 회원 DB(유효회원 시트)에 그대로 들어가는 칸. GM 지시 2026-08-03
+         ("새 문의에서 SUC하면 채워야하는 항목값들도 다 들어갈 수 있게"). 강습 모드에서는 숨김.
+         종료일자·잔여일·등록회차·담당자는 서버가 자동으로 채운다(여기서 묻지 않는다). -->
+    <div id="rpMemGrid" style="display:none;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:10px">
+      <div><div class="consult-field-label" style="margin-top:0">계약 기간</div>
+        <select id="rpMonths" class="rp-in" onchange="_rpSyncProgPreview()">
+          <option value="12">12개월</option><option value="3">3개월</option><option value="1">1개월</option>
+        </select></div>
+      <div><div class="consult-field-label" style="margin-top:0">회원 구분</div>
+        <select id="rpKind" class="rp-in">
+          <option value="멤버십">멤버십</option><option value="입주민">입주민</option><option value="보증금">보증금</option>
+          <option value="법인">법인</option><option value="FAN VIP">FAN VIP</option><option value="중단기">중단기</option>
+        </select></div>
+      <div><div class="consult-field-label" style="margin-top:0">등록 분류</div>
+        <select id="rpRegClass" class="rp-in">
+          <option value="신규">신규</option><option value="재등록">재등록</option>
+          <option value="양수">양수</option><option value="양도">양도</option>
+        </select></div>
+      <div><div class="consult-field-label" style="margin-top:0">나이</div>
+        <input id="rpAge" type="number" min="1" max="120" class="rp-in" placeholder="예: 48"></div>
+      <div><div class="consult-field-label" style="margin-top:0">등록일자 (계약일)</div>
+        <input id="rpRegDate" type="date" class="rp-in"></div>
+      <div><div class="consult-field-label" style="margin-top:0">시작일자 (이용 시작)</div>
+        <input id="rpStartDate" type="date" class="rp-in"></div>
+      <div style="grid-column:1/-1"><div class="consult-field-label" style="margin-top:0">락커 <span style="font-weight:400;color:var(--dim)">(없으면 비워두세요)</span></div>
+        <input id="rpLocker" type="text" class="rp-in" placeholder="예: 슈(279)"></div>
+      <div style="grid-column:1/-1;font-size:11.5px;color:var(--dim);line-height:1.6;padding:8px 10px;border-radius:7px;background:var(--accent-bg);border:1px solid var(--accent-border)">
+        회원 DB에 기록될 종목명 → <b id="rpProgPreview" style="color:var(--accent)">—</b><br>
+        종료일자 · 잔여일 · 등록회차 · 담당자는 자동으로 채워집니다.
+      </div>
+    </div>
 
     <!-- 강습 전용 — 회수·유효기간(멤버십은 숨김). 2026-07-21 시포·GM. -->
     <div class="consult-field-label" id="regCountLabel" style="display:none">회수</div>
@@ -9719,6 +9757,37 @@ function saveLossReasonModal() {
    GM 요청 사양(2026-07-20, 시포). ───────────────────────────────────────────── */
 var _regProgramModal = null;   // { mode, rowIndex/t, keyPhone, name, gid, type }
 
+/* ★회원 DB 종목명 조립 (2026-08-03 시토 · GM 지시 "프로그램명도 좀 수정해주고").
+   유효회원 시트의 수강반종목명은 표기 규칙이 하나뿐이다 — 실측 1,690행에 나타난 값이 정확히 12가지
+   (4등급 × 1·3·12개월)이고 예외가 없다: `★(정|단){등급} ▶ {시설} ▶ {N}개월`.
+   화면은 등급(노블레스/플래티넘/±골프)만 고르게 하고 시설·정단 표기는 여기서 규칙대로 붙인다.
+   ▸사람에게 시설 나열을 고르게 하면 반드시 어긋난다 — 실제로 그렇게 오염된 행을 08-02에 수리했다.
+   ▸(정)=12개월 / (단)=그 외. 실측에서 이 경계를 벗어난 값 0건.
+   ▸모르는 등급이 오면 조립하지 않고 빈 문자열 — 지어낸 표기를 시트에 넣느니 안 쓰는 편이 낫다
+     (서버는 activeProgram 이 비면 유효회원 쓰기를 건너뛴다). */
+var MEM_PROG_FACILITY = {
+  '노블레스':      'GYM+수영+사우나',
+  '플래티넘':      'GYM+사우나',
+  '노블레스+골프': 'GYM+수영+골프+사우나',
+  '플래티넘+골프': 'GYM+골프+사우나'
+};
+function _memProgCompose(grade, months) {
+  var g = String(grade || '').trim();
+  var f = MEM_PROG_FACILITY[g];
+  var mo = parseInt(months, 10);
+  if (!f || !(mo > 0)) return '';
+  return '★(' + (mo >= 12 ? '정' : '단') + ')' + g + ' ▶ ' + f + ' ▶ ' + mo + '개월';
+}
+// 조립 결과 미리보기 — 등급·기간을 바꿀 때마다 '시트에 이렇게 들어갑니다'를 그 자리에서 보여준다.
+function _rpSyncProgPreview() {
+  var el = document.getElementById('rpProgPreview'); if (!el) return;
+  var g = (document.getElementById('rpProgramSel') || {}).value || '';
+  var mo = (document.getElementById('rpMonths') || {}).value || '';
+  var composed = _memProgCompose(g, mo);
+  el.textContent = composed || '— 등록 종목을 선택하세요';
+  el.style.color = composed ? 'var(--accent)' : 'var(--dim)';
+}
+
 // 등록종목 모달 셀렉트 채우기 공통(멤버십·강습 공유) — _lossModalFill 대칭.
 function _regProgramModalFill(options, current) {
   var sel = document.getElementById('rpProgramSel');
@@ -9734,6 +9803,9 @@ function _regProgramModalFill(options, current) {
   // 구분(개인레슨/단체레슨) — 강습 모드에서만 표시(멤버십=해당 없음). 2026-07-21 시포·GM.
   var _typeLabel = document.getElementById('regLessonTypeLabel');
   var _typeSel = document.getElementById('regLessonType');
+  // 멤버십 전용 회원 DB 칸(2026-08-03) — 강습 모드에서는 숨긴다.
+  var _memGrid = document.getElementById('rpMemGrid');
+  if (_memGrid) _memGrid.style.display = _isLessonMode ? 'none' : 'grid';
   if (_isLessonMode) {
     _countLabel.style.display = '';
     _countSel.style.display = '';
@@ -9747,6 +9819,7 @@ function _regProgramModalFill(options, current) {
     _validityRow.style.display = 'none';
     _typeLabel.style.display = 'none';
     _typeSel.style.display = 'none';
+    _rpSyncProgPreview();
   }
   document.getElementById('regProgramOverlay').classList.add('open');
 }
@@ -9786,11 +9859,45 @@ function _regValidityUpdate() {
     txt.textContent = _ruleText + (exp ? ' (만료 ' + exp + ')' : '');
   }
 }
+// 유효회원(회원 DB)에서 같은 전화번호 행 찾기 — 재등록 판정·기존값 이어받기용. 미도착이면 null(무해).
+function _rpFindActiveRow(phone) {
+  var digits = String(phone || '').replace(/\D/g, '');
+  if (!digits || !_activeRows || !_activeRows.length) return null;
+  var pcol = _capCol(_activeHeaders, '휴대폰 번호') || _capCol(_activeHeaders, '휴대폰');
+  if (!pcol) return null;
+  for (var i = 0; i < _activeRows.length; i++) {
+    if (String(_activeRows[i][pcol] || '').replace(/\D/g, '') === digits) return _activeRows[i];
+  }
+  return null;
+}
 function openInquiryRegProgramModal(rowIndex) {
   var r = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
   if (!r) { showToast('문의 정보를 찾을 수 없습니다', 'err'); return; }
   _regProgramModal = { mode: 'member', rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '' };
   document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '');
+  // ★회원 DB 칸 기본값(2026-08-03) — 아는 것은 미리 채우고 모르는 것만 묻는다.
+  //   같은 번호가 이미 유효회원에 있으면 '재등록'으로 잡고 나이·락커를 이어받는다(사람이 다시 안 적게).
+  var _prev = _rpFindActiveRow(r.phone);
+  var _t = new Date();
+  var _today = _t.getFullYear() + '-' + String(_t.getMonth()+1).padStart(2,'0') + '-' + String(_t.getDate()).padStart(2,'0');
+  // select 는 옵션에 없는 값을 넣으면 조용히 빈칸이 된다 → 없으면 기본값으로 되돌린다.
+  //   실측: 시트 회원구분에 '맴버십'·'멥버십' 오타가 12건 있다 — 그걸 그대로 이어받지 않는다.
+  var _setv = function(id, v, fallback){
+    var el = document.getElementById(id); if (!el) return;
+    el.value = v == null ? '' : String(v);
+    if (el.tagName === 'SELECT' && el.selectedIndex < 0 && fallback !== undefined) el.value = fallback;
+  };
+  var _prevCell = function(name){
+    var c = _capCol(_activeHeaders, name);
+    return (_prev && c) ? String(_prev[c] || '').trim() : '';
+  };
+  _setv('rpMonths', '12', '12');
+  _setv('rpKind', _prevCell('회원 구분') || '멤버십', '멤버십');
+  _setv('rpRegClass', _prev ? '재등록' : '신규', '신규');
+  _setv('rpAge', _prevCell('나이'));
+  _setv('rpRegDate', _today);
+  _setv('rpStartDate', _today);
+  _setv('rpLocker', _prevCell('락커'));
   _regProgramModalFill(PROGRAM_OPTIONS, r.regProgram || r.program);
 }
 // 강습 등록종목 모달 — 강습 진행상태를 SUC로 바꿀 때 발동(멤버십과 동일 UI, 저장=lesson_inquiry_update row-level).
@@ -9831,7 +9938,21 @@ function saveRegProgramModal() {
           var _rule = lessonValidityMonths(program, _cnt, _isYouth);
           return lessonExpireDate(_mdashYmd(new Date()), _rule);
         })() }
-    : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, regProgram: program };
+    // 멤버십 — regProgram(등급, 문의 시트 표기 그대로) + 회원 DB 칸. activeProgram 은 조립된 시트 표준형이며,
+    //   서버는 이 값이 있을 때만 유효회원에 쓴다(빈 껍데기 행 방지). GM 지시 2026-08-03.
+    : (function(){
+        var _v = function(id){ var el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+        var _mo = _v('rpMonths');
+        return { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, regProgram: program,
+                 activeProgram: _memProgCompose(program, _mo),
+                 months: _mo,
+                 regDate:      _v('rpRegDate'),
+                 memStartDate: _v('rpStartDate'),
+                 memKind:      _v('rpKind'),
+                 memRegClass:  _v('rpRegClass'),
+                 memAge:       _v('rpAge'),
+                 memLocker:    _v('rpLocker') };
+      })();
   var _t = _isLesson ? _regProgramModal.t : null;
   // ★서버 왕복 대기 제거(2026-07-23 GM) — LOSS 모달과 동일. 화면 먼저, 기록은 뒤에서.
   //   SUC 처리 직후 연달아 뜨는 모달이라 여기서 몇 초 멈추면 등록 작업 전체가 느리게 느껴진다.
