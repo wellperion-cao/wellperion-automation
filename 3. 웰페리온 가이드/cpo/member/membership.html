@@ -7596,7 +7596,30 @@ function _activeRender(rows, isFiltered) {
 
 var ACTIVE_CHUNK = 120;          // 한 번에 붙이는 행 수 — 첫 화면을 채우고도 남는 양
 var _activeRenderQueue = null;   // {rows: 아직 안 그린 행, cols: 표시 칸}
-var _activeMoreObserver = null;
+var _activeMoreWired = false;
+
+/* 이어붙이는 방아쇠 = **사람이 스크롤한 순간**과 '더 보기' 클릭, 이 둘뿐이다.
+   IntersectionObserver 로 만들었다가 되돌렸다(2026-08-03 실측): 표가 아직 화면에 안 깔린 상태에서
+   관찰을 걸면 표식이 y=0 근처로 잡혀 곧바로 '보인다'가 되고, 붙일 때마다 다시 보여서 1,002행이
+   순식간에 다 그려졌다(라이브 실측 987행·23,688칸 — 고치기 전과 같은 상태). 스크롤 이벤트는
+   사람이 굴려야만 나므로 그렇게 새지 않는다. */
+function _activeWireMore() {
+  if (_activeMoreWired) return;
+  _activeMoreWired = true;
+  var onScroll = function(){
+    var q = _activeRenderQueue;
+    if (!q || !q.rows.length) return;
+    var s = document.getElementById('activeMoreSentinel');
+    if (!s) return;
+    var r = s.getBoundingClientRect();
+    if (r.height > 0 && r.top < (window.innerHeight || 800) + 400) _activeRenderChunk();
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  document.addEventListener('click', function(e){
+    var t = e.target.closest ? e.target.closest('#activeMoreSentinel') : null;
+    if (t) _activeRenderChunk();
+  });
+}
 
 function _activeRenderChunk() {
   var q = _activeRenderQueue;
@@ -7609,15 +7632,9 @@ function _activeRenderChunk() {
   if (!q.rows.length) return;
   tbody.insertAdjacentHTML('beforeend',
     '<tr id="activeMoreSentinel"><td colspan="' + (q.cols.length || 1) + '" ' +
-    'style="text-align:center;color:var(--dim);font-size:12px;padding:10px">아래로 내리면 ' +
-    q.rows.length.toLocaleString() + '명 더 보입니다…</td></tr>');
-  var sentinel = document.getElementById('activeMoreSentinel');
-  if (!_activeMoreObserver) {
-    _activeMoreObserver = new IntersectionObserver(function(entries){
-      if (entries.some(function(en){ return en.isIntersecting; })) _activeRenderChunk();
-    }, { rootMargin: '400px' });
-  }
-  _activeMoreObserver.observe(sentinel);
+    'style="text-align:center;color:var(--accent);font-size:12.5px;font-weight:700;padding:12px;cursor:pointer">' +
+    '↓ ' + q.rows.length.toLocaleString() + '명 더 보기 (아래로 내려도 됩니다)</td></tr>');
+  _activeWireMore();
 }
 
 function _activeRowHtml(row, displayCols) {
