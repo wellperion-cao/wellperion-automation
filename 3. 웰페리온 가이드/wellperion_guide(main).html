@@ -5613,7 +5613,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       <!-- ⚠️ 주의 신호 — 지금 GM이 행동할 신호(승인·대조)만 라이브 표시. 내부 운영신호(미푸시 등)는 금지(약속 L10). 2026-06-17 -->
       <div id="gm1-alert-signal" style="margin:6px 0 14px;"><div style="color:var(--dim);font-size:13px;">신호 확인 중…</div></div>
       <!-- 빈 판이 '고장'으로 보이지 않게 — 접수 자리를 알려 준다(웰리 배324 · 2026-08-03). 값 없음, 문구만. -->
-      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">GM 님 할 일은 <strong>업무 시트에 담당자를 '김남욱GM'</strong> 으로 적으면 여기 뜹니다. AI 배는 <a href="자율현황.html#sec-hangro" style="color:var(--accent);font-weight:700;">자율 작업 현황 ▸ 🧭 항로</a>에 있습니다.</p>
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;">GM 님 할 일은 <strong>업무 시트에 담당자를 '김남욱GM'</strong> 으로 적으면 여기 뜹니다. AI 배는 <a href="자율현황.html#sec-hangro" style="color:var(--accent);font-weight:700;">자율 작업 현황 ▸ 🧭 항로</a>에 있습니다. · <a href="#" onclick="gm1SetTodoKey();return false;" style="color:var(--accent);font-weight:700;">🔑 GM 할 일 열쇠 입력</a> <span style="color:var(--dim-soft);">(이 브라우저에 한 번만)</span></p>
       <div id="today-task-list">
         <!-- 동적 렌더링 — gm1_unified_tasks localStorage 기반 (상태별 뷰 · 무변경) -->
       </div>
@@ -8994,9 +8994,25 @@ function crTab(btn, panelId) {
       return null;  // 전원 서명 완료
     }
 
+    /* GM 행 통로 열쇠 — 값은 이 브라우저(localStorage)와 GAS 스크립트 속성에만 있다.
+       소스·저장소에 문자열로 넣지 않는다(배326 · 그게 GM1_PW='1234' 가 만든 문제였다).
+       GM1_PW 재사용 금지 — 별개 값. 없으면 안 붙인다 → GM 행이 안 온다(정직하게 비어 보임). */
+    function gm1TodoKey() {
+      try { return localStorage.getItem('gm1_todo_key') || ''; } catch (e) { return ''; }
+    }
+    window.gm1SetTodoKey = function () {
+      var v = prompt('GM 할 일 열쇠 (GM 전용 · 이 브라우저에만 저장됩니다)');
+      if (v === null) return;
+      try { localStorage.setItem('gm1_todo_key', String(v).trim()); } catch (e) {}
+      gm1FetchSsot();
+    };
+
     function gm1FetchSsot() {
       // ① 시트(todo_list) + ② _queue.json 병렬 fetch — 어느 쪽 실패해도 나머지는 표시
-      var sheetP = fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now(), { redirect:'follow', cache:'no-store' })
+      var _k = gm1TodoKey();
+      var sheetP = fetch(SSOT_API_URL + '?action=todo_list&_=' + Date.now()
+                         + (_k ? '&include_gm=1&gmkey=' + encodeURIComponent(_k) : ''),
+                         { redirect:'follow', cache:'no-store' })
         .then(function(r){ return r.ok ? r.json() : null; })
         .catch(function(){ return null; });
       var queueP = gm1FetchWithFallback(GM1_QUEUE_RAW_URL, GM1_QUEUE_MIRROR_URL);
