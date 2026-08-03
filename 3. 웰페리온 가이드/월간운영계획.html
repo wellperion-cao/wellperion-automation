@@ -123,6 +123,11 @@
   .c-prog{min-width:150px;}
   .c-title{white-space:normal; word-break:keep-all;}
   .c-ns{min-width:150px;}
+  /* 과제표 좌우 스크롤 제거(GM 지적 2026-08-03) — 원인은 .chip 의 white-space:nowrap 이
+     북극성 칸에서 풀리지 않아 셀 폭(231px)보다 내용(306px)이 넓어진 것이었다(라이브 실측).
+     표 전체 min-width 를 건드리면 인쇄 레이아웃이 흔들리므로 이 칸의 칩만 접히게 한다.
+     word-break:keep-all = 한글 단어를 중간에서 자르지 않는다. */
+  .c-ns .chip.ns{white-space:normal; word-break:keep-all; display:inline-block; line-height:1.5;}
   .r-note{font-size:11.5px; color:var(--dim); line-height:1.5; white-space:pre-wrap; margin-top:4px;}
   /* 📋 목표치 & 진행 근거·경위 통합 칸(2026-08-01 GM 지적 "목표치 칸이 제일 길어서... 제일 긴 칸으로") —
      표에서 가장 넓은 칸으로 두고, 근거 한줄요약(r-note-sum)은 항상 펼쳐 보이고 원문 전문만 접기(r-note-fold).
@@ -1102,11 +1107,11 @@
          인쇄는 화면 전용(.toggle-row-2 @media print 숨김) — A3 페이지 수 불변. -->
     <section class="blk" data-blkid="exec-toggles">
       <div class="toggle-row-2">
-        <details class="r-note-fold tg-card" id="chairman-fold">
+        <details class="r-note-fold tg-card" id="chairman-fold" open>
           <summary>👑 회장님 업무 보고건 <span class="be-badge" id="chairman-badge">불러오는 중…</span></summary>
           <div class="r-note" id="chairman-body">불러오는 중…</div>
         </details>
-        <details class="r-note-fold tg-card" id="broj-fold">
+        <details class="r-note-fold tg-card" id="broj-fold" open>
           <summary>🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> <span class="be-badge be-p1" id="broj-fold-p1"></span></summary>
           <div class="r-note" id="broj-fold-body">불러오는 중…</div>
         </details>
