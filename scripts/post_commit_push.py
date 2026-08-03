@@ -571,6 +571,9 @@ _MACHINE_OUTPUTS = (
     "status/kpi_values.json",                     # scripts/build_voyage_map.py 등
     "status/module_silence_snapshot.json",        # scripts/module_silence_detector.py
     "status/northstar_reach.json",                # scripts/northstar_reach.py
+    # ★2026-08-03 시토 — 자율현황 「북극성별 보기」가 raw.githubusercontent 로 읽는 파일이다.
+    #   매일 만들어도 커밋이 안 되면 GM 화면은 그대로 옛날 것이다(9일 묵었던 실제 원인의 절반).
+    "status/voyage_map.json",                     # scripts/build_voyage_map.py
     "status/parking_revenue.json",                # scripts/parking_revenue_crawler.py
     "status/publish_audit_state.json",            # scripts/publish_status_audit.py 등
     "status/weekly_bundle_pending_stream3_daily.json",
