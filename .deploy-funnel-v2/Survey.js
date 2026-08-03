@@ -2948,6 +2948,7 @@ function _rentbizHasStatusCol_(gid) {
 //   (남은 1개 loss_reason_setup 은 scripts/collectors/cpo_sheet_contract.py 가 쓰므로 제외).
 //   → 새 비밀값을 하나 더 만드는 대신 **없앤다**(삭제가 최선의 차단). 되돌리려면 이 목록에서 빼면 된다.
 // 2026-08-03 본문 삭제 완료 — 21개 핸들러 블록(+안내주석) 실제 제거. 이 맵·가드는 이름 재사용 차단용으로 유지.
+// 2026-08-03 2차 — 저장소 호출부 0인 일회성·진단 액션 41개. 본문은 남겨 뒀다(외부 호출 가능성 소거용 관찰 기간). 살아 있는 호출이 나오면 이 목록에서 빼면 즉시 복구.
 var _RETIRED_ACTIONS_ = {
   'clear_lesson_sport_mgmt_residue': 1, 'cpo_clear_wsc_auto_json': 1,
   'cpo_delete_blank_membership_cols': 1, 'cpo_delete_old_lesson_reg': 1,
@@ -2959,7 +2960,29 @@ var _RETIRED_ACTIONS_ = {
   'cpo_migrate_lesson_reg': 1, 'cpo_restore_lost_timestamps_0718': 1,
   'cpo_wsc_contact_migrate13': 1, 'member_active_phone_fix': 1,
   'member_hold_intake_migrate': 1, 'migrate_lesson_contact_json_to_plain': 1,
-  'migrate_member_reservations_plain_gj': 1
+  'migrate_member_reservations_plain_gj': 1,
+  // ↓ 2차 배치(41개) — 호출부 0·자체주석 "일회성/진단/읽기전용"+완료날짜(2026-07-20~22) 프로필. 본문 유지.
+  'add_utm_field': 1, 'clear_loss_validation_20260722': 1,
+  'clear_orphan_row_20260722': 1, 'consolidate_cols_20260720': 1,
+  'cpo_clean_intake_id_memo': 1, 'cpo_diag_gid_formula': 1,
+  'cpo_diag_wsc_legacy_inversions': 1, 'cpo_lesson_sheet_diag_0721': 1,
+  'cpo_lesson_sort_verify_0721': 1, 'cpo_lesson_teamsheet_dump': 1,
+  'cpo_lesson_teamsheet_formulas': 1, 'cpo_lesson_ts_display_sort_0721': 1,
+  'cpo_lesson_ts_fill_0720': 1, 'cpo_lesson_ts_format_0721': 1,
+  'cpo_lesson_ts_scan': 1, 'cpo_lesson_ts_scan_boundary': 1,
+  'cpo_lesson_unhide_0721': 1, 'cpo_probe_adult_lesson_col0': 1,
+  'dedup_autoroute_20260720': 1, 'del_col_by_name_20260720': 1,
+  'del_lesson_datecol_20260720': 1, 'del_loss_cols_20260720': 1,
+  'del_residence_20260720': 1, 'delete_date_col_20260720': 1,
+  'delete_lesson_sheet_20260722': 1, 'diag_exec_identity_20260720': 1,
+  'diag_form_link_20260720': 1, 'finalize_cols_20260720': 1,
+  'finish_slot4_20260720': 1, 'fix_inquiry_channel_20260720': 1,
+  'fix_ts_display_move_20260720': 1, 'member_col_cleanup_20260722': 1,
+  'migrate_en_youth_to_main_20260722': 1, 'migrate_slot4_20260720': 1,
+  'move_freetext_g_20260720': 1, 'naver_split_midcat': 1,
+  'normalize_slot_time_20260720': 1, 'read_col_validation': 1,
+  'read_rows_by_rownum': 1, 'list_lesson_sheets': 1,
+  'set_col_hidden_20260722': 1, 'sort_tail_by_ts_20260720': 1
 };
 
 function _processAction(body) {
