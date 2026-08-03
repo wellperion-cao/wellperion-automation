@@ -5851,7 +5851,6 @@ function _processAction(body) {
     // ★행키 검증(비파괴·하위호환, 지문키 미동봉/칸 미탐지 시 폴백): keyPhone 동봉 시 대상 행의 현재 전화와 대조 — 삭제/시트편집 후 rowIndex 밀림으로 엉뚱한 회원 덮어쓰기 방지.
     //   keyPhone=편집 전(로드된) 전화. body.phone(새 값)과 별개. keyPhone 미전송이면 기존 동작 폴백(정상 편집 무중단) — 단, 예약 쓰기는 예외(B1 아래).
     //   예약 쓰기 여부(B1 fail-closed 대상 판정) — 예약목록 JSON 또는 체험1·2 날짜/시간 중 하나라도 동봉되면 예약 저장으로 간주. 2026-07-22 시포(오지목 봉합).
-    var _muIsReservationWrite = (body.reservations !== undefined || body.exp1Date !== undefined || body.exp1Time !== undefined || body.exp2Date !== undefined || body.exp2Time !== undefined);
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
       if (_muPhCi >= 0) {
         var _muRowPh = _normPhone_(muSh.getRange(muRow, _muPhCi + 1).getValue());
@@ -5868,12 +5867,20 @@ function _processAction(body) {
             return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
           }
         }
-      } else if (_muIsReservationWrite) {
-        // 전화 칸 자체를 못 찾음 → 대조 불가능. 예약 쓰기면 raw rowIndex 맹목 쓰기 금지(B1). 2026-07-22 시포.
+      } else {
+        // ★2026-08-03 시토(배294) — '예약 쓰기일 때만' 조건을 뺐다. 대조할 수 없으면 쓰기 종류를
+        //   가리지 않고 거부한다. 2026-07-31 배239 가 member_active_update 에 적용한 것과 같은 조치
+        //   (형제 2곳이 안 고쳐진 채 남아 있었다). 전화 칸을 못 찾으면 어느 행이 맞는지 알 수 없고,
+        //   시트는 동시 편집되므로 client 가 보낸 rowIndex 는 이미 밀려 있을 수 있다.
         return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
       }
-    } else if (_muIsReservationWrite) {
-      // B1: keyPhone 없음 + 예약 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 예약이 아닌 순수 필드 편집은 기존 동작 유지. 2026-07-22 시포(GM 지시).
+    } else {
+      // ★2026-08-03 시토(배294) — 위와 같은 조치(바깥 가지). keyPhone 자체가 없으면 대조 불가 →
+      //   무조건 거부. 종전엔 '예약 쓰기'만 막고 순수 필드 편집(성함·연락처·진행현황·연락이력·담당자)은
+      //   검증 없는 rowIndex 로 그냥 썼다 — 행이 밀려 있으면 **다른 문의고객의 그 칸들이 덮인다**
+      //   (2026-07-20 실고객 오삭제 사고와 같은 뿌리).
+      //   ▸전화가 비어 있는 행(실측 문의 8건·강습 1건)은 이 거부에 걸리는 게 정상이다 —
+      //     대조키가 없으면 쓰지 않고 건너뛴다. 근본 해소는 실무진이 전화번호를 채우는 것.
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
     }
     }
@@ -6625,7 +6632,6 @@ function _processAction(body) {
       }
     } else {
     // ★행키 검증(비파괴·하위호환, 지문키 미동봉/칸 미탐지 시 폴백): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(상담예약) 쓰기는 예외(B1).
-    var _luIsReservationWrite = (body.consult !== undefined);  // 상담예약 쓰기 여부(B1 fail-closed 대상 판정). 2026-07-22 시포(오지목 봉합).
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
       if (_luPhCi >= 0) {
         var _luRowPh = _normPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue());
@@ -6642,12 +6648,13 @@ function _processAction(body) {
             return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 없음) — 목록을 새로고침 후 다시 시도하세요' });
           }
         }
-      } else if (_luIsReservationWrite) {
-        // 전화 칸 자체를 못 찾음 → 대조 불가능. 예약 쓰기면 raw rowIndex 맹목 쓰기 금지(B1). 2026-07-22 시포.
+      } else {
+        // ★2026-08-03 시토(배294) — 문의 쪽과 같은 조치. 대조 불가능하면 쓰기 종류를 안 가리고 거부.
         return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
       }
-    } else if (_luIsReservationWrite) {
-      // B1: keyPhone 없음 + 예약(상담예약) 쓰기 → raw rowIndex 맹목 쓰기 금지(오지목 방지). 2026-07-22 시포(GM 지시).
+    } else {
+      // ★2026-08-03 시토(배294) — keyPhone 없으면 무조건 거부. 종전엔 상담예약 쓰기만 막아,
+      //   진행상태·담당·상담메모·방문상태·연락처가 **다른 강습문의고객 행에 덮일** 수 있었다.
       return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
     }
     }
@@ -9077,7 +9084,6 @@ function _processAction(body) {
     } else {
     // ★행키 검증(비파괴·하위호환, 지문키 미동봉/칸 미탐지 시 폴백): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(재등록예약목록) 쓰기는 예외(B1).
     //   ※ 이 액션은 애초에 first-match 복구를 하지 않고 불일치 시 무조건 거부(위 __B2__ 중복전화 첫매칭 오지목 버그가 애초에 없음) — B1(빈 keyPhone fail-closed)만 보강.
-    var _auIsReservationWrite = !!(auFields && Object.prototype.hasOwnProperty.call(auFields, ACT_RES_COL));  // 2026-07-22 시포(오지목 봉합).
     if (body.keyPhone !== undefined && String(body.keyPhone) !== '') {
       if (_auPhI >= 0 && auRow <= auSh.getLastRow()) {
         var _auRowPh = _normPhone_(auSh.getRange(auRow, _auPhI + 1).getValue());
@@ -9093,8 +9099,12 @@ function _processAction(body) {
         if (_auKeyPh && _auRowPh !== _auKeyPh) {
           return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패 — 목록을 새로고침 후 다시 시도하세요' });
         }
-      } else if (_auIsReservationWrite) {
-        // 전화 칸 미발견/행범위초과 → 대조 불가능. 예약 쓰기면 raw rowIndex 맹목 쓰기 금지(B1). 2026-07-22 시포.
+      } else {
+        // ★2026-08-03 시토(배294) — **여기도 조건이 남아 있었다.** 배239(2026-07-31)는 바깥 가지만
+        //   고치고 이 안쪽 가지를 놓쳤다. 안쪽 = keyPhone 은 왔는데 전화 칸을 못 찾거나 행이
+        //   범위를 벗어난 경우 = 역시 대조 불가능인데, 예약 쓰기가 아니면 그대로 통과해 맹목 쓰기가 됐다.
+        //   바로 위 주석이 인용한 예약자 뒤바뀜 사고(FB260728-112703)와 같은 통로다.
+        //   이제 안팎 모두 쓰기 종류를 가리지 않고 거부한다 — 대조할 수 없으면 쓰지 않는다.
         return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
       }
     } else {
