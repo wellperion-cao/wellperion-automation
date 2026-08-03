@@ -21,7 +21,9 @@
     card: { x: 36, y: 40, w: 852, h: 688 },
     block: { x: 36, y: 40, w: 427, h: 688, r: 213, bg: '#f4f6f9' },
     text: { x: 502, right: 887 },
-    nameTop: 86, nameSize: 46, enSize: 38,
+    // ★세로 위치는 원본 실측에 맞춘 값이다(2026-08-03 대조):
+    //   이름 잉크 상단 ≈95 · 영문 ≈145 · 첫 구분선 =218. 임의로 바꾸면 원본과 어긋난다.
+    nameTop: 92, nameSize: 46, enSize: 38, secGap: 38,
     secTitle: 16.5, secColor: '#d2af95', body: 15.2, bodyLh: 25.8,
     wm: { x: 413, y: 666, w: 48 }
   };
@@ -197,7 +199,7 @@
 
     c.fillStyle = '#1f1f1f'; c.font = font(700, G.enSize);
     c.fillText(val('pwNameEn'), tx, y + G.enSize * 0.79);
-    y += G.enSize + 30;
+    y += G.enSize + G.secGap;   // 첫 구분선이 원본과 같은 y=218 에 오도록
 
     [['경력사항', 'pwCareer'], ['자격사항', 'pwCert'], ['주요 프로그램', 'pwProgram']].forEach(function (sec) {
       var items = lines(val(sec[1]));
