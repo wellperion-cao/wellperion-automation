@@ -1815,10 +1815,8 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <div id="pane-registered" class="pane">
 
     <div class="card">
-      <div class="card-title">
-        <span class="icon">📋</span>신규 멤버십 등록현황
-        <span style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">회원 DB 등록일 기준 · 월 단위 기본(◀▶ 이동) · 상단 카드와 동일 소스</span>
-      </div>
+      <!-- 제목 삭제(GM 지시 2026-08-03) — 바로 위 현황카드가 이미 「신규 멤버십 등록현황」이라 같은 말이 두 번 나왔다. 설명만 남긴다. -->
+      <div style="font-size:11px;color:var(--dim);margin-bottom:8px">회원 DB 등록일 기준 · 월 단위 기본(◀▶ 이동) · 상단 카드와 동일 소스</div>
 
       <div class="reg-toolbar">
         <button type="button" id="regBtnDay"    class="btn-query" style="padding:8px 12px;font-size:12px" onclick="setRegRange('day')">일</button>
@@ -1886,9 +1884,11 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
   <div id="pane-active" class="pane">
 
     <div class="card">
-      <div class="card-title">
-        <span class="icon">👥</span><span id="activeCardTitleText">멤버십 회원관리</span>
-        <span id="activeCardSubtitle" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:4px">유효회원 시트 · 편집가능 · 연락처 표시</span>
+      <!-- 제목 삭제(GM 지시 2026-08-03) — 위 현황카드·페이지 제목이 이미 「멤버십 회원 관리」라 세 번 나왔다.
+           #activeCardTitleText 는 휴회 전용 보기 전환(setHoldOnlyView)이 값을 넣는 자리라 지우지 않고 숨겨 둔다. -->
+      <div style="margin-bottom:8px">
+        <span id="activeCardTitleText" style="display:none">멤버십 회원관리</span>
+        <span id="activeCardSubtitle" style="font-size:11px;font-weight:400;color:var(--dim)">유효회원 시트 · 편집가능 · 연락처 표시</span>
       </div>
 
       <!-- 현황 요약 카드 (작업 3) -->
@@ -7747,23 +7747,20 @@ function _composeHtml() {
   if (tc) {
     var TYPE_ORDER = ['멤버십', '입주민', '중단기', '보증금', 'FAN VIP', '기타'];
     var TYPE_LABEL = { '중단기': '단기' };
-    typeInline = '<span style="font-size:12px;font-weight:600;color:var(--dim)"> (' +
+    typeInline = '<div style="font-size:12.5px;font-weight:600;color:var(--text);word-break:keep-all;line-height:1.75">' +
       TYPE_ORDER.map(function(k){
-        return '<span style="white-space:nowrap">' + (TYPE_LABEL[k] || k) + ' ' + (tc[k] || 0).toLocaleString() + '</span>';
-      }).join(' · ') + ')</span>';
+        return '<span style="white-space:nowrap">' + (TYPE_LABEL[k] || k) +
+               ' <b style="color:var(--teal)">' + (tc[k] || 0).toLocaleString() + '</b></span>';
+      }).join('<span style="color:var(--dim-mid)"> · </span>') + '</div>';
   } else {
-    typeInline = '<span style="font-size:12px;font-weight:600;color:var(--dim)"> (구분별 — 명단 불러오는 중)</span>';
+    typeInline = '<div style="font-size:12.5px;color:var(--dim)">회원 구분별 — 명단 불러오는 중</div>';
   }
   /* 2026-08-03 GM 지시 — ①유효는 '멤버십 999 + 법인 32 = 1,031명'으로 합쳐 보여준다(카드4 '유효'와 같은 값).
      ②'종료'라는 말을 쓰지 않고 LOSS 로 부르고, 유효 줄에 섞지 않고 옆에 따로 둔다. LOSS 를 누르면
      아래 표가 LOSS 명단으로 바뀐다(회원 구분 선택칸의 LOSS 와 같은 동작 — 새 경로 안 만든다). */
-  var validAll = v + c;
+  // 2026-08-03 GM 지시(2차) — 유효 합계 줄은 왼쪽 큰 숫자 블록으로 옮겼다. 여기는 **회원 구분값만** 남긴다.
   return '<div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
       '<div style="flex:1 1 240px;min-width:220px">' +
-        '<div style="font-size:13px;font-weight:700;color:var(--text);word-break:keep-all;line-height:1.75">' +
-          '<span role="button" tabindex="0" title="클릭하여 유효회원 전체 명단 보기" onclick="setActiveScope(\'valid\')" style="cursor:pointer">유효 <b style="color:var(--teal)">' + validAll.toLocaleString() + '</b></span>' +
-          '<span style="font-size:12px;font-weight:600;color:var(--dim)"> (유효 ' + v.toLocaleString() + ' + 법인 ' + c + ')</span>' +
-        '</div>' +
         typeInline +
         bar +
         '<div style="font-size:12px;color:var(--dim)">이번달 신규 <b style="color:var(--green)">+' + reg + '</b> · LOSS <b style="color:var(--red)">−' + loss + '</b> → 순증감 <b style="color:' + netCol + '">' + netSgn + Math.abs(net) + '</b> 명</div>' +
@@ -7878,17 +7875,24 @@ function _memberOverviewHtml() {
     var cntTxt = (cnt == null) ? '–' : cnt.toLocaleString();
     var waitReady = (hi.periodKey === 'waitPeriods' && _activeLoaded && _activeScope === 'valid' && _activeStartFilter === 'waiting');
     var lossReady = (hi.periodKey === 'lossPeriods' && _activeLoaded && _activeScope === 'ended');
+    /* 2026-08-03 GM 지적 — 「회원 구분 선택」에서 대기·LOSS 를 고르면 카드가 세로로 길어졌다.
+       숫자·기간탭·인원체크판이 위아래로 쌓였기 때문이다. 숫자와 기간탭을 한 줄에 두고,
+       아래 체크판은 높이를 묶어 넘치면 그 안에서만 스크롤한다 — 내용은 그대로, 카드만 안 길어진다. */
     return '<div>' +
-        '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
           '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
             '<div style="font-size:10px;font-weight:700;color:' + hi.color + ';letter-spacing:0.08em;margin-bottom:2px">' + esc(hi.label) + '</div>' +
             '<div style="font-size:34px;font-weight:800;color:' + hi.color + ';line-height:1">' + cntTxt + '</div>' +
             '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
           '</div>' +
+          '<div style="flex:1 1 auto;min-width:180px">' + _actPeriodTabsHtml() + '</div>' +
         '</div>' +
-        _actPeriodTabsHtml() +
-        (waitReady ? _waitBoardHtml(_activeBaseRows()) : '') +
-        (lossReady ? _unregReasonBoardHtml(_activeBaseRows()) : '') +
+        ((waitReady || lossReady)
+          ? '<div style="max-height:126px;overflow-y:auto">' +
+              (waitReady ? _waitBoardHtml(_activeBaseRows()) : '') +
+              (lossReady ? _unregReasonBoardHtml(_activeBaseRows()) : '') +
+            '</div>'
+          : '') +
       '</div>';
   }
   var d = _cpoStats || {};
@@ -7899,12 +7903,22 @@ function _memberOverviewHtml() {
   // 2026-08-03 GM 지시 — 이 큰 숫자를 '총 유효회원'에서 '회원 구성 합계'로 바꿨다. 오른쪽 블록이 갖고 있던
   // '회원 구성 / 합계 N명' 제목줄이 이 자리로 흡수돼 한 줄이 더 줄었다. 유효회원 명단 진입은 오른쪽 '유효 999'
   // 클릭으로 옮겼다(_composeHtml) — 합계를 눌러 유효 명단이 뜨면 숫자와 결과가 어긋나기 때문.
-  var totalAll = ((d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0)) + corp + (Number(d.memberEnded) || 0);
-  return '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+  // 2026-08-03 GM 지시(2차) — 큰 숫자를 '회원 구성 합계 1,723'에서 **유효 1,031**로 바꿨다.
+  //   종료(LOSS)까지 더한 합계는 매일 보는 숫자가 아니고, 실무진이 보는 건 '지금 살아 있는 회원'이다.
+  //   내역(유효 999 + 법인 32 + 대기자 N)을 이 자리에 붙여 오른쪽 블록의 같은 줄을 없앴다(한 줄 축소).
+  var active = (d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0);
+  var validAll = active + corp;
+  var wait = _validWaitCnt || 0;
+  return '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
       '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
-        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">회원 구성</div>' +
-        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + totalAll.toLocaleString() + '</div>' +
+        '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">유효회원</div>' +
+        '<div style="font-size:34px;font-weight:800;color:var(--teal);line-height:1">' + validAll.toLocaleString() + '</div>' +
         '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--dim);line-height:1.7;word-break:keep-all">' +
+        '유효 <b style="color:var(--text)">' + active.toLocaleString() + '</b>' +
+        ' + 법인 <b style="color:var(--text)">' + corp + '</b>' +
+        ' + 대기자 <b style="color:var(--text)">' + wait + '</b>' +
       '</div>' +
     '</div>';
 }
@@ -9292,8 +9306,9 @@ function _renderHoldIntake() {
   //   기능은 있는데 화면에서 사라지니 '안 만든 것'으로 보였다. 비어 있어도 자리를 지키고 '0건'이라고 말한다
   //   — 없는 것과 아직 안 들어온 것은 다르다.
   el.style.display = '';
-  var html = '<div style="font-weight:800;font-size:14px;margin-bottom:4px">⏸ 휴회 회원 관리'
-    + '<span style="font-size:11px;font-weight:600;color:var(--dim);margin-left:6px">접수대기 ' + pending.length
+  // 제목 삭제(GM 지시 2026-08-03) — 이 블록으로 들어오면 페이지 제목이 이미 '⏸ 휴회 회원 관리'다. 건수만 남긴다.
+  var html = '<div style="font-weight:800;font-size:14px;margin-bottom:4px">'
+    + '<span style="font-size:11px;font-weight:600;color:var(--dim)">접수대기 ' + pending.length
     + ' · 진행중 ' + ongoing.length + ' · 완료 ' + done.length + ' · 반려 ' + rejected.length + '</span>'
     + '<button type="button" onclick="_loadHoldIntake(true)" style="float:right;padding:3px 10px;border-radius:7px;border:1px solid var(--border);background:var(--paper);color:var(--dim);font:600 11px inherit;cursor:pointer">새로고침</button></div>'
     + '<div style="font-size:11px;color:var(--dim);margin-bottom:10px">회원이 <b>휴회 신청 페이지</b>에서 접수하면 여기에 뜹니다. 서버 자동판정(가능/불가)을 확인하고 승인·반려하세요. 승인하면 회원 기록(이용일수 앞 \'휴회기간\')에 반영됩니다.</div>';
