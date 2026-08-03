@@ -637,7 +637,18 @@ function _render(){
   var groups = {'접수':[],'처리중':[],'완료':[]};
   rows.forEach(function(r){ var s = String(r.status||'접수'); if(!groups[s]) groups[s]=[]; groups[s].push(r); });
 
-  var html = '';
+  /* 담당 미지정 한 줄(GM 지적 2026-08-03) — 배지만으로는 몇 건인지 세어야 알 수 있다.
+     아직 안 끝난 것 중 담당이 빈 건수를 맨 위에 한 줄로. 0이면 줄 자체를 안 만든다(잔소리 방지). */
+  var _noAsg = 0;
+  STATUS_LIST.forEach(function(st){
+    if(st === '완료' || st === '처리완료' || st === '종결') return;
+    (groups[st]||[]).forEach(function(rr){ if(!String(rr.assignee||'').trim()) _noAsg++; });
+  });
+  var html = _noAsg
+    ? '<div style="grid-column:1/-1;margin-bottom:10px;padding:9px 14px;border-radius:10px;' +
+      'background:rgba(200,117,111,.12);border:1px solid #c8756f;color:#c8756f;font-size:13px;font-weight:700">' +
+      '⚠ 담당이 정해지지 않은 접수 ' + _noAsg + '건 — 카드에 「담당 미지정」이 붙어 있습니다. 담당 칸에 이름을 넣어 주세요.</div>'
+    : '';
   STATUS_LIST.forEach(function(status){
     var list = groups[status]||[];
     var color = STATUS_COLOR[status]||'var(--accent)';
@@ -714,6 +725,14 @@ function _card(r){
   /* 기한(일) 인라인 수정 — SLA 배지 옆. 비우면 카테고리 기본값 */
   var _defDays = (r.slaHours===null||r.slaHours===undefined||r.slaHours==='') ? '' : Math.round(Number(r.slaHours)/24);
   h += '<span class="sla-edit" title="이 건 기한(일). 비우면 기본값' + (_defDays!==''?(' '+_defDays+'일'):'(없음)') + '"><span class="u">기한</span><input type="number" min="0" step="1" inputmode="numeric" data-reg-sladays placeholder="' + _esc(String(_defDays)) + '" value="' + _esc(String(r.slaDays==null?'':r.slaDays)) + '"><span class="u">일</span></span>';
+  /* 담당 배지(GM 지적 2026-08-03 "접수건 담당자가 따로 체크가 안 된다").
+     담당 칸은 카드 아래쪽 편집 영역에만 있어서, 목록을 훑을 때는 누가 맡았는지·아무도 안 맡았는지
+     알 수가 없었다. 실측 그날: 접수 76건 중 담당 공백 22건, 그중 아직 안 끝난 것이 21건(가장 오래된 건 7/24).
+     새 칸·새 조회를 만들지 않고, 이미 받아 오는 assignee 값을 머리줄에 배지로 한 번 더 보여준다. */
+  var _asg = String(r.assignee || '').trim();
+  var _closed = (status === '완료' || status === '처리완료' || status === '종결');
+  if(_asg) h += '<span class="badge" style="background:var(--paper);color:var(--dim);">👤 ' + _esc(_asg) + '</span>';
+  else if(!_closed) h += '<span class="badge" style="background:rgba(200,117,111,.14);color:#c8756f;font-weight:800;">⚠ 담당 미지정</span>';
   if(r.dept) h += '<span class="card-when">' + _esc(String(r.dept)) + '</span>';
   if(id) h += '<span class="card-id">#' + id + '</span>';
   h += '</div>';
