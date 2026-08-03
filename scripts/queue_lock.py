@@ -197,6 +197,14 @@ def save_queue_atomic(items, repo_root=None):
     """tmp+os.replace 원자적 쓰기 — 락 없는 reader도 반쪽 파일을 안 본다.
     윈도우: 대상 파일을 AV·인덱서가 순간 잡으면 os.replace가 WinError 5로 실패 →
     짧은 backoff 재시도(표준 우회). 실패 시 tmp 청소."""
+    # surface 기본값 — 배 10510(웰리 결정 2, 2026-08-03). surface 는 '어느 화면에 그릴까'이고
+    # G1 렌더(:9603)가 'autonomy'면 자율현황으로 위임한다. 생성 경로마다 인자를 붙이는 방식은
+    # 계속 샜다(실측: 붙이는 곳 2곳 · 안 붙은 배 18척). 모든 쓰기가 지나는 이 관문에서 채운다.
+    # 큐의 배는 전부 AI 것이다(clevel = ceo/cmo/coo/cpo/cto — GM 본인 할 일은 큐가 아니라
+    # todo_list 시트에 있다). GM 배가 들어올 일이 생기면 surface 를 명시하면 이 기본값은 안 탄다.
+    for _it in items if isinstance(items, list) else []:
+        if isinstance(_it, dict) and not _it.get("surface"):
+            _it["surface"] = "autonomy"
     p = queue_path(repo_root)
     tmp = f"{p}.tmp.{os.getpid()}"
     with open(tmp, "w", encoding="utf-8") as f:
