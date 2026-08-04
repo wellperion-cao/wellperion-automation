@@ -2048,7 +2048,10 @@
     if(!list.length) return head + '<div class="obj-empty">해당 과제가 없습니다.</div>';
     var sorted = sortObjsByStatus(list);
     return head + '<div class="rpt-wrap"><table class="rpt obj-tbl"><thead><tr>' +
-      '<th class="c-own" style="width:8%">담당·번호</th><th style="width:18%">핵심 과제</th><th class="c-target" style="width:36%">목표치 &amp; 진행 근거·경위</th><th style="width:6%">상태</th><th style="width:16%">진척' + (withDelta ? ' · 궤적' : '') + '</th><th style="width:16%">→ 북극성</th>' +
+      /* 칸 폭 재배분(2026-08-04 GM 표면점검 — 핵심 과제 칸이 상태 칸보다 18.7배 빽빽한데 폭은 218px vs 73px로 접혔다):
+         핵심 과제 18%→26%(+8pp). 목표치는 GM 확정대로 표 최대폭 유지(36%→32%, 여전히 1위) — 진척·북극성에서 2pp씩 덜어 옴.
+         상태(6%)는 안 건드림 — 이미 짧은 배지라 줄일 이유가 없다(GM 지시 "내용 많은 칸에 폭을 더 줄 것"). */
+      '<th class="c-own" style="width:8%">담당·번호</th><th style="width:26%">핵심 과제</th><th class="c-target" style="width:32%">목표치 &amp; 진행 근거·경위</th><th style="width:6%">상태</th><th style="width:14%">진척' + (withDelta ? ' · 궤적' : '') + '</th><th style="width:14%">→ 북극성</th>' +
       '</tr></thead><tbody>' + sorted.map(function(o){ return objRow(o, withDelta); }).join('') + '</tbody></table></div>';
   }
   // 🎚️ 자동화 달성률 게이지(honestyGauge) — 2026-08-01 삭제: 최상단 밴드 '전 부서 핵심 과제 진척' 칸(ss-top3)이

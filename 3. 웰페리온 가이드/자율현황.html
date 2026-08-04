@@ -1301,7 +1301,9 @@
       { key:'wait', title:'⚓ 대기·정박', list: live.filter(function(s){ return !isDone(s) && s.status !== 'IN_PROGRESS'; }) },
       { key:'done', title:'🏁 오늘 입항', list: live.filter(function(s){ var m = ts(s.processed_at); return isDone(s) && m >= t0 && m < t1; }) }
     ];
-    var HEAD = '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th><th style="width:30%">다음</th></tr>';
+    // 칸 폭 재배분(2026-08-04 GM 표면점검 — 「다음」칸이 「배」보다 3.1배 빽빽한데 폭은 366px vs 37px로 접혔다):
+    // 다음 30%→38%(+8pp, 미션의 남은 폭에서 흡수) · 담당 96px→84px. 배(37px)는 아이콘 칸이라 더 못 줄인다.
+    var HEAD = '<tr><th style="width:36px">배</th><th style="width:84px">담당</th><th>미션</th><th style="width:38%">다음</th></tr>';
     el.innerHTML = secs.map(function(sec){
       var rows = sec.list
         .sort(function(a,b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); })
