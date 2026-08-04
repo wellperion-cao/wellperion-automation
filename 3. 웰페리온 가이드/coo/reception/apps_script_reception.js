@@ -61,12 +61,13 @@ var REG_CATEGORIES = [
   // 29건 중 12건이 이것이어서 진짜 방치된 컴플레인 10건이 숫자에 묻혔다. 30일 = 보관 기간
   // 개념(넘으면 폐기·기증 등 정리 대상). 기한 개념을 없애지 않은 이유 = 영원히 쌓이는 것도 막아야 해서.
   { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부', slaHours: 720 },
-  { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24 },
+  { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24, defaultAssignee: '@시설폰' },
   { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부', slaHours: 12 },
   { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부', slaHours: null },
   { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부', slaHours: 72 },
-  { key: 'complaint', label: '컴플레인 접수',        sheet: '접수_컴플레인', dept: '운영부', slaHours: 48 }
+  { key: 'complaint', label: '컴플레인 접수',        sheet: '접수_컴플레인', dept: '운영부', slaHours: 48, defaultAssignee: '@운영부' }
   // praise/voice → dept: '인사부' 로 바꿀 때 위 두 줄만 수정
+  // defaultAssignee — GM 확정 2026-08-04(이 두 카테고리만). 나머지는 공란 유지(_regDefaultAssignee 참고).
 ];
 
 // 공통 12컬럼 (영문키: 한글헤더)
@@ -129,6 +130,13 @@ function _regCatByLabel(label) {
     if (REG_CATEGORIES[i].label === label) return REG_CATEGORIES[i];
   }
   return null;
+}
+// 카테고리 기본 담당자 — SSOT는 REG_CATEGORIES[].defaultAssignee 한 곳뿐(위 참고).
+// 이미 담당자가 있으면 그대로 보존(절대 덮어쓰지 않음). 매핑 없는 카테고리는 공란 유지.
+function _regDefaultAssignee(catKey, currentAssignee) {
+  if (String(currentAssignee || '').trim()) return currentAssignee;
+  var cat = _regCatByKey(catKey);
+  return (cat && cat.defaultAssignee) || '';
 }
 // 사진 미수집 카테고리 — GM 결정(2026-07-08): 칭찬·쓴소리는 폼+시트컬럼 모두 사진 제거.
 // _regHeadersFor 가 photoUrl 을 정의에서 빼야 reg_submit/reg_update 의 위치기반(_set) 쓰기가
@@ -868,6 +876,7 @@ function _regSubmit(body) {
   _set('photoUrl', photoUrl);
   _set('status',   '접수');
   _set('dept',     cat.dept);
+  _set('assignee', _regDefaultAssignee(cat.key, ''));
   // 접수자 (2026-07-28 시우 · 점수 랭킹제) — 직원이 대신 적어 준 경우 그 직원 이름,
   //   회원이 폼에서 직접 넣은 경우는 '회원'. 접수 1점의 근거가 되는 칸이라
   //   비워 두면 점수가 안 붙는다(그래서 기본값을 반드시 남긴다).
