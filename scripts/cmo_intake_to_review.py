@@ -23,6 +23,13 @@ telegram_bot/.env 에서만 읽는다(코드·커밋에 값 금지). INTAKE_READ
 이미 같은 id가 있으면 재추가하지 않는다. 텔레그램 카드도 scripts/.intake_card_sent.json
 에 id를 기록해 재발송하지 않는다.
 
+배 등록(2026-08-04 GM 승인 · 배9888 후속 사고): 텔레그램 카드는 발송 순간을 놓치면
+묻힌다(강사 이수지 접수 5일 방치 실측 — 알림은 갔지만 밤 9시반 한 번뿐이라 안 보임).
+신규 접수마다 queue_dispatch.py 를 서브프로세스로 호출해 시모(CMO) 배로도 등록한다
+(약속 L15 — 큐에 없으면 항로에도 없다). 배 등록 여부도 scripts/.intake_card_sent.json
+같은 항목에 ship_created 키로 기록(멱등). 배 생성이 실패해도 접수 등록·카드 발송
+흐름은 죽지 않는다(try/except로 격리).
+
 플래그: --dry-run(큐 추가·텔레그램 발송 없이 무엇을 할지만 출력) · --once(1회 실행 ·
 반복 루프 없음, 향후 스케줄러 연동 대비 플래그만 수용) · --include-test(테스트 접수행 포함)
 · --limit N(조회 건수, 기본 500).
@@ -33,6 +40,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -44,6 +52,7 @@ ROOT = Path(__file__).resolve().parent.parent
 INTAKE_HTML = ROOT / "3. 웰페리온 가이드" / "cmo" / "intake" / "instructor_intake.html"
 ENV_FILE = ROOT / "telegram_bot" / ".env"
 SENT_STATE_PATH = ROOT / "scripts" / ".intake_card_sent.json"
+QUEUE_DISPATCH_PATH = ROOT / "scripts" / "queue_dispatch.py"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from review_queue_util import (  # noqa: E402
@@ -201,6 +210,49 @@ def _send_telegram_card(bot_token: str, chat_id: str, item: dict) -> bool:
                      extra={"disable_web_page_preview": "true"}, timeout=10)
 
 
+# ---------------------------------------------------------------------------
+# 시모(CMO) 배 등록 — 기존 배 생성 관문(queue_dispatch.py)을 서브프로세스로 재사용.
+# 큐 락 직렬화·중복 방지·배번호 부여는 전부 그쪽 소유(새 큐 쓰기 코드 금지 · 약속 L01·L21).
+# ---------------------------------------------------------------------------
+def _create_review_ship(item: dict) -> str:
+    """접수 1건을 시모 배로 큐(status/_queue.json)에 올린다. 실패 시 예외 전파
+    (호출부에서 try/except로 흡수 — 배 생성 실패가 접수 흐름을 죽이면 안 된다)."""
+    intake = item.get("intake") or {}
+    name = intake.get("성함", "")
+    cat = intake.get("분류", "")
+    note = "\n".join([
+        f"한줄소개: {intake.get('한줄소개', '') or '(없음)'}",
+        f"회원이 얻는 것: {intake.get('회원이얻는것', '') or '(없음)'}",
+        f"사진: {'있음' if intake.get('사진링크') else '없음'} / 영상: {'있음' if intake.get('영상링크') else '없음'}",
+        f"드라이브 폴더: {intake.get('드라이브폴더', '') or '(없음)'}",
+        f"접수일시: {intake.get('접수일시', '')}",
+    ])
+    # ★--sender 는 역할명이 아니라 "콘텐츠접수" 를 넘긴다.
+    #   --sender cmo 는 쓸 수 없고(queue_dispatch 는 to==sender 를 --mine 없이는 거부),
+    #   기본값(ceo)을 쓰면 note 접두가 "[웰리 → 시모 전달]" 로 찍혀 **웰리가 보낸 것처럼 보인다**
+    #   — 사람이 나중에 "웰리가 왜 이걸 보냈지"로 오해한다. --mine("자가점검")도 사실이 아니다.
+    #   queue_dispatch 는 ROLES 에 없는 sender 값을 원문 그대로 접두에 쓰므로
+    #   "[콘텐츠접수 → 시모 전달 …]" 이 되어 출처가 정확해진다(관문 수정 0).
+    args = [
+        sys.executable, str(QUEUE_DISPATCH_PATH),
+        "--to", "cmo",
+        "--sender", "콘텐츠접수",
+        "--title", f"콘텐츠 접수 — {name} ({cat})",
+        "--note", note,
+        "--next", "사진 확인 → 슬라이드 제작 → 검수큐(검수대기)로 올려 GM 승인 카드 발송",
+        "--priority", "⛵돛단배",
+        "--audience", "office",
+        "--reversible", "yes",
+        "--work-type", "update",
+    ]
+    proc = subprocess.run(args, cwd=str(ROOT), capture_output=True, text=True,
+                           encoding="utf-8", timeout=30)
+    if proc.returncode != 0:
+        raise RuntimeError(f"rc={proc.returncode}: {(proc.stderr or proc.stdout).strip()[:200]}")
+    out = proc.stdout.strip()
+    return out.splitlines()[0] if out else "ok"
+
+
 def _load_sent_state() -> dict:
     if not SENT_STATE_PATH.exists():
         return {}
@@ -301,20 +353,42 @@ def main() -> int:
 
     print(f"[INFO] review_queue.json 에 {len(added_items)}건 추가 완료(status=접수검토)")
 
+    sent_state = _load_sent_state()
+
+    # 시모(CMO) 배 등록 — 텔레그램 발송 성공 여부와 무관하게 시도한다(알림이 묻혀도
+    # 배는 항로에 남아야 한다 · 배9888 후속 사고). 항목별 try/except로 격리.
+    ship_count = 0
+    for item in added_items:
+        iid = item["id"]
+        entry = sent_state.setdefault(iid, {})
+        if entry.get("ship_created"):
+            continue
+        try:
+            result = _create_review_ship(item)
+            entry["ship_created"] = True
+            entry["ship_result"] = result
+            ship_count += 1
+        except Exception as e:
+            entry["ship_created"] = False
+            print(f"[WARN] 시모 배 생성 실패(접수 흐름은 계속 진행): {iid}: {e}")
+    print(f"[INFO] 시모(CMO) 배 등록 {ship_count}/{len(added_items)}건")
+
     bot_token = _load_env_val("TELEGRAM_BOT_TOKEN")
     chat_id = _load_env_val("TELEGRAM_CHAT_ID")
     if not bot_token or not chat_id:
         print("[WARN] TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID 미설정 — 카드 발송 생략")
+        _save_sent_state(sent_state)
         return 0
 
-    sent_state = _load_sent_state()
     sent_count = 0
     for item in added_items:
         iid = item["id"]
-        if sent_state.get(iid):
+        entry = sent_state.setdefault(iid, {})
+        if entry.get("sent_at"):
             continue
         ok = _send_telegram_card(bot_token, chat_id, item)
-        sent_state[iid] = {"sent_at": datetime.now().isoformat(timespec="seconds"), "ok": ok}
+        entry["sent_at"] = datetime.now().isoformat(timespec="seconds")
+        entry["ok"] = ok
         if ok:
             sent_count += 1
         else:
