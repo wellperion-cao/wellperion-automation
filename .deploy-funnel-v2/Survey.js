@@ -7647,6 +7647,11 @@ function _processAction(body) {
         var rlRegI = _rlIdx('등록일자');
         var rlPhI  = _rlIdx('휴대폰'); if (rlPhI < 0) rlPhI = _rlIdx('연락처'); if (rlPhI < 0) rlPhI = _rlIdx('전화');
         var rlPgI  = _rlIdx('수강반종목'); if (rlPgI < 0) rlPgI = _rlIdx('종목명'); if (rlPgI < 0) rlPgI = _rlIdx('회원권'); if (rlPgI < 0) rlPgI = _rlIdx('상품'); if (rlPgI < 0) rlPgI = _rlIdx('프로그램');
+        // 등록 분류 3칸(2026-08-04 시토) — '등록분류'는 '재등록분류'와도 부분일치하지만 헤더 순서상
+        //   앞칸('등록 분류')이 먼저 잡힌다(_memberActiveUpsert_ 와 같은 관례).
+        var rlClsI  = _rlIdx('등록분류');
+        var rlCls2I = _rlIdx('재등록분류');
+        var rlSeqI  = _rlIdx('등록회차');
         var rlData = rlSh.getRange(2, 1, rlSh.getLastRow() - 1, rlCols).getValues();
         for (var ri = 0; ri < rlData.length; ri++) {
           var rr = rlData[ri];
@@ -7666,7 +7671,19 @@ function _processAction(body) {
             name:     rlNm,
             phone:    rlPh,
             program:  rlPgI >= 0 ? String(rr[rlPgI] == null ? '' : rr[rlPgI]).trim() : '',
-            regDate:  regDate
+            regDate:  regDate,
+            // ★2026-08-04 시토(GM 지적 '황경태·박기순은 재등록이신데?') — 이 액션은 등록일자 기간만 보고
+            //   등록 분류를 아예 안 봤다. 그래서 화면 「멤버십 신규 등록현황」에 재등록·양수·환불이 함께 섞이고,
+            //   같은 소스를 쓰는 문의→가입 전환율의 분자도 같이 부풀었다.
+            //   실측(2026-08-04): 2026년 등록 196건 중 실제 신규는 179건 — 17건이 신규가 아니었다
+            //   (재등록 6·양수 5·환불 4·양도 1·대기 1). 2026-08 은 5건 중 3건이 재등록이었다.
+            //   ▸여기서 걸러내지 않고 **값을 같이 내려준다** — 걸러 버리면 화면에서 재등록이 통째로 사라져
+            //     '정직 표기가 빈 화면이 되는' 부류가 된다. 가르는 것은 화면 몫.
+            //   ▸regClass = 「등록 분류」 · regClass2 = 「재등록 분류」(둘 다 내려준다 — 배303 통합 전까지
+            //     한쪽만 값이 있는 행이 있다. 박기순님은 등록 분류만, 황경태님은 둘 다 있다).
+            regClass:  rlClsI  >= 0 ? String(rr[rlClsI]  == null ? '' : rr[rlClsI]).trim()  : '',
+            regClass2: rlCls2I >= 0 ? String(rr[rlCls2I] == null ? '' : rr[rlCls2I]).trim() : '',
+            regSeq:    rlSeqI  >= 0 ? String(rr[rlSeqI]  == null ? '' : rr[rlSeqI]).trim()  : ''
           });
         }
         rlRows.sort(function(a, b){ return a.regDate < b.regDate ? 1 : (a.regDate > b.regDate ? -1 : 0); }); // 최신 등록 먼저
