@@ -269,7 +269,7 @@
             <div class="lbl">팀 처리업무</div>
             <div class="num"><span id="todayTeam">0</span><span class="today-unit">건</span></div>
           </div>
-          <div class="counter counter-sub" title="오늘 자동화로그 전건 수(병합 없음) — 에이전트(A-1~A-7)뿐 아니라 리마인드 루틴·CFO 릴레이 등 모든 주체 포함, 자동화로그 실측(공개 열람) 기준, 2026-07-23 신설·집계모수 확대">
+          <div class="counter counter-sub" title="오늘 자동화로그 전건 수(병합 없음) — 에이전트(A-1~A-12)뿐 아니라 리마인드 루틴·CFO 릴레이 등 모든 주체 포함, 자동화로그 실측(공개 열람) 기준, 2026-07-23 신설·집계모수 확대">
             <div class="lbl">오늘 처리업무</div>
             <div class="num"><span id="todayAgent">0</span><span class="today-unit">건</span></div>
           </div>
@@ -331,9 +331,12 @@
   /* ---------- palettes ---------- */
   // 2026-07-10: A-2·A-6이 둘 다 흐린 갈색 계열이라 한눈에 구분이 안 됨 — A-2는 따뜻한 앰버로,
   // A-6은 와인빛 버건디로 벌려 파스텔 톤 안에서도 확실히 대비되게 조정(나머지 5색은 기존 유지).
+  // 2026-08-03: 인사 조직 5종(A-8~A-12) 증원 — 기존 7색이 비워둔 색상환 구간(인디고·테라코타·
+  // 시그린·올리브라임·오키드)에 배치해 12색이 서로 붙지 않게 함. 기존 7색 값은 무변경.
   const AGENT_COLORS={
     'A-1':'#5E7A96', 'A-2':'#BF8A44', 'A-3':'#5C8A5E', 'A-4':'#A88C4A',
-    'A-5':'#7E77A0', 'A-6':'#9C4A5E', 'A-7':'#4E8A94'
+    'A-5':'#7E77A0', 'A-6':'#9C4A5E', 'A-7':'#4E8A94',
+    'A-8':'#5B6BA8', 'A-9':'#B5654A', 'A-10':'#3F8A72', 'A-11':'#8A9A46', 'A-12':'#96639E'
   };
   // 유휴 페르소나 말풍선(2026-07-10 복구) — 실 자동화로그가 아닌 순수 캐릭터 연출이므로 브리핑 피드·집계에는
   // 절대 반영하지 않는다(정직 배지 원칙 — 실가동과 무관한 문구를 "실적"처럼 보이게 하지 않기 위함).
@@ -341,7 +344,9 @@
   const PERSONA_LINE={
     'A-1':'이력서 한 장씩 다시 확인', 'A-2':'지원자와 일정 통화 조율',
     'A-3':'이번 주 체크인 리스트 확인', 'A-4':'평가 기준 다시 짚어보기',
-    'A-5':'배포 막바지 점검', 'A-6':'숫자 하나하나 대조 중', 'A-7':'흐름 막히는 지점 분석'
+    'A-5':'배포 막바지 점검', 'A-6':'숫자 하나하나 대조 중', 'A-7':'흐름 막히는 지점 분석',
+    'A-8':'조직도 앞에서 정원 셈', 'A-9':'급여 밴드 다시 맞춰보기',
+    'A-10':'근로계약 조항 짚어보기', 'A-11':'교육 커리큘럼 손보는 중', 'A-12':'지표 추세 들여다보기'
   };
   // ── 지브리/토토로 팔레트 — 키는 원본 그대로, 값만 숲 정령의 목조 오피스 톤으로 교체.
   //    다크 = 해질녘 등불 밝힌 아늑한 나무집(깊은 이끼빛+꿀빛 목재), 라이트 = 한낮 햇살 드는 들판집.
@@ -559,20 +564,41 @@
   //   A-3 직원담당: 여 · 포니테일 · 체크리스트 두드림(pat)   A-4 평가: 남 · 단정 가르마+안경 · 안경 고쳐쓰기(adjust)
   //   A-5 배포: 여 · 작업번 · 빠른 커밋 타이핑(commit)       A-6 감사: 남 · 짧은 웨이브 · 돋보기 점검(inspect)
   //   A-7 시스템효율: 여 · 롱웨이브 · 화이트보드 응시(point)
+  // 2026-08-03 인사 조직 5종 증원 — 기존 헤어스타일·행동 렌더 코드를 재사용(신규 드로잉 코드 0)하고
+  // 헤어색·성별·좌석으로 구분한다.
+  //   A-8 인사기획: 남 · 사이드스윕 · 화이트보드 응시(point)   A-9 보상: 여 · 작업번 · 서류 뒤적임(sift)
+  //   A-10 노무: 남 · 짧은 웨이브 · 돋보기 점검(inspect)       A-11 교육개발: 여 · 포니테일 · 체크리스트(pat)
+  //   A-12 인사분석: 남 · 단정 가르마+안경 · 차트 응시(point)
+  // 2026-08-03(같은 날 2차) 매니저 피드백 "사무실이 비좁다" → 팀별 3구역 분리로 재배치(ZONES 참조):
+  // 채용·인재(A1-4, 상단좌)·조직·전략(A8-11, 상단우)·시스템·운영(A5-7,A12, 하단 가로). 구역 사이 실여백 확보.
+  // 캐릭터 드로잉 코드(hairStyle·personaBeh 등)는 그대로, gx/gy/face 좌표만 구역별로 재배정.
   // hairColor — 캐릭터별 확실히 다른 헤어색(2026-07-10 추가). 미지정(팀장)은 테마 기본 P.hair 유지.
   const agents=[
-    {id:'A-1', tag:'이력서',    gx:2.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'bob',      personaBeh:'sift',   hairColor:'#3E2A1E'},
-    {id:'A-2', tag:'채용',      gx:4.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'sweep',    personaBeh:'call',   hairColor:'#221F1C', accessory:'headset'},
-    {id:'A-3', tag:'직원담당',   gx:7.2,  gy:2.4, face:'y+', gender:'f', hairStyle:'ponytail', personaBeh:'pat',    hairColor:'#7A4326'},
-    {id:'A-4', tag:'평가',      gx:9.7,  gy:2.4, face:'y+', gender:'m', hairStyle:'part',     personaBeh:'adjust', hairColor:'#5B5750', accessory:'glasses'},
-    {id:'A-5', tag:'배포',      gx:3.45, gy:5.5, face:'y-', gender:'f', hairStyle:'bun',      personaBeh:'commit', hairColor:'#8C5A2E'},
-    {id:'A-6', tag:'감사',      gx:5.95, gy:5.5, face:'y-', gender:'m', hairStyle:'wave',     personaBeh:'inspect',hairColor:'#26313D'},
-    {id:'A-7', tag:'시스템효율', gx:8.45, gy:5.5, face:'y-', gender:'f', hairStyle:'longwave', personaBeh:'point',  hairColor:'#B8862E'}
+    {id:'A-1', tag:'이력서',    gx:1.4,  gy:2.4, face:'y+', gender:'f', hairStyle:'bob',      personaBeh:'sift',   hairColor:'#3E2A1E'},
+    {id:'A-2', tag:'채용',      gx:3.2,  gy:2.4, face:'y+', gender:'m', hairStyle:'sweep',    personaBeh:'call',   hairColor:'#221F1C', accessory:'headset'},
+    {id:'A-3', tag:'직원담당',   gx:5.0,  gy:2.4, face:'y+', gender:'f', hairStyle:'ponytail', personaBeh:'pat',    hairColor:'#7A4326'},
+    {id:'A-4', tag:'평가',      gx:6.8,  gy:2.4, face:'y+', gender:'m', hairStyle:'part',     personaBeh:'adjust', hairColor:'#5B5750', accessory:'glasses'},
+    {id:'A-5', tag:'배포',      gx:1.5,  gy:7.1, face:'y-', gender:'f', hairStyle:'bun',      personaBeh:'commit', hairColor:'#8C5A2E'},
+    {id:'A-6', tag:'감사',      gx:5.0,  gy:7.1, face:'y-', gender:'m', hairStyle:'wave',     personaBeh:'inspect',hairColor:'#26313D'},
+    {id:'A-7', tag:'시스템효율', gx:8.5,  gy:7.1, face:'y-', gender:'f', hairStyle:'longwave', personaBeh:'point',  hairColor:'#B8862E'},
+    {id:'A-8', tag:'인사기획',   gx:8.0,  gy:2.4, face:'y+', gender:'m', hairStyle:'sweep',    personaBeh:'point',  hairColor:'#47372B'},
+    {id:'A-9', tag:'보상',      gx:9.8,  gy:2.4, face:'y+', gender:'f', hairStyle:'bun',      personaBeh:'sift',   hairColor:'#6E3B2A'},
+    {id:'A-10',tag:'노무',      gx:11.6, gy:2.4, face:'y+', gender:'m', hairStyle:'wave',     personaBeh:'inspect',hairColor:'#2B2F3A'},
+    {id:'A-11',tag:'교육개발',   gx:13.4, gy:2.4, face:'y+', gender:'f', hairStyle:'ponytail', personaBeh:'pat',    hairColor:'#A06B3A'},
+    {id:'A-12',tag:'인사분석',   gx:12.0, gy:7.1, face:'y-', gender:'m', hairStyle:'part',     personaBeh:'point',  hairColor:'#57414E', accessory:'glasses'}
+  ];
+  // 구역 라벨(개요 표시용) — 좌표는 각 구역 테이블 중심 상공(z 높게 띄워 캐릭터·소품과 안 겹침).
+  const ZONES=[
+    {name:'채용·인재',  gx:4.0,  gy:3.5, color:'#6B8CAE'},
+    {name:'조직·전략',  gx:10.5, gy:3.5, color:'#8A6BAE'},
+    {name:'시스템·운영', gx:6.75, gy:7.4, color:'#5E9E86'}
   ];
   // per-character personality — distinct idle facial-expression bias + a staggered starting behavior
   const EXPR_IDLE=[ ['calm','smile','ponder'], ['smile','grin','calm'], ['smile','content','wink'],
-    ['calm','ponder','tired'], ['smile','calm','surprise'], ['focus','calm','ponder'], ['grin','smile','wink'] ];
-  const INIT_BEH=['read','mouse','coffee','think','glance','type','stretch'];
+    ['calm','ponder','tired'], ['smile','calm','surprise'], ['focus','calm','ponder'], ['grin','smile','wink'],
+    ['ponder','calm','smile'], ['content','smile','calm'], ['focus','ponder','calm'],
+    ['smile','wink','content'], ['calm','focus','ponder'] ];
+  const INIT_BEH=['read','mouse','coffee','think','glance','type','stretch','think','read','glance','type','mouse'];
   agents.forEach((a,i)=>{
     a.phase=i*0.9; a.status='idle'; a.task=''; a.tStart=0; a.tDur=0; a.tDone=0; a.color=AGENT_COLORS[a.id];
     a.sticky=false; a.stickyStart=0;   // 지속 busy 상태(진행중 로그) — 폴링 주기와 무관하게 유지
@@ -893,8 +919,11 @@
 
   /* ---------- desk props per seat ---------- */
   function propAnchor(c){
-    if(c.face==='y+') return {px:c.gx, py:3.05, dir:'row'};
-    if(c.face==='y-') return {px:c.gx, py:4.72, dir:'row'};
+    // 2026-08-03: 구역 분리로 좌석 gy가 구역마다 달라져(더 이상 고정된 두 줄이 아님) 데스크 소품(모니터·
+    // 램프·명패 등)을 캐릭터 자신의 gy 기준 상대 오프셋으로 앵커링(기존 고정값 3.05/4.72는 원래 gy 2.4/5.5
+    // 좌석 기준으로 역산한 오프셋 +0.65/-0.78과 정확히 동일 — 기존 좌석은 결과가 완전히 그대로 유지됨).
+    if(c.face==='y+') return {px:c.gx, py:c.gy+0.65, dir:'row'};
+    if(c.face==='y-') return {px:c.gx, py:c.gy-0.78, dir:'row'};
     return {px:0.95, py:c.gy-0.30, dir:'lead'};
   }
   // 책상 위 집기 — 발광 사각 모니터 대신 원목 프레임에 놓인 장부(크림 페이지). 차가운 발광·유리반사 제거,
@@ -991,7 +1020,7 @@
     limb(mx+0.17, my+0.06, 1.06, mx+0.17, my+0.06, 1.14, 0.05*TW, shadeHex(P.mug,0.9)); // handle
     drawSteam(mx+0.08, my+0.08, 1.1, t, (c.phase||0)*1.7);
   }
-  // 페르소나 전용 데스크 소품 — 클립보드(A-3)·노트북(A-5)·돋보기(A-6, 상시 거치)·차트카드(A-7). 2026-07-10 추가.
+  // 페르소나 전용 데스크 소품 — 클립보드(A-3)·노트북(A-5)·돋보기(A-6, 상시 거치)·차트카드(A-7/A-12). 2026-07-10 추가.
   function drawPersonaProp(c){
     const a=propAnchor(c);
     if(c.id==='A-3'){                                    // 클립보드 — 브라스 클립 + 체크리스트 줄
@@ -1010,7 +1039,7 @@
       ctx.save(); ctx.beginPath(); ctx.arc(rp.x,rp.y,0.075*TW,0,Math.PI*2);
       ctx.lineWidth=Math.max(1.3,0.018*TW); ctx.strokeStyle=P.brass; ctx.stroke(); ctx.restore();
       limb(px,py,1.02, px+0.16,py+0.16,0.98, 0.026*TW, P.brass, 1.0);
-    } else if(c.id==='A-7'){                             // 차트카드 — 작은 막대그래프 카드
+    } else if(c.id==='A-7' || c.id==='A-12'){            // 차트카드 — 작은 막대그래프 카드(A-12 인사분석도 동일 소품)
       const px=a.px+0.50, py=a.py-0.30;
       box(px, py, 1.0, 0.24,0.03,0.26, '#FDFBF5', 1.14);
       box(px+0.03, py+0.005, 1.03, 0.03,0.02,0.08, P.sage, 1.2);
@@ -1905,27 +1934,36 @@
     // meeting table (per cell) — 상판 나뭇결 + 앞줄 모서리 소프트 하이라이트(구조·depth 불변)
     // 외곽 네 코너 셀만 라운드 상판(tblBlock)으로 교체 → 상판 실루엣의 각진 4점을 유기적으로 곡선화.
     // 나머지 셀은 box 그대로(내부 이음새 직선 유지). 셀별 depth를 보존하므로 painter 정렬·오클루전 불변.
-    for(let gx=1; gx<11; gx++){
-      for(let gy=3; gy<5; gy++){
-        const frontRow=(gy===4), rightEnd=(gx===10);
-        push(gx+gy, 0.5, (function(gx,gy,frontRow,rightEnd){return function(){
-          const rA=(gx===1&&gy===3), rB=(gx===10&&gy===3), rC=(gx===10&&gy===4), rD=(gx===1&&gy===4);
-          if(rA||rB||rC||rD) tblBlock(gx,gy,P.table, rA,rB,rC,rD);   // 외곽 코너 셀: 라운드 상판
-          else box(gx,gy,0,1.0,1.0,1.0, P.table);                    // 내부 셀: 평면 상판(이음새 무손실)
-          grain(gx,gy,1.0,1,1,P.table,2);
-          if(frontRow || rightEnd){                         // 노출된 앞치마·우측 끝면: 세로 나뭇결 + 바닥 AO로 각형 완화
-            faceShade(gx,gy,0,1,1,1, 0.24,0.20);
-            vGrain(gx,gy,0,1,1,1,P.table,2);
-          }
-          if(frontRow) tableLip(gx,gy,P.table);              // 앞모서리 라운드 불노즈(연속 프로파일 — 스캘럽 없음)
-          if(rightEnd) tableSideLip(gx,gy,P.table);          // 우측 끝 라운드 불노즈
-        };})(gx,gy,frontRow,rightEnd));
+    // 2026-08-03: 구역 분리를 위해 기존 단일 회의테이블 루프(gx1~11,gy3~4 고정)를 gx0/gx1/gy0/gy1
+    // 인자를 받는 함수로 일반화 — box/tblBlock/grain/tableLip 등 기존 드로잉 프리미티브는 그대로 재사용하고
+    // 호출부만 3구역으로 나눴다(신규 드로잉 코드 없음, 좌표만 파라미터화).
+    function drawZoneTable(gx0,gx1,gy0,gy1){
+      for(let gx=gx0; gx<gx1; gx++){
+        for(let gy=gy0; gy<gy1; gy++){
+          const frontRow=(gy===gy1-1), rightEnd=(gx===gx1-1);
+          push(gx+gy, 0.5, (function(gx,gy,frontRow,rightEnd){return function(){
+            const rA=(gx===gx0&&gy===gy0), rB=(gx===gx1-1&&gy===gy0), rC=(gx===gx1-1&&gy===gy1-1), rD=(gx===gx0&&gy===gy1-1);
+            if(rA||rB||rC||rD) tblBlock(gx,gy,P.table, rA,rB,rC,rD);   // 외곽 코너 셀: 라운드 상판
+            else box(gx,gy,0,1.0,1.0,1.0, P.table);                    // 내부 셀: 평면 상판(이음새 무손실)
+            grain(gx,gy,1.0,1,1,P.table,2);
+            if(frontRow || rightEnd){                         // 노출된 앞치마·우측 끝면: 세로 나뭇결 + 바닥 AO로 각형 완화
+              faceShade(gx,gy,0,1,1,1, 0.24,0.20);
+              vGrain(gx,gy,0,1,1,1,P.table,2);
+            }
+            if(frontRow) tableLip(gx,gy,P.table);              // 앞모서리 라운드 불노즈(연속 프로파일 — 스캘럽 없음)
+            if(rightEnd) tableSideLip(gx,gy,P.table);          // 우측 끝 라운드 불노즈
+          };})(gx,gy,frontRow,rightEnd));
+        }
+      }
+      // brass center runner
+      const depth=gy1-gy0, brassY=gy0+depth*0.425, brassD=Math.max(0.14, Math.min(0.30, depth*0.18));
+      for(let gx=gx0; gx<gx1; gx++){
+        push(gx+brassY+0.001, 0.6, (function(gx){return function(){ box(gx+0.15,brassY,1.0,0.7,brassD,0.03,P.brass,1.2); };})(gx));
       }
     }
-    // brass center runner
-    for(let gx=1; gx<11; gx++){
-      push(gx+3.5+0.001, 0.6, (function(gx){return function(){ box(gx+0.15,3.85,1.0,0.7,0.30,0.03,P.brass,1.2); };})(gx));
-    }
+    drawZoneTable(1,   7,   3,   4);     // 채용·인재(A1-4) 앞 테이블
+    drawZoneTable(7.5, 13.5,3,   4);     // 조직·전략(A8-11) 앞 테이블
+    drawZoneTable(1,   13,  5.5, 6.5);   // 시스템·운영(A5-7,A12) 앞 테이블 — 가로로 넓게
 
     // carpet medallion (just above floor tiles, below furniture)
     push(ROOM.x0+ROOM.y0-0.04, -1, function(){ drawRugPattern(); });
@@ -1940,17 +1978,20 @@
     push(SIGN_D+0.020, -1.5, function(){ drawCalendar(); });
 
     // premium furniture (depth-sorted on the floor)
+    // 2026-08-03: 구역 재배치로 조직·전략(우상단) 테이블이 gx7.5~13.5,gy3~4를 차지 — 기존 화이트보드
+    // 좌표(11.7,3.0)가 그 안에 파묻히므로 위·아래 구역 사이 여백 띠(gy4~5.5, 비어있음)로 이동만 함
+    // (drawWhiteboard 함수·모양은 그대로, 호출 좌표만 조정).
     push(11.5+0.55, 4, function(){ drawCredenza(11.5,0.55); });
     push(-2.15+1.05, 4, function(){ drawCabinet(-2.15,1.05); });
-    push(11.7+3.0,  4, function(){ drawWhiteboard(11.7,3.0); });
+    push(12.3+4.6,  4, function(){ drawWhiteboard(12.3,4.6); });
     push(-2.5+7.0,  4, function(){ drawWoodChest(-2.5,7.0,t); });   // 원목 서랍장, front-left corner
 
     // 큰 캄포르(녹나무) — 뒷벽 너머로 우거진 우듬지가 넘어오는 지브리의 상징목. 벽보다 먼저 그려(낮은 depth)
     // 밑동은 벽에 가리고 우듬지만 벽 위로 보이게 한다(painter's algorithm).
     push(ROOM.x0+ROOM.y0-0.6, -2.2, function(){ drawBigTree(8.0,-0.7,t); });
 
-    // plants
-    push(10.7+6.6, 5, function(){ drawPlant(10.7,6.6,t,0.0); });
+    // plants — 화분 하나(10.7,6.6)가 시스템·운영 구역 테이블/좌석과 겹쳐 우측 뒷벽 코너로 이동.
+    push(13.0+7.8, 5, function(){ drawPlant(13.0,7.8,t,0.0); });
     push(-2.1+5.4, 5, function(){ drawPlant(-2.1,5.4,t,2.1); });
 
     // props + characters
@@ -1980,7 +2021,8 @@
     const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
     return `rgba(${r},${g},${b},${a})`;
   }
-  const CEIL_PTS=[[1.5,3.4],[5.5,3.6],[9.5,3.8],[3.5,5.4],[8,2.4]];
+  // 2026-08-03: 3구역 분리로 좌석이 넓게 퍼져 다운라이트 포인트도 각 구역 위로 재분포(개수·로직 불변).
+  const CEIL_PTS=[[4.0,2.6],[10.5,2.6],[7.0,6.4],[1.0,7.2],[13.2,3.6]];
   function drawOverlays(t,W,H){
     const lightT = currentTheme()==='light';
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -2016,6 +2058,33 @@
       }
     }
 
+    // zone labels — 2026-08-03 3구역 분리에 맞춰 신설. 각 구역 테이블 중심 상공(캐릭터·소품보다 높은 z)에
+    // 떠 있는 작은 팻말로 어느 캐릭터가 어느 팀인지 한눈에 읽히게 한다. 이름표(nameplates, 바로 아래 블록)와
+    // 동일한 오버레이 프리미티브(roundRect·hexA·KFONT)를 재사용 — 구역 3개뿐이라 상호 이격 패스는 불필요.
+    for(const z of ZONES){
+      const s=toScreen(z.gx, z.gy, 2.6);
+      const fs=Math.max(11, Math.min(15, 12.5*CAM.scale/1.6));
+      ctx.font=`700 ${fs}px ${KFONT}`;
+      const tw=ctx.measureText(z.name).width;
+      const padX=fs*0.68, padY=fs*0.40, dot=fs*0.9;
+      const w=tw+padX*2+dot, h=fs+padY*2;
+      const px=s.x-w/2, py=s.y-h/2;
+      ctx.save();
+      ctx.shadowColor='rgba(0,0,0,.30)'; ctx.shadowBlur=6; ctx.shadowOffsetY=2;
+      roundRect(px,py,w,h,h*0.32);
+      ctx.fillStyle = lightT? 'rgba(255,251,243,.95)':'rgba(21,25,32,.90)';
+      ctx.fill(); ctx.shadowColor='transparent';
+      ctx.lineWidth=1.6; ctx.strokeStyle=hexA(z.color,0.9); ctx.stroke();
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      const tx0=px+padX;
+      ctx.beginPath(); ctx.arc(tx0+fs*0.28, s.y, fs*0.28, 0, Math.PI*2);
+      ctx.fillStyle=z.color; ctx.fill();
+      ctx.fillStyle = lightT? '#2A2318':'#F1E8D4';
+      ctx.fillText(z.name, tx0+dot, s.y+0.5);
+      ctx.restore();
+    }
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+
     // nameplates — opaque billboard panels (bold, framed, shadowed) so every seat reads clearly.
     // 2026-07-10 매니저 피드백: 이름표가 말풍선·다른 캐릭터 이름표와 겹쳐 가독성 저하 — 데스크 소품 공유 라인
     // (propAnchor, 모니터·램프·명패 소품용)을 그대로 쓰지 않고 캐릭터 자신의 실제 좌석 좌표로 독립 앵커링
@@ -2031,6 +2100,8 @@
       const na=nameplateAnchor(c);
       const anchor = toScreen(na.gx, na.gy, na.z);
       const isLead=c.lead;
+      // 2026-08-03(2차): 3구역 분리로 좌석 간 여백이 다시 확보돼 이름표를 원래 크기로 복원
+      // (7→12석 증원 때 밴드 밀집 대응으로 한 단계 줄였던 것을 되돌림 — 값은 증원 이전 원본과 동일).
       const label = isLead ? '팀장 · Claude' : (c.id+'  '+c.tag);
       const fs = Math.max(isLead?12:11, Math.min(isLead?18:15, (isLead?12.5:10.5)*CAM.scale/1.6));
       ctx.font=`700 ${fs}px ${KFONT}`;
@@ -2180,7 +2251,7 @@
      scale. c.expr is chosen per-character by updateExpression(); falls back to a state default.
      v2: 열린 눈은 주기적 깜빡임(blink micro-animation) — 감은눈 계열 표정에는 미적용. */
   function drawFace(c,t){
-    if(c.face==='y-') return;   // 뒤돌아 앉은 좌석(A-5·A-6·A-7) — 표정·안경 등 얼굴 디테일 없음(뒤통수만)
+    if(c.face==='y-') return;   // 뒤돌아 앉은 좌석(시스템·운영 구역 A-5·A-6·A-7·A-12) — 표정·안경 등 얼굴 디테일 없음(뒤통수만)
     const f=c._face; if(!f) return;
     const es=Math.max(1.3, 2.0*CAM.scale/1.6)*f.s;
     const dx=es*1.55, cx0=f.x, lightT=currentTheme()==='light';
@@ -2312,7 +2383,11 @@
   let realQueue=[];          // {agent,text,kind,isLead,count,progress} — 오래된→최신 순 소진
   let autologMaxRow=0;
   const STICKY_MAX_SEC=90*60;  // 안전장치 — sticky busy가 90분 넘게 해소 안 되면 자동 idle 복귀
-  const actorToAgent=actor=>{ const m=String(actor||'').match(/A-?([1-7])/); return m? ('A-'+m[1]) : null; };
+  // 주체(actor) → 에이전트 코드. 2026-08-03 A-8~A-12 증원 반영.
+  // ⚠️ 두 자리(10~12)를 반드시 한 자리보다 먼저 시도해야 한다 — 구판 /A-?([1-7])/는 "A-10 노무담당"의
+  //    앞 '1'만 집어 A-1로 오귀속시켰다(누락이 아니라 오집계였음). 뒤의 (?![0-9])는 미정의 코드(A-13 등)를
+  //    조용히 A-1로 흡수하지 않고 '매칭 없음'으로 떨구는 안전장치.
+  const actorToAgent=actor=>{ const m=String(actor||'').match(/A-?(1[0-2]|[1-9])(?![0-9])/); return m? ('A-'+m[1]) : null; };
   const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
   const dateStr=d=>{ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
   const weekStartStr=()=>{ const d=new Date(); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return dateStr(d); };
@@ -2401,7 +2476,8 @@
     if(REAL_SEEN||BACKEND_OK||SAMPLE_ON) return; SAMPLE_ON=true;
     ambientOn=true;                                    // 유휴 대기실 분위기 문구가 계속 흐르게
     const now=termNow();
-    const ST={'A-1':4,'A-2':3,'A-3':5,'A-4':2,'A-5':3,'A-6':6,'A-7':2};   // 대표 오늘 처리 건수
+    const ST={'A-1':4,'A-2':3,'A-3':5,'A-4':2,'A-5':3,'A-6':6,'A-7':2,
+              'A-8':2,'A-9':1,'A-10':2,'A-11':1,'A-12':1};   // 대표 오늘 처리 건수
     let sum=0; agents.forEach(a=>{ tally[a.id]=ST[a.id]||0; sum+=tally[a.id]; const el=document.getElementById('cn-'+a.id); if(el) el.textContent=tally[a.id]; });
     todayCount=sum; renderTodayAgent();
     const tte=document.getElementById('todayTeam'); if(tte) tte.textContent=sum;   // 샘플 폴백은 실 대상식별자가 없어 편의상 동일값 표시(실데이터 도착 시 즉시 정리됨)
@@ -2724,7 +2800,12 @@
     'A-4':{name:'평가담당자', desc:'인사평가 입력·평가지 렌더 (save-eval)'},
     'A-5':{name:'배포담당자', desc:'GitHub Pages 커밋 + Apps Script 새 버전 배포'},
     'A-6':{name:'감사자', desc:'확정·배포 직전 사실 검증 + 운영허브 자가점검(오류 능동 발견)'},
-    'A-7':{name:'시스템효율담당', desc:'중복·불필요 단계 제거 — 병렬·배치 최적화 + 회고 박제'}
+    'A-7':{name:'시스템효율담당', desc:'중복·불필요 단계 제거 — 병렬·배치 최적화 + 회고 박제 + 자동화 인프라 진단'},
+    'A-8':{name:'인사기획담당', desc:'인력계획·정원(TO)·조직설계·직무분석·R&R·직급체계·결재선'},
+    'A-9':{name:'보상담당', desc:'급여체계·수당·복리후생·인건비 분석·보상 형평(재무 관점은 CFO 소관)'},
+    'A-10':{name:'노무담당', desc:'근로계약·취업규칙·연장근무·근태·연차 법정관리·법적 리스크 식별'},
+    'A-11':{name:'교육개발담당', desc:'온보딩 교육 설계·직무교육·경력개발·교육 실시율(온보딩 실행은 A-3)'},
+    'A-12':{name:'인사분석담당', desc:'이직률·근속·인건비율·채용 리드타임·전환율 등 인사 지표 해석'}
   };
   const TERM_BEH_KO={rest:'휴식',coffee:'커피',stretch:'스트레칭',read:'서류 읽기',think:'생각 정리',mouse:'마우스 조작',glance:'두리번',swivel:'의자 회전',type:'타이핑',nod:'끄덕임'};
   const TERM_ALIAS={
@@ -2753,7 +2834,7 @@
   function tScroll(){ tOut.scrollTop=tOut.scrollHeight; }
   function termNow(){ return performance.now()/1000; }   // rAF 타임스탬프와 동일 시간축 → 엔진 무수정 호출
   function termAgentArg(arg){
-    const m=String(arg||'').trim().match(/^[Aa]\s*-?\s*([1-7])$/);
+    const m=String(arg||'').trim().match(/^[Aa]\s*-?\s*(1[0-2]|[1-9])$/);
     return m? 'A-'+m[1] : null;
   }
   function termLiveLine(c){
@@ -2813,7 +2894,7 @@
     team:function(arg){
       if(arg){
         const id=termAgentArg(arg);
-        if(!id){ tLine('팀원 상세는 A-1 ~ A-7 로 물어봐 주세요 (예: 팀원 A-6)','tl-err'); return; }
+        if(!id){ tLine('팀원 상세는 A-1 ~ A-12 로 물어봐 주세요 (예: 팀원 A-6)','tl-err'); return; }
         const r=TERM_ROLES[id], c=byId[id];
         tLine(id+' '+r.name,'tl-h');
         tLine('  역할: '+r.desc);
@@ -2832,7 +2913,7 @@
     motto:function(){ tLine('매출! 긍정! 협동! 사랑!','tl-h'); },
     call:function(arg){
       const id=termAgentArg(arg);
-      if(!id){ tLine('호출 대상: A-1 ~ A-7 (예: 호출 A-3)','tl-err'); return; }
+      if(!id){ tLine('호출 대상: A-1 ~ A-12 (예: 호출 A-3)','tl-err'); return; }
       const c=byId[id], r=TERM_ROLES[id];
       if(c.status==='busy'){ tLine(id+' '+r.name+' 작업 처리 중: '+c.task,'tl-mut'); return; }
       setBeh(c,'stretch',termNow());               // 기존 행동 엔진 API — 두 팔 번쩍(손 흔들기)
@@ -2890,7 +2971,7 @@
 
   /* ===== 앰비언트 피드 — 실 로그가 없을 때 대기실 분위기용 표시 문구(백엔드 미연결, 페이지 내 데이터만) ===== */
   let ambientOn=false;
-  const AMBIENT=[{id:'A-1',t:'이력서 한 장씩 다시 확인'},{id:'A-6',t:'숫자 하나하나 대조 중'},{id:'A-2',t:'지원자와 일정 통화 조율'},{id:'A-3',t:'이번 주 체크인 리스트 확인'},{id:'A-5',t:'배포 막바지 점검'},{id:'A-4',t:'평가 기준 다시 짚어보기'},{id:'A-7',t:'흐름 막히는 지점 분석'},{id:'A-1',t:'서류 평가 재검토'},{id:'A-6',t:'감사 대기 건 점검'}];
+  const AMBIENT=[{id:'A-1',t:'이력서 한 장씩 다시 확인'},{id:'A-6',t:'숫자 하나하나 대조 중'},{id:'A-2',t:'지원자와 일정 통화 조율'},{id:'A-3',t:'이번 주 체크인 리스트 확인'},{id:'A-5',t:'배포 막바지 점검'},{id:'A-4',t:'평가 기준 다시 짚어보기'},{id:'A-7',t:'흐름 막히는 지점 분석'},{id:'A-8',t:'조직도 앞에서 정원 셈'},{id:'A-9',t:'급여 밴드 다시 맞춰보기'},{id:'A-10',t:'근로계약 조항 짚어보기'},{id:'A-11',t:'교육 커리큘럼 손보는 중'},{id:'A-12',t:'지표 추세 들여다보기'},{id:'A-1',t:'서류 평가 재검토'},{id:'A-6',t:'감사 대기 건 점검'}];
   function ambientFeed(){ if(!ambientOn||realQueue.length) return; const a=AMBIENT[(Math.random()*AMBIENT.length)|0]; realQueue.push({agent:a.id,text:a.t,kind:'진행',isLead:false,count:false}); }
   function termExec(raw){
     tLine('chro> '+raw,'tl-cmd');
