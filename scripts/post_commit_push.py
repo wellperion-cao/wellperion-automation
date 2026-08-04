@@ -769,7 +769,32 @@ def _alert_should_send(root: str, reason: str) -> bool:
       멈춰 있었는데 아무에게도 알려지지 않았다. 억제는 도배를 막으려는 것이지 침묵하려는
       것이 아니다. 그래서 '같은 사유라도 정체가 _ALERT_STUCK_MAX_SEC 을 넘기면 반드시
       보낸다'를 얹는다(그 뒤로도 같은 간격으로만 — 도배 방지는 유지).
-    """
+
+    ★2026-08-04(시토 · 텔레그램·카톡 전수점검) — read→write 임계구역에 락이 없어
+      동시에 실행된 두 post_commit_push 프로세스가 같은 밀리초에 같은 상태를 읽고
+      둘 다 '억제 안 걸림'으로 판단해 같은 경보를 2번 보냈다(실사고: 2026-08-04
+      12:02:53·12:02:54 1초 간격 중복). 새 락 코드를 만들지 않고 이미 있는
+      queue_lock(P2, msvcrt 크로스프로세스 락)을 다른 lock_name으로 재사용해
+      임계구역(읽기~쓰기 전체)을 감싼다. 락을 못 잡아도(타임아웃) 기존 철학대로
+      경보를 잃지 않는 쪽(락 없이 진행)으로 폴백한다."""
+    import hashlib
+    import time
+    try:
+        import queue_lock  # noqa: E402  (같은 scripts/ 폴더 · P2 크로스프로세스 락 재사용)
+        _lock_cm = queue_lock.queue_lock(holder="post_commit_push", repo_root=root, lock_name="push_alert.lock")
+    except Exception:
+        from contextlib import nullcontext
+        _lock_cm = nullcontext()
+    try:
+        with _lock_cm:
+            return _alert_should_send_locked(root, reason)
+    except Exception:
+        # 락 타임아웃 등 — 경보를 잃는 것보다 락 없이 진행하는 쪽을 택한다(기존 철학과 동일).
+        return _alert_should_send_locked(root, reason)
+
+
+def _alert_should_send_locked(root: str, reason: str) -> bool:
+    """_alert_should_send의 실제 판정 로직(락으로 감싸진 임계구역)."""
     import hashlib
     import time
     key = hashlib.sha256(reason.encode("utf-8", "replace")).hexdigest()[:16]

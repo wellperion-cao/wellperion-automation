@@ -71,6 +71,44 @@ def main() -> None:
     assert welly_auto_runner._gm_action_notifier().chat_id == GM_ROOM
     print("[OK] ⑦ 러너 모호 배 핑(GM 손 요청) → 업무보고방")
 
+    # ⑧ 텔레그램 주 발신관문(tg_outbound_log.send) — HTTP 200 이어도 본문 ok:false 면
+    #    실패로 잡는지(2026-08-04 시토 · 카톡과 같은 부류의 조용한 실패 점검, 배347/348 대칭)
+    import io
+    from unittest.mock import patch
+    import tg_outbound_log as T
+
+    class _FakeResp(io.BytesIO):
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    with patch("urllib.request.urlopen", return_value=_FakeResp(b'{"ok": false, "description": "chat not found"}')):
+        result = T.send("fake-token", GM_ROOM, "방 경계 자체 점검", source="test_room_routing", max_attempts=1)
+    assert result is False, f"HTTP 200 + ok:false 인데 성공(True)으로 판정됨 — 조용한 실패: {result}"
+    print("[OK] ⑧ tg_outbound_log.send: HTTP 200 + ok:false → 실패로 정확히 판정")
+
+    # ⑨ post_commit_push 경보 억제 — 동시 실행 두 프로세스가 같은 사유를 동시에 보내던
+    #    레이스(2026-08-04 실사고: 12:02:53·12:02:54 1초 간격 중복) 재현 점검
+    import tempfile
+    import threading
+    import post_commit_push as P
+    tmp = tempfile.mkdtemp()
+    os.makedirs(os.path.join(tmp, "tmp"), exist_ok=True)
+    race_results = []
+    barrier = threading.Barrier(5)
+
+    def _racer():
+        barrier.wait()
+        race_results.append(P._alert_should_send(tmp, "방 경계 자체 점검 — 동시성"))
+
+    threads = [threading.Thread(target=_racer) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert sum(race_results) == 1, f"동시 5회 호출인데 True={sum(race_results)}번 — 락 레이스 재발: {race_results}"
+    print("[OK] ⑨ post_commit_push._alert_should_send: 동시 5회 중 1번만 발신(락 정상)")
+
     print("ALL OK — 방 경계 점검 통과 (실발신 0)")
 
 

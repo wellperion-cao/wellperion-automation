@@ -39,7 +39,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SENDER = ROOT / "scripts" / "kakao_report_sender.py"
 PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부" / "_pending_digest.json"
 KILL_SWITCH = ROOT / "status" / "ops_digest_send.json"
-TARGET_ROOM = "★ 운영부"
+TARGET_ROOM = "★운영부"  # 2026-08-04 시토: SSOT(kakao_rooms.json)와 표기 일치(공백 제거) —
+# 발송 자체는 _title_key 정규화로 공백 무관하게 동작하지만, 등록부 드리프트 체커가
+# SSOT 표기와 다르면 CODE_ROOM_NOT_IN_SSOT로 매번 걸린다(발송 실패 아님 — 표기만 정합화).
 
 
 def log(msg: str) -> None:

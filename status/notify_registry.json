@@ -540,6 +540,36 @@
       "state": "live",
       "state_note": "2026-07-31 GM 지시 — 지연 목록이 전부 실무진·부서장 이름인데 GM만 보고 있었다. 본인이 봐야 본인 지연을 안다. GM 정정으로 ★부서장 아닌 ★운영부. | [2026-08-04 정정] 공백 없는 표기로 통일(kakao_rooms.json 08-04 갱신과 일치, 기능 영향 없음).",
       "source": "telegram_bot/daily_scheduler.py run_stream_3_mgmt 말미 + scripts/kakao_report_sender.py"
+    },
+    {
+      "id": "evt-incident-regression",
+      "when": "09:10 편승(모듈 일일 보고 실행 중)",
+      "when_sort": null,
+      "freq": "conditional",
+      "channel": "telegram",
+      "room": "자동화현황방",
+      "chat_id": -5498808140,
+      "what": "재발방지 회귀 감지(캐논복사·규칙재서술·가드유실·박제깨짐) — 정상이면 무발신",
+      "owner": "시토",
+      "trigger": "schtasks",
+      "state": "live",
+      "state_note": "2026-08-04 시토(텔레그램·카톡 전수점검) 등록 — 등록부에 빠져 있어 자율현황이 이 발신원을 못 봤다(실측: 2026-08-03 10:25~10:28 5연발 + 08-04 1건, 억제 쿨다운 없음 — baseline이 알림 후 자동 갱신되지 않아 같은 드리프트가 재커밋마다 재경보됨. 의도적 지속경보인지 버그인지는 --set-baseline 설계상 판단 보류, 근본수정은 별건).",
+      "source": "Wellperion-Module-Report-Daily · ssot/incident_regression_monitor.py (scripts/module_reporter.py:347 편승)"
+    },
+    {
+      "id": "evt-erp-bridge-broken",
+      "when": "부정기(커밋훅·헬스체크 등 여러 진입점)",
+      "when_sort": null,
+      "freq": "conditional",
+      "channel": "telegram",
+      "room": "자동화현황방",
+      "chat_id": -5498808140,
+      "what": "연동 다리(시트 GAS 등) 끊김 감지 — 새로 끊긴 것만(alert_router 경유), 같은 끊김 반복은 무음",
+      "owner": "시토",
+      "trigger": "manual",
+      "state": "live",
+      "state_note": "2026-08-04 시토(텔레그램·카톡 전수점검) 등록 — 등록부에 빠져 있었다. 고정 스케줄 하나가 아니라 post_commit_push·self_health_watchdog·kpi_collector 등 여러 지점이 각자 호출(trigger=manual로 표기, schtasks 단일 매핑 불가). 실측: 2026-08-03 21:18·22:17 같은 사유(시트 GAS todo_list 타임아웃) 1시간 간격 재경보 — 코드상 dedup은 있음(newly broken만) → 그 사이 복구판정→재발 플래핑으로 추정, 확정 못함.",
+      "source": "scripts/erp_status_publisher.py:429-469 (alert_newly_broken)"
     }
   ],
   "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다.",

@@ -59,7 +59,9 @@ STATUS_FILE = ROOT / "status" / "kakao_summary_card_last_send.json"
 
 # 발송 대상 = ★운영부 1방 단독(2026-07-14 GM 정정 — 회장님·관리부 제외).
 # 9:30 매출보고 3방 공용 kakao_rooms.json은 건드리지 않고 여기서 고정한다.
-TARGET_ROOM = "★ 운영부"
+TARGET_ROOM = "★운영부"  # 2026-08-04 시토: SSOT(kakao_rooms.json)와 표기 일치 — 발송 자체는 _title_key
+# 정규화로 공백 무관하게 되지만, 등록부 드리프트 체커(notify_registry_check.py)가 SSOT 표기와
+# 다르면 CODE_ROOM_NOT_IN_SSOT로 매번 걸린다(발송 실패 아님 — 표기 정합 문제만 수정).
 
 
 def log(msg: str) -> None:

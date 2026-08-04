@@ -147,7 +147,13 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
         try:
             req = urllib.request.Request(url, data=data, method='POST')
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                ok = (resp.status == 200)
+                # ★2026-08-04 시토: HTTP 200 만으로는 부족하다 — 텔레그램 Bot API 는
+                #   일부 검증 오류에서도 200 + {"ok": false} 를 돌려준다(문서화된 동작).
+                #   status만 보면 그 실패가 '보냄'으로 로그에 남아 재시도가 안 걸린다
+                #   (오늘 카톡 발신에서 같은 부류 버그 2건 잡음 — 배347/348). 응답 본문의
+                #   ok 필드까지 확인해야 진짜 성공이다.
+                body = resp.read().decode('utf-8', 'replace')
+                ok = resp.status == 200 and json.loads(body).get('ok') is True
                 break
         except urllib.error.HTTPError as ex:
             if ex.code == 429 and attempt < max_attempts - 1:
