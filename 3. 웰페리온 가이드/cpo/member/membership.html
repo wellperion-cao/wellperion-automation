@@ -1524,7 +1524,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
             <tr>
               <th class="left" style="min-width:80px">이름</th>
               <th style="min-width:110px">전화</th>
-              <th style="min-width:150px">프로그램</th>
+              <!-- ★칸 이름·값을 회원관리와 같게 맞춤(GM 지시 2026-08-04): '프로그램'→'수강반종목명',
+                   표시도 축약 없이 시트 원문 그대로. GM: "멤버십 회원관리 수강반종목명이랑 달리 되어있어서
+                   오류가 생길수도 있으니". 정식명이 길어 폭을 넓힌다. -->
+              <th style="min-width:230px">수강반종목명</th>
               <th style="min-width:90px">등록일</th>
               <th class="left" style="min-width:180px">담당자 배정</th>
             </tr>
@@ -7573,7 +7576,12 @@ function _mregRender(){
     html += '<tr data-mregidx="' + idx + '">' +
       '<td class="left" style="font-weight:700">' + (m.name ? esc(m.name) : '—') + (isNew ? '<span class="reg-new-badge">NEW</span>' : '') + clsBadge + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(_oaMaskPhone(m.phone)) + '</td>' +
-      '<td style="font-size:11px;color:var(--dim)" title="' + esc(m.program || '') + '">' + esc(_mregProgLabel(m.program)) + '</td>' +
+      // ★수강반종목명은 시트 원문 그대로 보여준다 — 축약하지 않는다(GM 지시 2026-08-04).
+      //   GM: "멤버십 회원관리 수강반종목명이랑 달리 되어있어서 오류가 생길수도 있으니".
+      //   화면이 축약해 보여주면 사람이 그 축약값을 정답으로 알고 옮겨 적게 되고, 그게 시트에
+      //   두 벌 표기를 만든다. 서버도 같은 날 쓰기 값을 시트 정식명으로 맞추도록 고쳤다(@218).
+      //   ※다른 표(6747줄)는 종전대로 _mregProgLabel 축약 유지 — GM 지시 범위가 이 표다.
+      '<td style="font-size:11px;color:var(--dim);word-break:keep-all">' + esc(m.program || '—') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(m.regDate || '—') + '</td>' +
       '<td class="left">' + _mregOwnerCell(m, membersReady) + '</td>' +
       '</tr>';
