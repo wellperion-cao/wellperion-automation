@@ -1233,7 +1233,7 @@ function renderReqTbl(){
     var st=r.상태||"품의",act="";
     if(st==="품의"||st==="승인")act='<button class="reqAct" data-row="'+r.row+'" data-next="검토" data-pw="1" style="'+btnCss("#3c7a4a")+'">승인</button>';
     else if(st==="검토")act='<button class="reqAct" data-row="'+r.row+'" data-next="정산" data-pw="1" style="'+btnCss("#2f6d9e")+'">검토완료</button>';
-    else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" style="'+btnCss("#a98a52")+'">최종확인</button>';
+    else if(st==="정산")act='<button class="reqAct" data-row="'+r.row+'" data-next="완료" data-pw="1" style="'+btnCss("#a98a52")+'">최종확인</button>';
     else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
     if(st==="품의"||st==="검토"||st==="정산"||st==="승인")act+=' <button class="reqRej" data-row="'+r.row+'" style="'+btnCss("#b14238")+'">반려</button>';
@@ -1278,8 +1278,33 @@ function astBadge(r){ // 자산성 물품 표식 — 라벨 발급 상태까지 
   return '<span class="ast-badge" title="'+escapeHtml(lbs.map(function(a){return a.라벨;}).join(", "))+'">🏷 '+lbs.length+'장'+(todo?(" · 부착대기 "+todo):" · 부착완료")+'</span>';
 }
 function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
+/* 단계별·승인자별 비밀번호 (2026-08-04 매니저 지시)
+     품의→검토 [승인]     : 승인자가 김남욱 GM 이면 1531, 그 외(이경연 실장·이정헌 소장 등)는 1202
+     검토→정산 [검토완료] : 전부 1202!
+     정산→완료 [최종확인] : 전부 1202  (이전엔 비번 없이 눌렸다 — 이번에 신설)
+     반려                 : 1202 (별도 지시 없어 기존 유지)
+   ⚠ 이 확인은 화면(브라우저)에서만 이뤄진다. 서버는 공통 접근키만 보므로 권한 통제가 아니라
+     '실수 방지 잠금' 수준이다 — 서버 검증은 매니저 판단으로 후속 안건. */
+var APPR_PW={"김남욱":"1531"};   // 승인자 이름에 이 문자열이 포함되면 해당 비번
+var APPR_PW_DEFAULT="1202";
+function apprPwFor(next,row){
+  if(next==="정산")return "1202!";                 // 검토완료
+  if(next==="완료"||next==="반려")return "1202";
+  var it=REQ_ACTIVE.concat(REQ_DONE).filter(function(x){return String(x.row)===String(row);})[0];
+  var who=String((it&&it.승인자)||"");
+  for(var k in APPR_PW){if(who.indexOf(k)>=0)return APPR_PW[k];}
+  return APPR_PW_DEFAULT;
+}
 async function doAct(row,next,needPw,btn){
-  if(needPw){var _a=(next==="반려")?"반려":(next==="정산")?"검토완료":"승인";var _need=(next==="정산")?"1202!":"1202";var pw=prompt(_a+" 처리 — 부서장 비밀번호를 입력하세요");if(pw===null)return;if(String(pw).trim()!==_need){alert("비밀번호가 올바르지 않습니다");return;}}
+  if(needPw){
+    var _a=(next==="반려")?"반려":(next==="정산")?"검토완료":(next==="완료")?"최종확인":"승인";
+    var _need=apprPwFor(next,row);
+    var _it=REQ_ACTIVE.concat(REQ_DONE).filter(function(x){return String(x.row)===String(row);})[0];
+    var _who=(next==="검토"&&_it&&_it.승인자)?String(_it.승인자):""; // 승인 단계만 담당자 명시
+    var pw=prompt(_a+" 처리 — "+(_who?(_who+" "):"부서장 ")+"비밀번호를 입력하세요");
+    if(pw===null)return;
+    if(String(pw).trim()!==_need){alert("비밀번호가 올바르지 않습니다");return;}
+  }
   if(btn){btn.disabled=true;btn.textContent="처리중…";}
   var src=(reqFilter==="완료"||reqFilter==="반려")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
   if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
