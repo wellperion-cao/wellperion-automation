@@ -1968,6 +1968,13 @@
     // 🎯 목표치 & 진행 근거·경위 통합 칸(2026-08-01 GM 지적) — 정직 딱지를 여기로 옮겨 '0%'가 못 잰 값인지
     // 정말 안 한 것인지 목표치 바로 옆에서 구분되게 하고, 근거 한줄요약은 접지 않고 기본 펼침으로 보인다.
     var targetCell = '<div class="r-target-val">' + (o.target ? esc(o.target) : '—') + honestyBadge(o) + '</div>';
+    // 🗓️ 마감일(due, GM 지시 2026-08-03) — 값이 있으면 monthly_ops_sync.py 가 전사일정(GAS)에
+    // mop-{id} 로 멱등 등록한다. 지어내지 않음: 비어 있으면 그대로 비어 있다(약속 L23).
+    if(_editMode){
+      targetCell += '<div class="mc-edit">🗓️ <input type="date" data-id="' + esc(o.id) + '" data-f="due" value="' + esc(o.due || '') + '"> <span style="opacity:.7">마감(→전사일정)</span></div>';
+    } else if(o.due){
+      targetCell += '<div class="r-note-sum">🗓️ ' + esc(o.due) + ' → 전사일정</div>';
+    }
     if(_editMode){
       if(o.metric && !((o.metric.unit === '원') && /매출/.test(o.metric.name || ''))){
         var cv = (typeof o.metric.current === 'number') ? o.metric.current : '';
@@ -3303,6 +3310,7 @@
       }
       else if(f === 'progress'){ o.progress = clampPct(el.value); }
       else if(f === 'progress_note'){ o.progress_note = (el.innerText || el.textContent || '').trim(); }
+      else if(f === 'due'){ o.due = el.value.trim(); }
     });
 
     // 🔧 이슈·해결 보드 (상태·해결 메모)

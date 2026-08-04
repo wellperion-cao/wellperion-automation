@@ -50,6 +50,13 @@ HOME_KPI_URL = (
     "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
 )
 
+# 전사일정 GAS(SCHEDULE_SSOT) — 3. 웰페리온 가이드/coo/check/전사_일정.html 이 쓰는 것과 동일 URL
+# 재사용(약속 L21 — 새 GAS·새 엔드포인트 금지). GM 배포 2026-07-14.
+SCHEDULE_GAS_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec"
+)
+
 GATE = os.environ.get("MONTHLY_SYNC_APPLY", "0").strip() == "1"
 
 _SCRIPTS_DIR_FOR_WORKLOG = str(Path(__file__).resolve().parent)
@@ -422,6 +429,89 @@ def commit_plan(month: str, changed: int, n_observe_changed: int) -> None:
         print(f"[FAIL] 커밋 실패 — 반영분이 커밋되지 않았습니다. {res.get('reason')}")
 
 
+# ── 전사일정 연동(GM 지시 2026-08-03) ──────────────────────────────
+# 약속 L23: 전사일정=담당·날짜가 실제로 잡혔는지 확인하는 곳 / 월간운영계획=진척 관리 / 업무 SSOT=실무 굴림.
+# 세 화면에 같은 내용을 복제하지 않는다 — 여기서 하는 일은 딱 하나, objective.due 가 채워진 목표를
+# 기존 전사일정 GAS(SCHEDULE_GAS_URL)에 mop-{objective.id} 로 멱등 등록(추가/갱신만, 삭제는 절대 안 함
+# — 목표가 사라져도 이미 등록된 일정은 사람이 손댔을 수 있어 남긴다. INC-020 선례).
+def _schedule_item_from_objective(o: dict) -> dict:
+    """objective → 전사_일정.html 이 만드는 것과 같은 모양의 이벤트 아이템.
+    dept 는 objective.dept(부서 소계 표현)가 전사일정 부서 목록과 1:1로 안 맞아 지어내지 않고 비운다
+    (약속 L23 — 빈칸을 지어 채우지 않는다). source 키로 화면에서 출처 배지를 띄운다."""
+    return {
+        "id": "mop-" + str(o.get("id")),
+        "type": "이벤트",
+        "name": str(o.get("title") or "")[:80],
+        "category": "general",
+        "dept": "",
+        "cycle": "", "cycle_confirmed": False, "period_months": None,
+        "legal_basis": "",
+        "assignee": str(o.get("owner") or ""),
+        "last_done": "",
+        "next_due": str(o.get("due") or ""),
+        "evidence": "",
+        "applies": "있음",
+        "note": f"월간운영계획에서 자동 연동({o.get('id')})",
+        "vendor_id": "", "repeat": "",
+        "source": "monthly_ops",
+    }
+
+
+def sync_schedule(objs: list, live: bool) -> None:
+    """due 있는 목표만 전사일정에 밀어넣는다. 실패해도 조용히 넘어간다(정직: 무엇을 왜 못 했는지만 출력)."""
+    due_objs = [o for o in objs if str(o.get("due") or "").strip()]
+    if not due_objs:
+        print("\n[전사일정] due 있는 목표 없음 — 등록 생략")
+        return
+    cur = _get_json_retry(SCHEDULE_GAS_URL + "?action=load_schedule", timeout=20)
+    data = cur.get("data") if isinstance(cur, dict) and cur.get("ok") else None
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+        print("[전사일정] 조회 실패 — 등록 생략(원본 무변경)")
+        return
+
+    by_id = {it.get("id"): it for it in data["items"]}
+    # 날짜 충돌 가드 — 같은 날짜에 이미 사람이 손으로 넣은(source != monthly_ops) 항목이 있으면
+    # 같은 사실이 두 줄로 남을 위험(약속 L23 복제 금지)이라 자동 등록을 건너뛰고 사람 확인으로 넘긴다.
+    # (실측 2026-08-05: objective 2026-08-08 의 due=2026-08-31 이 기존 수기 항목
+    #  evt-brojay-wrapup-20260831 과 같은 날짜·같은 사실이었다 — 이 가드가 없으면 그대로 중복 등록됨.)
+    manual_by_due: dict[str, list] = {}
+    for it in data["items"]:
+        if it.get("source") != "monthly_ops" and it.get("next_due"):
+            manual_by_due.setdefault(it["next_due"], []).append(it.get("name", ""))
+
+    changed = 0
+    skipped = []
+    for o in due_objs:
+        item = _schedule_item_from_objective(o)
+        mid = item["id"]
+        if mid not in by_id and item["next_due"] in manual_by_due:
+            skipped.append((o.get("title"), item["next_due"], manual_by_due[item["next_due"]]))
+            continue
+        if by_id.get(mid) != item:
+            by_id[mid] = item
+            changed += 1
+    print(f"\n[전사일정] due 있는 목표 {len(due_objs)}건 · 신규/변경 {changed}건 · "
+          f"{'라이브 등록' if live else '드라이런(등록 안 함)'}")
+    for title, due, names in skipped:
+        print(f"   ⚠️ 건너뜀 — '{title}' ({due}) 같은 날짜에 이미 수기 일정 있음: "
+              f"{', '.join(names)} (중복 방지 · 사람 확인 필요)")
+    if not live or not changed:
+        return
+    data["items"] = list(by_id.values())
+    try:
+        body = json.dumps({"action": "save_schedule", "data": data}).encode("utf-8")
+        req = urllib.request.Request(SCHEDULE_GAS_URL, data=body,
+                                      headers={"Content-Type": "text/plain"}, method="POST")
+        with urllib.request.urlopen(req, timeout=20) as r:
+            res = json.loads(r.read())
+        if isinstance(res, dict) and res.get("ok"):
+            print(f"[전사일정] 등록 완료 ({res.get('count', '?')}건)")
+        else:
+            print("[전사일정] 등록 실패 — GAS 응답 오류")
+    except Exception as e:
+        print(f"[전사일정] 등록 실패({type(e).__name__}: {e})")
+
+
 def run(month: str | None, apply: bool) -> None:
     plan = load_json(PLAN_FILE)
     if not month:
@@ -550,6 +640,7 @@ def run(month: str | None, apply: bool) -> None:
 
     warn_unbacked_approvals(objs)
     warn_status_progress_mismatch(objs)
+    sync_schedule(objs, live)
 
 
 # ── 진척과 상태가 서로 다른 말을 하는 목표 적발 (2026-07-27) ─────────────────

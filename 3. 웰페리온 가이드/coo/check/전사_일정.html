@@ -338,8 +338,9 @@ function renderList(){
     r.setAttribute("title","클릭하면 편집");
     (function(_id){ r.onclick=function(){ if(inlineEditId===_id)return; openInline(_id); }; })(it.id);
     if(comp.date)r.setAttribute("data-due",fmtDate(comp.date));
+    var srcTag=(it.source==="monthly_ops")?'<span class="tag" style="border-color:var(--accent);color:var(--accent)" title="월간운영계획 목표에서 자동 연동">🎯 운영계획</span>':"";
     r.innerHTML='<div class="catbar" style="background:'+cat.color+'"></div>'+
-      '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+'</div>'+
+      '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+' '+srcTag+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+'</div>'+
       '<div class="rdept">'+esc(it.dept)+'</div>'+
       '<div class="rd">'+(isEvent?"":"다음 ")+'<b>'+dueTxt+'</b>'+dueBadge+'<br><span style="opacity:.7">'+tailTxt+'</span></div>'+
       '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';
