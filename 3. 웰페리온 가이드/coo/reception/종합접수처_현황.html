@@ -773,6 +773,18 @@ function _card(r){
     return h;
   }
 
+  /* 📨 실무진 전달 모듈 (GM 제안 2026-08-05) — "전달만 하고 완료"하는 작은 모듈.
+     새 칸·새 액션 없음(약속 L21): 전달문구 = 이미 있는 처리메모(memo) 그대로 보여줄 뿐이고,
+     완료 버튼도 아래 상태 드롭다운과 똑같이 reg_update(status:'완료')를 부른다(_update 공용 함수). */
+  if(!_closed){
+    var _msg = String(r.memo||'').trim();
+    h += '<div class="lf-note" style="margin-bottom:6px;"><b>📨 전달문구</b><br>' + (_msg ? _esc(_msg) : '아직 없음') + '</div>';
+    h += '<div class="lf-ctrl-row" style="margin-bottom:8px;">';
+    h += '<button type="button" class="lf-btn" data-reg-copy data-reg-copy-text="' + _esc(_msg) + '">📋 문구 복사</button>';
+    h += '<button type="button" class="lf-btn lf-claim" data-reg-done="' + _esc(rawId) + '" data-reg-done-cat="' + _esc(rawCat) + '" data-reg-done-status="' + _esc(status) + '">✅ 전달 완료</button>';
+    h += '</div>';
+  }
+
   /* 상태 */
   var opts = STATUS_LIST.map(function(s){ return '<option value="' + _esc(s) + '"' + (s===status?' selected':'') + '>' + _esc(s) + '</option>'; }).join('');
   h += '<div class="field-row"><label>상태</label>';
@@ -1109,6 +1121,30 @@ function _wireBoard(){
         if(d && d.ok){ toast(rId + ' 삭제 완료'); regLoad(); }
         else { toast((d && d.error) || '삭제 실패', true); regDelBtn.disabled = false; }
       }).catch(function(){ toast('네트워크 오류 — 삭제되지 않았습니다.', true); regDelBtn.disabled = false; });
+      return;
+    }
+    /* 📨 문구 복사 — 클립보드에 그대로(회원에게 보낼 텍스트를 새로 짓지 않는다). */
+    var copyBtn = e.target.closest('[data-reg-copy]');
+    if(copyBtn){
+      var ctext = copyBtn.dataset.regCopyText || '';
+      if(!ctext){ toast('전달문구가 아직 없습니다', true); return; }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(ctext).then(function(){ toast('문구를 복사했습니다'); })
+          .catch(function(){ toast('복사하지 못했습니다', true); });
+      } else {
+        toast('복사하지 못했습니다', true);
+      }
+      return;
+    }
+    /* 📨 전달 완료 — 아래 상태 드롭다운과 완전히 같은 경로(_update → reg_update status:'완료').
+       새 상태값·새 액션 없음. */
+    var doneBtn = e.target.closest('[data-reg-done]');
+    if(doneBtn){
+      var did = doneBtn.dataset.regDone;
+      var dcat = doneBtn.dataset.regDoneCat || '';
+      var dprev = doneBtn.dataset.regDoneStatus || '';
+      if(!did) return;
+      _update(did, dcat, {status:'완료'}, null, null, dprev);
       return;
     }
     var claimBtn = e.target.closest('[data-lf-claim]');
