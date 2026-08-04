@@ -5009,7 +5009,31 @@ function _processAction(body) {
       //   (2026-07-20 실고객 오삭제 사고와 같은 뿌리).
       //   ▸전화가 비어 있는 행(실측 문의 8건·강습 1건)은 이 거부에 걸리는 게 정상이다 —
       //     대조키가 없으면 쓰지 않고 건너뛴다. 근본 해소는 실무진이 전화번호를 채우는 것.
-      return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
+      //
+      // ★2026-08-04 시토 — 딱 하나 예외를 연다: **전화가 비어 있는 행에 그 전화를 채우는 저장.**
+      //   위 문장('근본 해소는 실무진이 전화번호를 채우는 것')이 실은 불가능했다 — 채우려면 저장해야
+      //   하는데 그 저장이 바로 이 줄에서 막힌다. 막다른 구조였고, 그걸 만든 게 나다.
+      //   실사고(2026-08-04): 이경연M 이 유상두님의 전화 빈 행(문의 233)에 기본정보를 넣고 저장했는데
+      //   여기서 거부돼 어디에도 안 남았다 — GM 이 '사라졌다'로 먼저 발견했다(FB260804-090407).
+      //   안전 근거(셋 다 만족해야만 연다):
+      //     ①이 요청이 실제로 전화번호를 채우는 요청이고
+      //     ②대상 행의 전화 칸이 **지금 비어 있고**(누구의 번호도 덮지 않는다)
+      //     ③보내온 이름이 그 행의 이름과 **정확히 같다**(행이 밀렸으면 이름이 안 맞아 막힌다).
+      //   → 이 셋이 맞으면 그 행은 '전화로는 못 찾지만 이름으로 확인된 행'이다. 그 외는 전부 종전대로 거부.
+      var _muFillPh = _normPhone_(body.phone);
+      var _muNmCi2  = _miColIdx_(muHdr, ['성함', '이름']);
+      if (_muFillPh && _muPhCi >= 0 && _muNmCi2 >= 0) {
+        var _muRowPhNow = _normPhone_(muSh.getRange(muRow, _muPhCi + 1).getValue());
+        var _muRowNm    = String(muSh.getRange(muRow, _muNmCi2 + 1).getValue() || '').trim();
+        var _muBodyNm   = String(body.name || '').trim();
+        if (!_muRowPhNow && _muRowNm && _muBodyNm && _muRowNm === _muBodyNm) {
+          Logger.log('row-key 예외 통과(전화 채움): row=' + muRow + ' name=' + _muRowNm);
+        } else {
+          return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
+        }
+      } else {
+        return _json({ ok: false, error: 'row-key-unverified', detail: '행 확인 불가 — 연락처 확인 후 목록 새로고침하여 다시 저장하세요' });
+      }
     }
     }
     function _muSet(colNames, val) {
@@ -5231,18 +5255,7 @@ function _processAction(body) {
       //   화면(신규 등록현황·회원관리)은 유효회원만 읽으므로, SUC 처리한 회원이 화면에 안 뜨는 게 그 구조의 결과였다.
       //   ★조건: 화면이 회원 DB 칸(activeProgram)을 실어 보낸 경우에만 쓴다 — 옛 화면·달력 모달처럼 status만
       //   보내는 경로가 빈 껍데기 행을 만들지 않게 한다. 전화키 멱등이라 재저장해도 행이 늘지 않는다.
-      if (String(body.activeProgram || '').trim()) {
-        try {
-          _memberActiveUpsert_(_coName, _coPhone, String(body.activeProgram).trim(),
-                               body.regDate || _todayKR_(), body.months, {
-            kind:      body.memKind,
-            age:       body.memAge,
-            regClass:  body.memRegClass,
-            locker:    body.memLocker,
-            startDate: body.memStartDate
-          });
-        } catch (eMa) { Logger.log('SUC 유효회원 반영 실패: ' + eMa.message); }
-      }
+      //   ▸★2026-08-04 시토 — 실제 쓰기는 아래 블록으로 옮겼다(이 if 밖). 이유는 그 주석 참조.
       // 등록 전환 전용 알림은 '실제 전환(이전≠SUC)' 1회만 — 매 저장 중복 알림 방지. '문의 알림' 방.
       if (!_wasSuc) {
         try {
@@ -5250,6 +5263,27 @@ function _processAction(body) {
           _notifyTelegram('✅ <b>등록 전환</b> — 문의회원이 등록(' + _muNewStatus + ')으로 전환\n· 이름: ' + (_coName || '-') + '\n· 등록종목: ' + _teamChip(_coRegProg) + (_coRegProg || '-') + '\n· 담당: ' + (_coOwner || '-'), _regChatId);
         } catch (e) {}
       }
+    }
+    // ★유효회원(회원 DB) 반영 — if(_isSucNew) 밖으로 꺼냈다 (2026-08-04 시토 · 배345).
+    //   ▸왜: 등록은 **저장이 두 번**으로 갈린다. ①진행상태를 SUC 로 → status 는 오지만 등록종목(activeProgram)은
+    //     아직 모른다 ②그 직후 뜨는 '등록 종목' 모달 저장 → activeProgram 은 오는데 **status 는 안 보낸다.**
+    //     회원 DB 쓰기가 status 기준(_isSucNew) 안에 있었으므로 ①은 종목이 없어 건너뛰고 ②는 '새 SUC 아님'으로
+    //     블록째 건너뛰었다 — **어느 쪽으로도 회원 명단에 안 써졌고, 로그도 알림도 없었다.**
+    //     실측(2026-08-04): SUC 186건 중 12건이 회원 명단에 없다(2026-01 ~ 08-03, 유상두님 포함).
+    //   ▸고친 방식: '이 저장으로 SUC 가 됐거나(_isSucNew) 이미 SUC 인 행(_wasSuc)' 이면서 등록종목이 실려 오면 쓴다.
+    //     activeProgram 조건은 그대로 둔다 — 없애면 회원구분·시작일자가 빈 껍데기 행이 생기고, 그게 2026-07-28
+    //     정지원님 중복행 사고(배306)와 같은 자리다. 전화키 멱등이라 재저장해도 행이 늘지 않는다.
+    if ((_isSucNew || _wasSuc) && String(body.activeProgram || '').trim()) {
+      try {
+        _memberActiveUpsert_(_coName, _coPhone, String(body.activeProgram).trim(),
+                             body.regDate || _todayKR_(), body.months, {
+          kind:      body.memKind,
+          age:       body.memAge,
+          regClass:  body.memRegClass,
+          locker:    body.memLocker,
+          startDate: body.memStartDate
+        });
+      } catch (eMa) { Logger.log('SUC 유효회원 반영 실패: ' + eMa.message); }
     }
     // 1차 컨택 알림(축6, 이력-기준으로 일원화): 연락이력 0건 → ≥1건 전이 시 1회만. 2026-07-08 시포·GM.
     //   구 '컨택 시작'(상태=상담중 등 진입 기준) 알림은 중복 방지를 위해 이 이력-기준 알림으로 대체(제거).
