@@ -88,6 +88,15 @@
   .linkbox .d{font-size:11.5px;color:var(--grey);margin:0;}
   .linkbox .go{font-size:12px;font-weight:700;color:var(--mid);white-space:nowrap;}
 
+  /* 큰 묶음 헤더 — 회장님 7건 / 브로제이 / 김남욱 GM (2026-08-04 GM 지시) */
+  .grp{margin:20px 0 10px;padding:7px 13px;background:var(--deep);color:#fff;
+       display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+       break-inside:avoid;break-after:avoid;page-break-after:avoid;}
+  .grp h2{font-size:15.5px;font-weight:800;letter-spacing:.02em;margin:0;}
+  .grp .cnt{font-size:11.5px;font-weight:600;color:#C9D2CC;white-space:nowrap;}
+  .grp-note{font-size:12.5px;color:var(--grey);margin:0 0 4px;}
+  .grp-stub{font-size:12.5px;color:var(--grey);font-style:italic;margin:6px 0 0;}
+
   .sum{margin-top:8px;border:2px solid var(--deep);padding:8px 14px;}
   .sum h3{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--brass);margin:0 0 6px;}
   .sum table{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -104,6 +113,8 @@
     .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
     .bar{display:none;}
     .item,.sum,.linkbox{break-inside:avoid;}
+    .grp{break-inside:avoid;break-after:avoid;page-break-after:avoid;
+         -webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .linkbox{background:#fff;}
     .linkbox .go::after{content:" (별첨 참조)";font-weight:500;}
   }
@@ -137,6 +148,12 @@
     <strong>5·6번은 내용 정리 예정</strong> — GM 확인 후 채워집니다.
     <strong>7번은 회장님 지시 6건과 별개로 GM 지시(8월 3일)로 추가된 검토 건</strong>이며, 같은 사우나 구역 정비라 함께 올려 둡니다.
   </p>
+
+  <!-- ── 묶음 1 · 회장님 업무 보고건 ── -->
+  <div class="grp">
+    <h2>👑 회장님 업무 보고건</h2>
+    <span class="cnt">7건 · 01~07</span>
+  </div>
 
   <div class="grid">
 
@@ -334,6 +351,38 @@
   </div>
 
   </div><!-- /.grid -->
+
+  <!-- ── 묶음 2 · 브로제이건 ── -->
+  <div class="grp">
+    <h2>🤝 브로제이건</h2>
+    <span class="cnt">전용 페이지에서 관리</span>
+  </div>
+  <p class="grp-note">브로제이 시스템 도입·업무분장은 전용 페이지에서 관리합니다.</p>
+
+  <a class="linkbox" href="../brojay/브로제이_업무분장.html">
+    <div>
+      <p class="t">브로제이 · 전용 페이지</p>
+      <p class="n">브로제이 업무분장</p>
+      <p class="d">담당별 체크리스트</p>
+    </div>
+    <span class="go">자료 열기 →</span>
+  </a>
+
+  <a class="linkbox" href="../brojay/브로제이_확인목록.html">
+    <div>
+      <p class="t">브로제이 · 전용 페이지</p>
+      <p class="n">브로제이 확인목록</p>
+      <p class="d">확인 목록</p>
+    </div>
+    <span class="go">자료 열기 →</span>
+  </a>
+
+  <!-- ── 묶음 3 · 김남욱 GM건 ── -->
+  <div class="grp">
+    <h2>🧭 김남욱 GM건</h2>
+    <span class="cnt">내용 대기</span>
+  </div>
+  <p class="grp-stub">GM이 직접 챙기시는 건을 이곳에 모읍니다 — 전달해 주시면 정리해 올립니다.</p>
 
   <div class="sum">
     <h3>8월 진행 요약</h3>
