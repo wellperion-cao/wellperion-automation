@@ -541,23 +541,58 @@ def _ceo_gm_record_gap() -> dict:
     return result
 
 
+def _count_done_reply_gap(ships: list, by_fid: dict, stage_rank, done_rank: int) -> int:
+    """DONE 배 중 **feedback_id 필드로 정확히 연결된 것만** 세되, 시트 처리상태가
+    '처리완료' **가 아닌**(rank != done_rank — rank<done_rank 아님. '<' 를 쓰면 구버전
+    자동라벨 같은 미인식 문구(rank=99)가 "이미 앞선 단계"로 오판돼 새는 걸 배358 2차
+    진단에서 실측했다) 건을 미회신으로 센다.
+    note·title 텍스트로 FB…ID 를 찾는 폴백은 쓰지 않는다 — cpo_staff_feedback_watch.
+    detect_done_reopen_drift() 의 문서화된 교훈(FB260801-152607 실사고: 무관한 배가
+    접수ID를 한 번 언급했다는 이유로 오탐)과 같은 함정이라, 실제로 다시 재현해 확인했다
+    (배299·CLI ad-hoc 병합배가 note 안에 FB260725-114820 을 언급만 했을 뿐인데 걸림)."""
+    n = 0
+    for ship in ships:
+        if not isinstance(ship, dict) or ship.get("status") != "DONE":
+            continue
+        fid = str(ship.get("feedback_id") or "").strip()
+        if not fid:
+            continue
+        row = by_fid.get(fid)
+        if row is None:
+            continue
+        if stage_rank(str(row.get("처리상태") or "")) != done_rank:
+            n += 1
+    return n
+
+
 def _ceo_staff_reply_gap() -> dict:
-    """실무진 회신 미완료 건수(배358). 새 조회 0건 — cpo-staff-feedback-watch.py 가 3분마다
-    이미 계산해 남기는 하트비트의 '미처리'(처리완료 단계 미도달)를 그대로 읽는다(약속 L21).
-    실패=None(0 위장 금지)."""
+    """실무진 회신 미완료 건수(배358, 2026-08-04 정의 2차 수정 — 팀장 지적: ①오늘 막
+    접수된 PENDING 건까지 세면 절대 0이 안 되는 죽은 지표다 ②'<' 비교와 note 텍스트
+    폴백은 오탐을 만든다는 걸 재현 확인). **배가 DONE이고 feedback_id 필드로 정확히
+    연결된 시트 행이 아직 처리완료가 아닌 것만** 센다.
+    새 GAS 없음 — cpo_staff_feedback_watch 의 fetch_feedback·_stage_rank 그대로 재사용.
+    ⚠️ feedback_id 필드가 없는 구세대 배(예: 배114/FB260725-114820)는 이 지표가 못 잡는다
+    — note 텍스트로 잇는 건 위 도크스트링의 이유로 안전하지 않아 일부러 안 한다. 그런
+    배는 배299(시토, 회신 통로 자체 결함) 쪽 실증거로 별도 취급."""
     result: dict = {"실무진_회신_미완료": None, "_실무진회신_note": "측정 전"}
     try:
-        hb = json.loads(STAFF_FB_HEARTBEAT_PATH.read_text(encoding="utf-8"))
-        n = hb.get("미처리")
-        if not isinstance(n, int) or isinstance(n, bool):
-            result["_실무진회신_note"] = "하트비트에 미처리 필드 없음/형식 불일치"
+        sys.path.insert(0, str(ROOT / "scripts" / "collectors"))
+        from cpo_staff_feedback_watch import fetch_feedback, _stage_rank, STAFF_STATUS_DONE  # type: ignore
+        rows, err = fetch_feedback()
+        if rows is None:
+            result["_실무진회신_note"] = f"staff_feedback_list 실패: {err}"
             return result
+        by_fid = {str(r.get("접수ID") or "").strip(): r for r in rows if r.get("접수ID")}
+        archive = json.loads((ROOT / "status" / "_queue_archive.json").read_text(encoding="utf-8"))
+        done_rank = _stage_rank(STAFF_STATUS_DONE)
+        n = _count_done_reply_gap(_load_queue() + archive, by_fid, _stage_rank, done_rank)
         result["실무진_회신_미완료"] = n
         result["_실무진회신_note"] = (
-            f"cpo-staff-feedback-watch 하트비트 재사용(생성 {hb.get('generated_at_kst', '?')})"
+            "배 DONE & feedback_id 연결 & 시트 처리완료 미도달 카운트"
+            "(note 텍스트 폴백 미사용 — feedback_id 없는 구세대 배는 별도 취급, 배299 참조)"
         )
     except FileNotFoundError:
-        result["_실무진회신_note"] = "하트비트 파일 없음(수집기 미가동)"
+        result["_실무진회신_note"] = "_queue_archive.json 없음"
     except Exception as e:
         result["_실무진회신_note"] = f"읽기 실패({type(e).__name__}): {str(e)[:80]}"
     return result
@@ -678,7 +713,26 @@ def _selftest() -> int:
     ]
     n = _count_gm_unrouted(rows)
     assert n == 3, n
-    print("selftest OK —", n, "건")
+
+    sys.path.insert(0, str(ROOT / "scripts" / "collectors"))
+    from cpo_staff_feedback_watch import _stage_rank, STAFF_STATUS_DONE  # type: ignore
+    done_rank = _stage_rank(STAFF_STATUS_DONE)
+    by_fid = {
+        "FB1": {"처리상태": "처리완료"},        # 이미 회신됨 — 안 셈
+        "FB2": {"처리상태": "확인중"},          # DONE인데 회신 못 미침 — 셈
+        "FB3": {"처리상태": "진행중"},          # 미인식 구버전 라벨(rank=99) — 회신 아님, 셈
+    }
+    ships = [
+        {"status": "DONE", "feedback_id": "FB1"},
+        {"status": "DONE", "feedback_id": "FB2"},
+        {"status": "DONE", "feedback_id": "FB3"},
+        {"status": "PENDING", "feedback_id": "FB2"},          # 진행중 배 — 애초에 스킵
+        {"status": "DONE", "note": "…FB1 언급만…"},           # feedback_id 필드 없음 — 텍스트 폴백 안 써서 스킵
+    ]
+    gap = _count_done_reply_gap(ships, by_fid, _stage_rank, done_rank)
+    assert gap == 2, gap  # FB2·FB3 만 잡혀야 함
+
+    print("selftest OK — GM기록_미반영", n, "건 · 실무진_회신_미완료(픽스처)", gap, "건")
     return 0
 
 
