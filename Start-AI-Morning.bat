@@ -24,6 +24,14 @@ REM  ASCII only on purpose - Korean text in a .bat breaks under CP949.
 REM ============================================================
 
 cd /d "%WORK%"
+REM -- 0-a. Clear inherited child-session marker (GM 2026-08-04) --
+REM    If this window is launched from inside another Claude session it inherits
+REM    CLAUDE_CODE_CHILD_SESSION=1 and the transcript is never saved. Two things break:
+REM    (1) the whole conversation is lost (942 bytes instead of ~12MB),
+REM    (2) the status line reads the role FROM the transcript, so it drops to a grey
+REM        "role unknown" line and looks like every colour vanished (GM 2026-08-04).
+REM    Clearing it costs nothing when it was not set.
+set "CLAUDE_CODE_CHILD_SESSION="
 echo.
 echo  == Wellperion morning boot - Welly + Sito ==
 echo.

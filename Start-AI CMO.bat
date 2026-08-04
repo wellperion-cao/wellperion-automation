@@ -3,6 +3,14 @@ chcp 65001 >nul
 set "WORK=%USERPROFILE%\welperion-automation"
 
 cd /d "%WORK%"
+REM -- 0-a. Clear inherited child-session marker (GM 2026-08-04) --
+REM    If this window is launched from inside another Claude session it inherits
+REM    CLAUDE_CODE_CHILD_SESSION=1 and the transcript is never saved. Two things break:
+REM    (1) the whole conversation is lost (942 bytes instead of ~12MB),
+REM    (2) the status line reads the role FROM the transcript, so it drops to a grey
+REM        "role unknown" line and looks like every colour vanished (GM 2026-08-04).
+REM    Clearing it costs nothing when it was not set.
+set "CLAUDE_CODE_CHILD_SESSION="
 REM -- git 부팅 관문 자가복구 (GM 2026-07-30, 7개 부팅 배치 멈춤 사고) --
 REM    왜: 자동화가 detached HEAD 로 커밋을 쌓아왔고, 그 상태의 pull --rebase 가
 REM    미커밋 대용량 바이너리까지 autostash 로 삼키다 부팅이 멈췄다(stash 35개·287MB).

@@ -9,6 +9,15 @@ echo    Wellperion GM Control Room Starting
 echo  ========================================
 echo.
 
+REM -- 0-a. Clear inherited child-session marker (GM 2026-08-04) --
+REM    If this window is launched from inside another Claude session, it inherits
+REM    CLAUDE_CODE_CHILD_SESSION=1 and the transcript is never saved. Two things break:
+REM    (1) the whole conversation is lost (942 bytes instead of ~12MB),
+REM    (2) the status line cannot read the role from the transcript, so it drops to a
+REM        grey "role unknown" line and looks like all colours vanished.
+REM    Clearing it here costs nothing when it was not set.
+set "CLAUDE_CODE_CHILD_SESSION="
+
 REM -- 0. Auto-update Claude Code + OMC --
 REM    Windows locks a running .exe, so updating while ANY claude session is open
 REM    silently fails. Guard: update ONLY when claude.exe count = 0, then verify
