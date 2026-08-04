@@ -10,7 +10,8 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO"
 
-# 재배선 대상 22곳 (status/_queue*.json·backups·briefs·docs/specs·워크트리 제외)
+# 재배선 대상 21곳 (status/_queue*.json·backups·briefs·docs/specs·워크트리 제외)
+# ★2026-08-04 시토(모듈 정리) — inc020_close_verify.py 제거(INC-020 종결 단발 검증 스크립트 삭제, 호출처 0 확인)
 # ★2026-08-01 시토(배276/286 조사) — 07-18 이후 신규 통합분 8건 반영 + 죽은 마케팅현황대시보드.html 제거
 #   (07-22 콘텐츠문의현황.html로 대체됨, memory: project_marketing_dashboard_merged_into_m1.md).
 #   전수 확인 = grep -rl "<prod webapp URL>" 로 재검증(백업·아카이브·브리프·specs 제외 시 이 22개와 일치).
@@ -34,7 +35,6 @@ FILES=(
 "scripts/qa_inject_inquiry.py"
 "scripts/telegram_health_check.py"
 "scripts/monthly_marketing_report.py"
-"scripts/inc020_close_verify.py"
 "scripts/collectors/ops_shared.py"
 "scripts/collectors/cpo_staff_feedback_watch.py"
 )

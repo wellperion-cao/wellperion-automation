@@ -186,3 +186,18 @@ def test_append_feedback_unknown_module_returns_false(tmp_path):
         "no-such-module", "text", "author", path=str(reg_file), at="2026-07-09"
     )
     assert ok is False
+
+
+def test_cleanup_20260804_dead_oneshots_stay_deleted():
+    # 2026-08-04 시토 모듈 정리 — 호출처 0 단발 검증 스크립트 3개 삭제 유지 확인.
+    # 부활하면 이 테스트가 알린다(정리=삭제가 기본, feedback_cleanup_merge_relocate_delete).
+    import re
+
+    for name in ("inc020_close_verify.py", "verify_g1_edit.py", "verify_g1_screenshot.py"):
+        assert not os.path.exists(os.path.join(_SCRIPTS_DIR, name)), f"{name} 부활 — 삭제 유지 위반"
+
+    # gas_funnel_migrate.sh 재배선 목록의 로컬 경로가 전부 실재해야 repoint 가 안 깨진다.
+    sh = os.path.join(_SCRIPTS_DIR, "gas_funnel_migrate.sh")
+    with open(sh, encoding="utf-8") as f:
+        for path in re.findall(r'^"([^"]+)"$', f.read(), flags=re.M):
+            assert os.path.exists(os.path.join(_PROJECT_ROOT, path)), f"gas_funnel_migrate.sh 죽은 참조: {path}"
