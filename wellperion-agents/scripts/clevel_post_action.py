@@ -467,25 +467,15 @@ def build_telegram_message(
     return "\n".join(lines)
 
 
-# ── 완료보고 목적지 분리 (2026-07-30 배202 ①·팀리드 지시) ──────────────────────
-# 배경: 이 파일의 정식 L18 완료보고가 audience 와 무관하게 전부 업무보고방(8254867551)
-# 으로 나갔고, notify_registry.json 에도 등록이 안 돼 있었다 — GM 2026-07-25 확정 규칙
-# ("업무보고방=현실업무만·AI진행건=AI진행현황방")을 이 관문만 안 지키고 있었다(오늘 실측:
-# 부분로그만으로도 6건). 그 배의 audience 로 갈라 보낸다. audience 판정이 없거나 못 읽으면
-# 지금까지와 동일하게 업무보고방(안전측 폴백 — 조용히 사라지는 경로를 만들지 않는다).
-def _lookup_audience(task_id: str) -> str | None:
-    """큐에서 task_id 하나의 audience 필드만 읽는다. 없거나 못 읽으면 None."""
-    try:
-        if not _QUEUE_PATH.exists():
-            return None
-        queue = json.loads(_QUEUE_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-    for t in queue:
-        if isinstance(t, dict) and t.get("task_id") == task_id:
-            aud = t.get("audience")
-            return aud.strip().lower() if isinstance(aud, str) and aud.strip() else None
-    return None
+# ── 완료보고 목적지 = AI 진행현황방 단일 (2026-08-04 GM "두 방 혼선 정리") ──────
+# 배 완료·진행·이슈 보고(L18)는 정의상 전부 "AI 가 한 작업의 보고"다 — 규약(ssot/자율화
+# 규약.md §4)·wellperion-gm-report SKILL §4-2-1("작업 완료 및 다음 작업 → AI 진행현황방")
+# 그대로. 종전엔 배의 audience 칸이 방까지 골랐고(미선언 폴백=업무보고방), 그 탓에 8/1~4
+# 실측 26건의 배 보고가 업무보고방을 채웠다. 08-03 "시토만 AI방" 패치는 args.clevel=="cto"
+# 소문자 비교였는데 .bat 이 CTO 로 넘겨 한 번도 안 걸렸다(사후 실측: 08-03 11:02 등 계속
+# 업무보고방행). 호출측 선택지를 없애고 이 관문 하나가 목적지를 정한다(약속 L21).
+# audience 칸은 이제 G1 항로 표시 여부만 가른다(hangro_board.py) — 방 선택에 안 쓴다.
+# 발송 실패·게이트 시 notify_or_fallback 이 업무보고방으로 폴백(조용한 소멸 없음 — 종전 유지).
 
 
 def send_ai_progress_report(
@@ -503,7 +493,7 @@ def send_ai_progress_report(
     changelog: str = "",
 ) -> bool:
     """AI 진행현황방 완료보고 — notify_gm_progress.notify_or_fallback() 단일 관문 재사용
-    (새 발신 함수 신설 금지 · 약속 L21). audience=ai 인 배만 여기로 온다.
+    (새 발신 함수 신설 금지 · 약속 L21). 모든 배의 L18 보고가 여기로 온다(2026-08-04).
 
     [2026-07-30 배202 팀리드 지시 — 조용한 소멸 구멍 폐쇄, 폴백 판단은 한 지점(notify_
     gm_progress.notify_or_fallback)에만] gate_off·daily_cap·room_unresolved·send_failed
@@ -773,47 +763,23 @@ def main() -> int:
         print("[Telegram] 루틴/자동 완료 — GM 채널 보고 스킵(스팸 방지): " + args.task_id)
         ok_telegram = True
     else:
-        audience = _lookup_audience(args.task_id)
-        # ★2026-08-03 GM 지시 — "시토 일이 다 업무보고방으로 들어오는데, AI 진행현황방으로 옮겨줘."
-        #   시토(CTO)는 백엔드 라인·전사 AI 업무 총괄이라 완료보고가 사실상 전부 AI 살림이다.
-        #   그런데 배에 audience 가 안 박혀 있으면 폴백이 업무보고방이라, 실무진·GM 이 보는 방이
-        #   시토 작업 보고로 채워지고 있었다(오늘 실측: 배294·298 등이 그 경로로 들어감).
-        #   ▸시토 보고는 audience 선언과 무관하게 AI 진행현황방으로 보낸다.
-        #   ▸되돌리기 = 이 두 줄을 지우면 종전 동작(배의 audience 판정)으로 복귀.
-        #   ▸다른 역할은 손대지 않는다 — 그들의 폴백 정책은 그대로다.
-        if args.clevel == "cto":
-            audience = "ai"
-        print("[라우팅] audience=" + (audience or "(없음→업무보고방 폴백)"))
-        if audience == "ai":
-            ok_telegram = send_ai_progress_report(
-                clevel=args.clevel,
-                task_id=args.task_id,
-                status=args.status,
-                summary=args.summary,
-                dry_run=args.dry_run,
-                title=title,
-                artifact_url=args.artifact_url or "",
-                next_desc=args.next_desc or "",
-                terminal=args.terminal,
-                bridge_label=bridge_label,
-                version=args.version,
-                changelog=args.changelog,
-            )
-        else:
-            ok_telegram = send_telegram(
-                clevel=args.clevel,
-                task_id=args.task_id,
-                status=args.status,
-                summary=args.summary,
-                dry_run=args.dry_run,
-                bridge_label=bridge_label,
-                title=title,
-                version=args.version,
-                changelog=args.changelog,
-                artifact_url=args.artifact_url or "",
-                next_desc=args.next_desc or "",
-                terminal=args.terminal,
-            )
+        # 목적지는 이 관문이 정한다 — 배 보고(L18)는 역할·audience 무관 전부 AI 진행현황방
+        # (2026-08-04 GM "두 방 혼선 정리" · 근거는 send_ai_progress_report 위 주석).
+        print("[라우팅] L18 배 보고 → AI 진행현황방 (실패 시 업무보고방 폴백)")
+        ok_telegram = send_ai_progress_report(
+            clevel=args.clevel,
+            task_id=args.task_id,
+            status=args.status,
+            summary=args.summary,
+            dry_run=args.dry_run,
+            title=title,
+            artifact_url=args.artifact_url or "",
+            next_desc=args.next_desc or "",
+            terminal=args.terminal,
+            bridge_label=bridge_label,
+            version=args.version,
+            changelog=args.changelog,
+        )
 
     # ── 세션 GM 신호 흡수(배 10267): --gm-signal 없으면 완전 무동작 ──────────
     if args.gm_signal:
