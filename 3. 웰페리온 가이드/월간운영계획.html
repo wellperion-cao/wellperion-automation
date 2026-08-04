@@ -3505,10 +3505,11 @@
         if(bodyEl) bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>' + link;
       });
   }
-  // 👑 회장님 지시사항 — coo/chairman/회장님_지시사항.html 과 동일 CHECK_GAS 공용보드(BOARD_KEY) 재사용,
-  // 새 GAS·새 저장소 없음(약속 L21). 항목 제목·기한은 그 페이지 고정 본문을 그대로 미러(사본 아님·정본은
-  // 그 페이지) — 보드 응답에는 상태값만 있고 제목은 없어 여기서도 나열해 둬야 요약을 만들 수 있다.
-  var CHAIRMAN_BOARD_KEY = 'CHAIRMAN_DIRECTIVES_2026_08';
+  // 👑 회장님 지시사항 — 항목 제목·기한은 그 페이지 고정 본문을 그대로 미러(사본 아님·정본은 그 페이지).
+  // ★2026-08-04 GM 지시로 원본 페이지의 진행 트래커(착수/진행/메모, CHAIRMAN_DIRECTIVES_2026_08 보드)를
+  // 통째로 없앴다 — 이제 GM 이 웰리에게 구두로 전달하면 웰리가 본문을 직접 정리한다. 그 보드는 더 이상
+  // 아무도 쓰지 않고(과거 오염 기록만 남아 있음, 데이터는 지우지 않음) 여기서도 fetch·상태 배지를 없애고
+  // 항목만 정적으로 나열한다(화면에서 안 쓰면 그만 — 약속 L21).
   var CHAIRMAN_ITEMS = [
     {id:'d1', title:'파우더룸 소독기 증설', when:'8월 1주 완료'},
     {id:'d2', title:'사우나 입구 정비', when:'8월 2~3주'},
@@ -3523,30 +3524,11 @@
     var bodyEl = document.getElementById('chairman-body');
     if(!badge || !bodyEl) return;
     var link = '<a class="tg-link" href="coo/chairman/회장님_지시사항.html" target="_blank">자세히 보기 →</a>';
-    // 항목 7건은 고정 본문이라 GAS 응답을 기다릴 이유가 없다 — 먼저 그린다.
-    // 2026-08-01 GM 지적("회장님 업무보고건은 불러오지도 못하는데"): 이 토글과 브로제이 토글이
-    // 같은 CHECK_GAS 를 동시에 부르는데 GAS 는 요청을 줄 세운다. 뒤에 선 회장님 쪽이 느려지거나
-    // 응답이 안 오면 "불러오는 중…" 에서 영영 멈췄다(타임아웃도 없었다). 이제 상태값만 나중에 덧칠한다.
-    function paint(board){
-      var done = 0;
-      var lines = CHAIRMAN_ITEMS.map(function(it){
-        var st = (board[it.id] && board[it.id].status) || '착수';
-        if(st === '완료') done++;
-        var cls = st === '완료' ? '완료' : (st === '진행' ? '진행' : '계획');
-        return '<div class="tg-line"><span>' + esc(it.title) + ' <span style="color:var(--dim);font-size:11px;">· ' + esc(it.when) + '</span></span><span class="obadge ' + cls + '">' + esc(st) + '</span></div>';
-      }).join('');
-      badge.textContent = done + '/' + CHAIRMAN_ITEMS.length + ' 완료';
-      bodyEl.innerHTML = lines + link;
-    }
-    paint({});
-    withTimeout(
-      fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(CHAIRMAN_BOARD_KEY), {method:'GET', redirect:'follow'})
-        .then(function(r){ return r.json(); }),
-      15000, null
-    ).then(function(data){
-      var board = (data && data.ok && data.board && typeof data.board === 'object') ? data.board : null;
-      if(board) paint(board);   // 못 받아도 위에서 그려둔 7건은 그대로 남는다
-    }).catch(function(){});
+    var lines = CHAIRMAN_ITEMS.map(function(it){
+      return '<div class="tg-line"><span>' + esc(it.title) + ' <span style="color:var(--dim);font-size:11px;">· ' + esc(it.when) + '</span></span></div>';
+    }).join('');
+    badge.textContent = CHAIRMAN_ITEMS.length + '건';
+    bodyEl.innerHTML = lines + link;
   }
   /* ── (구) 전체 체크보드 렌더 로직은 여기 있었다 — coo/brojay/브로제이_업무분장.html 로 그대로 이관(사본 아님, 본문 삭제). ── */
 
