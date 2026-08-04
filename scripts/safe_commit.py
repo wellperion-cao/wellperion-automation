@@ -79,6 +79,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from git_lock import GitLock  # noqa: E402  (같은 scripts/ 폴더 — 락 로직 재사용)
+# chro/cfo 보호 삭제 판정용 경로 목록 재사용(2026-08-04 — 새 상수 중복 정의 금지,
+# .git/hooks/pre-commit 이 부르는 precommit_phantom_delete_guard.py 와 단일 출처).
+from precommit_phantom_delete_guard import PROTECTED_DELETE_PREFIXES  # noqa: E402
 
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
 _RETRY_WAIT_SEC = 0.4
@@ -278,13 +281,26 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
       파일이 실존하면 위반. 디스크에도 없으면 의도된 정당한 삭제 — 통과.
     """
     violations: list[str] = []
-    for status, path in _tree_diff_status(head_tree, tree, root):
+    diff_pairs = _tree_diff_status(head_tree, tree, root)
+    for status, path in diff_pairs:
         in_scope = any(path == rp or path.startswith(rp + "/") for rp in rel_paths)
         if not in_scope:
             violations.append(f"무관 경로 혼입: {status} {path}")
             continue
         if status == "D" and (root / path).exists():
             violations.append(f"유령 삭제(디스크엔 실존): {path}")
+
+    # chro/cfo 보호 삭제(2026-08-04 — 인사 지원자 사진 반복삭제 사고 재발방지):
+    # 삭제가 하나라도 chro/cfo 안이면서 이 커밋에 chro/cfo 밖 경로가 섞여 있으면
+    # 차단한다. 커밋 전체가 chro/cfo 안에서만 이뤄지면(도메인 전용 호출) 통과.
+    protected_deletes = [p for s, p in diff_pairs
+                          if s == "D" and any(p.startswith(pre) for pre in PROTECTED_DELETE_PREFIXES)]
+    if protected_deletes:
+        mixed_domain = any(not any(p.startswith(pre) for pre in PROTECTED_DELETE_PREFIXES)
+                            for _, p in diff_pairs)
+        if mixed_domain:
+            extra = f" 외 {len(protected_deletes) - 1}건" if len(protected_deletes) > 1 else ""
+            violations.append(f"보호된 삭제 차단(chro/cfo 도메인 혼입): {protected_deletes[0]}{extra}")
     return violations
 
 

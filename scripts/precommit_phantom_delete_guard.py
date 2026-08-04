@@ -29,6 +29,22 @@ precommit_phantom_delete_guard.py — 커밋 전 "유령 삭제"(작업트리엔
           또는 git commit --no-verify
 
   ※ exit 1 = 차단(유령 삭제 감지). exit 0 = 통과(정상/진짜 삭제/에러/우회).
+
+── chro/cfo 보호 삭제 판정 (2026-08-04 시토 · 인사 지원자 사진 반복삭제 사고) ──
+  배경: COO·CPO 도메인 커밋(welly_auto_runner 디스패치, 배 425cbb58a·31841eec1)이
+  chro/hub/photos 지원자 사진 삭제를 자기 업무와 전혀 무관하게 쓸어담았다(runner
+  자체 로그 status/welly_auto_runner_log.jsonl live_run 이벤트로 확정 — 공유 라이브
+  인덱스로 맨손 git commit 했을 때 다른 세션이 남긴 미커밋 삭제까지 같이 실렸다).
+  두 사고 모두 파일이 디스크에도 실제로 없어(진짜 삭제) 위 유령 삭제 판정을
+  피해 간다 — "디스크 존재 여부"가 아니라 "이 삭제가 커밋의 나머지 변경과 같은
+  도메인이냐"로 갈라야 잡힌다.
+
+  판정: 이번 커밋이 chro/·cfo/ 경로를 하나라도 삭제(D)로 담고 있는데, 같은 커밋에
+  chro/·cfo/ 밖의 경로도 섞여 있으면 차단한다. 커밋 전체가 chro/·cfo/ 안에서만
+  이뤄지면(=그 도메인 전용 도구·세션) 통과 — 인사·재무 담당(나우열M)의 정상
+  삭제까지 막지 않는다.
+  우회: env SKIP_PHANTOM_DELETE_GUARD=1 또는 git commit --no-verify(위와 동일 스위치
+  재사용 — 새 환경변수 안 만듦).
 """
 
 import os
@@ -37,6 +53,11 @@ import sys
 
 SKIP_ENV = "SKIP_PHANTOM_DELETE_GUARD"
 MAX_LISTED = 20
+
+PROTECTED_DELETE_PREFIXES = (
+    "3. 웰페리온 가이드/chro/",
+    "3. 웰페리온 가이드/cfo/",
+)
 
 
 def run(args):
@@ -57,6 +78,25 @@ def staged_deletions():
         return None
     tokens = [t for t in out.split(b"\x00") if t]
     return tokens
+
+
+def staged_all():
+    """스테이징된 전체 경로(상태 무관, bytes) 목록. git 실패 시 None(fail-open 신호)."""
+    rc, out = run(["git", "diff", "--cached", "--name-only", "-z"])
+    if rc != 0:
+        return None
+    return [t for t in out.split(b"\x00") if t]
+
+
+def _is_protected(path: str) -> bool:
+    return any(path.startswith(p) for p in PROTECTED_DELETE_PREFIXES)
+
+
+def _decode(path_bytes):
+    try:
+        return path_bytes.decode("utf-8", "replace")
+    except Exception:
+        return None
 
 
 def main():
@@ -112,6 +152,37 @@ def main():
             % SKIP_ENV
         )
         return 1
+
+    # ── chro/cfo 보호 삭제 판정 ──
+    protected_deletes = [d for p in deleted if (d := _decode(p)) and _is_protected(d)]
+    if protected_deletes:
+        all_staged = staged_all()
+        if all_staged is not None:
+            all_paths = [d for p in all_staged if (d := _decode(p))]
+            mixed_domain = any(not _is_protected(p) for p in all_paths)
+            if mixed_domain:
+                sys.stderr.write(
+                    "\n"
+                    "============================================================\n"
+                    "[phantom-delete-guard] 커밋 차단 — chro/cfo 보호 삭제 혼입\n"
+                    "------------------------------------------------------------\n"
+                )
+                for path in protected_deletes[:MAX_LISTED]:
+                    sys.stderr.write("  - %s\n" % path)
+                sys.stderr.write(
+                    "------------------------------------------------------------\n"
+                    "  이 커밋은 chro/cfo(인사·재무) 파일 삭제와 그 밖의 무관한 변경을\n"
+                    "  함께 담고 있습니다. chro/cfo 경로 삭제는 그 도메인 전용 커밋\n"
+                    "  (chro/cfo 안에서만 이뤄지는 커밋)에서만 허용됩니다 — 다른 업무\n"
+                    "  커밋이 공유 인덱스를 통해 지원자 사진 등을 쓸어담는 사고를\n"
+                    "  막기 위함(2026-08-04 재발).\n"
+                    "  해법: chro/cfo 경로를 이번 커밋에서 빼고(git reset -- <경로>)\n"
+                    "  나머지만 커밋하세요. 정말 의도한 삭제면 우회:\n"
+                    "  git commit --no-verify 또는 env %s=1\n"
+                    "============================================================\n"
+                    % SKIP_ENV
+                )
+                return 1
 
     return 0
 

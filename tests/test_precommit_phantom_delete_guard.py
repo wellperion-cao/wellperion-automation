@@ -122,3 +122,49 @@ def test_korean_and_space_path_detected(tmp_path, monkeypatch, capsys):
     assert rc == 1
     err = capsys.readouterr().err
     assert "점검 일지.md" in err
+
+
+# ── ⑦~⑨ chro/cfo 보호 삭제(2026-08-04 · 인사 지원자 사진 반복삭제 사고 재현) ──
+# 실사고: COO·CPO 무관 업무 커밋이 chro/hub/photos 지원자 사진 삭제를 같이
+# 담았다(배 425cbb58a·31841eec1, status/welly_auto_runner_log.jsonl live_run 로
+# 확정). 사진이 디스크에도 실제로 없어(진짜 삭제) 위 ①~⑥ 유령 삭제 판정을
+# 피해 간다 — 아래는 그 정확한 재현.
+_CHRO_PHOTO = G.PROTECTED_DELETE_PREFIXES[0] + "hub/photos/r125.jpg"
+
+
+def test_protected_delete_mixed_domain_blocks(tmp_path, monkeypatch, capsys):
+    """무관 업무 파일 + chro 사진을 같은 커밋에 실제 삭제로 staged → 차단(실사고 재현)."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, _CHRO_PHOTO, content="photo-bytes\n")
+    _commit_file(tmp_path, "coo/check/파트너팀 체계.html", content="점검 결과\n")
+    _stage_real_delete(tmp_path, _CHRO_PHOTO)
+    (tmp_path / "coo/check/파트너팀 체계.html").write_text("갱신된 점검 결과\n", encoding="utf-8")
+    _git(["add", "coo/check/파트너팀 체계.html"], tmp_path)
+    monkeypatch.chdir(tmp_path)
+    rc = G.main()
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "r125.jpg" in err
+    assert "chro/cfo" in err
+
+
+def test_protected_delete_pure_domain_passes(tmp_path, monkeypatch, capsys):
+    """커밋 전체가 chro/ 안에서만 이뤄지면(도메인 전용 도구) 실제 삭제도 통과."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, _CHRO_PHOTO, content="photo-bytes\n")
+    _stage_real_delete(tmp_path, _CHRO_PHOTO)
+    monkeypatch.chdir(tmp_path)
+    rc = G.main()
+    assert rc == 0
+
+
+def test_protected_delete_without_any_deletion_passes(tmp_path, monkeypatch, capsys):
+    """chro 경로를 건드리지만 삭제가 없으면(추가·수정만) 무관 경로와 섞여도 통과."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "coo/check/파트너팀 체계.html")
+    (tmp_path / _CHRO_PHOTO).parent.mkdir(parents=True, exist_ok=True)
+    (tmp_path / _CHRO_PHOTO).write_text("new-photo\n", encoding="utf-8")
+    _git(["add", "coo/check/파트너팀 체계.html", _CHRO_PHOTO], tmp_path)
+    monkeypatch.chdir(tmp_path)
+    rc = G.main()
+    assert rc == 0
