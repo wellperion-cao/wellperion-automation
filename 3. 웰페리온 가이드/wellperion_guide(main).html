@@ -9761,17 +9761,33 @@ function crTab(btn, panelId) {
           '</span>' +
           '</div>' + descHtml + '</div>';
       }
+      /* ★2026-08-04 웰리 — 대기 45건을 한 줄씩 전부 쏟아 놓고 "오늘 볼 것"이라 적고 있었다.
+         ①라벨이 거짓이었다: 7일째 기다린 배도 '오늘'로 보였다. ②45줄을 세로로 늘어놓아 GM이 훑을 수 없었다.
+         ③최신순이라 **가장 오래 기다린 배가 맨 아래로 가라앉았다** — 정확히 거꾸로다.
+         고친 것: 오래 기다린 순으로 세우고, 위 8건만 펴 두고 나머지는 접는다. 라벨은 사실대로. */
+      var GM1_WAIT_OPEN = 8;
+      /* createdAt = 큐의 enqueued_at 이 들어오는 칸(:9194). 날짜가 없는 배는 맨 뒤로 보낸다(거짓 '가장 오래됨' 방지). */
+      function _gm1WaitAge(t){ return String(t.createdAt || t.startDate || '9999-99-99'); }
       function _gm1WaitSectionHtml(list){
         if (!list.length && !gm1ParkedCount) return '';
+        list = list.slice().sort(function(a, b){
+          return _gm1WaitAge(a).localeCompare(_gm1WaitAge(b)) || String(a.title||'').localeCompare(String(b.title||''));
+        });
         var s = '<div style="margin-top:16px;padding-top:10px;border-top:1px solid var(--border);">';
-        s += '<div style="font-size:12.5px;font-weight:700;color:#8ca6d6;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>항로 대기 ' + list.length + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 오늘 볼 것 (각 예정일 있음)</span></div>';
+        s += '<div style="font-size:12.5px;font-weight:700;color:#8ca6d6;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>항로 대기 ' + list.length + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 오래 기다린 것부터</span></div>';
         // ── ⚓ 정박·대기 포인터 — surface==='autonomy' 배는 자율현황 위임(항로 대기 섹터 제외·카운트만) (2026-07-15 GM·배237) ──
         if (gm1ParkedCount) {
           s += '<a href="자율현황.html#sec-hangro" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:9px 12px;border:1px solid rgba(140,166,214,0.35);border-radius:8px;background:rgba(140,166,214,0.07);text-decoration:none;flex-wrap:wrap;">' +
             '<span style="flex:1;font-size:12.5px;font-weight:700;color:#8ca6d6;">⚓ 정박 ' + gm1ParkedCount + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 자율현황·미래 (조건·시각 트리거 대기)</span></span>' +
             '<span style="font-size:12px;color:#8ca6d6;font-weight:600;">자율현황에서 관리 →</span></a>';
         }
-        list.forEach(function(t){ s += _gm1WaitLineHtml(t); });
+        list.slice(0, GM1_WAIT_OPEN).forEach(function(t){ s += _gm1WaitLineHtml(t); });
+        var rest = list.slice(GM1_WAIT_OPEN);
+        if (rest.length) {
+          s += '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:#8ca6d6;padding:4px 0;">▼ 나머지 ' + rest.length + '건 보기</summary><div style="margin-top:4px;">';
+          rest.forEach(function(t){ s += _gm1WaitLineHtml(t); });
+          s += '</div></details>';
+        }
         s += '</div>';
         return s;
       }
