@@ -525,6 +525,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
    원인: 새로 만든 select 에 .cell-input(background:transparent) 을 그대로 물려 글자·바탕이 겹쳐 보였다.
    이 페이지엔 이미 select 전용 .cell-select 가 있었는데 쓰지 않은 것이 잘못이다. */
 .cell-select, .cell-select option{ color:var(--text); background-color:var(--paper); }
+/* 담당자 배정 select 두 곳(oa-owner-sel·mreg-owner-sel)도 같은 증상 세 번째 신고(2026-08-04 FB260804-174043,
+   김태엽M "담당자 선택 시 배경·글자 둘 다 흰색") — color-scheme만으로는 방어가 안 돼 매번 같은 방식으로 새는 것이라
+   이번엔 두 곳을 한 번에 막는다. */
+.oa-owner-sel, .oa-owner-sel option, .mreg-owner-sel, .mreg-owner-sel option{ color:var(--text); background-color:var(--paper); }
 
 /* ── 멤버십 문의 현황표(#dbTable) 담당 칼럼 화면 숨김 — 데이터·저장은 유지, 표시만 제거. 강습표는 미적용(지시 범위). 2026-07-07 시포·GM ── */
 /* 담당 칸 숨김 — display:none 금지(2026-07-20 3차 · GM "우측에 빈틈 왜 만들어?").
@@ -7265,9 +7269,12 @@ function _oaRender(){
     var sel = '<select class="oa-owner-sel" data-rowindex="' + ri + '" data-phone="' + esc(String(ph)) + '" style="max-width:150px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12.5px;font-family:inherit;cursor:pointer">';
     opts.forEach(function(o){ sel += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>'; });
     sel += '</select>';
+    // 휴대폰 마스킹 해제(2026-08-04 FB260804-183522, 김태엽M) — 이 표는 PIN 게이트가 없는 사내 담당자
+    // 배정 화면인데 번호만 가려 놓아 실무진이 회원에게 연락을 못 하는 상태였다. 잠금도 없이 가리기만
+    // 하면 보호 효과 없이 업무만 막는다 — 이 파일 다른 사내 화면(문의표 등)과 같은 원문 표시로 통일.
     html += '<tr data-rowindex="' + ri + '">' +
       '<td style="white-space:nowrap;text-align:left">' + esc(r['회원명']||'—') + '</td>' +
-      '<td style="white-space:nowrap">' + esc(_oaMaskPhone(ph)) + '</td>' +
+      '<td style="white-space:nowrap">' + esc(String(ph||'') || '—') + '</td>' +
       '<td style="white-space:nowrap">' + sel + '</td>' +
       '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(contact) + '">' + esc(contact||'—') + '</td>' +
       '</tr>';
