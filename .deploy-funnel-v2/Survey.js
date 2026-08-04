@@ -5370,6 +5370,19 @@ function _processAction(body) {
           startDate: body.memStartDate
         });
       } catch (eMa) { Logger.log('SUC 유효회원 반영 실패: ' + eMa.message); }
+    } else if (_isSucNew && !_wasSuc) {
+      // ★건너뛴 사실을 보이게 한다(2026-08-04 시토 · 배345 후속 — GM 지적 12건은 이 조건이 계속 참이라
+      //   아무 기록 없이 떨어진 결과였다). activeProgram 조건 자체는 그대로 둔다(위 주석 — 빈 껍데기 행 방지).
+      //   전환 순간(!_wasSuc)에만 1회 알린다 — 매번 울리면 실무진이 같은 행을 편집할 때마다 반복 발송된다.
+      //   실무진이 '등록 종목' 모달을 마저 저장하면 다음 저장은 _wasSuc=true 로 조건을 통과해 조용히 정상 반영된다.
+      //   새 발신기·새 방을 만들지 않는다 — 이 파일이 이미 같은 종류(등록 전환)에 쓰는 채널(TELEGRAM_INQUIRY_CHAT_ID)
+      //   그대로 재사용한다. ★운영부(카톡)는 GM PC 로컬 UI 자동화(kakao_report_sender.py)로만 닿아 GAS 서버에서
+      //   직접 못 부른다 — 필요하면 그 쪽 다이제스트가 이 방을 읽어 전달하는 별도 배선이 있어야 한다(현재 없음).
+      Logger.log('SUC 유효회원 반영 보류(등록종목 미수신): ' + (_coName || '-') + ' ' + (_coPhone || '-'));
+      try {
+        var _skipChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+        _notifyTelegram('⚠️ <b>회원 명단 미반영</b> — 등록(SUC) 처리됐지만 등록 종목이 아직 없어 회원 명단에 못 들어갔습니다. 등록 종목 저장을 마저 해주세요.\n· 이름: ' + (_coName || '-') + '\n· 연락처: ' + (_coPhone || '-'), _skipChatId);
+      } catch (eSkipN) { Logger.log('SUC 미반영 알림 발송 실패: ' + eSkipN.message); }
     }
     // 1차 컨택 알림(축6, 이력-기준으로 일원화): 연락이력 0건 → ≥1건 전이 시 1회만. 2026-07-08 시포·GM.
     //   구 '컨택 시작'(상태=상담중 등 진입 기준) 알림은 중복 방지를 위해 이 이력-기준 알림으로 대체(제거).
