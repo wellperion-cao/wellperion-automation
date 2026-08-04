@@ -2455,6 +2455,12 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
     for (var i = 0; i < phVals.length; i++) {
       if (_regNormPhone_(phVals[i][0]) === key) {
         var row = i + 2;
+        // 등록일자를 덮기 전에 예전 값을 먼저 읽어 둔다 — 회차 판정에 쓴다(아래).
+        var _prevRegIso = (regI >= 0) ? (function(){
+          var _pv = sh.getRange(row, regI + 1).getValue();
+          return (_pv instanceof Date && !isNaN(_pv.getTime()))
+            ? Utilities.formatDate(_pv, 'Asia/Seoul', 'yyyy-MM-dd') : (_miToISO_(_pv) || '');
+        })() : '';
         if (name) sh.getRange(row, nmI + 1).setValue(name);
         if (program && pgI >= 0) sh.getRange(row, pgI + 1).setValue(program);
         if (regDate && regI >= 0) { var _rc = sh.getRange(row, regI + 1); _rc.setNumberFormat('@'); _rc.setValue(regDate); }
@@ -2466,8 +2472,15 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
         _put(row, ageI, opts.age);
         _put(row, clsI, opts.regClass);
         _put(row, lckI, opts.locker);
-        // 등록회차 — 재등록이면 기존 회차+1(사람이 세던 칸). 신규 재계약도 회차가 오르는 게 맞다.
-        if (seqI >= 0 && String(opts.regClass || '').indexOf('재등록') >= 0) {
+        // 등록회차 — 기존 행이 잡혔는데 **등록일자가 실제로 바뀌면** +1 한다.
+        //   ★2026-08-04 시토(GM 지적 '박기순님 이번까지 9회차인데'). 종전 조건은 등록 분류 글자에
+        //     '재등록'이 들어 있을 때만이었다. 그래서 분류가 '대기'·'단기재등록' 처럼 다른 말로 적힌
+        //     재등록은 회차가 안 올랐다 — 박기순님이 그 경우로, 9회차인데 시트엔 8로 굳어 있었다.
+        //   ▸판정을 글자가 아니라 사실로 바꾼다: **전화가 같은 기존 행이 잡혔다 = 이미 회원이다.**
+        //     거기에 새 등록일자가 들어오면 그건 재등록이다(분류를 뭐라 적었든).
+        //   ▸같은 날짜로 다시 저장하면 안 오른다(멱등) — 종전 조건은 재저장할 때마다 계속 올랐다.
+        //   ▸예전 등록일자가 비어 있으면 올리지 않는다(비교할 근거가 없으면 손대지 않는다).
+        if (seqI >= 0 && regDate && _prevRegIso && _prevRegIso !== String(regDate)) {
           var _prevSeq = parseInt(sh.getRange(row, seqI + 1).getValue(), 10);
           sh.getRange(row, seqI + 1).setValue((_prevSeq > 0 ? _prevSeq : 1) + 1);
         }
