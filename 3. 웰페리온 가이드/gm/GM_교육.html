@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GM 교육 — 웰리가 GM께 전해 드리는 것</title>
+<style>
+  @page { size: A4 portrait; margin: 14mm; }
+
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --green:#2e6b4f; --green-soft:#e8f2ec;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.62; word-break:keep-all; overflow-wrap:break-word;
+  }
+  .sheet{max-width:210mm; margin:0 auto; background:#fff; padding:14mm; text-align:left;}
+
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:9px; margin-bottom:16px;}
+  .hd .kick{font-size:13px; letter-spacing:.1em; color:var(--dim);}
+  .hd .ttl{font-size:28px; font-weight:800; letter-spacing:-.025em; line-height:1.2;}
+  .hd .meta{margin-top:7px; font-size:14.5px; color:var(--dim);}
+  .hd .meta b{color:var(--ink);}
+
+  .lede{font-size:15px; line-height:1.65; margin:0 0 16px;
+        padding:10px 13px; background:var(--accent-soft); border-left:4px solid var(--accent);}
+
+  .item{border:1px solid var(--line); margin-bottom:13px; break-inside:avoid;}
+  .item .top{display:flex; align-items:baseline; gap:10px; padding:8px 13px; background:#f4f6f9; border-bottom:1px solid var(--line);}
+  .item .no{display:inline-block; min-width:24px; font-weight:800; color:var(--accent);}
+  .item h2{font-size:17px; font-weight:800; margin:0; letter-spacing:-.01em; flex:1;}
+  .badge{font-size:12px; font-weight:700; padding:2px 10px; border-radius:20px; white-space:nowrap;
+         background:var(--green-soft); color:var(--green); border:1px solid var(--green);}
+  .item .body{padding:11px 13px;}
+
+  .said{background:var(--accent-soft); border-left:4px solid var(--accent); padding:9px 13px; margin:0 0 9px;
+        font-size:15px; line-height:1.6;}
+  .said .src{display:block; margin-top:4px; font-size:12.5px; color:var(--dim);}
+
+  dl{margin:0; display:grid; grid-template-columns:110px 1fr; gap:6px 12px; font-size:14.5px;}
+  dt{color:var(--dim); font-weight:700;}
+  dd{margin:0;}
+  dd ul{margin:0; padding-left:18px;}
+  dd li{margin-bottom:3px;}
+  dd li:last-child{margin-bottom:0;}
+
+  .hold{background:var(--warm-soft); border-left:4px solid var(--warm); padding:9px 13px; margin-top:9px; font-size:14.5px;}
+
+  .stub-item{border:1px dashed var(--line); margin-bottom:13px; padding:12px 13px;
+             color:var(--dim); font-style:italic; font-size:14.5px; break-inside:avoid;}
+  .stub-item .no{font-weight:800; font-style:normal; color:var(--line); margin-right:8px;}
+
+  h3{font-size:17px; font-weight:800; margin:20px 0 8px; padding:5px 11px; background:var(--ink); color:#fff;}
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th,td{border:1px solid var(--line); padding:7px 10px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+  td.dim{color:var(--dim); font-style:italic;}
+
+  .foot{margin-top:16px; padding-top:8px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .item,.stub-item,tr{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .bar{max-width:210mm; margin:10px auto 0; text-align:right;}
+  .bar button{font:inherit; font-size:13px; padding:6px 14px; cursor:pointer;
+              border:1px solid var(--ink); background:var(--ink); color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="bar noprint"><button onclick="window.print()">인쇄</button></div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div class="kick">GM 교육</div>
+    <div class="ttl">웰리가 GM께 전해 드리는 것</div>
+    <div class="meta"><b>작성 웰리(AI CEO)</b> · 시작 2026년 8월 4일 · 꼭 필요한 것만 골라 쌓아 둡니다</div>
+  </div>
+
+  <p class="lede">
+    웰리가 일하며 알게 된 것 중 <b>GM이 아시면 바로 도움이 되는 것</b>만 모아 두는 자리입니다.
+    회장님 지시사항 페이지처럼, 새 항목이 생기면 여기에 번호를 붙여 쌓입니다.
+  </p>
+
+  <!-- 1 -->
+  <div class="item">
+    <div class="top">
+      <span class="no">01</span>
+      <h2>AI에게 일을 시킬 때 — 지시가 또렷할수록 결과가 정확해진다</h2>
+      <span class="badge">새로 추가</span>
+    </div>
+    <div class="body">
+      <div class="said">
+        GM께서 &ldquo;신규 등록현황에 재등록이 뜬다&rdquo;고 말씀하셨을 때, 웰리는 <b>&lsquo;재등록을 표시만 구분&rsquo;</b>하는 것으로 처리했습니다.
+        GM이 두 번째로 &ldquo;여기 등록현황에 <b>반영이 되면 안 될 것 같고</b>&rdquo;라고 다시 말씀하신 뒤에야 제외 처리가 됐습니다 —
+        <b>같은 말씀을 두 번 하시게 한 것은 웰리의 해석 실수</b>입니다.
+        <span class="src">2026-08-04 실제 있었던 일 · 웰리의 실수 기록</span>
+      </div>
+      <dl>
+        <div style="display:contents"><dt>왜 알아야 하나</dt><dd>지시 한 줄의 모양에 따라 AI의 왕복 횟수가 달라집니다 — GM의 시간을 아끼는 가장 빠른 길입니다.</dd></div>
+        <div style="display:contents"><dt>핵심</dt><dd><ul>
+          <li><b>&ldquo;보이게 하라&rdquo;와 &ldquo;빼라&rdquo;는 다릅니다.</b> 현상만 말하면 AI는 가장 보수적인 쪽(표시 구분)을 고릅니다.</li>
+          <li>AI는 <b>원하는 최종 화면</b>을 알면 정확히 그리로 갑니다 — 중간 해석이 끼어들 틈이 없습니다.</li>
+          <li>지시가 짧아도 됩니다. 짧되 <b>결과 기준</b>이면 충분합니다.</li>
+        </ul></dd></div>
+        <div style="display:contents"><dt>바로 써먹는 법</dt><dd>무엇이 잘못됐는지 대신 <b>다 끝난 화면이 어때야 하는지 한 줄</b>로 적어 주세요.
+          예: &ldquo;재등록이 뜬다&rdquo; → <b>&ldquo;신규 등록현황에는 순수 신규만 나오게 해 줘(재등록은 빼)&rdquo;</b>. 이 한 줄이면 왕복이 없습니다.</dd></div>
+      </dl>
+      <div class="hold">
+        이 항목은 GM을 향한 지적이 아닙니다. <b>현상 신고를 결과 지시로 번역하는 것은 원래 웰리의 몫</b>이고,
+        이번엔 그 번역을 틀렸습니다. 다만 GM께서 위 형태로 주시면 틀릴 자리 자체가 없어집니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 이후 자리 -->
+  <div class="stub-item"><span class="no">02</span>다음 항목이 추가됩니다.</div>
+  <div class="stub-item"><span class="no">03</span>다음 항목이 추가됩니다.</div>
+
+  <h3>항목 요약</h3>
+  <table>
+    <tr><th style="width:32px">#</th><th>제목</th><th>한 줄 요지</th></tr>
+    <tr><td>01</td><td>AI에게 일을 시킬 때</td><td>현상 대신 <b>다 끝난 화면 한 줄</b>로 지시하면 왕복이 없어진다</td></tr>
+    <tr><td>02</td><td class="dim" colspan="2">다음 항목이 추가됩니다.</td></tr>
+  </table>
+
+  <div class="foot">
+    WELLPERION · GM 교육 — 웰리(AI CEO)가 필요할 때마다 항목을 더합니다 · 시작 2026-08-04
+  </div>
+
+</div>
+</body>
+</html>
