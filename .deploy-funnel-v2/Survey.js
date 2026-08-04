@@ -1853,7 +1853,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   read_rows_by_rownum:        true,  // 읽기전용: 지정 시트·행번호의 알림 필드 원문 반환 (2026-06-25)
   preview_notify_msg:         true,  // 읽기전용: 지정 행의 알림 메시지 텍스트 미리보기(발송 0) (2026-06-25)
   lesson_rewire_audit:        true,  // [진단·읽기전용] 6팀시트 은퇴 안전게이트 — OLD(6팀시트) vs NEW(메인4시트 flat O) IDENTICAL 대조(카운트만·PII 미노출). 배973 시포. 2026-07-15 실측: 불일치(성인 812→794·유소년 926→908 등, 상세=재배선핸드오프). 은퇴 전 이 액션이 OLD≡NEW 반환할 때까지 반복 검증.
-  funnel_conversion_detail:   true   // 2026-07-20 GM 지시(배834) — M1 마케팅 대시보드 채널별 가입전환 상세 명단. PII 노출(이름·연락처뒷4자리) — member_inquiry_list 등과 동일 정책(전체공개, 읽기전용·원본시트 미변경). 연락처는 서버에서 뒷4자리로 절단 후 반환(전체번호 미노출).
+  funnel_conversion_detail:   true,  // 2026-07-20 GM 지시(배834) — M1 마케팅 대시보드 채널별 가입전환 상세 명단. PII 노출(이름·연락처뒷4자리) — member_inquiry_list 등과 동일 정책(전체공개, 읽기전용·원본시트 미변경). 연락처는 서버에서 뒷4자리로 절단 후 반환(전체번호 미노출).
+  diag_member_loss_date_dryrun: true  // [진단·읽기전용] LOSS일자 자동스탬프 대상 사전 확인(dry:true — 시트 쓰기 0). 배302 배포검증용. 2026-08-05 시토
 };
 // add_utm_field 비밀 가드값 — 폼 변형 액션 무단호출 차단. _SURVEY_PUBLIC_ACTIONS에 넣지 말 것.
 var _ADD_UTM_GUARD = 'wp-utm-field-2026-i-am-sure';
@@ -3233,6 +3234,17 @@ function _processAction(body) {
   //   bool_fields 가 비어 있었다 — 즉 문의 알림 백엔드의 토큰·방 설정이 빠져도 아무도 몰랐다.
   //   같은 계약(hasToken/hasChatId)을 여기에도 채워 기존 헬스체크가 그대로 판정하게 한다.
   //   ※ 토큰·chat_id 실값은 반환하지 않는다(공개 엔드포인트 — 존재 여부만).
+  if (action === 'diag_member_loss_date_dryrun') {
+    try {
+      var _ldDry = member_loss_date_auto_stamp_({ dry: true });
+      var _ldSelf = { ok: true };
+      try { member_loss_date_auto_stamp_selfcheck_(); } catch (eSelf) { _ldSelf = { ok: false, error: eSelf.message }; }
+      return _json({ ok: true, dryrun: _ldDry, selfcheck: _ldSelf });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
   if (action === 'diag_notify_config') {
     try {
       var _dTok = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN') || '';
@@ -3320,6 +3332,80 @@ function _processAction(body) {
         _dOut.push(rec);
       });
       return _json({ ok: true, sheets: _dOut });
+    } catch (e) {
+      return _json({ ok: false, error: e.message });
+    }
+  }
+
+  // ─── [진단·읽기전용] 문의접수 시트 E열(문의유형) 데이터 확인 규칙 실측 (2026-08-05 시토, 배209 잔여) ───
+  //   왜: submit_inquiry 가 이따금 JSON 대신 GAS 오류페이지를 돌려준 사고(2026-07-30,
+  //   "셀 E652/E653 데이터 확인 규칙 위반") 원인 조사. 저장소 코드엔 이 시트 setDataValidation
+  //   호출이 0건 — 시트 UI에서 사람이 건 규칙으로 추정, 이 액션으로 실측만 한다.
+  //   ★쓰기 0: getDataValidations()/getValues() 읽기만. setDataValidation·clearDataValidations 절대 금지.
+  if (action === 'diag_inquiry_type_validation') {
+    try {
+      var vSh = _getSheet(INQUIRY_SHEET, INQUIRY_HEADERS);
+      var vLast = vSh.getLastRow();
+      var vCol = INQUIRY_HEADERS.indexOf('문의유형') + 1;  // 1-based 시트 열번호(E=5)
+      if (vLast < 2 || vCol < 1) return _json({ ok: true, hasData: false, ruleCount: 0, rules: [], distinctValues: [] });
+
+      // ① 규칙 — 데이터가 있는 행이 아니라 시트 물리 행 전체(getMaxRows)를 훑는다.
+      //   시트 UI에서 건 데이터 확인 규칙은 흔히 현재 데이터보다 훨씬 아래(예: E2:E1000)까지
+      //   미리 적용돼 있다 — 배209 사고의 E652/E653은 당시 실데이터 행이었지만, 지금은 그 행이
+      //   사라졌어도 규칙 자체는 물리 행 범위에 남아 있을 수 있다. vLast만 보면 그 규칙을 놓친다.
+      var vMaxRow = vSh.getMaxRows();
+      var vRuleRows = Math.max(vLast, vMaxRow) - 1;  // 2행부터 끝까지
+      var vValidations = vSh.getRange(2, vCol, vRuleRows, 1).getDataValidations();  // [[rule|null], ...]
+      var ruleMap = {};  // 서명 → { criteriaType, criteriaValues, allowInvalid, rowFrom, rowTo, count }
+      for (var vi = 0; vi < vValidations.length; vi++) {
+        var rule = vValidations[vi][0];
+        var rowNum = vi + 2;  // 시트 행번호(1-base, 헤더=1행)
+        if (!rule) continue;
+        var crit = rule.getCriteriaType();
+        var vals = rule.getCriteriaValues();
+        // criteriaValues 는 종류별로 [배열, showDropdown] 등 섞여있어 객체는 문자열화해 안전 반환
+        var valsSafe = vals.map(function(v) {
+          if (v === null || v === undefined) return v;
+          if (typeof v === 'object') { try { return JSON.stringify(v); } catch (e6) { return String(v); } }
+          return v;
+        });
+        var sig = crit.toString() + '|' + JSON.stringify(valsSafe) + '|' + rule.getAllowInvalid();
+        if (!ruleMap[sig]) {
+          ruleMap[sig] = {
+            criteriaType: crit.toString(),
+            criteriaValues: valsSafe,
+            allowInvalid: rule.getAllowInvalid(),  // true=경고만 통과, false=입력거부(리젝트)
+            rowFrom: rowNum, rowTo: rowNum, count: 0
+          };
+        }
+        ruleMap[sig].rowTo = rowNum;
+        ruleMap[sig].count++;
+      }
+      var rules = Object.keys(ruleMap).map(function(k) { return ruleMap[k]; });
+
+      // ② E열 실제 값 — 서로 다른 값 상위 20개(빈도순, 허용값 목록과의 어긋남 확인용)
+      var vValues = vSh.getRange(2, vCol, vLast - 1, 1).getValues();
+      var freq = {};
+      vValues.forEach(function(r) {
+        var s = String(r[0] || '').trim();
+        if (!s) return;
+        freq[s] = (freq[s] || 0) + 1;
+      });
+      var distinctValues = Object.keys(freq)
+        .map(function(k) { return { value: k, count: freq[k] }; })
+        .sort(function(a, b) { return b.count - a.count; })
+        .slice(0, 20);
+
+      return _json({
+        ok: true,
+        column: 'E(col ' + vCol + ') 문의유형',
+        totalRows: vLast - 1,        // 실데이터 행수(마지막 행 기준)
+        sheetMaxRows: vMaxRow,       // 시트 물리 행 전체(규칙 스캔 범위)
+        ruleCount: rules.length,
+        rules: rules,
+        distinctValueCount: Object.keys(freq).length,
+        distinctValues: distinctValues
+      });
     } catch (e) {
       return _json({ ok: false, error: e.message });
     }
@@ -10526,10 +10612,10 @@ function member_loss_date_auto_stamp_(opts) {
     if (nmI >= 0 && !String(data[r][nmI] || '').trim()) continue;   // 회원명 없는 행(집계 블록 등) 제외
     if (!_memberLossDateShouldStamp_(data[r][remI], data[r][lossI])) continue;
     out.checked++;
-    writes.push({ row: r + 2, col: lossI + 1 });
+    writes.push({ row: r + 2, col: lossI + 1, name: String(data[r][nmI] || ''), rem: String(data[r][remI] || ''), lossBefore: String(data[r][lossI] || '') });
   }
   out.stamped = writes.length;
-  out.targets = writes.map(function(w) { return { row: w.row, col: w.col }; });
+  out.targets = writes.map(function(w) { return { row: w.row, col: w.col, name: w.name, rem: w.rem, lossBefore: w.lossBefore }; });
   if (!dry) writes.forEach(function(w) { sh.getRange(w.row, w.col).setValue(today); });
   return out;
 }
