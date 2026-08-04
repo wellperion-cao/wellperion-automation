@@ -549,6 +549,18 @@ def _ping_decision(parked_task_ids: list[str], state: dict, now: datetime | None
     return {"should_send": True, "new_task_ids": new_ids, "reason": f"신규 parked {len(new_ids)}건 — 핑 대상"}
 
 
+def _gm_action_notifier():
+    """모호 배 핑 발신기 — 「세션 열어 인터뷰 필요」는 보고가 아니라 **GM 손을 부르는
+    요청**이라 gm_action(업무보고방)이다(2026-08-04 시토 판정 — 축은 '누가 움직여야
+    하나', scripts/alert_router.py 참조). 종전 TelegramNotifier 직접 사용(관문 우회)을
+    alert_router 경유로 교체 — 목적지는 같고 판정 지점만 한 곳으로 모았다(약속 L01)."""
+    from types import SimpleNamespace  # noqa: PLC0415
+    from alert_router import GM_ACTION, route  # noqa: PLC0415
+    from notify.telegram_send import send as _send  # noqa: PLC0415
+    chat_id = route(GM_ACTION)
+    return SimpleNamespace(chat_id=chat_id, send=lambda text: _send(chat_id, text))
+
+
 def maybe_send_ambiguous_ping(parked_task_ids: list[str], state_path: str | None = None,
                                notifier=None, now: datetime | None = None,
                                daily_cap: int = AMBIGUOUS_PING_DAILY_CAP) -> dict:
@@ -1278,12 +1290,8 @@ def run_once(
         parked_task_ids = _collect_parked_task_ids(queue_path)
         notifier = None
         if _ping_live():
-            _agents_dir = os.path.join(_PROJECT_ROOT, "wellperion-agents")
-            if _agents_dir not in sys.path:
-                sys.path.insert(0, _agents_dir)
             try:
-                from telegram_notifier import TelegramNotifier  # noqa: E402  (지연 임포트 — RUNNER_PING_LIVE=1일 때만)
-                notifier = TelegramNotifier()
+                notifier = _gm_action_notifier()  # 지연 생성 — RUNNER_PING_LIVE=1일 때만
             except Exception:  # noqa: BLE001
                 notifier = None
         ping_result = maybe_send_ambiguous_ping(parked_task_ids, ping_state_path, notifier=notifier)

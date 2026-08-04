@@ -66,6 +66,11 @@ def main() -> None:
     assert captured.get("chat_id") == AI_ROOM, f"kakao 경보 chat_id={captured.get('chat_id')}"
     print("[OK] ⑥ 카톡 발송실패 경보 → AI 진행현황방")
 
+    # ⑦ GM 손이 필요한 요청(3차 · 2026-08-04) — 러너 모호 배 핑 = gm_action → 업무보고방
+    import welly_auto_runner
+    assert welly_auto_runner._gm_action_notifier().chat_id == GM_ROOM
+    print("[OK] ⑦ 러너 모호 배 핑(GM 손 요청) → 업무보고방")
+
     print("ALL OK — 방 경계 점검 통과 (실발신 0)")
 
 
