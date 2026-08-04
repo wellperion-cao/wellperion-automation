@@ -1582,5 +1582,24 @@
     "short_no": 388,
     "audience": "ai",
     "reversible": true
+  },
+  {
+    "task_id": "CTO-2026-08-05-주간-페이지-위생-웰리가-고른-A등급-삭제-실행-8",
+    "clevel": "cto",
+    "title": "[시토] 주간 페이지 위생 — 웰리가 고른 A등급 삭제 실행, 8개 파일",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-08-05",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-05] [배386 웰리 판정 실행 지시] 후보 80건 재검증 결과 A등급(지워도 안전) 중 시로·시뽀 도메인 22건을 뺀 나머지 8개 파일의 죽은 코드(안 쓰는 CSS 클래스·CSS 변수·낡은 이력 주석·중복 문구)를 정리한다.\n\n삭제 대상 8개 파일:\n- coo/check/전사_일정.html\n- cpo/member/강습회원관리.html\n- cmo/funnel/문의흐름지도.html\n- cmo/funnel/월간마케팅보고서.html\n- cmo/series/AI시리즈보드.html\n- cmo/survey/wp_inquiry_block.html\n- cto/automation/카톡전송관리.html\n- wellperion_dashboard_web.html, index.html, 항해지도.html (루트)\n\n★ 시로(CHRO)·시뽀(CFO) 도메인 22건(chro/ 4개 + cfo/finance/ 2개)은 절대 손대지 말 것 — 나우열M 관할.\nB 27건(콘텐츠 판단 성격)은 이번 주 손대지 않는다.\n★ C 등급 오탐 2건은 다음 주 정기 감사에서 후보로 다시 올라오지 않게 감사 스크립트에서 제외 처리할 것:\n  - chro/hub/onboarding-self.html .banner.ok (setBanner 실사용 중)\n  - cto/automation/카톡전송관리.html ../../assets/ 경로 (정상 링크, 404 아님)\n\n원 판정 전문은 배386(short_no=386) note 참조.",
+    "next": "8개 파일에서 죽은 CSS 클래스·변수·낡은 주석·중복 문구 실제 삭제 후 커밋, 배386에 완료 보고",
+    "depends_on": "",
+    "ship_no": 10580,
+    "short_no": 389,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "updated_at": "2026-08-05"
   }
 ]
