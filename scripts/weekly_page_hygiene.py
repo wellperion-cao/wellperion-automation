@@ -443,6 +443,48 @@ def build_telegram_summary(apply_total: int, proposal_total: int, commit_count: 
     return "\n".join(lines)
 
 
+def dispatch_proposal_ship(proposal_total: int, proposal_path: str) -> dict:
+    """정리안을 **배로도** 올린다 — 파일만 쓰면 아무도 안 읽기 때문이다.
+
+    ★2026-08-04 시토(배316). 이 감사는 3주(07-19·07-26·08-02) 동안 정상 작동해
+    죽은 코드 후보를 실제로 찾아냈는데, **그 제안을 반영한 커밋이 0건**이었다.
+    원인은 감지가 아니라 **도착지**다 — 결과가 status/ 아래 .md 파일로만 남고
+    사람이 보는 목록(항로)에는 한 번도 오르지 않았다. 오늘 같은 종류의 결함
+    (산출물이 만들어만 지고 사람에게 안 닿음)을 저장소 전반에서 고쳤고, 이건
+    그 마지막 조각이다.
+
+    - 받는 쪽 = 웰리(ceo). 대상이 실무진이 여는 페이지라 프론트 라인 소관이다.
+    - 제목을 매주 같게 둔다 → queue_dispatch 가 같은 제목의 열린 배를 새로 만들지
+      않고 갱신한다(배가 매주 늘지 않는다).
+    - 찾은 게 없으면 배도 안 만든다 — 빈 배는 그 자체로 소음이다.
+    - 실패해도 주간 감사는 계속된다(fail-soft). 이 배선 때문에 감사가 멈추면 안 된다.
+    """
+    if proposal_total <= 0:
+        return {"ok": True, "skipped": "정리 후보 0건 — 배 생성 안 함"}
+    rel = os.path.relpath(proposal_path, _PROJECT_ROOT).replace("\\", "/")
+    try:
+        r = subprocess.run(
+            [sys.executable, os.path.join(_PROJECT_ROOT, "scripts", "queue_dispatch.py"),
+             "--to", "ceo", "--sender", "cto",
+             "--title", "주간 페이지 위생 — 이번 주 정리 후보 검토",
+             "--note", (f"자동 감사가 페이지 정리 후보 {proposal_total}건을 찾았습니다. "
+                        f"상세=`{rel}`.\n\n"
+                        "이 배는 매주 일요일 감사가 갱신합니다(같은 제목이라 새로 늘지 않습니다). "
+                        "판단할 것은 하나입니다 — 이번 주 후보 중 실제로 지울 것을 고르는 것. "
+                        "고르면 시토가 실행합니다.\n\n"
+                        "※ 배316 배경: 이 감사는 3주간 정상 작동했지만 결과가 파일로만 남아 "
+                        "반영 커밋이 0건이었습니다. 그래서 결과를 항로로 올리게 바꿨습니다."),
+             "--next", "이번 주 정리 후보 중 반영할 것 선택 → 시토가 실행",
+             "--priority", "⛵돛단배", "--audience", "office",
+             "--reversible", "yes", "--work-type", "update"],
+            cwd=_PROJECT_ROOT, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=120,
+        )
+        return {"ok": r.returncode == 0, "stdout": (r.stdout or "")[-300:]}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": str(e)}
+
+
 def send_telegram_summary(text: str) -> dict:
     agents_dir = os.path.join(_PROJECT_ROOT, "wellperion-agents")
     if agents_dir not in sys.path:
@@ -586,6 +628,7 @@ def run_pipeline(clevel: str | None = "coo", apply: bool | None = None, force_dr
     summary_text = build_telegram_summary(
         apply_total, proposal_total, len(commits), proposal_path, apply_gate, error_total,
     )
+    dispatch_proposal_ship(proposal_total, proposal_path)
 
     telegram_result = None
     if notify:
