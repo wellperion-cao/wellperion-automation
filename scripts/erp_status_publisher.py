@@ -450,28 +450,45 @@ def _send_telegram(text, kind="tech_check"):
         return False
 
 
+def _bridge_sig(name: str, detail: str) -> str:
+    import hashlib
+    return hashlib.sha256(f"{name}|{detail}".encode("utf-8")).hexdigest()[:16]
+
+
 def alert_newly_broken(bridges):
-    """직전 상태와 비교해 '새로 깨진' 다리만 텔레그램 경고. 같은 깨짐 반복은 무음."""
+    """직전과 같은 (다리, 사유) **내용**이면 재발신하지 않는다 — 시간 쿨다운이 아니라
+    내용-지문(2026-08-04 웰리 판정). 확인: 08-03 21:18·22:17 같은 사유(시트 GAS
+    todo_list 타임아웃) 1시간 간격 재경보는 실측으로 플래핑(20:47 정상 → 21:18 이상
+    → 22:17 이상 재검출 → 22:47 정상, git log status/erp_status.json 3커밋 확인)이었다
+    — 옛 로직(상태-전이만 보는 dedup)은 복구→재발이면 매번 '새로 깨짐'으로 재알렸는데,
+    사람이 보기엔 몇 분 새 같은 사유가 반복 도배되는 것과 다를 바 없다. 사유가 바뀌거나
+    복구 후 다른 사유로 재발하면 즉시 다시 알린다. BRIDGE_LAST를 '깨진 이름 목록'에서
+    '이름→지문' 으로 바꿔 이 판정을 그대로 흡수 — 새 상태파일 없음."""
     try:
-        broken_now = {b["name"] for b in bridges if b["state"] == "이상"}
-        prev = set()
+        broken_now = {b["name"]: b.get("detail", "") for b in bridges if b["state"] == "이상"}
+        prev_sigs = {}
         if BRIDGE_LAST.exists():
             try:
-                prev = set(json.loads(BRIDGE_LAST.read_text(encoding="utf-8")) or [])
+                raw = json.loads(BRIDGE_LAST.read_text(encoding="utf-8"))
+                prev_sigs = raw if isinstance(raw, dict) else {}  # 구 형식(list)은 폐기 — 새로 시작
             except Exception:
-                prev = set()
-        newly = broken_now - prev
-        if newly:
-            details = {b["name"]: b["detail"] for b in bridges}
-            lines = [f"🔗 연동 다리 끊김 감지 ({len(newly)}건)"]
-            for nm in sorted(newly):
-                lines.append(f"⚠️ {nm}: {details.get(nm, '')}")
+                prev_sigs = {}
+
+        new_sigs, to_alert = {}, []
+        for name, detail in broken_now.items():
+            sig = _bridge_sig(name, detail)
+            new_sigs[name] = sig
+            if prev_sigs.get(name) != sig:
+                to_alert.append((name, detail))
+
+        if to_alert:
+            lines = [f"🔗 연동 다리 끊김 감지 ({len(to_alert)}건)"]
+            for nm, detail in sorted(to_alert):
+                lines.append(f"⚠️ {nm}: {detail}")
             _send_telegram("\n".join(lines))
-        # 현재 깨진 목록을 상태파일에 저장(복구되면 다음에 재알림 가능)
+        # 복구된 다리는 new_sigs에서 자연히 빠짐 → 다음에 같은 사유로 재발해도 다시 알림
         try:
-            BRIDGE_LAST.write_text(
-                json.dumps(sorted(broken_now), ensure_ascii=False), encoding="utf-8"
-            )
+            BRIDGE_LAST.write_text(json.dumps(new_sigs, ensure_ascii=False), encoding="utf-8")
         except Exception:
             pass
     except Exception:

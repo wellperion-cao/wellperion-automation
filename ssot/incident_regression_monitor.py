@@ -207,6 +207,37 @@ def _today() -> str:
     return datetime.date.today().isoformat()
 
 
+# ── 경보 내용-지문 억제(2026-08-04 웰리 판정) ────────────────────────────────
+# 왜: 시간 쿨다운이 아니라 **내용**으로 가른다 — 같은 회귀가 재커밋마다 다시 울려
+# 08-03 10:25~10:28 5연발이 났다(baseline이 알림 후 자동 갱신 안 됨). 그렇다고
+# baseline을 알림 시점에 자동 전진시키면 "사람이 고칠 때까지 계속 알린다"는 설계
+# 의도가 깨진다. 그래서 baseline은 그대로 두고, **직전에 이미 보낸 것과 똑같은
+# 내용**일 때만 재발신을 억제한다 — 지문이 바뀌면(새 파일·새 유실·새 leaked)
+# 즉시 다시 보낸다. 새 상태파일 없음 — 이미 있는 BASELINE_FILE에 필드 하나만 얹는다.
+def _signature(new_drift: dict, missing: list, unguarded: list, leaked: list) -> str:
+    """회귀 '내용'만의 지문 — 시각·커밋해시 등 매번 바뀌는 값은 절대 안 넣는다."""
+    import hashlib
+    parts = [f"drift:{k}:{','.join(sorted(v))}" for k, v in sorted(new_drift.items())]
+    parts += [f"missing:{m}" for m in sorted(missing)]
+    parts += [f"unguarded:{u}" for u in sorted(unguarded)]
+    parts += [f"leaked:{l}" for l in sorted(leaked)]
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:16]
+
+
+def _load_alert_sig() -> str | None:
+    return _baseline_raw().get("last_alert_signature")
+
+
+def _save_alert_sig(sig: str | None) -> None:
+    """baseline 파일의 다른 필드(divergence·guarded_ids)는 건드리지 않고 이 필드만 갱신."""
+    try:
+        d = _baseline_raw()
+        d["last_alert_signature"] = sig
+        BASELINE_FILE.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def run(set_baseline: bool = False) -> int:
     cur = _divergence_map()
     missing = _missing_assets()
@@ -251,11 +282,17 @@ def run(set_baseline: bool = False) -> int:
     print(f"  (참고) 기존 코드 드리프트(수정 후보): {len(code_drift)}건 · 문서 FP {doc_fp}건")
     print(f"  판정: {verdict}" + (" · baseline established" if established else ""))
 
+    sig = _signature(new_drift, missing, unguarded, leaked) if regression else None
+    suppressed = bool(regression and sig == _load_alert_sig())
+    if regression:
+        print(f"  경보: {'억제(동일 회귀 반복 — 지문 ' + sig + ', 직전 발신과 내용 동일)' if suppressed else '발신'}")
+
     lines = [
         "# 🛡️ 재발방지 회귀감시",
         f"_갱신: {_today()} · 자동 산출(ssot/incident_regression_monitor.py)_",
         "",
-        f"## 판정: {verdict}",
+        f"## 판정: {verdict}"
+        + (f" · 경보 억제(직전과 동일 내용 · 지문 {sig})" if suppressed else ""),
         "",
         "| 검사 | 결과 |",
         "|---|---|",
@@ -293,8 +330,12 @@ def run(set_baseline: bool = False) -> int:
             det.append(f"박제깨짐 {len(unguarded)}건")
         if leaked:
             det.append(f"결정정합 누출(leaked) {len(leaked)}건")
-        _alert("🛡️⚠️ 재발방지 회귀 감지 — " + " / ".join(det) + ". status/incident_health.md 확인.")
+        if not suppressed:
+            _alert("🛡️⚠️ 재발방지 회귀 감지 — " + " / ".join(det) + ". status/incident_health.md 확인.")
+            _save_alert_sig(sig)
         return 1
+    if _load_alert_sig() is not None:
+        _save_alert_sig(None)  # 해소됨 — 다음 회귀 발생 시 다시 울리도록 지문 비움
     return 0
 
 

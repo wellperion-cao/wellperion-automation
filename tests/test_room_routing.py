@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "ssot"))
 
 AI_ROOM = -5498808140      # AI 진행현황방 (status/telegram_rooms.json "자동화현황방")
 GM_ROOM = 8254867551       # 업무보고방 (GM_DM)
@@ -108,6 +109,67 @@ def main() -> None:
         t.join()
     assert sum(race_results) == 1, f"동시 5회 호출인데 True={sum(race_results)}번 — 락 레이스 재발: {race_results}"
     print("[OK] ⑨ post_commit_push._alert_should_send: 동시 5회 중 1번만 발신(락 정상)")
+
+    # ⑩ incident_regression_monitor 경보 내용-지문 억제(2026-08-04 웰리 판정 · 시토 구현)
+    #    시간 쿨다운이 아니라 내용으로 가른다: 동일 반복=억제 / 내용변경=즉시재발신 / 해소후재발=재발신
+    import pathlib
+    import incident_regression_monitor as M
+    tmp_baseline = pathlib.Path(tempfile.mkdtemp()) / "incident_baseline.json"
+    _orig = dict(baseline=M.BASELINE_FILE, alert=M._alert, div=M._divergence_map,
+                 missing=M._missing_assets, unguarded=M._unguarded, leaked=M._leaked_today)
+    try:
+        M.BASELINE_FILE = tmp_baseline
+        alerts = []
+        M._alert = lambda text: alerts.append(text)
+        M._divergence_map = lambda: {}
+        M._leaked_today = lambda: []
+        M._unguarded = lambda: []
+
+        M._missing_assets = lambda: ["자산A (x)"]
+        assert M.run() == 1 and len(alerts) == 1, "①최초 회귀는 발신"
+        assert M.run() == 1 and len(alerts) == 1, "②동일 내용 반복은 억제(추가발신 없음)"
+        M._missing_assets = lambda: ["자산B (y)"]
+        assert M.run() == 1 and len(alerts) == 2, "③내용이 바뀌면 즉시 재발신"
+        M._missing_assets = lambda: []
+        assert M.run() == 0 and len(alerts) == 2, "④해소되면 무발신(정상은 조용히)"
+        M._missing_assets = lambda: ["자산B (y)"]
+        assert M.run() == 1 and len(alerts) == 3, "⑤해소 후 같은 내용 재발 시 다시 발신"
+    finally:
+        M.BASELINE_FILE, M._alert = _orig["baseline"], _orig["alert"]
+        M._divergence_map, M._missing_assets = _orig["div"], _orig["missing"]
+        M._unguarded, M._leaked_today = _orig["unguarded"], _orig["leaked"]
+    print("[OK] ⑩ incident_regression_monitor: 동일반복 억제·내용변경 즉시재발신·해소후재발 재발신 확인")
+
+    # ⑪ erp_status_publisher 연동다리 경보도 같은 내용-지문 규칙(2026-08-04 웰리 판정)
+    #    08-03 21:18·22:17 1시간 간격 재경보를 실측 확인(git log status/erp_status.json —
+    #    20:47 정상→21:18 이상→22:17 이상 재검출→22:47 정상) = 플래핑. 시간쿨다운이 아니라
+    #    내용지문으로 흡수: 같은사유 지속=억제 / 복구=무발신 / 복구후 같은사유 재발=재발신 / 사유변경=재발신
+    import erp_status_publisher as E
+    _bl = E.BRIDGE_LAST
+    tmp_bridge = pathlib.Path(tempfile.mkdtemp()) / "_bridge_last.json"
+    bridge_alerts = []
+    _orig_send = E._send_telegram
+    try:
+        E.BRIDGE_LAST = tmp_bridge
+        E._send_telegram = lambda text, kind="tech_check": bridge_alerts.append(text) or True
+        broken = [{"name": "시트 GAS(todo_list)", "state": "이상", "detail": "TimeoutError"}]
+        ok = [{"name": "시트 GAS(todo_list)", "state": "정상", "detail": "HTTP 200"}]
+        diff = [{"name": "시트 GAS(todo_list)", "state": "이상", "detail": "ConnectionError"}]
+
+        E.alert_newly_broken(broken)
+        assert len(bridge_alerts) == 1, "①최초 깨짐은 발신"
+        E.alert_newly_broken(broken)
+        assert len(bridge_alerts) == 1, "②같은 사유 지속은 억제"
+        E.alert_newly_broken(ok)
+        assert len(bridge_alerts) == 1, "③복구는 무발신"
+        E.alert_newly_broken(broken)
+        assert len(bridge_alerts) == 2, "④복구 후 같은 사유 재발(플래핑)은 다시 발신"
+        E.alert_newly_broken(diff)
+        assert len(bridge_alerts) == 3, "⑤사유가 바뀌면 즉시 재발신"
+    finally:
+        E.BRIDGE_LAST = _bl
+        E._send_telegram = _orig_send
+    print("[OK] ⑪ erp_status_publisher: 연동다리 경보 내용-지문 억제/재발신 5단계 확인")
 
     print("ALL OK — 방 경계 점검 통과 (실발신 0)")
 
