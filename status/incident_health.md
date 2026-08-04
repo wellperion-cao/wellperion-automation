@@ -1,5 +1,5 @@
 # 🛡️ 재발방지 회귀감시
-_갱신: 2026-08-04 · 자동 산출(ssot/incident_regression_monitor.py)_
+_갱신: 2026-08-05 · 자동 산출(ssot/incident_regression_monitor.py)_
 
 ## 판정: ⚠️ 회귀 감지
 
