@@ -429,7 +429,12 @@ function delegatedAgents(cwd) {
         if (!role) continue;
         const e = out[role] || (out[role] = { count: 0, ships: [], since: null });
         e.count++;
-        const m = nm.match(/(?:^|-)(\d{3,6})(?:-|$)/);    // 이름 마디로 떨어지는 숫자만 배 번호로 본다
+        // ★끝자락 숫자만 배 번호로 본다 — 하이픈 유무 안 가린다('simo-9457'도 'ship293'도 잡아야
+        //   한다). 기존엔 하이픈 앞뒤로 떨어진 숫자만 찾아 'ship293' 같은 이름을 놓쳤다(실측
+        //   2026-08-04: 웰리 아래 살아있는 위임 2척이 'ship293'·'ship349' 인데 배 번호를 못 뽑아
+        //   화면엔 며칠 전 커밋의 배10521 이 대신 떴다 — GM 지적 "배편도 이상한 걸로"의 뿌리).
+        const m = nm.match(/(\d{3,6})$/);
+
         if (m && !e.ships.includes(m[1])) e.ships.push(m[1]);
         const born = st.birthtimeMs || st.mtimeMs;
         if (e.since === null || born < e.since) e.since = born;
@@ -939,6 +944,17 @@ function buildRoleLines(cwd, role) {
     const acts = roleActivity(cwd, role);
     const live = roleLiveness(cwd);
     for (const a of acts) a.age = live[a.role];          // ms · 없으면 undefined
+    // ★worklog 커밋(a.mins)도 '살아있음' 신호다 — roleLiveness 는 **이 statusline 을 그리는
+    //   인터랙티브 세션 창**의 mtime 만 본다. 배치·서브에이전트 경유로 일하면(예: .bat 훅으로
+    //   커밋만 하고 창은 안 열림) 세션 파일이 며칠째 안 갱신돼도 실제로는 방금 일했을 수 있다
+    //   (실측 2026-08-04 13:09: 시우·시포 worklog 는 12:38·12:39 커밋인데 세션 mtime 은
+    //   07-28 23:43 에 멎어 있었다 — GM 지적 "쉼 07-28 23:43 인데?"의 뿌리).
+    //   커밋은 이미 roleActivity() 가 읽어와 a.mins 에 갖고 있다 — 새로 읽지 않고 둘 중
+    //   더 최근 것만 취한다(약속 L01 — 판정 계산 복제 금지, 있는 신호를 합칠 뿐).
+    for (const a of acts) {
+      const commitAge = (a.mins != null) ? a.mins * 60000 : null;
+      if (commitAge != null && (a.age == null || commitAge < a.age)) a.age = commitAge;
+    }
     // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
     //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
     //   ●(2) + 공백 + 닉4 + 공백 + [제목] + 2칸 + 상태칸 + 2칸 + '배NNNNNN'(최대 8) = 20 + 상태칸
