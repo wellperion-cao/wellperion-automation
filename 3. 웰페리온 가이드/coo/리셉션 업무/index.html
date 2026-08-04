@@ -745,19 +745,51 @@ function parseDateLoose(s){
 }
 
 /* ── 서버 호출 (text/plain → CORS preflight 회피) ── */
+/* 2026-08-03: 구글이 간헐적으로 JSON 대신 안내/오류 HTML을 반환함(Apps Script 웹앱 고질).
+   기존 코드는 재시도가 없어 캐시 없는 PC(=처음 들어오는 다른 컴퓨터)는 첫 실패에서 그대로 막혔음.
+   → 읽기는 자동 재시도, 쓰기는 재시도 금지(응답만 실패하고 시트엔 이미 기록됐을 수 있어 중복 위험). */
+const RC_RETRY_MS=[1200, 3500, 8000];
+function rcFriendlyErr(txt){
+  const t=String(txt||'');
+  if(/accounts\.google\.com|계정을 선택|Sign in|로그인/i.test(t))
+    return '구글 로그인 화면이 돌아왔습니다 — 크롬에서 구글 계정을 하나만 남기고 로그인하거나 시크릿 창으로 열어주세요.';
+  if(/찾을 수 없|not found|404/i.test(t))
+    return '서버 주소를 찾지 못했습니다 — 관리자에게 알려주세요.';
+  return '구글 서버가 데이터 대신 안내 페이지를 보냈습니다(일시 오류). 잠시 후 [새로고침]을 눌러주세요.';
+}
 async function call(payload){
   if(!state.url) throw new Error('NO_URL');
-  const res = await fetch(state.url, {
-    method:'POST', redirect:'follow',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify(payload)
-  });
-  const txt = await res.text();
-  let json; try{ json = JSON.parse(txt); }catch(e){ throw new Error('서버 응답 오류: '+txt.slice(0,120)); }
-  /* 수정 로그(2026-07-25) — 모든 쓰기가 이 함수를 지나므로 여기서 일괄 기록(메뉴얼 제외) */
-  if(json && json.ok && (payload.action==='update'||payload.action==='append') && payload.tab!=='업무 및 기초 메뉴얼')
-    editLogSend(payload, json);
-  return json;
+  const isRead = (payload.action||'read')==='read';
+  const tries  = isRead ? RC_RETRY_MS.length+1 : 1;   /* 쓰기는 1회만 */
+  for(let i=0;i<tries;i++){
+    if(i) await new Promise(r=>setTimeout(r, RC_RETRY_MS[i-1]));
+    let txt;
+    try{
+      const res = await fetch(state.url, {
+        method:'POST', redirect:'follow', credentials:'omit', cache:'no-store',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(payload)
+      });
+      txt = await res.text();
+    }catch(netErr){
+      console.warn('[RC] 네트워크 실패('+(i+1)+'/'+tries+')', netErr && netErr.message);
+      if(i<tries-1) continue;
+      throw new Error('네트워크 연결 실패 — 인터넷 상태를 확인한 뒤 [새로고침]을 눌러주세요.');
+    }
+    let json;
+    try{ json = JSON.parse(txt); }
+    catch(e){
+      window.__rcLastRaw = txt;   /* 진단용 원문 보관 — 콘솔에서 __rcLastRaw 로 확인 */
+      console.warn('[RC] 비JSON 응답('+(i+1)+'/'+tries+') — 구글 안내 페이지', String(txt).slice(0,400));
+      if(i<tries-1) continue;
+      throw new Error(rcFriendlyErr(txt));
+    }
+    if(i) console.info('[RC] 재시도 '+i+'회 후 성공: '+(payload.tab||''));
+    /* 수정 로그(2026-07-25) — 모든 쓰기가 이 함수를 지나므로 여기서 일괄 기록(메뉴얼 제외) */
+    if(json && json.ok && (payload.action==='update'||payload.action==='append') && payload.tab!=='업무 및 기초 메뉴얼')
+      editLogSend(payload, json);
+    return json;
+  }
 }
 
 /* ── 로컬 로그 서버(_serve.js) 주소 — 이 PC에서 볼 때만 기록한다.
@@ -996,7 +1028,12 @@ async function load(){
       document.getElementById('syncMeta').textContent='저장본 '+hhmm(cached.t)+' · 최신화 실패';
       toast('최신화 실패(저장본 표시 중): '+esc(e.message),'err'); return;
     }
-    host.innerHTML='<div class="loadwrap">⚠️ '+esc(e.message)+'</div>';
+    /* 캐시 없는 PC(처음 들어온 컴퓨터)는 여기서 막히므로 재시도 수단을 반드시 준다 — 2026-08-03 */
+    host.innerHTML='<div class="loadwrap" style="flex-direction:column;gap:14px;text-align:center">'
+      +'<div>⚠️ '+esc(e.message)+'</div>'
+      +'<button class="btn" id="loadRetryBtn">다시 시도</button></div>';
+    const rb=document.getElementById('loadRetryBtn');
+    if(rb) rb.onclick=()=>load();
     toast('불러오기 실패: '+esc(e.message),'err');
   }
 }
