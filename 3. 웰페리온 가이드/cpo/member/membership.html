@@ -4442,12 +4442,17 @@ function _lessonRegDateStr(r) {
 // 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화)로 신설.
 // 멤버십 신규 등록 현황 카드 페이스 — 2026-07-18 GM 지시로 강습 registry(성인/유소년) → 멤버십 신규등록(member_registered_list)
 // 금일/월간 카운트로 재배선. 구 _lessonComboRegLoad(성인/유소년 lesson_registry_list) 대체.
-// 등록 분류 판정 — regClass2(재등록분류) 우선, 없으면 regClass(등록분류). 빈칸/'신규' = 신규(null).
-// 그 외 문자열(재등록·양수·환불·양도·대기 등)은 원문 그대로 라벨로 쓴다 — 모르는 표기 손대지 않음(_mregProgLabel과 동일 원칙).
-// 2026-08-04 시토 서버 필드 추가(regClass/regClass2/regSeq, 배303) 대응 — 「멤버십 신규 등록현황」에 재등록이
-// 섞여 보이던 문제(GM 신고, 배349) 수리: 신규/그 외를 여기서 가른다. 값이 아예 없는 옛 응답 = 전부 신규 취급(무변경).
+// 등록 분류 판정 — regClass(등록분류)가 정본: 신규179·재등록6·양수5·환불4·양도1·대기1(2026 실측, 배349)로
+// 이 칸 하나에 등록 유형이 이미 다 들어 있다. regClass2(재등록분류)는 '재등록' 표기와 등록 이후 이탈·환불
+// 상태값(LOSS·환불·양도LOSS·대기)이 겹쳐 쓰이는 칸이라 — 등록 유형 판정에는 그 값이 '재등록'일 때만 반영
+// 한다(그 외 상태값은 "나중에 이탈/환불했다"일 뿐 "신규 가입 아니었다"가 아니다 — 전환은 이미 일어났다).
+// ★2026-08-04 배349 2차(시포·GM) — 최초 버전은 regClass2를 우선해 신규였다가 이탈한 16명을 신규에서
+// 빼버려 과소집계(164)였다. regClass 우선으로 정정 — 신규는 179가 맞다.
+// 그 외 문자열은 원문 그대로 라벨로 쓴다 — 모르는 표기 손대지 않음(_mregProgLabel과 동일 원칙).
 function _mregClassify(m){
-  var raw = String((m && (m.regClass2 || m.regClass)) || '').trim();
+  var raw = String((m && m.regClass) || '').trim();
+  var raw2 = String((m && m.regClass2) || '').trim();
+  if (raw2 === '재등록') raw = raw2;   // regClass가 비어도 regClass2='재등록'이면 재등록으로 판정
   return (!raw || raw === '신규') ? null : raw;   // null = 신규
 }
 function _mregCountNew(rows){
