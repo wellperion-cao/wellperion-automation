@@ -449,7 +449,8 @@ function _regNotifySlaOverdue(dryRun) {
     lines.push('⏰ <b>[종합접수처 SLA 초과]</b>');
     lines.push('신규 초과 ' + newlyOverdue.length + '건 · 전체 초과 ' + overdue.length + '건');
     newlyOverdue.slice(0, 10).forEach(function (r) {
-      var over = (r.remainH !== null && r.remainH !== undefined) ? Math.abs(Math.round(r.remainH)) + 'h' : '-';
+      var overAbs = (r.remainH !== null && r.remainH !== undefined) ? Math.abs(r.remainH) : null;
+      var over = (overAbs !== null) ? (overAbs < 1 ? Math.round(overAbs * 60) + '분' : Math.round(overAbs) + 'h') : '-';
       lines.push('  🔴 [' + (r.category || '') + '] ' + String(r.content || '').slice(0, 24) +
         ' — ' + over + ' 초과 (' + (r.regId || '') + (r.assignee ? ' · 담당 ' + r.assignee : ' · 미배정') + ')');
     });

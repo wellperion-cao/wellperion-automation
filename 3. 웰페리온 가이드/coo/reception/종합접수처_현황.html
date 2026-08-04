@@ -557,7 +557,7 @@ function _slaBadge(r){
   if(st!=='정상' && st!=='임박' && st!=='초과') return '';
   var rem = (r.remainH===null||r.remainH===undefined) ? null : Number(r.remainH);
   var bg, color, txt;
-  if(st==='초과'){ bg='var(--red-bg)'; color='var(--red)'; txt='초과 +' + (rem!==null?Math.abs(Math.round(rem))+'h':''); }
+  if(st==='초과'){ bg='var(--red-bg)'; color='var(--red)'; txt='초과 +' + (rem!==null?(Math.abs(rem)<1?Math.round(Math.abs(rem)*60)+'분':Math.abs(Math.round(rem))+'h'):''); }
   else if(st==='임박'){ bg='var(--orange-bg)'; color='var(--orange)'; txt='임박' + (rem!==null?' '+(rem<1?Math.round(rem*60)+'분':Math.round(rem)+'h'):''); }
   else { bg='var(--border)'; color='var(--dim)'; txt='기한 ' + (rem!==null?(rem<24?Math.round(rem)+'h':'D-'+Math.floor(rem/24)):''); }
   return '<span class="card-sla" title="기한 ' + _esc(String(r.deadline||'')) + '" style="background:' + bg + ';color:' + color + ';">' + _esc(txt) + '</span>';
