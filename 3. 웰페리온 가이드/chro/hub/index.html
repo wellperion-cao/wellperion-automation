@@ -1698,6 +1698,11 @@ function applicantRow(a){
       if(isAlreadyHiredEmp_(a["지원자명"])){
         actions+='<button type="button" class="btn-sm" disabled title="이미 임직원으로 등록된 지원자입니다" style="background:#f2f1ec;color:#8a8880;border-color:var(--line);cursor:not-allowed;opacity:.85">✓ 입사확정 완료</button>';
       }else{
+        // [추가 2026-08-04 A-5] 첫 출근예정일 사전입력 — '합류 가능일' 필드 재사용. 입사확정 전에 날짜만
+        // 미리 저장해 대시보드 캘린더에 노출(안 A). 입사확정 버튼 로직은 무변경.
+        var __jd=a["합류 가능일"]?fmtD(a["합류 가능일"]):"";
+        actions+='<input type="date" data-jd="1" id="jd_'+esc(pageId)+'" value="'+esc(__jd)+'" title="첫 출근 예정일(저장 시 대시보드 캘린더에 표시)" style="padding:3px 5px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--ink)">';
+        actions+='<button type="button" class="btn-sm" data-savejoin="'+esc(pageId)+'" data-name="'+esc(a["지원자명"]||"")+'" title="입력한 날짜를 첫 출근 예정일로 저장">📅 예정일 저장</button>';
         actions+='<button class="btn-sm" data-hire="'+esc(pageId)+'" data-name="'+esc(a["지원자명"]||"")+'" style="background:var(--gold);color:#fff;border-color:var(--gold)">✓ 입사 확정</button>';
       }
     }
@@ -2382,6 +2387,9 @@ function renderHire(){
       if(iv){openInterviewEvalModal(iv.getAttribute("data-iveval"),iv.getAttribute("data-name"));return;}
       var h=t.closest("[data-hire]");
       if(h){openHireCompleteModal(h.getAttribute("data-hire"),h.getAttribute("data-name"));return;}
+      if(t.closest("[data-jd]")){return;} // [추가 2026-08-04 A-5] 날짜 입력 클릭 — 상세모달 오픈 방지, 네이티브 동작만
+      var sj=t.closest("[data-savejoin]");
+      if(sj){saveJoinDate(sj.getAttribute("data-savejoin"),sj.getAttribute("data-name"));return;}
       var cj=t.closest("[data-closejob]");
       if(cj){closeJob(cj.getAttribute("data-closejob"),cj.getAttribute("data-jobname"));return;}
       var pgb=t.closest("[data-applpage]");
@@ -2847,14 +2855,24 @@ function empOpenCard(nm){
   if(!best){alert(target+" 님은 지원자 기록(인사카드)이 없습니다. — 허브 도입 전 입사자");return;}
   openPrintView(normId(best.url),true);
 }
-function dashCalEvents(){var out=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;out.push({kind:"면접",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:s,name:a["지원자명"]||"",label:(a["전형 단계"]||"면접"),done:false});});obCheckEvents().forEach(function(e){out.push({kind:"온보딩",y:e.y,m:e.m,d:e.d,t:e.t,date:e.date,name:e.name,label:e.label,done:e.done,row:e.row});});return out;}
+function dashCalEvents(){var out=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;out.push({kind:"면접",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:s,name:a["지원자명"]||"",label:(a["전형 단계"]||"면접"),done:false});});
+  // [추가 2026-08-04 A-5] 입사예정 — 최종합격+합류가능일 저장됐지만 아직 미확정(현재근무자 미등재)인
+  // 지원자를 파생 표시(로스터 등재 없음, 급여·연차 영향 0 — 조회 응답을 프론트에서 오버레이만 함).
+  (DB.appl||[]).forEach(function(a){
+    if((a["전형 단계"]||"")!=="최종 합격")return;
+    var jv=a["합류 가능일"];if(!jv)return;
+    if(typeof isAlreadyHiredEmp_==="function"&&isAlreadyHiredEmp_(a["지원자명"]))return;
+    var ds=String(jv).slice(0,10);var dt=new Date(ds+"T00:00:00");if(isNaN(dt.getTime()))return;
+    out.push({kind:"입사예정",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:ds,name:a["지원자명"]||"",label:"입사예정",done:false});
+  });
+  obCheckEvents().forEach(function(e){out.push({kind:"온보딩",y:e.y,m:e.m,d:e.d,t:e.t,date:e.date,name:e.name,label:e.label,done:e.done,row:e.row});});return out;}
 function dashCalNav(delta){var ym=window.__dashYM||{};var m=ym.m+delta,y=ym.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}window.__dashYM={y:y,m:m};renderDash();}
 function renderDashCalCard(){
   var ev=dashCalEvents();var ym=window.__dashYM;if(!ym){var d0=new Date();ym={y:d0.getFullYear(),m:d0.getMonth()};window.__dashYM=ym;}
   var y=ym.y,m=ym.m;var byDay={};ev.forEach(function(e){if(e.y===y&&e.m===m){(byDay[e.d]=byDay[e.d]||[]).push(e);}});
   var startDow=new Date(y,m,1).getDay();var days=new Date(y,m+1,0).getDate();var td=new Date();var isT=function(d){return td.getFullYear()===y&&td.getMonth()===m&&td.getDate()===d;};
   var h='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><button class="ob-btn sec" onclick="dashCalNav(-1)">‹</button><div style="font-weight:700">'+y+'년 '+(m+1)+'월 <span style="color:#888;font-weight:500;font-size:11px">채용·온보딩 일정</span></div><button class="ob-btn sec" onclick="dashCalNav(1)">›</button></div>';
-  h+='<div style="display:flex;gap:13px;font-size:11px;color:#666;margin-bottom:7px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f6d9e;margin-right:3px;vertical-align:middle"></span>면접</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#b08d57;margin-right:3px;vertical-align:middle"></span>온보딩 체크인</span></div>';
+  h+='<div style="display:flex;gap:13px;font-size:11px;color:#666;margin-bottom:7px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f6d9e;margin-right:3px;vertical-align:middle"></span>면접</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#b08d57;margin-right:3px;vertical-align:middle"></span>온보딩 체크인</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3f8f5f;margin-right:3px;vertical-align:middle"></span>입사예정</span></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
   for(var i=0;i<startDow;i++)h+="<div></div>";
@@ -2865,9 +2883,12 @@ function renderDashCalCard(){
     var chips='';
     if(has.length){
       chips=has.slice(0,2).map(function(e){
-        var col=e.kind==="면접"?"#2f6d9e":(e.kind==="공고마감"?"#b5532f":"#b08d57");
+        var col=e.kind==="면접"?"#2f6d9e":(e.kind==="공고마감"?"#b5532f":(e.kind==="입사예정"?"#3f8f5f":"#b08d57"));
         var clk=(e.kind==="온보딩"&&e.row)?('onclick="obCheck('+e.row+')" '):'';
-        return '<div '+clk+'style="'+(clk?'cursor:pointer;':'')+'margin-top:2px;background:#f7f4ee;border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:11px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.name)+(e.done?" ✓":"")+'</div><div style="font-size:9.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.kind)+" · "+esc(e.label)+'</div></div>';
+        // [수정 2026-08-04 A-5] 입사예정은 "입사예정 · <실명>" 한 줄로 표시(요청 표기 그대로).
+        var __top=e.kind==="입사예정"?("입사예정 · "+esc(e.name)):(esc(e.name)+(e.done?" ✓":""));
+        var __bot=e.kind==="입사예정"?"":('<div style="font-size:9.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.kind)+" · "+esc(e.label)+'</div>');
+        return '<div '+clk+'style="'+(clk?'cursor:pointer;':'')+'margin-top:2px;background:#f7f4ee;border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:11px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+__top+'</div>'+__bot+'</div>';
       }).join('');
       if(has.length>2)chips+='<div style="margin-top:1px;font-size:10px;font-weight:700;color:#8a6f3f">+'+(has.length-2)+' 더</div>';
     }
@@ -4480,12 +4501,35 @@ function openHireCompleteModal(pageId,name){
   document.getElementById("hcSosok").value="";
   document.getElementById("hcRank").value="";
   document.getElementById("hcType").value="정규직";
-  document.getElementById("hcDate").value="";
+  // [추가 2026-08-04 A-5] 미리 저장해둔 첫 출근예정일('합류 가능일')이 있으면 입사일 기본값으로 프리필 —
+  // 매니저가 그날 버튼만 누르면 되도록. 없으면 기존과 동일하게 빈칸.
+  var __hcA=(DB.appl||[]).find(function(x){return normId(x.url)===pageId;})||(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===name;});
+  document.getElementById("hcDate").value=(__hcA&&__hcA["합류 가능일"])?fmtD(__hcA["합류 가능일"]):"";
   var msg=document.getElementById("hcMsg");msg.textContent="";msg.className="modal-msg";
   var btn=document.getElementById("hcConfirm");btn.disabled=false;btn.textContent="입사 확정 실행";
   document.getElementById("hireCompleteModal").classList.add("show");
 }
 function closeHireCompleteModal(){document.getElementById("hireCompleteModal").classList.remove("show");}
+// [추가 2026-08-04 A-5] 첫 출근예정일 저장 — update-applicant에 joinDate만 실어 보냄(stage 미전달로
+// 전형 단계 보존, 핵심규칙 4). 저장 후 reloadData()로 서버 재조회 라운드트립까지 확인.
+async function saveJoinDate(pageId,name){
+  var input=document.getElementById("jd_"+pageId);
+  if(!input)return;
+  var date=input.value;
+  if(!date){alert("날짜를 먼저 선택하세요.");return;}
+  var __a=(DB.appl||[]).find(function(x){return normId(x.url)===pageId;})||(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===name;});
+  if(!__a||!__a["_sheet_row"]){alert("지원자 행을 찾을 수 없습니다.");return;}
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-applicant",adminPassword:SESSION_PW,sheetRow:__a["_sheet_row"],joinDate:date})}).then(function(x){return x.json();});
+    if(r&&r.ok){
+      reloadData();
+    }else{
+      alert("저장 실패: "+((r&&r.error)||"알 수 없는 오류"));
+    }
+  }catch(e){
+    alert("서버 오류: "+((e&&e.message)||e));
+  }
+}
 async function submitHireComplete(){
   if(!hcTarget)return;
   var dept=document.getElementById("hcDept").value;
