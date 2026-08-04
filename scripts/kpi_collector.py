@@ -84,6 +84,47 @@ def _role_stats(ships: list[dict], role: str) -> dict:
     return {"완결률": rate, "완료": done, "활성": active, "기계발행_건수": machine_done}
 
 
+_STALL_DAYS = 7  # 2026-08-04 GM 재지적 — 3일은 정상 리듬과 섞인다, 7일 넘게 열려 있어야 진짜 신호
+
+
+def _role_stalled_ships(ships: list[dict], role: str, today=None) -> dict:
+    """멈춘 배 — 열린 배(PENDING/IN_PROGRESS) 중 **enqueued_at**(열린 지 며칠) 기준
+    _STALL_DAYS일 이상 그대로인 것.
+    ⚠️ updated_at 이 아니라 enqueued_at 을 쓴다 — 배117(cpo) 실측(2026-08-04)이
+    이유다: enqueued_at=07-25·10일째 방치인데 updated_at 은 08-04(오늘)이었다.
+    updated_at 은 스냅샷 자동발행·auto-log 커밋이 큐 파일을 다시 쓸 때마다 같이
+    갱신돼 "일을 안 해도 방금 만진 것"처럼 보인다(아침 점검표 #1-b "도는데 결과를
+    못 내는 장치"와 같은 함정) — 손대지 말고 그대로 둘 것.
+    IN_PROGRESS 인데 오래된 것은 더 나쁜 신호라 최장 배 정보에 status 를 함께
+    남긴다(한 숫자에 두 뜻을 안 섞음). 날짜 파싱 실패 건은 개별 스킵(집계 전체를
+    죽이지 않음 — 0 위장과는 다름, 파싱 안 되는 값만 빠진다)."""
+    today = today or datetime.now(KST).date()
+    stalled = []  # (경과일, 배번호, status)
+    for s in ships:
+        if not isinstance(s, dict) or s.get("clevel") != role or s.get("status") not in ACTIVE:
+            continue
+        raw = s.get("enqueued_at")
+        if not raw:
+            continue
+        try:
+            d = datetime.strptime(str(raw)[:10], "%Y-%m-%d").date()
+        except Exception:
+            continue
+        days = (today - d).days
+        if days >= _STALL_DAYS:
+            stalled.append((days, s.get("short_no") or s.get("task_id"), s.get("status")))
+    if not stalled:
+        return {"멈춘배_건수": 0, "멈춘배_최장일수": None, "멈춘배_최장배번호": None, "멈춘배_최장상태": None}
+    stalled.sort(reverse=True)
+    worst_days, worst_id, worst_status = stalled[0]
+    return {
+        "멈춘배_건수": len(stalled),
+        "멈춘배_최장일수": worst_days,
+        "멈춘배_최장배번호": worst_id,
+        "멈춘배_최장상태": worst_status,
+    }
+
+
 def _unpushed_count() -> int | None:
     """origin/master..HEAD 미푸시 커밋 수. 실패 시 None."""
     try:
@@ -626,6 +667,7 @@ def collect() -> dict:
     roles_data: dict[str, dict] = {}
     for role in ("ceo", "coo", "cfo", "cmo", "cto", "chro", "cpo"):
         stats = _role_stats(ships, role)
+        stats.update(_role_stalled_ships(ships, role))  # 멈춘 배(전 역할 공통) — GM 지적 2026-08-04
         if role == "ceo":
             # GM기록 미반영·실무진 회신 미완료 병합 (배358 · 아침 자가점검 두 지표 자동화)
             stats.update(_ceo_gm_record_gap())
@@ -689,7 +731,9 @@ def main() -> None:
             extra = f"  sales_month={v['sales_month']}({v.get('sales_month_label')}) target={v.get('sales_month_target')}"
         if role == "cmo" and v.get("채널별_문의전환") is not None:
             extra = f"  채널별_문의전환={v['채널별_문의전환']}"
-        print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{extra}")
+        stall = (f"  멈춘배={v['멈춘배_건수']}(최장 {v['멈춘배_최장일수']}일·배{v['멈춘배_최장배번호']}·{v.get('멈춘배_최장상태')})"
+                  if v.get("멈춘배_건수") else "  멈춘배=0")
+        print(f"  {role:5s}: 완결률={v['완결률']}  완료={v['완료']}  활성={v['활성']}{stall}{extra}")
     print(f"  -> {OUT_PATH}")
 
     # 북극성 도달율 재산출(best-effort · 실패해도 collector 성공 유지). kpi_values 갱신 직후 물림.
@@ -732,7 +776,24 @@ def _selftest() -> int:
     gap = _count_done_reply_gap(ships, by_fid, _stage_rank, done_rank)
     assert gap == 2, gap  # FB2·FB3 만 잡혀야 함
 
-    print("selftest OK — GM기록_미반영", n, "건 · 실무진_회신_미완료(픽스처)", gap, "건")
+    import datetime as _dt
+    fixed_today = _dt.date(2026, 8, 4)
+    stall_ships = [
+        # 배117 실측 그대로 — enqueued_at=07-25(10일)인데 updated_at 은 오늘(자동 재기록).
+        # updated_at 을 봤다면 안 잡혔을 것 — 이게 회귀 테스트다.
+        {"clevel": "cpo", "status": "IN_PROGRESS", "short_no": 117,
+         "enqueued_at": "2026-07-25", "updated_at": "2026-08-04"},
+        {"clevel": "cpo", "status": "PENDING", "short_no": 2, "enqueued_at": "2026-08-01"},   # 3일 — 정상(7일 미만)
+        {"clevel": "cpo", "status": "DONE", "short_no": 3, "enqueued_at": "2026-07-01"},      # DONE — 대상 아님
+        {"clevel": "coo", "status": "IN_PROGRESS", "short_no": 9, "enqueued_at": "2026-07-28"},  # 7일 — 경계값, 멈춤
+    ]
+    r_cpo = _role_stalled_ships(stall_ships, "cpo", today=fixed_today)
+    assert r_cpo == {"멈춘배_건수": 1, "멈춘배_최장일수": 10, "멈춘배_최장배번호": 117, "멈춘배_최장상태": "IN_PROGRESS"}, r_cpo
+    r_coo = _role_stalled_ships(stall_ships, "coo", today=fixed_today)
+    assert r_coo["멈춘배_건수"] == 1 and r_coo["멈춘배_최장일수"] == 7, r_coo
+
+    print("selftest OK — GM기록_미반영", n, "건 · 실무진_회신_미완료(픽스처)", gap,
+          "건 · 멈춘배(cpo, 픽스처)", r_cpo)
     return 0
 
 
