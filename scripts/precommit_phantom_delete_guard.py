@@ -47,9 +47,11 @@ precommit_phantom_delete_guard.py — 커밋 전 "유령 삭제"(작업트리엔
   재사용 — 새 환경변수 안 만듦).
 """
 
+import json
 import os
 import subprocess
 import sys
+import time
 
 SKIP_ENV = "SKIP_PHANTOM_DELETE_GUARD"
 MAX_LISTED = 20
@@ -58,6 +60,56 @@ PROTECTED_DELETE_PREFIXES = (
     "3. 웰페리온 가이드/chro/",
     "3. 웰페리온 가이드/cfo/",
 )
+
+# 차단 사실·이유를 남기는 파일 로그(2026-08-04 GM 근본분석 — "조용히 통과/차단 금지").
+# stderr 는 headless 세션이 삼키는 경우가 있어 파일에도 한 줄 append 한다. 실패=무시(fail-soft).
+_BLOCK_LOG = "logs/phantom_delete_guard.jsonl"
+
+
+def _log_block(kind: str, paths, root: str = "."):
+    try:
+        p = os.path.join(root, _BLOCK_LOG)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                "kind": kind, "paths": list(paths)[:50],
+            }, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+def foreign_delete_violations(deleted, all_staged, explicit_paths=()):
+    """일반 혼입 삭제 판정 (2026-08-04 GM 지시 — 유령 삭제 근본분석).
+
+    원리: 「로컬에 파일이 없다」는 「지워도 된다」가 아니다. 원격(다른 PC 나우열M·
+    remote 세션)이 추가한 파일은 배245 무접촉 통합(post_commit_push._reconcile)이
+    작업트리에 실체화하지 않아, 이 PC 에서는 항상 '삭제된 것처럼' 보인다. 그 상태의
+    맨손 커밋이 삭제를 쓸어담는 사고가 chro/cfo 밖(tests/·_assets/·coo/notice/·
+    .deploy-procurement/)에서도 났다 — 도메인 목록 확장이 아니라 판정 축을 바꾼다:
+
+      삭제는 **명시적 의도**일 때만 커밋에 담긴다. 구체적으로 —
+      ①삭제만 담은 커밋(전부 D) = 삭제가 곧 주제 → 통과
+      ②단일 보호 도메인(chro/·cfo/) 안에서만 이뤄진 커밋 = 그 도메인 전용
+        도구(나우열M 레인) → 통과(기존 chro/cfo 판정과 같은 통과 조건)
+      ③그 외(비삭제 변경과 섞인 커밋)의 삭제는 explicit_paths 에 **파일 단위로
+        정확히** 나열된 것만 허용 — 디렉터리 지정에 쓸려 들어온 삭제는 위반.
+
+    반환: 위반 삭제 경로 목록(비면 통과). SKIP_ENV=1 이면 항상 통과.
+    """
+    if os.environ.get(SKIP_ENV) == "1":
+        return []
+    if not deleted:
+        return []
+    deleted_set = set(deleted)
+    non_delete = [p for p in all_staged if p not in deleted_set]
+    if not non_delete:
+        return []  # ①삭제 전용 커밋 = 명시적 의도
+    for pre in PROTECTED_DELETE_PREFIXES:
+        if all(p.startswith(pre) for p in all_staged):
+            return []  # ②단일 보호 도메인 전용 커밋
+    explicit = set(explicit_paths)
+    return [d for d in deleted if d not in explicit]
 
 
 def run(args):
@@ -151,6 +203,7 @@ def main():
             "============================================================\n"
             % SKIP_ENV
         )
+        _log_block("phantom_delete", violations)
         return 1
 
     # ── chro/cfo 보호 삭제 판정 ──
@@ -182,7 +235,41 @@ def main():
                     "============================================================\n"
                     % SKIP_ENV
                 )
+                _log_block("protected_delete", protected_deletes)
                 return 1
+
+    # ── 일반 혼입 삭제 판정 (2026-08-04 GM 근본분석 — 판정 축 교체) ──
+    # 삭제와 비삭제 변경이 한 커밋에 섞이면, 그 삭제는 「의도」가 아니라 「원격이
+    # 추가한 파일이 이 PC 작업트리에 없어서」일 가능성이 높다(무접촉 통합 구조).
+    # 훅 경로(맨손 git commit)엔 명시 경로 개념이 없으므로 혼합 커밋의 삭제는
+    # 전부 차단한다. 삭제 전용 커밋·단일 보호 도메인 커밋은 통과(함수 주석 참조).
+    all_staged = staged_all()
+    if all_staged is not None:
+        del_paths = [d for p in deleted if (d := _decode(p))]
+        all_paths = [d for p in all_staged if (d := _decode(p))]
+        general = foreign_delete_violations(del_paths, all_paths)
+        if general:
+            sys.stderr.write(
+                "\n"
+                "============================================================\n"
+                "[phantom-delete-guard] 커밋 차단 — 혼입 삭제(삭제+다른 변경 혼합)\n"
+                "------------------------------------------------------------\n"
+            )
+            for path in general[:MAX_LISTED]:
+                sys.stderr.write("  - %s\n" % path)
+            if len(general) > MAX_LISTED:
+                sys.stderr.write("  ... 외 %d건\n" % (len(general) - MAX_LISTED))
+            sys.stderr.write(
+                "------------------------------------------------------------\n"
+                "  「로컬에 없다」는 「지워도 된다」가 아닙니다 — 다른 PC·원격 세션이\n"
+                "  추가한 파일은 이 PC 작업트리에 실체화되지 않아 삭제로 보입니다.\n"
+                "  통과 방법: ①삭제만 담은 별도 커밋으로 분리(삭제 전용 커밋은 통과)\n"
+                "  ②정말 의도한 혼합 커밋이면 git commit --no-verify 또는 env %s=1\n"
+                "============================================================\n"
+                % SKIP_ENV
+            )
+            _log_block("mixed_delete", general)
+            return 1
 
     return 0
 

@@ -168,3 +168,43 @@ def test_protected_delete_without_any_deletion_passes(tmp_path, monkeypatch, cap
     monkeypatch.chdir(tmp_path)
     rc = G.main()
     assert rc == 0
+
+
+# ── 일반 혼입 삭제 판정(2026-08-04 GM 근본분석) — 훅 경로(맨손 git commit) ──
+def test_mixed_delete_any_domain_blocks(tmp_path, monkeypatch, capsys):
+    """chro/cfo 밖 경로라도, 진짜 삭제가 비삭제 변경과 섞이면 차단(오늘 실사고 부류)."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "tests/test_foo.py")
+    _commit_file(tmp_path, "status/erp_status.json")
+    _stage_real_delete(tmp_path, "tests/test_foo.py")
+    (tmp_path / "status/erp_status.json").write_text("{}\n", encoding="utf-8")
+    _git(["add", "status/erp_status.json"], tmp_path)
+    monkeypatch.chdir(tmp_path)
+    rc = G.main()
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "혼입 삭제" in err
+    assert "test_foo.py" in err
+
+
+def test_delete_only_commit_passes(tmp_path, monkeypatch, capsys):
+    """삭제만 담은 커밋(전부 D) = 명시적 의도 → 통과."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "docs/old1.md")
+    _commit_file(tmp_path, "docs/old2.md")
+    _stage_real_delete(tmp_path, "docs/old1.md")
+    _stage_real_delete(tmp_path, "docs/old2.md")
+    monkeypatch.chdir(tmp_path)
+    rc = G.main()
+    assert rc == 0
+
+
+def test_foreign_delete_violations_unit():
+    """판정 함수 단위 계약: 혼합=위반 / 삭제전용=통과 / 명시나열=통과 / 보호도메인전용=통과."""
+    assert G.foreign_delete_violations([], ["a.py"]) == []
+    assert G.foreign_delete_violations(["gone.py"], ["gone.py"]) == []           # 삭제 전용
+    assert G.foreign_delete_violations(["gone.py"], ["gone.py", "kept.py"]) == ["gone.py"]  # 혼합
+    assert G.foreign_delete_violations(["gone.py"], ["gone.py", "kept.py"],
+                                        explicit_paths=["gone.py"]) == []        # 명시 나열
+    pre = G.PROTECTED_DELETE_PREFIXES[0]
+    assert G.foreign_delete_violations([pre + "x.jpg"], [pre + "x.jpg", pre + "y.html"]) == []  # 보호 도메인 전용

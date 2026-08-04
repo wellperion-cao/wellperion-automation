@@ -81,7 +81,10 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from git_lock import GitLock  # noqa: E402  (같은 scripts/ 폴더 — 락 로직 재사용)
 # chro/cfo 보호 삭제 판정용 경로 목록 재사용(2026-08-04 — 새 상수 중복 정의 금지,
 # .git/hooks/pre-commit 이 부르는 precommit_phantom_delete_guard.py 와 단일 출처).
-from precommit_phantom_delete_guard import PROTECTED_DELETE_PREFIXES  # noqa: E402
+from precommit_phantom_delete_guard import (  # noqa: E402
+    PROTECTED_DELETE_PREFIXES,
+    foreign_delete_violations,
+)
 
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
 _RETRY_WAIT_SEC = 0.4
@@ -301,6 +304,19 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
         if mixed_domain:
             extra = f" 외 {len(protected_deletes) - 1}건" if len(protected_deletes) > 1 else ""
             violations.append(f"보호된 삭제 차단(chro/cfo 도메인 혼입): {protected_deletes[0]}{extra}")
+
+    # 일반 혼입 삭제 판정(2026-08-04 GM 근본분석 — 로직은 가드 모듈 단일 출처):
+    # 비삭제 변경과 섞인 커밋의 삭제는 caller 가 rel_paths 에 **파일 단위로 정확히**
+    # 나열한 것만 허용. 디렉터리 지정에 쓸려 들어온 삭제(원격 추가분이 이 PC 디스크에
+    # 없어 D 로 보이는 부류)는 차단. 통과 방법: 삭제할 파일 경로를 직접 나열하거나
+    # 삭제 전용 커밋으로 분리(전부 D 면 통과).
+    del_paths = [p for s, p in diff_pairs if s == "D"]
+    all_paths = [p for _, p in diff_pairs]
+    for p in foreign_delete_violations(del_paths, all_paths, explicit_paths=rel_paths):
+        violations.append(
+            f"혼입 삭제 차단(명시 지정 없음): {p} — 삭제하려면 이 파일 경로를 직접 나열하거나 "
+            f"삭제 전용 커밋으로 분리하세요"
+        )
     return violations
 
 

@@ -87,3 +87,77 @@ def test_pure_domain_delete_still_allowed(tmp_path):
     assert res["ok"] is True
     assert res["committed"] is True
     assert res["foreign"] == []
+
+
+# ── 일반 혼입 삭제 판정 (2026-08-04 GM 근본분석 — 판정 축 교체) ──────────────
+# 원격(다른 PC·remote 세션)이 추가한 파일은 배245 무접촉 통합이 작업트리에
+# 실체화하지 않아 이 PC 에선 삭제로 보인다. 오늘 실제 피해는 chro/cfo 밖에서도
+# 났다(tests/·_assets/profile/·coo/notice/·.deploy-procurement/ — 커밋 425cbb58a).
+# 아래는 그 부류 전체를 막는 새 판정의 재현이다.
+
+def test_general_sweep_delete_blocked_via_directory_path(tmp_path):
+    """①실사고 재현: 무관 업무 커밋(디렉터리 지정)이 남의 삭제를 쓸어담음 → 차단."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "tests/test_foo.py", content="assert True\n")
+    _commit_file(tmp_path, "coo/check/점검.html", content="점검\n")
+    os.remove(tmp_path / "tests/test_foo.py")  # 원격 추가분이 로컬에 없던 상황 재현
+    (tmp_path / "coo/check/점검.html").write_text("갱신\n", encoding="utf-8")
+
+    res = SC.safe_commit(
+        ["tests", "coo/check/점검.html"], "chore(coo): 무관 업무 — tests 삭제 혼입",
+        holder="test_general_sweep", repo_root=str(tmp_path), push=False,
+    )
+    assert res["ok"] is False and res["committed"] is False
+    assert any("혼입 삭제 차단" in v for v in res["foreign"])
+    assert any("tests/test_foo.py" in v for v in res["foreign"])
+
+
+def test_other_victim_paths_blocked_same_way(tmp_path):
+    """③오늘 피해 본 다른 경로(_assets/·coo/notice/)도 같은 방식으로 차단."""
+    _init_repo(tmp_path)
+    victims = ["3. 웰페리온 가이드/_assets/profile/profilewall.js",
+               "3. 웰페리온 가이드/coo/notice/게시물_프로필월.html"]
+    for v in victims:
+        _commit_file(tmp_path, v, content="원격 추가분\n")
+    _commit_file(tmp_path, "status/erp_status.json", content="{}\n")
+    for v in victims:
+        os.remove(tmp_path / v)
+    (tmp_path / "status/erp_status.json").write_text('{"v":2}\n', encoding="utf-8")
+
+    res = SC.safe_commit(
+        ["3. 웰페리온 가이드", "status/erp_status.json"], "chore: 무관 업무 커밋",
+        holder="test_victims", repo_root=str(tmp_path), push=False,
+    )
+    assert res["ok"] is False and res["committed"] is False
+    assert any("profilewall.js" in v for v in res["foreign"])
+    assert any("게시물_프로필월.html" in v for v in res["foreign"])
+
+
+def test_intended_delete_passes_when_file_listed_exactly(tmp_path):
+    """②의도된 삭제: 삭제할 파일을 경로에 직접 나열하면 다른 변경과 섞여도 통과."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "scripts/old_tool.py", content="낡음\n")
+    _commit_file(tmp_path, "scripts/new_tool.py", content="v1\n")
+    os.remove(tmp_path / "scripts/old_tool.py")
+    (tmp_path / "scripts/new_tool.py").write_text("v2\n", encoding="utf-8")
+
+    res = SC.safe_commit(
+        ["scripts/old_tool.py", "scripts/new_tool.py"], "refactor: old_tool 제거·new_tool 갱신",
+        holder="test_intended", repo_root=str(tmp_path), push=False,
+    )
+    assert res["ok"] is True and res["committed"] is True
+    assert res["foreign"] == []
+
+
+def test_plain_commit_without_deletion_passes(tmp_path):
+    """④삭제 없는 평범한 커밋 → 통과(오탐 0)."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "docs/a.md", content="v1\n")
+    (tmp_path / "docs/a.md").write_text("v2\n", encoding="utf-8")
+
+    res = SC.safe_commit(
+        ["docs/a.md"], "docs: 갱신",
+        holder="test_plain", repo_root=str(tmp_path), push=False,
+    )
+    assert res["ok"] is True and res["committed"] is True
+    assert res["foreign"] == []
