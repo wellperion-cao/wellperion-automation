@@ -34,7 +34,6 @@
     text-decoration:none;border-radius:2px;transition:.15s;
   }
   .bar button:hover, .bar a:hover{background:#fff;color:var(--deep);}
-  .savemsg{width:297mm;margin:6px auto 0;font-size:12px;color:#fff;text-align:right;min-height:16px;}
 
   .hd{border-bottom:3px solid var(--deep);padding-bottom:10px;margin-bottom:8px;}
   .brand{font-size:10px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
@@ -68,9 +67,6 @@
   /* 내용 미정 항목(05·06) — 실제 칸을 흉내내지 않고 비어있다는 사실만 보여준다 */
   .item.stub{padding-bottom:12px;}
   .item .body.stub{color:var(--grey);font-style:italic;margin-bottom:0;}
-  .linknote{font-size:11.5px;color:var(--mid);background:var(--pick);
-            border-left:2px solid var(--mid);padding:6px 10px;margin:0 0 8px;}
-  .linknote a{color:var(--mid);font-weight:700;}
 
   dl{margin:0;font-size:12.5px;line-height:1.6;}
   dl div{display:flex;gap:10px;margin-bottom:4px;}
@@ -92,27 +88,6 @@
   .linkbox .d{font-size:11.5px;color:var(--grey);margin:0;}
   .linkbox .go{font-size:12px;font-weight:700;color:var(--mid);white-space:nowrap;}
 
-  /* ── 진행 체크 · 메모 (GM 화면 체크 → 회장님 보고용) ── */
-  .track{margin-top:11px;border:1px solid var(--line);background:#fff;padding:8px 11px 9px;}
-  .trackrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .tlabel{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--grey);}
-  .stbtns{display:flex;gap:4px;}
-  .stbtn{font-family:var(--font);font-size:11.5px;font-weight:700;padding:3px 10px;
-         border:1px solid var(--line);background:#fff;color:var(--grey);border-radius:20px;cursor:pointer;}
-  .stbtn:hover{border-color:var(--mid);color:var(--mid);}
-  .stbtn.on{background:var(--mid);border-color:var(--mid);color:#fff;}
-  .stamp{font-size:10.5px;color:var(--grey);margin-left:auto;}
-  .memo{margin-top:6px;font-size:12px;line-height:1.55;color:var(--ink);cursor:text;white-space:pre-wrap;}
-  .memo.empty{color:var(--grey);font-style:italic;}
-  .memoedit{margin-top:6px;}
-  .memogrow{width:100%;display:block;font:inherit;font-size:12px;line-height:1.55;color:var(--ink);
-            background:var(--steam);border:1px solid var(--mid);border-radius:3px;
-            padding:6px 8px;resize:none;overflow:hidden;min-height:30px;}
-  .memobar{display:flex;gap:6px;margin-top:5px;align-items:center;}
-  .msave{font-family:var(--font);font-size:11.5px;font-weight:800;padding:4px 12px;border-radius:3px;
-         background:var(--mid);color:#fff;border:1px solid var(--mid);cursor:pointer;}
-  .mcancel{font-family:var(--font);font-size:11.5px;color:var(--grey);background:none;border:none;cursor:pointer;text-decoration:underline;}
-
   .sum{margin-top:8px;border:2px solid var(--deep);padding:8px 14px;}
   .sum h3{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--brass);margin:0 0 6px;}
   .sum table{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -127,28 +102,20 @@
   @media print{
     html,body{background:#fff;}
     .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
-    .bar,.savemsg{display:none;}
-    .item,.sum,.linkbox,.track{break-inside:avoid;}
+    .bar{display:none;}
+    .item,.sum,.linkbox{break-inside:avoid;}
     .linkbox{background:#fff;}
     .linkbox .go::after{content:" (별첨 참조)";font-weight:500;}
-    /* 진행 체크·메모 = 인쇄본에서 항상 1장을 넘지 않도록 정적으로만 보여준다 */
-    .stbtn{display:none;}
-    .stbtn.on{display:inline-block;}
-    .memoedit{display:none;}
-    .memo{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
-    .memo.empty{display:none;}
   }
 </style>
 </head>
 <body>
 
 <div class="bar">
-  <button id="staffNameBadge" onclick="editStaffName()" title="담당자 이름 변경">✎ 이름: —</button>
   <button onclick="window.print()">인쇄 / PDF 저장 (A3 세로)</button>
   <a href="헤어드라이기_검토.html">드라이기 검토 자료 열기 →</a>
   <a href="../../월간운영계획.html">◂ 월간운영계획으로</a>
 </div>
-<div id="savemsg" class="savemsg"></div>
 
 <div class="sheet">
 
@@ -169,7 +136,6 @@
     1~3번은 사우나·파우더룸 환경 개선 건으로 운영부가 일괄 실행하며, 4번은 경영지원부(GM) 주관 분석 과제입니다.
     <strong>5·6번은 내용 정리 예정</strong> — GM 확인 후 채워집니다.
     <strong>7번은 회장님 지시 6건과 별개로 GM 지시(8월 3일)로 추가된 검토 건</strong>이며, 같은 사우나 구역 정비라 함께 올려 둡니다.
-    각 건 하단 <strong>진행</strong> 표시는 화면에서 바로 체크·메모하면 저장되어, GM이 이 화면으로 회장님께 보고합니다.
   </p>
 
   <div class="grid">
@@ -194,7 +160,6 @@
       <div><dt>유의</dt><dd>두 대를 한쪽에 몰아 배치하면 동선 개선 효과가 없어 지시 취지를 놓침</dd></div>
     </dl>
 
-    <div class="track" id="track-d1"></div>
   </div>
 
   <!-- 2 -->
@@ -221,7 +186,6 @@
       <p style="margin:0;"><b>부착물 전면 제거는 불가합니다.</b> 목욕장업은 요금표·위생관리기준 등 법정 게시 의무 항목이 있어, 남길 것과 뗄 것을 먼저 분리한 뒤 진행합니다. 발판 교체 시 광택 마감은 젖은 바닥에서 미끄러워 잔다듬 또는 버너 마감을 적용합니다.</p>
     </div>
 
-    <div class="track" id="track-d2"></div>
   </div>
 
   <!-- 3 -->
@@ -259,7 +223,6 @@
       <span class="go">자료 열기 →</span>
     </a>
 
-    <div class="track" id="track-d3"></div>
   </div>
 
   <!-- 4 -->
@@ -286,7 +249,6 @@
       <p style="margin:0;"><b>재입회율 검증 전에는 정책을 확정하지 않습니다.</b> 회원이 줄고 있는 시기에 재입회를 어렵게 하면 이탈 억제보다 복귀 유입 차단으로 작용할 수 있어, 순효과를 계산한 뒤 제안드리겠습니다. 해지 대신 휴회로 유도하는 방식이 가장 빠르게 효과를 볼 수 있는 대안으로 함께 검토합니다.</p>
     </div>
 
-    <div class="track" id="track-d4"></div>
   </div>
 
   <!-- 5 -->
@@ -297,12 +259,7 @@
     </div>
     <p class="who">경영지원부</p>
 
-    <p class="linknote">🔗 월간운영계획에 이미 등록된 과제입니다 — 담당 시로(CHRO) · 진행 20% ·
-      <a href="../../월간운영계획.html">월간운영계획에서 보기 →</a></p>
-
     <p class="body stub">내용 정리 예정 — GM 확인 후 채움</p>
-
-    <div class="track" id="track-d5"></div>
   </div>
 
   <!-- 6 -->
@@ -315,7 +272,6 @@
 
     <p class="body stub">내용 정리 예정 — GM 확인 후 채움</p>
 
-    <div class="track" id="track-d6"></div>
   </div>
 
   <!-- 7 -->
@@ -347,7 +303,6 @@
       <p style="margin:0;"><b>사우나는 상시 고온다습한 구역입니다.</b> 스팀다리미와 콘센트를 습기가 닿는 자리에 두면 안전 문제가 되므로, 설치 위치는 탈의·파우더 구역과의 경계에서 환기 조건을 확인한 뒤 정합니다. 옷걸이도 젖은 상태로 옷이 걸리지 않는 자리여야 합니다.</p>
     </div>
 
-    <div class="track" id="track-d7"></div>
   </div>
 
   </div><!-- /.grid -->
@@ -359,7 +314,7 @@
       <tr><td>02</td><td>사우나 입구 정비 — 정리·교체 후 사진 보고</td><td>8월 2~3주</td></tr>
       <tr><td>03</td><td>헤어드라이기 교체 — 8/1 보고 완료, 블라우풍트 통일안 결재 대기</td><td>8월 1일 보고</td></tr>
       <tr><td>04</td><td>회원 감소 분석 — 데이터 확보 및 1차 집계</td><td>8월 착수</td></tr>
-      <tr><td>05</td><td>회장님·파트너팀 오찬 — 내용 정리 예정 (월간운영계획 연동)</td><td>정리 예정</td></tr>
+      <tr><td>05</td><td>회장님·파트너팀 오찬 — 내용 정리 예정</td><td>정리 예정</td></tr>
       <tr><td>06</td><td>회장님 독서토론회 개최 — 내용 정리 예정</td><td>정리 예정</td></tr>
       <tr><td>07</td><td>사우나 스팀다리미·옷걸이 — 위치·수량·전기 용량 확인 후 안 보고</td><td>8월 중 안 보고</td></tr>
     </table>
