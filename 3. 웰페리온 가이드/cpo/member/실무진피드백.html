@@ -149,6 +149,8 @@ details[open]>.fb-status-summary::before{content:'▾ '}
 @media (prefers-color-scheme: dark){.fb-status-badge.done{color:#7fd0a6;background:rgba(45,138,94,0.16);border-color:rgba(45,138,94,0.36)}}
 .fb-status-content{color:var(--text)}
 .fb-status-memo{margin-top:4px;color:var(--dim)}
+.fb-status-picker{margin-top:10px;margin-bottom:10px}
+.fb-status-picker input[type="text"]{font-size:13px;padding:9px 12px}
 </style>
 <script>
 // 밝게 갈지 어둡게 갈지를 여기서 한 번 정한다(그리기 전에 정해야 깜빡임이 없어 head 안에 둔다).
@@ -246,10 +248,16 @@ details[open]>.fb-status-summary::before{content:'▾ '}
 
 </form>
 
-<!-- 내가 낸 신고 처리 현황(2026-08-04 GM 지시 · 배366) — 접기 안에 두어 폼이 우선 보이게 한다. -->
+<!-- 내가 낸 신고 처리 현황(2026-08-04 GM 지시 · 배366) — 접기 안에 두어 폼이 우선 보이게 한다.
+     2026-08-05: localStorage 이름 없이도(다른 기기·다른 브라우저) 볼 수 있게, 이 안에서 직접 이름을
+     고르거나 입력해 조회하는 칸을 둔다. 목록(datalist)은 시트에 실제 있는 작성자 값에서만 뽑는다. -->
 <div class="fb-status-wrap">
   <details id="fbStatusDetails">
     <summary class="fb-status-summary">📬 내가 낸 신고 처리 현황</summary>
+    <div class="fb-status-picker">
+      <input type="text" id="fbStatusAuthor" list="fbStatusAuthorList" placeholder="이름을 입력하거나 목록에서 골라 주세요" autocomplete="off">
+      <datalist id="fbStatusAuthorList"></datalist>
+    </div>
     <div class="fb-status-list" id="fbStatusList"></div>
   </details>
 </div>
@@ -553,25 +561,75 @@ function _fbSubmissionId(){
   return _fbSubId;
 }
 
-// ─── 내가 낸 신고 처리 현황(2026-08-04 GM 지시 · 배366) ───
+// ─── 내가 낸 신고 처리 현황(2026-08-04 GM 지시 · 배366 / 2026-08-05 다기기 대응) ───
 //   staff_feedback_list 는 이미 살아 있는 조회 API(Survey.js) — 새 API·새 토큰 없이 그대로 재사용.
-//   작성자 칸(시트 헤더 '작성자')이 localStorage 저장 이름과 같은 행만 걸러 화면에 낸다(다른 사람 신고 비노출).
-var _fbStatusLoaded = false;
-function _fbLoadMyStatus(force){
+//   작성자 이름은 이 화면 안에서 직접 고르거나 입력해 조회한다(localStorage 비어도 조회 가능).
+//   비교는 공백·대소문자만 정규화해서 맞춘다(부분일치·앞글자 매칭 없음 — 다른 사람과 섞이면 안 됨).
+var _fbAllRows = null;   // staff_feedback_list 전체 캐시 — 이름을 바꿔가며 다시 걸러볼 때 재조회하지 않는다.
+function _fbNormName(s){ return String(s || '').trim().replace(/\s+/g, '').toLowerCase(); }
+
+(function(){
+  var input = document.getElementById('fbStatusAuthor');
+  if (!input) return;
+  var saved = '';
+  try { saved = localStorage.getItem('wlp_fb_author') || ''; } catch(e) {}
+  input.value = saved;
+  var timer = null;
+  input.addEventListener('input', function(){
+    try { localStorage.setItem('wlp_fb_author', input.value.trim()); } catch(e) {}
+    clearTimeout(timer);
+    timer = setTimeout(_fbRenderFilteredStatus, 250);   // 타이핑마다 다시 그리지 않게
+  });
+})();
+
+// 이름 목록(datalist) — 시트에 실제 있는 작성자 값에서만 뽑는다(하드코딩 명단 없음).
+function _fbFillAuthorOptions(rows){
+  var dl = document.getElementById('fbStatusAuthorList');
+  if (!dl) return;
+  var seen = {};
+  dl.textContent = '';
+  rows.forEach(function(row){
+    var name = String(row['작성자'] || '').trim();
+    if (!name || seen[_fbNormName(name)]) return;
+    seen[_fbNormName(name)] = true;
+    var opt = document.createElement('option');
+    opt.value = name;
+    dl.appendChild(opt);
+  });
+}
+
+function _fbRenderFilteredStatus(){
   var list = document.getElementById('fbStatusList');
-  if (!list) return;
-  var author = '';
-  try { author = (localStorage.getItem('wlp_fb_author') || '').trim(); } catch(e) {}
+  var input = document.getElementById('fbStatusAuthor');
+  if (!list || !input) return;
+  var author = input.value.trim();
   if (!author){
     list.textContent = '';
     var empty = document.createElement('div');
     empty.className = 'fb-status-empty';
-    empty.textContent = '신고를 한 번 남기시면 여기서 처리 현황을 보실 수 있습니다.';
+    empty.textContent = '이름을 입력하거나 목록에서 골라 주세요.';
     list.appendChild(empty);
-    _fbStatusLoaded = false;
     return;
   }
-  if (_fbStatusLoaded && !force) return;
+  if (!_fbAllRows){
+    list.textContent = '';
+    var loading = document.createElement('div');
+    loading.className = 'fb-status-empty';
+    loading.textContent = '불러오는 중…';
+    list.appendChild(loading);
+    return;
+  }
+  var norm = _fbNormName(author);
+  var mine = _fbAllRows.filter(function(row){
+    return _fbNormName(row['작성자']) === norm;
+  }).slice(0, 10);
+  _fbRenderMyStatus(mine, author);
+}
+
+function _fbLoadMyStatus(force){
+  var list = document.getElementById('fbStatusList');
+  if (!list) return;
+  if (_fbAllRows && !force){ _fbRenderFilteredStatus(); return; }
   list.textContent = '';
   var loading = document.createElement('div');
   loading.className = 'fb-status-empty';
@@ -586,14 +644,12 @@ function _fbLoadMyStatus(force){
   .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
   .then(function(res){
     if (!res || res.ok !== true) throw new Error((res && res.error) || 'unknown');
-    _fbStatusLoaded = true;
-    var mine = (res.rows || []).filter(function(row){
-      return String(row['작성자'] || '').trim() === author;
-    }).slice(0, 10);
-    _fbRenderMyStatus(mine);
+    _fbAllRows = res.rows || [];
+    _fbFillAuthorOptions(_fbAllRows);
+    _fbRenderFilteredStatus();
   })
   .catch(function(){
-    _fbStatusLoaded = false;
+    _fbAllRows = null;
     list.textContent = '';
     var fail = document.createElement('div');
     fail.className = 'fb-status-empty';
@@ -602,14 +658,14 @@ function _fbLoadMyStatus(force){
   });
 }
 
-function _fbRenderMyStatus(rows){
+function _fbRenderMyStatus(rows, author){
   var list = document.getElementById('fbStatusList');
   if (!list) return;
   list.textContent = '';
   if (!rows.length){
     var empty = document.createElement('div');
     empty.className = 'fb-status-empty';
-    empty.textContent = '아직 접수한 신고가 없습니다.';
+    empty.textContent = author ? ('"' + author + '" 이름으로 접수된 신고가 없습니다.') : '아직 접수한 신고가 없습니다.';
     list.appendChild(empty);
     return;
   }
