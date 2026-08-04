@@ -1189,8 +1189,11 @@
       .catch(function(){ return {dept:PROC_FALLBACK, live:false}; });
   }
   // ── 종목별 매출 정본 = 「매출 보고」 말일탭 서버집계(action=sales_dept, PROC_API). CFO 매출지출현황.html loadSalesDept와 동일 소스 — 강사→종목 매핑=인건비마스터(서버측), 집계만 반환(PII 없음). 응답 {ok, dept:{부서:[12]}}. 실패=null → SALES_GVIZ 매출마스터 폴백. ──
+  // 매출 배관 전용 백엔드(sales-api) — 2026-08-04 분리. proc_summary(구매요청 집계)는 기존 PROC_API 유지,
+  // 무거운 sales_dept 만 이쪽으로 보낸다. 같은 스크립트를 쓰면 구매요청 조회가 밀려 간헐 404 가 났다.
+  var SALES_API = 'https://script.google.com/macros/s/AKfycbzXcWyi-PgS9vBX5oW384OhnBZXaRwpZCma-hYnkOmTmh_SQ1b4WIg6esKgZw3ZF7-k-A/exec';
   function readSalesDeptLive(){
-    return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    return fetch(SALES_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
         body: JSON.stringify({action:'sales_dept', password:PROC_GATE_PW})})
       .then(function(r){ return r.json(); })
       .then(function(res){ return (res && res.ok && res.dept) ? res.dept : null; })

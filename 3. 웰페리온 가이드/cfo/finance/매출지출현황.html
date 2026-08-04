@@ -980,9 +980,15 @@ function capPrint(){
 }
 window.addEventListener("afterprint",function(){document.body.classList.remove("printing");});
 function pdNum(s){var m=String(s||"").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);return m?(+m[1]*10000+ +m[2]*100+ +m[3]):0;} // 구매날짜 "2026. 7. 15" → 20260715 (빈값=0)
+/* 매출·인건비 배관 전용 백엔드(sales-api) — 2026-08-04 분리.
+   구매요청과 한 Apps Script 를 쓰던 시절, 매출 재계산(수십 초)이 구매요청의 가벼운 조회를
+   밀어내 간헐 404·빈 목록이 났다. 이제 무거운 집계는 이쪽으로만 간다 — 구매요청은 영향 없음. */
+var SALES_API="https://script.google.com/macros/s/AKfycbzXcWyi-PgS9vBX5oW384OhnBZXaRwpZCma-hYnkOmTmh_SQ1b4WIg6esKgZw3ZF7-k-A/exec";
+var SALES_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1,sales_probe:1,labor_zero:1};
+function apiFor(action){return SALES_ACT[action]?SALES_API:PROC_API;}
 function _rawCall(action,extra){
   var body=Object.assign({action:action,password:GATE_PW},extra||{});
-  return fetch(PROC_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
+  return fetch(apiFor(action),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
 }
 // 무거운 매출 집계(같은 Apps Script)는 직렬 실행 + 구매요청 로딩 중엔 양보 → 구매요청(리스트·사진)이 백엔드를 먼저 잡게(2026-07-08 효율화)
 var HEAVY_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};
