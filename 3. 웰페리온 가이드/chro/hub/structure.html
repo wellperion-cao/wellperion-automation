@@ -20,6 +20,11 @@
     --a5:#45607A;  /* 배포 — 슬레이트 */
     --a6:#8A3B3B;  /* 감사 — 버건디 */
     --a7:#5E6B34;  /* 시스템효율 — 올리브 */
+    --a8:#4A3B7A;  /* 인사기획 — 딥 바이올렛 */
+    --a9:#8C6A1A;  /* 보상 — 딥 골드 */
+    --a10:#7A2F4A; /* 노무 — 로즈 버건디 */
+    --a11:#2F7A52; /* 교육개발 — 에메랄드 그린 */
+    --a12:#2A6E78; /* 인사분석 — 딥 시안 */
     --chro:#1E2B26;
     --db-bg:#2A3A34;        /* DB 태그 — 다크 칩 */
   }
@@ -91,12 +96,15 @@
   .node-chro .rl b{color:var(--brass)}
   .vline{width:1px;height:26px;background:var(--brass);margin:0 auto}
   .agents{
-    display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:0;
+    display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:0;
     position:relative;padding-top:26px;
   }
-  .agents::before{ /* 수평 연결선 */
-    content:"";position:absolute;top:0;left:calc(50% / 7);right:calc(50% / 7);
+  .agents::before{ /* 수평 연결선 — 1행(A-1~A-6) 기준 */
+    content:"";position:absolute;top:0;left:calc(50% / 6);right:calc(50% / 6);
     height:1px;background:var(--brass);
+  }
+  .agents .agent-card:nth-child(n+7)::before{ /* 2행(A-7~A-12)은 트리선 생략 — 1행 하단에 이어붙는 형태 */
+    display:none;
   }
   .agents::after{ /* 중앙 수직선 */
     content:"";position:absolute;top:-26px;left:50%;width:1px;height:26px;background:var(--brass);
@@ -114,8 +122,12 @@
   .agent-card .aduty{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
   .s-a1{background:var(--a1)} .s-a2{background:var(--a2)} .s-a3{background:var(--a3)}
   .s-a4{background:var(--a4)} .s-a5{background:var(--a5)} .s-a6{background:var(--a6)} .s-a7{background:var(--a7)}
+  .s-a8{background:var(--a8)} .s-a9{background:var(--a9)} .s-a10{background:var(--a10)}
+  .s-a11{background:var(--a11)} .s-a12{background:var(--a12)}
   .b-a1{border-top:3px solid var(--a1)} .b-a2{border-top:3px solid var(--a2)} .b-a3{border-top:3px solid var(--a3)}
   .b-a4{border-top:3px solid var(--a4)} .b-a5{border-top:3px solid var(--a5)} .b-a6{border-top:3px solid var(--a6)} .b-a7{border-top:3px solid var(--a7)}
+  .b-a8{border-top:3px solid var(--a8)} .b-a9{border-top:3px solid var(--a9)} .b-a10{border-top:3px solid var(--a10)}
+  .b-a11{border-top:3px solid var(--a11)} .b-a12{border-top:3px solid var(--a12)}
   .foundation{
     margin-top:24px;background:var(--brass-soft);border:1px solid var(--line);border-radius:3px;
     padding:12px 18px;text-align:center;font-size:12.5px;color:var(--ink);letter-spacing:.03em;
@@ -140,6 +152,8 @@
   .bg-a1{background:var(--a1)} .bg-a2{background:var(--a2)} .bg-a3{background:var(--a3)}
   .bg-a4{background:var(--a4)} .bg-a5{background:var(--a5)} .bg-a6{background:var(--a6)}
   .bg-a7{background:var(--a7)} .bg-chro{background:var(--chro)}
+  .bg-a8{background:var(--a8)} .bg-a9{background:var(--a9)} .bg-a10{background:var(--a10)}
+  .bg-a11{background:var(--a11)} .bg-a12{background:var(--a12)}
   .bg-auto{background:#7A7A6E}
   .tag{
     display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:2px;
@@ -254,8 +268,8 @@
     <h1>웰페리온 CHRO 기능 구조도</h1>
     <p class="header-sub">인사 운영 허브가 할 수 있는 일의 총람 — 각 기능을 어떤 에이전트가, 어떤 도구로, 어떤 데이터·액션을 거쳐 수행하는지 한 장에 담았습니다.</p>
     <div class="header-meta">
-      <span class="pill">갱신일 <b>2026-07-28</b></span>
-      <span class="pill">전담 에이전트 <b>7종</b> (A-1 ~ A-7)</span>
+      <span class="pill">갱신일 <b>2026-08-04</b></span>
+      <span class="pill">전담 에이전트 <b>12종</b> (A-1 ~ A-12)</span>
       <span class="pill">읽기 DB <b>7종</b> + 휴무·자동화로그·업무평가·자기평가·리더십평가 탭</span>
       <span class="pill">쓰기 액션 <b>48종</b></span>
     </div>
@@ -320,6 +334,36 @@
         <div class="anm">시스템효율담당</div>
         <div class="amodel">Opus</div>
         <div class="aduty">효율 최적화 · 회고 박제 · 자동화 인프라 진단·수리·정직 배지 추적(3모드)</div>
+      </div>
+      <div class="agent-card b-a8">
+        <span class="seal s-a8">A-8</span>
+        <div class="anm">인사기획담당</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">정원(TO) · 조직설계 · 직무분석 · R&R · 직급체계 · 결재선</div>
+      </div>
+      <div class="agent-card b-a9">
+        <span class="seal s-a9">A-9</span>
+        <div class="anm">보상담당</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">급여체계 · 수당 · 복리후생 · 인건비 분석 · 보상 형평</div>
+      </div>
+      <div class="agent-card b-a10">
+        <span class="seal s-a10">A-10</span>
+        <div class="anm">노무담당</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">근로계약 · 취업규칙 · 연장근무 · 근태 · 연차 법정관리 · 법적 리스크 식별</div>
+      </div>
+      <div class="agent-card b-a11">
+        <span class="seal s-a11">A-11</span>
+        <div class="anm">교육개발담당</div>
+        <div class="amodel">Sonnet</div>
+        <div class="aduty">온보딩 교육 설계 · 직무교육 · 법정의무교육 · 경력개발 · 교육 실시율</div>
+      </div>
+      <div class="agent-card b-a12">
+        <span class="seal s-a12">A-12</span>
+        <div class="anm">인사분석담당</div>
+        <div class="amodel">Opus</div>
+        <div class="aduty">이직률 · 근속 · 인건비율 · 채용 리드타임 · 파이프라인 전환율 해석</div>
       </div>
     </div>
 
@@ -524,8 +568,8 @@
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-auto">자동 루틴</span><span class="badge bg-a6">A-6</span><h3>매일 09:33 정합성 스윕</h3></div>
-      <p>매일 아침 <b>6개 항목을 자동 점검</b>: 사진 404 · 공고 상태 · KPI 수치 · 블랙리스트 배지 · 평점 공란 · PII 노출. 전일 대비 <b>델타(신규/해소)만 보고</b>해 알림 피로를 줄이고, 저위험 작업의 사후 검증망 역할을 합니다.</p>
+      <div class="item-head"><span class="badge bg-auto">자동 루틴</span><span class="badge bg-a6">A-6</span><h3>매일 08:30 정합성 스윕</h3></div>
+      <p>매일 아침 <b>14개 항목을 자동 점검</b>: 사진 404·DB연결·사진 소실 감시 · 공고 마감일 · 지원자수 KPI · 블랙리스트 배지 · 평점 공란 · 표기 깨짐 · 사진 URL 규약 · 로컬 주경로 하트비트 · 자동수신 미등록(자가치유) · 수행기사 나이·포지션 교차검증 · 평가 가산점 클램프 · Gmail 미첨부 누락 · 사진배포 러너 하트비트 · 아침브리핑 러너 하트비트. 전일 대비 <b>델타(신규/해소)만 보고</b>해 알림 피로를 줄이고, 저위험 작업의 사후 검증망 역할을 합니다.</p>
       <div class="tags"><span class="tag act">log-add</span><span class="tag db">db 전체</span><span class="tag tool">Windows 주기 루프</span></div>
     </div>
 
@@ -560,7 +604,7 @@
 
     <div class="item">
       <div class="item-head"><span class="badge bg-auto">자동 루틴</span><span class="badge bg-a7">A-7</span><h3>금요일 주간 효율 리포트</h3></div>
-      <p>매주 금 17:07, 하네스 전체를 훑어 <b>반복 수작업 후보 · 위임률 격차 · 함정노트 미반영 실수 · 낡은 중복 규칙</b>을 표로 보고합니다. 모델 라우팅(기계작업=Haiku · 정형=Sonnet · 판단=Opus)으로 비용 절감도 관리합니다.</p>
+      <p>매주 금 14:07, 하네스 전체를 훑어 <b>반복 수작업 후보 · 위임률 격차 · 함정노트 미반영 실수 · 낡은 중복 규칙</b>을 표로 보고합니다. 모델 라우팅(기계작업=Haiku · 정형=Sonnet · 판단=Opus)으로 비용 절감도 관리합니다.</p>
       <div class="tags"><span class="tag act">log-add</span><span class="tag tool">Windows 주기 루프</span><span class="tag tool">세션로그 집계</span></div>
     </div>
 
@@ -613,7 +657,7 @@
 
     <div class="item">
       <div class="item-head"><span class="badge bg-auto">자동 루틴</span><h3>Windows 주기 루프 3종</h3></div>
-      <p>PC에서 자동 실행되는 정기 점검 3종 — <b>매일 09:33</b> 정합성 스윕(A-6, 6항목 델타 보고) · <b>목 10:03</b> 온보딩 주간 워치(A-3, 지연/도래 체크인 감시) · <b>금 17:07</b> 주간 효율 리포트(A-7). 매회 자동화로그 1건씩 남겨 이력이 추적됩니다.</p>
+      <p>PC에서 자동 실행되는 정기 점검 3종 — <b>매일 08:30</b> 정합성 스윕(A-6, 14항목 델타 보고 · 사진 소실 감시 포함) · <b>목 10:03</b> 온보딩 주간 워치(A-3, 지연/도래 체크인 감시) · <b>금 14:07</b> 주간 효율 리포트(A-7). 매회 자동화로그 1건씩 남겨 이력이 추적됩니다.</p>
       <div class="hbadge-row">
         <span class="hbadge-item"><span class="hb-name">정합성 스윕</span><span id="hb-sweep" class="hbadge hb-loading">확인 중…</span><span id="hb-sweep-t" class="hbadge-time"></span></span>
         <span class="hbadge-item"><span class="hb-name">온보딩 워치</span><span id="hb-onbowatch" class="hbadge hb-loading">확인 중…</span><span id="hb-onbowatch-t" class="hbadge-time"></span></span>
@@ -634,7 +678,7 @@
 
     <div class="item">
       <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>HR office 실시간 대시보드</h3></div>
-      <p>office.html은 <b>비밀번호 입장 단계 없이</b> 로드 즉시 <code>office-autolog</code>(공개, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트 — 상세 필드 제외)로 <b>로그 피드·오늘 카운터·에이전트별 집계</b>를 25초 폴링 연동합니다. 주체(actor)의 A-1~A-7 코드를 인식해 <b>캐릭터 애니메이션</b>으로도 보여줍니다. ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
+      <p>office.html은 <b>비밀번호 입장 단계 없이</b> 로드 즉시 <code>office-autolog</code>(공개, 실명 무마스킹, 일시·주체·작업·결과 4필드 화이트리스트 — 상세 필드 제외)로 <b>로그 피드·오늘 카운터·에이전트별 집계</b>를 25초 폴링 연동합니다. 주체(actor)의 A-1~A-12 코드를 인식해 <b>캐릭터 애니메이션</b>(2026-07-31 신설 5종 좌석 포함)으로도 보여줍니다. ERP 구조도 하단 '자동화 로그'(관리자 인증)에서도 동일 이력 열람이 가능합니다.</p>
       <div class="tags"><span class="tag act">office-autolog</span><span class="tag db">자동화로그 탭</span><span class="tag tool">office.html</span><span class="tag tool">25초 폴링</span></div>
     </div>
 
@@ -835,7 +879,7 @@
         <tr><td><span class="tag act">set-channels</span></td><td>채용 채널 설정</td><td><span class="badge bg-a2">A-2</span></td></tr>
         <tr><td><span class="tag act">update-headcount</span></td><td>모집인원 변경(전용 액션 · 0 이상 정수 검증)</td><td><span class="badge bg-a2">A-2</span></td></tr>
         <tr><td><span class="tag act">vacate-current</span></td><td>채용취소 정리(퇴사 기록 없이 행 값만 비움)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
-        <tr><td rowspan="5">온보딩 · 입사</td><td><span class="tag act">hire-complete</span></td><td>입사 확정 → 12주 체크인 자동 생성</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td rowspan="5">온보딩 · 입사</td><td><span class="tag act">hire-complete</span></td><td>입사 확정 → 12주 체크인 자동 생성 · <span class="warn">⏳@81 배포 대기: 동일 지원자 재확정 시 중복 등록 차단(가드) + 온보딩 기본항목 8→6 축소</span></td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">add-onboarding</span></td><td>온보딩 항목 추가</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">update-onboarding</span></td><td>온보딩 항목 갱신(완료 체크 등)</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">delete-onboarding</span></td><td>온보딩 항목 삭제</td><td><span class="badge bg-a3">A-3</span></td></tr>
@@ -876,8 +920,8 @@
   <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">인프라</h3>
   <div class="grid">
     <div class="item">
-      <div class="item-head"><h3>Apps Script 백엔드 (@79 · 라이브)</h3></div>
-      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @79 = 명단 정정에 총연차 · 개명 2종 추가(성명 문자 화이트리스트 포함) + <b>휴무 단건 쓰기 날짜 정규화</b>(일괄동기화가 남긴 날짜형 셀을 못 찾아 같은 칸이 중복 행으로 쌓이던 결함 수정).</p>
+      <div class="item-head"><h3>Apps Script 백엔드 (@79 · 라이브 / @81 · 배포 대기)</h3></div>
+      <p>단일 Code.gs가 모든 읽기 · 쓰기 API를 제공합니다. 코드 수정 후 <b>"새 버전" 배포</b>해야 반영되며, 호출은 검증된 패턴을 고정한 <b>백엔드 러너(hr-backend2.ps1)</b>를 경유해 화면에 코드가 노출되지 않게 합니다. @79 = 명단 정정에 총연차 · 개명 2종 추가(성명 문자 화이트리스트 포함) + <b>휴무 단건 쓰기 날짜 정규화</b>(일괄동기화가 남긴 날짜형 셀을 못 찾아 같은 칸이 중복 행으로 쌓이던 결함 수정). <span class="warn">@81(2026-07-31 코드 준비 완료 · 배포 대기) = 입사확정 중복가드(동일 지원자 재확정 클릭 차단) + 온보딩 기본항목 8→6 축소, 매니저 clasp 배포 승인 후 반영 예정.</span></p>
       <div class="tags"><span class="tag tool">백엔드 러너</span><span class="tag tool">clasp</span></div>
     </div>
     <div class="item">
@@ -922,9 +966,50 @@
   </div>
 </section>
 
-<!-- ═══════════ I. 안전·원칙 ═══════════ -->
-<div class="safety" id="sec-i">
-  <h2>I &nbsp;·&nbsp; 안전 · 원칙 레이어</h2>
+<!-- ═══════════ I. 인사 전략 기능 (2026-07-31 신설 5종) ═══════════ -->
+<section id="sec-i">
+  <div class="sec-head">
+    <span class="sec-letter">I</span><h2>인사 전략 기능</h2>
+    <span class="sec-note">A-8~A-12 · 2026-07-31 신설 — 일일 자율 스캔 + 6단 제안서, 데이터 쓰기는 대부분 승인 필요 등급</span>
+  </div>
+  <div class="grid">
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a8">A-8 인사기획담당</span><h3>인력계획 · 조직설계 · 직무분석</h3></div>
+      <p>정원(TO) · 조직구조 · 직무분석 · R&R · 직급체계 · 결재선이 도메인입니다. <b>조직 결정은 비가역</b>이라는 원칙 아래 매일 8항목(부서 라벨 3문서 불일치 · 직급 위계이탈 · TO 괴리 · 결재선 무작동률 등)을 자율 스캔해 6단 제안서(문제 · 근거 · 해결안 · 효과 · 위험 · 승인수준)를 만들며, <b>정원 확정 · 직급 반영 · 조직 개편 실행은 전부 매니저 승인 등급</b>입니다.</p>
+      <div class="tags"><span class="tag tool">8항목 자율 스캔</span><span class="tag tool">6단 제안서</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a9">A-9 보상담당</span><h3>급여체계 · 형평 · 인건비</h3></div>
+      <p>급여체계 · 수당 · 복리후생 · 인건비 분석 · 보상 형평이 도메인이며, <b>인사 관점(체계 · 형평 · 직급연동)만</b> 다루고 재무 관점(자금 · 손익 · 예산)은 CFO 소관으로 넘깁니다. 직급 역전 · 동일 직급 내 급여 폭 이탈 · 산식 결함 · 명부 불일치 · 최저임금 근접 등 8항목을 자율 스캔합니다. <b>개인별 금액은 Drive · 저장소 · 자동화로그 · 아티팩트에 절대 기록하지 않고</b> 건수 · 비율로만 보고하며, 로컬 drafts 한정 · 급여 쓰기는 예외 없이 승인 필요입니다.</p>
+      <div class="tags"><span class="tag tool">8항목 자율 스캔</span><span class="tag tool">대외비 — drafts 전용</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a10">A-10 노무담당</span><h3>근로계약 · 취업규칙 · 법적 리스크</h3></div>
+      <p>근로계약 · 취업규칙 · 연장근무 · 근태 · 연차 법정관리가 도메인입니다. <b>법률 자문을 확정하지 않고 "법적 검토 필요" 지점만 식별 · 플래그</b>하는 것이 역할이며 — 계약 만료 임박(D-30) · 계약서 부재 · 연장근무 무기록 · 근로조건 일괄변경 · 연차촉진 의무 · 퇴직처리 누락 등 8항목을 자율 스캔합니다. 최종 법적 판단은 노무사 · 변호사 몫으로 안내합니다.</p>
+      <div class="tags"><span class="tag tool">8항목 자율 스캔</span><span class="tag tool">법적 검토 필요 플래그</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a11">A-11 교육개발담당</span><h3>온보딩 교육 설계 · 직무교육</h3></div>
+      <p>온보딩 교육 <b>설계</b> · 직무교육 · 법정의무교육 · 경력개발 · 교육 실시율이 도메인입니다. <span class="warn">온보딩 '실행'(체크인 입력 · 입사확정)은 여전히 A-3 소관</span> — "규칙 · 양식을 만드는 일"과 "그 규칙대로 개별 대상자를 처리하는 일"로 분업합니다. 체크인 기한 경과 · 2·3개월차 실시율 저조 · 게이트(4·8·12주) 미판정 · 멘토 미지정 · 의무교육 미실시 · 온보딩 항목 중복 등 8항목을 자율 스캔합니다.</p>
+      <div class="tags"><span class="tag tool">8항목 자율 스캔</span><span class="tag act">add-onboarding</span><span class="tag act">update-onboarding</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a12">A-12 인사분석담당</span><h3>이직률 · 근속 · 채용 지표 해석</h3></div>
+      <p>이직률 · 근속 · 인건비율 · 채용 리드타임 · 파이프라인 전환율 등 인사 지표의 <b>해석과 대응안</b>을 만듭니다(지표 '계산'은 결정적 스캔이 하고, A-12는 해석 담당). 웰페리온 정규직 20명대 소표본 특성상 <b>항상 분자/분모를 병기</b>하며, 이직 급등 · 조기 이탈(6개월 미만 퇴사) · 리드타임 지연 · 파이프라인 정체 · 인건비율 이탈 · 데이터 결측 · 평가 분포 이탈 등 8항목을 자율 스캔합니다.</p>
+      <div class="tags"><span class="tag tool">8항목 자율 스캔</span><span class="tag tool">분자/분모 병기</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════ J. 안전·원칙 ═══════════ -->
+<div class="safety" id="sec-j">
+  <h2>J &nbsp;·&nbsp; 안전 · 원칙 레이어</h2>
   <div class="safety-sub">모든 기능 위에 항상 걸려 있는 규칙 — 효율보다 먼저입니다.</div>
   <div class="safety-grid">
     <div class="sitem"><span class="no">一</span><span><b>Production 보호</b> — 라이브 시트 · 백엔드는 실서비스. 테스트는 비파괴적으로, 쓰기 후엔 반드시 라운드트립 검증.</span></div>
@@ -944,7 +1029,7 @@
 
 <footer>
   <div class="brand">WELLPERION</div>
-  <div style="margin-top:8px">웰페리온 인사 운영 허브 · CHRO 기능 구조도 · 갱신일 2026-07-09</div>
+  <div style="margin-top:8px">웰페리온 인사 운영 허브 · CHRO 기능 구조도 · 갱신일 2026-08-04</div>
 </footer>
 
 
