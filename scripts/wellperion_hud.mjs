@@ -65,6 +65,12 @@ const NODE = process.execPath;
 //   내 줄이 **통째로 사라진다**(GM 2026-07-25 "나올 때도 있고 안 나올 때도 있는데"). 한 번
 //   알아냈으면 기억해 두면 그 뒤로는 안 사라진다. 기억함이 없어도 동작은 같다(그냥 다시 찾는다).
 const ROLE_CACHE = 'tmp/hud_role_cache.json';   // .gitignore 대상(tmp/) — 커밋 오염 없음
+// 창을 띄운 Start-AI *.bat 이 알려준 역할. 대화기록이 아직 비어 있는 **부팅 직후**와
+// 기록 저장이 꺼진 창에서 역할이 null 로 떨어져 상태줄이 회색 한 줄로 죽던 것을 받친다
+// (GM 2026-08-04 "statusline에 색상이 다 없어진 것 같네"). 대화기록이 읽히면 그쪽이 이긴다.
+const ENV_ROLE = /^(ceo|cfo|chro|cmo|coo|cpo|cto)$/.test(String(process.env.WELLPERION_ROLE || '').toLowerCase())
+  ? String(process.env.WELLPERION_ROLE).toLowerCase()
+  : null;
 const ROLE_CACHE_MAX = 50;                       // 오래된 세션부터 버린다(무한 증식 방지)
 
 const NICK = { ceo: '웰리', cfo: '시뽀', chro: '시로', cmo: '시모', coo: '시우', cpo: '시포', cto: '시토' };
@@ -141,7 +147,7 @@ function roleOf(transcript) {
  *  기억함을 못 읽거나 못 쓰더라도 roleOf 결과 그대로 동작한다(기억함은 덤이지 의존이 아니다). */
 function resolveRole(cwd, transcript) {
   const found = roleOf(transcript);
-  if (!transcript) return found;
+  if (!transcript) return found || ENV_ROLE;
   // 기억함 열쇠는 경로 표기를 통일한다 — 같은 파일이 `C:\..\a.jsonl` 과 `C:/../a.jsonl` 로
   // 들어오면 다른 세션으로 오인해 기억이 헛돈다(윈도우는 둘 다 유효한 표기다).
   const key = String(transcript).replace(/\\/g, '/').toLowerCase();
@@ -151,7 +157,7 @@ function resolveRole(cwd, transcript) {
   try { cache = JSON.parse(readFileSync(cachePath, 'utf8')) || {}; } catch { /* 없으면 빈 것 */ }
   if (typeof cache !== 'object' || Array.isArray(cache)) cache = {};
 
-  if (!found) return cache[key] || null;   // 못 찾았으면 기억해 둔 것으로 버틴다
+  if (!found) return cache[key] || ENV_ROLE || null;   // 기억함 → 창이 알려준 역할 순으로 버틴다
   if (cache[key] === found) return found;  // 이미 같은 값 — 쓰지 않는다(디스크 낭비 방지)
 
   cache[key] = found;
