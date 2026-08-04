@@ -5458,6 +5458,9 @@ function _lessonSportMgmt(row, sportKey) {
   // ★팀장 자동 대입 폐기(배100, 웰리 감사 2026-07-25) — 원본 owner 공란을 화면이 종목 팀장 이름으로
   //   채워 보여줘 배정 완료율이 과대평가됐다(실측 5건). 원본이 공란이면 화면도 미배정(담당자 X)으로 둔다.
   //   드롭다운 옵션에는 팀장이 여전히 포함되어 수동 배정은 그대로 가능(_lessonRosterFor). 저장 경로 무변경.
+  //   ★2026-08-05 웰리 — 이 폐기는 유지한 채, '확정값'이 아닌 흐린 색 "(제안)" 표기만 담당자 셀 아래에 다시
+  //   넣었다(_lessonOwnerSelectHtml). select 선택값·row.owner는 그대로 공란이라 집계는 안 세인다 — 위 완료율
+  //   과대평가 재발 없이 GM 요청(2026-07-25 "담당자 기본 셋업")을 충족한다.
   // 종목별 컨택 분리(GM 2026-07-22 · 디버그 보강): 다종목 회원만 종목별 분리(단일종목=flat 공유 그대로 — 태깅·중복 없음).
   //   다종목: 이 종목 태그 컨택 + 무태그(공통) 컨택 함께 표시(공통 숨기지 않음). 단일종목/미기재: flat 전체 노출.
   var _bs = (row.bySport && typeof row.bySport === 'object') ? row.bySport : {};
@@ -5879,6 +5882,14 @@ function _lessonOwnerSelectHtml(t, rowIndex, sportKey, current) {
     html += '<option value="' + esc(o) + '"' + (o === selVal ? ' selected' : '') + '>' + esc(o) + '</option>';
   });
   html += '</select>';
+  // 미배정 제안(표시전용, 2026-08-05 웰리) — 담당자 공란일 때만 종목 팀장을 흐린 색 "(제안)"으로 아래에 얹는다.
+  // select의 선택값·row.owner는 그대로 공란 — 시트에 쓰지 않고, 확정(사람이 드롭다운에서 직접 고름)과 시각적으로 분리된다.
+  // _lessonOwnerSummaryRender 등 집계는 row.owner 원본만 세므로(아래 mgmt.owner 참조) 이 제안 표기는 완료율에 잡히지 않는다
+  // — membership.html:5458 폐기 사유(완료율 과대평가) 재발 없이 GM 요청(2026-07-25 "담당자 기본 셋업")을 충족.
+  if (!cur) {
+    var lead = _lessonTeamLeadOf(sportKey);
+    if (lead) html += '<div style="font-size:10px;color:var(--dim);margin-top:2px">' + esc(lead) + ' (제안)</div>';
+  }
   return html;
 }
 function lessonOwnerChange(sel, t, rowIndex, sportKeyEnc) {
