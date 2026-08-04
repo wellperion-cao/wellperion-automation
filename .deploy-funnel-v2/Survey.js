@@ -8146,6 +8146,17 @@ function _processAction(body) {
     return _json({ ok: true, mode: lrMode, sheets: lrReport });
   }
 
+  // ★배209 근본수리 완료 기록(2026-08-04, 코드 변경 없음 — 이 주석만 남김. 1회성 진단·수리 액션
+  //   inquiry_type_validation_209 는 실행·검증 뒤 여기서 제거됨, DEPLOY_PLAYBOOK.md 이력에도 남김):
+  //   근본원인 = 문의접수(LANDING)가 아니라 _mirrorInquiryToStaffLog_(:414)가 '26년 신규문의'
+  //   (MEMBER, gid1902010032) 컬럼E("...어떤 경로로 알게 되셨나요?")에 쓸 때 그 칸의
+  //   VALUE_IN_RANGE·allowInvalid:false 드롭다운(원천 DATA!C2:C14)이 _canonicalChannel_(:265)의
+  //   일부 출력('기타·미상'·'법인·단체'·'오프라인'·'유선전화')을 못 담아 스크립트 실행 자체를
+  //   끊었다(문의접수 1차 쓰기는 항상 성공 — 행은 남고 응답만 깨진 것처럼 보인 이유).
+  //   수리 = DATA!C12:C15에 그 4값 추가 + '26년 신규문의' 컬럼E 신규행 버퍼(그 시점 lastRow+1~+500)만
+  //   검증범위를 DATA!C2:C15로 넓히고 allowInvalid:true 로 재발방지. 기존 행·기존 10개 값은 안 건드림.
+  //   재현 6종(기본값·빈inflow·완전빈값·법인·오프라인·유선전화) 전부 JSON 정상 응답 확인.
+
   // ─── 회원관리 페이지(CPO): 멤버십 회원 명단 ('유효회원' 시트, 읽기전용·전화 마스킹) ───
   //   scope=valid(기본): 잔여일>=0 유효회원(2026-06-24 GM 최초 기준=잔여일>0 → 2026-07-31 실무진 신고로 경계 정정:
   //   잔여일 0=만료 당일까지 유효, LOSS 전환은 잔여일 -1일부터) / scope=ended: 종료·이탈(잔여일<0 또는 LOSS·환불·양도LOSS)
