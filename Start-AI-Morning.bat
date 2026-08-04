@@ -33,10 +33,10 @@ REM        "role unknown" line and looks like every colour vanished (GM 2026-08-
 REM    Clearing it costs nothing when it was not set.
 set "CLAUDE_CODE_CHILD_SESSION="
 
-REM -- 부팅 화면은 조용히 (GM 2026-08-04) --
-REM    장식 배너·진행 안내를 뺐다. 남기는 것은 사람이 손대야 하는 경고뿐이고,
-REM    경고가 하나라도 떴을 때만 창을 5초 붙잡아 GM 이 읽을 수 있게 한다.
-REM    아무 문제 없으면 창은 바로 닫힌다.
+REM -- Quiet boot (GM 2026-08-04) --
+REM    Decorative banners and progress lines removed. Only warnings a human must
+REM    act on stay on screen, and the window is held 5s ONLY when one fired.
+REM    Clean boot closes immediately.
 set "WPWARN="
 
 REM -- git boot self-heal (once) --
@@ -63,6 +63,13 @@ set WP_BOOT_SKIP_GIT=1
 
 call "%WORK%\Start-AI CTO.bat"
 
-start "Wellperion GM" "%WORK%\Start-AI CEO.bat"
+REM -- Welly (CEO) window no longer opens at boot. GM 2026-08-04:
+REM    "Wellperion GM Control - just don't open it, the backend line can
+REM     run the automated work." Only the WINDOW is gone. Welly's scheduled
+REM    automation is untouched and still runs headless (08:00 brief task
+REM    Wellperion-CEO-Morning-Brief-0800-Live, welly_auto_runner 07:30, etc).
+REM    To open Welly by hand any time: double-click "Start-AI CEO.bat".
+REM    Reverting = restore the one line below.
+REM    start "Wellperion GM" "%WORK%\Start-AI CEO.bat"
 
 if defined WPWARN timeout /t 5 >nul
