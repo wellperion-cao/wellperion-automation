@@ -130,6 +130,25 @@ input[type="file"]{font:inherit;font-size:12.5px;color:var(--dim)}
   .btn-row{flex-direction:column-reverse}
   .btn{width:100%}
 }
+/* 내가 낸 신고 처리 현황(2026-08-04 GM 지시 · 배366) — 접수 후 처리 여부를 몰라 같은 신고를
+   되풀이하는 일(FB260804-101548)이 실제로 나 붙였다. 기존 색·변수만 재사용, 새 팔레트 없음. */
+.fb-status-wrap{margin-top:22px;border-top:1px solid var(--border);padding-top:16px}
+.fb-status-summary{cursor:pointer;font-size:13px;font-weight:800;color:var(--text);list-style:none}
+.fb-status-summary::-webkit-details-marker{display:none}
+.fb-status-summary::before{content:'▸ ';color:var(--dim)}
+details[open]>.fb-status-summary::before{content:'▾ '}
+.fb-status-list{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.fb-status-empty{font-size:12.5px;color:var(--dim)}
+.fb-status-item{background:var(--paper-raised);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12.5px}
+.fb-status-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.fb-status-id{color:var(--dim);font-size:11px}
+.fb-status-badge{font-size:11px;font-weight:800;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.fb-status-badge.wait{color:var(--warn-text);background:var(--warn-bg);border:1px solid var(--warn-border)}
+.fb-status-badge.doing{color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-border)}
+.fb-status-badge.done{color:#1f6b46;background:rgba(45,138,94,0.12);border:1px solid rgba(45,138,94,0.32)}
+@media (prefers-color-scheme: dark){.fb-status-badge.done{color:#7fd0a6;background:rgba(45,138,94,0.16);border-color:rgba(45,138,94,0.36)}}
+.fb-status-content{color:var(--text)}
+.fb-status-memo{margin-top:4px;color:var(--dim)}
 </style>
 <script>
 // 밝게 갈지 어둡게 갈지를 여기서 한 번 정한다(그리기 전에 정해야 깜빡임이 없어 head 안에 둔다).
@@ -227,6 +246,14 @@ input[type="file"]{font:inherit;font-size:12.5px;color:var(--dim)}
 
 </form>
 
+<!-- 내가 낸 신고 처리 현황(2026-08-04 GM 지시 · 배366) — 접기 안에 두어 폼이 우선 보이게 한다. -->
+<div class="fb-status-wrap">
+  <details id="fbStatusDetails">
+    <summary class="fb-status-summary">📬 내가 낸 신고 처리 현황</summary>
+    <div class="fb-status-list" id="fbStatusList"></div>
+  </details>
+</div>
+
 <script>
 "use strict";
 // 지난번에 적은 작성자 자동 채움 — 필수 항목이라 매번 타이핑하지 않게(2026-07-25 GM).
@@ -234,6 +261,13 @@ try {
   var _fbSavedAuthor = localStorage.getItem('wlp_fb_author');
   if (_fbSavedAuthor) document.getElementById('fbAuthor').value = _fbSavedAuthor;
 } catch(e) {}
+
+// 처리 현황 접기를 열 때만 조회한다(평소엔 호출하지 않음).
+(function(){
+  var details = document.getElementById('fbStatusDetails');
+  if (!details) return;
+  details.addEventListener('toggle', function(){ if (details.open) _fbLoadMyStatus(false); });
+})();
 
 // 선택형 필드(button group) — 클릭한 버튼만 active, 같은 그룹 내 나머지는 해제.
 document.querySelectorAll('.choice-group').forEach(function(group){
@@ -457,6 +491,7 @@ function submitStaffFeedback(){
         + '담당자가 확인하고 처리 결과를 남깁니다. 의견 주셔서 감사합니다.');
       contentEl.value = '';
       _fbPhotos = []; _fbRenderPhotoPreview();
+      _fbLoadMyStatus(true);
       return;
     }
     // 텍스트는 이미 저장됐다 — 사진 업로드는 별도 GAS(콘텐츠 접수 재사용) 호출.
@@ -484,6 +519,7 @@ function submitStaffFeedback(){
         + '사진 ' + _fbPhotos.length + '장도 함께 저장됐습니다. 의견 주셔서 감사합니다.');
       contentEl.value = '';
       _fbPhotos = []; _fbRenderPhotoPreview();
+      _fbLoadMyStatus(true);
     })
     .catch(function(){
       if (sendBtn) sendBtn.disabled = false;
@@ -515,6 +551,106 @@ function _fbSubmissionId(){
     _fbSubId = 'sf-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
   }
   return _fbSubId;
+}
+
+// ─── 내가 낸 신고 처리 현황(2026-08-04 GM 지시 · 배366) ───
+//   staff_feedback_list 는 이미 살아 있는 조회 API(Survey.js) — 새 API·새 토큰 없이 그대로 재사용.
+//   작성자 칸(시트 헤더 '작성자')이 localStorage 저장 이름과 같은 행만 걸러 화면에 낸다(다른 사람 신고 비노출).
+var _fbStatusLoaded = false;
+function _fbLoadMyStatus(force){
+  var list = document.getElementById('fbStatusList');
+  if (!list) return;
+  var author = '';
+  try { author = (localStorage.getItem('wlp_fb_author') || '').trim(); } catch(e) {}
+  if (!author){
+    list.textContent = '';
+    var empty = document.createElement('div');
+    empty.className = 'fb-status-empty';
+    empty.textContent = '신고를 한 번 남기시면 여기서 처리 현황을 보실 수 있습니다.';
+    list.appendChild(empty);
+    _fbStatusLoaded = false;
+    return;
+  }
+  if (_fbStatusLoaded && !force) return;
+  list.textContent = '';
+  var loading = document.createElement('div');
+  loading.className = 'fb-status-empty';
+  loading.textContent = '불러오는 중…';
+  list.appendChild(loading);
+  fetch(FB_GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'staff_feedback_list', t: FB_TOKEN }),
+    redirect: 'follow'
+  })
+  .then(function(r){ if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+  .then(function(res){
+    if (!res || res.ok !== true) throw new Error((res && res.error) || 'unknown');
+    _fbStatusLoaded = true;
+    var mine = (res.rows || []).filter(function(row){
+      return String(row['작성자'] || '').trim() === author;
+    }).slice(0, 10);
+    _fbRenderMyStatus(mine);
+  })
+  .catch(function(){
+    _fbStatusLoaded = false;
+    list.textContent = '';
+    var fail = document.createElement('div');
+    fail.className = 'fb-status-empty';
+    fail.textContent = '⚠️ 현황을 불러오지 못했습니다.';
+    list.appendChild(fail);
+  });
+}
+
+function _fbRenderMyStatus(rows){
+  var list = document.getElementById('fbStatusList');
+  if (!list) return;
+  list.textContent = '';
+  if (!rows.length){
+    var empty = document.createElement('div');
+    empty.className = 'fb-status-empty';
+    empty.textContent = '아직 접수한 신고가 없습니다.';
+    list.appendChild(empty);
+    return;
+  }
+  rows.forEach(function(row){
+    var status = String(row['처리상태'] || '').trim() || '접수됨(대기)';
+    var memo = String(row['처리메모'] || '').trim();
+    var content = String(row['내용'] || '').trim().slice(0, 40);
+    var when = String(row['접수시각'] || '').trim();
+    var id = String(row['접수ID'] || '').trim();
+    var badgeClass = 'wait';
+    if (/완료|반영/.test(status)) badgeClass = 'done';
+    else if (status !== '접수됨(대기)' && status !== '접수') badgeClass = 'doing';
+
+    var item = document.createElement('div');
+    item.className = 'fb-status-item';
+
+    var top = document.createElement('div');
+    top.className = 'fb-status-top';
+    var idEl = document.createElement('span');
+    idEl.className = 'fb-status-id';
+    idEl.textContent = id + (when ? ' · ' + when : '');
+    var badge = document.createElement('span');
+    badge.className = 'fb-status-badge ' + badgeClass;
+    badge.textContent = status;
+    top.appendChild(idEl);
+    top.appendChild(badge);
+    item.appendChild(top);
+
+    var contentEl = document.createElement('div');
+    contentEl.className = 'fb-status-content';
+    contentEl.textContent = content + (content.length >= 40 ? '…' : '');
+    item.appendChild(contentEl);
+
+    if (memo){
+      var memoEl = document.createElement('div');
+      memoEl.className = 'fb-status-memo';
+      memoEl.textContent = '💬 ' + memo;
+      item.appendChild(memoEl);
+    }
+    list.appendChild(item);
+  });
 }
 
 function cancelFeedback(){
