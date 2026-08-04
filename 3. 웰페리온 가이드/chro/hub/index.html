@@ -990,7 +990,8 @@ function primeCache(){
 }
 
 /* ============ shared ============ */
-function empNameByUrl(){var m={};DB.emp.forEach(function(e){m[normId(e.url)]=e["성명"]||"";});return m;}
+/* url 없는 행(로컬 미러 등)은 키 생성 스킵 — 빈 키("")가 resolveRel의 평문(비URL) 관계값(normId→"")을 그 행 이름으로 오해석하는 회귀 방지 (2026-08-04) */
+function empNameByUrl(){var m={};DB.emp.forEach(function(e){var k=normId(e.url);if(k)m[k]=e["성명"]||"";});return m;}
 function resolveRel(field){
   var map=empNameByUrl();
   return parseArr(field).map(function(u){return map[normId(u)]||"";}).filter(Boolean);
