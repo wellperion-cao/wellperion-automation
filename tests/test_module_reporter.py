@@ -188,6 +188,21 @@ def test_bot_id_str_unresolved_room_skips(tmp_path, monkeypatch):
     assert any(r.get("reason") == "room_unresolved" for r in out["results"])
 
 
+# ── 배284 회귀 방지: 실 등록부·실 방목록으로 cmo 3모듈 bot_id 해소 확인 ────────
+# 2026-08-02(커밋 01832f7c3) 전에는 이 3개 모듈의 bot_id 가 telegram_rooms.json 에
+# 없는 이름이라 조용히 미해소(None)였다. 이름이 다시 드리프트하면 여기서 잡는다.
+def test_cmo_notify_modules_resolve_real_rooms():
+    reg = reporter.load_registry()
+    rooms = reporter.load_json(reporter.ROOMS_PATH, {})
+    by_id = {m.get("id"): m for m in reg.get("modules", [])}
+    for mid in ("cmo-publish-digest", "cmo-reaction-loop", "cmo-content-intake"):
+        bot_id = by_id[mid]["notify_spec"]["bot_id"]
+        chat_id = reporter.resolve_chat_id(bot_id, rooms)
+        assert chat_id is not None, (
+            f"{mid} bot_id={bot_id!r} 이 status/telegram_rooms.json 에 없음 — 무음 발송실패"
+        )
+
+
 # ── dry-run → payload 프리뷰 · 네트워크 0 ────────────────────────────────────
 def test_dryrun_payload_no_network(tmp_path, monkeypatch):
     monkeypatch.setattr(reporter.importlib, "import_module", _fake_import)
