@@ -2790,6 +2790,19 @@ var LESSON_INTAKE_HEADERS = ['타임스탬프','성함','연락처','자녀 나�
 
 function _intakeToken_() { return _accessProp_('INTAKE_SUBMIT_TOKEN') || INTAKE_SUBMIT_TOKEN; }
 
+// ─── 실무진 피드백 쓰기 게이트 (2026-08-04 시토 재개 · 배299) ──────────────────────
+//   staff_feedback_list·staff_feedback_update 판정을 이 함수 한 곳에서만 한다.
+//   ①마스터 토큰(_intakeToken_) — 기존 경로 그대로 보존, list·resort·update 전부 통과(회귀 없음).
+//   ②커튼 열쇠(_assets/gate.js 의 사내 게이트 비밀번호) — staff_feedback_update 한정,
+//     그것도 resort(시트 전체 재정렬)는 제외. 새 토큰·새 인증 체계는 만들지 않는다(약속 L21).
+//   둘 다 아니면 거부(fail-closed) — 비로그인(커튼 미통과) 상태의 쓰기는 통과할 수 없다.
+function _staffFeedbackWriteAuthed_(action, body) {
+  if (String(body.t || '') === _intakeToken_()) return true;
+  if (action !== 'staff_feedback_update' || body.resort === true) return false;
+  var gatePw = _accessProp_('STAFF_GATE_PW') || 'wellperion!@345';   // gate.js GATE_PW와 동일 값(정본=ScriptProperties)
+  return String(body.password || '') === gatePw;
+}
+
 // ─── QA 격리 판정(2026-07-30 시토, 배195) ───────────────────────────────────
 //   submit_inquiry 는 방문자 공개 액션이라(_SURVEY_PUBLIC_ACTIONS 토큰 면제) 진짜 손님이 실수로
 //   qa=1 을 붙여도 격리로 새지 않아야 하고, 반대로 qa=1 만으로 아무나 격리 경로를 추측해 쓰면
@@ -4040,10 +4053,11 @@ function _processAction(body) {
   //   update : 처리상태·처리메모를 적는다. ★대조키 = 접수ID(FB…) — 행번호로 찾지 않는다.
   //            행번호 기준은 중간에 행이 지워지면 엉뚱한 줄을 고친다(실고객 오삭제 사고와 동종).
   if (action === 'staff_feedback_list' || action === 'staff_feedback_update') {
-    // ★2026-08-03 되돌림(GM 지시 "추가로 만든 건 삭제하자 · 이제 추가로 만드는 건 싫어") —
-    //   같은 날 잠시 열었던 '커튼 열쇠로 update 허용' 항을 걷어내고 원래 마스터 토큰 단일 게이트로 복귀.
-    //   실무진은 구글 시트에서 직접 처리상태를 채운다(GM 결정 — 화면을 새로 만들지 않는다).
-    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    // ★2026-08-04 시토 재개(배299 · GM 2026-08-03 확정 "gate.js 커튼 재사용은 자율") —
+    //   08-03 낮에 커튼 열쇠로 열었다가(11:27) GM이 "시트에서 보는 게 편하다"며 12분 만에 되돌린(11:39) 적이
+    //   있지만, 08-04 GM이 "접수하면 바로 처리가 되어야 하는데 안 되네"로 다시 지시해 재개한다.
+    //   ★판정은 이 함수 하나에서만 한다(다른 곳에 조건 복제 금지 — 약속 L21).
+    if (!_staffFeedbackWriteAuthed_(action, body)) return _json({ ok: false, error: 'bad-token', noRetry: true });
     var _fbSh = SpreadsheetApp.openById(_MI_SS_ID).getSheetByName('실무진 피드백');
     if (!_fbSh) return _json({ ok: true, rows: [], note: '아직 접수 없음(탭 미생성)' });
     var _fbLast = _fbSh.getLastRow();
