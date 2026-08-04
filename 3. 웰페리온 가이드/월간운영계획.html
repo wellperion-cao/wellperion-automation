@@ -3468,7 +3468,11 @@
     var p1El = document.getElementById('broj-fold-p1');
     var bodyEl = document.getElementById('broj-fold-body');
     if(!pEl) return;
-    var link = '<a class="tg-link" href="coo/brojay/브로제이_업무분장.html" target="_blank">담당별 체크리스트 열기 →</a>';
+    // 2026-08-04 GM 지적("확인 목록은 담당별 체크리스트 열기해서 넘어가던데?") — 종전엔 이 토글→담당별
+    // 체크리스트→(그 안에서 카드 클릭)→확인 목록, 두 번 건너가야 했다. 확인 목록 직행 링크를 나란히 둔다
+    // (기존 링크는 그대로 유지 — 둘 다 쓰이는 화면). 새 배지 배선은 안 만든다(GM 지시 — 링크만).
+    var link = '<a class="tg-link" href="coo/brojay/브로제이_업무분장.html" target="_blank">담당별 체크리스트 열기 →</a>' +
+      ' <a class="tg-link" href="coo/brojay/브로제이_확인목록.html" target="_blank">확인 목록 열기 →</a>';
     fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(BROJ_STORAGE_KEY), {method:'GET', redirect:'follow'})
       .then(function(r){ return r.json(); })
       .then(function(data){
