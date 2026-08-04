@@ -27,6 +27,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -701,6 +702,201 @@ def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
     return sorted(out, key=lambda it: -(_stall_days(it) or 0))
 
 
+# ── 🤔 큐 자기정합 (2026-08-04 GM 지시 "줄기 3 큐 자기정합부터") ──────────────
+#   오늘 하루에만 '이미 끝난 일을 안 끝난 줄 알고 다시 판' 게 7건(1건은 GM 시간 낭비).
+#   원인 3가지를 여기 한 곳(부팅 때 항상 지나가는 이 보드)에서 표면화한다.
+#   ★새 감시기·새 상태파일 금지(약속 L21) — 판정만 하고 **자동으로 닫지 않는다.**
+#   ★판정은 의심형이다 — "끝났다"가 아니라 "끝난 듯, 확인 필요". 오탐이 나는 게 정상,
+#     사람이 최종 판단한다.
+try:
+    from queue_dispatch import EXCLUDED_ROLES as _SELFCHECK_EXCLUDED_ROLES  # {"chro","cfo"}
+except Exception:
+    _SELFCHECK_EXCLUDED_ROLES = {"chro", "cfo"}  # 폴백 — import 실패해도 판정 대상은 계속 뺀다
+
+
+def _is_excluded_role(owner: str) -> bool:
+    """★시로(CHRO)·시뽀(CFO) 관련은 건드리지도 목록에 올리지도 않는다(GM 지시).
+    코드 정본은 queue_dispatch.EXCLUDED_ROLES — 여기서 복제하지 않고 그대로 가져다 쓴다."""
+    o = str(owner or "").strip()
+    return o.lower() in _SELFCHECK_EXCLUDED_ROLES or _nick(o) in {"시로", "시뽀"}
+
+
+_RE_NOTE_ENTRY = re.compile(r"\[20\d{2}-\d{2}-\d{2}[^\]]{0,40}\]")
+
+
+def _tail_note(item: dict) -> str:
+    """note의 **마지막** 날짜기록 이후만(가장 최신 항목). 옛 기록 속 '이미 끝남' 같은
+    문구로 오탐나지 않게 — 실측(CTO-2026-07-22 배)에서 중간에 '이미 끝남'을 써도
+    같은 기록 끝에 '진짜 남은 것'이 붙어 있으면 전체는 안 끝난 거라 오탐이면 안 된다."""
+    # note 원문은 큐 항목엔 "note", 보드 항목(_build_item)엔 "_raw_summary"로 담긴다
+    # (_last_touch와 동일 관례 — line ~650) — 하나만 보면 큐 항목에서 항상 빈다.
+    note = str(item.get("note") or item.get("_raw_summary") or "")
+    marks = list(_RE_NOTE_ENTRY.finditer(note))
+    return note[marks[-1].start():] if marks else note
+
+
+_OPEN_STATUSES = {"PENDING", "IN_PROGRESS", "보류", "대기", "ON_HOLD"}
+
+
+def _is_open_status(item: dict) -> bool:
+    st = str(item.get("status", ""))
+    return st.upper() in _OPEN_STATUSES or st in _OPEN_STATUSES
+
+
+def _is_new_today(item: dict) -> bool:
+    """오늘 새로 뜬 배는 제외 — 아직 끝났을 리 없다."""
+    today = dt.date.today().strftime("%Y-%m-%d")
+    return str(item.get("enqueued_at") or "")[:10] == today
+
+
+# ⚪ 실무진·GM·외부 이벤트 대기 배 — 정상 오픈이다. "끝난 듯"·"중복" 판정에서만 뺀다
+#   (③note↔status 불일치는 오히려 이런 배를 잡는 게 목적이라 여기서 빼지 않는다).
+_RE_EXTERNAL_WAIT = re.compile(
+    r"(실무진.{0,6}(회신|응답|확인).{0,2}대기|GM.{0,4}(회신|결정|승인|확인|go).{0,2}대기|"
+    r"외부.{0,6}(응답|대기)|회신\s*대기|응답\s*대기|결과\s*대기|승인\s*대기)"
+)
+
+
+def _is_external_wait(item: dict) -> bool:
+    blob = str(item.get("next") or "") + " " + _tail_note(item)
+    return bool(_RE_EXTERNAL_WAIT.search(blob))
+
+
+# ①「끝난 듯」— note 자기증언(마지막 기록에 완료류 단어) ─────────────────────
+_RE_SELF_DONE = re.compile(
+    r"(이미\s*(수리|처리|완료|반영|배포|해결|고침)|처리\s*완료|배포\s*완료|해소\s*완료|"
+    r"완료로\s*재확인)"
+)
+
+
+def _self_testimony_evidence(item: dict) -> str:
+    tail = _tail_note(item)
+    if not _RE_SELF_DONE.search(tail):
+        return ""
+    return "note 자기증언(완료류) — " + _truncate_word(_clean_summary(tail), 55)
+
+
+# ①「끝난 듯」— note가 스스로 인용한 커밋해시가 실제 존재 + 그 커밋 제목이 '끝냈다'는
+# 근거로 쓸 만함 ────────────────────────────────────────────────────────────
+# ponytail: 파일명·함수명 자유텍스트 대조는 안 한다 — 실측(2026-08-04)으로 "배147"
+#   같은 번호가 무관한 자동커밋 문구에 고정 인용되는 걸 확인했다(scripts/post_commit_push.py
+#   의 정형 문구). note가 직접 인용한 커밋해시만 존재 검증한다 — 오탐이 낮은 신호만 쓴다.
+#   더 정밀하게(파일 diff 대조)는 이 신호로 오탐이 실측되면 확장한다.
+# ★2026-08-04 실측 보정: 커밋이 존재하기만 해도 다 근거는 아니다 — ship_no 300 실측에서
+#   인용된 커밋이 "GM 지시 배 등록"(그 배를 **만든** 커밋)이었다. 배를 만든 커밋은 끝냈다는
+#   근거가 아니라서 뺀다.
+_RE_COMMIT_REGISTER_ONLY = re.compile(r"배\s*(등록|생성)")
+
+
+def _cited_commit_evidence(item: dict) -> str:
+    tail = _tail_note(item)
+    m = re.search(r"커밋\s*([0-9a-f]{7,12})", tail)
+    if not m:
+        return ""
+    h = m.group(1)
+    try:
+        r = subprocess.run(["git", "log", "-1", "--format=%s", h], cwd=_REPO,
+                            capture_output=True, text=True, timeout=5,
+                            encoding="utf-8", errors="replace")
+        if r.returncode != 0 or not r.stdout.strip():
+            return ""
+        subject = r.stdout.strip()
+    except Exception:
+        return ""
+    if _RE_COMMIT_REGISTER_ONLY.search(subject):
+        return ""  # 배를 만든 커밋이지 끝냈다는 근거가 아니다
+    return f"note가 인용한 커밋 {h} 실재 확인({_truncate_word(subject, 35)}) — " \
+        + _truncate_word(_clean_summary(tail), 35)
+
+
+# ② 중복 배 — 같은 담당의 DONE과 열린 상태가 제목 겹쳐 공존 ───────────────────
+_RE_TITLE_TOKEN = re.compile(r"[가-힣A-Za-z0-9]{2,}")
+
+
+def _title_tokens(title: str) -> set[str]:
+    t = _RE_META_BRACKET.sub("", str(title or ""))
+    t = re.sub(r"^\[[^\]]{1,10}\]\s*", "", t)  # [시토] 역할 태그
+    return set(_RE_TITLE_TOKEN.findall(t))
+
+
+def _duplicate_evidence(item: dict, dones: list[dict]) -> str:
+    okeys = _title_tokens(item.get("title", ""))
+    if len(okeys) < 2:
+        return ""
+    owner = item.get("owner")
+    for d in dones:
+        if d is item or d.get("owner") != owner:
+            continue
+        dkeys = _title_tokens(d.get("title", ""))
+        if len(dkeys) < 2:
+            continue
+        overlap = okeys & dkeys
+        if len(overlap) >= 2 and len(overlap) / min(len(okeys), len(dkeys)) >= 0.5:
+            return (f"완료 배 「{str(d.get('title',''))[:30]}…」와 제목 중복 의심 — "
+                     f"겹침: {'·'.join(sorted(overlap))[:40]}")
+    return ""
+
+
+# ③ note↔status 어긋남 — note가 '정박 전환'인데 status는 여전히 열린 진행중 ──────
+#   ⚓ 세계관(CLAUDE.md §3-1): 정박 = status가 PENDING/ON_HOLD(⚓)여야 한다. note는
+#   정박을 선언했는데 status가 그대로 IN_PROGRESS면 기록만 갱신되고 상태 칸이 안 따라간
+#   전형(실측: 배206 — "⚓ 정박 전환" note인데 status IN_PROGRESS 그대로).
+#   ★_tail_note(마지막 날짜기록만)를 안 쓴다 — 실측(배206)에서 '정박 전환' 선언 뒤에도
+#   그날 안에 다른 화제(회장님 지시사항 등) 기록이 이어 붙어, 마지막 기록만 보면
+#   정박 선언 자체를 놓친다. 그래서 note 전체에서 '정박' 선언을 찾고, 그 **뒤**에
+#   '정박 해제' 가 없으면(=아직 안 풀림) status 와 대조한다.
+_RE_NOTE_PARKED = re.compile(r"정박\s*(전환|확정|선언)")
+_RE_NOTE_UNPARKED = re.compile(r"정박\s*해제")
+
+
+def _note_status_mismatch(item: dict) -> str:
+    note = str(item.get("note") or item.get("_raw_summary") or "")
+    matches = list(_RE_NOTE_PARKED.finditer(note))
+    if not matches:
+        return ""
+    last = matches[-1]
+    if _RE_NOTE_UNPARKED.search(note[last.end():]):
+        return ""  # 이후 '정박 해제' 기록이 있음 — 다시 열린 게 맞음
+    if str(item.get("status", "")).upper() in {"PENDING", "ON_HOLD"} \
+            or item.get("status") in {"대기", "보류"}:
+        return ""  # 이미 정박 상태 — 정합, 문제 없음
+    ctx = note[max(0, last.start() - 5):last.end() + 55]
+    return (f"note='정박 {last.group(1)}' 기록(이후 해제 없음)인데 status={item.get('status')}(⚓ 아님) — "
+            + _truncate_word(_clean_summary(ctx), 45))
+
+
+def _self_consistency_findings(
+    items: list[dict],
+) -> tuple[list[tuple[dict, str]], list[tuple[dict, str]], list[tuple[dict, str]]]:
+    """3종 판정 — (①끝난 듯, ②중복 의심, ③note↔status 불일치) 각각 (item, evidence) 리스트,
+    오래된 순(전체, 캡 없음 — 캡은 렌더에서 건다). 자동으로 닫지 않는다 — 표면화만."""
+    dones = [it for it in items if str(it.get("status")) in STATUS_DONE
+              or str(it.get("status", "")).upper() in STATUS_DONE]
+    looks_done: list[tuple[dict, str]] = []
+    dupes: list[tuple[dict, str]] = []
+    mismatch: list[tuple[dict, str]] = []
+    for it in items:
+        if not _is_open_status(it) or _is_new_today(it) or _is_excluded_role(it.get("owner", "")):
+            continue
+        # ③은 '외부 대기' 배를 잡는 게 목적이라 여기서만 external-wait 필터를 안 건다.
+        m3 = _note_status_mismatch(it)
+        if m3:
+            mismatch.append((it, m3))
+        if _is_external_wait(it):
+            continue
+        ev1 = _self_testimony_evidence(it) or _cited_commit_evidence(it)
+        if ev1:
+            looks_done.append((it, ev1))
+        ev2 = _duplicate_evidence(it, dones)
+        if ev2:
+            dupes.append((it, ev2))
+    key = lambda pair: -(_stall_days(pair[0]) or 0)
+    looks_done.sort(key=key)
+    dupes.sort(key=key)
+    mismatch.sort(key=key)
+    return looks_done, dupes, mismatch
+
+
 def build_board(gas_items: list[dict], queue_items: list[dict],
                 role: str = "", sent_by_role: list[dict] | None = None) -> tuple[str, dict]:
     """보드 텍스트 + 섹션 dict 반환.
@@ -765,7 +961,14 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     for it in sent_unanswered:
         it["_ship"] = classify_ship({
             "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
-    if stalled or sent_unanswered:
+    # 🤔 큐 자기정합 3종(2026-08-04) — 같은 블록에 붙인다(새 ### 헤더 금지·약속 L21).
+    looks_done, dupes, mismatch = _self_consistency_findings(all_items)
+    _SELFCHECK_CAP = 7
+    for pair_list in (looks_done, dupes, mismatch):
+        for it, _ev in pair_list:
+            it["_ship"] = classify_ship({
+                "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
+    if stalled or sent_unanswered or looks_done or dupes or mismatch:
         lines.append("")
         lines.append(f"### 🔔 멈춰 있는 배 {len(stalled)}척 — 마지막 기록 이후 오래된 순")
         if stalled:
@@ -776,6 +979,21 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
             lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
                                     for it in sent_unanswered]))
+        for label, pair_list in (
+            ("🤔 끝난 듯 — 확인 필요", looks_done),
+            ("🔁 중복 의심", dupes),
+            ("⚠️ note↔status 불일치", mismatch),
+        ):
+            if not pair_list:
+                continue
+            shown = pair_list[:_SELFCHECK_CAP]
+            extra = f" (외 {len(pair_list) - len(shown)}척)" if len(pair_list) > len(shown) else ""
+            lines.append(f"{label} {len(shown)}척{extra} — 판정은 의심형·자동 종료 안 함, 사람 확인")
+            rows = []
+            for it, ev in shown:
+                base = _item_to_row(it, ship_col_extra=_stall_tag(it))
+                rows.append((base[0], base[1], base[2], ev, "👉 status/note 대조 확인"))
+            lines.append(_md_table(rows))
 
     # ── 🔴 급한 입항 (별도 알림) ──
     if secs["urgent"]:
