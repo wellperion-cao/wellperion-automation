@@ -29,6 +29,7 @@
 import argparse
 import os
 import re
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -504,6 +505,17 @@ async def _launch_persistent_with_heal(p, *, headless, args=None, no_viewport=Tr
             try:
                 PERSISTENT_PROFILE_DIR.rename(backup)
                 print(f"[SELF-HEAL] 손상 프로필 백업 이동 → {backup.name}")
+                # ★2026-08-04 시토 — 격리본은 쌓이기만 하고 아무도 지우지 않았다.
+                #   실측: 07-08~07-13 사이 4벌이 남아 725MB 를 먹고 있었고, 되읽는 코드는
+                #   어디에도 없다(이름 grep 0건). 가장 최근 1벌만 남기고 옛것을 지운다 —
+                #   "직전에 뭐가 있었나"는 1벌이면 충분하고, 그 이상은 디스크만 쓴다.
+                old = sorted(
+                    (d for d in PERSISTENT_PROFILE_DIR.parent.glob("danggn_corrupt_*") if d.is_dir()),
+                    key=lambda d: d.name,
+                )[:-1]
+                for d in old:
+                    shutil.rmtree(d, ignore_errors=True)
+                    print(f"[SELF-HEAL] 옛 격리본 정리 → {d.name}")
             except Exception as re:
                 print(f"[SELF-HEAL] 백업 이동 실패({type(re).__name__}: {re}) — 재시도 불가.")
                 raise
