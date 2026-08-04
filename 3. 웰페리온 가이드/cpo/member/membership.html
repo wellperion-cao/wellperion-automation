@@ -4183,6 +4183,7 @@ function _mdashComputeKpi(period){
       if (!DATE_RE.test(d)) return;
       if (r.from && d < r.from) return;
       if (d > r.to) return;
+      if (_mregClassify(row)) return;   // 재등록·양수·환불·양도·대기 제외 — 전환율 분자는 신규만(배349, GM 지시)
       regCount++;
     });
   }
@@ -4210,7 +4211,7 @@ function loadInquiryDash(){
     _mdashPeriodTabsHtml() +
     '<div class="mdash-sec"><div class="mdash-sec-hd" id="mdashPerfHd">① ' + _mdashPeriodRange(_mdashPeriod).label + ' 성과</div>' +
       '<div id="mdashSecPerf" class="mdash-kpirow">' + _ld + '</div>' +
-      '<div class="mdash-caveat">신규 문의=member_inquiry_list(26년 신규문의 시트) 접수일 실측, 멤버십 유형만(강습·렌트·비즈 제외) · 가입=member_registered_list(유효회원 시트) 등록일자 실측 · 전환율=선택 기간 가입/선택 기간 문의 · 문의는 문의DB 탭에 이미 로드된 데이터 재사용(중복 fetch 0) · 가입은 기본 연초~오늘 스코프로 조회, 일·월·연 토글은 재조회 없이 즉시 재계산 · \'총\' 선택 시에만 2022년~ 전체 1회 추가 조회.</div></div>' +
+      '<div class="mdash-caveat">신규 문의=member_inquiry_list(26년 신규문의 시트) 접수일 실측, 멤버십 유형만(강습·렌트·비즈 제외) · 가입=member_registered_list(유효회원 시트) 등록일자 실측, ★신규만(재등록·양수·환불·양도·대기 제외, 배349) · 전환율=선택 기간 가입(신규)/선택 기간 문의 · 문의는 문의DB 탭에 이미 로드된 데이터 재사용(중복 fetch 0) · 가입은 기본 연초~오늘 스코프로 조회, 일·월·연 토글은 재조회 없이 즉시 재계산 · \'총\' 선택 시에만 2022년~ 전체 1회 추가 조회.</div></div>' +
     '<div class="mdash-sec"><div class="mdash-sec-hd">② 문의 이후 퍼널 (누적)</div>' +
       '<div id="postInqSecFunnel">' + _ld + '</div>' +
       '<div class="mdash-caveat">기간 토글 영향 없음 — stage_funnel 현재 시점 누적 스냅샷.</div></div>' +
@@ -4250,6 +4251,7 @@ function loadInquiryDash(){
       var d = String(r.regDate || '');
       if (!DATE_RE.test(d)) { excluded++; return; }   // 형식 이상행(시트 하단 재등록횟수 요약 등 비회원 행) 제외
       if (d.slice(0, 4) !== String(year)) return;     // 올해분만(전체 원본에서 연도 필터, 새 fetch 없음)
+      if (_mregClassify(r)) return;   // 재등록·양수·환불·양도·대기 제외 — 신규만(배349, GM 지시)
       var mo = parseInt(d.slice(5, 7), 10);
       counts[mo] = (counts[mo] || 0) + 1;
     });
@@ -4270,9 +4272,9 @@ function loadInquiryDash(){
       prevCount = c;
     }
     el.innerHTML = '<div class="mdash-mreg-wrap"><table class="mdash-mreg-table">' +
-      '<thead><tr><th>월</th><th>등록</th><th>전월비</th><th>누적</th><th>문의</th><th>전환율</th></tr></thead>' +
+      '<thead><tr><th>월</th><th>신규등록</th><th>전월비</th><th>누적</th><th>문의</th><th>전환율</th></tr></thead>' +
       '<tbody>' + rowsHtml + '</tbody></table></div>';
-    var note = '등록=member_registered_list(유효회원 시트 등록일자) 원본 실측 · 문의=member_inquiry_list(멤버십 유형만) 같은 달 기준 · 전환율=등록/문의(코호트 추적 아님, 참고용) · ' + year + '년 ' + curMonth + '월은 진행 중(월말 전 수치).';
+    var note = '등록=member_registered_list(유효회원 시트 등록일자) 원본 실측, ★신규만(재등록·양수·환불·양도·대기 제외, 배349) · 문의=member_inquiry_list(멤버십 유형만) 같은 달 기준 · 전환율=신규등록/문의(코호트 추적 아님, 참고용) · ' + year + '년 ' + curMonth + '월은 진행 중(월말 전 수치).';
     if (excluded > 0) note += ' · 등록일 형식 이상 ' + excluded + '건은 집계에서 제외.';
     if (caveatEl) caveatEl.textContent = note;
   }
