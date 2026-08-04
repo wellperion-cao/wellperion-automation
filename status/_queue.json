@@ -1607,5 +1607,24 @@
     "audience": "office",
     "feedback_id": "FB260804-090407",
     "updated_at": "2026-08-04"
+  },
+  {
+    "task_id": "CTO-2026-08-04-회원-변경-이력이-기록-0건-어제-4줄-쌓인-걸-확",
+    "clevel": "cto",
+    "title": "[시토] 회원 변경 이력이 기록 0건 — 어제 4줄 쌓인 걸 확인했는데 지금 비어 있다 (웰리 실측 2026-08-04)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-04",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-04] [웰리 실측 2026-08-04 09시대]\n· 라이브 member_log_list — scope=membership/lesson/all 전부 {ok:true, data:[], started:'2026-08-03'}. **0건.**\n· 그런데 실무진은 저장하고 있었다 — 박민서M 이 08-03 20:39 에 '이름을 알려주세요 창이 계속 뜬다'고 신고했다.\n  그 창은 쓰기 저장 때만 뜬다. 즉 **그 시각에 쓰기가 돌고 있었는데 이력에는 아무것도 안 남았다.**\n· 08-03 저녁 funnel-v2 @206→@210 배포 직후엔 자동경로 로그 4줄('이름미상')이 실제로 관측됐다(웰리 실측).\n  그 4줄이 지금 없다.\n\n[조사 결과 — 코드는 배선돼 있다]\n· 백엔드 = .deploy-funnel-v2/Survey.js (scriptId 1BezMSW_rGi57IrC9IoxoQzczsATVzqwFa039cigvhad0wpCBdOmhHTjQ · 프로젝트명 funnel-v2 인데 회원관리 백엔드 겸용).\n· _memberLog_() 호출 4곳 — lesson_inquiry_update(:5966) · member_active_update(:8254/8262) · member_owner_save(:8300) · member_owner_bulk_set(:8363). 쓰기 3종 전부 걸려 있다.\n· 대상 = MEMBER_SPREADSHEET_ID 의 '회원변경이력' 탭. 없으면 insertSheet 로 자동 생성(:1133-1136).\n· MEMBER_LOG_STARTED='2026-08-03' 은 하드코딩(:1114) — 시트에서 읽지 않는다.\n\n[핵심 = 두 겹의 침묵]\n1) _memberLog_ 전체가 try/catch 로 감싸이고 catch 가 완전 무시다(:1129-1139). 셀 저장은 이 호출 **전에** 이미 끝나 있어,\n   이력 append 가 무슨 이유로 실패해도 응답은 ok:true 다. **실패가 성공으로 보인다.**\n2) member_log_list 는 시트가 없거나 getLastRow()<2 면 조용히 {ok:true,data:[]} 를 준다(:7938).\n   **'탭이 없다'와 '기록이 없다'가 화면에서 같은 모습이다.**\n→ 그래서 08-04 아침 @213 재배포 때 member_active_list(1,000명)만 확인하고 넘어갔고, 로그 왕복은 아무도 다시 안 봤다.\n\n[시토가 확인할 것 — 이 저장소에서는 못 한다]\n1. 구글시트 '회원변경이력' 탭을 직접 열어 현재 행 수. 08-03 저녁 4줄이 남아 있나, 아니면 비었나(누가 지웠나).\n2. 라이브 /exec 가 정말 @213 이상인지, 그 버전 소스가 로컬 Survey.js(HEAD)와 같은지 Apps Script 에디터에서 대조.\n3. 테스트 데이터로 member_active_update 1건 왕복 → 실제로 append 되는지 + Apps Script 실행기록(Executions)에서 catch 가 삼킨 에러 확인.\n\n[웰리 의견] 고칠 것은 기능보다 **침묵**이다. 위 1)2) 둘 다 '실패를 정상으로 보이게' 만든다 — 자가점검 #1-b(도는데 결과를 낸 적 없는 장치)가 정확히 이 부류다. 최소 수리 = catch 가 삼킨 것을 어딘가 한 줄 남기고, list 응답이 '탭 없음'과 '0건'을 구분하게.",
+    "next": "구글시트 '회원변경이력' 탭 행 수 직접 확인 → 라이브 버전 대조 → 테스트 1건 왕복. 고칠 땐 침묵 분기(try/catch 무시 · 탭없음=0건 위장) 먼저",
+    "depends_on": "",
+    "ship_no": 10532,
+    "short_no": 342,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "updated_at": "2026-08-04"
   }
 ]
