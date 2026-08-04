@@ -2406,6 +2406,21 @@ function _regRemove_(phone) {
 //   회원 담당은 임정은M 1인이다 — 문의 접수자를 회원 담당자로 흘려 넣던 것이 빈칸·오기의 원인이었다.
 //   여기 한 곳에 두면 SUC·직접등록 등 모든 쓰기 경로가 같은 값을 쓴다(담당이 바뀌면 이 줄만 고친다).
 var MEMBER_DEFAULT_OWNER = '임정은';
+/** 회원 시트 캐시 세대번호 — 시트에 쓰기가 일어나면 올린다(2026-08-04 시토).
+ *  캐시 키에 이 값을 섞어 두면, 한 번 올리는 것만으로 기간·옵션별로 갈린 옛 키가 전부 무효가 된다.
+ *  (키를 하나씩 지우는 방식은 조합 수만큼 키가 있어 열거가 불가능하다.)
+ */
+function _memberCacheGen_() {
+  try { return PropertiesService.getScriptProperties().getProperty('MEMBER_CACHE_GEN') || '0'; }
+  catch (e) { return '0'; }
+}
+function _memberCacheBump_() {
+  try {
+    var p = PropertiesService.getScriptProperties();
+    p.setProperty('MEMBER_CACHE_GEN', String((parseInt(p.getProperty('MEMBER_CACHE_GEN'), 10) || 0) + 1));
+  } catch (e) { /* 캐시 무효화 실패가 저장 자체를 막지 않게 한다 */ }
+}
+
 /** 종목명을 **회원 시트가 이미 쓰고 있는 표준 이름**으로 맞춘다 (2026-08-04 시토).
  *
  * ★왜(GM 지적 '종목명이 기록된 종목명이 아니라서 충돌난 것 같은데'):
@@ -2525,6 +2540,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
           var _prevSeq = parseInt(sh.getRange(row, seqI + 1).getValue(), 10);
           sh.getRange(row, seqI + 1).setValue((_prevSeq > 0 ? _prevSeq : 1) + 1);
         }
+        _memberCacheBump_();   // 방금 바뀐 회원이 화면에 바로 보이게(캐시 세대 올림)
         return;
       }
     }
@@ -2548,6 +2564,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var _newRow = sh.getLastRow();
   var _pc = sh.getRange(_newRow, phI + 1); _pc.setNumberFormat('@'); _pc.setValue(phone || '');
   if (regI >= 0) { var _rc2 = sh.getRange(_newRow, regI + 1); _rc2.setNumberFormat('@'); _rc2.setValue(regDate || _todayKR_()); }
+  _memberCacheBump_();   // 새로 등록한 회원이 화면에 바로 보이게(캐시 세대 올림)
 }
 
 // ═══════════════════════════════════════════
@@ -7690,7 +7707,28 @@ function _processAction(body) {
     // 2026-06-25 GM: 실제 회원 DB(유효회원 시트) 등록일자 기준 — 대시보드 '멤버십 등록건' 카드와 동일 소스.
     var rlFrom = String(body.from || '');  // YYYY-MM-DD
     var rlTo   = String(body.to   || '');
+    // ★newOnly=1 → 신규 등록만 (2026-08-04 GM 지시).
+    //   GM: "멤버십 회원관리에 있는 회원님이 재등록 시에는 신규가 아니라서 여기 등록현황에 반영이 되면 안 될 것 같고".
+    //   기본값은 끔 — 같은 액션을 월별 등록현황·전환율도 쓰므로 기본을 바꾸면 그쪽 숫자가 말없이 달라진다.
+    //   판정: 등록 분류가 '신규' 이거나, 분류가 비었는데 등록회차가 1 이하인 행(첫 등록). 그 외(재등록·양수·
+    //   양도·환불·대기 등)는 신규가 아니다 — 실측 2026년 196건 중 17건이 그 부류였다.
+    var rlNewOnly = (String(body.newOnly || '') === '1' || body.newOnly === true);
     var rlRows = [];
+    // ★캐시(2026-08-04 시토 · GM '불러오는데 너무 오래걸리는 것 같은데 왜그럴까?').
+    //   실측: 이 액션만 캐시가 없어 매번 유효회원 시트 전체를 다시 읽었다 — 캐시 있을 때 7.5초 /
+    //   무시했을 때 7.3초로 사실상 같았다(=캐시가 없다는 뜻). 다른 무거운 액션은 이미 같은 헬퍼로
+    //   캐시를 쓰고 있어 새 장치를 만들지 않고 그 관례를 그대로 따른다(약속 L21).
+    //   TTL 360초 = member_active_list 와 동일(5분 예열기 주기에 맞춘 값).
+    //   ▸★캐시가 만든 새 위험 하나를 같이 막는다: 방금 등록한 회원이 몇 분간 안 보이면
+    //     '안 넘어갔다'로 보인다 — 오늘(2026-08-04) GM 이 정확히 그 혼란을 겪었다. 그래서 회원 시트에
+    //     쓰기가 일어날 때마다 세대번호(_memberCacheGen_)를 올려 옛 키를 통째로 못 쓰게 한다.
+    //     키를 하나하나 지우지 않는 이유 = 기간·옵션 조합만큼 키가 갈려 열거가 불가능하다.
+    var rlCache = CacheService.getScriptCache();
+    var rlCacheKey = 'rl_v3_' + _memberCacheGen_() + '_' + rlFrom + '_' + rlTo + '_' + (rlNewOnly ? 'N' : 'A');
+    if (!_nc) {
+      var rlHit = _cacheGetJson_(rlCache, rlCacheKey);
+      if (rlHit) return _json(rlHit);
+    }
     try {
       var rlSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
       if (rlSh && rlSh.getLastRow() >= 2) {
@@ -7740,10 +7778,20 @@ function _processAction(body) {
             regSeq:    rlSeqI  >= 0 ? String(rr[rlSeqI]  == null ? '' : rr[rlSeqI]).trim()  : ''
           });
         }
+        if (rlNewOnly) {
+          rlRows = rlRows.filter(function(r){
+            var c = String(r.regClass || '').trim();
+            if (c) return c === '신규';
+            var n = parseInt(r.regSeq, 10);
+            return !(n > 1);   // 분류가 비었으면 회차로 — 2회차 이상은 신규가 아니다
+          });
+        }
         rlRows.sort(function(a, b){ return a.regDate < b.regDate ? 1 : (a.regDate > b.regDate ? -1 : 0); }); // 최신 등록 먼저
       }
     } catch (eRl) {}
-    return _json({ ok: true, count: rlRows.length, data: rlRows });
+    var rlResult = { ok: true, count: rlRows.length, data: rlRows, newOnly: rlNewOnly };
+    _cachePutJson_(rlCache, rlCacheKey, rlResult, 360);
+    return _json(rlResult);
   }
 
   // ─── 회원관리 페이지(CPO): 등록회원 월별 체크 토글 ───
