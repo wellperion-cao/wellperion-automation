@@ -647,6 +647,21 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       return true;
   }
 
+  /* CSV 재파싱은 강사별을 '시트에 있는 값'으로 되돌린다. 그래서 배관으로 채웠던 달(강습부 미입력월)이
+     새로고침마다 사라졌다가 보완 응답(수십 초)이 와야 다시 나타났다 — 저장본으로 7월이 보이다가
+     도로 비는 증상의 원인. 직전에 알고 있던 값을 '시트가 비어 있는 달에 한해' 되살린다(시트 우선 불변). */
+  function reviveInstr(prev,cur){
+    if(!prev||!prev.length||!cur)return;
+    var idx={};cur.forEach(function(p){idx[nkey(p.name)]=p;});
+    prev.forEach(function(q){
+      if(!q||!q.monthly)return;
+      var t=idx[nkey(q.name)];
+      if(!t){cur.push({name:q.name,team:q.team,monthly:q.monthly.slice(),sum:q.sum||0});return;}
+      for(var i=0;i<12;i++){if(!(t.monthly[i]>0)&&(q.monthly[i]||0)>0)t.monthly[i]=q.monthly[i];}
+    });
+    cur.forEach(function(p){var s=0;for(var i=0;i<12;i++)s+=(p.monthly[i]||0);p.sum=s;});
+  }
+
   // 팀 매출은 있는데 강사별이 비어있는 달 목록(1-base). 강습부 시트 미입력 구간을 찾아낸다.
   // 배경: 배관이 진행월만 채우던 시절, 달이 바뀌면 지난달 강사별이 빈 채로 남았다(7월 사례).
   function instrGapMonths(){

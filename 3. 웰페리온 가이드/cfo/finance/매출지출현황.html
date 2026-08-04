@@ -998,7 +998,26 @@ function procCall(action,extra){
   return new Promise(function(resolve,reject){_hvQ.push({action:action,extra:extra,resolve:resolve,reject:reject});_hvDrain();});
 }
 function rval(id){return document.getElementById(id).value;}
-async function loadReq(){_reqBusy++;try{var d=await procCall("list",{mode:"active",noimg:1});REQ_ACTIVE=(d&&d.data)||[];}catch(e){REQ_ACTIVE=[];}finally{_reqBusy--;_hvDrain();}renderReqTbl();loadReqPhotos();} // 경량(noimg) 즉시 렌더 → 사진은 백그라운드 병합(2026-07-08 A안: 첫 표시 즉시화·247KB→10KB·백엔드 무변경). _reqBusy=구매요청 우선(매출 재계산 양보)
+/* 경량(noimg) 즉시 렌더 → 사진은 백그라운드 병합(2026-07-08 A안). _reqBusy=구매요청 우선(매출 재계산 양보).
+   ★재시도 추가(2026-08-04): 시작 시 첫 호출이 실패하면(콜드 스타트·리다이렉트 경합) 목록이 빈 채로 굳었다.
+   실패해도 화면엔 "품의 0건"으로만 보여서 데이터가 없는 것처럼 읽혔다 — 사진(loadReqPhotos)엔 이미
+   있던 재시도가 정작 목록엔 없었다. 실패는 조용히 넘기지 말고 안내한다. */
+async function loadReq(){
+  _reqBusy++;
+  var d=null;
+  try{
+    var delays=[0,900,2000,3500,6000];
+    for(var a=0;a<delays.length;a++){
+      if(delays[a])await new Promise(function(rs){setTimeout(rs,delays[a]);});
+      try{ d=await procCall("list",{mode:"active",noimg:1}); }catch(e){ d=null; }
+      if(d&&d.ok)break;
+    }
+    REQ_ACTIVE=(d&&d.data)||[];
+  } finally{_reqBusy--;_hvDrain();}
+  var m=document.getElementById("reqMsg");
+  if(m&&!(d&&d.ok))m.textContent="⚠️ 목록을 불러오지 못했습니다 — 잠시 후 새로고침(F5) 해주세요";
+  renderReqTbl();loadReqPhotos();
+}
 var _photoLoading=false;
 async function loadReqPhotos(){ // 미완료 리스트 사진(이미지·지출증빙) 백그라운드 로드 → 도착 시 병합·재렌더(논블로킹, 재시도 포함)
   if(_photoLoading)return;_photoLoading=true;_reqBusy++; // _reqBusy=사진 받는 동안 매출 재계산 양보 → 사진이 경합 없이 첫 시도에 도착
