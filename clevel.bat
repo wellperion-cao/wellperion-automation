@@ -91,12 +91,60 @@ if /i "%STATUS%"=="완료" set COMMIT_MSG=[DONE][%ROLE%][%TASK_ID%] %SUMMARY%
 if /i "%STATUS%"=="DONE"  set COMMIT_MSG=[DONE][%ROLE%][%TASK_ID%] %SUMMARY%
 
 cd /d "%BAT_DIR%"
+
+REM ============================================================
+REM  ★2026-08-04 GM 지시 — 「남의 작업이 통째로 지워지는 사고」 수리
+REM
+REM  사고: 커밋 425cbb58a(8/4 시설 점검)가 무관한 파일 10건을 삭제했다.
+REM        (_assets/profile 5건 · 게시물_프로필월.html · 지원자 사진 4건)
+REM        같은 유형으로 b7d4f3817 은 저장소 트리 전체를 날린 적이 있다(d591c95f8 로 복구).
+REM
+REM  원인: 아래 순서가 뒤집혀 있었다.
+REM        (구) git add -A → commit → pull --rebase → push
+REM        세션의 워킹트리가 낡아 있으면(= 다른 세션이 그 사이 추가한 파일이 없으면)
+REM        git add -A 가 그 파일들을 "삭제됨"으로 기록해 커밋에 쓸어담는다.
+REM        삭제 의도가 전혀 없어도 삭제 커밋이 만들어진다.
+REM
+REM  수리: ①먼저 최신본을 받고(pull) ②그 다음 add ③삭제가 섞였으면 커밋 자체를 만들지 않는다.
+REM  ※ 의도적 삭제가 필요하면 실행 전 set CLEVEL_ALLOW_DELETE=1 로 우회.
+REM ============================================================
+
+REM ① 최신본 먼저 — 워킹트리를 원격과 맞춘 뒤에 add 해야 오탐 삭제가 생기지 않는다.
+echo [clevel.bat] Syncing with origin/master before staging...
+git pull --rebase --autostash origin master
+if not %ERRORLEVEL%==0 goto :pull_failed
+
 git add -A
+
+REM ② 안전망 — 스테이징에 삭제(D)가 섞였는지 검사.
+REM    ※ exit /b 를 중첩 블록 안에서 쓰면 종료코드가 유실되므로 goto 라벨로 빠져나간다(실측 확인).
+git diff --cached --diff-filter=D --quiet
+if not %ERRORLEVEL%==0 goto :deletion_detected
+goto :do_commit
+
+:deletion_detected
+if "%CLEVEL_ALLOW_DELETE%"=="1" (
+    echo [clevel.bat] CLEVEL_ALLOW_DELETE=1 — 삭제를 허용하고 진행합니다.
+    goto :do_commit
+)
+echo.
+echo [clevel.bat ABORT] 삭제로 기록된 파일이 있어 커밋을 중단했습니다.
+echo   아래 파일이 이 커밋에서 사라집니다. 직접 지운 게 아니라면 워킹트리가 낡은 것입니다.
+git diff --cached --diff-filter=D --name-only
+echo.
+echo   의도한 삭제라면: set CLEVEL_ALLOW_DELETE=1 을 먼저 실행한 뒤 재시도
+git reset >nul
+exit /b 3
+
+:pull_failed
+echo [clevel.bat ABORT] git pull failed — 커밋하지 않고 중단합니다.
+echo   원격과 맞추지 못한 상태로 add 하면 남의 파일이 삭제로 기록될 수 있습니다.
+exit /b 4
+
+:do_commit
 git diff --cached --quiet
 if not %ERRORLEVEL%==0 (
     git commit -m "%COMMIT_MSG%"
-    REM 동시 다중 C-Level 세션 push 충돌 방지 — push 전 rebase (2026-06-01 GM 멀티세션 운영)
-    git pull --rebase --autostash origin master
     git push origin master
     echo [clevel.bat] Auto commit/push done.
 ) else (
