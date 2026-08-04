@@ -1615,6 +1615,51 @@ function _kpiDailyReportSheet(params) {
   }
 }
 
+// 배351 회고(2026-08-04 시토) — '보고' 탭 "총 매출 합계"행 달성률 셀이 한때
+// =J{r}/SUM(INDIRECT(...AB70:AB76)) 로 되어 있어(외부 시트 팀별 목표 7칸 부분합, 뮤지컬·GXE
+// 목표 2칸 누락) 같은 행 목표(K{r}=sum(K6:K15), 뮤지컬·GXE 포함)와 분모가 어긋나 12.32%(정답
+// 11.92%)로 틀렸었다. GAS 1회성 함수로 =J4/K4(뮤지컬·GXE 행과 동일 패턴)로 정정 완료(배포
+// @131). 재발 감시용으로 읽기전용 진단 action만 상시 유지 — scripts/_check_sales_report_rate_formula.py
+// 가 이 action으로 매출보고 발송 전 회귀를 잡는다.
+function _kpiDailyReportRateDebug(params) {
+  try {
+    var month = parseInt((params && params.month) || _kpiToday().m, 10);
+    var sh = _kpiSalesReportTab(month);
+    if (!sh) return _json({ ok: false, error: 'report_tab_not_found' });
+    var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+    var values = sh.getRange(1, 1, lastRow, lastCol).getValues();
+    var anchors = [];
+    for (var r = 0; r < values.length; r++) {
+      for (var c = 0; c < values[r].length; c++) {
+        if (String(values[r][c] || '').indexOf('총 매출 합계') >= 0) anchors.push({ r: r, c: c });
+      }
+    }
+    if (!anchors.length) return _json({ ok: false, error: 'anchor_not_found' });
+    // 가장 오른쪽(최신) 블록 채택 — 진단용이라 월 매칭 없이 단순.
+    var best = anchors[0];
+    for (var i = 1; i < anchors.length; i++) if (anchors[i].c > best.c) best = anchors[i];
+    var startRow = best.r, col = best.c;
+    var endRow = Math.min(startRow + 20, lastRow);
+    var width = 5; // 라벨열 + 4칸
+    var vals = sh.getRange(startRow + 1, col + 1, endRow - startRow, width).getValues();
+    var forms = sh.getRange(startRow + 1, col + 1, endRow - startRow, width).getFormulas();
+    var rows = [];
+    for (var ri = 0; ri < vals.length; ri++) {
+      rows.push({
+        row: startRow + 1 + ri,
+        label: vals[ri][0],
+        today:  { value: vals[ri][1], formula: forms[ri][1] },
+        month:  { value: vals[ri][2], formula: forms[ri][2] },
+        target: { value: vals[ri][3], formula: forms[ri][3] },
+        rate:   { value: vals[ri][4], formula: forms[ri][4] }
+      });
+    }
+    return _json({ ok: true, sheetName: sh.getSheetName(), anchorRow: startRow + 1, anchorCol: col + 1, rows: rows });
+  } catch (err) {
+    return _json({ ok: false, error: String(err) });
+  }
+}
+
 // 요약 탭 선택: 모든 달 공통 '31'(그 달 실제 일수와 무관하게 고정 템플릿명·1·4·6월 실측 검증) 우선.
 // 혹시 없는(구조가 다른) 파일 대비 옛 '말일 숫자' 탭 폴백 유지(방어적, 정상 파일에선 안 탐).
 function _kpiSalesLastDayTab(ss, year, month) {
@@ -2341,6 +2386,11 @@ function doGet(e) {
     // GET ?action=daily_report_sheet[&year=2026&month=8&tab=보고]. 읽기전용.
     if (action === 'daily_report_sheet') {
       return _kpiDailyReportSheet(e.parameter);
+    }
+
+    // ─── 배351 총매출 달성률 회귀감시(상시, 읽기전용) — '보고' 탭 값/수식 덤프 — 2026-08-04 시토 ───
+    if (action === 'daily_report_rate_debug') {
+      return _kpiDailyReportRateDebug(e.parameter);
     }
 
     // ─── G1 '오늘의 항로' 서버 단일 머지 (2026-06-11 시토 · ②a 미사용·비파괴) ───
