@@ -10473,6 +10473,83 @@ function member_wait_auto_release_selfcheck_() {
   return true;
 }
 
+// ═══ LOSS일자 자동 기록 (2026-08-05 시토 · 배302, GM 지시 2026-08-03) ═══
+//   GM 원문: '잔여일이 -1이 되면 자동으로 LOSS일자가 찍히게'.
+//   실측(2026-08-04 웰리): LOSS 회원(scope=ended) 689명은 LOSS일자가 이미 100% 채워져 있다(공백 0) —
+//   지금까지는 사람이 채워왔다는 뜻. 소급 대상 자체가 없으므로 과거분 백필은 하지 않는다(GM 확인 불요).
+//   판정은 _memberIsValid_(약속 L01 SSOT, member_active_summary 등 4곳과 동일 함수) 를 재사용하되
+//   재등록분류 자리에 빈 문자열을 고정으로 넘겨 '잔여일<0' 단독 조건으로 좁힌다 — 재등록분류 기반
+//   LOSS/환불/양도LOSS 전환은 스코프 밖(실무진이 이미 그 경로는 수동으로 100% 채우는 중).
+//   멱등: LOSS일자 칸이 이미 채워진 행은 절대 덮어쓰지 않는다.
+
+/** 순수판정(시트 I/O 없음) — 본체·자체점검이 공유. remCell=잔여일 원본 셀 값, lossCell=LOSS일자 원본 셀 값.
+ *  true=오늘 날짜로 찍어야 함(잔여일이 진짜 음수 & LOSS일자 아직 빈칸). */
+function _memberLossDateShouldStamp_(remCell, lossCell) {
+  return !_memberIsValid_(remCell, '') && !String(lossCell == null ? '' : lossCell).trim();
+}
+
+/**
+ * member_loss_date_auto_stamp_(opts)
+ * 유효회원 시트를 순회해 잔여일이 음수인데 LOSS일자가 빈칸인 행에 오늘 날짜(KST)를 1회 찍는다.
+ * dry:true면 쓰기 없이 대상만 반환(검증용). 멱등 — 찍을 게 없으면 쓰기 0회.
+ * 회원명 없는 행(시트 하단 집계 블록 등, 배964 교훈)은 건드리지 않는다.
+ */
+function member_loss_date_auto_stamp_(opts) {
+  var dry = !!(opts && opts.dry);
+  var tz = 'Asia/Seoul';
+  var today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  var out = { checked: 0, stamped: 0, targets: [], dry: dry };
+  var sh;
+  try {
+    sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+  } catch (e) {
+    out.error = e.message;
+    return out;
+  }
+  if (!sh || sh.getLastRow() < 2) return out;
+
+  var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+  function _idx(want) {
+    var w = String(want).replace(/\s/g, '');
+    for (var i = 0; i < headers.length; i++) { if (headers[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+    return -1;
+  }
+  var nmI   = _idx('회원명');
+  var remI  = _idx('잔여일');
+  var lossI = _idx('LOSS일자');   // ssot/sheet_columns.json member_active 계약에 실헤더 'LOSS\n일자'로 확인됨(2026-08-05)
+  if (remI < 0 || lossI < 0) { out.error = '칸 없음(잔여일=' + remI + ' LOSS일자=' + lossI + ')'; return out; }
+
+  var data = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var writes = [];
+  for (var r = 0; r < data.length; r++) {
+    if (nmI >= 0 && !String(data[r][nmI] || '').trim()) continue;   // 회원명 없는 행(집계 블록 등) 제외
+    if (!_memberLossDateShouldStamp_(data[r][remI], data[r][lossI])) continue;
+    out.checked++;
+    writes.push({ row: r + 2, col: lossI + 1 });
+  }
+  out.stamped = writes.length;
+  out.targets = writes.map(function(w) { return { row: w.row, col: w.col }; });
+  if (!dry) writes.forEach(function(w) { sh.getRange(w.row, w.col).setValue(today); });
+  return out;
+}
+
+/** 자체점검(프레임워크 없음) — _memberLossDateShouldStamp_ 판정 6분기 단독 확인(시트 I/O 없음).
+ *  Apps Script 편집기에서 수동 실행. 실패 시 throw, 통과 시 Logger.log('[OK] ...'). */
+function member_loss_date_auto_stamp_selfcheck_() {
+  function eq(label, actual, expected) {
+    if (actual !== expected) throw new Error('[FAIL] ' + label + ' — got ' + actual + ' want ' + expected);
+  }
+  eq('잔여일 -1, LOSS일자 빈칸 — 대상',              _memberLossDateShouldStamp_('-1', ''), true);
+  eq('잔여일 -5, LOSS일자 빈칸 — 대상',              _memberLossDateShouldStamp_('-5', ''), true);
+  eq('잔여일 -1, LOSS일자 이미 있음 — 제외(멱등)',    _memberLossDateShouldStamp_('-1', '2026-08-01'), false);
+  eq('잔여일 0(만료 당일까지 유효) — 제외',           _memberLossDateShouldStamp_('0', ''), false);
+  eq('잔여일 5(유효) — 제외',                        _memberLossDateShouldStamp_('5', ''), false);
+  eq('잔여일 미기재(빈칸, 유효 취급) — 제외',          _memberLossDateShouldStamp_('', ''), false);
+  Logger.log('[OK] member_loss_date_auto_stamp_selfcheck_ 6건 통과');
+  return true;
+}
+
 /**
  * member_match_autostamp_()
  * 유효회원 시트(MEMBER_SPREADSHEET_ID/유효회원 탭)에서 (정규화 전화 → 등록일) 맵을 구성하고,
@@ -10619,6 +10696,13 @@ function memberMatchAutostamp() {
   } catch (e) {
     Logger.log('member_wait_auto_release_ 실패: ' + e.message);
   }
+  // ★LOSS일자 자동기록(2026-08-05 시토·배302) — 대기→멤버십 자동전환과 같은 자리에 얹는다(약속 L21, 새 트리거 금지).
+  try {
+    var ld = member_loss_date_auto_stamp_();
+    Logger.log('member_loss_date_auto_stamp_: checked=' + ld.checked + ' stamped=' + ld.stamped + (ld.error ? ' error=' + ld.error : ''));
+  } catch (e) {
+    Logger.log('member_loss_date_auto_stamp_ 실패: ' + e.message);
+  }
   return member_match_autostamp_();
 }
 
@@ -10743,6 +10827,14 @@ function warmDashboardCache() {
       var _wr = member_wait_auto_release_();
       _wrProps.setProperty('WAIT_RELEASE_LAST', _wrToday);
       Logger.log('member_wait_auto_release_(warm): checked=' + _wr.checked + ' released=' + _wr.released);
+    }
+    // ★LOSS일자 자동기록(2026-08-05 시토·배302, GM 지시 2026-08-03) — 위와 같은 근거로 같은 자리에 얹는다:
+    //   02:00 트리거가 라이브에 실제 설치돼 있는지 밖에서 확인할 수 없어, 실측으로 히트가 확인된
+    //   이 5분 워머를 실행 경로로 겸한다. 하루 1회만(별도 날짜 도장) — 시트 전체를 5분마다 읽지 않는다.
+    if (_wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
+      var _ld = member_loss_date_auto_stamp_();
+      _wrProps.setProperty('LOSS_DATE_STAMP_LAST', _wrToday);
+      Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
     }
   } catch (e) { /* 워머가 죽어도 캐시 예열은 이미 끝났다 — 다음 주기 재시도 */ }
 }
