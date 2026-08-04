@@ -176,6 +176,14 @@ tr:nth-child(even) td{background:transparent}
 #lbOv{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(10,16,30,.88);cursor:zoom-out;padding:26px} /* 사진 확대 라이트박스(구 window.open은 크롬이 data: 새창 차단 → 빈 화면) */
 #lbOv.on{display:flex}
 #lbOv img{max-width:94vw;max-height:92vh;border-radius:12px;background:#fff;box-shadow:0 30px 90px rgba(0,0,0,.55);object-fit:contain}
+/* ── 자산성 물품(라벨 관리) — 2026-08-03 매니저 지시 ── */
+.ast-ck{background:#FBF7EE;border:1px solid #E6D9BE;border-radius:12px;padding:11px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.ast-hint{font-size:11.5px;color:#8A6630;font-weight:700;width:100%}
+.ast-hint.off{color:#98A0B3;font-weight:600}
+.ast-badge{display:inline-block;font-size:10px;font-weight:800;color:#8A6630;background:#FBF2E0;border:1px solid #E6D9BE;border-radius:999px;padding:2px 8px;margin-left:5px;white-space:nowrap} /* 품의 목록 자산 표식 */
+.ast-lb{display:inline-block;font-size:10.5px;font-weight:800;color:#0F1E3D;background:#F2EFE6;border:1px solid #D8D2C2;border-radius:6px;padding:2px 7px;margin:1px 3px 1px 0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ast-lb.on{color:#2E6B46;background:#E7F2EA;border-color:#CBE3D2}
+.ast-todo{font-size:11.5px;font-weight:800;color:#B14238}
 #reqTbl.set-compact .ship-sub{font-size:10px} /* 컴팩트 탭(정산·완료)에서 배송비 서브라인 폭 절약 */
 #reqTbl.set-compact .pay-cash{font-size:9.5px;padding:2px 6px}
 /* ── 완료탭 선택 캡처·출력 (2026-07-14 매니저 지시: 체크한 순서대로 나열해 바로 출력) ── */
@@ -203,6 +211,17 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
 #printSheet td img{height:56px;max-width:92px;object-fit:cover;border-radius:4px;margin:1px;border:1px solid #E2DCCB}
 #printSheet tr.tot td{background:#F8F6F0;font-weight:800;color:#0F1E3D}
 #printSheet .ps-foot{margin-top:10px;font-size:9.5px;color:#98A0B3;text-align:center}
+/* 자산 라벨 격자(2026-08-03) — A4 가로 1장에 4열, 잘라서 부착 */
+#printSheet .lbl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5mm}
+#printSheet .lbl{border:1px dashed #B9B2A0;border-radius:3mm;padding:4mm 4.5mm;min-height:22mm;break-inside:avoid;page-break-inside:avoid}
+#printSheet .lbl-br{font-size:7.5px;letter-spacing:.34em;color:#8A6630;font-weight:800;text-transform:uppercase}
+#printSheet .lbl-no{font-size:15px;font-weight:800;color:#0F1E3D;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin:1.5mm 0 .8mm}
+#printSheet .lbl-nm{font-size:10.5px;font-weight:700;color:#0F1E3D;line-height:1.35;word-break:break-word}
+#printSheet .lbl-ft{font-size:8.5px;color:#5E6880;margin-top:.8mm}
+.ast-bar{display:none;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 0 0;padding:11px 15px;background:#FBF7EE;border:1px solid #E6D9BE;border-radius:14px;font-size:12.5px;font-weight:700;color:#8A6630}
+.ast-bar button{font-size:12px;padding:7px 15px;cursor:pointer;border:none;border-radius:99px;color:#fff;font-weight:700;background:linear-gradient(135deg,#C69A54,#8A6630)}
+.ast-bar button:disabled{background:#DDD7C8;cursor:default}
+.ast-bar .ghost{background:#fff;color:var(--ink-soft);border:1px solid var(--line)}
 </style><link rel="stylesheet" href="../../assets/wp-typography.css">
 </head><body>
 
@@ -293,6 +312,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
         <div class="field" style="grid-column:1/-1"><label>관련 링크 <span style="color:var(--ink-faint);font-weight:400">· 공개 링크 권장</span></label><textarea id="reqLink" rows="1" placeholder="공개 상품 링크 권장 (회원 주문상세·장바구니 링크 X)"></textarea></div>
         <div class="field"><label>계정(항목1)</label><select id="reqCat1"><option>운영비</option><option>소모품</option><option>업무추진비</option><option>비품</option><option>홍보비</option><option>장비</option><option>기타</option></select></div>
         <div class="field"><label>항목2</label><select id="reqCat2"><option>소모품</option><option>비품</option><option>장비</option><option>기타</option></select></div>
+        <div class="field" style="grid-column:1/-1"><label>자산 관리</label><div class="ast-ck"><label class="pay-ck"><input type="checkbox" id="reqAsset"><span>🏷 자산성 물품 (라벨 관리 대상)</span></label><span id="reqAssetHint" class="ast-hint off">오래 쓰는 물품(장비·비품·가구 등)이면 체크하세요 — 입고 확인 시 자산 라벨이 발급됩니다.</span></div></div>
         <div class="field" style="grid-column:1/-1"><label>구매목적 / 사용내용</label><input type="text" id="reqPurpose" placeholder="목적"></div>
         <div class="field" style="grid-column:1/-1"><label>사진 첨부 (영수증·견적서·이미지)</label><input type="file" id="reqPhoto" accept="image/*,application/pdf"></div>
       </div>
@@ -344,7 +364,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
   <section class="panel" data-panel="progress">
     <div class="sec-title">📦 내 구매요청 진행 현황</div>
     <div class="card">
-      <div class="desc">제출한 품의가 어디까지 왔는지 단계별로 보여줍니다. <b>조회 전용</b> — 승인·반려는 부서장 결재로 진행됩니다. 물품을 실제로 받았으면 <b>[📦 입고 확인]</b>을 눌러 비품 원장에 반영해 주세요.</div>
+      <div class="desc">제출한 품의가 어디까지 왔는지 단계별로 보여줍니다. <b>조회 전용</b> — 승인·반려는 부서장 결재로 진행됩니다. <b>🏷 자산성 물품만</b> 물건을 받은 뒤 <b>[📦 입고 확인]</b>을 눌러 라벨을 발급받으시면 됩니다(일반 물품은 따로 하실 것 없습니다).</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
         <input type="text" id="progWho" placeholder="요청자 이름으로 필터 (비우면 전체)" style="padding:8px 12px;border:1px solid var(--line);border-radius:99px;font:inherit;min-width:220px">
         <button class="btn" id="progRefresh" style="padding:8px 16px;font-size:12.5px">🔄 새로고침</button>
@@ -352,7 +372,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
       </div>
     </div>
     <div id="progList" style="margin-top:12px"></div>
-    <div class="notice">단계: 요청 → 검토(부서장 승인) → 승인(검토완료) → 발주(구매날짜 기재) → 입고(직원 확인). 반려·캔슬 건은 빨간 상태로 표시됩니다.</div>
+    <div class="notice">일반 물품: 요청 → 검토(부서장 승인) → 승인(검토완료) → 발주(구매날짜 기재) → 완료. · 🏷 자산성 물품: 발주 뒤 <b>입고 확인</b>(라벨 발급) → <b>라벨링</b>(부착 완료)까지. 반려·캔슬 건은 빨간 상태로 표시됩니다.</div>
   </section>
 
   <section class="panel" data-panel="supply">
@@ -366,6 +386,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
         <span id="supMsg" style="font-size:12px;color:var(--ink-soft)"></span>
       </div>
     </div>
+    <div id="astBar" class="ast-bar"><span>🏷 라벨을 출력할 자산을 체크하세요 — <b>체크한 순서대로</b> 인쇄됩니다</span><span id="astHint" style="color:var(--ink-soft);font-weight:600">선택 0장</span><button id="astPrintBtn" disabled>🖨 라벨 출력</button><button id="astDoneBtn" disabled>🏷 선택 부착완료</button><button id="astClearBtn" class="ghost">선택 해제</button></div>
     <div class="tbl-wrap" style="margin-top:12px"><table id="supTbl"></table></div>
     <div class="notice">불용 처리한 품목은 삭제되지 않고 「불용」 필터에 보관됩니다. 발주 필요 품목은 [🛒 구매요청으로]를 누르면 ①탭에 물품명이 자동 입력됩니다.</div>
   </section>
@@ -381,6 +402,12 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
         <label>보관 위치 (선택)</label><input type="text" id="inbNewLoc" placeholder="예: B1-4. 운영사무실 옆창고">
       </div>
       <label>입고 수량</label><input type="number" id="inbQty" value="1" min="1">
+      <div id="inbAstWrap" style="display:none;margin-top:14px;padding:12px 14px;background:#FBF7EE;border:1px solid #E6D9BE;border-radius:12px">
+        <div style="font-size:12.5px;font-weight:800;color:#8A6630">🏷 자산성 물품 — 라벨 발급</div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:3px">입고 수량만큼 라벨번호가 발급됩니다(<b id="inbAstN">1</b>장). 발급 후 <b>비품관리 ▸ 🏷 자산대장</b>에서 출력해 부착하세요.</div>
+        <label>보관 위치</label><input type="text" id="inbAstLoc" placeholder="예: B1-4. 운영사무실 옆창고">
+        <label>관리 담당자</label><input type="text" id="inbAstOwner" placeholder="이름">
+      </div>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn" id="inbOk" style="flex:1">입고 반영</button>
         <button class="sup-act" id="inbCancel" style="padding:9px 16px">취소</button>
@@ -1019,8 +1046,34 @@ function renderReq(){
     _pc.onchange=function(){if(_pc.checked)_ph.checked=false;else if(!_ph.checked)_pc.checked=true;};
     _ph.onchange=function(){if(_ph.checked)_pc.checked=false;else if(!_pc.checked)_pc.checked=true;};
   }
+  bindAssetSuggest(); // 자산성 물품 자동 추천(금액·항목2 기준)
   loadReviewLowest(); // 최저가검토 시트(읽기전용) — 로드되면 배지 갱신, 실패 무음
   loadReq();
+}
+/* 자산성 물품 자동 추천 — 금액 100만원 이상(예산안의 경상<100만 / 자본대형≥100만 경계와 동일)
+   또는 항목2가 비품·장비면 체크를 켜고 사유를 안내한다. 요청자가 직접 건드린 뒤로는
+   자동 개입을 멈춘다(_astTouched) — 판단은 사람이 이기게. */
+var ASSET_AMT=1000000,ASSET_CATS={"비품":1,"장비":1},_astTouched=false;
+function assetAutoReason(){
+  var amt=Number(String(rval("reqAmt")||"").replace(/[^0-9.]/g,""))||0;
+  if(amt>=ASSET_AMT)return "금액 "+won(ASSET_AMT)+" 이상 → 자동 체크됨 (자산이 아니면 해제하세요)";
+  if(ASSET_CATS[rval("reqCat2")])return "항목2가 「"+rval("reqCat2")+"」 → 자동 체크됨 (자산이 아니면 해제하세요)";
+  return "";
+}
+function refreshAssetHint(){
+  var ck=document.getElementById("reqAsset"),ht=document.getElementById("reqAssetHint");
+  if(!ck||!ht)return;
+  var why=assetAutoReason();
+  if(!_astTouched&&why&&!ck.checked)ck.checked=true; // 자동 추천(수동 조작 전까지만)
+  if(ck.checked)ht.textContent=why?("✔ "+why):"✔ 입고 확인 시 수량만큼 자산 라벨이 발급됩니다.";
+  else ht.textContent="오래 쓰는 물품(장비·비품·가구 등)이면 체크하세요 — 입고 확인 시 자산 라벨이 발급됩니다.";
+  ht.className="ast-hint"+(ck.checked?"":" off");
+}
+function bindAssetSuggest(){
+  var ck=document.getElementById("reqAsset");if(!ck)return;
+  ck.onchange=function(){_astTouched=true;refreshAssetHint();};
+  ["reqAmt","reqCat2"].forEach(function(id){var el=document.getElementById(id);if(el){el.oninput=refreshAssetHint;el.onchange=refreshAssetHint;}});
+  refreshAssetHint();
 }
 async function submitReq(){
   var msg=document.getElementById("reqMsg");
@@ -1032,7 +1085,7 @@ async function submitReq(){
   if(shipN>0&&!(amtN>0)){msg.textContent="⚠️ 총액(배송비 포함)을 입력해주세요 — 배송비만 입력할 수 없습니다";return;} // 총액 누락+배송비만 제출 → 집계 누락 행 방지(검증 발견 수정)
   if(shipN>0&&amtN>0&&shipN>=amtN&&!confirm("배송비("+won(shipN)+")가 총액("+won(amtN)+") 이상입니다.\n총액은 배송비를 포함한 전체 금액입니다. 그대로 제출할까요?")){msg.textContent="제출 취소됨 — 총액·배송비 확인 후 다시 시도";return;}
   msg.textContent="제출 중…";
-  var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),배송비:(shipN>0?String(shipN):""),결제:(document.getElementById("payCash")&&document.getElementById("payCash").checked)?"현금":"카드",링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover"),항목1:rval("reqCat1"),항목2:rval("reqCat2"),구매날짜:rval("reqPDate")};
+  var base={요청자:rval("reqWho"),소속:rval("reqDept"),물품:rval("reqItem"),가격:rval("reqAmt"),배송비:(shipN>0?String(shipN):""),결제:(document.getElementById("payCash")&&document.getElementById("payCash").checked)?"현금":"카드",링크:rval("reqLink"),목적:rval("reqPurpose"),승인자:rval("reqApprover"),항목1:rval("reqCat1"),항목2:rval("reqCat2"),구매날짜:rval("reqPDate"),자산:(document.getElementById("reqAsset")&&document.getElementById("reqAsset").checked)?"Y":""};
   var fp=document.getElementById("reqPhoto");var f=fp&&fp.files&&fp.files[0];
   if(f){attachPhoto(base,f,function(){doSubmit(base,msg,fp);});}
   else doSubmit(base,msg,fp);
@@ -1069,9 +1122,11 @@ async function doSubmit(base,msg,fp){
       if(diff!==null&&diff>0)m+=" — 물품가 기준 "+diff.toLocaleString("ko-KR")+"원 저렴한 판매처 있음(참고)";
       else if(diff!==null&&diff<0)m+=" — 품의가가 더 저렴(적정)";
     } else if(ins&&ins.ok&&!ins.found){ m+=" · 🤖 AI 시세: 검색결과 없음 — 모델명 보완 권장"; }
+    if(base.자산==="Y")m+=" · 🏷 자산성 물품 — 입고 확인 시 라벨이 발급됩니다";
     msg.textContent=m;
     ["reqWho","reqItem","reqAmt","reqShip","reqLink","reqPurpose","reqPDate"].forEach(function(id){document.getElementById(id).value="";});if(fp)fp.value="";
     var _pc2=document.getElementById("payCard"),_ph2=document.getElementById("payCash");if(_pc2)_pc2.checked=true;if(_ph2)_ph2.checked=false; // 결제수단 기본(카드)으로 복귀
+    var _ast=document.getElementById("reqAsset");if(_ast)_ast.checked=false;_astTouched=false;refreshAssetHint(); // 자산 체크 초기화(다음 품의에 자동추천 재개)
     loadReq();loadReviewLowest(); // 목록 + 검토시트 재로드 → 💡배지 즉시 반영(구: 새로고침 전까지 미표시)
   }
   else msg.textContent="⚠️ 실패: "+((d&&d.error)||"서버 오류");
@@ -1173,7 +1228,7 @@ function renderReqTbl(){
     var amtCell=won(r.가격)+(shipN>0?'<div class="ship-sub">└ 배송비 '+won(shipN)+'</div>':'')+(isCash?'<div class="pay-cash">💵 현금</div>':'');
     var ci=capTab?capSel.indexOf(String(r.row)):-1; // 체크 순서(0-base) — 배지엔 +1 표시
     var capCell=capTab?('<td style="text-align:center"><label class="cap-ck"><input type="checkbox" class="capCk" data-row="'+r.row+'"'+(ci>=0?' checked':'')+'>'+(ci>=0?('<b class="cap-ord">'+(ci+1)+'</b>'):'')+'</label></td>'):'';
-    h+='<tr'+(isCash?' class="row-cash"':'')+'>'+capCell+'<td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+escapeHtml(r.날짜)+'</td><td style="text-align:left;font-size:12px;color:var(--ink-soft)">'+escapeHtml(r.구매날짜||"")+'</td><td style="text-align:left">'+escapeHtml(r.소속||"")+'</td><td style="text-align:left">'+escapeHtml(r.요청자||"")+'</td><td style="text-align:left">'+escapeHtml(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+escapeHtml(r.물품||"")+'</span>'+(r.목적?'<div class="req-purpose">'+escapeHtml(r.목적)+'</div>':'')+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+amtCell+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+    h+='<tr'+(isCash?' class="row-cash"':'')+'>'+capCell+'<td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+escapeHtml(r.날짜)+'</td><td style="text-align:left;font-size:12px;color:var(--ink-soft)">'+escapeHtml(r.구매날짜||"")+'</td><td style="text-align:left">'+escapeHtml(r.소속||"")+'</td><td style="text-align:left">'+escapeHtml(r.요청자||"")+'</td><td style="text-align:left">'+escapeHtml(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+escapeHtml(r.물품||"")+'</span>'+(r.목적?'<div class="req-purpose">'+escapeHtml(r.목적)+'</div>':'')+astBadge(r)+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+amtCell+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
   if(!rows.length)h+='<tr><td colspan="'+(capTab?12:11)+'" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
@@ -1195,6 +1250,13 @@ function addPhotoTo(row,btn){
   inp.onchange=function(){var f=inp.files[0];if(!f)return;if(btn)btn.textContent="업로드…";
     var base={row:row};attachPhoto(base,f,async function(){var d=await procCall("photo",base);if(!(d&&d.ok)&&btn)btn.textContent="실패";loadReq();});};
   inp.click();
+}
+function astBadge(r){ // 자산성 물품 표식 — 라벨 발급 상태까지 한눈에(관리자·직원용 공용)
+  if(String(r&&r.자산||"")!=="Y")return "";
+  var lbs=assetOf(r);
+  if(!lbs.length)return '<span class="ast-badge" title="자산성 물품 — 입고 확인 시 라벨이 발급됩니다">🏷 자산</span>';
+  var todo=lbs.filter(function(a){return !a.부착;}).length;
+  return '<span class="ast-badge" title="'+escapeHtml(lbs.map(function(a){return a.라벨;}).join(", "))+'">🏷 '+lbs.length+'장'+(todo?(" · 부착대기 "+todo):" · 부착완료")+'</span>';
 }
 function btnCss(c){return "font-size:11px;padding:4px 11px;cursor:pointer;border:none;border-radius:6px;color:#fff;font-weight:600;background:"+c;}
 async function doAct(row,next,needPw,btn){
@@ -1219,6 +1281,9 @@ var SUPPLY_API="https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8
 var SUPPLY_KEY="SUPPORT_SUPPLY";
 var SUPPLY_ROWS=[],_supLoaded=false,_supSaveTimer=null,_supSeq=0,supFilter="전체";
 var PROG_DONE=[],_progDoneLoaded=false;
+/* 자산대장(2026-08-03) — 라벨 1장 = 1행. 저장소는 지출 시트 「자산대장」 탭(procurement 백엔드).
+   비품 원장(ScriptProperties 보드)에 넣지 않은 이유 = 9KB 한도라 해마다 쌓이는 자산을 못 담는다. */
+var ASSET_ROWS=[],_astLoaded=false,astSel=[];
 
 function supNewId(){return 'sup_'+Date.now().toString(36)+'_'+(_supSeq++).toString(36);}
 function supNormRow(r){ // 지원부 applySupplyStored와 동일 정규화(스키마 계약 유지)
@@ -1252,7 +1317,7 @@ async function loadSupply(force){
   var msg=document.getElementById("supMsg");
   if(_supLoaded&&!force){renderSupply();return;}
   if(msg)msg.textContent="원장 불러오는 중…";
-  var b=await supFetch();
+  var b=(await Promise.all([supFetch(),loadAssets(force)]))[0]; // 비품 보드 + 자산대장 병렬
   if(b){supApply(b);_supLoaded=true;if(msg)msg.textContent="";}
   else if(msg)msg.textContent="⚠️ 원장 연결 실패 — 새로고침 해주세요";
   renderSupply();
@@ -1285,9 +1350,12 @@ function renderSupply(){
   var fc=document.getElementById("supFilter");if(!fc)return;
   var liveRows=SUPPLY_ROWS.filter(function(r){return !supIsDead(r);});
   var lowN=SUPPLY_ROWS.filter(supIsLow).length,deadN=SUPPLY_ROWS.length-liveRows.length;
-  var FL=[{k:"전체",l:"전체 "+liveRows.length},{k:"발주필요",l:"🔴 발주 필요 "+lowN},{k:"불용",l:"불용 "+deadN}];
+  var astPend=astLive().filter(function(a){return !a.부착;}).length;
+  var FL=[{k:"전체",l:"전체 "+liveRows.length},{k:"발주필요",l:"🔴 발주 필요 "+lowN},{k:"자산",l:"🏷 자산대장 "+astLive().length+(astPend?(" · 부착대기 "+astPend):"")},{k:"불용",l:"불용 "+deadN}];
   fc.innerHTML=FL.map(function(f){return '<button class="team-chip'+(f.k===supFilter?' on':'')+'" data-f="'+f.k+'">'+f.l+'</button>';}).join('');
   fc.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){supFilter=b.dataset.f;renderSupply();};});
+  if(supFilter==="자산"){renderAssets();return;} // 자산대장은 별도 원장(시트 탭) — 표만 갈아끼운다
+  var bar=document.getElementById("astBar");if(bar)bar.style.display="none";
   var q=(document.getElementById("supSearch").value||"").trim().toLowerCase();
   var rows=SUPPLY_ROWS.filter(function(r){
     if(supFilter==="불용"){if(!supIsDead(r))return false;}
@@ -1359,6 +1427,7 @@ async function loadProgress(force){
     jobs.push(procCall("list",{mode:"done",from:fr,to:to,noimg:1}).then(function(d){PROG_DONE=(d&&d.ok&&d.data)||[];_progDoneLoaded=true;}).catch(function(){PROG_DONE=[];}));
   }
   if(!_supLoaded)jobs.push(supFetch().then(function(b){if(b){supApply(b);_supLoaded=true;}})); // 입고 판정(원장 비고 토큰)용
+  jobs.push(loadAssets(force)); // 라벨 발급·부착 현황(자산 트랙 표시용)
   await Promise.all(jobs);
   if(msg)msg.textContent="";
   renderProgress();
@@ -1384,22 +1453,34 @@ function renderProgress(){
   items.forEach(function(r){
     var st=r.상태||"품의",rejected=(st==="반려"||st==="미승인"||st==="캔슬");
     var hasPD=pdNum(r.구매날짜)>0,rec=inbRec(r);
+    var isAst=String(r.자산||"")==="Y",lbs=isAst?assetOf(r):[];
     var steps=[
       {l:"요청",on:true},
       {l:"검토",on:st!=="품의"&&!rejected},
       {l:"승인",on:(st==="정산"||st==="완료")},
-      {l:"발주",on:hasPD&&!rejected},
-      {l:"입고",on:!!rec}
+      {l:"발주",on:hasPD&&!rejected}
     ];
+    // 입고 확인은 자산성 물품 전용(2026-08-04 매니저 지시). 자산은 라벨 발급이 걸려 있어 사람이 확인해야 하지만,
+    // 일반 물품은 요청자가 따로 할 일이 없다 — 부서장 정산·최종확인으로 마무리된다.
+    if(isAst)steps.push({l:"입고",on:!!rec},{l:"라벨링",on:lbs.length>0&&lbs.every(function(a){return a.부착;})});
+    else steps.push({l:"완료",on:st==="완료"});
     var cur=-1;for(var i=steps.length-1;i>=0;i--){if(steps[i].on){cur=i;break;}}
     var track=steps.map(function(s,i){
       var cls=s.on?(i===cur?"prg-stp now":"prg-stp on"):"prg-stp";
       return (i?'<span class="prg-bar'+(s.on?' on':'')+'"></span>':'')+'<span class="'+cls+'"><span class="pdot">'+(s.on?"✓":(i+1))+'</span>'+s.l+'</span>';
     }).join("");
     var inbCell="";
-    if(rec)inbCell='<span class="inb-done">✔ 입고완료 '+escapeHtml(rec.date||"")+(rec.item?(' → 원장 「'+escapeHtml(rec.item)+'」'):'')+'</span>';
-    else if(!rejected&&hasPD)inbCell='<button class="inb-btn" data-row="'+r.row+'">📦 입고 확인</button>';
-    else if(!rejected)inbCell='<span style="font-size:11.5px;color:var(--ink-faint)">발주(구매날짜 기재) 후 입고 확인 가능</span>';
+    if(!isAst){ // 일반 물품 = 입고 확인 불필요(요청자가 할 일 없음)
+      if(!rejected)inbCell='<span style="font-size:11.5px;color:var(--ink-faint)">'+(st==="완료"?"✔ 마무리되었습니다":"부서장 정산·최종확인으로 마무리됩니다 — 따로 확인하실 것 없습니다")+'</span>';
+    }
+    else if(rec)inbCell='<span class="inb-done">✔ 입고완료 '+escapeHtml(rec.date||"")+(rec.item?(' → 원장 「'+escapeHtml(rec.item)+'」'):'')+'</span>';
+    else if(!rejected&&hasPD)inbCell='<button class="inb-btn" data-row="'+r.row+'">📦 입고 확인 · 라벨 발급</button>';
+    else if(!rejected)inbCell='<span style="font-size:11.5px;color:var(--ink-faint)">발주(구매날짜 기재) 후 입고 확인 가능 — 자산성 물품이라 라벨이 함께 발급됩니다</span>';
+    if(isAst&&lbs.length){ // 발급된 라벨 + 부착 대기 안내
+      var todo=lbs.filter(function(a){return !a.부착;}).length;
+      inbCell+='<div style="margin-top:6px">'+lbs.map(function(a){return '<span class="ast-lb'+(a.부착?' on':'')+'" title="'+(a.부착?('부착완료 '+escapeHtml(a.부착일||"")):'부착 대기')+'">'+(a.부착?'✔ ':'')+escapeHtml(a.라벨)+'</span>';}).join('')
+        +(todo?'<span class="ast-todo" style="margin-left:4px">🏷 부착 대기 '+todo+'장 — 비품관리 ▸ 🏷 자산대장에서 출력·부착</span>':'')+'</div>';
+    } else if(isAst&&rec) inbCell+='<div class="ast-todo" style="margin-top:6px">🏷 라벨 미발급 — 비품관리 ▸ 🏷 자산대장을 확인해주세요</div>';
     var stChip=rejected?'<span class="chip no">'+escapeHtml(st)+'</span>':'<span class="chip '+({"품의":"wait","검토":"rev","정산":"set","완료":"ok"}[st]||"wait")+'">'+escapeHtml(st)+'</span>';
     h+='<div class="prg-card"><div class="prg-top">'
       +'<span class="prg-no">'+(r.번호?("#"+r.번호):"")+'</span>'
@@ -1429,7 +1510,16 @@ function openInb(row){
   sel.onchange=function(){document.getElementById("inbNewWrap").style.display=(sel.value==="__new__")?"block":"none";};
   document.getElementById("inbNewWrap").style.display=(sel.value==="__new__")?"block":"none";
   document.getElementById("inbNewName").value=String(r.물품||"").split("\n")[0].slice(0,40);
-  document.getElementById("inbQty").value=1;
+  var qty=document.getElementById("inbQty");qty.value=1;
+  // 자산성 물품이면 라벨 발급 안내·입력칸 노출(수량 = 발급 장수)
+  var isAst=String(r.자산||"")==="Y",aw=document.getElementById("inbAstWrap");
+  aw.style.display=isAst?"block":"none";
+  if(isAst){
+    document.getElementById("inbAstN").textContent="1";
+    document.getElementById("inbAstOwner").value=String(r.요청자||"");
+    document.getElementById("inbAstLoc").value="";
+    qty.oninput=function(){var n=parseInt(qty.value,10);document.getElementById("inbAstN").textContent=(isNaN(n)||n<1)?"1":n;};
+  } else qty.oninput=null;
   document.getElementById("inbOv").style.display="flex";
 }
 async function confirmInb(){
@@ -1454,10 +1544,157 @@ async function confirmInb(){
   target.note=(String(target.note||"")+" "+token).trim();
   target.updatedAt=new Date().toISOString();
   await _supPush();
+  // 자산성 물품 → 수량만큼 라벨 발급(백엔드 채번·품의키 멱등). 실패해도 입고 자체는 이미 반영됨을 알린다.
+  var astMsg="";
+  if(String(r.자산||"")==="Y"){
+    btn.textContent="라벨 발급 중…";
+    var unit=(function(){var g=Number(String(r.가격||"").replace(/[^0-9.]/g,""))||0;return (g>0&&n>0)?Math.round(g/n):"";})(); // 단가 = 총액 ÷ 수량
+    try{
+      var ar=await procCall("asset_issue",{수량:n,품의번호:inbKey(r),품명:target.name,분류:target.cat||"비품",
+        부서:String(r.소속||""),위치:(document.getElementById("inbAstLoc").value||target.loc||"").trim(),
+        관리자:(document.getElementById("inbAstOwner").value||"").trim(),단가:unit,비고:""});
+      if(ar&&ar.ok&&ar.labels&&ar.labels.length){
+        astMsg="\n\n🏷 자산 라벨 "+ar.labels.length+"장 발급:\n"+ar.labels.join(", ")+"\n\n비품관리 ▸ 🏷 자산대장에서 출력해 부착해주세요.";
+        await loadAssets(true);
+      } else astMsg="\n\n⚠️ 입고는 반영됐으나 라벨 발급에 실패했습니다 — 자산대장에서 다시 시도해주세요.";
+    }catch(e){astMsg="\n\n⚠️ 입고는 반영됐으나 라벨 발급에 실패했습니다 — 자산대장에서 다시 시도해주세요.";}
+  }
   btn.disabled=false;btn.textContent="입고 반영";
   closeInb();renderProgress();renderSupply();
+  if(astMsg)alert("📦 입고 반영 완료"+astMsg);
 }
 function closeInb(){_inbRow=null;document.getElementById("inbOv").style.display="none";}
+
+/* ═══════════ 🏷 자산대장 (2026-08-03 매니저 지시) ═══════════
+   흐름: 품의에 [자산성 물품] 체크 → 승인·발주 → 입고 확인 시 수량만큼 라벨 발급
+         → 비품관리 ▸ 🏷 자산대장에서 라벨 출력·부착 → [부착완료] 체크로 마감.
+   라벨번호 = WP-{취득연도}-{4자리 일련}, 채번은 백엔드(LockService)에서만.       */
+async function loadAssets(force){
+  if(_astLoaded&&!force)return ASSET_ROWS;
+  try{var d=await procCall("asset_list",{});ASSET_ROWS=(d&&d.ok&&d.data)||[];_astLoaded=true;}
+  catch(e){ASSET_ROWS=[];}
+  return ASSET_ROWS;
+}
+function assetOf(r){ // 해당 품의로 발급된 라벨들(입고 멱등키와 동일한 키로 매칭)
+  if(!r||String(r.자산||"")!=="Y"||!ASSET_ROWS.length)return [];
+  var k=inbKey(r);
+  return ASSET_ROWS.filter(function(a){return a.품의번호===k;});
+}
+function astLive(){return ASSET_ROWS.filter(function(a){return a.상태!=="불용";});}
+
+function renderAssets(){ // 비품관리 탭의 「🏷 자산대장」 뷰 — 표는 #supTbl 재사용
+  var rows=astLive();
+  var q=(document.getElementById("supSearch").value||"").trim().toLowerCase();
+  if(q)rows=rows.filter(function(a){return (a.품명||"").toLowerCase().indexOf(q)>=0||(a.라벨||"").toLowerCase().indexOf(q)>=0;});
+  rows=rows.slice().sort(function(a,b){return String(b.라벨).localeCompare(String(a.라벨));}); // 최신 라벨 먼저
+  var bar=document.getElementById("astBar");
+  if(bar)bar.style.display="flex";
+  var h='<thead><tr><th style="text-align:center">출력</th><th style="text-align:left">라벨번호</th><th style="text-align:left">품명</th><th style="text-align:left">관리부서</th><th style="text-align:left">보관위치</th><th style="text-align:left">관리자</th><th>취득일</th><th style="text-align:center">품의</th><th style="text-align:center">라벨 부착</th></tr></thead><tbody>';
+  rows.forEach(function(a){
+    var i=astSel.indexOf(a.라벨);
+    h+='<tr'+(a.부착?'':' class="sup-low"')+'>'
+      +'<td style="text-align:center"><label class="cap-ck"><input type="checkbox" class="astCk" data-lb="'+escapeHtml(a.라벨)+'"'+(i>=0?' checked':'')+'>'+(i>=0?('<b class="cap-ord">'+(i+1)+'</b>'):'')+'</label></td>'
+      +'<td style="text-align:left"><span class="ast-lb'+(a.부착?' on':'')+'">'+escapeHtml(a.라벨)+'</span></td>'
+      +'<td style="text-align:left">'+escapeHtml(a.품명||"")+'</td>'
+      +'<td style="text-align:left">'+escapeHtml(a.부서||"")+'</td>'
+      +'<td style="text-align:left;min-width:130px"><input class="supIn astIn" data-lb="'+escapeHtml(a.라벨)+'" data-f="위치" type="text" value="'+escapeHtml(a.위치||"")+'"></td>'
+      +'<td style="text-align:left;min-width:90px"><input class="supIn astIn" data-lb="'+escapeHtml(a.라벨)+'" data-f="관리자" type="text" value="'+escapeHtml(a.관리자||"")+'"></td>'
+      +'<td style="text-align:center;font-size:12px;color:var(--ink-soft)">'+escapeHtml(a.취득일||"")+'</td>'
+      +'<td style="text-align:center;font-size:12px;color:var(--ink-soft)">'+escapeHtml(a.품의번호||"")+'</td>'
+      +'<td style="text-align:center;white-space:nowrap">'+(a.부착
+          ?('<span class="inb-done">✔ 부착 '+escapeHtml(a.부착일||"")+'</span> <button class="sup-act astUndo" data-lb="'+escapeHtml(a.라벨)+'">해제</button>')
+          :('<span class="ast-todo">부착 대기</span> <button class="sup-act buy astDone" data-lb="'+escapeHtml(a.라벨)+'">🏷 부착완료</button> <button class="sup-act astDel" data-lb="'+escapeHtml(a.라벨)+'" title="수량을 잘못 입력해 발급된 라벨을 회수합니다(미부착만)">🗑</button>'))
+      +'</td></tr>';
+  });
+  if(!rows.length)h+='<tr><td colspan="9" style="color:var(--ink-faint)">'+(q?"검색 결과가 없습니다.":"등록된 자산이 없습니다 — 품의에 [🏷 자산성 물품]을 체크하고 입고 확인하면 라벨이 발급됩니다.")+'</td></tr>';
+  h+='</tbody>';
+  document.getElementById("supTbl").innerHTML=h;
+  document.querySelectorAll("#supTbl .astCk").forEach(function(b){b.onchange=function(){
+    var i=astSel.indexOf(b.dataset.lb);if(i>=0)astSel.splice(i,1);else astSel.push(b.dataset.lb);renderAssets();};});
+  document.querySelectorAll("#supTbl .astDone").forEach(function(b){b.onclick=function(){astMark(b.dataset.lb,false,b);};});
+  document.querySelectorAll("#supTbl .astUndo").forEach(function(b){b.onclick=function(){astMark(b.dataset.lb,true,b);};});
+  document.querySelectorAll("#supTbl .astIn").forEach(function(inp){inp.onchange=function(){astEdit(inp);};});
+  document.querySelectorAll("#supTbl .astDel").forEach(function(b){b.onclick=function(){astDelete(b.dataset.lb,b);};});
+  updateAstBar();
+}
+function updateAstBar(){
+  var hint=document.getElementById("astHint"),btn=document.getElementById("astPrintBtn"),done=document.getElementById("astDoneBtn");
+  var pend=astLive().filter(function(a){return !a.부착;}).length;
+  if(hint)hint.textContent="선택 "+astSel.length+"장 · 부착 대기 "+pend+"장";
+  if(btn)btn.disabled=!astSel.length;
+  if(done)done.disabled=!astSel.length;
+}
+async function astMark(lb,undo,btn){
+  if(btn){btn.disabled=true;btn.textContent="…";}
+  try{
+    var d=await procCall("asset_label",{라벨:lb,해제:undo?"Y":""});
+    if(!(d&&d.ok))throw 0;
+    var a=ASSET_ROWS.filter(function(x){return x.라벨===lb;})[0]; // 낙관적 반영(재조회 없이 즉시)
+    if(a){a.부착=!undo;a.부착일=undo?"":todayStr();}
+  }catch(e){alert("처리 실패 — 잠시 후 다시 시도해주세요");}
+  renderAssets();
+}
+async function astMarkSel(){ // 선택분 일괄 부착완료
+  var btn=document.getElementById("astDoneBtn");if(!astSel.length)return;
+  if(!confirm(astSel.length+"장을 부착완료로 표시할까요?"))return;
+  btn.disabled=true;btn.textContent="처리 중…";
+  try{
+    var d=await procCall("asset_label",{라벨:astSel.join(",")});
+    if(!(d&&d.ok))throw 0;
+    var set={};astSel.forEach(function(x){set[x]=1;});
+    ASSET_ROWS.forEach(function(a){if(set[a.라벨]&&!a.부착){a.부착=true;a.부착일=todayStr();}});
+    astSel=[];
+  }catch(e){alert("처리 실패 — 잠시 후 다시 시도해주세요");}
+  btn.textContent="🏷 선택 부착완료";
+  renderAssets();
+}
+async function astDelete(lb,btn){ // 오발급 라벨 회수 — 미부착만(부착분은 실물이 붙어 있어 불용 경로)
+  if(!confirm("라벨 "+lb+" 을(를) 대장에서 회수할까요?\n수량을 잘못 입력해 발급된 경우에만 사용하세요.\n(실물에 이미 붙였다면 회수하지 말고 그대로 두세요)"))return;
+  if(btn){btn.disabled=true;btn.textContent="…";}
+  try{
+    var d=await procCall("asset_del",{라벨:lb});
+    if(!(d&&d.ok))throw 0;
+    if(d.blocked&&d.blocked.length){alert("부착완료된 라벨은 회수할 수 없습니다: "+d.blocked.join(", "));}
+    var gone={};(d.deleted||[]).forEach(function(x){gone[x]=1;});
+    ASSET_ROWS=ASSET_ROWS.filter(function(a){return !gone[a.라벨];});
+    var i=astSel.indexOf(lb);if(i>=0)astSel.splice(i,1);
+  }catch(e){alert("회수 실패 — 잠시 후 다시 시도해주세요");}
+  renderAssets();
+}
+async function astEdit(inp){ // 위치·관리자 인라인 수정
+  var a=ASSET_ROWS.filter(function(x){return x.라벨===inp.dataset.lb;})[0];if(!a)return;
+  var f=inp.dataset.f,v=String(inp.value);
+  if(a[f]===v)return;
+  a[f]=v;
+  var body={라벨:a.라벨};body[f]=v;
+  var msg=document.getElementById("supMsg");if(msg)msg.textContent="저장 중…";
+  try{var d=await procCall("asset_update",body);if(!(d&&d.ok))throw 0;if(msg){msg.textContent="✅ 저장 완료";setTimeout(function(){if(msg.textContent.indexOf("저장 완료")>=0)msg.textContent="";},2000);}}
+  catch(e){if(msg)msg.textContent="⚠️ 저장 실패 — 다시 시도해주세요";}
+}
+/* 라벨 출력 — 완료탭 선택 출력과 같은 구조(#printSheet + body.printing) 재사용.
+   A4 가로 1장에 라벨 격자 배치. 선택한 순서 그대로 인쇄된다. */
+function astPrint(){
+  if(!astSel.length)return;
+  var byLb={};ASSET_ROWS.forEach(function(a){byLb[a.라벨]=a;});
+  var picks=astSel.map(function(lb){return byLb[lb];}).filter(Boolean);
+  if(!picks.length)return;
+  var cells=picks.map(function(a){
+    return '<div class="lbl"><div class="lbl-br">WELLPERION</div>'
+      +'<div class="lbl-no">'+escapeHtml(a.라벨)+'</div>'
+      +'<div class="lbl-nm">'+escapeHtml(a.품명||"")+'</div>'
+      +'<div class="lbl-ft">'+escapeHtml(a.취득일||"")+(a.부서?(' · '+escapeHtml(a.부서)):'')+'</div>'
+      +(a.위치?'<div class="lbl-ft">'+escapeHtml(a.위치)+'</div>':'')+'</div>';
+  }).join("");
+  document.getElementById("printSheet").innerHTML=
+    '<div class="ps-brand">Wellperion</div><h1>자산 라벨</h1>'
+    +'<div class="ps-meta">출력일 '+todayStr()+' · '+picks.length+'장 · 잘라서 각 자산에 부착하세요</div>'
+    +'<div class="lbl-grid">'+cells+'</div>'
+    +'<div class="ps-foot">웰페리온 자산대장 · 라벨 부착 후 [🏷 부착완료]를 눌러주세요</div>';
+  document.body.classList.add("printing"); // 화면=라벨 시트만 → 인쇄 후 원복(afterprint + 보조 타이머)
+  setTimeout(function(){
+    try{window.print();}finally{setTimeout(function(){document.body.classList.remove("printing");},400);}
+  },80);
+}
 (function(){ // 확장 탭 컨트롤 바인딩(요소는 항상 존재 — 직원용에서만 노출됨)
   var el;
   if(el=document.getElementById("progRefresh"))el.onclick=function(){loadProgress(true);};
@@ -1469,6 +1706,9 @@ function closeInb(){_inbRow=null;document.getElementById("inbOv").style.display=
     supFilter="전체";renderSupply();
     var first=document.querySelector('#supTbl .supIn[data-f="name"][value=""]');if(first)first.focus();
   };
+  if(el=document.getElementById("astPrintBtn"))el.onclick=astPrint;
+  if(el=document.getElementById("astDoneBtn"))el.onclick=astMarkSel;
+  if(el=document.getElementById("astClearBtn"))el.onclick=function(){astSel=[];renderAssets();};
   if(el=document.getElementById("inbOk"))el.onclick=confirmInb;
   if(el=document.getElementById("inbCancel"))el.onclick=closeInb;
   if(el=document.getElementById("inbOv"))el.onclick=function(ev){if(ev.target===el)closeInb();};
