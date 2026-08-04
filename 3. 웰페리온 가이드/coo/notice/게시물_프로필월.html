@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내부게시물 — 프로필월 생성</title>
+<!-- ══════════════════════════════════════════════════════════════════
+     프로필월 생성 (단독 페이지 · 공용)
+     내부게시물 생성(notice_template.html)과 파트너팀 체계 두 곳에서
+     iframe 으로 함께 쓴다. 서식을 한 곳에서만 고치면 양쪽이 같이 바뀐다.
+     판형 실측 근거·렌더 로직 = _assets/profile/profilewall.js
+     ══════════════════════════════════════════════════════════════════ -->
+<style>
+  :root{
+    --paper:#fff; --border:#e5e1d8; --text:#1a1a1a; --dim:#8a8a8a;
+    --accent:#B79F8A; --accent-bg:#f5efe8; --accent-border:#e0d3c4; --bg:#fbfaf8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px;background:var(--bg);color:var(--text);
+       font-family:"Pretendard","Malgun Gothic",sans-serif;font-size:14px}
+  h2{margin:0 0 6px;font-size:17px}
+  .intro{font-size:13px;color:var(--dim);line-height:1.6;margin:0 0 16px}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  label{font-size:12px;color:var(--dim);display:block}
+  input[type=text],textarea{width:100%;margin-top:3px;padding:7px 9px;border:1px solid var(--border);
+       border-radius:7px;background:var(--paper);color:var(--text);font-family:inherit;font-size:13px}
+  textarea{resize:vertical}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .col{display:flex;flex-direction:column;gap:10px}
+  .sep{border-top:1px solid var(--border);padding-top:10px}
+  .hint{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5}
+  #pwDownload{margin-top:4px;padding:10px;font-size:13.5px;font-weight:700;background:var(--accent-bg);
+       color:#8a6b4c;border:1px solid var(--accent-border);border-radius:9px;cursor:pointer;font-family:inherit}
+  #pwCanvas{width:100%;max-width:938px;border:1px solid var(--border);border-radius:10px;display:block;background:#fff}
+  .note{font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<h2>🖼 프로필월 생성</h2>
+<p class="intro">이름·경력·자격을 넣고 사진을 올리면 <b>파트너강사 프로필월</b>이 기존 판형(938×760)으로 자동 생성됩니다.
+내려받은 파일은 <b>2,814 × 2,280px</b>(3배)로 출력용입니다. 항목은 <b>한 줄에 하나씩</b> 적어주세요.</p>
+
+<div class="grid">
+  <div class="col">
+    <div class="two">
+      <label>종목<input type="text" id="pwSport" placeholder="PT"></label>
+      <label>직함 배지 <span style="opacity:.7">(비우면 표시 안 함)</span><input type="text" id="pwBadge" placeholder="팀장"></label>
+    </div>
+    <div class="two">
+      <label>이름<input type="text" id="pwName" placeholder="홍길동"></label>
+      <label>영문 이름<input type="text" id="pwNameEn" placeholder="Gildong Hong"></label>
+    </div>
+    <label>경력사항<textarea id="pwCareer" rows="5" placeholder="한 줄에 하나씩"></textarea></label>
+    <label>자격사항<textarea id="pwCert" rows="5" placeholder="한 줄에 하나씩"></textarea></label>
+    <label>주요 프로그램<textarea id="pwProgram" rows="3" placeholder="한 줄에 하나씩"></textarea></label>
+
+    <div class="sep">
+      <label>사진<input id="pwPhoto" type="file" accept="image/*" style="width:100%;margin-top:4px;font-size:12px"></label>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:9px;font-size:12.5px;color:var(--text)">
+        <input id="pwCut" type="checkbox" checked> 배경 제거(누끼)</label>
+      <div class="hint">밝고 단색에 가까운 벽 앞에서 찍은 사진일수록 잘 지워집니다. 덜 지워지면 아래 값을 낮춰보세요.</div>
+      <label style="margin-top:7px">배경 밝기 기준 <span style="opacity:.7">(기본 115)</span>
+        <input id="pwLum" type="range" min="70" max="200" value="115" style="width:100%"></label>
+      <div id="pwStatus" style="font-size:11.5px;color:#8a6b4c;min-height:16px"></div>
+    </div>
+
+    <div class="sep" style="display:grid;gap:6px">
+      <label>사진 확대 <input id="pwZoom" type="range" min="60" max="220" value="100" style="width:100%"></label>
+      <label>좌우 위치 <input id="pwOffX" type="range" min="-300" max="300" value="0" style="width:100%"></label>
+      <label>상하 위치 <input id="pwOffY" type="range" min="-300" max="300" value="0" style="width:100%"></label>
+    </div>
+
+    <button id="pwDownload">⬇ PNG 내려받기 (2814×2280)</button>
+  </div>
+
+  <div>
+    <div style="font-size:12px;color:var(--dim);margin-bottom:6px">미리보기 — 실제 출력물과 동일한 배치입니다</div>
+    <canvas id="pwCanvas" width="938" height="760"></canvas>
+    <div class="note">
+      · 판형·글꼴·색은 기존 파트너강사 프로필월에서 실측한 값입니다(카드 852×688 · 사진블록 우하단 라운드 213 · 소제목 #D2AF95).<br>
+      · 글꼴은 브랜드 서체 <b>Pretendard</b>를 사용합니다. 첫 진입 시 잠시 뒤 글꼴이 바뀌어 보일 수 있습니다.<br>
+      · 만든 파일은 <b>2. 브랜드_자료 ▸ 03_파트너강사 프로필월</b> 폴더에 함께 보관해 주세요.
+    </div>
+  </div>
+</div>
+
+<script src="../../_assets/profile/profilewall.js"></script>
+</body>
+</html>
