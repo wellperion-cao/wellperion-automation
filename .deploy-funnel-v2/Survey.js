@@ -113,6 +113,21 @@ function _findColExact_(headers, keys) {
 // 전화번호 정규화(숫자만) — 행키(rowIndex) 검증용 안정키 비교에 사용. 2026-06-26 시우.
 function _normPhone_(v) { return String(v == null ? '' : v).replace(/[^0-9]/g, ''); }
 
+// 회원 유효/종료 단일 판정(약속 L01 — 판정 로직 복제 금지). member_active_list·cpo_today_stats·
+//   member_active_summary·member_owner_bulk_set 4곳이 각자 이 계산을 복제해 갖고 있다가, 잔여일
+//   미기재(NaN)를 member_active_list 만 '유효'로(배286 2026-08-01), 나머지 3곳은 여전히 '종료'로
+//   세는 짝 누락이 났다(웰리 실측 배354 2026-08-04 — 신규등록 직후 회원이 생기면 요약카드와
+//   명단이 말없이 갈린다). 이제 모두 이 함수 하나를 부른다.
+//   유효 = (잔여일>=0 또는 잔여일 미기재) & 재등록분류가 이탈표시(LOSS/환불/양도LOSS)가 아님.
+//   remCell/reVCell = 시트 원본 셀 값(파싱 전) 그대로 넘긴다.
+var MEMBER_LOSS_TAGS_ = { 'LOSS': 1, '환불': 1, '양도LOSS': 1 };
+function _memberIsValid_(remCell, reVCell) {
+  var remRaw = String(remCell == null ? '' : remCell).replace(/[^0-9\-]/g, '');
+  var rem = (remRaw === '' || remRaw === '-') ? NaN : parseInt(remRaw, 10);
+  var reV = String(reVCell == null ? '' : reVCell).trim();
+  return (isNaN(rem) || rem >= 0) && !MEMBER_LOSS_TAGS_[reV];
+}
+
 // keyPhone(정규화)로 시트에서 대상 물리 행 탐색 — rowIndex가 어긋났을 때(예: gviz 압축 인덱스·시트 편집 밀림)
 // 올바른 행을 복구해 저장이 엉뚱한 행으로 가지 않게 한다. phCol0=전화 컬럼(0-based). 반환=물리 행(1-based, ≥2) 또는 -1.
 // 첫 일치 반환(동일 전화 중복은 드묾·기존 rowIndex 검증과 동일 노출). 2026-07-13 시포(INC-013 근본수리).
@@ -8187,7 +8202,6 @@ function _processAction(body) {
     //   '타임스탬프'(시분초) 칸이 없다. 최근접 대체값='등록일자'(날짜만) — member_active_update 가드와 동일 재료로 정합. 2026-07-22 시포.
     var aiTsRk = _aaIdx('등록일자'); if (aiTsRk < 0) aiTsRk = _aaIdx('타임스탬프');
     var aiPhRk = aaHdrRaw.indexOf(MEMBER_PHONE_COL);
-    var _AA_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
     var aaRows = [];
     var aaFull = true;                                         // 2026-06-25 GM 전체공개 — 회원명도 평문(페이지 전체 PII 공개 정책 통일·전화도 평문)
     var aaNameKey = aiName >= 0 ? aaHdrRaw[aiName] : '';
@@ -8207,15 +8221,12 @@ function _processAction(body) {
         //     ①숫자만('83'·'1109') ②연령대 라벨('0대'·'16-19세'·'90-99세') ③'합계'.
         //     실제 회원 이름은 이 셋 중 어느 것도 아니다(전수 확인: 유효 996명·종료 692명 오탐 0).
         if (/^[0-9.]+$/.test(nm) || /^\d{1,3}대$/.test(nm) || /^\d{1,3}\s*[-~]\s*\d{1,3}세$/.test(nm) || nm === '합계') continue;
-        var remRaw = aiRem >= 0 ? String(arow[aiRem] == null ? '' : arow[aiRem]).replace(/[^0-9\-]/g, '') : '';
-        var rem = (remRaw === '' || remRaw === '-') ? NaN : parseInt(remRaw, 10);
-        var reV = aiRe >= 0 ? String(arow[aiRe] == null ? '' : arow[aiRe]).trim() : '';
-        // 유효 = (잔여일>=0 또는 잔여일 미기재) & 이탈표시 없음. 2026-07-31 실무진 신고로 경계 정정(구: rem>0).
+        // 유효/종료 판정 = _memberIsValid_ 단일 함수(약속 L01, 배354 2026-08-04 짝 누락 근본수리).
         //   ★2026-08-01 신규등록 오분류 근본수리(GM 신고, 배286) — 잔여일 미기재(NaN)를 '종료'로 밀어내던 것을
         //   '유효'로 바꾼다. 신규 등록 직후(기간 미입력)엔 잔여일이 비어있는데, 종전 로직(!isNaN(rem))이 이걸
         //   그대로 종료회원 취급해 오늘 등록한 회원이 화면에서 사라졌다. 데이터 미비 ≠ 계약 종료 — 진짜 종료는
         //   잔여일이 음수로 "계산된" 경우뿐이다(쓰기 경로 보강은 _memberActiveUpsert_ months 파라미터, 이건 안전망).
-        var isValid = (isNaN(rem) || rem >= 0) && !_AA_LOSS[reV];
+        var isValid = _memberIsValid_(aiRem >= 0 ? arow[aiRem] : '', aiRe >= 0 ? arow[aiRe] : '');
         if (aaScope === 'valid' && !isValid) continue;
         if (aaScope === 'ended' && isValid) continue;   // 종료 = 유효가 아닌 모든 회원명 보유 행
         var obj = { rowIndex: ai + 2 };   // 시트 실제 행번호(인라인 수정 저장용)
@@ -8500,7 +8511,6 @@ function _processAction(body) {
     // scope=valid 판정 칸(잔여일·재등록분류) — member_active_list 와 동일 퍼지매칭(기존 판정 로직 재사용, 쓸 필드와는 무관)
     function _mbIdx(want){ var w = String(want).replace(/\s/g,''); for (var i=0;i<mbHdr.length;i++){ if (mbHdr[i].replace(/\s/g,'').indexOf(w) >= 0) return i; } return -1; }
     var mbRemIdx = _mbIdx('잔여일'), mbReIdx = _mbIdx('재등록분류');
-    var mbLoss = { 'LOSS': 1, '환불': 1, '양도LOSS': 1 };
     var mbRows = mbLast - 1;
     var mbAllVals = mbSh.getRange(2, 1, mbRows, mbCols).getValues();  // 판정용 전체 열 읽기(쓰기는 대상 열 1개만)
     var mbBefore = {}, mbAfter = {};
@@ -8509,10 +8519,8 @@ function _processAction(body) {
     for (var mbI = 0; mbI < mbAllVals.length; mbI++) {
       var mbRowArr = mbAllVals[mbI];
       var mbCur = String(mbRowArr[mbFieldIdx] == null ? '' : mbRowArr[mbFieldIdx]).trim();
-      var mbRemRaw = mbRemIdx >= 0 ? String(mbRowArr[mbRemIdx] == null ? '' : mbRowArr[mbRemIdx]).replace(/[^0-9\-]/g, '') : '';
-      var mbRem = (mbRemRaw === '' || mbRemRaw === '-') ? NaN : parseInt(mbRemRaw, 10);
-      var mbReV = mbReIdx >= 0 ? String(mbRowArr[mbReIdx] == null ? '' : mbRowArr[mbReIdx]).trim() : '';
-      var mbIsValid = !isNaN(mbRem) && mbRem >= 0 && !mbLoss[mbReV];  // 2026-07-31 경계 정정(구: mbRem>0)
+      // 유효/종료 판정 = _memberIsValid_ 단일 함수(약속 L01, 배354 2026-08-04 짝 누락 근본수리).
+      var mbIsValid = _memberIsValid_(mbRemIdx >= 0 ? mbRowArr[mbRemIdx] : '', mbReIdx >= 0 ? mbRowArr[mbReIdx] : '');
       if (!mbIsValid) { mbOut.push([mbCur]); continue; }  // 범위밖(유효회원 아님) — 원값 그대로, 집계 제외
       mbTotal++;
       var mbKey = mbCur || '(빈값)';
@@ -8572,7 +8580,6 @@ function _processAction(body) {
       if (maLossI < 0) maLossI = _maIdx('해지일');
       if (maLossI < 0) maLossI = _maIdx('LOSS일자');
       if (maLossI < 0) maLossI = _maIdx('종료일');
-      var _MA_LOSS = { 'LOSS': 1, '환불': 1, '양도LOSS': 1 };
       var MA_TYPO  = { '맴버십': '멤버십', '멥버십': '멤버십' };
       var MA_KNOWN = { '멤버십': 1, '입주민': 1, '중단기': 1, '보증금': 1, 'FAN VIP': 1 };
       function _maISO(v) {
@@ -8599,10 +8606,8 @@ function _processAction(body) {
         var mrow = maAll[mi];
         // 회원명 없는 행은 통째로 제외 — cpo_today_stats와 동일(유효·종료 어느 쪽에도 안 넣는다)
         if (maNmI >= 0 && !String(mrow[maNmI] == null ? '' : mrow[maNmI]).trim()) continue;
-        var maRemRaw = maRemI >= 0 ? String(mrow[maRemI] == null ? '' : mrow[maRemI]).replace(/[^0-9\-]/g, '') : '';
-        var maRem = (maRemRaw === '' || maRemRaw === '-') ? NaN : parseInt(maRemRaw, 10);
-        var maReV = maReI >= 0 ? String(mrow[maReI] == null ? '' : mrow[maReI]).trim() : '';
-        var maValid = !isNaN(maRem) && maRem >= 0 && !_MA_LOSS[maReV];  // 2026-07-31 경계 정정(구: maRem>0)
+        // 유효/종료 판정 = _memberIsValid_ 단일 함수(약속 L01, 배354 2026-08-04 짝 누락 근본수리).
+        var maValid = _memberIsValid_(maRemI >= 0 ? mrow[maRemI] : '', maReI >= 0 ? mrow[maReI] : '');
         if (maValid) {
           maRes.validTotal++;
           var mv = maTypI >= 0 ? String(mrow[maTypI] == null ? '' : mrow[maTypI]).trim() : '';
@@ -8952,7 +8957,6 @@ function _processAction(body) {
         var crReI   = _crIdx('재등록분류');
         var crLossI = _crIdx('이탈일'); if (crLossI < 0) crLossI = _crIdx('해지일'); if (crLossI < 0) crLossI = _crIdx('종료일');
         ctLossDated = (crLossI >= 0);
-        var _CR_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
         var crAll = crSh.getRange(2, 1, crSh.getLastRow() - 1, crCols).getValues();
         for (var cr = 0; cr < crAll.length; cr++) {
           var crow = crAll[cr];
@@ -8966,10 +8970,9 @@ function _processAction(body) {
           // 회원 현황(회원명 있는 행만): 유효 = 잔여일>=0(만료 당일까지 유효) & 이탈표시 없음. 2026-07-31 경계 정정.
           var crNm = crNmI >= 0 ? String(crow[crNmI] == null ? '' : crow[crNmI]).trim() : '';
           if (!crNm) continue;
-          var crRemRaw = crRemI >= 0 ? String(crow[crRemI] == null ? '' : crow[crRemI]).replace(/[^0-9\-]/g, '') : '';
-          var crRem = (crRemRaw === '' || crRemRaw === '-') ? NaN : parseInt(crRemRaw, 10);
-          var crReV = crReI >= 0 ? String(crow[crReI] == null ? '' : crow[crReI]).trim() : '';
-          var crValid = !isNaN(crRem) && crRem >= 0 && !_CR_LOSS[crReV];  // 2026-07-31 경계 정정(구: crRem>0)
+          // 유효/종료 판정 = _memberIsValid_ 단일 함수(약속 L01, 배354 2026-08-04) — 종전엔 잔여일
+          //   미기재(NaN)를 여기만 '종료'로 세어 member_active_list(배286)와 짝이 안 맞았다.
+          var crValid = _memberIsValid_(crRemI >= 0 ? crow[crRemI] : '', crReI >= 0 ? crow[crReI] : '');
           if (crValid) ctActive++; else ctEnded++;
           // 금일 LOSS: 이탈일(또는 해지/종료일)이 오늘 + 유효 아님 — 날짜 칸 없으면 0 유지
           if (crLossI >= 0 && !crValid) {
