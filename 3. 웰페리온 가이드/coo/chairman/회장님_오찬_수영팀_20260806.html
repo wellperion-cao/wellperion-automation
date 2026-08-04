@@ -78,12 +78,19 @@
   }
   .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
   .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
-                   border:1px solid var(--ink); background:var(--ink); color:#fff;}
+                   border:1px solid var(--ink); background:var(--ink); color:#fff; margin-left:6px;}
+  .printbar button.ghost{background:#fff; color:var(--ink);}
+  .printbar button[disabled]{opacity:.5; cursor:default;}
+  .printbar .msg{font-size:13px; color:var(--dim); margin-right:8px;}
 </style>
 </head>
 <body>
 
-<div class="printbar noprint"><button onclick="window.print()">A3로 인쇄</button></div>
+<div class="printbar noprint">
+  <span class="msg" id="pngMsg"></span>
+  <button class="ghost" id="pngBtn" onclick="savePng()">.png로 저장</button>
+  <button onclick="window.print()">A3로 인쇄</button>
+</div>
 
 <div class="sheet">
 
@@ -207,5 +214,34 @@
   </div>
 
 </div>
+
+<!-- PNG 저장 — 저장소 표준(공지 템플릿·모집 페이지와 동일한 html2canvas 방식) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+function savePng(){
+  var btn = document.getElementById('pngBtn');
+  var msg = document.getElementById('pngMsg');
+  if (typeof html2canvas !== 'function'){
+    msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+    return;
+  }
+  btn.disabled = true;
+  msg.textContent = '이미지를 만드는 중입니다…';
+  html2canvas(document.querySelector('.sheet'), {
+    scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+  }).then(function(canvas){
+    var a = document.createElement('a');
+    a.download = '수영팀_오찬_20260806.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    msg.textContent = '저장했습니다.';
+    btn.disabled = false;
+    setTimeout(function(){ msg.textContent = ''; }, 4000);
+  }).catch(function(e){
+    msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+    btn.disabled = false;
+  });
+}
+</script>
 </body>
 </html>
