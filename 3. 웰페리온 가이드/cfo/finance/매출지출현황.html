@@ -980,9 +980,15 @@ function capPrint(){
 }
 window.addEventListener("afterprint",function(){document.body.classList.remove("printing");});
 function pdNum(s){var m=String(s||"").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);return m?(+m[1]*10000+ +m[2]*100+ +m[3]):0;} // 구매날짜 "2026. 7. 15" → 20260715 (빈값=0)
+/* 매출·인건비 배관 전용 백엔드(sales-api) — 2026-08-04 분리.
+   구매요청과 한 Apps Script 를 쓰던 시절, 매출 재계산(수십 초)이 구매요청의 가벼운 조회를
+   밀어내 간헐 404·빈 목록이 났다. 이제 무거운 집계는 이쪽으로만 간다 — 구매요청은 영향 없음. */
+var SALES_API="https://script.google.com/macros/s/AKfycbzXcWyi-PgS9vBX5oW384OhnBZXaRwpZCma-hYnkOmTmh_SQ1b4WIg6esKgZw3ZF7-k-A/exec";
+var SALES_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1,sales_probe:1,labor_zero:1};
+function apiFor(action){return SALES_ACT[action]?SALES_API:PROC_API;}
 function _rawCall(action,extra){
   var body=Object.assign({action:action,password:GATE_PW},extra||{});
-  return fetch(PROC_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
+  return fetch(apiFor(action),{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});
 }
 // 무거운 매출 집계(같은 Apps Script)는 직렬 실행 + 구매요청 로딩 중엔 양보 → 구매요청(리스트·사진)이 백엔드를 먼저 잡게(2026-07-08 효율화)
 var HEAVY_ACT={sales_month:1,sales_ops:1,sales_dept:1,labor_time:1};
@@ -1012,10 +1018,11 @@ async function loadReq(){
       try{ d=await procCall("list",{mode:"active",noimg:1}); }catch(e){ d=null; }
       if(d&&d.ok)break;
     }
-    REQ_ACTIVE=(d&&d.data)||[];
+    if(d&&d.ok){REQ_ACTIVE=d.data||[];writeReqCache();} // 성공분만 저장본으로 남긴다(실패 시 직전 목록 유지)
   } finally{_reqBusy--;_hvDrain();}
   var m=document.getElementById("reqMsg");
-  if(m&&!(d&&d.ok))m.textContent="⚠️ 목록을 불러오지 못했습니다 — 잠시 후 새로고침(F5) 해주세요";
+  if(!(d&&d.ok))reqToast("⚠️ 목록을 불러오지 못했습니다 — 잠시 후 새로고침(F5) 해주세요",1);
+  else if(m&&m.textContent.indexOf("직전 목록")>=0)m.textContent=""; // 최신으로 갈아끼웠으니 안내 지움
   renderReqTbl();loadReqPhotos();
 }
 var _photoLoading=false;
@@ -1066,8 +1073,35 @@ function renderReq(){
     _ph.onchange=function(){if(_ph.checked)_pc.checked=false;else if(!_pc.checked)_pc.checked=true;};
   }
   bindAssetSuggest(); // 자산성 물품 자동 추천(금액·항목2 기준)
+  showCachedReq();    // 직전 목록을 즉시 그린다(체감 0초) → loadReq 가 뒤에서 최신화
   loadReviewLowest(); // 최저가검토 시트(읽기전용) — 로드되면 배지 갱신, 실패 무음
   loadReq();
+}
+/* ── 목록 즉시 표시(2026-08-04) ──
+   백엔드 왕복이 2~3초라 진입할 때마다 빈 표를 보고 기다려야 했다. 직전에 성공한 목록을
+   먼저 그려 화면이 바로 뜨게 하고, 서버 응답이 오면 조용히 갈아끼운다(파트너팀 매출과 같은 방식).
+   저장 대상은 사진 없는 경량 목록(noimg)뿐이며, 이미 화면에 표시되는 정보라 새로 노출되는 건 없다. */
+var REQ_CACHE_KEY="procReqCache.v1",REQ_CACHE_TTL=24*3600*1000; // 하루 지난 저장본은 안 쓴다(오래된 목록을 현재처럼 보여주지 않기 위해)
+function readReqCache(){
+  try{var c=JSON.parse(localStorage.getItem(REQ_CACHE_KEY)||"null");
+    if(c&&Array.isArray(c.data)&&c.data.length&&(Date.now()-(c.at||0))<REQ_CACHE_TTL)return c.data;}catch(e){}
+  return null;
+}
+function writeReqCache(){
+  try{localStorage.setItem(REQ_CACHE_KEY,JSON.stringify({at:Date.now(),data:REQ_ACTIVE}));}catch(e){}
+}
+function showCachedReq(){
+  if(REQ_ACTIVE&&REQ_ACTIVE.length)return;      // 이미 받은 게 있으면 건드리지 않는다
+  var c=readReqCache(); if(!c)return;
+  REQ_ACTIVE=c; renderReqTbl();
+  var m=document.getElementById("reqMsg"); if(m)m.textContent="직전 목록 표시 중 · 최신 확인 중…";
+}
+/* 짧은 알림 — 버튼을 누르면 기다림 없이 결과를 알린다(alert 처럼 흐름을 막지 않는다). */
+function reqToast(msg,warn){
+  var m=document.getElementById("reqMsg"); if(!m)return;
+  m.textContent=msg; m.style.color=warn?"#B14238":"";
+  clearTimeout(reqToast._t);
+  reqToast._t=setTimeout(function(){if(m.textContent===msg){m.textContent="";m.style.color="";}},warn?6000:2600);
 }
 /* 자산성 물품 자동 추천 — 금액 100만원 이상(예산안의 경상<100만 / 자본대형≥100만 경계와 동일)
    또는 항목2가 비품·장비면 체크를 켜고 사유를 안내한다. 요청자가 직접 건드린 뒤로는
@@ -1305,11 +1339,21 @@ async function doAct(row,next,needPw,btn){
     if(pw===null)return;
     if(String(pw).trim()!==_need){alert("비밀번호가 올바르지 않습니다");return;}
   }
-  if(btn){btn.disabled=true;btn.textContent="처리중…";}
-  var src=(reqFilter==="완료"||reqFilter==="반려")?REQ_DONE:REQ_ACTIVE;var item=src.filter(function(x){return String(x.row)===String(row);})[0];
-  if(item){item.상태=next;renderReqTbl();}  // 즉시 반영(낙관적)
-  try{await procCall("status",{row:row,status:next});}catch(e){}
-  loadReq();  // 서버 재확인
+  /* 즉시 반영 후 서버는 뒤에서 처리한다(2026-08-04). 예전엔 status 응답을 await 하고
+     이어서 목록 전체를 다시 받느라 누른 뒤 몇 초간 화면이 멈춘 것처럼 보였다.
+     실패하면 원래 상태로 되돌리고 빨간 안내를 띄운다 — 조용히 삼키지 않는다. */
+  var src=(reqFilter==="완료"||reqFilter==="반려")?REQ_DONE:REQ_ACTIVE;
+  var item=src.filter(function(x){return String(x.row)===String(row);})[0];
+  var prev=item?item.상태:null;
+  if(item){item.상태=next;renderReqTbl();}
+  reqToast("✔ "+((next==="반려")?"반려":next)+" 처리했습니다");
+  procCall("status",{row:row,status:next}).then(function(d){
+    if(d&&d.ok){writeReqCache();loadReq();return;}
+    throw 0;
+  }).catch(function(){
+    if(item&&prev!==null){item.상태=prev;renderReqTbl();}
+    reqToast("⚠️ 저장되지 않았습니다 — 다시 시도해주세요",1);
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════
