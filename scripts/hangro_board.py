@@ -439,6 +439,9 @@ def _build_item(q: dict, st: str, title: str) -> dict:
             # _owner_label만 이 값을 우선 표시(없으면 ship_no 폴백).
             "short_no": q.get("short_no", ""),
             "source":   "queue",
+            # 보낸 역할(queue_dispatch.py build_ship의 "from" 그대로) — "쿵짝: 내가 넘긴 배"
+            # 판정 단일 지점(2026-08-04 GM 지시). GAS 항목엔 이 칸이 없다(= "").
+            "_from":    str(q.get("from", "")).strip().lower(),
     }
 
 
@@ -680,11 +683,34 @@ def _stalled(items: list[dict], min_days: int = _STALL_MIN_DAYS) -> list[dict]:
     return sorted(out, key=lambda it: -(_stall_days(it) or 0))
 
 
-def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, dict]:
+# ── 🔔 쿵짝 회수 (2026-08-04 GM 지시 "작업 1개당 답변 1개" — 배를 띄우고 끝내지 마라.
+#   넘긴 배는 답이 올 때까지 내가 쥐고 있는다. 답이 없으면 그것부터 보고한다("N일째").
+#   지금까지 웰리에게만 걸려 있던 규칙을 역할과 무관하게(약속 L01) 여기 한 곳에 얹는다. ──
+def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
+    """role이 다른 역할에게 띄운 배 중 아직 열려 있는(답 없는) 것. 오래된 순.
+    1일 미만(오늘 띄운 배)은 뺀다 — 매일 뜨면 아무도 안 본다."""
+    role = (role or "").strip().lower()
+    if not role:
+        return []
+    open_status = {"PENDING", "IN_PROGRESS", "ON_HOLD", "보류", "대기", "진행중"}
+    out = [it for it in items
+           if it.get("_from") == role
+           and str(it.get("owner", "")).lower() != role
+           and str(it.get("status", "")).upper() in open_status
+           and (_stall_days(it) or 0) >= 1]
+    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+
+
+def build_board(gas_items: list[dict], queue_items: list[dict],
+                role: str = "", sent_by_role: list[dict] | None = None) -> tuple[str, dict]:
     """보드 텍스트 + 섹션 dict 반환.
     3섹터: 🚢 진행중 / ⚓ 대기중 / 🏁 입항 완료 (오늘)
     표 칼럼(5개): 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언
-    배 칸=난이도 배 아이콘만 · 상태는 섹터 제목에만 · 담당=닉네임."""
+    배 칸=난이도 배 아이콘만 · 상태는 섹터 제목에만 · 담당=닉네임.
+
+    role/sent_by_role: 쿵짝 회수(2026-08-04) — role이 다른 역할에 띄운 배 중 답 없는 것을
+    「🔔 멈춰 있는 배」섹션에 얹는다. sent_by_role은 역할 슬라이스(owner==role만 남김) **전**의
+    원본 queue_items 스냅샷이어야 한다 — 슬라이스 후엔 내가 보낸 배(owner=남)가 이미 잘려 없다."""
     all_items = gas_items + queue_items
     secs = _classify(all_items)
 
@@ -735,11 +761,21 @@ def build_board(gas_items: list[dict], queue_items: list[dict]) -> tuple[str, di
     #   새 알림·새 예약을 만들지 않는다(약속 L21) — 모든 표면(부팅 셸·G1 보드·08:00 보고)이 이미
     #   지나가는 이 보드에 얹는다. 한 곳에만 띄우면 그 화면을 안 여는 날 그냥 넘어간다.
     stalled = _stalled(secs["today"])
-    if stalled:
+    sent_unanswered = _sent_unanswered(sent_by_role or [], role)
+    for it in sent_unanswered:
+        it["_ship"] = classify_ship({
+            "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
+    if stalled or sent_unanswered:
         lines.append("")
         lines.append(f"### 🔔 멈춰 있는 배 {len(stalled)}척 — 마지막 기록 이후 오래된 순")
-        lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
-                                for it in stalled]))
+        if stalled:
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+                                    for it in stalled]))
+        if sent_unanswered:
+            lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
+                          "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+                                    for it in sent_unanswered]))
 
     # ── 🔴 급한 입항 (별도 알림) ──
     if secs["urgent"]:
@@ -834,6 +870,12 @@ def main() -> None:
 
     queue_items = fetch_queue_items()
 
+    # 쿵짝 회수(2026-08-04) — 역할 슬라이스로 잘리기 전 원본 스냅샷.
+    #   슬라이스는 owner(받는이)==나 만 남기므로, 내가 보낸 배(owner=남)는 슬라이스 후엔
+    #   이미 사라져 안 잡힌다 — 반드시 슬라이스 앞에서 떠 둔다.
+    role_slug = args.role.strip().lower() if args.role else ""
+    sent_by_role = list(queue_items) if role_slug else []
+
     # ── 역할 슬라이스 (배10369 · 2026-07-29 시토) ────────────────────────────
     #  왜: 부팅 (4)단계가 status/_queue.json 을 통째로 읽어 창 하나당 20만 자를 먹었다.
     #  GM 은 늘 셸 5개로 일하므로 실제로는 그 5배다(웰리 실측 101만 자).
@@ -845,7 +887,7 @@ def main() -> None:
         gas_items = [it for it in gas_items if _nick(str(it.get("owner", ""))) == target]
         queue_items = [it for it in queue_items if _nick(str(it.get("owner", ""))) == target]
 
-    board_text, secs = build_board(gas_items, queue_items)
+    board_text, secs = build_board(gas_items, queue_items, role=role_slug, sent_by_role=sent_by_role)
     if args.role:
         # 정보 손실 0 — 잘라 냈다는 사실과 전체를 어디서 보는지 같이 알린다.
         board_text += (
