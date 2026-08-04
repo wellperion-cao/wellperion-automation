@@ -776,6 +776,33 @@ def test_maybe_send_ambiguous_ping_dedups_across_calls(tmp_path):
     assert len(notifier.sent) == 1  # 두 번째 호출은 dedup으로 실제 전송 안 됨
 
 
+def test_maybe_send_ambiguous_ping_folds_burst_of_distinct_new_ids_within_window(tmp_path):
+    """배39 잔여분 — run_cycle()이 clevel마다 다른 배를 park할 때(각각 진짜 신규
+    task_id라 dedup은 안 걸림) 수 초 간격 연발을 접는다. 창을 벗어나면 그 사이 쌓인
+    신규 배가 다음 발신에 합류해 유실되지 않는다."""
+    from datetime import datetime, timedelta, timezone
+
+    state_path = tmp_path / "ping_state.json"
+    notifier = _FakeNotifier()
+    t0 = datetime(2026, 8, 5, 9, 0, 0, tzinfo=timezone.utc)
+
+    first = war.maybe_send_ambiguous_ping(["CTO-A"], state_path=str(state_path), notifier=notifier, now=t0)
+    assert first["sent"] is True
+
+    t1 = t0 + timedelta(seconds=2)
+    second = war.maybe_send_ambiguous_ping(["CTO-A", "CPO-B"], state_path=str(state_path),
+                                            notifier=notifier, now=t1)
+    assert second["sent"] is False
+    assert "시간창" in second["reason"]
+    assert len(notifier.sent) == 1  # 2초 뒤 다른 신규 배(CPO-B)가 생겨도 실전송은 여전히 1건
+
+    t2 = t0 + timedelta(seconds=war.AMBIGUOUS_PING_MIN_INTERVAL_SECONDS + 1)
+    third = war.maybe_send_ambiguous_ping(["CTO-A", "CPO-B"], state_path=str(state_path),
+                                           notifier=notifier, now=t2)
+    assert third["sent"] is True  # 창 밖 + 하루 cap(2) 이내 — CPO-B가 여기 합류해 정상 발신
+    assert len(notifier.sent) == 2
+
+
 # ── run_once: 모호 배는 parked 모드 — 실행 안 함, dry-run은 큐 무변경 ──
 def test_run_once_dry_run_ambiguous_ship_returns_parked_mode_without_queue_mutation(tmp_path, monkeypatch):
     queue = [_ship(note="점검")]  # 짧은 note = 모호

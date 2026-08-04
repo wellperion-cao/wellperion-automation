@@ -124,6 +124,12 @@ INTERVIEW_ANSWER_MARKER = "[GM 인터뷰 답변]"
 PING_LIVE_ENV_VAR = "RUNNER_PING_LIVE"
 DEFAULT_PING_STATE_PATH = os.path.join(_PROJECT_ROOT, "status", "welly_auto_runner_ping_state.json")
 AMBIGUOUS_PING_DAILY_CAP = 2
+# 2026-08-05 시토 — 배39 잔여분: run_cycle()이 7 clevel을 순회하며 clevel마다 새로
+# park되는 배가 있으면 그때마다 핑을 쐈다(각 task_id는 진짜 "신규"라 기존 dedup을
+# 통과함) → 같은 사이클 안에서 수 초 간격 2~3연발(2026-08-04 실측). 새 감시기 대신
+# 기존 관문(maybe_send_ambiguous_ping)에 최소 발신 간격만 추가 — 창 안의 신규 배는
+# 유실되지 않고 다음 발신(다음 clevel 또는 다음 사이클)에 자연 합류한다.
+AMBIGUOUS_PING_MIN_INTERVAL_SECONDS = 300
 
 
 def _is_low_risk(ship: dict) -> bool:
@@ -532,8 +538,10 @@ def _save_ping_state(state: dict, path: str) -> None:
 
 
 def _ping_decision(parked_task_ids: list[str], state: dict, now: datetime | None = None,
-                    daily_cap: int = AMBIGUOUS_PING_DAILY_CAP) -> dict:
-    """PURE — dedup(신규 parked 배 있을 때만) + 하루 cap 판정. 반환: {should_send, new_task_ids, reason}."""
+                    daily_cap: int = AMBIGUOUS_PING_DAILY_CAP,
+                    min_interval_seconds: int = AMBIGUOUS_PING_MIN_INTERVAL_SECONDS) -> dict:
+    """PURE — dedup(신규 parked 배 있을 때만) + 하루 cap + 최소 발신 간격 판정.
+    반환: {should_send, new_task_ids, reason}."""
     now = now or datetime.now(timezone.utc)
     today = now.strftime("%Y-%m-%d")
     pinged = set(state.get("pinged_task_ids", []))
@@ -546,6 +554,18 @@ def _ping_decision(parked_task_ids: list[str], state: dict, now: datetime | None
             "should_send": False, "new_task_ids": new_ids,
             "reason": f"하루 cap({daily_cap}회) 도달 — 오늘 추가 핑 보류",
         }
+    last_sent_at = state.get("last_sent_at")
+    if last_sent_at:
+        try:
+            elapsed = abs((now - datetime.fromisoformat(last_sent_at)).total_seconds())
+        except (ValueError, TypeError):
+            elapsed = None
+        if elapsed is not None and elapsed < min_interval_seconds:
+            return {
+                "should_send": False, "new_task_ids": new_ids,
+                "reason": (f"시간창({min_interval_seconds}초) 내 직전 핑과 접음 — "
+                           f"신규 {len(new_ids)}건은 다음 발신에 합류"),
+            }
     return {"should_send": True, "new_task_ids": new_ids, "reason": f"신규 parked {len(new_ids)}건 — 핑 대상"}
 
 
@@ -586,6 +606,7 @@ def maybe_send_ambiguous_ping(parked_task_ids: list[str], state_path: str | None
     state["pinged_task_ids"] = sorted(set(state.get("pinged_task_ids", [])) | set(decision["new_task_ids"]))
     state.setdefault("sent_dates", {})
     state["sent_dates"][today] = state["sent_dates"].get(today, 0) + 1
+    state["last_sent_at"] = now.isoformat()
     _save_ping_state(state, state_path)
     return {"sent": True, "text": text, "reason": decision["reason"], "api_result": send_result}
 
