@@ -814,6 +814,62 @@ function _vUpdate(body) {
 //  종합 접수처 액션
 // ═══════════════════════════════════════════
 
+// ─── 「전달문구」 초안 자동 채움 (GM 제안 2026-08-05) ───
+// 화면(종합접수처_현황.html 776~784행)은 이미 있는 처리메모(memo)를 「전달문구」로 그대로
+// 보여줄 뿐이다 — 새 칸·새 화면 없이 접수 시점에 memo 를 채워 넣기만 하면 화면은 저절로 뜬다.
+// ★사람이 이미 쓴 memo 는 절대 덮지 않는다 — _regShouldDraftMemo 가 비어 있을 때만 통과시키고,
+//   호출부(_regSubmit)는 그 판정을 거쳐야만 memo 를 채운다(공개 제출 폼엔 memo 입력 자체가 없어
+//   신규 접수는 항상 빈 상태로 들어온다 — 그래도 규칙은 방어적으로 한 번 더 확인한다).
+// ★앞에 '[초안] '을 붙여 초안임을 드러낸다 — 실무진이 그대로 보낼지 판단하고, 고치는 순간부터는
+//   위 덮어쓰기 금지 규칙이 사람 문구로 지켜준다.
+// ★분류를 모르거나 본문이 너무 짧으면 빈 문자열을 돌려준다(빈칸 > 엉뚱한 초안).
+// 톤 = ssot/약속.json L07(표준 문의 안내)·L08(브랜드 말투) + wellperion-brand 스킬 §5:
+//   "피트니스"·"하이엔드프라이빗" 금지, "스포츠클럽", 압박 없이 알리는 격조 있는 톤.
+// 순수함수 — GAS API 미의존, Node에서도 그대로 테스트 가능(_regEffectiveStatusOnMemo 와 같은 원칙).
+var REG_DRAFT_MIN_CONTENT_LEN = 2;   // 이보다 짧은 본문(빈칸·한 글자)은 판단 근거가 부실 → 초안 생략
+var REG_DRAFT_TEMPLATES = {
+  lost:      '[초안] 분실물 접수 확인했습니다. 운영팀이 확인 후 보관 여부를 안내드리겠습니다.',
+  facility:  '[초안] 시설물 고장 확인했습니다. 시설팀이 신속히 점검 후 조치하겠습니다.',
+  clean:     '[초안] 청결 관련 사항 확인했습니다. 지원팀이 즉시 확인해 정리하겠습니다.',
+  praise:    '[초안] 소중한 칭찬 감사합니다. 담당 직원에게 잘 전달하겠습니다.',
+  voice:     '[초안] 소중한 의견 감사합니다. 관련 부서에 전달해 개선하겠습니다.',
+  complaint: '[초안] 불편을 드려 죄송합니다. 운영팀이 확인 후 신속히 조치하겠습니다.'
+};
+// 이미 사람이 쓴 memo 가 있으면 false — 덮어쓰기 금지 규칙의 단일 판정점.
+function _regShouldDraftMemo(existingMemo) {
+  return !String(existingMemo || '').trim();
+}
+// 카테고리 키 + 본문으로 초안 문자열(또는 빈 문자열) 반환.
+function _regDraftMemo(catKey, content) {
+  var tpl = REG_DRAFT_TEMPLATES[catKey];
+  if (!tpl) return '';                                                              // 모르는 분류 → 비워 둔다
+  if (String(content || '').trim().length < REG_DRAFT_MIN_CONTENT_LEN) return '';   // 본문 부실 → 비워 둔다
+  return tpl;
+}
+// assert 기반 자체점검 — GAS 에디터에서 직접 실행하거나 action=reg_draft_selftest(GET, read-only)로 호출.
+// 새 테스트 프레임워크 없이 순수함수만 검증 — 시트를 전혀 건드리지 않는다.
+function _regAssertEq_(actual, expected, label, failures) {
+  if (actual !== expected) {
+    failures.push(label + ': expected ' + JSON.stringify(expected) + ', got ' + JSON.stringify(actual));
+  }
+}
+function _regDraftMemoSelfCheck() {
+  var failures = [];
+  Object.keys(REG_DRAFT_TEMPLATES).forEach(function (key) {
+    var out = _regDraftMemo(key, '테스트 접수 본문입니다');
+    _regAssertEq_(out, REG_DRAFT_TEMPLATES[key], 'draft:' + key, failures);
+    _regAssertEq_(out.indexOf('[초안] ') === 0, true, 'prefix:' + key, failures);
+  });
+  _regAssertEq_(_regDraftMemo('unknown_cat', '충분히 긴 본문입니다'), '', 'unknown-cat-blank', failures);
+  _regAssertEq_(_regDraftMemo('lost', ''), '', 'empty-content-blank', failures);
+  _regAssertEq_(_regDraftMemo('lost', ' '), '', 'whitespace-content-blank', failures);
+  _regAssertEq_(_regDraftMemo('lost', 'a'), '', 'too-short-content-blank', failures);
+  _regAssertEq_(_regShouldDraftMemo(''), true, 'should-draft-empty', failures);
+  _regAssertEq_(_regShouldDraftMemo('   '), true, 'should-draft-whitespace', failures);
+  _regAssertEq_(_regShouldDraftMemo('사람이 이미 쓴 메모'), false, 'should-not-draft-existing-memo', failures);
+  return { ok: failures.length === 0, failures: failures, checked: Object.keys(REG_DRAFT_TEMPLATES).length * 2 + 7 };
+}
+
 // ─── reg_submit — 종합 접수처 제출 (public) ───
 function _regSubmit(body) {
   // 카테고리 해석: 키 우선, 없으면 라벨로 fallback
@@ -890,6 +946,13 @@ function _regSubmit(body) {
   extras.forEach(function (h) {
     if (body[h.key] !== undefined) _set(h.key, String(body[h.key]));
   });
+
+  // 「전달문구」 초안 — memo 가 비어 있을 때만(사람이 이미 쓴 memo 는 절대 덮지 않는다).
+  //   공개 제출 폼엔 memo 입력 자체가 없어 신규 접수는 항상 빈 상태로 들어온다.
+  if (_regShouldDraftMemo(body.memo)) {
+    var draftMemo = _regDraftMemo(cat.key, content);
+    if (draftMemo) _set('memo', draftMemo);
+  }
 
   var sh = _shForCols;
   var newRow = sh.getLastRow() + 1;
@@ -2033,6 +2096,8 @@ function _vProcess(action, body, params) {
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
+  // 「전달문구」 초안 자체점검(read-only·시트 미접촉) — 배포 후 라이브 확인용. 2026-08-05 시토.
+  if (action === 'reg_draft_selftest') return _vJson(_regDraftMemoSelfCheck());
   if (action === 'reg_staff_suggest') return _regStaffSuggest();  // 담당자 입력 자동완성 제안(공개 read·PII 없음). 2026-07-31 웰리.
   if (action === 'hold_intake_stats') return _holdIntakeStats();  // 휴회접수 건수 집계(공개 read·PII 없음). 2026-07-31 웰리.
   if (action === 'reg_board') {
