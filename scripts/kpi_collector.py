@@ -131,6 +131,8 @@ _CFO_GAS = (
 )
 _HTTP_TIMEOUT = 20
 SALES_TARGETS_PATH = ROOT / "status" / "sales_targets.json"
+# 배358 — cpo-staff-feedback-watch.py 가 3분마다 이미 재는 '미처리' 재사용(새 조회 0건).
+STAFF_FB_HEARTBEAT_PATH = ROOT / "status" / "heartbeats" / "cpo-staff-feedback-watch.json"
 
 
 def _http_get_json(url: str, timeout: int = _HTTP_TIMEOUT, retries: int = 2) -> object:
@@ -503,6 +505,64 @@ def _cfo_sales_month() -> dict:
     return result
 
 
+def _count_gm_unrouted(rows: list) -> int:
+    """todo_list 행 중 생성자='김남욱GM'·담당자 공란인 건수 — 아직 아무에게도 안 간
+    GM 원본 기록(배324 실측: 접수 자리=생성자 필드, 담당자 필드 아님)."""
+    n = 0
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        if str(r.get("생성자", "")).strip() != "김남욱GM":
+            continue
+        if str(r.get("담당자", "")).strip():
+            continue
+        n += 1
+    return n
+
+
+def _ceo_gm_record_gap() -> dict:
+    """GM기록 미반영 건수(배358 · 2026-08-04). todo_list(_CFO_GAS 재사용, 새 GAS 없음)에서
+    생성자='김남욱GM'·담당자 공란 행 = 월간운영계획으로 아직 안 흘러간 GM 원본 기록.
+    실패=None(0 위장 금지)."""
+    result: dict = {"GM기록_미반영": None, "_GM기록_note": "측정 전"}
+    try:
+        data = _http_get_json(f"{_CFO_GAS}?action=todo_list")
+        if not isinstance(data, dict) or not (data.get("ok") or data.get("success")):
+            result["_GM기록_note"] = "todo_list GAS 응답 오류(ok=false 또는 형식 불일치)"
+            return result
+        rows = data.get("data") or data.get("todos")
+        if not isinstance(rows, list):
+            result["_GM기록_note"] = "todo_list 응답에 rows 없음"
+            return result
+        result["GM기록_미반영"] = _count_gm_unrouted(rows)
+        result["_GM기록_note"] = "todo_list 생성자='김남욱GM' & 담당자 공란 카운트(배324 실측 방법)"
+    except Exception as e:
+        result["_GM기록_note"] = f"fetch 실패({type(e).__name__}): {str(e)[:80]}"
+    return result
+
+
+def _ceo_staff_reply_gap() -> dict:
+    """실무진 회신 미완료 건수(배358). 새 조회 0건 — cpo-staff-feedback-watch.py 가 3분마다
+    이미 계산해 남기는 하트비트의 '미처리'(처리완료 단계 미도달)를 그대로 읽는다(약속 L21).
+    실패=None(0 위장 금지)."""
+    result: dict = {"실무진_회신_미완료": None, "_실무진회신_note": "측정 전"}
+    try:
+        hb = json.loads(STAFF_FB_HEARTBEAT_PATH.read_text(encoding="utf-8"))
+        n = hb.get("미처리")
+        if not isinstance(n, int) or isinstance(n, bool):
+            result["_실무진회신_note"] = "하트비트에 미처리 필드 없음/형식 불일치"
+            return result
+        result["실무진_회신_미완료"] = n
+        result["_실무진회신_note"] = (
+            f"cpo-staff-feedback-watch 하트비트 재사용(생성 {hb.get('generated_at_kst', '?')})"
+        )
+    except FileNotFoundError:
+        result["_실무진회신_note"] = "하트비트 파일 없음(수집기 미가동)"
+    except Exception as e:
+        result["_실무진회신_note"] = f"읽기 실패({type(e).__name__}): {str(e)[:80]}"
+    return result
+
+
 def _integration_health() -> str | None:
     """
     integration_health.py check_bridges() 결과 요약.
@@ -531,6 +591,10 @@ def collect() -> dict:
     roles_data: dict[str, dict] = {}
     for role in ("ceo", "coo", "cfo", "cmo", "cto", "chro", "cpo"):
         stats = _role_stats(ships, role)
+        if role == "ceo":
+            # GM기록 미반영·실무진 회신 미완료 병합 (배358 · 아침 자가점검 두 지표 자동화)
+            stats.update(_ceo_gm_record_gap())
+            stats.update(_ceo_staff_reply_gap())
         if role == "coo":
             # 점검완료율 병합 (지원부 한정 · 4부서 전체는 null)
             stats.update(coo_check)
@@ -573,6 +637,8 @@ def main() -> None:
     print(f"  global: unpushed={g['unpushed']}  mirror={g['mirror_ok']}  health={g['health']}")
     for role, v in data["roles"].items():
         extra = ""
+        if role == "ceo" and (v.get("GM기록_미반영") is not None or v.get("실무진_회신_미완료") is not None):
+            extra = f"  GM기록_미반영={v.get('GM기록_미반영')}  실무진_회신_미완료={v.get('실무진_회신_미완료')}"
         if role == "coo" and v.get("지원부_점검완료율") is not None:
             extra = (
                 f"  지원부점검완료율(월간대표)={v['지원부_점검완료율']}"
@@ -601,5 +667,22 @@ def main() -> None:
         print(f"  [northstar_reach 재산출 스킵] {type(e).__name__}: {str(e)[:80]}")
 
 
+def _selftest() -> int:
+    """자기검사(배358) — GM기록 미반영 카운트 로직만 프레임워크 없이 assert."""
+    rows = [
+        {"생성자": "김남욱GM", "담당자": ""},
+        {"생성자": "김남욱GM", "담당자": "  "},
+        {"생성자": "김남욱GM", "담당자": "나우열M"},
+        {"생성자": "나우열M", "담당자": ""},
+        {"생성자": "김남욱GM"},  # 담당자 필드 자체가 없어도 공란 취급
+    ]
+    n = _count_gm_unrouted(rows)
+    assert n == 3, n
+    print("selftest OK —", n, "건")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        raise SystemExit(_selftest())
     main()
