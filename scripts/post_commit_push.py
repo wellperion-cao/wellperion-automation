@@ -692,6 +692,13 @@ _MACHINE_OUTPUTS = (
 # 자기 id 로 파일 하나씩 늘 뿐) 그때마다 이 목록을 또 고치지 않아도 되게(2026-07-30).
 _MACHINE_OUTPUT_DIRS = (
     "status/heartbeats/",
+    # ★2026-08-04 시토 — C-Level 브리프·아침 항로 근거. 예약작업이 만들기만 하고 아무도
+    #   커밋하지 않아 GM 화면까지 못 갔다(실측: 브리프 9건 07-30~08-03 · 항로 5일치 전부
+    #   미커밋. 생산자 3종에 커밋 코드가 아예 없었고, 5분 스위퍼는 '커밋된 것을 push' 만
+    #   하므로 이 부류는 어느 관문에도 안 걸렸다). 폴더 단위로 잡아 새 브리프가 생겨도
+    #   목록을 다시 고치지 않게 한다(위 heartbeats 와 같은 이유).
+    "status/briefs/",
+    "status/morning_plans/",
 )
 
 
@@ -951,6 +958,18 @@ def _commit_stale_machine_outputs(root: str) -> None:
         if r.returncode != 0:
             return
         dirty = [p for p in (r.stdout or "").split("\0") if p]
+        # ★2026-08-04 시토 — 아직 한 번도 커밋된 적 없는 산출물(미추적)도 대상에 넣는다.
+        #   `git diff HEAD` 는 **추적 중인 파일의 변경**만 준다 — 새로 생긴 브리프처럼
+        #   태어나서 한 번도 올라간 적 없는 파일은 여기 안 잡혀 영원히 로컬에만 남았다.
+        #   (--exclude-standard = .gitignore 존중. 아래 _is_machine_output 허용목록으로
+        #    한 번 더 좁히므로 목록 밖 파일은 여전히 손대지 않는다.)
+        r2 = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        if r2.returncode == 0:
+            dirty += [p for p in (r2.stdout or "").split("\0") if p]
     except Exception:
         return
     now = time.time()
