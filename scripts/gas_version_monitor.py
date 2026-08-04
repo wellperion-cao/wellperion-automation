@@ -49,6 +49,11 @@ _PROJECTS = [
     # (gas_deploy_guard)을 통과할 수 없었고, 그대로 두면 raw clasp deploy 로 새는
     # 우회로가 된다(버전 200 하드리밋 감시 사각). 배9888.
     ("instructor", "1Q5RiwzqX3Ro1GHLPM9v__CH3DKeOxM4i7NecqI7w_rv6ev0yta4PhGP0", ".deploy-instructor"),
+    # 폼(.deploy-forms) — 2026-08-04 등록(배301 조사). instructor 와 **똑같은 사각지대**였다:
+    # .clasp.json 이 있어 clasp deploy 가 되는 실제 프로젝트인데 이 목록에 없어서
+    # 버전 수를 아무도 안 세고 있었다(200 하드리밋 경보·정리 대상에서 통째로 빠짐).
+    # 위 instructor 주석이 예고한 바로 그 부류라 같은 방식으로 메운다.
+    ("forms", "1o8EfB_jMeX0EVKZhBJPOPqXjkkCTHJYXBuyt9lMvOhSiQAMkie-ADQ6T", ".deploy-forms"),
 ]
 
 _HARD_LIMIT = 200
