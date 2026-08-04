@@ -52,6 +52,20 @@ def main() -> None:
     assert int(report_stream_1_impl.GM_CHAT_ID) == GM_ROOM
     print("[OK] ③④ 하루 정리·아침 보고 → 업무보고방")
 
+    # ⑤ 경보 분류 관문(alert_router) — tech_check=AI방 / gm_action=업무보고방
+    import alert_router
+    assert alert_router.route(alert_router.TECH_CHECK) == AI_ROOM
+    assert alert_router.route(alert_router.GM_ACTION) == GM_ROOM
+    print("[OK] ⑤ alert_router: tech_check → AI방 · gm_action → 업무보고방")
+
+    # ⑥ 카톡 매출보고 실패 경보(2차 · 2026-08-04) — 가짜 발송기를 꽂아 목적지만 검증
+    import kakao_auto_daily_report as K
+    captured = {}
+    K._tg_send = lambda token, chat_id, text, **kw: captured.update(chat_id=chat_id) or True
+    K.send_owner_alert("방 경계 자체 점검 — 실발신 아님")
+    assert captured.get("chat_id") == AI_ROOM, f"kakao 경보 chat_id={captured.get('chat_id')}"
+    print("[OK] ⑥ 카톡 발송실패 경보 → AI 진행현황방")
+
     print("ALL OK — 방 경계 점검 통과 (실발신 0)")
 
 

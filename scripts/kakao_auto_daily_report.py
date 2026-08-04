@@ -95,15 +95,18 @@ def _load_env(path: Path) -> dict:
 
 
 def send_owner_alert(message: str) -> None:
-    """OWNER 텔레그램 DM으로 실패 경보(best-effort)."""
+    """실패 경보(best-effort) — AI 진행현황방으로 (2026-08-04 GM "시토 진행건은 AI방").
+    카톡 '내용'(매출 보고)은 업무보고방 소관이 맞지만, 그 내용이 **안 나갔다는 배선
+    경보**는 tech_check 다 — 내용과 배선 경보를 가른다. 종전엔 .env OWNER_ID(업무
+    보고방)로 갔다(08-04 09:31 실측). 분류는 alert_router 한 곳만(약속 L01)."""
     try:
         env = _load_env(ENV_PATH)
         token = env.get("TELEGRAM_BOT_TOKEN", "")
-        owner_id = env.get("OWNER_ID") or env.get("TELEGRAM_CHAT_ID", "")
-        if not token or not owner_id:
-            log("[경고] TELEGRAM_BOT_TOKEN/OWNER_ID(.env) 없음 — 경보 발송 생략")
+        if not token:
+            log("[경고] TELEGRAM_BOT_TOKEN(.env) 없음 — 경보 발송 생략")
             return
-        ok = _tg_send(token, int(owner_id), message, source="kakao_auto_daily_report.send_owner_alert", timeout=15)
+        from alert_router import TECH_CHECK, route  # noqa: PLC0415
+        ok = _tg_send(token, route(TECH_CHECK), message, source="kakao_auto_daily_report.send_owner_alert", timeout=15)
         log("OWNER 텔레그램 경보 발송 완료" if ok else "[경고] 경보 발송 실패")
     except Exception as exc:
         log(f"[경고] 경보 발송 예외(무시): {exc}")
