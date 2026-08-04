@@ -6,6 +6,7 @@ test_publish_digest.py — 발행완료→문의방 통합요약 자동발신 py
   가로채거나, dry_run=True 로만 호출한다.
 """
 
+import datetime
 import json
 import os
 import sys
@@ -121,13 +122,15 @@ def test_group_published_merges_5_channels_into_1_content():
 # ② 대상방 — chat_id == TELEGRAM_INQUIRY_CHAT_ID (GM채널 아님)
 # ---------------------------------------------------------------------------
 def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
-    captured = {}
+    """★ 2026-08-04 GM 검토 게이트 도입으로 계약이 뒤집혔다: 1차 호출은 실무진 방이 아니라
+    GM 업무보고방(TELEGRAM_CHAT_ID)에 승인/보류 버튼 카드가 가고 실무진 방은 0건이어야
+    한다. ledger[f"{folder}:gm_ok"]=True 를 심고 재호출해야 비로소 실무진 방
+    (TELEGRAM_INQUIRY_CHAT_ID)으로 1건 나간다 — '실무진 방으로 잘못 새나가면 안 된다'는
+    이 테스트의 본래 목적은 두 단계 모두 단언해 그대로 지킨다."""
+    calls = []
 
-    def fake_send(token, chat_id, text, preview_url=""):
-        captured["token"] = token
-        captured["chat_id"] = chat_id
-        captured["text"] = text
-        captured["preview_url"] = preview_url
+    def fake_send(token, chat_id, text, preview_url="", reply_markup=""):
+        calls.append({"chat_id": chat_id, "text": text, "reply_markup": reply_markup})
         return True
 
     monkeypatch.setattr(pd, "_send", fake_send)
@@ -137,20 +140,28 @@ def test_sends_to_inquiry_chat_id_not_gm_channel(monkeypatch):
     monkeypatch.setattr(pd, "_first_slide_image", lambda group: "")
     ledger_path = _tmp_ledger_path()
     try:
-        expected_chat_id = pd._load_env_val(pd.TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY)
+        expected_inquiry_chat_id = pd._load_env_val(pd.TELEGRAM_INQUIRY_CHAT_ID_ENV_KEY)
         gm_chat_id = pd._load_env_val("TELEGRAM_CHAT_ID")
-        assert expected_chat_id, "테스트 전제: TELEGRAM_INQUIRY_CHAT_ID가 .env에 설정돼 있어야 함"
+        assert expected_inquiry_chat_id, "테스트 전제: TELEGRAM_INQUIRY_CHAT_ID가 .env에 설정돼 있어야 함"
+        assert gm_chat_id, "테스트 전제: TELEGRAM_CHAT_ID가 .env에 설정돼 있어야 함"
 
+        # 1차 호출 — GM 검토 카드만 나가고 실무진 방은 0건
         sent = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+        assert sent == 0, "GM 승인 전에는 실무진 방으로 나가면 안 됨"
+        assert len(calls) == 1
+        assert calls[0]["chat_id"] == gm_chat_id
+        assert calls[0]["chat_id"] != expected_inquiry_chat_id
+        assert calls[0]["reply_markup"], "검토 카드에는 승인/보류 버튼이 실려야 함"
 
-        assert sent == 1
-        assert captured["chat_id"] == expected_chat_id
-        assert captured["chat_id"] != gm_chat_id or not gm_chat_id, "GM 채널로 가면 안 됨"
-        # ★ 2026-07-18 시토 수정: 2026-07-16부터 send_publish_digest()는 IG 미리보기 URL을
-        #   _send()에 전달하지 않는다(_send 자체도 preview_url 인자를 무시 — 429 유발이라 폐기).
-        #   옛 단언(IG post_url 전달)은 그 이전 설계를 테스트해 드리프트로 실패하던 것 — 현재
-        #   계약(항상 빈 값)에 맞춘다.
-        assert captured["preview_url"] == ""
+        # GM 승인 — ledger[f"{folder}:gm_ok"]=True 를 심고 재호출하면 실무진 방으로 실제 발신
+        ledger = pd._load_ledger(ledger_path)
+        ledger["instagram/260715_L1_수영:gm_ok"] = True
+        pd._save_ledger(ledger_path, ledger)
+        calls.clear()
+        sent2 = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+        assert sent2 == 1
+        assert calls[0]["chat_id"] == expected_inquiry_chat_id
+        assert calls[0]["chat_id"] != gm_chat_id
     finally:
         if ledger_path.exists():
             ledger_path.unlink()
@@ -254,10 +265,14 @@ def test_missing_token_logs_error_and_does_not_send(monkeypatch, capsys):
 # ④ 멱등 — 같은 콘텐츠 2회 호출 시 2번째는 전송 0건
 # ---------------------------------------------------------------------------
 def test_idempotent_second_call_sends_zero(monkeypatch):
+    """★ 2026-08-04: GM 검토 게이트가 생겨도 멱등은 여전히 지켜야 하는 성질이다(낡은 계약이
+    아니라 유지 대상) — GM 검토 카드도 같은 folder 재유입 시 1회만(ledger[f"{folder}:gm_review"]),
+    승인 후 실무진 방 실발신도 1회만(ledger[key]) 나가야 한다. 두 단계 각각의 멱등을 확장해
+    단언한다."""
     calls = []
 
-    def fake_send(token, chat_id, text, preview_url=""):
-        calls.append(text)
+    def fake_send(token, chat_id, text, preview_url="", reply_markup=""):
+        calls.append(chat_id)
         return True
 
     monkeypatch.setattr(pd, "_send", fake_send)
@@ -266,12 +281,21 @@ def test_idempotent_second_call_sends_zero(monkeypatch):
     monkeypatch.setattr(pd, "_first_slide_image", lambda group: "")
     ledger_path = _tmp_ledger_path()
     try:
+        # ① GM 검토 카드 — 승인 전엔 같은 folder 재호출해도 1회만
         first = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
         second = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+        assert first == 0 and second == 0, "GM 승인 전엔 실무진 방 발신 0건"
+        assert len(calls) == 1, "GM 검토 카드도 같은 folder 재유입 시 재발송 금지 — 멱등 위반"
 
-        assert first == 1
-        assert second == 0, "동일 콘텐츠 재발신 — 멱등 위반"
-        assert len(calls) == 1, "실제 발신 호출은 1회만 있어야 함"
+        # ② GM 승인 후 — 실무진 방 실발신도 재호출 시 1회만
+        ledger = pd._load_ledger(ledger_path)
+        ledger["instagram/260715_L1_수영:gm_ok"] = True
+        pd._save_ledger(ledger_path, ledger)
+        third = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+        fourth = pd.send_publish_digest(_l1_swim_items(), dry_run=False, ledger_path=ledger_path)
+        assert third == 1 and fourth == 0, "승인 후 실무진 방 재발신 — 멱등 위반"
+        assert len(calls) == 2, "실무진 방 실제 발신 호출은 승인 뒤 1회만 있어야 함"
+
         # 원장에 그룹키 기록됐는지 확인
         ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
         assert "instagram/260715_L1_수영" in ledger
@@ -284,9 +308,12 @@ def test_idempotent_second_call_sends_zero(monkeypatch):
 # ⑤ 배선 발동 — 감시기(run) 이번 사이클 '발행완료' 전환 항목으로 digest 실제 호출
 # ---------------------------------------------------------------------------
 def test_watcher_dispatch_calls_digest_only_for_newly_published(monkeypatch):
-    """실브라우저·git·네트워크 없이: ig_review_publish_watcher._dispatch_publish_digest 가
-    approved 리스트 중 '발행완료'로 전환된 것만 send_publish_digest 로 넘기는지 검증.
-    이 함수는 _run_once_inner() 가 실제 호출하는 그 함수(같은 코드 경로) — 발동지점 실증."""
+    """★ 2026-08-04(배C): approved(이번 사이클 전환분)만 넘기던 옛 계약은 폐기됐다 — 발행
+    당일 5채널이 안 모였다가 나중 사이클에 채워진 folder 가 approved 에 안 잡혀 영원히
+    재검사되지 않던 결함(L3~L6, 17일 미발신) 수리. 새 계약: review_queue 전체
+    (_load_review_queue())를 approved 내용과 무관하게 그대로 send_publish_digest 로 넘긴다
+    (원장 멱등 체크가 재발송을 막아 안전). 이 함수는 _run_once_inner() 가 실제 호출하는 그
+    함수(같은 코드 경로) — 발동지점 실증은 유지."""
     import ig_review_publish_watcher as watcher
 
     captured = {}
@@ -297,18 +324,23 @@ def test_watcher_dispatch_calls_digest_only_for_newly_published(monkeypatch):
 
     monkeypatch.setattr(watcher, "send_publish_digest", fake_send_publish_digest)
 
+    queue_fixture = [
+        {"id": "Q-1", "status": "발행완료", "folder": "instagram/q1", "channel": "인스타그램"},
+        {"id": "Q-2", "status": "검수대기", "folder": "instagram/q2", "channel": "블로그"},
+    ]
+    monkeypatch.setattr(watcher, "_load_review_queue", lambda: queue_fixture)
+
+    # approved 는 옛 계약의 필터 대상이었으나 새 계약에선 내용과 무관 — 일부러 다른 값으로 둔다.
     approved = [
         {"id": "A-1", "status": "발행완료", "folder": "instagram/x", "channel": "인스타그램",
          "post_url": "https://example.com/a"},
         {"id": "A-2", "status": "발행실패", "folder": "instagram/y", "channel": "블로그"},
-        {"id": "A-3", "status": "수동발행대기", "folder": "instagram/z", "channel": "카카오"},
     ]
 
     sent = watcher._dispatch_publish_digest(approved)
 
-    assert sent == 1, "발행완료 1건만 digest로 전달돼야 함"
-    assert len(captured["items"]) == 1
-    assert captured["items"][0]["id"] == "A-1"
+    assert sent == len(queue_fixture)
+    assert captured["items"] == queue_fixture, "approved 가 아니라 review_queue 전체를 넘겨야 함(새 계약)"
 
     # run 함수 소스에 실제 호출부가 존재함을 실행경로로도 재확인(정적 우회 방지)
     import inspect
@@ -317,7 +349,9 @@ def test_watcher_dispatch_calls_digest_only_for_newly_published(monkeypatch):
 
 
 def test_watcher_dispatch_no_newly_published_skips_digest(monkeypatch):
-    """발행완료 전환 항목이 하나도 없으면 send_publish_digest 자체를 호출하지 않는다."""
+    """★ 2026-08-04(배C): 반대로 뒤집힌 계약 — 이번 사이클에 새로 '발행완료'로 전환된 게
+    approved 에 하나도 없어도 digest 는 여전히 호출돼야 한다(과거 미완결 folder 재훑기가
+    목적이라, 여기서 early-return 하면 재훑기 자체가 죽는다)."""
     import ig_review_publish_watcher as watcher
 
     called = {"n": 0}
@@ -327,12 +361,13 @@ def test_watcher_dispatch_no_newly_published_skips_digest(monkeypatch):
         return 0
 
     monkeypatch.setattr(watcher, "send_publish_digest", fake_send_publish_digest)
+    monkeypatch.setattr(watcher, "_load_review_queue", lambda: [{"id": "Q-1", "folder": "instagram/q1"}])
 
     approved = [{"id": "B-1", "status": "발행실패", "folder": "instagram/y"}]
     sent = watcher._dispatch_publish_digest(approved)
 
     assert sent == 0
-    assert called["n"] == 0
+    assert called["n"] == 1, "approved 에 신규 전환분이 없어도 digest 호출을 스킵하면 안 됨(재훑기 목적)"
 
 
 # ---------------------------------------------------------------------------
@@ -409,8 +444,10 @@ def test_build_digest_falls_back_to_channel_home_when_url_missing():
 
 
 def test_send_publish_digest_sends_with_url_gaps_via_fixture(monkeypatch):
-    """send_publish_digest() 전체 경로 — 픽스처로 _load_review_queue를 격리해 실제
-    review_queue.json은 절대 건드리지 않고, URL 갭이 있어도 실무진 방 발신(sent==1)까지 확인."""
+    """★ 2026-08-04: URL 갭이 있어도 채널 이름 노출(카카오 홈 폴백 등) 기존 성질은 그대로
+    유지하되, GM 검토 게이트 도입으로 1차 목적지가 실무진 방이 아니라 GM 업무보고방으로
+    바뀐 것만 반영한다(승인 전이라 sent==0). 픽스처로 _load_review_queue를 격리해 실제
+    review_queue.json은 절대 건드리지 않는다."""
     entries = _official_group_entries_url_gaps()
 
     monkeypatch.setattr(pd, "_load_review_queue", lambda: entries)
@@ -418,7 +455,8 @@ def test_send_publish_digest_sends_with_url_gaps_via_fixture(monkeypatch):
 
     captured = {}
 
-    def fake_send(token, chat_id, text, preview_url=""):
+    def fake_send(token, chat_id, text, preview_url="", reply_markup=""):
+        captured["chat_id"] = chat_id
         captured["text"] = text
         return True
 
@@ -426,8 +464,10 @@ def test_send_publish_digest_sends_with_url_gaps_via_fixture(monkeypatch):
 
     ledger_path = _tmp_ledger_path()
     try:
+        gm_chat_id = pd._load_env_val("TELEGRAM_CHAT_ID")
         sent = pd.send_publish_digest(entries, dry_run=False, ledger_path=ledger_path)
-        assert sent == 1
+        assert sent == 0, "GM 승인 전에는 실무진 방 발신 0건(게이트)"
+        assert captured["chat_id"] == gm_chat_id
         assert "https://pf.kakao.com/_cgxiKj (채널 홈 · 게시글 링크 미확정)" in captured["text"]
     finally:
         if ledger_path.exists():
@@ -462,3 +502,33 @@ def test_group_is_complete_still_false_when_channel_pending_review():
 
     assert complete is False, "일부 채널 미발행이면 여전히 False여야 함"
     assert "미발행" in reason
+
+
+# ---------------------------------------------------------------------------
+# ⑦ D(2026-08-04) — 디제스트 본문 발행일 표기: 2일 이상 지난 것만, 지어내지 않는다
+# ---------------------------------------------------------------------------
+def test_build_digest_shows_publish_date_only_when_2days_or_older():
+    """2일 이상 지난 콘텐츠만 '📅 YYYY-MM-DD 발행' 표기 — 최신 건·published_at 없는 건은
+    생략(지어내지 않는다, 약속 L05)."""
+    old_group = [{"title": "옛날 글", "channel": "인스타그램", "published_at": "2020-01-01T00:00:00"}]
+    assert "📅 2020-01-01 발행" in pd.build_digest(old_group)
+
+    fresh_group = [{"title": "오늘 글", "channel": "인스타그램",
+                     "published_at": datetime.date.today().isoformat() + "T00:00:00"}]
+    assert "📅" not in pd.build_digest(fresh_group)
+
+    no_date_group = [{"title": "날짜없음", "channel": "인스타그램"}]
+    assert "📅" not in pd.build_digest(no_date_group)
+
+
+# ---------------------------------------------------------------------------
+# ⑧ E(2026-08-04) — 채널별 /output(...) 접미 병합 회귀 방지
+# ---------------------------------------------------------------------------
+def test_base_key_merges_trailing_output_suffix_only():
+    """_base_key()는 folder 끝의 /output(채널) 접미만 벗겨 base 로 병합한다. 끝이 아니라
+    중간 세그먼트(예: KPGA 처럼 output(...) 뒤에 /epN 이 더 붙는 실데이터 패턴)는 원문 그대로
+    유지돼 실제로 동일한 folder 값을 공유하는 그룹과 충돌하지 않는다(E 조사 회귀 방지)."""
+    assert pd._base_key({"folder": "instagram/260715_L1_수영/output(블로그)"}) == "instagram/260715_L1_수영"
+    assert pd._base_key({"folder": "instagram/260715_L1_수영"}) == "instagram/260715_L1_수영"
+    kpga = "instagram/260620_골프_유소년_KPGA주니어대회/output(인스타그램)/ep1"
+    assert pd._base_key({"folder": kpga}) == kpga  # 끝이 아니므로 그대로(의도된 동작)

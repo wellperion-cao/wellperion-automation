@@ -55,8 +55,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from git_lock import GitLock, pull_rebase_safe
 from safe_commit import safe_commit  # 스테일 트리 차단 커밋(2026-07-23 배9820)
 from publish_digest import send_publish_digest  # 발행완료→문의방 통합요약 자동발신(2026-07-15)
-# 발행 '완결' 판정 집합의 단일 출처 — 여기서 문자열을 다시 박지 않는다(배125 · 약속 L01).
-from publish_digest import _COMPLETE_STATUSES  # noqa: F401  (_dispatch_publish_digest 에서 사용)
+# review_queue 전체 재훑기(2026-08-04, 아래 _dispatch_publish_digest) — 새 로더 만들지 않고
+# publish_digest 의 단일 로더를 재사용한다(약속 L01).
+from publish_digest import _load_review_queue
 # review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
 from review_queue_util import merge_save_review_queue
 
@@ -321,12 +322,17 @@ def _dispatch_publish_digest(approved: list[dict]) -> int:
     publish_digest 쪽 _COMPLETE_STATUSES 는 그때 같이 넓혀졌지만 호출부인 여기가 안 따라와
     newly_published 가 항상 빈 리스트 → 디제스트가 조용히 한 번도 안 나갔다. 실측: 2026-07-24
     ~07-27 발행 4건 모두 원장(.publish_digest_sent.json)에 없고 보류(:held) 키도 0.
-    같은 판정을 두 곳에 두면 한쪽만 늙는다(약속 L01) — 사본을 없애고 한 곳을 읽는다."""
-    newly_published = [it for it in approved if it.get("status") in _COMPLETE_STATUSES]
-    if not newly_published:
-        return 0
+    같은 판정을 두 곳에 두면 한쪽만 늙는다(약속 L01) — 사본을 없애고 한 곳을 읽는다.
+
+    [2026-08-04] approved(이번 사이클 전환분)만 넘기면, 발행 당일 5채널이 한 번에 안 모이고
+    나중 사이클에 나머지 채널이 채워진 folder 는 그 나중 사이클에서 approved 에 안 잡혀
+    영원히 재검사되지 않는다(실측: L3 골프·L4 필라테스·L5 스쿼시·L6 그룹 4건이 17일째
+    미발신). review_queue 전체를 넘겨도 send_publish_digest() 의 원장 멱등 체크
+    (key in ledger)가 재발송을 막으므로 중복 발신 위험은 없다 — approved 대신 큐 전체를
+    넘기고, approved 가 비어도(이번 사이클에 새로 전환된 게 없어도) early-return 하지 않는다.
+    """
     try:
-        return send_publish_digest(newly_published)
+        return send_publish_digest(_load_review_queue())
     except Exception as exc:
         _safe_print(f"[WARN] 발행완료 통합요약 발신 실패(발행 흐름 무영향): {exc}")
         return 0

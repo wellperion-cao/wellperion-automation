@@ -68,6 +68,11 @@ try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — scripts/ 경�
 except Exception:
     queue_lock = None
 
+try:  # 발송요약 GM 검토 게이트(dig: 콜백, 2026-08-04) — scripts/ 경로는 위 블록에서 이미 삽입
+    import publish_digest as _digest
+except Exception:
+    _digest = None
+
 
 def _install_outbound_logging() -> None:
     """PTB 발신 메서드(send_message/send_photo/reply_text)에 best-effort 로깅 래핑.
@@ -1559,6 +1564,67 @@ async def cmd_publish_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 text=f"⚠️ 발행 엔진 기동 실패: {exc}\n수동 발행 필요: {title_label}")
 
 
+async def cmd_digest_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """발송요약(디제스트) GM 검토 카드 [✅ 실무진 방 발송]/[⛔ 보류] 클릭 처리.
+
+    callback_data 형식: ``dig:<h8>:<a|r>`` (h8 = folder 그룹키의 md5 앞 8자리 —
+    scripts/publish_digest.py send_publish_digest() 가 GM 검토 카드 발신 시 원장
+    ledger[f"{folder}:gm_review"] = {"h8":..,"folder":..,"hash":..} 로 기록).
+
+    승인(a) → ledger[f"{folder}:gm_ok"]=True 기록 후 send_publish_digest() 재호출 —
+              이제 gm_ok 가 있으므로 그 함수가 실무진 문의·컨택·등록 알림방으로 실제 발신한다.
+    보류(r) → ledger[f"{folder}:gm_hold"]=True 만 기록(실무진 방 미발송). gm_review 키는
+              그대로 남아있어 다음 사이클에 다시 묻지 않는다(의도된 동작).
+    2026-08-04 GM 지시("실무진 방으로 보내기 전에 항상 업무보고방에 보내줘 검토할게") 구현.
+    """
+    q = update.callback_query
+    if not q or not q.data or not q.data.startswith("dig:"):
+        return
+    await q.answer()
+    parts = q.data.split(":")
+    if len(parts) != 3 or _digest is None:
+        await q.answer("형식 오류" if _digest is not None else "게이트 모듈 미가용", show_alert=False)
+        return
+    h8, decision = parts[1], parts[2]
+
+    ledger = _digest._load_ledger(_digest.SENT_LEDGER)
+    folder = None
+    for k, v in ledger.items():
+        if k.endswith(":gm_review") and isinstance(v, dict) and v.get("h8") == h8:
+            folder = v.get("folder")
+            break
+    if not folder:
+        await q.answer("식별자를 찾지 못했습니다", show_alert=True)
+        return
+
+    if decision == "a":
+        ledger[f"{folder}:gm_ok"] = True
+        _digest._save_ledger(_digest.SENT_LEDGER, ledger)
+        try:
+            all_review_items = _digest._load_review_queue()
+            entries = _digest._group_all_entries(folder, all_review_items)
+            await asyncio.to_thread(_digest.send_publish_digest, entries, False, None)
+        except Exception as exc:
+            log.error(f"[digest] 승인 후 실무진 방 발신 실패: {exc}")
+        try:
+            await q.edit_message_text(text=f"✅ 실무진 방 발송 완료 — {folder}", reply_markup=None)
+        except Exception:
+            try:
+                await q.edit_message_reply_markup(reply_markup=None)
+            except Exception:
+                pass
+    else:
+        ledger[f"{folder}:gm_hold"] = True
+        _digest._save_ledger(_digest.SENT_LEDGER, ledger)
+        try:
+            await q.edit_message_text(text=f"⛔ 보류 — 실무진 방 미발송 — {folder}", reply_markup=None)
+        except Exception:
+            try:
+                await q.edit_message_reply_markup(reply_markup=None)
+            except Exception:
+                pass
+
+
 # ─── M1 웹 승인 ↔ 텔레그램 승인 통일 (/m1pub) — 2026-07-16 CMO, 배1170 ───────────
 # GM 확정 방식='봇 발행 재사용': M1(웹 검수 SSOT, wellperion_guide(main).html)에서
 # [승인] 클릭 → GAS _reviewSetStatus() 가 review_queue.json status='승인' 커밋 후
@@ -1965,6 +2031,8 @@ def main():
     # app.add_handler(CallbackQueryHandler(cmd_approval_callback, pattern=r"^sign:"))
     # 콘텐츠 검수 발행 콜백 (pub:) — IG 폴링 감시기 폐기 대체 (2026-06-03). 결재(sign:)와 별개.
     app.add_handler(CallbackQueryHandler(cmd_publish_callback, pattern=r"^pub:"))
+    # 발송요약 GM 검토 게이트 콜백 (dig:) — 실무진 방 발송 전 GM 승인/보류 (2026-08-04).
+    app.add_handler(CallbackQueryHandler(cmd_digest_callback, pattern=r"^dig:"))
     # M1 웹 승인 신호 (/m1pub) — GAS _signalM1Publish() 가 보냄. 텔레그램 카드 승인과
     # 동일 발행 트리거로 수렴(2026-07-16 CMO, 배1170). 게이트=M1_AUTO_PUBLISH(기본 OFF).
     app.add_handler(CommandHandler("m1pub", cmd_m1_publish))

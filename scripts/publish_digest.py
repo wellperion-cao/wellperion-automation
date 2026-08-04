@@ -38,6 +38,7 @@
 """
 from __future__ import annotations
 
+import datetime
 import hashlib
 import json
 import os
@@ -331,11 +332,27 @@ def _northstar_prefix() -> str:
 
 
 def build_digest(group: list[dict]) -> str:
-    """콘텐츠 1건 통합요약 메시지 — 📢헤더 · 설명 · 채널이모지 링크(고정순서) · 응원 CTA."""
+    """콘텐츠 1건 통합요약 메시지 — 📢헤더 · (2일+ 지난 건만 발행일) · 설명 · 채널이모지 링크(고정순서) · 응원 CTA."""
     title = _digest_title(group)
     intro = _digest_intro(group)
     lines = [
         f"{_northstar_prefix()}📢 웰페리온 공식 · {title} 발행 완료 — 응원 부탁드려요!",
+    ]
+    # ★ 2026-08-04 GM 지시: 발행일 미표기라 12~17일 지난 콘텐츠도 '방금 올라간 것'처럼
+    # 읽히던 문제 수리 — 지어내지 않는다(약속 L05): published_at 없는 엔트리는 무시하고,
+    # 그룹 전체가 비면 표기 생략. 2일 미만(최신 건)은 군더더기라 생략, 2일 이상이면
+    # 그룹 중 가장 이른 날짜 1줄만 표기.
+    pub_dates = []
+    for it in group:
+        try:
+            pub_dates.append(datetime.date.fromisoformat((it.get("published_at") or "")[:10]))
+        except ValueError:
+            continue
+    if pub_dates:
+        earliest = min(pub_dates)
+        if (datetime.date.today() - earliest).days >= 2:
+            lines.append(f"📅 {earliest.isoformat()} 발행")
+    lines += [
         "",
         intro,
         "아래 링크에서 ❤️ 좋아요 · 💬 댓글 남겨주시면 큰 힘이 됩니다 🙏",
@@ -403,8 +420,10 @@ def _instagram_preview_url(group: list[dict]) -> str:
     return ""
 
 
-def _send(token: str, chat_id: str, text: str, preview_url: str = "") -> bool:
+def _send(token: str, chat_id: str, text: str, preview_url: str = "", reply_markup: str = "") -> bool:
     payload: dict[str, str] = {"chat_id": chat_id, "text": text}
+    if reply_markup:  # 인라인 버튼(JSON 문자열) — GM 검토 게이트 승인/보류 카드용
+        payload["reply_markup"] = reply_markup
     # ★ 근본원인 (2026-07-16 진단): 인스타그램 게시물 URL의 link_preview는 텔레그램이 IG로부터
     #   미리보기 이미지를 못 가져와(IG가 봇 프리뷰 페처 차단) sendMessage 자체가 429로 실패한다.
     #   → 디제스트가 07-15 셋업 후 한 번도 도착 못한 진짜 원인. 미리보기를 끄면 즉시 200 성공(실측).
@@ -620,6 +639,48 @@ def send_publish_digest(
         h = _group_hash(full_entries)
         msg = build_digest(full_entries)
         preview_url = _instagram_preview_url(full_entries)
+
+        # ★ GM 검토 게이트 (2026-08-04 GM 지시): "실무진 방으로 보내기 전에 항상 텔레그램
+        #   업무보고방에 보내줘 검토할게." — GM 승인(ledger[f"{key}:gm_ok"])이 없으면
+        #   실무진 방으로 보내지 않고 GM 업무보고방에 승인/보류 버튼 카드를 먼저 보낸다.
+        #   승인 처리는 telegram_bot/bot.py cmd_digest_callback(dig:<h8>:<a|r>)이
+        #   gm_ok 를 세운 뒤 이 함수를 재호출해 실제 실무진 방 발신을 수행한다.
+        if f"{key}:gm_ok" not in ledger:
+            review_key = f"{key}:gm_review"
+            if review_key in ledger:
+                continue  # 이미 GM 방에 검토 요청 발신함(같은 folder 1회만 — 재스팸 방지)
+            title = _digest_title(full_entries)
+            h8 = hashlib.md5(key.encode("utf-8")).hexdigest()[:8]
+            review_body = (
+                f"🔎 실무진 방 발송 전 검토 — {title}\n\n"
+                f"{msg}\n\n"
+                "▸ 승인하면 실무진 '문의·컨택·등록 알림방'으로 이 내용이 그대로 나갑니다."
+            )
+            if dry_run:
+                print("[DRY-RUN] → GM 업무보고방 검토 요청 대상")
+                print(review_body)
+                print("-" * 40)
+                continue  # dry-run 은 멱등 이력을 남기지 않는다(실제 발신 아님)
+            if not gm_chat_id:
+                print(
+                    f"[ERROR] GM 검토 요청 발신 불가 — {TELEGRAM_CHAT_ID_ENV_KEY} 미설정 "
+                    "(telegram_bot/.env 확인 필요) — 조용히 넘어가지 않음",
+                    file=sys.stderr,
+                )
+                continue
+            reply_markup = json.dumps({"inline_keyboard": [[
+                {"text": "✅ 실무진 방 발송", "callback_data": f"dig:{h8}:a"},
+                {"text": "⛔ 보류", "callback_data": f"dig:{h8}:r"},
+            ]]})
+            ok = _send(token, gm_chat_id, review_body, reply_markup=reply_markup)
+            if ok:
+                ledger[review_key] = {"h8": h8, "folder": key, "hash": h}
+                dirty = True
+                print(f"[INFO] GM 검토 요청 발신 완료: {key} (h8={h8})")
+            else:
+                print(f"[WARN] GM 검토 요청 발신 실패: {key}", file=sys.stderr)
+            continue
+
         if dry_run:
             print("[DRY-RUN] → 실무진 문의·컨택·등록 알림방 대상 (기준 충족, 실전송 없음)")
             print(msg)
