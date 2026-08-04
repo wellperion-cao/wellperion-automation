@@ -947,6 +947,10 @@ function fmtTime(ts){
   return p2(d.getMonth()+1)+"/"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes());
 }
 async function loadOne(k){
+  // [추가 2026-08-04 A-5 즉시반영] 쓰기 직후 서버 구본 역행 가드 — applyLocalWrite가 방금 로컬 변이한 db는
+  // 백엔드 읽기 캐시 스테일 창(B-3, 최대 300초) 동안 재조회 결과가 쓰기 전 구본일 수 있어 덮어쓰지 않는다
+  // (30초 폴링·수동 새로고침 공통 — 창이 지나면 자동으로 정상 재조회 재개).
+  if(localWriteGuardActive_(k)) return;
   var cached=loadCache(k);
   try{
     var raw=await queryDB(k);
@@ -1596,9 +1600,13 @@ async function closeJob(row,name){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-hire",adminPassword:SESSION_PW,sheetRow:row,status:"마감"})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
-    // [추가 2026-07-16 A-5 P2·G4] 진행중 지원자 명단 안내(자동쓰기 0, 당락 자동변경 배제) — reloadData 전에 표시.
+    // [추가 2026-07-16 A-5 P2·G4] 진행중 지원자 명단 안내(자동쓰기 0, 당락 자동변경 배제).
     if(r.pendingApplicants&&r.pendingApplicants.length>0){ showPendingApplicantsModal(name,r.pendingApplicants); }
-    reloadData();
+    // [수정 2026-08-04 A-5 즉시반영] 재조회(reloadData)는 B-3 스테일 창에서 마감 전 구본을 되그릴 수 있어,
+    // 성공 응답 확인 후 로컬 DB.hire를 직접 갱신하고 관련 화면만 부분 재렌더한다(r.row=백엔드 확정 행).
+    var __h=(DB.hire||[]).find(function(x){return String(x["_sheet_row"])===String((r.row!=null?r.row:row));});
+    if(__h)__h["채용 상태"]="마감";
+    applyLocalWrite(["hire"],["hire","dash","chan"]);
   }catch(e){ alert("마감 실패: "+(e.message||e)); }
 }
 // [추가 2026-07-16 A-5 P2·G4] 마감 시 진행중 지원자 명단 오버레이 — 이름 클릭 시 기존 전역 위임 클릭
@@ -2533,8 +2541,15 @@ async function submitAddBlacklist(){
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-blacklist",adminPassword:SESSION_PW,
       name:name, birth:g("blf_birth"), phone4:g("blf_phone4"), source:g("blf_source"), reason:reason, memo:g("blf_memo")})}).then(function(x){return x.json();});
     if(!r||!r.ok) throw new Error((r&&r.error)||"등록 실패");
-    if(msg){msg.style.color="var(--green)";msg.textContent="✓ 등록 완료 — 목록 갱신 중…";}
-    await loadBlacklist();   // 재조회로 반영 확인 + 재렌더(폼 초기화됨)
+    if(msg){msg.style.color="var(--green)";msg.textContent="✓ 등록 완료";}
+    // [수정 2026-08-04 A-5 즉시반영] 재조회(loadBlacklist)는 B-3 스테일 창에서 방금 등록분이 빠진 구본을
+    // 받을 수 있어, 성공 응답(row·등록일 포함)을 로컬 BLACKLIST에 직접 반영 후 부분 재렌더(폼도 초기화됨).
+    if(BLACKLIST_LOADED){
+      BLACKLIST.push({"No":(r.no!=null?r.no:""),"성명":name,"생년":g("blf_birth"),"연락처(뒤4자리)":g("blf_phone4"),"지원경로":g("blf_source"),"사유":reason,"등록일":(r["등록일"]||""),"비고":g("blf_memo"),"_sheet_row":(r.row!=null?r.row:"")});
+      rerenderTabInPlace("hire");
+    }else{
+      await loadBlacklist();   // 목록 자체가 미로드 상태면 종전 경로(전체 로드)로 확보
+    }
   }catch(e){
     if(msg){msg.style.color="var(--red)";msg.textContent="실패: "+((e&&e.message)||e);}
     if(btn){btn.disabled=false;btn.textContent="블랙리스트 등록";}
@@ -2547,7 +2562,10 @@ async function submitRemoveBlacklist(sheetRow,name){
     if(sheetRow) body.sheetRow=Number(sheetRow); else body.name=name;
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify(body)}).then(function(x){return x.json();});
     if(!r||!r.ok) throw new Error((r&&r.error)||"삭제 실패");
-    await loadBlacklist();   // 재조회로 반영 확인 + 재렌더
+    // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 배열에서 해당 행 제거 + 부분 재렌더(재조회는 B-3 스테일 위험).
+    var __tr=(r.row!=null?String(r.row):String(sheetRow||""));
+    BLACKLIST=BLACKLIST.filter(function(b){ return __tr?String(b["_sheet_row"])!==__tr:blNorm(b["성명"])!==blNorm(name); });
+    rerenderTabInPlace("hire");
   }catch(e){ alert("삭제 실패: "+((e&&e.message)||e)); }
 }
 
@@ -2587,7 +2605,11 @@ async function obSubmitStart(){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-onboarding",adminPassword:SESSION_PW,name:name,dept:document.getElementById("obsDept").value.trim(),mentor:document.getElementById("obsMentor").value.trim(),joinDate:join,owner:document.getElementById("obsOwner").value.trim()})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
-    obCloseModal("obStartModal"); reloadData();
+    obCloseModal("obStartModal");
+    // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 백엔드 고정 템플릿(체크인 13+성찰 12+정보 1)을 로컬
+    // DB.onbo에 미러링 후 부분 재렌더 — 재조회는 B-3 스테일 창에서 생성분이 빠진 구본을 되그릴 수 있음.
+    mirrorOnboRowsLocal_(name,document.getElementById("obsDept").value.trim(),document.getElementById("obsMentor").value.trim(),join,document.getElementById("obsOwner").value.trim()||"관리자+HR");
+    applyLocalWrite(["onbo"],["onbo","dash"]);
   }catch(e){ msg.textContent="실패: "+(e.message||e); btn.disabled=false; btn.textContent="90일 체크인 생성"; }
 }
 function obSelHasVal(sel,val){ if(!sel)return false; for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===val) return true; } return false; }
@@ -2767,7 +2789,17 @@ async function obSubmitCheck(){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-onboarding",adminPassword:SESSION_PW,sheetRow:row,done:true,note:note,owner:owner})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
-    obCloseModal("obCheckModal"); reloadData();
+    obCloseModal("obCheckModal");
+    // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 해당 행만 로컬 패치(완료·완료일·비고·담당자 — 백엔드
+    // handleUpdateOnboarding_ 기록 필드와 동일) + 부분 재렌더. 재조회는 B-3 스테일 창 위험으로 미사용.
+    var __ro=(DB.onbo||[]).find(function(x){return String(x["_sheet_row"])===String((r.row!=null?r.row:row));});
+    if(__ro){
+      __ro["완료 여부"]=true;
+      __ro["완료일"]=(function(){var t=new Date();return t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());})();
+      __ro["비고"]=note;
+      if(owner)__ro["담당자"]=owner;
+    }
+    applyLocalWrite(["onbo"],["onbo","dash"]);
   }catch(e){ msg.style.color="#c0392b"; msg.textContent="실패: "+(e.message||e); btn.disabled=false; btn.textContent="완료 기록"; }
 }
 async function obDelete(name){
@@ -2775,7 +2807,25 @@ async function obDelete(name){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"delete-onboarding",adminPassword:SESSION_PW,name:name})}).then(function(x){return x.json();});
     if(!r.ok) throw new Error(r.error||"실패");
-    reloadData();
+    // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 제거 + 후속 행번호 시프트 보정 — 백엔드
+    // handleDeleteOnboarding_는 deleteRow로 아래 행들을 위로 당기므로, 보정 없이는 남은 행의 체크인
+    // 기입(update-onboarding sheetRow)이 어긋난 행에 쓰일 수 있다. url은 행 재계산 불가라 비움(온보딩 미사용).
+    var __delRows=[];
+    DB.onbo=(DB.onbo||[]).filter(function(x){
+      if(String(x["대상 신입 직원"]||"").trim()===String(name||"").trim()){
+        var n=parseInt(x["_sheet_row"],10); if(!isNaN(n))__delRows.push(n);
+        return false;
+      }
+      return true;
+    });
+    if(__delRows.length){
+      DB.onbo.forEach(function(x){
+        var sr=parseInt(x["_sheet_row"],10); if(isNaN(sr))return;
+        var sh=0; for(var i=0;i<__delRows.length;i++){ if(__delRows[i]<sr)sh++; }
+        if(sh){ x["_sheet_row"]=sr-sh; x["url"]=""; }
+      });
+    }
+    applyLocalWrite(["onbo"],["onbo","dash"]);
   }catch(e){ alert("삭제 실패: "+(e.message||e)); }
 }
 /* [추가 2026-07-09] 매니저 열람용 성찰 전체보기 — 대상자의 주간 성찰 12건을 Q1/A1·Q2/A2 카드로 한 화면에 정리 + 인쇄.
@@ -3351,7 +3401,36 @@ function wpSavePerfEval(p){
   for(var k in p){ if(p.hasOwnProperty(k)) body[k]=p[k]; }
   return fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})
     .then(function(x){return x.json();})
-    .then(function(r){ if(r&&r.ok&&typeof reloadData==="function"){ try{reloadData();}catch(e){} } return r; });
+    .then(function(r){
+      // [수정 2026-08-04 A-5 즉시반영] 재조회(reloadData) 대신 성공 응답값(총점·가산점·최종점수·등급) 기준으로
+      // 저장 행을 로컬 DB.eval에 미러 후 부분 재렌더 — 백엔드 handleSaveEval_의 행 구성·피드백 브레이크다운
+      // 병기 규칙을 그대로 따라 다음 동기화 후 표시와 일치시킨다(B-3 스테일 창 회피).
+      if(r&&r.ok){
+        try{
+          var __tgt=String(p.target||"").trim();
+          var __evalName=((p.cycle||"반기")+" "+__tgt+" "+(p.evalType||"정기 성과평가")+(p.family?" ("+p.family+")":""));
+          var __fb=String(p.feedback||"").trim();
+          if(r.computed){
+            var __att=p.attScore; if(p.honestyViolation===true&&Number(__att)>40)__att=40;
+            var __hasB=(r.bonus!==""&&r.bonus!=null&&Number(r.bonus)>0);
+            var __bd="■ 정기 성과평가 산출: 기본 "+r.total+"점"
+              +(__hasB?(" + 가산점 "+r.bonus+"점 = 최종 "+r.finalScore+"점"):"")
+              +" · 등급 "+r.grade
+              +(p.honestyViolation===true?" · [정직성 게이트 적용]":"")
+              +"\n■ 직무성과 KPI: "+p.kpiScore+"점 (가중 "+p.wKpi+"%)"
+              +"\n■ 공통역량 5축: "+p.compScore+"점 (가중 "+p.wComp+"%)"
+              +"\n■ 태도·가치: "+__att+"점 (가중 "+p.wAtt+"%)"
+              +(__hasB?("\n■ 가산점(운영부 업무평가 SSOT): +"+r.bonus+"점 (최대 +10)"):"")
+              +(p.family?"\n■ 직군: "+p.family:"");
+            if(p.breakdown)__bd+="\n"+String(p.breakdown).trim();
+            __fb=__fb?(__bd+"\n\n"+__fb):__bd;
+          }
+          DB.eval.push({"평가명":__evalName,"대상자":__tgt,"평가 종류":(p.evalType||"정기 성과평가"),"평가 주기":(p.cycle||"반기"),"평가 기간 시작":(p.startDate||""),"평가 기간 종료":(p.endDate||""),"평가자":(p.evaluator||""),"총점":(r.total!=null?r.total:""),"가산점":(r.bonus!=null?r.bonus:""),"평가 등급":(r.grade||""),"평가지 링크":"","포상 여부":"N","포상 내역":"","피드백":__fb,"원본 Notion URL":"","_sheet_row":"","url":""});
+          applyLocalWrite(["eval"],["eval","dash"]);
+        }catch(e){ if(window.console&&console.warn)console.warn("[save-eval local]",(e&&e.message)||e); }
+      }
+      return r;
+    });
 }
 /* ============================================================================
    관리자 업무평가(직무성과 50% 산출) — A-4 평가담당자 · 2026-07-14 웨이브1
@@ -4160,6 +4239,90 @@ function updateSyncMeta(){
     (DB.emp.length?" · 재직 "+(function(){var s={};DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})()+"명":"");
 }
 
+/* ============ [추가 2026-08-04 A-5] 쓰기 성공 즉시 반영 — 로컬 상태 갱신 + 부분 재렌더 ============
+   배경: 백엔드 읽기 캐시 무효화 타이밍 결함(B-3)으로 쓰기 직후 재조회(reloadData/loadAll)는 최대 300초
+   동안 쓰기 전 구본을 되그릴 수 있다. 정답 경로 = 성공 응답 확인 후 ①DB[k]를 전송값/응답값 기준으로
+   직접 변이 ②saveCache(k) 동기화(다음 부팅 primeCache 구본 방지) ③관련 탭 RENDERED=false → 현재 탭이면
+   제자리 재렌더(autoRefreshHire의 스크롤·토글·캘린더월 보존 패턴 재사용). 실패·비JSON 응답 경로는 종전
+   그대로(UI 무변경) — 아래 헬퍼들은 각 핸들러가 성공 판정을 통과한 뒤에만 호출한다. */
+var LOCAL_WRITE_GUARD_MS=300000;   // B-3 스테일 창과 동일(300초) — loadOne 역행 가드 유효기간
+var __localWriteTs={};             // db키 → 마지막 로컬 변이 시각(ms)
+function localWriteGuardActive_(k){
+  try{ return !!(__localWriteTs[k] && (Date.now()-__localWriteTs[k])<LOCAL_WRITE_GUARD_MS); }catch(e){ return false; }
+}
+// 탭 1개 제자리 재렌더 — 비활성 탭은 무효화만(다음 방문 시 재렌더, rerenderHireForBlacklist 관용구).
+function rerenderTabInPlace(tab){
+  RENDERED[tab]=false;
+  if(currentTab()!==tab) return;
+  try{
+    var sx=window.scrollX,sy=window.scrollY;                       // 스크롤 보존
+    if(tab==="hire"){
+      var dEl=document.querySelector('[data-panel="hire"] details.closed-jobs');
+      var wasOpen=!!(dEl&&dEl.open);                               // 채용 마감건 토글 보존
+      var keepMonth=(window.__ivMonth&&typeof window.__ivMonth.y==="number")?{y:window.__ivMonth.y,m:window.__ivMonth.m}:null; // 캘린더 월 보존
+      renderHire();RENDERED.hire=true;
+      if(wasOpen){var d2=document.querySelector('[data-panel="hire"] details.closed-jobs');if(d2)d2.open=true;}
+      if(keepMonth){window.__ivMonth=keepMonth;var cc=document.getElementById("ivCalCard");if(cc&&window.__renderIvCal)cc.innerHTML=window.__renderIvCal(keepMonth.y,keepMonth.m);}
+    }else if(tab==="dash"){
+      var dashYM=window.__dashYM;                                  // 대시보드 캘린더 월 보존
+      renderDash();RENDERED.dash=true;
+      if(dashYM)window.__dashYM=dashYM;
+    }else if(tab==="emp"){
+      var q=(document.getElementById("empQ")||{}).value||"",fs=(document.getElementById("empSosok")||{}).value||"",ft=(document.getElementById("empType")||{}).value||"";
+      showTab("emp");                                              // renderEmp 재실행(RENDERED=false 상태)
+      var q2=document.getElementById("empQ"),f2=document.getElementById("empSosok"),t2=document.getElementById("empType");
+      if(q2&&(q||fs||ft)){ q2.value=q; if(f2)f2.value=fs; if(t2)t2.value=ft; q2.dispatchEvent(new Event("input")); } // 검색·필터 보존
+    }else{
+      showTab(tab);                                                // 렌더 오류는 showTab 자체 처리
+    }
+    window.scrollTo(sx,sy);
+  }catch(e){ if(window.console&&console.warn)console.warn("[local-rerender]",tab,(e&&e.message)||e); }
+}
+// 성공한 쓰기의 공통 마무리 — 캐시 저장 + 역행 가드 타임스탬프 + 관련 탭 재렌더 + 헤더 메타 갱신.
+function applyLocalWrite(dbKeys,tabs){
+  (dbKeys||[]).forEach(function(k){
+    try{saveCache(k,DB[k]);}catch(e){}
+    __localWriteTs[k]=Date.now();
+  });
+  (tabs||[]).forEach(function(t){ try{rerenderTabInPlace(t);}catch(e){} });
+  try{updateSyncMeta();}catch(e){}
+}
+/* add-onboarding 백엔드 고정 템플릿(handleAddOnboarding_: 온보딩정보1 + 주간체크인13 + 주간성찰12)의 로컬
+   미러 — 표시용. 서버 응답이 생성 행번호를 주지 않아 _sheet_row는 공란("")으로 둔다(잘못 추정한 행번호로
+   update-onboarding이 남의 행을 덮는 사고 방지 — 공란이면 obCheck가 조용히 무시, 기입은 다음 동기화 후). */
+function mirrorOnboRowsLocal_(name,dept,mentor,joinDate,owner){
+  var pj=String(joinDate||"").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/); if(!pj||!name) return;
+  var jy=+pj[1],jm=+pj[2],jd=+pj[3];
+  function d(n){var t=new Date(jy,jm-1,jd+n);return t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());}
+  var rows=[["온보딩 정보","온보딩정보",d(0),"부서: "+(dept||"-")+" | 멘토: "+(mentor||"-")]];
+  for(var w=1;w<=12;w++){ rows.push([(w===12?"12주차 수습평가":w+"주차 체크인"),"주간 체크인",d(w*7),""]); }
+  for(var w2=1;w2<=12;w2++){ rows.push([w2+"주차 성찰","주간 성찰",d(w2*7),""]); }
+  rows.forEach(function(p){
+    DB.onbo.push({"체크 항목":p[0],"카테고리":p[1],"대상 신입 직원":name,"담당자":(p[1]==="주간 성찰"?"신입직원":(owner||"관리자+HR")),"완료 기한":p[2],"완료 여부":"","완료일":"","비고":p[3],"원본 Notion URL":"","_sheet_row":"","url":""});
+  });
+}
+/* register 계열(handleRegister_·hire-complete)의 사전 온보딩 기본 6항목(addDefaultOnboardingTasks_) 로컬
+   미러 — 백엔드 게이트2와 동일 키(대상자+항목+기한)로 중복 방지. _sheet_row 공란 사유는 위와 동일. */
+function mirrorOnboDefaultTasksLocal_(name,joinDate){
+  if(!name) return;
+  var items=[["근로계약서 작성·서명","서류·계약","인사담당"],["신분증 사본 제출","서류·계약","신입직원"],["통장 사본 제출 (급여)","서류·계약","신입직원"],["근태·일정 시스템 접근","시스템 접근","운영부"],["오리엔테이션","교육·OT","CHRO"],["부서 인사 인사·시설 투어","조직 적응","부서장"]];
+  items.forEach(function(t){
+    var dup=(DB.onbo||[]).some(function(x){return String(x["대상 신입 직원"]||"").trim()===name&&String(x["체크 항목"]||"").trim()===t[0]&&String(x["완료 기한"]||"").slice(0,10)===String(joinDate||"").slice(0,10);});
+    if(dup)return;
+    DB.onbo.push({"체크 항목":t[0],"카테고리":t[1],"대상 신입 직원":name,"담당자":t[2],"완료 기한":String(joinDate||""),"완료 여부":"","완료일":"","비고":"","원본 Notion URL":"","_sheet_row":"","url":""});
+  });
+}
+/* register/hire-complete 성공 응답의 현재근무자 행을 로컬 DB.emp에 미러 — 서버 읽기(readCurrentSheet_)의
+   파생 규칙(소속 매핑·강습부 접두=프리랜서·기본 재직중)을 그대로 따라 다음 동기화 후 표시와 일치시킨다.
+   url은 서버측 해시라 로컬 산출 불가 → 공란(이 행의 퇴사 처리 버튼은 다음 동기화 후 동작). */
+function mirrorEmpRowLocal_(name,dept,rank,joinDate,phone,email,sheetRow){
+  if(!name) return;
+  var d=String(dept||"").trim();
+  var sosok=(d==="시설"||d==="주차"||d==="주차관리"||d==="주차관리부"||d==="지원")?"시설부":d;
+  var empType=/^(헬스|P\.?T|필라테스|스쿼시|골프|수영|체조|G\.?X|GXE)/i.test(d)?"프리랜서":"정규직";
+  DB.emp.push({"성명":name,"이름":name,"부서":d,"소속":sosok,"직급":String(rank||""),"고용 형태":empType,"재직 상태":"재직중","입사일":String(joinDate||""),"연락처":String(phone||""),"이메일":String(email||""),"_sheet_row":(sheetRow!=null&&sheetRow!==""?sheetRow:""),"url":""});
+}
+
 /* ============ 채용(hire)·대시보드(dash) 탭 자동 갱신 — 외부(AI·타인·타기기) 변경 무음 반영 (2026-07-10 대시보드 실시간화) ============ */
 var AUTO_HIRE_MS=30000;        // 채용탭·대시보드탭 공용 폴링 주기(서버 읽기 캐시 45~60초라 30초면 1분 내 반영)
 var __autoTimer=null;          // 폴링 타이머(채용탭·대시보드탭에서 가동)
@@ -4389,7 +4552,11 @@ async function submitHire(){
     msg.className="modal-msg ok";
     msg.innerHTML="✓ "+esc(name)+" 등록 완료<br>"+parts.map(esc).join("<br>");
     btn.textContent="완료";
-    setTimeout(function(){closeHireModal();reloadData();},2600);
+    // [수정 2026-08-04 A-5 즉시반영] 응답(sheet_row) 기준 로컬 DB.emp 행 + 온보딩 기본 6항목 미러 후
+    // 부분 재렌더 — 재조회는 B-3 스테일 창에서 신규 행이 빠진 구본을 되그릴 수 있어 쓰지 않는다.
+    mirrorEmpRowLocal_(name,dept,rank,date,phone,email,data.sheet_row);
+    mirrorOnboDefaultTasksLocal_(name,date);
+    setTimeout(function(){closeHireModal();applyLocalWrite(["emp","onbo"],["emp","dash","onbo"]);},2600);
   }catch(e){
     msg.className="modal-msg err";msg.textContent="서버 연결 오류: "+((e&&e.message)||e);
     btn.disabled=false;btn.textContent="등록 실행";
@@ -4435,7 +4602,11 @@ async function submitSchedule(){
     }
     msg.className="modal-msg ok";msg.innerHTML="✓ "+esc(schTarget.name)+" — "+esc(stage)+" 일정 등록 완료";
     btn.textContent="완료";
-    setTimeout(function(){closeScheduleModal();reloadData();},2200);
+    // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 지원자 행 패치(백엔드 handleScheduleInterview_ 기록
+    // 필드와 동일: 면접 일정·담당 면접관(있을 때)·전형 단계) + 부분 재렌더(재조회는 B-3 스테일 위험).
+    var __sa=(DB.appl||[]).find(function(x){return normId(x.url)===schTarget.pageId;});
+    if(__sa){ __sa["면접 일정"]=date; if(interviewer)__sa["담당 면접관"]=interviewer; if(stage)__sa["전형 단계"]=stage; }
+    setTimeout(function(){closeScheduleModal();applyLocalWrite(["appl"],["hire","dash"]);},2200);
   }catch(e){
     msg.className="modal-msg err";msg.textContent="서버 오류: "+((e&&e.message)||e);
     btn.disabled=false;btn.textContent="면접 등록";
@@ -4480,7 +4651,19 @@ async function submitInterviewEval(){
     }
     msg.className="modal-msg ok";msg.innerHTML="✓ "+esc(iveTarget.name)+" — "+esc(grade)+" 등급 / "+esc(next)+" 처리 완료";
     btn.textContent="완료";
-    setTimeout(function(){closeInterviewEvalModal();reloadData();},2200);
+    // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 패치(백엔드 handleUpdateInterview_ 기록과 동일:
+    // 평점·다음 단계·메모 스탬프 병기) + 부분 재렌더(재조회는 B-3 스테일 위험).
+    var __ia=(DB.appl||[]).find(function(x){return normId(x.url)===iveTarget.pageId;});
+    if(__ia){
+      if(grade)__ia["면접 평점"]=grade;
+      if(next)__ia["전형 단계"]=next;
+      if(note){
+        var __t=new Date();
+        var __st="["+__t.getFullYear()+"-"+p2(__t.getMonth()+1)+"-"+p2(__t.getDate())+" "+p2(__t.getHours())+":"+p2(__t.getMinutes())+" 면접평가] ";
+        __ia["메모"]=(__ia["메모"]?__ia["메모"]+"\n":"")+__st+note;
+      }
+    }
+    setTimeout(function(){closeInterviewEvalModal();applyLocalWrite(["appl"],["hire","dash"]);},2200);
   }catch(e){
     msg.className="modal-msg err";msg.textContent="서버 오류: "+((e&&e.message)||e);
     btn.disabled=false;btn.textContent="평가 등록";
@@ -4511,7 +4694,7 @@ function openHireCompleteModal(pageId,name){
 }
 function closeHireCompleteModal(){document.getElementById("hireCompleteModal").classList.remove("show");}
 // [추가 2026-08-04 A-5] 첫 출근예정일 저장 — update-applicant에 joinDate만 실어 보냄(stage 미전달로
-// 전형 단계 보존, 핵심규칙 4). 저장 후 reloadData()로 서버 재조회 라운드트립까지 확인.
+// 전형 단계 보존, 핵심규칙 4). 성공 응답 확인 후 로컬 반영+부분 재렌더(즉시반영 패턴).
 async function saveJoinDate(pageId,name){
   var input=document.getElementById("jd_"+pageId);
   if(!input)return;
@@ -4522,7 +4705,10 @@ async function saveJoinDate(pageId,name){
   try{
     var r=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"update-applicant",adminPassword:SESSION_PW,sheetRow:__a["_sheet_row"],joinDate:date})}).then(function(x){return x.json();});
     if(r&&r.ok){
-      reloadData();
+      // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 반영(합류 가능일만 — stage 미전달 계약 그대로) +
+      // 부분 재렌더. 재조회는 B-3 스테일 창에서 방금 저장한 날짜를 빈값/구값으로 되돌려 보일 수 있음.
+      __a["합류 가능일"]=date;
+      applyLocalWrite(["appl"],["hire","dash"]);
     }else{
       alert("저장 실패: "+((r&&r.error)||"알 수 없는 오류"));
     }
@@ -4557,7 +4743,7 @@ async function submitHireComplete(){
     }
     var parts=["• 임직원 명부: "+(data.empPage?"생성 완료":"실패 — "+(data.empPageMsg||""))];
     parts.push("• 매출보고서 시트: "+(data.sheet&&data.sheet.ok?(data.sheet.msg||"행 추가 완료"):"실패 — "+((data.sheet&&data.sheet.msg)||"")));
-    parts.push("• 지원자 페이지: 입사 완료 표시");try{if(!(DB.onbo||[]).some(function(o){return String(o["대상 신입 직원"]||"")===hcTarget.name;})){var _or=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-onboarding",adminPassword:SESSION_PW,name:hcTarget.name,dept:dept,joinDate:date,owner:"관리자+HR"})}).then(function(x){return x.json();});parts.push("• 온보딩: "+((_or&&_or.ok)?"90일 체크인 자동생성":"실패"));}else{parts.push("• 온보딩: 이미 등록됨");}}catch(_e){parts.push("• 온보딩: 생성 보류");}
+    parts.push("• 지원자 페이지: 입사 완료 표시");try{if(!(DB.onbo||[]).some(function(o){return String(o["대상 신입 직원"]||"")===hcTarget.name;})){var _or=await fetch(NOTION_FN,{method:"POST",body:JSON.stringify({action:"add-onboarding",adminPassword:SESSION_PW,name:hcTarget.name,dept:dept,joinDate:date,owner:"관리자+HR"})}).then(function(x){return x.json();});parts.push("• 온보딩: "+((_or&&_or.ok)?"90일 체크인 자동생성":"실패"));if(_or&&_or.ok)mirrorOnboRowsLocal_(hcTarget.name,dept,"",date,"관리자+HR");/* [2026-08-04 A-5 즉시반영] 90일 템플릿 로컬 미러 */}else{parts.push("• 온보딩: 이미 등록됨");}}catch(_e){parts.push("• 온보딩: 생성 보류");}
     msg.className="modal-msg ok";
     msg.innerHTML="✓ "+esc(hcTarget.name)+" 입사 확정 완료<br>"+parts.map(esc).join("<br>");
     btn.textContent="완료";
@@ -4568,7 +4754,14 @@ async function submitHireComplete(){
         closeJob(__posting.jobRow,__posting.jobName);
       }
     }
-    setTimeout(function(){closeHireCompleteModal();reloadData();},2800);
+    // [수정 2026-08-04 A-5 즉시반영] 응답 확인 후 로컬 미러(지원자 행 최종합격·합류일 + 임직원 행 + 온보딩
+    // 기본 6항목) 후 부분 재렌더 — 재조회는 B-3 스테일 창에서 확정 전 구본을 되그릴 수 있어 쓰지 않는다.
+    // 임직원 등재 미러로 isAlreadyHiredEmp_가 즉시 참이 되어 '✓ 입사확정 완료' 중복방지 버튼도 바로 반영.
+    var __ha=(DB.appl||[]).find(function(x){return normId(x.url)===hcTarget.pageId;})||(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===hcTarget.name;});
+    if(__ha){ __ha["전형 단계"]="최종 합격"; __ha["합류 가능일"]=date; }
+    mirrorEmpRowLocal_(hcTarget.name,dept,rank,date,(__ha&&__ha["연락처"])||"",(__ha&&__ha["이메일"])||"",(data.register&&data.register.sheet_row));
+    mirrorOnboDefaultTasksLocal_(hcTarget.name,date);
+    setTimeout(function(){closeHireCompleteModal();applyLocalWrite(["appl","emp","onbo"],["hire","dash","emp","onbo"]);},2800);
   }catch(e){
     msg.className="modal-msg err";msg.textContent="서버 오류: "+((e&&e.message)||e);
     btn.disabled=false;btn.textContent="입사 확정 실행";
@@ -4763,8 +4956,18 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
         stage: stage, interviewDate: date, interviewer: interviewer, note: note
       })}).then(function(r){return r.json();});
       if(!r1.ok) throw new Error(r1.error||"set-stage failed");
+      // [수정 2026-08-04 A-5 즉시반영 — 매니저 실증 결함 교정] 종전 loadAll()만으로는 ①재렌더가 없어 화면
+      // 불변 ②재조회 자체도 B-3 스테일 창 위험. __currentAppl은 DB.appl 행과 동일 참조(APPS_BY_NAME 경유)라
+      // 성공 응답 확인 후 직접 패치가 곧 DB 갱신 — 백엔드 handleSetStage_ 기록 필드(단계·일정·면접관·메모
+      // 이어붙임)와 동일하게 미러하고, 모달 상세도 즉시 갱신 후 닫힐 때 부분 재렌더.
+      if(stage) a["전형 단계"]=stage;
+      if(date) a["면접 일정"]=date;
+      if(interviewer) a["담당 면접관"]=interviewer;
+      if(note) a["메모"]=(a["메모"]?a["메모"]+"\n":"")+note;
+      (function(){ function S2(id,v){var el=document.getElementById(id);if(el)el.textContent=(v==null||v==="")?"—":String(v);}
+        S2("aiStage",a["전형 단계"]); S2("aiIveDate",fmtDate(a["면접 일정"])); S2("aiIveer",a["담당 면접관"]); })();
       msg.style.color = "#0a6b3a"; msg.textContent = "✓ 변경 완료 — 단계: " + stage + (date? " · 면접 "+date.replace("T"," ") : "");
-      setTimeout(function(){ document.getElementById("aiModal").style.display = "none"; if(typeof loadAll==="function") loadAll(); }, 1200);
+      setTimeout(function(){ document.getElementById("aiModal").style.display = "none"; if(typeof applyLocalWrite==="function") applyLocalWrite(["appl"],["hire","dash"]); }, 1200);
     } catch(e){
       msg.style.color = "#b00020"; msg.textContent = "❌ 실패: " + (e.message||e);
     } finally {
