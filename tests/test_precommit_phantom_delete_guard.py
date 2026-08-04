@@ -240,7 +240,8 @@ def test_normal_staged_commit_passes_stale_gate(tmp_path, monkeypatch, capsys):
 
 
 def test_reconcile_syncs_index_to_new_head(tmp_path):
-    """②무접촉 통합 직후 라이브 인덱스가 새 HEAD 와 일치(동결 0) · 작업트리는 무접촉."""
+    """②무접촉 통합 직후 인덱스=새 HEAD(동결 0) ③원격 추가분 디스크 실체화
+    ④로컬에서 수정 중인 파일은 절대 안 덮임(가장 중요한 안전 조건)."""
     import post_commit_push as P
 
     bare = tmp_path / "origin.git"
@@ -251,30 +252,38 @@ def test_reconcile_syncs_index_to_new_head(tmp_path):
     _git(["config", "user.email", "t@t.t"], local)
     _git(["config", "user.name", "T"], local)
     (local / "README.md").write_text("init\n", encoding="utf-8")
-    _git(["add", "README.md"], local)
+    (local / "shared.md").write_text("v1\n", encoding="utf-8")
+    _git(["add", "README.md", "shared.md"], local)
     _git(["commit", "-q", "-m", "init"], local)
     _git(["remote", "add", "origin", str(bare)], local)
     _git(["push", "-q", "origin", "master"], local)
 
-    # 나우열M PC 역할 — 별도 클론이 파일을 추가해 push (이 PC 디스크엔 영영 없는 파일)
+    # 나우열M PC 역할 — 별도 클론이 파일 추가 + shared.md 수정 후 push
     other = tmp_path / "other"
     _git(["clone", "-q", str(bare), str(other)], tmp_path)
     _git(["config", "user.email", "n@t.t"], other)
     _git(["config", "user.name", "N"], other)
     _commit_file(other, "photos/r999.jpg", content="remote-added\n")
+    (other / "shared.md").write_text("v2-remote\n", encoding="utf-8")
+    _git(["add", "shared.md"], other)
+    _git(["commit", "-q", "-m", "shared v2"], other)
     _git(["push", "-q", "origin", "master"], other)
 
     _commit_file(local, "local.md", content="local work\n")  # 로컬도 앞섬 → non-ff
+    # 로컬에서 shared.md 를 수정 중(미커밋) — 통합·실체화가 절대 덮으면 안 됨
+    (local / "shared.md").write_text("local-uncommitted\n", encoding="utf-8")
 
     ok, reason = P._reconcile(str(local))
     assert ok, reason
-    # 인덱스 ↔ 새 HEAD 차이 0건 (동결 없음)
+    # ② 인덱스 ↔ 새 HEAD 차이 0건 (동결 없음)
     r = subprocess.run(["git", "-C", str(local), "diff", "--cached", "--name-only"],
                        capture_output=True, text=True, encoding="utf-8")
     assert r.stdout.strip() == "", r.stdout
-    # 원격 추가 파일이 HEAD·인덱스 양쪽에 들어왔다
+    # ③ 원격 추가분: HEAD·인덱스에 들어왔고 **디스크에도 실체화**됐다(다)
     ls = subprocess.run(["git", "-C", str(local), "ls-files", "--", "photos/r999.jpg"],
                         capture_output=True, text=True, encoding="utf-8")
     assert ls.stdout.strip() != ""
-    # 작업트리 무접촉 — 파일은 디스크에 안 쓰였다(체크아웃은 이번 범위 밖·GM 지시 5항)
-    assert not (local / "photos/r999.jpg").exists()
+    assert (local / "photos/r999.jpg").exists()
+    assert (local / "photos/r999.jpg").read_text(encoding="utf-8") == "remote-added\n"
+    # ④ 로컬에 존재하며 수정 중이던 파일은 그대로 — 원격 v2 로 덮이지 않았다
+    assert (local / "shared.md").read_text(encoding="utf-8") == "local-uncommitted\n"

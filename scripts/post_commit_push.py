@@ -291,6 +291,59 @@ def _sync_index_to_new_head(root: str, old_head: str, new_sha: str) -> list:
         return []
 
 
+def _fill_missing_from_index(root: str, old_head: str, new_sha: str) -> list:
+    """(다) 원격 추가분 실체화 (2026-08-04 GM 지시) — **디스크에 없는 경로만** 채운다.
+
+    왜: 무접촉 통합은 checkout 을 안 하므로 원격(나우열M PC·remote 세션)이 추가한
+    파일이 이 PC 디스크에 영원히 안 내려온다(실측: chro/hub/photos 가 r99 에서 정지).
+    디스크에 없는 파일은 **덮어쓸 로컬 변경 자체가 없다** — 잃을 것이 0 인 경로만 쓴다.
+
+    안전 조건(코드로 강제):
+      ①os.path.exists 로 걸러 **로컬에 파일이 있는 경로는 후보에서 제외**(수정 중일 수 있음)
+      ②인덱스에 실존하는 경로만(ls-files 대조 — 삭제·동기화 실패분 자동 제외)
+      ③쓰기는 `git checkout-index`(-f 없음) — 이 명령은 기존 파일을 **절대 덮지 않는다**
+        (①의 이중 안전벨트). checkout --·restore 계열은 쓰지 않는다.
+    채운 수를 로그에 남긴다(조용히 하지 않음). 실패=best-effort(다음 통합이 재시도)."""
+    try:
+        r = subprocess.run(
+            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "-z",
+             old_head, new_sha],
+            cwd=root, capture_output=True, timeout=60,
+        )
+        if r.returncode != 0:
+            return []
+        paths = [p.decode("utf-8", "replace") for p in r.stdout.split(b"\x00") if p]
+        cand = [p for p in paths if p and not os.path.exists(os.path.join(root, p))]
+        if not cand:
+            return []
+        filled: list = []
+        for i in range(0, len(cand), 100):  # Windows 명령줄 길이 한도 방어(한글 경로)
+            chunk = cand[i:i + 100]
+            ls = subprocess.run(
+                ["git", "-c", "core.quotepath=false", "ls-files", "-z", "--", *chunk],
+                cwd=root, capture_output=True, timeout=60,
+            )
+            if ls.returncode != 0:
+                continue
+            in_index = [p.decode("utf-8", "replace") for p in ls.stdout.split(b"\x00") if p]
+            if not in_index:
+                continue
+            payload = b"\x00".join(p.encode("utf-8") for p in in_index) + b"\x00"
+            co = subprocess.run(
+                ["git", "checkout-index", "-z", "--stdin"],
+                cwd=root, input=payload, capture_output=True, timeout=120,
+            )
+            if co.returncode == 0:
+                filled += in_index
+        if filled:
+            _log(f"POST_COMMIT_PUSH 원격 추가분 실체화 {len(filled)}건(디스크에 없던 것만): "
+                 f"{', '.join(filled[:5])}", root)
+        return filled
+    except Exception as e:
+        _log(f"POST_COMMIT_PUSH 실체화 실패(best-effort) {e}", root)
+        return []
+
+
 def _reconcile(root: str) -> tuple[bool, str]:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
     ★언제나 merge 로만 통합한다(rebase 경로는 배147에서 껐다 — 아래 _ALLOW_REBASE 주석 참고).
@@ -457,8 +510,11 @@ def _reconcile(root: str) -> tuple[bool, str]:
                         #   라이브 인덱스가 옛 트리에 동결돼 이후 맨손 커밋이 원격 추가분을
                         #   삭제로·원격 수정분을 되돌림으로 쓸어담는다. 통합 직후 바로 맞춘다.
                         synced = _sync_index_to_new_head(root, head, new)
+                        # (다) 원격 추가분 실체화 — 인덱스 동기화 뒤에 호출(인덱스 기준으로 쓰므로).
+                        filled = _fill_missing_from_index(root, head, new)
                         _log("POST_COMMIT_PUSH ok(작업트리 무접촉 통합 — 배245"
                              + (f" · 인덱스 동기화 {len(synced)}건" if synced else "")
+                             + (f" · 실체화 {len(filled)}건" if filled else "")
                              + ")", root)
                         return True, ""
                     reason = _tail("update-ref 실패(그새 HEAD 이동): "
