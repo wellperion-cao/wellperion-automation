@@ -3473,13 +3473,27 @@
       .then(function(r){ return r.json(); })
       .then(function(data){
         var board = (data && data.ok && data.board && typeof data.board === 'object') ? data.board : {};
-        var done = 0;
-        for(var k in board){ if(board[k] && k.indexOf('broj-p') !== 0) done++; }
-        var p1Open = BROJ_P1_IDS.filter(function(id){ return !board[id]; }).length;
-        pEl.textContent = done + '/' + BROJ_DEPT_TOTAL + ' 체크';
+        // 2026-08-04 GM 표면점검(배233) — board[k] 는 {checked:false, text:..} 같은 메모 객체도 있어
+        // 예전엔 "존재하면 완료"로 세는 바람에 체크 안 된 메모 13건까지 완료로 잡혀 14/36(39%)로 보였다
+        // (실제 체크=1건·3%). checked===true 인 것만 센다. 삭제·숨김(브로제이 페이지엔 안 뜨는) 항목은
+        // 분자·분모 모두 제외 — 대신 현장에서 새로 추가한 항목(origin:'staff')은 분모에 더한다
+        // (분모 36 이 실측 38 보다 낮았던 것도 이 누락 때문 — 실제 항목 목록은 이 페이지가 아니라
+        // coo/brojay/브로제이_업무분장.html 이 정본(약속 L01)이라 그 목록을 복제하지 않고, board 가
+        // 자체적으로 갖고 있는 origin·hidden·deleted 표식만으로 정본 페이지의 렌더 규칙을 따라간다).
+        var isChecked = function(v){ return v === true || (v && typeof v === 'object' && v.checked === true); };
+        var done = 0, staffExtra = 0;
+        for(var k in board){
+          var v = board[k];
+          if(v && typeof v === 'object' && (v.deleted || v.hidden)) continue;
+          if(v && typeof v === 'object' && v.origin === 'staff') staffExtra++;
+          if(isChecked(v) && k.indexOf('broj-p') !== 0) done++;
+        }
+        var brojTotal = BROJ_DEPT_TOTAL + staffExtra;
+        var p1Open = BROJ_P1_IDS.filter(function(id){ return !isChecked(board[id]); }).length;
+        pEl.textContent = done + '/' + brojTotal + ' 체크';
         if(p1El) p1El.textContent = p1Open ? ('P1 회신대기 ' + p1Open + '/4') : '';
         if(bodyEl) bodyEl.innerHTML =
-          '<div class="tg-line"><span>담당별 체크</span><span>' + done + '/' + BROJ_DEPT_TOTAL + '</span></div>' +
+          '<div class="tg-line"><span>담당별 체크</span><span>' + done + '/' + brojTotal + '</span></div>' +
           '<div class="tg-line"><span>P1 회신대기</span><span>' + p1Open + '/4</span></div>' + link;
       })
       .catch(function(){
