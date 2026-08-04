@@ -647,6 +647,23 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       return true;
   }
 
+  /* 공개 배관 조회 — 재시도 포함(2026-08-04).
+     이 백엔드는 구매요청과 같은 Apps Script 라, 무거운 매출 재계산이 물려 있으면
+     간헐적으로 404(HTML)를 돌려준다(2026-07-08 에 기록된 알려진 증상). 한 번 실패로
+     화면이 비지 않도록 점증 간격으로 다시 묻는다. 끝까지 실패하면 null 을 준다. */
+  function pubGet(q){
+    var delays=[0,1200,2600,4500];
+    return (function step(i){
+      return new Promise(function(rs){setTimeout(rs,delays[i]);})
+        .then(function(){return fetch(PUB_API+q).then(function(r){return r.json();}).catch(function(){return null;});})
+        .then(function(j){
+          if(j&&j.ok)return j;
+          if(i+1<delays.length)return step(i+1);
+          return j;
+        });
+    })(0);
+  }
+
   /* CSV 재파싱은 강사별을 '시트에 있는 값'으로 되돌린다. 그래서 배관으로 채웠던 달(강습부 미입력월)이
      새로고침마다 사라졌다가 보완 응답(수십 초)이 와야 다시 나타났다 — 저장본으로 7월이 보이다가
      도로 비는 증상의 원인. 직전에 알고 있던 값을 '시트가 비어 있는 달에 한해' 되살린다(시트 우선 불변). */
@@ -681,8 +698,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     var gaps=instrGapMonths().slice(-3);
     if(!gaps.length)return Promise.resolve(false);
     return Promise.all(gaps.map(function(m){
-      return fetch(PUB_API+'?action=sales_instr_pub&month='+m+(force?'&nocache=1':''))
-        .then(function(r){return r.json();}).catch(function(){return null;});
+      return pubGet('?action=sales_instr_pub&month='+m+(force?'&nocache=1':''));
     })).then(function(arr){
       if(seq!==SALES_SEQ)return false;
       var any=false;
@@ -709,8 +725,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     var err=document.getElementById('salesError');err.style.display='none';
     var hasView=!!(MODEL&&MODEL.months); // 이미 화면에 데이터가 있으면(캐시·이전 로드) 절대 비우지 않고 배경 갱신
     up.textContent=force?'서버 재계산 중…(수 분 소요 가능)':(hasView?(SALES_FROM_CACHE?savedLabel()+' 표시 · 갱신 중…':'갱신 중…'):'불러오는 중…');
-    var pDept=fetch(PUB_API+'?action=sales_dept_pub'+(force?'&nocache=1':'')).then(function(r){return r.json();}).catch(function(){return null;});
-    var pInstr=fetch(PUB_API+'?action=sales_instr_pub'+(force?'&nocache=1':'')).then(function(r){return r.json();}).catch(function(){return null;});
+    var pDept=pubGet('?action=sales_dept_pub'+(force?'&nocache=1':''));
+    var pInstr=pubGet('?action=sales_instr_pub'+(force?'&nocache=1':''));
     fetch(SALES_CSV+(force?('&_='+Date.now()):'')).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(function(txt){
       if(seq!==SALES_SEQ)return;
       var M=parseCSV(txt);
