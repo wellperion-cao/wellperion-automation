@@ -2,7 +2,7 @@
   "_doc": "정기·조건부·이벤트 텔레그램/카카오톡 발신 전체의 단일 SSOT. GM 지시(2026-07-20) — 자율현황 통합 알림 보드가 이 파일을 렌더. 신규 발신 추가 시 여기 먼저 등록(scripts/notify_registry_check.py 가 코드↔등록부 드리프트를 대조).",
   "_schema": "id · when(표시용 시각/주기) · when_sort(정렬용 HHMM, 부정기=null) · freq(daily|weekly|monthly|conditional|event) · channel(telegram|kakao) · room(방 이름) · chat_id(숫자 chat_id, 모르면 null) · what(한 줄 설명) · owner(닉네임) · trigger(apscheduler|schtasks|gas_time|gas_event|manual) · state(live|off|dead) · state_note(꺼진·죽은 이유) · source(파일:줄) · gen(선택·비파괴 — 스케줄 생성기 Phase1 선언, scripts/schedule_generator.py --plan 소비. trigger=schtasks·state=live 항목에만 추가 가능)",
   "_gen_schema": "gen.task(schtasks 작업명, 생략시 id 사용) · gen.script(레포 루트 기준 .py 상대경로) · gen.args(문자열 배열) · gen.py(인터프리터 절대경로, 생략시 C:\\Python314\\python.exe) · gen.schedule{kind:daily|weekly|monthly|interval, at:'HH:MM', dow:'MON'.. (weekly), day:1..31 (monthly), every:분 (interval)} · gen.log(레포 루트 기준 로그 상대경로) · gen.hidden(true=vbs 숨김런처 경유). Phase1은 --plan(현실 대조 diff)만 — 이 필드에서 vbs/bat/schtasks를 실제로 생성하지 않음(Phase2/3 승인 전까지).",
-  "generated_at": "2026-07-22",
+  "generated_at": "2026-08-04",
   "items": [
     {
       "id": "tg-0600-morning",
@@ -287,21 +287,6 @@
       "source": "Wellperion-AI-Education-Weekly · scripts/education_archive_weekly.py → weekly_bundle_pending → Wellperion-Weekly-Self-Review-Sunday(10:30)에서 발신"
     },
     {
-      "id": "win-weekly-sun0900-module",
-      "when": "월 09:00",
-      "when_sort": null,
-      "freq": "weekly",
-      "channel": "telegram",
-      "room": "자동화현황방",
-      "chat_id": null,
-      "what": "모듈 주간 보고",
-      "owner": "시토",
-      "trigger": "schtasks",
-      "state": "dead",
-      "state_note": "2026-08-02 시토 — 예약작업 Wellperion-Module-Report-Weekly 가 실재하지 않음(Get-ScheduledTask 실측). 주간 모듈 보고 기능은 Wellperion-Module-Report-Daily(win-0910-module-daily)가 흡수해 가동 중. 이 등록부 항목이 live 로 남아 있어 매일 MISSING_IN_REALITY 경보 발생(경보 피로 원인) → dead 로 변경.",
-      "source": "Wellperion-Module-Report-Weekly"
-    },
-    {
       "id": "win-weekly-sun1030-selfreview",
       "when": "일 10:30",
       "when_sort": null,
@@ -375,21 +360,6 @@
       "state": "live",
       "state_note": "",
       "source": "Wellperion-MonthlyOps-End-2100"
-    },
-    {
-      "id": "win-monthly-module",
-      "when": "매월(등록부 monthly 모듈)",
-      "when_sort": null,
-      "freq": "monthly",
-      "channel": "telegram",
-      "room": "자동화현황방",
-      "chat_id": null,
-      "what": "모듈 월간 보고",
-      "owner": "시토",
-      "trigger": "schtasks",
-      "state": "dead",
-      "state_note": "2026-08-02 시토 — 예약작업 Wellperion-Module-Report-Monthly 가 실재하지 않음(Get-ScheduledTask 실측). 실재 월간 보고는 Wellperion-Module-Report-Daily(win-0910-module-daily)가 --cadence monthly 로 처리. 이 항목이 live 로 남아 매일 MISSING_IN_REALITY 경보 발생 → dead 로 변경.",
-      "source": "Wellperion-Module-Report-Monthly"
     },
     {
       "id": "win-monthly-4thmon1000-memberexpiry",
@@ -574,6 +544,50 @@
   ],
   "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다.",
   "_removed": [
+    {
+      "id": "win-weekly-sun0900-module",
+      "removed_at": "2026-08-04",
+      "by": "시토",
+      "why": "GM 지적(2026-08-04 '자율현황 문제 2건') — dead 로 2026-08-02 부터 남아 「AI 진행현황」(자동화현황방) 카드에 문제 1건으로 계속 잡히고 있었다. 실측 재확인: Get-ScheduledTask 에 Wellperion-Module-Report-Weekly 없음(존재 스케줄=Wellperion-Module-Report-Daily 1개뿐) · 그 작업이 실행하는 ops/module_report_daily.bat 는 module_reporter.py --cadence auto 를 부르고, _cadences_due_today() 가 일요일이면 weekly 를 자동 포함한다(module_reporter.py:368-399) — 별도 작업 없이 이미 흡수돼 가동 중. 죽은 게 아니라 흡수된 것이라 등록부에서 정리.",
+      "restore": "되살리려면 이 블록을 items 로 옮기면 된다(단, Wellperion-Module-Report-Weekly 예약작업을 실제로 다시 만들 게 아니라면 되살릴 이유 없음 — 기능은 daily auto 가 이미 대체 중)",
+      "snapshot": {
+        "id": "win-weekly-sun0900-module",
+        "when": "월 09:00",
+        "when_sort": null,
+        "freq": "weekly",
+        "channel": "telegram",
+        "room": "자동화현황방",
+        "chat_id": null,
+        "what": "모듈 주간 보고",
+        "owner": "시토",
+        "trigger": "schtasks",
+        "state": "dead",
+        "state_note": "2026-08-02 시토 — 예약작업 Wellperion-Module-Report-Weekly 가 실재하지 않음(Get-ScheduledTask 실측). 주간 모듈 보고 기능은 Wellperion-Module-Report-Daily(win-0910-module-daily)가 흡수해 가동 중.",
+        "source": "Wellperion-Module-Report-Weekly"
+      }
+    },
+    {
+      "id": "win-monthly-module",
+      "removed_at": "2026-08-04",
+      "by": "시토",
+      "why": "GM 지적(2026-08-04 '자율현황 문제 2건') — dead 로 2026-08-02 부터 남아 「AI 진행현황」(자동화현황방) 카드에 문제 1건으로 계속 잡히고 있었다(위 항목과 합쳐 2건). 실측 재확인: Get-ScheduledTask 에 Wellperion-Module-Report-Monthly 없음(존재 스케줄=Wellperion-Module-Report-Daily 1개뿐) · module_reporter.py --cadence auto → _cadences_due_today() 가 매월 1일이면 monthly 를 자동 포함(module_reporter.py:368-399) — 별도 작업 없이 이미 흡수돼 가동 중. 죽은 게 아니라 흡수된 것이라 등록부에서 정리.",
+      "restore": "되살리려면 이 블록을 items 로 옮기면 된다(단, Wellperion-Module-Report-Monthly 예약작업을 실제로 다시 만들 게 아니라면 되살릴 이유 없음 — 기능은 daily auto 가 이미 대체 중)",
+      "snapshot": {
+        "id": "win-monthly-module",
+        "when": "매월(등록부 monthly 모듈)",
+        "when_sort": null,
+        "freq": "monthly",
+        "channel": "telegram",
+        "room": "자동화현황방",
+        "chat_id": null,
+        "what": "모듈 월간 보고",
+        "owner": "시토",
+        "trigger": "schtasks",
+        "state": "dead",
+        "state_note": "2026-08-02 시토 — 예약작업 Wellperion-Module-Report-Monthly 가 실재하지 않음(Get-ScheduledTask 실측). 실재 월간 보고는 Wellperion-Module-Report-Daily(win-0910-module-daily)가 --cadence monthly 로 처리.",
+        "source": "Wellperion-Module-Report-Monthly"
+      }
+    },
     {
       "id": "gas-cfo-procurement",
       "removed_at": "2026-08-01",
