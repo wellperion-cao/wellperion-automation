@@ -4440,6 +4440,19 @@ function _lessonRegDateStr(r) {
 // 2026-07-15 GM 지시(전환보드 삭제→현황카드 일원화)로 신설.
 // 멤버십 신규 등록 현황 카드 페이스 — 2026-07-18 GM 지시로 강습 registry(성인/유소년) → 멤버십 신규등록(member_registered_list)
 // 금일/월간 카운트로 재배선. 구 _lessonComboRegLoad(성인/유소년 lesson_registry_list) 대체.
+// 등록 분류 판정 — regClass2(재등록분류) 우선, 없으면 regClass(등록분류). 빈칸/'신규' = 신규(null).
+// 그 외 문자열(재등록·양수·환불·양도·대기 등)은 원문 그대로 라벨로 쓴다 — 모르는 표기 손대지 않음(_mregProgLabel과 동일 원칙).
+// 2026-08-04 시토 서버 필드 추가(regClass/regClass2/regSeq, 배303) 대응 — 「멤버십 신규 등록현황」에 재등록이
+// 섞여 보이던 문제(GM 신고, 배349) 수리: 신규/그 외를 여기서 가른다. 값이 아예 없는 옛 응답 = 전부 신규 취급(무변경).
+function _mregClassify(m){
+  var raw = String((m && (m.regClass2 || m.regClass)) || '').trim();
+  return (!raw || raw === '신규') ? null : raw;   // null = 신규
+}
+function _mregCountNew(rows){
+  var n = 0;
+  (rows || []).forEach(function(m){ if (!_mregClassify(m)) n++; });
+  return n;
+}
 var _lessonComboMRegLoaded = false;
 function _lessonComboMRegLoad() {
   if (_lessonComboMRegLoaded) return;
@@ -4450,11 +4463,11 @@ function _lessonComboMRegLoad() {
   var mTo   = _mdashYmd(new Date(now.getFullYear(), now.getMonth() + 1, 0));
   _mdashFetchRegistered(today, today, function (d) {
     var el = document.getElementById('lessonComboMRegToday');
-    if (el) el.textContent = (d && d.data) ? d.data.length : '–';
+    if (el) el.textContent = (d && d.data) ? _mregCountNew(d.data) : '–';   // 신규만(배349)
   });
   _mdashFetchRegistered(mFrom, mTo, function (d) {
     var el = document.getElementById('lessonComboMRegMonth');
-    if (el) el.textContent = (d && d.data) ? d.data.length : '–';
+    if (el) el.textContent = (d && d.data) ? _mregCountNew(d.data) : '–';   // 신규만(배349)
   });
 }
 function loadLessonDash(t){
@@ -7532,15 +7545,26 @@ function _mregProgLabel(raw){
 function _mregRender(){
   var tbody = document.getElementById('mregBody'); if (!tbody) return;
   if (!_mregRows.length){ _mregRenderEmpty('등록 없음', '선택한 기간에 등록한 회원이 없습니다.'); return; }
-  var cnt = document.getElementById('mregCount'); if (cnt) cnt.textContent = '총 ' + _mregRows.length + '명';
-  var mc = document.getElementById('mregMonthCount'); if (mc) mc.textContent = (_mregRangeMode === 'month') ? ('이 달 ' + _mregRows.length + '명') : '';
+  // 신규/그 외(재등록·양수·환불·양도·대기 등) 분리 집계 — 걸러서 숨기지 않고 둘 다 보여준다(배349, GM 지시).
+  var _byLabel = {}, _newCnt = 0;
+  _mregRows.forEach(function(m){
+    var c = _mregClassify(m);
+    if (c) _byLabel[c] = (_byLabel[c] || 0) + 1; else _newCnt++;
+  });
+  var _otherCnt = _mregRows.length - _newCnt;
+  var _detail = Object.keys(_byLabel).map(function(k){ return k + _byLabel[k]; }).join('·');
+  var cnt = document.getElementById('mregCount');
+  if (cnt) cnt.textContent = '신규 ' + _newCnt + (_otherCnt ? ' · 그 외 ' + _otherCnt + '(' + _detail + ')' : '') + ' · 총 ' + _mregRows.length + '명';
+  var mc = document.getElementById('mregMonthCount'); if (mc) mc.textContent = (_mregRangeMode === 'month') ? ('이 달 신규 ' + _newCnt + '명') : '';
   var membersReady = !!(_ownerAssignRows && _ownerAssignRows.length);
   var _today = _mdashYmd(new Date());
   var html = '';
   _mregRows.forEach(function(m, idx){
     var isNew = m.regDate && String(m.regDate).startsWith(_today);
+    var _cls = _mregClassify(m);   // null=신규(뱃지 없음) · 그 외=원문 라벨 뱃지(배349)
+    var clsBadge = _cls ? ('<span class="ri-badge ri-badge-repeat" style="margin-left:6px" title="등록 분류' + (m.regSeq ? ' · 회차 ' + esc(m.regSeq) : '') + '">' + esc(_cls) + '</span>') : '';
     html += '<tr data-mregidx="' + idx + '">' +
-      '<td class="left" style="font-weight:700">' + (m.name ? esc(m.name) : '—') + (isNew ? '<span class="reg-new-badge">NEW</span>' : '') + '</td>' +
+      '<td class="left" style="font-weight:700">' + (m.name ? esc(m.name) : '—') + (isNew ? '<span class="reg-new-badge">NEW</span>' : '') + clsBadge + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(_oaMaskPhone(m.phone)) + '</td>' +
       '<td style="font-size:11px;color:var(--dim)" title="' + esc(m.program || '') + '">' + esc(_mregProgLabel(m.program)) + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(m.regDate || '—') + '</td>' +
