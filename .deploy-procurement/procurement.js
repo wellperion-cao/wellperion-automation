@@ -552,28 +552,37 @@ function salesDeptPub(p){
 /** 공개 강사별 매출(무인증) — 파트너팀 페이지 강사별 실시간. 진행월(최신 데이터 탭) O8:T80에서 6팀 강사별 실적만 반환.
  *  매니저 승인(2026-07-14): 이 공개페이지는 강습부 시트로 6월까지 강사별을 이미 공개 중 → 노출 증가 없음.
  *  최소노출: 6팀 종목 실제 강사만(프로그램 라벨 아쿠아/뮤지컬/GXE 등 제외·미매핑 제외·매출>0). 진행월 1탭만 파싱(경량). SWR 캐시(20분+6시간). */
+/** 공개 강사별(무인증·6팀). `month`(1~12) 지정 시 그 달, 없으면 진행월 — 2026-08-04 확장.
+ *  확장 이유: 이전엔 진행월만 반환해서, 달이 바뀌면 지난달 강사별이 '강습부 시트에 입력될 때까지'
+ *  빈 채로 남았다(7월 사례). 원천인 매출보고서엔 월별 강사 실적이 이미 다 있으므로 아무 달이나 읽는다.
+ *  강습부 시트 입력을 기다리지 않는다 — 이 페이지는 강사분들에게 공개되는 화면이다. */
 function salesInstrPub(p){
-  var hit = swrGet_(p, "sales_instr_v1"); if (hit) return out(hit);
   var now = new Date();
   var year = parseInt(Utilities.formatDate(now,"Asia/Seoul","yyyy"),10);
   var curMo = parseInt(Utilities.formatDate(now,"Asia/Seoul","M"),10);
   var curDay = parseInt(Utilities.formatDate(now,"Asia/Seoul","d"),10);
+  var want = parseInt((p && p.month), 10);
+  if (!(want >= 1 && want <= 12)) want = curMo; // 기본 = 진행월(기존 호출 동작 그대로)
+  if (want > curMo) return out({ ok:true, month:0, instr:[], note:"future_month" }); // 미래월은 조회 안 함
+  var ckey = "sales_instr_v2_" + want; // 월별 캐시 분리(구 sales_instr_v1 키는 미사용)
+  var hit = swrGet_(p, ckey); if (hit) return out(hit);
   var files = salesFiles_();
   var dmap = laborDeptMap_();
   var SIX = { "수영":1, "P.T":1, "필라테스":1, "골프":1, "스쿼시":1, "체조&트램":1 };
   var month = 0, instr = [];
-  if (files[curMo]){
-    var ss = SpreadsheetApp.openById(files[curMo]);
-    var startDay = Math.min(curDay, daysInMonth_(year, curMo));
+  if (files[want]){
+    var ss = SpreadsheetApp.openById(files[want]);
+    // 지난달은 말일부터, 진행월은 오늘부터 역방향 — 값이 있는 첫 일자탭이 그 달의 누계다.
+    var startDay = (want === curMo) ? Math.min(curDay, daysInMonth_(year, want)) : daysInMonth_(year, want);
     for (var d=startDay; d>=1; d--){
       var sht = ss.getSheetByName(String(d));
       if (!sht) continue;
       var rows = parseInstrList_(sht, dmap, SIX);
-      if (rows && rows.length){ instr = rows; month = curMo; break; }
+      if (rows && rows.length){ instr = rows; month = want; break; }
     }
   }
   var res = { ok:true, month:month, instr:instr, at:Utilities.formatDate(now,"Asia/Seoul","yyyy-MM-dd HH:mm") };
-  swrPut_("sales_instr_v1", res);
+  swrPut_(ckey, res);
   return out(res);
 }
 /** O8:T80 강사별 리스트 [{name,team,val}] — 6팀 종목 실제 강사만(프로그램 라벨·미매핑·0/음수 제외). */

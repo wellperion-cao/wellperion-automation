@@ -636,6 +636,36 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       return true;
   }
 
+  // 팀 매출은 있는데 강사별이 비어있는 달 목록(1-base). 강습부 시트 미입력 구간을 찾아낸다.
+  // 배경: 배관이 진행월만 채우던 시절, 달이 바뀌면 지난달 강사별이 빈 채로 남았다(7월 사례).
+  function instrGapMonths(){
+    var gaps=[];
+    if(!MODEL||!MODEL.months||!MODEL.instr)return gaps;
+    for(var i=0;i<MODEL.months.length;i++){
+      var md=MODEL.months[i];
+      if(!md||!(md.total>0))continue; // 매출 자체가 없는 달(미래월 등)은 대상 아님
+      var any=false;
+      for(var x=0;x<MODEL.instr.length;x++){if((MODEL.instr[x].monthly[i]||0)>0){any=true;break;}}
+      if(!any)gaps.push(i+1);
+    }
+    return gaps;
+  }
+  // 빈 달을 매출보고서에서 월별로 당겨와 채운다. 최근 3개월까지만(요청 폭주·콜드 재계산 방지).
+  function fillInstrGaps(seq,force){
+    var gaps=instrGapMonths().slice(-3);
+    if(!gaps.length)return Promise.resolve(false);
+    return Promise.all(gaps.map(function(m){
+      return fetch(PUB_API+'?action=sales_instr_pub&month='+m+(force?'&nocache=1':''))
+        .then(function(r){return r.json();}).catch(function(){return null;});
+    })).then(function(arr){
+      if(seq!==SALES_SEQ)return false;
+      var any=false;
+      arr.forEach(function(jm){ if(jm&&jm.ok&&jm.month){ try{ if(applyLiveInstr(jm))any=true; }catch(e){} } });
+      if(any){renderPeriod();writeSalesCache();}
+      return any;
+    }).catch(function(){return false;});
+  }
+
   var SALES_CACHE_KEY='partnerSalesCache.v1', SALES_SEQ=0, SALES_BUSY=false, SALES_FROM_CACHE=false, SALES_SAVED_AT=null;
   function fmtSavedAt(ts){try{return new Date(ts).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
   function savedLabel(){var t=(SALES_FROM_CACHE&&SALES_SAVED_AT)?fmtSavedAt(SALES_SAVED_AT):'';return t?'저장본('+t+')':'저장본';} // 캐시 표시 중이면 저장 시각 병기
@@ -684,6 +714,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         var failNote=(deptFail&&instrFail)?' · 진행월 라이브 갱신 실패 — 시트 데이터만 표시':(deptFail?' · 팀별 라이브 갱신 실패':(instrFail?' · 강사별 라이브 갱신 실패':''));
         up.textContent=baseUp+(MODEL.liveMonths&&MODEL.liveMonths.length?(' · '+MODEL.liveMonths.join('·')+'월 재무 라이브'):'')+failNote;
         writeSalesCache(); // 최종 표시 데이터를 저장본으로 보존(다음 방문 즉시 표시)
+        // 강사별이 비어있는 지난 달(강습부 시트 미입력)도 매출보고서에서 마저 채운다 — 비차단
+        fillInstrGaps(seq,force).then(function(filled){
+          if(filled&&seq===SALES_SEQ)up.textContent=up.textContent+' · 지난달 강사별 보완';
+        });
       }).catch(function(e3){
         if(seq!==SALES_SEQ)return;
         try{up.textContent=baseUp+' · 표시 갱신 중 오류 — 화면 데이터 유지';}catch(e4){} // 말단 방어 — 렌더·캐시 저장 예외에도 상태 표기 유지
