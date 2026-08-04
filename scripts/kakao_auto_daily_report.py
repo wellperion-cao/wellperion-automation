@@ -151,26 +151,12 @@ def send_telegram_photo(image_path: str, caption: str) -> bool:
         return False
 
 
-def write_status(ok: bool, detail: str, kind: str = "IMAGE_REPORT") -> None:
-    """status/kakao_last_send.json 갱신 — telegram_bot/bot.py의 _write_kakao_status와 동일 스키마
-    ({ok, detail, at}) 재사용, T2 카톡전송관리 페이지가 이 파일을 그대로 읽는다.
-    kind: "IMAGE_REPORT"(정상 이미지 보고, 기본값) 또는 "HOLIDAY_NOTICE"(휴관 안내문만 전송)."""
-    try:
-        STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        STATUS_FILE.write_text(
-            json.dumps(
-                {
-                    "ok": ok,
-                    "detail": detail[:300],
-                    "kind": kind,
-                    "at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                },
-                ensure_ascii=False, indent=2,
-            ),
-            encoding="utf-8",
-        )
-    except Exception as exc:
-        log(f"[경고] status/kakao_last_send.json 기록 실패(무시): {exc}")
+# status/kakao_last_send.json 기록은 더 이상 여기서 하지 않는다(2026-08-04 CTO) — 관문
+# kakao_report_sender.py의 write_status()가 단일 기록 지점이다(run_sender/run_sender_message
+# 가 --status-file 로 STATUS_FILE 경로를 넘긴다). 이유: 이 래퍼만 상태를 적고 사람이
+# kakao_report_sender.py를 직접 불러 재발송하면(09:34 3방 재발송 사고, 2026-08-04) 그
+# 결과가 어디에도 안 남아 화면이 옛 실패에 굳어 있었다 — 관문 한 곳으로 옮기면 어느
+# 경로로 불러도 같은 파일에 정직하게 반영된다.
 
 
 # 북극성 대비 블록 헬퍼(_northstar_prefix)는 지웠다 — GM 지시 2026-08-02 로 회장님
@@ -262,7 +248,8 @@ def run_sender(rooms: "list[str] | None", image_path: str, caption: str, dry_run
     failures: list[str] = []
     targets = rooms if rooms else [None]
     for room in targets:
-        cmd = [sys.executable, str(SENDER_SCRIPT), "--image", image_path, "--caption", caption]
+        cmd = [sys.executable, str(SENDER_SCRIPT), "--image", image_path, "--caption", caption,
+               "--status-file", str(STATUS_FILE), "--status-kind", "IMAGE_REPORT"]
         if dry_run:
             cmd.append("--dry-run")
         if room:
@@ -284,7 +271,8 @@ def run_sender_message(rooms: "list[str] | None", message: str, dry_run: bool) -
     failures: list[str] = []
     targets = rooms if rooms else [None]
     for room in targets:
-        cmd = [sys.executable, str(SENDER_SCRIPT), "--message", message]
+        cmd = [sys.executable, str(SENDER_SCRIPT), "--message", message,
+               "--status-file", str(STATUS_FILE), "--status-kind", "HOLIDAY_NOTICE"]
         if dry_run:
             cmd.append("--dry-run")
         if room:
@@ -339,15 +327,12 @@ def main() -> int:
 
         ok, failures = run_sender_message(rooms, notice, args.dry_run)
         if ok:
-            detail = f"휴관 안내문 발송 완료 — {notice}"
-            write_status(True, detail, kind="HOLIDAY_NOTICE")
             msg = f"DONE: 카톡 {'검증(dry-run)' if args.dry_run else '전송'} 완료(휴관 안내문) — {notice}"
             log(msg)
             print(msg)
             return 0
         else:
             detail = "; ".join(failures)
-            write_status(False, detail, kind="HOLIDAY_NOTICE")
             send_owner_alert(f"⚠️ 카톡 휴관 안내문 자동 발송 실패 — {detail}")
             print(f"FAILED: 카톡 휴관 안내문 전송 실패 — {detail}")
             return 1
@@ -377,14 +362,12 @@ def main() -> int:
     ok, failures = run_sender(rooms, image_path, caption, args.dry_run)
     if ok:
         detail = "DRY-RUN 검증 완료" if args.dry_run else "3방 전송 완료" if rooms is None else f"{rooms} 전송 완료"
-        write_status(True, detail)
         msg = f"DONE: 카톡 {'검증(dry-run)' if args.dry_run else '전송'} 완료 — {detail}"
         log(msg)
         print(msg)
         return 0
     else:
         detail = "; ".join(failures)
-        write_status(False, detail)
         send_owner_alert(f"⚠️ 카톡 매출보고 자동 발송 실패 — {detail}")
         print(f"FAILED: 카톡 전송 실패 — {detail}")
         return 1

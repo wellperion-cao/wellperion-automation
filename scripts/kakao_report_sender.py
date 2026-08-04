@@ -1043,6 +1043,58 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     return True
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 상태 기록 단일 관문(2026-08-04 CTO) — status/kakao_last_send.json 등 "발신 결과"
+# 파일은 이 스크립트(모든 카톡 발신이 통과하는 관문)에서만 쓴다. 이전엔 호출측
+# (kakao_auto_daily_report.py·telegram_bot/bot.py 버튼)이 각자 따로 같은 파일에 썼는데,
+# 사람이 이 스크립트를 직접 불러 재발송하면(09:34 3방 재발송 사고, 2026-08-04) 그 결과가
+# 어느 쪽에도 안 남았다 — 발신은 성공했는데 화면엔 그 이전 실패가 그대로 남는 사고.
+# --status-file 을 지정한 호출만 기록한다(기본 None=기록 안 함) — 이 스크립트는 매출보고
+# 외에도 하루 수십 번(아침 다이제스트 등) 다른 목적으로 불려 나가므로, 지정 없는 호출까지
+# 전부 기록하면 무관한 발신이 이 파일을 밟는다.
+# rooms는 기존 파일의 값과 병합한다(덮어쓰지 않음) — "3방 중 재발송으로 성공한 2방만"처럼
+# 여러 번 나눠 부른 호출도 정직하게 누적되게 한다(부분 성공을 뭉개지 않는다).
+# ══════════════════════════════════════════════════════════════════════════
+def write_status(status_file: str, detail: str, kind: str, room_results: dict) -> None:
+    """room_results: {방이름: {"ok": bool, "detail": str}} — 이번 호출이 실제 처리한 방만."""
+    path = Path(status_file)
+    try:
+        prev = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except Exception:
+        prev = {}
+    rooms = prev.get("rooms") if isinstance(prev.get("rooms"), dict) else {}
+    now_s = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for name, r in room_results.items():
+        rooms[name] = {"ok": bool(r.get("ok")), "detail": str(r.get("detail", ""))[:200], "at": now_s}
+    overall_ok = all(r.get("ok") for r in rooms.values()) if rooms else False
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {"ok": overall_ok, "detail": detail[:300], "kind": kind, "at": now_s, "rooms": rooms},
+                ensure_ascii=False, indent=2,
+            ),
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        log(f"[경고] {status_file} 기록 실패(무시): {exc}")
+
+
+def _room_results(rooms: list[dict], failures: list, dedup_skipped: list) -> dict:
+    """이번 호출이 처리한 각 방의 결과를 write_status용 dict로 정리."""
+    fail_map = dict(failures)
+    results = {}
+    for room in rooms:
+        name = room["name"]
+        if name in fail_map:
+            results[name] = {"ok": False, "detail": fail_map[name]}
+        elif name in dedup_skipped:
+            results[name] = {"ok": True, "detail": "중복 발신 가드로 스킵(최근 동일 발신 있음)"}
+        else:
+            results[name] = {"ok": True, "detail": ""}
+    return results
+
+
 def resolve_image_path(cfg: dict, args) -> Path:
     """--image 직접지정 우선, 없고 --from-folder면 archive_dir/YYYY-MM/에서 오늘자 파일 자동선택."""
     if args.image:
@@ -1130,6 +1182,45 @@ def _selftest() -> None:
         assert len(calls) == 1, "이미 기준선에 반영된 구성인데 미리보기가 또 감"
 
         print("SELFTEST OK: 회장님 새내용게이트/정제/평균정확성 정상(발신 0건)")
+
+        # ④ 상태 기록 관문(write_status) — 전량 성공/부분 실패/전량 실패 3가지 + 병합(부분
+        # 재발송 누적) 자가검사. 실제 status 파일은 안 건드리고 tmp_dir 안 임시 파일로만 검증.
+        status_path = tmp_dir / "kakao_last_send_test.json"
+        rooms4 = [{"name": n, "prefix": ""} for n in ["★운영부", "차의주 회장님", "★관리부", "★부서장"]]
+
+        # 전량 성공
+        write_status(str(status_path), "4/4개 방 성공", "IMAGE_REPORT",
+                     _room_results(rooms4, [], []))
+        s1 = json.loads(status_path.read_text(encoding="utf-8"))
+        assert s1["ok"] is True and len(s1["rooms"]) == 4, f"전량성공인데 ok=False거나 방 수 틀림: {s1}"
+        print("  [전량 성공] ok=True, 4개 방 기록 — 통과")
+
+        # 부분 실패(2방 실패) — 같은 파일에 다시 기록
+        write_status(str(status_path), "2/4개 방 성공", "IMAGE_REPORT",
+                     _room_results(rooms4, [("차의주 회장님", "err1"), ("★관리부", "err2")], []))
+        s2 = json.loads(status_path.read_text(encoding="utf-8"))
+        assert s2["ok"] is False, f"2방 실패인데 ok=True: {s2}"
+        assert s2["rooms"]["차의주 회장님"]["ok"] is False and s2["rooms"]["★관리부"]["ok"] is False
+        assert s2["rooms"]["★운영부"]["ok"] is True and s2["rooms"]["★부서장"]["ok"] is True
+        print("  [부분 실패 2/4] ok=False, 실패 2방만 False — 통과")
+
+        # 병합 검증 — 실패했던 2방만 재발송 성공(나머지 2방은 이번 호출에 안 나옴).
+        # 이전에 기록된 나머지 2방 값이 지워지지 않고 그대로 남아야 정직한 병합이다.
+        write_status(str(status_path), "2/2개 방 성공(재발송)", "IMAGE_REPORT",
+                     _room_results([{"name": "차의주 회장님", "prefix": ""}, {"name": "★관리부", "prefix": ""}], [], []))
+        s3 = json.loads(status_path.read_text(encoding="utf-8"))
+        assert s3["ok"] is True, f"재발송으로 4방 다 성공했는데 ok=False: {s3}"
+        assert len(s3["rooms"]) == 4, f"병합 후 방 수가 4가 아님(이전 기록 유실): {s3['rooms'].keys()}"
+        print("  [재발송 병합] 실패 2방만 재기록해도 이전 성공 2방 값 보존 + 전체 ok=True — 통과")
+
+        # 전량 실패
+        write_status(str(status_path), "0/4개 방 성공", "IMAGE_REPORT",
+                     _room_results(rooms4, [(r["name"], "err") for r in rooms4], []))
+        s4 = json.loads(status_path.read_text(encoding="utf-8"))
+        assert s4["ok"] is False and all(not r["ok"] for r in s4["rooms"].values())
+        print("  [전량 실패] ok=False, 4개 방 전부 False — 통과")
+
+        print("SELFTEST OK: write_status 전량성공/부분실패/재발송병합/전량실패 정상")
     finally:
         CHAIRMAN_BASELINE_PATH = orig_baseline_path
         MONTHLY_PLAN_PATH = orig_plan_path
@@ -1156,6 +1247,11 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true",
                      help="방 열기+클립보드+미리보기까지만, 실제 전송(Enter) 안 함")
     ap.add_argument("--only-room", default=None, help="지정한 방 1개만 처리(검증용)")
+    ap.add_argument("--status-file", default=None,
+                     help="발신 결과를 이 경로(JSON)에 기록(상태 기록 단일 관문). 미지정 시 기록 안 함 — "
+                          "매출보고 등 상태 추적이 필요한 호출만 지정할 것")
+    ap.add_argument("--status-kind", default="IMAGE_REPORT",
+                     help="--status-file 기록 시 kind 필드(기본 IMAGE_REPORT, 예: HOLIDAY_NOTICE)")
     args = ap.parse_args()
 
     if args.selftest:
@@ -1201,6 +1297,9 @@ def main() -> int:
                 failures.append((room_name, str(exc)))
             if idx < len(rooms) - 1:
                 time.sleep(2.0)  # 방 사이 지연
+        if args.status_file and not args.dry_run:
+            write_status(args.status_file, f"{len(rooms) - len(failures)}/{len(rooms)}개 방 성공(텍스트)",
+                         args.status_kind, _room_results(rooms, failures, dedup_skipped))
         if failures:
             print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
             return 1
@@ -1228,6 +1327,10 @@ def main() -> int:
             failures.append((room_name, str(exc)))
         if idx < len(rooms) - 1:
             time.sleep(2.0)  # 방 사이 지연
+
+    if args.status_file and not args.dry_run:
+        write_status(args.status_file, f"{len(rooms) - len(failures)}/{len(rooms)}개 방 성공",
+                     args.status_kind, _room_results(rooms, failures, dedup_skipped))
 
     if failures:
         print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")

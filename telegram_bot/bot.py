@@ -1669,22 +1669,12 @@ def _kakao_archive_dir() -> Path:
     return _KAKAO_DEFAULT_ARCHIVE_DIR
 
 
-def _write_kakao_status(ok: bool, detail: str) -> None:
-    """T2 카톡전송관리 페이지의 "상태" 섹션이 읽는 마지막 전송 기록(간단 v1).
-    실패해도 조용히 무시(상태 기록은 부가 기능 — 본 전송 흐름을 막지 않음)."""
-    try:
-        import datetime as _dt
-        _KAKAO_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        _KAKAO_STATUS_FILE.write_text(
-            json.dumps(
-                {"ok": ok, "detail": detail[:300],
-                 "at": _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
-                ensure_ascii=False, indent=2,
-            ),
-            encoding="utf-8",
-        )
-    except Exception:
-        pass
+# status/kakao_last_send.json 기록은 여기서 하지 않는다(2026-08-04 CTO) — 관문
+# kakao_report_sender.py의 write_status()가 단일 기록 지점(--status-file 로 전달).
+# 예전엔 이 콜백도 자체 write_kakao_status()로 같은 파일에 따로 썼는데(스키마도 kind
+# 필드가 빠져 다른 두 곳과 어긋나 있었다), 사람이 kakao_report_sender.py를 직접 불러
+# 재발송하면 이 콜백도 kakao_auto_daily_report.py도 안 거치므로 그 결과가 어디에도
+# 안 남았다(09:34 3방 재발송 사고, 2026-08-04) — 관문 한 곳으로 옮겨 해결한다.
 
 
 async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -1728,7 +1718,6 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
         local_path = month_dir / f"웰페리온_일일보고_{today.strftime('%Y%m%d')}.png"
         await tg_file.download_to_drive(str(local_path))
     except Exception as exc:
-        _write_kakao_status(False, f"이미지 다운로드/archive 저장 오류 — {exc}")
         await ctx.bot.send_message(chat_id=msg.chat_id,
             text=f"⚠️ 카톡 전송 실패: 이미지 다운로드/archive 저장 오류 — {exc}")
         return
@@ -1738,6 +1727,7 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
         proc = await asyncio.create_subprocess_exec(
             str(_VENV_PY), "-u", str(_KAKAO_SENDER),
             "--image", str(local_path), "--caption", caption,
+            "--status-file", str(_KAKAO_STATUS_FILE), "--status-kind", "IMAGE_REPORT",
             cwd=str(WORKDIR),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
@@ -1747,17 +1737,14 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
         out_text = (out or b"").decode("utf-8", errors="replace")
         log.info(f"[kakao_send] rc={proc.returncode} out_tail={out_text[-500:]}")
     except Exception as exc:
-        _write_kakao_status(False, f"실행 오류 — {exc}")
         await ctx.bot.send_message(chat_id=msg.chat_id,
             text=f"⚠️ 카톡 전송 실패: 실행 오류 — {exc}")
         return
 
     if proc.returncode == 0 and "DONE:" in out_text:
-        _write_kakao_status(True, "3방 전송 완료")
         await ctx.bot.send_message(chat_id=msg.chat_id, text="✅ 카톡 3방 전송 완료")
     else:
         tail = out_text.strip().splitlines()[-1] if out_text.strip() else "알 수 없는 오류"
-        _write_kakao_status(False, tail)
         await ctx.bot.send_message(chat_id=msg.chat_id, text=f"⚠️ 카톡 전송 실패: {tail}")
 
 
