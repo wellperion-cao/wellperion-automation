@@ -208,3 +208,73 @@ def test_foreign_delete_violations_unit():
                                         explicit_paths=["gone.py"]) == []        # 명시 나열
     pre = G.PROTECTED_DELETE_PREFIXES[0]
     assert G.foreign_delete_violations([pre + "x.jpg"], [pre + "x.jpg", pre + "y.html"]) == []  # 보호 도메인 전용
+
+
+# ── 동결(스테일) 인덱스 — 게이트(나) + 통합 직후 동기화(가) (2026-08-04 GM 지시 ②) ──
+# post_commit_push 무접촉 통합이 HEAD 만 전진시키고 라이브 인덱스를 안 맞춰,
+# 인덱스가 옛 트리에 동결 → 이후 커밋이 남의 최신 변경을 옛것으로 되돌리거나
+# 원격 추가분을 삭제로 쓸어담았다(2026-08-04 실사고). 가=원인 제거, 나=안전망.
+
+def test_stale_index_entry_blocks_with_guidance(tmp_path, monkeypatch, capsys):
+    """①스테이징 blob 이 HEAD 와도 작업트리와도 다르면(동결 인덱스) 차단 + 해법 안내."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "docs/f.md", content="v1\n")
+    (tmp_path / "docs/f.md").write_text("v2\n", encoding="utf-8")
+    _git(["add", "docs/f.md"], tmp_path)
+    (tmp_path / "docs/f.md").write_text("v3\n", encoding="utf-8")  # index=v2·HEAD=v1·디스크=v3
+    monkeypatch.chdir(tmp_path)
+    rc = G.main()
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "동결" in err and "git reset" in err  # 차단 + 푸는 법 안내
+
+
+def test_normal_staged_commit_passes_stale_gate(tmp_path, monkeypatch, capsys):
+    """③평범한 스테이징(스테이징=디스크) → 통과(오탐 0)."""
+    _init_repo(tmp_path)
+    _commit_file(tmp_path, "docs/g.md", content="v1\n")
+    (tmp_path / "docs/g.md").write_text("v2\n", encoding="utf-8")
+    _git(["add", "docs/g.md"], tmp_path)
+    monkeypatch.chdir(tmp_path)
+    assert G.main() == 0
+
+
+def test_reconcile_syncs_index_to_new_head(tmp_path):
+    """②무접촉 통합 직후 라이브 인덱스가 새 HEAD 와 일치(동결 0) · 작업트리는 무접촉."""
+    import post_commit_push as P
+
+    bare = tmp_path / "origin.git"
+    _git(["init", "-q", "--bare", "-b", "master", str(bare)], tmp_path)
+    local = tmp_path / "local"
+    local.mkdir()
+    _git(["init", "-q", "-b", "master"], local)
+    _git(["config", "user.email", "t@t.t"], local)
+    _git(["config", "user.name", "T"], local)
+    (local / "README.md").write_text("init\n", encoding="utf-8")
+    _git(["add", "README.md"], local)
+    _git(["commit", "-q", "-m", "init"], local)
+    _git(["remote", "add", "origin", str(bare)], local)
+    _git(["push", "-q", "origin", "master"], local)
+
+    # 나우열M PC 역할 — 별도 클론이 파일을 추가해 push (이 PC 디스크엔 영영 없는 파일)
+    other = tmp_path / "other"
+    _git(["clone", "-q", str(bare), str(other)], tmp_path)
+    _git(["config", "user.email", "n@t.t"], other)
+    _git(["config", "user.name", "N"], other)
+    _commit_file(other, "photos/r999.jpg", content="remote-added\n")
+    _git(["push", "-q", "origin", "master"], other)
+
+    _commit_file(local, "local.md", content="local work\n")  # 로컬도 앞섬 → non-ff
+
+    ok, reason = P._reconcile(str(local))
+    assert ok, reason
+    # 인덱스 ↔ 새 HEAD 차이 0건 (동결 없음)
+    r = subprocess.run(["git", "-C", str(local), "diff", "--cached", "--name-only"],
+                       capture_output=True, text=True, encoding="utf-8")
+    assert r.stdout.strip() == "", r.stdout
+    # 원격 추가 파일이 HEAD·인덱스 양쪽에 들어왔다
+    ls = subprocess.run(["git", "-C", str(local), "ls-files", "--", "photos/r999.jpg"],
+                        capture_output=True, text=True, encoding="utf-8")
+    assert ls.stdout.strip() != ""
+    # 작업트리 무접촉 — 파일은 디스크에 안 쓰였다(체크아웃은 이번 범위 밖·GM 지시 5항)
+    assert not (local / "photos/r999.jpg").exists()

@@ -112,6 +112,78 @@ def foreign_delete_violations(deleted, all_staged, explicit_paths=()):
     return [d for d in deleted if d not in explicit]
 
 
+def stale_staged_paths():
+    """동결(스테일) 인덱스 신호 — 스테이징 blob 이 HEAD 와도 작업트리와도 다른 경로 목록.
+
+    (2026-08-04 GM 지시 ② — post_commit_push 무접촉 통합이 HEAD 만 전진시키고 인덱스를
+    안 맞춰 인덱스가 '동결'됐다. 그 상태의 인덱스 항목은 아무의 현재 진실도 아니다:
+    HEAD 도 아니고(=새 내용 아님) 디스크도 아니다(=지금 편집 내용도 아님) — 옛 스냅샷
+    찌꺼기다. 그대로 커밋되면 남의 최신 변경을 옛것으로 되돌린다(실측: 2026-08-04
+    chro/hub/structure.html 인사 조직도가 옛 내용으로 커밋될 뻔).
+
+    판정 = 「index≠HEAD」(git diff --cached) ∩ 「작업트리≠index」(git diff) 교집합.
+    정상 스테이징은 스테이징=작업트리라 교집합에 안 든다. status/*.jsonl append 로그는
+    여러 세션이 상시 이어쓰는 게 정상(merge=union)이라 제외. git 실패 시 None(fail-open).
+    알려진 한계: add 후 이어서 더 편집한 부분 스테이징도 걸린다 — 이 저장소에선 맨손
+    add 자체가 금지 관행이라 수용, 우회는 SKIP env/--no-verify."""
+    rc1, out1 = run(["git", "diff", "--cached", "--name-only", "-z"])
+    rc2, out2 = run(["git", "diff", "--name-only", "-z"])
+    if rc1 != 0 or rc2 != 0:
+        return None
+    # 훅 체인이 커밋 직전 스스로 재생성하는 미러 목적지는 제외 — pre-commit 에서 이
+    # 가드(37행대)보다 뒤(109행대)에 sync_queue_mirror 가 미러를 새로 add 하므로,
+    # 지금 스테일로 보여도 실제 커밋엔 항상 신선본이 담긴다(라이브 실측 오탐 1건).
+    # 목록은 sync_queue_mirror.SYNC_PAIRS 단일 출처(L01). import 실패 시 제외 없음(보수).
+    try:
+        from sync_queue_mirror import SYNC_PAIRS
+        hook_regen = {dst for _, dst in SYNC_PAIRS}
+    except Exception:
+        hook_regen = set()
+    staged = {t for t in out1.split(b"\x00") if t}
+    unstaged = {t for t in out2.split(b"\x00") if t}
+    out = []
+    for p in sorted(staged & unstaged):
+        d = _decode(p)
+        if not d:
+            continue
+        if d.startswith("status/") and d.endswith(".jsonl"):
+            continue  # append 로그 — 상시 동시 이어쓰기가 정상(merge=union)
+        if d in hook_regen:
+            continue
+        out.append(d)
+    return out
+
+
+def _stale_index_check() -> int:
+    """동결 인덱스 게이트 — 걸리면 차단(1)·해법 안내, 아니면 통과(0)."""
+    stale = stale_staged_paths()
+    if not stale:
+        return 0
+    sys.stderr.write(
+        "\n"
+        "============================================================\n"
+        "[phantom-delete-guard] 커밋 차단 — 동결(스테일) 인덱스 감지\n"
+        "------------------------------------------------------------\n"
+    )
+    for path in stale[:MAX_LISTED]:
+        sys.stderr.write("  - %s\n" % path)
+    if len(stale) > MAX_LISTED:
+        sys.stderr.write("  ... 외 %d건\n" % (len(stale) - MAX_LISTED))
+    sys.stderr.write(
+        "------------------------------------------------------------\n"
+        "  위 경로의 스테이징 내용이 HEAD 와도 디스크와도 다릅니다 — 옛\n"
+        "  스냅샷 찌꺼기입니다(무접촉 통합 뒤 인덱스 미동기화 등). 그대로\n"
+        "  커밋하면 남의 최신 변경이 옛 내용으로 되돌아갑니다.\n"
+        "  해법: git reset -q HEAD -- <경로>  로 인덱스를 HEAD 와 맞춘 뒤\n"
+        "  필요한 경로만 다시 add 해서 재커밋하세요.\n"
+        "  정말 의도한 스테이징이면 우회: git commit --no-verify 또는 env %s=1\n"
+        "============================================================\n"
+        % SKIP_ENV
+    )
+    _log_block("stale_index", stale)
+    return 1
+
+
 def run(args):
     """git 명령 실행 → (returncode, stdout_bytes)."""
     proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -164,7 +236,7 @@ def main():
         return 0
 
     if not deleted:
-        return 0
+        return _stale_index_check()
 
     violations = []
     for path_bytes in deleted:
@@ -271,7 +343,7 @@ def main():
             _log_block("mixed_delete", general)
             return 1
 
-    return 0
+    return _stale_index_check()
 
 
 if __name__ == "__main__":

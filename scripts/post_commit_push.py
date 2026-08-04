@@ -257,6 +257,40 @@ def _clear_stale_index_entries(root: str) -> list:
         return []
 
 
+def _sync_index_to_new_head(root: str, old_head: str, new_sha: str) -> list:
+    """무접촉 통합 직후 라이브 인덱스를 새 HEAD 로 동기화 (2026-08-04 GM 지시 — 인덱스 동결 근본수리).
+
+    왜: 아래 통합은 update-ref 로 HEAD 만 옮기고 라이브 인덱스는 옛 트리 그대로 남긴다.
+    그 순간부터 이 클론의 인덱스는 '동결' — 원격이 넣은 파일이 인덱스엔 없어 삭제로
+    보이고, 원격이 고친 파일은 옛 blob 이라 되돌림으로 보인다. 이후 맨손 커밋이 그
+    옛것을 그대로 커밋한다(2026-08-04 지원자 사진 반복삭제 사고의 뿌리 — 나우열M PC 가
+    push 한 chro 사진이 이 PC 에선 영구히 '삭제된 것처럼' 보였다).
+
+    로직은 safe_commit._sync_live_index 재사용(약속 L01 — 복제 금지). 그 함수의 안전
+    조건이 여기 요구와 정확히 같다: **라이브 인덱스 항목이 옛 HEAD 와 같은 경로만**
+    새 HEAD 로 바꾼다(다른 세션이 stage 해 둔 자기 내용은 절대 안 덮음). 인덱스 전용
+    update-index 만 쓰고 작업트리는 무접촉. index.lock 은 지우지 않고 대기·재시도
+    (그 함수에 내장 — 0.5s × 40회). 실패해도 통합 자체는 유효(best-effort — 남은
+    동결분은 커밋 관문의 동결 인덱스 게이트가 거부한다)."""
+    try:
+        from safe_commit import _sync_live_index
+        r = subprocess.run(
+            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "-z",
+             old_head, new_sha],
+            cwd=root, capture_output=True, timeout=60,
+        )
+        if r.returncode != 0:
+            return []
+        paths = [p.decode("utf-8", "replace") for p in r.stdout.split(b"\x00") if p]
+        synced: list = []
+        for i in range(0, len(paths), 100):  # Windows 명령줄 길이 한도 방어(한글 경로)
+            synced += _sync_live_index(paths[i:i + 100], Path(root), old_head, new_sha)
+        return synced
+    except Exception as e:
+        _log(f"POST_COMMIT_PUSH 인덱스 동기화 실패(best-effort) {e}", root)
+        return []
+
+
 def _reconcile(root: str) -> tuple[bool, str]:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
     ★언제나 merge 로만 통합한다(rebase 경로는 배147에서 껐다 — 아래 _ALLOW_REBASE 주석 참고).
@@ -419,7 +453,13 @@ def _reconcile(root: str) -> tuple[bool, str]:
                         encoding="utf-8", errors="replace", timeout=30,
                     )
                     if ur.returncode == 0:
-                        _log("POST_COMMIT_PUSH ok(작업트리 무접촉 통합 — 배245)", root)
+                        # ★인덱스 동결 방지(2026-08-04 GM 지시) — HEAD 만 전진시키고 끝내면
+                        #   라이브 인덱스가 옛 트리에 동결돼 이후 맨손 커밋이 원격 추가분을
+                        #   삭제로·원격 수정분을 되돌림으로 쓸어담는다. 통합 직후 바로 맞춘다.
+                        synced = _sync_index_to_new_head(root, head, new)
+                        _log("POST_COMMIT_PUSH ok(작업트리 무접촉 통합 — 배245"
+                             + (f" · 인덱스 동기화 {len(synced)}건" if synced else "")
+                             + ")", root)
                         return True, ""
                     reason = _tail("update-ref 실패(그새 HEAD 이동): "
                                    + (ur.stderr or ur.stdout or "").strip())
