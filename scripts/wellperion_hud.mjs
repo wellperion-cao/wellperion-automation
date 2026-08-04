@@ -959,7 +959,15 @@ function buildRoleLines(cwd, role) {
     //   더 최근 것만 취한다(약속 L01 — 판정 계산 복제 금지, 있는 신호를 합칠 뿐).
     for (const a of acts) {
       const commitAge = (a.mins != null) ? a.mins * 60000 : null;
-      if (commitAge != null && (a.age == null || commitAge < a.age)) a.age = commitAge;
+      if (commitAge != null && (a.age == null || commitAge < a.age)) {
+        // ★창은 오래 닫혀 있는데 커밋만 최근이면 그건 **배치·서브에이전트가 한 것**이다.
+        //   그런데 아래 표기는 창 기준 낱말('멈춤')이라, 창을 열지도 않은 역할이 "일하다 멎은"
+        //   것처럼 보였다 (GM 2026-08-05 "시우 시포것이 멈춤인데?" — 실측 결과 두 창은 07-28
+        //   23:43 이후 7일째 안 열렸고, 26~29분 전 신호는 전부 자동 커밋이었다).
+        //   신호를 합치는 것은 그대로 두고(합치는 게 맞다), **어느 신호가 이겼는지만 표시**한다.
+        a.viaCommit = (a.age == null || a.age >= PAUSE_MS);
+        a.age = commitAge;
+      }
     }
     // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
     //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
@@ -979,6 +987,8 @@ function buildRoleLines(cwd, role) {
     const marks = acts.map((a) => {
       if (a.deleg)                return { dot: `${G}●${X}`, state: `${G}위임 ${a.deleg.count}척${X}` };
       if (a.age == null)          return { dot: `${D}○${X}`, state: `${D}—${X}` };
+      // 창은 닫혀 있고 자동 커밋만 최근 — '멈춤'이 아니라 '자동'이다(위 viaCommit 주석 참고).
+      if (a.viaCommit)            return { dot: `${Y}◐${X}`, state: `${Y}자동 ${durText(a.age)}${X}` };
       if (a.age < LIVE_MS)        return { dot: `${G}●${X}`, state: `${G}진행중${X}` };
       // '전'을 뗀다 — '멈춤 8분전'은 어색하다. 여기 숫자는 시점이 아니라 **멈춰 있은 길이**다.
       if (a.age < PAUSE_MS)       return { dot: `${Y}◐${X}`, state: `${Y}멈춤 ${durText(a.age)}${X}` };
