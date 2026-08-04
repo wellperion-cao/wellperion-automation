@@ -124,10 +124,10 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
       </select>
     </div>
     <div class="field">
-      <label class="fl">사진 <span class="opt">(3~5장 권장)</span></label>
+      <label class="fl">사진 <span class="opt">(필수 · 3~5장 권장)</span></label>
       <label class="file-zone" for="f_photos">
         <div class="fz-icon">📷</div>
-        <div class="fz-text">수업·프로필 사진을 선택하세요 (여러 장 가능)</div>
+        <div class="fz-text">수업·프로필 사진을 1장 이상 선택하세요 (여러 장 가능)</div>
         <input type="file" id="f_photos" accept="image/*" multiple>
       </label>
       <div class="file-list" id="f_photosList"></div>
@@ -235,6 +235,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
     var agree = $('f_agree').checked;
     if (!name){ toast('성함을 입력해 주세요', true); return; }
     if (!team){ toast('담당 종목·팀을 선택해 주세요', true); return; }
+    if (!$('f_photos').files.length){ toast('사진을 1장 이상 올려 주세요', true); return; }
     if (!agree){ toast('공식 채널 게시 동의가 필요합니다', true); return; }
 
     var btn = $('submitBtn'); btn.disabled = true; btn.textContent = '접수 중…';
