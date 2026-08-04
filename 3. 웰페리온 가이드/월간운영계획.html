@@ -1118,6 +1118,10 @@
           <summary>🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> <span class="be-badge be-p1" id="broj-fold-p1"></span></summary>
           <div class="r-note" id="broj-fold-body">불러오는 중…</div>
         </details>
+        <details class="r-note-fold tg-card" id="gm-fold" open>
+          <summary>👤 김남욱GM 업무 <span class="be-badge" id="gm-fold-badge">불러오는 중…</span></summary>
+          <div class="r-note" id="gm-fold-body">불러오는 중…</div>
+        </details>
       </div>
     </section>
 
@@ -1189,11 +1193,8 @@
       .catch(function(){ return {dept:PROC_FALLBACK, live:false}; });
   }
   // ── 종목별 매출 정본 = 「매출 보고」 말일탭 서버집계(action=sales_dept, PROC_API). CFO 매출지출현황.html loadSalesDept와 동일 소스 — 강사→종목 매핑=인건비마스터(서버측), 집계만 반환(PII 없음). 응답 {ok, dept:{부서:[12]}}. 실패=null → SALES_GVIZ 매출마스터 폴백. ──
-  // 매출 배관 전용 백엔드(sales-api) — 2026-08-04 분리. proc_summary(구매요청 집계)는 기존 PROC_API 유지,
-  // 무거운 sales_dept 만 이쪽으로 보낸다. 같은 스크립트를 쓰면 구매요청 조회가 밀려 간헐 404 가 났다.
-  var SALES_API = 'https://script.google.com/macros/s/AKfycbzXcWyi-PgS9vBX5oW384OhnBZXaRwpZCma-hYnkOmTmh_SQ1b4WIg6esKgZw3ZF7-k-A/exec';
   function readSalesDeptLive(){
-    return fetch(SALES_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    return fetch(PROC_API, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
         body: JSON.stringify({action:'sales_dept', password:PROC_GATE_PW})})
       .then(function(r){ return r.json(); })
       .then(function(res){ return (res && res.ok && res.dept) ? res.dept : null; })
@@ -3429,6 +3430,7 @@
     withTimeout(readWorkApproval(), 8000, null).then(function(rows){
       _workApprRows = rows; _workApprReady = true;
       if(_data) renderSummaryStrip();
+      renderGmFold(rows);
     });
 
     // 8) 🤝 브로제이 업무분장 — 진입 토글 요약만 로드(본문은 별도 페이지). (배214·2026-07-29 → 오후 분리 → 08-01 토글 승격)
@@ -3533,6 +3535,50 @@
     }).join('');
     badge.textContent = CHAIRMAN_ITEMS.length + '건';
     bodyEl.innerHTML = lines + link;
+  }
+  // 👤 김남욱GM 업무 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과 재사용·새 GAS 호출 0)에서
+  // 생성자=김남욱 + 상태(진행중·보류)만 추림(GM 지시 2026-08-04). 완료는 이 토글의 목적("어디까지 갔나")과
+  // 무관해 제외. rows===null = 조회 실패(가짜 0건 금지 — 실패 문구 표시).
+  function renderGmFold(rows){
+    var badge = document.getElementById('gm-fold-badge');
+    var bodyEl = document.getElementById('gm-fold-body');
+    if(!badge || !bodyEl) return;
+    if(!rows){
+      badge.textContent = '불러오지 못함';
+      bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
+      return;
+    }
+    var today = _todayStr();
+    var gmRows = rows.filter(function(r){
+      var creator = String(r['생성자'] || r.creator || '').trim();
+      var status = String(r['상태'] || r.status || '').trim();
+      return creator.indexOf('김남욱') !== -1 && (status === '진행중' || status === '보류');
+    }).sort(function(a, b){
+      var da = String(a['종료일'] || a.endDate || '').trim() || '9999-99-99';
+      var db = String(b['종료일'] || b.endDate || '').trim() || '9999-99-99';
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+    badge.textContent = gmRows.length + '건';
+    if(!gmRows.length){
+      bodyEl.innerHTML = '<div class="rep-empty">진행중·보류 업무가 없습니다.</div>';
+      return;
+    }
+    var rowsHtml = gmRows.map(function(r){
+      var title = esc(String(r['업무명'] || r.title || r.name || '').trim());
+      var owner = esc(String(r['담당자'] || r.owner || '').trim());
+      var status = String(r['상태'] || r.status || '').trim();
+      var cat = esc(String(r['카테고리'] || r.category || '').trim());
+      var due = String(r['종료일'] || r.endDate || '').trim();
+      var overdue = due && due < today;
+      var dueHtml = esc(due || '—');
+      if(overdue) dueHtml = '<span style="color:#c0392b;font-weight:700;">' + dueHtml + '</span>';
+      var holdReason = status === '보류' ? esc(String(r['보류사유'] || r.holdReason || '').trim()) : '';
+      var titleHtml = title + (holdReason ? '<div style="font-size:11px;color:var(--dim);margin-top:2px;">보류사유: ' + holdReason + '</div>' : '');
+      return '<tr><td>' + titleHtml + '</td><td>' + owner + '</td><td>' + esc(status) + '</td><td>' + cat + '</td><td>' + dueHtml + '</td></tr>';
+    }).join('');
+    bodyEl.innerHTML = '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
+      '<th>업무명</th><th>담당자</th><th>상태</th><th>카테고리</th><th>종료일</th>' +
+      '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
   }
   /* ── (구) 전체 체크보드 렌더 로직은 여기 있었다 — coo/brojay/브로제이_업무분장.html 로 그대로 이관(사본 아님, 본문 삭제). ── */
 
