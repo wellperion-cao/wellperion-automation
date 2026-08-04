@@ -27,6 +27,19 @@ var LEGACY_RECEPTION_HEADERS = [
   '내용', '연락처', '상태', '담당', '처리메모'
 ];
 var LEGACY_RECEPTION_STATUSES = ['접수', '처리중', '완료'];
+
+// ─── 답변(처리메모) 등록 시 자동 상태 전환 규칙 (순수함수 — GAS API 미의존, Node에서 테스트 가능) ───
+// reg_update(_regUpdate)·voc_update(_vUpdate) 두 '답변 등록' 경로가 공유한다.
+// 규칙: '접수' 상태에서 처리메모가 채워지면 '처리중'으로 한 단계만 자동 이동.
+//   · 사람이 상태를 직접 지정했으면(newStatus) 그 값이 그대로 이긴다.
+//   · '완료' 전환은 자동화 대상 아님 — 추가 답변·재문의가 남을 수 있어 사람이 드롭다운으로 직접.
+//   · 이미 '완료'인 건은 메모를 고쳐도 상태를 건드리지 않는다(재오픈도 사람이 드롭다운으로 — 되돌릴 수 있게).
+// 2026-08-04 시토 (RECEPTION-81 — 답변은 나갔는데 상태가 그대로라 며칠째 SLA 초과로 뜨던 문제).
+function _regEffectiveStatusOnMemo(curStatus, newStatus, memo) {
+  if (newStatus) return newStatus;
+  if (memo !== undefined && String(memo).trim() && curStatus === '접수') return '처리중';
+  return '';
+}
 var LEGACY_RECEPTION_STATUS_COLORS = {
   '접수':  '#e6944e', // 주황
   '처리중': '#5b9fd5', // 파랑
@@ -756,23 +769,26 @@ function _vUpdate(body) {
   var existing = sh.getRange(rowNum, 1, 1, LEGACY_RECEPTION_HEADERS.length).getValues()[0];
 
   var newStatus = String(body.status || body['상태'] || '').trim();
-  if (newStatus) {
-    if (LEGACY_RECEPTION_STATUSES.indexOf(newStatus) < 0) {
-      return _vJson({ ok: false, error: '상태는 접수|처리중|완료 만 허용' });
-    }
-    existing[LEGACY_RECEPTION_HEADERS.indexOf('상태')] = newStatus;
+  if (newStatus && LEGACY_RECEPTION_STATUSES.indexOf(newStatus) < 0) {
+    return _vJson({ ok: false, error: '상태는 접수|처리중|완료 만 허용' });
   }
+
+  var memo = body.memo !== undefined ? body.memo
+    : (body['처리메모'] !== undefined ? body['처리메모'] : undefined);
+
+  // 답변(처리메모) 자동 상태 전환 — 규칙은 _regEffectiveStatusOnMemo 단일 정의(파일 상단 참고).
+  var curStatus = String(existing[LEGACY_RECEPTION_HEADERS.indexOf('상태')] || '');
+  var effStatus = _regEffectiveStatusOnMemo(curStatus, newStatus, memo);
+  if (effStatus) existing[LEGACY_RECEPTION_HEADERS.indexOf('상태')] = effStatus;
 
   var assignee = body.assignee !== undefined ? body.assignee
     : (body['담당'] !== undefined ? body['담당'] : undefined);
   if (assignee !== undefined) existing[LEGACY_RECEPTION_HEADERS.indexOf('담당')] = String(assignee);
 
-  var memo = body.memo !== undefined ? body.memo
-    : (body['처리메모'] !== undefined ? body['처리메모'] : undefined);
   if (memo !== undefined) existing[LEGACY_RECEPTION_HEADERS.indexOf('처리메모')] = String(memo);
 
   sh.getRange(rowNum, 1, 1, LEGACY_RECEPTION_HEADERS.length).setValues([existing]);
-  if (newStatus) _vApplyStatusColor(sh, rowNum, newStatus);
+  if (effStatus) _vApplyStatusColor(sh, rowNum, effStatus);
 
   return _vJson({
     ok: true, id: id,
@@ -1134,17 +1150,19 @@ function _regUpdate(body) {
       return (key in keyCols) ? keyCols[key] : -1;
     };
 
-    if (newStatus) {
-      var si = _idx('status');
-      if (si >= 0) existing[si] = newStatus;
-    }
+    var si = _idx('status');
+    var curStatus = si >= 0 ? String(existing[si] || '') : '';
+    var memo = body.memo !== undefined ? body.memo : undefined;
+
+    // 답변(처리메모) 자동 상태 전환 — 규칙은 _regEffectiveStatusOnMemo 단일 정의(위 참고).
+    var effStatus = _regEffectiveStatusOnMemo(curStatus, newStatus, memo);
+    if (effStatus && si >= 0) existing[si] = effStatus;
 
     var assignee = body.assignee !== undefined ? body.assignee : undefined;
     if (assignee !== undefined) {
       var ai = _idx('assignee');
       if (ai >= 0) existing[ai] = String(assignee);
     }
-    var memo = body.memo !== undefined ? body.memo : undefined;
     if (memo !== undefined) {
       var mi = _idx('memo');
       if (mi >= 0) existing[mi] = String(memo);
@@ -1166,7 +1184,7 @@ function _regUpdate(body) {
 
     // 읽은 폭 그대로 되쓴다 — headers.length 로 쓰면 시트가 더 넓을 때 뒤 칸이 잘린다.
     sh.getRange(rowNum, 1, 1, existing.length).setValues([existing]);
-    if (newStatus) _regApplyStatusColor(sh, rowNum, newStatus, headers);
+    if (effStatus) _regApplyStatusColor(sh, rowNum, effStatus, headers);
 
     var statusIdx = _idx('status');
     var assigneeIdx = _idx('assignee');
