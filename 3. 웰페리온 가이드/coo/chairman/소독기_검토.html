@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파우더룸 소독기 증설 검토</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm; }
+  :root{
+    --deep:#22322D; --mid:#3D5A4F; --grey:#6E7772; --line:#C7CFC9;
+    --steam:#EDF1EE; --brass:#8F7029; --alert:#9A4A20; --alert-bg:#FAF0E5;
+    --ink:#111A16; --pick:#E4EDE7;
+    --font:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#8B948F;}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;}
+
+  .bar{width:273mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;}
+  .bar button,.bar a{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 16px;
+    border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
+    cursor:pointer;text-decoration:none;border-radius:2px;}
+  .bar button:hover,.bar a:hover{background:#fff;color:var(--deep);}
+
+  .sheet{width:273mm;min-height:393mm;margin:14px auto;background:#fff;
+    padding:12mm 13mm 10mm;box-shadow:0 3px 22px rgba(0,0,0,.3);}
+
+  .ref{font-size:11.5px;color:var(--grey);margin:0 0 9px;}
+  .hd{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:14px;}
+  .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-size:29px;font-weight:800;letter-spacing:-.025em;margin:0;}
+  .hd .rt{text-align:right;font-size:13.5px;line-height:1.8;white-space:nowrap;}
+  .hd .rt b{color:var(--grey);font-weight:600;font-size:11.5px;letter-spacing:.08em;margin-right:7px;}
+
+  .quote{border-left:4px solid var(--brass);background:#FBF8F1;padding:11px 16px;margin:0 0 14px;
+    font-size:14px;line-height:1.6;}
+  .quote span{display:block;margin-top:5px;font-size:11.5px;color:var(--grey);}
+
+  .concl{border:2.5px solid var(--deep);padding:16px 20px;margin-bottom:14px;}
+  .concl h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 12px;}
+  .concl .main{font-size:17.5px;font-weight:700;line-height:1.55;margin:0 0 12px;letter-spacing:-.01em;}
+  .concl .main em{font-style:normal;background:var(--pick);padding:1px 5px;}
+  .concl .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    border-top:1px solid var(--line);padding-top:11px;}
+  .concl .cols p{font-size:13.5px;line-height:1.6;margin:0;}
+  .concl .cols b{display:block;font-size:11.5px;letter-spacing:.1em;color:var(--mid);
+    font-weight:800;margin-bottom:4px;}
+
+  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:13px 18px;margin-bottom:16px;}
+  .hold p{font-size:13.5px;line-height:1.62;margin:0;}
+  .hold b{font-weight:800;color:var(--mid);}
+
+  h3{font-size:15px;font-weight:800;margin:0 0 8px;padding-bottom:5px;
+     border-bottom:1.5px solid var(--deep);}
+  h3 span{font-size:12px;font-weight:500;color:var(--grey);margin-left:9px;}
+
+  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
+  .card{border:1px solid var(--line);display:flex;flex-direction:column;}
+  .card.pick{border:2.5px solid var(--mid);}
+  .card .tx{padding:11px 13px 13px;flex:1;display:flex;flex-direction:column;}
+  .card .tier{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--brass);margin:0 0 5px;}
+  .card.pick .tier{color:var(--mid);}
+  .card .nm{font-size:15px;font-weight:700;line-height:1.3;margin:0 0 3px;}
+  .card .md{font-size:11.5px;color:var(--grey);margin:0 0 10px;line-height:1.4;}
+  .card .pr{font-size:22px;font-weight:800;letter-spacing:-.025em;margin:auto 0 0;}
+  .card .pr small{font-size:12.5px;font-weight:600;color:var(--grey);}
+  .card .ws{font-size:11px;color:var(--grey);margin:2px 0 0;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:middle;}
+  thead th{background:var(--deep);color:#fff;font-size:13.5px;font-weight:700;text-align:center;}
+  thead th:first-child{background:var(--mid);text-align:left;width:112px;}
+  tbody th{background:var(--steam);font-weight:600;font-size:13.5px;white-space:nowrap;}
+  td.p{background:var(--pick);}
+  td.na{color:var(--grey);}
+
+  .cost{margin-top:11px;border:1px solid var(--line);background:var(--steam);
+    padding:11px 15px;font-size:13.5px;line-height:1.7;}
+  .cost b{font-weight:800;color:var(--mid);}
+
+  .grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:13px;margin-top:18px;}
+  .blk{border:1px solid var(--line);padding:14px 17px;}
+  .blk.warn{background:var(--alert-bg);border-color:#E2CDB6;}
+  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 10px;}
+  .blk.warn h4{color:var(--alert);}
+  .blk p{font-size:13.5px;line-height:1.62;margin:0 0 9px;}
+  .blk p:last-child{margin-bottom:0;}
+  .blk.warn p{color:#573015;}
+  .blk strong{font-weight:700;}
+  .blk.warn strong{color:var(--alert);}
+  .blk ul{margin:0;padding-left:17px;}
+  .blk li{font-size:13.5px;line-height:1.6;margin-bottom:6px;}
+  .blk li:last-child{margin-bottom:0;}
+
+  .ft{border-top:1px solid var(--line);margin-top:16px;padding-top:8px;
+    display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
+
+  @media print{
+    html,body{background:#fff;}
+    .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
+    .bar{display:none;}
+    .strip,.concl,table,.grid2,.blk,.quote{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+  <a href="회장님_지시사항.html">← 회장님 지시사항으로 돌아가기</a>
+</div>
+
+<div class="sheet">
+  <p class="ref">별첨 · 2026년 8월 월간계획보고 — 회장님 지시사항 01</p>
+
+  <div class="hd">
+    <div>
+      <p class="brand">WELLPERION</p>
+      <h1>파우더룸 소독기 증설 검토</h1>
+    </div>
+    <div class="rt">
+      <div><b>작성일</b>2026. 08. 04.</div>
+      <div><b>작성</b>운영부</div>
+    </div>
+  </div>
+
+  <div class="quote">
+    소독기가 1개뿐이라 회원분들이 멀리서 가져와 이용한다. 그런 사소한 부분을 챙겨야 한다.
+    <b>2개를 배치</b>해 왔다 갔다 하지 않도록 하고, 소독에 신경 쓴다는 것을 인식시켜야 한다.
+    <span>차의주 회장님 지시</span>
+  </div>
+
+  <div class="concl">
+    <h2>결론 · 기존 기종 확인이 먼저입니다</h2>
+    <p class="main">
+      같은 기종 1대를 더 두는 것이 가장 깔끔하지만, <em>기존 1대가 어떤 제품인지 기록이 없습니다.</em>
+      기종이 확인되면 그것으로, 끝내 확인되지 않으면 <em>카리스 KRS-989(10L)</em>를 제안드립니다.
+    </p>
+    <div class="cols">
+      <p><b>제안 사유</b>
+        파우더룸에서 공용으로 쓰는 빗·미용도구를 넣어 두는 용도입니다.
+        5L는 여러 개를 한 번에 넣기에 좁고, 48L는 파우더 카운터에 두기엔 과합니다.
+        10L가 크기와 수납량이 가장 무난합니다.</p>
+      <p><b>예산</b>
+        2대 기준 <b>260,000원</b>(1대 130,000원). 기존 1대를 그대로 두고 1대만 추가하면
+        <b>130,000원</b>입니다. 48L로 갈 경우 2대 114만원이 들어 현 단계에서는 과도합니다.</p>
+    </div>
+  </div>
+
+  <div class="hold">
+    <p><b>확인 중 · 현재 설치 상태</b>
+      회장님 지시사항 화면에는 이 건이 <b>&ldquo;구매 및 배치 완료&rdquo;</b>로 되어 있는데,
+      운영부 진척 기록(7월 31일 산정)에는 <b>소독기 추가 설치 0% 미착수</b>로 남아 있습니다.
+      둘 중 하나가 사실과 다릅니다. 현재 파우더룸에 몇 대가 있고 어디에 놓여 있는지
+      <b>현장 확인을 요청해 둔 상태</b>이며, 그 결과에 따라 이 검토가 &lsquo;신규 구매&rsquo;용인지
+      &lsquo;추가 1대&rsquo;용인지 정해집니다.</p>
+  </div>
+
+  <h3>후보 4종 <span>10~13만원대 2종 · 13~23만원대 1종 · 57만원대 1종</span></h3>
+  <div class="strip">
+    <div class="card">
+      <div class="tx">
+        <p class="tier">실속형</p>
+        <p class="nm">카리스 KRS-985</p>
+        <p class="md">5L · 소형 · 타이머 없음</p>
+        <p class="pr">103,000<small> 원</small></p>
+        <p class="ws">2대 206,000원</p>
+      </div>
+    </div>
+    <div class="card pick">
+      <div class="tx">
+        <p class="tier">제안</p>
+        <p class="nm">카리스 KRS-989</p>
+        <p class="md">10L · 원터치 3분 자동</p>
+        <p class="pr">130,000<small> 원</small></p>
+        <p class="ws">2대 260,000원</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tx">
+        <p class="tier">사양 미확인</p>
+        <p class="nm">청클린 SM-23 · SM-40</p>
+        <p class="md">업소용 · 정가 확인 안 됨</p>
+        <p class="pr">132,800<small> ~ 234,000 원</small></p>
+        <p class="ws">판매처마다 가격 다름</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="tx">
+        <p class="tier">중대형</p>
+        <p class="nm">카리스 48L</p>
+        <p class="md">48L · 상세 사양 미확인</p>
+        <p class="pr">570,000<small> 원</small></p>
+        <p class="ws">2대 1,140,000원</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>비교</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>KRS-985</th><th>KRS-989 (제안)</th><th>청클린 SM-23·40</th><th>카리스 48L</th></tr>
+    </thead>
+    <tbody>
+      <tr><th>가격 (1대)</th><td>103,000 원</td><td class="p"><b>130,000 원</b></td><td>132,800~234,000 원</td><td>570,000 원</td></tr>
+      <tr><th>용량</th><td>5 L</td><td class="p">10 L</td><td class="na">미확인</td><td>48 L</td></tr>
+      <tr><th>살균 방식</th><td>UV-C 253.7nm · 6W</td><td class="p">UV-C 253.7nm · 6W</td><td>자외선 (상세 미확인)</td><td class="na">미확인</td></tr>
+      <tr><th>크기 (외형)</th><td>260 × 230 × 185 mm</td><td class="p">350 × 215 × 230 mm</td><td class="na">미확인</td><td class="na">미확인</td></tr>
+      <tr><th>전원</th><td>10 W</td><td class="p">10 W</td><td class="na">미확인</td><td class="na">미확인</td></tr>
+      <tr><th>작동</th><td>원터치 · 타이머 없음</td><td class="p">원터치 · 3분 자동</td><td class="na">미확인</td><td class="na">미확인</td></tr>
+      <tr><th>램프 수명</th><td>약 8,000시간 (연 1회 교체 권장)</td><td class="p">동일 계열</td><td class="na">미확인</td><td class="na">미확인</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cost">
+    <b>소요액</b> — 추가 1대만 구매 시 <b>130,000원</b> · 2대를 새로 갖출 경우 <b>260,000원</b>.
+    램프는 소모품으로 연 1회 교체가 권장되며, 교체 비용은 별도입니다.
+  </div>
+
+  <div class="grid2">
+    <div class="blk">
+      <h4>배치 · 운영</h4>
+      <ul>
+        <li><b>파우더 카운터 양쪽 끝으로 나눠</b> 놓습니다. 두 대를 한쪽에 몰아 두면
+          &lsquo;왔다 갔다 하지 않도록&rsquo;이라는 지시 취지를 살리지 못합니다.</li>
+        <li>소독 관리 주기를 적은 <b>안내 표기</b>를 함께 부착해, 회원이 소독하고 있다는 것을
+          눈으로 확인하실 수 있게 합니다.</li>
+        <li><b>일일 점검표</b>에 소독기 항목을 넣어 기록을 남깁니다.</li>
+      </ul>
+    </div>
+    <div class="blk warn">
+      <h4>확인이 필요한 것</h4>
+      <p><strong>기존 1대의 기종·구매처가 어디에도 기록돼 있지 않습니다.</strong>
+        같은 기종으로 맞추는 것이 관리·소모품 면에서 가장 유리하므로,
+        현장에서 제품명을 확인하는 것이 먼저입니다.</p>
+      <p>청클린 제품은 <strong>판매처마다 가격이 10만원 가까이 차이</strong>가 나고 정가가 확인되지 않아,
+        구매하실 경우 정식 유통처 확인이 필요합니다.</p>
+    </div>
+  </div>
+
+  <div class="ft">
+    <span>가격·사양은 2026년 8월 4일 조회 기준이며, 확인되지 않은 항목은 &lsquo;미확인&rsquo;으로 두었습니다.</span>
+    <span>웰페리온 · 회장님 지시사항 01 별첨</span>
+  </div>
+
+</div>
+</body>
+</html>
