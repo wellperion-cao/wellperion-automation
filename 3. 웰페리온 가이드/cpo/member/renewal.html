@@ -194,9 +194,9 @@ Chart.defaults.color='#8C8378';Chart.defaults.font.size=12;
 
 let DATA=[],charts={};
 const destroy=k=>{if(charts[k]){charts[k].destroy();delete charts[k];}};
-let AUTHED=false,ROSTER={};
+let AUTHED=false,ROSTER={},ROSTER_LOCAL_ONLY=false;
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function rosterRows(list,wm){if(!list||!list.length)return `<tr><td colspan="${wm?8:7}" style="text-align:center;color:var(--muted);padding:14px 0">대상 없음</td></tr>`;
+function rosterRows(list,wm){if(!list||!list.length)return `<tr><td colspan="${wm?8:7}" style="text-align:center;color:var(--muted);padding:14px 0">${ROSTER_LOCAL_ONLY?'이 명단(90일 미만)은 외부 연결이 끊겨 있습니다 — 시토에게 문의':'대상 없음'}</td></tr>`;
   return list.map((x,i)=>`<tr><td>${i+1}</td>${wm?`<td>${x._m}월</td>`:''}<td>${esc(x.name)}</td><td>${esc(x.phone)}</td><td>${esc(x.memb)}</td><td>${esc(x.exp)}</td><td style="font-weight:700;color:${x.use<30?CORAL:'inherit'}">${x.use}일</td><td><span class="dot-cell" style="background:${STC[x.gb]||'#bbb'}"></span>${esc(x.gb)}</td></tr>`).join('');}
 function rosterBlock(scope){
   if(!AUTHED)return `<div style="margin-top:14px"><button class="rosterBtn" onclick="reqRoster()">🔒 90일 미만 명단 보기 (PIN)</button> <span class="pii-note">이름·연락처 포함 · 사내 전용</span></div>`;
@@ -207,6 +207,16 @@ function rosterBlock(scope){
     `<div style="overflow-x:auto"><table class="roster"><thead><tr><th>No</th>${wm?'<th>월</th>':''}<th>회원명</th><th>연락처</th><th>회원권</th><th>만기</th><th>이용</th><th>구분</th></tr></thead><tbody>${rosterRows(list,wm)}</tbody></table></div></div>`;}
 function reqRoster(){if(AUTHED){repaint();return;}
   const pin=prompt('PIN을 입력하세요 (90일 미만 명단 보기)');if(!pin)return;
+  if(pin==='1200'){
+    // 2026-08-04 GM 지시("PIN 1200으로") — 외부 인증 백엔드(APPS_URL)가 이 저장소·clasp 계정 권한 밖(다른 구글
+    // 계정 소유로 추정)이라 소스를 못 보고 못 고친다. 실측(GET, pin=0000/1200 둘 다) 결과 그 백엔드는 현재
+    // 어떤 PIN을 넣어도 authed:false만 돌려준다 — 값 문제가 아니라 그쪽 서버(속성 미설정 등) 문제로 보인다.
+    // '재등록 대상 명단'·'조건별 대상 인원'은 이 값과 무관한 별도 공개 GAS(RENEWAL_FUNNEL_URL, member_active_list —
+    // 서버 인증 자체가 없음, 이미 무인증 공개)에서 실데이터를 받으므로 AUTHED만 사내 표준 PIN(membership.html
+    // 커튼과 동일 "1200")으로 로컬 해제하면 정상 동작한다. 다만 '90일 미만 명단'(ROSTER)은 그 외부 백엔드가
+    // 유일한 소스라 계속 빈다 — 대상 없음(0명)으로 오인되지 않게 rosterRows()가 별도 안내를 띄운다.
+    ROSTER_LOCAL_ONLY=true;window.__wpR({authed:true,months:[]});return;
+  }
   const s=document.createElement('script');s.onerror=()=>{s.remove();alert('연결 오류 — 잠시 후 다시 시도해주세요.');};s.onload=()=>s.remove();
   s.src=APPS_URL+(APPS_URL.indexOf('?')<0?'?':'&')+'callback=__wpR&pin='+encodeURIComponent(pin)+'&_='+Date.now();
   document.body.appendChild(s);}
