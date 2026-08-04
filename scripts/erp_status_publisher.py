@@ -505,19 +505,23 @@ def fetch_sales_month_in_progress():
 
         pw = _proc_password()
         if not pw:
+            print("[erp_status] sales_month_in_progress: 실패 — 처리방 비밀번호 없음")
             return None
         resp = gas_get(
             PROC_EXEC_URL, {"action": "sales_month", "password": pw},
             timeout=60, label="home_kpi 당월매출",
         )
         if resp is None:
+            print("[erp_status] sales_month_in_progress: 실패 — GAS 응답 없음")
             return None
         d = resp.json()
         if not d.get("ok"):
+            print(f"[erp_status] sales_month_in_progress: 실패 — GAS ok=false({d.get('error')})")
             return None
         m = _now_kst().month
         v = (d.get("total") or [None] * 12)[m - 1]
         if v is None:
+            print(f"[erp_status] sales_month_in_progress: 실패 — {m}월 값 없음(null)")
             return None
         return {
             "month": m,
@@ -525,7 +529,8 @@ def fetch_sales_month_in_progress():
             "source": "sales_month(월별 매출보고 말일탭 Y70:Y80) — 마감 전 진행중 누적",
             "asOf": _now_kst().strftime("%Y-%m-%d %H:%M"),
         }
-    except Exception:
+    except Exception as e:
+        print(f"[erp_status] sales_month_in_progress: 예외 — {e}")
         return None
 
 
@@ -542,8 +547,23 @@ def publish_home_kpi_snapshot():
         # 당월 진행중 누적 — 프론트가 "이번달 미마감" 대신 실제 숫자를 띄우는 데 쓴다.
         # AV열(마감 정본)은 손대지 않는다 — 달이 마감되면 기존 hasCurMonth 분기로 자동 승계.
         mip = fetch_sales_month_in_progress()
-        if mip is not None and isinstance(data.get("sales"), dict):
-            data["sales"]["monthInProgress"] = mip
+        if isinstance(data.get("sales"), dict):
+            if mip is not None:
+                data["sales"]["monthInProgress"] = mip
+            else:
+                # 이번 회차 조회 실패 — 직전 스냅샷의 당월값을 승계(조용한 승계 금지, 배347).
+                prev_mip = None
+                try:
+                    prev = json.loads(HOME_KPI_OUT.read_text(encoding="utf-8"))
+                    prev_mip = prev.get("data", {}).get("sales", {}).get("monthInProgress")
+                except Exception:
+                    prev_mip = None
+                if prev_mip is not None:
+                    data["sales"]["monthInProgress"] = prev_mip
+                    print(f"[erp_status] home_kpi: 당월매출 조회 실패 — 직전 스냅샷 값 승계"
+                          f"(asOf={prev_mip.get('asOf')})")
+                else:
+                    print("[erp_status] home_kpi: 당월매출 조회 실패, 승계할 직전 값도 없음 — 비움")
         now = _now_kst()
         payload = {
             "_doc": "home 히어로 KPI 서버측 스냅샷 단일 출처. erp_status_publisher.py가 30분 주기로 발행. "

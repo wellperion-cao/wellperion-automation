@@ -807,13 +807,11 @@ def _save_dedup_ledger(entries: list[dict]) -> None:
         log(f"[dedup] 원장 저장 실패(무시 — 가드는 best-effort, 발신 자체는 계속): {exc}")
 
 
-def check_and_record_dedup(
-    room_name: str, text: str = "", image_path: Path | None = None, dry_run: bool = False
-) -> bool:
-    """True 반환 = 중복(발신 차단해야 함). False = 신규(정상 진행, 실발송이면 원장에 기록).
+def check_dedup(room_name: str, text: str = "", image_path: Path | None = None) -> bool:
+    """True 반환 = 중복(발신 차단해야 함). False = 신규(정상 진행).
 
-    dry-run 은 실제 발송이 아니므로 원장에 기록하지 않는다(검증용 dry-run 반복 실행이
-    스스로를 중복으로 오판하는 것 방지) — 다만 이미 실발송된 것과 겹치는지 검사는 한다.
+    판정만 한다 — 기록은 하지 않는다(배348: 실제 발송 전에 원장을 적으면 발송이 실패해도
+    "보냄"으로 남아 재시도를 막는다). 성공 확정 후에는 record_dedup_sent()가 기록한다.
     우회: env SKIP_KAKAO_DEDUP_GUARD=1."""
     if os.environ.get(SKIP_DEDUP_ENV) == "1":
         return False
@@ -829,13 +827,23 @@ def check_and_record_dedup(
         _save_dedup_ledger(entries)  # 창 밖 항목 정리만 반영
         return True
 
-    if not dry_run:
-        entries.append({
-            "room": room_name, "sig": sig, "ts": now,
-            "at_kst": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        })
-    _save_dedup_ledger(entries)
+    _save_dedup_ledger(entries)  # 창 밖 항목 정리만 반영(신규 기록은 없음)
     return False
+
+
+def record_dedup_sent(room_name: str, text: str = "", image_path: Path | None = None) -> None:
+    """실제 발송 성공이 확정된 뒤에만 호출 — 원장에 "보냄"을 기록한다(배348).
+    dry-run 은 호출부에서 애초에 부르지 않는다. 우회 시(env)에는 기록도 생략."""
+    if os.environ.get(SKIP_DEDUP_ENV) == "1":
+        return
+    sig = _dedup_signature(room_name, text, image_path)
+    now = time.time()
+    entries = [e for e in _load_dedup_ledger() if now - e.get("ts", 0) < DEDUP_WINDOW_SEC]
+    entries.append({
+        "room": room_name, "sig": sig, "ts": now,
+        "at_kst": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    })
+    _save_dedup_ledger(entries)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -959,7 +967,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(text):
         return False
 
-    if check_and_record_dedup(room_name, text=text, dry_run=dry_run):
+    if check_dedup(room_name, text=text):
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
         return False
 
@@ -980,6 +988,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     time.sleep(0.5)
     screenshot(room_win, room_name, "message_sent")
     log(f"[{room_name}] 텍스트 전송 완료")
+    record_dedup_sent(room_name, text=text)
     _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
                   ok=True, kind="message", channel="kakao")
     return True
@@ -994,7 +1003,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(caption):
         return False
 
-    if check_and_record_dedup(room_name, text=caption, image_path=image_path, dry_run=dry_run):
+    if check_dedup(room_name, text=caption, image_path=image_path):
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
         return False
 
@@ -1028,6 +1037,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
 
     screenshot(room_win, room_name, "sent")
     log(f"[{room_name}] 전송 완료")
+    record_dedup_sent(room_name, text=caption, image_path=image_path)
     _log_outbound(caption, chat_id=room_name, source="kakao_report_sender.image",
                   ok=True, kind="image+caption", channel="kakao")
     return True
@@ -1194,6 +1204,9 @@ def main() -> int:
         if failures:
             print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
             return 1
+        if dedup_skipped and len(dedup_skipped) == len(rooms):
+            print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {dedup_skipped}")
+            return 1
         note = f" (미발신 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""
         print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방{note}")
         return 0
@@ -1218,6 +1231,9 @@ def main() -> int:
 
     if failures:
         print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
+        return 1
+    if dedup_skipped and len(dedup_skipped) == len(rooms):
+        print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {dedup_skipped}")
         return 1
 
     note = f" (중복 발신 가드 스킵 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""

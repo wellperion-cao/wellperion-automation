@@ -42,11 +42,13 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from close_days import is_closed, next_business_day  # noqa: E402
+from generate_sales_report_image import profile_chrome_pids  # noqa: E402
 try:  # 발신 관문(best-effort) — 임포트 실패해도 경보 무영향
     from tg_outbound_log import send as _tg_send
 except Exception:
@@ -241,6 +243,20 @@ def generate_image() -> "tuple[bool, str]":
     return False, reason
 
 
+def wait_for_profile_chrome_clear(timeout_sec: int = 60) -> None:
+    """이미지 생성이 쓰던 profiles/danggn 크롬이 남아 있으면 발신기가 카톡 창을 포그라운드로
+    못 끌어온다(Windows 포그라운드 잠금 — 배348). 고정 sleep 대신 조건 폴링: 정확한 소요시간은
+    확정 못 했으므로(추정) 사라지는 즉시 진행, 상한을 넘기면 로그만 남기고 계속한다(안 멈춤)."""
+    start = time.time()
+    while time.time() - start < timeout_sec:
+        if not profile_chrome_pids():
+            return
+        time.sleep(1.0)
+    remaining = profile_chrome_pids()
+    if remaining:
+        log(f"이미지 생성 크롬 잔존({remaining}) — {timeout_sec}초 대기 후에도 안 사라짐, 그대로 진행")
+
+
 def run_sender(rooms: "list[str] | None", image_path: str, caption: str, dry_run: bool) -> "tuple[bool, list[str]]":
     """rooms=None → 옵션 없이 3방 일괄 1회 호출. rooms=[...] → 방마다 --only-room 반복 호출."""
     failures: list[str] = []
@@ -357,6 +373,7 @@ def main() -> int:
             tg_ok = send_telegram_photo(image_path, caption)
             log(f"텔레그램 사진 발송 {'완료' if tg_ok else '실패'} — 정본 PNG 재사용({image_path})")
 
+    wait_for_profile_chrome_clear()
     ok, failures = run_sender(rooms, image_path, caption, args.dry_run)
     if ok:
         detail = "DRY-RUN 검증 완료" if args.dry_run else "3방 전송 완료" if rooms is None else f"{rooms} 전송 완료"
