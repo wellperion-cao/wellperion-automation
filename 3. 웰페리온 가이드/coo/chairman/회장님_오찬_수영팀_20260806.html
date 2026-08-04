@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회장님 팀별 오찬 1차 — 수영팀 (2026-08-06)</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm 12mm 10mm 12mm; }
+
+  :root{
+    --ink:#1a1d21; --dim:#6b7280; --line:#d8dce2; --line2:#eef1f5;
+    --accent:#0f5c8c; --accent-soft:#e8f1f7; --warm:#8c5a0f; --warm-soft:#fdf4e3;
+    --ok:#186a3b; --ok-soft:#e9f5ee; --paper:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#f2f4f7; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:12.5px; line-height:1.62; word-break:keep-all; overflow-wrap:break-word;
+  }
+  .sheet{
+    max-width:297mm; margin:0 auto; background:var(--paper);
+    padding:14mm 14mm 12mm; text-align:left;
+  }
+
+  /* ── 머리말 ── */
+  .hd{border-bottom:2.5px solid var(--ink); padding-bottom:9px; margin-bottom:14px;}
+  .hd-kicker{font-size:11.5px; letter-spacing:.14em; color:var(--dim); margin-bottom:5px;}
+  .hd-title{font-size:26px; font-weight:800; letter-spacing:-.02em; line-height:1.25;}
+  .hd-meta{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px 20px; font-size:12.5px;}
+  .hd-meta b{font-weight:700;}
+  .hd-meta span{color:var(--dim);}
+
+  /* ── 섹션 ── */
+  section{margin-top:16px; break-inside:avoid;}
+  h2{
+    font-size:14.5px; font-weight:800; margin:0 0 8px;
+    padding:5px 10px; background:var(--ink); color:#fff; letter-spacing:-.01em;
+  }
+  h3{font-size:12.5px; font-weight:700; margin:12px 0 5px; color:var(--accent);}
+
+  /* ── 한눈에 ── */
+  .lede{
+    background:var(--accent-soft); border-left:4px solid var(--accent);
+    padding:11px 14px; font-size:14px; line-height:1.6; font-weight:600;
+  }
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px;}
+  .kpi{border:1px solid var(--line); padding:9px 11px;}
+  .kpi .k{font-size:11px; color:var(--dim); margin-bottom:3px;}
+  .kpi .v{font-size:19px; font-weight:800; letter-spacing:-.02em; line-height:1.2;}
+  .kpi .s{font-size:11px; color:var(--dim); margin-top:3px;}
+
+  /* ── 표 ── */
+  table{width:100%; border-collapse:collapse; margin-top:6px; font-size:12px;}
+  th,td{border:1px solid var(--line); padding:6px 9px; vertical-align:top; text-align:left;}
+  th{background:#f6f8fa; font-weight:700; white-space:nowrap;}
+  td.num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .src{font-size:10.5px; color:var(--dim); margin-top:4px;}
+
+  /* ── 카톡 보고문 ── */
+  .kakao{
+    border:1.5px dashed var(--accent); background:#fbfdff;
+    padding:12px 14px; font-size:12.5px; line-height:1.75; white-space:pre-line;
+  }
+  .kakao-hint{font-size:11px; color:var(--dim); margin-bottom:6px;}
+
+  /* ── 논의 주제 ── */
+  .topics{list-style:none; padding:0; margin:6px 0 0;}
+  .topics li{
+    border:1px solid var(--line); border-left:4px solid var(--accent);
+    padding:9px 12px; margin-bottom:7px; break-inside:avoid;
+  }
+  .topics .q{font-size:13px; font-weight:700; margin-bottom:4px;}
+  .topics .why{font-size:11.5px; color:var(--dim); line-height:1.55;}
+
+  .note{background:var(--warm-soft); border-left:4px solid var(--warm); padding:10px 13px; font-size:12px;}
+  .good{background:var(--ok-soft); border-left:4px solid var(--ok); padding:10px 13px; font-size:12px;}
+  .blank{color:#b42318; font-weight:700;}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+
+  .foot{margin-top:18px; padding-top:8px; border-top:1px solid var(--line); font-size:10.5px; color:var(--dim);}
+
+  /* ── 인쇄 ── */
+  @media print{
+    body{background:#fff; font-size:11.5px;}
+    .sheet{max-width:none; padding:0; margin:0;}
+    .noprint{display:none !important;}
+    section{break-inside:avoid;}
+    h2{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .lede,.kpi,.kakao,.note,.good,.topics li,th{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{
+    max-width:297mm; margin:10px auto 0; text-align:right;
+  }
+  .printbar button{
+    font:inherit; font-size:12px; padding:6px 14px; cursor:pointer;
+    border:1px solid var(--ink); background:var(--ink); color:#fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="printbar noprint"><button onclick="window.print()">A3로 인쇄</button></div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div class="hd-kicker">회장님 팀별 오찬 · 1차</div>
+    <div class="hd-title">수영팀과의 오찬</div>
+    <div class="hd-meta">
+      <div><span>일시</span> <b>2026년 8월 6일(목) 13:00</b></div>
+      <div><span>참석</span> <b>차의주 회장님 · 김남욱 GM · 나우열M(인사&amp;파트너) · 수영팀</b></div>
+      <div><span>성격</span> <b>격려·소통</b></div>
+    </div>
+  </div>
+
+  <!-- ───────────────── 1. 한눈에 ───────────────── -->
+  <section>
+    <h2>1. 한눈에 — 수영팀은 어떤 팀인가</h2>
+    <div class="lede">
+      수영팀은 <em>웰페리온 강습 8개 팀 가운데 매출 1위</em>입니다.
+      7월 한 달 <em>1억 2,368만 원</em>으로 전체 강습 매출의 <em>35.4%</em>를 만들었고,
+      2분기 실적도 1분기보다 <em>3,475만 원</em> 늘었습니다.
+      같은 기간 <em>사고·고장 접수는 0건</em>이었습니다.
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="k">7월 매출</div>
+        <div class="v">1억 2,368만</div>
+        <div class="s">강습 8팀 중 1위 · 35.4%</div>
+      </div>
+      <div class="kpi">
+        <div class="k">상반기 흐름</div>
+        <div class="v">2.97억 → 3.31억</div>
+        <div class="s">1분기 → 2분기</div>
+      </div>
+      <div class="kpi">
+        <div class="k">강사</div>
+        <div class="v">10명</div>
+        <div class="s">성인 · 유소년 · 아쿠아로빅</div>
+      </div>
+      <div class="kpi">
+        <div class="k">사고·고장</div>
+        <div class="v">0건</div>
+        <div class="s">접수 기준 · 수질 정상</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 2. 카톡 사전 보고문 ───────────────── -->
+  <section>
+    <h2>2. 회장님께 드릴 사전 보고 <span style="font-weight:400;font-size:11.5px;">— 카카오톡에 그대로 붙여 쓰시면 됩니다</span></h2>
+    <div class="kakao-hint">아래 상자 안 내용만 복사하시면 됩니다.</div>
+    <div class="kakao">회장님, 이번 주 목요일(8/6) 13시 수영팀 오찬 관련해 미리 보고드립니다.
+
+수영팀은 현재 강사 10분이 성인·유소년·아쿠아로빅을 맡고 있습니다.
+
+7월 매출은 1억 2,368만 원으로, 강습 8개 팀 가운데 가장 큰 규모이며 전체 강습 매출의 35.4%를 차지합니다. 2분기 실적도 1분기보다 3,475만 원 늘어 3억 3,144만 원을 기록했습니다.
+
+시설 쪽은 상반기 중 사고나 고장 접수가 없었고, 수질도 정상 범위를 유지하고 있습니다.
+
+올해 수영 문의는 815건 접수돼 142분이 등록으로 이어졌습니다. 유소년(95분)이 성인(47분)보다 많은 것이 특징입니다.
+
+격려 자리인 만큼 실적 점검보다는 현장 이야기를 듣는 데 무게를 두려 합니다. 논의하실 만한 주제는 따로 정리해 함께 올리겠습니다.</div>
+  </section>
+
+  <!-- ───────────────── 3. 현황 ───────────────── -->
+  <section>
+    <h2>3. 수영팀 현황 (실측)</h2>
+
+    <div class="two">
+      <div>
+        <h3>사람</h3>
+        <table>
+          <tr><th style="width:78px">강사</th><td>박민서 · 송민근 · 강대경 · 천주희 · 구성우 · 박주혜 · 김성은 · 강승구 · 김형기 · 김미자 <b>(10명)</b></td></tr>
+          <tr><th>최근 변동</th><td>2026-07-29 김미자 선생님 합류 (아쿠아로빅)</td></tr>
+          <tr><th>직책</th><td class="blank">기록 없음 — 명단에 직책 칸이 없습니다</td></tr>
+        </table>
+        <div class="src">출처 : 강습 강사 명단 정본 · 최종수정 2026-07-29</div>
+
+        <h3>매출</h3>
+        <table>
+          <tr><th style="width:78px">1분기</th><td class="num">296,693,350 원</td><td>월평균 9,890만</td></tr>
+          <tr><th>2분기</th><td class="num">331,441,000 원</td><td>월평균 1억 1,048만</td></tr>
+          <tr><th>7월 (마감)</th><td class="num">123,684,000 원</td><td>거래 511건</td></tr>
+          <tr><th>8월 (진행)</th><td class="num">9,529,000 원</td><td>거래 42건 · 4일 기준</td></tr>
+          <tr><th>강습 내 비중</th><td class="num">35.4 %</td><td><b>8개 팀 중 1위</b> (7월 기준)</td></tr>
+        </table>
+        <div class="src">출처 : 팀별 매출 · 2026-08-04 실측</div>
+      </div>
+
+      <div>
+        <h3>문의와 등록</h3>
+        <table>
+          <tr><th style="width:78px"></th><th>성인</th><th>유소년</th><th>합계</th></tr>
+          <tr><th>문의 접수</th><td class="num">400</td><td class="num">415</td><td class="num"><b>815</b></td></tr>
+          <tr><th>등록 완료</th><td class="num">47</td><td class="num">95</td><td class="num"><b>142</b></td></tr>
+          <tr><th>상담 진행중</th><td class="num">178</td><td class="num">160</td><td class="num">338</td></tr>
+        </table>
+        <div class="src">2026-01-01 ~ 08-04 누계 · 등록 전환 17.4%</div>
+
+        <h3>월별 문의 접수</h3>
+        <table>
+          <tr><th>1월</th><th>2월</th><th>3월</th><th>4월</th><th>5월</th><th>6월</th><th>7월</th><th>8월</th></tr>
+          <tr><td class="num">109</td><td class="num">90</td><td class="num">140</td><td class="num">97</td><td class="num">118</td><td class="num">132</td><td class="num">119</td><td class="num">10</td></tr>
+        </table>
+        <div class="src">8월은 4일까지 · 성인+유소년 합계</div>
+
+        <h3>시설·안전</h3>
+        <table>
+          <tr><th style="width:78px">사고·고장</th><td><b>접수 0건</b></td></tr>
+          <tr><th>수질 (8/3)</th><td>염소 0.42 · pH 7.26 · 수온 31.8&deg;C — 정상 보고</td></tr>
+        </table>
+        <div class="src">출처 : 시설부 점검 일지 2026-08-03 22:31</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px" class="note">
+      <b>아직 채우지 못한 것</b> — <span class="blank">현재 수영 강습을 받고 있는 인원</span>은 지금 시스템에서 바로 세어지지 않습니다.
+      회장님께서 물으시면 <b>"등록 누계 142분"</b>까지만 말씀드리고, 현재 수강 인원은 확인 후 알려드리는 것이 정확합니다.
+      숫자를 지어 말씀드리지 않는 편이 낫습니다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 4. 논의 주제 ───────────────── -->
+  <section>
+    <h2>4. 오찬에서 나누실 만한 주제 <span style="font-weight:400;font-size:11.5px;">— 답이 정해지지 않은 질문 위주</span></h2>
+
+    <ol class="topics">
+      <li>
+        <div class="q">"수영이 우리 강습에서 제일 큰 팀입니다. 그만큼 힘든 점도 있을 텐데요?"</div>
+        <div class="why">먼저 인정하고 시작하는 자리입니다. 매출 1위·35.4%는 사실이므로 근거 있는 칭찬이 되고, 뒤 문장이 현장 이야기를 여는 문을 만듭니다.</div>
+      </li>
+      <li>
+        <div class="q">"유소년이 성인보다 등록이 두 배 많던데, 현장에서 느끼시기엔 어떻습니까?"</div>
+        <div class="why">등록 95명 대 47명. 숫자로만 보면 유소년이 강한데, 그 이유는 현장만 압니다. 학부모 응대·시간대·안전 같은 이야기가 자연스럽게 나옵니다.</div>
+      </li>
+      <li>
+        <div class="q">"수영 배우러 오셨다가 다른 것도 하시게 되는 회원이 있습니까?"</div>
+        <div class="why">수영팀이 클럽 전체에 어떤 기여를 하는지 현장 감각으로 듣는 질문입니다. 팀의 역할을 넓게 봐 주는 인정이기도 합니다.</div>
+      </li>
+      <li>
+        <div class="q">"회원분들께 가장 자주 듣는 말씀이 뭔가요?"</div>
+        <div class="why">칭찬이든 불만이든 현장 목소리가 그대로 나옵니다. 대답하기 쉬워 말문이 열리는 질문이라 초반에 쓰기 좋습니다.</div>
+      </li>
+      <li>
+        <div class="q">"있으면 훨씬 수월해질 것 같은 게 하나 있다면요?"</div>
+        <div class="why">건의를 묻되 부담을 주지 않는 표현입니다. 장비·시간표·인원 같은 구체적인 요청이 나오면 그 자리에서 메모해 두시면 됩니다.</div>
+      </li>
+      <li>
+        <div class="q">"아쿠아로빅은 시작한 지 얼마 안 됐는데 어떠십니까?"</div>
+        <div class="why">7월 29일 김미자 선생님이 합류하며 시작된 새 프로그램입니다. 새로 온 분을 자리에서 환영하는 효과도 있습니다.</div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ───────────────── 5. 진행 참고 ───────────────── -->
+  <section>
+    <h2>5. 진행하실 때 참고</h2>
+    <div class="two">
+      <div class="good">
+        <b>이렇게 하시면 좋습니다</b>
+        <ul style="margin:6px 0 0; padding-left:18px;">
+          <li>숫자는 <b>칭찬의 근거로만</b> 한 번 쓰고 넘어갑니다 — "8개 팀 중 제일 크다" 정도면 충분합니다.</li>
+          <li>강사분들 <b>이름을 불러</b> 주시면 자리가 빨리 풀립니다.</li>
+          <li>건의가 나오면 <b>그 자리에서 답을 주지 않으셔도</b> 됩니다. 적어 두겠다는 말씀이 더 신뢰를 줍니다.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <b>이 자리에서는 피하는 편이 좋습니다</b>
+        <ul style="margin:6px 0 0; padding-left:18px;">
+          <li><b>문의 전환율(17.4%)</b> — 낮아 보이는 숫자입니다. 다만 7월에 성인수영 문의 130건이 담당자 배정 없이 오래 남아 있던 것을 찾아 해소했으므로, <b>현장 잘못이 아니라 관리 체계 문제</b>였습니다. 물으시면 그렇게 설명하시면 됩니다.</li>
+          <li><b>개인별 실적 비교</b> — 격려 자리의 성격과 맞지 않습니다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    실측 기준 2026-08-04 · 숫자는 팀별 매출·강습 문의·시설 점검 기록에서 직접 확인한 값입니다.
+    확인되지 않은 항목은 채우지 않고 비워 두었습니다. · 작성 웰리(AI CEO)
+  </div>
+
+</div>
+</body>
+</html>
