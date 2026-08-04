@@ -1186,6 +1186,14 @@ function _isTestInquiryName_(name) {
   }
   return false;
 }
+// 배209 사고 재발방지(2026-08-04, GM 지적) — 테스트 태그 문의가 실무진 알림방(문의컨택알림방)으로
+// 그대로 새던 것. submit_inquiry·intake_submit 알림 발신 직전에 이 함수로 채팅방을 정한다.
+// 판정은 위 _isTestInquiryName_ 재사용(새 판정 로직 없음, 약속 L01·L21) — 테스트면 조용히 버리지
+// 않고 업무보고방(8254867551)으로 돌린다.
+var TELEGRAM_REPORT_CHAT_ID = '8254867551';
+function _inquiryNotifyChatId_(name, normalChatId) {
+  return _isTestInquiryName_(name) ? TELEGRAM_REPORT_CHAT_ID : normalChatId;
+}
 // 반환 행은 기존 5곳과 동일 폭·순서(INQUIRY_HEADERS.length 컬럼) — 그 계약은 안 건드리고
 // 테스트행만 뺀다. 이름 칸 인덱스는 상수(INQUIRY_HEADERS)가 아니라 시트 실제 헤더 행을
 // 매 호출 스캔해 찾는다(열 번호 하드코딩 금지 — reference_inquiry_sheet_write_read_column_mismatch
@@ -3815,13 +3823,13 @@ function _processAction(body) {
       _mirrorInquiryToStaffLog_(body, id);
 
       _notifyTelegram(
-        '🔔 <b>[신규 문의]</b>\n'
+        (_isTestInquiryName_(body.name) ? '🧪 <b>[테스트 문의 — 업무보고방으로 자동전환]</b>\n' : '🔔 <b>[신규 문의]</b>\n')
         + '이름: ' + (body.name || '-') + '\n'
         + '연락처: ' + (body.phone || '-') + '\n'
         + '유형: ' + (body.type || '-') + '\n'
         + '유입채널: ' + (body.inflow || '-') + '\n'
         + '내용: ' + (body.message || '-').substring(0, 100),
-        _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK
+        _inquiryNotifyChatId_(body.name, _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK)
       );
     }
 
@@ -4058,15 +4066,15 @@ function _processAction(body) {
     // 알림 — '문의 알림' 방(멤버십 add·구글폼과 동일 톤). 실패해도 접수 자체는 성공 유지(fail-soft).
     // 신규 3종(여름특강·공간렌트·비즈니스)도 category 라벨·표시명·부가정보만 분기해 동일 _notifyTelegram 재사용(2026-07-16 시토).
     try {
-      var _iChat = _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
       var _iCatLabelMap = { membership: '멤버십', adult: '성인 강습', youth: '유소년 강습', summer: '여름 특강', rental: '공간 렌트', business: '비즈니스 제휴' };
       var _iCatLabel = _iCatLabelMap[_iCat] || _iCat;
       var _iDisplayName = (_iCat === 'business') ? (_iCompany + ' / ' + _iContactName) : _iName;
+      var _iChat = _inquiryNotifyChatId_(_iDisplayName, _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK); // 배209 재발방지 — 테스트 태그는 업무보고방으로
       var _iExtra = '';
       if (_iCat === 'summer') _iExtra = (_iWish ? ('\n희망시간: ' + _iWish) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '') + (_iTarget ? ('\n대상: ' + _iTarget) : '');
       if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
       if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
-      _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
+      _notifyTelegram((_isTestInquiryName_(_iDisplayName) ? '🧪 <b>[테스트 문의 — 업무보고방으로 자동전환]</b>\n' : '🔔 <b>[웹 문의 접수]</b> (자체폼)\n') + '유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
         + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
