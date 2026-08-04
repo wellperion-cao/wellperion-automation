@@ -5283,6 +5283,17 @@ function _processAction(body) {
           muSh.getRange(muRow, _muHistCi3 + 1).setNumberFormat('@');
           muSh.getRange(muRow, _muHistCi3 + 1).setValue(_resStringify_(_muOverflow));
         }
+        // 회원 변경 이력(배327) 배선 — 2026-08-04 시토(배359, 임정은M 컨택내용 8일 5회 소실 조사).
+        //   이 블록은 그동안 _memberLog_를 한 번도 부르지 않았다 — member_active_update 등 다른 칸은
+        //   다 남는데 CONTACT만 이력이 없어서, 다음에 또 사라지면 이번처럼 '언제 몇 건이 몇 건 됐는지'조차
+        //   못 짚는다. 내용은 Contact1/2/3·연락이력 칸 자체가 원본이라 건수만 남긴다(중복 저장 안 함).
+        if (_muHistNewArr.length !== _muHistPrevCount) {
+          var _muLogNmCi = _miColIdx_(muHdr, ['성함', '이름']);
+          _memberLog_([[new Date(), _logWho_(body),
+            _muLogNmCi >= 0 ? String(muSh.getRange(muRow, _muLogNmCi + 1).getValue() || '') : '',
+            _muPhCi >= 0 ? _logMaskPhone_(muSh.getRange(muRow, _muPhCi + 1).getValue()) : '',
+            '연락 이력', _muHistPrevCount + '건', _muHistNewArr.length + '건', '멤버십']]);
+        }
       } catch (eHist) {
         // ★삼키지 않는다(2026-07-25) — 실패는 응답에 실어 화면이 빨갛게 알리고 창을 열어두게 한다.
         Logger.log('연락이력 저장 실패: ' + eHist.message);
@@ -6006,6 +6017,14 @@ function _processAction(body) {
             _spCell.setNumberFormat('@');
             _spCell.setValue(_lessonContactPlainStringify_(_spMerged));
           }
+          // 회원 변경 이력(배327) 배선 — 2026-08-04 시토(배359). row-level 경로(아래 _luSet)만 이력에 남고
+          //   종목별 경로는 안 남아 있었다 — 형제 호출부 누락(약속 L01). 건수만 남긴다.
+          if (_spTagged.length !== _spPrevCount) {
+            _luLog.push([new Date(), _luStaff,
+              _luNameCi >= 0 ? String(luSh.getRange(luRow, _luNameCi + 1).getValue() || '') : '',
+              _luPhCi >= 0 ? _logMaskPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue()) : '',
+              '연락 이력(' + luSportKey + ')', _spPrevCount + '건', _spTagged.length + '건', '강습']);
+          }
         } catch (eSp) { Logger.log('강습 종목별 컨택 저장 실패: ' + eSp.message); }
       }
       // 1차 컨택 알림(종목별): 이 종목 태그 줄 0건 → ≥1건 전이 시 1회만. body.silent==='1' 억제(대량 이관 오알림 방지).
@@ -6071,6 +6090,13 @@ function _processAction(body) {
             // flat 경로(sport:'')=단일종목/미기재 회원. 프론트가 모달에 전체 컨택(태그줄 포함)을 담아 왕복하므로
             //   body.contacts 그대로 기록하면 태그줄도 보존된다 — 별도 keptTags concat은 중복 유발이라 제거. 2026-07-22 디버그.
             _luHistCell.setValue(_lessonContactPlainStringify_(_luHistNewArr));
+          }
+          // 회원 변경 이력(배327) 배선 — 2026-08-04 시토(배359). 건수만 남긴다(내용은 칸 자체가 원본).
+          if (_luHistNewArr.length !== _luHistPrevCount) {
+            _luLog.push([new Date(), _luStaff,
+              _luNameCi >= 0 ? String(luSh.getRange(luRow, _luNameCi + 1).getValue() || '') : '',
+              _luPhCi >= 0 ? _logMaskPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue()) : '',
+              '연락 이력', _luHistPrevCount + '건', _luHistNewArr.length + '건', '강습']);
           }
         } catch (eHist) { Logger.log('강습 연락이력 저장 실패: ' + eHist.message); }
       }
