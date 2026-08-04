@@ -32,33 +32,37 @@ REM    (2) the status line reads the role FROM the transcript, so it drops to a 
 REM        "role unknown" line and looks like every colour vanished (GM 2026-08-04).
 REM    Clearing it costs nothing when it was not set.
 set "CLAUDE_CODE_CHILD_SESSION="
-echo.
-echo  == Wellperion morning boot - Welly + Sito ==
-echo.
+
+REM -- 부팅 화면은 조용히 (GM 2026-08-04) --
+REM    장식 배너·진행 안내를 뺐다. 남기는 것은 사람이 손대야 하는 경고뿐이고,
+REM    경고가 하나라도 떴을 때만 창을 5초 붙잡아 GM 이 읽을 수 있게 한다.
+REM    아무 문제 없으면 창은 바로 닫힌다.
+set "WPWARN="
 
 REM -- git boot self-heal (once) --
 git symbolic-ref -q HEAD >nul 2>&1
 if errorlevel 1 (
   echo   [self-heal] detached HEAD - returning to master
+  set "WPWARN=1"
   git checkout -B master HEAD
 )
 set DIRTY=0
 for /f %%c in ('git status --porcelain ^| find /c /v ""') do set DIRTY=%%c
 if %DIRTY% GTR 200 (
   echo   [warn] %DIRTY% uncommitted files - skipping pull
+  set "WPWARN=1"
 ) else (
   git pull --rebase --autostash origin master
-  if errorlevel 1 echo   [warn] git pull failed - boot continues
+  if errorlevel 1 (
+    echo   [warn] git pull failed - boot continues
+    set "WPWARN=1"
+  )
 )
 
 set WP_BOOT_SKIP_GIT=1
 
-echo   [1/2] opening Sito (CTO)...
 call "%WORK%\Start-AI CTO.bat"
 
-echo   [2/2] opening Welly (CEO)...
 start "Wellperion GM" "%WORK%\Start-AI CEO.bat"
 
-echo.
-echo   Both windows opened. You can close this one.
-timeout /t 5 >nul
+if defined WPWARN timeout /t 5 >nul
