@@ -2406,6 +2406,45 @@ function _regRemove_(phone) {
 //   회원 담당은 임정은M 1인이다 — 문의 접수자를 회원 담당자로 흘려 넣던 것이 빈칸·오기의 원인이었다.
 //   여기 한 곳에 두면 SUC·직접등록 등 모든 쓰기 경로가 같은 값을 쓴다(담당이 바뀌면 이 줄만 고친다).
 var MEMBER_DEFAULT_OWNER = '임정은';
+/** 종목명을 **회원 시트가 이미 쓰고 있는 표준 이름**으로 맞춘다 (2026-08-04 시토).
+ *
+ * ★왜(GM 지적 '종목명이 기록된 종목명이 아니라서 충돌난 것 같은데'):
+ *   화면 선택지는 4종 축약('플래티넘'·'노블레스'±골프)인데(2026-07-08 GM 확정 · 문의 화면용),
+ *   회원 시트가 실제로 담는 값은 '★(정)플래티넘 ▶ GYM+사우나 ▶ 12개월' 같은 긴 정식명이다.
+ *   그 축약값이 그대로 회원 시트에 들어가면 같은 상품이 두 이름으로 갈려 집계·조인이 깨진다
+ *   (기억: 종목명 두 벌 — 강습에서 이미 같은 사고가 있었다).
+ * ★방식: 상품명 목록을 새로 하드코딩하지 않는다(약속 L01). **시트에 이미 있는 값**에서
+ *   같은 등급(노블레스/플래티넘)·같은 골프 유무·같은 기간종류(정/단)를 찾아 가장 많이 쓰이는 것을 쓴다.
+ *   못 찾으면 받은 값을 그대로 둔다(지어내지 않는다).
+ */
+function _memberProgramCanon_(sh, pgI, program, moN) {
+  var raw = String(program || '').trim();
+  if (!raw || pgI < 0) return raw;
+  function _sig(s, m) {
+    var t = String(s || '');
+    var grade = t.indexOf('노블레스') >= 0 ? 'N' : (t.indexOf('플래티넘') >= 0 ? 'P' : '');
+    if (!grade) return '';
+    var golf = (t.indexOf('골프') >= 0) ? 'G' : '-';
+    // 기간종류: 문자열의 (단)/(정) 표기가 있으면 그것, 없으면 개월수로 판단(1개월 이하=단기).
+    var term = t.indexOf('(단)') >= 0 ? 'S' : (t.indexOf('(정)') >= 0 ? 'R' : ((m > 0 && m <= 1) ? 'S' : 'R'));
+    return grade + golf + term;
+  }
+  var want = _sig(raw, moN);
+  if (!want) return raw;
+  var last = sh.getLastRow();
+  if (last < 2) return raw;
+  var vals = sh.getRange(2, pgI + 1, last - 1, 1).getValues();
+  var tally = {};
+  for (var i = 0; i < vals.length; i++) {
+    var v = String(vals[i][0] == null ? '' : vals[i][0]).trim();
+    if (!v || _sig(v, 0) !== want) continue;
+    tally[v] = (tally[v] || 0) + 1;
+  }
+  var best = '', bestN = 0;
+  for (var k in tally) { if (tally[k] > bestN) { best = k; bestN = tally[k]; } }
+  return best || raw;
+}
+
 function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var key = _regNormPhone_(phone);
   if (!key) return;
@@ -2449,6 +2488,8 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
       remN = Math.round((ed.getTime() - Date.now()) / 86400000);
     }
   }
+  // 화면이 보낸 축약 종목명('플래티넘' 등)을 회원 시트가 쓰는 정식명으로 맞춘다(위 함수 주석 참조).
+  program = _memberProgramCanon_(sh, pgI, program, moN);
   var last = sh.getLastRow();
   if (last >= 2) {
     var phVals = sh.getRange(2, phI + 1, last - 1, 1).getValues();
