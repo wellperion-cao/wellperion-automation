@@ -129,7 +129,12 @@ _IDENTIFIER_RE = re.compile(r"_[A-Za-z][A-Za-z0-9_]*")
 _ALLCAPS_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9_]{2,}\b")
 _PAREN_SPAN_RE = re.compile(r"\([^()]*\)")
 _GM_QUOTE_START_RE = re.compile(r'GM\s*(지시|판단|결정)\s*[:"“]')
-_CLOSING_TAG_RE = re.compile(r"\[[^\]\n]*(?:완료|확정|검수 통과|종결)[^\]\n]*\]")
+_CLOSING_TAG_RE = re.compile(r"\[[^\]\n]*(?:완료|확정|결정|검수 통과|종결)[^\]\n]*\]")
+# ★2026-08-04 웰리 — 부정문을 종결로 읽어 실무진 화면에 내부 진단문이 그대로 나갔다.
+#   실사고: 배10496 note 의 「[왜 저장이 안 됐나 — 확정 못 함]」이 '확정' 때문에 종결 태그로
+#   잡혔고, 그 아래 rowKey·WriteBuffer 설명이 임정은M 회신으로 시트에 적혔다.
+#   태그 안에 부정어가 있으면 종결이 아니다. ('결정'은 GM 결정 기록이 종결이라 새로 넣었다.)
+_CLOSING_NEGATION_RE = re.compile(r"못\s|못함|못 함|불가|실패|안 됨|안됨|미완|보류")
 
 # ─── 약속-표현 게이트 (2026-07-29 GM·웰리 지적 — FB260729-132718 실사고) ───────────────────
 #   사고: 배 10399 회신에 "검토해서 반영하겠습니다"(미래형 약속)라고 적어 놓고 그 순간 배를
@@ -232,7 +237,8 @@ _INTAKE_INSTRUCTION_MARK = "실무진이 본인 화면에서 처리 결과를 �
 def _last_closing_entry(note: str) -> str:
     """note 안에서 가장 마지막 '완료/확정/검수 통과/종결' 계열 항목의 본문을 뽑는다.
     그런 항목이 하나도 없으면(옛 형식 등) 마지막 문단으로 폴백."""
-    matches = list(_CLOSING_TAG_RE.finditer(note))
+    matches = [m for m in _CLOSING_TAG_RE.finditer(note)
+               if not _CLOSING_NEGATION_RE.search(m.group(0))]
     if not matches:
         return note.split("\n\n")[-1]
     m = matches[-1]
