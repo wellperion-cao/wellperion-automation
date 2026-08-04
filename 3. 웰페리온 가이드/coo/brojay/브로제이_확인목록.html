@@ -116,6 +116,7 @@
       <div class="slogan">브로제이에 요청한 개선 사항 · 회신 대기 현황 — 급한 순서로 보고, 끝나면 담당자별 완료 칸으로 넘깁니다</div>
     </div>
     <a class="sheet-btn" href="https://docs.google.com/spreadsheets/d/16RL4xhCK0-JOHy9rLPPte0xXdC1cSlPQnmdU13Ri6sQ/edit?gid=0#gid=0" target="_blank" rel="noopener">📗 브로제이 시트 열기 (내용 고치기)</a>
+    <button type="button" class="back" id="staffNameBadge" onclick="editStaffName()" title="담당자 이름 변경">✎ 이름: —</button>
     <a class="back" href="브로제이_업무분장.html">◂ 업무분장으로</a>
     <a class="back" href="../../월간운영계획.html">◂ 월간운영계획으로</a>
   </header>
@@ -182,16 +183,57 @@
     return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
   function getStaffName(){ try{ return localStorage.getItem(STAFF_NAME_KEY) || ''; }catch(e){ return ''; } }
+  // 이름값 검증 — GM 신고(2026-08-04): membership.html에서 메모 문장이 이름 창에 잘못 들어가
+  // "김남욱 이번 재등록으로 인해 9회차 등록 · ..." 처럼 문장이 이름으로 굳었다. 사람 이름 길이(1~10자)·
+  // 줄바꿈 없음만 통과시킨다. wellperion_staff_name 키를 쓰는 화면 3곳(회장님_지시사항·브로제이_확인목록·
+  // membership) 전부 이 규칙을 공유해야 한다(같은 키를 공유하므로 한 곳만 고치면 다른 화면이 다시 오염시킨다).
+  function _isValidStaffName(s){
+    var t = String(s == null ? '' : s).trim();
+    return !!t && t.length <= 10 && !/[\r\n]/.test(t);
+  }
+  function _promptStaffName(defaultVal){
+    for (var i = 0; i < 5; i++){
+      var raw = null;
+      try{ raw = prompt('이름을 입력해 주세요 (한 번 적으면 다음부터 자동으로 채워집니다)', defaultVal || ''); }catch(e){}
+      if (raw === null) return '';   // 취소
+      var t = raw.trim();
+      if (_isValidStaffName(t)) return t;
+      try{ alert('이름만 적어 주세요(예: 김남욱)'); }catch(e){}
+    }
+    return '';
+  }
+  function _renderStaffBadge(){
+    var el = document.getElementById('staffNameBadge');
+    if (el) el.textContent = '✎ 이름: ' + (getStaffName() || '—');
+  }
+  // 이미 굳은 잘못된 값(과거 버그로 들어간 문장 등)은 새로고침만 해도 스스로 지워진다 — _asked 플래그와 무관.
+  (function _healBadName(){
+    try{
+      var v = localStorage.getItem(STAFF_NAME_KEY);
+      if (v && !_isValidStaffName(v)){
+        localStorage.removeItem(STAFF_NAME_KEY);
+        localStorage.removeItem(STAFF_NAME_KEY + '_asked');
+      }
+    }catch(e){}
+  })();
+  // 이름 뱃지(✎) 클릭 — 지금 이름을 바로 고칠 수 있게(배 GM 신고 완료 조건).
+  // window에 노출 — 이 함수들은 IIFE 안에 있는데 뱃지 버튼은 inline onclick(전역 스코프에서 실행)이라
+  // 노출 안 하면 "editStaffName is not defined"로 죽는다.
+  function editStaffName(){
+    var name = _promptStaffName(getStaffName());
+    if (name) { try{ localStorage.setItem(STAFF_NAME_KEY, name); }catch(e){} }
+    _renderStaffBadge();
+  }
+  window.editStaffName = editStaffName;
   /* ★배10520 수리(2026-08-04) — 취소하거나 빈칸으로 닫으면 저장할 게 없어 **저장할 때마다 다시 물었다.**
      물었다는 사실을 남겨 브라우저당 한 번만 묻는다(이름을 적으면 그때부터 자동으로 채워진다). */
   function ensureStaffName(){
     var cur = getStaffName(); if(cur) return cur;
     try{ if(localStorage.getItem(STAFF_NAME_KEY + '_asked')) return '이름미상'; }catch(e){}
-    var name = '';
     try{ localStorage.setItem(STAFF_NAME_KEY + '_asked', '1'); }catch(e){}
-    try{ name = prompt('이름을 입력해 주세요 (한 번 적으면 다음부터 자동으로 채워집니다)', '') || ''; }catch(e){}
-    name = name.trim();
+    var name = _promptStaffName('');
     if(name){ try{ localStorage.setItem(STAFF_NAME_KEY, name); }catch(e){} }
+    _renderStaffBadge();
     return name || '이름미상';
   }
   function toObj(v){
@@ -567,6 +609,7 @@
     }
     render();
   });
+  _renderStaffBadge();
 })();
 </script>
 </body>
