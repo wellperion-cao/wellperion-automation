@@ -8532,7 +8532,8 @@ function _processAction(body) {
     } else {
       aaResult = { ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows };
     }
-    // ★2026-08-03 시토(배298) — TTL 60 → 360초. 워머(warmDashboardCache)가 5분마다 도는데
+    // ★2026-08-03 시토(배298) — TTL 60 → 360초. 워머(2026-08-05 부터 warmLessonRosterCache —
+    //   warmDashboardCache 는 트리거가 없어 안 돈다)가 5분마다 도는데
     //   TTL 이 60초면 5분 중 1분만 뜨겁고 나머지 4분은 미스라 워밍이 헛돈다. 360초로 두면
     //   워머 주기(300초)보다 길어 **항상 히트**한다(경계 race 없음).
     //   ▸신선도 영향: 쓰기 액션(member_active_update 등)은 그대로 즉시 무효화하므로 화면에서
@@ -10976,24 +10977,6 @@ function warmLessonRosterCache() {
     } catch (e) { /* 한쪽 실패가 다른 쪽을 막지 않게 */ }
   }
 
-  // ★회원 목록(유효·종료) 캐시 워밍 — 2026-08-05 시토(배298 미완 마감).
-  //   왜 여기냐: 이 두 스코프를 데우는 코드는 warmDashboardCache 에 08-03에 들어갔는데, 그 함수에는
-  //   CLOCK 트리거가 없어 **한 번도 자동으로 돈 적이 없다**(라이브 확인 4건에 없음). 파이썬 쪽
-  //   daily_scheduler._warm_dashboard_cache 는 마케팅 4종만 데우고 회원 목록은 목록에 없다.
-  //   즉 GM 이 "느려서 CRM 관리가 안 된다"고 한 바로 그 화면만 워밍에서 빠져 있었다.
-  //   실측(라이브 curl, 2026-08-05): scope=valid 캐시미스 12.1초 / 히트 3.3초 · ended 8.9초 / 6.9초.
-  //   주기 5분 < 캐시 TTL 6분(8464줄) 이라 만료 구간 없이 항상 뜨겁게 유지된다.
-  //   자기 URL 로 HTTP 를 쏘지 않고 _processAction 을 직접 부른다(위 강습 워밍과 같은 방식 — 인증·과금 무관).
-  //   ▸알아 둘 것: 워머가 시트를 읽는 12초 사이에 실무진이 저장하면, 워머가 저장 직전 값을 캐시에 넣어
-  //     최대 6분간 옛 값이 보일 수 있다. 다만 이 경합은 원래 있던 것이다 — 캐시가 빈 상태에서 사람이
-  //     목록을 열어도 똑같이 12초를 읽는다. 워머는 그 '찬 상태 읽기'를 사람 대신 떠안는 쪽이라
-  //     전체 노출은 늘지 않는다. 없애려면 쓰기 시각을 보고 put 을 건너뛰는 장치가 필요한데,
-  //     그건 실제 피해가 관측되면 그때 만든다(지금은 장치를 늘리지 않는다).
-  ['valid', 'ended'].forEach(function (sc) {
-    try { _processAction({ action: 'member_active_list', scope: sc, format: 'rows', nocache: '1' }); }
-    catch (eWarmAa) { /* 한쪽 실패가 다른 쪽·아래 자동처리를 막지 않게 */ }
-  });
-
   // ★대기→멤버십 자동해제 + LOSS일자 자동기록(2026-08-05 시토·배302) — warmDashboardCache에서 이관.
   //   두 기능 모두 원래 memberMatchAutostamp(02:00 일일) 또는 warmDashboardCache(5분) 에 얹혀 있었는데,
   //   action=list_inquiry_triggers(읽기전용 진단)로 라이브 트리거를 직접 조회하니 **둘 다 CLOCK 트리거가
@@ -11016,6 +10999,26 @@ function warmLessonRosterCache() {
       Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
     }
   } catch (e) { /* 워머가 죽어도 강습 캐시 워밍은 이미 끝났다 — 다음 주기 재시도 */ }
+
+  // ★회원 목록(유효·종료) 캐시 워밍 — 2026-08-05 시토(배298 미완 마감).
+  //   왜 여기냐: 이 두 스코프를 데우는 코드는 warmDashboardCache 에 08-03에 들어갔는데, 그 함수에는
+  //   CLOCK 트리거가 없어 **한 번도 자동으로 돈 적이 없다**(라이브 확인 4건에 없음). 파이썬 쪽
+  //   daily_scheduler._warm_dashboard_cache 는 마케팅 4종만 데우고 회원 목록은 목록에 없다.
+  //   즉 GM 이 "느려서 CRM 관리가 안 된다"고 한 바로 그 화면만 워밍에서 빠져 있었다.
+  //   실측(라이브 curl, 2026-08-05): scope=valid 캐시미스 12.1초 / 히트 3.3초 · ended 8.9초 / 6.9초.
+  //   주기 5분 < 캐시 TTL 6분(8464줄) 이라 만료 구간 없이 항상 뜨겁게 유지된다.
+  //   자기 URL 로 HTTP 를 쏘지 않고 _processAction 을 직접 부른다(위 강습 워밍과 같은 방식 — 인증·과금 무관).
+  //   ★자리는 이 함수의 맨 끝이다 — 대기해제·LOSS 스탬프(위)는 시트에 쓰는 일이라 캐시 데우기보다
+  //     먼저 끝나야 한다. 워밍을 앞에 두면 20초쯤을 그 앞에 얹어 트리거 실행시간 한계에 그만큼 가까워진다.
+  //   ▸알아 둘 것: 워머가 시트를 읽는 12초 사이에 실무진이 저장하면, 워머가 저장 직전 값을 캐시에 넣어
+  //     최대 6분간 옛 값이 보일 수 있다. 다만 이 경합은 원래 있던 것이다 — 캐시가 빈 상태에서 사람이
+  //     목록을 열어도 똑같이 12초를 읽는다. 워머는 그 '찬 상태 읽기'를 사람 대신 떠안는 쪽이라
+  //     전체 노출은 늘지 않는다. 없애려면 쓰기 시각을 보고 put 을 건너뛰는 장치가 필요한데,
+  //     그건 실제 피해가 관측되면 그때 만든다(지금은 장치를 늘리지 않는다).
+  ['valid', 'ended'].forEach(function (sc) {
+    try { _processAction({ action: 'member_active_list', scope: sc, format: 'rows', nocache: '1' }); }
+    catch (eWarmAa) { /* 한쪽 실패가 다른 쪽·아래 자동처리를 막지 않게 */ }
+  });
 
   return done;
 }
