@@ -132,6 +132,11 @@ SUNDAY_VARIANTS = {
     "card": {"photo_frac": 1.0, "pad": "76px", "stage_top": "0", "stage_bottom": "8%",
              "justify": "flex-end", "size": "46px", "line_height": "1.5",
              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": "card", "label": False, "bar": True},
+    # 정보: 사진 없음 · 크림 바탕 + 항목별 줄(어디·언제·비용 등). 받은 답변을 그대로 보여 준다.
+    #   (GM 지적 2026-08-05 "정보들은 하나도 없네 — 이러면 정보를 왜 받은거야?")
+    "info": {"photo_frac": 0.0, "pad": "92px", "stage_top": "0", "stage_bottom": "0",
+             "justify": "center", "size": "40px", "line_height": "1.5",
+             "bg": SUNDAY_CREAM, "fg": SUNDAY_INK, "grad": "", "label": False, "bar": True},
     # 생각: 사진 없음 · 다크 바탕 + 주황 가로 바 + 흰 문장
     "think": {"photo_frac": 0.0, "pad": "108px", "stage_top": "0", "stage_bottom": "0",
               "justify": "center", "size": "50px", "line_height": "1.62",
@@ -309,6 +314,25 @@ def _base_css() -> str:
 
 
 # ── 슬라이드 1장 → HTML ─────────────────────────────────────────────
+def _sunday_info_html(rows: list) -> str:
+    """정보 슬라이드 본문 — [(라벨, 값), …] 을 줄로 쌓는다.
+
+    받은 답변을 캡션에만 묻어 두지 않고 한 장으로 보여 주기 위한 것(GM 지적 2026-08-05).
+    값이 없는 항목은 아예 그리지 않는다 — 빈칸을 만들어 두지 않는다.
+    """
+    out = []
+    for label, value in rows:
+        if not str(value).strip():
+            continue
+        out.append(
+            '<div class="sunday-info-row">'
+            f'<div class="sunday-info-k">{_esc(str(label))}</div>'
+            f'<div class="sunday-info-v">{_esc(str(value))}</div>'
+            "</div>"
+        )
+    return '<div class="sunday-info">' + "".join(out) + "</div>"
+
+
 def build_slide_html(slide: dict, *, w: int, h: int, account: str,
                      chip_label: str, index: int, total: int) -> str:
     kind = slide["type"]
@@ -408,7 +432,8 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
             LABEL_HTML=(f'<div class="sunday-label">{_esc(slide.get("label", "GM의 일요일"))}</div>'
                         if v["label"] else ""),
             BAR_HTML='<div class="sunday-bar"></div>' if v["bar"] else "",
-            TEXT=_esc(slide.get("text", "")),
+            TEXT=(_sunday_info_html(slide.get("rows") or [])
+                  if slide.get("variant") == "info" else _esc(slide.get("text", ""))),
         ))
 
     if kind == "paper":

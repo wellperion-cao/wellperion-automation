@@ -338,3 +338,16 @@ body {
   word-break: keep-all;
   overflow-wrap: break-word;   /* 한 어절이 줄보다 길 때만 최후 수단 */
 }
+
+/* 정보 슬라이드 — 받은 답변을 항목별로 보여 준다(GM 지적 2026-08-05). */
+.sunday-info { display: flex; flex-direction: column; gap: 34px; width: 100%; }
+.sunday-info-row { display: flex; flex-direction: column; gap: 9px; }
+.sunday-info-k {
+  font-family: 'Pretendard', sans-serif; font-weight: 600; font-size: 24px;
+  letter-spacing: .16em; color: #8A8377;
+}
+.sunday-info-v {
+  font-family: 'Pretendard', sans-serif; font-weight: 600;
+  font-size: var(--sunday-text-size); line-height: var(--sunday-line-height);
+  color: var(--sunday-fg); letter-spacing: -.01em; text-wrap: balance;
+}

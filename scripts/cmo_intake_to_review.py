@@ -409,12 +409,18 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         "",
         "규칙:",
         "- 사진에 실제로 보이는 것만 쓴다. 안 보이는 사실(가족 구성·장소 이름·감정의 근거)을 지어내지 마라.",
-        "- 톤 = 절제된 문어체 · 담백. 과장·감탄사·이모지·광고 문구 금지. 문장 끝은 '~다'.",
+        "- ★말투 = GM 이 늘 쓰던 말투 그대로. 존댓말 구어체('~해요' '~습니다' '~더라고요').",
+        "  실제 예: '일요일엔 계획을 안 세웁니다. 평일엔 아침마다 오늘 할 일부터 정하거든요.",
+        "  그 버릇이 주말까지 따라오더라고요.' — 이 결을 따라간다.",
+        "  ★문어체 '~다' 로 끝내지 마라. 시·수필처럼 쓰지 마라. 예쁘게 쓰려 하지 마라.",
+        "  금지: 미문·비유·여운·'~에 있었다' 류의 문학적 마무리. 과장·감탄사·이모지·광고 문구.",
+        "  그냥 그날 있었던 걸 아는 사람한테 말하듯 담담하게 적는다.",
         "- title = 두 줄. 반드시 줄바꿈 문자 1개로 나눈다. 각 줄 12자 안팎.",
         "  제목에 'GM의 일요일' 같은 시리즈 이름을 넣지 마라(표지에 이미 있다). 줄표(—)로 잇지 마라.",
         f"- lines = 표지를 뺀 사진 {n}장 각각에 대한 문장 {n}개, 사진 순서 그대로."
-        " 각 한 문장 25자 안팎이고 사진마다 다른 이야기다.",
-        "- think = 그날에서 건져 올린 한 줄 생각. 교훈조·설교조 금지.",
+        " 각 한 문장 25자 안팎. 사진에 보이는 걸 담담하게 적는다(같은 말투)."
+        " 사진마다 다른 이야기이고, 꾸미는 말을 붙이지 않는다.",
+        "- think = 그날 느낀 것 한 줄. 같은 말투(존댓말 구어체). 교훈조·설교조·미문 금지.",
         "- caption = 인스타 본문 5~8줄. 순서는 ①그날 있었던 일(기록) ②읽는 사람이 따라 해볼 수 있는"
         " 정보(아래 '사진으로는 알 수 없는 사실'에 적힌 것만 — 없으면 그 부분은 아예 쓰지 않는다.",
         "  지어내지 마라) ③마지막 줄은 독자에게 던지는 질문 한 줄. 정보는 나열식 광고 문구가 아니라"
@@ -429,7 +435,8 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
             f"GM 이 준 슬로건 한 줄: {(facts or {}).get('슬로건')}",
             "  ★이 문장을 그대로 쓰지 말고 **사진에 맞게 다듬어라.** 문장의 뼈대(무엇을 말하는지)는",
             "  살리되, 오늘 사진에 실제로 있는 장면의 말로 바꿔 쓴다. 다듬은 결과를 think 로 낸다.",
-            "  사진과 아무 상관이 없어 다듬을 수 없으면 원문 그대로 think 에 넣어라."]
+            "  사진과 아무 상관이 없어 다듬을 수 없으면 원문 그대로 think 에 넣어라.",
+            "  다듬을 때도 말투는 위 규칙(존댓말 구어체)을 따른다 — 문어체로 바꾸지 마라."]
            if (facts or {}).get("슬로건") else [] ),
         *( ["", "아래는 사진으로는 알 수 없는 사실이다. 지어낸 것이 아니니 글에 자연스럽게 녹여라",
            "(억지로 다 넣지 말고, 기록으로 남을 값이 있는 것만):"]
@@ -612,6 +619,63 @@ def _compose_sunday_photo_card(photo: Path, caption: str, output: Path) -> None:
     canvas.save(output, "JPEG", quality=92, optimize=True)
 
 
+# 정보 슬라이드에 올릴 항목 — 접수에서 받은 답변 중 '남이 따라 할 수 있는 것'만, 이 순서로.
+SUNDAY_INFO_KEYS = ["장소", "날짜", "누구와", "추천 시간", "비용·준비물", "좋았던 점", "다시 간다면"]
+SUNDAY_INFO_LABELS = {"장소": "어디", "날짜": "언제", "누구와": "누구와",
+                      "추천 시간": "가기 좋은 때", "비용·준비물": "비용·준비물",
+                      "좋았던 점": "좋았던 점", "다시 간다면": "다음엔"}
+
+
+def _sunday_info_rows(facts: dict | None) -> list:
+    """접수 답변 → 정보 슬라이드 줄. 적힌 것만 뽑는다(빈 항목은 아예 만들지 않는다)."""
+    rows = []
+    for k in SUNDAY_INFO_KEYS:
+        v = str((facts or {}).get(k, "")).strip()
+        if not v:
+            continue
+        label = SUNDAY_INFO_LABELS[k]
+        if k == "날짜":
+            v = _human_date(v)
+        if v.startswith(label):            # '다음엔 / 다음엔 점심을…' 처럼 라벨이 겹쳐 읽히는 것 방지
+            v = v[len(label):].lstrip(" ·:-").strip() or v
+        rows.append((label, v))
+    return rows
+
+
+def _human_date(v: str) -> str:
+    """2026-08-03 → '8월 3일 일요일'. 형식이 다르면 원문 그대로 둔다."""
+    try:
+        d = datetime.strptime(v[:10], "%Y-%m-%d")
+    except ValueError:
+        return v
+    week = "월화수목금토일"[d.weekday()]
+    return f"{d.month}월 {d.day}일 {week}요일"
+
+
+def _compose_sunday_info(rows: list, output: Path) -> bool:
+    """정보 슬라이드 1장. 줄이 2개 미만이면 만들지 않는다(빈 장을 끼우지 않는다).
+
+    GM 지적 2026-08-05: '정보들은 하나도 없네 — 이러면 정보를 왜 받은거야?'
+    받은 답변이 캡션 안에만 묻혀 있어 슬라이드로는 보이지 않던 것을 한 장으로 세운다.
+    """
+    if len(rows) < 2:
+        return False
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from compose_html import render_carousel
+        out = render_carousel(
+            {"account": "personal", "size": "1080x1350",
+             "slides": [{"type": "sunday", "variant": "info", "rows": rows}]},
+            output.parent, fmt="jpg")
+        made = Path(out[0])
+        if made != output:
+            made.replace(output)
+        return True
+    except Exception as exc:
+        print(f"[WARN] 정보 슬라이드 렌더 실패(건너뜀): {exc}", file=sys.stderr)
+        return False
+
+
 def _compose_sunday_think(caption: str, output: Path) -> None:
     """post_4 — 사진 없음: 어두운 배경(#23201C) + 주황(#F0B27A) 바 + 문장3."""
     if _render_sunday_html("think", output, caption):
@@ -724,7 +788,12 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
             # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
             _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
                                        _add(f"post_{i + 2}.jpg"))
-        _compose_sunday_think(think, _add(f"post_{len(cards) + 2}.jpg"))
+        nxt = len(cards) + 2
+        info_rows = _sunday_info_rows((parsed or {}).get("facts"))
+        if _compose_sunday_info(info_rows, out_dir / f"post_{nxt}.jpg"):
+            slides_rel.append(f"{folder_rel}/output/post_{nxt}.jpg")
+            nxt += 1
+        _compose_sunday_think(think, _add(f"post_{nxt}.jpg"))
     except Exception as exc:
         print(f"[WARN] GM의 일요일 슬라이드 제작 실패: {item_id}: {exc}", file=sys.stderr)
         return None
