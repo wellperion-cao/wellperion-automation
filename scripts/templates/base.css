@@ -288,3 +288,53 @@ body {
   font-weight: 500; font-size: 20px; letter-spacing: 1px;
   color: var(--paper-muted);
 }
+
+/* ── GM의 일요일 (sunday) — 세리프 타이포 3변형: cover / card / think.
+   .canvas.sunday 스코프라 기존 타입 렌더에는 영향 없음. 변형별 값(사진 높이·여백·
+   정렬·글자 크기·배경/글자색)은 compose_html.SUNDAY_VARIANTS 가 CSS 변수로 주입. ── */
+.canvas.sunday { background: var(--sunday-bg); }
+
+.sunday-photo {
+  position: absolute; left: 0; top: 0;
+  width: 100%; height: var(--sunday-photo-h);
+  object-fit: cover;
+}
+
+.sunday-grad { position: absolute; inset: 0; background: var(--gradient); }
+
+/* 좌상단 라벨 — 자간 넓게(트래킹). Pillow 는 글자마다 오프셋을 더해 흉내냈지만
+   여기선 letter-spacing 한 줄이면 커닝까지 살아난다. */
+.sunday-label {
+  position: absolute; left: var(--sunday-pad); top: 6%;
+  font-weight: 500; font-size: 28px; letter-spacing: 0.40em;
+  color: #FFFFFF;
+  text-shadow: 0 1px 6px rgba(34, 31, 32, 0.35);
+}
+
+.sunday-stage {
+  position: absolute;
+  left: var(--sunday-pad); right: var(--sunday-pad);
+  top: var(--sunday-stage-top); bottom: var(--sunday-stage-bottom);
+  display: flex; flex-direction: column;
+  justify-content: var(--sunday-justify);
+}
+
+.sunday-bar {
+  width: 64px; height: 3px;
+  background: var(--sunday-accent);
+  margin-bottom: 46px;
+}
+
+.sunday-text {
+  font-family: 'GowunBatang', 'Pretendard', serif;
+  font-weight: 700;
+  font-size: var(--sunday-text-size);
+  line-height: var(--sunday-line-height);
+  letter-spacing: -0.012em;
+  color: var(--sunday-fg);
+  white-space: pre-line;   /* 표지 제목의 \n 2줄 유지 */
+  text-wrap: balance;
+  /* 한글은 기본값이면 어절 한가운데서 잘린다("말" / "을,") — 띄어쓰기에서만 끊는다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;   /* 한 어절이 줄보다 길 때만 최후 수단 */
+}

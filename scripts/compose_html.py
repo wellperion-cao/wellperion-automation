@@ -44,6 +44,13 @@ HTML/CSS가 Pillow 대비 이기는 것:
        "bottom": ["더 보기  >"], "counter": true,      # counter 기본 꺼짐 → (ii/tt)
        "top_pct": 40, "title_size": 62,
        "mark_tilt": -1.6, "mark_pad_x": 9, "mark_pad_y": 26}
+      {"type": "sunday", "variant": "cover"|"card"|"think",
+       "photo": "...",              # cover·card 만 (think 는 사진 없음)
+       "text": "회복,\n하루의 마무리",  # 세리프(GowunBatang) 본문·제목
+       "label": "GM의 일요일"}       # cover 좌상단 트래킹 라벨 (기본값 동일)
+      # sunday: "GM의 일요일" 시리즈 전용 세리프 레이아웃(1080x1350 기준).
+      #   cover=사진 풀블리드+그라디언트+좌하단 제목 / card=위 62% 사진+크림 문장 /
+      #   think=다크+주황 바+흰 문장. 변형값 = SUNDAY_VARIANTS.
       # paper: 종이질감+마커 원(레퍼런스 스타일, 사진 없음). [[구절]] = 손그림 마커 원.
       #   마커 색 = 계정 자동(개인 에메랄드 / 공식 HIGHLIGHT). 짧은 구절은 pad 크게.
       #   "whisper": 속삭임 브랜딩 1줄 (기본 계정별 자동, false 로 끔).
@@ -76,9 +83,13 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).parent))
 from brand_constants import (  # noqa: E402
-    FONT_BOLD, FONT_SEMIBOLD, FONT_MEDIUM,
+    FONT_DIR, FONT_BOLD, FONT_SEMIBOLD, FONT_MEDIUM,
     LOGO_WHITE_ALPHA, LOGO_BEIGE_ALPHA,
 )
+
+# 한글 세리프(OFL · 브랜드 폰트 폴더 동거) — "GM의 일요일" 시안 전용.
+# Pretendard(고딕) 사용처는 건드리지 않는다. 없으면 CSS 가 Pretendard 로 폴백.
+FONT_SERIF = FONT_DIR / "GowunBatang-Bold.ttf"
 from compose_barre import center_crop_fill, to_duotone  # noqa: E402  (사진 파이프라인 SSOT)
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -101,6 +112,29 @@ PAPER_LIGHT = "#CDC5B7"
 PAPER_EDGE = "#A89F91"
 PAPER_INK = "#2F2A24"                 # 종이 위 잉크 (소프트 블랙)
 PAPER_MUTED = "rgba(58,52,45,0.55)"   # 속삭임 브랜딩·CTA
+
+# "GM의 일요일" 팔레트 — GM 시안 정본(브랜드 색이 아니라 시리즈 전용 값).
+# Pillow 폴백(cmo_intake_to_review._SUNDAY_*)과 같은 값이어야 두 경로 결과가 안 튄다.
+SUNDAY_CREAM = "#F4F1EA"
+SUNDAY_DARK = "#23201C"
+SUNDAY_ORANGE = "#F0B27A"
+SUNDAY_INK = "#2C2823"
+
+# 변형 3종. photo_frac = 사진이 덮는 화면 비율(0 이면 사진 없음).
+SUNDAY_VARIANTS = {
+    # 표지: 사진 풀블리드 + 아래로 어두워지는 그라디언트 + 좌상단 라벨 + 좌하단 세리프 제목
+    "cover": {"photo_frac": 1.0, "pad": "76px", "stage_top": "0", "stage_bottom": "9%",
+              "justify": "flex-end", "size": "84px", "line_height": "1.32",
+              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": True, "label": True, "bar": False},
+    # 02/03: 위 62% 사진 + 아래 크림 바탕 세리프 문장(좌정렬·수직 중앙)
+    "card": {"photo_frac": 0.62, "pad": "97px", "stage_top": "62%", "stage_bottom": "0",
+             "justify": "center", "size": "45px", "line_height": "1.55",
+             "bg": SUNDAY_CREAM, "fg": SUNDAY_INK, "grad": False, "label": False, "bar": False},
+    # 04 생각: 사진 없음 · 다크 바탕 + 주황 가로 바 + 흰 세리프 문장
+    "think": {"photo_frac": 0.0, "pad": "108px", "stage_top": "0", "stage_bottom": "0",
+              "justify": "center", "size": "50px", "line_height": "1.62",
+              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": False, "label": False, "bar": True},
+}
 
 ACCOUNTS = {
     # marker = 손그림 마커 원 (본선, 되그은 선). 개인=에메랄드 시그니처(라이트 배경 정본),
@@ -135,6 +169,14 @@ def _font_css() -> str:
                 f"src: url(data:font/otf;base64,{_b64_file(path)}) format('opentype'); "
                 f"font-weight: {weight}; font-style: normal; }}"
             )
+        if FONT_SERIF.exists():
+            faces.append(
+                "@font-face { font-family: 'GowunBatang'; "
+                f"src: url(data:font/ttf;base64,{_b64_file(FONT_SERIF)}) format('truetype'); "
+                "font-weight: 700; font-style: normal; }"
+            )
+        else:
+            print(f"[WARN] 세리프 폰트 없음({FONT_SERIF}) — 고딕으로 대체", file=sys.stderr)
         _FONT_CSS_CACHE = "\n".join(faces)
     return _FONT_CSS_CACHE
 
@@ -274,6 +316,18 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
         f"--gradient: {_gradient_css(grad_start, h)}; "
         f"--cover-photo-h: {cover_photo_h}px;"
     )
+    if kind == "sunday":
+        v = SUNDAY_VARIANTS[slide.get("variant", "card")]
+        tokens += (
+            f" --sunday-bg: {v['bg']}; --sunday-fg: {v['fg']}; "
+            f"--sunday-accent: {SUNDAY_ORANGE}; --sunday-pad: {v['pad']}; "
+            f"--sunday-photo-h: {round(h * v['photo_frac'])}px; "
+            f"--sunday-stage-top: {v['stage_top']}; "
+            f"--sunday-stage-bottom: {v['stage_bottom']}; "
+            f"--sunday-justify: {v['justify']}; "
+            f"--sunday-text-size: {v['size']}; "
+            f"--sunday-line-height: {v['line_height']};"
+        )
     if kind == "paper":
         tokens += (
             f" --paper-base: {PAPER_BASE}; --paper-light: {PAPER_LIGHT}; "
@@ -329,6 +383,23 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
             FOOTER=_esc(slide.get("footer", "WELLPERION")),
         ))
 
+    if kind == "sunday":
+        v = SUNDAY_VARIANTS[slide.get("variant", "card")]
+        photo_html = ""
+        if v["photo_frac"] > 0:
+            photo_html = ('<img class="sunday-photo" src="'
+                          + _photo_b64(Path(slide["photo"]), w, round(h * v["photo_frac"]))
+                          + '">')
+        return _fill(_load_template("sunday"), dict(
+            common,
+            PHOTO_HTML=photo_html,
+            GRAD_HTML='<div class="sunday-grad"></div>' if v["grad"] else "",
+            LABEL_HTML=(f'<div class="sunday-label">{_esc(slide.get("label", "GM의 일요일"))}</div>'
+                        if v["label"] else ""),
+            BAR_HTML='<div class="sunday-bar"></div>' if v["bar"] else "",
+            TEXT=_esc(slide.get("text", "")),
+        ))
+
     if kind == "paper":
         marker = cfg["marker"]
         tilt = float(slide.get("mark_tilt", -1.6))
@@ -378,7 +449,8 @@ async def _render_batch(html_docs: list[str], w: int, h: int,
                 # 미사용 웨이트는 lazy-load 되지 않으므로 3웨이트 강제 로드 후 검증
                 await page.evaluate(
                     "Promise.all(['700','600','500'].map(w =>"
-                    " document.fonts.load(w + \" 20px 'Pretendard'\")))")
+                    " document.fonts.load(w + \" 20px 'Pretendard'\"))"
+                    ".concat(document.fonts.load(\"700 20px 'GowunBatang'\")))")
                 await page.wait_for_function("document.fonts.status === 'loaded'")
                 ok = await page.evaluate("document.fonts.check(\"700 20px 'Pretendard'\")")
                 if not ok:

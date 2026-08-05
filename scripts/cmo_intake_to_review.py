@@ -40,8 +40,10 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -293,8 +295,36 @@ def _download_drive_image(url: str, dest: Path) -> bool:
     return True
 
 
+def _render_sunday_html(variant: str, output: Path, text: str,
+                        photo: Path | None = None) -> bool:
+    """HTML/CSS 엔진(compose_html)으로 슬라이드 1장 렌더 → output. 실패하면 False.
+
+    HTML 쪽이 자간·행간·균형 줄바꿈·밴딩 없는 그라디언트에서 Pillow 를 이긴다. 다만
+    Playwright/Chromium 이 없거나 렌더가 막히는 날이 있어, 실패를 예외로 올리지 않고
+    호출부가 기존 Pillow 합성으로 떨어지게 한다 — 검수 카드가 통째로 안 나가는 것보다 낫다.
+    """
+    slide = {"type": "sunday", "variant": variant, "text": text or ""}
+    if photo is not None:
+        slide["photo"] = str(photo)
+    try:
+        from compose_html import render_carousel
+        with tempfile.TemporaryDirectory() as tmp:
+            made = render_carousel(
+                {"account": "personal", "size": "1080x1350", "slides": [slide]},
+                Path(tmp), fmt="jpg", concurrency=1)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(made[0]), str(output))
+        return True
+    except Exception as exc:
+        print(f"[WARN] HTML 슬라이드 렌더 실패({variant}) — Pillow 합성으로 대체: {exc}",
+              file=sys.stderr)
+        return False
+
+
 def _compose_sunday_cover(photo: Path, title: str, output: Path) -> None:
     """post_1 — 표지: 사진 + 위→아래 그라디언트 + 하단 제목(줄바꿈 유지) + 상단 라벨."""
+    if _render_sunday_html("cover", output, title or "GM의 일요일", photo):
+        return
     from slide_compositor import load_and_fit, apply_dark_gradient, load_font, draw_text_block
     from brand_constants import BRAND_PRESETS
 
@@ -341,6 +371,8 @@ def _sunday_serif(size: int):
 
 def _compose_sunday_photo_card(photo: Path, caption: str, output: Path) -> None:
     """post_2/post_3 — 사진(상단 62%) + 문장(하단, 크림 배경)."""
+    if _render_sunday_html("card", output, caption, photo):
+        return
     from slide_compositor import load_and_fit, load_font, wrap_text, draw_text_block
 
     w, h = _SUNDAY_ASPECT
@@ -362,6 +394,8 @@ def _compose_sunday_photo_card(photo: Path, caption: str, output: Path) -> None:
 
 def _compose_sunday_think(caption: str, output: Path) -> None:
     """post_4 — 사진 없음: 어두운 배경(#23201C) + 주황(#F0B27A) 바 + 문장3."""
+    if _render_sunday_html("think", output, caption):
+        return
     from slide_compositor import load_font, wrap_text, draw_text_block
 
     w, h = _SUNDAY_ASPECT
