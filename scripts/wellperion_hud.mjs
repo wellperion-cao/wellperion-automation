@@ -691,7 +691,16 @@ function myShips(q, cwd, role) {
         return body.split(/[\n|]/)[0].replace(/^[\s:·]*/, '').trim();
       })(),
     } : null;
-    return { run, wait: waitNos.length, waitNos, fresh, done, shortOf, cur, ask };
+    // ★다음에 잡을 배 — 손이 비었을 때 '대기'라고만 적지 않고 **무엇을 집으면 되는지**까지 적는다
+    //   (GM 2026-08-05 "대기없이 계속 작업할 것을 찾는 내용이 있어서, 찾아서 진행하는 걸로").
+    //   waiting 은 이미 무게 무거운 순 → 오래 기다린 순으로 정렬돼 있으므로 맨 앞이 곧 다음 차례다.
+    //   자동 생성된 잔소리 배는 '다음 할 일'로 권할 성질이 아니라 뺀다(❓GM답 칸과 같은 잣대).
+    const nextShip = waiting.find((s) => !String(s.title || '').includes('[GM보좌 제안]'));
+    const next = nextShip ? {
+      no: (shortOf[nextShip.ship_no] != null) ? shortOf[nextShip.ship_no] : nextShip.ship_no,
+      title: String(nextShip.title || '').replace(/^\[[^\]]*\]\s*/, '').trim(),
+    } : null;
+    return { run, wait: waitNos.length, waitNos, fresh, done, shortOf, cur, ask, next };
   } catch { return null; }
 }
 
@@ -825,6 +834,12 @@ function buildLine(cwd, role, transcript, sessionId) {
      *  (GM 2026-07-28 "시포 13건 진행중이라는데 statusline엔 계속 대기로만 남는데").
      *  항로 칸(🚢⚓)은 폭이 좁으면 접히지만 이 칸은 안 접히므로 여기 붙인다. */
     const idleLoad = (st) => (st && st.run > 0) ? `${D} · 진행${X}${st.run}${D}척${X}` : '';
+    /** 손이 비었을 때 붙이는 **다음에 집을 배** (GM 2026-08-05 지시).
+     *  왜: '대기'만 떠 있으면 GM 은 '멈춰 있다'로 읽으신다. 정작 큐에는 집을 배가 있는데
+     *  화면이 그걸 말해 주지 않으니, 다음 한 걸음을 GM 이 매번 지시해야 했다.
+     *  대기 중일 때만 붙인다 — 일하는 중에는 지금 하는 일이 더 급한 정보다. */
+    const nextUp = (st) => (st && st.next)
+      ? `${D} ▸다음 ${X}${C}⚓${st.next.no}${X} ${D}${shortTitle(st.next.title, 14)}${X}` : '';
     if (lv.working && lv.idle <= 900) {
       // ① 돌고 있음 — 도구를 부를 때마다 다시 그려지므로 여기서만 경과 초가 실제로 움직인다.
       const name = lv.act ? (ACT[lv.act.tool] || lv.act.tool) : '작업중';
@@ -850,10 +865,10 @@ function buildLine(cwd, role, transcript, sessionId) {
     } else if (lv.idle > 1800) {
       // ③ 아무도 안 기다리는데 30분 넘게 멈춤 = **문제다**(GM 2026-07-27 "멎음은 문제인 것 같은데").
       //    기다릴 답도 없는데 일이 안 도는 것이므로 눈에 띄게 — 2시간 넘으면 빨강.
-      time = `${D}·${X}${lv.idle > 7200 ? R : Y}⏸멈춤 ${when}${X}${idleLoad(s)}`;
+      time = `${D}·${X}${lv.idle > 7200 ? R : Y}⏸멈춤 ${when}${X}${idleLoad(s)}${nextUp(s)}`;
     } else {
       // ④ 방금 끝냄 — 정상. 조용히 둔다.
-      time = `${D}·💤GM답 기다림 ${when}${X}${idleLoad(s)}`;
+      time = `${D}·💤GM답 기다림 ${when}${X}${idleLoad(s)}${nextUp(s)}`;
     }
   } else if (bg) {
     // ★transcript 를 못 읽어도(유실 등) 배경 에이전트가 실측으로 살아있으면 대기로 보이면 안 된다.
