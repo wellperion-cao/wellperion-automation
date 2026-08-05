@@ -45,14 +45,10 @@
   .thumb .lab{position:absolute;left:4px;top:4px;font-size:10px;background:rgba(20,18,15,.62);color:#FBF8F2;padding:2px 6px;border-radius:999px;}
   .thumb .del{position:absolute;right:3px;top:3px;width:22px;height:22px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:13px;line-height:1;cursor:pointer;}
   .note{font-size:12px;line-height:1.7;color:#8A8377;}
-  .cover-pick{display:flex;flex-direction:column;gap:9px;border-top:1px solid #EEE9DF;padding-top:14px;}
-  .cover-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
-  .cover-opt{flex:0 0 auto;width:74px;cursor:pointer;border:none;background:none;padding:0;display:flex;flex-direction:column;gap:5px;}
-  .cover-opt .im{width:74px;height:74px;overflow:hidden;background:#E2DCD0;border:2px solid transparent;}
-  .cover-opt .im img{width:100%;height:100%;object-fit:cover;display:block;}
-  .cover-opt .cap{font-size:11px;color:#8A8377;text-align:center;}
-  .cover-opt.on .im{border-color:#B4552E;}
-  .cover-opt.on .cap{color:#B4552E;font-weight:500;}
+  .cover-one{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;background:#E2DCD0;border:2px solid #B4552E;}
+  .cover-one img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cover-one .lab{position:absolute;left:8px;top:8px;font-size:11px;background:#B4552E;color:#FBF8F2;padding:3px 9px;border-radius:999px;}
+  .cover-one .del{position:absolute;right:6px;top:6px;width:26px;height:26px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:15px;line-height:1;cursor:pointer;}
   .fld{border:1px solid #E2DCD0;background:#fff;padding:12px;font-size:14px;color:#23201C;width:100%;}
   .row{display:flex;gap:10px;flex-wrap:wrap;}
   select.fld{padding:11px;}
@@ -125,26 +121,31 @@
 
   <div class="body">
 
-    <!-- ① 사진 -->
+    <!-- ① 표지 사진 (GM 지시 2026-08-05 — 여럿 중에 고르는 대신 표지만 따로 올린다) -->
     <div class="card">
-      <div class="step"><div class="num">1</div><div class="step-t">사진 올리기 <span>(3~5장 권장)</span></div></div>
+      <div class="step"><div class="num">1</div><div class="step-t">표지 사진 <span>(1장 · 제목이 얹힙니다)</span></div></div>
+      <label class="drop" id="coverDrop">
+        <div style="font-size:26px;">＋</div>
+        <div class="drop-hint">맨 앞에 올 사진 한 장<br>제목 글씨가 올라가니 여백 있는 사진이 좋습니다</div>
+        <input type="file" accept="image/*" id="f_cover" style="display:none;">
+      </label>
+      <div class="cover-one hide" id="coverOne"></div>
+    </div>
+
+    <!-- ② 나머지 사진 -->
+    <div class="card">
+      <div class="step"><div class="num">2</div><div class="step-t">나머지 사진 <span>(2~4장 권장)</span></div></div>
       <label class="drop">
         <div style="font-size:26px;">＋</div>
         <div class="drop-hint">그날의 사진을 선택하세요<br>여러 장 한 번에 가능</div>
         <input type="file" accept="image/*" multiple id="f_photos" style="display:none;">
       </label>
       <div class="grid3 hide" id="thumbs"></div>
-
-      <!-- 표지 고르기 (GM 지시 2026-08-05 — 첫 장 자동 지정 대신 직접 고른다) -->
-      <div class="cover-pick hide" id="coverPick">
-        <div class="f-lab">표지 고르기 <span style="letter-spacing:0;color:#6E675E;">— 캐러셀 맨 앞에 올 사진</span></div>
-        <div class="cover-strip" id="coverStrip"></div>
-      </div>
     </div>
 
-    <!-- ② 영상 -->
+    <!-- ③ 영상 -->
     <div class="card">
-      <div class="step"><div class="num">2</div><div class="step-t">영상 <span>(선택 · 캐러셀 마지막 장)</span></div></div>
+      <div class="step"><div class="num">3</div><div class="step-t">영상 <span>(선택 · 캐러셀 마지막 장)</span></div></div>
       <label class="drop row">
         <div style="font-size:22px;">🎥</div>
         <div class="drop-hint" style="text-align:left;" id="videoLabel">짧은 영상을 선택하세요 (15~30초)</div>
@@ -154,9 +155,9 @@
       <input type="text" class="fld" id="f_videoLink" placeholder="대용량 영상 링크 (선택)">
     </div>
 
-    <!-- ③ 자동 초안 -->
+    <!-- ④ 자동 초안 -->
     <div class="card">
-      <div class="step"><div class="num">3</div><div class="step-t">자동 초안</div></div>
+      <div class="step"><div class="num">4</div><div class="step-t">자동 초안</div></div>
       <div class="row">
         <select class="fld" id="f_mood" style="flex:1;min-width:130px;">
           <option value="가족과 놀았던 날">가족과 놀았던 날</option>
@@ -183,9 +184,9 @@
       </div>
     </div>
 
-    <!-- ④ 미리보기 -->
+    <!-- ⑤ 미리보기 -->
     <div class="card hide" id="previewCard">
-      <div class="step"><div class="num">4</div><div class="step-t">캐러셀 미리보기 <span id="cutCount">4컷</span></div></div>
+      <div class="step"><div class="num">5</div><div class="step-t">캐러셀 미리보기 <span id="cutCount">4컷</span></div></div>
       <div class="cuts">
         <div class="cut cut-cover"><img id="p_cover"><div class="shade"></div>
           <div class="in"><div class="tag">GM의 일요일</div><div class="ttl" id="p_title"></div></div></div>
@@ -197,9 +198,9 @@
       </div>
     </div>
 
-    <!-- ⑤ 검수 요청 -->
+    <!-- ⑥ 검수 요청 -->
     <div class="card">
-      <div class="step"><div class="num">5</div><div class="step-t">검수 요청 · 발행 예약</div></div>
+      <div class="step"><div class="num">6</div><div class="step-t">검수 요청 · 발행 예약</div></div>
       <div class="kv">
         <div><span class="k">검수 채널</span><span>텔레그램 · 업무보고방</span></div>
         <div><span class="k">발행 계정</span><span>@namuk.wellperion (개인)</span></div>
@@ -270,8 +271,8 @@
   };
   var HASHTAGS = '#GM의일요일 #가족 #일요일의기록 #행복은평범함에 #주말기록';
 
-  var photos = [];          // {file, url}
-  var coverIdx = 0;         // 표지로 고른 장의 위치
+  var cover = null;         // 표지 1장 {file, url} — 따로 올린다(GM 지시 2026-08-05)
+  var photos = [];          // 나머지 사진 {file, url}
   var videoFile = null;
   var hasDraft = false;
   var sent = false;
@@ -281,43 +282,40 @@
 
   // ── 화면 갱신 ────────────────────────────────────────────────
   function renderThumbs(){
+    $('errBox').classList.add('hide');
     var box = $('thumbs');
     box.classList.toggle('hide', photos.length === 0);
     box.innerHTML = '';
     photos.forEach(function(p, i){
       var d = document.createElement('div'); d.className = 'thumb';
-      d.innerHTML = '<img src="'+p.url+'"><div class="lab">'+(i===coverIdx?'표지':(i+1))+'</div>';
+      d.innerHTML = '<img src="'+p.url+'"><div class="lab">'+(i+2)+'</div>';
       var b = document.createElement('button'); b.className='del'; b.textContent='×';
       b.onclick = function(){
         URL.revokeObjectURL(p.url); photos.splice(i,1);
-        if (coverIdx > i) coverIdx--;              // 앞의 장이 빠지면 표지 위치가 하나 당겨진다
-        if (coverIdx >= photos.length) coverIdx = 0;
-        renderThumbs(); renderCoverPick(); renderPreview();
+        renderThumbs(); renderPreview();
       };
       d.appendChild(b); box.appendChild(d);
     });
   }
 
-  // 표지 고르기 — 첫 장 자동 지정 대신 직접 고른다(GM 지시 2026-08-05)
-  function renderCoverPick(){
-    $('coverPick').classList.toggle('hide', photos.length < 2);
-    var strip = $('coverStrip'); strip.innerHTML = '';
-    photos.forEach(function(p, i){
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'cover-opt' + (i === coverIdx ? ' on' : '');
-      b.innerHTML = '<div class="im"><img src="'+p.url+'"></div>'
-                  + '<div class="cap">'+(i === coverIdx ? '표지' : (i+1)+'번')+'</div>';
-      b.onclick = function(){ coverIdx = i; renderThumbs(); renderCoverPick(); renderPreview(); };
-      strip.appendChild(b);
-    });
+  // 표지 1장 표시 — 따로 올린 것을 그대로 보여준다.
+  function renderCover(){
+    $('errBox').classList.add('hide');   // 고치면 경고는 지운다 — 해결된 안내가 남아 있으면 헷갈린다
+    var box = $('coverOne');
+    box.classList.toggle('hide', !cover);
+    $('coverDrop').classList.toggle('hide', !!cover);
+    box.innerHTML = '';
+    if (!cover) return;
+    box.innerHTML = '<img src="'+cover.url+'"><div class="lab">표지</div>';
+    var b = document.createElement('button'); b.className='del'; b.textContent='×';
+    b.onclick = function(){ URL.revokeObjectURL(cover.url); cover = null; renderCover(); renderPreview(); };
+    box.appendChild(b);
   }
 
-  // 표지로 고른 장이 맨 앞, 나머지는 올린 순서 그대로 뒤에 붙는다.
+  // 표지가 맨 앞, 나머지는 올린 순서 그대로 뒤에 붙는다.
   function orderedUrls(){
-    var rest = photos.filter(function(_, i){ return i !== coverIdx; }).map(function(p){ return p.url; });
-    var cov = photos[coverIdx] ? [photos[coverIdx].url] : [];
-    return cov.concat(rest);
+    var rest = photos.map(function(p){ return p.url; });
+    return (cover ? [cover.url] : []).concat(rest);
   }
 
   function renderPreview(){
@@ -358,10 +356,16 @@
     $(id).addEventListener('input', renderPreview);
   });
 
+  $('f_cover').addEventListener('change', function(){
+    var f = this.files[0];
+    if (f){ if (cover) URL.revokeObjectURL(cover.url); cover = { file:f, url:URL.createObjectURL(f) }; }
+    this.value = '';
+    renderCover(); renderPreview();
+  });
   $('f_photos').addEventListener('change', function(){
     [].slice.call(this.files).forEach(function(f){ photos.push({ file:f, url:URL.createObjectURL(f) }); });
     this.value = '';
-    renderThumbs(); renderCoverPick(); renderPreview();
+    renderThumbs(); renderPreview();
   });
   $('f_video').addEventListener('change', function(){
     videoFile = this.files[0] || null;
@@ -449,7 +453,8 @@
   $('sendBtn').onclick = async function(){
     if (sent) return;
     $('errBox').classList.add('hide');
-    if (!photos.length){ fail('사진을 1장 이상 올려 주세요.'); return; }
+    if (!cover){ fail('표지 사진을 올려 주세요.'); return; }
+    if (!photos.length){ fail('나머지 사진을 1장 이상 올려 주세요.'); return; }
     if (!hasDraft){ fail('먼저 「초안 만들기」를 눌러 문장을 만들어 주세요.'); return; }
     if (scheduled && !$('f_date').value){ fail('발행할 날짜를 골라 주세요.'); return; }
     if (videoFile && videoFile.size > 50*1024*1024){
@@ -460,8 +465,8 @@
     try{
       var gas = await gasUrl();
 
-      // 표지로 고른 장을 맨 앞에 놓고 보낸다 — 받는 쪽은 첫 장을 표지로 쓴다.
-      var order = [photos[coverIdx]].concat(photos.filter(function(_, i){ return i !== coverIdx; }));
+      // 표지를 맨 앞에 놓고 보낸다 — 받는 쪽은 첫 장을 표지로 쓴다.
+      var order = [cover].concat(photos);
       var pics = [];
       for (var i=0;i<order.length && i<5;i++){
         btn.textContent = '사진 준비 중… ('+(i+1)+'/'+Math.min(order.length,5)+')';
