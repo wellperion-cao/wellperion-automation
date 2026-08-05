@@ -1336,17 +1336,29 @@ function _progNameOnly_(p){
   return s || p;
 }
 
+// ★전송 성공 여부를 돌려준다 — 2026-08-05 시토.
+//   그동안 이 함수는 아무것도 반환하지 않았고, muteHttpExceptions:true 라서 텔레그램이 400·403·429 로
+//   거절해도 예외조차 나지 않았다. 즉 "보냈다고 생각하지만 아무도 못 본" 상태를 부르는 쪽에서 구분할
+//   방법이 없었다. 그런데 이 함수를 부르는 폴러들(_notifyNewInquiries_·_notifyLessonStatusChanges_)은
+//   호출 직후 커서·마커를 다음으로 넘겨 버린다 — 한 번 실패한 신규 문의는 영원히 알림이 안 간다.
+//   ▸반환값: true=텔레그램이 200으로 받음 / false=미설정·거절·네트워크 실패.
+//   ▸기존 호출부는 반환값을 안 쓰므로 동작 변화 없음(하위호환). 커서를 옮기는 쪽만 이 값을 본다.
 function _notifyTelegram(text, chatIdOverride) {
   const token = _prop('BOT_TOKEN') || _prop('TELEGRAM_BOT_TOKEN');
   const chatId = chatIdOverride || _prop('CHAT_ID') || _prop('TELEGRAM_CHAT_ID');
-  if (!token || !chatId) return;
+  if (!token || !chatId) { Logger.log('텔레그램 미발송 — 토큰/챗ID 미설정'); return false; }
   try {
-    UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+    var _tgRes = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
       method: 'post', contentType: 'application/json',
       payload: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' }),
       muteHttpExceptions: true
     });
-  } catch (e) { Logger.log('텔레그램 실패: ' + e.message); }
+    var _tgCode = _tgRes.getResponseCode();
+    if (_tgCode === 200) return true;
+    // 429(과다발송)·400(HTML 파싱 실패)·403(봇 차단)이 여기로 온다. 본문 앞부분까지 남겨야 원인을 안다.
+    Logger.log('텔레그램 거절(HTTP ' + _tgCode + '): ' + String(_tgRes.getContentText() || '').slice(0, 200));
+    return false;
+  } catch (e) { Logger.log('텔레그램 실패: ' + e.message); return false; }
 }
 
 // ─── 실데이터 마지막 행번호 탐색 헬퍼 (2026-06-25 버그수정) ───
@@ -1435,12 +1447,21 @@ function _notifyNewInquiries_() {
       if (realLastRow <= storedRow) return; // 신규 실데이터 없음
 
       // 신규 행 처리 (storedRow+1 ~ realLastRow)
+      // ★커서는 '실제로 알림이 나간 데까지만' 올린다 — 2026-08-05 시토.
+      //   종전엔 forEach 로 전부 돌린 뒤 무조건 realLastRow 를 저장했다. 그래서 텔레그램이 한 건이라도
+      //   거절하면(429 과다발송·400 파싱실패·순간 네트워크 오류) 그 문의는 다시 시도되지 않고 영구히
+      //   사라졌다 — 실무진 입장에선 "문의가 들어왔는데 알림이 안 왔다"가 되고, 원인은 로그에도 안 남았다.
+      //   ▸이제 첫 실패 지점에서 멈추고 커서를 그 직전 행까지만 올린다. 5분 뒤 다음 주기가 그 행부터 재시도한다.
+      //   ▸대가: 텔레그램이 200을 안 줬는데 실제로는 배달된 드문 경우 같은 알림이 한 번 더 갈 수 있다.
+      //     중복 한 통이 문의 유실보다 낫다는 판단(놓친 문의는 매출로 직결).
       var newRows = sh.getRange(storedRow + 1, 1, realLastRow - storedRow, lastCol).getValues();
-      newRows.forEach(function(r) {
+      var _advanceTo = realLastRow;
+      for (var _ni = 0; _ni < newRows.length; _ni++) {
+        var r = newRows[_ni];
         // [웹접수] 미러 행 제외 (이미 submit_inquiry에서 발송)
-        if (_isWebIntakeRow_(r, headers)) return;   // 자체폼 접수분 — 접수 알림은 intake_submit 이 이미 보냈다
+        if (_isWebIntakeRow_(r, headers)) continue;   // 자체폼 접수분 — 접수 알림은 intake_submit 이 이미 보냈다
         // 완전 빈 행 스킵
-        if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) return;
+        if (!r[idxDate >= 0 ? idxDate : 0] && (idxPhone < 0 || !r[idxPhone])) continue;
 
         var ts = idxDate >= 0 ? r[idxDate] : '';
         var tsStr = '';
@@ -1472,11 +1493,17 @@ function _notifyNewInquiries_() {
           + '연락처: ' + phone + '\n'
           + '유입채널: ' + chan
           + (content ? '\n내용: ' + content : '');
-        _notifyTelegram(msg)   /* 자체폼 외 = GM 개인 업무보고방(2026-07-23 GM 규칙) */;
-      });
+        var _sent = _notifyTelegram(msg)   /* 자체폼 외 = GM 개인 업무보고방(2026-07-23 GM 규칙) */;
+        if (!_sent) {
+          // 이 행(물리 storedRow+_ni+1)은 아직 아무도 못 봤다 → 커서를 바로 앞 행까지만 올리고 멈춘다.
+          _advanceTo = storedRow + _ni;
+          Logger.log('[문의알림] 전송 실패로 중단 — ' + cfg.type + ' 커서=' + _advanceTo + '(다음 주기 재시도)');
+          break;
+        }
+      }
 
       // 기준선 갱신 — 실데이터 마지막 행번호로 저장 (빈행 포함 getLastRow 사용 금지)
-      props.setProperty(propKey, String(realLastRow));
+      props.setProperty(propKey, String(_advanceTo));
     } catch (e) {
       Logger.log('[문의알림] ' + cfg.type + ' 오류: ' + e.message);
     }
@@ -1544,19 +1571,29 @@ function _notifyLessonStatusChanges_() {
       var stored = {};
       try { (JSON.parse(storedStr) || []).forEach(function(k) { stored[k] = 1; }); } catch (e) {}
 
+      // ★보내지 못한 전환은 '알린 것'으로 기록하지 않는다 — 2026-08-05 시토(_notifyNewInquiries_ 커서와 같은 수리).
+      //   종전엔 전송 결과와 무관하게 curKeys 전체를 마커로 저장해, 텔레그램이 거절한 등록·컨택 전환은
+      //   두 번 다시 알림이 가지 않았다(마커에 이미 있으니 다음 주기가 건너뛴다).
+      var _failedMarks = {};
       events.forEach(function(ev) {
         if (stored[ev.mark]) return;  // 이미 알린 전환
         var chip = _teamChip(cfg.명);
         var who = ev.name || '(이름미상)';
         var owner = ev.owner ? (' · 담당 ' + ev.owner) : '';
+        var _lsSent;
         if (ev.bucket === 'SUC') {
-          _notifyTelegram('✅ <b>[강습 등록]</b> ' + chip + cfg.명 + '\n· 수강생: ' + who + owner, chatId);
+          _lsSent = _notifyTelegram('✅ <b>[강습 등록]</b> ' + chip + cfg.명 + '\n· 수강생: ' + who + owner, chatId);
         } else {
-          _notifyTelegram('📞 <b>[강습 컨택]</b> ' + chip + cfg.명 + '\n· 수강생: ' + who + owner, chatId);
+          _lsSent = _notifyTelegram('📞 <b>[강습 컨택]</b> ' + chip + cfg.명 + '\n· 수강생: ' + who + owner, chatId);
         }
+        if (!_lsSent) _failedMarks[ev.mark] = 1;   // 다음 주기가 다시 시도하도록 마커에서 뺀다
       });
+      var _saveKeys = curKeys.filter(function(k) { return !_failedMarks[k]; });
+      if (_saveKeys.length !== curKeys.length) {
+        Logger.log('[강습상태알림] 전송 실패 ' + (curKeys.length - _saveKeys.length) + '건 — 마커 보류(다음 주기 재시도): ' + cfg.명);
+      }
 
-      try { props.setProperty(propKey, JSON.stringify(curKeys)); }
+      try { props.setProperty(propKey, JSON.stringify(_saveKeys)); }
       catch (e) { Logger.log('[강습상태알림] 마커 저장 실패(' + cfg.명 + '): ' + e.message); }
     } catch (e) { Logger.log('[강습상태알림] ' + cfg.명 + ' 오류: ' + e.message); }
   });
@@ -10897,6 +10934,24 @@ function warmLessonRosterCache() {
     } catch (e) { /* 한쪽 실패가 다른 쪽을 막지 않게 */ }
   }
 
+  // ★회원 목록(유효·종료) 캐시 워밍 — 2026-08-05 시토(배298 미완 마감).
+  //   왜 여기냐: 이 두 스코프를 데우는 코드는 warmDashboardCache 에 08-03에 들어갔는데, 그 함수에는
+  //   CLOCK 트리거가 없어 **한 번도 자동으로 돈 적이 없다**(라이브 확인 4건에 없음). 파이썬 쪽
+  //   daily_scheduler._warm_dashboard_cache 는 마케팅 4종만 데우고 회원 목록은 목록에 없다.
+  //   즉 GM 이 "느려서 CRM 관리가 안 된다"고 한 바로 그 화면만 워밍에서 빠져 있었다.
+  //   실측(라이브 curl, 2026-08-05): scope=valid 캐시미스 12.1초 / 히트 3.3초 · ended 8.9초 / 6.9초.
+  //   주기 5분 < 캐시 TTL 6분(8464줄) 이라 만료 구간 없이 항상 뜨겁게 유지된다.
+  //   자기 URL 로 HTTP 를 쏘지 않고 _processAction 을 직접 부른다(위 강습 워밍과 같은 방식 — 인증·과금 무관).
+  //   ▸알아 둘 것: 워머가 시트를 읽는 12초 사이에 실무진이 저장하면, 워머가 저장 직전 값을 캐시에 넣어
+  //     최대 6분간 옛 값이 보일 수 있다. 다만 이 경합은 원래 있던 것이다 — 캐시가 빈 상태에서 사람이
+  //     목록을 열어도 똑같이 12초를 읽는다. 워머는 그 '찬 상태 읽기'를 사람 대신 떠안는 쪽이라
+  //     전체 노출은 늘지 않는다. 없애려면 쓰기 시각을 보고 put 을 건너뛰는 장치가 필요한데,
+  //     그건 실제 피해가 관측되면 그때 만든다(지금은 장치를 늘리지 않는다).
+  ['valid', 'ended'].forEach(function (sc) {
+    try { _processAction({ action: 'member_active_list', scope: sc, format: 'rows', nocache: '1' }); }
+    catch (eWarmAa) { /* 한쪽 실패가 다른 쪽·아래 자동처리를 막지 않게 */ }
+  });
+
   // ★대기→멤버십 자동해제 + LOSS일자 자동기록(2026-08-05 시토·배302) — warmDashboardCache에서 이관.
   //   두 기능 모두 원래 memberMatchAutostamp(02:00 일일) 또는 warmDashboardCache(5분) 에 얹혀 있었는데,
   //   action=list_inquiry_triggers(읽기전용 진단)로 라이브 트리거를 직접 조회하니 **둘 다 CLOCK 트리거가
@@ -10971,16 +11026,12 @@ function warmDashboardCache() {
     'action=funnel_conversion',                 // fc_v1 (범위 무관)
     'action=type_channel_breakdown' + range,    // tc — 가장 무거움
     'action=period_breakdown' + range,
-    // ★2026-08-03 시토(배298 · GM '너무 느려 CRM 관리가 안 된다') — 회원 목록 2스코프 추가.
-    //   실측(라이브 curl, 중앙값): 플랫폼 고정비용 2.28초 · 캐시 히트 3.18초 · 캐시 미스 8.35초.
-    //   더 큰 문제는 동시성이었다 — 화면이 valid·ended 를 근접 시점에 같이 프리페치하는데
-    //   GAS 가 스크립트당 동시실행을 제한해 초과분을 큐잉한다. 5개 동시발사 실측에서 한 건이
-    //   **65.5초**까지 밀렸다(코드 주석 8913줄의 07-31 '6개 요청 계단식 1.6→16.4초'와 같은 현상).
-    //   → 캐시를 상시 뜨겁게 유지하면 미스 자체가 안 생겨 경합도 함께 사라진다.
-    //   format=rows 로 warm 하는 이유 = 화면이 그 형식만 부른다(membership.html:6948).
-    //   형식별로 캐시 키가 갈리므로(8921줄) obj 형식을 warm 하면 헛돈다.
-    'action=member_active_list&scope=valid&format=rows',
-    'action=member_active_list&scope=ended&format=rows'
+    // ★2026-08-03 시토(배298 · GM '너무 느려 CRM 관리가 안 된다')로 여기 넣었던 회원 목록 2스코프는
+    //   2026-08-05 warmLessonRosterCache 로 옮겼다 — 이 함수엔 CLOCK 트리거가 없어 실제로는 한 번도
+    //   돈 적이 없었기 때문이다. 같은 것을 두 곳에서 데우면 헛돈이 되므로 여기서는 뺀다.
+    //   (배경 실측: 화면이 valid·ended 를 근접 프리페치하는데 GAS 가 동시실행을 큐잉해 한 건이 65.5초까지
+    //    밀렸다 — 캐시를 상시 뜨겁게 두면 미스가 없어 경합도 사라진다. format=rows 만 데우는 이유는
+    //    화면이 그 형식만 부르고 형식별로 캐시 키가 갈리기 때문.)
   ];
   qs.forEach(function(q) {
     try {
