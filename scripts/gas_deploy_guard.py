@@ -16,15 +16,33 @@
        - count >= 195             : 🔴 강경 경고 + 배포 중단(--force로만 강행)
        - 버전 조회 실패(None)      : WARN만 출력하고 통과 — 오탐으로 배포 자체를
                                      막지 않는다(원칙: 조회 실패는 배포 차단 사유가 아님)
+    2-1) ★원격 무단변경 가드(2026-08-05 시토 — reception 08:50 배포 사고 재발방지).
+       `clasp push --force`는 원격 GAS 코드를 로컬로 **경고 없이 통째 덮는다.** 사람이
+       편집기(script.google.com)에서 직접 고친 내용이 있어도 사라진다. 막는 법:
+       - 이 스크립트가 push 성공 직후마다 원격 콘텐츠(Apps Script API projects.getContent)의
+         해시를 status/gas_push_baseline.json 에 프로젝트별로 저장해 둔다("우리가 마지막으로
+         push 한 내용의 원격 지문").
+       - 다음 배포 시도 때 push 하기 **전에** 원격 콘텐츠를 다시 조회해 해시를 비교한다.
+         - 베이스라인과 같음        → 🟢 원격이 그대로다. 통과.
+         - 베이스라인과 다름        → 🔴 우리가 모르는 새 원격 변경(=편집기 직접 수정 가능성).
+                                      BLOCK + 파일별 unified diff 출력. --force 로만 강행.
+         - 베이스라인 없음(최초)    → ⚠️ 대조 불가, WARN만 하고 통과(오탐 방지 원칙 동일 적용).
+       - 대조 단위는 파일 콘텐츠 해시(sha256) — 전체 diff 는 BLOCK 일 때만 계산한다(평소엔
+         해시 비교 1회 API 호출만 들어 값싸다). 한계: 베이스라인 자체가 이 스크립트를 거친
+         배포에만 갱신되므로, "이 스크립트 도입 전"에 이미 있었던 원격-로컬 괴리는 최초 1회
+         잡지 못한다(WARN 후 그 시점 원격을 새 베이스라인으로 삼는다).
     3) 통과 시 실제 `clasp push --force` + `clasp deploy`를 대상 clasp 폴더에서
        실행한다. `--` 뒤 인자는 `clasp deploy`에 그대로 패스스루된다
        (예: `-i <deploymentId> -d "설명"`).
-    4) 배포 성공 후 status/gas_version_status.json을 갱신한다(가능하면).
+    4) 배포 성공 후 status/gas_version_status.json 및 status/gas_push_baseline.json 을
+       갱신한다(가능하면).
 
 실행법:
     python scripts/gas_deploy_guard.py funnel-v2 -- -i AKfycby... -d "설명"
     python scripts/gas_deploy_guard.py check --check-only          # 검증용 dry-run(배포 안 함)
     python scripts/gas_deploy_guard.py funnel --check-only --force # BLOCK 우회 분기 확인
+    python scripts/gas_deploy_guard.py reception --check-only --simulate-drift
+        # 원격 무단변경을 흉내 내 BLOCK 판정만 확인(네트워크 호출 없음·배포 없음)
 
 <project> = gas_version_monitor._PROJECTS 의 프로젝트명(check/funnel/funnel-v2/todo/reception)
             또는 로컬 clasp 폴더명(.deploy-check 등).
@@ -34,11 +52,15 @@
 from __future__ import annotations
 
 import argparse
+import difflib
+import hashlib
 import json
 import os
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT_DIR = os.path.dirname(_SCRIPT_DIR)
@@ -67,6 +89,121 @@ _HARD_LIMIT = gvm._HARD_LIMIT
 # 폴링하는 방식으로 교체하면 추정 대신 실측 확인이 된다.
 _COOLDOWN_SEC = 20
 _COOLDOWN_PATH = os.path.join(_ROOT_DIR, 'status', 'gas_deploy_cooldown.json')
+
+# ── 원격 무단변경 가드(2026-08-05 시토) ─────────────────────────────────────
+_BASELINE_PATH = os.path.join(_ROOT_DIR, 'status', 'gas_push_baseline.json')
+_TYPE_EXT = {'SERVER_JS': '.js', 'HTML': '.html', 'JSON': '.json'}
+
+
+def _fetch_remote_content(script_id: str, access_token: str | None) -> dict[str, str] | None:
+    """Apps Script API projects.getContent — 원격 프로젝트 현재 파일 전체({파일명: 소스}).
+    실패(토큰 없음·네트워크·권한)하면 None — 호출부가 오탐 방지로 통과 처리한다."""
+    if not access_token:
+        return None
+    url = f'https://script.googleapis.com/v1/projects/{script_id}/content'
+    req = urllib.request.Request(url, headers={'Authorization': f'Bearer {access_token}'})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        print(f"[WARN] {script_id} 원격 콘텐츠 조회 실패: {e}", flush=True)
+        return None
+    files: dict[str, str] = {}
+    for f in data.get('files', []):
+        name = f.get('name', '')
+        ext = _TYPE_EXT.get(f.get('type', ''), '')
+        key = name if (not ext or name.endswith(ext)) else name + ext
+        files[key] = f.get('source', '')
+    return files
+
+
+def _content_hash(files: dict[str, str]) -> str:
+    h = hashlib.sha256()
+    for name in sorted(files):
+        h.update(name.encode('utf-8'))
+        h.update(b'\x00')
+        h.update(files[name].encode('utf-8'))
+        h.update(b'\x00')
+    return h.hexdigest()
+
+
+def _load_baseline(name: str) -> dict | None:
+    try:
+        with open(_BASELINE_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f).get(name)
+    except Exception:
+        return None
+
+
+def _save_baseline(name: str, files: dict[str, str]) -> None:
+    data = {}
+    try:
+        with open(_BASELINE_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    data[name] = {
+        'hash': _content_hash(files),
+        'files': files,
+        'saved_at': time.strftime('%Y-%m-%dT%H:%M:%S'),
+    }
+    try:
+        os.makedirs(os.path.dirname(_BASELINE_PATH), exist_ok=True)
+        with open(_BASELINE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[WARN] 베이스라인 저장 실패(배포 자체는 성공): {e}", flush=True)
+
+
+def _diff_files(base_files: dict[str, str], remote_files: dict[str, str]) -> list[str]:
+    """베이스라인(마지막 push 시점 원격) vs 지금 원격 — 파일별 unified diff(파일당 최대 40줄)."""
+    out: list[str] = []
+    for fname in sorted(set(base_files) | set(remote_files)):
+        old, new = base_files.get(fname, ''), remote_files.get(fname, '')
+        if old == new:
+            continue
+        d = list(difflib.unified_diff(
+            old.splitlines(), new.splitlines(),
+            fromfile=f'baseline/{fname}', tofile=f'remote-now/{fname}', lineterm='', n=1,
+        ))
+        if len(d) > 40:
+            d = d[:40] + ['... (이하 생략)']
+        out.append(f'--- {fname} ---')
+        out.extend(d)
+    return out
+
+
+def _decide_drift(name: str, script_id: str, access_token: str | None,
+                   simulate_drift: bool) -> tuple[str, str, list[str], dict[str, str] | None]:
+    """(decision, message, diff_lines, remote_files) 반환. decision ∈ {PASS, WARN, BLOCK}.
+    remote_files 는 성공적으로 조회됐을 때만 채워짐(push 후 베이스라인 갱신에 재사용)."""
+    if simulate_drift:
+        # ★검증 전용 — 네트워크 호출·실배포 없이 BLOCK 분기만 확인한다.
+        base_files = {'(simulated).js': 'function f(){ return 1; }\n'}
+        remote_files = {'(simulated).js': 'function f(){ return 1; }\n// 사람이 편집기에서 넣은 줄\n'}
+        diff_lines = _diff_files(base_files, remote_files)
+        return 'BLOCK', "🔴 [시뮬레이션] 원격 변경 감지 — 실제 조회 아님(--simulate-drift).", diff_lines, None
+
+    remote_files = _fetch_remote_content(script_id, access_token)
+    if remote_files is None:
+        return 'WARN', "⚠️ 원격 콘텐츠 조회 실패 — 대조 없이 통과(오탐 방지).", [], None
+
+    baseline = _load_baseline(name)
+    if baseline is None:
+        return ('WARN',
+                "⚠️ 베이스라인 없음(이 가드 도입 후 첫 배포) — 대조 없이 통과. "
+                "이번 push 성공 후 지금 원격 상태를 새 베이스라인으로 기록합니다.",
+                [], remote_files)
+
+    remote_hash = _content_hash(remote_files)
+    if baseline.get('hash') == remote_hash:
+        return 'PASS', "🟢 원격 변경 없음 — 마지막 배포 이후 그대로.", [], remote_files
+
+    diff_lines = _diff_files(baseline.get('files', {}), remote_files)
+    return ('BLOCK',
+            "🔴 원격이 마지막 배포 이후 우리 모르게 바뀌었다 — 편집기 직접 수정일 수 있다. "
+            "지금 push하면 그 내용이 사라진다. 배포 중단(--force로만 강행 가능).",
+            diff_lines, remote_files)
 
 
 def _write_cooldown(name: str) -> None:
@@ -182,6 +319,10 @@ def main() -> int:
         help='[테스트 전용] 실제 조회 대신 지정한 버전수로 임계 분기를 검증',
     )
     parser.add_argument(
+        '--simulate-drift', action='store_true',
+        help='[테스트 전용] 원격 무단변경을 흉내 내 BLOCK 분기만 확인(네트워크 호출·실배포 없음)',
+    )
+    parser.add_argument(
         '--description', '-d', default=None,
         help="clasp deploy -d 설명('--' 패스스루 인자가 있으면 무시됨)",
     )
@@ -208,6 +349,21 @@ def main() -> int:
             print("배포 중단됨. 강행하려면 --force 명시.", flush=True)
             return 1
         print("--force 지정 — BLOCK 임계를 우회하여 진행합니다.", flush=True)
+
+    # ★원격 무단변경 가드 — push(원격 통째 덮어쓰기) 전에 반드시 대조한다.
+    drift_token = None if args.simulate_drift else gvm._get_access_token()
+    drift_decision, drift_message, drift_diff, drift_remote_files = _decide_drift(
+        name, script_id, drift_token, args.simulate_drift,
+    )
+    print(drift_message, flush=True)
+    if drift_decision == 'BLOCK':
+        for line in drift_diff:
+            print(line, flush=True)
+        if not args.force:
+            print("배포 중단됨(원격 무단변경). 강행하려면 --force 명시.", flush=True)
+            return 1
+        print("--force 지정 — 원격 무단변경을 무시하고 진행합니다(이 push가 그 변경을 지웁니다).",
+              flush=True)
 
     if args.check_only:
         print("[check-only] 실제 배포는 수행하지 않음.", flush=True)
@@ -248,6 +404,14 @@ def main() -> int:
             if push.returncode != 0:
                 print("[ERROR] clasp push 실패 — 배포 중단.", flush=True)
                 return push.returncode
+
+            # push 성공 직후 원격을 다시 읽어 새 베이스라인으로 기록한다(다음 배포가 대조할 지문).
+            if not args.simulate_drift:
+                post_push_files = _fetch_remote_content(script_id, drift_token or gvm._get_access_token())
+                if post_push_files is not None:
+                    _save_baseline(name, post_push_files)
+                else:
+                    print("[WARN] push 후 베이스라인 갱신 실패(다음 배포는 대조 없이 WARN 통과).", flush=True)
 
             print(f"[{name}] {' '.join(deploy_cmd)} ...", flush=True)
             deploy = subprocess.run(deploy_cmd, cwd=clasp_dir, shell=True)
