@@ -1,90 +1,3 @@
-<!-- 웰페리온 문의 블록 — 워드프레스 '문의' 페이지(8394) 본문 주입 소스 (SSOT)
-     2026-07-16 B안 프리미엄 리스킨 + 6버튼 전부 자체 Survey 폼(wp_inquiry_form.html) 연결 완료(GM 발효 승인).
-     ★ 구글폼(forms.gle·docs.google.com/forms) 완전 탈피 — 6종 전부 /ko/inquiry-form/?type=… 로 귀속.
-     디자인: wp_inquiry_form.html 과 동일한 B안 토큰(팔레트 4색 BLACK #221F20·WHITE·BEIGE #B79F8A·CORAL #ED5B3F,
-     Pretendard, 다크 풀블리드 히어로 + 화이트 에디토리얼 본문, 샤프 모서리, 선(line) SVG 아이콘 재사용).
-     CSS 스코프 .wlp-inq 래퍼(Salient/WPBakery 테마 오염 차단). 외부 스크립트 의존 없음(폰트 CDN 1개 제외).
-     2026-07-16 GM 피드백①: 헤더 로고(검정)가 폭>1000px에서 margin-top 32px 때문에 다크 히어로 상단
-     61px 안으로 흘러들어가 히어로 eyebrow "WELLPERION"과 겹치고 검정이라 안 보이던 문제 수정 —
-     eyebrow 삭제 + 헤더 로고를 그 구간(폭>1000px)만 베이지(#B79F8A 근사, invert/sepia/hue-rotate
-     필터로 실측 산출)로 전환해 다크 배경 위에서 브랜드 배지처럼 보이게 함. 히어로 padding도 컴팩트화.
-     2026-07-16 GM 피드백②: 로고 위로 WP 테마 헤더의 흰 바(#header-outer, 데스크톱 29px/모바일 78px)
-     + container-wrap padding-top(40px, 회색 #f6f6f6)이 남아 로고가 흰/회색↔다크 경계에 걸쳐 보이던 문제 수정 —
-     ①#header-outer 배경을 페이지 최상단(0px)부터 다크(#221F20)로, ②.container.main-content를 정확히
-     container-wrap의 padding-top(40px)만큼 위로 끌어올려(margin-top:-40px) 히어로가 #header-outer 박스
-     하단(데스크톱29px/모바일78px)에 바로 이어붙게 함(실측 기반 정밀값, 임의 여백 아님). 로고는 이제
-     첫 픽셀부터 다크 배경 안에 온전히 앉음.
-     2026-07-16 GM 피드백③(웰리 검수 발견): 위 ②의 margin-top:-40px로 히어로 콘텐츠(슬로건 등)도 같이
-     40px 위로 밀려 로고(top~60·bottom~130)와 세로로 겹치는 부작용 수정 — .hero-band padding-top을
-     60px→110px(+40 원복 보정 + 여유 10px)로 늘려 배경 박스는 그대로 상단 확장 유지하되 콘텐츠 시작
-     위치는 로고 하단보다 확실히 아래(실측 gap 양수 확보)로 재조정. 동시에 히어로 소개문 줄바꿈 개선 — "세우고"의 '고'만 다음 줄로 넘어가던
-     어색한 끊김을 의미 단위 수동 <br> 3줄 분리 + word-break:keep-all(한글 어절 단위 줄바꿈)로 해소.
-     2026-07-16 GM 방향전환(다크 히어로 폐기·근본 해결): WP 테마 헤더(로고·메뉴·ENG버튼, 전 페이지 공통)와
-     다크 히어로 밴드가 계속 충돌(로고 안보임·겹침·위치어긋남)해 위 ①②③ 다크 관련 수정 전부 원복 —
-     #header-outer 다크 배경·헤더 로고 베이지 filter·margin-top push·container.main-content의
-     margin-top:-40px 전부 제거(밝은 기본 WP 헤더 복귀, 충돌 원천 차단). 히어로 자체도 다크(#221F20)→
-     밝은 배경으로 교체하고 "문의하기" 큰 제목 삭제(6버튼이 이미 각자 'OO 문의' 라벨이라 중복).
-     문구·글자 크기는 B안 리스킨 이전 원본 wp_inquiry_form.html(커밋 46af9cc2, 밝은 배경·심플 버전)의
-     사이즈 위계(큰 영문 슬로건→작은 국문 부제→코럴 디바이더→작은 소개문)를 참고하되 컬러는 브랜드
-     정본색(BLACK #221F20·BEIGE #B79F8A·CORAL #ED5B3F)만 사용. 카드형(네모) 6버튼 레이아웃은 그대로 유지.
-     2026-07-16 웰리 검수(재발, 이후 GM이 아래 방향전환으로 흡수·정정): 슬로건 위 작은 eyebrow
-     "WELLPERION"이 헤더 로고 워드마크와 중복이라 일시 삭제했었음.
-     2026-07-16 GM 방향전환②(헤더 자체 숨김 — 충돌 근본 해결): WP 테마 헤더(#header-outer, 로고·메뉴·
-     ENG버튼)를 page-id-8394 한정으로 display:none — 로고 찝힘·겹침·위치어긋남 문제의 근원 자체를 제거.
-     헤더가 사라지며 로고도 함께 사라지므로 히어로에 브랜드 표시를 되살림 — eyebrow "WELLPERION" 복원
-     (이제 헤더 로고가 없어 중복 아님). 홈 이동은 하단 소셜바 '홈페이지' 아이콘이 대체.
-     히어로 배경을 흰색→연한 브랜드 베이지(#f5f0ea)로 전환. ★함정: 헤더를 display:none하면 테마 JS가
-     헤더 실측높이(0)에 맞춰 container-wrap의 상단 오프셋도 0으로 재계산(기존 29px데스크톱/78px모바일→
-     0으로 축소, 실측 확인) — 남는 예약 여백은 container-wrap 자체 padding-top 40px 뿐(양 브레이크포인트
-     동일). .hero-band에 margin-top:-40px(단일값, 미디어쿼리 불필요)를 줘 베이지가 페이지 최상단(0px)
-     까지 이어지게 함(다른 페이지 영향 0 — page-id-8394 스코프). 본문 카드(.type-card 등)는 흰색 유지해 대비.
-     "1,000명 정원제" 안내를 하단→히어로 안(슬로건 바로 아래)으로 이관(중복 생성 아님 — 기존 하단
-     .capacity 블록 삭제 후 이동).
-     2026-07-16 GM 피드백(색상 재변경): 베이지(#f5f0ea)→다크(#221F20)로 재전환("찐한 회색"). 헤더를 이미
-     display:none 처리해 로고 자체가 없으므로 예전 다크 시절의 로고 겹침·헤더 충돌 문제는 원천적으로
-     재발하지 않음(heroTop:0 유지, 실측 재확인). 히어로 텍스트를 다크 배경용으로 반전 — eyebrow=베이지,
-     슬로건 영문=흰색, 국문 부제·소개문=연회색(rgba(255,255,255,.7) 계열), "1,000명 정원제" 문장=흰색
-     본문+숫자만 코럴 강조, 코럴 디바이더 유지. 본문 카드(.type-card 등)는 흰색 그대로(다크 히어로+흰
-     본문 대비).
-     2026-07-16 GM 피드백(폭 축소): 다크 히어로가 좌우 풀블리드라 과하게 넓다는 지적 — .hero-band에
-     max-width:720px(.wrap과 동일 폭, 통일감) + margin:auto로 가운데 정렬해 데스크톱에서 다크 박스가
-     본문 콘텐츠 폭 안에 카드처럼 앉게 함(좌우 여백 생김). 모바일은 뷰포트가 720px보다 좁아 자동으로
-     꽉 차 보임(별도 미디어쿼리 불필요). margin-top:-40px(상단 확장)는 auto 정렬과 함께 유지.
-     2026-07-16 GM 최종확정(시안F 밝은 베이지 우아, 전체 통일): "상단만 색 넣으면 위아래 따로 논다"
-     피드백 반영 — 다크(#221F20) 히어로 폐기, .wlp-inq 전체(히어로+본문 배경)를 동일한 연한 베이지
-     #f5f0ea(--bg 변수)로 통일해 하나의 연속된 면처럼 보이게 함(부분 색 아님). 텍스트: 헤드라인=검정
-     (--ink), 부제·소개문=새 --muted #6b6258, eyebrow·디바이더·"1,000명 정원제"강조·예약안내=베이지
-     (--beige, 코럴 대신 — "코럴 최소" 방침, 제출버튼·체크박스 선택 등 기능적 CTA색만 코럴 유지).
-     본문 카드(.type-card 등)는 흰색+기존 베이지톤 보더 그대로(대비 유지). 문구 정정: "그날의"→
-     "그 날의"(띄어쓰기), "1,000명 정원제(멤버십)로"→"1,000명 정원제(멤버십) 운영으로".
-     2026-07-16 GM 미세조정: 히어로 세로 여백 과다("정원제" 문구와 "상담 및 투어는 사전예약제" 사이) —
-     .hero-band padding-bottom 30→14, .wrap padding-top 34→18(합계 64px→32px)로 축소. 허브 맨 아래
-     (social-bar 이후)는 실측 결과 중복/잉여 줄 없음 확인(별도 삭제 대상 없음).
-     2026-07-20 GM 지시: Survey폼(8460)에 적용한 배경 풀블리드+하단여백 제거를 이 페이지(메인 문의,
-     GM이 실제로 가리킨 대상)에도 동일 적용. 원인·처방 동일(같은 WP 테마 래퍼 구조 — .container.main-
-     content padding:0 90px 거터 + .container-wrap padding-bottom 40px + wpb_raw_code margin-bottom
-     35px=고정 75px, 8460과 실측 일치). ::before 50vw 브레이크아웃 + .wlp-inq margin-bottom:-75px로
-     동일 처리(8460과 같은 코드 패턴, 자체선택 사이드바 없음).
-     2026-07-20 GM 지시(언어전환): 영문판(/en/inquiry/, 8408)엔 WP 테마 네이티브 언어전환 버튼
-     (a.lang-header, "KOR")이 보이는데, 이 페이지는 위 #header-outer를 통째로 숨겨놔서 그 안에 같이
-     있는 네이티브 "ENG" 버튼도 함께 숨어버려 안 보였음(DOM엔 있으나 0×0, 실측 확인). 헤더를 다시 켜면
-     예전에 몇 차례 고생해서 잡은 로고·히어로 겹침 문제가 재발하므로(위 이력 참고) 헤더는 계속 숨김
-     유지 — 대신 .hero-band 안에 새 .lang-switch 링크를 직접 추가(네이티브 버튼과 동일한 알약형·2px
-     테두리·24px 라운드·"ENG" 대문자 표기 계승, 색만 이 페이지 베이지 배경에 맞게 반전 — 네이티브는
-     흰 배경 위 흰색이라 이 베이지 배경에선 그대로 못 씀). .hero-band(720px 가운데정렬 컬럼) 안이 아닌
-     .wlp-inq 최상위 직계로 배치 — 컨텐츠 영역(WP 90px 거터 안쪽) 우상단에 앉아 영문판 네이티브 버튼의
-     "화면 진짜 모서리" 위치와는 살짝(≈120px) 다르지만, 이 페이지 다른 요소(카드 등)도 전부 같은 90px
-     거터 안에서 끝나므로 이 페이지 자체 기준으론 일관됨 — position:fixed로 픽셀 일치시키는 안은
-     영문판에 없는 "항상 고정" 동작을 새로 만드는 것이라 보류(GM 확인 필요시 후속).
-     ★함정(실측 발견): href="http://wellperion.com/en/inquiry/" 리터럴을 그대로 쓰면 WPML이 본문
-     콘텐츠 안의 내부링크를 "현재 보고 있는 언어로" 자동 교정하는 필터가 서버단에서 이를 감지해
-     href를 조용히 /ko/inquiry/(자기 자신)로 되돌려버림(라이브 HTML 소스 직접 확인 — 렌더 후 DOM이
-     아니라 서버가 이미 고친 원본 자체가 틀어짐, 네이티브 a.lang-header는 WPML 자체 함수 출력이라
-     이 필터를 안 타서 멀쩡함). 우회: href="#" + onclick으로 location.href를 JS 문자열로 나눠서
-     대입(리터럴 URL 문자열이 페이지 소스 어디에도 "href=..." 형태로 등장하지 않게)해 WPML의 href
-     패턴매칭을 회피. 이 페이지의 다른 href(예: /ko/inquiry-form/?type=...)는 같은 언어(ko) 내
-     이동이라 이 필터에 안 걸림 — 문제는 "다른 언어로 나가는 링크"에서만 발생.
-     수정 시 이 파일을 고치고 draft-inquiry 모드로 재주입. -->
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <style>
 /* 문의 페이지(8394) 한정 — WP 테마 헤더 전체 숨김(로고·메뉴·네이티브 ENG버튼 포함). 다른 페이지
@@ -98,7 +11,7 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 .wlp-inq{
-  --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;--muted:#6b6258;
+  --bg:#f5f0ea;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;--dim:#8a7f72;--muted:#6b6258;
   background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;
   font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   -webkit-text-size-adjust:100%;box-sizing:border-box;

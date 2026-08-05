@@ -543,8 +543,6 @@ function efRepeat(idx,it){
   var o=opts.map(function(p){return '<option value="'+p[0]+'"'+(p[0]===cur?" selected":"")+'>'+p[1]+'</option>';}).join("");
   return '<div class="efield"><label>반복 (규칙 1줄 → 달력 자동 반복)</label><select data-i="'+idx+'" data-f="repeat">'+o+'</select></div>';
 }
-/* 구 편집 모드(toggleEdit·renderEdit·addItem·addEvent·JSON 내보내기)는
-   항목별 인라인 편집(위 inlinePanelHtml/saveInline)으로 대체·제거. GM 2026-07-15. */
 function saveToServer(){
   if(!SCHEDULE_GAS_URL){toast("서버 배포 후 사용 가능합니다.");return;}
   fetch(SCHEDULE_GAS_URL,{method:'POST',redirect:'follow',

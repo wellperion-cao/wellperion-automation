@@ -115,6 +115,14 @@ PAGE_TARGETS: list[dict] = [
 ]
 
 DEFAULT_LOG_PATH = os.path.join(_PROJECT_ROOT, "status", "weekly_page_hygiene_log.jsonl")
+
+# ── 오탐 영구 제외 목록 (웰리 판정 2026-08-05, 배386/배8) ──
+# (path_contains, symbol_or_snippet_contains) — 두 조건이 모두 맞으면 후보 제외.
+FALSE_POSITIVE_EXCLUSIONS: list[tuple[str, str]] = [
+    ("onboarding-self.html", "banner.ok"),   # setBanner('ok') 2곳 실사용 — 지우면 완료 배너 깨짐
+    ("카톡전송관리.html", "../../assets/"),  # assets/wp-typography.css 정상 링크 — 404 아님
+]
+
 CATEGORY_LABELS = {
     "A": "죽은 코드(자동삭제 대상)",
     "B": "중복 설명 병합",
@@ -526,7 +534,13 @@ def _audit_one_target(target: dict, working_content: str, apply_gate: bool, forc
     proposed: list[dict] = []
     content = working_content
 
+    def _is_false_positive(tpath: str, c: dict) -> bool:
+        combined = (c.get("symbol") or "") + (c.get("snippet") or "")
+        return any(pp in tpath and sp in combined for pp, sp in FALSE_POSITIVE_EXCLUSIONS)
+
     for cand in audit["candidates"]:
+        if _is_false_positive(target["path"], cand):
+            continue
         cat = (cand.get("category") or "").strip().upper()
         if cat != "A":
             proposed.append({**cand, "gate_reason": "", "would_auto_apply": False})

@@ -570,7 +570,6 @@ async function loadFunnelConversion() {
 /* ── KPI 집계 표 렌더 ── */
 function renderKpiTable(pb) {
   const inquiries = pb?.inquiries?.month ?? null;
-  const convInq   = pb?.conversion?.month?.inquiries ?? null;
   const convDone  = pb?.conversion?.month?.converted ?? null;
   const convRate  = pb?.conversion?.month?.rate      ?? null;
 
