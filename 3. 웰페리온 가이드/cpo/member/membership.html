@@ -8538,6 +8538,13 @@ function _wireActiveDblclick(){
       var r = _activeRows.find(function(x){ return x.rowIndex == rowIndex; });
       if (r) r[col] = newVal;
       var _keyPhone = (r && (r['휴대폰 번호'] || r['휴대폰'])) || '';   // 행키(서버 rowIndex 밀림 검증용)
+      // ★등록일자 편집 시 rowKey 즉시 갱신(2026-08-05 시포 — INC: 동기화 실패 연쇄 근본수리).
+      //   등록일자는 rowKey 지문의 ts 재료다. 이 칸을 바꾼 뒤 시작일자·종료일자를 편집하면
+      //   이미 구 일자로 계산된 rowKey가 발사 → 서버 rowkey-not-found → parkedHard(계속 처리안됨).
+      //   변경 직후 r.rowKey를 새 일자 기준으로 재계산해 연쇄 실패를 차단한다.
+      if (r && String(col).replace(/\s/g, '').indexOf('등록일자') >= 0) {
+        r.rowKey = _gzRowKey_(newVal, _keyPhone);
+      }
       // 버퍼 경유(2026-07-23) — 화면은 이미 새 값으로 바뀐 뒤라 체감은 같지만, 실패했을 때가 다르다.
       //   전: 토스트 한 번 띄우고 끝 → 놓치면 그대로 유실. 후: 대기큐에 남아 재시도 + 헤더 배지로 표면화.
       var _who = (r && (r['회원명'] || r['성함'] || r['이름'])) || '';
