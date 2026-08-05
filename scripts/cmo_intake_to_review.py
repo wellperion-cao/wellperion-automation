@@ -96,7 +96,7 @@ _SUNDAY_LINE_RE = re.compile(r"^(\d{2})(?:\s+(.*))?$")   # 02·03·…·10 (빈 
 _SUNDAY_THINK_RE = re.compile(r"^생각\s*·\s*(.*)$")
 _PUBLISH_AT_RE = re.compile(r"발행시점\s*·\s*(\S+)")
 # 표지에서 보여줄 지점(0~1) — 화면에서 끌어 맞춘 값. 없으면 가운데(0.5,0.5).
-_FACT_RE = re.compile(r"^(장소|날짜|추천)\s*·\s*(.+)$")   # 사진으로 알 수 없는 사실(접수 화면 입력)
+_FACT_RE = re.compile(r"^(컨셉|슬로건|장소|날짜|추천)\s*·\s*(.+)$")   # 사진으로 알 수 없는 사실(접수 화면 입력)
 _COVER_FOCUS_RE = re.compile(r"표지위치\s*·\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?")
 _DRIVE_ID_RE = re.compile(r"/d/([a-zA-Z0-9_-]{10,})")
 _DRIVE_ID_QS_RE = re.compile(r"[?&]id=([a-zA-Z0-9_-]{10,})")
@@ -418,9 +418,18 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         "- 금지어: '피트니스'(→'스포츠클럽'), '하이엔드프라이빗', '사교'.",
         *(["- 사진 외에 영상도 함께 올라가지만 영상은 보지 못하니 언급하지 마라."] if video else []),
         "",
+        *( ["", f"이번 편 컨셉: {(facts or {}).get('컨셉')}. 글 전체가 이 컨셉을 따라간다."]
+           if (facts or {}).get("컨셉") else [] ),
+        *( ["",
+            f"GM 이 준 슬로건 한 줄: {(facts or {}).get('슬로건')}",
+            "  ★이 문장을 그대로 쓰지 말고 **사진에 맞게 다듬어라.** 문장의 뼈대(무엇을 말하는지)는",
+            "  살리되, 오늘 사진에 실제로 있는 장면의 말로 바꿔 쓴다. 다듬은 결과를 think 로 낸다.",
+            "  사진과 아무 상관이 없어 다듬을 수 없으면 원문 그대로 think 에 넣어라."]
+           if (facts or {}).get("슬로건") else [] ),
         *( ["", "아래는 사진으로는 알 수 없는 사실이다. 지어낸 것이 아니니 글에 자연스럽게 녹여라",
            "(억지로 다 넣지 말고, 기록으로 남을 값이 있는 것만):"]
-           + [f"- {k}: {v}" for k, v in (facts or {}).items()] if facts else [] ),
+           + [f"- {k}: {v}" for k, v in (facts or {}).items() if k not in ("컨셉", "슬로건")]
+           if facts and any(k not in ("컨셉", "슬로건") for k in facts) else [] ),
         "",
         "출력은 JSON 한 덩어리만. 설명·코드블록 없이 { 로 시작해 } 로 끝낸다.",
         '{"title":"두 줄 제목(\\n 포함)","lines":['
