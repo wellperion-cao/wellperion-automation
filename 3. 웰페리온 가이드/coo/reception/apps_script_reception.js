@@ -426,7 +426,9 @@ function _regComputeSla(row) {
 // ─── SLA 초과 '전환 시점' 텔레그램 알림 (COO 배163 · 2026-07-27) ───
 // 기존 _vNotifyTelegram 재사용(신규 알림 채널·봇 없음). 매 호출마다 스팸 발송 방지를 위해
 // '이번에 새로 초과 전환된 건'만 알린다 — 직전 체크의 초과 ID 집합을 ScriptProperties에 저장해 비교.
-// 호출 경로: 시간 트리거(예: 30분마다) 설치가 필요(라이브 설정 — GM/웰리 승인 후 진행. 이 배포에선 미설치).
+// 호출 경로: 시간 트리거(30분마다) — installReceptionSlaTrigger()로 설치.
+// ★2026-08-05 시토 실측: 라이브 GAS에 getProjectTriggers()로 직접 조회해 _regSlaCheckTrigger
+// CLOCK 트리거가 실제로 걸려 있음을 확인했다(이전 주석 "이 배포에선 미설치"는 낡은 정보 — 정정).
 var REG_SLA_NOTIFIED_PROP = 'REG_SLA_NOTIFIED_IDS';
 var REG_DASHBOARD_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/reception/종합접수처_현황.html';
 

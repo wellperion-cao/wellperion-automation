@@ -258,6 +258,19 @@ def build_reception_block(target_date: str) -> str:
     if stale:
         lines.append(f" • ⏸️ 보류 {len(stale)}건(2주+ 자동 이관 · 별도 검토)")
 
+    # ⏳ 가장 오래된 건 — 버킷(미해결/보류) 무관하게 항상 노출. 오래될수록 보류로 내려가
+    # 개별 노출에서 빠지던 은폐 구조 수리(GM 2026-08-05 · RECEPTION-12 28.8일이 미해결 13일째
+    # 뒤에 숨던 실측). 보류 버킷 설계 자체는 유지하고 이 한 줄만 무조건 덧붙인다.
+    oldest = max(unresolved, key=_elapsed_days)
+    oldest_cat = _short_cat(oldest.get("category", ""))
+    oldest_content = re.sub(r"\s+", " ", str(oldest.get("content", "") or "")).strip()
+    if len(oldest_content) > 30:
+        oldest_content = oldest_content[:30] + "…"
+    oldest_bucket = "보류 버킷" if _elapsed_days(oldest) >= STALE_DAYS else "미해결 버킷"
+    lines.append(
+        f" • ⏳ 가장 오래된 건: [{oldest_cat}] {oldest_content} · {_elapsed_days(oldest)}일째 ({oldest_bucket})"
+    )
+
     return "\n".join(lines)
 
 
