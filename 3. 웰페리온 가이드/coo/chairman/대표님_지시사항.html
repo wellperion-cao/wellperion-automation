@@ -153,7 +153,7 @@
   <div class="repbar">
     <span class="cnt" id="owner-count">불러오는 중…</span>
     <button type="button" class="rbtn" id="owner-bulk-btn" disabled>보고 필요건 통합 보고</button>
-    <span class="rnote">자동 발송은 준비 중입니다 — 문안을 복사해 업무보고방에 직접 붙여넣어 주세요.</span>
+    <span class="rnote">대표님 보고 필요건 + 👑 회장님 업무 지시건 현황이 한 문안으로 복사됩니다 — 업무보고방에 그대로 붙여넣어 주세요.</span>
     <span class="rstatus" id="owner-bulk-status"></span>
   </div>
   <pre class="digest" id="owner-digest"></pre>
@@ -177,6 +177,8 @@
 
 </div>
 
+<!-- 회장님 지시건 목록 정본(월간운영계획 회장님 카드와 공용·복제 없음) — 통합 보고 문안에 함께 실린다. -->
+<script src="_chairman_items.js"></script>
 <script src="_owner_directive.js"></script>
 <script>
   // wantCeoRows=true(내용칸 "대표님 보고건" 포함) · markPrefix = 내용칸에 덧붙일 보고완료 표식(기존 '내용' 칸
@@ -185,7 +187,9 @@
     wantCeoRows: true,
     markPrefix: '대표님 보고완료',
     reportIntro: '대표님께 아래 업무를 보고드립니다.',
-    emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.'
+    emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.',
+    // 통합 보고 문안 뒤에 👑 회장님 업무 지시건 현황을 함께 싣는다(2026-08-05 GM 지시 — 한 번에 복사해 전달).
+    includeChairman: true
   });
 </script>
 </body>

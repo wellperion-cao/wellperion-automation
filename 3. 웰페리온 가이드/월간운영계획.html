@@ -1173,6 +1173,7 @@
 
 <!-- 👤 김남욱GM 칸 소스(status/monthly_ops_plan.json GM 직접 건 판정) — coo/chairman/김남욱GM_업무.html과 공용(약속 L01). -->
 <script src="coo/chairman/_gm_direct_tasks.js"></script>
+<script src="coo/chairman/_chairman_items.js"></script>
 <script>
 (function(){
   // ── 설정: 라이브 URL(AI운영한장.html 동일 GAS·raw 폴백 패턴) ──
@@ -2499,8 +2500,12 @@
   var DEPT_CARDS = [
    {id:'ops',  key:'운영부(운영 매출 및 운영 총괄 진행)', prac:'lee-gy', ai:'lee-gy',   deptKeys:['운영','매출'],             links:[{label:'운영부 체계', href:'coo/check/운영부 체계.html'}]},
    {id:'fac',  key:'시설부(점검·관리 감독 + 간단한 시설 유지보수)', prac:'lee-jh', ai:'lee-jh',   deptKeys:['시설'],                    links:[{label:'시설부 체계', href:'coo/check/시설부 체계.html'}]},
-   {id:'sup',  key:'지원부',              prac:'lee-jh', ai:'lee-jh',   deptKeys:['지원'],                    links:[{label:'지원부 체계', href:'coo/check/지원부 체계.html'}]},
-   {id:'park', key:'주차관리부',          prac:'lee-jh', ai:'lee-jh',   deptKeys:['주차'],                    links:[{label:'주차관리부 체계', href:'coo/check/주차관리부 체계.html'}]},
+   {id:'sup',  key:'지원부(일일점검 · 청소·비품 관리)', prac:'lee-jh', ai:'lee-jh',   deptKeys:['지원'],                    links:[{label:'지원부 체계', href:'coo/check/지원부 체계.html'}]},
+   // ★지원부·주차관리부 역할 표기는 웰리 초안(2026-08-05 GM 지적 "운영부·시설부·경영지원만 소괄호가 있다").
+   // 세 부서와 달리 GM 이 문장으로 확정해 준 정의가 없어, 이 저장소에 이미 있는 사실만으로 적었다 —
+   // 지원부=유일하게 측정되는 일일점검 완료율 + 청소·비품(지원부 체계.html 점검표), 주차관리부=주차장 자체
+   // 운영 체계 가동(2026-Q3 목표). GM 이 다르게 정의하면 그 문장으로 교체한다(지어낸 값 아님·확정값 아님).
+   {id:'park', key:'주차관리부(주차장 자체 운영 · 청결·점검)', prac:'lee-jh', ai:'lee-jh',   deptKeys:['주차'],                    links:[{label:'주차관리부 체계', href:'coo/check/주차관리부 체계.html'}]},
    // 경영지원 key·deptKeys에서 '매출' 제거(GM 지시 2026-08-05 — 매출은 운영부로 이관). '매출&지출' 한 문자열이
    // 매출·지출을 동시에 잡던 것을 '지출'만 걸리게 좁힘 — 지금은 지출로만 분류된 목표가 없어 매칭 0건이지만
    // 없는 값을 지어내 채우지 않는다(정직 표기·GM 지시).
@@ -3644,16 +3649,10 @@
   // [6]회원·CS [7]IT·시스템·자동화 [8]교육·조직문화 [9]회의)로 내용을 보고 분류(GM 지시 2026-08-05·회장님
   // 원본 데이터는 이 항목 자체에 카테고리 칸이 없어 화면 표시용으로만 판단 — 원본 GAS 보드는 안 건드림).
   // 판단이 서지 않는 항목은 '분류 미정'으로 둔다(지어내지 않음) — 현재 8건 모두 내용상 분류 가능.
-  var CHAIRMAN_ITEMS = [
-    {id:'d1', title:'파우더룸 소독기 증설', when:'8월 1주 완료', cat:'시설 및 환경'},
-    {id:'d2', title:'사우나 입구 정비', when:'8월 2~3주', cat:'시설 및 환경'},
-    {id:'d3', title:'파우더룸 헤어드라이기 교체 검토', when:'8월 1일 보고 완료 · 결재 대기', cat:'시설 및 환경'},
-    {id:'d4', title:'회원 감소 원인 분석', when:'8월 착수 · 9월 보고', cat:'회원·CS'},
-    {id:'d5', title:'회장님·파트너팀 오찬', when:'내용 정리 예정', cat:'교육·조직문화'},
-    {id:'d6', title:'회장님 독서토론회 개최', when:'내용 정리 예정', cat:'교육·조직문화'},
-    {id:'d7', title:'파우더룸·탈의실 스팀다리미 설치 · 옷걸이 공간 배치', when:'검토 착수 · 8월 중 안 보고', cat:'시설 및 환경'},
-    {id:'d8', title:'지하 1층 청소 장비 · 세제 및 비품 정비', when:'8월 5일 지시 · 조사 착수', cat:'시설 및 환경'}
-  ];
+  // ★배열 정본 = coo/chairman/_chairman_items.js (2026-08-05 GM 지시로 대표님 통합 보고 문안에도 같은
+  // 목록이 들어가게 되면서 읽는 곳이 둘이 됐다 — 배열을 두 벌 두지 않으려고 그 파일 하나로 뺐다, 약속 L01).
+  // 상세 본문은 coo/chairman/회장님_지시사항.html 이 갖는다. 항목이 늘면 그 페이지 + 그 js 두 곳을 함께 고친다.
+  var CHAIRMAN_ITEMS = window.WellperionChairmanItems || [];
   function loadChairmanFold(){
     // 카드 3종 통일(renderExecCard) — 카테고리 칸엔 위 9종 체계 분류를, 일정 칸엔 기존 when 텍스트를
     // 그대로 싣는다(실제 시작·종료일이 없는 정적 항목이라 26.8.1~26.8.30 형식을 억지로 만들지 않음).

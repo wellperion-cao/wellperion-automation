@@ -91,14 +91,29 @@
     } else { onDone(false); }
   }
 
-  function buildDigest(items, introLine) {
+  // 👑 회장님 지시건 현황 — 2026-08-05 GM 지시("회장님 업무보고건을 대표님에게도 같이 회장님 업무 지시건으로
+  // 정리해서 한 번에 복사해 붙여넣게"). 목록 정본 = _chairman_items.js(배열 한 벌·복제 없음). 그 파일을 안 실은
+  // 페이지에서는 빈 문자열이 되어 문안이 예전 그대로다(조용히 빠지지 않게 cfg.includeChairman 로만 켠다).
+  function chairmanSection() {
+    var items = window.WellperionChairmanItems || [];
+    if (!items.length) return '';
+    return '\n\n■ 회장님 업무 지시건 ' + items.length + '건 (진행 현황)\n\n' +
+      items.map(function (it, i) {
+        return (i + 1) + '. ' + it.title + ' (' + (it.cat || '분류 미정') + ')' +
+          '\n   · 진행: ' + it.when;
+      }).join('\n');
+  }
+
+  function buildDigest(items, introLine, includeChairman) {
     var body = items.map(function (it, i) {
       return (i + 1) + '. ' + it.title +
         '\n   · 카테고리: ' + (it.category || '—') +
         '\n   · 일정: ' + it.schedule +
         (it.content ? ('\n   · 내용: ' + it.content) : '');
     }).join('\n\n');
-    return introLine + ' (' + todayStr() + ')\n\n' + body + '\n\n확인 부탁드립니다.';
+    var head = includeChairman ? '■ 대표님 보고 필요건 ' + items.length + '건\n\n' : '';
+    return introLine + ' (' + todayStr() + ')\n\n' + head + body +
+      (includeChairman ? chairmanSection() : '') + '\n\n확인 부탁드립니다.';
   }
 
   // ── 화면 렌더 + 이벤트(대표님/GM 페이지 공용 — cfg 로만 갈린다) ──
@@ -140,7 +155,8 @@
       var done = _items.filter(function (it) { return it.reported; });
       elCount.textContent = '보고 필요 ' + need.length + '건 · 보고 완료 ' + done.length + '건';
       elGrpCnt.textContent = _items.length + '건';
-      elBulkBtn.disabled = need.length === 0;
+      // 대표님 보고 필요건이 0건이어도 회장님 지시건 현황만으로 보낼 수 있게 열어 둔다(둘 다 0일 때만 잠금).
+      elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && (window.WellperionChairmanItems || []).length);
 
       if (!_items.length) {
         elGrid.innerHTML = '<div class="rep-empty">' + esc(cfg.emptyMsg) + '</div>';
@@ -209,13 +225,16 @@
     // 「보고 필요건 통합 보고」 — 아직 보고 안 한 건만 모아 문안 1개로 만들어 클립보드에 복사(자동 발송은 준비 중).
     elBulkBtn.addEventListener('click', function () {
       var need = (_items || []).filter(function (it) { return !it.reported; });
-      if (!need.length) return;
-      var text = buildDigest(need, cfg.reportIntro);
+      var chN = cfg.includeChairman ? (window.WellperionChairmanItems || []).length : 0;
+      if (!need.length && !chN) return;
+      var text = buildDigest(need, cfg.reportIntro, cfg.includeChairman);
       elDigest.style.display = 'block';
       elDigest.textContent = text;
       elBulkStatus.textContent = '문안 생성 중…';
+      var chCnt = cfg.includeChairman ? (window.WellperionChairmanItems || []).length : 0;
+      var cntLabel = need.length + '건' + (chCnt ? ' + 회장님 지시건 ' + chCnt + '건' : '');
       dispatchReport(text, function (ok) {
-        elBulkStatus.textContent = ok ? ('복사됨 ✓ — 업무보고방에 붙여넣어 주세요(' + need.length + '건)') : '클립보드 복사 실패 — 아래 문안을 직접 복사해 주세요.';
+        elBulkStatus.textContent = ok ? ('복사됨 ✓ — 업무보고방에 붙여넣어 주세요(' + cntLabel + ')') : '클립보드 복사 실패 — 아래 문안을 직접 복사해 주세요.';
       });
     });
 
