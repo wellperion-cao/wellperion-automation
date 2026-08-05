@@ -148,7 +148,8 @@
      윗칸에 2개 배치"). r-note-fold(위)를 그대로 재사용 — 새 접힘 컴포넌트 만들지 않음. 박스 톤만
      .broj-entry(아래)에서 차용. 인쇄는 화면 전용(아래 @media print에서 숨김 — 페이지 수 불변). */
   .toggle-row-2{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;}
-  .toggle-row-2 .tg-card{flex:1 1 320px; min-width:260px; margin-top:0; border:1px solid var(--border-strong); background:var(--paper); border-radius:12px; padding:10px 16px;}
+  /* min-width 260→220(2026-08-05 GM 지적 "좌우 스크롤 너무 싫어" — 좁은 화면에서 3칸이 더 쉽게 세로로 쌓이도록 낮춤) */
+  .toggle-row-2 .tg-card{flex:1 1 300px; min-width:220px; margin-top:0; border:1px solid var(--border-strong); background:var(--paper); border-radius:12px; padding:10px 16px;}
   .toggle-row-2 .tg-card summary{font-size:13px; font-weight:800; color:var(--text); list-style:none;}
   .toggle-row-2 .tg-card summary::-webkit-details-marker{display:none;}
   .toggle-row-2 .tg-card .r-note{margin-top:8px; padding-left:0; border-left:none; font-size:12.5px; line-height:1.6;}
@@ -156,6 +157,13 @@
   .toggle-row-2 .tg-line:last-of-type{border-bottom:none;}
   .toggle-row-2 .tg-link{display:inline-block; margin-top:6px; color:var(--accent-soft); font-weight:700; text-decoration:none; font-size:12px;}
   .toggle-row-2 .tg-link:hover{text-decoration:underline;}
+  /* 카드 3종(회장님/대표님/GM) 표 = 업무명·카테고리·일정 3칸뿐이라 기본 table.rpt(min-width:720px)를 그대로 쓰면
+     ~220~300px 카드 안에서 표만 내부 가로스크롤(실측 288px 표시폭에 720px 표 → 매 칸 스크롤)이 생겨 GM이 싫어한
+     원인이었다(2026-08-05). min-width:0으로 좁은 카드 폭에 맞춰 자연히 줄어들게 하고, 셀은 좁아도 어색하게
+     끊기지 않도록 word-break:keep-all로 문단 경계에서만 줄바꿈한다. */
+  table.rpt.exec{min-width:0;}
+  table.rpt.exec th, table.rpt.exec td{padding:7px 8px; font-size:11.5px; word-break:keep-all; overflow-wrap:break-word;}
+  table.rpt.exec .ebtn{font-size:10.5px; padding:4px 7px; margin:0 4px 4px 0; white-space:nowrap;}
   @media print{ .toggle-row-2{display:none !important;} }
 
   .chip{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap;}
@@ -1115,7 +1123,14 @@
          무변경 — 약속 L21). 새 컴포넌트·새 GAS 액션·새 저장키 0(위 r-note-fold 재사용, 대표님/GM 칸 모두
          readWorkApproval() 같은 결과를 담당자=김남욱 + 내용칸 "대표님 보고건" 포함 여부로만 양분). 접었을
          때도 summary 안 배지로 건수가 보인다. 인쇄는 화면 전용(.toggle-row-2·.ebtn @media print 숨김)
-         — A3 페이지 수 불변. -->
+         — A3 페이지 수 불변.
+         ★2026-08-05 2차 GM 지시(가로스크롤 제거·간략화·카테고리 통일·브로제이 링크화·자세히보기 3페이지
+         일관화·게이트 비번 1531 통일): table.rpt.exec(min-width:0)로 카드 내부 표 스크롤 제거·catName()으로
+         "[n] 이름" 표기에서 번호를 뗀 이름만 표시(회장님 칸도 CHAIRMAN_ITEMS.cat 동일 9종 체계로 분류)·
+         브로제이는 배지+링크 한 줄로 축소(loadBrojEntry 본문 렌더 제거)·대표님/GM 자세히보기는 각각
+         전용 페이지(coo/chairman/대표님_지시사항.html, coo/chairman/김남욱GM_업무.html — 회장님_지시사항.html
+         과 동일 CSS·구조, 같은 담당자/상태/대표님보고건 판정을 재사용)로 분리(舊 업무 현황 SSOT.html 공유
+         링크 폐기 — 그 파일은 시로/CHRO 소유라 손대지 않음, 링크만 이동). -->
     <section class="blk" data-blkid="exec-toggles">
       <div class="toggle-row-2">
         <details class="r-note-fold tg-card" id="chairman-fold" open>
@@ -1129,9 +1144,9 @@
         <details class="r-note-fold tg-card" id="gm-fold" open>
           <summary>👤 김남욱GM 업무 진행건 <span class="be-badge" id="gm-fold-badge">불러오는 중…</span></summary>
           <div class="r-note" id="gm-fold-body">불러오는 중…</div>
-          <div class="r-note" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);">
-            <div style="font-weight:800;font-size:13px;margin-bottom:4px;">🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> <span class="be-badge be-p1" id="broj-fold-p1"></span></div>
-            <div id="broj-fold-body">불러오는 중…</div>
+          <div class="r-note" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-size:12.5px;">
+            🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> ·
+            <a class="tg-link" href="coo/brojay/브로제이_업무분장.html" target="_blank">자세히 보기 →</a>
           </div>
         </details>
       </div>
@@ -3497,17 +3512,11 @@
   // 이 페이지엔 진척 요약 한 줄만). 저장 GAS·key(BROJ_TASK_BOARD)는 두 페이지가 동일하게 재사용(체크값 공유).
   var BROJ_STORAGE_KEY = 'BROJ_TASK_BOARD';
   var BROJ_DEPT_TOTAL = 36;     // cfo 6 + coo 14 + cpo 3 + 이경연실장 5 + rec 8 (2026-07-29 GM 담당변경: 상품등록 5건 임정은M→이경연실장 · 총계는 불변)
-  var BROJ_P1_IDS = ['broj-p1-1','broj-p1-2','broj-p1-3','broj-p1-4'];
+  // 2026-08-05 GM 지시("한 줄 링크로 줄여라") — 배지+링크 한 줄만 남기고 본문·P1 표시는 없앤다
+  // (P1 잔여건은 coo/brojay/브로제이_업무분장.html 자세히보기에서 본다 — BROJ_P1_IDS 분기도 함께 제거).
   function loadBrojEntry(){
     var pEl = document.getElementById('broj-fold-badge');
-    var p1El = document.getElementById('broj-fold-p1');
-    var bodyEl = document.getElementById('broj-fold-body');
     if(!pEl) return;
-    // 2026-08-04 GM 지적("확인 목록은 담당별 체크리스트 열기해서 넘어가던데?") — 종전엔 이 토글→담당별
-    // 체크리스트→(그 안에서 카드 클릭)→확인 목록, 두 번 건너가야 했다. 확인 목록 직행 링크를 나란히 둔다
-    // (기존 링크는 그대로 유지 — 둘 다 쓰이는 화면). 새 배지 배선은 안 만든다(GM 지시 — 링크만).
-    var link = '<a class="tg-link" href="coo/brojay/브로제이_업무분장.html" target="_blank">담당별 체크리스트 열기 →</a>' +
-      ' <a class="tg-link" href="coo/brojay/브로제이_확인목록.html" target="_blank">확인 목록 열기 →</a>';
     fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(BROJ_STORAGE_KEY), {method:'GET', redirect:'follow'})
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -3528,17 +3537,9 @@
           if(isChecked(v) && k.indexOf('broj-p') !== 0) done++;
         }
         var brojTotal = BROJ_DEPT_TOTAL + staffExtra;
-        var p1Open = BROJ_P1_IDS.filter(function(id){ return !isChecked(board[id]); }).length;
         pEl.textContent = done + '/' + brojTotal + ' 체크';
-        if(p1El) p1El.textContent = p1Open ? ('P1 회신대기 ' + p1Open + '/4') : '';
-        if(bodyEl) bodyEl.innerHTML =
-          '<div class="tg-line"><span>담당별 체크</span><span>' + done + '/' + brojTotal + '</span></div>' +
-          '<div class="tg-line"><span>P1 회신대기</span><span>' + p1Open + '/4</span></div>' + link;
       })
-      .catch(function(){
-        pEl.textContent = '불러오지 못함'; if(p1El) p1El.textContent = '';
-        if(bodyEl) bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>' + link;
-      });
+      .catch(function(){ pEl.textContent = '불러오지 못함'; });
   }
   // ══════════ 👑🤵👤 회장님/대표님/김남욱GM 카드 3종 공용 렌더 (GM 지시 2026-08-05 "구성 좀 통일시켜줘" +
   // 같은 날 후속 지시 "간단한 것만·카테고리&일정 26.8.1~26.8.30 형식") ══════════
@@ -3564,17 +3565,18 @@
       bodyEl.innerHTML = '<div class="rep-empty">' + emptyMsg + '</div>' + link;
       return;
     }
-    var hasActions = items.some(function(it){ return !!it.id; });
+    // 토글은 보기 전용(업무명·카테고리·일정 셋뿐) — 건별 보고 필요/완료 버튼은 2026-08-05 GM 지시로
+    // 자세히보기 페이지(대표님_지시사항.html·김남욱GM_업무.html, 통합 보고+체크)로 옮겼다(중복 UI 없음).
     var rowsHtml = items.map(function(it){
-      var idSafe = it.id ? String(it.id).replace(/'/g, '') : '';
-      var actionsCell = hasActions ?
-        ('<td>' + (idSafe ?
-          '<button type="button" class="ebtn" style="background:var(--surface);color:var(--accent-soft);border:1px solid var(--accent);margin-right:4px;" onclick="gm1ReportNeeded(this,\'' + idSafe + '\')">보고 필요</button>' +
-          '<button type="button" class="ebtn" style="background:var(--accent);color:#fff;border:none;" onclick="gm1ReportDone(this,\'' + idSafe + '\')">보고 완료</button>' : '—') + '</td>') : '';
-      return '<tr><td>' + esc(it.title) + '</td><td>' + esc(it.category || '—') + '</td><td>' + esc(it.schedule || '일정 미정') + '</td>' + actionsCell + '</tr>';
+      return '<tr><td>' + esc(it.title) + '</td><td>' + esc(it.category || '—') + '</td><td>' + esc(it.schedule || '일정 미정') + '</td></tr>';
     }).join('');
-    var head = '<th>업무명</th><th>카테고리</th><th>일정</th>' + (hasActions ? '<th>처리</th>' : '');
-    bodyEl.innerHTML = '<div class="rpt-wrap"><table class="rpt"><thead><tr>' + head + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + link;
+    var head = '<th>업무명</th><th>카테고리</th><th>일정</th>';
+    bodyEl.innerHTML = '<div class="rpt-wrap"><table class="rpt exec"><thead><tr>' + head + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + link;
+  }
+  // 시트 카테고리 "[n] 이름" → 번호를 뗀 이름만(GM 지시 2026-08-05 "인사·시설 및 환경 등으로 정리").
+  // 회장님 칸(CHAIRMAN_ITEMS.cat)도 같은 9종 체계 이름을 그대로 쓴다 — 이 함수는 시트값 표기만 정리.
+  function catName(raw){
+    return String(raw || '').trim().replace(/^\[\d+\]\s*/, '');
   }
   // 'YYYY-MM-DD' → '26.8.1~26.8.30' (GM 지시 2026-08-05 통일 형식·연도 2자리·월일 0 없음·물결).
   // 한쪽만 있으면 그 값만, 둘 다 없으면 '일정 미정'(빈칸으로 얼버무리지 않는다).
@@ -3594,19 +3596,23 @@
   // 항목만 정적으로 나열한다(화면에서 안 쓰면 그만 — 약속 L21). id 는 시트 행이 아닌 이 배열 안 로컬
   // 식별자라 renderExecCard 의 처리버튼(id 있는 항목만 붙음) 조건에서 의도적으로 뺀다(카드 3종 공용
   // 렌더로 실어도 처리 버튼은 실제 시트 행에만 — 없는 기능을 있는 척 안 함).
+  // cat = 업무 시트와 같은 9종 카테고리([1]매출 및 영업 [2]인사 [3]파트너팀 [4]운영 정책 [5]시설 및 환경
+  // [6]회원·CS [7]IT·시스템·자동화 [8]교육·조직문화 [9]회의)로 내용을 보고 분류(GM 지시 2026-08-05·회장님
+  // 원본 데이터는 이 항목 자체에 카테고리 칸이 없어 화면 표시용으로만 판단 — 원본 GAS 보드는 안 건드림).
+  // 판단이 서지 않는 항목은 '분류 미정'으로 둔다(지어내지 않음) — 현재 7건 모두 내용상 분류 가능.
   var CHAIRMAN_ITEMS = [
-    {id:'d1', title:'파우더룸 소독기 증설', when:'8월 1주 완료'},
-    {id:'d2', title:'사우나 입구 정비', when:'8월 2~3주'},
-    {id:'d3', title:'파우더룸 헤어드라이기 교체 검토', when:'8월 1일 보고 완료 · 결재 대기'},
-    {id:'d4', title:'회원 감소 원인 분석', when:'8월 착수 · 9월 보고'},
-    {id:'d5', title:'회장님·파트너팀 오찬', when:'내용 정리 예정'},
-    {id:'d6', title:'회장님 독서토론회 개최', when:'내용 정리 예정'},
-    {id:'d7', title:'파우더룸·탈의실 스팀다리미 설치 · 옷걸이 공간 배치', when:'검토 착수 · 8월 중 안 보고'}
+    {id:'d1', title:'파우더룸 소독기 증설', when:'8월 1주 완료', cat:'시설 및 환경'},
+    {id:'d2', title:'사우나 입구 정비', when:'8월 2~3주', cat:'시설 및 환경'},
+    {id:'d3', title:'파우더룸 헤어드라이기 교체 검토', when:'8월 1일 보고 완료 · 결재 대기', cat:'시설 및 환경'},
+    {id:'d4', title:'회원 감소 원인 분석', when:'8월 착수 · 9월 보고', cat:'회원·CS'},
+    {id:'d5', title:'회장님·파트너팀 오찬', when:'내용 정리 예정', cat:'교육·조직문화'},
+    {id:'d6', title:'회장님 독서토론회 개최', when:'내용 정리 예정', cat:'교육·조직문화'},
+    {id:'d7', title:'파우더룸·탈의실 스팀다리미 설치 · 옷걸이 공간 배치', when:'검토 착수 · 8월 중 안 보고', cat:'시설 및 환경'}
   ];
   function loadChairmanFold(){
-    // 카드 3종 통일(renderExecCard) — 카테고리 칸엔 이 토글 이름을 그대로(진짜 소속), 일정 칸엔 기존 when
-    // 텍스트를 그대로 싣는다(실제 시작·종료일이 없는 정적 항목이라 26.8.1~26.8.30 형식을 억지로 만들지 않음).
-    var items = CHAIRMAN_ITEMS.map(function(it){ return {title: it.title, category: '회장님 지시사항', schedule: it.when}; });
+    // 카드 3종 통일(renderExecCard) — 카테고리 칸엔 위 9종 체계 분류를, 일정 칸엔 기존 when 텍스트를
+    // 그대로 싣는다(실제 시작·종료일이 없는 정적 항목이라 26.8.1~26.8.30 형식을 억지로 만들지 않음).
+    var items = CHAIRMAN_ITEMS.map(function(it){ return {title: it.title, category: it.cat, schedule: it.when}; });
     renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/회장님_지시사항.html', '자세히 보기 →');
   }
   // 👤 김남욱GM 업무 진행건 / 🤵 대표님 업무 보고건 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과
@@ -3618,8 +3624,11 @@
   // 공통 처리). ★2026-08-05 GM 결정으로 열쇠 입력 UI(gm1SetTodoKey)는 폐기 — gm1TodoKey()가 항상 값을
   // 반환해 "열쇠 없음" 분기가 구조적으로 없다(같은 이유로 이 분기·잠금 문구는 삭제, 되살리지 않는다).
   var CEO_REPORT_MARK = '대표님 보고건';
-  var GM_SSOT_HREF = 'coo/todo/업무 현황 SSOT.html'; // 업무&결재 SSOT 화면(실재 확인 완료) — 대표님 전용 페이지는 없어 이 화면을 같이 쓴다.
-  var _todoRowMap = {}; // id → 원본 행(보고필요/보고완료 버튼이 참조 — 새 GAS 호출 없이 이미 받은 rows 재사용).
+  // 자세히보기 대상(2026-08-05 GM 지시로 전용 페이지 2종 신설 — 舊 업무 현황 SSOT.html 공유 링크 폐기,
+  // 그 파일은 시로/CHRO 소유라 안 건드림). 두 페이지 모두 회장님_지시사항.html과 동일 CSS·구조이고 이
+  // 페이지와 같은 담당자=김남욱+상태(진행중·보류)+대표님 보고건 표식 판정을 그대로 재사용한다.
+  var CEO_DETAIL_HREF = 'coo/chairman/대표님_지시사항.html';
+  var GM_DETAIL_HREF = 'coo/chairman/김남욱GM_업무.html';
   function renderOwnerTodoFold(rows, badgeId, bodyId, wantCeoRows, emptyMsg, detailHref, detailLabel, linkNote){
     if(!rows){ renderExecCard(badgeId, bodyId, null, '', detailHref, detailLabel, linkNote); return; }
     var filtered = rows.filter(function(r){
@@ -3634,70 +3643,26 @@
       return da < db ? -1 : da > db ? 1 : 0;
     });
     var items = filtered.map(function(r){
-      var id = String(r['id'] || r.id || '').trim();
-      if(id) _todoRowMap[id] = r;
       return {
         title: String(r['업무명'] || r.title || r.name || '').trim(),
-        category: String(r['카테고리'] || r.category || '').trim(),
-        schedule: fmtSchedule(r['시작일'] || r.startDate, r['종료일'] || r.endDate),
-        id: id
+        category: catName(r['카테고리'] || r.category),
+        schedule: fmtSchedule(r['시작일'] || r.startDate, r['종료일'] || r.endDate)
       };
     });
     renderExecCard(badgeId, bodyId, items, emptyMsg, detailHref, detailLabel, linkNote);
   }
   function renderGmFold(rows){
     renderOwnerTodoFold(rows, 'ceo-fold-badge', 'ceo-fold-body', true,
-      '아직 대표님 보고건으로 등록된 업무가 없습니다.', GM_SSOT_HREF, '자세히 보기 →',
-      '업무 SSOT 화면으로 연결됩니다(대표님 전용 화면은 없어 김남욱GM 업무와 같은 시트를 봅니다).');
+      '아직 대표님 보고건으로 등록된 업무가 없습니다.', CEO_DETAIL_HREF, '자세히 보기 →');
     renderOwnerTodoFold(rows, 'gm-fold-badge', 'gm-fold-body', false,
       '아직 GM 님 담당으로 지정된 업무가 없습니다.<br>업무 시트에서 담당자를 「김남욱GM」으로 적으시면 이 칸에 바로 표시됩니다.',
-      GM_SSOT_HREF, '자세히 보기 →');
+      GM_DETAIL_HREF, '자세히 보기 →');
   }
-  // ── 🔔 보고 필요 — 보고 문안(업무명·카테고리·일정·내용, 대표님 보고건 꼬리표 제거)을 정중한 평문으로
-  //    만들어 클립보드에 복사한다(GM 이 카카오톡에 그대로 붙여넣게). ⚠️ 텔레그램 자동발송은 이번에 빼뒀다
-  //    — 이 GAS(업무&결재 현황)의 텔레그램 발신 코드(_notifyTelegram)는 2026-05-28 GM 결재로 이미
-  //    no-op 폐기됐고, 되살리거나 새 발신 액션을 추가하려면 이 GAS를 고쳐 재배포해야 하는데 이 GAS가
-  //    받치는 "업무 현황 SSOT·결재 현황 SSOT"는 ssot/ownership_map.json 상 시로(CHRO) 소유·나우열M
-  //    관할이라 AI 접촉 금지 대상이다 — 웰리가 GM 결재를 먼저 받아야 진행 가능(임의 진행 안 함).
-  window.gm1ReportNeeded = function(btn, id){
-    var r = _todoRowMap[id];
-    if(!r){ alert('업무 정보를 찾을 수 없습니다.'); return; }
-    var title = String(r['업무명'] || '').trim();
-    var cat = String(r['카테고리'] || '').trim();
-    var sched = fmtSchedule(r['시작일'], r['종료일']);
-    var content = String(r['내용'] || '').replace(/\n?대표님 보고건\([^)]*\)\s*$/, '').trim();
-    var text = title + ' 관련하여 보고드립니다.\n\n· 카테고리: ' + (cat || '—') + '\n· 일정: ' + sched +
-      (content ? ('\n· 내용: ' + content) : '') + '\n\n확인 부탁드립니다.';
-    var old = btn.textContent;
-    function flash(ok){ btn.textContent = ok ? '복사됨 ✓' : '복사 실패'; setTimeout(function(){ btn.textContent = old; }, 2000); }
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(function(){ flash(true); }).catch(function(){ flash(false); prompt('아래 문구를 복사해 카카오톡에 붙여넣어 주세요:', text); });
-    } else {
-      flash(false);
-      prompt('아래 문구를 복사해 카카오톡에 붙여넣어 주세요:', text);
-    }
-  };
-  // ── ✅ 보고 완료 — 기존 todo_update 액션 재사용(새 액션 없음), 그 건의 상태만 '진행중'으로 바꾼다.
-  window.gm1ReportDone = function(btn, id){
-    var old = btn.textContent;
-    btn.disabled = true; btn.textContent = '저장 중…';
-    var qs = 'action=todo_update&id=' + encodeURIComponent(id) + '&' + encodeURIComponent('상태') + '=' + encodeURIComponent('진행중');
-    fetch(GAS_URL + '?' + qs, {method:'GET', redirect:'follow'})
-      .then(function(r){ return r.json(); })
-      .then(function(res){
-        if(res && res.ok){
-          readWorkApproval().then(function(rows){
-            _workApprRows = rows; _workApprReady = true;
-            if(_data) renderSummaryStrip();
-            renderGmFold(rows);
-          });
-        } else {
-          btn.disabled = false; btn.textContent = old;
-          alert('저장하지 못했습니다' + (res && res.error ? (': ' + res.error) : '.'));
-        }
-      })
-      .catch(function(){ btn.disabled = false; btn.textContent = old; alert('저장하지 못했습니다.'); });
-  };
+  // ── 🔔 건별 「보고 필요」/「보고 완료」 버튼은 2026-08-05 2차 GM 지시로 이 토글에서 완전히 뺐다(토글은
+  //    보기 전용) — "1건씩 보고가 아니라 자세히보기 들어가서" 통합 보고+체크로 옮겼다. 그 로직은
+  //    coo/chairman/_owner_directive.js(대표님_지시사항.html·김남욱GM_업무.html 공용)에만 있다(복제 없음,
+  //    약속 L01). 이 파일에는 더 이상 gm1ReportNeeded/gm1ReportDone 이 없다(호출부도 함께 제거 — 죽은
+  //    코드 방치 금지). ──
   /* ── (구) 전체 체크보드 렌더 로직은 여기 있었다 — coo/brojay/브로제이_업무분장.html 로 그대로 이관(사본 아님, 본문 삭제). ── */
 
   boot();
