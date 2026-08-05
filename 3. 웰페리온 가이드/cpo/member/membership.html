@@ -2836,7 +2836,7 @@ select, select option{ color:var(--text); background-color:var(--paper); }
         <div style="font-size:11px;font-weight:800;color:var(--text);margin:0 0 7px">⚠️ LOSS 신호 (실측 라이브 — 유효회원 시트)</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px 14px">
           <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 이번 달 LOSS <b id="chSigMoLossCount">—</b>명 (<b id="chSigMoLossRate">—</b>%)</div>
-          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)"><span class="signal-badge" style="background:var(--dim);color:#fff">누적</span> 명단 잔류 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim)"><span class="signal-badge" style="background:var(--dim);color:#000">누적</span> 명단 잔류 <b id="chSigLossRate">—</b>% (<span id="chSigLossCount">—</span>명)</div>
           <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge high">HIGH</span> 갱신 D-7 이내 임박 <b id="chSigD7">—</b>명</div>
           <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span class="signal-badge med">MED</span> 갱신 D-8~30 임박 <b id="chSigD830">—</b>명</div>
         </div>
@@ -7243,7 +7243,7 @@ function _oaRenderTrainerChips(pop){
   var names = Object.keys(counts).sort(function(a,b){ return (counts[b]-counts[a]) || a.localeCompare(b); });
   var chip = function(label, val, cnt){
     var on = (_oaTrainer === val);
-    return '<span class="oa-chip" data-oatrainer="' + esc(val) + '" role="button" tabindex="0" style="cursor:pointer;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;background:' + (on?'var(--teal)':'var(--bg)') + ';color:' + (on?'#fff':'var(--dim)') + ';border:1px solid ' + (on?'var(--teal)':'var(--border)') + '">' + esc(label) + ' <b style="font-weight:800">' + cnt + '</b></span>';
+    return '<span class="oa-chip" data-oatrainer="' + esc(val) + '" role="button" tabindex="0" style="cursor:pointer;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;background:' + (on?'var(--teal)':'var(--bg)') + ';color:' + (on?'#1a1918':'var(--dim)') + ';border:1px solid ' + (on?'var(--teal)':'var(--border)') + '">' + esc(label) + ' <b style="font-weight:800">' + cnt + '</b></span>';
   };
   var html = chip('전체', '', pop.length);
   names.forEach(function(n){ html += chip(n, n, counts[n]); });
