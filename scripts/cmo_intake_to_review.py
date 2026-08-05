@@ -824,6 +824,21 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         print(f"[WARN] GM의 일요일 검수 미리보기 생성 실패(카드는 글자로 나갑니다): {item_id}: {exc}",
               file=sys.stderr)
 
+    # ★미리보기는 가이드 트리 안에 둔다(cmo/review/…).
+    #   깃허브 페이지는 "3. 웰페리온 가이드" 를 루트로 서비스하므로, 저장소 루트 기준
+    #   instagram/… 경로는 M1 화면에서 아예 닿지 않는다 — 2026-08-05 GM 지적
+    #   'm1에 미리보기도 안나오고' 의 원인. 기존 항목 규약(cmo/review/*.png)을 따른다.
+    preview_rel = ""
+    try:
+        mont = out_dir / f"_검수_미리보기_{len(slides_rel)}장.png"
+        if mont.exists():
+            dest = ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / f"{item_id}_preview.png"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(mont, dest)
+            preview_rel = f"cmo/review/{dest.name}"
+    except Exception as exc:
+        print(f"[WARN] 미리보기 복사 실패(카드는 폴더 몽타주로 폴백): {exc}", file=sys.stderr)
+
     caption_full = caption_body
     if hashtags:
         caption_full = f"{caption_full}\n\n{hashtags}" if caption_full else hashtags
@@ -841,7 +856,7 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         "collaborators": [],
         "mentions": [],
         "status": "검수대기",
-        "preview": slides_rel[0],
+        "preview": preview_rel or slides_rel[0],
         "id": item_id,
         "publish_at": parsed["publish_at"],
         "note": f"[GM의 일요일 접수 {row.get('접수일시', '')}] cmo_intake_to_review.py 자동 제작(GM의일요일 분기) · {copy_note}",
