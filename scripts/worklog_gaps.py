@@ -873,14 +873,15 @@ def rule_reception_stale_unresolved() -> list[dict]:
     "주인 대기 중"인 정상 상태가 진짜 이슈(컴플레인·청결·시설물고장 등)를 묻어버린다.
     ★PII 미노출(공개 화면 규격): title·detail에 접수자 이름·연락처·본문(content)을 절대 넣지
     않는다 — regId·category·dept·경과일만 사용."""
-    from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get  # noqa: PLC0415
+    from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days  # noqa: PLC0415
 
     resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, label="종합접수처")
     if resp is None:
         return []
     data = resp.json()
     rows = data.get("data", []) if isinstance(data, dict) else []
-    today = datetime.now(tz=KST).date()
+    now_kst = datetime.now(tz=KST)
+    today = now_kst.date()
     gaps: list[dict] = []
     for r in rows:
         category = str(r.get("category", "")).strip()
@@ -893,7 +894,7 @@ def rule_reception_stale_unresolved() -> list[dict]:
         target_date = _parse_iso_date(created)
         if target_date is None:
             continue
-        days = (today - target_date).days
+        days = reception_elapsed_days(r, now_kst)  # 정본=ops_shared(약속 L01) — 여기서 재계산 안 함
         if days < _STALE_DAYS:
             continue
         urgency = str(r.get("urgency") or r.get("severity") or "")

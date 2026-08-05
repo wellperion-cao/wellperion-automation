@@ -67,6 +67,7 @@ try:
         SSOT_API_URL,
         TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
         gas_get as _gas_get,
+        reception_elapsed_days as _reception_elapsed_days,
         utc_iso_to_kst_date as _utc_iso_to_kst_date,
     )
 except ImportError:
@@ -77,6 +78,7 @@ except ImportError:
         SSOT_API_URL,
         TODO_DONE_STATUSES as _TODO_DONE_STATUSES,
         gas_get as _gas_get,
+        reception_elapsed_days as _reception_elapsed_days,
         utc_iso_to_kst_date as _utc_iso_to_kst_date,
     )
 
@@ -215,11 +217,7 @@ def build_reception_block(target_date: str) -> str:
     today_dt = datetime.now()
 
     def _elapsed_days(r: dict) -> int:
-        raw = str(r.get("occurredAt", "") or r.get("createdAt", ""))[:10]
-        try:
-            return (today_dt - datetime.strptime(raw, "%Y-%m-%d")).days
-        except Exception:
-            return 0
+        return _reception_elapsed_days(r, today_dt)
 
     unresolved = [r for r in rows if str(r.get("status", "")) not in _RESOLVED_STATUSES]
     if not unresolved:

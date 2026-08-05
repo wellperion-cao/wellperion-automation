@@ -64,6 +64,24 @@ def gas_get(
     return None
 
 
+def reception_elapsed_days(r: dict, now: datetime | None = None) -> int:
+    """종합접수처(RECEPTION_EXEC_URL reg_list) 한 건의 접수 경과일수 — 정본.
+
+    ★기준=createdAt(GAS 라벨 '접수일시') 날짜만 비교한 정수 일수. occurredAt('발생시점')은
+    쓰지 않는다 — '접수 건이 며칠째'는 언제 접수됐는지 기준이지 언제 사건이 일어났는지가
+    아니다(GM 2026-08-05: 같은 건이 ops_daily_digest=35일째 vs report_stream_2b_reception=
+    28.8일로 갈라져 지적됨 — occurredAt 혼용 + 소수점 표기가 원인).
+    소비자(ops_daily_digest.py·report_stream_2b_reception.py·worklog_gaps.py)는 각자
+    다시 세지 말고 이 함수를 import해 쓴다(약속 L01)."""
+    now = now or datetime.now()
+    try:
+        created = datetime.strptime(str(r.get("createdAt", ""))[:10], "%Y-%m-%d").date()
+    except Exception:
+        return 0
+    now_date = now.date() if hasattr(now, "date") else now
+    return (now_date - created).days
+
+
 def utc_iso_to_kst_date(iso_str: str) -> str:
     """문의 API '시각' 필드 → KST YYYY-MM-DD.
     ★2026-07-27 시토(배10357): GAS inquiry_list가 그동안 Date를 그대로 JSON.stringify해

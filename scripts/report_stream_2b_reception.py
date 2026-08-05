@@ -38,7 +38,7 @@ REPO_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get  # noqa: E402
+from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days  # noqa: E402
 from publish_digest import _load_env_val  # noqa: E402
 from tg_outbound_log import send as tg_send  # noqa: E402
 
@@ -94,9 +94,11 @@ def _today_section(rows: list[dict], today: str) -> str:
     return f"📮 오늘 신규 접수 {len(today_rows)}건 (미처리 {undone_today}건)  {cat_str}"
 
 
-def _fmt_age(elapsed_h: float) -> str:
-    days = elapsed_h / 24.0
-    return f"{days:.1f}일" if days >= 1 else f"{elapsed_h:.1f}시간"
+def _fmt_age(days: int, elapsed_h: float) -> str:
+    # ★일수는 reception_elapsed_days(정본=ops_shared) 그대로 씀 — 여기서 elapsed_h/24로
+    # 다시 계산하면 소수점(28.8일)이 나와 ops_daily_digest의 정수 "N일째"와 갈라진다
+    # (GM 2026-08-05 실측 지적, 약속 L01). 만 하루 미만만 시간 단위로 보여준다.
+    return f"{days}일" if days >= 1 else f"{elapsed_h:.1f}시간"
 
 
 def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
@@ -125,6 +127,7 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
                           or ([str(r.get("assignee") or "").strip()] if str(r.get("assignee") or "").strip() else []),
                 "content": " ".join(str(r.get("content") or "").split())[:28],  # 개행 제거 — 1건 1줄 유지
                 "elapsed_h": elapsed_h,
+                "days": reception_elapsed_days(r, now),  # 표시용 "N일째" 정본(SLA 판정은 elapsed_h 유지)
                 "sla": sla,
             })
 
@@ -136,7 +139,7 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
     def _fmt_item(it: dict) -> str:
         ratio = it["elapsed_h"] / it["sla"] if it["sla"] else 0.0
         flag = "🔴" if ratio >= 3 else "⚠️"
-        return f"  {flag} [{it['cat']}] {it['content']} — {_fmt_age(it['elapsed_h'])} 경과 ({it['regId']})"
+        return f"  {flag} [{it['cat']}] {it['content']} — {_fmt_age(it['days'], it['elapsed_h'])} 경과 ({it['regId']})"
 
     # 한 건에 담당이 둘이면 양쪽 목록에 모두 띄운다 — 그 전엔 '이경연/ 임정은' 이 제3의
     # 사람처럼 잡혀 두 사람 어느 쪽 목록에도 안 떴다(2026-07-31 실측).
