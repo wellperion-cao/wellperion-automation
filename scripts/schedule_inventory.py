@@ -19,6 +19,19 @@ CLI:
   python scripts/schedule_inventory.py            파일 갱신
   python scripts/schedule_inventory.py --check    파일을 쓰지 않고 현재 실태와 저장 파일이
                                                     다른지만 비교(다르면 차이 출력 + exit 1)
+
+★2026-08-05(시토, 흩어진 파이프라인 통합 조사) — status/schedule.json 을 이 파일의
+  windows_tasks 인벤토리로부터 자동 생성하는 export 모드는 **만들지 않기로 결론**냈다
+  (배39 잔여분 조사). 이유: schedule.json 소비자 telegram_bot/pre_task_notifier.py 가
+  필요로 하는 clevel 필드를 Windows 작업 이름만으로 신뢰성 있게 못 뽑는다 — 실측
+  32건 중 이름에 역할 토큰(CEO/CMO/COO/CPO)이 든 건 7건뿐이고, 나머지는 토큰이
+  없거나(AI-Education-Weekly 등) 이름이 오히려 오도한다("Ops-Morning-Digest"는
+  이름만 보면 COO 같지만 실제 소유는 CTO — module_registry.json cto-ops-morning-digest
+  로 확인). 잘못된 clevel 로 자동 생성하면 담당자 오표기 알림이 나가는데, 이는
+  2026-07-30 배39 가 막았던 "유령 알림"보다 나은 실패가 아니다. 그래서 원래 계획한
+  "Windows=원천, schedule.json=생성물" 전환은 보류하고, 더 작은 개입만 유지한다:
+  check_declared_vs_actual() 의 curated mapping(요일·시각만 대조, clevel 은 안 봄)을
+  그대로 둔다. schedule.json 자체는 여전히 사람이 큐레이션하는 파일이다.
 """
 from __future__ import annotations
 

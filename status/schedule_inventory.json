@@ -2,6 +2,24 @@
   "generated_at_note": "실행마다 바뀌는 타임스탬프를 의도적으로 넣지 않음(멱등) — 내용이 안 바뀌면 파일도 안 바뀐다. 최신 실행 시각이 필요하면 status/heartbeats 등 별도 SSOT 참고.",
   "windows_tasks": [
     {
+      "name": "Auto-Shutdown-2330",
+      "state": "Ready",
+      "enabled": true,
+      "triggers": [
+        {
+          "type": "CalendarTrigger",
+          "start_boundary": "2026-04-28T00:30:00",
+          "days_interval": "1"
+        }
+      ],
+      "actions": [
+        {
+          "execute": "shutdown.exe",
+          "arguments": "/s /f /t 0"
+        }
+      ]
+    },
+    {
       "name": "Wellperion-AI-Education-Weekly",
       "state": "Ready",
       "enabled": true,
@@ -18,7 +36,11 @@
       "actions": [
         {
           "execute": "C:\\Python314\\python.exe",
-          "arguments": "C:\\Users\\jjky0\\welperion-automation\\scripts\\ai_education_auto_learner.py --no-send"
+          "arguments": "C:\\Users\\jjky0\\welperion-automation\\scripts\\education_archive_weekly.py"
+        },
+        {
+          "execute": "C:\\Python314\\python.exe",
+          "arguments": "C:\\Users\\jjky0\\welperion-automation\\scripts\\ai_education_auto_learner.py"
         }
       ]
     },
@@ -58,6 +80,24 @@
         {
           "execute": "C:\\Python314\\python.exe",
           "arguments": "\"C:\\Users\\jjky0\\welperion-automation\\wellperion-agents\\scripts\\ceo_morning_pipeline.py\""
+        }
+      ]
+    },
+    {
+      "name": "Wellperion-CMO-Content-Intake-15min",
+      "state": "Ready",
+      "enabled": true,
+      "triggers": [
+        {
+          "type": "TimeTrigger",
+          "start_boundary": "2026-07-24T00:00:00+09:00",
+          "repetition_interval": "PT2M"
+        }
+      ],
+      "actions": [
+        {
+          "execute": "wscript.exe",
+          "arguments": "C:\\Users\\jjky0\\welperion-automation\\launchers\\cmo_intake_to_review_hidden.vbs"
         }
       ]
     },
@@ -121,6 +161,27 @@
       ]
     },
     {
+      "name": "Wellperion-COO-FillBoard-Mon-1000",
+      "state": "Ready",
+      "enabled": true,
+      "triggers": [
+        {
+          "type": "CalendarTrigger",
+          "start_boundary": "2026-07-23T10:00:00+09:00",
+          "weeks_interval": "1",
+          "days_of_week": [
+            "Monday"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "execute": "wscript.exe",
+          "arguments": "\"C:\\Users\\jjky0\\welperion-automation\\launchers\\ops_fill_board_weekly_hidden.vbs\""
+        }
+      ]
+    },
+    {
       "name": "Wellperion-CPO-Inquiry-Snapshot-3min",
       "state": "Ready",
       "enabled": true,
@@ -152,27 +213,6 @@
         {
           "execute": "wscript",
           "arguments": "C:\\Users\\jjky0\\welperion-automation\\launchers\\member_expiry_alert_hidden.vbs"
-        }
-      ]
-    },
-    {
-      "name": "Wellperion-Education-Archive-Weekly",
-      "state": "Ready",
-      "enabled": true,
-      "triggers": [
-        {
-          "type": "CalendarTrigger",
-          "start_boundary": "2026-06-15T09:00:00+09:00",
-          "weeks_interval": "1",
-          "days_of_week": [
-            "Sunday"
-          ]
-        }
-      ],
-      "actions": [
-        {
-          "execute": "C:\\Python314\\python.exe",
-          "arguments": "C:\\Users\\jjky0\\welperion-automation\\scripts\\education_archive_weekly.py"
         }
       ]
     },
@@ -270,24 +310,6 @@
       ]
     },
     {
-      "name": "Wellperion-Kakao-CheckStatus-Share-2300",
-      "state": "Ready",
-      "enabled": true,
-      "triggers": [
-        {
-          "type": "CalendarTrigger",
-          "start_boundary": "2026-07-09T23:00:00+09:00",
-          "days_interval": "1"
-        }
-      ],
-      "actions": [
-        {
-          "execute": "wscript.exe",
-          "arguments": "\"C:\\Users\\jjky0\\welperion-automation\\launchers\\kakao_check_share_hidden.vbs\""
-        }
-      ]
-    },
-    {
       "name": "Wellperion-Kakao-Sales-Report-0930",
       "state": "Ready",
       "enabled": true,
@@ -338,47 +360,6 @@
         {
           "execute": "wscript.exe",
           "arguments": "C:\\Users\\jjky0\\welperion-automation\\ops\\module_report_daily_hidden.vbs"
-        }
-      ]
-    },
-    {
-      "name": "Wellperion-Module-Report-Monthly",
-      "state": "Ready",
-      "enabled": true,
-      "triggers": [
-        {
-          "type": "CalendarTrigger",
-          "start_boundary": "2026-07-15T09:10:00",
-          "days_of_month": [
-            "1"
-          ]
-        }
-      ],
-      "actions": [
-        {
-          "execute": "wscript.exe",
-          "arguments": "C:\\Users\\jjky0\\welperion-automation\\ops\\module_report_monthly_hidden.vbs"
-        }
-      ]
-    },
-    {
-      "name": "Wellperion-Module-Report-Weekly",
-      "state": "Ready",
-      "enabled": true,
-      "triggers": [
-        {
-          "type": "CalendarTrigger",
-          "start_boundary": "2026-07-09T09:00:00+09:00",
-          "weeks_interval": "1",
-          "days_of_week": [
-            "Monday"
-          ]
-        }
-      ],
-      "actions": [
-        {
-          "execute": "wscript.exe",
-          "arguments": "\"C:\\Users\\jjky0\\welperion-automation\\ops\\module_report_weekly_hidden.vbs\""
         }
       ]
     },
@@ -607,6 +588,23 @@
           "arguments": "\"C:\\Users\\jjky0\\welperion-automation\\launchers\\bot_hidden.vbs\""
         }
       ]
+    },
+    {
+      "name": "Welperion-Ep3-Review-Reminder-0701-1000",
+      "state": "Ready",
+      "enabled": true,
+      "triggers": [
+        {
+          "type": "TimeTrigger",
+          "start_boundary": "2026-07-01T10:00:00"
+        }
+      ],
+      "actions": [
+        {
+          "execute": "C:\\Python314\\pythonw.exe",
+          "arguments": "C:\\Users\\jjky0\\welperion-automation\\scripts\\send_review_card.py --id CMO-2026-07-01-SUMMER-CAMP-EP3 --force"
+        }
+      ]
     }
   ],
   "apscheduler_jobs": [
@@ -711,6 +709,39 @@
       "misfire_grace_time": 600,
       "coalesce": true,
       "run_on_start": true
+    },
+    {
+      "func": "_zero_zone_alert",
+      "id": "f\"zero_zone_alert_{_h}\"",
+      "trigger": {
+        "type": "CronTrigger",
+        "params": {
+          "hour": "_h",
+          "minute": 0
+        }
+      },
+      "call_args": [
+        "_sk"
+      ],
+      "misfire_grace_time": 1800,
+      "coalesce": true,
+      "run_on_start": false
+    },
+    {
+      "func": "_sweep_git_locks",
+      "id": "git_lock_janitor_10min",
+      "trigger": {
+        "type": "IntervalTrigger",
+        "params": {
+          "minutes": 10
+        }
+      },
+      "call_args": [
+        "주기"
+      ],
+      "misfire_grace_time": 300,
+      "coalesce": true,
+      "run_on_start": false
     },
     {
       "func": "verify_publish_sweep",
@@ -847,25 +878,6 @@
     },
     {
       "func": "run_report",
-      "id": "report_18",
-      "trigger": {
-        "type": "CronTrigger",
-        "params": {
-          "hour": 18,
-          "minute": 0,
-          "timezone": "Asia/Seoul"
-        }
-      },
-      "call_args": [
-        "18",
-        false
-      ],
-      "misfire_grace_time": 600,
-      "coalesce": true,
-      "run_on_start": false
-    },
-    {
-      "func": "run_report",
       "id": "report_21",
       "trigger": {
         "type": "CronTrigger",
@@ -903,38 +915,16 @@
       "run_on_start": false
     },
     {
-      "func": "run_nudge",
-      "id": "report_nudge_close",
+      "func": "_guard_sales_session",
+      "id": "sales_session_guard_0810",
       "trigger": {
         "type": "CronTrigger",
         "params": {
-          "hour": 22,
-          "minute": 0,
-          "timezone": "Asia/Seoul"
+          "hour": 8,
+          "minute": 10
         }
       },
-      "call_args": [
-        "close"
-      ],
-      "misfire_grace_time": 600,
-      "coalesce": true,
-      "run_on_start": false
-    },
-    {
-      "func": "run_nudge",
-      "id": "report_nudge_pm",
-      "trigger": {
-        "type": "CronTrigger",
-        "params": {
-          "hour": 17,
-          "minute": 0,
-          "timezone": "Asia/Seoul"
-        }
-      },
-      "call_args": [
-        "pm"
-      ],
-      "misfire_grace_time": 600,
+      "misfire_grace_time": 1800,
       "coalesce": true,
       "run_on_start": false
     },
@@ -955,7 +945,7 @@
     }
   ],
   "counts": {
-    "windows": 33,
+    "windows": 32,
     "apscheduler": 22
   }
 }
