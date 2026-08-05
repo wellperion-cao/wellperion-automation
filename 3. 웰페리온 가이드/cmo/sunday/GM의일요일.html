@@ -70,11 +70,6 @@
   .cut-a .ph{height:130px;background:#E2DCD0;overflow:hidden;}
   .cut-a .ph img{width:100%;height:100%;object-fit:cover;}
   .cut-a .tx{flex:1;display:flex;align-items:center;font-family:'Gowun Batang',serif;font-size:10px;line-height:1.5;}
-  .cut-b{background:#F4F1EA;border:1px solid #E2DCD0;padding:12px;display:flex;flex-direction:column;gap:8px;}
-  .cut-b .duo{display:flex;gap:6px;height:108px;}
-  .cut-b .duo div{flex:1;min-width:0;background:#E2DCD0;overflow:hidden;}
-  .cut-b .duo img{width:100%;height:100%;object-fit:cover;}
-  .cut-b .tx{font-family:'Gowun Batang',serif;font-size:10px;line-height:1.5;}
   .cut-think{background:#23201C;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;}
   .cut-think .bar{width:24px;height:2px;background:#F0B27A;}
   .cut-think .tx{font-family:'Gowun Batang',serif;font-size:12px;line-height:1.6;color:#FBF8F2;}
@@ -134,10 +129,10 @@
 
     <!-- ② 나머지 사진 -->
     <div class="card">
-      <div class="step"><div class="num">2</div><div class="step-t">나머지 사진 <span>(2~4장 권장)</span></div></div>
+      <div class="step"><div class="num">2</div><div class="step-t">나머지 사진 <span>(최대 8장)</span></div></div>
       <label class="drop">
         <div style="font-size:26px;">＋</div>
-        <div class="drop-hint">그날의 사진을 선택하세요<br>여러 장 한 번에 가능</div>
+        <div class="drop-hint">그날의 사진을 선택하세요 · 여러 장 한 번에 가능<br>사진 1장 = 슬라이드 1장. 올린 만큼 캐러셀이 길어집니다</div>
         <input type="file" accept="image/*" multiple id="f_photos" style="display:none;">
       </label>
       <div class="grid3 hide" id="thumbs"></div>
@@ -151,7 +146,7 @@
         <div class="drop-hint" style="text-align:left;" id="videoLabel">짧은 영상을 선택하세요 (15~30초)</div>
         <input type="file" accept="video/*" id="f_video" style="display:none;">
       </label>
-      <div class="note">15~30초 권장 · 50MB 초과 시 드라이브 링크를 아래에 붙여주세요.</div>
+      <div class="note">15~30초 권장. <strong style="color:#B4552E;">큰 영상은 올리면 자동으로 줄여 보냅니다</strong> — 화질은 최대한 살리고, 영상 길이만큼 잠깐 기다리시면 됩니다. 자동 축소가 안 되는 경우에만 아래 링크 칸을 쓰세요.</div>
       <input type="text" class="fld" id="f_videoLink" placeholder="대용량 영상 링크 (선택)">
     </div>
 
@@ -167,17 +162,15 @@
         </select>
         <button class="btn-dark" id="genBtn">초안 만들기</button>
       </div>
-      <div class="note">사진 장수와 분위기에 맞춰 제목·문장 3개·본문 캡션을 만들어 둡니다. 아래에서 바로 고치세요.</div>
+      <div class="note">분위기에 맞춰 제목·캡션과 문장 두어 개를 채워 둡니다. 사진마다 문장 칸이 하나씩 생기니, 남은 칸은 직접 쓰세요.</div>
 
       <div class="draft hide" id="draftBox">
         <div class="f"><div class="f-lab">표지 제목</div>
           <textarea id="d_title" rows="2" class="serif" style="font-size:20px;"></textarea></div>
-        <div class="f"><div class="f-lab">02 문장</div>
-          <textarea id="d_line1" rows="2" class="serif" style="font-size:16px;"></textarea></div>
-        <div class="f"><div class="f-lab">03 문장</div>
-          <textarea id="d_line2" rows="2" class="serif" style="font-size:16px;"></textarea></div>
-        <div class="f"><div class="f-lab">04 생각 (철학 한 장)</div>
-          <textarea id="d_line3" rows="3" class="serif" style="font-size:16px;"></textarea></div>
+        <!-- 문장 칸은 사진 수만큼 renderLineFields() 가 만든다 (사진 1장 = 문장 1개) -->
+        <div id="lineFields" style="display:flex;flex-direction:column;gap:14px;"></div>
+        <div class="f"><div class="f-lab">생각 (철학 한 장)</div>
+          <textarea id="d_think" rows="3" class="serif" style="font-size:16px;"></textarea></div>
         <div class="f"><div class="f-lab">본문 캡션</div>
           <textarea id="d_caption" rows="9" style="font-size:14px;line-height:1.9;"></textarea>
           <div style="font-size:12px;line-height:1.8;color:#6E675E;" id="d_tags"></div></div>
@@ -187,15 +180,8 @@
     <!-- ⑤ 미리보기 -->
     <div class="card hide" id="previewCard">
       <div class="step"><div class="num">5</div><div class="step-t">캐러셀 미리보기 <span id="cutCount">4컷</span></div></div>
-      <div class="cuts">
-        <div class="cut cut-cover"><img id="p_cover"><div class="shade"></div>
-          <div class="in"><div class="tag">GM의 일요일</div><div class="ttl" id="p_title"></div></div></div>
-        <div class="cut cut-a"><div class="ph"><img id="p_shot2"></div><div class="tx" id="p_line1"></div></div>
-        <div class="cut cut-b"><div class="duo"><div><img id="p_shot3"></div><div><img id="p_shot4"></div></div>
-          <div class="tx" id="p_line2"></div></div>
-        <div class="cut cut-think"><div class="bar"></div><div class="tx" id="p_line3"></div></div>
-        <div class="cut cut-vid"><div class="in"><div class="play">▶</div><div class="cap" id="p_video">영상 자리 (비어 있음)</div></div></div>
-      </div>
+      <!-- 컷은 사진 수만큼 renderPreview() 가 만든다 (표지 + 사진카드 N + 생각 + 영상) -->
+      <div class="cuts" id="cuts"></div>
     </div>
 
     <!-- ⑥ 검수 요청 -->
@@ -271,14 +257,20 @@
   };
   var HASHTAGS = '#GM의일요일 #가족 #일요일의기록 #행복은평범함에 #주말기록';
 
+  var MAX_PHOTOS = 8;       // 인스타 캐러셀 10장 = 표지1 + 사진카드8 + 생각1
+
   var cover = null;         // 표지 1장 {file, url} — 따로 올린다(GM 지시 2026-08-05)
-  var photos = [];          // 나머지 사진 {file, url}
+  var photos = [];          // 나머지 사진 {file, url} — 이 장수가 슬라이드 수를 정한다
   var videoFile = null;
   var hasDraft = false;
   var sent = false;
 
-  // 예약 발행은 쓰지 않는다(GM 결정 2026-08-05) — 승인 누르는 즉시 올라간다.
-  function cutCount(){ return (4 + ((videoFile || $('f_videoLink').value.trim()) ? 1 : 0)) + '컷'; }
+  function num2(n){ return ('0'+n).slice(-2); }
+
+  // 표지1 + 사진카드 photos.length + 생각1 (+ 영상)
+  function cutCount(){
+    return (2 + photos.length + ((videoFile || $('f_videoLink').value.trim()) ? 1 : 0)) + '컷';
+  }
 
   // ── 화면 갱신 ────────────────────────────────────────────────
   function renderThumbs(){
@@ -288,15 +280,37 @@
     box.innerHTML = '';
     photos.forEach(function(p, i){
       var d = document.createElement('div'); d.className = 'thumb';
-      d.innerHTML = '<img src="'+p.url+'"><div class="lab">'+(i+2)+'</div>';
+      d.innerHTML = '<img src="'+p.url+'"><div class="lab">'+num2(i+2)+'</div>';
       var b = document.createElement('button'); b.className='del'; b.textContent='×';
       b.onclick = function(){
         URL.revokeObjectURL(p.url); photos.splice(i,1);
-        renderThumbs(); renderPreview();
+        renderThumbs(); renderLineFields(); renderPreview();
       };
       d.appendChild(b); box.appendChild(d);
     });
   }
+
+  // 문장 칸 = 사진 1장당 1개. 이미 쓴 문장은 번호 기준으로 살려서 다시 그린다.
+  function renderLineFields(){
+    var box = $('lineFields');
+    var kept = {};
+    [].slice.call(box.querySelectorAll('textarea')).forEach(function(t){ kept[t.dataset.n] = t.value; });
+    box.innerHTML = '';
+    photos.forEach(function(p, i){
+      var n = num2(i + 2);
+      var f = document.createElement('div'); f.className = 'f';
+      f.innerHTML = '<div class="f-lab">'+n+' 문장</div>';
+      var ta = document.createElement('textarea');
+      ta.rows = 2; ta.className = 'serif'; ta.style.fontSize = '16px';
+      ta.dataset.n = n;
+      ta.placeholder = '이 사진에 대해 한 줄';
+      ta.value = kept[n] || '';
+      ta.addEventListener('input', renderPreview);
+      f.appendChild(ta); box.appendChild(f);
+    });
+  }
+
+  function lineFields(){ return [].slice.call($('lineFields').querySelectorAll('textarea')); }
 
   // 표지 1장 표시 — 따로 올린 것을 그대로 보여준다.
   function renderCover(){
@@ -312,39 +326,54 @@
     box.appendChild(b);
   }
 
-  // 표지가 맨 앞, 나머지는 올린 순서 그대로 뒤에 붙는다.
-  function orderedUrls(){
-    var rest = photos.map(function(p){ return p.url; });
-    return (cover ? [cover.url] : []).concat(rest);
+  // 컷을 사진 수만큼 그린다 — 표지 + 사진카드 N + 생각 (+ 영상 자리).
+  function cut(cls, html){
+    var d = document.createElement('div'); d.className = 'cut ' + cls; d.innerHTML = html;
+    return d;
   }
-
   function renderPreview(){
     $('previewCard').classList.toggle('hide', !hasDraft);
     if (!hasDraft) return;
-    var u = orderedUrls();
-    $('p_cover').src  = u[0] || '';
-    $('p_shot2').src  = u[1] || u[0] || '';
-    $('p_shot3').src  = u[2] || u[0] || '';
-    $('p_shot4').src  = u[3] || u[1] || u[0] || '';
-    $('p_title').textContent = $('d_title').value;
-    $('p_line1').textContent = $('d_line1').value;
-    $('p_line2').textContent = $('d_line2').value;
-    $('p_line3').textContent = $('d_line3').value;
-    $('p_video').textContent = videoFile ? videoFile.name
+    var box = $('cuts'); box.innerHTML = '';
+
+    var c = cut('cut-cover', '<img><div class="shade"></div><div class="in">'
+      + '<div class="tag">GM의 일요일</div><div class="ttl"></div></div>');
+    c.querySelector('img').src = cover ? cover.url : '';
+    c.querySelector('.ttl').textContent = $('d_title').value;
+    box.appendChild(c);
+
+    var vals = lineFields();
+    photos.forEach(function(p, i){
+      var a = cut('cut-a', '<div class="ph"><img></div><div class="tx"></div>');
+      a.querySelector('img').src = p.url;
+      a.querySelector('.tx').textContent = vals[i] ? vals[i].value : '';
+      box.appendChild(a);
+    });
+
+    var t = cut('cut-think', '<div class="bar"></div><div class="tx"></div>');
+    t.querySelector('.tx').textContent = $('d_think').value;
+    box.appendChild(t);
+
+    var v = cut('cut-vid', '<div class="in"><div class="play">▶</div><div class="cap"></div></div>');
+    v.querySelector('.cap').textContent = videoFile ? videoFile.name
       : ($('f_videoLink').value.trim() ? '링크 영상' : '영상 자리 (비어 있음)');
+    box.appendChild(v);
+
     $('cutCount').textContent = cutCount();
   }
 
   // ── 초안 생성 ────────────────────────────────────────────────
+  // 문장 은행 세트는 문장 2개 + 생각 1개뿐이다. 사진이 더 많으면 그 칸은 비워 둔다 —
+  // 없는 문장을 지어내거나 같은 문장을 반복해 채우지 않는다(약속 L05).
   $('genBtn').onclick = function(){
     var mood = $('f_mood').value;
     var sets = BANK[mood] || BANK['가족과 놀았던 날'];
     var set = sets[Math.floor(Math.random()*sets.length)];
     var title = TITLES[mood];
     $('d_title').value  = title;
-    $('d_line1').value  = set[0];
-    $('d_line2').value  = set[1];
-    $('d_line3').value  = set[2];
+    renderLineFields();
+    lineFields().forEach(function(ta, i){ if (i < 2) ta.value = set[i]; });
+    $('d_think').value = set[2];
     $('d_caption').value = title.replace('\n',' ')+'.\n\n'+set[0]+' '+set[1]+'\n\n이번 주 일요일, 당신은 무엇을 하셨나요?';
     $('d_tags').textContent = HASHTAGS;
     hasDraft = true;
@@ -352,7 +381,7 @@
     renderPreview();
   };
 
-  ['d_title','d_line1','d_line2','d_line3'].forEach(function(id){
+  ['d_title','d_think'].forEach(function(id){
     $(id).addEventListener('input', renderPreview);
   });
 
@@ -363,9 +392,13 @@
     renderCover(); renderPreview();
   });
   $('f_photos').addEventListener('change', function(){
-    [].slice.call(this.files).forEach(function(f){ photos.push({ file:f, url:URL.createObjectURL(f) }); });
+    var picked = [].slice.call(this.files);
+    var room = Math.max(0, MAX_PHOTOS - photos.length);
+    var dropped = Math.max(0, picked.length - room);
+    picked.slice(0, room).forEach(function(f){ photos.push({ file:f, url:URL.createObjectURL(f) }); });
     this.value = '';
-    renderThumbs(); renderPreview();
+    renderThumbs(); renderLineFields(); renderPreview();
+    if (dropped) fail('나머지 사진은 '+MAX_PHOTOS+'장까지입니다 — '+dropped+'장은 담지 않았습니다.');
   });
   $('f_video').addEventListener('change', function(){
     videoFile = this.files[0] || null;
@@ -418,6 +451,54 @@
     });
   }
 
+  // ── 영상 자동 축소 (GM 지시 2026-08-05) ───────────────────────
+  // 구글 스크립트가 한 번에 받을 수 있는 파일은 50MB 가 상한이다. 그래서 넘치는 영상은
+  // 브라우저가 가진 녹화기(MediaRecorder)로 다시 입혀 줄인다 — 설치할 프로그램도,
+  // 외부로 나가는 것도 없다. 해상도는 그대로 두고 비트레이트만 낮춰 화질을 최대한 살린다.
+  var VIDEO_LIMIT = 50 * 1024 * 1024;
+  var VIDEO_TARGET = 42 * 1024 * 1024;      // 상한에 딱 붙이지 않는다(컨테이너 오버헤드 여유)
+
+  function canShrinkVideo(){
+    return typeof MediaRecorder !== 'undefined'
+        && typeof HTMLVideoElement.prototype.captureStream === 'function'
+        && MediaRecorder.isTypeSupported('video/mp4;codecs=avc1');
+  }
+
+  function shrinkVideo(file, onProgress){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file);
+      var v = document.createElement('video');
+      v.src = url; v.muted = true; v.playsInline = true; v.preload = 'auto';
+      v.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('영상을 열지 못했습니다')); };
+      v.onloadedmetadata = function(){
+        var dur = v.duration;
+        if (!isFinite(dur) || dur <= 0){ URL.revokeObjectURL(url); reject(new Error('영상 길이를 읽지 못했습니다')); return; }
+        // 목표 용량에서 소리 몫을 빼고 남는 만큼을 화면에 준다.
+        var audioBps = 128000;
+        var bits = Math.floor((VIDEO_TARGET * 8) / dur) - audioBps;
+        bits = Math.max(1200000, Math.min(bits, 12000000));
+        var stream = v.captureStream();
+        var rec;
+        try {
+          rec = new MediaRecorder(stream, { mimeType: 'video/mp4;codecs=avc1',
+                                            videoBitsPerSecond: bits, audioBitsPerSecond: audioBps });
+        } catch (e){ URL.revokeObjectURL(url); reject(e); return; }
+        var chunks = [];
+        rec.ondataavailable = function(e){ if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = function(){
+          URL.revokeObjectURL(url);
+          var name = file.name.replace(/\.[^.]+$/, '') + '_축소.mp4';
+          resolve(new File(chunks, name, { type: 'video/mp4' }));
+        };
+        rec.onerror = function(e){ URL.revokeObjectURL(url); reject(e.error || new Error('축소 중 오류')); };
+        v.ontimeupdate = function(){ if (onProgress) onProgress(Math.min(1, v.currentTime / dur)); };
+        v.onended = function(){ try { rec.stop(); } catch (e) {} };
+        rec.start(1000);
+        v.play().catch(function(e){ URL.revokeObjectURL(url); reject(e); });
+      };
+    });
+  }
+
   function fail(msg){
     var e = $('errBox'); e.textContent = msg; e.classList.remove('hide');
   }
@@ -457,8 +538,8 @@
     if (!photos.length){ fail('나머지 사진을 1장 이상 올려 주세요.'); return; }
     if (!hasDraft){ fail('먼저 「초안 만들기」를 눌러 문장을 만들어 주세요.'); return; }
     if (scheduled && !$('f_date').value){ fail('발행할 날짜를 골라 주세요.'); return; }
-    if (videoFile && videoFile.size > 50*1024*1024){
-      fail('영상이 50MB를 넘습니다. 드라이브 링크 칸을 이용해 주세요.'); return;
+    if (videoFile && videoFile.size > VIDEO_LIMIT && !canShrinkVideo()){
+      fail('이 브라우저에서는 큰 영상을 자동으로 줄이지 못합니다. 드라이브 링크 칸을 이용해 주세요.'); return;
     }
 
     var btn = this; btn.disabled = true;
@@ -466,14 +547,25 @@
       var gas = await gasUrl();
 
       // 표지를 맨 앞에 놓고 보낸다 — 받는 쪽은 첫 장을 표지로 쓴다.
-      var order = [cover].concat(photos);
+      var order = [cover].concat(photos);   // photos 는 MAX_PHOTOS 로 이미 잘려 있다
       var pics = [];
-      for (var i=0;i<order.length && i<5;i++){
-        btn.textContent = '사진 준비 중… ('+(i+1)+'/'+Math.min(order.length,5)+')';
+      for (var i=0;i<order.length;i++){
+        btn.textContent = '사진 준비 중… ('+(i+1)+'/'+order.length+')';
         pics.push(await shrinkPhoto(order[i].file));
       }
+      var sendVideo = videoFile;
+      if (videoFile && videoFile.size > VIDEO_LIMIT){
+        btn.textContent = '영상 줄이는 중… 0%';
+        sendVideo = await shrinkVideo(videoFile, function(r){
+          btn.textContent = '영상 줄이는 중… ' + Math.round(r * 100) + '%';
+        });
+        if (sendVideo.size > VIDEO_LIMIT){       // 드물게 목표를 못 맞춘 경우 — 조용히 실패시키지 않는다
+          fail('영상을 충분히 줄이지 못했습니다(' + Math.round(sendVideo.size/1048576) + 'MB). 조금 더 짧게 자르거나 드라이브 링크 칸을 이용해 주세요.');
+          btn.disabled = false; btn.textContent = '텔레그램으로 검수 요청'; return;
+        }
+      }
       btn.textContent = '보내는 중… (30초~1분)';
-      var video = videoFile ? await toB64(videoFile) : null;
+      var video = sendVideo ? await toB64(sendVideo) : null;
 
       // 시트 계약(instructor_intake.js INTAKE_HEADER)에 그대로 얹는다 — 새 칸을 만들지 않는다.
       var body = {
@@ -481,10 +573,9 @@
         team: 'GM의 일요일',
         // 제목의 줄바꿈은 살려 보낸다 — 표지 슬라이드가 이 줄바꿈 그대로 두 줄로 앉힌다.
         intro: $('d_title').value,
-        benefit: [
-          '02 ' + $('d_line1').value,
-          '03 ' + $('d_line2').value,
-          '04 ' + $('d_line3').value,
+        // 문장 카드는 번호(02·03·…)로, 생각은 '생각 ·' 으로 구분한다 — 뒷단이 그대로 읽는다.
+        benefit: lineFields().map(function(ta, i){ return num2(i+2) + ' ' + ta.value.trim(); }).concat([
+          '생각 · ' + $('d_think').value.trim(),
           '',
           $('d_caption').value,
           '',
@@ -493,7 +584,7 @@
           '계정 @namuk.wellperion (개인) · ' + cutCount(),
           // 아래 한 줄은 뒷단(cmo_intake_to_review.py)이 그대로 읽는다 — 형식 바꾸지 말 것.
           '발행시점 · ' + (publishAt() || '즉시')
-        ].join('\n'),
+        ]).join('\n'),
         agree: true,
         photos: pics,
         video: video,
