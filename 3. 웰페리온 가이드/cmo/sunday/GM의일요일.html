@@ -290,11 +290,11 @@
     });
   }
 
-  // 문장 칸 = 사진 1장당 1개. 이미 쓴 문장은 번호 기준으로 살려서 다시 그린다.
+  // 문장 칸 = 사진 1장당 1개.
+  // ★문장은 '칸 번호'가 아니라 '그 사진'에 붙는다(p.line). 번호에 붙여 두면 가운데 사진을
+  //   지웠을 때 뒤 문장들이 한 칸씩 밀려 엉뚱한 사진에 붙는다 — 실측으로 확인한 어긋남.
   function renderLineFields(){
     var box = $('lineFields');
-    var kept = {};
-    [].slice.call(box.querySelectorAll('textarea')).forEach(function(t){ kept[t.dataset.n] = t.value; });
     box.innerHTML = '';
     photos.forEach(function(p, i){
       var n = num2(i + 2);
@@ -304,8 +304,8 @@
       ta.rows = 2; ta.className = 'serif'; ta.style.fontSize = '16px';
       ta.dataset.n = n;
       ta.placeholder = '이 사진에 대해 한 줄';
-      ta.value = kept[n] || '';
-      ta.addEventListener('input', renderPreview);
+      ta.value = p.line || '';
+      ta.addEventListener('input', function(){ p.line = ta.value; renderPreview(); });
       f.appendChild(ta); box.appendChild(f);
     });
   }
@@ -372,7 +372,11 @@
     var title = TITLES[mood];
     $('d_title').value  = title;
     renderLineFields();
-    lineFields().forEach(function(ta, i){ if (i < 2) ta.value = set[i]; });
+    // 은행 세트는 문장 2개뿐이다 — 채울 수 있는 만큼만 채우고 나머지는 빈칸으로 둔다
+    // (없는 문장을 지어내거나 같은 문장을 반복해 채우지 않는다 · 약속 L05).
+    lineFields().forEach(function(ta, i){
+      if (i < 2){ ta.value = set[i]; if (photos[i]) photos[i].line = set[i]; }
+    });
     $('d_think').value = set[2];
     $('d_caption').value = title.replace('\n',' ')+'.\n\n'+set[0]+' '+set[1]+'\n\n이번 주 일요일, 당신은 무엇을 하셨나요?';
     $('d_tags').textContent = HASHTAGS;

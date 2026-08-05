@@ -88,7 +88,8 @@ _GAS_URL_RE = re.compile(r'GAS_PROD\s*=\s*"([^"]+)"')
 
 # "GM의 일요일" 접수(분류 값 정확히 이 문자열) — 다른 분류는 기존 접수검토 경로 그대로.
 SUNDAY_TEAM = "GM의 일요일"
-_SUNDAY_LINE_RE = re.compile(r"^0([234])\s+(.*)$")
+_SUNDAY_LINE_RE = re.compile(r"^(\d{2})(?:\s+(.*))?$")   # 02·03·…·10 (빈 문장도 자리를 지킨다)
+_SUNDAY_THINK_RE = re.compile(r"^생각\s*·\s*(.*)$")
 _PUBLISH_AT_RE = re.compile(r"발행시점\s*·\s*(\S+)")
 _DRIVE_ID_RE = re.compile(r"/d/([a-zA-Z0-9_-]{10,})")
 _DRIVE_ID_QS_RE = re.compile(r"[?&]id=([a-zA-Z0-9_-]{10,})")
@@ -210,7 +211,8 @@ def build_item(row: dict, item_id: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# "GM의 일요일" 분기 — 사진+문장 접수를 캐러셀 4장으로 제작해 검수대기로 등록.
+# "GM의 일요일" 분기 — 사진+문장 접수를 캐러셀로 제작해 검수대기로 등록.
+# 장수는 올린 사진이 정한다: 표지 1 + 나머지 사진 1장당 문장 카드 1 + 생각 1.
 # 다른 분류(강사소개 등)는 위 build_item()/접수검토 경로 그대로(회귀 0).
 # ---------------------------------------------------------------------------
 def is_sunday_row(row: dict) -> bool:
@@ -218,18 +220,33 @@ def is_sunday_row(row: dict) -> bool:
 
 
 def _parse_sunday_benefit(benefit: str) -> dict:
-    """GM의일요일.html 이 만든 benefit 텍스트를 문장1~3·본문 캡션·해시태그로 분해.
-    형식(정확히 이 모양): '02 문장1\\n03 문장2\\n04 문장3\\n\\n캡션…\\n\\n#해시태그…\\n\\n계정 @…'"""
+    """GM의일요일.html 이 만든 benefit 텍스트를 문장 리스트·생각·본문 캡션·해시태그로 분해.
+
+    형식: '02 문장\\n03 문장\\n…\\n생각 · 문장\\n\\n캡션…\\n\\n#해시태그…\\n\\n계정 @…'
+    문장 카드는 사진 수만큼 번호가 붙고(02부터), 생각은 항상 한 장이라 번호 대신 이름으로 온다.
+
+    구 형식('02/03/04' 셋뿐 · 생각 줄 없음)은 마지막 번호를 생각으로 읽는다 — 이미 시트에
+    쌓인 접수분이 새 코드에서 깨지면 안 된다.
+    """
     lines = (benefit or "").replace("\r\n", "\n").split("\n")
-    numbered: dict[str, str] = {}
+    numbered: list[str] = []
+    think = ""
     header_end = 0
     for i, line in enumerate(lines):
-        m = _SUNDAY_LINE_RE.match(line.strip())
+        s = line.strip()
+        m = _SUNDAY_LINE_RE.match(s)
+        tm = _SUNDAY_THINK_RE.match(s)
         if m:
-            numbered[m.group(1)] = m.group(2).strip()
+            numbered.append((m.group(2) or "").strip())
             header_end = i + 1
-        elif numbered:
-            break  # 02/03/04 블록 종료(빈 줄 등)
+        elif tm:
+            think = tm.group(1).strip()
+            header_end = i + 1
+        elif numbered or think:
+            break  # 문장 블록 종료(빈 줄 등)
+
+    if not think and len(numbered) == 3:      # 구 형식 — 04 가 '생각'이었다
+        think = numbered.pop()
 
     rest = lines[header_end:]
 
@@ -258,9 +275,8 @@ def _parse_sunday_benefit(benefit: str) -> dict:
     publish_at = "" if pub_raw in ("", "즉시") else pub_raw
 
     return {
-        "line1": numbered.get("2", ""),
-        "line2": numbered.get("3", ""),
-        "line3": numbered.get("4", ""),
+        "lines": numbered,          # 문장 카드 — 사진 순서 그대로
+        "think": think,             # 생각 한 장(사진 없음)
         "caption": "\n".join(caption_lines).strip(),
         "hashtags": rest[hashtag_idx].strip() if hashtag_idx is not None else "",
         "publish_at": publish_at,
@@ -467,19 +483,26 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         print(f"[WARN] GM의 일요일 접수 다운로드 전량 실패 — 제작 불가: {item_id}", file=sys.stderr)
         return None
 
-    def pick(idx: int) -> Path:
-        return downloaded[idx] if idx < len(downloaded) else downloaded[-1]
+    # 사진 수가 슬라이드 수를 정한다 — 표지 1장 + 나머지 사진 1장당 문장 카드 1장 + 생각 1장.
+    cards = downloaded[1:]
+    texts = parsed["lines"]
+    if len(texts) > len(cards):
+        print(f"[WARN] GM의 일요일 문장 {len(texts) - len(cards)}개 버림(사진이 모자람): {item_id}",
+              file=sys.stderr)
 
     slides_rel = []
+
+    def _add(name: str) -> Path:
+        slides_rel.append(f"{folder_rel}/output/{name}")
+        return out_dir / name
+
     try:
-        _compose_sunday_cover(pick(0), intro, out_dir / "post_1.jpg")
-        slides_rel.append(f"{folder_rel}/output/post_1.jpg")
-        _compose_sunday_photo_card(pick(1), parsed["line1"], out_dir / "post_2.jpg")
-        slides_rel.append(f"{folder_rel}/output/post_2.jpg")
-        _compose_sunday_photo_card(pick(2), parsed["line2"], out_dir / "post_3.jpg")
-        slides_rel.append(f"{folder_rel}/output/post_3.jpg")
-        _compose_sunday_think(parsed["line3"], out_dir / "post_4.jpg")
-        slides_rel.append(f"{folder_rel}/output/post_4.jpg")
+        _compose_sunday_cover(downloaded[0], intro, _add("post_1.jpg"))
+        for i, photo in enumerate(cards):
+            # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
+            _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
+                                       _add(f"post_{i + 2}.jpg"))
+        _compose_sunday_think(parsed["think"], _add(f"post_{len(cards) + 2}.jpg"))
     except Exception as exc:
         print(f"[WARN] GM의 일요일 슬라이드 제작 실패: {item_id}: {exc}", file=sys.stderr)
         return None
@@ -489,7 +512,7 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
     # 이미지 없이 글자로만 나가, GM 이 '결과물'을 못 보고 승인해야 한다.
     try:
         _compose_sunday_montage(
-            [ROOT / s for s in slides_rel], out_dir / "_검수_미리보기_4장.png"
+            [ROOT / s for s in slides_rel], out_dir / f"_검수_미리보기_{len(slides_rel)}장.png"
         )
     except Exception as exc:                       # 몽타주 실패가 접수 자체를 죽이면 안 된다
         print(f"[WARN] GM의 일요일 검수 미리보기 생성 실패(카드는 글자로 나갑니다): {item_id}: {exc}",
