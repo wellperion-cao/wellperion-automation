@@ -22,7 +22,7 @@ REM measured was ship-creation -> processing-START (median 20.5h, only because t
 REM executor was the once-daily 07:30 Wellperion-Welly-Auto-Runner-0730 task). Reuses that
 REM same runner engine (welly_auto_runner.py --feedback-only) on THIS existing 3-min slot
 REM instead of a new scheduled task. Scope is narrowed to staff-feedback ships only
-REM (ship["from"]=="실무진") - every other ship still waits for the 07:30 all-clevel cycle,
+REM (ship["from"]=="staff") - every other ship still waits for the 07:30 all-clevel cycle,
 REM unchanged. All existing gates stay on unchanged: reversible-only, work_type=="new"
 REM exclusion, ambiguity park, per-cycle cap (MAX_SHIPS_PER_CYCLE=3, own budget since this
 REM is a separate process from the 07:30 cycle - not raised). Windows Task Scheduler's

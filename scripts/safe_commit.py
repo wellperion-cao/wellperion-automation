@@ -925,6 +925,36 @@ def safe_commit(
     return result
 
 
+def _repair_batch_line_endings(paths: list[str]) -> list[str]:
+    """커밋에 담기는 .bat/.cmd 가 LF 로 저장돼 있으면 CRLF 로 되돌린다(고친 경로 목록 반환).
+
+    왜 여기 있나 — cmd.exe 는 배치 파일을 CRLF 로 읽는다. LF 로 저장되면 예약작업이
+    '성공(반환값 0)'으로 보고되면서 실제로는 아무 일도 안 하는 상태가 된다. 조용한
+    실패라 어떤 감시기도 잡지 못한다:
+      · 2026-07-30 — Start-AI 계열 7종 + wellperion.bat 이 LF 로 저장돼 C-Level 부팅 전멸.
+      · 2026-08-05 — cpo_inquiry_snapshot.bat 이 LF 로 저장돼 3분 주기 잡이 13:06 부터
+        5시간 멈췄다. 그 잡에 실무진 피드백 감시기가 얹혀 있어 오전 10시 신고 3건이
+        접수 상태 그대로 방치됐고, GM 이 먼저 발견하셨다.
+    .gitattributes 의 `*.bat text eol=crlf` 는 git 체크아웃만 보호한다 — 편집 도구가
+    파일을 직접 쓰면 작업트리는 LF 로 남고, git 은 정규화 때문에 차이를 보여주지도
+    않는다(그래서 눈으로도 안 보인다). 커밋은 모든 세션이 지나가는 관문이라 여기서
+    되돌린다(새 검사기·새 훅 신설 없음).
+    """
+    fixed: list[str] = []
+    for raw in paths:
+        p = Path(raw)
+        if p.suffix.lower() not in (".bat", ".cmd") or not p.is_file():
+            continue
+        try:
+            data = p.read_bytes()
+            if data.count(b"\r\n") == 0 and data.count(b"\n") > 0:
+                p.write_bytes(data.replace(b"\n", b"\r\n"))
+                fixed.append(raw)
+        except OSError:
+            continue  # 잠겼거나 읽을 수 없으면 커밋을 막지 않는다(경보만 없는 셈)
+    return fixed
+
+
 def main() -> int:
     import argparse
 
@@ -934,6 +964,9 @@ def main() -> int:
     p.add_argument("--no-push", action="store_true", help="커밋만 하고 push 하지 않음")
     p.add_argument("paths", nargs="+", help="커밋할 경로(이 목록 밖은 절대 안 담김)")
     args = p.parse_args()
+
+    for _p in _repair_batch_line_endings(args.paths):
+        print(f"  ~ 줄끝 복구(.bat 은 CRLF 여야 cmd 가 읽는다): {_p}")
 
     res = safe_commit(args.paths, args.message, holder=args.holder, push=not args.no_push)
     # ★ '변경 없음'인데 방금 건드린 파일이 있으면 [OK] 로 찍지 않는다(2026-07-28 시모).
