@@ -36,6 +36,11 @@ except Exception:
     def _tg_send(token, chat_id, text, **k):
         return False
 
+try:  # GAS 재시도 GET 전송 정본(약속 L01) — 임포트 실패해도 _gas_get 은 폴백으로 동작
+    from collectors.ops_shared import gas_get as _gas_get_shared
+except Exception:
+    _gas_get_shared = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = REPO_ROOT / "telegram_bot" / ".env"
 STATE_FILE = REPO_ROOT / "status" / "cpo_report_state.json"
@@ -96,22 +101,42 @@ def report_live_enabled() -> bool:
     return v in ("1", "true", "on", "yes")
 
 
-# ── 공용 GAS 조회 헬퍼 (daily_scheduler._gas_get 과 동일 패턴, 독립 재사용) ─────
+# ── 공용 GAS 조회 헬퍼 ────────────────────────────────────────────────────────
+# 2026-08-05(시토, 흩어진 파이프라인 통합) — 전송(HTTP GET 재시도) 자체는
+# collectors.ops_shared.gas_get(정본, 약속 L01)에 위임한다. 여기 남는 건 action
+# 파라미터 조립 + GAS 응답의 ok 필드 판정뿐 — daily_scheduler.py 가 예전에 똑같은
+# retry-loop 을 갖고 있다가 ops_shared 로 옮긴 것과 같은 정리. ★동작 무변경: 원본은
+# "HTTP 200인데 ok=false"면 다음 시도로 넘어갔다(ok=true를 볼 때까지 최대 attempts회) —
+# 그 재시도 의미를 지키려고 ops_shared.gas_get(attempts=1)을 바깥 루프로 감싼다
+# (ops_shared.gas_get 자체의 attempts=3 재시도는 "이 한 번의 시도"에 대해서만 쓰지 않음).
 def _gas_get(action: str, params: dict | None = None, timeout: int = 40, attempts: int = 3) -> dict | None:
     """GAS GET 재시도 헬퍼. 성공(ok=true) 시 dict, 실패 시 None(정직 실패 신호 — 지어내지 않음)."""
     q = {"action": action}
     if params:
         q.update(params)
     for _ in range(attempts):
+        resp = (
+            _gas_get_shared(FUNNEL_EXEC_URL, q, timeout=timeout, attempts=1, label=f"cpo_report:{action}")
+            if _gas_get_shared is not None
+            else _gas_get_fallback(q, timeout)
+        )
+        if resp is None:
+            continue
         try:
-            resp = requests.get(FUNNEL_EXEC_URL, params=q, timeout=timeout, allow_redirects=True)
-            if resp.status_code == 200:
-                data = resp.json()
-                if data.get("ok"):
-                    return data
+            data = resp.json()
         except Exception:
-            pass
+            continue
+        if data.get("ok"):
+            return data
     return None
+
+
+def _gas_get_fallback(q: dict, timeout: int):
+    """ops_shared 임포트 실패 시에만 쓰는 원본 그대로의 단발 GET(폴백 — 기동 실패 금지)."""
+    try:
+        return requests.get(FUNNEL_EXEC_URL, params=q, timeout=timeout, allow_redirects=True)
+    except Exception:
+        return None
 
 
 def fetch_member_inquiries() -> list[dict] | None:
