@@ -47,7 +47,11 @@
   .note{font-size:12px;line-height:1.7;color:#8A8377;}
   .cover-one{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;background:#E2DCD0;border:2px solid #B4552E;cursor:grab;touch-action:none;}
   .cover-one.drag{cursor:grabbing;}
-  .cover-one img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;}
+  .cover-one{background:#23201C;}
+  .cover-one img{position:absolute;left:0;top:0;transform-origin:0 0;display:block;pointer-events:none;user-select:none;max-width:none;}
+  .cover-zoom{display:flex;align-items:center;gap:10px;}
+  .cover-zoom input{flex:1;accent-color:#B4552E;}
+  .cover-zoom .z{font-size:12px;color:#8A8377;white-space:nowrap;}
   .cover-one .hint{position:absolute;left:0;right:0;bottom:0;background:rgba(20,18,15,.55);color:#FBF8F2;font-size:11px;line-height:1.6;text-align:center;padding:6px 8px;}
   .cover-one .lab{position:absolute;left:8px;top:8px;font-size:11px;background:#B4552E;color:#FBF8F2;padding:3px 9px;border-radius:999px;}
   .cover-one .del{position:absolute;right:6px;top:6px;width:26px;height:26px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:15px;line-height:1;cursor:pointer;}
@@ -63,7 +67,7 @@
   .cuts{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;}
   .cut{flex:0 0 auto;width:168px;height:210px;box-sizing:border-box;}
   .cut-cover{position:relative;background:#23201C;overflow:hidden;}
-  .cut-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .cut-cover img{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none;}
   .cut-cover .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,18,15,.5),rgba(20,18,15,.05) 40%,rgba(20,18,15,.75));}
   .cut-cover .in{position:absolute;inset:0;padding:14px;display:flex;flex-direction:column;justify-content:space-between;}
   .cut-cover .tag{font-size:8px;letter-spacing:.24em;color:#FBF8F2;}
@@ -127,6 +131,12 @@
         <input type="file" accept="image/*" id="f_cover" style="display:none;">
       </label>
       <div class="cover-one hide" id="coverOne"></div>
+      <div class="cover-zoom hide" id="coverZoomBox">
+        <div class="z">축소</div>
+        <input type="range" id="f_zoom" min="0.4" max="3" step="0.01" value="1">
+        <div class="z">확대</div>
+        <div class="z" id="zoomPct" style="width:44px;text-align:right;">100%</div>
+      </div>
     </div>
 
     <!-- ② 나머지 사진 -->
@@ -264,6 +274,7 @@
 
   var cover = null;         // 표지 1장 {file, url} — 따로 올린다(GM 지시 2026-08-05)
   var coverFocus = { x: 0.5, y: 0.5 };   // 표지에서 보여줄 지점(0~1) — 끌어서 맞춘다(GM 지시 2026-08-05)
+  var coverZoom = 1;                     // 1 = 꽉 채우기 · 1보다 크면 확대 · 작으면 축소(여백은 다크)
   var photos = [];          // 나머지 사진 {file, url} — 이 장수가 슬라이드 수를 정한다
   var videoFile = null;
   var hasDraft = false;
@@ -321,27 +332,51 @@
     $('errBox').classList.add('hide');   // 고치면 경고는 지운다 — 해결된 안내가 남아 있으면 헷갈린다
     var box = $('coverOne');
     box.classList.toggle('hide', !cover);
+    $('coverZoomBox').classList.toggle('hide', !cover);
     $('coverDrop').classList.toggle('hide', !!cover);
     box.innerHTML = '';
     if (!cover) return;
     box.innerHTML = '<img src="'+cover.url+'"><div class="lab">표지</div>'
-                  + '<div class="hint">사진을 끌어서 보여줄 부분을 맞추세요</div>';
+                  + '<div class="hint">끌어서 위치, 아래 막대로 확대·축소</div>';
     var b = document.createElement('button'); b.className='del'; b.textContent='×';
     b.onclick = function(e){ e.stopPropagation(); URL.revokeObjectURL(cover.url); cover = null;
-                             coverFocus = { x:0.5, y:0.5 }; renderCover(); renderPreview(); };
+                             coverFocus = { x:0.5, y:0.5 }; coverZoom = 1; $('f_zoom').value = 1;
+                             renderCover(); renderPreview(); };
     box.appendChild(b);
-    applyFocus();
+    var im = box.querySelector('img');
+    im.onload = applyFocus;                 // 원본 크기를 알아야 자리를 잡을 수 있다
+    if (im.complete) applyFocus();
     attachDrag(box);
   }
 
-  // 표지에서 보여줄 지점을 화면(업로드 칸·미리보기 표지)에 그대로 반영한다.
-  function focusPos(){ return Math.round(coverFocus.x*100) + '% ' + Math.round(coverFocus.y*100) + '%'; }
+  // 한 칸(4:5) 안에 사진을 어떻게 놓을지 계산한다.
+  //   배율 1 = 칸을 꽉 채우는 크기(지금까지의 기본값) · 1보다 크면 확대 · 작으면 축소.
+  //   위치(0~1)는 남는 공간을 어느 쪽으로 밀지 정한다 — 뒷단 계산과 같은 식이다.
+  function placeIn(im, W, H){
+    var nw = im.naturalWidth, nh = im.naturalHeight;
+    if (!nw || !nh) return null;
+    var s = Math.max(W / nw, H / nh) * coverZoom;
+    return { w: nw * s, h: nh * s, s: s,
+             left: (W - nw * s) * coverFocus.x,
+             top:  (H - nh * s) * coverFocus.y };
+  }
+  function layout(im){
+    var host = im.parentElement.getBoundingClientRect();
+    var pl = placeIn(im, host.width, host.height);
+    if (!pl) return;
+    im.style.width = im.naturalWidth + 'px';
+    im.style.height = im.naturalHeight + 'px';
+    im.style.transform = 'translate(' + pl.left + 'px,' + pl.top + 'px) scale(' + pl.s + ')';
+  }
   function applyFocus(){
     var im = $('coverOne').querySelector('img');
-    if (im) im.style.objectPosition = focusPos();
+    if (im) layout(im);
     var pc = $('cuts') && $('cuts').querySelector('.cut-cover img');
-    if (pc) pc.style.objectPosition = focusPos();
+    if (pc) layout(pc);
+    $('zoomPct').textContent = Math.round(coverZoom * 100) + '%';
   }
+
+  $('f_zoom').addEventListener('input', function(){ coverZoom = parseFloat(this.value) || 1; applyFocus(); });
 
   // 끌어서 맞추기 — 끈 거리를 칸 크기에 견줘 0~1 로 옮긴다(마우스·손가락 같은 코드).
   function attachDrag(box){
@@ -375,8 +410,10 @@
 
     var c = cut('cut-cover', '<img><div class="shade"></div><div class="in">'
       + '<div class="tag">GM의 일요일</div><div class="ttl"></div></div>');
-    c.querySelector('img').src = cover ? cover.url : '';
-    c.querySelector('img').style.objectPosition = focusPos();
+    var ci = c.querySelector('img');
+    ci.src = cover ? cover.url : '';
+    ci.onload = function(){ layout(ci); };
+    if (ci.complete) layout(ci);
     c.querySelector('.ttl').textContent = $('d_title').value;
     box.appendChild(c);
 
@@ -635,7 +672,7 @@
           '계정 @namuk.wellperion (개인) · ' + cutCount(),
           // 아래 두 줄은 뒷단(cmo_intake_to_review.py)이 그대로 읽는다 — 형식 바꾸지 말 것.
           '발행시점 · ' + (publishAt() || '즉시'),
-          '표지위치 · ' + coverFocus.x.toFixed(2) + ',' + coverFocus.y.toFixed(2)
+          '표지위치 · ' + coverFocus.x.toFixed(2) + ',' + coverFocus.y.toFixed(2) + ',' + coverZoom.toFixed(2)
         ]).join('\n'),
         agree: true,
         photos: pics,

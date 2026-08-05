@@ -92,7 +92,7 @@ _SUNDAY_LINE_RE = re.compile(r"^(\d{2})(?:\s+(.*))?$")   # 02·03·…·10 (빈 
 _SUNDAY_THINK_RE = re.compile(r"^생각\s*·\s*(.*)$")
 _PUBLISH_AT_RE = re.compile(r"발행시점\s*·\s*(\S+)")
 # 표지에서 보여줄 지점(0~1) — 화면에서 끌어 맞춘 값. 없으면 가운데(0.5,0.5).
-_COVER_FOCUS_RE = re.compile(r"표지위치\s*·\s*([0-9.]+)\s*,\s*([0-9.]+)")
+_COVER_FOCUS_RE = re.compile(r"표지위치\s*·\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?")
 _DRIVE_ID_RE = re.compile(r"/d/([a-zA-Z0-9_-]{10,})")
 _DRIVE_ID_QS_RE = re.compile(r"[?&]id=([a-zA-Z0-9_-]{10,})")
 _SUNDAY_ASPECT = (1080, 1350)
@@ -277,12 +277,17 @@ def _parse_sunday_benefit(benefit: str) -> dict:
     pub_raw = pub_m.group(1) if pub_m else ""
     publish_at = "" if pub_raw in ("", "즉시") else pub_raw
 
+    # 표지 배치 = (좌우 0~1, 상하 0~1, 배율). 배율 1 = 칸을 꽉 채우는 크기(종전 동작).
     fm = _COVER_FOCUS_RE.search(benefit or "")
     try:
-        cover_focus = (min(1.0, max(0.0, float(fm.group(1)))),
-                       min(1.0, max(0.0, float(fm.group(2))))) if fm else (0.5, 0.5)
+        if fm:
+            cover_focus = (min(1.0, max(0.0, float(fm.group(1)))),
+                           min(1.0, max(0.0, float(fm.group(2)))),
+                           min(4.0, max(0.2, float(fm.group(3)))) if fm.group(3) else 1.0)
+        else:
+            cover_focus = (0.5, 0.5, 1.0)
     except ValueError:
-        cover_focus = (0.5, 0.5)
+        cover_focus = (0.5, 0.5, 1.0)
 
     return {
         "lines": numbered,          # 문장 카드 — 사진 순서 그대로
@@ -349,32 +354,34 @@ def _render_sunday_html(variant: str, output: Path, text: str,
 
 
 def _focus_crop(photo: Path, focus: tuple, dest: Path) -> Path:
-    """표지에서 GM 이 끌어 맞춘 지점을 살려 1080x1350 비율로 미리 잘라 둔다.
+    """표지를 GM 이 맞춘 대로(위치 + 확대/축소) 1080x1350 한 장으로 미리 앉혀 둔다.
 
     합성기(HTML 엔진·Pillow 폴백)는 둘 다 '가운데 잘라 채우기'라 원본을 그대로 넘기면
-    끌어 맞춘 위치가 무시된다. 여기서 비율을 미리 맞춰 두면 그 다음 가운데 자르기는
-    아무것도 자르지 않는다(같은 비율이므로) — 합성기를 건드리지 않고 위치만 살린다.
-    focus = (x, y) · 0~1 · CSS object-position 과 같은 뜻. 실패하면 원본을 그대로 쓴다.
+    맞춘 배치가 무시된다. 여기서 최종 크기·비율로 만들어 두면 그 다음 가운데 자르기가
+    아무것도 바꾸지 않는다 — 합성기를 건드리지 않고 배치만 살린다.
+
+    focus = (x, y, zoom) · x·y 는 0~1(남는 공간을 어느 쪽으로 밀지) · zoom 1 = 꽉 채우기.
+    zoom 이 1보다 작으면 사진이 칸보다 작아져 여백이 생기고, 그 여백은 시안 배경색으로 채운다.
+    화면(GM의일요일.html placeIn)과 같은 식이라 미리보기와 결과가 어긋나지 않는다.
+    실패하면 원본을 그대로 쓴다(표지가 아예 안 나오는 것보다 낫다).
     """
     try:
         from PIL import ImageOps
         img = ImageOps.exif_transpose(Image.open(photo)).convert("RGB")
         tw, th = _SUNDAY_ASPECT
+        fx, fy = float(focus[0]), float(focus[1])
+        zoom = float(focus[2]) if len(focus) > 2 else 1.0
         sw, sh = img.size
-        target = tw / th
-        if sw / sh > target:                       # 원본이 더 가로형 → 좌우를 자른다
-            nw = int(sh * target)
-            x0 = int((sw - nw) * min(1.0, max(0.0, focus[0])))
-            box = (x0, 0, x0 + nw, sh)
-        else:                                      # 더 세로형 → 위아래를 자른다
-            nh = int(sw / target)
-            y0 = int((sh - nh) * min(1.0, max(0.0, focus[1])))
-            box = (0, y0, sw, y0 + nh)
+        scale = max(tw / sw, th / sh) * zoom
+        nw, nh = max(1, round(sw * scale)), max(1, round(sh * scale))
+        canvas = Image.new("RGB", (tw, th), _SUNDAY_DARK)
+        canvas.paste(img.resize((nw, nh), Image.LANCZOS),
+                     (round((tw - nw) * fx), round((th - nh) * fy)))
         dest.parent.mkdir(parents=True, exist_ok=True)
-        img.crop(box).save(dest, "JPEG", quality=95, optimize=True)
+        canvas.save(dest, "JPEG", quality=95, optimize=True)
         return dest
     except Exception as exc:
-        print(f"[WARN] 표지 위치 자르기 실패(원본 그대로 씁니다): {exc}", file=sys.stderr)
+        print(f"[WARN] 표지 배치 실패(원본 그대로 씁니다): {exc}", file=sys.stderr)
         return photo
 
 
