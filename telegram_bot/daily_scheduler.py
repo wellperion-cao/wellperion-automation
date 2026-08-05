@@ -2538,6 +2538,30 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 문의알림방(stream1) 예외: {e}")
 
+    # ── 강습 담당 배정 독려 — 독립 메시지 (2026-08-05 GM 지시) ──────────────────────
+    # 예전엔 stream1(위) 안에 "📌 3일 넘게 담당이 안 정해진 문의" 한 블록으로 섞여 나가
+    # 배정 독려가 신규문의·컨택&등록 등 다른 내용에 묻혔다(GM 실측 지적). unassigned_nudge.py
+    # 는 그대로 두고(새 스크립트 없음), 여기서 stream1 발송 직후 그것만 담은 메시지로 같은
+    # 방(문의알림방=STAFF_CHAT_ID, 목적지 그대로)에 매일 독립 발송한다. 새 예약작업·새 방 없음
+    # — 기존 send_telegram 관문 + 기존 run_daily_digest 스케줄만 재사용.
+    try:
+        import unassigned_nudge as _un
+        un_payload = _un.build_payload(today)
+        un_text = un_payload["text"]
+        if un_text:
+            un_ok = send_telegram(DIGEST_INQUIRY_CHAT_ID, un_text, parse_mode=None)
+            if un_ok:
+                logger.info(f"{label} 담당배정 독려 발송 완료 chat_id={DIGEST_INQUIRY_CHAT_ID} "
+                            f"(선발 {len(un_payload['selected'])}건/미배정 {len(un_payload['eligible'])}건)")
+                _un._record_sent(un_payload["selected"], un_payload["notified"], un_payload["today"],
+                                  len(un_payload["eligible"]), len(un_payload["dormant"]))
+            else:
+                logger.error(f"{label} 담당배정 독려 발송 실패 chat_id={DIGEST_INQUIRY_CHAT_ID}")
+        else:
+            logger.info(f"{label} 담당배정 독려 — 오늘 보낼 신규 대상 없음(가드/미배정 0건)")
+    except Exception as e:
+        logger.error(f"{label} 담당배정 독려 예외: {e}")
+
     # ── 스트림 #2 점검+이슈 현황 (점검현황방 단독 · 2026-07-22) ─────────────────────
     s2_msg = None  # 카톡 ★운영+시설+지원+주차 재사용(아래) — 빌드 실패 시 None 유지, 카톡 스킵.
     try:

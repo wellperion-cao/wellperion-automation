@@ -423,9 +423,16 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     other_today = total_new - progress_today - len(unassigned_today)
 
     # 담당배정 3일+ 지연(최근 30일 내, 전체 리스트 기준) → 별도 "참고" 라인으로 분리 표기(당일 아님).
+    # ★2026-08-05 시토(GM 지시) — 강습(성인/유소년)은 여기서 뺐다. 이 신규문의·컨택&등록 등
+    # 여러 섹션이 뒤섞인 22:30 한 메시지 안에 있어서는 배정 독려가 묻혔다(GM 실측 지적).
+    # 강습 배정 요청은 이제 scripts/unassigned_nudge.py 가 별도 메시지로 문의알림방에 매일
+    # 독립 발신한다(daily_scheduler.run_daily_digest 배선, 상한도 30일 캡 없이 전건).
+    # 멤버십은 이 모듈이 다루는 도메인이 아니라(운영부·별도 채널) 그대로 남긴다.
     stale_unassigned: list[tuple[str, str]] = []
     stale_by_team: dict[str, list[str]] = {}
     for kind, rows in raw_groups.items():
+        if kind != "membership":
+            continue
         for r in rows:
             if _is_test_row(r):
                 continue

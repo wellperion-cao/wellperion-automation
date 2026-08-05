@@ -35,6 +35,23 @@ GM 지시: "미배정건 각 팀장분들한테 좋게 푸시해서 배정 다 �
     죽은 리드에 쓰지 않게). ★삭제·폐기 아님 — 매 실행 시 데이터에서 다시 도출되며
     --list-dormant 로 전체 목록 열람(월 1회 검토용). 연락이력이 있는 100일+ 건은
     이미 관계가 있으므로 정상 배정 대상이다.
+
+★2026-08-05 시토 개편 (GM 지시 — "다른 내용까지 다 같이 들어가니까 진행이 안된다")
+  - 진단: 이 모듈 자체는 배9206 이후 한 번도 실제 발신 배선에 물린 적이 없었다.
+    실제로 팀장님들이 받던 배정 독려는 report_stream_1_impl.build_digest() 안
+    "📌 3일 넘게 담당이 안 정해진 문의" 한 블록뿐이었고, 그 블록이 신규문의·컨택&등록
+    현황 등 다른 섹션과 한 메시지(22:30 문의알림방)에 뒤섞여 나가 묻혔다.
+  - 흡수 해제: report_stream_1_impl 의 그 블록에서 강습(성인/유소년) 항목을 뺐다
+    (멤버십은 이 모듈이 다루지 않는 별도 도메인이라 그대로 둠 — module_reporter.py
+    ABSORB_BUNDLES 흡수 해제와 같은 방식: 배선만 끊고 새 경로는 안 만든다).
+  - 배선: telegram_bot/daily_scheduler.py run_daily_digest() 가 stream1 발송 직후
+    이 모듈의 build_payload()를 그대로 호출해 문의알림방(기존 목적지 그대로)에
+    독립 메시지로 보낸다. 새 스크립트·새 예약작업·새 방 없음 — 기존 발신 관문
+    (send_telegram)과 기존 스케줄(매일 20:00 또는 22:30)만 재사용.
+  - 지속: RENOTIFY_GAP_DAYS 7일 → 1일. 배정될 때까지 매일 다시 뜬다(단, 같은 날
+    중복 실행 시 재전송은 막는다). 도배 방지는 여전히 상위 DAILY_TOP_N 건 회전
+    선발로 잡되, 메시지 본문에는 오래된 순 MSG_DISPLAY_N 건만 줄로 싣고 나머지는
+    "외 N건" + 총계로 접는다(GM "10줄 안쪽").
 """
 from __future__ import annotations
 
@@ -43,7 +60,7 @@ import hashlib
 import os
 import statistics
 import sys
-from collections import Counter, defaultdict
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -57,11 +74,9 @@ import report_stream_1_impl as R  # noqa: E402  (미배정 판정 단일 출처)
 GM_CHAT_ID = 8254867551
 STAFF_CHAT_ID = int(os.environ.get("TELEGRAM_INQUIRY_CHAT_ID") or -5516675010)
 
-# 배정 화면 — 멤버십과 강습이 화면이 갈린다(GM 2026-07-23 지적: 멤버십 링크만 주면 강습은 못 간다).
-# lesson.html 은 membership.html?manage=lesson 으로 넘겨주는 정식 강습 진입 주소다.
+# 배정 화면 — 이 모듈은 강습(성인/유소년)만 다룬다(멤버십은 별도 도메인 · 운영부 08:00 보고에서 이미 다룸).
 _BASE = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/"
 ASSIGN_URL_LESSON = _BASE + "lesson.html"
-ASSIGN_URL_MEMBERSHIP = _BASE + "membership.html"
 
 # 화면 입장 코드 — GM 2026-07-23 제공. 실무진이 코드를 몰라 못 들어가는 일이 없게 안내에 포함.
 ENTRY_CODE = "1200"
@@ -70,13 +85,15 @@ ENTRY_CODE = "1200"
 # 받는 분이 누구에게 되물어야 할지 알 수 있어야 하고, 정체불명 자동 메시지로 읽히면 안 된다.
 # 2026-07-24 시토 정정: 문의 담당자 배정은 '문의 이후' = 시포(회원) 도메인이다. 시모(마케팅)는 유입까지.
 # 잘못 적으면 실무진이 되물을 상대를 틀리게 찾아간다. 문안 소유는 시포 — 바꾸려면 시포 배로.
-AI_INTRO = "안녕하세요, 웰페리온 AI 회원 담당 시포입니다."
+# 2026-08-05: 맨 위 인사 대신 맨 끝 서명으로(GM "10줄 안쪽" — 인사말 한 줄도 아깝다).
+AI_SIGNOFF = "웰페리온 회원 시포 드림"
 
 # 하루에 부탁드리는 건수 상한 — 소음은 상한(30일)이 아니라 건수로 잡는다(웰리 07-25).
-DAILY_TOP_N = 10
+DAILY_TOP_N = 10              # 회전 선발 상한(가드 대상) — 기존 값 유지(웰리 07-25)
+MSG_DISPLAY_N = 5             # 메시지 본문에 실제로 줄로 싣는 건수(GM 08-05 "10줄 안쪽")
 STALE_MIN_DAYS = 3           # 갓 들어온 문의는 정상 응대 흐름에 맡긴다
 DORMANT_OVER_DAYS = 100      # 이 일수 "초과" + 연락이력 0건 = 휴면
-RENOTIFY_GAP_DAYS = 7        # 같은 건 재알림 최소 간격(도배 방지)
+RENOTIFY_GAP_DAYS = 1        # 같은 건 재알림 최소 간격 — 배정될 때까지 매일(GM 08-05). 같은 날 중복실행만 막는다.
 NOTIFIED_KEEP_DAYS = 30      # 가드 맵에서 이보다 오래된 기록은 청소(무한 비대 방지)
 HEARTBEAT_ID = "cpo-unassigned-nudge"  # 배10014 방식 — 상설 파일 1개 갱신
 
@@ -119,6 +136,7 @@ def collect_unassigned(today: str) -> list[dict]:
                 "sport": sport,
                 "group": f"{label} {_sport_short(sport)}",
                 "name": str(r.get("name", "") or "-").strip() or "-",
+                "date": str(r.get("timestamp", "") or "")[:10] or "-",
                 "days": days,
                 "contacted": _has_contact(r),
                 "key": _lead_key(r),
@@ -159,7 +177,8 @@ def select_daily(items: list[dict], notified: dict[str, str], today: str,
                  top_n: int = DAILY_TOP_N) -> list[dict]:
     """오늘 안내할 상위 top_n 건.
 
-    ① 7일 가드: 마지막 안내로부터 RENOTIFY_GAP_DAYS 미만이면 이번 회차 제외.
+    ① 재알림 가드: 마지막 안내로부터 RENOTIFY_GAP_DAYS 미만이면 이번 회차 제외
+       (현재 1일 — 같은 날 중복 실행만 막고, 배정될 때까지 매일 다시 뜬다).
     ② 종목 점수 내림차순으로 종목을 세우고, 종목 안은 "연락이력 없음 우선 →
        경과일 오래된 순"으로 세운 뒤 라운드로빈으로 뽑는다(한 종목 독식 방지 —
        브리프 §0 방법 그대로).
@@ -230,22 +249,6 @@ def _sport_short(sport: str) -> str:
     return sport.split("(")[0].strip() or "-"
 
 
-def _sport_lines(items: list[dict], label: str) -> list[str]:
-    counts = Counter(_sport_short(i["sport"]) for i in items if i["type"] == label)
-    if not counts:
-        return []
-    total = sum(counts.values())
-    parts = [f"■ {label} {total}건"]
-    ranked = counts.most_common()
-    head = ranked[:3]
-    rest = sum(c for _, c in ranked[3:])
-    body = " · ".join(f"{s} {c}" for s, c in head)
-    if rest:
-        body += f" · 그 외 {rest}"
-    parts.append(f"  {body}")
-    return parts
-
-
 def build_payload(today: str | None = None, notified: dict[str, str] | None = None) -> dict:
     """오늘 회차 산출물 한 벌: 본문 + 선발 10건 + 휴면 목록 + 집계."""
     today = today or datetime.now().strftime("%Y-%m-%d")
@@ -264,61 +267,31 @@ def build_payload(today: str | None = None, notified: dict[str, str] | None = No
 
 
 def _render_message(selected: list[dict], eligible: list[dict], dormant: list[dict]) -> str:
+    """그것만 담은 독립 메시지(GM 2026-08-05) — 10줄 안쪽·한 줄에 한 건·부탁 조.
+
+    텔레그램 굵게가 잘 안 먹어 줄바꿈·기호로 읽히게 한다. 표시는 선발 top MSG_DISPLAY_N
+    건을 "오래된 순"으로 다시 정렬해서 싣는다(select_daily 의 회전 선발 순서는 종목별
+    공정 배분용이라 화면 순서와 다르다). 나머지는 "외 N건"+총계로 접는다(도배 방지).
+    """
     if not eligible:
         return "✅ 담당자 미배정 문의 0건 — 모두 배정 완료되었습니다. 감사합니다 🙏"
     if not selected:
-        # 대상은 있으나 전건이 7일 가드 안(최근 안내 완료) — 도배하지 않고 쉰다.
+        # 대상은 있으나 전건이 오늘 이미 안내됨(같은 날 중복 실행 방지) — 다시 보내지 않는다.
         return ""
 
-    lines = [
-        f"🤝 문의 담당 배정 안내 — 오늘 {len(selected)}건 (미배정 전체 {len(eligible)}건)",
-        "",
-        AI_INTRO,
-        "",
-        # ★어조 (GM 2026-07-23): 지금 쌓인 건은 안내 체계가 없어서 모인 것 —
-        # 누구의 잘못이 아니다. "이제부터 이렇게 안내한다"는 셋업 공지로 쓴다.
-        "담당자가 아직 정해지지 않은 문의 가운데, 오늘은 가장 급한 순서로",
-        f"{len(selected)}건만 추려 부탁드립니다. 같은 분은 {RENOTIFY_GAP_DAYS}일 안에 다시 올리지 않습니다.",
-        "지금 쌓여 있는 건은 그동안 안내 체계가 없어서 모인 것이라 어느 분의 잘못도 아닙니다.",
-        "",
-    ]
-    for label in ("성인강습", "유소년강습"):
-        lines += _sport_lines(eligible, label)
-    lines.append("")
+    oldest = eligible[0]["days"]  # collect_unassigned() 에서 이미 -days 정렬됨
+    shown = sorted(selected, key=lambda x: -x["days"])[:MSG_DISPLAY_N]
+    rest_n = len(eligible) - len(shown)
 
-    lines.append("⏳ 오늘 부탁드리는 순서 (급한 종목·오래 기다린 분 우선)")
-    for it in selected:
+    lines = [f"🙋 담당 배정 필요 · {len(eligible)}건 (가장 오래된 건 {oldest}일째)"]
+    lines.append("팀장님들, 아래 문의부터 담당 배정 부탁드립니다 🙏")
+    for it in shown:
         sport = _sport_short(it["sport"])
-        tag = "연락이력 없음" if not it["contacted"] else "상담이력 있음"
-        lines.append(f"  · {it['name']} · {sport} ({it['days']}일째 · {tag})")
-    lines.append("")
-
-    buckets = defaultdict(int)
-    for it in eligible:
-        if it["days"] <= 30:
-            buckets["3~30일"] += 1
-        elif it["days"] <= 100:
-            buckets["31~100일"] += 1
-        else:
-            buckets["100일 초과(상담이력 있음)"] += 1
-    lines.append(
-        "기다린 기간: "
-        + " · ".join(f"{k} {buckets[k]}건"
-                     for k in ("3~30일", "31~100일", "100일 초과(상담이력 있음)") if buckets[k])
-    )
-    if dormant:
-        lines.append(
-            f"😴 연락이력 없이 100일이 지난 {len(dormant)}건은 휴면으로 분류해 "
-            "이 안내에서 뺐습니다(월 1회 따로 검토)."
-        )
-    lines.append("")
-    lines.append("👉 배정하기 (화면이 갈려 있어 주소를 따로 드립니다)")
-    lines.append(f"  · 강습: {ASSIGN_URL_LESSON}")
-    lines.append(f"  · 멤버십: {ASSIGN_URL_MEMBERSHIP}")
-    lines.append(f"  🔑 입장 코드 {ENTRY_CODE}")
-    lines.append("   이름 옆 담당자 칸에서 고르시면 바로 반영됩니다.")
-    lines.append("")
-    lines.append("한 분씩만 맡아주셔도 금방 정리됩니다. 늘 감사합니다 🙏")
+        lines.append(f"· {it['date']} · {it['name']} · {sport} · {it['days']}일째")
+    if rest_n > 0:
+        lines.append(f"… 외 {rest_n}건 (총 {len(eligible)}건)")
+    lines.append(f"👉 배정하기: {ASSIGN_URL_LESSON} (입장코드 {ENTRY_CODE})")
+    lines.append(AI_SIGNOFF)
     return "\n".join(lines)
 
 
@@ -395,7 +368,7 @@ def main() -> int:
     result = send(text, chat_id)
     print(f"[발송] 대상={args.to}({chat_id}) ok={result['ok']}")
     if result["ok"]:
-        # 발송이 실제로 나간 뒤에만 7일 가드 시계를 돌린다(배10014 상설 갱신 방식).
+        # 발송이 실제로 나간 뒤에만 재알림 가드 시계를 돌린다(배10014 상설 갱신 방식).
         rec = _record_sent(payload["selected"], payload["notified"], payload["today"],
                            len(payload["eligible"]), len(payload["dormant"]))
         print(f"[가드 기록] heartbeats/{HEARTBEAT_ID}.json ok={rec.get('ok')}")
