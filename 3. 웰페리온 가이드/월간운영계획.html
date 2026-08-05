@@ -1101,26 +1101,38 @@
       <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
     </section>
 
-    <!-- 👑🤝 회장님 지시사항 + 브로제이 업무분장 — 요약 토글 2개, 핵심 과제 상세 바로 위(GM 직접 지시
-         2026-08-01: "회장님것도 따로 토글 하나 분리, 핵심과제 상세 윗칸에 2개 배치"). 옛 브로제이 한 줄
-         요약(broj-entry, 舊 위치=이 상세표 바로 아래·2026-07-29 분리)을 이 자리 토글로 승격 이관 — 새
-         컴포넌트 0(위 r-note-fold 재사용), 새 데이터소스 0(둘 다 기존 CHECK_GAS 공용보드 그대로: 회장님=
-         coo/chairman/회장님_지시사항.html·CHAIRMAN_DIRECTIVES_2026_08, 브로제이=coo/brojay/브로제이_업무
-         분장.html과 동일 BROJ_TASK_BOARD). 접었을 때도 summary 안 배지로 건수가 보인다.
-         인쇄는 화면 전용(.toggle-row-2 @media print 숨김) — A3 페이지 수 불변. -->
+    <!-- 👑🤵👤 회장님 / 대표님 / 김남욱GM 업무 진행건 — 요약 토글 3개, 핵심 과제 상세 바로 위. 2026-08-05
+         GM 직접 지시(2차례): ① 대표님 칸 신설(회장님 칸 오른쪽) + 브로제이 업무분장을 김남욱GM 칸 안으로
+         흡수(독립 토글 폐기) ② 3칸 구성 통일("아이콘+제목+배지" summary·같은 표 칸(업무명/카테고리/일정)·
+         같은 빈칸·실패 문구·같은 자리 "자세히 보기 →" 링크)·간단한 것만(상태·담당·비고·내용 전문은 자세히
+         보기 페이지로) ③ 열쇠(gm1_todo_key) 입력 UI 폐기 — gm1TodoKey()가 값을 항상 반환해 토글 3칸 모두
+         무열쇠로 바로 보인다(대신 자세히보기 중 회장님 페이지에 gate.js 커튼을 걸었다 — 업무 SSOT 페이지는
+         ssot/ownership_map.json 상 시로/CHRO 소유라 미게이트, 보고서 참조) ④ 실사용 건(대표님/GM)에 「보고
+         필요」(문안 클립보드 복사)·「보고 완료」(todo_update 재사용·상태→진행중) 버튼. 자세히보기 페이지
+         연동(대표님은 전용 페이지가 없어 GM과 같은 업무 SSOT 화면 재사용 — 새 페이지 생성 안 함). 3칸 모두
+         renderExecCard() 공용 렌더 한 함수로 그린다(약속 L01 — 판정·마크업 복제 금지). 브로제이 배지·본문
+         id(broj-fold-badge/-p1/-body)는 그대로 두고 위치만 gm-fold 안으로 이동(채우는 코드 loadBrojEntry()
+         무변경 — 약속 L21). 새 컴포넌트·새 GAS 액션·새 저장키 0(위 r-note-fold 재사용, 대표님/GM 칸 모두
+         readWorkApproval() 같은 결과를 담당자=김남욱 + 내용칸 "대표님 보고건" 포함 여부로만 양분). 접었을
+         때도 summary 안 배지로 건수가 보인다. 인쇄는 화면 전용(.toggle-row-2·.ebtn @media print 숨김)
+         — A3 페이지 수 불변. -->
     <section class="blk" data-blkid="exec-toggles">
       <div class="toggle-row-2">
         <details class="r-note-fold tg-card" id="chairman-fold" open>
           <summary>👑 회장님 업무 보고건 <span class="be-badge" id="chairman-badge">불러오는 중…</span></summary>
           <div class="r-note" id="chairman-body">불러오는 중…</div>
         </details>
-        <details class="r-note-fold tg-card" id="broj-fold" open>
-          <summary>🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> <span class="be-badge be-p1" id="broj-fold-p1"></span></summary>
-          <div class="r-note" id="broj-fold-body">불러오는 중…</div>
+        <details class="r-note-fold tg-card" id="ceo-fold" open>
+          <summary>🤵 대표님 업무 보고건 <span class="be-badge" id="ceo-fold-badge">불러오는 중…</span></summary>
+          <div class="r-note" id="ceo-fold-body">불러오는 중…</div>
         </details>
         <details class="r-note-fold tg-card" id="gm-fold" open>
-          <summary>👤 김남욱GM 업무 <span class="be-badge" id="gm-fold-badge">불러오는 중…</span></summary>
+          <summary>👤 김남욱GM 업무 진행건 <span class="be-badge" id="gm-fold-badge">불러오는 중…</span></summary>
           <div class="r-note" id="gm-fold-body">불러오는 중…</div>
+          <div class="r-note" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);">
+            <div style="font-weight:800;font-size:13px;margin-bottom:4px;">🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> <span class="be-badge be-p1" id="broj-fold-p1"></span></div>
+            <div id="broj-fold-body">불러오는 중…</div>
+          </div>
         </details>
       </div>
     </section>
@@ -1408,10 +1420,12 @@
       })
       .catch(function(){ return []; });
   }
-  // ── GM 행 통로 열쇠 — wellperion_guide(main).html gm1TodoKey()와 동일 localStorage 키 재사용(약속 L21, 새 저장키 금지).
-  //    값은 이 브라우저에만 있다. 없으면 GAS가 GM 행을 필터링해 응답에서 뺀다(정직하게 비어 보임).
+  // ── GM 행 통로 열쇠 — 2026-08-05 GM 결정: 실무진용 열쇠 입력 UI를 없애고 페이지가 자동으로 붙인다
+  //    (간단한 것만 토글에 내고, 민감한 자세히보기 페이지 3건에 게이트를 거는 것으로 방어선을 옮겼다 — GM 인지·수용).
+  //    값을 붙이는 자리는 이 함수 하나뿐(약속 L01) — telegram_bot/.env GM_TODO_KEY와 동일값.
+  //    ⚠️ 이 값은 공개 페이지 소스에 그대로 노출된다 — GM 결재 사항(같은 성격의 GAS 비밀번호 노출 기존 수용 전례 준용).
   function gm1TodoKey(){
-    try { return localStorage.getItem('gm1_todo_key') || ''; } catch (e) { return ''; }
+    return '1531';
   }
   // ── 업무&결재 SSOT(GAS action=todo_list) — home(wellperion_guide(main).html loadHomeKpiOps)과 동일 GAS_URL·동일 필드 정의 재사용
   //    (약속 L21 — 새 GAS·새 수집기 미신설, 이미 이 페이지가 쓰는 GAS_URL에 action만 하나 더 붙임). AI배(C레벨) 행 제외 = 실무진 업무·결재만.
@@ -3526,11 +3540,60 @@
         if(bodyEl) bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>' + link;
       });
   }
+  // ══════════ 👑🤵👤 회장님/대표님/김남욱GM 카드 3종 공용 렌더 (GM 지시 2026-08-05 "구성 좀 통일시켜줘" +
+  // 같은 날 후속 지시 "간단한 것만·카테고리&일정 26.8.1~26.8.30 형식") ══════════
+  // summary 배지·표(업무명|카테고리|일정, 실사용 건은 +처리)·빈칸/실패 문구·"자세히 보기 →" 링크까지
+  // 세 토글이 같은 틀로 나오게 이 함수 하나로만 그린다(약속 L01 — 마크업·판정 로직 복제 금지). 상세(상태·
+  // 담당·비고·내용 전문)는 토글에 안 낸다 — 자세히보기 페이지에서 본다(GM 지시). items: null=조회 실패
+  // (가짜 0건 금지, 실패 문구 표시) · []=정상 조회인데 0건(emptyMsg 표시) ·
+  // [{title,category,schedule,id?}]=정상 표시(id 있는 항목만 보고필요/보고완료 처리 버튼이 붙는다 —
+  // 회장님 카드는 시트에 연결된 실제 행이 아니라 정적 미러라 처리 버튼이 없다, 데이터 없는 척 안 함).
+  function renderExecCard(badgeId, bodyId, items, emptyMsg, detailHref, detailLabel, linkNote){
+    var badge = document.getElementById(badgeId);
+    var bodyEl = document.getElementById(bodyId);
+    if(!badge || !bodyEl) return;
+    var link = (linkNote ? '<div style="font-size:11px;color:var(--dim);margin:6px 0 2px;">' + linkNote + '</div>' : '') +
+      '<a class="tg-link" href="' + detailHref + '" target="_blank">' + detailLabel + '</a>';
+    if(items === null){
+      badge.textContent = '불러오지 못함';
+      bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>' + link;
+      return;
+    }
+    badge.textContent = items.length + '건';
+    if(!items.length){
+      bodyEl.innerHTML = '<div class="rep-empty">' + emptyMsg + '</div>' + link;
+      return;
+    }
+    var hasActions = items.some(function(it){ return !!it.id; });
+    var rowsHtml = items.map(function(it){
+      var idSafe = it.id ? String(it.id).replace(/'/g, '') : '';
+      var actionsCell = hasActions ?
+        ('<td>' + (idSafe ?
+          '<button type="button" class="ebtn" style="background:var(--surface);color:var(--accent-soft);border:1px solid var(--accent);margin-right:4px;" onclick="gm1ReportNeeded(this,\'' + idSafe + '\')">보고 필요</button>' +
+          '<button type="button" class="ebtn" style="background:var(--accent);color:#fff;border:none;" onclick="gm1ReportDone(this,\'' + idSafe + '\')">보고 완료</button>' : '—') + '</td>') : '';
+      return '<tr><td>' + esc(it.title) + '</td><td>' + esc(it.category || '—') + '</td><td>' + esc(it.schedule || '일정 미정') + '</td>' + actionsCell + '</tr>';
+    }).join('');
+    var head = '<th>업무명</th><th>카테고리</th><th>일정</th>' + (hasActions ? '<th>처리</th>' : '');
+    bodyEl.innerHTML = '<div class="rpt-wrap"><table class="rpt"><thead><tr>' + head + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + link;
+  }
+  // 'YYYY-MM-DD' → '26.8.1~26.8.30' (GM 지시 2026-08-05 통일 형식·연도 2자리·월일 0 없음·물결).
+  // 한쪽만 있으면 그 값만, 둘 다 없으면 '일정 미정'(빈칸으로 얼버무리지 않는다).
+  function fmtSchedule(startRaw, endRaw){
+    function short(v){
+      var m = String(v || '').trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      return m ? (m[1].slice(2) + '.' + parseInt(m[2], 10) + '.' + parseInt(m[3], 10)) : '';
+    }
+    var s = short(startRaw), e = short(endRaw);
+    if(s && e) return s === e ? s : (s + '~' + e);
+    return s || e || '일정 미정';
+  }
   // 👑 회장님 지시사항 — 항목 제목·기한은 그 페이지 고정 본문을 그대로 미러(사본 아님·정본은 그 페이지).
   // ★2026-08-04 GM 지시로 원본 페이지의 진행 트래커(착수/진행/메모, CHAIRMAN_DIRECTIVES_2026_08 보드)를
   // 통째로 없앴다 — 이제 GM 이 웰리에게 구두로 전달하면 웰리가 본문을 직접 정리한다. 그 보드는 더 이상
   // 아무도 쓰지 않고(과거 오염 기록만 남아 있음, 데이터는 지우지 않음) 여기서도 fetch·상태 배지를 없애고
-  // 항목만 정적으로 나열한다(화면에서 안 쓰면 그만 — 약속 L21).
+  // 항목만 정적으로 나열한다(화면에서 안 쓰면 그만 — 약속 L21). id 는 시트 행이 아닌 이 배열 안 로컬
+  // 식별자라 renderExecCard 의 처리버튼(id 있는 항목만 붙음) 조건에서 의도적으로 뺀다(카드 3종 공용
+  // 렌더로 실어도 처리 버튼은 실제 시트 행에만 — 없는 기능을 있는 척 안 함).
   var CHAIRMAN_ITEMS = [
     {id:'d1', title:'파우더룸 소독기 증설', when:'8월 1주 완료'},
     {id:'d2', title:'사우나 입구 정비', when:'8월 2~3주'},
@@ -3541,78 +3604,100 @@
     {id:'d7', title:'파우더룸·탈의실 스팀다리미 설치 · 옷걸이 공간 배치', when:'검토 착수 · 8월 중 안 보고'}
   ];
   function loadChairmanFold(){
-    var badge = document.getElementById('chairman-badge');
-    var bodyEl = document.getElementById('chairman-body');
-    if(!badge || !bodyEl) return;
-    var link = '<a class="tg-link" href="coo/chairman/회장님_지시사항.html" target="_blank">자세히 보기 →</a>';
-    var lines = CHAIRMAN_ITEMS.map(function(it){
-      return '<div class="tg-line"><span>' + esc(it.title) + ' <span style="color:var(--dim);font-size:11px;">· ' + esc(it.when) + '</span></span></div>';
-    }).join('');
-    badge.textContent = CHAIRMAN_ITEMS.length + '건';
-    bodyEl.innerHTML = lines + link;
+    // 카드 3종 통일(renderExecCard) — 카테고리 칸엔 이 토글 이름을 그대로(진짜 소속), 일정 칸엔 기존 when
+    // 텍스트를 그대로 싣는다(실제 시작·종료일이 없는 정적 항목이라 26.8.1~26.8.30 형식을 억지로 만들지 않음).
+    var items = CHAIRMAN_ITEMS.map(function(it){ return {title: it.title, category: '회장님 지시사항', schedule: it.when}; });
+    renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/회장님_지시사항.html', '자세히 보기 →');
   }
-  // 🔑 GM 할 일 열쇠 입력 — wellperion_guide(main).html gm1SetTodoKey()와 같은 방식(prompt → localStorage 저장 → 재조회).
-  //    새 저장키 없음(gm1_todo_key 재사용) · 저장은 이 브라우저 한정.
-  window.gm1SetTodoKey = function(){
-    var v = prompt('GM 할 일 열쇠 (GM 전용 · 이 브라우저에만 저장됩니다)');
-    if(v === null) return;
-    try { localStorage.setItem('gm1_todo_key', String(v).trim()); } catch(e){}
-    readWorkApproval().then(function(rows){
-      _workApprRows = rows; _workApprReady = true;
-      if(_data) renderSummaryStrip();
-      renderGmFold(rows);
-    });
-  };
-  // 👤 김남욱GM 업무 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과 재사용·새 GAS 호출 0)에서
-  // 담당자=김남욱 + 상태(진행중·보류)만 추림(GM 지시 2026-08-05 — 애초 필터가 생성자였는데 GM 이 시트에
-  // 업무를 등록한 사람이라 남의 업무 103건이 "김남욱GM 업무"로 잘못 표시됐다. 담당자 기준으로 정정).
-  // 완료는 이 토글의 목적("어디까지 갔나")과 무관해 제외. rows===null = 조회 실패(가짜 0건 금지 — 실패 문구 표시).
-  // 열쇠 없음(gm1_todo_key 미설정) = 구조적으로 GM 행이 응답에서 빠짐 → 0건과 다른 문구(열쇠 입력 안내) 표시.
-  function renderGmFold(rows){
-    var badge = document.getElementById('gm-fold-badge');
-    var bodyEl = document.getElementById('gm-fold-body');
-    if(!badge || !bodyEl) return;
-    if(!rows){
-      badge.textContent = '불러오지 못함';
-      bodyEl.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
-      return;
-    }
-    var today = _todayStr();
-    var gmRows = rows.filter(function(r){
+  // 👤 김남욱GM 업무 진행건 / 🤵 대표님 업무 보고건 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과
+  // 재사용·새 GAS 호출 0)에서 담당자=김남욱 + 상태(진행중·보류)만 추린 뒤(GM 지시 2026-08-05 — 애초 필터가
+  // 생성자였는데 GM 이 시트에 업무를 등록한 사람이라 남의 업무 103건이 "김남욱GM 업무"로 잘못 표시됐다.
+  // 담당자 기준으로 정정), 내용칸에 "대표님 보고건" 표식이 있는지로 두 칸을 양분한다(같은 건이 두 칸에
+  // 겹쳐 뜨지 않게 — isCeoRow===wantCeoRows 가 서로 반대 조건이라 배타적). 완료는 두 토글 모두의 목적
+  // ("어디까지 갔나")과 무관해 제외. rows===null = 조회 실패(가짜 0건 금지 — 실패 문구는 renderExecCard가
+  // 공통 처리). ★2026-08-05 GM 결정으로 열쇠 입력 UI(gm1SetTodoKey)는 폐기 — gm1TodoKey()가 항상 값을
+  // 반환해 "열쇠 없음" 분기가 구조적으로 없다(같은 이유로 이 분기·잠금 문구는 삭제, 되살리지 않는다).
+  var CEO_REPORT_MARK = '대표님 보고건';
+  var GM_SSOT_HREF = 'coo/todo/업무 현황 SSOT.html'; // 업무&결재 SSOT 화면(실재 확인 완료) — 대표님 전용 페이지는 없어 이 화면을 같이 쓴다.
+  var _todoRowMap = {}; // id → 원본 행(보고필요/보고완료 버튼이 참조 — 새 GAS 호출 없이 이미 받은 rows 재사용).
+  function renderOwnerTodoFold(rows, badgeId, bodyId, wantCeoRows, emptyMsg, detailHref, detailLabel, linkNote){
+    if(!rows){ renderExecCard(badgeId, bodyId, null, '', detailHref, detailLabel, linkNote); return; }
+    var filtered = rows.filter(function(r){
       var owner = String(r['담당자'] || r.owner || '').trim();
       var status = String(r['상태'] || r.status || '').trim();
-      return owner.indexOf('김남욱') !== -1 && (status === '진행중' || status === '보류');
+      if(owner.indexOf('김남욱') === -1 || (status !== '진행중' && status !== '보류')) return false;
+      var isCeoRow = String(r['내용'] || r.content || '').indexOf(CEO_REPORT_MARK) !== -1;
+      return isCeoRow === wantCeoRows;
     }).sort(function(a, b){
       var da = String(a['종료일'] || a.endDate || '').trim() || '9999-99-99';
       var db = String(b['종료일'] || b.endDate || '').trim() || '9999-99-99';
       return da < db ? -1 : da > db ? 1 : 0;
     });
-    badge.textContent = gmRows.length + '건';
-    if(!gmRows.length){
-      if(!gm1TodoKey()){
-        bodyEl.innerHTML = '<div class="rep-empty">GM 업무는 이 브라우저에 열쇠를 넣어야 보입니다.<br><a href="#" onclick="gm1SetTodoKey();return false;" style="color:var(--accent);font-weight:700;">🔑 GM 할 일 열쇠 입력</a></div>';
-        return;
-      }
-      bodyEl.innerHTML = '<div class="rep-empty">아직 GM 님 담당으로 지정된 업무가 없습니다.<br>업무 시트에서 담당자를 「김남욱GM」으로 적으시면 이 칸에 바로 표시됩니다.</div>';
-      return;
-    }
-    var rowsHtml = gmRows.map(function(r){
-      var title = esc(String(r['업무명'] || r.title || r.name || '').trim());
-      var owner = esc(String(r['담당자'] || r.owner || '').trim());
-      var status = String(r['상태'] || r.status || '').trim();
-      var cat = esc(String(r['카테고리'] || r.category || '').trim());
-      var due = String(r['종료일'] || r.endDate || '').trim();
-      var overdue = due && due < today;
-      var dueHtml = esc(due || '—');
-      if(overdue) dueHtml = '<span style="color:#c0392b;font-weight:700;">' + dueHtml + '</span>';
-      var holdReason = status === '보류' ? esc(String(r['보류사유'] || r.holdReason || '').trim()) : '';
-      var titleHtml = title + (holdReason ? '<div style="font-size:11px;color:var(--dim);margin-top:2px;">보류사유: ' + holdReason + '</div>' : '');
-      return '<tr><td>' + titleHtml + '</td><td>' + owner + '</td><td>' + esc(status) + '</td><td>' + cat + '</td><td>' + dueHtml + '</td></tr>';
-    }).join('');
-    bodyEl.innerHTML = '<div class="rpt-wrap"><table class="rpt"><thead><tr>' +
-      '<th>업무명</th><th>담당자</th><th>상태</th><th>카테고리</th><th>종료일</th>' +
-      '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
+    var items = filtered.map(function(r){
+      var id = String(r['id'] || r.id || '').trim();
+      if(id) _todoRowMap[id] = r;
+      return {
+        title: String(r['업무명'] || r.title || r.name || '').trim(),
+        category: String(r['카테고리'] || r.category || '').trim(),
+        schedule: fmtSchedule(r['시작일'] || r.startDate, r['종료일'] || r.endDate),
+        id: id
+      };
+    });
+    renderExecCard(badgeId, bodyId, items, emptyMsg, detailHref, detailLabel, linkNote);
   }
+  function renderGmFold(rows){
+    renderOwnerTodoFold(rows, 'ceo-fold-badge', 'ceo-fold-body', true,
+      '아직 대표님 보고건으로 등록된 업무가 없습니다.', GM_SSOT_HREF, '자세히 보기 →',
+      '업무 SSOT 화면으로 연결됩니다(대표님 전용 화면은 없어 김남욱GM 업무와 같은 시트를 봅니다).');
+    renderOwnerTodoFold(rows, 'gm-fold-badge', 'gm-fold-body', false,
+      '아직 GM 님 담당으로 지정된 업무가 없습니다.<br>업무 시트에서 담당자를 「김남욱GM」으로 적으시면 이 칸에 바로 표시됩니다.',
+      GM_SSOT_HREF, '자세히 보기 →');
+  }
+  // ── 🔔 보고 필요 — 보고 문안(업무명·카테고리·일정·내용, 대표님 보고건 꼬리표 제거)을 정중한 평문으로
+  //    만들어 클립보드에 복사한다(GM 이 카카오톡에 그대로 붙여넣게). ⚠️ 텔레그램 자동발송은 이번에 빼뒀다
+  //    — 이 GAS(업무&결재 현황)의 텔레그램 발신 코드(_notifyTelegram)는 2026-05-28 GM 결재로 이미
+  //    no-op 폐기됐고, 되살리거나 새 발신 액션을 추가하려면 이 GAS를 고쳐 재배포해야 하는데 이 GAS가
+  //    받치는 "업무 현황 SSOT·결재 현황 SSOT"는 ssot/ownership_map.json 상 시로(CHRO) 소유·나우열M
+  //    관할이라 AI 접촉 금지 대상이다 — 웰리가 GM 결재를 먼저 받아야 진행 가능(임의 진행 안 함).
+  window.gm1ReportNeeded = function(btn, id){
+    var r = _todoRowMap[id];
+    if(!r){ alert('업무 정보를 찾을 수 없습니다.'); return; }
+    var title = String(r['업무명'] || '').trim();
+    var cat = String(r['카테고리'] || '').trim();
+    var sched = fmtSchedule(r['시작일'], r['종료일']);
+    var content = String(r['내용'] || '').replace(/\n?대표님 보고건\([^)]*\)\s*$/, '').trim();
+    var text = title + ' 관련하여 보고드립니다.\n\n· 카테고리: ' + (cat || '—') + '\n· 일정: ' + sched +
+      (content ? ('\n· 내용: ' + content) : '') + '\n\n확인 부탁드립니다.';
+    var old = btn.textContent;
+    function flash(ok){ btn.textContent = ok ? '복사됨 ✓' : '복사 실패'; setTimeout(function(){ btn.textContent = old; }, 2000); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ flash(true); }).catch(function(){ flash(false); prompt('아래 문구를 복사해 카카오톡에 붙여넣어 주세요:', text); });
+    } else {
+      flash(false);
+      prompt('아래 문구를 복사해 카카오톡에 붙여넣어 주세요:', text);
+    }
+  };
+  // ── ✅ 보고 완료 — 기존 todo_update 액션 재사용(새 액션 없음), 그 건의 상태만 '진행중'으로 바꾼다.
+  window.gm1ReportDone = function(btn, id){
+    var old = btn.textContent;
+    btn.disabled = true; btn.textContent = '저장 중…';
+    var qs = 'action=todo_update&id=' + encodeURIComponent(id) + '&' + encodeURIComponent('상태') + '=' + encodeURIComponent('진행중');
+    fetch(GAS_URL + '?' + qs, {method:'GET', redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(res && res.ok){
+          readWorkApproval().then(function(rows){
+            _workApprRows = rows; _workApprReady = true;
+            if(_data) renderSummaryStrip();
+            renderGmFold(rows);
+          });
+        } else {
+          btn.disabled = false; btn.textContent = old;
+          alert('저장하지 못했습니다' + (res && res.error ? (': ' + res.error) : '.'));
+        }
+      })
+      .catch(function(){ btn.disabled = false; btn.textContent = old; alert('저장하지 못했습니다.'); });
+  };
   /* ── (구) 전체 체크보드 렌더 로직은 여기 있었다 — coo/brojay/브로제이_업무분장.html 로 그대로 이관(사본 아님, 본문 삭제). ── */
 
   boot();
