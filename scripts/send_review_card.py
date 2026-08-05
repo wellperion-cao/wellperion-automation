@@ -344,11 +344,22 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
             print(f"[WARN] 그룹 qc_flags 수집 실패(무시): {exc}")
     qc_line = ("\n⚠️ <b>품질 경고</b> — " + " / ".join(qc_flags) + "\n") if qc_flags else ""
 
+    # 발행 시점 — publish_at 없으면(기존 항목 전부 포함) 지금까지 그래왔듯 승인 즉시.
+    publish_at = item.get("publish_at") or ""
+    if publish_at:
+        try:
+            pub_label = datetime.fromisoformat(publish_at).strftime("%Y-%m-%d %H:%M")
+        except ValueError:
+            pub_label = publish_at
+    else:
+        pub_label = "승인 즉시"
+
     caption = (
         f"🔎 <b>콘텐츠 검수 요청</b>\n"
         f"<b>{title}</b>\n"
         f"채널: {ch_label}\n"
         f"폴더: {folder}\n"
+        f"발행 — {pub_label}\n"
         f"{qc_line}\n"
         f"슬라이드 미리보기 ↑ · <a href=\"{M1_URL}\">M1에서 전체 보기</a>\n"
         f"확인 후 아래에서 바로 발행 승인하세요."

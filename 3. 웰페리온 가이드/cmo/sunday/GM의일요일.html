@@ -474,7 +474,8 @@
       var body = {
         name: '김남욱 GM',
         team: 'GM의 일요일',
-        intro: $('d_title').value.replace(/\n/g,' '),
+        // 제목의 줄바꿈은 살려 보낸다 — 표지 슬라이드가 이 줄바꿈 그대로 두 줄로 앉힌다.
+        intro: $('d_title').value,
         benefit: [
           '02 ' + $('d_line1').value,
           '03 ' + $('d_line2').value,

@@ -48,6 +48,8 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+from PIL import Image, ImageDraw, ImageFont
+
 ROOT = Path(__file__).resolve().parent.parent
 INTAKE_HTML = ROOT / "3. 웰페리온 가이드" / "cmo" / "intake" / "instructor_intake.html"
 ENV_FILE = ROOT / "telegram_bot" / ".env"
@@ -68,6 +70,12 @@ except Exception:
     def _tg_send(token, chat_id, text, **k):
         return False
 
+try:  # GM의 일요일 승인 카드 — 기존 검수카드 발송기 재사용(새 텔레그램 호출 금지)
+    from send_review_card import send_card as _send_review_card
+except Exception:
+    def _send_review_card(item, **k):
+        return False
+
 # 시트 헤더 정본(.deploy-instructor/instructor_intake.js INTAKE_HEADER 와 동일 순서) —
 # 헤더가 깨져 조회 응답이 col1..col9 로 올 때 이 순서로 이름을 되붙인다.
 INTAKE_HEADER = ["접수일시", "성함", "분류", "한줄소개", "회원이얻는것", "사진링크", "영상링크", "드라이브폴더", "상태"]
@@ -75,6 +83,17 @@ INTAKE_HEADER = ["접수일시", "성함", "분류", "한줄소개", "회원이�
 _TEST_MARKERS = ("__TEST__", "__배포검증__", "__폼검증__")
 _ID_SAFE_RE = re.compile(r"[^0-9A-Za-z가-힣]+")
 _GAS_URL_RE = re.compile(r'GAS_PROD\s*=\s*"([^"]+)"')
+
+# "GM의 일요일" 접수(분류 값 정확히 이 문자열) — 다른 분류는 기존 접수검토 경로 그대로.
+SUNDAY_TEAM = "GM의 일요일"
+_SUNDAY_LINE_RE = re.compile(r"^0([234])\s+(.*)$")
+_PUBLISH_AT_RE = re.compile(r"발행시점\s*·\s*(\S+)")
+_DRIVE_ID_RE = re.compile(r"/d/([a-zA-Z0-9_-]{10,})")
+_DRIVE_ID_QS_RE = re.compile(r"[?&]id=([a-zA-Z0-9_-]{10,})")
+_SUNDAY_ASPECT = (1080, 1350)
+_SUNDAY_CREAM = (0xF4, 0xF1, 0xEA)
+_SUNDAY_DARK = (0x23, 0x20, 0x1C)
+_SUNDAY_ORANGE = (0xF0, 0xB2, 0x7A)
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +204,283 @@ def build_item(row: dict, item_id: str) -> dict:
             "드라이브폴더": row.get("드라이브폴더", ""),
             "접수일시": row.get("접수일시", ""),
         },
+    }
+
+
+# ---------------------------------------------------------------------------
+# "GM의 일요일" 분기 — 사진+문장 접수를 캐러셀 4장으로 제작해 검수대기로 등록.
+# 다른 분류(강사소개 등)는 위 build_item()/접수검토 경로 그대로(회귀 0).
+# ---------------------------------------------------------------------------
+def is_sunday_row(row: dict) -> bool:
+    return (row.get("분류") or "").strip() == SUNDAY_TEAM
+
+
+def _parse_sunday_benefit(benefit: str) -> dict:
+    """GM의일요일.html 이 만든 benefit 텍스트를 문장1~3·본문 캡션·해시태그로 분해.
+    형식(정확히 이 모양): '02 문장1\\n03 문장2\\n04 문장3\\n\\n캡션…\\n\\n#해시태그…\\n\\n계정 @…'"""
+    lines = (benefit or "").replace("\r\n", "\n").split("\n")
+    numbered: dict[str, str] = {}
+    header_end = 0
+    for i, line in enumerate(lines):
+        m = _SUNDAY_LINE_RE.match(line.strip())
+        if m:
+            numbered[m.group(1)] = m.group(2).strip()
+            header_end = i + 1
+        elif numbered:
+            break  # 02/03/04 블록 종료(빈 줄 등)
+
+    rest = lines[header_end:]
+
+    # cut_idx = 캡션이 끝나는 지점 / hashtag_idx = 해시태그 줄(있을 때만)
+    hashtag_idx = None
+    cut_idx = None
+    for i, line in enumerate(rest):
+        s = line.strip()
+        if s.startswith("#"):
+            hashtag_idx = cut_idx = i
+            break
+        if s.startswith("계정 @") or s.startswith("발행시점"):
+            cut_idx = i              # 해시태그가 없어도 여기서 캡션을 끊는다
+            break
+
+    # 해시태그가 없어도 '계정 @…'·'발행시점 · …' 앞에서 캡션을 끊는다(내부 표기가 게시글 본문에 새지 않게).
+    caption_lines = rest[:cut_idx] if cut_idx is not None else list(rest)
+    caption_lines = [ln for ln in caption_lines if not ln.strip().startswith("발행시점")]
+    while caption_lines and not caption_lines[0].strip():
+        caption_lines.pop(0)
+    while caption_lines and not caption_lines[-1].strip():
+        caption_lines.pop()
+
+    pub_m = _PUBLISH_AT_RE.search(benefit or "")
+    pub_raw = pub_m.group(1) if pub_m else ""
+    publish_at = "" if pub_raw in ("", "즉시") else pub_raw
+
+    return {
+        "line1": numbered.get("2", ""),
+        "line2": numbered.get("3", ""),
+        "line3": numbered.get("4", ""),
+        "caption": "\n".join(caption_lines).strip(),
+        "hashtags": rest[hashtag_idx].strip() if hashtag_idx is not None else "",
+        "publish_at": publish_at,
+    }
+
+
+def _drive_file_id(url: str) -> str:
+    m = _DRIVE_ID_RE.search(url) or _DRIVE_ID_QS_RE.search(url)
+    return m.group(1) if m else ""
+
+
+def _download_drive_image(url: str, dest: Path) -> bool:
+    """드라이브 공유 URL → 파일ID 추출 → uc?export=download 로 원본 저장.
+    HTML(용량초과 확인 페이지 등) 응답이면 실패로 본다(조용히 성공 처리 금지)."""
+    fid = _drive_file_id(url)
+    if not fid:
+        return False
+    dl_url = f"https://drive.google.com/uc?export=download&id={fid}"
+    try:
+        req = urllib.request.Request(dl_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            ctype = resp.headers.get("Content-Type", "")
+            data = resp.read()
+    except Exception:
+        return False
+    looks_html = "text/html" in ctype.lower() or data[:15].strip().lower().startswith(b"<!doctype") \
+        or data[:5].lower() == b"<html"
+    if looks_html:
+        return False
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(data)
+    return True
+
+
+def _compose_sunday_cover(photo: Path, title: str, output: Path) -> None:
+    """post_1 — 표지: 사진 + 위→아래 그라디언트 + 하단 제목(줄바꿈 유지) + 상단 라벨."""
+    from slide_compositor import load_and_fit, apply_dark_gradient, load_font, draw_text_block
+    from brand_constants import BRAND_PRESETS
+
+    w, h = _SUNDAY_ASPECT
+    img = load_and_fit(photo, w, h)
+    img = apply_dark_gradient(img, BRAND_PRESETS["main"], "bottom")
+    draw = ImageDraw.Draw(img)
+    margin = int(w * 0.07)
+
+    label_font = load_font("medium", int(w * 0.026))
+    cx = margin
+    label_y = int(h * 0.06)
+    for ch in "GM의 일요일":
+        draw.text((cx, label_y), ch, font=label_font, fill=(255, 255, 255))
+        bb = label_font.getbbox(ch)
+        cx += (bb[2] - bb[0]) + int(label_font.size * 0.15)
+
+    title_font = _sunday_serif(int(w * 0.078))          # GM 시안 = 세리프 제목
+    lines = (title or "GM의 일요일").split("\n")
+    line_h = int(title_font.size * 1.32)
+    ty = h - len(lines) * line_h - int(h * 0.09)
+    draw_text_block(draw, lines, title_font, (255, 255, 255), margin, ty, line_spacing=1.32)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    img.convert("RGB").save(output, "JPEG", quality=92, optimize=True)
+
+
+def _sunday_serif(size: int):
+    """GM 시안이 제목·문장에 쓰는 한글 세리프(Gowun Batang).
+
+    브랜드 폰트는 Pretendard(고딕)뿐이라 세리프를 따로 들였다(OFL · 같은 폰트 폴더).
+    폰트가 없으면 조용히 깨지지 말고 기존 고딕으로 떨어진다 — 글자가 두부(□)로 나가는 것보다
+    낫고, 사람이 알아볼 수 있게 경고를 남긴다.
+    """
+    from slide_compositor import load_font
+    from brand_constants import FONT_DIR
+
+    path = FONT_DIR / "GowunBatang-Bold.ttf"
+    if not path.exists():
+        print(f"[WARN] 세리프 폰트 없음({path}) — 고딕으로 대체", file=sys.stderr)
+        return load_font("semibold", size)
+    return ImageFont.truetype(str(path), size)
+
+
+def _compose_sunday_photo_card(photo: Path, caption: str, output: Path) -> None:
+    """post_2/post_3 — 사진(상단 62%) + 문장(하단, 크림 배경)."""
+    from slide_compositor import load_and_fit, load_font, wrap_text, draw_text_block
+
+    w, h = _SUNDAY_ASPECT
+    photo_h = int(h * 0.62)
+    canvas = Image.new("RGB", (w, h), _SUNDAY_CREAM)
+    canvas.paste(load_and_fit(photo, w, photo_h), (0, 0))
+
+    draw = ImageDraw.Draw(canvas)
+    margin = int(w * 0.09)
+    body_font = _sunday_serif(int(w * 0.042))           # GM 시안 = 세리프 문장
+    lines = wrap_text(caption or "", body_font, w - 2 * margin)
+    line_h = int(body_font.size * 1.5)
+    text_y = photo_h + max(0, (h - photo_h - len(lines) * line_h) // 2)
+    draw_text_block(draw, lines, body_font, _SUNDAY_DARK, margin, text_y, line_spacing=1.5)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(output, "JPEG", quality=92, optimize=True)
+
+
+def _compose_sunday_think(caption: str, output: Path) -> None:
+    """post_4 — 사진 없음: 어두운 배경(#23201C) + 주황(#F0B27A) 바 + 문장3."""
+    from slide_compositor import load_font, wrap_text, draw_text_block
+
+    w, h = _SUNDAY_ASPECT
+    canvas = Image.new("RGB", (w, h), _SUNDAY_DARK)
+    draw = ImageDraw.Draw(canvas)
+    margin = int(w * 0.10)
+    body_font = _sunday_serif(int(w * 0.046))           # GM 시안 = 세리프 문장
+    lines = wrap_text(caption or "", body_font, w - 2 * margin)
+    line_h = int(body_font.size * 1.6)
+    total_h = len(lines) * line_h
+    bar_w, bar_h = int(w * 0.06), 4
+    start_y = max(0, (h - total_h) // 2 - int(h * 0.03))
+    draw.rectangle([(margin, start_y), (margin + bar_w, start_y + bar_h)], fill=_SUNDAY_ORANGE)
+    draw_text_block(draw, lines, body_font, (255, 255, 255), margin, start_y + int(h * 0.05), line_spacing=1.6)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(output, "JPEG", quality=92, optimize=True)
+
+
+def _compose_sunday_montage(slides: list[Path], output: Path) -> None:
+    """검수 카드용 몽타주 — 완성 슬라이드를 한 장으로 이어 붙인다.
+
+    GM 이 텔레그램 카드에서 '실제로 올라갈 그림'을 보고 승인하게 하는 것이 목적이다.
+    파일 이름은 send_review_card._preview_photo 가 찾는 규약(_검수_미리보기_*.png)을 따른다.
+    """
+    imgs = [Image.open(p).convert("RGB") for p in slides if p.exists()]
+    if not imgs:
+        raise FileNotFoundError("몽타주로 붙일 슬라이드가 없다")
+    cell_w = 540
+    cells = [im.resize((cell_w, int(im.height * cell_w / im.width))) for im in imgs]
+    gap = 12
+    total_w = sum(c.width for c in cells) + gap * (len(cells) - 1)
+    total_h = max(c.height for c in cells)
+    canvas = Image.new("RGB", (total_w, total_h), _SUNDAY_CREAM)
+    x = 0
+    for c in cells:
+        canvas.paste(c, (x, 0))
+        x += c.width + gap
+    output.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(output, "PNG", optimize=True)
+
+
+def build_sunday_item(row: dict, item_id: str) -> dict | None:
+    """'GM의 일요일' 접수 1건 → review_queue 항목(검수대기) 빌드. 사진 0장이거나
+    다운로드가 전부 실패하면 None(경고는 여기서 stderr 로 남김 — 조용한 성공 처리 금지)."""
+    intro = (row.get("한줄소개") or "").strip()
+    parsed = _parse_sunday_benefit(row.get("회원이얻는것") or "")
+    links = [u.strip() for u in (row.get("사진링크") or "").split("\n") if u.strip()]
+    if not links:
+        print(f"[WARN] GM의 일요일 접수 사진 0장 — 제작 불가: {item_id}", file=sys.stderr)
+        return None
+
+    date8 = re.sub(r"[^0-9]", "", str(row.get("접수일시") or ""))[:8]
+    date6 = date8[2:8] if len(date8) == 8 else datetime.now().strftime("%y%m%d")
+    slug = _id_safe(intro)[:24] or "무제"
+    folder_rel = f"instagram/namuk.wellperion/{date6}_GM일요일_{slug}"
+    src_dir = ROOT / folder_rel / "src"
+    out_dir = ROOT / folder_rel / "output"
+
+    downloaded: list[Path] = []
+    for i, url in enumerate(links, start=1):
+        dest = src_dir / f"src_{i:02d}.jpg"
+        if _download_drive_image(url, dest):
+            downloaded.append(dest)
+        else:
+            print(f"[WARN] GM의 일요일 사진 다운로드 실패(건너뜀): {item_id} #{i} {url}", file=sys.stderr)
+
+    if not downloaded:
+        print(f"[WARN] GM의 일요일 접수 다운로드 전량 실패 — 제작 불가: {item_id}", file=sys.stderr)
+        return None
+
+    def pick(idx: int) -> Path:
+        return downloaded[idx] if idx < len(downloaded) else downloaded[-1]
+
+    slides_rel = []
+    try:
+        _compose_sunday_cover(pick(0), intro, out_dir / "post_1.jpg")
+        slides_rel.append(f"{folder_rel}/output/post_1.jpg")
+        _compose_sunday_photo_card(pick(1), parsed["line1"], out_dir / "post_2.jpg")
+        slides_rel.append(f"{folder_rel}/output/post_2.jpg")
+        _compose_sunday_photo_card(pick(2), parsed["line2"], out_dir / "post_3.jpg")
+        slides_rel.append(f"{folder_rel}/output/post_3.jpg")
+        _compose_sunday_think(parsed["line3"], out_dir / "post_4.jpg")
+        slides_rel.append(f"{folder_rel}/output/post_4.jpg")
+    except Exception as exc:
+        print(f"[WARN] GM의 일요일 슬라이드 제작 실패: {item_id}: {exc}", file=sys.stderr)
+        return None
+
+    # 검수 카드에 붙일 몽타주 — send_review_card._preview_photo 가 찾는 이름 규약
+    # (folder/output/_검수_미리보기_*.png)을 그대로 따른다. 이 파일이 없으면 카드가
+    # 이미지 없이 글자로만 나가, GM 이 '결과물'을 못 보고 승인해야 한다.
+    try:
+        _compose_sunday_montage(
+            [ROOT / s for s in slides_rel], out_dir / "_검수_미리보기_4장.png"
+        )
+    except Exception as exc:                       # 몽타주 실패가 접수 자체를 죽이면 안 된다
+        print(f"[WARN] GM의 일요일 검수 미리보기 생성 실패(카드는 글자로 나갑니다): {item_id}: {exc}",
+              file=sys.stderr)
+
+    caption_full = parsed["caption"]
+    if parsed["hashtags"]:
+        caption_full = f"{caption_full}\n\n{parsed['hashtags']}" if caption_full else parsed["hashtags"]
+    (ROOT / folder_rel / "caption.md").write_text(caption_full, encoding="utf-8")
+
+    return {
+        "title": f"GM의 일요일 — {intro}",
+        "channel": "인스타그램 (namuk.wellperion)",
+        "account": "namuk.wellperion",
+        "folder": folder_rel,
+        "slides": slides_rel,
+        "caption": caption_full,
+        "location": "웰페리온 스포츠클럽",
+        "collaborators": [],
+        "mentions": [],
+        "status": "검수대기",
+        "preview": slides_rel[0],
+        "id": item_id,
+        "publish_at": parsed["publish_at"],
+        "note": f"[GM의 일요일 접수 {row.get('접수일시', '')}] cmo_intake_to_review.py 자동 제작(GM의일요일 분기)",
     }
 
 
@@ -324,14 +620,36 @@ def main() -> int:
         return 0
 
     if args.dry_run:
-        print("[DRY-RUN] review_queue.json 추가·텔레그램 발송 생략")
+        print("[DRY-RUN] review_queue.json 추가·텔레그램 발송·GM의 일요일 제작 전부 생략")
         return 0
+
+    # GM의 일요일 분기 — 다운로드·슬라이드 제작(무거운 작업)은 큐 락 밖에서 미리 끝낸다.
+    # 실패(사진 0장·다운로드 전량 실패·합성 예외)는 build_sunday_item 이 None 을 반환하며
+    # stderr 에 이미 경고를 남긴다 — 이번 실행에서는 등록하지 않고 다음 폴링에서 재시도.
+    sunday_items: dict[str, dict] = {}
+    other_candidates = []
+    for item_id, row in candidates:
+        if is_sunday_row(row):
+            try:
+                built = build_sunday_item(row, item_id)
+            except Exception as exc:
+                built = None
+                print(f"[WARN] GM의 일요일 처리 중 예외(건너뜀, 다른 접수는 계속): {item_id}: {exc}", file=sys.stderr)
+            if built is not None:
+                sunday_items[item_id] = built
+        else:
+            other_candidates.append((item_id, row))
 
     added_items: list[dict] = []
 
     def _mutator(items: list) -> list:
         current_ids = {it.get("id") for it in items if isinstance(it, dict)}
-        for item_id, row in candidates:
+        for item_id, item in sunday_items.items():
+            if item_id in current_ids:
+                continue
+            items.append(item)
+            added_items.append(item)
+        for item_id, row in other_candidates:
             if item_id in current_ids:
                 continue
             item = build_item(row, item_id)
@@ -355,10 +673,12 @@ def main() -> int:
 
     sent_state = _load_sent_state()
 
-    # 시모(CMO) 배 등록 — 텔레그램 발송 성공 여부와 무관하게 시도한다(알림이 묻혀도
-    # 배는 항로에 남아야 한다 · 배9888 후속 사고). 항목별 try/except로 격리.
+    # 시모(CMO) 배 등록 — GM의 일요일은 건너뛴다(승인 카드가 곧 할 일이라 배가 겹친다).
+    # 다른 분류는 텔레그램 발송 성공 여부와 무관하게 시도(알림이 묻혀도 배는 항로에
+    # 남아야 한다 · 배9888 후속 사고). 항목별 try/except로 격리.
     ship_count = 0
-    for item in added_items:
+    non_sunday_added = [it for it in added_items if it["id"] not in sunday_items]
+    for item in non_sunday_added:
         iid = item["id"]
         entry = sent_state.setdefault(iid, {})
         if entry.get("ship_created"):
@@ -371,7 +691,7 @@ def main() -> int:
         except Exception as e:
             entry["ship_created"] = False
             print(f"[WARN] 시모 배 생성 실패(접수 흐름은 계속 진행): {iid}: {e}")
-    print(f"[INFO] 시모(CMO) 배 등록 {ship_count}/{len(added_items)}건")
+    print(f"[INFO] 시모(CMO) 배 등록 {ship_count}/{len(non_sunday_added)}건")
 
     bot_token = _load_env_val("TELEGRAM_BOT_TOKEN")
     chat_id = _load_env_val("TELEGRAM_CHAT_ID")
@@ -380,21 +700,32 @@ def main() -> int:
         _save_sent_state(sent_state)
         return 0
 
+    # GM의 일요일 = 승인카드(send_review_card, ✅/❌ 버튼) / 그 외 = 기존 단순 알림 카드.
+    # 단순 알림(_send_telegram_card)을 GM의 일요일에 같이 보내면 중복 발신이 된다.
     sent_count = 0
+    review_card_count = 0
     for item in added_items:
         iid = item["id"]
         entry = sent_state.setdefault(iid, {})
         if entry.get("sent_at"):
             continue
-        ok = _send_telegram_card(bot_token, chat_id, item)
+        if iid in sunday_items:
+            ok = _send_review_card(item)
+            if ok:
+                review_card_count += 1
+            else:
+                print(f"[WARN] GM의 일요일 승인 카드 발송 실패: {iid}")
+        else:
+            ok = _send_telegram_card(bot_token, chat_id, item)
+            if ok:
+                sent_count += 1
+            else:
+                print(f"[WARN] 텔레그램 카드 발송 실패: {iid}")
         entry["sent_at"] = datetime.now().isoformat(timespec="seconds")
         entry["ok"] = ok
-        if ok:
-            sent_count += 1
-        else:
-            print(f"[WARN] 텔레그램 카드 발송 실패: {iid}")
     _save_sent_state(sent_state)
-    print(f"[INFO] GM 업무보고방 카드 발송 {sent_count}/{len(added_items)}건")
+    print(f"[INFO] GM 업무보고방 카드 발송 {sent_count}/{len(non_sunday_added)}건 · "
+          f"GM의 일요일 승인카드 {review_card_count}/{len(sunday_items)}건")
     return 0
 
 
