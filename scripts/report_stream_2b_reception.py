@@ -279,7 +279,7 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
     return "\n".join(lines)
 
 
-def build_digest(today: str | None = None) -> str:
+def build_digest(today: str | None = None, persist_completion: bool = True) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
     # 보낸이를 밝힌다(2026-07-31 GM 지시 "웰리가 보냈다는 것도 인지시켜야 하고").
@@ -299,7 +299,7 @@ def build_digest(today: str | None = None) -> str:
         parts.append(score.lstrip("\n").removeprefix(_DIVIDER).strip())
     parts.append(f"{_DIVIDER}\n{_today_section(rows, today)}")
     parts.append(f"{_DIVIDER}\n{_aging_block(rows)}")
-    completion = _completion_block(rows)
+    completion = _completion_block(rows, persist=persist_completion)
     if completion:
         parts.append(completion)
     return "\n\n".join(parts)
@@ -321,7 +321,7 @@ def seed_completion_cursor() -> int:
 
 def run(today: str | None = None, dry_run: bool = True) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
-    text = build_digest(today)
+    text = build_digest(today, persist_completion=not dry_run)
     if dry_run:
         print(f"[stream2b] DRY-RUN — chat_id={TELEGRAM_CHAT_ID} 발송 안 함", flush=True)
         return text

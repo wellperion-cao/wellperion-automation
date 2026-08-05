@@ -389,7 +389,8 @@ def seed_completion_cursor() -> int:
     return len(all_true_keys)
 
 
-def build_digest(today: str | None = None, sample: bool = False, sample_n: int = 15) -> str:
+def build_digest(today: str | None = None, sample: bool = False, sample_n: int = 15,
+                  persist_completion: bool = True) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
 
@@ -534,7 +535,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         )
     section_contact = f"{contact_head}\n{contact_body}"
 
-    completion = "" if sample else _completion_block(raw_groups)
+    completion = "" if sample else _completion_block(raw_groups, persist=persist_completion)
     tail = f"\n\n{completion}" if completion else ""
     return (
         f"{header}\n\n{section_new}\n\n"

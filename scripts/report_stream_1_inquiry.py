@@ -68,7 +68,7 @@ def _send_kakao(plain_text: str) -> None:
 def run(today: str | None = None, dry_run: bool = True, kakao_go: bool = False) -> str:
     """메시지 렌더 + 조건부 발송. 렌더된 HTML 문자열 반환."""
     today = today or datetime.now().strftime("%Y-%m-%d")
-    html_text = build_digest(today)
+    html_text = build_digest(today, persist_completion=not dry_run)
     if dry_run:
         print(f"[stream1] DRY-RUN — chat_id={TELEGRAM_CHAT_ID} 발송 안 함", flush=True)
         return html_text
