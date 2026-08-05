@@ -529,6 +529,10 @@ tr.row-registered td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
    김태엽 프로 "담당자 선택 시 배경·글자 둘 다 흰색") — color-scheme만으로는 방어가 안 돼 매번 같은 방식으로 새는 것이라
    이번엔 두 곳을 한 번에 막는다. */
 .oa-owner-sel, .oa-owner-sel option, .mreg-owner-sel, .mreg-owner-sel option{ color:var(--text); background-color:var(--paper); }
+/* 전수 방어(2026-08-05 시토, GM "다 정리해서") — 같은 증상이 세 번(07-28·08-03·08-04) 개별 select 클래스에
+   땜질됐는데 그때마다 다른 select가 또 걸렸다. color-scheme:dark만으론 브라우저별 옵션 렌더가 불완전(위 주석)해서,
+   이 페이지의 select 옵션 팝업 전체를 한 번에 막는다 — 새로 생기는 select도 자동 방어(다음 재발 없음). */
+select, select option{ color:var(--text); background-color:var(--paper); }
 
 /* ── 멤버십 문의 현황표(#dbTable) 담당 칼럼 화면 숨김 — 데이터·저장은 유지, 표시만 제거. 강습표는 미적용(지시 범위). 2026-07-07 시포·GM ── */
 /* 담당 칸 숨김 — display:none 금지(2026-07-20 3차 · GM "우측에 빈틈 왜 만들어?").
@@ -6661,7 +6665,10 @@ function loadRegistered() {
   var from = document.getElementById('regFrom').value || '';
   var to   = document.getElementById('regTo').value   || '';
 
-  var url = GAS_URL + '?action=member_registered_list';
+  // newOnly=1(2026-08-05 시토, GM 지적 "신규등록자가 아니라 재등록자는 왜 나오는거야?") — 서버는 이미
+  // 배361(2026-08-04)에서 이 필터를 만들었고 옆 pane(_mregLoad)은 쓰고 있었는데 이 화면(카드3·pane-registered)만
+  // 빠져 있었다. 새 판정 만들지 않고 기존 서버 필터를 그대로 재사용.
+  var url = GAS_URL + '?action=member_registered_list&newOnly=1';
   if (from) url += '&from=' + encodeURIComponent(from);
   if (to)   url += '&to='   + encodeURIComponent(to);
 
@@ -7131,7 +7138,7 @@ function _oaSportCfg(key){ for (var i=0;i<OWNER_ASSIGN_SPORTS.length;i++){ if (O
 var OWNER_ASSIGN_ROSTER_KEYS = ['PT', '골프', 'P.L'];
 var OWNER_ASSIGN_EXCLUDE = { '이정한': 1, '정시우': 1, '김명선': 1, '이우성': 1 };
 var OWNER_ASSIGN_FORCE_INCLUDE = { 'PT': ['양승문'] };   // 유효회원 116명 실사용 담당자인데 명단(하드코딩/팀시트) 누락분 보강
-// 종목 상관없이 통합된 배정 후보 목록(끝=담당자 X). pane-ownerAssign·mreg 담당자 셀 공용.
+// 종목 상관없이 통합된 배정 후보 목록(끝=담당자 X). 5탭 중 후보 없는 종목(수영·스쿼시 등)의 폴백 전용 — GM 2026-07-20.
 function _oaOwnerOptionsCombined(){
   var seen = {}, list = [];
   OWNER_ASSIGN_ROSTER_KEYS.forEach(function(key){
@@ -7139,6 +7146,22 @@ function _oaOwnerOptionsCombined(){
     _lessonRosterFor(cfg.rosterKey).forEach(function(n){ if (n && !seen[n] && !OWNER_ASSIGN_EXCLUDE[n]) { seen[n] = 1; list.push(n); } });
     (OWNER_ASSIGN_FORCE_INCLUDE[key] || []).forEach(function(n){ if (!seen[n]) { seen[n] = 1; list.push(n); } });
   });
+  list.push(LESSON_UNASSIGNED_OPTION);
+  return list;
+}
+// 종목별 배정 후보(끝=담당자 X) — pane-ownerAssign·mreg 담당자 셀 공용. 2026-08-05 시토(GM 지적
+// "종목별 강사들이 안나오고 다른 강사들까지 나온다") — 위 _oaOwnerOptionsCombined가 PT/골프/필라테스 세
+// 종목 명단을 합쳐 셋 다 같은 통합 목록을 쓰고 있었다(PT 셀에 골프·필라테스 강사까지 섞여 나옴).
+// 후보 종목(PT/골프/P.L)은 그 종목 명단만 쓰고, 후보 없는 종목(수영·스쿼시 등 5탭 population 전용)은
+// 기존 통합 목록으로 폴백한다(GM 2026-07-20 결정 유지). 명단이 비면(매칭 실패) 통합 목록으로 폴백 —
+// 빈 드롭다운보다 낫다(약속: 매칭 실패 시 필터 걸지 않는다).
+function _oaOwnerOptionsForSport(key){
+  if (OWNER_ASSIGN_ROSTER_KEYS.indexOf(key) < 0) return _oaOwnerOptionsCombined();
+  var cfg = _oaSportCfg(key);
+  var seen = {}, list = [];
+  _lessonRosterFor(cfg.rosterKey).forEach(function(n){ if (n && !seen[n] && !OWNER_ASSIGN_EXCLUDE[n]) { seen[n] = 1; list.push(n); } });
+  (OWNER_ASSIGN_FORCE_INCLUDE[key] || []).forEach(function(n){ if (!seen[n]) { seen[n] = 1; list.push(n); } });
+  if (!list.length) return _oaOwnerOptionsCombined();   // 매칭 실패 = 필터 걸지 않고 전체 후보 표시
   list.push(LESSON_UNASSIGNED_OPTION);
   return list;
 }
@@ -7263,8 +7286,8 @@ function _oaRender(){
     return;
   }
 
-  // 드롭다운 옵션 = 종목 무관 P.T·필라테스·골프 통합 명단(roster) ∪ 컬럼 실제값 + '담당자 X'(GM 2026-07-20)
-  var opts = _oaOwnerOptionsCombined();   // 새 배열(끝=담당자 X)
+  // 드롭다운 옵션 = 이 종목(_oaSport) 명단 ∪ 컬럼 실제값 + '담당자 X'. 2026-08-05 시토 — 종목별로 갈랐다(위 함수 주석).
+  var opts = _oaOwnerOptionsForSport(_oaSport);   // 새 배열(끝=담당자 X)
   var optSet = {}; opts.forEach(function(o){ optSet[o] = 1; });
   var present = {}; pop.forEach(function(r){ var v = String(r[cfg.col]||'').trim(); if (v) present[v] = 1; });
   Object.keys(present).forEach(function(v){ if (!optSet[v]){ opts.splice(opts.length - 1, 0, v); optSet[v] = 1; } });
@@ -7550,11 +7573,14 @@ function _mregEnsureMembersThen(cb){
 //   ▸★모르는 표기는 손대지 않고 원문 그대로 낸다(조용히 빈칸이 되는 것 금지).
 //   ▸원문은 잃지 않는다 — 셀 title 로 남겨 마우스만 올리면 시트 원문이 그대로 보인다.
 //   ▸실측 검산(2026-08-03): 라이브 1,691건에 나타나는 15가지 값 전부 변환 성공·실패 0.
+// 2026-08-05 시토(GM 지시 "프로그램칸도... 수강반종목명 // (정)플래티넘+골프 이런식으로 통일") —
+//   (정)/(단) 마커를 버리고 있었는데(옛 정규식이 리터럴로만 매치·캡처 안 함) GM 예시엔 마커가 붙어 있다.
+//   마커도 같이 캡처해 등급 앞에 되살린다 — 새 조립 규칙이 아니라 이미 있던 캡처만 넓힌 것.
 function _mregProgLabel(raw){
   var s = String(raw || '').trim();
   if (!s) return '—';
-  var m = s.match(/^★?\s*\((?:정|단)\)\s*([^▶]+?)\s*▶/);                 // 시트 옛 표기 → 등급만
-  if (m) return m[1].trim();
+  var m = s.match(/^★?\s*(\((?:정|단)\))\s*([^▶]+?)\s*▶/);                // 시트 옛 표기 → (정/단)+등급
+  if (m) return m[1] + m[2].trim();
   var w = s.match(/^([^(]+?)\s*\(/);                                     // 웹접수형
   if (w) return w[1].trim();
   return s;                                                              // 모르는 표기 = 원문 유지
@@ -7577,12 +7603,13 @@ function _mregRender(){
     html += '<tr data-mregidx="' + idx + '">' +
       '<td class="left" style="font-weight:700">' + (m.name ? esc(m.name) : '—') + (isNew ? '<span class="reg-new-badge">NEW</span>' : '') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(_oaMaskPhone(m.phone)) + '</td>' +
-      // ★수강반종목명은 시트 원문 그대로 보여준다 — 축약하지 않는다(GM 지시 2026-08-04).
-      //   GM: "멤버십 회원관리 수강반종목명이랑 달리 되어있어서 오류가 생길수도 있으니".
-      //   화면이 축약해 보여주면 사람이 그 축약값을 정답으로 알고 옮겨 적게 되고, 그게 시트에
-      //   두 벌 표기를 만든다. 서버도 같은 날 쓰기 값을 시트 정식명으로 맞추도록 고쳤다(@218).
-      //   ※다른 표(6747줄)는 종전대로 _mregProgLabel 축약 유지 — GM 지시 범위가 이 표다.
-      '<td style="font-size:11px;color:var(--dim);word-break:keep-all">' + esc(m.program || '—') + '</td>' +
+      // ★2026-08-05 재지시(GM "프로그램칸도 멤버십 회원관리 현황처럼... 통일") — 2026-08-04엔 이 표만
+      //   원문 그대로 두라고 했는데(바로 아래 옛 사유), 오늘 GM이 두 표 다 같은 형식으로 통일해 달라고
+      //   다시 지시해 그 결정을 대체한다. 새 조립 만들지 않고 6747줄과 같은 _mregProgLabel 재사용 —
+      //   원문은 title(툴팁)로 남겨 완전히 잃지 않는다.
+      // (2026-08-04 원 사유, 참고용) 당시엔 "축약값을 정답으로 알고 옮겨 적어 시트에 두 벌 표기가 생긴다"는
+      //   우려로 원문 그대로 뒀었다 — 오늘 지시로 두 표 통일이 우선한다.
+      '<td style="font-size:11px;color:var(--dim);word-break:keep-all" title="' + esc(m.program || '') + '">' + esc(_mregProgLabel(m.program) || '—') + '</td>' +
       '<td style="font-size:12px;color:var(--dim)">' + esc(m.regDate || '—') + '</td>' +
       '<td class="left">' + _mregOwnerCell(m, membersReady) + '</td>' +
       '</tr>';
@@ -7620,7 +7647,7 @@ function _mregOwnerCell(m, membersReady){
       if (_prog.indexOf('골프') < 0 && !/golf/i.test(_prog) && !cur) return;   // 골프 미신청 + 미배정 → 골프 셀 생략
     }
     var selVal = cur || LESSON_UNASSIGNED_OPTION;   // 빈칸=미배정(담당자 X)로 표시
-    var opts = _oaOwnerOptionsCombined();   // 종목 상관없이 P.T·필라테스·골프 통합(GM 2026-07-20) — 새 배열(끝=담당자 X)
+    var opts = _oaOwnerOptionsForSport(key);   // 이 셀의 종목(key) 명단만. 2026-08-05 시토 — 새 배열(끝=담당자 X)
     var optSet = {}; opts.forEach(function(o){ optSet[o] = 1; });
     if (cur && !optSet[cur]) opts.splice(opts.length - 1, 0, cur);   // 현재값이 명단에 없으면 '담당자 X' 앞에 삽입
     var sel = '<select class="mreg-owner-sel" data-field="' + esc(cfg.col) + '" data-phone="' + phoneAttr + '" data-rowindex="' + ri + '" title="' + esc(cfg.label) + ' 담당자" style="max-width:130px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:11.5px;font-family:inherit;cursor:pointer">';
@@ -11313,7 +11340,8 @@ function buildDbRow(row, isNew) {
   }
   // 등록종목(SUC 계열)·LOSS 사유 병기 — 진행상황 칸 하단 소자막 + 툴팁. 데이터=dbRows(regProgram/lossReason). 2026-07-18 시토(GM요청) 대행.
   var _stExtra = '';
-  if ((row.status === 'SUC' || row.status === '단기SUC') && String(row.regProgram || '').trim()) _stExtra = '🏷️ ' + String(row.regProgram).trim();
+  // 2026-08-05 시토(GM "새문의에서 SUC 처리해 종목 넣는 것도 다 통일해줘") — 프로그램 칸과 같은 형식(_mregProgLabel) 재사용.
+  if ((row.status === 'SUC' || row.status === '단기SUC') && String(row.regProgram || '').trim()) _stExtra = '🏷️ ' + _mregProgLabel(row.regProgram);
   else if (row.status === 'LOSS' && String(row.lossReason || '').trim()) _stExtra = '사유: ' + String(row.lossReason).trim();
   else if (row.status === 'LOSS') _stExtra = '⚠ 사유 미기록';   // 사유 필수화(배101) — 미기록 건을 눈에 보이게(클릭해 LOSS 재선택 시 사유 모달)
   if (_stExtra) {
