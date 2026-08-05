@@ -145,14 +145,14 @@
       "when_sort": "0730",
       "freq": "daily",
       "channel": "kakao",
-      "room": "★운영부",
+      "room": "★운영부 / ★중간관리자",
       "chat_id": null,
-      "what": "아침 종합 운영 다이제스트(점검·문의·종합접수·예약·업무)",
+      "what": "아침 종합 운영 다이제스트(점검·문의·종합접수·예약·업무) + 사람이 처리할 배 전달(시우→★운영부 최준용M · 시로·시뽀→★중간관리자 나우열M)",
       "owner": "시토",
       "trigger": "schtasks",
       "state": "live",
-      "state_note": "킬스위치 status/ops_digest_send.json enabled=true(GM go 2026-07-14 발효) | [2026-08-04 정정] GM 확인 — 실제 방 이름은 공백 없는 \"★운영부\"(kakao_rooms.json 08-04 갱신과 일치). kakao_report_sender._title_key 가 공백 무시 대조라 표기는 기능에 영향 없음, 문서만 정정.",
-      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py:41-65"
+      "state_note": "킬스위치 status/ops_digest_send.json enabled=true(GM go 2026-07-14 발효) | [2026-08-04 정정] GM 확인 — 실제 방 이름은 공백 없는 \"★운영부\"(kakao_rooms.json 08-04 갱신과 일치). kakao_report_sender._title_key 가 공백 무시 대조라 표기는 기능에 영향 없음, 문서만 정정. | [2026-08-05 시토 · GM 편제 확정] 같은 07:30 실행에 '사람이 처리할 배 전달' 1통이 붙었다 — AI가 실행하지 않는 시우·시로·시뽀 배(status/_queue.json)를 담당자 이름과 함께 방에 넘긴다. 목록이 지난번과 같으면 발신하지 않는다(지문=status/heartbeats/clevel-queue-human-relay.json). 새 발신기·새 예약작업 없음 — 기존 관문 kakao_report_sender.py 재사용.",
+      "source": "Wellperion-Ops-Morning-Digest-0730 · scripts/send_ops_digest.py(다이제스트 + send_relays)"
     },
     {
       "id": "win-0800-ceo",
