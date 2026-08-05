@@ -225,6 +225,28 @@ def _load_completion_state() -> dict:
     return {"enabled": False, "reception_seen_done_ids": [], "inquiry_seen_keys": []}
 
 
+# ★2026-08-05 시토 — 커서를 '보낸 뒤에' 파일에 쓴다.
+#   전에는 _completion_block 이 문구를 만드는 그 자리에서 곧바로 파일에 커서를 적었다.
+#   그런데 발송은 그 다음 단계라, 텔레그램이 실패하면(토큰 만료·429·방 권한 등) 아무 방에도
+#   안 갔는데 커서만 전진해 있었다 — 그 완료건들은 다음 날에도 '이미 통보함'으로 걸러져
+#   영영 통보되지 않는다. 조용히 사라지는 종류의 사고라 아무도 모른다.
+#   그래서 문구를 만들 때는 메모리의 state 만 갱신해 두고(같은 실행 안에서의 멱등은 그대로),
+#   실제 파일 쓰기는 발송 성공을 확인한 호출자가 commit_completion_cursor() 로 한 번 한다.
+#   발송이 실패하면 커서가 안 움직이므로 다음 회차에 다시 통보된다(잃는 것보다 겹치는 게 낫다).
+_pending_state: dict | None = None
+
+
+def commit_completion_cursor() -> bool:
+    """처리완료 통보가 실제로 나간 뒤 호출 — 대기 중인 커서를 파일에 확정한다.
+    대기분이 없으면 아무것도 하지 않고 False."""
+    global _pending_state
+    if _pending_state is None:
+        return False
+    _save_completion_state(_pending_state)
+    _pending_state = None
+    return True
+
+
 def _save_completion_state(state: dict) -> None:
     try:
         COMPLETION_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -246,8 +268,9 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
     done_now = [r for r in rows if str(r.get("status", "")) == "완료" and str(r.get("regId") or "")]
     new_done = [r for r in done_now if str(r["regId"]) not in seen]
     if persist:
+        global _pending_state
         state["reception_seen_done_ids"] = sorted({str(r["regId"]) for r in done_now})
-        _save_completion_state(state)
+        _pending_state = state   # 파일 확정은 발송 성공 뒤 commit_completion_cursor()
     if not new_done:
         return ""
 
@@ -332,6 +355,8 @@ def run(today: str | None = None, dry_run: bool = True) -> str:
     # 전역 페이싱·429 재시도·로깅 = tg_outbound_log.send() 경유(플러드 방어, 개별 requests 금지).
     ok = tg_send(token, TELEGRAM_CHAT_ID, text, source="report_stream_2b_reception")
     print(f"[stream2b] 텔레그램 {'완료' if ok else '실패'} → {TELEGRAM_CHAT_ID}", flush=True)
+    if ok:
+        commit_completion_cursor()   # 실제로 나간 뒤에만 커서 전진(실패 시 다음 회차 재통보)
     return text
 
 

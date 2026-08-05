@@ -2658,9 +2658,13 @@ def run_daily_digest(early: bool = False) -> None:
         s2b_msg = _s2b.build_digest(today)
         success = send_telegram(DIGEST_RECEPTION_CHAT_ID, s2b_msg)
         if success:
+            # ★2026-08-05 시토 — 처리완료 통보 커서는 '실제로 나간 뒤에만' 전진시킨다.
+            #   전에는 build_digest() 안에서 곧바로 파일에 적어, 발송이 실패해도 커서가
+            #   움직여 그 완료건들이 영영 통보되지 않았다(조용히 사라지는 사고).
+            _s2b.commit_completion_cursor()
             logger.info(f"{label} 종합접수방 발송 완료 chat_id={DIGEST_RECEPTION_CHAT_ID} (stream2b)")
         else:
-            logger.error(f"{label} 종합접수방 발송 실패 chat_id={DIGEST_RECEPTION_CHAT_ID}")
+            logger.error(f"{label} 종합접수방 발송 실패 chat_id={DIGEST_RECEPTION_CHAT_ID} — 완료통보 커서 미전진(다음 회차 재통보)")
     except Exception as e:
         logger.error(f"{label} 종합접수방(stream2b) 예외: {e}")
 

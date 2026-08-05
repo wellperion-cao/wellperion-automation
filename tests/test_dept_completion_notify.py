@@ -112,6 +112,27 @@ def test_reception_only_new_completions_after_seen_cursor():
     assert "처리 완료 알림 2건" in out  # R4·R5만 신규
 
 
+# ---------------------------------------------------------------------------
+# ⑤ 커서는 '보낸 뒤에' 확정된다 (2026-08-05 시토) — 발송이 실패하면 커서가 움직이면 안 된다.
+#   움직여 버리면 그 완료건들은 다음 날 '이미 통보함'으로 걸러져 영영 통보되지 않는다.
+# ---------------------------------------------------------------------------
+def test_reception_cursor_committed_only_after_send(monkeypatch, tmp_path):
+    import json
+    tmp = _isolate_state_path(monkeypatch, tmp_path)
+    monkeypatch.setattr(RC, "_pending_state", None)   # 앞 테스트의 대기분 격리
+    rows = _reception_rows(5)
+    state = {"enabled": True, "reception_seen_done_ids": []}
+
+    out = RC._completion_block(rows, state=state, persist=True)
+    assert "처리 완료 알림 5건" in out
+    assert not tmp.exists()          # 발송 전 = 파일에 아무것도 안 씀(발송 실패 시 재통보 보장)
+
+    assert RC.commit_completion_cursor() is True     # 발송 성공 뒤에야 확정
+    saved = json.loads(tmp.read_text(encoding="utf-8"))
+    assert saved["reception_seen_done_ids"] == ["R1", "R2", "R3", "R4", "R5"]
+    assert RC.commit_completion_cursor() is False    # 대기분 없으면 두 번 쓰지 않음
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
