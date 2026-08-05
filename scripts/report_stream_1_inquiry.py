@@ -37,8 +37,15 @@ _SENDER = REPO_ROOT / "scripts" / "kakao_report_sender.py"
 
 
 def build_plain(today: str | None = None) -> str:
-    """HTML 태그 제거 + 엔티티 복원 → 카카오 평문."""
-    raw = build_digest(today)
+    """HTML 태그 제거 + 엔티티 복원 → 카카오 평문.
+
+    ★2026-08-05 시토 수리 — persist_completion=False 필수. run()이 먼저 build_digest()를
+    persist_completion=not dry_run 으로 호출해 완료통보 커서를 이미 전진시킨 뒤, 카카오용
+    평문을 뽑으려고 이 함수가 build_digest()를 다시 부른다. 인자 없이 부르면 기본값 True라
+    같은 회차에 커서가 두 번 전진해, 방금 전 텔레그램에 실린 "✅ 처리 완료 알림" 블록이
+    카카오 쪽에서는 이미 seen 처리돼 사라진다(같은 내용이 채널마다 달라지는 조용한 드리프트
+    — bb89e240d 의 dry-run 커서 가드가 놓친 세 번째 호출 지점)."""
+    raw = build_digest(today, persist_completion=False)
     raw = re.sub(r"<pre>\s*", "", raw)
     raw = re.sub(r"\s*</pre>", "", raw)
     return _html_mod.unescape(raw)
