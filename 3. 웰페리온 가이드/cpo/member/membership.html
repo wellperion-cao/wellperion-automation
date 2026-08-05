@@ -5300,6 +5300,7 @@ function _lessonRosterKeyOf(sportKey) {
   //   아쿠아가 수영 배열 안에 들어 있었다. 아쿠아로빅 전담 명단이 따로 있으면 이 줄만 바꾸면 된다.
   if (/아쿠아/.test(s)) return '수영';
   if (/수영/.test(s)) return '수영';
+  if (/Parent.?Child|swim/i.test(s)) return '수영';   // 영문 WSC 폼 저장값(FB260805-214544 박민서 — 모자수영 문의 컨택 시 운영부 명단 노출 버그)
   if (/P\.?T/i.test(s)) return 'P.T';
   if (/필라/.test(s)) return '필라테스';
   if (/골프/.test(s)) return '골프';
@@ -5314,6 +5315,7 @@ function _lessonTeamLeadOf(sportKey) {
   var s = String(sportKey || '');
   if (/아쿠아/.test(s)) return '천주희';
   if (/수영/.test(s)) return '박민서';
+  if (/Parent.?Child|swim/i.test(s)) return '박민서';   // 영문 WSC 폼 저장값(FB260805-214544)
   if (/P\.?T/i.test(s)) return '김상식';
   if (/필라/.test(s)) return '최은지';
   if (/골프/.test(s)) return '김태엽';   // 2026-08-05 GM 확정 — 최현준 아님(2026-08-31 퇴사 예정)
@@ -5375,7 +5377,7 @@ function _lessonRowIsYouth_(row) {
 // 종목 세그먼트(원문) + 성인/유소년 → 메인SS 팀시트 탭명. 없으면 null(flat 폴백 유지). 2026-07-16 시포·GM.
 function _lessonSportTabName_(sportKey, isYouth) {
   var s = String(sportKey || '');
-  if (/모자수영/.test(s)) return 'WSC 모자수영';                 // 유소년 전용(성인 탭 없음, 실측 확인)
+  if (/모자수영|Parent.?Child/i.test(s)) return 'WSC 모자수영';  // 유소년 전용(성인 탭 없음, 실측 확인) + 영문 WSC 폼 저장값(FB260805-214544)
   if (/아쿠아/.test(s)) return '아쿠아';                          // WSC 변형 미확인(스키마 불일치) — 성인 탭만 신뢰
   if (/수영/.test(s)) return isYouth ? 'WSC 수영' : '수영';
   if (/P\.?T/i.test(s)) return isYouth ? 'WSC P.T' : 'P.T';
@@ -5573,6 +5575,7 @@ var LESSON_SPORT_DISPLAY_MAP = {
   'WSC수영':'WSC 수영','WSC 수영':'WSC 수영',
   '뮤지컬':'뮤지컬 (Brad Little Star Academy)',
   'Swimming':'WSC 수영','swimming':'WSC 수영',
+  'Parent-Child Swimming':'WSC 모자수영',   // 영문 WSC 폼 저장값(FB260805-214544)
   'Squash':'WSC 스쿼시','squash':'WSC 스쿼시',
   // 영문 유소년(WSC) 폼 종목 → 한글 표시(GM 2026-07-22). 표시 전용 — 저장값·필터키·컨택태그는 원본(영문) 그대로.
   'Gymnastics':'WSC 체조 & 트램폴린','gymnastics':'WSC 체조 & 트램폴린',
