@@ -106,6 +106,8 @@
   .ok .s{font-size:13px;line-height:1.8;color:#55504A;}
   .err{background:#FBEDE8;border:1px solid #E5C3B4;padding:14px;font-size:13px;line-height:1.7;color:#8E3E1E;}
   .hide{display:none;}
+  details{border-top:1px solid #EEE9DF;padding-top:12px;}
+  details summary{cursor:pointer;font-size:13px;color:#8A8377;}
 </style>
 </head>
 <body>
@@ -166,7 +168,7 @@
          장소·날짜·추천은 사진으로 알 수 없으니 여기서만 받는다. 글은 여전히 AI 가 쓴다) -->
     <div class="card">
       <div class="step"><div class="num">4</div><div class="step-t">이번 편 <span>(컨셉 · 슬로건 · 그날 기록)</span></div></div>
-      <div class="note">글은 사진을 보고 만듭니다. 여기서는 <strong>방향만</strong> 잡아 주세요 — 컨셉 하나와 슬로건 한 줄이면 됩니다. 슬로건은 <strong>사진에 맞게 다듬어</strong> 마지막 장에 얹습니다.</div>
+      <div class="note">글은 사진을 보고 만듭니다. 다만 <strong>사진만으로는 알 수 없는 정보</strong>(어디·언제·뭐가 좋았는지)는 여기 적은 만큼만 글에 들어갑니다 — 남들이 따라 해볼 수 있게 알려 주세요. 없으면 비워 두세요, 지어내지 않습니다.</div>
       <div class="f"><div class="f-lab">컨셉</div>
         <select class="fld" id="f_concept">
           <option value="가족과 함께">가족과 함께</option>
@@ -183,8 +185,21 @@
         <input type="text" class="fld" id="f_place" placeholder="예: 남산 둘레길 · 한남동 집 앞"></div>
       <div class="f"><div class="f-lab">언제</div>
         <input type="date" class="fld" id="f_when"></div>
+      <div class="f"><div class="f-lab">누구와</div>
+        <input type="text" class="fld" id="f_with" placeholder="예: 아내와 아이 둘"></div>
+      <div class="f"><div class="f-lab">뭐가 좋았나</div>
+        <textarea class="fld" id="f_good" rows="2" placeholder="예: 물이 깊지 않아 아이들이 놀기 좋았다"></textarea></div>
       <div class="f"><div class="f-lab">남에게 추천한다면</div>
         <input type="text" class="fld" id="f_tip" placeholder="예: 아침 8시 전에 가면 사람이 없다"></div>
+      <details>
+        <summary>더 적기 (선택)</summary>
+        <div class="f" style="margin-top:12px;"><div class="f-lab">언제 가면 좋나</div>
+          <input type="text" class="fld" id="f_time" placeholder="예: 오전 9시 전 · 주차가 금방 찬다"></div>
+        <div class="f" style="margin-top:12px;"><div class="f-lab">비용·준비물</div>
+          <input type="text" class="fld" id="f_cost" placeholder="예: 주차 5천원 · 돗자리와 아쿠아슈즈 필수"></div>
+        <div class="f" style="margin-top:12px;"><div class="f-lab">다시 간다면</div>
+          <input type="text" class="fld" id="f_again" placeholder="예: 다음엔 점심을 싸 갈 것"></div>
+      </details>
     </div>
 
     <!-- ⑤ 미리보기 (GM 지시 2026-08-05 — 화면에서 문장을 미리 정하지 않는다.
@@ -606,6 +621,12 @@
           $('f_place').value.trim() ? '장소 · ' + $('f_place').value.trim() : '',
           $('f_when').value        ? '날짜 · ' + $('f_when').value : '',
           $('f_tip').value.trim()  ? '추천 · ' + $('f_tip').value.trim() : '',
+          $('f_with').value.trim() ? '누구와 · ' + $('f_with').value.trim() : '',
+          // 여러 줄일 수 있다 — 뒷단 파서가 한 줄 단위라 줄바꿈을 공백으로 바꿔 보낸다.
+          $('f_good').value.trim() ? '좋았던 점 · ' + $('f_good').value.trim().replace(/\s*\n+\s*/g, ' ') : '',
+          $('f_time').value.trim() ? '추천 시간 · ' + $('f_time').value.trim() : '',
+          $('f_cost').value.trim() ? '비용·준비물 · ' + $('f_cost').value.trim() : '',
+          $('f_again').value.trim() ? '다시 간다면 · ' + $('f_again').value.trim() : '',
           '발행시점 · ' + (publishAt() || '즉시'),
           '표지위치 · ' + coverFocus.x.toFixed(2) + ',' + coverFocus.y.toFixed(2) + ',' + coverZoom.toFixed(2)
         ].filter(Boolean).join('\n'),
