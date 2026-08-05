@@ -1759,16 +1759,18 @@
     return s + '~' + u;
   }
 
-  // ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · GM 직접 지정 우선 · GM 확정 2026-07-04 · 북극성 기여도 2026-08-01 · GM 직접지정 2026-08-01) ──
+  // ── 🎯 이달 핵심 과제 top3 (1·2·3순위 · GM 직접 지정 우선 · GM 확정 2026-07-04 · 북극성 기여도 2026-08-01 · GM 직접지정 2026-08-01, 조건부 버그 수정 2026-08-05) ──
   // 선정 규칙(문서화·결정적·랜덤 없음 · 지어내기 금지=기존 objective 필드만 사용):
-  //   ① GM 직접 지정 경로 — objective.northstar_contribution='high' 인 과제가 정확히 3건이고 전부
-  //      gm_top3_rank(1~3)를 가지면 그 순서를 그대로 쓴다(산식으로 재정렬 금지 · GM 2026-08-01
-  //      "핵심과제 Top3: ①매출&지출 ②브로제이 시스템 ③밸류업"을 직접 지정). 이 경로는 매출 제외 규칙도
-  //      적용 안 함 — 매출&지출 자체가 GM 지정 1순위이기 때문.
-  //   ② 폴백(①이 성립하지 않는 달 — high 가 3건이 아닌 과거/미래월) — 기존 자동 산식:
-  //      매출 과제(💰 0순위 별도 섹션) 제외 → score = 북극성 기여도(high=10000·mid=5000·low=1000)
-  //      + 상태가중(진행3·이월2·계획1·완료0·tie-break) + 전사 여부(+40) + 북극성 직접연결(+20)
-  //      + 진척 가중(progress×0.01·tie-break) → score 내림차순 → 진척 내림차순 → 원배열 순서.
+  //   ① GM 직접 지정 경로 — gm_top3_rank(1~3)를 가진 과제가 있으면 그 값 그대로 우선 채운다.
+  //      northstar_contribution 값(high/mid/low)과 무관하게 동작한다 — GM 이 손으로 지정한 순위이므로
+  //      어떤 자동 점수식보다 앞선다. (2026-08-05: 과거엔 "high 가 정확히 3건" 조건이 있어 그중 하나만
+  //      mid 로 바뀌어도 GM 지정 전체가 무시되고 폴백 점수식이 대신 돌았다 — 그 조건을 제거함.
+  //      되돌리지 말 것.) 이 경로는 매출 제외 규칙도 적용 안 함 — 매출&지출 자체가 GM 지정 1순위이기 때문.
+  //   ② 지정이 3건 미만이면 지정된 것을 먼저 채우고 모자란 자리만 폴백 산식으로 메운다(중복 방지 위해
+  //      이미 gm_top3_rank 가 있는 과제는 폴백 후보에서 제외) — 매출 과제(💰 0순위 별도 섹션) 제외 →
+  //      score = 북극성 기여도(high=10000·mid=5000·low=1000) + 상태가중(진행3·이월2·계획1·완료0·tie-break)
+  //      + 전사 여부(+40) + 북극성 직접연결(+20) + 진척 가중(progress×0.01·tie-break)
+  //      → score 내림차순 → 진척 내림차순 → 원배열 순서.
   //   ⚠ 기여도 미배정(옛 항목) = 안전 기본값 mid 취급(완전 배제·과대평가 둘 다 피함).
   //   ⚠ 기한 임박 가산은 2026-08-01 도입 후 같은 날 철회(GM 직접 지정 방식이라 불필요·지정을 흔듦).
   //   ⚠ 난이도(priority 🛳️/⛴️/⛵)는 objectives 스키마에 필드가 없어 미사용(지어내기 금지). status로 대체 반영.
@@ -1803,18 +1805,19 @@
   }
   function selectTop3(objs){
     var list = objs || [];
-    var highs = list.filter(function(o){ return contribOf(o) === 'high'; });
-    if(highs.length === 3 && highs.every(function(o){ return typeof o.gm_top3_rank === 'number'; })){
-      return highs.slice().sort(function(a, b){ return a.gm_top3_rank - b.gm_top3_rank; });
-    }
-    return list.filter(function(o){ return !isSalesObj(o); })
+    // GM 직접 지정(gm_top3_rank)이 최우선 — northstar_contribution 값과 무관하게 채운다.
+    var ranked = list.filter(function(o){ return typeof o.gm_top3_rank === 'number'; })
+      .sort(function(a, b){ return a.gm_top3_rank - b.gm_top3_rank; });
+    if(ranked.length >= 3) return ranked.slice(0, 3);
+    var fallback = list.filter(function(o){ return !isSalesObj(o) && typeof o.gm_top3_rank !== 'number'; })
       .map(function(o, i){ return {o:o, i:i, s:top3Score(o)}; })
       .sort(function(a, b){
         if(b.s !== a.s) return b.s - a.s;
         var pb = clampPct(b.o.progress), pa = clampPct(a.o.progress);
         if(pb !== pa) return pb - pa;
         return a.i - b.i;
-      }).map(function(x){ return x.o; }).slice(0, 3);
+      }).map(function(x){ return x.o; });
+    return ranked.concat(fallback).slice(0, 3);
   }
   function renderTop3(){
     var host = document.getElementById('top3-board');
