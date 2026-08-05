@@ -145,8 +145,13 @@ def _short_title(title: str) -> str:
 def build_relay_message(contacts: dict) -> str:
     """열려 있는(PENDING·IN_PROGRESS) 배를 한 배 한 줄로. 없으면 빈 문자열.
 
-    한 줄 = 배 번호(화면표시용 short_no) · 짧은 제목 · 담당자 이름. 상태값·task_id·
-    내부 코드는 싣지 않는다(실무진이 읽을 글에 AI 내부 용어를 흘리지 않는다)."""
+    한 줄 = 짧은 제목(+담당자가 여럿인 방이면 이름). 배 번호·상태값·task_id 같은 내부
+    코드는 싣지 않는다 — 실무진이 그 번호를 찾아볼 곳이 없다.
+
+    ★audience 가 'office' 인 배만 싣는다(GM 2026-08-05 "원래 하던 일인데, 배편에 있는
+    내용인거야?"). 큐에는 AI 내부 살림(audience='ai')도 섞여 있는데, 그걸 사람 방에
+    보내면 AI 를 돌보는 일이 실무진 업무로 둔갑한다 — GM 이 반복해 경계하신 구조다.
+    실측: 시로 배 3척 중 1척(상시 자율 체계 운영)이 정확히 그 부류였다."""
     try:
         queue = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
     except Exception as exc:
@@ -155,7 +160,8 @@ def build_relay_message(contacts: dict) -> str:
 
     ships = [x for x in queue if isinstance(x, dict)
              and x.get("clevel") in contacts
-             and str(x.get("status", "")) in RELAY_OPEN_STATUSES]
+             and str(x.get("status", "")) in RELAY_OPEN_STATUSES
+             and str(x.get("audience", "")) == "office"]   # ★AI 내부 살림(audience="ai")은 사람 방에 보내지 않는다
     if not ships:
         return ""
     ships.sort(key=lambda x: (_RELAY_WEIGHT.get(x.get("priority"), 9),
