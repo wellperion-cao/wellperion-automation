@@ -8580,7 +8580,29 @@ function _processAction(body) {
       if (_auFpRows.length === 1) {
         auRow = _auFpRows[0];
       } else if (_auFpRows.length === 0) {
-        return _json({ ok: false, error: 'rowkey-not-found', detail: '행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
+        // ★★지문 미스 복구 — 2026-08-05 시토(실무진 신고 FB260805-101542·FB260805-105803 근본수리).
+        //   이 시트의 지문 재료는 '등록일자 + 전화'인데, **등록일자는 실무진이 화면에서 고치는 칸이다.**
+        //   즉 회원의 등록일자를 고치는 순간 그 행의 지문이 바뀌고, 화면이 들고 있던 옛 지문으로
+        //   보내는 다음 저장은 전부 0건 매칭이 되어 영구히 막혔다. 이경연M 이 겪은 그대로다 —
+        //   "유상두·전하늘 등록일자/시작일자/종료일자 계속 처리 안 됨", "연령·등록회차만 고쳤는데
+        //   지문 불일치가 자꾸 뜸"(고친 건 다른 칸인데, 앞선 등록일자 편집으로 지문이 이미 어긋나 있었다).
+        //   화면 쪽은 커밋 353ae32d9 가 편집 직후 지문을 다시 계산하게 고쳤다. 여기 서버 쪽은 그래도
+        //   막아 둔다 — 옛 화면이 열려 있는 브라우저·재시도 큐에 남은 옛 요청은 여전히 옛 지문을 보낸다.
+        //   ▸복구 규칙: 전화 단독 매칭이 **정확히 1건**일 때만 그 행으로 확정한다. 지문의 등록일자
+        //     조각이 하는 일은 '같은 전화의 여러 행'을 가르는 것뿐이라, 전화가 유일하면 그 조각이
+        //     없어도 대상은 확정된다. 0건·2건+ 는 그대로 거부(fail-closed) — 행번호로는 절대 쓰지 않는다.
+        //   ▸이미 있는 헬퍼(_countRowsByPhone_·_findRowByPhone_)를 그대로 쓴다. 문의 경로가 쓰는 것과 같다.
+        var _auRecovered = -1;
+        if (_auRk.phone) {
+          var _auPhHits = _countRowsByPhone_(auSh, _auPhI, _auRk.phone);
+          if (_auPhHits === 1) _auRecovered = _findRowByPhone_(auSh, _auPhI, _auRk.phone);
+        }
+        if (_auRecovered >= 2) {
+          auRow = _auRecovered;
+          Logger.log('지문 미스 복구(전화 단독 1건 일치): row=' + auRow + ' 지문ts=' + _auRk.ts);
+        } else {
+          return _json({ ok: false, error: 'rowkey-not-found', detail: '행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
+        }
       } else {
         return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
       }
