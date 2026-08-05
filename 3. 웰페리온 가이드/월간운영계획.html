@@ -3545,8 +3545,9 @@
     bodyEl.innerHTML = lines + link;
   }
   // 👤 김남욱GM 업무 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과 재사용·새 GAS 호출 0)에서
-  // 생성자=김남욱 + 상태(진행중·보류)만 추림(GM 지시 2026-08-04). 완료는 이 토글의 목적("어디까지 갔나")과
-  // 무관해 제외. rows===null = 조회 실패(가짜 0건 금지 — 실패 문구 표시).
+  // 담당자=김남욱 + 상태(진행중·보류)만 추림(GM 지시 2026-08-05 — 애초 필터가 생성자였는데 GM 이 시트에
+  // 업무를 등록한 사람이라 남의 업무 103건이 "김남욱GM 업무"로 잘못 표시됐다. 담당자 기준으로 정정).
+  // 완료는 이 토글의 목적("어디까지 갔나")과 무관해 제외. rows===null = 조회 실패(가짜 0건 금지 — 실패 문구 표시).
   function renderGmFold(rows){
     var badge = document.getElementById('gm-fold-badge');
     var bodyEl = document.getElementById('gm-fold-body');
@@ -3558,9 +3559,9 @@
     }
     var today = _todayStr();
     var gmRows = rows.filter(function(r){
-      var creator = String(r['생성자'] || r.creator || '').trim();
+      var owner = String(r['담당자'] || r.owner || '').trim();
       var status = String(r['상태'] || r.status || '').trim();
-      return creator.indexOf('김남욱') !== -1 && (status === '진행중' || status === '보류');
+      return owner.indexOf('김남욱') !== -1 && (status === '진행중' || status === '보류');
     }).sort(function(a, b){
       var da = String(a['종료일'] || a.endDate || '').trim() || '9999-99-99';
       var db = String(b['종료일'] || b.endDate || '').trim() || '9999-99-99';
@@ -3568,7 +3569,7 @@
     });
     badge.textContent = gmRows.length + '건';
     if(!gmRows.length){
-      bodyEl.innerHTML = '<div class="rep-empty">진행중·보류 업무가 없습니다.</div>';
+      bodyEl.innerHTML = '<div class="rep-empty">아직 GM 님 담당으로 지정된 업무가 없습니다.<br>업무 시트에서 담당자를 「김남욱GM」으로 적으시면 이 칸에 바로 표시됩니다.</div>';
       return;
     }
     var rowsHtml = gmRows.map(function(r){
