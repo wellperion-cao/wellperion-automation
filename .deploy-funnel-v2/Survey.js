@@ -1813,7 +1813,10 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_inquiry_delete:  true,  // 행 삭제
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
-  member_registered_delete:   true,  // 등록 해제(행 삭제)
+  // member_registered_delete 제거(2026-08-05 시토, INC-042 재발방지 ②) — 호출부 0건(membership.html 등록
+  //   해제는 member_inquiry_update→_regRemove_ 경유, 2026-06-29 시포). 이 액션은 비밀번호·중복전화 가드
+  //   없이 전화 1건 매칭 즉시 deleteRow 하는 물리 삭제 통로였다 — 죽은 코드로 남기면 다시 켜질 위험
+  //   (약속 L21), 삭제.
   member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
@@ -7916,6 +7919,13 @@ function _processAction(body) {
             //   newOnly=1 을 뚫고 나갔다(실측: 전체기간 724건 중 16건). 확실한 재등록 신호만 배제 —
             //   대기·LOSS·환불·양도LOSS 등 다른 regClass2 값은 신규 여부와 무관해 그대로 둔다(보수적).
             if (String(r.regClass2 || '').indexOf('재등록') >= 0) return false;
+            // ★2026-08-05 시토(GM 재지적 '이주헌·김지원은 재등록회차인데?') — regClass만 보고 등록회차를
+            //   안 봐서, 등록분류='신규'인데 등록회차≥2인 행(부부 재등록 등, 실측 11건)이 newOnly=1을
+            //   뚫고 나갔다. member_active_list(8376행)가 이미 쓰는 '등록회차≥2→재등록' 판정을 그대로
+            //   재사용한다(약속 L01, 새 파싱 금지). 등록회차가 비었거나 숫자가 아니면(match 실패) 기존
+            //   동작 그대로 둔다 — 값 없다고 빼면 진짜 신규가 사라진다.
+            var _rlChaM = String(r.regSeq || '').match(/\d+/);
+            if (_rlChaM && parseInt(_rlChaM[0], 10) >= 2) return false;
             var c = String(r.regClass || '').trim();
             if (c) return c === '신규';
             var n = parseInt(r.regSeq, 10);
@@ -7949,23 +7959,8 @@ function _processAction(body) {
     return _json({ ok: false, error: '해당 등록회원 없음' });
   }
 
-  // ─── 회원관리 페이지(CPO): 등록 해제(등록현황 행 삭제, 전화 키) ───
-  if (action === 'member_registered_delete') {
-    var rdPhone = _regNormPhone_(body.phone);
-    if (!rdPhone) return _json({ ok: false, error: 'phone 필수' });
-    var rdSh = _regSheet_();
-    var rdLast = rdSh.getLastRow();
-    if (rdLast < 2) return _json({ ok: false, error: '등록회원 없음' });
-    var rdData = rdSh.getRange(2, 2, rdLast - 1, 1).getValues();  // 전화 열
-    for (var di = 0; di < rdData.length; di++) {
-      if (_regNormPhone_(rdData[di][0]) === rdPhone) {
-        rdSh.deleteRow(di + 2);
-        try { _notifyTelegram('➖ 등록 해제 — ' + (body.name || rdPhone)); } catch (e) {}
-        return _json({ ok: true, message: '등록 해제되었습니다.' });
-      }
-    }
-    return _json({ ok: false, error: '해당 등록회원 없음' });
-  }
+  // member_registered_delete 제거(2026-08-05 시토, INC-042 재발방지 ②) — 위 dispatch 테이블 주석 참조.
+  //   등록 해제는 membership.html → member_inquiry_update → _regRemove_(2412행, 중복전화 가드 포함)로 이미 처리된다.
 
   // ─── 등록현황(CPO): 페이지에서 직접 등록 추가(문의 퍼널 안 거친 직접·법인 계약 등) — _regUpsert_ 멱등(전화키). 2026-06-29 시포 ───
   if (action === 'member_registered_add') {
