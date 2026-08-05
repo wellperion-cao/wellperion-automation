@@ -8567,16 +8567,25 @@ function _processAction(body) {
       var _anh = auHdr[_an].replace(/\s/g, '');
       if (_anh === '성명' || _anh === '이름' || _anh.indexOf('회원명') >= 0) { _auNameI = _an; break; }
     }
-    var _auMember = _auNameI >= 0 ? String(auSh.getRange(auRow, _auNameI + 1).getValue() || '') : '';
-    var _auPhone = _auPhI >= 0 ? String(auSh.getRange(auRow, _auPhI + 1).getValue() || '') : '';
+    // ★행 스냅샷 1회 읽기(2026-08-05 시토 — 저장 왕복 축소, 배327 이후 실측 15회→9회).
+    //   전엔 필드마다 _auWriteCell 안에서 cell.getValue()를 또 불러 old값을 읽었다(N필드=N회 읽기).
+    //   auRow는 위에서 이미 확정됐으니 여기서 행 전체를 한 번만 읽어 old값·이름·전화를 전부 이 스냅샷에서
+    //   꺼내 쓴다 — 쓰기(setValue/setNumberFormat)는 손대지 않고 칸별 개별 호출 그대로 유지한다(범위
+    //   setValues로 합치면 그 사이 칸을 동시에 만지는 다른 저장을 덮어쓸 위험이 있다 — 이 파일 위쪽
+    //   _muSetCol 주석의 Contact3가 진행현황을 덮던 사고가 그 위험의 실례라 쓰기 폭은 그대로 둔다).
+    //   읽기만 배치화 = 정확성 회귀 없음(쓰는 값·쓰는 칸·검증 로직 전부 무변경).
+    var _auRowSnap = auSh.getRange(auRow, 1, 1, auHdr.length).getValues()[0];
+    var _auMember = _auNameI >= 0 ? String(_auRowSnap[_auNameI] || '') : '';
+    var _auPhone = _auPhI >= 0 ? String(_auRowSnap[_auPhI] || '') : '';
     var _auLog = [];
     function _auWriteCell(ix, colName, val) {
       var cell = auSh.getRange(auRow, ix + 1);
-      var _old = String(cell.getValue() == null ? '' : cell.getValue());
+      var _old = String(_auRowSnap[ix] == null ? '' : _auRowSnap[ix]);
       var _cn = String(colName).replace(/\s/g, '');
       if (_cn.indexOf('재등록상담') >= 0 || _cn.indexOf('재등록예약목록') >= 0) cell.setNumberFormat('@');
       var _new = val == null ? '' : String(val);
       cell.setValue(_new);
+      _auRowSnap[ix] = _new;  // 같은 요청 안에서 같은 칸이 다시 조회될 경우를 대비해 스냅샷도 갱신
       // 안 바뀐 칸은 안 남긴다 — 이력이 노이즈가 되면 아무도 안 본다.
       if (_old !== _new) _auLog.push([new Date(), _auStaff, _auMember, _logMaskPhone_(_auPhone), colName, _old, _new, '멤버십']);
     }
