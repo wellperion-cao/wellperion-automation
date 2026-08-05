@@ -16,7 +16,11 @@
   "use strict";
 
   // ── 단일 출처: 비밀번호는 오직 여기서만 관리 ──────────────────
-  var GATE_PW = "1531"; // 2026-08-05 GM 지시 — 회장님/대표님/GM 자세히보기 3페이지 비밀번호 통일(단일 상수라 이 파일을 쓰는 모든 페이지에 동시 적용)
+  // 2026-08-05 GM 지시 — 두 단으로 가른다: GM 관련(coo/chairman/) 페이지는 GM 전용, 나머지는 실무진 공용.
+  // 각 페이지 파일은 건드리지 않고 이 파일 한 곳에서 경로로 판정한다(약속 L21 — 관문 하나에만 둔다).
+  var GATE_PW_GM = "1531";    // 회장님/대표님/GM 자세히보기 (coo/chairman/ 하위 전체)
+  var GATE_PW_STAFF = "1200"; // 그 외 실무진 공용 페이지
+  var GATE_PW = /\/coo\/chairman\//.test(window.location.pathname) ? GATE_PW_GM : GATE_PW_STAFF;
   window.WELP_GATE_PW = GATE_PW; // 기존 GAS 호출(password 동봉) 호환용
   var SKEY = "welp_gate_ok";     // 같은 탭 세션에서 한 번 통과하면 다른 보호 페이지도 통과
 
