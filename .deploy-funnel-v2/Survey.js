@@ -7842,6 +7842,11 @@ function _processAction(body) {
         }
         if (rlNewOnly) {
           rlRows = rlRows.filter(function(r){
+            // ★2026-08-05 시토(GM 재지적) — regClass('등록분류')만 보고 regClass2('재등록분류')를
+            //   안 봐서, 등록분류='신규'인데 재등록분류에 '재등록'(또는 'L재등록') 값이 있는 행이
+            //   newOnly=1 을 뚫고 나갔다(실측: 전체기간 724건 중 16건). 확실한 재등록 신호만 배제 —
+            //   대기·LOSS·환불·양도LOSS 등 다른 regClass2 값은 신규 여부와 무관해 그대로 둔다(보수적).
+            if (String(r.regClass2 || '').indexOf('재등록') >= 0) return false;
             var c = String(r.regClass || '').trim();
             if (c) return c === '신규';
             var n = parseInt(r.regSeq, 10);
