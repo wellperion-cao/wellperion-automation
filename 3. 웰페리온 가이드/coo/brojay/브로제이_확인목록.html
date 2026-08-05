@@ -116,7 +116,6 @@
       <div class="slogan">브로제이에 요청한 개선 사항 · 회신 대기 현황 — 급한 순서로 보고, 끝나면 담당자별 완료 칸으로 넘깁니다</div>
     </div>
     <a class="sheet-btn" href="https://docs.google.com/spreadsheets/d/16RL4xhCK0-JOHy9rLPPte0xXdC1cSlPQnmdU13Ri6sQ/edit?gid=0#gid=0" target="_blank" rel="noopener">📗 브로제이 시트 열기 (내용 고치기)</a>
-    <button type="button" class="back" id="staffNameBadge" onclick="editStaffName()" title="담당자 이름 변경">✎ 이름: —</button>
     <a class="back" href="브로제이_업무분장.html">◂ 업무분장으로</a>
     <a class="back" href="../../월간운영계획.html">◂ 월간운영계획으로</a>
   </header>
@@ -230,15 +229,6 @@
       }
     }catch(e){}
   })();
-  // 이름 뱃지(✎) 클릭 — 지금 이름을 바로 고칠 수 있게(배 GM 신고 완료 조건).
-  // window에 노출 — 이 함수들은 IIFE 안에 있는데 뱃지 버튼은 inline onclick(전역 스코프에서 실행)이라
-  // 노출 안 하면 "editStaffName is not defined"로 죽는다.
-  function editStaffName(){
-    var name = _promptStaffName(getStaffName());
-    if (name) { try{ localStorage.setItem(STAFF_NAME_KEY, name); }catch(e){} }
-    _renderStaffBadge();
-  }
-  window.editStaffName = editStaffName;
   /* ★배10520 수리(2026-08-04) — 취소하거나 빈칸으로 닫으면 저장할 게 없어 **저장할 때마다 다시 물었다.**
      물었다는 사실을 남겨 브라우저당 한 번만 묻는다(이름을 적으면 그때부터 자동으로 채워진다). */
   function ensureStaffName(){
