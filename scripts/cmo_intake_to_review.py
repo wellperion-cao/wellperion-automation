@@ -88,10 +88,15 @@ _GAS_URL_RE = re.compile(r'GAS_PROD\s*=\s*"([^"]+)"')
 
 # "GM의 일요일" 접수(분류 값 정확히 이 문자열) — 다른 분류는 기존 접수검토 경로 그대로.
 SUNDAY_TEAM = "GM의 일요일"
+# 시리즈 슬로건 (GM 확정 2026-08-05) — 이 시리즈 글이 향하는 한 문장.
+SUNDAY_SLOGAN = "행복은 특별한 날에 오는 게 아니라, 평범한 하루를 함께 보낼 때 온다."
+# 글의 기준 (GM 2026-08-05) — 설명글이 아니라 기록이다.
+SUNDAY_STANDARD = "남에게 보이는 글이면서, 나중에 내가 다시 읽을 기록"
 _SUNDAY_LINE_RE = re.compile(r"^(\d{2})(?:\s+(.*))?$")   # 02·03·…·10 (빈 문장도 자리를 지킨다)
 _SUNDAY_THINK_RE = re.compile(r"^생각\s*·\s*(.*)$")
 _PUBLISH_AT_RE = re.compile(r"발행시점\s*·\s*(\S+)")
 # 표지에서 보여줄 지점(0~1) — 화면에서 끌어 맞춘 값. 없으면 가운데(0.5,0.5).
+_FACT_RE = re.compile(r"^(장소|날짜|추천)\s*·\s*(.+)$")   # 사진으로 알 수 없는 사실(접수 화면 입력)
 _COVER_FOCUS_RE = re.compile(r"표지위치\s*·\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?")
 _DRIVE_ID_RE = re.compile(r"/d/([a-zA-Z0-9_-]{10,})")
 _DRIVE_ID_QS_RE = re.compile(r"[?&]id=([a-zA-Z0-9_-]{10,})")
@@ -260,14 +265,14 @@ def _parse_sunday_benefit(benefit: str) -> dict:
         if s.startswith("#"):
             hashtag_idx = cut_idx = i
             break
-        if s.startswith("계정 @") or s.startswith("발행시점") or s.startswith("표지위치"):
+        if s.startswith("계정 @") or s.startswith("발행시점") or s.startswith("표지위치") or _FACT_RE.match(s):
             cut_idx = i              # 해시태그가 없어도 여기서 캡션을 끊는다
             break
 
     # 해시태그가 없어도 '계정 @…'·'발행시점 · …' 앞에서 캡션을 끊는다(내부 표기가 게시글 본문에 새지 않게).
     caption_lines = rest[:cut_idx] if cut_idx is not None else list(rest)
     caption_lines = [ln for ln in caption_lines
-                     if not (ln.strip().startswith("발행시점") or ln.strip().startswith("표지위치"))]
+                     if not (ln.strip().startswith("발행시점") or ln.strip().startswith("표지위치") or _FACT_RE.match(ln.strip()))]
     while caption_lines and not caption_lines[0].strip():
         caption_lines.pop(0)
     while caption_lines and not caption_lines[-1].strip():
@@ -278,6 +283,12 @@ def _parse_sunday_benefit(benefit: str) -> dict:
     publish_at = "" if pub_raw in ("", "즉시") else pub_raw
 
     # 표지 배치 = (좌우 0~1, 상하 0~1, 배율). 배율 1 = 칸을 꽉 채우는 크기(종전 동작).
+    facts = {}
+    for ln in lines:
+        mf = _FACT_RE.match(ln.strip())
+        if mf:
+            facts[mf.group(1)] = mf.group(2).strip()
+
     fm = _COVER_FOCUS_RE.search(benefit or "")
     try:
         if fm:
@@ -296,7 +307,138 @@ def _parse_sunday_benefit(benefit: str) -> dict:
         "hashtags": rest[hashtag_idx].strip() if hashtag_idx is not None else "",
         "publish_at": publish_at,
         "cover_focus": cover_focus,
+        "facts": facts,
     }
+
+
+def _clean_title(t: str) -> str:
+    """표지 제목을 시안 모양(두 줄)으로 다듬는다.
+
+    프롬프트로 규칙을 줘도 모델이 'GM의 일요일 — …' 처럼 시리즈 이름을 붙여 오는 일이
+    실측으로 반복됐다(표지에 라벨이 이미 있어 두 번 나온다). 말로만 막지 않고 여기서 깎는다.
+    줄바꿈이 없으면 가운데에 가장 가까운 띄어쓰기에서 두 줄로 나눈다.
+    """
+    t = (t or "").strip()
+    for lead in ("GM의 일요일", "GM 의 일요일"):
+        if t.startswith(lead):
+            t = t[len(lead):]
+    t = t.lstrip(" -—–·:|").strip()
+    if not t:
+        return ""
+    if "\n" in t:
+        return "\n".join(x.strip() for x in t.split("\n")[:2] if x.strip())
+    t = t.replace("—", " ").replace("–", " ")
+    t = " ".join(t.split())
+    if len(t) <= 12 or " " not in t:
+        return t
+    mid = len(t) // 2
+    cut = min((i for i, c in enumerate(t) if c == " "), key=lambda i: abs(i - mid))
+    return t[:cut].strip() + "\n" + t[cut:].strip()
+
+
+def _parse_copy_json(raw: str, n_lines: int) -> dict | None:
+    """AI 응답 텍스트 → 캐러셀 글 dict. 실패하면 None(예외를 밖으로 던지지 않는다).
+
+    코드블록 펜스(```json …```)나 앞뒤 설명이 섞여 와도 첫 '{' ~ 마지막 '}' 만 떼어 읽는다.
+    lines 는 표지를 뺀 사진 수(n_lines)와 정확히 맞춘다 — 모자라면 빈 문장으로 채우고
+    (사진만 나가는 카드가 된다), 넘치면 잘라 버린다. 둘 다 stderr 에 남긴다.
+    """
+    s = (raw or "").strip()
+    i, j = s.find("{"), s.rfind("}")
+    if i < 0 or j <= i:
+        print("[WARN] GM의 일요일 AI 글 — JSON 덩어리를 못 찾음", file=sys.stderr)
+        return None
+    try:
+        data = json.loads(s[i:j + 1])
+    except json.JSONDecodeError as exc:
+        print(f"[WARN] GM의 일요일 AI 글 JSON 파싱 실패: {exc}", file=sys.stderr)
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    lines = [str(x).strip() for x in (data.get("lines") or []) if isinstance(x, (str, int, float))]
+    if len(lines) > n_lines:
+        print(f"[WARN] GM의 일요일 AI 문장 {len(lines) - n_lines}개 초과 — 잘라 맞춤", file=sys.stderr)
+        lines = lines[:n_lines]
+    elif len(lines) < n_lines:
+        print(f"[WARN] GM의 일요일 AI 문장 {n_lines - len(lines)}개 부족 — 빈 문장으로 채움", file=sys.stderr)
+        lines += [""] * (n_lines - len(lines))
+
+    return {
+        "title": _clean_title(str(data.get("title") or "")),
+        "lines": lines,
+        "think": str(data.get("think") or "").strip(),
+        "caption": str(data.get("caption") or "").strip(),
+        "hashtags": str(data.get("hashtags") or "").strip(),
+    }
+
+
+def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = None) -> dict | None:
+    """내려받은 사진을 실제로 열어 보고 캐러셀 글(제목·문장·생각·캡션·해시태그)을 쓴다.
+
+    사람이 접수 화면에서 문장을 미리 채우는 대신, 올라온 사진에서 글이 나오게 하는 경로
+    (GM 지시 2026-08-05). claude CLI 의 Read 도구를 열어 주면(--allowedTools Read) 로컬
+    이미지를 직접 보고 답한다 — GM 의 Claude Code 구독을 재사용하므로 API 비용 0.
+
+    photos[0] = 표지. 반환 dict 에 사용 모델을 model 키로 담는다.
+    실패(CLI 실패·파싱 실패)면 None — 호출부가 접수 원문(은행)으로 폴백한다.
+    """
+    if not photos:
+        return None
+    try:
+        from model_router import run_claude
+    except Exception as exc:
+        print(f"[WARN] GM의 일요일 AI 글 — model_router 임포트 실패: {exc}", file=sys.stderr)
+        return None
+
+    n = len(photos) - 1  # 표지를 뺀 나머지 = 문장 카드 수
+    prompt = "\n".join([
+        "너는 웰페리온 GM(김남욱)의 개인 인스타그램 계정 @namuk.wellperion 에 올라갈",
+        "'GM의 일요일' 캐러셀 글을 쓴다. 회사 홍보가 아니라 한 사람의 일요일 기록이다.",
+        "",
+        f"이 글의 기준: {SUNDAY_STANDARD}.",
+        "  남에게 설명하는 글이 아니라, 몇 년 뒤 본인이 다시 읽었을 때 그날이 되살아나는 글이다.",
+        "  '저희는 이렇게 합니다' 같은 설명조는 기록이 아니다 — 그날 있었던 장면을 적는다.",
+        f"이 시리즈가 향하는 한 문장: {SUNDAY_SLOGAN}",
+        "  이 문장을 글에 그대로 베껴 넣지 마라. 글이 이 방향을 향하기만 하면 된다.",
+        "",
+        "아래 사진 파일을 Read 도구로 전부 열어 실제로 보고 써라. 첫 번째가 표지다.",
+        *[str(p) for p in photos],
+        "",
+        "규칙:",
+        "- 사진에 실제로 보이는 것만 쓴다. 안 보이는 사실(가족 구성·장소 이름·감정의 근거)을 지어내지 마라.",
+        "- 톤 = 절제된 문어체 · 담백. 과장·감탄사·이모지·광고 문구 금지. 문장 끝은 '~다'.",
+        "- title = 두 줄. 반드시 줄바꿈 문자 1개로 나눈다. 각 줄 12자 안팎.",
+        "  제목에 'GM의 일요일' 같은 시리즈 이름을 넣지 마라(표지에 이미 있다). 줄표(—)로 잇지 마라.",
+        f"- lines = 표지를 뺀 사진 {n}장 각각에 대한 문장 {n}개, 사진 순서 그대로."
+        " 각 한 문장 25자 안팎이고 사진마다 다른 이야기다.",
+        "- think = 그날에서 건져 올린 한 줄 생각. 교훈조·설교조 금지.",
+        "- caption = 인스타 본문 3~5줄. 마지막 줄은 독자에게 던지는 질문 한 줄.",
+        "- hashtags = 5개 안팎이고 맨 앞 3개가 가장 중요하다. #GM의일요일 을 반드시 포함한다.",
+        "- 금지어: '피트니스'(→'스포츠클럽'), '하이엔드프라이빗', '사교'.",
+        *(["- 사진 외에 영상도 함께 올라가지만 영상은 보지 못하니 언급하지 마라."] if video else []),
+        "",
+        *( ["", "아래는 사진으로는 알 수 없는 사실이다. 지어낸 것이 아니니 글에 자연스럽게 녹여라",
+           "(억지로 다 넣지 말고, 기록으로 남을 값이 있는 것만):"]
+           + [f"- {k}: {v}" for k, v in (facts or {}).items()] if facts else [] ),
+        "",
+        "출력은 JSON 한 덩어리만. 설명·코드블록 없이 { 로 시작해 } 로 끝낸다.",
+        '{"title":"두 줄 제목(\\n 포함)","lines":['
+        + ", ".join(f'"사진{k + 2} 문장"' for k in range(n))
+        + '],"think":"생각 한 줄","caption":"본문 캡션","hashtags":"#태그 #태그"}',
+    ])
+
+    raw, used_model = run_claude(
+        prompt, label="sunday-carousel-copy", extra_args=["--allowedTools", "Read"]
+    )
+    if not raw:
+        print("[WARN] GM의 일요일 AI 글 생성 실패(전 모델) — 접수 원문으로 폴백", file=sys.stderr)
+        return None
+    parsed = _parse_copy_json(raw, n)
+    if parsed is None:
+        return None
+    parsed["model"] = used_model or ""
+    return parsed
 
 
 def _drive_file_id(url: str) -> str:
@@ -514,7 +656,7 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
 
     date8 = re.sub(r"[^0-9]", "", str(row.get("접수일시") or ""))[:8]
     date6 = date8[2:8] if len(date8) == 8 else datetime.now().strftime("%y%m%d")
-    slug = _id_safe(intro)[:24] or "무제"
+    slug = _id_safe(intro)[:24] or "일요일"
     folder_rel = f"instagram/namuk.wellperion/{date6}_GM일요일_{slug}"
     src_dir = ROOT / folder_rel / "src"
     out_dir = ROOT / folder_rel / "output"
@@ -533,7 +675,24 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
 
     # 사진 수가 슬라이드 수를 정한다 — 표지 1장 + 나머지 사진 1장당 문장 카드 1장 + 생각 1장.
     cards = downloaded[1:]
-    texts = parsed["lines"]
+
+    # 글은 사진을 보고 쓴다(주경로). 접수 화면이 보낸 문장(은행)은 AI 가 실패했을 때의 폴백이다.
+    ai = _write_sunday_copy(downloaded, bool((row.get("영상링크") or "").strip()), parsed.get("facts"))
+    if ai:
+        intro = ai["title"] or intro
+        texts, think = ai["lines"], ai["think"]
+        caption_body, hashtags = ai["caption"], ai["hashtags"]
+        copy_note = f"글=사진 보고 AI 작성({ai['model'] or '모델미상'})"
+    else:
+        texts, think = parsed["lines"], parsed["think"]
+        caption_body, hashtags = parsed["caption"], parsed["hashtags"]
+        copy_note = "글=접수 원문 폴백(AI 생성 실패)"
+        # 새 접수 화면은 문장을 아예 안 보낸다 — 폴백할 원문도 없으면 빈 슬라이드를 만들지 않는다.
+        if not (any(t.strip() for t in texts) or think.strip()):
+            print(f"[WARN] GM의 일요일 AI 글 실패 + 접수 문장도 없음 — 제작 불가(다음 폴링 재시도): {item_id}",
+                  file=sys.stderr)
+            return None
+
     if len(texts) > len(cards):
         print(f"[WARN] GM의 일요일 문장 {len(texts) - len(cards)}개 버림(사진이 모자람): {item_id}",
               file=sys.stderr)
@@ -551,7 +710,7 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
             # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
             _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
                                        _add(f"post_{i + 2}.jpg"))
-        _compose_sunday_think(parsed["think"], _add(f"post_{len(cards) + 2}.jpg"))
+        _compose_sunday_think(think, _add(f"post_{len(cards) + 2}.jpg"))
     except Exception as exc:
         print(f"[WARN] GM의 일요일 슬라이드 제작 실패: {item_id}: {exc}", file=sys.stderr)
         return None
@@ -567,13 +726,14 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         print(f"[WARN] GM의 일요일 검수 미리보기 생성 실패(카드는 글자로 나갑니다): {item_id}: {exc}",
               file=sys.stderr)
 
-    caption_full = parsed["caption"]
-    if parsed["hashtags"]:
-        caption_full = f"{caption_full}\n\n{parsed['hashtags']}" if caption_full else parsed["hashtags"]
+    caption_full = caption_body
+    if hashtags:
+        caption_full = f"{caption_full}\n\n{hashtags}" if caption_full else hashtags
     (ROOT / folder_rel / "caption.md").write_text(caption_full, encoding="utf-8")
 
     return {
-        "title": f"GM의 일요일 — {intro}",
+        # 표지 제목은 두 줄(\n)이지만 큐·검수카드 제목은 한 줄이어야 한다 — 줄바꿈만 편다.
+        "title": "GM의 일요일 — " + " ".join(intro.split()),
         "channel": "인스타그램 (namuk.wellperion)",
         "account": "namuk.wellperion",
         "folder": folder_rel,
@@ -586,7 +746,7 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         "preview": slides_rel[0],
         "id": item_id,
         "publish_at": parsed["publish_at"],
-        "note": f"[GM의 일요일 접수 {row.get('접수일시', '')}] cmo_intake_to_review.py 자동 제작(GM의일요일 분기)",
+        "note": f"[GM의 일요일 접수 {row.get('접수일시', '')}] cmo_intake_to_review.py 자동 제작(GM의일요일 분기) · {copy_note}",
     }
 
 

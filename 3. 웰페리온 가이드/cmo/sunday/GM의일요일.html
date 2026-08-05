@@ -162,10 +162,23 @@
       <input type="text" class="fld" id="f_videoLink" placeholder="대용량 영상 링크 (선택)">
     </div>
 
-    <!-- ④ 미리보기 (GM 지시 2026-08-05 — 화면에서 문장을 미리 정하지 않는다.
+    <!-- ④ 그날 기록 (GM 지시 2026-08-05 — 기록물이 되려면 사진에 안 보이는 사실이 있어야 한다.
+         장소·날짜·추천은 사진으로 알 수 없으니 여기서만 받는다. 글은 여전히 AI 가 쓴다) -->
+    <div class="card">
+      <div class="step"><div class="num">4</div><div class="step-t">그날 기록 <span>(선택 · 안 적어도 됩니다)</span></div></div>
+      <div class="note">나중에 다시 읽을 기록이라, 사진만으로는 알 수 없는 것만 받습니다. 적어 주시면 글에 자연스럽게 들어갑니다.</div>
+      <div class="f"><div class="f-lab">어디</div>
+        <input type="text" class="fld" id="f_place" placeholder="예: 남산 둘레길 · 한남동 집 앞"></div>
+      <div class="f"><div class="f-lab">언제</div>
+        <input type="date" class="fld" id="f_when"></div>
+      <div class="f"><div class="f-lab">남에게 추천한다면</div>
+        <input type="text" class="fld" id="f_tip" placeholder="예: 아침 8시 전에 가면 사람이 없다"></div>
+    </div>
+
+    <!-- ⑤ 미리보기 (GM 지시 2026-08-05 — 화면에서 문장을 미리 정하지 않는다.
          올린 사진으로 글까지 만들어 검수 카드로 올린다) -->
     <div class="card hide" id="previewCard">
-      <div class="step"><div class="num">4</div><div class="step-t">이렇게 나갑니다 <span id="cutCount">4컷</span></div></div>
+      <div class="step"><div class="num">5</div><div class="step-t">이렇게 나갑니다 <span id="cutCount">4컷</span></div></div>
       <!-- 컷은 사진 수만큼 renderPreview() 가 만든다 (표지 + 사진카드 N + 생각 + 영상) -->
       <div class="cuts" id="cuts"></div>
       <div class="note">제목·문장·캡션은 <strong>올리신 사진을 보고 만들어져</strong> 검수 카드로 옵니다. 마음에 안 들면 카드에서 반려하시면 됩니다.</div>
@@ -173,7 +186,7 @@
 
     <!-- ⑥ 검수 요청 -->
     <div class="card">
-      <div class="step"><div class="num">5</div><div class="step-t">검수 요청 · 발행 예약</div></div>
+      <div class="step"><div class="num">6</div><div class="step-t">검수 요청 · 발행 예약</div></div>
       <div class="kv">
         <div><span class="k">검수 채널</span><span>텔레그램 · 업무보고방</span></div>
         <div><span class="k">발행 계정</span><span>@namuk.wellperion (개인)</span></div>
@@ -513,6 +526,13 @@
       $('f_date').value = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
     }
     renderWhen();
+
+  // '언제' 기본값 = 가장 가까운 지난 일요일(오늘이 일요일이면 오늘).
+  (function(){
+    var d = new Date();
+    d.setDate(d.getDate() - d.getDay());
+    $('f_when').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  })();
   };
   $('f_date').addEventListener('change', renderWhen);
   renderWhen();
@@ -568,9 +588,13 @@
         // 뒷단(cmo_intake_to_review.py)이 그대로 읽는 줄들 — 형식 바꾸지 말 것.
         benefit: [
           '계정 @namuk.wellperion (개인) · ' + cutCount(),
+          // 사진으로 알 수 없는 사실 — 적혀 있을 때만 보낸다(빈 줄을 만들지 않는다).
+          $('f_place').value.trim() ? '장소 · ' + $('f_place').value.trim() : '',
+          $('f_when').value        ? '날짜 · ' + $('f_when').value : '',
+          $('f_tip').value.trim()  ? '추천 · ' + $('f_tip').value.trim() : '',
           '발행시점 · ' + (publishAt() || '즉시'),
           '표지위치 · ' + coverFocus.x.toFixed(2) + ',' + coverFocus.y.toFixed(2) + ',' + coverZoom.toFixed(2)
-        ].join('\n'),
+        ].filter(Boolean).join('\n'),
         agree: true,
         photos: pics,
         video: video,
