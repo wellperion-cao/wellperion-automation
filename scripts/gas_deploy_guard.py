@@ -365,6 +365,26 @@ def main() -> int:
         print("--force 지정 — 원격 무단변경을 무시하고 진행합니다(이 push가 그 변경을 지웁니다).",
               flush=True)
 
+    # ★로컬 역행 경보(경보만·차단 안 함) — 원격에는 있는데 로컬에는 없는 줄 수를 알린다.
+    #   위 대조는 '원격이 우리 모르게 바뀌었나'만 본다. 반대 방향(로컬 편집이 유실돼 라이브보다
+    #   뒤처진 상태)은 원격=베이스라인이라 PASS 로 통과하고, 그대로 push 하면 라이브에서 살아 있던
+    #   코드가 조용히 사라진다. 2026-08-05 실사고: member_active_update 왕복 축소가 라이브(@248)에는
+    #   있는데 로컬 작업트리에서만 사라져 있었다. 정상 삭제 편집도 걸리므로 판단은 사람이 한다.
+    for _fname, _remote_src in (drift_remote_files or {}).items():
+        _lpath = os.path.join(_ROOT_DIR, local_dir, _fname)
+        if not os.path.isfile(_lpath):
+            continue
+        with open(_lpath, encoding='utf-8') as _lf:
+            _local_lines = _lf.read().replace('\r\n', '\n').split('\n')
+        _remote_lines = _remote_src.replace('\r\n', '\n').split('\n')
+        _lost = sum(i2 - i1 for tag, i1, i2, _j1, _j2
+                    in difflib.SequenceMatcher(None, _remote_lines, _local_lines).get_opcodes()
+                    if tag == 'delete')
+        if _lost:
+            print(f"⚠️ [로컬 역행 확인] {_fname} — 원격에 있고 로컬에 없는 줄 {_lost}개. "
+                  f"의도한 삭제면 그대로 진행, 아니면 push 를 멈추고 로컬을 먼저 회수하세요.",
+                  flush=True)
+
     if args.check_only:
         print("[check-only] 실제 배포는 수행하지 않음.", flush=True)
         return 0
