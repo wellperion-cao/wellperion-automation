@@ -108,7 +108,7 @@
       <div class="pill" id="statusLabel">작성 중</div>
     </div>
     <div class="h1">GM의 일요일</div>
-    <div class="sub">@namuk.wellperion · 일요일 저녁 발행 · 승인 필수</div>
+    <div class="sub">@namuk.wellperion · 승인하면 바로 발행 · 승인 필수</div>
   </div>
 
   <div class="body">
@@ -185,18 +185,8 @@
       <div class="kv">
         <div><span class="k">검수 채널</span><span>텔레그램 · 업무보고방</span></div>
         <div><span class="k">발행 계정</span><span>@namuk.wellperion (개인)</span></div>
-        <div><span class="k">발행 예약</span><span id="k_schedule">—</span></div>
+        <div><span class="k">발행 시점</span><span>승인 즉시</span></div>
         <div><span class="k">미승인 시</span><span>발행 보류 · 다시 알림</span></div>
-      </div>
-      <div class="row" style="align-items:center;flex-wrap:nowrap;">
-        <div style="font-size:13px;color:#8A8377;white-space:nowrap;">발행 시각</div>
-        <select class="fld" id="f_time" style="flex:1;">
-          <option value="18:00">일요일 오후 6:00</option>
-          <option value="19:00">일요일 오후 7:00</option>
-          <option value="20:00" selected>일요일 오후 8:00</option>
-          <option value="21:00">일요일 오후 9:00</option>
-          <option value="now">승인 즉시 발행</option>
-        </select>
       </div>
       <button class="cta" id="sendBtn">텔레그램으로 검수 요청</button>
       <div class="note">공식 계정(@wellperion)에는 올라가지 않습니다. 개인 계정 전용 모듈입니다.</div>
@@ -208,7 +198,7 @@
       <div class="tg-h">TELEGRAM · 업무보고방</div>
       <div class="tg-box">
         <div class="t">[검수요청] GM의 일요일 · <span id="t_date"></span></div>
-        <div>계정 @namuk.wellperion · <span id="t_cut"></span> · 예약 <span id="t_sched"></span></div>
+        <div>계정 @namuk.wellperion · <span id="t_cut"></span> · 승인 즉시 발행</div>
         <div class="d">제목 — <span id="t_title"></span></div>
         <div class="tg-act"><div>이 카드는 실제 텔레그램 업무보고방으로 나갑니다 — 승인·반려는 그곳에서</div></div>
       </div>
@@ -256,16 +246,7 @@
   var hasDraft = false;
   var sent = false;
 
-  // ── 발행 예약 라벨 (시안 schedule() 그대로) ──────────────────
-  function scheduleLabel(){
-    var t = $('f_time').value;
-    if (t === 'now') return '승인 즉시 발행';
-    var h = parseInt(t,10), d = new Date();
-    var sundayStillOk = d.getDay() === 0 && d.getHours() < h;
-    if (!sundayStillOk) d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7));
-    var label = (d.getMonth()+1)+'월 '+d.getDate()+'일(일) 오후 '+(h-12)+':00';
-    return sundayStillOk ? '오늘 '+label : label;
-  }
+  // 예약 발행은 쓰지 않는다(GM 결정 2026-08-05) — 승인 누르는 즉시 올라간다.
   function cutCount(){ return (4 + ((videoFile || $('f_videoLink').value.trim()) ? 1 : 0)) + '컷'; }
 
   // ── 화면 갱신 ────────────────────────────────────────────────
@@ -297,7 +278,6 @@
       : ($('f_videoLink').value.trim() ? '링크 영상' : '영상 자리 (비어 있음)');
     $('cutCount').textContent = cutCount();
   }
-  function renderMeta(){ $('k_schedule').textContent = scheduleLabel(); }
 
   // ── 초안 생성 ────────────────────────────────────────────────
   $('genBtn').onclick = function(){
@@ -333,7 +313,6 @@
     renderPreview();
   });
   $('f_videoLink').addEventListener('input', renderPreview);
-  $('f_time').addEventListener('change', renderMeta);
 
   // ── 접수 GAS URL — 정본(instructor_intake.html)에서 읽는다 (약속 L01) ──
   // 보낼 때 한 번만 읽는다 — 페이지 열자마자 받아 두면 실패해도 다시 시도할 길이 없다.
@@ -404,7 +383,6 @@
       var video = videoFile ? await toB64(videoFile) : null;
 
       // 시트 계약(instructor_intake.js INTAKE_HEADER)에 그대로 얹는다 — 새 칸을 만들지 않는다.
-      var sched = scheduleLabel();
       var body = {
         name: '김남욱 GM',
         team: 'GM의 일요일',
@@ -418,7 +396,7 @@
           '',
           HASHTAGS,
           '',
-          '계정 @namuk.wellperion (개인) · ' + cutCount() + ' · 발행 예약 ' + sched
+          '계정 @namuk.wellperion (개인) · ' + cutCount() + ' · 승인 즉시 발행'
         ].join('\n'),
         agree: true,
         photos: pics,
@@ -440,9 +418,8 @@
       var now = new Date();
       $('t_date').textContent  = (now.getMonth()+1)+'/'+now.getDate();
       $('t_cut').textContent   = cutCount();
-      $('t_sched').textContent = sched;
       $('t_title').textContent = $('d_title').value.replace(/\n/g,' ');
-      $('ok_sched').textContent = sched + ' 발행 예정';
+      $('ok_sched').textContent = '승인하시면 바로 올라갑니다';
       $('tgCard').classList.remove('hide');
       $('okBox').classList.remove('hide');
     }catch(e){
@@ -451,7 +428,6 @@
     }
   };
 
-  renderMeta();
 })();
 </script>
 </body>
