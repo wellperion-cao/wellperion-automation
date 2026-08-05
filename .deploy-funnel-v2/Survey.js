@@ -1898,6 +1898,12 @@ function _svMaskPhone_(p) {
 var _MI_SS_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
 var _MI_SHEET = '26년 신규문의';
 var _MI_GID_EN = 1887747109;   // 멤버십(영문) 응답탭 — 영어 문의가 별도 탭에 쌓여 CRM에서 누락되던 누수 수리(2026-07-09 시포·GM)
+// ★소프트 삭제 마커(2026-08-05 시토, GM 지시 — 새 문의 중복 삭제) — INC-020(행번호 밀림으로 실고객 오삭제) 재발방지로
+//   물리적 deleteRow 를 구조적으로 막는다. 대신 진행현황(상태) 칸에 이 값만 쓰고 행은 그대로 남긴다.
+//   기존 STATUS_OPTIONS(미정/컨택중/가망/SUC/단기SUC/LOSS) 6종과 겹치지 않는 새 값 1개만 추가(약속 L21 — 새 칸·새 시트는 안 만든다).
+//   이 값을 읽는 모든 소비처(member_inquiry_list·inquiry_stats·member_calendar·cpo_today_stats·stage_funnel·
+//   period_breakdown regByType 멤버십)가 목록·집계에서 제외해야 '삭제'가 실제로 안 보인다 — 4개 지점에서 검사(아래 grep 참조).
+var MI_DUP_DELETED_STATUS = '중복(삭제)';
 function _miSheet_() { return SpreadsheetApp.openById(_MI_SS_ID).getSheetByName(_MI_SHEET); }
 // 영문 응답탭 은퇴(GM 2026-07-23) — 탭이 삭제돼도 null 을 돌려 조용히 건너뛴다(호출부는 전부 try/catch·null 가드).
 //   영어 문의는 한글 탭에 '유입언어'·[영어] 표식으로 함께 쌓이므로 읽을 곳이 사라지는 게 아니다.
@@ -2231,6 +2237,8 @@ function _miReadRows_(sh) {
     var hasName  = iName  >= 0 && row[iName];
     var hasPhone = iPhone >= 0 && row[iPhone];
     if (!hasName && !hasPhone) continue; // 완전 빈 행 스킵
+    // ★소프트 삭제(중복) 제외 — 단일 공유 리더라 member_inquiry_list·inquiry_stats·member_calendar 3곳이 여기서 한 번에 걸린다.
+    if (iStat >= 0 && String(row[iStat] || '').trim() === MI_DUP_DELETED_STATUS) continue;
     var _mo = {
       rowIndex: r + 2 + rowOffset,
       name:     iName  >= 0 ? String(row[iName]  || '') : '',  // 2026-06-22 GM '전체 공개' — 실명 노출
@@ -5452,7 +5460,12 @@ function _processAction(body) {
     return _json({ ok: true, rowIndex: muRowRaw, message: '수정되었습니다.' });
   }
 
-  // ─── 문의회원 페이지(CPO): 행 삭제 ───
+  // ─── 문의회원 페이지(CPO): 새 문의 중복 삭제(소프트) ───
+  //   ★2026-08-05 GM 지시 — "새 문의에 중복된 건들이 있으면 임정은M 가 삭제 가능하게(비밀번호+이력)".
+  //   ★물리 삭제 금지(INC-020 재발방지) — 예전엔 mdSh.deleteRow(mdRow)로 실제 행을 지웠으나, 행번호 밀림으로
+  //   실고객 행이 대신 삭제된 사고가 있었다. 이제는 절대 deleteRow를 하지 않는다 — 진행현황 칸에
+  //   MI_DUP_DELETED_STATUS 마커만 쓰고, 목록·집계 소비처(_miReadRows_ 등 4곳, 위 grep 참조)가 그 값을 제외한다.
+  //   되돌리기 = 회원변경이력(MEMBER_LOG_SHEET)에서 이전값 확인 후 member_inquiry_update로 그 값 재기재.
   if (action === 'member_inquiry_delete') {
     var mdRow = parseInt(body.rowIndex, 10);
     if (!mdRow || mdRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
@@ -5465,11 +5478,20 @@ function _processAction(body) {
     if (body.keyPhone === undefined || String(body.keyPhone) === '') {
       return _json({ ok: false, error: 'keyPhone 필수 — 대조 없이 삭제 불가' });
     }
-    // ★쓰기 직렬화(INC-020 재발방지 ③, 2026-07-20): 범위확인→전화대조→삭제 사이에 동시 호출이 같은 시트에
-    //   행을 밀어넣으면(삽입·삭제) 검증 통과 후 엉뚱한 행이 지워질 수 있다 — 락을 잡고 검증부터 삭제까지
-    //   한 번의 원자 구간으로 묶는다. 락 획득 실패 시 삭제하지 않고 재시도 요청(무음 스킵 금지).
+    // ★비밀번호 게이트(매회 서버검증, 세션 통과 아님) — 새 인증체계를 만들지 않는다(약속 L21).
+    //   _staffFeedbackWriteAuthed_(2026-08-04 시토)와 동일 패턴 재사용: 사내 게이트 비밀번호
+    //   (_assets/gate.js GATE_PW ↔ ScriptProperties STAFF_GATE_PW, 정본=ScriptProperties)를 그대로 쓴다.
+    //   새 비밀값을 코드에 평문 추가하지 않음 — 이 폴백 리터럴은 gate.js에 이미 커밋돼 있던 것과 동일.
+    var _mdGatePw = _accessProp_('STAFF_GATE_PW') || 'wellperion!@345';
+    if (String(body.password || '') !== _mdGatePw) {
+      return _json({ ok: false, error: '비밀번호가 올바르지 않습니다.' });
+    }
+    // ★쓰기 직렬화(INC-020 재발방지 ③, 2026-07-20): 범위확인→전화대조→쓰기 사이에 동시 호출이 같은 시트에
+    //   행을 밀어넣으면(삽입·삭제) 검증 통과 후 엉뚱한 행이 바뀔 수 있다 — 락을 잡고 검증부터 쓰기까지
+    //   한 번의 원자 구간으로 묶는다. 락 획득 실패 시 쓰지 않고 재시도 요청(무음 스킵 금지).
     var _mdLock = LockService.getScriptLock();
     if (!_mdLock.tryLock(8000)) return _json({ ok: false, error: 'locked', detail: '다른 쓰기 작업 진행 중 — 잠시 후 다시 시도' });
+    var _mdName = '', _mdPhoneMasked = '', _mdBeforeStatus = '';
     try {
       if (mdRow > mdSh.getLastRow()) return _json({ ok: false, error: '행 범위 초과' });
       var _mdHdr = _miHeaders_(mdSh);
@@ -5494,14 +5516,25 @@ function _processAction(body) {
       if (!_mdRowPh || _mdRowPh !== _mdKeyPh) {
         return _json({ ok: false, error: 'row-key-mismatch', detail: '행 검증 실패(대상 전화 불일치/불명) — 목록 새로고침 후 다시 시도' });
       }
-      mdSh.deleteRow(mdRow);
+      var _mdStCi = _miColIdx_(_mdHdr, ['진행현황','진행상황','진행상태','상태']);
+      if (_mdStCi < 0) return _json({ ok: false, error: '진행현황 칸 없음(소프트 삭제 불가)' });
+      var _mdNmCi = _miColIdx_(_mdHdr, ['성함','이름']);
+      _mdName = _mdNmCi >= 0 ? String(mdSh.getRange(mdRow, _mdNmCi + 1).getValue() || '') : '';
+      _mdPhoneMasked = _logMaskPhone_(mdSh.getRange(mdRow, _mdPhCi + 1).getValue());
+      _mdBeforeStatus = String(mdSh.getRange(mdRow, _mdStCi + 1).getValue() || '').trim() || '(미기재)';
+      // ★물리 삭제 금지(INC-020) — deleteRow 대신 상태 마커만 쓴다. 행은 그대로 남아 언제든 되돌릴 수 있다.
+      mdSh.getRange(mdRow, _mdStCi + 1).setValue(MI_DUP_DELETED_STATUS);
     } finally {
       _mdLock.releaseLock();
     }
-    // 조회 캐시 무효화(축1) — delete 직후 최대 60초 stale 반환 방지(연쇄 오삭제 위험 차단). 2026-07-08 시토 안전수리.
+    // 조회 캐시 무효화(축1) — 쓰기 직후 최대 60초 stale 반환 방지. 2026-07-08 시토 안전수리.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
-    try { _notifyTelegram('🗑 문의회원 삭제(공개페이지) — 행 ' + mdRow); } catch (e) {}
-    return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다.' });
+    // ★회원 변경 이력(기존 _memberLog_ 재사용, 새 로그·새 시트 없음) — 언제·누가(_logWho_, staff 미동봉이면 '자동'이 아니라
+    //   프론트가 항상 staff를 실어보내므로 실행자명)·무엇을(이름·전화 뒷4자리 마스킹)·왜(중복 삭제)·전후 상태.
+    _memberLog_([[new Date(), _logWho_(body), _mdName, _mdPhoneMasked,
+                  '중복 삭제(소프트)', _mdBeforeStatus, MI_DUP_DELETED_STATUS, '멤버십 새 문의']]);
+    try { _notifyTelegram('🗑 새 문의 중복 삭제(소프트, 목록 제외·되돌리기 가능) — ' + (_mdName || '(이름없음)') + ' · 처리: ' + _logWho_(body)); } catch (e) {}
+    return _json({ ok: true, rowIndex: mdRow, message: '삭제되었습니다(목록에서 제외 · 되돌리기 가능).' });
   }
 
   // ─── 강습문의 페이지(CPO): 전체 목록 (성인 강습 문의 + 관리 필드) ───
@@ -8994,10 +9027,12 @@ function _processAction(body) {
         var ciTs = _miColIdx_(ciH, ['타임스탬프','접수일','날짜']);
         var ciNm = _miColIdx_(ciH, ['성함','이름']);
         var ciPg = _miColIdx_(ciH, ['관심 있는 프로그램 종류','관심 있는 프로그램 종목','관심프로그램','프로그램']);
+        var ciSt = _miColIdx_(ciH, ['진행현황','진행상황','진행상태','상태']);   // 소프트 삭제(중복) 제외용. 2026-08-05 시토.
         if (ciTs >= 0) {
           var ciData = ciSh.getRange(2, 1, ciSh.getLastRow() - 1, ciH.length).getValues();
           for (var ci = 0; ci < ciData.length; ci++) {
             if (ciNm >= 0 && !String(ciData[ci][ciNm] || '').trim() && !ciData[ci][ciTs]) continue;
+            if (ciSt >= 0 && String(ciData[ci][ciSt] || '').trim() === MI_DUP_DELETED_STATUS) continue;   // ★소프트 삭제 제외(2026-08-05)
             // 멤버십 문의 집계: 프로그램 미기재(빈칸)는 포함(목록과 분모 일치), 명시적 비멤버십(강습 등)만 제외.
             if (ciPg >= 0) { var ciPv = String(ciData[ci][ciPg] || '').trim(); if (ciPv && ciPv.indexOf('플래티넘') < 0 && ciPv.indexOf('노블레스') < 0) continue; }
             var ciD = _miToISO_(ciData[ci][ciTs]);
@@ -9772,6 +9807,7 @@ function _processAction(body) {
         rows.forEach(function(r) {
           var dateRaw = r[idxDate];
           if (!dateRaw) return;
+          if (String(r[idxStatus] || '').trim() === MI_DUP_DELETED_STATUS) return;   // ★소프트 삭제(중복) 제외(2026-08-05 시토)
           var d = _toDate_(_parseAnyDate_(dateRaw));
           if (isNaN(d.getTime())) return;
           if (!_isLessonReg_(r[idxStatus])) return;
@@ -9949,6 +9985,12 @@ function _processAction(body) {
         var last = sh.getLastRow(), lc = sh.getLastColumn(); if (last < 2 || lc < 1) return;
         var hd = sh.getRange(1, 1, 1, lc).getValues()[0];
         var rows = sh.getRange(2, 1, last - 1, lc).getValues();
+        // ★소프트 삭제(중복) 제외 — 26년 신규문의(FORM_SHEETS[0])만 해당. _sfProc_ 내부 iStatus(진행상태/상태/단계)는
+        //   이 시트 실헤더 '진행현황'을 못 찾아 여기서 따로 걸러야 한다(2026-08-05 시토, GM 지시).
+        if (cfg === FORM_SHEETS[0]) {
+          var _sfMiStI = _miColIdx_(hd, ['진행현황','진행상황','진행상태','상태']);
+          if (_sfMiStI >= 0) rows = rows.filter(function(r){ return String(r[_sfMiStI] || '').trim() !== MI_DUP_DELETED_STATUS; });
+        }
         if (LES_GIDS[cfg.gid]) _sfProc_(hd, rows, LES_KEYS, lesT, lesM);   // 강습 퍼널
         else                   _sfProc_(hd, rows, MEM_KEYS, memT, memM);   // 멤버십 퍼널(그 외 폼=소량·멤버십 편입)
       } catch (e) { /* 무중단 */ }
