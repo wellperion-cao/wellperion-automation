@@ -7275,15 +7275,21 @@ function _oaRender(){
   if (count) count.textContent = '총 ' + rows.length + '명' + (pop.length !== rows.length ? ' (' + cfg.label + ' 담당 전체 ' + pop.length + '명 중)' : '');
 
   var head = document.getElementById('oaHead');
+  // ★2026-08-05 GM 지시 — ①Contact 헤더 가운데 정렬 ②멤버십 회원관리가 이미 만들어 쓰는 값(수강반종목명·
+  //   등록분류·계약기간·잔여일)을 같은 응답 행에서 그대로 가져와 칸을 늘림(실측 채움률 99.7~100%, 새 계산 0).
   if (head) head.innerHTML = '<tr>' +
     '<th style="white-space:nowrap;text-align:left">회원명</th>' +
     '<th style="white-space:nowrap;text-align:center">휴대폰</th>' +
+    '<th style="white-space:nowrap;text-align:left">수강반종목명</th>' +
+    '<th style="white-space:nowrap;text-align:center">등록분류</th>' +
+    '<th style="white-space:nowrap;text-align:center">계약기간</th>' +
+    '<th style="white-space:nowrap;text-align:center">잔여일</th>' +
     '<th style="white-space:nowrap;text-align:center">담당자</th>' +
-    '<th style="white-space:nowrap;text-align:left">Contact (연락 이력)</th></tr>';
+    '<th style="white-space:nowrap;text-align:center">Contact (연락 이력)</th></tr>';
 
   var body = document.getElementById('oaBody'); if (!body) return;
   if (!rows.length){
-    body.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">해당 회원 없음</div><div class="empty-state-desc">검색·강사 필터를 바꿔보세요.</div></div></td></tr>';
+    body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">해당 회원 없음</div><div class="empty-state-desc">검색·강사 필터를 바꿔보세요.</div></div></td></tr>';
     return;
   }
 
@@ -7301,21 +7307,39 @@ function _oaRender(){
     var ri = r.rowIndex != null ? esc(String(r.rowIndex)) : '';
     var ph = r['휴대폰 번호'] || r['휴대폰'] || '';
     var contact = String(r[cfg.contact]||'').trim();
+    // ★2026-08-05 GM 지시 — 멤버십 회원관리와 같은 member_active_list 응답 행에 이미 있는 값을 그대로 씀
+    //   (새 계산·새 fetch 0). 프로그램칸 축약은 신규 등록현황 표(7580행 _mregProgLabel)와 같은 함수 재사용.
+    var progRaw = String(r['수강반종목명']||'').trim();
+    var progLbl = _mregProgLabel(progRaw) || '—';
+    var regClass = String(r['등록 분류']||'').trim() || '—';
+    var startD = String(r['시작\n일자']||'').trim();
+    var endD = String(r['종료\n일자']||'').trim();
+    var period = (startD || endD) ? ((startD||'—') + ' ~ ' + (endD||'—')) : '—';
+    var remain = String(r['잔여일\n(일)']||'').trim() || '—';
     var sel = '<select class="oa-owner-sel" data-rowindex="' + ri + '" data-phone="' + esc(String(ph)) + '" style="max-width:150px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12.5px;font-family:inherit;cursor:pointer">';
     opts.forEach(function(o){ sel += '<option value="' + esc(o) + '"' + (o === cur ? ' selected' : '') + '>' + esc(o) + '</option>'; });
     sel += '</select>';
     // 휴대폰 마스킹 해제(2026-08-04 FB260804-183522, 김태엽 프로) — 이 표는 PIN 게이트가 없는 사내 담당자
     // 배정 화면인데 번호만 가려 놓아 실무진이 회원에게 연락을 못 하는 상태였다. 잠금도 없이 가리기만
     // 하면 보호 효과 없이 업무만 막는다 — 이 파일 다른 사내 화면(문의표 등)과 같은 원문 표시로 통일.
+    // ★2026-08-05 GM 지시 — Contact 칸에 추가 입력을 붙인다(.oa-contact-add-in, 아래 _oaAppendContact).
+    //   기존 이력(.oa-contact-hist)은 그대로 두고 새 줄만 뒤에 붙는다 — 덮어쓰기·삭제 기능 없음.
     html += '<tr data-rowindex="' + ri + '">' +
       '<td style="white-space:nowrap;text-align:left">' + esc(r['회원명']||'—') + '</td>' +
       '<td style="white-space:nowrap">' + esc(String(ph||'') || '—') + '</td>' +
+      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(progRaw) + '">' + esc(progLbl) + '</td>' +
+      '<td style="white-space:nowrap;text-align:center">' + esc(regClass) + '</td>' +
+      '<td style="white-space:nowrap;text-align:center;font-size:11px">' + esc(period) + '</td>' +
+      '<td style="white-space:nowrap;text-align:center">' + esc(remain) + '</td>' +
       '<td style="white-space:nowrap">' + sel + '</td>' +
-      '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(contact) + '">' + esc(contact||'—') + '</td>' +
+      '<td style="min-width:190px;max-width:280px">' +
+        '<div class="oa-contact-hist" data-rowindex="' + ri + '" style="max-height:54px;overflow-y:auto;white-space:pre-wrap;font-size:11px;color:var(--dim);margin-bottom:3px" title="' + esc(contact) + '">' + esc(contact||'—') + '</div>' +
+        '<input class="oa-contact-add-in" data-field="' + esc(cfg.contact) + '" data-phone="' + esc(String(ph||'')) + '" data-rowindex="' + ri + '" placeholder="+ 컨택 추가" title="입력 후 포커스를 빼면 기존 이력 뒤에 추가 저장됩니다(덮어쓰지 않음)" style="width:160px;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:11px;font-family:inherit">' +
+      '</td>' +
       '</tr>';
   });
   if (rows.length > _oaLimit){
-    html += '<tr><td colspan="4" style="text-align:center;padding:10px"><button type="button" class="btn-refresh" onclick="_oaShowMore()">더 보기 (' + (rows.length - _oaLimit) + '명 남음)</button></td></tr>';
+    html += '<tr><td colspan="8" style="text-align:center;padding:10px"><button type="button" class="btn-refresh" onclick="_oaShowMore()">더 보기 (' + (rows.length - _oaLimit) + '명 남음)</button></td></tr>';
   }
   body.innerHTML = html;
 }
@@ -7334,6 +7358,7 @@ function _oaWireSearch(){
     body.addEventListener('change', function(e){
       var sel = e.target;
       if (sel && sel.classList && sel.classList.contains('oa-owner-sel')) _oaSaveOwner(sel);
+      if (sel && sel.classList && sel.classList.contains('oa-contact-add-in')) _oaAppendContact(sel);
     });
   }
 }
@@ -7358,6 +7383,42 @@ function _oaSaveOwner(sel){
     { scope: 'active', phoneKey: phone, fieldset: 'owner:' + cfg.col, label: '담당', who: (r && (r['회원명'] || r['성함'])) || '', overlay: _ovO }
   );
   showToast('담당자 저장', 'ok');
+}
+
+/* 연락 이력 추가(append-only) — 2026-08-05 GM 지시("아래에 있는 내용들은 추가 할 수 있게").
+   ★기존 이력을 절대 덮지 않는다 — 항상 old + '\n' + new 로만 이어붙인다(지우기 기능 없음).
+   새 쓰기 액션 0 — mreg 카드(_mregSaveContact)가 같은 칸(cfg.contact, member_active_list의
+   '{종목} Contact' 시트칼럼)에 이미 쓰는 member_active_update 를 그대로 재사용한다.
+   재렌더 없음(입력칸·이력 <div>만 직접 갱신) — 한글 입력 중 재렌더로 글자가 깨지는 사고 재발 방지.
+   # ponytail: 서버가 이전값을 대조하지 않는 단순 overwrite라, 같은 회원 칸에 두 명이 동시에 추가하면
+   #   나중 저장이 앞 저장을 덮을 수 있다(같은 한계가 이미 _mregSaveContact·_oaSaveOwner에도 있음).
+   #   업그레이드 시점: 실무진 동시편집 충돌 신고가 들어오면 서버측 append(대조 후 붙이기)로 전환. */
+function _oaAppendContact(inp){
+  var field = inp.getAttribute('data-field');
+  var phone = inp.getAttribute('data-phone');
+  var rowIndex = inp.getAttribute('data-rowindex');
+  var entry = String(inp.value == null ? '' : inp.value).trim();
+  if (!entry) return;   // 빈 입력 — 저장하지 않음(기존 이력 그대로)
+  var rows = _ownerAssignRows || [];
+  var member = null;
+  for (var i=0;i<rows.length;i++){ if (String(rows[i].rowIndex) === String(rowIndex)){ member = rows[i]; break; } }
+  if (!member){ showToast('회원 행을 찾지 못해 저장할 수 없습니다', 'err'); inp.value = ''; return; }
+  var old = String(member[field] || '').trim();
+  var line = _mdashYmd(new Date()) + ' ' + entry;
+  var next = old ? (old + '\n' + line) : line;
+  member[field] = next;   // 낙관적 캐시 갱신(_ownerAssignRows 공유 — mreg 카드에도 즉시 반영)
+  var histEl = document.querySelector('.oa-contact-hist[data-rowindex="' + rowIndex + '"]');
+  if (histEl){ histEl.textContent = next; histEl.title = next; }
+  inp.value = '';   // 입력칸만 비움 — 표 전체 재렌더 없음
+  var _ov = {}; _ov[field] = next;
+  WriteBuffer.enqueue(
+    { action: 'member_active_update', rowIndex: member.rowIndex, col: field, value: next,
+      keyPhone: member['휴대폰 번호'] || member['휴대폰'] || phone, rowKey: member.rowKey || '' },
+    { scope: 'active', phoneKey: phone, fieldset: 'cell:' + field, label: '컨택 추가',
+      who: (member['회원명'] || member['성함']) || '', overlay: _ov }
+  );
+  // 성공은 즉시 토스트(낙관적) — 실패는 WriteBuffer 자체가 감시해 '저장 실패 — …' 토스트를 띄운다(기존 방식 재사용).
+  showToast('컨택 이력 추가 · ' + String(field).replace('Contact','').trim(), 'ok');
 }
 
 function _oaRenderState(msg){
