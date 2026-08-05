@@ -2589,6 +2589,39 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 24h SLA 위반 카톡 발송 예외: {e}")
 
+    # ── 컨택 후 60일(2개월) 무응답 — 카카오 ★부서장 방, 24h SLA 경보 바로 옆에 (GM 2026-08-05) ──
+    # GM: "기한을 2개월로 해줘 / 짚어주면서 하나씩 고쳐나가게 서포트해." 위 24h SLA(신규 미배정)와
+    # 다른 층 — 대상은 이미 컨택된 활성 리드 중 최근활동 60일+ 경과(강습+회원 통합, 상한 없음).
+    # 새 스크립트·새 예약작업·새 방 없음 — unassigned_nudge.py 의 판정을 같은 카카오 관문으로,
+    # 위 SLA 메시지 발송 직후 독립 두 번째 메시지로 같은 방에 "얹는다". 도배 방지는 하루 5건
+    # 회전 선발(기존 하트비트 파일의 notified60 키, 새 원장 없음) — 발송 성공 시에만 회전을 돌린다.
+    try:
+        noresp_items = _un.collect_noresponse(today)
+        noresp_due, noresp_warn = _un.split_noresponse(noresp_items)
+        noresp_text = ""
+        noresp_selected = []
+        if noresp_due:
+            noresp_notified60 = _un._load_notified60()
+            noresp_selected = _un.select_noresponse_rotation(noresp_due, noresp_notified60)
+            noresp_text = _un.build_noresponse_alert_text(noresp_due, len(noresp_warn), noresp_selected)
+        if noresp_text:
+            sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+            env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+            proc = subprocess.run(
+                [sys.executable, str(sender), "--message", noresp_text, "--only-room", KAKAO_DEPTHEAD_ROOM],
+                cwd=str(REPO_ROOT), capture_output=True, text=True,
+                encoding="utf-8", errors="replace", env=env, timeout=180,
+            )
+            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+            logger.info(f"{label} 60일 무응답 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]} "
+                        f"(본선 {len(noresp_due)}건 · 예고 {len(noresp_warn)}건 · 선발 {len(noresp_selected)}건)")
+            noresp_current_keys = {it["key"] for it in noresp_due}
+            _un._record_sent60(noresp_selected, noresp_notified60, today, noresp_current_keys, len(noresp_due))
+        else:
+            logger.info(f"{label} 60일 무응답 0건 — 카톡 발송 없음")
+    except Exception as e:
+        logger.error(f"{label} 60일 무응답 카톡 발송 예외: {e}")
+
     # ── 스트림 #2 점검+이슈 현황 (점검현황방 단독 · 2026-07-22) ─────────────────────
     s2_msg = None  # 카톡 ★운영+시설+지원+주차 재사용(아래) — 빌드 실패 시 None 유지, 카톡 스킵.
     try:

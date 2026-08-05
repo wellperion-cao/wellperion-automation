@@ -52,6 +52,37 @@ GM 지시: "미배정건 각 팀장분들한테 좋게 푸시해서 배정 다 �
   매일 다시 알리는 게 맞다(GM "철저하게") — 재알림 억제 없음. 위반 0건이면 조용히
   아무것도 보내지 않는다.
 
+★2026-08-05 시토 2차 추가 — 컨택 후 60일(2개월) 무응답 → 같은 카카오 ★부서장 경보에 얹음
+  GM: "기한을 2개월로 해줘 / 짚어주면서 하나씩 고쳐나가게 서포트해 // 근본적인
+  해결방안을 마련해." 실측(2026-08-05): 마지막 활동(접수일·연락일 중 최근) 60일+
+  경과·컨택 이력 1건 이상('컨택 후')·활성(등록·LOSS 아님) 리드 다수. 지금까지는
+  화면 '오래 멈춘 리드' 섹션을 직접 열어야만 보였고 하루 5건 캡이라 뒤에 숨은
+  건수가 매일 노출되지 않았다 — 이 알림이 그 간극을 메운다.
+  판정 = collect_sla_violations()와 동일 판정틀(R._is_registered/_is_loss 재사용) +
+  '컨택 후'(contacts[]≥1, _has_contact 재사용) + 최근활동(접수일·연락일[].date 중
+  최신) 경과 60일 이상. 대상 = 강습(성인/유소년) + 회원(member_inquiry_list) 통합
+  — GM 지시가 도메인을 가르지 않았다(716건 = 강습585+회원131 실측 당시 기준).
+  회전(도배 방지) = 기존 하트비트 파일(cpo-unassigned-nudge.json)에 새 키
+  "notified60"만 얹는다(새 원장 금지) — 마지막으로 보여준 날짜 오름차순(못 보여준
+  건 우선) → 경과일 내림차순으로 정렬해 매일 상위 5건만 뽑는다. 오늘 보여준 건은
+  다음 정렬에서 뒤로 밀리고(회전), 상태가 바뀌어 후보에서 빠진 건(등록/LOSS 처리
+  또는 재컨택으로 60일 밑으로 내려간 건)은 다음 회차에 notified60에서 자동 청소된다
+  (현재 후보 키 집합 밖은 버림) — "처리되면 목록에서 사라진다"(GM).
+  근본 처방 2종(GM "다시 쌓이지 않게"):
+   ① 45일 예고 — 60일 도달 전에 미리 알리면 늦지 않게 손댈 수 있다(문턱을 넘은 뒤
+      알리면 이미 늦다). 별도 목록·별도 발송을 만들지 않고 같은 경보 헤더 한 줄에
+      "2개월 임박 N건"으로 병기한다(45~59일 구간, 60일 이상 본선 목록과 절대 겹치지
+      않음 — 판정 임계값이 서로 배타적이라 자연히 분리, selftest로 재확인).
+   ② 상태로 닫을 길 — 알림만으로는 다시 쌓인다. AI 는 상태를 바꾸지 않는다(사람이
+      정한다) — 본문에 "계속 진행/이탈(LOSS)/보류 중 하나로 정리해 주세요" 유도
+      문구만 넣어 사람이 화면에서 직접 고르게 한다.
+  화면(membership.html/lesson 배정화면) 쪽 수정은 이번에 하지 않는다 — 다른 레인이
+  같은 파일을 고치는 중이라 제안만 남긴다(카카오 알림 발신 코드로 충분히 처리 가능
+  — 새 화면 없이 문구만으로 회전·예고·상태선택 유도 3가지를 전부 담았다).
+  발송 = 기존 카카오 관문(kakao_report_sender.py --only-room ★부서장) 재사용, 24시간
+  SLA 블록 발송 직후 독립 두 번째 메시지로 "얹는다"(같은 방·같은 회차·새 방/새
+  예약작업 없음). 본문 자체도 10줄 이내(GM "짧고 핵심만").
+
 ★2026-08-05 시토 개편 (GM 지시 — "다른 내용까지 다 같이 들어가니까 진행이 안된다")
   - 진단: 이 모듈 자체는 배9206 이후 한 번도 실제 발신 배선에 물린 적이 없었다.
     실제로 팀장님들이 받던 배정 독려는 report_stream_1_impl.build_digest() 안
@@ -77,7 +108,7 @@ import os
 import statistics
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -120,6 +151,12 @@ SLA_SINCE_DATE = "2026-08-01"  # 대상 = 이 날짜(포함) 이후 접수분만
 SLA_HOURS = 24                 # 문턱 — 배정·컨택 둘 중 하나라도 없으면 위반
 SLA_MSG_DISPLAY_N = 5          # 본문에 줄로 싣는 건수(GM "10줄 안쪽")
 KAKAO_DEPTHEAD_ROOM = "★부서장"  # scripts/kakao_rooms.json 정본과 동일 값(창-제목 대조용)
+ASSIGN_URL_MEMBER = _BASE + "membership.html"  # 회원 문의 처리 화면(60일 무응답 알림 링크용)
+
+# ── 컨택 후 60일(2개월) 무응답 → 카카오 ★부서장 방 (GM 2026-08-05 지시) ──────────
+NORESP_MIN_DAYS = 60    # 본선 문턱 — GM "기한을 2개월로"
+NORESP_WARN_DAYS = 45   # 예고 문턱 — 60일 도달 전에 미리 뜨게(문턱 넘고 알리면 늦다)
+NORESP_MSG_DISPLAY_N = 5  # 본문에 줄로 싣는 건수(GM "10줄 안쪽")
 
 
 def _has_contact(row: dict) -> bool:
@@ -240,11 +277,23 @@ def select_daily(items: list[dict], notified: dict[str, str], today: str,
 
 # ── 7일 가드 상태 — 배10014 방식: 상설 하트비트 1파일 덮어쓰기 갱신(새 원장 금지) ──
 
-def _load_notified(root: Path | None = None) -> dict[str, str]:
+def _load_heartbeat_extra(root: Path | None = None) -> dict:
+    """상설 하트비트 1파일의 두 회전 상태(notified/notified60)를 함께 읽는다 — record_heartbeat()
+    는 extra 를 통째로 덮어쓰므로, 한쪽만 갱신할 때 다른 쪽 상태가 지워지지 않게 항상 같이 들고 다닌다."""
     from module_heartbeat import PROJECT_ROOT, last_heartbeat
-    rec = last_heartbeat(HEARTBEAT_ID, root=root or PROJECT_ROOT)
-    m = (rec or {}).get("notified")
-    return dict(m) if isinstance(m, dict) else {}
+    rec = last_heartbeat(HEARTBEAT_ID, root=root or PROJECT_ROOT) or {}
+    return {
+        "notified": dict(rec.get("notified") or {}) if isinstance(rec.get("notified"), dict) else {},
+        "notified60": dict(rec.get("notified60") or {}) if isinstance(rec.get("notified60"), dict) else {},
+    }
+
+
+def _load_notified(root: Path | None = None) -> dict[str, str]:
+    return _load_heartbeat_extra(root)["notified"]
+
+
+def _load_notified60(root: Path | None = None) -> dict[str, str]:
+    return _load_heartbeat_extra(root)["notified60"]
 
 
 def _record_sent(selected: list[dict], notified: dict[str, str], today: str,
@@ -256,10 +305,33 @@ def _record_sent(selected: list[dict], notified: dict[str, str], today: str,
         merged[it["key"]] = today
     merged = {k: v for k, v in merged.items()
               if 0 <= R._days_since(v, today) <= NOTIFIED_KEEP_DAYS}
+    extra = _load_heartbeat_extra(root)
+    extra["notified"] = merged
     return record_heartbeat(
         HEARTBEAT_ID,
         detail=f"배정 안내 {len(selected)}건 발송(대상 {eligible_n}건 · 휴면 제외 {dormant_n}건)",
-        extra={"notified": merged},
+        extra=extra,
+        root=root or PROJECT_ROOT,
+    )
+
+
+def _record_sent60(selected: list[dict], notified60: dict[str, str], today: str,
+                    current_keys: set[str], due_n: int, root: Path | None = None) -> dict:
+    """60일 무응답 경보 발송 '성공' 직후에만 호출. current_keys=이번 회차 due 후보 키 집합 —
+    여기 없는 옛 키(등록/LOSS 처리 또는 재컨택으로 후보에서 빠진 건)는 자동 청소된다
+    (GM "처리되면 목록에서 사라진다")."""
+    from module_heartbeat import PROJECT_ROOT, record_heartbeat
+    merged = dict(notified60)
+    for it in selected:
+        merged[it["key"]] = today
+    merged = {k: v for k, v in merged.items()
+              if k in current_keys and 0 <= R._days_since(v, today) <= NOTIFIED_KEEP_DAYS}
+    extra = _load_heartbeat_extra(root)
+    extra["notified60"] = merged
+    return record_heartbeat(
+        HEARTBEAT_ID,
+        detail=f"60일 무응답 안내 {len(selected)}건 발송(대상 {due_n}건)",
+        extra=extra,
         root=root or PROJECT_ROOT,
     )
 
@@ -358,6 +430,95 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     if rest_n > 0:
         lines.append(f"… 외 {rest_n}건 (총 {len(violations)}건)")
     lines.append(f"👉 처리하기: {ASSIGN_URL_LESSON} (입장코드 {ENTRY_CODE})")
+    lines.append(AI_SIGNOFF)
+    return "\n".join(lines)
+
+
+def _last_activity_days(row: dict, today: str) -> int | None:
+    """최근 활동(접수일 또는 연락이력[].date 중 가장 최근) 경과일. 날짜 전무=None(판정불가)."""
+    dates = []
+    ts = str(row.get("timestamp", "") or "")[:10]
+    if ts:
+        dates.append(ts)
+    for c in row.get("contacts") or []:
+        if isinstance(c, dict):
+            d = str(c.get("date", "") or "")[:10]
+            if d:
+                dates.append(d)
+    if not dates:
+        return None
+    return R._days_since(max(dates), today)  # YYYY-MM-DD 문자열 비교=날짜비교 안전, max=가장 최근
+
+
+def collect_noresponse(today: str) -> list[dict]:
+    """컨택 후(contacts[]≥1) 무응답 — 최근활동 경과 NORESP_WARN_DAYS(45)일 이상, 강습+회원 통합.
+    등록완료·이탈종결(LOSS)은 제외(R._is_registered/_is_loss — collect_sla_violations와 동일 판정틀).
+    미컨택(contacts 0건)은 대상 아님 — 그건 배정독려(collect_unassigned)가 이미 다룬다.
+    경과일 내림차순(오래된 순) 반환 — 45~59일(예고)과 60일+(본선)은 호출부에서 split."""
+    sources = {
+        "성인강습": (R._fetch_list("lesson_inquiry_list", type="성인강습"), True),
+        "유소년강습": (R._fetch_list("lesson_inquiry_list", type="유소년강습"), True),
+        "회원": (R._fetch_list("member_inquiry_list"), False),
+    }
+    out: list[dict] = []
+    for label, (rows, is_lesson) in sources.items():
+        for r in rows:
+            if R._is_test_row(r):
+                continue
+            if R._is_registered(r, is_lesson) or R._is_loss(r):
+                continue
+            if not _has_contact(r):
+                continue
+            days = _last_activity_days(r, today)
+            if days is None or days < NORESP_WARN_DAYS:
+                continue
+            sport = str(r.get("sport") or r.get("program") or "-").strip() or "-"
+            out.append({
+                "kind": label,
+                "sport": sport,
+                "name": str(r.get("name", "") or "-").strip() or "-",
+                "date": str(r.get("timestamp", "") or "")[:10] or "-",
+                "owner": str(r.get("owner", "") or "-").strip() or "-",
+                "days": days,
+                "key": _lead_key(r),
+            })
+    out.sort(key=lambda x: -x["days"])
+    return out
+
+
+def split_noresponse(items: list[dict]) -> tuple[list[dict], list[dict]]:
+    """(60일+ 본선, 45~59일 예고) 분리 — 임계값이 서로 배타적이라 겹치지 않는다."""
+    due = [it for it in items if it["days"] >= NORESP_MIN_DAYS]
+    warn = [it for it in items if it["days"] < NORESP_MIN_DAYS]
+    return due, warn
+
+
+def select_noresponse_rotation(due: list[dict], notified60: dict[str, str],
+                                top_n: int = NORESP_MSG_DISPLAY_N) -> list[dict]:
+    """회전 선발 — 마지막으로 보여준 날짜 오름차순(못 보여준 건 "" 이 가장 앞) → 경과일
+    내림차순. 오늘 보여준 건은 notified60 기록 후 다음 선발에서 뒤로 밀린다(라운드로빈).
+    처리(등록/LOSS/재컨택)된 건은 due 자체에서 빠지므로 자동으로 회전에서 사라진다."""
+    ordered = sorted(due, key=lambda it: (notified60.get(it["key"], ""), -it["days"]))
+    return ordered[:top_n]
+
+
+def build_noresponse_alert_text(due: list[dict], warn_n: int, selected: list[dict]) -> str:
+    """카카오 ★부서장 방용 평문(GM 2026-08-05) — 60일+ 0건이면 빈 문자열(발송 안 함).
+    10줄 이내·한 줄에 한 건(접수일·이름·종목·경과일·담당자)·상태선택 유도·AI 서명."""
+    if not due:
+        return ""
+    shown = selected[:NORESP_MSG_DISPLAY_N]
+    rest_n = len(due) - len(shown)
+    oldest = due[0]["days"]  # collect_noresponse()에서 이미 -days 정렬됨
+    warn_part = f" · 2개월 임박(45~59일) {warn_n}건 곧 도달" if warn_n else ""
+    lines = [f"🗓️ 컨택 후 2개월(60일+) 무응답 · {len(due)}건 (가장 오래된 건 {oldest}일째{warn_part})"]
+    lines.append("부서장님, 아래 건 확인 후 계속 진행/이탈(LOSS)/보류 중 하나로 정리 부탁드립니다 🙏")
+    for it in shown:
+        lines.append(f"· {it['date']} · {it['name']} · {_sport_short(it['sport'])} · "
+                     f"{it['days']}일째 · 담당:{it['owner']}")
+    if rest_n > 0:
+        lines.append(f"… 외 {rest_n}건 (총 {len(due)}건)")
+    lines.append(f"🔗 처리: {ASSIGN_URL_LESSON} · {ASSIGN_URL_MEMBER} (입장코드 {ENTRY_CODE})")
     lines.append(AI_SIGNOFF)
     return "\n".join(lines)
 
@@ -500,6 +661,85 @@ def _selftest_sla() -> None:
         R._fetch_list = orig_fetch
 
 
+def _selftest_noresponse() -> None:
+    """컨택 후 60일 무응답 판정·회전 자가검사(assert 기반, 실제 GAS 호출·발송 0건).
+    확인: ①60일 미만(45~59 예고구간)은 본선 제외 ②등록완료/LOSS 제외 ③미컨택 제외
+    (배정독려 몫) ④최근 재컨택은 무응답 아님 ⑤강습+회원 통합 집계 ⑥45일 예고와 60일
+    본선이 겹치지 않음 ⑦0건이면 빈 문자열 ⑧본문 10줄 이내 ⑨회전이 다음 회차에 다른
+    건을 낸다(2회 연속 비교)."""
+    today_dt = datetime(2026, 8, 5)
+    today = today_dt.strftime("%Y-%m-%d")
+
+    def _d(n: int) -> str:
+        return (today_dt - timedelta(days=n)).strftime("%Y-%m-%d")
+
+    def _row(name, contact_days_ago, ts_days_ago=None, owner="", status=""):
+        ts = _d(ts_days_ago if ts_days_ago is not None else contact_days_ago)
+        contacts = [{"date": _d(contact_days_ago), "note": "1차 상담"}] if contact_days_ago is not None else []
+        return {"name": name, "timestamp": ts, "owner": owner, "contacts": contacts,
+                "status": status, "sport": "성인 수영"}
+
+    lesson_rows = [
+        _row("59일차", 59),                            # 예고 구간(45~59) — 본선 아님
+        _row("60일차", 60),                             # 본선(60+)
+        _row("미컨택오래됨", None, ts_days_ago=100),      # 컨택 0 — 대상 아님(배정독려 몫)
+        _row("등록완료오래됨", 90, status="등록완료"),     # 등록완료 — 대상 아님
+        _row("이탈오래됨", 90, status="LOSS"),            # LOSS — 대상 아님
+        _row("최근재컨택", 5, ts_days_ago=200),           # 최근활동=5일 전 — 대상 아님(살아있음)
+    ]
+    member_rows = [_row("회원65일차", 65)]
+
+    orig_fetch = R._fetch_list
+
+    def _fake(action, **params):
+        if action == "lesson_inquiry_list" and params.get("type") == "성인강습":
+            return lesson_rows
+        if action == "member_inquiry_list":
+            return member_rows
+        return []
+    R._fetch_list = _fake
+    try:
+        items = collect_noresponse(today)
+        due, warn = split_noresponse(items)
+        due_names = {it["name"] for it in due}
+        warn_names = {it["name"] for it in warn}
+
+        assert "60일차" in due_names, "60일 경과건이 본선에 안 잡힘"
+        assert "회원65일차" in due_names, "회원(멤버십) 도메인이 통합 집계에서 빠짐"
+        assert "59일차" not in due_names and "59일차" in warn_names, "60일 미만이 본선에 잘못 잡힘"
+        assert not (due_names & warn_names), "45일 예고가 60일 본선과 겹침"
+        assert not ({"미컨택오래됨"} & (due_names | warn_names)), "미컨택 건이 무응답 경보에 섞임(배정독려 몫)"
+        assert "등록완료오래됨" not in due_names, "등록완료건이 무응답 경보에 섞임"
+        assert "이탈오래됨" not in due_names, "LOSS건이 무응답 경보에 섞임"
+        assert not ({"최근재컨택"} & (due_names | warn_names)), "최근 재컨택건이 무응답으로 오판정됨"
+        print(f"  [판정] 본선 {len(due)}건 · 예고 {len(warn)}건 — 60일 미만 제외/등록·LOSS 제외/"
+              "미컨택 제외/45일 예고-60일 본선 비중복/회원+강습 통합 — 전부 통과")
+
+        empty_text = build_noresponse_alert_text([], 0, [])
+        assert empty_text == "", "본선 0건인데 본문이 생성됨(발송하면 안 됨)"
+        print("  [빈 목록] 본문 \"\" — 발송 안 함 — 통과")
+
+        sel1 = select_noresponse_rotation(due, {})
+        text = build_noresponse_alert_text(due, len(warn), sel1)
+        assert AI_SIGNOFF in text, "AI 주체 서명 누락"
+        line_n = len(text.splitlines())
+        assert line_n <= 10, f"본문이 10줄을 넘음({line_n}줄)"
+        print(f"  [본문] {line_n}줄(10줄 이내) · 서명 포함 — 통과")
+
+        # 회전: 실데이터 2건뿐이라 회전 확인용으로 가짜 후보를 늘려 5건 초과 상태를 만든다.
+        many_due = due + [dict(due[0], name=f"가짜{i}", key=f"fakekey{i}", days=90 - i) for i in range(8)]
+        sel_day1 = select_noresponse_rotation(many_due, {})
+        notified60 = {it["key"]: today for it in sel_day1}
+        sel_day2 = select_noresponse_rotation(many_due, notified60)
+        keys1 = {it["key"] for it in sel_day1}
+        keys2 = {it["key"] for it in sel_day2}
+        assert keys1 != keys2, "회전이 다음 회차에 다른 건을 내지 못함(같은 5건 반복)"
+        print(f"  [회전] 1일차 {sorted(keys1)} → 2일차 {sorted(keys2)} — 다른 건 선발 확인 통과")
+        print("SELFTEST OK: 60일 무응답 판정·회전 정상(실발송 0건)")
+    finally:
+        R._fetch_list = orig_fetch
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="문의 담당자 미배정 배정 독려 안내")
     p.add_argument("--send", action="store_true",
@@ -511,12 +751,15 @@ def main() -> int:
                    help="휴면(연락이력 0건·100일 초과) 전체 목록 출력 — 월 1회 검토용. 발송 없음.")
     p.add_argument("--sla-check", action="store_true",
                    help="24시간 SLA 위반(카카오 ★부서장 방 대상) 본문만 출력 — 발송 없음(검증용).")
+    p.add_argument("--noresp-check", action="store_true",
+                   help="컨택 후 60일 무응답(카카오 ★부서장 방 대상) 본문만 출력 — 발송 없음(검증용).")
     p.add_argument("--selftest", action="store_true",
-                   help="SLA 판정 자가검사만 실행(가짜 데이터·실제 발신 0건).")
+                   help="SLA·60일 무응답 판정 자가검사만 실행(가짜 데이터·실제 발신 0건).")
     args = p.parse_args()
 
     if args.selftest:
         _selftest_sla()
+        _selftest_noresponse()
         return 0
 
     if args.sla_check:
@@ -526,6 +769,20 @@ def main() -> int:
               f"— 목적지=카카오 {KAKAO_DEPTHEAD_ROOM} 방")
         print("-" * 56)
         print(text or "(위반 0건 — 발송 안 함)")
+        print("-" * 56)
+        return 0
+
+    if args.noresp_check:
+        today = args.today or datetime.now().strftime("%Y-%m-%d")
+        items = collect_noresponse(today)
+        due, warn = split_noresponse(items)
+        notified60 = _load_notified60()
+        selected = select_noresponse_rotation(due, notified60)
+        text = build_noresponse_alert_text(due, len(warn), selected)
+        print(f"[60일 무응답] 본선 {len(due)}건 · 예고(45~59일) {len(warn)}건 "
+              f"— 목적지=카카오 {KAKAO_DEPTHEAD_ROOM} 방")
+        print("-" * 56)
+        print(text or "(본선 0건 — 발송 안 함)")
         print("-" * 56)
         return 0
 
