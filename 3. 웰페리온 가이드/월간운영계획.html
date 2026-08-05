@@ -2142,6 +2142,10 @@
     if(window.WellperionGmDirect){
       objs = objs.filter(function(o){ return !window.WellperionGmDirect.isGmDirect(o.title); });
     }
+    // 부서 이관 건(dept_managed:true)도 이 목록에서만 뺀다 — GM 지시 2026-08-05 "상(위) 내용 빼고 각 부서별
+    // 월 목표 진척칸으로 이관시키고 관리 감독". 데이터에서 지우지 않는 이유는 위 (GM 직접)과 같다: 아래
+    // 「📌 부서별 월 목표·진척」 카드가 같은 objectives 배열을 dept 로 매칭해 그리므로, 빼면 그 칸이 비어 버린다.
+    objs = objs.filter(function(o){ return !o.dept_managed; });
     if(!objs.length){ board.innerHTML = '<div class="board-status">이 달의 목표가 없습니다.</div>'; return; }
     // 인사·파트너(owner=chro) 건은 나우열M 관할 — GM 지시(2026-08-05)로 본문에서 갈라 별도 구획에 표시.
     // 내용·진척·note는 손대지 않고 위치만 가른다.

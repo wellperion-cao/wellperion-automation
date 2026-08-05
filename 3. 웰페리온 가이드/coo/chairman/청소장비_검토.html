@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>지하 1층 청소 장비 검토</title>
+<!-- 사내 게이트(단일 소스 _assets/gate.js) — 회장님_지시사항.html과 동일(GM 지시 2026-08-05, 비밀번호 1531 통일). -->
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<style>
+  @page { size: A3 portrait; margin: 12mm; }
+  :root{
+    --deep:#22322D; --mid:#3D5A4F; --grey:#6E7772; --line:#C7CFC9;
+    --steam:#EDF1EE; --brass:#8F7029; --alert:#9A4A20; --alert-bg:#FAF0E5;
+    --ink:#111A16; --pick:#E4EDE7;
+    --font:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#8B948F;}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;}
+
+  .bar{width:273mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;}
+  .bar button,.bar a{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 16px;
+    border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
+    cursor:pointer;text-decoration:none;border-radius:2px;}
+  .bar button:hover,.bar a:hover{background:#fff;color:var(--deep);}
+
+  .sheet{width:273mm;min-height:393mm;margin:14px auto;background:#fff;
+    padding:12mm 13mm 10mm;box-shadow:0 3px 22px rgba(0,0,0,.3);}
+
+  .ref{font-size:11.5px;color:var(--grey);margin:0 0 9px;}
+  .hd{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:14px;}
+  .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-size:29px;font-weight:800;letter-spacing:-.025em;margin:0;}
+  .hd .rt{text-align:right;font-size:13.5px;line-height:1.8;white-space:nowrap;}
+  .hd .rt b{color:var(--grey);font-weight:600;font-size:11.5px;letter-spacing:.08em;margin-right:7px;}
+
+  .quote{border-left:4px solid var(--brass);background:#FBF8F1;padding:11px 16px;margin:0 0 14px;
+    font-size:14px;line-height:1.6;}
+  .quote span{display:block;margin-top:5px;font-size:11.5px;color:var(--grey);}
+
+  .concl{border:2.5px solid var(--deep);padding:16px 20px;margin-bottom:14px;}
+  .concl h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 12px;}
+  .concl .main{font-size:17.5px;font-weight:700;line-height:1.55;margin:0 0 12px;letter-spacing:-.01em;}
+  .concl .main em{font-style:normal;background:var(--pick);padding:1px 5px;}
+  .concl .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    border-top:1px solid var(--line);padding-top:11px;}
+  .concl .cols p{font-size:13.5px;line-height:1.6;margin:0;}
+  .concl .cols b{display:block;font-size:11.5px;letter-spacing:.1em;color:var(--mid);
+    font-weight:800;margin-bottom:4px;}
+
+  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:13px 18px;margin-bottom:12px;}
+  .hold p{font-size:13.5px;line-height:1.62;margin:0;}
+  .hold b{font-weight:800;color:var(--mid);}
+  .hold p + p{margin-top:8px;}
+
+  h3{font-size:15px;font-weight:800;margin:22px 0 8px;padding-bottom:5px;
+     border-bottom:1.5px solid var(--deep);}
+  h3:first-of-type{margin-top:0;}
+  h3 span{font-size:12px;font-weight:500;color:var(--grey);margin-left:9px;}
+
+  .strip{display:grid;grid-template-columns:112px repeat(5,1fr);gap:0;margin-bottom:10px;}
+  .strip.n3{grid-template-columns:130px repeat(3,1fr);}
+  .card{border:1px solid var(--line);display:flex;flex-direction:column;}
+  .card + .card{margin-left:-1px;}
+  .card.pick{background:var(--pick);box-shadow:inset 0 0 0 2px var(--mid);}
+  .card .ph{height:120px;background:var(--steam);display:flex;align-items:center;
+    justify-content:center;padding:5px;overflow:hidden;}
+  .card .ph img{max-width:100%;max-height:100%;object-fit:contain;}
+  .card .ph.placeholder{padding:10px;}
+  .card .ph.placeholder a{font-size:12px;font-weight:700;color:var(--mid);text-align:center;
+    line-height:1.5;text-decoration:underline;}
+  .card .tx{padding:11px 13px 13px;flex:1;display:flex;flex-direction:column;}
+  .card .tier{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--brass);margin:0 0 5px;}
+  .card.pick .tier{color:var(--mid);}
+  .card .nm{font-size:15px;font-weight:700;line-height:1.3;margin:0 0 3px;}
+  .card .md{font-size:11.5px;color:var(--grey);margin:0 0 8px;line-height:1.4;}
+  .card .pr{font-size:20px;font-weight:800;letter-spacing:-.025em;margin:auto 0 0;}
+  .card .pr small{font-size:12.5px;font-weight:600;color:var(--grey);}
+  .card .ws{font-size:11px;color:var(--grey);margin:2px 0 0;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5;table-layout:fixed;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:middle;}
+  thead th{background:var(--deep);color:#fff;font-size:13.5px;font-weight:700;text-align:center;}
+  thead th:first-child{background:var(--mid);text-align:left;width:130px;}
+  tbody th{background:var(--steam);font-weight:600;font-size:13.5px;}
+  td.p{background:var(--pick);}
+  td.na{color:var(--grey);}
+
+  .cost{margin-top:11px;border:1px solid var(--line);background:var(--steam);
+    padding:11px 15px;font-size:13.5px;line-height:1.7;}
+  .cost b{font-weight:800;color:var(--mid);}
+
+  .grid2{display:grid;grid-template-columns:1.15fr 1fr;gap:13px;margin-top:12px;}
+  .blk{border:1px solid var(--line);padding:14px 17px;margin-top:12px;}
+  .blk.warn{background:var(--alert-bg);border-color:#E2CDB6;}
+  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 10px;}
+  .blk.warn h4{color:var(--alert);}
+  .blk p{font-size:13.5px;line-height:1.62;margin:0 0 9px;}
+  .blk p:last-child{margin-bottom:0;}
+  .blk.warn p{color:#573015;}
+  .blk strong{font-weight:700;}
+  .blk.warn strong{color:var(--alert);}
+  .blk ul{margin:0;padding-left:17px;}
+  .blk li{font-size:13.5px;line-height:1.6;margin-bottom:6px;}
+  .blk li:last-child{margin-bottom:0;}
+
+  .ft{border-top:1px solid var(--line);margin-top:16px;padding-top:8px;
+    display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
+
+  @media print{
+    html,body{background:#fff;}
+    .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
+    .bar{display:none;}
+    .strip,.concl,table,.grid2,.blk,.quote{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+  <a href="김남욱GM_업무.html">← GM 업무로 돌아가기</a>
+</div>
+
+<div class="sheet">
+  <p class="ref">별첨 · GM 지시사항 — 2026년 8월 5일</p>
+
+  <div class="hd">
+    <div>
+      <p class="brand">WELLPERION</p>
+      <h1>지하 1층 청소 장비 검토</h1>
+    </div>
+    <div class="rt">
+      <div><b>작성일</b>2026. 08. 05.</div>
+      <div><b>작성</b>운영부</div>
+    </div>
+  </div>
+
+  <div class="quote">
+    지하 1층(사우나·락커룸·복도) 청소 장비를 갖춘다 — ① 카처 중심 업소용 건·습식 겸용 청소기,
+    ② <b>탕 물을 직접 끌어 쓰는 자흡식 고압세척기</b>(수돗물 호스 없이 사우나 탕 물 이용 · 온수 사용 가능 온도 확인 필수),
+    ③ 화장실 청소용 폼건(거품분사기)과 세제(사우나 바닥 산성세제 금지 준수),
+    ④ 이태리산업 구매 품목 정리.
+    <span>김남욱 GM 지시</span>
+  </div>
+
+  <div class="concl">
+    <h2>결론 · 4갈래 요약 — 가격·온도·규정 확인된 것과 확인 못한 것을 구분</h2>
+    <p class="main">
+      1) 청소기는 <em>카처 WD4~WD5 국내 정가가 확인</em>됐고 예산에 맞춰 바로 결정 가능합니다.
+      2) 고압세척기는 <em>온수 입수 허용 온도가 K5=40°C, K7=60°C로 갈린다</em>는 점이 핵심 — 탕 물(온탕·열탕) 실측 온도를
+      시설부에서 받아야 K5로 충분한지 K7이 필요한지 정해집니다. 3) 화장실 세제는 <em>사우나 바닥에 산성세제 금지</em> 규정이
+      이미 점검표에 있어 중성·알칼리성만 후보로 좁혔습니다. 4) 이태리산업은 <em>웹 검색으로 특정하지 못해 확인 필요</em>로 남겨둡니다.
+    </p>
+    <div class="cols">
+      <p><b>갈래 1 · 청소기</b> 가성비 WD4(199,290원)~최고가 업소용 NT48/1(국내가 확인 필요) — 바로 결정 가능.</p>
+      <p><b>갈래 2 · 고압세척기</b> K5(40°C 한계) vs K7(60°C) — 탕물 실측 온도 확인이 선결.</p>
+      <p><b>갈래 3 · 폼건·세제</b> 세제는 산성 금지 규정상 중성·알칼리성 위주. 폼건은 가격 확인이 얇음.</p>
+      <p><b>갈래 4 · 이태리산업</b> 웹에서 특정 불가 — GM·지원부 직접 확인 필요.</p>
+    </div>
+  </div>
+
+  <div class="hold">
+    <p><b>사내 SSOT 재확인</b> — 웰페리온 점검표(시설부·지원부 체계)에
+      <b>&ldquo;대리석·코팅면 산성세제 사용 금지&rdquo;</b>, <b>&ldquo;건/습식 사우나 바닥 고압세척(매주 수요일) · 산성세제 금지&rdquo;</b>
+      가 이미 명시돼 있습니다. 이번 검토의 세제·폼건 후보는 이 규정을 벗어나지 않는 범위에서만 뽑았습니다.</p>
+  </div>
+
+  <h3>1. 지하 1층용 청소기 — 카처 업소용 건·습식 겸용 <span>사우나·락커룸·복도 물기 구역 · 소음(dB)·탱크 용량 기준</span></h3>
+  <div class="strip n3">
+    <div class="sp card">
+      <div class="ph"></div>
+      <div class="tx">
+        <p class="tier">구분</p>
+        <p class="nm">제품명</p>
+        <p class="md">탱크 용량</p>
+        <p class="md">소음(dB)</p>
+        <p class="pr">가격</p>
+        <p class="ws">비고</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a href="https://prod.danawa.com/info/?pcode=5154620" target="_blank" rel="noopener">🔗 다나와 가격비교 열기</a></div>
+      <div class="tx">
+        <p class="tier">가성비</p>
+        <p class="nm">카처 WD4 (일반구매)</p>
+        <p class="md">20L · 전선 5m</p>
+        <p class="md na">확인 필요(국내 미기재)</p>
+        <p class="pr">199,290<small> 원</small></p>
+        <p class="ws">다나와 최저가 기준</p>
+      </div>
+    </div>
+    <div class="card pick">
+      <div class="ph placeholder"><a href="https://prod.danawa.com/info/?pcode=5154170" target="_blank" rel="noopener">🔗 다나와 가격비교 열기</a></div>
+      <div class="tx">
+        <p class="tier">중가</p>
+        <p class="nm">카처 WD5 프리미엄</p>
+        <p class="md">25L · 전선 5m</p>
+        <p class="md">확인 필요(국내 미기재)</p>
+        <p class="pr">328,000<small> 원</small></p>
+        <p class="ws">다나와 최저가 기준</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a href="https://www.kaercher.com/us/commercial/vacuum-cleaners/wet-dry/nt-48-1-14286230.html" target="_blank" rel="noopener">🔗 카처 해외 스펙 페이지</a></div>
+      <div class="tx">
+        <p class="tier">최고가</p>
+        <p class="nm">카처 NT 48/1 (업소용)</p>
+        <p class="md">48L(습식 35L)</p>
+        <p class="md">72 dB(A) (해외 스펙)</p>
+        <p class="pr na">확인 필요</p>
+        <p class="ws">국내 정가·판매채널 한국카처 문의 필요 · Tact 자동 필터클리닝</p>
+      </div>
+    </div>
+  </div>
+  <p class="ref">참고 — 더 조용한 업소용 대안: 카처 NT 30/1 Tact Te L (30L · 69 dB(A), 해외 스펙). 국내 WD4·WD5는 소음 스펙이 다나와·한국카처 페이지에 기재돼 있지 않아 &lsquo;확인 필요&rsquo;로 남겼다.</p>
+
+  <table>
+    <thead><tr><th>항목</th><th>가성비 · WD4</th><th>중가 · WD5 프리미엄</th><th>최고가 · NT 48/1</th></tr></thead>
+    <tbody>
+      <tr><th>가격</th><td>199,290 원</td><td class="p"><b>328,000 원</b></td><td class="na">확인 필요</td></tr>
+      <tr><th>탱크 용량</th><td>20 L</td><td class="p">25 L</td><td>48 L(습식 35 L)</td></tr>
+      <tr><th>소음(dB)</th><td class="na">확인 필요</td><td class="p na">확인 필요</td><td>72 dB(A)(해외 스펙)</td></tr>
+      <tr><th>필터 클리닝</th><td class="na">확인 필요</td><td class="p na">확인 필요</td><td>자동(Tact) — 업소 연속가동에 유리</td></tr>
+      <tr><th>적합 구역</th><td>복도·좁은 공간</td><td class="p">사우나·락커룸 겸용</td><td>대용량 연속가동(전 구역)</td></tr>
+    </tbody>
+  </table>
+  <div class="cost">
+    <b>소요액</b> — WD4 1대 = <b>199,290원</b> · WD5 프리미엄 1대 = <b>328,000원</b> · NT 48/1 1대 = <b>가격 확인 필요</b>(한국카처 업소용 채널 별도 문의).
+    구역이 넓고 물기 구역이 많은 지하 1층 특성상 WD5(25L) 이상을 1차 후보로, 예산이 맞으면 NT48/1을 검토한다.
+  </div>
+
+  <div class="blk">
+    <h4>배치·운영 참고</h4>
+    <p>사우나·락커룸 등 물기 구역은 습식 흡입이 필수이므로 WD5 이상 권장, 복도·사무 공간은 WD4로도 충분하다.
+    업소용 NT 시리즈는 자동 필터클리닝(Tact)이 있어 연속 가동 시 관리 부담이 적다.</p>
+  </div>
+  <div class="blk warn">
+    <h4>확인이 필요한 것</h4>
+    <p><strong>WD4·WD5의 국내 소음(dB) 스펙</strong>이 다나와·한국카처 페이지에 없다. <strong>NT 48/1의 국내 정가·재고</strong>는
+    한국카처 공식몰에서 목록만 확인되고 개별 가격이 표시되지 않아 고객센터(1800-6588) 확인이 필요하다.</p>
+  </div>
+
+  <h3>2. 탕 물을 끌어 쓰는 자흡식 고압세척기 <span>온수 입수 허용 온도가 핵심 — 탕 물은 온수다</span></h3>
+  <div class="hold">
+    <p><b>자흡호스 kit</b>(카처 정품, 품번 2643-1000, 헝가리산) = <b>52,000원</b> · &ldquo;K4 이상 모델부터 사용 권장&rdquo;이라
+      K5·K7 모두 장착 가능하다. 다만 <b>자흡호스 자체의 최대 흡입 가능 수온은 한국카처 페이지에 명시돼 있지 않다(확인 필요)</b>.
+      참고로 카처 해외 라인의 자흡호스(SH3, 국내 K4/K5용과 다른 모델)는 최대 40°C(104°F) 제한이 있다 — 탕 물 온도가 이보다 높으면
+      호스·펌프 정격을 넘을 수 있어 실측이 먼저다.</p>
+  </div>
+  <div class="strip n3">
+    <div class="sp card">
+      <div class="ph"></div>
+      <div class="tx">
+        <p class="tier">구분</p>
+        <p class="nm">제품명</p>
+        <p class="md">압력(bar)</p>
+        <p class="md">최대 입수온도</p>
+        <p class="pr">가격</p>
+        <p class="ws">비고</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a href="https://prod.danawa.com/info/?pcode=3205877" target="_blank" rel="noopener">🔗 다나와 가격비교 열기</a></div>
+      <div class="tx">
+        <p class="tier">가성비</p>
+        <p class="nm">카처 K5 Premium (본체만)</p>
+        <p class="md">145 bar</p>
+        <p class="md">40°C</p>
+        <p class="pr">607,500<small> 원</small></p>
+        <p class="ws">쿠팡 최저가(다나와 확인) · 자흡호스 미포함</p>
+      </div>
+    </div>
+    <div class="card pick">
+      <div class="ph placeholder"><a href="https://www.karcher.co.kr/goods/view?no=277" target="_blank" rel="noopener">🔗 자흡호스 kit 정품 페이지</a></div>
+      <div class="tx">
+        <p class="tier">중가</p>
+        <p class="nm">K5 Premium + 자흡호스 세트</p>
+        <p class="md">145 bar</p>
+        <p class="md">40°C</p>
+        <p class="pr">659,500<small> 원</small></p>
+        <p class="ws">607,500 + 52,000원</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a href="https://prod.danawa.com/info/?pcode=7753825" target="_blank" rel="noopener">🔗 다나와 가격비교 열기</a></div>
+      <div class="tx">
+        <p class="tier">최고가</p>
+        <p class="nm">K7 Premium + 자흡호스 세트</p>
+        <p class="md">180 bar</p>
+        <p class="md">60°C</p>
+        <p class="pr">2,065,240<small> 원</small></p>
+        <p class="ws">2,013,240(11번가) + 52,000원 · 온도 안전마진 큼</p>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>항목</th><th>가성비 · K5</th><th>중가 · K5+자흡</th><th>최고가 · K7+자흡</th></tr></thead>
+    <tbody>
+      <tr><th>압력</th><td>145 bar</td><td class="p">145 bar</td><td>180 bar</td></tr>
+      <tr><th>무게</th><td class="na">확인 필요</td><td class="p na">확인 필요</td><td>19.6 kg</td></tr>
+      <tr><th>최대 입수온도</th><td>40°C</td><td class="p">40°C</td><td><b>60°C</b></td></tr>
+      <tr><th>자흡호스 포함</th><td class="na">미포함</td><td class="p">포함(52,000원)</td><td>포함(52,000원)</td></tr>
+      <tr><th>총 소요액(1대)</th><td>607,500 원</td><td class="p">659,500 원</td><td>2,065,240 원</td></tr>
+      <tr><th>탕물 온도 안전마진</th><td class="na">40°C 근접 시 위험</td><td class="p na">40°C 근접 시 위험</td><td>여유 큼(60°C까지)</td></tr>
+    </tbody>
+  </table>
+  <div class="cost">
+    <b>소요액</b> — K5 단품 <b>607,500원</b> · K5+자흡세트 <b>659,500원</b> · K7+자흡세트 <b>2,065,240원</b>.
+    K7이 K5보다 약 140만원 비싸지만 온수 허용 온도가 20°C 더 높아 탕 물 온도가 40°C를 넘나드는 열탕 물을 쓸 경우 더 안전하다.
+  </div>
+
+  <div class="blk warn">
+    <h4>확인이 필요한 것 — 이 갈래가 가장 중요</h4>
+    <p><strong>온탕·열탕 실제 수온이 미확인</strong>이다. 시설부 점검표에 배수 주기는 있으나 실측 온도 수치는 이번 조사 범위에서
+    확인하지 못했다 — 시설부에 직접 확인해야 K5(40°C 한계)로 충분한지 K7(60°C)이 필요한지 정할 수 있다.</p>
+    <p><strong>자흡호스 자체의 정격 최대 수온</strong>이 한국카처 공식 페이지에 없다. 정격을 넘겨 온수를 자흡하면 호스·씰·펌프
+    손상 우려가 있어 카처코리아 고객센터(1800-6588) 확인 후 진행을 권한다.</p>
+  </div>
+
+  <h3>3. 화장실 청소용 폼건(거품분사기) + 세제 <span>사우나 바닥 산성세제 금지(SSOT) — 산성·중성·알칼리성 구분</span></h3>
+
+  <p class="ref">폼건(고압세척기 부착형 거품분사기) — 3등급</p>
+  <div class="strip n3">
+    <div class="sp card">
+      <div class="ph"></div>
+      <div class="tx">
+        <p class="tier">구분</p>
+        <p class="nm">제품명</p>
+        <p class="md">호환 모델</p>
+        <p class="pr">가격</p>
+        <p class="ws">비고</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a>상품 다수 · 링크 확인 필요</a></div>
+      <div class="tx">
+        <p class="tier">가성비</p>
+        <p class="nm">애프터마켓 폼랜스(스노우폼)</p>
+        <p class="md">K1~K7 호환(호환형)</p>
+        <p class="pr na">확인 필요</p>
+        <p class="ws">지마켓·SSG 등에 다수 판매 · 개별 URL 접속 실패로 가격 미확정</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a href="https://davo.co.kr/product/%EC%B9%B4%EC%B2%98-k3-k4-k5-%EA%B3%A0%EC%95%95%EC%84%B8%EC%B2%99%EA%B8%B0-%EA%B1%B4%EC%8B%A0%ED%98%95%EA%B1%B4-%EA%B3%A0%EC%95%95%EC%84%B8%EC%B2%99%EA%B8%B0%EA%B1%B4-2642-8890/1273/" target="_blank" rel="noopener">🔗 판매 페이지 열기</a></div>
+      <div class="tx">
+        <p class="tier">중가</p>
+        <p class="nm">카처 정품 고압세척기건(신형)</p>
+        <p class="md">K3·K4·K5 (품번 2642-8890)</p>
+        <p class="pr na">확인 필요</p>
+        <p class="ws">폼노즐과 조합해 사용하는 정품 건 · 가격 페이지 접속 실패</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a href="https://www.kaercher.com/us/accessories/fj-6-foam-nozzle-26431470.html" target="_blank" rel="noopener">🔗 카처 해외 정품 페이지</a></div>
+      <div class="tx">
+        <p class="tier">최고가</p>
+        <p class="nm">카처 정품 FJ6 폼노즐</p>
+        <p class="md">K1~K5 호환</p>
+        <p class="pr na">확인 필요</p>
+        <p class="ws">해외 공식몰만 확인 · 국내 정식 판매가 미확인</p>
+      </div>
+    </div>
+  </div>
+  <p class="ref">폼건 계열은 가격 확보가 얇다 — 3종 모두 실제 결제 전 한국카처·판매처 재확인이 필요하다.</p>
+
+  <p class="ref">화장실 세제 — 산성 / 중성 / 알칼리성 3구분 (가성비·중가·최고가 대신 액성 기준으로 정리 — 사용 구역 판단이 우선)</p>
+  <div class="strip n3">
+    <div class="sp card">
+      <div class="ph"></div>
+      <div class="tx">
+        <p class="tier">구분</p>
+        <p class="nm">제품명(예시)</p>
+        <p class="md">주 용도</p>
+        <p class="pr">가격</p>
+        <p class="ws">사용 가능 구역</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a>상품 다수 · 링크 확인 필요</a></div>
+      <div class="tx">
+        <p class="tier">산성</p>
+        <p class="nm">요석·물때 전용 세정제(예: 고게터류)</p>
+        <p class="md">변기·타일 요석·물때 제거 전용</p>
+        <p class="pr na">확인 필요</p>
+        <p class="ws"><strong>사우나 바닥·대리석·코팅면 전면 금지(SSOT)</strong> · 일반 화장실 변기에 한정</p>
+      </div>
+    </div>
+    <div class="card pick">
+      <div class="ph placeholder"><a href="https://ypcity.co.kr/product/%EC%8A%88%ED%8D%BC%EC%95%A1%EC%85%98-1l-%EB%8B%A4%EB%AA%A9%EC%A0%81-%EC%84%B8%EC%A0%95%EC%A0%9C-%EB%8C%80%EB%A6%AC%EC%84%9D-%ED%99%94%EC%9E%A5%EC%8B%A4-%ED%83%80%EC%9D%BC-%EC%B0%8C%EB%93%A0%EB%95%8C-%EC%84%B8%EC%A0%9C-%EC%A3%BC%EB%B0%A9-%ED%9B%84%EB%93%9C-%EB%B0%94%EB%8B%A5-%EA%B8%B0%EB%A6%84%EB%95%8C-%EC%A0%9C%EA%B1%B0/3363/" target="_blank" rel="noopener">🔗 판매 페이지 열기</a></div>
+      <div class="tx">
+        <p class="tier">중성</p>
+        <p class="nm">슈퍼액션 1L 다목적 세정제</p>
+        <p class="md">대리석·화장실 타일·주방 기름때</p>
+        <p class="pr">10,200<small> 원</small></p>
+        <p class="ws">가격 확인 · 정확한 pH는 제조사 미표기(확인 필요) · 대리석·사우나 바닥 등 예민한 표면에 우선 후보</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ph placeholder"><a href="https://cleaniglobal.kr/product/%EC%9C%A0%ED%95%9C%EB%9D%BD%EC%8A%A4-%EB%B0%94%EB%8B%A5%EC%B2%AD%EC%86%8C%EC%9A%A9-%EC%84%B8%EC%A0%9C-18kg-%ED%99%94%EC%9E%A5%EC%8B%A4-%EB%B3%80%EA%B8%B0-%EC%9A%95%EC%8B%A4-%EC%82%B4%EA%B7%A0-%EC%84%B8%EC%A0%95-%EC%84%B8%EC%B2%99-%EA%B1%B0%ED%92%88-%ED%96%A5-%EC%97%85%EC%86%8C%EC%9A%A9/338/" target="_blank" rel="noopener">🔗 판매 페이지 열기</a></div>
+      <div class="tx">
+        <p class="tier">알칼리성</p>
+        <p class="nm">유한락스 바닥청소용 세제 18kg</p>
+        <p class="md">욕실바닥·변기 살균·곰팡이·기름때</p>
+        <p class="pr">27,200<small> 원</small></p>
+        <p class="ws">제조사 표기 &ldquo;원액(알칼리성)&rdquo; 확인 · 대리석·코팅면은 고농도 사용 시 별도 확인 필요</p>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>항목</th><th>산성</th><th>중성</th><th>알칼리성</th></tr></thead>
+    <tbody>
+      <tr><th>가격</th><td class="na">확인 필요</td><td>10,200 원</td><td class="p">27,200 원</td></tr>
+      <tr><th>주 용도</th><td>변기·타일 요석·물때 제거</td><td>대리석·타일·주방 기름때(다목적)</td><td class="p">욕실바닥·변기 살균·곰팡이 제거</td></tr>
+      <tr><th>사우나 바닥(수요일 고압세척)</th><td><strong>금지(SSOT)</strong></td><td>가능</td><td class="p">가능(고농도 원액 사용 시 주의)</td></tr>
+      <tr><th>대리석·코팅면</th><td><strong>금지(SSOT)</strong></td><td>1차 후보(pH 확인 필요)</td><td class="p na">확인 필요(원액은 자극적)</td></tr>
+      <tr><th>화장실 변기·타일</th><td>가능(전용)</td><td>가능</td><td class="p">가능</td></tr>
+    </tbody>
+  </table>
+  <div class="cost">
+    <b>구역별 결론</b> — <strong>산성세제는 사우나 바닥·대리석·코팅면 어디에도 쓸 수 없다(SSOT 위반)</strong>. 사우나 인접 대리석·코팅면은
+    <b>중성 세제</b>(예: 슈퍼액션류, 10,200원)를 1차 후보로, 일반 화장실 변기·바닥의 강한 오염·곰팡이 제거에는 <b>알칼리성</b>(유한락스 18kg, 27,200원)을
+    쓴다. 요석 등 산성이 꼭 필요한 경우는 <b>화장실 변기 전용</b>으로 국한한다.
+  </div>
+
+  <div class="blk warn">
+    <h4>확인이 필요한 것</h4>
+    <p>폼건 3종 모두 정확한 국내 결제 가격을 확보하지 못했다(쿠팡·지마켓 접속 차단·타임아웃). <strong>중성 세정제(슈퍼액션)의 정확한 pH</strong>가
+    제조사 페이지에 표기돼 있지 않아 &lsquo;중성 추정&rsquo;일 뿐 확정이 아니다 — 실제 발주 전 제조사·판매처에 액성 확인이 필요하다.</p>
+  </div>
+
+  <h3>4. 이태리산업 구매 품목 정리 <span>웹 검색 범위에서 확인한 것만 — 지어내지 않음</span></h3>
+  <div class="blk warn">
+    <h4>확인 결과 — 특정 실패</h4>
+    <p>&ldquo;이태리산업&rdquo;이라는 상호로 다나와·네이버·사업자정보(나이스비즈인포 등)·구글 검색을 여러 각도로 시도했으나,
+    세제·청소용품을 취급하는 동일 상호의 업체를 웹에서 특정하지 못했다. &ldquo;이태리&rdquo;가 들어간 회사명은 다수 존재하나(안경·물류 등)
+    청소용품·세제 업태와 일치하는 곳은 확인되지 않았다.</p>
+    <p><strong>확인 필요 — GM 또는 지원부에 직접 문의</strong>가 필요하다. 실제 발주 내역(세금계산서·거래명세서)이나
+    지원부 담당자를 통해 상호·사업자번호·취급 품목군을 확보하면 이후 검토서에 채워 넣을 수 있다.</p>
+  </div>
+
+  <div class="blk">
+    <h4>확인 방법 제안</h4>
+    <ul>
+      <li>지원부 물품 구매 대장·최근 세제 발주 영수증에서 거래처명 확인</li>
+      <li>회계(카드·계좌이체) 내역에서 &ldquo;이태리산업&rdquo; 또는 유사 상호 검색</li>
+      <li>확인되면 취급 품목군·단가·거래 조건을 이 문서에 추가해 갈래 4를 완성한다</li>
+    </ul>
+  </div>
+
+  <h3>확인 필요 — 아직 못 잰 것</h3>
+  <div class="blk warn">
+    <ul>
+      <li>지하 1층 청소기: WD4·WD5의 국내 소음(dB) 스펙 / 카처 NT 48/1(업소용)의 국내 정가·판매채널</li>
+      <li>고압세척기: 온탕·열탕 실제 수온(시설부 실측 필요) / 자흡호스 kit 자체의 정격 최대 흡입 수온</li>
+      <li>폼건: 애프터마켓 폼랜스·카처 정품 건(2642-8890)·FJ6 폼노즐의 국내 정확한 결제 가격(쿠팡 403 차단, 일부 사이트 접속 실패)</li>
+      <li>세제: 중성 세정제(슈퍼액션 등)의 제조사 표기 pH — &lsquo;중성 추정&rsquo;이며 확정 아님 / 산성 요석 세정제의 정확한 상품명·가격</li>
+      <li>이태리산업: 취급 품목군·업태·거래 조건 전체 — GM/지원부 확인 필요</li>
+    </ul>
+  </div>
+
+  <div class="ft">
+    <span>가격·사양은 2026년 8월 5일 조회 기준이며, 확인되지 않은 항목은 &lsquo;확인 필요&rsquo;로 두었다. 쿠팡(coupang.com)은 HTTP 403으로 접속이 막혀 가격을 직접 확인하지 못했다.</span>
+    <span>웰페리온 · 지하 1층 청소 장비 검토</span>
+  </div>
+
+</div>
+</body>
+</html>
