@@ -44,7 +44,10 @@
       .map(function (o) {
         return {
           id: o.id,
-          title: o.title,
+          // 화면 제목에서 "(GM 직접)" 표식은 뗀다 — 이 목록 자체가 GM 직접 건이라 매 줄에 붙으면 군더더기고,
+          // 카테고리도 소괄호로 붙어(2026-08-05 GM 지시) 괄호가 겹쳐 읽힌다. 표식은 정본(monthly_ops_plan.json)
+          // 제목에 그대로 남아 판정(isGmDirect)은 계속 그 값으로 한다.
+          title: String(o.title || '').replace(GM_TAG, '').replace(/\s{2,}/g, ' ').trim(),
           category: catFor(o.id),
           schedule: schedule,
           target: o.target || '',
