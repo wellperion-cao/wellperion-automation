@@ -45,11 +45,15 @@ import weekly_bundle_pending as _bundle  # noqa: E402 — 배10011 알림 묶기
 
 # ── 배10011(2026-07-24, GM 승인) — 자동화현황방(GM 2인 전용, 실측 확인) 직접 발신을
 #   다른 메시지로 흡수한다. (cadence, bot_id) → bundle_id 매핑. 직접 sender() 호출 대신
-#   weekly_bundle_pending 에 적재만 하고, 실제 발송은 흡수 대상 메시지(스트림#3·월요일
-#   주간묶음)가 소비(consume)+발송 후 mark_bundle_sent() 로 로그를 확정한다.
+#   weekly_bundle_pending 에 적재만 하고, 실제 발송은 흡수 대상 메시지가 소비(consume)+발송
+#   후 mark_bundle_sent() 로 로그를 확정한다.
+# ★2026-08-05(시토, GM 지적) — daily 흡수("자동화현황방"→"stream3_daily")를 제거했다.
+#   흡수처였던 report_stream_3_mgmt(09:30 하루 일과 정리)는 업무보고방(8254867551) 발신
+#   고정인데, 흡수는 자동화현황방(AI진행현황방) 몫인 cto-automation-health 09:10 데일리를
+#   그 업무보고방 메시지 안으로 밀어넣고 있었다 — GM 이 실측 지적한 오배달의 원인. weekly
+#   흡수(monday_weekly_bundle → ai_learning_proposer)는 AI진행현황방으로 정확히 가므로 그대로 둔다.
 ABSORB_BUNDLES = {
-    ("daily", "자동화현황방"): "stream3_daily",       # 09:10 모듈데일리 → 09:30 스트림#3에 흡수
-    ("weekly", "자동화현황방"): "monday_weekly_bundle",  # 월요일 모듈위클리 → AI자기학습제안에 흡수
+    ("weekly", "자동화현황방"): "monday_weekly_bundle",  # 월요일 모듈위클리 → AI자기학습제안에 흡수(AI진행현황방 발신)
 }
 
 # ★2026-08-03(시토) — GM_DM 은 (cadence, bot_id) 단위로 묶을 수 없다: 이 방으로 daily 가는
