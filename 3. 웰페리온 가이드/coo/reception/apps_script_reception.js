@@ -156,7 +156,9 @@ var REG_NO_PHOTO_CATS = { praise: true, voice: true };
 // reporter=접수자: 누가 적었는지. 점수의 절반(접수 1점)이 여기서 나온다.
 var REG_TAIL_HEADERS = [
   { key: 'handler',  label: '처리자' },
-  { key: 'reporter', label: '접수자' }
+  { key: 'reporter', label: '접수자' },
+  // 회원 안내(회원 셀프 조회 노출 문구). 처리메모(내부)와 별개. 2026-08-03 복구.
+  { key: 'memberReply', label: '회원안내' }
 ];
 
 function _regHeadersFor(catKey) {
@@ -1011,6 +1013,43 @@ function _regSortAllDesc() {
   return n;
 }
 
+// ─── reg_lookup — 회원 셀프 조회 (공개 · 전화+이름 2차확인 · 회원안전 필드만) ───
+// 전화+이름이 둘 다 맞는 행만 반환(남의 번호로 열람 불가) + rate-limit. 내부메모(처리메모)·담당·
+// 처리자·접수자·연락처·사진은 응답에서 제외 — 회원안전 필드(내용·상태·회원안내)만 내보낸다.
+// ⚠️ '내용'은 회원 원문 노출(GM 결정). 직원은 처리 메모를 '처리메모/회원안내'에만 쓸 것.
+function _regLookup(params) {
+  var phone = String((params && params.phone) || '').replace(/\D/g, '');
+  var name  = String((params && params.name)  || '').replace(/\s/g, '');
+  if (!phone || !name) {
+    return _vJson({ ok: false, error: '이름과 전화번호를 모두 입력해 주세요.' });
+  }
+  if (!_vRateLimitOk_(_vFp_('lookup|' + phone + '|' + name))) {
+    return _vJson({ ok: false, error: '요청이 많아 잠시 후 다시 시도해 주세요.', code: 'RATE_LIMIT' });
+  }
+  var out = [];
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    var rows = _regReadAll(sh, _regHeadersFor(cat.key));
+    rows.forEach(function (r) {
+      var rc = String(r.contact || '').replace(/\D/g, '');
+      var rn = String(r.name || '').replace(/\s/g, '');
+      if (!rc || rc !== phone) return;   // 전화 일치
+      if (rn !== name)         return;   // 이름 일치 (둘 다 맞아야)
+      out.push({
+        regId:       r.regId       || '',
+        category:    r.category    || '',
+        createdAt:   r.createdAt   || '',
+        status:      r.status      || '',
+        content:     r.content     || '',
+        memberReply: r.memberReply || ''
+      });
+    });
+  });
+  out.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
+  return _vJson({ ok: true, count: out.length, data: out });
+}
+
 // ─── reg_list — 종합 접수처 목록 조회 (GATED) ───
 function _regList(params) {
   var filterCat    = String((params && params.category) || '').trim();
@@ -1258,6 +1297,12 @@ function _regUpdate(body) {
     if (reporter !== undefined) {
       var ri = _idx('reporter');
       if (ri >= 0) existing[ri] = String(reporter);
+    }
+    // 회원 안내 — 현황판 '회원 안내' 칸 입력 → 회원 셀프 조회 노출. 2026-08-03 복구.
+    var memberReply = body.memberReply !== undefined ? body.memberReply : undefined;
+    if (memberReply !== undefined) {
+      var mri = _idx('memberReply');
+      if (mri >= 0) existing[mri] = String(memberReply);
     }
 
     // 읽은 폭 그대로 되쓴다 — headers.length 로 쓰면 시트가 더 넓을 때 뒤 칸이 잘린다.
@@ -2002,6 +2047,7 @@ var _RECEPTION_PUBLIC_ACTIONS = {
   reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
   reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
   reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
+  reg_lookup:  true,  // 회원 셀프 조회 — 전화+이름 2차확인·회원안전 필드만·rate-limit, 토큰 면제
   lf_submit:   true,  // 습득물 접수 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
   lf_gallery:  true,  // 습득물 공개 갤러리 — 민감필드 미반환(게시중만), 토큰 면제
   lf_disposal: true,  // 폐기물 공지 A3(게시예정+폐기완료) — 민감필드 미반환, 토큰 면제
@@ -2098,6 +2144,7 @@ function _vProcess(action, body, params) {
   // ── 종합 접수처 액션 ──
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
+  if (action === 'reg_lookup') return _regLookup(params || body);  // 회원 셀프 조회(공개·전화+이름·회원안전 필드만). 2026-08-03 복구.
   // 「전달문구」 초안 자체점검(read-only·시트 미접촉) — 배포 후 라이브 확인용. 2026-08-05 시토.
   if (action === 'reg_draft_selftest') return _vJson(_regDraftMemoSelfCheck());
   if (action === 'reg_staff_suggest') return _regStaffSuggest();  // 담당자 입력 자동완성 제안(공개 read·PII 없음). 2026-07-31 웰리.
