@@ -4042,6 +4042,8 @@ function _processAction(body) {
         try {
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|year');
           _cacheInvalidateJson_(_iCache, 'licache|' + _iType + '|all');
+          _cacheInvalidateJson_(_iCache, 'lscache|' + _iType + '|year');
+          _cacheInvalidateJson_(_iCache, 'lscache|' + _iType + '|all');
         } catch (e) {}
       } else if (_iCat === 'rental') {
         // 공간렌트 → '공간렌트 문의' 신규 탭(_MI_SS_ID 하위, 2026-07-16 시토)
@@ -5049,6 +5051,16 @@ function _processAction(body) {
   // ─── 문의회원 페이지(CPO): 예약 달력 (익명·상담/체험 일정) ───
   if (action === 'member_calendar') {
     var mcMonth = String(body.month || '');  // 'YYYY-MM'
+    // 조회 캐시(축1, TTL 60초) — member_inquiry_list(micache)와 동일 TTL. nocache=1 우회.
+    //   실측 6.9초(매 호출 재병합 + _memberReconEvents_ 재계산) → 캐시 추가. 월 단위 키(다른 달 조회 오염 방지).
+    //   ★쓰기 경로 invalidate 미배선(스코프 밖) — micache처럼 즉시무효화 아님, TTL 60초로만 신선도 보장.
+    //   2026-08-05 시토.
+    var mcCache = CacheService.getScriptCache();
+    var mcCacheKey = 'mccache|' + mcMonth;
+    if (!_nc) {
+      var mcHit = _cacheGetJson_(mcCache, mcCacheKey);
+      if (mcHit) return _json(mcHit);
+    }
     // 한글+영문 탭 병합 — 영어 문의 누수 수리(2026-07-09 시포·GM). 영문 탭 미존재/에러는 조용히 스킵(무중단).
     var mcRows = _miReadRows_(_miSheet_());
     try { mcRows = mcRows.concat(_miReadRows_(_miSheetEn_())); } catch (eMcEn) {}
@@ -5071,7 +5083,9 @@ function _processAction(body) {
     });
     // ── 재등록 상담 병합(유효회원 시트) — 재등록상담 날짜/시간 있는 회원을 달력 이벤트로. 기존 신규 이벤트 무손상. 2026-07-03 시포·GM.
     try { _memberReconEvents_(mcMonth).forEach(function(e){ mcEvents.push(e); }); } catch (eRe) {}
-    return _json({ ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents });
+    var mcResult = { ok: true, month: mcMonth, count: mcEvents.length, events: mcEvents };
+    _cachePutJson_(mcCache, mcCacheKey, mcResult, 60);
+    return _json(mcResult);
   }
 
   // ─── 문의회원 페이지(CPO): 행 수정 (이름·전화·진행상태·관심프로그램·메모·담당·일정) ───
@@ -5940,6 +5954,16 @@ function _processAction(body) {
 
   // ─── 강습문의 페이지(CPO): 통계 (총·이번달·종목 분포·유입경로 분포) ───
   if (action === 'lesson_stats') {
+    // 조회 캐시(축1, TTL 60초) — lesson_inquiry_list(licache)와 동일 키 축(type+scope). nocache=1 우회.
+    //   실측 7.8초(매 호출 시트 재병합·재집계) → 캐시 추가. 2026-08-05 시토.
+    var lsType = String(body.type || '');
+    var lsScope = (String(body.scope || '') === 'all') ? 'all' : 'year';
+    var lsCache = CacheService.getScriptCache();
+    var lsCacheKey = 'lscache|' + lsType + '|' + lsScope;
+    if (!_nc) {
+      var lsHit = _cacheGetJson_(lsCache, lsCacheKey);
+      if (lsHit) return _json(lsHit);
+    }
     var lsRows = _lessonScopeFilter_(_lessonReadRowsMerged_(body), body);
     var lsTotal = lsRows.length;
     var lsMonth = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM');
@@ -5957,7 +5981,9 @@ function _processAction(body) {
       return Object.keys(obj).map(function(k){ return { k: k, v: obj[k] }; })
         .sort(function(a, b){ return b.v - a.v; });
     }
-    return _json({ ok: true, total: lsTotal, thisMonth: lsThisMonth, bySport: _lsSort(lsSport), byChannel: _lsSort(lsChan) });
+    var lsResult = { ok: true, total: lsTotal, thisMonth: lsThisMonth, bySport: _lsSort(lsSport), byChannel: _lsSort(lsChan) };
+    _cachePutJson_(lsCache, lsCacheKey, lsResult, 60);
+    return _json(lsResult);
   }
 
   // ─── 강습문의 페이지(CPO): 예약 달력 (상담예약 일정) ───
@@ -6215,6 +6241,8 @@ function _processAction(body) {
       var _luType = String(body.type || '');
       _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|year');
       _cacheInvalidateJson_(_luCache, 'licache|' + _luType + '|all');
+      _cacheInvalidateJson_(_luCache, 'lscache|' + _luType + '|year');
+      _cacheInvalidateJson_(_luCache, 'lscache|' + _luType + '|all');
     } catch (e) {}
     _memberLog_(_luLog);
     return _json({ ok: true, rowIndex: luRowRaw, message: '수정되었습니다.' });
