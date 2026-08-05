@@ -406,10 +406,11 @@ function scoreLoad(period){
     b.classList.toggle('on', b.getAttribute('data-period') === period);
   });
   box.innerHTML = '<span class="score-empty">불러오는 중…</span>';
-  fetch(REG_API + '?action=reg_scoreboard&period=' + encodeURIComponent(period) + '&cb=' + Date.now(),
-        { cache:'no-store' })
-    .then(function(r){ return r.json(); })
+  var _scoreTimedOut = {};
+  withTimeout(fetch(REG_API + '?action=reg_scoreboard&period=' + encodeURIComponent(period) + '&cb=' + Date.now(),
+        { cache:'no-store' }).then(function(r){ return r.json(); }), 8000, _scoreTimedOut)
     .then(function(d){
+      if(d === _scoreTimedOut){ box.innerHTML = '<span class="score-empty">점수를 불러오지 못했습니다.</span>'; return; }
       var board = (d && d.board) || [];
       if(!board.length){
         box.innerHTML = '<span class="score-empty">아직 점수가 없습니다. 접수하거나 처리를 끝내면 쌓입니다.</span>';
@@ -463,6 +464,14 @@ function _catMeta(label){ for(var i=0;i<CAT_META.length;i++){ if(CAT_META[i].lab
 function $(id){ return document.getElementById(id); }
 function toast(msg, isErr){ var t=$('toast'); if(!t) return; t.textContent = msg; t.className = 'toast show' + (isErr?' err':''); setTimeout(function(){ t.className = 'toast' + (isErr?' err':''); }, 2600); }
 
+/* withTimeout — 월간운영계획.html 에 이미 있는 패턴 그대로(새 유틸 아님). 부팅 즉시 발사되는 5개
+   로드 중 하나라도 느리면 그 칸이 "불러오는 중…"에서 영영 멈추던 문제 방지(2026-08-05 성능 수리). */
+function withTimeout(promise, ms, fallbackValue){
+  var timer;
+  var timeout = new Promise(function(resolve){ timer = setTimeout(function(){ resolve(fallbackValue); }, ms); });
+  return Promise.race([promise, timeout]).then(function(v){ clearTimeout(timer); return v; });
+}
+
 /* 접수월(YYYY-MM) 추출 — 습득물=foundWhen, 그 외=createdAt(서버 포맷 방어적 파싱, 실패시 '' → '전체'에만 포함) */
 function _monthOf(r){
   var raw = r._lf ? (r.foundWhen || r.createdAt) : r.createdAt;
@@ -483,8 +492,7 @@ function regLoad(){
   var board = document.getElementById('board');
   board.innerHTML = '<div class="state-msg">불러오는 중…</div>';
   var url = REG_API + '?action=reg_board&pv=' + encodeURIComponent(REG_PV) + '&_=' + Date.now();
-  fetch(url, {redirect:'follow', cache:'no-store'})
-    .then(function(r){ return r.json(); })
+  withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 8000, null)
     .then(function(d){
       _loading = false;
       if(!d || !d.ok){ board.innerHTML = '<div class="state-msg">현황을 불러오지 못했습니다 — ' + _esc(d && d.error || '') + '</div>'; return; }
@@ -875,11 +883,10 @@ function lfLoad(){
   _lfLoading = true;
   var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
   var url = REG_API + '?action=lf_list&_=' + Date.now() + (key ? ('&key=' + encodeURIComponent(key)) : '');
-  fetch(url, {redirect:'follow', cache:'no-store'})
-    .then(function(r){ return r.json(); })
+  withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 8000, null)
     .then(function(d){
       _lfLoading = false;
-      if(!d || !d.ok){ _lfItems = []; _merge(); return; }
+      if(!d || !d.ok){ _lfItems = []; _merge(); toast('습득물 현황을 불러오지 못했습니다', true); return; }
       var rows = Array.isArray(d.data) ? d.data : [];
       _lfItems = rows.filter(function(r){ return LF_STATUS_MAP[String(r.status||'')]; }).map(function(r){
         return {
@@ -903,7 +910,7 @@ function lfLoad(){
       });
       _merge();
     })
-    .catch(function(){ _lfLoading = false; /* 습득물 실패는 6종 보드 유지, 조용히 스킵 */ });
+    .catch(function(){ _lfLoading = false; toast('습득물 현황을 불러오지 못했습니다', true); });
 }
 
 /* ═══════════════════════════════════════════
@@ -921,11 +928,10 @@ function holdLoad(){
   _holdLoading = true;
   var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
   var url = HOLD_API + '?action=member_hold_intake_list' + (key ? ('&key=' + encodeURIComponent(key)) : '') + '&_=' + Date.now();
-  fetch(url, {redirect:'follow', cache:'no-store'})
-    .then(function(r){ return r.json(); })
+  withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 8000, null)
     .then(function(d){
       _holdLoading = false;
-      if(!d || !d.ok){ _holdItems = []; _merge(); return; }
+      if(!d || !d.ok){ _holdItems = []; _merge(); toast('휴회 접수 현황을 불러오지 못했습니다', true); return; }
       var rows = Array.isArray(d.data) ? d.data : [];
       _holdItems = rows.map(function(r){
         var vtxt = '판정: ' + (r.verdict || '-') + (r.verdictReason ? ' — ' + r.verdictReason : '');
@@ -947,7 +953,7 @@ function holdLoad(){
       });
       _merge();
     })
-    .catch(function(){ _holdLoading = false; /* 휴회 실패는 나머지 7종 보드 유지, 조용히 스킵(실패 격리) */ });
+    .catch(function(){ _holdLoading = false; toast('휴회 접수 현황을 불러오지 못했습니다', true); });
 }
 
 /* ═══════════════════════════════════════════
@@ -1180,8 +1186,7 @@ function loadStaffSuggest(){
     dl.id = 'reg-staff-names';
     document.body.appendChild(dl);
   }
-  fetch(REG_API + '?action=reg_staff_suggest', {redirect:'follow', cache:'no-store'})
-    .then(function(r){ return r.json(); })
+  withTimeout(fetch(REG_API + '?action=reg_staff_suggest', {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 8000, null)
     .then(function(d){
       if(!d || !d.ok || !d.names) return;
       dl.innerHTML = d.names.map(function(n){

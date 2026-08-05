@@ -6498,13 +6498,28 @@ function renderRentbiz(t) {
     .catch(function(e){ _rentbizEmpty(t, '데이터 로드 실패', e.message || 'GAS URL 또는 배포 상태를 확인하세요.'); });
 }
 
+/* 통계 로드 실패 표시 — 바로 위 renderRentbiz의 _rentbizEmpty(t,...)는 목록 표(rentbizBody_t)를
+   대상으로 해 통계 칸(rentbizStat*)엔 안 맞는다. 같은 '정직 표기(—)' 관례를 통계 칸에 재사용. */
+function _rentbizStatsFail(t){
+  var elTotal = document.getElementById('rentbizStatTotal_' + t);
+  var elNew   = document.getElementById('rentbizStatNew_' + t);
+  var elProg  = document.getElementById('rentbizStatProgress_' + t);
+  var elDone  = document.getElementById('rentbizStatDone_' + t);
+  var elLine  = document.getElementById('rentbizStatLine_' + t);
+  if (elTotal) elTotal.textContent = '—';
+  if (elNew)  elNew.textContent  = '—';
+  if (elProg) elProg.textContent = '—';
+  if (elDone) elDone.textContent = '—';
+  if (elLine) elLine.textContent = '통계를 불러오지 못했습니다';
+}
+
 function rentbizLoadStats(t) {
   var st = _rentbizState[t];
   if (!st || GAS_URL === GAS_PLACEHOLDER) return;
   fetch(GAS_URL + '?action=rentbiz_stats&type=' + t + _wpKeyParam() + (st.scope === 'all' ? '&scope=all' : ''))
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if (!d || !d.ok) return;
+      if (!d || !d.ok) { _rentbizStatsFail(t); return; }
       var elTotal = document.getElementById('rentbizStatTotal_' + t);
       var elNew   = document.getElementById('rentbizStatNew_' + t);
       var elProg  = document.getElementById('rentbizStatProgress_' + t);
@@ -6517,7 +6532,7 @@ function rentbizLoadStats(t) {
       if (elDone) elDone.textContent = d.hasStatus ? (d.done || 0) : '—';
       if (elLine) elLine.textContent = '총 ' + (d.total || 0) + '건 · 이번달 ' + (d.thisMonth || 0) + '건';
     })
-    .catch(function(){});
+    .catch(function(){ _rentbizStatsFail(t); });
 }
 
 /* ─────────────────────────────────────────────
