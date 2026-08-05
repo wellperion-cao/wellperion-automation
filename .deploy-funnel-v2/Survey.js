@@ -10852,6 +10852,15 @@ function installMemberMatchTrigger() {
  */
 var _WARM_EVERY_MIN = 5;   // GAS everyMinutes 허용값 = 1·5·10·15·30. 캐시 TTL(600초)보다 짧게.
 function warmLessonRosterCache() {
+  // ★강습 등록원장 동기화(2026-08-05 시토 · lesson_registry_list 23초 수리) — 원래 read 경로(호출마다)에서
+  //   실행되던 _syncLessonRegistry_()를 여기로 이관. ★대상 재선정: 처음엔 warmDashboardCache(다른 함수)에
+  //   얹었으나, action=list_inquiry_triggers(읽기전용 진단)로 라이브 트리거 목록을 직접 조회해 보니
+  //   warmDashboardCache는 CLOCK 트리거가 설치돼 있지 않았다(코드 주석의 "실측 확인" 주장은 실제로 틀렸다 —
+  //   확인 없이 만든 문장을 그대로 믿을 뻔했다). 이 warmLessonRosterCache 만이 list_inquiry_triggers로
+  //   실측 확인된 진짜 CLOCK 트리거(5분 주기)이고, 도메인도 강습 원장이라 자연스러운 자리다. 새 트리거는
+  //   만들지 않는다(약속 L21). _syncLessonRegistry_ 자체에 5분(300초) 캐시가드가 있어 이 5분 워머와 주기가
+  //   맞물린다 — 중복 호출은 가드가 즉시 반환해 무해. 실패해도 다음 워머 주기(5분 뒤)에 재시도되므로 삼킨다.
+  try { _syncLessonRegistry_(); } catch (eSyncReg) {}
   var types = ['성인강습', '유소년강습'], done = [];
   for (var i = 0; i < types.length; i++) {
     try {
@@ -10918,13 +10927,6 @@ function warmDashboardCache() {
       UrlFetchApp.fetch(_WARM_EXEC_URL + '?' + q + '&nocache=1', { muteHttpExceptions: true, followRedirects: true });
     } catch (e) { /* 개별 실패 무시 — 다음 주기 재시도 */ }
   });
-
-  // ★강습 등록원장 동기화(2026-08-05 시토 · lesson_registry_list 23초 수리) — 원래 read 경로(호출마다)에서
-  //   실행되던 _syncLessonRegistry_()를 여기로 이관. 이 워머가 라이브에서 실제로 5분마다 도는 것이
-  //   실측 확인된 유일한 CLOCK 트리거라 새 트리거를 만들지 않고 얹는다(약속 L21 '막 만들지 마라').
-  //   _syncLessonRegistry_ 자체에 5분(300초) 캐시가드가 있어 이 5분 워머와 주기가 맞물린다 — 중복 호출은
-  //   가드가 즉시 반환해 무해. 실패해도 다음 워머 주기(5분 뒤)에 재시도되므로 여기서 삼킨다.
-  try { _syncLessonRegistry_(); } catch (eSyncReg) {}
 
   // ★대기→멤버십 자동 해제를 여기에 얹는다(2026-08-04 시토 · 배302).
   //   원래는 매일 02:00 memberMatchAutostamp 트리거에 달았는데, **그 트리거가 라이브에
