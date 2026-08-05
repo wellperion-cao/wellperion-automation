@@ -157,13 +157,15 @@
   .toggle-row-2 .tg-line:last-of-type{border-bottom:none;}
   .toggle-row-2 .tg-link{display:inline-block; margin-top:6px; color:var(--accent-soft); font-weight:700; text-decoration:none; font-size:12px;}
   .toggle-row-2 .tg-link:hover{text-decoration:underline;}
-  /* 카드 3종(회장님/대표님/GM) 표 = 업무명·카테고리·일정 3칸뿐이라 기본 table.rpt(min-width:720px)를 그대로 쓰면
+  /* 카드 3종(회장님/대표님/GM) 표 = 업무명(카테고리)·일정 2칸뿐이라 기본 table.rpt(min-width:720px)를 그대로 쓰면
      ~220~300px 카드 안에서 표만 내부 가로스크롤(실측 288px 표시폭에 720px 표 → 매 칸 스크롤)이 생겨 GM이 싫어한
      원인이었다(2026-08-05). min-width:0으로 좁은 카드 폭에 맞춰 자연히 줄어들게 하고, 셀은 좁아도 어색하게
      끊기지 않도록 word-break:keep-all로 문단 경계에서만 줄바꿈한다. */
   table.rpt.exec{min-width:0;}
   table.rpt.exec th, table.rpt.exec td{padding:7px 8px; font-size:11.5px; word-break:keep-all; overflow-wrap:break-word;}
   table.rpt.exec .ebtn{font-size:10.5px; padding:4px 7px; margin:0 4px 4px 0; white-space:nowrap;}
+  /* 업무명 옆 (카테고리) — 제목보다 한 단계 죽여 제목이 먼저 읽히게(GM 지시 2026-08-05 소괄호 표기). */
+  table.rpt.exec .cat{color:var(--dim); font-size:10.5px; white-space:nowrap;}
   @media print{ .toggle-row-2{display:none !important;} }
 
   .chip{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap;}
@@ -3605,12 +3607,14 @@
       bodyEl.innerHTML = '<div class="rep-empty">' + emptyMsg + '</div>' + link;
       return;
     }
-    // 토글은 보기 전용(업무명·카테고리·일정 셋뿐) — 건별 보고 필요/완료 버튼은 2026-08-05 GM 지시로
+    // 토글은 보기 전용(업무명·일정 둘뿐) — 건별 보고 필요/완료 버튼은 2026-08-05 GM 지시로
     // 자세히보기 페이지(대표님_지시사항.html·김남욱GM_업무.html, 통합 보고+체크)로 옮겼다(중복 UI 없음).
+    // 카테고리는 별도 칸이 아니라 업무명 옆 소괄호로 붙인다(GM 지시 2026-08-05 — 칸이 하나 줄어 좁은
+    // 3열 카드에서 제목이 덜 접힌다). 카드 3종(회장님·대표님·GM) 공통 — 이 함수 하나가 셋을 다 그린다.
     var rowsHtml = items.map(function(it){
-      return '<tr><td>' + esc(it.title) + '</td><td>' + esc(it.category || '—') + '</td><td>' + esc(it.schedule || '일정 미정') + '</td></tr>';
+      return '<tr><td>' + esc(it.title) + (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td><td>' + esc(it.schedule || '일정 미정') + '</td></tr>';
     }).join('');
-    var head = '<th>업무명</th><th>카테고리</th><th>일정</th>';
+    var head = '<th>업무명 (카테고리)</th><th>일정</th>';
     bodyEl.innerHTML = '<div class="rpt-wrap"><table class="rpt exec"><thead><tr>' + head + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + link;
   }
   // 시트 카테고리 "[n] 이름" → 번호를 뗀 이름만(GM 지시 2026-08-05 "인사·시설 및 환경 등으로 정리").

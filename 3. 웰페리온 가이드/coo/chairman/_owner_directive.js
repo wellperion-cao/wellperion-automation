@@ -155,8 +155,10 @@
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         return (
           '<div class="item">' +
-          '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) + '</h2><span class="when">' + esc(it.schedule) + '</span></div>' +
-          '<p class="who">' + esc(it.category || '분류 미정') + '</p>' +
+          // 카테고리는 별도 줄이 아니라 제목 옆 소괄호(GM 지시 2026-08-05 · 월간운영계획 카드 3종과 같은 표기).
+          '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
+          (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
+          '</h2><span class="when">' + esc(it.schedule) + '</span></div>' +
           '<p class="body">' + esc(it.content || '내용 없음') + '</p>' +
           '<dl>' +
           '<div><dt>상태</dt><dd>' + esc(it.status || '—') + '</dd></div>' +
