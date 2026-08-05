@@ -140,6 +140,37 @@ def test_select_bridge_ship_excluded_among_mixed_candidates():
     assert result["task_id"] == "CTO-2026-07-13-A"
 
 
+# ── feedback_only: 실무진 피드백 배만 좁히는 스코프(2026-08-05 GM 지시) ──
+def test_select_feedback_only_excludes_non_feedback_ship():
+    queue = [_ship(**{"from": "cto"})]  # from!="실무진" — 일반 배
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY, feedback_only=True)
+    assert result is None
+
+
+def test_select_feedback_only_includes_feedback_ship():
+    queue = [_ship(**{"from": "실무진"})]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY, feedback_only=True)
+    assert result is not None
+    assert result["task_id"] == "CTO-2026-07-13-A"
+
+
+def test_select_feedback_only_picks_feedback_ship_among_mixed():
+    queue = [
+        _ship(**{"from": "cto"}, task_id="CTO-2026-07-13-A"),
+        _ship(**{"from": "실무진"}, task_id="CTO-2026-07-13-B"),
+    ]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY, feedback_only=True)
+    assert result is not None
+    assert result["task_id"] == "CTO-2026-07-13-B"
+
+
+def test_select_default_feedback_only_off_keeps_old_behavior():
+    # 회귀 0 — feedback_only 미지정(기본 False)이면 종전과 동일하게 from 무관 통과.
+    queue = [_ship(**{"from": "cto"})]
+    result = war.select_one_low_risk_ship("cto", queue, registry=FAKE_REGISTRY)
+    assert result is not None
+
+
 # ── 쿨다운 배 제외 ──
 def test_select_excludes_cooldown_task_ids():
     queue = [_ship()]

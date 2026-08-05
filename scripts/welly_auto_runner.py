@@ -191,13 +191,19 @@ def _sort_key(ship: dict):
     return (_urgency_rank(ship), _priority_rank(ship))
 
 
-def _sorted_low_risk_candidates(clevel, queue, registry=None, cooldown_task_ids=None):
+def _sorted_low_risk_candidates(clevel, queue, registry=None, cooldown_task_ids=None,
+                                 feedback_only=False):
     """
     select_one_low_risk_ship과 완전히 같은 필터·정렬을 적용하되, 1척으로 자르지 않고
     **전체** 정렬된 후보 리스트를 반환한다(boot_candidate의 순회용 — 2026-07-27 GM 지적:
     "배편이 있는데도 대기하는 건?" 대응). run_once() 등 기존 1척 계약은 그대로
     select_one_low_risk_ship을 쓴다 — 필터·정렬 predicate 자체는 이 함수 하나로 공유해
     두 곳이 갈라지지 않게 한다(게이트 중복 방지).
+
+    feedback_only=True면 ship["from"]=="실무진"(cpo_staff_feedback_watch.build_ship이
+    붙이는 값)인 배만 남긴다(2026-08-05 GM 지시 — 실무진 피드백 배만 짧은 주기로 집는다,
+    다른 배는 이 필터를 안 타는 기존 07:30 사이클 그대로). 다른 필터·정렬은 전부 동일 —
+    가역·저위험·구체배·쿨다운·모호park 제외 게이트를 그대로 통과해야 한다(우회 없음).
     """
     cooldown_task_ids = cooldown_task_ids or set()
     candidates = select_autonomous_ships(clevel, queue, registry=registry)
@@ -207,19 +213,24 @@ def _sorted_low_risk_candidates(clevel, queue, registry=None, cooldown_task_ids=
     # 이미 parked-interview 중인 배(aide_interview_needed=True)는 매 사이클 재선택해
     # 다른 후보를 막지 않도록 제외한다 — GM 답변 기록 시 플래그 해제되면 자연히 재후보군 복귀.
     candidates = [s for s in candidates if not s.get("aide_interview_needed")]
+    if feedback_only:
+        candidates = [s for s in candidates if s.get("from") == "실무진"]
     candidates.sort(key=_sort_key)   # 급한정도 먼저, 그 다음 무게(GM ①안 2026-07-27)
     return candidates
 
 
-def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=None):
+def select_one_low_risk_ship(clevel, queue, registry=None, cooldown_task_ids=None,
+                              feedback_only=False):
     """
     welly_orchestrate.select_autonomous_ships(가역·해당clevel·활성·등록부존재) 결과에
     저위험 추가 필터 + 쿨다운 배 제외를 적용하고, **①급한정도(urgency) ②난이도(priority)** 순으로
     오름차순 정렬 후 **1척만** 반환한다. 후보 없으면 None.
     급한정도 칸이 없는 배는 전부 '보통'으로 같은 값이라 종전(난이도만 보던 때)과 순서가 같다.
+    feedback_only는 _sorted_low_risk_candidates로 그대로 전달(실무진 피드백 배만 스코프).
     """
     candidates = _sorted_low_risk_candidates(
-        clevel, queue, registry=registry, cooldown_task_ids=cooldown_task_ids
+        clevel, queue, registry=registry, cooldown_task_ids=cooldown_task_ids,
+        feedback_only=feedback_only,
     )
     if not candidates:
         return None
@@ -1221,9 +1232,12 @@ def run_once(
     live: bool | None = None,
     claude_timeout: int = 1200,
     ping_state_path: str | None = None,
+    feedback_only: bool = False,
 ) -> dict:
     """
     러너 1회 실행.
+    feedback_only=True면 실무진 피드백 배(ship["from"]=="실무진")만 후보로 본다
+    (2026-08-05 GM 지시 — select_one_low_risk_ship로 그대로 전달, 나머지 게이트 동일).
     live=None이면 env RUNNER_LIVE로 판단(기본 OFF=dry-run). 테스트에서는 live=False/True를
     명시해 env에 무관하게 강제할 수 있다.
 
@@ -1278,7 +1292,8 @@ def run_once(
     state = _load_state(state_path)
     cooldown_ids = _active_cooldown_ids(state)
 
-    ship = select_one_low_risk_ship(clevel, queue, registry=registry, cooldown_task_ids=cooldown_ids)
+    ship = select_one_low_risk_ship(clevel, queue, registry=registry, cooldown_task_ids=cooldown_ids,
+                                     feedback_only=feedback_only)
     mode = "live" if live else "dry-run"
 
     if ship is None:
@@ -1503,6 +1518,7 @@ def run_cycle(
     claude_timeout: int = 1200,
     ping_state_path: str | None = None,
     max_total_ships: int = MAX_SHIPS_PER_CYCLE,
+    feedback_only: bool = False,
 ) -> dict:
     """
     전 C-Level 순회(배237 phase4) — clevels(기본 DEFAULT_CLEVELS 7종) 각각에 대해
@@ -1510,6 +1526,12 @@ def run_cycle(
     사이클 전체 라이브 성공 실행이 max_total_ships에 도달하면 남은 clevel은
     "cycle-cap-skipped"로 건너뛴다(신규 안전 로직 추가 없음 — run_once의 기존 가드를
     그대로 clevel별로 재사용하는 얇은 순회 래퍼).
+
+    feedback_only=True면 각 clevel 호출이 실무진 피드백 배만 후보로 본다(2026-08-05
+    GM 지시). max_total_ships는 이 파라미터와 무관하게 기본값(MAX_SHIPS_PER_CYCLE=3)을
+    그대로 쓴다 — 3분 주기로 별도 프로세스가 도는 이 사이클은 07:30 전체 사이클과
+    상한을 공유하지 않으므로(각 호출이 독립적으로 최대 3척) 상한을 더 올릴 필요가
+    없다(GM 지시 ①항 판단 — 늘리면 한 회차에 claude 세션이 더 몰려 위험만 커진다).
 
     ★비협상 원칙(GM 2026-07-14)★ 이 함수는 clevel별 우회 경로를 만들지 않는다 — 각
     clevel 호출이 그대로 run_once()의 is_ambiguous() 게이트를 통과해야 하므로, 배
@@ -1541,7 +1563,7 @@ def run_cycle(
         result = run_once(
             clevel=clevel, nick=nick, queue_path=queue_path, registry_path=registry_path,
             state_path=state_path, log_path=log_path, live=live, claude_timeout=claude_timeout,
-            ping_state_path=ping_state_path,
+            ping_state_path=ping_state_path, feedback_only=feedback_only,
         )
         results[clevel] = result
         if result.get("executed") and result.get("success"):
@@ -1617,6 +1639,12 @@ def main() -> int:
         help="주어진 URL을 render_verify_url로 단독 헤드리스 렌더해 결과만 출력(run_once 미가동). "
              "실제 ERP 페이지 수동 실측용.",
     )
+    parser.add_argument(
+        "--feedback-only", action="store_true",
+        help="후보를 실무진 피드백 배(ship['from']=='실무진')로만 좁힌다(2026-08-05 GM 지시 — "
+             "3분 주기 cpo_inquiry_snapshot.bat에서 호출해 접수→처리 시작 지연을 줄인다). "
+             "다른 게이트(가역·work_type=new 제외·모호park·쿨다운·회차상한)는 전부 그대로.",
+    )
     args = parser.parse_args()
 
     if args.interview_worklist:
@@ -1647,9 +1675,10 @@ def main() -> int:
     live = False if args.force_dry_run else None
 
     if args.clevel == "all":
-        cycle = run_cycle(live=live)
+        cycle = run_cycle(live=live, feedback_only=args.feedback_only)
         print("=" * 60)
-        print(f"[welly_auto_runner] --clevel all — 사이클 실행 {cycle['executed_count']}척"
+        scope = " [feedback-only]" if args.feedback_only else ""
+        print(f"[welly_auto_runner] --clevel all{scope} — 사이클 실행 {cycle['executed_count']}척"
               f"(순회 순서: {', '.join(cycle['cycle_order'])})")
         for clevel in cycle["cycle_order"]:
             print("-" * 60)
@@ -1657,7 +1686,7 @@ def main() -> int:
         print("=" * 60)
         return 0
 
-    result = run_once(clevel=args.clevel, nick=args.nick, live=live)
+    result = run_once(clevel=args.clevel, nick=args.nick, live=live, feedback_only=args.feedback_only)
 
     print("=" * 60)
     _print_run_once_result(result, label="welly_auto_runner")
