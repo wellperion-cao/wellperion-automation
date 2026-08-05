@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GM의 일요일 — 개인계정 주간 기록</title>
+<!--
+  GM의 일요일 모듈 (M1 콘텐츠 허브 · 2026-08-05 시모 · 배367)
+  시안 정본: GM 제공 디자인(2026-08-04) — 5단계(사진→영상→자동초안→미리보기→검수요청)
+
+  뒷단은 새로 만들지 않는다. 콘텐츠 접수 모듈(instructor_intake.html)이 쓰는 GAS를
+  그대로 재사용한다 — 분류(team)만 "GM의 일요일"로 보낸다.
+    접수 → GAS(드라이브 저장 + '마케팅 접수' 시트 append + 텔레그램 알림)
+         → cmo_intake_to_review.py(15분 폴러) → 검수큐 "접수검토" + GM 카드 + 시모 배
+  GAS 배포 URL은 여기에 복사하지 않는다(약속 L01) — 정본인 instructor_intake.html에서
+  런타임에 읽어 온다. 그 파일이 URL의 단일 출처이고, 폴러도 같은 곳을 읽는다.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#EAE6DC;font-family:'Noto Sans KR',sans-serif;color:#23201C;}
+  textarea,input,select,button{font-family:'Noto Sans KR',sans-serif;}
+  textarea:focus,input:focus,select:focus{outline:2px solid #B4552E;outline-offset:-2px;}
+  .wrap{max-width:430px;margin:0 auto;min-height:100vh;background:#F4F1EA;padding-bottom:60px;}
+  .head{padding:22px 20px 18px;background:#23201C;color:#FBF8F2;display:flex;flex-direction:column;gap:10px;position:sticky;top:0;z-index:5;}
+  .head-top{display:flex;align-items:center;justify-content:space-between;}
+  .eyebrow{font-size:12px;letter-spacing:.24em;color:#A9A29A;}
+  .pill{font-size:12px;padding:5px 10px;border:1px solid #4A443C;border-radius:999px;color:#E4DFD6;}
+  .h1{font-family:'Gowun Batang',serif;font-size:26px;line-height:1.35;}
+  .sub{font-size:13px;line-height:1.7;color:#A9A29A;}
+  .body{padding:20px;display:flex;flex-direction:column;gap:18px;}
+  .card{background:#FFFDF8;border:1px solid #E2DCD0;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .step{display:flex;align-items:center;gap:10px;}
+  .num{width:22px;height:22px;border-radius:999px;background:#B4552E;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .step-t{font-size:15px;font-weight:500;}
+  .step-t span{color:#8A8377;font-weight:400;}
+  .drop{border:1px dashed #C9C2B4;background:#F7F4ED;padding:26px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;}
+  .drop.row{flex-direction:row;padding:18px 16px;align-items:center;gap:12px;}
+  .drop-hint{font-size:13px;color:#6E675E;text-align:center;line-height:1.6;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .thumb{position:relative;aspect-ratio:1;overflow:hidden;background:#E2DCD0;}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb .lab{position:absolute;left:4px;top:4px;font-size:10px;background:rgba(20,18,15,.62);color:#FBF8F2;padding:2px 6px;border-radius:999px;}
+  .thumb .del{position:absolute;right:3px;top:3px;width:22px;height:22px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:13px;line-height:1;cursor:pointer;}
+  .note{font-size:12px;line-height:1.7;color:#8A8377;}
+  .fld{border:1px solid #E2DCD0;background:#fff;padding:12px;font-size:14px;color:#23201C;width:100%;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  select.fld{padding:11px;}
+  .btn-dark{border:none;background:#23201C;color:#FBF8F2;padding:12px 18px;font-size:14px;cursor:pointer;}
+  .draft{display:flex;flex-direction:column;gap:14px;border-top:1px solid #EEE9DF;padding-top:14px;}
+  .f{display:flex;flex-direction:column;gap:6px;}
+  .f-lab{font-size:12px;letter-spacing:.14em;color:#8A8377;}
+  .f textarea{border:1px solid #E2DCD0;background:#fff;padding:12px;line-height:1.7;color:#2C2823;resize:vertical;width:100%;}
+  .serif{font-family:'Gowun Batang',serif;}
+  .cuts{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;}
+  .cut{flex:0 0 auto;width:168px;height:210px;box-sizing:border-box;}
+  .cut-cover{position:relative;background:#23201C;overflow:hidden;}
+  .cut-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .cut-cover .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,18,15,.5),rgba(20,18,15,.05) 40%,rgba(20,18,15,.75));}
+  .cut-cover .in{position:absolute;inset:0;padding:14px;display:flex;flex-direction:column;justify-content:space-between;}
+  .cut-cover .tag{font-size:8px;letter-spacing:.24em;color:#FBF8F2;}
+  .cut-cover .ttl{font-family:'Gowun Batang',serif;font-size:15px;line-height:1.4;color:#FBF8F2;white-space:pre-line;}
+  .cut-a{background:#F4F1EA;border:1px solid #E2DCD0;padding:12px 12px 0;display:flex;flex-direction:column;}
+  .cut-a .ph{height:130px;background:#E2DCD0;overflow:hidden;}
+  .cut-a .ph img{width:100%;height:100%;object-fit:cover;}
+  .cut-a .tx{flex:1;display:flex;align-items:center;font-family:'Gowun Batang',serif;font-size:10px;line-height:1.5;}
+  .cut-b{background:#F4F1EA;border:1px solid #E2DCD0;padding:12px;display:flex;flex-direction:column;gap:8px;}
+  .cut-b .duo{display:flex;gap:6px;height:108px;}
+  .cut-b .duo div{flex:1;min-width:0;background:#E2DCD0;overflow:hidden;}
+  .cut-b .duo img{width:100%;height:100%;object-fit:cover;}
+  .cut-b .tx{font-family:'Gowun Batang',serif;font-size:10px;line-height:1.5;}
+  .cut-think{background:#23201C;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:10px;}
+  .cut-think .bar{width:24px;height:2px;background:#F0B27A;}
+  .cut-think .tx{font-family:'Gowun Batang',serif;font-size:12px;line-height:1.6;color:#FBF8F2;}
+  .cut-vid{background:#1A1815;display:flex;align-items:center;justify-content:center;}
+  .cut-vid .in{text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;}
+  .cut-vid .play{width:40px;height:40px;border-radius:999px;border:1px solid #6E675E;display:flex;align-items:center;justify-content:center;color:#FBF8F2;font-size:13px;}
+  .cut-vid .cap{font-size:10px;line-height:1.6;color:#A9A29A;}
+  .kv{display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.7;color:#55504A;}
+  .kv>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #EEE9DF;padding-bottom:9px;}
+  .kv>div:last-child{border-bottom:none;padding-bottom:0;}
+  .kv .k{color:#8A8377;white-space:nowrap;}
+  .cta{border:none;background:#B4552E;color:#FBF8F2;padding:16px;font-size:15px;font-weight:500;cursor:pointer;width:100%;}
+  .cta:disabled{background:#8A8377;cursor:default;}
+  .tg{background:#23201C;padding:18px;display:flex;flex-direction:column;gap:14px;}
+  .tg-h{font-size:12px;letter-spacing:.2em;color:#F0B27A;}
+  .tg-box{background:#2E2A24;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.8;color:#E4DFD6;}
+  .tg-box .t{font-weight:500;color:#FBF8F2;}
+  .tg-box .d{color:#A9A29A;}
+  .tg-act{display:flex;gap:8px;padding-top:4px;}
+  .tg-act div{flex:1;text-align:center;border:1px solid #4A443C;padding:10px;color:#A9A29A;font-size:12px;}
+  .ok{background:#EEF1EA;border:1px solid #CBD5C4;padding:18px;display:flex;flex-direction:column;gap:8px;}
+  .ok .h{font-size:12px;letter-spacing:.2em;color:#4E6B52;}
+  .ok .m{font-family:'Gowun Batang',serif;font-size:20px;}
+  .ok .s{font-size:13px;line-height:1.8;color:#55504A;}
+  .err{background:#FBEDE8;border:1px solid #E5C3B4;padding:14px;font-size:13px;line-height:1.7;color:#8E3E1E;}
+  .hide{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div class="head-top">
+      <div class="eyebrow">WELLPERION · PERSONAL</div>
+      <div class="pill" id="statusLabel">작성 중</div>
+    </div>
+    <div class="h1">GM의 일요일</div>
+    <div class="sub">@namuk.wellperion · 일요일 저녁 발행 · 승인 필수</div>
+  </div>
+
+  <div class="body">
+
+    <!-- ① 사진 -->
+    <div class="card">
+      <div class="step"><div class="num">1</div><div class="step-t">사진 올리기 <span>(3~5장 권장)</span></div></div>
+      <label class="drop">
+        <div style="font-size:26px;">＋</div>
+        <div class="drop-hint">그날의 사진을 선택하세요<br>여러 장 한 번에 가능</div>
+        <input type="file" accept="image/*" multiple id="f_photos" style="display:none;">
+      </label>
+      <div class="grid3 hide" id="thumbs"></div>
+    </div>
+
+    <!-- ② 영상 -->
+    <div class="card">
+      <div class="step"><div class="num">2</div><div class="step-t">영상 <span>(선택 · 캐러셀 마지막 장)</span></div></div>
+      <label class="drop row">
+        <div style="font-size:22px;">🎥</div>
+        <div class="drop-hint" style="text-align:left;" id="videoLabel">짧은 영상을 선택하세요 (15~30초)</div>
+        <input type="file" accept="video/*" id="f_video" style="display:none;">
+      </label>
+      <div class="note">15~30초 권장 · 50MB 초과 시 드라이브 링크를 아래에 붙여주세요.</div>
+      <input type="text" class="fld" id="f_videoLink" placeholder="대용량 영상 링크 (선택)">
+    </div>
+
+    <!-- ③ 자동 초안 -->
+    <div class="card">
+      <div class="step"><div class="num">3</div><div class="step-t">자동 초안</div></div>
+      <div class="row">
+        <select class="fld" id="f_mood" style="flex:1;min-width:130px;">
+          <option value="가족과 놀았던 날">가족과 놀았던 날</option>
+          <option value="그냥 푹 쉰 날">그냥 푹 쉰 날</option>
+          <option value="밖으로 나간 날">밖으로 나간 날</option>
+          <option value="집에서 함께 있던 날">집에서 함께 있던 날</option>
+        </select>
+        <button class="btn-dark" id="genBtn">초안 만들기</button>
+      </div>
+      <div class="note">사진 장수와 분위기에 맞춰 제목·문장 3개·본문 캡션을 만들어 둡니다. 아래에서 바로 고치세요.</div>
+
+      <div class="draft hide" id="draftBox">
+        <div class="f"><div class="f-lab">표지 제목</div>
+          <textarea id="d_title" rows="2" class="serif" style="font-size:20px;"></textarea></div>
+        <div class="f"><div class="f-lab">02 문장</div>
+          <textarea id="d_line1" rows="2" class="serif" style="font-size:16px;"></textarea></div>
+        <div class="f"><div class="f-lab">03 문장</div>
+          <textarea id="d_line2" rows="2" class="serif" style="font-size:16px;"></textarea></div>
+        <div class="f"><div class="f-lab">04 생각 (철학 한 장)</div>
+          <textarea id="d_line3" rows="3" class="serif" style="font-size:16px;"></textarea></div>
+        <div class="f"><div class="f-lab">본문 캡션</div>
+          <textarea id="d_caption" rows="9" style="font-size:14px;line-height:1.9;"></textarea>
+          <div style="font-size:12px;line-height:1.8;color:#6E675E;" id="d_tags"></div></div>
+      </div>
+    </div>
+
+    <!-- ④ 미리보기 -->
+    <div class="card hide" id="previewCard">
+      <div class="step"><div class="num">4</div><div class="step-t">캐러셀 미리보기 <span id="cutCount">4컷</span></div></div>
+      <div class="cuts">
+        <div class="cut cut-cover"><img id="p_cover"><div class="shade"></div>
+          <div class="in"><div class="tag">GM의 일요일</div><div class="ttl" id="p_title"></div></div></div>
+        <div class="cut cut-a"><div class="ph"><img id="p_shot2"></div><div class="tx" id="p_line1"></div></div>
+        <div class="cut cut-b"><div class="duo"><div><img id="p_shot3"></div><div><img id="p_shot4"></div></div>
+          <div class="tx" id="p_line2"></div></div>
+        <div class="cut cut-think"><div class="bar"></div><div class="tx" id="p_line3"></div></div>
+        <div class="cut cut-vid"><div class="in"><div class="play">▶</div><div class="cap" id="p_video">영상 자리 (비어 있음)</div></div></div>
+      </div>
+    </div>
+
+    <!-- ⑤ 검수 요청 -->
+    <div class="card">
+      <div class="step"><div class="num">5</div><div class="step-t">검수 요청 · 발행 예약</div></div>
+      <div class="kv">
+        <div><span class="k">검수 채널</span><span>텔레그램 · 업무보고방</span></div>
+        <div><span class="k">발행 계정</span><span>@namuk.wellperion (개인)</span></div>
+        <div><span class="k">발행 예약</span><span id="k_schedule">—</span></div>
+        <div><span class="k">미승인 시</span><span>발행 보류 · 다시 알림</span></div>
+      </div>
+      <div class="row" style="align-items:center;flex-wrap:nowrap;">
+        <div style="font-size:13px;color:#8A8377;white-space:nowrap;">발행 시각</div>
+        <select class="fld" id="f_time" style="flex:1;">
+          <option value="18:00">일요일 오후 6:00</option>
+          <option value="19:00">일요일 오후 7:00</option>
+          <option value="20:00" selected>일요일 오후 8:00</option>
+          <option value="21:00">일요일 오후 9:00</option>
+          <option value="now">승인 즉시 발행</option>
+        </select>
+      </div>
+      <button class="cta" id="sendBtn">텔레그램으로 검수 요청</button>
+      <div class="note">공식 계정(@wellperion)에는 올라가지 않습니다. 개인 계정 전용 모듈입니다.</div>
+      <div class="err hide" id="errBox"></div>
+    </div>
+
+    <!-- 텔레그램 카드 미리보기 (읽기 전용 — 실제 승인은 텔레그램에서) -->
+    <div class="tg hide" id="tgCard">
+      <div class="tg-h">TELEGRAM · 업무보고방</div>
+      <div class="tg-box">
+        <div class="t">[검수요청] GM의 일요일 · <span id="t_date"></span></div>
+        <div>계정 @namuk.wellperion · <span id="t_cut"></span> · 예약 <span id="t_sched"></span></div>
+        <div class="d">제목 — <span id="t_title"></span></div>
+        <div class="tg-act"><div>이 카드는 실제 텔레그램 업무보고방으로 나갑니다 — 승인·반려는 그곳에서</div></div>
+      </div>
+    </div>
+
+    <div class="ok hide" id="okBox">
+      <div class="h">SENT</div>
+      <div class="m" id="ok_sched"></div>
+      <div class="s">사진·문장이 드라이브와 접수 시트에 저장됐습니다. 업무보고방으로 검수 카드가 나가고, 승인 전까지는 발행되지 않습니다.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ── 문장 은행 (시안 정본 그대로) ──────────────────────────────
+  var BANK = {
+    '가족과 놀았던 날': [
+      ['물이 튀는 쪽으로 먼저 뛰어드는 건 언제나 아이들이었다.','좋은 하루는 대단한 계획이 아니라 같이 있기로 한 결정에서 시작된다.','행복은 특별한 날에 오는 게 아니라, 평범한 일요일을 알아보는 눈에 온다.'],
+      ['웃음소리가 큰 쪽으로 자꾸 고개가 돌아갔다.','기억에 남는 건 장소가 아니라 그날 같이 있던 사람이었다.','가족이 있어 인생이 즐겁다는 말은, 설명이 필요 없는 문장이다.']
+    ],
+    '그냥 푹 쉰 날': [
+      ['아무 계획도 세우지 않은 아침이 제일 넉넉했다.','쉬는 일에도 연습이 필요하다는 걸 이제 안다.','비워둔 하루는 낭비가 아니라, 다음 주를 견디는 힘이다.']
+    ],
+    '밖으로 나간 날': [
+      ['멀리 가지 않아도 바람의 방향은 달라졌다.','걸음이 느려질수록 보이는 것은 많아졌다.','삶은 목적지보다 오늘 지나온 길에 더 오래 남는다.']
+    ],
+    '집에서 함께 있던 날': [
+      ['거실 소리만으로도 집이 살아 있었다.','함께 있는 시간은 특별한 사건 없이도 충분했다.','평범함을 지키는 일이야말로 가장 어려운 성취다.']
+    ]
+  };
+  var TITLES = {
+    '가족과 놀았던 날':'가족이 있어\n인생이 즐겁다',
+    '그냥 푹 쉰 날':'아무것도 하지 않기로\n정한 일요일',
+    '밖으로 나간 날':'조금 멀리\n걸어본 일요일',
+    '집에서 함께 있던 날':'집에서 보낸\n가장 좋은 하루'
+  };
+  var HASHTAGS = '#GM의일요일 #가족 #일요일의기록 #행복은평범함에 #주말기록';
+
+  var photos = [];          // {file, url}
+  var videoFile = null;
+  var hasDraft = false;
+  var sent = false;
+
+  // ── 발행 예약 라벨 (시안 schedule() 그대로) ──────────────────
+  function scheduleLabel(){
+    var t = $('f_time').value;
+    if (t === 'now') return '승인 즉시 발행';
+    var h = parseInt(t,10), d = new Date();
+    var sundayStillOk = d.getDay() === 0 && d.getHours() < h;
+    if (!sundayStillOk) d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7));
+    var label = (d.getMonth()+1)+'월 '+d.getDate()+'일(일) 오후 '+(h-12)+':00';
+    return sundayStillOk ? '오늘 '+label : label;
+  }
+  function cutCount(){ return (4 + ((videoFile || $('f_videoLink').value.trim()) ? 1 : 0)) + '컷'; }
+
+  // ── 화면 갱신 ────────────────────────────────────────────────
+  function renderThumbs(){
+    var box = $('thumbs');
+    box.classList.toggle('hide', photos.length === 0);
+    box.innerHTML = '';
+    photos.forEach(function(p, i){
+      var d = document.createElement('div'); d.className = 'thumb';
+      d.innerHTML = '<img src="'+p.url+'"><div class="lab">'+(i===0?'표지':(i+1))+'</div>';
+      var b = document.createElement('button'); b.className='del'; b.textContent='×';
+      b.onclick = function(){ URL.revokeObjectURL(p.url); photos.splice(i,1); renderThumbs(); renderPreview(); };
+      d.appendChild(b); box.appendChild(d);
+    });
+  }
+  function renderPreview(){
+    $('previewCard').classList.toggle('hide', !hasDraft);
+    if (!hasDraft) return;
+    var u = photos.map(function(p){ return p.url; });
+    $('p_cover').src  = u[0] || '';
+    $('p_shot2').src  = u[1] || u[0] || '';
+    $('p_shot3').src  = u[2] || u[0] || '';
+    $('p_shot4').src  = u[3] || u[1] || u[0] || '';
+    $('p_title').textContent = $('d_title').value;
+    $('p_line1').textContent = $('d_line1').value;
+    $('p_line2').textContent = $('d_line2').value;
+    $('p_line3').textContent = $('d_line3').value;
+    $('p_video').textContent = videoFile ? videoFile.name
+      : ($('f_videoLink').value.trim() ? '링크 영상' : '영상 자리 (비어 있음)');
+    $('cutCount').textContent = cutCount();
+  }
+  function renderMeta(){ $('k_schedule').textContent = scheduleLabel(); }
+
+  // ── 초안 생성 ────────────────────────────────────────────────
+  $('genBtn').onclick = function(){
+    var mood = $('f_mood').value;
+    var sets = BANK[mood] || BANK['가족과 놀았던 날'];
+    var set = sets[Math.floor(Math.random()*sets.length)];
+    var title = TITLES[mood];
+    $('d_title').value  = title;
+    $('d_line1').value  = set[0];
+    $('d_line2').value  = set[1];
+    $('d_line3').value  = set[2];
+    $('d_caption').value = title.replace('\n',' ')+'.\n\n'+set[0]+' '+set[1]+'\n\n이번 주 일요일, 당신은 무엇을 하셨나요?';
+    $('d_tags').textContent = HASHTAGS;
+    hasDraft = true;
+    $('draftBox').classList.remove('hide');
+    renderPreview();
+  };
+
+  ['d_title','d_line1','d_line2','d_line3'].forEach(function(id){
+    $(id).addEventListener('input', renderPreview);
+  });
+
+  $('f_photos').addEventListener('change', function(){
+    [].slice.call(this.files).forEach(function(f){ photos.push({ file:f, url:URL.createObjectURL(f) }); });
+    this.value = '';
+    renderThumbs(); renderPreview();
+  });
+  $('f_video').addEventListener('change', function(){
+    videoFile = this.files[0] || null;
+    $('videoLabel').textContent = videoFile
+      ? videoFile.name+' · '+Math.round(videoFile.size/1048576)+'MB'
+      : '짧은 영상을 선택하세요 (15~30초)';
+    renderPreview();
+  });
+  $('f_videoLink').addEventListener('input', renderPreview);
+  $('f_time').addEventListener('change', renderMeta);
+
+  // ── 접수 GAS URL — 정본(instructor_intake.html)에서 읽는다 (약속 L01) ──
+  // 보낼 때 한 번만 읽는다 — 페이지 열자마자 받아 두면 실패해도 다시 시도할 길이 없다.
+  function gasUrl(){
+    return fetch('../intake/instructor_intake.html')
+      .then(function(r){ return r.text(); })
+      .then(function(t){
+        var m = t.match(/GAS_PROD\s*=\s*"([^"]+)"/);
+        if (!m) throw new Error('접수 주소를 찾지 못했습니다');
+        return m[1];
+      });
+  }
+
+  // ── 파일 → base64 · 사진 축소 (instructor_intake.html 검증된 패턴) ──
+  function toB64(file){
+    return new Promise(function(res){
+      var r = new FileReader();
+      r.onload = function(){ res({ b64:r.result, mime:file.type, fname:file.name }); };
+      r.readAsDataURL(file);
+    });
+  }
+  var MAX_EDGE = 1600, JPEG_Q = 0.82, SKIP_UNDER = 600*1024;
+  function shrinkPhoto(file){
+    return new Promise(function(res){
+      if (!/^image\//.test(file.type) || file.size <= SKIP_UNDER){ res(toB64(file)); return; }
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){
+        try{
+          var w = img.naturalWidth, h = img.naturalHeight;
+          var s = Math.min(1, MAX_EDGE/Math.max(w,h));
+          var cv = document.createElement('canvas');
+          cv.width = Math.round(w*s); cv.height = Math.round(h*s);
+          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+          var b64 = cv.toDataURL('image/jpeg', JPEG_Q);
+          URL.revokeObjectURL(url);
+          res({ b64:b64, mime:'image/jpeg', fname:file.name.replace(/\.[^.]+$/,'')+'.jpg' });
+        }catch(e){ URL.revokeObjectURL(url); res(toB64(file)); }
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); res(toB64(file)); };
+      img.src = url;
+    });
+  }
+
+  function fail(msg){
+    var e = $('errBox'); e.textContent = msg; e.classList.remove('hide');
+  }
+
+  // ── 검수 요청 전송 ───────────────────────────────────────────
+  $('sendBtn').onclick = async function(){
+    if (sent) return;
+    $('errBox').classList.add('hide');
+    if (!photos.length){ fail('사진을 1장 이상 올려 주세요.'); return; }
+    if (!hasDraft){ fail('먼저 「초안 만들기」를 눌러 문장을 만들어 주세요.'); return; }
+    if (videoFile && videoFile.size > 50*1024*1024){
+      fail('영상이 50MB를 넘습니다. 드라이브 링크 칸을 이용해 주세요.'); return;
+    }
+
+    var btn = this; btn.disabled = true;
+    try{
+      var gas = await gasUrl();
+
+      var pics = [];
+      for (var i=0;i<photos.length && i<5;i++){
+        btn.textContent = '사진 준비 중… ('+(i+1)+'/'+Math.min(photos.length,5)+')';
+        pics.push(await shrinkPhoto(photos[i].file));
+      }
+      btn.textContent = '보내는 중… (30초~1분)';
+      var video = videoFile ? await toB64(videoFile) : null;
+
+      // 시트 계약(instructor_intake.js INTAKE_HEADER)에 그대로 얹는다 — 새 칸을 만들지 않는다.
+      var sched = scheduleLabel();
+      var body = {
+        name: '김남욱 GM',
+        team: 'GM의 일요일',
+        intro: $('d_title').value.replace(/\n/g,' '),
+        benefit: [
+          '02 ' + $('d_line1').value,
+          '03 ' + $('d_line2').value,
+          '04 ' + $('d_line3').value,
+          '',
+          $('d_caption').value,
+          '',
+          HASHTAGS,
+          '',
+          '계정 @namuk.wellperion (개인) · ' + cutCount() + ' · 발행 예약 ' + sched
+        ].join('\n'),
+        agree: true,
+        photos: pics,
+        video: video,
+        videoLink: $('f_videoLink').value.trim()
+      };
+
+      var r = await fetch(gas, {
+        method:'POST', redirect:'follow',
+        headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify(body)
+      });
+      var j = await r.json();
+      if (!j || !j.ok) throw new Error((j && j.err) || '알 수 없는 오류');
+
+      sent = true;
+      $('statusLabel').textContent = '검수 대기';
+      btn.textContent = '검수 요청 전송됨 — 승인 대기';
+      var now = new Date();
+      $('t_date').textContent  = (now.getMonth()+1)+'/'+now.getDate();
+      $('t_cut').textContent   = cutCount();
+      $('t_sched').textContent = sched;
+      $('t_title').textContent = $('d_title').value.replace(/\n/g,' ');
+      $('ok_sched').textContent = sched + ' 발행 예정';
+      $('tgCard').classList.remove('hide');
+      $('okBox').classList.remove('hide');
+    }catch(e){
+      fail('전송 실패 — ' + e.message + ' (잠시 후 다시 시도해 주세요)');
+      btn.disabled = false; btn.textContent = '텔레그램으로 검수 요청';
+    }
+  };
+
+  renderMeta();
+})();
+</script>
+</body>
+</html>
