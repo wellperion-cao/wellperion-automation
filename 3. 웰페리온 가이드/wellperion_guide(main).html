@@ -4406,6 +4406,16 @@
         </span>
         <span style="font-size:13px;font-weight:800;color:#221F20;background:#c9a24a;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
       </a>
+      <!-- GM의 일요일 (2026-08-05 GM 지시 · 배367) — 개인계정 @namuk.wellperion 주간 기록.
+           뒷단은 위 '콘텐츠 접수'와 같은 GAS·같은 검수큐를 재사용한다(분류만 'GM의 일요일'). -->
+      <a href="cmo/sunday/GM의일요일.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin:-2px 0 6px;padding:16px 20px;background:linear-gradient(135deg,#2a1c16,#1a1a2a);border:1px solid #B4552E;border-radius:14px;text-decoration:none;color:#fff;">
+        <span style="font-size:28px;flex-shrink:0;">🌤️</span>
+        <span style="flex:1;">
+          <span style="display:block;font-size:16px;font-weight:800;">GM의 일요일 — 개인계정 주간 기록</span>
+          <span style="display:block;font-size:12.5px;color:#e8c0aa;margin-top:3px;line-height:1.5;">사진 올리면 제목·문장·캡션 자동 초안 → 캐러셀 미리보기 → 텔레그램 검수 → 일요일 저녁 발행. @namuk.wellperion 전용.</span>
+        </span>
+        <span style="font-size:13px;font-weight:800;color:#fff;background:#B4552E;border-radius:9px;padding:8px 14px;white-space:nowrap;">열기 →</span>
+      </a>
     </section>
 
     <!-- ① 기반 — 회사·전략·브랜드 (2026-07-15 GM 설계: 콘텐츠 방향 연료 · m1-foundation) -->
@@ -9107,70 +9117,17 @@ function crTab(btn, panelId) {
           });
         }
 
-        // ── ② _queue.json AI 배 머지 (PENDING 대기배만 · IN_PROGRESS=자율현황 위임·완료 제외) ──
-        //   todo_list 제거 후에도 G1 항로에 AI 배가 살아있도록 (2026-06-07 GM 1단계 이관 대응)
-        //   시트에 동일 task_id가 이미 있으면 중복 제외 (ssot- prefix가 다르므로 _sheetsId 비교)
-        var sheetIds = {};
-        items.forEach(function(it){ if (it._sheetsId) sheetIds[it._sheetsId] = true; });
-        var CLEVEL_LABEL = { ceo:'AI CEO', cmo:'AI CMO', cto:'AI CTO', coo:'AI COO', cfo:'AI CFO', cpo:'AI CPO', chro:'AI CHRO' };
-        var CLEVEL_NICK  = { ceo:'웰리', cmo:'시모', cto:'시토', coo:'시우', cfo:'시뽀', cpo:'시포', chro:'시로', gm:'GM', gm1:'GM' };
-        // ── 🚢 진행·상시 미션(IN_PROGRESS) 항로 제외 → 자율현황.html 위임 (2026-07-15 GM·배237) ──
-        //   status 필드로만 판정(하드코딩 배 목록 없음·라이브 큐 자동 정합). IN_PROGRESS 배는 항로 3섹터
-        //   어디에도 그리지 않고 개수만 세어 '🚢 진행중' 섹터 자리에 자율현황 안내 한 줄로 대체한다.
-        //   PENDING(⚓ 대기)·DONE(🏁 입항)·시트(todo_list) 항목은 무손상. 순수 가역 — 이 분기만 되돌리면 원복.
-        //   (구 gm1QDoneWaiting '완결+대기' 재분류는 IN_PROGRESS 전량 제외로 흡수·제거)
+        // ── ② _queue.json = 100% AI 배(clevel 은 항상 AI C레벨 · GM 소유 항목 없음) ──
+        //   카드로 그리지 않고 개수만 집계한다. 전체 배 목록·상세(대기·진행중·완료)는
+        //   자율현황.html(🧭 항로·🗂 전체 배)에서 관리 — 이미 큐 전량을 그린다(audience 무관).
+        //   G1 카드까지 같이 그리면 같은 배가 두 화면에 중복 표시된다(GM 지적 2026-08-05
+        //   "여긴 개인것들만" · 배317 — 소유자 기준: G1=GM 것, 자율현황=AI 것).
+        //   순수 가역 — 이 블록을 옛 버전으로 되돌리면 카드 렌더가 복원된다.
         gm1InProgressCount = 0;
         gm1ParkedCount = 0;
         queue.forEach(function(q){
-          // ── ⚓ AI 배(audience==='ai')만 항로 제외 → 자율현황.html#sec-hangro 위임 ──
-          //   ★2026-08-03 시토 기준 정정(GM 지적 "실무 내용 맞나"). 배10510 의 결정문은 「G1 은 남기고
-          //   **AI 배만** 자율현황으로 이사」였는데, 구현이 판정을 surface 로 잡았다. surface 는
-          //   queue_lock 이 **모든** 큐 항목에 'autonomy' 를 기본으로 찍는 값이라, 실무 배까지 통째로
-          //   G1 에서 사라졌다 — 실측 열린 배 67척 중 66척 제외, 그중 50척이 실무(office) 배.
-          //   판정을 audience 로 바꾼다. audience 는 배를 만들 때 office/ai 를 사람이 정하는 값이다.
-          //   ★미지정은 G1 에 남긴다(안전측) — 분류를 빠뜨린 배가 GM 화면에서 조용히 사라지는 것보다
-          //   한 번 더 보이는 편이 낫다. 실측 미지정 4척은 전부 실무 건이었다.
-          //   ★배지 숫자(gm1ParkedCount)는 열린 배(PENDING·IN_PROGRESS)만 카운트 — status 무관 전량 합산 시
-          //   아카이브(_queue_archive.json)의 종결(DONE·완료·STANDBY)건까지 섞여 실제보다 부풀려짐(2026-07-24 GM 지적·웰리 수정).
-          if (q.audience === 'ai') {
-            if (q.status === 'PENDING' || q.status === 'IN_PROGRESS') gm1ParkedCount++;
-            return;
-          }
-          if (q.status === 'IN_PROGRESS') { gm1InProgressCount++; return; }  // 진행·상시 미션 → 자율현황 위임
-          var _qActive = (q.status === 'PENDING');
-          var _qHist = (q.status === 'DONE' || q.status === '완료' || q.status === '폐기');
-          if (!_qActive && !_qHist) return;  // 대기=기본뷰 · 완료/폐기=이력(검색용)
-          var tid = String(q.task_id || '');
-          if (!tid) return;
-          if (sheetIds[tid]) return;  // 시트에 이미 있으면 스킵
-          var qid = 'queue-' + tid;
-          // 동일 queue- 항목 중복 방지
-          if (items.some(function(it){ return it.id === qid; })) return;
-          var _clvKey  = String(q.clevel || '').toLowerCase();
-          var clvLabel = CLEVEL_LABEL[_clvKey] || String(q.clevel || 'AI');
-          var _nick    = CLEVEL_NICK[_clvKey]  || clvLabel;
-          var _qNo = (q.short_no != null) ? q.short_no : q.ship_no;  // 배10012: 표시=short_no 우선, 없으면 ship_no 폴백
-          var _shipDisp = _nick + (_qNo != null ? ' ' + _qNo : '');
-          var statusMap = { PENDING:'대기', IN_PROGRESS:'진행중', DONE:'완료', '완료':'완료', '폐기':'폐기' };
-          var _qDone = (q.status === 'DONE' || q.status === '완료');
-          // IN_PROGRESS 는 위에서 전량 제외(자율현황 위임) → 여기는 PENDING(대기)·DONE(완료)·폐기만 도달.
-          var _effStatus = statusMap[q.status] || '진행중';
-          items.push({
-            id: qid,
-            title: String(q.title || tid),
-            status: _effStatus,
-            category: '업무',
-            description: String(q.next || q.summary || ''),
-            isToday: true,
-            ssotAuto: true,
-            queueSource: true,   // _queue 기원 마킹 (편집 차단용)
-            owner: _shipDisp,
-            _doneDate: _qDone ? String(q.processed_at || '').slice(0,10) : '',  // AI배 완료일(processed_at)
-            _holdDate: '',  // AI배는 보류 상태 없음(statusMap에 보류 미포함) — 폴백만 유지 (GM 2026-06-12)
-            createdAt: String(q.enqueued_at || q.assigned_at || ''),  // AI배 생성일 — 최신순 정렬 키 (GM 2026-06-12)
-            _history: (q.status === '폐기'),   // 완료(DONE)=입항 표시(오늘/지난 분리) / 폐기=이력(검색전용) (GM 2026-06-07)
-            _sheetsId: ''
-          });
+          if (q.status === 'IN_PROGRESS') { gm1InProgressCount++; return; }
+          if (q.status === 'PENDING') gm1ParkedCount++;
         });
 
         gm1SsotItems = items;
