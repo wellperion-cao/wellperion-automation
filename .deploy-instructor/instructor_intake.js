@@ -14,9 +14,10 @@
 //            시트에 메타 append → 텔레그램 접수 알림.
 //   doPost(action:'staff_feedback_photo') — 2026-07-29 GM 지시(사진 첨부 확정). 실무진
 //            피드백(cpo/member/실무진피드백.html) 사진을 staff_feedback/<접수ID> 하위폴더에
-//            저장하고 공개 링크만 반환한다. 콘텐츠 접수 시트에는 쓰지 않는다 — 링크를
-//            피드백 시트 10번째 칸("첨부사진")에 쓰는 건 funnel-v2 Survey.js 의
-//            staff_feedback_update 몫이다(§ _handleFeedbackPhotoUpload_ 참고).
+//            저장하고 공개 링크를 반환한다. 콘텐츠 접수 시트에는 쓰지 않는다.
+//            ★피드백 시트 10번째 칸("첨부사진")에 쓰는 것도 이 파일이 한다
+//            (_writeFeedbackPhotoColumn_). funnel-v2 Survey.js 는 이 칸을 쓰지 않는다 —
+//            종전 주석이 Survey.js 몫이라 잘못 적어 두어 2026-08-05 바로잡음.
 //
 // 계약(doPost body, JSON):
 //   { name, team, intro, benefit, agree,
@@ -174,8 +175,29 @@ function _writeFeedbackPhotoColumn_(feedbackId, urls) {
   var rowNo = -1;
   for (var r = 0; r < ids.length; r++) { if (String(ids[r][0]).trim() === feedbackId) { rowNo = r + 2; break; } }
   if (rowNo < 0) return { ok: false, err: '접수ID를 시트에서 찾을 수 없습니다: ' + feedbackId };
-  sh.getRange(rowNo, cPhoto + 1).setValue(urls.join('\n'));
-  return { ok: true, row: rowNo, col: cPhoto + 1 };
+  // 눌리는 링크로 쓴다 (2026-08-05 GM 지적: "사진이 보이는 게 아니라 그냥 링크가 보이고, 눌러도 안 넘어간다").
+  //   종전 setValue(urls.join('\n')) 은 URL을 맨 문자열로 넣었다 — 시트는 setValue 로 들어온 문자열을
+  //   자동으로 링크로 만들어 주지 않아서, 보이는 건 긴 주소뿐이고 눌러도 아무 일이 없었다.
+  //   ★셀 안에 그림을 직접 띄우는 =IMAGE 는 쓸 수 없다: 구글이 IMAGE 함수의 드라이브 주소 지원을
+  //   막아서 어떤 형태로 넣어도 #REF! 가 뜬다(2026-08-05 실측 — /file/d/ 형태·uc?export=view·
+  //   thumbnail?id= 모두 동일. 셋 다 브라우저로는 image/jpeg 를 정상 반환하지만 시트 IMAGE 는 거부한다).
+  //   그래서 '사진 1·2…' 라벨에 진짜 하이퍼링크를 건다 — 한 번 누르면 사진이 열리고, 맨 URL 텍스트는 안 남는다.
+  sh.getRange(rowNo, cPhoto + 1).setRichTextValue(_photoLinkRichText_(urls));
+  // 여러 장이면 줄이 늘어난다 — 기본 행 높이(21px)에선 둘째 줄부터 잘려 안 보인다. 사람이 넓혀 둔 건 안 건드린다.
+  if (sh.getRowHeight(rowNo) < 21 * urls.length) sh.setRowHeight(rowNo, 21 * urls.length);
+  return { ok: true, row: rowNo, col: cPhoto + 1, count: urls.length };
+}
+
+// 줄마다 '사진 1·2…'에 진짜 하이퍼링크를 건다(맨 URL 텍스트를 안 남기려는 것).
+function _photoLinkRichText_(urls) {
+  var labels = urls.map(function (u, i) { return '사진 ' + (i + 1); });
+  var b = SpreadsheetApp.newRichTextValue().setText(labels.join('\n'));
+  var pos = 0;
+  for (var i = 0; i < labels.length; i++) {
+    b.setLinkUrl(pos, pos + labels[i].length, urls[i]);
+    pos += labels[i].length + 1;             // +1 = 줄바꿈 한 글자
+  }
+  return b.build();
 }
 
 function _handleFeedbackPhotoUpload_(d) {

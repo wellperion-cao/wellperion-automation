@@ -409,20 +409,11 @@ function _fbGroupValue(field){
   return active ? active.getAttribute('data-value') : '';
 }
 
-// 어느 화면·주소·창 크기에서 남겼는지 자동 기록(2026-07-29 GM 지시 — "다른 페이지 피드백은
-// 그 현재 페이지 사진도 남겨주면 더 좋긴하겠다"). 실제 화면 캡처(스크린샷)는 외부 라이브러리 없이는
-// 만들 수 없고(이 파일은 CDN 0 원칙 유지), getDisplayMedia는 매번 사용자 허용 팝업이 떠 피드백을
-// 남기는 흐름을 막는다 — 그래서 최소한 "어디서 남겼는지"(주소·창 크기)만 자동 기록한다.
-// 이 폼은 부모 화면 위에 iframe으로 열리므로 window.parent 의 주소·크기를 읽는다(동일 출처 전제 —
-// 실패해도 접수 자체는 막지 않는다).
-function _fbPageContext(){
-  try {
-    var w = (window.parent && window.parent !== window) ? window.parent : window;
-    return '[화면정보] ' + w.location.href + ' · ' + w.innerWidth + 'x' + w.innerHeight;
-  } catch(e) {
-    return '[화면정보] (읽기 실패 — 다른 출처)';
-  }
-}
+// 2026-08-05 GM 지시로 「화면정보」 자동 기록을 걷어냈다. 2026-07-29에 넣을 때 의도는 "어느 화면에서
+// 남겼는지"를 첨부사진 쪽에 캡처로 남기는 것이었는데, 실제 화면 캡처는 CDN 0 원칙(외부 라이브러리 금지)과
+// getDisplayMedia 허용 팝업 때문에 못 만들어서 주소·창 크기 문자열을 '내용' 뒤에 붙이는 것으로 대신했다.
+// 그 결과 실무진이 쓴 글 밑에 매번 기계 문자열이 따라붙어 읽기만 나빠졌다 — GM 판단은 "안 되면 그냥 안 하면
+// 된다". 그래서 대체 자리를 새로 만들지 않고 기능 자체를 걷어낸다(화면 구분은 기존 '업무 구분' 칸으로 충분).
 
 function submitStaffFeedback(){
   var contentEl = document.getElementById('fbContent');
@@ -457,9 +448,8 @@ function submitStaffFeedback(){
     t: FB_TOKEN,
     screen: _fbGroupValue('screen'),
     kind: _fbGroupValue('type'),
-    // 사용자가 쓴 내용 뒤에 화면정보를 자동으로 덧붙인다(2026-07-29 GM 지시) — 입력칸에는 안 보이고
-    // 전송 시에만 붙는다. 어디서 남겼는지 알면 재현·확인이 훨씬 빨라진다.
-    content: content + '\n\n' + _fbPageContext(),
+    // 쓴 사람이 입력한 글 그대로만 보낸다 — 뒤에 아무것도 덧붙이지 않는다(2026-08-05 GM).
+    content: content,
     urgency: _fbGroupValue('urgency'),
     writer: author,
     // 같은 글의 재시도는 같은 번호로 보낸다 → 두 번 눌러도 시트엔 한 줄만 남는다.
