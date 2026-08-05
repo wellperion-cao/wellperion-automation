@@ -1381,7 +1381,6 @@ select, select option{ color:var(--text); background-color:var(--paper); }
             <a id="miSheetLink" class="action-btn" href="https://docs.google.com/spreadsheets/d/12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U/edit#gid=1902010032" target="_blank" rel="noopener">📊 문의 회원관리 시트 →</a>
             <a class="action-btn" href="../../wellperion_guide(main).html">ERP 홈</a>
             <button class="action-btn" onclick="window.print()">인쇄</button>
-            <button class="action-btn" id="staffNameBadge" onclick="editStaffName()" title="담당자 이름 변경">✎ 이름: —</button>
           </div>
         </div>
         <div class="hz-zone z-theme">
@@ -10274,6 +10273,13 @@ function confirmDeleteDupInquiry(rowIndex) {
     '접수일: ' + (_fmtInqDateTime(r.timestamp) || '—') + '\n\n' +
     '정말 삭제하시겠습니까?';
   if (!confirm(msg)) return;
+  // 실행자 이름 — 그 순간 물어본다(GM 2026-08-05, "삭제할때 이름을 물어보거나"). 저장돼 있던 값을
+  //   조용히 자동 사용하면 오래된/남의 이름이 이력에 굳는다 — 저장값은 기본값으로만 채우고 매번 확인받는다.
+  //   새 모달 대신 비밀번호와 같은 prompt() 흐름 재사용(_promptStaffName은 기존 STAFF_NAME_KEY 헬퍼).
+  //   비면 진행하지 않는다 — 이력에 '이름미상'이 남는 것을 막는 게 목적(_logWho_ 서버 규칙과 대칭).
+  var staffName = _promptStaffName((localStorage.getItem(STAFF_NAME_KEY) || '').trim());
+  if (!staffName) { showToast('삭제 취소됨(실행자 이름 미입력 — 이름 없이는 삭제하지 않습니다)', 'err'); return; }
+  try { localStorage.setItem(STAFF_NAME_KEY, staffName); } catch (e) {}
   var pw = prompt('삭제 비밀번호를 입력하세요:');
   if (pw === null || pw === '') { showToast('삭제 취소됨(비밀번호 미입력)', 'err'); return; }
   apiPost({ action: 'member_inquiry_delete', rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', gid: r.gid, password: pw })
@@ -12127,13 +12133,6 @@ function _renderStaffBadge(){
     }
   }catch(e){}
 })();
-// 이름 뱃지(✎) 클릭 — 지금 이름을 바로 고칠 수 있게(배 GM 신고 완료 조건).
-function editStaffName(){
-  var cur = (localStorage.getItem(STAFF_NAME_KEY) || '').trim();
-  var name = _promptStaffName(cur);
-  if (name) { try{ localStorage.setItem(STAFF_NAME_KEY, name); }catch(e){} }
-  _renderStaffBadge();
-}
 function memberStaffName() {
   try {
     var n = (localStorage.getItem(STAFF_NAME_KEY) || '').trim();
