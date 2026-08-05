@@ -134,9 +134,9 @@ SUNDAY_VARIANTS = {
              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": "card", "label": False, "bar": True},
     # 정보: 사진 없음 · 크림 바탕 + 항목별 줄(어디·언제·비용 등). 받은 답변을 그대로 보여 준다.
     #   (GM 지적 2026-08-05 "정보들은 하나도 없네 — 이러면 정보를 왜 받은거야?")
-    "info": {"photo_frac": 0.0, "pad": "92px", "stage_top": "0", "stage_bottom": "0",
-             "justify": "center", "size": "40px", "line_height": "1.5",
-             "bg": SUNDAY_CREAM, "fg": SUNDAY_INK, "grad": "", "label": False, "bar": True},
+    "info": {"photo_frac": 1.0, "pad": "84px", "stage_top": "0", "stage_bottom": "0",
+             "justify": "center", "size": "36px", "line_height": "1.45",
+             "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": "info", "label": False, "bar": True},
     # 생각: 사진 없음 · 다크 바탕 + 주황 가로 바 + 흰 문장
     "think": {"photo_frac": 0.0, "pad": "108px", "stage_top": "0", "stage_bottom": "0",
               "justify": "center", "size": "50px", "line_height": "1.62",
@@ -149,6 +149,8 @@ SUNDAY_GRADS = {
              " rgba(20,18,15,.10) 55%, rgba(20,18,15,.86) 100%)",
     "card":  "linear-gradient(180deg, rgba(42,31,22,0) 52%, rgba(38,27,18,.72) 78%,"
              " rgba(30,21,14,.92) 100%)",
+    # 정보 카드 — 글이 많아 사진 전체를 고르게 덮는다(읽히는 게 먼저다).
+    "info":  "linear-gradient(180deg, rgba(24,18,13,.80) 0%, rgba(24,18,13,.86) 100%)",
 }
 
 ACCOUNTS = {

@@ -665,7 +665,7 @@ def _human_date(v: str) -> str:
     return f"{d.month}월 {d.day}일 {week}요일"
 
 
-def _compose_sunday_info(rows: list, output: Path) -> bool:
+def _compose_sunday_info(rows: list, output: Path, photo: Path | None = None) -> bool:
     """정보 슬라이드 1장. 줄이 2개 미만이면 만들지 않는다(빈 장을 끼우지 않는다).
 
     GM 지적 2026-08-05: '정보들은 하나도 없네 — 이러면 정보를 왜 받은거야?'
@@ -681,7 +681,8 @@ def _compose_sunday_info(rows: list, output: Path) -> bool:
         with tempfile.TemporaryDirectory() as tmp:
             made = render_carousel(
                 {"account": "personal", "size": "1080x1350",
-                 "slides": [{"type": "sunday", "variant": "info", "rows": rows}]},
+                 "slides": [dict({"type": "sunday", "variant": "info", "rows": rows},
+                                 **({"photo": str(photo)} if photo else {}))]},
                 Path(tmp), fmt="jpg", concurrency=1)
             output.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(made[0]), str(output))
@@ -804,10 +805,16 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
             _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
                                        _add(f"post_{i + 2}.jpg"))
         nxt = len(cards) + 2
+        # 정보는 따로 글자 페이지를 만들지 않고 '마지막 사진 위'에 얹는다(GM 지시 2026-08-05:
+        # '정보를 따로 페이지로 만드는 것보다, 그냥 사진 페이지에 정리하는 게 낫다').
+        # 그 사진의 문장 카드를 정보 카드로 갈아 끼우므로 장수는 늘지 않는다.
         info_rows = _sunday_info_rows((parsed or {}).get("facts"))
-        if _compose_sunday_info(info_rows, out_dir / f"post_{nxt}.jpg"):
-            slides_rel.append(f"{folder_rel}/output/post_{nxt}.jpg")
-            nxt += 1
+        if info_rows and cards:
+            last_rel = slides_rel[-1]
+            if _compose_sunday_info(info_rows, out_dir / Path(last_rel).name, cards[-1]):
+                nxt = len(cards) + 2          # 문장 카드 자리를 그대로 쓴다(추가 없음)
+            else:
+                print("[WARN] 정보 카드 렌더 실패 — 문장 카드 그대로 둔다", file=sys.stderr)
         _compose_sunday_think(think, _add(f"post_{nxt}.jpg"))
     except Exception as exc:
         print(f"[WARN] GM의 일요일 슬라이드 제작 실패: {item_id}: {exc}", file=sys.stderr)
