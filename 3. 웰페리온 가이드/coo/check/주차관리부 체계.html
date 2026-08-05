@@ -844,6 +844,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="a3-pchk-host"></div>
 </div>
 
+<script src="../../_assets/board_sync.js" charset="utf-8"></script>
 <!-- ── 정적 프레젠테이션 전용 미니 스크립트 (탭 전환 + 접이식 토글만) ── -->
 <script>
 function switchTab(tab){
@@ -1034,30 +1035,20 @@ function loadBoardLocal(cfg){
   try{ stored=JSON.parse(localStorage.getItem(cfg.key)); }catch(e){ stored=null; }
   applyBoardStored(cfg, stored);
 }
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync) 위임. cfg(PARK_BOARDS.*)의 cols/seed/data
+   getter-setter는 이 페이지 고유 로직(applyBoardStored/renderBoardCfg)이 그대로 처리 —
+   운영부/지원부/시설부가 이 페이지의 패턴을 이식받는 반대편에서, 이 페이지도 같은 공용 배관을 쓴다. */
 async function loadBoardBackend(cfg){
-  loadBoardLocal(cfg);
-  if(!ONLINE) return;
-  try{
-    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(cfg.key),{method:'GET',redirect:'follow'});
-    const data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applyBoardStored(cfg, data.board);
-      localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
-    }
-  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
-  const wrap=document.getElementById(cfg.wrapId);
-  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderBoardCfg(cfg);
+  return BoardSync.load({
+    key:cfg.key, wrapId:cfg.wrapId, guard:'cell', label:cfg.label,
+    localLoad:function(){ loadBoardLocal(cfg); },
+    apply:function(data){ applyBoardStored(cfg, data); },
+    render:function(){ renderBoardCfg(cfg); },
+    getData:function(){ return cfg.data; }
+  });
 }
 function persistBoard(cfg){
-  localStorage.setItem(cfg.key, JSON.stringify(cfg.data));
-  if(!ONLINE) return;
-  const ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent=cfg.label+' 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:cfg.key,board:cfg.data})
-  }).then(()=>{if(ind){ind.textContent=cfg.label+' 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
-    .catch(()=>{if(ind){ind.textContent=cfg.label+' 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
+  return BoardSync.persist({ key:cfg.key, label:cfg.label, getData:function(){ return cfg.data; } });
 }
 
 function renderBoardCfg(cfg){

@@ -1839,6 +1839,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div id="mrImprovements"></div>
 </div>
 
+<script src="../../_assets/board_sync.js" charset="utf-8"></script>
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
 const ONLINE = API_URL.length > 0;
@@ -5587,38 +5588,13 @@ function loadBoardData(){
   applyBoardStored(stored);
 }
 
-/* 백엔드에서 보드 로드 → 있으면 사용·로컬 캐시, 없거나 실패 시 localStorage 폴백.
-   모든 기기 동기화의 핵심: 페이지 로드마다 백엔드를 진실 소스로 사용(last-write-wins). */
-async function loadBoardFromBackend(){
-  loadBoardData(); // 즉시 로컬/시드로 1차 렌더 가능하게
-  if(!ONLINE) return;
-  try{
-    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(BOARD_STORAGE_KEY),{method:'GET',redirect:'follow'});
-    const data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applyBoardStored(data.board);
-      localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(BOARD_DATA)); // 오프라인 폴백 캐시 갱신
-    }
-    // data.board===null → 백엔드에 아직 없음 → 로컬/시드 유지(이후 첫 저장 시 백엔드에 기록)
-  }catch(e){ /* 네트워크 실패 → 이미 로드된 localStorage/시드 유지 */ }
-  // 편집 중인 셀이 있으면 재렌더 보류(IME 조합·입력 보호). 없을 때만 갱신.
-  const wrap=document.getElementById('manual-board');
-  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderBoard();
-}
-
-function persistBoardData(){
-  // 1) localStorage 즉시 영속 (페이지 표준 오프라인 폴백 패턴)
-  localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(BOARD_DATA));
-  // 2) 기존 저장 패턴대로 API 베스트에포트 POST (GAS가 action 미지원 시 무해히 무시)
-  if(!ONLINE) return;
-  const ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent='보드 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:BOARD_STORAGE_KEY,board:BOARD_DATA})
-  }).then(()=>{if(ind){ind.textContent='보드 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
-    .catch(()=>{if(ind){ind.textContent='보드 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
-}
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync). 모든 기기 동기화의 핵심:
+   페이지 로드마다 백엔드를 진실 소스로 사용(last-write-wins). IME 조합 중 재렌더 보류(guard:'cell'). */
+const BOARD_SYNC_CFG = {key:BOARD_STORAGE_KEY, wrapId:'manual-board', guard:'cell',
+  localLoad:loadBoardData, apply:applyBoardStored, render:renderBoard,
+  getData:function(){return BOARD_DATA;}, label:'보드'};
+async function loadBoardFromBackend(){ return BoardSync.load(BOARD_SYNC_CFG); }
+function persistBoardData(){ return BoardSync.persist(BOARD_SYNC_CFG); }
 
 /* ═══════════════════════════════════════════════
    비품관리 (목록형 1표 CRUD) — 매뉴얼 보드 패턴 복제
@@ -5683,42 +5659,13 @@ function loadSupplyData(){
   applySupplyStored(stored);
 }
 
-/* 백엔드 우선 로드 → 있으면 사용·로컬 캐시, 실패/없음 시 로컬 폴백. 편집 중이면 재렌더 보류(IME 보호). */
-async function loadSupplyFromBackend(){
-  loadSupplyData();      // 즉시 로컬로 1차 렌더
-  renderSupplyTable();
-  if(!ONLINE) return;
-  try{
-    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(SUPPLY_STORAGE_KEY),{method:'GET',redirect:'follow'});
-    var data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applySupplyStored(data.board);
-      localStorage.setItem(SUPPLY_STORAGE_KEY, JSON.stringify({rows:SUPPLY_DATA})); // 오프라인 캐시 갱신
-    }
-    // data.board===null → 백엔드 미존재 → 로컬 유지(첫 저장 시 기록)
-  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
-  // 입력 포커스 중이면 재렌더 보류(조합·커서 보호). 없을 때만 갱신.
-  var wrap=document.getElementById('supply-table');
-  if(wrap && !wrap.contains(document.activeElement)) renderSupplyTable();
-}
-
-/* localStorage 즉시 영속 + 범용 saveBoard 서버 저장(디바운스 800ms — 타자마다 POST 방지) */
-var _supplySaveTimer=null;
-function persistSupplyData(){
-  localStorage.setItem(SUPPLY_STORAGE_KEY, JSON.stringify({rows:SUPPLY_DATA}));  // 즉시 로컬
-  if(!ONLINE) return;
-  clearTimeout(_supplySaveTimer);
-  _supplySaveTimer=setTimeout(_supplyPush, 800);   // 마지막 변경 후 0.8초 모아 1회 서버 저장
-}
-function _supplyPush(){
-  var ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent='비품 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:SUPPLY_STORAGE_KEY,board:{rows:SUPPLY_DATA}})
-  }).then(()=>{if(ind){ind.textContent='비품 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
-    .catch(()=>{if(ind){ind.textContent='비품 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
-}
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync). 입력 포커스 중이면 재렌더 보류(guard:'focus').
+   저장은 디바운스 800ms(타자마다 POST 방지) — persistDebounced. */
+const SUPPLY_SYNC_CFG = {key:SUPPLY_STORAGE_KEY, wrapId:'supply-table', guard:'focus', renderBeforeFetch:true,
+  localLoad:loadSupplyData, apply:applySupplyStored, render:renderSupplyTable,
+  getData:function(){return {rows:SUPPLY_DATA};}, label:'비품'};
+async function loadSupplyFromBackend(){ return BoardSync.load(SUPPLY_SYNC_CFG); }
+function persistSupplyData(){ return BoardSync.persistDebounced(SUPPLY_SYNC_CFG); }
 
 function supplyFind(id){ for(var i=0;i<SUPPLY_DATA.length;i++){ if(SUPPLY_DATA[i].id===id) return SUPPLY_DATA[i]; } return null; }
 function supplyEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -6232,33 +6179,12 @@ function loadPolicyData(){
   applyPolicyStored(stored);
 }
 
-/* 백엔드 로드 → 있으면 사용·로컬 캐시, 없거나 실패 시 localStorage 폴백(매뉴얼 보드와 동일 패턴) */
-async function loadPolicyFromBackend(){
-  loadPolicyData(); // 즉시 로컬/시드로 1차 렌더
-  if(!ONLINE) return;
-  try{
-    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(POLICY_STORAGE_KEY),{method:'GET',redirect:'follow'});
-    const data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applyPolicyStored(data.board);
-      localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(POLICY_DATA));
-    }
-  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
-  const wrap=document.getElementById('policy-board');
-  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderPolicyBoard();
-}
-
-function persistPolicyData(){
-  localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(POLICY_DATA));
-  if(!ONLINE) return;
-  const ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent='규정 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:POLICY_STORAGE_KEY,board:POLICY_DATA})
-  }).then(()=>{if(ind){ind.textContent='규정 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
-    .catch(()=>{if(ind){ind.textContent='규정 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
-}
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync, 매뉴얼 보드와 동일 패턴) */
+const POLICY_SYNC_CFG = {key:POLICY_STORAGE_KEY, wrapId:'policy-board', guard:'cell',
+  localLoad:loadPolicyData, apply:applyPolicyStored, render:renderPolicyBoard,
+  getData:function(){return POLICY_DATA;}, label:'규정'};
+async function loadPolicyFromBackend(){ return BoardSync.load(POLICY_SYNC_CFG); }
+function persistPolicyData(){ return BoardSync.persist(POLICY_SYNC_CFG); }
 
 /* 카드 본문(줄바꿈) → 표시 HTML. 빈 값이면 안내. */
 function policyCardBodyHTML(body){
@@ -6479,32 +6405,12 @@ function loadSupportGuideData(){
   applySupportGuideStored(stored);
 }
 
-async function loadSupportGuideFromBackend(){
-  loadSupportGuideData();
-  if(!ONLINE) return;
-  try{
-    const res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(SUPPORT_GUIDE_STORAGE_KEY),{method:'GET',redirect:'follow'});
-    const data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applySupportGuideStored(data.board);
-      localStorage.setItem(SUPPORT_GUIDE_STORAGE_KEY, JSON.stringify(SUPPORT_GUIDE_DATA));
-    }
-  }catch(e){ /* 네트워크 실패 → 로컬/시드 유지 */ }
-  const wrap=document.getElementById('support-guide-board');
-  if(wrap && !wrap.querySelector('.dv-cell.editing')) renderSupportGuideBoard();
-}
-
-function persistSupportGuideData(){
-  localStorage.setItem(SUPPORT_GUIDE_STORAGE_KEY, JSON.stringify(SUPPORT_GUIDE_DATA));
-  if(!ONLINE) return;
-  const ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent='가이드 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:SUPPORT_GUIDE_STORAGE_KEY,board:SUPPORT_GUIDE_DATA})
-  }).then(()=>{if(ind){ind.textContent='가이드 저장 완료';setTimeout(()=>{ind.style.display='none'},1500);}})
-    .catch(()=>{if(ind){ind.textContent='가이드 저장 (로컬 보관됨)';setTimeout(()=>{ind.style.display='none'},1500);}});
-}
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync) */
+const SUPPORT_GUIDE_SYNC_CFG = {key:SUPPORT_GUIDE_STORAGE_KEY, wrapId:'support-guide-board', guard:'cell',
+  localLoad:loadSupportGuideData, apply:applySupportGuideStored, render:renderSupportGuideBoard,
+  getData:function(){return SUPPORT_GUIDE_DATA;}, label:'가이드'};
+async function loadSupportGuideFromBackend(){ return BoardSync.load(SUPPORT_GUIDE_SYNC_CFG); }
+function persistSupportGuideData(){ return BoardSync.persist(SUPPORT_GUIDE_SYNC_CFG); }
 
 function supportGuideCardBodyHTML(body){
   const lines=(body||'').split('\n').map(l=>l.trim()).filter(l=>l.length);
@@ -6681,40 +6587,13 @@ function loadCsData(){
   applyCsStored(stored);
 }
 
-/* 백엔드 우선 로드 → 있으면 사용·로컬 캐시, 실패/없음 시 로컬 폴백. 편집 중이면 재렌더 보류(IME 보호). */
-async function loadCsFromBackend(){
-  loadCsData();      // 즉시 로컬로 1차 렌더
-  renderCsTable();
-  if(!ONLINE) return;
-  try{
-    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(CS_STORAGE_KEY),{method:'GET',redirect:'follow'});
-    var data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applyCsStored(data.board);
-      localStorage.setItem(CS_STORAGE_KEY, JSON.stringify({rows:CS_DATA}));
-    }
-  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
-  var wrap=document.getElementById('cs-guide-table');
-  if(wrap && !wrap.contains(document.activeElement)) renderCsTable();
-}
-
-/* localStorage 즉시 영속 + 범용 saveBoard 서버 저장(디바운스 800ms — 타자마다 POST 방지) */
-var _csSaveTimer=null;
-function persistCsData(){
-  localStorage.setItem(CS_STORAGE_KEY, JSON.stringify({rows:CS_DATA}));
-  if(!ONLINE) return;
-  clearTimeout(_csSaveTimer);
-  _csSaveTimer=setTimeout(_csPush, 800);
-}
-function _csPush(){
-  var ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent='응대표 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:CS_STORAGE_KEY,board:{rows:CS_DATA}})
-  }).then(function(){if(ind){ind.textContent='응대표 저장 완료';setTimeout(function(){ind.style.display='none'},1500);}})
-    .catch(function(){if(ind){ind.textContent='응대표 저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none'},1500);}});
-}
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync). 입력 포커스 중이면 재렌더 보류(guard:'focus').
+   저장은 디바운스 800ms(타자마다 POST 방지) — persistDebounced. */
+const CS_SYNC_CFG = {key:CS_STORAGE_KEY, wrapId:'cs-guide-table', guard:'focus', renderBeforeFetch:true,
+  localLoad:loadCsData, apply:applyCsStored, render:renderCsTable,
+  getData:function(){return {rows:CS_DATA};}, label:'응대표'};
+async function loadCsFromBackend(){ return BoardSync.load(CS_SYNC_CFG); }
+function persistCsData(){ return BoardSync.persistDebounced(CS_SYNC_CFG); }
 
 function csFind(id){ for(var i=0;i<CS_DATA.length;i++){ if(CS_DATA[i].id===id) return CS_DATA[i]; } return null; }
 
@@ -6820,38 +6699,13 @@ function loadStaffData(){
   applyStaffStored(stored);
 }
 
-async function loadStaffFromBackend(){
-  loadStaffData();
-  renderStaffTable();
-  if(!ONLINE) return;
-  try{
-    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(STAFF_STORAGE_KEY),{method:'GET',redirect:'follow'});
-    var data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applyStaffStored(data.board);
-      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify({rows:STAFF_DATA}));
-    }
-  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
-  var wrap=document.getElementById('support-staff-table');
-  if(wrap && !wrap.contains(document.activeElement)) renderStaffTable();
-}
-
-var _staffSaveTimer=null;
-function persistStaffData(){
-  localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify({rows:STAFF_DATA}));
-  if(!ONLINE) return;
-  clearTimeout(_staffSaveTimer);
-  _staffSaveTimer=setTimeout(_staffPush, 800);
-}
-function _staffPush(){
-  var ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent='직원표 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:STAFF_STORAGE_KEY,board:{rows:STAFF_DATA}})
-  }).then(function(){if(ind){ind.textContent='직원표 저장 완료';setTimeout(function(){ind.style.display='none'},1500);}})
-    .catch(function(){if(ind){ind.textContent='직원표 저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none'},1500);}});
-}
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync). 입력 포커스 중이면 재렌더 보류(guard:'focus').
+   저장은 디바운스 800ms(타자마다 POST 방지) — persistDebounced. */
+const STAFF_SYNC_CFG = {key:STAFF_STORAGE_KEY, wrapId:'support-staff-table', guard:'focus', renderBeforeFetch:true,
+  localLoad:loadStaffData, apply:applyStaffStored, render:renderStaffTable,
+  getData:function(){return {rows:STAFF_DATA};}, label:'직원표'};
+async function loadStaffFromBackend(){ return BoardSync.load(STAFF_SYNC_CFG); }
+function persistStaffData(){ return BoardSync.persistDebounced(STAFF_SYNC_CFG); }
 
 function staffFind(id){ for(var i=0;i<STAFF_DATA.length;i++){ if(STAFF_DATA[i].id===id) return STAFF_DATA[i]; } return null; }
 
@@ -6957,38 +6811,13 @@ function loadTourData(){
   applyTourStored(stored);
 }
 
-async function loadTourFromBackend(){
-  loadTourData();
-  renderTourList();
-  if(!ONLINE) return;
-  try{
-    var res=await fetch(API_URL+'?action=board&key='+encodeURIComponent(TOUR_STORAGE_KEY),{method:'GET',redirect:'follow'});
-    var data=await res.json();
-    if(data && data.ok && data.board && typeof data.board==='object'){
-      applyTourStored(data.board);
-      localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify({rows:TOUR_DATA}));
-    }
-  }catch(e){ /* 네트워크 실패 → 로컬 유지 */ }
-  var wrap=document.getElementById('support-tour-list');
-  if(wrap && !wrap.contains(document.activeElement)) renderTourList();
-}
-
-var _tourSaveTimer=null;
-function persistTourData(){
-  localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify({rows:TOUR_DATA}));
-  if(!ONLINE) return;
-  clearTimeout(_tourSaveTimer);
-  _tourSaveTimer=setTimeout(_tourPush, 800);
-}
-function _tourPush(){
-  var ind=document.getElementById('saveIndicator');
-  if(ind){ind.style.display='block';ind.textContent='투어안내 저장 중...';}
-  fetch(API_URL,{method:'POST',redirect:'follow',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveBoard',key:TOUR_STORAGE_KEY,board:{rows:TOUR_DATA}})
-  }).then(function(){if(ind){ind.textContent='투어안내 저장 완료';setTimeout(function(){ind.style.display='none'},1500);}})
-    .catch(function(){if(ind){ind.textContent='투어안내 저장 (로컬 보관됨)';setTimeout(function(){ind.style.display='none'},1500);}});
-}
+/* 백엔드 동기화 = board_sync.js 공용 엔진(BoardSync). 입력 포커스 중이면 재렌더 보류(guard:'focus').
+   저장은 디바운스 800ms(타자마다 POST 방지) — persistDebounced. */
+const TOUR_SYNC_CFG = {key:TOUR_STORAGE_KEY, wrapId:'support-tour-list', guard:'focus', renderBeforeFetch:true,
+  localLoad:loadTourData, apply:applyTourStored, render:renderTourList,
+  getData:function(){return {rows:TOUR_DATA};}, label:'투어안내'};
+async function loadTourFromBackend(){ return BoardSync.load(TOUR_SYNC_CFG); }
+function persistTourData(){ return BoardSync.persistDebounced(TOUR_SYNC_CFG); }
 
 function tourFind(id){ for(var i=0;i<TOUR_DATA.length;i++){ if(TOUR_DATA[i].id===id) return TOUR_DATA[i]; } return null; }
 
