@@ -109,8 +109,10 @@ from precommit_phantom_delete_guard import (  # noqa: E402
 #   같은 문장 "점검의 배선(GAS·자동발송)은 시토"). coo/ 폴더 안이라도 소유가 다른
 #   것(예 coo/todo/업무 현황 SSOT.html·결재 현황 SSOT.html = 시로 domain 문구와
 #   일치)은 이 목록에 넣지 않았다 — GM 지시 원문의 그 반례와 정확히 일치.
+# ▶2026-08-05 GM 확정 — 월간운영계획·전사_일정 두 화면은 GM 소관으로 옮긴다(GM 이
+#   직접 지시해 수정하는 화면이라 이 가드에 걸리면 GM 지시가 막힌다). 나머지 7개는
+#   준용M 라인 그대로.
 COO_DOMAIN_PATHS = frozenset({
-    "3. 웰페리온 가이드/월간운영계획.html",
     "3. 웰페리온 가이드/전사회의.html",
     "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html",
     "3. 웰페리온 가이드/coo/check/시설부 체계.html",
@@ -118,7 +120,6 @@ COO_DOMAIN_PATHS = frozenset({
     "3. 웰페리온 가이드/coo/check/주차관리부 체계.html",
     "3. 웰페리온 가이드/coo/check/지원부 체계.html",
     "3. 웰페리온 가이드/coo/check/파트너팀 체계.html",
-    "3. 웰페리온 가이드/coo/check/전사_일정.html",
 })
 
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
