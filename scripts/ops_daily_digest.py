@@ -836,10 +836,15 @@ def run(forced_date: str | None = None) -> int:
         mid_block += "\n" + _resv_body
 
     # 섹션 재배치(GM 2026-07-14 + 배97 2026-07-25): 상단=개별 카톡 대화·오늘 챙길 것 /
-    # 💰 전사 신호(매출·지출·구매) / 업무 / 문의·예약 / 종합접수 / 💪 항상 맨끝.
+    # 문의·예약 / 종합접수 / 💪 항상 맨끝.
     # 🏢 점검은 제외(22:30 밤 점검공유 스트림#2가 별도 담당).
+    # 💰 매출·지출·구매(finance_block) · 🗂️ 업무 SSOT(work_block) 은 2026-08-05 GM 지시로
+    # 이 07:32 메시지 본문에서 제외한다(카카오 간결화 — "실무진 혼란 최소화"). 정보 소실
+    # 아님: 매출은 같은 방(★운영부)에 09:30~31 매출보고 이미지로, 업무 SSOT는 같은 방에
+    # 09:30 「하루 일과 정리」 메시지(report_stream_3)로 그날 안에 더 상세히 나간다.
+    # finance_block 은 원장 metrics 스냅샷(다음날 전일대비 계산용)을 위해 계속 계산만 한다.
     header, llm_body, warm = _split_llm(message)
-    parts = [header, llm_body, finance_block, work_block, mid_block, reception_block]
+    parts = [header, llm_body, mid_block, reception_block]
     final_message = "\n\n".join(p.strip() for p in parts if p and p.strip())
     if warm:
         final_message += "\n\n" + warm.strip()

@@ -260,9 +260,15 @@ def _chunk_blocks(blocks: list[str], limit: int = TELEGRAM_MSG_LIMIT) -> list[st
     return messages
 
 
-def build_digest(today: str | None = None) -> list[str]:
+def build_digest(today: str | None = None, channel: str = "telegram") -> list[str]:
     """v3: 액션 필요한 항목(지연·임박·결재대기)만 리스트로 남기고, 진행현황 전체 나열은
-    카테고리별 건수 요약으로 대체한다(GM 피드백 "너무 길다"). 데이터 소스·판정 로직은 v2 재사용."""
+    카테고리별 건수 요약으로 대체한다(GM 피드백 "너무 길다"). 데이터 소스·판정 로직은 v2 재사용.
+
+    channel="kakao"(2026-08-05 GM 지시 — "현장 업무는 카카오톡으로, 카카오는 간단명확하게"):
+    실무진 카카오(★운영부)에는 담당자 이름이 붙어 오늘 바로 움직일 수 있는 항목(⏰지연·⏳임박·
+    📋결재대기)만 남기고, 개인에게 할 일을 지우지 않는 집계용 정보(🔧 카테고리별 건수·🎯 분기
+    운영 목표 진행률)는 뺀다. channel 기본값은 "telegram"이라 기존 호출부(GM 개인 업무보고방)는
+    100% 그대로 — 정보 소실 아님, 텔레그램에는 이 두 블록이 계속 그대로 나간다."""
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
     header = f"📊 [하루 일과 정리] {today}({weekday})\n📈 매출 및 운영+인사 현황 보고"
@@ -336,13 +342,16 @@ def build_digest(today: str | None = None) -> list[str]:
     else:
         imminent_body = "임박 없음"
 
-    section_progress = (
-        "🔧 진행 현황 (카테고리별 건수)\n"
-        f"{count_line}\n"
-        "※ 지연 제외 활성 건수.\n\n"
-        "⏳ 임박 (D-7 이내, 지연 아님)\n"
-        f"{imminent_body}"
-    )
+    imminent_section = f"⏳ 임박 (D-7 이내, 지연 아님)\n{imminent_body}"
+    if channel == "kakao":
+        section_progress = imminent_section  # 🔧 카테고리별 건수 집계는 텔레그램에만(개인 할일 아님)
+    else:
+        section_progress = (
+            "🔧 진행 현황 (카테고리별 건수)\n"
+            f"{count_line}\n"
+            "※ 지연 제외 활성 건수.\n\n"
+            f"{imminent_section}"
+        )
 
     # 📋 결재 대기 — 결재요청 있는데 결재상태 미완인 건. (v3: [상태] 태그 제거)
     if pending_approval:
@@ -359,7 +368,6 @@ def build_digest(today: str | None = None) -> list[str]:
     else:
         section_approval = "📋 결재 대기 0건\n대기 중인 결재 없음."
 
-    section_quarter = _load_quarter_goals(today)
     footer = "· 전체 항목 상세는 업무 SSOT 페이지 / 상세판 원하면 말씀"
 
     divider = "━━━━━━━━━━"
@@ -369,8 +377,12 @@ def build_digest(today: str | None = None) -> list[str]:
         section_overdue,
         f"{divider}\n{section_progress}",
         f"{divider}\n{section_approval}",
-        f"{section_quarter}\n\n{footer}",
     ]
+    if channel == "kakao":
+        blocks.append(footer)  # 🎯 분기 운영 목표(진행률)는 텔레그램에만 — 오늘 할 일 아님
+    else:
+        section_quarter = _load_quarter_goals(today)
+        blocks.append(f"{section_quarter}\n\n{footer}")
     return _chunk_blocks(blocks)
 
 

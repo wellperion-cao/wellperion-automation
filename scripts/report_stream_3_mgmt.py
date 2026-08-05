@@ -80,8 +80,12 @@ def _send_telegram_parts(parts: list[str]) -> bool:
     return ok_all
 
 
-def _send_kakao(parts: list[str]) -> None:
-    plain = "\n\n".join(_strip_html(p) for p in parts)
+def _send_kakao(today: str) -> None:
+    """2026-08-05 GM 지시 — 카카오는 텔레그램과 다른 렌더(channel="kakao")를 새로 만들어
+    쓴다(build_digest 재실측, 추가 GAS 호출 1회 — 새 발신기·새 스크립트는 아님, 기존
+    build_digest()의 channel 파라미터만 사용). 텔레그램에 이미 보낸 parts는 건드리지 않는다."""
+    kakao_parts = build_digest(today, channel="kakao")
+    plain = "\n\n".join(_strip_html(p) for p in kakao_parts)
     rooms = _load_kakao_room_names()
     if rooms is None:
         print("[stream3] 카카오 방 목록 로드 실패 — 발신 시도 안 함(옛 하드코딩 폴백 금지)", flush=True)
@@ -118,7 +122,7 @@ def run(today: str | None = None, dry_run: bool = True, kakao_go: bool = False,
     ok = _send_telegram_parts(parts)
     print(f"[stream3] 텔레그램 {'완료' if ok else '일부실패'} → {TELEGRAM_CHAT_ID}", flush=True)
     if kakao_go:
-        _send_kakao(parts)
+        _send_kakao(today)
     else:
         print(f"[stream3] 카카오 SKIP (kakao_go=False — GM go 게이트)", flush=True)
     return parts
