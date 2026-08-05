@@ -81,10 +81,45 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from git_lock import GitLock  # noqa: E402  (같은 scripts/ 폴더 — 락 로직 재사용)
 # chro/cfo 보호 삭제 판정용 경로 목록 재사용(2026-08-04 — 새 상수 중복 정의 금지,
 # .git/hooks/pre-commit 이 부르는 precommit_phantom_delete_guard.py 와 단일 출처).
+# SKIP_ENV·_log_block 도 같은 이유로 재사용(2026-08-05 — 아래 COO 도메인 차단의
+# 우회 스위치·로그 싱크로 그대로 쓴다. 새 env·새 로그 파일 안 만듦).
 from precommit_phantom_delete_guard import (  # noqa: E402
     PROTECTED_DELETE_PREFIXES,
     foreign_delete_violations,
+    SKIP_ENV as _DOMAIN_GUARD_SKIP_ENV,
+    _log_block as _domain_guard_log,
 )
+
+# ── COO(시우) 도메인 파일 차단(2026-08-05 GM 편제 확정) ─────────────────────────
+# GM 원문: "실무진들과 작업 충돌되는 부분... 시우건도 준용M 라인으로해서 건드리지말고,
+#   내용 전달만 할 수 있게 해줄래? 운영부 방에... 각기 담당자 이름 적어서 웰리가 전달"
+# GM 선택 ① — 시우 배(큐 항목)는 그대로 산다. 다만 **운영 도메인의 파일을 AI가
+#   직접 고치지 않는다** — 발견하면 ★운영부 카톡방에 담당자를 붙여 "전달"만 한다.
+#
+# ★층 구분(섞으면 안 됨) — queue_dispatch.py 의 EXCLUDED_ROLES(chro·cfo)는
+#   "배 생성 자체"를 큐 관문에서 차단한다(그 두 역할 앞으로는 배조차 안 만든다).
+#   이건 그와 다른 층이다: 시우는 배가 그대로 살아 있고, 이 관문(파일 커밋)에서
+#   "그 도메인 파일을 AI가 직접 쓰는 것"만 막는다 — 큐·항로에서 시우 배가
+#   사라지면 안 된다(EXCLUDED_ROLES 에 coo 를 넣는 것과는 다른 조치).
+#
+# 경로 출처(실측 · 임의 확장·축소 금지) — ssot/ownership_map.json roles[nick=시우]:
+#   primary_surface="월간운영계획·전사회의", domain="종합접수처·각 체계 페이지".
+#   + ssot/kpi.json _점검소유_2026_07_27: "점검 화면(coo/check/ 시설부 체계·
+#   운영부 체계·전사 일정)... 전부 시우 소유"(GAS 배선 파일은 시토 소유라 제외 —
+#   같은 문장 "점검의 배선(GAS·자동발송)은 시토"). coo/ 폴더 안이라도 소유가 다른
+#   것(예 coo/todo/업무 현황 SSOT.html·결재 현황 SSOT.html = 시로 domain 문구와
+#   일치)은 이 목록에 넣지 않았다 — GM 지시 원문의 그 반례와 정확히 일치.
+COO_DOMAIN_PATHS = frozenset({
+    "3. 웰페리온 가이드/월간운영계획.html",
+    "3. 웰페리온 가이드/전사회의.html",
+    "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html",
+    "3. 웰페리온 가이드/coo/check/시설부 체계.html",
+    "3. 웰페리온 가이드/coo/check/운영부 체계.html",
+    "3. 웰페리온 가이드/coo/check/주차관리부 체계.html",
+    "3. 웰페리온 가이드/coo/check/지원부 체계.html",
+    "3. 웰페리온 가이드/coo/check/파트너팀 체계.html",
+    "3. 웰페리온 가이드/coo/check/전사_일정.html",
+})
 
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
 _RETRY_WAIT_SEC = 0.4
@@ -304,6 +339,27 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
         if mixed_domain:
             extra = f" 외 {len(protected_deletes) - 1}건" if len(protected_deletes) > 1 else ""
             violations.append(f"보호된 삭제 차단(chro/cfo 도메인 혼입): {protected_deletes[0]}{extra}")
+
+    # COO(시우) 도메인 파일 차단(2026-08-05 GM 편제 확정 — 위 COO_DOMAIN_PATHS 주석 참조):
+    # 삭제뿐 아니라 추가·수정도 막는다(파일 "수정" 자체를 막는 게 이번 조치다 —
+    # 위 chro/cfo 는 "삭제"만 막는다는 점에서 다르다). 기본은 항상 차단이고,
+    # 사람이 강행할 때만 통과(우회 로그는 아래에서 남긴다).
+    coo_hits = sorted({path for _, path in diff_pairs if path in COO_DOMAIN_PATHS})
+    if coo_hits:
+        if os.environ.get(_DOMAIN_GUARD_SKIP_ENV) == "1":
+            _domain_guard_log("coo_domain_force", coo_hits, str(root))
+            print(f"[WARN] {_DOMAIN_GUARD_SKIP_ENV}=1 — COO 도메인 가드 강행 통과: "
+                  f"{', '.join(coo_hits)}")
+        else:
+            extra = f" 외 {len(coo_hits) - 1}건" if len(coo_hits) > 1 else ""
+            violations.append(
+                f"COO(시우) 도메인 차단: {coo_hits[0]}{extra} — AI가 직접 수정하지 않습니다"
+                f"(GM 확정 2026-08-05, 준용M 라인). ★운영부 카톡방에 담당자 붙여 전달하세요: "
+                f"python scripts/queue_dispatch.py --to ceo --title \"[운영부 전달] "
+                f"{coo_hits[0]} 수정 필요\" --note \"담당자: (scripts/kakao_rooms.json "
+                f"★운영부 members 참조)\" (웰리가 ★운영부 방으로 전달). "
+                f"강행하려면 env {_DOMAIN_GUARD_SKIP_ENV}=1(로그 남음)."
+            )
 
     # 일반 혼입 삭제 판정(2026-08-04 GM 근본분석 — 로직은 가드 모듈 단일 출처):
     # 비삭제 변경과 섞인 커밋의 삭제는 caller 가 rel_paths 에 **파일 단위로 정확히**
