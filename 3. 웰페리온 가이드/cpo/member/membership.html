@@ -856,7 +856,7 @@ select, select option{ color:var(--text); background-color:var(--paper); }
 .lesson-inq-cell-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lesson-inq-cell-phone{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lesson-inq-cell-sport{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.reg-new-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
+.reg-new-badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--accent);color:#1a1918;margin-left:6px;vertical-align:middle}
 /* 영어로 접수된 문의 뱃지 — 영어 문의 누수 수리(한글+영문 탭 병합 표시). 2026-07-09 시포·GM. */
 .lang-badge-en{display:inline-block;font-size:9px;font-weight:800;padding:1px 6px;border-radius:6px;background:#2563eb;color:#fff;margin-left:6px;vertical-align:middle}
 /* 재문의(같은 연락처) 배지 — 기존 배지 체계(등록완료=accent 금색·LOSS=red 빨강) 색토큰 재사용, 새 색 발명 금지. GM 지시 2026-07-20. */
@@ -995,7 +995,7 @@ select, select option{ color:var(--text); background-color:var(--paper); }
 .mdash-mreg-table tr.mreg-cur td{font-weight:800;color:var(--accent)}
 .mdash-ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .mdash-ptab{font:inherit;font-size:12px;font-weight:700;color:var(--dim-mid);background:rgba(125,123,116,0.07);border:1px solid var(--border-subtle);border-radius:999px;padding:6px 15px;cursor:pointer}
-.mdash-ptab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mdash-ptab.active{background:var(--accent);color:#1a1918;border-color:var(--accent)}
 .mdash-kpirow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .mdash-kpi{padding:13px 14px;border-radius:9px;background:rgba(125,123,116,0.07);border:1px solid var(--border-subtle);position:relative;overflow:hidden}
 .mdash-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dim)}
@@ -5315,8 +5315,9 @@ function _lessonTeamLeadOf(sportKey) {
   if (/수영/.test(s)) return '박민서';
   if (/P\.?T/i.test(s)) return '김상식';
   if (/필라/.test(s)) return '최은지';
-  if (/골프/.test(s)) return '최현준';
+  if (/골프/.test(s)) return '김태엽';   // 2026-08-05 GM 확정 — 최현준 아님(2026-08-31 퇴사 예정)
   if (/체조|트램폴린/.test(s)) return '이형주';
+  if (/뮤지컬/.test(s)) return '편한별';   // 2026-08-05 GM 확정 — 신규 배정 대상 전환
   if (/웰니스|wellness|루프/i.test(s)) return '루프메소드';
   return '';
 }
