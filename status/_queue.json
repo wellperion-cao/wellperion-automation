@@ -1704,5 +1704,24 @@
     "short_no": 413,
     "audience": "office",
     "reversible": true
+  },
+  {
+    "task_id": "CTO-2026-08-06-아침-자동-부팅에서-시토-창이-안-뜬다-08-06-",
+    "clevel": "cto",
+    "title": "[시토] 아침 자동 부팅에서 시토 창이 안 뜬다 — 08-06 로그온 때 CEO 창만 열림 (웰리 실측)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-06",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-06] 증상: 2026-08-06 로그온 시 Windows Terminal 은 05:55:59 에 떴고 claude 는 05:56:14 한 개(CEO)만 살아 있었다. 시토 탭 없음. GM 이 08:55 에 '부팅이 안되었네?' 로 먼저 발견 — 자가점검이 못 잡았다.\n경로: 시작프로그램에 shortcut 두 개가 같이 있다 — 'Start-AI CEO.lnk'(2026-05-23) · 'Wellperion-Morning.lnk'(2026-08-03). Morning 이 시토를 여는 유일한 경로다(Start-AI-Morning.bat 64행 call 'Start-AI CTO.bat', CEO 창은 2026-08-04 지시로 주석 처리).\n의심 지점(미확정): Morning 배치가 자기 git 블록에서 멈췄거나 로그온 때 아예 안 돌았다. 그 시점 미커밋 100개 — DIRTY>200 문턱은 안 넘어 pull --rebase --autostash 가 돌 조건이었다. 실행 흔적을 남기는 곳이 없어 어느 쪽인지 사후 확인이 불가능하다(조용한 실패).\n웰리 임시조치: 08:55 에 WP_BOOT_SKIP_GIT=1 로 'Start-AI CTO.bat' 수동 실행 — 시토 창 정상 기동 확인(claude PID 21908). git 블록은 미커밋 100개 autostash 사고(2026-07-30 부류) 피하려고 건너뜀.",
+    "next": "①Morning 배치가 로그온에 실제로 돌았는지 남는 흔적 한 줄(기존 로그 파일 재사용·새 감시기 금지) ②안 돌았으면 시작프로그램 shortcut 두 개의 역할 정리 ③돌았는데 멈췄으면 git 블록이 멈춘 지점 차단",
+    "depends_on": "",
+    "ship_no": 10607,
+    "short_no": 414,
+    "module": "home",
+    "audience": null,
+    "reversible": null,
+    "work_type": "update",
+    "updated_at": "2026-08-06"
   }
 ]
