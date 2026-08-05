@@ -5902,11 +5902,13 @@ function _processAction(body) {
     return _json(lrrPayload);
   }
 
-  // ─── 강습 등록 원장 명단 (금일 등록현황) — sync-on-load. 2026-06-27 시포 ───
-  //   호출 시 _syncLessonRegistry_() 선실행(팀시트 SUC→원장 upsert). type 일치 + 등록일 ∈ [from,to] 명단.
-  //   from/to 미지정 = 오늘(KST). 카드=오늘 명단. 시드 직후 금일=0이 정상(과거분은 기준선 2000-01-01).
+  // ─── 강습 등록 원장 명단 (금일 등록현황) — sync는 read 경로 밖(warmDashboardCache 5분 워머)으로 이관. 2026-06-27 시포·2026-08-05 시토 ───
+  //   ★기존: 호출마다 _syncLessonRegistry_() 선실행(팀시트 13개 재수집 + 2,500+행 재스캔) → 실측 23초.
+  //   read는 시트를 그대로 읽기만 한다 — 동기화는 warmDashboardCache(라이브 확인된 5분 CLOCK 트리거)로 이관.
+  //   _syncLessonRegistry_ 자체 5분 캐시가드(lesson_reg_synced)가 워머 주기와 일치해 실질 5분 내 반영.
+  //   type 일치 + 등록일 ∈ [from,to] 명단. from/to 미지정 = 오늘(KST). 카드=오늘 명단.
+  //   시드 직후 금일=0이 정상(과거분은 기준선 2000-01-01).
   if (action === 'lesson_registry_list') {
-    _syncLessonRegistry_();
     var lglType = String(body.type || '');
     var lglToday = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd');
     var lglFrom = String(body.from || lglToday);
@@ -10916,6 +10918,13 @@ function warmDashboardCache() {
       UrlFetchApp.fetch(_WARM_EXEC_URL + '?' + q + '&nocache=1', { muteHttpExceptions: true, followRedirects: true });
     } catch (e) { /* 개별 실패 무시 — 다음 주기 재시도 */ }
   });
+
+  // ★강습 등록원장 동기화(2026-08-05 시토 · lesson_registry_list 23초 수리) — 원래 read 경로(호출마다)에서
+  //   실행되던 _syncLessonRegistry_()를 여기로 이관. 이 워머가 라이브에서 실제로 5분마다 도는 것이
+  //   실측 확인된 유일한 CLOCK 트리거라 새 트리거를 만들지 않고 얹는다(약속 L21 '막 만들지 마라').
+  //   _syncLessonRegistry_ 자체에 5분(300초) 캐시가드가 있어 이 5분 워머와 주기가 맞물린다 — 중복 호출은
+  //   가드가 즉시 반환해 무해. 실패해도 다음 워머 주기(5분 뒤)에 재시도되므로 여기서 삼킨다.
+  try { _syncLessonRegistry_(); } catch (eSyncReg) {}
 
   // ★대기→멤버십 자동 해제를 여기에 얹는다(2026-08-04 시토 · 배302).
   //   원래는 매일 02:00 memberMatchAutostamp 트리거에 달았는데, **그 트리거가 라이브에
