@@ -54,6 +54,7 @@ GAS_URL = (
     "AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
 )
 QUEUE_PATH = _REPO / "status" / "_queue.json"
+WORKLOG_PATH = _REPO / "status" / "worklog.jsonl"
 
 # 상태 아이콘 — 아이콘 표준 A안 (ssot/약속.json L16 · CLAUDE.md §3-1 정본과 동일값).
 #   대기/정박=⚓ · 진행중=난이도별 배(_render_line이 ship 아이콘으로 덮음) · 완료=🏁
@@ -702,6 +703,86 @@ def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
     return sorted(out, key=lambda it: -(_stall_days(it) or 0))
 
 
+# ── 📨 GM 지시 짝맞추기 (2026-08-05 GM 지시 — status/worklog.jsonl area=="GM지시" 미완
+#   적발. 실사고: 대표님 보고건(GM-20260804-05, 21:03)이 접수만 되고 안 끝났는데 부팅
+#   점검은 "미완 0"이라 아무도 못 집었다. ref 가 하루 안에서 3~6회 재사용되는데 판정을
+#   "ref 하나에 ok 가 있으면 끝난 것"으로 잘못 봐 09:23 ok 가 21:03 warn 을 덮었다. 게다가
+#   이 짝맞추기가 부팅 지시문(prose)에만 있어 세션마다 즉석으로 다시 짜다 보니 함정이
+#   안 걸러졌다 — 그래서 이미 전 역할이 지나가는 이 보드에 코드로 박는다(약속 L02·L21).
+#   판정 = 시간순 스택: warn 을 만나면 그 ref 대기열에 쌓고, ok 를 만나면 같은 ref
+#   대기열에서 가장 오래된 warn 하나만 닫는다. 다 훑고 남은 warn 이 미완이다. ──
+def _pair_gm_directives(entries: list[dict]) -> list[dict]:
+    """area=='GM지시' 로그 목록을 ts 오름차순 스택으로 짝맞춰 미완만 반환(오래된 순).
+    파일 I/O 없음 — 순수 함수(테스트용으로 분리, _gm_directive_unresolved 가 파일을 읽어 넘김)."""
+    ordered = sorted(entries, key=lambda d: str(d.get("ts", "")))
+    pending: dict[str, list[dict]] = {}
+    for d in ordered:
+        ref = str(d.get("ref", ""))
+        result = str(d.get("result", ""))
+        if result == "warn":
+            pending.setdefault(ref, []).append(d)
+        elif result == "ok":
+            queue = pending.get(ref)
+            if queue:
+                queue.pop(0)  # 가장 오래된 미짝 warn 하나만 닫는다
+
+    today = dt.date.today()
+    out: list[dict] = []
+    for queue in pending.values():
+        for d in queue:
+            ts = str(d.get("ts", ""))
+            try:
+                days = (today - dt.datetime.strptime(ts[:10], "%Y-%m-%d").date()).days
+            except Exception:
+                days = 0
+            out.append({"days": days, "ts": ts, "event": str(d.get("event", "")),
+                        "ref": str(d.get("ref", ""))})
+    out.sort(key=lambda x: x["ts"])
+    return out
+
+
+def _gm_directive_unresolved(role: str = "") -> list[dict]:
+    """status/worklog.jsonl 을 읽어(읽기 전용 — 절대 쓰지 않는다, 다른 세션이 쓰는 중일 수
+    있다) area=='GM지시' 항목만 걸러 _pair_gm_directives 로 미완을 판정한다.
+    role 지정 시 그 role 이 남긴 로그만 본다."""
+    entries: list[dict] = []
+    try:
+        with WORKLOG_PATH.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if d.get("area") != "GM지시":
+                    continue
+                if role and str(d.get("role", "")).strip().lower() != role.strip().lower():
+                    continue
+                entries.append(d)
+    except Exception:
+        return []
+    return _pair_gm_directives(entries)
+
+
+def _selftest_gm_directives() -> None:
+    """3줄(warn·ok·warn 같은 ref) 넣으면 미완 1건(가장 나중 warn)만 남는지 확인.
+    GM-20260804-05 실사고(09:20 warn/09:23 ok/21:03 warn) 재현 — 21:03 만 남아야 한다."""
+    sample = [
+        {"ts": "2026-08-04T09:20:00+09:00", "role": "ceo", "area": "GM지시",
+         "event": "발화기록 오늘 것부터 체크", "result": "warn", "ref": "GM-TEST-01"},
+        {"ts": "2026-08-04T09:23:00+09:00", "role": "ceo", "area": "GM지시",
+         "event": "오늘 기록으로 즉시 점검", "result": "ok", "ref": "GM-TEST-01"},
+        {"ts": "2026-08-04T21:03:00+09:00", "role": "ceo", "area": "GM지시",
+         "event": "대표님 보고건 4가지 접수", "result": "warn", "ref": "GM-TEST-01"},
+    ]
+    result = _pair_gm_directives(sample)
+    assert len(result) == 1, f"기대 미완 1건, 실제 {len(result)}건: {result}"
+    assert result[0]["event"] == "대표님 보고건 4가지 접수", f"엉뚱한 건이 남음: {result[0]}"
+    print("[OK] _gm_directive selftest 통과 — warn/ok/warn 스택 짝맞추기 정상(21:03 건만 미완)")
+
+
 # ── 🤔 큐 자기정합 (2026-08-04 GM 지시 "줄기 3 큐 자기정합부터") ──────────────
 #   오늘 하루에만 '이미 끝난 일을 안 끝난 줄 알고 다시 판' 게 7건(1건은 GM 시간 낭비).
 #   원인 3가지를 여기 한 곳(부팅 때 항상 지나가는 이 보드)에서 표면화한다.
@@ -958,6 +1039,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     #   지나가는 이 보드에 얹는다. 한 곳에만 띄우면 그 화면을 안 여는 날 그냥 넘어간다.
     stalled = _stalled(secs["today"])
     sent_unanswered = _sent_unanswered(sent_by_role or [], role)
+    gm_gaps = _gm_directive_unresolved(role)
     for it in sent_unanswered:
         it["_ship"] = classify_ship({
             "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
@@ -968,7 +1050,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         for it, _ev in pair_list:
             it["_ship"] = classify_ship({
                 "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
-    if stalled or sent_unanswered or looks_done or dupes or mismatch:
+    if stalled or sent_unanswered or looks_done or dupes or mismatch or gm_gaps:
         lines.append("")
         lines.append(f"### 🔔 멈춰 있는 배 {len(stalled)}척 — 마지막 기록 이후 오래된 순")
         if stalled:
@@ -979,6 +1061,11 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
             lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
                                     for it in sent_unanswered]))
+        if gm_gaps:
+            lines.append(f"📨 GM 지시 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
+            for g in gm_gaps:
+                tag = "🔴" if g["days"] >= 1 else "🟡"
+                lines.append(f"  - {tag} {g['days']}일째 · {g['ts']} · {g['event']} (ref={g['ref']})")
         for label, pair_list in (
             ("🤔 끝난 듯 — 확인 필요", looks_done),
             ("🔁 중복 의심", dupes),
@@ -1125,4 +1212,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if "--selftest" in sys.argv:
+        _selftest_gm_directives()
+    else:
+        main()
