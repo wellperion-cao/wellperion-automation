@@ -122,6 +122,74 @@ COO_DOMAIN_PATHS = frozenset({
     "3. 웰페리온 가이드/coo/check/파트너팀 체계.html",
 })
 
+# ── CHRO(시로)·CFO(시뽀) 도메인 파일 "수정" 차단(2026-08-05 GM 확정) ────────────
+# GM 원문(같은 날): "시우 및 시로, 시뽀 관련해서는 운영부 카카오톡 방에 전달해서
+#   작업 시키면 되겠네... 시토는 자율화라고 하지만 막 건드려서 충돌이 나지 않게
+#   도와줘야해." → 시로·시뽀는 큐 관문(queue_dispatch.EXCLUDED_ROLES)에서 **배
+#   생성 자체**가 이미 막혀 있다(더 강한 층). 여기서는 그 위에 남아 있던 구멍 —
+#   "AI가 그 도메인 파일을 직접 '수정'하는 경로"(safe_commit)만 COO와 같은 방식
+#   으로 마저 막는다. 위 chro/cfo 보호 삭제 판정(§ PROTECTED_DELETE_PREFIXES)은
+#   "삭제"만 막고 "수정"은 안 막았다 — 그 구멍.
+#
+# 경로 출처(임의 확장 금지) — ssot/ownership_map.json roles[]:
+#   시로 domain="업무현황 SSOT·결재현황 SSOT" → 실제 파일 2개(폴더는 coo 지만
+#   소유는 시로 — coo/check/* 처럼 folder=owner 가 아니다):
+CHRO_DOMAIN_PATHS = frozenset({
+    "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html",
+    "3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html",
+})
+#   시뽀 domain="운영 매출·지출" → cfo/finance/ 안의 매출·지출 대시보드 3종
+#   (apps_script_expense.js 등 배선 파일은 제외 — COO 와 동일 원칙: 내용 화면은
+#   도메인 소유, GAS 배선은 시토 소유). 매출지출현황.html 은 GM 이 직접 보는
+#   공개 페이지(기억 project_public_pages_gas_password_exposure_accepted)라
+#   차단은 하되 강행 경로(SKIP env)를 안내문에 명시해 GM 요청 수정을 막지 않는다.
+CFO_DOMAIN_PATHS = frozenset({
+    "3. 웰페리온 가이드/cfo/finance/매출지출현황.html",
+    "3. 웰페리온 가이드/cfo/finance/매출현황.html",
+    "3. 웰페리온 가이드/cfo/finance/지출현황.html",
+})
+_CFO_GM_JUDGMENT_NOTE = (
+    "GM 이 직접 보는 공개 화면입니다 — GM 지시로 고치는 경우 강행 스위치로 "
+    "진행하세요(막되 우회로는 열어 둠)."
+)
+
+# 세 도메인을 한 판정 함수(_domain_modify_violation)로 처리한다(약속 L01 —
+# 같은 관문 안에서 로직도 하나로 합친다. 새 가드 파일·새 함수 난립 금지).
+# 튜플: (역할표기, 담당자 표기, 경로집합, GM판단 메모 or None)
+DOMAIN_MODIFY_RULES = (
+    ("COO(시우)", "최준용M", COO_DOMAIN_PATHS, None),
+    ("CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS, None),
+    ("CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS, _CFO_GM_JUDGMENT_NOTE),
+)
+
+
+def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
+                              domain_paths: frozenset, judgment_note: str | None,
+                              root: Path) -> str | None:
+    """도메인 경로가 이번 커밋에 하나라도 걸리면 차단 문구를 만든다(없으면 None).
+
+    강행: env SKIP_PHANTOM_DELETE_GUARD=1(로그는 precommit_phantom_delete_guard 의
+    _log_block 재사용 — 새 우회 스위치·새 로그 파일 안 만듦, 위 import 참조).
+    """
+    hits = sorted({path for _, path in diff_pairs if path in domain_paths})
+    if not hits:
+        return None
+    if os.environ.get(_DOMAIN_GUARD_SKIP_ENV) == "1":
+        _domain_guard_log(f"{role_label}_domain_force", hits, str(root))
+        print(f"[WARN] {_DOMAIN_GUARD_SKIP_ENV}=1 — {role_label} 도메인 가드 강행 통과: "
+              f"{', '.join(hits)}")
+        return None
+    extra = f" 외 {len(hits) - 1}건" if len(hits) > 1 else ""
+    note = f" [GM 판단 대상] {judgment_note}" if judgment_note else ""
+    return (
+        f"{role_label} 도메인 차단: {hits[0]}{extra} — AI가 직접 수정하지 않습니다"
+        f"(GM 확정 2026-08-05). 담당: {contact}. ★운영부 카톡방에 담당자 붙여 전달하세요: "
+        f"python scripts/queue_dispatch.py --to ceo --title \"[운영부 전달] "
+        f"{hits[0]} 수정 필요\" --note \"담당자: {contact} (scripts/kakao_rooms.json "
+        f"★운영부 members 참조)\" (웰리가 ★운영부 방으로 전달)."
+        f" 강행하려면 env {_DOMAIN_GUARD_SKIP_ENV}=1(로그 남음).{note}"
+    )
+
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
 _RETRY_WAIT_SEC = 0.4
 _INDEX_LOCK_WAIT_SEC = 0.5
@@ -332,8 +400,12 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
     # chro/cfo 보호 삭제(2026-08-04 — 인사 지원자 사진 반복삭제 사고 재발방지):
     # 삭제가 하나라도 chro/cfo 안이면서 이 커밋에 chro/cfo 밖 경로가 섞여 있으면
     # 차단한다. 커밋 전체가 chro/cfo 안에서만 이뤄지면(도메인 전용 호출) 통과.
+    # ★2026-08-05 — CFO_DOMAIN_PATHS(아래) 3개는 아래 도메인 수정 차단이 삭제를
+    #   포함해 항상 걸러내므로 여기서 제외한다(안 그러면 같은 파일에 메시지가
+    #   두 번 뜬다 — GM 지시 "이중 발동 안 하는지 확인").
     protected_deletes = [p for s, p in diff_pairs
-                          if s == "D" and any(p.startswith(pre) for pre in PROTECTED_DELETE_PREFIXES)]
+                          if s == "D" and any(p.startswith(pre) for pre in PROTECTED_DELETE_PREFIXES)
+                          and p not in CFO_DOMAIN_PATHS and p not in CHRO_DOMAIN_PATHS]
     if protected_deletes:
         mixed_domain = any(not any(p.startswith(pre) for pre in PROTECTED_DELETE_PREFIXES)
                             for _, p in diff_pairs)
@@ -341,26 +413,14 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
             extra = f" 외 {len(protected_deletes) - 1}건" if len(protected_deletes) > 1 else ""
             violations.append(f"보호된 삭제 차단(chro/cfo 도메인 혼입): {protected_deletes[0]}{extra}")
 
-    # COO(시우) 도메인 파일 차단(2026-08-05 GM 편제 확정 — 위 COO_DOMAIN_PATHS 주석 참조):
-    # 삭제뿐 아니라 추가·수정도 막는다(파일 "수정" 자체를 막는 게 이번 조치다 —
-    # 위 chro/cfo 는 "삭제"만 막는다는 점에서 다르다). 기본은 항상 차단이고,
-    # 사람이 강행할 때만 통과(우회 로그는 아래에서 남긴다).
-    coo_hits = sorted({path for _, path in diff_pairs if path in COO_DOMAIN_PATHS})
-    if coo_hits:
-        if os.environ.get(_DOMAIN_GUARD_SKIP_ENV) == "1":
-            _domain_guard_log("coo_domain_force", coo_hits, str(root))
-            print(f"[WARN] {_DOMAIN_GUARD_SKIP_ENV}=1 — COO 도메인 가드 강행 통과: "
-                  f"{', '.join(coo_hits)}")
-        else:
-            extra = f" 외 {len(coo_hits) - 1}건" if len(coo_hits) > 1 else ""
-            violations.append(
-                f"COO(시우) 도메인 차단: {coo_hits[0]}{extra} — AI가 직접 수정하지 않습니다"
-                f"(GM 확정 2026-08-05, 준용M 라인). ★운영부 카톡방에 담당자 붙여 전달하세요: "
-                f"python scripts/queue_dispatch.py --to ceo --title \"[운영부 전달] "
-                f"{coo_hits[0]} 수정 필요\" --note \"담당자: (scripts/kakao_rooms.json "
-                f"★운영부 members 참조)\" (웰리가 ★운영부 방으로 전달). "
-                f"강행하려면 env {_DOMAIN_GUARD_SKIP_ENV}=1(로그 남음)."
-            )
+    # COO(시우)·CHRO(시로)·CFO(시뽀) 도메인 파일 "수정" 차단(2026-08-05 GM 편제 확정
+    # — 위 COO_DOMAIN_PATHS/CHRO_DOMAIN_PATHS/CFO_DOMAIN_PATHS·DOMAIN_MODIFY_RULES
+    # 주석 참조). 삭제뿐 아니라 추가·수정도 막는다 — 기본은 항상 차단이고, 사람이
+    # 강행할 때만 통과(우회 로그는 _domain_modify_violation 안에서 남긴다).
+    for role_label, contact, domain_paths, judgment_note in DOMAIN_MODIFY_RULES:
+        v = _domain_modify_violation(diff_pairs, role_label, contact, domain_paths, judgment_note, root)
+        if v:
+            violations.append(v)
 
     # 일반 혼입 삭제 판정(2026-08-04 GM 근본분석 — 로직은 가드 모듈 단일 출처):
     # 비삭제 변경과 섞인 커밋의 삭제는 caller 가 rel_paths 에 **파일 단위로 정확히**
