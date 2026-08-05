@@ -3371,6 +3371,9 @@ function _processAction(body) {
     }
   }
 
+  // diag_warm_stamp_props_0805 — 2026-08-05 시토, 확인 완료(WAIT_RELEASE_LAST/LOSS_DATE_STAMP_LAST 둘 다
+  // 2026-08-05로 찍힘 = warmLessonRosterCache 이관 후 정상 발화 확인) 후 회수함. 재추가 금지.
+
   // ─── onFormSubmit 핸들러 mock 테스트 (실 데이터 행 생성 없음) ───
   // FORM_SHEETS[0](멤버십 시트)을 기준으로 가짜 이벤트 객체를 구성해 onInquiryFormSubmit 경로를 통해
   // 문의알림방에 '[TEST]' 메시지 1건 발송. 실 행수·마커는 변경하지 않음.
@@ -10794,9 +10797,13 @@ function member_match_autostamp_() {
 }
 
 /** 공개 트리거용 래퍼 (Apps Script 트리거는 인자 없는 최상위 함수여야 함)
- *  ★2026-08-04 시토 — 새 트리거를 만들지 않고(약속 L21) 이미 설치된 매일 02:00(KST) 트리거에
- *  대기→멤버십 자동전환(member_wait_auto_release_)을 얹는다. member_match_autostamp_ 자체는
- *  2026-07-22 은퇴(no-op)라 이 트리거는 지금 이 자동전환의 유일한 실행 경로가 된다. */
+ *  ★정정(2026-08-05 시토) — 이전 주석의 "이미 설치된 매일 02:00(KST) 트리거"는 실측 없이 적힌 문장이었다.
+ *  action=list_inquiry_triggers(읽기전용 진단)로 라이브 트리거를 직접 조회하니 memberMatchAutostamp 에는
+ *  CLOCK 트리거가 걸려 있지 않다(설치하려면 아래 installMemberMatchTrigger()를 GAS 에디터에서 1회 수동 실행
+ *  해야 하는데, 그 실행이 실제로 있었던 적이 없다). 즉 이 함수는 지금 자동으로 돌지 않는다.
+ *  member_wait_auto_release_·member_loss_date_auto_stamp_ 는 실측 확인된 5분 CLOCK 트리거
+ *  (warmLessonRosterCache)로 이관해 그쪽에서 하루 1회 돈다 — 이 02:00 경로는 지금 불필요(중복 대비만).
+ *  member_match_autostamp_ 자체는 2026-07-22 은퇴(no-op). */
 function memberMatchAutostamp() {
   try {
     var wr = member_wait_auto_release_();
@@ -10868,6 +10875,30 @@ function warmLessonRosterCache() {
       done.push(types[i]);
     } catch (e) { /* 한쪽 실패가 다른 쪽을 막지 않게 */ }
   }
+
+  // ★대기→멤버십 자동해제 + LOSS일자 자동기록(2026-08-05 시토·배302) — warmDashboardCache에서 이관.
+  //   두 기능 모두 원래 memberMatchAutostamp(02:00 일일) 또는 warmDashboardCache(5분) 에 얹혀 있었는데,
+  //   action=list_inquiry_triggers(읽기전용 진단)로 라이브 트리거를 직접 조회하니 **둘 다 CLOCK 트리거가
+  //   설치돼 있지 않았다**(라이브 확인 4건: _notifyNewInquiries_·warmLessonRosterCache·onInquiryFormSubmit×2뿐).
+  //   즉 배포 이후(오늘) 자동으로 한 번도 실행된 적이 없다. 이 함수(warmLessonRosterCache)만이 실측 확인된
+  //   CLOCK 트리거라 여기로 옮긴다. 새 트리거는 만들지 않는다(약속 L21). 하루 1회만 돌게 날짜 도장으로 막는다
+  //   — 5분마다 회원 시트를 통째로 훑으면 낭비.
+  try {
+    var _wrTz = 'Asia/Seoul';
+    var _wrToday = Utilities.formatDate(new Date(), _wrTz, 'yyyy-MM-dd');
+    var _wrProps = PropertiesService.getScriptProperties();
+    if (_wrProps.getProperty('WAIT_RELEASE_LAST') !== _wrToday) {
+      var _wr = member_wait_auto_release_();
+      _wrProps.setProperty('WAIT_RELEASE_LAST', _wrToday);
+      Logger.log('member_wait_auto_release_(warm): checked=' + _wr.checked + ' released=' + _wr.released);
+    }
+    if (_wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
+      var _ld = member_loss_date_auto_stamp_();
+      _wrProps.setProperty('LOSS_DATE_STAMP_LAST', _wrToday);
+      Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
+    }
+  } catch (e) { /* 워머가 죽어도 강습 캐시 워밍은 이미 끝났다 — 다음 주기 재시도 */ }
+
   return done;
 }
 
@@ -10895,9 +10926,17 @@ function doPost(e) {
 }
 
 // ─── 대시보드 캐시 워머 (2026-06-19 시토) ────────────────────────────────
-// 시간 트리거가 5분마다 호출 → 무거운 집계(type_channel·funnel_conversion 등)를
-// nocache=1로 강제 재계산해 캐시를 미리 데움 → 사용자는 항상 캐시 히트(~1.5초).
+// 무거운 집계(type_channel·funnel_conversion 등)를 nocache=1로 강제 재계산해
+// 캐시를 미리 데움 → 사용자는 항상 캐시 히트(~1.5초).
 // Claude/LLM 토큰 무관(구글 서버 실행). 자기 /exec 호출이라 새 OAuth 스코프 없음.
+// ★정정(2026-08-05 시토) — 이전 주석의 "시간 트리거가 5분마다 호출"은 실측 없이 적힌 문장이었다.
+//   action=list_inquiry_triggers(읽기전용 진단)로 라이브 트리거를 직접 조회하니 이 함수(warmDashboardCache)에는
+//   CLOCK 트리거가 설치돼 있지 않다 — installWarmTrigger()가 GM/시토 손으로 1회 실행된 적이 없다는 뜻.
+//   즉 이 함수는 GAS 자체 트리거로는 자동 실행되지 않는다. 대신 telegram_bot/daily_scheduler.py 의
+//   _warm_dashboard_cache(15분 간격, 봇 프로세스 가동 중일 때만)가 funnel_conversion·type_channel_breakdown·
+//   click_stats·period_breakdown 4종은 대신 데운다 — member_active_list(valid/ended) 2스코프는 파이썬 목록에
+//   없어 이 경로로는 안 식는다(둘 다 커버 X). 대기→멤버십 자동해제·LOSS일자 자동기록은 여기 얹지 않는다
+//   (아래 참고) — 라이브로 확인된 CLOCK 트리거(warmLessonRosterCache)로 옮겼다.
 var _WARM_EXEC_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 
 function warmDashboardCache() {
@@ -10927,33 +10966,7 @@ function warmDashboardCache() {
       UrlFetchApp.fetch(_WARM_EXEC_URL + '?' + q + '&nocache=1', { muteHttpExceptions: true, followRedirects: true });
     } catch (e) { /* 개별 실패 무시 — 다음 주기 재시도 */ }
   });
-
-  // ★대기→멤버십 자동 해제를 여기에 얹는다(2026-08-04 시토 · 배302).
-  //   원래는 매일 02:00 memberMatchAutostamp 트리거에 달았는데, **그 트리거가 라이브에
-  //   실제로 설치돼 있는지 밖에서 확인할 방법이 없다**(clasp run 권한 없음 · 트리거 목록은
-  //   API 로 안 나온다). 확인 못 하는 트리거에 기대면 '등록돼 있고 코드도 있는데 한 번도
-  //   작동한 적 없는 장치'가 된다 — 2026-08-03 하루에 같은 부류를 셋 잡았다.
-  //   이 워머는 5분마다 도는 것이 실측으로 확인된 자리다(배298 성능 수리 때 히트 확인).
-  //   ▸5분마다 시트를 통째로 읽으면 낭비이므로 **하루 한 번만** 돌게 날짜 도장으로 막는다
-  //     — 도장 읽기는 속성 1건이라 사실상 공짜다. 02:00 트리거가 살아 있어도 멱등이라 무해.
-  try {
-    var _wrTz = 'Asia/Seoul';
-    var _wrToday = Utilities.formatDate(new Date(), _wrTz, 'yyyy-MM-dd');
-    var _wrProps = PropertiesService.getScriptProperties();
-    if (_wrProps.getProperty('WAIT_RELEASE_LAST') !== _wrToday) {
-      var _wr = member_wait_auto_release_();
-      _wrProps.setProperty('WAIT_RELEASE_LAST', _wrToday);
-      Logger.log('member_wait_auto_release_(warm): checked=' + _wr.checked + ' released=' + _wr.released);
-    }
-    // ★LOSS일자 자동기록(2026-08-05 시토·배302, GM 지시 2026-08-03) — 위와 같은 근거로 같은 자리에 얹는다:
-    //   02:00 트리거가 라이브에 실제 설치돼 있는지 밖에서 확인할 수 없어, 실측으로 히트가 확인된
-    //   이 5분 워머를 실행 경로로 겸한다. 하루 1회만(별도 날짜 도장) — 시트 전체를 5분마다 읽지 않는다.
-    if (_wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
-      var _ld = member_loss_date_auto_stamp_();
-      _wrProps.setProperty('LOSS_DATE_STAMP_LAST', _wrToday);
-      Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
-    }
-  } catch (e) { /* 워머가 죽어도 캐시 예열은 이미 끝났다 — 다음 주기 재시도 */ }
+  // 대기→멤버십 자동해제·LOSS일자 자동기록은 여기 없다 — warmLessonRosterCache로 이관(2026-08-05 시토, 아래 참고).
 }
 
 // 워머 트리거 설치/제거 — GM이 GAS 에디터에서 1회 실행(ScriptApp 스코프 인가).
