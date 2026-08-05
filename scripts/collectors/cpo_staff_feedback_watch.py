@@ -42,6 +42,7 @@ import os
 import re
 import sys
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 _HERE = Path(__file__).resolve()
@@ -50,9 +51,11 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from queue_lock import mutate_queue, load_queue  # noqa: E402
-from module_heartbeat import record_heartbeat  # noqa: E402
+from module_heartbeat import record_heartbeat, last_heartbeat  # noqa: E402
 from assign_short_no import next_short_no  # noqa: E402
 from clevel_colors import nickname as clevel_nickname  # noqa: E402
+
+KST = timezone(timedelta(hours=9))
 
 MODULE_ID = "cpo-staff-feedback-watch"
 ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"
@@ -377,6 +380,86 @@ def detect_done_reopen_drift(rows: list, queue: list, archive: list) -> list:
     return drift
 
 
+# ─── 정체(aging) 리마인드 (2026-08-05 GM 지시) ────────────────────────────────
+#   8단계 중 7단계는 이미 자동인데 딱 하나(에스컬레이션)가 없었다 — 접수→배 생성까지는
+#   자동이지만, 배가 며칠째 안 닫혀도 아무도 안 본다. 실사고: FB260728-112703(예약자
+#   이름 뒤바뀜 신고)이 2일을 묵었고 GM이 물어서야 추적이 시작됐다.
+#   ★새 감시기·새 예약작업·새 상태파일 금지(약속 L21) — 이미 매일 도는 이 감시기 안에,
+#   이미 읽고 있는 rows/queue/archive 로만 판정한다. 문턱은 아침 자가점검과 동일(1일 이상).
+#   표면화 경로도 새로 만들지 않는다 — 이 파일이 이미 쓰는 두 경로(print→로그 / 하트비트
+#   detail·extra→자율현황 보드)를 그대로 재사용한다(detect_done_reopen_drift와 동일 패턴).
+_STALE_MIN_DAYS = 1
+_KOR_DT_RE = re.compile(r"(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\s*(오전|오후)\s*(\d{1,2}):(\d{2}):(\d{2})")
+
+
+def _parse_kor_dt(s: str) -> "datetime | None":
+    """GAS가 주는 '2026. 8. 4 오전 10:12:28' 형식(한국어 로캘) 파서. 못 읽으면 None."""
+    m = _KOR_DT_RE.search(s or "")
+    if not m:
+        return None
+    y, mo, d, ampm, h, mi, se = m.groups()
+    h = int(h) % 12
+    if ampm == "오후":
+        h += 12
+    try:
+        return datetime(int(y), int(mo), int(d), h, int(mi), int(se))
+    except ValueError:
+        return None
+
+
+def detect_stale_feedback(rows: list, queue: list, archive: list, now: "datetime") -> list:
+    """처리완료에 아직 안 닿은(rank<3) 건 중 접수 후 1일(_STALE_MIN_DAYS) 이상 지난 것을
+    오래된 순으로 뽑는다. now 는 tz 없는 KST 벽시계 시각(접수시각도 tz 없이 온다).
+    담당 배정(feedback_id로 연결된 배 존재) 여부와 회신 여부(시트 단계 '확인중' 이상)를
+    갈라 표시한다(GM 지시 ⑤ — 배정만 되고 회신 없는 채 묵는 것도 여전히 미해결)."""
+    latest_by_fid = {}
+    for ship in list(archive) + list(queue):  # queue 를 나중에 덮어써 활성 큐 우선(detect_done_reopen_drift와 동일)
+        if not isinstance(ship, dict):
+            continue
+        fid = str(ship.get("feedback_id") or "").strip()
+        if fid:
+            latest_by_fid[fid] = ship
+
+    out = []
+    for r in rows:
+        fid = str(r.get("접수ID") or "").strip()
+        if not fid:
+            continue
+        status = str(r.get("처리상태") or "").strip()
+        if _stage_rank(status) >= len(_STAGE_ORDER):  # 처리완료 — 대상 아님
+            continue
+        created = _parse_kor_dt(str(r.get("접수시각") or ""))
+        if created is None:
+            continue
+        days = (now - created).total_seconds() / 86400.0
+        if days < _STALE_MIN_DAYS:
+            continue
+
+        ship = latest_by_fid.get(fid)
+        screen = str(r.get("업무 구분") or r.get("화면") or "").strip()
+        content = str(r.get("내용") or "").strip()
+        clevel = str(ship.get("clevel") or "").strip() if ship else route_clevel(screen, str(r.get("종류") or ""), content)
+        replied = _stage_rank(status) >= 2  # '확인중' 이상 — 실무진 화면에 뭔가 회신이 나간 적 있음
+        if ship is None:
+            label = f"담당 미배정 {int(days)}일째"
+        elif not replied:
+            label = f"담당 배정됨·회신 없음 {int(days)}일째"
+        else:
+            label = f"확인중(회신됨) {int(days)}일째"
+        out.append({
+            "id": fid, "days": days, "clevel": clevel_nickname(clevel) if clevel else "미정",
+            "title": screen or content[:30], "label": label,
+        })
+    out.sort(key=lambda x: -x["days"])
+    return out
+
+
+def _stale_fingerprint(stale: list) -> str:
+    """같은 내용(같은 접수ID·같은 경과일) 이면 지문이 같다 — 도배 방지용.
+    경과일이 바뀌면(1일째→2일째) 지문도 바뀌어 다시 알린다(GM 요구 그대로)."""
+    return "|".join(f"{s['id']}:{int(s['days'])}" for s in stale)
+
+
 def sync_feedback_status(rows: list, queue: list, archive: list, today: str):
     """접수ID로 배와 시트를 대조 — 배 status(PENDING→접수됨/IN_PROGRESS→확인중/DONE→처리완료)에
     맞는 단계가 시트에 아직 안 쓰여 있으면 그 단계 하나만 조립한다(단계를 건너뛰지 않음 —
@@ -555,6 +638,27 @@ def _selftest() -> int:
     print("selftest OK")
     print("  안내문구만 있을 때:", out1)
     print("  완료 기록 있을 때 :", out2)
+
+    # ── 정체 리마인드 자체검사(2026-08-05) ── 1일 미만 안 걸림 / 처리완료 안 걸림 /
+    #    담당 있고 회신 없는 건이 구분됨. 3개 assert 로 충분(ponytail — 프레임워크 없음).
+    now = datetime(2026, 8, 5, 12, 0, 0)
+    rows_stale = [
+        {"접수ID": "FB260804-100000", "처리상태": "접수", "접수시각": "2026. 8. 4 오전 10:00:00",
+         "업무 구분": "멤버십", "종류": "버그", "내용": "예약자 이름이 바뀝니다"},
+        {"접수ID": "FB260805-100000", "처리상태": "접수", "접수시각": "2026. 8. 5 오전 10:00:00",
+         "업무 구분": "멤버십", "종류": "버그", "내용": "당일 접수"},
+        {"접수ID": "FB260801-090000", "처리상태": "처리완료", "접수시각": "2026. 8. 1 오전 9:00:00",
+         "업무 구분": "멤버십", "종류": "버그", "내용": "이미 처리됨"},
+    ]
+    queue_stale = [{"feedback_id": "FB260804-100000", "clevel": "cpo", "status": "PENDING", "task_id": "T1"}]
+    stale = detect_stale_feedback(rows_stale, queue_stale, [], now)
+    ids = {s["id"] for s in stale}
+    assert "FB260804-100000" in ids, stale        # 1일 이상 + 담당 있음 → 걸림
+    assert "FB260805-100000" not in ids, stale     # 접수 2시간(1일 미만) → 안 걸림
+    assert "FB260801-090000" not in ids, stale     # 처리완료 → 안 걸림
+    lbl = next(s["label"] for s in stale if s["id"] == "FB260804-100000")
+    assert "담당 배정됨" in lbl and "회신 없음" in lbl, lbl  # 배정됨·회신없음 구분 표시
+    print("정체 리마인드 자체검사 OK:", lbl)
     return 0
 
 
@@ -589,8 +693,8 @@ def main() -> int:
     ship_targets = [r for r in rows
                     if _stage_rank(str(r.get("처리상태") or "")) <= 1]
 
-    from datetime import datetime, timedelta, timezone
-    today = datetime.now(timezone(timedelta(hours=9))).date().isoformat()
+    now_dt = datetime.now(KST).replace(tzinfo=None)
+    today = now_dt.date().isoformat()
 
     try:
         archive = json.loads(ARCHIVE_PATH.read_text(encoding="utf-8"))
@@ -615,6 +719,11 @@ def main() -> int:
         print(f"\n[재발방지 어긋남] 배 DONE 아닌데 시트는 이미 처리완료 {len(drift)}건")
         for d in drift:
             print(f"  ! {d['id']} ({d['task_id']}) — 배 status={d['ship_status']} / 시트='{d['sheet_status']}'")
+
+        stale = detect_stale_feedback(rows, q, archive, now_dt)
+        print(f"\n[정체 리마인드] 1일 이상 묵은 실무진 신고 {len(stale)}건 (오래된 순)")
+        for s in stale:
+            print(f"  ⏳ {s['id']} · {int(s['days'])}일째 · 담당 {s['clevel']} · {s['label']} — {s['title']}")
         return 0
 
     made = []
@@ -657,17 +766,31 @@ def main() -> int:
         print(f"[drift] {d['id']} ({d['task_id']}) — 배 status={d['ship_status']} 인데 시트는 "
               f"이미 '{d['sheet_status']}' 입니다. 실제로 다시 문제가 있는지 재확인하세요.")
 
+    # 정체 리마인드 — 지문 억제(같은 접수ID·같은 경과일이면 매 3분 재통보하지 않는다).
+    # 새 상태파일을 안 만든다: 이 모듈 자신의 하트비트(status/heartbeats/{MODULE_ID}.json,
+    # 이미 매 회차 덮어써 존재)에 지난 지문을 실어 두고 이번 회차와 비교한다.
+    stale = detect_stale_feedback(rows, queue_now, archive, now_dt)
+    stale_fp = _stale_fingerprint(stale)
+    prev_fp = str((last_heartbeat(MODULE_ID) or {}).get("정체_지문") or "")
+    if stale and stale_fp != prev_fp:
+        print(f"[정체 리마인드] 1일 이상 묵은 실무진 신고 {len(stale)}건 (오래된 순)")
+        for s in stale:
+            print(f"  ⏳ {s['id']} · {int(s['days'])}일째 · 담당 {s['clevel']} · {s['label']} — {s['title']}")
+    elif stale:
+        print(f"[정체 리마인드] 변화 없음(이미 통보) — {len(stale)}건 유지")
+
     record_heartbeat(
         MODULE_ID,
         detail=(
             f"피드백 {len(rows)}건 · 미처리 {len(pending)}건 · 이번에 배로 올린 것 {len(made)}건"
             f" · 회신 대상 {len(sync_updates)}건 · 회신 완료 {len(replied)}건"
-            f" · 재발방지 어긋남 {len(drift)}건"
+            f" · 재발방지 어긋남 {len(drift)}건 · 정체(1일+) {len(stale)}건"
         ),
         extra={
             "전체": len(rows), "미처리": len(pending), "신규_배": len(made),
             "회신_대상": len(sync_updates), "회신_완료": len(replied),
             "재발방지_어긋남": len(drift),
+            "정체_1일이상": len(stale), "정체_지문": stale_fp,
         },
     )
 
