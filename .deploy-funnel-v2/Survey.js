@@ -2409,15 +2409,22 @@ function _regUpsert_(name, phone, program, regDate) {
   row[0] = name || ''; row[1] = phone || ''; row[2] = program || ''; row[3] = regDate || _todayKR_();  // 등록일=지정값 우선, 없으면 오늘
   sh.appendRow(row);
 }
-// 등록 해제(잘못 등록 되돌리기) — 등록현황에서 전화키 매칭 행 제거(중복 있으면 전부). 2026-06-29 시포.
+// 등록 해제(잘못 등록 되돌리기) — 등록현황에서 전화키 매칭 행 제거. 2026-06-29 시포.
+//   ★2026-08-05 시토(GM 지시) — "중복 있으면 전부" 지우던 것을 거부로 바꿨다. 전화 공유(가족·유소년)면
+//   무관한 등록건까지 같이 지워질 위험이 있다 — 인라인 편집 가드와 동일한 _countRowsByPhone_(148) 재사용.
+//   반환값 추가: {ok:true} 삭제됨 / {ok:true,removed:0} 대상 없음(무손상) / {ok:false,...} 거부(호출부가 알려야 함).
 function _regRemove_(phone) {
   var key = _regNormPhone_(phone);
-  if (!key) return;
+  if (!key) return { ok: true, removed: 0 };
   var sh = _regSheet_();
+  var _rrDupN = _countRowsByPhone_(sh, 1, key);   // 등록현황 B열=전화(row[1]) → 0-based phCol=1
+  if (_rrDupN >= 2) return { ok: false, error: 'phone-ambiguous', count: _rrDupN };
   var last = sh.getLastRow();
+  var removed = 0;
   for (var i = last; i >= 2; i--) {
-    if (_regNormPhone_(sh.getRange(i, 2).getValue()) === key) sh.deleteRow(i);
+    if (_regNormPhone_(sh.getRange(i, 2).getValue()) === key) { sh.deleteRow(i); removed++; }
   }
+  return { ok: true, removed: removed };
 }
 // ★2026-08-01 시토(배276) — "+직접등록"(member_registered_add)이 실제 회원 DB(유효회원)에도 반영되게.
 //   근본원인: 회원관리·신규등록현황 화면은 유효회원 탭만 읽는데(member_registered_list, 2026-06-25 GM),
@@ -2538,6 +2545,18 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   program = _memberProgramCanon_(sh, pgI, program, moN);
   var last = sh.getLastRow();
   if (last >= 2) {
+    // ★2026-08-05 시토(GM 지시, "저장이 엉뚱한 회원에게 들어간다" 5건·12일·4회 반복의 뿌리) — 전화 첫매칭만으로
+    //   행을 잡으면 가족·유소년처럼 번호를 공유하는 회원이 있을 때 다른 실회원 행을 조용히 덮어쓴다.
+    //   인라인 편집(member_active_update, 8393 부근)엔 이미 있는 중복 거부 가드를 이 upsert 경로만 안 거쳤다 —
+    //   같은 가드(_countRowsByPhone_, 148)를 그대로 재사용해 배선만 한다(새 함수 없음).
+    var _mauDupN = _countRowsByPhone_(sh, phI, key);
+    if (_mauDupN >= 2) {
+      try {
+        _notifyTelegram('⚠️ 회원 자동저장 거부 — 전화 ' + _logMaskPhone_(phone) + ' 매칭 ' + _mauDupN + '건(2건 이상, 가족·유소년 등 번호 공유 추정). "' +
+          (name || '') + '" 저장이 유효회원 시트에 자동 반영되지 않았습니다. 시트에서 수동으로 확인·처리해 주세요.');
+      } catch (e) {}
+      return { ok: false, error: 'phone-ambiguous', count: _mauDupN };
+    }
     var phVals = sh.getRange(2, phI + 1, last - 1, 1).getValues();
     for (var i = 0; i < phVals.length; i++) {
       if (_regNormPhone_(phVals[i][0]) === key) {
@@ -5388,8 +5407,14 @@ function _processAction(body) {
     //     정지원님 중복행 사고(배306)와 같은 자리다. 전화키 멱등이라 재저장해도 행이 늘지 않는다.
     if ((_isSucNew || _wasSuc) && String(body.activeProgram || '').trim()) {
       try {
+        // ★2026-08-05 시토(GM 지시) — 여기서만 || _todayKR_() 폴백을 뺐다(직접등록 7945는 그대로 둔다 —
+        //   그쪽은 사람이 누른 명시적 등록 행위라 오늘 날짜가 맞다). 이 경로는 이미 SUC인 행의 재저장(예:
+        //   등록종목 오타 수정)마다 반복 호출되는데, body.regDate가 안 오면 매번 "오늘"을 억지로 채워
+        //   _memberActiveUpsert_가 기존 등록일자를 오늘로 덮어썼다(지문 재료 오염 → 다른 화면 동기화 실패로
+        //   보이는 원인). regDate가 비면 _memberActiveUpsert_의 if(regDate && regI>=0) 가드가 그냥 안 쓴다 —
+        //   신규 행은 그 함수의 appendRow 경로 자체 기본값(_todayKR_())이 여전히 채운다(무손상).
         _memberActiveUpsert_(_coName, _coPhone, String(body.activeProgram).trim(),
-                             body.regDate || _todayKR_(), body.months, {
+                             body.regDate, body.months, {
           kind:      body.memKind,
           age:       body.memAge,
           regClass:  body.memRegClass,
@@ -5447,7 +5472,18 @@ function _processAction(body) {
     if (_wasSuc && !_isSucNew && body.status !== undefined) {
       var _urPhCi = _miColIdx_(muHdr, ['연락처','전화','휴대폰']);
       var _urPhone = (body.keyPhone && String(body.keyPhone)) || (_urPhCi >= 0 ? String(muSh.getRange(muRow, _urPhCi + 1).getValue() || '') : '');
-      try { _regRemove_(_urPhone); } catch (e) {}
+      // ★2026-08-05 시토(GM 지시) — 완전 무음 catch였다(등록 해제 실패가 아무 데도 안 남음). 기록+경보 추가.
+      //   새 로그·새 발신기 없음 — Logger.log + 기존 _notifyTelegram 재사용.
+      try {
+        var _rrResult = _regRemove_(_urPhone);
+        if (_rrResult && _rrResult.ok === false) {
+          Logger.log('_regRemove_ 거부 — phone=' + _logMaskPhone_(_urPhone) + ' count=' + _rrResult.count);
+          try { _notifyTelegram('⚠️ 등록 해제 거부 — 전화 ' + _logMaskPhone_(_urPhone) + ' 매칭 ' + _rrResult.count + '건(2건 이상, 번호 공유 추정). "26년 등록현황"에서 수동 확인 필요. 대상: ' + (_coName || '-')); } catch (eN1) {}
+        }
+      } catch (e) {
+        Logger.log('_regRemove_ 예외 — phone=' + _logMaskPhone_(_urPhone) + ' err=' + e);
+        try { _notifyTelegram('⚠️ 등록 해제 처리 중 오류 — 전화 ' + _logMaskPhone_(_urPhone) + '. "26년 등록현황"에서 수동 확인 필요: ' + e); } catch (eN2) {}
+      }
     }
     // 조회 캐시 무효화(축1) — 다음 목록 조회부터 최신 반영. 2026-07-08 시토.
     try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
