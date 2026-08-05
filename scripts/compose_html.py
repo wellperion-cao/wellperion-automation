@@ -122,18 +122,28 @@ SUNDAY_INK = "#2C2823"
 
 # 변형 3종. photo_frac = 사진이 덮는 화면 비율(0 이면 사진 없음).
 SUNDAY_VARIANTS = {
-    # 표지: 사진 풀블리드 + 아래로 어두워지는 그라디언트 + 좌상단 라벨 + 좌하단 세리프 제목
+    # 표지: 사진 풀블리드 + 중성 다크 그라디언트 + 좌상단 라벨 + 좌하단 큰 제목(두 줄)
     "cover": {"photo_frac": 1.0, "pad": "76px", "stage_top": "0", "stage_bottom": "9%",
               "justify": "flex-end", "size": "84px", "line_height": "1.32",
-              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": True, "label": True, "bar": False},
-    # 02/03: 위 62% 사진 + 아래 크림 바탕 세리프 문장(좌정렬·수직 중앙)
-    "card": {"photo_frac": 0.62, "pad": "97px", "stage_top": "62%", "stage_bottom": "0",
-             "justify": "center", "size": "45px", "line_height": "1.55",
-             "bg": SUNDAY_CREAM, "fg": SUNDAY_INK, "grad": False, "label": False, "bar": False},
-    # 04 생각: 사진 없음 · 다크 바탕 + 주황 가로 바 + 흰 세리프 문장
+              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": "cover", "label": True, "bar": False},
+    # 02·03…: 표지와 같은 언어(풀블리드+그라디언트+한 줄)지만 표지와 구분한다 —
+    #   ①그라디언트를 따뜻한 색으로 ②아래쪽만 짧게 덮고 ③주황 바를 얹고 ④글씨를 작게.
+    #   (GM 결정 2026-08-05: "표지처럼 가되, 표지랑 다른 색감 등으로 구분")
+    "card": {"photo_frac": 1.0, "pad": "76px", "stage_top": "0", "stage_bottom": "8%",
+             "justify": "flex-end", "size": "46px", "line_height": "1.5",
+             "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": "card", "label": False, "bar": True},
+    # 생각: 사진 없음 · 다크 바탕 + 주황 가로 바 + 흰 문장
     "think": {"photo_frac": 0.0, "pad": "108px", "stage_top": "0", "stage_bottom": "0",
               "justify": "center", "size": "50px", "line_height": "1.62",
-              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": False, "label": False, "bar": True},
+              "bg": SUNDAY_DARK, "fg": "#FFFFFF", "grad": "", "label": False, "bar": True},
+}
+
+# 변형별 그라디언트 — 표지는 중성 다크, 사진 카드는 따뜻한 갈색(색감으로 구분).
+SUNDAY_GRADS = {
+    "cover": "linear-gradient(180deg, rgba(20,18,15,.42) 0%, rgba(20,18,15,0) 34%,"
+             " rgba(20,18,15,.10) 55%, rgba(20,18,15,.86) 100%)",
+    "card":  "linear-gradient(180deg, rgba(42,31,22,0) 52%, rgba(38,27,18,.72) 78%,"
+             " rgba(30,21,14,.92) 100%)",
 }
 
 ACCOUNTS = {
@@ -326,7 +336,8 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
             f"--sunday-stage-bottom: {v['stage_bottom']}; "
             f"--sunday-justify: {v['justify']}; "
             f"--sunday-text-size: {v['size']}; "
-            f"--sunday-line-height: {v['line_height']};"
+            f"--sunday-line-height: {v['line_height']}; "
+            f"--sunday-grad: {SUNDAY_GRADS.get(v['grad'], 'none')};"
         )
     if kind == "paper":
         tokens += (
