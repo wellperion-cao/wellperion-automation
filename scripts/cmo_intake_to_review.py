@@ -179,12 +179,25 @@ def _id_safe(s: str) -> str:
 
 
 def make_id(row: dict) -> str:
+    """접수 1건의 고유 id. ★날짜에 더해 '시각'까지 넣는다.
+
+    2026-08-05 실사고: 같은 사람이 같은 분류로 하루에 두 번 올리면 id 가 똑같아
+    (날짜+성함+분류) 두 번째 접수가 '이미 등록됨'으로 조용히 버려졌다. GM 이 12:39 에
+    올린 뒤 16:35 에 정보를 다 채워 다시 올렸는데 그 두 번째가 통째로 무시됐다.
+    시각(HHMM)을 넣어 같은 날 여러 번 올려도 각각 살아 있게 한다.
+    접수일시는 시트에 고정된 값이라 멱등성(같은 행 = 같은 id)은 그대로다.
+    """
     ts = str(row.get("접수일시") or "")
-    date_part = re.sub(r"[^0-9]", "", ts[:10]) or datetime.now().strftime("%Y%m%d")
-    date_part = date_part[:8] if len(date_part) >= 8 else date_part
+    digits = re.sub(r"[^0-9]", "", ts)
+    if len(digits) >= 12:
+        stamp = digits[:8] + "-" + digits[8:12]      # YYYYMMDD-HHMM
+    elif len(digits) >= 8:
+        stamp = digits[:8]
+    else:
+        stamp = datetime.now().strftime("%Y%m%d-%H%M")
     name = _id_safe(row.get("성함"))
     cat = _id_safe(row.get("분류"))
-    return f"CMO-INTAKE-{date_part}-{name}-{cat}"
+    return f"CMO-INTAKE-{stamp}-{name}-{cat}"
 
 
 def build_item(row: dict, item_id: str) -> dict:
