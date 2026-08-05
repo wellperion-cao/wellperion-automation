@@ -130,7 +130,16 @@ def _short_title(title: str) -> str:
     뒤에 있는 배가 많아 뜻이 사라졌다. 길이로 자르고 …를 붙인다(종합접수 블록과 동일)."""
     t = _ROLE_TAG_RE.sub("", str(title or "")).strip()
     t = re.sub(r"\s+", " ", t)
-    return t if len(t) <= RELAY_TITLE_CAP else t[:RELAY_TITLE_CAP].rstrip() + "…"
+    if len(t) <= RELAY_TITLE_CAP:
+        return t
+    # ★낱말 한가운데서 자르지 않는다(GM 상시 지시 — 어색한 중간 잘림 금지).
+    #   상한 안에서 마지막 띄어쓰기까지만 남긴다. 띄어쓰기가 아예 없으면(붙여 쓴 긴 제목)
+    #   어쩔 수 없이 길이로 자른다 — 그때는 잘린 티가 나는 게 뜻이 끊기는 것보다 낫다.
+    head = t[:RELAY_TITLE_CAP]
+    cut = head.rfind(" ")
+    if cut >= RELAY_TITLE_CAP // 2:
+        head = head[:cut]
+    return head.rstrip(" ·—-(→,") + "…"
 
 
 def build_relay_message(contacts: dict) -> str:
@@ -152,10 +161,15 @@ def build_relay_message(contacts: dict) -> str:
     ships.sort(key=lambda x: (_RELAY_WEIGHT.get(x.get("priority"), 9),
                               str(x.get("enqueued_at", ""))))
 
-    lines = [f"🧾 사람이 처리할 업무 {len(ships)}건 — AI가 대신 못 하는 건입니다."]
+    # 담당자가 한 사람뿐이면 이름을 머리줄에 한 번만 적는다 — 줄마다 같은 이름이 반복되면
+    # 정작 읽어야 할 제목이 묻힌다(카톡은 짧고 핵심만 · GM 2026-08-05).
+    # 배 번호도 싣지 않는다 — 실무진이 그 번호를 찾아볼 곳이 없다(내부 코드 노출 금지).
+    who = {contacts[s["clevel"]] for s in ships}
+    solo = who.pop() if len(who) == 1 else None
+    lines = [f"🧾 사람이 처리할 업무 {len(ships)}건" + (f" — {solo}" if solo else "")]
     for s in ships[:RELAY_SHOW_N]:
-        lines.append(f" • 배{s.get('short_no') or s.get('ship_no')} "
-                     f"{_short_title(s.get('title'))} · {contacts[s['clevel']]}")
+        tail = "" if solo else f" · {contacts[s['clevel']]}"
+        lines.append(f" • {_short_title(s.get('title'))}{tail}")
     if len(ships) > RELAY_SHOW_N:
         lines.append(f" • 외 {len(ships) - RELAY_SHOW_N}건")
     lines.append(RELAY_SIGNOFF)
