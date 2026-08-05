@@ -20,6 +20,9 @@
     '2026-08-23': '운영 정책'     // 지원부 약품·비품 비교 구매 구조 — 내부 프로세스 설계
   };
   function catFor(id) { return CATEGORY_BY_ID[id] || '분류 미정'; }
+  // 판정 함수 단일 출처(약속 L01) — 월간운영계획.html의 "이달 핵심 과제 상세" 목록도 이 함수로 GM 직접 건을
+  // 제외한다(2026-08-05 GM 지시). 두 화면이 각자 title.indexOf(...)를 다시 짜면 판정이 두 벌로 갈라진다.
+  function isGmDirect(title) { return String(title || '').indexOf(GM_TAG) !== -1; }
   // 'YYYY-MM' → '26.8.1~26.8.31' (해당월 전체 — 목표 자체에 시작·종료일이 없어 추적 대상 월 범위를 그대로 표기, 날짜 지어내지 않음).
   function monthRange(monthKey) {
     var m = String(monthKey || '').match(/^(\d{4})-(\d{2})$/);
@@ -36,7 +39,7 @@
     var objs = (month && month.objectives) || [];
     var schedule = monthRange(monthKey);
     return objs
-      .filter(function (o) { return String(o.title || '').indexOf(GM_TAG) !== -1; })
+      .filter(function (o) { return isGmDirect(o.title); })
       .map(function (o) {
         return {
           id: o.id,
@@ -49,5 +52,5 @@
         };
       });
   }
-  window.WellperionGmDirect = { extract: extract, GM_TAG: GM_TAG };
+  window.WellperionGmDirect = { extract: extract, isGmDirect: isGmDirect, GM_TAG: GM_TAG };
 })();
