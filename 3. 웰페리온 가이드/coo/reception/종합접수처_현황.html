@@ -1,6 +1,47 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!-- [속도개선] 통합 조회 shim — 2026-08-05. reg_board/reg_scoreboard(all)/reg_staff_suggest 호출을
+     가로채 reg_dashboard 한 번으로 합침(무거운 3호출->1). 필터·기간토글·lf·휴회는 통과. 화면코드 무수정. -->
+<script>
+(function () {
+  var API = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
+  var PV  = "wlp_reg_pv_2026";
+  var dashPromise = null;
+  function getDash() {
+    if (!dashPromise) {
+      dashPromise = _origFetch(API + "?action=reg_dashboard&pv=" + PV, { redirect: "follow", cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .catch(function (e) { dashPromise = null; throw e; });
+    }
+    return dashPromise;
+  }
+  function jsonResp(obj) {
+    return new Response(JSON.stringify(obj), { status: 200, headers: { "Content-Type": "application/json" } });
+  }
+  var _origFetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {
+    try {
+      var u = String((url && url.url) || url || "");
+      if (u.indexOf(API) >= 0) {
+        if (u.indexOf("action=reg_board") >= 0 && u.indexOf("category=") < 0 && u.indexOf("dept=") < 0) {
+          return getDash().then(function (d) { return jsonResp({ ok: true, count: (d.board || []).length, data: d.board || [] }); });
+        }
+        if (u.indexOf("action=reg_scoreboard") >= 0) {
+          var pm = u.match(/period=([a-zA-Z]+)/);
+          var per = pm ? pm[1].toLowerCase() : "all";
+          if (per === "all") { return getDash().then(function (d) { return jsonResp(d.scoreboard || { ok: true, board: [] }); }); }
+        }
+        if (u.indexOf("action=reg_staff_suggest") >= 0) {
+          return getDash().then(function (d) { return jsonResp({ ok: true, names: d.staffNames || [] }); });
+        }
+      }
+    } catch (e) { }
+    return _origFetch(url, opts);
+  };
+})();
+</script>
+
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
