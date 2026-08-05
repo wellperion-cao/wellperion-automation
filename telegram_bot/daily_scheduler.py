@@ -2562,6 +2562,33 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 담당배정 독려 예외: {e}")
 
+    # ── 24시간 SLA 위반 — 카카오 ★부서장 방 (2026-08-05 GM 지시) ──────────────────
+    # GM: "8월부터는 무조건 철저하게 관리해줘야해 담당자 24시간 내 미배정 및 컨택
+    # 안되었을 시에는 카카오톡 부서장방에 전달." 위 배정 독려(텔레그램·상한없음)와 다른
+    # 층 — 대상 8/1 이후 신규만, 문턱 24시간, 목적지 카카오뿐(텔레그램 안 건드림). 새
+    # 스크립트·새 예약작업·새 방 없음 — unassigned_nudge.py 가 이미 읽는 데이터에 얹은
+    # 판정을 기존 카카오 관문(kakao_report_sender.py --message --only-room)으로만 보낸다.
+    # 도배 방지: run_daily_digest 자체가 하루 1회 게이트(위 rest_day 분기)라 별도 가드
+    # 없이도 하루 1회. 위반 0건이면 build_sla_alert_text가 빈 문자열 — 발송 자체를 스킵.
+    try:
+        sla_violations = _un.collect_sla_violations()
+        sla_text = _un.build_sla_alert_text(sla_violations)
+        if sla_text:
+            sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+            env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+            proc = subprocess.run(
+                [sys.executable, str(sender), "--message", sla_text, "--only-room", KAKAO_DEPTHEAD_ROOM],
+                cwd=str(REPO_ROOT), capture_output=True, text=True,
+                encoding="utf-8", errors="replace", env=env, timeout=180,
+            )
+            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+            logger.info(f"{label} 24h SLA 위반 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]} "
+                        f"(위반 {len(sla_violations)}건)")
+        else:
+            logger.info(f"{label} 24h SLA 위반 0건 — 카톡 발송 없음")
+    except Exception as e:
+        logger.error(f"{label} 24h SLA 위반 카톡 발송 예외: {e}")
+
     # ── 스트림 #2 점검+이슈 현황 (점검현황방 단독 · 2026-07-22) ─────────────────────
     s2_msg = None  # 카톡 ★운영+시설+지원+주차 재사용(아래) — 빌드 실패 시 None 유지, 카톡 스킵.
     try:

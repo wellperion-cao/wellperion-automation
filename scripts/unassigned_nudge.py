@@ -36,6 +36,22 @@ GM 지시: "미배정건 각 팀장분들한테 좋게 푸시해서 배정 다 �
     --list-dormant 로 전체 목록 열람(월 1회 검토용). 연락이력이 있는 100일+ 건은
     이미 관계가 있으므로 정상 배정 대상이다.
 
+★2026-08-05 시토 추가 — 24시간 SLA 위반 → 카카오 ★부서장 방 (GM 지시)
+  GM: "8월부터는 무조건 철저하게 관리해줘야해 담당자 24시간 내 미배정 및 컨택
+  안되었을 시에는 카카오톡 부서장방에 전달." 위 배정 독려(텔레그램·문의알림방·
+  상한없음)와는 다른 층 — 대상은 8/1 이후 신규 접수만, 문턱은 정확히 24시간,
+  목적지는 카카오 ★부서장 방(scripts/kakao_rooms.json 정본). 새 스크립트·새 예약
+  작업·새 방 없음 — 이 모듈이 이미 읽는 데이터에 collect_sla_violations()/
+  build_sla_alert_text()만 얹고, 발신은 daily_scheduler.run_daily_digest()가 기존
+  카카오 관문(kakao_report_sender.py --message --only-room)으로 보낸다.
+  판정 = 접수 후 24시간 경과 && (담당자 없음 || 컨택기록 0건). 단, 이미 등록완료·
+  이탈종결(LOSS)로 끝난 건은 대상에서 뺀다(R._is_registered/_is_loss 재사용 —
+  이미 해결된 리드를 "위반"으로 알리면 부서장이 헛다리를 짚는다). 도배 방지 =
+  하루 1회(run_daily_digest 자체가 하루 1회만 실행되는 게이트라 별도 가드 파일을
+  두지 않는다 — 약속 L21, 새 원장 금지). 위반이 계속되면 경과시간이 매일 바뀌므로
+  매일 다시 알리는 게 맞다(GM "철저하게") — 재알림 억제 없음. 위반 0건이면 조용히
+  아무것도 보내지 않는다.
+
 ★2026-08-05 시토 개편 (GM 지시 — "다른 내용까지 다 같이 들어가니까 진행이 안된다")
   - 진단: 이 모듈 자체는 배9206 이후 한 번도 실제 발신 배선에 물린 적이 없었다.
     실제로 팀장님들이 받던 배정 독려는 report_stream_1_impl.build_digest() 안
@@ -96,6 +112,12 @@ DORMANT_OVER_DAYS = 100      # 이 일수 "초과" + 연락이력 0건 = 휴면
 RENOTIFY_GAP_DAYS = 1        # 같은 건 재알림 최소 간격 — 배정될 때까지 매일(GM 08-05). 같은 날 중복실행만 막는다.
 NOTIFIED_KEEP_DAYS = 30      # 가드 맵에서 이보다 오래된 기록은 청소(무한 비대 방지)
 HEARTBEAT_ID = "cpo-unassigned-nudge"  # 배10014 방식 — 상설 파일 1개 갱신
+
+# ── 24시간 SLA 위반 → 카카오 ★부서장 방 (GM 2026-08-05 지시) ────────────────────
+SLA_SINCE_DATE = "2026-08-01"  # 대상 = 이 날짜(포함) 이후 접수분만
+SLA_HOURS = 24                 # 문턱 — 배정·컨택 둘 중 하나라도 없으면 위반
+SLA_MSG_DISPLAY_N = 5          # 본문에 줄로 싣는 건수(GM "10줄 안쪽")
+KAKAO_DEPTHEAD_ROOM = "★부서장"  # scripts/kakao_rooms.json 정본과 동일 값(창-제목 대조용)
 
 
 def _has_contact(row: dict) -> bool:
@@ -249,6 +271,95 @@ def _sport_short(sport: str) -> str:
     return sport.split("(")[0].strip() or "-"
 
 
+def _hours_since_ts(ts: str, now_dt: datetime) -> float:
+    """접수 타임스탬프(실측 형식 "YYYY-MM-DD HH:MM:SS")부터 now_dt 까지 경과시간(시간
+    단위, 소수). R._days_since() 는 날짜만 잘라 비교해 자정 근처 오차가 최대 하루라
+    24시간 문턱 판정엔 못 쓴다 — 이 함수는 시각까지 그대로 써서 실제 경과시간을 잰다."""
+    raw = str(ts or "").strip()
+    d0 = None
+    try:
+        d0 = datetime.strptime(raw[:19], "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        try:
+            d0 = datetime.strptime(raw[:10], "%Y-%m-%d")  # 시각 없는 값 폴백(자정 취급)
+        except Exception:
+            return 0.0
+    return (now_dt - d0).total_seconds() / 3600.0
+
+
+def _is_assigned_owner(row: dict) -> bool:
+    """담당자 배정 여부(연락 유무와 무관) — R._is_unassigned_active 와 같은 오너 판정
+    (owner 비었거나 자동접수값이면 미배정)이지만 등록/이탈 여부는 섞지 않는다."""
+    owner = str(row.get("owner", "") or "").strip()
+    return bool(owner) and owner not in R._AUTO_OWNER_VALUES
+
+
+def _fmt_elapsed(hours: float) -> str:
+    if hours < 48:
+        return f"{int(hours)}시간"
+    return f"{int(hours // 24)}일"
+
+
+def collect_sla_violations(now: datetime | None = None) -> list[dict]:
+    """8/1(SLA_SINCE_DATE) 이후 접수 강습 문의 중 24시간(SLA_HOURS) 경과 +
+    (담당자 없음 또는 컨택기록 0건) 위반건. 이미 등록완료·이탈종결(LOSS)로 끝난
+    건은 빼고(R._is_registered/_is_loss 재사용 — 판정 기준 두 벌 금지), 경과시간
+    내림차순(오래된 위반 먼저)으로 반환한다."""
+    now = now or datetime.now()
+    sources = {
+        "성인강습": R._fetch_list("lesson_inquiry_list", type="성인강습"),
+        "유소년강습": R._fetch_list("lesson_inquiry_list", type="유소년강습"),
+    }
+    out: list[dict] = []
+    for label, rows in sources.items():
+        for r in rows:
+            if R._is_test_row(r):
+                continue
+            ts = str(r.get("timestamp", "") or "")
+            if ts[:10] < SLA_SINCE_DATE:
+                continue
+            if R._is_registered(r, True) or R._is_loss(r):
+                continue  # 이미 해결된 리드 — 위반 알림 대상 아님
+            hours = _hours_since_ts(ts, now)
+            if hours < SLA_HOURS:
+                continue
+            assigned = _is_assigned_owner(r)
+            contacted = _has_contact(r)
+            if assigned and contacted:
+                continue  # 배정도 컨택도 됐으면 정상
+            out.append({
+                "type": label,
+                "sport": str(r.get("sport", "") or "-").strip() or "-",
+                "name": str(r.get("name", "") or "-").strip() or "-",
+                "date": ts[:16] or "-",
+                "hours": hours,
+                "assigned": assigned,
+                "contacted": contacted,
+                "reason": "담당없음" if not assigned else "담당있음·컨택없음",
+            })
+    out.sort(key=lambda x: -x["hours"])
+    return out
+
+
+def build_sla_alert_text(violations: list[dict]) -> str:
+    """카카오 ★부서장 방용 평문(GM 2026-08-05) — 위반 0건이면 빈 문자열(발송 안 함).
+    10줄 안쪽·한 줄에 한 건(접수일시·이름·종목·경과시간·상태)·부탁 조·AI 주체 명시."""
+    if not violations:
+        return ""
+    shown = violations[:SLA_MSG_DISPLAY_N]  # 이미 경과시간 내림차순(오래된 순)
+    rest_n = len(violations) - len(shown)
+    lines = [f"⏰ 24시간 미배정·미컨택 · {len(violations)}건 (8/1 이후 접수분)"]
+    lines.append("부서장님, 아래 문의 확인 부탁드립니다 🙏")
+    for it in shown:
+        lines.append(f"· {it['date']} · {it['name']} · {_sport_short(it['sport'])} · "
+                     f"{_fmt_elapsed(it['hours'])}째 · {it['reason']}")
+    if rest_n > 0:
+        lines.append(f"… 외 {rest_n}건 (총 {len(violations)}건)")
+    lines.append(f"👉 처리하기: {ASSIGN_URL_LESSON} (입장코드 {ENTRY_CODE})")
+    lines.append(AI_SIGNOFF)
+    return "\n".join(lines)
+
+
 def build_payload(today: str | None = None, notified: dict[str, str] | None = None) -> dict:
     """오늘 회차 산출물 한 벌: 본문 + 선발 10건 + 휴면 목록 + 집계."""
     today = today or datetime.now().strftime("%Y-%m-%d")
@@ -328,6 +439,65 @@ def send(text: str, chat_id: int) -> dict:
     return {"ok": bool(resp.get("ok")), "chat_id": chat_id, "resp": resp}
 
 
+def _selftest_sla() -> None:
+    """24시간 SLA 위반 판정 자가검사(assert 기반, 실제 GAS 호출·발송 0건 — R._fetch_list
+    를 가짜 행으로 바꿔치기). 확인: ①24시간 미만은 안 걸림 ②7월 접수분은 대상 아님
+    ③담당있음·컨택없음이 담당없음과 구분됨 ④등록완료/LOSS 는 대상에서 빠짐
+    ⑤위반 0건이면 빈 문자열(발송 안 함) ⑥본문 10줄 이내."""
+    now = datetime(2026, 8, 5, 12, 0, 0)  # 기준 "지금"
+
+    def _row(name, ts, owner="", contacts=None, status=""):
+        return {"name": name, "timestamp": ts, "owner": owner,
+                "contacts": contacts or [], "status": status, "sport": "성인 수영"}
+
+    rows = [
+        _row("갓접수", "2026-08-05 01:00:00"),                       # 11h — 24h 미만, 대상 아님
+        _row("칠월접수", "2026-07-30 08:00:00"),                     # 7월 — 대상 아님(날짜 컷)
+        _row("담당없음A", "2026-08-01 08:00:00"),                    # 오너 없음 — 위반(담당없음)
+        _row("담당있음미컨택", "2026-08-02 08:00:00", owner="김상식"),  # 컨택 0 — 위반(담당있음·컨택없음)
+        _row("정상처리", "2026-08-02 08:00:00", owner="김상식",
+             contacts=[{"note": "1차 상담 완료"}]),                  # 배정+컨택 — 정상
+        _row("등록완료건", "2026-08-01 08:00:00", status="등록완료"),  # 이미 해결 — 대상 아님
+        _row("이탈건", "2026-08-01 08:00:00", status="LOSS"),         # 이미 해결 — 대상 아님
+        _row("자동접수값", "2026-08-01 08:00:00", owner="웹 자동접수"),  # 자동값=미배정 취급 — 위반
+    ]
+
+    orig_fetch = R._fetch_list
+    R._fetch_list = lambda action, **params: (rows if params.get("type") == "성인강습" else [])
+    try:
+        v = collect_sla_violations(now=now)
+        names = {it["name"] for it in v}
+        assert "갓접수" not in names, "24시간 미만인데 위반으로 잡힘"
+        assert "칠월접수" not in names, "7월 접수분인데 위반으로 잡힘(날짜 컷 실패)"
+        assert "정상처리" not in names, "배정+컨택 다 됐는데 위반으로 잡힘"
+        assert "등록완료건" not in names, "이미 등록완료인데 위반으로 잡힘"
+        assert "이탈건" not in names, "이미 LOSS 종결인데 위반으로 잡힘"
+        assert "담당없음A" in names and "자동접수값" in names, "담당 없는 건이 안 잡힘"
+        assert "담당있음미컨택" in names, "담당 있고 컨택만 없는 건이 안 잡힘"
+
+        by_name = {it["name"]: it for it in v}
+        assert by_name["담당없음A"]["reason"] == "담당없음"
+        assert by_name["자동접수값"]["reason"] == "담당없음"
+        assert by_name["담당있음미컨택"]["reason"] == "담당있음·컨택없음", \
+            "담당있음·컨택없음이 담당없음과 구분 안 됨"
+        print(f"  [판정] 위반 {len(v)}건 — 24h미만 제외/7월 제외/정상 제외/등록·LOSS 제외/"
+              "담당없음↔담당있음·컨택없음 구분 — 전부 통과")
+
+        empty_text = build_sla_alert_text([])
+        assert empty_text == "", "위반 0건인데 본문이 생성됨(발송하면 안 됨)"
+        print("  [빈 목록] 본문 \"\" — 발송 안 함 — 통과")
+
+        text = build_sla_alert_text(v)
+        assert "★부서장" not in text  # 방 이름은 본문이 아니라 --only-room 인자로 감(중복 노출 방지)
+        assert AI_SIGNOFF in text, "AI 주체 서명 누락(기존 배정 독려와 동일 서명 AI_SIGNOFF 재사용)"
+        line_n = len(text.splitlines())
+        assert line_n <= 10, f"본문이 10줄을 넘음({line_n}줄)"
+        print(f"  [본문] {line_n}줄(10줄 이내) · 서명 포함 — 통과")
+        print("SELFTEST OK: 24시간 SLA 위반 판정 정상(실발송 0건)")
+    finally:
+        R._fetch_list = orig_fetch
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="문의 담당자 미배정 배정 독려 안내")
     p.add_argument("--send", action="store_true",
@@ -337,7 +507,25 @@ def main() -> int:
     p.add_argument("--today", default=None, help="기준일(YYYY-MM-DD, 기본 오늘)")
     p.add_argument("--list-dormant", action="store_true",
                    help="휴면(연락이력 0건·100일 초과) 전체 목록 출력 — 월 1회 검토용. 발송 없음.")
+    p.add_argument("--sla-check", action="store_true",
+                   help="24시간 SLA 위반(카카오 ★부서장 방 대상) 본문만 출력 — 발송 없음(검증용).")
+    p.add_argument("--selftest", action="store_true",
+                   help="SLA 판정 자가검사만 실행(가짜 데이터·실제 발신 0건).")
     args = p.parse_args()
+
+    if args.selftest:
+        _selftest_sla()
+        return 0
+
+    if args.sla_check:
+        violations = collect_sla_violations()
+        text = build_sla_alert_text(violations)
+        print(f"[SLA 위반] {len(violations)}건 (8/1 이후 접수 · 24시간 경과 · 담당없음/컨택없음) "
+              f"— 목적지=카카오 {KAKAO_DEPTHEAD_ROOM} 방")
+        print("-" * 56)
+        print(text or "(위반 0건 — 발송 안 함)")
+        print("-" * 56)
+        return 0
 
     payload = build_payload(args.today)
     chat_id = GM_CHAT_ID if args.to == "gm" else STAFF_CHAT_ID
