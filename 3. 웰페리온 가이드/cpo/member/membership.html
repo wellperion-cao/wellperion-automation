@@ -5220,6 +5220,8 @@ function lessonFilterSport(btn, t) {
   _lessonState[t].shown = LESSON_PAGE_SIZE;   // 종목 전환 시 페이지 리셋(배944 후속)
   lessonRenderChips(t);
   lessonRender(t);
+  lessonWaitRender(t);
+  lessonLossRender(t);
 }
 function lessonFilterStatus(btn, t) {
   _lessonState[t].statusF = btn.getAttribute('data-status') || '';
@@ -5715,18 +5717,26 @@ function _lessonBucketRender(t, statusVal, tbodyId, statLineId, emptyTitle, empt
     tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">' + esc(emptyTitle) + '</div><div class="empty-state-desc">' + esc(emptyDesc) + '</div></div></td></tr>';
     if (sl) sl.textContent = '0명'; return;
   }
+  var curSport = (_lessonState[t] && _lessonState[t].sport) || '';
   var lines = [];
   rows.forEach(function(r){
     var sports = _lessonSportSplit(r.sport); if (!sports.length) sports = [''];
-    sports.forEach(function(sportKey){ lines.push({ row: r, sportKey: sportKey, sportLabel: sportKey || '—' }); });
+    sports.forEach(function(sportKey){
+      if (curSport && _lessonSegmentBucket(sportKey) !== curSport) return;
+      lines.push({ row: r, sportKey: sportKey, sportLabel: sportKey || '—' });
+    });
   });
+  if (!lines.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-title">' + esc(emptyTitle) + '</div><div class="empty-state-desc">' + esc(emptyDesc) + '</div></div></td></tr>';
+    if (sl) sl.textContent = '0명'; return;
+  }
   if (sortState && sortState.active) {
     lines.sort(function(a, b){ return sortState.dir * a.sportLabel.localeCompare(b.sportLabel, 'ko'); });
   }
   var html = '';
   lines.forEach(function(ln){ html += _lessonRowHtml(t, ln.row, ln.sportKey, ln.sportLabel); });
   tbody.innerHTML = html;
-  if (sl) sl.textContent = rows.length + '명';
+  if (sl) sl.textContent = lines.length + '명';
 }
 function lessonLossRender(t) { _lessonBucketRender(t, 'LOSS', 'lessonLossBody_' + t, 'lessonLossStatLine_' + t, 'LOSS 회원 없음', '등록 무산(LOSS) 처리된 문의가 없습니다.'); }
 
