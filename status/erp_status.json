@@ -1,8 +1,8 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-08-05T07:56:32Z",
-  "generated_at_kst": "2026-08-05 16:56",
-  "summary": "✅ 전체 정상",
+  "generated_at": "2026-08-05T11:57:17Z",
+  "generated_at_kst": "2026-08-05 20:57",
+  "summary": "⚠️ 점검 필요: 시트 GAS(todo_list)",
   "systems": [
     {
       "name": "일일 스케줄러",
@@ -13,7 +13,7 @@
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "하트비트 4분 전(생존) · 최근 발신 165분 전",
+      "detail": "하트비트 4분 전(생존) · 최근 발신 127분 전",
       "note": "보고·승인 중계"
     },
     {
@@ -31,32 +31,32 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "HTTP 200 · active 80건 라이브=로컬 일치"
+      "detail": "HTTP 200 · active 81건 라이브=로컬 일치"
     },
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "드리프트 감지 → 자가치유 완료(자동 동기화) — 일치 · active 80건/603061B"
+      "detail": "드리프트 감지 → 자가치유 완료(자동 동기화) — 일치 · active 81건/633727B"
     },
     {
       "name": "시트 GAS(todo_list)",
-      "state": "정상",
-      "detail": "HTTP 200 · data 110건"
+      "state": "이상",
+      "detail": "GAS HTTP 404 — 업무·결재 SSOT 끊김"
     },
     {
       "name": "M5 검수큐 라이브",
       "state": "정상",
-      "detail": "HTTP 200 · 175건 파싱 OK"
+      "detail": "HTTP 200 · 177건 파싱 OK"
     },
     {
       "name": "미푸시 커밋",
       "state": "정상",
-      "detail": "1건 동기화 진행 중(3s, 자가복구 창 내) — 정상"
+      "detail": "2건 동기화 진행 중(48s, 자가복구 창 내) — 정상"
     },
     {
       "name": "KPI 집계 신선도",
       "state": "정상",
-      "detail": "9.1h 전 갱신 — 정상"
+      "detail": "13.1h 전 갱신 — 정상"
     }
   ],
   "automation_health": {
@@ -89,9 +89,9 @@
       {
         "name": "Wellperion-CMO-Content-Intake-15min",
         "state": "정상",
-        "last_run": "2026-08-05 오후 4:56:01",
+        "last_run": "2026-08-05 오후 8:56:01",
         "last_result": 0,
-        "next_run": "2026-08-05 오후 4:58:00"
+        "next_run": "2026-08-05 오후 8:58:00"
       },
       {
         "name": "Wellperion-CMO-Daily-Marketing-2100",
@@ -124,9 +124,9 @@
       {
         "name": "Wellperion-CPO-Inquiry-Snapshot-3min",
         "state": "정상",
-        "last_run": "2026-08-05 오후 4:54:01",
+        "last_run": "2026-08-05 오후 8:57:01",
         "last_result": 0,
-        "next_run": "2026-08-05 오후 4:57:00"
+        "next_run": "2026-08-05 오후 9:00:00"
       },
       {
         "name": "Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000",
@@ -286,12 +286,12 @@
   },
   "git_sync": {
     "state": "정상",
-    "detail": "미푸시 3건 · origin 최신 0분 전",
-    "unpushed": 3,
-    "origin_at": "2026-08-05T16:55:42+09:00"
+    "detail": "미푸시 2건 · origin 최신 2분 전",
+    "unpushed": 2,
+    "origin_at": "2026-08-05T20:55:03+09:00"
   },
   "archive_summary": {
-    "total": 3270,
+    "total": 3267,
     "done": 3225,
     "latest_processed_at": "2026-08-04"
   }
