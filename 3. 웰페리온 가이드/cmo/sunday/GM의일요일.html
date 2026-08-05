@@ -45,6 +45,14 @@
   .thumb .lab{position:absolute;left:4px;top:4px;font-size:10px;background:rgba(20,18,15,.62);color:#FBF8F2;padding:2px 6px;border-radius:999px;}
   .thumb .del{position:absolute;right:3px;top:3px;width:22px;height:22px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:13px;line-height:1;cursor:pointer;}
   .note{font-size:12px;line-height:1.7;color:#8A8377;}
+  .cover-pick{display:flex;flex-direction:column;gap:9px;border-top:1px solid #EEE9DF;padding-top:14px;}
+  .cover-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+  .cover-opt{flex:0 0 auto;width:74px;cursor:pointer;border:none;background:none;padding:0;display:flex;flex-direction:column;gap:5px;}
+  .cover-opt .im{width:74px;height:74px;overflow:hidden;background:#E2DCD0;border:2px solid transparent;}
+  .cover-opt .im img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cover-opt .cap{font-size:11px;color:#8A8377;text-align:center;}
+  .cover-opt.on .im{border-color:#B4552E;}
+  .cover-opt.on .cap{color:#B4552E;font-weight:500;}
   .fld{border:1px solid #E2DCD0;background:#fff;padding:12px;font-size:14px;color:#23201C;width:100%;}
   .row{display:flex;gap:10px;flex-wrap:wrap;}
   select.fld{padding:11px;}
@@ -122,6 +130,12 @@
         <input type="file" accept="image/*" multiple id="f_photos" style="display:none;">
       </label>
       <div class="grid3 hide" id="thumbs"></div>
+
+      <!-- 표지 고르기 (GM 지시 2026-08-05 — 첫 장 자동 지정 대신 직접 고른다) -->
+      <div class="cover-pick hide" id="coverPick">
+        <div class="f-lab">표지 고르기 <span style="letter-spacing:0;color:#6E675E;">— 캐러셀 맨 앞에 올 사진</span></div>
+        <div class="cover-strip" id="coverStrip"></div>
+      </div>
     </div>
 
     <!-- ② 영상 -->
@@ -242,6 +256,7 @@
   var HASHTAGS = '#GM의일요일 #가족 #일요일의기록 #행복은평범함에 #주말기록';
 
   var photos = [];          // {file, url}
+  var coverIdx = 0;         // 표지로 고른 장의 위치
   var videoFile = null;
   var hasDraft = false;
   var sent = false;
@@ -256,16 +271,44 @@
     box.innerHTML = '';
     photos.forEach(function(p, i){
       var d = document.createElement('div'); d.className = 'thumb';
-      d.innerHTML = '<img src="'+p.url+'"><div class="lab">'+(i===0?'표지':(i+1))+'</div>';
+      d.innerHTML = '<img src="'+p.url+'"><div class="lab">'+(i===coverIdx?'표지':(i+1))+'</div>';
       var b = document.createElement('button'); b.className='del'; b.textContent='×';
-      b.onclick = function(){ URL.revokeObjectURL(p.url); photos.splice(i,1); renderThumbs(); renderPreview(); };
+      b.onclick = function(){
+        URL.revokeObjectURL(p.url); photos.splice(i,1);
+        if (coverIdx > i) coverIdx--;              // 앞의 장이 빠지면 표지 위치가 하나 당겨진다
+        if (coverIdx >= photos.length) coverIdx = 0;
+        renderThumbs(); renderCoverPick(); renderPreview();
+      };
       d.appendChild(b); box.appendChild(d);
     });
   }
+
+  // 표지 고르기 — 첫 장 자동 지정 대신 직접 고른다(GM 지시 2026-08-05)
+  function renderCoverPick(){
+    $('coverPick').classList.toggle('hide', photos.length < 2);
+    var strip = $('coverStrip'); strip.innerHTML = '';
+    photos.forEach(function(p, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cover-opt' + (i === coverIdx ? ' on' : '');
+      b.innerHTML = '<div class="im"><img src="'+p.url+'"></div>'
+                  + '<div class="cap">'+(i === coverIdx ? '표지' : (i+1)+'번')+'</div>';
+      b.onclick = function(){ coverIdx = i; renderThumbs(); renderCoverPick(); renderPreview(); };
+      strip.appendChild(b);
+    });
+  }
+
+  // 표지로 고른 장이 맨 앞, 나머지는 올린 순서 그대로 뒤에 붙는다.
+  function orderedUrls(){
+    var rest = photos.filter(function(_, i){ return i !== coverIdx; }).map(function(p){ return p.url; });
+    var cov = photos[coverIdx] ? [photos[coverIdx].url] : [];
+    return cov.concat(rest);
+  }
+
   function renderPreview(){
     $('previewCard').classList.toggle('hide', !hasDraft);
     if (!hasDraft) return;
-    var u = photos.map(function(p){ return p.url; });
+    var u = orderedUrls();
     $('p_cover').src  = u[0] || '';
     $('p_shot2').src  = u[1] || u[0] || '';
     $('p_shot3').src  = u[2] || u[0] || '';
@@ -303,7 +346,7 @@
   $('f_photos').addEventListener('change', function(){
     [].slice.call(this.files).forEach(function(f){ photos.push({ file:f, url:URL.createObjectURL(f) }); });
     this.value = '';
-    renderThumbs(); renderPreview();
+    renderThumbs(); renderCoverPick(); renderPreview();
   });
   $('f_video').addEventListener('change', function(){
     videoFile = this.files[0] || null;
@@ -374,10 +417,12 @@
     try{
       var gas = await gasUrl();
 
+      // 표지로 고른 장을 맨 앞에 놓고 보낸다 — 받는 쪽은 첫 장을 표지로 쓴다.
+      var order = [photos[coverIdx]].concat(photos.filter(function(_, i){ return i !== coverIdx; }));
       var pics = [];
-      for (var i=0;i<photos.length && i<5;i++){
-        btn.textContent = '사진 준비 중… ('+(i+1)+'/'+Math.min(photos.length,5)+')';
-        pics.push(await shrinkPhoto(photos[i].file));
+      for (var i=0;i<order.length && i<5;i++){
+        btn.textContent = '사진 준비 중… ('+(i+1)+'/'+Math.min(order.length,5)+')';
+        pics.push(await shrinkPhoto(order[i].file));
       }
       btn.textContent = '보내는 중… (30초~1분)';
       var video = videoFile ? await toB64(videoFile) : null;
