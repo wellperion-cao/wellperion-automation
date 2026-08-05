@@ -674,15 +674,17 @@ def _compose_sunday_info(rows: list, output: Path) -> bool:
     if len(rows) < 2:
         return False
     try:
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
         from compose_html import render_carousel
-        out = render_carousel(
-            {"account": "personal", "size": "1080x1350",
-             "slides": [{"type": "sunday", "variant": "info", "rows": rows}]},
-            output.parent, fmt="jpg")
-        made = Path(out[0])
-        if made != output:
-            made.replace(output)
+        # ★임시 폴더에 렌더한 뒤 옮긴다. 결과 폴더에 바로 렌더하면 엔진이 첫 장을 항상
+        #   post_1.jpg 로 쓰기 때문에 이미 만들어 둔 표지(post_1.jpg)를 덮어쓰고 옮겨 간다
+        #   — 2026-08-05 실사고: 표지 파일이 사라져 M1 미리보기가 통째로 깨졌다.
+        with tempfile.TemporaryDirectory() as tmp:
+            made = render_carousel(
+                {"account": "personal", "size": "1080x1350",
+                 "slides": [{"type": "sunday", "variant": "info", "rows": rows}]},
+                Path(tmp), fmt="jpg", concurrency=1)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(made[0]), str(output))
         return True
     except Exception as exc:
         print(f"[WARN] 정보 슬라이드 렌더 실패(건너뜀): {exc}", file=sys.stderr)
