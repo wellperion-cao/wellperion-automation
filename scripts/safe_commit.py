@@ -130,6 +130,13 @@ COO_DOMAIN_PATHS = frozenset({
 #   "AI가 그 도메인 파일을 직접 '수정'하는 경로"(safe_commit)만 COO와 같은 방식
 #   으로 마저 막는다. 위 chro/cfo 보호 삭제 판정(§ PROTECTED_DELETE_PREFIXES)은
 #   "삭제"만 막고 "수정"은 안 막았다 — 그 구멍.
+# ★재확정(같은 날, GM): "실무 처리 시로 시뽀도 배(업무) 유지하고, 실무 처리를
+#   ★중간관리자 방 전달 → 사람이 처리하게 해줘." → 배(큐 항목)를 되살린 것은
+#   추적용이지 AI가 파일을 고쳐도 된다는 뜻이 아니다 — 이 차단은 그대로 유지.
+#   대신 전달처를 나눈다: 시우(운영) 도메인 차단은 ★운영부 방(담당 최준용M),
+#   시로·시뽀(인사·재무) 도메인 차단은 ★중간관리자 방(담당 나우열M) — 두 방
+#   모두 scripts/kakao_rooms.json all_rooms 에 실재(새 방 안 만듦). 아래
+#   DOMAIN_MODIFY_RULES 의 room 필드가 이 구분을 담는다.
 #
 # 경로 출처(임의 확장 금지) — ssot/ownership_map.json roles[]:
 #   시로 domain="업무현황 SSOT·결재현황 SSOT" → 실제 파일 2개(폴더는 coo 지만
@@ -155,17 +162,20 @@ _CFO_GM_JUDGMENT_NOTE = (
 
 # 세 도메인을 한 판정 함수(_domain_modify_violation)로 처리한다(약속 L01 —
 # 같은 관문 안에서 로직도 하나로 합친다. 새 가드 파일·새 함수 난립 금지).
-# 튜플: (역할표기, 담당자 표기, 경로집합, GM판단 메모 or None)
+# 튜플: (역할표기, 담당자 표기, 경로집합, 전달방(카톡 room name), GM판단 메모 or None)
+# ★2026-08-05 GM 재확정 — 전달처를 도메인별로 가른다: 시우(운영)=★운영부,
+#   시로·시뽀(인사·재무)=★중간관리자. 두 방 모두 scripts/kakao_rooms.json
+#   all_rooms 에 실재(새 방 생성 금지).
 DOMAIN_MODIFY_RULES = (
-    ("COO(시우)", "최준용M", COO_DOMAIN_PATHS, None),
-    ("CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS, None),
-    ("CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS, _CFO_GM_JUDGMENT_NOTE),
+    ("COO(시우)", "최준용M", COO_DOMAIN_PATHS, "★운영부", None),
+    ("CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS, "★중간관리자", None),
+    ("CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS, "★중간관리자", _CFO_GM_JUDGMENT_NOTE),
 )
 
 
 def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
-                              domain_paths: frozenset, judgment_note: str | None,
-                              root: Path) -> str | None:
+                              domain_paths: frozenset, room: str,
+                              judgment_note: str | None, root: Path) -> str | None:
     """도메인 경로가 이번 커밋에 하나라도 걸리면 차단 문구를 만든다(없으면 None).
 
     강행: env SKIP_PHANTOM_DELETE_GUARD=1(로그는 precommit_phantom_delete_guard 의
@@ -181,12 +191,13 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
         return None
     extra = f" 외 {len(hits) - 1}건" if len(hits) > 1 else ""
     note = f" [GM 판단 대상] {judgment_note}" if judgment_note else ""
+    room_tag = room.lstrip("★")
     return (
         f"{role_label} 도메인 차단: {hits[0]}{extra} — AI가 직접 수정하지 않습니다"
-        f"(GM 확정 2026-08-05). 담당: {contact}. ★운영부 카톡방에 담당자 붙여 전달하세요: "
-        f"python scripts/queue_dispatch.py --to ceo --title \"[운영부 전달] "
+        f"(GM 확정 2026-08-05). 담당: {contact}. {room} 카톡방에 담당자 붙여 전달하세요: "
+        f"python scripts/queue_dispatch.py --to ceo --title \"[{room_tag} 전달] "
         f"{hits[0]} 수정 필요\" --note \"담당자: {contact} (scripts/kakao_rooms.json "
-        f"★운영부 members 참조)\" (웰리가 ★운영부 방으로 전달)."
+        f"{room} members 참조)\" (웰리가 {room} 방으로 전달)."
         f" 강행하려면 env {_DOMAIN_GUARD_SKIP_ENV}=1(로그 남음).{note}"
     )
 
@@ -417,8 +428,8 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
     # — 위 COO_DOMAIN_PATHS/CHRO_DOMAIN_PATHS/CFO_DOMAIN_PATHS·DOMAIN_MODIFY_RULES
     # 주석 참조). 삭제뿐 아니라 추가·수정도 막는다 — 기본은 항상 차단이고, 사람이
     # 강행할 때만 통과(우회 로그는 _domain_modify_violation 안에서 남긴다).
-    for role_label, contact, domain_paths, judgment_note in DOMAIN_MODIFY_RULES:
-        v = _domain_modify_violation(diff_pairs, role_label, contact, domain_paths, judgment_note, root)
+    for role_label, contact, domain_paths, room, judgment_note in DOMAIN_MODIFY_RULES:
+        v = _domain_modify_violation(diff_pairs, role_label, contact, domain_paths, room, judgment_note, root)
         if v:
             violations.append(v)
 
