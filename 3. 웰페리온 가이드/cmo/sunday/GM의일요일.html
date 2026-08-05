@@ -203,6 +203,7 @@
         <input type="date" class="fld" id="f_date" style="flex:1;">
         <div class="note" style="white-space:nowrap;">오전 7:30 발행</div>
       </div>
+      <div class="note" id="whenNote"></div>
 
       <button class="cta" id="sendBtn">텔레그램으로 검수 요청</button>
       <div class="note">공식 계정(@wellperion)에는 올라가지 않습니다. 개인 계정 전용 모듈입니다.</div>
@@ -516,6 +517,15 @@
     var d = $('f_date').value;
     $('k_when').textContent = (scheduled && d) ? (d.replace(/-/g,'.') + ' 오전 7:30')
                             : scheduled ? '날짜를 골라 주세요' : '승인 즉시';
+    // 승인하면 언제 올라가는지 한 문장으로 — 카드에서도 같은 문장이 나간다.
+    $('whenNote').textContent = (scheduled && d)
+      ? '👉 검수 카드에서 승인하시면 ' + whenKo(d) + ' 오전 7:30 에 인스타그램에 올라갑니다.'
+      : scheduled ? '날짜를 고르시면 그날 오전 7:30 에 올라갑니다.'
+                  : '👉 검수 카드에서 승인하시는 즉시 인스타그램에 올라갑니다.';
+  }
+  function whenKo(d){
+    var t = d.split('-');
+    return t[0] + '년 ' + Number(t[1]) + '월 ' + Number(t[2]) + '일';
   }
   $('whenNow').onclick  = function(){ scheduled = false; renderWhen(); };
   $('whenDate').onclick = function(){
@@ -611,7 +621,9 @@
       $('t_cut').textContent   = cutCount();
       $('t_when').textContent  = $('k_when').textContent === '승인 즉시' ? '승인 즉시 발행' : ($('k_when').textContent + ' 발행');
       $('t_title').textContent = $('d_title').value.replace(/\n/g,' ');
-      $('ok_sched').textContent = publishAt() ? ($('k_when').textContent + ' 에 올라갑니다') : '승인하시면 바로 올라갑니다';
+      $('ok_sched').textContent = publishAt()
+        ? ('승인하시면 ' + whenKo($('f_date').value) + ' 오전 7:30 에 올라갑니다')
+        : '승인하시면 바로 올라갑니다';
       $('tgCard').classList.remove('hide');
       $('okBox').classList.remove('hide');
     }catch(e){

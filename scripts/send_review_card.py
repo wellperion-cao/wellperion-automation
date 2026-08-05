@@ -348,11 +348,12 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
     publish_at = item.get("publish_at") or ""
     if publish_at:
         try:
-            pub_label = datetime.fromisoformat(publish_at).strftime("%Y-%m-%d %H:%M")
+            _d = datetime.fromisoformat(publish_at)
+            pub_label = f"승인하시면 {_d.year}년 {_d.month}월 {_d.day}일 오전 {_d.hour}:{_d.minute:02d} 에 올라갑니다"
         except ValueError:
-            pub_label = publish_at
+            pub_label = f"승인하시면 {publish_at} 에 올라갑니다"
     else:
-        pub_label = "승인 즉시"
+        pub_label = "승인하시는 즉시 올라갑니다"
 
     caption = (
         f"🔎 <b>콘텐츠 검수 요청</b>\n"
@@ -366,7 +367,7 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
     )
     keyboard = {
         "inline_keyboard": [[
-            {"text": "✅ 승인 (즉시 발행)", "callback_data": cb_approve},
+            {"text": ("✅ 승인 (예약 발행)" if publish_at else "✅ 승인 (즉시 발행)"), "callback_data": cb_approve},
             {"text": "❌ 반려", "callback_data": cb_reject},
         ]]
     }
