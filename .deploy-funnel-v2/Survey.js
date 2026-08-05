@@ -1297,6 +1297,26 @@ function _aaCacheClear_() {
   } catch (e) {}
 }
 
+// ★문의 조회 캐시 일괄 무효화 — 2026-08-05 시토. 문의 시트를 바꾸는 경로(추가·수정·삭제·자체폼 접수)는
+//   전부 이걸 부른다. 종전엔 네 곳이 각자 'micache' 하나만 지웠는데, 예약 달력이 쓰는
+//   'mccache|YYYY-MM'(2026-08-05 신설) 은 아무도 안 지웠다. 그래서 상담·체험 일정을 저장하고 달력을
+//   다시 열면 최대 60초 동안 옛 일정이 그대로 보였다 — 실무진에겐 '저장이 안 됐다'로 읽히는 그 부류다
+//   (유효회원 목록에서 같은 이유로 _aaCacheClear_ 를 만든 것과 같은 사정).
+//   달력 키는 월별이라 전부 열거할 수 없다. 현재 월 기준 앞뒤 2개월 + 월 미지정 키를 지운다 —
+//   예약은 대개 근시일이라 이 범위가 실사용을 덮는다. 더 먼 달을 편집하면 그 달만 TTL 60초로 자연 해소된다.
+function _miCacheClear_() {
+  try {
+    var c = CacheService.getScriptCache();
+    _cacheInvalidateJson_(c, 'micache');
+    _cacheInvalidateJson_(c, 'mccache|');          // 월 미지정 조회
+    var _mcBase = new Date();
+    for (var _mcD = -2; _mcD <= 2; _mcD++) {
+      var _mcM = new Date(_mcBase.getFullYear(), _mcBase.getMonth() + _mcD, 1);
+      _cacheInvalidateJson_(c, 'mccache|' + Utilities.formatDate(_mcM, 'Asia/Seoul', 'yyyy-MM'));
+    }
+  } catch (e) { /* 캐시 정리 실패가 저장 자체를 막지 않는다 — TTL 60초로 어차피 사라진다 */ }
+}
+
 function _cacheInvalidateJson_(cache, key) {
   try {
     var meta = cache.get(key + '__meta');
@@ -4022,7 +4042,7 @@ function _processAction(body) {
         _imSet(['개인정보 수집·이용 동의'], '동의');   // U열 — 검증만 하고 미기록이던 버그 수리(2026-07-20 시포). 강습·공간렌트·비즈니스 분기와 동일 표기 '동의' 통일. 헤더가 매우 긴 문장이라 짧은 키(동의·개인정보)는 다른 칸과 충돌 위험 있어 실헤더 대조로 확인한 고유 서두 구절만 사용. 과거 행은 무변경(신규 append만).
         _imSet(['유입언어'], _iLang);   // KO/EN — 영문 자체폼 통합(배9674 시모). 정확일치 우선(_miColIdx_) + '유입언어'는 부분일치 충돌 없음. 칸 없으면 무기록(컷오버 전엔 no-op).
         _imSh.appendRow(_imRow);
-        try { _cacheInvalidateJson_(_iCache, 'micache'); } catch (e) {}
+        _miCacheClear_();   // 문의 캐시 일괄 무효화(달력 포함)
       } else if (_iCat === 'adult' || _iCat === 'youth' || _iCat === 'summer') {
         // 강습(성인/유소년/여름특강) → 기존 구글폼 응답탭 저장으로 전환(자체폼·구글폼 통일 1단계, 2026-07-18 GM).
         //   성인=1.성인강습(gid111889422) / 유소년·여름특강(성인분기 없음·무조건 유소년탭)=2.WSC강습(gid268994754).
@@ -5084,7 +5104,8 @@ function _processAction(body) {
     }
     try { _notifyTelegram('➕ 전화·직접 문의 추가 — ' + (body.name || '(이름없음)') + ' · ' + (body.phone || '-') + ' · 채널:' + (body.channel || '유선전화')); } catch (e) {}
     // 조회 캐시 무효화(축1) — add 직후 최대 60초 stale 반환 방지(rowIndex 오삭제 위험 차단). 2026-07-08 시토 안전수리.
-    try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
+    //   2026-08-05 시토 — 목록(micache)만 지우던 것을 달력(mccache)까지 한 헬퍼로 통일.
+    _miCacheClear_();
     return _json({ ok: true, message: '추가되었습니다.', rowIndex: maSh.getLastRow() });
   }
 
@@ -5543,7 +5564,9 @@ function _processAction(body) {
       }
     }
     // 조회 캐시 무효화(축1) — 다음 목록 조회부터 최신 반영. 2026-07-08 시토.
-    try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
+    //   2026-08-05 시토 — 달력(mccache)까지 함께 지운다. 상담·체험 일정 저장이 여기를 지나므로
+    //   달력을 안 지우면 방금 바꾼 일정이 최대 60초 옛 값으로 보였다.
+    _miCacheClear_();
     // 연락 이력 저장이 실패했으면 성공으로 답하지 않는다(2026-07-25 시포·GM). 다른 칸은 이미 저장됐지만
     // 실무진이 알아야 할 것은 '적은 글이 안 들어갔다'는 사실이다 — 화면이 창을 닫지 않고 다시 시도할 수 있다.
     if (_muHistErr) {
@@ -5621,7 +5644,8 @@ function _processAction(body) {
       _mdLock.releaseLock();
     }
     // 조회 캐시 무효화(축1) — 쓰기 직후 최대 60초 stale 반환 방지. 2026-07-08 시토 안전수리.
-    try { _cacheInvalidateJson_(CacheService.getScriptCache(), 'micache'); } catch (e) {}
+    //   2026-08-05 시토 — 달력(mccache)까지 함께 지운다(삭제된 문의의 예약이 달력에 남지 않게).
+    _miCacheClear_();
     // ★회원 변경 이력(기존 _memberLog_ 재사용, 새 로그·새 시트 없음) — 언제·누가(_logWho_, staff 미동봉이면 '자동'이 아니라
     //   프론트가 항상 staff를 실어보내므로 실행자명)·무엇을(이름·전화 뒷4자리 마스킹)·왜(중복 삭제)·전후 상태.
     _memberLog_([[new Date(), _logWho_(body), _mdName, _mdPhoneMasked,
@@ -6129,6 +6153,12 @@ function _processAction(body) {
     // ★종목별 독립 관리(축7, GM 2026-07-08 확정) 라우팅: body.sport(sportKey) 동봉 시 종목별 경로,
     //  없으면 기존 row-level 경로(하위호환) — 두 경로는 완전히 분기(서로 컬럼 침범 없음).
     var luSportKey = String(body.sport || '').trim();
+    // ★연락이력 저장이 실패했는지 붙들어 둔다 — 2026-08-05 시토.
+    //   멤버십(member_inquiry_update)은 2026-07-25 에 이 처리를 넣었는데(실무진 피드백 FB260725-122608),
+    //   같은 모양의 강습 경로 두 곳은 안 고쳐진 채 남아 있었다. 아래 catch 가 Logger.log 만 하고 끝나서
+    //   응답은 ok:true 로 나갔고, 화면은 '저장' 토스트를 띄웠다 — 팀장은 저장된 줄 알고 창을 닫는다.
+    //   컨택 내용은 다시 쓸 수 없는 글이라(통화하며 적은 것) 조용한 유실의 대가가 특히 크다.
+    var _luHistErr = '';
 
     if (luSportKey) {
       // ── 종목별 경로(GM 2026-07-22 · 평문 태그): 연락이력 칸에 '[종목] …' 태그 줄로 저장.
@@ -6185,7 +6215,10 @@ function _processAction(body) {
               _luPhCi >= 0 ? _logMaskPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue()) : '',
               '연락 이력(' + luSportKey + ')', _spPrevCount + '건', _spTagged.length + '건', '강습']);
           }
-        } catch (eSp) { Logger.log('강습 종목별 컨택 저장 실패: ' + eSp.message); }
+        } catch (eSp) {
+          Logger.log('강습 종목별 컨택 저장 실패: ' + eSp.message);
+          _luHistErr = String(eSp && eSp.message ? eSp.message : eSp);   // 삼키지 않는다 — 아래에서 실패로 응답
+        }
       }
       // 1차 컨택 알림(종목별): 이 종목 태그 줄 0건 → ≥1건 전이 시 1회만. body.silent==='1' 억제(대량 이관 오알림 방지).
       if (_spNewHistArr && _spPrevCount === 0 && _spNewHistArr.length >= 1 && String(body.silent || '') !== '1') {
@@ -6258,7 +6291,10 @@ function _processAction(body) {
               _luPhCi >= 0 ? _logMaskPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue()) : '',
               '연락 이력', _luHistPrevCount + '건', _luHistNewArr.length + '건', '강습']);
           }
-        } catch (eHist) { Logger.log('강습 연락이력 저장 실패: ' + eHist.message); }
+        } catch (eHist) {
+          Logger.log('강습 연락이력 저장 실패: ' + eHist.message);
+          _luHistErr = String(eHist && eHist.message ? eHist.message : eHist);   // 삼키지 않는다 — 아래에서 실패로 응답
+        }
       }
       // 강습 등록 전환(신규→SUC/단기SUC 1회) → '문의 알림' 방 통보(멤버십과 정합). 시토 2026-06-29 GM.
       //   이름/종목 값은 컨택 시작 알림(아래)도 재사용 → _luIsSucNew 여부와 무관하게 항상 계산. 2026-07-07 시토.
@@ -6299,6 +6335,12 @@ function _processAction(body) {
       _cacheInvalidateJson_(_luCache, 'lscache|' + _luType + '|all');
     } catch (e) {}
     _memberLog_(_luLog);
+    // 연락 이력 저장이 실패했으면 성공으로 답하지 않는다 — 멤버십 경로(5572줄)와 같은 문구·같은 계약.
+    // 다른 칸은 이미 저장됐지만, 팀장이 알아야 할 것은 '적은 글이 안 들어갔다'는 사실이다.
+    if (_luHistErr) {
+      return _json({ ok: false, error: '연락 이력 저장 실패 — 적으신 내용이 저장되지 않았습니다. 창을 닫지 마시고 다시 시도해 주세요.',
+                     detail: _luHistErr, rowIndex: luRowRaw, partial: true });
+    }
     return _json({ ok: true, rowIndex: luRowRaw, message: '수정되었습니다.' });
   }
 
