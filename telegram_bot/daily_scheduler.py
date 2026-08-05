@@ -2717,6 +2717,13 @@ def run_stream_3_mgmt() -> None:
             if isinstance(body, list):
                 body = "\n".join(body)
             body = re.sub(r"</?pre>", "", str(body))   # 카톡은 HTML 태그를 못 그린다
+            # ★운영부 방 전용 재편(2026-08-05 GM 지시) — "매출 및 운영+인사 현황"이라는 제목과
+            # 실데이터 없는 매출 자리표시자([연동 예정])가 이 방에 안 맞는다(운영부는 매출을
+            # 손대지 못한다·월간운영계획은 09:30 매출이미지 캡션으로 이미 이 방에 따로 간다).
+            # build_digest() 자체는 손대지 않는다 — GM 업무보고방(위 report_stream_3_mgmt.run
+            # 호출) 은 매출+운영+인사 원본 그대로 유지(약속 L01, 본문 재조립 아님·치환만).
+            body = body.replace("📈 매출 및 운영+인사 현황 보고", "📈 업무 SSOT 현황 보고")
+            body = re.sub(r"■ 매출\s*\[연동 예정\]\n?", "", body)
             proc = subprocess.run(
                 [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
                  "--message", body, "--only-room", KAKAO_OPS_DEPT_ROOM],
