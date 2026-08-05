@@ -560,6 +560,57 @@ function loadQueue(cwd) {
  *  ▸규칙: GM·웰리 답이 있어야 진행되는 배는 next 를 ⏳ 로 시작한다. */
 const GM_ANSWER = /^[\s·]*⏳/;
 
+// ── 오늘 사람에게 닿은 것 (GM 지시 2026-08-05) ──────────────────────────────────
+//  왜: 상태줄이 그동안 보여준 건 전부 'AI 내부 상태'였다 — GM 판단: "지금 뭐가 돌고 있고,
+//  그래서 사람에게 뭐가 달라졌나" 하나만 있으면 된다. 이미 있는 기록만 쓴다(새 로그·새 캐시
+//  없음). 못 세는 항목은 그 항목만 뺀다 — 지어내지 않는다(0 이면 0으로 보인다).
+function todayYmd() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+}
+/** 오늘 카카오 발신 건수 — logs/kakao_sent-<오늘>.log 줄 수(실무진·회장님 방으로 나간 것). */
+function todayKakaoSent(cwd) {
+  try {
+    const p = path.join(cwd, 'logs', `kakao_sent-${todayYmd()}.log`);
+    if (statSync(p).size > 3_000_000) return null;   // 비정상 비대 — 상태줄이 느려지면 안 된다
+    let n = 0;
+    for (const line of readFileSync(p, 'utf8').split('\n')) if (line.trim()) n++;
+    return n;
+  } catch { return null; }   // 오늘치 로그 아직 없음 = '모름' — 항목을 뺀다(0 을 지어내지 않는다)
+}
+/** 오늘 실무진 신고 회신 — status/heartbeats/cpo-staff-feedback-watch.json 의 회신_완료
+ *  (시포 하트비트가 매 회차 새로 쓰는 값을 그대로 읽는다 — 새 계산 없음). */
+function feedbackReplied(cwd) {
+  try {
+    const j = JSON.parse(readFileSync(path.join(cwd, 'status', 'heartbeats', 'cpo-staff-feedback-watch.json'), 'utf8'));
+    return Number.isFinite(j.회신_완료) ? j.회신_완료 : null;
+  } catch { return null; }
+}
+/** GM 답이 필요한 배 — 전사. 이미 로드된 큐(q)를 재사용한다(추가 파일읽기 없음).
+ *  myShips 의 GM_ANSWER(⏳) 판정을 전사로 넓힌 것뿐 — 판정 로직 복제가 아니라 같은 잣대. */
+function companyGmWaiting(q) {
+  if (!q) return null;
+  const EXCLUDED = ['chro', 'cfo'];
+  let n = 0;
+  for (const s of q) {
+    if (!s || EXCLUDED.includes(s.clevel)) continue;
+    if (s.status === 'DONE' || s.status === '완료') continue;
+    if (String(s.title || '').includes('[GM보좌 제안]')) continue;
+    if (GM_ANSWER.test(String(s.next || ''))) n++;
+  }
+  return n;
+}
+function todaySignals(cwd, q) {
+  const parts = [];
+  const kakao = todayKakaoSent(cwd);
+  if (kakao != null) parts.push(`발신${kakao}`);
+  const fb = feedbackReplied(cwd);
+  if (fb != null) parts.push(`신고${fb}`);
+  const gm = companyGmWaiting(q);
+  if (gm != null) parts.push(`GM대기${gm}`);
+  return parts.length ? `${D}오늘${X} ${parts.join(`${D}·${X}`)}` : null;
+}
+
 // 배 무게 — 대기 목록을 무거운 순으로 늘어놓기 위한 값(항해 세계관 priority).
 const WEIGHT = { '🛳️크루즈': 3, '⛴️여객선': 2, '⛵돛단배': 1 };
 function weightOf(s) { return WEIGHT[String(s.priority || '')] || 0; }
@@ -812,6 +863,7 @@ function buildLine(cwd, role, transcript, sessionId) {
   }
 
   // 선택부(접히는 순서의 역순으로 정의) — ③🆕 ④대기 목록 ⑤오늘🏁 ⑥전사 막힌 것 우선.
+  const segToday = todaySignals(cwd, q);   // 오늘 사람에게 닿은 것 — GM 지시 2026-08-05, 가장 늦게 접힘
   const segNew = (s && s.fresh > 0) ? `${Y}🆕${s.fresh}${X}` : null;
   let waitNums = null;
   if (s) {
@@ -836,16 +888,20 @@ function buildLine(cwd, role, transcript, sessionId) {
   const segsW = (arr) => arr.reduce((a, g) => a + SEPW + dw(g), 0);
 
   // 사다리 — 위에서부터 처음 폭에 들어가는 단을 쓴다. 마지막 단 = 내 배만.
+  // ★'today'(오늘 사람에게 닿은 것)는 GM 이 가장 느껴야 할 값이라 거의 모든 단에 남긴다 —
+  //   가장 좁은 창(빈 사다리 직전 단)에서야 접힌다.
   const ladder = [
-    ['new', 'waitN', 'done'],
-    ['new', 'waitC', 'done'],
-    ['new', 'waitC'],
-    ['new'],
+    ['today', 'new', 'waitN', 'done'],
+    ['today', 'new', 'waitC', 'done'],
+    ['today', 'new', 'waitC'],
+    ['today', 'new'],
+    ['today'],
     [],
   ];
   let chosen = [];
   for (const lv of ladder) {
     const segs = [];
+    if (lv.includes('today') && segToday) segs.push(segToday);
     if (lv.includes('new') && segNew) segs.push(segNew);
     if (lv.includes('waitN') && waitNums) segs.push(waitNums);
     if (lv.includes('waitC') && waitCount) segs.push(waitCount);
@@ -909,8 +965,7 @@ function padDisp(s, width) {
  *  파일 수정시각이 곧 '그 창이 마지막으로 움직인 시각'이다(추측 아니라 실측).
  *  역할↔세션 대응은 이미 있는 역할 기억함(ROLE_CACHE)이 갖고 있다 — 키가 대화기록 전체 경로다.
  *  ★내용은 읽지 않는다(수 MB) — statSync 로 mtime 만 본다. */
-const LIVE_MS = 120_000;      // 2분 안에 움직였으면 '지금 하는 중'
-const PAUSE_MS = 1_800_000;   // 30분 안이면 '잠시 멈춤', 그 뒤는 조용함
+const PAUSE_MS = 1_800_000;   // 30분 안 움직였으면 '진행중'으로 본다
 function roleLiveness(cwd) {
   const out = {};
   try {
@@ -927,24 +982,10 @@ function roleLiveness(cwd) {
   return out;
 }
 
-/** 멈춰 있은 '길이' — agoText 는 '~전'(시점)이라 여기엔 안 맞는다. */
-function durText(ms) {
-  return String(agoText(Math.round(ms / 60000))).replace(/전$/, '');
-}
-
-/** 오래 조용한 창은 **길이 대신 마지막으로 움직인 시각**을 적는다 (GM 2026-07-29 "웰리만 진행하는데?").
- *  왜: '쉼 14시간'은 길이만 말해서 GM 이 "그 창이 일을 안 하는 건가, 고장인가"를 못 가른다. 실측해 보면
- *  시모·시우·시포 창은 **어제 23:43(PC 종료 시각) 이후 한 번도 안 움직였다** — 오늘 안 연 창이다.
- *  시각을 그대로 보여주면 '어제 밤 이후 아무 일도 안 했다'가 한눈에 읽힌다(값도 얼어붙지 않는다).
- *  같은 날이면 시:분만, 날짜가 넘어가면 월-일까지. */
-function sinceText(ms) {
-  const d = new Date(Date.now() - ms);
-  const now = new Date();
-  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-  return sameDay ? hm : `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${hm}`;
-}
-
+/** roleActivity + roleLiveness 를 줄 배열로 조립 — 상태는 사람 말 3가지뿐(GM 지시 2026-08-05):
+ *  **진행중 / 대기 / 오늘 없음.** '자동 N분'·'쉼 HH:MM' 처럼 설명이 필요한 표시, 배 번호·내부
+ *  작업 제목은 전부 뺀다 — 지웠을 때 GM 판단이 안 바뀌는 글자였다(진단 근거는 이 파일 상단 주석).
+ *  실패해도(❗) 빈 배열만 돌려준다(호출부에서 본 줄은 안 죽는다). */
 function buildRoleLines(cwd, role) {
   try {
     const acts = roleActivity(cwd, role);
@@ -952,86 +993,30 @@ function buildRoleLines(cwd, role) {
     for (const a of acts) a.age = live[a.role];          // ms · 없으면 undefined
     // ★worklog 커밋(a.mins)도 '살아있음' 신호다 — roleLiveness 는 **이 statusline 을 그리는
     //   인터랙티브 세션 창**의 mtime 만 본다. 배치·서브에이전트 경유로 일하면(예: .bat 훅으로
-    //   커밋만 하고 창은 안 열림) 세션 파일이 며칠째 안 갱신돼도 실제로는 방금 일했을 수 있다
-    //   (실측 2026-08-04 13:09: 시우·시포 worklog 는 12:38·12:39 커밋인데 세션 mtime 은
-    //   07-28 23:43 에 멎어 있었다 — GM 지적 "쉼 07-28 23:43 인데?"의 뿌리).
+    //   커밋만 하고 창은 안 열림) 세션 파일이 며칠째 안 갱신돼도 실제로는 방금 일했을 수 있다.
     //   커밋은 이미 roleActivity() 가 읽어와 a.mins 에 갖고 있다 — 새로 읽지 않고 둘 중
     //   더 최근 것만 취한다(약속 L01 — 판정 계산 복제 금지, 있는 신호를 합칠 뿐).
     for (const a of acts) {
       const commitAge = (a.mins != null) ? a.mins * 60000 : null;
-      if (commitAge != null && (a.age == null || commitAge < a.age)) {
-        // ★창은 오래 닫혀 있는데 커밋만 최근이면 그건 **배치·서브에이전트가 한 것**이다.
-        //   그런데 아래 표기는 창 기준 낱말('멈춤')이라, 창을 열지도 않은 역할이 "일하다 멎은"
-        //   것처럼 보였다 (GM 2026-08-05 "시우 시포것이 멈춤인데?" — 실측 결과 두 창은 07-28
-        //   23:43 이후 7일째 안 열렸고, 26~29분 전 신호는 전부 자동 커밋이었다).
-        //   신호를 합치는 것은 그대로 두고(합치는 게 맞다), **어느 신호가 이겼는지만 표시**한다.
-        a.viaCommit = (a.age == null || a.age >= PAUSE_MS);
-        a.age = commitAge;
-      }
+      if (commitAge != null && (a.age == null || commitAge < a.age)) a.age = commitAge;
     }
-    // ★제목 칸은 창 폭에 맞춰 늘린다(GM 2026-07-28 "우측이 많이 비는데 제목이 끊겨보인다").
-    //   고정 18칸이라 넓은 창에서 오른쪽이 비고 제목만 잘렸다. 고정폭 소모분을 빼고 남는 만큼 준다.
-    //   ●(2) + 공백 + 닉4 + 공백 + [제목] + 2칸 + 상태칸 + 2칸 + '배NNNNNN'(최대 8) = 20 + 상태칸
-    //   ★2026-07-29 시토 — 고정폭을 26→30으로 정정. 26은 ●를 1칸으로, 상태를 7칸으로 세었는데
-    //     실제로는 ●가 2칸이고 상태는 padDisp 로 채워져 매 줄이 4칸씩 넘쳤다.
-    //   ★상태칸을 10 고정이 아니라 **실제로 가장 긴 상태 글자에 맞춘다** — 아래에서 '쉼 07-28 23:43'
-    //     처럼 길어질 수 있어, 10 으로 가정하면 그만큼 줄이 창 밖으로 넘친다.
-    // ★점 = 지금 상태(실측), 오른쪽 글자 = 그 상태를 말로. 시각(N분전)은 '멈춘 뒤'에만 쓴다 —
-    //   움직이는 중에 '0분전'을 적으면 무슨 뜻인지 알 수 없다(GM 지적 2026-07-28).
     // ★위임해서 도는 일이 최우선 신호 — 창이 닫혀 있어도 그 역할의 일은 돌고 있다(GM 2026-07-29).
     const deleg = delegatedAgents(cwd);
     for (const a of acts) a.deleg = deleg[a.role] || null;
-    // 위임 중인 역할을 맨 위로. 그 다음이 창이 움직이는 역할.
+    // 위임 중인 역할을 맨 위로. 그 다음이 최근에 움직인 역할.
     acts.sort((a, b) => (b.deleg ? 1 : 0) - (a.deleg ? 1 : 0)
       || (a.age ?? Infinity) - (b.age ?? Infinity) || (a.mins ?? Infinity) - (b.mins ?? Infinity));
-    const marks = acts.map((a) => {
-      if (a.deleg)                return { dot: `${G}●${X}`, state: `${G}위임 ${a.deleg.count}척${X}` };
-      if (a.age == null)          return { dot: `${D}○${X}`, state: `${D}—${X}` };
-      // 창은 닫혀 있고 자동 커밋만 최근 — '멈춤'이 아니라 '자동'이다(위 viaCommit 주석 참고).
-      if (a.viaCommit)            return { dot: `${Y}◐${X}`, state: `${Y}자동 ${durText(a.age)}${X}` };
-      if (a.age < LIVE_MS)        return { dot: `${G}●${X}`, state: `${G}진행중${X}` };
-      // '전'을 뗀다 — '멈춤 8분전'은 어색하다. 여기 숫자는 시점이 아니라 **멈춰 있은 길이**다.
-      if (a.age < PAUSE_MS)       return { dot: `${Y}◐${X}`, state: `${Y}멈춤 ${durText(a.age)}${X}` };
-      // 오래 조용한 창은 길이 대신 **마지막으로 움직인 시각** — 위 sinceText 주석 참고.
-      return { dot: `${D}○${X}`, state: `${D}쉼 ${sinceText(a.age)}${X}` };
-    });
-    // 배 번호 칸 — 위임 중이면 여러 척이 붙어 길어진다. 폭 계산에 실제 길이를 넣지 않으면 그만큼 넘친다.
-    //   길어지지 않게 두 척까지만 적고 나머지는 +N 으로 줄인다.
-    const shipText = (a) => {
-      if (a.deleg && a.deleg.ships.length) {
-        const s = a.deleg.ships;
-        return `배${s.slice(0, 2).join('·')}${s.length > 2 ? `+${s.length - 2}` : ''}`;
-      }
-      return (a.event != null && a.ship) ? `배${a.ship}` : '';
+    const now = new Date();
+    const isToday = (ms) => {
+      const d = new Date(Date.now() - ms);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
     };
-    const stateW = Math.max(10, ...marks.map((m) => dw(m.state)));
-    const shipW = Math.max(0, ...acts.map((a) => dw(shipText(a))));
-    const evW = Math.max(18, Math.min(80, (termWidth() - 1) - 12 - stateW - shipW));
-    return acts.map((a, i) => {
-      const has = a.event != null;
-      const { dot, state } = marks[i];
-      const nick = padDisp(NICK[a.role], 4);
-      // ★제목은 **표시 폭**으로 자른다(fitCols) — shortTitle 은 글자 수로 자른다.
-      //   한글·이모지는 한 글자가 2칸이라 글자 수로 자르면 폭이 최대 두 배가 되어 줄이 창 밖으로
-      //   넘쳤다(2026-07-29 실측: 100칸 창에서 시모 줄이 130칸을 넘겨 다음 줄로 말려 내려감).
-      //   padDisp 는 폭 기준으로 채우는데 자르기만 글자 수 기준이라 둘의 잣대가 어긋나 있었다.
-      // ★위임 중이면 **지금 위임한 배**의 제목·번호를 보여준다 — worklog 의 '마지막 커밋 때 한 일'은
-      //   어제 것이라, 옆에 '위임 1척'을 달아 두면 GM 이 어제 일을 지금 하는 줄로 읽는다.
-      let evText;
-      if (a.deleg && a.deleg.ships.length) {
-        const q = loadQueue(cwd) || [];
-        const titles = a.deleg.ships.map((n) => {
-          const s = q.find((x) => x && (String(x.ship_no) === n || String(x.short_no) === n));
-          return s ? String(s.title || '').replace(/^\[[^\]]*\]\s*/, '').trim() : '';
-        }).filter(Boolean);
-        evText = titles.length ? titles.join(' · ') : String(a.event || '').replace(/^\[[^\]]*\]\s*/, '').trim();
-      } else {
-        evText = String(a.event || '').replace(/^\[[^\]]*\]\s*/, '').trim();
-      }
-      const ev = padDisp((has || a.deleg) ? fitCols(evText, evW) : `${D}—${X}`, evW);
-      const st = shipText(a);
-      const ship = st ? `${D}${st}${X}` : '';
-      return [`${dot} ${nick} ${ev}`, padDisp(state, stateW), ship].filter(Boolean).join('  ');
+    return acts.map((a) => {
+      let dot, state;
+      if (a.deleg || (a.age != null && a.age < PAUSE_MS)) { dot = `${G}●${X}`; state = `${G}진행중${X}`; }
+      else if (a.age != null && isToday(a.age))            { dot = `${Y}◐${X}`; state = `${Y}대기${X}`; }
+      else                                                  { dot = `${D}○${X}`; state = `${D}오늘 없음${X}`; }
+      return `${dot} ${padDisp(NICK[a.role], 4)} ${state}`;
     });
   } catch { return []; }
 }
