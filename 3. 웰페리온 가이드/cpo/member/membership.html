@@ -5948,12 +5948,21 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   var mgmt = _lessonSportMgmt(row, sportKey);
   var newVal = sel.value;
   var prevVal = mgmt.status || '';
-  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: '', status: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
-  // 배1037: 낙관 즉시 반영(원복 없음) → 버퍼 enqueue. 상태색·버킷 재렌더는 로컬반영 기준 즉시 수행.
-  _lessonApplyLocalMgmt(row, sportKey, { status: newVal });
   sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel', 'st-wait');   // 기존 상태색 전부 제거 후 재설정
   var stCls = _lessonStatusClass(newVal);
   if (stCls) sel.classList.add(stCls);
+  // ★신규 LOSS 전환 = 회원과 동일 강제(2026-08-05 시토, GM 지시 — 강습 LOSS 사유기록 3.4%(174건 중 6건)
+  //   실측 근본원인). 예전엔 여기서 바로 row·서버에 커밋하고 사유 모달은 '팝업만' 띄웠다 — 취소해도
+  //   이미 LOSS로 저장돼 있어 강제가 이름뿐이었다. 이제 row 갱신·서버 커밋·버킷 재렌더 전부 사유 모달
+  //   저장(saveLossReasonModal)까지 미룬다(회원 openInquiryLossModal pendingStatusSave와 동일 패턴 재사용,
+  //   새 함수 없음). 취소 시 애초에 아무 것도 안 바뀌었으므로 select 색만 원복하면 된다.
+  if (newVal === 'LOSS' && newVal !== prevVal) {
+    try { openLessonLossModal(t, rowIndex, true, prevVal, sel); } catch (e) {}
+    return;
+  }
+  var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: '', status: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
+  // 배1037: 낙관 즉시 반영(원복 없음) → 버퍼 enqueue. 상태색·버킷 재렌더는 로컬반영 기준 즉시 수행.
+  _lessonApplyLocalMgmt(row, sportKey, { status: newVal });
   WriteBuffer.enqueue(payload, { scope: 'lesson', phoneKey: (row && row.phone) || '', fieldset: 'status', label: '상태', who: (row && row.name) || '', overlay: { status: newVal } });
   // 활성↔이관(LOSS·SUC·대기) 경계를 넘으면 문의 현황·LOSS·대기 목록 재렌더로 행 이동 반영. 배973.
   // ★SUC 포함(2026-07-23) — SUC를 문의 목록에서 빼도록 바꿔놓고 이 갱신 목록엔 안 넣어서,
@@ -5973,8 +5982,9 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
     // 목록에서 사라지기만 하면 '저장이 안 됐다'로 읽힌다 → 어디로 갔는지 말해 준다(GM 지적 2026-07-23).
     try { showToast('등록 처리 — 이 문의는 [강습 회원 관리]로 이동했습니다', 'ok'); } catch (e) {}
   }
-  // 진행상태를 LOSS로 바꾸면 사유 모달 자동 발동(멤버십과 동일 — 사유 미기록 방지). 이미 사유 있으면 재촉발 안 함. 2026-07-18 시토(GM요청) 대행.
-  if (newVal === 'LOSS' && (prevVal !== 'LOSS' || !String((row && row.lossReason) || '').trim())) {
+  // 신규 전환은 위에서 이미 return(지연 커밋) — 여기 도달하는 LOSS는 '이미 LOSS인데 사유만 없는' 재촉발
+  //   케이스뿐(오늘 할 일 백필 섹션에서 같은 select를 다시 건드리는 경우 등). 2026-07-18 시토(GM요청) 대행.
+  if (newVal === 'LOSS' && prevVal === 'LOSS' && !String((row && row.lossReason) || '').trim()) {
     try { openLessonLossModal(t, rowIndex); } catch (e) {}
   }
   // 진행상태를 SUC로 바꾸면 등록종목 모달 자동 발동(LOSS와 대칭 — 종목 미기록 방지). 이미 등록종목 있으면 재촉발 안 함. 2026-07-20 시포(GM요청).
@@ -9864,11 +9874,13 @@ function openInquiryLossModal(rowIndex, pendingStatusSave, prevStatus) {
   _lossModalFill(r.lossReason);
 }
 // 강습 LOSS 사유 모달 — 강습 진행상태를 LOSS로 바꿀 때 발동(멤버십과 동일 UI, 저장=lesson_inquiry_update row-level). 2026-07-18 시토(GM요청) 대행.
-function openLessonLossModal(t, rowIndex) {
+// pendingStatusSave/prevStatus/sel = 신규 LOSS 전환 시에만 동봉(2026-08-05, 회원 openInquiryLossModal과 대칭) —
+//   취소 시 되돌릴 값·되돌릴 select DOM. 오늘 할 일 백필 섹션에서 여는 경우(이미 LOSS)엔 비워 둔다.
+function openLessonLossModal(t, rowIndex, pendingStatusSave, prevStatus, sel) {
   var r = _lessonFindRow(t, rowIndex);
   if (!r) { showToast('강습 문의 정보를 찾을 수 없습니다', 'err'); return; }
   var st = _lessonState[t];
-  _lossModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
+  _lossModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid, pendingStatusSave: !!pendingStatusSave, prevStatus: prevStatus || '', sel: sel || null };
   document.getElementById('lrMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (r.sport ? ' · ' + r.sport : '');
   _lossModalFill(r.lossReason);
 }
@@ -9878,6 +9890,14 @@ function closeLossReasonModal() {
     var _rb = dbRows.find(function(x){ return x.rowIndex === _lossModal.rowIndex; });
     if (_rb) { _rb.status = _lossModal.prevStatus; }
     if (_tabLoaded && _tabLoaded.db) { try { renderDbTable(); } catch(e){} }
+  }
+  // 강습판 취소 되돌리기(2026-08-05) — row·서버는 애초에 안 건드렸다(lessonStatusChange가 커밋을 여기까지
+  //   미뤘음) → 되돌릴 건 select 표시뿐.
+  if (_lossModal && _lossModal.pendingStatusSave && _lossModal.mode === 'lesson' && _lossModal.sel) {
+    _lossModal.sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel', 'st-wait');
+    var _ps = _lessonStatusClass(_lossModal.prevStatus);
+    if (_ps) _lossModal.sel.classList.add(_ps);
+    _lossModal.sel.value = _lossModal.prevStatus;
   }
   document.getElementById('lossReasonOverlay').classList.remove('open');
   _lossModal = null;
@@ -9896,8 +9916,9 @@ function saveLossReasonModal() {
   var _payload = _isLesson
     ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _lossModal.gid, lossReason: reason }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, lossReason: reason };
-  // 신규 LOSS 전환: _saveCell 을 지연했으므로 status=LOSS 도 같은 요청에 포함 — 사유 등록 후 카운트(FB260728-141756).
-  if (!_isLesson && _lossModal.pendingStatusSave) { _payload.status = 'LOSS'; }
+  // 신규 LOSS 전환(회원·강습 공통, 2026-08-05): status 커밋을 여기까지 지연했으므로 status=LOSS 도 같은
+  //   요청에 포함 — 사유 등록 후 카운트(FB260728-141756, 강습도 동일 강제로 확장).
+  if (_lossModal.pendingStatusSave) { _payload.status = 'LOSS'; }
   var _t = _isLesson ? _lossModal.t : null;
   // ★서버 왕복 대기 제거(2026-07-23 GM '저장 누른 속도') — 상태·담당·연락이력은 이미 버퍼를 타는데
   //   이 모달만 apiPost 로 응답을 기다려 저장 버튼이 몇 초씩 멈춰 있었다. 화면 먼저 반영하고
@@ -9905,7 +9926,10 @@ function saveLossReasonModal() {
   var _who = _lossModal.name || '';
   if (_isLesson) {
     var lr = _lessonFindRow(_t, rowIndex);
-    if (lr) { lr.lossReason = reason; }
+    if (lr) {
+      lr.lossReason = reason;
+      if (_lossModal.pendingStatusSave) { lr.status = 'LOSS'; }   // 지연된 status 로컬 반영(2026-08-05)
+    }
   } else {
     var r0 = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
     if (r0) {
@@ -9913,15 +9937,28 @@ function saveLossReasonModal() {
       if (_lossModal.pendingStatusSave) { r0.status = 'LOSS'; }   // 지연된 status 로컬 반영
     }
   }
-  var _overlay = _isLesson ? { lossReason: reason } : ((_lossModal.pendingStatusSave) ? { lossReason: reason, status: 'LOSS' } : { lossReason: reason });
+  var _overlay = (_lossModal.pendingStatusSave) ? { lossReason: reason, status: 'LOSS' } : { lossReason: reason };
   WriteBuffer.enqueue(_payload, {
     scope: _isLesson ? 'lesson' : 'member', phoneKey: keyPhone, fieldset: 'lossReason',
     label: 'LOSS 사유', who: _who, overlay: _overlay
   });
   showToast('LOSS 사유 저장', 'ok');
+  // ★저장 확정 — close의 '취소 시 원복' 분기를 여기서 끈다(2026-08-05). 안 끄면 방금 로컬에 반영한
+  //   status='LOSS'를 closeLossReasonModal이 그대로 prevStatus로 되돌려버린다(같은 _lossModal 참조 공유).
+  var _wasPending = _isLesson && _lossModal.pendingStatusSave;
+  var _tt = _t;
+  _lossModal.pendingStatusSave = false;
   closeLossReasonModal();
   saveBtn.disabled = false;
-  if (_isLesson) { try { lessonLossRender(_t); } catch (e) {} }
+  if (_isLesson) {
+    try { lessonLossRender(_tt); } catch (e) {}
+    if (_wasPending) {   // 신규 LOSS 전환이었으면 지연해 둔 버킷 재렌더도 이제 실행(lessonStatusChange와 동일 마무리)
+      try { _lessonUpdateBucketCounts(_tt); lessonRenderChips(_tt); lessonRender(_tt); lessonWaitRender(_tt); } catch (e) {}
+    }
+    // 오늘 할 일 '이탈사유 미기록' 폐루프 — 회원 종료사유 모달의 renderTodayActionPanel() 재계산과 동일 패턴.
+    //   저장했으면 이 행은 lossReason이 채워졌으니 목록에서 바로 빠지고 다음 오래된 건이 올라온다.
+    try { renderTodayActionPanel(); } catch (e) {}
+  }
   else if (_tabLoaded.db) { renderDbTable(); }
 }
 
@@ -11236,9 +11273,25 @@ function _tapClassifyLesson(today) {
   });
   var byDate = function(a, b){ return a.date.localeCompare(b.date); };   // 오래된 것부터
   stale.sort(byDate); staleExt.sort(byDate);
+  // 이탈사유 미기록(2026-08-05 GM 지시) — LOSS인데 사유 빈칸인 문의. 회원 쪽 '종료사유 미기록'과 같은
+  //   패턴(오래된 5건만·채우면 사라지고 다음이 올라옴, 위 '오래된 미응대'와 동일 슬라이스 방식 재사용).
+  //   채우는 통로 = 기존 LOSS 사유 모달(openLessonLossModal) 그대로 — 새 컴포넌트 없음.
+  //   실측 174건 중 168건 미기록(3.4%만 기록) — 근본원인(lessonStatusChange 즉시커밋)은 위에서 수리했고,
+  //   이 섹션은 그 수리 전에 쌓인 과거분을 매일 조금씩 소진한다.
+  var lossMissing = [];
+  types.forEach(function(t){
+    (_lessonState[t].rows || []).forEach(function(r){
+      if (String(r.status || '').trim() === 'LOSS' && !String(r.lossReason || '').trim()) {
+        var _ld = String(r.timestamp || '').slice(0, 10);
+        lossMissing.push({ t: t, row: r, date: _ld, time: _ld });   // date+time 중복 = stale과 동일 표기 방식(showTime 배선 재사용)
+      }
+    });
+  });
+  lossMissing.sort(byDate);
   return { todayNew: todayNew, uncontacted: uncontacted, todaysConsult: todaysConsult,
            staleAll: stale.length, stale: stale.slice(0, 5),
-           staleExtAll: staleExt.length, staleExt: staleExt.slice(0, 5), types: types };
+           staleExtAll: staleExt.length, staleExt: staleExt.slice(0, 5),
+           lossMissingAll: lossMissing.length, lossMissing: lossMissing.slice(0, 5), types: types };
 }
 // 외부 파트너가 직접 응대하는 강습 — 지금은 뮤지컬(Brad Little Star Academy) 하나.
 //   2026-07-25 GM: 뮤지컬팀이 직접 응대하지만 문의·미응대 건도 운영부로 컨택이 오니
@@ -11274,6 +11327,18 @@ function _tapRowHtmlLesson(item, timeLabel) {
     (timeLabel ? '<span class="tap-row-time">' + esc(timeLabel) + '</span>' : '') +
     '</div>';
 }
+// 이탈사유 미기록 항목 클릭 → 기존 LOSS 사유 모달 바로 오픈(상태변경 아님, pendingStatusSave 없음 —
+//   이미 LOSS인 행의 사유칸만 채운다). 회원 쪽 _tapRowHtmlChurn과 동일 자리(전용 렌더 분기). 2026-08-05.
+function _tapRowHtmlLessonLoss(item) {
+  var r = item.row;
+  var sub = (r.sport || '종목미상');
+  if (r.phone) sub += ' · ' + r.phone;
+  return '<div class="tap-row" onclick="openLessonLossModal(\'' + item.t + '\',' + r.rowIndex + ')">' +
+    '<span class="tap-row-name">' + esc(r.name || '(이름없음)') + '</span>' +
+    '<span class="tap-row-sub">' + esc(sub) + '</span>' +
+    '<span class="tap-row-time">' + esc(item.time || '') + '</span>' +
+    '</div>';
+}
 function _tapSectionHtmlLesson(s) {
   var n = s.items.length;
   var open = _tapOpenKey === s.key;
@@ -11282,7 +11347,10 @@ function _tapSectionHtmlLesson(s) {
     listHtml = '<div class="tap-empty">' + esc(s.empty) + '</div>';
   } else {
     var shown = s.items.slice(0, 12);
-    listHtml = shown.map(function(it){ return _tapRowHtmlLesson(it, s.showTime ? (it.time || '시간미정') : ''); }).join('');
+    listHtml = shown.map(function(it){
+      if (s.key === 'lloss') return _tapRowHtmlLessonLoss(it);
+      return _tapRowHtmlLesson(it, s.showTime ? (it.time || '시간미정') : '');
+    }).join('');
     if (n > shown.length) listHtml += '<div class="tap-row-more">…외 ' + (n - shown.length) + '건 (강습 문의 탭·필터에서 전체 확인)</div>';
   }
   if (s.caveat) listHtml += '<div class="tap-caveat">' + esc(s.caveat) + '</div>';
@@ -11329,7 +11397,10 @@ function renderTodayActionPanel() {
       { key: 'lext', icon: '🎭', label: '뮤지컬(외부 응대) 확인' + (clsL.staleExtAll ? ' · 미응대 ' + clsL.staleExtAll + '건' : ''),
         color: 'accent', items: clsL.staleExt, empty: '외부 응대 미응대 없음',
         caveat: '뮤지컬팀(Brad Little Star Academy)이 직접 응대합니다. 우리가 연락할 몫은 아니지만 문의가 운영부로도 오므로 컨택 여부를 여기서 확인합니다.',
-        showTime: true }
+        showTime: true },
+      // 이탈사유 미기록 — 회원 쪽 '종료사유 미기록' 섹션과 동일 패턴(오래된 5건씩만). 2026-08-05 GM 지시.
+      { key: 'lloss', icon: '🚪', label: '이탈사유 미기록' + (clsL.lossMissingAll ? ' (전체 ' + clsL.lossMissingAll + '건 중 오래된 5건)' : ''),
+        color: 'red', items: clsL.lossMissing, empty: '이탈사유 미기록 없음 — 전원 기록 완료', showTime: true }
     ];
     if (_tapOpenKey === null && (clsL.uncontacted.length || clsL.todaysConsult.length)) _tapOpenKey = 'lunc';
     body.innerHTML = sectionsL.map(_tapSectionHtmlLesson).join('');
