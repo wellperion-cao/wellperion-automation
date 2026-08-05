@@ -1408,11 +1408,18 @@
       })
       .catch(function(){ return []; });
   }
+  // ── GM 행 통로 열쇠 — wellperion_guide(main).html gm1TodoKey()와 동일 localStorage 키 재사용(약속 L21, 새 저장키 금지).
+  //    값은 이 브라우저에만 있다. 없으면 GAS가 GM 행을 필터링해 응답에서 뺀다(정직하게 비어 보임).
+  function gm1TodoKey(){
+    try { return localStorage.getItem('gm1_todo_key') || ''; } catch (e) { return ''; }
+  }
   // ── 업무&결재 SSOT(GAS action=todo_list) — home(wellperion_guide(main).html loadHomeKpiOps)과 동일 GAS_URL·동일 필드 정의 재사용
   //    (약속 L21 — 새 GAS·새 수집기 미신설, 이미 이 페이지가 쓰는 GAS_URL에 action만 하나 더 붙임). AI배(C레벨) 행 제외 = 실무진 업무·결재만.
+  //    열쇠가 있으면 &include_gm=1&gmkey=…를 붙여 GM 행도 함께 받는다(없으면 기존과 동일 — 다른 소비자 회귀 없음).
   //    실패/미측정=null(가짜값 없음).
   function readWorkApproval(){
-    return fetch(GAS_URL + '?action=todo_list', {method:'GET', redirect:'follow'})
+    var _k = gm1TodoKey();
+    return fetch(GAS_URL + '?action=todo_list' + (_k ? '&include_gm=1&gmkey=' + encodeURIComponent(_k) : ''), {method:'GET', redirect:'follow'})
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(!res || !(res.ok || res.success) || !Array.isArray(res.data || res.todos)) return null;
@@ -3544,10 +3551,23 @@
     badge.textContent = CHAIRMAN_ITEMS.length + '건';
     bodyEl.innerHTML = lines + link;
   }
+  // 🔑 GM 할 일 열쇠 입력 — wellperion_guide(main).html gm1SetTodoKey()와 같은 방식(prompt → localStorage 저장 → 재조회).
+  //    새 저장키 없음(gm1_todo_key 재사용) · 저장은 이 브라우저 한정.
+  window.gm1SetTodoKey = function(){
+    var v = prompt('GM 할 일 열쇠 (GM 전용 · 이 브라우저에만 저장됩니다)');
+    if(v === null) return;
+    try { localStorage.setItem('gm1_todo_key', String(v).trim()); } catch(e){}
+    readWorkApproval().then(function(rows){
+      _workApprRows = rows; _workApprReady = true;
+      if(_data) renderSummaryStrip();
+      renderGmFold(rows);
+    });
+  };
   // 👤 김남욱GM 업무 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과 재사용·새 GAS 호출 0)에서
   // 담당자=김남욱 + 상태(진행중·보류)만 추림(GM 지시 2026-08-05 — 애초 필터가 생성자였는데 GM 이 시트에
   // 업무를 등록한 사람이라 남의 업무 103건이 "김남욱GM 업무"로 잘못 표시됐다. 담당자 기준으로 정정).
   // 완료는 이 토글의 목적("어디까지 갔나")과 무관해 제외. rows===null = 조회 실패(가짜 0건 금지 — 실패 문구 표시).
+  // 열쇠 없음(gm1_todo_key 미설정) = 구조적으로 GM 행이 응답에서 빠짐 → 0건과 다른 문구(열쇠 입력 안내) 표시.
   function renderGmFold(rows){
     var badge = document.getElementById('gm-fold-badge');
     var bodyEl = document.getElementById('gm-fold-body');
@@ -3569,6 +3589,10 @@
     });
     badge.textContent = gmRows.length + '건';
     if(!gmRows.length){
+      if(!gm1TodoKey()){
+        bodyEl.innerHTML = '<div class="rep-empty">GM 업무는 이 브라우저에 열쇠를 넣어야 보입니다.<br><a href="#" onclick="gm1SetTodoKey();return false;" style="color:var(--accent);font-weight:700;">🔑 GM 할 일 열쇠 입력</a></div>';
+        return;
+      }
       bodyEl.innerHTML = '<div class="rep-empty">아직 GM 님 담당으로 지정된 업무가 없습니다.<br>업무 시트에서 담당자를 「김남욱GM」으로 적으시면 이 칸에 바로 표시됩니다.</div>';
       return;
     }
