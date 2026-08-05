@@ -91,6 +91,8 @@ SUNDAY_TEAM = "GM의 일요일"
 _SUNDAY_LINE_RE = re.compile(r"^(\d{2})(?:\s+(.*))?$")   # 02·03·…·10 (빈 문장도 자리를 지킨다)
 _SUNDAY_THINK_RE = re.compile(r"^생각\s*·\s*(.*)$")
 _PUBLISH_AT_RE = re.compile(r"발행시점\s*·\s*(\S+)")
+# 표지에서 보여줄 지점(0~1) — 화면에서 끌어 맞춘 값. 없으면 가운데(0.5,0.5).
+_COVER_FOCUS_RE = re.compile(r"표지위치\s*·\s*([0-9.]+)\s*,\s*([0-9.]+)")
 _DRIVE_ID_RE = re.compile(r"/d/([a-zA-Z0-9_-]{10,})")
 _DRIVE_ID_QS_RE = re.compile(r"[?&]id=([a-zA-Z0-9_-]{10,})")
 _SUNDAY_ASPECT = (1080, 1350)
@@ -258,13 +260,14 @@ def _parse_sunday_benefit(benefit: str) -> dict:
         if s.startswith("#"):
             hashtag_idx = cut_idx = i
             break
-        if s.startswith("계정 @") or s.startswith("발행시점"):
+        if s.startswith("계정 @") or s.startswith("발행시점") or s.startswith("표지위치"):
             cut_idx = i              # 해시태그가 없어도 여기서 캡션을 끊는다
             break
 
     # 해시태그가 없어도 '계정 @…'·'발행시점 · …' 앞에서 캡션을 끊는다(내부 표기가 게시글 본문에 새지 않게).
     caption_lines = rest[:cut_idx] if cut_idx is not None else list(rest)
-    caption_lines = [ln for ln in caption_lines if not ln.strip().startswith("발행시점")]
+    caption_lines = [ln for ln in caption_lines
+                     if not (ln.strip().startswith("발행시점") or ln.strip().startswith("표지위치"))]
     while caption_lines and not caption_lines[0].strip():
         caption_lines.pop(0)
     while caption_lines and not caption_lines[-1].strip():
@@ -274,12 +277,20 @@ def _parse_sunday_benefit(benefit: str) -> dict:
     pub_raw = pub_m.group(1) if pub_m else ""
     publish_at = "" if pub_raw in ("", "즉시") else pub_raw
 
+    fm = _COVER_FOCUS_RE.search(benefit or "")
+    try:
+        cover_focus = (min(1.0, max(0.0, float(fm.group(1)))),
+                       min(1.0, max(0.0, float(fm.group(2))))) if fm else (0.5, 0.5)
+    except ValueError:
+        cover_focus = (0.5, 0.5)
+
     return {
         "lines": numbered,          # 문장 카드 — 사진 순서 그대로
         "think": think,             # 생각 한 장(사진 없음)
         "caption": "\n".join(caption_lines).strip(),
         "hashtags": rest[hashtag_idx].strip() if hashtag_idx is not None else "",
         "publish_at": publish_at,
+        "cover_focus": cover_focus,
     }
 
 
@@ -335,6 +346,36 @@ def _render_sunday_html(variant: str, output: Path, text: str,
         print(f"[WARN] HTML 슬라이드 렌더 실패({variant}) — Pillow 합성으로 대체: {exc}",
               file=sys.stderr)
         return False
+
+
+def _focus_crop(photo: Path, focus: tuple, dest: Path) -> Path:
+    """표지에서 GM 이 끌어 맞춘 지점을 살려 1080x1350 비율로 미리 잘라 둔다.
+
+    합성기(HTML 엔진·Pillow 폴백)는 둘 다 '가운데 잘라 채우기'라 원본을 그대로 넘기면
+    끌어 맞춘 위치가 무시된다. 여기서 비율을 미리 맞춰 두면 그 다음 가운데 자르기는
+    아무것도 자르지 않는다(같은 비율이므로) — 합성기를 건드리지 않고 위치만 살린다.
+    focus = (x, y) · 0~1 · CSS object-position 과 같은 뜻. 실패하면 원본을 그대로 쓴다.
+    """
+    try:
+        from PIL import ImageOps
+        img = ImageOps.exif_transpose(Image.open(photo)).convert("RGB")
+        tw, th = _SUNDAY_ASPECT
+        sw, sh = img.size
+        target = tw / th
+        if sw / sh > target:                       # 원본이 더 가로형 → 좌우를 자른다
+            nw = int(sh * target)
+            x0 = int((sw - nw) * min(1.0, max(0.0, focus[0])))
+            box = (x0, 0, x0 + nw, sh)
+        else:                                      # 더 세로형 → 위아래를 자른다
+            nh = int(sw / target)
+            y0 = int((sh - nh) * min(1.0, max(0.0, focus[1])))
+            box = (0, y0, sw, y0 + nh)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        img.crop(box).save(dest, "JPEG", quality=95, optimize=True)
+        return dest
+    except Exception as exc:
+        print(f"[WARN] 표지 위치 자르기 실패(원본 그대로 씁니다): {exc}", file=sys.stderr)
+        return photo
 
 
 def _compose_sunday_cover(photo: Path, title: str, output: Path) -> None:
@@ -497,7 +538,8 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         return out_dir / name
 
     try:
-        _compose_sunday_cover(downloaded[0], intro, _add("post_1.jpg"))
+        cover_src = _focus_crop(downloaded[0], parsed["cover_focus"], src_dir / "cover_focus.jpg")
+        _compose_sunday_cover(cover_src, intro, _add("post_1.jpg"))
         for i, photo in enumerate(cards):
             # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
             _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",

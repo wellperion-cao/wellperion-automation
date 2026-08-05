@@ -45,8 +45,10 @@
   .thumb .lab{position:absolute;left:4px;top:4px;font-size:10px;background:rgba(20,18,15,.62);color:#FBF8F2;padding:2px 6px;border-radius:999px;}
   .thumb .del{position:absolute;right:3px;top:3px;width:22px;height:22px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:13px;line-height:1;cursor:pointer;}
   .note{font-size:12px;line-height:1.7;color:#8A8377;}
-  .cover-one{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;background:#E2DCD0;border:2px solid #B4552E;}
-  .cover-one img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cover-one{position:relative;width:100%;aspect-ratio:4/5;overflow:hidden;background:#E2DCD0;border:2px solid #B4552E;cursor:grab;touch-action:none;}
+  .cover-one.drag{cursor:grabbing;}
+  .cover-one img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;}
+  .cover-one .hint{position:absolute;left:0;right:0;bottom:0;background:rgba(20,18,15,.55);color:#FBF8F2;font-size:11px;line-height:1.6;text-align:center;padding:6px 8px;}
   .cover-one .lab{position:absolute;left:8px;top:8px;font-size:11px;background:#B4552E;color:#FBF8F2;padding:3px 9px;border-radius:999px;}
   .cover-one .del{position:absolute;right:6px;top:6px;width:26px;height:26px;border:none;border-radius:999px;background:rgba(20,18,15,.62);color:#FBF8F2;font-size:15px;line-height:1;cursor:pointer;}
   .fld{border:1px solid #E2DCD0;background:#fff;padding:12px;font-size:14px;color:#23201C;width:100%;}
@@ -261,6 +263,7 @@
   var MAX_PHOTOS = 8;       // 인스타 캐러셀 10장 = 표지1 + 사진카드8 + 생각1
 
   var cover = null;         // 표지 1장 {file, url} — 따로 올린다(GM 지시 2026-08-05)
+  var coverFocus = { x: 0.5, y: 0.5 };   // 표지에서 보여줄 지점(0~1) — 끌어서 맞춘다(GM 지시 2026-08-05)
   var photos = [];          // 나머지 사진 {file, url} — 이 장수가 슬라이드 수를 정한다
   var videoFile = null;
   var hasDraft = false;
@@ -321,10 +324,43 @@
     $('coverDrop').classList.toggle('hide', !!cover);
     box.innerHTML = '';
     if (!cover) return;
-    box.innerHTML = '<img src="'+cover.url+'"><div class="lab">표지</div>';
+    box.innerHTML = '<img src="'+cover.url+'"><div class="lab">표지</div>'
+                  + '<div class="hint">사진을 끌어서 보여줄 부분을 맞추세요</div>';
     var b = document.createElement('button'); b.className='del'; b.textContent='×';
-    b.onclick = function(){ URL.revokeObjectURL(cover.url); cover = null; renderCover(); renderPreview(); };
+    b.onclick = function(e){ e.stopPropagation(); URL.revokeObjectURL(cover.url); cover = null;
+                             coverFocus = { x:0.5, y:0.5 }; renderCover(); renderPreview(); };
     box.appendChild(b);
+    applyFocus();
+    attachDrag(box);
+  }
+
+  // 표지에서 보여줄 지점을 화면(업로드 칸·미리보기 표지)에 그대로 반영한다.
+  function focusPos(){ return Math.round(coverFocus.x*100) + '% ' + Math.round(coverFocus.y*100) + '%'; }
+  function applyFocus(){
+    var im = $('coverOne').querySelector('img');
+    if (im) im.style.objectPosition = focusPos();
+    var pc = $('cuts') && $('cuts').querySelector('.cut-cover img');
+    if (pc) pc.style.objectPosition = focusPos();
+  }
+
+  // 끌어서 맞추기 — 끈 거리를 칸 크기에 견줘 0~1 로 옮긴다(마우스·손가락 같은 코드).
+  function attachDrag(box){
+    var start = null;
+    box.addEventListener('pointerdown', function(e){
+      if (e.target.classList.contains('del')) return;
+      start = { x:e.clientX, y:e.clientY, fx:coverFocus.x, fy:coverFocus.y };
+      box.classList.add('drag'); box.setPointerCapture(e.pointerId);
+    });
+    box.addEventListener('pointermove', function(e){
+      if (!start) return;
+      var r = box.getBoundingClientRect();
+      coverFocus.x = Math.min(1, Math.max(0, start.fx - (e.clientX - start.x) / r.width));
+      coverFocus.y = Math.min(1, Math.max(0, start.fy - (e.clientY - start.y) / r.height));
+      applyFocus();
+    });
+    ['pointerup','pointercancel'].forEach(function(ev){
+      box.addEventListener(ev, function(){ start = null; box.classList.remove('drag'); });
+    });
   }
 
   // 컷을 사진 수만큼 그린다 — 표지 + 사진카드 N + 생각 (+ 영상 자리).
@@ -340,6 +376,7 @@
     var c = cut('cut-cover', '<img><div class="shade"></div><div class="in">'
       + '<div class="tag">GM의 일요일</div><div class="ttl"></div></div>');
     c.querySelector('img').src = cover ? cover.url : '';
+    c.querySelector('img').style.objectPosition = focusPos();
     c.querySelector('.ttl').textContent = $('d_title').value;
     box.appendChild(c);
 
@@ -596,8 +633,9 @@
           HASHTAGS,
           '',
           '계정 @namuk.wellperion (개인) · ' + cutCount(),
-          // 아래 한 줄은 뒷단(cmo_intake_to_review.py)이 그대로 읽는다 — 형식 바꾸지 말 것.
-          '발행시점 · ' + (publishAt() || '즉시')
+          // 아래 두 줄은 뒷단(cmo_intake_to_review.py)이 그대로 읽는다 — 형식 바꾸지 말 것.
+          '발행시점 · ' + (publishAt() || '즉시'),
+          '표지위치 · ' + coverFocus.x.toFixed(2) + ',' + coverFocus.y.toFixed(2)
         ]).join('\n'),
         agree: true,
         photos: pics,
