@@ -590,7 +590,10 @@ function feedbackReplied(cwd) {
  *  myShips 의 GM_ANSWER(⏳) 판정을 전사로 넓힌 것뿐 — 판정 로직 복제가 아니라 같은 잣대. */
 function companyGmWaiting(q) {
   if (!q) return null;
-  const EXCLUDED = ['chro', 'cfo'];
+  // 시로(chro)·시뽀(cfo) 배제 해제(GM 재확정 2026-08-05 — ssot/kpi.json
+  // _라인분담_2026_08_05_chro_cfo_queue_revival) — 배는 살아있고 화면에서도 보여야
+  // "무엇이 밀렸는지" 안다. 실행만 계속 막힌다(welly_auto_runner 러너 전용 제외).
+  const EXCLUDED = [];
   let n = 0;
   for (const s of q) {
     if (!s || EXCLUDED.includes(s.clevel)) continue;
@@ -924,8 +927,10 @@ function buildLine(cwd, role, transcript, sessionId) {
  *    커밋할 때만 쌓여 커밋 사이엔 조용해 보인다. '가동 중'이라고 쓰면 거짓말이 된다.
  *    ③값이 없으면 빈칸 대신 —. */
 function roleActivity(cwd, role) {
-  // 시로(chro)·시뽀(cfo)는 뺀다 — 나우열M 관할이라 AI 큐·화면에서 전원 배제(GM 확정 2026-07-28).
-  const EXCLUDED = ['chro', 'cfo'];
+  // 배제 해제(GM 재확정 2026-08-05 — ssot/kpi.json
+  // _라인분담_2026_08_05_chro_cfo_queue_revival). 시로·시뽀는 여전히 AI 에이전트가
+  // 안 뜬다(worklog 가 안 쌓여 그냥 '—'로 뜬다) — 그래도 줄 자체는 남아야 밀린 게 보인다.
+  const EXCLUDED = [];
   const others = Object.keys(NICK).filter((r) => r !== role && !EXCLUDED.includes(r));
   const found = new Map();
   try {

@@ -86,11 +86,18 @@ MAX_SHIPS_PER_RUN = 1  # 선별기 구조가 항상 1척만 반환하므로 이 
 # 러너의 선별 대상을 CTO 1개→7 C-Level 전체로 넓힌다. run_once() 자체의 안전 로직은
 # 손대지 않는다(재귀 방지·클린트리·모호성 park·쿨다운·1clevel당 1척 전부 그대로) —
 # run_cycle()은 그 위에 clevel 순회 + 사이클 총 상한만 얹는 얇은 래퍼.
-# 시뽀(cfo)·시로(chro) 제외 — 나우열M 이 직접 운영하는 영역이라 AI 가 자율로 배를 집지
-# 않는다(GM 확정 2026-07-28). 배제 정본 = queue_dispatch.EXCLUDED_ROLES (복사 금지·import).
+# 시뽀(cfo)·시로(chro)·시우(coo) 제외 — 세 역할 모두 사람이 실무를 처리한다(시로·시뽀=
+# 나우열M, 시우=최준용M). GM 확정 2026-08-05 이후 queue_dispatch.EXCLUDED_ROLES(배
+# "생성" 차단)는 비워졌다 — 그 셋 앞으로도 배는 만들어지고 큐에 남는다. 그런데 "누가
+# 그 배를 집어 실행하는가"는 다른 층이라, **이 러너 전용 제외**를 별도로 둔다: 여기서
+# 빠져도 배는 살아 있고(항로·자율현황에 그대로 보임), 담당 표기도 바뀌지 않는다 —
+# 그냥 무인 러너가 그 앞으로 온 배를 절대 자동 실행하지 않을 뿐이다. 사람에게 전달은
+# 웰리가 화면을 보고 직접 한다(자동 재배정 금지). 상세 = ssot/kpi.json
+# _라인분담_2026_08_05_coo · _라인분담_2026_08_05_chro_cfo.
+_RUNNER_EXECUTION_EXCLUDE = {"coo", "chro", "cfo"}
 DEFAULT_CLEVELS = tuple(
     r for r in ("cmo", "coo", "cto", "cpo", "ceo", "cfo", "chro")
-    if r not in _EXCLUDED_ROLES
+    if r not in _EXCLUDED_ROLES and r not in _RUNNER_EXECUTION_EXCLUDE
 )
 CLEVEL_NICKS = {
     "ceo": "웰리",
