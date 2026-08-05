@@ -118,6 +118,40 @@ def _assert_publish_authorized(it: dict, events: list) -> bool:
             f"⛔ {title}: 승인 상태 아님(status={it.get('status')!r}) — 발행 권한 가드 차단"
         )
         return False
+    if not _publish_time_reached(it, events):
+        return False
+    return True
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 예약 발행 (GM 결정 2026-08-05 · 배401)
+#   GM: "승인하면 즉시 올라가든, 원하는 날짜 오전 7시30분에 올라가든 둘 다."
+#   승인은 그대로 GM 이 누르고, 그 뒤 '언제 나가느냐'만 이 한 곳에서 가른다 —
+#   새 상태값·새 감시기·새 스케줄러를 만들지 않는다(약속 L21). 항목에 publish_at 이
+#   없으면 지금까지와 완전히 같다(즉시 발행 · 회귀 0).
+#   publish_at 형식 = "YYYY-MM-DDTHH:MM" (로컬 시각). 아직 안 됐으면 승인 상태를 그대로
+#   둔 채 이번 회차만 넘기고, 다음 회차에 다시 본다(감시기가 주기로 돈다).
+# ─────────────────────────────────────────────────────────────────────────────
+def _publish_time_reached(it: dict, events: list) -> bool:
+    raw = str(it.get("publish_at") or "").strip()
+    if not raw:
+        return True                                   # 예약 없음 = 승인 즉시
+    try:
+        due = datetime.strptime(raw[:16], "%Y-%m-%dT%H:%M")
+    except ValueError:
+        # 형식이 깨졌으면 예약을 무시하고 즉시 발행하지 않는다 — 의도치 않은 조기 발행이
+        # 예약 누락보다 나쁘다(비가역). 사람이 볼 수 있게 알리고 이번 회차는 막는다.
+        events.append(f"⚠️ {it.get('title', it.get('id', '?'))}: publish_at 형식 오류({raw!r}) — 발행 보류")
+        return False
+    now = datetime.now()
+    if now < due:
+        # ★events 에 넣지 않는다 — events 는 텔레그램 요약으로 나간다(1093행). 며칠 뒤
+        #   예약 1건이 매 회차 알림을 쏘면 발신 폭주가 된다. 대기는 정상 상태라 조용해야
+        #   맞고, 로그에는 남겨 '조용한 실패'와 구분되게 한다.
+        _safe_print(
+            f"[예약대기] {it.get('id', '?')} — {due:%Y-%m-%d %H:%M} 발행 예정(승인 완료·시간 미도래)"
+        )
+        return False
     return True
 
 # ─────────────────────────────────────────────────────────────────────────────

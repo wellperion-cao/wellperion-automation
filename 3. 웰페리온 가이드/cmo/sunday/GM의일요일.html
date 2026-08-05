@@ -90,6 +90,10 @@
   .kv>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #EEE9DF;padding-bottom:9px;}
   .kv>div:last-child{border-bottom:none;padding-bottom:0;}
   .kv .k{color:#8A8377;white-space:nowrap;}
+  .when{display:flex;gap:8px;}
+  .when-opt{flex:1;border:1px solid #E2DCD0;background:#fff;color:#6E675E;padding:12px;font-size:14px;cursor:pointer;}
+  .when-opt.on{border-color:#B4552E;background:#FBF1EC;color:#B4552E;font-weight:500;}
+  .when-date{display:flex;gap:10px;align-items:center;}
   .cta{border:none;background:#B4552E;color:#FBF8F2;padding:16px;font-size:15px;font-weight:500;cursor:pointer;width:100%;}
   .cta:disabled{background:#8A8377;cursor:default;}
   .tg{background:#23201C;padding:18px;display:flex;flex-direction:column;gap:14px;}
@@ -199,9 +203,20 @@
       <div class="kv">
         <div><span class="k">검수 채널</span><span>텔레그램 · 업무보고방</span></div>
         <div><span class="k">발행 계정</span><span>@namuk.wellperion (개인)</span></div>
-        <div><span class="k">발행 시점</span><span>승인 즉시</span></div>
+        <div><span class="k">발행 시점</span><span id="k_when">승인 즉시</span></div>
         <div><span class="k">미승인 시</span><span>발행 보류 · 다시 알림</span></div>
       </div>
+
+      <!-- 발행 시점 (GM 결정 2026-08-05) — 승인 즉시 / 원하는 날짜 오전 7:30 -->
+      <div class="when">
+        <button type="button" class="when-opt on" id="whenNow">승인하면 바로</button>
+        <button type="button" class="when-opt" id="whenDate">날짜 지정</button>
+      </div>
+      <div class="when-date hide" id="whenDateBox">
+        <input type="date" class="fld" id="f_date" style="flex:1;">
+        <div class="note" style="white-space:nowrap;">오전 7:30 발행</div>
+      </div>
+
       <button class="cta" id="sendBtn">텔레그램으로 검수 요청</button>
       <div class="note">공식 계정(@wellperion)에는 올라가지 않습니다. 개인 계정 전용 모듈입니다.</div>
       <div class="err hide" id="errBox"></div>
@@ -212,7 +227,7 @@
       <div class="tg-h">TELEGRAM · 업무보고방</div>
       <div class="tg-box">
         <div class="t">[검수요청] GM의 일요일 · <span id="t_date"></span></div>
-        <div>계정 @namuk.wellperion · <span id="t_cut"></span> · 승인 즉시 발행</div>
+        <div>계정 @namuk.wellperion · <span id="t_cut"></span> · <span id="t_when"></span></div>
         <div class="d">제목 — <span id="t_title"></span></div>
         <div class="tg-act"><div>이 카드는 실제 텔레그램 업무보고방으로 나갑니다 — 승인·반려는 그곳에서</div></div>
       </div>
@@ -403,12 +418,40 @@
     var e = $('errBox'); e.textContent = msg; e.classList.remove('hide');
   }
 
+  // ── 발행 시점 — 승인 즉시 / 원하는 날짜 오전 7:30 (GM 결정 2026-08-05) ──
+  var scheduled = false;
+  function renderWhen(){
+    $('whenNow').classList.toggle('on', !scheduled);
+    $('whenDate').classList.toggle('on', scheduled);
+    $('whenDateBox').classList.toggle('hide', !scheduled);
+    var d = $('f_date').value;
+    $('k_when').textContent = (scheduled && d) ? (d.replace(/-/g,'.') + ' 오전 7:30')
+                            : scheduled ? '날짜를 골라 주세요' : '승인 즉시';
+  }
+  $('whenNow').onclick  = function(){ scheduled = false; renderWhen(); };
+  $('whenDate').onclick = function(){
+    scheduled = true;
+    if (!$('f_date').value){                       // 기본값 = 내일
+      var t = new Date(); t.setDate(t.getDate()+1);
+      $('f_date').value = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+    }
+    renderWhen();
+  };
+  $('f_date').addEventListener('change', renderWhen);
+  renderWhen();
+
+  // 예약 시각 = 고른 날짜 오전 7:30. 즉시 발행이면 빈 문자열(뒷단이 '예약 없음'으로 읽는다).
+  function publishAt(){
+    return (scheduled && $('f_date').value) ? ($('f_date').value + 'T07:30') : '';
+  }
+
   // ── 검수 요청 전송 ───────────────────────────────────────────
   $('sendBtn').onclick = async function(){
     if (sent) return;
     $('errBox').classList.add('hide');
     if (!photos.length){ fail('사진을 1장 이상 올려 주세요.'); return; }
     if (!hasDraft){ fail('먼저 「초안 만들기」를 눌러 문장을 만들어 주세요.'); return; }
+    if (scheduled && !$('f_date').value){ fail('발행할 날짜를 골라 주세요.'); return; }
     if (videoFile && videoFile.size > 50*1024*1024){
       fail('영상이 50MB를 넘습니다. 드라이브 링크 칸을 이용해 주세요.'); return;
     }
@@ -441,7 +484,9 @@
           '',
           HASHTAGS,
           '',
-          '계정 @namuk.wellperion (개인) · ' + cutCount() + ' · 승인 즉시 발행'
+          '계정 @namuk.wellperion (개인) · ' + cutCount(),
+          // 아래 한 줄은 뒷단(cmo_intake_to_review.py)이 그대로 읽는다 — 형식 바꾸지 말 것.
+          '발행시점 · ' + (publishAt() || '즉시')
         ].join('\n'),
         agree: true,
         photos: pics,
@@ -463,8 +508,9 @@
       var now = new Date();
       $('t_date').textContent  = (now.getMonth()+1)+'/'+now.getDate();
       $('t_cut').textContent   = cutCount();
+      $('t_when').textContent  = $('k_when').textContent === '승인 즉시' ? '승인 즉시 발행' : ($('k_when').textContent + ' 발행');
       $('t_title').textContent = $('d_title').value.replace(/\n/g,' ');
-      $('ok_sched').textContent = '승인하시면 바로 올라갑니다';
+      $('ok_sched').textContent = publishAt() ? ($('k_when').textContent + ' 에 올라갑니다') : '승인하시면 바로 올라갑니다';
       $('tgCard').classList.remove('hide');
       $('okBox').classList.remove('hide');
     }catch(e){
