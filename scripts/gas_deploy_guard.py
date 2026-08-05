@@ -34,9 +34,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
+import time
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT_DIR = os.path.dirname(_SCRIPT_DIR)
@@ -48,6 +50,59 @@ import gas_version_monitor as gvm  # noqa: E402
 _WARN_THRESHOLD = 180   # 이상이면 눈에 띄는 경고(진행은 허용)
 _BLOCK_THRESHOLD = 195  # 이상이면 기본 중단(--force로만 강행)
 _HARD_LIMIT = gvm._HARD_LIMIT
+
+# ── INC-042 재발방지(2026-08-05 시토) ──────────────────────────────────────
+# 배경: clasp deploy -i(기존 배포ID 재배포)는 성공 응답 후에도 실제 /exec 엔드포인트가
+# 새 코드로 완전히 전환되기까지 전파 지연이 있다. 그 창에서 쓰기성 호출(삭제 등)을
+# 검증용으로 보내면 옛 코드가 응답해 실고객 행이 지워질 수 있다(실제 발생: 박상훈 건).
+# ★근본 해결(신버전 응답을 실제로 확인 후 통과)은 Survey.js에 버전 echo 액션을 새로
+# 심어야 하는 더 큰 변경이라 이번엔 보류한다(과한 장치 — 배포마다 프로젝트 코드 자체를
+# 건드리는 부담이 이 사고 재발확률보다 크다). 대신 값싸고 확실한 완화책: 배포 성공 직후
+# 이 프로세스가 일정 시간 자체적으로 대기한 뒤에야 종료한다 — 배포→검증을 이어서 하는
+# 사람·에이전트라면 다음 호출이 자연히 전파 지연 창 밖에서 일어난다.
+# ponytail: 대기시간(20초)은 INC-042 실측("수 초 이내")에 안전 여유를 더한 추정치이지
+# GAS가 보장하는 상한이 아니다. 상한을 알 수 없다는 뜻 — 그래도 "배포 직후 첫 호출은
+# 반드시 읽기 전용" 원칙은 이 대기와 무관하게 항상 지켜야 한다(예외 없음). 업그레이드
+# 경로: Survey.js에 action=_version(배포마다 바뀌는 상수) 추가 후 그 값이 바뀔 때까지
+# 폴링하는 방식으로 교체하면 추정 대신 실측 확인이 된다.
+_COOLDOWN_SEC = 20
+_COOLDOWN_PATH = os.path.join(_ROOT_DIR, 'status', 'gas_deploy_cooldown.json')
+
+
+def _write_cooldown(name: str) -> None:
+    """배포 성공 직후 프로젝트별 쿨다운 마커를 남긴다(다른 스크립트가 참조 가능)."""
+    data = {}
+    try:
+        with open(_COOLDOWN_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    now = time.time()
+    data[name] = {'deployed_at': now, 'cooldown_until': now + _COOLDOWN_SEC}
+    try:
+        os.makedirs(os.path.dirname(_COOLDOWN_PATH), exist_ok=True)
+        with open(_COOLDOWN_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[WARN] 쿨다운 마커 기록 실패(배포 자체는 성공): {e}", flush=True)
+
+
+def in_deploy_cooldown(project: str) -> tuple[bool, float]:
+    """다른 스크립트가 쓰기성 호출 전에 확인할 수 있는 공개 헬퍼.
+    반환: (쿨다운 중인가, 남은 초). 마커가 없으면 (False, 0.0) — 배포 이력이 없거나
+    이미 지난 것으로 간주(오탐으로 정상 작업을 막지 않는다)."""
+    resolved = _resolve_project(project)
+    name = resolved[0] if resolved else project
+    try:
+        with open(_COOLDOWN_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        return False, 0.0
+    entry = data.get(name)
+    if not entry:
+        return False, 0.0
+    remaining = entry.get('cooldown_until', 0) - time.time()
+    return (remaining > 0, max(0.0, remaining))
 
 
 def _resolve_project(project_arg: str) -> tuple[str, str, str] | None:
@@ -206,8 +261,15 @@ def main() -> int:
         return 2
 
     print(f"[OK] {name} 배포 완료.", flush=True)
-    print("  → 배포는 '올렸다'까지다. 라이브 응답을 실제로 호출해 값이 바뀌었는지 확인하라"
-          "(오늘 사고: 배포 성공 출력만 믿었다가 옛 코드가 라이브에 남아 있었다).", flush=True)
+    # ★INC-042 재발방지(2026-08-05 시토) — 쿨다운 마커 기록 + 이 프로세스 자체를 대기시킨다.
+    #   왜: 문구만 출력하고 바로 종료하면 사람도 에이전트도 그 다음 줄에서 바로 검증 호출을
+    #   보낸다(오늘 사고가 정확히 이 순서였다). 대기 자체가 전파 지연 창을 지나가게 한다.
+    _write_cooldown(name)
+    print(f"  → 배포 전파 대기 {_COOLDOWN_SEC}초 — 이 시간 동안은 옛 코드가 응답할 수 있다. "
+          f"기다리는 동안 검증 호출을 보내지 마라.", flush=True)
+    time.sleep(_COOLDOWN_SEC)
+    print("  → 대기 종료. 그래도 첫 검증은 반드시 읽기 전용 호출로만 하라(쓰기·삭제 검증 금지, 예외 없음) "
+          "— 이 대기는 확률을 낮출 뿐 GAS 전파시간을 보장하지 않는다.", flush=True)
 
     try:
         results = gvm.collect()
