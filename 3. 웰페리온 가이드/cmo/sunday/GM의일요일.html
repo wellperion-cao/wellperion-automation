@@ -162,43 +162,18 @@
       <input type="text" class="fld" id="f_videoLink" placeholder="대용량 영상 링크 (선택)">
     </div>
 
-    <!-- ④ 자동 초안 -->
-    <div class="card">
-      <div class="step"><div class="num">4</div><div class="step-t">자동 초안</div></div>
-      <div class="row">
-        <select class="fld" id="f_mood" style="flex:1;min-width:130px;">
-          <option value="가족과 놀았던 날">가족과 놀았던 날</option>
-          <option value="그냥 푹 쉰 날">그냥 푹 쉰 날</option>
-          <option value="밖으로 나간 날">밖으로 나간 날</option>
-          <option value="집에서 함께 있던 날">집에서 함께 있던 날</option>
-        </select>
-        <button class="btn-dark" id="genBtn">초안 만들기</button>
-      </div>
-      <div class="note">분위기에 맞춰 제목·캡션과 문장 두어 개를 채워 둡니다. 사진마다 문장 칸이 하나씩 생기니, 남은 칸은 직접 쓰세요.</div>
-
-      <div class="draft hide" id="draftBox">
-        <div class="f"><div class="f-lab">표지 제목</div>
-          <textarea id="d_title" rows="2" class="serif" style="font-size:20px;"></textarea></div>
-        <!-- 문장 칸은 사진 수만큼 renderLineFields() 가 만든다 (사진 1장 = 문장 1개) -->
-        <div id="lineFields" style="display:flex;flex-direction:column;gap:14px;"></div>
-        <div class="f"><div class="f-lab">생각 (철학 한 장)</div>
-          <textarea id="d_think" rows="3" class="serif" style="font-size:16px;"></textarea></div>
-        <div class="f"><div class="f-lab">본문 캡션</div>
-          <textarea id="d_caption" rows="9" style="font-size:14px;line-height:1.9;"></textarea>
-          <div style="font-size:12px;line-height:1.8;color:#6E675E;" id="d_tags"></div></div>
-      </div>
-    </div>
-
-    <!-- ⑤ 미리보기 -->
+    <!-- ④ 미리보기 (GM 지시 2026-08-05 — 화면에서 문장을 미리 정하지 않는다.
+         올린 사진으로 글까지 만들어 검수 카드로 올린다) -->
     <div class="card hide" id="previewCard">
-      <div class="step"><div class="num">5</div><div class="step-t">캐러셀 미리보기 <span id="cutCount">4컷</span></div></div>
+      <div class="step"><div class="num">4</div><div class="step-t">이렇게 나갑니다 <span id="cutCount">4컷</span></div></div>
       <!-- 컷은 사진 수만큼 renderPreview() 가 만든다 (표지 + 사진카드 N + 생각 + 영상) -->
       <div class="cuts" id="cuts"></div>
+      <div class="note">제목·문장·캡션은 <strong>올리신 사진을 보고 만들어져</strong> 검수 카드로 옵니다. 마음에 안 들면 카드에서 반려하시면 됩니다.</div>
     </div>
 
     <!-- ⑥ 검수 요청 -->
     <div class="card">
-      <div class="step"><div class="num">6</div><div class="step-t">검수 요청 · 발행 예약</div></div>
+      <div class="step"><div class="num">5</div><div class="step-t">검수 요청 · 발행 예약</div></div>
       <div class="kv">
         <div><span class="k">검수 채널</span><span>텔레그램 · 업무보고방</span></div>
         <div><span class="k">발행 계정</span><span>@namuk.wellperion (개인)</span></div>
@@ -247,37 +222,16 @@
   var $ = function(id){ return document.getElementById(id); };
 
   // ── 문장 은행 (시안 정본 그대로) ──────────────────────────────
-  var BANK = {
-    '가족과 놀았던 날': [
-      ['물이 튀는 쪽으로 먼저 뛰어드는 건 언제나 아이들이었다.','좋은 하루는 대단한 계획이 아니라 같이 있기로 한 결정에서 시작된다.','행복은 특별한 날에 오는 게 아니라, 평범한 일요일을 알아보는 눈에 온다.'],
-      ['웃음소리가 큰 쪽으로 자꾸 고개가 돌아갔다.','기억에 남는 건 장소가 아니라 그날 같이 있던 사람이었다.','가족이 있어 인생이 즐겁다는 말은, 설명이 필요 없는 문장이다.']
-    ],
-    '그냥 푹 쉰 날': [
-      ['아무 계획도 세우지 않은 아침이 제일 넉넉했다.','쉬는 일에도 연습이 필요하다는 걸 이제 안다.','비워둔 하루는 낭비가 아니라, 다음 주를 견디는 힘이다.']
-    ],
-    '밖으로 나간 날': [
-      ['멀리 가지 않아도 바람의 방향은 달라졌다.','걸음이 느려질수록 보이는 것은 많아졌다.','삶은 목적지보다 오늘 지나온 길에 더 오래 남는다.']
-    ],
-    '집에서 함께 있던 날': [
-      ['거실 소리만으로도 집이 살아 있었다.','함께 있는 시간은 특별한 사건 없이도 충분했다.','평범함을 지키는 일이야말로 가장 어려운 성취다.']
-    ]
-  };
-  var TITLES = {
-    '가족과 놀았던 날':'가족이 있어\n인생이 즐겁다',
-    '그냥 푹 쉰 날':'아무것도 하지 않기로\n정한 일요일',
-    '밖으로 나간 날':'조금 멀리\n걸어본 일요일',
-    '집에서 함께 있던 날':'집에서 보낸\n가장 좋은 하루'
-  };
-  var HASHTAGS = '#GM의일요일 #가족 #일요일의기록 #행복은평범함에 #주말기록';
-
   var MAX_PHOTOS = 8;       // 인스타 캐러셀 10장 = 표지1 + 사진카드8 + 생각1
+
+  // 제목·문장·캡션·해시태그는 이 화면에서 만들지 않는다(GM 지시 2026-08-05).
+  // 올린 사진을 뒷단이 실제로 보고 쓴 뒤 검수 카드로 올린다 — 화면은 사진·영상만 받는다.
 
   var cover = null;         // 표지 1장 {file, url} — 따로 올린다(GM 지시 2026-08-05)
   var coverFocus = { x: 0.5, y: 0.5 };   // 표지에서 보여줄 지점(0~1) — 끌어서 맞춘다(GM 지시 2026-08-05)
   var coverZoom = 1;                     // 1 = 꽉 채우기 · 1보다 크면 확대 · 작으면 축소(여백은 다크)
   var photos = [];          // 나머지 사진 {file, url} — 이 장수가 슬라이드 수를 정한다
   var videoFile = null;
-  var hasDraft = false;
   var sent = false;
 
   function num2(n){ return ('0'+n).slice(-2); }
@@ -299,33 +253,11 @@
       var b = document.createElement('button'); b.className='del'; b.textContent='×';
       b.onclick = function(){
         URL.revokeObjectURL(p.url); photos.splice(i,1);
-        renderThumbs(); renderLineFields(); renderPreview();
+        renderThumbs(); renderPreview();
       };
       d.appendChild(b); box.appendChild(d);
     });
   }
-
-  // 문장 칸 = 사진 1장당 1개.
-  // ★문장은 '칸 번호'가 아니라 '그 사진'에 붙는다(p.line). 번호에 붙여 두면 가운데 사진을
-  //   지웠을 때 뒤 문장들이 한 칸씩 밀려 엉뚱한 사진에 붙는다 — 실측으로 확인한 어긋남.
-  function renderLineFields(){
-    var box = $('lineFields');
-    box.innerHTML = '';
-    photos.forEach(function(p, i){
-      var n = num2(i + 2);
-      var f = document.createElement('div'); f.className = 'f';
-      f.innerHTML = '<div class="f-lab">'+n+' 문장</div>';
-      var ta = document.createElement('textarea');
-      ta.rows = 2; ta.className = 'serif'; ta.style.fontSize = '16px';
-      ta.dataset.n = n;
-      ta.placeholder = '이 사진에 대해 한 줄';
-      ta.value = p.line || '';
-      ta.addEventListener('input', function(){ p.line = ta.value; renderPreview(); });
-      f.appendChild(ta); box.appendChild(f);
-    });
-  }
-
-  function lineFields(){ return [].slice.call($('lineFields').querySelectorAll('textarea')); }
 
   // 표지 1장 표시 — 따로 올린 것을 그대로 보여준다.
   function renderCover(){
@@ -404,8 +336,8 @@
     return d;
   }
   function renderPreview(){
-    $('previewCard').classList.toggle('hide', !hasDraft);
-    if (!hasDraft) return;
+    $('previewCard').classList.toggle('hide', !cover);
+    if (!cover) return;
     var box = $('cuts'); box.innerHTML = '';
 
     var c = cut('cut-cover', '<img><div class="shade"></div><div class="in">'
@@ -414,19 +346,18 @@
     ci.src = cover ? cover.url : '';
     ci.onload = function(){ layout(ci); };
     if (ci.complete) layout(ci);
-    c.querySelector('.ttl').textContent = $('d_title').value;
+    c.querySelector('.ttl').textContent = '제목은 사진을 보고 만들어집니다';
     box.appendChild(c);
 
-    var vals = lineFields();
-    photos.forEach(function(p, i){
+    photos.forEach(function(p){
       var a = cut('cut-a', '<div class="ph"><img></div><div class="tx"></div>');
       a.querySelector('img').src = p.url;
-      a.querySelector('.tx').textContent = vals[i] ? vals[i].value : '';
+      a.querySelector('.tx').textContent = '문장 자리';
       box.appendChild(a);
     });
 
     var t = cut('cut-think', '<div class="bar"></div><div class="tx"></div>');
-    t.querySelector('.tx').textContent = $('d_think').value;
+    t.querySelector('.tx').textContent = '생각 한 줄 자리';
     box.appendChild(t);
 
     var v = cut('cut-vid', '<div class="in"><div class="play">▶</div><div class="cap"></div></div>');
@@ -436,33 +367,6 @@
 
     $('cutCount').textContent = cutCount();
   }
-
-  // ── 초안 생성 ────────────────────────────────────────────────
-  // 문장 은행 세트는 문장 2개 + 생각 1개뿐이다. 사진이 더 많으면 그 칸은 비워 둔다 —
-  // 없는 문장을 지어내거나 같은 문장을 반복해 채우지 않는다(약속 L05).
-  $('genBtn').onclick = function(){
-    var mood = $('f_mood').value;
-    var sets = BANK[mood] || BANK['가족과 놀았던 날'];
-    var set = sets[Math.floor(Math.random()*sets.length)];
-    var title = TITLES[mood];
-    $('d_title').value  = title;
-    renderLineFields();
-    // 은행 세트는 문장 2개뿐이다 — 채울 수 있는 만큼만 채우고 나머지는 빈칸으로 둔다
-    // (없는 문장을 지어내거나 같은 문장을 반복해 채우지 않는다 · 약속 L05).
-    lineFields().forEach(function(ta, i){
-      if (i < 2){ ta.value = set[i]; if (photos[i]) photos[i].line = set[i]; }
-    });
-    $('d_think').value = set[2];
-    $('d_caption').value = title.replace('\n',' ')+'.\n\n'+set[0]+' '+set[1]+'\n\n이번 주 일요일, 당신은 무엇을 하셨나요?';
-    $('d_tags').textContent = HASHTAGS;
-    hasDraft = true;
-    $('draftBox').classList.remove('hide');
-    renderPreview();
-  };
-
-  ['d_title','d_think'].forEach(function(id){
-    $(id).addEventListener('input', renderPreview);
-  });
 
   $('f_cover').addEventListener('change', function(){
     var f = this.files[0];
@@ -476,7 +380,7 @@
     var dropped = Math.max(0, picked.length - room);
     picked.slice(0, room).forEach(function(f){ photos.push({ file:f, url:URL.createObjectURL(f) }); });
     this.value = '';
-    renderThumbs(); renderLineFields(); renderPreview();
+    renderThumbs(); renderPreview();
     if (dropped) fail('나머지 사진은 '+MAX_PHOTOS+'장까지입니다 — '+dropped+'장은 담지 않았습니다.');
   });
   $('f_video').addEventListener('change', function(){
@@ -624,7 +528,6 @@
     $('errBox').classList.add('hide');
     if (!cover){ fail('표지 사진을 올려 주세요.'); return; }
     if (!photos.length){ fail('나머지 사진을 1장 이상 올려 주세요.'); return; }
-    if (!hasDraft){ fail('먼저 「초안 만들기」를 눌러 문장을 만들어 주세요.'); return; }
     if (scheduled && !$('f_date').value){ fail('발행할 날짜를 골라 주세요.'); return; }
     if (videoFile && videoFile.size > VIDEO_LIMIT && !canShrinkVideo()){
       fail('이 브라우저에서는 큰 영상을 자동으로 줄이지 못합니다. 드라이브 링크 칸을 이용해 주세요.'); return;
@@ -660,20 +563,14 @@
         name: '김남욱 GM',
         team: 'GM의 일요일',
         // 제목의 줄바꿈은 살려 보낸다 — 표지 슬라이드가 이 줄바꿈 그대로 두 줄로 앉힌다.
-        intro: $('d_title').value,
+        intro: '',                                   // 제목도 뒷단이 사진을 보고 쓴다
         // 문장 카드는 번호(02·03·…)로, 생각은 '생각 ·' 으로 구분한다 — 뒷단이 그대로 읽는다.
-        benefit: lineFields().map(function(ta, i){ return num2(i+2) + ' ' + ta.value.trim(); }).concat([
-          '생각 · ' + $('d_think').value.trim(),
-          '',
-          $('d_caption').value,
-          '',
-          HASHTAGS,
-          '',
+        // 뒷단(cmo_intake_to_review.py)이 그대로 읽는 줄들 — 형식 바꾸지 말 것.
+        benefit: [
           '계정 @namuk.wellperion (개인) · ' + cutCount(),
-          // 아래 두 줄은 뒷단(cmo_intake_to_review.py)이 그대로 읽는다 — 형식 바꾸지 말 것.
           '발행시점 · ' + (publishAt() || '즉시'),
           '표지위치 · ' + coverFocus.x.toFixed(2) + ',' + coverFocus.y.toFixed(2) + ',' + coverZoom.toFixed(2)
-        ]).join('\n'),
+        ].join('\n'),
         agree: true,
         photos: pics,
         video: video,
@@ -695,7 +592,7 @@
       $('t_date').textContent  = (now.getMonth()+1)+'/'+now.getDate();
       $('t_cut').textContent   = cutCount();
       $('t_when').textContent  = $('k_when').textContent === '승인 즉시' ? '승인 즉시 발행' : ($('k_when').textContent + ' 발행');
-      $('t_title').textContent = $('d_title').value.replace(/\n/g,' ');
+      $('t_title').textContent = '사진을 보고 만든 제목이 들어갑니다';
       $('ok_sched').textContent = publishAt()
         ? ('승인하시면 ' + whenKo($('f_date').value) + ' 오전 7:30 에 올라갑니다')
         : '승인하시면 바로 올라갑니다';
