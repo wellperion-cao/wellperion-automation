@@ -256,10 +256,20 @@ function _vJson(obj) {
 // ScriptProperties 'SPREADSHEET_ID' 로 openById() 한다.
 // GM 액션: 프로젝트 설정 → 스크립트 속성 → SPREADSHEET_ID = 접수 데이터를 넣을 시트의 ID
 //   (시트 URL: https://docs.google.com/spreadsheets/d/<여기>/edit  ← 이 부분이 ID)
+// ★2026-08-05 시토 — 한 번의 요청 안에서 스프레드시트를 여러 번 여는 것을 막는다.
+//   reg_list·reg_scoreboard·reg_staff_suggest·reg_board 는 카테고리 6개를 돌며 시트를 여는데,
+//   그때마다 _regGetSheet → _vGetSpreadsheet 를 거쳐 openById 를 새로 호출하고 있었다(요청당 6번).
+//   openById 는 파일을 여는 호출이라 한 번이 가장 비싸다. GAS 전역 변수는 실행 1회 동안만
+//   살아 있으므로 여기 담아 두면 같은 요청 안에서만 재사용되고, 다음 요청은 다시 새로 연다
+//   — 오래된 값을 들고 있을 위험이 없다.
+var _VSS_CACHE = null;
+
 function _vGetSpreadsheet() {
+  if (_VSS_CACHE) return _VSS_CACHE;
   var ssId = _vprop('SPREADSHEET_ID');
   if (!ssId) throw new Error('ScriptProperties에 SPREADSHEET_ID 미설정 — 프로젝트 설정 → 스크립트 속성에 추가');
-  return SpreadsheetApp.openById(ssId);
+  _VSS_CACHE = SpreadsheetApp.openById(ssId);
+  return _VSS_CACHE;
 }
 
 // ─── 시트 확보 (없으면 자동 생성 + 헤더) ───
@@ -535,29 +545,32 @@ function _regKeyCols(sh, headers) {
   return out;
 }
 
+// ★2026-08-05 시토 — 읽기 열 위치를 쓰기와 같은 함수(_regKeyCols)에서 구하도록 바꿨다.
+//   왜: 같은 키에 해당하는 헤더가 한 시트에 두 개 있을 때 읽기와 쓰기가 서로 다른 칸을 골랐다.
+//   예전 읽기는 헤더를 왼쪽부터 훑으며 obj[key] 를 계속 덮어써서 '마지막 칸'이 이겼고,
+//   쓰기(_regKeyCols)는 주석대로 '앞쪽 원본'을 골랐다. 두 규칙이 반대라 값이 엇갈렸다.
+//   실측 2026-08-05: 분실물 시트는 7번째가 '물품상세'(=content 별칭), 17번째가 나중에 덧붙은
+//   '내용'이다. 접수는 전부 7번째에 저장되는데 읽기는 비어 있는 17번째를 읽어, 라이브 27건
+//   전부 내용이 빈칸으로 나왔다(적체 리마인드·다이제스트·현황판에 품목 설명이 안 보였다).
+//   이제 읽기·쓰기가 같은 한 곳에서 열을 찾으니 다시 어긋날 수가 없다.
+//   덤으로 열 위치를 행마다 다시 찾지 않고 한 번만 구한다(라벨 조회 81행×19열 → 19회).
 function _regReadAll(sh, headers) {
   var lastCol = sh.getLastColumn();
   var last = sh.getLastRow();
   if (last < 2 || lastCol < 1) return [];
 
-  var label2key = {};
-  headers.forEach(function (h) { label2key[h.label] = h.key; });
-  Object.keys(REG_LABEL_ALIASES).forEach(function (label) {
-    if (!(label in label2key)) label2key[label] = REG_LABEL_ALIASES[label];
-  });
+  var keyCols = _regKeyCols(sh, headers);
+  var pairs = Object.keys(keyCols).map(function (k) { return [k, keyCols[k]]; });
 
-  var sheetHeaderLabels = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
   var data = sh.getRange(2, 1, last - 1, lastCol).getValues();
   return data.map(function (row) {
     var obj = {};
-    sheetHeaderLabels.forEach(function (label, i) {
-      var key = label2key[label];
-      if (!key) return; // 매칭 안 되는 컬럼(빈칸·잔재)은 무시
-      var v = row[i];
+    pairs.forEach(function (p) {
+      var v = row[p[1]];
       if (v instanceof Date) {
         v = Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
       }
-      obj[key] = v;
+      obj[p[0]] = v;
     });
     return obj;
   });
@@ -871,7 +884,33 @@ function _regDraftMemoSelfCheck() {
   _regAssertEq_(_regShouldDraftMemo(''), true, 'should-draft-empty', failures);
   _regAssertEq_(_regShouldDraftMemo('   '), true, 'should-draft-whitespace', failures);
   _regAssertEq_(_regShouldDraftMemo('사람이 이미 쓴 메모'), false, 'should-not-draft-existing-memo', failures);
-  return { ok: failures.length === 0, failures: failures, checked: Object.keys(REG_DRAFT_TEMPLATES).length * 2 + 7 };
+
+  // ─── 읽기·쓰기 열 일치 점검 (2026-08-05 시토) ───
+  // 같은 키에 해당하는 헤더가 한 시트에 둘 있을 때(분실물의 '물품상세'·'내용') 읽기와 쓰기가
+  // 같은 칸을 고르는지 확인한다. 이게 어긋나 라이브 분실물 27건의 내용이 전부 빈칸으로 나왔다.
+  // 새 액션·새 파일을 만들지 않으려고 기존 자체점검(reg_draft_selftest, GET·read-only)에 얹었다.
+  // 시트를 흉내 낸 가짜 객체만 쓰므로 실제 시트는 전혀 건드리지 않는다.
+  var _lostHeaderRow = ['접수ID', '카테고리', '접수일시', '이름', '연락처', '장소', '물품상세',
+                        '사진URL', '상태', '담당', '처리메모', '부서', '분실물품', '분실시점',
+                        '처리자', '접수자', '내용', '기한일수', '회원안내'];
+  var _lostDataRow = new Array(_lostHeaderRow.length).fill('');
+  _lostDataRow[6] = '검은색 무선이어폰 세트';   // 접수가 실제로 저장되는 칸('물품상세')
+  var _fakeSheet = {
+    getLastColumn: function () { return _lostHeaderRow.length; },
+    getLastRow:    function () { return 2; },
+    getRange: function (r, c, nr, nc) {
+      var all = [_lostHeaderRow, _lostDataRow];
+      return { getValues: function () {
+        return all.slice(r - 1, r - 1 + nr).map(function (row) { return row.slice(c - 1, c - 1 + nc); });
+      } };
+    }
+  };
+  var _lostHeaders = _regHeadersFor('lost');
+  _regAssertEq_(_regKeyCols(_fakeSheet, _lostHeaders).content, 6, 'keycols-content-first-match', failures);
+  _regAssertEq_(_regReadAll(_fakeSheet, _lostHeaders)[0].content, '검은색 무선이어폰 세트',
+                'readall-content-matches-write-column', failures);
+
+  return { ok: failures.length === 0, failures: failures, checked: Object.keys(REG_DRAFT_TEMPLATES).length * 2 + 9 };
 }
 
 // ─── reg_submit — 종합 접수처 제출 (public) ───
@@ -1229,10 +1268,99 @@ function _regScoreboard(params) {
            at: Utilities.formatDate(now, tz, 'yyyy-MM-dd HH:mm'), board: board };
 }
 
+// ─── reg_dashboard — 현황판 통합 조회 (공개 · 읽기 전용 · 시트 1회 스캔) ───
+// 보드가 reg_board·reg_scoreboard·reg_staff_suggest 를 각각(=시트 3중 읽기, GAS 직렬 호출)
+//   부르던 것을 한 번에 합친다. ★시트에 아무것도 쓰지 않는다(순수 읽기) — 원본 데이터 불변.
+// 반환: { ok, count, board:[…reg_board 동일], scoreboard:{…reg_scoreboard 동일}, staffNames:[…reg_staff_suggest 동일] }.
+// 판정은 전부 기존 단일 함수(_regMask·_regComputeSla·_regStaffCanonList) 재사용 — 규칙이 두 벌이 되지 않게(약속 L01).
+// 캐시: 필터 없는 기본 호출 60초(반복 로드 즉답). pv(사진 원본) 여부 + period 로 키 분리. 쓰기 시 _regBoardCacheClear_ 가 무효화.
+function _regDashboard(params) {
+  var src = params || {};
+  var staffPhoto = String(src.pv || '') === REG_STAFF_PHOTO_KEY;
+  var period = String(src.period || 'all').trim().toLowerCase();
+  var cacheKey = 'reg_dash_v1' + (staffPhoto ? '_staff' : '') + '_' + period;
+
+  try {
+    var hit = CacheService.getScriptCache().get(cacheKey);
+    if (hit) return _vJson(JSON.parse(hit));
+  } catch (e) {}
+
+  // ── 전 카테고리 시트를 딱 1회만 읽는다(읽기 전용) ──
+  var rows = [];
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { return; }
+    _regReadAll(sh, _regHeadersFor(cat.key)).forEach(function (r) { rows.push(r); });
+  });
+  // 담당·처리자 통일값 부착 — 판정은 _regStaffCanonList 단일 재사용(reg_list 와 동일)
+  rows.forEach(function (r) {
+    r.assigneeCanon = _regStaffCanonList(r.assignee);
+    r.handlerCanon  = _regStaffCanonList(r.handler);
+  });
+  rows.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
+
+  // ── (1) board: 마스킹 + SLA — reg_board 와 동일 파이프 재사용 ──
+  var board = rows.map(function (r) { return _regComputeSla(_regMask(r, staffPhoto)); });
+
+  // ── (2) scoreboard: 같은 rows 로 집계 — reg_scoreboard 와 동일 규칙(판정=_regStaffCanonList 재사용) ──
+  var tz = Session.getScriptTimeZone() || 'Asia/Seoul';
+  var now = new Date();
+  var since = null;
+  if (period === 'week') {
+    var dow = now.getDay();
+    var back = (dow === 0) ? 6 : dow - 1;
+    since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - back);
+  } else if (period === 'month') {
+    since = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  var sinceStr = since ? Utilities.formatDate(since, tz, 'yyyy-MM-dd') : '';
+  var NON_STAFF = { '회원': 1, '익명': 1, '자동(점검)': 1, '지원부 점검': 1 };
+  var tally = {};
+  var _add = function (who, field) {
+    who = (_regStaffCanonList(who)[0] || '');
+    if (!who || NON_STAFF[who]) return;
+    if (!tally[who]) tally[who] = { intake: 0, done: 0 };
+    tally[who][field]++;
+  };
+  rows.forEach(function (r) {
+    var created = String(r.createdAt || '').slice(0, 10);
+    if (sinceStr && created && created < sinceStr) return;
+    _add(r.reporter, 'intake');
+    if (String(r.status || '') === '완료') _add(String(r.handler || '').trim() || r.assignee, 'done');
+  });
+  var sbBoard = Object.keys(tally).map(function (name) {
+    return { name: name, intake: tally[name].intake, done: tally[name].done, total: tally[name].intake + tally[name].done };
+  });
+  sbBoard.sort(function (a, b) { return b.total !== a.total ? b.total - a.total : b.done - a.done; });
+  var rank = 0, prev = null;
+  sbBoard.forEach(function (x, i) { if (x.total !== prev) { rank = i + 1; prev = x.total; } x.rank = rank; });
+  var scoreboard = { ok: true, period: period, since: sinceStr,
+    at: Utilities.formatDate(now, tz, 'yyyy-MM-dd HH:mm'), board: sbBoard };
+
+  // ── (3) 담당자 제안: 같은 rows 로 빈도순 — reg_staff_suggest 와 동일 ──
+  var scount = {};
+  rows.forEach(function (r) {
+    _regStaffCanonList(r.assignee).concat(_regStaffCanonList(r.handler)).forEach(function (n) {
+      scount[n] = (scount[n] || 0) + 1;
+    });
+  });
+  var staffNames = Object.keys(scount).sort(function (a, b) { return scount[b] - scount[a]; }).slice(0, 40);
+
+  var out = { ok: true, count: board.length, board: board, scoreboard: scoreboard, staffNames: staffNames };
+  try { CacheService.getScriptCache().put(cacheKey, JSON.stringify(out), 60); } catch (e) {}
+  return _vJson(out);
+}
+
 // ─── reg_update — 종합 접수처 갱신 (GATED) ───
-// reg_board 공개·직원(사진) 두 캐시 동시 무효화 — 쓰기 액션(submit/update/delete/renumber 등)마다 호출.
+// reg_board 공개·직원(사진) 두 캐시 + reg_dashboard 캐시 동시 무효화 — 쓰기 액션(submit/update/delete/renumber 등)마다 호출.
 function _regBoardCacheClear_() {
-  try { var c = CacheService.getScriptCache(); c.remove('reg_board_v1'); c.remove('reg_board_staff_v1'); } catch (e) {}
+  try {
+    var c = CacheService.getScriptCache();
+    c.remove('reg_board_v1'); c.remove('reg_board_staff_v1');
+    // reg_dashboard 캐시(공개/사진 × all/week/month) 함께 무효화 — 쓰기 직후 최신 반영.
+    c.removeAll(['reg_dash_v1_all','reg_dash_v1_week','reg_dash_v1_month',
+                 'reg_dash_v1_staff_all','reg_dash_v1_staff_week','reg_dash_v1_staff_month']);
+  } catch (e) {}
 }
 
 function _regUpdate(body) {
@@ -2046,6 +2174,7 @@ var _RECEPTION_PUBLIC_ACTIONS = {
   voc_types:   true,  // 유형·상태 목록 조회 — 토큰 면제
   reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
   reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
+  reg_dashboard: true,  // 현황판 통합 조회 — reg_board 와 동일 마스킹(이름·연락처 가림), 읽기 전용, 토큰 면제
   reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
   reg_lookup:  true,  // 회원 셀프 조회 — 전화+이름 2차확인·회원안전 필드만·rate-limit, 토큰 면제
   lf_submit:   true,  // 습득물 접수 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
@@ -2145,6 +2274,7 @@ function _vProcess(action, body, params) {
   if (action === 'reg_submit') return _regSubmit(body);
   if (action === 'reg_list')   return _regList(params || body);
   if (action === 'reg_lookup') return _regLookup(params || body);  // 회원 셀프 조회(공개·전화+이름·회원안전 필드만). 2026-08-03 복구.
+  if (action === 'reg_dashboard') return _regDashboard(params || body);  // 현황판 통합 조회(공개·읽기전용·시트 1회 스캔). 2026-08-05.
   // 「전달문구」 초안 자체점검(read-only·시트 미접촉) — 배포 후 라이브 확인용. 2026-08-05 시토.
   if (action === 'reg_draft_selftest') return _vJson(_regDraftMemoSelfCheck());
   if (action === 'reg_staff_suggest') return _regStaffSuggest();  // 담당자 입력 자동완성 제안(공개 read·PII 없음). 2026-07-31 웰리.
