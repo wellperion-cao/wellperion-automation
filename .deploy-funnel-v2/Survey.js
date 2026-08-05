@@ -5919,15 +5919,27 @@ function _processAction(body) {
     // 문의내용 조인(2a, 2026-07-18 시포): 강습 문의(성인+유소년, 한글+영문+자체폼 신규문의 모두 병합)의 note 필드
     //   (_lessonReadRows_/_lessonIntakeReadRows_가 INQUIRY_CONTENT_KEYS로 탐지한 문의사항/문의내용/내용 칼럼)를
     //   정규화 전화 키로 1회 맵 구성 후 등록현황 각 행에 O(1) 조회 조인. 동일 전화 여러 건이면 뒤(최근) 건이 이김.
+    //   ★캐시(축1, TTL 60초, 2026-08-05 시토 — 15.8초 수리): 이 맵은 항상 두 고정 type(성인+유소년) 전체를
+    //   재구성하는 것이라 lglType/from/to 어떤 필터에도 좌우되지 않는다 — 필터 무관 고정 키라 요청별로 값이
+    //   달라질 위험 없음(lesson_stats·lesson_inquiry_list와 같은 재사용 패턴, 새 유틸 없음). 시트 접근이
+    //   6~8회(성인 KR/EN·유소년 KR/EN·신규문의탭 헤더+본문×2)라 여기가 15.8초의 대부분이었다. nocache=1 우회 유지.
     var lglNoteMap = {};
-    try {
-      ['성인강습', '유소년강습'].forEach(function(t) {
-        _lessonReadRowsMerged_({ type: t }).forEach(function(r) {
-          var p = _normPhone_(r.phone);
-          if (p && r.note) lglNoteMap[p] = r.note;
+    var lnmCache = CacheService.getScriptCache();
+    var lnmCacheKey = 'lglnotemap';
+    var lnmHit = _nc ? null : _cacheGetJson_(lnmCache, lnmCacheKey);
+    if (lnmHit) {
+      lglNoteMap = lnmHit;
+    } else {
+      try {
+        ['성인강습', '유소년강습'].forEach(function(t) {
+          _lessonReadRowsMerged_({ type: t }).forEach(function(r) {
+            var p = _normPhone_(r.phone);
+            if (p && r.note) lglNoteMap[p] = r.note;
+          });
         });
-      });
-    } catch (eNoteMap) {}
+        _cachePutJson_(lnmCache, lnmCacheKey, lglNoteMap, 60);
+      } catch (eNoteMap) {}
+    }
     var lglData = [];
     try {
       var lglSh = _lessonRegSheet_();
