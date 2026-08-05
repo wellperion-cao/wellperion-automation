@@ -317,6 +317,15 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
         cb_approve = f"pub:grp:{grp_hash}:approve"
         cb_reject  = f"pub:grp:{grp_hash}:reject"
         ch_label = f"{len(group_ids)}개 채널 일괄"
+    elif len(f"pub:{item_id}:approve".encode("utf-8")) > 60:
+        # ★id 가 길면 callback_data 가 텔레그램 64바이트 한계를 넘어 버튼이 통째로 안 붙는다
+        #   (카드는 그대로 나가고 승인만 못 하게 되므로 실패로 보이지 않는다 — 가장 나쁜 종류).
+        #   접수 id 에 시각을 넣으면서 실측 63바이트까지 찼다(2026-08-05). 한 글자만 더 길어지면
+        #   끊긴다 → 그룹용 해시 우회를 단일 건에도 그대로 쓴다(새 장치 만들지 않는다).
+        grp_hash = _write_group([item_id])
+        cb_approve = f"pub:grp:{grp_hash}:approve"
+        cb_reject  = f"pub:grp:{grp_hash}:reject"
+        ch_label = channel
     else:
         cb_approve = f"pub:{item_id}:approve"
         cb_reject  = f"pub:{item_id}:reject"
