@@ -72,6 +72,9 @@
   .top h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
   .top h2 .no{color:var(--brass);margin-right:8px;}
   .top h2 .cat{font-size:12.5px;font-weight:600;color:var(--grey);letter-spacing:.01em;}
+  /* 👑 회장님 지시건 표 — 카테고리는 제목 옆 소괄호(카드 3종과 같은 표기), 기한 칸은 문구가 길어 줄바꿈 허용. */
+  .sum td .cat{font-size:11.5px;font-weight:500;color:var(--grey);}
+  #chairman-sum-body td:last-child{white-space:normal;width:150px;}
   .top .when{font-size:12px;font-weight:600;color:var(--mid);white-space:nowrap;}
 
   .item p.body{font-size:13px;line-height:1.66;margin:0 0 9px;}
@@ -148,6 +151,7 @@
   <p class="lede">
     대표님께 보고가 필요한 업무를 담당자=김남욱 + 상태(진행중·보류) + 내용칸 "대표님 보고건" 표식으로 자동으로 추립니다.
     월간운영계획.html 토글과 같은 판정을 그대로 씁니다 — 완료된 업무는 목적(어디까지 갔나)과 무관해 여기 포함하지 않습니다.
+    <br><b>맨 아래 👑 회장님 업무 지시건</b>도 함께 정리돼 있고, 위 「보고 필요건 통합 보고」를 누르면 <b>두 가지가 한 문안으로 복사</b>됩니다.
   </p>
 
   <div class="repbar">
@@ -168,6 +172,18 @@
   <div class="sum">
     <h3>한눈에 보기</h3>
     <table><tbody id="owner-sum-body"></tbody></table>
+  </div>
+
+  <!-- 👑 회장님 업무 지시건 — 2026-08-05 GM 지시로 대표님 보고에 함께 싣는다. 목록 정본은 _chairman_items.js
+       한 벌이고 이 표와 「보고 필요건 통합 보고」 문안이 그 한 벌을 같이 읽는다(둘이 어긋날 수 없음). -->
+  <div class="grp">
+    <h2>👑 회장님 업무 지시건</h2>
+    <span class="cnt" id="chairman-grp-cnt">불러오는 중…</span>
+  </div>
+
+  <div class="sum">
+    <h3>회장님 지시건 진행 현황</h3>
+    <table><tbody id="chairman-sum-body"></tbody></table>
   </div>
 
   <div class="ft">

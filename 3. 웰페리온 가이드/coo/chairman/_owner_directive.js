@@ -238,6 +238,22 @@
       });
     });
 
+    // 👑 회장님 업무 지시건 표 — 정본 배열(_chairman_items.js)을 그대로 그린다. 문안(chairmanSection)과 같은
+    // 배열을 읽으므로 화면과 복사본이 어긋날 수 없다. 그 파일을 안 실은 페이지에는 요소 자체가 없어 그냥 건너뛴다.
+    var elChCnt = document.getElementById('chairman-grp-cnt');
+    var elChSum = document.getElementById('chairman-sum-body');
+    if (elChSum) {
+      var chItems = window.WellperionChairmanItems || [];
+      if (elChCnt) elChCnt.textContent = chItems.length + '건';
+      elChSum.innerHTML = chItems.length
+        ? chItems.map(function (it, i) {
+            var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
+            return '<tr><td>' + no + '</td><td>' + esc(it.title) +
+              ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span></td><td>' + esc(it.when || '일정 미정') + '</td></tr>';
+          }).join('')
+        : '<tr><td colspan="3">회장님 지시건이 없습니다.</td></tr>';
+    }
+
     load();
   }
 
