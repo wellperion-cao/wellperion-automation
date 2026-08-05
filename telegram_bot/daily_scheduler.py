@@ -2584,6 +2584,12 @@ def run_daily_digest(early: bool = False) -> None:
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
             logger.info(f"{label} 24h SLA 위반 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]} "
                         f"(위반 {len(sla_violations)}건)")
+            # ★2026-08-05 시토 수리 — 이 블록은 _send_ops_kakao(2026-07-31)가 이미 세운
+            # "실패 시에만 GM 업무보고방 1줄" 관문을 안 물고 있었다. proc.returncode 를
+            # 확인 안 해 카톡 창이 닫혀 있어도 로그에 조용히 묻혔다(발송 성공 여부는
+            # logger.info 한 줄뿐 — 아무도 안 봄).
+            if proc.returncode != 0:
+                _kakao_fail_notify("24h SLA 위반", tail[0], room=KAKAO_DEPTHEAD_ROOM)
         else:
             logger.info(f"{label} 24h SLA 위반 0건 — 카톡 발송 없음")
     except Exception as e:
@@ -2615,8 +2621,17 @@ def run_daily_digest(early: bool = False) -> None:
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
             logger.info(f"{label} 60일 무응답 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]} "
                         f"(본선 {len(noresp_due)}건 · 예고 {len(noresp_warn)}건 · 선발 {len(noresp_selected)}건)")
-            noresp_current_keys = {it["key"] for it in noresp_due}
-            _un._record_sent60(noresp_selected, noresp_notified60, today, noresp_current_keys, len(noresp_due))
+            # ★2026-08-05 시토 수리 — 회전 가드 기록(_record_sent60)이 proc.returncode 확인
+            # 없이 무조건 호출되고 있었다. 모듈 docstring·이 블록 위 주석 모두 "발송 성공
+            # 시에만 회전을 돌린다"고 적어놓고 실제 코드는 실패해도(카톡 창 닫힘 등)
+            # notified60 을 오늘 날짜로 찍어, 못 본 부서장 대신 회전이 다음 건으로
+            # 넘어가버리는 조용한 데이터 오염이었다(_record_sent 의 gm 배정독려 경로는
+            # 이미 un_ok 로 성공만 걸러 기록 — 여기만 빠져 있었다).
+            if proc.returncode != 0:
+                _kakao_fail_notify("60일 무응답", tail[0], room=KAKAO_DEPTHEAD_ROOM)
+            else:
+                noresp_current_keys = {it["key"] for it in noresp_due}
+                _un._record_sent60(noresp_selected, noresp_notified60, today, noresp_current_keys, len(noresp_due))
         else:
             logger.info(f"{label} 60일 무응답 0건 — 카톡 발송 없음")
     except Exception as e:
@@ -2702,6 +2717,9 @@ def run_daily_digest(early: bool = False) -> None:
             )
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
             logger.info(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]}")
+            # ★2026-08-05 시토 수리 — 위 SLA·60일 무응답과 같은 구멍(returncode 미확인).
+            if proc.returncode != 0:
+                _kakao_fail_notify("문의 정리", tail[0], room=KAKAO_DEPTHEAD_ROOM)
         except Exception as e:
             logger.error(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송 예외: {e}")
 
