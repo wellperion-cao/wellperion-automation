@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>경영진 업무 진행건 — 회장님·대표님·김남욱GM · WELLPERION</title>
+<title>경영 보고·GM 업무 현황 · WELLPERION</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
 <!-- 사내 게이트(단일 소스 _assets/gate.js) — 회장님_지시사항.html과 동일(GM 지시 2026-08-05, 비밀번호 1531 통일). -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -59,11 +59,9 @@
 
   .item p.body{font-size:13px;line-height:1.66;margin:0 0 9px;}
   /* 내용 전문 — 줄바꿈·기호 그대로 살려 읽는다(GM 2026-08-06 "아무 내용이 없다" 지적 대응) */
-  .item .note-body{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.7;
-                   margin:8px 0 0;padding:10px 12px;border:1px solid #ddd;background:#fafafa;color:#222;}
-  .item .doc-link{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:#8a6b4c;
-                  text-decoration:none;border:1px solid #e0d3c4;border-radius:99px;padding:5px 12px;background:#fbf7f2;}
-  @media print{ .item .note-body{background:#fff;} .item .doc-link{display:none;} }
+  /* 링크 줄 — 팔레트 안(브라스·steam)으로 통일 */
+  .item .doc-link{display:inline-block;margin:8px 8px 0 0;font-size:12px;font-weight:700;color:var(--brass);
+                  text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:5px 12px;background:var(--steam);}
   .item strong{font-weight:700;}
 
   dl{margin:0;font-size:12.5px;line-height:1.6;}
@@ -127,6 +125,27 @@
   .nb .todo{list-style:none;padding-left:2px;}
   .nb .todo li:before{content:"\25A1  ";color:var(--brass);font-weight:800;}
   .nb .lead{font-weight:700;color:var(--deep);}
+  /* ── 카드 위계·진행바·접힘 (2026-08-06 재정리) ── */
+  .top h2{font-size:16px;}
+  .badges{display:flex;gap:6px;align-items:center;white-space:nowrap;}
+  .st{font-size:11.5px;font-weight:800;letter-spacing:.02em;}
+  .st.on{color:var(--deep);} .st.plan{color:var(--grey);} .st.carry{color:var(--brass);}
+  .pct{font-size:12.5px;font-weight:800;color:var(--brass);}
+  .pbar{height:4px;background:var(--steam);margin:6px 0 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .pbar > i{display:block;height:100%;background:var(--mid);}
+  .lead-p{font-size:13px;line-height:1.6;margin:0 0 8px;}
+  .next-box{border-top:1px solid var(--line);padding-top:7px;margin-top:2px;}
+  .next-box .nh{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--grey);margin-bottom:4px;}
+  .next-box ul{margin:0;padding-left:2px;list-style:none;}
+  .next-box li{font-size:12.5px;line-height:1.55;margin-bottom:3px;}
+  .next-box li:before{content:"\25A1  ";color:var(--brass);font-weight:800;}
+  details.fold{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;}
+  details.fold > summary{list-style:none;cursor:pointer;font-size:11.5px;font-weight:800;color:var(--mid);letter-spacing:.02em;}
+  details.fold > summary::-webkit-details-marker{display:none;}
+  details.fold > summary:after{content:" ▾";color:var(--grey);}
+  details.fold[open] > summary:after{content:" ▴";}
+  @media print{ details.fold:not([open]){display:none;} #owner-grid{display:none !important;} }
+  #owner-grid{display:none;}   /* 대표님 카드는 전용 화면과 중복 — 요약표만 남긴다 */
   @media print{
     .sec{break-inside:avoid;}
     .tgl-nav{display:none;}
@@ -154,20 +173,15 @@
 
   <div class="hd">
     <p class="brand">WELLPERION · 월간계획보고</p>
-    <h1>경영진 업무 진행건</h1>
-    <p class="sub">회장님 · 대표님 · 김남욱 GM 세 갈래를 한 장에서 봅니다 (각 줄을 눌러 펼치고 접습니다)</p>
+    <h1>경영 보고 · GM 업무 현황</h1>
+    <p class="sub">회장님·대표님 보고건과 김남욱 GM 직접 업무를 한 장에서 봅니다</p>
     <div class="meta">
+      <div><b>대상</b><span id="target-month">—</span></div>
       <div><b>기준일</b><span id="today-str">—</span></div>
-      <div><b>소스</b>회장님·GM = 월간운영계획 / 대표님 = 업무 시트</div>
-      <div><b>인쇄</b>A3 세로 · 펼친 상태 그대로 출력</div>
+      <div><b>인쇄</b>A3 세로 · 펼쳐 놓은 것만 인쇄됩니다</div>
     </div>
   </div>
 
-  <div class="tgl-nav">
-    <a href="#sec-chairman">👑 회장님</a>
-    <a href="#sec-ceo">🤵 대표님</a>
-    <a href="#sec-gm">👤 김남욱 GM</a>
-  </div>
 
   <!-- ① 회장님 -->
   <details class="sec" id="sec-chairman" open>
@@ -205,11 +219,11 @@
   <details class="sec" id="sec-gm" open>
     <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span></summary>
     <div class="sec-body">
-      <div class="grid" id="gm-grid"><div class="rep-empty">불러오는 중…</div></div>
       <div class="sum">
-        <h3>한눈에 보기</h3>
+        <h3>업무명 · 상태 · 진척</h3>
         <table><tbody id="gm-sum-body"></tbody></table>
       </div>
+      <div class="grid" id="gm-grid"><div class="rep-empty">불러오는 중…</div></div>
     </div>
   </details>
 
@@ -241,16 +255,33 @@
   var now = new Date();
   var elToday = document.getElementById('today-str');
   if (elToday) elToday.textContent = now.getFullYear() + '. ' + pad2(now.getMonth() + 1) + '. ' + pad2(now.getDate()) + '.';
+  var elMon = document.getElementById('target-month');
+  if (elMon) elMon.textContent = now.getFullYear() + '년 ' + (now.getMonth() + 1) + '월';
 
   /* 내용(progress_note)을 읽히는 모양으로 — 소제목/불릿/체크/번호를 각각 다른 블록으로 끊는다.
      통짜로 쏟으면 "나열만 많다"가 된다(GM 2026-08-06). 정본 텍스트 자체는 바꾸지 않는다. */
-  function renderNote(raw) {
+  /* 내용(progress_note)을 세 갈래로 나눈다 — ①리드 문단 ②본문(소제목·불릿) ③경과 기록(▶·✅·❌ 로 시작).
+     경과 기록에는 정정 이력·내부 경로가 섞여 있어 기본으로 접어 둔다(GM 2026-08-06 가독성 지시).
+     정본 텍스트(monthly_ops_plan.json)는 건드리지 않는다 — 보여주는 층에서만 가른다. */
+  function splitNote(raw) {
     var lines = String(raw || '').split(/\r?\n/);
-    var out = [], mode = null;
-    function close() { if (mode) { out.push('</ul>'); mode = null; } }
+    var lead = [], body = [], logs = [], seenBlank = false, cur = null;
     lines.forEach(function (ln) {
       var t = ln.trim();
-      if (!t) { close(); return; }
+      if (!t) { if (lead.length) seenBlank = true; cur = null; return; }
+      var isLog = /^[\u25B6\u2705\u274C]/.test(t) || /^\[(20\d\d|GM|웰리|시토|시우|시모|시포)/.test(t);
+      if (isLog) { logs.push(t); cur = 'log'; return; }
+      if (cur === 'log' && !/^[\u25A0\u25A1\u2610]/.test(t)) { logs.push(t); return; }
+      if (!seenBlank && !/^[\u25A0\u25A1\u2610]/.test(t)) { lead.push(t); return; }
+      body.push(t); cur = 'body';
+    });
+    return { lead: lead.join(' '), body: body, logs: logs };
+  }
+
+  function renderLines(lines) {
+    var out = [], mode = null;
+    function close() { if (mode) { out.push('</ul>'); mode = null; } }
+    lines.forEach(function (t) {
       if (t.charAt(0) === '\u25A0') { close(); out.push('<h4>' + esc(t.replace(/^\u25A0\s*/, '')) + '</h4>'); return; }
       if (t.charAt(0) === '\u25A1' || t.charAt(0) === '\u2610') {
         if (mode !== 'todo') { close(); out.push('<ul class="todo">'); mode = 'todo'; }
@@ -260,11 +291,16 @@
         if (mode !== 'ul') { close(); out.push('<ul>'); mode = 'ul'; }
         out.push('<li>' + esc(t.replace(/^[\u00B7\u2022\-]\s*/, '')) + '</li>'); return;
       }
-      close();
-      out.push('<p' + (t.charAt(0) === '[' ? ' class="lead"' : '') + '>' + esc(t) + '</p>');
+      close(); out.push('<p>' + esc(t) + '</p>');
     });
     close();
-    return '<div class="nb">' + out.join('') + '</div>';
+    return out.join('');
+  }
+
+  /* 「다음 할 일」 = 아직 안 끝난 체크(□) 앞 3개. 요약을 지어내지 않고 있는 줄만 뽑는다. */
+  function nextTodos(lines) {
+    return lines.filter(function (t) { return /^[\u25A1\u2610]/.test(t); })
+                .slice(0, 3).map(function (t) { return t.slice(1).trim(); });
   }
 
   function readPlan() {
@@ -295,22 +331,34 @@
     }
     elGmGrid.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
-      return '<div class="item">' +
+      var sp = splitNote(it.note);
+      var todos = nextTodos(sp.body);
+      var pct = (typeof it.progress === 'number') ? it.progress : null;
+      var stCls = it.status === '진행' ? 'on' : (it.status === '이월' ? 'carry' : 'plan');
+      return '<div class="item" id="gm-' + esc(it.id) + '">' +
         '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
-        (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
-        '</h2><span class="when">' + esc(it.schedule) + '</span></div>' +
+        (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</h2>' +
+        '<span class="badges"><span class="st ' + stCls + '">' + esc(it.status || '—') + '</span>' +
+        (pct === null ? '' : '<span class="pct">' + pct + '%</span>') + '</span></div>' +
+        (pct === null ? '' : '<div class="pbar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>') +
         '<p class="body">' + esc(it.target || '내용 없음') + '</p>' +
-        '<dl>' +
-        '<div><dt>상태</dt><dd>' + esc(it.status || '-') + '</dd></div>' +
-        '<div><dt>진행률</dt><dd>' + (typeof it.progress === 'number' ? it.progress + '%' : '-') + '</dd></div>' +
-        '</dl>' +
-        (it.note ? renderNote(it.note) : '') +
-        (it.doc ? '<a class="doc-link" href="' + esc(it.doc) + '" target="_blank">정리본 열기 (A3 인쇄용) →</a>' : '') +
+        (sp.lead ? '<p class="lead-p">' + esc(sp.lead.length > 170 ? sp.lead.slice(0, 170) + '…' : sp.lead) + '</p>' : '') +
+        (todos.length ? '<div class="next-box"><div class="nh">다음 할 일</div><ul>' +
+            todos.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' : '') +
+        (sp.body.length ? '<details class="fold"><summary>내용 전체</summary><div class="nb">' + renderLines(sp.body) + '</div></details>' : '') +
+        (sp.logs.length ? '<details class="fold"><summary>경과 기록 ' + sp.logs.length + '건</summary><div class="nb">' +
+            sp.logs.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></details>' : '') +
+        '<div>' +
+        '<a class="doc-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '">📌 월간운영계획에서 이 목표 보기 →</a>' +
+        (it.doc ? '<a class="doc-link" href="' + esc(it.doc) + '" target="_blank">📄 정리본 열기 (A3 인쇄용) →</a>' : '') +
+        '</div>' +
         '</div>';
     }).join('');
     elGmSum.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
-      return '<tr><td>' + no + '</td><td>' + esc(it.title) + '</td><td>' + esc(it.schedule) + '</td></tr>';
+      var pct = (typeof it.progress === 'number') ? it.progress + '%' : '—';
+      return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
+        esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + '</td></tr>';
     }).join('');
   }
 
@@ -318,6 +366,21 @@
   readPlan().then(function (plan) {
     renderGm(window.WellperionGmDirect.extract(plan, now.getFullYear() + '-' + pad2(now.getMonth() + 1)));
   }).catch(function () { renderGm(null); });
+
+  /* #gm-{id} 로 들어오면 그 카드로 가서 접힌 내용을 펴 준다 — '보러 왔는데 접혀 있음'을 막는다. */
+  function focusHashCard() {
+    var h = String(location.hash || '');
+    if (h.indexOf('#gm-') !== 0) return;
+    var el = document.getElementById(h.slice(1));
+    if (!el) return;
+    var f = el.querySelector('details.fold'); if (f) f.open = true;
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { el.scrollIntoView(); }
+    el.style.transition = 'background .3s';
+    el.style.background = 'var(--pick)';
+    setTimeout(function () { el.style.background = ''; }, 2200);
+  }
+  window.addEventListener('hashchange', focusHashCard);
+  setTimeout(focusHashCard, 1200);
 
   // 대표님 칸 + 회장님 표 — 판정·문안 로직은 _owner_directive.js 하나만 쓴다(복제 없음).
   OwnerDirective.mount({

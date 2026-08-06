@@ -1163,6 +1163,7 @@
     <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
       <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-half" title="일부 목표는 실무 SSOT·채용공고·연동 배 상태에서 자동 연동(🔄 자동 배지 병기·배9678), 나머지는 수동 관리 — 사람 진척은 시우 검수로 보정">🟠 반반</span> <span class="stag">요약 + 신규·이월 상세 · 🔄 자동연동 병기</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
+      <div style="margin:10px 0 0;text-align:right;"><a class="tg-link" href="coo/chairman/김남욱GM_업무.html" target="_blank">경영 보고·GM 업무 현황 열기 ▸</a></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
@@ -1993,6 +1994,20 @@
     }
     return {sum: acc, full: text, cut: (acc !== text.trim())};
   }
+  // 🔗 #obj-{id} 로 들어오면 그 행을 찾아 보여준다 — 표가 비동기로 그려지므로 렌더 직후 호출한다.
+  function focusHashObj(){
+    var h = String(location.hash || '');
+    if(h.indexOf('#obj-') !== 0) return;
+    var el = document.getElementById(h.slice(1));
+    if(!el) return;
+    try{ el.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){ el.scrollIntoView(); }
+    var prev = el.style.background;
+    el.style.transition = 'background .3s';
+    el.style.background = 'var(--accent-bg, #E7EEE9)';
+    setTimeout(function(){ el.style.background = prev; }, 2200);
+  }
+  window.addEventListener('hashchange', focusHashObj);
+
   function objRow(o, withDelta){
     // 서브항목(부모-자식)이 있으면 부모 진척% = 서브 %의 집계(평균) — 렌더에서 계산(GM 지시 2026-07-06 3차).
     var hasSub = o.sub && o.sub.length;
@@ -2068,7 +2083,9 @@
 
     var nsCell = nsBadge(o);
 
-    var mainRow = '<tr>' +
+    // 🔗 앵커(2026-08-06 GM 지시 '각 업무들도 월간운영계획이랑 연결') — 경영 보고·GM 업무 현황 화면에서
+    //    이 목표로 바로 오도록 행에 id 를 준다. 키 = objectives.id(이미 유일키·새 번호체계 안 만듦).
+    var mainRow = '<tr id="obj-' + esc(o.id || '') + '">' +
       '<td class="c-own">' + idOwnCell + '</td>' +
       '<td class="c-title">' + titleCell + '</td>' +
       '<td class="c-target">' + targetCell + '</td>' +
@@ -2157,6 +2174,8 @@
       objSplitSection('🆕 당월 신규 과제', 'new', neu, false) +
       objSplitSection('🔁 이월·연속 과제', 'carry', carry, true) +
       objSplitSection('👥 나우열M 담당 — 인사·파트너 (내용·진척은 나우열M 관할·AI 미개입)', 'partner', partner, true);
+    // 표가 다 그려진 뒤에 #obj-{id} 로 들어온 요청을 처리한다(비동기 렌더라 로드 시점엔 행이 없다).
+    setTimeout(focusHashObj, 60);
   }
 
   // ── 선택월 매출·지출·순액 공통 계산 (fin-board 상세표 + 월말 결과 보고 히어로카드 공용 · 계산식 중복 방지) ──
