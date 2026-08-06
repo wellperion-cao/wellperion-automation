@@ -1699,9 +1699,11 @@
     var i = keys.indexOf(monKey);
     return (i > 0) ? keys[i - 1] : null;
   }
+  // 근거 있는(honesty=measured·basis) 목표만 평균에 넣는다(GM 지적 2026-08-06) — manual·observed는
+  // 사람값이라 평균을 오염시킨다. honestyHasEvidence 하나로 판정(objRow·objHtml과 동일 기준).
   function avgProgress(monKey){
     var m = _data && _data.months && _data.months[monKey];
-    var objs = (m && m.objectives) || [];
+    var objs = ((m && m.objectives) || []).filter(honestyHasEvidence);
     if(!objs.length) return null;
     var s = 0;
     objs.forEach(function(o){ s += (typeof o.progress === 'number' ? o.progress : 0); });
@@ -1839,7 +1841,8 @@
           '<span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
           '<span class="t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + '</span></div>' +
         '<div class="t3-title">' + esc(o.title) + '</div>' +
-        '<div class="t3-prog">' + progBar(o.progress, o.status, false, '', false) + '</div>' +
+        // top3 카드도 상세표·부서카드와 같은 정직 기준(honestyNoEvidence) — GM 지적 원문 예시(웰페리온 ERP/브로제이=2순위·manual)가 바로 이 카드였다.
+        '<div class="t3-prog">' + (honestyNoEvidence(o) ? '<span class="q-none">근거 없음</span>' : progBar(o.progress, o.status, false, '', false)) + '</div>' +
         '<div class="t3-ns">' + nsBadge(o) + '</div>' +
       '</div>';
     }).join('');
@@ -1940,11 +1943,18 @@
   // 보수적으로 '📝 사람값'으로 표시(GM 1단계 2026-07-24 — 측정 실패·미기록을 조용히 감추지 않는다).
   function honestyBadge(o){
     var h = o.honesty;
-    var lvl = (h && h.level) || 'manual';
+    var lvl = honestyLevel(o);
     var label = (h && h.label) || '📝 사람값';
     var basis = (h && h.basis) || '옛 항목 — 아직 정직 판정 미기록(엔진 재실행 시 자동 채움)';
     return '<span class="hbadge ' + esc(lvl) + '" title="' + esc(basis) + '">' + esc(label) + '</span>';
   }
+  // 정직 등급별 진척률 표시 규칙(GM 지적 2026-08-06) — "체크건이 없는데 %가 나온다"는 지적에 따라
+  // measured(✅실측)·basis(🧮근거계산)만 숫자·막대를 보여준다. manual(📝사람값)·observed(👀상태만)는
+  // 근거 없는 숫자라 "근거 없음"으로 바꾼다. unmeasured(🔧측정실패/미마감)는 지금 표기 그대로 둔다.
+  // label(사람이 고칠 수 있는 문자열)이 아니라 level 값으로만 판정 — 이 세 함수가 유일한 판정처(복제 금지).
+  function honestyLevel(o){ return (o.honesty && o.honesty.level) || 'manual'; }
+  function honestyHasEvidence(o){ var l = honestyLevel(o); return l === 'measured' || l === 'basis'; }
+  function honestyNoEvidence(o){ var l = honestyLevel(o); return l === 'manual' || l === 'observed'; }
   // 🔖 식별자 클릭 복사 — data-id 값(담당·번호 병합 라벨, 예: 시뽀-01) 그대로 클립보드에(가짜 번호 체계 생성 없음).
   // window.copyObjId 로 노출 필수 — onclick 인라인 속성은 IIFE 클로저 밖(전역)에서 이름을 찾는다(안 하면 ReferenceError로 조용히 실패).
   function copyObjId(el){
@@ -2064,7 +2074,10 @@
       statusCell = '<span class="obadge ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span>';
     }
 
-    var progCell = progBar(displayProg, o.status, _editMode, 'data-id="' + esc(o.id) + '" data-f="progress"', false);
+    // 편집모드는 값을 고치는 화면이라 그대로 입력칸을 보여준다 — 근거없음 표시는 조회 화면(비편집)에서만.
+    var progCell = (!_editMode && honestyNoEvidence(o))
+      ? '<span class="q-none" title="정직 딱지=' + esc(honestyLevel(o)) + ' · 실측·근거계산 아님(사람 입력값)">근거 없음</span>'
+      : progBar(displayProg, o.status, _editMode, 'data-id="' + esc(o.id) + '" data-f="progress"', false);
     // 이월(연속) 과제 = 이니셔티브 궤적 델타(당월 pct − 전월 pct). 신규는 델타 없음(당월 착수).
     if(withDelta && o.initiative_id && !_editMode){
       var init = findInitiative(o.initiative_id);
@@ -2579,7 +2592,19 @@
       '<td class="c-prog">' + aiCellHtml(aiById[head.ai] || null) + '</td>' +
     '</tr>';
   }
-  function objsForDept(cfg, objs){ return objs.filter(function(o){ var d = o.dept || ''; return cfg.deptKeys.some(function(k){ return d.indexOf(k) >= 0; }); }); }
+  // 부서 판정 = 가장 긴 deptKeys 매치가 이긴다(longest-match wins · GM 지적 2026-08-06) — dept 문자열에 부분포함
+  // 관계인 키가 여럿 걸려도(예 '경영지원부'에 지원부 키 '지원'과 경영지원 키 '경영지원'이 동시에 걸림) 과제 1건은
+  // 소속 부서 1곳에만 잡힌다. 어느 키에도 안 걸리면 null(어느 카드에도 안 뜨는 기존 동작 유지). 판정은 이 함수 하나뿐 — 복제 금지.
+  function resolveDeptId(dept){
+    var d = dept || '', bestId = null, bestLen = 0;
+    DEPT_CARDS.forEach(function(cfg){
+      cfg.deptKeys.forEach(function(k){
+        if(d.indexOf(k) >= 0 && k.length > bestLen){ bestLen = k.length; bestId = cfg.id; }
+      });
+    });
+    return bestId;
+  }
+  function objsForDept(cfg, objs){ return objs.filter(function(o){ return resolveDeptId(o.dept || '') === cfg.id; }); }
   function objHtml(o){
     var st = o.status || '계획';
     var tgt = (o.target && String(o.target).trim()) ? ('<div class="dg-obj-goal">🎯 월 목표: ' + esc(o.target) + '</div>') : '';
@@ -2600,11 +2625,14 @@
       '</div>';
     }
     var pct = clampPct(o.progress);
+    var noEv = honestyNoEvidence(o);
+    var pctCell = noEv ? '<span class="q-none">근거 없음</span>' : ('<span class="dg-obj-p">' + pct + '%</span>');
+    var barCell = noEv ? '' : ('<div class="dg-obj-bar"><i style="width:' + pct + '%"></i></div>');
     return '<div class="dg-obj st-' + esc(st) + '">' +
       '<div class="dg-obj-top"><span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
       '<span class="dg-obj-t">' + esc(o.title) + '</span>' +
-      '<span class="dg-obj-p">' + pct + '%</span></div>' +
-      '<div class="dg-obj-bar"><i style="width:' + pct + '%"></i></div>' + tgt +
+      pctCell + '</div>' +
+      barCell + tgt +
     '</div>';
   }
   function objsBlockHtml(cfg, objs){
@@ -3285,8 +3313,10 @@
           var yKeysT3 = Object.keys((_data && _data.months) || {}).filter(function(k){ return k.indexOf(yrT3 + '-') === 0; }).sort();
           var yValsT3 = yKeysT3.map(function(k){ return avgProgress(k); }).filter(function(v){ return typeof v === 'number'; });
           var yAvgT3 = yValsT3.length ? Math.round(yValsT3.reduce(function(a, b){ return a + b; }, 0) / yValsT3.length) : null;
+          // 평균이 근거 있는 목표(measured·basis)만으로 계산됐다는 걸 숫자로 드러낸다(GM 지적 2026-08-06 — 근거 없는 %가 섞여 보이던 문제).
+          var evidenceN = objs.filter(honestyHasEvidence).length;
           t3El.innerHTML = (avgT3 != null ? avgT3 + '%' : '—') +
-            ' <span class="ss-sub2">(' + active + '/' + objs.length + '건 착수)</span>' +
+            ' <span class="ss-sub2">(' + active + '/' + objs.length + '건 착수 · 근거 ' + evidenceN + '/' + objs.length + '건만 근거 있음)</span>' +
             '<div class="ss-sub">기준 — ✅실측' + hn.measured + '·🧮근거' + hn.basis + '·👀상태' + hn.observed + '·📝사람값' + hn.manual + '·🔧실패' + hn.unmeasured +
             ' · 연 누적 평균 ' + (yAvgT3 != null ? yAvgT3 + '%(' + yValsT3.length + '개월)' : '—') + '</div>';
         } else { t3El.textContent = '—'; }
@@ -3305,7 +3335,16 @@
           var getApprReq = function(r){ return String(r['결재요청'] || r.approval || '').trim(); };
           var getCreated = function(r){ return String(r['생성일'] || r.createdAt || r.startDate || '').trim().slice(0, 10); };
           var apprPendFn = function(r){ return getApprReq(r) && getApprStatus(r) !== '결재완료' && !/반려/.test(getApprStatus(r)); };
-          var activeFn = function(r){ var st = getStatus(r); return st !== '완료' && st !== '보류'; };
+          // 아직 시작도 안 한 예정 건(예: 다음 주 회의 껍데기)은 '진행'으로 세지 않는다 — 시작일이 오늘 이후면 뺀다.
+          // (GM 지적 2026-08-06 '업무 진행 12건 안 맞는다' · 실측: 12건 중 4건이 회의 껍데기, 3건은 아직 안 온 회의)
+          var _todayStr = new Date().toISOString().slice(0, 10);
+          var getStart = function(r){ return String(r['시작일'] || r.startDate || '').trim().slice(0, 10); };
+          var activeFn = function(r){
+            var st = getStatus(r);
+            if(st === '완료' || st === '보류') return false;
+            var sd = getStart(r);
+            return !sd || sd <= _todayStr;
+          };
           var rowsMonth = _sel ? _workApprRows.filter(function(r){ return getCreated(r).slice(0, 7) === _sel; }) : [];
           var workActiveM = rowsMonth.filter(activeFn).length;
           var apprPendM = rowsMonth.filter(apprPendFn).length;
