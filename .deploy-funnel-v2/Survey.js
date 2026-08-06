@@ -4280,17 +4280,61 @@ function _processAction(body) {
     if (_sfSid) _sfCache.put('sf_sid_' + _sfSid, _sfId, 600);
     try {   // 알림 실패는 접수를 되돌리지 않는다(이미 저장됨) — best-effort
       var _sfEsc = function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
-      _notifyTelegram('💬 <b>실무진 피드백</b>'
+      // ★발신처 = 문의알림방(2026-08-06 GM 지시 "종합접수처처럼 문의알림방에 접수되었고").
+      //   전에는 GM 업무보고방으로만 갔다 — 신고한 실무진 본인은 접수된 줄도 몰랐다.
+      //   방을 옮기는 것이지 늘리는 것이 아니다(중복 발신 금지).
+      _notifyTelegram('💬 <b>실무진 피드백 접수</b>'
+        + '\n접수번호: ' + _sfEsc(_sfId)
         + (_sfScreen ? '\n화면: ' + _sfEsc(_sfScreen) : '')
         + (_sfKind   ? '\n종류: ' + _sfEsc(_sfKind)   : '')
         + (_sfUrgent ? '\n급한정도: ' + _sfEsc(_sfUrgent) : '')
         + (_sfWho    ? '\n작성: ' + _sfEsc(_sfWho)    : '')
-        + '\n\n' + _sfEsc(_sfBody.slice(0, 300)));
+        + '\n\n' + _sfEsc(_sfBody.slice(0, 300)),
+        _staffFeedbackRoom_());
     } catch (e) { /* 알림 실패 무시 */ }
     return _json({ ok: true, id: _sfId });
   }
 
-  // ─── 실무진 피드백 조회·처리 (토큰 게이트 · 시포 2026-07-24) ───────────────────
+  // ─── 실무진 피드백 알림 판정 3종 (2026-08-06 GM 지시 · 시포) ─────────────────
+//   접수·처리 알림이 어디로 갈지, 그리고 '처리완료'라고 부를 자격이 있는지를 여기 한 곳에서만 정한다.
+//   판정을 호출부마다 복제하면 우회로가 생긴다(약속 L21).
+function _staffFeedbackRoom_() {
+  // 문의알림방 — 신규 문의 알림이 이미 쓰는 그 방·그 프로퍼티를 그대로 재사용(새 방·새 키 없음).
+  return PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID')
+      || _INQUIRY_CHAT_ID_FALLBACK;
+}
+// ─── '신규 등록인가' 판정 — 단 하나의 자리 (2026-08-06 시포 · 배361 연장) ───────
+//   ★왜 뽑았나: 목록(member_registered_list&newOnly=1)은 5명인데 카드(cpo_today_stats.monthReg)는
+//   10명이었다(2026-08-06 GM 지적 "신규멤버십 등록현황이 5명인데 위에 카드는 10명?"). 같은 제목의
+//   같은 숫자를 두 조회가 각자 세고 있었고, 한쪽만 신규 판정을 알고 있었다. 판정을 한 곳으로 모은다(약속 L01).
+function _isNewRegistration_(regClass, regClass2, regSeq) {
+  // 재등록분류에 '재등록'(또는 'L재등록')이 있으면 신규가 아니다. 대기·LOSS·환불·양도LOSS 등
+  // 다른 값은 신규 여부와 무관하므로 그대로 둔다(보수적 — 2026-08-05 시토).
+  if (String(regClass2 || '').indexOf('재등록') >= 0) return false;
+  // 등록회차 2 이상이면 등록분류가 '신규'라 적혀 있어도 신규가 아니다(부부 재등록 등 · 2026-08-05 시토).
+  // 회차가 비었거나 숫자가 아니면 기존 동작 유지 — 값이 없다고 빼면 진짜 신규가 사라진다.
+  var m = String(regSeq || '').match(/\d+/);
+  if (m && parseInt(m[0], 10) >= 2) return false;
+  var c = String(regClass || '').trim();
+  if (c) return c === '신규';
+  var n = parseInt(regSeq, 10);
+  return !(n > 1);
+}
+function _isDoneStatus_(st) {
+  // '처리완료' · '처리완료(원인 수리)' 처럼 꼬리표가 붙은 것까지 완료로 본다.
+  return String(st || '').indexOf('처리완료') >= 0;
+}
+function _hasRealReply_(memo) {
+  var m = String(memo || '');
+  // 대괄호 날짜·서명 태그는 회신 내용이 아니다 — 빼고 센다.
+  var core = m.replace(/\[[^\]]*\]/g, '').trim();
+  if (!core) return false;
+  // 내용 없이 완료로 닫던 상투 문구 — 이게 들어 있으면 회신이 아니다.
+  if (m.indexOf('아직 남기지 않아') >= 0 || m.indexOf('메모가 남는 대로') >= 0) return false;
+  return core.length >= 40;
+}
+
+// ─── 실무진 피드백 조회·처리 (토큰 게이트 · 시포 2026-07-24) ───────────────────
   //   list   : 접수된 피드백 전체를 최신순으로 반환(처리상태·처리메모 포함).
   //   update : 처리상태·처리메모를 적는다. ★대조키 = 접수ID(FB…) — 행번호로 찾지 않는다.
   //            행번호 기준은 중간에 행이 지워지면 엉뚱한 줄을 고친다(실고객 오삭제 사고와 동종).
@@ -4307,6 +4351,7 @@ function _processAction(body) {
     var _fbHdr = _fbSh.getRange(1, 1, 1, _fbSh.getLastColumn()).getDisplayValues()[0];
     var _fbIx = function (name) { for (var i = 0; i < _fbHdr.length; i++) if (String(_fbHdr[i]).trim() === name) return i; return -1; };
     var _cId = _fbIx('접수ID'), _cSt = _fbIx('처리상태'), _cMemo = _fbIx('처리메모');
+    var _cWho = _fbIx('작성자'), _cBody = _fbIx('내용');   // 처리완료 알림 본문용(없으면 -1 — 그 줄만 생략)
     if (_cId < 0) return _json({ ok: false, error: '접수ID 칸을 찾을 수 없습니다.' });
     var _fbVals = _fbSh.getRange(2, 1, _fbLast - 1, _fbHdr.length).getDisplayValues();
 
@@ -4352,8 +4397,34 @@ function _processAction(body) {
       for (var r = 0; r < _fbVals.length; r++) if (String(_fbVals[r][_cId]).trim() === wantId) { hit = r; break; }
       if (hit < 0) { _miss.push(wantId); continue; }
       var rowNo = hit + 2;   // 헤더 1줄 + 0-based → 실제 행. 대조로 찾은 행이라 어긋나지 않는다.
-      if (_ups[u].status !== undefined) _fbSh.getRange(rowNo, _cSt + 1).setValue(String(_ups[u].status));
-      if (_ups[u].memo   !== undefined) _fbSh.getRange(rowNo, _cMemo + 1).setValue(String(_ups[u].memo));
+      var _wantSt = _ups[u].status === undefined ? '' : String(_ups[u].status);
+      var _wantMemo = _ups[u].memo === undefined
+        ? String(_fbVals[hit][_cMemo] || '')      // 이번에 안 보냈으면 시트에 이미 적힌 값으로 판정
+        : String(_ups[u].memo);
+      // ★가짜 완료 차단(2026-08-06 GM 지시 · 시포) — 회신 내용이 없는데 '처리완료'로 적히던 것을 막는다.
+      //   실측 2026-08-06: 시트 58건이 전부 '처리완료'였고, 그중 오늘 접수건의 회신은
+      //   "처리 메모를 아직 남기지 않아 나중에 안내드리겠습니다" 였다. 감시 장치는 매일 '미처리 0건'을
+      //   보고했다 — 상태값만 보고 회신을 안 봤기 때문이다. 판정은 이 한 곳에서만 한다(약속 L21).
+      if (_isDoneStatus_(_wantSt) && !_hasRealReply_(_wantMemo)) _wantSt = '확인중';
+      if (_wantSt) _fbSh.getRange(rowNo, _cSt + 1).setValue(_wantSt);
+      if (_ups[u].memo !== undefined) _fbSh.getRange(rowNo, _cMemo + 1).setValue(String(_ups[u].memo));
+      // ★처리 결과를 문의알림방에 정리해 알린다(2026-08-06 GM 지시) — 실질 회신이 담겼을 때 1회만.
+      //   접수ID당 캐시로 중복을 막는다(감시기가 3분마다 같은 값을 밀어도 두 번 나가지 않는다).
+      if (_isDoneStatus_(_wantSt) && _hasRealReply_(_wantMemo)) {
+        try {
+          var _dnKey = 'sf_done_' + wantId;
+          if (!CacheService.getScriptCache().get(_dnKey)) {
+            CacheService.getScriptCache().put(_dnKey, '1', 21600);
+            var _dnEsc = function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+            _notifyTelegram('✅ <b>실무진 피드백 처리완료</b>'
+              + '\n접수번호: ' + _dnEsc(wantId)
+              + (_cWho >= 0 && _fbVals[hit][_cWho] ? '\n신고: ' + _dnEsc(_fbVals[hit][_cWho]) : '')
+              + (_cBody >= 0 && _fbVals[hit][_cBody] ? '\n내용: ' + _dnEsc(String(_fbVals[hit][_cBody]).slice(0, 120)) : '')
+              + '\n\n처리 결과\n' + _dnEsc(String(_wantMemo).slice(0, 500)),
+              _staffFeedbackRoom_());
+          }
+        } catch (e) { /* 알림 실패가 시트 반영을 되돌리지 않는다 */ }
+      }
       _done.push(wantId);
     }
     return _json({ ok: true, updated: _done, notFound: _miss });
@@ -8093,23 +8164,9 @@ function _processAction(body) {
           });
         }
         if (rlNewOnly) {
+          // 판정 정본 = _isNewRegistration_(2026-08-06 시포) — 카드(cpo_today_stats)와 같은 함수를 쓴다.
           rlRows = rlRows.filter(function(r){
-            // ★2026-08-05 시토(GM 재지적) — regClass('등록분류')만 보고 regClass2('재등록분류')를
-            //   안 봐서, 등록분류='신규'인데 재등록분류에 '재등록'(또는 'L재등록') 값이 있는 행이
-            //   newOnly=1 을 뚫고 나갔다(실측: 전체기간 724건 중 16건). 확실한 재등록 신호만 배제 —
-            //   대기·LOSS·환불·양도LOSS 등 다른 regClass2 값은 신규 여부와 무관해 그대로 둔다(보수적).
-            if (String(r.regClass2 || '').indexOf('재등록') >= 0) return false;
-            // ★2026-08-05 시토(GM 재지적 '이주헌·김지원은 재등록회차인데?') — regClass만 보고 등록회차를
-            //   안 봐서, 등록분류='신규'인데 등록회차≥2인 행(부부 재등록 등, 실측 11건)이 newOnly=1을
-            //   뚫고 나갔다. member_active_list(8376행)가 이미 쓰는 '등록회차≥2→재등록' 판정을 그대로
-            //   재사용한다(약속 L01, 새 파싱 금지). 등록회차가 비었거나 숫자가 아니면(match 실패) 기존
-            //   동작 그대로 둔다 — 값 없다고 빼면 진짜 신규가 사라진다.
-            var _rlChaM = String(r.regSeq || '').match(/\d+/);
-            if (_rlChaM && parseInt(_rlChaM[0], 10) >= 2) return false;
-            var c = String(r.regClass || '').trim();
-            if (c) return c === '신규';
-            var n = parseInt(r.regSeq, 10);
-            return !(n > 1);   // 분류가 비었으면 회차로 — 2회차 이상은 신규가 아니다
+            return _isNewRegistration_(r.regClass, r.regClass2, r.regSeq);
           });
         }
         rlRows.sort(function(a, b){ return a.regDate < b.regDate ? 1 : (a.regDate > b.regDate ? -1 : 0); }); // 최신 등록 먼저
@@ -9264,7 +9321,7 @@ function _processAction(body) {
   // ─── CPO 오늘 현황(PII 미노출 집계): 오늘/이번달 문의·등록 건수 2026-06-24 GM ───
   if (action === 'cpo_today_stats') {
     var ctCache = CacheService.getScriptCache();
-    var ctCached = ctCache.get('cpo_today_stats_v4');
+    var ctCached = ctCache.get('cpo_today_stats_v5');
     if (ctCached) return _json(JSON.parse(ctCached));
     var ctTz = 'Asia/Seoul';
     var ctToday = Utilities.formatDate(new Date(), ctTz, 'yyyy-MM-dd');
@@ -9305,6 +9362,9 @@ function _processAction(body) {
         var crNmI   = _crIdx('회원명');
         var crRemI  = _crIdx('잔여일');
         var crReI   = _crIdx('재등록분류');
+        // 신규 판정용 두 칸(2026-08-06 시포) — 카드가 재등록까지 세던 것을 목록과 같은 기준으로 맞춘다.
+        var crClsI  = _crIdx('등록분류'); if (crClsI < 0) crClsI = _crIdx('등록 분류');
+        var crSeqI  = _crIdx('등록회차'); if (crSeqI < 0) crSeqI = _crIdx('등록 회차');
         var crLossI = _crIdx('이탈일'); if (crLossI < 0) crLossI = _crIdx('해지일'); if (crLossI < 0) crLossI = _crIdx('종료일');
         ctLossDated = (crLossI >= 0);
         var crAll = crSh.getRange(2, 1, crSh.getLastRow() - 1, crCols).getValues();
@@ -9314,8 +9374,15 @@ function _processAction(body) {
           if (crRegI >= 0) {
             var cv = crow[crRegI];
             var crD = (cv instanceof Date && !isNaN(cv.getTime())) ? Utilities.formatDate(cv, ctTz, 'yyyy-MM-dd') : _miToISO_(cv);
-            if (crD === ctToday) ctTR++;
-            if (crD && crD.slice(0, 7) === ctMonth) ctMR++;
+            // ★2026-08-06 시포 — 카드 제목이 「신규 멤버십 등록현황」인데 재등록·대기까지 세고 있었다.
+            //   목록과 같은 판정(_isNewRegistration_)을 태워 두 숫자를 한 기준으로 맞춘다.
+            var crIsNew = _isNewRegistration_(
+              crClsI >= 0 ? crow[crClsI] : '',
+              crReI  >= 0 ? crow[crReI]  : '',
+              crSeqI >= 0 ? crow[crSeqI] : ''
+            );
+            if (crIsNew && crD === ctToday) ctTR++;
+            if (crIsNew && crD && crD.slice(0, 7) === ctMonth) ctMR++;
           }
           // 회원 현황(회원명 있는 행만): 유효 = 잔여일>=0(만료 당일까지 유효) & 이탈표시 없음. 2026-07-31 경계 정정.
           var crNm = crNmI >= 0 ? String(crow[crNmI] == null ? '' : crow[crNmI]).trim() : '';
@@ -9348,7 +9415,7 @@ function _processAction(body) {
       }
     } catch (eCorp) {}
     var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberCorp: ctCorp, memberEnded: ctEnded, todayLoss: ctLoss, monthLoss: ctMonthLoss, lossDated: ctLossDated };
-    try { ctCache.put('cpo_today_stats_v4', JSON.stringify(ctResult), 60); } catch (eCc) {}
+    try { ctCache.put('cpo_today_stats_v5', JSON.stringify(ctResult), 60); } catch (eCc) {}
     return _json(ctResult);
   }
 
