@@ -716,6 +716,25 @@ def shift_gaps(today: str, shift_key: str, url: str = DEFAULT_GAS_URL,
     return out
 
 
+def facility_gap(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
+    """시설부가 오늘 **통째로 0건**이면 알림 재료를 돌려준다. 아니면 None.
+
+    2026-08-06 실사고의 짝 문제(배436 잔여 2번): 0건 경보가 지원부 남/여 구역만 봐서
+    시설부가 통째로 0건이어도 아무도 모른다. 판정은 build_facility_section 과 같은
+    원천(board.store.submissions)을 쓴다 — 두 곳에서 갈라지면 숫자가 어긋난다(약속 L01).
+
+    ★조회 실패(board is None)는 0으로 치지 않는다 — '못 읽음'을 '안 했음'으로 적으면
+      제대로 일한 사람을 안 했다고 적는 셈이다(2026-08-06 GM 지적). 그때는 None(무알림).
+    """
+    board = fetch_gas({"action": "board", "key": f"FACILITY_CHECK_{today}"}, url)
+    if board is None:
+        return None
+    subs = (((board or {}).get("board") or {}).get("store") or {}).get("submissions")
+    if isinstance(subs, list) and len(subs) > 0:
+        return None
+    return {"zone": "시설부", "shift": "오늘", "total": 0, "likely": "미시작"}
+
+
 def _weekday_kor(date: str) -> str:
     try:
         return ["월", "화", "수", "목", "금", "토", "일"][datetime.strptime(date, "%Y-%m-%d").weekday()]

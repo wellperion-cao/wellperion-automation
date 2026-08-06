@@ -3291,9 +3291,15 @@ def main():
             _sp = str(REPO_ROOT / "scripts")
             if _sp not in _s.path:
                 _s.path.insert(0, _sp)
-            from support_check_summary import shift_gaps
+            from support_check_summary import shift_gaps, facility_gap
             today = datetime.now().strftime("%Y-%m-%d")
             gaps = shift_gaps(today, shift_key)
+            # 시설부가 통째로 0건인 날도 잡는다(배436 잔여 2번 · 2026-08-07 시토).
+            # 그 전에는 지원부 남/여 구역만 봐서, 시설부가 하루 종일 0건이어도 아무도 몰랐다.
+            # 조회 실패는 0으로 치지 않는다 — facility_gap 이 그때 None 을 준다.
+            fac = facility_gap(today)
+            if fac:
+                gaps = gaps + [fac]
             if not gaps:
                 return                      # 정상 — 아무 말도 하지 않는다
             try:
@@ -3307,10 +3313,16 @@ def main():
             # ★사람이 옆에서 짚어주듯 쓴다(2026-07-31 GM 지시). 숫자만 던지면 받는 사람은
             #   무엇을 하라는 건지 모른다. '무슨 일이 일어난 것 같은지'까지 말해 준다.
             miss = [g for g in fresh if g["likely"] == "제출누락"]
-            head = ("🔔 점검은 도신 것 같은데 제출이 안 들어왔습니다"
-                    if miss else "🔔 아직 시작 전인 회차가 있습니다")
+            only_fac = all(g["zone"] == "시설부" for g in fresh)
+            head = ("🔔 시설부 점검 입력이 아직 없습니다" if only_fac else
+                    "🔔 점검은 도신 것 같은데 제출이 안 들어왔습니다" if miss else
+                    "🔔 아직 시작 전인 회차가 있습니다")
             body = [head, "— 웰페리온 AI 운영지원 '웰리'가 보내드립니다.", ""]
             for g in fresh:
+                if g["zone"] == "시설부":
+                    body.append("▪ 시설부 — 오늘 점검 입력이 한 건도 없습니다")
+                    body.append("   이미 도셨다면 입력만 부탁드립니다.")
+                    continue
                 body.append(f"▪ {g['zone']} {g['shift']} — {g['total']}건 예정인데 제출 0건")
                 if g["likely"] == "제출누락":
                     other = "여성구역" if g["zone"] == "남성구역" else "남성구역"
@@ -3322,7 +3334,8 @@ def main():
                     body.append("   아직 시작 전이시면 그대로 두셔도 됩니다.")
                     body.append("   이미 하셨다면 제출만 부탁드립니다.")
             body.append("")
-            body.append("👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html")
+            _page = "시설부 체계.html" if only_fac else "지원부 체계.html"
+            body.append("👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/" + _page)
             # parse_mode=None = 평문. 본문에 '—'·'('·'.' 가 있어 MarkdownV2 로 보내면 파싱 오류가 난다.
             text = "\n".join(body)
             ok = send_telegram(DIGEST_CHECK_CHAT_ID, text, parse_mode=None)
