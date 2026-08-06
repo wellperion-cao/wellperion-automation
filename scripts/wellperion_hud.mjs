@@ -94,12 +94,20 @@ const OMC_CACHE_TTL_MS = 15000;               // 15초 — 비용 표시가 최�
 const REPO_ROOT = path.dirname(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')));
 const OMC_CACHE = path.join(REPO_ROOT, 'tmp', 'hud_omc_cache.json');   // .gitignore 대상(tmp/)
 
+// OMC 4.15.7 이 settings.json 의 statusLine 이 자기 스크립트를 안 가리키면(우리는 의도적으로
+// wellperion_hud.mjs 를 가리킨다) 정상 출력(branch/모델/한도/ctx — 원래도 여러 줄이다) 대신
+// 이 안내 배너를 낸다 — 우리 상태줄엔 소음이다(배417, 2026-08-06). 배너는 "[OMC] HUD"(공백,
+// 정상 출력의 "[OMC#4.15.7L]"과 다름)·"NOT configured"·"HUD script:" 문구로만 정확히 가려낸다.
+function isOmcBanner(s) {
+  return !s || /\[OMC\]\s+HUD/.test(s) || /NOT configured/.test(s) || /HUD script:/.test(s);
+}
+
 function omcHud(input) {
   const cachePath = OMC_CACHE;
   // 1) 살아있는 캐시가 있으면 프로세스를 띄우지 않는다.
   try {
     const c = JSON.parse(readFileSync(cachePath, 'utf8'));
-    if (c && typeof c.out === 'string' && (Date.now() - (c.at || 0)) < OMC_CACHE_TTL_MS) return c.out;
+    if (c && typeof c.out === 'string' && !isOmcBanner(c.out) && (Date.now() - (c.at || 0)) < OMC_CACHE_TTL_MS) return c.out;
   } catch { /* 캐시 없음·깨짐 — 그냥 새로 계산한다 */ }
 
   // 2) 새로 계산. timeout 을 5s → 2.5s 로 줄인다 — 5초를 다 쓰면 어차피 상태줄 상한을 넘겨
@@ -108,13 +116,14 @@ function omcHud(input) {
   try {
     const r = spawnSync(NODE, [OMC_HUD], { input, encoding: 'utf8', timeout: 2500 });
     out = (r.stdout || '').replace(/\s+$/, '');
+    if (isOmcBanner(out)) out = '';
   } catch { out = ''; }
 
-  // 3) 계산이 빈손이면 만료된 캐시라도 쓴다(빈 화면보다 조금 늦은 값이 낫다).
+  // 3) 계산이 빈손이면 만료된 캐시라도 쓴다(빈 화면보다 조금 늦은 값이 낫다) — 단, 배너면 버린다.
   if (!out) {
     try {
       const c = JSON.parse(readFileSync(cachePath, 'utf8'));
-      if (c && typeof c.out === 'string') return c.out;
+      if (c && typeof c.out === 'string' && !isOmcBanner(c.out)) return c.out;
     } catch { /* 없으면 빈 문자열 그대로 */ }
     return out;
   }
