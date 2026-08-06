@@ -1282,11 +1282,41 @@ def main() -> int:
         return 1
     room_names = [r["name"] for r in rooms]
 
+    def _log_room_members(target_rooms):
+        """보내기 직전, 그 방을 **누가 읽는지** 로그에 남긴다(발송은 막지 않는다).
+
+        왜: 2026-08-06 GM 지시 "항상 조직에 혼란없게 카카오톡 전달해줘". 같은 날
+        ★중간관리자 방 구성원을 저장소의 낡은 목록(6명·매니저 포함)으로 잘못 알고
+        "매니저에게 가면 안 되는 내용"의 판단을 틀리게 했다(실제 4명·매니저 없음).
+        보내는 사람이 수신자를 눈으로 보게 하는 것이 가장 싼 예방이다.
+        명단 정본은 scripts/kakao_rooms.json — 여기서 새로 정의하지 않는다(약속 L01).
+        """
+        try:
+            # 방 목록은 T2 웹(GAS)이 편집 SSOT라 members 칸이 없다 — 명단은 로컬
+            # kakao_rooms.json(폴백 캐시)에만 적혀 있으므로 이름으로 찾아 붙인다.
+            by_name = {}
+            try:
+                cfg = json.loads(ROOMS_CONFIG.read_text(encoding="utf-8"))
+                for key in ("rooms", "all_rooms"):
+                    for r in cfg.get(key, []):
+                        m = str((r or {}).get("members") or "").strip()
+                        if m:
+                            by_name.setdefault(str(r.get("name") or "").strip(), m)
+            except Exception:
+                pass
+            for r in target_rooms:
+                name = str(r.get("name") or "").strip()
+                members = str(r.get("members") or "").strip() or by_name.get(name, "")
+                log(f"  읽는 사람 [{name}] — {members or '명단 미기록(kakao_rooms.json 에 채워 주세요)'}")
+        except Exception:
+            pass  # 안내용이라 실패해도 발송을 막지 않는다
+
     failures = []
     dedup_skipped = []  # 발신 안 함(실패 아님 — 중복 발신 가드 또는 회장님 방 승인 대기)
 
     if args.message:
         log(f"대상 방 {len(rooms)}개: {room_names} / message={args.message!r} / dry_run={args.dry_run}")
+        _log_room_members(rooms)
         for idx, room in enumerate(rooms):
             room_name = room["name"]
             try:
