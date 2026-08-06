@@ -260,6 +260,63 @@ def _chunk_blocks(blocks: list[str], limit: int = TELEGRAM_MSG_LIMIT) -> list[st
     return messages
 
 
+def build_staff_feedback_block(today: str) -> str:
+    """💬 실무진 피드백 — 오늘 접수분과 아직 안 끝난 건을 「하루 일과 정리」 안에 한 블록으로 접는다.
+
+    GM 지시 2026-08-06: "문의 접수랑 같은 맥락으로 진행 — 접수 시 즉각 알림 + 처리 완료 시
+    메모랑 같이 알림 + 하루 일과 정리에도 추가." 앞의 둘은 GAS(Survey.js)가 문의알림방으로
+    보내고, 이 함수가 셋째다.
+
+    ★새 알림을 만들지 않는다(GM 지시 2026-08-06 "텔레그램 알림 계속 오는 그런건 하지말아줘").
+    이미 나가는 「하루 일과 정리」 한 통 안에 몇 줄을 얹을 뿐이라 발신 건수는 그대로다.
+
+    소스·토큰은 cpo_staff_feedback_watch 의 것을 그대로 재사용한다(주소를 두 벌로 두지 않는다·약속 L01).
+    조회 실패는 정직하게 '측정 불가'로 적고 넘어간다 — 이 블록 하나 때문에 하루 정리 전체가
+    죽으면 안 된다.
+    """
+    try:
+        from collectors.cpo_staff_feedback_watch import FB_GAS_URL, FB_TOKEN
+        import urllib.parse
+        import urllib.request
+
+        q = urllib.parse.urlencode({"action": "staff_feedback_list", "t": FB_TOKEN})
+        with urllib.request.urlopen(FB_GAS_URL + "?" + q, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        rows = data.get("data") or data.get("rows") or []
+        if not data.get("ok"):
+            raise RuntimeError(str(data.get("error") or "응답 실패"))
+    except Exception as exc:  # noqa: BLE001 — 어떤 실패든 블록만 정직 표기하고 계속 간다
+        return f"💬 실무진 피드백\n측정 불가 — 조회 실패({type(exc).__name__})"
+
+    # 접수ID = FByyMMdd-HHmmss. 날짜 비교는 이 앞자리로만 한다(접수시각 문자열 서식이 시트마다 흔들린다).
+    ymd = today[2:].replace("-", "")   # 2026-08-06 -> 260806
+    todays = [r for r in rows if str(r.get("접수ID", "")).startswith("FB" + ymd)]
+    open_rows = [r for r in rows if "처리완료" not in str(r.get("처리상태", ""))]
+    done_today = [r for r in todays if "처리완료" in str(r.get("처리상태", ""))]
+
+    head = (
+        f"💬 실무진 피드백  오늘 접수 {len(todays)} · "
+        f"오늘 처리완료 {len(done_today)} · 아직 안 끝난 것 {len(open_rows)}"
+    )
+    if not open_rows:
+        return head + "\n남은 건 없음."
+
+    # 오래된 것부터 — 며칠 묵었는지가 실무진 신뢰를 깎는 정도다.
+    open_rows.sort(key=lambda r: str(r.get("접수ID", "")))
+    lines = []
+    for r in open_rows[:8]:
+        who = html.escape(str(r.get("작성자", "")).strip() or "무기명")
+        body = html.escape(_short_title(str(r.get("내용", "")).replace("\n", " "), 34))
+        state = html.escape(str(r.get("처리상태", "")).strip() or "접수")
+        rid = str(r.get("접수ID", ""))
+        day = rid[6:8] if len(rid) >= 8 else ""
+        mon = rid[4:6] if len(rid) >= 6 else ""
+        when = f"{int(mon)}/{int(day)}" if mon.isdigit() and day.isdigit() else "?"
+        lines.append(f"· {when} · {who} · {body} · {state}")
+    more = f"\n· 외 {len(open_rows) - 8}건" if len(open_rows) > 8 else ""
+    return head + "\n<pre>\n" + "\n".join(lines) + more + "\n</pre>"
+
+
 def build_digest(today: str | None = None, channel: str = "telegram") -> list[str]:
     """v3: 액션 필요한 항목(지연·임박·결재대기)만 리스트로 남기고, 진행현황 전체 나열은
     카테고리별 건수 요약으로 대체한다(GM 피드백 "너무 길다"). 데이터 소스·판정 로직은 v2 재사용.
@@ -372,11 +429,17 @@ def build_digest(today: str | None = None, channel: str = "telegram") -> list[st
 
     divider = "━━━━━━━━━━"
 
+    # 💬 실무진 피드백 — 결재 대기 다음에 붙인다(GM 지시 2026-08-06 "하루 일과 정리에도 추가").
+    #   자리를 여기로 잡은 이유: 위 세 블록은 업무 SSOT 기반이고 이건 실무진이 화면에서 직접
+    #   올린 것이라, 섞지 않고 뒤에 따로 세운다.
+    section_feedback = build_staff_feedback_block(today)
+
     blocks = [
         f"{header}\n\n{sales_line}\n{summary_line}",
         section_overdue,
         f"{divider}\n{section_progress}",
         f"{divider}\n{section_approval}",
+        f"{divider}\n{section_feedback}",
     ]
     if channel == "kakao":
         blocks.append(footer)  # 🎯 분기 운영 목표(진행률)는 텔레그램에만 — 오늘 할 일 아님
