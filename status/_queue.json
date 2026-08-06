@@ -1857,5 +1857,24 @@
     "reversible": null,
     "work_type": "update",
     "updated_at": "2026-08-06"
+  },
+  {
+    "task_id": "CTO-2026-08-06-GM-화면-2건-검증-상태줄-색-복귀-진행현황방-보",
+    "clevel": "cto",
+    "title": "[시토] GM 화면 2건 검증 — 상태줄 색 복귀 · 진행현황방 보고 형식 (GM 지적 2026-08-06)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-08-06",
+    "from": "cto",
+    "note": "[시토 자가점검 2026-08-06] GM 지적 2026-08-06 두 건. 조치는 끝났고 **다음 창(재부팅)에서 눈으로 확인**하는 것만 남았다.\n\n1) 상태줄 색이 시토 창에서만 사라짐. 원인 = 공식 문서가 명시한 취약점 'Multi-line status lines with escape codes are more prone to rendering issues'. 실측 시토 9줄·이스케이프 90개(색 소실) vs 웰리 3줄·78개(정상). 조치: C-Level 블록을 역할당 1줄에서 상태당 1줄로 묶어 6줄 78개로 낮춤(커밋 fbc25e1a4). ★2026-08-04 같은 증상 때 역할 해석 실패로 잘못 짚어 재발했다 — 이번엔 색이 살아 있는 창과 수치를 맞췄다.\n2) 상태줄이 갱신을 멈추던 것. 원인 = 이벤트 기반이라 백그라운드 작업 대기 구간에 신호가 끊긴다(문서 명시). 조치: ~/.claude/settings.json statusLine.refreshInterval=10 추가 — 새 창부터 적용.\n3) AI 진행현황방 보고가 200자 한 줄 글벽이라 GM 이 못 읽음. 조치: 제목 한 줄 + 섹션 불릿으로 분리, 섹션 없이 120자 넘으면 발신 거부, 기술어 개수 집계·경고.\n\n검증 방법: 새 창을 열어 ①상태줄 C-Level 줄이 3줄이고 색이 보이는지 ②10초마다 갱신되는지 ③다음 완료 보고가 제목+섹션으로 방에 뜨는지.",
+    "next": "새 창에서 상태줄 색·3줄·자동갱신 확인 후 닫는다. 안 되면 줄 수를 더 줄이거나(2줄) 색 코드를 더 뺀다.",
+    "depends_on": "",
+    "ship_no": 10615,
+    "short_no": 422,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "updated_at": "2026-08-06"
   }
 ]
