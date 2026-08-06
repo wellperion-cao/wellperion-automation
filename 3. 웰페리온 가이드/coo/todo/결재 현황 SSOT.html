@@ -1005,9 +1005,13 @@ function renderRepApprovalRow(t) {
     // 대표 올림(서명본 대기) → 상태 + 🖨 인쇄(대표 서명란 포함) + 📄 업로드 + 올림 취소
     h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--yellow);background:var(--yellow-bg);border:1px solid rgba(214,166,79,0.3);padding:4px 10px;border-radius:7px;">🏛 대표 보고 대기(오프라인 종이)</span>';
     h += '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);cursor:pointer;font-family:inherit;">🖨 인쇄</button>';
+    // 📷 촬영 업로드 — 휴대폰에서 결재판을 바로 찍어 올린다(GM 지시 2026-08-06). capture 는 모바일에서만
+    //    카메라를 바로 열고, 데스크톱에서는 그냥 파일 선택으로 동작해 기존 흐름을 깨지 않는다.
+    h += '<button onclick="event.stopPropagation();document.getElementById(\'repSignCam_' + escAttr(id) + '\').click();" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;background:var(--green);color:#fff;border:1px solid var(--green);cursor:pointer;font-family:inherit;">📷 촬영해서 올리기</button>';
     h += '<button onclick="event.stopPropagation();document.getElementById(\'repSignFile_' + escAttr(id) + '\').click();" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);cursor:pointer;font-family:inherit;">📄 서명본 업로드</button>';
     h += '<button onclick="event.stopPropagation();repCancel(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;">↩ 올림 취소</button>';
     h += '<input type="file" id="repSignFile_' + escAttr(id) + '" accept="image/*,application/pdf" style="display:none;" onclick="event.stopPropagation();" onchange="uploadRepSign(\'' + escAttr(id) + '\', this)">';
+    h += '<input type="file" id="repSignCam_' + escAttr(id) + '" accept="image/*" capture="environment" style="display:none;" onclick="event.stopPropagation();" onchange="uploadRepSign(\'' + escAttr(id) + '\', this)">';
     h += '<span id="repSignStatus_' + escAttr(id) + '" style="font-size:10px;color:var(--accent);"></span>';
   } else {
     // 대표 결재완료 → 배지 + 📎 서명본 링크
@@ -1045,13 +1049,42 @@ async function repCancel(id) {
   } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
+// 사진 줄이기 — 촬영 업로드용(GM 지시 2026-08-06). 캔버스로 긴 변을 maxPx 로 맞추고 JPEG 로 다시 만든다.
+function shrinkImage(file, maxPx, quality) {
+  return new Promise(function (resolve, reject) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () {
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var scale = Math.min(1, maxPx / Math.max(w, h));
+      if (scale >= 1 && file.size <= 5 * 1024 * 1024) { URL.revokeObjectURL(url); resolve(file); return; }
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(w * scale); cv.height = Math.round(h * scale);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      cv.toBlob(function (blob) {
+        URL.revokeObjectURL(url);
+        if (!blob) { reject(new Error('축소 실패')); return; }
+        var name = (file.name || 'sign').replace(/\.[^.]+$/, '') + '.jpg';
+        resolve(new File([blob], name, { type: 'image/jpeg' }));
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('이미지 읽기 실패')); };
+    img.src = url;
+  });
+}
+
 // 대표 서명본 업로드 = 대표 결재완료 트리거 — 대표싸인 컬럼에 직접 URL 저장(approval_rep_sign_upload).
 async function uploadRepSign(id, input) {
   var file = input && input.files && input.files[0];
   if (!file) return;
   var statusEl = document.getElementById('repSignStatus_' + id);
   function _status(msg){ if (statusEl) statusEl.textContent = msg; }
-  if (file.size > 5 * 1024 * 1024) { _status(''); alert(file.name + ' — 5MB를 초과합니다.'); input.value = ''; return; }
+  // 📷 휴대폰 사진은 보통 4~8MB라 그대로 올리면 5MB 벽에 걸린다(GM 지시 2026-08-06 촬영 업로드).
+  // 이미지면 긴 변 1800px·JPEG 80%로 줄여 올린다 — 서명 확인에는 충분하고 실패가 사라진다. PDF는 손대지 않는다.
+  if (/^image\//.test(file.type || '')) {
+    try { file = await shrinkImage(file, 1800, 0.8); } catch (e) { /* 축소 실패하면 원본 그대로 시도 */ }
+  }
+  if (file.size > 5 * 1024 * 1024) { _status(''); alert(file.name + ' — 줄여도 5MB를 넘습니다. 다시 찍어 주세요.'); input.value = ''; return; }
   _status('업로드 중...');
   try {
     var base64 = await new Promise(function(resolve, reject){
