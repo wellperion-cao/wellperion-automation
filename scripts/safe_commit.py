@@ -51,6 +51,10 @@
 #   경로를 바꿨으면 경고하고, 그중에서도 내가 스테이징한 내용이 그 변경 '이전' 버전과
 #   완전히 같으면(=남의 최근 변경을 통째로 지움) 더 강한 경고를 남긴다. 오탐이 실측되면
 #   차단으로 강화할지 재판단한다(§_detect_concurrent_edit_warnings 참조).
+#   ▶2026-08-06 — 위 "최근 N분 내 경고" 는 삭제했다. 아무도 안 읽는 채널(stdout 뿐)이었고,
+#   실사고 부류(옛 사본이 최신을 덮음)는 배421 낡은 사본 차단(같은 함수, 이력 N개 blob
+#   비교)이 대신 잡는다(Fable 설계검토 지적④, 약속 L21 net-zero). 지금 §_detect_
+#   concurrent_edit_warnings 는 낡은 사본 판정만 한다 — 상세는 그 함수 docstring 참조.
 #
 # [배10314] append 로그 자동 포함 — status/worklog.jsonl 등 공용 작업 현황 로그는
 #   호출자가 경로에 안 넣으면 로컬에만 쌓여 GM 화면이 멈춘다(시포 실측 2026-07-27,
@@ -223,16 +227,85 @@ _INDEX_LOCK_RETRIES = 40  # index.lock 은 지우지 않는다 — 대기 후 �
 _PENDING_LEDGER = "status/_safe_commit_pending.json"
 _FLUSHING = False  # 재귀 가드 — 잔여분 커밋이 다시 잔여분 플러시를 부르지 않게
 
+# ★2026-08-06 시토(Fable 설계검토 지적①) — 원장은 **일시 실패만** 기억한다.
+#   선검증·훅가드·되돌림(낡은 사본)·도메인 차단은 스테이징 내용 자체의 문제라
+#   재시도해도 100% 같은 이유로 다시 실패한다. 그런데도 원장이 이걸 기억하면
+#   ⓐ절대 못 고칠 항목이 머리를 차지해 뒤 항목이 굶고 ⓑ이후 모든 커밋이 이
+#   항목 재시도 비용(락+이력스캔)을 매번 문다. 아래 세 reason 접두사
+#   ("선검증 실패(커밋 생성 안 함)"·"훅가드 위반(커밋 생성 안 함)"·
+#   "되돌림 차단(커밋 생성 안 함)")는 모두 "(커밋 생성 안 함)" 공통 마커로
+#   끝나므로 그 문자열 하나로 판별한다(각 reason 조립부 3곳 그대로 재사용 —
+#   새 enum·새 분류 테이블 안 만듦). HEAD 경합·잠금 예외 등 "다시 하면 될 수
+#   있는" 실패만 원장에 남는다.
+_PERMANENT_FAILURE_MARK = "(커밋 생성 안 함)"
+_LEDGER_MAX_ATTEMPTS = 5  # 일시 실패도 이 횟수 넘게 계속 실패하면 원장에서 뺀다(무한 재시도 금지)
+
+
+def _is_permanent_failure(reason: str) -> bool:
+    return _PERMANENT_FAILURE_MARK in (reason or "")
+
 # 배10314 — append 로그 자동 포함 대상(비재귀 · status/ 바로 아래만).
 _AUTO_INCLUDE_LOG_DIR = "status"
 _AUTO_INCLUDE_LOG_SUFFIX = ".jsonl"
 
-# 배10291 — 동시편집 경고 판정 창(분). 짧으면 놓치고 길면 오탐만 늘어 하루 운영 주기
-# 감안 15분으로 시작(보수적 경고 임계값 — 오탐 실측 후 조정).
-_CONCURRENT_EDIT_WINDOW_MIN = 15
+# ★2026-08-06 시토(Fable 설계검토 지적④) — 배10291 의 "최근 N분 내 동시편집" 경고는
+#   경고만 하고 아무도 안 읽는 채널(stdout 뿐)이었고, 실사고 부류(옛 사본이 최신을
+#   덮음)는 같은 날 넣은 낡은 사본 차단이 대신 잡는다(자기 자신이 방금 고친 파일에도
+#   뜨는 오탐이 실측됨). 삭제한다 — 새 장치(낡은 사본 차단)를 넣었으니 낡은 걸
+#   하나 없앤다(약속 L21 net-zero). _CONCURRENT_EDIT_WINDOW_MIN 상수도 함께 제거.
+#
 # 낡은 사본 판정에서 훑을 이력 깊이. 며칠 묵은 사본까지 잡되 경로당 git 호출이
 # 선형으로 늘어나므로 얕게 둔다. ponytail: 30 이 모자라면 그때 올린다.
 _STALE_COPY_SCAN_DEPTH = 30
+
+# ★2026-08-06 시토(Fable 설계검토 지적②) — {"enabled": false} 같은 토글, 발송여부
+#   플래그 등 status/ 바로 아래 작은 JSON 은 **정당하게** 과거 커밋 버전과 바이트가
+#   똑같아진다(값의 가짓수가 적어 재사용됨). 낡은 사본 차단을 그대로 걸면 예약
+#   파이프라인의 정상 커밋이 조용히 막힌다 — .bat 예약작업 호출자는 stdout 을 안
+#   읽어 WP_ALLOW_REVERT 안내조차 못 보고, 그 실패가 원장에 쌓여 영구 재시도
+#   루프가 된다. 기준(무엇을 "작다"로 볼지): status/ 바로 아래(비재귀 — worklog
+#   등은 이미 §_auto_include_modified_logs 로 별도 처리), 확장자 .json, 4KB 이하
+#   (토글·플래그류 상태 파일은 이 크기를 넘지 않는다 — 넘으면 콘텐츠성 데이터로
+#   보고 차단 유지). 페이지(.html)·코드(.py 등)·문서는 이 예외 대상이 아니다.
+_SMALL_STATE_JSON_DIR = "status/"
+_SMALL_STATE_JSON_SUFFIX = ".json"
+_SMALL_STATE_JSON_MAX_BYTES = 4096
+
+
+def _is_small_state_json(path: str, root: Path) -> bool:
+    if not (path.startswith(_SMALL_STATE_JSON_DIR)
+            and path.count("/") == 1 and path.endswith(_SMALL_STATE_JSON_SUFFIX)):
+        return False
+    try:
+        return (root / path).stat().st_size <= _SMALL_STATE_JSON_MAX_BYTES
+    except OSError:
+        return False
+
+
+def _batch_blobs(root: Path, rev_path_pairs: list[tuple[str, str]]) -> dict[tuple[str, str], str]:
+    """`<rev>:<path>` 여러 건을 `git cat-file --batch-check` 한 번으로 조회한다.
+
+    ★2026-08-06 시토(Fable 설계검토 지적③) — 낡은 사본 판정이 이력 SHA 최대 30개를
+    git ls-tree 로 하나씩 조회해(경로당 최대 31 서브프로세스, 전부 GitLock 안에서
+    돎) 커밋 관문 체류시간을 늘렸다(이 저장소는 이미 index.lock 경합으로 실패한
+    전례가 있다). batch-check 는 stdin 에 여러 줄을 한 번에 넣고 그대로 답 받으므로
+    같은 조회를 서브프로세스 1회로 줄인다(31→2: git log 1회 + 이 함수 1회).
+    출력은 입력과 1:1 순서로 대응한다(git 계약) — blob 이 아니거나 없으면 그 항목은
+    결과 dict 에서 빠진다.
+    """
+    if not rev_path_pairs:
+        return {}
+    stdin = "\n".join(f"{rev}:{path}" for rev, path in rev_path_pairs) + "\n"
+    r = subprocess.run(
+        ["git", "-C", str(root), "-c", "core.quotepath=false", "cat-file", "--batch-check"],
+        input=stdin, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    out: dict[tuple[str, str], str] = {}
+    for pair, line in zip(rev_path_pairs, r.stdout.splitlines()):
+        parts = line.split()
+        if len(parts) >= 3 and parts[1] == "blob":
+            out[pair] = parts[0]
+    return out
 
 
 def _git(args: list[str], root: Path, env: dict | None = None,
@@ -555,28 +628,27 @@ def _auto_include_modified_logs(root: Path, existing_rel_paths: list[str]) -> li
 
 def _detect_concurrent_edit_warnings(
     rel_paths: list[str], root: Path, tree: str, head: str,
-    window_min: int = _CONCURRENT_EDIT_WINDOW_MIN,
 ) -> list[str]:
-    """지정 경로가 최근 N분 내 다른 커밋으로 바뀐 적 있으면 경고 문자열 목록을 반환(차단 안 함).
+    """지정 경로가 '과거 커밋 버전과 바이트까지 똑같은 옛 사본'인지 판정한다.
 
-    배10291(2026-07-26 · 웰리 판단 배10226 회신): 공유 작업트리에서 한 세션이 편집 중인
-    파일을 다른 세션이 같이 고쳐 옛 사본이 최신 코드를 덮어쓴 사고가 실제로 났다(하루
-    4건). 문서에 "동시 편집 금지"라 적어도 기계가 못 막는다(약속 L02) — 이 관문 한
-    곳에서 잡는다.
+    배10291(2026-07-26) 신설 → 2026-08-06 시토(배421) "낡은 사본 차단" 으로 대체.
+    구 배10291 은 최근 N분 내 동시편집을 경고만 했는데 아무도 안 읽는 채널이었고
+    (stdout 뿐), 실사고 부류(옛 사본이 최신 코드를 덮음)는 이 함수의 낡은 사본
+    판정이 대신 잡는다 — 그래서 그 15분 창 경고 블록은 삭제했다(Fable 설계검토
+    지적④, 약속 L21 net-zero: 새 장치를 넣었으니 낡은 것 하나를 없앤다).
 
-    ★차단이 아니라 경고로 시작한다 — 오탐으로 정상 커밋을 막으면 그게 더 큰 사고다.
-      오탐이 실측되면 차단(강화) 여부를 재판단한다. 그래서 이 함수는 safe_commit 의
-      ok/committed 판정에 절대 관여하지 않고, 발견한 사실만 result 와 stdout 에 남긴다.
     ★자동 포함되는 append 로그(_auto_include_modified_logs)는 이 판정 대상에서 뺀다 —
       그 카테고리는 설계상 여러 세션이 상시 동시 append 하는 게 정상이고 merge=union
       으로 이미 무손실 병합되므로 여기서 또 경고하면 잡음만 늘어난다. 그래서 호출자는
       auto-include 이전의 caller_rel_paths 만 넘긴다.
-    ★판정 2단계(약함→강함):
-      - 단순 동시편집: 최근 N분 내 남이 이 경로를 바꿨고, 내 스테이징도 그 커밋 이후
-        내용과 다르다 → 서로 다른 변경이 겹칠 수 있다는 사실만 경고.
-      - 되돌리기(강한 신호): 내 스테이징 blob 이 그 커밋 '이전' blob 과 정확히 같다
-        = 나는 그 변경을 모른 채 옛 버전을 그대로 다시 올리는 중 → 남의 변경을
-        고스란히 지운다. 문구를 구분해 우선순위를 알 수 있게 한다.
+    ★차단이 기본이지만 예외 하나 — status/ 아래 작은 상태 JSON(§_is_small_state_json)
+      은 정당하게 과거 버전과 같아질 수 있어 경고로만 낮춘다(Fable 설계검토 지적②).
+    ★판정: 올리려는 내용이 '이 경로의 과거 커밋 버전과 바이트까지 똑같은지' 본다.
+      같으면 나는 새로 고친 게 아니라 옛 사본을 그대로 다시 올리는 중이고, 그 사이
+      커밋된 변경이 통째로 사라진다. blob 완전일치라 오탐이 사실상 없다.
+      (2026-08-06 배421 실측: 워크트리에 08-04 19:21 옛 사본 9건이 남아 있었다.
+       15분 창짜리 경고로는 이틀 지난 이 부류를 영원히 못 잡고, 직전 커밋 하나만
+       비교해도 그 뒤로 커밋이 더 쌓이면 놓친다 — 그래서 이력 N개를 훑는다.)
     """
     def _blob_at(rev: str, path: str) -> str:
         r = _git(["ls-tree", rev, "--", path], root)
@@ -585,65 +657,45 @@ def _detect_concurrent_edit_warnings(
         parts = r.stdout.strip().split()
         return parts[2] if len(parts) >= 3 else ""
 
-    def _prev_and_after(sha: str, path: str) -> tuple[str, str]:
-        """그 커밋이 이 경로를 바꾸기 '전' blob 과 '후' blob. 못 읽으면 ("","")."""
-        after = _blob_at(sha, path)
-        if not after:
-            return "", ""
-        before = _blob_at(f"{sha}^", path)   # 루트 커밋이면 실패→"" (정상)
-        if after == before:
-            return "", ""                    # 이 커밋이 실제로 내용을 바꾼 게 아님
-        return before, after
-
     warnings: list[str] = []
     reverts: list[str] = []
-    since = f"{window_min}.minutes.ago"
     for path in rel_paths:
         mine_blob = _blob_at(tree, path)
         if not mine_blob:
             continue
 
-        # ① 낡은 사본 판정 — 시간창 없이, 올리려는 내용이 '이 경로의 과거 커밋 버전과
-        #    바이트까지 똑같은지' 본다. 같으면 나는 새로 고친 게 아니라 옛 사본을 그대로
-        #    다시 올리는 중이고, 그 사이 커밋된 변경이 통째로 사라진다.
-        #    blob 완전일치라 오탐이 사실상 없어 경고가 아니라 차단으로 둔다.
-        #    (2026-08-06 배421 실측: 워크트리에 08-04 19:21 옛 사본 9건이 남아 있었다.
-        #     15분 창짜리 경고로는 이틀 지난 이 부류를 영원히 못 잡고, 직전 커밋 하나만
-        #     비교해도 그 뒤로 커밋이 더 쌓이면 놓친다 — 그래서 이력 N개를 훑는다.)
         history = _git(["log", "--format=%H", f"-{_STALE_COPY_SCAN_DEPTH}", head, "--", path], root)
-        if history.returncode == 0 and history.stdout.strip():
-            shas = history.stdout.strip().splitlines()
-            head_blob = _blob_at(head, path)
-            if mine_blob != head_blob:
-                for sha in shas[1:]:          # shas[0] = 현재 내용을 만든 커밋
-                    if _blob_at(sha, path) == mine_blob:
-                        subject = _git_out(["log", "-1", "--format=%s", shas[0]], root)[:70]
-                        when = _git_out(["log", "-1", "--format=%ad", "--date=format:%m-%d %H:%M",
-                                         shas[0]], root)
-                        reverts.append(
-                            f"[낡은 사본 차단] {path} — 올리려는 내용이 옛 커밋 {sha[:9]} 버전과 "
-                            f"똑같습니다. 그 뒤 {when} 커밋 {shas[0][:9]}({subject}) 이 이 파일을 "
-                            f"바꿨는데, 이대로 올리면 그 변경이 통째로 사라집니다. 작업트리 사본이 "
-                            f"낡았습니다 — 최신 내용을 받아 다시 고쳐 올리세요. 되돌리기가 "
-                            f"의도라면 WP_ALLOW_REVERT=1 로 다시 실행."
-                        )
-                        break
-                if reverts and reverts[-1].startswith(f"[낡은 사본 차단] {path} "):
-                    continue   # 차단 대상은 아래 약한 경고를 중복해서 내지 않는다
-
-        # ② 동시편집 경고 — 최근 N분 내 남이 같은 경로를 바꿨다(내용은 서로 다름).
-        log = _git(["log", f"--since={since}", "--format=%H", "-1", head, "--", path], root)
-        if log.returncode != 0 or not log.stdout.strip():
+        if history.returncode != 0 or not history.stdout.strip():
             continue
-        recent_sha = log.stdout.strip().splitlines()[0]
-        _, after_blob = _prev_and_after(recent_sha, path)
-        if not after_blob or mine_blob == after_blob:
-            continue
-        warnings.append(
-            f"[동시편집 경고] {path} — 최근 {window_min}분 내 커밋 {recent_sha[:9]} 이 이 "
-            f"경로를 바꿨습니다. 지금 내 커밋도 같은 경로를 바꿉니다 — 동시 편집 가능성, "
-            f"확인 요망."
-        )
+        shas = history.stdout.strip().splitlines()
+        # Fable 지적③ — 이력 SHA 최대 30개를 git ls-tree 로 하나씩 조회하던 걸(경로당
+        # 최대 31 서브프로세스) batch-check 한 번으로 합친다(31→2: 위 git log + 아래 1회).
+        blob_map = _batch_blobs(root, [(head, path)] + [(sha, path) for sha in shas[1:]])
+        head_blob = blob_map.get((head, path), "")
+        if mine_blob == head_blob:
+            continue  # 최신 내용과 같음 — 낡은 사본 아님
+        for sha in shas[1:]:          # shas[0] = 현재 내용을 만든 커밋
+            if blob_map.get((sha, path)) != mine_blob:
+                continue
+            subject = _git_out(["log", "-1", "--format=%s", shas[0]], root)[:70]
+            when = _git_out(["log", "-1", "--format=%ad", "--date=format:%m-%d %H:%M",
+                             shas[0]], root)
+            body = (
+                f"{path} — 올리려는 내용이 옛 커밋 {sha[:9]} 버전과 똑같습니다. 그 뒤 "
+                f"{when} 커밋 {shas[0][:9]}({subject}) 이 이 파일을 바꿨는데, 이대로 "
+                f"올리면 그 변경이 통째로 사라집니다."
+            )
+            if _is_small_state_json(path, root):
+                warnings.append(
+                    f"[낡은 사본 경고] {body} (작은 상태 JSON — 정상적으로 과거 값과 "
+                    f"같아질 수 있어 경고만 하고 커밋은 진행합니다.)"
+                )
+            else:
+                reverts.append(
+                    f"[낡은 사본 차단] {body} 작업트리 사본이 낡았습니다 — 최신 내용을 "
+                    f"받아 다시 고쳐 올리세요. 되돌리기가 의도라면 WP_ALLOW_REVERT=1 로 다시 실행."
+                )
+            break
     return warnings, reverts
 
 
@@ -699,7 +751,7 @@ def _ledger_remember(root: Path, rel_paths: list, message: str, reason: str) -> 
     """커밋 실패분을 원장에 적는다. 같은 경로는 갱신만(무한 증식 방지)."""
     entries = [e for e in _ledger_read(root)
                if sorted(e.get("paths") or []) != sorted(rel_paths)]
-    entries.append({"paths": rel_paths, "message": message, "reason": reason[:200]})
+    entries.append({"paths": rel_paths, "message": message, "reason": reason[:200], "attempts": 0})
     _ledger_write(root, entries[-50:])  # 상한 — 원장 자체가 새는 곳이 되지 않게
 
 
@@ -742,16 +794,31 @@ def _flush_pending(root: Path, push: bool) -> list:
                                 repo_root=str(root), push=push)
             except Exception as ex:  # noqa: BLE001
                 e["reason"] = f"재시도 예외: {type(ex).__name__}"
-                left.append(e)
-                continue
-            if r.get("ok"):
+                r = None
+            if r and r.get("ok"):
                 healed.append({"paths": paths, "sha": r.get("sha", "")})
-            else:
+                continue
+            if r is not None:
                 e["reason"] = str(r.get("reason", ""))[:200]
-                left.append(e)
+            # ★지적① — 선검증·훅가드·되돌림·도메인 차단은 다시 해도 100% 같은 이유로
+            #   또 실패한다(스테이징 내용 자체의 문제). 원장에 다시 넣지 않고 버린다.
+            if _is_permanent_failure(e["reason"]):
+                print(f"[자가치유] 정책 차단 — 재시도 불가라 원장에서 제거: "
+                      f"{paths} — {e['reason'][:80]}")
+                continue
+            # 일시 실패는 재시도 상한까지만 보존. 넘으면 버린다(무한 재시도 금지).
+            e["attempts"] = e.get("attempts", 0) + 1
+            if e["attempts"] >= _LEDGER_MAX_ATTEMPTS:
+                print(f"[자가치유] 재시도 {_LEDGER_MAX_ATTEMPTS}회 초과 — 원장에서 제거: "
+                      f"{paths} — {e['reason'][:80]}")
+                continue
+            left.append(e)
     finally:
         _FLUSHING = False
-        _ledger_write(root, left + deferred)  # 이번에 안 건드린 나머지는 그대로 보존
+        # ★지적① — 이번에 실패한 항목은 맨 앞이 아니라 **뒤**로 보낸다(deferred 먼저
+        #   쓴다). 맨 앞에 두면(구: left + deferred) 못 고치는 항목이 계속 머리를
+        #   차지해 뒤 항목들이 굶는다.
+        _ledger_write(root, deferred + left)
     return healed
 
 
@@ -927,7 +994,7 @@ def safe_commit(
     # ★자가치유 — 실패했으면 원장에 적어 둔다. 다음 커밋이 대신 밀어 올린다.
     #   '변경 없음'(committed=False·ok=True)은 실패가 아니므로 적지 않는다.
     #   플러시 중 실패는 _flush_pending 이 이미 원장에 남기므로 여기서 또 적지 않는다(중복 방지).
-    if not result["ok"] and not _FLUSHING:
+    if not result["ok"] and not _FLUSHING and not _is_permanent_failure(result.get("reason", "")):
         _ledger_remember(root, rel_paths, message, result.get("reason", ""))
         print(f"[자가치유] 커밋 실패 — 원장에 적어 뒀습니다. 다음 커밋이 재시도합니다: "
               f"{result.get('reason','')[:80]}")

@@ -18,6 +18,20 @@ def tree_from_worktree(paths):
     os.unlink(idx)
     return t
 
+def tree_with_blob(path, content_bytes):
+    """path 하나만 주어진 바이트로 바꾼 트리 SHA(나머지는 HEAD 그대로) — 디스크 안 건드림."""
+    fd, idx = tempfile.mkstemp(suffix='.idx'); os.close(fd); os.unlink(idx)
+    env = dict(os.environ, GIT_INDEX_FILE=idx)
+    subprocess.run(['git','read-tree','HEAD'], cwd=ROOT, env=env, check=True)
+    blob = subprocess.run(['git','hash-object','-w','--stdin'], cwd=ROOT, input=content_bytes,
+                          capture_output=True, check=True).stdout.strip().decode()
+    subprocess.run(['git','update-index','--add','--cacheinfo','100644', blob, path],
+                   cwd=ROOT, env=env, check=True)
+    t = subprocess.run(['git','write-tree'], cwd=ROOT, env=env,
+                       capture_output=True, text=True, check=True).stdout.strip()
+    os.unlink(idx)
+    return t
+
 head = sc._git_out(['rev-parse','HEAD'], ROOT)
 
 # ① 낡은 사본(워크트리가 HEAD 보다 옛것) → 되돌림으로 차단돼야 한다
@@ -37,4 +51,18 @@ same = ['CLAUDE.md']
 w3, r3 = sc._detect_concurrent_edit_warnings(same, ROOT, tree_from_worktree(same), head)
 assert not r3 and not w3, f"무변경 파일에서 소리가 났다: {r3} {w3}"
 print("③ 무변경 파일 무소음 OK")
+
+# ④ 작은 상태 JSON(status/ 바로 아래·4KB 이하)의 낡은 사본 → 차단이 아니라 경고여야 한다
+small_json = 'status/_bridge_last.json'
+hist = subprocess.run(['git','log','--format=%H','-5','HEAD','--',small_json],
+                      cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+assert len(hist) >= 2, f"{small_json} 이력이 테스트에 부족합니다(2개 이상 필요)"
+old_content = subprocess.run(['git','show', f'{hist[1]}:{small_json}'],
+                             cwd=ROOT, capture_output=True, check=True).stdout
+assert sc._is_small_state_json(small_json, ROOT), f"{small_json} 이 작은 상태 JSON 판정에서 빠졌다"
+w4, r4 = sc._detect_concurrent_edit_warnings([small_json], ROOT,
+                                             tree_with_blob(small_json, old_content), head)
+assert not r4, f"작은 상태 JSON을 차단으로 잡았다(경고여야 함): {r4}"
+assert any('[낡은 사본 경고]' in x for x in w4), f"작은 상태 JSON 경고가 안 떴다: {w4}"
+print("④ 작은 상태 JSON 경고(차단 아님) OK:", w4[0][:110])
 print("PASS")
