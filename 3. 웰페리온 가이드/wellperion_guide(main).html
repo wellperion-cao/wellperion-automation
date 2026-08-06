@@ -153,9 +153,16 @@
   .task-card{padding:14px 16px;border-bottom:1px solid rgba(61,56,53,0.4);transition:background 0.1s;background:transparent;}
   .task-card:last-child{border-bottom:none}
   .task-card:hover{background:rgba(183,159,138,0.04)}
+  /* G1 task-card 안에서만 적용 (acc-list 등 타 카드 충돌 방지 — id=today-task-list 스코프) */
+  #today-task-list .task-card{padding:17px 16px;border-bottom:1px solid rgba(61,56,53,0.28);border-radius:0;margin:0;box-shadow:none;border-left:none;border-top:none;border-right:none;line-height:1.55;}
+  #today-task-list .task-card:first-child{border-top:1px solid rgba(61,56,53,0.4);}
+  #today-task-list .task-card:hover{background:rgba(183,159,138,0.04);box-shadow:none;}
   /* toggle-arrow */
   .gm1-toggle-arrow{font-size:10px;color:var(--dim);transition:transform 0.2s;flex-shrink:0;cursor:pointer;padding:2px 4px;display:inline-block;}
   .gm1-toggle-arrow.open{transform:rotate(90deg);}
+  /* task-detail 펼침 */
+  #today-task-list .task-detail{display:none;padding:10px 0 0 18px;border-top:1px dashed var(--border);margin-top:8px;}
+  #today-task-list .task-detail.open{display:block!important;}
   /* chip: 업무현황 SSOT 동일 */
   .gm1-chip{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap;}
   .gm1-chip.status-active{background:rgba(183,159,138,0.15);color:var(--accent);}
@@ -165,6 +172,9 @@
   .gm1-chip.date:hover{background:rgba(183,159,138,0.25);}
   .gm1-chip.ssot{background:rgba(126,87,194,0.1);color:#7e57c2;opacity:0.6;font-size:9.5px;padding:1px 6px;}
   .gm1-chip.log{background:rgba(126,87,194,0.13);color:#7e57c2;}
+  /* 밀도 완화 — 예정 항구/입항 라인 줄간격·여백 확대, 카테고리·SSOT 태그 흐리게 (2026-07-18) */
+  #today-task-list .gm1-wait-line,#today-task-list .gm1-done-line{padding:11px 0!important;line-height:1.5;}
+  #today-task-list .gm1-tag-faint{opacity:0.62;}
   /* action-btn: 업무현황 SSOT 동일 */
   .gm1-action-btn{font-size:12px;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid;font-weight:600;transition:opacity 0.15s;white-space:nowrap;}
   .gm1-action-btn:hover{opacity:0.8;}
@@ -5619,7 +5629,16 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
 
     <!-- ══ 🧭 항로 → 자율현황·월간운영계획으로 이관 (업무 표면 정리 · 배317 · 2026-08-06 시토) ══ -->
-    <p style="font-size:13px;color:var(--dim);margin:8px 0 24px;">🧭 오늘 할 일과 AI 진행 상황은 <a href="자율현황.html#sec-hangro" style="color:var(--accent);font-weight:700;">자율 작업 현황 ▸ 🧭 항로</a> / <a href="월간운영계획.html" style="color:var(--accent);font-weight:700;">월간운영계획 ▸ 👤 김남욱GM 업무 진행건</a> 에 있습니다.</p>
+    <p style="font-size:13px;color:var(--dim);margin:8px 0 10px;">🧭 회사 업무와 AI 진행 상황은 <a href="자율현황.html#sec-hangro" style="color:var(--accent);font-weight:700;">자율 작업 현황 ▸ 🧭 항로</a> / <a href="월간운영계획.html" style="color:var(--accent);font-weight:700;">월간운영계획 ▸ 👤 김남욱GM 업무 진행건</a> 으로 옮겼습니다.</p>
+
+  <!-- ══ 내가 적어 둔 할 일 — 이 브라우저에만 저장된다 (배317 · 2026-08-06) ══
+       회사 업무는 위 두 곳으로 옮겼지만, GM 이 여기에 직접 적어 둔 항목은 브라우저
+       저장소(gm1_unified_tasks)에만 있어 옮길 곳이 아직 없다(CLAUDE.md §3-1 — GM 전용
+       저장소가 생기면 그때 합류). 칸을 없애면 적어 둔 것이 화면에서 사라지므로 남긴다. -->
+  <details id="gm1-todo-section" open style="margin:0 0 24px;">
+    <summary style="cursor:pointer;list-style:none;"><h3 style="display:inline;"><span class="ico">🧭</span>내가 적어 둔 할 일</h3><span style="font-size:0.78em;color:#888;font-weight:400;margin-left:8px;">이 브라우저에만 저장됩니다 · 회사 업무는 위 두 곳으로</span></summary>
+    <div id="today-task-list"></div>
+  </details>
 
 
     <!-- ══ 🧠 AI 자기학습 제안 → 자율현황으로 이관 (AI 살림 · 배10510 · 2026-08-03) ══ -->
@@ -9361,10 +9380,12 @@ function crTab(btn, panelId) {
           merged.push(t);
         }
       });
-      // 매칭 안 된 SSOT 항목만 별도 카드로 합류
-      gm1SsotItems.forEach(function(s){
-        if (!matchedSsotKeys[gm1MergeKey(s)]) merged.push(s);
-      });
+      /* ★2026-08-06(배317 · GM "G1 항로랑 AI건 + 현실업무건들은 다 이관") —
+         업무 시트에서 온 항목(SSOT)은 이제 G1 에 카드로 올리지 않는다.
+         회사 업무는 월간운영계획 ▸ 👤 김남욱GM 업무 진행건 이 정본이고, 여기 남는 것은
+         GM 이 이 브라우저에 직접 적어 둔 것뿐이다(그건 아직 옮길 저장소가 없다).
+         위의 상태 병합은 그대로 둔다 — 직접 적은 항목이 시트에도 있으면 완료 여부만 맞춘다.
+         ※ gm1SsotItems 자체는 캘린더가 같은 소스를 쓰므로 없애지 않는다(약속 L01). */
 
       // 이력(옛 완료·보류·폐기) — 기본뷰선 숨김, 검색 시에만 포함 (GM 2026-06-07)
       if (!gm1Searching) {
