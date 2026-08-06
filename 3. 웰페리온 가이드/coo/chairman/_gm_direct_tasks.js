@@ -55,7 +55,12 @@
           schedule: schedule,
           target: o.target || '',
           status: o.status || '',
-          progress: o.progress
+          progress: o.progress,
+          // 본문(progress_note)·별첨 링크(doc)도 함께 넘긴다 — 2026-08-06 GM 지적("만들긴 했는데
+          // 아무 내용이 없다"): 그동안 화면이 한 줄 target 만 그려, 정리해 둔 내용이 어디에도 안 보였다.
+          // 좁은 3열 카드(월간운영계획 토글)는 그대로 두고 자세히보기 페이지에서만 펼친다.
+          note: o.progress_note || '',
+          doc: o.doc || ''
         };
       });
   }

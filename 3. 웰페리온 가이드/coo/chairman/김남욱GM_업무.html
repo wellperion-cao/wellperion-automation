@@ -58,6 +58,12 @@
   .top .when{font-size:12px;font-weight:600;color:var(--mid);white-space:nowrap;}
 
   .item p.body{font-size:13px;line-height:1.66;margin:0 0 9px;}
+  /* 내용 전문 — 줄바꿈·기호 그대로 살려 읽는다(GM 2026-08-06 "아무 내용이 없다" 지적 대응) */
+  .item .note-body{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.7;
+                   margin:8px 0 0;padding:10px 12px;border:1px solid #ddd;background:#fafafa;color:#222;}
+  .item .doc-link{display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:#8a6b4c;
+                  text-decoration:none;border:1px solid #e0d3c4;border-radius:99px;padding:5px 12px;background:#fbf7f2;}
+  @media print{ .item .note-body{background:#fff;} .item .doc-link{display:none;} }
   .item strong{font-weight:700;}
 
   dl{margin:0;font-size:12.5px;line-height:1.6;}
@@ -204,6 +210,10 @@
         '<div><dt>상태</dt><dd>' + esc(it.status || '—') + '</dd></div>' +
         '<div><dt>진행률</dt><dd>' + (typeof it.progress === 'number' ? it.progress + '%' : '—') + '</dd></div>' +
         '</dl>' +
+        // 내용 전문 — 그동안 한 줄 요약만 보여 "만들긴 했는데 아무 내용이 없다"는 지적을 받았다
+        // (GM 2026-08-06). 정리해 둔 본문을 여기서 그대로 편다(정본은 월간운영계획 progress_note).
+        (it.note ? '<div class="note-body">' + esc(it.note) + '</div>' : '') +
+        (it.doc ? '<a class="doc-link" href="' + esc(it.doc) + '" target="_blank">📄 정리본 열기 (A3 인쇄용) →</a>' : '') +
         '</div>'
       );
     }).join('');
