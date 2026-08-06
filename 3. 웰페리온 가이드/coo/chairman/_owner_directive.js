@@ -80,15 +80,18 @@
     });
   }
 
-  // ── 발송 담당(2026-08-05 GM 지시) — 지금은 클립보드 복사만 한다. 텔레그램 봇 토큰을 브라우저(공개 소스)에
-  //    넣으면 전 채널 발신 권한이 그대로 노출돼 절대 금지(GM 확인 완료). 업무 시트 GAS 의 텔레그램 발신
-  //    (_notifyTelegram)도 2026-05-28 GM 결재로 no-op 폐기 상태라 지금 호출 가능한 발송 액션이 없다
-  //    (GAS 재배포는 백엔드라 시토 배403 으로 이관됨). 나중에 발송 액션이 생기면 이 함수 하나만 고치면
-  //    대표님·GM 페이지 양쪽이 한 번에 자동 발송으로 바뀐다 — 호출부는 손대지 않는다.
+  // ── 발송 담당(2026-08-05 GM 지시 · 2026-08-06 시토 배403 — GAS 쪽 action=owner_report_send
+  //    신설로 실발송 연결) — 클립보드 복사는 그대로 안전망으로 남긴다(텔레그램 실패해도 사람이
+  //    직접 붙여넣을 수 있게). 봇 토큰은 여전히 브라우저에 안 넣는다 — 발송은 GAS 서버측
+  //    (.deploy-todo/업무&결재 현황.js _sendOwnerReportTelegram, GM 확인 완료 패턴 재사용)이
+  //    한다. ⚠️ GAS 쪽 코드는 준비만 됐고 재배포 전까지는 이 fetch 가 구버전 GAS에서 action
+  //    미인식 응답을 받을 뿐 — 클립보드 흐름은 그 실패와 무관하게 그대로 동작한다.
   function dispatchReport(text, onDone) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function () { onDone(true); }).catch(function () { onDone(false); });
     } else { onDone(false); }
+    fetch(GAS_URL + '?action=owner_report_send&text=' + encodeURIComponent(text), { method: 'GET', redirect: 'follow' })
+      .catch(function () {}); // best-effort — 실패해도 위 클립보드 흐름을 막지 않는다.
   }
 
   // 👑 회장님 보고건 현황 — 2026-08-05 GM 지시("회장님 업무보고건을 대표님에게도 같이 회장님 보고건으로

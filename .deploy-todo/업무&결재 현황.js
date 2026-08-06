@@ -790,6 +790,27 @@ function _notifyTelegram(text, opts) {
   return; // no-op
 }
 
+// ─── 보고건 통합 발송 전용 텔레그램 송신 (배403) — _notifyTelegram 과 별개.
+// _signalM1Publish 와 동일 UrlFetchApp 직송 패턴 재사용(같은 토큰 프로퍼티·같은 챗).
+// 비치명(예외를 던지지 않고 { ok, error } 로만 반환) — 실패해도 화면 클립보드 복사는 산다.
+function _sendOwnerReportTelegram(text) {
+  try {
+    var token = _prop('TELEGRAM_BOT_TOKEN');
+    if (!token) return { ok: false, error: '토큰 미설정' };
+    var chatId = '8254867551';
+    var resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({ chat_id: chatId, text: text }),
+      muteHttpExceptions: true
+    });
+    var r = JSON.parse(resp.getContentText() || '{}');
+    return r.ok ? { ok: true } : { ok: false, error: r.description || '전송 실패' };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
 // ─── 카테고리 → 부서장 매핑 (결재선 1단계 자동, 2026-06-10 GM 확정 9분류) ───
 // 인사·파트너팀=나우열M([2][3]) / 운영부=이경연 실장([4]) / 시설부=이정헌 소장([5]).
 // 매핑 없는 카테고리([1][6][7][8][9])는 부서장 생략 → GM→대표 폴백.
@@ -2413,6 +2434,18 @@ function doGet(e) {
     // 카테고리 목록 조회
     if (action === 'todo_categories') {
       return _json({ ok: true, data: CATEGORIES });
+    }
+
+    // ─── 대표님/GM 보고건 통합 발송 — 텔레그램 (배403, 2026-08-06 시토) ───
+    // 화면(_owner_directive.js)의 「보고건 통합 보고」 버튼이 지금까지 클립보드 복사로만
+    // 끝나 실제 발송은 사람이 손으로 붙여넣어야 했다. _notifyTelegram 은 2026-05-28 GM
+    // 결재로 전면 폐기 상태라 재사용 불가 — 대신 같은 파일의 _signalM1Publish 와 동일
+    // 패턴(같은 TELEGRAM_BOT_TOKEN ScriptProperty·같은 GM 개인 챗 8254867551)을 그대로
+    // 재사용한다(새 발신 경로 신설 아님, 약속 L21).
+    if (action === 'owner_report_send') {
+      var _ownText = String(e.parameter.text || '').slice(0, 4000);
+      if (!_ownText) return _json({ ok: false, error: 'text 필수' });
+      return _json(_sendOwnerReportTelegram(_ownText));
     }
 
     // ─── 봇 토큰 지문 진단 (디스패처 연결·배47 잔여작업 · 2026-07-27 시토) ───
