@@ -41,6 +41,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -162,8 +163,33 @@ def resolve_room(rooms_path=None):
 
 
 # 섹션 표기 — 순서 고정. GM 이 폰에서 훑는 순서와 같게 둔다(무엇을 왜 → 뭘 했나 → 진짜 되나 → 다음).
-_SECTIONS = (("cause", "🔎 원인"), ("fix", "🔧 고친 것"),
-             ("check", "📊 확인"), ("next", "👉 다음"))
+# 라벨은 GM 이 셸에서 보는 표준 표(wellperion-gm-report §4 5요소)와 같은 말을 쓴다
+#   — GM 지시 2026-08-06: "차라리 우리 쿵짝내용 처럼 정리해서 주는게 더 이해하기 쉬워질 것 같은데".
+#   두 곳(셸·방)이 다른 어휘를 쓰면 같은 일을 두 번 해독해야 한다.
+_SECTIONS = (("cause", "🔍 무엇이 문제였나"), ("fix", "✅ 무엇을 했나"),
+             ("check", "🔎 확인한 것"), ("next", "👉 다음"))
+
+# 섹션 없이 통째로 보낼 수 있는 한 줄 보고의 상한(글자).
+#   왜: 이 관문은 2026-07-27 부터 섹션 인자를 갖고 있었는데 아무도 안 써서, 방에는 계속
+#   기술 용어를 이어 붙인 글벽이 나갔다(GM 2026-08-06 "9:00~9:20 사이에 보내준 것들이
+#   이해가 하나도 안 되"). 문서로 권하는 것으로는 안 지켜졌으므로 관문에서 막는다(약속 L02).
+#   짧은 한 줄 완료 보고는 그대로 통과한다 — 길어질 때만 나눠 쓰게 만든다.
+PLAIN_SUMMARY_MAX = 120
+
+# GM 이 이미 아는 약어 — 이건 기술어로 세지 않는다.
+_OK_WORDS = {"ai", "gm", "erp", "ig", "kpi", "pc", "url", "sns", "voc", "cs", "qr", "pdf", "a3"}
+
+
+def count_jargon(text: str) -> list[str]:
+    """GM 이 못 읽는 기술어(라틴 문자 토큰) 목록. 발신은 막지 않고 경고·집계만 한다.
+
+    왜 막지 않나: 이 관문이 거부하면 호출측이 업무보고방으로 폴백해 같은 글벽이 다른 방에
+    남는다(조용한 소멸 방지 규칙과 충돌). 대신 매 발신마다 세어 로그에 남긴다 — 건수가
+    안 줄면 그때 강제한다(GM 지시 2026-08-06 "이해가 하나도 안 되").
+    """
+    found = [w for w in re.findall(r"[A-Za-z][A-Za-z_.=-]{2,}", str(text or ""))
+             if w.lower().strip("_.=-") not in _OK_WORDS]
+    return found
 
 
 def _bullets(raw: str) -> str:
@@ -216,6 +242,21 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
     """
     log_path = Path(log_path) if log_path else LOG_PATH
     now = now or _now_kst()
+
+    # ★긴 보고는 섹션으로 나눠 써야 나간다(GM 지시 2026-08-06). 한 줄에 다 이어 붙이면
+    #   방에 글벽이 남고 GM 은 읽어도 무슨 일인지 모른다. 섹션 인자는 2026-07-27 부터
+    #   있었지만 강제가 없어 아무도 안 썼다 — 그래서 관문에서 막는다(약속 L02·L21).
+    if (len(summary.strip()) > PLAIN_SUMMARY_MAX
+            and not any((v or "").strip() for v in (cause, fix, check, nxt))):
+        hint = ("진행현황방 보고가 너무 깁니다(%d자 > %d자)."
+                " 한 덩어리로 보내지 말고 --cause(무엇이 문제였나) ·"
+                " --fix(무엇을 했나) · --check(확인한 것) · --next(다음) 로 나눠 쓰세요."
+                " summary 는 제목 한 줄로 줄입니다."
+                % (len(summary.strip()), PLAIN_SUMMARY_MAX))
+        print("[notify_gm_progress] " + hint, file=sys.stderr)
+        return {"sent": False, "reason": "needs_sections", "text": summary.strip(),
+                "chat_id": None, "hint": hint}
+
     text = build_text(summary, link, ship=ship, step=step, state=state,
                       cause=cause, fix=fix, check=check, nxt=nxt)
 
@@ -250,10 +291,14 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
         from notify.telegram_send import send as sender  # noqa: PLC0415
 
     ok = bool(sender(chat_id, text))
+    jargon = count_jargon(text)
+    if jargon:
+        print("[notify_gm_progress] GM 이 못 읽는 기술어 %d개: %s — 다음부터 사람 말로 바꿔 쓰세요."
+              % (len(jargon), ", ".join(jargon[:8])), file=sys.stderr)
     _append_log(log_path, {
         "ts": now.isoformat(), "summary": summary.strip(), "text": text,
         "link": link or "", "ship": ship or "", "step": step or "", "state": state,
-        "sent": ok, "chat_id": chat_id,
+        "sent": ok, "chat_id": chat_id, "jargon": len(jargon), "jargon_words": jargon[:12],
     })
     return {"sent": ok, "reason": "sent" if ok else "send_failed",
             "text": text, "chat_id": chat_id}

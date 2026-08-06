@@ -478,6 +478,31 @@ def build_telegram_message(
 # 발송 실패·게이트 시 notify_or_fallback 이 업무보고방으로 폴백(조용한 소멸 없음 — 종전 유지).
 
 
+def _split_head_body(title: str, summary: str) -> tuple[str, str]:
+    """방 보고를 '제목 한 줄 + 본문 불릿'으로 가른다 (GM 지시 2026-08-06).
+
+    - title 이 있으면 그게 제목이고 summary 전체가 본문이다.
+    - title 이 없으면 summary 의 첫 문장을 제목으로 떼고 나머지를 본문으로 쓴다.
+    - 본문은 '①②③④⑤' 번호나 ' · ' 로 끊어 '|' 로 잇는다 — notify_gm_progress 의
+      _bullets 가 그 구분자로 줄을 나눠 폰에서 한 줄씩 읽히게 만든다.
+    왜: 전에는 summary 를 통째로 제목 자리에 넣어 방에 글벽이 남았다("4건 중 3건 해소.
+    ①발행 스크립트 타임아웃 — 당월매출 GAS 재시도 3회…" 처럼 한 줄로 200자).
+    """
+    title = (title or "").strip()
+    summary = (summary or "").strip()
+    if title:
+        head, body = title, summary
+    else:
+        m = re.search(r"(?<=[.。])\s+|\n", summary)
+        head = (summary[:m.start()] if m else summary).strip()
+        body = (summary[m.end():] if m else "").strip()
+    if body:
+        body = re.sub(r"\s*[①②③④⑤⑥⑦⑧⑨]\s*", "|", body)
+        body = re.sub(r"\s+·\s+", "|", body)
+        body = "|".join(x.strip() for x in body.split("|") if x.strip())
+    return head, body
+
+
 def send_ai_progress_report(
     clevel: str,
     task_id: str,
@@ -493,6 +518,7 @@ def send_ai_progress_report(
     changelog: str = "",
 ) -> bool:
     """AI 진행현황방 완료보고 — notify_gm_progress.notify_or_fallback() 단일 관문 재사용
+    (제목/본문 분리는 _split_head_body 참고)
     (새 발신 함수 신설 금지 · 약속 L21). 모든 배의 L18 보고가 여기로 온다(2026-08-04).
 
     [2026-07-30 배202 팀리드 지시 — 조용한 소멸 구멍 폐쇄, 폴백 판단은 한 지점(notify_
@@ -528,9 +554,13 @@ def send_ai_progress_report(
                   file=sys.stderr)
         return ok
 
+    # ★제목 한 줄 + 본문은 섹션으로 나눈다(GM 지시 2026-08-06 "9:00~9:20 사이에 보내준
+    #   것들이 이해가 하나도 안 되 · 차라리 우리 쿵짝내용 처럼 정리해서"). 전에는 요약을
+    #   통째로 제목 자리에 넣어, 방에 기술 용어를 이어 붙인 한 줄 글벽이 남았다.
+    head, body = _split_head_body(title, summary)
     result = _notify_or_fallback(
-        title or summary, artifact_url or None,
-        ship=nick, state=state, dry_run=dry_run, nxt=nxt,
+        head, artifact_url or None,
+        ship=nick, state=state, dry_run=dry_run, fix=body or None, nxt=nxt,
         fallback=_fallback_to_gm_dm,
     )
     if dry_run:

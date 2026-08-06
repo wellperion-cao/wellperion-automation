@@ -201,3 +201,23 @@ def test_cli_dry_run_returns_zero(tmp_path, monkeypatch, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "CLI 테스트" in out
+
+
+# ── GM 이 읽을 수 있게 (2026-08-06 GM 지시 "이해가 하나도 안 되") ─────────────
+def test_long_summary_without_sections_is_rejected(tmp_path):
+    """긴 보고를 한 덩어리로 보내면 방에 글벽이 남는다 — 섹션으로 나눠 쓰게 막는다."""
+    out = ngp.notify("가" * (ngp.PLAIN_SUMMARY_MAX + 1), dry_run=True, ship="시토 1")
+    assert out["sent"] is False
+    assert out["reason"] == "needs_sections"
+
+
+def test_long_summary_with_sections_passes(tmp_path):
+    """제목을 줄이고 본문을 섹션으로 옮기면 통과한다."""
+    out = ngp.notify("제목 한 줄", dry_run=True, ship="시토 1", fix="첫째|둘째")
+    assert out["reason"] == "dry_run"
+    assert "✅ 무엇을 했나" in out["text"]
+
+
+def test_count_jargon_flags_english_but_allows_known_abbrev():
+    assert ngp.count_jargon("당월매출 GAS 재시도 attempts=1 timeout 45초")
+    assert ngp.count_jargon("AI 진행현황 ERP 확인, 문의 접수 처리중") == []
