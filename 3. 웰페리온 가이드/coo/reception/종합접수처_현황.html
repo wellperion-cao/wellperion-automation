@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<!-- ▼▼▼ [속도·안정 개선 v2] 통합 조회 shim — 2026-08-05. 이 <script> 블록 하나를 현황판 HTML의
+<!-- ▼▼▼ [속도·안정 v3] 통합 조회 shim — 2026-08-06. 이 <script> 블록 하나를 현황판 HTML의
      <head> 안, 다른 <script> 들보다 '위'에 붙여넣기(가장 먼저 실행돼야 함). 나머지 코드는 그대로. ▼▼▼
-     v2 변경점(v1 대비):
-       1) 메인 주소(…VcF3gQ)로 가는 호출을 '한 줄로' 직렬화 → 현황판 본문·습득물이 동시에 부딪혀
-          서로 55초씩 느려지던 충돌 제거. (현황판 ~8초 → 습득물 ~3초 순서대로.)
-       2) 목록 읽기(습득물 lf_list·휴회 member_hold_intake_list·현황판)는 일시적 실패(4xx/5xx/네트워크,
-          구글 리다이렉트 만료 404 등)면 잠깐 쉬고 자동 재시도 → "이번엔 휴회가 안 들어옴" 같은 랜덤 누락 방지.
-       ★ 쓰기(reg_update/삭제/인계 등)는 직렬화만 하고 재시도는 안 함(중복 적용 방지).
-       ★ 휴회는 별도 주소라 직렬화는 불필요하고 재시도만 붙임(병렬 그대로 → 빠름). -->
+     v3 변경점(v2 대비):
+       · 직렬화(줄 세우기) 제거 — v2는 메인주소 호출을 한 줄로 세워서 습득물(lf_list)이 무거운
+         현황판 본문(reg_dashboard) 뒤에 강제로 기다렸다. 현황판 통합으로 무거운 호출이 이미
+         1개로 줄었으니(reg_board·scoreboard·staff→dashboard) 습득물까지 줄 세울 필요가 없다.
+         → 습득물은 본문과 '나란히(병렬)' 로딩 → 본문이 느려도 습득물은 따로 빨리 뜬다.
+       · 재시도(fetchRetry) 유지 — 습득물·휴회·현황판 조회가 일시적으로 실패(4xx/5xx/네트워크,
+         구글 리다이렉트 만료 404 등)하면 잠깐 쉬고 최대 3번까지 자동 재시도 → 랜덤 누락 방지.
+       · 현황판 통합(reg_board·scoreboard(all)·staff → reg_dashboard 1회) 유지.
+       ★ 쓰기(reg_update/삭제/인계 등)는 가로채지 않고 그대로 통과(중복·지연 방지). -->
 <script>
 (function () {
   var API_MAIN = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
@@ -34,21 +36,12 @@
     return attempt(1);
   }
 
-  // 메인 주소(VcF3gQ) 호출을 한 줄로 직렬화 — 같은 스크립트에 동시 요청이 몰려 서로 느려지는 것 방지.
-  var mainChain = Promise.resolve();
-  function queueMain(run) {
-    var p = mainChain.then(run, run);
-    mainChain = p.then(function () {}, function () {});   // 성패와 무관하게 줄은 계속 이어짐
-    return p;
-  }
-
-  // reg_dashboard 를 딱 한 번만 호출(메모이즈) + 직렬 큐 + 재시도. 세 화면이 이 한 번을 나눠 쓴다.
+  // reg_dashboard 를 딱 한 번만 호출(메모이즈) + 재시도. 세 화면이 이 한 번을 나눠 쓴다.
   var dashPromise = null;
   function getDash() {
     if (!dashPromise) {
-      dashPromise = queueMain(function () {
-        return fetchRetry(API_MAIN + "?action=reg_dashboard&pv=" + PV, { redirect: "follow", cache: "no-store" });
-      }).then(function (r) { return r.json(); })
+      dashPromise = fetchRetry(API_MAIN + "?action=reg_dashboard&pv=" + PV, { redirect: "follow", cache: "no-store" })
+        .then(function (r) { return r.json(); })
         .catch(function (e) { dashPromise = null; throw e; });  // 실패 시 다음 시도에 다시 부르도록
     }
     return dashPromise;
@@ -80,15 +73,13 @@
         if (u.indexOf("action=reg_staff_suggest") >= 0) {
           return getDash().then(function (d) { return jsonResp({ ok: true, names: d.staffNames || [] }); });
         }
-        // ④ 그 밖의 메인 주소 호출(습득물 lf_list, 필터 reg_board, 주/월 점수판, 쓰기 등)
-        //    → 직렬 큐로 충돌 제거. 읽기는 재시도로 안정화, 쓰기는 재시도 없이 그대로(중복 방지).
-        var isWrite = /action=(reg_update|reg_delete|reg_submit|renumber|lf_delete|lf_handover|lf_update)/.test(u);
-        return queueMain(function () {
-          return isWrite ? _origFetch(url, opts) : fetchRetry(url, opts);
-        });
+        // ④ 그 밖의 메인 주소 '읽기'(습득물 lf_list, 필터 reg_board, 주/월 점수판 등) → 병렬 + 재시도.
+        //    쓰기(reg_update/삭제/인계 등)는 가로채지 않고 원래 fetch 로 그대로 통과(중복·지연 방지).
+        var isWrite = /action=(reg_update|reg_delete|reg_submit|renumber|lf_delete|lf_handover|lf_update|lf_submit)/.test(u);
+        if (!isWrite) return fetchRetry(url, opts);
       }
 
-      // 휴회(별도 주소) — 직렬화는 불필요(다른 스크립트라 병렬 그대로). 읽기이므로 재시도만 붙여 랜덤 누락 방지.
+      // 휴회(별도 주소) — 읽기이므로 재시도만 붙여 랜덤 누락 방지(별도 스크립트스병렬 그대로).
       if (u.indexOf("action=member_hold_intake_list") >= 0) {
         return fetchRetry(url, opts);
       }
@@ -97,7 +88,8 @@
   };
 })();
 </script>
-<!-- ▲▲▲ 여기까지 붙여넣기 (v2) ▲▲▲ -->
+<!-- ▲▲▲ 여기까지 붙여넣기 (v3) ▲▲▲ -->
+
 
 
 <meta charset="UTF-8">
