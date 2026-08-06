@@ -1781,5 +1781,24 @@
     "reversible": null,
     "work_type": "update",
     "updated_at": "2026-08-06"
+  },
+  {
+    "task_id": "CEO-2026-08-06-공지-서식-인쇄-옵션이-인쇄물에-안-먹는다-용지-A",
+    "clevel": "ceo",
+    "title": "[웰리] 공지 서식 인쇄 옵션이 인쇄물에 안 먹는다 — 용지 A4 골라도 항상 A3 (GM 지적 2026-08-06)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-06",
+    "from": "ceo",
+    "note": "[웰리 자가점검 2026-08-06] ■ 실측(라이브 headless 크롬 재현): 인쇄 옵션 패널에서 A4 선택 시 부모 페이지에 @page{size:A4 portrait;margin:8mm} 이 주입되지만, 실제 인쇄 창은 ntPrint() 가 만드는 새 창이고 그 안 @page 는 297mm 420mm(A3 세로) 고정이다. 방향도 이 패널이 아니라 페이지 자체 '방향' 선택만 반영된다.\n■ 뿌리: 이 페이지 인쇄는 html2canvas 로 A3 캔버스를 떠서 이미지 한 장을 새 창에 띄워 인쇄하는 방식(v2.47)이다. 공용 인쇄옵션 컴포넌트(_assets/print_options.js · 22개 페이지 롤아웃)는 '페이지 자체를 인쇄'하는 화면을 전제로 @page 를 주입하므로 이 페이지에서는 구조적으로 효과가 없다. 게다가 방향 선택이 두 곳(페이지 select + 옵션 패널)에 생겨 서로 다르게 동작한다.\n■ 선택지 두 갈래: ①이 페이지에서 공용 옵션 컴포넌트 script 한 줄 제거 — 안 먹는 조작을 없애 혼란 제거, 인쇄는 기존 A3 고정 유지(가장 작은 수정). ②ntPrint/ntDownloadPDF/PNG 가 옵션 선택값(localStorage wlp_print_opts)을 읽어 캡처 용지·@page 를 따라가게 배선 — 기능은 늘지만 방향 컨트롤 이중화 정리까지 필요.\n■ ★착수 전 필수: 지금 작업트리의 notice_template.html 이 HEAD(v2.2 카테고리 UI 포함)보다 오래된 v2.1 사본이다(87줄 삭제 상태·mtime 08-04 19:21). 이대로 커밋하면 라이브가 되돌아간다 — 반드시 HEAD 내용을 기준으로 고친다.\n■ 운영부 안내: 2026-08-06 09:51 ★운영부 방에 캡처+회피 방법 발송 완료(A3 기준 사용 · A4 는 프린터 '용지에 맞춤'). 수정 반영되면 같은 방에 다시 알린다.",
+    "next": "①/② 중 택해 수정 → 라이브 재현으로 A4 선택 시 인쇄물 용지 변화 확인 → ★운영부 방에 반영 안내",
+    "depends_on": "",
+    "ship_no": 10611,
+    "short_no": 418,
+    "module": "home",
+    "audience": null,
+    "reversible": null,
+    "work_type": "update",
+    "updated_at": "2026-08-06"
   }
 ]
