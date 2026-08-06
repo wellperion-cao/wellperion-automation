@@ -863,8 +863,19 @@ var BUSINESS_INTAKE_HEADERS = ['타임스탬프','성함','회사명','담당자
 function _processAction(body) {
   const action = body.action || '';
   if (action === 'ping') {
-    return _json({ ok: true, service: 'intake-api', at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') });
+    return _json({
+      ok: true, service: 'intake-api',
+      at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'),
+      // 알림 토큰이 들어 있는지만 길이로 알린다(값은 절대 안 내보낸다). 0 이면 접수는 되는데
+      // 텔레그램 알림만 조용히 안 가는 상태다 — 그 침묵을 밖에서 볼 수 있게 하는 창 하나.
+      botTokenLen: _prop('BOT_TOKEN').length
+    });
   }
+  /* set_bot_token_once (1회용 쓰기 문) 는 값을 넣은 뒤 지웠다 — 2026-08-06 배240.
+     남겨 두면 쓰이지 않는 쓰기 통로가 그대로 열려 있게 된다(약속 L21 "꺼둔 것은 남기지 않는다").
+     대신 ping 이 토큰 설정 여부를 길이로만 알려 준다(값은 안 내보낸다) — 토큰이 빠지면
+     접수는 되는데 알림만 조용히 안 가는 부류라, 사람이 눈치채려면 볼 자리가 있어야 한다. */
+
   // nocache 플래그는 원본 계약 유지(미사용이라도 body 그대로 통과) — intake_submit 은 캐시 우회 분기 없음.
   if (!_checkSurveyAccess_(action, body.key)) {
     return _json({ ok: false, error: 'unauthorized' });
