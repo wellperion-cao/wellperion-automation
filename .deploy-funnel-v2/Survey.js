@@ -8726,7 +8726,30 @@ function _hasRealReply_(memo) {
           return _json({ ok: false, error: 'rowkey-not-found', detail: '행 확인 불가(지문 불일치) — 목록 새로고침 후 다시 시도하세요' });
         }
       } else {
-        return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
+        // ★★지문 중복 복구 — 2026-08-06 시포(GM "실무진이 신뢰할 수 있는 페이지" 지시로 전수 검수 중 발견).
+        //   지문 재료가 '등록일자 + 전화' 뿐이라, **가족이 같은 번호로 같은 날 등록하면 두 행의 지문이
+        //   완전히 같아진다.** 그 순간 두 분 다 어떤 칸도 저장할 수 없고, 새로고침해도 영구히 안 풀린다
+        //   (2026-08-05 에 넣은 '전화 단독 복구'도 후보가 2건이라 똑같이 막힌다).
+        //   실측 2026-08-06: 유효회원 1,003명 중 Maria Campero·Oscar Garcia Chacon 두 분이 이 상태였다
+        //   (같은 번호 · 둘 다 2025-01-03 등록). 실무진은 원인을 알 길이 없고 계속 실패만 본다.
+        //   ▸복구 규칙: 화면이 보낸 rowIndex 가 **지문이 걸린 후보 행들 중 하나와 정확히 같을 때만**
+        //     그 행으로 확정한다. 후보 밖 행번호는 그대로 거부 — 행번호를 단독 근거로 쓰지 않는다는
+        //     INC-020 원칙은 그대로다. 후보는 모두 같은 전화·같은 등록일이라 최악의 경우에도
+        //     **그 가족 두 사람 사이**를 벗어나지 않는다(남의 줄은 구조적으로 못 건드린다).
+        //   ▸화면은 고치지 않았다 — 이미 보내고 있는 rowIndex 를 판정 재료로 한 겹 더 쓸 뿐이다(약속 L21).
+        var _auPick = -1;
+        var _auWantRow = parseInt(body.rowIndex, 10);
+        if (_auWantRow >= 2) {
+          for (var _afi = 0; _afi < _auFpRows.length; _afi++) {
+            if (_auFpRows[_afi] === _auWantRow) { _auPick = _auWantRow; break; }
+          }
+        }
+        if (_auPick >= 2) {
+          auRow = _auPick;
+          Logger.log('지문 중복 복구(후보 내 행번호 일치): row=' + auRow + ' 후보=' + _auFpRows.join(','));
+        } else {
+          return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
+        }
       }
     } else {
     // ★행키 검증(비파괴·하위호환, 지문키 미동봉/칸 미탐지 시 폴백): keyPhone 동봉 시 대상 행 전화 대조 — rowIndex 밀림 오수정 방지. 미전송이면 폴백 — 단, 예약(재등록예약목록) 쓰기는 예외(B1).
