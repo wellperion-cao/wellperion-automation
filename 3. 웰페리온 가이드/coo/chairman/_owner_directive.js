@@ -102,11 +102,18 @@
   // 대표님건은 시트 '내용' 칸 표식으로, 회장님건은 시트에 없어 이 파일로 — 판정 규칙(있으면 완료)은 같다.
   var CH_STATE_PATH = '3. 웰페리온 가이드/coo/chairman/chairman_reported.json';
   var chReported = {};   // 조회 실패 시 {} — 전부 '보고 대기'로 보여 문안에서 빠지는 일이 없게 한다.
+  // 배포(GitHub Pages) 반영이 늦으면 같은 파일을 저장소 raw 에서 한 번 더 찾는다 — 못 읽은 채로 그리면
+  // 이미 보고한 건이 다시 '보고 대기'로 올라가 문안에 섞인다(GM 2026-08-06 가 막으라고 한 바로 그 상태).
+  var RAW_STATE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/' + encodeURI(CH_STATE_PATH);
   function loadChairmanReported() {
-    return fetch('chairman_reported.json?t=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : {}; })
-      .then(function (j) { chReported = j || {}; })
-      .catch(function () { chReported = {}; });
+    function get(url) {
+      return fetch(url + (url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    }
+    return get('chairman_reported.json')
+      .then(function (j) { return j || get(RAW_STATE); })
+      .then(function (j) { chReported = j || {}; });
   }
   function chDate(it) { return String(chReported[it.id] || '').trim(); }
   function chairmanPending() {
