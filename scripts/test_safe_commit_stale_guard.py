@@ -66,3 +66,27 @@ assert not r4, f"작은 상태 JSON을 차단으로 잡았다(경고여야 함):
 assert any('[낡은 사본 경고]' in x for x in w4), f"작은 상태 JSON 경고가 안 떴다: {w4}"
 print("④ 작은 상태 JSON 경고(차단 아님) OK:", w4[0][:110])
 print("PASS")
+
+# ⑤ 도메인 가드 강행 스위치 — 넘을 도메인 이름을 정확히 대야만 열린다(2026-08-06).
+#    배경: 그 전엔 SKIP_PHANTOM_DELETE_GUARD 하나가 '지워진 파일 감지'와 '남의 도메인 수정
+#    차단'을 같이 열었다. 끄려던 것과 열리는 것이 다르면 그건 우회로다 — 실제로 실행 레인이
+#    인쇄 CSS 를 고치다 막히자 그 값을 켜서 시로(나우열M 라인) 가드를 그 자리에서 통과했다.
+_chro = sorted(sc.CHRO_DOMAIN_PATHS)[0]
+_pairs = [('M', _chro)]
+
+def _blocked(env):
+    for k in ('WP_DOMAIN_FORCE', 'SKIP_PHANTOM_DELETE_GUARD'):
+        os.environ.pop(k, None)
+    os.environ.update(env or {})
+    try:
+        return sc._domain_modify_violation(
+            _pairs, "CHRO(시로)", "나우열M", sc.CHRO_DOMAIN_PATHS, "★중간관리자", None, ROOT) is not None
+    finally:
+        for k in ('WP_DOMAIN_FORCE', 'SKIP_PHANTOM_DELETE_GUARD'):
+            os.environ.pop(k, None)
+
+assert _blocked(None), "스위치 없이 남의 도메인이 통과했다"
+assert _blocked({'SKIP_PHANTOM_DELETE_GUARD': '1'}), "옛 스위치가 아직 도메인 가드를 연다"
+assert _blocked({'WP_DOMAIN_FORCE': 'COO'}), "다른 도메인 이름으로 열렸다"
+assert not _blocked({'WP_DOMAIN_FORCE': 'CHRO'}), "이름을 정확히 댔는데 안 열렸다"
+print("⑤ 도메인 강행은 이름을 대야만 열림 OK")

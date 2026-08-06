@@ -90,7 +90,6 @@ from git_lock import GitLock  # noqa: E402  (같은 scripts/ 폴더 — 락 로�
 from precommit_phantom_delete_guard import (  # noqa: E402
     PROTECTED_DELETE_PREFIXES,
     foreign_delete_violations,
-    SKIP_ENV as _DOMAIN_GUARD_SKIP_ENV,
     _log_block as _domain_guard_log,
 )
 
@@ -145,6 +144,10 @@ COO_DOMAIN_PATHS = frozenset({
 # 경로 출처(임의 확장 금지) — ssot/ownership_map.json roles[]:
 #   시로 domain="업무현황 SSOT·결재현황 SSOT" → 실제 파일 2개(폴더는 coo 지만
 #   소유는 시로 — coo/check/* 처럼 folder=owner 가 아니다):
+# 도메인 가드 강행 스위치 — 넘을 도메인 이름을 값으로 넣는다(쉼표로 여러 개).
+# 예: WP_DOMAIN_FORCE=CHRO · WP_DOMAIN_FORCE=CHRO,COO
+_DOMAIN_FORCE_ENV = "WP_DOMAIN_FORCE"
+
 CHRO_DOMAIN_PATHS = frozenset({
     "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html",
     "3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html",
@@ -182,15 +185,27 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
                               judgment_note: str | None, root: Path) -> str | None:
     """도메인 경로가 이번 커밋에 하나라도 걸리면 차단 문구를 만든다(없으면 None).
 
-    강행: env SKIP_PHANTOM_DELETE_GUARD=1(로그는 precommit_phantom_delete_guard 의
-    _log_block 재사용 — 새 우회 스위치·새 로그 파일 안 만듦, 위 import 참조).
+    강행: env WP_DOMAIN_FORCE 에 **그 역할 이름**을 넣어야 한다(예: WP_DOMAIN_FORCE=CHRO).
+    로그는 precommit_phantom_delete_guard 의 _log_block 재사용(새 로그 파일 안 만듦).
+
+    ★2026-08-06 시토 — 강행 스위치를 SKIP_PHANTOM_DELETE_GUARD 와 갈랐다.
+      왜: 그 전엔 두 가드가 스위치 하나를 같이 썼다. '지워진 파일 감지'를 끄려고 켠 값이
+      전혀 다른 '남의 도메인 수정 차단'까지 같이 열어 버린다 — 끄려던 것과 열리는 것이
+      다르면 그건 우회로다. 실제로 이날 실행 레인이 인쇄 CSS 를 고치다 막히자 그 값을
+      켜서 시로(나우열M 라인) 도메인 가드를 그 자리에서 통과했다(logs/phantom_delete_guard.jsonl
+      CHRO(시로)_domain_force 2건). 사람·리드가 판단하라고 둔 문을 기계가 눌렀다.
+      이제는 **어느 도메인을 넘는지 이름으로 말해야** 열린다 — 모르고 열리는 일이 없다.
+      스위치 개수는 그대로다(도메인용이 phantom 것을 빌려 쓰던 것을 자기 것으로 옮겼을 뿐).
     """
     hits = sorted({path for _, path in diff_pairs if path in domain_paths})
     if not hits:
         return None
-    if os.environ.get(_DOMAIN_GUARD_SKIP_ENV) == "1":
+    # role_label 은 "CHRO(시로)" 꼴 — 괄호 앞 영문 토큰만 비교한다(한글 입력 부담 제거).
+    role_token = role_label.split("(")[0].strip().upper()
+    forced = {t.strip().upper() for t in os.environ.get(_DOMAIN_FORCE_ENV, "").split(",") if t.strip()}
+    if role_token in forced:
         _domain_guard_log(f"{role_label}_domain_force", hits, str(root))
-        print(f"[WARN] {_DOMAIN_GUARD_SKIP_ENV}=1 — {role_label} 도메인 가드 강행 통과: "
+        print(f"[WARN] {_DOMAIN_FORCE_ENV}={role_token} — {role_label} 도메인 가드 강행 통과: "
               f"{', '.join(hits)}")
         return None
     extra = f" 외 {len(hits) - 1}건" if len(hits) > 1 else ""
@@ -202,7 +217,8 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
         f"python scripts/queue_dispatch.py --to ceo --title \"[{room_tag} 전달] "
         f"{hits[0]} 수정 필요\" --note \"담당자: {contact} (scripts/kakao_rooms.json "
         f"{room} members 참조)\" (웰리가 {room} 방으로 전달)."
-        f" 강행하려면 env {_DOMAIN_GUARD_SKIP_ENV}=1(로그 남음).{note}"
+        f" 강행하려면 env {_DOMAIN_FORCE_ENV}={role_token}(그 도메인만 열림·로그 남음)."
+        f" ★강행은 사람·리드가 판단한다 — 막혔다고 자동으로 누르지 마라.{note}"
     )
 
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
