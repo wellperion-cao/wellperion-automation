@@ -19,6 +19,11 @@ AI가 실행하지 않는 시우·시로·시뽀의 배를 담당자 이름과 �
 시우→★운영부(최준용M) · 시로·시뽀→★중간관리자(나우열M). 목록이 지난번과 같으면
 보내지 않는다. 자세한 이유는 아래 '사람에게 넘기는 배 전달' 주석 블록 참조.
 
+[2026-08-06 추가] 업무 시트(S3)에서 상태가 '완료'로 바뀐 운영부 담당 건을 다이제스트
+본문 끝에 "✅ 완료된 일" 절로 붙인다(GM 지시). ★한계: 카톡 발송은 이 PC 예약 시각에만
+돈다(데스크톱 카카오톡 직접 조작 구조라 서버 즉시발송 불가) — 완료 체크 즉시가 아니라
+다음 다이제스트 발송 회차에 묶여 나간다.
+
 사용:
   python scripts/send_ops_digest.py            # 킬스위치 ON이면 발송
   python scripts/send_ops_digest.py --force    # 킬스위치·오늘조건 무시(수동 검증 발송)
@@ -57,6 +62,79 @@ TARGET_ROOM = "★운영부"  # 2026-08-04 시토: SSOT(kakao_rooms.json)와 표
 
 
 ROOMS_CONFIG = ROOT / "scripts" / "kakao_rooms.json"
+
+# ══════════════════════════════════════════════════════════════════════════
+# 업무 시트 완료 알림 (2026-08-06 GM 지시 — "체크완료를 하면 카카오톡방에 완료되었다는
+# 내용이 있으면 좋을듯")
+#
+# 체크 자리는 새로 안 만든다 — 실무진이 이미 쓰는 업무 시트(S3 · action=todo_list)의
+# '상태' 칸이 곧 체크 UI다. 이 함수는 그 칸이 '완료'로 바뀐 운영부 담당 건을 골라
+# 운영부 다이제스트 본문에 한 절 붙인다. 비교·발송은 위 relay 구간과 같은 자리
+# (send_ops_digest.py 발신 관문 하나)에 흡수한다 — 새 스크립트·새 예약작업 없음.
+# ══════════════════════════════════════════════════════════════════════════
+DONE_HEARTBEAT_ID = "ops-digest-done-tasks"  # 지난 회차에 알린 완료건 스냅샷(상설 하트비트 1파일)
+DONE_SHOW_N = 5
+OPS_STAFF = ("최준용M", "이경연 실장", "윤병현AM")  # 운영부 담당자(GM 지시 원문 3인)
+
+
+def _fetch_todo_rows() -> list:
+    """업무 시트 전체 행 — 실패 시 빈 리스트(fail-soft, 다이제스트 발송을 막지 않는다)."""
+    from collectors.ops_shared import SSOT_API_URL, gas_get
+    resp = gas_get(SSOT_API_URL, {"action": "todo_list"}, label="todo_list")
+    if resp is None:
+        log("[done] 업무 시트 조회 실패 — 완료 절 생략")
+        return []
+    try:
+        data = resp.json().get("data", [])
+        return data if isinstance(data, list) else []
+    except Exception as exc:
+        log(f"[done] 업무 시트 파싱 실패 — 완료 절 생략: {exc}")
+        return []
+
+
+def build_done_section(rows: list, prev_ids: dict) -> "tuple[str, dict]":
+    """운영부 담당자(OPS_STAFF) 몫 중 상태='완료'인 건에서 지난 회차 이후 새로
+    완료된 것만 골라 절로 만든다. 비교 키 = 시트 행 id 고정(업무명은 바뀔 수 있다 —
+    relay 구간의 task_id 교훈과 동일). 반환 (섹션 텍스트, 현재 완료건 {id: 표시줄}) —
+    두 번째 값은 변화가 없어도 다음 회차 비교용으로 그대로 저장한다."""
+    from collectors.ops_shared import TODO_DONE_STATUSES
+
+    done = [r for r in rows if isinstance(r, dict)
+            and str(r.get("상태", "")).strip() in TODO_DONE_STATUSES
+            and any(n in str(r.get("담당자", "")) for n in OPS_STAFF)
+            and str(r.get("id", ""))]
+    current = {str(r["id"]): f"{str(r.get('업무명', '')).strip()} — {str(r.get('담당자', '')).strip()} 완료"
+               for r in done}
+
+    new_ids = [k for k in current if k not in prev_ids]
+    if not new_ids:
+        return "", current
+
+    lines = [f"✅ 완료된 일 {len(new_ids)}건"]
+    for k in new_ids[:DONE_SHOW_N]:
+        lines.append(f" • {current[k]}")
+    if len(new_ids) > DONE_SHOW_N:
+        lines.append(f" • 외 {len(new_ids) - DONE_SHOW_N}건")
+    return "\n".join(lines), current
+
+
+def _done_state() -> "tuple[dict, bool]":
+    """(지난 회차 완료건 스냅샷, 최초실행 여부). 최초실행(하트비트 파일 자체가 없음)이면
+    이번 회차는 알리지 않고 스냅샷만 찍는다 — 안 그러면 시트에 쌓여 있던 과거 완료건이
+    전부 '신규 완료'로 한꺼번에 쏟아진다(relay 구간 _is_legacy_snapshot과 같은 문제)."""
+    from module_heartbeat import last_heartbeat
+    rec = last_heartbeat(DONE_HEARTBEAT_ID)
+    if rec is None:
+        return {}, True
+    state = rec.get("state")
+    return (dict(state) if isinstance(state, dict) else {}), False
+
+
+def _save_done_state(state: dict) -> None:
+    from module_heartbeat import record_heartbeat
+    record_heartbeat(DONE_HEARTBEAT_ID,
+                     detail=f"운영부 완료건 스냅샷 — {len(state)}건", extra={"state": state})
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # 사람에게 넘기는 배 전달 (2026-08-05 GM 편제 확정)
@@ -370,6 +448,13 @@ def main() -> int:
             print("SKIPPED: 오늘 생성분 아님")
             return 0
 
+    done_prev, done_bootstrap = _done_state()
+    done_section, done_current = build_done_section(_fetch_todo_rows(), done_prev)
+    if done_bootstrap:
+        done_section = ""  # 최초실행 — 과거 완료건 일괄 스팸 방지, 스냅샷만 찍고 이번엔 침묵
+    if done_section:
+        message = f"{message}\n\n{done_section}"
+
     cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", TARGET_ROOM]
     if args.dry_run:
         cmd.append("--dry-run")
@@ -383,6 +468,8 @@ def main() -> int:
             data["sent"] = True
             data["sent_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             PENDING.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+            if done_bootstrap or done_current != done_prev:
+                _save_done_state(done_current)
         print(f"DONE: 다이제스트 발송 완료 — {TARGET_ROOM}")
         return 0
     print(f"FAILED: 발송 실패(rc={proc.returncode}) — {tail}")
