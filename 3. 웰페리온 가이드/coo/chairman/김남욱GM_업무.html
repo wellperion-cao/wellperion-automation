@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>김남욱GM 업무 진행건 · WELLPERION</title>
+<title>경영진 업무 진행건 — 회장님·대표님·김남욱GM · WELLPERION</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
 <!-- 사내 게이트(단일 소스 _assets/gate.js) — 회장님_지시사항.html과 동일(GM 지시 2026-08-05, 비밀번호 1531 통일). -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -95,6 +95,44 @@
   .ft{border-top:1px solid var(--line);margin-top:8px;padding-top:5px;
       display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
 
+  /* -- 토글 3줄 (2026-08-06 GM 지시 "1페이지에 토글라인으로") -- */
+  .tgl-nav{display:flex;gap:8px;margin:12px 0 14px;flex-wrap:wrap;}
+  .tgl-nav a{font-size:12.5px;font-weight:700;text-decoration:none;color:var(--mid);
+             border:1px solid var(--line);border-radius:99px;padding:5px 13px;background:var(--steam);}
+  .sec{border:1.5px solid var(--deep);margin-bottom:12px;}
+  .sec > summary{list-style:none;cursor:pointer;padding:9px 14px;background:var(--deep);color:#fff;
+                 font-size:15.5px;font-weight:800;letter-spacing:.02em;display:flex;align-items:baseline;gap:9px;
+                 -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .sec > summary::-webkit-details-marker{display:none;}
+  .sec > summary .ic{font-size:16px;}
+  .sec > summary .cnt{margin-left:auto;font-size:11.5px;font-weight:600;color:#C9D2CC;white-space:nowrap;}
+  .sec-body{padding:12px 14px 14px;}
+  .repbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px;}
+  .repbar .cnt2{font-weight:700;color:var(--mid);}
+  .repbar .rbtn{font-family:var(--font);font-size:12.5px;font-weight:700;padding:6px 14px;cursor:pointer;
+                border:1px solid var(--deep);background:var(--deep);color:#fff;border-radius:2px;}
+  .repbar .rbtn:disabled{opacity:.4;cursor:default;}
+  .repbar .rnote{font-size:11.5px;color:var(--grey);}
+  .repbar .rstatus{font-size:11.5px;font-weight:700;color:var(--brass);}
+  .digest{display:none;white-space:pre-wrap;font-size:11.5px;line-height:1.6;background:#fafafa;
+          border:1px solid var(--line);padding:10px 12px;margin:0 0 10px;max-height:260px;overflow:auto;}
+  /* 내용 구조화 — 통짜로 쏟지 않고 소제목/불릿으로 끊는다 (GM 2026-08-06 "가독성 챙겨줘") */
+  .nb{margin:9px 0 0;padding:11px 13px;border:1px solid var(--line);background:#FBFCFB;}
+  .nb h4{font-size:12.5px;font-weight:800;color:var(--deep);margin:11px 0 5px;letter-spacing:-.01em;
+         border-left:3px solid var(--brass);padding-left:7px;}
+  .nb h4:first-child{margin-top:0;}
+  .nb ul{margin:0 0 6px;padding-left:17px;}
+  .nb li{font-size:12.5px;line-height:1.62;margin-bottom:3px;}
+  .nb p{font-size:12.5px;line-height:1.62;margin:0 0 6px;}
+  .nb .todo{list-style:none;padding-left:2px;}
+  .nb .todo li:before{content:"\25A1  ";color:var(--brass);font-weight:800;}
+  .nb .lead{font-weight:700;color:var(--deep);}
+  @media print{
+    .sec{break-inside:avoid;}
+    .tgl-nav{display:none;}
+    .repbar,.digest{display:none !important;}
+    .nb{background:#fff;}
+  }
   @media print{
     html,body{background:#fff;}
     .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
@@ -116,122 +154,179 @@
 
   <div class="hd">
     <p class="brand">WELLPERION · 월간계획보고</p>
-    <h1>김남욱GM 업무 진행건</h1>
-    <p class="sub">월간운영계획 GM 직접 건 실시간 조회 · 제목 "(GM 직접)" 표식 · 대표님 보고건 별도</p>
+    <h1>경영진 업무 진행건</h1>
+    <p class="sub">회장님 · 대표님 · 김남욱 GM 세 갈래를 한 장에서 봅니다 (각 줄을 눌러 펼치고 접습니다)</p>
     <div class="meta">
-      <div><b>담당</b>김남욱 GM</div>
-      <div><b>구분</b>대표님 보고건 제외(일반 진행 업무)</div>
-      <div><b>소스</b>status/monthly_ops_plan.json 해당월 목표(제목 "(GM 직접)")</div>
+      <div><b>기준일</b><span id="today-str">—</span></div>
+      <div><b>소스</b>회장님·GM = 월간운영계획 / 대표님 = 업무 시트</div>
+      <div><b>인쇄</b>A3 세로 · 펼친 상태 그대로 출력</div>
     </div>
   </div>
 
-  <p class="lede">
-    월간운영계획(status/monthly_ops_plan.json) 해당월 목표 중 제목에 "(GM 직접)" 표식이 붙은 건만 자동으로 추립니다
-    (2026-08-05 GM 지시 — 업무 시트 대신 이 소스를 씁니다). 대표님께 보고가 필요한 업무는
-    <a href="대표님_지시사항.html">대표님 보고건</a> 페이지(업무 시트 소스, 별도)에서 봅니다.
-  </p>
-
-  <div class="grp">
-    <h2>👤 김남욱GM 업무 진행건</h2>
-    <span class="cnt" id="owner-grp-cnt">불러오는 중…</span>
+  <div class="tgl-nav">
+    <a href="#sec-chairman">👑 회장님</a>
+    <a href="#sec-ceo">🤵 대표님</a>
+    <a href="#sec-gm">👤 김남욱 GM</a>
   </div>
 
-  <div class="grid" id="owner-grid"><div class="rep-empty">불러오는 중…</div></div>
+  <!-- ① 회장님 -->
+  <details class="sec" id="sec-chairman" open>
+    <summary><span class="ic">👑</span> 회장님 보고건 <span class="cnt" id="chairman-grp-cnt">불러오는 중…</span></summary>
+    <div class="sec-body">
+      <div class="sum">
+        <h3>업무명 · 분류 · 진행</h3>
+        <table><tbody id="chairman-sum-body"></tbody></table>
+      </div>
+      <a class="doc-link" href="회장님_지시사항.html">📄 회장님 보고건 원문(이행 계획 A3) 열기 →</a>
+    </div>
+  </details>
 
-  <div class="sum">
-    <h3>한눈에 보기</h3>
-    <table><tbody id="owner-sum-body"></tbody></table>
-  </div>
+  <!-- ② 대표님 -->
+  <details class="sec" id="sec-ceo" open>
+    <summary><span class="ic">🤵</span> 대표님 보고건 <span class="cnt" id="owner-grp-cnt">불러오는 중…</span></summary>
+    <div class="sec-body">
+      <div class="repbar">
+        <span class="cnt2" id="owner-count">불러오는 중…</span>
+        <button type="button" class="rbtn" id="owner-bulk-btn" disabled>보고건 통합 보고</button>
+        <span class="rnote">대표님 보고건 + 회장님 보고건 현황이 한 문안으로 복사됩니다.</span>
+        <span class="rstatus" id="owner-bulk-status"></span>
+      </div>
+      <pre class="digest" id="owner-digest"></pre>
+      <div class="grid" id="owner-grid"><div class="rep-empty">불러오는 중…</div></div>
+      <div class="sum">
+        <h3>한눈에 보기</h3>
+        <table><tbody id="owner-sum-body"></tbody></table>
+      </div>
+      <a class="doc-link" href="대표님_지시사항.html">📄 대표님 보고건 전용 화면 열기 →</a>
+    </div>
+  </details>
+
+  <!-- ③ 김남욱 GM -->
+  <details class="sec" id="sec-gm" open>
+    <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span></summary>
+    <div class="sec-body">
+      <div class="grid" id="gm-grid"><div class="rep-empty">불러오는 중…</div></div>
+      <div class="sum">
+        <h3>한눈에 보기</h3>
+        <table><tbody id="gm-sum-body"></tbody></table>
+      </div>
+    </div>
+  </details>
 
   <div class="ft">
-    <span>WELLPERION 경영지원부 · GM 업무 진행 현황</span>
-    <span>월간운영계획 정본 실시간 · status/monthly_ops_plan.json</span>
+    <span>WELLPERION 경영지원부 · 경영진 업무 진행 현황</span>
+    <span>월간운영계획 · 업무 시트 실시간</span>
   </div>
 
 </div>
 
-<!-- 판정·카테고리 분류 로직 = coo/chairman/_gm_direct_tasks.js 하나뿐(월간운영계획.html GM 토글과 공용·복제 없음, 약속 L01). -->
+<!-- 판정 로직 = _gm_direct_tasks.js / 대표님·회장님 = _owner_directive.js + _chairman_items.js (약속 L01 · 복제 없음) -->
 <script src="_gm_direct_tasks.js"></script>
+<script src="_chairman_items.js"></script>
+<script src="_owner_directive.js"></script>
 <script>
 (function () {
   "use strict";
-  // 정적 정본(plan)=raw-GitHub 먼저(캐시 허용) → 실패 시에만 GAS read_file 폴백(월간운영계획.html readPlan()과 동일 패턴).
-  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
   var RAW_BASE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
   var PLAN_PATH = 'status/monthly_ops_plan.json';
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
+  var now = new Date();
+  var elToday = document.getElementById('today-str');
+  if (elToday) elToday.textContent = now.getFullYear() + '. ' + pad2(now.getMonth() + 1) + '. ' + pad2(now.getDate()) + '.';
+
+  /* 내용(progress_note)을 읽히는 모양으로 — 소제목/불릿/체크/번호를 각각 다른 블록으로 끊는다.
+     통짜로 쏟으면 "나열만 많다"가 된다(GM 2026-08-06). 정본 텍스트 자체는 바꾸지 않는다. */
+  function renderNote(raw) {
+    var lines = String(raw || '').split(/\r?\n/);
+    var out = [], mode = null;
+    function close() { if (mode) { out.push('</ul>'); mode = null; } }
+    lines.forEach(function (ln) {
+      var t = ln.trim();
+      if (!t) { close(); return; }
+      if (t.charAt(0) === '\u25A0') { close(); out.push('<h4>' + esc(t.replace(/^\u25A0\s*/, '')) + '</h4>'); return; }
+      if (t.charAt(0) === '\u25A1' || t.charAt(0) === '\u2610') {
+        if (mode !== 'todo') { close(); out.push('<ul class="todo">'); mode = 'todo'; }
+        out.push('<li>' + esc(t.slice(1).trim()) + '</li>'); return;
+      }
+      if (/^[\u00B7\u2022\-]\s/.test(t) || /^\d+\)\s/.test(t)) {
+        if (mode !== 'ul') { close(); out.push('<ul>'); mode = 'ul'; }
+        out.push('<li>' + esc(t.replace(/^[\u00B7\u2022\-]\s*/, '')) + '</li>'); return;
+      }
+      close();
+      out.push('<p' + (t.charAt(0) === '[' ? ' class="lead"' : '') + '>' + esc(t) + '</p>');
+    });
+    close();
+    return '<div class="nb">' + out.join('') + '</div>';
+  }
+
   function readPlan() {
     return fetch(RAW_BASE + PLAN_PATH + '?cb=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('raw ' + r.status); return r.json(); })
       .catch(function () {
-        return fetch(GAS_URL, {
-          method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'read_file', path: PLAN_PATH })
-        })
+        return fetch(GAS_URL, { method: 'POST', redirect: 'follow',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'read_file', path: PLAN_PATH }) })
           .then(function (r) { return r.json(); })
-          .then(function (res) { if (res && res.ok && res.content) { return JSON.parse(res.content); } throw new Error((res && res.error) || '읽기 실패'); });
+          .then(function (res) { if (res && res.ok && res.content) return JSON.parse(res.content); throw new Error('읽기 실패'); });
       });
   }
 
-  var elGrpCnt = document.getElementById('owner-grp-cnt');
-  var elGrid = document.getElementById('owner-grid');
-  var elSum = document.getElementById('owner-sum-body');
+  var elGmCnt = document.getElementById('gm-grp-cnt');
+  var elGmGrid = document.getElementById('gm-grid');
+  var elGmSum = document.getElementById('gm-sum-body');
 
-  function render(items) {
+  function renderGm(items) {
     if (items === null) {
-      elGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
-      elGrpCnt.textContent = '조회 실패';
-      elSum.innerHTML = '';
-      return;
+      elGmGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
+      elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = ''; return;
     }
-    elGrpCnt.textContent = items.length + '건';
+    elGmCnt.textContent = items.length + '건';
     if (!items.length) {
-      elGrid.innerHTML = '<div class="rep-empty">이번 달 GM 직접 관장 건이 없습니다. 월간운영계획(status/monthly_ops_plan.json)에 목표 제목에 "(GM 직접)"을 붙이면 이 페이지에 바로 표시됩니다.</div>';
-      elSum.innerHTML = '';
-      return;
+      elGmGrid.innerHTML = '<div class="rep-empty">이번 달 GM 직접 관장 건이 없습니다.</div>';
+      elGmSum.innerHTML = ''; return;
     }
-    elGrid.innerHTML = items.map(function (it, i) {
+    elGmGrid.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
-      return (
-        '<div class="item">' +
-        // 카테고리는 별도 줄이 아니라 제목 옆 소괄호(GM 지시 2026-08-05 · 월간운영계획 카드 3종과 같은 표기).
+      return '<div class="item">' +
         '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
         (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
         '</h2><span class="when">' + esc(it.schedule) + '</span></div>' +
         '<p class="body">' + esc(it.target || '내용 없음') + '</p>' +
         '<dl>' +
-        '<div><dt>상태</dt><dd>' + esc(it.status || '—') + '</dd></div>' +
-        '<div><dt>진행률</dt><dd>' + (typeof it.progress === 'number' ? it.progress + '%' : '—') + '</dd></div>' +
+        '<div><dt>상태</dt><dd>' + esc(it.status || '-') + '</dd></div>' +
+        '<div><dt>진행률</dt><dd>' + (typeof it.progress === 'number' ? it.progress + '%' : '-') + '</dd></div>' +
         '</dl>' +
-        // 내용 전문 — 그동안 한 줄 요약만 보여 "만들긴 했는데 아무 내용이 없다"는 지적을 받았다
-        // (GM 2026-08-06). 정리해 둔 본문을 여기서 그대로 편다(정본은 월간운영계획 progress_note).
-        (it.note ? '<div class="note-body">' + esc(it.note) + '</div>' : '') +
-        (it.doc ? '<a class="doc-link" href="' + esc(it.doc) + '" target="_blank">📄 정리본 열기 (A3 인쇄용) →</a>' : '') +
-        '</div>'
-      );
+        (it.note ? renderNote(it.note) : '') +
+        (it.doc ? '<a class="doc-link" href="' + esc(it.doc) + '" target="_blank">정리본 열기 (A3 인쇄용) →</a>' : '') +
+        '</div>';
     }).join('');
-    elSum.innerHTML = items.map(function (it, i) {
+    elGmSum.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
       return '<tr><td>' + no + '</td><td>' + esc(it.title) + '</td><td>' + esc(it.schedule) + '</td></tr>';
     }).join('');
   }
 
-  function load() {
-    elGrid.innerHTML = '<div class="rep-empty">불러오는 중…</div>';
-    readPlan().then(function (plan) {
-      var now = new Date();
-      var mk = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
-      render(window.WellperionGmDirect.extract(plan, mk));
-    }).catch(function () { render(null); });
-  }
-  load();
+  elGmGrid.innerHTML = '<div class="rep-empty">불러오는 중…</div>';
+  readPlan().then(function (plan) {
+    renderGm(window.WellperionGmDirect.extract(plan, now.getFullYear() + '-' + pad2(now.getMonth() + 1)));
+  }).catch(function () { renderGm(null); });
+
+  // 대표님 칸 + 회장님 표 — 판정·문안 로직은 _owner_directive.js 하나만 쓴다(복제 없음).
+  OwnerDirective.mount({
+    wantCeoRows: true,
+    markPrefix: '대표님 보고완료',
+    reportIntro: '대표님께 아래 업무를 보고드립니다.',
+    emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.',
+    includeChairman: true
+  });
 })();
 </script>
 </body>

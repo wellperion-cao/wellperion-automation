@@ -3661,7 +3661,7 @@
     // 카드 3종 통일(renderExecCard) — 카테고리 칸엔 위 9종 체계 분류를, 일정 칸엔 기존 when 텍스트를
     // 그대로 싣는다(실제 시작·종료일이 없는 정적 항목이라 26.8.1~26.8.30 형식을 억지로 만들지 않음).
     var items = CHAIRMAN_ITEMS.map(function(it){ return {title: it.title, category: it.cat, schedule: it.when}; });
-    renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/회장님_지시사항.html', '자세히 보기 →');
+    renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/김남욱GM_업무.html#sec-chairman', '자세히 보기 →');
   }
   // 👤 김남욱GM 업무 진행건 / 🤵 대표님 보고건 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과
   // 재사용·새 GAS 호출 0)에서 담당자=김남욱 + 상태(진행중·보류)만 추린 뒤(GM 지시 2026-08-05 — 애초 필터가
@@ -3675,8 +3675,8 @@
   // 자세히보기 대상(2026-08-05 GM 지시로 전용 페이지 2종 신설 — 舊 업무 현황 SSOT.html 공유 링크 폐기,
   // 그 파일은 시로/CHRO 소유라 안 건드림). 두 페이지 모두 회장님_지시사항.html과 동일 CSS·구조이고 이
   // 페이지와 같은 담당자=김남욱+상태(진행중·보류)+대표님 보고건 표식 판정을 그대로 재사용한다.
-  var CEO_DETAIL_HREF = 'coo/chairman/대표님_지시사항.html';
-  var GM_DETAIL_HREF = 'coo/chairman/김남욱GM_업무.html';
+  var CEO_DETAIL_HREF = 'coo/chairman/김남욱GM_업무.html#sec-ceo';   // 경영진 통합 자세히보기(3섹션) — GM 지시 2026-08-06
+  var GM_DETAIL_HREF = 'coo/chairman/김남욱GM_업무.html#sec-gm';    // 같은 통합 화면의 GM 섹션
   function renderOwnerTodoFold(rows, badgeId, bodyId, wantCeoRows, emptyMsg, detailHref, detailLabel, linkNote){
     if(!rows){ renderExecCard(badgeId, bodyId, null, '', detailHref, detailLabel, linkNote); return; }
     var filtered = rows.filter(function(r){
