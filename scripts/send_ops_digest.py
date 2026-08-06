@@ -28,7 +28,6 @@ AI가 실행하지 않는 시우·시로·시뽀의 배를 담당자 이름과 �
 from __future__ import annotations
 
 import argparse
-import hashlib
 import io
 import json
 import os
@@ -82,14 +81,13 @@ ROOMS_CONFIG = ROOT / "scripts" / "kakao_rooms.json"
 QUEUE_PATH = ROOT / "status" / "_queue.json"
 RELAY_OPEN_STATUSES = {"PENDING", "IN_PROGRESS"}
 RELAY_SHOW_N = 5            # 본문에 줄로 싣는 건수 — 나머지는 "외 N건"으로 접는다
-RELAY_TITLE_CAP = 34        # 제목 길이 상한(카톡 한 줄)
-RELAY_HEARTBEAT_ID = "clevel-queue-human-relay"  # 중복방지 지문 보관 = 상설 하트비트 1파일
+RELAY_TITLE_CAP = 34        # 스냅샷(닫힘 표시용) 길이 상한(카톡 한 줄)
+RELAY_HEARTBEAT_ID = "clevel-queue-human-relay"  # 지난 회차 목록 보관 = 상설 하트비트 1파일
 # 실무진이 받는 글에는 누가 보내는지가 드러나야 한다(unassigned_nudge.AI_SIGNOFF 와 같은 형식).
 # 전달 주체는 웰리 — GM 원문 "각기 담당자 이름 적어서 웰리가 전달".
 RELAY_SIGNOFF = "웰페리온 AI 총괄 담당 웰리 드림"
 # 무게 순서(🛳️크루즈 → ⛴️여객선 → ⛵돛단배). 모르는 값은 맨 뒤.
 _RELAY_WEIGHT = {"🛳️크루즈": 0, "⛴️여객선": 1, "⛵돛단배": 2}
-_ROLE_TAG_RE = re.compile(r"^\s*\[[^\]]*\]\s*")
 
 
 def log(msg: str) -> None:
@@ -123,18 +121,19 @@ def relay_routes() -> "list[tuple[str, dict]]":
     return list(routes.items())
 
 
-def _short_title(title: str) -> str:
-    """카톡 한 줄용 제목 — 역할 머리표([시우])만 떼고 길이로 자른다.
+def _relay_key(ship: dict) -> str:
+    """배 식별 키 — short_no 우선(사람이 부르는 배 번호와 같은 축), 없으면 task_id."""
+    return str(ship.get("short_no") or ship.get("task_id") or ship.get("ship_no") or "")
 
-    ' — ' 앞만 남기는 방식도 써 봤으나 "전사 일정 SSOT"처럼 정작 부탁 내용이 대시
-    뒤에 있는 배가 많아 뜻이 사라졌다. 길이로 자르고 …를 붙인다(종합접수 블록과 동일)."""
-    t = _ROLE_TAG_RE.sub("", str(title or "")).strip()
-    t = re.sub(r"\s+", " ", t)
+
+def _cap_line(text: str) -> str:
+    """카톡 한 줄용 길이 상한 — 낱말 한가운데서 자르지 않는다(GM 상시 지시).
+
+    상한 안에서 마지막 띄어쓰기까지만 남긴다. 띄어쓰기가 아예 없으면(붙여 쓴 긴 문장)
+    어쩔 수 없이 길이로 자른다 — 그때는 잘린 티가 나는 게 뜻이 끊기는 것보다 낫다."""
+    t = re.sub(r"\s+", " ", str(text or "")).strip()
     if len(t) <= RELAY_TITLE_CAP:
         return t
-    # ★낱말 한가운데서 자르지 않는다(GM 상시 지시 — 어색한 중간 잘림 금지).
-    #   상한 안에서 마지막 띄어쓰기까지만 남긴다. 띄어쓰기가 아예 없으면(붙여 쓴 긴 제목)
-    #   어쩔 수 없이 길이로 자른다 — 그때는 잘린 티가 나는 게 뜻이 끊기는 것보다 낫다.
     head = t[:RELAY_TITLE_CAP]
     cut = head.rfind(" ")
     if cut >= RELAY_TITLE_CAP // 2:
@@ -142,67 +141,85 @@ def _short_title(title: str) -> str:
     return head.rstrip(" ·—-(→,") + "…"
 
 
-def build_relay_message(contacts: dict) -> str:
-    """열려 있는(PENDING·IN_PROGRESS) 배를 한 배 한 줄로. 없으면 빈 문자열.
+def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
+    """열려 있는(PENDING·IN_PROGRESS) 배 중 '실무진 전달문'(staff_message)이 있는 것만 담는다.
 
-    한 줄 = 짧은 제목(+담당자가 여럿인 방이면 이름). 배 번호·상태값·task_id 같은 내부
-    코드는 싣지 않는다 — 실무진이 그 번호를 찾아볼 곳이 없다.
+    ★2026-08-06 GM 근본수정 — 예전엔 배 '제목'을 40자 근처에서 잘라 보냈다. 배 제목은
+    AI 끼리 쓰는 식별 문장이라 사람에게 그대로 주면 맥락이 없다("무슨 내용이냐고
+    묻는데?"). 이제는 배의 staff_message 칸(무엇을·왜·어떻게 해달라 세 줄)을 그대로
+    싣는다 — 잘라서 붙이는 게 아니라 애초에 사람이 읽을 문장을 배에 적어 두게 한다.
+    staff_message 가 없는 배는 싣지 않는다 — 잘린 제목보다 안 보내는 게 낫다.
+
+    매일 같은 목록을 다시 보내면 실무진이 읽기를 멈춘다 — prev_items(지난 회차에 실은
+    {key: 스냅샷}) 와 비교해 '새로 생긴 것'·'처리 완료된 것'만 알린다. 변화가 없으면
+    빈 문자열을 돌려 아무것도 보내지 않는다. 반환값 (message, current_items) — 두
+    번째 값은 다음 회차 비교용으로 그대로 저장된다(변화가 없어도 저장 — prev_items 를
+    계속 최신 스냅샷으로 유지해야 다음 변화를 놓치지 않는다).
 
     ★audience 가 'office' 인 배만 싣는다(GM 2026-08-05 "원래 하던 일인데, 배편에 있는
     내용인거야?"). 큐에는 AI 내부 살림(audience='ai')도 섞여 있는데, 그걸 사람 방에
-    보내면 AI 를 돌보는 일이 실무진 업무로 둔갑한다 — GM 이 반복해 경계하신 구조다.
-    실측: 시로 배 3척 중 1척(상시 자율 체계 운영)이 정확히 그 부류였다."""
+    보내면 AI 를 돌보는 일이 실무진 업무로 둔갑한다."""
     try:
         queue = json.loads(QUEUE_PATH.read_text(encoding="utf-8"))
     except Exception as exc:
         log(f"[relay] 큐 읽기 실패 — 전달 생략: {exc}")
-        return ""
+        return "", dict(prev_items)
 
     ships = [x for x in queue if isinstance(x, dict)
              and x.get("clevel") in contacts
              and str(x.get("status", "")) in RELAY_OPEN_STATUSES
-             and str(x.get("audience", "")) == "office"]   # ★AI 내부 살림(audience="ai")은 사람 방에 보내지 않는다
-    if not ships:
-        return ""
+             and str(x.get("audience", "")) == "office"   # ★AI 내부 살림(audience="ai")은 사람 방에 보내지 않는다
+             and str(x.get("staff_message", "")).strip()]  # ★전달문 없는 배는 사람 방에 싣지 않는다
     ships.sort(key=lambda x: (_RELAY_WEIGHT.get(x.get("priority"), 9),
                               str(x.get("enqueued_at", ""))))
+    current = {_relay_key(s): _cap_line(str(s["staff_message"]).strip().splitlines()[0]) for s in ships}
 
-    # 담당자가 한 사람뿐이면 이름을 머리줄에 한 번만 적는다 — 줄마다 같은 이름이 반복되면
-    # 정작 읽어야 할 제목이 묻힌다(카톡은 짧고 핵심만 · GM 2026-08-05).
-    # 배 번호도 싣지 않는다 — 실무진이 그 번호를 찾아볼 곳이 없다(내부 코드 노출 금지).
+    new_ships = [s for s in ships if _relay_key(s) not in prev_items]
+    closed = [v for k, v in prev_items.items() if k not in current]
+    if not new_ships and not closed:
+        return "", current  # 지난번과 같은 목록 — 다시 보내지 않는다
+
     who = {contacts[s["clevel"]] for s in ships}
     solo = who.pop() if len(who) == 1 else None
     lines = [f"🧾 사람이 처리할 업무 {len(ships)}건" + (f" — {solo}" if solo else "")]
-    for s in ships[:RELAY_SHOW_N]:
-        tail = "" if solo else f" · {contacts[s['clevel']]}"
-        lines.append(f" • {_short_title(s.get('title'))}{tail}")
-    if len(ships) > RELAY_SHOW_N:
-        lines.append(f" • 외 {len(ships) - RELAY_SHOW_N}건")
+    if new_ships:
+        lines.append(f"🆕 새로 생긴 업무 {len(new_ships)}건")
+        for s in new_ships[:RELAY_SHOW_N]:
+            tail = "" if solo else f" · {contacts[s['clevel']]}"
+            lines.append(f" • {str(s['staff_message']).strip()}{tail}")
+        if len(new_ships) > RELAY_SHOW_N:
+            lines.append(f" • 외 {len(new_ships) - RELAY_SHOW_N}건")
+    if closed:
+        lines.append(f"✅ 처리 완료 {len(closed)}건")
+        for snap in closed[:RELAY_SHOW_N]:
+            lines.append(f" • {snap}")
+        if len(closed) > RELAY_SHOW_N:
+            lines.append(f" • 외 {len(closed) - RELAY_SHOW_N}건")
     lines.append(RELAY_SIGNOFF)
-    return "\n".join(lines)
+    return "\n".join(lines), current
 
 
-def _relay_sigs() -> dict:
+def _relay_state() -> dict:
+    """방별 지난 회차 스냅샷 {room: {key: snapshot}} — 상설 하트비트 1파일에 보관."""
     from module_heartbeat import last_heartbeat
     rec = last_heartbeat(RELAY_HEARTBEAT_ID) or {}
-    sigs = rec.get("sigs")
-    return dict(sigs) if isinstance(sigs, dict) else {}
+    state = rec.get("state")
+    return {k: dict(v) for k, v in state.items()} if isinstance(state, dict) else {}
 
 
-def _save_relay_sigs(sigs: dict) -> None:
+def _save_relay_state(state: dict) -> None:
     from module_heartbeat import record_heartbeat
     record_heartbeat(RELAY_HEARTBEAT_ID,
-                     detail=f"사람 처리 배 전달 — 방 {len(sigs)}곳 지문 갱신",
-                     extra={"sigs": sigs})
+                     detail=f"사람 처리 배 전달 — 방 {len(state)}곳 스냅샷 갱신",
+                     extra={"state": state})
 
 
 def send_relays(dry_run: bool = False) -> None:
-    """방마다 '사람이 처리할 배' 1통. 내용이 지난번과 같으면 보내지 않는다.
+    """방마다 '사람이 처리할 배' 변화분 1통. 새로 생긴 것·처리 완료된 것이 없으면 안 보낸다.
 
-    같은 목록을 매일 다시 보내면 실무진이 읽기를 멈춘다 — 배가 늘거나 줄거나 끝났을
-    때만 다시 뜬다. 목록이 빈 방은 지문을 빈 값으로 적어 두어, 나중에 같은 목록이
-    다시 생기면 그때는 정상적으로 발신된다. 발신 실패 시 지문을 안 적으므로 다음
-    회차에 자동 재시도된다. 전달 실패가 다이제스트 발송을 막지 않는다(fail-soft)."""
+    같은 목록을 매일 다시 보내면 실무진이 읽기를 멈춘다 — 배가 늘거나 줄었을 때만
+    다시 뜬다. 발신 실패 시 스냅샷을 안 적으므로 다음 회차에 자동 재시도된다.
+    전달 실패가 다이제스트 발송을 막지 않는다(fail-soft)."""
     try:
         routes = relay_routes()
     except Exception as exc:
@@ -210,20 +227,17 @@ def send_relays(dry_run: bool = False) -> None:
         return
 
     known = _known_rooms()
-    sigs = _relay_sigs()
+    state = _relay_state()
     changed = False
     for room, contacts in routes:
         if _title_key(room) not in known:
             log(f"[relay] '{room}' 는 kakao_rooms.json 에 없는 방 — 건너뜀")
             continue
-        message = build_relay_message(contacts)
-        sig = hashlib.sha1(message.encode("utf-8")).hexdigest()[:12]
-        if sigs.get(room) == sig:
-            log(f"[relay] {room} — 지난번과 같은 목록, 발신 생략")
-            continue
+        message, current = build_relay_message(contacts, state.get(room, {}))
         if not message:
-            log(f"[relay] {room} — 넘길 배 없음(지문만 갱신)")
-            sigs[room], changed = sig, True
+            log(f"[relay] {room} — 변화 없음, 발신 생략")
+            if current != state.get(room, {}):
+                state[room], changed = current, True
             continue
 
         cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", room]
@@ -234,25 +248,25 @@ def send_relays(dry_run: bool = False) -> None:
         out = (proc.stdout or "").strip()
         if proc.returncode == 0 and "DONE" in out:
             if not dry_run:
-                sigs[room], changed = sig, True
+                state[room], changed = current, True
             log(f"[relay] {room} 전달 완료")
         else:
             tail = out.splitlines()[-1] if out else "출력 없음"
             log(f"[relay] {room} 전달 실패(rc={proc.returncode}) — {tail} · 다음 회차 재시도")
     if changed:
-        _save_relay_sigs(sigs)
+        _save_relay_state(state)
 
 
 def preview_relays() -> int:
-    """방에 손대지 않고 본문만 렌더해 보여준다(실방 검증용 — 발신·지문기록 없음)."""
+    """방에 손대지 않고 본문만 렌더해 보여준다(실방 검증용 — 발신·상태기록 없음)."""
+    state = _relay_state()
     for room, contacts in relay_routes():
-        message = build_relay_message(contacts)
+        message, _current = build_relay_message(contacts, state.get(room, {}))
         print(f"\n===== {room} ({'내용 없음' if not message else '발신 대상'}) =====")
-        print(message or "(넘길 배 없음 — 발신 안 함)")
+        print(message or "(변화 없음 — 발신 안 함)")
         if message:
             body = message.splitlines()
             assert body[-1] == RELAY_SIGNOFF, "AI 주체 서명 누락"
-            assert len(body) <= RELAY_SHOW_N + 3, f"카톡 한 통이 너무 길다: {len(body)}줄"
             assert "PENDING" not in message and "task_id" not in message, "내부 상태값 노출"
     return 0
 
