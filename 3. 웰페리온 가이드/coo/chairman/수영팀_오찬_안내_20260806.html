@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수영팀 오찬 안내 — 팀장·강사용 (2026-08-06)</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm 14mm; }
+
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:16px; line-height:1.55; word-break:keep-all; overflow-wrap:break-word;
+  }
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:14mm; text-align:left;}
+
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:11px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .hd .kick{font-size:14px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:34px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:16px; text-align:right; line-height:1.6;}
+  .hd-r .big{font-size:20px; font-weight:800;}
+
+  h2{font-size:18px; font-weight:800; margin:0 0 6px; padding:4px 11px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:12px 16px; font-size:19px; font-weight:600; line-height:1.55;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-top:8px;}
+  .kpi{border:1.5px solid var(--line); padding:7px 12px;}
+  .kpi .k{font-size:13px; color:var(--dim);}
+  .kpi .v{font-size:25px; font-weight:800; letter-spacing:-.025em; line-height:1.2;}
+  .kpi .s{font-size:13px; color:var(--dim);}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; align-items:start; margin-top:13px;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:11px;}
+
+  table{width:100%; border-collapse:collapse; font-size:15.5px;}
+  th,td{border:1px solid var(--line); padding:6px 10px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+
+  .quote{border-left:5px solid var(--ok); background:var(--ok-soft); padding:12px 16px;
+         font-size:17px; line-height:1.6;}
+  .quote .tail{margin-top:7px; font-size:16px; font-weight:800; color:var(--ok);}
+  .quote .src{margin-top:8px; font-size:13px; color:var(--dim);}
+
+  .topics{list-style:none; padding:0; margin:0;}
+  .topics li{border-left:5px solid var(--accent); background:#f7f9fb;
+             padding:7px 13px; margin-bottom:4px; break-inside:avoid; font-size:17px;
+             font-weight:600; line-height:1.45;}
+  .topics .w{display:block; margin-top:2px; font-size:13.5px; font-weight:400; color:var(--dim); line-height:1.38;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .note ul,.good ul{margin:5px 0 0; padding-left:20px;}
+  .note li,.good li{margin-bottom:3px;}
+
+  .names{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+  .names span{border:1px solid var(--line); padding:3px 9px; font-size:15px; background:#f7f9fb;}
+  .names span.main{border-color:var(--accent); background:var(--accent-soft); font-weight:700;}
+
+  .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk,.topics li{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff; margin-left:6px;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint">
+  <button onclick="window.print()">A3 세로로 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">회장님 팀별 오찬 · 1차</div>
+      <div class="ttl">수영팀 오찬 안내</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">8월 6일(목) 13:00</div>
+      <div>회장님 · 김남욱 GM · 나우열M · 수영팀</div>
+      <div>성격 &mdash; 격려·소통 (장소는 별도 안내)</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    오늘 자리는 <em>평가나 점검이 아니라 격려와 소통</em>을 위한 자리입니다.
+    수영팀은 <em>강습 8개 팀 중 매출 1위</em>이고, 최근 5주간 <em>안전사고가 한 건도 없었습니다.</em>
+    편하게 오시면 됩니다.
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">7월 매출</div><div class="v">1억 2,368만</div><div class="s">강습 8팀 중 1위 · 35.4%</div></div>
+    <div class="kpi"><div class="k">상반기 흐름</div><div class="v">2.97 → 3.31억</div><div class="s">1분기 → 2분기</div></div>
+    <div class="kpi"><div class="k">안전사고</div><div class="v">0건</div><div class="s">최근 5주</div></div>
+    <div class="kpi"><div class="k">강습 문의</div><div class="v">815건</div><div class="s">2위 체조(142건)의 5.7배</div></div>
+  </div>
+
+  <div class="grid">
+
+    <div>
+      <div class="blk">
+        <h2>왜 수영팀이 1위인가</h2>
+        <p style="margin:0 0 7px;">
+          한 타임에 다섯 분을 받는 수업 구조 덕분입니다. 회원에게는 부담이 가장 적고,
+          회사 입장에서는 한 타임이 만드는 값이 가장 큽니다.
+        </p>
+        <table>
+          <tr><th></th><th>수영 (1:5·4회)</th><th>P.T (1:1·10회)</th></tr>
+          <tr><td>회원이 내는 돈 (1회당)</td><td><b>52,250원</b></td><td>123,900원</td></tr>
+          <tr><td>한 타임이 버는 돈</td><td><b>261,250원</b><br>5명 × 52,250</td><td>123,900원<br>1명</td></tr>
+        </table>
+        <p style="margin:7px 0 0; font-size:15.5px; color:var(--dim);">
+          한 타임 기준으로 수영이 P.T보다 <b>2.1배</b>를 만들어 냅니다. 이 숫자를 만든 것은
+          결국 <b>여러분이 감당하고 계신 회원 수</b>입니다.
+        </p>
+      </div>
+
+      <div class="blk">
+        <h2>회원이 남긴 말</h2>
+        <div class="quote">
+          &ldquo;수영을 처음 배우다 보니 걱정이 많았는데, <b>박주혜 선생님</b>께서 편안한 분위기에서
+          친절하게 알려주시고 진심으로 지도해 주신 덕분에 수영이 재미있어졌고,
+          계속 배우고 싶어 <b>멤버십까지 등록</b>했습니다.&rdquo;
+          <div class="tail">&ldquo;박주혜 선생님께 꼭 좋은 이야기 전해달라&rdquo;</div>
+          <div class="src">안○○ 회원 · 「직원·강사 칭찬합니다」 2026-07-08 접수</div>
+        </div>
+        <p style="margin:8px 0 4px; font-size:15.5px;">이름을 직접 찾아 주신 회원도 계셨습니다.</p>
+        <ul style="margin:0; padding-left:20px; font-size:15.5px;">
+          <li>&ldquo;1:1 수업은 <b>박민서 팀장님</b>이 해달라&rdquo;</li>
+          <li>&ldquo;이전 <b>구성우</b> 선생님 수업 다시 듣고 싶다&rdquo;</li>
+        </ul>
+      </div>
+
+      <div class="blk">
+        <h2>수영팀 현황 (참고)</h2>
+        <div class="names">
+          <span class="main">박민서</span><span class="main">송민근</span><span class="main">강대경</span>
+          <span class="main">천주희</span><span class="main">구성우</span><span class="main">박주혜</span>
+          <span class="main">김성은</span>
+          <span>강승구</span><span>김형기</span><span>김미자 · 아쿠아로빅</span>
+        </div>
+        <table style="margin-top:8px;">
+          <tr><th>올해 등록</th><td>142명 — 유소년 95 · 성인 47</td></tr>
+          <tr><th>누계 수강생</th><td>성인 443 · 유소년 564 = <b>1,007명</b></td></tr>
+          <tr><th>수용 여력</th><td>강습 레인 2개 정원이 가득 차, 등록을 원하시는 회원을 못 받는 상황</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="blk">
+        <h2>회장님께서 물으실 만한 것</h2>
+        <ul class="topics">
+          <li>&ldquo;한 달에 수업이 500번 넘게 나간다는데, 그 많은 회원을 어떻게 다 감당하십니까?&rdquo;
+            <span class="w">현장에서 실제로 어떻게 돌리고 계신지 편하게 말씀하시면 됩니다. 힘든 점을 말씀하셔도 괜찮은 자리입니다.</span></li>
+          <li>&ldquo;레인이 꽉 차서 못 받는 회원도 있다던데, 현장에서는 어느 정도입니까?&rdquo;
+            <span class="w">가장 중요한 질문입니다. 대기하시는 회원이 어느 시간대에 얼마나 계신지 <b>구체적인 사례</b>로 말씀해 주시면 가장 도움이 됩니다.</span></li>
+          <li>&ldquo;있으면 훨씬 수월해질 것 같은 게 하나 있다면요?&rdquo;
+            <span class="w">건의를 여는 질문입니다. 장비·시간표·인원 무엇이든 편하게 말씀하시면 됩니다.</span></li>
+          <li>회원 칭찬 언급 &mdash; 박주혜 선생님 건이 나올 수 있습니다
+            <span class="w">회원이 직접 남긴 글이라 회장님도 보고 계십니다.</span></li>
+        </ul>
+      </div>
+
+      <div class="blk">
+        <h2>이 자리에서 말씀드리면 좋은 것</h2>
+        <div class="good">
+          <ul>
+            <li><b>자리가 없어 못 받는 회원</b> — 어느 요일·시간대가 특히 꽉 차는지, 대기 회원이 몇 분 정도인지.</li>
+            <li><b>현장에서 불편한 것</b> — 시간표, 준비물, 락커·샤워 동선, 안내 방식 등 사소해도 괜찮습니다.</li>
+            <li><b>회원이 자주 하시는 요청</b> — 반복해서 들으시는 이야기가 가장 정확한 정보입니다.</li>
+          </ul>
+        </div>
+        <p style="margin:7px 0 0; font-size:15.5px; color:var(--dim);">
+          말씀하신 건의는 <b>김남욱 GM이 기록</b>해 이후 진행 여부를 확인합니다. 그 자리에서 결론이 나지 않아도 괜찮습니다.
+        </p>
+      </div>
+
+      <div class="blk">
+        <h2>회사가 보고 있는 방향 (참고)</h2>
+        <p style="margin:0 0 6px; font-size:15.5px;">
+          지금 막혀 있는 것은 강사가 아니라 <b>레인</b>이라고 보고 있습니다. 그래서 세 가지를 검토하고 있습니다.
+        </p>
+        <table>
+          <tr><th>자리를 늘린다</th><td>레인·시간대 확보 — 한 타임을 더 열 때마다 26만 원이 더 생기고, 지금 못 받는 회원을 받게 됩니다.</td></tr>
+          <tr><th>요금을 조정한다</th><td>수영 1회 52,250원은 P.T의 절반이 안 됩니다. (회장님·대표님 결정 사항)</td></tr>
+          <tr><th>한산한 시간을 채운다</th><td>꽉 차는 시간은 평일 저녁·토요일 오전입니다.</td></tr>
+        </table>
+        <div class="note" style="margin-top:8px;">
+          <b>여러분께 드리는 말씀</b> — 등록 수가 더 늘지 않는 이유는 <b>가르치는 역량이 아니라 자리(레인)</b> 때문이라고
+          회사도 보고 있습니다. 그 부분으로 부담 느끼지 않으셔도 됩니다.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    수치는 2026-08-04 기준 실측입니다 — 팀별 매출 · 강습 문의 · 등록 원장 · 종합접수처 접수 기록에서 직접 확인했습니다.
+    확인되지 않은 항목은 비워 두었습니다. · 작성 웰페리온 AI 웰리 · 문의 김남욱 GM
+  </div>
+
+</div>
+
+</body>
+</html>
