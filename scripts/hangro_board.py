@@ -55,6 +55,8 @@ GAS_URL = (
 )
 QUEUE_PATH = _REPO / "status" / "_queue.json"
 WORKLOG_PATH = _REPO / "status" / "worklog.jsonl"
+KPI_PATH = _REPO / "ssot" / "kpi.json"
+GM_PROFILE_PATH = _REPO / "status" / "gm_profile.md"
 
 # 상태 아이콘 — 아이콘 표준 A안 (ssot/약속.json L16 · CLAUDE.md §3-1 정본과 동일값).
 #   대기/정박=⚓ · 진행중=난이도별 배(_render_line이 ship 아이콘으로 덮음) · 완료=🏁
@@ -1182,6 +1184,62 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
 
 
 
+# ── 부팅 슬라이스: kpi.json / gm_profile.md (배433 · 2026-08-06 시토) ──────────
+#   둘 다 파일은 한 벌 그대로(약속 L01) — hangro_board가 이미 부팅마다 --role로
+#   불리는 자리라 읽는 순간에만 잘라 준다(큐 슬라이스와 같은 원리 · 배10369).
+_RE_HTML_TAG = re.compile(r"<[^>]+>")
+
+
+def _kpi_slice(role_slug: str) -> str:
+    """ssot/kpi.json → roles.{role}.kpi_html 한 줄만(§6 선언표 '담당 KPI' 행 전용).
+    실측(2026-08-06): 파일 전체 12,694자 중 한 역할이 쓰는 건 이 필드뿐(297자 수준) —
+    나머지는 역할분담 결정 경위(다른 역할 몫)라 부팅에 안 실어도 된다."""
+    if not role_slug or not KPI_PATH.exists():
+        return ""
+    try:
+        data = json.loads(KPI_PATH.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"[WARN] kpi.json 슬라이스 실패: {e}", file=sys.stderr)
+        return ""
+    role = data.get("roles", {}).get(role_slug)
+    if not role:
+        return ""
+    kpi = _RE_HTML_TAG.sub("", str(role.get("kpi_html", ""))).strip()
+    if not kpi:
+        return ""
+    nick = role.get("nickname", "")
+    return (f"\n📌 담당 KPI({nick}) — {kpi}\n"
+            "※ 역할분담 결정 경위 등 전체는 ssot/kpi.json 파일 자체를 여세요.")
+
+
+_GM_PROFILE_SECTIONS = {"선호", "습관", "자주 놓치는 것"}
+_RE_MD_H2 = re.compile(r"(?m)^## ")
+
+
+def _gm_profile_slice() -> str:
+    """status/gm_profile.md → 선호·습관·자주 놓치는 것 3섹션만(전체 5,854자 중 ~1,700자).
+    나머지(표면점검·북극성·루틴준수 등)는 자가점검용 상세라 매 부팅에 안 실어도 된다.
+    파일은 gm_profile_builder.py가 매일 통째로 재생성하므로 별도 요약 파일을 만들지
+    않고 여기서 읽는 순간에만 자른다."""
+    if not GM_PROFILE_PATH.exists():
+        return ""
+    try:
+        text = GM_PROFILE_PATH.read_text(encoding="utf-8")
+    except Exception as e:
+        print(f"[WARN] gm_profile.md 슬라이스 실패: {e}", file=sys.stderr)
+        return ""
+    picked = []
+    for part in _RE_MD_H2.split(text)[1:]:
+        head = part.split("\n", 1)[0].strip()
+        if head in _GM_PROFILE_SECTIONS:
+            picked.append("## " + part.rstrip())
+    if not picked:
+        return ""
+    return ("\n📋 GM 프로필 요약(부팅 슬라이스) — 선호·습관·자주 놓치는 것\n"
+            + "\n\n".join(picked)
+            + "\n※ 전체(표면점검·북극성·루틴준수 등)는 status/gm_profile.md 파일 자체를 여세요.")
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────
 def main() -> None:
     parser = argparse.ArgumentParser(description="항로 보드 생성기")
@@ -1226,6 +1284,8 @@ def main() -> None:
             "전 역할 항로는 `python scripts/hangro_board.py --dry-run`, "
             "특정 배의 전체 기록은 그 배 하나만 status/_queue.json 에서 찾아 읽으세요."
         )
+        board_text += _kpi_slice(role_slug)
+        board_text += _gm_profile_slice()
     print(board_text)
 
     if args.json:
