@@ -104,6 +104,11 @@
   .sec > summary::-webkit-details-marker{display:none;}
   .sec > summary .ic{font-size:16px;}
   .sec > summary .cnt{margin-left:auto;font-size:11.5px;font-weight:600;color:#C9D2CC;white-space:nowrap;}
+  /* 섹션 액션 — 세 섹션 같은 자리(헤더 우측)에 같은 모양으로 (GM 2026-08-06 일관성 지시) */
+  .sec > summary .sec-act{font-size:11.5px;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;
+    border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:3px 11px;margin-left:10px;}
+  .sec > summary .sec-act:hover{background:#fff;color:var(--deep);}
+  @media print{ .sec > summary .sec-act{display:none;} }
   .sec-body{padding:12px 14px 14px;}
   .repbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px;}
   .repbar .cnt2{font-weight:700;color:var(--mid);}
@@ -185,19 +190,18 @@
 
   <!-- ① 회장님 -->
   <details class="sec" id="sec-chairman" open>
-    <summary><span class="ic">👑</span> 회장님 보고건 <span class="cnt" id="chairman-grp-cnt">불러오는 중…</span></summary>
+    <summary><span class="ic">👑</span> 회장님 보고건 <span class="cnt" id="chairman-grp-cnt">불러오는 중…</span><a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">A3 인쇄</a></summary>
     <div class="sec-body">
       <div class="sum">
-        <h3>업무명 · 분류 · 진행</h3>
+        <h3>업무명 · 상태</h3>
         <table><tbody id="chairman-sum-body"></tbody></table>
       </div>
-      <a class="doc-link" href="회장님_지시사항.html">📄 회장님 보고건 원문(이행 계획 A3) 열기 →</a>
     </div>
   </details>
 
   <!-- ② 대표님 -->
   <details class="sec" id="sec-ceo" open>
-    <summary><span class="ic">🤵</span> 대표님 보고건 <span class="cnt" id="owner-grp-cnt">불러오는 중…</span></summary>
+    <summary><span class="ic">🤵</span> 대표님 보고건 <span class="cnt" id="owner-grp-cnt">불러오는 중…</span><a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">A3 인쇄</a></summary>
     <div class="sec-body">
       <div class="repbar">
         <span class="cnt2" id="owner-count">불러오는 중…</span>
@@ -208,19 +212,18 @@
       <pre class="digest" id="owner-digest"></pre>
       <div class="grid" id="owner-grid"><div class="rep-empty">불러오는 중…</div></div>
       <div class="sum">
-        <h3>한눈에 보기</h3>
+        <h3>업무명 · 상태</h3>
         <table><tbody id="owner-sum-body"></tbody></table>
       </div>
-      <a class="doc-link" href="대표님_지시사항.html">📄 대표님 보고건 전용 화면 열기 →</a>
     </div>
   </details>
 
   <!-- ③ 김남욱 GM -->
   <details class="sec" id="sec-gm" open>
-    <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span></summary>
+    <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span><a class="sec-act" href="../../월간운영계획.html" onclick="event.stopPropagation();">월간운영계획</a></summary>
     <div class="sec-body">
       <div class="sum">
-        <h3>업무명 · 상태 · 진척</h3>
+        <h3>업무명 · 상태</h3>
         <table><tbody id="gm-sum-body"></tbody></table>
       </div>
       <div class="grid" id="gm-grid"><div class="rep-empty">불러오는 중…</div></div>
