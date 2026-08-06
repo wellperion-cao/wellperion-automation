@@ -621,6 +621,21 @@ function weightOf(s) { return WEIGHT[String(s.priority || '')] || 0; }
 // 배의 '마지막 움직임'이 며칠 전인가 — updated_at 이 있으면 그것, 없으면 enqueued_at.// 표시용 배 번호 — 짧은번호 우선.
 function noOf(s) { return s.short_no != null ? s.short_no : s.ship_no; }
 
+/** 한 역할의 대기 배 — 무게 무거운 순, 같은 무게면 오래 기다린 순(웰리 결정 D안 ④).
+ *  내 항로(myShips)와 C-Level 현황 줄(buildRoleLines)이 **같은 순서**를 봐야 하므로 여기 한 곳에서만
+ *  정한다(약속 L01 — 정렬 규칙을 두 곳에 적으면 같은 배가 화면마다 다른 순서로 뜬다). */
+function waitingOf(q, role) {
+  return q.filter((s) => s && s.clevel === role
+      && (s.status === 'PENDING' || s.status === 'STANDBY'))
+    .sort((a, b) => (weightOf(b) - weightOf(a))
+      || String(a.enqueued_at || '').localeCompare(String(b.enqueued_at || '')));
+}
+
+/** 대기 목록 맨 앞 = 다음에 집을 배. 자동 생성된 잔소리 배는 '다음 할 일'로 권할 성질이 아니라 뺀다. */
+function nextShipOf(waiting) {
+  return waiting.find((s) => !String(s.title || '').includes('[GM보좌 제안]')) || null;
+}
+
 /** 내 항로 — 진행/대기/오늘 입항 + 대기 배 번호 목록 + 🆕(남이 띄웠는데 아직 안 잡은 배). */
 function myShips(q, cwd, role) {
   try {
@@ -628,10 +643,7 @@ function myShips(q, cwd, role) {
     const t = new Date();
     const ymd = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     const run = mine.filter((s) => s.status === 'IN_PROGRESS').length;
-    // 대기 배 — 번호를 무게 무거운 순으로 늘어놓는다(웰리 결정 D안 ④). 같은 무게면 오래 기다린 순.
-    const waiting = mine.filter((s) => s.status === 'PENDING' || s.status === 'STANDBY')
-      .sort((a, b) => (weightOf(b) - weightOf(a))
-        || String(a.enqueued_at || '').localeCompare(String(b.enqueued_at || '')));
+    const waiting = waitingOf(q, role);
     const waitNos = waiting.map(noOf).filter((n) => n != null);
     // 🆕 = 남이 나에게 띄웠는데 아직 안 잡은 배(웰리 결정 D안 ③ — "다른 C레벨도 작업 지시 현황 바로").
     //   '남이' = from 이 있고 내가 아님. '안 잡은' = PENDING(STANDBY 는 잡았다가 정박한 배라 제외).
@@ -693,9 +705,8 @@ function myShips(q, cwd, role) {
     } : null;
     // ★다음에 잡을 배 — 손이 비었을 때 '대기'라고만 적지 않고 **무엇을 집으면 되는지**까지 적는다
     //   (GM 2026-08-05 "대기없이 계속 작업할 것을 찾는 내용이 있어서, 찾아서 진행하는 걸로").
-    //   waiting 은 이미 무게 무거운 순 → 오래 기다린 순으로 정렬돼 있으므로 맨 앞이 곧 다음 차례다.
-    //   자동 생성된 잔소리 배는 '다음 할 일'로 권할 성질이 아니라 뺀다(❓GM답 칸과 같은 잣대).
-    const nextShip = waiting.find((s) => !String(s.title || '').includes('[GM보좌 제안]'));
+    //   판정은 nextShipOf 단일 정의(위 참고) — C-Level 현황 줄도 같은 함수를 쓴다.
+    const nextShip = nextShipOf(waiting);
     const next = nextShip ? {
       no: (shortOf[nextShip.ship_no] != null) ? shortOf[nextShip.ship_no] : nextShip.ship_no,
       title: String(nextShip.title || '').replace(/^\[[^\]]*\]\s*/, '').trim(),
@@ -1031,12 +1042,24 @@ function buildRoleLines(cwd, role) {
       const d = new Date(Date.now() - ms);
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
     };
+    // ★일하는 줄만 무슨 일인지 붙인다(GM 선택 2026-08-06). 2026-08-05 단순화로 6줄이
+    //   '진행중/대기/오늘 없음'만 반복해 "회사가 뭘 하고 있나"가 안 보였다(GM "색감이 다 사라졌다").
+    //   진행중 = 마지막으로 한 일 / 대기 = 다음에 집을 배. '오늘 없음'은 붙일 게 없어 그대로 짧게.
+    //   큐는 여기서 한 번만 읽는다 — 역할마다 myShips 를 부르면 보관함까지 6번 읽어 상태줄이 느려진다.
+    const q = loadQueue(cwd);
     return acts.map((a) => {
-      let dot, state;
-      if (a.deleg || (a.age != null && a.age < PAUSE_MS)) { dot = `${G}●${X}`; state = `${G}진행중${X}`; }
-      else if (a.age != null && isToday(a.age))            { dot = `${Y}◐${X}`; state = `${Y}대기${X}`; }
-      else                                                  { dot = `${D}○${X}`; state = `${D}오늘 없음${X}`; }
-      return `${dot} ${padDisp(NICK[a.role], 4)} ${state}`;
+      let dot, state, tail = '';
+      if (a.deleg || (a.age != null && a.age < PAUSE_MS)) {
+        dot = `${G}●${X}`; state = `${G}진행중${X}`;
+        if (a.event) tail = `  ${D}${shortTitle(a.event, 18)}${X}`;
+      } else if (a.age != null && isToday(a.age)) {
+        dot = `${Y}◐${X}`; state = `${Y}대기${X}`;
+        const nx = q ? nextShipOf(waitingOf(q, a.role)) : null;
+        if (nx) tail = `  ${D}▸다음 ${shortTitle(nx.title, 18)}${X}`;
+      } else {
+        dot = `${D}○${X}`; state = `${D}오늘 없음${X}`;
+      }
+      return `${dot} ${padDisp(NICK[a.role], 4)} ${padDisp(state, 8)}${tail}`;
     });
   } catch { return []; }
 }
