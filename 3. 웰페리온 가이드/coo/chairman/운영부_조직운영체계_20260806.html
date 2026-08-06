@@ -18,31 +18,31 @@
     font-size:14.5px; line-height:1.42; word-break:keep-all; overflow-wrap:break-word;}
   .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:13mm; text-align:left;}
 
-  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:10px;
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:5px; margin-bottom:8px;
       display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;}
   .hd .kick{font-size:13.5px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
-  .hd .ttl{font-size:29px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
-  .hd-r{font-size:15px; text-align:right; line-height:1.55;}
-  .hd-r .big{font-size:18px; font-weight:800;}
+  .hd .ttl{font-size:26px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:14px; text-align:right; line-height:1.5;}
+  .hd-r .big{font-size:16.5px; font-weight:800;}
 
   h2{font-size:16px; font-weight:800; margin:0 0 5px; padding:3px 10px;
      background:var(--ink); color:#fff; letter-spacing:-.01em;}
   .blk{break-inside:avoid;}
-  .blk + .blk{margin-top:8px;}
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; align-items:start; margin-top:12px;}
+  .blk + .blk{margin-top:5px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; align-items:start; margin-top:9px;}
 
   .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
-        padding:9px 14px; font-size:16.5px; font-weight:600; line-height:1.45;}
+        padding:7px 13px; font-size:15.5px; font-weight:600; line-height:1.4;}
   .lede em{font-style:normal; color:var(--accent); font-weight:800;}
 
   table{width:100%; border-collapse:collapse; font-size:14px;}
-  th,td{border:1px solid var(--line); padding:3.5px 8px; vertical-align:top; text-align:left;}
+  th,td{border:1px solid var(--line); padding:3px 7px; vertical-align:top; text-align:left;}
   th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
   td.c,th.c{text-align:center;}
 
-  .flow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:8px 0 4px;
-        font-size:17px; font-weight:700;}
-  .flow .node{border:2px solid var(--accent); background:var(--accent-soft); padding:6px 14px;}
+  .flow{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:6px 0 2px;
+        font-size:15px; font-weight:700;}
+  .flow .node{border:2px solid var(--accent); background:var(--accent-soft); padding:4px 12px;}
   .flow .node.mid{border-color:var(--ink); background:#fff;}
   .flow .arr{color:var(--dim); font-weight:800;}
 
@@ -51,12 +51,12 @@
   .note ul,.good ul{margin:4px 0 0; padding-left:19px;}
   .note li,.good li{margin-bottom:3px;}
 
-  .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+  .foot{margin-top:7px; padding-top:4px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
 
   /* 업무가 오가는 4단계 — 표보다 순서가 눈에 들어온다 */
   .steps{list-style:none; margin:0; padding:0;}
   .steps li{display:grid; grid-template-columns:22px 1fr; gap:10px; align-items:start;
-            padding:6px 0; border-bottom:1px dashed var(--line);}
+            padding:4px 0; border-bottom:1px dashed var(--line);}
   .steps li:last-child{border-bottom:0;}
   .steps .mk{width:22px; height:22px; border-radius:50%; background:var(--accent-soft);
              color:var(--accent); font-size:13px; font-weight:800; line-height:22px; text-align:center;}
@@ -64,7 +64,7 @@
   .steps span{display:block; font-size:14.5px; color:var(--dim); line-height:1.45; margin-top:1px;}
 
   /* 멈춘 업무 — 숫자를 먼저 보이게 */
-  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:8px 0;}
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin:6px 0;}
   .stat{background:#f4f6f9; border:1px solid var(--line); padding:7px 10px;}
   .stat .v{font-size:21px; font-weight:800; line-height:1.05;}
   .stat .v.hot{color:#a33;}
@@ -128,9 +128,18 @@
           <tr><td>사원</td><td>백승화</td><td>운영</td><td>리셉셔니스트 (오전조)</td></tr>
           <tr><td>사원</td><td>채용 진행 중</td><td>운영</td><td>리셉셔니스트 (오후조)</td></tr>
         </table>
-        <p style="margin:6px 0 0; font-size:14.5px; color:var(--dim);">
-          업무 시스템 — 웰페리온 ERP · 브로제이 · 카카오톡방 3종 병행
-        </p>
+
+        <div class="good" style="margin-top:8px;">
+          <b>실장이 하시는 다섯 가지</b> &mdash; 이 다섯이 돌지 않으면 이 체계는 서지 않습니다.
+        </div>
+        <table style="margin-top:5px;">
+          <tr><th style="width:74px;">무엇을</th><th>어떻게</th></tr>
+          <tr><td><b>받는다</b></td><td>운영부로 오는 업무·현황을 실장이 받습니다. 담당자 개인에게 바로 흘러가지 않게 막습니다.</td></tr>
+          <tr><td><b>나눈다</b></td><td>누가 · 언제까지 할지 정해 맡깁니다. 담당·기한이 빈 일은 만들지 않습니다.</td></tr>
+          <tr><td><b>확인한다</b></td><td>업무 시트 상태로 진행을 봅니다. <b>주 1회 이상</b> 확인해 멈춘 일을 찾습니다.</td></tr>
+          <tr><td><b>뚫는다</b></td><td>실무진이 못 푸는 건 실장이 풀거나 GM께 올립니다. <b>멈춘 채 두지 않습니다.</b></td></tr>
+          <tr><td><b>올린다</b></td><td>끝난 일과 막힌 점을 정리해 GM께 보고합니다. 실무진의 GM 직보는 실장이 대신합니다.</td></tr>
+        </table>
       </div>
 
       <div class="blk">
@@ -159,35 +168,21 @@
       </div>
 
       <div class="blk">
-        <h2>4. 업무를 보는 5가지 관점</h2>
-        <table>
-          <tr><th class="c">#</th><th>관점</th><th>스스로 묻는 질문</th></tr>
-          <tr><td class="c">①</td><td><b>방향에 맞는 일</b></td><td>이 업무가 3개월 안정화 목표에 기여하는가?</td></tr>
-          <tr><td class="c">②</td><td><b>진행 중인 일</b></td><td>누가, 언제까지, 어디까지 갔는가?</td></tr>
-          <tr><td class="c">③</td><td><b>멈춰 있는 일</b></td><td>마지막 진행이 언제인가? 담당이 있는가?</td></tr>
-          <tr><td class="c">④</td><td><b>잘 되는 일</b></td><td>매뉴얼로 남길 것은 무엇인가?</td></tr>
-          <tr><td class="c">⑤</td><td><b>부족한 일</b></td><td>교육으로 되는가, 사람이 더 필요한가?</td></tr>
+        <h2>5. 주간 보고 &mdash; 손으로 쓰지 않습니다</h2>
+        <div class="good">
+          매주 <b>주간 보고 초안이 ★중간관리자 방으로 자동으로 올라갑니다.</b>
+          실장님은 보시고 <b>고치거나 그대로 쓰시면</b> 됩니다. 빈 양식을 채우실 필요가 없습니다.
+        </div>
+        <table style="margin-top:7px;">
+          <tr><th style="width:118px;">초안에 담기는 것</th><th>무엇을</th></tr>
+          <tr><td><b>② 진행 중</b></td><td>지금 굴러가는 일 &mdash; 업무명 · 담당 · 기한</td></tr>
+          <tr><td><b>③ 멈춰 있는 것</b></td><td>기한이 지났거나 오래 손을 못 댄 일 &mdash; 업무명 · 담당 · 며칠째</td></tr>
+          <tr><td><b>✅ 이번 주 끝난 것</b></td><td>이번 주에 완료로 바뀐 일</td></tr>
         </table>
-        <div class="good" style="margin-top:7px;">
-          <b>가장 먼저 할 것 = ③ 멈춰 있는 일 찾기.</b>
-        </div>
-        <div class="stats">
-          <div class="stat"><div class="v hot">14</div><div class="l">기한 지난 업무</div></div>
-          <div class="stat"><div class="v hot">12</div><div class="l">그중 30일 넘게 멈춤</div></div>
-          <div class="stat"><div class="v">68</div><div class="l">가장 오래된 것 (일)</div></div>
-        </div>
-        <table>
-          <tr><th>담당</th><th class="c">건수</th><th>비고</th></tr>
-          <tr><td>최준용M</td><td class="c">5</td><td>운영부</td></tr>
-          <tr><td>이경연 실장</td><td class="c">3</td><td>운영부</td></tr>
-          <tr><td>윤병현AM</td><td class="c">2</td><td>운영부</td></tr>
-          <tr><td>그 밖</td><td class="c">4</td><td>나우열M 3 · 이정헌 소장 1</td></tr>
-        </table>
-        <div class="choice">
-          <div><b>끝났다</b>완료로 바꿉니다.</div>
-          <div><b>안 한다</b>폐기로 바꿉니다.</div>
-          <div><b>계속한다</b>새 기한을 넣습니다.</div>
-        </div>
+        <p style="margin:6px 0 0; font-size:14.5px; color:var(--dim);">
+          초안은 <b>업무 시트에 적힌 것만</b> 담습니다 &mdash; 시트에 없는 일은 초안에도 없습니다.
+          카카오톡방 · ERP · 브로제이에 흩어진 업무를 시트 한 곳으로 모으는 것이 1차 목표입니다.
+        </p>
       </div>
 
     </div>
@@ -204,21 +199,40 @@
       </div>
 
       <div class="blk">
-        <h2>5. 주간 보고 &mdash; 손으로 쓰지 않습니다</h2>
-        <div class="good">
-          매주 <b>주간 보고 초안이 ★중간관리자 방으로 자동으로 올라갑니다.</b>
-          실장님은 보시고 <b>고치거나 그대로 쓰시면</b> 됩니다. 빈 양식을 채우실 필요가 없습니다.
-        </div>
-        <table style="margin-top:7px;">
-          <tr><th style="width:118px;">초안에 담기는 것</th><th>무엇을</th></tr>
-          <tr><td><b>② 진행 중</b></td><td>지금 굴러가는 일 &mdash; 업무명 · 담당 · 기한</td></tr>
-          <tr><td><b>③ 멈춰 있는 것</b></td><td>기한이 지났거나 오래 손을 못 댄 일 &mdash; 업무명 · 담당 · 며칠째</td></tr>
-          <tr><td><b>✅ 이번 주 끝난 것</b></td><td>이번 주에 완료로 바뀐 일</td></tr>
+        <h2>4. 업무를 보는 5가지 관점</h2>
+        <table>
+          <tr><th class="c">#</th><th>관점</th><th>스스로 묻는 질문</th></tr>
+          <tr><td class="c">①</td><td><b>방향에 맞는 일</b></td><td>이 업무가 3개월 안정화 목표에 기여하는가?</td></tr>
+          <tr><td class="c">②</td><td><b>진행 중인 일</b></td><td>누가, 언제까지, 어디까지 갔는가?</td></tr>
+          <tr><td class="c">③</td><td><b>멈춰 있는 일</b></td><td>마지막 진행이 언제인가? 담당이 있는가?</td></tr>
+          <tr><td class="c">④</td><td><b>잘 되는 일</b></td><td>매뉴얼로 남길 것은 무엇인가?</td></tr>
+          <tr><td class="c">⑤</td><td><b>부족한 일</b></td><td>교육으로 되는가, 사람이 더 필요한가?</td></tr>
         </table>
-        <p style="margin:6px 0 0; font-size:14.5px; color:var(--dim);">
-          초안은 <b>업무 시트에 적힌 것만</b> 담습니다 &mdash; 시트에 없는 일은 초안에도 없습니다.
-          카카오톡방 · ERP · 브로제이에 흩어진 업무를 시트 한 곳으로 모으는 것이 1차 목표입니다.
+        <div class="good" style="margin-top:7px;">
+          <b>가장 먼저 할 것 = ③ 멈춰 있는 일 찾기.</b>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="v hot">14</div><div class="l">기한이 지난 업무</div></div>
+          <div class="stat"><div class="v hot">22</div><div class="l">기한 지남 + 7일 넘게<br>손 안 댄 것</div></div>
+          <div class="stat"><div class="v">68</div><div class="l">가장 오래된 것 (일)</div></div>
+        </div>
+        <p style="margin:0 0 6px; font-size:13.5px; color:var(--dim);">
+          두 숫자는 세는 방식이 다릅니다 &mdash; <b>14</b>는 기한만 본 것, <b>22</b>는 기한이 안 지났어도
+          한 주 넘게 손을 못 댄 것까지 넣은 것입니다. <b>주간 보고 초안은 22건 기준</b>으로 만듭니다.
+          목록은 <a href="https://docs.google.com/spreadsheets/d/1aqZGHpxzjAMqQvWQDrBWxrVtrFdZhFMxqFudNFlGnTk/edit">업무 시트</a>에서 직접 확인하실 수 있습니다.
         </p>
+        <table>
+          <tr><th>기한 지난 14건 &mdash; 담당</th><th class="c">건수</th><th>비고</th></tr>
+          <tr><td>최준용M</td><td class="c">5</td><td>운영부</td></tr>
+          <tr><td>이경연 실장</td><td class="c">3</td><td>운영부</td></tr>
+          <tr><td>윤병현AM</td><td class="c">2</td><td>운영부</td></tr>
+          <tr><td>그 밖</td><td class="c">4</td><td>나우열M 3 · 이정헌 소장 1</td></tr>
+        </table>
+        <div class="choice">
+          <div><b>끝났다</b>완료로 바꿉니다.</div>
+          <div><b>안 한다</b>폐기로 바꿉니다.</div>
+          <div><b>계속한다</b>새 기한을 넣습니다.</div>
+        </div>
       </div>
 
       <div class="blk">
@@ -256,8 +270,13 @@
   </div>
 
   <div class="foot">
-    근거 &mdash; GM 지시 2026-08-06(조직 핵심 지시) · 기한 초과 업무 수치는 같은 날 업무 현황판 실측값입니다.
-    확인되지 않은 항목은 채우지 않았습니다. · 정리 웰페리온 AI 웰리 · 문의 김남욱 GM
+    <b>바로 가기</b> &nbsp;
+    업무 시트 <a href="https://docs.google.com/spreadsheets/d/1aqZGHpxzjAMqQvWQDrBWxrVtrFdZhFMxqFudNFlGnTk/edit">docs.google.com/spreadsheets/d/1aqZ…</a> &nbsp;·&nbsp;
+    업무 현황 화면 <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html">업무 현황 SSOT</a> &nbsp;·&nbsp;
+    이 문서 <a href="https://wellperion-cao.github.io/wellperion-automation/coo/chairman/%EC%9A%B4%EC%98%81%EB%B6%80_%EC%A1%B0%EC%A7%81%EC%9A%B4%EC%98%81%EC%B2%B4%EA%B3%84_20260806.html">운영부 조직 운영 체계</a>
+    <br>
+    근거 &mdash; GM 지시 2026-08-06(조직 핵심 지시) · 업무 수치는 같은 날 업무 시트 실측값입니다.
+    확인되지 않은 항목은 채우지 않았습니다. · 문의 이경연 실장 또는 김남욱 GM
   </div>
 
 </div>
