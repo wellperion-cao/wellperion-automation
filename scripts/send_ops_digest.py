@@ -177,6 +177,102 @@ def _save_done_state(state: dict) -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# 주간 보고 초안 (2026-08-06 GM 지시 — "표준 양식은 의미없고, 보고 내용을 중간관리자
+# 방에다가 보고할 수 있거나 정리할 수 있게 도와줬으면"). 빈 양식표는 아무도 안 채운다
+# — 이경연 실장이 손으로 안 써도 초안이 ★중간관리자 방에 나가고, 고치거나 그대로 쓴다.
+# 담당자·완료 판정은 위 OPS_STAFF·_ops_done_rows 그대로 재사용(약속 L01) — 필터를
+# 두 번 안 짠다. 발송 쪽(요일·시각·킬스위치)은 telegram_bot/daily_scheduler.py 가
+# 이 함수를 불러 kakao_report_sender.py --only-room "★중간관리자"로 보낸다
+# (새 스크립트·새 예약작업 없음, 약속 L21).
+# ══════════════════════════════════════════════════════════════════════════
+WEEKLY_STALE_DAYS = 7   # "오래 갱신이 없는" 기준 — worklog_gaps._STALE_DAYS(배9578)와 동일 관례
+WEEKLY_SHOW_N = 8
+WEEKLY_ROOM = "★중간관리자"
+
+
+def _weekly_active_rows(rows: list) -> list:
+    """운영부 담당(OPS_STAFF) 미완료·비보류 건 — _ops_done_rows 의 반대.
+    '보류'를 뺀 것은 coo_registry.fetch_workapproval_status/rule_task_deadline_passed_active
+    와 같은 관례(의도적으로 멈춰둔 것과 방치는 다르다)."""
+    from collectors.ops_shared import TODO_DONE_STATUSES
+
+    return [r for r in rows if isinstance(r, dict)
+            and str(r.get("상태", "")).strip() not in TODO_DONE_STATUSES
+            and str(r.get("상태", "")).strip() != "보류"
+            and any(n in str(r.get("담당자", "")) for n in OPS_STAFF)
+            and str(r.get("id", ""))]
+
+
+def _parse_ymd(s):
+    """업무 시트 날짜칸(YYYY-MM-DD 또는 ISO datetime) → date. 실패 시 None."""
+    from datetime import date as _date
+    try:
+        return _date.fromisoformat(str(s or "")[:10])
+    except Exception:
+        return None
+
+
+def build_weekly_report_draft(rows: list, today_str: str) -> str:
+    """운영부 주간 보고 초안. ②진행 중(상태='진행중'·기한 안 지나고 최근 갱신) /
+    ③멈춰 있는 것(기한 지남 또는 WEEKLY_STALE_DAYS일+ 무갱신) / ✅이번 주 끝난 것
+    (이번 주 월요일 이후 완료). 빈 절은 안 넣는다 — 셋 다 비면 빈 문자열(발송 안 함)."""
+    from datetime import date as _date, timedelta as _td
+
+    today = _parse_ymd(today_str) or _date.today()
+    week_start = today - _td(days=today.weekday())  # 이번 주 월요일
+
+    progressing, stalled = [], []
+    for r in _weekly_active_rows(rows):
+        end = _parse_ymd(r.get("종료일"))
+        upd = _parse_ymd(r.get("수정일"))
+        overdue_days = (today - end).days if end and end < today else 0
+        stale_days = None if upd is None else (today - upd).days
+        if overdue_days > 0:
+            stalled.append((r, f"기한 {overdue_days}일 초과", overdue_days))
+        elif stale_days is None or stale_days >= WEEKLY_STALE_DAYS:
+            tag = "갱신기록 없음" if stale_days is None else f"{stale_days}일째 무갱신"
+            stalled.append((r, tag, stale_days if stale_days is not None else 9999))
+        elif str(r.get("상태", "")).strip() == "진행중":
+            deadline = end.isoformat() if end else "기한 미정"
+            progressing.append((r, deadline))
+    stalled.sort(key=lambda x: -x[2])
+
+    done_this_week = [r for r in _ops_done_rows(rows)
+                       if (_parse_ymd(r.get("수정일")) or _date.min) >= week_start]
+
+    lines = ["📋 운영부 주간 보고 초안(자동 생성 — 확인 후 고쳐서 올려주세요)"]
+
+    if progressing:
+        lines.append(f"\n② 진행 중 {len(progressing)}건")
+        for r, deadline in progressing[:WEEKLY_SHOW_N]:
+            lines.append(f" • {str(r.get('업무명', '')).strip()} / {str(r.get('담당자', '')).strip()} / {deadline}")
+        if len(progressing) > WEEKLY_SHOW_N:
+            lines.append(f" • 외 {len(progressing) - WEEKLY_SHOW_N}건")
+
+    if stalled:
+        lines.append(f"\n③ 멈춰 있는 것 {len(stalled)}건")
+        for r, tag, _age in stalled[:WEEKLY_SHOW_N]:
+            lines.append(f" • {str(r.get('업무명', '')).strip()} / {str(r.get('담당자', '')).strip()} / {tag}")
+        if len(stalled) > WEEKLY_SHOW_N:
+            lines.append(f" • 외 {len(stalled) - WEEKLY_SHOW_N}건")
+
+    if done_this_week:
+        lines.append(f"\n✅ 이번 주 끝난 것 {len(done_this_week)}건")
+        for r in done_this_week[:WEEKLY_SHOW_N]:
+            lines.append(f" • {str(r.get('업무명', '')).strip()} — {str(r.get('담당자', '')).strip()}")
+        if len(done_this_week) > WEEKLY_SHOW_N:
+            lines.append(f" • 외 {len(done_this_week) - WEEKLY_SHOW_N}건")
+
+    if not progressing and not stalled and not done_this_week:
+        return ""
+
+    if stalled:
+        lines.append("\n👉 멈춘 건은 완료 처리 / 폐기 / 새 기한 중 하나로 정리해 주세요.")
+
+    return "\n".join(lines)
+
+
+# ══════════════════════════════════════════════════════════════════════════
 # 사람에게 넘기는 배 전달 (2026-08-05 GM 편제 확정)
 #
 # 왜 필요한가. AI 로 도는 C-Level 은 웰리·시토·시모·시포 넷뿐이고, 시우·시로·시뽀의

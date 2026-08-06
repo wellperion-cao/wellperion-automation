@@ -2824,6 +2824,45 @@ def _check_ops_done_immediate() -> None:
         logger.warning(f"[완료 즉시알림] 예외(다음 주기 재시도): {exc}")
 
 
+# ── 운영부 주간 보고 초안 — ★중간관리자 방 (GM 2026-08-06 "표준 양식은 의미없고,
+#   보고 내용을 중간관리자 방에다가 보고할 수 있거나 정리할 수 있게 도와줬으면") ──────
+#   빈 양식표는 아무도 안 채운다 — 이경연 실장이 손으로 안 써도 초안이 나가고, 실장은
+#   고치거나 그대로 쓴다. 금요일 17:00을 고른 이유: 그 주가 끝나기 전, 실장이 아직
+#   자리에 있는 시간대에 그 주 진행상황을 정리해 두면 다음 주 계획 전에 검토할 여유가
+#   있다(월요일 발송이면 '지난주' 데이터를 다시 조사해야 해서 실장이 손볼 타이밍을 놓친다).
+#   새 예약작업·새 발신기 없음(약속 L21) — 상주 스케줄러 잡 하나 + kakao_report_sender.py
+#   --only-room 재사용. 판정 로직(운영부 담당자·완료건)은 send_ops_digest.py 함수 재사용
+#   (약속 L01). 킬스위치 = ops_digest_send.json 공유(새 킬스위치 안 만듦).
+def run_weekly_ops_report() -> None:
+    try:
+        import send_ops_digest as _od
+    except Exception as exc:
+        logger.warning(f"[주간 보고] send_ops_digest import 실패: {exc}")
+        return
+    if not _od.kill_switch_enabled():
+        logger.info("[주간 보고] 킬스위치 OFF(ops_digest_send.json) — 생략")
+        return
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        draft = _od.build_weekly_report_draft(_od._fetch_todo_rows(), today)
+        if not draft:
+            logger.info("[주간 보고] 이번 주 진행/멈춤/완료 없음 — 발송 생략")
+            return
+        proc = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
+             "--message", draft, "--only-room", _od.WEEKLY_ROOM],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=180,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+        )
+        tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+        logger.info(f"[주간 보고] 카톡 {_od.WEEKLY_ROOM} 발송: {tail[0]}")
+        if proc.returncode != 0:
+            _kakao_fail_notify("주간 보고 초안", tail[0], room=_od.WEEKLY_ROOM)
+    except Exception as exc:
+        logger.error(f"[주간 보고] 예외: {exc}")
+
+
 def run_stream_3_mgmt() -> None:
     """스트림 #3 매출+운영+인사 현황 보고 (매일 09:30 · 업무보고방) — CTO 2026-07-22.
     확정 포맷: report_stream_3_impl v3 (54% 압축 · GM ok). 카카오=GM go 후 활성화.
@@ -3532,6 +3571,19 @@ def main():
             logger.info("stream_3_mgmt 등록 완료 — 매일 09:30 업무보고방 발송 (스트림 #3)")
         except Exception as e:
             logger.warning(f"stream_3_mgmt 등록 실패: {e}")
+
+        # ── 운영부 주간 보고 초안 (금요일 17:00 · ★중간관리자 방) — CTO 2026-08-06 ──
+        try:
+            scheduler.add_job(
+                run_weekly_ops_report,
+                trigger=CronTrigger(day_of_week="fri", hour=17, minute=0, timezone="Asia/Seoul"),
+                id="weekly_ops_report_fri1700",
+                misfire_grace_time=600,
+                coalesce=True,
+            )
+            logger.info("weekly_ops_report 등록 완료 — 매주 금 17:00 ★중간관리자 발송")
+        except Exception as e:
+            logger.warning(f"weekly_ops_report 등록 실패: {e}")
 
     # ── git 죽은 잠금 청소 (배9889 · 2026-07-23 시토) ──────────────────────
     #   `git commit -- <경로>` 가 쓰는 임시 인덱스(next-index-<PID>.lock)는 그 프로세스가

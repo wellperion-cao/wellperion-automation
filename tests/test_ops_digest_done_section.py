@@ -6,6 +6,8 @@
 ⑤즉각 알림·아침 다이제스트가 같은 스냅샷을 공유하면 같은 건을 두 번 안 보냄(배431·GM 2026-08-06)
 ⑥하루 일과 정리(build_daily_done_section)는 날짜로만 거르고 중복억제가 없음
 ⑦조용한 시간(22:00~08:00) 판정.
+⑧주간 보고 초안(build_weekly_report_draft) — ②진행중·③멈춤(기한초과/무갱신)·✅이번주완료
+분류 및 보류·타부서 제외(배431 후속, GM 2026-08-06).
 실행: C:\\Python314\\python.exe tests/test_ops_digest_done_section.py
 """
 import sys
@@ -14,7 +16,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from send_ops_digest import build_done_section, build_daily_done_section, in_ops_quiet_hours  # noqa: E402
+from send_ops_digest import (  # noqa: E402
+    build_done_section, build_daily_done_section, in_ops_quiet_hours,
+    build_weekly_report_draft,
+)
 
 ROWS = [
     {"id": "1", "업무명": "주차 라인 도색", "담당자": "최준용M", "상태": "완료"},
@@ -75,5 +80,55 @@ def main() -> None:
     print("OK: build_done_section/build_daily_done_section/in_ops_quiet_hours — 필터·dedup·공유스냅샷·시간대 전부 통과")
 
 
+WEEKLY_ROWS = [
+    # ②진행 중 — 상태=진행중·기한 안 지남(2026-08-10)·최근 갱신(1일전)
+    {"id": "20", "업무명": "락커 유지보수", "담당자": "최준용M", "상태": "진행중",
+     "종료일": "2026-08-10", "수정일": "2026-08-05"},
+    # ③멈춤(기한 초과) — 종료일이 오늘(2026-08-06)보다 과거
+    {"id": "21", "업무명": "주차 라인 재도색", "담당자": "이경연 실장", "상태": "진행중",
+     "종료일": "2026-08-01", "수정일": "2026-08-05"},
+    # ③멈춤(무갱신 7일+) — 기한은 안 지났지만 수정일이 17일 전
+    {"id": "22", "업무명": "냉방기 부품 발주", "담당자": "윤병현AM", "상태": "진행중",
+     "종료일": "2026-08-20", "수정일": "2026-07-20"},
+    # ③멈춤(수정일 없음) — 무갱신 취급
+    {"id": "23", "업무명": "누수 재점검", "담당자": "최준용M", "상태": "진행중", "종료일": "2026-08-15"},
+    # 보류 — ②③ 어디에도 안 실림
+    {"id": "24", "업무명": "예산 보류 건", "담당자": "이경연 실장", "상태": "보류",
+     "종료일": "2026-07-01", "수정일": "2026-07-01"},
+    # 타부서 담당 — 제외
+    {"id": "25", "업무명": "예산안 검토", "담당자": "나우열M", "상태": "진행중",
+     "종료일": "2026-08-10", "수정일": "2026-08-05"},
+    # ✅이번 주 완료(주 시작=2026-08-03 월요일, 08-04는 이번 주)
+    {"id": "26", "업무명": "누수 점검", "담당자": "최준용M", "상태": "완료", "수정일": "2026-08-04"},
+    # 완료지만 지난주 — 이번 주 절에서 제외
+    {"id": "27", "업무명": "락커 교체", "담당자": "이경연 실장", "상태": "완료", "수정일": "2026-07-30"},
+]
+
+
+def test_build_weekly_report_draft() -> None:
+    draft = build_weekly_report_draft(WEEKLY_ROWS, "2026-08-06")
+
+    assert "② 진행 중 1건" in draft, draft
+    assert "락커 유지보수 / 최준용M / 2026-08-10" in draft, draft
+
+    assert "③ 멈춰 있는 것 3건" in draft, draft
+    assert "주차 라인 재도색 / 이경연 실장 / 기한 5일 초과" in draft, draft
+    assert "냉방기 부품 발주 / 윤병현AM / 17일째 무갱신" in draft, draft
+    assert "누수 재점검 / 최준용M / 갱신기록 없음" in draft, draft
+
+    assert "✅ 이번 주 끝난 것 1건" in draft, draft
+    assert "누수 점검 — 최준용M" in draft, draft
+    assert "락커 교체" not in draft, "지난주 완료건이 이번 주 절에 새어나옴"
+
+    assert "예산 보류 건" not in draft, "보류 건이 ②③에 새어나옴"
+    assert "예산안 검토" not in draft, "타부서 담당자가 새어나옴"
+    assert "👉 멈춘 건은" in draft, "멈춤 정리 안내 누락"
+
+    assert build_weekly_report_draft([], "2026-08-06") == "", "빈 입력인데 초안이 생성됨"
+
+    print("OK: build_weekly_report_draft — ②③✅ 분류·보류/타부서 제외·이번 주 필터 전부 통과")
+
+
 if __name__ == "__main__":
     main()
+    test_build_weekly_report_draft()
