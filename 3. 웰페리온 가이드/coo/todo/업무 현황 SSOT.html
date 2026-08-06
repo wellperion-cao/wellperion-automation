@@ -300,25 +300,45 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 /* ── Print ── */
 @media print{
-  @page{margin:10mm;size:A4}
+  @page{margin:8mm;size:A4}
   /* 인쇄용 라이트 팔레트 — 다크 카드 그대로 인쇄되던 문제 해결(2026-06-01 COO, 결재현황과 통일) */
   :root{--bg:#fff;--paper:#fff;--text:#1a1a1a;--dim:#555;--dim-soft:#999;--border:#ccc}
-  body{background:#fff;color:#1a1a1a;font-size:11px;line-height:1.4}
+  /* 글자 키우고 장수 줄이기(GM 지시 2026-08-06 · 배426): 11px→13px 확대 + 2단 배치 + 줄당
+     내용 압축으로 A4 14장을 줄인다. 화면 요약표는 그대로, 인쇄만 한 줄 요약(제목·담당·기한·상태)로
+     좁힌다 — '내용' 미리보기 줄·액션 버튼 줄은 인쇄에서 뺀다(웰리 실측·방향 전달). */
+  body{background:#fff;color:#1a1a1a;font-size:13px;line-height:1.35}
   .header-right,.filter-bar,.add-bar,.action-btn,.modal-overlay,.toast,.share-btn,.sheet-link{display:none!important}
-  .header{position:static;background:#fff;border-bottom:1px solid #ccc;padding:6px 0 8px;margin-bottom:10px}
+  .header{position:static;background:#fff;border-bottom:1px solid #ccc;padding:6px 0 8px;margin-bottom:8px}
   .header h1{font-size:15px;color:#111}
   .cat-accordion,.cat-header,.task-card{background:#fff}
   .content{padding:0;max-width:100%}
-  .cat-accordion{border:1px solid #ccc;break-inside:avoid;margin-bottom:8px}
-  .cat-header{padding:8px 12px}
+  /* #mainContent(업무 목록)만 2단 — #calendarView 도 class="content" 를 공유해서 여기 걸면
+     캘린더 인쇄(한 장 맞춤 scale-to-fit)가 2단으로 쪼개져 깨진다. ID로 좁힘.
+     카테고리 전체를 안 쪼개면(break-inside:avoid-column) 큰 카테고리가 통째로 다음 컬럼으로
+     밀려 빈 공간이 커진다 — 카테고리 헤더만 업무 카드와 붙어있게 하고 나머지는 자유롭게 흐르게 둔다 */
+  #mainContent{column-count:2;column-gap:14px}
+  .cat-accordion{border:1px solid #ccc;margin-bottom:6px}
+  .cat-header{padding:5px 10px;break-after:avoid-column}
   .cat-body{display:block!important}
+  /* A3(폭 297mm)나 가로 방향처럼 더 넓은 용지를 고르면 3단까지 늘려 1장에 더 가깝게 */
+  @media print and (min-width:280mm){ #mainContent{column-count:3} }
   /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
   .kanban-board{display:block!important;overflow:visible!important;padding:0!important}
-  .kanban-board > .cat-group{width:auto!important;margin-bottom:8px!important;break-inside:avoid}
+  .kanban-board > .cat-group{width:auto!important;margin-bottom:6px!important}
   .kanban-board::after{display:none!important}
-  .task-card{border-bottom:1px solid #eee;padding:8px 12px;break-inside:avoid}
-  .chip{border:1px solid #ccc;background:#f5f5f5;color:#333}
-  .done-log-body{display:block!important}
+  .task-card{border-bottom:1px solid #eee;padding:3px 8px;break-inside:avoid}
+  .task-title{font-size:13px!important;padding:2px 6px!important;margin-bottom:2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .task-meta{flex-wrap:nowrap!important;overflow:hidden;gap:4px!important}
+  .chip{border:1px solid #ccc;background:#f5f5f5;color:#333;font-size:10.5px!important;padding:1px 6px!important}
+  /* 인쇄본은 요약표(업무명·담당·기한·상태) — 내용 미리보기 줄·협조 칩·토글 화살표·액션 버튼 줄은 뺀다 */
+  .task-summary-line,.task-actions,.chip.collab,.appr-opinions,.toggle-arrow{display:none!important}
+  /* 완료/보류 로그 강제 펼침 삭제(장수 폭증의 실제 원인 — 실측 46 업무카드 대비 완료로그 62건이
+     통째로 펼쳐져 함께 인쇄되고 있었다, GM 지시 2026-08-06). 화면과 동일하게 접힘 상태를 따르고
+     (펼쳐 둔 상태로 인쇄하면 그대로 나온다), 펼쳤을 때도 아래 압축 스타일로 가볍게 나온다. */
+  .done-card{padding:3px 8px!important;break-inside:avoid}
+  .done-card .task-title{font-size:13px!important;padding:2px 6px!important}
+  .done-card .task-meta{flex-wrap:nowrap!important;overflow:hidden}
+  .done-log-header{padding:4px 10px!important}
   /* 캘린더 뷰는 기본 인쇄에서 숨김. 단 캘린더 한 장 인쇄 모드(data-print-mode="calendar")에서는
      아래 오버라이드로 노출·칸반은 숨김 (2026-07-18 GM 확정: 전체 인쇄 삭제·캘린더만 유지) */
   #calendarView{display:none!important}

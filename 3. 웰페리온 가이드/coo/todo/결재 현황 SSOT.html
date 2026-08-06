@@ -339,8 +339,18 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   .header{position:static;background:#fff;color:#000;border-bottom:1px solid #ccc}
   .header-right,.sheet-link,.filter-bar,.detail-toggle{display:none!important}
   body{background:#fff;color:#000}
-  .approval-card{background:#fff;border:1px solid #ccc;border-left:3px solid #0b8043;page-break-inside:avoid}
-  .detail-body{display:block!important}
+  /* 기본 목록 인쇄(모드 없음) 압축(GM 지시 2026-08-06·배426): 실측 20건 카드가 22장으로 쏟아지던
+     원인 = 본문/기획/진척로그/결과보고 토글(detail-body)을 카드마다 강제로 펼쳐 통째로 인쇄하던 것
+     (업무 현황 SSOT의 완료로그 강제펼침과 같은 유형의 문제). 화면과 동일하게 접힘 상태를 따르고,
+     2단 배치로 남은 요약(제목·담당·상태·결재선)만 한 장에 압축한다. 카드 인쇄(cards)·문서(doc)
+     모드는 아래 별도 규칙이 그대로 처리 — 손대지 않음. */
+  .approval-card{background:#fff;border:1px solid #ccc;border-left:3px solid #0b8043;break-inside:avoid;padding:6px 10px;margin-bottom:6px}
+  body:not([data-print-mode]) .content{column-count:2;column-gap:14px;max-width:100%}
+  @media print and (min-width:280mm){ body:not([data-print-mode]) .content{column-count:3} }
+  body:not([data-print-mode]) .approval-card button{display:none!important}
+  body:not([data-print-mode]) .card-owner-line,body:not([data-print-mode]) .meta-row,
+  body:not([data-print-mode]) .approval-steps,body:not([data-print-mode]) .sign-line{font-size:10.5px;margin:3px 0}
+  body:not([data-print-mode]) .opinion-block{font-size:10.5px}
   /* [결재-3] 대시보드 인쇄 모드 */
   [data-print-mode="approval-dashboard"] .content{display:none!important}
   [data-print-mode="approval-dashboard"] .dash-overlay{position:static!important;display:block!important;background:none!important;padding:0!important;}
