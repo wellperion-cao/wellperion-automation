@@ -54,6 +54,11 @@ _PROJECTS = [
     # 버전 수를 아무도 안 세고 있었다(200 하드리밋 경보·정리 대상에서 통째로 빠짐).
     # 위 instructor 주석이 예고한 바로 그 부류라 같은 방식으로 메운다.
     ("forms", "1o8EfB_jMeX0EVKZhBJPOPqXjkkCTHJYXBuyt9lMvOhSiQAMkie-ADQ6T", ".deploy-forms"),
+    # 고객 접수(intake-api) — 2026-08-06 등록(배240·시토). Survey.js(funnel-v2)에서
+    # intake_submit 액션만 별도 GAS 로 분리(전례: sales-api, 커밋 c5ac263b2). 등록 안 하면
+    # 배포 관문(gas_deploy_guard)을 못 거치고 raw clasp deploy 우회로가 된다 — instructor·forms
+    # 와 같은 사각지대 재발 방지.
+    ("intake", "1zmXkpox9nuVY5x4rRDhMYD6k9GlNEjQnUU4c_F4ezEuKsn40OvJp7L8J", ".deploy-intake"),
 ]
 
 _HARD_LIMIT = 200
