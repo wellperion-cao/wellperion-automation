@@ -230,6 +230,9 @@ _AUTO_INCLUDE_LOG_SUFFIX = ".jsonl"
 # 배10291 — 동시편집 경고 판정 창(분). 짧으면 놓치고 길면 오탐만 늘어 하루 운영 주기
 # 감안 15분으로 시작(보수적 경고 임계값 — 오탐 실측 후 조정).
 _CONCURRENT_EDIT_WINDOW_MIN = 15
+# 낡은 사본 판정에서 훑을 이력 깊이. 며칠 묵은 사본까지 잡되 경로당 git 호출이
+# 선형으로 늘어나므로 얕게 둔다. ponytail: 30 이 모자라면 그때 올린다.
+_STALE_COPY_SCAN_DEPTH = 30
 
 
 def _git(args: list[str], root: Path, env: dict | None = None,
@@ -582,35 +585,66 @@ def _detect_concurrent_edit_warnings(
         parts = r.stdout.strip().split()
         return parts[2] if len(parts) >= 3 else ""
 
+    def _prev_and_after(sha: str, path: str) -> tuple[str, str]:
+        """그 커밋이 이 경로를 바꾸기 '전' blob 과 '후' blob. 못 읽으면 ("","")."""
+        after = _blob_at(sha, path)
+        if not after:
+            return "", ""
+        before = _blob_at(f"{sha}^", path)   # 루트 커밋이면 실패→"" (정상)
+        if after == before:
+            return "", ""                    # 이 커밋이 실제로 내용을 바꾼 게 아님
+        return before, after
+
     warnings: list[str] = []
+    reverts: list[str] = []
     since = f"{window_min}.minutes.ago"
     for path in rel_paths:
+        mine_blob = _blob_at(tree, path)
+        if not mine_blob:
+            continue
+
+        # ① 낡은 사본 판정 — 시간창 없이, 올리려는 내용이 '이 경로의 과거 커밋 버전과
+        #    바이트까지 똑같은지' 본다. 같으면 나는 새로 고친 게 아니라 옛 사본을 그대로
+        #    다시 올리는 중이고, 그 사이 커밋된 변경이 통째로 사라진다.
+        #    blob 완전일치라 오탐이 사실상 없어 경고가 아니라 차단으로 둔다.
+        #    (2026-08-06 배421 실측: 워크트리에 08-04 19:21 옛 사본 9건이 남아 있었다.
+        #     15분 창짜리 경고로는 이틀 지난 이 부류를 영원히 못 잡고, 직전 커밋 하나만
+        #     비교해도 그 뒤로 커밋이 더 쌓이면 놓친다 — 그래서 이력 N개를 훑는다.)
+        history = _git(["log", "--format=%H", f"-{_STALE_COPY_SCAN_DEPTH}", head, "--", path], root)
+        if history.returncode == 0 and history.stdout.strip():
+            shas = history.stdout.strip().splitlines()
+            head_blob = _blob_at(head, path)
+            if mine_blob != head_blob:
+                for sha in shas[1:]:          # shas[0] = 현재 내용을 만든 커밋
+                    if _blob_at(sha, path) == mine_blob:
+                        subject = _git_out(["log", "-1", "--format=%s", shas[0]], root)[:70]
+                        when = _git_out(["log", "-1", "--format=%ad", "--date=format:%m-%d %H:%M",
+                                         shas[0]], root)
+                        reverts.append(
+                            f"[낡은 사본 차단] {path} — 올리려는 내용이 옛 커밋 {sha[:9]} 버전과 "
+                            f"똑같습니다. 그 뒤 {when} 커밋 {shas[0][:9]}({subject}) 이 이 파일을 "
+                            f"바꿨는데, 이대로 올리면 그 변경이 통째로 사라집니다. 작업트리 사본이 "
+                            f"낡았습니다 — 최신 내용을 받아 다시 고쳐 올리세요. 되돌리기가 "
+                            f"의도라면 WP_ALLOW_REVERT=1 로 다시 실행."
+                        )
+                        break
+                if reverts and reverts[-1].startswith(f"[낡은 사본 차단] {path} "):
+                    continue   # 차단 대상은 아래 약한 경고를 중복해서 내지 않는다
+
+        # ② 동시편집 경고 — 최근 N분 내 남이 같은 경로를 바꿨다(내용은 서로 다름).
         log = _git(["log", f"--since={since}", "--format=%H", "-1", head, "--", path], root)
         if log.returncode != 0 or not log.stdout.strip():
             continue
         recent_sha = log.stdout.strip().splitlines()[0]
-        after_blob = _blob_at(recent_sha, path)
-        if not after_blob:
-            continue  # 그 커밋 시점 이 경로 정보를 못 읽음 — 판단 근거 부족, 건너뜀
-        before_blob = _blob_at(f"{recent_sha}^", path)  # 루트 커밋이면 실패→"" (정상)
-        if after_blob == before_blob:
-            continue  # 이 커밋이 실제로 이 경로 내용을 바꾼 게 아님(로그만 걸림)
-        mine_blob = _blob_at(tree, path)
-        if not mine_blob or mine_blob == after_blob:
-            continue  # 내 스테이징이 이미 그 최신 내용과 같음 — 경고 불필요
-        if mine_blob == before_blob:
-            warnings.append(
-                f"[동시편집 경고·되돌림] {path} — 최근 {window_min}분 내 커밋 {recent_sha[:9]} "
-                f"이 바꾼 내용을 내 커밋이 그대로 지웁니다(스테이징 내용이 그 이전 버전과 "
-                f"동일). 차단하지 않고 통과시킵니다 — 내용 대조 요망."
-            )
-        else:
-            warnings.append(
-                f"[동시편집 경고] {path} — 최근 {window_min}분 내 커밋 {recent_sha[:9]} 이 이 "
-                f"경로를 바꿨습니다. 지금 내 커밋도 같은 경로를 바꿉니다 — 동시 편집 가능성, "
-                f"확인 요망."
-            )
-    return warnings
+        _, after_blob = _prev_and_after(recent_sha, path)
+        if not after_blob or mine_blob == after_blob:
+            continue
+        warnings.append(
+            f"[동시편집 경고] {path} — 최근 {window_min}분 내 커밋 {recent_sha[:9]} 이 이 "
+            f"경로를 바꿨습니다. 지금 내 커밋도 같은 경로를 바꿉니다 — 동시 편집 가능성, "
+            f"확인 요망."
+        )
+    return warnings, reverts
 
 
 _RECENT_TOUCH_SEC = 900   # 15분 — 이 안에 건드린 파일이 HEAD와 같으면 '편집 유실' 의심
@@ -742,7 +776,8 @@ def safe_commit(
     rel_paths = [_rel(p, root) for p in paths if str(p).strip()]
     result = {"ok": False, "committed": False, "sha": "", "attempts": 0,
               "changed": [], "foreign": [], "hook_violations": [], "index_synced": [],
-              "auto_included": [], "concurrent_edit_warnings": [], "reason": ""}
+              "auto_included": [], "concurrent_edit_warnings": [], "reverts": [],
+              "reason": ""}
     if not rel_paths:
         result["ok"] = True
         result["reason"] = "대상 경로 없음"
@@ -824,7 +859,17 @@ def safe_commit(
                 # ②-d 동시편집 경고(배10291) — 차단하지 않는다. 호출자가 지정한 경로만
                 # 대상(caller_rel_paths — auto-include 된 append 로그는 상시 동시편집이
                 # 정상이라 대상에서 뺀다). 발견돼도 result 와 stdout 에만 남기고 계속 진행.
-                edit_warnings = _detect_concurrent_edit_warnings(caller_rel_paths, root, tree, head)
+                # ★되돌림(reverts)만은 차단한다 — blob 완전일치라 오탐이 없고, 이 부류가
+                #   실제로 최신 코드를 지운 사고를 냈다(§_detect_concurrent_edit_warnings).
+                edit_warnings, reverts = _detect_concurrent_edit_warnings(
+                    caller_rel_paths, root, tree, head)
+                if reverts and os.environ.get("WP_ALLOW_REVERT") != "1":
+                    result["reverts"] = reverts
+                    result["reason"] = (
+                        f"되돌림 차단(커밋 생성 안 함) — {reverts[0]}"
+                        + (f" 외 {len(reverts) - 1}건" if len(reverts) > 1 else "")
+                    )
+                    return result
                 if edit_warnings:
                     result["concurrent_edit_warnings"] = edit_warnings
                     for w in edit_warnings:
