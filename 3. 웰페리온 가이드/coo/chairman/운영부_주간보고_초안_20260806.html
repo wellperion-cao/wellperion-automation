@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<title>운영부 주간 보고 초안 — 8월 1주차 (2026-08-06)</title>
+<style>
+  @page { size: A3 portrait; margin: 11mm 13mm; }
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:14.5px; line-height:1.42; word-break:keep-all; overflow-wrap:break-word;}
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:13mm; text-align:left;}
+
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:5px; margin-bottom:8px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;}
+  .hd .kick{font-size:13.5px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:26px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:14px; text-align:right; line-height:1.5;}
+  .hd-r .big{font-size:16.5px; font-weight:800;}
+
+  h2{font-size:16px; font-weight:800; margin:0 0 5px; padding:3px 10px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:5px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; align-items:start; margin-top:9px;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:7px 13px; font-size:15.5px; font-weight:600; line-height:1.4;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th,td{border:1px solid var(--line); padding:3px 7px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+  td.c,th.c{text-align:center;}
+  td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  tr.dim td{color:var(--dim); font-style:italic;}
+  tr.blank td{color:var(--line);}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:7px 11px; font-size:14px; line-height:1.4;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:7px 11px; font-size:14px; line-height:1.4;}
+
+  .foot{margin-top:7px; padding-top:4px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  .choice{display:flex; gap:8px; margin-top:8px;}
+  .choice div{flex:1; border:1px solid var(--line); padding:7px 10px; font-size:14px; color:var(--dim); line-height:1.4;}
+  .choice b{display:block; color:var(--ink); font-size:15px; margin-bottom:1px;}
+
+  .pending{color:var(--dim); font-size:13px;}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint"><button onclick="window.print()">A3 세로로 인쇄</button></div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">운영부 · 이경연 실장 앞</div>
+      <div class="ttl">운영부 주간 보고 초안</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">8월 1주차 · 2026-08-06 발행</div>
+      <div>고치거나 그대로 쓰시면 됩니다</div>
+      <div>수치 근거 — 업무 현황 SSOT 실측 (2026-08-06)</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    일이 없어서가 아니라 <em>손이 닿지 않아 멈춰</em> 있습니다 &mdash;
+    운영부 열린 업무 <em>28건 중 22건</em>이 일주일 넘게 그대로입니다.
+  </div>
+
+  <div class="grid">
+    <div>
+
+      <div class="blk">
+        <h2>① 5대 관점 요약</h2>
+        <table>
+          <tr><th>관점</th><th class="c" style="width:52px;">건수</th><th>한 줄</th></tr>
+          <tr><td>① 방향 맞나</td><td class="c">&mdash;</td><td>월간 보고에서 다루는 관점입니다. 이번 주간 보고에는 넣지 않았습니다.</td></tr>
+          <tr><td>② 하고 있나</td><td class="c num">6건</td><td>최근 일주일 안에 손을 댄 일 (8월 2·3·4주차 회의 포함)</td></tr>
+          <tr><td>③ 멈춰 있나</td><td class="c num">22건</td><td>기한 지난 10건 + 기한은 안 지났지만 오래 손 못 댄 12건</td></tr>
+          <tr><td>④ 잘 되나</td><td class="c pending">&mdash;</td><td class="pending">실장 판단 칸 &mdash; 주간 보고 때 채웁니다</td></tr>
+          <tr><td>⑤ 모자라나</td><td class="c pending">&mdash;</td><td class="pending">실장 판단 칸 &mdash; 주간 보고 때 채웁니다</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>② 멈춘 일 &mdash; 기한 지난 10건</h2>
+        <table>
+          <tr><th>업무명</th><th style="width:76px;">담당</th><th style="width:88px;">분류</th><th style="width:78px;">기한</th><th class="c" style="width:52px;">초과일</th></tr>
+          <tr><td>계약서 약관 검토 및 수정 (모두사인)</td><td>최준용M</td><td>운영 정책</td><td>2026-06-06</td><td class="c num">61</td></tr>
+          <tr><td>리셉션 무인화(반자동화) 전환 프로세스 개편안</td><td>최준용M</td><td>운영 정책</td><td>2026-06-07</td><td class="c num">60</td></tr>
+          <tr><td>이슈 응답↔텔레그램 양방향 연결</td><td>최준용M</td><td>IT·시스템·자동화</td><td>2026-06-08</td><td class="c num">59</td></tr>
+          <tr><td>PC구매 3대 <span style="color:var(--dim); font-size:12.5px;">(보류)</span></td><td>최준용M</td><td>시설 및 환경</td><td>2026-06-18</td><td class="c num">49</td></tr>
+          <tr><td>멤버십 매출정책 및 방향성</td><td>이경연 실장</td><td>매출 및 영업</td><td>2026-06-28</td><td class="c num">39</td></tr>
+          <tr><td>리셉션 매뉴얼 작성 및 자동화</td><td>윤병현AM</td><td>운영 정책</td><td>2026-06-28</td><td class="c num">39</td></tr>
+          <tr><td>요금 인상 라인업 공지 준비</td><td>이경연 실장</td><td>매출 및 영업</td><td>2026-06-28</td><td class="c num">39</td></tr>
+          <tr><td>주차 차단기 핫라인 변경 및 연결 방법</td><td>윤병현AM</td><td>시설 및 환경</td><td>2026-06-29</td><td class="c num">38</td></tr>
+          <tr><td>종합접수처</td><td>최준용M</td><td>IT·시스템·자동화</td><td>2026-07-05</td><td class="c num">32</td></tr>
+          <tr><td>8월 1주차 회의</td><td>이경연 실장</td><td>회의</td><td>2026-07-30</td><td class="c num">7</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>⑤ 정리 요청 &mdash; 한 건당 10초</h2>
+        <div class="choice">
+          <div><b>끝났다</b>완료로 바꿉니다.</div>
+          <div><b>안 한다</b>폐기로 바꿉니다 (사유 한 줄).</div>
+          <div><b>계속한다</b>새 기한을 넣습니다.</div>
+        </div>
+        <div class="note" style="margin-top:7px;">
+          <b>회의 항목 주의</b> &mdash; 「8월 1주차 회의」는 기한이 7일 지난 채 열려 있습니다, 지난 회의라 닫아 주시면 됩니다.
+          2·3·4주차 회의는 아직 오지 않은 날짜라 그대로 열어 두시면 됩니다.
+        </div>
+      </div>
+
+    </div>
+
+    <div>
+
+      <div class="blk">
+        <h2>③ 기한은 안 지났지만 오래 손 못 댄 것 (12건)</h2>
+        <table>
+          <tr><th>업무명</th><th style="width:76px;">담당</th><th class="c" style="width:76px;">손댄 뒤<br>지난 날</th></tr>
+          <tr><td>3분기 예상 매출 및 목표</td><td>이경연 실장</td><td class="c num">65</td></tr>
+          <tr><td>회원 모니터링 (심사대상회원)</td><td>이경연 실장</td><td class="c num">57</td></tr>
+          <tr><td>야외 테라스 활용 방안</td><td>최준용M</td><td class="c num">57</td></tr>
+          <tr><td>리셉션 매뉴얼 구축</td><td>이경연 실장, 최준용M</td><td class="c num">57</td></tr>
+          <tr><td>생크몽드 미사용분(25년도) 재발급 요청</td><td>최준용M</td><td class="c num">52</td></tr>
+          <tr><td>웰컴 에티켓 북(가안)</td><td>최준용M</td><td class="c num">51</td></tr>
+          <tr><td>운영부 체계 (세부내용 수정 및 추가)</td><td>윤병현AM</td><td class="c num">50</td></tr>
+          <tr><td>男/女 탈의실 입출입 방향 안내문 부착</td><td>윤병현AM</td><td class="c num">50</td></tr>
+          <tr><td>각 부서 희망 간식 리스트 받기</td><td>최준용M</td><td class="c num">45</td></tr>
+          <tr><td>더플라자 리뉴얼에 따른 회원 수용 검토 보고</td><td>이경연 실장</td><td class="c num">42</td></tr>
+          <tr><td>환불사유에 따른 분석 및 운영 반영 프로세스 구축</td><td>이경연 실장</td><td class="c num">39</td></tr>
+          <tr><td>기타사항</td><td>이경연 실장</td><td class="c num">39</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>④ 담당별 건수 (열린 업무 28건)</h2>
+        <table>
+          <tr><th>담당</th><th class="c" style="width:52px;">건수</th></tr>
+          <tr><td>이경연 실장</td><td class="c num">12</td></tr>
+          <tr><td>최준용M</td><td class="c num">10</td></tr>
+          <tr><td>윤병현AM</td><td class="c num">5</td></tr>
+          <tr><td>이경연 실장, 최준용M (공동)</td><td class="c num">1</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>⑥ 주간 보고 표준 양식 &mdash; 다음 주부터 이 칸에</h2>
+        <table>
+          <tr><th>업무명</th><th style="width:66px;">관점</th><th style="width:70px;">담당</th><th style="width:56px;">상태</th><th style="width:66px;">기한</th><th>이슈</th></tr>
+          <tr class="dim"><td>종합접수처 안정화</td><td>③멈춤</td><td>최준용M</td><td>진행중</td><td>08/12</td><td>응답 지연 확인 중</td></tr>
+          <tr class="dim"><td>8월 매출 목표 점검</td><td>②진행</td><td>이경연 실장</td><td>진행중</td><td>08/10</td><td>&mdash;</td></tr>
+          <tr class="blank"><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr class="blank"><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr class="blank"><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>바로 가기</b> &nbsp;
+    <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html">업무 현황 SSOT</a>
+    &mdash; 업무 목록·상태·기한을 보고 고치는 곳 &nbsp;·&nbsp;
+    <a href="https://wellperion-cao.github.io/wellperion-automation/coo/chairman/%EC%9A%B4%EC%98%81%EB%B6%80_%EC%A1%B0%EC%A7%81%EC%9A%B4%EC%98%81%EC%B2%B4%EA%B3%84_20260806.html">운영부 조직 운영 체계 A3</a>
+    <br>
+    근거 &mdash; 2026-08-06 GM 확정 「운영부 단일 보고 라인」 후속 · 같은 날 ★중간관리자 방 공지(주간 보고 초안은 22건 기준) 이행.
+    수치는 같은 날 업무 현황 SSOT 실측값입니다. 확인되지 않은 항목(④잘되나·⑤모자라나)은 채우지 않았습니다. · 문의 이경연 실장 또는 김남욱 GM
+  </div>
+
+</div>
+
+</body>
+</html>
