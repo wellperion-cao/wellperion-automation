@@ -24,6 +24,13 @@ REM  ASCII only on purpose - Korean text in a .bat breaks under CP949.
 REM ============================================================
 
 cd /d "%WORK%"
+REM -- boot trace (2026-08-06 CTO, bae414) --
+REM    No prior run of this batch left any evidence it fired. GM discovered the missing
+REM    CTO tab only by noticing the window was gone at 08:55, hours after boot. One log
+REM    line per phase (start / after-git / cto-launch) is enough to tell post-hoc whether
+REM    the batch never ran, stalled in git pull, or reached the CTO launch line.
+echo [%date% %time%] start >> logs\morning_boot.log
+
 REM -- 0-a. Clear inherited child-session marker (GM 2026-08-04) --
 REM    If this window is launched from inside another Claude session it inherits
 REM    CLAUDE_CODE_CHILD_SESSION=1 and the transcript is never saved. Two things break:
@@ -61,7 +68,9 @@ if %DIRTY% GTR 200 (
 
 set WP_BOOT_SKIP_GIT=1
 
+echo [%date% %time%] git step done (dirty=%DIRTY% warn=%WPWARN%) - launching CTO >> logs\morning_boot.log
 call "%WORK%\Start-AI CTO.bat"
+echo [%date% %time%] cto launch call returned >> logs\morning_boot.log
 
 REM -- Welly (CEO) window no longer opens at boot. GM 2026-08-04:
 REM    "Wellperion GM Control - just don't open it, the backend line can
