@@ -13,6 +13,8 @@
  */
 (function () {
   "use strict";
+  // 보고 완료 여부는 여기 두지 않는다 — 같은 폴더 chairman_reported.json 이 갖는다(id → 보고한 날짜).
+  // 화면의 「보고 완료로 표시」 버튼이 그 파일만 갱신하므로 이 목록은 손대지 않아도 된다(_owner_directive.js).
   window.WellperionChairmanItems = [
     { id: 'd1', title: '파우더룸 소독기 증설', when: '기종 확정 · 구매 전 (현장 확인 중)', cat: '시설 및 환경' },
     { id: 'd2', title: '사우나 입구 정비', when: '8월 2~3주', cat: '시설 및 환경' },

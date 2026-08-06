@@ -97,8 +97,26 @@
   // 👑 회장님 보고건 현황 — 2026-08-05 GM 지시("회장님 업무보고건을 대표님에게도 같이 회장님 보고건으로
   // 정리해서 한 번에 복사해 붙여넣게"). 목록 정본 = _chairman_items.js(배열 한 벌·복제 없음). 그 파일을 안 실은
   // 페이지에서는 빈 문자열이 되어 문안이 예전 그대로다(조용히 빠지지 않게 cfg.includeChairman 로만 켠다).
+  // 👑 회장님 보고 완료 상태 — 같은 폴더 chairman_reported.json(id → 보고한 날짜) 한 곳만 읽고 쓴다.
+  // GM 2026-08-06 "회장님건도 대표님건처럼 보고된 건이면 보고 완료로 문안 복사에서 제외".
+  // 대표님건은 시트 '내용' 칸 표식으로, 회장님건은 시트에 없어 이 파일로 — 판정 규칙(있으면 완료)은 같다.
+  var CH_STATE_PATH = '3. 웰페리온 가이드/coo/chairman/chairman_reported.json';
+  var chReported = {};   // 조회 실패 시 {} — 전부 '보고 대기'로 보여 문안에서 빠지는 일이 없게 한다.
+  function loadChairmanReported() {
+    return fetch('chairman_reported.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (j) { chReported = j || {}; })
+      .catch(function () { chReported = {}; });
+  }
+  function chDate(it) { return String(chReported[it.id] || '').trim(); }
+  function chairmanPending() {
+    return (window.WellperionChairmanItems || []).filter(function (it) { return !chDate(it); });
+  }
+  function chairmanDone() {
+    return (window.WellperionChairmanItems || []).filter(function (it) { return !!chDate(it); });
+  }
   function chairmanSection() {
-    var items = window.WellperionChairmanItems || [];
+    var items = chairmanPending();
     if (!items.length) return '';
     return '\n\n■ 회장님 보고건 ' + items.length + '건 (진행 현황)\n\n' +
       items.map(function (it, i) {
@@ -159,7 +177,7 @@
       elCount.textContent = '보고 필요 ' + need.length + '건 · 보고 완료 ' + done.length + '건';
       elGrpCnt.textContent = _items.length + '건';
       // 대표님 보고건이 0건이어도 회장님 보고건 현황만으로 보낼 수 있게 열어 둔다(둘 다 0일 때만 잠금).
-      elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && (window.WellperionChairmanItems || []).length);
+      elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && chairmanPending().length);
 
       if (!_items.length) {
         elGrid.innerHTML = '<div class="rep-empty">' + esc(cfg.emptyMsg) + '</div>';
@@ -228,37 +246,89 @@
     // 「보고건 통합 보고」 — 아직 보고 안 한 건만 모아 문안 1개로 만들어 클립보드에 복사(자동 발송은 준비 중).
     elBulkBtn.addEventListener('click', function () {
       var need = (_items || []).filter(function (it) { return !it.reported; });
-      var chN = cfg.includeChairman ? (window.WellperionChairmanItems || []).length : 0;
+      var chN = cfg.includeChairman ? chairmanPending().length : 0;
       if (!need.length && !chN) return;
       var text = buildDigest(need, cfg.reportIntro, cfg.includeChairman);
       elDigest.style.display = 'block';
       elDigest.textContent = text;
       elBulkStatus.textContent = '문안 생성 중…';
-      var chCnt = cfg.includeChairman ? (window.WellperionChairmanItems || []).length : 0;
+      var chCnt = chN;
       var cntLabel = need.length + '건' + (chCnt ? ' + 회장님 보고건 ' + chCnt + '건' : '');
       dispatchReport(text, function (ok) {
         elBulkStatus.textContent = ok ? ('복사됨 ✓ — 업무보고방에 붙여넣어 주세요(' + cntLabel + ')') : '클립보드 복사 실패 — 아래 문안을 직접 복사해 주세요.';
       });
     });
 
-    // 👑 회장님 보고건 표 — 정본 배열(_chairman_items.js)을 그대로 그린다. 문안(chairmanSection)과 같은
-    // 배열을 읽으므로 화면과 복사본이 어긋날 수 없다. 그 파일을 안 실은 페이지에는 요소 자체가 없어 그냥 건너뛴다.
+    // 👑 회장님 보고건 표 — 목록 정본(_chairman_items.js) + 보고 완료 상태(chairman_reported.json).
+    // 문안(chairmanSection)과 같은 두 소스를 읽으므로 화면과 복사본이 어긋날 수 없다.
+    // 그 파일을 안 실은 페이지에는 요소 자체가 없어 그냥 건너뛴다.
     var elChCnt = document.getElementById('chairman-grp-cnt');
     var elChSum = document.getElementById('chairman-sum-body');
-    if (elChSum) {
-      var chItems = window.WellperionChairmanItems || [];
-      if (elChCnt) elChCnt.textContent = chItems.length + '건';
-      elChSum.innerHTML = chItems.length
-        ? chItems.map(function (it, i) {
-            var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
-            return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-              ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span></td><td>' + esc(it.when || '일정 미정') + '</td></tr>';
-          }).join('')
-        : '<tr><td colspan="3">회장님 보고건이 없습니다.</td></tr>';
+    var elChDoneSum = document.getElementById('chairman-done-sum-body');
+
+    function chRows(list, isDone) {
+      return list.map(function (it, i) {
+        var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
+        var act = isDone
+          ? '<span class="done-badge">✓ ' + esc(chDate(it)) + ' 보고</span>'
+          : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
+        return '<tr><td>' + no + '</td><td>' + esc(it.title) +
+          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span></td><td>' + esc(it.when || '일정 미정') +
+          '<div class="rpt-actions" style="margin-top:4px;">' + act + '</div></td></tr>';
+      }).join('');
     }
 
+    function renderChairman() {
+      if (!elChSum) return;
+      var pend = chairmanPending(), done = chairmanDone();
+      if (elChCnt) elChCnt.textContent = '보고 대기 ' + pend.length + '건 · 보고 완료 ' + done.length + '건';
+      elChSum.innerHTML = pend.length ? chRows(pend, false) : '<tr><td colspan="3">보고 대기 중인 회장님 보고건이 없습니다.</td></tr>';
+      if (elChDoneSum) elChDoneSum.innerHTML = done.length ? chRows(done, true) : '';
+      // 대표님 칸과 같은 규칙 — 양쪽 다 보고 대기 0건이면 문안 복사 버튼을 잠근다.
+      if (elBulkBtn) {
+        var needOwner = (_items || []).filter(function (it) { return !it.reported; }).length;
+        elBulkBtn.disabled = needOwner === 0 && !(cfg.includeChairman && pend.length);
+      }
+      Array.prototype.forEach.call(elChSum.querySelectorAll('.ch-rep-btn'), function (btn) {
+        btn.addEventListener('click', function () { markChairmanReported(btn, btn.getAttribute('data-ch-id')); });
+      });
+    }
+
+    // 「보고 완료로 표시」(회장님) — 상태 파일 한 곳만 갱신한다(목록 정본은 손대지 않는다).
+    // 저장 경로 = 월간운영계획.html·GM 업무 페이지가 쓰는 commit_file 그대로(새 API 없음 · 약속 L21).
+    function markChairmanReported(btn, id) {
+      if (!id) return;
+      var pin = prompt('보고 완료로 표시 — GM 비밀번호를 입력하세요:');
+      if (pin === null || pin === '') return;
+      btn.disabled = true; btn.textContent = '저장 중…';
+      loadChairmanReported().then(function () {
+        var next = {};
+        Object.keys(chReported).forEach(function (k) { next[k] = chReported[k]; });
+        next[id] = todayStr();
+        return fetch(GAS_URL, {
+          method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'commit_file', path: CH_STATE_PATH, content: JSON.stringify(next, null, 2),
+            message: '[회장님 보고건] 보고 완료 표시 ' + id + ' ' + todayStr(), key: pin
+          })
+        }).then(function (r) { return r.json(); }).then(function (res) {
+          if (res && res.ok) { chReported = next; renderChairman(); }
+          else {
+            btn.disabled = false; btn.textContent = '보고 완료로 표시';
+            alert('저장하지 못했습니다' + (res && res.error ? (': ' + res.error) : '.'));
+          }
+        });
+      }).catch(function () {
+        btn.disabled = false; btn.textContent = '보고 완료로 표시';
+        alert('저장하지 못했습니다.');
+      });
+    }
+
+    loadChairmanReported().then(renderChairman);
     load();
   }
 
-  window.OwnerDirective = { mount: mount };
+  // 보고 대기/완료 판정은 이 파일 하나만 갖는다 — 읽는 쪽(김남욱GM_업무.html 인쇄·건수)은 이 두 함수를
+  // 쓴다(약속 L01 · 판정 복제 금지). 상태 파일 조회 전에는 전부 '대기'로 나온다.
+  window.OwnerDirective = { mount: mount, chairmanPending: chairmanPending, chairmanDone: chairmanDone, chairmanDate: chDate };
 })();
