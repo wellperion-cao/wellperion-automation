@@ -1880,11 +1880,12 @@ select, select option{ color:var(--text); background-color:var(--paper); }
               <th style="min-width:120px">전화</th>
               <th style="min-width:160px">프로그램</th>
               <th style="min-width:100px">등록일</th>
+              <th style="min-width:80px">관리</th>
             </tr>
           </thead>
           <tbody id="regBody">
             <tr>
-              <td colspan="4">
+              <td colspan="5">
                 <div class="empty-state">
                   <div class="loading-spinner" id="regSpinner"></div>
                   <div class="empty-state-title" style="margin-top:12px" id="regEmptyTitle">불러오는 중…</div>
@@ -6734,7 +6735,7 @@ function _regSetLoading(on) {
   if (_regLoadTimer) { clearTimeout(_regLoadTimer); _regLoadTimer = null; }
   if (on) {
     document.getElementById('regBody').innerHTML =
-      '<tr><td colspan="4"><div class="empty-state">' +
+      '<tr><td colspan="5"><div class="empty-state">' +
       '<div class="loading-spinner" id="regSpinner"></div>' +
       '<div class="empty-state-title" style="margin-top:12px">불러오는 중…</div>' +
       '<div class="empty-state-desc" id="regLoadingHint"></div>' +
@@ -6749,7 +6750,7 @@ function _regSetLoading(on) {
 
 function _regRenderEmpty(title, desc) {
   document.getElementById('regBody').innerHTML =
-    '<tr><td colspan="4"><div class="empty-state">' +
+    '<tr><td colspan="5"><div class="empty-state">' +
     '<div class="empty-state-icon">📭</div>' +
     '<div class="empty-state-title">' + esc(title) + '</div>' +
     '<div class="empty-state-desc">' + esc(desc) + '</div>' +
@@ -6806,8 +6807,42 @@ function _regRender() {
     tdDate.textContent = _actDateLabel(member.regDate) || '—';
     tr.appendChild(tdDate);
 
+    // 되돌리기(등록 해제) — 배295. member.name/phone을 클로저로 직접 넘겨 HTML 문자열 이스케이프 문제를 피한다.
+    var tdAction = document.createElement('td');
+    var rmBtn = document.createElement('button');
+    rmBtn.type = 'button';
+    rmBtn.className = 'row-btn btn-del';
+    rmBtn.title = '등록 해제(되돌리기) — 유효회원까지 함께 정리';
+    rmBtn.textContent = '↩ 되돌리기';
+    rmBtn.onclick = function (e) { e.stopPropagation(); confirmRemoveReg(member.phone || '', member.name || ''); };
+    tdAction.appendChild(rmBtn);
+    tr.appendChild(tdAction);
+
     tbody.appendChild(tr);
   });
+}
+// "+직접등록" 되돌리기 확인 — 중복문의 삭제(confirmDeleteDupInquiry)와 같은 패턴: 확인창 + 비밀번호.
+//   서버(member_registered_remove)가 등록현황 + 유효회원(등록회차 1일 때만)을 함께 정리한다. 2026-08-06 시토(배295).
+function confirmRemoveReg(phone, name) {
+  if (!phone) { showToast('전화번호가 없어 되돌릴 수 없습니다', 'err'); return; }
+  var msg = '다음 등록을 해제합니다(등록현황 + 유효회원 정리):\n\n' +
+    '이름: ' + (name || '—') + '\n' +
+    '연락처: ' + phone + '\n\n' +
+    '정말 되돌리시겠습니까?';
+  if (!confirm(msg)) return;
+  var pw = prompt('삭제 비밀번호를 입력하세요:');
+  if (pw === null || pw === '') { showToast('취소됨(비밀번호 미입력)', 'err'); return; }
+  apiPost({ action: 'member_registered_remove', phone: phone, name: name, password: pw })
+    .then(function (res) {
+      if (res && res.ok) {
+        showToast('등록이 해제되었습니다', 'ok');
+        loadRegistered();
+        loadCpoTodayStats();
+      } else {
+        showToast('해제 실패: ' + ((res && res.error) || '알 수 없는 오류'), 'err');
+      }
+    })
+    .catch(function () { showToast('해제 요청 실패(네트워크)', 'err'); });
 }
 
 /* ─────────────────────────────────────────────

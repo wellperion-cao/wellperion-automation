@@ -1869,12 +1869,16 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_inquiry_add:     true,  // 2026-06-23 전화·직접 문의 수기 추가
   member_inquiry_delete:  true,  // 행 삭제
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
-  member_registered_setmonth: true,  // 등록회원 1~12월 체크 토글
+  // member_registered_setmonth 제거(2026-08-06 시토, 배295 점검) — 호출부 0건(membership.html 어디서도
+  //   부르지 않고, member_registered_list 응답에 월 필드 자체가 없어 체크해도 화면에 뜰 수가 없었다).
+  //   member_registered_delete 와 같은 사유(약속 L21, 죽은 쓰기 통로는 남기지 않는다) — 삭제.
   // member_registered_delete 제거(2026-08-05 시토, INC-042 재발방지 ②) — 호출부 0건(membership.html 등록
   //   해제는 member_inquiry_update→_regRemove_ 경유, 2026-06-29 시포). 이 액션은 비밀번호·중복전화 가드
   //   없이 전화 1건 매칭 즉시 deleteRow 하는 물리 삭제 통로였다 — 죽은 코드로 남기면 다시 켜질 위험
   //   (약속 L21), 삭제.
   member_registered_add:      true,  // 2026-06-29 등록현황 직접 추가(페이지 수기 등록)
+  member_registered_remove:   true,  // 2026-08-06 시토(배295) — "+직접등록" 되돌리기. 비밀번호 게이트 +
+                                      //   중복전화 가드(_regRemove_) + 유효회원 동반 정리(_regActiveRemoveIfSole_)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
   member_hold_preview:        true,  // 2026-07-22 휴회 경량안 — 미리보기/검증(read-only, 시트 무변경). 시포·GM
@@ -2473,6 +2477,9 @@ function _regUpsert_(name, phone, program, regDate) {
 //   ★2026-08-05 시토(GM 지시) — "중복 있으면 전부" 지우던 것을 거부로 바꿨다. 전화 공유(가족·유소년)면
 //   무관한 등록건까지 같이 지워질 위험이 있다 — 인라인 편집 가드와 동일한 _countRowsByPhone_(148) 재사용.
 //   반환값 추가: {ok:true} 삭제됨 / {ok:true,removed:0} 대상 없음(무손상) / {ok:false,...} 거부(호출부가 알려야 함).
+//   ★2026-08-06 시토(배295) — 등록현황만 지우고 유효회원(화면이 실제로 읽는 시트)은 그대로 남아 "해제해도
+//   화면에서 안 사라진다"는 짝 어긋남이 있었다. 지운 뒤 유효회원도 같은 전화키로 정리 시도(아래 함수, 그
+//   행의 등록회차가 1일 때만 — 2회차 이상이면 이전 정상 등록 이력이 섞여 있어 지우지 않는다, INC-020 재발방지).
 function _regRemove_(phone) {
   var key = _regNormPhone_(phone);
   if (!key) return { ok: true, removed: 0 };
@@ -2484,7 +2491,37 @@ function _regRemove_(phone) {
   for (var i = last; i >= 2; i--) {
     if (_regNormPhone_(sh.getRange(i, 2).getValue()) === key) { sh.deleteRow(i); removed++; }
   }
+  if (removed > 0) { try { _regActiveRemoveIfSole_(key); } catch (e) { Logger.log('_regActiveRemoveIfSole_ 예외: ' + e); } }
   return { ok: true, removed: removed };
+}
+// 유효회원(회원 DB)에서 같은 전화키 행을 지운다 — **그 행의 등록회차가 1(유일 등록)일 때만**. 2026-08-06 시토(배295).
+//   0건=대상 없음(무손상) / 2건+=번호 공유 추정이라 손대지 않고 수동 확인 요청(_countRowsByPhone_·_findRowByPhone_
+//   재사용, 인라인 편집 가드와 같은 판정) / 등록회차 칸을 못 찾거나 2 이상이면 이전 등록 이력 보존을 위해 지우지
+//   않고 알림만 보낸다 — 실제 회원 데이터는 확신 없이는 절대 지우지 않는다(INC-020 교훈).
+function _regActiveRemoveIfSole_(normKey) {
+  var sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+  if (!sh) return;
+  var cols = sh.getLastColumn();
+  var hdr = sh.getRange(1, 1, 1, cols).getValues()[0].map(function (v) { return String(v).trim(); });
+  function _idx(want) {
+    var w = String(want).replace(/\s/g, '');
+    for (var i = 0; i < hdr.length; i++) { if (hdr[i] && hdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+    return -1;
+  }
+  var phI = _idx('휴대폰'); if (phI < 0) phI = _idx('연락처'); if (phI < 0) phI = _idx('전화');
+  var seqI = _idx('등록회차');
+  if (phI < 0) return;
+  var dupN = _countRowsByPhone_(sh, phI, normKey);
+  if (dupN !== 1) return;   // 0건=없음(무손상) / 2건+=번호공유 추정, 손대지 않음(수동 확인)
+  var row = _findRowByPhone_(sh, phI, normKey);
+  if (row < 2) return;
+  var seq = (seqI >= 0) ? parseInt(sh.getRange(row, seqI + 1).getValue(), 10) : NaN;
+  if (seqI < 0 || !(seq === 1)) {
+    try { _notifyTelegram('⚠️ 등록 해제 — 유효회원 시트는 그대로 두었습니다(등록회차 ' + (seqI < 0 ? '확인불가' : seq) + ', 이전 등록 이력 있음/불명). 필요하면 "유효회원" 시트에서 직접 확인해주세요.'); } catch (e) {}
+    return;
+  }
+  sh.deleteRow(row);
+  _memberCacheBump_();
 }
 // ★2026-08-01 시토(배276) — "+직접등록"(member_registered_add)이 실제 회원 DB(유효회원)에도 반영되게.
 //   근본원인: 회원관리·신규등록현황 화면은 유효회원 탭만 읽는데(member_registered_list, 2026-06-25 GM),
@@ -2652,6 +2689,25 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
         }
         _memberCacheBump_();   // 방금 바뀐 회원이 화면에 바로 보이게(캐시 세대 올림)
         return;
+      }
+    }
+  }
+  // ★2026-08-06 시토(배306) — 전화로 못 찾아 새 행을 만들기 직전, **같은 이름이 이미 다른 전화로 있는지**
+  //   확인해 경고한다. 근본원인(정지원 실사고): 전화가 오타·다르게 적히면 같은 사람인데 새 행이 생긴다 —
+  //   이 upsert의 대조키가 전화 하나뿐이라서다. 자동 병합은 하지 않는다(어느 전화가 맞는지는 사람만 안다,
+  //   note 지시 "자동 병합 금지") — 새 행은 그대로 만들되 텔레그램으로 알려 사람이 판단하게 한다.
+  if (name && nmI >= 0 && last >= 2) {
+    var _mauNmVals = sh.getRange(2, nmI + 1, last - 1, 1).getValues();
+    var _mauNmTrim = String(name).trim();
+    if (_mauNmTrim) {
+      for (var _mauNi = 0; _mauNi < _mauNmVals.length; _mauNi++) {
+        if (String(_mauNmVals[_mauNi][0] || '').trim() === _mauNmTrim) {
+          try {
+            _notifyTelegram('⚠️ 회원 이름 중복 의심 — "' + _mauNmTrim + '"님이 다른 전화번호로 이미 있는데(유효회원 행 ' + (_mauNi + 2) +
+              '), 전화 ' + _logMaskPhone_(phone) + '(으)로 새 행이 추가됩니다. 같은 사람이면(오타 등) 수동으로 확인·병합해주세요.');
+          } catch (e) {}
+          break;
+        }
       }
     }
   }
@@ -8064,27 +8120,13 @@ function _processAction(body) {
     return _json(rlResult);
   }
 
-  // ─── 회원관리 페이지(CPO): 등록회원 월별 체크 토글 ───
-  if (action === 'member_registered_setmonth') {
-    var smPhone = _regNormPhone_(body.phone);
-    var smMonth = parseInt(body.month, 10);  // 1~12
-    var smChecked = (body.checked === true || body.checked === 'true' || body.checked === 1 || body.checked === '1');
-    if (!smPhone || !(smMonth >= 1 && smMonth <= 12)) return _json({ ok: false, error: 'phone·month(1~12) 필수' });
-    var smSh = _regSheet_();
-    var smLast = smSh.getLastRow();
-    if (smLast < 2) return _json({ ok: false, error: '등록회원 없음' });
-    var smData = smSh.getRange(2, 2, smLast - 1, 1).getValues();  // 전화 열
-    for (var si = 0; si < smData.length; si++) {
-      if (_regNormPhone_(smData[si][0]) === smPhone) {
-        smSh.getRange(si + 2, 4 + smMonth).setValue(smChecked ? 'O' : '');  // col5=1월 … col16=12월
-        return _json({ ok: true, message: '저장됨', phone: smPhone, month: smMonth, checked: smChecked });
-      }
-    }
-    return _json({ ok: false, error: '해당 등록회원 없음' });
-  }
+  // member_registered_setmonth 제거(2026-08-06 시토, 배295 점검) — 위 dispatch 테이블 주석 참조(호출부 0건).
 
   // member_registered_delete 제거(2026-08-05 시토, INC-042 재발방지 ②) — 위 dispatch 테이블 주석 참조.
-  //   등록 해제는 membership.html → member_inquiry_update → _regRemove_(2412행, 중복전화 가드 포함)로 이미 처리된다.
+  //   ★2026-08-06 시토(배295) 정정 — 위 주석은 "등록 해제가 이미 처리된다"고 했지만, 그 경로(문의 목록
+  //   체크박스 해제 → member_inquiry_update → _regRemove_)는 **문의에서 SUC 전환된 건**에만 걸린다.
+  //   "+직접등록"(문의를 거치지 않는 계약)은 되돌릴 통로가 그때도 없었다 — 아래 member_registered_remove
+  //   가 그 통로다(비밀번호 게이트 + 중복전화 가드 + 유효회원 동반 정리).
 
   // ─── 등록현황(CPO): 페이지에서 직접 등록 추가(문의 퍼널 안 거친 직접·법인 계약 등) — _regUpsert_ 멱등(전화키). 2026-06-29 시포 ───
   if (action === 'member_registered_add') {
@@ -8104,6 +8146,21 @@ function _processAction(body) {
       _notifyTelegram('➕ <b>등록 추가</b> — 직접/법인 등록\n· 이름: ' + (raName || '-') + '\n· 프로그램: ' + _teamChip(raProg) + (raProg || '-') + '\n· 등록일: ' + raDate, _raRegChatId);
     } catch (e) {}
     return _json({ ok: true, message: '등록 추가되었습니다.' });
+  }
+
+  // ─── 등록현황(CPO): "+직접등록" 되돌리기 — _regRemove_(2478행) 재사용, 유효회원까지 정리. 2026-08-06 시토(배295) ───
+  //   member_registered_delete(2026-08-05 INC-042로 제거)와 달리 비밀번호 게이트 + 중복전화 가드 +
+  //   유효회원 동반 정리를 거친다. 새 인증체계 없음 — member_inquiry_delete(5601행)와 같은 STAFF_GATE_PW 재사용(약속 L21).
+  if (action === 'member_registered_remove') {
+    var rmPhone = String(body.phone || '').trim();
+    if (!rmPhone) return _json({ ok: false, error: 'phone 필수' });
+    var _rmGatePw = _accessProp_('STAFF_GATE_PW') || 'wellperion!@345';
+    if (String(body.password || '') !== _rmGatePw) return _json({ ok: false, error: '비밀번호가 올바르지 않습니다.' });
+    var rmResult = _regRemove_(rmPhone);
+    if (rmResult && rmResult.ok === false) return _json(rmResult);
+    if (!rmResult || rmResult.removed === 0) return _json({ ok: false, error: '해당 등록회원 없음' });
+    try { _notifyTelegram('➖ 등록 해제(되돌리기) — ' + (body.name || rmPhone)); } catch (e) {}
+    return _json({ ok: true, message: '등록이 해제되었습니다.' });
   }
 
   // ─── 휴회 시트 구조 조사 (읽기 전용·일회성·내부토큰) ───
