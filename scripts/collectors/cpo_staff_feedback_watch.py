@@ -250,6 +250,16 @@ def _last_closing_entry(note: str) -> str:
     return (tail[:nxt] if nxt >= 0 else tail).strip()
 
 
+def _no_memo_reply(ship: dict, today: str) -> str:
+    """담당자가 처리 메모를 안 남긴 경우의 정직한 회신 — 배342 재발방지(2026-08-06).
+    ship['title']엔 신고 원문(content[:44], build_ship 참고)이 그대로 박혀 있어, 이 문구에
+    title 을 섞으면 '신고 원문을 그대로 되돌려주는' 메아리가 된다(웰리 실측 2026-08-04,
+    FB260804-183522 등 3건). 원문 재인용 없이 ①접수 확인 ②담당 ③다음 안내 세 가지만 담는다."""
+    nick = clevel_nickname(str(ship.get("clevel") or "")) or "담당자"
+    return (f"[{today} 처리완료] 접수하신 내용을 확인했습니다. 담당은 {nick}입니다."
+            " 처리 메모를 아직 남기지 않아 상세 내용은 메모가 남는 대로 다시 안내드리겠습니다.")
+
+
 def build_staff_reply(ship: dict, today: str) -> str:
     """DONE 배 하나 → 실무진이 읽을 한 줄 회신. 원 신고 문구(GM 지시 "…")는 재인용하지
     않고, 실제로 뭘 어떻게 고쳤는지(▸ 항목 최대 2개)만 담는다."""
@@ -258,9 +268,7 @@ def build_staff_reply(ship: dict, today: str) -> str:
     if _INTAKE_INSTRUCTION_MARK in block:
         # 완료 기록이 없어 접수 안내문(정형 문구)만 뽑힌 경우 — 뜻 모를 내부 지시문을 실무진에게
         # 보내느니 "메모를 안 남겼다"를 드러내는 게 낫다(웰리 반려 2026-08-01).
-        title = str(ship.get("title") or "").split("—", 1)[-1].strip()
-        base = f"확인해 처리했습니다{('(' + title + ')') if title else ''}."
-        return f"[{today} 처리완료] {base} (담당자가 상세 처리 메모를 남기지 않았습니다.)"
+        return _no_memo_reply(ship, today)
     lines = [ln.strip() for ln in block.split("\n")]
 
     picked = []
@@ -301,8 +309,9 @@ def build_staff_reply(ship: dict, today: str) -> str:
 
     summary = _clean_staff_text(" ".join(picked))
     if not summary:
-        title = str(ship.get("title") or "").split("—", 1)[-1].strip()
-        summary = f"확인해 처리했습니다{('(' + title + ')') if title else ''}."
+        # 완료 기록은 있었지만 기술 잡음만이라 다 걸러진 경우 — 여기도 title 을 쓰면 같은
+        # 메아리가 난다(배342). 메모 없음과 같은 정직한 문구로 통일.
+        return _no_memo_reply(ship, today)
     if len(summary) > 150:
         summary = summary[:150].rstrip() + "…"
     return f"[{today} 처리완료] {summary}"
@@ -627,9 +636,10 @@ def _selftest() -> int:
         "[실무진 피드백 자동 접수 2026-08-01] 접수ID FB000000-000000 · 접수 x · 작성자 테스트\n\n"
         "테스트 내용\n\n" + _INTAKE_INSTRUCTION_LINE
     )
-    out1 = build_staff_reply({"note": boiler_note, "title": "[시포] 테스트"}, "2026-08-01")
+    out1 = build_staff_reply({"note": boiler_note, "title": "[시포] 테스트", "clevel": "cpo"}, "2026-08-01")
     assert "staff_feedback_update" not in out1, out1
-    assert "메모를 남기지 않았습니다" in out1, out1
+    assert "메모를 아직 남기지 않아" in out1, out1
+    assert "테스트 내용" not in out1, out1  # 배342 재발방지 — 신고 원문(제목) 메아리 금지
 
     good_note = boiler_note + "\n\n[처리완료 2026-08-01] 버튼 색을 파란색으로 바꿨습니다."
     out2 = build_staff_reply({"note": good_note, "title": "[시포] 테스트"}, "2026-08-01")
