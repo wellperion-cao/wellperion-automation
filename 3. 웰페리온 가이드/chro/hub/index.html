@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<!-- [추가 2026-08-06 A-5 재수정] GitHub Pages는 Cache-Control: max-age=600(10분)로 이 파일을 서빙한다(실측
+     확인: 응답 헤더 Cache-Control:max-age=600, X-Cache:HIT) — 배포 직후 몇 분 내 재확인하면 이전 빌드가
+     보일 수 있는 창(A-6 재검증 20260806, #1·#2 재현 유력 원인). CDN 엣지 캐시 자체는 메타태그로 못 끄지만
+     브라우저가 문서를 자체 캐시/재사용하지 않도록 최소한의 신호는 남겨 창을 줄인다. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>🟡 HR CONCIERGE · 웰페리온</title>
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iI2E5OGE1MiIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1zaXplPSIxOSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZmZmZiIgZm9udC1mYW1pbHk9IidBcHBsZSBTRCBHb3RoaWMgTmVvJywnTWFsZ3VuIEdvdGhpYycsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCI+7J24PC90ZXh0Pjwvc3ZnPg==">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
@@ -1114,9 +1121,13 @@ function renderDash(){
   var overdue=hire.filter(function(h){
     var dl=dval(h,"공고 마감일");return h["채용 상태"]==="공고중"&&dl&&new Date(dl)<today;});
   if(overdue.length){
+    // [수정 2026-08-06 A-5 재수정] 배지는 hireEffectiveStatus로 '기간종료' 전환됐지만(2fe16945e) 이 알림
+    // 카드는 여전히 원본 데이터값 그대로 "상태가 '공고중'입니다"를 문자 그대로 노출해, 배지 수정이 반영
+    // 안 된 것처럼 보이는 잔존 렌더 경로였다(A-6 재검증 20260806). 배지 표시와 모순돼 보이지 않도록
+    // "화면은 기간종료로 표시되나 데이터가 미갱신" 프레이밍으로 교체 — 데이터 자체는 그대로 두는 정책 불변.
     html+='<div class="alert"><b>⚠ 단계 전환 필요</b><div>'+
       overdue.map(function(h){return esc(h["포지션명"])+" — 공고 마감일("+fmtD(dval(h,"공고 마감일"))+
-      ")이 지났으나 상태가 ‘공고중’입니다.";}).join("<br>")+'</div></div>';
+      ")이 지났습니다. 화면엔 ‘기간종료’로 표시되지만 등록된 채용 상태 값은 아직 ‘공고중’이라 데이터 갱신이 필요합니다.";}).join("<br>")+'</div></div>';
   }
   var contractSoon=active.filter(function(e){
     var c=dval(e,"계약 만료일");if(!c)return false;
