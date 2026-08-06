@@ -435,6 +435,16 @@
     elGmGrid.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
       var sp = splitNote(it.note);
+      // 자료 링크 — 작은 아이콘(📄)은 GM 이 못 찾으셨다(2026-08-06 "링크를 추가해줘").
+      // 카드 맨 아래에 이름표가 붙은 링크로 그린다. 이름표는 파일이 무엇인지 보고 정한다.
+      function docLink(doc) {
+        var v = String(doc || '').trim();
+        if (!v) return '';
+        var label = /결재/.test(v) ? '🖊 결재 문서 열기'
+                  : /\.pdf$/i.test(v) ? '📄 분석 보고서 (PDF)'
+                  : '📄 A3 정리본 — 한 장으로 보기';
+        return '<a class="doc-link" href="' + esc(v) + '" target="_blank" rel="noopener">' + label + '</a>';
+      }
       var todos = extractTodos(it.note);
       var hasChecks = todos.length > 0;
       if (hasChecks) gmNoteLines[it.id] = it.note.split(/\r?\n/);
@@ -446,7 +456,6 @@
         (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
         // ③ 큰 「…보기 →」 버튼 대신 제목 옆 작은 아이콘으로(GM 2026-08-06 "너무 정신없다")
         ' <a class="ic-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '" title="월간운영계획에서 보기">📌</a>' +
-        (it.doc ? '<a class="ic-link" href="' + esc(it.doc) + '" target="_blank" title="정리본 열기 (A3 인쇄용)">📄</a>' : '') +
         '</h2>' +
         '<span class="badges"><span class="st ' + stCls + '">' + esc(it.status || '—') + '</span>' +
         (pct === null ? '' : '<span class="pct">' + pct + '%</span>') +
@@ -464,6 +473,7 @@
         (sp.body.length ? '<details class="fold"><summary>내용 전체</summary><div class="nb">' + renderLines(sp.body) + '</div></details>' : '') +
         (sp.logs.length ? '<details class="fold"><summary>경과 기록 ' + sp.logs.length + '건</summary><div class="nb">' +
             sp.logs.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></details>' : '') +
+        docLink(it.doc) +
         '</div>';
     }).join('');
     elGmSum.innerHTML = items.map(function (it, i) {
