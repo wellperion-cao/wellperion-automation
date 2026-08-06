@@ -68,6 +68,8 @@
   .brand h1{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:.075em;color:#f8f5ea}
   .hd-sub{color:#b1aa9c;font-size:12.5px;margin-top:5px}
   .hd-meta{margin-top:12px;font-size:11.5px;color:#948d7d;font-variant-numeric:tabular-nums}
+  .hd-meta.warn{color:var(--amber);font-weight:700}
+  .hd-meta.err{color:var(--red);font-weight:700}
   .role-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;
     letter-spacing:.05em;align-self:center}
   .role-pill.admin{background:rgba(169,138,82,.22);color:#e5cc90;border:1px solid rgba(169,138,82,.6)}
@@ -510,8 +512,11 @@
 
 <main class="wrap">
   <div id="loading">
-    <div class="spin"></div>
+    <div class="spin" id="loadSpin"></div>
     <span id="loadMsg">인사 데이터를 불러오는 중입니다…</span>
+    <div id="loadRetryWrap" style="display:none;margin-top:16px">
+      <button type="button" id="loadRetryBtn" class="btn-sm" style="padding:7px 16px;font-size:12px">↻ 다시 시도</button>
+    </div>
   </div>
   <div id="app" style="display:none">
     <section class="panel" data-panel="dash"></section>
@@ -770,6 +775,15 @@ function parseArr(v){
 function normId(u){var s=String(u||"").split(/[?#]/)[0].replace(/-/g,"");var m=s.match(/[0-9a-f]{32}$/i);return m?m[0].toLowerCase():"";}
 // 평문 날짜 지원: Notion식(date:필드:start) 없으면 일반 키 사용
 function dval(r,f){return (r&&(r["date:"+f+":start"]||r[f]))||"";}
+// [추가 2026-08-06 A-5] 마감일 지난 '공고중' 화면단 표시 파생(A-6 허브버튼검증 20260806 #6) — 데이터는
+// 그대로 두고(매니저가 마감일 갱신 검토 중, 잔여 모집 유효) 배지만 '기간종료'로 바꿔 헷갈리지 않게 한다.
+function hireEffectiveStatus(h){
+  if(h&&h["채용 상태"]==="공고중"){
+    var dl=dval(h,"공고 마감일");
+    if(dl){var d=new Date(dl);var t=new Date();t.setHours(0,0,0,0);if(!isNaN(d.getTime())&&d<t)return "기간종료";}
+  }
+  return h?h["채용 상태"]:"";
+}
 // 공고-지원자 이름 기반 매칭 (공백 무시 부분일치)
 function jobMatchesAppl(h,a){
   var hk=String((h&&h["포지션명"])||"").replace(/\s/g,"");
@@ -889,7 +903,7 @@ function p2(n){return (n<10?"0":"")+n;}
 var COLOR={
   "재직중":"green","수습중":"amber","휴직중":"orange","퇴사":"red",
   "정규직":"green","계약직":"blue","파트타임":"amber","파트너":"purple",
-  "공고 준비":"gray","공고중":"blue","서류심사":"amber","면접 진행":"orange","처우 협의":"purple","채용 완료":"green","보류":"red",
+  "공고 준비":"gray","공고중":"blue","기간종료":"orange","서류심사":"amber","면접 진행":"orange","처우 협의":"purple","채용 완료":"green","보류":"red",
   "서류 검토":"gray","1차 면접":"blue","2차 면접":"purple","최종 합격":"green","불합격":"red",
   "긴급":"red","높음":"orange","보통":"amber","낮음":"gray",
   "A":"green","B":"blue","C":"amber","D":"orange","E":"red","F":"gray","미평가":"gray",
@@ -947,11 +961,15 @@ function fmtTime(ts){
   if(!ts)return"";var d=new Date(ts);
   return p2(d.getMonth()+1)+"/"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes());
 }
+// [추가 2026-08-06 A-5] 로그인 게이트가 이미 db:"emp"를 조회해 받은 응답을 그대로 DB.emp에 반영해두면
+// (attemptGate 참고) startApp()의 loadAll()이 5초 내 같은 emp를 다시 조회하는 중복 호출이 된다 — 1회만 skip.
+var __skipEmpOnce=false;
 async function loadOne(k){
   // [추가 2026-08-04 A-5 즉시반영] 쓰기 직후 서버 구본 역행 가드 — applyLocalWrite가 방금 로컬 변이한 db는
   // 백엔드 읽기 캐시 스테일 창(B-3, 최대 300초) 동안 재조회 결과가 쓰기 전 구본일 수 있어 덮어쓰지 않는다
   // (30초 폴링·수동 새로고침 공통 — 창이 지나면 자동으로 정상 재조회 재개).
   if(localWriteGuardActive_(k)) return;
+  if(k==="emp"&&__skipEmpOnce){ __skipEmpOnce=false; return; }
   var cached=loadCache(k);
   try{
     var raw=await queryDB(k);
@@ -973,8 +991,18 @@ async function loadOne(k){
     }
   }
 }
+// [수정 2026-08-06 A-5] 6개 DB를 한 번에 동시 요청하면 단건 최대 20.9초·전체 30초+로 백엔드가 과부하
+// 걸려 간헐 실패한다(A-6 허브버튼검증 20260806) — 2개씩 나눠 순차 진행(핵심규칙 9의 "쓰기 간격" 개념을
+// 읽기에도 적용). loadKeys(subset)는 폴링 등에서 필요한 DB만 골라 부를 때 사용.
+function chunk2_(arr){var out=[];for(var i=0;i<arr.length;i+=2)out.push(arr.slice(i,i+2));return out;}
+async function loadKeys(keys){
+  var batches=chunk2_(keys);
+  for(var i=0;i<batches.length;i++){
+    await Promise.all(batches[i].map(function(k){return loadOne(k);}));
+  }
+}
 async function loadAll(){
-  await Promise.all(KEYS.map(function(k){return loadOne(k);}));
+  await loadKeys(KEYS);
 }
 // 진입 즉시 1차 렌더용: 유효 로컬캐시를 DB에 즉시 채움(stale-while-revalidate)
 // 정상 폴백/STALE 의미 보존 — STALE[k]=cached.ts(예전 데이터 배지), loadAll이 곧 최신으로 덮음
@@ -1655,7 +1683,7 @@ function jobItem(h){
 
   return '<div class="item"><div class="item-top">'+
     '<div><div class="item-title">'+esc(txt(h["포지션명"]))+'</div>'+
-    '<div class="item-meta">'+badge(h["채용 상태"])+(h["부서"]?badge(h["부서"]):"")+
+    '<div class="item-meta">'+badge(hireEffectiveStatus(h))+(h["부서"]?badge(h["부서"]):"")+
       badge(h["채용 유형"])+(h["우선순위"]?badge(h["우선순위"]):"")+'</div></div>'+
     '<div style="text-align:right"><div class="t-name" style="font-size:18px">'+
       applicants.length+'</div><div class="t-sub">지원자</div>'+
@@ -4182,7 +4210,27 @@ function buildNav(){
     document.querySelector('.tab[data-tab="'+t.id+'"]').addEventListener("click",function(){showTab(t.id);});
   });
 }
+/* [추가 2026-08-06 A-5] 로딩 무한 스피너 방지(A-6 허브버튼검증 20260806 #3·4) — 백엔드가 느리거나
+   간헐 실패하면 loadAll()의 재시도(3회×22초 타임아웃)가 누적돼 "불러오는 중"이 분 단위로 유지될 수
+   있다. 20초 무응답 시 안내문+"다시 시도" 버튼으로 전환. 재시도는 진행 중인 fetch와 경합하지 않도록
+   페이지를 새로 불러오는 방식(location.reload)으로 처리 — 중복 폴링 스톰을 만들지 않는 가장 안전한 경로. */
+var __loadTimeoutH=null;
+function clearLoadTimeout(){
+  if(__loadTimeoutH){clearTimeout(__loadTimeoutH);__loadTimeoutH=null;}
+  var w=document.getElementById("loadRetryWrap");if(w)w.style.display="none";
+}
+function armLoadTimeout(){
+  clearLoadTimeout();
+  __loadTimeoutH=setTimeout(function(){
+    var msgEl=document.getElementById("loadMsg");
+    if(msgEl)msgEl.textContent="응답이 지연되고 있습니다. 네트워크 상태를 확인하거나 다시 시도해 주세요.";
+    var w=document.getElementById("loadRetryWrap");if(w)w.style.display="block";
+    var btn=document.getElementById("loadRetryBtn");
+    if(btn){btn.onclick=function(){btn.disabled=true;btn.textContent="재시도 중…";location.reload();};}
+  },20000);
+}
 function finishLoad(forceTab){
+  clearLoadTimeout();
   document.getElementById("loading").style.display="none";
   document.getElementById("app").style.display="block";
   var rp=document.getElementById("rolePill");
@@ -4224,21 +4272,40 @@ async function reloadData(){
   document.getElementById("app").style.display="none";
   document.getElementById("loading").style.display="block";
   document.getElementById("loadMsg").textContent="데이터를 새로 불러오는 중…";
+  armLoadTimeout();
   RENDERED={};
   await loadAll();
   finishLoad();
   if(btn){btn.disabled=false;btn.textContent="↻ 새로고침";}
 }
 
-/* ============ 동기화 메타(헤더 우측) 갱신 — 수동/자동 공용 ============ */
+/* ============ 동기화 메타(헤더 우측) 갱신 — 수동/자동 공용 ============
+   [수정 2026-08-06 A-5] 캐시 폴백(STALE)도 ERR=false라 "정상"에 합산되던 버그(A-6 허브버튼검증 20260806
+   #2 — 6개 DB 전부 캐시인데 "6개 정상"으로 표시) — 정상/캐시/실패를 구분해 실패·캐시 상태를 숨기지 않는다. */
 function updateSyncMeta(){
   var el=document.getElementById("syncMeta");if(!el)return;
-  var ok=DBMETA.filter(function(m){return !ERR[m[0]];}).length;
+  var fresh=0,stale=0,failed=0,staleTs=0;
+  DBMETA.forEach(function(m){
+    var k=m[0];
+    if(ERR[k]){failed++;}
+    else if(STALE[k]){stale++; if(!staleTs||STALE[k]<staleTs)staleTs=STALE[k];}
+    else{fresh++;}
+  });
   var now=new Date();
-  el.textContent=
-    "마지막 동기화 "+now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(now.getDate())+" "+
-    p2(now.getHours())+":"+p2(now.getMinutes())+" · 6개 DB 중 "+ok+"개 정상"+
-    (DB.emp.length?" · 재직 "+(function(){var s={};DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})()+"명":"");
+  var head=now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(now.getDate())+" "+p2(now.getHours())+":"+p2(now.getMinutes());
+  var empN=DB.emp.length?" · 재직 "+(function(){var s={};DB.emp.filter(function(e){return e["재직 상태"]!=="퇴사";}).forEach(function(e){var n=(e["성명"]||e["이름"]||"").toString().trim();if(n)s[n]=1;});return Object.keys(s).length;})()+"명":"";
+  var cls="hd-meta",body;
+  if(failed>0){
+    cls="hd-meta err";
+    body="⚠ 6개 DB 중 "+fresh+"개 정상 · "+failed+"개 연동 실패"+(stale?(" · "+stale+"개 캐시("+fmtTime(staleTs)+" 기준)"):"");
+  }else if(stale>0){
+    cls="hd-meta warn";
+    body="↻ 6개 DB 중 "+fresh+"개 정상 · "+stale+"개 캐시 표시 중("+fmtTime(staleTs)+" 기준 — 최신 아님)";
+  }else{
+    body="6개 DB 중 "+fresh+"개 정상";
+  }
+  el.className=cls;
+  el.textContent="마지막 확인 "+head+" · "+body+empN;
 }
 
 /* ============ [추가 2026-08-04 A-5] 쓰기 성공 즉시 반영 — 로컬 상태 갱신 + 부분 재렌더 ============
@@ -4351,7 +4418,11 @@ async function autoRefreshHire(){
   if(anyModalOpen())return;                       // 입력 중(모달) → 끊지 않음
   __autoInflight=true;
   try{
-    await loadAll();                              // 큰 로딩 UI 없이 백그라운드 fetch(DB 갱신)
+    // [수정 2026-08-06 A-5] 30초 폴링이 매번 6개 DB 전량을 재조회해 스스로 과부하를 만든다는 지적(A-6
+    // 허브버튼검증 20260806 #4) — 채용탭은 화면에 실제 쓰이는 hire·appl 2개만 재조회. 대시보드는
+    // 6개 카드가 6개 DB를 모두 쓰므로("보이는 화면만") 그대로 전체 재조회.
+    var __tab0=currentTab();
+    await loadKeys(__tab0==="hire"?["hire","appl"]:KEYS); // 큰 로딩 UI 없이 백그라운드 fetch(DB 갱신)
     var __tab=currentTab();
     if(!__isLiveTab(__tab)||anyModalOpen())return; // fetch 도중 탭이동/모달 열림 → 재렌더 보류
     if(__tab==="hire"){
@@ -4830,9 +4901,22 @@ async function attemptGate(pw){
   SESSION_PW=pw;
   SESSION_ROLE=gateData.role;
   try{sessionStorage.setItem("wp_hr_pw",pw);}catch(e){}
+  // [추가 2026-08-06 A-5] 게이트 인증 자체가 이미 db:"emp"를 조회한 응답이다(위 fetch) — startApp()의
+  // loadAll()이 5초 내 emp를 또 조회하는 중복 호출을 없애기 위해 이 응답을 그대로 DB.emp에 반영해둔다
+  // (A-6 허브버튼검증 20260806 개선제안③). 응답 형태가 비정상이면 조용히 건너뛰고 loadOne이 정상 처리.
+  try{
+    var __gRows=extractResults(gateData);
+    if(Array.isArray(__gRows)&&__gRows.length>0){
+      RAWSAMPLE.emp=sampleOf(gateData);
+      DB.emp=__gRows;ROWCOUNT.emp=__gRows.length;ERR.emp=false;STALE.emp=0;
+      saveCache("emp",__gRows);
+      __skipEmpOnce=true;
+    }
+  }catch(e){}
   hideGate();
   document.getElementById("loading").style.display="block";
   document.getElementById("loadMsg").textContent="인사 데이터를 불러오는 중입니다…";
+  armLoadTimeout();
   startApp();
 }
 document.getElementById("gateBtn").addEventListener("click",function(){
