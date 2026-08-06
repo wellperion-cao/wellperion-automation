@@ -1046,21 +1046,31 @@ function buildRoleLines(cwd, role) {
     //   '진행중/대기/오늘 없음'만 반복해 "회사가 뭘 하고 있나"가 안 보였다(GM "색감이 다 사라졌다").
     //   진행중 = 마지막으로 한 일 / 대기 = 다음에 집을 배. '오늘 없음'은 붙일 게 없어 그대로 짧게.
     //   큐는 여기서 한 번만 읽는다 — 역할마다 myShips 를 부르면 보관함까지 6번 읽어 상태줄이 느려진다.
+    // ★역할당 한 줄이 아니라 **상태당 한 줄**로 묶는다(2026-08-06).
+    //   왜: 공식 문서가 "여러 줄 + 이스케이프 코드 조합은 한 줄 평문보다 렌더링 문제가 잘 난다"고
+    //   명시한다(code.claude.com/docs/en/statusline — Display glitches with escape sequences).
+    //   실측 2026-08-06: 시토 창 9줄·이스케이프 90개는 색이 통째로 사라졌고, 웰리 창 3줄·78개는
+    //   멀쩡했다. 같은 증상이 2026-08-04 에도 있었는데 그때는 역할 해석 실패로 잘못 짚어 재발했다.
+    //   묶으면 6줄→최대 3줄, 이스케이프도 역할마다 3벌씩 붙던 것이 상태당 1벌로 준다.
+    //   비어 있는 상태는 줄 자체를 안 낸다 — 줄 수를 더 줄이는 쪽이 항상 안전하다.
     const q = loadQueue(cwd);
-    return acts.map((a) => {
-      let dot, state, tail = '';
+    const run = [], wait = [], idle = [];
+    for (const a of acts) {
+      const nick = NICK[a.role];
       if (a.deleg || (a.age != null && a.age < PAUSE_MS)) {
-        dot = `${G}●${X}`; state = `${G}진행중${X}`;
-        if (a.event) tail = `  ${D}${shortTitle(a.event, 18)}${X}`;
+        run.push(a.event ? `${nick} ${shortTitle(a.event, 12)}` : nick);
       } else if (a.age != null && isToday(a.age)) {
-        dot = `${Y}◐${X}`; state = `${Y}대기${X}`;
         const nx = q ? nextShipOf(waitingOf(q, a.role)) : null;
-        if (nx) tail = `  ${D}▸다음 ${shortTitle(nx.title, 18)}${X}`;
+        wait.push(nx ? `${nick} ▸${shortTitle(nx.title, 12)}` : nick);
       } else {
-        dot = `${D}○${X}`; state = `${D}오늘 없음${X}`;
+        idle.push(nick);
       }
-      return `${dot} ${padDisp(NICK[a.role], 4)} ${padDisp(state, 8)}${tail}`;
-    });
+    }
+    const lines = [];
+    if (run.length)  lines.push(`${G}● 진행중${X} ${run.join(' · ')}`);
+    if (wait.length) lines.push(`${Y}◐ 대기${X} ${wait.join(' · ')}`);
+    if (idle.length) lines.push(`${D}○ 오늘 없음 ${idle.join(' · ')}${X}`);
+    return lines;
   } catch { return []; }
 }
 
