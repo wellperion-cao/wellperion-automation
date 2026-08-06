@@ -2687,7 +2687,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
           var _prevSeq = parseInt(sh.getRange(row, seqI + 1).getValue(), 10);
           sh.getRange(row, seqI + 1).setValue((_prevSeq > 0 ? _prevSeq : 1) + 1);
         }
-        _memberCacheBump_();   // 방금 바뀐 회원이 화면에 바로 보이게(캐시 세대 올림)
+        _memberCacheBump_(); _aaCacheClear_();   // member_active_list 캐시도 즉시 무효화(FB260806-150441 근본수리)
         return;
       }
     }
@@ -2730,7 +2730,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var _newRow = sh.getLastRow();
   var _pc = sh.getRange(_newRow, phI + 1); _pc.setNumberFormat('@'); _pc.setValue(phone || '');
   if (regI >= 0) { var _rc2 = sh.getRange(_newRow, regI + 1); _rc2.setNumberFormat('@'); _rc2.setValue(regDate || _todayKR_()); }
-  _memberCacheBump_();   // 새로 등록한 회원이 화면에 바로 보이게(캐시 세대 올림)
+  _memberCacheBump_(); _aaCacheClear_();   // member_active_list 캐시도 즉시 무효화(FB260806-150441 근본수리)
 }
 
 // ═══════════════════════════════════════════
@@ -8139,12 +8139,20 @@ function _processAction(body) {
     _regUpsert_(raName, raPhone, raProg, raDate);  // 월별체크용 '26년 등록현황' 갱신(기존 유지, 기존 전화면 갱신·없으면 등록일 도장 추가)
     // ★배276 근본수리(2026-08-01 시토) — 화면(회원관리·신규등록현황)은 유효회원 탭을 읽는다. 위 한 줄만으로는
     //   '26년 등록현황'에만 쌓여 화면에 안 보인다(임정은M 신고 FB260801-152607/141856). 유효회원에도 같은 전화키로 upsert.
-    try { _memberActiveUpsert_(raName, raPhone, raProg, raDate, raMonths); } catch (e) {}
+    // ★FB260806-150441 근본수리 — 종전 catch(e){} 가 예외를 삼켜 유효회원 미반영 시에도 UI에 "성공"이 떴다.
+    //   phone-ambiguous(중복전화 2건+) 반환 객체도 버려지던 구조. 이제 예외·에러 반환 모두 잡아 ok:false로 표면화.
+    //   _regUpsert_는 이미 성공했고 멱등이므로 재시도가 안전하다.
+    var _mauErr = null;
+    try {
+      var _mauR = _memberActiveUpsert_(raName, raPhone, raProg, raDate, raMonths);
+      if (_mauR && _mauR.ok === false) _mauErr = _mauR.error || 'activeUpsert 거부';
+    } catch (e) { _mauErr = String(e); }
     // 등록 추가 알림 → '문의 알림' 방(전환 3경로와 정합). override 누락 시 개인 OWNER방으로 새던 버그 수정 — 직접·법인 등록건도 문의알림방에 통보. 2026-07-06 시토·GM.
     try {
       var _raRegChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
       _notifyTelegram('➕ <b>등록 추가</b> — 직접/법인 등록\n· 이름: ' + (raName || '-') + '\n· 프로그램: ' + _teamChip(raProg) + (raProg || '-') + '\n· 등록일: ' + raDate, _raRegChatId);
     } catch (e) {}
+    if (_mauErr) return _json({ ok: false, error: '유효회원 반영 실패 (' + _mauErr + ') — 등록 버튼을 다시 눌러 재시도하세요.' });
     return _json({ ok: true, message: '등록 추가되었습니다.' });
   }
 
