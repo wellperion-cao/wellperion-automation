@@ -273,6 +273,15 @@
     var elChSum = document.getElementById('chairman-sum-body');
     var elChDoneSum = document.getElementById('chairman-done-sum-body');
 
+    // 자료 링크(docs) — 결재건·시안·A3 정리본이 실재하는 항목만 제목 옆에 그린다(2026-08-06 GM 지시).
+    // 클래스는 doc-link 그대로 재사용(김남욱GM_업무.html .item .doc-link 스타일과 동일 클래스 — 새 클래스 없음).
+    function chDocs(it) {
+      if (!it.docs || !it.docs.length) return '';
+      return it.docs.map(function (d) {
+        return ' <a class="doc-link" href="' + esc(d.href) + '" target="_blank" rel="noopener">📄 ' + esc(d.label) + '</a>';
+      }).join('');
+    }
+
     function chRows(list, isDone) {
       return list.map(function (it, i) {
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
@@ -280,7 +289,7 @@
           ? '<span class="done-badge">✓ ' + esc(chDate(it)) + ' 보고</span>'
           : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span></td><td>' + esc(it.when || '일정 미정') +
+          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + '</td><td>' + esc(it.when || '일정 미정') +
           '<div class="rpt-actions" style="margin-top:4px;">' + act + '</div></td></tr>';
       }).join('');
     }
