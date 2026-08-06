@@ -169,6 +169,40 @@
     .grp{break-inside:avoid;break-after:avoid;page-break-after:avoid;
          -webkit-print-color-adjust:exact;print-color-adjust:exact;}
   }
+
+  /* ── ② 각 건 소속 배지 · GM 업무로 링크 (2026-08-06 GM 지시) — 표 각 행에 소속을 보인다 ── */
+  .dept-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;
+              background:var(--steam);color:var(--brass);white-space:nowrap;}
+
+  /* ── ③ 결재 문서형 인쇄(2026-08-06 GM: "결재 SSOT처럼") — 모양·글자크기는
+     coo/todo/결재 현황 SSOT.html #approvalPrintArea 의 rr-page·rr-approval-table·rr-info-table 을
+     그대로 따른다(그 파일은 수정하지 않고 값만 옮겨 온다). ── */
+  #aprPrintArea{display:none;}
+  @media print{
+    body[data-print-mode="apr"] > *:not(#aprPrintArea){display:none !important;}
+    body[data-print-mode="apr"] #aprPrintArea{display:block !important;}
+    #aprPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:14px;line-height:1.6;padding:0;}
+    #aprPrintArea .rr-header{display:flex;align-items:flex-start;justify-content:space-between;
+      margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111;}
+    #aprPrintArea .rr-wordmark{font-size:17px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111;}
+    #aprPrintArea .rr-wordmark small{display:block;font-size:10px;font-weight:600;letter-spacing:0.12em;color:#666;margin-top:2px;}
+    #aprPrintArea .rr-approval-table{border-collapse:collapse;font-size:12.5px;}
+    #aprPrintArea .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:70px;vertical-align:top;}
+    #aprPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;
+      padding:6px 4px;font-size:12.5px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    #aprPrintArea .rr-approval-role{font-weight:700;font-size:12.5px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px;}
+    #aprPrintArea .rr-approval-sign{font-size:13px;min-height:52px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700;}
+    #aprPrintArea .rr-doc-title{text-align:center;font-size:20px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px;}
+    #aprPrintArea .rr-meta{font-size:13px;color:#555;margin-bottom:10px;}
+    #aprPrintArea .rr-section-title{font-size:15px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px;}
+    #aprPrintArea .rr-section-body{font-size:14px;color:#333;}
+    #aprPrintArea .rr-list-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
+    #aprPrintArea .rr-list-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    #aprPrintArea .rr-list-table td{border:1px solid #bbb;padding:4px 8px;vertical-align:top;}
+    #aprPrintArea .rr-footer{margin-top:16px;padding-top:6px;border-top:1px solid #bbb;
+      display:flex;justify-content:space-between;font-size:12px;color:#666;}
+  }
 </style>
 </head>
 <body>
@@ -197,10 +231,21 @@
   <details class="sec" id="sec-report" open>
     <summary><span class="ic">📋</span> 경영 보고건 <span class="cnt"><span id="rep-total">—</span></span>
       <a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">회장님 A3</a>
-      <a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">대표님 A3</a></summary>
+      <a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">대표님 A3</a>
+      <!-- ③ 결재 문서형 인쇄 — GM 지시 2026-08-06 "보고를 결재 SSOT처럼" -->
+      <button type="button" class="sec-act" style="background:transparent;cursor:pointer;font-family:inherit;"
+              id="print-approval-doc-btn" onclick="event.stopPropagation(); printGmApprovalDoc();">결재 문서 인쇄</button>
+    </summary>
     <div class="sec-body">
 
-      <div class="sub-h"><span class="who">👑 회장님</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
+      <!-- ② 갈 곳 안내 — 링크 클릭 시 alert 대신 여기 한 줄로 표시(GM 지시 2026-08-06, 데이터는 자동 이동 안 함) -->
+      <div class="rnote" id="moveToGmNote"></div>
+
+      <!-- ① 보고 대기 / 보고 완료 분리 — 판정은 _owner_directive.js 가 이미 끝낸 것(.done-badge)을
+           그대로 읽어 화면에서만 두 구획으로 가른다(GM 지시 2026-08-06, 판정 로직 복제 없음). -->
+      <div class="sub-h"><span class="who">보고 대기</span><span class="cnt3" id="rep-pending-cnt">—</span></div>
+
+      <div class="sub-h" style="margin-top:10px;"><span class="who">👑 회장님</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
       <div class="sum">
         <table><tbody id="chairman-sum-body"></tbody></table>
       </div>
@@ -217,6 +262,14 @@
       <div class="sum">
         <table><tbody id="owner-sum-body"></tbody></table>
       </div>
+
+      <details class="fold" id="rep-done-fold">
+        <summary>보고 완료 <span id="rep-done-cnt">0건</span></summary>
+        <div class="grid" id="owner-done-grid" style="margin-top:8px;"></div>
+        <div class="sum" style="margin-top:8px;">
+          <table><tbody id="owner-done-sum-body"></tbody></table>
+        </div>
+      </details>
 
     </div>
   </details>
@@ -239,6 +292,9 @@
   </div>
 
 </div>
+
+<!-- ③ 결재 문서 인쇄 영역 — 화면 숨김, printGmApprovalDoc() 실행 시에만 표시(coo/todo/결재 현황 SSOT.html 과 동일 기법) -->
+<div id="aprPrintArea"></div>
 
 <!-- 판정 로직 = _gm_direct_tasks.js / 대표님·회장님 = _owner_directive.js + _chairman_items.js (약속 L01 · 복제 없음) -->
 <script src="_gm_direct_tasks.js"></script>
@@ -406,6 +462,156 @@
     emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.',
     includeChairman: true
   });
+
+  // ══════════════════════════════════════════════════════════════════
+  // ① 보고 대기/완료 분리 · ② 소속 배지+GM 업무로 링크 · ③ 결재 문서 인쇄
+  // (GM 지시 2026-08-06). _owner_directive.js 의 isReported 판정을 다시 짜지 않고,
+  // 그 판정이 이미 그려낸 표식(.done-badge = 보고완료)만 DOM에서 읽어 구획을 가른다.
+  // ══════════════════════════════════════════════════════════════════
+  (function () {
+    var elGrid = document.getElementById('owner-grid');
+    var elSum = document.getElementById('owner-sum-body');
+    var elDoneGrid = document.getElementById('owner-done-grid');
+    var elDoneSum = document.getElementById('owner-done-sum-body');
+    var elPendCnt = document.getElementById('rep-pending-cnt');
+    var elDoneCnt = document.getElementById('rep-done-cnt');
+    var elChSum = document.getElementById('chairman-sum-body');
+    var elNote = document.getElementById('moveToGmNote');
+    if (!elGrid || !elSum) return;
+
+    var OWNER_BADGE = '🤵 대표님'; // 🤵 대표님
+    var CHAIRMAN_BADGE = '👑 회장님'; // 👑 회장님
+
+    // 표 각 행 끝에 소속 배지 + "GM 업무로" 링크를 한 번만 붙인다(재실행돼도 중복 추가 안 함).
+    function decorateRow(tr, badgeLabel) {
+      if (!tr || tr.querySelector('.row-actions')) return;
+      var td = document.createElement('td');
+      td.className = 'row-actions';
+      td.innerHTML = '<span class="dept-badge">' + badgeLabel + '</span> ' +
+        '<a class="doc-link move-to-gm" href="../../월간운영계획.html" target="_blank" rel="noopener">GM 업무로 →</a>';
+      tr.appendChild(td);
+    }
+
+    // 회장님 표 — 정적 배열이라 mount() 직후 1회만 처리해도 된다.
+    if (elChSum) {
+      Array.prototype.forEach.call(elChSum.querySelectorAll('tr'), function (tr) {
+        decorateRow(tr, CHAIRMAN_BADGE);
+      });
+    }
+
+    // 「GM 업무로」 클릭 — alert 대신 화면 안 안내 줄로(GM 지시). 새 창 이동은 기본 링크 동작 그대로 둔다.
+    // 데이터는 자동 이동하지 않는다 — 사람이 월간운영계획에서 직접 추가.
+    document.getElementById('sec-report').addEventListener('click', function (e) {
+      var a = e.target.closest ? e.target.closest('.move-to-gm') : null;
+      if (!a || !elNote) return;
+      elNote.textContent = '이 건을 GM 업무(월간운영계획 목표)로 옮기려면 월간운영계획에서 목표로 추가하세요.';
+    });
+
+    // 대표님 항목이 새로 그려질 때마다(초기 로드·보고완료 표시·새로고침) 다시 갈라 담는다.
+    function regroupReports() {
+      var doneItems = Array.prototype.filter.call(elGrid.children, function (el) {
+        return el.classList && el.classList.contains('item') && el.querySelector('.done-badge');
+      });
+      doneItems.forEach(function (el) { elDoneGrid.appendChild(el); });
+
+      var doneRows = Array.prototype.filter.call(elSum.children, function (tr) {
+        return tr.tagName === 'TR' && tr.querySelector('.done-badge');
+      });
+      doneRows.forEach(function (tr) { elDoneSum.appendChild(tr); });
+
+      Array.prototype.forEach.call(elSum.querySelectorAll('tr'), function (tr) { decorateRow(tr, OWNER_BADGE); });
+      Array.prototype.forEach.call(elDoneSum.querySelectorAll('tr'), function (tr) { decorateRow(tr, OWNER_BADGE); });
+
+      var chCount = (window.WellperionChairmanItems || []).length;
+      var pendCount = elGrid.querySelectorAll('.item').length;
+      var doneCount = elDoneGrid.querySelectorAll('.item').length;
+      if (elPendCnt) elPendCnt.textContent = (chCount + pendCount) + '건';
+      if (elDoneCnt) elDoneCnt.textContent = doneCount + '건';
+    }
+    new MutationObserver(regroupReports).observe(elGrid, { childList: true });
+    new MutationObserver(regroupReports).observe(elSum, { childList: true });
+
+    // ── ③ 결재 문서형 인쇄 — 담당(김남욱 GM)·대표(전응준)·회장(차의주) 3란 결재 문서.
+    //    모양은 coo/todo/결재 현황 SSOT.html #approvalPrintArea 를 본떴다(그 파일 미수정).
+    function extractOwnerItems(container) {
+      var out = [];
+      if (!container) return out;
+      Array.prototype.forEach.call(container.querySelectorAll('.item'), function (el) {
+        var h2 = el.querySelector('.top h2');
+        var title = '';
+        if (h2) {
+          var clone = h2.cloneNode(true);
+          var noEl = clone.querySelector('.no'); if (noEl) noEl.remove();
+          var catEl = clone.querySelector('.cat'); if (catEl) catEl.remove();
+          title = clone.textContent.trim();
+        }
+        var status = '';
+        Array.prototype.forEach.call(el.querySelectorAll('dl > div'), function (row) {
+          var dt = row.querySelector('dt');
+          if (dt && dt.textContent.trim() === '상태') {
+            var dd = row.querySelector('dd');
+            status = dd ? dd.textContent.trim() : '';
+          }
+        });
+        out.push({ title: title, status: status || '—' });
+      });
+      return out;
+    }
+
+    function collectReportRows() {
+      var pending = (window.WellperionChairmanItems || []).map(function (it) {
+        return { dept: CHAIRMAN_BADGE, title: it.title, status: it.when || '—' };
+      });
+      extractOwnerItems(elGrid).forEach(function (it) {
+        pending.push({ dept: OWNER_BADGE, title: it.title, status: it.status });
+      });
+      var done = extractOwnerItems(elDoneGrid).map(function (it) {
+        return { dept: OWNER_BADGE, title: it.title, status: it.status };
+      });
+      return { pending: pending, done: done };
+    }
+
+    function listTable(list) {
+      var rows = list.map(function (it, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.dept) + '</td><td>' + esc(it.title) + '</td><td>' + esc(it.status) + '</td></tr>';
+      }).join('');
+      return '<table class="rr-list-table"><thead><tr><th>번호</th><th>구분</th><th>업무명</th><th>진행 상태</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
+    window.printGmApprovalDoc = function () {
+      var data = collectReportRows();
+      var now = new Date();
+      var dateStr = now.getFullYear() + '. ' + pad2(now.getMonth() + 1) + '. ' + pad2(now.getDate()) + '.';
+      var genTime = dateStr + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+      var html = '<div class="rr-page">' +
+        '<div class="rr-header">' +
+        '<div class="rr-wordmark">WELLPERION<small>경영 보고서</small></div>' +
+        '<table class="rr-approval-table"><tr>' +
+        '<td class="rr-approval-label">결재</td>' +
+        '<td><div class="rr-approval-role">담당 김남욱 GM (인)</div><div class="rr-approval-sign"></div></td>' +
+        '<td><div class="rr-approval-role">대표 전응준 (인)</div><div class="rr-approval-sign"></div></td>' +
+        '<td><div class="rr-approval-role">회장 차의주 (인)</div><div class="rr-approval-sign"></div></td>' +
+        '</tr></table>' +
+        '</div>' +
+        '<div class="rr-doc-title">경 영 보 고 서</div>' +
+        '<div class="rr-meta">작성일 ' + dateStr + '</div>' +
+        '<div class="rr-section-title">보고 대기 ' + data.pending.length + '건</div>' +
+        (data.pending.length ? listTable(data.pending) : '<div class="rr-section-body">보고 대기 건이 없습니다.</div>') +
+        (data.done.length ? ('<div class="rr-section-title">보고 완료 ' + data.done.length + '건</div>' + listTable(data.done)) : '') +
+        '<div class="rr-footer">' +
+        '<span>이 문서는 웰페리온 ERP 월간운영계획·업무 시트에서 자동 생성되었습니다.</span>' +
+        '<span>생성 시각: ' + genTime + '</span>' +
+        '</div>' +
+        '</div>';
+      var area = document.getElementById('aprPrintArea');
+      area.innerHTML = html;
+      document.body.setAttribute('data-print-mode', 'apr');
+      function reset() { document.body.removeAttribute('data-print-mode'); window.removeEventListener('afterprint', reset); }
+      window.addEventListener('afterprint', reset);
+      window.print();
+      setTimeout(reset, 2000);
+    };
+  })();
 })();
 </script>
 </body>
