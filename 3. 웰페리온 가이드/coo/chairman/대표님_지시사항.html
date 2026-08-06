@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>대표님 업무 보고건 · WELLPERION</title>
+<title>대표님 보고건 · WELLPERION</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
 <!-- 사내 게이트(단일 소스 _assets/gate.js) — 회장님_지시사항.html과 동일(GM 지시 2026-08-05, 비밀번호 1531 통일). -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
@@ -72,7 +72,7 @@
   .top h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
   .top h2 .no{color:var(--brass);margin-right:8px;}
   .top h2 .cat{font-size:12.5px;font-weight:600;color:var(--grey);letter-spacing:.01em;}
-  /* 👑 회장님 지시건 표 — 카테고리는 제목 옆 소괄호(카드 3종과 같은 표기), 기한 칸은 문구가 길어 줄바꿈 허용. */
+  /* 👑 회장님 보고건 표 — 카테고리는 제목 옆 소괄호(카드 3종과 같은 표기), 기한 칸은 문구가 길어 줄바꿈 허용. */
   .sum td .cat{font-size:11.5px;font-weight:500;color:var(--grey);}
   #chairman-sum-body td:last-child{white-space:normal;width:150px;}
   .top .when{font-size:12px;font-weight:600;color:var(--mid);white-space:nowrap;}
@@ -139,7 +139,7 @@
 
   <div class="hd">
     <p class="brand">WELLPERION · 월간계획보고</p>
-    <h1>대표님 업무 보고건</h1>
+    <h1>대표님 보고건</h1>
     <p class="sub">업무&amp;결재 SSOT 실시간 조회 · 담당 김남욱GM · 상태 진행중·보류만</p>
     <div class="meta">
       <div><b>보고</b>김남욱 GM</div>
@@ -151,19 +151,19 @@
   <p class="lede">
     대표님께 보고가 필요한 업무를 담당자=김남욱 + 상태(진행중·보류) + 내용칸 "대표님 보고건" 표식으로 자동으로 추립니다.
     월간운영계획.html 토글과 같은 판정을 그대로 씁니다 — 완료된 업무는 목적(어디까지 갔나)과 무관해 여기 포함하지 않습니다.
-    <br><b>맨 아래 👑 회장님 업무 지시건</b>도 함께 정리돼 있고, 위 「보고 필요건 통합 보고」를 누르면 <b>두 가지가 한 문안으로 복사</b>됩니다.
+    <br><b>맨 아래 👑 회장님 보고건</b>도 함께 정리돼 있고, 위 「보고건 통합 보고」를 누르면 <b>두 가지가 한 문안으로 복사</b>됩니다.
   </p>
 
   <div class="repbar">
     <span class="cnt" id="owner-count">불러오는 중…</span>
-    <button type="button" class="rbtn" id="owner-bulk-btn" disabled>보고 필요건 통합 보고</button>
-    <span class="rnote">대표님 보고 필요건 + 👑 회장님 업무 지시건 현황이 한 문안으로 복사됩니다 — 업무보고방에 그대로 붙여넣어 주세요.</span>
+    <button type="button" class="rbtn" id="owner-bulk-btn" disabled>보고건 통합 보고</button>
+    <span class="rnote">대표님 보고건 + 👑 회장님 보고건 현황이 한 문안으로 복사됩니다 — 업무보고방에 그대로 붙여넣어 주세요.</span>
     <span class="rstatus" id="owner-bulk-status"></span>
   </div>
   <pre class="digest" id="owner-digest"></pre>
 
   <div class="grp">
-    <h2>🤵 대표님 업무 보고건</h2>
+    <h2>🤵 대표님 보고건</h2>
     <span class="cnt" id="owner-grp-cnt">불러오는 중…</span>
   </div>
 
@@ -174,15 +174,15 @@
     <table><tbody id="owner-sum-body"></tbody></table>
   </div>
 
-  <!-- 👑 회장님 업무 지시건 — 2026-08-05 GM 지시로 대표님 보고에 함께 싣는다. 목록 정본은 _chairman_items.js
-       한 벌이고 이 표와 「보고 필요건 통합 보고」 문안이 그 한 벌을 같이 읽는다(둘이 어긋날 수 없음). -->
+  <!-- 👑 회장님 보고건 — 2026-08-05 GM 지시로 대표님 보고에 함께 싣는다. 목록 정본은 _chairman_items.js
+       한 벌이고 이 표와 「보고건 통합 보고」 문안이 그 한 벌을 같이 읽는다(둘이 어긋날 수 없음). -->
   <div class="grp">
-    <h2>👑 회장님 업무 지시건</h2>
+    <h2>👑 회장님 보고건</h2>
     <span class="cnt" id="chairman-grp-cnt">불러오는 중…</span>
   </div>
 
   <div class="sum">
-    <h3>회장님 지시건 진행 현황</h3>
+    <h3>회장님 보고건 진행 현황</h3>
     <table><tbody id="chairman-sum-body"></tbody></table>
   </div>
 
@@ -193,7 +193,7 @@
 
 </div>
 
-<!-- 회장님 지시건 목록 정본(월간운영계획 회장님 카드와 공용·복제 없음) — 통합 보고 문안에 함께 실린다. -->
+<!-- 회장님 보고건 목록 정본(월간운영계획 회장님 카드와 공용·복제 없음) — 통합 보고 문안에 함께 실린다. -->
 <script src="_chairman_items.js"></script>
 <script src="_owner_directive.js"></script>
 <script>
@@ -204,7 +204,7 @@
     markPrefix: '대표님 보고완료',
     reportIntro: '대표님께 아래 업무를 보고드립니다.',
     emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.',
-    // 통합 보고 문안 뒤에 👑 회장님 업무 지시건 현황을 함께 싣는다(2026-08-05 GM 지시 — 한 번에 복사해 전달).
+    // 통합 보고 문안 뒤에 👑 회장님 보고건 현황을 함께 싣는다(2026-08-05 GM 지시 — 한 번에 복사해 전달).
     includeChairman: true
   });
 </script>

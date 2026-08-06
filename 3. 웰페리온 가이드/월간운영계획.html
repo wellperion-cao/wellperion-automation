@@ -1141,11 +1141,11 @@
     <section class="blk" data-blkid="exec-toggles">
       <div class="toggle-row-2">
         <details class="r-note-fold tg-card" id="chairman-fold" open>
-          <summary>👑 회장님 업무 보고건 <span class="be-badge" id="chairman-badge">불러오는 중…</span></summary>
+          <summary>👑 회장님 보고건 <span class="be-badge" id="chairman-badge">불러오는 중…</span></summary>
           <div class="r-note" id="chairman-body">불러오는 중…</div>
         </details>
         <details class="r-note-fold tg-card" id="ceo-fold" open>
-          <summary>🤵 대표님 업무 보고건 <span class="be-badge" id="ceo-fold-badge">불러오는 중…</span></summary>
+          <summary>🤵 대표님 보고건 <span class="be-badge" id="ceo-fold-badge">불러오는 중…</span></summary>
           <div class="r-note" id="ceo-fold-body">불러오는 중…</div>
         </details>
         <details class="r-note-fold tg-card" id="gm-fold" open>
@@ -3663,7 +3663,7 @@
     var items = CHAIRMAN_ITEMS.map(function(it){ return {title: it.title, category: it.cat, schedule: it.when}; });
     renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/회장님_지시사항.html', '자세히 보기 →');
   }
-  // 👤 김남욱GM 업무 진행건 / 🤵 대표님 업무 보고건 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과
+  // 👤 김남욱GM 업무 진행건 / 🤵 대표님 보고건 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과
   // 재사용·새 GAS 호출 0)에서 담당자=김남욱 + 상태(진행중·보류)만 추린 뒤(GM 지시 2026-08-05 — 애초 필터가
   // 생성자였는데 GM 이 시트에 업무를 등록한 사람이라 남의 업무 103건이 "김남욱GM 업무"로 잘못 표시됐다.
   // 담당자 기준으로 정정), 내용칸에 "대표님 보고건" 표식이 있는지로 두 칸을 양분한다(같은 건이 두 칸에

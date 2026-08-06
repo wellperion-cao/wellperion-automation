@@ -91,13 +91,13 @@
     } else { onDone(false); }
   }
 
-  // 👑 회장님 지시건 현황 — 2026-08-05 GM 지시("회장님 업무보고건을 대표님에게도 같이 회장님 업무 지시건으로
+  // 👑 회장님 보고건 현황 — 2026-08-05 GM 지시("회장님 업무보고건을 대표님에게도 같이 회장님 보고건으로
   // 정리해서 한 번에 복사해 붙여넣게"). 목록 정본 = _chairman_items.js(배열 한 벌·복제 없음). 그 파일을 안 실은
   // 페이지에서는 빈 문자열이 되어 문안이 예전 그대로다(조용히 빠지지 않게 cfg.includeChairman 로만 켠다).
   function chairmanSection() {
     var items = window.WellperionChairmanItems || [];
     if (!items.length) return '';
-    return '\n\n■ 회장님 업무 지시건 ' + items.length + '건 (진행 현황)\n\n' +
+    return '\n\n■ 회장님 보고건 ' + items.length + '건 (진행 현황)\n\n' +
       items.map(function (it, i) {
         return (i + 1) + '. ' + it.title + ' (' + (it.cat || '분류 미정') + ')' +
           '\n   · 진행: ' + it.when;
@@ -111,7 +111,7 @@
         '\n   · 일정: ' + it.schedule +
         (it.content ? ('\n   · 내용: ' + it.content) : '');
     }).join('\n\n');
-    var head = includeChairman ? '■ 대표님 보고 필요건 ' + items.length + '건\n\n' : '';
+    var head = includeChairman ? '■ 대표님 보고건 ' + items.length + '건\n\n' : '';
     return introLine + ' (' + todayStr() + ')\n\n' + head + body +
       (includeChairman ? chairmanSection() : '') + '\n\n확인 부탁드립니다.';
   }
@@ -155,7 +155,7 @@
       var done = _items.filter(function (it) { return it.reported; });
       elCount.textContent = '보고 필요 ' + need.length + '건 · 보고 완료 ' + done.length + '건';
       elGrpCnt.textContent = _items.length + '건';
-      // 대표님 보고 필요건이 0건이어도 회장님 지시건 현황만으로 보낼 수 있게 열어 둔다(둘 다 0일 때만 잠금).
+      // 대표님 보고건이 0건이어도 회장님 보고건 현황만으로 보낼 수 있게 열어 둔다(둘 다 0일 때만 잠금).
       elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && (window.WellperionChairmanItems || []).length);
 
       if (!_items.length) {
@@ -222,7 +222,7 @@
         .catch(function () { btn.disabled = false; btn.textContent = '보고 완료로 표시'; alert('저장하지 못했습니다.'); });
     }
 
-    // 「보고 필요건 통합 보고」 — 아직 보고 안 한 건만 모아 문안 1개로 만들어 클립보드에 복사(자동 발송은 준비 중).
+    // 「보고건 통합 보고」 — 아직 보고 안 한 건만 모아 문안 1개로 만들어 클립보드에 복사(자동 발송은 준비 중).
     elBulkBtn.addEventListener('click', function () {
       var need = (_items || []).filter(function (it) { return !it.reported; });
       var chN = cfg.includeChairman ? (window.WellperionChairmanItems || []).length : 0;
@@ -232,13 +232,13 @@
       elDigest.textContent = text;
       elBulkStatus.textContent = '문안 생성 중…';
       var chCnt = cfg.includeChairman ? (window.WellperionChairmanItems || []).length : 0;
-      var cntLabel = need.length + '건' + (chCnt ? ' + 회장님 지시건 ' + chCnt + '건' : '');
+      var cntLabel = need.length + '건' + (chCnt ? ' + 회장님 보고건 ' + chCnt + '건' : '');
       dispatchReport(text, function (ok) {
         elBulkStatus.textContent = ok ? ('복사됨 ✓ — 업무보고방에 붙여넣어 주세요(' + cntLabel + ')') : '클립보드 복사 실패 — 아래 문안을 직접 복사해 주세요.';
       });
     });
 
-    // 👑 회장님 업무 지시건 표 — 정본 배열(_chairman_items.js)을 그대로 그린다. 문안(chairmanSection)과 같은
+    // 👑 회장님 보고건 표 — 정본 배열(_chairman_items.js)을 그대로 그린다. 문안(chairmanSection)과 같은
     // 배열을 읽으므로 화면과 복사본이 어긋날 수 없다. 그 파일을 안 실은 페이지에는 요소 자체가 없어 그냥 건너뛴다.
     var elChCnt = document.getElementById('chairman-grp-cnt');
     var elChSum = document.getElementById('chairman-sum-body');
@@ -251,7 +251,7 @@
             return '<tr><td>' + no + '</td><td>' + esc(it.title) +
               ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span></td><td>' + esc(it.when || '일정 미정') + '</td></tr>';
           }).join('')
-        : '<tr><td colspan="3">회장님 지시건이 없습니다.</td></tr>';
+        : '<tr><td colspan="3">회장님 보고건이 없습니다.</td></tr>';
     }
 
     load();
