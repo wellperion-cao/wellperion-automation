@@ -306,10 +306,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   /* 글자 키우고 장수 줄이기(GM 지시 2026-08-06 · 배426): 11px→13px 확대 + 2단 배치 + 줄당
      내용 압축으로 A4 14장을 줄인다. 화면 요약표는 그대로, 인쇄만 한 줄 요약(제목·담당·기한·상태)로
      좁힌다 — '내용' 미리보기 줄·액션 버튼 줄은 인쇄에서 뺀다(웰리 실측·방향 전달). */
-  body{background:#fff;color:#1a1a1a;font-size:13px;line-height:1.35}
+  body{background:#fff;color:#1a1a1a;font-size:15px;line-height:1.35}
   .header-right,.filter-bar,.add-bar,.action-btn,.modal-overlay,.toast,.share-btn,.sheet-link{display:none!important}
   .header{position:static;background:#fff;border-bottom:1px solid #ccc;padding:6px 0 8px;margin-bottom:8px}
-  .header h1{font-size:15px;color:#111}
+  .header h1{font-size:17px;color:#111}
   .cat-accordion,.cat-header,.task-card{background:#fff}
   .content{padding:0;max-width:100%}
   /* #mainContent(업무 목록)만 2단 — #calendarView 도 class="content" 를 공유해서 여기 걸면
@@ -327,16 +327,16 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .kanban-board > .cat-group{width:auto!important;margin-bottom:6px!important}
   .kanban-board::after{display:none!important}
   .task-card{border-bottom:1px solid #eee;padding:3px 8px;break-inside:avoid}
-  .task-title{font-size:13px!important;padding:2px 6px!important;margin-bottom:2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .task-title{font-size:15px!important;padding:2px 6px!important;margin-bottom:2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .task-meta{flex-wrap:nowrap!important;overflow:hidden;gap:4px!important}
-  .chip{border:1px solid #ccc;background:#f5f5f5;color:#333;font-size:10.5px!important;padding:1px 6px!important}
+  .chip{border:1px solid #ccc;background:#f5f5f5;color:#333;font-size:12.5px!important;padding:1px 6px!important}
   /* 인쇄본은 요약표(업무명·담당·기한·상태) — 내용 미리보기 줄·협조 칩·토글 화살표·액션 버튼 줄은 뺀다 */
   .task-summary-line,.task-actions,.chip.collab,.appr-opinions,.toggle-arrow{display:none!important}
   /* 완료/보류 로그 강제 펼침 삭제(장수 폭증의 실제 원인 — 실측 46 업무카드 대비 완료로그 62건이
      통째로 펼쳐져 함께 인쇄되고 있었다, GM 지시 2026-08-06). 화면과 동일하게 접힘 상태를 따르고
      (펼쳐 둔 상태로 인쇄하면 그대로 나온다), 펼쳤을 때도 아래 압축 스타일로 가볍게 나온다. */
   .done-card{padding:3px 8px!important;break-inside:avoid}
-  .done-card .task-title{font-size:13px!important;padding:2px 6px!important}
+  .done-card .task-title{font-size:15px!important;padding:2px 6px!important}
   .done-card .task-meta{flex-wrap:nowrap!important;overflow:hidden}
   .done-log-header{padding:4px 10px!important}
   /* 캘린더 뷰는 기본 인쇄에서 숨김. 단 캘린더 한 장 인쇄 모드(data-print-mode="calendar")에서는
@@ -376,11 +376,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body[data-print-mode="calendar"] .cal-nav-btn,
   body[data-print-mode="calendar"] #calUndated{display:none!important}
   body[data-print-mode="calendar"] .cal-bar{margin-bottom:6px}
-  body[data-print-mode="calendar"] .cal-month-label{font-size:17px}
+  body[data-print-mode="calendar"] .cal-month-label{font-size:19px}
   /* 인쇄 폰트는 화면보다 한 단계 더 키움 — scale-to-fit으로 축소돼도 읽히도록(GM 가독성 지적 2026-07-18) */
-  body[data-print-mode="calendar"] .cal-table th{font-size:14px}
-  body[data-print-mode="calendar"] .cal-daynum{font-size:15px}
-  body[data-print-mode="calendar"] .cal-badge{font-size:13.5px}
+  body[data-print-mode="calendar"] .cal-table th{font-size:16px}
+  body[data-print-mode="calendar"] .cal-daynum{font-size:17px}
+  body[data-print-mode="calendar"] .cal-badge{font-size:15.5px}
   body[data-print-mode="calendar"] #calPrintOuter{overflow:hidden}
   body[data-print-mode="calendar"] .cal-badge,
   body[data-print-mode="calendar"] .cal-table td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -392,29 +392,29 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .rr-doc table{border-collapse:collapse;width:100%}
   .rr-doc td,.rr-doc th{border:1px solid #bbb;padding:4px 6px;vertical-align:top}
   .rr-doc img{max-width:100%;height:auto}
-  .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0}
+  .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:13px;line-height:1.6;padding:0}
   .rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}
-  .rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
-  .rr-approval-table{border-collapse:collapse;font-size:9px}
+  .rr-wordmark{font-size:17px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
+  .rr-approval-table{border-collapse:collapse;font-size:11px}
   .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:44px;vertical-align:top}
-  .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:9px;background:#f0f0f0}
-  .rr-approval-role{font-weight:700;font-size:9px;border-bottom:1px solid #bbb;padding-bottom:2px;margin-bottom:4px}
-  .rr-approval-sign{font-size:10px;min-height:22px;display:flex;align-items:center;justify-content:center}
-  .rr-doc-title{text-align:center;font-size:18px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
-  .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px}
+  .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:11px;background:#f0f0f0}
+  .rr-approval-role{font-weight:700;font-size:11px;border-bottom:1px solid #bbb;padding-bottom:2px;margin-bottom:4px}
+  .rr-approval-sign{font-size:12px;min-height:22px;display:flex;align-items:center;justify-content:center}
+  .rr-doc-title{text-align:center;font-size:20px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
+  .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px}
   .rr-info-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;width:18%;white-space:nowrap}
   .rr-info-table td{border:1px solid #bbb;padding:4px 8px}
-  .rr-section-title{font-size:11px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
-  .rr-section-body{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
-  .rr-result-box{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
-  .rr-log-table{width:100%;border-collapse:collapse;font-size:10px}
+  .rr-section-title{font-size:13px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
+  .rr-section-body{font-size:12px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
+  .rr-result-box{font-size:12px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
+  .rr-log-table{width:100%;border-collapse:collapse;font-size:12px}
   .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left}
   .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
   .rr-log-date{white-space:nowrap;width:90px}
-  .rr-footer{margin-top:20px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:9px;color:#666}
+  .rr-footer{margin-top:20px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:11px;color:#666}
   /* 공통 대시보드 */
   .dashboard-panel h2 .close-dash,.dash-print-btn{display:none!important}
-  .dash-table th,.dash-table td{border:1px solid #ccc;padding:4px 8px;font-size:10px}
+  .dash-table th,.dash-table td{border:1px solid #ccc;padding:4px 8px;font-size:12px}
   .dash-bar-wrap{background:#eee!important}
   .dash-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .dash-stat-card{border:1px solid #ccc;background:#f9f9f9!important;break-inside:avoid}

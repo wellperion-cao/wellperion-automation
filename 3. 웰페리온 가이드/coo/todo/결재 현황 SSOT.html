@@ -285,26 +285,26 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   .opinion-row{background:#f5f0fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   @page{margin:10mm;size:A4}
   /* ── 결재 보고서 인쇄 — 업무 현황 보고서(rr-page)와 동일 품질로 통일 (2026-06-16 GM) ── */
-  #approvalPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:13px;line-height:1.6;padding:0;page-break-after:always}
+  #approvalPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:15px;line-height:1.6;padding:0;page-break-after:always}
   #approvalPrintArea .rr-page:last-child{page-break-after:auto}
   #approvalPrintArea .rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}
-  #approvalPrintArea .rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
-  #approvalPrintArea .rr-wordmark small{display:block;font-size:8px;font-weight:600;letter-spacing:0.12em;color:#666;margin-top:2px}
-  #approvalPrintArea .rr-approval-table{border-collapse:collapse;font-size:10.5px}
+  #approvalPrintArea .rr-wordmark{font-size:17px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
+  #approvalPrintArea .rr-wordmark small{display:block;font-size:10px;font-weight:600;letter-spacing:0.12em;color:#666;margin-top:2px}
+  #approvalPrintArea .rr-approval-table{border-collapse:collapse;font-size:12.5px}
   #approvalPrintArea .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:50px;vertical-align:top}
-  #approvalPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:10.5px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .rr-approval-role{font-weight:700;font-size:10.5px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px}
-  #approvalPrintArea .rr-approval-sign{font-size:11px;min-height:52px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700}
-  #approvalPrintArea .rr-doc-title{text-align:center;font-size:18px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
-  #approvalPrintArea .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+  #approvalPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:12.5px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-approval-role{font-weight:700;font-size:12.5px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px}
+  #approvalPrintArea .rr-approval-sign{font-size:13px;min-height:52px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700}
+  #approvalPrintArea .rr-doc-title{text-align:center;font-size:20px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
+  #approvalPrintArea .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:14px}
   #approvalPrintArea .rr-info-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;width:18%;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-info-table td{border:1px solid #bbb;padding:4px 8px}
-  #approvalPrintArea .rr-section-title{font-size:13px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
-  #approvalPrintArea .rr-section-body{font-size:12px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
-  #approvalPrintArea .rr-result-box{font-size:12px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
+  #approvalPrintArea .rr-section-title{font-size:15px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
+  #approvalPrintArea .rr-section-body{font-size:14px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
+  #approvalPrintArea .rr-result-box{font-size:14px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
   /* ── 문서 서식(HTML 기획안·결과보고) — 디자인 그대로 인쇄 (2026-07-15) ── */
   #approvalPrintArea .rr-doc,#approvalPrintArea .rr-doc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .rr-doc{font-size:12px;line-height:1.6}
+  #approvalPrintArea .rr-doc{font-size:14px;line-height:1.6}
   /* 인쇄 가독성 — 화면에선 연한 회색이 보기 좋지만 종이에선 흐려 안 읽힌다(GM 지시 2026-08-06).
      제목·강조 색은 그대로 두고 본문 계열만 진하게. */
   #approvalPrintArea .rr-doc p,#approvalPrintArea .rr-doc li,#approvalPrintArea .rr-doc td,
@@ -316,18 +316,18 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   /* ── 첨부 사진 인라인 — 이미지 첨부는 문서에 직접 표시(비이미지는 링크). 페이지 넘침 방지 (2026-07-02 시토) ── */
   #approvalPrintArea .rr-attach{page-break-inside:avoid;margin:4px 0}
   #approvalPrintArea .rr-attach-img{display:block;max-width:100%;max-height:360px;object-fit:contain;border:1px solid #bbb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .rr-attach-link{font-size:11px;word-break:break-all}
-  #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:11.5px}
+  #approvalPrintArea .rr-attach-link{font-size:13px;word-break:break-all}
+  #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:13.5px}
   #approvalPrintArea .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
   #approvalPrintArea .rr-log-date{white-space:nowrap;width:90px}
   /* ── 결재 고유: 결재선 ── */
-  #approvalPrintArea .rr-route{font-size:11.5px;color:#222;margin:4px 0 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  #approvalPrintArea .rr-route{font-size:13.5px;color:#222;margin:4px 0 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   #approvalPrintArea .rr-route b{font-weight:700}
   #approvalPrintArea .rr-route .rr-route-step{border:1px solid #999;border-radius:4px;padding:2px 8px;background:#f7f7f7;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-route .rr-route-arrow{color:#888;font-weight:700}
-  #approvalPrintArea .rr-footer{margin-top:12px;padding-top:6px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:10px;color:#666}
-  #approvalPrintArea .rr-empty{font-size:13px;color:#555}
+  #approvalPrintArea .rr-footer{margin-top:12px;padding-top:6px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:12px;color:#666}
+  #approvalPrintArea .rr-empty{font-size:15px;color:#555}
   /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
   .kanban-board{display:block!important;overflow:visible!important;padding:0!important}
   .kanban-board > .kanban-col{width:auto!important;margin-bottom:8px!important;break-inside:avoid}
@@ -349,14 +349,14 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   @media print and (min-width:280mm){ body:not([data-print-mode]) .content{column-count:3} }
   body:not([data-print-mode]) .approval-card button{display:none!important}
   body:not([data-print-mode]) .card-owner-line,body:not([data-print-mode]) .meta-row,
-  body:not([data-print-mode]) .approval-steps,body:not([data-print-mode]) .sign-line{font-size:10.5px;margin:3px 0}
-  body:not([data-print-mode]) .opinion-block{font-size:10.5px}
+  body:not([data-print-mode]) .approval-steps,body:not([data-print-mode]) .sign-line{font-size:12.5px;margin:3px 0}
+  body:not([data-print-mode]) .opinion-block{font-size:12.5px}
   /* [결재-3] 대시보드 인쇄 모드 */
   [data-print-mode="approval-dashboard"] .content{display:none!important}
   [data-print-mode="approval-dashboard"] .dash-overlay{position:static!important;display:block!important;background:none!important;padding:0!important;}
   [data-print-mode="approval-dashboard"] .dash-panel{border:none!important;margin:0!important;padding:10px!important;max-width:100%!important;}
   .dash-panel h2 .close-dash,.dash-print-btn{display:none!important}
-  .dash-table th,.dash-table td{border:1px solid #ccc;padding:4px 8px;font-size:10px;}
+  .dash-table th,.dash-table td{border:1px solid #ccc;padding:4px 8px;font-size:12px;}
   .dash-bar-wrap{background:#eee!important}
   .dash-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .dash-stat-card{border:1px solid #ccc;background:#f9f9f9!important;break-inside:avoid;}
@@ -373,12 +373,12 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   body[data-print-mode="calendar"] .cal-legend,
   body[data-print-mode="calendar"] .cal-day-detail{display:none!important}
   body[data-print-mode="calendar"] .cal-bar{margin-bottom:6px}
-  body[data-print-mode="calendar"] .cal-month-label{font-size:17px}
+  body[data-print-mode="calendar"] .cal-month-label{font-size:19px}
   /* 인쇄 폰트는 화면보다 한 단계 더 키움 — scale-to-fit으로 축소돼도 읽히도록(GM 가독성 지적 2026-07-18) */
-  body[data-print-mode="calendar"] .cal-table th{font-size:14px}
-  body[data-print-mode="calendar"] .cal-daynum{font-size:15px}
-  body[data-print-mode="calendar"] .cal-ev-count{font-size:12.5px}
-  body[data-print-mode="calendar"] .cal-badge{font-size:13.5px}
+  body[data-print-mode="calendar"] .cal-table th{font-size:16px}
+  body[data-print-mode="calendar"] .cal-daynum{font-size:17px}
+  body[data-print-mode="calendar"] .cal-ev-count{font-size:14.5px}
+  body[data-print-mode="calendar"] .cal-badge{font-size:15.5px}
   body[data-print-mode="calendar"] #calPrintOuter{overflow:hidden}
   body[data-print-mode="calendar"] .cal-badge,
   body[data-print-mode="calendar"] .cal-table td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
