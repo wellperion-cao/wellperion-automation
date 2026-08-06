@@ -986,8 +986,8 @@
   function ntCaptureToCanvas(pageSize){
     return new Promise(function(resolve, reject){
       var d = ntCollectData();
-      /* v2.38 — 방향(세로/가로) 반영 */
-      var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+      /* v2.38 — 방향(세로/가로) 반영 · v2.62 — 인쇄 옵션 위젯 방향 우선(ntOrient, 함수 선언 호이스팅) */
+      var orient = ntOrient();
       var html = ntBuildPageHtml(d.brand, d.titleKr, d.titleEn, d.bodyHtml, d.imgHtml, d.fontFam, d.fs, pageSize, orient);
       var sizeMap = {A3:[297,420], A4:[210,297]};
       var mm = sizeMap[pageSize] || [297,420];
@@ -1017,8 +1017,23 @@
     return 'WELLPERION_'+titleKr+'_'+d+'.'+ext;
   }
 
+  /* v2.62 — 용지(A4/A3)·방향은 공용 print_options.js가 <html data-print-paper>·
+     <html data-print-orientation>에 세팅해둔 값을 그대로 따른다(전사회의.html·상품기획.html과
+     동일 훅). 이전엔 PDF/PNG/인쇄 3곳 모두 'A3' 하드코딩 + 방향은 페이지 자체 select만 봐서
+     인쇄 옵션 위젯에서 A4·가로를 골라도 산출물은 항상 A3 세로로 나왔다(GM 2026-08-06 지적,
+     웰리 배418 실측 이관). 위젯 값이 없으면(로드 실패 등) 기존 페이지 자체 select로 폴백. */
+  function ntPaper(){
+    var p = document.documentElement.getAttribute('data-print-paper');
+    return p === 'A4' ? 'A4' : 'A3';
+  }
+  function ntOrient(){
+    var o = document.documentElement.getAttribute('data-print-orientation');
+    if(o === 'landscape' || o === 'portrait') return o;
+    return el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+  }
+
   window.ntDownloadPNG = function(){
-    ntCaptureToCanvas('A3').then(function(r){
+    ntCaptureToCanvas(ntPaper()).then(function(r){
       var link = document.createElement('a');
       link.download = ntDownloadFileName('png');
       link.href = r.canvas.toDataURL('image/png');
@@ -1027,10 +1042,10 @@
   };
 
   window.ntDownloadPDF = function(){
-    ntCaptureToCanvas('A3').then(function(r){
+    ntCaptureToCanvas(ntPaper()).then(function(r){
       var imgData = r.canvas.toDataURL('image/png');
       /* v2.38 — 방향 반영 (r.mm은 이미 swap됨) */
-      var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
+      var orient = ntOrient();
       var pdf = new jspdf.jsPDF({orientation:orient, unit:'mm', format:[r.mm[0], r.mm[1]]});
       pdf.addImage(imgData, 'PNG', 0, 0, r.mm[0], r.mm[1]);
       pdf.save(ntDownloadFileName('pdf'));
@@ -1040,10 +1055,13 @@
   /* v2.47 — 인쇄도 PDF/PNG와 동일하게 html2canvas 캡처 이미지를 새 창에 띄워 인쇄
      장점: 인쇄 결과 = PDF/PNG = 미리보기 비율 정합. 배경색·인쇄 옵션 무관 (이미지 인쇄) */
   window.ntPrint = function(){
-    ntCaptureToCanvas('A3').then(function(r){
+    var paper = ntPaper();
+    ntCaptureToCanvas(paper).then(function(r){
       var img = r.canvas.toDataURL('image/png');
-      var orient = el('noticeOrient') ? el('noticeOrient').value : 'portrait';
-      var sizeRule = orient === 'landscape' ? '420mm 297mm' : '297mm 420mm';
+      var orient = ntOrient();
+      var sizeMap = {A3:['297mm','420mm'], A4:['210mm','297mm']};
+      var wh = sizeMap[paper] || sizeMap.A3;
+      var sizeRule = orient === 'landscape' ? (wh[1]+' '+wh[0]) : (wh[0]+' '+wh[1]);
       var winSize = orient === 'landscape' ? 'width=1270,height=900' : 'width=900,height=1270';
       var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>WELLPERION NOTICE</title>' +
         '<style>@page{size:'+sizeRule+';margin:0;}*{margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}' +
