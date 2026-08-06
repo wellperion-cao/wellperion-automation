@@ -2726,6 +2726,38 @@ def run_daily_digest(early: bool = False) -> None:
     else:
         logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP (KAKAO_GO_STREAM2=False)")
 
+    # ── 오늘 완료된 운영부 업무 — 하루 일과 정리에도 포함 (GM 2026-08-06 "완료 알림은
+    #   완료 시 즉각 1회, 하루 일과 정리에서도 꼭 체크하고 정리해서 보내줘야해") ──────
+    #   판정은 즉각 알림(아래 _check_ops_done_immediate)과 같은 send_ops_digest 함수를
+    #   쓰지만, 여기는 build_daily_done_section 으로 '오늘' 완료건 전체를 매번 다시
+    #   모은다 — 이미 즉각 알림으로 나간 건도 다시 싣는다(중복억제 없음, GM 지시 —
+    #   즉각 알림은 스쳐가고 하루 정리는 남는다. 성격이 달라 배431 스냅샷을 안 씀).
+    #   발송처 = 즉각 알림과 같은 ★운영부(send_ops_digest.TARGET_ROOM) — 완료 소식은
+    #   한 곳에 모인다. 같은 킬스위치(status/ops_digest_send.json)를 공유해 GM이 그
+    #   기능을 끄면 여기도 같이 꺼진다(새 킬스위치 안 만듦).
+    try:
+        import send_ops_digest as _od
+        if _od.kill_switch_enabled():
+            daily_done_msg = _od.build_daily_done_section(_od._fetch_todo_rows(), today)
+            if daily_done_msg:
+                sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+                proc = subprocess.run(
+                    [sys.executable, str(sender), "--message", daily_done_msg, "--only-room", _od.TARGET_ROOM],
+                    cwd=str(REPO_ROOT), capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=180,
+                    env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+                )
+                tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+                logger.info(f"{label} 카톡 {_od.TARGET_ROOM}(오늘 완료건) 발송: {tail[0]}")
+                if proc.returncode != 0:
+                    _kakao_fail_notify("오늘 완료된 운영부 업무", tail[0], room=_od.TARGET_ROOM)
+            else:
+                logger.info(f"{label} 오늘 완료된 운영부 업무 0건 — 카톡 발송 없음")
+        else:
+            logger.info(f"{label} 완료건 정리 SKIP — ops_digest_send 킬스위치 OFF")
+    except Exception as e:
+        logger.error(f"{label} 오늘 완료건 카톡 발송 예외: {e}")
+
     # 카카오톡 ★부서장 방에도 문의 정리 발송 (GM 2026-07-18 · best-effort).
     if inquiry_plain:
         try:
@@ -2743,6 +2775,53 @@ def run_daily_digest(early: bool = False) -> None:
                 _kakao_fail_notify("문의 정리", tail[0], room=KAKAO_DEPTHEAD_ROOM)
         except Exception as e:
             logger.error(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송 예외: {e}")
+
+
+# ── 완료 즉시 알림 (10분 주기) — GM 2026-08-06 "완료 시 즉각 1회" ────────────────────
+#   진짜 즉시는 불가능하다 — 카톡 발송이 이 PC 데스크톱 카톡 앱을 직접 조작하는 구조라
+#   (scripts/kakao_report_sender.py) 서버가 완료 이벤트를 실시간으로 못 받는다. 최선은
+#   짧은 주기로 확인해 바로 보내는 것. 10분을 고른 이유: 5분 주기 잡이 이미 여럿(위
+#   pre_task_notifier·env_reload_watcher) GAS 를 두드리는데, 완료 통보가 몇 분 늦어도
+#   실무진 업무엔 지장이 없다 — git_lock_janitor 10분 주기(아래 등록부)와 같은 선.
+#   새 감시기·새 예약작업 아님(약속 L21) — 상주 스케줄러 안의 잡 하나로 흡수.
+#   판정·중복방지는 새로 안 짠다 — send_ops_digest.build_done_section(배431)을 그대로
+#   불러 아침 다이제스트와 하트비트 스냅샷(DONE_HEARTBEAT_ID) 하나를 공유한다: 여기서
+#   카톡 발송에 성공했을 때만 스냅샷을 전진시키므로, 같은 완료건이 아침 회차에서
+#   다시 '신규'로 잡히지 않는다.
+def _check_ops_done_immediate() -> None:
+    try:
+        import send_ops_digest as _od
+    except Exception as exc:
+        logger.warning(f"[완료 즉시알림] send_ops_digest import 실패: {exc}")
+        return
+    if _od.in_ops_quiet_hours(datetime.now().hour):
+        return  # 조용한 시간(22:00~08:00) — 확인 생략, 스냅샷 안 건드림(다음 확인·아침이 자연히 집어감)
+    try:
+        if not _od.kill_switch_enabled():
+            return  # 아침 다이제스트와 같은 킬스위치(status/ops_digest_send.json)
+        prev, bootstrap = _od._done_state()
+        section, current = _od.build_done_section(_od._fetch_todo_rows(), prev)
+        if bootstrap:
+            _od._save_done_state(current)  # 최초실행 — 과거 완료건 일괄 스팸 방지, 스냅샷만
+            return
+        if not section:
+            return
+        proc = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
+             "--message", section, "--only-room", _od.TARGET_ROOM],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=180,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+        )
+        out = (proc.stdout or "").strip()
+        if proc.returncode == 0 and "DONE" in out:
+            _od._save_done_state(current)  # 발송 성공 시에만 전진 — 실패하면 다음 주기 재시도
+            logger.info(f"[완료 즉시알림] {_od.TARGET_ROOM} 발송 완료 (신규 {len(current) - len(prev)}건)")
+        else:
+            tail = out.splitlines()[-1] if out else "출력없음"
+            logger.warning(f"[완료 즉시알림] 발송 실패(rc={proc.returncode}) — {tail} · 다음 주기 재시도(스냅샷 미전진)")
+    except Exception as exc:
+        logger.warning(f"[완료 즉시알림] 예외(다음 주기 재시도): {exc}")
 
 
 def run_stream_3_mgmt() -> None:
@@ -3054,6 +3133,16 @@ def main():
         coalesce=True,
     )
     logger.info("env_reload_watcher 등록 완료 (5분 주기) — v1.2")
+
+    # ── 완료 즉시 알림 (10분 주기) — GM 2026-08-06 · 근거·중복방지 방식은 함수 정의부 주석 ──
+    scheduler.add_job(
+        _check_ops_done_immediate,
+        trigger=IntervalTrigger(minutes=10),
+        id="ops_done_immediate_alert",
+        misfire_grace_time=300,
+        coalesce=True,
+    )
+    logger.info("ops_done_immediate_alert 등록 완료 (10분 주기) — 완료 즉시 알림(조용한시간 22-08 제외)")
 
     # ── IG 발행검증 자동 대조 스윕 (30분 주기) — INC-003 자동화 ───────────────────
     scheduler.add_job(

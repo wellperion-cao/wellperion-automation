@@ -65,16 +65,33 @@ ROOMS_CONFIG = ROOT / "scripts" / "kakao_rooms.json"
 
 # ══════════════════════════════════════════════════════════════════════════
 # 업무 시트 완료 알림 (2026-08-06 GM 지시 — "체크완료를 하면 카카오톡방에 완료되었다는
-# 내용이 있으면 좋을듯")
+# 내용이 있으면 좋을듯" + "완료 알림은 완료 시 즉각 1회, 하루 일과 정리에서도 꼭 체크")
 #
 # 체크 자리는 새로 안 만든다 — 실무진이 이미 쓰는 업무 시트(S3 · action=todo_list)의
-# '상태' 칸이 곧 체크 UI다. 이 함수는 그 칸이 '완료'로 바뀐 운영부 담당 건을 골라
-# 운영부 다이제스트 본문에 한 절 붙인다. 비교·발송은 위 relay 구간과 같은 자리
-# (send_ops_digest.py 발신 관문 하나)에 흡수한다 — 새 스크립트·새 예약작업 없음.
+# '상태' 칸이 곧 체크 UI다. 아래 함수들은 그 칸이 '완료'로 바뀐 운영부 담당 건을 골라
+# 두 자리에 흡수한다 — 새 스크립트·새 예약작업 없음:
+#   ① 즉각 알림 — telegram_bot/daily_scheduler.py 가 10분 주기로 build_done_section
+#      (아래)을 그대로 불러 새로 완료된 건만 ★운영부에 바로 보낸다. 아침 다이제스트
+#      (이 파일 main())와 하트비트 스냅샷 하나(DONE_HEARTBEAT_ID)를 공유해 같은 건이
+#      두 번 나가지 않는다.
+#   ② 하루 일과 정리 — daily_scheduler.run_daily_digest 가 build_daily_done_section
+#      (아래)으로 '오늘' 완료건 전체를 다시 모아 싣는다. 여기는 중복억제를 안 건다
+#      (성격이 다르다 — 즉각=통보, 정리=하루치 요약. GM 지시).
 # ══════════════════════════════════════════════════════════════════════════
 DONE_HEARTBEAT_ID = "ops-digest-done-tasks"  # 지난 회차에 알린 완료건 스냅샷(상설 하트비트 1파일)
 DONE_SHOW_N = 5
 OPS_STAFF = ("최준용M", "이경연 실장", "윤병현AM")  # 운영부 담당자(GM 지시 원문 3인)
+
+# 조용한 시간(22:00~08:00) — 즉각 완료 알림은 이 시간대엔 확인 자체를 건너뛴다(GM 상시
+# 지시: 밤에는 보내지 않는다). 이 시간에 완료된 건은 스냅샷을 안 건드리므로 다음 날
+# 08시 이후 첫 확인이나 아침 다이제스트가 자연히 집어간다 — 별도 이월 로직 불필요.
+OPS_QUIET_START_HOUR = 22
+OPS_QUIET_END_HOUR = 8
+
+
+def in_ops_quiet_hours(hour: int) -> bool:
+    """hour(0~23)가 조용한 시간대(22:00~08:00, 익일 포함)인가."""
+    return hour >= OPS_QUIET_START_HOUR or hour < OPS_QUIET_END_HOUR
 
 
 def _fetch_todo_rows() -> list:
@@ -92,17 +109,23 @@ def _fetch_todo_rows() -> list:
         return []
 
 
+def _ops_done_rows(rows: list) -> list:
+    """업무 시트 행 중 운영부 담당자(OPS_STAFF)의 완료건만 — build_done_section(즉각·
+    아침)과 build_daily_done_section(하루 정리) 양쪽이 같은 필터를 공유한다(약속 L01)."""
+    from collectors.ops_shared import TODO_DONE_STATUSES
+
+    return [r for r in rows if isinstance(r, dict)
+            and str(r.get("상태", "")).strip() in TODO_DONE_STATUSES
+            and any(n in str(r.get("담당자", "")) for n in OPS_STAFF)
+            and str(r.get("id", ""))]
+
+
 def build_done_section(rows: list, prev_ids: dict) -> "tuple[str, dict]":
     """운영부 담당자(OPS_STAFF) 몫 중 상태='완료'인 건에서 지난 회차 이후 새로
     완료된 것만 골라 절로 만든다. 비교 키 = 시트 행 id 고정(업무명은 바뀔 수 있다 —
     relay 구간의 task_id 교훈과 동일). 반환 (섹션 텍스트, 현재 완료건 {id: 표시줄}) —
     두 번째 값은 변화가 없어도 다음 회차 비교용으로 그대로 저장한다."""
-    from collectors.ops_shared import TODO_DONE_STATUSES
-
-    done = [r for r in rows if isinstance(r, dict)
-            and str(r.get("상태", "")).strip() in TODO_DONE_STATUSES
-            and any(n in str(r.get("담당자", "")) for n in OPS_STAFF)
-            and str(r.get("id", ""))]
+    done = _ops_done_rows(rows)
     current = {str(r["id"]): f"{str(r.get('업무명', '')).strip()} — {str(r.get('담당자', '')).strip()} 완료"
                for r in done}
 
@@ -116,6 +139,23 @@ def build_done_section(rows: list, prev_ids: dict) -> "tuple[str, dict]":
     if len(new_ids) > DONE_SHOW_N:
         lines.append(f" • 외 {len(new_ids) - DONE_SHOW_N}건")
     return "\n".join(lines), current
+
+
+def build_daily_done_section(rows: list, date_str: str) -> str:
+    """'하루 일과 정리'용 — date_str(YYYY-MM-DD)에 완료된 운영부 건 전체를 매번
+    다시 모아 보여준다(중복억제 없음 — build_done_section 과 다른 용도: 즉각 알림으로
+    이미 나갔어도 하루 정리엔 다시 싣는다, GM 지시). 완료 시각 = 시트 '수정일' 칸
+    (hangro_board.build_work_block 의 '어제 완료(수정일=target_date)'와 동일 관례)."""
+    done = [r for r in _ops_done_rows(rows) if str(r.get("수정일", "") or "").startswith(date_str)]
+    if not done:
+        return ""
+
+    lines = [f"✅ 오늘 완료된 운영부 업무 {len(done)}건"]
+    for r in done[:DONE_SHOW_N]:
+        lines.append(f" • {str(r.get('업무명', '')).strip()} — {str(r.get('담당자', '')).strip()} 완료")
+    if len(done) > DONE_SHOW_N:
+        lines.append(f" • 외 {len(done) - DONE_SHOW_N}건")
+    return "\n".join(lines)
 
 
 def _done_state() -> "tuple[dict, bool]":
