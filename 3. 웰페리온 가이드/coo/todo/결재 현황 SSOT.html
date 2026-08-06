@@ -285,43 +285,48 @@ html,body{background:var(--bg);color:var(--text);font-family:"Pretendard","Apple
   .opinion-row{background:#f5f0fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   @page{margin:10mm;size:A4}
   /* ── 결재 보고서 인쇄 — 업무 현황 보고서(rr-page)와 동일 품질로 통일 (2026-06-16 GM) ── */
-  #approvalPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:11px;line-height:1.6;padding:0;page-break-after:always}
+  #approvalPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:13px;line-height:1.6;padding:0;page-break-after:always}
   #approvalPrintArea .rr-page:last-child{page-break-after:auto}
   #approvalPrintArea .rr-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111}
   #approvalPrintArea .rr-wordmark{font-size:15px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111}
   #approvalPrintArea .rr-wordmark small{display:block;font-size:8px;font-weight:600;letter-spacing:0.12em;color:#666;margin-top:2px}
-  #approvalPrintArea .rr-approval-table{border-collapse:collapse;font-size:9px}
+  #approvalPrintArea .rr-approval-table{border-collapse:collapse;font-size:10.5px}
   #approvalPrintArea .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:50px;vertical-align:top}
-  #approvalPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:9px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .rr-approval-role{font-weight:700;font-size:9px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px}
+  #approvalPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;padding:6px 4px;font-size:10.5px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #approvalPrintArea .rr-approval-role{font-weight:700;font-size:10.5px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px}
   #approvalPrintArea .rr-approval-sign{font-size:11px;min-height:52px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700}
   #approvalPrintArea .rr-doc-title{text-align:center;font-size:18px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px}
-  #approvalPrintArea .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px}
+  #approvalPrintArea .rr-info-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
   #approvalPrintArea .rr-info-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;width:18%;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-info-table td{border:1px solid #bbb;padding:4px 8px}
-  #approvalPrintArea .rr-section-title{font-size:11px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
-  #approvalPrintArea .rr-section-body{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
-  #approvalPrintArea .rr-result-box{font-size:10px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
+  #approvalPrintArea .rr-section-title{font-size:13px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px}
+  #approvalPrintArea .rr-section-body{font-size:12px;white-space:pre-wrap;word-break:break-word;padding:8px;border:1px solid #ddd;background:#fafafa;line-height:1.7}
+  #approvalPrintArea .rr-result-box{font-size:12px;white-space:pre-wrap;word-break:break-word;padding:8px 10px;border:2px solid #111;background:#f5f5f5;line-height:1.7}
   /* ── 문서 서식(HTML 기획안·결과보고) — 디자인 그대로 인쇄 (2026-07-15) ── */
   #approvalPrintArea .rr-doc,#approvalPrintArea .rr-doc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .rr-doc{font-size:10px;line-height:1.6}
+  #approvalPrintArea .rr-doc{font-size:12px;line-height:1.6}
+  /* 인쇄 가독성 — 화면에선 연한 회색이 보기 좋지만 종이에선 흐려 안 읽힌다(GM 지시 2026-08-06).
+     제목·강조 색은 그대로 두고 본문 계열만 진하게. */
+  #approvalPrintArea .rr-doc p,#approvalPrintArea .rr-doc li,#approvalPrintArea .rr-doc td,
+  #approvalPrintArea .rr-doc span,#approvalPrintArea .rr-doc div{color:#1f1f1f!important}
+  #approvalPrintArea .rr-section-body,#approvalPrintArea .rr-result-box{color:#1f1f1f}
   #approvalPrintArea .rr-doc table{border-collapse:collapse;width:100%}
   #approvalPrintArea .rr-doc td,#approvalPrintArea .rr-doc th{border:1px solid #bbb;padding:4px 6px;vertical-align:top}
   #approvalPrintArea .rr-doc img{max-width:100%;height:auto}
   /* ── 첨부 사진 인라인 — 이미지 첨부는 문서에 직접 표시(비이미지는 링크). 페이지 넘침 방지 (2026-07-02 시토) ── */
   #approvalPrintArea .rr-attach{page-break-inside:avoid;margin:4px 0}
   #approvalPrintArea .rr-attach-img{display:block;max-width:100%;max-height:360px;object-fit:contain;border:1px solid #bbb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #approvalPrintArea .rr-attach-link{font-size:10px;word-break:break-all}
-  #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:10px}
+  #approvalPrintArea .rr-attach-link{font-size:11px;word-break:break-all}
+  #approvalPrintArea .rr-log-table{width:100%;border-collapse:collapse;font-size:11.5px}
   #approvalPrintArea .rr-log-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-log-table td{border:1px solid #ddd;padding:4px 8px;vertical-align:top}
   #approvalPrintArea .rr-log-date{white-space:nowrap;width:90px}
   /* ── 결재 고유: 결재선 ── */
-  #approvalPrintArea .rr-route{font-size:10px;color:#222;margin:4px 0 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  #approvalPrintArea .rr-route{font-size:11.5px;color:#222;margin:4px 0 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   #approvalPrintArea .rr-route b{font-weight:700}
   #approvalPrintArea .rr-route .rr-route-step{border:1px solid #999;border-radius:4px;padding:2px 8px;background:#f7f7f7;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #approvalPrintArea .rr-route .rr-route-arrow{color:#888;font-weight:700}
-  #approvalPrintArea .rr-footer{margin-top:20px;padding-top:8px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:9px;color:#666}
+  #approvalPrintArea .rr-footer{margin-top:12px;padding-top:6px;border-top:1px solid #bbb;display:flex;justify-content:space-between;font-size:10px;color:#666}
   #approvalPrintArea .rr-empty{font-size:13px;color:#555}
   /* 칸반 보드 → 인쇄 시 컬럼을 세로 나열(클리핑 방지) */
   .kanban-board{display:block!important;overflow:visible!important;padding:0!important}
