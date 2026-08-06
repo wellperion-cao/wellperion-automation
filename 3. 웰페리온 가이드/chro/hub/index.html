@@ -711,6 +711,7 @@
     <div class="modal-msg" id="hcMsg"></div>
     <div class="modal-act">
       <button class="btn btn-ghost" id="hcCancel">취소</button>
+      <button class="btn btn-ghost" id="hcForce" style="display:none;border-color:#c8891c;color:#c8891c">강제 재등록으로 다시 요청</button>
       <button class="btn" id="hcConfirm">입사 확정 실행</button>
     </div>
   </div>
@@ -4691,6 +4692,7 @@ function openHireCompleteModal(pageId,name){
   document.getElementById("hcDate").value=(__hcA&&__hcA["합류 가능일"])?fmtD(__hcA["합류 가능일"]):"";
   var msg=document.getElementById("hcMsg");msg.textContent="";msg.className="modal-msg";
   var btn=document.getElementById("hcConfirm");btn.disabled=false;btn.textContent="입사 확정 실행";
+  var fbtn0=document.getElementById("hcForce");if(fbtn0)fbtn0.style.display="none";
   document.getElementById("hireCompleteModal").classList.add("show");
 }
 function closeHireCompleteModal(){document.getElementById("hireCompleteModal").classList.remove("show");}
@@ -4717,7 +4719,7 @@ async function saveJoinDate(pageId,name){
     alert("서버 오류: "+((e&&e.message)||e));
   }
 }
-async function submitHireComplete(){
+async function submitHireComplete(force){
   if(!hcTarget)return;
   var dept=document.getElementById("hcDept").value;
   var sosok=document.getElementById("hcSosok").value;
@@ -4726,20 +4728,29 @@ async function submitHireComplete(){
   var date=document.getElementById("hcDate").value;
   var msg=document.getElementById("hcMsg");
   var btn=document.getElementById("hcConfirm");
+  var fbtn=document.getElementById("hcForce");
   if(!dept){msg.className="modal-msg err";msg.textContent="부서를 선택하세요.";return;}
   if(!sosok){msg.className="modal-msg err";msg.textContent="소속을 선택하세요.";return;}
   if(!empType){msg.className="modal-msg err";msg.textContent="고용 형태를 선택하세요.";return;}
   if(!date){msg.className="modal-msg err";msg.textContent="입사일을 입력하세요.";return;}
   btn.disabled=true;btn.textContent="처리 중…";
+  if(fbtn)fbtn.style.display="none";
   msg.className="modal-msg";msg.textContent="시트에 반영하는 중…";
   try{
     var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({action:"hire-complete",adminPassword:SESSION_PW,
         applicantPageId:hcTarget.pageId,name:hcTarget.name,
-        dept:dept,sosok:sosok,rank:rank,empType:empType,joinDate:date})});
+        dept:dept,sosok:sosok,rank:rank,empType:empType,joinDate:date,
+        forceRegister:(force===true)})});
     var data={};try{data=await r.json();}catch(e){}
     if(!r.ok||!data.ok){
-      msg.className="modal-msg err";msg.textContent=(data.error||"입사 확정 실패");
+      // [추가 2026-08-05 A-5 F-1] 중복가드(게이트1) 차단 시 백엔드 안내문(data.message)을 그대로 보여주고
+      // "강제 재등록으로 다시 요청" 버튼을 노출한다. 클릭해도 바로 재전송하지 않고 confirm()으로 관리자가
+      // 한 번 더 의도를 확인한 뒤에만 forceRegister:true로 재요청 — 중복가드 자체는 그대로 살아있고
+      // 무심코 두 번 눌러 중복 생성되는 사고만 막는다.
+      var __dupCodes={"duplicate_employee_exact":1,"duplicate_name_warning":1};
+      msg.className="modal-msg err";msg.textContent=(data.message||data.error||"입사 확정 실패");
+      if(fbtn)fbtn.style.display=(data.error&&__dupCodes[data.error])?"":"none";
       btn.disabled=false;btn.textContent="입사 확정 실행";return;
     }
     var parts=["• 임직원 명부: "+(data.empPage?"생성 완료":"실패 — "+(data.empPageMsg||""))];
@@ -4768,7 +4779,12 @@ async function submitHireComplete(){
     btn.disabled=false;btn.textContent="입사 확정 실행";
   }
 }
-document.getElementById("hcConfirm").addEventListener("click",submitHireComplete);
+document.getElementById("hcConfirm").addEventListener("click",function(){submitHireComplete(false);});
+document.getElementById("hcForce").addEventListener("click",function(){
+  // [추가 2026-08-05 A-5 F-1] 강제 재등록 — 무심코 눌러 중복 생성되는 사고를 막기 위해 재확인 게이트 유지.
+  if(!confirm("정말로 같은 성명으로 다시 등록하시겠습니까?\n동일 인물이 맞다면 명부·온보딩이 중복 생성됩니다.\n신규 동명이인 입사자임을 확인했을 때만 계속하세요."))return;
+  submitHireComplete(true);
+});
 document.getElementById("hcCancel").addEventListener("click",closeHireCompleteModal);
 document.getElementById("hireCompleteModal").addEventListener("click",function(e){
   if(e.target.id==="hireCompleteModal")closeHireCompleteModal();
