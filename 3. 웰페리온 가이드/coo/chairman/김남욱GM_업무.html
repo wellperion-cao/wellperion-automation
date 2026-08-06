@@ -100,6 +100,7 @@
   .sec{border:1.5px solid var(--deep);margin-bottom:12px;}
   .sec > summary{list-style:none;cursor:pointer;padding:9px 14px;background:var(--deep);color:#fff;
                  font-size:15.5px;font-weight:800;letter-spacing:.02em;display:flex;align-items:baseline;gap:9px;
+                 flex-wrap:wrap;
                  -webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .sec > summary::-webkit-details-marker{display:none;}
   .sec > summary .ic{font-size:16px;}
@@ -108,6 +109,10 @@
   .sec > summary .sec-act{font-size:11.5px;font-weight:700;color:#fff;text-decoration:none;white-space:nowrap;
     border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:3px 11px;margin-left:10px;}
   .sec > summary .sec-act:hover{background:#fff;color:var(--deep);}
+  .sec > summary .sec-act:disabled{opacity:.45;cursor:default;}
+  .sec > summary .sec-act:disabled:hover{background:transparent;color:#fff;}
+  /* 헤더로 옮겨온 「보고 문안 복사」 안내문 — 흰 배경 대신 옅은 색으로(GM 2026-08-06, 대표님구획→헤더 이동) */
+  .sec > summary .rnote{color:#C9D2CC;font-weight:600;}
   @media print{ .sec > summary .sec-act{display:none;} }
   .sec-body{padding:12px 14px 14px;}
   .sub-h{display:flex;align-items:baseline;gap:10px;border-bottom:1.5px solid var(--deep);
@@ -143,11 +148,20 @@
   .pbar{height:4px;background:var(--steam);margin:6px 0 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .pbar > i{display:block;height:100%;background:var(--mid);}
   .lead-p{font-size:13px;line-height:1.6;margin:0 0 8px;}
-  .next-box{border-top:1px solid var(--line);padding-top:7px;margin-top:2px;}
-  .next-box .nh{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--grey);margin-bottom:4px;}
-  .next-box ul{margin:0;padding-left:2px;list-style:none;}
-  .next-box li{font-size:12.5px;line-height:1.55;margin-bottom:3px;}
-  .next-box li:before{content:"\25A1  ";color:var(--brass);font-weight:800;}
+  /* 할 일 체크박스(舊 next-box 자리 재사용, 2026-08-06 GM 지시 "체크할 수 있게") — □→☑ 클릭 체크 */
+  .chk-box{border-top:1px solid var(--line);padding-top:7px;margin-top:2px;}
+  .chk-box .nh{font-size:11.5px;font-weight:800;letter-spacing:.08em;color:var(--grey);margin-bottom:4px;}
+  .chk-box .nh .gm-check-cnt{color:var(--brass);font-weight:700;margin-left:6px;letter-spacing:0;}
+  .chk-box ul{margin:0;padding-left:2px;list-style:none;}
+  .chk-box li{font-size:12.5px;line-height:1.55;margin-bottom:3px;}
+  .chk-box label{display:flex;gap:6px;align-items:baseline;cursor:pointer;}
+  .chk-box input[type="checkbox"]{margin:0;cursor:pointer;}
+  .chk-box input[type="checkbox"]:checked + span{color:var(--grey);text-decoration:line-through;}
+  @media print{ .chk-box input[type="checkbox"]{-webkit-appearance:checkbox;} }
+  /* 카드 제목 옆 작은 아이콘 링크 — 큰 「…보기 →」 버튼 대체(GM 2026-08-06 "너무 정신없다") */
+  .top h2 .ic-link{font-size:13px;text-decoration:none;margin-left:5px;vertical-align:middle;}
+  @media print{ .top h2 .ic-link{display:none;} }
+  .chkcnt{font-size:11.5px;font-weight:700;color:var(--mid);}
   details.fold{margin-top:8px;border-top:1px solid var(--line);padding-top:6px;}
   details.fold > summary{list-style:none;cursor:pointer;font-size:11.5px;font-weight:800;color:var(--mid);letter-spacing:.02em;}
   details.fold > summary::-webkit-details-marker{display:none;}
@@ -232,6 +246,11 @@
     <summary><span class="ic">📋</span> 경영 보고건 <span class="cnt"><span id="rep-total">—</span></span>
       <a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">회장님 A3</a>
       <a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">대표님 A3</a>
+      <!-- ② 「보고 문안 복사」 — 대표님 구획 안에 있던 것을 헤더 우측으로 이동 + 토글(GM 지시 2026-08-06
+           "경영 보고건 우측이 좋을 것 같고 열었다 닫을 수 있게"). id·판정 로직은 _owner_directive.js 그대로 재사용 —
+           위치만 옮긴다. -->
+      <button type="button" class="sec-act" id="owner-bulk-btn" disabled onclick="event.stopPropagation();">📋 보고 문안 복사</button>
+      <span class="sec-act rnote" style="border:none;padding:0;margin-left:0;">대표님·회장님 보고건이 한 문안으로 복사됩니다.</span>
       <!-- ③ 결재 문서형 인쇄 — GM 지시 2026-08-06 "보고를 결재 SSOT처럼" -->
       <button type="button" class="sec-act" style="background:transparent;cursor:pointer;font-family:inherit;"
               id="print-approval-doc-btn" onclick="event.stopPropagation(); printGmApprovalDoc();">결재 문서 인쇄</button>
@@ -251,10 +270,9 @@
       </div>
 
       <div class="sub-h" style="margin-top:14px;"><span class="who">🤵 대표님</span><span class="cnt3" id="owner-grp-cnt">불러오는 중…</span></div>
+      <!-- 「보고 문안 복사」 버튼·안내문은 헤더 우측으로 이동(GM 2026-08-06) — 여기는 결과(건수·상태)만 남긴다 -->
       <div class="repbar">
         <span class="cnt2" id="owner-count">불러오는 중…</span>
-        <button type="button" class="rbtn" id="owner-bulk-btn" disabled>보고 문안 복사</button>
-        <span class="rnote">대표님·회장님 보고건이 한 문안으로 복사됩니다.</span>
         <span class="rstatus" id="owner-bulk-status"></span>
       </div>
       <pre class="digest" id="owner-digest"></pre>
@@ -276,7 +294,11 @@
 
   <!-- ③ 김남욱 GM -->
   <details class="sec" id="sec-gm" open>
-    <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span><a class="sec-act" href="../../월간운영계획.html" onclick="event.stopPropagation();">월간운영계획</a></summary>
+    <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span>
+      <!-- ① 할 일 체크 저장 — 체크는 화면에 즉시 반영, 저장은 한 번에 몰아서(GM 2026-08-06 지시).
+           저장 경로는 월간운영계획.html window._planSave() 방식 그대로(신규 API 없음, prompt+commit_file). -->
+      <button type="button" class="sec-act" id="gm-save-btn" disabled onclick="event.stopPropagation(); window.gmSaveChecks();">변경 저장</button>
+      <a class="sec-act" href="../../월간운영계획.html" onclick="event.stopPropagation();">월간운영계획</a></summary>
     <div class="sec-body">
       <div class="sum">
         <h3>업무명 · 상태</h3>
@@ -359,10 +381,16 @@
     return out.join('');
   }
 
-  /* 「다음 할 일」 = 아직 안 끝난 체크(□) 앞 3개. 요약을 지어내지 않고 있는 줄만 뽑는다. */
-  function nextTodos(lines) {
-    return lines.filter(function (t) { return /^[\u25A1\u2610]/.test(t); })
-                .slice(0, 3).map(function (t) { return t.slice(1).trim(); });
+  // 할 일 체크(□/☑) 줄만 뽑는다. 줄 번호(idx)를 같이 들고 나가야 체크 시 그 줄 하나만 바꾸고
+  // 나머지 원문은 그대로 둘 수 있다(GM 2026-08-06 지시 — nextTodos() 대체).
+  function extractTodos(raw) {
+    var lines = String(raw || '').split(/\r?\n/);
+    var out = [];
+    lines.forEach(function (ln, idx) {
+      var m = /^(\s*)([\u25A1\u2611])(.*)$/.exec(ln);
+      if (m) out.push({ idx: idx, checked: m[2] === '\u2611', text: m[3].trim() });
+    });
+    return out;
   }
 
   function readPlan() {
@@ -380,40 +408,53 @@
   var elGmCnt = document.getElementById('gm-grp-cnt');
   var elGmGrid = document.getElementById('gm-grid');
   var elGmSum = document.getElementById('gm-sum-body');
+  // ① 할 일 체크 상태 — gmNoteLines[목표id] = progress_note 줄 배열(체크하면 이 배열만 바뀐다).
+  // dirtyIds = 아직 저장 안 한 목표id 모음. gmPrintRows = 결재 문서 인쇄용 GM 표 데이터(renderGm이 채운다).
+  var gmNoteLines = {}, dirtyIds = {}, gmPrintRows = [];
 
   function renderGm(items) {
     if (items === null) {
       elGmGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
-      elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = ''; return;
+      elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = ''; gmPrintRows = []; return;
     }
     elGmCnt.textContent = items.length + '건';
     if (!items.length) {
       elGmGrid.innerHTML = '<div class="rep-empty">이번 달 GM 직접 관장 건이 없습니다.</div>';
-      elGmSum.innerHTML = ''; return;
+      elGmSum.innerHTML = ''; gmPrintRows = []; return;
     }
+    gmNoteLines = {};
     elGmGrid.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
       var sp = splitNote(it.note);
-      var todos = nextTodos(sp.body);
+      var todos = extractTodos(it.note);
+      var hasChecks = todos.length > 0;
+      if (hasChecks) gmNoteLines[it.id] = it.note.split(/\r?\n/);
+      var doneCount = todos.filter(function (t) { return t.checked; }).length;
       var pct = (typeof it.progress === 'number') ? it.progress : null;
       var stCls = it.status === '진행' ? 'on' : (it.status === '이월' ? 'carry' : 'plan');
       return '<div class="item" id="gm-' + esc(it.id) + '">' +
         '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
-        (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</h2>' +
+        (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
+        // ③ 큰 「…보기 →」 버튼 대신 제목 옆 작은 아이콘으로(GM 2026-08-06 "너무 정신없다")
+        ' <a class="ic-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '" title="월간운영계획에서 보기">📌</a>' +
+        (it.doc ? '<a class="ic-link" href="' + esc(it.doc) + '" target="_blank" title="정리본 열기 (A3 인쇄용)">📄</a>' : '') +
+        '</h2>' +
         '<span class="badges"><span class="st ' + stCls + '">' + esc(it.status || '—') + '</span>' +
-        (pct === null ? '' : '<span class="pct">' + pct + '%</span>') + '</span></div>' +
+        (pct === null ? '' : '<span class="pct">' + pct + '%</span>') +
+        (hasChecks ? '<span class="chkcnt">' + doneCount + '/' + todos.length + ' 완료</span>' : '') +
+        '</span></div>' +
         (pct === null ? '' : '<div class="pbar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>') +
         '<p class="body">' + esc(it.target || '내용 없음') + '</p>' +
         (sp.lead ? '<p class="lead-p">' + esc(sp.lead.length > 170 ? sp.lead.slice(0, 170) + '…' : sp.lead) + '</p>' : '') +
-        (todos.length ? '<div class="next-box"><div class="nh">다음 할 일</div><ul>' +
-            todos.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' : '') +
+        // ① 할 일 체크박스 — □/☑ 줄을 그대로 클릭 체크로(GM 2026-08-06 지시). 체크는 gmNoteLines[id]에 즉시 반영.
+        (hasChecks ? '<div class="chk-box"><div class="nh">할 일 <span class="gm-check-cnt">' + doneCount + '/' + todos.length + ' 완료</span></div><ul>' +
+            todos.map(function (t) {
+              return '<li><label><input type="checkbox" class="gm-chk" data-obj-id="' + esc(it.id) + '" data-idx="' + t.idx + '"' +
+                (t.checked ? ' checked' : '') + '><span>' + esc(t.text) + '</span></label></li>';
+            }).join('') + '</ul></div>' : '') +
         (sp.body.length ? '<details class="fold"><summary>내용 전체</summary><div class="nb">' + renderLines(sp.body) + '</div></details>' : '') +
         (sp.logs.length ? '<details class="fold"><summary>경과 기록 ' + sp.logs.length + '건</summary><div class="nb">' +
             sp.logs.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></details>' : '') +
-        '<div>' +
-        '<a class="doc-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '">📌 월간운영계획에서 이 목표 보기 →</a>' +
-        (it.doc ? '<a class="doc-link" href="' + esc(it.doc) + '" target="_blank">📄 정리본 열기 (A3 인쇄용) →</a>' : '') +
-        '</div>' +
         '</div>';
     }).join('');
     elGmSum.innerHTML = items.map(function (it, i) {
@@ -422,12 +463,105 @@
       return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
         esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + '</td></tr>';
     }).join('');
+    // ① 결재 문서 인쇄용 GM 업무 표(업무명·상태·진척·할 일 완료 수) — printGmApprovalDoc()이 재사용한다.
+    gmPrintRows = items.map(function (it) {
+      var todos = extractTodos(it.note);
+      var done = todos.filter(function (t) { return t.checked; }).length;
+      return {
+        title: it.title,
+        status: it.status || '—',
+        pct: (typeof it.progress === 'number') ? (it.progress + '%') : '—',
+        doneRatio: todos.length ? (done + '/' + todos.length) : '—'
+      };
+    });
   }
 
   elGmGrid.innerHTML = '<div class="rep-empty">불러오는 중…</div>';
   readPlan().then(function (plan) {
     renderGm(window.WellperionGmDirect.extract(plan, now.getFullYear() + '-' + pad2(now.getMonth() + 1)));
   }).catch(function () { renderGm(null); });
+
+  // ① 체크박스 클릭 — gmNoteLines[id]만 바꾸고 화면 숫자만 즉시 갱신한다(저장은 안 함).
+  function refreshCardProgress(id) {
+    var lines = gmNoteLines[id];
+    if (!lines) return;
+    var todos = extractTodos(lines.join('\n'));
+    if (!todos.length) return;
+    var done = todos.filter(function (t) { return t.checked; }).length;
+    var cntTxt = done + '/' + todos.length + ' 완료';
+    var card = document.getElementById('gm-' + id);
+    if (!card) return;
+    var a = card.querySelector('.gm-check-cnt'); if (a) a.textContent = cntTxt;
+    var b = card.querySelector('.chkcnt'); if (b) b.textContent = cntTxt;
+  }
+  elGmGrid.addEventListener('change', function (e) {
+    var cb = e.target.closest ? e.target.closest('.gm-chk') : null;
+    if (!cb) return;
+    var id = cb.getAttribute('data-obj-id');
+    var idx = Number(cb.getAttribute('data-idx'));
+    var lines = gmNoteLines[id];
+    if (!lines || lines[idx] === undefined) return;
+    var m = /^(\s*)([\u25A1\u2611])(.*)$/.exec(lines[idx]);
+    if (!m) return;
+    lines[idx] = m[1] + (cb.checked ? '\u2611' : '\u25A1') + m[3];
+    dirtyIds[id] = true;
+    refreshCardProgress(id);
+    var saveBtn = document.getElementById('gm-save-btn');
+    if (saveBtn) saveBtn.disabled = false;
+  });
+
+  // 「변경 저장」 — 월간운영계획.html window._planSave() 방식 그대로 재사용(prompt+commit_file, 새 API 없음).
+  // 저장 직전 최신 정본을 다시 읽어 그 위에 체크만 얹는다 — 통째로 덮어써 남의 편집을 날리지 않는다(GM 지시).
+  window.gmSaveChecks = function () {
+    var ids = Object.keys(dirtyIds);
+    if (!ids.length) return;
+    var pin = prompt('변경 저장 — GM 비밀번호를 입력하세요:');
+    if (pin === null || pin === '') return;
+    var btn = document.getElementById('gm-save-btn');
+    if (btn) { btn.textContent = '저장 중…'; btn.disabled = true; }
+    var monthKey = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
+    var todayStr = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    readPlan().then(function (freshPlan) {
+      var month = freshPlan && freshPlan.months && freshPlan.months[monthKey];
+      if (!month) throw new Error('이번 달 데이터를 찾지 못했습니다');
+      ids.forEach(function (id) {
+        var obj = (month.objectives || []).filter(function (o) { return o.id === id; })[0];
+        if (!obj || !gmNoteLines[id]) return;
+        var newNote = gmNoteLines[id].join('\n');
+        obj.progress_note = newNote;
+        // ① 진척률 자동 반영 — 체크 항목이 있는 목표만. 체크 항목 없는 목표는 손대지 않는다(GM 지시).
+        var todos = extractTodos(newNote);
+        if (todos.length) {
+          var done = todos.filter(function (t) { return t.checked; }).length;
+          obj.progress = Math.round(done / todos.length * 100);
+          obj.honesty = { level: 'basis', label: '🧮 근거계산', basis: '할 일 체크 ' + done + '/' + todos.length, at: todayStr };
+        }
+      });
+      freshPlan.updated_at = todayStr;
+      return fetch(GAS_URL, {
+        method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'commit_file', path: PLAN_PATH, content: JSON.stringify(freshPlan, null, 2),
+          message: '[GM 업무] 할 일 체크 갱신 ' + todayStr, key: pin
+        })
+      }).then(function (r) { return r.json(); });
+    }).then(function (res) {
+      if (res && res.ok) {
+        alert('저장 완료. (커밋: ' + ((res.commit || '') + '').slice(0, 7) + ')');
+        dirtyIds = {};
+        readPlan().then(function (plan) {
+          renderGm(window.WellperionGmDirect.extract(plan, monthKey));
+          var b2 = document.getElementById('gm-save-btn'); if (b2) { b2.textContent = '변경 저장'; b2.disabled = true; }
+        }).catch(function () { renderGm(null); });
+      } else {
+        alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
+        if (btn) { btn.textContent = '변경 저장'; btn.disabled = false; }
+      }
+    }).catch(function (e) {
+      alert('저장 오류: ' + e.message);
+      if (btn) { btn.textContent = '변경 저장'; btn.disabled = false; }
+    });
+  };
 
   /* #gm-{id} 로 들어오면 그 카드로 가서 접힌 내용을 펴 준다 — '보러 왔는데 접혀 있음'을 막는다. */
   function focusHashCard() {
@@ -453,6 +587,20 @@
 
   window.addEventListener('hashchange', focusHashCard);
   setTimeout(focusHashCard, 1200);
+
+  // ② 「보고 문안 복사」 토글 — _owner_directive.js 는 누를 때마다 항상 펼치기만 하므로, 그 파일은 고치지
+  // 않고 캡처 단계에서 먼저 가로채 '열려 있으면 접기만' 처리한다(GM 2026-08-06 "열었다 닫을 수 있게").
+  (function () {
+    var btn = document.getElementById('owner-bulk-btn');
+    var digest = document.getElementById('owner-digest');
+    if (!btn || !digest) return;
+    btn.addEventListener('click', function (e) {
+      if (digest.style.display === 'block') {
+        digest.style.display = 'none';
+        e.stopImmediatePropagation();
+      }
+    });
+  })();
 
   // 대표님 칸 + 회장님 표 — 판정·문안 로직은 _owner_directive.js 하나만 쓴다(복제 없음).
   OwnerDirective.mount({
@@ -578,6 +726,15 @@
       return '<table class="rr-list-table"><thead><tr><th>번호</th><th>구분</th><th>업무명</th><th>진행 상태</th></tr></thead><tbody>' + rows + '</tbody></table>';
     }
 
+    // ① GM 업무 진행건 표(업무명·상태·진척·할 일 완료 수) — renderGm()이 채워 둔 gmPrintRows 재사용
+    // (GM 2026-08-06 "이 부분도 보고할 수 있게 정리해줘").
+    function gmListTable(list) {
+      var rows = list.map(function (it, i) {
+        return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.title) + '</td><td>' + esc(it.status) + '</td><td>' + esc(it.pct) + '</td><td>' + esc(it.doneRatio) + '</td></tr>';
+      }).join('');
+      return '<table class="rr-list-table"><thead><tr><th>번호</th><th>업무명</th><th>상태</th><th>진척</th><th>할 일 완료 수</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
     window.printGmApprovalDoc = function () {
       var data = collectReportRows();
       var now = new Date();
@@ -598,6 +755,8 @@
         '<div class="rr-section-title">보고 대기 ' + data.pending.length + '건</div>' +
         (data.pending.length ? listTable(data.pending) : '<div class="rr-section-body">보고 대기 건이 없습니다.</div>') +
         (data.done.length ? ('<div class="rr-section-title">보고 완료 ' + data.done.length + '건</div>' + listTable(data.done)) : '') +
+        '<div class="rr-section-title">김남욱 GM 업무 진행건 ' + gmPrintRows.length + '건</div>' +
+        (gmPrintRows.length ? gmListTable(gmPrintRows) : '<div class="rr-section-body">등록된 GM 업무가 없습니다.</div>') +
         '<div class="rr-footer">' +
         '<span>이 문서는 웰페리온 ERP 월간운영계획·업무 시트에서 자동 생성되었습니다.</span>' +
         '<span>생성 시각: ' + genTime + '</span>' +
