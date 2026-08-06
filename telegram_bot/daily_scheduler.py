@@ -2522,6 +2522,23 @@ def run_daily_digest(early: bool = False) -> None:
     label = "[하루 일과 정리]"
     logger.info(f"{label} 시작 — today={today}")
 
+    # 상주 프로세스라 sys.modules 캐시가 기동 시점 소스에 고정된다 — 그날 커밋된 코드를
+    #   다음 재기동 전까지 아무 job 도 못 본다. 실사고(2026-08-05): collectors/ops_shared.py 에
+    #   reception_elapsed_days 가 10:02 에 추가됐는데 22:31 종합접수방 발송이 캐시된 옛 모듈을
+    #   보고 ImportError 로 통째 실패했다(그날 발송 0건). 이 파이프라인이 쓰는 모듈만 다시 읽는다.
+    #   collectors 를 먼저 읽어야 그걸 import 하는 report_stream_* 이 새 심볼을 본다.
+    #   실패해도 정리는 계속된다(fail-soft — 재읽기 때문에 발송이 멈추면 안 된다).
+    import importlib as _importlib
+    for _mod_name in sorted(
+        (m for m in list(sys.modules)
+         if m.startswith("collectors.") or m.startswith("report_stream_")),
+        key=lambda m: (not m.startswith("collectors."), m),
+    ):
+        try:
+            _importlib.reload(sys.modules[_mod_name])
+        except Exception as _reload_err:
+            logger.warning(f"{label} 모듈 재읽기 실패 {_mod_name}: {_reload_err}")
+
     # ── 스트림 #1 문의 및 컨택&등록 현황 (통일 포맷 msg5618 · 2026-07-22) ────────────────
     # 옛 _build_digest_inquiry(종목별 그룹) 대체. 확정 포맷: report_stream_1_inquiry.
     inquiry_plain = None  # 카카오용 평문(태그·엔티티 없음)
