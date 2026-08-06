@@ -89,6 +89,11 @@ function readStdin() { try { return readFileSync(0, 'utf8'); } catch { return '{
 //     캐시가 살아있으면 프로세스를 아예 안 띄우므로 상태줄이 상한 안에 안정적으로 들어온다.
 //   ※ OMC HUD 파일 자체는 여전히 건드리지 않는다(업데이트 시 덮어써짐 — 이 파일 상단 원칙).
 const OMC_CACHE_TTL_MS = 15000;               // 15초 — 비용 표시가 최대 15초 늦을 뿐, 값은 정확
+const OMC_EMPTY_CACHE_TTL_MS = 3000;          // 3초 — 빈 결과(배너·타임아웃 등)도 캐시하되 훨씬 짧게.
+// ★2026-08-06 시토: 빈 결과를 캐시에 안 쓰면 배너가 뜨는 동안(혹은 매 타임아웃마다) 렌더할 때마다
+//   프로세스 재기동(≈600ms)이 그대로 부활한다 — 캐시가 막으려던 바로 그 비용이다. 실측(아래
+//   isOmcBanner 주석): 우리 파이프라인은 실제 stdin 을 항상 넘기므로 배너는 안 뜬다(확정) —
+//   그래도 타임아웃·크래시 등 다른 이유로 빈 결과가 날 수 있어 짧은 TTL 로 캐시는 남겨 둔다.
 // 캐시 위치는 이 스크립트 위치에서 잡는다(<repo>/scripts/ → <repo>/tmp/).
 // 상태줄은 cwd 가 매번 다를 수 있어 상대경로로 두면 캐시가 흩어진다.
 const REPO_ROOT = path.dirname(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')));
@@ -104,11 +109,14 @@ function isOmcBanner(s) {
 
 function omcHud(input) {
   const cachePath = OMC_CACHE;
-  // 1) 살아있는 캐시가 있으면 프로세스를 띄우지 않는다.
-  try {
-    const c = JSON.parse(readFileSync(cachePath, 'utf8'));
-    if (c && typeof c.out === 'string' && !isOmcBanner(c.out) && (Date.now() - (c.at || 0)) < OMC_CACHE_TTL_MS) return c.out;
-  } catch { /* 캐시 없음·깨짐 — 그냥 새로 계산한다 */ }
+  let cached = null;
+  try { cached = JSON.parse(readFileSync(cachePath, 'utf8')); } catch { /* 캐시 없음·깨짐 — 새로 계산 */ }
+
+  // 1) 살아있는 캐시가 있으면 프로세스를 띄우지 않는다. 빈 결과는 훨씬 짧은 TTL(위 상수 참고).
+  if (cached && typeof cached.out === 'string') {
+    const ttl = cached.out ? OMC_CACHE_TTL_MS : OMC_EMPTY_CACHE_TTL_MS;
+    if ((Date.now() - (cached.at || 0)) < ttl) return cached.out;
+  }
 
   // 2) 새로 계산. timeout 을 5s → 2.5s 로 줄인다 — 5초를 다 쓰면 어차피 상태줄 상한을 넘겨
   //    그 회차는 버려진다. 그럴 바엔 일찍 포기하고 직전 값이라도 내보내는 편이 화면이 안 빈다.
@@ -119,19 +127,14 @@ function omcHud(input) {
     if (isOmcBanner(out)) out = '';
   } catch { out = ''; }
 
-  // 3) 계산이 빈손이면 만료된 캐시라도 쓴다(빈 화면보다 조금 늦은 값이 낫다) — 단, 배너면 버린다.
-  if (!out) {
-    try {
-      const c = JSON.parse(readFileSync(cachePath, 'utf8'));
-      if (c && typeof c.out === 'string' && !isOmcBanner(c.out)) return c.out;
-    } catch { /* 없으면 빈 문자열 그대로 */ }
-    return out;
-  }
-
+  // 3) 캐시 갱신 — 빈 결과도 쓴다(짧은 TTL 로 다음 렌더의 재기동을 막는다). 못 써도 표시는 정상.
   try {
     mkdirSync(path.dirname(cachePath), { recursive: true });
     writeFileSync(cachePath, JSON.stringify({ at: Date.now(), out }), 'utf8');
   } catch { /* 캐시 못 써도 표시는 정상 — 다음 회차에 다시 계산할 뿐 */ }
+
+  // 4) 이번 계산이 빈손이면 직전 값(있었다면)이라도 화면에 낸다(빈 화면보다 조금 늦은 값이 낫다).
+  if (!out && cached && typeof cached.out === 'string' && cached.out) return cached.out;
   return out;
 }
 

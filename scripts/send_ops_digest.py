@@ -121,9 +121,45 @@ def relay_routes() -> "list[tuple[str, dict]]":
     return list(routes.items())
 
 
+ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"
+
+
 def _relay_key(ship: dict) -> str:
-    """배 식별 키 — short_no 우선(사람이 부르는 배 번호와 같은 축), 없으면 task_id."""
-    return str(ship.get("short_no") or ship.get("task_id") or ship.get("ship_no") or "")
+    """배 식별 키 — task_id 고정(배마다 불변). ★2026-08-06 GM 근본수정: 예전엔 short_no
+    우선이었는데 short_no 는 나중에 붙는 경우가 있어, 같은 배가 키가 바뀌며 '완료'+
+    '신규' 두 번 잡혔다. task_id 는 생성 시 한 번 박히고 안 바뀐다.
+
+    ★첫 회차 처리: 옛 스냅샷은 short_no(숫자 문자열) 키라 이 함수 도입 이후 첫 비교에서
+    전부 매칭 실패한다 — build_relay_message 의 _is_legacy_snapshot 이 그 회차만 비교를
+    건너뛰고 새 키로 스냅샷만 다시 찍는다(살아있는 배 전부가 '신규'로 쏟아지는 것 방지)."""
+    return str(ship.get("task_id") or "")
+
+
+def _is_legacy_snapshot(prev_items: dict) -> bool:
+    """지난 스냅샷이 옛 키(short_no 숫자 문자열)로 저장된 것인가.
+    task_id 는 항상 "CTO-2026-07-22-..." 꼴 문자열이라 숫자만인 키가 하나라도 있으면
+    옛 형식 — 이번 회차는 비교 없이 스냅샷만 새 키로 다시 찍는다(첫 회차 처리)."""
+    return any(str(k).isdigit() for k in prev_items)
+
+
+def _is_done(task_id: str, queue: list, archive_cache: list) -> bool:
+    """이 task_id 가 실제로 완료됐는가 — 큐 안에서 status 가 DONE/완료이거나, 큐에서
+    아예 사라졌는데 보관함(queue_archive_sweep.py 가 terminal 배만 옮긴다)에 있으면
+    완료로 본다. 큐에 그대로 남아 PENDING/IN_PROGRESS 인 채 staff_message 가 지워지거나
+    audience 가 바뀌기만 한 배는 완료가 아니다(2026-08-06 GM 근본수정 — 그런 배를
+    '✅ 처리 완료'로 오보하던 문제)."""
+    for s in queue:
+        if isinstance(s, dict) and str(s.get("task_id", "")) == task_id:
+            return str(s.get("status", "")) in ("DONE", "완료")
+    return any(isinstance(s, dict) and str(s.get("task_id", "")) == task_id for s in archive_cache)
+
+
+def _load_archive() -> list:
+    try:
+        data = json.loads(ARCHIVE_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
 
 
 def _cap_line(text: str) -> str:
@@ -174,8 +210,19 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
                               str(x.get("enqueued_at", ""))))
     current = {_relay_key(s): _cap_line(str(s["staff_message"]).strip().splitlines()[0]) for s in ships}
 
+    if _is_legacy_snapshot(prev_items):
+        return "", current  # 옛 키 형식 — 비교 건너뛰고 새 키로 스냅샷만 다시 찍는다(첫 회차)
+
     new_ships = [s for s in ships if _relay_key(s) not in prev_items]
-    closed = [v for k, v in prev_items.items() if k not in current]
+    # ★'완료'는 목록에서 사라진 것 전부가 아니라, 실제로 DONE/보관함행인 것만(위 _is_done).
+    #   staff_message 가 지워지거나 audience 가 바뀌어 사라진 배는 아직 진행 중일 수 있다 —
+    #   그런 배까지 '✅ 처리 완료'로 실무진에게 보내면 오보다.
+    dropped = [k for k in prev_items if k not in current]
+    if dropped:
+        archive_cache = _load_archive()
+        closed = [prev_items[k] for k in dropped if _is_done(k, queue, archive_cache)]
+    else:
+        closed = []
     if not new_ships and not closed:
         return "", current  # 지난번과 같은 목록 — 다시 보내지 않는다
 
