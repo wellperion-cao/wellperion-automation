@@ -175,12 +175,28 @@ def _lead_key(row: dict) -> str:
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
 
 
+_ROWS_CACHE: dict[str, list[dict]] = {}
+
+
+def _lesson_rows(today: str) -> list[dict]:
+    """강습 문의 전건(성인+유소년) — 한 회차 안에서 여러 번 쓰이므로 날짜별 1회만 조회.
+    daily_scheduler 처럼 오래 사는 프로세스에서도 날짜가 바뀌면 자동으로 다시 읽는다."""
+    if _ROWS_CACHE.get("date") != today:
+        rows: list[dict] = []
+        for label in ("성인강습", "유소년강습"):
+            for r in R._fetch_list("lesson_inquiry_list", type=label):
+                r["_label"] = label
+                rows.append(r)
+        _ROWS_CACHE.clear()
+        _ROWS_CACHE.update({"date": today, "rows": rows})
+    return _ROWS_CACHE.get("rows") or []
+
+
 def collect_unassigned(today: str) -> list[dict]:
     """담당자 미배정 + 활성 강습 문의 전건(3일 이상 경과 · 상한 없음)."""
-    sources = {
-        "성인강습": R._fetch_list("lesson_inquiry_list", type="성인강습"),
-        "유소년강습": R._fetch_list("lesson_inquiry_list", type="유소년강습"),
-    }
+    sources: dict[str, list[dict]] = {"성인강습": [], "유소년강습": []}
+    for r in _lesson_rows(today):
+        sources[r.get("_label", "성인강습")].append(r)
     out: list[dict] = []
     for label, rows in sources.items():
         for r in rows:
@@ -285,6 +301,9 @@ def _load_heartbeat_extra(root: Path | None = None) -> dict:
     return {
         "notified": dict(rec.get("notified") or {}) if isinstance(rec.get("notified"), dict) else {},
         "notified60": dict(rec.get("notified60") or {}) if isinstance(rec.get("notified60"), dict) else {},
+        # open = 지난 회차에 '아직 미배정'이던 건들 {키: 이름} — 다음 회차에 그중 몇이
+        # 실제로 배정됐는지 세어 팡파레를 울리는 데만 쓴다(GM 2026-08-07). 새 파일 없음.
+        "open": dict(rec.get("open") or {}) if isinstance(rec.get("open"), dict) else {},
     }
 
 
@@ -307,6 +326,9 @@ def _record_sent(selected: list[dict], notified: dict[str, str], today: str,
               if 0 <= R._days_since(v, today) <= NOTIFIED_KEEP_DAYS}
     extra = _load_heartbeat_extra(root)
     extra["notified"] = merged
+    # 이번 회차에 아직 미배정인 건들을 찍어 둔다 — 다음 회차가 이 명단과 대조해
+    # 실제로 담당이 붙은 건만 팡파레로 축하한다(GM 2026-08-07). 행 조회는 캐시 재사용.
+    extra["open"] = {i["key"]: i["name"] for i in split_dormant(collect_unassigned(today))[0]}
     return record_heartbeat(
         HEARTBEAT_ID,
         detail=f"배정 안내 {len(selected)}건 발송(대상 {eligible_n}건 · 휴면 제외 {dormant_n}건)",
@@ -602,24 +624,65 @@ def apply_auto_assign(ready: list[dict], timeout: float = 60.0) -> list[dict]:
     return out
 
 
+def newly_assigned(prev_open: dict, today: str) -> list[dict]:
+    """지난 회차에 미배정이던 건 중 **이번에 담당자가 붙은 건**만 골라낸다(GM 2026-08-07 '팡파레').
+
+    사라진 키를 세지 않고 행을 다시 열어 owner 를 확인한다 — 등록완료·이탈(LOSS)로 목록에서
+    빠진 건까지 '배정했다'고 축하하면 팀장님들이 받는 숫자가 사실이 아니게 된다.
+    """
+    if not prev_open:
+        return []
+    rows = {_lead_key(r): r for r in _lesson_rows(today)}
+    out = []
+    for key, name in prev_open.items():
+        r = rows.get(key)
+        if r is not None and _is_assigned_owner(r):
+            out.append({"name": str(name or r.get("name") or "-"),
+                        "owner": str(r.get("owner", "") or "-").strip(),
+                        "sport": _sport_short(str(r.get("sport", "") or "-"))})
+    return out
+
+
+def _render_cheer(done: list[dict], eligible_n: int) -> str:
+    """팡파레 한 줄(+담당별 건수). 배정된 게 없고 미배정도 남아 있으면 빈 문자열."""
+    if not done and eligible_n:
+        return ""
+    if done:
+        by = defaultdict(int)
+        for d in done:
+            by[d["owner"] or "-"] += 1
+        who = " · ".join(f"{o} {n}건" for o, n in sorted(by.items(), key=lambda x: -x[1])[:4])
+        head = f"🎉 배정 완료 {len(done)}건 — {who}. 감사합니다 🙏"
+    else:
+        head = "🎉 감사합니다 🙏"
+    if not eligible_n:
+        return head + "\n🏁 미배정 0건 — 전부 배정 끝났습니다!"
+    return head
+
+
 def build_payload(today: str | None = None, notified: dict[str, str] | None = None) -> dict:
-    """오늘 회차 산출물 한 벌: 본문 + 선발 10건 + 휴면 목록 + 집계."""
+    """오늘 회차 산출물 한 벌: 본문 + 선발 10건 + 휴면 목록 + 집계 + 팡파레."""
     today = today or datetime.now().strftime("%Y-%m-%d")
-    notified = _load_notified() if notified is None else notified
+    extra = _load_heartbeat_extra()
+    notified = extra["notified"] if notified is None else notified
     items = collect_unassigned(today)
     eligible, dormant = split_dormant(items)
     selected = select_daily(eligible, notified, today)
+    done = newly_assigned(extra["open"], today)
+    cheer = _render_cheer(done, len(eligible))
     return {
         "today": today,
-        "text": _render_message(selected, eligible, dormant),
+        "text": _render_message(selected, eligible, dormant, cheer),
         "selected": selected,
         "eligible": eligible,
         "dormant": dormant,
         "notified": notified,
+        "cheered": done,
     }
 
 
-def _render_message(selected: list[dict], eligible: list[dict], dormant: list[dict]) -> str:
+def _render_message(selected: list[dict], eligible: list[dict], dormant: list[dict],
+                    cheer: str = "") -> str:
     """그것만 담은 독립 메시지(GM 2026-08-05) — 10줄 안쪽·한 줄에 한 건·부탁 조.
 
     텔레그램 굵게가 잘 안 먹어 줄바꿈·기호로 읽히게 한다. 표시는 선발 top MSG_DISPLAY_N
@@ -627,16 +690,23 @@ def _render_message(selected: list[dict], eligible: list[dict], dormant: list[di
     공정 배분용이라 화면 순서와 다르다). 나머지는 "외 N건"+총계로 접는다(도배 방지).
     """
     if not eligible:
-        return "✅ 담당자 미배정 문의 0건 — 모두 배정 완료되었습니다. 감사합니다 🙏"
+        # 팡파레가 있으면 그것만으로 충분(같은 뜻을 두 줄로 적지 않는다).
+        return cheer or "✅ 담당자 미배정 문의 0건 — 모두 배정 완료되었습니다. 감사합니다 🙏"
     if not selected:
         # 대상은 있으나 전건이 오늘 이미 안내됨(같은 날 중복 실행 방지) — 다시 보내지 않는다.
-        return ""
+        # 단, 그 사이 배정된 건이 있으면 팡파레만 보낸다(축하를 하루 미루지 않는다).
+        return cheer
 
     oldest = eligible[0]["days"]  # collect_unassigned() 에서 이미 -days 정렬됨
-    shown = sorted(selected, key=lambda x: -x["days"])[:MSG_DISPLAY_N]
+    # 팡파레가 붙는 날은 줄 수 상한(GM "10줄 안쪽")을 지키려고 목록을 그만큼 줄인다.
+    show_n = MSG_DISPLAY_N - (2 if cheer else 0)
+    shown = sorted(selected, key=lambda x: -x["days"])[:show_n]
     rest_n = len(eligible) - len(shown)
 
-    lines = [f"🙋 담당 배정 필요 · {len(eligible)}건 (가장 오래된 건 {oldest}일째)"]
+    lines = []
+    if cheer:
+        lines += [cheer, ""]      # 축하가 먼저, 부탁이 그 다음
+    lines.append(f"🙋 담당 배정 필요 · {len(eligible)}건 (가장 오래된 건 {oldest}일째)")
     lines.append("팀장님들, 아래 문의부터 담당 배정 부탁드립니다 🙏")
     for it in shown:
         sport = _sport_short(it["sport"])
@@ -819,6 +889,44 @@ def _selftest_noresponse() -> None:
         R._fetch_list = orig_fetch
 
 
+def _selftest_cheer() -> None:
+    """팡파레 판정 자가검사(가짜 데이터·발신 0건). 확인: ①배정된 건만 축하 ②목록에서
+    빠졌어도 담당 없으면(LOSS·등록 등) 축하 안 함 ③미배정 0건이면 마무리 줄 추가
+    ④배정 0건이고 미배정 남았으면 침묵 ⑤팡파레 붙은 본문도 10줄 이내."""
+    today = "2026-08-07"
+    rows = [
+        {"name": "배정된사람", "owner": "박민서", "sport": "성인 수영", "timestamp": "2026-07-01 10:00:00"},
+        {"name": "이탈된사람", "owner": "", "sport": "뮤지컬", "timestamp": "2026-07-01 10:00:00"},
+    ]
+    keys = {r["name"]: _lead_key(r) for r in rows}
+    _ROWS_CACHE.clear()
+    _ROWS_CACHE.update({"date": today, "rows": rows})
+    try:
+        prev = {keys["배정된사람"]: "배정된사람", keys["이탈된사람"]: "이탈된사람"}
+        done = newly_assigned(prev, today)
+        names = {d["name"] for d in done}
+        assert names == {"배정된사람"}, f"배정된 건만 축하해야 하는데 {names}"
+        assert done[0]["owner"] == "박민서"
+        print(f"  [판정] 축하 대상 {len(done)}건 — 담당 붙은 건만, 담당 없는 건 제외 — 통과")
+
+        assert _render_cheer([], 5) == "", "배정 0건인데 팡파레가 울림"
+        assert "🏁" in _render_cheer(done, 0), "미배정 0건인데 마무리 줄이 없음"
+        assert "🏁" not in _render_cheer(done, 3), "미배정이 남았는데 마무리 줄이 붙음"
+        print("  [문구] 배정0=침묵 · 미배정0=마무리줄 · 남음=축하만 — 통과")
+
+        eligible = [{"sport": "성인 수영", "name": f"대기{i}", "date": "2026-07-20",
+                     "days": 18 - i, "contacted": False, "key": f"k{i}", "type": "성인강습"}
+                    for i in range(9)]
+        text = _render_message(eligible[:5], eligible, [], _render_cheer(done, len(eligible)))
+        line_n = len(text.splitlines())
+        assert line_n <= 10, f"팡파레 포함 본문이 10줄을 넘음({line_n}줄)"
+        assert "🎉" in text and "🙋" in text, "축하와 부탁이 같은 메시지에 함께 있어야 한다"
+        print(f"  [본문] {line_n}줄(10줄 이내) · 축하+부탁 동시 — 통과")
+        print("SELFTEST OK: 팡파레 판정 정상(실발송 0건)")
+    finally:
+        _ROWS_CACHE.clear()
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="문의 담당자 미배정 배정 독려 안내")
     p.add_argument("--send", action="store_true",
@@ -866,6 +974,7 @@ def main() -> int:
     if args.selftest:
         _selftest_sla()
         _selftest_noresponse()
+        _selftest_cheer()
         return 0
 
     if args.sla_check:
