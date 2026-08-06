@@ -28,16 +28,30 @@ var LEGACY_RECEPTION_HEADERS = [
 ];
 var LEGACY_RECEPTION_STATUSES = ['접수', '처리중', '완료'];
 
+// 「전달문구」 초안임을 드러내는 접두어 — 단일 출처.
+//   여기 한 곳에서만 정의하고, 초안 생성(_regDraftMemo)과 자동 상태 전환 판정
+//   (_regEffectiveStatusOnMemo)이 둘 다 이 값을 쓴다(약속 L01 — 두 곳에 적으면 어긋난다).
+var REG_DRAFT_PREFIX = '[초안] ';
+
 // ─── 답변(처리메모) 등록 시 자동 상태 전환 규칙 (순수함수 — GAS API 미의존, Node에서 테스트 가능) ───
 // reg_update(_regUpdate)·voc_update(_vUpdate) 두 '답변 등록' 경로가 공유한다.
 // 규칙: '접수' 상태에서 처리메모가 채워지면 '처리중'으로 한 단계만 자동 이동.
 //   · 사람이 상태를 직접 지정했으면(newStatus) 그 값이 그대로 이긴다.
 //   · '완료' 전환은 자동화 대상 아님 — 추가 답변·재문의가 남을 수 있어 사람이 드롭다운으로 직접.
 //   · 이미 '완료'인 건은 메모를 고쳐도 상태를 건드리지 않는다(재오픈도 사람이 드롭다운으로 — 되돌릴 수 있게).
+//   · ★초안 문구([초안] 접두어)는 승격시키지 않는다 — 2026-08-05 GM 제안으로 접수 시점에 전달문구
+//     초안을 자동으로 채우게 되면서, 아무도 안 본 건까지 '처리중'으로 올라가 「접수(아무도 안 봄)」와
+//     「처리중(누가 보고 있음)」 구분이 사라졌다(웰리 실측 2026-08-05 RECEPTION-54·58·64).
+//     실무진이 초안을 고치거나 접두어를 지워 '실제 답변'이 되는 순간 승격된다.
 // 2026-08-04 시토 (RECEPTION-81 — 답변은 나갔는데 상태가 그대로라 며칠째 SLA 초과로 뜨던 문제).
+// 2026-08-06 시토 (초안 배제 — 위 세 번째 규칙).
 function _regEffectiveStatusOnMemo(curStatus, newStatus, memo) {
   if (newStatus) return newStatus;
-  if (memo !== undefined && String(memo).trim() && curStatus === '접수') return '처리중';
+  if (memo === undefined) return '';
+  var m = String(memo).trim();
+  if (!m) return '';
+  if (m.indexOf(REG_DRAFT_PREFIX.trim()) === 0) return '';   // 초안은 '누가 보고 있음'이 아니다
+  if (curStatus === '접수') return '처리중';
   return '';
 }
 var LEGACY_RECEPTION_STATUS_COLORS = {
@@ -844,13 +858,14 @@ function _vUpdate(body) {
 //   "피트니스"·"하이엔드프라이빗" 금지, "스포츠클럽", 압박 없이 알리는 격조 있는 톤.
 // 순수함수 — GAS API 미의존, Node에서도 그대로 테스트 가능(_regEffectiveStatusOnMemo 와 같은 원칙).
 var REG_DRAFT_MIN_CONTENT_LEN = 2;   // 이보다 짧은 본문(빈칸·한 글자)은 판단 근거가 부실 → 초안 생략
+// 본문만 적는다 — 앞의 '[초안] ' 접두어는 _regDraftMemo 가 REG_DRAFT_PREFIX 로 붙인다(파일 상단 단일 출처).
 var REG_DRAFT_TEMPLATES = {
-  lost:      '[초안] 분실물 접수 확인했습니다. 운영팀이 확인 후 보관 여부를 안내드리겠습니다.',
-  facility:  '[초안] 시설물 고장 확인했습니다. 시설팀이 신속히 점검 후 조치하겠습니다.',
-  clean:     '[초안] 청결 관련 사항 확인했습니다. 지원팀이 즉시 확인해 정리하겠습니다.',
-  praise:    '[초안] 소중한 칭찬 감사합니다. 담당 직원에게 잘 전달하겠습니다.',
-  voice:     '[초안] 소중한 의견 감사합니다. 관련 부서에 전달해 개선하겠습니다.',
-  complaint: '[초안] 불편을 드려 죄송합니다. 운영팀이 확인 후 신속히 조치하겠습니다.'
+  lost:      '분실물 접수 확인했습니다. 운영팀이 확인 후 보관 여부를 안내드리겠습니다.',
+  facility:  '시설물 고장 확인했습니다. 시설팀이 신속히 점검 후 조치하겠습니다.',
+  clean:     '청결 관련 사항 확인했습니다. 지원팀이 즉시 확인해 정리하겠습니다.',
+  praise:    '소중한 칭찬 감사합니다. 담당 직원에게 잘 전달하겠습니다.',
+  voice:     '소중한 의견 감사합니다. 관련 부서에 전달해 개선하겠습니다.',
+  complaint: '불편을 드려 죄송합니다. 운영팀이 확인 후 신속히 조치하겠습니다.'
 };
 // 이미 사람이 쓴 memo 가 있으면 false — 덮어쓰기 금지 규칙의 단일 판정점.
 function _regShouldDraftMemo(existingMemo) {
@@ -861,7 +876,7 @@ function _regDraftMemo(catKey, content) {
   var tpl = REG_DRAFT_TEMPLATES[catKey];
   if (!tpl) return '';                                                              // 모르는 분류 → 비워 둔다
   if (String(content || '').trim().length < REG_DRAFT_MIN_CONTENT_LEN) return '';   // 본문 부실 → 비워 둔다
-  return tpl;
+  return REG_DRAFT_PREFIX + tpl;
 }
 // assert 기반 자체점검 — GAS 에디터에서 직접 실행하거나 action=reg_draft_selftest(GET, read-only)로 호출.
 // 새 테스트 프레임워크 없이 순수함수만 검증 — 시트를 전혀 건드리지 않는다.
@@ -874,9 +889,19 @@ function _regDraftMemoSelfCheck() {
   var failures = [];
   Object.keys(REG_DRAFT_TEMPLATES).forEach(function (key) {
     var out = _regDraftMemo(key, '테스트 접수 본문입니다');
-    _regAssertEq_(out, REG_DRAFT_TEMPLATES[key], 'draft:' + key, failures);
-    _regAssertEq_(out.indexOf('[초안] ') === 0, true, 'prefix:' + key, failures);
+    _regAssertEq_(out, REG_DRAFT_PREFIX + REG_DRAFT_TEMPLATES[key], 'draft:' + key, failures);
+    _regAssertEq_(out.indexOf(REG_DRAFT_PREFIX) === 0, true, 'prefix:' + key, failures);
+    // 초안은 상태를 올리지 않는다(2026-08-06 시토) — 아래 자동 상태 전환 점검과 짝.
+    _regAssertEq_(_regEffectiveStatusOnMemo('접수', '', out), '', 'draft-no-promote:' + key, failures);
   });
+
+  // ─── 답변(처리메모) 자동 상태 전환 점검 (2026-08-06 시토) ───
+  _regAssertEq_(_regEffectiveStatusOnMemo('접수', '', '실무진이 직접 쓴 답변입니다'), '처리중', 'memo-promotes', failures);
+  _regAssertEq_(_regEffectiveStatusOnMemo('접수', '', REG_DRAFT_PREFIX + '무엇이든'), '', 'draft-prefix-blocks', failures);
+  _regAssertEq_(_regEffectiveStatusOnMemo('접수', '완료', REG_DRAFT_PREFIX + '무엇이든'), '완료', 'explicit-status-wins', failures);
+  _regAssertEq_(_regEffectiveStatusOnMemo('완료', '', '추가 답변'), '', 'done-stays-done', failures);
+  _regAssertEq_(_regEffectiveStatusOnMemo('접수', '', ''), '', 'empty-memo-no-change', failures);
+  _regAssertEq_(_regEffectiveStatusOnMemo('접수', '', undefined), '', 'undefined-memo-no-change', failures);
   _regAssertEq_(_regDraftMemo('unknown_cat', '충분히 긴 본문입니다'), '', 'unknown-cat-blank', failures);
   _regAssertEq_(_regDraftMemo('lost', ''), '', 'empty-content-blank', failures);
   _regAssertEq_(_regDraftMemo('lost', ' '), '', 'whitespace-content-blank', failures);
