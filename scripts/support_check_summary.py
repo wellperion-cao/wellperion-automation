@@ -83,18 +83,33 @@ def _num(n) -> str:
     return str(int(f)) if f.is_integer() else str(f)
 
 
-def fetch_gas(params: dict, url: str = DEFAULT_GAS_URL, timeout: float = 20.0) -> dict | None:
-    """GAS GET → dict(ok=true)만 반환. 실패·ok=false는 None(정직 — 지어내기 금지)."""
+FETCH_FAILED = "조회 실패"   # '진짜 0' 과 '못 읽음' 을 가르는 표식(아래 주석 참조)
+
+
+def fetch_gas(params: dict, url: str = DEFAULT_GAS_URL, timeout: float = 20.0,
+              tries: int = 3) -> dict | None:
+    """GAS GET → dict(ok=true)만 반환. 끝까지 실패하면 None(정직 — 지어내기 금지).
+
+    ★2026-08-06 GM 지적으로 재시도를 붙였다. GM 원문: "실무진들이 더 집중할 수 있게
+      백엔드에서 실수가 있으면 안 돼… 실무진 힘나게 해야지 힘빠지게 하면 안 돼."
+      그날 실측: 시설부가 7회차(04:23~18:35) 실제로 다 돌았는데 19:13 조회가 빈 응답을
+      돌려줘 '오늘 점검 입력 없음' 으로 렌더됐고, 11분 뒤 같은 조회는 7회차를 정상으로
+      읽었다. **사람은 제대로 했는데 화면이 안 했다고 말한 것** — 가장 나쁜 종류다.
+      한 번 실패로 '없음' 을 만들지 않는다: 짧게 쉬며 세 번까지 다시 묻는다.
+    """
     params = {**params, "_pv": int(time.time())}   # 캐시 버스트(no-store 정합)
-    full = url + "?" + urllib.parse.urlencode(params)
-    try:
-        with urllib.request.urlopen(urllib.request.Request(full), timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-    except Exception:
-        return None
-    if not isinstance(data, dict) or not data.get("ok"):
-        return None
-    return data
+    for attempt in range(1, max(1, tries) + 1):
+        full = url + "?" + urllib.parse.urlencode({**params, "_pv": int(time.time())})
+        try:
+            with urllib.request.urlopen(urllib.request.Request(full), timeout=timeout) as r:
+                data = json.loads(r.read().decode("utf-8"))
+            if isinstance(data, dict) and data.get("ok"):
+                return data
+        except Exception:
+            pass
+        if attempt < tries:
+            time.sleep(1.5 * attempt)   # 1.5s · 3s — 짧은 일시 장애를 넘긴다
+    return None
 
 
 # ── 지원부 ────────────────────────────────────────────────────────────────
@@ -561,7 +576,14 @@ def build_facility_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list
 
     lines: list[str] = []
     if not sessions:
-        lines.append("🏗 시설부 현황: 오늘 점검 입력 없음")
+        # ★'못 읽음' 과 '진짜 0' 을 가른다(2026-08-06 GM 지적).
+        #   board 조회 자체가 실패하면(None) 점검을 안 한 게 아니라 우리가 못 본 것이다.
+        #   그걸 '점검 입력 없음' 으로 적으면 제대로 일한 사람을 안 했다고 적는 셈이 된다.
+        if board is None:
+            lines.append("🏗 시설부 현황: 지금 확인이 안 됩니다(조회 실패) — 점검 여부는 알 수 없습니다")
+            filled["facility_fetch_failed"] = True
+        else:
+            lines.append("🏗 시설부 현황: 오늘 점검 입력 없음")
         return (lines, filled)
 
     filled["facility_status"] = True
@@ -620,6 +642,10 @@ def build_parking_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[
             if str(row.get("date")) == today and isinstance(t, (int, float)) and t:
                 filled["parking"] = True
                 return ([f"🅿 주차부 이슈사항: 없음 · 점검 {row.get('done', 0)}/{t}({row.get('pct', 0)}%)"], filled)
+    if data is None:
+        # ★'못 읽음' 을 '준비 중' 으로 적지 않는다(2026-08-06 GM 지적 · 시설부와 같은 부류).
+        filled["parking_fetch_failed"] = True
+        return (["🅿 주차부: 지금 확인이 안 됩니다(조회 실패) — 점검 여부는 알 수 없습니다"], filled)
     return (["🅿 주차부 이슈사항: 없음 (자체점검 준비 중)"], filled)
 
 
