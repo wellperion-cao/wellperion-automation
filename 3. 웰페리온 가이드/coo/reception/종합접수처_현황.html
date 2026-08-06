@@ -1022,12 +1022,13 @@ var _holdLoading = false;
 function holdLoad(){
   if(_holdLoading) return;
   _holdLoading = true;
+  try { var _hc = localStorage.getItem('wlp_hold_cache'); if(_hc){ _holdItems = JSON.parse(_hc); _merge(); } } catch(e){}  // 캐시된 휴회 즉시 표시(원본 시트 무관·표시용)
   var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
   var url = HOLD_API + '?action=member_hold_intake_list' + (key ? ('&key=' + encodeURIComponent(key)) : '') + '&_=' + Date.now();
   withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 45000, null)
     .then(function(d){
       _holdLoading = false;
-      if(!d || !d.ok){ _holdItems = []; _merge(); toast('휴회 접수 현황을 불러오지 못했습니다', true); return; }
+      if(!d || !d.ok){ _merge(); return; }  // 실패해도 캐시된 휴회 유지(비우지 않음)
       var rows = Array.isArray(d.data) ? d.data : [];
       _holdItems = rows.map(function(r){
         var vtxt = '판정: ' + (r.verdict || '-') + (r.verdictReason ? ' — ' + r.verdictReason : '');
@@ -1047,6 +1048,7 @@ function holdLoad(){
           holdReason:r.reason|| ''
         };
       });
+      try { localStorage.setItem('wlp_hold_cache', JSON.stringify(_holdItems)); } catch(e){}  // 최신 휴회 캐시에 저장
       _merge();
     })
     .catch(function(){ _holdLoading = false; toast('휴회 접수 현황을 불러오지 못했습니다', true); });
