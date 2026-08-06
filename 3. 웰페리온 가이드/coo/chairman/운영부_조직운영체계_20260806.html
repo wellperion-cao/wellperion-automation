@@ -15,28 +15,28 @@
   *{box-sizing:border-box;}
   body{margin:0; background:#eef1f4; color:var(--ink);
     font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
-    font-size:15.5px; line-height:1.5; word-break:keep-all; overflow-wrap:break-word;}
+    font-size:14.5px; line-height:1.42; word-break:keep-all; overflow-wrap:break-word;}
   .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:13mm; text-align:left;}
 
   .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:10px;
       display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;}
   .hd .kick{font-size:13.5px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
-  .hd .ttl{font-size:32px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd .ttl{font-size:29px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
   .hd-r{font-size:15px; text-align:right; line-height:1.55;}
   .hd-r .big{font-size:18px; font-weight:800;}
 
-  h2{font-size:17px; font-weight:800; margin:0 0 6px; padding:4px 11px;
+  h2{font-size:16px; font-weight:800; margin:0 0 5px; padding:3px 10px;
      background:var(--ink); color:#fff; letter-spacing:-.01em;}
   .blk{break-inside:avoid;}
-  .blk + .blk{margin-top:11px;}
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; align-items:start; margin-top:12px;}
+  .blk + .blk{margin-top:8px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; align-items:start; margin-top:12px;}
 
   .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
-        padding:11px 15px; font-size:18px; font-weight:600; line-height:1.5;}
+        padding:9px 14px; font-size:16.5px; font-weight:600; line-height:1.45;}
   .lede em{font-style:normal; color:var(--accent); font-weight:800;}
 
-  table{width:100%; border-collapse:collapse; font-size:15px;}
-  th,td{border:1px solid var(--line); padding:5px 9px; vertical-align:top; text-align:left;}
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th,td{border:1px solid var(--line); padding:3.5px 8px; vertical-align:top; text-align:left;}
   th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
   td.c,th.c{text-align:center;}
 
@@ -46,12 +46,33 @@
   .flow .node.mid{border-color:var(--ink); background:#fff;}
   .flow .arr{color:var(--dim); font-weight:800;}
 
-  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:9px 13px; font-size:15px; line-height:1.45;}
-  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:9px 13px; font-size:15px; line-height:1.45;}
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:7px 11px; font-size:14px; line-height:1.4;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:7px 11px; font-size:14px; line-height:1.4;}
   .note ul,.good ul{margin:4px 0 0; padding-left:19px;}
   .note li,.good li{margin-bottom:3px;}
 
   .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  /* 업무가 오가는 4단계 — 표보다 순서가 눈에 들어온다 */
+  .steps{list-style:none; margin:0; padding:0;}
+  .steps li{display:grid; grid-template-columns:22px 1fr; gap:10px; align-items:start;
+            padding:6px 0; border-bottom:1px dashed var(--line);}
+  .steps li:last-child{border-bottom:0;}
+  .steps .mk{width:22px; height:22px; border-radius:50%; background:var(--accent-soft);
+             color:var(--accent); font-size:13px; font-weight:800; line-height:22px; text-align:center;}
+  .steps b{display:block; font-size:15.5px;}
+  .steps span{display:block; font-size:14.5px; color:var(--dim); line-height:1.45; margin-top:1px;}
+
+  /* 멈춘 업무 — 숫자를 먼저 보이게 */
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:8px 0;}
+  .stat{background:#f4f6f9; border:1px solid var(--line); padding:7px 10px;}
+  .stat .v{font-size:21px; font-weight:800; line-height:1.05;}
+  .stat .v.hot{color:#a33;}
+  .stat .l{font-size:13px; color:var(--dim); margin-top:2px; line-height:1.35;}
+
+  .choice{display:flex; gap:8px; margin-top:8px;}
+  .choice div{flex:1; border:1px solid var(--line); padding:7px 10px; font-size:14px; color:var(--dim); line-height:1.4;}
+  .choice b{display:block; color:var(--ink); font-size:15px; margin-bottom:1px;}
 
   @media print{
     body{background:#fff;}
@@ -113,28 +134,30 @@
       </div>
 
       <div class="blk">
-        <h2>2. 오가는 방식</h2>
-        <table>
-          <tr><th>방향</th><th>규칙</th></tr>
-          <tr><td><b>지시(하향)</b></td><td>GM·AI의 운영부 업무 지시는 <b>이경연 실장에게만</b> 전달합니다. 실무진 개인에게 직접 지시하지 않습니다.</td></tr>
-          <tr><td><b>분배</b></td><td>실장이 실무진에게 나누고 진행을 관리합니다.</td></tr>
-          <tr><td><b>보고(상향)</b></td><td>실무진의 결과·이슈는 실장이 취합해 GM께 보고합니다. 실무진의 GM 직보는 하지 않습니다.</td></tr>
-          <tr><td><b>예외</b></td><td>결제 · 보안 · 금지항목 세 가지는 지금처럼 즉시 GM께 올립니다.</td></tr>
-        </table>
+        <h2>2. 업무가 오가는 길</h2>
+        <ul class="steps">
+          <li><span class="mk">1</span><div>
+            <b>업무와 현황이 실장께 모입니다</b>
+            <span>웰페리온에서 생기는 운영부 일과 현황은 실장님 한 곳으로 모입니다. 담당자 개인에게 따로 가지 않습니다.</span>
+          </div></li>
+          <li><span class="mk">2</span><div>
+            <b>실장이 매니저에게 맡깁니다</b>
+            <span>누가 맡을지, 언제까지 할지를 실장님이 정해 알려 주십니다.</span>
+          </div></li>
+          <li><span class="mk">3</span><div>
+            <b>매니저가 하고, 실장이 확인합니다</b>
+            <span>진행과 완료는 업무 시트에 상태로 남깁니다 &mdash; 실장님이 그것으로 확인하십니다.</span>
+          </div></li>
+          <li><span class="mk">4</span><div>
+            <b>끝나면 GM께 보고됩니다</b>
+            <span>완료된 일과 막힌 점을 실장님이 정리해 GM님께 올리십니다.</span>
+          </div></li>
+        </ul>
+        <div class="note" style="margin-top:7px;">
+          <b>이 셋은 예외입니다</b> &mdash; 결제 · 보안 · 금지항목은 기다리지 말고 <b>바로 GM께</b> 올립니다.
+        </div>
       </div>
 
-      <div class="blk">
-        <h2>3. 실장 보고 주기</h2>
-        <table>
-          <tr><th>주기</th><th>내용</th><th>형식</th></tr>
-          <tr><td>주간</td><td>5대 관점 업무 현황 (②진행 중 + ③방치 발굴 중심)</td><td>표 1장</td></tr>
-          <tr><td>월간</td><td>①방향 정합도 + ④강점 · ⑤약점 + 개선 제안</td><td>요약 보고</td></tr>
-          <tr><td>수시</td><td>결제·보안·금지 해당 건, 긴급 이슈</td><td>즉시</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <div>
       <div class="blk">
         <h2>4. 업무를 보는 5가지 관점</h2>
         <table>
@@ -146,25 +169,55 @@
           <tr><td class="c">⑤</td><td><b>부족한 일</b></td><td>교육으로 되는가, 사람이 더 필요한가?</td></tr>
         </table>
         <div class="good" style="margin-top:7px;">
-          <b>가장 먼저 할 것 = ③ 멈춰 있는 일 찾기.</b> 지금 업무 현황판에 기한이 지난 업무가 <b>14건</b> 있고,
-          그중 <b>12건은 30일 넘게</b>(가장 오래된 것 <b>68일</b>) 아무도 손대지 못했습니다.
-          이 중 <b>운영부 몫은 10건</b>입니다(최준용M 5 · 이경연 실장 3 · 윤병현AM 2).
-          이 목록부터 셋 중 하나로 정리합니다 &mdash;
-          <b>끝났으면 완료 · 안 할 거면 폐기 · 계속할 거면 새 기한.</b>
+          <b>가장 먼저 할 것 = ③ 멈춰 있는 일 찾기.</b>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="v hot">14</div><div class="l">기한 지난 업무</div></div>
+          <div class="stat"><div class="v hot">12</div><div class="l">그중 30일 넘게 멈춤</div></div>
+          <div class="stat"><div class="v">68</div><div class="l">가장 오래된 것 (일)</div></div>
+        </div>
+        <table>
+          <tr><th>담당</th><th class="c">건수</th><th>비고</th></tr>
+          <tr><td>최준용M</td><td class="c">5</td><td>운영부</td></tr>
+          <tr><td>이경연 실장</td><td class="c">3</td><td>운영부</td></tr>
+          <tr><td>윤병현AM</td><td class="c">2</td><td>운영부</td></tr>
+          <tr><td>그 밖</td><td class="c">4</td><td>나우열M 3 · 이정헌 소장 1</td></tr>
+        </table>
+        <div class="choice">
+          <div><b>끝났다</b>완료로 바꿉니다.</div>
+          <div><b>안 한다</b>폐기로 바꿉니다.</div>
+          <div><b>계속한다</b>새 기한을 넣습니다.</div>
         </div>
       </div>
 
+    </div>
+
+    <div>
       <div class="blk">
-        <h2>5. 주간 보고 표준 양식</h2>
+        <h2>3. 실장 보고 주기</h2>
         <table>
-          <tr><th>업무명</th><th class="c">관점</th><th>담당</th><th>상태</th><th>기한</th><th>이슈</th></tr>
-          <tr><td style="color:var(--dim);">예) 종합접수처 키오스크 셋팅</td><td class="c">②</td><td>윤병현AM</td><td>진행</td><td>8/15</td><td>업체 일정 확인 중</td></tr>
-          <tr><td style="color:var(--dim);">예) 리셉션 매뉴얼 작성</td><td class="c">③</td><td>윤병현AM</td><td>멈춤</td><td>기한 초과</td><td>담당 재확인 필요</td></tr>
-          <tr><td>&nbsp;</td><td class="c">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-          <tr><td>&nbsp;</td><td class="c">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+          <tr><th>주기</th><th>내용</th><th>형식</th></tr>
+          <tr><td>주간</td><td>5대 관점 업무 현황 (②진행 중 + ③방치 발굴 중심)</td><td>표 1장</td></tr>
+          <tr><td>월간</td><td>①방향 정합도 + ④강점 · ⑤약점 + 개선 제안</td><td>요약 보고</td></tr>
+          <tr><td>수시</td><td>결제·보안·금지 해당 건, 긴급 이슈</td><td>즉시</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>5. 주간 보고 &mdash; 손으로 쓰지 않습니다</h2>
+        <div class="good">
+          매주 <b>주간 보고 초안이 ★중간관리자 방으로 자동으로 올라갑니다.</b>
+          실장님은 보시고 <b>고치거나 그대로 쓰시면</b> 됩니다. 빈 양식을 채우실 필요가 없습니다.
+        </div>
+        <table style="margin-top:7px;">
+          <tr><th style="width:118px;">초안에 담기는 것</th><th>무엇을</th></tr>
+          <tr><td><b>② 진행 중</b></td><td>지금 굴러가는 일 &mdash; 업무명 · 담당 · 기한</td></tr>
+          <tr><td><b>③ 멈춰 있는 것</b></td><td>기한이 지났거나 오래 손을 못 댄 일 &mdash; 업무명 · 담당 · 며칠째</td></tr>
+          <tr><td><b>✅ 이번 주 끝난 것</b></td><td>이번 주에 완료로 바뀐 일</td></tr>
         </table>
         <p style="margin:6px 0 0; font-size:14.5px; color:var(--dim);">
-          카카오톡방 · ERP · 브로제이에 흩어진 업무를 이 여섯 칸으로 모으는 것이 1차 목표입니다.
+          초안은 <b>업무 시트에 적힌 것만</b> 담습니다 &mdash; 시트에 없는 일은 초안에도 없습니다.
+          카카오톡방 · ERP · 브로제이에 흩어진 업무를 시트 한 곳으로 모으는 것이 1차 목표입니다.
         </p>
       </div>
 
@@ -199,18 +252,6 @@
         </p>
       </div>
 
-      <div class="blk">
-        <h2>8. 지금 바꿔야 하는 것 (실측)</h2>
-        <div class="note">
-          아래 네 경로는 <b>실무진 개인에게 바로 나가고</b> 있습니다. 실장 경유로 바꿉니다.
-          <ul>
-            <li>아침 카카오톡 업무 전달 &mdash; 「사람이 처리할 업무 N건 — 최준용M」 형태로 개인 지목</li>
-            <li>하루 정리 보고 &mdash; 브로제이 가이드 항목을 윤병현AM 앞으로 직접 하달</li>
-            <li>종합접수처 현황 &mdash; 담당자 이름별 목록이 방에 그대로 노출</li>
-            <li>AI가 실무진 방에 보내는 개별 안내 &mdash; 오늘 오전 발송분 포함</li>
-          </ul>
-        </div>
-      </div>
     </div>
   </div>
 
