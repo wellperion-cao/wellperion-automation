@@ -703,6 +703,23 @@ def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
     return sorted(out, key=lambda it: -(_stall_days(it) or 0))
 
 
+def _received_unanswered(items: list[dict], role: str) -> list[dict]:
+    """쿵짝의 받는 쪽 짝(2026-08-06 배397 — 남이 나에게 띄운 배는 대기중 섹터에 자기
+    배와 섞여 있어 눈에 안 띈다는 실측 지적). role이 남에게서 받아 아직 열려 있는 것.
+    오래된 순, 1일 미만은 뺀다(위와 동일 기준). AI 내부 배(audience=='ai')는 자율현황行이라 제외."""
+    role = (role or "").strip().lower()
+    if not role:
+        return []
+    open_status = {"PENDING", "IN_PROGRESS", "ON_HOLD", "보류", "대기", "진행중"}
+    out = [it for it in items
+           if str(it.get("owner", "")).lower() == role
+           and it.get("_from") and it.get("_from") != role
+           and it.get("audience") != "ai"
+           and str(it.get("status", "")).upper() in open_status
+           and (_stall_days(it) or 0) >= 1]
+    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+
+
 # ── 📨 GM 지시 짝맞추기 (2026-08-05 GM 지시 — status/worklog.jsonl area=="GM지시" 미완
 #   적발. 실사고: 대표님 보고건(GM-20260804-05, 21:03)이 접수만 되고 안 끝났는데 부팅
 #   점검은 "미완 0"이라 아무도 못 집었다. ref 가 하루 안에서 3~6회 재사용되는데 판정을
@@ -1039,8 +1056,12 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     #   지나가는 이 보드에 얹는다. 한 곳에만 띄우면 그 화면을 안 여는 날 그냥 넘어간다.
     stalled = _stalled(secs["today"])
     sent_unanswered = _sent_unanswered(sent_by_role or [], role)
+    received_unanswered = _received_unanswered(sent_by_role or [], role)
     gm_gaps = _gm_directive_unresolved(role)
     for it in sent_unanswered:
+        it["_ship"] = classify_ship({
+            "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
+    for it in received_unanswered:
         it["_ship"] = classify_ship({
             "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
     # 🤔 큐 자기정합 3종(2026-08-04) — 같은 블록에 붙인다(새 ### 헤더 금지·약속 L21).
@@ -1050,7 +1071,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         for it, _ev in pair_list:
             it["_ship"] = classify_ship({
                 "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
-    if stalled or sent_unanswered or looks_done or dupes or mismatch or gm_gaps:
+    if stalled or sent_unanswered or received_unanswered or looks_done or dupes or mismatch or gm_gaps:
         lines.append("")
         lines.append(f"### 🔔 멈춰 있는 배 {len(stalled)}척 — 마지막 기록 이후 오래된 순")
         if stalled:
@@ -1061,6 +1082,11 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
             lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
                                     for it in sent_unanswered]))
+        if received_unanswered:
+            lines.append(f"짝 — 남이 내게 띄우고 내가 답 안 한 배 {len(received_unanswered)}척 "
+                          "(보낸이=상대 · 담당=나 · N일째 오래된 순)")
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+                                    for it in received_unanswered]))
         if gm_gaps:
             lines.append(f"📨 GM 지시 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
             for g in gm_gaps:
