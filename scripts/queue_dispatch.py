@@ -122,7 +122,30 @@ def build_ship(args, queue):
         # 신규 생성 게이트(2026-08-01) — "work_type" is None(미선언)이면 선별기는
         # 기존 동작 그대로(가역만 보고 통과). "new"만 자율 후보에서 제외된다.
         "work_type": args.work_type,
+        # 실무진(사람) 방으로 나가는 한 줄. send_ops_digest 가 이 칸만 읽어 카톡에 싣고,
+        # 비어 있으면 그 배는 아예 안 싣는다(잘린 배 제목을 보내던 것을 2026-08-06 배423 에서
+        # 끊었다). 즉 이 칸이 비면 그 일은 사람에게 영원히 안 알려진다 — 아래 경고가 그 자리다.
+        "staff_message": args.staff_message or "",
     }
+
+
+# 이 역할 앞으로 띄운 배는 아침 카톡으로 사람 방에 중계된다(send_ops_digest).
+# 시우→★운영부(최준용M) · 시로·시뽀→★중간관리자(나우열M).
+RELAYED_ROLES = {"coo", "chro", "cfo"}
+
+
+def _warn_missing_staff_message(ship: dict) -> None:
+    """사람 방으로 중계되는 역할인데 전달문이 비면 크게 알린다(막지는 않는다).
+
+    막지 않는 이유: 여기서 배 생성을 거부하면 일 자체가 기록되지 않아 더 나쁘다.
+    경고인 이유: 배423 이후 전달문 없는 배는 카톡에 안 실린다 — 즉 이 칸을 비우면
+    그 일은 사람에게 영영 안 알려지고, 아무도 그 사실을 모른다(조용한 실패).
+    """
+    if ship.get("clevel") in RELAYED_ROLES and not str(ship.get("staff_message") or "").strip():
+        print("  ⚠ 실무진 전달문(--staff-message)이 비었습니다 — 이 배는 아침 카톡으로 "
+              "사람 방에 나가지 않습니다.")
+        print("    사람이 받아야 하는 일이면 --staff-message 에 '무엇을·왜·무엇을 해주면 "
+              "되는지' 한 줄을 넣어 다시 띄우거나, 큐에서 이 배의 staff_message 칸을 채우세요.")
 
 
 def main() -> int:
@@ -153,6 +176,9 @@ def main() -> int:
     # 아침 루틴 4단계 권한 분기(2026-08-01 GM 확정 · 웰리 판단은 doc/wellperion-boot SKILL.md
     # §2-1 참조): update=기존 수정·고도화(가역이면 자율) / new=신규 생성(가역이어도 GM 승인).
     # 미지정(None)이면 선별기가 기존대로 통과시킨다(회귀 0 — 큐의 기존 배는 이 칸이 없다).
+    ap.add_argument("--staff-message", dest="staff_message", default="",
+                    help="실무진(사람)에게 카톡으로 나갈 한 줄 — 무엇을·왜·무엇을 해주면 되는지. "
+                         "비우면 이 배는 사람 방에 안 실린다(배423).")
     ap.add_argument("--work-type", dest="work_type", choices=("update", "new"), default=None,
                      help="update=기존 수정 / new=신규 생성(미지정=선별기 기존 동작 유지)")
     args = ap.parse_args()
@@ -216,6 +242,7 @@ def main() -> int:
                   "audience", "reversible", "work_type"):
             print("  %-10s %s" % (k, ship[k]))
         print("  note       %s" % (ship["note"][:160] or "(없음)"))
+        _warn_missing_staff_message(ship)
         return 0
 
     mutate_queue(mutator, holder="queue_dispatch")
@@ -232,6 +259,7 @@ def main() -> int:
     s = made["ship"]
     disp = s.get("short_no") if s.get("short_no") is not None else s.get("ship_no")
     print("배를 띄웠습니다 → %s(%s)" % (ROLES[s["clevel"]], s["clevel"]))
+    _warn_missing_staff_message(s)
     print("  배 번호 : %s" % disp)
     print("  제목    : %s" % s["title"])
     print("  다음    : %s" % s["next"])
