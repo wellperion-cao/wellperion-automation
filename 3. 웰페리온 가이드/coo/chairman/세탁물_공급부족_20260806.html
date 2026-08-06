@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<title>세탁물 공급 부족 분석 — 요일 배분 문제 (2026-08-06)</title>
+<style>
+  @page { size: A3 portrait; margin: 11mm 13mm; }
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:13.5px; line-height:1.38; word-break:keep-all; overflow-wrap:break-word;}
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:12mm; text-align:left;}
+
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:5px; margin-bottom:7px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;}
+  .hd .kick{font-size:13px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:24px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:13px; text-align:right; line-height:1.5;}
+  .hd-r .big{font-size:15.5px; font-weight:800;}
+
+  h2{font-size:15px; font-weight:800; margin:0 0 5px; padding:3px 10px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:5px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:9px 16px; align-items:start; margin-top:8px;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:6px 12px; font-size:14.5px; font-weight:600; line-height:1.4;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{border:1px solid var(--line); padding:2.5px 6px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+  td.c,th.c{text-align:center;}
+  tr.base td{background:#fbfbfb; font-weight:700;}
+  td.low{color:#a33; font-weight:800;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:6px 10px; font-size:13px; line-height:1.4;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:6px 10px; font-size:13px; line-height:1.4;}
+  .note ul,.good ul{margin:4px 0 0; padding-left:18px;}
+  .note li,.good li{margin-bottom:2px;}
+
+  .foot{margin-top:6px; padding-top:4px; border-top:1px solid var(--line); font-size:12px; color:var(--dim);}
+
+  .steps{list-style:none; margin:0; padding:0;}
+  .steps li{display:grid; grid-template-columns:20px 1fr; gap:9px; align-items:start;
+            padding:3px 0; border-bottom:1px dashed var(--line);}
+  .steps li:last-child{border-bottom:0;}
+  .steps .mk{width:20px; height:20px; border-radius:50%; background:var(--accent-soft);
+             color:var(--accent); font-size:12px; font-weight:800; line-height:20px; text-align:center;}
+  .steps b{display:block; font-size:14px;}
+  .steps span{display:block; font-size:12.8px; color:var(--dim); line-height:1.4; margin-top:0.5px;}
+
+  .stats{display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin:6px 0;}
+  .stat{background:#f4f6f9; border:1px solid var(--line); padding:6px 10px;}
+  .stat .v{font-size:20px; font-weight:800; line-height:1.05; color:#a33;}
+  .stat .l{font-size:12.5px; color:var(--dim); margin-top:2px; line-height:1.3;}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint"><button onclick="window.print()">A3 세로로 인쇄</button></div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">경영지원부 · 세탁물 공급 분석</div>
+      <div class="ttl">세탁물 공급 부족 분석 — 요일 배분 문제</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">2026-08-06 GM 확인</div>
+      <div>측정 — 2026년 7월 입고 29일치 + 8월 1주차 대조</div>
+      <div>업체 미팅 자료</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    총량이 모자란 게 아니라 <em>요일 배분이 어긋나 있다.</em>
+    월요일 물량을 하루 뒤로 옮기면 풀리는 구조다.
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="blk">
+        <h2>1. 측정 기준</h2>
+        <p style="margin:0; font-size:13px; color:var(--dim); line-height:1.4;">
+          2026년 7월 입고 29일치(휴관일 제외) + 8월 1주차 대조. 입고 21:00 → 익일 사용 기준으로 재정렬.
+          휴관일 = 2·4주 일요일.
+        </p>
+      </div>
+
+      <div class="blk">
+        <h2>2. 요일별 실제 공급량</h2>
+        <table>
+          <tr><th>요일</th><th class="c">바스타월</th><th class="c">세면타월</th><th class="c">기준 대비</th></tr>
+          <tr><td>월</td><td class="c">300</td><td class="c">1,572</td><td class="c">109%</td></tr>
+          <tr><td>화</td><td class="c">235</td><td class="c">1,390</td><td class="c low">85%</td></tr>
+          <tr><td>수</td><td class="c">240</td><td class="c">1,290</td><td class="c low">87%</td></tr>
+          <tr><td>목</td><td class="c">272</td><td class="c">1,564</td><td class="c">99%</td></tr>
+          <tr><td>금</td><td class="c">276</td><td class="c">1,572</td><td class="c">100%</td></tr>
+          <tr><td>토</td><td class="c">284</td><td class="c">1,456</td><td class="c">103%</td></tr>
+          <tr><td>일</td><td class="c">260</td><td class="c">1,560</td><td class="c">94%</td></tr>
+          <tr class="base"><td>기준선(목·금·토·일 평균)</td><td class="c">275</td><td class="c">1,534</td><td class="c">100%</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>3. 문제 A — 수요일, 전 품목 동시 최저</h2>
+        <table>
+          <tr><th>품목</th><th class="c">수요일</th><th class="c">기준선</th><th class="c">수준</th></tr>
+          <tr><td>양말</td><td class="c">212</td><td class="c">281</td><td class="c low">75%</td></tr>
+          <tr><td>샤워타월</td><td class="c">288</td><td class="c">385</td><td class="c low">75%</td></tr>
+          <tr><td>운동복 상</td><td class="c">225</td><td class="c">284</td><td class="c low">79%</td></tr>
+          <tr><td>운동복 하</td><td class="c">214</td><td class="c">259</td><td class="c low">83%</td></tr>
+          <tr><td>세면타월</td><td class="c">1,290</td><td class="c">1,534</td><td class="c low">84%</td></tr>
+          <tr><td>바스타월</td><td class="c">240</td><td class="c">275</td><td class="c low">87%</td></tr>
+          <tr><td>땀타월</td><td class="c">275</td><td class="c">306</td><td class="c low">90%</td></tr>
+        </table>
+        <div class="note" style="margin-top:6px;">
+          특정 품목이 모자란 게 아니라 <b>화요일 배송분 전체가 통째로 적다.</b>
+          4주간 수치도 일정하다 &mdash; 바스타월 260·240·240·220, 세면타월 1,320·1,310·1,310·1,220.
+          변동이 아니라 <b>낮게 고정된 값</b>이다. 회원 이용 변동으로는 설명되지 않는다.
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="blk">
+        <h2>4. 문제 B — 화요일, 격주로 반토막</h2>
+        <table>
+          <tr><th>주차</th><th class="c">일요일</th><th class="c">화요일 바스타월</th><th class="c">화요일 세면타월</th></tr>
+          <tr><td>1주</td><td class="c">개관</td><td class="c low">140</td><td class="c low">900</td></tr>
+          <tr><td>2주</td><td class="c">휴관</td><td class="c">360</td><td class="c">1,810</td></tr>
+          <tr><td>3주</td><td class="c">개관</td><td class="c low">120</td><td class="c low">990</td></tr>
+          <tr><td>4주</td><td class="c">휴관</td><td class="c">320</td><td class="c">1,860</td></tr>
+        </table>
+        <div class="note" style="margin-top:6px;">
+          <b>일요일 개관 주에만 화요일이 무너진다.</b> 개관 주는 일요일에도 배송이 들어오는데
+          업체가 일요일에 물량을 몰아주고 월요일 배송을 120~140장으로 줄인다.
+          그 월요일 배송분이 곧 화요일 사용분이다. 월요일 사용분은 300장으로 이미 109% 여유가 있다.
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>5. 월간 누적 부족분 · 8월 1주차</h2>
+        <div class="stats">
+          <div class="stat"><div class="v">2,150장</div><div class="l">세면타월 월간 누적 부족</div></div>
+          <div class="stat"><div class="v">430장</div><div class="l">바스타월 월간 누적 부족</div></div>
+        </div>
+        <div class="note">
+          <b>8월 1주차 — 더 나빠졌다.</b> 화요일 7월 범위 120~360장 → 8월 1주 140장. 개선되지 않고 있다.
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>6. 요청 사항 (업체에 할 말)</h2>
+        <ul class="steps">
+          <li><span class="mk">1</span><div>
+            <b>화·수 배송량을 기준선까지 상향</b>
+            <span>바스타월 275장 · 세면타월 1,534장으로 맞춘다.</span>
+          </div></li>
+          <li><span class="mk">2</span><div>
+            <b>일요일 몰아주기 중단</b>
+            <span>일요일 개관 주의 월요일 배송 축소를 멈추고 월요일을 정상화한다.</span>
+          </div></li>
+          <li><span class="mk">3</span><div>
+            <b>2주간 재측정</b>
+            <span>조정 후 요일별 입고량을 다시 재고, 기준 대비 95% 이상 회복을 확인한다.</span>
+          </div></li>
+          <li><span class="mk">4</span><div>
+            <b>미회복 시 계약 검토</b>
+            <span>회복되지 않으면 계약 조건 · 업체 교체를 검토한다.</span>
+          </div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    근거 &mdash; 2026-08-05 경영지원부
+    <a href="./%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8_%EC%84%B8%ED%83%81%EB%AC%BC_%EA%B3%B5%EA%B8%89%EB%B6%80%EC%A1%B1_%EB%B6%84%EC%84%9D_2026-07.pdf">웰페리온_세탁물_공급부족_분석_2026-07.pdf</a>
+    &nbsp;·&nbsp; 본 페이지의 모든 수치는 원본 PDF 그대로이며 임의로 추정하지 않았습니다.
+  </div>
+
+</div>
+
+</body>
+</html>
