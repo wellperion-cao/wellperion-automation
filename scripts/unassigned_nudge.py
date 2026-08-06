@@ -523,6 +523,85 @@ def build_noresponse_alert_text(due: list[dict], warn_n: int, selected: list[dic
     return "\n".join(lines)
 
 
+# ── 2주 경과 미배정 → 종목 팀장 이름으로 일괄 배정 (GM 지시 2026-08-07) ──────────
+# GM: "담당자 배정 2주 정도 지나면 각 팀장이름으로 일단 배정해서 마무리해줘" · "이번 한 번만"
+# 이름은 지어내지 않는다 — 이미 배정된 1,285건에서 종목별 최다 담당자를 실측해 뽑은 표다
+# (2026-08-07 실측). 위에서부터 첫 일치(모자수영이 수영보다 먼저 와야 한다).
+# 판단이 갈리는 종목(키성장 P.T·웰니스)은 넣지 않는다 — 최다값이 3표 차 안이라 찍는 것과 같다.
+AUTO_ASSIGN_MIN_DAYS = 14
+TEAM_LEAD_BY_SPORT = [
+    ("모자수영", "김성은"), ("체조", "이형주"), ("뮤지컬", "편한별"),
+    ("스쿼시", "이상훈"), ("골프", "최현준"), ("필라테스", "최은지"),
+    ("수영", "박민서"), ("P.T", "김상식"),
+]
+AMBIGUOUS_SPORT_KEYS = ("키성장", "웰니스")   # GM 확인 전까지 자동 배정 제외
+
+
+def lead_for_sport(sport: str) -> str | None:
+    """첫 종목 기준 팀장 이름. 모호 종목·미등록 종목은 None(사람이 처리)."""
+    first = _sport_short(str(sport or "").split(",")[0])
+    if any(k in first for k in AMBIGUOUS_SPORT_KEYS):
+        return None
+    for key, lead in TEAM_LEAD_BY_SPORT:
+        if key in first:
+            return lead
+    return None
+
+
+def collect_auto_assign(today: str, min_days: int = AUTO_ASSIGN_MIN_DAYS) -> tuple[list[dict], list[dict]]:
+    """(배정 대상, 보류) — 보류 사유는 'reason' 에 적는다.
+
+    보류가 되는 두 경우: ①대조키(전화·지문키)가 없어 안전하게 못 쓰는 행 — 행번호만 믿고
+    쓰면 남의 행을 고친다(INC-013·INC-020) ②종목이 모호하거나 표에 없어 이름을 못 정하는 행.
+    """
+    ready, held = [], []
+    for label in ("성인강습", "유소년강습"):
+        for r in R._fetch_list("lesson_inquiry_list", type=label):
+            if R._is_test_row(r):
+                continue
+            days = R._days_since(str(r.get("timestamp", "") or ""), today)
+            if days < min_days or not R._is_unassigned_active(r, True):
+                continue
+            item = {"type": label, "name": str(r.get("name", "") or "-").strip() or "-",
+                    "sport": str(r.get("sport", "") or "-").strip() or "-", "days": days,
+                    "rowIndex": r.get("rowIndex"), "rowKey": str(r.get("rowKey", "") or ""),
+                    "phone": str(r.get("phone", "") or "").strip(), "gid": r.get("gid"),
+                    "date": str(r.get("timestamp", "") or "")[:10]}
+            lead = lead_for_sport(item["sport"])
+            if not item["phone"] and not item["rowKey"]:
+                item["reason"] = "대조키 없음(전화·지문키 빈칸)"
+                held.append(item)
+            elif not lead:
+                item["reason"] = "종목 팀장 미정"
+                held.append(item)
+            else:
+                item["owner"] = lead
+                ready.append(item)
+    ready.sort(key=lambda x: -x["days"])
+    held.sort(key=lambda x: -x["days"])
+    return ready, held
+
+
+def apply_auto_assign(ready: list[dict], timeout: float = 60.0) -> list[dict]:
+    """실제 쓰기 — 기존 화면과 같은 관문(lesson_inquiry_update)만 쓴다. 새 액션 없음.
+    대조키(rowKey·keyPhone) 동봉 필수 — GAS 가 fail-closed 로 검증한다(배294)."""
+    import requests
+    out = []
+    for it in ready:
+        body = {"action": "lesson_inquiry_update", "rowIndex": it["rowIndex"],
+                "owner": it["owner"], "keyPhone": it["phone"], "gid": it["gid"]}
+        if it["rowKey"]:
+            body["rowKey"] = it["rowKey"]
+        try:
+            resp = requests.post(R.FUNNEL_EXEC_URL, json=body, timeout=timeout,
+                                 allow_redirects=True)
+            d = resp.json()
+            out.append({**it, "ok": bool(d.get("ok")), "error": d.get("error", "")})
+        except Exception as e:
+            out.append({**it, "ok": False, "error": str(e)[:80]})
+    return out
+
+
 def build_payload(today: str | None = None, notified: dict[str, str] | None = None) -> dict:
     """오늘 회차 산출물 한 벌: 본문 + 선발 10건 + 휴면 목록 + 집계."""
     today = today or datetime.now().strftime("%Y-%m-%d")
@@ -755,7 +834,34 @@ def main() -> int:
                    help="컨택 후 60일 무응답(카카오 ★부서장 방 대상) 본문만 출력 — 발송 없음(검증용).")
     p.add_argument("--selftest", action="store_true",
                    help="SLA·60일 무응답 판정 자가검사만 실행(가짜 데이터·실제 발신 0건).")
+    p.add_argument("--auto-assign", action="store_true",
+                   help=f"{AUTO_ASSIGN_MIN_DAYS}일 넘게 미배정인 강습 문의를 종목 팀장 이름으로 배정(기본 미리보기).")
+    p.add_argument("--apply", action="store_true", help="--auto-assign 을 실제로 시트에 쓴다.")
     args = p.parse_args()
+
+    if args.auto_assign:
+        today = args.today or datetime.now().strftime("%Y-%m-%d")
+        ready, held = collect_auto_assign(today)
+        print(f"[자동 배정] 대상 {len(ready)}건 · 보류 {len(held)}건 "
+              f"({AUTO_ASSIGN_MIN_DAYS}일 이상 미배정)")
+        by_lead = defaultdict(int)
+        for it in ready:
+            by_lead[it["owner"]] += 1
+        for lead, n in sorted(by_lead.items(), key=lambda x: -x[1]):
+            print(f"  · {lead} ← {n}건")
+        for it in held:
+            print(f"  [보류] {it['date']} · {it['name']} · {_sport_short(it['sport'])} "
+                  f"· {it['days']}일째 — {it['reason']}")
+        if not args.apply:
+            print("(미리보기 — 실제로 쓰려면 --apply)")
+            return 0
+        res = apply_auto_assign(ready)
+        ok = [r for r in res if r["ok"]]
+        bad = [r for r in res if not r["ok"]]
+        print(f"[쓰기 완료] 성공 {len(ok)}건 · 실패 {len(bad)}건")
+        for r in bad:
+            print(f"  [실패] {r['name']} · {r['sport']} — {r['error']}")
+        return 0 if not bad else 1
 
     if args.selftest:
         _selftest_sla()
