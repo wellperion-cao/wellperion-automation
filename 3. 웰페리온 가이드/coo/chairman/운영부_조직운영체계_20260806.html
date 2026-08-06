@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>운영부 조직 운영 체계 — 단일 보고 라인 (2026-08-06 GM 확정)</title>
+<style>
+  @page { size: A3 portrait; margin: 11mm 13mm; }
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:15.5px; line-height:1.5; word-break:keep-all; overflow-wrap:break-word;}
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:13mm; text-align:left;}
+
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:10px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;}
+  .hd .kick{font-size:13.5px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:32px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:15px; text-align:right; line-height:1.55;}
+  .hd-r .big{font-size:18px; font-weight:800;}
+
+  h2{font-size:17px; font-weight:800; margin:0 0 6px; padding:4px 11px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:11px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; align-items:start; margin-top:12px;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:11px 15px; font-size:18px; font-weight:600; line-height:1.5;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  table{width:100%; border-collapse:collapse; font-size:15px;}
+  th,td{border:1px solid var(--line); padding:5px 9px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+  td.c,th.c{text-align:center;}
+
+  .flow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:8px 0 4px;
+        font-size:17px; font-weight:700;}
+  .flow .node{border:2px solid var(--accent); background:var(--accent-soft); padding:6px 14px;}
+  .flow .node.mid{border-color:var(--ink); background:#fff;}
+  .flow .arr{color:var(--dim); font-weight:800;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:9px 13px; font-size:15px; line-height:1.45;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:9px 13px; font-size:15px; line-height:1.45;}
+  .note ul,.good ul{margin:4px 0 0; padding-left:19px;}
+  .note li,.good li{margin-bottom:3px;}
+
+  .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint"><button onclick="window.print()">A3 세로로 인쇄</button></div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">4개 부서 통합 관리 · 운영부</div>
+      <div class="ttl">운영부 조직 운영 체계</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">GM 확정 2026-08-06 · 즉시 적용</div>
+      <div>적용 순서 — 운영부 먼저, 검증 후 시설·지원·주차 확대</div>
+      <div>기존 지시와 충돌하면 이 체계가 우선</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    운영부의 지시와 보고는 <em>이경연 실장 한 곳</em>을 거칩니다.
+    GM·AI는 실무진 개인에게 직접 지시하지 않고, 실무진은 실장을 통해 보고합니다.
+  </div>
+
+  <div class="flow">
+    <span class="node">GM</span><span class="arr">↕</span>
+    <span class="node mid">이경연 실장 &mdash; 단일 창구</span><span class="arr">↕</span>
+    <span class="node">운영부 실무진</span>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="blk">
+        <h2>1. 운영부 구성</h2>
+        <table>
+          <tr><th>직급</th><th>이름</th><th>라인</th><th>역할</th></tr>
+          <tr><td>실장</td><td><b>이경연</b></td><td>운영부 리더</td><td>업무 분배 · 진행 관리 · 결과 취합 · GM 보고</td></tr>
+          <tr><td>매니저</td><td>최준용M</td><td>운영</td><td>운영 실무</td></tr>
+          <tr><td>매니저</td><td>임정은M</td><td>회원·CS</td><td>회원·CS 실무</td></tr>
+          <tr><td>어시스트매니저</td><td>윤병현AM</td><td>운영</td><td>리셉션 팀장 겸임</td></tr>
+          <tr><td>사원</td><td>채승화</td><td>운영</td><td>리셉셔니스트 (오전조)</td></tr>
+          <tr><td>사원</td><td>채용 진행 중</td><td>운영</td><td>리셉셔니스트 (오후조)</td></tr>
+        </table>
+        <p style="margin:6px 0 0; font-size:14.5px; color:var(--dim);">
+          업무 시스템 — 웰페리온 ERP · 브로제이 · 카카오톡방 3종 병행
+        </p>
+      </div>
+
+      <div class="blk">
+        <h2>2. 오가는 방식</h2>
+        <table>
+          <tr><th>방향</th><th>규칙</th></tr>
+          <tr><td><b>지시(하향)</b></td><td>GM·AI의 운영부 업무 지시는 <b>이경연 실장에게만</b> 전달합니다. 실무진 개인에게 직접 지시하지 않습니다.</td></tr>
+          <tr><td><b>분배</b></td><td>실장이 실무진에게 나누고 진행을 관리합니다.</td></tr>
+          <tr><td><b>보고(상향)</b></td><td>실무진의 결과·이슈는 실장이 취합해 GM께 보고합니다. 실무진의 GM 직보는 하지 않습니다.</td></tr>
+          <tr><td><b>예외</b></td><td>결제 · 보안 · 금지항목 세 가지는 지금처럼 즉시 GM께 올립니다.</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>3. 실장 보고 주기</h2>
+        <table>
+          <tr><th>주기</th><th>내용</th><th>형식</th></tr>
+          <tr><td>주간</td><td>5대 관점 업무 현황 (②진행 중 + ③방치 발굴 중심)</td><td>표 1장</td></tr>
+          <tr><td>월간</td><td>①방향 정합도 + ④강점 · ⑤약점 + 개선 제안</td><td>요약 보고</td></tr>
+          <tr><td>수시</td><td>결제·보안·금지 해당 건, 긴급 이슈</td><td>즉시</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="blk">
+        <h2>4. 업무를 보는 5가지 관점</h2>
+        <table>
+          <tr><th class="c">#</th><th>관점</th><th>스스로 묻는 질문</th></tr>
+          <tr><td class="c">①</td><td><b>방향에 맞는 일</b></td><td>이 업무가 3개월 안정화 목표에 기여하는가?</td></tr>
+          <tr><td class="c">②</td><td><b>진행 중인 일</b></td><td>누가, 언제까지, 어디까지 갔는가?</td></tr>
+          <tr><td class="c">③</td><td><b>멈춰 있는 일</b></td><td>마지막 진행이 언제인가? 담당이 있는가?</td></tr>
+          <tr><td class="c">④</td><td><b>잘 되는 일</b></td><td>매뉴얼로 남길 것은 무엇인가?</td></tr>
+          <tr><td class="c">⑤</td><td><b>부족한 일</b></td><td>교육으로 되는가, 사람이 더 필요한가?</td></tr>
+        </table>
+        <div class="good" style="margin-top:7px;">
+          <b>가장 먼저 할 것 = ③ 멈춰 있는 일 찾기.</b> 지금 업무 현황판에 기한이 지난 업무가 <b>14건</b> 있고,
+          그중 <b>12건은 30일 넘게</b>(최장 62일) 아무도 손대지 못했습니다. 이 목록부터 셋 중 하나로 정리합니다 &mdash;
+          <b>끝났으면 완료 · 안 할 거면 폐기 · 계속할 거면 새 기한.</b>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>5. 주간 보고 표준 양식</h2>
+        <table>
+          <tr><th>업무명</th><th class="c">관점</th><th>담당</th><th>상태</th><th>기한</th><th>이슈</th></tr>
+          <tr><td style="color:var(--dim);">예) 종합접수처 키오스크 셋팅</td><td class="c">②</td><td>윤병현AM</td><td>진행</td><td>8/15</td><td>업체 일정 확인 중</td></tr>
+          <tr><td style="color:var(--dim);">예) 리셉션 매뉴얼 작성</td><td class="c">③</td><td>윤병현AM</td><td>멈춤</td><td>기한 초과</td><td>담당 재확인 필요</td></tr>
+          <tr><td>&nbsp;</td><td class="c">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+          <tr><td>&nbsp;</td><td class="c">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+        </table>
+        <p style="margin:6px 0 0; font-size:14.5px; color:var(--dim);">
+          카카오톡방 · ERP · 브로제이에 흩어진 업무를 이 여섯 칸으로 모으는 것이 1차 목표입니다.
+        </p>
+      </div>
+
+      <div class="blk">
+        <h2>6. 지금 바꿔야 하는 것 (실측)</h2>
+        <div class="note">
+          아래 네 경로는 <b>실무진 개인에게 바로 나가고</b> 있습니다. 실장 경유로 바꿉니다.
+          <ul>
+            <li>아침 카카오톡 업무 전달 &mdash; 「사람이 처리할 업무 N건 — 최준용M」 형태로 개인 지목</li>
+            <li>하루 정리 보고 &mdash; 브로제이 가이드 항목을 윤병현AM 앞으로 직접 하달</li>
+            <li>종합접수처 현황 &mdash; 담당자 이름별 목록이 방에 그대로 노출</li>
+            <li>AI가 실무진 방에 보내는 개별 안내 &mdash; 오늘 오전 발송분 포함</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    근거 &mdash; GM 지시 2026-08-06(조직 핵심 지시) · 기한 초과 업무 수치는 같은 날 업무 현황판 실측값입니다.
+    확인되지 않은 항목은 채우지 않았습니다. · 정리 웰페리온 AI 웰리 · 문의 김남욱 GM
+  </div>
+
+</div>
+
+</body>
+</html>
