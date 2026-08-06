@@ -1329,11 +1329,15 @@
      "자율화 진척 계기판". 새 집계기·새 파일을 만들지 않는다(약속 L21) — 이미 받아 둔
      _queueAll 의 세 칸(clevel·reversible·work_type)을 그 자리에서 셀 뿐이다.
      판정은 아침 루틴 권한 분기와 같은 기준을 쓴다(약속 L01 — 판정 로직을 복제하지 않는다):
-       ✅ 자율   = 되돌릴 수 있다고 선언됐고(reversible) 신규 생성이 아니다(work_type!=='new')
-       ⛔ 승인   = 신규 생성(work_type==='new') — 가역이어도 GM 승인
-       ❔ 미선언 = reversible 을 아직 안 적은 배. 선별기가 낱말 스캔으로 폴백하는 구간이라
-                  안전측으로 막히는 일이 잦다 → 이 숫자가 크면 배에 칸을 채워야 한다는 신호다.
-     ★'미선언'을 자율로 세지 않는다. 세면 계기판이 실제보다 좋게 보인다. */
+       ✅ 자율   = 되돌릴 수 있다고 선언됐고(reversible===true) 신규 생성이 아니다(work_type!=='new')
+       ⛔ 승인   = 신규 생성(work_type==='new') **또는** 되돌릴 수 없다고 판정됨(reversible===false)
+       ❔ 미선언 = reversible 을 아직 **안 적은**(null·undefined) 배. 선별기가 낱말 스캔으로
+                  폴백하는 구간이라 안전측으로 막히는 일이 잦다 → 이 숫자가 크면 배에 칸을
+                  채워야 한다는 신호다.
+     ★'미선언'을 자율로 세지 않는다. 세면 계기판이 실제보다 좋게 보인다.
+     ★2026-08-06 수리: 처음엔 reversible===false 까지 '미선언'으로 셌다. 그러면 사람이
+       일부러 '사람이 해야 한다'고 판정해 둔 배가 "칸을 안 적은 배 — 채우면 자율로 돕니다"로
+       뜬다(계기판이 정반대로 안내). false 는 판정이 있는 것이니 승인 쪽으로 센다. */
   function renderAutonomyStats(){
     var open = _queueAll.filter(function(s){
       return s && !isTrashed(s) && (s.status === 'PENDING' || s.status === 'IN_PROGRESS');
@@ -1343,7 +1347,8 @@
     open.forEach(function(s){
       var role = s.clevel || '—';
       var b = by[role] || (by[role] = {auto:0, appr:0, unset:0});
-      var k = (s.work_type === 'new') ? 'appr' : (s.reversible === true ? 'auto' : 'unset');
+      var k = (s.work_type === 'new' || s.reversible === false) ? 'appr'
+            : (s.reversible === true ? 'auto' : 'unset');
       b[k]++; tot[k]++;
     });
     var pct = function(n){ return open.length ? Math.round(n * 100 / open.length) : 0; };
@@ -1362,12 +1367,12 @@
       + '<span style="float:right;color:var(--dim);font-weight:400;">자율 ' + pct(tot.auto) + '%</span></summary>'
       + '<div class="sec-note" style="margin:6px 0 8px;">열린 배 ' + open.length + '척 기준. '
       + '<b style="color:#2e7d32;">✅ 자율</b>=되돌릴 수 있고 기존 것을 고치는 일 · '
-      + '<b style="color:#b07800;">⛔ 승인</b>=새로 만드는 일(가역이어도 GM 승인) · '
+      + '<b style="color:#b07800;">⛔ 승인·사람</b>=새로 만드는 일이거나, 사람·GM 손이 있어야 하는 일 · '
       + '<b>❔ 미선언</b>=아직 판정 칸을 안 적은 배(안전측으로 막힙니다 — 채우면 자율로 돕니다).</div>'
       + '<div class="gtbl-wrap"><table class="gtbl">'
       + '<tr><th>담당</th><th style="width:56px;text-align:right;">열린 배</th>'
       + '<th style="width:56px;text-align:right;">✅ 자율</th>'
-      + '<th style="width:56px;text-align:right;">⛔ 승인</th>'
+      + '<th style="width:64px;text-align:right;">⛔ 승인·사람</th>'
       + '<th style="width:56px;text-align:right;">❔ 미선언</th></tr>'
       + rows.join('')
       + '<tr style="font-weight:700;border-top:2px solid var(--line,#ccc);"><td>합계</td>'
