@@ -524,9 +524,13 @@ def fetch_sales_month_in_progress():
         if not pw:
             print("[erp_status] sales_month_in_progress: 실패 — 처리방 비밀번호 없음")
             return None
+        # attempts=1 고정(2026-08-06 시토) — gas_get 기본 재시도는 3회라 이 한 호출만으로
+        #   최대 3×60=180초가 되어 호출부(daily_scheduler.py 의 timeout=150)를 단독으로 넘겼다.
+        #   실측: 이 작업은 매시간 도는데 누적 150초 타임아웃 184회. 당월 매출은 다음 회차에
+        #   회복되는 값이라 여기서 물고 늘어질 이유가 없다 — 한 번 시도하고 없으면 비운다.
         resp = gas_get(
             PROC_EXEC_URL, {"action": "sales_month", "password": pw},
-            timeout=60, label="home_kpi 당월매출",
+            timeout=40, attempts=1, label="home_kpi 당월매출",
         )
         if resp is None:
             print("[erp_status] sales_month_in_progress: 실패 — GAS 응답 없음")
@@ -677,8 +681,12 @@ def main():
             sys.path.insert(0, str(Path(__file__).resolve().parent))
             from git_lock import pull_rebase_safe  # noqa: E402
             pull_rebase_safe(str(ROOT), str(ROOT), "erp_status_publisher")
-            subprocess.run(["git", "push", "origin", "master"], cwd=ROOT, check=True)
+            # timeout(2026-08-06 시토) — 네트워크 왕복이 무제한 대기라 호출부의 150초를
+            #   통째로 잡아먹을 수 있었다. 못 밀면 다음 회차가 회복한다(발행 파일은 이미 커밋됨).
+            subprocess.run(["git", "push", "origin", "master"], cwd=ROOT, check=True, timeout=45)
             print("[erp_status] pushed")
+        except subprocess.TimeoutExpired as e:
+            print(f"[erp_status] push timeout — 다음 회차에 재시도: {e}")
         except subprocess.CalledProcessError as e:
             print(f"[erp_status] push skipped/failed: {e}")
 

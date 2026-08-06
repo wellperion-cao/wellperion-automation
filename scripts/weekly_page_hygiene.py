@@ -639,6 +639,11 @@ def run_pipeline(clevel: str | None = "coo", apply: bool | None = None, force_dr
                          "applied_count": len(group_applied_summary)}, log_path)
 
     proposal_path = write_proposal_file(per_target_results, clevel_label)
+    # 제안서 자체도 커밋한다(2026-08-06 시토) — 안 하면 GM·웰리 화면까지 못 간다.
+    #   배로는 이미 올라가는데(dispatch_proposal_ship) 배가 가리키는 파일이 이 PC 작업트리에만
+    #   남아 있었다. 실측: 08-02 생성분이 4일째 미커밋, 앞선 2회(07-19·07-26)는 남의 커밋에
+    #   우연히 딸려 들어가 회수됐다. 커밋 실패해도 감사는 계속된다(fail-soft — 반환값 무시).
+    _git_commit_file(proposal_path, f"정리 후보 {proposal_total}건 · 대상 {clevel_label}")
     summary_text = build_telegram_summary(
         apply_total, proposal_total, len(commits), proposal_path, apply_gate, error_total,
     )
