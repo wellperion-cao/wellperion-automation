@@ -360,6 +360,15 @@
   </div>
   <!-- ══ /알림 한 장 ══ -->
 
+  <!-- ══ 🔍 GM 승인 신호 — G1(wellperion_guide)의 ⚠️주의 신호/🟢순항요약 이관 (배422 후속 · 2026-08-06 시토) ══
+       소스 = cmo/review/review_queue.json 직독(G1 gm1RenderAlertSignal과 동일 판정 로직). 지금 GM이
+       행동할 것(검수 승인·발행 대조)만 — 내부 운영신호는 금지(약속 L10). -->
+  <div id="gm-approval-signal" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
+    <h2 class="sec" style="margin-top:0;">🔍 GM 승인 신호 <span style="font-size:12px;font-weight:400;color:var(--dim);">(검수 승인·발행 대조 — 지금 GM이 볼 것)</span></h2>
+    <div id="gm-approval-signal-body">불러오는 중…</div>
+  </div>
+  <!-- ══ /GM 승인 신호 ══ -->
+
   <div id="layer-autonomy">
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
@@ -2642,6 +2651,42 @@
       }
     }catch(e){ /* 접기 실패해도 표 자체는 그대로 보인다 */ }
   }
+
+  // ── 🔍 GM 승인 신호 — review_queue.json 직독(G1 이관 · 2026-08-06). status 정의 그대로 신뢰:
+  //   '검수대기'=GM 승인 차례 / '발행검증대기'=웰리 IG↔M3 대조 차례. card_sent_at 있는 것만 진짜 GM 대기.
+  function renderGmApprovalSignal(){
+    var box = document.getElementById('gm-approval-signal-body');
+    if(!box) return;
+    fetch('cmo/review/review_queue.json?_=' + Date.now(), { cache:'no-store' })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(items){
+        if(!Array.isArray(items)) items = [];
+        var reviewWaitAll = items.filter(function(it){ return (it && it.status) === '검수대기'; });
+        var pubWait = items.filter(function(it){ return (it && it.status) === '발행검증대기'; });
+        var reviewWait = reviewWaitAll.filter(function(it){ return !!(it && it.card_sent_at); });
+        var qN = reviewWaitAll.length - reviewWait.length;
+        var rN = reviewWait.length, pN = pubWait.length;
+        function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        if(rN === 0 && pN === 0){
+          var qNote = qN ? '<div style="font-size:11.5px;color:var(--dim);margin-top:4px;">발송 차례 대기 ' + qN + '건(GM 대기 아님)</div>' : '';
+          box.innerHTML = '<div style="border:1px solid rgba(74,157,107,0.35);border-left:4px solid #4a9d6b;border-radius:10px;padding:10px 14px;background:rgba(74,157,107,0.06);font-size:13.5px;color:#4a9d6b;font-weight:700;">✅ 막힌 것 없음 — 지금 기다리는 신호 없음' + qNote + '</div>';
+          return;
+        }
+        var titles = reviewWait.slice(0,2).map(function(it){ return esc(it.title || it.id || ''); }).filter(Boolean);
+        var preview = titles.length ? '<div style="font-size:11.5px;color:var(--dim);margin-top:3px;">' + titles.join(' · ') + (rN > titles.length ? ' 외 ' + (rN - titles.length) + '건' : '') + '</div>' : '';
+        var h = '<div style="border:1px solid rgba(217,140,95,0.4);border-left:4px solid #d98c5f;border-radius:10px;padding:11px 14px;background:rgba(217,140,95,0.07);">';
+        h += '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">';
+        h += '<div><div style="font-size:26px;font-weight:800;line-height:1;color:#d98c5f;">' + rN + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px;">🔍 검수 승인 대기 (GM)</div>' + preview + '</div>';
+        h += '<div style="' + (pN?'':'opacity:0.4;') + '"><div style="font-size:' + (pN?'26':'18') + 'px;font-weight:800;line-height:1;color:#7c3aed;">' + pN + '</div><div style="font-size:12px;color:var(--dim);margin-top:2px;">✓ 발행 대조 대기 (웰리)</div></div>';
+        h += '</div>';
+        if(qN) h += '<div style="margin-top:8px;font-size:11.5px;color:var(--dim);">발송 차례 대기 ' + qN + '건(GM 대기 아님)</div>';
+        h += '</div>';
+        box.innerHTML = h;
+      }).catch(function(){ box.innerHTML = '<div style="color:var(--dim);font-size:13px;">⚠️ 신호를 불러오지 못했습니다.</div>'; });
+  }
+  renderGmApprovalSignal();
+  setInterval(renderGmApprovalSignal, 90000);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') renderGmApprovalSignal(); });
 
   // ═══════════ 로드 ═══════════
   Promise.all([
