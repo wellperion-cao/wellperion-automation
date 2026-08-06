@@ -5175,7 +5175,7 @@ function _lessonOwnerSummaryRender(t) {
   var byOwner = {};
   function bucketOf(owner) {
     var k0 = String(owner || '').trim() || LESSON_UNASSIGNED_OPTION;
-    var k = (k0 !== LESSON_UNASSIGNED_OPTION && !rosterSet[k0]) ? (k0 + ' (타종목 담당)') : k0;
+    var k = (k0 !== LESSON_UNASSIGNED_OPTION && !rosterSet[k0]) ? LESSON_UNASSIGNED_OPTION : k0;  // FB260806-192852: 타종목 담당자는 해당 종목 미배정으로 통합(다른 부서 카드 노출 제거)
     if (!byOwner[k]) byOwner[k] = { count: 0, statusCounts: {} };
     return byOwner[k];
   }
