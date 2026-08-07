@@ -1479,12 +1479,16 @@ async def run_media_upload(file_path_arg: str) -> int:
 SURVEY_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "survey" / "wp_inquiry_form.html"
 LF_GALLERY_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lost_found_gallery_block.html"
 LF_REGISTER_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lost_found_register_block.html"
+# 2026-08-07 GM 지시 — 오넛티 접수현황(cpo/member/오넛티_접수현황.html)을 회사 도메인 안 페이지로.
+# 정본=오넛티_접수현황.html, 이 블록=워드프레스 주입용 사본(게이트 인라인 복제·noindex 포함).
+OHNUTTY_STATUS_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cpo" / "member" / "wp_ohnutty_status_block.html"
 
 # key: (block_file, 신규생성 시 기본 제목, 발행 시 기본 slug)
 _NEW_PAGE_SPECS = {
-    "survey":      (SURVEY_BLOCK_FILE,      "문의하기",         "inquiry-form"),
-    "lf-gallery":  (LF_GALLERY_BLOCK_FILE,  "습득 분실물 현황", "lost-found"),
-    "lf-register": (LF_REGISTER_BLOCK_FILE, "습득물 등록",      "lost-found-register"),
+    "survey":          (SURVEY_BLOCK_FILE,          "문의하기",             "inquiry-form"),
+    "lf-gallery":      (LF_GALLERY_BLOCK_FILE,      "습득 분실물 현황",     "lost-found"),
+    "lf-register":     (LF_REGISTER_BLOCK_FILE,     "습득물 등록",          "lost-found-register"),
+    "ohnutty-status":  (OHNUTTY_STATUS_BLOCK_FILE,  "OHNUTTY X WELLPERION", "ohnutty-status"),
 }
 
 
@@ -1775,8 +1779,8 @@ def main() -> int:
         "swap-additional-css",
     ], default="setup")
     ap.add_argument("--page", dest="page", default=None,
-                    choices=["survey", "lf-gallery", "lf-register"],
-                    help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)")
+                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status"],
+                    help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)/ohnutty-status(오넛티 접수현황)")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
     ap.add_argument("--find", dest="find", default=None, help="swap-href 찾을 문자열")

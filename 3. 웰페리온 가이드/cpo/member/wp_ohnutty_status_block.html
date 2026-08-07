@@ -1,0 +1,325 @@
+<!-- 오넛티 접수현황 — 워드프레스 페이지 본문 직접 주입 소스 (SSOT)
+     ★ 정본 = cpo/member/오넛티_접수현황.html — 이 블록은 그 원본을 워드프레스(wellperion.com) 페이지에
+        맞게 옮긴 사본이다(iframe 없이 vc_raw_html 로 본문에 직접 심는다. self-contained·단일 스크롤).
+        원본을 고치면 이 블록도 같이 고쳐야 한다(자동 동기화 없음 — 손 동기화).
+     ★ 게이트: 원본과 동일하게 _assets/gate.js 커튼을 인라인 복제해 그대로 심는다(상대경로 스크립트 태그는
+        워드프레스 도메인에서 안 먹으므로 코드를 그대로 복사 — ★주의: 이 파일 어디든 주석 텍스트 안에
+        꺾쇠괄호+script 글자를 그대로 적지 말 것. Autoptimize가 주석 속 텍스트까지 스캔해 진짜 스크립트로
+        오인·본문 전체를 빈 값으로 날려버림(2026-08-07 실측 확인)). 통과 코드는 gate.js와 동일한 규칙(경로에
+        /coo/chairman/ 없으면 실무진 공용 코드) — 이 페이지 경로는 항상 실무진 공용 코드로 떨어진다.
+     ★ CSS 충돌 방지: 전 규칙 .wlp-ons 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
+        WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-ons-page 한정으로 숨김.
+     ★ 검색엔진 미노출(내부 전용): head에 robots noindex 메타를 JS로 주입(WP 코어 변경 없이 self-contained). -->
+<script>try{if(!document.querySelector('meta[name="robots"]')){var _m=document.createElement('meta');_m.name='robots';_m.content='noindex,nofollow';document.head.appendChild(_m);}}catch(e){}</script>
+<style>
+/* ── 오넛티 접수현황 페이지 한정 테마 보정 (body.wlp-ons-page) ── */
+body.wlp-ons-page h1.entry-title,
+body.wlp-ons-page .entry-title,
+body.wlp-ons-page .page-title,
+body.wlp-ons-page .title-container h1,
+body.wlp-ons-page .page-header h1{display:none!important}
+body.wlp-ons-page .buttonizer,
+body.wlp-ons-page #buttonizer,
+body.wlp-ons-page [class*="buttonizer"]{display:none!important}
+body.wlp-ons-page a.lang-header{display:none!important}
+body.wlp-ons-page #header-outer #logo{margin-top:32px!important}
+@media (max-width:1000px){
+  body.wlp-ons-page #header-outer #logo{margin-top:22px!important}
+}
+body.wlp-ons-page,
+body.wlp-ons-page #ajax-content-wrap,
+body.wlp-ons-page .container-wrap,
+body.wlp-ons-page #content,
+body.wlp-ons-page .main-content,
+body.wlp-ons-page .post-area,
+body.wlp-ons-page .entry-content,
+body.wlp-ons-page .wpb_row,
+body.wlp-ons-page .row-bg{background:#faf9f7!important}
+body.wlp-ons-page .container-wrap{padding-top:0!important;border:none!important;box-shadow:none!important}
+body.wlp-ons-page #content{padding-top:0!important}
+body.wlp-ons-page .wlp-ons{background:transparent!important}
+body.wlp-ons-page .vc_row,body.wlp-ons-page .wpb_column,body.wlp-ons-page .vc_column-inner{padding-top:0!important;padding-bottom:0!important}
+
+/* ── Design tokens + 베이스 (.wlp-ons 스코프, 원본과 동일 변수) ── */
+.wlp-ons{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%;
+}
+.wlp-ons *{margin:0;padding:0;box-sizing:border-box}
+.wlp-ons a{color:var(--accent);text-decoration:none}
+.wlp-ons .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 44px}
+/* 헤더 로고 겹침 해소(데스크톱, register/lfg 블록과 동일 방식) */
+@media (min-width:1001px){
+  .wlp-ons .wrap{padding-top:130px}
+}
+
+.wlp-ons .brand{text-align:center;margin-bottom:8px}
+.wlp-ons .brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.wlp-ons .brand h1{font-size:clamp(20px,5vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.wlp-ons .brand p{font-size:13.5px;color:#777}
+.wlp-ons .gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 22px;max-width:320px}
+.wlp-ons .gd-line{flex:1;height:1px}
+.wlp-ons .gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.wlp-ons .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.wlp-ons .gd-diamond{color:var(--accent);font-size:10px;line-height:1}
+
+/* ── 요약 타일 ── */
+.wlp-ons .summary{display:none;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.wlp-ons .summary.show{display:grid}
+.wlp-ons .stile{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center}
+.wlp-ons .stile .v{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.wlp-ons .stile .l{font-size:12px;color:var(--dim);margin-top:4px;font-weight:600}
+.wlp-ons .stile.hi .v{color:var(--accent)}
+
+/* ── 목록 테이블(가로 스크롤 — 페이지 자체는 안 밀림) ── */
+.wlp-ons .list-wrap{display:none}
+.wlp-ons .list-wrap.show{display:block}
+.wlp-ons .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;background:var(--paper);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.wlp-ons table.otbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+.wlp-ons table.otbl th{background:var(--accent-bg);color:var(--text);font-weight:700;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+.wlp-ons table.otbl td{padding:11px 12px;border-bottom:1px solid var(--border);word-break:break-word}
+.wlp-ons table.otbl tr:last-child td{border-bottom:none}
+.wlp-ons .stat-badge{display:inline-block;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 10px}
+.wlp-ons .stat-badge.confirm{color:var(--green);background:var(--green-bg)}
+.wlp-ons .stat-badge.pending{color:#8a5a00;background:#fdf0d5}
+.wlp-ons .stat-badge.wait{color:var(--dim);background:var(--bg);border:1px solid var(--border)}
+.wlp-ons .stat-sel{font-size:12.5px;font-weight:700;border-radius:20px;padding:4px 8px;border:1px solid var(--border);background:var(--paper);color:var(--text);font-family:inherit}
+.wlp-ons .stat-sel:disabled{opacity:.5}
+
+.wlp-ons .state-msg{padding:40px 20px;text-align:center;color:var(--dim);font-size:14.5px}
+.wlp-ons .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+</style>
+<script>try{document.body.classList.add('wlp-ons-page');}catch(e){}</script>
+
+<script>
+/* ── 사내 게이트(커튼) — _assets/gate.js 인라인 복제(원본과 동일 로직, 상대경로 src 대신 코드 직접 심음) ── */
+(function () {
+  "use strict";
+  var GATE_PW_GM = "1531";
+  var GATE_PW_STAFF = "1200";
+  var GATE_PW = /\/coo\/chairman\//.test(window.location.pathname) ? GATE_PW_GM : GATE_PW_STAFF;
+  window.WELP_GATE_PW = GATE_PW;
+  var SKEY = "welp_gate_ok";
+
+  try {
+    if (sessionStorage.getItem(SKEY) === "1") return;
+  } catch (e) {}
+
+  var root = document.documentElement;
+  var hideStyle = document.createElement("style");
+  hideStyle.setAttribute("data-welp-gate", "");
+  hideStyle.textContent =
+    "body{visibility:hidden!important}" +
+    "#welpGate{visibility:visible!important}" +
+    "#welpGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;" +
+    "background:linear-gradient(180deg,#262524,#1a1918);padding:20px;" +
+    "font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Malgun Gothic',sans-serif}" +
+    "#welpGate .gc{background:#2f2d2b;border:1px solid #45423f;border-radius:14px;padding:34px 28px;max-width:344px;" +
+    "width:100%;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.45)}" +
+    "#welpGate .mk{font-size:11px;letter-spacing:.28em;color:#c9a24b;font-weight:700;text-transform:uppercase}" +
+    "#welpGate h2{margin:10px 0 4px;font-size:18px;color:#f3efe9;font-weight:600}" +
+    "#welpGate p{margin:0;font-size:12px;color:#a8a39c;line-height:1.5}" +
+    "#welpGate input{width:100%;box-sizing:border-box;text-align:center;padding:11px;margin-top:16px;" +
+    "border:1px solid #45423f;border-radius:8px;background:#1f1d1c;color:#f3efe9;font:13px inherit;outline:none}" +
+    "#welpGate input:focus{border-color:#c9a24b}" +
+    "#welpGate button{width:100%;margin-top:10px;padding:11px;border:0;border-radius:8px;cursor:pointer;" +
+    "background:#c9a24b;color:#1a1918;font:600 13px inherit}" +
+    "#welpGate button:hover{background:#d8b55f}" +
+    "#welpGate .er{color:#e06a5a;font-size:12px;margin-top:10px;min-height:16px}";
+  root.appendChild(hideStyle);
+
+  function unlock() {
+    try { sessionStorage.setItem(SKEY, "1"); } catch (e) {}
+    var s = document.querySelector('style[data-welp-gate]');
+    if (s) s.parentNode.removeChild(s);
+    var g = document.getElementById("welpGate");
+    if (g) g.parentNode.removeChild(g);
+    if (typeof window.startApp === "function" && !window.__welpStarted) {
+      window.__welpStarted = true;
+      try { window.startApp(); } catch (e) {}
+    }
+  }
+
+  function build() {
+    if (document.getElementById("welpGate")) return;
+    var ov = document.createElement("div");
+    ov.id = "welpGate";
+    ov.innerHTML =
+      '<div class="gc">' +
+      '<div class="mk">WELLPERION</div>' +
+      '<h2>사내 전용</h2>' +
+      '<p>접근 비밀번호를 입력하세요.</p>' +
+      '<input type="password" id="welpGatePw" placeholder="접근 비밀번호" autocomplete="current-password">' +
+      '<button type="button" id="welpGateBtn">입장</button>' +
+      '<div class="er" id="welpGateErr"></div>' +
+      '</div>';
+    (document.body || root).appendChild(ov);
+
+    var input = document.getElementById("welpGatePw");
+    var err = document.getElementById("welpGateErr");
+
+    function attempt() {
+      var v = (input.value || "").trim();
+      if (!v) { err.textContent = "비밀번호를 입력해 주세요."; return; }
+      if (v !== GATE_PW) { err.textContent = "비밀번호가 올바르지 않습니다."; input.select(); return; }
+      unlock();
+    }
+    document.getElementById("welpGateBtn").addEventListener("click", attempt);
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") attempt(); });
+    setTimeout(function () { try { input.focus(); } catch (e) {} }, 30);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", build);
+  } else {
+    build();
+  }
+})();
+</script>
+
+<div class="wlp-ons">
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">추석 선물세트 접수현황</p>
+    <h1>OHNUTTY X WELLPERION</h1>
+    <p>웰페리온과 오넛티 추석 선물세트 프로젝트 접수 현황입니다.</p>
+    <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+  </div>
+
+  <div class="state-msg" id="onsLoadMsg">불러오는 중…</div>
+
+  <div class="summary" id="onsSummary"></div>
+
+  <div class="list-wrap" id="onsListWrap">
+    <div class="tbl-scroll">
+      <table class="otbl">
+        <thead><tr><th>접수번호</th><th>성함</th><th>수량</th><th>수령방법</th><th>희망수령일</th><th>배송지</th><th>상태</th></tr></thead>
+        <tbody id="onsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="info-note">상태는 드롭다운에서 선택하면 바로 저장됩니다. 접수 내용(수량·연락처 등) 수정·문의는 웰페리온 담당자에게 연락해 주세요.<br>하루의 완성, 웰페리온</p>
+</div>
+</div>
+
+<script>
+(function(){
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+
+  function $(id){ return document.getElementById(id); }
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  var STATUS_OPTIONS = [
+    { v: '접수', l: '결제대기' },
+    { v: '확정', l: '확정' },
+    { v: '대기', l: '대기순번' },
+    { v: '취소', l: '취소' }
+  ];
+
+  function _statSelect(id, st){
+    st = String(st||'').trim();
+    var opts = STATUS_OPTIONS.map(function(o){
+      return '<option value="'+_esc(o.v)+'"'+(o.v===st?' selected':'')+'>'+_esc(o.l)+'</option>';
+    }).join('');
+    if(st && STATUS_OPTIONS.every(function(o){return o.v!==st;})) opts += '<option value="'+_esc(st)+'" selected>'+_esc(st)+'</option>';
+    return '<select class="stat-sel" data-id="'+_esc(id)+'">'+opts+'</select>';
+  }
+
+  function _renderSummary(stats){
+    var total = (stats.confirmed||0) + (stats.pending||0) + (stats.waiting||0);
+    var tiles = [
+      { v: total, l: '총 접수(세트)' },
+      { v: stats.confirmed||0, l: '확정' },
+      { v: (stats.pending||0)+(stats.waiting||0), l: '대기(결제+순번)' },
+      { v: (stats.remaining!=null? stats.remaining : '-') + ' / ' + (stats.cap||500), l: '남은 수량 / 목표', hi:true },
+      { v: (stats.rate!=null? stats.rate : '-') + '%', l: '달성률', hi:true }
+    ];
+    $('onsSummary').innerHTML = tiles.map(function(t){
+      return '<div class="stile'+(t.hi?' hi':'')+'"><div class="v">'+_esc(t.v)+'</div><div class="l">'+_esc(t.l)+'</div></div>';
+    }).join('');
+    $('onsSummary').className = 'summary show';
+  }
+
+  function _renderRows(rows){
+    if(!rows.length){
+      $('onsTbody').innerHTML = '<tr><td colspan="7"><div class="state-msg">접수 내역이 없습니다.</div></td></tr>';
+    } else {
+      $('onsTbody').innerHTML = rows.map(function(r){
+        return '<tr><td>'+_esc(r.id)+'</td><td>'+_esc(r.name)+'</td><td>'+_esc(r.qty)+'</td>'+
+          '<td>'+_esc(r.method)+'</td><td>'+_esc(r.wantDate)+'</td><td>'+_esc(r.address)+'</td>'+
+          '<td>'+_statSelect(r.id, r.status)+'</td></tr>';
+      }).join('');
+      Array.prototype.forEach.call($('onsTbody').querySelectorAll('.stat-sel'), function(sel){
+        sel.addEventListener('change', function(){ saveStatus(sel); });
+      });
+    }
+    $('onsListWrap').className = 'list-wrap show';
+  }
+
+  // 드롭다운 선택 → 즉시 저장. 실패하면 alert로 알리고 원래 값으로 되돌린다(조용히 성공한 척 안 함).
+  function saveStatus(sel){
+    var id = sel.getAttribute('data-id');
+    var newVal = sel.value;
+    var prevVal = sel.getAttribute('data-prev') || newVal;
+    sel.disabled = true;
+    fetch(GAS_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'ohnutti_status_update', code: window.WELP_GATE_PW, id: id, status: newVal })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      sel.disabled = false;
+      if(!d || !d.ok){
+        alert('저장 실패: ' + ((d && d.error) || '알 수 없는 오류') + '\n다시 시도해 주세요.');
+        sel.value = prevVal;
+        return;
+      }
+      sel.setAttribute('data-prev', newVal);
+    })
+    .catch(function(){
+      sel.disabled = false;
+      alert('네트워크 오류로 저장하지 못했습니다. 다시 시도해 주세요.');
+      sel.value = prevVal;
+    });
+  }
+
+  function setMsg(text){
+    $('onsLoadMsg').style.display = 'block';
+    $('onsLoadMsg').textContent = text;
+    $('onsSummary').className = 'summary';
+    $('onsListWrap').className = 'list-wrap';
+  }
+
+  // 입장 게이트(위 인라인 커튼)를 이미 통과할 때 쓴 비밀번호를 그대로 조회 코드로 쓴다.
+  function load(code){
+    setMsg('불러오는 중…');
+    fetch(GAS_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'ohnutti_team_list', code: code })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok){
+        setMsg((d && d.error) || '조회에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      $('onsLoadMsg').style.display = 'none';
+      _renderSummary(d.stats||{});
+      _renderRows(Array.isArray(d.rows)?d.rows:[]);
+    })
+    .catch(function(){
+      setMsg('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
+    });
+  }
+
+  window.startApp = function(){ load(window.WELP_GATE_PW); };
+  try { if (sessionStorage.getItem('welp_gate_ok') === '1') load(window.WELP_GATE_PW); } catch(e){}
+})();
+</script>
