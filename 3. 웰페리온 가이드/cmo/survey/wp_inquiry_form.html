@@ -191,6 +191,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 /* ===== 인풋(언더라인 · 샤프 모서리) ===== */
 .wlp-inq .field{margin-bottom:20px}
 .wlp-inq .field:last-child{margin-bottom:0}
+.wlp-inq .field-info{font-size:13.5px;color:var(--ink);line-height:1.6}
 .wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
   width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);color:var(--ink);padding:11px 2px;border-radius:0;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s;-webkit-appearance:none;appearance:none;margin:0}
 .wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--ink);border-bottom-width:2px}
@@ -263,7 +264,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         <p class="slogan-kr">하루의 완성, 웰페리온</p>
         <div class="divider-coral"></div>
         <h1 id="heroTitle">문의하기</h1>
-        <p class="hero-desc"><span id="heroSubLine1">멤버십 가입·시설 투어·강습 상담을 도와드립니다.</span><br><span id="heroSubLine2">아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.</span></p>
+        <p class="hero-desc"><span id="heroSubLine1">멤버십 가입·시설 투어·강습 상담을 도와드립니다.</span><br id="heroSubBr"><span id="heroSubLine2">아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.</span></p>
         <p class="hero-note" id="heroNote">상담 및 투어는 사전 예약제로 운영됩니다.</p>
       </div>
     </div>
@@ -278,7 +279,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 
       <button class="submit" id="submitBtn">문의 접수하기</button>
       <div class="retry-banner" id="retryBanner"></div>
-      <p class="note" id="noteText">남겨주신 연락처로 담당자가 안내드립니다.<br>하루의 완성, 웰페리온</p>
+      <p class="note" id="noteText"><span id="noteLine1">남겨주신 연락처로 담당자가 안내드립니다.</span><br>하루의 완성, 웰페리온</p>
 
       <div class="card fallback-card" id="fallbackBox" style="display:none">
         <p class="fallback-msg">문의 유형을 문의 페이지에서 선택해 주세요.</p>
@@ -423,7 +424,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         { key:'name',     label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
         { key:'phone',    label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
         { key:'qty',      label:'수량(세트)', type:'text', ph:'숫자만 입력해 주세요 (예: 2)', req:true },
-        { key:'method',   label:'수령 방법', type:'select', ph:'선택해 주세요', opts:['현장 수령'], req:true, hint:'택배는 10세트 이상 주문 시 가능합니다' },
+        { key:'methodInfo', label:'수령 방법', type:'info', text:'현장 수령이 기본입니다. 10세트 이상 주문 시 택배도 가능합니다.' },
         { key:'wantDate', label:'희망 수령일', type:'date', req:true },
         { key:'address',  label:'배송지', type:'text', opt:true, hint:'10세트 이상 주문으로 택배를 원하시면 배송지를 남겨주세요', ph:'10세트 미만은 입력하지 않으셔도 됩니다' },
         { key:'pay',      label:'결제 방법', type:'select', ph:'선택해 주세요', opts:['현장 결제','계좌이체'], req:true },
@@ -495,18 +496,25 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     business: '제휴·입점·B2B 등 사업 협업 제안을 받습니다.',
     ohnutti: '추석 선물세트 신청을 도와드립니다.'
   };
-  // 2번째 줄 — 기본은 "담당자가 연락" 문구, 오넛티만 현장 결제 순차판매로 교체(2026-08-07 GM 지시:
-  //   사람 손 최소화 — 담당자 개별 연락 구조가 아님).
+  // 2번째 줄 — 기본은 "담당자가 연락" 문구. 오넛티는 아래 hero-note("접수 순서대로 현장에서 결제 후
+  //   제공해 드립니다")가 같은 뜻이라 중복이 돼(2026-08-07 GM 재지적) — 오넛티는 이 줄 자체를 숨긴다.
   var HERO_SUB_LINE2_DEFAULT = '아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.';
-  var HERO_SUB_LINE2 = { ohnutti: '방문해서 결제 시 순차대로 판매 진행합니다.' };
   // hero-note("상담 및 투어는 사전 예약제로 운영됩니다") — 상담·투어 전용 문구라 오넛티(선물세트 판매)와
   // 무관함(2026-08-07 GM 지적). 오넛티만 판매 방식 문구로 교체, 나머지 6종은 기존 문구 유지.
   var HERO_NOTE_DEFAULT = '상담 및 투어는 사전 예약제로 운영됩니다.';
   var HERO_NOTE = { ohnutti: '접수 순서대로 현장에서 결제 후 제공해 드립니다.' };
+  // 제출버튼 아래 안내 1번째 줄 — 기본은 "담당자가 연락" 문구. 오넛티는 담당자가 전화하는 구조가
+  //   아니므로 접수 후 무엇이 일어나는지로 교체(2026-08-07 GM 재지적, 사람 손 최소화).
+  var NOTE_LINE1_DEFAULT = '남겨주신 연락처로 담당자가 안내드립니다.';
+  var NOTE_LINE1 = { ohnutti: '방문·결제 순서로 접수가 확정됩니다.' };
   function setHeroSub(cat){
     $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT;
-    $('heroSubLine2').textContent = HERO_SUB_LINE2[cat] || HERO_SUB_LINE2_DEFAULT;
+    var isOhnutti = (cat === 'ohnutti');
+    $('heroSubBr').style.display = isOhnutti ? 'none' : '';
+    $('heroSubLine2').style.display = isOhnutti ? 'none' : '';
+    if (!isOhnutti) $('heroSubLine2').textContent = HERO_SUB_LINE2_DEFAULT;
     $('heroNote').textContent = HERO_NOTE[cat] || HERO_NOTE_DEFAULT;
+    $('noteLine1').textContent = NOTE_LINE1[cat] || NOTE_LINE1_DEFAULT;
   }
 
   var selectedCat = '';
@@ -653,6 +661,10 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
           rgrid.appendChild(l);
         });
         field.appendChild(rgrid);
+      } else if (f.type === 'info') {
+        // 입력칸 없이 안내문만(선택지가 1개뿐이라 고를 게 없는 칸을 없앤 자리, 2026-08-07 GM 지시 — 오넛티 수령방법)
+        var infoP = document.createElement('p'); infoP.className='field-info'; infoP.textContent = f.text;
+        field.appendChild(infoP);
       }
       box.appendChild(field);
     });
@@ -705,6 +717,8 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         out[f.key] = el ? (el.value||'').trim() : '';
       }
     });
+    // 오넛티 수령방법 칸을 없앤 대신(위 info 필드) — 뒷단(GAS)이 method 값을 기대하므로 고정값 자동 채움
+    if (selectedCat === 'ohnutti') out.method = '현장 수령';
     out.consent = !!($('f_consent') && $('f_consent').checked);
     out.hp = ($('f_hp') && $('f_hp').value) || '';
     return out;
