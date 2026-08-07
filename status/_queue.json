@@ -1754,5 +1754,25 @@
     "work_type": "update",
     "staff_message": "",
     "updated_at": "2026-08-07"
+  },
+  {
+    "task_id": "CTO-2026-08-07-08시-보고에-이달-매출이-6일째-빈칸-8-3-에-",
+    "clevel": "cto",
+    "title": "[시토] 08시 보고에 이달 매출이 6일째 빈칸 — 8/3 에 고친 값이 이 경로엔 안 옮겨졌다 (GM 지적 2026-08-07)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-07",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-07] ■ GM 지적 원문(2026-08-07): '오늘 8시에 온 내용도 이달 매출은 안나오네'. ■ 실측(웰리 2026-08-07): 오늘 08:00:34 발송된 08시 보고 부록에 '💰 이달 매출 — · 지출 7,224만' 으로 나갔다. 매출 자리만 비고 지출은 나온다. 줄이 생략된 게 아니라 값만 빈 것이다. ■ 원인: wellperion-agents/scripts/ceo_morning_pipeline.py 의 fetch_sales_oneline() 이 GAS home_kpi 의 sales.month(마감 정본 AV열)만 읽는다. 8월은 아직 마감 전이라 GAS 가 정직하게 null 을 주고, _kr_amt() 가 '—' 로 찍는다. null 을 주는 것 자체는 옳은 설계다(허위 숫자 금지). ■ 값은 실재한다: status/home_kpi_snapshot.json 의 sales.monthInProgress.value = 138,492,471원(1억 3,849만 · asOf 2026-08-07 08:56). 별도 GAS action=sales_month(말일탭 진행중 누적)로 수집된다. ■ ★핵심 — 이건 8/3 에 이미 한 번 고친 건이다: 2026-08-03 GM 이 같은 문제를 지적했고 scripts/erp_status_publisher.py(512-555행)가 monthInProgress 를 만들어 ERP home 히어로 화면에는 반영했다. 그런데 같은 수정이 08시 텔레그램 보고 경로에는 안 옮겨졌다. 화면 하나만 고치고 같은 값을 쓰는 다른 소비자를 안 찾은 것이다(약속 L01 — 한 곳만 본다의 실패). ■ 시토가 할 것: 1)fetch_sales_oneline() 이 sales.month 가 null 이면 monthInProgress 를 쓰도록 고친다. 화면에 '(진행 중)' 같은 표시를 붙여 마감값과 구분한다 — 마감 전 누적을 마감 매출로 오인하면 안 된다. 2)★같은 값을 읽는 다른 소비자를 전수로 찾아 같이 고친다. 이번엔 08시 보고 하나만 고치고 끝내지 마라 — 그게 8/3 에 저지른 실수다. sales.month 를 읽는 곳을 전부 grep 해 목록을 만들고, 각각 마감 전에 무엇을 보여줄지 정한다. 3)9월 1일에 같은 일이 또 나는지 확인할 방법을 남긴다(새 감시기 만들지 말고, 기존 점검에 한 줄). ■ 범위: 오늘만의 문제가 아니다 — 08-03·08-05·08-06 08시 보고 전부 같은 상태였다(08-04 는 지출도 null 이라 줄 자체 생략). 8월 시작 이후 6일째 반복됐고 아무도 못 잡았다. ■ 09:30 카톡 매출보고는 다른 소스(매출 보고 시트)라 별개다 — 이 배에서 건드리지 마라.",
+    "next": "fetch_sales_oneline 폴백(month null 이면 monthInProgress + 진행중 표시) → sales.month 읽는 소비자 전수 grep 후 같이 수정 → 웰리에게 목록과 함께 회신",
+    "depends_on": "",
+    "ship_no": 10640,
+    "short_no": 446,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "updated_at": "2026-08-07"
   }
 ]
