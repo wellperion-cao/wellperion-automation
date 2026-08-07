@@ -120,6 +120,19 @@ body.page-id-8460 #header-outer { display: none !important; }
    .wpb_wrapper > div{margin-bottom:24px}류 규칙(특이도 0,1,1)이 우리 규칙(0,1,0)을 이겨 무시됨(실측
    확인). body.page-id-8460 스코프 + !important로 확실히 승리시킴(#header-outer와 동일 패턴). */
 body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
+/* 모바일 좌우 폭 확장(2026-08-07 GM 지시) — Salient 테마 .container.main-content가 PC 거터(padding:0 90px)와
+   별개로 모바일 폭에서도 자체 반응형 max-width 단계(300/320/420/600px)를 margin:auto로 중앙정렬해 화면
+   폭의 최대 54px(390px 폭 실측)를 그냥 잡아먹음(Playwright 실측, .wlp-inq padding과는 다른 층). 1000px 이하
+   에서만 이 층을 무력화해 뷰포트 폭을 그대로 쓰게 하고, 실제 좌우 숨쉴 틈은 .wrap padding(18px)이 담당.
+   1000px 초과(데스크톱, 540px 중앙 정렬)는 원래 폭 유지 — 이 규칙 미적용. */
+@media (max-width:1000px){
+  body.page-id-8460 .container.main-content{
+    max-width:none !important;
+    width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+}
 </style>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
