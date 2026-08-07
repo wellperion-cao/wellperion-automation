@@ -174,7 +174,8 @@
     .sec{break-inside:avoid;}
     .tgl-nav{display:none;}
     .repbar,.digest{display:none !important;}
-    .nb{background:#fff;}
+    /* 오늘 넣은 화면용 스크롤 박스(max-height·overflow-y)는 인쇄에서 해제 — 안 그러면 펼쳐도 잘린다(GM 2026-08-07 ★중요) */
+    .nb{background:#fff;max-height:none;overflow:visible;}
   }
   @media print{
     html,body{background:#fff;}
@@ -223,7 +224,14 @@
 <body>
 
 <div class="bar">
-  <button onclick="window.print()">인쇄 / PDF 저장 (A3 세로)</button>
+  <!-- A3 인쇄 가로·세로 + PNG 저장 — 재사용: _assets/print_options.js(용지 A4/A3 겸용)는 이 페이지가
+       A3 전용이라 안 맞아 씀(GM "인쇄 버튼 1개"류 4부서 체계 페이지와 같은 예외) → 자체 @page 전환 함수로
+       구현. PNG 저장은 저장소 표준(coo/chairman/회장님_오찬_수영팀_20260806.html 과 동일 html2canvas
+       CDN 방식) 재사용 — 새 라이브러리 없음. (GM 지시 2026-08-07) -->
+  <button onclick="printA3('portrait')">🖨 인쇄 (A3 세로)</button>
+  <button onclick="printA3('landscape')">🖨 인쇄 (A3 가로)</button>
+  <span class="msg" id="gm-png-msg" style="align-self:center;font-size:12px;color:#fff;"></span>
+  <button id="gm-png-btn" onclick="saveGmPng()">🖼 PNG로 저장</button>
   <a href="../../월간운영계획.html">◂ 월간운영계획으로</a>
 </div>
 
@@ -236,7 +244,7 @@
     <div class="meta">
       <div><b>대상</b><span id="target-month">—</span></div>
       <div><b>기준일</b><span id="today-str">—</span></div>
-      <div><b>인쇄</b>A3 세로 · 펼쳐 놓은 것만 인쇄됩니다</div>
+      <div><b>인쇄</b>A3 세로·가로 선택 가능 · 접힌 내용도 자동으로 펼쳐 인쇄됩니다</div>
     </div>
   </div>
 
@@ -332,6 +340,8 @@
 <script src="_gm_direct_tasks.js"></script>
 <script src="_chairman_items.js"></script>
 <script src="_owner_directive.js"></script>
+<!-- PNG 저장 — 저장소 표준(회장님_오찬_수영팀_20260806.html·notice_template.html 과 동일 html2canvas CDN 방식, 새 라이브러리 아님) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -345,6 +355,56 @@
     });
   }
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  // ── A3 인쇄(가로·세로) + PNG 저장 (GM 지시 2026-08-07) ──
+  // 접힌 <details> 강제 오픈은 beforeprint/afterprint 로 건다 — 버튼 클릭 시점이 아니라 실제
+  // 인쇄가 시작되는 시점(브라우저가 beforeprint 를 쏘는 순간)에 열어야, 그 사이 비동기로 늦게
+  // 그려진 GM 업무 카드(readPlan fetch 응답 지연)도 놓치지 않는다. window.print() 호출 없이
+  // 사람이 Ctrl+P 로 직접 인쇄해도 동일하게 펼쳐진다.
+  var a3FoldSaved = null;
+  window.addEventListener('beforeprint', function () {
+    a3FoldSaved = [];
+    document.querySelectorAll('details').forEach(function (d) { a3FoldSaved.push([d, d.open]); d.open = true; });
+  });
+  window.addEventListener('afterprint', function () {
+    if (!a3FoldSaved) return;
+    a3FoldSaved.forEach(function (pair) { pair[0].open = pair[1]; });
+    a3FoldSaved = null;
+  });
+
+  // @page 규칙을 버튼 클릭 때마다 다시 써서 문서 뒤쪽(=우선)에 둔다 — 상단 고정 @page A3 portrait 보다 나중이라 이긴다.
+  window.printA3 = function (orientation) {
+    var st = document.getElementById('gm-a3-style');
+    if (!st) { st = document.createElement('style'); st.id = 'gm-a3-style'; document.head.appendChild(st); }
+    st.textContent = '@page{ size: A3 ' + orientation + '; margin: 12mm; }';
+    window.print();
+  };
+
+  window.saveGmPng = function () {
+    var btn = document.getElementById('gm-png-btn');
+    var msg = document.getElementById('gm-png-msg');
+    if (typeof html2canvas !== 'function') {
+      if (msg) msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+      return;
+    }
+    if (btn) btn.disabled = true;
+    if (msg) msg.textContent = '이미지를 만드는 중입니다…';
+    html2canvas(document.querySelector('.sheet'), { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      .then(function (canvas) {
+        var d = new Date();
+        var a = document.createElement('a');
+        a.download = 'GM업무_' + d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        if (msg) msg.textContent = '저장했습니다.';
+        if (btn) btn.disabled = false;
+        setTimeout(function () { if (msg) msg.textContent = ''; }, 4000);
+      })
+      .catch(function () {
+        if (msg) msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+        if (btn) btn.disabled = false;
+      });
+  };
 
   var now = new Date();
   var elToday = document.getElementById('today-str');
