@@ -146,6 +146,56 @@ def format_report(payload, module_name, cadence, owner_role=None):
     return "\n".join(lines)
 
 
+# ── 변화 판정(라이브 데이터) ──────────────────────────────────────────────────
+def _metrics_of(payload):
+    """payload.metrics → {라벨: 값}. 라벨이 없거나 형식이 다르면 빈 dict(판정 포기=평소대로 발송)."""
+    out = {}
+    for m in (payload or {}).get("metrics") or []:
+        if isinstance(m, dict) and m.get("label") is not None:
+            out[str(m["label"])] = m.get("value")
+    return out
+
+
+def _last_metrics(log_path, mid):
+    """그 모듈의 **가장 최근** 기록된 지표값. 없으면 None(첫 회차 = 무조건 발송)."""
+    if not os.path.exists(log_path):
+        return None
+    found = None
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                rec = json.loads(line)
+                if rec.get("module") == mid and isinstance(rec.get("metrics"), dict):
+                    found = rec["metrics"]
+    except Exception:
+        return None
+    return found
+
+
+def _delta_line(prev, cur, max_items=4):
+    """'미컨택 46→41(-5)' 처럼 **바뀐 값만** 한 줄로. 첫 회차나 변화 없음이면 빈 문자열."""
+    if not prev or not cur:
+        return ""
+    parts = []
+    for label, now_v in cur.items():
+        was = prev.get(label)
+        if was is None or was == now_v:
+            continue
+        gap = ""
+        if isinstance(was, (int, float)) and isinstance(now_v, (int, float)):
+            d = now_v - was
+            gap = f"({d:+g})"
+        parts.append(f"{label} {was}→{now_v}{gap}")
+    if not parts:
+        return ""
+    shown = parts[:max_items]
+    tail = f" 외 {len(parts) - len(shown)}건" if len(parts) > len(shown) else ""
+    return "🔄 지난 보고 대비 — " + " · ".join(shown) + tail
+
+
 # ── 로그 ─────────────────────────────────────────────────────────────────────
 def _already_sent(key, log_path):
     """로그에 sent=True 로 남은 동일 dedup 키가 있으면 True(멱등)."""
@@ -322,11 +372,33 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                             "bundle": bundle_id, "dedup_key": key})
             continue
 
+        # ★변한 게 없으면 보내지 않는다 (GM 지적 2026-08-07 · 시토).
+        #   GM: "의미도 없고, 뭔가 그냥 의무적으로 정해진 것만 보내는 느낌인데, 라이브 데이터가
+        #   필요한건데." 같은 숫자를 매일 다시 던지면 읽는 사람이 방 자체를 안 보게 된다.
+        #   ▸숫자가 하나라도 달라졌을 때만 보내고, 그때는 **무엇이 어떻게 변했는지**를 맨 위에 붙인다.
+        #   ▸모듈이 조용해진 것(죽은 것)은 이 침묵과 구분해야 하는데, 그건 module_silence_detector
+        #     가 이미 본다 — 여기서 또 감시 장치를 만들지 않는다(약속 L21).
+        cur_metrics = _metrics_of(payload)
+        prev_metrics = _last_metrics(log_path, mid)
+        if cur_metrics and prev_metrics == cur_metrics:
+            _append_log(log_path, {
+                "ts": now.isoformat(), "module": mid, "cadence": cadence,
+                "dedup_key": key, "sent": False, "reason": "no_change",
+                "metrics": cur_metrics,
+            })
+            results.append({"module": mid, "action": "skip",
+                            "reason": "no_change", "dedup_key": key})
+            continue
+        delta = _delta_line(prev_metrics, cur_metrics)
+        if delta:
+            text = delta + "\n" + text
+
         ok = bool(sender(chat_id, text))
         _append_log(log_path, {
             "ts": now.isoformat(), "module": mid, "cadence": cadence,
             "dedup_key": key, "sent": ok, "chat_id": chat_id,
             "honesty_tag": payload.get("honesty_tag"),
+            "metrics": cur_metrics,
         })
         results.append({"module": mid, "action": "sent" if ok else "send_failed",
                         "dedup_key": key, "sent": ok})
