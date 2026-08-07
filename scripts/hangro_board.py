@@ -687,6 +687,45 @@ def _stalled(items: list[dict], min_days: int = _STALL_MIN_DAYS) -> list[dict]:
     return sorted(out, key=lambda it: -(_stall_days(it) or 0))
 
 
+# ── 🧱 오래 걸리는 배 (2026-08-07 GM 지시 "문제·진행이 반복되고 처리가 안 되면 서포트해라") ──
+# 위 _stalled 는 **마지막으로 기록이 붙은 날**을 본다. 그런데 note 는 오늘 날짜만 스쳐도
+# 갱신된 것으로 보여서, 실측(2026-08-07) 결과 '멈춘 배 0척'인데 **열린 지 14일 넘은 배가
+# 21척**이었다. 매일 한 줄씩 적히기만 하고 끝나지 않는 배가 이 감지기를 통째로 빠져나간다.
+# 그래서 축을 하나 더 둔다: **처음 뜬 뒤로 며칠째 안 닫혔나.** 판정기를 새로 만들지 않고
+# 같은 섹션에 나란히 낸다(약속 L21).
+_LONG_OPEN_MIN_DAYS = 14
+_LONG_OPEN_CAP = 7          # 화면에 줄로 싣는 최대 척수(넘치면 '외 N척'으로 접는다)
+_REPO_EPOCH = dt.date(2026, 1, 1)   # 이보다 이른 날짜는 오타·기본값(2000-01-01 등) — 나이 계산에서 뺀다
+
+
+def _open_days(item: dict) -> int | None:
+    """그 배가 처음 뜬 뒤 지난 날수. 날짜를 못 찾으면 None."""
+    raw = str(item.get("enqueued_at") or "")[:10]
+    first = None
+    try:
+        cand = dt.datetime.strptime(raw, "%Y-%m-%d").date()
+        if _REPO_EPOCH <= cand <= dt.date.today():
+            first = cand
+    except Exception:
+        pass
+    if first is None:
+        blob = " ".join(str(item.get(k) or "") for k in ("note", "_raw_summary"))
+        for y, m, d in _RE_DATE.findall(blob):
+            try:
+                cand = dt.date(int(y), int(m), int(d))
+            except ValueError:
+                continue
+            if _REPO_EPOCH <= cand <= dt.date.today() and (first is None or cand < first):
+                first = cand
+    return None if first is None else (dt.date.today() - first).days
+
+
+def _long_open(items: list[dict], min_days: int = _LONG_OPEN_MIN_DAYS) -> list[dict]:
+    """열린 지 오래된 배 — 오래된 순. 오늘 움직인 배도 포함한다(움직임과 무관하게 '안 끝난' 것)."""
+    out = [it for it in items if (_open_days(it) or 0) >= min_days]
+    return sorted(out, key=lambda it: -(_open_days(it) or 0))
+
+
 # ── 🔔 쿵짝 회수 (2026-08-04 GM 지시 "작업 1개당 답변 1개" — 배를 띄우고 끝내지 마라.
 #   넘긴 배는 답이 올 때까지 내가 쥐고 있는다. 답이 없으면 그것부터 보고한다("N일째").
 #   지금까지 웰리에게만 걸려 있던 규칙을 역할과 무관하게(약속 L01) 여기 한 곳에 얹는다. ──
@@ -1057,6 +1096,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     #   새 알림·새 예약을 만들지 않는다(약속 L21) — 모든 표면(부팅 셸·G1 보드·08:00 보고)이 이미
     #   지나가는 이 보드에 얹는다. 한 곳에만 띄우면 그 화면을 안 여는 날 그냥 넘어간다.
     stalled = _stalled(secs["today"])
+    long_open = [it for it in _long_open(secs["today"]) if it not in stalled]
     sent_unanswered = _sent_unanswered(sent_by_role or [], role)
     received_unanswered = _received_unanswered(sent_by_role or [], role)
     gm_gaps = _gm_directive_unresolved(role)
@@ -1073,12 +1113,21 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         for it, _ev in pair_list:
             it["_ship"] = classify_ship({
                 "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
-    if stalled or sent_unanswered or received_unanswered or looks_done or dupes or mismatch or gm_gaps:
+    if (stalled or long_open or sent_unanswered or received_unanswered
+            or looks_done or dupes or mismatch or gm_gaps):
         lines.append("")
         lines.append(f"### 🔔 멈춰 있는 배 {len(stalled)}척 — 마지막 기록 이후 오래된 순")
         if stalled:
             lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
                                     for it in stalled]))
+        if long_open:
+            # 매일 한 줄씩 적히지만 끝나지 않는 배 — 위 '멈춤' 판정은 기록 날짜만 보므로 이걸 놓친다.
+            lines.append(f"🧱 오래 걸리는 배 {len(long_open)}척 "
+                         f"(뜬 지 {_LONG_OPEN_MIN_DAYS}일 넘게 안 닫힘 · 오래된 순 · 위 멈춤 목록과 중복 제외)")
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=f"{_open_days(it)}일째")
+                                    for it in long_open[:_LONG_OPEN_CAP]]))
+            if len(long_open) > _LONG_OPEN_CAP:
+                lines.append(f"… 외 {len(long_open) - _LONG_OPEN_CAP}척")
         if sent_unanswered:
             lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
