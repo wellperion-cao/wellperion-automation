@@ -660,7 +660,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="field">
       <label>첨부파일 <span style="font-size:11px;color:var(--dim);font-weight:400;">(최대 5MB)</span></label>
-      <input type="file" id="fFile" multiple style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:8px;font-family:inherit;font-size:14px;width:100%;">
+      <input type="file" id="fFile" multiple onchange="onPickFiles(this)" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:8px;font-family:inherit;font-size:14px;width:100%;">
       <div id="fFileStatus" style="font-size:12px;color:var(--dim);margin-top:4px;"></div>
       <div id="fExistingFiles" style="margin-top:8px;"></div>
     </div>
@@ -2630,7 +2630,8 @@ function openAddModal() {
   document.getElementById('fDifficulty').value = '';
   document.getElementById('fLink').value = '';
   document.getElementById('fFile').value = '';
-  document.getElementById('fFileStatus').textContent = '';
+  _pendingFiles = [];
+  document.getElementById('fFileStatus').innerHTML = '';
   _modalFileUrls = [];
   var _efb = document.getElementById('fExistingFiles'); if (_efb) _efb.innerHTML = '';
   clearCheckboxGroup('fApprovalGroup');
@@ -2966,6 +2967,38 @@ async function saveDifficultyBatch() {
 }
 
 /* 모달 기존 첨부 목록·삭제 — 업로드된 첨부를 개별 삭제(시트 링크 제거 + Drive 휴지통). 2026-06-03 GM */
+/* ── 첨부 예정 파일 목록 (2026-08-07 GM 지시) ──
+   <input type="file"> 는 고른 파일을 하나만 빼는 방법이 없다(다시 고르면 통째로 교체된다).
+   고른 파일을 배열에 모아 두고 ✕ 로 개별 제거할 수 있게 한다. input 은 매번 비워서
+   같은 파일을 다시 고를 수도 있게 한다. 저장은 이 배열만 본다. */
+let _pendingFiles = [];
+function _fileKey(f) { return f.name + '|' + f.size + '|' + (f.lastModified || 0); }
+function onPickFiles(input) {
+  const over = [];
+  for (const f of input.files) {
+    if (f.size > 5 * 1024 * 1024) { over.push(f.name); continue; }
+    if (!_pendingFiles.some(p => _fileKey(p) === _fileKey(f))) _pendingFiles.push(f);
+  }
+  input.value = '';                       // 같은 파일 재선택 허용 + 표시는 배열이 담당
+  if (over.length) alert('5MB를 넘어 제외했습니다:\n' + over.join('\n'));
+  renderPendingFiles();
+}
+function removePendingFile(i) { _pendingFiles.splice(i, 1); renderPendingFiles(); }
+function clearPendingFiles() { _pendingFiles = []; renderPendingFiles(); }
+function renderPendingFiles() {
+  const box = document.getElementById('fFileStatus');
+  if (!box) return;
+  if (!_pendingFiles.length) { box.innerHTML = ''; return; }
+  const kb = n => n < 1024 * 1024 ? (n / 1024).toFixed(0) + 'KB' : (n / 1024 / 1024).toFixed(1) + 'MB';
+  box.innerHTML = '<div style="font-size:11px;color:var(--dim);margin:2px 0 4px;">첨부 예정 (' + _pendingFiles.length + ') — 저장하면 올라갑니다</div>' +
+    _pendingFiles.map((f, i) =>
+      '<div style="display:flex;align-items:center;gap:6px;margin:3px 0;">' +
+        '<span class="chip" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📄 ' + esc(f.name) + ' <span style="color:var(--dim)">' + kb(f.size) + '</span></span>' +
+        '<button type="button" title="목록에서 빼기" onclick="removePendingFile(' + i + ')" style="border:1px solid var(--border);color:var(--dim);background:var(--paper);border-radius:6px;font-size:13px;line-height:1;padding:4px 9px;cursor:pointer;flex-shrink:0;">✕</button>' +
+      '</div>'
+    ).join('');
+}
+
 let _modalFileUrls = [];
 function renderExistingFiles(id) {
   const box = document.getElementById('fExistingFiles');
@@ -3065,10 +3098,10 @@ async function saveTask() {
   if (editId) params.id = editId;
 
   // 첨부파일 처리 (여러 개 지원, 각 5MB 제한)
-  const fileInput = document.getElementById('fFile');
+  // 첨부는 ✕ 로 개별 제거 가능한 _pendingFiles 배열만 본다(2026-08-07). input.files 는 표시용이 아니다.
   const filesToUpload = [];
-  if (fileInput.files.length > 0) {
-    for (const file of fileInput.files) {
+  if (_pendingFiles.length > 0) {
+    for (const file of _pendingFiles) {
       if (file.size > 5 * 1024 * 1024) { alert(file.name + ' — 5MB를 초과합니다. 건너뜁니다.'); continue; }
       const base64 = await new Promise(resolve => {
         const reader = new FileReader();
