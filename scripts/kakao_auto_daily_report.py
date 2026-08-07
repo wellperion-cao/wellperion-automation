@@ -48,7 +48,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from close_days import is_closed, next_business_day  # noqa: E402
-from generate_sales_report_image import profile_chrome_pids  # noqa: E402
+from generate_sales_report_image import profile_chrome_pids, GAS_URL  # noqa: E402
 try:  # 발신 관문(best-effort) — 임포트 실패해도 경보 무영향
     from tg_outbound_log import send as _tg_send
 except Exception:
@@ -152,6 +152,78 @@ def send_telegram_photo(image_path: str, caption: str) -> bool:
     except Exception as exc:
         log(f"[경고] 텔레그램 사진 발송 실패(카톡 전송은 계속 진행): {exc}")
         return False
+
+
+# ── 회장님 매출보고 핵심숫자 텍스트화(GM 지시 2026-08-08) ─────────────────────────
+# 배경: 회장님 방 09:30 보고는 사진이라 로그로 숫자 대조가 안 된다(2026-08-01 옛값
+# 오발송을 사람이 다음날에야 발견). GM 결정 = 회장님 방은 사진 그대로 유지, 같은
+# 숫자를 텍스트로 업무보고방(8254867551)에도 남겨 로그 대조가 가능하게 한다.
+# ★숫자 출처는 이미지와 반드시 같아야 한다(별도 재계산 금지) — GAS
+# action=daily_report_rate_debug 가 이미지가 export하는 그 파일·그 '보고' 탭의
+# "✅ 총 매출 합계" 행(금일|월누적|월목표|월달성률)을 직독한다(_kpiDailyReportRateDebug,
+# .deploy-todo/업무&결재 현황.js) — resolve_sheet()/export_url_for()와 동일 파일 해석
+# 규칙(_kpiSalesReportTab)을 GAS 쪽에서 공유하므로 이미지와 같은 셀 값이 나온다.
+SALES_REPORT_WORK_ROOM_ID = 8254867551  # 업무보고방(@namuki_report_bot) — 회장님 방 아님
+
+
+def fetch_daily_report_numbers(target_date: datetime) -> "dict | None":
+    """이미지가 그린 '✅ 총 매출 합계' 행을 GAS 직독. 실패/못 찾음 → None(호출부가 '미수집' 표기)."""
+    import requests
+    try:
+        resp = requests.get(GAS_URL, params={"action": "daily_report_rate_debug", "month": target_date.month},
+                             timeout=30)
+        data = resp.json()
+    except Exception as exc:
+        log(f"[경고] 매출 핵심숫자 조회 실패: {exc}")
+        return None
+    if not data.get("ok"):
+        log(f"[경고] 매출 핵심숫자 조회 실패(ok=false): {data.get('error')}")
+        return None
+    for row in data.get("rows", []):
+        if "총 매출 합계" in str(row.get("label", "")):
+            return {k: (row.get(k) or {}).get("value") for k in ("today", "month", "target", "rate")}
+    log("[경고] '총 매출 합계' 행을 GAS 응답에서 못 찾음")
+    return None
+
+
+def _fmt_won(v) -> str:
+    return f"{round(v):,}원" if isinstance(v, (int, float)) else "미수집"
+
+
+def _fmt_rate(v) -> str:
+    """시트 퍼센트 서식 셀은 raw value가 분수(0.2634)로 온다 — 정수 퍼센트(예 71%)로 이미
+    저장된 값과 헷갈리지 않게 절대값 1 이하만 100배(분수 판정)."""
+    if not isinstance(v, (int, float)):
+        return "미수집"
+    return f"{v * 100:.2f}%" if -1 <= v <= 1 else f"{v:.2f}%"
+
+
+def build_sales_numbers_text(target_date: datetime, nums: "dict | None") -> str:
+    weekday_kr = _WEEKDAY_KR[target_date.weekday()]
+    n = nums or {}
+    return (
+        f"📊 회장님 매출보고 핵심숫자 ({target_date.month}.{target_date.day}({weekday_kr})분, "
+        f"사진 대조용)\n"
+        f"금일 매출: {_fmt_won(n.get('today'))}\n"
+        f"당월 누적: {_fmt_won(n.get('month'))}\n"
+        f"당월 목표: {_fmt_won(n.get('target'))}\n"
+        f"당월 달성률: {_fmt_rate(n.get('rate'))}"
+    )
+
+
+def send_sales_numbers_text(target_date: datetime) -> bool:
+    """업무보고방(8254867551)에 텍스트 1건 발송 — tg_outbound_log 관문 경유(로그 남음)."""
+    env = _load_env(ENV_PATH)
+    token = env.get("TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        log("[경고] TELEGRAM_BOT_TOKEN(.env) 없음 — 핵심숫자 텍스트 발송 생략")
+        return False
+    nums = fetch_daily_report_numbers(target_date)
+    text = build_sales_numbers_text(target_date, nums)
+    ok = _tg_send(token, SALES_REPORT_WORK_ROOM_ID, text,
+                   source="kakao_auto_daily_report.send_sales_numbers_text", timeout=15)
+    log(f"업무보고방 매출 핵심숫자 텍스트 {'발송 완료' if ok else '발송 실패'}")
+    return ok
 
 
 # status/kakao_last_send.json 기록은 더 이상 여기서 하지 않는다(2026-08-04 CTO) — 관문
@@ -364,6 +436,8 @@ def main() -> int:
     wait_for_profile_chrome_clear()
     ok, failures = run_sender(rooms, image_path, caption, args.dry_run)
     if ok:
+        if not args.dry_run:
+            send_sales_numbers_text(target)  # 회장님 사진 발송 직후 — 같은 숫자를 업무보고방에 텍스트로(GM 2026-08-08)
         detail = "DRY-RUN 검증 완료" if args.dry_run else "3방 전송 완료" if rooms is None else f"{rooms} 전송 완료"
         msg = f"DONE: 카톡 {'검증(dry-run)' if args.dry_run else '전송'} 완료 — {detail}"
         log(msg)
