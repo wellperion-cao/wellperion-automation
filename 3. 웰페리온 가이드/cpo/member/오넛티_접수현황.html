@@ -4,14 +4,18 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>웰페리온 X 오넛티 추석 선물세트 — 접수현황</title>
+<title>웰페리온과 오넛티 추석 선물세트 — 접수현황</title>
+<script src="../../_assets/gate.js" charset="utf-8"></script>
 <!--
   오넛티 팀(외부 파트너) 열람 전용 — 조회만, 처리 없음(GM 지시 2026-08-07).
   · 형식 정본 = coo/reception/lost_found_gallery.html — 같은 CSS 변수·레이아웃 패턴을 그대로 재사용한다.
+  · 입장 방식(GM 지시 2026-08-07) = 사내 게이트(_assets/gate.js) 재사용. 비밀번호 1회 입력 → sessionStorage 세션 유지
+    → 같은 브라우저에서 다시 열면 안 물어본다. 틀린 비밀번호 안내도 gate.js 커튼이 그대로 처리한다.
+  · 게이트 통과 시 gate.js 가 전역에 심어두는 window.WELP_GATE_PW(게이트 비밀번호)를 그대로 백엔드 조회 코드로 쓴다 —
+    코드를 담을 별도 저장소를 새로 만들지 않는다(기존 게이트와 같은 자리 = sessionStorage).
   · 백엔드(.deploy-funnel-v2/Survey.js): action=ohnuti_team_list — 접속코드 필요(ScriptProperties OHNUTI_ACCESS_CODE,
     미설정이면 항상 거부). 응답 rows: id/name/qty/method/wantDate/address/status, stats: cap/confirmed/pending/waiting/remaining/rate.
     연락처는 서버가 아예 담아 보내지 않는다. 성함은 서버가 이미 첫 글자만 보낸다(예: 김○○) — 화면에서 추가로 가리지 않는다.
-  · 접속코드는 화면(localStorage 등)에 저장하지 않는다 — 조회할 때마다 다시 보낸다.
   · 삭제·수정 기능 없음. 보기 전용.
 -->
 <style>
@@ -34,17 +38,6 @@ a{color:var(--accent);text-decoration:none}
 .gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
 .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
 .gd-diamond{color:var(--accent);font-size:10px;line-height:1}
-
-/* ── 접속코드 게이트 ── */
-.gate{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:18px 18px 20px;margin-bottom:20px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.gate-h{font-size:14.5px;font-weight:800;margin-bottom:10px}
-.gate-row{display:flex;gap:8px;flex-wrap:wrap}
-.gate-row input{flex:1;min-width:180px;padding:11px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;font-family:inherit}
-.gate-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
-.gate-row button{padding:11px 20px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
-.gate-row button:disabled{opacity:.5;cursor:default}
-.gate-msg{font-size:12.5px;color:var(--dim);margin-top:9px;line-height:1.6}
-.gate-msg.err{color:var(--red)}
 
 /* ── 요약 타일 ── */
 .summary{display:none;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
@@ -78,18 +71,11 @@ table.otbl tr:last-child td{border-bottom:none}
   <div class="brand">
     <p class="brand-eyebrow">Wellperion X Ohnuti</p>
     <h1>추석 선물세트 접수현황</h1>
-    <p>웰페리온 X 오넛티 추석 선물세트 프로젝트 접수 현황입니다. 접속코드를 입력하시면 조회됩니다.</p>
+    <p>웰페리온과 오넛티 추석 선물세트 프로젝트 접수 현황입니다.</p>
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
   </div>
 
-  <div class="gate">
-    <div class="gate-h">🔑 접속코드 입력</div>
-    <div class="gate-row">
-      <input type="password" id="codeInput" placeholder="접속코드" autocomplete="off">
-      <button type="button" id="loadBtn">조회</button>
-    </div>
-    <div class="gate-msg" id="gateMsg">웰페리온에서 안내받은 접속코드를 입력해 주세요.</div>
-  </div>
+  <div class="state-msg" id="loadMsg">불러오는 중…</div>
 
   <div class="summary" id="summary"></div>
 
@@ -148,12 +134,16 @@ table.otbl tr:last-child td{border-bottom:none}
     $('listWrap').className = 'list-wrap show';
   }
 
-  function load(){
-    var code = $('codeInput').value.trim();
-    if(!code){ $('gateMsg').className='gate-msg err'; $('gateMsg').textContent='접속코드를 입력해 주세요.'; return; }
-    var btn = $('loadBtn');
-    btn.disabled = true; btn.textContent = '조회 중…';
-    $('gateMsg').className='gate-msg'; $('gateMsg').textContent='조회하는 중입니다…';
+  function setMsg(text){
+    $('loadMsg').style.display = 'block';
+    $('loadMsg').textContent = text;
+    $('summary').className = 'summary';
+    $('listWrap').className = 'list-wrap';
+  }
+
+  // 입장 게이트(gate.js)를 이미 통과할 때 쓴 비밀번호를 그대로 조회 코드로 쓴다 — 화면에 코드 입력칸을 따로 두지 않는다.
+  function load(code){
+    setMsg('불러오는 중…');
     fetch(GAS_URL, {
       method: 'POST', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -161,24 +151,23 @@ table.otbl tr:last-child td{border-bottom:none}
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
-      btn.disabled = false; btn.textContent = '조회';
       if(!d || !d.ok){
-        $('summary').className='summary'; $('listWrap').className='list-wrap';
-        $('gateMsg').className='gate-msg err'; $('gateMsg').textContent = (d && d.error) || '조회에 실패했습니다. 접속코드를 확인해 주세요.';
+        setMsg((d && d.error) || '조회에 실패했습니다. 잠시 후 다시 시도해 주세요.');
         return;
       }
-      $('gateMsg').className='gate-msg'; $('gateMsg').textContent='조회 완료.';
+      $('loadMsg').style.display = 'none';
       _renderSummary(d.stats||{});
       _renderRows(Array.isArray(d.rows)?d.rows:[]);
     })
     .catch(function(){
-      btn.disabled = false; btn.textContent = '조회';
-      $('gateMsg').className='gate-msg err'; $('gateMsg').textContent='네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
+      setMsg('네트워크 오류입니다. 잠시 후 다시 시도해 주세요.');
     });
   }
 
-  $('loadBtn').addEventListener('click', load);
-  $('codeInput').addEventListener('keydown', function(e){ if(e.key==='Enter') load(); });
+  // ── 게이트 통과 후 앱 시작 (상품기획.html 과 같은 패턴) ──────────────
+  window.startApp = function(){ load(window.WELP_GATE_PW); };
+  // 게이트 없이 바로 로드된 경우(이미 통과된 세션)
+  try { if (sessionStorage.getItem('welp_gate_ok') === '1') load(window.WELP_GATE_PW); } catch(e){}
 })();
 </script>
 </body>
