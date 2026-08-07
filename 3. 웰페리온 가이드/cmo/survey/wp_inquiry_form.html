@@ -173,8 +173,9 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 /* 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상, 2026-08-07 GM 지시) — 오넛티 유형 한정, 입력 칸 위쪽 */
 .wlp-inq .g-brand{margin-top:12px}
 .wlp-inq .g-brand-link{display:inline-block;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;margin-bottom:10px}
-/* 쇼츠(세로 영상) — 9:16 비율로 고정 폭, 가로로 안 늘어나고 모바일에서도 화면 안에 들어옴 */
-.wlp-inq .g-brand-video{max-width:220px;margin:0 auto;position:relative;width:100%;padding-top:177.78%;background:var(--ink)}
+/* 쇼츠(세로 영상) — 폭 240px 고정(9:16→높이 약427px). aspect-ratio 사용(패딩%트릭 금지 — %는 부모폭
+   기준이라 카드 폭까지 늘어나는 버그, 2026-08-07 GM 지적). max-width:100%로 모바일 폭 초과도 방지. */
+.wlp-inq .g-brand-video{width:240px;max-width:100%;margin:0 auto;position:relative;aspect-ratio:9/16;background:var(--ink)}
 .wlp-inq .g-brand-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 
 /* ===== 입회 나이 안내(접이식) — 멤버십·성인강습 유형 한정. 2026-07-21 시포·GM ===== */
