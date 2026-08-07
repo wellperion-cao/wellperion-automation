@@ -256,6 +256,7 @@
       <a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">회장님 A3</a>
       <a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">대표님 A3</a>
       <a class="sec-act" href="../todo/결재 현황 SSOT.html" onclick="event.stopPropagation();">결재 현황</a>
+      <a class="sec-act" href="../../월간운영계획.html" onclick="event.stopPropagation();">월간운영계획</a>
       <!-- ② 「보고 문안 복사」 — 대표님 구획 안에 있던 것을 헤더 우측으로 이동 + 토글(GM 지시 2026-08-06
            "경영 보고건 우측이 좋을 것 같고 열었다 닫을 수 있게"). id·판정 로직은 _owner_directive.js 그대로 재사용 —
            위치만 옮긴다. -->
@@ -560,7 +561,9 @@
       // 오넛티 접수현황 버튼 — 이 목표(id 2026-08-24) 카드에만(GM 지시 2026-08-07). 기존 doc-link 클래스 재사용.
       function ohnuttiLink(id) {
         if (id !== '2026-08-24') return '';
-        return '<a class="doc-link" href="../../cpo/member/오넛티_접수현황.html" target="_blank" rel="noopener">🎁 오넛티 접수현황</a>';
+        // 접수현황은 회사 도메인(워드프레스) 정본으로 간다 — github.io 사본은 남겨두되 링크는 여기로.
+        return '<a class="doc-link" href="http://wellperion.com/ko/inquiry-form/?type=ohnutti" target="_blank" rel="noopener">🎁 오넛티 신청 폼</a>' +
+               ' <a class="doc-link" href="http://wellperion.com/ko/ohnutty-status/" target="_blank" rel="noopener">📊 오넛티 접수현황</a>';
       }
       // 점수 체계 초안 버튼 — 이 목표(id 2026-08-25 「실무진 업무 점수 체계」) 카드에만(GM 지시 2026-08-07).
       // 같은 폴더 상대경로, 기존 doc-link 클래스 재사용 — 새 CSS 없음.
@@ -804,8 +807,9 @@
       if (!tr || tr.querySelector('.row-actions')) return;
       var td = document.createElement('td');
       td.className = 'row-actions';
-      td.innerHTML = '<span class="dept-badge">' + badgeLabel + '</span> ' +
-        '<a class="doc-link move-to-gm" href="../../월간운영계획.html" target="_blank" rel="noopener">GM 업무로 →</a>';
+      // 행별 「GM 업무로 →」 링크는 뺐다(GM 지시 2026-08-07) — 누르면 월간운영계획으로 넘어가
+      // 지금 보던 자리를 잃는다. 이동은 섹션 머리의 「월간운영계획」 버튼 하나로 모았다.
+      td.innerHTML = '<span class="dept-badge">' + badgeLabel + '</span>';
       tr.appendChild(td);
     }
 
