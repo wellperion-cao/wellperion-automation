@@ -39,10 +39,8 @@ DONE → VERIFYING → (VERIFIED | REJECTED) → ARCHIVED
 ```
 
 ## 가동 명령
-```powershell
-# 등록
-.\scripts\register_ceo_watcher.ps1
 
-# 1회 수동 가동 (테스트용)
-python scripts\ceo_watcher.py
-```
+`ceo_watcher.py`(15초 폴러)와 `register_ceo_watcher.ps1`은 2026-08-08 폐기했다.
+예약작업에 등록된 적이 없고(`schtasks` 실측 0건), 루프가 `_queue.json`을 FIFO로
+`pop(0)`해 저장하므로 실행되면 현재 '배' 큐를 파괴한다. 큐 처리 역할은
+`scripts/welly_auto_runner.py`(예약작업 `Wellperion-Welly-Auto-Runner-0730`)가 승계했다.
