@@ -126,8 +126,14 @@ def owner_nick(plan: dict, o: dict) -> str:
 # ═══════════════════════════════════════════
 #  매출 실측 (home_kpi sales.month)
 # ═══════════════════════════════════════════
-def fetch_sales_month() -> int | None:
-    """home_kpi ?action=home_kpi → sales.month 실값(원). 실패·미연동 시 None(정직)."""
+HOME_KPI_SNAPSHOT_FILE = BASE_DIR / "status" / "home_kpi_snapshot.json"
+
+
+def fetch_sales_month() -> tuple[int, bool] | None:
+    """home_kpi ?action=home_kpi → sales.month 실값(원). 마감 전(null)이면 status/home_kpi_snapshot.json의
+    monthInProgress(진행중 누적 · erp_status_publisher.py가 이미 발행 중 · 새 수집기 없음, 약속 L21)로 폴백한다.
+    반환=(값, is_in_progress) — is_in_progress=True면 마감 전 진행중 누적(호출부가 반드시 라벨링).
+    실패·미연동 시 None(정직). 2026-08-07 GM 지시 — 월간운영계획 매출 미연동 해결(08시 보고 건과 같은 방식)."""
     try:
         req = urllib.request.Request(HOME_KPI_URL + "?action=home_kpi")
         with urllib.request.urlopen(req, timeout=15) as r:
@@ -141,7 +147,14 @@ def fetch_sales_month() -> int | None:
     sales = data.get("sales") or {}
     val = sales.get("month")
     if isinstance(val, (int, float)):
-        return int(val)
+        return int(val), False
+    try:
+        snap = json.loads(HOME_KPI_SNAPSHOT_FILE.read_text(encoding="utf-8"))
+        mip = snap.get("data", {}).get("sales", {}).get("monthInProgress")
+        if isinstance(mip, dict) and isinstance(mip.get("value"), (int, float)):
+            return int(mip["value"]), True
+    except Exception as e:
+        print(f"[WARN] home_kpi_snapshot 진행중 누적 폴백 실패: {type(e).__name__}: {e}")
     return None
 
 
@@ -206,7 +219,7 @@ def build_start_card(plan: dict, now: datetime) -> str:
 # ═══════════════════════════════════════════
 #  카드 빌더 — 월말
 # ═══════════════════════════════════════════
-def _measured_block(cur_objs: list, sales_month: int | None) -> list:
+def _measured_block(cur_objs: list, sales_month: tuple[int, bool] | None) -> list:
     """측정 목표 실측 블록. 매출=home_kpi 실값 vs target, ERP%=metric.current vs target.
     정직(L05): current 없으면 상태만, 가짜 달성% 금지.
     정직 게이트(honesty_gate, GM 2단계 2026-07-24): objective.honesty.level 을 honesty_gate.verdict()
@@ -227,9 +240,14 @@ def _measured_block(cur_objs: list, sales_month: int | None) -> list:
         v = _honesty_verdict(level)
         stamp_suffix = f" {v['stamp']}" if v["stamp"] else ""
 
-        # 매출은 home_kpi 라이브 실측으로 current 대체
+        # 매출은 home_kpi 라이브 실측으로 current 대체 (마감 전엔 진행중 누적 — 반드시 라벨링)
         is_sales = unit == "원" or "매출" in str(metric.get("name", ""))
-        current = sales_month if is_sales else metric.get("current")
+        in_progress = False
+        if is_sales:
+            current = sales_month[0] if sales_month else None
+            in_progress = bool(sales_month and sales_month[1])
+        else:
+            current = metric.get("current")
 
         if isinstance(current, (int, float)) and isinstance(target, (int, float)) and target:
             rate = current / target * 100
@@ -237,7 +255,8 @@ def _measured_block(cur_objs: list, sales_month: int | None) -> list:
                 cur_s, tgt_s = fmt_won(int(current)), fmt_won(int(target))
             else:
                 cur_s, tgt_s = f"{current}{unit}", f"{target}{unit}"
-            out.append(f"  • {name}: {cur_s} / 목표 {tgt_s} → <b>{rate:.0f}%</b>{stamp_suffix}")
+            prog_tag = " <i>(마감 전 진행중 누적)</i>" if in_progress else ""
+            out.append(f"  • {name}: {cur_s} / 목표 {tgt_s} → <b>{rate:.0f}%</b>{prog_tag}{stamp_suffix}")
         else:
             # 측정 안 됨 — 상태만(정직) · 배지는 honesty_gate 일원화
             tgt_s = fmt_won(int(target)) if (unit == "원" and isinstance(target, (int, float))) \
@@ -248,7 +267,7 @@ def _measured_block(cur_objs: list, sales_month: int | None) -> list:
     return out
 
 
-def build_end_card(plan: dict, now: datetime, sales_month: int | None) -> str:
+def build_end_card(plan: dict, now: datetime, sales_month: tuple[int, bool] | None) -> str:
     """월말 카드: 상태 요약 + 측정목표 실측 + 미완/이월 후보 + 검토 CTA."""
     e = html.escape
     cur_key = month_key(now)
@@ -358,7 +377,9 @@ def run(mode: str, send: bool = False) -> str:
     if mode == "end":
         print("[1/2] home_kpi 매출 실측 조회...")
         sales_month = fetch_sales_month()
-        print(f"  → sales.month = {fmt_won(sales_month)}")
+        sm_val = sales_month[0] if sales_month else None
+        sm_tag = " (마감 전 진행중 누적)" if sales_month and sales_month[1] else ""
+        print(f"  → sales.month = {fmt_won(sm_val)}{sm_tag}")
         card = build_end_card(plan, now, sales_month)
     else:
         card = build_start_card(plan, now)
@@ -374,7 +395,8 @@ def run(mode: str, send: bool = False) -> str:
             f"{mode}_report",
             date=now.strftime("%Y-%m-%d"),
             sent=sent,
-            sales_month=sales_month,
+            sales_month=(sales_month[0] if sales_month else None),
+            sales_month_in_progress=bool(sales_month and sales_month[1]),
         )
         print(f"[2/2] 발송 완료 (텔레그램 {'발송' if sent else '미발송'}) — {now_str()}")
     else:
