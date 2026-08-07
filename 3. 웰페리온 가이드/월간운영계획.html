@@ -3773,7 +3773,7 @@
     var mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
     var items = window.WellperionGmDirect.extract(_data, mk);
     renderExecCard('gm-fold-badge', 'gm-fold-body', items,
-      '이번 달 GM 직접 관장 건이 없습니다.<br>월간운영계획(status/monthly_ops_plan.json)에 목표 제목에 "(GM 직접)"을 붙이면 이 칸에 바로 표시됩니다.',
+      '이번 달 GM 직접 관장 건이 없습니다.<br>월간운영계획(status/monthly_ops_plan.json)에 목표 제목에 "(GM 직접)"을 붙이거나 gm_top3_rank 를 지정하면 이 칸에 바로 표시됩니다.',
       GM_DETAIL_HREF, '자세히 보기 →');
   }
   // ── 🔔 건별 「보고 필요」/「보고 완료」 버튼은 2026-08-05 2차 GM 지시로 이 토글에서 완전히 뺐다(토글은

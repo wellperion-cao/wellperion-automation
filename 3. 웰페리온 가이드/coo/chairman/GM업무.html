@@ -455,6 +455,9 @@
       return '<div class="item" id="gm-' + esc(it.id) + '">' +
         '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
         (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') +
+        // 전사 배지 — gm_top3_rank 로만 편입된 건(제목에 "(GM 직접)" 없음)은 회사 전체가 보는 과제라는 걸
+        // 한눈에 구분한다(2026-08-07 GM 지시, 목록에서 빼진 않고 같은 자리에 둔다). 기존 .dept-badge 재사용.
+        (!it.direct ? ' <span class="dept-badge">전사</span>' : '') +
         // ③ 큰 「…보기 →」 버튼 대신 제목 옆 작은 아이콘으로(GM 2026-08-06 "너무 정신없다")
         ' <a class="ic-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '" title="월간운영계획에서 보기">📌</a>' +
         '</h2>' +
