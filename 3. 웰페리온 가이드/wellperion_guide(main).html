@@ -9509,14 +9509,10 @@ function crTab(btn, panelId) {
         html += '</a>';
       }
 
-      // ── 🚢 진행·상시 미션 포인터 — _queue IN_PROGRESS는 항로 제외, 자율현황에서 관리 (GM 2026-07-15·배237) ──
-      //   status==IN_PROGRESS 개수(gm1InProgressCount)를 안내 한 줄로 대체(하드코딩 목록 없음·라이브 자동 정합).
-      if (gm1InProgressCount) {
-        html += '<a href="자율현황.html#sec-hangro" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:11px 14px;border:1px solid rgba(167,139,218,0.35);border-radius:10px;background:rgba(167,139,218,0.07);text-decoration:none;flex-wrap:wrap;">';
-        html += '<span style="flex:1;font-size:13.5px;font-weight:700;color:#a78bda;">🚢 지금 굴러가는 것 — 상시 자동 ' + gm1InProgressCount + '건 <span style="font-size:11px;font-weight:400;color:var(--dim);">(각 AI가 자율현황에서 관리 · 오늘 신규 진행 배는 아래)</span></span>';
-        html += '<span style="font-size:12px;color:#a78bda;font-weight:600;">자율현황에서 관리 →</span>';
-        html += '</a>';
-      }
+      // ── 🚢 진행·상시 미션 포인터 삭제(GM 지시 2026-08-07) ──
+      //   GM: "자율현황에서 관리하는데 그냥 정본에서 볼 테니 넘어가는 것들 다 삭제해.
+      //   여기는 내 개인 영역이랑 개인 북극성만 있으면 될 것 같은데?"
+      //   숫자만 알려 주던 줄이라 지워도 잃는 정보가 없다 — 정본은 자율현황 ▸ 🧭 항로.
 
       // 진행중 카드 — 업무현황 SSOT 전체 기능 이식 (결과보고서 제외, 2026-06-01 GM 최종)
       var cardIdx = 0;
@@ -9637,9 +9633,7 @@ function crTab(btn, panelId) {
 
       if (!active.length) {
         html += '<div style="color:var(--dim);font-size:13px;padding:12px 0;">' +
-          (gm1InProgressCount
-            ? '오늘 새로 시작한 진행 배는 없음 — 상시 자동 ' + gm1InProgressCount + '건은 위 🚢 참조.'
-            : '오늘 진행 중인 항목이 없습니다.') + '</div>';
+          '오늘 진행 중인 항목이 없습니다.' + '</div>';   // AI 배 안내는 삭제(GM 2026-08-07) — 정본=자율현황
       }
 
       // ── 완료 라인 렌더 헬퍼 (오늘 입항·지난 입항 공통) ──
@@ -9719,18 +9713,16 @@ function crTab(btn, panelId) {
       /* createdAt = 큐의 enqueued_at 이 들어오는 칸(:9194). 날짜가 없는 배는 맨 뒤로 보낸다(거짓 '가장 오래됨' 방지). */
       function _gm1WaitAge(t){ return String(t.createdAt || t.startDate || '9999-99-99'); }
       function _gm1WaitSectionHtml(list){
-        if (!list.length && !gm1ParkedCount) return '';
+        // 정박 표시를 뺐으므로(GM 2026-08-07) 대기 목록이 비면 섹션 자체를 그리지 않는다 —
+        // 종전엔 AI 정박 수 때문에 빈 '항로 대기' 머리만 남는 경우가 있었다.
+        if (!list.length) return '';
         list = list.slice().sort(function(a, b){
           return _gm1WaitAge(a).localeCompare(_gm1WaitAge(b)) || String(a.title||'').localeCompare(String(b.title||''));
         });
         var s = '<div style="margin-top:16px;padding-top:10px;border-top:1px solid var(--border);">';
         s += '<div style="font-size:12.5px;font-weight:700;color:#8ca6d6;margin-bottom:6px;"><span style="margin-right:4px;">⚓</span>항로 대기 ' + list.length + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 오래 기다린 것부터</span></div>';
         // ── ⚓ 정박·대기 포인터 — surface==='autonomy' 배는 자율현황 위임(항로 대기 섹터 제외·카운트만) (2026-07-15 GM·배237) ──
-        if (gm1ParkedCount) {
-          s += '<a href="자율현황.html#sec-hangro" target="_blank" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:9px 12px;border:1px solid rgba(140,166,214,0.35);border-radius:8px;background:rgba(140,166,214,0.07);text-decoration:none;flex-wrap:wrap;">' +
-            '<span style="flex:1;font-size:12.5px;font-weight:700;color:#8ca6d6;">⚓ 정박 ' + gm1ParkedCount + ' <span style="font-size:11px;font-weight:400;color:var(--dim);">— 자율현황·미래 (조건·시각 트리거 대기)</span></span>' +
-            '<span style="font-size:12px;color:#8ca6d6;font-weight:600;">자율현황에서 관리 →</span></a>';
-        }
+        // ── ⚓ 정박 포인터도 삭제(GM 지시 2026-08-07) — 자율현황이 정본이라 여기선 안 센다.
         list.slice(0, GM1_WAIT_OPEN).forEach(function(t){ s += _gm1WaitLineHtml(t); });
         var rest = list.slice(GM1_WAIT_OPEN);
         if (rest.length) {
