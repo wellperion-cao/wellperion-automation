@@ -6741,12 +6741,15 @@ function _hasRealReply_(memo) {
           var _otNum = _otINum >= 0 ? String(_otRow[_otINum] || '') : '';
           var _otNm = _otIName >= 0 ? String(_otRow[_otIName] || '') : '';
           if (!_otNum && !_otNm) continue;   // 완전 빈 행 스킵
+          var _otWantRaw = _otIWant >= 0 ? _otRow[_otIWant] : '';
+          var _otWantStr = (_otWantRaw instanceof Date && !isNaN(_otWantRaw.getTime()))
+            ? Utilities.formatDate(_otWantRaw, 'Asia/Seoul', 'yyyy-MM-dd') : String(_otWantRaw || '');
           _otRows.push({
             id: _otNum,
             name: _otNm ? (_otNm.charAt(0) + '○○') : '',   // 첫 글자만(예: 김○○) — 서버가 원본을 안 보냄
             qty: _otIQty >= 0 ? (parseInt(_otRow[_otIQty], 10) || 0) : 0,
             method: _otIMethod >= 0 ? String(_otRow[_otIMethod] || '') : '',
-            wantDate: _otIWant >= 0 ? String(_otRow[_otIWant] || '') : '',
+            wantDate: _otWantStr,   // Date 셀이면 YYYY-MM-DD로(문자열화 원본 방지 · 2026-08-07 GM 라이브 발견)
             address: _otIAddr >= 0 ? String(_otRow[_otIAddr] || '') : '',
             status: _otIStat >= 0 ? String(_otRow[_otIStat] || '') : ''
           });
@@ -6796,6 +6799,32 @@ function _hasRealReply_(memo) {
       _osLock.releaseLock();
     }
     return _json({ ok: true, id: _osId, status: _osStatus });
+  }
+
+  // ─── (일회성) 오넛티 테스트 접수건 물리 삭제 — 2026-08-07 GM 라이브 발견 ───
+  //   ★행번호 금지(INC-020 재발방지) — id(접수번호) 정확일치로만 행을 잡는다.
+  //   ★삭제 전 성함 정확일치 필수('[테스트] 확인용'이 아니면 name-mismatch로 거부, 삭제 안 함).
+  //   guard key로 오호출 차단. dryRun 기본(값 전량 반환) — key + dryRun:0 명시해야 실제 삭제.
+  //   사용 완료 후 이 액션 블록은 제거한다(a28b683f3 선례와 동일 운용).
+  if (action === 'ohnutti_test_row_delete_20260807') {
+    if (String(body.key || '') !== 'wlp_ohnuttitestdel_20260807') return _json({ ok: false, error: 'guard-mismatch' });
+    var _tdId = String(body.id || '').trim();
+    if (!_tdId) return _json({ ok: false, error: 'id 필수' });
+    var _tdDry = (String(body.dryRun || '') !== '0');
+    var _tdSh = _ohnuttiIntakeSheet_(false);
+    if (!_tdSh) return _json({ ok: false, error: '시트 없음' });
+    var _tdFound = _ohnuttiFindRowById_(_tdSh, _tdId);
+    if (_tdFound.count === 0) return _json({ ok: false, error: '해당 접수를 찾을 수 없습니다.' });
+    if (_tdFound.count > 1) return _json({ ok: false, error: '접수번호 중복 — 확인이 필요합니다.' });
+    var _tdHdr = _tdSh.getRange(1, 1, 1, _tdSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var _tdINm = _findCol_(_tdHdr, ['성함']);
+    var _tdRowVals = _tdSh.getRange(_tdFound.row, 1, 1, _tdSh.getLastColumn()).getValues()[0];
+    var _tdName = _tdINm >= 0 ? String(_tdRowVals[_tdINm] || '').trim() : '';
+    if (_tdName !== '[테스트] 확인용') return _json({ ok: false, error: 'name-mismatch', name: _tdName });
+    if (_tdDry) return _json({ ok: true, dryRun: true, row: _tdFound.row, name: _tdName, values: _tdRowVals });
+    _tdSh.deleteRow(_tdFound.row);
+    SpreadsheetApp.flush();
+    return _json({ ok: true, deleted: true, row: _tdFound.row, id: _tdId });
   }
 
   // ─── (일회성) A열 '날짜' 칸 삭제 — 2026-07-20 시포 · 확정스펙 §1-B(GM 확정 옵션2) ───

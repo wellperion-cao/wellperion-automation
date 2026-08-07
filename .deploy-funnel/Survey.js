@@ -3929,12 +3929,15 @@ function _processAction(body) {
           var _otNum = _otINum >= 0 ? String(_otRow[_otINum] || '') : '';
           var _otNm = _otIName >= 0 ? String(_otRow[_otIName] || '') : '';
           if (!_otNum && !_otNm) continue;   // 완전 빈 행 스킵
+          var _otWantRaw = _otIWant >= 0 ? _otRow[_otIWant] : '';
+          var _otWantStr = (_otWantRaw instanceof Date && !isNaN(_otWantRaw.getTime()))
+            ? Utilities.formatDate(_otWantRaw, 'Asia/Seoul', 'yyyy-MM-dd') : String(_otWantRaw || '');
           _otRows.push({
             id: _otNum,
             name: _otNm ? (_otNm.charAt(0) + '○○') : '',   // 첫 글자만(예: 김○○) — 서버가 원본을 안 보냄
             qty: _otIQty >= 0 ? (parseInt(_otRow[_otIQty], 10) || 0) : 0,
             method: _otIMethod >= 0 ? String(_otRow[_otIMethod] || '') : '',
-            wantDate: _otIWant >= 0 ? String(_otRow[_otIWant] || '') : '',
+            wantDate: _otWantStr,   // Date 셀이면 YYYY-MM-DD로(문자열화 원본 방지 · 2026-08-07 GM 라이브 발견)
             address: _otIAddr >= 0 ? String(_otRow[_otIAddr] || '') : '',
             status: _otIStat >= 0 ? String(_otRow[_otIStat] || '') : ''
           });
