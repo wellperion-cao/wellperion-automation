@@ -5320,6 +5320,8 @@ function _lessonTeamLeadOf(sportKey) {
   if (/P\.?T/i.test(s)) return '김상식';
   if (/필라/.test(s)) return '최은지';
   if (/골프/.test(s)) return '김태엽';   // 2026-08-05 GM 확정 — 최현준 아님(2026-08-31 퇴사 예정)
+  if (/스쿼시/.test(s)) return '이상훈';   // 2026-08-07 시토 — 빠져 있던 줄. 명단(이상훈·박상현)은 있는데
+                                          //   팀장이 없어 스쿼시만 기본배정 대상이 안 잡혔다(GM 지적 "스쿼시 필라테스 다 비슷하네").
   if (/체조|트램폴린/.test(s)) return '이형주';
   if (/뮤지컬/.test(s)) return '편한별';   // 2026-08-05 GM 확정 — 신규 배정 대상 전환
   if (/웰니스|wellness|루프/i.test(s)) return '루프메소드';

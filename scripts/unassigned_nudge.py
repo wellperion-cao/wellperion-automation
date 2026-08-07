@@ -104,7 +104,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
+import re
 import statistics
 import sys
 from collections import defaultdict
@@ -561,6 +563,73 @@ TEAM_LEAD_BY_SPORT = [
 AMBIGUOUS_SPORT_KEYS = ("키성장", "웰니스")   # GM 확인 전까지 자동 배정 제외
 
 
+# ── 종목별 강사 명단·팀장 = 화면(membership.html)이 정본 ──────────────────────
+# 같은 명단을 파이썬에 베껴 두면 GM 이 화면에서 팀장을 바꿔도 이쪽은 옛 사람을 계속 쓴다
+# (실제로 그랬다 — 골프 팀장이 2026-08-05 에 최현준→김태엽으로 바뀌었는데 이 파일 표는
+#  최현준 그대로였다). 그래서 화면 파일에서 읽어 쓴다(약속 L01 한 곳만 본다).
+_PAGE = Path(_HERE).parent / "3. 웰페리온 가이드" / "cpo" / "member" / "membership.html"
+_ROSTER_CACHE: dict = {}
+
+# _lessonRosterKeyOf / _lessonTeamLeadOf 의 판정 순서를 그대로 옮긴 것(위에서부터 첫 일치).
+# 순서가 뜻을 가진다 — 'WSC 키성장 P.T' 는 WSC(체조)보다 P.T 가 먼저 잡혀야 한다.
+_SPORT_KEY_RULES = [
+    (re.compile(r"아쿠아"), "수영"), (re.compile(r"수영"), "수영"),
+    (re.compile(r"Parent.?Child|swim", re.I), "수영"),
+    (re.compile(r"P\.?T", re.I), "P.T"), (re.compile(r"필라"), "필라테스"),
+    (re.compile(r"발레|바레"), "웰니스"),
+    (re.compile(r"골프"), "골프"), (re.compile(r"스쿼시"), "스쿼시"),
+    (re.compile(r"체조|트램폴린|WSC", re.I), "체조&트램폴린"),
+    (re.compile(r"뮤지컬"), "뮤지컬팀"),
+    (re.compile(r"웰니스|wellness|루프", re.I), "웰니스"),
+]
+
+
+def _load_roster() -> tuple[dict, dict]:
+    """(종목키→강사 명단, 종목키→팀장) — 화면 파일에서 직접 읽는다."""
+    if _ROSTER_CACHE:
+        return _ROSTER_CACHE["roster"], _ROSTER_CACHE["leads"]
+    html = _PAGE.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"var LESSON_INSTRUCTOR_ROSTER\s*=\s*(\{.*?\n\});", html, re.S)
+    if not m:
+        raise RuntimeError("membership.html 에서 강사 명단을 찾지 못함")
+    body = re.sub(r"//[^\n]*", "", m.group(1))          # 주석 제거 후 JSON 으로 읽는다
+    roster = json.loads(re.sub(r",(\s*[}\]])", r"\1", body))
+    leads = {}
+    for line in re.findall(r"if \(/([^/]+)/[a-z]*\.test\(s\)\) return '([^']+)';",
+                           html[html.find("function _lessonTeamLeadOf"):][:1200]):
+        leads[line[0]] = line[1]
+    _ROSTER_CACHE.update({"roster": roster, "leads": leads})
+    return roster, leads
+
+
+def sport_key_of(sport: str) -> str | None:
+    """종목 표기 → 명단 키(화면 _lessonRosterKeyOf 와 같은 순서·같은 결과)."""
+    s = str(sport or "")
+    for rx, key in _SPORT_KEY_RULES:
+        if rx.search(s):
+            return key
+    return None
+
+
+def team_of(sport: str) -> tuple[str, list[str]] | tuple[None, list]:
+    """종목 표기 → (팀장, 그 팀 강사 명단). 판정 못 하면 (None, [])."""
+    key = sport_key_of(sport)
+    if not key:
+        return None, []
+    roster, leads = _load_roster()
+    names = list(roster.get(key) or [])
+    lead = ""
+    for pat, who in leads.items():
+        if re.search(pat, str(sport or ""), re.I):
+            lead = who
+            break
+    if not lead and names:
+        lead = names[0]
+    if lead and lead not in names:
+        names = [lead] + names
+    return (lead or None), names
+
+
 def lead_for_sport(sport: str) -> str | None:
     """첫 종목 기준 팀장 이름. 모호 종목·미등록 종목은 None(사람이 처리)."""
     first = _sport_short(str(sport or "").split(",")[0])
@@ -604,6 +673,50 @@ def collect_auto_assign(today: str, min_days: int = AUTO_ASSIGN_MIN_DAYS) -> tup
     ready.sort(key=lambda x: -x["days"])
     held.sort(key=lambda x: -x["days"])
     return ready, held
+
+
+def collect_owner_fixes(today: str) -> tuple[list[dict], list[dict]]:
+    """담당이 그 종목 팀 사람이 아닌 문의를 골라 (고칠 것, 보류)로 나눈다 (GM 지시 2026-08-07).
+
+    GM: "뮤지컬은 담당자가 편한별밖에 없어서 통일" · "키성장 P.T 도 PT팀이면 그대로, 다른 팀이면
+    김상식으로" · "스쿼시 필라테스 다 비슷하네 · 유소년 목록은 내가 못 찾는 것까지 다 보완".
+    ▸판정은 화면과 같은 명단(membership.html 정본)으로 한다 — 기준이 두 벌이 되면 화면과 값이 갈린다.
+    ▸그 팀 사람이면 팀장이 아니어도 그대로 둔다(팀 안에서 누가 맡든 우리가 정할 일이 아니다).
+    ▸여러 종목을 신청한 행은 담당 칸이 종목별로 나뉘지 않는다(한 칸을 공유) —
+      **어느 신청 종목 팀에도 속하지 않을 때만** 첫 종목 팀장으로 맞춘다.
+    ▸등록완료·이탈(LOSS)로 끝난 건은 건드리지 않는다 — 담당자별 등록율이 바뀌어 실적이 흔들린다.
+    """
+    fix, held = [], []
+    for label in ("성인강습", "유소년강습"):
+        for r in R._fetch_list("lesson_inquiry_list", type=label):
+            if R._is_test_row(r):
+                continue
+            if R._is_registered(r, True) or R._is_loss(r):
+                continue
+            sport = str(r.get("sport", "") or "").strip()
+            segs = [s.strip() for s in sport.split(",") if s.strip()] or [sport]
+            teams = [team_of(s) for s in segs]
+            known = [(lead, names) for lead, names in teams if lead]
+            if not known:
+                continue                      # 종목을 못 알아보는 행은 사람 몫(지어내지 않는다)
+            owner = str(r.get("owner", "") or "").strip()
+            if owner and owner not in R._AUTO_OWNER_VALUES:
+                if any(owner in names for _, names in known):
+                    continue                  # 그 종목 팀 사람 — 그대로 둔다
+            lead = known[0][0]
+            if owner == lead:
+                continue
+            item = {"name": str(r.get("name", "") or "-").strip() or "-", "sport": sport,
+                    "owner": lead, "before": owner or "(빈칸)", "type": label,
+                    "rowIndex": r.get("rowIndex"), "rowKey": str(r.get("rowKey", "") or ""),
+                    "phone": str(r.get("phone", "") or "").strip(), "gid": r.get("gid"),
+                    "date": str(r.get("timestamp", "") or "")[:10]}
+            if not item["phone"] and not item["rowKey"]:
+                item["reason"] = "대조키 없음(전화·지문키 빈칸)"
+                held.append(item)
+            else:
+                fix.append(item)
+    return fix, held
 
 
 def apply_auto_assign(ready: list[dict], timeout: float = 60.0) -> list[dict]:
@@ -946,8 +1059,35 @@ def main() -> int:
                    help="SLA·60일 무응답 판정 자가검사만 실행(가짜 데이터·실제 발신 0건).")
     p.add_argument("--auto-assign", action="store_true",
                    help=f"{AUTO_ASSIGN_MIN_DAYS}일 넘게 미배정인 강습 문의를 종목 팀장 이름으로 배정(기본 미리보기).")
-    p.add_argument("--apply", action="store_true", help="--auto-assign 을 실제로 시트에 쓴다.")
+    p.add_argument("--apply", action="store_true", help="--auto-assign/--fix-owners 를 실제로 시트에 쓴다.")
+    p.add_argument("--fix-owners", action="store_true",
+                   help="담당이 그 종목 팀 사람이 아닌 문의를 팀장으로 통일(기본 미리보기).")
     args = p.parse_args()
+
+    if args.fix_owners:
+        today = args.today or datetime.now().strftime("%Y-%m-%d")
+        fix, held = collect_owner_fixes(today)
+        by = defaultdict(list)
+        for it in fix:
+            by[it["owner"]].append(it)
+        print(f"[담당 통일] 고칠 것 {len(fix)}건 · 보류 {len(held)}건 (등록완료·이탈 건은 제외)")
+        for lead in sorted(by, key=lambda k: -len(by[k])):
+            froms = defaultdict(int)
+            for it in by[lead]:
+                froms[it["before"]] += 1
+            detail = " · ".join(f"{k} {v}" for k, v in sorted(froms.items(), key=lambda x: -x[1]))
+            print(f"  · {lead} ← {len(by[lead])}건 ({detail})")
+        for it in held:
+            print(f"  [보류] {it['date']} · {it['name']} · {it['sport'][:24]} — {it['reason']}")
+        if not args.apply:
+            print("(미리보기 — 실제로 쓰려면 --apply)")
+            return 0
+        res = apply_auto_assign(fix)
+        bad = [r for r in res if not r["ok"]]
+        print(f"[쓰기 완료] 성공 {len(res) - len(bad)}건 · 실패 {len(bad)}건")
+        for r in bad:
+            print(f"  [실패] {r['name']} · {r['sport'][:24]} — {r['error']}")
+        return 0 if not bad else 1
 
     if args.auto_assign:
         today = args.today or datetime.now().strftime("%Y-%m-%d")
