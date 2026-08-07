@@ -6805,6 +6805,20 @@ function _hasRealReply_(memo) {
     return _json({ ok: true, id: _osId, status: _osStatus });
   }
 
+  // ─── (일회성) 오넛티 헤더에 '세트종류' 칸 반영 — 2026-08-07 GM 세트2종 확정 ───
+  //   시트가 이미 생성돼 있어(_ohnuttiIntakeSheet_ createIfMissing은 신규생성 시에만 헤더를 쓴다)
+  //   OHNUTTI_INTAKE_HEADERS 변경이 기존 시트 헤더 행에는 반영되지 않던 버그(라이브 실측 확인 —
+  //   세트종류가 계속 빈 값으로 저장됨). 데이터 0건일 때만 헤더 행을 통째로 교체(안전가드).
+  //   사용 완료 후 이 액션 블록은 제거한다(a28b683f3 선례와 동일 운용).
+  if (action === 'ohnutti_header_migrate_20260807') {
+    if (String(body.key || '') !== 'wlp_ohnuttihdr_20260807') return _json({ ok: false, error: 'guard-mismatch' });
+    var _hmSh = _ohnuttiIntakeSheet_(true);
+    if (!_hmSh) return _json({ ok: false, error: '시트 없음' });
+    if (_hmSh.getLastRow() > 1) return _json({ ok: false, error: '데이터가 있어 거부(0건일 때만 허용)', lastRow: _hmSh.getLastRow() });
+    _hmSh.getRange(1, 1, 1, OHNUTTI_INTAKE_HEADERS.length).setValues([OHNUTTI_INTAKE_HEADERS]);
+    return _json({ ok: true, headers: OHNUTTI_INTAKE_HEADERS });
+  }
+
   // ─── (일회성) 오넛티 테스트 접수건 물리 삭제 — 2026-08-07 GM 라이브 발견 ───
   //   ★행번호 금지(INC-020 재발방지) — id(접수번호) 정확일치로만 행을 잡는다.
   //   ★삭제 전 성함 정확일치 필수('오넛티검증테스트-지워주세요'가 아니면 name-mismatch로 거부, 삭제 안 함).
