@@ -131,7 +131,11 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
                 "sla": sla,
             })
 
-    lines = ["⏰ 미처리 적체 리마인드", f"미처리 {len(undone)}건 · 기한초과 {len(overdue)}건"]
+    # ★2026-08-07 시토(배429 · 약속 L24) — 받는 사람을 이경연 실장 한 곳으로 적는다.
+    #   아래 담당자별 목록은 지우지 않는다 — 그건 '누구에게 시킨다'가 아니라 실장이 나눌 때
+    #   보는 참고 정보다(GM 확정 2026-08-06: 실장이 분배하고, 상향 보고도 실장이 취합한다).
+    lines = ["⏰ 미처리 적체 리마인드 (이경연 실장)",
+             f"미처리 {len(undone)}건 · 기한초과 {len(overdue)}건"]
     if not overdue:
         lines.append("기한 초과 건 없음.")
         return "\n".join(lines)
