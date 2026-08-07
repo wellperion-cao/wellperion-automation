@@ -7871,12 +7871,51 @@ function _activeFilter(query) {
   //   ▸강습 화면이 이미 같은 규칙을 쓴다(검색 중엔 종목·상태 칩 무시) — 같은 원칙을 맞춘다.
   //   ▸유효/종료/법인 전환은 서버 조회가 갈리므로 그대로 둔다(이 표가 지금 들고 있는 명단 안에서만).
   var base = _activeRows;
-  var filtered = base.filter(function(row){
+  var match = function(row){
     return _activeHeaders.some(function(h){
       return String(row[h] || '').toLowerCase().indexOf(q) !== -1;
     });
-  });
+  };
+  var filtered = base.filter(match);
+  // ★2026-08-07 GM 지시 2차 — "느려지지만 않으면" 유효↔종료를 같이 찾는다.
+  //   ▸화면 첫 로딩은 그대로다(추가 조회 0). **검색을 칠 때만** 반대편 명단을 한 번 불러온다.
+  //   ▸결과는 지금 명단에서 즉시 뜨고, 반대편이 도착하면 조용히 덧붙는다(체감 지연 0).
+  //   ▸법인은 시트가 달라 칸 구성이 아예 다르다 — 같은 표에 못 실으므로 제외한다(법인 탭에서 본다).
+  var other = (_activeScope === 'ended') ? 'valid' : (_activeScope === 'valid' ? 'ended' : '');
+  if (other) {
+    var oc = _activeCache[other];
+    if (oc && oc.rows) {
+      var extra = oc.rows.filter(match);
+      if (extra.length) filtered = filtered.concat(extra);
+      _activeCrossExtra = extra.length;
+    } else {
+      _activeCrossExtra = 0;
+      _activeLoadOtherScope(other, q);
+    }
+  } else {
+    _activeCrossExtra = 0;
+  }
   _activeRender(filtered, true);
+}
+
+// 반대편 스코프를 한 번만 불러온다(세션 내 1회 · 화면은 안 바꾼다 — 보관만 하고 검색을 다시 돌린다).
+var _activeCrossExtra = 0;      // 이번 검색 결과에 섞인 반대편(종료/유효) 건수 — 건수 표기용
+var _activeCrossLoading = {};   // 같은 스코프를 두 번 부르지 않게
+function _activeLoadOtherScope(scope, query) {
+  if (_activeCrossLoading[scope] || GAS_URL === GAS_PLACEHOLDER) return;
+  _activeCrossLoading[scope] = true;
+  fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      data = _maDecodeRowsFormat(data);
+      if (!data.ok) return;
+      _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
+      var si = document.getElementById('activeSearch');
+      // 그 사이 검색어가 바뀌었으면 다시 그리지 않는다(엉뚱한 결과 덮어쓰기 방지).
+      if (si && si.value.trim().toLowerCase() === query) _activeFilter(si.value);
+    })
+    .catch(function(){})
+    .then(function(){ _activeCrossLoading[scope] = false; });
 }
 
 // 항상 숨김(원본 시트 칸은 그대로, 화면 렌더에서만 제외 — 데이터 손실 0). FB260801-141806(임정은M) · GM 승인.
@@ -7998,7 +8037,9 @@ function _activeRender(rows, isFiltered) {
   }
 
   count.textContent = '총 ' + rows.length + '명' +
-    (_activeRows.length !== rows.length ? ' (전체 ' + _activeRows.length + '명 중)' : '');
+    (_activeRows.length !== rows.length ? ' (전체 ' + _activeRows.length + '명 중)' : '') +
+    // 검색 결과에 반대편 명단(유효↔종료)이 섞였으면 몇 명인지 밝힌다 — 안 밝히면 왜 늘었는지 모른다.
+    (_activeCrossExtra ? ' · ' + (_activeScope === 'ended' ? '유효회원' : '종료회원') + ' ' + _activeCrossExtra + '명 포함' : '');
   try { _loadHoldIntake(); } catch (e) {}   // 휴회 접수 관리 카드(공개 접수건 리스트·서버 자동판정). 2026-07-22 시포·GM
 
   if (rows.length === 0) {
