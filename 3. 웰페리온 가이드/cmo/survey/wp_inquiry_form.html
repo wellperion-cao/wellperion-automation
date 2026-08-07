@@ -98,7 +98,20 @@
      ⑤OHNUTTY 브랜드 소개(홈페이지 링크+쇼츠 임베드, g-brand) — 로고 이미지는 ohnutty.co.kr이 정적
      <img> 없이 JS/배너로만 내려줘 저장소에 받아오지 못함(핫링크 금지 원칙상 생략). 전부 cat==='ohnutti'
      조건부라 다른 6종 화면은 무변화. 카드 자리(wp_inquiry_block.html)는 여름방학 특강 숨김·오넛티가
-     그 자리로 이동. -->
+     그 자리로 이동.
+     2026-08-07 GM 재지시(라이브 눈검수 3회차) — ①쇼츠 임베드가 padding-top% 트릭 탓에 부모(카드) 폭
+     기준으로 계산돼 세로로 폭주하던 버그 수정: aspect-ratio:9/16 + 폭 240px 고정(g-brand-video)으로
+     교체. ②히어로 2번째 줄(HERO_SUB_LINE2 "방문해서 결제 시…")과 hero-note("접수 순서대로 현장에서…")
+     가 같은 말 중복 — 오넛티는 2번째 줄 자체를 숨기고(heroSubBr/heroSubLine2 display:none) note만 남김.
+     ③제출버튼 아래 note("남겨주신 연락처로 담당자가 안내드립니다")도 오넛티에는 안 맞는 말(담당자가
+     전화 거는 구조 아님) — noteLine1을 "방문·결제 순서로 접수가 확정됩니다"로 교체(NOTE_LINE1). ④수령
+     방법 select가 선택지 1개("현장 수령")뿐이라 고를 게 없는 칸이었음 — 필드 자체를 info 텍스트로 교체
+     (methodInfo, 입력 없음), 제출 시 payload.method는 collect()에서 오넛티 한정 '현장 수령' 자동 채움
+     (뒷단 GAS 계약 무변경). ⑤GM이 로고 원본(ohnutty-logo.png, 회색 배경 546x90) 전달 → PIL로 배경
+     투명 처리(ohnutty-logo-transparent.png) 후 WP 미디어 업로드(첨부 8612)한 URL을 g-brand-logo에 삽입,
+     기존 텍스트 링크는 로고 자체가 링크를 겸하도록 통합(폭 150px, g-brand-logo). 전부 cat==='ohnutti'
+     조건부, 다른 6종 무변화. -->
+
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
@@ -172,7 +185,9 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 .wlp-inq .g-price .g-price-sale{font-size:19px;font-weight:800;color:var(--coral)}
 /* 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상, 2026-08-07 GM 지시) — 오넛티 유형 한정, 입력 칸 위쪽 */
 .wlp-inq .g-brand{margin-top:12px}
-.wlp-inq .g-brand-link{display:inline-block;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;margin-bottom:10px}
+/* 로고(150px 워드마크, 클릭 시 홈페이지 새탭) — 텍스트 링크와 중복이라 링크는 로고 하나로 통합(2026-08-07 GM 지시) */
+.wlp-inq .g-brand-logo{display:block;width:150px;max-width:100%;margin:0 auto 10px}
+.wlp-inq .g-brand-logo img{display:block;width:100%;height:auto}
 /* 쇼츠(세로 영상) — 폭 240px 고정(9:16→높이 약427px). aspect-ratio 사용(패딩%트릭 금지 — %는 부모폭
    기준이라 카드 폭까지 늘어나는 버그, 2026-08-07 GM 지적). max-width:100%로 모바일 폭 초과도 방지. */
 .wlp-inq .g-brand-video{width:240px;max-width:100%;margin:0 auto;position:relative;aspect-ratio:9/16;background:var(--ink)}
@@ -557,12 +572,13 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     if (!g) { box.style.display = 'none'; box.innerHTML = ''; return; }
     var html = '';
     if (g.lead) { html += '<p class="g-lead">' + g.lead + '</p>'; }
-    // 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상) — 회원이 "이게 뭔지" 먼저 보고 신청하도록 입력 칸
-    //   위쪽에 배치(2026-08-07 GM 지시). 로고 이미지는 ohnutty.co.kr이 정적 <img>가 아닌 JS/배너로만
-    //   내려줘 저장소에 받아올 수 없었음(핫링크 금지 원칙상 생략, GM 보고).
+    // 오넛티 브랜드 소개(로고·홈페이지 링크·쇼츠 영상) — 회원이 "이게 뭔지" 먼저 보고 신청하도록 입력 칸
+    //   위쪽에 배치(2026-08-07 GM 지시). 로고는 GM이 직접 전달한 원본(회색 배경 546x90)을 파이썬으로
+    //   투명 처리해 ohnutty-logo-transparent.png로 저장 → WP 미디어 라이브러리 업로드(첨부 8612) 후 그
+    //   URL을 사용. 로고 자체가 링크(원래 있던 텍스트 링크와 중복이라 통합, 2026-08-07 GM 재지시).
     if (cat === 'ohnutti') {
       html += '<div class="g-brand">'
-        + '<a class="g-brand-link" href="https://ohnutty.co.kr/" target="_blank" rel="noopener">OHNUTTY 홈페이지 바로가기 ↗</a>'
+        + '<a class="g-brand-logo" href="https://ohnutty.co.kr/" target="_blank" rel="noopener"><img src="http://wellperion.com/wp/wp-content/uploads/2026/08/ohnutty-logo-transparent.png" alt="OHNUTTY"></a>'
         + '<div class="g-brand-video"><iframe src="https://www.youtube.com/embed/wcBJOmI6gKw" title="OHNUTTY 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
         + '</div>';
     }
