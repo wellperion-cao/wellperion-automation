@@ -2100,6 +2100,24 @@ function _ohnuttiTeamAuthed_(body) {
   return String((body && body.code) || '').trim() === code;
 }
 
+// 상태값 4종 — '접수'(=화면 라벨 "결제대기", 결제기한 있음)와 '대기'(=화면 라벨 "대기순번", 정원초과 대기)는
+// 서로 뜻이 다른 별개 상태라 둘 다 유지한다(GM이 말한 "결제대기"는 기존 '접수'의 화면 라벨 — 새 값 아님).
+var OHNUTTI_STATUSES = ['접수', '확정', '대기', '취소'];
+// id(접수번호) 정확일치로 물리행을 찾는다 — 행번호 기준 삭제/수정 금지(INC-020류 오삭제 재발방지, 웹접수/화면표시 열 불일치 전례).
+function _ohnuttiFindRowById_(sh, id) {
+  var lastCol = sh.getLastColumn(), lastRow = sh.getLastRow();
+  if (lastRow < 2 || lastCol < 1) return { row: -1, count: 0 };
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+  var iNum = _findCol_(hdr, ['접수번호']);
+  if (iNum < 0) return { row: -1, count: 0 };
+  var col = sh.getRange(2, iNum + 1, lastRow - 1, 1).getValues();
+  var hits = [];
+  for (var r = 0; r < col.length; r++) {
+    if (String(col[r][0] || '').trim() === id) hits.push(r + 2);
+  }
+  return { row: hits.length === 1 ? hits[0] : -1, count: hits.length };
+}
+
 // 강습 신규문의 탭 → 문의행 배열(강습 목록 병합용). body.type(성인강습/유소년강습)로 '유형' 필터. _ROW_OFFSET_INTAKE_ 부여.
 // _lessonReadRows_ 와 동일한 행 스키마를 반환(프론트·lesson_inquiry_update 라운드트립 정합).
 function _lessonIntakeReadRows_(body) {
@@ -3936,6 +3954,36 @@ function _processAction(body) {
         rate: _otStats.cap ? Math.round((_otStats.confirmed + _otStats.pending) / _otStats.cap * 100) : 0
       }
     });
+  }
+
+  // ─── 오넛티 팀: 상태 변경(드롭다운 선택 → 즉시저장, 2026-08-07 GM 지시) ───
+  //   오넛티팀·웰페리온팀이 이 화면 하나로 소통하는 게 목적 — 접속코드(ohnutti_team_list와 동일 게이트,
+  //   새 인증체계 없음)로 쓰기를 막는다. 대상 행은 id(접수번호) 정확일치로만 찾는다(행번호 금지).
+  //   동시 수정 대비 LockService로 감싼다. 저장 실패는 실패로 반환(조용한 성공가장 금지).
+  if (action === 'ohnutti_status_update') {
+    if (!_ohnuttiTeamAuthed_(body)) return _json({ ok: false, error: '접속코드가 올바르지 않습니다.', noRetry: true });
+    var _osId = String(body.id || '').trim();
+    var _osStatus = String(body.status || '').trim();
+    if (!_osId) return _json({ ok: false, error: 'id 필수', noRetry: true });
+    if (OHNUTTI_STATUSES.indexOf(_osStatus) < 0) return _json({ ok: false, error: '올바르지 않은 상태값', noRetry: true });
+    var _osSh = _ohnuttiIntakeSheet_(false);
+    if (!_osSh) return _json({ ok: false, error: '시트 없음' });
+    var _osLock = LockService.getScriptLock();
+    if (!_osLock.tryLock(8000)) return _json({ ok: false, error: '다른 작업 진행 중 — 잠시 후 다시 시도해 주세요.' });
+    try {
+      var _osHdr = _osSh.getRange(1, 1, 1, _osSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+      var _osStCi = _findCol_(_osHdr, ['상태']);
+      if (_osStCi < 0) return _json({ ok: false, error: '상태 칸 없음' });
+      var _osFound = _ohnuttiFindRowById_(_osSh, _osId);
+      if (_osFound.count === 0) return _json({ ok: false, error: '해당 접수를 찾을 수 없습니다.' });
+      if (_osFound.count > 1) return _json({ ok: false, error: '접수번호 중복 — 확인이 필요합니다.' });
+      _osSh.getRange(_osFound.row, _osStCi + 1).setValue(_osStatus);
+    } catch (eOs) {
+      return _json({ ok: false, error: '저장 실패: ' + eOs.message });
+    } finally {
+      _osLock.releaseLock();
+    }
+    return _json({ ok: true, id: _osId, status: _osStatus });
   }
 
   // ─── UTM 귀속(파일럿): 구글폼에 '유입경로(자동)' 텍스트 항목 추가 + prefill entry ID 회수 (2026-06-23 ship113) ───
