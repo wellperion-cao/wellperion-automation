@@ -17,7 +17,8 @@
   // ── 실측 제원 (938×760 좌표계) ──
   var G = {
     W: 938, H: 760,
-    mat: '#606060',
+    mat: '#606060',   // (미사용) 구 판형의 회색 매트 — 2026-08-07 카드가 판형을 꽉 채우도록 바뀌며 안 그린다
+
     card: { x: 36, y: 40, w: 852, h: 688 },
     block: { x: 36, y: 40, w: 427, h: 688, r: 213, bg: '#f4f6f9' },
     text: { x: 502, right: 887 },
@@ -147,10 +148,15 @@
   function render(canvas, s) {
     var c = canvas.getContext('2d');
     canvas.width = G.W * s; canvas.height = G.H * s;
-    c.setTransform(s, 0, 0, s, 0, 0);
+    /* ★카드가 판형을 꽉 채우게 한다 (2026-08-07 GM 지시).
+       이전에는 938×760 전체를 회색 매트(#606060)로 깔고 그 안에 852×688 카드를 얹었다.
+       그 결과 사방에 회색 테두리(상40·하32·좌36·우50)가 남아 인쇄물이 규격에 안 맞았다.
+       그리기 좌표는 기존 카드 좌표계를 그대로 두고, 변환으로 카드 영역을 캔버스 전체에 대응시킨다
+       — 좌표 상수를 건드리지 않아 글자·사진 위치 비율이 원본 그대로 유지된다. */
+    var fx = G.W / G.card.w, fy = G.H / G.card.h;
+    c.setTransform(s * fx, 0, 0, s * fy, -G.card.x * s * fx, -G.card.y * s * fy);
     c.textBaseline = 'alphabetic';
 
-    c.fillStyle = G.mat; c.fillRect(0, 0, G.W, G.H);
     c.fillStyle = '#fff'; c.fillRect(G.card.x, G.card.y, G.card.w, G.card.h);
 
     // 사진 블록
