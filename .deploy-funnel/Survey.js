@@ -2042,7 +2042,7 @@ function _businessIntakeSheet_(createIfMissing) {
 //   현장 판매분은 수령방법='현장 수령'·비고에 표시해 구분(이 함수는 웹접수 경로만 담당 — 현장분은 담당자가 같은 탭에 직접 기입).
 //   선착순 500세트는 행 삭제로 관리하지 않는다(INC-020 재발방지) — 상태값(접수/확정/대기/취소)만 바꾼다.
 var OHNUTTI_INTAKE_SHEET_NAME = '오넛티 선물세트 접수';
-var OHNUTTI_INTAKE_HEADERS = ['접수시각','접수번호','성함','연락처','수량','수령방법','희망수령일','배송지','결제방법','요청사항','상태','순번','결제기한','비고'];
+var OHNUTTI_INTAKE_HEADERS = ['접수시각','접수번호','성함','연락처','수량','세트종류','수령방법','희망수령일','배송지','결제방법','요청사항','상태','순번','결제기한','비고'];
 var OHNUTTI_CAP = 500;   // 선착순 500세트(신청 건수가 아니라 세트 수량 합) — GM 확정
 function _ohnuttiIntakeSheet_(createIfMissing) {
   var ss = SpreadsheetApp.openById(_MI_SS_ID);
@@ -2878,6 +2878,7 @@ function _processAction(body) {
     var _iDocLink = String(body.docLink || '').trim();          // business: 소개자료 링크
     var _iProposal = String(body.proposal || '').trim();        // business: 제안 내용
     var _iOhQty = String(body.qty || '').trim();                 // ohnutti: 수량(세트) — wp_inquiry_form.html FORMS.ohnutti 필드키(qty)와 1:1
+    var _iOhSetType = String(body.setType || '').trim();         // ohnutti: 세트 종류(230g 2구/80g 3구, 2026-08-07 GM 파트너 조건 확정)
     var _iOhMethod = String(body.method || '').trim();           // ohnutti: 수령 방법
     var _iOhWantDate = String(body.wantDate || '').trim();       // ohnutti: 희망 수령일
     var _iOhAddress = String(body.address || '').trim();         // ohnutti: 배송지(택배 선택 시)
@@ -3006,6 +3007,7 @@ function _processAction(body) {
           _ohSet('성함', _iName);
           _ohSet('연락처', _fmtPhone_(_iPhone));
           _ohSet('수량', _ohQty);
+          _ohSet('세트종류', _iOhSetType);
           _ohSet('수령방법', _iOhMethod);
           _ohSet('희망수령일', _iOhWantDate);
           _ohSet('배송지', _iOhAddress);
@@ -3038,7 +3040,7 @@ function _processAction(body) {
       if (_iCat === 'summer') _iExtra = (_iWish ? ('\n희망시간: ' + _iWish) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '') + (_iTarget ? ('\n대상: ' + _iTarget) : '');
       if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
       if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
-      if (_iCat === 'ohnutti') _iExtra = (_iOhQty ? ('\n수량: ' + _iOhQty + '세트') : '') + (_iOhMethod ? ('\n수령방법: ' + _iOhMethod) : '');
+      if (_iCat === 'ohnutti') _iExtra = (_iOhSetType ? ('\n세트: ' + _iOhSetType) : '') + (_iOhQty ? ('\n수량: ' + _iOhQty + '세트') : '') + (_iOhMethod ? ('\n수령방법: ' + _iOhMethod) : '');
       _notifyTelegram('🔔 <b>[웹 문의 접수]</b> (자체폼)\n유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
         + (_iProgram ? ('\n관심: ' + _sportColor(_iProgram) + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
@@ -3921,6 +3923,7 @@ function _processAction(body) {
       if (_otLastRow >= 2 && _otLastCol >= 1) {
         var _otHdr = _otSh.getRange(1, 1, 1, _otLastCol).getValues()[0].map(function(v){ return String(v).trim(); });
         var _otIName = _findCol_(_otHdr, ['성함']), _otINum = _findCol_(_otHdr, ['접수번호']), _otIQty = _findCol_(_otHdr, ['수량']),
+            _otISet = _findCol_(_otHdr, ['세트종류']),
             _otIMethod = _findCol_(_otHdr, ['수령방법']), _otIWant = _findCol_(_otHdr, ['희망수령일']), _otIAddr = _findCol_(_otHdr, ['배송지']),
             _otIStat = _findCol_(_otHdr, ['상태']);
         var _otData = _otSh.getRange(2, 1, _otLastRow - 1, _otLastCol).getValues();
@@ -3936,6 +3939,7 @@ function _processAction(body) {
             id: _otNum,
             name: _otNm ? (_otNm.charAt(0) + '○○') : '',   // 첫 글자만(예: 김○○) — 서버가 원본을 안 보냄
             qty: _otIQty >= 0 ? (parseInt(_otRow[_otIQty], 10) || 0) : 0,
+            setType: _otISet >= 0 ? String(_otRow[_otISet] || '') : '',
             method: _otIMethod >= 0 ? String(_otRow[_otIMethod] || '') : '',
             wantDate: _otWantStr,   // Date 셀이면 YYYY-MM-DD로(문자열화 원본 방지 · 2026-08-07 GM 라이브 발견)
             address: _otIAddr >= 0 ? String(_otRow[_otIAddr] || '') : '',

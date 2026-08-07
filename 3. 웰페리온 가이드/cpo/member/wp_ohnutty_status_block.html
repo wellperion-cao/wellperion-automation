@@ -197,7 +197,7 @@ body.wlp-ons-page .vc_row,body.wlp-ons-page .wpb_column,body.wlp-ons-page .vc_co
   <div class="list-wrap" id="onsListWrap">
     <div class="tbl-scroll">
       <table class="otbl">
-        <thead><tr><th>접수번호</th><th>성함</th><th>수량</th><th>수령방법</th><th>희망수령일</th><th>배송지</th><th>상태</th></tr></thead>
+        <thead><tr><th>접수번호</th><th>성함</th><th>수량</th><th>세트종류</th><th>수령방법</th><th>희망수령일</th><th>배송지</th><th>상태</th></tr></thead>
         <tbody id="onsTbody"></tbody>
       </table>
     </div>
@@ -247,10 +247,10 @@ body.wlp-ons-page .vc_row,body.wlp-ons-page .wpb_column,body.wlp-ons-page .vc_co
 
   function _renderRows(rows){
     if(!rows.length){
-      $('onsTbody').innerHTML = '<tr><td colspan="7"><div class="state-msg">접수 내역이 없습니다.</div></td></tr>';
+      $('onsTbody').innerHTML = '<tr><td colspan="8"><div class="state-msg">접수 내역이 없습니다.</div></td></tr>';
     } else {
       $('onsTbody').innerHTML = rows.map(function(r){
-        return '<tr><td>'+_esc(r.id)+'</td><td>'+_esc(r.name)+'</td><td>'+_esc(r.qty)+'</td>'+
+        return '<tr><td>'+_esc(r.id)+'</td><td>'+_esc(r.name)+'</td><td>'+_esc(r.qty)+'</td><td>'+_esc(r.setType)+'</td>'+
           '<td>'+_esc(r.method)+'</td><td>'+_esc(r.wantDate)+'</td><td>'+_esc(r.address)+'</td>'+
           '<td>'+_statSelect(r.id, r.status)+'</td></tr>';
       }).join('');
