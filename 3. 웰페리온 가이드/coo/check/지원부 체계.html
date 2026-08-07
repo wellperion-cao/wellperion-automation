@@ -1766,9 +1766,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-laundry" class="content hidden">
   <style>
   .wp-ldy__wrap{font-size:13.5px}
-  .wp-ldy__subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}
-  .wp-ldy__subtab{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-weight:650;cursor:pointer;font-family:inherit}
-  .wp-ldy__subtab.on{background:var(--accent,#4ec4c4);color:#141312;border-color:var(--accent,#4ec4c4)}
+  .wp-ldy__h{font-size:15px;font-weight:750;margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);text-align:left}
+  .wp-ldy__wrap>div:first-child .wp-ldy__h,.wp-ldy__wrap>div:first-of-type>.wp-ldy__h{margin-top:4px}
   .wp-ldy__bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
   .wp-ldy__badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700}
   .wp-ldy__badge--closed{background:rgba(232,163,61,0.16);color:#e8a33d}
@@ -1805,15 +1804,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   }
   </style>
 
+  <!-- 서브탭 3개(오늘 점검·월간 현황·재고 원장)를 한 화면으로 합쳤다(GM 2026-08-07).
+       매일 쓰는 것 → 주간에 보는 것 → 가끔 손대는 것 순으로 위에서 아래로 읽힌다. -->
   <div class="wp-ldy__wrap">
-    <div class="wp-ldy__subtabs">
-      <button class="wp-ldy__subtab on" id="wpLdySub-today" onclick="wpLdySub('today')">📝 오늘 점검</button>
-      <button class="wp-ldy__subtab" id="wpLdySub-month" onclick="wpLdySub('month')">📊 월간 현황</button>
-      <button class="wp-ldy__subtab" id="wpLdySub-ledger" onclick="wpLdySub('ledger')">📒 재고 원장</button>
-    </div>
-
-    <!-- ① 오늘 점검 -->
+    <!-- ① 오늘 점검 — 매일 쓰는 곳(맨 위) -->
     <div id="wpLdyView-today">
+      <div class="wp-ldy__h">📝 오늘 점검</div>
       <!-- 기초재고가 비어 있으면 사용량이 계산되지 않는다 — 여기서 먼저 알린다(GM 요청 2026-08-07) -->
       <div id="wpLdyOpeningWarn"></div>
       <div class="wp-ldy__bar">
@@ -1840,7 +1836,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
 
     <!-- ② 월간 현황 -->
-    <div id="wpLdyView-month" style="display:none">
+    <div id="wpLdyView-month">
+      <div class="wp-ldy__h">📊 월간 현황</div>
       <div class="wp-ldy__bar">
         <input type="month" id="wpLdyMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderMonth()">
       </div>
@@ -1852,8 +1849,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </div>
     </div>
 
-    <!-- ③ 재고 원장 -->
-    <div id="wpLdyView-ledger" style="display:none">
+    <!-- ③ 재고 원장 — 가끔 손대는 곳이라 접어 둔다. 기초재고 미입력이 있으면 자동으로 펼친다. -->
+    <div id="wpLdyView-ledger">
+      <div class="wp-ldy__h" style="cursor:pointer" onclick="wpLdyToggleLedger()">📒 재고 원장 <span id="wpLdyLedgerCaret" class="wp-ldy__k">▾ 펼치기</span></div>
+      <div id="wpLdyLedgerBox" style="display:none">
       <div class="wp-ldy__bar">
         <button class="wp-ldy__btn" onclick="wpLdyExportJson()">JSON 내보내기</button>
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySaveLedger()">저장</button>
@@ -1872,6 +1871,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       </table>
       <div class="wp-ldy__k" style="margin:14px 0 4px">신품 투입 이력</div>
       <table class="wp-ldy__tbl"><thead><tr><th>일자</th><th style="text-align:left">품목</th><th>수량</th><th style="text-align:left">메모</th></tr></thead><tbody id="wpLdyNiBody"></tbody></table>
+      </div>
     </div>
   </div>
 </div>
@@ -6495,7 +6495,6 @@ const WP_LDY_SEED = [
   {id:'carpet', name:'카페트',    unitPrice:5000, lowLimit:1,   active:true}
 ];
 var LAUNDRY_DATA = {master:[], openingStock:{}, daily:{}, newInput:[], audit:[]};
-var WP_LDY_SUB = 'today';
 
 /* ── 계산 규칙(지시서 §6) — 화면과 검산이 같은 함수를 쓴다 ────────────────── */
 /* 휴관일 = 매월 둘째·넷째 일요일. 날짜에서 매번 계산한다(하드코딩 금지 · 지시서 §8). */
@@ -6641,18 +6640,25 @@ function wpLdyEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, func
 function wpLdyToday(){ var d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function wpLdyItems(){ return LAUNDRY_DATA.master.filter(function(m){ return m.active !== false; }); }
 
-function wpLdySub(v){
-  WP_LDY_SUB = v;
-  ['today','month','ledger'].forEach(function(k){
-    var b = document.getElementById('wpLdySub-'+k); if (b) b.classList.toggle('on', k === v);
-    var p = document.getElementById('wpLdyView-'+k); if (p) p.style.display = (k === v ? '' : 'none');
-  });
-  wpLdyRenderAll();
+/* 재고 원장 접기·펼치기. 기초재고가 비어 있으면 열어 둔다(넣으라고 만든 칸이 접혀 있으면 안 넣는다). */
+function wpLdyToggleLedger(force){
+  var box = document.getElementById('wpLdyLedgerBox'); if (!box) return;
+  var open = (force === undefined) ? (box.style.display === 'none') : !!force;
+  box.style.display = open ? '' : 'none';
+  var c = document.getElementById('wpLdyLedgerCaret');
+  if (c) c.textContent = open ? '▴ 접기' : '▾ 펼치기';
+}
+/* 기초재고 입력칸으로 데려간다(옛 서브탭 이동을 대체) */
+function wpLdyGoOpening(){
+  wpLdyToggleLedger(true);
+  var g = document.getElementById('wpLdyOpeningGrid');
+  if (g && g.scrollIntoView) g.scrollIntoView({behavior:'smooth', block:'center'});
 }
 function wpLdyRenderAll(){
-  if (WP_LDY_SUB === 'today') wpLdyRenderToday();
-  else if (WP_LDY_SUB === 'month') wpLdyRenderMonth();
-  else wpLdyRenderLedger();
+  wpLdyRenderToday();
+  wpLdyRenderMonth();
+  wpLdyRenderLedger();
+  if (wpLdyOpeningMissing().length) wpLdyToggleLedger(true);
   wpLdyMarkTodo();
 }
 /* 기초재고가 아직 안 들어온 품목 목록. 이 값이 없으면 사용량 계산이 시작되지 않는다. */
@@ -6681,7 +6687,7 @@ function wpLdyRenderOpeningWarn(){
   box.innerHTML = miss.length
     ? '<div class="wp-ldy__notice">📦 <b>기초재고 미입력 ' + miss.length + '개 품목</b> — 이 품목들은 사용량이 계산되지 않습니다 ('
       + wpLdyEsc(miss.map(function(m){ return m.name; }).join(' · ')) + ')'
-      + '<button class="wp-ldy__btn" onclick="wpLdySub(\'ledger\')">기초재고 입력하러 가기</button></div>'
+      + '<button class="wp-ldy__btn" onclick="wpLdyGoOpening()">기초재고 입력하러 가기</button></div>'
     : '';
 }
 /* 오늘 날짜에 빈 칸이 있으면 탭 제목 옆 ● */
