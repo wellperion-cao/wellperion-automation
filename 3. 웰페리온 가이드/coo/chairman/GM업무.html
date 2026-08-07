@@ -574,6 +574,12 @@
         if (id !== '2026-08-26') return '';
         return '<a class="doc-link" href="../../회사문서/웰페리온_운영부_단일보고라인_A3.html" target="_blank" rel="noopener">📄 단일 보고라인 A3</a>';
       }
+      // 아르모니움 소통체계 A3 버튼 — 이 목표(id 2026-08-27 「상가(아르모니움) 소통 체계·관리비 기준 운영」)
+      // 카드에만(GM 지시 2026-08-07). 상대경로, 기존 doc-link 클래스 재사용 — 새 CSS 없음.
+      function armoniumLink(id) {
+        if (id !== '2026-08-27') return '';
+        return '<a class="doc-link" href="../../회사문서/웰페리온_아르모니움_소통체계_미팅_A3.html" target="_blank" rel="noopener">📄 아르모니움 소통체계 A3</a>';
+      }
       var todos = extractTodos(it.note);
       // 공용 체크보드가 있으면 그 값으로 화면 체크 상태를 덮는다(새로고침해도 살아남는 값 = 여기).
       todos.forEach(function (t) {
@@ -614,6 +620,7 @@
         ohnuttiLink(it.id) +
         scoreDraftLink(it.id) +
         reportLineLink(it.id) +
+        armoniumLink(it.id) +
         '</div>';
     }).join('');
     elGmSum.innerHTML = items.map(function (it, i) {
