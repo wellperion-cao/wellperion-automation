@@ -3285,7 +3285,29 @@ def main():
     # 판정은 support_check_summary.zero_zones() 한 곳(22:30 보고와 같은 원천 · 약속 L01).
     _ZERO_ALERT_STATE = REPO_ROOT / "status" / "check_zero_alert.json"
 
+    def _check_status_noon():
+        """낮 1회 점검 현황 — 점검관리방에만(카톡 실무진 방엔 안 보낸다).
+
+        ★2026-08-07 GM 지적("점검관리방에 시설부·지원부 점검이 아예 없는데?")로 되살린다.
+        실측: 22:30 하루 정리는 매일 정상 발송되고 있었다(8/3~8/6 로그 확인). 문제는
+        **낮에는 어디에도 안 보인다**는 것이었다 — 12시 발신은 2026-07-18 GM 결정으로
+        폐지됐고, 그 뒤 남은 것은 밤 정리와 '구역이 통째로 0건일 때만' 울리는 침묵형
+        경보뿐이었다. 그래서 진행 중인 상태(지원부 8%처럼)는 하루 종일 흔적이 없다.
+        ▸새 예약작업·새 방을 만들지 않는다 — 이미 있는 14:00 슬롯에 얹는다(약속 L21).
+        ▸본문은 22:30 과 같은 렌더(report_stream_2_check)를 그대로 쓴다(약속 L01).
+        """
+        try:
+            import report_stream_2_check as _s2n
+            body = _s2n.build_digest(datetime.now().strftime("%Y-%m-%d"))
+            ok = send_telegram(DIGEST_CHECK_CHAT_ID, "🕐 점심 점검 현황 (오늘 낮 기준)\n" + body)
+            logger.info(f"[낮 점검현황] 점검관리방 발송 {'완료' if ok else '실패'}")
+        except Exception as e:
+            logger.error(f"[낮 점검현황] 예외: {e}")
+
     def _zero_zone_alert(shift_key: str):
+        # 오전조 슬롯(14:00)에서는 먼저 낮 현황 한 장을 보낸다 — 문제가 없어도 보인다.
+        if shift_key == "am":
+            _check_status_noon()
         try:
             import sys as _s
             _sp = str(REPO_ROOT / "scripts")
