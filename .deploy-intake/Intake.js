@@ -868,9 +868,36 @@ function _processAction(body) {
       at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'),
       // 알림 토큰이 들어 있는지만 길이로 알린다(값은 절대 안 내보낸다). 0 이면 접수는 되는데
       // 텔레그램 알림만 조용히 안 가는 상태다 — 그 침묵을 밖에서 볼 수 있게 하는 창 하나.
-      botTokenLen: _prop('BOT_TOKEN').length
+      botTokenLen: _prop('BOT_TOKEN').length,
+      intakeTokenSet: _prop('INTAKE_SUBMIT_TOKEN').length > 0
     });
   }
+  /* 접수 토큰 1회용 쓰기 문은 값을 넣은 뒤 지웠다(2026-08-07 19:33 · 약속 L21).
+     남겨 두면 쓰이지 않는 쓰기 통로가 열려 있게 된다. 설정 여부는 ping 의 intakeTokenSet 으로 본다. */
+  /* 저장 실증(intake_selftest) — 이 백엔드가 실제로 시트에 쓸 수 있는지 확인하는 유일한 통로다.
+     왜 필요한가: 접수 주소를 이쪽으로 옮기기 전에 '정말 저장되나'를 봐야 하는데, 실고객 탭에
+     시험 데이터를 넣을 수는 없다(2026-08-06 GM 지시로 막힌 지점). 그래서 아무도 안 읽는
+     '__시험접수' 탭에만 쓰고, 쓴 것을 곧바로 되읽어 확인한다. 실고객 탭·기존 로직 무접촉.
+     방어는 접수와 같은 토큰 하나(INTAKE_SUBMIT_TOKEN) — 새 방식 발명 없음. */
+  if (action === 'intake_selftest') {
+    if (String(body.token || '') !== _prop('INTAKE_SUBMIT_TOKEN')) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _stSs = SpreadsheetApp.openById(_MI_SS_ID);
+    var _stSh = _stSs.getSheetByName('__시험접수');
+    if (!_stSh) {
+      _stSh = _stSs.insertSheet('__시험접수');
+      _stSh.appendRow(['시각', '표식', '비고']);
+    }
+    var _stMark = 'selftest-' + new Date().getTime();
+    _stSh.appendRow([new Date(), _stMark, '시토 저장 실증 — 실무 무관, 지워도 됨']);
+    SpreadsheetApp.flush();
+    var _stLast = _stSh.getLastRow();
+    var _stBack = String(_stSh.getRange(_stLast, 2).getValue());
+    return _json({
+      ok: _stBack === _stMark, wrote: _stMark, readBack: _stBack, row: _stLast,
+      sheet: '__시험접수', ssName: _stSs.getName()
+    });
+  }
+
   /* set_bot_token_once (1회용 쓰기 문) 는 값을 넣은 뒤 지웠다 — 2026-08-06 배240.
      남겨 두면 쓰이지 않는 쓰기 통로가 그대로 열려 있게 된다(약속 L21 "꺼둔 것은 남기지 않는다").
      대신 ping 이 토큰 설정 여부를 길이로만 알려 준다(값은 안 내보낸다) — 토큰이 빠지면
@@ -960,6 +987,7 @@ function _processAction(body) {
     var _iDocLink = String(body.docLink || '').trim();          // business: 소개자료 링크
     var _iProposal = String(body.proposal || '').trim();        // business: 제안 내용
     var _iOhQty = String(body.qty || '').trim();                 // ohnutti: 수량(세트) — wp_inquiry_form.html FORMS.ohnutti 필드키(qty)와 1:1
+    var _iOhSetType = String(body.setType || '').trim();         // ohnutti: 세트 종류(230g 2구/80g 3구, 2026-08-07 GM 파트너 조건 확정)
     var _iOhMethod = String(body.method || '').trim();           // ohnutti: 수령 방법
     var _iOhWantDate = String(body.wantDate || '').trim();       // ohnutti: 희망 수령일
     var _iOhAddress = String(body.address || '').trim();         // ohnutti: 배송지(택배 선택 시)
@@ -1129,6 +1157,7 @@ function _processAction(body) {
           _ohSet('성함', _iName);
           _ohSet('연락처', _fmtPhone_(_iPhone));
           _ohSet('수량', _ohQty);
+          _ohSet('세트종류', _iOhSetType);
           _ohSet('수령방법', _iOhMethod);
           _ohSet('희망수령일', _iOhWantDate);
           _ohSet('배송지', _iOhAddress);
@@ -1161,7 +1190,7 @@ function _processAction(body) {
       if (_iCat === 'summer') _iExtra = (_iWish ? ('\n희망시간: ' + _iWish) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '') + (_iTarget ? ('\n대상: ' + _iTarget) : '');
       if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
       if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
-      if (_iCat === 'ohnutti') _iExtra = (_iOhQty ? ('\n수량: ' + _iOhQty + '세트') : '') + (_iOhMethod ? ('\n수령방법: ' + _iOhMethod) : '');
+      if (_iCat === 'ohnutti') _iExtra = (_iOhSetType ? ('\n세트: ' + _iOhSetType) : '') + (_iOhQty ? ('\n수량: ' + _iOhQty + '세트') : '') + (_iOhMethod ? ('\n수령방법: ' + _iOhMethod) : '');
       _notifyTelegram((_isTestInquiryName_(_iDisplayName) ? '🧪 <b>[테스트 문의 — 업무보고방으로 자동전환]</b>\n' : '🔔 <b>[웹 문의 접수]</b> (자체폼)\n') + '유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
         + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
