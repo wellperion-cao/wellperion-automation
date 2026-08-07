@@ -8704,21 +8704,28 @@ function _hasRealReply_(memo) {
     //   ▸format 미지정이면 종전 그대로(하위호환) — 옛 화면·다른 소비자 무영향.
     //   ▸참고: 애초 계획이던 '칸 화이트리스트'는 전제가 틀렸다. 화면(_activeDisplayCols)은
     //     서버가 준 헤더를 거의 다 쓰고 9칸 남짓만 숨긴다 — 줄여도 25% 정도라 효과가 작다.
-    var aaResult;
-    if (String(body.format || '') === 'rows') {
-      var aaCols = aaHdrs.slice();
-      var aaArr = [];
-      for (var ar = 0; ar < aaRows.length; ar++) {
-        var aRow = aaRows[ar], aOut = [aRow.rowIndex, aRow.rowKey || ''];
-        for (var ac = 0; ac < aaCols.length; ac++) aOut.push(aRow[aaCols[ac]] === undefined ? '' : aRow[aaCols[ac]]);
-        aaArr.push(aOut);
-      }
-      // meta = 앞 2칸이 무엇인지 알려 준다(화면이 순서를 추측하지 않게).
-      aaResult = { ok: true, scope: aaScope, format: 'rows', meta: ['rowIndex', 'rowKey'],
-                   columns: aaCols, count: aaArr.length, rows: aaArr };
-    } else {
-      aaResult = { ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows };
+    // ★2026-08-07 시토(배117 잔여 ①) — 한 번 읽었으면 **두 형식을 함께 만들어 둘 다 캐시**한다.
+    //   종전엔 캐시 키가 rows/obj 로 갈려 있어서, 같은 데이터인데 형식이 다른 요청이 오면
+    //   시트를 처음부터 다시 통째로 스캔했다(유효회원 약 1,000행 풀스캔이 한 번 더).
+    //   두 형식을 만드는 비용은 이미 메모리에 있는 배열을 옮겨 담는 것뿐이라 사실상 공짜다.
+    var aaColNames = aaHdrs.slice();   // 칸 이름 목록(위 aaCols=칸 '개수' 와 이름이 겹치지 않게 분리)
+    var aaArr = [];
+    for (var ar = 0; ar < aaRows.length; ar++) {
+      var aRow = aaRows[ar], aOut = [aRow.rowIndex, aRow.rowKey || ''];
+      for (var ac = 0; ac < aaColNames.length; ac++) aOut.push(aRow[aaColNames[ac]] === undefined ? '' : aRow[aaColNames[ac]]);
+      aaArr.push(aOut);
     }
+    // meta = 앞 2칸이 무엇인지 알려 준다(화면이 순서를 추측하지 않게).
+    var aaRowsResult = { ok: true, scope: aaScope, format: 'rows', meta: ['rowIndex', 'rowKey'],
+                         columns: aaColNames, count: aaArr.length, rows: aaArr };
+    var aaObjResult = { ok: true, scope: aaScope, headers: aaHdrs, count: aaRows.length, data: aaRows };
+    var aaWantRows = (String(body.format || '') === 'rows');
+    var aaResult = aaWantRows ? aaRowsResult : aaObjResult;
+    // 요청받지 않은 쪽도 같은 스캔 결과로 채워 둔다(실패해도 조회는 정상 — 캐시는 보조).
+    try {
+      _cachePutJson_(aaCache, 'aacache|' + aaScope + '|' + (aaWantRows ? 'obj' : 'rows'),
+                     aaWantRows ? aaObjResult : aaRowsResult, 360);
+    } catch (aaE) {}
     // ★2026-08-03 시토(배298) — TTL 60 → 360초. 워머(2026-08-05 부터 warmLessonRosterCache —
     //   warmDashboardCache 는 트리거가 없어 안 돈다)가 5분마다 도는데
     //   TTL 이 60초면 5분 중 1분만 뜨겁고 나머지 4분은 미스라 워밍이 헛돈다. 360초로 두면
@@ -9440,8 +9447,12 @@ function _hasRealReply_(memo) {
       }
     } catch (eCi) {}
     // 등록 + 회원 현황(유효/종료/금일 LOSS): 유효회원 시트
+    var ctMemberSs = null;   // 아래 두 블록이 함께 쓰는 스프레드시트 핸들(2026-08-07 시토)
     try {
-      var crSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+      // ★2026-08-07 시토(배117 잔여 ②) — 같은 스프레드시트를 한 요청에서 두 번 열던 것을
+      //   한 번만 열고 아래 법인 카운트와 함께 쓴다(openById 는 매번 원격 왕복이다).
+      ctMemberSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+      var crSh = ctMemberSs.getSheetByName(MEMBER_SHEET);
       if (crSh && crSh.getLastRow() >= 2) {
         var crCols = crSh.getLastColumn();
         var crHdr = crSh.getRange(1, 1, 1, crCols).getValues()[0].map(function(v){ return String(v).trim(); });
@@ -9492,7 +9503,7 @@ function _hasRealReply_(memo) {
     // 법인회원 수(별도 시트 gid 1612064257 '법인현황' — 회원명 있는 행). 2026-06-29 시포.
     var ctCorp = 0;
     try {
-      var ctCorpSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID), ctCorpSh = null, ctCorpShs = ctCorpSs.getSheets();
+      var ctCorpSs = ctMemberSs || SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID), ctCorpSh = null, ctCorpShs = ctCorpSs.getSheets();
       for (var cci = 0; cci < ctCorpShs.length; cci++) { if (ctCorpShs[cci].getSheetId() === 1612064257) { ctCorpSh = ctCorpShs[cci]; break; } }
       if (!ctCorpSh) ctCorpSh = ctCorpSs.getSheetByName('법인현황');
       if (ctCorpSh && ctCorpSh.getLastRow() >= 2) {
