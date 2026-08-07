@@ -1932,10 +1932,13 @@ function lifecycleStage(task) {
 
   if (status === '완료') return 'closed';                // ⑤ 종료
   if (!approvalReq) return 'free';                        // ① 결재 미요청 — 자유 (리셋 복귀 포함: 결재요청이 비면 결과보고 마커 유무와 무관하게 편집 가능 · 2026-07-02 시토)
-  if (hasResult) return 'result';                         // ④ 결과보고 작성 단계
-  if (approvalStatus === '결재완료') return 'execution';   // ③ 결재 완료 → 진척 활성
-  if (/반려/.test(approvalStatus)) return 'rejected';     // 반려
-  return 'approval';                                       // ② 결재 진행 중
+  if (/반려/.test(approvalStatus)) return 'rejected';     // 반려 — 보완 후 재상신
+  // ★ 결재자가 실제로 결재하기 전까지는 무조건 편집 가능 (2026-08-07 GM 지시).
+  //   이전에는 hasResult 를 먼저 봐서, 결재가 안 났는데 결과보고를 먼저 쓰면 'result' 로 빠져
+  //   기획안·내용·예산이 잠겼다. 상신만 해두고 내용을 다듬는 흔한 흐름이 막히던 원인.
+  if (approvalStatus !== '결재완료') return 'approval';    // ② 결재 대기 — 전 섹션 편집 가능
+  if (hasResult) return 'result';                         // ④ 결재 완료 + 결과보고 작성 단계
+  return 'execution';                                      // ③ 결재 완료 → 진척 활성
 }
 
 /* 단계별 잠금 정책 */
@@ -2148,7 +2151,7 @@ function applyLifecycleLocks(task) {
   const locks = stageLocks(stage);
   const labels = {
     free:      { text: '① 자유 — 모든 섹션 편집 가능',                bg: 'var(--accent-bg)', fg: 'var(--accent)' },
-    approval:  { text: '② 결재 진행 중 — 진척 로그 작성 가능, 결과보고만 잠금', bg: 'var(--yellow-bg)', fg: 'var(--yellow)' },
+    approval:  { text: '② 결재 대기 — 결재자가 결재하기 전이라 모든 섹션 편집 가능', bg: 'var(--yellow-bg)', fg: 'var(--yellow)' },
     execution: { text: '③ 결재 완료 — 진척 로그 활성, 내용·예산 잠금', bg: 'var(--green-bg)',  fg: 'var(--green)' },
     result:    { text: '④ 결과보고 작성 단계 — 결과보고만 편집',       bg: 'var(--purple-bg)', fg: 'var(--purple)' },
     closed:    { text: '⑤ 업무 종료 — 모든 섹션 read-only',           bg: 'var(--paper)',     fg: 'var(--dim)' },
