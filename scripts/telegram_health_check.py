@@ -332,6 +332,24 @@ def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
 
 
 # ── 메인 ──────────────────────────────────────────────────────────────────────
+def _check_sales_month() -> list[str]:
+    """08시·09시·09:30 보고에 나갈 '이달 매출' 값이 실제로 있는지 하루 한 번 확인한다.
+
+    2026-08-08 배446 — 8월 1일부터 6일 연속 매출란이 빈칸으로 나갔는데 어떤 경보도 안 울렸다.
+    보고는 정상 발송됐고 값만 비어 있어서 발송 감시로는 안 잡히는 부류다(자가점검 7번 '0 위장').
+    달이 바뀐 직후 진행중 누적이 새 달로 안 넘어오면 여기서 잡힌다.
+    """
+    try:
+        from erp_status_publisher import read_sales_month_display
+    except Exception as e:
+        return [f"이달 매출 표시 모듈 임포트 실패: {type(e).__name__}"]
+    text, _in_progress = read_sales_month_display()
+    if text == "—":
+        return ["이달 매출 표시값 없음 — 08시·09시 보고 매출란이 빈칸으로 나간다"
+                " (status/home_kpi_snapshot.json 의 sales.month·monthInProgress 둘 다 비었음)"]
+    return []
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description='텔레그램 알림 헬스체크')
     parser.add_argument('--dry-run', action='store_true', help='경보 발송 없이 stdout만')
@@ -389,7 +407,13 @@ def main() -> None:
     except Exception as e:
         all_issues.append(f"GAS 버전 점검 예외: {e}")
 
-    # 7. 결과 출력 및 경보
+    # 7. 이달 매출 표시값 (배446 — 8월 6일 연속 빈칸이 아무 경보도 안 울렸다)
+    try:
+        all_issues.extend(_check_sales_month())
+    except Exception as e:
+        all_issues.append(f"이달 매출 표시 점검 예외: {e}")
+
+    # 8. 결과 출력 및 경보
     if all_issues:
         today_str = datetime.date.today().strftime('%Y-%m-%d')
         alert_msg = (

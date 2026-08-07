@@ -1084,43 +1084,57 @@ _HOME_KPI_API = (
 
 
 def _kr_amt(n) -> str:
-    """한국식 금액 표기: 271488886 → '2억 7,148만'. ERP home krAmt와 동일 규칙."""
-    try:
-        n = round(float(n))
-    except (TypeError, ValueError):
-        return "—"
-    sign = "-" if n < 0 else ""
-    n = abs(n)
-    eok = n // 100000000
-    man = (n % 100000000) // 10000
-    if eok > 0 and man > 0:
-        return f"{sign}{eok}억 {man:,}만"
-    if eok > 0:
-        return f"{sign}{eok}억"
-    if man > 0:
-        return f"{sign}{man:,}만"
-    return f"{sign}{n:,}원"
+    """한국식 금액 표기. 정본 = scripts/erp_status_publisher.kr_amt (2026-08-08 배446 단일화)."""
+    from erp_status_publisher import kr_amt
+    return kr_amt(n)
 
 
 def fetch_sales_oneline() -> str:
     """매출·지출 1줄 (구 09시 흡수 · 상세는 카톡 09:30 담당). ERP home과 동일 소스(home_kpi).
-    실패·데이터없음 시 ''(줄 생략)."""
+    양쪽 다 값이 없을 때만 ''(줄 생략).
+
+    2026-08-08 배446 — 8월 들어 6일 연속 매출란이 빈칸으로 나갔고 08-04 는 줄 자체가 빠졌다.
+    원인 둘: ①마감 전(당월)엔 sales.month 가 항상 null 이라 '—' 로 굳음 ②라이브 GAS 조회가
+    한 번 실패하면 곧바로 ''를 돌려줘 줄이 통째로 사라짐. 둘 다 스냅샷
+    (status/home_kpi_snapshot.json)에 값이 멀쩡히 있는데 안 읽어서 생긴 일이다.
+    그래서 스냅샷을 바닥값으로 깔고, 라이브가 응답하면 그 값으로 덮어쓴다.
+    """
+    data = {}
     try:
         req = urllib.request.Request(
             _HOME_KPI_API, headers={"User-Agent": "Mozilla/5.0 (CEO-morning-pipeline)"})
         with urllib.request.urlopen(req, timeout=20) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            live = json.loads(resp.read().decode("utf-8"))
+        if isinstance(live, dict) and live.get("ok"):
+            data = live
     except Exception as exc:
-        print(f"[WARN] 매출 1줄 조회 실패: {exc}", file=sys.stderr)
+        print(f"[WARN] 매출 1줄 라이브 조회 실패 — 스냅샷으로 진행: {exc}", file=sys.stderr)
+
+    # 매출: 마감값 우선, 없으면 당월 진행중 누적. 판정·표기는 erp_status_publisher 한 곳이 한다(L01).
+    from erp_status_publisher import read_sales_month_display
+    s_text, in_progress = read_sales_month_display()
+    if s_text == "—":
+        s_month = (data.get("sales") or {}).get("month")
+        if s_month is not None:
+            s_text = _kr_amt(s_month)
+
+    e_month = (data.get("expense") or {}).get("month")
+    if e_month is None:
+        e_month = _snapshot_expense_month()
+
+    if s_text == "—" and e_month is None:
         return ""
-    if not isinstance(data, dict) or not data.get("ok"):
-        return ""
-    sales = data.get("sales") or {}
-    expense = data.get("expense") or {}
-    s_month, e_month = sales.get("month"), expense.get("month")
-    if s_month is None and e_month is None:
-        return ""
-    return f"💰 이달 매출 {_kr_amt(s_month)} · 지출 {_kr_amt(e_month)}  (상세는 카톡 09:30)"
+    mark = " (진행 중)" if in_progress else ""
+    return f"💰 이달 매출 {s_text}{mark} · 지출 {_kr_amt(e_month)}  (상세는 카톡 09:30)"
+
+
+def _snapshot_expense_month():
+    """이달 지출 — 라이브가 죽었을 때 쓰는 스냅샷 바닥값. 없으면 None."""
+    try:
+        snap = json.loads((STATUS_DIR / "home_kpi_snapshot.json").read_text(encoding="utf-8"))
+        return ((snap.get("data") or {}).get("expense") or {}).get("month")
+    except Exception:
+        return None
 
 
 def _staff_quote() -> str:

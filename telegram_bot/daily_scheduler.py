@@ -1579,8 +1579,18 @@ def _fetch_cfo_finance_block() -> str:
     if s_month is None and e_month is None:
         return "💰 매출·지출 현황\n  데이터 없음 (home 소스 미연동 — 보완 중)"
 
+    # 마감 전(당월)엔 s_month 가 항상 null 이라 '—' 로 나갔다 — 08시 보고와 같은 뿌리(배446,
+    # 2026-08-08). 스냅샷의 당월 진행중 누적으로 떨어지고 '(진행 중)'을 붙여 마감값과 구분한다.
+    # 판정·표기는 erp_status_publisher 한 곳이 한다(약속 L01).
+    try:
+        from erp_status_publisher import read_sales_month_display
+        _s_text, _in_progress = read_sales_month_display()
+    except Exception:
+        _s_text, _in_progress = "—", False
+    if _s_text == "—":
+        _s_text = _kr_amt(s_month)
     table_rows = [
-        ("이달 매출", _kr_amt(s_month)),
+        ("이달 매출", f"{_s_text}{' (진행 중)' if _in_progress else ''}"),
         ("이달 지출", _kr_amt(e_month)),
     ]
     table_str = "\n".join(_count_table(table_rows))

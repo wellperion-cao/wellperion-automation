@@ -555,6 +555,63 @@ def fetch_sales_month_in_progress():
         return None
 
 
+def kr_amt(n) -> str:
+    """한국식 금액 표기: 271488886 → '2억 7,148만'. ERP home krAmt와 동일 규칙.
+
+    정본(2026-08-08 배446) — 같은 규칙을 각 보고기가 따로 갖고 있으면 표기가 어긋난다(약속 L01).
+    """
+    try:
+        n = round(float(n))
+    except (TypeError, ValueError):
+        return "—"
+    sign = "-" if n < 0 else ""
+    n = abs(n)
+    eok = n // 100000000
+    man = (n % 100000000) // 10000
+    if eok > 0 and man > 0:
+        return f"{sign}{eok}억 {man:,}만"
+    if eok > 0:
+        return f"{sign}{eok}억"
+    if man > 0:
+        return f"{sign}{man:,}만"
+    return f"{sign}{n:,}원"
+
+
+def read_sales_month_display() -> tuple[str, bool]:
+    """이달 매출 표시값 — (금액문자열, 진행중여부). 값이 없으면 ('—', False).
+
+    왜 있나(2026-08-08 배446 · GM 지적 "8시에 온 내용도 이달 매출은 안나오네"):
+      home_kpi 의 sales.month 는 '마감 정본'(AV열)이라 달이 끝나야 채워진다. 8월 들어
+      6일 연속으로 08시 보고 매출란이 '—' 로 나갔고, 09:30 ★운영부 보고는 아예
+      '[연동 예정]' 문자열이었다. 값 자체는 sales.monthInProgress 로 이미 매일 수집돼
+      스냅샷에 들어 있는데 보고기들이 그 칸을 안 읽었다.
+      2026-08-03 에 ERP 히어로 화면만 고치고 같은 값을 쓰는 다른 소비자를 안 찾은 결과다.
+
+    마감값이 있으면 그것을 쓰고(진행중=False), 없을 때만 당월 진행중 누적으로 떨어진다.
+    진행중 값은 '이번 달 것'일 때만 쓴다 — 달이 바뀌었는데 지난달 누적이 남아 있으면 버린다.
+    소비자는 진행중=True 면 '(진행 중)' 같은 표시를 붙여 마감 매출과 구분한다.
+    """
+    try:
+        snap = json.loads(HOME_KPI_OUT.read_text(encoding="utf-8"))
+        sales = ((snap.get("data") or {}).get("sales")) or {}
+    except Exception:
+        return "—", False
+    return pick_sales_month(sales, _now_kst().month)
+
+
+def pick_sales_month(sales: dict, cur_month: int) -> tuple[str, bool]:
+    """read_sales_month_display 의 판정만 떼어낸 순수 함수 — 파일을 안 읽는다.
+
+    자기검사 = scripts/test_sales_month_display.py (달 바뀜 경계가 이 함수의 유일한 위험).
+    """
+    if sales.get("month") is not None:
+        return kr_amt(sales["month"]), False
+    mip = sales.get("monthInProgress") or {}
+    if mip.get("value") is not None and mip.get("month") == cur_month:
+        return kr_amt(mip["value"]), True
+    return "—", False
+
+
 def publish_home_kpi_snapshot():
     """home 히어로 KPI 스냅샷 발행 — status/home_kpi_snapshot.json.
 
