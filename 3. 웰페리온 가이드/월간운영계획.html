@@ -1258,7 +1258,8 @@
 
   var _data = null;      // monthly_ops_plan.json 전체(정본 모델)
   var _sel = null;       // 선택 월 키
-  var _homeSales = undefined; // home_kpi sales.month (라이브) — undefined=미조회, null=미측정
+  var _homeSales = undefined; // home_kpi sales.month(마감정본) 또는 스냅샷 monthInProgress(마감 전 진행중 누적) — undefined=미조회, null=미측정
+  var _homeSalesMIP = null;   // _homeSales가 진행중 누적으로 채워졌을 때만 세팅(라벨 "진행 중" 표기용) — {month,value,source,asOf}
   var _cfoSales = null;  // CFO 매출: 월별 센터전체 매출 배열[12](정본 우선·부서합 폴백) — null=미조회/실패
   var _cfoExp = null;    // CFO 인건비: 월별 총인건비 배열[12](강사+운영부) — null=미조회/실패
   var _cfoProc = null;   // 구매성: 월별 합계 배열[12](라이브 proc_summary 우선·실패시 폴백) — 전체지출=인건비+구매성
@@ -1473,13 +1474,27 @@
       })
       .catch(function(){ return null; });
   }
-  // ── 라이브 매출: home_kpi → sales.month(당월 실측). 실패/미측정=null ──
+  // ── 라이브 매출: home_kpi → sales.month(당월 마감정본). 마감 전엔 sales.month=null(의도된 설계·허위숫자 방지) —
+  //    그 경우 서버 스냅샷(erp_status_publisher.py가 이미 발행 중인 status/home_kpi_snapshot.json)의
+  //    data.sales.monthInProgress(진행중 누적, ★운영부 아침 정리와 동일 소스)로 폴백. 새 수집기·새 엔드포인트 없음(약속 L21).
+  //    wellperion_guide(main).html의 동일 폴백과 같은 소스(2026-08-07 GM 지시 — 월간운영계획 매출 미연동 해결).
+  var HOME_KPI_SNAPSHOT_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/home_kpi_snapshot.json';
   function readHomeSales(){
     return fetch(GAS_URL + '?action=home_kpi', {method:'GET', redirect:'follow'})
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res && res.ok && res.sales && typeof res.sales.month === 'number') return res.sales.month;
-        return null;
+        var curMonth = res && res.sales && res.sales.curMonth;
+        return fetch(HOME_KPI_SNAPSHOT_URL + '?t=' + Date.now(), {cache:'no-store'})
+          .then(function(r2){ return r2.json(); })
+          .then(function(snap){
+            var mip = snap && snap.data && snap.data.sales && snap.data.sales.monthInProgress;
+            if(mip && typeof mip.value === 'number' && (!curMonth || mip.month === curMonth)){
+              _homeSalesMIP = mip;
+              return mip.value;
+            }
+            return null;
+          }).catch(function(){ return null; });
       })
       .catch(function(){ return null; });
   }
@@ -1883,7 +1898,8 @@
     if(isSales){
       var tgt = mt.target || 0;
       var cur = _homeSales;
-      var lab = '<span class="metric-h"><span class="live">● 라이브</span> ' + esc(mt.name || '매출') + ' · home_kpi 당월 실측</span>';
+      var mipLab = (_homeSalesMIP && typeof cur === 'number') ? ' · 진행중(마감 전, ' + (_homeSalesMIP.asOf || '') + ' 기준)' : ' · home_kpi 당월 실측';
+      var lab = '<span class="metric-h"><span class="live">● 라이브</span> ' + esc(mt.name || '매출') + esc(mipLab) + '</span>';
       if(typeof cur === 'number' && tgt){
         var pct = Math.max(0, Math.round(cur / tgt * 100));
         var w = Math.max(0, Math.min(100, pct));
@@ -2367,7 +2383,8 @@
           '<div class="fin-hero-target">목표 <b class="tv">' + fmtWon(target) + '</b> 대비 ' +
             (spct != null ? '<b>' + spct + '%</b>' : '—') +
             '<div class="mbar green"><i style="width:' + sw + '%"></i></div>' +
-            '<span class="fin-hero-sub">' + (cfoS != null ? '● CFO 매출현황 정본(회원권+강습+기타·주차)' : '● 당월 라이브(home_kpi)') + '</span>' +
+            '<span class="fin-hero-sub">' + (cfoS != null ? '● CFO 매출현황 정본(회원권+강습+기타·주차)' :
+              (_homeSalesMIP ? '● 당월 진행중 누적(마감 전 · ' + esc(_homeSalesMIP.asOf || '') + ' 기준)' : '● 당월 라이브(home_kpi)')) + '</span>' +
             '<div class="fin-hero-pace">' + paceHtml + '</div>' +
           '</div></div>' +
         extraBlock + '</div>';

@@ -112,6 +112,24 @@ def fetch_home_kpi() -> dict | None:
     return data if isinstance(data, dict) and data.get("ok") else None
 
 
+HOME_KPI_SNAPSHOT_FILE = BASE_DIR / "status" / "home_kpi_snapshot.json"
+
+
+def sales_month_in_progress() -> tuple[int, str] | None:
+    """sales.month(마감정본 AV열)가 아직 null인 달의 폴백 — status/home_kpi_snapshot.json에
+    erp_status_publisher.py가 이미 30분 주기로 발행 중인 monthInProgress(진행중 누적, ★운영부
+    아침 정리와 동일 소스)를 로컬에서 그대로 읽는다. 새 수집기·새 네트워크 호출 없음(약속 L21).
+    2026-08-07 GM 지시 — 월간운영계획 매출 미연동 해결(08시 보고 건과 같은 방식)."""
+    try:
+        snap = load_json(HOME_KPI_SNAPSHOT_FILE)
+        mip = snap.get("data", {}).get("sales", {}).get("monthInProgress")
+        if isinstance(mip, dict) and isinstance(mip.get("value"), (int, float)):
+            return int(mip["value"]), str(mip.get("asOf") or "")
+    except Exception:
+        pass
+    return None
+
+
 def dig(d: dict, dotted: str):
     """'sales.month' → d['sales']['month']. 없으면 None."""
     cur = d
@@ -321,12 +339,22 @@ def resolve(obj: dict, kpi: dict | None) -> dict:
     if src == "metric_live":
         if kpi is None:
             return {"title": title, "verdict": "미연동", "detail": "home_kpi 조회 실패"}
-        val = dig(kpi, str(sync.get("ref", "")))
+        ref = str(sync.get("ref", ""))
+        val = dig(kpi, ref)
+        mip_asof = None
+        if not isinstance(val, (int, float)) and ref == "sales.month":
+            # 마감 전(null) — 진행중 누적 폴백(마감값 아님, 라벨에 명시)
+            mip = sales_month_in_progress()
+            if mip is not None:
+                val, mip_asof = mip
         if not isinstance(val, (int, float)):
             return {"title": title, "verdict": "미연동", "detail": f"지표 없음({sync.get('ref')})"}
         cur = (obj.get("metric") or {}).get("current")
+        src_label = f"metric_live:{ref}"
+        if mip_asof is not None:
+            src_label += f"(마감전 진행중 누적·{mip_asof} 기준)"
         return {"title": title, "verdict": "AUTO", "field": "metric.current",
-                "old": cur, "new": int(val), "src": f"metric_live:{sync.get('ref')}"}
+                "old": cur, "new": int(val), "src": src_label}
 
     if src == "queue":
         refs = sync.get("ref") or []
