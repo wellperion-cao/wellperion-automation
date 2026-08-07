@@ -2604,25 +2604,27 @@ select, select option{ color:var(--text); background-color:var(--paper); }
   </div>
 </div>
 
-<!-- ══ LOSS 재등록 처리 모달 — 종료회원(LOSS) 표 '재등록 처리' 버튼. GM 지시(2026-07-28). ★왜 필요한가:
-     서버 판정(Survey.js member_active_list, _AA_LOSS) = 잔여일>=0 && 재등록분류 ∉ {LOSS,환불,양도LOSS}(2026-07-31 경계 정정).
-     종료일자만 고치면 잔여일(시트 수식)은 살아나지만 재등록분류가 여전히 LOSS류면 그대로 종료회원에
-     남는다 — 실무진은 "왜 안 넘어가지" 하게 된다(더블클릭 인라인 편집도 발견하기 어려움).
-     이 모달은 새 유효기간(종료일자) + 재등록분류를 한 번에 저장해 두 조건을 동시에 채운다.
-     재등록분류 저장값='L재등록'(REACTIVATE_RECLASS_VALUE) — member_active_list 실데이터에 이미 쓰이는
-     값이며 _AA_LOSS에 없어 유효회원으로 잡힌다(새 값 발명 금지, GM 지시). 저장=기존 member_active_update
-     fields 경로 재사용(신규 액션 없음) · Survey.js 서버 판정 로직은 전혀 건드리지 않는다. ══ -->
+<!-- ══ LOSS 재등록·환불 처리 모달 — 종료회원(LOSS) 표 '재등록 처리' 버튼. GM 지시(2026-07-28).
+     FB260807-121152(임정은M): 환불 처리 유형 추가 — 재등록(유효 복귀)·환불(LOSS 유지·재등록분류=환불) 선택. ══ -->
 <div class="consult-overlay" id="reactivateOverlay" onclick="if(event.target===this)closeReactivateModal()">
   <div class="consult-modal" role="dialog" aria-modal="true">
     <div class="consult-modal-head">
-      <span class="consult-modal-kind experience">재등록</span>
-      <span class="consult-modal-title">재등록 처리</span>
+      <span class="consult-modal-kind experience">처리</span>
+      <span class="consult-modal-title">처리 유형 선택</span>
     </div>
     <div class="consult-row"><span class="ck">회원</span><span class="cv" id="rvMemberFixed">—</span></div>
 
-    <div class="consult-field-label">새 유효기간(종료일자)</div>
-    <input type="date" id="rvEndDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
-    <div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5">재등록하신 회원의 새 유효기간을 넣으면 멤버십 회원 명단으로 돌아갑니다.</div>
+    <div class="consult-field-label">처리 유형</div>
+    <select id="rvType" onchange="_rvTypeChange()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+      <option value="재등록">재등록 — 새 유효기간으로 유효회원 복귀</option>
+      <option value="환불">환불 — 재등록분류=환불(LOSS 유지)</option>
+    </select>
+
+    <div id="rvEndDateRow" style="margin-top:12px">
+      <div class="consult-field-label">새 유효기간(종료일자)</div>
+      <input type="date" id="rvEndDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+      <div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5">재등록하신 회원의 새 유효기간을 넣으면 멤버십 회원 명단으로 돌아갑니다.</div>
+    </div>
 
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeReactivateModal()">취소</button>
@@ -7913,9 +7915,11 @@ function _activeDisplayCols() {
   var cols = _activeHeaders.slice().filter(function(h){ return ALWAYS_HIDE_COLS.indexOf(h) < 0; });
   // 종료 스코프: '종료사유'(+메모) 원본 칸은 숨기고 전용 통합셀('__churn__')로 대체(정형 드롭다운+메모 모달). 2026-07-09 시포·GM
   if (_activeScope === 'ended') {
-    var out = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL; });
+    var _urc = _capCol(cols, '미등록사유');   // FB260807-121152 — 미등록사유를 커스텀 클릭 셀로
+    var out = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL && h !== _urc; });
     out.push('__churn__');
-    out.push('__reactivate__');   // 재등록 처리 버튼(GM 지시 2026-07-28) — 통합셀(정렬 대상 아님)
+    out.push('__reactivate__');
+    if (_urc) out.push('__unregreason__');
     return out;
   }
   // valid/corp: 종료사유(+메모)는 항상 빈값이라 숨김·미등록사유는 LOSS 탭 전용으로 여기서도 숨김. 2026-08-01
@@ -7967,10 +7971,11 @@ function _activeRender(rows, isFiltered) {
 
   if (!isFiltered) {
     var ths = displayCols.map(function(h){
-      if (h === '__recon__') return '<th style="white-space:nowrap;text-align:center">재등록 상담</th>';   // 통합셀(정렬 대상 아님)
-      if (h === '__churn__') return '<th style="white-space:nowrap;text-align:center">종료사유</th>';       // 통합셀(정렬 대상 아님) 2026-07-09 시포·GM
-      if (h === '__reactivate__') return '<th style="white-space:nowrap;text-align:center">재등록 처리</th>'; // 통합셀(정렬 대상 아님) 2026-07-28 시포·GM
-      if (h === '__owners__') return '<th style="white-space:nowrap;text-align:center">담당 강사</th>';      // 종목별 담당 강사 요약(정렬 대상 아님) · 이름 변경 GM 지시 2026-08-03
+      if (h === '__recon__') return '<th style="white-space:nowrap;text-align:center">재등록 상담</th>';
+      if (h === '__churn__') return '<th style="white-space:nowrap;text-align:center">종료사유</th>';
+      if (h === '__reactivate__') return '<th style="white-space:nowrap;text-align:center">재등록 처리</th>';
+      if (h === '__unregreason__') return '<th style="white-space:nowrap;text-align:center">미등록사유</th>';   // FB260807-121152
+      if (h === '__owners__') return '<th style="white-space:nowrap;text-align:center">담당 강사</th>';
       // 머리칸은 전부 가운데 정렬(GM 지시 2026-08-03) — 값 칸 정렬은 그대로 둔다.
       var arrow = (_activeSort.col === h) ? (_activeSort.dir < 0 ? ' ▼' : ' ▲') : '';
       return '<th data-sortcol="' + esc(h) + '" title="클릭하여 정렬" style="white-space:nowrap;cursor:pointer;user-select:none;text-align:center">' + esc(h) + arrow + '</th>';
@@ -8064,6 +8069,7 @@ function _activeRowHtml(row, displayCols) {
       if (h === '__recon__') { html += _reconCellHtml(row); return; }
       if (h === '__churn__') { html += _churnCellHtml(row); return; }
       if (h === '__reactivate__') { html += _reactivateCellHtml(row); return; }
+      if (h === '__unregreason__') { html += _unregReasonCellHtml(row); return; }
       if (h === '__owners__') { html += _ownersCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
       // 칸 축소(FB260801-141806, 2026-08-01) — NARROW_COL_WIDTHS에 등록된 칸은 폭 고정+말줄임+마우스오버 전체보기(표시전용·데이터 무변경).
@@ -8537,7 +8543,12 @@ function _wireActiveDblclick(){
     var cell = e.target.closest ? e.target.closest('td.recon-cell') : null;
     if (cell) { var ri = parseInt(cell.getAttribute('data-recon'), 10); if (ri) openReconForMember(ri); return; }
     var ccell = e.target.closest ? e.target.closest('td.churn-reason-cell') : null;
-    if (ccell) { var cri = parseInt(ccell.getAttribute('data-churn'), 10); if (cri) openChurnReasonModal(cri); }
+    if (ccell) {
+      var cri = parseInt(ccell.getAttribute('data-churn'), 10);
+      if (cri) { openChurnReasonModal(cri); return; }
+      var uri = parseInt(ccell.getAttribute('data-unregreason'), 10);
+      if (uri) openUnregReasonModal(uri);
+    }
   });
   tbody.addEventListener('dblclick', function(e){
     var td = e.target.closest('td');
@@ -9524,6 +9535,31 @@ function _reactivateCellHtml(row) {
   return '<td style="white-space:nowrap"><button type="button" onclick="openReactivateModal(' + ri + ')" ' +
     'style="padding:4px 10px;border-radius:7px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">재등록 처리</button></td>';
 }
+// 미등록사유 커스텀 셀 — LOSS 탭 전용(FB260807-121152 임정은M). __churn__ 패턴 재사용.
+function _unregReasonCellHtml(row) {
+  var col = _capCol(_activeHeaders, '미등록사유');
+  var ri = row.rowIndex != null ? esc(String(row.rowIndex)) : '';
+  if (col) {
+    var val = String(row[col] || '').trim();
+    if (val) {
+      return '<td class="churn-reason-cell" data-unregreason="' + ri + '" title="미등록사유 수정" style="white-space:nowrap;cursor:pointer;color:var(--text);font-weight:600">' + esc(val) + '</td>';
+    }
+  }
+  return '<td class="churn-reason-cell churn-reason-empty" data-unregreason="' + ri + '" title="미등록사유 입력" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 사유 입력</td>';
+}
+function openUnregReasonModal(rowIndex) {
+  var rows = (_activeScope === 'ended' ? _activeRows : []).concat(_endedRowsBg || []);
+  var member = null;
+  for (var i = 0; i < rows.length; i++) { if (rows[i].rowIndex == rowIndex) { member = rows[i]; break; } }
+  if (!member) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
+  var col = _capCol(_activeHeaders, '미등록사유');
+  var name = member['회원명'] || member['성함'] || member['이름'] || '';
+  var phone = member['휴대폰 번호'] || member['휴대폰'] || '';
+  _lossModal = { mode: 'activemember', rowIndex: rowIndex, keyPhone: phone, rowKey: member.rowKey || '', name: name, col: col };
+  document.getElementById('lrMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '');
+  _lossModalFill(col ? (member[col] || '') : '');
+}
+
 // '기타' 선택 시 메모 필수 유도(빨강 안내 + 저장 가드).
 function _crUpdateNoteReq() {
   var sel = document.getElementById('crReasonSel');
@@ -9599,25 +9635,54 @@ function openReactivateModal(rowIndex) {
   _reactivateModal = { rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, endCol: endCol, reCol: reCol };
   document.getElementById('rvMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '');
   var cur = String(r[endCol] || '').trim();
-  var dm = cur.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);   // 기존 종료일자를 date input 값으로 프리필(형식 다양성 방어)
+  var dm = cur.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
   document.getElementById('rvEndDate').value = dm ? (dm[1] + '-' + ('0' + dm[2]).slice(-2) + '-' + ('0' + dm[3]).slice(-2)) : '';
+  var _ts = document.getElementById('rvType'); if (_ts) { _ts.value = '재등록'; _rvTypeChange(); }
   document.getElementById('reactivateOverlay').classList.add('open');
 }
 function closeReactivateModal() {
   document.getElementById('reactivateOverlay').classList.remove('open');
   _reactivateModal = null;
 }
+function _rvTypeChange() {
+  var t = (document.getElementById('rvType') || {}).value;
+  var row = document.getElementById('rvEndDateRow');
+  if (row) row.style.display = (t === '환불') ? 'none' : '';
+}
 function saveReactivateModal() {
   if (!_reactivateModal) return;
-  var val = document.getElementById('rvEndDate').value;
-  if (!val) { showToast('새 유효기간을 입력해 주세요', 'err'); return; }
+  var type = (document.getElementById('rvType') || {}).value || '재등록';
   var m = _reactivateModal, rowIndex = m.rowIndex, keyPhone = m.keyPhone;
-  var fields = {}; fields[m.endCol] = val; fields[m.reCol] = REACTIVATE_RECLASS_VALUE;
   var saveBtn = document.getElementById('rvSaveBtn'); saveBtn.disabled = true;
+
+  // 환불 처리 — 재등록분류='환불'만 쓰고 LOSS 유지(목록 제거 없음). FB260807-121152
+  if (type === '환불') {
+    if (!m.reCol) { showToast('재등록분류 칸을 찾을 수 없습니다', 'err'); saveBtn.disabled = false; return; }
+    var _hov = {}; _hov[m.reCol] = '환불';
+    [(_activeScope === 'ended' ? _activeRows : null), _endedRowsBg].forEach(function(arr){
+      if (!arr) return;
+      var idx = arr.findIndex(function(x){ return x.rowIndex == rowIndex; });
+      if (idx >= 0) arr[idx][m.reCol] = '환불';
+    });
+    // 해당 행의 재등록분류 칸 즉시 갱신
+    var _tr = document.querySelector('#activeBody tr[data-rowindex="' + rowIndex + '"]');
+    if (_tr) { Array.prototype.forEach.call(_tr.querySelectorAll('td[data-col]'), function(td){
+      var c = (td.getAttribute('data-col') || '').replace(/\s/g,'');
+      if (c.indexOf('재등록') >= 0 && c.indexOf('분류') >= 0) td.textContent = '환불';
+    }); }
+    WriteBuffer.enqueue(
+      { action: 'member_active_update', rowIndex: rowIndex, col: m.reCol, value: '환불', keyPhone: keyPhone, rowKey: m.rowKey || '' },
+      { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + m.reCol, label: '환불 처리', who: m.name || '', overlay: _hov }
+    );
+    showToast((m.name || '회원') + '님 환불 처리 완료', 'ok');
+    closeReactivateModal(); saveBtn.disabled = false; return;
+  }
+
+  // 재등록 처리 — 기존 로직 유지
+  var val = document.getElementById('rvEndDate').value;
+  if (!val) { showToast('새 유효기간을 입력해 주세요', 'err'); saveBtn.disabled = false; return; }
+  var fields = {}; fields[m.endCol] = val; fields[m.reCol] = REACTIVATE_RECLASS_VALUE;
   var _ov = {}; _ov[m.endCol] = val; _ov[m.reCol] = REACTIVATE_RECLASS_VALUE;
-  // 낙관적 갱신(기존 셀 편집·종료사유 모달과 동일 철학, 화면 먼저·기록은 WriteBuffer가 뒤에서 재시도) —
-  //   단 이 저장은 값 패치가 아니라 LOSS→유효 '이동'이라, 종료회원 표에서 행을 통째로 빼야 GM이 지시한
-  //   "목록 갱신"이 체감된다(값만 바꾸면 여전히 종료회원 표에 남아 있는 것처럼 보인다).
   [(_activeScope === 'ended' ? _activeRows : null), _endedRowsBg].forEach(function(arr){
     if (!arr) return;
     var idx = arr.findIndex(function(x){ return x.rowIndex == rowIndex; });
@@ -9983,52 +10048,59 @@ function saveLossReasonModal() {
   if (!reason) { showToast('LOSS 사유를 선택해주세요 — 필수입니다', 'err'); return; }
   var rowIndex = _lossModal.rowIndex, keyPhone = _lossModal.keyPhone, rowKey = _lossModal.rowKey || '';
   var saveBtn = document.getElementById('lrSaveBtn'); saveBtn.disabled = true;
-  // 강습(mode='lesson')=lesson_inquiry_update row-level 경로(sport:'' → flat 컬럼) / 멤버십=member_inquiry_update. 2026-07-18 시토(GM요청) 대행.
   var _isLesson = (_lossModal.mode === 'lesson');
+  var _isActiveMember = (_lossModal.mode === 'activemember');   // FB260807-121152 — 미등록사유 직접 편집
+  var _amOverlay = {}; if (_lossModal.col) _amOverlay[_lossModal.col] = reason;
   var _payload = _isLesson
     ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _lossModal.gid, lossReason: reason }
+    : _isActiveMember
+    ? { action: 'member_active_update', rowIndex: rowIndex, col: _lossModal.col, value: reason, keyPhone: keyPhone, rowKey: rowKey }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, lossReason: reason };
-  // 신규 LOSS 전환(회원·강습 공통, 2026-08-05): status 커밋을 여기까지 지연했으므로 status=LOSS 도 같은
-  //   요청에 포함 — 사유 등록 후 카운트(FB260728-141756, 강습도 동일 강제로 확장).
   if (_lossModal.pendingStatusSave) { _payload.status = 'LOSS'; }
   var _t = _isLesson ? _lossModal.t : null;
-  // ★서버 왕복 대기 제거(2026-07-23 GM '저장 누른 속도') — 상태·담당·연락이력은 이미 버퍼를 타는데
-  //   이 모달만 apiPost 로 응답을 기다려 저장 버튼이 몇 초씩 멈춰 있었다. 화면 먼저 반영하고
-  //   실제 기록은 뒤에서 처리한다(실패하면 WriteBuffer 가 배지로 표면화 + 재시도 — 조용한 유실 없음).
   var _who = _lossModal.name || '';
   if (_isLesson) {
     var lr = _lessonFindRow(_t, rowIndex);
     if (lr) {
       lr.lossReason = reason;
-      if (_lossModal.pendingStatusSave) { lr.status = 'LOSS'; }   // 지연된 status 로컬 반영(2026-08-05)
+      if (_lossModal.pendingStatusSave) { lr.status = 'LOSS'; }
     }
+  } else if (_isActiveMember) {
+    var _uc = _lossModal.col;
+    var _ra = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+    if (_ra && _uc) _ra[_uc] = reason;
+    (_endedRowsBg || []).forEach(function(x){ if (x.rowIndex == rowIndex && _uc) x[_uc] = reason; });
   } else {
     var r0 = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
     if (r0) {
       r0.lossReason = reason;
-      if (_lossModal.pendingStatusSave) { r0.status = 'LOSS'; }   // 지연된 status 로컬 반영
+      if (_lossModal.pendingStatusSave) { r0.status = 'LOSS'; }
     }
   }
-  var _overlay = (_lossModal.pendingStatusSave) ? { lossReason: reason, status: 'LOSS' } : { lossReason: reason };
+  var _overlay = _isActiveMember ? _amOverlay
+    : (_lossModal.pendingStatusSave) ? { lossReason: reason, status: 'LOSS' } : { lossReason: reason };
   WriteBuffer.enqueue(_payload, {
-    scope: _isLesson ? 'lesson' : 'member', phoneKey: keyPhone, fieldset: 'lossReason',
-    label: 'LOSS 사유', who: _who, overlay: _overlay
+    scope: _isLesson ? 'lesson' : (_isActiveMember ? 'active' : 'member'),
+    phoneKey: keyPhone,
+    fieldset: _isActiveMember ? ('cell:' + (_lossModal.col || '미등록사유')) : 'lossReason',
+    label: _isActiveMember ? '미등록사유' : 'LOSS 사유',
+    who: _who, overlay: _overlay
   });
-  showToast('LOSS 사유 저장', 'ok');
-  // ★저장 확정 — close의 '취소 시 원복' 분기를 여기서 끈다(2026-08-05). 안 끄면 방금 로컬에 반영한
-  //   status='LOSS'를 closeLossReasonModal이 그대로 prevStatus로 되돌려버린다(같은 _lossModal 참조 공유).
+  showToast(_isActiveMember ? '미등록사유 저장' : 'LOSS 사유 저장', 'ok');
   var _wasPending = _isLesson && _lossModal.pendingStatusSave;
   var _tt = _t;
   _lossModal.pendingStatusSave = false;
   closeLossReasonModal();
   saveBtn.disabled = false;
-  if (_isLesson) {
+  if (_isActiveMember) {
+    // 셀 즉시 갱신 — 표 재렌더 없음
+    var _uTd = document.querySelector('td[data-unregreason="' + rowIndex + '"]');
+    if (_uTd) { _uTd.textContent = reason; _uTd.style.color = 'var(--text)'; _uTd.classList.remove('churn-reason-empty'); }
+  } else if (_isLesson) {
     try { lessonLossRender(_tt); } catch (e) {}
-    if (_wasPending) {   // 신규 LOSS 전환이었으면 지연해 둔 버킷 재렌더도 이제 실행(lessonStatusChange와 동일 마무리)
+    if (_wasPending) {
       try { _lessonUpdateBucketCounts(_tt); lessonRenderChips(_tt); lessonRender(_tt); lessonWaitRender(_tt); } catch (e) {}
     }
-    // 오늘 할 일 '이탈사유 미기록' 폐루프 — 회원 종료사유 모달의 renderTodayActionPanel() 재계산과 동일 패턴.
-    //   저장했으면 이 행은 lossReason이 채워졌으니 목록에서 바로 빠지고 다음 오래된 건이 올라온다.
     try { renderTodayActionPanel(); } catch (e) {}
   }
   else if (_tabLoaded.db) { renderDbTable(); }
