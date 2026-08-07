@@ -6803,7 +6803,8 @@ function _hasRealReply_(memo) {
 
   // ─── (일회성) 오넛티 테스트 접수건 물리 삭제 — 2026-08-07 GM 라이브 발견 ───
   //   ★행번호 금지(INC-020 재발방지) — id(접수번호) 정확일치로만 행을 잡는다.
-  //   ★삭제 전 성함 정확일치 필수('[테스트] 확인용'이 아니면 name-mismatch로 거부, 삭제 안 함).
+  //   ★삭제 전 성함 정확일치 필수('오넛티검증테스트-지워주세요'가 아니면 name-mismatch로 거부, 삭제 안 함).
+  //   ★GM 정정(2026-08-07): 최초 지시값('[테스트] 확인용')이 오기 — 실제값으로 교체.
   //   guard key로 오호출 차단. dryRun 기본(값 전량 반환) — key + dryRun:0 명시해야 실제 삭제.
   //   사용 완료 후 이 액션 블록은 제거한다(a28b683f3 선례와 동일 운용).
   if (action === 'ohnutti_test_row_delete_20260807') {
@@ -6820,7 +6821,7 @@ function _hasRealReply_(memo) {
     var _tdINm = _findCol_(_tdHdr, ['성함']);
     var _tdRowVals = _tdSh.getRange(_tdFound.row, 1, 1, _tdSh.getLastColumn()).getValues()[0];
     var _tdName = _tdINm >= 0 ? String(_tdRowVals[_tdINm] || '').trim() : '';
-    if (_tdName !== '[테스트] 확인용') return _json({ ok: false, error: 'name-mismatch', name: _tdName });
+    if (_tdName !== '오넛티검증테스트-지워주세요') return _json({ ok: false, error: 'name-mismatch', name: _tdName });
     if (_tdDry) return _json({ ok: true, dryRun: true, row: _tdFound.row, name: _tdName, values: _tdRowVals });
     _tdSh.deleteRow(_tdFound.row);
     SpreadsheetApp.flush();
