@@ -29,6 +29,7 @@ except Exception:
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
 PROFILE_DIR = ROOT / "profiles" / "wordpress"
+SESSION_STATE_FILE = PROFILE_DIR / "wp_session.json"  # 인증정보 — .gitignore profiles/* 로 커밋 제외됨
 
 # 주의: wellperion.com 은 HTTPS 미동작(SSL 연결 실패). HTTP 전용 사이트 → http:// 고정.
 WP_ADMIN_URL = "http://wellperion.com/wp/wp-admin/"
@@ -52,6 +53,17 @@ async def _launch(async_playwright):
         args=["--start-maximized"],
         no_viewport=True,
     )
+    # Remember Me 미체크 시 세션쿠키는 프로필에 안 남음 — 별도 저장한 쿠키가 있으면 복원
+    if SESSION_STATE_FILE.exists():
+        try:
+            import json
+            state = json.loads(SESSION_STATE_FILE.read_text(encoding="utf-8"))
+            cookies = state.get("cookies") or []
+            if cookies:
+                await ctx.add_cookies(cookies)
+                print(f"[INFO] 저장된 세션 쿠키 복원함 ({len(cookies)}개)")
+        except Exception as e:
+            print(f"[WARN] 세션 쿠키 파일 복원 실패(무시): {e}")
     return p, ctx
 
 
@@ -75,7 +87,19 @@ async def run_setup() -> int:
         await page.goto(WP_LOGIN_URL, wait_until="domcontentloaded", timeout=40_000)
     except Exception as e:
         print(f"[WARN] 로그인 페이지 진입 경고(무시 가능): {e}")
+    # 「로그인 상태 유지」 체크 — 안 하면 세션쿠키만 발급돼 브라우저 닫으면 사라짐
+    try:
+        checked = await page.evaluate(
+            "() => { const c=document.querySelector('#rememberme'); if(c && !c.checked){ c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); return true; } return !!(c && c.checked); }"
+        )
+        if checked:
+            print("[INFO] 로그인 상태 유지 체크함")
+        else:
+            print("[WARN] 체크박스 못 찾음 — 수동으로 체크해 주세요")
+    except Exception as e:
+        print(f"[WARN] 로그인 상태 유지 체크 시도 실패(무시): {e}")
     print("[INFO] 브라우저에서 워드프레스 관리자 로그인을 완료하세요 — 로그인 감지 시 자동 저장됩니다.")
+    print("[INFO] 로그인 화면에서 '로그인 상태 유지'를 체크한 뒤 로그인해 주세요.")
     print("[INFO] (Enter 불필요. 최대 10분 대기, 로그인 끝나면 자동 마무리)")
 
     has_session = False
@@ -92,7 +116,16 @@ async def run_setup() -> int:
         waited += 3
     if has_session:
         await asyncio.sleep(2)
-        print("[INFO] 워드프레스 세션 확인 — 저장 완료 (값 비공개: ****)")
+        print("[INFO] 워드프레스 세션 확인됨 — 쿠키 파일 저장 시도")
+        try:
+            await ctx.storage_state(path=str(SESSION_STATE_FILE))
+        except Exception as e:
+            print(f"[WARN] 세션 쿠키 파일 저장 실패: {e}")
+        # 디스크에 실제로 남았는지 확인 후에만 "저장 완료" 표기 (거짓 성공 방지)
+        if SESSION_STATE_FILE.exists() and SESSION_STATE_FILE.stat().st_size > 0:
+            print("[INFO] 워드프레스 세션 — 디스크 저장 완료 확인 (값 비공개: ****)")
+        else:
+            print("[WARN] 로그인은 됐으나 디스크 저장은 확인 못 함 — check 로 확인하세요")
     else:
         print("[WARN] 10분 내 로그인 미감지 — 다시 실행하거나 GM 확인 필요.")
     await ctx.close()
