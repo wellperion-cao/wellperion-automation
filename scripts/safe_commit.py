@@ -69,9 +69,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 # 저장소 루트 = 이 스크립트(scripts/)의 부모 — 작업트리를 어느 PC·경로에 클론했든 동일하게 동작
@@ -1050,7 +1052,56 @@ def safe_commit(
             )
         except Exception as exc:  # push 실패는 커밋을 되돌리지 않는다(fail-open)
             print(f"[WARN] push 실패(커밋은 유지 — 다음 워처가 올림): {type(exc).__name__}: {exc}")
+        _reply_to_feedback_in_message(message)
     return result
+
+
+# ── 고치면 신고한 사람에게 회신이 따라간다 (GM 지적 2026-08-07 · 시토) ─────────────
+# GM: "FB260806-192852 이건은 바로 처리 가능했을 것 같은데?" — 실제로 접수 15분 만에 고쳐
+# 라이브까지 나갔는데, 신고자 화면엔 하루가 지나도 '확인중'이었고 회신도 "메모를 아직 남기지
+# 않았다"는 빈 문구였다. **고친 사람이 회신을 안 채운 것**이 진짜 결함이다(받음→끝냄 짝).
+# 사람 기억에 맡기면 또 빠진다(약속 L02) → 모든 커밋이 지나는 이 관문에 얹는다(L21).
+#   커밋 메시지에 접수ID(FB260806-192852 꼴)가 있으면 그 메시지를 그대로 회신으로 적고
+#   처리완료로 닫는다. 문구를 새로 지어내지 않는다 — 고친 사람이 쓴 커밋 제목이 곧 회신이다.
+_FEEDBACK_ID_RE = re.compile(r"\bFB\d{6}-\d{6}\b")
+
+
+def feedback_ids_in(message: str) -> list[str]:
+    """커밋 메시지에서 실무진 피드백 접수ID를 뽑는다(중복 제거·등장순)."""
+    seen, out = set(), []
+    for m in _FEEDBACK_ID_RE.findall(message or ""):
+        if m not in seen:
+            seen.add(m)
+            out.append(m)
+    return out
+
+
+def feedback_reply_from(message: str, today: str) -> str:
+    """커밋 메시지 → 신고자에게 보낼 회신 한 줄. 첫 줄(제목)만 쓰고 접수ID·타입 접두는 지운다."""
+    head = (message or "").strip().splitlines()[0] if (message or "").strip() else ""
+    head = _FEEDBACK_ID_RE.sub("", head)
+    head = re.sub(r"^\s*\w+(\([^)]*\))?\s*:\s*", "", head)      # 'fix(cpo): ' 같은 접두 제거
+    head = head.strip(" -—·:")
+    return (f"[{today} 처리완료] {head}. 확인해 보시고 아직 그대로면 다시 남겨주세요."
+            if head else f"[{today} 처리완료] 요청하신 내용을 반영했습니다.")
+
+
+def _reply_to_feedback_in_message(message: str) -> None:
+    """커밋 메시지에 접수ID가 있으면 그 피드백을 처리완료로 닫고 회신을 채운다.
+    실패해도 커밋·push 를 되돌리지 않는다(fail-open — 회신 실패가 배포를 막으면 안 된다)."""
+    ids = feedback_ids_in(message)
+    if not ids:
+        return
+    try:
+        sys.path.insert(0, str(_SCRIPTS_DIR / "collectors"))
+        from cpo_staff_feedback_watch import push_feedback_updates  # type: ignore
+        today = datetime.now().strftime("%Y-%m-%d")
+        memo = feedback_reply_from(message, today)
+        _, err = push_feedback_updates(
+            [{"id": i, "status": "처리완료", "memo": memo} for i in ids])
+        print(f"[피드백 회신] {', '.join(ids)} — " + ("실패: " + err if err else "처리완료로 닫음"))
+    except Exception as exc:
+        print(f"[WARN] 피드백 회신 건너뜀: {type(exc).__name__}: {exc}")
 
 
 def _repair_batch_line_endings(paths: list[str]) -> list[str]:
