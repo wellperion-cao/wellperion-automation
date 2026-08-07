@@ -143,7 +143,8 @@
   .r-note-fold summary::-webkit-details-marker{display:none;}
   .r-note-fold summary::before{content:'▸ '; }
   .r-note-fold[open] summary::before{content:'▾ '; }
-  .r-note-fold .r-note{margin-top:6px; padding-left:10px; border-left:2px solid var(--border);}
+  .r-note-fold .r-note{margin-top:6px; padding-left:10px; border-left:2px solid var(--border);
+    overflow-wrap:anywhere; word-break:break-word; max-height:40vh; overflow-y:auto;}
   /* 👑🤝 회장님 지시사항 + 브로제이 업무분장 — 요약 토글 2개 나란히(GM 지시 2026-08-01: "핵심과제 상세
      윗칸에 2개 배치"). r-note-fold(위)를 그대로 재사용 — 새 접힘 컴포넌트 만들지 않음. 박스 톤만
      .broj-entry(아래)에서 차용. 인쇄는 화면 전용(아래 @media print에서 숨김 — 페이지 수 불변). */
@@ -1130,7 +1131,7 @@
          일관화·게이트 비번 1531 통일): table.rpt.exec(min-width:0)로 카드 내부 표 스크롤 제거·catName()으로
          "[n] 이름" 표기에서 번호를 뗀 이름만 표시(회장님 칸도 CHAIRMAN_ITEMS.cat 동일 9종 체계로 분류)·
          브로제이는 배지+링크 한 줄로 축소(loadBrojEntry 본문 렌더 제거)·대표님/GM 자세히보기는 각각
-         전용 페이지(coo/chairman/대표님_지시사항.html, coo/chairman/김남욱GM_업무.html — 회장님_지시사항.html
+         전용 페이지(coo/chairman/대표님_지시사항.html, coo/chairman/GM업무.html — 회장님_지시사항.html
          과 동일 CSS·구조, 같은 담당자/상태/대표님보고건 판정을 재사용)로 분리(舊 업무 현황 SSOT.html 공유
          링크 폐기 — 그 파일은 시로/CHRO 소유라 손대지 않음, 링크만 이동).
          ★2026-08-05 3차 GM 지시("구매 관련은 시뽀건이라 건드리지 말고, 김남욱GM 업무 진행건은 업무
@@ -1163,7 +1164,7 @@
     <section class="blk sum-hero" id="report-hero-wrap" data-blkid="detail">
       <h2 class="sec">📋 이달 핵심 과제 상세 <span class="lvb lvb-half" title="일부 목표는 실무 SSOT·채용공고·연동 배 상태에서 자동 연동(🔄 자동 배지 병기·배9678), 나머지는 수동 관리 — 사람 진척은 시우 검수로 보정">🟠 반반</span> <span class="stag">요약 + 신규·이월 상세 · 🔄 자동연동 병기</span></h2>
       <div id="report-area"><div class="board-status">한눈 요약을 계산하는 중…</div></div>
-      <div style="margin:10px 0 0;text-align:right;"><a class="tg-link" href="coo/chairman/김남욱GM_업무.html" target="_blank">경영 보고·GM 업무 현황 열기 ▸</a></div>
+      <div style="margin:10px 0 0;text-align:right;"><a class="tg-link" href="coo/chairman/GM업무.html" target="_blank">경영 보고·GM 업무 현황 열기 ▸</a></div>
       <div id="obj-board" style="margin-top:16px;"><div class="board-status">월간 계획 정본을 불러오는 중…</div></div>
     </section>
 
@@ -1172,7 +1173,7 @@
 
 </div>
 
-<!-- 👤 김남욱GM 칸 소스(status/monthly_ops_plan.json GM 직접 건 판정) — coo/chairman/김남욱GM_업무.html과 공용(약속 L01). -->
+<!-- 👤 김남욱GM 칸 소스(status/monthly_ops_plan.json GM 직접 건 판정) — coo/chairman/GM업무.html과 공용(약속 L01). -->
 <script src="coo/chairman/_gm_direct_tasks.js"></script>
 <script src="coo/chairman/_chairman_items.js"></script>
 <script>
@@ -3675,7 +3676,7 @@
       return;
     }
     // 토글은 보기 전용(업무명·일정 둘뿐) — 건별 보고 필요/완료 버튼은 2026-08-05 GM 지시로
-    // 자세히보기 페이지(대표님_지시사항.html·김남욱GM_업무.html, 통합 보고+체크)로 옮겼다(중복 UI 없음).
+    // 자세히보기 페이지(대표님_지시사항.html·GM업무.html, 통합 보고+체크)로 옮겼다(중복 UI 없음).
     // 카테고리는 별도 칸이 아니라 업무명 옆 소괄호로 붙인다(GM 지시 2026-08-05 — 칸이 하나 줄어 좁은
     // 3열 카드에서 제목이 덜 접힌다). 카드 3종(회장님·대표님·GM) 공통 — 이 함수 하나가 셋을 다 그린다.
     var rowsHtml = items.map(function(it){
@@ -3719,7 +3720,7 @@
     // 카드 3종 통일(renderExecCard) — 카테고리 칸엔 위 9종 체계 분류를, 일정 칸엔 기존 when 텍스트를
     // 그대로 싣는다(실제 시작·종료일이 없는 정적 항목이라 26.8.1~26.8.30 형식을 억지로 만들지 않음).
     var items = CHAIRMAN_ITEMS.map(function(it){ return {title: it.title, category: it.cat, schedule: it.when}; });
-    renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/김남욱GM_업무.html#sec-chairman', '자세히 보기 →');
+    renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/GM업무.html#sec-chairman', '자세히 보기 →');
   }
   // 👤 김남욱GM 업무 진행건 / 🤵 대표님 보고건 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과
   // 재사용·새 GAS 호출 0)에서 담당자=김남욱 + 상태(진행중·보류)만 추린 뒤(GM 지시 2026-08-05 — 애초 필터가
@@ -3733,8 +3734,8 @@
   // 자세히보기 대상(2026-08-05 GM 지시로 전용 페이지 2종 신설 — 舊 업무 현황 SSOT.html 공유 링크 폐기,
   // 그 파일은 시로/CHRO 소유라 안 건드림). 두 페이지 모두 회장님_지시사항.html과 동일 CSS·구조이고 이
   // 페이지와 같은 담당자=김남욱+상태(진행중·보류)+대표님 보고건 표식 판정을 그대로 재사용한다.
-  var CEO_DETAIL_HREF = 'coo/chairman/김남욱GM_업무.html#sec-ceo';   // 경영진 통합 자세히보기(3섹션) — GM 지시 2026-08-06
-  var GM_DETAIL_HREF = 'coo/chairman/김남욱GM_업무.html#sec-gm';    // 같은 통합 화면의 GM 섹션
+  var CEO_DETAIL_HREF = 'coo/chairman/GM업무.html#sec-ceo';   // 경영진 통합 자세히보기(3섹션) — GM 지시 2026-08-06
+  var GM_DETAIL_HREF = 'coo/chairman/GM업무.html#sec-gm';    // 같은 통합 화면의 GM 섹션
   function renderOwnerTodoFold(rows, badgeId, bodyId, wantCeoRows, emptyMsg, detailHref, detailLabel, linkNote){
     if(!rows){ renderExecCard(badgeId, bodyId, null, '', detailHref, detailLabel, linkNote); return; }
     var filtered = rows.filter(function(r){
@@ -3765,7 +3766,7 @@
   // 👤 김남욱GM 칸 — 2026-08-05 GM 지시로 소스 전환: 업무 시트(todo_list) 대신 status/monthly_ops_plan.json
   // 해당월 objectives 중 제목에 "(GM 직접)"이 붙은 건만(구매 관련은 시뽀 건이라 이 목록에서 제외). 대표님
   // 칸(위 renderGmFold)과 서로 다른 소스를 쓰는 것이 GM 지시에 따른 의도된 분리다. 판정·카테고리 분류 로직은
-  // coo/chairman/_gm_direct_tasks.js 하나뿐(김남욱GM_업무.html과 공용·복제 없음, 약속 L01).
+  // coo/chairman/_gm_direct_tasks.js 하나뿐(GM업무.html과 공용·복제 없음, 약속 L01).
   function renderGmDirectFold(){
     if(!_data || !window.WellperionGmDirect){ renderExecCard('gm-fold-badge', 'gm-fold-body', null, '', GM_DETAIL_HREF, '자세히 보기 →'); return; }
     var now = new Date();
@@ -3777,7 +3778,7 @@
   }
   // ── 🔔 건별 「보고 필요」/「보고 완료」 버튼은 2026-08-05 2차 GM 지시로 이 토글에서 완전히 뺐다(토글은
   //    보기 전용) — "1건씩 보고가 아니라 자세히보기 들어가서" 통합 보고+체크로 옮겼다. 그 로직은
-  //    coo/chairman/_owner_directive.js(대표님_지시사항.html·김남욱GM_업무.html 공용)에만 있다(복제 없음,
+  //    coo/chairman/_owner_directive.js(대표님_지시사항.html·GM업무.html 공용)에만 있다(복제 없음,
   //    약속 L01). 이 파일에는 더 이상 gm1ReportNeeded/gm1ReportDone 이 없다(호출부도 함께 제거 — 죽은
   //    코드 방치 금지). ──
   /* ── (구) 전체 체크보드 렌더 로직은 여기 있었다 — coo/brojay/브로제이_업무분장.html 로 그대로 이관(사본 아님, 본문 삭제). ── */

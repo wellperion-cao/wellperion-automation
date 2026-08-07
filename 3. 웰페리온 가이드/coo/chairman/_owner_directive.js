@@ -1,5 +1,5 @@
 /*!
- * 대표님_지시사항.html · 김남욱GM_업무.html 공용 로직 (2026-08-05 GM 지시 — "판정·문안 생성 로직을 복제하지
+ * 대표님_지시사항.html · GM업무.html 공용 로직 (2026-08-05 GM 지시 — "판정·문안 생성 로직을 복제하지
  * 마라", "일관성이 핵심"). 월간운영계획.html 의 readWorkApproval()/renderOwnerTodoFold() 와 같은 판정
  * (담당자=김남욱 + 상태 진행중·보류 + 내용칸 "대표님 보고건" 포함여부)을 그대로 재사용한다 — 규칙이 바뀌면
  * 이 파일 + 월간운영계획.html 두 곳을 함께 고친다(약속 L01, GAS·저장키 신설 없음 — 약속 L21).
@@ -274,7 +274,7 @@
     var elChDoneSum = document.getElementById('chairman-done-sum-body');
 
     // 자료 링크(docs) — 결재건·시안·A3 정리본이 실재하는 항목만 제목 옆에 그린다(2026-08-06 GM 지시).
-    // 클래스는 doc-link 그대로 재사용(김남욱GM_업무.html .item .doc-link 스타일과 동일 클래스 — 새 클래스 없음).
+    // 클래스는 doc-link 그대로 재사용(GM업무.html .item .doc-link 스타일과 동일 클래스 — 새 클래스 없음).
     function chDocs(it) {
       if (!it.docs || !it.docs.length) return '';
       return it.docs.map(function (d) {
@@ -344,7 +344,7 @@
     load();
   }
 
-  // 보고 대기/완료 판정은 이 파일 하나만 갖는다 — 읽는 쪽(김남욱GM_업무.html 인쇄·건수)은 이 두 함수를
+  // 보고 대기/완료 판정은 이 파일 하나만 갖는다 — 읽는 쪽(GM업무.html 인쇄·건수)은 이 두 함수를
   // 쓴다(약속 L01 · 판정 복제 금지). 상태 파일 조회 전에는 전부 '대기'로 나온다.
   window.OwnerDirective = { mount: mount, chairmanPending: chairmanPending, chairmanDone: chairmanDone, chairmanDate: chDate };
 })();

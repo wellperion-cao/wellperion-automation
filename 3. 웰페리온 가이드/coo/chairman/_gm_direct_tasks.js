@@ -1,5 +1,5 @@
 /*!
- * _gm_direct_tasks.js · 김남욱GM_업무.html · 월간운영계획.html(GM 토글) 공용 소스 (2026-08-05 GM 지시 —
+ * _gm_direct_tasks.js · GM업무.html · 월간운영계획.html(GM 토글) 공용 소스 (2026-08-05 GM 지시 —
  * "구매 관련은 시뽀 건이라 건드리지 말고, 김남욱GM 업무 진행건은 업무 시트에서 가져올 생각 말고 별도로
  * 만들어" — 정본을 업무 시트(todo_list)에서 status/monthly_ops_plan.json 해당월 목표로 전환). 대표님 칸은
  * 여전히 업무 시트(todo_list)를 그대로 쓴다(월간운영계획.html readWorkApproval() 참조) — 두 칸이 서로 다른
