@@ -558,7 +558,7 @@
         return '<a class="doc-link" href="' + esc(v) + '" target="_blank" rel="noopener">' + label + '</a>';
       }
       // 오넛티 접수현황 버튼 — 이 목표(id 2026-08-24) 카드에만(GM 지시 2026-08-07). 기존 doc-link 클래스 재사용.
-      function ohnutiLink(id) {
+      function ohnuttiLink(id) {
         if (id !== '2026-08-24') return '';
         return '<a class="doc-link" href="../../cpo/member/오넛티_접수현황.html" target="_blank" rel="noopener">🎁 오넛티 접수현황</a>';
       }
@@ -605,7 +605,7 @@
         (sp.logs.length ? '<details class="fold"><summary>경과 기록 ' + sp.logs.length + '건</summary><div class="nb">' +
             sp.logs.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></details>' : '') +
         docLink(it.doc) +
-        ohnutiLink(it.id) +
+        ohnuttiLink(it.id) +
         scoreDraftLink(it.id) +
         '</div>';
     }).join('');

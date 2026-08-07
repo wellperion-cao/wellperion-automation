@@ -13,7 +13,7 @@
     → 같은 브라우저에서 다시 열면 안 물어본다. 틀린 비밀번호 안내도 gate.js 커튼이 그대로 처리한다.
   · 게이트 통과 시 gate.js 가 전역에 심어두는 window.WELP_GATE_PW(게이트 비밀번호)를 그대로 백엔드 조회 코드로 쓴다 —
     코드를 담을 별도 저장소를 새로 만들지 않는다(기존 게이트와 같은 자리 = sessionStorage).
-  · 백엔드(.deploy-funnel-v2/Survey.js): action=ohnuti_team_list — 접속코드 필요(ScriptProperties OHNUTI_ACCESS_CODE,
+  · 백엔드(.deploy-funnel-v2/Survey.js): action=ohnutti_team_list — 접속코드 필요(ScriptProperties OHNUTTI_ACCESS_CODE,
     미설정이면 항상 거부). 응답 rows: id/name/qty/method/wantDate/address/status, stats: cap/confirmed/pending/waiting/remaining/rate.
     연락처는 서버가 아예 담아 보내지 않는다. 성함은 서버가 이미 첫 글자만 보낸다(예: 김○○) — 화면에서 추가로 가리지 않는다.
   · 삭제·수정 기능 없음. 보기 전용.
@@ -69,7 +69,7 @@ table.otbl tr:last-child td{border-bottom:none}
 <div class="wrap">
 
   <div class="brand">
-    <p class="brand-eyebrow">Wellperion X Ohnuti</p>
+    <p class="brand-eyebrow">Wellperion X Ohnutti</p>
     <h1>추석 선물세트 접수현황</h1>
     <p>웰페리온과 오넛티 추석 선물세트 프로젝트 접수 현황입니다.</p>
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
@@ -147,7 +147,7 @@ table.otbl tr:last-child td{border-bottom:none}
     fetch(GAS_URL, {
       method: 'POST', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'ohnuti_team_list', code: code })
+      body: JSON.stringify({ action: 'ohnutti_team_list', code: code })
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
