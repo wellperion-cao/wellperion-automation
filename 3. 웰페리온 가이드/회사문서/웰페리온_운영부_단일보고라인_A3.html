@@ -62,6 +62,14 @@
 
   .foot{margin-top:7px; padding-top:4px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
 
+  .cl-wrap{display:grid; grid-template-columns:repeat(3,1fr); gap:0 16px;}
+  .cl-wrap + .cl-wrap{margin-top:5px;}
+  .cl-h{font-weight:800; font-size:13px; margin-bottom:3px; color:var(--accent);}
+  ul.cl{list-style:none; margin:0; padding:0;}
+  ul.cl li{position:relative; padding-left:16px; margin-bottom:3px; font-size:12px; line-height:1.3;}
+  ul.cl li:before{content:"☐"; position:absolute; left:0; top:0; font-size:13px; line-height:1.2;}
+  .cl-line{border-bottom:1px solid var(--line); height:15px; margin-bottom:4px;}
+
   @media print{
     body{background:#fff;}
     .sheet{max-width:none; padding:0;}
@@ -94,7 +102,7 @@
 
   <div class="lede">
     운영부의 지시와 보고가 <em>여러 갈래로 흩어져</em> 있었습니다.
-    앞으로는 <em>이경연 실장 한 곳</em>을 거칩니다 — 실장이 받아 매니저에게 나누고 진행을 관리합니다.
+    앞으로는 <em>이경연 실장 한 곳</em>을 거쳐 매니저에게 나눕니다.
   </div>
 
   <div class="flow">
@@ -112,8 +120,7 @@
       <tr><td class="who">경영진 전달사항</td><td>오너</td><td>회장님 · 대표님에게서 내려온 건</td></tr>
     </table>
     <div class="good" style="margin-top:6px;">
-      세 갈래 모두 <b>실장이 받아 매니저에게 분배</b>합니다. 실장이 전부 직접 처리하는 것이 아닙니다 &mdash;
-      매니저를 활용하는 것이 속도와 완성도를 같이 잡는 방법입니다.
+      세 갈래 모두 <b>실장이 받아 매니저에게 분배</b>합니다. 실장이 전부 직접 처리하지 않습니다.
     </div>
   </div>
 
@@ -184,6 +191,55 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <div class="blk" style="margin-top:7px;">
+    <h2 class="big">6. 미팅 체크리스트 &mdash; 확인 항목</h2>
+    <div class="cl-wrap">
+      <div>
+        <div class="cl-h">A. 오늘 요청드린 것 (회신 확인)</div>
+        <ul class="cl">
+          <li>카카오톡 방 정리 &mdash; 여러 방으로 나뉜 것 정리 요청 (10:40 발송)</li>
+          <li>브로제이 부서별 준비 항목 &mdash; 전체 38건 중 체크 1건(3%), 4개 부서 0% &mdash; '안 한 것'인지 '체크만 안 한 것'인지 확인 (10:48 발송)</li>
+          <li>오넛티 팝업 담당 리드 추천 (12:52 발송)</li>
+          <li>결재 2건 &mdash; 동부이촌동 커뮤니티 제휴광고 · 브로제이 단말기 3대 (10:53 발송, 나우열M 앞)</li>
+        </ul>
+      </div>
+      <div>
+        <div class="cl-h">B. 8/11(화) 브로제이 준비</div>
+        <ul class="cl">
+          <li>14:00 스마트 락커 이용방법 교육 &mdash; 교육 대상 · 인원 정리</li>
+          <li>현장작업 4건 &mdash; 데일리락커 셋업 · 키패스 라이트 위치 · 자동 제어 · 얼굴인증 자동문 속도</li>
+          <li>오토티업 제어 설치 · 작동 테스트 &mdash; 시설부 확인 필요</li>
+          <li>프로모션 조건 &mdash; 설치 완료일 기준 2일 이내 거래, 8/11 이후 이틀이 기한</li>
+        </ul>
+      </div>
+      <div>
+        <div class="cl-h">C. 운영부 업무 현황 (오늘 실측)</div>
+        <ul class="cl">
+          <li>30일 넘게 안 움직인 일 19건, 최장 58일 &mdash; 리셉션 무인화 전환 · 리셉션 매뉴얼 구축 · 야외 테라스 활용 · 목욕탕 허가건(폐기 처리) 등</li>
+          <li>종합접수처 열린 건 29건 중 분실물 15건 담당자 공란, 최장 31일</li>
+          <li>각 건을 완료 · 폐기 · 새 기한 셋 중 하나로 정리</li>
+        </ul>
+      </div>
+    </div>
+    <div class="cl-wrap">
+      <div>
+        <div class="cl-h">D. 앞으로의 소통 방식 (오늘 확정)</div>
+        <ul class="cl">
+          <li>★중간관리자 방 = 소통 창구 / ★운영부 방 = 공유 전용</li>
+          <li>법정점검은 시설부 소장님께 여쭙는 것으로 이동</li>
+          <li>운영부 지시 · 보고는 실장 한 곳을 거침</li>
+          <li>업무 지시 3갈래 &mdash; 종합접수처(회원) · 업무 SSOT(직원) · 경영진 전달사항(오너)</li>
+        </ul>
+      </div>
+      <div style="grid-column: span 2;">
+        <div class="cl-h">E. 결정 기록</div>
+        <div class="cl-line"></div>
+        <div class="cl-line"></div>
+        <div class="cl-line"></div>
+      </div>
     </div>
   </div>
 
