@@ -22,7 +22,14 @@ function ok(name, cond, extra) {
 wpLdyApplyStored(null);
 ok('§8 품목 8종 시딩', LAUNDRY_DATA.master.length === 8, LAUNDRY_DATA.master.length);
 ok('§8 바스타월 하한 70', LAUNDRY_DATA.master[0].lowLimit === 70);
+
+// 기초재고 미입력 판정 — 안 넣은 품목은 사용량이 계산되지 않으므로 화면이 먼저 알려야 한다
+ok('기초재고 전부 미입력 = 8품목', wpLdyOpeningMissing().length === 8, wpLdyOpeningMissing().length);
 LAUNDRY_DATA.openingStock = { bath: 300 };
+ok('한 품목 입력 후 미입력 7', wpLdyOpeningMissing().length === 7, wpLdyOpeningMissing().length);
+LAUNDRY_DATA.openingStock.face = 0;
+ok('0 도 입력한 값으로 친다(미입력 6)', wpLdyOpeningMissing().length === 6, wpLdyOpeningMissing().length);
+delete LAUNDRY_DATA.openingStock.face;
 
 // 1. 8/1 기초재고 → 입고·마감 기입 → 사용량이 §6 수식과 일치
 LAUNDRY_DATA.daily['2026-08-01'] = { bath: { in: 260, end: 280 } };

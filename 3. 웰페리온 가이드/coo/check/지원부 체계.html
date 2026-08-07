@@ -1794,6 +1794,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .wp-ldy__bars>div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
   .wp-ldy__bar-fill{width:100%;background:var(--accent,#4ec4c4);border-radius:3px 3px 0 0;min-height:2px}
   .wp-ldy__hint{font-size:12px;color:var(--dim);margin:6px 0 10px;line-height:1.6}
+  .wp-ldy__opengrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+  .wp-ldy__openitem{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+  .wp-ldy__openitem.wp-ldy__openitem--empty{border-color:rgba(232,163,61,0.55)}
+  .wp-ldy__openitem span{font-size:12.5px;font-weight:650}
+  .wp-ldy__notice{border:1px solid rgba(232,163,61,0.55);background:rgba(232,163,61,0.12);border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   @media(max-width:430px){
     .wp-ldy__tbl th,.wp-ldy__tbl td{padding:5px 4px;font-size:12px}
     .wp-ldy__in{width:62px;padding:5px 4px}
@@ -1809,6 +1814,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
     <!-- ① 오늘 점검 -->
     <div id="wpLdyView-today">
+      <!-- 기초재고가 비어 있으면 사용량이 계산되지 않는다 — 여기서 먼저 알린다(GM 요청 2026-08-07) -->
+      <div id="wpLdyOpeningWarn"></div>
       <div class="wp-ldy__bar">
         <input type="date" id="wpLdyDate" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderToday()">
         <span id="wpLdyDow" class="wp-ldy__k"></span>
@@ -1852,9 +1859,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySaveLedger()">저장</button>
         <span id="wpLdyLedgerState" class="wp-ldy__k"></span>
       </div>
-      <div class="wp-ldy__k" style="margin-bottom:4px">품목 마스터 · 기초재고 · 총 재고 현황</div>
+      <!-- 기초재고 = 시작 시점 실사값. 표 안에 섞으면 안 보인다고 해 따로 뺐다(GM 요청 2026-08-07) -->
+      <div class="wp-ldy__card" style="flex:1 1 100%;margin-bottom:14px">
+        <div class="wp-ldy__k">📦 기초재고 — 시작 시점에 실제로 가지고 있는 수량 (한 번만 입력)</div>
+        <div class="wp-ldy__hint" style="margin:4px 0 10px">이 값이 없으면 사용량·로스가 계산되지 않습니다. 세는 대로 채워 넣으면 그 품목부터 계산이 시작됩니다. 다음 달부터는 자동으로 이월되므로 다시 넣지 않아도 됩니다.</div>
+        <div id="wpLdyOpeningGrid" class="wp-ldy__opengrid"></div>
+      </div>
+      <div class="wp-ldy__k" style="margin-bottom:4px">품목 마스터 · 총 재고 현황</div>
       <table class="wp-ldy__tbl">
-        <thead><tr><th style="text-align:left">품목</th><th>단가</th><th>마감 하한</th><th>사용</th><th>기초재고</th><th>총 투입 누계</th><th>현재 순환 추정</th><th>실사값</th></tr></thead>
+        <thead><tr><th style="text-align:left">품목</th><th>단가</th><th>마감 하한</th><th>사용</th><th>총 투입 누계</th><th>현재 순환 추정</th><th>실사값</th></tr></thead>
         <tbody id="wpLdyLedgerBody"></tbody>
       </table>
       <div class="wp-ldy__k" style="margin:14px 0 4px">신품 투입 이력</div>
@@ -6642,6 +6655,35 @@ function wpLdyRenderAll(){
   else wpLdyRenderLedger();
   wpLdyMarkTodo();
 }
+/* 기초재고가 아직 안 들어온 품목 목록. 이 값이 없으면 사용량 계산이 시작되지 않는다. */
+function wpLdyOpeningMissing(){
+  return wpLdyItems().filter(function(m){
+    var v = LAUNDRY_DATA.openingStock[m.id];
+    return v == null || v === '';
+  });
+}
+/* 기초재고 전용 입력칸 — 원장 표와 분리(GM 요청 2026-08-07) */
+function wpLdyRenderOpening(){
+  var grid = document.getElementById('wpLdyOpeningGrid'); if (!grid) return;
+  grid.innerHTML = wpLdyItems().map(function(m){
+    var v = LAUNDRY_DATA.openingStock[m.id];
+    var empty = (v == null || v === '');
+    return '<div class="wp-ldy__openitem' + (empty ? ' wp-ldy__openitem--empty' : '') + '">'
+      + '<span>' + wpLdyEsc(m.name) + '</span>'
+      + '<input type="number" class="wp-ldy__in" style="width:78px" min="0" placeholder="미입력" value="'
+      + (empty ? '' : v) + '" oninput="wpLdyOpeningEdit(\'' + m.id + '\',this.value)"></div>';
+  }).join('');
+}
+/* ① 오늘 점검 상단 안내 — 미입력이 있을 때만 뜬다 */
+function wpLdyRenderOpeningWarn(){
+  var box = document.getElementById('wpLdyOpeningWarn'); if (!box) return;
+  var miss = wpLdyOpeningMissing();
+  box.innerHTML = miss.length
+    ? '<div class="wp-ldy__notice">📦 <b>기초재고 미입력 ' + miss.length + '개 품목</b> — 이 품목들은 사용량이 계산되지 않습니다 ('
+      + wpLdyEsc(miss.map(function(m){ return m.name; }).join(' · ')) + ')'
+      + '<button class="wp-ldy__btn" onclick="wpLdySub(\'ledger\')">기초재고 입력하러 가기</button></div>'
+    : '';
+}
 /* 오늘 날짜에 빈 칸이 있으면 탭 제목 옆 ● */
 function wpLdyMarkTodo(){
   var d = wpLdyToday(), miss = false;
@@ -6653,6 +6695,7 @@ function wpLdyMarkTodo(){
   if (btn) btn.innerHTML = '🧺 세탁물 관리' + (miss ? ' <span style="color:#e06b6b">●</span>' : '');
 }
 function wpLdyRenderToday(){
+  wpLdyRenderOpeningWarn();
   var dEl = document.getElementById('wpLdyDate'); if (!dEl) return;
   if (!dEl.value) dEl.value = wpLdyToday();
   var d = dEl.value, closed = wpLdyIsClosed(d);
@@ -6762,6 +6805,7 @@ function wpLdyRenderMonth(){
   document.getElementById('wpLdyDowBars').innerHTML = bars;
 }
 function wpLdyRenderLedger(){
+  wpLdyRenderOpening();
   var body = document.getElementById('wpLdyLedgerBody'); if (!body) return;
   body.innerHTML = LAUNDRY_DATA.master.map(function(m){
     var t = wpLdyTotals(m.id);
@@ -6770,7 +6814,6 @@ function wpLdyRenderLedger(){
       + '<td>' + (m.unitPrice || 0).toLocaleString() + '</td>'
       + '<td><input type="number" class="wp-ldy__in" style="width:70px" value="' + (m.lowLimit || 0) + '" oninput="wpLdyLedgerEdit(\'' + m.id + '\',\'lowLimit\',this.value)"></td>'
       + '<td><input type="checkbox"' + (m.active !== false ? ' checked' : '') + ' onchange="wpLdyLedgerEdit(\'' + m.id + '\',\'active\',this.checked)"></td>'
-      + '<td><input type="number" class="wp-ldy__in" style="width:80px" value="' + (LAUNDRY_DATA.openingStock[m.id] == null ? '' : LAUNDRY_DATA.openingStock[m.id]) + '" oninput="wpLdyOpeningEdit(\'' + m.id + '\',this.value)"></td>'
       + '<td>' + Math.round(t.input) + '</td>'
       + '<td>' + Math.round(t.circ) + '</td>'
       + '<td><input type="number" class="wp-ldy__in" style="width:80px" value="' + (last ? last.counted : '') + '" onchange="wpLdyAudit(\'' + m.id + '\',this.value)">'
