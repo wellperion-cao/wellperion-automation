@@ -705,9 +705,59 @@ def collect() -> dict:
     }
 
 
+# ── 대표님·회장님 보고건 스냅샷 (GM 지시 2026-08-06 · 배432) ─────────────────────
+# GM: "시트 하루 한 번만 읽는 방식으로 같이 해줘." 웰리 실측 — 라이브 첫 표시까지 회장님 0.2초 ·
+# GM 0.7초인데 **대표님 칸만 3.7초**였다. 그 칸만 매번 업무 시트를 새로 조회해서다.
+# ▸새 수집기·새 예약작업을 만들지 않는다(약속 L21) — 이미 하루 2회 도는 이 수집기에 얹는다.
+# ▸판정을 두 벌로 만들지 않는다: 화면(_owner_directive.js filterRows)과 같은 세 조건
+#   (담당자에 '김남욱' 포함 · 상태 진행중/보류 · 내용의 '대표님 보고건' 표식)만 쓰고,
+#   표식은 참/거짓으로만 담는다. **내용 본문은 담지 않는다**(스냅샷은 목록용).
+# ▸화면은 이 스냅샷을 먼저 그리고 라이브 조회가 끝나면 덮어쓴다(2단) — 결재 상태는 실시간으로
+#   바뀌므로 스냅샷만 믿으면 안 된다.
+OWNER_SNAPSHOT_PATH = ROOT / "status" / "owner_directive_snapshot.json"
+_OWNER_MARK = "대표님 보고건"
+_OWNER_FIELDS = ("id", "업무명", "담당자", "상태", "시작일", "종료일",
+                 "카테고리", "결재요청", "결재상태", "결재완료시각")
+
+
+def publish_owner_directive_snapshot() -> dict:
+    """대표님·회장님 보고건 목록 스냅샷 발행. 실패해도 수집기 전체를 막지 않는다."""
+    out = {"_doc": "대표님·회장님 보고건 목록 스냅샷(배432). 화면은 이 값으로 먼저 그리고 "
+                   "라이브 조회로 반드시 덮어쓴다 — 결재 상태는 실시간으로 바뀐다.",
+           "generated_at_kst": datetime.now(KST).strftime("%Y-%m-%d %H:%M KST"),
+           "rows": [], "error": None}
+    try:
+        data = _http_get_json(f"{_CFO_GAS}?action=todo_list&include_gm=1")
+        rows = (data or {}).get("data") or (data or {}).get("todos")
+        if not isinstance(rows, list):
+            out["error"] = "todo_list 응답에 rows 없음"
+            return out
+        picked = []
+        for r in rows:
+            if "김남욱" not in str(r.get("담당자") or ""):
+                continue
+            if str(r.get("상태") or "").strip() not in ("진행중", "보류"):
+                continue
+            item = {k: r.get(k) for k in _OWNER_FIELDS}
+            item["ceo_mark"] = _OWNER_MARK in str(r.get("내용") or "")
+            picked.append(item)
+        picked.sort(key=lambda x: str(x.get("종료일") or "9999-99-99"))
+        out["rows"] = picked
+    except Exception as e:
+        out["error"] = f"{type(e).__name__}: {str(e)[:100]}"
+    OWNER_SNAPSHOT_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=2),
+                                   encoding="utf-8")
+    return out
+
+
 def main() -> None:
     data = collect()
     OUT_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    snap = publish_owner_directive_snapshot()
+    ceo_n = sum(1 for r in snap["rows"] if r.get("ceo_mark"))
+    print(f"  대표님 보고건 스냅샷: {ceo_n}건(회장님·기타 포함 {len(snap['rows'])}건)"
+          + (f" — 실패: {snap['error']}" if snap.get("error") else ""))
 
     g = data["global"]
     print(f"[kpi_collector] {data['generated_at_kst']}")
