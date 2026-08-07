@@ -511,6 +511,12 @@
         if (id !== '2026-08-24') return '';
         return '<a class="doc-link" href="../../cpo/member/오넛티_접수현황.html" target="_blank" rel="noopener">🎁 오넛티 접수현황</a>';
       }
+      // 점수 체계 초안 버튼 — 이 목표(id 2026-08-25 「실무진 업무 점수 체계」) 카드에만(GM 지시 2026-08-07).
+      // 같은 폴더 상대경로, 기존 doc-link 클래스 재사용 — 새 CSS 없음.
+      function scoreDraftLink(id) {
+        if (id !== '2026-08-25') return '';
+        return '<a class="doc-link" href="실무진_업무점수체계_초안.html" target="_blank" rel="noopener">📊 점수 체계 초안</a>';
+      }
       var todos = extractTodos(it.note);
       var hasChecks = todos.length > 0;
       if (hasChecks) gmNoteLines[it.id] = it.note.split(/\r?\n/);
@@ -544,6 +550,7 @@
             sp.logs.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('') + '</div></details>' : '') +
         docLink(it.doc) +
         ohnutiLink(it.id) +
+        scoreDraftLink(it.id) +
         '</div>';
     }).join('');
     elGmSum.innerHTML = items.map(function (it, i) {

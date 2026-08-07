@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실무진 업무 점수 체계 초안 · WELLPERION</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E">
+<!-- 사내 게이트(단일 소스 _assets/gate.js) — GM업무.html과 동일(GM 지시 2026-08-05, 비밀번호 1531 통일). -->
+<script src="../../_assets/gate.js" charset="utf-8"></script>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+  /* ── CSS = GM업무.html 을 본으로 그대로 따른다(형식 정본 재사용 — 새 디자인 체계 없음) ── */
+  @page { size: A3 portrait; margin: 12mm; }
+
+  :root{
+    --deep:#22322D; --mid:#3D5A4F; --grey:#727B76; --line:#CBD2CD;
+    --steam:#EDF1EE; --brass:#96762F;
+    --alert:#A04E24; --alert-bg:#FBF1E7; --ink:#131B18; --pick:#E7EEE9;
+    --font:'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+           'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#8B948F;}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word;}
+
+  .sheet{
+    width:297mm; min-height:420mm; margin:16px auto; background:#fff;
+    padding:14mm 16mm 12mm; box-shadow:0 3px 22px rgba(0,0,0,.3);
+  }
+
+  .bar{width:297mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+  .bar button, .bar a{
+    font-family:var(--font);font-size:13px;font-weight:600;
+    padding:8px 16px;border:1px solid rgba(255,255,255,.45);
+    background:rgba(255,255,255,.14);color:#fff;cursor:pointer;
+    text-decoration:none;border-radius:2px;transition:.15s;
+  }
+  .bar button:hover, .bar a:hover{background:#fff;color:var(--deep);}
+
+  .hd{border-bottom:3px solid var(--deep);padding-bottom:10px;margin-bottom:14px;}
+  .brand{font-size:10px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-size:27px;font-weight:800;letter-spacing:-.025em;margin:0 0 4px;}
+  .hd .sub{font-size:14px;color:var(--grey);margin:0 0 12px;}
+  .meta{display:flex;flex-wrap:wrap;gap:4px 28px;font-size:12.5px;}
+  .meta b{color:var(--grey);font-weight:600;font-size:11px;letter-spacing:.08em;margin-right:6px;}
+
+  /* 초안 안내 — 가장 먼저 보이게, 경고색 */
+  .draft-banner{margin:14px 0 20px;padding:14px 16px;background:var(--alert-bg);
+    border:2px solid var(--alert);font-size:14px;line-height:1.6;color:#5E3418;}
+  .draft-banner b{color:var(--alert);font-weight:800;}
+  .draft-banner .lbl{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.1em;
+    color:#fff;background:var(--alert);padding:3px 10px;border-radius:99px;margin-right:8px;}
+
+  h2.sec-h{font-size:15.5px;font-weight:800;letter-spacing:.02em;margin:22px 0 8px;
+    padding:7px 13px;background:var(--deep);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  h2.sec-h .no{color:#C9D2CC;margin-right:8px;font-weight:600;}
+
+  p.lede{font-size:13px;line-height:1.65;color:var(--ink);margin:0 0 10px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{border:1px solid var(--line);padding:6px 9px;vertical-align:top;text-align:left;line-height:1.5;}
+  th{background:var(--steam);font-weight:700;color:var(--deep);white-space:nowrap;}
+  td.c,th.c{text-align:center;white-space:nowrap;}
+  td.num{text-align:right;font-weight:700;color:var(--mid);white-space:nowrap;}
+  tr.warn td{background:var(--alert-bg);}
+
+  .stat-row{display:flex;flex-wrap:wrap;gap:8px 10px;margin:8px 0 14px;}
+  .stat-row .chip{font-size:12px;font-weight:600;padding:5px 11px;border:1px solid var(--line);
+    background:var(--steam);color:var(--mid);border-radius:99px;white-space:nowrap;}
+
+  /* ★이대로면 생기는 문제 — 가장 눈에 띄게 */
+  .crit-box{margin:8px 0 16px;padding:16px 18px;background:var(--alert-bg);
+    border:3px solid var(--alert);break-inside:avoid;}
+  .crit-box .crit-h{font-size:15px;font-weight:800;color:var(--alert);margin:0 0 9px;letter-spacing:-.01em;}
+  .crit-box ul{margin:0;padding-left:19px;}
+  .crit-box li{font-size:13px;line-height:1.6;margin-bottom:6px;color:#5E3418;}
+  .crit-box li:last-child{margin-bottom:0;}
+  .crit-box b{color:var(--alert);font-weight:800;}
+
+  /* GM이 정할 것 5개 — A/B 카드 */
+  .decision{margin-bottom:14px;border:1.5px solid var(--deep);break-inside:avoid;}
+  .decision .dh{padding:8px 14px;background:var(--deep);color:#fff;font-size:13.5px;font-weight:800;
+    display:flex;align-items:baseline;gap:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .decision .dh .dno{color:var(--brass);background:#fff;border-radius:99px;width:20px;height:20px;
+    display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none;}
+  .decision .db{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+  .decision .opt{padding:10px 14px;font-size:12.5px;line-height:1.6;}
+  .decision .opt:first-child{border-right:1px solid var(--line);}
+  .decision .opt .otag{display:inline-block;font-size:11px;font-weight:800;color:var(--brass);
+    border:1px solid var(--line);border-radius:99px;padding:2px 9px;margin-bottom:5px;background:var(--steam);}
+  .decision .opt .oeff{color:var(--grey);}
+  .decision .fyi{padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--mid);
+    background:var(--pick);}
+
+  .note{margin:10px 0;padding:11px 14px;background:var(--alert-bg);
+        border:1px solid #E5D1BC;font-size:12.5px;line-height:1.65;color:#5E3418;}
+  .note b{color:var(--alert);font-weight:700;}
+
+  .ft{border-top:1px solid var(--line);margin-top:16px;padding-top:6px;
+      display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
+
+  @media print{
+    html,body{background:#fff;}
+    .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
+    .bar{display:none !important;}
+    .crit-box,.decision,table{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button onclick="window.print()">🖨 인쇄 (A3 세로)</button>
+  <a href="GM업무.html">◂ GM업무로</a>
+</div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <p class="brand">WELLPERION · 경영지원부</p>
+    <h1>실무진 업무 점수 체계 — 초안</h1>
+    <p class="sub">업무 SSOT 실측 위에 배점안을 얹어 검증했습니다. GM 이 정해야 다음 단계로 갑니다.</p>
+    <div class="meta">
+      <div><b>작성</b>2026-08-07 · Fable</div>
+      <div><b>실측 기준</b>업무 SSOT 2026-08-07 조회 · 110건</div>
+      <div><b>관련</b>시로 초안(배150 · 나우열M 협의 5건) 과 같은 줄기 — 이 초안 위에서 합칩니다</div>
+    </div>
+  </div>
+
+  <div class="draft-banner">
+    <span class="lbl">초안 · 확정 아님</span>
+    이 화면은 <b>아직 확정되지 않은 초안</b>입니다. 아래 <b>「GM 이 정할 것」 5개</b>를 고르셔야
+    실제로 점수를 돌릴 수 있습니다. 지금 상태로 그냥 돌리면 <b>8월은 전원 점수가 나오지 않습니다</b>
+    (아래 ★문제 항목 참고). 숫자는 전부 업무 SSOT 실측값이며 지어낸 값이 아닙니다.
+  </div>
+
+  <h2 class="sec-h"><span class="no">1</span>실측 근거 — 담당자별 편차</h2>
+  <p class="lede">업무 SSOT(todo_list) 110건을 담당자별로 나눠 봤습니다. 건수부터 최대 10.8배 차이가 납니다.</p>
+  <table>
+    <tr><th>담당자</th><th class="c">건수</th><th class="c">기한 준수율<br>(완료건 중)</th><th class="c">적체<br>(기한초과 미완료)</th><th class="c">8월 기한도래</th></tr>
+    <tr><td>나우열M</td><td class="num">54</td><td class="c">11/21 (52%)</td><td class="c">3</td><td class="c">3</td></tr>
+    <tr><td>이경연 실장</td><td class="num">27</td><td class="c">3/13 (23%)</td><td class="c">3</td><td class="c">4</td></tr>
+    <tr><td>최준용M</td><td class="num">19</td><td class="c">2/8 (25%)</td><td class="c">5</td><td class="c">0</td></tr>
+    <tr><td>윤병현AM</td><td class="num">5</td><td class="c">계산불가(완료 0건)</td><td class="c">2</td><td class="c">0</td></tr>
+    <tr><td>김남욱GM</td><td class="num">2</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+    <tr><td>담당 빈칸</td><td class="num">2</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+    <tr><td>공동</td><td class="num">1</td><td class="c">—</td><td class="c">—</td><td class="c">—</td></tr>
+    <tr class="warn"><td><b>★임정은M</b></td><td class="num">0</td><td class="c" colspan="3">업무 SSOT 에 아예 없음 — 전용 축 없이는 점수 자체가 불가</td></tr>
+  </table>
+  <div class="stat-row">
+    <span class="chip">상태 분포 — 완료 64 · 진행중 44 · 보류 2</span>
+    <span class="chip">종료일 기재 — 67/110 (61%), 미기재 43건(39%)</span>
+    <span class="chip">자기등록 — 실무진 2건(2%, 나우열M) · GM 등록 103건(94%)</span>
+  </div>
+
+  <h2 class="sec-h"><span class="no">2</span>제안 배점 — 세 축</h2>
+  <p class="lede">100점을 세 축으로 나눕니다. 계산 자체는 SSOT 데이터로 가능하나, 종료일이 없는 39%는 완수·기한 두 축 분모에서 통째 빠집니다.</p>
+  <table>
+    <tr><th style="width:90px;">축</th><th style="width:210px;">무엇을 재나</th><th>계산식</th></tr>
+    <tr><td><b>완수 50점</b></td><td>종료일이 있는 업무 중 완료 비율</td><td>종료일 있는 완료건수 ÷ 종료일 있는 전체 × 50 (현재 계산 가능 범위 = 전체의 61%)</td></tr>
+    <tr><td><b>기한 30점</b></td><td>완료건 중 기한 내 완료 비율</td><td>기한 내 완료 ÷ 완료 전체 × 30. 완료 0건이면 이 축은 N/A → 남은 축 합으로 100점 재환산(0점 처리 금지 — 소수건 담당자에게 부당)</td></tr>
+    <tr><td><b>클린큐 20점</b></td><td>기한 초과인데 아직 안 끝난 건</td><td>기한초과 미완료 0건 = 20점 · 1건당 -4점(하한 0)</td></tr>
+  </table>
+  <p class="lede" style="margin-top:8px;">집계는 <b>일간 자동 계산</b>(스냅샷 적재) + <b>월 1회 정리</b>입니다. 표본이 월 5건 미만인 달은 점수를 내지 않고 <b>'표본부족(N건)'</b>으로만 표시합니다.</p>
+
+  <div class="crit-box">
+    <div class="crit-h">★ 이대로면 생기는 문제 — GM 이 가장 먼저 보셔야 할 부분</div>
+    <ul>
+      <li><b>월 단위로 돌리면 8월은 전원 점수가 안 나옵니다.</b> 8월 기한도래 건수가 이경연 실장 4·나우열M 3·최준용M 0·윤병현AM 0 — 표본 임계치(5건)를 아무도 못 채웁니다. 배점 체계를 만들어도 <b>첫 달에는 점수를 받는 사람이 0명</b>입니다.</li>
+      <li><b>임정은M은 점수 자체가 없습니다.</b> 업무 SSOT에 임정은M 이름으로 등록된 건이 0건이라, 완수·기한·클린큐 세 축 전부 계산할 데이터가 없습니다. 아래 전용 축(⑤)을 먼저 정해야만 점수가 생깁니다.</li>
+    </ul>
+  </div>
+
+  <h2 class="sec-h"><span class="no">3</span>부작용과 완화</h2>
+  <table>
+    <tr><th style="width:260px;">우려되는 부작용</th><th>완화책</th></tr>
+    <tr><td>완수율 고배점 → 쉬운 일만 골라 닫음</td><td>월 정리에 '가장 오래 방치된 3건' 항상 병기 + 비율제라 잘게 쪼개도 이득 제한</td></tr>
+    <tr><td>기한 감점 → 종료일을 아예 안 적는 유인 (지금도 39% 미기재)</td><td>기재율을 점수와 별도로 항상 공개 표시 + 미기재 다수 시 나우열M 개입</td></tr>
+    <tr><td>자기등록 독려 → 점수용으로 잔업무만 등록할 위험</td><td>등록 건수는 점수에 직접 반영하지 않음</td></tr>
+    <tr><td>표본이 적으면 1건이 점수를 크게 흔듦 (예: 2건 중 1건 놓치면 -25점)</td><td>표본 임계치 월 5건 — 미만이면 점수 미공표</td></tr>
+  </table>
+
+  <h2 class="sec-h"><span class="no">4</span>GM 이 정할 것 — 5개</h2>
+  <p class="lede">이 문서의 목적은 이 절입니다. 다섯 갈래를 고르시면 나머지는 그대로 실행에 들어갑니다.</p>
+
+  <div class="decision">
+    <div class="dh"><span class="dno">①</span>주기 프레임 — 점수를 어떤 기간으로 낼까</div>
+    <div class="db">
+      <div class="opt"><span class="otag">A안</span> 월간 100점(시로안)<br>축 의미는 명확하지만, 8월 실측 기준 <span class="oeff">전원 표본부족 → 첫 달 점수 0명</span></div>
+      <div class="opt"><span class="otag">B안</span> 롤링 90일 100점<br>표본이 확보돼 당장 점수가 나오지만, <span class="oeff">'이번 달 잘함'이라는 감각이 흐려짐</span></div>
+    </div>
+  </div>
+
+  <div class="decision">
+    <div class="dh"><span class="dno">②</span>종료일 미기재 — 39%를 어떻게 다룰까</div>
+    <div class="db">
+      <div class="opt"><span class="otag">A안</span> 분모에서 제외 + 병기<br>왜곡은 없지만, <span class="oeff">39%가 계속 안 보이는 채로 남음</span></div>
+      <div class="opt"><span class="otag">B안</span> 미기재 건 클린큐 감점(-2/건)<br>기재율은 오르지만, <span class="oeff">'아무 날짜나 채워 넣는' 위험</span></div>
+    </div>
+  </div>
+
+  <div class="decision">
+    <div class="dh"><span class="dno">③</span>공개 범위 — 누가 볼 수 있나</div>
+    <div class="db">
+      <div class="opt"><span class="otag">A안</span> 본인 + 나우열M + GM<br><span class="oeff">압박이 낮고 개선 중심</span></div>
+      <div class="opt"><span class="otag">B안</span> 전체 공개<br>긴장감은 있으나, <span class="oeff">순위 경쟁·SSOT 회피(등록 안 하기) 위험</span></div>
+    </div>
+  </div>
+
+  <div class="decision">
+    <div class="dh"><span class="dno">④</span>용도 — 점수가 무엇에 쓰이나</div>
+    <div class="db">
+      <div class="opt"><span class="otag">A안</span> 참고용(비공식)<br><span class="oeff">자기등록 2%인 지금 데이터 품질에 맞음</span></div>
+      <div class="opt"><span class="otag">B안</span> 인사평가 반영<br>공식값으로 쓰려면 <span class="oeff">나우열M 협의(5건) + GM 결재가 먼저 끝나야 함</span></div>
+    </div>
+    <div class="fyi">★현재 상태에서 곧바로 B안으로 가면, 사실상 'GM 이 지시한 업무의 처리율'로 사람을 평가하는 셈이 됩니다(자기등록 2% 때문).</div>
+  </div>
+
+  <div class="decision">
+    <div class="dh"><span class="dno">⑤</span>임정은M 전용 축 — 상담·등록으로 어떻게 잴까</div>
+    <div class="db">
+      <div class="opt"><span class="otag">A안</span> 웰리 초안대로<br>첫컨택 +2 · 상담완료 +1 · 등록성사 +5 · 재컨택 등록 +7</div>
+      <div class="opt"><span class="otag">B안</span> 나우열M 협의 후 확정<br><span class="oeff">배점 세부는 실무 협의로 조정</span></div>
+    </div>
+    <div class="fyi">어느 쪽을 고르셔도, 전용 축이 정해지기 전까지 임정은M 은 점수가 없습니다(SSOT 0건이라 다른 축을 못 씀).</div>
+  </div>
+
+  <h2 class="sec-h"><span class="no">5</span>한계 고지</h2>
+  <div class="note">
+    이 점수는 <b>업무 SSOT에 올라온 일만</b> 봅니다. 지금 실무진 자기등록은 110건 중 2건(2%)뿐이고,
+    나머지 94%는 GM 이 직접 등록한 업무입니다. 그래서 이 점수는 사실상 <b>GM 이 지시한 업무의 처리율</b>이며,
+    실무진이 실제로 한 일 중 <b>SSOT에 오른 일부만</b> 측정합니다. 이 사실은 리포트 최상단에 항상 같이 표시합니다.
+  </div>
+
+  <div class="ft">
+    <span>WELLPERION 경영지원부 · 실무진 업무 점수 체계 초안</span>
+    <span>GM 지시 2026-08-07 · 확정 전 — GM 결재 필요</span>
+  </div>
+
+</div>
+
+</body>
+</html>
