@@ -115,9 +115,10 @@
      radio 필수) 추가 — 구성 설명은 옵션 라벨에 병기, name/phone 다음·qty 앞에 배치(수량은 선택한 세트
      기준임을 qty 힌트로 안내). ②OHNUTTI_PRICE를 세트 2종 배열 구조로 교체(소비자가→판매가 20% 할인
      확정값, 나란히 표시). ③10세트 이상 할인율(30%)을 GUIDES.ohnutti.note에 명시(단가는 협의 여지가
-     있어 숫자로 못박지 않음). 공급가·마진·용차비 등 내부 값은 화면·주석 어디에도 넣지 않는다(GM 지시,
-     소비자가·판매가만 노출). 뒷단(Survey.js 2벌) 오넛티 접수 시트에 '세트종류' 칸 추가, 현황판
-     (오넛티_접수현황.html·wp_ohnutty_status_block.html)에도 반영. -->
+     있어 숫자로 못박지 않음). ★이 파일의 HTML 주석·인라인 <script>는 view-source로 그대로 노출되므로
+     비공개 원가 관련 항목은 이름조차 적지 않는다(GM 지시) — 공개 값은 소비자가·판매가뿐. 뒷단
+     (Survey.js 2벌) 오넛티 접수 시트에 '세트종류' 칸 추가, 현황판(오넛티_접수현황.html·
+     wp_ohnutty_status_block.html)에도 반영. -->
 
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <style>
@@ -354,7 +355,8 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 <script>
 (function(){
   // ── 오넛티 추석 선물세트 가격(2026-08-07 GM 확정) — 세트 2종, 소비자가→판매가(20% 할인)만 노출.
-  //   공급가·마진·용차비는 여기 절대 넣지 않는다(GM 지시 — 내부 값 화면·주석 노출 금지).
+  //   ★이 <script>는 브라우저 view-source로 그대로 노출된다 — 비공개 원가 관련 항목은 어떤 형태로도
+  //   이 파일(주석 포함)에 적지 않는다(GM 지시). 공개해도 되는 값은 소비자가·판매가뿐이다.
   var OHNUTTI_PRICE = [
     { label: '230g 2구 세트', list: 25800, sale: 20640 },
     { label: '80g 3구 세트',  list: 25600, sale: 20480 }
