@@ -1903,5 +1903,25 @@
     "artifact": "https://wellperion-cao.github.io/welperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cpo/member/membership.html",
     "saw": "LOSS 탭 환불 처리 유형 드롭다운 + 미등록사유 클릭 편집 셀 추가 (FB260807-121152)",
     "terminal": true
+  },
+  {
+    "task_id": "CEO-2026-08-07-G1-을-GM-개인-판으로-회사-업무-섹션-정리-G",
+    "clevel": "ceo",
+    "title": "[웰리] G1 을 GM 개인 판으로 — 회사 업무 섹션 정리 (GM 지시 2026-08-07)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-07",
+    "from": "cto",
+    "note": "[시토 → 웰리 전달 2026-08-07] GM 원문: 'G1에 지금 굴러가는 것 / 항로 대기 자율현황에서 관리하는데 그냥 정본에서 볼 테니까 넘어가는 것들 다 삭제해. 여기는 내 개인 영역이랑 개인 북극성만 있으면 될 것 같은데?'\n\n■ 시토가 이미 지운 것(커밋 완료)\n· 🚢 지금 굴러가는 것(상시 자동 N건 · 자율현황 링크) · ⚓ 정박 N 카운트 · 그에 딸린 안내 문구 · 빈 '항로 대기' 머리.\n\n■ 웰리가 판단해 정리할 것 (프론트·G1 소유가 웰리라 넘긴다)\nG1 렌더(wellperion_guide(main).html · gm1RenderToday 부근)에 남아 있는 **회사 업무 기반 섹션**들이다. 전부 정본이 따로 있다:\n· 🔴 결재 포인터(정본=결재 현황 SSOT)\n· 🚢 진행중 카드 목록 · ⚓ 항로 대기 목록 · 🏁 입항 완료(오늘) · 🗄️ 지난 입항 완료 (정본=업무 현황 SSOT)\n· 크루즈 요약(gm1RenderCruiseSummary) · 경보(gm1RenderAlertSignal)\nGM 말대로면 이것들도 '정본에서 본다'에 해당한다. 다만 지우는 폭이 커서 GM 개인 화면 구조가 바뀌므로 웰리가 GM 과 한 번 맞춘 뒤 하는 게 맞다.\n\n■ ★지우면 안 되는 것 (시토 실측)\ngm1InProgressCount / gm1ParkedCount 를 **세는 로직**은 표시용이 아니라 AI 배를 G1 목록에서 걸러내는 필터다(9144~9145). 지우면 AI 배가 GM 개인 판에 다시 쏟아진다. 카운터는 남기고 표시만 없애야 한다.\n\n■ 남길 것(GM 확인) — 개인 북극성 · 내가 적어 둔 할 일 · 개인 캘린더 · 루틴 · 영양 · 결정 7대 원칙 · 삶의 운영 헌장 · 5가지 핵심 역할 · 세션 로그.",
+    "next": "G1 회사 업무 섹션 제거 범위를 GM 과 한 줄로 맞춘 뒤 일괄 정리 → 라이브 확인",
+    "depends_on": "",
+    "ship_no": 10647,
+    "short_no": 453,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "updated_at": "2026-08-07"
   }
 ]
