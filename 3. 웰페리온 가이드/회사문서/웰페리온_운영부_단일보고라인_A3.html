@@ -80,11 +80,19 @@
   .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
   .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
                    border:1px solid var(--ink); background:var(--ink); color:#fff;}
+  .printbar .msg{font-size:12px; color:var(--dim); margin-right:8px;}
 </style>
 </head>
 <body>
 
-<div class="printbar noprint"><button onclick="window.print()">A3 세로로 인쇄</button></div>
+<!-- PNG 저장 — GM업무.html saveGmPng() 과 동일 html2canvas CDN 방식 재사용(새 라이브러리 아님, GM 지시 2026-08-07).
+     .sheet 만 캡처하므로 이 노란 인쇄바(.noprint, .sheet 바깥)는 PNG·인쇄 결과물에 찍히지 않는다. -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<div class="printbar noprint">
+  <span class="msg" id="a3-png-msg"></span>
+  <button id="a3-png-btn" onclick="saveA3Png()">🖼 PNG로 저장</button>
+  <button onclick="window.print()">A3 세로로 인쇄</button>
+</div>
 
 <div class="sheet">
 
@@ -256,6 +264,34 @@
   </div>
 
 </div>
+
+<script>
+  // saveGmPng() 와 동일 패턴(coo/chairman/GM업무.html) — 파일명은 날짜 없이 문서명 고정.
+  function saveA3Png() {
+    var btn = document.getElementById('a3-png-btn');
+    var msg = document.getElementById('a3-png-msg');
+    if (typeof html2canvas !== 'function') {
+      if (msg) msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+      return;
+    }
+    if (btn) btn.disabled = true;
+    if (msg) msg.textContent = '이미지를 만드는 중입니다…';
+    html2canvas(document.querySelector('.sheet'), { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      .then(function (canvas) {
+        var a = document.createElement('a');
+        a.download = '웰페리온_운영부_단일보고라인.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        if (msg) msg.textContent = '저장했습니다.';
+        if (btn) btn.disabled = false;
+        setTimeout(function () { if (msg) msg.textContent = ''; }, 4000);
+      })
+      .catch(function () {
+        if (msg) msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+        if (btn) btn.disabled = false;
+      });
+  }
+</script>
 
 </body>
 </html>
