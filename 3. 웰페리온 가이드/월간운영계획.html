@@ -1479,6 +1479,7 @@
   //    data.sales.monthInProgress(진행중 누적, ★운영부 아침 정리와 동일 소스)로 폴백. 새 수집기·새 엔드포인트 없음(약속 L21).
   //    wellperion_guide(main).html의 동일 폴백과 같은 소스(2026-08-07 GM 지시 — 월간운영계획 매출 미연동 해결).
   var HOME_KPI_SNAPSHOT_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/home_kpi_snapshot.json';
+  var OWNER_DIRECTIVE_SNAPSHOT_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/owner_directive_snapshot.json';
   function readHomeSales(){
     return fetch(GAS_URL + '?action=home_kpi', {method:'GET', redirect:'follow'})
       .then(function(r){ return r.json(); })
@@ -3598,6 +3599,15 @@
     });
 
     // 7-1) 업무&결재 SSOT(todo_list) — 최상단 밴드 '업무&결재 SSOT 현황' 칸. 도착 시 밴드만 재렌더.
+    //      🤵 대표님 보고건 폴드는 스냅샷(owner_directive_snapshot.json)으로 먼저 그리고 라이브 도착 시 덮어쓴다(배449).
+    fetch(OWNER_DIRECTIVE_SNAPSHOT_URL + '?t=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(snap){
+        if(_workApprReady) return; // 라이브가 먼저 도착 — 스냅샷 버림
+        var rows = snap && Array.isArray(snap.rows) ? snap.rows : null;
+        if(rows) renderGmFold(rows);
+      })
+      .catch(function(){});
     withTimeout(readWorkApproval(), 8000, null).then(function(rows){
       _workApprRows = rows; _workApprReady = true;
       if(_data) renderSummaryStrip();
@@ -3759,7 +3769,7 @@
       var owner = String(r['담당자'] || r.owner || '').trim();
       var status = String(r['상태'] || r.status || '').trim();
       if(owner.indexOf('김남욱') === -1 || (status !== '진행중' && status !== '보류')) return false;
-      var isCeoRow = String(r['내용'] || r.content || '').indexOf(CEO_REPORT_MARK) !== -1;
+      var isCeoRow = String(r['내용'] || r.content || '').indexOf(CEO_REPORT_MARK) !== -1 || r.ceo_mark === true;
       return isCeoRow === wantCeoRows;
     }).sort(function(a, b){
       var da = String(a['종료일'] || a.endDate || '').trim() || '9999-99-99';
