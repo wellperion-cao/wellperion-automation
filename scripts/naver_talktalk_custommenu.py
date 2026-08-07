@@ -221,7 +221,9 @@ def run_fix_typo(page, *, go: bool) -> int:
 
     # STEP 2: 오타 메뉴 버튼 클릭
     try:
-        btn = frame.get_by_role("button", name=TYPO_OLD)
+        # exact=True: 목록 항목(li[role=button], 이름에 '메뉴 이동 삭제'가 붙는다)과
+        # 편집 버튼이 둘 다 잡혀 strict mode 위반이 났다(2026-08-07 실측). 편집 버튼만 고른다.
+        btn = frame.get_by_role("button", name=TYPO_OLD, exact=True)
         btn.wait_for(timeout=5_000)
         btn.click()
         page.wait_for_timeout(1000)
@@ -250,7 +252,9 @@ def run_fix_typo(page, *, go: bool) -> int:
             print(f"[WARN] 예상 오타값과 불일치: '{current_val}' ≠ '{TYPO_OLD}'")
             # 계속 진행(다른 메뉴가 선택됐을 수 있음)
 
-        inp.triple_click()
+        # Locator 에 triple_click 은 없다(2026-08-07 실측). click_count=3 으로 전체 선택 후 타이핑 —
+        # fill() 로 한 번에 넣지 않는 이유: 리액트 입력칸이라 키 이벤트가 있어야 상태가 따라붙는다.
+        inp.click(click_count=3)
         inp.type(TYPO_NEW, delay=50)
         page.wait_for_timeout(500)
         new_val = inp.input_value()
@@ -298,9 +302,26 @@ def run_fix_typo(page, *, go: bool) -> int:
             print("[WARN] 저장 버튼 셀렉터 미매칭 — 현재 DOM 상태 확인 필요")
         else:
             save_btn.click()
+            page.wait_for_timeout(1500)
+            # 저장 버튼만 누르면 반영되지 않는다 — '입력된 내용을 채팅방에 적용하시겠습니까?'
+            # 확인 모달이 한 번 더 뜬다(2026-08-07 실측, 그동안 저장이 막혀 보이던 진짜 원인).
+            # 모달은 iframe 안이 아니라 페이지 본문에 뜬다.
+            confirmed = False
+            for scope in (frame, page):
+                try:
+                    ok_btn = scope.locator("button:has-text('확인')").first
+                    ok_btn.wait_for(timeout=3_000)
+                    ok_btn.click()
+                    confirmed = True
+                    print("[STEP5-2] 적용 확인 모달 '확인' 클릭")
+                    break
+                except Exception:
+                    continue
+            if not confirmed:
+                print("[WARN] 확인 모달을 못 찾았다 — 모달 없이 저장되는 경로일 수 있다")
             page.wait_for_timeout(2000)
-            save_result = "클릭 완료"
-            print("[STEP5] 저장 버튼 클릭 완료 — 반영 확인 대기")
+            save_result = "클릭 완료" + (" + 모달 확인" if confirmed else " (모달 없음)")
+            print("[STEP5] 저장 절차 완료 — 반영 확인 대기")
     except Exception as e:
         save_result = "오류"
         save_error = str(e)
