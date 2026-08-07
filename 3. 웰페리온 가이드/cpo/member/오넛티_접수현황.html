@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 X 오넛티 추석 선물세트 — 접수현황</title>
+<!--
+  오넛티 팀(외부 파트너) 열람 전용 — 조회만, 처리 없음(GM 지시 2026-08-07).
+  · 형식 정본 = coo/reception/lost_found_gallery.html — 같은 CSS 변수·레이아웃 패턴을 그대로 재사용한다.
+  · 백엔드(.deploy-funnel-v2/Survey.js): action=ohnuti_team_list — 접속코드 필요(ScriptProperties OHNUTI_ACCESS_CODE,
+    미설정이면 항상 거부). 응답 rows: id/name/qty/method/wantDate/address/status, stats: cap/confirmed/pending/waiting/remaining/rate.
+    연락처는 서버가 아예 담아 보내지 않는다. 성함은 서버가 이미 첫 글자만 보낸다(예: 김○○) — 화면에서 추가로 가리지 않는다.
+  · 접속코드는 화면(localStorage 등)에 저장하지 않는다 — 조회할 때마다 다시 보낸다.
+  · 삭제·수정 기능 없음. 보기 전용.
+-->
+<style>
+:root{
+  --bg:#faf9f7;--paper:#ffffff;--text:#1a1a1a;--dim:#8d867c;
+  --accent:#b08d57;--accent-bg:rgba(176,141,87,0.09);--border:#e8e2d8;
+  --green:#2e7d5b;--green-bg:rgba(46,125,91,0.10);--red:#c0392b;--red-bg:rgba(192,57,43,0.09);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;font-size:16px;-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 16px 44px}
+
+.brand{text-align:center;margin-bottom:8px}
+.brand-eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:8px}
+.brand h1{font-size:clamp(20px,5vw,28px);font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.brand p{font-size:13.5px;color:#777}
+.gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px auto 22px;max-width:320px}
+.gd-line{flex:1;height:1px}
+.gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.gd-diamond{color:var(--accent);font-size:10px;line-height:1}
+
+/* ── 접속코드 게이트 ── */
+.gate{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:18px 18px 20px;margin-bottom:20px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.gate-h{font-size:14.5px;font-weight:800;margin-bottom:10px}
+.gate-row{display:flex;gap:8px;flex-wrap:wrap}
+.gate-row input{flex:1;min-width:180px;padding:11px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;font-family:inherit}
+.gate-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
+.gate-row button{padding:11px 20px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.gate-row button:disabled{opacity:.5;cursor:default}
+.gate-msg{font-size:12.5px;color:var(--dim);margin-top:9px;line-height:1.6}
+.gate-msg.err{color:var(--red)}
+
+/* ── 요약 타일 ── */
+.summary{display:none;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.summary.show{display:grid}
+.stile{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center}
+.stile .v{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.stile .l{font-size:12px;color:var(--dim);margin-top:4px;font-weight:600}
+.stile.hi .v{color:var(--accent)}
+
+/* ── 목록 테이블 ── */
+.list-wrap{display:none}
+.list-wrap.show{display:block}
+.tbl-scroll{overflow-x:auto;background:var(--paper);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+table.otbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+table.otbl th{background:var(--accent-bg);color:var(--text);font-weight:700;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.otbl td{padding:11px 12px;border-bottom:1px solid var(--border);word-break:break-word}
+table.otbl tr:last-child td{border-bottom:none}
+.stat-badge{display:inline-block;font-size:11.5px;font-weight:700;border-radius:20px;padding:3px 10px}
+.stat-badge.confirm{color:var(--green);background:var(--green-bg)}
+.stat-badge.pending{color:#8a5a00;background:#fdf0d5}
+.stat-badge.wait{color:var(--dim);background:var(--bg);border:1px solid var(--border)}
+
+.state-msg{padding:40px 20px;text-align:center;color:var(--dim);font-size:14.5px}
+.info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <p class="brand-eyebrow">Wellperion X Ohnuti</p>
+    <h1>추석 선물세트 접수현황</h1>
+    <p>웰페리온 X 오넛티 추석 선물세트 프로젝트 접수 현황입니다. 접속코드를 입력하시면 조회됩니다.</p>
+    <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+  </div>
+
+  <div class="gate">
+    <div class="gate-h">🔑 접속코드 입력</div>
+    <div class="gate-row">
+      <input type="password" id="codeInput" placeholder="접속코드" autocomplete="off">
+      <button type="button" id="loadBtn">조회</button>
+    </div>
+    <div class="gate-msg" id="gateMsg">웰페리온에서 안내받은 접속코드를 입력해 주세요.</div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="list-wrap" id="listWrap">
+    <div class="tbl-scroll">
+      <table class="otbl">
+        <thead><tr><th>접수번호</th><th>성함</th><th>수량</th><th>수령방법</th><th>희망수령일</th><th>배송지</th><th>상태</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="info-note">본 화면은 조회 전용입니다. 접수 내용 수정·문의는 웰페리온 담당자에게 연락해 주세요.<br>하루의 완성, 웰페리온</p>
+</div>
+
+<script>
+(function(){
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+
+  function $(id){ return document.getElementById(id); }
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function _statBadge(st){
+    st = String(st||'').trim();
+    if(st==='확정') return '<span class="stat-badge confirm">확정</span>';
+    if(st==='접수') return '<span class="stat-badge pending">결제대기</span>';
+    if(st==='대기') return '<span class="stat-badge wait">대기순번</span>';
+    return _esc(st||'-');
+  }
+
+  function _renderSummary(stats){
+    var total = (stats.confirmed||0) + (stats.pending||0) + (stats.waiting||0);
+    var tiles = [
+      { v: total, l: '총 접수(세트)' },
+      { v: stats.confirmed||0, l: '확정' },
+      { v: (stats.pending||0)+(stats.waiting||0), l: '대기(결제+순번)' },
+      { v: (stats.remaining!=null? stats.remaining : '-') + ' / ' + (stats.cap||500), l: '남은 수량 / 목표', hi:true },
+      { v: (stats.rate!=null? stats.rate : '-') + '%', l: '달성률', hi:true }
+    ];
+    $('summary').innerHTML = tiles.map(function(t){
+      return '<div class="stile'+(t.hi?' hi':'')+'"><div class="v">'+_esc(t.v)+'</div><div class="l">'+_esc(t.l)+'</div></div>';
+    }).join('');
+    $('summary').className = 'summary show';
+  }
+
+  function _renderRows(rows){
+    if(!rows.length){
+      $('tbody').innerHTML = '<tr><td colspan="7"><div class="state-msg">접수 내역이 없습니다.</div></td></tr>';
+    } else {
+      $('tbody').innerHTML = rows.map(function(r){
+        return '<tr><td>'+_esc(r.id)+'</td><td>'+_esc(r.name)+'</td><td>'+_esc(r.qty)+'</td>'+
+          '<td>'+_esc(r.method)+'</td><td>'+_esc(r.wantDate)+'</td><td>'+_esc(r.address)+'</td>'+
+          '<td>'+_statBadge(r.status)+'</td></tr>';
+      }).join('');
+    }
+    $('listWrap').className = 'list-wrap show';
+  }
+
+  function load(){
+    var code = $('codeInput').value.trim();
+    if(!code){ $('gateMsg').className='gate-msg err'; $('gateMsg').textContent='접속코드를 입력해 주세요.'; return; }
+    var btn = $('loadBtn');
+    btn.disabled = true; btn.textContent = '조회 중…';
+    $('gateMsg').className='gate-msg'; $('gateMsg').textContent='조회하는 중입니다…';
+    fetch(GAS_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'ohnuti_team_list', code: code })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      btn.disabled = false; btn.textContent = '조회';
+      if(!d || !d.ok){
+        $('summary').className='summary'; $('listWrap').className='list-wrap';
+        $('gateMsg').className='gate-msg err'; $('gateMsg').textContent = (d && d.error) || '조회에 실패했습니다. 접속코드를 확인해 주세요.';
+        return;
+      }
+      $('gateMsg').className='gate-msg'; $('gateMsg').textContent='조회 완료.';
+      _renderSummary(d.stats||{});
+      _renderRows(Array.isArray(d.rows)?d.rows:[]);
+    })
+    .catch(function(){
+      btn.disabled = false; btn.textContent = '조회';
+      $('gateMsg').className='gate-msg err'; $('gateMsg').textContent='네트워크 오류입니다. 잠시 후 다시 시도해 주세요.';
+    });
+  }
+
+  $('loadBtn').addEventListener('click', load);
+  $('codeInput').addEventListener('keydown', function(e){ if(e.key==='Enter') load(); });
+})();
+</script>
+</body>
+</html>
