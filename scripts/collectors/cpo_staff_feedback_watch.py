@@ -538,6 +538,26 @@ def push_feedback_updates(updates: list, timeout=60):
     return data, None
 
 
+def sync_brojay_feedback(timeout=60):
+    """업무 구분이 '브로제이'인 피드백을 브로제이 시트의 '실무진 피드백' 탭으로 옮겨 적는다.
+
+    판정·쓰기는 전부 GAS(brojay_feedback_sync) 한 곳에서 한다 — 여기서 다시 거르면 기준이
+    두 벌이 된다(약속 L01). 대조키 = 접수ID라 여러 번 돌아도 같은 줄이 두 번 생기지 않는다.
+    반환: (새로 옮긴 건수, None) / 실패 시 (None, 사유).
+    """
+    body = json.dumps({"action": "brojay_feedback_sync", "t": FB_TOKEN}).encode("utf-8")
+    req = urllib.request.Request(
+        FB_GAS_URL, data=body, headers={"Content-Type": "text/plain;charset=utf-8"}
+    )
+    try:
+        data = json.loads(urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8"))
+    except Exception as e:
+        return None, f"{type(e).__name__}: {str(e)[:120]}"
+    if not data.get("ok"):
+        return None, str(data.get("error") or "ok=false")
+    return int(data.get("added") or 0), None
+
+
 def fetch_feedback(timeout=60):
     """접수된 피드백 전체(최신순). 실패 시 (None, 사유) — 조용히 성공으로 위장하지 않는다."""
     body = json.dumps({"action": "staff_feedback_list", "t": FB_TOKEN}).encode("utf-8")
@@ -686,6 +706,17 @@ def main() -> int:
     if rows is None:
         print(f"[error] 피드백 조회 실패 — {err}")
         return 0  # fail-soft: 3분마다 도는 잡이라 다음 회차에 재시도한다.
+
+    # ★브로제이로 넘길 건은 브로제이 시트로 흘려보낸다 (GM 지시 2026-08-07 · 시토).
+    #   우리 탭에만 있으면 외부 업체(브로제이)가 못 본다 — 새 감시기·새 예약작업을 만들지 않고
+    #   이미 3분마다 도는 이 관문에 한 줄로 얹는다(약속 L21). GAS 쪽이 접수ID로 중복을 막으므로
+    #   몇 번을 돌아도 같은 줄이 두 번 생기지 않는다. 실패해도 본 흐름을 막지 않는다(fail-soft).
+    if not args.dry_run:
+        synced, sync_err = sync_brojay_feedback()
+        if sync_err:
+            print(f"[warn] 브로제이 시트 이관 실패 — {sync_err}")
+        elif synced:
+            print(f"[brojay] 브로제이 시트로 {synced}건 새로 옮김")
 
     # ★2026-08-03 시토(배299 · 0 위장 수리) — '미처리 집계'와 '배 생성 대상'을 갈랐다.
     #   종전엔 하나였고 판정이 빈칸·'접수' 두 값뿐이라, 실무진이 손든 건이 **집계에서 사라졌다**:

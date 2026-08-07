@@ -4334,6 +4334,71 @@ function _hasRealReply_(memo) {
   return core.length >= 40;
 }
 
+  // ─── 브로제이로 넘길 실무진 피드백을 브로제이 시트로 옮겨 적기 (GM 지시 2026-08-07 · 시토) ───
+  //   GM: "실무진 피드백에서 브로제이로 남는건은 브로제이 시트에다가 '실무진 피드백' 시트칸
+  //   만들어두었으니, 기록 연결해주고, 마무리해줘."
+  //   ▸브로제이(외부 업체 · 시트 소유 jbro.matthew)가 직접 봐야 처리되는 건들이라, 우리 탭에만
+  //     있으면 영영 안 넘어간다. 브로제이 시트의 '실무진 피드백' 탭으로 옮겨 적는다.
+  //   ▸대조키 = 접수ID(FB…). 이미 적힌 건은 건드리지 않는다(같은 줄이 두 번 생기지 않게).
+  //     행번호로 찾지 않는다 — 중간 행이 지워지면 엉뚱한 줄을 고친다(위 update 와 같은 규율).
+  //   ▸브로제이가 채우는 두 칸(확인·답변 / 처리상태)은 우리가 절대 덮어쓰지 않는다.
+  if (action === 'brojay_feedback_sync') {
+    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
+    var _bjSrc = SpreadsheetApp.openById(_MI_SS_ID).getSheetByName('실무진 피드백');
+    if (!_bjSrc) return _json({ ok: false, error: '우리 실무진 피드백 탭 없음' });
+    var _bjSrcLast = _bjSrc.getLastRow();
+    if (_bjSrcLast < 2) return _json({ ok: true, added: 0, skipped: 0, note: '접수 없음' });
+    var _bjSrcRows = _bjSrc.getRange(1, 1, _bjSrcLast, _bjSrc.getLastColumn()).getDisplayValues();
+    var _bjH = _bjSrcRows[0].map(function (v) { return String(v).trim(); });
+    var _bjI = function (n) { return _bjH.indexOf(n); };
+    var cTime = _bjI('접수시각'), cId = _bjI('접수ID'), cCat = _bjI('업무 구분'),
+        cKind = _bjI('종류'), cUrg = _bjI('급한정도'), cBy = _bjI('작성자'),
+        cBody = _bjI('내용'), cSt = _bjI('처리상태');
+    if (cId < 0 || cCat < 0) return _json({ ok: false, error: '접수ID·업무 구분 칸 미발견' });
+
+    var _bjDstSs = SpreadsheetApp.openById('16RL4xhCK0-JOHy9rLPPte0xXdC1cSlPQnmdU13Ri6sQ');
+    var _bjDst = _bjDstSs.getSheetByName('실무진 피드백');
+    if (!_bjDst) return _json({ ok: false, error: '브로제이 시트에 실무진 피드백 탭 없음' });
+
+    // 헤더 — 비어 있으면 처음 한 번만 만든다(브로제이가 이미 만들어 뒀으면 그대로 쓴다).
+    var _bjDstLast = _bjDst.getLastRow();
+    var _bjHeader = ['접수일', '접수ID', '작성자', '종류', '급한정도', '요청 내용',
+                     '웰페리온 처리상태', '브로제이 확인·답변', '브로제이 처리상태'];
+    if (_bjDstLast < 1 || String(_bjDst.getRange(1, 2).getDisplayValue() || '').trim() !== '접수ID') {
+      _bjDst.getRange(1, 1, 1, _bjHeader.length).setValues([_bjHeader]).setFontWeight('bold');
+      _bjDstLast = 1;
+    }
+    // 이미 적힌 접수ID 모으기(중복 방지)
+    var _bjSeen = {};
+    if (_bjDstLast >= 2) {
+      var _bjIds = _bjDst.getRange(2, 2, _bjDstLast - 1, 1).getDisplayValues();
+      for (var _bi = 0; _bi < _bjIds.length; _bi++) {
+        var _v = String(_bjIds[_bi][0] || '').trim();
+        if (_v) _bjSeen[_v] = true;
+      }
+    }
+    var _bjNew = [], _bjSkip = 0;
+    for (var _r = 1; _r < _bjSrcRows.length; _r++) {
+      var row = _bjSrcRows[_r];
+      if (String(row[cCat] || '').indexOf('브로제이') < 0) continue;
+      var id = String(row[cId] || '').trim();
+      if (!id) continue;
+      if (_bjSeen[id]) { _bjSkip++; continue; }
+      _bjSeen[id] = true;
+      _bjNew.push([
+        cTime >= 0 ? String(row[cTime] || '') : '', id,
+        cBy >= 0 ? String(row[cBy] || '') : '', cKind >= 0 ? String(row[cKind] || '') : '',
+        cUrg >= 0 ? String(row[cUrg] || '') : '', cBody >= 0 ? String(row[cBody] || '') : '',
+        cSt >= 0 ? String(row[cSt] || '') : '', '', ''
+      ]);
+    }
+    if (_bjNew.length) {
+      _bjDst.getRange(_bjDst.getLastRow() + 1, 1, _bjNew.length, _bjHeader.length).setValues(_bjNew);
+    }
+    return _json({ ok: true, added: _bjNew.length, skipped: _bjSkip,
+                   ids: _bjNew.map(function (x) { return x[1]; }) });
+  }
+
 // ─── 실무진 피드백 조회·처리 (토큰 게이트 · 시포 2026-07-24) ───────────────────
   //   list   : 접수된 피드백 전체를 최신순으로 반환(처리상태·처리메모 포함).
   //   update : 처리상태·처리메모를 적는다. ★대조키 = 접수ID(FB…) — 행번호로 찾지 않는다.
