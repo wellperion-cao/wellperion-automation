@@ -307,12 +307,12 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
   var CONTACT_EMAIL = 'info@wellperion.com';
 
   // ── 개인정보 수집·이용 동의문(기존 구글폼 PIPA 문안 승계 · create_inquiry_forms_kr.gs _pipa_) ──
-  function pipa(purpose){
+  function pipa(purpose, thirdParty){
     return '개인정보 보호법에 따라 주식회사 웰페리온은 아래와 같이 개인정보를 수집·이용합니다.\n\n'
       + '수집 목적: ' + purpose + '\n'
       + '수집 항목: 성함(또는 담당자), 연락처, 문의 내용\n'
       + '보유 기간: 수집일로부터 1년 또는 목적 달성 시까지(둘 중 빠른 시점)\n'
-      + '제3자 제공: 별도 동의 없이 제공하지 않음(법령상 요구 시 예외)\n\n'
+      + '제3자 제공: ' + (thirdParty || '별도 동의 없이 제공하지 않음(법령상 요구 시 예외)') + '\n\n'
       + '동의를 거부하실 수 있으나, 거부 시 문의 응대가 제한될 수 있습니다.';
   }
 
@@ -394,6 +394,19 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         { key:'docLink',     label:'소개자료 링크', type:'text', opt:true, ph:'https://…' },
         { key:'proposal',    label:'제안 내용', type:'textarea', ph:'제휴 제안 내용을 자유롭게 적어주세요.' }
       ]
+    },
+    ohnuti: {
+      purpose: '추석 선물세트 신청 접수 및 배송·결제 안내',
+      fields: [
+        { key:'name',     label:'성함',    type:'text', ph:'실명을 입력해 주세요', req:true },
+        { key:'phone',    label:'연락처',  type:'tel',  ph:'010-1234-5678', req:true },
+        { key:'qty',      label:'수량(세트)', type:'text', ph:'숫자만 입력해 주세요 (예: 2)', req:true },
+        { key:'method',   label:'수령 방법', type:'select', ph:'선택해 주세요', opts:['현장 수령','택배'], req:true },
+        { key:'wantDate', label:'희망 수령일', type:'date', req:true },
+        { key:'address',  label:'배송지 (택배 선택 시)', type:'text', opt:true, ph:'택배 수령 시 배송지를 입력해 주세요' },
+        { key:'pay',      label:'결제 방법', type:'select', ph:'선택해 주세요', opts:['현장 결제','계좌이체'], req:true },
+        { key:'note',     label:'요청 사항', type:'textarea', opt:true, ph:'요청하실 내용을 자유롭게 적어주세요.' }
+      ]
     }
   };
 
@@ -426,10 +439,14 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     business: {
       lead:'웰페리온과 함께 성장할 파트너를 찾습니다. 콜라보레이션부터 입점·B2B 복지·콘텐츠 협업까지 다양한 제휴를 환영합니다.',
       note:'담당 부서 검토 후 회신드립니다.'
+    },
+    ohnuti: {
+      lead:'웰페리온 X 오넛티 추석 선물세트를 신청하실 수 있습니다.',
+      note:'신청해 주시면 준비되는 대로 연락드립니다. 선물 준비와 배송을 위해 신청 정보가 협력사(오넛티)에 전달될 수 있습니다.'
     }
   };
 
-  var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의' };
+  var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의', ohnuti:'추석 선물세트 신청' };
 
   // ── 입회 나이 안내(접이식, 멤버십·성인강습 한정) — 2026-07-21 시포·GM ──
   var AGE_POLICY_HTML =
@@ -449,7 +466,8 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     youth: '유소년 강습 프로그램을 안내해 드립니다.',
     summer: '여름방학 단기 집중 특강을 안내해 드립니다.',
     rental: '행사·촬영·모임을 위한 공간 대관을 안내해 드립니다.',
-    business: '제휴·입점·B2B 등 사업 협업 제안을 받습니다.'
+    business: '제휴·입점·B2B 등 사업 협업 제안을 받습니다.',
+    ohnuti: '추석 선물세트 신청을 도와드립니다.'
   };
   function setHeroSub(cat){ $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT; }
 
@@ -589,7 +607,8 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     // 개인정보 동의(필수) — PIPA 문안 승계
     var cField = document.createElement('div'); cField.className='field';
     var cLab = document.createElement('label'); cLab.className='fl'; cLab.textContent='개인정보 수집·이용 동의'; cField.appendChild(cLab);
-    var cBox = document.createElement('div'); cBox.className='consent-box'; cBox.textContent = pipa(def.purpose); cField.appendChild(cBox);
+    var thirdParty = (cat === 'ohnuti') ? '선물 준비·배송을 위해 협력사(오넛티)에 제공될 수 있음' : '';
+    var cBox = document.createElement('div'); cBox.className='consent-box'; cBox.textContent = pipa(def.purpose, thirdParty); cField.appendChild(cBox);
     var cRow = document.createElement('div'); cRow.className='chk-row';
     cRow.innerHTML = '<input type="checkbox" id="f_consent"><span>위 개인정보 수집·이용에 동의합니다.</span>';
     cField.appendChild(cRow);
@@ -799,7 +818,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 
   // ── 유형 딥링크(?type=) — 유일한 유형 결정 경로. 유형 선택은 허브(/ko/inquiry/)에서 이미 끝났으므로
   //   이 폼은 로드 시 ?type= 을 즉시 해석해 해당 유형의 히어로·가이드·폼을 바로 그린다(폼 내 재선택 UI 없음).
-  //   허용값: membership|adult|youth|summer|rental|business (한글 별칭 병행). 미지정·미매칭 = 폴백(허브로 안내).
+  //   허용값: membership|adult|youth|summer|rental|business|ohnuti (한글 별칭 병행). 미지정·미매칭 = 폴백(허브로 안내).
   (function(){
     try {
       var t = (qp('type') || '').toLowerCase();
@@ -808,7 +827,8 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
                     youth:'youth', '유소년':'youth', '유소년강습':'youth',
                     summer:'summer', '여름':'summer', '여름특강':'summer',
                     rental:'rental', '렌트':'rental', '대관':'rental', '공간렌트':'rental',
-                    business:'business', '비즈니스':'business', '제휴':'business' };
+                    business:'business', '비즈니스':'business', '제휴':'business',
+                    ohnuti:'ohnuti', '오넛티':'ohnuti', '추석':'ohnuti', '선물세트':'ohnuti' };
       var cat = alias[t];
       if (cat) { selectedCat = cat; buildForm(cat); } else { showFallback(); }
     } catch (e) { showFallback(); }
