@@ -91,7 +91,14 @@
      예약해둔 고정 여백을 음수 마진으로 되돌려 상쇄, "저번처럼"). .wrap 자체의 padding-bottom:70px
      (본문 카드 안쪽 여백)은 그대로 유지 — 폼 마지막 버튼이 화면 끝에 붙지 않도록 내부 여백은 보존,
      없앤 것은 순수 낭비였던 바깥 회색 띠뿐.
-     수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입. -->
+     수정 시 이 파일을 고치고 WP post 8460(draft-page --page survey) 재주입.
+     2026-08-07 GM 지시: 오넛티(ohnutti) 유형 한정 개편 — ①가격 정가→할인가(OHNUTTI_PRICE, 단가 미확정
+     시 숨김) ②안내 문구 "담당자가 연락"→"방문 결제 시 순차 판매"(HERO_SUB_LINE2) ③수령방법 안내(현장
+     수령·10개 이상 할인/택배, GUIDES.ohnutti.note) ④제출버튼 "선물세트 구매 대기 신청"(SUBMIT_LABEL)
+     ⑤OHNUTTY 브랜드 소개(홈페이지 링크+쇼츠 임베드, g-brand) — 로고 이미지는 ohnutty.co.kr이 정적
+     <img> 없이 JS/배너로만 내려줘 저장소에 받아오지 못함(핫링크 금지 원칙상 생략). 전부 cat==='ohnutti'
+     조건부라 다른 6종 화면은 무변화. 카드 자리(wp_inquiry_block.html)는 여름방학 특강 숨김·오넛티가
+     그 자리로 이동. -->
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 <style>
 /* 문의 Survey 폼 페이지(8460) 한정 — WP 테마 헤더 전체 숨김. 다른 페이지 영향 0(page-id 스코프). */
@@ -159,6 +166,16 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 .wlp-inq .g-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .wlp-inq .g-tag{font-size:11px;font-weight:600;padding:6px 10px;background:rgba(183,159,138,.15);color:var(--ink)}
 .wlp-inq .g-note{font-size:12px;color:var(--dim);line-height:1.7;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+/* 오넛티 가격(정가→할인가, 2026-08-07 GM 지시) — GM이 OHNUTTI_PRICE 값을 채우면 노출 */
+.wlp-inq .g-price{display:flex;align-items:baseline;gap:10px;margin-top:14px}
+.wlp-inq .g-price .g-price-list{font-size:13px;color:var(--dim);text-decoration:line-through}
+.wlp-inq .g-price .g-price-sale{font-size:19px;font-weight:800;color:var(--coral)}
+/* 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상, 2026-08-07 GM 지시) — 오넛티 유형 한정, 입력 칸 위쪽 */
+.wlp-inq .g-brand{margin-top:12px}
+.wlp-inq .g-brand-link{display:inline-block;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;margin-bottom:10px}
+/* 쇼츠(세로 영상) — 9:16 비율로 고정 폭, 가로로 안 늘어나고 모바일에서도 화면 안에 들어옴 */
+.wlp-inq .g-brand-video{max-width:220px;margin:0 auto;position:relative;width:100%;padding-top:177.78%;background:var(--ink)}
+.wlp-inq .g-brand-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 
 /* ===== 입회 나이 안내(접이식) — 멤버십·성인강습 유형 한정. 2026-07-21 시포·GM ===== */
 .wlp-inq .g-age-policy{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
@@ -245,7 +262,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
         <p class="slogan-kr">하루의 완성, 웰페리온</p>
         <div class="divider-coral"></div>
         <h1 id="heroTitle">문의하기</h1>
-        <p class="hero-desc"><span id="heroSubLine1">멤버십 가입·시설 투어·강습 상담을 도와드립니다.</span><br>아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.</p>
+        <p class="hero-desc"><span id="heroSubLine1">멤버십 가입·시설 투어·강습 상담을 도와드립니다.</span><br><span id="heroSubLine2">아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.</span></p>
         <p class="hero-note">상담 및 투어는 사전 예약제로 운영됩니다.</p>
       </div>
     </div>
@@ -296,6 +313,10 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 
 <script>
 (function(){
+  // ── 오넛티 추석 선물세트 가격(2026-08-07 GM 지시) — 단가 미확정. GM이 숫자만 채우면 아래
+  //   renderGuide()의 g-price 블록이 자동으로 뜬다(list·sale 둘 다 채워야 노출, 하나라도 비면 숨김).
+  var OHNUTTI_PRICE = { list: null, sale: null };   // 예: { list: 89000, sale: 69000 }
+
   // ── 백엔드 GAS ──
   var GAS_PROD = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
   var GAS_HEAD = 'https://script.google.com/macros/s/AKfycbzeGDag3XgoSn6A4UIGdsBCkR3v-joepgRYfW3MWzi9/exec';
@@ -442,11 +463,15 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     },
     ohnutti: {
       lead:'웰페리온과 오넛티 추석 선물세트를 신청하실 수 있습니다.',
-      note:'신청해 주시면 준비되는 대로 연락드립니다. 선물 준비와 배송을 위해 신청 정보가 협력사(오넛티)에 전달될 수 있습니다.'
+      note:'웰페리온 현장 수령 · 10개 이상 주문 시 할인 및 택배 가능합니다. 선물 준비를 위해 신청 정보가 협력사(오넛티)에 전달될 수 있습니다.'
     }
   };
 
   var CAT_TITLES = { membership:'멤버십 문의', adult:'성인 강습 문의', youth:'유소년 강습 문의', summer:'여름 특강 문의', rental:'공간 렌트 문의', business:'비즈니스 제휴 문의', ohnutti:'추석 선물세트 신청' };
+
+  // 제출 버튼 문구 — 기본 "문의 접수하기", 오넛티만 "선물세트 구매 대기 신청"(2026-08-07 GM 지시, 오넛티 한정)
+  var SUBMIT_LABEL_DEFAULT = '문의 접수하기';
+  var SUBMIT_LABEL = { ohnutti: '선물세트 구매 대기 신청' };
 
   // ── 입회 나이 안내(접이식, 멤버십·성인강습 한정) — 2026-07-21 시포·GM ──
   var AGE_POLICY_HTML =
@@ -469,7 +494,14 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     business: '제휴·입점·B2B 등 사업 협업 제안을 받습니다.',
     ohnutti: '추석 선물세트 신청을 도와드립니다.'
   };
-  function setHeroSub(cat){ $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT; }
+  // 2번째 줄 — 기본은 "담당자가 연락" 문구, 오넛티만 현장 결제 순차판매로 교체(2026-08-07 GM 지시:
+  //   사람 손 최소화 — 담당자 개별 연락 구조가 아님).
+  var HERO_SUB_LINE2_DEFAULT = '아래 정보를 남겨주시면 담당자가 빠르게 연락드립니다.';
+  var HERO_SUB_LINE2 = { ohnutti: '방문해서 결제 시 순차대로 판매 진행합니다.' };
+  function setHeroSub(cat){
+    $('heroSubLine1').textContent = HERO_SUB[cat] || HERO_SUB_DEFAULT;
+    $('heroSubLine2').textContent = HERO_SUB_LINE2[cat] || HERO_SUB_LINE2_DEFAULT;
+  }
 
   var selectedCat = '';
   var formShownAt = 0;   // 유형 선택(폼 표시) 시각 — 타이밍 게이트용
@@ -511,6 +543,20 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     if (!g) { box.style.display = 'none'; box.innerHTML = ''; return; }
     var html = '';
     if (g.lead) { html += '<p class="g-lead">' + g.lead + '</p>'; }
+    // 오넛티 브랜드 소개(홈페이지 링크·쇼츠 영상) — 회원이 "이게 뭔지" 먼저 보고 신청하도록 입력 칸
+    //   위쪽에 배치(2026-08-07 GM 지시). 로고 이미지는 ohnutty.co.kr이 정적 <img>가 아닌 JS/배너로만
+    //   내려줘 저장소에 받아올 수 없었음(핫링크 금지 원칙상 생략, GM 보고).
+    if (cat === 'ohnutti') {
+      html += '<div class="g-brand">'
+        + '<a class="g-brand-link" href="https://ohnutty.co.kr/" target="_blank" rel="noopener">OHNUTTY 홈페이지 바로가기 ↗</a>'
+        + '<div class="g-brand-video"><iframe src="https://www.youtube.com/embed/wcBJOmI6gKw" title="OHNUTTY 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
+        + '</div>';
+    }
+    // 오넛티 가격(정가→할인가) — 값이 둘 다 채워져야 노출(GM 미확정 시 전체 숨김, 2026-08-07 지시)
+    if (cat === 'ohnutti' && OHNUTTI_PRICE.list && OHNUTTI_PRICE.sale) {
+      html += '<div class="g-price"><span class="g-price-list">' + OHNUTTI_PRICE.list.toLocaleString() + '원</span>'
+        + '<span class="g-price-sale">' + OHNUTTI_PRICE.sale.toLocaleString() + '원</span></div>';
+    }
     if (g.badges && g.badges.length) {
       html += '<div class="g-badges">' + g.badges.map(function(b){ return '<span class="g-badge">'+b+'</span>'; }).join('') + '</div>';
     }
@@ -533,6 +579,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     $('heroTitle').textContent = CAT_TITLES[cat] || '문의하기';
     setHeroSub(cat);
     renderGuide(cat);
+    $('submitBtn').textContent = SUBMIT_LABEL[cat] || SUBMIT_LABEL_DEFAULT;
 
     def.fields.forEach(function(f){
       var field = document.createElement('div'); field.className = 'field';
@@ -732,7 +779,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
   }
 
   // ── 배너/버튼 UX ──
-  function resetSubmitBtn(){ var b=$('submitBtn'); b.disabled=false; b.textContent='문의 접수하기'; }
+  function resetSubmitBtn(){ var b=$('submitBtn'); b.disabled=false; b.textContent = SUBMIT_LABEL[selectedCat] || SUBMIT_LABEL_DEFAULT; }
   function showPendingBanner(){
     var el = $('retryBanner'); el.className='retry-banner pending';
     el.innerHTML = '전송이 지연되고 있습니다. 자동으로 다시 시도 중입니다… 창을 닫으셔도 다음 방문 시 재전송됩니다.';
