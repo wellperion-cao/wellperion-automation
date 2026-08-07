@@ -344,6 +344,21 @@ def main() -> int:
     print(f"[{name}] scriptId={script_id} source={source}", flush=True)
     print(message, flush=True)
 
+    # ★접수 갈래 경보(경보만·차단 안 함) — 접수 로직은 원본(Survey.js)과 분리본(Intake.js) 두 벌이다.
+    #   원본만 고치고 배포하면 분리본이 조용히 뒤처지고, 나중에 화면 주소를 분리본으로 옮기는 순간
+    #   새로 생긴 접수 유형이 통째로 죽는다(2026-08-07 실제로 '오넛티' 유형이 그 상태였다).
+    if name in ('funnel-v2', 'intake'):
+        try:
+            _parity = subprocess.run(
+                [sys.executable, os.path.join(_ROOT_DIR, 'scripts', 'tests', 'test_intake_parity.py')],
+                capture_output=True, text=True, encoding='utf-8', timeout=30,
+            )
+            if _parity.returncode != 0:
+                print("[WARN] 접수 로직이 원본과 갈렸습니다 — 분리본을 맞춘 뒤 배포하세요.", flush=True)
+                print((_parity.stdout or '').strip()[:1200], flush=True)
+        except Exception as _e:   # 검사 실패가 배포를 막지는 않는다
+            print(f"[WARN] 접수 갈래 검사를 못 돌렸습니다: {_e}", flush=True)
+
     if decision == 'BLOCK':
         if not args.force:
             print("배포 중단됨. 강행하려면 --force 명시.", flush=True)

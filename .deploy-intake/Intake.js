@@ -910,10 +910,10 @@ function _processAction(body) {
     var _iPhone = String(body.phone || '').trim();
     var _iPhoneDigits = _iPhone.replace(/[^0-9]/g, '');
     var _iConsent = (body.consent === true || body.consent === '예' || String(body.consent) === 'true' || String(body.consent) === '1' || String(body.consent) === '동의');
-    var _iCat = String(body.category || '').trim();   // 'membership' | 'adult' | 'youth' | 'summer' | 'rental' | 'business'(신규 3종 2026-07-16 시토)
+    var _iCat = String(body.category || '').trim();   // 'membership' | 'adult' | 'youth' | 'summer' | 'rental' | 'business' | 'ohnutti'(추석 선물세트, 2026-08-07 GM)
     var _iCompany = String(body.company || '').trim();        // business 전용(name 키 없음)
     var _iContactName = String(body.contactName || '').trim(); // business 전용(name 키 없음)
-    if (_iCat !== 'membership' && _iCat !== 'adult' && _iCat !== 'youth' && _iCat !== 'summer' && _iCat !== 'rental' && _iCat !== 'business') return _json({ ok: false, error: '문의 유형이 올바르지 않습니다.', noRetry: true });
+    if (_iCat !== 'membership' && _iCat !== 'adult' && _iCat !== 'youth' && _iCat !== 'summer' && _iCat !== 'rental' && _iCat !== 'business' && _iCat !== 'ohnutti') return _json({ ok: false, error: '문의 유형이 올바르지 않습니다.', noRetry: true });
     if (_iCat === 'business') {
       if (!_iCompany || !_iContactName) return _json({ ok: false, error: '회사명과 담당자를 입력해 주세요.', noRetry: true });
     } else if (!_iName) {
@@ -959,6 +959,12 @@ function _processAction(body) {
     var _iPartnerType = String(body.partnerType || '').trim();  // business: 제휴 유형
     var _iDocLink = String(body.docLink || '').trim();          // business: 소개자료 링크
     var _iProposal = String(body.proposal || '').trim();        // business: 제안 내용
+    var _iOhQty = String(body.qty || '').trim();                 // ohnutti: 수량(세트) — wp_inquiry_form.html FORMS.ohnutti 필드키(qty)와 1:1
+    var _iOhMethod = String(body.method || '').trim();           // ohnutti: 수령 방법
+    var _iOhWantDate = String(body.wantDate || '').trim();       // ohnutti: 희망 수령일
+    var _iOhAddress = String(body.address || '').trim();         // ohnutti: 배송지(택배 선택 시)
+    var _iOhPay = String(body.pay || '').trim();                 // ohnutti: 결제 방법
+    var _iOhNote = String(body.note || '').trim();                // ohnutti: 요청 사항
 
     try {
       if (_iCat === 'membership') {
@@ -1077,7 +1083,7 @@ function _processAction(body) {
         _rtSet('유입언어', _iLang);   // KO/EN — 영문 자체폼 6종 통합(배9674 시모). 칸 있을 때만 기록(no-op safe).
         if (_iReviewFlag) _rtSet('비고', _iReviewFlag + ' 자동검토');
         _rtSh.appendRow(_rtRow);
-      } else {
+      } else if (_iCat === 'business') {
         // 비즈니스(_iCat === 'business') → '비즈니스 문의' 신규 탭(_MI_SS_ID 하위, 2026-07-16 시토)
         var _bzSh = _businessIntakeSheet_(true);
         if (!_bzSh) return _json({ ok: false, error: '비즈니스 문의 시트 생성 실패' });
@@ -1098,6 +1104,44 @@ function _processAction(body) {
         _bzSet('유입언어', _iLang);   // KO/EN — 영문 자체폼 6종 통합(배9674 시모). 칸 있을 때만 기록(no-op safe).
         if (_iReviewFlag) _bzSet('비고', _iReviewFlag + ' 자동검토');
         _bzSh.appendRow(_bzRow);
+      } else {
+        // 오넛티(_iCat === 'ohnutti') → '오넛티 선물세트 접수' 신규 탭(_MI_SS_ID 하위, 2026-08-07 GM 지시)
+        //   선착순 500세트 — 수량 부족해도 접수는 막지 않고 '대기' 상태로 받는다(GM 확정). 순번·재고 계산은
+        //   서버 판정(LockService 잠금 안)이 정본 — 동시접수 경합으로 순번·재고가 어긋나지 않게 한다.
+        var _ohQty = parseInt(_iOhQty.replace(/[^0-9]/g, ''), 10) || 0;
+        if (_ohQty < 1) return _json({ ok: false, error: '수량을 정확히 입력해 주세요.', noRetry: true });
+        var _ohSh = _ohnuttiIntakeSheet_(true);
+        if (!_ohSh) return _json({ ok: false, error: '오넛티 접수 시트 생성 실패' });
+        var _ohLock = LockService.getScriptLock();
+        if (!_ohLock.tryLock(5000)) return _json({ ok: false, error: '접수가 몰려 있습니다. 잠시 후 다시 시도해 주세요.' });   // 재시도 가능
+        try {
+          var _ohCap = _ohnuttiCapacityStats_();
+          var _ohStatus = (_ohCap.remaining >= _ohQty) ? '접수' : '대기';
+          var _ohSeq = _ohCap.total + 1;   // 순번 = 누적 신청 세트수 뒤 순서(접수+대기 모두 포함 — 대기도 순번은 받는다)
+          var _ohNowDt = new Date();
+          // 결제기한 = 접수 후 3일(GM 확정). '대기'는 아직 슬롯이 확정 안 돼 결제 자체가 의미 없어 기한 미기록.
+          var _ohDeadline = (_ohStatus === '접수') ? new Date(_ohNowDt.getTime() + 3 * 24 * 60 * 60 * 1000) : '';
+          var _ohHdr = _ohSh.getRange(1, 1, 1, _ohSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+          var _ohRow = new Array(_ohHdr.length).fill('');
+          function _ohSet(name, val) { if (val === undefined || val === null || val === '') return; var ci = _findCol_(_ohHdr, [name]); if (ci >= 0) _ohRow[ci] = val; }
+          _ohSet('접수시각', _ohNowDt);   // ★실제 Date — 문자열이면 정렬이 깨진다(다른 문의 탭과 동일 규칙)
+          _ohSet('접수번호', _iId);
+          _ohSet('성함', _iName);
+          _ohSet('연락처', _fmtPhone_(_iPhone));
+          _ohSet('수량', _ohQty);
+          _ohSet('수령방법', _iOhMethod);
+          _ohSet('희망수령일', _iOhWantDate);
+          _ohSet('배송지', _iOhAddress);
+          _ohSet('결제방법', _iOhPay);
+          _ohSet('요청사항', _iOhNote);
+          _ohSet('상태', _ohStatus);
+          _ohSet('순번', _ohSeq);
+          if (_ohDeadline) _ohSet('결제기한', _ohDeadline);
+          if (_iReviewFlag) _ohSet('비고', _iReviewFlag + ' 자동검토');
+          _ohSh.appendRow(_ohRow);
+        } finally {
+          _ohLock.releaseLock();
+        }
       }
     } catch (eIntake) {
       // 저장 실패 = 재시도 가능(noRetry 미설정) → 프론트 대기큐가 재전송. 조용한 유실 0.
@@ -1109,7 +1153,7 @@ function _processAction(body) {
     // 알림 — '문의 알림' 방(멤버십 add·구글폼과 동일 톤). 실패해도 접수 자체는 성공 유지(fail-soft).
     // 신규 3종(여름특강·공간렌트·비즈니스)도 category 라벨·표시명·부가정보만 분기해 동일 _notifyTelegram 재사용(2026-07-16 시토).
     try {
-      var _iCatLabelMap = { membership: '멤버십', adult: '성인 강습', youth: '유소년 강습', summer: '여름 특강', rental: '공간 렌트', business: '비즈니스 제휴' };
+      var _iCatLabelMap = { membership: '멤버십', adult: '성인 강습', youth: '유소년 강습', summer: '여름 특강', rental: '공간 렌트', business: '비즈니스 제휴', ohnutti: '오넛티 선물세트' };
       var _iCatLabel = _iCatLabelMap[_iCat] || _iCat;
       var _iDisplayName = (_iCat === 'business') ? (_iCompany + ' / ' + _iContactName) : _iName;
       var _iChat = _inquiryNotifyChatId_(_iDisplayName, _prop('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK); // 배209 재발방지 — 테스트 태그는 업무보고방으로
@@ -1117,14 +1161,77 @@ function _processAction(body) {
       if (_iCat === 'summer') _iExtra = (_iWish ? ('\n희망시간: ' + _iWish) : '') + (_iWishMonth ? ('\n희망월: ' + _iWishMonth) : '') + (_iTarget ? ('\n대상: ' + _iTarget) : '');
       if (_iCat === 'rental') _iExtra = (_iSpace ? ('\n공간: ' + _iSpace) : '') + (_iPurpose ? ('\n용도: ' + _iPurpose) : '');
       if (_iCat === 'business') _iExtra = (_iPartnerType ? ('\n제휴유형: ' + _iPartnerType) : '');
+      if (_iCat === 'ohnutti') _iExtra = (_iOhQty ? ('\n수량: ' + _iOhQty + '세트') : '') + (_iOhMethod ? ('\n수령방법: ' + _iOhMethod) : '');
       _notifyTelegram((_isTestInquiryName_(_iDisplayName) ? '🧪 <b>[테스트 문의 — 업무보고방으로 자동전환]</b>\n' : '🔔 <b>[웹 문의 접수]</b> (자체폼)\n') + '유형: ' + _iCatLabel + '\n이름: ' + _iDisplayName + '\n연락처: ' + _fmtPhone_(_iPhone)
         + (_iProgram ? ('\n관심: ' + _iProgram) : '') + _iExtra + (_iMessage ? ('\n내용: ' + _iMessage.substring(0, 100)) : ''), _iChat);
     } catch (e) {}
     return _json({ ok: true, id: _iId, submissionId: _sid, message: '문의가 접수되었습니다.' });
   }
 
+  // ─── 실무진 피드백 접수 — 회원관리 화면 상단 '💬 실무진 피드백' 버튼 → 실무진피드백.html (GM 2026-07-24 시포) ───
+  //   실무진이 화면·업무를 쓰다 느낀 불편·개선요청을 그 자리에서 남긴다. 저장 = 멤버십 스프레드시트
+  //   '실무진 피드백' 탭(없으면 헤더와 함께 생성) · 알림 = 업무보고방 1줄.
+  //   ★방어는 intake_submit 과 같은 계열을 그대로 쓴다(토큰·허니팟·멱등·레이트리밋) — 새 방식 발명 없음.
+  //   ★고객 데이터 무관(회원 시트에 쓰지 않는다) — 별도 탭이라 기존 문의 파이프라인에 영향 0.
+
   return _json({ ok: false, error: '알 수 없는 action: ' + action });
 }
+
+
+/* ── 오넛티(추석 선물세트) 접수 — 2026-08-07 원본에서 이식. 분리 백엔드가 원본보다 뒤처지면
+   주소를 갈아끼우는 순간 그 유형 접수가 통째로 죽는다. ── */
+function _ohnuttiIntakeSheet_(createIfMissing) {
+  var ss = SpreadsheetApp.openById(_MI_SS_ID);
+  var sh = ss.getSheetByName(OHNUTTI_INTAKE_SHEET_NAME);
+  if (!sh && createIfMissing) {
+    sh = ss.insertSheet(OHNUTTI_INTAKE_SHEET_NAME);
+    sh.getRange(1, 1, 1, OHNUTTI_INTAKE_HEADERS.length).setValues([OHNUTTI_INTAKE_HEADERS]);
+    sh.setFrozenRows(1);
+    try { sh.getRange(1, 1, 1, OHNUTTI_INTAKE_HEADERS.length).setFontWeight('bold'); } catch (e) {}
+  }
+  return sh || null;
+}
+
+// 재고 집계 — 헤더 라벨 기준으로만 읽는다(_findCol_, 인덱스 금지 · 2026-08-05 사고 재발방지).
+//   '결제기한'이 지난 '접수'(결제대기) 행은 슬롯을 계속 잡아먹지 않도록 확정+접수 합계에서 자동 제외한다
+//   (행을 지우거나 상태를 고쳐쓰지 않고, 집계 시점 판정만으로 반영 — 물리적 상태 변경 없음).
+
+function _ohnuttiCapacityStats_() {
+  var stats = { cap: OHNUTTI_CAP, total: 0, confirmed: 0, pending: 0, waiting: 0, remaining: OHNUTTI_CAP };
+  var sh = _ohnuttiIntakeSheet_(false);
+  if (!sh) return stats;
+  var lastCol = sh.getLastColumn(), lastRow = sh.getLastRow();
+  if (lastRow < 2 || lastCol < 1) return stats;
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+  var iQty = _findCol_(hdr, ['수량']);
+  var iStat = _findCol_(hdr, ['상태']);
+  var iDeadline = _findCol_(hdr, ['결제기한']);
+  if (iQty < 0 || iStat < 0) return stats;   // 칼럼 자체가 없으면 0 날조 금지(rentbiz 패턴과 동일 원칙) — cap만 반환
+  var data = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var now = new Date();
+  for (var r = 0; r < data.length; r++) {
+    var q = parseInt(data[r][iQty], 10) || 0;
+    if (!q) continue;
+    var st = String(data[r][iStat] || '').trim();
+    stats.total += q;
+    if (st === '확정') {
+      stats.confirmed += q;
+    } else if (st === '접수') {
+      var dlRaw = iDeadline >= 0 ? data[r][iDeadline] : '';
+      var dl = (dlRaw instanceof Date) ? dlRaw : (dlRaw ? new Date(dlRaw) : null);
+      var expired = dl && !isNaN(dl) && dl < now;
+      if (!expired) stats.pending += q;   // 기한 만료분은 슬롯 반환(집계 제외) — 상태값은 그대로(팀이 취소로 정리)
+    } else if (st === '대기') {
+      stats.waiting += q;
+    }
+  }
+  stats.remaining = Math.max(0, OHNUTTI_CAP - stats.confirmed - stats.pending);
+  return stats;
+}
+
+// 오넛티 팀 조회 접속코드 — ScriptProperties 키가 설정되면 그 값이 우선, 미설정이면 기본값 '1200'으로 동작(GM 즉시 사용, 2026-08-07).
+var OHNUTTI_ACCESS_CODE_PROP = 'OHNUTTI_ACCESS_CODE';
+var OHNUTTI_ACCESS_CODE_DEFAULT = '1200';
 
 function doGet(e) {
   try {
