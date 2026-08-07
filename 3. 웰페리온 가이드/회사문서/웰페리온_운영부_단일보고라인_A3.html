@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 운영부 단일 보고라인 — 이경연 실장 미팅 자료 (2026-08-07)</title>
+<style>
+  @page { size: A3 portrait; margin: 11mm 13mm; }
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:14.5px; line-height:1.42; word-break:keep-all; overflow-wrap:break-word;}
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:13mm; text-align:left;}
+
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:5px; margin-bottom:8px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap;}
+  .hd .kick{font-size:13.5px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:26px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:14px; text-align:right; line-height:1.5;}
+  .hd-r .big{font-size:16.5px; font-weight:800;}
+
+  h2{font-size:16px; font-weight:800; margin:0 0 5px; padding:3px 10px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+  h2.big{font-size:18px; padding:5px 12px;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:5px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; align-items:start; margin-top:9px;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:7px 13px; font-size:15.5px; font-weight:600; line-height:1.4;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th,td{border:1px solid var(--line); padding:3px 7px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+  td.c,th.c{text-align:center;}
+
+  table.hero{font-size:15.5px;}
+  table.hero th{padding:6px 10px; font-size:14.5px;}
+  table.hero td{padding:7px 10px;}
+  table.hero td.who{font-weight:800; white-space:nowrap;}
+
+  .flow{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:6px 0 2px;
+        font-size:15px; font-weight:700;}
+  .flow .node{border:2px solid var(--accent); background:var(--accent-soft); padding:4px 12px;}
+  .flow .node.mid{border-color:var(--ink); background:#fff;}
+  .flow .arr{color:var(--dim); font-weight:800;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:7px 11px; font-size:14px; line-height:1.4;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:7px 11px; font-size:14px; line-height:1.4;}
+  .note ul,.good ul{margin:4px 0 0; padding-left:19px;}
+  .note li,.good li{margin-bottom:3px;}
+
+  .esc{border:2px solid var(--ink); padding:7px 11px; font-size:14px; line-height:1.4;}
+  .esc b.tag{display:inline-block; border:1px solid var(--ink); padding:0 6px; margin-right:6px; font-size:12.5px;}
+
+  .foot{margin-top:7px; padding-top:4px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint"><button onclick="window.print()">A3 세로로 인쇄</button></div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">운영부 · 이경연 실장 미팅 자료</div>
+      <div class="ttl">웰페리온 운영부 단일 보고라인</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">GM 확정 2026-08-07</div>
+      <div>운영부 조직 운영 체계(2026-08-06)의 소통 채널 확정 후속</div>
+      <div>근거 — 약속 L24</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    운영부의 지시와 보고가 <em>여러 갈래로 흩어져</em> 있었습니다.
+    앞으로는 <em>이경연 실장 한 곳</em>을 거칩니다 — 실장이 받아 매니저에게 나누고 진행을 관리합니다.
+  </div>
+
+  <div class="flow">
+    <span class="node">회원 · 직원 · 오너</span><span class="arr">→</span>
+    <span class="node mid">이경연 실장 &mdash; 단일 창구</span><span class="arr">→</span>
+    <span class="node">매니저 분배</span>
+  </div>
+
+  <div class="blk" style="margin-top:9px;">
+    <h2 class="big">1. 업무 지시 3갈래 &mdash; 이 문서의 핵심</h2>
+    <table class="hero">
+      <tr><th style="width:130px;">갈래</th><th style="width:110px;">어디서 오나</th><th>무엇</th></tr>
+      <tr><td class="who">종합접수처</td><td>회원</td><td>컴플레인 · 분실물 · 시설 고장 등 회원에게서 온 건</td></tr>
+      <tr><td class="who">업무 현황 SSOT</td><td>직원</td><td>직원 업무 · 과제 · 결재 건</td></tr>
+      <tr><td class="who">경영진 전달사항</td><td>오너</td><td>회장님 · 대표님에게서 내려온 건</td></tr>
+    </table>
+    <div class="good" style="margin-top:6px;">
+      세 갈래 모두 <b>실장이 받아 매니저에게 분배</b>합니다. 실장이 전부 직접 처리하는 것이 아닙니다 &mdash;
+      매니저를 활용하는 것이 속도와 완성도를 같이 잡는 방법입니다.
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+
+      <div class="blk">
+        <h2>2. 소통 채널</h2>
+        <table>
+          <tr><th style="width:140px;">방</th><th style="width:64px;">성격</th><th>쓰임</th></tr>
+          <tr><td><b>★중간관리자 방</b></td><td class="c">소통</td><td>질문 · 요청 · 확인 · 답변은 전부 이 방입니다. 이경연 실장 · 이정헌 소장 · 나우열M 이 함께 있어 부서를 가로지르는 확인이 한 번에 끝납니다.</td></tr>
+          <tr><td><b>★운영부 방</b></td><td class="c">공유</td><td>진행 내용을 알리는 용도입니다. 답변을 요구하지 않습니다.</td></tr>
+        </table>
+        <div class="note" style="margin-top:6px;">
+          카카오톡 방이 여러 개로 나뉘어 혼란스러운 상태입니다. <b>방 구성 정리를 실장께 요청</b>드립니다.
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>5. 미팅 안건</h2>
+        <table>
+          <tr><th style="width:26px;" class="c">#</th><th>안건</th></tr>
+          <tr><td class="c">1</td><td>운영부 실장 역할 재확인</td></tr>
+          <tr><td class="c">2</td><td>3갈래 체계를 실제로 어떻게 굴릴지</td></tr>
+          <tr><td class="c">3</td><td>매니저 분배 기준</td></tr>
+          <tr><td class="c">4</td><td>카카오톡 방 정리 방향</td></tr>
+        </table>
+      </div>
+
+    </div>
+
+    <div>
+
+      <div class="blk">
+        <h2>3. 보고 리듬</h2>
+        <table>
+          <tr><th style="width:44px;">주기</th><th>내용</th></tr>
+          <tr><td><b>주간</b></td><td>5대 관점 업무 현황 — ②진행 중 · ③방치 발굴 중심 (표 1장)</td></tr>
+          <tr><td><b>월간</b></td><td>①방향 정합도 + ④강점 · ⑤약점 + 개선 제안 (요약 보고)</td></tr>
+          <tr><td><b>수시</b></td><td>결제 · 보안 · 금지 해당 건, 긴급 이슈는 즉시</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>4. 운영부 업무를 보는 5대 관점</h2>
+        <table>
+          <tr><th class="c" style="width:26px;">#</th><th style="width:96px;">관점</th><th>스스로 묻는 질문</th></tr>
+          <tr><td class="c">①</td><td><b>방향성 정합</b></td><td>이 업무가 지금 목표에 기여하는가?</td></tr>
+          <tr><td class="c">②</td><td><b>진행 중</b></td><td>누가, 언제까지, 어디까지 갔는가?</td></tr>
+          <tr><td class="c">③</td><td><b>방치</b></td><td>마지막 진행이 언제인가? 담당이 있는가?</td></tr>
+          <tr><td class="c">④</td><td><b>잘하는 부분</b></td><td>매뉴얼로 남길 것은 무엇인가?</td></tr>
+          <tr><td class="c">⑤</td><td><b>부족한 부분</b></td><td>교육으로 되는가, 사람이 더 필요한가?</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <h2>표준 칸</h2>
+        <table>
+          <tr><th>업무명</th><th style="width:56px;">관점</th><th style="width:56px;">담당자</th><th style="width:44px;">상태</th><th style="width:44px;">기한</th><th>이슈</th></tr>
+          <tr><td style="color:var(--dim);">예시</td><td class="c">③방치</td><td class="c">-</td><td class="c">-</td><td class="c">-</td><td>-</td></tr>
+        </table>
+      </div>
+
+      <div class="blk">
+        <div class="esc">
+          <b class="tag">즉시 GM 보고</b>기다리지 않고 바로 올리는 세 가지 &mdash;
+          <b>💰 결제</b> · <b>🔒 보안</b> · <b>🚫 금지항목</b> 해당 건.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>바로 가기</b> &nbsp;
+    <a href="https://wellperion-cao.github.io/wellperion-automation/coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html">업무 현황 SSOT</a>
+    &nbsp;·&nbsp;
+    <a href="https://wellperion-cao.github.io/wellperion-automation/coo/reception/%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html">종합접수처 현황</a>
+    &nbsp;·&nbsp;
+    <a href="https://wellperion-cao.github.io/wellperion-automation/coo/chairman/%EC%9A%B4%EC%98%81%EB%B6%80_%EC%A1%B0%EC%A7%81%EC%9A%B4%EC%98%81%EC%B2%B4%EA%B3%84_20260806.html">운영부 조직 운영 체계 A3</a>
+    <br>
+    근거 &mdash; GM 확정 2026-08-06(조직 핵심 지시) · 2026-08-07(채널 역할 분리) · 약속 L24 원문 그대로.
+    문의 이경연 실장 또는 김남욱 GM
+  </div>
+
+</div>
+
+</body>
+</html>
