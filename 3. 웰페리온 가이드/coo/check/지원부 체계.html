@@ -910,6 +910,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <button class="tab" onclick="switchTab('monthly')">📊 월간 지원부 현황·계획·보고</button>
+  <button class="tab" id="wpLdyTabBtn" onclick="switchTab('laundry')">🧺 세탁물 관리</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
   <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
@@ -1754,6 +1755,114 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=지원부&embed=1" title="지원부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
+
+<!-- ══ 「🧺 세탁물 관리」 탭 — GM 발주 2026-08-07(CTO지시_세탁물관리체계_구축.md) ══
+     왜 만드나: 크린토피아 위탁 세탁이 매일 21:00 입고 → 익일 사용 구조인데 지금은 **입고량(명세서)만** 보인다.
+     출고(사용)량·마감 재고가 없어 화·수 부족이 업체 배분 문제인지 로스인지 확정할 수 없다.
+     이 탭은 매일 품목별 [입고]·[마감재고] 두 칸만 채우면 사용량·로스를 자동 산출한다.
+     ▸데이터 네임스페이스 = LAUNDRY (key=SUPPORT_LAUNDRY) — 다른 탭 데이터와 섞지 않는다.
+     ▸저장 = 이 페이지의 기존 방식 그대로(localStorage 즉시 + BoardSync saveBoard 비동기).
+     ▸CSS 는 전부 wp-ldy__ 접두사로 스코프 격리 — 다른 탭 스타일 무접촉. ══ -->
+<div id="tab-laundry" class="content hidden">
+  <style>
+  .wp-ldy__wrap{font-size:13.5px}
+  .wp-ldy__subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}
+  .wp-ldy__subtab{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-weight:650;cursor:pointer;font-family:inherit}
+  .wp-ldy__subtab.on{background:var(--accent,#4ec4c4);color:#141312;border-color:var(--accent,#4ec4c4)}
+  .wp-ldy__bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .wp-ldy__badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700}
+  .wp-ldy__badge--closed{background:rgba(232,163,61,0.16);color:#e8a33d}
+  .wp-ldy__badge--todo{background:rgba(220,38,38,0.16);color:#e06b6b}
+  .wp-ldy__tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .wp-ldy__tbl th,.wp-ldy__tbl td{border:1px solid var(--border);padding:7px 8px;text-align:center}
+  .wp-ldy__tbl th{background:var(--paper,#2a2725);font-weight:700;white-space:nowrap}
+  .wp-ldy__tbl td.wp-ldy__name{text-align:left;font-weight:650;white-space:nowrap}
+  .wp-ldy__in{width:82px;padding:6px 7px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;text-align:right;font-family:inherit}
+  .wp-ldy__in:disabled{opacity:.45;cursor:not-allowed}
+  .wp-ldy__prev{color:var(--dim);font-variant-numeric:tabular-nums}
+  .wp-ldy__use{font-weight:700;font-variant-numeric:tabular-nums}
+  .wp-ldy__warn-low{background:rgba(220,38,38,0.18)}
+  .wp-ldy__warn-neg{background:rgba(232,163,61,0.18)}
+  .wp-ldy__cards{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .wp-ldy__card{flex:1 1 190px;min-width:170px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--paper,#2a2725)}
+  .wp-ldy__card--bad{border-color:rgba(220,38,38,0.5)}
+  .wp-ldy__card b{display:block;font-size:20px;margin-top:3px;font-variant-numeric:tabular-nums}
+  .wp-ldy__k{font-size:11.5px;color:var(--dim);font-weight:650}
+  .wp-ldy__btn{padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12.5px;font-weight:650;cursor:pointer;font-family:inherit}
+  .wp-ldy__btn--go{background:var(--accent,#4ec4c4);color:#141312;border-color:var(--accent,#4ec4c4)}
+  .wp-ldy__bars{display:flex;gap:8px;align-items:flex-end;height:76px;margin-top:6px}
+  .wp-ldy__bars>div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .wp-ldy__bar-fill{width:100%;background:var(--accent,#4ec4c4);border-radius:3px 3px 0 0;min-height:2px}
+  .wp-ldy__hint{font-size:12px;color:var(--dim);margin:6px 0 10px;line-height:1.6}
+  @media(max-width:430px){
+    .wp-ldy__tbl th,.wp-ldy__tbl td{padding:5px 4px;font-size:12px}
+    .wp-ldy__in{width:62px;padding:5px 4px}
+  }
+  </style>
+
+  <div class="wp-ldy__wrap">
+    <div class="wp-ldy__subtabs">
+      <button class="wp-ldy__subtab on" id="wpLdySub-today" onclick="wpLdySub('today')">📝 오늘 점검</button>
+      <button class="wp-ldy__subtab" id="wpLdySub-month" onclick="wpLdySub('month')">📊 월간 현황</button>
+      <button class="wp-ldy__subtab" id="wpLdySub-ledger" onclick="wpLdySub('ledger')">📒 재고 원장</button>
+    </div>
+
+    <!-- ① 오늘 점검 -->
+    <div id="wpLdyView-today">
+      <div class="wp-ldy__bar">
+        <input type="date" id="wpLdyDate" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderToday()">
+        <span id="wpLdyDow" class="wp-ldy__k"></span>
+        <span id="wpLdyClosed"></span>
+        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySaveToday()">저장</button>
+        <span id="wpLdySaveState" class="wp-ldy__k"></span>
+      </div>
+      <table class="wp-ldy__tbl">
+        <thead><tr><th style="text-align:left">품목</th><th>전일마감</th><th>입고</th><th>마감재고</th><th>신품</th><th>사용량</th></tr></thead>
+        <tbody id="wpLdyTodayBody"></tbody>
+      </table>
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:12.5px;font-weight:650;color:var(--accent,#4ec4c4)">＋ 신품 투입 기록</summary>
+        <div class="wp-ldy__bar" style="margin-top:8px">
+          <select id="wpLdyNiItem" class="wp-ldy__in" style="width:130px;text-align:left"></select>
+          <input type="number" id="wpLdyNiQty" class="wp-ldy__in" placeholder="수량" min="0">
+          <input type="text" id="wpLdyNiMemo" class="wp-ldy__in" style="width:180px;text-align:left" placeholder="사유 메모">
+          <button class="wp-ldy__btn" onclick="wpLdyAddNewInput()">기록</button>
+        </div>
+      </details>
+      <div class="wp-ldy__hint">사용량 = 전일마감 + 입고 + 신품 − 마감재고. 마감재고를 아직 안 적었으면 “–”로 둡니다.</div>
+    </div>
+
+    <!-- ② 월간 현황 -->
+    <div id="wpLdyView-month" style="display:none">
+      <div class="wp-ldy__bar">
+        <input type="month" id="wpLdyMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderMonth()">
+      </div>
+      <div class="wp-ldy__cards" id="wpLdyCards"></div>
+      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdyMonthTbl"></table></div>
+      <div style="margin-top:14px">
+        <div class="wp-ldy__k">요일별 평균 입고 — 바스타월 · 세면타월</div>
+        <div class="wp-ldy__bars" id="wpLdyDowBars"></div>
+      </div>
+    </div>
+
+    <!-- ③ 재고 원장 -->
+    <div id="wpLdyView-ledger" style="display:none">
+      <div class="wp-ldy__bar">
+        <button class="wp-ldy__btn" onclick="wpLdyExportJson()">JSON 내보내기</button>
+        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySaveLedger()">저장</button>
+        <span id="wpLdyLedgerState" class="wp-ldy__k"></span>
+      </div>
+      <div class="wp-ldy__k" style="margin-bottom:4px">품목 마스터 · 기초재고 · 총 재고 현황</div>
+      <table class="wp-ldy__tbl">
+        <thead><tr><th style="text-align:left">품목</th><th>단가</th><th>마감 하한</th><th>사용</th><th>기초재고</th><th>총 투입 누계</th><th>현재 순환 추정</th><th>실사값</th></tr></thead>
+        <tbody id="wpLdyLedgerBody"></tbody>
+      </table>
+      <div class="wp-ldy__k" style="margin:14px 0 4px">신품 투입 이력</div>
+      <table class="wp-ldy__tbl"><thead><tr><th>일자</th><th style="text-align:left">품목</th><th>수량</th><th style="text-align:left">메모</th></tr></thead><tbody id="wpLdyNiBody"></tbody></table>
+    </div>
+  </div>
+</div>
+
 
 <!-- ══ 「🧑‍💼 채용 현황」 탭 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
      클릭 없이 탭을 열면 바로 원본 공고 본문이 그 자리에 그대로 펼쳐진다(다른 페이지로 나가지 않음 · 사본 아님).
@@ -5479,6 +5588,8 @@ function switchTab(tab, opts){
   var _vb=document.getElementById('tab-vendorboard'); if(_vb) _vb.classList.toggle('hidden',tab!=='vendorboard');
   if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
   var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
+  var _ldy=document.getElementById('tab-laundry'); if(_ldy) _ldy.classList.toggle('hidden',tab!=='laundry');   // 🧺 세탁물 관리(2026-08-07 CTO)
+  if(tab==='laundry'){ if(typeof wpLdyLoadFromBackend==='function') wpLdyLoadFromBackend(); if(typeof wpLdyRenderAll==='function') wpLdyRenderAll(); }
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
   // Show correct submit bar
@@ -6351,6 +6462,357 @@ loadItemMasterFromSheet(); // 점검 항목 마스터를 시트에서 로드 (�
 loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로컬 즉시 렌더 후 백엔드 동기화(모든 기기 반영)
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
 loadSupplyData(); renderSupplyTable(); // 비품: 로컬 즉시 렌더(서버 동기화는 탭 열 때 loadSupplyFromBackend)
+/* ═══════════════════════════════════════════════
+   🧺 세탁물 관리 — GM 발주 2026-08-07 (CTO지시_세탁물관리체계_구축.md)
+   목적: 매일 품목별 [입고]·[마감재고] 두 칸만 채우면 사용량·로스가 자동으로 나오게 한다.
+        지금은 입고(명세서)만 보여서, 화·수 부족이 업체 배분 문제인지 로스인지 확정할 수 없다.
+   저장: 이 페이지의 기존 방식 그대로 — localStorage 즉시 + BoardSync saveBoard(key=SUPPORT_LAUNDRY).
+   격리: 데이터 네임스페이스 LAUNDRY_DATA 하나. 다른 탭 데이터·공용 함수 무접촉.
+   ═══════════════════════════════════════════════ */
+const LAUNDRY_STORAGE_KEY = 'SUPPORT_LAUNDRY';
+/* 품목 초기값 — 지시서 §8 그대로. 하한은 원장에서 수정 가능(여긴 시딩값일 뿐). */
+const WP_LDY_SEED = [
+  {id:'bath',   name:'바스타월',  unitPrice:399,  lowLimit:70,  active:true},
+  {id:'face',   name:'세면타월',  unitPrice:106,  lowLimit:380, active:true},
+  {id:'sweat',  name:'땀타월',    unitPrice:41,   lowLimit:75,  active:true},
+  {id:'shower', name:'샤워타월',  unitPrice:41,   lowLimit:95,  active:true},
+  {id:'socks',  name:'양말',      unitPrice:81,   lowLimit:70,  active:true},
+  {id:'top',    name:'운동복 상', unitPrice:133,  lowLimit:70,  active:true},
+  {id:'btm',    name:'운동복 하', unitPrice:133,  lowLimit:65,  active:true},
+  {id:'carpet', name:'카페트',    unitPrice:5000, lowLimit:1,   active:true}
+];
+var LAUNDRY_DATA = {master:[], openingStock:{}, daily:{}, newInput:[], audit:[]};
+var WP_LDY_SUB = 'today';
+
+/* ── 계산 규칙(지시서 §6) — 화면과 검산이 같은 함수를 쓴다 ────────────────── */
+/* 휴관일 = 매월 둘째·넷째 일요일. 날짜에서 매번 계산한다(하드코딩 금지 · 지시서 §8). */
+function wpLdyIsClosed(dateStr){
+  var d = new Date(String(dateStr) + 'T00:00:00');
+  if (isNaN(d.getTime()) || d.getDay() !== 0) return false;
+  var nth = Math.floor((d.getDate() - 1) / 7) + 1;
+  return nth === 2 || nth === 4;
+}
+function wpLdyNum(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
+/* 전일마감 = 전날 end. 전날이 비었으면 **가장 최근 기입일**의 end 로 이월. 아무것도 없으면 기초재고. */
+function wpLdyPrevEnd(itemId, dateStr){
+  var keys = Object.keys(LAUNDRY_DATA.daily).filter(function(k){ return k < dateStr; }).sort();
+  for (var i = keys.length - 1; i >= 0; i--){
+    var rec = LAUNDRY_DATA.daily[keys[i]];
+    var e = rec && rec[itemId] ? wpLdyNum(rec[itemId].end) : null;
+    if (e !== null) return e;
+  }
+  return wpLdyNum(LAUNDRY_DATA.openingStock[itemId]);
+}
+function wpLdyNewQty(itemId, dateStr){
+  return (LAUNDRY_DATA.newInput || []).reduce(function(s, n){
+    return s + ((n && n.date === dateStr && n.itemId === itemId) ? (wpLdyNum(n.qty) || 0) : 0);
+  }, 0);
+}
+function wpLdyIn(itemId, dateStr){
+  var rec = LAUNDRY_DATA.daily[dateStr];
+  return rec && rec[itemId] ? wpLdyNum(rec[itemId].in) : null;
+}
+function wpLdyEnd(itemId, dateStr){
+  var rec = LAUNDRY_DATA.daily[dateStr];
+  return rec && rec[itemId] ? wpLdyNum(rec[itemId].end) : null;
+}
+/* 사용량 = 전일마감 + 입고 + 신품 − 마감재고. 마감 미기입이면 계산 보류(null). */
+function wpLdyUsage(itemId, dateStr){
+  var end = wpLdyEnd(itemId, dateStr);
+  if (end === null) return null;
+  var prev = wpLdyPrevEnd(itemId, dateStr);
+  if (prev === null) return null;
+  return prev + (wpLdyIn(itemId, dateStr) || 0) + wpLdyNewQty(itemId, dateStr) - end;
+}
+/* 월 합계 — 품목별 사용/입고/로스 추정(Σ사용 − Σ입고). 지시서 §6. */
+function wpLdyMonthStats(ym){
+  var days = Object.keys(LAUNDRY_DATA.daily).filter(function(k){ return k.indexOf(ym) === 0; }).sort();
+  var per = {};
+  LAUNDRY_DATA.master.forEach(function(m){ per[m.id] = {use:0, inn:0, loss:0, newq:0, useDays:0}; });
+  days.forEach(function(d){
+    LAUNDRY_DATA.master.forEach(function(m){
+      var p = per[m.id];
+      var i = wpLdyIn(m.id, d); if (i !== null) p.inn += i;
+      var u = wpLdyUsage(m.id, d); if (u !== null){ p.use += u; p.useDays++; }
+      p.newq += wpLdyNewQty(m.id, d);
+    });
+  });
+  Object.keys(per).forEach(function(k){ per[k].loss = per[k].use - per[k].inn; });
+  return {days:days, per:per};
+}
+/* 화·수 바스타월 평균 입고 — 업체 배분 협의 결과 검증용(목표 275 이상, 235 미만이면 7월 저점 회귀). */
+function wpLdyTueWedAvg(ym, itemId){
+  var days = Object.keys(LAUNDRY_DATA.daily).filter(function(k){ return k.indexOf(ym) === 0; });
+  var vals = [];
+  days.forEach(function(d){
+    var wd = new Date(d + 'T00:00:00').getDay();
+    if (wd !== 2 && wd !== 3) return;
+    var i = wpLdyIn(itemId || 'bath', d);
+    if (i !== null) vals.push(i);
+  });
+  if (!vals.length) return null;
+  return Math.round(vals.reduce(function(a,b){ return a+b; }, 0) / vals.length);
+}
+/* 결품 경고 발생일수 = 마감재고가 품목 하한 아래로 내려간 날 수(품목 무관 하루 1회 계수). */
+function wpLdyLowDays(ym){
+  var days = Object.keys(LAUNDRY_DATA.daily).filter(function(k){ return k.indexOf(ym) === 0; });
+  var n = 0;
+  days.forEach(function(d){
+    var hit = LAUNDRY_DATA.master.some(function(m){
+      var e = wpLdyEnd(m.id, d);
+      return e !== null && e < (wpLdyNum(m.lowLimit) || 0);
+    });
+    if (hit) n++;
+  });
+  return n;
+}
+/* 로스 추정이 주 단위로 계속 늘고 있나 — ▲ 추세 표시용(주별 로스 합이 연속 증가하면 true). */
+function wpLdyLossRising(ym){
+  var days = Object.keys(LAUNDRY_DATA.daily).filter(function(k){ return k.indexOf(ym) === 0; }).sort();
+  var wk = {};
+  days.forEach(function(d){
+    var w = Math.floor((parseInt(d.slice(8,10),10) - 1) / 7);
+    LAUNDRY_DATA.master.forEach(function(m){
+      var u = wpLdyUsage(m.id, d); var i = wpLdyIn(m.id, d);
+      if (u === null) return;
+      wk[w] = (wk[w] || 0) + (u - (i || 0));
+    });
+  });
+  var ks = Object.keys(wk).sort(function(a,b){ return a-b; });
+  if (ks.length < 3) return false;
+  for (var i = 1; i < ks.length; i++){ if (wk[ks[i]] <= wk[ks[i-1]]) return false; }
+  return true;
+}
+/* 총 투입 누계 = 기초재고 + 신품 누계 / 현재 순환 추정 = 총 투입 − 로스 추정 누계(전 기간). */
+function wpLdyTotals(itemId){
+  var opening = wpLdyNum(LAUNDRY_DATA.openingStock[itemId]) || 0;
+  var newSum = (LAUNDRY_DATA.newInput || []).reduce(function(s,n){
+    return s + ((n && n.itemId === itemId) ? (wpLdyNum(n.qty) || 0) : 0); }, 0);
+  var lossSum = 0;
+  Object.keys(LAUNDRY_DATA.daily).sort().forEach(function(d){
+    var u = wpLdyUsage(itemId, d); if (u === null) return;
+    lossSum += u - (wpLdyIn(itemId, d) || 0);
+  });
+  return {opening:opening, newSum:newSum, input:opening + newSum, loss:lossSum, circ:opening + newSum - lossSum};
+}
+
+/* ── 저장/로드 (기존 BoardSync 그대로 재사용) ─────────────────────────────── */
+function wpLdyApplyStored(stored){
+  var s = (stored && typeof stored === 'object') ? stored : {};
+  var master = Array.isArray(s.master) && s.master.length ? s.master : WP_LDY_SEED.map(function(m){ return Object.assign({}, m); });
+  LAUNDRY_DATA = {
+    master: master.map(function(m){
+      return {id:String(m.id), name:String(m.name || ''), unitPrice:(wpLdyNum(m.unitPrice) || 0),
+              lowLimit:(wpLdyNum(m.lowLimit) || 0), active:(m.active !== false)};
+    }),
+    openingStock: (s.openingStock && typeof s.openingStock === 'object') ? s.openingStock : {},
+    daily: (s.daily && typeof s.daily === 'object') ? s.daily : {},
+    newInput: Array.isArray(s.newInput) ? s.newInput : [],
+    audit: Array.isArray(s.audit) ? s.audit : []
+  };
+}
+function wpLdyLoadLocal(){
+  var stored = null;
+  try{ stored = JSON.parse(localStorage.getItem(LAUNDRY_STORAGE_KEY)); }catch(e){ stored = null; }
+  wpLdyApplyStored(stored);
+}
+const LAUNDRY_SYNC_CFG = {key:LAUNDRY_STORAGE_KEY, wrapId:'tab-laundry', guard:'focus', renderBeforeFetch:true,
+  localLoad:wpLdyLoadLocal, apply:wpLdyApplyStored, render:function(){ wpLdyRenderAll(); },
+  getData:function(){ return LAUNDRY_DATA; }, label:'세탁물'};
+async function wpLdyLoadFromBackend(){ return BoardSync.load(LAUNDRY_SYNC_CFG); }
+function wpLdyPersist(){ return BoardSync.persistDebounced(LAUNDRY_SYNC_CFG); }
+
+/* ── 화면 ──────────────────────────────────────────────────────────────── */
+function wpLdyEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function wpLdyToday(){ var d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function wpLdyItems(){ return LAUNDRY_DATA.master.filter(function(m){ return m.active !== false; }); }
+
+function wpLdySub(v){
+  WP_LDY_SUB = v;
+  ['today','month','ledger'].forEach(function(k){
+    var b = document.getElementById('wpLdySub-'+k); if (b) b.classList.toggle('on', k === v);
+    var p = document.getElementById('wpLdyView-'+k); if (p) p.style.display = (k === v ? '' : 'none');
+  });
+  wpLdyRenderAll();
+}
+function wpLdyRenderAll(){
+  if (WP_LDY_SUB === 'today') wpLdyRenderToday();
+  else if (WP_LDY_SUB === 'month') wpLdyRenderMonth();
+  else wpLdyRenderLedger();
+  wpLdyMarkTodo();
+}
+/* 오늘 날짜에 빈 칸이 있으면 탭 제목 옆 ● */
+function wpLdyMarkTodo(){
+  var d = wpLdyToday(), miss = false;
+  wpLdyItems().forEach(function(m){
+    if (wpLdyEnd(m.id, d) === null) miss = true;
+    if (!wpLdyIsClosed(d) && wpLdyIn(m.id, d) === null) miss = true;
+  });
+  var btn = document.getElementById('wpLdyTabBtn');
+  if (btn) btn.innerHTML = '🧺 세탁물 관리' + (miss ? ' <span style="color:#e06b6b">●</span>' : '');
+}
+function wpLdyRenderToday(){
+  var dEl = document.getElementById('wpLdyDate'); if (!dEl) return;
+  if (!dEl.value) dEl.value = wpLdyToday();
+  var d = dEl.value, closed = wpLdyIsClosed(d);
+  var dow = ['일','월','화','수','목','금','토'][new Date(d+'T00:00:00').getDay()];
+  document.getElementById('wpLdyDow').textContent = dow + '요일';
+  document.getElementById('wpLdyClosed').innerHTML = closed
+    ? '<span class="wp-ldy__badge wp-ldy__badge--closed">휴관 — 입고 없음</span>' : '';
+  var html = '';
+  wpLdyItems().forEach(function(m){
+    var prev = wpLdyPrevEnd(m.id, d), inv = wpLdyIn(m.id, d), end = wpLdyEnd(m.id, d);
+    var nq = wpLdyNewQty(m.id, d), use = wpLdyUsage(m.id, d);
+    var endCls = (end !== null && end < (m.lowLimit || 0)) ? ' wp-ldy__warn-low' : '';
+    var useCls = (use !== null && use < 0) ? ' wp-ldy__warn-neg' : '';
+    html += '<tr>'
+      + '<td class="wp-ldy__name">' + wpLdyEsc(m.name) + '</td>'
+      + '<td class="wp-ldy__prev">' + (prev === null ? '–' : prev) + '</td>'
+      + '<td><input type="number" class="wp-ldy__in" min="0" data-ldy="in" data-item="' + m.id + '" value="'
+        + (closed ? 0 : (inv === null ? '' : inv)) + '"' + (closed ? ' disabled' : '') + ' oninput="wpLdyEdit(this)"></td>'
+      + '<td class="' + endCls + '"' + (endCls ? ' title="익일 결품 위험"' : '') + '><input type="number" class="wp-ldy__in" min="0" data-ldy="end" data-item="' + m.id + '" value="'
+        + (end === null ? '' : end) + '" oninput="wpLdyEdit(this)"></td>'
+      + '<td class="wp-ldy__prev">' + (nq || '–') + '</td>'
+      + '<td class="wp-ldy__use' + useCls + '"' + (useCls ? ' title="기입 확인 필요"' : '') + '>' + (use === null ? '–' : use) + '</td>'
+      + '</tr>';
+  });
+  document.getElementById('wpLdyTodayBody').innerHTML = html;
+  var sel = document.getElementById('wpLdyNiItem');
+  if (sel && !sel.options.length) sel.innerHTML = wpLdyItems().map(function(m){
+    return '<option value="' + m.id + '">' + wpLdyEsc(m.name) + '</option>'; }).join('');
+}
+/* 입력 즉시 메모리 반영 + 디바운스 저장. 표를 통째로 다시 그리지 않는다(한글 입력 깨짐 방지) —
+   사용량·경고 칸만 갱신한다. */
+function wpLdyEdit(el){
+  var d = document.getElementById('wpLdyDate').value, item = el.getAttribute('data-item'), fld = el.getAttribute('data-ldy');
+  if (!LAUNDRY_DATA.daily[d]) LAUNDRY_DATA.daily[d] = {};
+  if (!LAUNDRY_DATA.daily[d][item]) LAUNDRY_DATA.daily[d][item] = {};
+  LAUNDRY_DATA.daily[d][item][fld] = (el.value === '' ? '' : Number(el.value));
+  var tr = el.closest('tr'); if (!tr) return;
+  var use = wpLdyUsage(item, d), m = LAUNDRY_DATA.master.filter(function(x){ return x.id === item; })[0] || {};
+  var useTd = tr.children[5], endTd = tr.children[3];
+  useTd.textContent = (use === null ? '–' : use);
+  useTd.className = 'wp-ldy__use' + (use !== null && use < 0 ? ' wp-ldy__warn-neg' : '');
+  useTd.title = (use !== null && use < 0) ? '기입 확인 필요' : '';
+  var end = wpLdyEnd(item, d);
+  endTd.className = (end !== null && end < (m.lowLimit || 0)) ? 'wp-ldy__warn-low' : '';
+  endTd.title = endTd.className ? '익일 결품 위험' : '';
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  wpLdyPersist();
+  wpLdyMarkTodo();
+}
+function wpLdySaveToday(){
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  var st = document.getElementById('wpLdySaveState'); if (st) st.textContent = '저장 중…';
+  Promise.resolve(wpLdyPersist()).then(function(){ if (st) st.textContent = '저장됨'; })
+    .catch(function(){ if (st) st.textContent = '저장 실패 — 다시 눌러 주세요'; });
+}
+function wpLdyAddNewInput(){
+  var d = document.getElementById('wpLdyDate').value;
+  var item = document.getElementById('wpLdyNiItem').value;
+  var qty = parseFloat(document.getElementById('wpLdyNiQty').value);
+  if (!item || isNaN(qty) || qty <= 0){ alert('품목과 수량을 확인해 주세요.'); return; }
+  LAUNDRY_DATA.newInput.push({date:d, itemId:item, qty:qty, memo:document.getElementById('wpLdyNiMemo').value || ''});
+  document.getElementById('wpLdyNiQty').value = '';
+  document.getElementById('wpLdyNiMemo').value = '';
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  wpLdyPersist(); wpLdyRenderToday(); wpLdyMarkTodo();
+}
+function wpLdyRenderMonth(){
+  var mEl = document.getElementById('wpLdyMonth'); if (!mEl) return;
+  if (!mEl.value) mEl.value = wpLdyToday().slice(0,7);
+  var ym = mEl.value, st = wpLdyMonthStats(ym);
+  var tw = wpLdyTueWedAvg(ym, 'bath');
+  var lossAll = 0, newAll = 0;
+  Object.keys(st.per).forEach(function(k){ lossAll += st.per[k].loss; newAll += st.per[k].newq; });
+  var lowDays = wpLdyLowDays(ym), rising = wpLdyLossRising(ym);
+  var lossTip = LAUNDRY_DATA.master.map(function(m){ return m.name + ' ' + Math.round(st.per[m.id].loss); }).join(' · ');
+  document.getElementById('wpLdyCards').innerHTML =
+    '<div class="wp-ldy__card' + ((tw !== null && tw < 235) ? ' wp-ldy__card--bad' : '') + '"><span class="wp-ldy__k">화·수 입고 평균 (바스타월)</span><b>'
+      + (tw === null ? '–' : tw) + '</b><span class="wp-ldy__k">목표 275 이상' + ((tw !== null && tw < 235) ? ' · 7월 저점 이하' : '') + '</span></div>'
+    + '<div class="wp-ldy__card" title="' + wpLdyEsc(lossTip) + '"><span class="wp-ldy__k">월간 로스 추정</span><b>'
+      + Math.round(lossAll) + (rising ? ' ▲' : '') + '</b><span class="wp-ldy__k">Σ사용 − Σ입고' + (rising ? ' · 주 단위 계속 증가' : '') + '</span></div>'
+    + '<div class="wp-ldy__card"><span class="wp-ldy__k">신품 투입 누계</span><b>' + Math.round(newAll)
+      + '</b><span class="wp-ldy__k">로스와 같이 늘면 신품으로 메우는 중</span></div>'
+    + '<div class="wp-ldy__card"><span class="wp-ldy__k">결품 경고 발생일수</span><b>' + lowDays + '</b><span class="wp-ldy__k">마감재고 하한 미달</span></div>';
+  var items = wpLdyItems();
+  var h = '<thead><tr><th style="text-align:left">날짜</th>' + items.map(function(m){
+    return '<th>' + wpLdyEsc(m.name) + '<div class="wp-ldy__k">입고/사용</div></th>'; }).join('') + '</tr></thead><tbody>';
+  st.days.forEach(function(d){
+    var dow = ['일','월','화','수','목','금','토'][new Date(d+'T00:00:00').getDay()];
+    h += '<tr><td class="wp-ldy__name">' + d.slice(5) + '(' + dow + ')' + (wpLdyIsClosed(d) ? ' 휴관' : '') + '</td>'
+      + items.map(function(m){
+          var i = wpLdyIn(m.id, d), u = wpLdyUsage(m.id, d);
+          return '<td>' + (i === null ? '–' : i) + ' / ' + (u === null ? '–' : u) + '</td>'; }).join('') + '</tr>';
+  });
+  if (!st.days.length) h += '<tr><td colspan="' + (items.length+1) + '" class="wp-ldy__k">이 달 기록이 아직 없습니다.</td></tr>';
+  document.getElementById('wpLdyMonthTbl').innerHTML = h + '</tbody>';
+  var bars = '';
+  [['bath','바스타월'], ['face','세면타월']].forEach(function(p){
+    for (var wd = 1; wd <= 6; wd++){
+      var vals = st.days.filter(function(d){ return new Date(d+'T00:00:00').getDay() === wd; })
+        .map(function(d){ return wpLdyIn(p[0], d); }).filter(function(v){ return v !== null; });
+      var avg = vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : 0;
+      var maxv = (p[0] === 'face') ? 1800 : 400;
+      bars += '<div><div class="wp-ldy__bar-fill" style="height:' + Math.min(100, Math.round(avg/maxv*100)) + '%"></div>'
+        + '<span class="wp-ldy__k">' + ['','월','화','수','목','금','토'][wd] + ' ' + avg + '</span></div>';
+    }
+  });
+  document.getElementById('wpLdyDowBars').innerHTML = bars;
+}
+function wpLdyRenderLedger(){
+  var body = document.getElementById('wpLdyLedgerBody'); if (!body) return;
+  body.innerHTML = LAUNDRY_DATA.master.map(function(m){
+    var t = wpLdyTotals(m.id);
+    var last = (LAUNDRY_DATA.audit || []).filter(function(a){ return a.itemId === m.id; }).slice(-1)[0];
+    return '<tr><td class="wp-ldy__name">' + wpLdyEsc(m.name) + '</td>'
+      + '<td>' + (m.unitPrice || 0).toLocaleString() + '</td>'
+      + '<td><input type="number" class="wp-ldy__in" style="width:70px" value="' + (m.lowLimit || 0) + '" oninput="wpLdyLedgerEdit(\'' + m.id + '\',\'lowLimit\',this.value)"></td>'
+      + '<td><input type="checkbox"' + (m.active !== false ? ' checked' : '') + ' onchange="wpLdyLedgerEdit(\'' + m.id + '\',\'active\',this.checked)"></td>'
+      + '<td><input type="number" class="wp-ldy__in" style="width:80px" value="' + (LAUNDRY_DATA.openingStock[m.id] == null ? '' : LAUNDRY_DATA.openingStock[m.id]) + '" oninput="wpLdyOpeningEdit(\'' + m.id + '\',this.value)"></td>'
+      + '<td>' + Math.round(t.input) + '</td>'
+      + '<td>' + Math.round(t.circ) + '</td>'
+      + '<td><input type="number" class="wp-ldy__in" style="width:80px" value="' + (last ? last.counted : '') + '" onchange="wpLdyAudit(\'' + m.id + '\',this.value)">'
+      + (last ? '<div class="wp-ldy__k">실사 대비 ' + Math.round(t.circ - last.counted) + '</div>' : '') + '</td></tr>';
+  }).join('');
+  document.getElementById('wpLdyNiBody').innerHTML = (LAUNDRY_DATA.newInput || []).slice().reverse().map(function(n){
+    var m = LAUNDRY_DATA.master.filter(function(x){ return x.id === n.itemId; })[0];
+    return '<tr><td>' + wpLdyEsc(n.date) + '</td><td class="wp-ldy__name">' + wpLdyEsc(m ? m.name : n.itemId)
+      + '</td><td>' + wpLdyEsc(n.qty) + '</td><td style="text-align:left">' + wpLdyEsc(n.memo || '') + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" class="wp-ldy__k">아직 없습니다.</td></tr>';
+}
+function wpLdyLedgerEdit(id, field, val){
+  LAUNDRY_DATA.master.forEach(function(m){ if (m.id === id) m[field] = (field === 'active' ? !!val : (wpLdyNum(val) || 0)); });
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  wpLdyPersist();
+}
+function wpLdyOpeningEdit(id, val){
+  if (val === '') delete LAUNDRY_DATA.openingStock[id];
+  else LAUNDRY_DATA.openingStock[id] = Number(val);
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  wpLdyPersist();
+}
+function wpLdyAudit(id, val){
+  if (val === '') return;
+  LAUNDRY_DATA.audit.push({date:wpLdyToday(), itemId:id, counted:Number(val)});
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  wpLdyPersist(); wpLdyRenderLedger();
+}
+function wpLdySaveLedger(){
+  var st = document.getElementById('wpLdyLedgerState'); if (st) st.textContent = '저장 중…';
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  Promise.resolve(wpLdyPersist()).then(function(){ if (st) st.textContent = '저장됨'; wpLdyRenderLedger(); })
+    .catch(function(){ if (st) st.textContent = '저장 실패 — 다시 눌러 주세요'; });
+}
+function wpLdyExportJson(){
+  var blob = new Blob([JSON.stringify(LAUNDRY_DATA, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'laundry_' + wpLdyToday() + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+wpLdyLoadLocal(); wpLdyMarkTodo();   // 세탁물: 로컬 즉시(서버 동기화는 탭 열 때 wpLdyLoadFromBackend)
 renderG('m');
 /* 로드 시 시드 자동 동기(무트리거) — setTimeout(0)로 스크립트 평가 완료 후 실행(const TDZ 회피)·비차단.
    시그니처 가드로 회차/명단 바뀐 경우에만 시트 write, 10초 디바운스로 멀티탭 연타 방지. GM 2026-06-23 [시우]. */
