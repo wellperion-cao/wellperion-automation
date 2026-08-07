@@ -3166,12 +3166,12 @@ function _ohnuttiCapacityStats_() {
   return stats;
 }
 
-// 오넛티 팀 조회 접속코드 — ScriptProperties 키(코드에 실제값 하드코딩 안 함, GM 지시). GM이 이 키로 값을 설정해야 조회가 열린다.
+// 오넛티 팀 조회 접속코드 — ScriptProperties 키가 설정되면 그 값이 우선, 미설정이면 기본값 '1200'으로 동작(GM 즉시 사용, 2026-08-07).
 var OHNUTTI_ACCESS_CODE_PROP = 'OHNUTTI_ACCESS_CODE';
+var OHNUTTI_ACCESS_CODE_DEFAULT = '1200';
 function _ohnuttiTeamAuthed_(body) {
-  var code = _accessProp_(OHNUTTI_ACCESS_CODE_PROP);
-  if (!code) return false;   // 미설정 = 거부(fail-closed) — 신규 액션이라 임시 하드코딩 기본값을 두지 않는다
-  return String((body && body.code) || '') === code;
+  var code = String(_accessProp_(OHNUTTI_ACCESS_CODE_PROP) || '').trim() || OHNUTTI_ACCESS_CODE_DEFAULT;
+  return String((body && body.code) || '').trim() === code;
 }
 
 // 강습 신규문의 탭 → 문의행 배열(강습 목록 병합용). body.type(성인강습/유소년강습)로 '유형' 필터. _ROW_OFFSET_INTAKE_ 부여.
