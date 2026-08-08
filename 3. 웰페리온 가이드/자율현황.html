@@ -2372,20 +2372,17 @@
      원천 = status/kungjjak_today.json (scripts/kungjjak_board.py --emit 발행).
      여기서 다시 세지 않는다 — 셸에서 보는 표와 같은 값이어야 한다(약속 L01). */
 
-  /* GM 지시가 아닌 자체 작업 — 시각·한 일·근거 세 칸. 없으면 빈 문자열. */
-  function workHtml(r){
-    if(!r || !r.work || !r.work.length) return '';
-    var rows = r.work.map(function(w){
-      return '<tr><td style="white-space:nowrap;color:var(--dim);font-size:12px;">' + esc(w.time || '') + '</td>'
-           + '<td>' + esc(w.event || '') + '</td>'
-           + '<td style="color:var(--dim);font-size:12px;">' + esc(w.detail || '') + '</td></tr>';
-    }).join('');
-    return '<div class="sec-note" style="margin:10px 0 4px;">그 밖에 오늘 한 일 ' + r.work.length + '건</div>'
-         + '<div class="coo-tbl-wrap"><table>'
-         + '<tr><th style="width:9%">시각</th><th style="width:56%">한 일</th><th style="width:35%">근거</th></tr>'
-         + rows + '</table></div>';
-  }
-
+  /* workHtml 삭제 (2026-08-08 재설계) — '그 밖에 오늘 한 일' 목록은 역할 표의 숫자로
+     대체했다. 목록으로 두면 역할마다 최대 12줄이 더 붙어 판단거리를 덮었다.
+     숫자는 남긴다 — 시토가 '0건'으로 보이던 오해가 다시 생기면 안 된다. */
+  /* ═══════════ 🥁 쿵짝표 (2026-08-08 재설계 · GM "눈에 잘 안들어오긴해") ═══════════
+     설계 목표 하나 — GM 이 3초 안에 "놓친 게 있나 없나"를 판단한다.
+     그 판단에 안 쓰이는 줄은 전부 접거나 뺀다.
+     ▸전: 약 210줄(끝난 105건 전문이 자동으로 펼쳐졌다) → 후: 첫 화면 약 16줄.
+     ▸GM 이 여기서 정할 것은 셋뿐이다 — ①진짜 놓친 것 ②같은 말 두 번 하게 만든 것
+       ③했는데 도장 안 찍은 것. 끝난 일·방금 받은 일·자체 작업은 확인용이지 판단용이 아니라
+       숫자만 남기고 목록은 접는다.
+     ▸데이터는 그대로(status/kungjjak_today.json) — 그리는 방식만 바꿨다. */
   function renderKungjjak(kj){
     var sum = document.getElementById('kungjjak-summary');
     var box = document.getElementById('kungjjak-body');
@@ -2395,87 +2392,106 @@
       box.innerHTML = ''; return;
     }
     var roles = kj.roles, order = ['ceo','cto','cmo','cpo','coo'];
-    var got = 0, done = 0, open = 0, html = '';
+    var got=0, done=0, openN=0, justN=0;
+    var missed=[], repeats=[], unclosed=[], rows=[];
 
-    /* ★놓친 지시·반복 지시를 맨 위에 (GM 지시 2026-08-08 "절대 놓치지마").
-       접수는 자동인데 완료 짝은 손으로 남긴다 — 그래서 끝난 일도 '진행중'으로 쌓이고
-       그 더미에서 진짜 안 한 것이 안 보였다. 셋으로 갈라 맨 위에 세운다.
-       ▸자동으로 '완료' 도장은 찍지 않는다. 안 한 일을 했다고 적는 것이 더 나쁘다. */
-    var mAll = [], rAll = [], uAll = 0;
     order.forEach(function(rk){
       var r = roles[rk]; if(!r) return;
-      (r.missed || []).forEach(function(x){ mAll.push({nick:r.nick, x:x}); });
-      (r.repeats || []).forEach(function(g){ rAll.push({nick:r.nick, g:g}); });
-      uAll += (r.unclosed || []).length;
-    });
-    if(mAll.length || rAll.length || uAll){
-      html += '<div class="whowrap" style="border-color:' + (mAll.length ? '#c4472f' : 'var(--line)')
-            + ';background:' + (mAll.length ? 'rgba(196,71,47,.08)' : 'var(--tile,transparent)') + ';margin-bottom:10px;">'
-            + '<div class="lab">' + (mAll.length ? '🔴 놓친 지시 ' + mAll.length + '건' : '✅ 놓친 지시 없음')
-            + (rAll.length ? ' · 🔁 같은 말 두 번 이상 ' + rAll.length + '건' : '')
-            + (uAll ? ' · 📝 했는데 안 닫은 것 ' + uAll + '건' : '') + '</div>';
-      mAll.forEach(function(o){
-        html += '<div class="srow"><span class="sd">' + (o.x.waited != null ? Math.floor(o.x.waited/60) + '시간' : '—')
-             + '</span><span class="st">' + esc(o.x.got || '') + '</span>'
-             + '<span class="sw">' + esc(o.nick) + '</span></div>';
-      });
-      rAll.forEach(function(o){
-        html += '<div class="srow"><span class="sd">' + o.g.count + '회</span>'
-             + '<span class="st">' + esc(o.g.got || '') + '</span>'
-             + '<span class="sw">' + esc(o.nick) + '</span></div>';
-      });
-      if(rAll.length){
-        html += '<div class="sub" style="margin-top:6px;">같은 말을 두 번 하셨다면 그건 저희가 안 한 것입니다.</div>';
-      }
-      html += '</div>';
-    }
-    order.forEach(function(rk){
-      var r = roles[rk]; if(!r || !r.items || !r.items.length) return;
-      var items = r.items.slice();
+      var items = r.items || [];
       var rOpen = items.filter(function(x){ return x.open; }).length;
-      got += items.length; done += (items.length - rOpen); open += rOpen;
-      // 진행중을 맨 위로 — 아직 안 끝난 것이 오늘 볼 것이다.
-      items.sort(function(x,y){ return (y.open?1:0) - (x.open?1:0); });
-      var rows = items.map(function(x){
-        var stat = x.open
-          ? '<span class="statchip warn">진행중</span>'
-          : '<span class="statchip ok">' + esc(x.upload || '완료') + '</span>';
-        return '<tr><td style="white-space:nowrap;color:var(--dim);font-size:12px;">' + esc(x.no || '') + '</td>'
-             + '<td>' + esc(x.got || '') + '</td>'
-             + '<td style="color:var(--dim);">' + esc(x.open ? '아직' : (x.did || '')) + '</td>'
-             + '<td style="white-space:nowrap;text-align:right;color:var(--dim);font-size:12px;">'
-               + (x.minutes ? x.minutes + '분' : '—') + '</td>'
-             + '<td style="white-space:nowrap;">' + stat + '</td></tr>';
-      }).join('');
-      html += '<details class="coo-details" style="margin-top:8px;"' + (rOpen ? ' open' : '') + '>'
-            + '<summary>' + esc(r.nick || rk)
-            + '<span style="float:right;color:var(--dim);font-weight:400;">'
-            + (items.length - rOpen) + '/' + items.length + ' 완료'
-            + (rOpen ? ' · <span style="color:#ffb74d;">진행중 ' + rOpen + '</span>' : '')
-            + ((r.work && r.work.length) ? ' · 그 밖에 ' + r.work.length : '') + '</span></summary>'
-            + '<div class="coo-tbl-wrap"><table>'
-            + '<tr><th style="width:9%">번호</th><th style="width:33%">시킨 것</th>'
-            + '<th style="width:38%">그래서 된 것</th><th style="width:8%">소요</th><th style="width:12%">상태</th></tr>'
-            + rows + '</table></div>'
-            + workHtml(r) + '</details>';
+      var rJust = (r.just || []).length;
+      got += items.length; done += (items.length - rOpen); openN += rOpen; justN += rJust;
+      (r.missed   || []).forEach(function(x){ missed.push({nick:r.nick, x:x}); });
+      (r.repeats  || []).forEach(function(g){ repeats.push({nick:r.nick, g:g}); });
+      (r.unclosed || []).forEach(function(x){ unclosed.push({nick:r.nick, x:x}); });
+      if(items.length || (r.work||[]).length){
+        rows.push({nick:r.nick, r:r, got:items.length, done:items.length-rOpen,
+                   open:rOpen, just:rJust, work:(r.work||[]).length});
+      }
     });
-    // GM 지시가 아닌 자체 작업이 있는 역할은 그것도 붙인다 — 그게 그 사람의 하루다.
-    // 데이터에는 원래 있었는데(work) 화면이 안 그려서 시토가 '0건'으로 보였다(2026-08-08).
-    order.forEach(function(rk){
-      var r = roles[rk];
-      if(!r || (r.items && r.items.length) || !r.work || !r.work.length) return;
-      got += 0;
-      html += '<details class="coo-details" style="margin-top:8px;">'
-            + '<summary>' + esc(r.nick || rk)
-            + '<span style="float:right;color:var(--dim);font-weight:400;">'
-            + 'GM 지시 없음 · 자체 작업 ' + r.work.length + '</span></summary>'
-            + workHtml(r) + '</details>';
-    });
+
+    // ① 판정 한 줄 — 놓침 0 이면 여기서 끝난다.
     if(sum){
-      sum.innerHTML = '오늘 <b>' + got + '건</b> 받아 <b>' + done + '건</b> 끝냈습니다'
-        + (open ? ' · <b style="color:#ffb74d;">진행중 ' + open + '건</b>' : '')
+      sum.innerHTML = '오늘 <b>' + got + '건</b> 받아 <b>' + done + '건</b> 끝냄'
+        + ' · ' + (missed.length
+            ? '<b style="color:#e2695f;">놓침 ' + missed.length + '건</b>'
+            : '<b style="color:#7fdbe8;">놓침 없음</b>')
         + ' <span style="color:var(--dim);">(' + esc(kj.date || '') + ')</span>';
     }
+
+    var html = '';
+
+    // 놓친 것 — 있으면 맨 위에 빨갛게. 없으면 줄 자체가 안 나온다.
+    if(missed.length){
+      html += '<div class="whowrap esc"><div class="lab">🔴 놓친 지시 ' + missed.length + '건</div>'
+        + missed.map(function(o){
+            return '<div class="srow"><span class="sd">'
+              + (o.x.waited != null ? Math.floor(o.x.waited/60) + '시간' : '—') + '</span>'
+              + '<span class="st">' + esc(o.x.got || '') + '</span>'
+              + '<span class="sw">' + esc(o.nick) + '</span></div>';
+          }).join('') + '</div>';
+    }
+
+    // 같은 말을 두 번 — 이 표가 존재하는 이유다. 항상 전부 보인다.
+    if(repeats.length){
+      html += '<div class="whowrap"><div class="lab">🔁 다시 말씀하신 것 ' + repeats.length + '묶음</div>'
+        + repeats.map(function(o){
+            return '<div class="srow"><span class="sd">' + o.g.count + '회</span>'
+              + '<span class="st">' + esc(o.g.got || '') + '</span>'
+              + '<span class="sw">' + esc(o.nick) + '</span></div>';
+          }).join('')
+        + '<div class="sub" style="margin-top:6px;">같은 말을 두 번 하셨다면 그건 저희가 안 한 것입니다.</div></div>';
+    }
+
+    // 했는데 도장만 안 찍은 것 — 위 둘보다 연하게.
+    if(unclosed.length){
+      html += '<div class="whowrap"><div class="lab">📝 했는데 안 닫은 것 ' + unclosed.length + '건</div>'
+        + unclosed.map(function(o){
+            return '<div class="srow"><span class="sd">'
+              + (o.x.waited != null ? Math.floor(o.x.waited/60) + '시간' : '—') + '</span>'
+              + '<span class="st">' + esc(o.x.got || '') + '</span>'
+              + '<span class="sw">' + esc(o.nick) + '</span></div>';
+          }).join('') + '</div>';
+    }
+
+    // ④ 역할 한 줄 표 — 누가 얼마나 받아 얼마나 쳐냈나. 다섯 줄이면 끝난다.
+    //    '하는 중' 옆 괄호에 방금 받은 수를 적어 그것이 경보가 아님을 보인다.
+    if(rows.length){
+      html += '<div class="coo-tbl-wrap" style="margin-top:10px;"><table>'
+        + '<tr><th style="width:22%">누가</th><th style="width:20%">받음</th>'
+        + '<th style="width:20%">끝냄</th><th style="width:38%">하는 중</th></tr>'
+        + rows.map(function(o){
+            return '<tr><td><b>' + esc(o.nick) + '</b></td>'
+              + '<td>' + o.got + '</td><td>' + o.done + '</td>'
+              + '<td>' + o.open + (o.just ? ' <span style="color:var(--dim);font-size:12px;">(방금 ' + o.just + ')</span>' : '')
+              + (o.work ? ' <span style="color:var(--dim);font-size:12px;">· 그 밖에 ' + o.work + '</span>' : '')
+              + '</td></tr>';
+          }).join('') + '</table></div>';
+    }
+
+    // ⑤ 건별 상세 — 기본 닫힘. 열린 건이 있다고 자동으로 펼치지 않는다(그게 210줄의 원인이었다).
+    var detail = rows.map(function(o){
+      var items = (o.r.items || []).slice().sort(function(a,b){ return (b.open?1:0)-(a.open?1:0); });
+      if(!items.length) return '';
+      return '<details class="coo-details" style="margin-top:8px;">'
+        + '<summary>' + esc(o.nick)
+        + '<span style="float:right;color:var(--dim);font-weight:400;">' + o.done + '/' + o.got + '</span></summary>'
+        + '<div class="coo-tbl-wrap"><table>'
+        + '<tr><th style="width:40%">시킨 것</th><th style="width:45%">된 것</th><th style="width:15%">상태</th></tr>'
+        + items.map(function(x){
+            var did = String(x.did || '');
+            return '<tr><td>' + esc(x.got || '') + '</td>'
+              + '<td style="color:var(--dim);">' + esc(x.open ? '아직' : (did.length > 40 ? did.slice(0,40) + '…' : did)) + '</td>'
+              + '<td>' + (x.open ? '<span class="statchip warn">하는 중</span>'
+                                 : '<span class="statchip ok">' + esc(x.upload || '완료') + '</span>') + '</td></tr>';
+          }).join('') + '</table></div></details>';
+    }).join('');
+    if(detail){
+      html += '<details class="hist-fold" style="margin-top:10px;">'
+        + '<summary>▸ 건별로 보기 <span class="hist-sub">— 오늘 ' + got + '건 전부</span></summary>'
+        + detail + '</details>';
+    }
+
     box.innerHTML = html || '<div class="feed-status">오늘 받은 GM 지시가 없습니다.</div>';
   }
 
