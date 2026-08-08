@@ -4756,9 +4756,6 @@ function switchTab(id, btn) {
   // ownerAssign 훅 제거(2026-07-18): 담당자 배정이 강습 family로 이동 → lessonOwnerAssignOpen 전용 opener가 로드 관리.
 }
 
-// syncFunnel — 내비 탭 전환으로 대체됨. 하위 호환 보존용 빈 함수.
-function syncFunnel(id) {}
-
 /* ─────────────────────────────────────────────
    문의 유형 전환 (멤버십 / 강습 / 공간렌트 / 비즈니스) — 2026-06-26 시포 통합
 ───────────────────────────────────────────── */
@@ -7227,7 +7224,52 @@ function setActiveTypeFilter(val) {
    '기다림'뿐이다 — 한 번 받아 둔 스코프는 즉시 그려 놓고, 서버 조회는 그대로 뒤에서 돌려 최신값으로
    덮는다(stale-while-revalidate). 조회 횟수·데이터 신선도는 이전과 완전히 같아 낡은 값이 남을 위험이 없다.
    응답 자체가 14초인 것은 서버(GAS) 문제라 시토 배로 따로 넘겼다. */
-var _activeCache = {};   // scope -> {headers, rows}
+var _activeCache = {};   // scope -> {headers, rows}(세션 메모리 — F5 하면 비어 매번 8~14초 재대기. 아래 localStorage 보강으로 해소)
+
+/* 유효/종료회원 목록 localStorage 캐시(_dbCache 패턴 그대로 재사용 · L21 "관문 하나" — 새 캐시 체계 안 만든다).
+   scope별 개별 키 — 유효(~500KB)·종료(~340KB) 중 하나가 저장 용량 초과로 실패해도 나머지는 살아남는다.
+   TTL도 db탭과 동일값(_DB_CACHE_TTL) 재사용. */
+function _activeCacheKey_(scope) { return 'cpo_ma_cache_v1_' + scope; }
+function _activeCacheSave(scope, headers, rows) {
+  try { localStorage.setItem(_activeCacheKey_(scope), JSON.stringify({ v: 1, ts: Date.now(), headers: headers, rows: rows })); }
+  catch (e) {}   // 용량 초과 등 — 조용히 실패, 캐시 없이 동작(화면 안 죽음)
+}
+function _activeCacheLoad(scope) {
+  try {
+    var c = JSON.parse(localStorage.getItem(_activeCacheKey_(scope)) || 'null');
+    if (c && c.v === 1 && Array.isArray(c.rows) && (Date.now() - (c.ts || 0)) < _DB_CACHE_TTL) return c;
+  } catch (e) {}
+  return null;
+}
+// 저장 직후 옛 캐시가 새로 고친 값을 덮어써 보이지 않게 — 편집 큐 관문(WriteBuffer.enqueue)에서 호출.
+function _activeCacheClear(scope) { try { localStorage.removeItem(_activeCacheKey_(scope)); } catch (e) {} }
+
+// 자체 점검(콘솔에서 _activeCacheSelfTest() 호출) — 저장→로드→만료 판정이 맞는지. 테스트 프레임워크 없음(ponytail).
+function _activeCacheSelfTest() {
+  var ok = true;
+  function assertEq(actual, expected, label) {
+    if (actual !== expected) { ok = false; console.error('[활동회원 캐시 자체점검 실패] ' + label + ' — 기대 ' + expected + ' 실제 ' + actual); }
+  }
+  var SCOPE = '_selftest';
+  _activeCacheClear(SCOPE);
+  assertEq(_activeCacheLoad(SCOPE), null, '저장 전엔 null');
+  _activeCacheSave(SCOPE, ['h1'], [{ a: 1 }]);
+  var loaded = _activeCacheLoad(SCOPE);
+  assertEq(!!loaded, true, '저장 직후 로드 성공');
+  assertEq(loaded && loaded.rows.length, 1, '저장 직후 rows 1건');
+  // 만료 판정 — ts를 TTL 밖으로 조작하면 만료로 판정돼 null이어야 함
+  try {
+    var raw = JSON.parse(localStorage.getItem(_activeCacheKey_(SCOPE)));
+    raw.ts = Date.now() - (_DB_CACHE_TTL + 1000);
+    localStorage.setItem(_activeCacheKey_(SCOPE), JSON.stringify(raw));
+  } catch (e) {}
+  assertEq(_activeCacheLoad(SCOPE), null, 'TTL 지나면 만료(null)');
+  _activeCacheClear(SCOPE);
+  assertEq(_activeCacheLoad(SCOPE), null, 'clear 후엔 null');
+  console.log(ok ? '[활동회원 캐시 자체점검] 통과' : '[활동회원 캐시 자체점검] 실패 — 위 로그 확인');
+  return ok;
+}
+
 function _activeApplyData(headers, rows) {
   _activeHeaders = headers || [];
   _activeRows    = rows    || [];
@@ -7248,6 +7290,11 @@ function loadActiveMembers() {
   }
   var scope = _activeScope || 'valid';
   var cached = _activeCache[scope];
+  if (!cached) {
+    // 세션 메모리엔 없어도 localStorage엔 있을 수 있다(직전 새로고침 전 저장분) — D4 패턴 재사용, 새로고침 체감 0초화.
+    var _lsCached = _activeCacheLoad(scope);
+    if (_lsCached) cached = _activeCache[scope] = { headers: _lsCached.headers || [], rows: _lsCached.rows };
+  }
   if (cached) _activeApplyData(cached.headers, cached.rows, true);   // 먼저 그린다(체감 0초)
   else _activeRenderState('loading');
   var _seq = ++_activeReqSeq;
@@ -7258,6 +7305,7 @@ function loadActiveMembers() {
       if (_seq !== _activeReqSeq) return;   // 더 최신 요청이 있으면 이 응답 무시(경쟁 가드)
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
+      _activeCacheSave(scope, data.headers || [], data.data || []);   // 다음 새로고침 즉시 렌더용(D4)
       if ((_activeScope || 'valid') !== scope) return;   // 기다리는 사이 다른 스코프로 옮겼으면 화면은 건드리지 않고 보관만
       _activeApplyData(data.headers, data.data, false);
     })
@@ -7995,6 +8043,7 @@ function _activeLoadOtherScope(scope, query) {
       data = _maDecodeRowsFormat(data);
       if (!data.ok) return;
       _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
+      _activeCacheSave(scope, data.headers || [], data.data || []);
       var si = document.getElementById('activeSearch');
       // 그 사이 검색어가 바뀌었으면 다시 그리지 않는다(엉뚱한 결과 덮어쓰기 방지).
       if (si && si.value.trim().toLowerCase() === query) _activeFilter(si.value);
@@ -12740,6 +12789,9 @@ var WriteBuffer = (function(){
         attempts: 0, nextTry: 0, parked: false, rev: 1, inflight: false
       });
     }
+    // 유효/종료회원 편집(scope:'active')은 localStorage 캐시를 안 덮어쓴다(applyOverlay 미적용 스코프) —
+    // 방금 고친 값이 다음 새로고침에서 옛 캐시로 되보이지 않게 그 스코프 캐시를 무효화(재조회로 다시 채움).
+    if (opts.scope === 'active') _activeCacheClear(_activeScope || 'valid');
     _save();
     renderChip();
     scheduleFlush(0);
