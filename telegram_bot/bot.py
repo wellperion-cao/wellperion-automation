@@ -1884,6 +1884,31 @@ async def cmd_checkin_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
 
     data = q.data
+    # ── 저녁 설문(한 번에 하나씩) — ck:q:{문항}:{답} ──────────────────────────
+    #   같은 메시지를 문항마다 갈아 끼운다. 답은 누른 즉시 저장 — 중간에 그만두셔도
+    #   답한 데까지가 그날 기록이다. 마지막 문항을 넘기면 마무리 화면 + 커밋.
+    if data.startswith("ck:q:"):
+        try:
+            _, _, idx_s, code = data.split(":", 3)
+            idx = int(idx_s)
+            if code:                       # 빈 code = [🔧 다시 답하기] — 저장 없이 그 문항으로
+                await asyncio.to_thread(_checkin.set_answer, idx, code)
+                idx += 1
+            step = _checkin.build_step(idx)
+            if idx > len(_checkin.TOROKS):
+                await asyncio.to_thread(_checkin.commit)
+            markup = None
+            if step.get("markup"):
+                markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(b["text"], callback_data=b["callback_data"]) for b in row]
+                    for row in step["markup"]["inline_keyboard"]])
+            await q.edit_message_text(text=step["text"], reply_markup=markup)
+            await q.answer()
+        except Exception as exc:
+            log.error(f"[checkin] 설문 처리 실패: {exc}")
+            await q.answer("처리 실패 — 다시 눌러 주세요", show_alert=True)
+        return
+
     try:
         if data.startswith("ck:t:"):
             _checkin.toggle(data[5:])

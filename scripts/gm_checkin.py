@@ -68,14 +68,18 @@ def _day(data: dict, day: str) -> dict:
     return days[day]
 
 
+DONE_MARKS = ('O', '△')   # G1 트래커(litToroks)와 같은 판정 — O 만 세면 '조금'이 화면에서 사라진다
+
+
 def state(day: str | None = None) -> dict:
     """지금 눌려 있는 토막·기분. 버튼 표시에 쓴다."""
     day = day or today()
     d = _day(load(), day)
     axes = d.get('axes') or {}
-    on = {tid for tid, _i, _l, keys in TOROKS if all(axes.get(k) == 'O' for k in keys)}
+    on = {tid for tid, _i, _l, keys in TOROKS
+          if any(axes.get(k) in DONE_MARKS for k in keys)}
     return {'on': on, 'mood': d.get('mood') or '', 'weight': d.get('weight') or '',
-            'sleep': d.get('sleep') or ''}
+            'sleep': d.get('sleep') or '', 'axes': axes}
 
 
 def toggle(torok_id: str, day: str | None = None) -> dict:
@@ -101,6 +105,78 @@ def set_mood(mood: str, day: str | None = None) -> dict:
     d['mood'] = '' if d.get('mood') == mood else mood
     _write(data)
     return state(day)
+
+
+# ── 저녁 설문 — 한 번에 하나씩 (GM 2026-08-08 "Survey 처럼 기록해도 좋을 것 같긴한데") ──
+#   왜 바꿨나: 버튼 10개가 한 화면에 깔리니 무엇부터 눌러야 할지 알 수 없었다(GM: "난해하다").
+#   같은 메시지를 문항마다 갈아 끼운다(editMessageText) — 방이 카드로 더러워지지 않는다.
+#   문항 = 토막 5개(아침에 정한 그 문장을 그대로 물어본다) + 기분 1개 = 6문. 탭 6번이면 끝.
+#   답은 기존 데이터 모델 그대로 O(했다)·△(조금)·X(못 했다) — 5점 척도는 안 쓴다(점수 냄새).
+#   문항마다 바로 저장한다 — 중간에 그만두셔도 답한 데까지가 그날 기록이다.
+ANSWERS = [('O', '○ 했다'), ('T', '△ 조금'), ('X', '－ 못 했다')]
+_ANS_VALUE = {'O': 'O', 'T': '△', 'X': 'X'}
+
+
+def set_answer(idx: int, code: str, day: str | None = None) -> None:
+    """문항 하나의 답을 그 자리에서 저장한다. idx = 토막 순번, 마지막 +1 = 기분."""
+    day = day or today()
+    data = load()
+    d = _day(data, day)
+    if idx < len(TOROKS):
+        _tid, _i, _l, keys = TOROKS[idx]
+        axes = d.setdefault('axes', {})
+        for k in keys:
+            axes[k] = _ANS_VALUE.get(code, '')
+    elif idx == len(TOROKS):
+        d['mood'] = code if code in MOODS else ''
+    _write(data)
+
+
+def build_step(idx: int, day: str | None = None) -> dict:
+    """문항 하나의 화면. idx 가 문항 수를 넘으면 마무리 화면을 낸다.
+
+    반환 {'text': 본문, 'markup': inline_keyboard 또는 None}
+    """
+    day = day or today()
+    d = datetime.date.fromisoformat(day)
+    wd = '월화수목금토일'[d.weekday()]
+    total = len(TOROKS) + 1
+    head = f"🌙 오늘 어떠셨어요 — {d.month}/{d.day}({wd})"
+
+    if idx < len(TOROKS):
+        tid, icon, label, _k = TOROKS[idx]
+        sentence = (plan(day) or {}).get(tid, '')
+        text = (f"{head}\n{idx + 1}/{total}\n\n"
+                f"{icon} {label}\n{sentence}\n\n하셨어요?")
+        rows = [[{'text': lab, 'callback_data': f'ck:q:{idx}:{code}'} for code, lab in ANSWERS]]
+        return {'text': text, 'markup': {'inline_keyboard': rows}}
+
+    if idx == len(TOROKS):
+        text = f"{head}\n{total}/{total}\n\n오늘 기분은 어떠셨어요?"
+        rows = [[{'text': m, 'callback_data': f'ck:q:{idx}:{m}'} for m in MOODS]]
+        return {'text': text, 'markup': {'inline_keyboard': rows}}
+
+    return {'text': _finish_text(day),
+            'markup': {'inline_keyboard': [[{'text': '🔧 다시 답하기',
+                                             'callback_data': 'ck:q:0:'}]]}}
+
+
+def _finish_text(day: str) -> str:
+    """마무리 화면 — 오늘 무엇이 담겼는지 한 장. 여기에만 취침 안내가 붙는다."""
+    st = state(day)
+    lines = ["✅ 오늘 기록했습니다", ""]
+    p = plan(day) or {}
+    for tid, icon, label, keys in TOROKS:
+        v = next((st['axes'].get(k) for k in keys if st['axes'].get(k)), '')
+        mark = {'O': '○', '△': '△', 'X': '－'}.get(v, '·')
+        lines.append(f"{mark} {icon} {label}   {p.get(tid, '')}")
+    lines.append("")
+    lines.append(f"담긴 토막 {len(st['on'])}/{len(TOROKS)}"
+                 + (f"   기분 {st['mood']}" if st['mood'] else ""))
+    lines += ["", "한 줄 남기시려면 이 메시지에 답장해 주세요.",
+              "", "📵 전자기기 off — 수면 루틴 시작",
+              "오늘 하루도 고생 많으셨습니다."]
+    return '\n'.join(lines)
 
 
 def _write(data: dict) -> None:

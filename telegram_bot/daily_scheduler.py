@@ -2900,19 +2900,13 @@ def run_gm_checkin(weekly: bool = False, morning: bool = False) -> None:
             ok = _send(token, chat, _ck.build_morning(), source="gm_checkin_morning")
             logger.info(f"{label} 아침 제안 발송 ok={ok} chat={chat}")
             return
-        # 22시 취침 안내(개인 슬롯)를 이 카드 꼬리로 흡수 — GM 2026-08-08 "22:00 하루 마무리".
-        # 30분 사이에 두 번 울리던 것을 한 번으로. 문구는 사라지지 않고 자리만 옮긴다(net-zero).
-        quote = ""
-        try:
-            q = fetch_random_quote("22시")
-            quote = f'\n\n> "{q}"' if q else '\n\n> "충분한 수면이 내일의 판단력을 만듭니다."'
-        except Exception:
-            pass
-        body = _ck.build_prompt() + "\n\n📵 전자기기 off — 수면 루틴 시작" + quote
-        ok = _send(token, chat, body,
-                   source="gm_checkin",
-                   extra={"reply_markup": json.dumps(_ck.build_markup(), ensure_ascii=False)})
-        logger.info(f"{label} 저녁 확인 발송 ok={ok} chat={chat}")
+        # 저녁은 설문 첫 문항 하나만 보낸다 — 나머지는 같은 메시지를 갈아 끼우며 진행한다
+        # (GM 2026-08-08 "Survey 처럼"). 버튼 10개를 한 화면에 깔던 옛 카드는 폐기.
+        # 취침 안내·명언은 마지막 마무리 화면 꼬리로 옮겼다(build_step 마지막 단계).
+        step = _ck.build_step(0)
+        ok = _send(token, chat, step["text"], source="gm_checkin",
+                   extra={"reply_markup": json.dumps(step["markup"], ensure_ascii=False)})
+        logger.info(f"{label} 저녁 설문 1문항 발송 ok={ok} chat={chat}")
     except Exception as e:
         logger.warning(f"{label} 실패: {e}")
 
