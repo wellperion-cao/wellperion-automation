@@ -259,6 +259,26 @@ def build_banner(alerts: list) -> str:
 # ══════════════════════════════════════════════════════════════════════════
 # 지표 타일
 # ══════════════════════════════════════════════════════════════════════════
+def _in_progress_line() -> str:
+    """이달 진행중 누적 한 줄 — 큰 숫자는 마감 실적 그대로 두고, 오늘 값을 밑에 덧붙인다.
+
+    ★2026-08-08 GM 지시("아침 요약 이거 내용 너무 좋은데?" — 살리기로 하며 기준 정정).
+    큰 숫자를 진행중으로 바꾸지 않는 이유: 목표(sales_month_target)가 마감월 목표라,
+    이달 누적을 지난달 목표로 나누면 달성률이 거짓이 된다. 숫자를 바꾸는 대신 한 줄을 더한다.
+    판정·표기는 erp_status_publisher 한 곳이 한다(약속 L01 — 08시 보고·09시·09:30과 같은 값).
+    """
+    try:
+        from erp_status_publisher import read_sales_month_display
+        text, in_progress = read_sales_month_display()
+    except Exception:
+        return ""
+    if not in_progress or text == "—":
+        return ""
+    # 한 줄에 들어가는 길이로 유지한다 — '· 마감 전'을 붙였더니 '마 / 감 전'으로 잘렸다(2026-08-08).
+    # '진행중'이라는 말이 이미 마감 전이라는 뜻을 담고, 바로 윗줄에 'N월 마감'이 있어 대비도 된다.
+    return f'<div class="sub">이달 진행중 {text}</div>'
+
+
 def tile_sales(cfo: dict) -> str:
     sales = cfo.get("sales_month")
     target = cfo.get("sales_month_target")
@@ -283,6 +303,7 @@ def tile_sales(cfo: dict) -> str:
         f'<div class="lab">💰 매출 <span class="pill {pill_cls}">{rate_i}%</span></div>'
         f'<div class="big">{fmt_eok(sales)}</div>'
         f'<div class="sub">목표 {fmt_eok(target)} · {month_txt}</div>'
+        + _in_progress_line() +
         f'<div class="gauge"><i style="width:{gauge_w}%"></i></div>'
         '</div>'
     )
