@@ -6207,18 +6207,31 @@ function _hasRealReply_(memo) {
       }
       return bare || s;
     }
+    // ★전화번호 1개 ≠ 회원 1명이다. 한 사람이 종목 2개 이상 등록하면 팀시트에 형제 행이 생기는데,
+    //   전화번호당 마지막 1행만 남기면 나머지 형제 행은 영구히 rowIndex 없음이 되어 화면에서
+    //   연락기록 칸이 아예 비활성이 된다 — 실무진이 남기고 싶어도 못 남기는 원천 차단이었다.
+    //   실측(2026-08-08 시포): '연락기록 없음' 292건 중 83건이 이 형제행 충돌이었다(최혜은·최세은
+    //   그룹, 김규섭 그룹 등 — 같은 번호의 다른 행에 기록이 실재함을 확인).
+    //   → 전화번호당 형제 행 전부를 배열로 들고 있는다. 배열의 마지막 원소 = 옛 단일 맵과 같은 행이라
+    //     아래 등록회수·유효기간 블록은 동작이 그대로다(회귀 0).
     var lrrByPhone = {};
     lrrRoster.forEach(function (m) {
       m.src = 'team';
       var p = _normPhone_(m.phone);
-      if (p) lrrByPhone[p] = m;
+      if (p) (lrrByPhone[p] = lrrByPhone[p] || []).push(m);
     });
     try {
       _lessonReadRowsMerged_({ type: lrrType }).forEach(function (r) {
-        if (String(r.status == null ? '' : r.status).trim() !== 'SUC') return;
+        var rStatus = String(r.status == null ? '' : r.status).trim();
         var rp = _normPhone_(r.phone);
+        var sibs = rp ? (lrrByPhone[rp] || []) : [];
+        // ★상태 필터를 '조인'에서 뺀다(2026-08-08 시포 실측 89건). 재문의·상태변경 이력이 있어 지금
+        //   상태가 LOSS·컨택중·빈값인 문의행에도 연락기록이 실재하는데, SUC 만 매칭하던 탓에 그 기록이
+        //   화면에 영영 안 붙었다. 실무진이 안 남긴 게 아니라 화면이 못 찾은 것이었다.
+        //   ★단 '명단에 없는 사람을 새로 추가'하는 아래 push 는 여전히 SUC 일 때만 한다 —
+        //     안 그러면 아직 등록하지 않은 컨택중·LOSS 문의자가 등록회원 명단에 섞인다.
+        if (!sibs.length && rStatus !== 'SUC') return;
         var rSport = _lrrNormSport_(r.regProgram || r.sport) || '기타';
-        var hit = rp ? lrrByPhone[rp] : null;
         // ★편집에 필요한 원본 행 좌표를 같이 싣는다(2026-07-23 GM: 회원 관리에서도 연락 이력 수정).
         //   rowIndex·gid·rowKey 가 없으면 어느 행을 고칠지 특정할 수 없어 화면에서 편집을 열 수 없다.
         //   contacts 도 함께 보내 모달이 옛 기록까지 그대로 펼치게 한다(문의 목록과 같은 모달·같은 동작).
@@ -6226,17 +6239,27 @@ function _hasRealReply_(memo) {
           rowIndex: r.rowIndex, gid: r.gid, rowKey: r.rowKey || '',
           contacts: r.contacts || [], memo: String(r.memo || ''), inqType: lrrType
         };
-        if (hit) {   // 이미 명단에 있는 사람 → 빈 칸만 보강(중복 행 만들지 않는다)
-          if (!String(hit.name || '').trim())  hit.name = String(r.name || '');
-          if (!String(hit.phone || '').trim()) hit.phone = String(r.phone || '');
-          if (!String(hit.age || '').trim())      hit.age = String(r.age || '');
-          if (!String(hit.owner || '').trim())    hit.owner = String(r.owner || '');
-          if (!String(hit.inqDate || '').trim())  hit.inqDate = String(r.timestamp || '').slice(0, 10);
-          if (!String(hit.wishTime || '').trim()) hit.wishTime = String(r.wishTime || '');
-          if (hit.rowIndex === undefined) {   // 팀시트 유래 행에 원본 좌표를 얹어 편집 가능하게
-            hit.rowIndex = _srcMeta.rowIndex; hit.gid = _srcMeta.gid; hit.rowKey = _srcMeta.rowKey;
-            hit.contacts = _srcMeta.contacts; hit.memo = _srcMeta.memo; hit.inqType = _srcMeta.inqType;
-          }
+        if (sibs.length) {   // 이미 명단에 있는 사람 → 형제 행 전부에 보강(중복 행 만들지 않는다)
+          var _hasNew = (_srcMeta.contacts && _srcMeta.contacts.length) || !!String(_srcMeta.memo || '').trim();
+          sibs.forEach(function (hit) {
+            // 빈 칸 보강은 등록 확정행(SUC)에서만 — 컨택중·LOSS 행의 값으로 등록회원 정보를 채우지 않는다(옛 동작 유지)
+            if (rStatus === 'SUC') {
+              if (!String(hit.name || '').trim())  hit.name = String(r.name || '');
+              if (!String(hit.phone || '').trim()) hit.phone = String(r.phone || '');
+              if (!String(hit.age || '').trim())      hit.age = String(r.age || '');
+              if (!String(hit.owner || '').trim())    hit.owner = String(r.owner || '');
+              if (!String(hit.inqDate || '').trim())  hit.inqDate = String(r.timestamp || '').slice(0, 10);
+              if (!String(hit.wishTime || '').trim()) hit.wishTime = String(r.wishTime || '');
+            }
+            // 편집 좌표·연락기록은 상태와 무관하게 붙인다(팀시트 유래 행은 좌표가 없어 편집 자체가 막혀 있었다).
+            //   이미 좌표가 붙어 있어도 그쪽 기록이 비어 있고 이번 행에 실제 기록이 있으면 갈아끼운다
+            //   — 같은 번호에 문의행이 여럿일 때 '연락기록이 있는 행'이 이긴다.
+            var _hasOld = (hit.contacts && hit.contacts.length) || !!String(hit.memo || '').trim();
+            if (hit.rowIndex === undefined || (_hasNew && !_hasOld)) {
+              hit.rowIndex = _srcMeta.rowIndex; hit.gid = _srcMeta.gid; hit.rowKey = _srcMeta.rowKey;
+              hit.contacts = _srcMeta.contacts; hit.memo = _srcMeta.memo; hit.inqType = _srcMeta.inqType;
+            }
+          });
           return;
         }
         lrrRoster.push({
@@ -6247,7 +6270,7 @@ function _hasRealReply_(memo) {
           rowIndex: _srcMeta.rowIndex, gid: _srcMeta.gid, rowKey: _srcMeta.rowKey,
           contacts: _srcMeta.contacts, memo: _srcMeta.memo, inqType: _srcMeta.inqType
         });
-        if (rp) lrrByPhone[rp] = lrrRoster[lrrRoster.length - 1];
+        if (rp) (lrrByPhone[rp] = lrrByPhone[rp] || []).push(lrrRoster[lrrRoster.length - 1]);
       });
     } catch (eInq) { /* 문의 소스 실패 → 팀시트분만(무중단) */ }
 
@@ -6263,8 +6286,12 @@ function _hasRealReply_(memo) {
         if (p2 >= 0 && (c2 >= 0 || e2 >= 0)) {
           var md2 = lrrSh2.getRange(2, 1, lrrSh2.getLastRow() - 1, lrrSh2.getLastColumn()).getValues();
           for (var q2 = 0; q2 < md2.length; q2++) {
-            var pk2 = _normPhone_(md2[q2][p2]); if (!pk2 || !lrrByPhone[pk2]) continue;
-            var tgt = lrrByPhone[pk2];
+            var pk2 = _normPhone_(md2[q2][p2]);
+            var sib2 = pk2 ? lrrByPhone[pk2] : null; if (!sib2 || !sib2.length) continue;
+            // 등록회수·유효기간은 종목별로 다를 수 있어 형제 행 전부에 뿌리지 않는다 —
+            //   배열 마지막 행에만 붙여 단일맵이던 시절과 같은 대상을 유지한다(회귀 0).
+            //   ponytail: 종목별 정확 매칭은 문의행↔팀시트 종목 대조가 필요, 실수요 생기면 그때.
+            var tgt = sib2[sib2.length - 1];
             var cv2 = c2 >= 0 ? String(md2[q2][c2] == null ? '' : md2[q2][c2]).trim() : '';
             var ev2 = e2 >= 0 ? (md2[q2][e2] instanceof Date ? Utilities.formatDate(md2[q2][e2], 'Asia/Seoul', 'yyyy-MM-dd') : String(md2[q2][e2] == null ? '' : md2[q2][e2]).trim()) : '';
             if (cv2) tgt.regCount = cv2;
