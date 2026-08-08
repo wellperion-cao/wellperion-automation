@@ -9,17 +9,19 @@
   만들 방법이 코드에 없다(빈 카드·지어낸 카드 발송 절대 금지).
 
 동작 개요 (재고표 = instagram/_실전사례_2주플랜.md '## 재고' 표):
-  ① 재고표 파싱 → 요일 게이트(월~금='평일' / 토·일='주말GM' 행 있을 때만) → 다음 편 선정
-  ② 대본 불량 검증(html 6장·caption.md 존재) → 렌더(이미 6장+미리보기 있으면 재사용, 없으면
-     render_hand_slides.py 호출)
-  ③ publish_register.register_publish → M1 review_queue '검수대기' 등록(+montage 텔레그램)
-  ④ send_review_card.py --id → GM 텔레그램 [✅승인]/[❌반려] 버튼 카드(무폴링 발행 트리거)
-  ⑤ 재고표 해당 행 상태 → '검수발송(YYYY-MM-DD)' 마킹(다음날 중복 재선정 차단)
-  재고 0건(대상 트랙에 '재고(대본완료)' 없음)이면 평일엔 "📭 재고 소진" 텔레그램만 내고 종료,
-  주말(주말GM 행 없음)은 조용히 종료(알림 스팸 금지).
+  주 1회 묶음 승인 (GM 결정 2026-08-08 — 매일 1편씩 승인받던 것을 일요일 1회로 바꿈):
+  ・일요일 런: 다음 주 월~금 실전사례 5편 + 토 주말GM 1편을 재고표에서 미리 뽑아 각각
+    검증→렌더→publish_register.register_publish(publish_at="그날짜T07:30")로 예약 등록하고
+    편별 검수 카드([✅승인]/[❌반려])를 보낸다. 일요일 자체 콘텐츠(「GM의 일요일」)는 여기
+    안 낀다 — 사진 접수 경로(cmo_intake_to_review.py SUNDAY_TEAM 분기)가 별도로 담당.
+    재고가 6편에 모자라면 있는 만큼만 등록하고 몇 편 모자란지 로그+텔레그램으로 남긴다.
+  ・월~토 런: 새로 선정·등록·카드 발송을 하지 않는다(이미 일요일에 승인받음). 안전망
+    (금요일 주말재고 선행경고·시리즈 종결 킬스위치·선등록 카드 복구 패스)만 돈다.
+    실제 예약 발행은 ig_review_publish_watcher.py --once 의 publish_at 스윕이 담당
+    (ig/start_ig_series_producer.bat 이 매일 07:30 이 스윕을 함께 돌린다).
 
-발행 트리거 = 오직 GM 텔레그램 [✅승인] 탭(bot.py pub: 콜백 → watcher --once). 이 스크립트는
-발행을 절대 하지 않는다. review_queue 폴링 감시기 부활 금지.
+발행 트리거 = GM 텔레그램 [✅승인] 탭(즉시 발행 또는 publish_at 예약) → watcher 가 실제
+게시. 이 스크립트는 발행을 절대 하지 않는다. review_queue 폴링 감시기 부활 금지.
 
 사용:
   실가동:              python scripts\\case_series_dispatch.py
@@ -36,7 +38,7 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
@@ -556,21 +558,9 @@ def run(dry_run: bool, plan_only: bool) -> int:
     print(f"[INFO] === 실전사례 07:30 디스패처 시작 === {now.isoformat(timespec='seconds')} "
           f"(dry_run={dry_run}, plan_only={plan_only})")
 
-    is_weekend = now.weekday() >= 5  # 5=토, 6=일
-    track = WEEKEND_TRACK if is_weekend else WEEKDAY_TRACK
+    is_weekend = now.weekday() >= 5  # 5=토, 6=일 (아래 1.4 종결 킬스위치 범위 판정에 씀)
 
-    # 일요일 트랙 정지 (GM 지시 2026-08-08).
-    #   「GM의 일요일」은 GM이 그날 찍은 사진으로 진행하는 건이 됐다 — 소재를 미리
-    #   만들어 둘 수 없으므로 재고표 기반 자동 디스패치와 맞지 않는다. 사진 경로는
-    #   cmo_intake_to_review.py 의 SUNDAY_TEAM 분기가 담당한다(같은 계정·같은
-    #   검수큐·같은 제목 접두사를 쓰므로, 둘을 함께 두면 승인 카드가 두 장 뜬다).
-    #   토요일 트랙(「GM의 토요일」)과 평일 트랙은 그대로 둔다.
-    if now.weekday() == 6:  # 6=일
-        print("[INFO] 일요일 트랙 정지 — 「GM의 일요일」은 사진 접수 경로로 진행한다 "
-              "(GM 지시 2026-08-08). cmo_intake_to_review.py SUNDAY_TEAM 분기 담당.")
-        return 0
-
-    # 1) 재고표 파싱 (실패 시 경고 + 중단)
+    # 1) 재고표 파싱 (실패 시 경고 + 중단) — 일요일 주간배치도 이 rows 를 그대로 쓴다.
     try:
         if not INVENTORY.exists():
             raise InventoryError(f"재고표 파일 부재: {INVENTORY}")
@@ -580,6 +570,130 @@ def run(dry_run: bool, plan_only: bool) -> int:
         print(f"[ERROR] {msg}")
         telegram(msg)
         return 1
+
+    # 일요일 = 주간배치 승인 요청 (GM 결정 2026-08-08 — 매일 1편씩 승인받던 것을 주 1회
+    #   묶음으로 바꿈). 다음 주 월~금 실전사례 5편 + 토 주말GM 1편을 한 번에 뽑아
+    #   register_publish(publish_at=그날짜T07:30) 로 예약 등록하고, 편별 검수 카드를 보낸다.
+    #   ★일요일 콘텐츠 자체는 여전히 정지다 — 「GM의 일요일」은 사진 접수 경로
+    #   (cmo_intake_to_review.py SUNDAY_TEAM 분기)가 담당한다. 이 분기가 일요일에 하는 일은
+    #   오직 "다음 주 월~토 6편 승인 요청"뿐 — 일요일편은 이 배치 안에 없다.
+    if now.weekday() == 6:  # 6=일
+        print("[INFO] 일요일 — 다음 주 월~토 6편 주간배치 승인 요청 시작(GM 결정 2026-08-08). "
+              "일요일편 자체는 여기서 다루지 않음 — 사진 접수 경로(SUNDAY_TEAM 분기) 담당.")
+        # 대상 슬롯: 다음 주 월~금(평일 트랙) + 다음 주 토(주말GM 트랙). 일요일은 제외.
+        slots = [
+            ((now + timedelta(days=d)).strftime("%Y-%m-%d"), t)
+            for d, t in (
+                (1, WEEKDAY_TRACK), (2, WEEKDAY_TRACK), (3, WEEKDAY_TRACK),
+                (4, WEEKDAY_TRACK), (5, WEEKDAY_TRACK), (6, WEEKEND_TRACK),
+            )
+        ]
+        rows_pool = list(rows)  # 이번 배치 안에서 같은 편이 두 슬롯에 중복 선정되지 않게 소모
+        shortages: list[str] = []
+        registered = 0
+        for date_iso, day_track in slots:
+            nxt = pick_next_case(rows_pool, day_track, log_replay=not (dry_run or plan_only))
+            if nxt is None:
+                shortages.append(f"{date_iso}({day_track})")
+                print(f"[WARN] {date_iso}({day_track}) 슬롯 — 재고 없음, 건너뜀.")
+                continue
+            rows_pool = [r for r in rows_pool if r is not nxt]  # 이번 배치 안에서 재선정 차단
+            print(f"[INFO] {date_iso}({day_track}) → #{nxt['num']:02d} 「{nxt['title']}」 선정")
+            if plan_only:
+                continue
+
+            # 기존 단건(평일/토 요일 런) 검증·렌더·등록·카드 로직을 그대로 재사용 —
+            # 새 등록/발행 함수를 만들지 않고 6회 반복만 한다.
+            ok, reason, diary_html, caption_md = validate_case_folder(nxt)
+            if not ok:
+                msg = f"⚠️ 실전사례 {nxt['num']:02d}({date_iso}) 대본 불량({reason}) — 미등록"
+                print(f"[ERROR] {msg}")
+                telegram(msg)
+                continue
+            if dry_run:
+                print(f"[DRY-RUN] {date_iso} #{nxt['num']:02d} 검증 통과 — 렌더·등록·카드 없이 스킵.")
+                continue
+
+            ok, reason, montage = render_reuse_or_build(nxt, diary_html)
+            if not ok:
+                msg = f"⚠️ 실전사례 {nxt['num']:02d}({date_iso}) 렌더 실패({reason}) — 미등록"
+                print(f"[ERROR] {msg}")
+                telegram(msg)
+                continue
+
+            # 주말GM 제목 고정 가드(§기존 평일/토 런과 동일 규약) — 이 배치엔 토만 있으므로 고정값.
+            if day_track == WEEKEND_TRACK:
+                title_now = str(nxt.get("title", ""))
+                if not title_now.startswith(("GM의 토요일", "GM의 일요일")):
+                    fixed = f"GM의 토요일 — {title_now.lstrip('—- ')}"
+                    print(f"[WARN] 주말GM 제목 고정 규약 위반 — 「{title_now}」 → 「{fixed}」 로 교정")
+                    nxt["title"] = fixed
+
+            queue_id = make_queue_id(nxt, today_iso)
+            caption_text = caption_md.read_text(encoding="utf-8").strip()
+            folder_path = ROOT / nxt["folder"]
+            folder_rel = folder_path.relative_to(ROOT).as_posix()
+            slides = [f"{folder_rel}/output/post_{i}.jpg" for i in range(1, 7)]
+            title = (f"{nxt['title']}(개인계정)" if day_track == WEEKEND_TRACK
+                     else f"실전사례 {nxt['num']:02d} — {nxt['title']}(개인계정)")
+
+            try:
+                from publish_register import register_publish
+
+                register_publish(
+                    content_folder=folder_path,
+                    slug=make_slug(nxt),
+                    montage_path=montage,
+                    caption=caption_text,
+                    location="웰페리온 스포츠클럽",
+                    mentions=[],
+                    account="namuk.wellperion",
+                    slides=slides,
+                    queue_id=queue_id,
+                    title=title,
+                    channel="인스타그램 (namuk.wellperion)",
+                    send_card=False,  # 카드는 아래에서 별도 호출(중복 방지 — 기존 관례)
+                    publish_at=f"{date_iso}T07:30",  # 예약 발행(GM 결정 2026-08-08)
+                )
+            except Exception as exc:
+                msg = f"⚠️ 실전사례 {nxt['num']:02d}({date_iso}) M5 등록 실패: {exc}"
+                print(f"[ERROR] {msg}")
+                telegram(msg)
+                continue
+
+            if not send_review_card(queue_id):
+                telegram(
+                    f"⚠️ 실전사례 {nxt['num']:02d}({date_iso}) 검수 카드(버튼) 발송 실패 — id={queue_id}. "
+                    f"M5 등록은 됨. 수동: send_review_card.py --id {queue_id}"
+                )
+
+            if not mark_case_dispatched(nxt, today_iso):
+                telegram(
+                    f"⚠️ 실전사례 {nxt['num']:02d}({date_iso}) 재고표 자동표시 실패 — "
+                    f"재고표 #{nxt['num']:02d} 행 상태 수동 확인 요망."
+                )
+
+            registered += 1
+            print(f"[OK] {date_iso} #{nxt['num']:02d} 「{nxt['title']}」 M5 예약등록(publish_at="
+                  f"{date_iso}T07:30) + 검수 카드 발송 완료.")
+
+        if plan_only:
+            print(f"[PLAN-ONLY] 주간배치 선정 결과 — {len(slots) - len(shortages)}/{len(slots)}편 확보"
+                  + (f", 모자람: {shortages}" if shortages else "") + ". 등록·카드 없음.")
+            return 0
+        if dry_run:
+            print("[DRY-RUN] 주간배치 시뮬레이션 종료 — 검증까지만(등록·카드 없음).")
+            return 0
+
+        if shortages:
+            # 조용한 축소 금지(요청 명시) — 몇 편이 모자란지 로그+텔레그램 모두 남긴다.
+            msg = (f"📭 실전사례 주간배치 — {registered}/{len(slots)}편만 등록됨, "
+                   f"{len(shortages)}편 재고 부족: {', '.join(shortages)} (시모 대본 제작 필요)")
+            print(f"[WARN] {msg}")
+            telegram(msg)
+        print(f"[OK] 일요일 주간배치 완료 — {registered}/{len(slots)}편 등록"
+              + (f", {len(shortages)}편 부족" if shortages else ""))
+        return 0
 
     # 1.3) 금요일 선행 경고 — 주말 재고가 비었으면 **주말이 오기 전에** 알린다(2026-07-25).
     #      토요일 아침에야 '재고 없음'을 알아봐야 그날 발행은 이미 늦는다. 토요일편은
@@ -638,122 +752,13 @@ def run(dry_run: bool, plan_only: bool) -> int:
     else:
         recover_stalled_cards(rows, today_iso, dry_run=(dry_run or plan_only))
 
-    # 2) 다음 편 선정 (소진 시 생성 금지)
-    nxt = pick_next_case(rows, track, log_replay=not (dry_run or plan_only))
-    if nxt is None:
-        if is_weekend:
-            # 조용히 죽지 않는다 (2026-07-25). 주말 재고가 비면 발행이 0건인데도 아무 신호가
-            # 없어 사흘간 아무도 몰랐다(배 10187). 텔레그램 스팸은 여전히 금지 —
-            # 대신 기존 정합 신호 로그에 1줄 남겨 '빠진 것' 감지기가 표면화하게 한다.
-            print(f"[INFO] 주말({track}) 재고 없음 — 발송 없음. 정합 신호 기록.")
-            if not (dry_run or plan_only):
-                _replay_append(
-                    "cmo-case-series-dispatch",
-                    subject=f"주말GM 재고 소진({today_iso})",
-                    detail=f"{track} 트랙 재고 0 — 오늘 개인계정 발행 없음. 다음 편 대본 제작 필요.",
-                )
-            return 0
-        stock_nums = [r["num_raw"] for r in rows if r["track"] == track and r["status"] == STOCK_STATUS]
-        print(f"[INFO] 실전사례 대본 재고 소진 — 생성 금지. (재고 상태였던 잔여: {stock_nums})")
-        telegram("📭 실전사례 대본 재고 소진 — 시모 대본 제작 필요(재고표: instagram/_실전사례_2주플랜.md)")
-        return 0
-
-    # 주말GM 제목 고정 가드 (GM 2026-07-25) — 문서로만 두면 다음 사람이 또 다르게 적는다(약속 L02).
-    #   토=「GM의 토요일」 / 일=「GM의 일요일」 로 시작하지 않으면 여기서 붙여 맞춘다.
-    #   차단이 아니라 교정이다 — 제목 하나 때문에 주말 발행을 멈추는 게 더 손해다.
-    if nxt.get("track") == WEEKEND_TRACK:
-        title_now = str(nxt.get("title", ""))
-        # ★둘 중 하나로 시작하면 이미 규약을 지킨 것 — 손대지 않는다.
-        #   요일로만 판정하면 토요일 런이 일요일편을 집었을 때(오늘 몫이 이미 나간 경우 등)
-        #   앞머리를 겹쳐 붙인다("GM의 토요일 — GM의 일요일 — …"). 실제로 자체 검증에서 재현됐다.
-        if not title_now.startswith(("GM의 토요일", "GM의 일요일")):
-            want = "GM의 토요일" if now.weekday() == 5 else "GM의 일요일"
-            fixed = f"{want} — {title_now.lstrip('—- ')}"
-            print(f"[WARN] 주말GM 제목 고정 규약 위반 — 「{title_now}」 → 「{fixed}」 로 교정")
-            nxt["title"] = fixed
-
-    print(f"[INFO] 다음 편 선정 → #{nxt['num']:02d} 「{nxt['title']}」 / 폴더: {nxt['folder']}")
-
-    if plan_only:
-        print("[PLAN-ONLY] 선정만 출력하고 종료(검증·렌더·등록 안 함).")
-        return 0
-
-    # 3) 대본 불량 검증
-    ok, reason, diary_html, caption_md = validate_case_folder(nxt)
-    if not ok:
-        msg = f"⚠️ 실전사례 {nxt['num']:02d} 대본 불량({reason}) — 미등록"
-        print(f"[ERROR] {msg}")
-        telegram(msg)
-        return 1
-
-    if dry_run:
-        print(f"[DRY-RUN] 검증 통과(대본 html={diary_html.name}, caption.md 확인됨). "
-              f"렌더·M5 등록·검수카드 호출 없이 종료.")
-        return 0
-
-    # 4) 렌더(재사용 우선)
-    ok, reason, montage = render_reuse_or_build(nxt, diary_html)
-    if not ok:
-        msg = f"⚠️ 실전사례 {nxt['num']:02d} 렌더 실패({reason}) — 미등록"
-        print(f"[ERROR] {msg}")
-        telegram(msg)
-        return 1
-
-    # 5) 등록 (M1 review_queue '검수대기')
-    queue_id = make_queue_id(nxt, today_iso)
-    caption_text = caption_md.read_text(encoding="utf-8").strip()
-    folder_path = ROOT / nxt["folder"]
-    folder_rel = folder_path.relative_to(ROOT).as_posix()
-    slides = [f"{folder_rel}/output/post_{i}.jpg" for i in range(1, 7)]
-
-    try:
-        from publish_register import register_publish
-
-        register_publish(
-            content_folder=folder_path,
-            slug=make_slug(nxt),
-            montage_path=montage,
-            caption=caption_text,
-            location="웰페리온 스포츠클럽",
-            mentions=[],
-            account="namuk.wellperion",
-            slides=slides,
-            queue_id=queue_id,
-            # 주말GM 트랙은 제목을 고정한다 — 「GM의 토요일 — {부제}」 / 「GM의 일요일 — {부제}」
-            # (GM 2026-07-25 지시: "개인계정 인스타그램 제목을 고정해줘 GM의 일요일처럼, GM의 토요일로").
-            # 그동안 종결된 평일 시리즈 이름표("실전사례 14 —")가 주말편에도 붙어 나가,
-            # 같은 요일 시리즈인데 회차마다 앞머리가 달라 보였다. 주말편은 재고표 제목을 그대로 쓴다
-            # (재고표 §재고 주말GM 행이 이미 「GM의 토요일/일요일 — …」 형식이고, 아래 가드가 이를 강제한다).
-            title=(f"{nxt['title']}(개인계정)" if nxt.get("track") == WEEKEND_TRACK
-                   else f"실전사례 {nxt['num']:02d} — {nxt['title']}(개인계정)"),
-            channel="인스타그램 (namuk.wellperion)",
-            send_card=False,  # 카드는 아래 6)에서 별도 호출(중복 방지 — producer 동일 관례)
-        )
-    except Exception as exc:
-        msg = f"⚠️ 실전사례 {nxt['num']:02d} M5 등록 실패: {exc}"
-        print(f"[ERROR] {msg}")
-        telegram(msg)
-        return 1
-
-    # 6) 검수 카드 발송 — [✅승인]/[❌반려] 버튼(무폴링 발행 트리거). 실패해도 등록은 유효(경고만).
-    if not send_review_card(queue_id):
-        telegram(
-            f"⚠️ 실전사례 {nxt['num']:02d} 검수 카드(버튼) 발송 실패 — id={queue_id}. "
-            f"M5 등록은 됨. 수동 카드 발송: send_review_card.py --id {queue_id}"
-        )
-
-    # 7) 재고표 마킹 (실패해도 등록·카드는 이미 완료 — 경고만)
-    if not mark_case_dispatched(nxt, today_iso):
-        telegram(
-            f"⚠️ 실전사례 {nxt['num']:02d} 재고표 자동표시 실패 — 다음날 같은 편 재선정 위험. "
-            f"재고표 #{nxt['num']:02d} 행 상태 수동 확인 요망."
-        )
-
-    # 8) 발행은 GM 텔레그램 [✅승인] 탭 시 봇 pub: 콜백이 즉시 수행(무폴링). 이 스크립트는 발행 안 함.
-    print(
-        f"[OK] 실전사례 {nxt['num']:02d} 「{nxt['title']}」 M5 검수대기 등록 + 검수 카드 발송 완료. "
-        f"발행은 GM 텔레그램 [✅승인] 탭 → 봇 pub: 즉시 발행(무폴링). (이 스크립트는 발행 안 함)"
-    )
+    # 2) 월~토 런 — 선정·등록·카드 발송 없음 (GM 결정 2026-08-08).
+    #    다음 편 승인은 이제 일요일 주간배치 1회로 끝난다(위 분기). 월~토는 이미 승인된
+    #    편의 예약 발행 시각(publish_at)만 스윕한다 — 그 스윕은 이 스크립트가 아니라
+    #    ig_review_publish_watcher.py --once 가 담당한다(ig/start_ig_series_producer.bat 참고).
+    #    이 자리는 안전망(1.3 금요일 경고·1.4 종결 킬스위치·1.5 복구 패스)만 계속 돈다.
+    print("[INFO] 월~토 런 — 선정·등록·카드 발송 없음(주간배치로 이관, GM 결정 2026-08-08). "
+          "예약 발행은 ig_review_publish_watcher.py --once 스윕이 처리.")
     return 0
 
 

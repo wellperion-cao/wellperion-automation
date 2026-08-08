@@ -487,6 +487,7 @@ def register_publish(
     channel: str | None = None,
     collaborators: list[str] | None = None,
     send_card: bool = False,
+    publish_at: str = "",
 ) -> None:
     """제작완료 → 자동 등록(M1 upsert) + 텔레그램(1줄+montage) 발송 범용 헬퍼.
 
@@ -497,6 +498,9 @@ def register_publish(
         subprocess 로 1회 호출해 [✅승인]/[❌반려] 버튼 카드까지 발송한다(실패해도 경고만).
         ⚠️ 기본 False — 자동생성기(ig_series_producer.py)는 send_review_card 를 별도 호출하므로
         절대 send_card=True 로 부르면 안 됨(카드 중복 방지). 수동 build_slides 경로만 True.
+    publish_at — "YYYY-MM-DDTHH:MM"(로컬 시각) 예약 발행 시각(GM 결정 2026-08-08 · 주1회
+        묶음 승인). 큐 항목에 그대로 실려 ig_review_publish_watcher._publish_time_reached 가
+        읽는다. 기본값 빈 문자열 = 예약 없음(승인 즉시 발행, 기존 동작과 완전히 동일).
     """
     try:
         content_folder = Path(content_folder)
@@ -537,6 +541,8 @@ def register_publish(
         }
         if preview_rel:
             fields["preview"] = preview_rel
+        if publish_at:
+            fields["publish_at"] = publish_at
         try:
             matched, final_status = _upsert_queue(queue_id, fields)
         except Exception as exc:

@@ -52,3 +52,14 @@ REM ============================================================
 echo [ai_daily_series_card] %DATE% %TIME% launch >> "%LOGDIR%\ai_daily_series_card.log"
 "%PY%" -u "%ROOT%\scripts\ai_daily_series_card.py" >> "%LOGDIR%\ai_daily_series_card.log" 2>&1
 echo [ai_daily_series_card] %DATE% %TIME% exit=%ERRORLEVEL% >> "%LOGDIR%\ai_daily_series_card.log"
+
+REM ============================================================
+REM Scheduled-publish sweep (GM decision 2026-08-08 - weekly batch
+REM approval on Sunday, per-day publish_at fields set by
+REM case_series_dispatch.py). No new scheduled task -- riding this
+REM existing 07:30 batch. Publishes only items whose publish_at
+REM has arrived AND are already GM-approved; safe no-op otherwise.
+REM ============================================================
+echo [ig_review_publish_watcher] %DATE% %TIME% launch >> "%LOGDIR%\ig_review_publish_watcher.log"
+"%PY%" -u "%ROOT%\scripts\ig_review_publish_watcher.py" --once >> "%LOGDIR%\ig_review_publish_watcher.log" 2>&1
+echo [ig_review_publish_watcher] %DATE% %TIME% exit=%ERRORLEVEL% >> "%LOGDIR%\ig_review_publish_watcher.log"
