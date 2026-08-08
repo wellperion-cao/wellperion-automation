@@ -166,10 +166,6 @@ ACCOUNTS = {
                  "paper_whisper": "namuk.wellperion  ·  한남동에서 천천히"},
 }
 
-# 시리즈 전용 액센트 변형 — 계정 기본색과 다른 요일/시리즈를 구분할 때만 쓴다.
-# spec 최상위 "marker": "highlight" 로 켠다("GM의 토요일" 전용, 2026-08-08).
-HIGHLIGHT_MARKER = (HIGHLIGHT, "rgba(237,91,63,0.45)")
-
 SIZES = {"1080x1080": (1080, 1080), "1080x1350": (1080, 1350)}
 
 _FONT_CSS_CACHE: str | None = None
@@ -343,8 +339,7 @@ def _sunday_info_html(rows: list) -> str:
 
 
 def build_slide_html(slide: dict, *, w: int, h: int, account: str,
-                     chip_label: str, index: int, total: int,
-                     marker_variant: str | None = None) -> str:
+                     chip_label: str, index: int, total: int) -> str:
     kind = slide["type"]
     cfg = ACCOUNTS[account]
     accent = slide.get("accent", cfg["accent"])
@@ -447,7 +442,7 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
         ))
 
     if kind == "paper":
-        marker = HIGHLIGHT_MARKER if marker_variant == "highlight" else cfg["marker"]
+        marker = cfg["marker"]
         tilt = float(slide.get("mark_tilt", -1.6))
         pad_x = int(slide.get("mark_pad_x", 9))
         pad_y = int(slide.get("mark_pad_y", 26))
@@ -467,8 +462,7 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
                         if slide.get("counter") else "")
         return _fill(_load_template("paper"), dict(
             common,
-            LOGO_HTML=_paper_logo_html(
-                cfg, symbol_color=HIGHLIGHT if marker_variant == "highlight" else None),
+            LOGO_HTML=_paper_logo_html(cfg),
             TITLE_HTML=title_html,
             BODY_HTML=body_html,
             WHISPER_HTML=whisper_html,
@@ -522,7 +516,6 @@ def render_carousel(spec: dict, out_dir: Path, *, fmt: str = "jpg",
         raise ValueError(f"Unknown account: {account!r} (official|personal)")
     w, h = SIZES[spec.get("size", "1080x1080")]
     chip_label = spec.get("chip_label", "WELLPERION")
-    marker_variant = spec.get("marker")  # 예: "highlight" — 요일/시리즈 액센트 오버라이드
     slides = spec["slides"]
     total = int(spec.get("total", len(slides)))
 
@@ -532,7 +525,7 @@ def render_carousel(spec: dict, out_dir: Path, *, fmt: str = "jpg",
 
     t0 = time.perf_counter()
     docs = [build_slide_html(s, w=w, h=h, account=account, chip_label=chip_label,
-                             index=i, total=total, marker_variant=marker_variant)
+                             index=i, total=total)
             for i, s in enumerate(slides, start=1)]
     t_html = time.perf_counter() - t0
 
