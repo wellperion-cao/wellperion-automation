@@ -1798,6 +1798,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .wp-ldy__openitem.wp-ldy__openitem--empty{border-color:rgba(232,163,61,0.55)}
   .wp-ldy__openitem span{font-size:12.5px;font-weight:650}
   .wp-ldy__notice{border:1px solid rgba(232,163,61,0.55);background:rgba(232,163,61,0.12);border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .wp-ldy__guide{border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12.5px;line-height:1.75;color:var(--text)}
+  .wp-ldy__guide b{font-weight:750}
+  .wp-ldy__diff-ok{color:var(--dim)}
+  .wp-ldy__diff-bad{color:#e06b6b;font-weight:750}
   @media(max-width:430px){
     .wp-ldy__tbl th,.wp-ldy__tbl td{padding:5px 4px;font-size:12px}
     .wp-ldy__in{width:62px;padding:5px 4px}
@@ -1812,6 +1816,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div class="wp-ldy__h">📝 오늘 점검</div>
       <!-- 기초재고가 비어 있으면 사용량이 계산되지 않는다 — 여기서 먼저 알린다(GM 요청 2026-08-07) -->
       <div id="wpLdyOpeningWarn"></div>
+      <!-- 사용 가이드 — 실무진이 화면만 보고 바로 쓰게(GM 지시 2026-08-08) -->
+      <div class="wp-ldy__guide">
+        <b>① 받을 때</b> — 크린토피아 배송이 오면 품목별 받은 개수를 <b>입고</b> 칸에 적습니다.<br>
+        <b>② 마감할 때</b> — 마감 점검 때 남은 개수를 세서 <b>마감재고</b> 칸에 적습니다. 사용량은 화면이 자동으로 계산합니다(따로 셀 필요 없음).<br>
+        <b>③ 숫자가 안 맞으면</b> — 사용량 칸이 빨간색(마이너스)이면 입고나 마감재고를 잘못 적은 건 아닌지 다시 확인하세요. 아래 <b>재고 원장</b>에 가끔 실제로 다 세어(실사) 넣으면, 계산상 있어야 할 재고와 차이가 빨간 글씨로 뜹니다 — 그 차이가 분실·미기록 신호입니다.
+      </div>
       <div class="wp-ldy__bar">
         <input type="date" id="wpLdyDate" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderToday()">
         <span id="wpLdyDow" class="wp-ldy__k"></span>
@@ -6823,7 +6833,9 @@ function wpLdyRenderLedger(){
       + '<td>' + Math.round(t.input) + '</td>'
       + '<td>' + Math.round(t.circ) + '</td>'
       + '<td><input type="number" class="wp-ldy__in" style="width:80px" value="' + (last ? last.counted : '') + '" onchange="wpLdyAudit(\'' + m.id + '\',this.value)">'
-      + (last ? '<div class="wp-ldy__k">실사 대비 ' + Math.round(t.circ - last.counted) + '</div>' : '') + '</td></tr>';
+      + (last ? (function(){ var diff = Math.round(t.circ - last.counted);
+          return '<div class="' + (diff !== 0 ? 'wp-ldy__diff-bad' : 'wp-ldy__diff-ok') + '">실사 대비 ' + (diff > 0 ? '+' : '') + diff
+            + (diff !== 0 ? ' — 분실·미기록 의심' : ' — 일치') + '</div>'; })() : '') + '</td></tr>';
   }).join('');
   document.getElementById('wpLdyNiBody').innerHTML = (LAUNDRY_DATA.newInput || []).slice().reverse().map(function(n){
     var m = LAUNDRY_DATA.master.filter(function(x){ return x.id === n.itemId; })[0];
