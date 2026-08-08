@@ -45,6 +45,20 @@ def _pushed(sha: str) -> bool:
         return False
 
 
+def ref_no(ref: str, day: str) -> str:
+    """표의 # 칸. 오늘 지시는 번호만, 지난 날 지시는 날짜를 앞에 붙인다.
+
+    ref 는 `GM-YYYYMMDD-NN` 꼴이다. 전엔 `ref[-2:]` 로 잘라 썼는데, 어제·그제 받은
+    지시를 오늘 끝내면 오늘 것과 같은 번호가 두 번 나와 어느 쪽인지 알 수 없었다
+    (2026-08-08 실측: 04·06·13·25 가 각각 두 줄). 세 자리 이상 번호도 잘려 나갔다.
+    """
+    m = re.match(r'GM-(\d{4})(\d{2})(\d{2})-(\d+)$', ref)
+    if not m:
+        return ref[-2:]
+    ymd, no = f'{m.group(1)}-{m.group(2)}-{m.group(3)}', m.group(4)
+    return no if ymd == day else f'{m.group(2)}/{m.group(3)} {no}'
+
+
 def _dur(start: datetime.datetime, end: datetime.datetime) -> str:
     m = int((end - start).total_seconds() // 60)
     return f'{m}분' if m < 60 else f'{m // 60}시간{m % 60}분'
@@ -147,7 +161,7 @@ def emit(day: str) -> int:
             did = str(oks[-1].get('detail') or '').strip() if oks else ''
             items.append({
                 'ref': ref,
-                'no': ref[-2:],
+                'no': ref_no(ref, day),
                 'got': str(ev[0].get('event') or '').strip(),
                 'did': did,
                 'start': st.strftime('%H:%M') if st else None,
@@ -215,7 +229,7 @@ def main() -> int:
         got = str(ev[0].get('event') or '').strip()
         did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
         up = upload_state(did, bool(oks))
-        print(f'| {ref[-2:]} | {got[:52]} | {did[:74]} | {dur} | {up} |')
+        print(f'| {ref_no(ref, day)} | {got[:52]} | {did[:74]} | {dur} | {up} |')
 
     print()
     avg = (total // done) if done else 0

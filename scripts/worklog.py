@@ -87,6 +87,11 @@ def record_gm_prompt_hook() -> None:
         role = (os.environ.get("WELLPERION_ROLE") or "").strip().lower()
         if prompt and role:
             event = prompt.splitlines()[0].strip()
+            # 사람이 친 것만 접수한다. 훅은 시스템이 주입하는 알림·명령 출력에도 똑같이 걸려서,
+            # 2026-08-08 에 `<task-notification>` 한 줄이 GM 지시로 원장에 박혀 쿵짝표에
+            # "진행중" 으로 떴다. 아무도 시키지 않은 일이 놓친 일로 보이면 판단이 어긋난다.
+            if event.startswith(('<', '[SYSTEM NOTIFICATION', '[형식 고정')):
+                event = ''
             if len(event) > 120:
                 event = event[:120] + "…"
             if event:
