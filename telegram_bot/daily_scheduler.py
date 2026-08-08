@@ -1495,22 +1495,20 @@ def _build_07_body() -> str:
 
 
 def _kr_amt(n) -> str:
-    """한국식 금액 표기: 271488886 → '2억 7,148만'. ERP home krAmt와 동일 규칙."""
+    """한국식 금액 표기. 정본 = scripts/erp_status_publisher.kr_amt (2026-08-08 단일화).
+
+    같은 규칙을 보고기마다 따로 갖고 있으면 한 곳만 고쳤을 때 표기가 어긋난다(약속 L01).
+    임포트가 실패해도 돈 표기 하나 때문에 09시 보고가 통째로 죽으면 안 되므로 폴백을 둔다.
+    """
     try:
-        n = round(float(n))
-    except (TypeError, ValueError):
-        return "—"
-    sign = "-" if n < 0 else ""
-    n = abs(n)
-    eok = n // 100000000
-    man = (n % 100000000) // 10000
-    if eok > 0 and man > 0:
-        return f"{sign}{eok}억 {man:,}만"
-    if eok > 0:
-        return f"{sign}{eok}억"
-    if man > 0:
-        return f"{sign}{man:,}만"
-    return f"{sign}{n:,}원"
+        from erp_status_publisher import kr_amt
+        return kr_amt(n)
+    except Exception:
+        try:
+            v = round(float(n))
+        except (TypeError, ValueError):
+            return "—"
+        return f"{v:,}원"
 
 
 _FINANCE_CACHE = Path(__file__).parent / ".finance_cache.txt"

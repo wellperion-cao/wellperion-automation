@@ -332,6 +332,49 @@ def _send_alert(token: str, owner_id: int, message: str, dry_run: bool) -> None:
 
 
 # ── 메인 ──────────────────────────────────────────────────────────────────────
+def _check_stale_worktree() -> list[str]:
+    """작업트리에 '커밋보다 오래된 파일'이 있나 — 옛 사본이 최신을 덮은 흔적.
+
+    ★2026-08-08 실사고. 자동 통합(push)이 20회 연속 막혔고, 원인은 종합접수처 현황판이
+    8/5 14:54 자 옛 사본으로 덮여 있던 것이었다. 같은 종류를 전수로 세니 7개였고, 전부
+    지우는 방향이라 어느 세션이든 한 번만 쓸어 담았으면 사흘치가 날아갈 상태였다
+    (인사 허브 하나만 707줄). GM 이 알림을 넘겨줘서 찾았지 아니면 못 찾았다.
+
+    판정: 파일 수정시각 < 그 파일의 마지막 커밋 시각 → 옛 사본 의심.
+    5분 안쪽 차이는 세지 않는다 — 자동 산출물(로그·스냅샷)이 커밋 직후 다시 써지는 정상 흐름이
+    그 폭에 들어와 헛경보가 된다(실측 2026-08-08: 그렇게 잡힌 것이 5건 전부 오탐이었다).
+    """
+    import subprocess as _sp
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # scripts/ 의 상위 = 저장소
+    try:
+        out = _sp.run(['git', 'status', '--porcelain'], cwd=root,
+                      capture_output=True, text=True, encoding='utf-8', timeout=60).stdout
+    except Exception as e:
+        return [f"작업트리 점검 실패: {type(e).__name__}"]
+    suspects = []
+    for line in out.splitlines():
+        st, path = line[:2], line[3:].strip().strip('"')
+        if 'M' not in st:
+            continue
+        full = os.path.join(root, path)
+        if not os.path.exists(full):
+            continue
+        try:
+            r = _sp.run(['git', 'log', '-1', '--format=%ct', '--', path], cwd=root,
+                        capture_output=True, text=True, encoding='utf-8', timeout=30)
+            ct = int((r.stdout or '').strip() or 0)
+        except Exception:
+            continue
+        if ct and os.path.getmtime(full) < ct - 300:
+            suspects.append(path)
+    if suspects:
+        head = ' · '.join(os.path.basename(p) for p in suspects[:3])
+        more = f" 외 {len(suspects) - 3}개" if len(suspects) > 3 else ""
+        return [f"🔴 옛 사본이 최신 파일을 덮고 있습니다 {len(suspects)}개 — {head}{more}. "
+                f"그대로 커밋되면 최신 내용이 사라집니다(2026-08-08 같은 사고)."]
+    return []
+
+
 def _check_sales_month() -> list[str]:
     """08시·09시·09:30 보고에 나갈 '이달 매출' 값이 실제로 있는지 하루 한 번 확인한다.
 
@@ -413,7 +456,13 @@ def main() -> None:
     except Exception as e:
         all_issues.append(f"이달 매출 표시 점검 예외: {e}")
 
-    # 8. 결과 출력 및 경보
+    # 8. 옛 사본이 최신 파일을 덮고 있나 (2026-08-08 실사고 — 통합 20회 차단)
+    try:
+        all_issues.extend(_check_stale_worktree())
+    except Exception as e:
+        all_issues.append(f"작업트리 점검 예외: {e}")
+
+    # 9. 결과 출력 및 경보
     if all_issues:
         today_str = datetime.date.today().strftime('%Y-%m-%d')
         alert_msg = (
