@@ -24,6 +24,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -37,6 +39,67 @@ VALID_RESULTS = {"ok", "warn", "fail"}
 _APPEND_RETRIES = 3
 _APPEND_RETRY_WAIT_SEC = 0.2
 
+# GM지시 접수 자동화(2026-08-08, GM 지시 A안) — UserPromptSubmit 훅 진입점.
+# ref 채번 = 역할별 1000단위 구간(GM-YYYYMMDD-{구간+N}) — kungjjak_board.py --all-roles 가
+# ref 로만 짝을 묶으므로(role 필터 없음) 역할이 겹치는 번호를 쓰면 다른 역할 접수가 한 표에
+# 섞여버린다. 구간을 나눠 물리적으로 겹칠 수 없게 한다. 미지정 역할은 9000대로 격리.
+_GM_REF_BLOCK = {"ceo": 1000, "cto": 2000, "cmo": 3000, "cpo": 4000,
+                  "coo": 5000, "chro": 6000, "cfo": 7000}
+_GM_REMINDER = ("[형식 고정] 말투=caveman ultra(군더더기·과정 서술 금지) · "
+                "GM 물음 1개 = 표 1개(8요소 📌GM지시 🔍실측 ✅반영 🔎검수 📤올림 ⏱소요 💡더나았을방법 👉GM액션) · "
+                "표 밖 줄글은 표로 못 담는 것만")
+
+
+def _next_gm_ref(role: str, day: str) -> str:
+    """그날·그 역할의 기존 최대 번호 다음(역할 구간 안에서). 파일 없으면 구간 첫 번호."""
+    block = _GM_REF_BLOCK.get(role, 9000)
+    prefix = f"GM-{day}-"
+    max_nn = block
+    if WORKLOG_PATH.exists():
+        with open(WORKLOG_PATH, encoding="utf-8") as f:
+            for line in f:
+                if prefix not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if d.get("role") != role:
+                    continue
+                ref = str(d.get("ref") or "")
+                if not ref.startswith(prefix):
+                    continue
+                try:
+                    nn = int(ref[len(prefix):])
+                except ValueError:
+                    continue
+                if block <= nn < block + 1000 and nn > max_nn:
+                    max_nn = nn
+    return f"{prefix}{max_nn + 1}"
+
+
+def record_gm_prompt_hook() -> None:
+    """UserPromptSubmit 훅 진입점 — GM 프롬프트를 GM지시 접수로 best-effort 기록하고,
+    항상 리마인더 JSON 을 stdout 에 낸다(예외 나도 세션은 절대 막지 않는다)."""
+    try:
+        data = json.loads(sys.stdin.read())
+        prompt = str(data.get("prompt") or "").strip()
+        role = (os.environ.get("WELLPERION_ROLE") or "").strip().lower()
+        if prompt and role:
+            event = prompt.splitlines()[0].strip()
+            if len(event) > 120:
+                event = event[:120] + "…"
+            if event:
+                day = datetime.now(tz=KST).strftime("%Y%m%d")
+                ref = _next_gm_ref(role, day)
+                log(role, "GM지시", event, result="warn",
+                    detail="받음 · 자동 접수(UserPromptSubmit)", ref=ref)
+    except Exception:
+        pass
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit",
+                                              "additionalContext": _GM_REMINDER}},
+                      ensure_ascii=False))
+
 
 def log(
     role: str,
@@ -46,19 +109,23 @@ def log(
     detail: str = "",
     ref: str = "",
     url: str = "",
+    ts: str = "",
 ) -> bool:
     """status/worklog.jsonl 에 고정 스키마로 1줄 append. best-effort(항상 bool 반환, 예외 안 던짐).
 
     role: ceo|cfo|chro|cmo|coo|cpo|cto (소문자 정규화만 하고 값 자체는 검증 실패해도 기록 시도
           — 스키마 계약을 지키되 호출부를 막지 않는 게 우선).
     result: ok|warn|fail (그 외 값이 오면 'ok'로 안전 폴백).
+    ts: 소급 기록용 시각(ISO8601 KST). 비우면 지금. 접수를 놓쳐 나중에 남길 때,
+        지금 시각으로 찍으면 쿵짝표의 소요 칸이 거짓이 된다 — 실제 시각을 넣는다.
+        스키마는 그대로다(같은 ts 필드).
     """
     try:
         result_v = (result or "ok").strip().lower()
         if result_v not in VALID_RESULTS:
             result_v = "ok"
         record = {
-            "ts": datetime.now(tz=KST).isoformat(timespec="seconds"),
+            "ts": (ts or "").strip() or datetime.now(tz=KST).isoformat(timespec="seconds"),
             "role": (role or "").strip().lower(),
             "area": area or "",
             "event": event or "",
@@ -88,10 +155,10 @@ def log(
 
 
 if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) >= 4:
+    if len(sys.argv) >= 2 and sys.argv[1] == "--hook-prompt":
+        record_gm_prompt_hook()
+    elif len(sys.argv) >= 4:
         ok = log(sys.argv[1], sys.argv[2], sys.argv[3])
         print(f"[{'OK' if ok else 'FAIL'}] worklog.log() 호출 — {WORKLOG_PATH}")
     else:
-        print("사용: python worklog.py <role> <area> <event>")
+        print("사용: python worklog.py <role> <area> <event> | python worklog.py --hook-prompt")
