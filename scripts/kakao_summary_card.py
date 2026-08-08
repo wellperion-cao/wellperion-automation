@@ -234,15 +234,19 @@ def compute_alerts(kpi: dict) -> list:
     return alerts
 
 
-def build_banner(alerts: list) -> str:
+def build_banner(alerts: list, head_word: str = "오늘") -> str:
+    """경보 배너. head_word = '오늘'(매일 카드) / '이번 주'(주간 카드) 등 — 주기에 맞는 말을 쓴다.
+
+    2026-08-08: 주간 카드에 '오늘 주의'라고 떠서 말이 안 맞았다(매일 카드용 문구를 그대로 씀).
+    """
     if not alerts:
         return (
             '<div class="banner ok">'
             '<div class="ic">🟢</div>'
-            '<div><div class="b1">오늘 특이사항 없음</div></div>'
+            f'<div><div class="b1">{html_mod.escape(head_word)} 특이사항 없음</div></div>'
             '</div>'
         )
-    head = "오늘 주의 1건" if len(alerts) == 1 else f"오늘 주의 {len(alerts)}건"
+    head = f"{head_word} 주의 {len(alerts)}건"
     extra = "".join(f'<div class="b2">{html_mod.escape(a)}</div>' for a in alerts[1:])
     return (
         '<div class="banner">'
@@ -495,6 +499,129 @@ def build_page_html(kpi: dict, parking: dict, target_date: datetime) -> str:
     return PAGE_TEMPLATE.format(style=STYLE_CSS, card=card)
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 방별 카드 — ★중간관리자 「멈춘 업무 정리」 (2026-08-08 GM 지시)
+#   GM: "지금은 글로 다 정리가 되니까 잘 읽지도 않고 반영도 안되는 것 같아."
+#       "진행이 안되는 건에 대해선 명확히 담당 팀 리더에게 전달을 해서 작업을 할 수 있게."
+#   ★실측이 설계를 바꿨다(2026-08-08): 지연 12건 전부 담당자가 이미 있다(담당 미정 0건).
+#     문제는 '누구 건지 몰라서'가 아니라 '알고도 두 달째 안 움직인다'다. 그래서 이름보다
+#     **며칠째인지**를 크게 세운다 — D+63 이라는 숫자가 이름보다 사람을 움직인다.
+#   겉모습·렌더·발송은 위 아침 요약 카드 것을 그대로 쓴다(새 엔진·새 발송 경로 없음 · 약속 L21).
+# ══════════════════════════════════════════════════════════════════════════
+STALLED_ROOM = "★중간관리자"
+
+
+def collect_stalled() -> dict:
+    """업무 시트(S3)에서 마감이 지난 채 살아 있는 건을 담당자별로 모은다.
+
+    판정은 report_stream_3_impl 의 것을 그대로 쓴다 — 같은 '지연'을 두 벌로 계산하지 않는다
+    (약속 L01). 조회 실패는 예외를 올린다(빈 카드를 정상처럼 내보내지 않는다).
+    """
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from report_stream_3_impl import (_fetch_todo, _is_overdue, _due_date10,
+                                      TODO_DONE_STATUSES)
+    today = datetime.now().strftime("%Y-%m-%d")
+    items = _fetch_todo()
+    if not items:
+        raise RuntimeError("업무 시트 응답 없음 — 카드를 만들지 않는다(빈 값을 0으로 내보내지 않음)")
+    active = [x for x in items if str(x.get("상태", "")).strip() not in TODO_DONE_STATUSES]
+    overdue = [x for x in active if _is_overdue(x, today)]
+
+    def days_over(x) -> int:
+        d = _due_date10(x)
+        try:
+            due = datetime.strptime(d[:10], "%Y-%m-%d")
+            return (datetime.now() - due).days
+        except Exception:
+            return 0
+
+    rows = sorted(
+        ({"who": (str(x.get("담당자", "")).strip() or "담당 미정"),
+          "title": str(x.get("업무명", "")).strip(),
+          "days": days_over(x)} for x in overdue),
+        key=lambda r: -r["days"])
+    by_who: dict = {}
+    for r in rows:
+        by_who[r["who"]] = by_who.get(r["who"], 0) + 1
+    return {"active": len(active), "overdue": len(overdue), "rows": rows,
+            "by_who": sorted(by_who.items(), key=lambda kv: -kv[1])}
+
+
+def _stalled_tile(label: str, big: str, sub: str, tone: str = "") -> str:
+    return (f'<div class="tile{(" " + tone) if tone else ""}">'
+            f'<div class="lab">{label}</div>'
+            f'<div class="big">{big}</div>'
+            f'<div class="sub">{sub}</div></div>')
+
+
+def build_stalled_card_html(S: dict, target_date: datetime) -> str:
+    """★중간관리자 「멈춘 업무 정리」 카드 HTML."""
+    d1 = f"{target_date.month}.{target_date.day}"
+    d2 = WEEKDAY_KR[target_date.weekday()]
+    rows, by_who = S["rows"], S["by_who"]
+
+    # 경보 = 가장 오래 멈춘 것 하나. 없으면 '특이사항 없음'(엔진의 기존 배너 규칙 재사용).
+    alerts = ([f'{rows[0]["title"]} — {rows[0]["days"]}일째 · {rows[0]["who"]}'] if rows else [])
+
+    who_lines = "".join(
+        f'<div class="who"><span class="wn">{w}</span>'
+        f'<span class="wc">{n}건</span></div>' for w, n in by_who) or \
+        '<div class="sub">멈춘 업무 없음</div>'
+
+    # 오래된 순 5건까지. 12건을 다 실으면 카드가 다시 '긴 글'이 된다.
+    SHOW = 5
+    top = "".join(
+        f'<div class="srow"><span class="sd">{r["days"]}일</span>'
+        f'<span class="st">{r["title"][:30]}</span>'
+        f'<span class="sw">{r["who"]}</span></div>' for r in rows[:SHOW])
+    more = (f'<div class="sub" style="margin-top:6px;">외 {len(rows) - SHOW}건 — '
+            f'업무 현황 화면에서 전부 봅니다</div>') if len(rows) > SHOW else ""
+
+    card = (
+        '<div class="card" id="card" style="zoom:3">'
+        '<header class="top">'
+        '<div class="brand"><div class="mark">W</div><div>'
+        '<div class="t1">멈춘 업무 정리</div>'
+        f'<div class="t2">💬 매주 금 17:00 자동 · {STALLED_ROOM}</div>'
+        '</div></div>'
+        f'<div class="date"><div class="d1">{d1}</div><div class="d2">{d2}</div></div>'
+        '</header>'
+        f'{build_banner(alerts, "이번 주")}'
+        '<div class="pad" style="padding-top:0">'
+        '<div class="grid">'
+        f'{_stalled_tile("🗂 진행 중", fmt_comma(S["active"]) + "건", "마감 안 지난 것")}'
+        f'{_stalled_tile("⏰ 마감 지남", fmt_comma(S["overdue"]) + "건", "이름별로 아래에", "sales")}'
+        '</div>'
+        '<div class="whowrap"><div class="lab">사람별 밀린 건수</div>'
+        f'{who_lines}</div>'
+        '<div class="whowrap"><div class="lab">가장 오래 멈춘 것</div>'
+        f'{top}{more}</div>'
+        '</div>'
+        '<div class="foot"><div class="fl">'
+        '<b>부탁</b> 각 건을 <b>끝냄 · 접음 · 새 기한</b> 셋 중 하나로 정해 주세요. '
+        '막혀 있는 건이면 무엇에 막혔는지 한 줄만 남겨 주시면 저희가 풉니다.'
+        '</div></div>'
+        '</div>'
+    )
+    return PAGE_TEMPLATE.format(style=STYLE_CSS + STALLED_CSS, card=card)
+
+
+STALLED_CSS = """
+.whowrap{margin-top:14px;padding:14px 16px;background:var(--tile);border:1px solid var(--line);border-radius:14px}
+.whowrap .lab{font-size:13px;font-weight:800;color:var(--dim);margin-bottom:8px}
+.who{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+.who:last-child{border-bottom:none}
+.wn{font-size:15px;font-weight:700;color:var(--ink)}
+.wc{font-size:15px;font-weight:800;color:var(--gold)}
+.srow{display:flex;align-items:baseline;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.srow:last-child{border-bottom:none}
+.sd{flex:0 0 auto;min-width:52px;font-size:16px;font-weight:800;color:var(--crit)}
+.st{flex:1 1 auto;font-size:14px;color:var(--ink);line-height:1.45}
+.sw{flex:0 0 auto;font-size:13px;font-weight:700;color:var(--dim)}
+"""
+
+
 def render_card_png(html_content: str, out_path: Path) -> None:
     from playwright.sync_api import sync_playwright
 
@@ -521,6 +648,8 @@ def main() -> int:
         description="카카오톡 아침 요약 카드 이미지 생성(HTML→PNG, 발송 없음)")
     ap.add_argument("--out", default=None, help="지정 시 이 경로에도 추가 저장")
     ap.add_argument("--date", default=None, help="카드 날짜 YYYYMMDD(기본 오늘)")
+    ap.add_argument("--card", default="morning", choices=["morning", "stalled"],
+                    help="morning=아침 요약(기본) · stalled=★중간관리자 멈춘 업무 정리")
     args = ap.parse_args()
 
     if sys.platform != "win32":
@@ -534,6 +663,27 @@ def main() -> int:
         except ValueError:
             print(f"FAILED: --date 형식 오류({args.date}, YYYYMMDD 필요)")
             return 1
+
+    if args.card == "stalled":
+        try:
+            S = collect_stalled()
+            html_content = build_stalled_card_html(S, target_date)
+        except Exception as exc:
+            print(f"FAILED: 멈춘 업무 카드 — {exc}")
+            return 1
+        out_dir = OUT_DIR / target_date.strftime("%Y-%m")
+        png_path = out_dir / target_date.strftime("웰페리온_멈춘업무_%Y%m%d.png")
+        try:
+            render_card_png(html_content, png_path)
+        except Exception as exc:
+            print(f"FAILED: 카드 렌더 오류 — {exc}")
+            return 1
+        if args.out:
+            extra = Path(args.out)
+            extra.parent.mkdir(parents=True, exist_ok=True)
+            extra.write_bytes(png_path.read_bytes())
+        print(f"IMAGE: {png_path}")
+        return 0
 
     try:
         kpi = load_json(KPI_PATH)
