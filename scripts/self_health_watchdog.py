@@ -106,7 +106,10 @@ BOT_ROOM = "자동화현황방"  # 기존 채널 재사용(새 봇·새 방 금�
 LINK = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#layer-automation"
 
 MODULE_ID = "cto-self-health-watchdog"
-LIVE_ENV_VAR = "SELF_HEALTH_WATCHDOG_LIVE"
+# 2026-08-08 시토: SELF_HEALTH_WATCHDOG_LIVE 환경변수 게이트를 없앴다. 아무도 그 변수를
+# 켜지 않아 이 감시기는 2026-07-21 수동 실행 1회 말고는 한 번도 발신한 적이 없고, 그 사이
+# 침묵 모듈·시트 계약 위반이 매일 쌓여도 아무에게도 안 갔다. 게이트를 OFF로 남겨 두면
+# 죽은 코드가 된다(약속 L21) — 실발신 여부는 호출부의 dry_run 인자 하나로만 정한다.
 
 # automation_health.items 중 "이상"으로 간주할 상태(정상/대기/정상(건너뜀)=healthy — 소스 로직과 동일 기준)
 _AUTOMATION_BAD_STATES = ("실패", "미실행", "불명")
@@ -421,11 +424,6 @@ def _append_log(record, log_path=LOG_PATH):
         pass
 
 
-def _live_gate_open() -> bool:
-    """SELF_HEALTH_WATCHDOG_LIVE 환경변수 게이트(기본 OFF)."""
-    return os.environ.get(LIVE_ENV_VAR, "").strip().lower() in ("1", "true", "on", "yes")
-
-
 def run_watchdog(*, dry_run=True, now=None, log_path=LOG_PATH, rooms_path=ROOMS_PATH,
                   sender=None):
     """전체 조립 → 이상 있으면 하루 1통(멱등) 발송/드라이런. 반환: 결과 dict."""
@@ -443,12 +441,6 @@ def run_watchdog(*, dry_run=True, now=None, log_path=LOG_PATH, rooms_path=ROOMS_
 
     if dry_run:
         return {"date": date_str, "sections": sections, "action": "dry-run", "text": text}
-
-    if not _live_gate_open():
-        _append_log({"date": date_str, "sent": False, "reason": "live_gate_closed"}, log_path=log_path)
-        record_heartbeat(MODULE_ID, detail="이상 감지했으나 LIVE 게이트 OFF — 발신 생략")
-        return {"date": date_str, "sections": sections, "action": "skip",
-                "reason": f"{LIVE_ENV_VAR} 미설정 — 실발신 게이트 닫힘", "text": text}
 
     if _already_sent_today(date_str, log_path=log_path):
         return {"date": date_str, "sections": sections, "action": "skip",
@@ -475,7 +467,7 @@ def run_watchdog(*, dry_run=True, now=None, log_path=LOG_PATH, rooms_path=ROOMS_
 def main(argv=None):
     ap = argparse.ArgumentParser(description="자가건강 감시 통합 하네스(2026-07-21)")
     ap.add_argument("--live", action="store_true",
-                     help=f"실제 발송 시도(기본은 드라이런). {LIVE_ENV_VAR} 환경변수도 켜져 있어야 실발신")
+                     help="실제 발송 시도(기본은 드라이런)")
     ap.add_argument("--dry-run", action="store_true",
                      help="발신 없이 디제스트 텍스트만 stdout 출력(기본값과 동일 — 명시용)")
     ap.add_argument("--scan-only", action="store_true",

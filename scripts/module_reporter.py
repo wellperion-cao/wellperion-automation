@@ -425,6 +425,17 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         except Exception:
             pass  # 회귀감시 실패가 본 리포터의 발송 결과를 막지 않는다
 
+        # 자가건강 감시 발신(2026-08-08 시토) — 위 회귀감시와 같은 이유로 여기 편승한다.
+        # self_health_watchdog.py 는 만들어진 뒤 어떤 예약작업에도 걸리지 않아 2026-07-21
+        # 수동 실행 1회 말고는 한 번도 돈 적이 없었다. 그 18일 동안 침묵 모듈·시트 계약
+        # 위반이 매일 쌓였는데 아무에게도 안 갔다. 이상 있을 때만 자동화현황방에 하루 1통
+        # (멱등), 정상이면 무발신 — 새 예약작업·새 방 없음(약속 L21).
+        try:
+            from self_health_watchdog import run_watchdog  # noqa: PLC0415
+            run_watchdog(dry_run=False)
+        except Exception:
+            pass  # 자가건강 감시 실패가 본 리포터의 발송 결과를 막지 않는다
+
     return {"cadence": cadence, "date": date_str, "dry_run": dry_run, "results": results}
 
 
