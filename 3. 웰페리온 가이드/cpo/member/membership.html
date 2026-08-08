@@ -1941,6 +1941,9 @@ select, select option{ color:var(--text); background-color:var(--paper); }
 
       <div class="active-count" id="activeCount"></div>
 
+      <!-- 데이터 완성도(2026-08-08 GM 지시) — 이미 로드된 _activeRows만 집계(신규 fetch 0). 계산·필터 로직 = _renderActiveCompleteness(하단, _activeRender 직전). -->
+      <div id="activeCompleteness" style="font-size:11.5px;color:var(--dim);margin:2px 0 10px;line-height:1.6"></div>
+
       <div class="reg-table-wrap">
         <table class="reg-table" id="activeTable">
           <thead id="activeHead"><tr><th>불러오는 중…</th></tr></thead>
@@ -2101,6 +2104,8 @@ select, select option{ color:var(--text); background-color:var(--paper); }
           <span id="lessonMemStatLine_adult" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
           <button class="btn-refresh" onclick="lessonRegLoad('adult', true)" style="margin-left:auto">새로고침</button>
         </div>
+        <!-- 데이터 완성도(2026-08-08 GM 지시) — 이미 불러온 roster만 집계(신규 fetch 0). 계산·필터 = _renderLessonMemCompleteness. -->
+        <div id="lessonMemCompleteness_adult" style="font-size:11.5px;color:var(--dim);margin:0 0 10px;line-height:1.6"></div>
         <div style="margin-bottom:10px">
           <input type="search" id="lessonMemQ_adult" placeholder="🔍 이름 또는 연락처로 찾기"
             oninput="lessonMemSetQuery('adult', this.value)" autocomplete="off"
@@ -2291,6 +2296,8 @@ select, select option{ color:var(--text); background-color:var(--paper); }
           <span id="lessonMemStatLine_youth" style="font-size:11px;font-weight:400;color:var(--dim);margin-left:6px"></span>
           <button class="btn-refresh" onclick="lessonRegLoad('youth', true)" style="margin-left:auto">새로고침</button>
         </div>
+        <!-- 데이터 완성도(2026-08-08 GM 지시) — 이미 불러온 roster만 집계(신규 fetch 0). 계산·필터 = _renderLessonMemCompleteness. -->
+        <div id="lessonMemCompleteness_youth" style="font-size:11.5px;color:var(--dim);margin:0 0 10px;line-height:1.6"></div>
         <div style="margin-bottom:10px">
           <input type="search" id="lessonMemQ_youth" placeholder="🔍 이름 또는 연락처로 찾기"
             oninput="lessonMemSetQuery('youth', this.value)" autocomplete="off"
@@ -4844,9 +4851,9 @@ function switchFamily(fam) {
 // target='adult'(성인강습) | 'youth'(유소년강습). DOM id 접미사 + GAS type 파라미터로 분기.
 var _lessonState = {
   adult: { rows: [], scope: 'year', sport: '', statusF: '', loaded: false, type: '성인강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', regRange: 'month', regLoaded: false, memLoaded: false },
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', memGap: '', regRange: 'month', regLoaded: false, memLoaded: false },
   youth: { rows: [], scope: 'year', sport: '', statusF: '', loaded: false, type: '유소년강습',
-           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', regRange: 'month', regLoaded: false, memLoaded: false }
+           card: 'inq', roster: [], registry: [], bySport: [], regSport: '', memSport: '', regStatus: '', memStatus: '', memGap: '', regRange: 'month', regLoaded: false, memLoaded: false }
 };
 
 // 강습 현황카드(성인+유소년, CPO-2026-07-14-LESSON-4CARD → 2026-07-15 GM 지시로 5카드 재구성) 값 미러 — 기존
@@ -5687,7 +5694,11 @@ function _lessonInqDateCell(r) {
 }
 
 // 강습 문의 행 HTML(문의 현황·LOSS 회원 관리 공용) — 상태/담당 편집 셀렉트·CONTACT 편집. 배973.
-function _lessonRowHtml(t, r, sportKey, sportLabel) {
+// isFirstLine/isMultiLine(2026-08-08 시포·GM) — 담당은 문의 1건에 1명(행 단위 저장, 07-14 GM 결정)인데 화면은
+// 다종목 문의를 종목마다 줄로 쪼갠다. 그래서 같은 담당 select가 줄마다 반복 렌더되어 "종목-담당이 안 맞는다"로
+// 오인됐다(실제 오배정 0건 — 실측 확인됨). 같은 rowIndex 의 첫 줄에만 담당 select 를 두고, 나머지 줄은 회색
+// 안내문으로 대체 — 호출부(lessonRender·_lessonBucketRender)가 같은 rowIndex 그룹의 순번을 계산해 넘긴다.
+function _lessonRowHtml(t, r, sportKey, sportLabel, isFirstLine, isMultiLine) {
   var mgmt = _lessonSportMgmt(r, sportKey), argSport = encodeURIComponent(sportKey);
   var riHtml = _lriBadgeHtml(r, t);   // 재문의 배지 — 성함 옆이 아니라 문의내용 칸에 얹는다(GM 지시 2026-07-22). 이전 문의는 이름의 속성이 아니라 문의 맥락이라 문의내용과 같이 봐야 함.
   // 이전 문의 인라인 요약(문의내용 칸, GM 지시 2026-07-24 배10043) — 배지는 모달 진입 경로로 유지하고
@@ -5711,7 +5722,9 @@ function _lessonRowHtml(t, r, sportKey, sportLabel) {
     '<td class="left" style="white-space:normal;word-break:break-word;font-size:12.5px;color:var(--text)" title="' + esc(r.wishTime || '') + '">' + esc(r.wishTime ? String(r.wishTime).trim() || '—' : '—') + '</td>' +
     '<td style="font-size:12px">' + _lessonStatusSelectHtml(t, r.rowIndex, sportKey, mgmt.status) +
       ((String(r.status || '').trim() === 'LOSS') ? (String(r.lossReason || '').trim() ? '<div style="font-size:10px;color:var(--dim);margin-top:3px;line-height:1.3;white-space:normal">사유: ' + esc(String(r.lossReason).trim()) + '</div>' : '<div style="font-size:10px;color:var(--red);margin-top:3px;line-height:1.3">⚠ 사유 미기록</div>') : '') + '</td>' +
-    '<td style="font-size:12px">' + _lessonOwnerSelectHtml(t, r.rowIndex, sportKey, mgmt.owner) + '</td>' +
+    '<td style="font-size:12px">' + ((isFirstLine === false)
+      ? '<span style="color:var(--dim);font-size:11px">문의 공통 담당 — 위와 같음</span>'
+      : _lessonOwnerSelectHtml(t, r.rowIndex, sportKey, mgmt.owner, isMultiLine)) + '</td>' +
     '<td class="left editable-cell" style="font-size:11px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word" onclick="_lessonContactClick(\'' + t + '\',' + r.rowIndex + ',\'' + argSport + '\')">' + _lessonContactCellHtml(mgmt) + '</td>' +
   '</tr>';
 }
@@ -5742,7 +5755,13 @@ function _lessonBucketRender(t, statusVal, tbodyId, statLineId, emptyTitle, empt
     lines.sort(function(a, b){ return sortState.dir * a.sportLabel.localeCompare(b.sportLabel, 'ko'); });
   }
   var html = '';
-  lines.forEach(function(ln){ html += _lessonRowHtml(t, ln.row, ln.sportKey, ln.sportLabel); });
+  // 같은 문의(rowIndex)가 여러 줄로 쪼개졌을 때 담당 select 중복 표시 방지 — 위 _lessonRowHtml 주석 참조.
+  var _lbCounts = {}; lines.forEach(function(ln){ _lbCounts[ln.row.rowIndex] = (_lbCounts[ln.row.rowIndex] || 0) + 1; });
+  var _lbSeen = {};
+  lines.forEach(function(ln){
+    var isFirst = !_lbSeen[ln.row.rowIndex]; _lbSeen[ln.row.rowIndex] = true;
+    html += _lessonRowHtml(t, ln.row, ln.sportKey, ln.sportLabel, isFirst, _lbCounts[ln.row.rowIndex] > 1);
+  });
   tbody.innerHTML = html;
   if (sl) sl.textContent = lines.length + '명';
 }
@@ -5817,7 +5836,13 @@ function lessonRender(t) {
   var shown = _lessonState[t].shown || LESSON_PAGE_SIZE;
   var view = lines.slice(0, shown);
   var html = '';
-  view.forEach(function(ln){ html += _lessonRowHtml(t, ln.row, ln.sportKey, ln.sportLabel); });
+  // 같은 문의(rowIndex)가 여러 줄로 쪼개졌을 때 담당 select 중복 표시 방지 — 위 _lessonRowHtml 주석 참조.
+  var _lrCounts = {}; view.forEach(function(ln){ _lrCounts[ln.row.rowIndex] = (_lrCounts[ln.row.rowIndex] || 0) + 1; });
+  var _lrSeen = {};
+  view.forEach(function(ln){
+    var isFirst = !_lrSeen[ln.row.rowIndex]; _lrSeen[ln.row.rowIndex] = true;
+    html += _lessonRowHtml(t, ln.row, ln.sportKey, ln.sportLabel, isFirst, _lrCounts[ln.row.rowIndex] > 1);
+  });
   if (lines.length > view.length) {
     html += '<tr><td colspan="9" style="text-align:center;padding:12px">' +
       '<button type="button" onclick="lessonShowMore(\'' + t + '\')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer">＋ ' + (lines.length - view.length).toLocaleString() + '건 더보기</button>' +
@@ -5893,7 +5918,7 @@ function _lessonContactClick(t, rowIndex, sportKeyEnc) {
 
 // 담당 = 종목별 명단(정본 = 위 LESSON_INSTRUCTOR_ROSTER 한 곳) 드롭다운 — 축7, 2026-07-08 시포·GM.
 // 자유입력 인라인 편집(_lessonOwnerEdit)은 폐기 — 종목별 명단 정합 우선. 저장=lesson_inquiry_update(sport, owner).
-function _lessonOwnerSelectHtml(t, rowIndex, sportKey, current) {
+function _lessonOwnerSelectHtml(t, rowIndex, sportKey, current, isMulti) {
   var cur = String(current || '').trim();
   var opts = _lessonOwnerOptionsFor(sportKey);
   if (cur && opts.indexOf(cur) < 0) opts.unshift(cur);   // 목록 밖 기존값도 보존(데이터 손실 방지)
@@ -5904,6 +5929,8 @@ function _lessonOwnerSelectHtml(t, rowIndex, sportKey, current) {
     html += '<option value="' + esc(o) + '"' + (o === selVal ? ' selected' : '') + '>' + esc(o) + '</option>';
   });
   html += '</select>';
+  // 다종목 문의(여러 줄로 표시) 안내 — 담당은 문의 전체 공용(종목별 아님)임을 짧게 밝힌다. 단종목 문의(줄 1개)엔 안 붙인다.
+  if (isMulti) html += '<div style="font-size:9.5px;color:var(--dim);margin-top:1px">문의 공통</div>';
   // 미배정 제안(표시전용, 2026-08-05 웰리) — 담당자 공란일 때만 종목 팀장을 흐린 색 "(제안)"으로 아래에 얹는다.
   // select의 선택값·row.owner는 그대로 공란 — 시트에 쓰지 않고, 확정(사람이 드롭다운에서 직접 고름)과 시각적으로 분리된다.
   // _lessonOwnerSummaryRender 등 집계는 row.owner 원본만 세므로(아래 mgmt.owner 참조) 이 제안 표기는 완료율에 잡히지 않는다
@@ -6035,6 +6062,7 @@ function lessonRegLoad(t, force) {
       st.memIdentified = (typeof d.identified === 'number') ? d.identified : null;
       st.memUnknown = (typeof d.unknown === 'number') ? d.unknown : 0;
       _lessonRosterChips(t, 'mem'); _lessonRosterRender(t, 'mem');
+      _renderLessonMemCompleteness(t);   // 데이터 완성도 줄 — roster 갱신될 때만 재계산(2026-08-08)
       _lessonMemStatus(t);   // 현황카드(#3) 수강 총원 갱신
       // ★정직 집계(GM 2026-07-23 A안) — 옛 팀시트에 진행 상황 값만 남고 이름·연락처가 비어 있는
       //   기록이 성인 372·유소년 363건 있다. 합계만 보이면 그들이 정상 회원처럼 읽히므로
@@ -6327,18 +6355,74 @@ function openRosterContact(t, rowIndex) {
   );
 }
 
+// ── 데이터 완성도(강습 회원 관리, kind='mem' 전용) — 2026-08-08 GM 지시. 이미 불러온 st.roster만 집계, 신규 fetch·GAS 액션 0.
+//    필수 칸 2개(등록 즉시 서버가 채우는 문의일·나이·희망시간 등은 제외, 실무진이 직접 채우는 칸만):
+//      ① 배정 담당(r.owner, 표 '배정 담당' 칸) — 리드 배정 담당 강사가 적혀 있는지
+//      ② 연락 이력(r.contacts, _rowContacts 재사용) — 컨택 기록이 하나라도 있는지
+//    상태(r.status)도 같이 집계하지만, 이 명단은 전원 SUC 등록완료자만 올라와(_lessonRosterChips 위 주석 참고)
+//    실측(2026-08-08, 성인 751명·유소년 845명) 상태 미입력 0건 — 뜰 일이 거의 없다(0건이면 자동으로 안 보임).
+//    이름 없는 '정보 없음'(옛 팀시트 잔재) 행은 명단(아래 _lessonRosterRender)에서도 제외하는 행이라 여기서도 뺀다.
+function _lessonMemGapOf(r) {
+  var status = String(r.status || '').trim() || _LESSON_STATUS_BLANK;
+  return { owner: !String(r.owner || '').trim(), contact: !_rowContacts(r).length, status: (status === _LESSON_STATUS_BLANK) };
+}
+function _lessonMemGapMatch(r, kind) {
+  var g = _lessonMemGapOf(r);
+  return (kind === 'any') ? (g.owner || g.contact || g.status) : !!g[kind];
+}
+function _lessonMemSetGap(t, kind) {
+  var st = _lessonState[t];
+  st.memGap = (st.memGap === kind) ? '' : kind;
+  if (String(st.memQ || '').trim()) {   // 검색과 겹치면 헷갈리니 해제(종목·진행상태 칩과 동일 관례)
+    st.memQ = '';
+    var q = document.getElementById('lessonMemQ_' + t); if (q) q.value = '';
+  }
+  _lessonRosterChips(t, 'mem');
+  _lessonRosterRender(t, 'mem');
+}
+function _lessonMemGapLinkHtml(t, label, kind) {
+  var on = (_lessonState[t].memGap === kind);
+  return '<a href="javascript:void(0)" onclick="_lessonMemSetGap(\'' + t + '\',\'' + kind + '\')" ' +
+    'style="color:' + (on ? 'var(--red)' : 'var(--accent)') + ';font-weight:' + (on ? 800 : 600) + ';text-decoration:' + (on ? 'underline' : 'none') + '">' +
+    esc(label) + '</a>';
+}
+function _renderLessonMemCompleteness(t) {
+  var el = document.getElementById('lessonMemCompleteness_' + t);
+  if (!el) return;
+  var live = (_lessonState[t].roster || []).filter(function(r){ return String(r.name || '').trim(); });
+  if (!live.length) { el.innerHTML = ''; return; }
+  var owner = 0, contact = 0, status = 0, complete = 0;
+  live.forEach(function(r){
+    var g = _lessonMemGapOf(r);
+    if (g.owner) owner++;
+    if (g.contact) contact++;
+    if (g.status) status++;
+    if (!g.owner && !g.contact && !g.status) complete++;
+  });
+  var pct = Math.round(complete / live.length * 100);
+  var parts = [];
+  if (owner)   parts.push(_lessonMemGapLinkHtml(t, '담당 미배정 ' + owner, 'owner'));
+  if (contact) parts.push(_lessonMemGapLinkHtml(t, '연락기록 없음 ' + contact, 'contact'));
+  if (status)  parts.push(_lessonMemGapLinkHtml(t, '상태 미입력 ' + status, 'status'));
+  el.innerHTML = parts.length
+    ? ('데이터 완성도 ' + pct + '%  ·  ' + parts.join('  ·  ') + '  ·  ' + _lessonMemGapLinkHtml(t, '[안 채워진 것만 보기]', 'any'))
+    : '데이터 완성도 100% — 빈칸 없음';
+}
+
 function _lessonRosterRender(t, kind) {
   var tbody = document.getElementById((kind === 'reg' ? 'lessonRegBody_' : 'lessonMemBody_') + t);
   if (!tbody) return;
   var st = _lessonState[t];
   var filter = (kind === 'reg') ? st.regSport : st.memSport;
   var vFilter = (kind === 'reg') ? st.regStatus : st.memStatus;   // 진행상태 축(2026-07-23 GM)
+  var gapFilter = (kind === 'mem') ? st.memGap : '';   // 데이터 완성도 줄 클릭 필터(2026-08-08) — mem 전용
   var rows = st.roster || [];
   // 검색어가 있으면 칩 필터를 건너뛰고 전체에서 찾는다(종목칩이 눌려 있어 안 보이는 함정 차단). 2026-07-23 GM
   var qRows = (kind === 'mem') ? _lessonRosterFilterQ(t, rows) : null;
-  if (qRows) { rows = qRows; filter = ''; vFilter = ''; }
+  if (qRows) { rows = qRows; filter = ''; vFilter = ''; gapFilter = ''; }
   if (filter) rows = rows.filter(function(r){ return String(r.sport || '기타').trim() === filter; });
   if (vFilter) rows = rows.filter(function(r){ return (String(r.status || '').trim() || _LESSON_STATUS_BLANK) === vFilter; });
+  if (gapFilter) rows = rows.filter(function(r){ return _lessonMemGapMatch(r, gapFilter); });
   // 외부관리 프로그램(루프메소드 등) 정직 안내 — mem 뷰·두 필터 모두 없을 때만. 명단 시트 없음 → 등록 명단 미표시.
   var extNote = '';
   if (kind === 'mem' && !filter && !vFilter) {
@@ -6875,6 +6959,7 @@ var _activeScope   = 'valid';   // 'valid'(잔여일>=0 유효회원, 2026-07-31
 var _activeReqSeq  = 0;         // 토글 빠르게 누를 때 느린 이전 응답이 최신을 덮지 않게(경쟁 가드)
 var _activeStartFilter = 'started';   // 대기자 버킷(2026-07-16 GM 지시) — 'started'(시작일 도래분만·기본) | 'waiting'(미래시작만) | 'all'(전체)
 var _activeTypeFilter = '';   // 회원 구분 선택칸(FB260801-141806) — ''=전체, 아니면 멤버십/입주민/중단기/보증금/FAN VIP/기타 중 하나(valid 스코프 전용)
+var _activeGapFilter = '';    // 데이터 완성도 줄 클릭 필터(2026-08-08) — ''|'owner'|'contact'|'cls'|'any'. 신규 fetch 없음(로드분 재필터만).
 
 // 대기자 버킷 헬퍼 — _activeRows(유효회원)의 '시작\n일자' 컬럼으로 미래시작 회원 판별. 신규 GAS 액션 없음(기존 member_active_list 데이터 재사용).
 function _memStartKey(row) {
@@ -7000,7 +7085,7 @@ function _actSetPeriod(period) {
 // 대기자 필터 + 월단위 보기 결합(신규 fetch 없이 로드분만 재필터) — loadActiveMembers·_activeFilter·헤더 카운트 공용.
 // 헤더 건수(§2-B·§2-C)와 표에 실제 뿌려지는 행이 항상 같은 값을 쓰도록 단일 함수로 통일.
 function _activeBaseRows() {
-  return _actPeriodFilter(_activeTypeFilterApply(_activeStartFilterApply(_activeRows)));
+  return _activeGapFilterApply(_actPeriodFilter(_activeTypeFilterApply(_activeStartFilterApply(_activeRows))));
 }
 var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
@@ -8009,6 +8094,95 @@ function _reconCellHtml(row) {
   return '<td class="recon-cell recon-empty" data-recon="' + ri + '" title="재등록 예약 잡기" style="white-space:nowrap;cursor:pointer;color:var(--dim)">＋ 상담 잡기</td>';
 }
 
+// ── 데이터 완성도(멤버십 회원관리, pane-active 전용) — 2026-08-08 GM 지시. 이미 로드된 _activeRows만 집계, 신규 fetch·GAS 액션 0.
+//    필수 칸 3개(등록 시 서버가 자동으로 채우는 회원명·휴대폰·시작/종료일자 등은 제외, 실무진이 직접 채우는 칸만):
+//      ① 담당 배정 — PT/골프/P.L/스쿼시/수영 담당자 5칸(OWNER_ASSIGN_SPORTS) 중 실제 이름이 하나라도 있는지
+//         (LESSON_UNASSIGNED_OPTION='담당자 X'는 명시적 미배정 값이라 채운 것으로 안 침)
+//      ② 연락기록 — 위 5종목 Contact 5칸 중 하나라도 값이 있는지
+//      ③ 등록 분류 상충 — 「등록 분류」·「재등록 분류」 두 칸이 신규/재등록으로 서로 어긋나는지(_regClassMerged 재사용,
+//         이미 셀 렌더에서 ⚠ 표기로 쓰는 같은 판정 — 새 판정 로직 아님)
+//    유효회원(valid) 스코프에서만 계산한다(법인·종료회원은 칸 구성이 달라 표시 안 함).
+//    실측(2026-08-08, 유효회원 1,000명): 담당 미배정 1 · 연락기록 없음 6 · 분류 상충 4 → 완성도 99.0%.
+function _activeCompletenessGaps(row) {
+  var hasOwner = OWNER_ASSIGN_SPORTS.some(function(s){ var v = String(row[s.col] || '').trim(); return v && v !== LESSON_UNASSIGNED_OPTION; });
+  var hasContact = OWNER_ASSIGN_SPORTS.some(function(s){ return String(row[s.contact] || '').trim() !== ''; });
+  return { owner: !hasOwner, contact: !hasContact, cls: _regClassMerged(row).conflict };
+}
+function _activeGapFilterApply(rows) {
+  if (!_activeGapFilter || _activeScope !== 'valid') return rows;
+  return rows.filter(function(row){
+    var g = _activeCompletenessGaps(row);
+    return (_activeGapFilter === 'any') ? (g.owner || g.contact || g.cls) : g[_activeGapFilter];
+  });
+}
+function _activeSetGapFilter(kind) {
+  _activeGapFilter = (_activeGapFilter === kind) ? '' : kind;
+  var si = document.getElementById('activeSearch');
+  if (si && si.value) si.value = '';   // 검색어와 겹치면 헷갈리니 해제(강습 쪽 칩과 동일 관례)
+  _activeFilter('');
+}
+function _activeGapLinkHtml(label, kind) {
+  var on = (_activeGapFilter === kind);
+  return '<a href="javascript:void(0)" onclick="_activeSetGapFilter(\'' + kind + '\')" ' +
+    'style="color:' + (on ? 'var(--red)' : 'var(--accent)') + ';font-weight:' + (on ? 800 : 600) + ';text-decoration:' + (on ? 'underline' : 'none') + '">' +
+    esc(label) + '</a>';
+}
+function _renderActiveCompleteness() {
+  var el = document.getElementById('activeCompleteness');
+  if (!el) return;
+  if (_activeScope !== 'valid' || !_activeRows.length) { el.innerHTML = ''; return; }
+  var n = _activeRows.length, owner = 0, contact = 0, cls = 0, complete = 0;
+  _activeRows.forEach(function(row){
+    var g = _activeCompletenessGaps(row);
+    if (g.owner) owner++;
+    if (g.contact) contact++;
+    if (g.cls) cls++;
+    if (!g.owner && !g.contact && !g.cls) complete++;
+  });
+  var pct = Math.round(complete / n * 100);
+  var parts = [];
+  if (owner)   parts.push(_activeGapLinkHtml('담당 미배정 ' + owner, 'owner'));
+  if (contact) parts.push(_activeGapLinkHtml('연락기록 없음 ' + contact, 'contact'));
+  if (cls)     parts.push(_activeGapLinkHtml('등록 분류 상충 ' + cls, 'cls'));
+  el.innerHTML = parts.length
+    ? ('데이터 완성도 ' + pct + '%  ·  ' + parts.join('  ·  ') + '  ·  ' + _activeGapLinkHtml('[안 채워진 것만 보기]', 'any'))
+    : '데이터 완성도 100% — 빈칸 없음';
+}
+
+// 자체 점검(콘솔에서 _completenessSelfTest() 호출) — 빈칸 있는 가짜 행 몇 개로 위 두 완성도 계산이 맞는지 확인.
+// 테스트 프레임워크 없음(ponytail) — assert 실패 시 콘솔에 사유를 남기고 false 반환. 실제 데이터·화면은 건드리지 않는다.
+function _completenessSelfTest() {
+  var ok = true;
+  function assertEq(actual, expected, label) {
+    if (actual !== expected) { ok = false; console.error('[완성도 자체점검 실패] ' + label + ' — 기대 ' + expected + ' 실제 ' + actual); }
+  }
+  // 멤버십(pane-active) — 4행 중 1행만 완전
+  var fakeActive = [
+    { 'PT 담당자': '김프로', 'PT Contact': '2026-01-01 통화', '등록 분류': '신규' },                                    // 완전
+    { 'PT 담당자': '', '골프 담당자': '', 'P.L 담당자': '', '스쿼시 담당자': '', '수영 담당자': '', '등록 분류': '신규' },   // 담당 미배정+연락기록 없음
+    { 'PT 담당자': '담당자 X', 'PT Contact': '', '등록 분류': '신규' },                                                 // '담당자 X'=미배정 취급 + 연락기록 없음
+    { 'PT 담당자': '김프로', 'PT Contact': '통화', '등록 분류': '신규', '재등록\n분류': '재등록' }                        // 분류 상충
+  ];
+  var g = fakeActive.map(_activeCompletenessGaps);
+  assertEq(g[0].owner || g[0].contact || g[0].cls, false, '멤버십 1행(완전)은 결측 없어야 함');
+  assertEq(g[1].owner, true, '멤버십 2행 담당 미배정');
+  assertEq(g[1].contact, true, '멤버십 2행 연락기록 없음');
+  assertEq(g[2].owner, true, "멤버십 3행 '담당자 X'는 미배정 취급");
+  assertEq(g[3].cls, true, '멤버십 4행 신규/재등록 상충');
+  // 강습(강습 회원 관리) — 3행 중 1행만 완전
+  var fakeLesson = [
+    { name: '김회원', owner: '이강사', contacts: [{ note: '통화' }], status: 'SUC' },   // 완전
+    { name: '박회원', owner: '', contacts: [], status: 'SUC' },                          // 담당 미배정+연락기록 없음
+    { name: '최회원', owner: '이강사', contacts: [{ note: '통화' }], status: '' }          // 상태 미입력
+  ];
+  assertEq(_lessonMemGapMatch(fakeLesson[0], 'any'), false, '강습 1행(완전)은 결측 없어야 함');
+  assertEq(_lessonMemGapMatch(fakeLesson[1], 'owner'), true, '강습 2행 담당 미배정');
+  assertEq(_lessonMemGapMatch(fakeLesson[1], 'contact'), true, '강습 2행 연락기록 없음');
+  assertEq(_lessonMemGapMatch(fakeLesson[2], 'status'), true, '강습 3행 상태 미입력');
+  console.log(ok ? '[완성도 자체점검] 통과' : '[완성도 자체점검] 실패 — 위 로그 확인');
+  return ok;
+}
+
 function _activeRender(rows, isFiltered) {
   var head  = document.getElementById('activeHead');
   var tbody = document.getElementById('activeBody');
@@ -8034,6 +8208,7 @@ function _activeRender(rows, isFiltered) {
         if (th) _activeSortBy(th.getAttribute('data-sortcol'));
       });
     }
+    _renderActiveCompleteness();   // 데이터 완성도 줄 — 데이터가 갱신될 때만(검색 중 매 타이핑마다는 안 함)
   }
 
   count.textContent = '총 ' + rows.length + '명' +
