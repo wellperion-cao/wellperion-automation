@@ -181,7 +181,9 @@ def fetch_daily_report_numbers(target_date: datetime) -> "dict | None":
         return None
     for row in data.get("rows", []):
         if "총 매출 합계" in str(row.get("label", "")):
-            return {k: (row.get(k) or {}).get("value") for k in ("today", "month", "target", "rate")}
+            n = {k: (row.get(k) or {}).get("value") for k in ("today", "month", "target", "rate")}
+            n["rate_formula"] = (row.get("rate") or {}).get("formula", "")
+            return n
     log("[경고] '총 매출 합계' 행을 GAS 응답에서 못 찾음")
     return None
 
@@ -198,9 +200,51 @@ def _fmt_rate(v) -> str:
     return f"{v * 100:.2f}%" if -1 <= v <= 1 else f"{v:.2f}%"
 
 
+SALES_TARGETS_FILE = ROOT / "status" / "sales_targets.json"
+
+
+def _canon_monthly_target() -> "int | None":
+    """월 목표 정본(status/sales_targets.json). 없거나 깨졌으면 None(대조 생략)."""
+    try:
+        return int(json.loads(SALES_TARGETS_FILE.read_text(encoding="utf-8"))["monthly_target_total"])
+    except Exception:
+        return None
+
+
+def check_sales_numbers(nums: "dict | None", canon_target: "int | None") -> list[str]:
+    """매일 발송 직전 숫자 자체를 검사한다. 이상 없으면 빈 목록.
+
+    배351(2026-08-04): 달성률 셀이 다른 시트 부분합을 분모로 물어 같은 행 목표와
+    어긋난 채 회장님 방으로 나갔다. 그때 만든 회귀 감시(구 scripts/
+    _check_sales_report_rate_formula.py)는 아무 곳에서도 호출되지 않아 한 번도 돈 적이
+    없었다 — 그래서 검사를 별도 스크립트로 두지 않고 발송 관문 안으로 옮긴다(약속 L21).
+
+    배464(2026-08-08): 시트 월목표가 6.105억인 채로 GM 확정값 6.6억과 갈려 달성률이
+    매일 약 2%p 높게 나갔다. 사진 안 숫자라 아무도 못 봤다 — 정본과 대조해 본문에 남긴다.
+    """
+    n = nums or {}
+    warns: list[str] = []
+
+    target, month, rate = n.get("target"), n.get("month"), n.get("rate")
+    if isinstance(target, (int, float)) and canon_target and round(target) != canon_target:
+        warns.append(f"⚠️ 시트 월목표({round(target):,}원)가 정본({canon_target:,}원)과 다릅니다")
+
+    if "INDIRECT" in str(n.get("rate_formula", "")):
+        warns.append("⚠️ 달성률 수식이 다른 시트 부분합을 분모로 씁니다(배351 재발)")
+
+    if all(isinstance(v, (int, float)) for v in (month, rate, target)) and target:
+        if abs(rate - month / target) > 1e-6:
+            warns.append(f"⚠️ 달성률({rate * 100:.2f}%)이 월누적÷목표({month / target * 100:.2f}%)와 다릅니다")
+
+    return warns
+
+
 def build_sales_numbers_text(target_date: datetime, nums: "dict | None") -> str:
     weekday_kr = _WEEKDAY_KR[target_date.weekday()]
     n = nums or {}
+    warns = check_sales_numbers(nums, _canon_monthly_target())
+    for w in warns:
+        log(f"[경고] 매출 핵심숫자 대조: {w}")
     return (
         f"📊 회장님 매출보고 핵심숫자 ({target_date.month}.{target_date.day}({weekday_kr})분, "
         f"사진 대조용)\n"
@@ -208,6 +252,7 @@ def build_sales_numbers_text(target_date: datetime, nums: "dict | None") -> str:
         f"당월 누적: {_fmt_won(n.get('month'))}\n"
         f"당월 목표: {_fmt_won(n.get('target'))}\n"
         f"당월 달성률: {_fmt_rate(n.get('rate'))}"
+        + ("\n\n" + "\n".join(warns) if warns else "")
     )
 
 
@@ -370,7 +415,21 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="sender에 --dry-run 전달(실전송 안 함)")
     ap.add_argument("--as-of", default=None, metavar="YYYYMMDD",
                      help="실행 기준일(기본=오늘). 시뮬레이션·테스트용 — 보고 대상일=기준일-1일")
+    ap.add_argument("--selftest-numbers", action="store_true",
+                     help="check_sales_numbers() 자체 검사(발송·네트워크 없음)")
     args = ap.parse_args()
+
+    if args.selftest_numbers:
+        ok = {"today": 1, "month": 160817436, "target": 610500000,
+              "rate": 160817436 / 610500000, "rate_formula": "=J4/K4"}
+        assert check_sales_numbers(ok, 610500000) == []
+        assert any("정본" in w for w in check_sales_numbers(ok, 660000000))
+        assert any("배351" in w for w in check_sales_numbers(
+            {**ok, "rate_formula": '=SUM(INDIRECT("x"))'}, 610500000))
+        assert any("월누적÷목표" in w for w in check_sales_numbers({**ok, "rate": 0.9}, 610500000))
+        assert check_sales_numbers(None, 610500000) == []
+        print("PASS — check_sales_numbers 5종")
+        return 0
 
     if sys.platform != "win32":
         print("FAILED: 이 스크립트는 Windows 전용입니다.")

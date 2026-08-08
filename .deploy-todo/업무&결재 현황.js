@@ -1640,8 +1640,9 @@ function _kpiDailyReportSheet(params) {
 // =J{r}/SUM(INDIRECT(...AB70:AB76)) 로 되어 있어(외부 시트 팀별 목표 7칸 부분합, 뮤지컬·GXE
 // 목표 2칸 누락) 같은 행 목표(K{r}=sum(K6:K15), 뮤지컬·GXE 포함)와 분모가 어긋나 12.32%(정답
 // 11.92%)로 틀렸었다. GAS 1회성 함수로 =J4/K4(뮤지컬·GXE 행과 동일 패턴)로 정정 완료(배포
-// @131). 재발 감시용으로 읽기전용 진단 action만 상시 유지 — scripts/_check_sales_report_rate_formula.py
-// 가 이 action으로 매출보고 발송 전 회귀를 잡는다.
+// @131). 재발 감시용으로 읽기전용 진단 action만 상시 유지 — scripts/kakao_auto_daily_report.py 의
+// check_sales_numbers() 가 이 action 응답으로 매일 발송 직전 회귀를 잡는다(2026-08-08 시토:
+// 감시가 아무도 호출하지 않는 별도 스크립트에 있어 한 번도 돈 적이 없었다 — 발송 관문으로 옮김).
 function _kpiDailyReportRateDebug(params) {
   try {
     var month = parseInt((params && params.month) || _kpiToday().m, 10);
@@ -2329,51 +2330,6 @@ function _gmKeyOk_(p) {
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || '';
-
-    /* 업무 처리 현황 — 담당자별 건수만 반환(읽기 전용). 2026-08-07 GM 결재 A안.
-       셈법을 서버 한 곳에 두는 이유: 화면이 따로 세면 여는 사람마다·열 때마다 숫자가 달라져
-       아무도 안 믿는다(reg_scoreboard 와 같은 원칙). 시트에는 아무것도 쓰지 않는다.
-       점수·순위·정렬 없음 — 건수는 배분 현황이지 평가가 아니다(GM 결정).
-       김남욱GM 행은 todo_list 와 같은 기준으로 제외한다(배326 — 이 중계는 무인증이다). */
-    if (action === 'todo_scoreboard') {
-      const _sh = initTodoSheet();
-      const _rows = _readAll(_sh).filter(r => String(r['담당자'] || '').indexOf('김남욱GM') < 0);
-      const TZ = 'Asia/Seoul';
-      const _today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
-      const _mon = (function () {                       // 이번주 월요일(일요일=주의 끝으로 본다)
-        const d = new Date();
-        const dow = Number(Utilities.formatDate(d, TZ, 'u'));   // 1=월 … 7=일
-        d.setDate(d.getDate() - (dow - 1));
-        return Utilities.formatDate(d, TZ, 'yyyy-MM-dd');
-      })();
-      const _ymd = function (v) {                       // 셀이 날짜형이든 문자열이든 yyyy-MM-dd 로
-        if (!v) return '';
-        if (Object.prototype.toString.call(v) === '[object Date]') return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
-        const m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
-        return m ? (m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2)) : '';
-      };
-      const _agg = {};
-      _rows.forEach(function (r) {
-        // 담당자 칸에 여러 명이 들어올 수 있다(쉼표) — 첫 사람을 주담당으로 본다(화면 카드도 주담당 기준).
-        const name = String(r['담당자'] || '').split(',')[0].trim();
-        if (!name) return;                              // 담당 공란은 카드로 만들지 않는다
-        if (!_agg[name]) _agg[name] = { name: name, inProgress: 0, weekDone: 0, overdue: 0, noEnd: 0 };
-        const a = _agg[name];
-        const st = String(r['상태'] || '').trim();
-        const end = _ymd(r['종료일']);
-        const done = _ymd(r['완료일']);
-        if (st === '진행중') a.inProgress++;
-        if (st === '완료' && done && done >= _mon) a.weekDone++;
-        if (st === '진행중' && end && end < _today) a.overdue++;
-        if (!end) a.noEnd++;
-      });
-      return ContentService.createTextOutput(JSON.stringify({
-        ok: true,
-        at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'),
-        weekSince: _mon,
-        board: Object.keys(_agg).map(function (k) { return _agg[k]; })
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
 
     if (action === 'todo_list') {
       // 필터 없는 전체 조회만 캐시한다 — 업무 현황 SSOT·G1 이 부르는 게 이 형태다.
