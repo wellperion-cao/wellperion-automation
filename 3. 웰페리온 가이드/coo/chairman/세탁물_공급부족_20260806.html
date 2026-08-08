@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="../../_assets/gate.js" charset="utf-8"></script>
+<!-- 게이트 해제 — GM 지시 2026-08-08. 이 파일 하나만(coo/chairman/ 폴더의 다른 GM 전용 문서는 gate.js 그대로 유지). -->
 <title>세탁물 공급 부족 분석 — 요일 배분 문제 (2026-08-06)</title>
 <style>
   @page { size: A3 portrait; margin: 11mm 13mm; }
@@ -72,13 +72,20 @@
     *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
   }
   .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
-  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer; margin-left:6px;
                    border:1px solid var(--ink); background:var(--ink); color:#fff;}
+  .printbar button:disabled{opacity:.5; cursor:default;}
 </style>
 </head>
 <body>
 
-<div class="printbar noprint"><button onclick="window.print()">A3 세로로 인쇄</button></div>
+<!-- 인쇄 A3 세로·가로 + PNG 저장 — 저장소 표준 재사용(coo/chairman/GM업무.html 과 동일 printA3()·html2canvas 방식, 새 라이브러리 없음. GM 지시 2026-08-08) -->
+<div class="printbar noprint">
+  <span class="msg" id="lz-png-msg" style="font-size:12px; color:var(--dim); margin-right:8px;"></span>
+  <button id="lz-png-btn" onclick="saveLzPng()">🖼 PNG로 저장</button>
+  <button onclick="printLzA3('portrait')">🖨 인쇄 (A3 세로)</button>
+  <button onclick="printLzA3('landscape')">🖨 인쇄 (A3 가로)</button>
+</div>
 
 <div class="sheet">
 
@@ -211,6 +218,49 @@
   </div>
 
 </div>
+
+<!-- PNG 저장 — 저장소 표준(GM업무.html·회장님_오찬_수영팀_20260806.html 과 동일 html2canvas CDN 방식, 새 라이브러리 아님) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  // @page 규칙을 버튼 클릭 때마다 다시 써서 문서 뒤쪽(=우선)에 둔다 — 상단 고정 @page A3 portrait 보다 나중이라 이긴다.
+  window.printLzA3 = function (orientation) {
+    var st = document.getElementById('lz-a3-style');
+    if (!st) { st = document.createElement('style'); st.id = 'lz-a3-style'; document.head.appendChild(st); }
+    st.textContent = '@page{ size: A3 ' + orientation + '; margin: 11mm 13mm; }';
+    window.print();
+  };
+
+  window.saveLzPng = function () {
+    var btn = document.getElementById('lz-png-btn');
+    var msg = document.getElementById('lz-png-msg');
+    if (typeof html2canvas !== 'function') {
+      if (msg) msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+      return;
+    }
+    if (btn) btn.disabled = true;
+    if (msg) msg.textContent = '이미지를 만드는 중입니다…';
+    html2canvas(document.querySelector('.sheet'), { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      .then(function (canvas) {
+        var d = new Date();
+        var a = document.createElement('a');
+        a.download = '세탁물_공급부족_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        if (msg) msg.textContent = '저장했습니다.';
+        if (btn) btn.disabled = false;
+        setTimeout(function () { if (msg) msg.textContent = ''; }, 4000);
+      })
+      .catch(function () {
+        if (msg) msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+        if (btn) btn.disabled = false;
+      });
+  };
+})();
+</script>
 
 </body>
 </html>
