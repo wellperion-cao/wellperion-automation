@@ -156,7 +156,7 @@ def _legal_check_blank_block() -> str:
         lines.append("📄 부서 체계 페이지 — 이번 주에 바뀐 것·빠진 것이 있으면 직접 적어 주세요")
         for _d, _f in (("시설부", "시설부 체계"), ("운영부", "운영부 체계"),
                        ("지원부", "지원부 체계"), ("주차관리부", "주차관리부 체계")):
-            lines.append(f"   · {_d} https://wellperion-cao.github.io/wellperion-automation/coo/check/{_f}.html")
+            lines.append(f"   · {_d} {_page_url(_f)}")
         # 브로제이 실무 가이드 — 가이드 카드에 '⬜ 확인 필요 N줄 남음' 이 떠 있어도 화면을 안
         # 열면 모른다. 여기서 같이 알린다.
         # ★2026-08-07 시토(배429 · 약속 L24) — 받는 사람을 **이경연 실장**으로 바꿨다.
@@ -181,6 +181,20 @@ def _legal_check_blank_block() -> str:
 # ▸독려·미체크는 아래 본문이 이미 하고 있다 — 위에서 또 하지 않는다(같은 말 두 번 금지).
 _SENDER_LINE = "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다."
 
+
+
+def _page_url(name: str) -> str:
+    """점검 페이지 주소 — 파일 이름의 띄어쓰기를 %20 으로 바꾼다.
+
+    ★2026-08-08 GM 지적 "링크가 짤려서 보내지네 · 들어가보니 404".
+      '지원부 체계.html' 처럼 띄어쓰기가 든 이름을 그대로 붙이면 카카오톡·텔레그램이
+      **띄어쓰기에서 주소를 끊는다.** 앞쪽 반쪽만 링크가 되어 404 가 뜬다.
+      한글은 messenger 가 알아서 처리하므로 띄어쓰기만 바꾸면 된다(전체 인코딩하면
+      사람이 주소를 읽고 어느 페이지인지 알 수 없게 된다 — 실무진이 보는 링크다).
+    """
+    from urllib.parse import quote
+    return ("https://wellperion-cao.github.io/wellperion-automation/coo/check/"
+            + quote(f"{name}.html", safe="가-힣ㄱ-ㅎㅏ-ㅣ"))
 
 def _praise_block(section_text: str) -> str:
     praise: list[str] = []

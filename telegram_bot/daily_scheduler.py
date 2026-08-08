@@ -3333,8 +3333,14 @@ def main():
                     body.append("   아직 시작 전이시면 그대로 두셔도 됩니다.")
                     body.append("   이미 하셨다면 제출만 부탁드립니다.")
             body.append("")
+            # ★2026-08-08 GM 지적 "링크가 짤려서 보내지네 · 들어가보니 404".
+            #   파일 이름에 띄어쓰기가 있어 그대로 붙이면 카카오톡·텔레그램이 **띄어쓰기에서
+            #   주소를 끊는다.** 앞 반쪽만 링크가 되어 404 가 뜬다. 띄어쓰기만 %20 으로 바꾼다
+            #   (한글까지 전부 바꾸면 사람이 주소만 보고 어느 페이지인지 알 수 없다 — 실무진이 본다).
+            #   같은 규칙이 scripts/report_stream_2_check.py _page_url 에도 있다.
             _page = "시설부 체계.html" if only_fac else "지원부 체계.html"
-            body.append("👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/" + _page)
+            body.append("👉 https://wellperion-cao.github.io/wellperion-automation/coo/check/"
+                        + _page.replace(" ", "%20"))
             # parse_mode=None = 평문. 본문에 '—'·'('·'.' 가 있어 MarkdownV2 로 보내면 파싱 오류가 난다.
             text = "\n".join(body)
             ok = send_telegram(DIGEST_CHECK_CHAT_ID, text, parse_mode=None)
