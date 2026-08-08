@@ -400,7 +400,11 @@ function _mirrorInquiryToStaffLog_(body, inqId) {
     put(['연락처', '휴대폰', '핸드폰', '전화'], body.phone || '');
     put(['진행현황', '진행상태', '상태'], '신규');
     put(['채널', '경로', '알게'], _canonicalChannel_(body.utmSource || body.inflow || ''));
-    put(['접수 담당자', '담당'], '웹 자동접수');
+    // 담당자 기본값 = 임정은 고정(2026-08-08 GM). '웹 자동접수'는 report_stream_1_impl._AUTO_OWNER_VALUES
+    //   에서 '실담당자 아님'으로 판정돼 매일 22:30 미배정 알림이 나갔다 — 이 시트(26년 신규문의)로 들어오는
+    //   두 경로(이 CTA 미러 · intake_submit 멤버십 분기) 모두 같은 값을 쓴다. 강습은 팀장 배정이라 제외.
+    //   웹접수 식별은 비고의 WEB_INTAKE_TAG 가 계속 담당한다(_isWebIntakeRow_ :1420 — 담당자 칸 아님).
+    put(['접수 담당자', '담당'], MEMBER_DEFAULT_OWNER);
     // V열 utm 원문 — intake_submit 경로와 동일 포맷('source|medium|content'). 2026-07-20 시모:
     //   이 미러 경로만 V열을 안 채워 같은 문의가 경로에 따라 계정 구분이 되기도 안 되기도 했다.
     put(['유입경로(자동)', '유입경로자동', '유입경로_자동'],
@@ -1412,8 +1416,11 @@ function _realLastDataRow_(sh, idxPhone, idxDate, idxMemo) {
 //   자체폼 접수가 기존 구글폼 응답탭에 저장되도록 바뀌었는데, 그 탭에는 표식을 쓸 자리가 없다.
 //   결과: 자체폼 접수 알림(intake_submit)이 이미 나갔는데 폴러가 같은 행을 또 잡아 두 번 나갔고,
 //   형식도 달라 GM 이 "왜 이 건만 양식이 다르냐"고 지적하게 됐다(2026-07-27 4:49 유소년 건).
-// 대신 무엇을 보나: 자체폼은 '접수 담당자' 칸에 '웹 자동접수'를 반드시 남긴다(_imSet/_lsSet 공통).
+// 대신 무엇을 보나: 강습 자체폼은 '접수 담당자' 칸에 '웹 자동접수'를 반드시 남긴다(_lsSet).
 //   실측 확인 — 유소년 4615행·성인 3550행 모두 '웹 자동접수'. 이 값은 사람이 쓰지 않는다.
+//   ★2026-08-08: 멤버십 경로(_imSet·CTA 미러)는 담당자 기본값이 '임정은'으로 바뀌어 이 검사에 안 걸린다.
+//   멤버십 시트('26년 신규문의')는 비고 칸이 있어 위 WEB_INTAKE_TAG 검사가 그대로 걸러 준다 —
+//   담당자 칸에 의존하던 건 비고 칸이 없는 강습 2탭뿐이었다.
 function _isWebIntakeRow_(r, headers) {
   try {
     var iMemoW = _findCol_(headers, ['비고', '메모']);
@@ -4183,7 +4190,7 @@ function _processAction(body) {
         _imSet(['관심 있는 프로그램 종류', '관심 있는 프로그램 종목', '관심프로그램', '프로그램', '종목'], _iProgram);
         _imSet(['진행현황', '진행상황', '진행상태', '상태'], '신규');
         _imSet(['문의채널', '유입채널', '채널', '경로'], _iChannel || _canonicalChannel_(_iUtmSource));
-        _imSet(['접수 담당자', '담당'], '웹 자동접수');
+        _imSet(['접수 담당자', '담당'], MEMBER_DEFAULT_OWNER);   // 임정은 고정(2026-08-08 GM) — 아래 강습 분기(_lsSet)는 종목 팀장 배정이라 '웹 자동접수' 유지
         _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], _dateOnlyStrip_(body.exp1Date));  // 날짜 전용 칸 — 시각 혼입 방어(2026-07-20)
         _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
         _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '') + (_iUtmCampaign ? '|' + _iUtmCampaign : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20 content 세그먼트, 2026-07-31 campaign 4번째 세그먼트 추가). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음

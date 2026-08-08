@@ -22,6 +22,11 @@
  *    같은 BOT_TOKEN 값을 이 프로젝트 속성에도 설정해야 한다.
  */
 
+// 멤버십 문의 접수 담당자 기본값 — 임정은 고정(2026-08-08 GM).
+//   Survey.js(funnel-v2) 의 MEMBER_DEFAULT_OWNER 와 같은 값이다. GAS 프로젝트가 달라 상수를 공유할 수
+//   없으므로 두 벌이 되며, 한쪽만 고치면 화면 전환 시점에 옛 동작이 되살아난다 — 바꿀 땐 양쪽 다.
+var MEMBER_DEFAULT_OWNER = '임정은';
+
 function _sheetByGid_(ssId, gid) {
   var sheets = SpreadsheetApp.openById(ssId).getSheets();
   for (var i = 0; i < sheets.length; i++) { if (sheets[i].getSheetId() === gid) return sheets[i]; }
@@ -1019,7 +1024,7 @@ function _processAction(body) {
         _imSet(['관심 있는 프로그램 종류', '관심 있는 프로그램 종목', '관심프로그램', '프로그램', '종목'], _iProgram);
         _imSet(['진행현황', '진행상황', '진행상태', '상태'], '신규');
         _imSet(['문의채널', '유입채널', '채널', '경로'], _iChannel || _canonicalChannel_(_iUtmSource));
-        _imSet(['접수 담당자', '담당'], '웹 자동접수');
+        _imSet(['접수 담당자', '담당'], MEMBER_DEFAULT_OWNER);   // 임정은 고정(2026-08-08 GM) — 아래 강습 분기(_lsSet)는 종목 팀장 배정이라 '웹 자동접수' 유지
         _imSet(['시설투어 및 상담 예약', '시설견학 및 상담 일정', '상담 예약', '상담'], _dateOnlyStrip_(body.exp1Date));  // 날짜 전용 칸 — 시각 혼입 방어(2026-07-20)
         _imSet(['기타 웰페리온에 대한 문의 사항', '기타 웰페리온', '자유롭게 적어', '문의 사항', '내용'], _iMessage);
         _imSet(['유입경로(자동)', '유입경로자동', '유입경로_자동'], _iUtmSource ? (_iUtmSource + (_iUtmMedium ? '|' + _iUtmMedium : '') + (_iUtmContent ? '|' + _iUtmContent : '') + (_iUtmCampaign ? '|' + _iUtmCampaign : '')) : (_iChannel || ''));  // V열 — utm 원본 제자리 기록(2026-07-20 content 세그먼트, 2026-07-31 campaign 4번째 세그먼트 추가). H/I(중분류·소분류)는 자기신고 분류라 건드리지 않음
