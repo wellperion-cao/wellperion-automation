@@ -211,7 +211,7 @@ def main() -> int:
 
     print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 |')
     print('|---|---|---|---|---|')
-    total = done = 0
+    total = done = measured = 0
     for ref in sorted(by):
         ev = by[ref]
         warns = [e for e in ev if e.get('result') == 'warn']
@@ -220,11 +220,22 @@ def main() -> int:
         st = datetime.datetime.fromisoformat(start['ts']) if start else None
         en = datetime.datetime.fromisoformat(oks[-1]['ts']) if oks else None
 
+        # 소급 기록은 소요를 계산하지 않는다 — 접수 ts 가 실제로 지시받은 시각이 아니라
+        # 나중에 몰아 적은 시각이라 0분으로 찍히고, 그 0분이 '즉시 처리'로 읽힌다.
+        # 접수·완료 어느 줄에든 '시각 추정'/'소급' 표기가 있으면 숫자 대신 그렇게 밝힌다
+        # (2026-08-08 GM 확정 — 원장은 다른 세션도 읽는다).
+        backfilled = any(('시각 추정' in str(e.get('detail') or '')
+                          or '소급' in str(e.get('detail') or '')) for e in ev)
+
         dur = '**진행중**'
         if st and en:
-            dur = _dur(st, en)
-            total += int((en - st).total_seconds() // 60)
             done += 1
+            if backfilled:
+                dur = '소급'
+            else:
+                dur = _dur(st, en)
+                total += int((en - st).total_seconds() // 60)
+                measured += 1
 
         got = str(ev[0].get('event') or '').strip()
         did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
@@ -232,9 +243,14 @@ def main() -> int:
         print(f'| {ref_no(ref, day)} | {got[:52]} | {did[:74]} | {dur} | {up} |')
 
     print()
-    avg = (total // done) if done else 0
+    # 평균은 실제로 잰 건만으로 낸다 — 소급분을 섞으면 평균이 0분 쪽으로 끌려간다.
     miss = len(by) - done
-    line = f'**{len(by)}건 접수 · {done}건 완료 · 평균 {avg}분**'
+    line = f'**{len(by)}건 접수 · {done}건 완료'
+    if measured:
+        line += f' · 평균 {total // measured}분(잰 것 {measured}건)'
+    else:
+        line += ' · 잰 것 없음(전부 소급)'
+    line += '**'
     if miss:
         line += f' · **진행중 {miss}건**'
     print(line)
