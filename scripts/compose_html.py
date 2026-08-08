@@ -166,6 +166,10 @@ ACCOUNTS = {
                  "paper_whisper": "namuk.wellperion  ·  한남동에서 천천히"},
 }
 
+# 시리즈 전용 액센트 변형 — 계정 기본색과 다른 요일/시리즈를 구분할 때만 쓴다.
+# spec 최상위 "marker": "highlight" 로 켠다("GM의 토요일" 전용, 2026-08-08).
+HIGHLIGHT_MARKER = (HIGHLIGHT, "rgba(237,91,63,0.45)")
+
 SIZES = {"1080x1080": (1080, 1080), "1080x1350": (1080, 1350)}
 
 _FONT_CSS_CACHE: str | None = None
@@ -245,9 +249,12 @@ def _marker_wrap(text_html: str, main: str, second: str, *,
     """key phrase 를 감싸는 손그림 마커 타원. 2패스(진한 본선 + 옅은 되그은 선).
 
     일부러 안 닫히고 시작점을 지나쳐 겹치는 마커펜 궤적(파일럿 검증 베지어).
-    pad_x/pad_y: 글자 대비 원의 여유(%) — 짧은 구절은 크게 줘야 '둘러싼' 원이 된다.
+    pad_x: 좌우 여유(px, 고정) — 구절 자체 너비의 %로 주면 구절이 길어질수록
+      여백이 같이 커져 옆 글자를 덮는 버그가 났다(2026-08-08). 이제 절대 px라
+      길이와 무관하게 여백이 일정하다.
+    pad_y: 위아래 여유(%, 줄 높이 기준) — 줄 하나에 대해 늘 일정해 문제없다.
     """
-    style = (f"left:-{pad_x}%;width:{100 + 2 * pad_x}%;"
+    style = (f"left:-{pad_x}px;width:calc(100% + {2 * pad_x}px);"
              f"top:-{pad_y}%;height:{100 + 2 * pad_y}%;"
              f"transform:rotate({tilt}deg)")
     return (
@@ -293,10 +300,10 @@ def _paper_lines_html(lines: list[str], cls: str, marker: tuple[str, str],
     return "".join(out)
 
 
-def _paper_logo_html(account_cfg: dict) -> str:
+def _paper_logo_html(account_cfg: dict, symbol_color: str | None = None) -> str:
     """paper(라이트 종이) 위 계정 로고 — 개인=에메랄드 W 심볼 / 공식=풀 로고 잉크 실루엣."""
     if account_cfg["logo_style"] == "symbol":
-        return f'<div class="paper-sym" style="color:{EMERALD_ON_LIGHT}">W</div>'
+        return f'<div class="paper-sym" style="color:{symbol_color or EMERALD_ON_LIGHT}">W</div>'
     # 베이지 알파 PNG 를 CSS filter(brightness 0)로 잉크 실루엣화 — 새 자산 불필요
     return f'<img class="paper-logo-img" src="data:image/png;base64,{_b64_file(LOGO_BEIGE_ALPHA)}">'
 
@@ -336,7 +343,8 @@ def _sunday_info_html(rows: list) -> str:
 
 
 def build_slide_html(slide: dict, *, w: int, h: int, account: str,
-                     chip_label: str, index: int, total: int) -> str:
+                     chip_label: str, index: int, total: int,
+                     marker_variant: str | None = None) -> str:
     kind = slide["type"]
     cfg = ACCOUNTS[account]
     accent = slide.get("accent", cfg["accent"])
@@ -439,7 +447,7 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
         ))
 
     if kind == "paper":
-        marker = cfg["marker"]
+        marker = HIGHLIGHT_MARKER if marker_variant == "highlight" else cfg["marker"]
         tilt = float(slide.get("mark_tilt", -1.6))
         pad_x = int(slide.get("mark_pad_x", 9))
         pad_y = int(slide.get("mark_pad_y", 26))
@@ -459,7 +467,8 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
                         if slide.get("counter") else "")
         return _fill(_load_template("paper"), dict(
             common,
-            LOGO_HTML=_paper_logo_html(cfg),
+            LOGO_HTML=_paper_logo_html(
+                cfg, symbol_color=HIGHLIGHT if marker_variant == "highlight" else None),
             TITLE_HTML=title_html,
             BODY_HTML=body_html,
             WHISPER_HTML=whisper_html,
@@ -513,6 +522,7 @@ def render_carousel(spec: dict, out_dir: Path, *, fmt: str = "jpg",
         raise ValueError(f"Unknown account: {account!r} (official|personal)")
     w, h = SIZES[spec.get("size", "1080x1080")]
     chip_label = spec.get("chip_label", "WELLPERION")
+    marker_variant = spec.get("marker")  # 예: "highlight" — 요일/시리즈 액센트 오버라이드
     slides = spec["slides"]
     total = int(spec.get("total", len(slides)))
 
@@ -522,7 +532,7 @@ def render_carousel(spec: dict, out_dir: Path, *, fmt: str = "jpg",
 
     t0 = time.perf_counter()
     docs = [build_slide_html(s, w=w, h=h, account=account, chip_label=chip_label,
-                             index=i, total=total)
+                             index=i, total=total, marker_variant=marker_variant)
             for i, s in enumerate(slides, start=1)]
     t_html = time.perf_counter() - t0
 
