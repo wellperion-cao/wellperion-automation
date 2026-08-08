@@ -457,6 +457,36 @@ def _case_discarded_before_send(queue_id: str) -> bool:
     return False
 
 
+def _mark_approved(queue_id: str) -> bool:
+    """검수큐 항목을 승인 상태로 올린다 — GM 상시 승인(2026-08-08 GM 지시).
+
+    GM 이 편별 승인 버튼을 없앴다. 대신 일요일 배치가 등록하는 순간 승인으로 올려 두고,
+    예약 시각이 되면 ig_review_publish_watcher 가 발행한 뒤 결과만 보고한다.
+    상태값은 감시기의 APPROVED_STATES 에 이미 있는 '승인발행대기'를 쓴다 — 새 상태를
+    만들면 감시기 가드(중복발행·종결항목 차단)가 그 값을 모른다.
+    """
+    try:
+        from review_queue_util import SkipSave, mutate_review_queue
+
+        hit = {"ok": False}
+
+        def _apply(items):
+            for it in items:
+                if str(it.get("id")) == queue_id:
+                    it["status"] = "승인발행대기"
+                    hit["ok"] = True
+                    return items
+            raise SkipSave
+
+        mutate_review_queue(_apply, holder="case_series_dispatch:_mark_approved")
+        if not hit["ok"]:
+            print(f"[WARN] 자동승인 — 큐에서 id={queue_id} 를 못 찾음")
+        return hit["ok"]
+    except Exception as exc:
+        print(f"[ERROR] 자동승인 실패 id={queue_id}: {exc}")
+        return False
+
+
 def send_review_card(queue_id: str) -> bool:
     """scripts/send_review_card.py --id <queue_id> 호출(무폴링 발행 트리거 카드).
 
@@ -591,6 +621,7 @@ def run(dry_run: bool, plan_only: bool) -> int:
         rows_pool = list(rows)  # 이번 배치 안에서 같은 편이 두 슬롯에 중복 선정되지 않게 소모
         shortages: list[str] = []
         registered = 0
+        lineup: list[str] = []  # 일요일 1건 요약용(GM 이 한 주치를 미리 본다)
         for date_iso, day_track in slots:
             nxt = pick_next_case(rows_pool, day_track, log_replay=not (dry_run or plan_only))
             if nxt is None:
@@ -672,10 +703,16 @@ def run(dry_run: bool, plan_only: bool) -> int:
                 telegram(msg)
                 continue
 
-            if not send_review_card(queue_id):
+            # 승인 카드를 보내지 않는다 — GM 상시 승인(2026-08-08 GM 지시 "승인 요청이
+            # 아니라 그냥 발행완료 보고만"). 등록 즉시 승인 상태로 넣고, 예약 시각이
+            # 되면 감시기가 발행한 뒤 결과만 보고한다.
+            #   ▸GM 이 승인 단계를 없앤 것이지 감시기의 발행 가드를 없앤 게 아니다 —
+            #     중복발행·종결항목 차단은 감시기 쪽에 그대로 살아 있다.
+            #   ▸되돌리려면 이 블록을 send_review_card(queue_id) 호출로 되돌리면 된다.
+            if not _mark_approved(queue_id):
                 telegram(
-                    f"⚠️ 실전사례 {nxt['num']:02d}({date_iso}) 검수 카드(버튼) 발송 실패 — id={queue_id}. "
-                    f"M5 등록은 됨. 수동: send_review_card.py --id {queue_id}"
+                    f"⚠️ 실전사례 {nxt['num']:02d}({date_iso}) 자동승인 표시 실패 — id={queue_id}. "
+                    f"그대로 두면 발행되지 않는다(검수대기로 남음)."
                 )
 
             if not mark_case_dispatched(nxt, today_iso):
@@ -685,8 +722,9 @@ def run(dry_run: bool, plan_only: bool) -> int:
                 )
 
             registered += 1
+            lineup.append(f"{date_iso[5:]} {nxt['title'][:40]}")
             print(f"[OK] {date_iso} #{nxt['num']:02d} 「{nxt['title']}」 M5 예약등록(publish_at="
-                  f"{date_iso}T07:30) + 검수 카드 발송 완료.")
+                  f"{date_iso}T07:30) · 자동승인(카드 없음).")
 
         if plan_only:
             print(f"[PLAN-ONLY] 주간배치 선정 결과 — {len(slots) - len(shortages)}/{len(slots)}편 확보"
@@ -702,6 +740,13 @@ def run(dry_run: bool, plan_only: bool) -> int:
                    f"{len(shortages)}편 재고 부족: {', '.join(shortages)} (시모 대본 제작 필요)")
             print(f"[WARN] {msg}")
             telegram(msg)
+        # 한 주치 목록 1건만 보낸다 — 편별 승인 카드 6장을 없앤 자리(GM 지시 2026-08-08
+        # "승인 요청이 아니라 그냥 발행완료 보고만"). 버튼 없는 알림이라 GM 이 볼 것만
+        # 보고 넘어가면 되고, 바꿀 게 있으면 그때 말씀하시면 된다.
+        if registered:
+            telegram("🗓 다음 주 개인계정 " + str(registered) + "편 예약 완료 (승인 불필요)\n"
+                     + "\n".join("▪ " + s for s in lineup)
+                     + "\n\n매일 오전 7시 30분 자동 발행 · 발행되면 결과만 보고합니다.")
         print(f"[OK] 일요일 주간배치 완료 — {registered}/{len(slots)}편 등록"
               + (f", {len(shortages)}편 부족" if shortages else ""))
         return 0
