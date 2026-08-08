@@ -97,7 +97,7 @@ def _resolve_out_path(room_name: str, out: str | None, date: str | None) -> Path
     folder = ROOM_DIR_NAME.get(room_name, room_name.replace(" ", ""))
     day = date or datetime.now().strftime("%Y%m%d")
     month = f"{day[:4]}-{day[4:6]}"
-    return ARCHIVE_BASE / folder / month / f"운영부_auto_{day}.txt"
+    return ARCHIVE_BASE / folder / month / f"{folder}_auto_{day}.txt"
 
 
 def export_room_chat(room_name: str, out_path: Path) -> bool:

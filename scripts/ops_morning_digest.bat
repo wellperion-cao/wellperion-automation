@@ -9,6 +9,7 @@ if not exist "%PY%" set PY=python
 cd /d "%ROOT%"
 echo ===== %DATE% %TIME% ops-morning-digest start ===== >> "%ROOT%\logs\ops_morning_digest.log"
 "%PY%" "%ROOT%\scripts\kakao_export_chat.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+"%PY%" "%ROOT%\scripts\kakao_export_chat.py" --room "★중간관리자" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 "%PY%" "%ROOT%\scripts\ops_daily_digest.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 "%PY%" "%ROOT%\scripts\send_ops_digest.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 endlocal
