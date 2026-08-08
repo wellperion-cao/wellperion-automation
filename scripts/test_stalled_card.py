@@ -41,13 +41,20 @@ assert fold_stalled([row("A", 40, reason="예산 결재 대기")], prev)["escala
 r3 = fold_stalled([row("A", 5), row("B", 6, reason="자재 입고 대기")], {})
 assert len(r3["no_reason"]) == 1
 
-# ── 사람별 집계는 많은 순
-r4 = fold_stalled([row("A", 5, who="최준용M"), row("B", 6, who="최준용M"),
-                   row("C", 7, who="이경연 실장")], {})
-assert r4["by_who"][0] == ("최준용M", 2)
+# ── ★집계는 사람이 아니라 부서 단위다 (GM 확정 2026-08-08)
+#   개인 이름으로 부르면 방어부터 하게 된다. 최준용M·이경연 실장·윤병현AM 은 모두 운영부라
+#   한 줄로 합쳐진다.
+r4 = fold_stalled([row("A", 5, who="최준용M"), row("B", 6, who="이경연 실장"),
+                   row("C", 7, who="나우열M")], {})
+assert r4["by_who"][0] == ("운영부", 2), r4["by_who"]
+assert ("인사·재무", 1) in r4["by_who"], r4["by_who"]
 
-# ── 담당 빈칸은 세지 않고 넘기지 않는다(호출부가 '담당 미정'으로 채워 넘긴다)
-r5 = fold_stalled([row("A", 5, who="담당 미정")], {})
-assert r5["by_who"] == [("담당 미정", 1)]
+# ── 카드에 실릴 값 어디에도 개인 이름이 남으면 안 된다
+for _r in r4["rows"]:
+    assert _r["dept"] in ("운영부", "시설부", "인사·재무", "미분류"), _r
 
-print("OK — 멈춘 업무 카드 판정 11건 통과")
+# ── 명단에 없는 이름은 지어내지 않고 '미분류'
+r5 = fold_stalled([row("A", 5, who="홍길동")], {})
+assert r5["by_who"] == [("미분류", 1)], r5["by_who"]
+
+print("OK — 멈춘 업무 카드 판정 13건 통과")
