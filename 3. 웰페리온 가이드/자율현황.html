@@ -2395,6 +2395,21 @@
   /* ═══════════ 🥁 쿵짝표 — 오늘 GM 이 시킨 것 ↔ 그래서 무엇이 됐나 (GM 지시 2026-08-08) ═══════════
      원천 = status/kungjjak_today.json (scripts/kungjjak_board.py --emit 발행).
      여기서 다시 세지 않는다 — 셸에서 보는 표와 같은 값이어야 한다(약속 L01). */
+
+  /* GM 지시가 아닌 자체 작업 — 시각·한 일·근거 세 칸. 없으면 빈 문자열. */
+  function workHtml(r){
+    if(!r || !r.work || !r.work.length) return '';
+    var rows = r.work.map(function(w){
+      return '<tr><td style="white-space:nowrap;color:var(--dim);font-size:12px;">' + esc(w.time || '') + '</td>'
+           + '<td>' + esc(w.event || '') + '</td>'
+           + '<td style="color:var(--dim);font-size:12px;">' + esc(w.detail || '') + '</td></tr>';
+    }).join('');
+    return '<div class="sec-note" style="margin:10px 0 4px;">그 밖에 오늘 한 일 ' + r.work.length + '건</div>'
+         + '<div class="coo-tbl-wrap"><table>'
+         + '<tr><th style="width:9%">시각</th><th style="width:56%">한 일</th><th style="width:35%">근거</th></tr>'
+         + rows + '</table></div>';
+  }
+
   function renderKungjjak(kj){
     var sum = document.getElementById('kungjjak-summary');
     var box = document.getElementById('kungjjak-body');
@@ -2427,11 +2442,25 @@
             + '<summary>' + esc(r.nick || rk)
             + '<span style="float:right;color:var(--dim);font-weight:400;">'
             + (items.length - rOpen) + '/' + items.length + ' 완료'
-            + (rOpen ? ' · <span style="color:#ffb74d;">진행중 ' + rOpen + '</span>' : '') + '</span></summary>'
+            + (rOpen ? ' · <span style="color:#ffb74d;">진행중 ' + rOpen + '</span>' : '')
+            + ((r.work && r.work.length) ? ' · 그 밖에 ' + r.work.length : '') + '</span></summary>'
             + '<div class="coo-tbl-wrap"><table>'
             + '<tr><th style="width:9%">번호</th><th style="width:33%">시킨 것</th>'
             + '<th style="width:38%">그래서 된 것</th><th style="width:8%">소요</th><th style="width:12%">상태</th></tr>'
-            + rows + '</table></div></details>';
+            + rows + '</table></div>'
+            + workHtml(r) + '</details>';
+    });
+    // GM 지시가 아닌 자체 작업이 있는 역할은 그것도 붙인다 — 그게 그 사람의 하루다.
+    // 데이터에는 원래 있었는데(work) 화면이 안 그려서 시토가 '0건'으로 보였다(2026-08-08).
+    order.forEach(function(rk){
+      var r = roles[rk];
+      if(!r || (r.items && r.items.length) || !r.work || !r.work.length) return;
+      got += 0;
+      html += '<details class="coo-details" style="margin-top:8px;">'
+            + '<summary>' + esc(r.nick || rk)
+            + '<span style="float:right;color:var(--dim);font-weight:400;">'
+            + 'GM 지시 없음 · 자체 작업 ' + r.work.length + '</span></summary>'
+            + workHtml(r) + '</details>';
     });
     if(sum){
       sum.innerHTML = '오늘 <b>' + got + '건</b> 받아 <b>' + done + '건</b> 끝냈습니다'
