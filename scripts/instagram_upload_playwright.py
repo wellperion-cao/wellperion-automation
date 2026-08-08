@@ -177,6 +177,26 @@ COLLABORATOR_INPUT_SELECTORS = [
     'input[type="text"][autocomplete="off"]',
 ]
 
+# ★2026-08-08 실측: 크롭 화면 기본값이 정사각(1:1) — 종횡비 선택 안 하면 4:5 이미지
+#   상하 각 135px 잘림(로고·문의안내 유실). 파일 업로드 직후 "다음" 누르기 전에
+#   가로세로 비율 선택 아이콘 → "원본" 클릭 단계 삽입.
+CROP_ASPECT_TRIGGER_SELECTORS = [
+    'svg[aria-label="가로세로 비율 선택"]',
+    'div[role="button"]:has(svg[aria-label="가로세로 비율 선택"])',
+    'svg[aria-label="Select crop"]',
+    'div[role="button"]:has(svg[aria-label="Select crop"])',
+    'div[role="button"][aria-label="가로세로 비율 선택"]',
+    'div[role="button"][aria-label="Select crop"]',
+]
+CROP_ASPECT_ORIGINAL_SELECTORS = [
+    'div[role="menuitem"]:has-text("원본")',
+    'div[role="button"]:has-text("원본")',
+    'span:has-text("원본")',
+    'div[role="menuitem"]:has-text("Original")',
+    'div[role="button"]:has-text("Original")',
+    'span:has-text("Original")',
+]
+
 # 게시 완료 URL 패턴 (게시물 상세) — /p/{shortcode}/
 POST_URL_PATTERN = re.compile(r"https?://(?:www\.)?instagram\.com/p/([A-Za-z0-9_-]+)/?")
 
@@ -1107,6 +1127,9 @@ async def _publish_single_post(
     print(f"[INFO]   파일 업로드 시작 — 이미지 {image_count}장 + 영상 {video_count}개 (총 {len(spec.image_paths)})")
     await page.wait_for_timeout(3500)
 
+    # 크롭 화면 종횡비 선택 (기본값 정사각 → 4:5 이미지 상하 잘림 방지). 실패해도 발행 계속.
+    await _select_crop_aspect_ratio(page, spec, evidence_prefix)
+
     # "다음" 2회 클릭 (자르기 → 편집 → 캡션) — 인스타 데스크탑 표준 흐름.
     # ★2026-07-10 실측(F3): 2차 '편집' 화면은 우측 편집 패널로 모달이 넓어져 top-right
     #   '다음' 버튼이 뷰포트 밖(오른쪽)으로 밀려 일반 click 이 타임아웃 → scrollIntoView +
@@ -1275,6 +1298,81 @@ async def _publish_single_post(
         )
         return None, "확인필요"
     return None, "발행실패"
+
+
+def _detect_aspect_label(spec) -> str | None:
+    """spec 의 첫 이미지(영상 제외) 실제 픽셀 비율로 인스타 크롭 메뉴 라벨 추정.
+    "원본" 셀렉터가 전부 실패했을 때만 쓰는 최후 폴백. 판정 불가 시 None."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    for p in spec.image_paths:
+        if p.suffix.lower() == ".mp4":
+            continue
+        try:
+            with Image.open(p) as im:
+                w, h = im.size
+        except Exception:
+            return None
+        ratio = w / h
+        if abs(ratio - 1) < 0.02:
+            return "1:1"
+        if abs(ratio - 4 / 5) < 0.02:
+            return "4:5"
+        if abs(ratio - 16 / 9) < 0.02:
+            return "16:9"
+        return None
+    return None
+
+
+async def _select_crop_aspect_ratio(page, spec, evidence_prefix: Path) -> None:
+    """크롭 화면에서 종횡비 선택 아이콘 → "원본"(없으면 실제 비율 라벨) 클릭.
+    셀렉터 미발견/클릭 실패 시 [WARN]+스크린샷 후 기존 흐름(정사각 기본값)대로 진행 —
+    업로드 자체를 막지 않는다."""
+    trigger = None
+    for sel in CROP_ASPECT_TRIGGER_SELECTORS:
+        loc = page.locator(sel).first
+        if await loc.count() > 0:
+            trigger = loc
+            print(f"[INFO]   크롭 종횡비 선택 아이콘: {sel!r}")
+            break
+    if trigger is None:
+        print("[WARN]   크롭 종횡비 선택 아이콘 미발견 — 기본값(정사각)으로 진행")
+        await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_trigger.png")))
+        return
+    try:
+        await trigger.click(timeout=3000)
+    except Exception as e:
+        print(f"[WARN]   크롭 종횡비 아이콘 클릭 실패: {e} — 기본값(정사각)으로 진행")
+        await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_trigger_click.png")))
+        return
+    await page.wait_for_timeout(700)
+
+    option_selectors = list(CROP_ASPECT_ORIGINAL_SELECTORS)
+    fallback_label = _detect_aspect_label(spec)
+    if fallback_label:
+        option_selectors += [
+            f'div[role="menuitem"]:has-text("{fallback_label}")',
+            f'div[role="button"]:has-text("{fallback_label}")',
+            f'span:has-text("{fallback_label}")',
+        ]
+
+    for sel in option_selectors:
+        loc = page.locator(sel).first
+        if await loc.count() > 0:
+            try:
+                await loc.click(timeout=3000)
+                print(f"[INFO]   크롭 종횡비 옵션 선택 완료: {sel!r}")
+                await page.screenshot(path=str(evidence_prefix.with_suffix(".crop_aspect.png")))
+                await page.wait_for_timeout(500)
+                return
+            except Exception as e:
+                print(f"[WARN]   크롭 종횡비 옵션 클릭 실패: {sel!r} — {e}")
+                continue
+
+    print("[WARN]   크롭 종횡비 옵션('원본' 등) 전부 미발견/클릭실패 — 기본값(정사각)으로 진행")
+    await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_option.png")))
 
 
 async def _add_location(page, location: str, evidence_prefix: Path) -> None:
