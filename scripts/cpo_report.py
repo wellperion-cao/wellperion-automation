@@ -364,7 +364,7 @@ def build_daily_report(today: str | None = None) -> str:
         lines.append(f"  · {r.get('_res_time') or '시간미정'} {r.get('name') or '(이름없음)'}")
 
     lines.append("")
-    lines.append(f"④ 이탈위험 후보(추정) {len(churn_cands)}건")
+    lines.append(f"④ LOSS 예방 대상(추정) {len(churn_cands)}건" + (" — 👉 후속 연락 필요" if churn_cands else ""))
     lines.append(f"  ※ 정직 꼬리표: 최초 문의일 기준 {14}일+ 무진전 근사치 — 연락메모 내 날짜는 미반영(구조화 데이터 아님), 실측 아님")
     for r in churn_cands[:5]:
         lines.append(f"  · {r.get('name') or '(이름없음)'} / 최초문의 {r.get('timestamp') or '-'}")
@@ -419,7 +419,7 @@ def build_weekly_report(today: str | None = None) -> str:
         )
     else:
         lines.append("LOSS 현황: 데이터 없음(조회 실패)")
-    lines.append(f"이탈위험 후보(추정) {len(churn_cands)}건")
+    lines.append(f"LOSS 예방 대상(추정) {len(churn_cands)}건" + (" — 👉 후속 연락 필요" if churn_cands else ""))
     lines.append("")
     lines.append("※ 정직 표기: 전환율은 표본기간(최근 7일 접수건) 기준 근사 — 진행 중인 건은 향후 전환될 수 있어 최종치 아님")
     lines.append(_AUTO_FOOTER)

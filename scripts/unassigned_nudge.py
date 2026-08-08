@@ -1070,7 +1070,7 @@ def main() -> int:
         by = defaultdict(list)
         for it in fix:
             by[it["owner"]].append(it)
-        print(f"[담당 통일] 고칠 것 {len(fix)}건 · 보류 {len(held)}건 (등록완료·이탈 건은 제외)")
+        print(f"[담당 통일] 고칠 것 {len(fix)}건 · 보류 {len(held)}건 (등록완료·LOSS 건은 제외)")
         for lead in sorted(by, key=lambda k: -len(by[k])):
             froms = defaultdict(int)
             for it in by[lead]:

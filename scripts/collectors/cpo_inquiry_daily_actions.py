@@ -61,7 +61,7 @@ def collect(module=None) -> dict:
         {"label": "오늘 신규 문의", "value": len(today_new)},
         {"label": "미컨택(연락기록 0건)", "value": len(uncontacted)},
         {"label": "오늘 상담·체험 예약", "value": len(todays_res)},
-        {"label": "이탈위험 후보(추정)", "value": len(churn_cands)},
+        {"label": "LOSS 예방 대상(추정)", "value": len(churn_cands)},
         {"label": "강습 미응대 30일(담당자 미배정)",
          "value": lesson_un["total"] if lesson_un else "미측정"},
         # 숨은 재고를 지표에 드러낸다(2026-07-25 GM) — 30일이 지난 건은 그동안 어디에도
@@ -71,7 +71,8 @@ def collect(module=None) -> dict:
     ]
     summary = (
         f"신규 {len(today_new)}건 · 미컨택 {len(uncontacted)}건 · "
-        f"오늘예약 {len(todays_res)}건 · 이탈위험(추정) {len(churn_cands)}건"
+        f"오늘예약 {len(todays_res)}건 · LOSS 예방 대상(추정) {len(churn_cands)}건"
+        + (" · 👉 후속 연락 필요" if churn_cands else "")
     )
     if lesson_un:
         bt = lesson_un.get("by_type") or {}

@@ -114,7 +114,7 @@ GM_SURFACE_SOURCES = {
                  ("status/kakao_last_send.json", "daily")],  # 카톡 발신 기록(멈춤 판정 근거)
         "manual": ["status/module_registry.json", "status/notify_registry.json", "status/audit_registry.json",
                    "status/telegram_rooms.json"],
-        "external": ["회원 이탈 GAS(cpo_churn_stats)"],
+        "external": ["회원 LOSS GAS(cpo_churn_stats)"],
     },
     "G1 오늘의 항로": {
         # G1 은 발행 루트 안 미러를 읽는다(INC-007 이후 구조). 원천은 저장소 루트 큐다.
