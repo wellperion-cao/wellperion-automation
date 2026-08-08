@@ -138,7 +138,7 @@ table.roster td{white-space:nowrap}
         </div>
         <div class="msgCard">
           <h3>A-2 · 만기 직후 (1~3개월)</h3>
-          <div class="cond"><b>대상</b>: 종료회원 · 멤버십이 끝난 지 1~3개월 지난 분<br><b>언제</b>: 이탈 이유가 아직 뚜렷할 시점 — 너무 늦지 않게</div>
+          <div class="cond"><b>대상</b>: 종료회원 · 멤버십이 끝난 지 1~3개월 지난 분<br><b>언제</b>: 그만두신 이유가 아직 뚜렷할 시점 — 너무 늦지 않게</div>
           <pre id="msgA2"></pre>
           <button class="copyBtn" onclick="copyMsg('msgA2',this)">문구 복사</button>
         </div>
@@ -149,7 +149,7 @@ table.roster td{white-space:nowrap}
           <button class="copyBtn" onclick="copyMsg('msgA3',this)">문구 복사</button>
         </div>
       </div>
-      <div class="warnBox">⚠️ <b>A-3(6개월 이상 이탈)은 절대 한 번에 전원 발송하지 마세요.</b> 오래 연락이 없던 분이 갑자기 메시지를 받으면 부담스럽게 느껴질 수 있습니다 — 하루 10~20명씩 나눠 며칠에 걸쳐 보내주세요.</div>
+      <div class="warnBox">⚠️ <b>A-3(6개월 이상 떠나신 분)은 절대 한 번에 전원 발송하지 마세요.</b> 오래 연락이 없던 분이 갑자기 메시지를 받으면 부담스럽게 느껴질 수 있습니다 — 하루 10~20명씩 나눠 며칠에 걸쳐 보내주세요.</div>
     </section>
     <div id="view-all">
       <section class="kpis" id="allKpi"></section>
@@ -157,12 +157,12 @@ table.roster td{white-space:nowrap}
         <div class="panel"><h2>재등록률 추세</h2><span class="tag">월별 · 최신월 진행중</span><div class="chartbox"><canvas id="rateChart"></canvas></div></div>
         <div class="panel"><h2>월별 확정매출</h2><span class="tag">단위: 원</span><div class="chartbox"><canvas id="revChart"></canvas></div></div>
       </section>
-      <section class="panel"><h2>월별 재등록 현황</h2><span class="tag">멤버십 회원 · 완료 / 컨택완 / 가망 / 무응답 / 로스</span><div class="chartbox"><canvas id="statusBar"></canvas></div></section>
+      <section class="panel"><h2>월별 재등록 현황</h2><span class="tag">멤버십 회원 · 완료 / 컨택완 / 가망 / 무응답 / LOSS</span><div class="chartbox"><canvas id="statusBar"></canvas></div></section>
       <section class="panel" id="lowPanelAll" style="display:none"><h2>90일 미만 저활동 관리</h2><span class="tag">정상가 결제 + 2개월 서비스 규정 대상 · 집중 관리</span>
         <table><thead><tr><th>월</th><th>90일미만 대상</th><th>재등록</th><th>재등록률</th><th>전체 대비</th></tr></thead><tbody id="lowBodyAll"></tbody></table>
         <div id="rosterAll"></div></section>
       <section class="grid2">
-        <div class="panel"><h2>이탈 사유 Top</h2><span class="tag">로스 사유 누적</span><table><thead><tr><th>사유</th><th>건수</th><th style="width:46%">비중</th></tr></thead><tbody id="reasonBodyAll"></tbody></table></div>
+        <div class="panel"><h2>LOSS 사유 Top</h2><span class="tag">LOSS 사유 누적</span><table><thead><tr><th>사유</th><th>건수</th><th style="width:46%">비중</th></tr></thead><tbody id="reasonBodyAll"></tbody></table></div>
         <div class="panel"><h2>이용일수 구간별 재등록률</h2><span class="tag">저활동 위험 신호 · 누적</span><div class="chartbox sm"><canvas id="usageChart"></canvas></div></div>
       </section>
     </div>
@@ -173,7 +173,7 @@ table.roster td{white-space:nowrap}
         <div class="panel"><h2>현황 요약</h2><span class="tag">멤버십 회원 기준</span><table><thead><tr><th>구분</th><th>인원</th><th>비중</th></tr></thead><tbody id="mBody"></tbody></table></div>
       </section>
       <section class="panel" id="lowPanelM" style="display:none"><h2>90일 미만 저활동 관리</h2><span class="tag" id="lowTagM"></span><div id="lowCardM"></div></section>
-      <section class="panel" id="reasonPanelM" style="display:none"><h2>이탈 사유</h2><span class="tag" id="reasonTagM"></span><table><thead><tr><th>사유</th><th>건수</th><th style="width:46%">비중</th></tr></thead><tbody id="reasonBodyM"></tbody></table></section>
+      <section class="panel" id="reasonPanelM" style="display:none"><h2>LOSS 사유</h2><span class="tag" id="reasonTagM"></span><table><thead><tr><th>사유</th><th>건수</th><th style="width:46%">비중</th></tr></thead><tbody id="reasonBodyM"></tbody></table></section>
     </div>
   </div>
   <footer>호스팅 <b>GitHub Pages</b> · 데이터 <b>Google 시트(Apps Script)</b> · 집계 지표만 표시(개인정보 미포함) · <span id="foot"></span></footer>
@@ -188,6 +188,7 @@ const SNAPSHOT = {"updated": "2026-06-08T10:03:46.391296", "months": [{"num": 2,
 const CORAL='#ED5B3F',BEIGE='#B79F8A';
 const STC={'완료':'#4F9D7F','컨택완':'#5A86C2','가망':'#E6A93C','고민중':'#B58BBA','무응답':'#9C938A','로스':'#E8593C'};
 const SKEYS=['완료','컨택완','가망','고민중','무응답','로스'];
+const LBL={'로스':'LOSS'};const dispLabel=k=>LBL[k]||k;   // 화면 표시 전용(GM 2026-08-08) — SKEYS/STC/status 키는 시트값 그대로 유지, 화면에 찍히는 문구만 LOSS로 통일
 const won=v=>'₩'+(v||0).toLocaleString('ko-KR');
 Chart.defaults.font.family="'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif";
 Chart.defaults.color='#8C8378';Chart.defaults.font.size=12;
@@ -405,7 +406,7 @@ function renderAll(){
     <div class="kpi"><div class="label">평균 재등록률 (마감)</div><div class="val">${avg.toFixed(1)}%</div><div class="note">${rateNote}</div></div>
     <div class="kpi"><div class="label">마감 누적 확정매출</div><div class="val sm">${won(closedRev)}</div><div class="note">${revNote}</div></div>
     <div class="kpi accent"><div class="label">${latest.key} 가망 기대매출</div><div class="val sm">${latest.pipeline?won(latest.pipeline):'—'}</div><div class="note">확정 전 · 클로징 대상</div></div>
-    <div class="kpi accent"><div class="label">누적 로스 인원</div><div class="val">${totalLoss}<span style="font-size:17px;color:var(--muted)">명</span></div><div class="note down">${DATA[0].key}~${latest.key}</div></div>`;
+    <div class="kpi accent"><div class="label">누적 LOSS 인원</div><div class="val">${totalLoss}<span style="font-size:17px;color:var(--muted)">명</span></div><div class="note down">${DATA[0].key}~${latest.key}</div></div>`;
   destroy('rate');const hasGoalR=DATA.some(m=>m.goal&&m.goal.rate!=null);charts.rate=new Chart(document.getElementById('rateChart'),{type:'line',
     data:{labels:DATA.map(m=>m.key),datasets:[{label:'실제',data:DATA.map(m=>m.rate),borderColor:CORAL,backgroundColor:'rgba(237,91,63,.08)',fill:true,borderWidth:2.5,tension:.32,pointBackgroundColor:CORAL,pointRadius:4},{label:'목표',data:DATA.map(m=>m.goal&&m.goal.rate!=null?m.goal.rate:null),borderColor:BEIGE,borderDash:[5,4],borderWidth:2,pointRadius:0,fill:false,tension:0,spanGaps:true}]},
     options:{maintainAspectRatio:false,plugins:{legend:{display:hasGoalR,position:'bottom',labels:{boxWidth:12,boxHeight:12,padding:12}},tooltip:{callbacks:{label:c=>c.dataset.label+' '+c.parsed.y+'%'}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#F3EEE8'}},x:{grid:{display:false}}}}});
@@ -414,7 +415,7 @@ function renderAll(){
     options:{maintainAspectRatio:false,plugins:{legend:{display:hasGoalV,position:'bottom',labels:{boxWidth:12,boxHeight:12,padding:12}},tooltip:{callbacks:{label:c=>c.dataset.label+' '+won(c.parsed.y)+'원'}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>won(v)},grid:{color:'#F3EEE8'}},x:{grid:{display:false}}}}});
   destroy('sbar');const stk=['완료','컨택완','가망','무응답','로스'];
   charts.sbar=new Chart(document.getElementById('statusBar'),{type:'bar',
-    data:{labels:DATA.map(m=>m.key),datasets:stk.map(k=>({label:k,data:DATA.map(m=>m.status[k]||0),backgroundColor:STC[k],stack:'s',borderRadius:3,maxBarThickness:54}))},
+    data:{labels:DATA.map(m=>m.key),datasets:stk.map(k=>({label:dispLabel(k),data:DATA.map(m=>m.status[k]||0),backgroundColor:STC[k],stack:'s',borderRadius:3,maxBarThickness:54}))},
     options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,boxHeight:12,padding:14}},tooltip:{callbacks:{label:c=>c.dataset.label+' '+c.parsed.y+'명'}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#F3EEE8'},ticks:{precision:0}}}}});
   const lowMs=DATA.filter(m=>m.low),lp=document.getElementById('lowPanelAll');
   if(lowMs.length){lp.style.display='';
@@ -440,12 +441,12 @@ function renderMonth(m){
     <div class="kpi accent"><div class="label">가망 기대매출</div><div class="val sm">${m.pipeline?won(m.pipeline):'—'}</div><div class="note">${m.pipeline?'확정 전':'해당 없음'}</div></div>`;
   document.getElementById('mTag').textContent=m.key+' 멤버십 회원 기준';
   const labs=SKEYS.filter(k=>(m.status[k]||0)>0),vals=labs.map(l=>m.status[l]);
-  document.getElementById('mLegend').innerHTML=labs.map(l=>`<div class="row"><span class="lab"><span class="d" style="background:${STC[l]}"></span>${l}</span><span class="num">${m.status[l]}명</span></div>`).join('');
+  document.getElementById('mLegend').innerHTML=labs.map(l=>`<div class="row"><span class="lab"><span class="d" style="background:${STC[l]}"></span>${dispLabel(l)}</span><span class="num">${m.status[l]}명</span></div>`).join('');
   destroy('status');charts.status=new Chart(document.getElementById('statusChart'),{type:'doughnut',
-    data:{labels:labs,datasets:[{data:vals,backgroundColor:labs.map(l=>STC[l]),borderWidth:2,borderColor:'#fff'}]},
+    data:{labels:labs.map(dispLabel),datasets:[{data:vals,backgroundColor:labs.map(l=>STC[l]),borderWidth:2,borderColor:'#fff'}]},
     options:{maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+' '+c.parsed+'명'}}}}});
   const tot=SKEYS.reduce((s,k)=>s+(m.status[k]||0),0)||1;
-  document.getElementById('mBody').innerHTML=SKEYS.map(k=>`<tr><td><span class="dot-cell" style="background:${STC[k]}"></span>${k}</td><td>${m.status[k]||0}명</td><td>${((m.status[k]||0)/tot*100).toFixed(0)}%</td></tr>`).join('')+`<tr><td><b>대상</b></td><td><b>${tot}명</b></td><td>100%</td></tr>`;
+  document.getElementById('mBody').innerHTML=SKEYS.map(k=>`<tr><td><span class="dot-cell" style="background:${STC[k]}"></span>${dispLabel(k)}</td><td>${m.status[k]||0}명</td><td>${((m.status[k]||0)/tot*100).toFixed(0)}%</td></tr>`).join('')+`<tr><td><b>대상</b></td><td><b>${tot}명</b></td><td>100%</td></tr>`;
   const lpm=document.getElementById('lowPanelM');
   if(m.low){lpm.style.display='';const r=m.low,diff=r.rate-m.rate;
     document.getElementById('lowTagM').textContent=m.key+' · 정상가 결제 + 2개월 서비스 규정 대상';
@@ -457,7 +458,7 @@ function renderMonth(m){
       `<div style="flex:1;min-width:200px;font-size:12px;color:var(--muted)">전체 ${m.rate}% 대비 <b style="color:${diff<0?CORAL:'#4F9D7F'}">${diff>=0?'+':''}${diff.toFixed(1)}%p</b> · 저활동층은 만기 전 사전 컨택·혜택 안내로 집중 관리</div></div>`+rosterBlock(m.num);
   }else lpm.style.display='none';
   const rp=document.getElementById('reasonPanelM'),rls=Object.entries(m.reasons||{}).sort((a,b)=>b[1]-a[1]);
-  if(rls.length){rp.style.display='';document.getElementById('reasonTagM').textContent=m.key+' 로스 사유';
+  if(rls.length){rp.style.display='';document.getElementById('reasonTagM').textContent=m.key+' LOSS 사유';
     const mx=Math.max(...rls.map(x=>x[1]),1);
     document.getElementById('reasonBodyM').innerHTML=rls.map((r,i)=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><div style="height:7px;background:var(--soft);border-radius:6px;overflow:hidden"><span style="display:block;height:100%;width:${r[1]/mx*100}%;background:${i===0?CORAL:BEIGE};border-radius:6px"></span></div></td></tr>`).join('');
   }else rp.style.display='none';

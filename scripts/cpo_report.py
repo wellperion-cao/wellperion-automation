@@ -414,11 +414,11 @@ def build_weekly_report(today: str | None = None) -> str:
     lines.append("")
     if churn is not None:
         lines.append(
-            f"이탈 현황(누적): 이탈율 {churn.get('lossRate', '-')}% · "
+            f"LOSS 현황(누적): LOSS율 {churn.get('lossRate', '-')}% · "
             f"당월 LOSS {churn.get('monthLossCount', '-')}건"
         )
     else:
-        lines.append("이탈 현황: 데이터 없음(조회 실패)")
+        lines.append("LOSS 현황: 데이터 없음(조회 실패)")
     lines.append(f"이탈위험 후보(추정) {len(churn_cands)}건")
     lines.append("")
     lines.append("※ 정직 표기: 전환율은 표본기간(최근 7일 접수건) 기준 근사 — 진행 중인 건은 향후 전환될 수 있어 최종치 아님")
@@ -467,12 +467,12 @@ def build_monthly_report(today: str | None = None) -> str:
     lines.append("")
     if churn is not None:
         lines.append(
-            f"이탈방지 성과: 유효회원 {churn.get('activeCount', '-')}명 · "
+            f"LOSS 방지 성과: 유효회원 {churn.get('activeCount', '-')}명 · "
             f"당월 LOSS율 {churn.get('monthLossRate', '-')}% · "
             f"30일내 갱신임박 {churn.get('renewCount', '-')}명"
         )
     else:
-        lines.append("이탈방지 성과: 데이터 없음(조회 실패)")
+        lines.append("LOSS 방지 성과: 데이터 없음(조회 실패)")
 
     lines.append("")
     lines.append("※ 정직 표기: 신규문의 대비 신규등록 전환율은 서로 다른 코호트(이번달 접수 vs 이번달 등록)의 근사치 — 등록자가 반드시 이번달 문의자는 아님. 정밀 전환율은 kpi_values.json '이번달_전환율'(등록일 기준) 축적 후 대체 예정.")

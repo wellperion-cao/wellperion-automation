@@ -124,7 +124,7 @@ def collect(module=None) -> dict:
             f"LOSS율 {churn.get('monthLossRate', '-')}% · 갱신임박 {churn.get('renewCount', '-')}명"
         )
     else:
-        metrics.append({"label": "이탈방지 성과", "value": "미측정"})
+        metrics.append({"label": "LOSS 방지 성과", "value": "미측정"})
 
     if active_rows is not None:
         missing = _missing_duration_members(active_rows)
