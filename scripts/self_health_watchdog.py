@@ -168,7 +168,7 @@ def build_section_erp_status(path: Path = ERP_STATUS_PATH):
     if not issues:
         return None
 
-    lines = [f"🩹 자동화 건강 이상 {len(issues)}건 (요약: {data.get('summary', '')})"]
+    lines = [f"🔧 자동화 이상 {len(issues)}건 (요약: {data.get('summary', '')})"]
     lines.extend(issues[:10])
     if len(issues) > 10:
         lines.append(f"  … 외 {len(issues) - 10}건")
@@ -366,7 +366,9 @@ def build_digest(now=None):
     if not active:
         return None, sections
 
-    lines = [f"🩺 ERP 자가건강 — {now.astimezone(KST).strftime('%Y-%m-%d')}"]
+    # 제목 문구는 GM 확정(2026-08-08) — '건강'은 회원 건강·시설 점검과 겹쳐 헷갈린다.
+    # 이 알림은 이상이 있을 때만 오므로 제목이 그대로 뜻을 말하게 한다.
+    lines = [f"🚨 ERP 이상 신호 — {now.astimezone(KST).strftime('%Y-%m-%d')}"]
     for sec in active:
         lines.append("")
         lines.extend(sec)

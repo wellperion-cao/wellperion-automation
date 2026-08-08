@@ -198,11 +198,11 @@ def _self_health_rows():
     try:
         _, sections = _self_health.build_digest()
     except Exception as e:
-        return [{"label": "ERP 자가건강", "value": f"집계 실패({type(e).__name__}: {str(e)[:60]})"}]
+        return [{"label": "ERP 이상 신호", "value": f"집계 실패({type(e).__name__}: {str(e)[:60]})"}]
     active = {k: v for k, v in sections.items() if v}
     if not active:
-        return [{"label": "ERP 자가건강", "value": "이상 0건 ✅"}]
-    return [{"label": f"자가건강·{name}", "value": lines[0]} for name, lines in active.items()]
+        return [{"label": "ERP 이상 신호", "value": "이상 0건 ✅"}]
+    return [{"label": f"이상 신호·{name}", "value": lines[0]} for name, lines in active.items()]
 
 
 # ── §주간 품질 회귀 delta (module_report_log.jsonl 재사용 — 새 리포트·새 모듈 없음) ──
@@ -296,7 +296,7 @@ def _enrich_with_live_signals(payload, erp):
     payload["metrics"].extend(self_health_rows)
     sh_summary = self_health_rows[0]["value"] if len(self_health_rows) == 1 else \
         f"이상 {len(self_health_rows)}건"
-    payload["summary_line"] = f"{payload['summary_line']} · 자가건강 {sh_summary}"
+    payload["summary_line"] = f"{payload['summary_line']} · 이상 신호 {sh_summary}"
     return payload
 
 
