@@ -5641,11 +5641,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   </details>
 
 
-    <!-- ══ 🧠 AI 자기학습 제안 → 자율현황으로 이관 (AI 살림 · 배10510 · 2026-08-03) ══ -->
-    <p style="font-size:13px;color:var(--dim);margin:8px 0 24px;">🧠 AI 자기학습 제안(AI C-Level이 스스로 올린 개선 아이디어)은 <strong>자율 작업 현황</strong>에서 봅니다 → <a href="자율현황.html#sec-learning" style="color:var(--accent);font-weight:700;">바로가기</a></p>
-
-    <!-- ░░ 재발방지 현황 → S2 공통탭으로 이전 (2026-06-15) ░░ -->
-    <p style="font-size:13px;color:var(--dim);margin:8px 0 24px;">🛡️ 같은 실수 막기·점검 현황은 <strong>AI C-Level 운영 가이드(S2 공통탭)</strong>에서 봅니다 → <a href="#" onclick="(function(){var t=document.querySelector('[data-panel=common]');if(t){var s=document.querySelector('.tab-btn[data-target=common]');if(s)s.click();}var el=document.getElementById('common-incidents');if(el)el.scrollIntoView({behavior:'smooth'});})();return false;" style="color:var(--accent);font-weight:700;">바로가기</a></p>
+    <!-- 🧠 AI 자기학습 제안(자율현황 이관 완료 · 배10510) · 🛡️ 같은 실수 막기(S2 공통탭 이관 완료)
+         안내 문단 2개 삭제 — GM 지시 2026-08-08 "다 이관 완료했으면 없애줘".
+         옮긴 지 오래돼 안내가 남아 있을 이유가 없다. 두 곳 다 상단 메뉴에서 바로 간다.
+         G1 은 GM 개인 판이므로 AI 살림 안내는 여기 자리가 없다. -->
 
 
     <!-- ░░ 캘린더 (항로 툴바 토글로 표시/숨김) ░░ -->
@@ -9281,6 +9280,17 @@ function crTab(btn, panelId) {
     function gm1RenderToday() {
       var container = document.getElementById('today-task-list');
       if (!container) return;
+
+      // ── 적어 둔 것이 하나도 없으면 칸 자체를 숨긴다 (GM 지시 2026-08-08 "없애줘") ──
+      //   지우지 않고 숨기는 이유: 이 목록은 GM 브라우저에만 저장돼 서버에서 내용을 볼 수 없다.
+      //   통째로 지우면 GM 이 적어 둔 것이 확인할 방법도 없이 사라진다. 비었으면 안 보이고,
+      //   하나라도 있으면 그대로 보인다 — 어느 쪽이든 GM 이 잃는 것은 없다.
+      var _todoSection = document.getElementById('gm1-todo-section');
+      if (_todoSection) {
+        var _hasAny = (gm1Load() || []).length > 0;
+        _todoSection.style.display = _hasAny ? '' : 'none';
+        if (!_hasAny) { container.innerHTML = ''; return; }
+      }
 
       // ── 도구바(검색·정렬·분류·공유)와 카드 목록을 별도 고정 DOM으로 분리 (업무 현황 SSOT 패턴 이식 2026-06-02) ──
       //   검색 input은 도구바 안에 최초 1회만 생성·재사용. 재렌더 시 목록(#gm1-list)만 교체하므로
