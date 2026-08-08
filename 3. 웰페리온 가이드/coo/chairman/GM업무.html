@@ -169,7 +169,7 @@
   details.fold > summary:after{content:" ▾";color:var(--grey);}
   details.fold[open] > summary:after{content:" ▴";}
   @media print{ details.fold:not([open]){display:none;} #owner-grid{display:none !important;} }
-  #owner-grid{display:none;}   /* 대표님 카드는 전용 화면과 중복 — 요약표만 남긴다 */
+  #owner-grid,#owner-done-grid{display:none;}   /* 대표님 카드는 전용 화면과 중복 — 요약표만 남긴다(보고완료도 회장님과 동일하게 표만, GM 지적 2026-08-08) */
   @media print{
     .sec{break-inside:avoid;}
     .tgl-nav{display:none;}
@@ -256,7 +256,7 @@
       <a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">회장님 A3</a>
       <a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">대표님 A3</a>
       <a class="sec-act" href="../todo/결재 현황 SSOT.html" onclick="event.stopPropagation();">결재 현황</a>
-      <a class="sec-act" href="../../월간운영계획.html" onclick="event.stopPropagation();">월간운영계획</a>
+      <!-- 월간운영계획 링크는 상단 바(◂ 월간운영계획으로)에만 남긴다 — 3중 중복 제거(GM 지적 2026-08-08) -->
       <!-- ② 「보고 문안 복사」 — 대표님 구획 안에 있던 것을 헤더 우측으로 이동 + 토글(GM 지시 2026-08-06
            "경영 보고건 우측이 좋을 것 같고 열었다 닫을 수 있게"). id·판정 로직은 _owner_directive.js 그대로 재사용 —
            위치만 옮긴다. -->
@@ -326,8 +326,7 @@
            progress_note·진척률까지 커밋하는 별도 단계(GM PIN 필요, GM 2026-08-06 지시 그대로 유지) —
            저장 경로는 월간운영계획.html window._planSave() 방식 그대로(신규 API 없음, prompt+commit_file). -->
       <button type="button" class="sec-act" id="gm-save-btn" disabled onclick="event.stopPropagation(); window.gmSaveChecks();">변경 저장</button>
-      <span class="sec-act rnote" id="gm-chk-save-msg" style="border:none;padding:0;margin-left:0;"></span>
-      <a class="sec-act" href="../../월간운영계획.html" onclick="event.stopPropagation();">월간운영계획</a></summary>
+      <span class="sec-act rnote" id="gm-chk-save-msg" style="border:none;padding:0;margin-left:0;"></span></summary>
     <div class="sec-body">
       <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 위 「경영 보고건」과 소스·기준이 다르다는 걸
            밝힌다. 정본 = _gm_direct_tasks.js. 제목에 '대표'가 들어간 카드가 있어도(예: 외부 협업처 대표 등
@@ -967,7 +966,12 @@
       var area = document.getElementById('aprPrintArea');
       area.innerHTML = html;
       document.body.setAttribute('data-print-mode', 'apr');
-      function reset() { document.body.removeAttribute('data-print-mode'); window.removeEventListener('afterprint', reset); }
+      // 결재문서는 A4 스케일 문서인데 상단 고정 @page가 A3라 그대로 찍히면 의미가 없다 — printA3와 같은 방식으로
+      // 임시 오버라이드 후 afterprint에 원복(GM 지적 2026-08-08).
+      var st = document.getElementById('gm-apr-a4-style');
+      if (!st) { st = document.createElement('style'); st.id = 'gm-apr-a4-style'; document.head.appendChild(st); }
+      st.textContent = '@page{ size: A4 portrait; margin: 12mm; }';
+      function reset() { document.body.removeAttribute('data-print-mode'); st.textContent = ''; window.removeEventListener('afterprint', reset); }
       window.addEventListener('afterprint', reset);
       window.print();
       setTimeout(reset, 2000);

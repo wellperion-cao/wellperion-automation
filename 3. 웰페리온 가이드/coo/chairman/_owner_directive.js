@@ -153,6 +153,7 @@
     var elGrpCnt = document.getElementById('owner-grp-cnt');
     var elGrid = document.getElementById('owner-grid');
     var elSum = document.getElementById('owner-sum-body');
+    var origBtnLabel = elBulkBtn.textContent; // 조회 실패 시 「다시 불러오기」로 바꿨다가 성공하면 이 라벨로 되돌린다.
 
     var _items = null; // {id,title,category,schedule,status,owner,note,content,reported}
 
@@ -174,11 +175,15 @@
 
     function render() {
       if (_items === null) {
+        // 영구 잠금 대신 재시도 — 사람이 한 번 누르면 load()를 다시 돈다(GM 지적 2026-08-08).
         elGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
         elCount.textContent = '조회 실패';
-        elBulkBtn.disabled = true;
+        elBulkBtn.disabled = false;
+        elBulkBtn.textContent = '다시 불러오기';
+        elBulkStatus.textContent = '업무·결재 자료를 못 불러왔습니다. 다시 불러오기를 눌러 주세요.';
         return;
       }
+      elBulkBtn.textContent = origBtnLabel;
       var need = _items.filter(function (it) { return !it.reported; });
       var done = _items.filter(function (it) { return it.reported; });
       elCount.textContent = '보고 필요 ' + need.length + '건 · 보고 완료 ' + done.length + '건';
@@ -252,6 +257,7 @@
 
     // 「보고건 통합 보고」 — 아직 보고 안 한 건만 모아 문안 1개로 만들어 클립보드에 복사(자동 발송은 준비 중).
     elBulkBtn.addEventListener('click', function () {
+      if (_items === null) { elBulkStatus.textContent = '다시 불러오는 중…'; load(); return; } // 조회 실패 재시도
       var need = (_items || []).filter(function (it) { return !it.reported; });
       var chN = cfg.includeChairman ? chairmanPending().length : 0;
       if (!need.length && !chN) return;
