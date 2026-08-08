@@ -2350,5 +2350,25 @@
     "work_type": "update",
     "staff_message": "",
     "updated_at": "2026-08-08"
+  },
+  {
+    "task_id": "CTO-2026-08-08-자율현황에-쿵짝표-붙이기-배편처럼-라이브로-GM-지",
+    "clevel": "cto",
+    "title": "[시토] 자율현황에 쿵짝표 붙이기 — 배편처럼 라이브로 (GM 지시 2026-08-08)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-08",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-08] GM 원문(2026-08-08): '각 C레벨들 작업한 것을 쿵짝표로 고정시켜서 볼 수 있는건가? 그걸 자율현황에다가 배편같이 붙이면 안되나? 라이브로'. ★웰리가 데이터 쪽은 이미 끝냈다 — 시토는 화면만 붙이면 된다. (1)scripts/kungjjak_board.py 에 --emit 을 넣었다. status/kungjjak_today.json 을 낸다(오늘 실측 25KB · 전 역할 5명분). (2)구조: roles.{ceo,cto,cmo,cpo,coo}.{nick, items[], work[], count, done, open, avg_minutes, work_count}. items = GM 지시 접수↔완료 짝(no·got·did·start·end·minutes·upload·open). work = 그 역할이 오늘 한 일(time·area·event·detail). 웰리·시토 말고는 GM 지시를 직접 안 받으므로 work 가 그 역할의 하루가 된다 — 빈 표를 내지 않으려고 둘 다 담았다. (3)upload 칸은 커밋 해시를 origin/master 까지 실제 대조해 찍는다(✅올림 / ⚠️저장만 / 발송 / 기록만). 상태값이 아니라 실측이다. ■ 시토가 할 일 두 가지: (가)발행 자동화 — kungjjak_board.py --emit 을 이미 지나가는 관문에 태운다. 웰리 판단으로는 scripts/safe_commit.py 가 모든 커밋을 거치므로 거기서 부르면 새 예약작업 0 이고 사실상 라이브가 된다(약속 L21 — 새 장치 금지). 커밋마다 부르는 것이 무거우면 최소 간격을 두거나 다른 관문을 골라도 된다 — 판단은 시토가. (나)자율현황에 렌더 — 역할별 카드로. GM 이 배편처럼이라 했으니 기존 항로·배 카드와 같은 모양을 재사용한다(새 UI 패턴 금지). 한 화면에서 5역할이 오늘 무엇을 받아 무엇을 끝냈고 무엇이 미완인지 보이면 된다. 미완(open)은 눈에 띄게. ■ 왜 필요한가: GM 이 PowerShell 5개를 번갈아 보지 않고 브라우저 한 장으로 전 역할 진행을 보려는 것이다. 지금은 각 창의 statusline 을 따로 봐야 한다. ■ 정본 주의: 원천은 status/worklog.jsonl 하나뿐이다. kungjjak_today.json 은 화면용으로 잘라 낸 것이라 여기에 직접 쓰지 않는다(진실 두 벌 금지·약속 L01). 끝나는 조건: 자율현황을 열면 5역할의 오늘 쿵짝표가 보이고, 커밋이 일어나면 저절로 갱신된다.",
+    "next": "safe_commit 등 기존 관문에 --emit 편승 → 자율현황에 역할별 쿵짝표 카드 렌더(기존 배 카드 패턴 재사용)",
+    "depends_on": "",
+    "ship_no": 10683,
+    "short_no": 488,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "updated_at": "2026-08-08"
   }
 ]

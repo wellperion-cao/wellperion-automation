@@ -50,28 +50,58 @@ def _dur(start: datetime.datetime, end: datetime.datetime) -> str:
     return f'{m}분' if m < 60 else f'{m // 60}시간{m % 60}분'
 
 
+def _read(day: str, role: str | None):
+    for line in LOG.open(encoding='utf-8'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        if not str(d.get('ts') or '').startswith(day):
+            continue
+        if role and d.get('role') != role:
+            continue
+        yield d
+
+
 def load(day: str, role: str | None):
-    rows = []
-    with LOG.open(encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                d = json.loads(line)
-            except Exception:
-                continue
-            if not str(d.get('ts') or '').startswith(day):
-                continue
-            if role and d.get('role') != role:
-                continue
-            if not str(d.get('ref') or '').startswith('GM-'):
-                continue
-            rows.append(d)
+    """GM 지시 짝(ref=GM-*)만 — 접수↔완료 대응이 있는 것."""
     by: dict[str, list] = {}
-    for d in rows:
-        by.setdefault(d['ref'], []).append(d)
+    for d in _read(day, role):
+        if str(d.get('ref') or '').startswith('GM-'):
+            by.setdefault(d['ref'], []).append(d)
     return by
+
+
+def load_work(day: str, role: str | None, limit: int = 12):
+    """오늘 한 일 — GM 지시가 아닌 자체 작업. 웰리·시토 말고는 GM 지시를 직접 안 받으므로
+    이 목록이 그 역할의 하루가 된다(빈 표를 내지 않기 위함)."""
+    out = []
+    for d in _read(day, role):
+        if str(d.get('ref') or '').startswith('GM-'):
+            continue
+        if d.get('result') != 'ok':
+            continue
+        ev = str(d.get('event') or '').strip()
+        if not ev:
+            continue
+        out.append({
+            'time': str(d.get('ts'))[11:16],
+            'area': str(d.get('area') or '').strip(),
+            'event': ev,
+            'detail': str(d.get('detail') or '').strip(),
+        })
+    # 같은 제목이 반복되면 마지막 것만(자동 갱신 로그가 여러 번 쌓인다)
+    seen, dedup = set(), []
+    for w in reversed(out):
+        if w['event'] in seen:
+            continue
+        seen.add(w['event'])
+        dedup.append(w)
+    dedup.reverse()
+    return dedup[-limit:]
 
 
 def upload_state(detail: str, has_done: bool) -> str:
@@ -90,12 +120,69 @@ def upload_state(detail: str, has_done: bool) -> str:
     return '기록만'
 
 
+def emit(day: str) -> int:
+    """전 역할 오늘치를 status/kungjjak_today.json 으로 발행 — 자율현황 화면이 이걸 읽는다.
+
+    worklog.jsonl 전체는 1.6MB·5,600줄이라 브라우저가 통째로 읽으면 무겁다.
+    오늘치만 잘라 작은 파일로 낸다(오늘 실측 574줄 → 훨씬 작다).
+    """
+    out = {'_doc': '쿵짝표 — 역할별 오늘 GM 지시 접수↔완료. 원천 = status/worklog.jsonl (여기는 잘라낸 화면용)',
+           'date': day, 'roles': {}}
+    for role in NICK:
+        by = load(day, role)
+        items = []
+        done = total = 0
+        for ref in sorted(by):
+            ev = by[ref]
+            warns = [e for e in ev if e.get('result') == 'warn']
+            oks = [e for e in ev if e.get('result') == 'ok']
+            start = warns[0] if warns else (oks[0] if oks else None)
+            st = datetime.datetime.fromisoformat(start['ts']) if start else None
+            en = datetime.datetime.fromisoformat(oks[-1]['ts']) if oks else None
+            mins = None
+            if st and en:
+                mins = int((en - st).total_seconds() // 60)
+                total += mins
+                done += 1
+            did = str(oks[-1].get('detail') or '').strip() if oks else ''
+            items.append({
+                'ref': ref,
+                'no': ref[-2:],
+                'got': str(ev[0].get('event') or '').strip(),
+                'did': did,
+                'start': st.strftime('%H:%M') if st else None,
+                'end': en.strftime('%H:%M') if en else None,
+                'minutes': mins,
+                'upload': upload_state(did, bool(oks)),
+                'open': not oks,
+            })
+        work = load_work(day, role)
+        if items or work:
+            out['roles'][role] = {
+                'nick': NICK[role], 'items': items, 'work': work,
+                'count': len(items), 'done': done,
+                'open': len(items) - done,
+                'avg_minutes': (total // done) if done else None,
+                'work_count': len(work),
+            }
+    p = ROOT / 'status' / 'kungjjak_today.json'
+    p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
+    roles = ', '.join(f'{v["nick"]} {v["done"]}/{v["count"]}' for v in out['roles'].values())
+    print(f'발행 {p.name} — {day} · {roles or "기록 없음"}')
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--role', default=None, help='ceo·cto·cmo·cpo·coo·chro·cfo')
     ap.add_argument('--date', default=None, help='YYYY-MM-DD (기본 오늘)')
     ap.add_argument('--all-roles', action='store_true')
+    ap.add_argument('--emit', action='store_true',
+                    help='status/kungjjak_today.json 으로 발행 (자율현황 화면용)')
     a = ap.parse_args()
+
+    if a.emit:
+        return emit(a.date or datetime.date.today().isoformat())
 
     day = a.date or datetime.date.today().isoformat()
     role = None if a.all_roles else (a.role or 'ceo')
