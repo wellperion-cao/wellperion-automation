@@ -32,4 +32,8 @@ REM no extra locking code needed. Fail-soft: never blocks the jobs above.
 set RUNNER_LIVE=1
 set RUNNER_PING_LIVE=1
 "%PY%" "%ROOT%\scripts\welly_auto_runner.py" --clevel all --feedback-only >> "%ROOT%\logs\welly_auto_runner.log" 2>&1
+REM Kungjjak board emit (2026-08-08 GM) - publishes status/kungjjak_today.json so the
+REM autonomy page can show today GM-order vs done pairs live. Read-only over worklog.jsonl,
+REM no sending, no new scheduled task - rides this existing 3-minute slot. Fail-soft.
+"%PY%" "%ROOT%\scripts\kungjjak_board.py" --emit >> "%ROOT%\logs\kungjjak_board.log" 2>&1
 endlocal

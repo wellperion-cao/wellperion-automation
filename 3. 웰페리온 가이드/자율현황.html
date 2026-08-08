@@ -363,6 +363,17 @@
        승인이 필요한 건은 텔레그램 카드로 그 자리에서 가고, 여기 한 줄이 더 있어도 GM 이
        할 일이 늘지 않았다. 화면에 있는 것만으로 '봐야 할 것'이 하나 늘어난다. -->
 
+  <!-- ══ 🥁 쿵짝표 — 오늘 GM 이 시킨 것 ↔ 그래서 무엇이 됐나 (GM 지시 2026-08-08) ══
+       GM: "이런 내용들이 전체 자율현황에서 보여줄 수 있어야할 것 같은데? 쿵짝표 타이틀로"
+       원천 = status/kungjjak_today.json (scripts/kungjjak_board.py --emit 이 발행).
+       여기서 다시 세지 않는다 — 셸에서 보는 표와 같은 값이어야 한다(약속 L01). ══ -->
+  <div id="kungjjak-board" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
+    <h2 class="sec" style="margin-top:0;">🥁 쿵짝표 <span style="font-size:12px;font-weight:400;color:var(--dim);">(오늘 GM 이 시킨 것 ↔ 그래서 무엇이 됐나)</span></h2>
+    <div id="kungjjak-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+    <div id="kungjjak-body"></div>
+  </div>
+  <!-- ══ /쿵짝표 ══ -->
+
   <div id="layer-autonomy">
   <h2 class="layer-h2">① 자율로 한 일</h2>
 
@@ -2380,6 +2391,56 @@
       : '코드↔등록부 대조 <b>' + when + '</b> 기준.';
   }
 
+
+  /* ═══════════ 🥁 쿵짝표 — 오늘 GM 이 시킨 것 ↔ 그래서 무엇이 됐나 (GM 지시 2026-08-08) ═══════════
+     원천 = status/kungjjak_today.json (scripts/kungjjak_board.py --emit 발행).
+     여기서 다시 세지 않는다 — 셸에서 보는 표와 같은 값이어야 한다(약속 L01). */
+  function renderKungjjak(kj){
+    var sum = document.getElementById('kungjjak-summary');
+    var box = document.getElementById('kungjjak-body');
+    if(!box) return;
+    if(!kj || !kj.roles){
+      if(sum) sum.textContent = '오늘 쿵짝표를 아직 못 불러왔습니다.';
+      box.innerHTML = ''; return;
+    }
+    var roles = kj.roles, order = ['ceo','cto','cmo','cpo','coo'];
+    var got = 0, done = 0, open = 0, html = '';
+    order.forEach(function(rk){
+      var r = roles[rk]; if(!r || !r.items || !r.items.length) return;
+      var items = r.items.slice();
+      var rOpen = items.filter(function(x){ return x.open; }).length;
+      got += items.length; done += (items.length - rOpen); open += rOpen;
+      // 진행중을 맨 위로 — 아직 안 끝난 것이 오늘 볼 것이다.
+      items.sort(function(x,y){ return (y.open?1:0) - (x.open?1:0); });
+      var rows = items.map(function(x){
+        var stat = x.open
+          ? '<span class="statchip warn">진행중</span>'
+          : '<span class="statchip ok">' + esc(x.upload || '완료') + '</span>';
+        return '<tr><td style="white-space:nowrap;color:var(--dim);font-size:12px;">' + esc(x.no || '') + '</td>'
+             + '<td>' + esc(x.got || '') + '</td>'
+             + '<td style="color:var(--dim);">' + esc(x.open ? '아직' : (x.did || '')) + '</td>'
+             + '<td style="white-space:nowrap;text-align:right;color:var(--dim);font-size:12px;">'
+               + (x.minutes ? x.minutes + '분' : '—') + '</td>'
+             + '<td style="white-space:nowrap;">' + stat + '</td></tr>';
+      }).join('');
+      html += '<details class="coo-details" style="margin-top:8px;"' + (rOpen ? ' open' : '') + '>'
+            + '<summary>' + esc(r.nick || rk)
+            + '<span style="float:right;color:var(--dim);font-weight:400;">'
+            + (items.length - rOpen) + '/' + items.length + ' 완료'
+            + (rOpen ? ' · <span style="color:#ffb74d;">진행중 ' + rOpen + '</span>' : '') + '</span></summary>'
+            + '<div class="coo-tbl-wrap"><table>'
+            + '<tr><th style="width:9%">번호</th><th style="width:33%">시킨 것</th>'
+            + '<th style="width:38%">그래서 된 것</th><th style="width:8%">소요</th><th style="width:12%">상태</th></tr>'
+            + rows + '</table></div></details>';
+    });
+    if(sum){
+      sum.innerHTML = '오늘 <b>' + got + '건</b> 받아 <b>' + done + '건</b> 끝냈습니다'
+        + (open ? ' · <b style="color:#ffb74d;">진행중 ' + open + '건</b>' : '')
+        + ' <span style="color:var(--dim);">(' + esc(kj.date || '') + ')</span>';
+    }
+    box.innerHTML = html || '<div class="feed-status">오늘 받은 GM 지시가 없습니다.</div>';
+  }
+
   function renderAlertBoard(troomsRaw, reg, drift, erp, kakaoLast, modReg){
     renderNotifyDriftNote(drift);
     var wrap = document.getElementById('alert-board-rooms');
@@ -2732,7 +2793,8 @@
     gasReadText('status/notify_registry.json',         'status/notify_registry.json').catch(function(){ return ''; }),
     gasReadText('status/notify_drift.json',            'status/notify_drift.json').catch(function(){ return ''; }),
     gasReadText('status/telegram_rooms.json',          'status/telegram_rooms.json').catch(function(){ return ''; }),
-    gasReadText('scripts/kakao_rooms.json',            'scripts/kakao_rooms.json').catch(function(){ return ''; })
+    gasReadText('scripts/kakao_rooms.json',            'scripts/kakao_rooms.json').catch(function(){ return ''; }),
+    gasReadText('status/kungjjak_today.json',          'status/kungjjak_today.json').catch(function(){ return ''; })
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -2777,6 +2839,7 @@
     try{ renderModuleSilence(parseJson(a[15]), moduleRegistry); }catch(e){ document.getElementById('erp-ah-silence-headline').innerHTML = '<span style="color:var(--dim);">모듈 결과 산출 표시 오류.</span>'; }
     // 방 용도·표시명은 두 SSOT 에서 읽어 먼저 채운다(a[18]=텔레그램 방 · a[19]=카톡 방).
     try{ buildRoomMeta(parseJson(a[18]), parseJson(a[19])); }catch(e){}
+    try{ renderKungjjak(parseJson(a[20])); }catch(e){ }
     try{ renderAlertBoard(parseJson(a[18]), parseJson(a[16]), parseJson(a[17]), erpStatus, parseJson(a[13]), moduleRegistry); }catch(e){
       var abEl = document.getElementById('alert-board-rooms');
       if(abEl) abEl.innerHTML = '<div class="feed-status">알림 한 장 표시 오류.</div>';
