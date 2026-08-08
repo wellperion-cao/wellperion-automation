@@ -1639,6 +1639,22 @@ async def cmd_digest_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # 하고 발행하지 않는다(GM go 후 1로 전환 + 봇 재시작 = 라이브 발효).
 _GM_CHAT_ID = 8254867551  # GM 텔레그램 챗 id (ssot/canon_values.json telegram_chat_id 정본과 동일)
 
+# GM 개인 방(「나의하루」) — 개인 체크인 버튼이 이 방에서도 먹어야 한다(GM 2026-08-08).
+# .env 를 읽는다: 이 프로세스는 os.environ 에 .env 를 싣지 않으므로 파일에서 직접 뽑는다.
+def _read_personal_chat_id() -> str:
+    try:
+        p = Path(__file__).resolve().parent / ".env"
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("TELEGRAM_PERSONAL_CHAT_ID="):
+                return line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    return ""
+
+
+_ENV_PERSONAL_CHAT_ID = _read_personal_chat_id()
+
 
 def _git_pull_locked() -> None:
     """GAS가 GitHub에 직접 커밋한 review_queue.json status='승인'을 로컬로 당긴다.
@@ -1854,8 +1870,16 @@ async def cmd_checkin_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if _checkin is None:
         await q.answer("체크인 모듈을 불러오지 못했습니다", show_alert=True)
         return
-    # GM 본인 방에서만 — 개인 기록이다.
-    if q.message and q.message.chat_id != _GM_CHAT_ID:
+    # GM 본인 방 또는 개인 방(「나의하루」)에서만 — 개인 기록이다.
+    # ★개인 방을 빠뜨리면 카드는 가는데 버튼이 안 먹는다(2026-08-08 실측 직전에 잡음).
+    _allowed = {_GM_CHAT_ID}
+    _personal = os.environ.get("TELEGRAM_PERSONAL_CHAT_ID") or _ENV_PERSONAL_CHAT_ID
+    if _personal:
+        try:
+            _allowed.add(int(_personal))
+        except ValueError:
+            pass
+    if q.message and q.message.chat_id not in _allowed:
         await q.answer()
         return
 

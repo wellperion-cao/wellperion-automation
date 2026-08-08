@@ -3053,9 +3053,18 @@ def run_report(slot: str, test_mode: bool = False) -> None:
         logger.info(f"{label} 12시 점검관리방 발신 폐지(배10011, 2026-07-18 GM 결정 영구화) — 미발신")
         return
 
-    success = send_telegram(owner_id, body, parse_mode=parse_mode)
+    # 개인 슬롯(06 하루시작·운동 / 22 취침)은 개인 방으로 — GM 지시 2026-08-08
+    # "이런 건 개인적인 부분이라 업무보고방이 아니라 개인한테". 업무보고방은 하루 종일
+    # 업무가 흐르는 곳이라 개인 문구가 그 사이에 묻힌다. 키가 없으면 지금 그대로(회귀 0).
+    target_id = owner_id
+    if slot in ("06", "22") and not test_mode:
+        personal = ENV.get("TELEGRAM_PERSONAL_CHAT_ID")
+        if personal:
+            target_id = int(personal)
+
+    success = send_telegram(target_id, body, parse_mode=parse_mode)
     if success:
-        logger.info(f"{label} 텔레그램 발송 완료 owner_id={owner_id}")
+        logger.info(f"{label} 텔레그램 발송 완료 chat_id={target_id}")
     else:
         logger.error(f"{label} 텔레그램 발송 실패 — 재시도 소진")
         logger.critical(f"{label} CRITICAL: 텔레그램 도달 불가 — 수동 확인 필요")
