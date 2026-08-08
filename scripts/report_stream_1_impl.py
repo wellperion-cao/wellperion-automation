@@ -34,7 +34,7 @@ import json
 import re
 import sys
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -174,6 +174,37 @@ def _is_unassigned_active(row: dict, is_lesson: bool) -> bool:
     if owner and owner not in _AUTO_OWNER_VALUES:
         return False
     return not (_is_registered(row, is_lesson) or _is_loss(row))
+
+
+def _uncontacted_membership(raw_groups: dict[str, list[dict]], today: str) -> list[tuple[str, int]]:
+    """회원(멤버십) 문의 중 접수 후 24시간(1일)+ 지났는데 컨택기록(contacts[]) 0건인 활성 건.
+
+    ★2026-08-08 시포(GM 지시) — "미배정 보고를 멈추긴 하는데, 컨택이 안 된 건에 대해서는
+    계속 보고해야지". 배472(시토)로 신규 멤버십 문의 담당자가 접수 시 자동으로 채워지면서
+    owner 기준 미배정 판정(_is_unassigned_active)이 이 도메인에서는 상시 0건이 된다 — 담당은
+    채워졌지만 실제 연락은 아직 없었을 수 있는 방치를 놓친다. 그래서 판정 기준을 담당(owner)
+    유무 → 컨택(contacts[]) 유무로 바꾼다. 문턱 24시간은 강습 SLA(unassigned_nudge.SLA_HOURS)
+    와 같은 개념을 재사용(순환 임포트라 상수 자체는 못 끌어오므로 이 파일이 이미 쓰는 날짜 단위
+    _days_since 로 표현 — 하루 이상 경과 = 접수 당일 이후). 강습(성인/유소년)은
+    unassigned_nudge.collect_sla_violations() 가 이미 24시간 SLA로 카카오 ★부서장 방에 따로
+    알리므로 여기서는 멤버십만 담아 중복 발신을 피한다. 등록완료·이탈종결(LOSS)은 제외
+    (판정 함수 재사용 = _is_registered/_is_loss/_has_contacts, 새 판정 없음). 경과일 내림차순
+    (오래된 순) 반환, 상한 없음(GM "계속 보고해야지" — 방치가 오래될수록 더 눈에 띄어야 한다)."""
+    out: list[tuple[str, int]] = []
+    for r in raw_groups.get("membership", []):
+        if _is_test_row(r):
+            continue
+        if _is_registered(r, False) or _is_loss(r):
+            continue
+        if _has_contacts(r):
+            continue
+        d = _days_since(str(r.get("timestamp", "") or ""), today)
+        if d < 1:  # 접수 당일(24시간 미만)은 정상 응대 흐름에 맡긴다
+            continue
+        nm = str(r.get("name", "") or "-").strip() or "-"
+        out.append((nm, d))
+    out.sort(key=lambda x: -x[1])
+    return out
 
 
 def _field_for(kind: str) -> str:
@@ -422,27 +453,10 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
                 unassigned_today.append((nm, _type_label(kind)))
     other_today = total_new - progress_today - len(unassigned_today)
 
-    # 담당배정 3일+ 지연(최근 30일 내, 전체 리스트 기준) → 별도 "참고" 라인으로 분리 표기(당일 아님).
-    # ★2026-08-05 시토(GM 지시) — 강습(성인/유소년)은 여기서 뺐다. 이 신규문의·컨택&등록 등
-    # 여러 섹션이 뒤섞인 22:30 한 메시지 안에 있어서는 배정 독려가 묻혔다(GM 실측 지적).
-    # 강습 배정 요청은 이제 scripts/unassigned_nudge.py 가 별도 메시지로 문의알림방에 매일
-    # 독립 발신한다(daily_scheduler.run_daily_digest 배선, 상한도 30일 캡 없이 전건).
-    # 멤버십은 이 모듈이 다루는 도메인이 아니라(운영부·별도 채널) 그대로 남긴다.
-    stale_unassigned: list[tuple[str, str]] = []
-    stale_by_team: dict[str, list[str]] = {}
-    for kind, rows in raw_groups.items():
-        if kind != "membership":
-            continue
-        for r in rows:
-            if _is_test_row(r):
-                continue
-            d = _days_since(str(r.get("timestamp", "") or ""), today)
-            if _is_unassigned_active(r, kind != "membership") and 3 <= d <= 30:
-                nm = str(r.get("name", "") or "-").strip() or "-"
-                sp = _sport_canon(_short_program(str(r.get(_field_for(kind), "") or "").strip()))
-                sub = f"{_type_label(kind)}·{sp}" if sp and sp != "-" else _type_label(kind)
-                stale_unassigned.append((nm, sub))
-                stale_by_team.setdefault(_team_for(kind, sp), []).append(nm)
+    # 회원(멤버십) 문의 '연락 아직 안 됨' → 별도 "참고" 라인(당일 아님, 상한 없음).
+    # 옛 owner 기준 "3일 넘게 담당이 안 정해진 문의" 자리를 대체한다 — GM 08-08 지시,
+    # 판정 상세는 _uncontacted_membership() 참조.
+    uncontacted = _uncontacted_membership(raw_groups, today)
     special = _special_notes(groups, raw_groups, today)
 
     header = (
@@ -463,15 +477,13 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         section_new += (
             f"\n🆕 담당배정 필요 {len(unassigned_today)}건 — {html.escape(names)} 👉 배정 필요"
         )
-    if stale_unassigned:
-        # 팀별로 갈라 적는다(2026-07-31 GM 확정) — 이름만 나열하면 누구 일인지 아무도 안 읽는다.
-        section_new += f"\n📌 3일 넘게 담당이 안 정해진 문의 {len(stale_unassigned)}건 — 팀별로 나눕니다"
-        for team in sorted(stale_by_team, key=lambda t: -len(stale_by_team[t])):
-            names = stale_by_team[team]
-            head = ", ".join(names[:5])
-            tail = f" 외 {len(names) - 5}건" if len(names) > 5 else ""
-            section_new += f"\n   ▪ {html.escape(team)} {len(names)}건 — {html.escape(head)}{tail}"
-        section_new += "\n   👉 각 팀에서 담당을 정해 주세요"
+    if uncontacted:
+        head = ", ".join(f"{nm}({d}일째)" for nm, d in uncontacted[:5])
+        tail = f" 외 {len(uncontacted) - 5}건" if len(uncontacted) > 5 else ""
+        section_new += (
+            f"\n📌 연락 아직 안 된 문의(멤버십) {len(uncontacted)}건 — {html.escape(head)}{tail}"
+            f"\n   👉 운영부(멤버십)에서 컨택 부탁드립니다"
+        )
 
     # 컨택&등록 현황 — 3리스트 통합, "실제 진전"(컨택이력≥1 또는 등록판정) 있는 행만.
     # 담당배정 필요 건은 위 신규 문의 섹션(🆕)으로 이전했다 — 정의상 진전이 없는 건이라
@@ -558,7 +570,42 @@ def send_test(text: str) -> bool:
                      extra={"parse_mode": "HTML"}, timeout=15)
 
 
+def _selftest_uncontacted() -> None:
+    """멤버십 '연락 아직 안 됨'(_uncontacted_membership) 자가검사(가짜 행·조회/발신 0건).
+    확인: ①담당(owner)만 채워지고 컨택이 없는 건은 여전히 잡힘(GM 08-08 지적 시나리오) ②컨택
+    이력 있는 건은 제외 ③접수 당일(24시간 미만)은 제외 ④등록완료·이탈종결(LOSS)은 제외
+    ⑤경과일 내림차순(오래된 순)."""
+    today = "2026-08-08"
+
+    def _d(n: int) -> str:
+        return (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=n)).strftime("%Y-%m-%d 09:00:00")
+
+    rows = [
+        {"name": "배정만됨미컨택", "timestamp": _d(5), "owner": "임정은", "contacts": [], "status": ""},
+        {"name": "당일접수", "timestamp": _d(0), "owner": "임정은", "contacts": [], "status": ""},
+        {"name": "컨택있음", "timestamp": _d(5), "owner": "임정은",
+         "contacts": [{"note": "1차 상담"}], "status": ""},
+        {"name": "등록완료", "timestamp": _d(10), "owner": "임정은", "contacts": [], "status": "SUC"},
+        {"name": "이탈", "timestamp": _d(10), "owner": "임정은", "contacts": [], "status": "LOSS"},
+        {"name": "더오래됨", "timestamp": _d(20), "owner": "임정은", "contacts": [], "status": ""},
+    ]
+    out = _uncontacted_membership({"membership": rows}, today)
+    names = [nm for nm, _ in out]
+    assert "배정만됨미컨택" in names, "담당만 채워지고 컨택 없는 건이 안 잡힘(핵심 회귀)"
+    assert "당일접수" not in names, "24시간 미만 접수가 잡힘"
+    assert "컨택있음" not in names, "컨택 이력 있는 건이 잡힘"
+    assert "등록완료" not in names, "등록완료건이 잡힘"
+    assert "이탈" not in names, "이탈(LOSS)건이 잡힘"
+    assert names == ["더오래됨", "배정만됨미컨택"], f"경과일 내림차순(오래된 순)이 아님: {names}"
+    assert _uncontacted_membership({"membership": []}, today) == [], "빈 목록이면 빈 결과여야 함"
+    print(f"  [판정] {len(out)}건 — 담당만됨·미컨택 포착/컨택있음·당일·등록·LOSS 제외/오래된 순 — 전부 통과")
+    print("SELFTEST OK: 멤버십 '연락 아직 안 됨' 판정 정상(실조회·실발신 0건)")
+
+
 def main() -> None:
+    if "--selftest" in sys.argv:
+        _selftest_uncontacted()
+        return
     sample = "--sample" in sys.argv
     today = datetime.now().strftime("%Y-%m-%d")
     text = build_digest(today, sample=sample)
