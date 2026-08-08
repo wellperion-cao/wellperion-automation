@@ -641,7 +641,11 @@ def run(dry_run: bool, plan_only: bool) -> int:
             caption_text = caption_md.read_text(encoding="utf-8").strip()
             folder_path = ROOT / nxt["folder"]
             folder_rel = folder_path.relative_to(ROOT).as_posix()
-            slides = [f"{folder_rel}/output/post_{i}.jpg" for i in range(1, 7)]
+            # 장수는 폴더에 실제로 있는 post_*.jpg 가 정한다 — 6장으로 박아 두었더니
+            # 7장짜리 편(2026-08-10~15 「하루의 완성」 6편)의 마지막 장이 조용히 빠졌다.
+            slides = [f"{folder_rel}/output/{p.name}" for p in
+                      sorted((folder_path / "output").glob("post_*.jpg"),
+                             key=lambda p: int(re.sub(r"\D", "", p.stem) or 0))]
             title = f"{nxt['title']}(개인계정)"
 
             try:
