@@ -261,12 +261,6 @@
   details.hist-fold > summary .hist-sub{font-size:11px; font-weight:400; color:var(--dim);}
 
   /* ── 📄 층② 정적 설계표 묶음 접기(기본 접힘 · 2026-07-15) — 2-ID로 부모 #layer-automation 화살표 규칙 무력화 ── */
-  #layer-automation details#static-fold-details{margin:20px 0 0;}
-  #layer-automation details#static-fold-details > summary{cursor:pointer; list-style:none; font-size:14.5px; font-weight:800; color:var(--text); padding:8px 0; display:flex; align-items:baseline; gap:8px;}
-  #layer-automation details#static-fold-details > summary::-webkit-details-marker{display:none;}
-  #layer-automation details#static-fold-details > summary::before{content:'▸'; color:var(--dim); font-weight:400; transform:none;}
-  #layer-automation details#static-fold-details[open] > summary::before{content:'▾'; transform:none;}
-  #layer-automation details#static-fold-details > summary .fold-sub{font-size:11.5px; font-weight:400; color:var(--dim);}
 
   @media (max-width:560px){
     body{padding:14px 12px 36px; font-size:12.5px;}
@@ -365,14 +359,9 @@
   </div>
   <!-- ══ /알림 한 장 ══ -->
 
-  <!-- ══ 🔍 GM 승인 신호 — G1(wellperion_guide)의 ⚠️주의 신호/🟢순항요약 이관 (배422 후속 · 2026-08-06 시토) ══
-       소스 = cmo/review/review_queue.json 직독(G1 gm1RenderAlertSignal과 동일 판정 로직). 지금 GM이
-       행동할 것(검수 승인·발행 대조)만 — 내부 운영신호는 금지(약속 L10). -->
-  <div id="gm-approval-signal" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
-    <h2 class="sec" style="margin-top:0;">🔍 GM 승인 신호 <span style="font-size:12px;font-weight:400;color:var(--dim);">(검수 승인·발행 대조 — 지금 GM이 볼 것)</span></h2>
-    <div id="gm-approval-signal-body">불러오는 중…</div>
-  </div>
-  <!-- ══ /GM 승인 신호 ══ -->
+  <!-- 🔍 GM 승인 신호 섹션 삭제 (GM 지시 2026-08-08 "GM 승인 신호도 의미없고").
+       승인이 필요한 건은 텔레그램 카드로 그 자리에서 가고, 여기 한 줄이 더 있어도 GM 이
+       할 일이 늘지 않았다. 화면에 있는 것만으로 '봐야 할 것'이 하나 늘어난다. -->
 
   <div id="layer-autonomy">
   <h2 class="layer-h2">① 자율로 한 일</h2>
@@ -399,7 +388,9 @@
   <div id="hangro-board"><div class="feed-status">항로를 불러오는 중…</div></div>
   <!-- GM 본인 할 일은 여기로 옮기지 않는다 — 개수·링크만. 본문은 G1 비번 뒤에 그대로 둔다
        (웰리 결정 2026-08-03 · 배10510). 이 페이지는 잠금이 없어 본문을 올리면 새로 공개된다. -->
-  <div id="gm-todo-link" class="sec-note" style="margin-top:8px;"></div>
+  <!-- 👤 GM 본인 할 일 줄 삭제 (GM 지시 2026-08-08 "GM 본인 할일 0건 삭제").
+       여기는 AI 판이다. GM 개인 할 일은 G1 에 있고, 이 화면에 개수만 뜨는 것은
+       GM 이 볼 이유가 없는 줄 하나가 늘어난 것뿐이었다. -->
 
   <!-- ════ 🗂 배 정리·보관함 (접힘) — 위 「🧭 항로」와 **같은 데이터**의 관리 도구 면이다. ════
        ★2026-08-03 시토(GM 지시 "중복 정리") — ①위치: 항로에서 멀리 떨어져 있어 같은 자료인 줄
@@ -893,10 +884,12 @@
   <!-- ════ 🛠️ 시토 (AI CTO) 자율 자동화 (status/module_registry.json 신규 스키마 · owner_role 있는 이 창 소속만 · additive · 계약 2026-07-09 · 2026-07-13 전용 섹션 격상) ════ -->
   <section>
     <h2 class="sec" id="sec-registry-cards">🛠️ 등록된 자율 자동화 모듈 <span style="font-size:11px;font-weight:400;color:var(--dim);">(카드마다 담당 표시 · 특징기능·자율수준·정직 꼬리표)</span></h2>
-    <div class="sec-note">상시 돌아가는 자동화 모듈 — 카드 아이콘이 담당(🛠️시토 · 👥시포 · 🌟웰리 · 🧑‍🤝‍🧑시로)입니다. 카톡·텔레그램 발신 전체(방·배선·상태)는 하단 '📨 알림 한 장'(② 돌아가는 자동화).</div>
+    <div class="sec-note">상시 돌아가는 자동화 모듈 — 카드 아이콘이 담당(🛠️시토 · 👥시포 · 🌟웰리)입니다. 카톡·텔레그램 발신 전체(방·배선·상태)는 하단 '📨 알림 한 장'(② 돌아가는 자동화).</div>
     <div id="registry-card-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div id="registry-cards"></div>
-    <details class="coo-details" id="registry-cards-dormant-wrap" style="margin-top:10px;">
+    <!-- 기본은 숨김 — 미발효 모듈이 실제로 있을 때만 JS 가 보여 준다(GM 2026-08-08
+         "GM 결정 대기(미발효,휴면) 이건 뭐지"). 전엔 정적 화면이 늘 '0개'로 떠 있었다. -->
+    <details class="coo-details" id="registry-cards-dormant-wrap" style="margin-top:10px;display:none;">
       <summary id="registry-cards-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
       <div id="registry-cards-dormant" style="margin-top:9px;"></div>
     </details>
@@ -1016,7 +1009,7 @@
     <div class="sec-note">노출을 회원으로 바꾸는 전환 설계가 본질 — 카드는 등록부(<code>cmo-*</code>) 실값 렌더. 발신 배선·상태는 하단 '📨 알림 한 장'.</div>
     <div id="registry-card-summary-cmo" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div id="registry-cards-cmo"></div>
-    <details class="coo-details" id="registry-cards-cmo-dormant-wrap" style="margin-top:10px;">
+    <details class="coo-details" id="registry-cards-cmo-dormant-wrap" style="margin-top:10px;display:none;">
       <summary id="registry-cards-cmo-dormant-summary">⏸️ GM 결정 대기 (미발효·휴면) — 0개</summary>
       <div id="registry-cards-cmo-dormant" style="margin-top:9px;"></div>
     </details>
@@ -1088,43 +1081,11 @@
     <!-- ══ /자동화 건강 점수판 ══ -->
 
 
-    <!-- ════ 📄 정적 설계표 3종(상시가동·매주) 묶어 기본 접힘 — 건강판·알림 한 장과 중복이라 축소 (2026-07-15) ════ -->
-    <details id="static-fold-details">
-    <summary>📄 설계 참고 — 무엇이 어떻게 돌도록 설계됐나(정적) <span class="fold-sub">— 상시가동·매일 타임라인·매주. 실측은 위 🤖 건강 점수판·📨 알림 한 장</span></summary>
+    <!-- 📄 설계 참고(정적 표 3종) 삭제 — GM 지시 2026-08-08 "아침 다이제스트도 알림한장 중복".
+     무엇이 언제 나가는지는 위 「📨 알림 한 장」이 실측으로 보여 준다. 이 표는 손으로 적어 둔
+     설계 설명이라 실제와 어긋나도 아무도 모르는 종류였다(2026-07-15 에 이미 접어 뒀던 것).
+     화면을 줄이는 것이 목적이므로 접는 대신 지운다(약속 L21 — 꺼둔 채 두지 않는다). -->
 
-    <div class="callout" style="margin-top:12px;">
-      <strong>📄 설계 문서(정적)</strong> — 🟢=설계상 상시가동, 실측 아님. 실제 가동은 위 🤖 건강 점수판.
-    </div>
-
-    <!-- ② 지금 돌고 있는 자동화 -->
-    <h3>🟢 지금 돌고 있는 자동화 <span class="statchip static">📄 설명(정적)</span></h3>
-
-    <h4>매일 <span class="statchip static">📄 설명</span> <span style="font-size:12px;color:var(--dim);font-weight:400;">— 예약작업 시각순 · 텔레그램·카카오 정시 발신 전체는 위 '📨 알림 한 장'</span></h4>
-    <div class="tbl-wrap"><table>
-      <tr><th style="width:90px">시각</th><th style="width:230px">자동화</th><th style="width:72px">담당</th><th>무엇을 하나</th></tr>
-      <tr><td>🟢 <strong>05:50</strong></td><td>PC 자동 ON</td><td>CTO</td><td>BIOS RTC로 자동 부팅 → 부팅 후 봇·스케줄러 자동기동(ONLOGON)</td></tr>
-      <tr><td>🟢 <strong>부팅 시</strong></td><td>OMC 자동 업데이트</td><td>CTO</td><td>PC 부팅·CEO(웰리) 배치 시작 시 OMC(플러그인) 1회 자동 업데이트. 실행 중 Claude는 못 바꿔 <strong>창 0개일 때만</strong>(logs\claude_update.log). 검은 창은 숨김 런처(vbs)로 제거. <span style="color:var(--dim);">모델은 세션 선택이라 업데이트 대상 아님.</span></td></tr>
-      <tr><td>🟢 <strong>22:00</strong></td><td>C-Level 진행 체크</td><td>AI CEO</td><td>일일 C-Level 진행현황 자동 점검</td></tr>
-      <tr><td>🟢 <strong>00:30</strong></td><td>PC 자동 종료</td><td>CTO</td><td>Auto-Shutdown-2330 (<code>shutdown.exe /s /f /t 0</code>) — PC 종료. 22:30 조기종료 사고 후 <strong>00:30로 단일화</strong>(2026-06-16). 자정 전 23:00 마감점검까지 발송 후 종료. <strong>종료 인사는 22:00 취침 슬롯에 통합.</strong></td></tr>
-    </table></div>
-
-    <div class="callout" style="margin-top:8px;font-size:13px;"><strong>📊 소스</strong> — 할일=<code>todo_list</code> · 명언=<code>quotes.json</code> · 진행=<code>status/*.json</code>·git.<br><strong>🔄 재기동</strong> — <code>Stop-Process -Id (PID) -Force</code> → <code>Start-Process python -ArgumentList telegram_bot\daily_scheduler.py -WorkingDirectory C:\Users\jjky0\welperion-automation -WindowStyle Hidden</code></div>
-
-    <!-- ★2026-08-01(시토) — 같은 「📣 마케팅 자율 = 시모 관리 + 링크 3개」 안내가 위(① 자율로 한 일)에
-         이미 똑같이 있어 여기 사본을 지웠다. 링크는 위 한 곳에서만 본다(GM "겹치는 것 전부 합치기"). -->
-
-    <!-- ══ 매주 (7 C-Level 컨텍스트 정비 · AI 교육자료 자동 정리) — T2 원본에서 이식 2026-07-03 ══ -->
-    <h4 id="sec-weekly">매주 <span class="statchip static">📄 설명</span></h4>
-    <div class="tbl-wrap"><table>
-      <tr><th style="width:48px">상태</th><th style="width:170px">자동화</th><th style="width:80px">담당</th><th style="width:130px">주기</th><th style="width:70px">상세</th></tr>
-      <tr><td>🟢</td><td>7 C-Level 컨텍스트 정비</td><td>7 C-Level</td><td>일 09:00</td><td style="font-size:12px;">범위·R/R 정본 = <strong>S2 ▸ 운영 프롬프트 ▸ ① 컨텍스트 정비</strong> <span style="color:var(--dim);">/ 실행 STEP1~5 = T1</span></td></tr>
-      <tr><td>🟢</td><td>AI 교육자료 파일 정리(이관)</td><td>AI CTO</td><td>월 09:00</td><td style="font-size:12px;">Desktop·Downloads 최상위 AI 학습자료를 아카이브 폴더로 이관(7일+ 미수정만). <span style="color:var(--dim);">/ education_archive_weekly.py</span></td></tr>
-      <tr><td>🟢</td><td>AI 자기학습(수집·요약→제안)</td><td>AI CTO</td><td>일 09:30·09:45</td><td style="font-size:12px;">최신 AI 정보 수집·요약(09:30) → 개선제안 생성(09:45). 프로세스 정본 = <strong>T1 ▸ 자기학습 프로세스</strong> <span style="color:var(--dim);">/ ai_education_auto_learner.py + ai_learning_proposer.py</span></td></tr>
-    </table></div>
-    <!-- ══ /매주 ══ -->
-
-    <div class="sec-note" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);">📄 근거: Task Scheduler + Python 코드. 실측 가동은 위 🤖 건강 점수판.</div>
-    </details>
     <!-- ════ /📄 정적 설계표 3종 접힘 ════ -->
 
   </details>
@@ -1376,41 +1337,13 @@
         + '<td style="text-align:right;color:#b07800;">' + b.appr + '</td>'
         + '<td style="text-align:right;color:var(--dim);">' + b.unset + '</td></tr>';
     });
-    return '<details class="coo-details" style="margin-top:8px;">'
-      + '<summary>📊 누적통계 — 자율 처리 vs 승인 대기'
-      + '<span style="float:right;color:var(--dim);font-weight:400;">자율 ' + pct(tot.auto) + '%</span></summary>'
-      + '<div class="sec-note" style="margin:6px 0 8px;">열린 배 ' + open.length + '척 기준. '
-      + '<b style="color:#2e7d32;">✅ 자율</b>=되돌릴 수 있고 기존 것을 고치는 일 · '
-      + '<b style="color:#b07800;">⛔ 승인·사람</b>=새로 만드는 일이거나, 사람·GM 손이 있어야 하는 일 · '
-      + '<b>❔ 미선언</b>=아직 판정 칸을 안 적은 배(안전측으로 막힙니다 — 채우면 자율로 돕니다).</div>'
-      + '<div class="gtbl-wrap"><table class="gtbl">'
-      + '<tr><th>담당</th><th style="width:56px;text-align:right;">열린 배</th>'
-      + '<th style="width:56px;text-align:right;">✅ 자율</th>'
-      + '<th style="width:64px;text-align:right;">⛔ 승인·사람</th>'
-      + '<th style="width:56px;text-align:right;">❔ 미선언</th></tr>'
-      + rows.join('')
-      + '<tr style="font-weight:700;border-top:2px solid var(--line,#ccc);"><td>합계</td>'
-      + '<td style="text-align:right;">' + open.length + '</td>'
-      + '<td style="text-align:right;color:#2e7d32;">' + tot.auto + '</td>'
-      + '<td style="text-align:right;color:#b07800;">' + tot.appr + '</td>'
-      + '<td style="text-align:right;color:var(--dim);">' + tot.unset + '</td></tr>'
-      + '</table></div></details>';
+    // 📊 누적통계 삭제 (GM 지시 2026-08-08 "누적통계도 의미가 없고").
+    //   자율 처리 비율은 GM 이 보고 정할 것이 없는 숫자였다 — 진척은 항로가 보여 준다.
+    //   호출부는 그대로 두고 빈 문자열만 돌려준다(배선을 끊지 않는다).
+    return '';
   }
 
-  // GM 본인 할 일 — 개수·링크만(본문은 G1 비번 뒤). 열린 건 = 상태가 '완료'가 아닌 것.
-  // 주소는 이 페이지가 이미 쓰는 GAS_URL 재사용(같은 배포본 · 새 상수 안 만듦).
-  function renderGmTodoLink(){
-    var el = document.getElementById('gm-todo-link'); if(!el) return;
-    fetch(GAS_URL + '?action=todo_list&_=' + Date.now(), {redirect:'follow'})
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        var open = (d && d.data || []).filter(function(x){
-          return String(x['담당자']||'').indexOf('김남욱GM') >= 0 && String(x['상태']||'') !== '완료';
-        }).length;
-        el.innerHTML = '👤 GM 본인 할 일 <b>' + open + '건</b> — 본문은 <a href="wellperion_guide(main).html#G1">G1 김남욱 GM</a>에서 확인합니다 (여기엔 개수만).';
-      })
-      .catch(function(){ el.textContent = '👤 GM 본인 할 일 — 개수를 불러오지 못했습니다. G1 김남욱 GM에서 확인하세요.'; });
-  }
+
 
   function renderAllShips(){
     var el = document.getElementById('all-ships'); if(!el) return;
@@ -2668,8 +2601,13 @@
       if(elDormantWrap) elDormantWrap.style.display = 'none';
       return;
     }
+    // ★시로(chro)·시뽀(cfo) 모듈은 이 화면에서 뺀다 (GM 지시 2026-08-08 "시로는 제외하라고 했는데").
+    //   두 역할은 나우열M 라인이라 AI 판(자율현황)에 있을 자리가 아니다. 등록부 자체는 건드리지
+    //   않는다 — 화면에서만 안 보이게 한다(그 도메인 파일·설정은 접촉 금지).
+    var HIDE_ROLES = { chro: 1, cfo: 1 };
     var mine = mods.filter(function(m){
-      return m && m.owner_role && m.front_card && m.front_card.window === '자율현황';
+      return m && m.owner_role && !HIDE_ROLES[m.owner_role]
+             && m.front_card && m.front_card.window === '자율현황';
     });
     // 시모(cmo)는 전용 섹션(sec-cmo-autonomy)으로 분리(2026-07-27 GM 지시) — 그전엔 공용 블록에
     // 섞여 있어 GM이 '시모 건'만 따로 보기 어려웠다(모듈 6건이라 한 섹션 값을 한다).
@@ -2814,7 +2752,6 @@
     var _queueArr = parseJson(a[14]);
     // 전체 배 정리·보관함이 같은 배열을 쓴다 — 화면들이 서로 다른 사본을 보지 않게 한 곳에 담는다.
     _queueAll = Array.isArray(_queueArr) ? _queueArr : [];
-    try{ renderGmTodoLink(); }catch(e){}
     try{ renderHangro(); }catch(e){
       var hgEl = document.getElementById('hangro-board');
       if(hgEl) hgEl.innerHTML = '<div class="feed-status">항로 표시 오류.</div>';
