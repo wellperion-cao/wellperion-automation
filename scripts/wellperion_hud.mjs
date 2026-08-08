@@ -1086,9 +1086,34 @@ function buildRoleLines(cwd, role) {
   } catch { return []; }
 }
 
+// OMC 원문(ANSI 색 포함)에서 GM 이 지정한 5개만 지운다(2026-08-08 GM 지정). 구조·줄 수·순서·
+// 색·구분자는 그대로 — 항목만 빠진다. ANSI 코드(\x1b[Nm)는 각 항목 안에 끼어 있어 와일드카드로
+// 넘긴다(dw() 가 쓰는 것과 같은 패턴). omc-hud-cost.mjs 자체는 손대지 않는다(원칙 — 파일 상단).
+const ANSI = '\\x1b\\[[0-9;]*m';
+// [정규식, 치환문자열] 쌍 — 캡처그룹 없는 규칙은 '' 로 통째로 지우고, wk·ctx 는 라벨(그룹1)만 남긴다.
+// ★String.replace 함정: 캡처그룹이 없는 정규식에 콜백을 쓰면 두 번째 인자가 매치 위치(숫자)로
+//   온다 — 그걸 '치환값'으로 오인하면 지운 자리에 인덱스 숫자가 그대로 박힌다(실측: 144·208·235).
+//   그래서 함수 콜백을 쓰지 않고 규칙마다 고정 치환 문자열을 쓴다.
+const TRIM_RULES = [
+  // ① 5시간 한도 통째로(막대+퍼센트+남은시간) + 뒤 공백 한 칸(wk 앞).
+  [new RegExp(`5h:\\[(?:${ANSI}|[^\\]])*\\](?:${ANSI})*\\d+%(?:${ANSI})*\\([^)]*\\)(?:${ANSI})*\\s?`), ''],
+  // ② session:NNNm 한 칸 — 앞 " | " 구분자까지 같이(자기완결 색 블록이라 안전).
+  [new RegExp(`${ANSI} \\| ${ANSI}session:${ANSI}\\d+m${ANSI}`), ''],
+  // ③④ wk·ctx 는 막대([...])만 지우고 퍼센트·남은시간은 남긴다.
+  [new RegExp(`(wk:${ANSI})\\[(?:${ANSI}|[#-])*\\]`), '$1'],
+  [new RegExp(`(ctx:)\\[(?:${ANSI}|[#-])*\\]`), '$1'],
+  // ⑤ cost 줄(비용 + 코드 줄 증감) 통째로 — 색 없는 순수 텍스트.
+  [/ \| cost:\$[\d.]+(?: \+\d+\/-\d+)?/, ''],
+];
+function trimOmcStats(raw) {
+  let out = String(raw || '');
+  for (const [re, rep] of TRIM_RULES) out = out.replace(re, rep);
+  return out;
+}
+
 function main() {
   const input = readStdin();
-  const base = omcHud(input);
+  const base = trimOmcStats(omcHud(input));
 
   let cwd = process.cwd(), transcript = '', sessionId = '';
   try {
