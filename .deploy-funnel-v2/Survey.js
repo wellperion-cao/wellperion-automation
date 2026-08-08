@@ -11264,6 +11264,86 @@ function member_loss_date_auto_stamp_selfcheck_() {
   return true;
 }
 
+// ═══ 유효회원 시트 잔여일순 정렬 (2026-08-08 시포, GM 지시 "잔여일 기준 정렬 하루 한 번") ═══
+//   매일 자정 직후(실무진 근무 전) 1회, 이미 실측 확인된 유일한 CLOCK 트리거(warmLessonRosterCache,
+//   5분 주기)의 날짜 도장 가드에 얹는다 — 새 트리거·새 액션 신설 없음(약속 L21).
+//   ★쓰기 안전: member_active_update 는 행번호가 아니라 (등록일자+전화) 지문으로 행을 다시 찾으므로
+//   정렬로 행 순서가 바뀌어도 다른 회원 줄을 덮어쓰지 않는다. 유일한 예외는 같은 전화+같은 등록일 쌍
+//   1건(2025-01-03, 지문 동일) — 지문 재료 보강(시토 배491)으로 근본수리 예정, 그 전까지는 그 두 행
+//   사이에서만 이론상 혼동 가능.
+//   ★집계 블록 보호 — 유효회원 시트 맨 아래에는 연령대·회차·지역 집계 블록이 붙어 있다(member_active_list
+//   8910행과 동일 이름패턴 판정: 숫자만/연령대 라벨/'합계'). 정렬 범위에 포함되면 회원 행 사이로 흩어질
+//   위험이 있어(2026-07-28 GM 지적 사고와 동일 유형) 정렬 범위에서 완전히 제외한다. 경계는 매번 이름
+//   패턴으로 재탐색 — 경계 아래 나머지가 전부 패턴에 안 맞으면(가정 붕괴) 정렬하지 않고 abort+경보.
+function _memberSortFooterName_(nm) {
+  return /^[0-9.]+$/.test(nm) || /^\d{1,3}대$/.test(nm) || /^\d{1,3}\s*[-~]\s*\d{1,3}세$/.test(nm) || nm === '합계';
+}
+
+/**
+ * member_active_sort_by_remaining_(opts)
+ * 유효회원 시트를 잔여일 오름차순(임박순 — czRenew 갱신임박 목록과 동일 방향)으로 정렬한다.
+ * - 대상: 머리글 아래 '진짜 회원 행'만(맨 위부터 첫 집계블록 이름 패턴 행 전까지).
+ * - 정렬 전 그 경계 아래 나머지 행이 전부 집계블록 패턴인지 재확인 — 아니면 정렬하지 않고 abort.
+ * - 정렬 전/후 총 행수(getLastRow())가 같은지 확인 — 다르면 abort+텔레그램 경보(데이터 유실 방어).
+ * dry:true면 쓰기 없이 대상 범위·행수만 반환(검증용).
+ */
+function member_active_sort_by_remaining_(opts) {
+  var dry = !!(opts && opts.dry);
+  var out = { dry: dry, sorted: false };
+  var sh;
+  try {
+    sh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+  } catch (e) {
+    out.error = e.message;
+    return out;
+  }
+  if (!sh || sh.getLastRow() < 3) return out;  // 데이터 2행 미만이면 정렬 무의미
+
+  var lastRowBefore = sh.getLastRow(), lastCol = sh.getLastColumn();
+  var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+  function _idx(want) {
+    var w = String(want).replace(/\s/g, '');
+    for (var i = 0; i < headers.length; i++) { if (headers[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+    return -1;
+  }
+  var nmI = _idx('회원명'), remI = _idx('잔여일');
+  if (nmI < 0 || remI < 0) { out.error = '칸 없음(회원명=' + nmI + ' 잔여일=' + remI + ')'; return out; }
+
+  var names = sh.getRange(2, nmI + 1, lastRowBefore - 1, 1).getValues().map(function(r){ return String(r[0] || '').trim(); });
+
+  // 경계 찾기 — 맨 위부터 첫 집계블록 패턴 이름이 나오는 행(names 배열 0-based 인덱스)
+  var footerStart = -1;
+  for (var i = 0; i < names.length; i++) {
+    if (names[i] && _memberSortFooterName_(names[i])) { footerStart = i; break; }
+  }
+  var memberRowCount = footerStart < 0 ? names.length : footerStart;
+
+  // 안전확인 — 경계 아래 나머지가 전부 집계블록 패턴(또는 빈칸)인지. 하나라도 정상 이름이면 가정 붕괴 → abort.
+  for (var j = memberRowCount; j < names.length; j++) {
+    if (names[j] && !_memberSortFooterName_(names[j])) {
+      out.error = '집계블록 경계 판정 실패(행 ' + (j + 2) + ' "' + names[j] + '") — 정렬 중단';
+      try { _notifyTelegram('⚠️ 유효회원 잔여일 정렬 중단 — ' + out.error); } catch (eN) {}
+      return out;
+    }
+  }
+
+  out.memberRowCount = memberRowCount;
+  out.footerRowCount = names.length - memberRowCount;
+  if (memberRowCount < 2) return out;  // 정렬할 회원 행이 1행 이하면 무의미
+
+  if (!dry) {
+    sh.getRange(2, 1, memberRowCount, lastCol).sort({ column: remI + 1, ascending: true });
+    var lastRowAfter = sh.getLastRow();
+    if (lastRowAfter !== lastRowBefore) {
+      out.error = '정렬 후 행수 불일치(전 ' + lastRowBefore + ' → 후 ' + lastRowAfter + ')';
+      try { _notifyTelegram('⚠️ 유효회원 잔여일 정렬 — ' + out.error + ' (데이터 확인 요망)'); } catch (eN2) {}
+      return out;
+    }
+    out.sorted = true;
+  }
+  return out;
+}
+
 /**
  * member_match_autostamp_()
  * 유효회원 시트(MEMBER_SPREADSHEET_ID/유효회원 탭)에서 (정규화 전화 → 등록일) 맵을 구성하고,
@@ -11499,6 +11579,13 @@ function warmLessonRosterCache() {
       var _ld = member_loss_date_auto_stamp_();
       _wrProps.setProperty('LOSS_DATE_STAMP_LAST', _wrToday);
       Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
+    }
+    // ★유효회원 잔여일순 정렬(2026-08-08 시포, GM 지시) — 같은 날짜 도장 가드로 하루 1회, 자정 직후
+    //   (실무진 근무 전) 첫 5분 틱에서만 실행. 위 두 함수와 같은 자리(약속 L21, 새 트리거 없음).
+    if (_wrProps.getProperty('MEMBER_SORT_LAST') !== _wrToday) {
+      var _ms = member_active_sort_by_remaining_();
+      _wrProps.setProperty('MEMBER_SORT_LAST', _wrToday);
+      Logger.log('member_active_sort_by_remaining_(warm): sorted=' + _ms.sorted + ' memberRowCount=' + _ms.memberRowCount + (_ms.error ? ' error=' + _ms.error : ''));
     }
   } catch (e) { /* 워머가 죽어도 강습 캐시 워밍은 이미 끝났다 — 다음 주기 재시도 */ }
 
