@@ -2847,7 +2847,19 @@ def _check_ops_done_immediate() -> None:
 #   새 파일·새 저장소 없음: status/gm_personal_routine.json 을 그대로 쓴다(G1 페이지와 같은 정본).
 #   21:30 을 고른 이유 = 22:00 취침 안내(개인 슬롯) 앞. 하루가 끝난 뒤이면서 잠들기 전이다.
 #   안 누르면 그날은 조용히 빈다 — 재촉 알림을 만들지 않는다(점수·심판이 아니라 거울).
-def run_gm_checkin(weekly: bool = False) -> None:
+#   받는 방: .env TELEGRAM_PERSONAL_CHAT_ID 가 있으면 그 방(개인 전용), 없으면 업무보고방.
+#   GM 지적(2026-08-08): "이런 건 개인적인 부분이라 업무보고방이 아니라 개인한테." 업무보고방은
+#   하루 종일 업무가 흐르는 곳이라 개인 기록이 그 사이에 묻힌다. 키가 비면 지금처럼 동작한다(회귀 0).
+def _checkin_chat_id() -> str:
+    return str(ENV.get("TELEGRAM_PERSONAL_CHAT_ID") or _GM_REPORT_CHAT_ID)
+
+
+def run_gm_checkin(weekly: bool = False, morning: bool = False) -> None:
+    """morning=오늘 할 네 가지 제안(버튼 없음) · 기본=저녁 확인(버튼) · weekly=한 주 카드.
+
+    아침·저녁을 나눈 이유(GM 2026-08-08): 체크만 하면 "했나/안 했나"로 끝난다.
+    아침에 토막마다 한 가지를 정해 두고 저녁에 같은 문장을 다시 보여 줘야 하루가 남는다.
+    """
     label = "[GM 개인 체크인]"
     try:
         import gm_checkin as _ck
@@ -2856,14 +2868,19 @@ def run_gm_checkin(weekly: bool = False) -> None:
         if not token:
             logger.warning(f"{label} 토큰 없음 — 건너뜀")
             return
+        chat = _checkin_chat_id()
         if weekly:
-            ok = _send(token, str(_GM_REPORT_CHAT_ID), _ck.week_card(), source="gm_checkin_week")
-            logger.info(f"{label} 한 주 카드 발송 ok={ok}")
+            ok = _send(token, chat, _ck.week_card(), source="gm_checkin_week")
+            logger.info(f"{label} 한 주 카드 발송 ok={ok} chat={chat}")
             return
-        ok = _send(token, str(_GM_REPORT_CHAT_ID), _ck.build_prompt(),
+        if morning:
+            ok = _send(token, chat, _ck.build_morning(), source="gm_checkin_morning")
+            logger.info(f"{label} 아침 제안 발송 ok={ok} chat={chat}")
+            return
+        ok = _send(token, chat, _ck.build_prompt(),
                    source="gm_checkin",
                    extra={"reply_markup": json.dumps(_ck.build_markup(), ensure_ascii=False)})
-        logger.info(f"{label} 발송 ok={ok}")
+        logger.info(f"{label} 저녁 확인 발송 ok={ok} chat={chat}")
     except Exception as e:
         logger.warning(f"{label} 실패: {e}")
 
@@ -3622,6 +3639,14 @@ def main():
         try:
             scheduler.add_job(
                 run_gm_checkin,
+                trigger=CronTrigger(hour=7, minute=0, timezone="Asia/Seoul"),
+                kwargs={"morning": True},
+                id="gm_checkin_morning_0700",
+                misfire_grace_time=1800,
+                coalesce=True,
+            )
+            scheduler.add_job(
+                run_gm_checkin,
                 trigger=CronTrigger(hour=21, minute=30, timezone="Asia/Seoul"),
                 id="gm_checkin_2130",
                 misfire_grace_time=1800,
@@ -3635,7 +3660,7 @@ def main():
                 misfire_grace_time=1800,
                 coalesce=True,
             )
-            logger.info("gm_checkin 등록 완료 — 매일 21:30 버튼 카드, 일요일 21:40 한 주 카드")
+            logger.info("gm_checkin 등록 완료 — 07:00 오늘 제안, 21:30 저녁 확인, 일요일 21:40 한 주 카드")
         except Exception as e:
             logger.warning(f"gm_checkin 등록 실패: {e}")
 

@@ -131,6 +131,58 @@ def summary(day: str | None = None) -> str:
     return line
 
 
+def plan(day: str | None = None) -> dict:
+    """그날의 '오늘 하나만' — 토막별 제안 1개. 한 번 정해지면 그날은 안 바뀐다.
+
+    체크만 하는 카드는 '했나/안 했나'로 끝난다. GM 지적(2026-08-08): "1가지씩 뭘 하게끔
+    만들고 느끼게끔 하는 게 중요하다." 그래서 아침에 네 가지를 정해 두고, 저녁 카드가
+    같은 문장을 그대로 다시 보여 준다 — 아침에 정한 걸 저녁에 마주하면 하루가 남는다.
+
+    뽑는 규칙: 최근 7일에 나온 제안은 뺀다(같은 말이 반복되면 벽지가 된다).
+    남는 게 없으면 풀 전체에서 날짜 기준으로 순환한다 — 무작위를 안 쓴다(같은 날 다시
+    불러도 같은 값이 나와야 아침 카드와 저녁 카드가 어긋나지 않는다).
+    """
+    day = day or today()
+    data = load()
+    d = _day(data, day)
+    if d.get('plan'):
+        return d['plan']
+
+    pools = data.get('suggestions') or {}
+    days = data.get('days') or {}
+    recent = set()
+    base = datetime.date.fromisoformat(day)
+    for i in range(1, 8):
+        prev = days.get((base - datetime.timedelta(days=i)).isoformat()) or {}
+        recent.update((prev.get('plan') or {}).values())
+
+    picked = {}
+    for tid, _icon, _label, _keys in TOROKS:
+        pool = pools.get(tid) or []
+        if not pool:
+            continue
+        fresh = [s for s in pool if s not in recent] or pool
+        picked[tid] = fresh[base.toordinal() % len(fresh)]
+    d['plan'] = picked
+    _write(data)
+    return picked
+
+
+def build_morning(day: str | None = None) -> str:
+    """아침 카드 — 오늘 할 네 가지. 버튼 없음, 읽고 지나가면 된다."""
+    day = day or today()
+    p = plan(day)
+    d = datetime.date.fromisoformat(day)
+    wd = '월화수목금토일'[d.weekday()]
+    lines = [f"🌅 오늘 하나씩 — {d.month}/{d.day}({wd})",
+             "네 가지만. 큰 거 아닙니다.", ""]
+    for tid, icon, label, _k in TOROKS:
+        if p.get(tid):
+            lines.append(f"{icon} {label}   {p[tid]}")
+    lines += ["", "저녁에 이 네 가지를 그대로 다시 여쭙겠습니다."]
+    return '\n'.join(lines)
+
+
 def build_prompt(day: str | None = None) -> str:
     """카드 자체가 설명서다.
 
@@ -140,20 +192,17 @@ def build_prompt(day: str | None = None) -> str:
     """
     day = day or today()
     st = state(day)
+    p = plan(day)
     d = datetime.date.fromisoformat(day)
     wd = '월화수목금토일'[d.weekday()]
-    lines = [
-        f"✍️ 오늘 체크인 — {d.month}/{d.day}({wd})",
-        "오늘 하루에 **담긴 것**만 눌러 주세요. 빠진 건 그냥 두시면 됩니다.",
-        "",
-        "🌱 나 — 몸 깨우기나 배움 한 조각이 있었다",
-        "👨‍👧 아빠 — 아이와 온전한 시간이 있었다",
-        "💑 남편 — 아내와 함께한 시간이 있었다",
-        "💼 일 — 일이 하루의 한 토막으로 들어갔다",
-        "",
-        "그 아래 줄은 오늘 기분(안 눌러도 됩니다).",
-        "다 누르셨으면 💾 저장 — 그걸로 끝입니다.",
-    ]
+    lines = [f"🌙 오늘 어떠셨어요 — {d.month}/{d.day}({wd})",
+             "아침에 정한 네 가지입니다. 하신 것만 눌러 주세요.", ""]
+    for tid, icon, label, _k in TOROKS:
+        mark = '✅' if tid in st['on'] else '　'
+        lines.append(f"{mark}{icon} {label}   {p.get(tid, '')}")
+    lines += ["",
+              "못 하신 건 그냥 두세요 — 그것도 오늘입니다.",
+              "아래 줄은 오늘 기분. 다 누르셨으면 💾 저장."]
     carry = []
     if st['weight']:
         carry.append(f"체중 {st['weight']}")
@@ -161,7 +210,7 @@ def build_prompt(day: str | None = None) -> str:
         carry.append(f"수면 {st['sleep']}")
     if carry:
         lines += ["", ' · '.join(carry) + " ← 어제 값 그대로 (바뀌었으면 답장으로 적어 주세요)"]
-    return '\n'.join(lines).replace('**', '')
+    return '\n'.join(lines)
 
 
 def build_markup(day: str | None = None) -> dict:
@@ -194,12 +243,20 @@ def week_card(day: str | None = None) -> str:
             lines.append(f"{dt.month}/{dt.day}({wd})  — 기록 없음")
             continue
         axes = rec.get('axes') or {}
-        on = [icon for tid, icon, _l, keys in TOROKS if all(axes.get(x) == 'O' for x in keys)]
-        filled += len(on)
-        lines.append(f"{dt.month}/{dt.day}({wd})  {' '.join(on) if on else '·'}   {len(on)}/4"
-                     + (f"  {rec.get('mood')}" if rec.get('mood') else ''))
+        pl = rec.get('plan') or {}
+        done = [(tid, icon) for tid, icon, _l, keys in TOROKS
+                if all(axes.get(x) == 'O' for x in keys)]
+        filled += len(done)
+        head = f"{dt.month}/{dt.day}({wd})  {' '.join(i for _t, i in done) if done else '·'}   {len(done)}/4"
+        if rec.get('mood'):
+            head += f"  {rec['mood']}"
+        lines.append(head)
+        # 실제로 한 것 한 줄만 덧붙인다 — 한 주를 훑을 때 '무엇을' 했는지가 남게(GM 2026-08-08).
+        for tid, _icon in done[:2]:
+            if pl.get(tid):
+                lines.append(f"      └ {pl[tid]}")
     pct = round(filled / total * 100)
-    return ("🗓️ 한 주 체크인\n" + '\n'.join(lines)
+    return ("🗓️ 한 주 — 무엇이 담겼나\n" + '\n'.join(lines)
             + f"\n\n담긴 토막 {filled}/{total} · {pct}%\n"
               "점수가 아니라 거울입니다 — 비어 있어도 괜찮습니다.")
 
