@@ -557,21 +557,6 @@
       "source": "telegram_bot/daily_scheduler.py run_daily_digest() → scripts/unassigned_nudge.py(collect_sla_violations)"
     },
     {
-      "id": "kakao-noresponse-60d",
-      "when": "평일 22:30 / 휴일 20:00",
-      "when_sort": "2230",
-      "freq": "conditional",
-      "channel": "kakao",
-      "room": "★부서장",
-      "chat_id": null,
-      "what": "컨택은 했지만 60일 넘게 후속 응답이 없는 강습·회원 리드를 회전 노출(하루 5건)",
-      "owner": "시포",
-      "trigger": "apscheduler",
-      "state": "live",
-      "state_note": "[2026-08-08 시토 등록] 위 SLA 경보 바로 다음에 같은 방으로 나가는 두 번째 메시지. 실측 08-07 22:31(493건 중 5건) · 08-06 22:35(488건 중 5건). 전수를 다 보내지 않고 하트비트로 돌려 가며 5건씩만 노출한다.",
-      "source": "telegram_bot/daily_scheduler.py run_daily_digest() → scripts/unassigned_nudge.py(collect_noresponse)"
-    },
-    {
       "id": "kakao-ops-done-immediate",
       "when": "10분마다 (22:00~08:00 제외)",
       "when_sort": null,
@@ -684,6 +669,11 @@
         "state_note": "GM 확인 2026-08-01 — GM 이 모르는 방이다. 실측: .deploy-procurement/procurement.js 가 TG_BOT_TOKEN·TG_CHAT_ID 속성이 있을 때만 발신하는데 그 값은 구글 스크립트 안에 있어 저장소에서 알 수 없다. \"CFO 채널\"이라는 방 이름은 근거 없이 붙어 있던 것이라 지웠다 — 실재 확인 전까지 미확인으로 둔다.",
         "source": "Survey.js CFO 조달 트리거"
       }
+    },
+    {
+      "id": "kakao-noresponse-60d",
+      "removed_at": "2026-08-08",
+      "why": "GM 지시 \"이거 보내지마 일단 알림한장에서도 삭제해놔\" — 501건을 매일 5건씩 회전 노출하는 구조라 끝이 안 보이고(가장 오래된 건 218일째) 부서장이 곧 안 읽는다. 발송 코드도 함께 삭제(telegram_bot/daily_scheduler.py) — 게이트만 꺼 두면 죽은 코드가 되고 누가 다시 켠다(약속 L21). 판정 함수(unassigned_nudge)는 시포 화면이 쓰므로 남겼다."
     }
   ],
   "_when_sort_doc": "when_sort = 시간순 화면의 정렬 기준. 평일·휴일로 시각이 갈리는 발신은 **잦은 쪽(평일)**을 기준으로 적는다 — 2026-08-08 이전엔 같은 성격 항목이 2030 과 2230 으로 섞여 있어 시간순으로 세우면 같은 회차가 두 자리에 흩어졌다. 부정기는 null."

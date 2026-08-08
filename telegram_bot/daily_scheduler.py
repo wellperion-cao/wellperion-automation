@@ -2642,47 +2642,15 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 24h SLA 위반 카톡 발송 예외: {e}")
 
-    # ── 컨택 후 60일(2개월) 무응답 — 카카오 ★부서장 방, 24h SLA 경보 바로 옆에 (GM 2026-08-05) ──
-    # GM: "기한을 2개월로 해줘 / 짚어주면서 하나씩 고쳐나가게 서포트해." 위 24h SLA(신규 미배정)와
-    # 다른 층 — 대상은 이미 컨택된 활성 리드 중 최근활동 60일+ 경과(강습+회원 통합, 상한 없음).
-    # 새 스크립트·새 예약작업·새 방 없음 — unassigned_nudge.py 의 판정을 같은 카카오 관문으로,
-    # 위 SLA 메시지 발송 직후 독립 두 번째 메시지로 같은 방에 "얹는다". 도배 방지는 하루 5건
-    # 회전 선발(기존 하트비트 파일의 notified60 키, 새 원장 없음) — 발송 성공 시에만 회전을 돌린다.
-    try:
-        noresp_items = _un.collect_noresponse(today)
-        noresp_due, noresp_warn = _un.split_noresponse(noresp_items)
-        noresp_text = ""
-        noresp_selected = []
-        if noresp_due:
-            noresp_notified60 = _un._load_notified60()
-            noresp_selected = _un.select_noresponse_rotation(noresp_due, noresp_notified60)
-            noresp_text = _un.build_noresponse_alert_text(noresp_due, len(noresp_warn), noresp_selected)
-        if noresp_text:
-            sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
-            env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
-            proc = subprocess.run(
-                [sys.executable, str(sender), "--message", noresp_text, "--only-room", KAKAO_DEPTHEAD_ROOM],
-                cwd=str(REPO_ROOT), capture_output=True, text=True,
-                encoding="utf-8", errors="replace", env=env, timeout=180,
-            )
-            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            logger.info(f"{label} 60일 무응답 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]} "
-                        f"(본선 {len(noresp_due)}건 · 예고 {len(noresp_warn)}건 · 선발 {len(noresp_selected)}건)")
-            # ★2026-08-05 시토 수리 — 회전 가드 기록(_record_sent60)이 proc.returncode 확인
-            # 없이 무조건 호출되고 있었다. 모듈 docstring·이 블록 위 주석 모두 "발송 성공
-            # 시에만 회전을 돌린다"고 적어놓고 실제 코드는 실패해도(카톡 창 닫힘 등)
-            # notified60 을 오늘 날짜로 찍어, 못 본 부서장 대신 회전이 다음 건으로
-            # 넘어가버리는 조용한 데이터 오염이었다(_record_sent 의 gm 배정독려 경로는
-            # 이미 un_ok 로 성공만 걸러 기록 — 여기만 빠져 있었다).
-            if proc.returncode != 0:
-                _kakao_fail_notify("60일 무응답", tail[0], room=KAKAO_DEPTHEAD_ROOM)
-            else:
-                noresp_current_keys = {it["key"] for it in noresp_due}
-                _un._record_sent60(noresp_selected, noresp_notified60, today, noresp_current_keys, len(noresp_due))
-        else:
-            logger.info(f"{label} 60일 무응답 0건 — 카톡 발송 없음")
-    except Exception as e:
-        logger.error(f"{label} 60일 무응답 카톡 발송 예외: {e}")
+    # ── 60일 무응답 카톡 발송 삭제 (GM 지시 2026-08-08 "이거 보내지마") ──
+    #   GM 원문: "이거 부서장에 보내는건데 이거 보내지마 일단 알림한장에서도 삭제해놔
+    #             시포한테 전달하긴했는데 하지말라했는데 오늘 또 나갔네."
+    #   ▸501건을 매일 5건씩 회전 노출하는 구조였다. 가장 오래된 건이 218일째라
+    #     회전으로는 끝이 안 보이고, 부서장이 매일 같은 종류를 받아 곧 안 읽게 된다.
+    #   ▸게이트를 꺼서 남기지 않고 지운다 — 꺼둔 코드는 죽은 코드가 되고 누가 다시
+    #     켠다(약속 L21). 되살릴 일이 생기면 이 커밋을 되돌리면 된다.
+    #   ▸판정 함수(unassigned_nudge.collect_noresponse 등)는 남긴다 — 시포가 화면에서
+    #     쓰는 집계이고, 없애야 하는 것은 "매일 부서장 방으로 밀어 넣는 행위"다.
 
     # ── 스트림 #2 점검+이슈 현황 (점검현황방 단독 · 2026-07-22) ─────────────────────
     s2_msg = None  # 카톡 ★운영+시설+지원+주차 재사용(아래) — 빌드 실패 시 None 유지, 카톡 스킵.

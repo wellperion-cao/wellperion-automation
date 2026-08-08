@@ -1279,6 +1279,17 @@ def main() -> int:
         log(f"[kakao_rooms] GAS 미가용 — 로컬 kakao_rooms.json 방 목록으로 폴백 "
             f"({len(cfg.get('rooms', []))}개)")
 
+    # ── 폐기된 알림 차단 (GM 지시 2026-08-08 "이거 보내지마") ──
+    #   60일 무응답 경보를 daily_scheduler 에서 지웠지만, 그 스케줄러는 상주 프로세스라
+    #   오늘 밤(22:30) 까지는 옛 코드를 들고 있다. 발송은 이 파일을 **매번 새로 실행**하므로
+    #   여기서 막으면 오늘 밤부터 즉시 안 나간다.
+    #   ▸스케줄러가 재기동되면(오늘 밤 PC 종료 → 내일 로그온) 이 가드는 할 일이 없어진다.
+    #     그때 지워도 되지만, 남아 있어도 폐기된 알림 하나를 막는 6줄이라 해가 없다.
+    _msg0 = str(getattr(args, "message", "") or "")
+    if "무응답" in _msg0 and ("60일" in _msg0 or "2개월" in _msg0):
+        print("BLOCKED: 60일 무응답 경보는 2026-08-08 GM 지시로 폐기됨 (발송하지 않음)")
+        return 0
+
     rooms = load_rooms(cfg, args.only_room)
     if not rooms:
         print("BLOCKED: 전송 대상 방이 없음 (kakao_rooms.json 확인)")
