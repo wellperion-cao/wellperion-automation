@@ -187,10 +187,25 @@ def _praise_block(section_text: str) -> str:
     m = re.search(r"🏗 시설부 현황\s*(\d+)회차\s*·\s*이상 없음", section_text)
     if m:
         praise.append(f"▪ 시설부 — 오늘 {m.group(1)}회차 점검까지 이상 없음. 고생하셨습니다.")
-    for label, emoji in (("지원부", "🛠"),):
-        m2 = re.search(rf"{emoji} {label} 현황\s*\d+/\d+\((\d+)%\)", section_text)
-        if m2 and int(m2.group(1)) >= 90:
-            praise.append(f"▪ {label} — 오늘 {m2.group(1)}% 완료. 고생하셨습니다.")
+    # ── 지원부 (GM 지적 2026-08-08: "지원부는 왜 없어?") ──
+    # 그 전엔 부서 전체 90% 이상일 때만 올랐다. 그런데 시설부는 '이상 없음', 주차부는
+    # '이슈 없음'이면 오르는 조건이라 사실상 매일 오르고, 지원부만 90% 문턱이라 사실상
+    # 못 오른다(실측 2026-08-07 47% · 08-08 42%). 같은 방에서 매일 두 부서만 이름이 뜨고
+    # 한 부서만 빠지면 그건 격려가 아니라 낙인이다.
+    # ▸그렇다고 없는 칭찬을 지어내지 않는다(약속 L05). 부서 전체 대신 **조 단위로 다 채운 곳**을
+    #   사실에서 뽑는다 — 어제도 '여성구역 오후조 15/15'가 실제로 있었는데 안 보였다.
+    m2 = re.search(r"🛠 지원부 현황\s*\d+/\d+\((\d+)%\)", section_text)
+    if m2 and int(m2.group(1)) >= 90:
+        praise.append(f"▪ 지원부 — 오늘 {m2.group(1)}% 완료. 고생하셨습니다.")
+    else:
+        done_groups = []
+        for zone, _d, _t, _p, groups in re.findall(
+                r"(남성구역|여성구역) (\d+)/(\d+)\((\d+)%\) — (.+)", section_text):
+            for gname, gd, gt in re.findall(r"(\S+조)\s*(\d+)/(\d+)", groups):
+                if int(gt) > 0 and int(gd) == int(gt):
+                    done_groups.append((f"{zone} {gname}", int(gt)))
+        for name, cnt in done_groups[:2]:      # 두 개까지만 — 칭찬도 길면 안 읽힌다
+            praise.append(f"▪ 지원부 {name} — {cnt}건 전부 완료. 고생하셨습니다.")
     if re.search(r"🅿 주차부 이슈사항:\s*없음", section_text):
         praise.append("▪ 주차부 — 오늘 이슈 없이 마감. 고생하셨습니다.")
     if not praise:

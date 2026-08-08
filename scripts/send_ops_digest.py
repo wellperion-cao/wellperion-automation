@@ -680,7 +680,19 @@ def main() -> int:
 
     # 사람이 처리할 배 전달은 다이제스트보다 먼저·독립으로 돈다 — 어제 카톡 대화가
     # 없어(휴관 등) 다이제스트가 안 만들어진 날에도 이 전달은 나가야 한다.
-    send_relays(dry_run=args.dry_run, approved=args.relay_approved)
+    # ★2026-08-08 GM 지시 — 자동 전달 중단.
+    #   GM: "운영부 방에는 어제 운영부 정리 이 1건만 자동 발송. 하루 일과 정리, 사람이 처리할
+    #        업무 건은 이제 삭제해줘. 통합해서 중간관리자방에 보내는걸로 웰리한테 전달할거야."
+    #   '사람이 처리할 업무' 전달은 웰리가 만드는 ★중간관리자 통합본으로 흡수된다. 그때까지
+    #   자동으로 내보내지 않는다 — 통합 전에 두 벌이 나가면 그게 GM 이 지적한 '안 읽히는' 상태다.
+    #   ▸코드는 지우지 않는다: 통합본이 이 조립(build_relay_message·델타 비교·스냅샷)을 그대로
+    #     쓸 예정이라 웰리가 이어받는다. 손으로 확인할 땐 --relay-preview 로 본다.
+    #   ▸인계가 끝나면 이 자리와 send_relays 를 함께 지운다(꺼둔 채 두지 않는다 · 약속 L21).
+    if args.relay_approved:
+        send_relays(dry_run=args.dry_run, approved=True)
+    else:
+        log("[relay] 자동 전달 중단(GM 2026-08-08) — ★중간관리자 통합본으로 이관 중. "
+            "확인은 --relay-preview · 수동 발송은 --relay-approved")
 
     if not PENDING.exists():
         print(f"FAILED: 대기 다이제스트 없음 — {PENDING}")

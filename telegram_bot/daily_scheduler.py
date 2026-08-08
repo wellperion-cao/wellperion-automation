@@ -2479,9 +2479,8 @@ _GM_REPORT_CHAT_ID = int(ENV.get("TELEGRAM_CHAT_ID") or 8254867551)
 # GM이 2026-07-18 개설. 창 제목이 다르면 이 값을 실제 제목으로 맞출 것.
 KAKAO_DEPTHEAD_ROOM = "★부서장"
 
-# 업무 SSOT 09:30 보고를 받는 방(2026-07-31 GM 지시 · GM 정정 "부서장방이 아니라 운영부방").
-# 이름은 scripts/kakao_rooms.json 등록값과 글자까지 같아야 창-제목 탐색이 맞는다.
-KAKAO_OPS_DEPT_ROOM = "★ 운영부"
+# (KAKAO_OPS_DEPT_ROOM 삭제 2026-08-08 — 업무 SSOT 09:30 카톡 ★운영부 발송을 GM 지시로
+#  없애면서 쓰는 곳이 사라졌다. 안 쓰는 상수를 남기면 다음 사람이 되살릴 자리로 오해한다.)
 
 
 def _kakao_fail_notify(tag: str, detail: str, room: str = "") -> None:
@@ -2900,51 +2899,16 @@ def run_stream_3_mgmt() -> None:
             _mr.mark_bundle_sent(keys, cadence="daily")
         logger.info(f"{label} 완료 (업무보고방 발송 · 흡수 {len(absorbed)}건)")
 
-        # ── 업무 SSOT 를 ★부서장 카톡방에도 (2026-07-31 GM 지시) ──
-        # GM: "업무 SSOT 도 카카오톡방에 보고를 해주면 좋을 것 같아."
-        # 이 본문의 '⏰ 지연' 목록은 전부 실무진·부서장 이름이다(실측 2026-07-31: 15건 — 이정헌
-        # 소장·최준용M·나우열M·윤병현AM·이경연 실장). 그런데 지금까지 GM 만 봤다. 본인이 봐야
-        # 본인 지연을 안다.
-        # ▸보내는 곳 = ★ 운영부 (2026-07-31 GM 정정 — 웰리가 처음에 ★부서장으로 잡았으나
-        #   GM: "부서장방이 아니라 운영부방인데?"). 방 이름은 scripts/kakao_rooms.json 의
-        #   등록값 그대로 써야 창-제목 탐색이 맞는다.
-        # ▸2026-07-31 웰리가 등록부에서 뺀 kakao-stream3-mgmt 와 다른 건이다 — 그건 회장님·관리부·
-        #   ★운영부 3방 09:30 이라 같은 시각 매출보고(win-0930-kakao-sales)와 중복이었다.
-        # ▸본문을 다시 만들지 않는다(약속 L01) — 방금 보낸 것과 같은 조립을 그대로 쓴다.
-        try:
-            import report_stream_3_impl as _s3i
-            body = _s3i.build_digest()
-            if isinstance(body, list):
-                body = "\n".join(body)
-            body = re.sub(r"</?pre>", "", str(body))   # 카톡은 HTML 태그를 못 그린다
-            # ★운영부 방 전용 재편(2026-08-05 GM 지시) — "매출 및 운영+인사 현황"이라는 제목과
-            # 실데이터 없는 매출 자리표시자([연동 예정])가 이 방에 안 맞는다(운영부는 매출을
-            # 손대지 못한다·월간운영계획은 09:30 매출이미지 캡션으로 이미 이 방에 따로 간다).
-            # build_digest() 자체는 손대지 않는다 — GM 업무보고방(위 report_stream_3_mgmt.run
-            # 호출) 은 매출+운영+인사 원본 그대로 유지(약속 L01, 본문 재조립 아님·치환만).
-            body = body.replace("📈 매출 및 운영+인사 현황 보고", "📈 업무 SSOT 현황 보고")
-            # ★2026-08-08 — 매출 줄은 내용이 무엇이든 이 방에서 뺀다.
-            #   그 전엔 "[연동 예정]"이라는 자리표시자 글자에 정확히 맞춰 지웠는데, 같은 날
-            #   배446 으로 그 자리에 진짜 매출액이 들어가면서 이 지우개가 빈손이 됐다 —
-            #   운영부 방에 매출액이 새로 나갈 뻔했다(GM: 운영부는 매출을 손대지 못한다).
-            #   글자가 아니라 '매출 줄'을 지운다.
-            body = re.sub(r"^■ 매출.*\n?", "", body, flags=re.MULTILINE)
-            proc = subprocess.run(
-                [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
-                 "--message", body, "--only-room", KAKAO_OPS_DEPT_ROOM],
-                cwd=str(REPO_ROOT), capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=180,
-                env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
-            )
-            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            logger.info(f"{label} 카톡 {KAKAO_OPS_DEPT_ROOM} 발송: {tail[0]}")
-            if proc.returncode != 0:
-                send_telegram(_GM_REPORT_CHAT_ID,
-                              f"⚠️ 업무 SSOT 카톡 발송이 안 나갔습니다\n▪ {KAKAO_OPS_DEPT_ROOM}\n   {tail[0]}\n"
-                              "   PC 카카오톡에서 그 방 창이 열려 있는지 확인해 주세요.",
-                              parse_mode=None)
-        except Exception as e:
-            logger.error(f"{label} 카톡 {KAKAO_OPS_DEPT_ROOM} 발송 예외: {e}")
+        # ── ★운영부 카톡 발송 삭제 (GM 지시 2026-08-08) ──
+        # GM: "운영부 방에는 어제 운영부 정리 이 1건만 자동 발송. 하루 일과 정리, 사람이
+        #      처리할 업무 건은 이제 삭제해줘. 통합해서 중간관리자방에 보내는걸로."
+        # 여기서 ★운영부로 보내던 「하루 일과 정리(업무 SSOT 현황)」를 지운다. 지연 목록을
+        # 본인이 봐야 한다는 2026-07-31 판단은 유효하지만, 그 몫은 ★중간관리자 방으로 통합된다
+        # (실장·소장·나우열M 이 그 방에 다 있어 나누는 자리가 거기다 · 약속 L24 채널 분리).
+        # ▸게이트를 꺼서 남기지 않고 지운다 — 꺼둔 코드는 죽은 코드가 되고 나중에 누가 다시
+        #   켠다(약속 L21). 되살릴 일이 생기면 이 커밋을 되돌리면 된다.
+        # ▸GM 업무보고방(텔레그램) 발송은 위 report_stream_3_mgmt.run 그대로 살아 있다 —
+        #   없어진 것은 카톡 ★운영부 사본 하나뿐이다(정보 손실 없음).
     except Exception as e:
         logger.error(f"{label} 예외: {e}")
 
