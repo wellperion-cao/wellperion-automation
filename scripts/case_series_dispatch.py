@@ -628,14 +628,21 @@ def run(dry_run: bool, plan_only: bool) -> int:
                     fixed = f"GM의 토요일 — {title_now.lstrip('—- ')}"
                     print(f"[WARN] 주말GM 제목 고정 규약 위반 — 「{title_now}」 → 「{fixed}」 로 교정")
                     nxt["title"] = fixed
+            # 평일 제목 고정 가드(GM 결정 2026-08-08 — 「하루의 완성」 3트랙 재가동) — 주말GM
+            # 가드와 같은 자리·같은 방식.
+            elif day_track == WEEKDAY_TRACK:
+                title_now = str(nxt.get("title", ""))
+                if not title_now.startswith("하루의 완성"):
+                    fixed = f"하루의 완성 — {title_now.lstrip('—- ')}"
+                    print(f"[WARN] 평일 제목 고정 규약 위반 — 「{title_now}」 → 「{fixed}」 로 교정")
+                    nxt["title"] = fixed
 
             queue_id = make_queue_id(nxt, today_iso)
             caption_text = caption_md.read_text(encoding="utf-8").strip()
             folder_path = ROOT / nxt["folder"]
             folder_rel = folder_path.relative_to(ROOT).as_posix()
             slides = [f"{folder_rel}/output/post_{i}.jpg" for i in range(1, 7)]
-            title = (f"{nxt['title']}(개인계정)" if day_track == WEEKEND_TRACK
-                     else f"실전사례 {nxt['num']:02d} — {nxt['title']}(개인계정)")
+            title = f"{nxt['title']}(개인계정)"
 
             try:
                 from publish_register import register_publish
