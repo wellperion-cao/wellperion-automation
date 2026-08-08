@@ -5622,7 +5622,31 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <span style="font-size:22px;">🌟</span>
         <span style="color:#fff;font-weight:800;font-size:16px;letter-spacing:-0.01em;">GM 개인 북극성</span>
       </div>
-      <p style="color:#cfc7e8;font-size:13px;line-height:1.75;margin:0;">아직 비어 있습니다 — GM 님이 직접 정하는 자리입니다. (여기는 <strong style="color:#fff;">GM 개인 판</strong>입니다. 회사 전사 북극성과 항해 세계관 범례는 <a href="자율현황.html#sec-hangro" style="color:#cbb6f0;font-weight:700;">자율 작업 현황</a>에 있습니다.)</p>
+      <p id="gm-hero-northstar" style="color:#cfc7e8;font-size:13px;line-height:1.75;margin:0;">불러오는 중…</p>
+    </div>
+
+    <!-- ══ 🌤️ 오늘 하루 한 장 (GM 지시 2026-08-08 "내 개인 영역을 더 업그레이드") ══
+         왜 여기 있나: 루틴 트래커는 멀쩡히 돌아가는데 기록이 5월 26·27일 이틀에서 멈춰 있었다.
+         칸이 없어서가 아니라 [잠금 → 개인 영역 펼치기 → 탭 → 패널] 네 겹 아래 묻혀 있어서,
+         열어도 반겨 주는 것이 없어서다. 그래서 '오늘 어떤가'만 맨 위로 꺼냈다.
+         새 데이터·새 파일 없음 — 아래 트래커가 이미 읽는 것(status/gm_personal_routine.json)과
+         '끊어야 할 습관' 표를 그대로 비춘다. 적는 자리는 여전히 아래 체크인 한 곳뿐이다. -->
+    <div id="gm-hero" class="card accent" style="margin:0 0 18px;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="font-weight:800;font-size:15px;">🌤️ 오늘 하루 한 장 <span id="gm-hero-date" style="font-weight:400;font-size:12px;color:var(--dim);"></span></div>
+        <div style="font-size:13px;color:var(--dim);">담긴 토막 <span id="gm-hero-reach" style="font-size:20px;font-weight:800;color:var(--accent-hover);">–</span> / 5</div>
+      </div>
+
+      <div id="gm-hero-streaks" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;"></div>
+
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;border-top:1px dashed var(--border);padding-top:12px;">
+        <div style="flex:1;min-width:190px;">
+          <div style="font-size:12.5px;color:var(--dim);font-weight:600;margin-bottom:6px;">최근 7일 — 담긴 토막과 그날 기분</div>
+          <div id="gm-hero-spark" style="display:flex;align-items:flex-end;gap:6px;height:56px;"></div>
+        </div>
+        <button type="button" id="gm-hero-checkin" style="padding:9px 18px;font-size:13px;font-weight:700;border-radius:9px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;border:none;">✍️ 오늘 체크인</button>
+      </div>
+      <div id="gm-hero-msg" style="font-size:12.5px;color:var(--dim);margin-top:10px;"></div>
     </div>
 
     <!-- 오늘의 항로 추천 배너 제거(2026-07-03 GM) — 중복 정리: 오늘 top3는 T2 ▸ 자율 작업 현황(자율현황.html)에 임베드됨. G1엔 별도 배너 두지 않음. -->
@@ -5893,6 +5917,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
               <input id="gmrtSleep" type="text" placeholder="23시→06시 · 7h" style="width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">
             </label>
           </div>
+          <!-- 오늘 기분 한 탭 (2026-08-08) — 글자를 안 써도 되는 유일한 감정 기록.
+               저장은 기존 저장 단추·기존 파일 그대로(days 안에 한 칸 추가)라 새 장치가 없다. -->
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;">
+            <span style="font-size:12px;color:var(--dim);">오늘 기분</span>
+            <button type="button" id="gmrtMood" style="padding:7px 14px;border-radius:20px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;border:1px solid var(--border);background:var(--paper-soft,var(--bg));color:var(--text);">· 안 적음</button>
+            <span style="font-size:11.5px;color:var(--dim);">눌러서 바꿉니다 — 안 적어도 괜찮습니다</span>
+          </div>
           <p style="font-size:11.5px;color:var(--dim);margin:0 0 6px;">칸을 눌러 순환 — <span style="color:var(--grow);font-weight:700;">O 완수</span> · <span style="color:var(--accent-hover);font-weight:700;">△ 일부</span> · <span style="color:var(--warm);font-weight:700;">X 미실시</span> · 빈칸 미기록</p>
           <div id="gmrtAxes" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
           <label style="font-size:12px;color:var(--dim);display:block;">비고
@@ -5994,7 +6025,79 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     }).join('');
     box.innerHTML='<table style="font-size:13px;margin:6px 0;"><tr><th>날짜</th><th style="text-align:center;">도달</th><th>토막</th><th>루틴축</th><th>체중</th><th>비고</th></tr>'+rows+'</table>';
   }
-  function renderAll(){ renderToroks(); renderAxes(); renderSpark(); renderRecent();
+  /* ── 오늘 기분 한 탭 (2026-08-08) ── 글자 입력 없이 탭 한 번. 안 적어도 되게 빈 값이 첫 칸이다. */
+  var MOOD = ['', '😊', '🙂', '😞'];
+  var MOOD_LABEL = { '':'· 안 적음', '😊':'😊 좋음', '🙂':'🙂 무난', '😞':'😞 힘듦' };
+  function renderMood(){
+    var b=document.getElementById('gmrtMood'); if(!b) return;
+    var v=DAY.mood||'';
+    b.textContent=MOOD_LABEL[v]||MOOD_LABEL[''];
+    b.style.borderColor = v ? 'var(--accent)' : 'var(--border)';
+  }
+
+  /* ── 🌤️ 오늘 하루 한 장 (히어로) ──
+     아래 트래커가 이미 읽은 값만 다시 비춘다. 자체 조회·자체 저장이 없다(약속 L01). */
+  function habitStreaks(){
+    // '끊어야 할 습관' 표가 유일한 출처 — 표를 고치면 여기가 따라온다.
+    var t=document.getElementById('gm-habit-table'); if(!t) return [];
+    var out=[];
+    Array.prototype.forEach.call(t.querySelectorAll('tr'), function(tr){
+      var td=tr.querySelectorAll('td'); if(td.length<2) return;
+      var name=(td[0].textContent||'').replace(/\s*\(.*\)\s*/,'').trim();
+      var p=(td[1].textContent||'').trim().split(/[.\-\/]/).map(Number);
+      if(p.length<3 || !p[0] || isNaN(p[0])) return;
+      var start=new Date(p[0], p[1]-1, p[2]);
+      var days=Math.floor((new Date().setHours(0,0,0,0) - start.setHours(0,0,0,0)) / 86400000);
+      if(days>=0) out.push({ name:name, days:days });
+    });
+    return out;
+  }
+  function renderHero(){
+    var hero=document.getElementById('gm-hero'); if(!hero) return;
+    hero.style.display='';
+    var ns=document.getElementById('gm-hero-northstar');
+    if(ns) ns.innerHTML = DATA['북극성']
+      ? '<strong style="color:#fff;">'+String(DATA['북극성']).replace(/</g,'&lt;')+'</strong>'
+      : '아직 비어 있습니다 — GM 님이 직접 정하는 자리입니다.';
+    var dt=document.getElementById('gm-hero-date'); if(dt) dt.textContent='· '+ko(today());
+    var rc=document.getElementById('gm-hero-reach'); if(rc) rc.textContent=reachOf(DAY.axes);
+
+    var sbox=document.getElementById('gm-hero-streaks');
+    if(sbox){
+      var st=habitStreaks();
+      sbox.innerHTML = st.length ? st.map(function(s){
+        return '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;font-size:12.5px;border:1px solid var(--grow);background:var(--grow-bg);">'
+          +'<span style="color:var(--dim);">'+s.name+'</span>'
+          +'<strong style="color:var(--grow);font-size:14px;">'+s.days.toLocaleString()+'</strong>'
+          +'<span style="color:var(--dim);font-size:11px;">일째</span></span>';
+      }).join('') : '';
+    }
+
+    var spark=document.getElementById('gm-hero-spark');
+    if(spark){
+      var days=DATA.days||{}, html='', recorded=0;
+      for(var i=6;i>=0;i--){
+        var d=new Date(); d.setDate(d.getDate()-i);
+        var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        var rec=days[key]; var r=rec?reachOf(rec.axes):-1;
+        if(r>=0) recorded++;
+        var h=r>=0?Math.max(6, r/5*34):3;
+        var col=r>=0?(r>=3?'var(--grow)':(r>=1?'var(--accent)':'var(--warm)')):'var(--border)';
+        html+='<div title="'+key+' · '+(r>=0?r+'/5':'미기록')+'" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">'
+          +'<span style="font-size:12px;line-height:1;height:14px;">'+((rec&&rec.mood)||'')+'</span>'
+          +'<div style="width:100%;max-width:26px;height:'+h+'px;border-radius:4px;background:'+col+';opacity:'+(r>=0?0.9:0.4)+';"></div>'
+          +'<span style="font-size:10px;color:'+(i===0?'var(--accent-hover)':'var(--dim)')+';font-weight:'+(i===0?700:400)+';">'+['일','월','화','수','목','금','토'][d.getDay()]+'</span></div>';
+      }
+      spark.innerHTML=html;
+      var msg=document.getElementById('gm-hero-msg');
+      // 혼내지 않는다(정본 principle: '점수 아닌 거울 · 못 지켜도 혼내지 않음').
+      if(msg) msg.textContent = recorded===0
+        ? '이번 주는 아직 비어 있습니다 — 오늘 한 번 눌러 두면 내일부터 여기가 채워집니다.'
+        : '최근 7일 중 '+recorded+'일 남기셨습니다.';
+    }
+  }
+
+  function renderAll(){ renderToroks(); renderAxes(); renderMood(); renderSpark(); renderRecent(); renderHero();
     var w=document.getElementById('gmrtWeight'), s=document.getElementById('gmrtSleep'), n=document.getElementById('gmrtNote');
     if(w) w.value=DAY.weight||''; if(s) s.value=DAY.sleep||''; if(n) n.value=DAY.note||'';
   }
@@ -6006,6 +6109,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     DAY.note  =(document.getElementById('gmrtNote')||{}).value||'';
     DAY.reach = reachOf(DAY.axes);
     DAY.toroks= litToroks(DAY.axes);
+    if(!DAY.mood) delete DAY.mood;   // 안 적은 날은 칸 자체를 안 남긴다(빈 값이 쌓이지 않게)
     DAY.updated_at=today();
     DATA.days=DATA.days||{}; DATA.days[today()]=DAY; DATA.updated_at=today();
     if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
@@ -6029,6 +6133,22 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       DAY.axes=DAY.axes||{};
       renderAll();
       var sb=document.getElementById('gmrtSaveBtn'); if(sb) sb.addEventListener('click', save);
+      var mb=document.getElementById('gmrtMood');
+      if(mb) mb.addEventListener('click', function(){
+        DAY.mood = MOOD[(MOOD.indexOf(DAY.mood||'')+1)%MOOD.length];
+        renderMood(); renderHero();
+      });
+      // 히어로의 '오늘 체크인' — 개인 영역을 펼치고 트래커 탭으로 데려간다(네 겹 이동을 한 번으로).
+      var hb=document.getElementById('gm-hero-checkin');
+      if(hb) hb.addEventListener('click', function(){
+        var host=document.getElementById('gmrtMood') || document.getElementById('gmrtSaveBtn');
+        if(!host) return;
+        for(var el=host; el; el=el.parentElement){
+          if(el.tagName==='DETAILS') el.open=true;
+          if(el.hasAttribute && el.hasAttribute('data-panel')) el.style.display='';
+        }
+        host.scrollIntoView({behavior:'smooth', block:'center'});
+      });
     }).catch(function(){ if(box) box.innerHTML='<span style="color:var(--warm);">정본(status/gm_personal_routine.json) 불러오기 실패 — 새로고침 해보세요.</span>'; });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
@@ -6036,7 +6156,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 </script>
 
         <h4>끊어야 할 습관 추적</h4>
-        <table>
+        <!-- 이 표가 '이어가는 날들'의 유일한 출처다 — 위 히어로 카드가 이 표를 읽어 며칠째인지
+             매일 자동으로 센다. 습관을 더하거나 시작일을 고치려면 여기만 고치면 된다. -->
+        <table id="gm-habit-table">
           <tr><th>습관</th><th>시작일</th><th>상태</th></tr>
           <tr><td>금연</td><td>2025.6.27</td><td><span class="badge green">진행중</span></td></tr>
           <tr><td>절주</td><td>2026.1.1</td><td><span class="badge green">진행중</span></td></tr>
