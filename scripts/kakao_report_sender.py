@@ -961,7 +961,10 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
 
     반환: True = 실제 발송(또는 dry-run 진행), False = 중복 발신 가드로 스킵."""
     room_name = room["name"]
-    text = build_caption(room, base_message)
+    # 링크에 낀 공백을 %20 으로 — 카톡은 공백에서 링크를 끊어 앞부분만 눌리고 404 가 난다.
+    # 정본 = tg_outbound_log.encode_url_spaces (텔레그램·카톡 두 관문이 같은 함수를 쓴다).
+    from tg_outbound_log import encode_url_spaces
+    text = encode_url_spaces(build_caption(room, base_message))
     log(f"── {room_name} 텍스트 전용 처리 시작 (dry_run={dry_run}, text={text!r}) ──")
 
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(text):

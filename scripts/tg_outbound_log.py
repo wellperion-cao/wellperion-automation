@@ -130,11 +130,31 @@ def _log_lint(issues, chat_id, source):
         pass   # 검수 실패가 발신을 막지 않는다
 
 
+_URL_WITH_SPACE = re.compile(
+    r'https?://[^\s]+(?:[ ][^\s]+)+?\.(?:html?|png|jpe?g|pdf|json|csv|xlsx?)\b')
+
+
+def encode_url_spaces(text):
+    """메시지 안의 링크에 낀 공백을 %20 으로 바꾼다.
+
+    우리 페이지 경로에는 한글 공백이 흔하다(`.../coo/check/시설부 체계.html`).
+    카톡·텔레그램은 공백에서 링크를 끊어 버려서 앞부분만 눌리고 404 가 난다.
+    GM 이 같은 지적을 반복했다("또 시설부 체계 링크 짤리게 했네") — 보내는
+    사람마다 손으로 인코딩하는 한 계속 샌다. 그래서 발신 관문에서 한 번 막는다.
+
+    확장자로 끝나는 구간만 바꾼다 — "주소 뒤 문장"까지 삼키지 않게 하는 울타리다.
+    """
+    def _fix(m):
+        return m.group(0).replace(' ', '%20')
+    return _URL_WITH_SPACE.sub(_fix, str(text or ''))
+
+
 def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
          min_interval=_MIN_INTERVAL, max_attempts=6, timeout=15):
     """페이싱 + 429 자가재시도(retry_after 존중) + 로깅 통합 발송. return ok(bool).
     각 루틴이 자체 urlopen 대신 이 함수를 쓰면 전역 페이싱에 자동 편입된다."""
     import urllib.request, urllib.parse, urllib.error
+    text = encode_url_spaces(text)
     _log_lint(lint_outbound(text, chat_id, source), chat_id, source)
     payload = {'chat_id': chat_id, 'text': text}
     if extra:
