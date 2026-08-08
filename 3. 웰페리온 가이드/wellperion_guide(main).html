@@ -5652,17 +5652,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     <!-- 오늘의 항로 추천 배너 제거(2026-07-03 GM) — 중복 정리: 오늘 top3는 T2 ▸ 자율 작업 현황(자율현황.html)에 임베드됨. G1엔 별도 배너 두지 않음. -->
 
 
-    <!-- ══ 🧭 항로 → 자율현황·월간운영계획으로 이관 (업무 표면 정리 · 배317 · 2026-08-06 시토) ══ -->
-    <p style="font-size:13px;color:var(--dim);margin:8px 0 10px;">🧭 회사 업무와 AI 진행 상황은 <a href="자율현황.html#sec-hangro" style="color:var(--accent);font-weight:700;">자율 작업 현황 ▸ 🧭 항로</a> / <a href="월간운영계획.html" style="color:var(--accent);font-weight:700;">월간운영계획 ▸ 👤 김남욱GM 업무 진행건</a> 으로 옮겼습니다.</p>
-
-  <!-- ══ 내가 적어 둔 할 일 — 이 브라우저에만 저장된다 (배317 · 2026-08-06) ══
-       회사 업무는 위 두 곳으로 옮겼지만, GM 이 여기에 직접 적어 둔 항목은 브라우저
-       저장소(gm1_unified_tasks)에만 있어 옮길 곳이 아직 없다(CLAUDE.md §3-1 — GM 전용
-       저장소가 생기면 그때 합류). 칸을 없애면 적어 둔 것이 화면에서 사라지므로 남긴다. -->
-  <details id="gm1-todo-section" open style="margin:0 0 24px;">
-    <summary style="cursor:pointer;list-style:none;"><h3 style="display:inline;"><span class="ico">🧭</span>내가 적어 둔 할 일</h3><span style="font-size:0.78em;color:#888;font-weight:400;margin-left:8px;">이 브라우저에만 저장됩니다 · 회사 업무는 위 두 곳으로</span></summary>
-    <div id="today-task-list"></div>
-  </details>
+    <!-- ══ 업무 표면 전체 삭제 — GM 지시 2026-08-08 ══
+         지운 것 3개: ①「회사 업무와 AI 진행 상황은 …으로 옮겼습니다」 안내 문단
+         ②「🧭 내가 적어 둔 할 일」칸(#gm1-todo-section / #today-task-list)
+         ③ 그 칸이 그리던 진행중·예정 항구·🏁 입항 완료·🗄️ 지난 완료 목록 전체.
+         회사 업무 정본 = 자율현황 ▸ 🧭 항로 · 월간운영계획 · 업무·결재 SSOT.
+         G1 은 GM 개인 판만 남긴다 — 개인 북극성 → 오늘 하루 한 장 → 개인 영역(상시 펼침).
+         렌더 함수 gm1RenderToday() 는 #today-task-list 가 없으면 즉시 반환하므로 그대로 둔다
+         (다른 데서 부르는 자리가 있어 함수를 지우면 그쪽이 깨진다). -->
 
 
     <!-- 🧠 AI 자기학습 제안(자율현황 이관 완료 · 배10510) · 🛡️ 같은 실수 막기(S2 공통탭 이관 완료)
@@ -5768,7 +5765,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     </div><!-- /calendar panel -->
 
 
-    <details class="toggle" style="margin:8px 0 20px;border-top:1px solid var(--border);padding-top:14px;"><summary style="cursor:pointer;font-weight:700;font-size:15px;color:var(--accent);"><span class="ico">👤</span>내 개인 영역 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 루틴·방향·기록·캘린더 (펼치기)</span></summary>
+    <!-- 내 개인 영역 — 토글을 벗기고 상시 펼침으로 (GM 지시 2026-08-08 "토글로 열게 하지 말고
+         그냥 오늘 하루 한 장 아래에 열어놔줘"). 위 업무 표면을 지운 뒤라 이 블록이
+         🌤️ 오늘 하루 한 장 바로 아래에 온다(사이의 개인 캘린더는 기본 display:none). -->
+    <div style="margin:8px 0 20px;border-top:1px solid var(--border);padding-top:14px;">
+    <div style="font-weight:700;font-size:15px;color:var(--accent);margin-bottom:10px;"><span class="ico">👤</span>내 개인 영역 <span style="font-size:12px;color:var(--dim);font-weight:400;">— 루틴·방향·기록</span></div>
     <div class="tabs" data-tabs="G1">
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="rhythm">💪 내 루틴</button>
@@ -6447,7 +6448,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div><!-- /compass -->
 
     </div><!-- /tabs gm1 -->
-    </details>
+    </div><!-- /내 개인 영역 (상시 펼침) -->
 
     <!-- ════ G1 업무 편집 모달 (업무SSOT 이식 · 진척 로그·예산·결재 라우팅) ════ -->
     <div id="gm1TaskModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:9997;align-items:center;justify-content:center;">
