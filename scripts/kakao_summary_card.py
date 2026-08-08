@@ -731,6 +731,127 @@ STALLED_CSS = """
 """
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 방별 카드 2호 — ★운영+시설+지원+주차 「오늘 점검 마감」 (2026-08-08 GM 지시)
+#   이 방이 받는 밤 22:30 글이 47줄 + 42줄 두 통으로 가장 긴 벽글이다. 시설부 회차 일지·
+#   측정값 20여 줄이 이상 없어도 매일 전문으로 나가고, 정작 행동이 필요한 '0% 조'는
+#   중간에 묻힌다. 카드는 **오늘 안 채운 곳**을 맨 위로 올리는 것이 전부다.
+#   원본 글을 다시 만들지 않는다 — 이미 조립된 본문을 읽어 숫자만 뽑는다(약속 L01).
+# ══════════════════════════════════════════════════════════════════════════
+CHECK_ROOM = "★운영+시설+지원+주차"
+
+
+def collect_check(section_text: str) -> dict:
+    """점검 본문에서 카드가 쓸 숫자만 뽑는다. 파일·시트를 안 건드리는 순수 함수.
+
+    자기검사 = scripts/test_check_card.py
+    """
+    import re as _re
+    S: dict = {"facility": None, "support": None, "parking": None,
+               "zero_groups": [], "full_groups": [], "issues": []}
+
+    m = _re.search(r"🏗 시설부 현황\s*(\d+)회차\s*·\s*(\S+[^\n]*)", section_text)
+    if m:
+        S["facility"] = {"rounds": int(m.group(1)), "state": m.group(2).strip()}
+
+    m = _re.search(r"🛠 지원부 현황\s*(\d+)/(\d+)\((\d+)%\)", section_text)
+    if m:
+        S["support"] = {"done": int(m.group(1)), "total": int(m.group(2)), "pct": int(m.group(3))}
+
+    for zone, _d, _t, _p, groups in _re.findall(
+            r"(남성구역|여성구역) (\d+)/(\d+)\((\d+)%\) — (.+)", section_text):
+        for gname, gd, gt in _re.findall(r"(\S+조)\s*(\d+)/(\d+)", groups):
+            gd, gt = int(gd), int(gt)
+            if gt <= 0:
+                continue
+            if gd == 0:
+                S["zero_groups"].append({"name": f"{zone} {gname}", "total": gt})
+            elif gd == gt:
+                S["full_groups"].append({"name": f"{zone} {gname}", "total": gt})
+
+    m = _re.search(r"🅿 주차부 이슈사항:\s*([^\n]+)", section_text)
+    if m:
+        S["parking"] = m.group(1).strip()
+
+    for line in _re.findall(r"·\s*\[([^\]]+)\]\s*([^\n(]+)", section_text):
+        S["issues"].append({"where": line[0].strip(), "what": line[1].strip()})
+    return S
+
+
+def build_check_card_html(S: dict, target_date: datetime) -> str:
+    """★운영+시설+지원+주차 「오늘 점검 마감」 카드 HTML."""
+    d1 = f"{target_date.month}.{target_date.day}"
+    d2 = WEEKDAY_KR[target_date.weekday()]
+    fac, sup, park = S.get("facility"), S.get("support"), S.get("parking")
+    zeros, fulls = S.get("zero_groups") or [], S.get("full_groups") or []
+
+    # 경보 = 아직 한 건도 안 들어온 조. 이게 오늘 이 방이 움직여야 할 유일한 이유다.
+    alerts = [f'{z["name"]} — {z["total"]}건 중 아직 0건' for z in zeros[:3]]
+
+    fac_big = f'{fac["rounds"]}회차' if fac else MISSING
+    fac_sub = (fac["state"] if fac else "값 없음")
+    sup_big = (f'{sup["pct"]}%' if sup else MISSING)
+    sup_sub = (f'{sup["done"]}/{sup["total"]}건 완료' if sup else "값 없음")
+    park_sub = park or "값 없음"
+
+    tiles = (
+        _stalled_tile("🏗 시설부", fac_big, fac_sub) +
+        _stalled_tile("🛠 지원부", sup_big, sup_sub,
+                      "sales" if (sup and sup["pct"] < 90) else "") +
+        _stalled_tile("🅿 주차부", "이슈 없음" if park and park.startswith("없음") else "확인",
+                      park_sub)
+    )
+
+    zero_html = ""
+    if zeros:
+        rows = "".join(
+            f'<div class="srow"><span class="sd">0건</span>'
+            f'<span class="st">{html_mod.escape(z["name"])}</span>'
+            f'<span class="sw">{z["total"]}건 예정</span></div>' for z in zeros)
+        zero_html = ('<div class="whowrap esc"><div class="lab">🔴 아직 안 들어온 조</div>'
+                     f'{rows}<div class="sub" style="margin-top:6px;">'
+                     '하셨는데 입력만 못 하신 것일 수 있습니다 — 확인 부탁드립니다.</div></div>')
+
+    full_html = ""
+    if fulls:
+        rows = "".join(
+            f'<div class="who"><span class="wn">{html_mod.escape(f["name"])}</span>'
+            f'<span class="wc">{f["total"]}건 완료</span></div>' for f in fulls[:3])
+        full_html = ('<div class="whowrap"><div class="lab">🏆 오늘 다 채운 곳</div>'
+                     f'{rows}</div>')
+
+    issues = S.get("issues") or []
+    issue_html = ""
+    if issues:
+        rows = "".join(
+            f'<div class="srow"><span class="st">{html_mod.escape(i["what"][:34])}</span>'
+            f'<span class="sw">{html_mod.escape(i["where"])}</span></div>' for i in issues[:3])
+        issue_html = ('<div class="whowrap"><div class="lab">🛠 오늘 올라온 이슈</div>'
+                      f'{rows}</div>')
+
+    card = (
+        '<div class="card" id="card" style="zoom:3">'
+        '<header class="top">'
+        '<div class="brand"><div class="mark">W</div><div>'
+        '<div class="t1">오늘 점검 마감</div>'
+        f'<div class="t2">💬 매일 밤 자동 · {CHECK_ROOM}</div>'
+        '</div></div>'
+        f'<div class="date"><div class="d1">{d1}</div><div class="d2">{d2}</div></div>'
+        '</header>'
+        f'{build_banner(alerts)}'
+        '<div class="pad" style="padding-top:0">'
+        f'<div class="grid">{tiles}</div>'
+        f'{zero_html}{full_html}{issue_html}'
+        '</div>'
+        '<div class="foot"><div class="fl">'
+        '<b>부탁</b> 빈 칸으로 남은 조는 <b>내일 아침 제출</b> 부탁드립니다. '
+        '회차별 일지와 측정값 전체는 점검 화면에서 그대로 보실 수 있습니다.'
+        '</div></div>'
+        '</div>'
+    )
+    return PAGE_TEMPLATE.format(style=STYLE_CSS + STALLED_CSS, card=card)
+
+
 def render_card_png(html_content: str, out_path: Path) -> None:
     from playwright.sync_api import sync_playwright
 
@@ -757,8 +878,9 @@ def main() -> int:
         description="카카오톡 아침 요약 카드 이미지 생성(HTML→PNG, 발송 없음)")
     ap.add_argument("--out", default=None, help="지정 시 이 경로에도 추가 저장")
     ap.add_argument("--date", default=None, help="카드 날짜 YYYYMMDD(기본 오늘)")
-    ap.add_argument("--card", default="morning", choices=["morning", "stalled"],
-                    help="morning=아침 요약(기본) · stalled=★중간관리자 멈춘 업무 정리")
+    ap.add_argument("--card", default="morning", choices=["morning", "stalled", "check"],
+                    help="morning=아침 요약(기본) · stalled=★중간관리자 멈춘 업무 정리 · "
+                         "check=★운영+시설+지원+주차 오늘 점검 마감")
     ap.add_argument("--record", action="store_true",
                     help="stalled 전용 — 이번 회차를 기록해 '몇 주째'를 올린다. "
                          "실제 발송 회차에서만 켠다(미리보기로 주차가 오르면 안 된다)")
@@ -775,6 +897,32 @@ def main() -> int:
         except ValueError:
             print(f"FAILED: --date 형식 오류({args.date}, YYYYMMDD 필요)")
             return 1
+
+    if args.card == "check":
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from report_stream_2_check import _check_section
+            section = _check_section(target_date.strftime("%Y-%m-%d"))
+            if not section.strip():
+                raise RuntimeError("점검 본문이 비었다 — 카드를 만들지 않는다")
+            html_content = build_check_card_html(collect_check(section), target_date)
+        except Exception as exc:
+            print(f"FAILED: 점검 마감 카드 — {exc}")
+            return 1
+        out_dir = OUT_DIR / target_date.strftime("%Y-%m")
+        png_path = out_dir / target_date.strftime("웰페리온_점검마감_%Y%m%d.png")
+        try:
+            render_card_png(html_content, png_path)
+        except Exception as exc:
+            print(f"FAILED: 카드 렌더 오류 — {exc}")
+            return 1
+        if args.out:
+            extra = Path(args.out)
+            extra.parent.mkdir(parents=True, exist_ok=True)
+            extra.write_bytes(png_path.read_bytes())
+        print(f"IMAGE: {png_path}")
+        return 0
 
     if args.card == "stalled":
         try:
