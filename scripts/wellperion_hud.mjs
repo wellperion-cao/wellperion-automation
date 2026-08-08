@@ -831,15 +831,15 @@ function buildLine(cwd, role, transcript, sessionId) {
   const busy = !!(lv && lv.working);
   if (s && s.cur) {
     const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
-    head += `${C}▶${n}${X}`;
+    head += `${D} · ${X}${C}배${n}${X}`;
     title = String(s.cur.title || '').replace(/^\[[^\]]*\]\s*/, '').trim();
   } else if (lc && lc.ship != null) {
     const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
-    head += `${D}✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
+    head += `${D} · 배✓${n}${X}`;   // 진행중 없음 = 방금 끝낸 배 표시(진행중과 헷갈리지 않게 다른 기호)
   } else if (!busy) {
     // ★잡은 배도 방금 끝낸 배도 없으면 **빈칸으로 두지 않는다** (GM 2026-07-25 "없으면 없다고").
     //   단 지금 실제로 돌고 있으면 '작업없음'은 거짓말이다 — 아래 제목·시각 칸이 진실을 말한다.
-    head += `${D}·작업없음${X}`;
+    head += `${D} · 작업없음${X}`;
   }
   // ★일하는 중이면 제목은 '잡아둔 배'가 아니라 **지금 받은 지시**를 쓴다(GM 지시 2026-07-27).
   //   잡은 배와 실제로 하는 일이 다를 때 배 제목은 GM 을 오히려 헷갈리게 한다(실측 재현:
@@ -903,57 +903,13 @@ function buildLine(cwd, role, transcript, sessionId) {
     time = `${D}·${X}${agoColor(lc.mins)}${agoText(lc.mins)}${X}`;
   }
 
-  // 선택부(접히는 순서의 역순으로 정의) — ③🆕 ④대기 목록 ⑤오늘🏁 ⑥전사 막힌 것 우선.
-  const segToday = todaySignals(cwd, q);   // 오늘 사람에게 닿은 것 — GM 지시 2026-08-05, 가장 늦게 접힘
-  const segNew = (s && s.fresh > 0) ? `${Y}🆕${s.fresh}${X}` : null;
-  let waitNums = null;
-  if (s) {
-    if (s.waitNos.length) {
-      const shown = s.waitNos.slice(0, 3);                      // 번호는 3개까지, 나머지 +N
-      const rest = s.waitNos.length - shown.length;
-      waitNums = `${D}항로${X}🚢${s.run}${D}⚓${shown.join('·')}${rest > 0 ? `+${rest}` : ''}${X}`;
-    } else {
-      waitNums = `${D}항로${X}🚢${s.run}${D}⚓0${X}`;
-    }
-  }
-  // 큐를 못 읽었을 때도 침묵하지 않는다 — '일이 0건'과 '못 읽었다'는 다른 말이다.
-  const waitCount = s ? `${D}항로${X}🚢${s.run}${D}⚓${s.wait}${X}` : `${D}항로${X}${Y}읽기실패${X}`;
-  const segDone = s ? `${D}오늘${X}🏁${s.done}` : null;
-
-  // 제목 최소 폭(20자 확보 — 배107) — 제목이 그보다 짧으면 그 길이만큼만.
-  const titleChars = Array.from(title);
-  const minTitleW = titleChars.length
-    ? dw(titleChars.slice(0, 20).join('')) + (titleChars.length > 20 ? 2 : 0) : 0;
-  const fixedW = dw(head) + dw(time) + (title ? 2 : 0);   // 제목 앞뒤 한 칸씩
-  const SEPW = 3;                                          // ' · '
-  const segsW = (arr) => arr.reduce((a, g) => a + SEPW + dw(g), 0);
-
-  // 사다리 — 위에서부터 처음 폭에 들어가는 단을 쓴다. 마지막 단 = 내 배만.
-  // ★'today'(오늘 사람에게 닿은 것)는 GM 이 가장 느껴야 할 값이라 거의 모든 단에 남긴다 —
-  //   가장 좁은 창(빈 사다리 직전 단)에서야 접힌다.
-  const ladder = [
-    ['today', 'new', 'waitN', 'done'],
-    ['today', 'new', 'waitC', 'done'],
-    ['today', 'new', 'waitC'],
-    ['today', 'new'],
-    ['today'],
-    [],
-  ];
-  let chosen = [];
-  for (const lv of ladder) {
-    const segs = [];
-    if (lv.includes('today') && segToday) segs.push(segToday);
-    if (lv.includes('new') && segNew) segs.push(segNew);
-    if (lv.includes('waitN') && waitNums) segs.push(waitNums);
-    if (lv.includes('waitC') && waitCount) segs.push(waitCount);
-    if (lv.includes('done') && segDone) segs.push(segDone);    if (fixedW + minTitleW + segsW(segs) <= W) { chosen = segs; break; }
-  }
-  // 남는 폭은 전부 제목에게 — 12자 상한 폐지의 실체. (좁으면 20자 밑으로도 줄여 잘림만은 막는다)
-  const titleBudget = W - dw(head) - dw(time) - (title ? 2 : 0) - segsW(chosen);
+  // ★2026-08-08 GM 승인(A안) — statusline 2줄 간소화. 항로 대기목록·오늘🏁·전사 신호(today/new/
+  //   waitN/waitC/done) 칸은 조립에서 뺀다 — 계산 함수(todaySignals 등)는 그대로 둔다, 손댄 건
+  //   조립부뿐이다. 남는 폭은 전부 제목에게(잘리면 … 만 남는다).
+  const titleBudget = W - dw(head) - dw(time) - (title ? 2 : 0);
   const titleFit = title ? fitCols(title, Math.max(titleBudget, 0)) : '';
-
   const first = head + (titleFit ? ` ${D}${titleFit}${X} ` : '') + time;
-  return [first.replace(/ $/, ''), ...chosen].join(`${D} · ${X}`);
+  return first.replace(/ $/, '');
 }
 
 /** 나 빼고 6 C-Level 작업현황 — 역할마다 한 줄 (GM 지시 2026-07-28
@@ -1086,6 +1042,24 @@ function buildRoleLines(cwd, role) {
   } catch { return []; }
 }
 
+/** OMC HUD 원문(branch·모델·한도·ctx·비용 등 여러 줄)에서 ctx%·5시간 한도%(남은시간)·오늘
+ *  비용 세 값만 뽑아 1줄로 줄인다(2026-08-08 GM 승인 A안 — 4줄→2줄, 개발자용 정보 제거).
+ *  ★계산은 손대지 않는다 — omc-hud-cost.mjs(건드리지 않는 원칙 · 파일 상단)가 이미 낸 값을
+ *    파싱만 한다. 값을 못 찾으면 그 조각만 뺀다 — 지어내지 않는다. 전부 못 찾아도 빈 줄
+ *    대신 확인중 문구를 낸다(role 없을 때의 폴백과 같은 관례). */
+function summarizeOmc(raw) {
+  // OMC 원문은 색을 입혀 막대·숫자 사이에 ANSI 코드가 끼어 있다 — 벗기고 나서 찾는다.
+  const plain = String(raw || '').replace(/\x1b\[[0-9;]*m/g, '');
+  const ctx = plain.match(/ctx:\[[^\]]*\](\d+)%/);
+  const limit = plain.match(/5h:\[[^\]]*\](\d+)%\(([^)]+)\)/);
+  const cost = plain.match(/cost:\$([\d.]+)/);
+  const parts = [];
+  if (ctx) parts.push(`ctx ${ctx[1]}%`);
+  if (limit) parts.push(`5시간 한도 ${limit[1]}% (${limit[2]} 남음)`);
+  if (cost) parts.push(`오늘 $${Math.round(Number(cost[1]))}`);
+  return parts.length ? parts.join(`  ${D}·${X}  `) : `${D}사용량 확인중${X}`;
+}
+
 function main() {
   const input = readStdin();
   const base = omcHud(input);
@@ -1103,31 +1077,12 @@ function main() {
   //   역할 기억함(ROLE_CACHE)이 채워지면 저절로 복구된다.
   const line = role ? buildLine(cwd, role, transcript, sessionId) : `${D}역할 확인중 · 작업표시 대기${X}`;
 
-  // 6 C-Level 작업현황 — ★시토(cto) 창에서만 보인다 (GM 지시 2026-07-29).
-  //   같은 PC 의 셸 5개가 이 스크립트 하나를 공유하므로, 막지 않으면 모든 창에 똑같이 뜬다
-  //   (GM 지적 2026-07-28). 그래서 한 역할 창에만 남긴다 — 문제는 '어느 역할이냐'였다.
-  //   2026-07-28 까지는 웰리(ceo) 창이었다. 2026-07-29 GM 지시로 시토(cto) 창으로 옮긴다:
-  //   "시토는 AI 관련된 배편 진행 / 웰리는 실무 관련 내용 체크 및 지시사항 정리해서 전달 /
-  //    시토가 statusline 에 AI C레벨들 작업들 나오게 셋팅하면 최고일듯."
-  //   근거 정합: 2026-07-27 GM 확정 역할분담(ssot/kpi.json `_역할분담_2026_07_27`) —
-  //   시토=전사 AI 업무 총괄 / 웰리=실무진의 현실 업무. 전 역할의 AI 창이 지금 무엇을 하고
-  //   있는지는 **총괄하는 쪽**이 봐야 하는 화면이다. 웰리 창은 본 줄(자기 항로)만 남는다.
-  //   ※표시 항목 소유(이 파일 상단 ①웰리 단독)는 GM 직접 지시가 상위라 그대로 반영했다 —
-  //     경위는 배10341(전사 AI 업무 총괄) note 에 기록.
-  // 폭이 좁으면(작은 창) 이 블록부터 접는다. worklog 가 없거나 깨져도 본 줄(line)은 절대 죽지 않게 try/catch.
-  let roleBlock = '';
-  if (role === 'cto') {
-    try {
-      if (termWidth() - 1 >= 40) {
-        const rl = buildRoleLines(cwd, role);
-        if (rl.length) roleBlock = '\n' + rl.join('\n');
-      }
-    } catch { /* 이 블록만 빠진다 */ }
-  }
-
-  // ★OMC 줄에 이어 붙이지 않고 **줄을 따로 뺀다** (GM 2026-07-24 '시모·시우·시포는 잘리는데?').
-  //   같은 줄이면 폭 경쟁으로 끝에 붙은 우리 부분부터 잘린다.
-  process.stdout.write(base + (line ? '\n' + line : '') + roleBlock);
+  // ★2026-08-08 GM 승인(A안) — statusline 정확히 2줄. 1줄=역할·배·지금 하는 일·경과,
+  //   2줄=ctx%·5시간 한도%(남은시간)·오늘 비용. OMC 원본 여러 줄(branch·git 상태·버전·모델·
+  //   wk 한도·thinking·session·skill·도구호출수·코드증감·막대그래프)과 6 C-Level 현황 블록
+  //   (cto 전용, 2026-07-29)은 뺀다 — GM 판단 "개발자용 정보가 많아 안 본다". 되돌리려면
+  //   이 두 줄 조립부만 이전 버전으로 되돌리면 된다(계산 함수는 그대로 남아 있다).
+  process.stdout.write(line + '\n' + summarizeOmc(base));
 }
 
 main();
