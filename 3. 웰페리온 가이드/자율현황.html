@@ -352,6 +352,11 @@
       <button type="button" class="nf-btn" data-f="kakao">카카오톡</button>
       <button type="button" class="nf-btn" data-owner-toggle="1">담당자별 ▾</button>
       <span class="nf-sep"></span>
+      <!-- ⏱ 시간순 (GM 지시 2026-08-08 "시간대별로 자동 발송 내용이 정리되는게 나을 것 같은데")
+           방 기준은 '이 방에 뭐가 오나'(실무진 관점)이고, 시간순은 '오늘 몇 시에 뭐가 나가나'(GM 관점)다.
+           정렬 기준은 등록부에 이미 있는 when_sort 를 그대로 쓴다 — 새 데이터 없음. -->
+      <button type="button" class="nf-btn" id="notify-time-toggle">⏱ 시간순</button>
+      <span class="nf-sep"></span>
       <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
     </div>
     <div id="notify-owner-filters" class="notify-filters" style="display:none;"></div>
@@ -2175,7 +2180,7 @@
   var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
   var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
   var NOTIFY_CH_EMOJI = { telegram: TG_LOGO, kakao: KT_LOGO };
-  var _notifyState = { channel:'all', owner:'all', problemOnly:false };
+  var _notifyState = { channel:'all', owner:'all', problemOnly:false, view:'room' };
 
   // 원천 신선도 판정 — GM 지시 2026-07-31(notify_drift.json 11일째 정지·0건을 진짜 0처럼 표시하던 함정).
   // 상수 한 곳 + 계산 함수 한 곳(복제 금지) · generated_at(날짜/일시 문자열) → 경과일. 필드 없음/파싱 불가 = null(측정 불가).
@@ -2277,6 +2282,63 @@
 
   var _alertRowsCache = []; // [{item, sevInfo, html}]
 
+  /* ⏱ 시간순 보기 (GM 지시 2026-08-08) — 하루를 시간대로 잘라 '몇 시에 무엇이 나가는가'로 세운다.
+     정렬은 등록부의 when_sort(HHMM, 부정기=null)를 그대로 쓴다. 새 데이터·새 파일 없음.
+     ★when_sort 는 평일·휴일로 갈리는 발신도 잦은 쪽(평일)으로 통일해 뒀다 — 안 그러면 같은
+     회차가 20시와 22시 두 자리에 흩어진다(2026-08-08 5건 정정). */
+  var TIME_BANDS = [
+    { key:'dawn',  label:'🌅 새벽·아침 (05~08시)', from:'0500', to:'0859' },
+    { key:'morn',  label:'☀️ 오전 (09~11시)',      from:'0900', to:'1159' },
+    { key:'day',   label:'🏢 낮 (12~17시)',        from:'1200', to:'1759' },
+    { key:'eve',   label:'🌙 저녁·밤 (18~23시)',   from:'1800', to:'2359' },
+    { key:'any',   label:'🔁 수시 · 부정기',        from:null,   to:null  }
+  ];
+  function bandOf(ws){
+    if(!ws) return 'any';
+    for(var i=0;i<TIME_BANDS.length;i++){
+      var b=TIME_BANDS[i];
+      if(b.from && ws>=b.from && ws<=b.to) return b.key;
+    }
+    return 'any';
+  }
+  function alertTimeHtml(rows){
+    var groups = {};
+    rows.forEach(function(r){
+      var b = bandOf(r.item.when_sort);
+      (groups[b] = groups[b] || []).push(r);
+    });
+    var nowHHMM = (function(){ var d=new Date(); return String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0'); })();
+    return TIME_BANDS.map(function(b){
+      var list = groups[b.key] || [];
+      if(!list.length) return '';
+      // 이른 것부터. 부정기는 이름순으로 둔다(시각이 없으니 순서에 뜻을 두지 않는다).
+      list.sort(function(x,y){
+        var a=x.item.when_sort||'', c=y.item.when_sort||'';
+        return a===c ? String(x.item.what||'').localeCompare(String(y.item.what||'')) : (a<c?-1:1);
+      });
+      var problemCnt = list.filter(function(r){ return r.sevInfo.sev==='bad' || r.sevInfo.sev==='dead'; }).length;
+      // 지금 시각이 이 띠 안이면 펼쳐 둔다 — GM 이 열자마자 '지금 나가는 것'이 보이게.
+      var isNow = b.from && nowHHMM>=b.from && nowHHMM<=b.to;
+      var body = '<div class="coo-tbl-wrap"><table>' +
+        '<tr><th style="width:11%">시각</th><th style="width:34%">보내는 것</th>' +
+        '<th style="width:16%">어느 방으로</th><th style="width:39%">상태</th></tr>' +
+        list.map(function(r){
+          var when = esc(r.item.when || '부정기');
+          return '<tr><td style="white-space:nowrap;font-weight:700;">' + when + '</td>' +
+                 '<td>' + esc(r.item.what || '') + '</td>' +
+                 '<td style="font-size:12px;color:var(--dim);">' + esc(r.item.room || '') + '</td>' +
+                 '<td><span class="statchip ' + r.sevInfo.sev + '">' + esc(r.sevInfo.label) + '</span></td></tr>';
+        }).join('') + '</table></div>';
+      return '<details class="coo-details" style="margin-top:8px;"' + (isNow?' open':'') + '>' +
+        '<summary>' + b.label +
+          '<span style="float:right;color:var(--dim);font-weight:400;">' + list.length + '건' +
+            (problemCnt ? ' · <span style="color:#ff8a80;">문제 ' + problemCnt + '건</span>' : '') +
+            (isNow ? ' · <span style="color:var(--accent);">지금 이 시간대</span>' : '') + '</span>' +
+        '</summary>' + body +
+        '</details>';
+    }).join('');
+  }
+
   // 방(room) 기준으로 접어 묶는다 — 문제(🔴+⚫) 많은 방을 위로. troom에는 있는데 발신 0건인 방(구멍)도 숨기지 않고 얹는다.
   function alertRoomsHtml(rows, troom){
     var groups = {}, order = [];
@@ -2354,7 +2416,9 @@
       if(_notifyState.problemOnly && r.sevInfo.sev !== 'bad' && r.sevInfo.sev !== 'dead') return false;
       return true;
     });
-    wrap.innerHTML = shown.length ? alertRoomsHtml(shown, _alertTroom) : '<div class="feed-status">조건에 맞는 알림이 없습니다.</div>';
+    wrap.innerHTML = shown.length
+      ? (_notifyState.view === 'time' ? alertTimeHtml(shown) : alertRoomsHtml(shown, _alertTroom))
+      : '<div class="feed-status">조건에 맞는 알림이 없습니다.</div>';
   }
 
   /* ★2026-07-31 시토(GM 표면 점검) — 여기 안내가 "notify_registry_check.py 가 상시 대조" 라고
@@ -2499,6 +2563,17 @@
       problemBtn.addEventListener('click', function(){
         _notifyState.problemOnly = !_notifyState.problemOnly;
         problemBtn.classList.toggle('active', _notifyState.problemOnly);
+        alertApplyFilters();
+      });
+    }
+    // ⏱ 시간순 ↔ 방 기준 전환 (GM 지시 2026-08-08). 방별 보기가 기본 — 실무진 관점은 그대로 두고,
+    // '오늘 몇 시에 뭐가 나가나'를 볼 때만 시간순으로 바꾼다.
+    var timeBtn = document.getElementById('notify-time-toggle');
+    if(timeBtn){
+      timeBtn.addEventListener('click', function(){
+        _notifyState.view = (_notifyState.view === 'time') ? 'room' : 'time';
+        timeBtn.classList.toggle('active', _notifyState.view === 'time');
+        timeBtn.textContent = (_notifyState.view === 'time') ? '🏠 방별로' : '⏱ 시간순';
         alertApplyFilters();
       });
     }

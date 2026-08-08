@@ -36,8 +36,8 @@
     },
     {
       "id": "tg-digest-1-inquiry",
-      "when": "휴일 20:00 / 평일 22:30",
-      "when_sort": "2030",
+      "when": "평일 22:30 / 휴일 20:00",
+      "when_sort": "2230",
       "freq": "daily",
       "channel": "telegram",
       "room": "문의알림방",
@@ -51,8 +51,8 @@
     },
     {
       "id": "tg-digest-2-check",
-      "when": "휴일 20:00 / 평일 22:30",
-      "when_sort": "2030",
+      "when": "평일 22:30 / 휴일 20:00",
+      "when_sort": "2230",
       "freq": "daily",
       "channel": "telegram",
       "room": "점검관리방",
@@ -66,8 +66,8 @@
     },
     {
       "id": "tg-digest-2b-reception",
-      "when": "휴일 20:00 / 평일 22:30",
-      "when_sort": "2030",
+      "when": "평일 22:30 / 휴일 20:00",
+      "when_sort": "2230",
       "freq": "daily",
       "channel": "telegram",
       "room": "종합접수처",
@@ -81,8 +81,8 @@
     },
     {
       "id": "kakao-ops-stream2",
-      "when": "휴일 20:00 / 평일 22:30",
-      "when_sort": "2030",
+      "when": "평일 22:30 / 휴일 20:00",
+      "when_sort": "2230",
       "freq": "daily",
       "channel": "kakao",
       "room": "★운영+시설+지원+주차",
@@ -259,7 +259,7 @@
     {
       "id": "win-weekly-mon0900-marketing",
       "when": "월 09:00",
-      "when_sort": null,
+      "when_sort": "0900",
       "freq": "weekly",
       "channel": "telegram",
       "room": "문의알림방",
@@ -274,7 +274,7 @@
     {
       "id": "win-weekly-sun0900-education",
       "when": "일 09:00",
-      "when_sort": null,
+      "when_sort": "0900",
       "freq": "weekly",
       "channel": "telegram",
       "room": "자동화현황방",
@@ -289,7 +289,7 @@
     {
       "id": "win-weekly-sun1030-selfreview",
       "when": "일 10:30",
-      "when_sort": null,
+      "when_sort": "1030",
       "freq": "weekly",
       "channel": "telegram",
       "room": "자동화현황방",
@@ -304,7 +304,7 @@
     {
       "id": "win-monthly-1st0900-marketing",
       "when": "매월 1일 09:00",
-      "when_sort": null,
+      "when_sort": "0900",
       "freq": "monthly",
       "channel": "telegram",
       "room": "GM_DM",
@@ -319,7 +319,7 @@
     {
       "id": "win-monthly-1st0900-checksummary",
       "when": "매월 1일 09:00",
-      "when_sort": null,
+      "when_sort": "0900",
       "freq": "monthly",
       "channel": "telegram",
       "room": "점검관리방",
@@ -334,7 +334,7 @@
     {
       "id": "win-monthly-1st0900-opsplan",
       "when": "매월 1일 09:00",
-      "when_sort": null,
+      "when_sort": "0900",
       "freq": "monthly",
       "channel": "telegram",
       "room": "GM_DM",
@@ -349,7 +349,7 @@
     {
       "id": "win-monthly-lastday2100-opsclose",
       "when": "말일 21:00",
-      "when_sort": null,
+      "when_sort": "2100",
       "freq": "monthly",
       "channel": "telegram",
       "room": "GM_DM",
@@ -364,7 +364,7 @@
     {
       "id": "win-monthly-4thmon1000-memberexpiry",
       "when": "매월 넷째 월요일 10:00",
-      "when_sort": null,
+      "when_sort": "1000",
       "freq": "monthly",
       "channel": "telegram",
       "room": "GM_DM",
@@ -453,8 +453,8 @@
     },
     {
       "id": "kakao-depthead-inquiry",
-      "when": "휴일 20:00 / 평일 22:30",
-      "when_sort": "2030",
+      "when": "평일 22:30 / 휴일 20:00",
+      "when_sort": "2230",
       "freq": "daily",
       "channel": "kakao",
       "room": "★부서장",
@@ -685,5 +685,6 @@
         "source": "Survey.js CFO 조달 트리거"
       }
     }
-  ]
+  ],
+  "_when_sort_doc": "when_sort = 시간순 화면의 정렬 기준. 평일·휴일로 시각이 갈리는 발신은 **잦은 쪽(평일)**을 기준으로 적는다 — 2026-08-08 이전엔 같은 성격 항목이 2030 과 2230 으로 섞여 있어 시간순으로 세우면 같은 회차가 두 자리에 흩어졌다. 부정기는 null."
 }
