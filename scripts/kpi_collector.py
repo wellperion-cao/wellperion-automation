@@ -759,6 +759,22 @@ def main() -> None:
     print(f"  대표님 보고건 스냅샷: {ceo_n}건(회장님·기타 포함 {len(snap['rows'])}건)"
           + (f" — 실패: {snap['error']}" if snap.get("error") else ""))
 
+    # 배선 수복(배CTO-2026-08-08): 스냅샷 파일을 쓴 뒤 커밋·푸시가 없었다 — 화면은 raw.githubusercontent
+    # 를 먼저 그리므로 로컬 갱신만으론 라이브 반영 불가. safe_commit 으로 이 관문에 흡수(약속 L21).
+    try:
+        _snap_r = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve().parent / "safe_commit.py"),
+             "-m", "chore(cto): 대표님 보고건 스냅샷 자동 발행 (owner_directive_snapshot)",
+             "--", "status/owner_directive_snapshot.json"],
+            cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", timeout=180,
+        )
+        _snap_tail = (_snap_r.stdout or "").strip().splitlines()
+        print("  [owner_snapshot] " + (_snap_tail[0] if _snap_tail else "safe_commit 출력 없음"))
+        if _snap_r.returncode != 0:
+            print(f"  [owner_snapshot] safe_commit rc={_snap_r.returncode} — 파일은 로컬에 남음, 다음 회차 재시도")
+    except Exception as _snap_e:
+        print(f"  [owner_snapshot] 커밋 실패(무해 — 파일은 로컬에 남음): {type(_snap_e).__name__}: {str(_snap_e)[:120]}")
+
     g = data["global"]
     print(f"[kpi_collector] {data['generated_at_kst']}")
     print(f"  global: unpushed={g['unpushed']}  mirror={g['mirror_ok']}  health={g['health']}")
