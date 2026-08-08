@@ -375,20 +375,14 @@
   <!-- ══ /쿵짝표 ══ -->
 
   <div id="layer-autonomy">
-  <h2 class="layer-h2">① 자율로 한 일</h2>
+  <!-- 레이어 제목 "① 자율로 한 일" 삭제 (GM 2026-08-08) — 바로 아래 「🧭 항로」가 그 내용이다.
+       머리만 하나 더 있으면 같은 것을 두 겹으로 읽게 된다. -->
 
 
-    <!-- ══ 🏁 일 끝낼 땐 '다음'을 남긴다 (아이콘 표준 A안) — 북극성과 글꼴·사이즈 통일 (2026-06-06 · A안 2026-06-18) ══ -->
-    <div style="background:linear-gradient(135deg,#13212c 0%,#1b3340 100%);border:1px solid #38b6c4;border-radius:14px;padding:14px 18px;margin:0 0 16px;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:18px;">🏁</span>
-        <span style="color:#fff;font-weight:800;font-size:14px;">일을 끝내면(🏁) 반드시 '다음'을 남긴다</span>
-      </div>
-      <p style="color:#cfe9ee;font-size:12px;line-height:1.6;margin:6px 0 0;">배가 도착(<strong style="color:#7fdbe8;">🏁 완료</strong>)하면 <strong style="color:#fff;">'여기까지 했다 + 다음은 이것'</strong>을 적어 다리(<strong style="color:#8ca6d6;">🔗 항로점</strong>)를 놓아요. 그래야 다음 배로 이어집니다. 아직 안 띄운·멈춘 배는 항구에 <strong style="color:#8ca6d6;">⚓ 닻</strong>을 내리고 대기.</p>
-      <div style="font-size:12px;color:#eaf6f8;line-height:1.6;margin:10px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><strong style="color:#7fdbe8;">🔑 단 하나의 규칙</strong> · 오늘 할 일 = <strong style="color:#fff;">① 어제 남긴 '다음'(🔗)</strong> + <strong style="color:#fff;">② GM이 새로 시킨 것</strong>. 이 둘뿐.</div>
-      <p style="color:#f0b8b8;font-size:11.5px;margin:8px 0 0;">⚠️ <strong style="color:#ff9a9a;">🌀 표류</strong> = 끝냈는데(🏁) '다음'을 안 남긴 것. 그냥 두지 말고 바로 <strong style="color:#fff;">"👉 다음 뭐 할지"</strong>를 정하세요 — 안 그러면 다음 날 "어디였더라?" 헤맵니다.</p>
-    </div>
-    <!-- ══ /🏁 완료·다음 ══ -->
+    <!-- 🏁 완료·다음 안내 박스 삭제 (GM 지시 2026-08-08 "가이드를 너무 길게 할 필요는
+     없는 것 같아, 굳이 불필요한건 삭제"). 규칙은 항로 표의 '다음' 칸이 이미 실물로
+     보여 준다 — 설명 박스가 매일 자리를 차지할 이유가 없다. -->
+
 
 
   <!-- ════ 🧭 항로 — AI 배 목록 (G1 에서 이관 · GM 결정 2026-08-03 "GM 것만 G1, AI 건들은 다 자율현황으로" · 배10510) ════
@@ -444,9 +438,11 @@
   <div class="routines" id="trash-ships">
     <div class="feed-status" style="grid-column:1/-1;">보관함을 불러오는 중…</div>
   </div>
-  </details>
 
-  <!-- ══ 🗺️ 북극성별 보기 — G1 에서 이관(AI 배를 북극성 모듈별로 조망 · 배10510 · 2026-08-03) ══
+  <!-- 🗺️ 북극성별 보기 — 같은 배를 담당·모듈별로 묶어 본 것뿐이라 여기로 들여왔다
+       (GM 2026-08-08 "북극성별 보기 너무 좋은데... 이것도 중복된 내용인 것 같은데 병합 가능할듯").
+       따로 두면 같은 배가 화면 두 곳에 흩어져 어느 쪽이 진짜인지 헷갈린다. -->
+<!-- ══ 🗺️ 북극성별 보기 — G1 에서 이관(AI 배를 북극성 모듈별로 조망 · 배10510 · 2026-08-03) ══
        소스 = status/voyage_map.json(scripts/build_voyage_map.py 발행). 렌더는 G1 에 있던 것 그대로 —
        id(#gm1-northstar-view)도 CSS 200여 줄이 그걸 물고 있어 유지한다. G1 쪽 토글 글루만 떼어냈다. ══ -->
   <details class="hist-fold" id="sec-voyage" style="margin-top:10px;">
@@ -810,6 +806,9 @@
     })();
     </script>
     <!-- ══ /🗺️ 북극성별 보기 ══ -->
+  </details>
+
+  
 
   <!-- ══ 🧠 AI 자기학습 제안 — G1 에서 이관(AI 살림 · 배10510) ══ -->
     <!-- ══ 🧠 AI 자기학습 제안 (2026-06-23 시토 신설) ══ -->
@@ -916,73 +915,12 @@
       <a href="cmo/funnel/문의흐름지도.html" style="color:var(--accent-soft);font-weight:700;">문의 흐름 지도</a>.</div>
   </div>
 
-  <!-- ════ 🔧 시우(AI COO) 자율 운영 (점검 운영 루프 5단계 자율 축 · today_live·daily_scheduler 실데이터) ════ -->
-  <section>
-    <h2 class="sec">🔧 시우 (AI COO) 자율 운영 <span style="font-size:11px;font-weight:400;color:var(--dim);">(점검 운영 루프 5단계 자율 축)</span></h2>
-    <div class="sec-note">지원부·시설부·주차 일일 점검 루프 — 수치는 점검 GAS 실데이터만.</div>
-    <div class="cmo-loop coo-loop">
-      <span class="cmo-loop-lbl">점검 운영 루프</span>
-      <div class="cmo-step live"><span>① 점검 실행</span><span class="cs-s">라이브</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step live"><span>② 집계·현황</span><span class="cs-s">라이브</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step live"><span>③ 독려</span><span class="cs-s">라이브</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step partial"><span>④ 월간 A3 리포트</span><span class="cs-s">부분</span></div>
-      <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step wait"><span>⑤ 개선 환류</span><span class="cs-s">대기</span></div>
-      <span class="cmo-loop-arrow back pending" title="⑤ 개선 환류 연결 시 닫힘(완료율 측정 정밀도 확정 후 연결)">↻ 다음달 운영 반영 (대기)</span>
-    </div>
-    <div class="cmo-loop-status">현재 열린 루프 — ⑤ 개선 환류 대기 · 완료율 측정 정밀도 확정 후 폐루프</div>
-
-    <!-- ════ 1층 · 운영 실측 지표(라이브 · today_live/monthly_report&dept=support 실데이터 · 지원부 체계.html과 동일 GAS 재사용) ════ -->
-    <div class="coo-tier">
-      <div class="coo-tier-h">📊 오늘·이번달 실측 지표 <span class="tier-badge">라이브</span></div>
-      <div class="stats" id="coo-live-metrics">
-        <div class="feed-status" style="grid-column:1/-1;">점검 실측 지표를 불러오는 중…</div>
-      </div>
-      <div class="sec-note" style="margin:6px 0 0;">지원부=<code>today_live</code>·<code>monthly_report&dept=support</code> 실측(남/여). 시설부=입력률 구조(완료율 아님). 주차=체계 외.</div>
-    </div>
-
-    <div id="coo-routines-static">
-      <div class="gtbl-wrap"><table class="gtbl"><tr><th style="width:42px">단계</th><th style="width:26%">체계</th><th style="width:17%">주기</th><th style="width:82px">상태</th><th>무엇을</th></tr><tr><td style="text-align:center;"><span class="cmo-stage live">②</span></td><td>✅ today_live 점검 집계 (GAS)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 성별·요일·회차 필터로 시트 기준 완료율 실시간 집계 → 화면·텔레그램·독려 단일 소스</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">③</span></td><td>📢 점검 독려 알림</td><td>매일(daily_scheduler)</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 미완료 점검 점검관리방(-5136037543) 자동 독려, 스팸 dedup</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">④</span></td><td>📅 월간 점검 리포트 발송</td><td>매월 1일 09:00</td><td><span class="pill on">라이브(신규)</span></td><td><span class="rk">무엇을</span> Wellperion-MonthlyCheckReport-0900-D1 — 전월 집계→점검관리방 텔레그램 요약(첫 발송 8/1)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage partial">④</span></td><td>📋 월간보고 A3 페이지</td><td>상시</td><td><span class="pill warn">부분</span></td><td><span class="rk">무엇을</span> 지원부=라이브·시설부=GAS 배포 대기. 월 선택→KPI·이슈·구역/회차·개선시사 A3 인쇄</td></tr><tr><td style="text-align:center;"><span class="cmo-stage wait">—</span></td><td>🔗 4부서 체계 페이지 정합</td><td>지시형</td><td><span class="pill idle">지시 시</span></td><td><span class="rk">무엇을</span> 페이지↔시트 동기·정렬(구체 지시 시에만 실행 — 상시 자율 보강 폐지)</td></tr></table></div>
-    
-    </div>
-
-    <!-- ════ 2층 · 실무진 점검 업무·역할(접기 · SUPPORT_STAFF 조편성·monthly_ops_plan practitioner_goals 실측 기반) ════ -->
-    <details class="coo-details">
-      <summary>👥 실무진 점검 업무·역할 <span style="font-size:11px;font-weight:400;color:var(--dim);">— 부서별 누가·언제 (펼치기)</span></summary>
-      <div class="coo-tbl-wrap">
-        <table>
-          <tr><th style="width:88px">부서</th><th style="width:190px">점검 주체</th><th>항목/구역</th><th style="width:150px">주기</th></tr>
-          <tr><td>지원부(남)</td><td>남성구역 담당(팀장·주임 체계)</td><td>남성구역 회차별 전 항목</td><td>매일 오전조·마감조 2교대(평일 10·20시, 주말 12·18시)</td></tr>
-          <tr><td>지원부(여)</td><td>여성구역 담당(반장·주임 체계)</td><td>여성구역 회차별 전 항목</td><td>매일 오전조·마감조 2교대(평일 10·20시, 주말 12·18시)</td></tr>
-          <tr><td>시설부</td><td><strong>김종현 차장·박호균 과장</strong></td><td>남자 지원 점검</td><td>매일 오전 10시</td></tr>
-          <tr><td>주차</td><td>주차관리부(양상규 고문)</td><td colspan="2"><span style="color:var(--dim);">점검 체계 미포함 — 독립 운영(규정·가이드·매뉴얼만, 점검 재추가 금지)</span></td></tr>
-        </table>
-      </div>
-      <div class="sec-note" style="margin:8px 0 0;">출처: <code>지원부 체계.html</code> · <code>monthly_ops_plan.json</code>. 개인 명단은 지원부 체계 페이지.</div>
-    </details>
-
-    <!-- ════ 3층 · 개선 액션·SOP 연결(접기 · 루프 ⑤ 개선 환류의 실체) ════ -->
-    <details class="coo-details">
-      <summary>🔁 이슈·미완료 → 개선 반영 흐름 (루프 ⑤ 실체 · 펼치기)</summary>
-      <div class="coo-flow">
-        <span class="coo-flow-step">① 이슈 발생(점검 중)</span><span class="coo-flow-arrow">→</span>
-        <span class="coo-flow-step">② 점검관리방(-5136037543) 자동 알림</span><span class="coo-flow-arrow">→</span>
-        <span class="coo-flow-step">③ 점검일지 시트 G열 기록</span><span class="coo-flow-arrow">→</span>
-        <span class="coo-flow-step">④ 이슈 내 완결(종합접수처 미전송)</span>
-      </div>
-      <div class="coo-flow" style="margin-top:6px;">
-        <span class="coo-flow-step">월 완료율 저조·이슈 다발</span><span class="coo-flow-arrow">→</span>
-        <span class="coo-flow-step">monthly_report improvements 개선시사 생성</span><span class="coo-flow-arrow">→</span>
-        <span class="coo-flow-step">다음달 practitioner_goals·objectives 반영<span class="coo-tag wait">대기</span></span>
-      </div>
-      <div class="sec-note" style="margin:8px 0 0;">①~④=라이브 · 월간→다음달 반영은 아직 수기(⑤ 대기).</div>
-    </details>
-  </section>
-
-  <!-- ════ 👥 시포(AI CPO) 자율 회원관리 (회원 라이프사이클 루프 5단계 자율 축 · cpo_churn_stats·문의 시트 실데이터) ════ -->
+    <!-- 🔧 시우(AI COO) 자율 운영 섹션 삭제 (GM 지시 2026-08-08 "자율 자동화 모듈은 알림한장이랑
+       중복되는 것과 항로랑 중복된 것들 다 있는 것 같은데").
+       ▸GM 확정 2026-08-05 로 시우는 AI 실행자가 아니다 — 배는 유지하되 사람이 처리한다.
+         AI 자율 루프 5단계를 이 화면에 그릴 근거가 없어졌다.
+       ▸점검 숫자는 「🖥️ 지금 잘 돌고 있나」와 점검 화면이, 배는 「🧭 항로」가 이미 보여 준다. -->
+<!-- ════ 👥 시포(AI CPO) 자율 회원관리 (회원 라이프사이클 루프 5단계 자율 축 · cpo_churn_stats·문의 시트 실데이터) ════ -->
   <section>
     <h2 class="sec">👥 시포 (AI CPO) 자율 회원관리 <span style="font-size:11px;font-weight:400;color:var(--dim);">(회원 라이프사이클 루프 5단계 자율 축)</span></h2>
     <div class="sec-note">문의→이탈·갱신 회원 라이프사이클 루프 — 수치는 <code>cpo_churn_stats</code>·문의 시트 실데이터만.</div>
@@ -2856,8 +2794,11 @@
       if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
     }
     try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
+    // 시우 섹션은 2026-08-08 에 삭제됐다 — 칸이 없으면 조용히 넘어간다.
+    //   (없는 칸에 innerHTML 을 쓰면 여기서 예외가 나 아래 렌더가 통째로 멈춘다.)
     try{ renderCooLiveMetrics(a[9], a[10]); }catch(e){
-      document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">운영 실측 지표 표시 오류.</div>';
+      var _cl = document.getElementById('coo-live-metrics');
+      if(_cl) _cl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">운영 실측 지표 표시 오류.</div>';
     }
     try{ renderCpoLiveStrip(a[11]); }catch(e){ /* 조용히 실패 — 초기 "–" 유지(가짜 수치 금지) */ }
     try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
@@ -2884,7 +2825,8 @@
     document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     var asEl0 = document.getElementById('all-ships');
     if(asEl0) asEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">배 목록을 불러오지 못했습니다.</div>';
-    document.getElementById('coo-live-metrics').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
+    var _cl2 = document.getElementById('coo-live-metrics');
+    if(_cl2) _cl2.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">현황을 아직 불러오지 못했습니다.</span>';
