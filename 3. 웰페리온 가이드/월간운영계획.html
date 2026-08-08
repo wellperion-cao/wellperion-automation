@@ -2623,7 +2623,9 @@
     });
     return bestId;
   }
-  function objsForDept(cfg, objs){ return objs.filter(function(o){ return resolveDeptId(o.dept || '') === cfg.id; }); }
+  // dept_hidden:true — 이 목표는 다른 화면(예 GM 업무 진행건)에 이미 있어 부서 카드에서만 뺀다(GM 지시 2026-08-08).
+  // objectives 배열엔 그대로 남아 isGmDirect 등 다른 필터에는 영향 없다 — 부서 카드 렌더 이 한 곳만 걸러낸다.
+  function objsForDept(cfg, objs){ return objs.filter(function(o){ return resolveDeptId(o.dept || '') === cfg.id && !o.dept_hidden; }); }
   function objHtml(o){
     var st = o.status || '계획';
     var tgt = (o.target && String(o.target).trim()) ? ('<div class="dg-obj-goal">🎯 월 목표: ' + esc(o.target) + '</div>') : '';
