@@ -954,7 +954,7 @@
 <!-- ════ 👥 시포(AI CPO) 자율 회원관리 (회원 라이프사이클 루프 5단계 자율 축 · cpo_churn_stats·문의 시트 실데이터) ════ -->
   <section>
     <h2 class="sec">👥 시포 (AI CPO) 자율 회원관리 <span style="font-size:11px;font-weight:400;color:var(--dim);">(회원 라이프사이클 루프 5단계 자율 축)</span></h2>
-    <div class="sec-note">문의→이탈·갱신 회원 라이프사이클 루프 — 수치는 <code>cpo_churn_stats</code>·문의 시트 실데이터만.</div>
+    <div class="sec-note">문의→LOSS·갱신 회원 라이프사이클 루프 — 수치는 <code>cpo_churn_stats</code>·문의 시트 실데이터만.</div>
     <div class="cpo-live-strip" id="cpo-live-strip">
       <div class="cls-item"><span class="cls-lbl">유효회원</span><b id="cpoStatActive">–</b>명</div>
       <div class="cls-item"><span class="cls-lbl">당월 LOSS</span><b id="cpoStatMonthLoss">–</b></div>
@@ -972,12 +972,12 @@
       <span class="cmo-loop-arrow">→</span>
       <div class="cmo-step partial"><span>④ 등록 전환</span><span class="cs-s">부분</span></div>
       <span class="cmo-loop-arrow">→</span>
-      <div class="cmo-step live"><span>⑤ 이탈·갱신 측정</span><span class="cs-s">라이브</span></div>
-      <span class="cmo-loop-arrow back pending" title="↻ 이탈신호→선제 케어 자동 연결 시 닫힘(갱신 D-7 알림=브로제이 이관 예정·현재 미연결)">↻ 이탈신호→선제 케어 (대기)</span>
+      <div class="cmo-step live"><span>⑤ LOSS·갱신 측정</span><span class="cs-s">라이브</span></div>
+      <span class="cmo-loop-arrow back pending" title="↻ LOSS신호→선제 케어 자동 연결 시 닫힘(갱신 D-7 알림=브로제이 이관 예정·현재 미연결)">↻ LOSS신호→선제 케어 (대기)</span>
     </div>
     <div class="cmo-loop-status">현재 열린 루프 — ⑤ 측정은 <b>라이브</b>·↻ 자동 케어 환류 대기(케어 자동화 연결 시 폐루프)</div>
     <div id="cpo-routines-static">
-      <div class="gtbl-wrap"><table class="gtbl"><tr><th style="width:42px">단계</th><th style="width:26%">체계</th><th style="width:17%">주기</th><th style="width:82px">상태</th><th>무엇을</th></tr><tr><td style="text-align:center;"><span class="cmo-stage live">①</span></td><td>🔔 문의 접수 자동 알림 (_notifyNewInquiries_)</td><td>매 5분(트리거)</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 문의 5종(멤버십·성인·유소년·공간렌트·비즈니스) 신규 자동 감지 → 문의알림방(-5516675010) 5분 폴링 알림</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">②</span></td><td>📋 CPO 문의 관리 대시보드 (membership.html)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 5종 문의 목록·상태·전환을 실데이터로 렌더. 공간렌트·비즈니스 관리패널 추가 → 관리 커버리지 5종 완성(상태 분류는 수기)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">⑤</span></td><td>📉 이탈·갱신 측정 (cpo_churn_stats GAS)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 유효회원·LOSS율(당월/누적)·갱신 임박 D-7/14/30 실측 렌더. 실측 2신호+미측정 7신호 정직 태그(억지 생성 금지)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage partial">③④</span></td><td>📅 통합회원 상태·등록 sync-on-load</td><td>카드 로드시</td><td><span class="pill warn">부분</span></td><td><span class="rk">무엇을</span> 달력 방문완료 도장·등록 carry-over 멱등 배관은 라이브. 예약·전환 판단은 수기 운영 의존</td></tr><tr><td style="text-align:center;"><span class="cmo-stage wait">↻</span></td><td>💌 이탈방지 자동 케어 (갱신 D-7 임박 알림)</td><td>대기</td><td><span class="pill idle">환류 대기</span></td><td><span class="rk">무엇을</span> 실측 갱신임박 신호로 선제 케어 알림 = 브로제이(AWS 회원관리 이전 시스템) 담당 예정 → 자동 환류 미연결(대기)</td></tr></table></div>
+      <div class="gtbl-wrap"><table class="gtbl"><tr><th style="width:42px">단계</th><th style="width:26%">체계</th><th style="width:17%">주기</th><th style="width:82px">상태</th><th>무엇을</th></tr><tr><td style="text-align:center;"><span class="cmo-stage live">①</span></td><td>🔔 문의 접수 자동 알림 (_notifyNewInquiries_)</td><td>매 5분(트리거)</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 문의 5종(멤버십·성인·유소년·공간렌트·비즈니스) 신규 자동 감지 → 문의알림방(-5516675010) 5분 폴링 알림</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">②</span></td><td>📋 CPO 문의 관리 대시보드 (membership.html)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 5종 문의 목록·상태·전환을 실데이터로 렌더. 공간렌트·비즈니스 관리패널 추가 → 관리 커버리지 5종 완성(상태 분류는 수기)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage live">⑤</span></td><td>📉 LOSS·갱신 측정 (cpo_churn_stats GAS)</td><td>매 요청</td><td><span class="pill on">라이브</span></td><td><span class="rk">무엇을</span> 유효회원·LOSS율(당월/누적)·갱신 임박 D-7/14/30 실측 렌더. 실측 2신호+미측정 7신호 정직 태그(억지 생성 금지)</td></tr><tr><td style="text-align:center;"><span class="cmo-stage partial">③④</span></td><td>📅 통합회원 상태·등록 sync-on-load</td><td>카드 로드시</td><td><span class="pill warn">부분</span></td><td><span class="rk">무엇을</span> 달력 방문완료 도장·등록 carry-over 멱등 배관은 라이브. 예약·전환 판단은 수기 운영 의존</td></tr><tr><td style="text-align:center;"><span class="cmo-stage wait">↻</span></td><td>💌 LOSS방지 자동 케어 (갱신 D-7 임박 알림)</td><td>대기</td><td><span class="pill idle">환류 대기</span></td><td><span class="rk">무엇을</span> 실측 갱신임박 신호로 선제 케어 알림 = 브로제이(AWS 회원관리 이전 시스템) 담당 예정 → 자동 환류 미연결(대기)</td></tr></table></div>
     
     </div>
   </section>
