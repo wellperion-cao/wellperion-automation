@@ -600,16 +600,55 @@ def fold_stalled(raw: list, prev: dict) -> dict:
         state[r["key"]] = weeks
     rows.sort(key=lambda r: -r["days"])
 
-    by_who: dict = {}
+    # ★부서 단위로 센다(GM 확정 2026-08-08) — 개인 이름으로 부르면 방어부터 하게 된다.
+    by_dept: dict = {}
     for r in rows:
-        by_who[r["who"]] = by_who.get(r["who"], 0) + 1
+        r["dept"] = dept_of(r["who"])
+        by_dept[r["dept"]] = by_dept.get(r["dept"], 0) + 1
 
     # 담당이 못 푸는 것 = 여러 회차째인데 막힌 이유조차 안 적힌 건. 이건 GM 이 풀 일이다.
     return {"rows": rows, "state": state,
-            "by_who": sorted(by_who.items(), key=lambda kv: -kv[1]),
+            "by_who": sorted(by_dept.items(), key=lambda kv: -kv[1]),
             "escalate": [r for r in rows if r["weeks"] >= ESCALATE_WEEKS and not r["reason"]],
             "no_reason": [r for r in rows if not r["reason"]],
             "first_round": not prev}
+
+
+def dept_of(name: str) -> str:
+    """사람 이름 → 부서. 못 찾으면 '미분류'(지어내지 않는다).
+
+    ★GM 확정 2026-08-08 — "사람단위로 하지말고 부서단위로 정리하는게 좋지않아?
+      사람이 직접적으로 안된건에 대해서 이야기하면 괴로울 것 같은데?"
+      멈춘 일을 개인 이름으로 부르면 방어부터 하게 된다. 부서로 말하면 그 부서 리더가
+      안에서 나눈다(약속 L24 — 지시·보고는 리더 한 곳을 거친다).
+    정본 = ssot/ownership_map.json 의 부서_리더. 여기 표를 새로 만들지 않는다(약속 L01).
+    """
+    nm = str(name or "").strip()
+    for d in _dept_table():
+        if nm in d.get("구성원", []):
+            return d["이름"]
+    return "미분류"
+
+
+def dept_leader(dept: str) -> str:
+    for d in _dept_table():
+        if d["이름"] == dept:
+            return d.get("리더", "")
+    return ""
+
+
+def _dept_table() -> list:
+    global _DEPT_CACHE
+    if _DEPT_CACHE is None:
+        try:
+            m = json.loads((ROOT / "ssot" / "ownership_map.json").read_text(encoding="utf-8"))
+            _DEPT_CACHE = (m.get("부서_리더") or {}).get("부서") or []
+        except Exception:
+            _DEPT_CACHE = []
+    return _DEPT_CACHE
+
+
+_DEPT_CACHE = None
 
 
 def _stalled_tile(label: str, big: str, sub: str, tone: str = "") -> str:
@@ -626,7 +665,7 @@ def build_stalled_card_html(S: dict, target_date: datetime) -> str:
     rows, by_who = S["rows"], S["by_who"]
 
     # 경보 = 가장 오래 멈춘 것 하나. 없으면 '특이사항 없음'(엔진의 기존 배너 규칙 재사용).
-    alerts = ([f'{rows[0]["title"]} — {rows[0]["days"]}일째 · {rows[0]["who"]}'] if rows else [])
+    alerts = ([f'{rows[0]["title"]} — {rows[0]["days"]}일째 · {rows[0].get("dept") or "미분류"}'] if rows else [])
 
     who_lines = "".join(
         f'<div class="who"><span class="wn">{w}</span>'
@@ -654,7 +693,7 @@ def build_stalled_card_html(S: dict, target_date: datetime) -> str:
         return ('<div class="sblock">'
                 f'<div class="srow"><span class="sd">{r["days"]}일</span>'
                 f'<span class="st">{html_mod.escape(r["title"][:30])}</span>'
-                f'<span class="sw">{html_mod.escape(r["who"])}{wk}</span></div>'
+                f'<span class="sw">{html_mod.escape(r.get("dept") or "미분류")}{wk}</span></div>'
                 f'{why}</div>')
 
     top = "".join(_row_html(r) for r in rows[:SHOW])
@@ -668,7 +707,7 @@ def build_stalled_card_html(S: dict, target_date: datetime) -> str:
         esc_lines = "".join(
             f'<div class="srow"><span class="sd">{r["weeks"]}주</span>'
             f'<span class="st">{html_mod.escape(r["title"][:30])}</span>'
-            f'<span class="sw">{html_mod.escape(r["who"])}</span></div>' for r in esc[:3])
+            f'<span class="sw">{html_mod.escape(r.get("dept") or "미분류")}</span></div>' for r in esc[:3])
         esc_html = ('<div class="whowrap esc"><div class="lab">🔴 담당이 못 푸는 것 — GM 께 올립니다</div>'
                     f'{esc_lines}'
                     '<div class="sub" style="margin-top:6px;">여러 주째 그대로인데 막힌 이유도 안 적혔습니다. '
@@ -676,6 +715,9 @@ def build_stalled_card_html(S: dict, target_date: datetime) -> str:
 
     nr = len(S.get("no_reason") or [])
     nr_line = (f'<b>{nr}건</b>은 막힌 이유가 아직 비어 있습니다. ' if nr else "")
+    # 부서 리더는 '탓할 사람'이 아니라 '안에서 나눌 사람'이다 — 숫자 옆이 아니라 여기에만 적는다.
+    leads = [f'{d} {dept_leader(d)}' for d, _n in by_who if dept_leader(d)]
+    lead_line = (f'{" · ".join(leads)}께 드립니다. ' if leads else "")
 
     card = (
         '<div class="card" id="card" style="zoom:3">'
@@ -690,16 +732,16 @@ def build_stalled_card_html(S: dict, target_date: datetime) -> str:
         '<div class="pad" style="padding-top:0">'
         '<div class="grid">'
         f'{_stalled_tile("🗂 진행 중", fmt_comma(S["active"]) + "건", "마감 안 지난 것")}'
-        f'{_stalled_tile("⏰ 마감 지남", fmt_comma(S["overdue"]) + "건", "이름별로 아래에", "sales")}'
+        f'{_stalled_tile("⏰ 마감 지남", fmt_comma(S["overdue"]) + "건", "부서별로 아래에", "sales")}'
         '</div>'
-        '<div class="whowrap"><div class="lab">사람별 밀린 건수</div>'
+        '<div class="whowrap"><div class="lab">부서별 밀린 건수</div>'
         f'{who_lines}</div>'
         '<div class="whowrap"><div class="lab">가장 오래 멈춘 것</div>'
         f'{top}{more}</div>'
         f'{esc_html}'
         '</div>'
         '<div class="foot"><div class="fl">'
-        f'<b>부탁</b> {nr_line}업무 시트의 <b>「보류사유」·「재개조건」</b> 두 칸에 한 줄만 적어 주세요. '
+        f'<b>부탁</b> {lead_line}{nr_line}업무 시트의 <b>「보류사유」·「재개조건」</b> 두 칸에 한 줄만 적어 주세요. '
         '적히면 다음 주 카드에 그 내용이 뜨고, 막힌 곳은 저희가 풉니다. '
         '끝났거나 접을 건이면 상태만 바꿔 주셔도 목록에서 빠집니다.'
         '</div></div>'
@@ -715,6 +757,7 @@ STALLED_CSS = """
 .who:last-child{border-bottom:none}
 .wn{font-size:15px;font-weight:700;color:var(--ink)}
 .wc{font-size:15px;font-weight:800;color:var(--gold)}
+.lead{font-size:12px;font-weight:600;color:var(--dim);margin-left:6px}
 .srow{display:flex;align-items:baseline;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
 .srow:last-child{border-bottom:none}
 .sd{flex:0 0 auto;min-width:52px;font-size:16px;font-weight:800;color:var(--crit)}
