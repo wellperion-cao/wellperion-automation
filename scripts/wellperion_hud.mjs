@@ -1111,9 +1111,48 @@ function trimOmcStats(raw) {
   return out;
 }
 
+// OMC 원문(branch·모델·ctx 등 3줄) + 서브에이전트 목록(└─ 줄, 개수만큼 늘어남)을 합쳐
+// 5줄이던 상태줄을 2줄로 접는다(GM 지시 2026-08-08 "5줄이나 잡아먹네"). 항목은 안 지운다 —
+// └─ 목록만 빼는데, 같은 줄에 이미 'agents:N'(정확히 그 개수)이 있어 정보 손실이 없다.
+function collapseOmcLines(raw) {
+  const stripAnsi = (s) => String(s).replace(/\x1b\[[0-9;]*m/g, '');
+  return String(raw || '').split('\n')
+    .filter((l) => !stripAnsi(l).trimStart().startsWith('└'))
+    .join(`${D} | ${X}`);
+}
+
+/** 1번째 줄(git 상태 기호)을 한글 단어로 바꾼다(2026-08-08 GM 지시 — "기호 말고 한글로").
+ *  +N(저장대기·staged) !N(미저장·modified — 실측 대부분 자동 산출물) ?N(새파일·untracked)
+ *  ⇡N(미업로드·원격에 안 올라간 커밋 — GM 이 실제로 알아야 하는 값, 0 이면 OMC 가 아예 안 찍는다).
+ *  ANSI 색 원문을 그대로 파싱하지 않는다 — 벗긴 평문에서 숫자만 뽑아 우리 팔레트로 다시 그린다
+ *  (부호별 색 조합을 원문 그대로 보존하려는 시도는 깨지기 쉽다 — 벗기고 다시 칠하는 쪽이 안전).
+ *  형식이 달라지면(OMC 업데이트 등) 원본 줄을 그대로 낸다 — 지어내지 않는다. */
+function koreanizeBranchLine(raw) {
+  const str = String(raw || '');
+  const nl = str.indexOf('\n');
+  const first = nl === -1 ? str : str.slice(0, nl);
+  const restStr = nl === -1 ? '' : str.slice(nl);
+  const plain = first.replace(/\x1b\[[0-9;]*m/g, '');
+  const m = plain.match(/^branch:(\S+)(?:\s*\|\s*(.*))?$/);
+  if (!m) return str;   // 형식이 다르면 원문 그대로
+  const branch = m[1];
+  const rest = m[2] || '';
+  const staged = (rest.match(/\+(\d+)/) || [])[1];
+  const modified = (rest.match(/!(\d+)/) || [])[1];
+  const untracked = (rest.match(/\?(\d+)/) || [])[1];
+  const ahead = (rest.match(/⇡(\d+)/) || [])[1];
+  const parts = [];
+  if (staged != null) parts.push(`${D}저장대기 ${X}${staged}`);
+  if (modified != null) parts.push(`${D}미저장 ${X}${modified}`);
+  if (untracked != null) parts.push(`${D}새파일 ${X}${untracked}`);
+  if (ahead != null) parts.push(`${B}${Y}미업로드 ${ahead}${X}`);   // ★0 이 아닐 때만 존재 — 눈에 띄게
+  const newFirst = `${C}${branch}${X}` + (parts.length ? ` ${D}·${X} ${parts.join(`${D} · ${X}`)}` : '');
+  return newFirst + restStr;
+}
+
 function main() {
   const input = readStdin();
-  const base = trimOmcStats(omcHud(input));
+  const base = collapseOmcLines(koreanizeBranchLine(trimOmcStats(omcHud(input))));
 
   let cwd = process.cwd(), transcript = '', sessionId = '';
   try {
