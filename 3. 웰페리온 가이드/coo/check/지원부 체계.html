@@ -6531,6 +6531,11 @@ const WP_LDY_SEED = [
   {id:'carpet', name:'카페트',    unitPrice:5000, lowLimit:1,   active:true}
 ];
 var LAUNDRY_DATA = {master:[], openingStock:{}, daily:{}, newInput:[], audit:[], issues:[]};
+/* 출고 세션 안전망(2026-08-08 라이브 검증 중 발견·수정) — 탭을 다시 열 때마다 백엔드 재조회를 하는데(switchTab),
+   GAS 응답이 느리면(수 초) 그사이 누른 출고 버튼이 뒤늦게 도착한 옛 서버 스냅샷에 덮여 사라질 수 있었다.
+   이번 세션에서 기록/취소한 출고는 여기 따로 쥐고 있다가, 백엔드 응답이 들어올 때마다(wpLdyApplyStored) 다시 얹는다. */
+var WP_LDY_SESSION_ISSUES = [];
+var WP_LDY_UNDONE_TS = {};
 
 /* ── 계산 규칙(지시서 §6) — 화면과 검산이 같은 함수를 쓴다 ────────────────── */
 /* 휴관일 = 매월 둘째·넷째 일요일. 날짜에서 매번 계산한다(하드코딩 금지 · 지시서 §8). */
@@ -6674,6 +6679,11 @@ function wpLdyApplyStored(stored){
     audit: Array.isArray(s.audit) ? s.audit : [],
     issues: Array.isArray(s.issues) ? s.issues : []
   };
+  // 세션 안전망 적용 — 이번 세션에 취소한 건 지우고, 이번 세션에 기록했는데 방금 온 스냅샷에 없는 건 다시 얹는다.
+  LAUNDRY_DATA.issues = LAUNDRY_DATA.issues.filter(function(x){ return !WP_LDY_UNDONE_TS[x.ts]; });
+  WP_LDY_SESSION_ISSUES.forEach(function(x){
+    if (!LAUNDRY_DATA.issues.some(function(y){ return y.ts === x.ts; })) LAUNDRY_DATA.issues.push(x);
+  });
 }
 function wpLdyLoadLocal(){
   var stored = null;
@@ -6810,7 +6820,9 @@ function wpLdyRenderIssueCards(){
 function wpLdyIssue(itemId, qty){
   var d = document.getElementById('wpLdyDate').value;
   if (!LAUNDRY_DATA.issues) LAUNDRY_DATA.issues = [];
-  LAUNDRY_DATA.issues.push({date:d, itemId:itemId, qty:qty, ts:Date.now()});
+  var evt = {date:d, itemId:itemId, qty:qty, ts:Date.now()};
+  LAUNDRY_DATA.issues.push(evt);
+  WP_LDY_SESSION_ISSUES.push(evt); // 늦게 도착하는 백엔드 응답이 못 지우게(세션 안전망)
   try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
   wpLdyPersist();
   wpLdyRefreshItemRow(itemId, d);
@@ -6835,6 +6847,8 @@ function wpLdyUndoIssue(){
   var st = document.getElementById('wpLdyUndoState');
   if (idx === -1){ if (st) st.textContent = '취소할 출고 기록이 없습니다.'; return; }
   var removed = arr.splice(idx, 1)[0];
+  WP_LDY_UNDONE_TS[removed.ts] = true; // 늦게 도착하는 백엔드 응답이 되살리지 못하게(세션 안전망)
+  WP_LDY_SESSION_ISSUES = WP_LDY_SESSION_ISSUES.filter(function(x){ return x.ts !== removed.ts; });
   try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
   wpLdyPersist();
   wpLdyRefreshItemRow(removed.itemId, d);
