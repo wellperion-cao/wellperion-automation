@@ -303,6 +303,22 @@ RELAY_SIGNOFF = "웰페리온 AI 총괄 담당 웰리 드림"
 # 무게 순서(🛳️크루즈 → ⛴️여객선 → ⛵돛단배). 모르는 값은 맨 뒤.
 _RELAY_WEIGHT = {"🛳️크루즈": 0, "⛴️여객선": 1, "⛵돛단배": 2}
 
+# ★2026-08-07 GM 확정(약속 L24 · 배443) — 채널 역할을 갈랐다.
+#   ★중간관리자 방 = 소통 창구(질문·요청·확인·답변 받기). 이경연 실장·이정헌 소장·나우열M 이
+#     다 있어 부서를 가로지르는 확인이 한 번에 끝난다.
+#   ★운영부 방 = 공유 전용. 업무 내용·진행 상황만 알리고 답변을 요구하지 않는다.
+# 이 전달문은 "이 일을 해주세요"라 본질이 요청이다 — 답을 받아야 하므로 담당 역할과 무관하게
+# ★중간관리자 방 한 곳으로 보낸다. 개인 이름으로 라우팅하지 않는다(방으로 라우팅).
+# ★운영부 방에는 기존 아침 다이제스트(공유 성격)가 그대로 나간다 — 그건 손대지 않았다.
+RELAY_ROOM = "★중간관리자"
+
+# 실무진 방 발신 전 GM 승인 단계 — status/ops_digest_send.json 의 키 하나로 켜고 끈다.
+# GM 결정 2026-08-07: "초반에만 이렇게 확인을 하고 나중에는 자율화 할거."
+# ★자율로 되돌릴 때는 이 키를 지운다(꺼둔 채 두면 죽은 코드가 된다 · 약속 L21).
+RELAY_APPROVAL_KEY = "relay_approval_required"
+GM_REPORT_ROOM_ID = 8254867551   # 업무보고방(@namuki_report_bot) — 승인 초안이 가는 곳
+ENV_PATH = ROOT / "telegram_bot" / ".env"
+
 
 def log(msg: str) -> None:
     print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
@@ -325,14 +341,20 @@ def _known_rooms() -> set:
 
 
 def relay_routes() -> "list[tuple[str, dict]]":
-    """[(방 이름, {clevel: 담당자})] — 방 배정 정본은 safe_commit.DOMAIN_MODIFY_RULES 하나."""
+    """[(방 이름, {clevel: 담당자})] — 담당자 정본은 safe_commit.DOMAIN_MODIFY_RULES 하나.
+
+    ★2026-08-07 GM 확정(배443) — 방은 역할로 가르지 않는다. 이 전달문은 "이 일을 해주세요"라
+    본질이 요청이고, 요청은 답을 받아야 한다 → 전부 ★중간관리자 방 한 곳으로 간다.
+    담당자 이름은 본문 줄 끝에 그대로 붙으므로 누구 일인지는 안 흐려진다.
+    (DOMAIN_MODIFY_RULES 의 room 칸은 커밋 가드 안내문에서 계속 쓰이므로 그대로 둔다.)
+    """
     from safe_commit import DOMAIN_MODIFY_RULES  # 함수 안에서 import — 실패해도 다이제스트는 산다
 
-    routes: dict = {}
-    for role_label, contact, _paths, room, _note in DOMAIN_MODIFY_RULES:
+    contacts: dict = {}
+    for role_label, contact, _paths, _room, _note in DOMAIN_MODIFY_RULES:
         clevel = role_label.split("(")[0].strip().lower()  # "COO(시우)" → "coo"
-        routes.setdefault(room, {})[clevel] = contact
-    return list(routes.items())
+        contacts[clevel] = contact
+    return [(RELAY_ROOM, contacts)]
 
 
 ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"
@@ -391,6 +413,21 @@ def _cap_line(text: str) -> str:
     return head.rstrip(" ·—-(→,") + "…"
 
 
+_EMPTY_STAFF_MESSAGE = {"none", "null", "nan", "-", "—", "없음", "미정"}
+
+
+def _has_staff_message(ship: dict) -> bool:
+    """실무진에게 실을 만한 전달문이 실제로 있는가.
+
+    ★2026-08-08 실측(배442) — 파이썬 None 이 문자열 "None" 으로 칸에 박혀 있던 배 3척이
+    있었고, 그중 2척이 GM 이 2026-08-07 에 지적한 바로 그 2건이다(배 9·150). 칸을 비우려던
+    응급 조치가 빈 값 대신 "None" 이라는 글자를 남겨, 다음 회차에 실무진 방으로
+    「• None · 이경연 실장」 이 그대로 나갈 상태였다. 사람 눈에 뜻이 없는 값은 없는 값으로 친다.
+    """
+    text = str(ship.get("staff_message") or "").strip()
+    return bool(text) and text.strip(".…").lower() not in _EMPTY_STAFF_MESSAGE
+
+
 def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
     """열려 있는(PENDING·IN_PROGRESS) 배 중 '실무진 전달문'(staff_message)이 있는 것만 담는다.
 
@@ -415,11 +452,28 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
         log(f"[relay] 큐 읽기 실패 — 전달 생략: {exc}")
         return "", dict(prev_items)
 
-    ships = [x for x in queue if isinstance(x, dict)
-             and x.get("clevel") in contacts
-             and str(x.get("status", "")) in RELAY_OPEN_STATUSES
-             and str(x.get("audience", "")) == "office"   # ★AI 내부 살림(audience="ai")은 사람 방에 보내지 않는다
-             and str(x.get("staff_message", "")).strip()]  # ★전달문 없는 배는 사람 방에 싣지 않는다
+    # ★제외 사유를 센다(2026-08-07 GM 지적 배442 — 조용한 탈락 금지). 안 나가는 것도 사고다:
+    #   'AI 살림이라 뺐다'와 '전달문이 비어 안 나간다'는 전혀 다른 문제인데 둘 다 침묵이면 구별이 안 된다.
+    #   담당이 아예 다른 역할인 배는 정상 범위 밖이라 세지 않는다(그건 탈락이 아니다).
+    dropped_why = {"닫힌 배": 0, "AI 내부 살림": 0, "전달문 비어 있음": 0, "audience 칸 비어 있음": 0}
+    ships = []
+    for x in queue:
+        if not isinstance(x, dict) or x.get("clevel") not in contacts:
+            continue
+        if str(x.get("status", "")) not in RELAY_OPEN_STATUSES:
+            dropped_why["닫힌 배"] += 1
+            continue
+        aud = str(x.get("audience", "")).strip()
+        if aud != "office":
+            # 빈 칸은 안전측으로 막는다 — 채우기 전까지 안 나가는 게 맞다(GM 2026-08-07).
+            dropped_why["AI 내부 살림" if aud else "audience 칸 비어 있음"] += 1
+            continue
+        if not _has_staff_message(x):
+            dropped_why["전달문 비어 있음"] += 1
+            continue
+        ships.append(x)
+    log(f"[relay] 실을 배 {len(ships)}척 · 제외 "
+        + (" · ".join(f"{k} {v}" for k, v in dropped_why.items() if v) or "없음"))
     ships.sort(key=lambda x: (_RELAY_WEIGHT.get(x.get("priority"), 9),
                               str(x.get("enqueued_at", ""))))
     current = {_relay_key(s): _cap_line(str(s["staff_message"]).strip().splitlines()[0]) for s in ships}
@@ -475,7 +529,62 @@ def _save_relay_state(state: dict) -> None:
                      extra={"state": state})
 
 
-def send_relays(dry_run: bool = False) -> None:
+def _migrate_relay_state(state: dict) -> None:
+    """방 배정이 바뀐 첫 회차에 옛 방 스냅샷을 새 방으로 합친다(배443).
+
+    안 하면 이미 한 번 전달한 배가 전부 '새로 생긴 업무'로 한꺼번에 쏟아진다 — 방을 바꾼 게
+    실무진 눈에는 대량 신규로 보인다. 합치기만 하고 발신은 안 한다.
+    """
+    legacy = [r for r in list(state) if r != RELAY_ROOM]
+    if not legacy:
+        return
+    merged = dict(state.get(RELAY_ROOM) or {})
+    for r in legacy:
+        merged.update(state.pop(r) or {})
+    state[RELAY_ROOM] = merged
+    log(f"[relay] 방 통합 — 옛 방 {len(legacy)}곳 스냅샷을 '{RELAY_ROOM}'로 승계(첫 회차 대량발신 방지)")
+
+
+def _relay_approval_required() -> bool:
+    """실무진 방 발신 전 GM 승인을 받을지 — 기존 킬스위치 파일의 키 하나(새 파일 안 만든다).
+
+    GM 결정 2026-08-07: "초반에만 이렇게 확인을 하고 나중에는 자율화 할거."
+    ★자율로 되돌릴 때는 이 키를 지우고 이 함수·초안 경로도 같이 지운다 —
+      꺼둔 채로 두면 죽은 코드가 된다(약속 L21).
+    """
+    try:
+        return bool(json.loads(KILL_SWITCH.read_text(encoding="utf-8")).get(RELAY_APPROVAL_KEY, False))
+    except Exception:
+        return False
+
+
+def _send_approval_draft(room: str, message: str) -> bool:
+    """실무진 방으로 나갈 본문을 업무보고방에 초안으로만 올린다(카톡 방엔 손 안 댐)."""
+    try:
+        from tg_outbound_log import send as _tg_send
+        env = {}
+        for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip()
+        token = env.get("TELEGRAM_BOT_TOKEN", "")
+        if not token:
+            log("[relay] 승인 초안 발송 생략 — 봇 토큰 없음")
+            return False
+        text = (f"📝 실무진 방 발신 승인 요청 — {room}\n"
+                f"아래 그대로 나갑니다. 보내려면 답장 대신 아래 명령을 돌리라고 알려주세요.\n"
+                f"  python scripts/send_ops_digest.py --relay-approved\n"
+                f"─────────────\n{message}")
+        ok = _tg_send(token, GM_REPORT_ROOM_ID, text,
+                      source="send_ops_digest.approval_draft", timeout=15)
+        log(f"[relay] 승인 초안 업무보고방 {'발송 완료' if ok else '발송 실패'}")
+        return ok
+    except Exception as exc:
+        log(f"[relay] 승인 초안 발송 예외 — {exc}")
+        return False
+
+
+def send_relays(dry_run: bool = False, approved: bool = False) -> None:
     """방마다 '사람이 처리할 배' 변화분 1통. 새로 생긴 것·처리 완료된 것이 없으면 안 보낸다.
 
     같은 목록을 매일 다시 보내면 실무진이 읽기를 멈춘다 — 배가 늘거나 줄었을 때만
@@ -489,6 +598,8 @@ def send_relays(dry_run: bool = False) -> None:
 
     known = _known_rooms()
     state = _relay_state()
+    _migrate_relay_state(state)
+    need_approval = _relay_approval_required() and not approved and not dry_run
     changed = False
     for room, contacts in routes:
         if _title_key(room) not in known:
@@ -499,6 +610,12 @@ def send_relays(dry_run: bool = False) -> None:
             log(f"[relay] {room} — 변화 없음, 발신 생략")
             if current != state.get(room, {}):
                 state[room], changed = current, True
+            continue
+
+        if need_approval:
+            # 스냅샷을 갱신하지 않는다 — 승인 후 실행에서 같은 목록이 그대로 다시 잡혀야 한다.
+            _send_approval_draft(room, message)
+            log(f"[relay] {room} — GM 승인 대기(초안만 올림, 카톡 미발신)")
             continue
 
         cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", room]
@@ -521,6 +638,7 @@ def send_relays(dry_run: bool = False) -> None:
 def preview_relays() -> int:
     """방에 손대지 않고 본문만 렌더해 보여준다(실방 검증용 — 발신·상태기록 없음)."""
     state = _relay_state()
+    _migrate_relay_state(state)   # 실제 발신과 같은 조건으로 봐야 미리보기가 미리보기다
     for room, contacts in relay_routes():
         message, _current = build_relay_message(contacts, state.get(room, {}))
         print(f"\n===== {room} ({'내용 없음' if not message else '발신 대상'}) =====")
@@ -548,6 +666,8 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="미발송")
     ap.add_argument("--relay-preview", action="store_true",
                     help="사람 처리 배 전달 본문만 렌더(방에 손 안 댐 · 발신·지문기록 없음)")
+    ap.add_argument("--relay-approved", action="store_true",
+                    help="GM 승인 받은 회차 — 승인 대기를 건너뛰고 실무진 방으로 실제 발신")
     args = ap.parse_args()
 
     if args.relay_preview:
@@ -560,7 +680,7 @@ def main() -> int:
 
     # 사람이 처리할 배 전달은 다이제스트보다 먼저·독립으로 돈다 — 어제 카톡 대화가
     # 없어(휴관 등) 다이제스트가 안 만들어진 날에도 이 전달은 나가야 한다.
-    send_relays(dry_run=args.dry_run)
+    send_relays(dry_run=args.dry_run, approved=args.relay_approved)
 
     if not PENDING.exists():
         print(f"FAILED: 대기 다이제스트 없음 — {PENDING}")
