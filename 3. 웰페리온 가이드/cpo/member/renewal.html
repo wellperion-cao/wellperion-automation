@@ -113,7 +113,7 @@ table.roster td{white-space:nowrap}
          PIN 게이트 뒤(기존 AUTHED/reqRoster()/rosterBlock() 패턴 그대로 재사용 — 새 인증 발명 없음). -->
     <section class="panel" id="renewalTargetPanel" style="margin-bottom:16px">
       <h2>이번 재등록 대상</h2>
-      <span class="tag" id="rtTag">익월 만기자 · 집계 로딩 중…</span>
+      <span class="tag" id="rtTag">이번 달 만기자 · 집계 로딩 중…</span>
       <div id="rtKpis" style="display:flex;gap:26px;flex-wrap:wrap;margin-top:12px"></div>
       <div id="rtOwnerBar"></div>
       <div id="rtRosterWrap"></div>
@@ -250,6 +250,10 @@ const RT_TIPS_HTML='<b>💡 컨택 팁</b><br>'+
   '· 비고(운영부 참고사항)·강습팀 참고사항(이용 시간 기록)에 메모가 있으면 컨택 전 먼저 확인하세요.<br>'+
   '· 담당자 미배정 회원은 재등록 컨택이 아예 누락될 위험이 가장 크니 최우선으로 처리하세요.';
 let RT_SUMMARY=null,RT_ROWS=null,RT_OWNER_FILTER='전체',RT_LOADING=false,RT_ERR='';
+let RT_MONTH_MODE='current'; // 'current'=이번 달 만기자(기본), 'next'=익월 만기자
+function rtCurrentMonthStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function rtMonthStr(){return RT_MONTH_MODE==='current'?rtCurrentMonthStr():rtNextMonthStr();}
+function rtSetMonthMode(m){if(RT_MONTH_MODE===m)return;RT_MONTH_MODE=m;RT_ROWS=null;rtRepaint();}
 
 // ── 재접촉 메시지 3종(배179·시모 초안 → 배10372·시포 검수완료, 수정 없음) ──────────────
 // 원문: status/briefs/CMO-만기회원_재접촉_콘텐츠_20260728.md §2. 절대 임의 수정 금지 —
@@ -326,7 +330,7 @@ function rtOwnerBarHtml(){
 function rtFetchRoster(){
   if(RT_LOADING)return;
   RT_LOADING=true;RT_ERR='';rtRepaint();
-  const nm=rtNextMonthStr();
+  const nm=rtMonthStr();
   fetch(RENEWAL_FUNNEL_URL+'?action=member_active_list&scope=valid')
     .then(r=>r.json())
     .then(d=>{
@@ -380,9 +384,12 @@ function rtRepaint(){
   if(RT_ERR&&!RT_SUMMARY){kpiEl.innerHTML=`<div style="color:${CORAL};font-size:13px">${esc(RT_ERR)} <button class="rosterBtn" onclick="rtLoadSummary()">다시 시도</button></div>`;}
   else if(!RT_SUMMARY){kpiEl.innerHTML='<div class="skel" style="padding:10px 0">집계 불러오는 중…</div>';}
   else{
-    tagEl.textContent=RT_SUMMARY.next_month+' 종료 예정 · 집계 '+(RT_SUMMARY.generated_at||'');
+    const _mb='padding:1px 7px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;border:1px solid;margin-left:5px;line-height:1.6';
+    tagEl.innerHTML=rtMonthStr()+' 종료 예정 · 집계 '+(RT_SUMMARY.generated_at||'')+
+      ` <button style="${_mb};${RT_MONTH_MODE==='current'?'background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border)':'background:transparent;color:var(--muted);border-color:var(--border)'}" onclick="rtSetMonthMode('current')">이번 달</button>`+
+      ` <button style="${_mb};${RT_MONTH_MODE==='next'?'background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border)':'background:transparent;color:var(--muted);border-color:var(--border)'}" onclick="rtSetMonthMode('next')">익월</button>`;
     kpiEl.innerHTML=
-      `<div><div style="font-size:12px;color:var(--muted)">대상</div><div style="font-size:22px;font-weight:800">${RT_SUMMARY.total}명</div></div>`+
+      `<div><div style="font-size:12px;color:var(--muted)">대상(스냅샷)</div><div style="font-size:22px;font-weight:800">${RT_SUMMARY.total}명</div><div style="font-size:10px;color:var(--muted)">${RT_SUMMARY.next_month} 기준</div></div>`+
       `<div><div style="font-size:12px;color:var(--muted)">미컨택</div><div style="font-size:22px;font-weight:800;color:${CORAL}">${RT_SUMMARY.uncontacted}명</div></div>`+
       `<div><div style="font-size:12px;color:var(--muted)">강습 담당자 미배정</div><div style="font-size:22px;font-weight:800">${RT_SUMMARY.unassigned_lesson_count}명</div></div>`;
     document.getElementById('rtOwnerBar').innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${rtOwnerBarHtml()}</div>`;
