@@ -559,6 +559,17 @@ def run(dry_run: bool, plan_only: bool) -> int:
     is_weekend = now.weekday() >= 5  # 5=토, 6=일
     track = WEEKEND_TRACK if is_weekend else WEEKDAY_TRACK
 
+    # 일요일 트랙 정지 (GM 지시 2026-08-08).
+    #   「GM의 일요일」은 GM이 그날 찍은 사진으로 진행하는 건이 됐다 — 소재를 미리
+    #   만들어 둘 수 없으므로 재고표 기반 자동 디스패치와 맞지 않는다. 사진 경로는
+    #   cmo_intake_to_review.py 의 SUNDAY_TEAM 분기가 담당한다(같은 계정·같은
+    #   검수큐·같은 제목 접두사를 쓰므로, 둘을 함께 두면 승인 카드가 두 장 뜬다).
+    #   토요일 트랙(「GM의 토요일」)과 평일 트랙은 그대로 둔다.
+    if now.weekday() == 6:  # 6=일
+        print("[INFO] 일요일 트랙 정지 — 「GM의 일요일」은 사진 접수 경로로 진행한다 "
+              "(GM 지시 2026-08-08). cmo_intake_to_review.py SUNDAY_TEAM 분기 담당.")
+        return 0
+
     # 1) 재고표 파싱 (실패 시 경고 + 중단)
     try:
         if not INVENTORY.exists():
