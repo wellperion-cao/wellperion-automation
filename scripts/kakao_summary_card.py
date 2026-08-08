@@ -509,13 +509,47 @@ def build_page_html(kpi: dict, parking: dict, target_date: datetime) -> str:
 #   겉모습·렌더·발송은 위 아침 요약 카드 것을 그대로 쓴다(새 엔진·새 발송 경로 없음 · 약속 L21).
 # ══════════════════════════════════════════════════════════════════════════
 STALLED_ROOM = "★중간관리자"
+STALLED_STATE_ID = "stalled-weekly-snapshot"   # 지난 회차 목록 = 상설 하트비트 1파일(새 파일 안 만든다)
+ESCALATE_WEEKS = 3     # 이 주차 이상 같은 건이 사유도 없이 남으면 GM 께 올린다
 
 
-def collect_stalled() -> dict:
+def _stalled_state() -> dict:
+    """지난 회차 스냅샷 {업무id: 그때 주차}. send_ops_digest 의 릴레이 스냅샷과 같은 방식."""
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from module_heartbeat import last_heartbeat
+    rec = last_heartbeat(STALLED_STATE_ID) or {}
+    st = rec.get("state")
+    return dict(st) if isinstance(st, dict) else {}
+
+
+def _save_stalled_state(state: dict) -> None:
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from module_heartbeat import record_heartbeat
+    record_heartbeat(STALLED_STATE_ID,
+                     detail=f"멈춘 업무 주간 회차 기록 — {len(state)}건",
+                     extra={"state": state})
+
+
+def collect_stalled(record: bool = False) -> dict:
     """업무 시트(S3)에서 마감이 지난 채 살아 있는 건을 담당자별로 모은다.
 
     판정은 report_stream_3_impl 의 것을 그대로 쓴다 — 같은 '지연'을 두 벌로 계산하지 않는다
     (약속 L01). 조회 실패는 예외를 올린다(빈 카드를 정상처럼 내보내지 않는다).
+
+    ★고리를 닫는 부분 (GM 2026-08-08 세 번 지시 — "진행이 안된건에 대해서는 명확히 체크해서
+      진행이 되게끔 구조를 만들어줘"):
+      카드로 알리기만 하면 다음 주에 같은 이름이 또 뜨고, 반복되면 다시 안 읽힌다.
+      그래서 세 가지를 같이 센다.
+      ① **몇 주째인가** — 회차마다 목록을 남겨 다음 회차와 대조한다. 주차가 늘면 그 건은
+         '알렸는데도 안 움직인 건'이다.
+      ② **막힌 이유가 적혀 있나** — 시트에 「보류사유」·「재개조건」 칸이 이미 있다(새 칸 안 만든다).
+         2026-08-08 실측: 지연 12건 전부 두 칸이 비어 있었다. 칸은 있는데 아무도 안 쓴다 —
+         구조의 빈 곳이 여기다. 비어 있으면 카드가 그 사실 자체를 요청으로 띄운다.
+      ③ **그래도 안 되면 올린다** — 3주째인데 사유도 없는 건은 담당이 못 푸는 건이다.
+         그건 GM 이 풀 일이므로 카드 맨 위와 GM 보고로 분리해 올린다(사람을 탓하지 않고 막힌 곳을 연다).
+    record=True 일 때만 회차 기록을 갱신한다 — 미리보기로 주차가 올라가면 안 된다.
     """
     import sys as _sys
     _sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -536,16 +570,46 @@ def collect_stalled() -> dict:
         except Exception:
             return 0
 
-    rows = sorted(
-        ({"who": (str(x.get("담당자", "")).strip() or "담당 미정"),
-          "title": str(x.get("업무명", "")).strip(),
-          "days": days_over(x)} for x in overdue),
-        key=lambda r: -r["days"])
+    prev = _stalled_state()
+    raw = [{"key": str(x.get("id") or x.get("업무명") or ""),
+            "who": (str(x.get("담당자", "")).strip() or "담당 미정"),
+            "title": str(x.get("업무명", "")).strip(),
+            "days": days_over(x),
+            "reason": str(x.get("보류사유", "")).strip(),
+            "resume": str(x.get("재개조건", "")).strip()} for x in overdue]
+    folded = fold_stalled(raw, prev)
+
+    if record:
+        _save_stalled_state(folded["state"])
+
+    folded["active"] = len(active)
+    folded["overdue"] = len(overdue)
+    return folded
+
+
+def fold_stalled(raw: list, prev: dict) -> dict:
+    """지연 목록 + 지난 회차 기록 → 카드가 쓸 값. 파일·시트를 안 건드리는 순수 함수.
+
+    자기검사 = scripts/test_stalled_card.py (주차 세기와 에스컬레이션 경계가 유일한 위험).
+    """
+    rows, state = [], {}
+    for r in raw:
+        weeks = int(prev.get(r["key"], 0)) + 1     # 이번 회차 포함 몇 번째로 뜨는가
+        row = dict(r, weeks=weeks)
+        rows.append(row)
+        state[r["key"]] = weeks
+    rows.sort(key=lambda r: -r["days"])
+
     by_who: dict = {}
     for r in rows:
         by_who[r["who"]] = by_who.get(r["who"], 0) + 1
-    return {"active": len(active), "overdue": len(overdue), "rows": rows,
-            "by_who": sorted(by_who.items(), key=lambda kv: -kv[1])}
+
+    # 담당이 못 푸는 것 = 여러 회차째인데 막힌 이유조차 안 적힌 건. 이건 GM 이 풀 일이다.
+    return {"rows": rows, "state": state,
+            "by_who": sorted(by_who.items(), key=lambda kv: -kv[1]),
+            "escalate": [r for r in rows if r["weeks"] >= ESCALATE_WEEKS and not r["reason"]],
+            "no_reason": [r for r in rows if not r["reason"]],
+            "first_round": not prev}
 
 
 def _stalled_tile(label: str, big: str, sub: str, tone: str = "") -> str:
@@ -571,12 +635,47 @@ def build_stalled_card_html(S: dict, target_date: datetime) -> str:
 
     # 오래된 순 5건까지. 12건을 다 실으면 카드가 다시 '긴 글'이 된다.
     SHOW = 5
-    top = "".join(
-        f'<div class="srow"><span class="sd">{r["days"]}일</span>'
-        f'<span class="st">{r["title"][:30]}</span>'
-        f'<span class="sw">{r["who"]}</span></div>' for r in rows[:SHOW])
+
+    # 전부 비어 있으면 줄마다 '안 적힘'을 반복하지 않는다 — 같은 말이 5번 이어지면 그게 곧
+    # 안 읽히는 벽글이다(맨 아래 부탁이 한 번만 말한다). 일부라도 적히기 시작하면 그때부터
+    # 안 적힌 줄을 표시해 대비를 만든다.
+    all_empty = len(S.get("no_reason") or []) == len(rows)
+
+    def _row_html(r) -> str:
+        # 주차 꼬리표 — 이미 알렸는데 또 뜬 건임을 드러낸다(1주째는 안 붙인다·소음).
+        wk = (f'<span class="wk">{r["weeks"]}주째</span>' if r["weeks"] >= 2 else "")
+        # 막힌 이유가 적혀 있으면 그걸 보여 준다. 그게 GM 이 풀 수 있는 실마리다.
+        if r["reason"]:
+            why = f'<div class="why">막힌 곳 — {html_mod.escape(r["reason"][:34])}</div>'
+        elif all_empty:
+            why = ""
+        else:
+            why = '<div class="why nofill">막힌 이유 아직 안 적힘</div>'
+        return ('<div class="sblock">'
+                f'<div class="srow"><span class="sd">{r["days"]}일</span>'
+                f'<span class="st">{html_mod.escape(r["title"][:30])}</span>'
+                f'<span class="sw">{html_mod.escape(r["who"])}{wk}</span></div>'
+                f'{why}</div>')
+
+    top = "".join(_row_html(r) for r in rows[:SHOW])
     more = (f'<div class="sub" style="margin-top:6px;">외 {len(rows) - SHOW}건 — '
             f'업무 현황 화면에서 전부 봅니다</div>') if len(rows) > SHOW else ""
+
+    # 담당이 못 푸는 것 — 사람을 탓하는 칸이 아니라 GM 이 열어 줄 문을 가리키는 칸이다.
+    esc = S.get("escalate") or []
+    esc_html = ""
+    if esc:
+        esc_lines = "".join(
+            f'<div class="srow"><span class="sd">{r["weeks"]}주</span>'
+            f'<span class="st">{html_mod.escape(r["title"][:30])}</span>'
+            f'<span class="sw">{html_mod.escape(r["who"])}</span></div>' for r in esc[:3])
+        esc_html = ('<div class="whowrap esc"><div class="lab">🔴 담당이 못 푸는 것 — GM 께 올립니다</div>'
+                    f'{esc_lines}'
+                    '<div class="sub" style="margin-top:6px;">여러 주째 그대로인데 막힌 이유도 안 적혔습니다. '
+                    '담당 힘으로 안 되는 건으로 봅니다.</div></div>')
+
+    nr = len(S.get("no_reason") or [])
+    nr_line = (f'<b>{nr}건</b>은 막힌 이유가 아직 비어 있습니다. ' if nr else "")
 
     card = (
         '<div class="card" id="card" style="zoom:3">'
@@ -597,10 +696,12 @@ def build_stalled_card_html(S: dict, target_date: datetime) -> str:
         f'{who_lines}</div>'
         '<div class="whowrap"><div class="lab">가장 오래 멈춘 것</div>'
         f'{top}{more}</div>'
+        f'{esc_html}'
         '</div>'
         '<div class="foot"><div class="fl">'
-        '<b>부탁</b> 각 건을 <b>끝냄 · 접음 · 새 기한</b> 셋 중 하나로 정해 주세요. '
-        '막혀 있는 건이면 무엇에 막혔는지 한 줄만 남겨 주시면 저희가 풉니다.'
+        f'<b>부탁</b> {nr_line}업무 시트의 <b>「보류사유」·「재개조건」</b> 두 칸에 한 줄만 적어 주세요. '
+        '적히면 다음 주 카드에 그 내용이 뜨고, 막힌 곳은 저희가 풉니다. '
+        '끝났거나 접을 건이면 상태만 바꿔 주셔도 목록에서 빠집니다.'
         '</div></div>'
         '</div>'
     )
@@ -618,7 +719,15 @@ STALLED_CSS = """
 .srow:last-child{border-bottom:none}
 .sd{flex:0 0 auto;min-width:52px;font-size:16px;font-weight:800;color:var(--crit)}
 .st{flex:1 1 auto;font-size:14px;color:var(--ink);line-height:1.45}
-.sw{flex:0 0 auto;font-size:13px;font-weight:700;color:var(--dim)}
+.sw{flex:0 0 auto;font-size:13px;font-weight:700;color:var(--dim);text-align:right}
+.sblock{padding:6px 0;border-bottom:1px solid var(--line)}
+.sblock:last-child{border-bottom:none}
+.sblock .srow{border-bottom:none;padding:0}
+.wk{display:block;font-size:11px;font-weight:800;color:var(--crit);margin-top:2px}
+.why{margin:3px 0 0 62px;font-size:12.5px;color:var(--dim);line-height:1.4}
+.why.nofill{color:var(--crit);font-weight:700}
+.whowrap.esc{border-color:var(--crit);background:#FCECE8}
+.whowrap.esc .lab{color:var(--crit)}
 """
 
 
@@ -650,6 +759,9 @@ def main() -> int:
     ap.add_argument("--date", default=None, help="카드 날짜 YYYYMMDD(기본 오늘)")
     ap.add_argument("--card", default="morning", choices=["morning", "stalled"],
                     help="morning=아침 요약(기본) · stalled=★중간관리자 멈춘 업무 정리")
+    ap.add_argument("--record", action="store_true",
+                    help="stalled 전용 — 이번 회차를 기록해 '몇 주째'를 올린다. "
+                         "실제 발송 회차에서만 켠다(미리보기로 주차가 오르면 안 된다)")
     args = ap.parse_args()
 
     if sys.platform != "win32":
@@ -666,7 +778,7 @@ def main() -> int:
 
     if args.card == "stalled":
         try:
-            S = collect_stalled()
+            S = collect_stalled(record=args.record)
             html_content = build_stalled_card_html(S, target_date)
         except Exception as exc:
             print(f"FAILED: 멈춘 업무 카드 — {exc}")
