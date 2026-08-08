@@ -825,7 +825,9 @@
       function statusIcon(st){
         if(st==='승인')   return '<span style="color:#059669;font-weight:700;">✅ 승인</span>';
         if(st==='거부')   return '<span style="color:#dc2626;font-weight:700;">❌ 거부</span>';
-        if(st==='반영완료') return '<span style="color:#7c3aed;font-weight:700;">🏁 반영완료</span>';
+        // '반영' 도 받는다 — 실제 데이터는 '반영' 인데 '반영완료' 만 보고 있어 7건이 '제안' 으로
+        // 잘못 떴다(2026-08-08 실측).
+        if(st==='반영완료' || st==='반영') return '<span style="color:#7c3aed;font-weight:700;">🏁 반영</span>';
         return '<span style="color:#d97706;font-weight:700;">💡 제안</span>';
       }
       fetch(LP_URL + '?_=' + Date.now(), {cache:'no-store'})
@@ -839,11 +841,33 @@
             if(body)  body.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:8px 0;">현재 검토 대기 제안이 없습니다.</div>';
             return;
           }
-          var pending = data.filter(function(p){ return (p.status||'제안')==='제안'; });
-          if(badge) badge.textContent = '검토 대기 ' + pending.length + '건';
-          if(title) title.innerHTML = '<span class="ico">🧠</span>AI 자기학습 제안 <span style="font-size:13px;background:' + (pending.length>0?'rgba(217,119,6,0.15)':'rgba(5,150,105,0.12)') + ';color:' + (pending.length>0?'#d97706':'#059669') + ';border-radius:99px;padding:2px 10px;font-weight:700;">검토 대기 ' + pending.length + '건</span>';
+          // ★2026-08-08 GM 지적 "AI 자기학습 제안도 눈에 띄는 변화나 검토 대기만 시키는 것 같고".
+          //   그동안 '검토 대기 N건'만 셌다. 정작 볼 것은 **반영한 게 실제로 나아졌나**인데
+          //   효과 칸이 전부 비어 있었다(실측 2026-08-08: 24건 중 효과 기록 0건).
+          //   그래서 머리에 '반영 N · 효과 확인 M' 을 같이 세운다. 끝난 일(거부)은 접어 둔다.
+          var pending  = data.filter(function(p){ return (p.status||'제안')==='제안'; });
+          var applied  = data.filter(function(p){ var st=p.status||''; return st==='반영'||st==='반영완료'; });
+          var effected = applied.filter(function(p){ return String(p['효과']||p.effect||'').trim(); });
+          var rejected = data.filter(function(p){ return (p.status||'')==='거부'; });
+          var live     = data.filter(function(p){ return (p.status||'')!=='거부'; });
+          if(badge) badge.textContent = '반영 ' + applied.length + ' · 효과 확인 ' + effected.length;
+          if(title){
+            var warn = applied.length > effected.length;
+            title.innerHTML = '<span class="ico">🧠</span>AI 자기학습 제안 '
+              + '<span style="font-size:13px;background:' + (warn?'rgba(217,119,6,0.15)':'rgba(5,150,105,0.12)')
+              + ';color:' + (warn?'#d97706':'#059669') + ';border-radius:99px;padding:2px 10px;font-weight:700;">'
+              + '반영 ' + applied.length + ' · 효과 확인 ' + effected.length + '</span>';
+          }
           var h = '';
-          data.forEach(function(p, idx){
+          if(applied.length && !effected.length){
+            h += '<div class="sec-note" style="border-left:3px solid #d97706;padding-left:10px;margin:0 0 10px;">'
+               + '<b>' + applied.length + '건을 반영했는데 나아졌는지 확인한 것이 0건입니다.</b> '
+               + '고리가 여기서 끊깁니다 — 반영만 하고 결과를 안 보면 학습이 아니라 기록입니다.</div>';
+          }
+          if(rejected.length){
+            h += '<div class="sec-note" style="margin:0 0 10px;">끝난 것(거부) ' + rejected.length + '건은 접어 뒀습니다.</div>';
+          }
+          live.forEach(function(p, idx){
             var st = p.status || '제안';
             var borderColor = st==='승인'?'#059669':st==='거부'?'#dc2626':st==='반영완료'?'#7c3aed':'#d97706';
             h += '<details style="border:1px solid ' + borderColor + ';border-radius:8px;margin-bottom:8px;background:var(--bg);">';
@@ -860,6 +884,13 @@
             if(p['위험'])     h += '<p style="margin:0 0 6px;color:#b45309;"><strong>위험:</strong> ' + esc(p['위험']) + '</p>';
             h += '<p style="margin:0 0 4px;"><strong>반영위치:</strong> ' + esc(p['반영위치']||'') + '</p>';
             if(p['승인일시']) h += '<p style="margin:4px 0 0;font-size:12px;color:var(--dim);">승인일시: ' + esc(p['승인일시']) + '</p>';
+            var _ef = String(p['효과']||p.effect||'').trim();
+            var _st = p.status || '';
+            if(_st==='반영'||_st==='반영완료'){
+              h += _ef
+                ? '<p style="margin:4px 0 0;font-size:12px;color:#059669;"><b>효과:</b> ' + esc(_ef) + '</p>'
+                : '<p style="margin:4px 0 0;font-size:12px;color:#d97706;"><b>효과 아직 확인 안 함</b> — 나아졌는지 봐야 끝납니다.</p>';
+            }
             h += '</div></details>';
           });
           if(body) body.innerHTML = h;
@@ -1316,7 +1347,14 @@
       return r || String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0));
     });
     var cnt = document.getElementById('ship-count');
-    if(cnt) cnt.textContent = list.length + '척 표시 · 백엔드 전체 ' + live.length + '척';
+    if(cnt){
+      // ★2026-08-08 GM 지적 "대기정박건도 지금 진행이 안되는게 엄청 많네".
+      //   그동안 '몇 척 있다'만 셌다. 정작 볼 것은 **얼마나 멈춰 있나**인데 그 숫자가 없어서,
+      //   필터를 직접 '오래 멈춤'으로 바꿔야만 보였다. 세는 김에 같이 적는다(새 계산 없음).
+      var _stale = live.filter(function(x){ return staleDays(x) >= 14; }).length;
+      cnt.innerHTML = list.length + '척 표시 · 백엔드 전체 ' + live.length + '척'
+        + (_stale ? ' · <b style="color:#b07800;">14일+ 멈춤 ' + _stale + '척</b>' : '');
+    }
     if(!list.length){ el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">해당하는 배가 없습니다.</div>'; return; }
     var rows = list.map(function(s){
       var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
