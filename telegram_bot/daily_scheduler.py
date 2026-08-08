@@ -1399,8 +1399,31 @@ def _build_06_body() -> str:
         f"오늘도 좋은 하루 되십시오."
         f"{quote_line}\n"
         + "\n".join(workout_lines)
+        + _checkin_morning_block()
         + f"\n\n{_AUTO_FOOTER}"
     )
+
+
+def _checkin_morning_block() -> str:
+    """06시 본문 뒤에 붙는 「오늘 하나씩」 — 07:00 단독 알림을 여기로 흡수(GM 2026-08-08).
+
+    GM: "06:00 하루 시작 / 07:00 = 21:30 같은 맥락? / 22:00 하루 마무리."
+    아침 인사와 오늘 할 네 가지는 같은 맥락이라 알림 두 개로 나눌 이유가 없다.
+    개인 알림을 하루 4개에서 2개로 줄인다 — 아침 한 번, 저녁 한 번.
+    """
+    try:
+        import gm_checkin as _ck
+        p = _ck.plan()
+        if not p:
+            return ""
+        lines = ["", "", "🌅 오늘 하나씩 — 큰 거 아닙니다"]
+        for tid, icon, label, _k in _ck.TOROKS:
+            if p.get(tid):
+                lines.append(f"  {icon} {label}   {p[tid]}")
+        lines.append("  저녁에 이 네 가지를 그대로 여쭙겠습니다.")
+        return "\n".join(lines)
+    except Exception:
+        return ""
 
 
 def _build_share_card_body() -> str:
@@ -2877,7 +2900,16 @@ def run_gm_checkin(weekly: bool = False, morning: bool = False) -> None:
             ok = _send(token, chat, _ck.build_morning(), source="gm_checkin_morning")
             logger.info(f"{label} 아침 제안 발송 ok={ok} chat={chat}")
             return
-        ok = _send(token, chat, _ck.build_prompt(),
+        # 22시 취침 안내(개인 슬롯)를 이 카드 꼬리로 흡수 — GM 2026-08-08 "22:00 하루 마무리".
+        # 30분 사이에 두 번 울리던 것을 한 번으로. 문구는 사라지지 않고 자리만 옮긴다(net-zero).
+        quote = ""
+        try:
+            q = fetch_random_quote("22시")
+            quote = f'\n\n> "{q}"' if q else '\n\n> "충분한 수면이 내일의 판단력을 만듭니다."'
+        except Exception:
+            pass
+        body = _ck.build_prompt() + "\n\n📵 전자기기 off — 수면 루틴 시작" + quote
+        ok = _send(token, chat, body,
                    source="gm_checkin",
                    extra={"reply_markup": json.dumps(_ck.build_markup(), ensure_ascii=False)})
         logger.info(f"{label} 저녁 확인 발송 ok={ok} chat={chat}")
@@ -3061,6 +3093,13 @@ def run_report(slot: str, test_mode: bool = False) -> None:
         personal = ENV.get("TELEGRAM_PERSONAL_CHAT_ID")
         if personal:
             target_id = int(personal)
+
+    # 22시 취침 안내는 22:00 체크인 카드(run_gm_checkin) 꼬리로 흡수됐다 — 여기서 또 보내면
+    # 같은 분에 두 번 울린다. 문구는 없어진 게 아니라 카드 안으로 자리를 옮겼다(GM 2026-08-08).
+    # builder(_build_22_body)는 되돌림·--manual-test 미리보기용으로 남긴다.
+    if slot == "22" and not test_mode:
+        logger.info(f"{label} 22시 취침 안내는 22:00 체크인 카드로 흡수 — 단독 발신 안 함")
+        return
 
     success = send_telegram(target_id, body, parse_mode=parse_mode)
     if success:
@@ -3646,30 +3685,26 @@ def main():
 
         # ── GM 개인 하루 체크인 (매일 21:30) + 한 주 카드 (일요일 21:40) — GM 승인 2026-08-08 ──
         try:
+            # 개인 알림은 하루 두 번뿐 — 아침(06:00 하루 시작에 「오늘 하나씩」 흡수)과
+            # 저녁(22:00 하루 마무리에 취침 안내 흡수). GM 2026-08-08:
+            # "06:00 하루 시작 / 07:00 = 21:30 같은 맥락? / 22:00 하루 마무리".
+            # 아침 제안은 별도 잡이 아니라 _build_06_body() 안 _checkin_morning_block() 이 낸다.
             scheduler.add_job(
                 run_gm_checkin,
-                trigger=CronTrigger(hour=7, minute=0, timezone="Asia/Seoul"),
-                kwargs={"morning": True},
-                id="gm_checkin_morning_0700",
+                trigger=CronTrigger(hour=22, minute=0, timezone="Asia/Seoul"),
+                id="gm_checkin_2200",
                 misfire_grace_time=1800,
                 coalesce=True,
             )
             scheduler.add_job(
                 run_gm_checkin,
-                trigger=CronTrigger(hour=21, minute=30, timezone="Asia/Seoul"),
-                id="gm_checkin_2130",
-                misfire_grace_time=1800,
-                coalesce=True,
-            )
-            scheduler.add_job(
-                run_gm_checkin,
-                trigger=CronTrigger(day_of_week="sun", hour=21, minute=40, timezone="Asia/Seoul"),
+                trigger=CronTrigger(day_of_week="sun", hour=22, minute=10, timezone="Asia/Seoul"),
                 args=[True],
-                id="gm_checkin_week_sun2140",
+                id="gm_checkin_week_sun2210",
                 misfire_grace_time=1800,
                 coalesce=True,
             )
-            logger.info("gm_checkin 등록 완료 — 07:00 오늘 제안, 21:30 저녁 확인, 일요일 21:40 한 주 카드")
+            logger.info("gm_checkin 등록 완료 — 06:00 아침(하루시작에 흡수), 22:00 하루 마무리, 일요일 22:10 한 주 카드")
         except Exception as e:
             logger.warning(f"gm_checkin 등록 실패: {e}")
 
