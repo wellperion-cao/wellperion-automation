@@ -821,6 +821,37 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "cpo-unassigned-nudge",
+      "owner_role": "cpo",
+      "owner_nick": "시포",
+      "feature": "문의 담당 배정 독려 + 24시간 미컨택 SLA 경보 + 60일 무응답 회전 안내 (GM 지시 2026-07-23·2026-08-05 \"무조건 철저하게 관리\"). 실제 가동 중이었으나 등록부에 없어 감시망 밖이던 것을 2026-08-08 등록.",
+      "data_source": {
+        "kind": "script",
+        "ref": "scripts/unassigned_nudge.py (판정은 report_stream_1_impl 재사용) + status/heartbeats/cpo-unassigned-nudge.json"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": "★부서장"
+      },
+      "front_card": {
+        "window": "문의회원",
+        "anchor": "cpoReportStatusLine"
+      },
+      "autonomy": "mech",
+      "ai_free_fallback": "담당자가 문의 화면에서 미배정·미컨택을 눈으로 확인",
+      "feedback": {
+        "enabled": true,
+        "audience": "clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "enabled": true,
+      "honesty_default": "measured"
     }
   ],
   "_removed": [
