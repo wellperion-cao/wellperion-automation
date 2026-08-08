@@ -1980,9 +1980,46 @@ def _ensure_no_webhook() -> None:
         log.warning(f"[bot] 웹훅 확인/삭제 실패(무시): {exc}")
 
 
+_HB_APP = None            # 폴링 상태를 물어볼 Application (main 에서 채운다)
+_hb_down_logged = False   # 같은 사유를 매 회차 로그에 도배하지 않기 위한 1회 표시
+
+
+def _polling_alive() -> bool:
+    """지금 '받는 쪽'이 실제로 돌고 있나.
+
+    ★2026-08-08 배468 — 이걸 안 보던 것이 이 배의 뿌리다.
+      그 전엔 하트비트를 무조건 5분마다 찍었다. 그런데 하트비트는 **별도 스레드**라
+      폴링 루프가 죽어도 계속 찍힌다 — 발신(sendMessage)은 API 직접 호출이라 그대로 나가고,
+      하트비트도 정상이니 어떤 감시기도 '승인 버튼이 안 닿는 상태'를 못 잡았다.
+      실측(2026-08-08): 봇 기록이 10:10 Bad Gateway 이후 멈췄는데 하트비트는 12:01 에도 찍혔다.
+      시모가 배398 시운전 중 손으로 확인해서야 드러났다.
+    ▸이제 폴링이 멈추면 하트비트를 **안 찍는다.** 그러면 파일이 낡고, 이미 있는
+      20분 신선도 점검(scripts/telegram_health_check.py _check_heartbeat)이 그대로 잡아낸다.
+      새 파일·새 감시기·새 형식 없음 — 있던 점검이 진실을 보게 만드는 것이 전부다(약속 L21).
+    ▸판단이 안 서면(앱을 아직 모르거나 속성이 없으면) 살아 있는 것으로 본다 —
+      확신 없이 '죽었다'고 적으면 멀쩡한 봇에 경보가 울린다.
+    """
+    app = _HB_APP
+    if app is None:
+        return True
+    up = getattr(app, "updater", None)
+    if up is None:
+        return True
+    running = getattr(up, "running", None)
+    return True if running is None else bool(running)
+
+
 def _write_heartbeat() -> None:
-    """폴링 생존 신호 기록 (2026-07-03 CTO, 배102). temp write + replace 로 원자적 기록."""
+    """폴링이 살아 있을 때만 생존 신호 기록. temp write + replace 로 원자적 기록."""
+    global _hb_down_logged
     import datetime as _dt
+    if not _polling_alive():
+        if not _hb_down_logged:
+            log.error("[bot] 받는 쪽(폴링)이 멈춰 하트비트를 찍지 않는다 — "
+                      "13시 상태 점검이 '미갱신'으로 잡아낸다. 재기동 필요.")
+            _hb_down_logged = True
+        return
+    _hb_down_logged = False
     try:
         tmp = HEARTBEAT_FILE.with_suffix(".tmp")
         tmp.write_text(_dt.datetime.now().isoformat(), encoding="utf-8")
@@ -2048,6 +2085,8 @@ def main():
     # ── 하트비트 기동 (2026-07-03 CTO, 배102) ─────────────────────────────────
     # job_queue(apscheduler+pytz) 설치돼 있으면 그걸 우선 사용, 없으면 daemon
     # 스레드로 폴백 — 현재 환경은 pytz 미설치라 스레드 경로를 탄다.
+    global _HB_APP
+    _HB_APP = app          # 하트비트가 '폴링이 실제로 도는지'를 물어볼 수 있게 (배468)
     if app.job_queue is not None:
         app.job_queue.run_repeating(_heartbeat_job, interval=300, first=5)
         log.info("[bot] 하트비트: job_queue 기반 (300s)")
