@@ -449,6 +449,30 @@ function _regComputeSla(row) {
   return out;
 }
 
+// 알림 한 줄용 길이 자르기 (2026-08-08 GM 지적).
+// 그 전엔 내용을 24자에서 그냥 잘랐다. 접수 내용에 줄바꿈이 있으면 알림 한 줄이 여러 줄로
+// 깨지고, 낱말·괄호 한가운데서 끊겨 뜻이 안 통했다. GM 이 받은 실제 알림:
+//   "🔴 [시설물 고장 접수] 자동 부팅 안됨 / T업기 타석 제어 안됨(타석 — 24분 초과 (…"
+// 두 줄로 벌어지고 여는 괄호가 닫히지 않은 채 끝났다.
+// ▸줄바꿈·연속 공백을 한 칸으로 눌러 한 줄로 만들고, 상한 안에서 마지막 띄어쓰기까지만 남긴다.
+// ▸잘렸으면 …을 붙여 잘렸다는 것이 보이게 한다(잘린 티가 나는 게 뜻이 끊기는 것보다 낫다).
+// ▸같은 규칙이 카톡 쪽에도 있다(scripts/send_ops_digest.py _cap_line) — 여기는 구글 서버에서
+//   도는 코드라 그 함수를 못 부른다. 규칙을 바꾸면 두 곳을 같이 고친다.
+function _regCapLine(s, n) {
+  var t = String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  if (!t) return '(내용 없음)';
+  if (t.length <= n) return t;
+  var head = t.slice(0, n);
+  var cut = head.lastIndexOf(' ');
+  if (cut >= Math.floor(n / 2)) head = head.slice(0, cut);
+  // 괄호가 열린 채로 끝나면 그 괄호 앞에서 끊는다 — "안됨(타석…" 처럼 반쪽 괄호가 남으면
+  // 읽는 사람이 뒤에 뭐가 있었는지 되묻게 된다(GM 이 지적한 그 모양이다).
+  var open = Math.max(head.lastIndexOf('('), head.lastIndexOf('['));
+  var close = Math.max(head.lastIndexOf(')'), head.lastIndexOf(']'));
+  if (open > close && open >= Math.floor(n / 3)) head = head.slice(0, open);
+  return head.replace(/[\s·\-—(\[,]+$/, '') + '…';
+}
+
 // ─── SLA 초과 '전환 시점' 텔레그램 알림 (COO 배163 · 2026-07-27) ───
 // 기존 _vNotifyTelegram 재사용(신규 알림 채널·봇 없음). 매 호출마다 스팸 발송 방지를 위해
 // '이번에 새로 초과 전환된 건'만 알린다 — 직전 체크의 초과 ID 집합을 ScriptProperties에 저장해 비교.
@@ -490,7 +514,7 @@ function _regNotifySlaOverdue(dryRun) {
         : overAbs < 1  ? Math.round(overAbs * 60) + '분'
         : overAbs < 24 ? Math.round(overAbs) + '시간'
         : Math.floor(overAbs / 24) + '일';
-      lines.push('  🔴 [' + (r.category || '') + '] ' + String(r.content || '').slice(0, 24) +
+      lines.push('  🔴 [' + (r.category || '') + '] ' + _regCapLine(r.content, 28) +
         ' — ' + over + ' 초과 (' + (r.regId || '') + (r.assignee ? ' · 담당 ' + r.assignee : ' · 미배정') + ')');
     });
     if (newlyOverdue.length > 10) lines.push('  … 외 ' + (newlyOverdue.length - 10) + '건');
