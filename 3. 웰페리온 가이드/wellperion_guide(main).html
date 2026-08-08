@@ -5967,7 +5967,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   }
   /* ── 오늘 기분 한 탭 (2026-08-08) ── 글자 입력 없이 탭 한 번. 안 적어도 되게 빈 값이 첫 칸이다. */
   var MOOD = ['', '😊', '🙂', '😞'];
-  var MOOD_LABEL = { '':'· 안 적음', '😊':'😊 좋음', '🙂':'🙂 무난', '😞':'😞 힘듦' };
+  /* 텔레그램 「나의하루」 체크인(scripts/gm_checkin.py MOODS)과 같은 벌이어야 한다 —
+     2026-08-08 실측: 텔레그램에서 누른 😀 가 여기선 라벨이 없어 '· 안 적음' 으로 보였다.
+     기분을 남겼는데 화면이 안 남겼다고 말하면 기록이 아니라 오보다. 옛 😊·😞 는 지난 기록
+     호환으로 남긴다(지우면 5월 기록의 기분이 사라진다). */
+  var MOOD_LABEL = { '':'· 안 적음', '😀':'😀 좋음', '🙂':'🙂 무난', '😐':'😐 그냥', '😔':'😔 힘듦',
+                     '😊':'😊 좋음', '😞':'😞 힘듦' };
   function renderMood(){
     var b=document.getElementById('gmrtMood'); if(!b) return;
     var v=DAY.mood||'';
@@ -6051,11 +6056,23 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     DAY.toroks= litToroks(DAY.axes);
     if(!DAY.mood) delete DAY.mood;   // 안 적은 날은 칸 자체를 안 남긴다(빈 값이 쌓이지 않게)
     DAY.updated_at=today();
-    DATA.days=DATA.days||{}; DATA.days[today()]=DAY; DATA.updated_at=today();
     if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
     if(st) st.textContent='';
-    fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'commit_file', path:JPATH, content:JSON.stringify(DATA,null,2), message:'[GM] 개인 루틴 트래커 체크인 '+today(), key:''})})
+    /* ★저장 직전에 최신을 다시 받아 그 위에 '오늘 하루'만 얹는다 (2026-08-08 수리).
+       종전엔 페이지를 열던 시점의 DATA 통째를 그대로 덮어써서, 그 사이 텔레그램
+       「나의하루」 체크인이 적은 값이 전부 사라졌다. 페이지를 아침에 열어 두고 저녁에
+       저장 한 번 누르면 그날 기록이 통째로 되돌아가는 경로였다. */
+    gasRead().catch(function(){ return DATA; }).then(function(fresh){
+      var base = (fresh && typeof fresh === 'object') ? fresh : DATA;
+      base.toroks = base.toroks || DATA.toroks || [];
+      base.axes   = base.axes   || DATA.axes   || [];
+      base.days   = base.days   || {};
+      base.days[today()] = DAY;          /* 오늘 칸만 내 것으로, 나머지 날은 최신 그대로 */
+      base.updated_at = today();
+      DATA = base;
+      return fetch(GAS_URL, {method:'POST', redirect:'follow', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({action:'commit_file', path:JPATH, content:JSON.stringify(DATA,null,2), message:'[GM] 개인 루틴 트래커 체크인 '+today(), key:''})});
+    })
       .then(function(r){ return r.json(); })
       .then(function(res){
         if(res && res.ok){ if(st){ st.style.color='var(--grow)'; st.textContent='저장됨 · 1~2분 후 반영'; } renderAll(); }

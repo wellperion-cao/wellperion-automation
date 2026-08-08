@@ -28,12 +28,16 @@ JPATH = ROOT / 'status' / 'gm_personal_routine.json'
 
 # 생활 토막 → 트래커 축(axes). 정본 = gm_personal_routine.json 의 toroks[].axes 와 같은 매핑.
 # 여기서 다시 적는 이유는 버튼 4개로 줄이기 위해서다 — 축 9개를 다 물으면 원래 문제로 돌아간다.
+# ★토막은 5개다 — 4개로 만들었다가 「⚖️ 단순함」이 영원히 빠지는 걸 놓쳤다(2026-08-08 수리).
+#   G1 화면은 /5 로 세므로, 4개만 물으면 하루를 다 채워도 화면엔 4/5 로 뜬다.
 TOROKS = [
     ('self',     '🌱', '나',   ['morning_ex', 'self_dev']),
     ('dad',      '👨‍👧', '아빠', ['evening_run']),
     ('husband',  '💑', '남편', ['family_time']),
     ('work',     '💼', '일',   ['work_focus']),
+    ('simple',   '⚖️', '단순함', ['principle']),
 ]
+# G1 트래커(MOOD_LABEL)와 같은 벌을 쓴다 — 두 벌이면 한쪽에서 누른 기분이 다른 쪽에서 '안 적음'이 된다.
 MOODS = ['😀', '🙂', '😐', '😔']
 
 
@@ -125,7 +129,7 @@ def summary(day: str | None = None) -> str:
     st = state(day)
     marks = ' '.join(i if tid in st['on'] else '·' for tid, i, _l, _k in TOROKS)
     n = len(st['on'])
-    line = f"{marks}   담긴 토막 {n}/4"
+    line = f"{marks}   담긴 토막 {n}/{len(TOROKS)}"
     if st['mood']:
         line += f"   기분 {st['mood']}"
     return line
@@ -169,17 +173,17 @@ def plan(day: str | None = None) -> dict:
 
 
 def build_morning(day: str | None = None) -> str:
-    """아침 카드 — 오늘 할 네 가지. 버튼 없음, 읽고 지나가면 된다."""
+    """아침 카드 — 오늘 할 다섯 가지. 버튼 없음, 읽고 지나가면 된다."""
     day = day or today()
     p = plan(day)
     d = datetime.date.fromisoformat(day)
     wd = '월화수목금토일'[d.weekday()]
     lines = [f"🌅 오늘 하나씩 — {d.month}/{d.day}({wd})",
-             "네 가지만. 큰 거 아닙니다.", ""]
+             "다섯 가지만. 큰 거 아닙니다.", ""]
     for tid, icon, label, _k in TOROKS:
         if p.get(tid):
             lines.append(f"{icon} {label}   {p[tid]}")
-    lines += ["", "저녁에 이 네 가지를 그대로 다시 여쭙겠습니다."]
+    lines += ["", "저녁에 이 다섯 가지를 그대로 다시 여쭙겠습니다."]
     return '\n'.join(lines)
 
 
@@ -196,7 +200,7 @@ def build_prompt(day: str | None = None) -> str:
     d = datetime.date.fromisoformat(day)
     wd = '월화수목금토일'[d.weekday()]
     lines = [f"🌙 오늘 어떠셨어요 — {d.month}/{d.day}({wd})",
-             "아침에 정한 네 가지입니다. 하신 것만 눌러 주세요.", ""]
+             "아침에 정한 다섯 가지입니다. 하신 것만 눌러 주세요.", ""]
     for tid, icon, label, _k in TOROKS:
         mark = '✅' if tid in st['on'] else '　'
         lines.append(f"{mark}{icon} {label}   {p.get(tid, '')}")
@@ -217,13 +221,15 @@ def build_markup(day: str | None = None) -> dict:
     """텔레그램 inline_keyboard. 켜진 토막은 앞에 ✅ 를 붙여 지금 상태가 그대로 보이게 한다."""
     day = day or today()
     st = state(day)
-    row1 = [{'text': ('✅' if tid in st['on'] else '') + f'{icon} {label}',
-             'callback_data': f'ck:t:{tid}'} for tid, icon, label, _k in TOROKS]
-    row2 = [{'text': ('✅' if st['mood'] == m else '') + m,
-             'callback_data': f'ck:m:{m}'} for m in MOODS]
-    row3 = [{'text': '💾 저장', 'callback_data': 'ck:save'},
-            {'text': '오늘은 건너뜀', 'callback_data': 'ck:skip'}]
-    return {'inline_keyboard': [row1, row2, row3]}
+    btn = [{'text': ('✅' if tid in st['on'] else '') + f'{icon} {label}',
+            'callback_data': f'ck:t:{tid}'} for tid, icon, label, _k in TOROKS]
+    # 토막 5개를 한 줄에 넣으면 글자가 잘린다 — 3+2 로 나눈다.
+    rows = [btn[:3], btn[3:]]
+    rows.append([{'text': ('✅' if st['mood'] == m else '') + m,
+                  'callback_data': f'ck:m:{m}'} for m in MOODS])
+    rows.append([{'text': '💾 저장', 'callback_data': 'ck:save'},
+                 {'text': '오늘은 건너뜀', 'callback_data': 'ck:skip'}])
+    return {'inline_keyboard': rows}
 
 
 def week_card(day: str | None = None) -> str:

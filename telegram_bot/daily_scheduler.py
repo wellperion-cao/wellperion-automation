@@ -1420,7 +1420,7 @@ def _checkin_morning_block() -> str:
         for tid, icon, label, _k in _ck.TOROKS:
             if p.get(tid):
                 lines.append(f"  {icon} {label}   {p[tid]}")
-        lines.append("  저녁에 이 네 가지를 그대로 여쭙겠습니다.")
+        lines.append("  저녁에 이 다섯 가지를 그대로 여쭙겠습니다.")
         return "\n".join(lines)
     except Exception:
         return ""
