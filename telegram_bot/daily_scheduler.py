@@ -2923,7 +2923,12 @@ def run_stream_3_mgmt() -> None:
             # build_digest() 자체는 손대지 않는다 — GM 업무보고방(위 report_stream_3_mgmt.run
             # 호출) 은 매출+운영+인사 원본 그대로 유지(약속 L01, 본문 재조립 아님·치환만).
             body = body.replace("📈 매출 및 운영+인사 현황 보고", "📈 업무 SSOT 현황 보고")
-            body = re.sub(r"■ 매출\s*\[연동 예정\]\n?", "", body)
+            # ★2026-08-08 — 매출 줄은 내용이 무엇이든 이 방에서 뺀다.
+            #   그 전엔 "[연동 예정]"이라는 자리표시자 글자에 정확히 맞춰 지웠는데, 같은 날
+            #   배446 으로 그 자리에 진짜 매출액이 들어가면서 이 지우개가 빈손이 됐다 —
+            #   운영부 방에 매출액이 새로 나갈 뻔했다(GM: 운영부는 매출을 손대지 못한다).
+            #   글자가 아니라 '매출 줄'을 지운다.
+            body = re.sub(r"^■ 매출.*\n?", "", body, flags=re.MULTILINE)
             proc = subprocess.run(
                 [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
                  "--message", body, "--only-room", KAKAO_OPS_DEPT_ROOM],
