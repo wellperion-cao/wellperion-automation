@@ -68,6 +68,11 @@ try:  # 크로스프로세스 _queue.json 락 (P2, 2026-07-10) — scripts/ 경�
 except Exception:
     queue_lock = None
 
+try:  # GM 개인 하루 체크인(ck: 콜백, 2026-08-08 GM 승인 A안) — scripts/ 경로는 위 블록에서 이미 삽입
+    import gm_checkin as _checkin
+except Exception:
+    _checkin = None
+
 try:  # 발송요약 GM 검토 게이트(dig: 콜백, 2026-08-04) — scripts/ 경로는 위 블록에서 이미 삽입
     import publish_digest as _digest
 except Exception:
@@ -1834,6 +1839,64 @@ def _ops_save_pending(pending: dict) -> None:
         log.error(f"[opsdig] 대기 파일 저장 실패: {exc}")
 
 
+async def cmd_checkin_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """GM 개인 하루 체크인 버튼 — callback_data ck:t:{토막} / ck:m:{기분} / ck:save / ck:skip.
+
+    2026-08-08 GM 승인(A안). G1 「오늘 체크인」이 11칸 손입력이라 이틀 만에 끊긴 것을,
+    저녁에 봇이 묻고 버튼만 누르는 구조로 옮긴 것이다. 글자 입력이 없다.
+
+    토막·기분은 누를 때마다 파일에 바로 쓰되 커밋은 안 한다(하루에 열 번 쌓이지 않게).
+    커밋은 [💾 저장] 한 번에만. 판정·저장 로직은 scripts/gm_checkin.py 단일 출처.
+    """
+    q = update.callback_query
+    if not q or not q.data:
+        return
+    if _checkin is None:
+        await q.answer("체크인 모듈을 불러오지 못했습니다", show_alert=True)
+        return
+    # GM 본인 방에서만 — 개인 기록이다.
+    if q.message and q.message.chat_id != _GM_CHAT_ID:
+        await q.answer()
+        return
+
+    data = q.data
+    try:
+        if data.startswith("ck:t:"):
+            _checkin.toggle(data[5:])
+            await q.answer()
+        elif data.startswith("ck:m:"):
+            _checkin.set_mood(data[5:])
+            await q.answer()
+        elif data == "ck:skip":
+            await q.edit_message_text(text="오늘은 건너뜁니다. 내일 다시 여쭙겠습니다.",
+                                      reply_markup=None)
+            return
+        elif data == "ck:save":
+            line = _checkin.summary()
+            ok = await asyncio.to_thread(_checkin.commit)
+            tail = "" if ok else "\n(저장은 됐고 업로드만 다음 차례에 따라갑니다)"
+            await q.edit_message_text(text=f"✅ 오늘 체크인 저장\n{line}{tail}", reply_markup=None)
+            await q.answer()
+            return
+        else:
+            await q.answer()
+            return
+    except Exception as exc:
+        log.error(f"[checkin] 처리 실패: {exc}")
+        await q.answer("처리 실패 — 잠시 후 다시 눌러 주세요", show_alert=True)
+        return
+
+    # 누른 결과가 버튼에 그대로 보이게 갱신(✅ 표시). 내용이 같으면 텔레그램이 거부하므로 무시한다.
+    try:
+        await q.edit_message_reply_markup(
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(b["text"], callback_data=b["callback_data"]) for b in row]
+                for row in _checkin.build_markup()["inline_keyboard"]
+            ]))
+    except Exception:
+        pass
+
+
 async def cmd_opsdig_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """callback_data opsdig:send / opsdig:revise / opsdig:hold 처리.
 
@@ -2079,6 +2142,9 @@ def main():
     # ★운영부 아침 요약 승인 콜백 (opsdig:) — 2026-07-13 CTO. ops_morning_pipeline.py가
     # 보낸 GM 승인요청 카드의 [발송]/[수정요청]/[보류] 버튼 처리. 방 전송 게이트(신규 기능).
     app.add_handler(CallbackQueryHandler(cmd_opsdig_callback, pattern=r"^opsdig:"))
+    # GM 개인 하루 체크인 (ck:) — 2026-08-08 GM 승인 A안. 21:30 daily_scheduler 가 보낸
+    # 카드의 토막·기분 버튼과 저장/건너뜀 처리. 저장은 gm_personal_routine.json 한 파일만 건드린다.
+    app.add_handler(CallbackQueryHandler(cmd_checkin_callback, pattern=r"^ck:"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 

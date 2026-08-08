@@ -2840,6 +2840,34 @@ def _check_ops_done_immediate() -> None:
 #   새 예약작업·새 발신기 없음(약속 L21) — 상주 스케줄러 잡 하나 + kakao_report_sender.py
 #   --only-room 재사용. 판정 로직(운영부 담당자·완료건)은 send_ops_digest.py 함수 재사용
 #   (약속 L01). 킬스위치 = ops_digest_send.json 공유(새 킬스위치 안 만듦).
+# ── GM 개인 하루 체크인 (매일 21:30 · 업무보고방) — GM 승인 2026-08-08 A안 ──────────
+#   왜 텔레그램인가: G1 「오늘 체크인」은 칸이 11개라 매일 페이지를 열어야 했고 이틀 만에
+#   끊겼다(2026-05-26·05-27 뒤 73일 공백). 「GM의 일요일」이 계속 도는 이유는 사람이 하는
+#   일이 사진 한 장뿐이기 때문이다 — 같은 구조로 옮긴다. 봇이 묻고 GM 은 버튼만 누른다.
+#   새 파일·새 저장소 없음: status/gm_personal_routine.json 을 그대로 쓴다(G1 페이지와 같은 정본).
+#   21:30 을 고른 이유 = 22:00 취침 안내(개인 슬롯) 앞. 하루가 끝난 뒤이면서 잠들기 전이다.
+#   안 누르면 그날은 조용히 빈다 — 재촉 알림을 만들지 않는다(점수·심판이 아니라 거울).
+def run_gm_checkin(weekly: bool = False) -> None:
+    label = "[GM 개인 체크인]"
+    try:
+        import gm_checkin as _ck
+        from tg_outbound_log import send as _send
+        token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
+        if not token:
+            logger.warning(f"{label} 토큰 없음 — 건너뜀")
+            return
+        if weekly:
+            ok = _send(token, str(_GM_REPORT_CHAT_ID), _ck.week_card(), source="gm_checkin_week")
+            logger.info(f"{label} 한 주 카드 발송 ok={ok}")
+            return
+        ok = _send(token, str(_GM_REPORT_CHAT_ID), _ck.build_prompt(),
+                   source="gm_checkin",
+                   extra={"reply_markup": json.dumps(_ck.build_markup(), ensure_ascii=False)})
+        logger.info(f"{label} 발송 ok={ok}")
+    except Exception as e:
+        logger.warning(f"{label} 실패: {e}")
+
+
 def run_weekly_ops_report() -> None:
     try:
         import send_ops_digest as _od
@@ -3589,6 +3617,27 @@ def main():
             logger.info("stream_3_mgmt 등록 완료 — 매일 09:30 업무보고방 발송 (스트림 #3)")
         except Exception as e:
             logger.warning(f"stream_3_mgmt 등록 실패: {e}")
+
+        # ── GM 개인 하루 체크인 (매일 21:30) + 한 주 카드 (일요일 21:40) — GM 승인 2026-08-08 ──
+        try:
+            scheduler.add_job(
+                run_gm_checkin,
+                trigger=CronTrigger(hour=21, minute=30, timezone="Asia/Seoul"),
+                id="gm_checkin_2130",
+                misfire_grace_time=1800,
+                coalesce=True,
+            )
+            scheduler.add_job(
+                run_gm_checkin,
+                trigger=CronTrigger(day_of_week="sun", hour=21, minute=40, timezone="Asia/Seoul"),
+                args=[True],
+                id="gm_checkin_week_sun2140",
+                misfire_grace_time=1800,
+                coalesce=True,
+            )
+            logger.info("gm_checkin 등록 완료 — 매일 21:30 버튼 카드, 일요일 21:40 한 주 카드")
+        except Exception as e:
+            logger.warning(f"gm_checkin 등록 실패: {e}")
 
         # ── 운영부 주간 보고 초안 (금요일 17:00 · ★중간관리자 방) — CTO 2026-08-06 ──
         try:
