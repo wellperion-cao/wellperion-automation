@@ -266,6 +266,29 @@ def fetch_cpo_churn_stats() -> dict | None:
     return _gas_get("cpo_churn_stats")
 
 
+def fetch_member_registered_list(date_from: str, date_to: str, new_only: bool = False) -> list[dict] | None:
+    """유효회원 시트 등록일자 기준 원본 행(member_registered_list, 화면 '멤버십 신규 등록현황'과 동일 소스).
+    new_only=True → 서버가 신규만 필터(_isNewRegistration_, cpo_today_stats 카드와 동일 판정 — 배361).
+    실패 시 None. 배312(2026-08-08) — 주간 보고 '이번 주 등록·LOSS' 신규/재등록 집계용."""
+    params = {"from": date_from, "to": date_to}
+    if new_only:
+        params["newOnly"] = "1"
+    data = _gas_get("member_registered_list", params, timeout=60)
+    if data is None:
+        return None
+    return data.get("data", [])
+
+
+def fetch_lesson_roster(lesson_type: str) -> list[dict] | None:
+    """강습(성인·유소년) 등록완료(SUC) 회원 명단(lesson_registered_roster) — 화면 '강습 회원 관리'
+    탭과 동일 소스. 행에 owner/contacts/status 필드 포함(membership.html _lessonMemGapOf가 그대로
+    읽는 필드 — 데이터 완성도 판정 재사용). 실패 시 None. 배312(2026-08-08)."""
+    data = _gas_get("lesson_registered_roster", {"type": lesson_type}, timeout=60)
+    if data is None:
+        return None
+    return data.get("roster", [])
+
+
 def _today_str() -> str:
     return datetime.now().strftime("%Y-%m-%d")
 
