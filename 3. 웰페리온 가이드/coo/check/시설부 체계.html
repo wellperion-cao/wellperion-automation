@@ -3506,6 +3506,7 @@ function vendorSubmitAddForm(){
     ROUND_FIELD_IDS.forEach(fcCheckField);
     AHU.forEach(function(a){ fcCheckField('fc_ahu_'+a); });
     AI_DRAFT.forEach(function(a){ fcCheckField(a[0]); });
+    BROJAY_ITEMS.forEach(function(it){ it.fields.forEach(fcCheckField); });   // x 입력 시 빨간 강조(:3497 fcCheckField 재사용) — 현장에서 눈에 띄어야 함
     ['fc_eq_hotw','fc_eq_pump','fc_eq_heat'].forEach(fcCheckField);   // 기계실 ok/x 셀렉트는 아님(텍스트) — 값 'x'면 강조 안 함(SELECT만). 안전상 남겨도 무해.
     fcRenderReasonBox();
   }
@@ -3552,6 +3553,24 @@ function vendorSubmitAddForm(){
     AI_DRAFT.forEach(function(a){h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px;">'+a[1]+'<select id="'+a[0]+'" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:5px;font-size:13px;font-family:inherit;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select></label>';});
     return h+'</div>';
   }
+  // 🚪 브로제이 자동화 점검(GM 2026-08-08 직접 지시) — 오픈·마감 각 1회, 항목당 select 2칸(open/close).
+  var BROJAY_ITEMS=[
+    {id:'fc_brojay_door',name:'얼굴인증 자동문(3초 내 개폐)',cat:'G 브로제이',fields:['fc_brojay_door_open','fc_brojay_door_close']},
+    {id:'fc_brojay_locker',name:'스마트 락커(데일리·개인) 잠금/해제',cat:'G 브로제이',fields:['fc_brojay_locker_open','fc_brojay_locker_close']},
+    {id:'fc_brojay_keypass',name:'키패스 라이트 점등',cat:'G 브로제이',fields:['fc_brojay_keypass_open','fc_brojay_keypass_close']},
+    {id:'fc_brojay_autotop',name:'오토 티업 제어(토요일 포함)',cat:'G 브로제이',fields:['fc_brojay_autotop_open','fc_brojay_autotop_close']},
+    {id:'fc_brojay_pc',name:'PC·빔프로젝터 전원(의도치 않은 점등 방지)',cat:'G 브로제이',fields:['fc_brojay_pc_open','fc_brojay_pc_close']}
+  ];
+  function brojayBox(){
+    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">🚪 브로제이 자동화 점검 (오픈·마감 각 1회)</div><div style="display:flex;flex-wrap:wrap;gap:10px;">';
+    BROJAY_ITEMS.forEach(function(it){
+      h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:220px;">'+it.name
+        +'<div style="display:flex;gap:4px;"><span style="font-size:11px;color:var(--dim);width:34px;">오픈</span><select id="'+it.fields[0]+'" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:5px;font-size:13px;font-family:inherit;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select></div>'
+        +'<div style="display:flex;gap:4px;"><span style="font-size:11px;color:var(--dim);width:34px;">마감</span><select id="'+it.fields[1]+'" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:5px;font-size:13px;font-family:inherit;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select></div>'
+        +'</label>';
+    });
+    return h+'</div>';
+  }
   // ─── 항목 마스터 — 회차별(시간대별 15) vs 1일1회(11) 분리 ───
   // 시간대별: 매 회차 입력. 1일1회: round '1일'로 1회 저장.
   var FC_ROUND_ITEMS=[
@@ -3584,6 +3603,7 @@ function vendorSubmitAddForm(){
     {id:'fc_ai_water',name:'정수기·비품 점검',cat:'F 안전(AI초안)',fields:['fc_ai_water']},
     {id:'fc_ai_alarm',name:'측정 기준범위 이탈 경보 확인',cat:'F 안전(AI초안)',fields:['fc_ai_alarm']}
   ];
+  FC_DAILY_ITEMS.push.apply(FC_DAILY_ITEMS, BROJAY_ITEMS);   // fields는 DAILY_FIELD_IDS·제출 payload에 자동 흡수(회차 리셋 대상 아님 — 오픈 값이 마감 제출까지 보존됨)
   var ROUND_FIELD_IDS=[];   // 시간대별 항목의 모든 입력 필드 id (회차 전환 시 캡처·복원 대상)
   FC_ROUND_ITEMS.forEach(function(it){ it.fields.forEach(function(f){ ROUND_FIELD_IDS.push(f); }); });
   var DAILY_FIELD_IDS=['fc_work','fc_order','fc_req','fc_note','fc_ooc_action'];   // 1일 공통 텍스트(작업사항·지시사항·점검요청사항·비고·기준이탈 조치) + 아래 daily items
@@ -3751,7 +3771,7 @@ function vendorSubmitAddForm(){
   };
   window.fcRender=function(){
     var el=document.getElementById('fc-body'); if(!el)return;
-    el.innerHTML='<div id="fc-rounds-bar"></div><div class="progress" id="fc-progress"></div>'+saunaTbl()+poolTbl()+'<div id="fc-reason-box" style="display:none;margin:6px 0 10px;"></div>'+equipBox()+aiBox()+noteBox();
+    el.innerHTML='<div id="fc-rounds-bar"></div><div class="progress" id="fc-progress"></div>'+saunaTbl()+poolTbl()+'<div id="fc-reason-box" style="display:none;margin:6px 0 10px;"></div>'+equipBox()+aiBox()+brojayBox()+noteBox();
     // 항목 칸 입력 시 캡처 후 진행바 갱신(회차 통합 — 단일 버킷)
     el.querySelectorAll('[id^=fc_]').forEach(function(n){ n.addEventListener('input',fcProgress); n.addEventListener('change',fcProgress); });
     fcProgress(); fcRenderRoundsBar();
