@@ -535,14 +535,36 @@ def build_noresponse_alert_text(due: list[dict], warn_n: int, selected: list[dic
     rest_n = len(due) - len(shown)
     oldest = due[0]["days"]  # collect_noresponse()에서 이미 -days 정렬됨
     warn_part = f" · 2개월 임박(45~59일) {warn_n}건 곧 도달" if warn_n else ""
-    lines = [f"🗓️ 컨택 후 2개월(60일+) 무응답 · {len(due)}건 (가장 오래된 건 {oldest}일째{warn_part})"]
-    lines.append("부서장님, 아래 건 확인 후 계속 진행/LOSS/보류 중 하나로 정리 부탁드립니다 🙏")
+    # 총 건수를 맨 앞에 크게 내면 받는 사람이 "501건을 하라는 건가" 로 읽고 손을 놓는다
+    # (2026-08-08 GM 지적 — 카톡에 501건이 그대로 떴다). 오늘 부탁하는 건 shown 뿐이라는 걸
+    # 첫 줄에서 못 박고, 전체 규모는 맨 아래 참고 한 줄로 내린다.
+    lines = [f"🗓️ 컨택 후 2개월(60일+) 무응답 — 오늘 {len(shown)}건만 봐 주세요"]
+    lines.append("계속 진행 / LOSS / 보류 중 하나로만 알려주시면 됩니다 🙏")
+    # 같은 사람이 같은 날 같은 종목으로 두 번 접수된 행이 있다 — 그대로 뿌리면 똑같은 줄이
+    # 두 번 떠서 받는 사람은 오류로 읽는다(2026-08-08 GM 실측: 김은희 2줄). 데이터는 그대로
+    # 두고 화면에서만 합쳐 건수를 붙인다.
+    _seen: dict[tuple, int] = {}
+    _order: list[tuple] = []
     for it in shown:
+        k = (it["date"], it["name"], it["sport"], it["owner"])
+        if k not in _seen:
+            _seen[k] = 0
+            _order.append(k)
+        _seen[k] += 1
+    for it in shown:
+        k = (it["date"], it["name"], it["sport"], it["owner"])
+        if k not in _order:
+            continue
+        _order.remove(k)
+        dup = f" ({_seen[k]}건)" if _seen[k] > 1 else ""
         lines.append(f"· {it['date']} · {it['name']} · {_sport_short(it['sport'])} · "
-                     f"{it['days']}일째 · 담당:{it['owner']}")
+                     f"{it['days']}일째 · 담당:{it['owner']}{dup}")
     if rest_n > 0:
-        lines.append(f"… 외 {rest_n}건 (총 {len(due)}건)")
-    lines.append(f"🔗 처리: {ASSIGN_URL_LESSON} · {ASSIGN_URL_MEMBER} (입장코드 {ENTRY_CODE})")
+        lines.append(f"(전체 {len(due)}건 · 가장 오래된 건 {oldest}일째{warn_part} — 매일 몇 건씩 나눠 보내드립니다)")
+    # 링크는 한 줄에 하나. ' · ' 로 이어 붙이면 카톡이 첫 주소 뒤 구분자까지 링크로 먹어 깨진다
+    # (2026-08-08 GM 실측 — lesson.html%20·%20https://… 로 잘려 나갔다).
+    lines.append(f"🔗 강습: {ASSIGN_URL_LESSON}")
+    lines.append(f"🔗 회원: {ASSIGN_URL_MEMBER} (입장코드 {ENTRY_CODE})")
     lines.append(AI_SIGNOFF)
     return "\n".join(lines)
 
