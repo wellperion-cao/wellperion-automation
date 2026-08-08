@@ -134,6 +134,82 @@ def upload_state(detail: str, has_done: bool) -> str:
     return '기록만'
 
 
+
+# ══════════════════════════════════════════════════════════════════════════
+# 놓친 지시 · 반복 지시 자동 적발 (GM 지시 2026-08-08 "절대 놓치지마")
+#   왜: 접수는 훅이 자동으로 넣는데 완료 짝은 사람이 남긴다. 그래서 끝난 일도 계속
+#   '진행중'으로 쌓이고, 그 더미 안에서 **진짜 안 한 것**이 안 보인다(실측 2026-08-08:
+#   열린 41건 중 대부분이 이미 끝난 것이었다).
+#   ★자동으로 '완료' 도장을 찍지는 않는다 — 안 한 일을 했다고 적는 것이 지금보다 나쁘다.
+#   대신 셋으로 **가른다**: 방금 받음 / 했는데 안 닫음 / 진짜 놓침.
+# ══════════════════════════════════════════════════════════════════════════
+GRACE_MIN = 90          # 이 시간 안이면 아직 '방금 받음' — 재촉하지 않는다
+_STOP = re.compile(r'[^0-9A-Za-z가-힣]+')
+
+
+def _norm(t: str) -> set:
+    """제목 비교용 낱말 집합 — 조사·기호 차이로 다른 지시처럼 보이는 것을 막는다."""
+    return {w for w in _STOP.split(str(t or '')) if len(w) >= 2}
+
+
+def classify_open(items: list, work: list, now: datetime.datetime) -> list:
+    """열린(완료 짝 없는) 지시를 셋으로 가른다.
+
+    - just    : 받은 지 GRACE_MIN 분 안 — 아직 재촉할 때가 아니다
+    - unclosed: 접수 뒤 그 역할이 남긴 작업 기록이 있다 — 했는데 짝만 안 지은 것
+    - missed  : 접수 뒤 아무 작업 기록도 없다 — **진짜 놓친 것**
+    자기검사 = scripts/test_kungjjak_missed.py
+    """
+    out = []
+    for it in items:
+        if not it.get('open'):
+            continue
+        st = it.get('start')
+        mins = None
+        if st:
+            try:
+                h, m = st.split(':')
+                started = now.replace(hour=int(h), minute=int(m), second=0, microsecond=0)
+                mins = int((now - started).total_seconds() // 60)
+            except Exception:
+                mins = None
+        if mins is not None and mins < GRACE_MIN:
+            kind = 'just'
+        elif any((w.get('time') or '') > (st or '') for w in work):
+            kind = 'unclosed'      # 접수 뒤에 뭔가 한 흔적이 있다
+        else:
+            kind = 'missed'
+        out.append(dict(it, kind=kind, waited=mins))
+    return out
+
+
+def find_repeats(items: list) -> list:
+    """같은 말을 두 번 이상 하신 것 — GM 이 반복하셨다면 그건 내가 안 한 것이다.
+
+    낱말이 절반 이상 겹치면 같은 지시로 본다(조사·표현 차이 흡수).
+    """
+    groups = []
+    for it in items:
+        w = _norm(it.get('got'))
+        if len(w) < 2:
+            continue
+        for g in groups:
+            # 겹친 낱말이 짧은 쪽의 절반 이상이면 같은 지시로 본다.
+            # 고정값 2 를 쓰면 '쿵짝표 보여줘' 처럼 두 낱말짜리 지시가 영영 안 묶인다
+            # (실측 2026-08-08: GM 이 세 번 물으셨는데 하나도 안 잡혔다).
+            need = max(1, (min(len(w), len(g['words'])) + 1) // 2)
+            if len(w & g['words']) >= need:
+                g['items'].append(it)
+                g['words'] |= w
+                break
+        else:
+            groups.append({'words': w, 'items': [it]})
+    return [{'count': len(g['items']),
+             'got': g['items'][0].get('got'),
+             'nos': [x.get('no') for x in g['items']]}
+            for g in groups if len(g['items']) >= 2]
+
+
 def emit(day: str) -> int:
     """전 역할 오늘치를 status/kungjjak_today.json 으로 발행 — 자율현황 화면이 이걸 읽는다.
 
@@ -171,6 +247,9 @@ def emit(day: str) -> int:
                 'open': not oks,
             })
         work = load_work(day, role)
+        _now = datetime.datetime.now()
+        opened = classify_open(items, work, _now)
+        repeats = find_repeats(items)
         if items or work:
             out['roles'][role] = {
                 'nick': NICK[role], 'items': items, 'work': work,
@@ -178,6 +257,10 @@ def emit(day: str) -> int:
                 'open': len(items) - done,
                 'avg_minutes': (total // done) if done else None,
                 'work_count': len(work),
+                'missed': [x for x in opened if x['kind'] == 'missed'],
+                'unclosed': [x for x in opened if x['kind'] == 'unclosed'],
+                'just': [x for x in opened if x['kind'] == 'just'],
+                'repeats': repeats,
             }
     p = ROOT / 'status' / 'kungjjak_today.json'
     p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')

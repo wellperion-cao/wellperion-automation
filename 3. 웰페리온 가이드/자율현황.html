@@ -2396,6 +2396,39 @@
     }
     var roles = kj.roles, order = ['ceo','cto','cmo','cpo','coo'];
     var got = 0, done = 0, open = 0, html = '';
+
+    /* ★놓친 지시·반복 지시를 맨 위에 (GM 지시 2026-08-08 "절대 놓치지마").
+       접수는 자동인데 완료 짝은 손으로 남긴다 — 그래서 끝난 일도 '진행중'으로 쌓이고
+       그 더미에서 진짜 안 한 것이 안 보였다. 셋으로 갈라 맨 위에 세운다.
+       ▸자동으로 '완료' 도장은 찍지 않는다. 안 한 일을 했다고 적는 것이 더 나쁘다. */
+    var mAll = [], rAll = [], uAll = 0;
+    order.forEach(function(rk){
+      var r = roles[rk]; if(!r) return;
+      (r.missed || []).forEach(function(x){ mAll.push({nick:r.nick, x:x}); });
+      (r.repeats || []).forEach(function(g){ rAll.push({nick:r.nick, g:g}); });
+      uAll += (r.unclosed || []).length;
+    });
+    if(mAll.length || rAll.length || uAll){
+      html += '<div class="whowrap" style="border-color:' + (mAll.length ? '#c4472f' : 'var(--line)')
+            + ';background:' + (mAll.length ? 'rgba(196,71,47,.08)' : 'var(--tile,transparent)') + ';margin-bottom:10px;">'
+            + '<div class="lab">' + (mAll.length ? '🔴 놓친 지시 ' + mAll.length + '건' : '✅ 놓친 지시 없음')
+            + (rAll.length ? ' · 🔁 같은 말 두 번 이상 ' + rAll.length + '건' : '')
+            + (uAll ? ' · 📝 했는데 안 닫은 것 ' + uAll + '건' : '') + '</div>';
+      mAll.forEach(function(o){
+        html += '<div class="srow"><span class="sd">' + (o.x.waited != null ? Math.floor(o.x.waited/60) + '시간' : '—')
+             + '</span><span class="st">' + esc(o.x.got || '') + '</span>'
+             + '<span class="sw">' + esc(o.nick) + '</span></div>';
+      });
+      rAll.forEach(function(o){
+        html += '<div class="srow"><span class="sd">' + o.g.count + '회</span>'
+             + '<span class="st">' + esc(o.g.got || '') + '</span>'
+             + '<span class="sw">' + esc(o.nick) + '</span></div>';
+      });
+      if(rAll.length){
+        html += '<div class="sub" style="margin-top:6px;">같은 말을 두 번 하셨다면 그건 저희가 안 한 것입니다.</div>';
+      }
+      html += '</div>';
+    }
     order.forEach(function(rk){
       var r = roles[rk]; if(!r || !r.items || !r.items.length) return;
       var items = r.items.slice();
