@@ -11766,8 +11766,8 @@ function renderTodayActionPanel() {
         caveat: '뮤지컬팀(Brad Little Star Academy)이 직접 응대합니다. 우리가 연락할 몫은 아니지만 문의가 운영부로도 오므로 컨택 여부를 여기서 확인합니다.',
         showTime: true },
       // 이탈사유 미기록 — 회원 쪽 '종료사유 미기록' 섹션과 동일 패턴(오래된 5건씩만). 2026-08-05 GM 지시.
-      { key: 'lloss', icon: '🚪', label: '이탈사유 미기록' + (clsL.lossMissingAll ? ' (전체 ' + clsL.lossMissingAll + '건 중 오래된 5건)' : ''),
-        color: 'red', items: clsL.lossMissing, empty: '이탈사유 미기록 없음 — 전원 기록 완료', showTime: true }
+      { key: 'lloss', icon: '🚪', label: 'LOSS 사유 미기록' + (clsL.lossMissingAll ? ' (전체 ' + clsL.lossMissingAll + '건 중 오래된 5건)' : ''),
+        color: 'red', items: clsL.lossMissing, empty: 'LOSS 사유 미기록 없음 — 전원 기록 완료', showTime: true }
     ];
     if (_tapOpenKey === null && (clsL.uncontacted.length || clsL.todaysConsult.length)) _tapOpenKey = 'lunc';
     body.innerHTML = sectionsL.map(_tapSectionHtmlLesson).join('');

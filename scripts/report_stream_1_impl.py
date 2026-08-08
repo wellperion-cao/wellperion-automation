@@ -136,7 +136,7 @@ def _progress_label(row: dict, is_lesson: bool) -> str:
     if _is_registered(row, is_lesson):
         return "등록완료"
     if _is_loss(row):
-        return "이탈"
+        return "LOSS"
     status = str(row.get("status", "") or "").strip()
     if status:
         if status not in _PRE_CONTACT_STATUSES and not _has_contacts(row):

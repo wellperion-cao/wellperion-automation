@@ -536,7 +536,7 @@ def build_noresponse_alert_text(due: list[dict], warn_n: int, selected: list[dic
     oldest = due[0]["days"]  # collect_noresponse()에서 이미 -days 정렬됨
     warn_part = f" · 2개월 임박(45~59일) {warn_n}건 곧 도달" if warn_n else ""
     lines = [f"🗓️ 컨택 후 2개월(60일+) 무응답 · {len(due)}건 (가장 오래된 건 {oldest}일째{warn_part})"]
-    lines.append("부서장님, 아래 건 확인 후 계속 진행/이탈(LOSS)/보류 중 하나로 정리 부탁드립니다 🙏")
+    lines.append("부서장님, 아래 건 확인 후 계속 진행/LOSS/보류 중 하나로 정리 부탁드립니다 🙏")
     for it in shown:
         lines.append(f"· {it['date']} · {it['name']} · {_sport_short(it['sport'])} · "
                      f"{it['days']}일째 · 담당:{it['owner']}")
