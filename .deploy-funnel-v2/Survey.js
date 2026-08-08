@@ -9355,13 +9355,13 @@ function _hasRealReply_(memo) {
       var maReI  = _maIdx('재등록분류');
       var maTypI = _maIdx('회원구분');
       var maStI  = _maIdx('시작일자');
-      // LOSS 날짜 칸: 이탈일→해지일→LOSS일자→종료일.
-      //   ★ 'LOSS일자'를 '종료일'보다 먼저 본다. 이 시트엔 '종료\n일자'와 'LOSS\n일자'가 별개로 존재하고,
-      //     '종료일'로 먼저 잡으면 '종료일자'가 걸려 월간 LOSS가 19로 나온다(정답 21은 LOSS일자 기준).
-      //     계약서 §2 본문의 '이탈일→해지일→종료일' 표기는 이 시트 실헤더와 어긋난다 — 계약서 정정 필요.
-      var maLossI = _maIdx('이탈일');
+      // LOSS 날짜 칸: LOSS일자→이탈일→해지일→종료일.
+      //   ★ GM 교정 2026-08-08: '이탈' 용어 전면 → LOSS. 시트 헤더도 'LOSS일자'로 변경 예정이므로 우선 순위 1위.
+      //     '이탈일'은 헤더 변경 전 하위호환 폴백으로 유지 — 헤더 변경 완료 후 정리 가능.
+      //     '종료일'은 이 시트의 '종료\n일자'(종료일자)와 구분이 안 돼 19건으로 틀리므로 맨 마지막 폴백.
+      var maLossI = _maIdx('LOSS일자');
+      if (maLossI < 0) maLossI = _maIdx('이탈일');
       if (maLossI < 0) maLossI = _maIdx('해지일');
-      if (maLossI < 0) maLossI = _maIdx('LOSS일자');
       if (maLossI < 0) maLossI = _maIdx('종료일');
       var MA_TYPO  = { '맴버십': '멤버십', '멥버십': '멤버십' };
       var MA_KNOWN = { '멤버십': 1, '입주민': 1, '중단기': 1, '보증금': 1, 'FAN VIP': 1 };
