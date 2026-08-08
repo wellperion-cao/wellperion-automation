@@ -132,19 +132,36 @@ def summary(day: str | None = None) -> str:
 
 
 def build_prompt(day: str | None = None) -> str:
+    """카드 자체가 설명서다.
+
+    GM 이 첫 카드를 받고 "뭔지 잘 모르겠는데"라고 했다(2026-08-08). 별도 가이드 문서를
+    만들면 그 문서를 또 찾아야 한다 — 매일 오는 카드 안에 뜻을 적어 두는 쪽이 맞다.
+    네 줄은 GM 개인 북극성("나·아빠·남편·일이 다 담겨 돌아가는 하루")의 네 토막 그대로다.
+    """
     day = day or today()
     st = state(day)
     d = datetime.date.fromisoformat(day)
     wd = '월화수목금토일'[d.weekday()]
-    head = f"✍️ 오늘 체크인 — {d.month}/{d.day}({wd})"
-    body = "담긴 토막만 눌러 주세요. 안 누르셔도 됩니다."
+    lines = [
+        f"✍️ 오늘 체크인 — {d.month}/{d.day}({wd})",
+        "오늘 하루에 **담긴 것**만 눌러 주세요. 빠진 건 그냥 두시면 됩니다.",
+        "",
+        "🌱 나 — 몸 깨우기나 배움 한 조각이 있었다",
+        "👨‍👧 아빠 — 아이와 온전한 시간이 있었다",
+        "💑 남편 — 아내와 함께한 시간이 있었다",
+        "💼 일 — 일이 하루의 한 토막으로 들어갔다",
+        "",
+        "그 아래 줄은 오늘 기분(안 눌러도 됩니다).",
+        "다 누르셨으면 💾 저장 — 그걸로 끝입니다.",
+    ]
     carry = []
     if st['weight']:
         carry.append(f"체중 {st['weight']}")
     if st['sleep']:
         carry.append(f"수면 {st['sleep']}")
-    tail = ('\n' + ' · '.join(carry) + ' (어제 값 그대로 — 바뀌었으면 답장으로 적어 주세요)') if carry else ''
-    return f"{head}\n{body}{tail}"
+    if carry:
+        lines += ["", ' · '.join(carry) + " ← 어제 값 그대로 (바뀌었으면 답장으로 적어 주세요)"]
+    return '\n'.join(lines).replace('**', '')
 
 
 def build_markup(day: str | None = None) -> dict:
