@@ -225,12 +225,63 @@ def build_text(summary: str, link: str | None = None, *,
     return text + (("\n\n🔗 " + link.strip()) if link else "")
 
 
+def _send_photo(chat_id: int, caption: str, image_path: str) -> bool:
+    """그림 1장 + 설명을 방에 보낸다. 실패하면 False (호출부가 글만 보내는 쪽으로 떨어진다).
+
+    2026-08-08 GM 지시로 추가 — 방별 요약 카드를 만들었는데 이 방에 보여줄 길이 없었다.
+    발신 관문은 하나로 유지한다: 새 발신 스크립트를 만들지 않고 이 파일 안에 둔다(약속 L21).
+    텔레그램 설명(caption)은 1024자 상한이라 넘치면 잘라 보낸다 — 잘린 티가 나게 …을 붙인다.
+    """
+    import mimetypes, urllib.request, uuid, io, json as _json
+    p = Path(image_path)
+    if not p.exists():
+        print(f"[notify_gm_progress] 그림 파일 없음: {p}", file=sys.stderr)
+        return False
+    env = {}
+    try:
+        for line in (_ROOT / "telegram_bot" / ".env").read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env[k.strip()] = v.strip()
+    except Exception as exc:
+        print(f"[notify_gm_progress] 봇 토큰 읽기 실패: {exc}", file=sys.stderr)
+        return False
+    token = env.get("TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        return False
+    cap = caption if len(caption) <= 1024 else caption[:1020].rstrip() + "…"
+    b = uuid.uuid4().hex
+    buf = io.BytesIO()
+
+    def part(name, val):
+        buf.write(f'--{b}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{val}\r\n'.encode())
+
+    part("chat_id", str(chat_id))
+    part("caption", cap)
+    ctype = mimetypes.guess_type(p.name)[0] or "image/png"
+    buf.write(f'--{b}\r\nContent-Disposition: form-data; name="photo"; '
+              f'filename="{p.name}"\r\nContent-Type: {ctype}\r\n\r\n'.encode())
+    buf.write(p.read_bytes())
+    buf.write(f"\r\n--{b}--\r\n".encode())
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendPhoto", data=buf.getvalue(),
+        headers={"Content-Type": f"multipart/form-data; boundary={b}"})
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            return bool(_json.loads(r.read().decode("utf-8")).get("ok"))
+    except Exception as exc:
+        print(f"[notify_gm_progress] 그림 발송 예외: {type(exc).__name__}: {str(exc)[:120]}",
+              file=sys.stderr)
+        return False
+
+
 def notify(summary: str, link: str | None = None, *, ship: str | None = None,
            step: str | None = None, state: str = DEFAULT_STATE,
            dry_run: bool = False, now: datetime | None = None,
            sender=None, log_path=None, rooms_path=None,
            cause: str | None = None, fix: str | None = None,
-           check: str | None = None, nxt: str | None = None) -> dict:
+           check: str | None = None, nxt: str | None = None,
+           image: str | None = None) -> dict:
     """
     AI 진행현황방으로 진행 1줄 발송.
 
@@ -290,7 +341,17 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
     if sender is None:
         from notify.telegram_send import send as sender  # noqa: PLC0415
 
-    ok = bool(sender(chat_id, text))
+    # 그림이 있으면 그림 + 설명 한 통으로 보낸다 (GM 지시 2026-08-08 — "요약카드도 만들어지면
+    # AI 진행현황에 보여줘"). 글만 보내면 카드를 만들어도 GM 이 볼 데가 없다.
+    # 그림 발송이 실패하면 글만이라도 나가게 떨어진다 — 보고가 통째로 사라지면 안 된다.
+    if image:
+        if _send_photo(chat_id, text, image):
+            ok = True
+        else:
+            print(f"[notify_gm_progress] 그림 발송 실패 — 글만 보냅니다: {image}", file=sys.stderr)
+            ok = bool(sender(chat_id, text))
+    else:
+        ok = bool(sender(chat_id, text))
     jargon = count_jargon(text)
     if jargon:
         print("[notify_gm_progress] GM 이 못 읽는 기술어 %d개: %s — 다음부터 사람 말로 바꿔 쓰세요."
@@ -346,12 +407,15 @@ def main(argv=None) -> int:
     ap.add_argument("--fix", default=None, help='고친 것 (여러 개면 "A|B")')
     ap.add_argument("--check", default=None, help='확인·실측 (여러 개면 "A|B")')
     ap.add_argument("--next", dest="nxt", default=None, help='다음 (여러 개면 "A|B")')
+    ap.add_argument("--image", default=None,
+                    help="같이 보낼 그림 경로(요약 카드 등) — 그림+설명 한 통으로 나간다")
     ap.add_argument("--dry-run", action="store_true", help="실제 발송 없이 payload 미리보기")
     args = ap.parse_args(argv)
 
     out = notify(args.summary, args.link, ship=args.ship, step=args.step,
                  state=args.state, dry_run=args.dry_run,
-                 cause=args.cause, fix=args.fix, check=args.check, nxt=args.nxt)
+                 cause=args.cause, fix=args.fix, check=args.check, nxt=args.nxt,
+                 image=args.image)
     print(json.dumps(out, ensure_ascii=False, indent=2))
     if args.dry_run or out["reason"] in ("sent", "gate_off", "dedup", "daily_cap"):
         return 0
