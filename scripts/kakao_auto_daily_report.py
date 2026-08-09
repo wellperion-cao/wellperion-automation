@@ -219,15 +219,18 @@ def check_sales_numbers(nums: "dict | None", canon_target: "int | None") -> list
     _check_sales_report_rate_formula.py)는 아무 곳에서도 호출되지 않아 한 번도 돈 적이
     없었다 — 그래서 검사를 별도 스크립트로 두지 않고 발송 관문 안으로 옮긴다(약속 L21).
 
-    배464(2026-08-08): 시트 월목표가 6.105억인 채로 GM 확정값 6.6억과 갈려 달성률이
-    매일 약 2%p 높게 나갔다. 사진 안 숫자라 아무도 못 봤다 — 정본과 대조해 본문에 남긴다.
+    배464(2026-08-08 GM 정정): 시트 월목표(현실 목표 6.105억)와 정본(이상 목표 6.6억)은
+    어긋난 게 아니라 성격이 다른 두 값이다 — 같아야 한다는 경고는 없앤다. 대신 두 값이
+    각자 살아 있는지만 본다(정본 파일을 못 읽거나 시트 목표가 비면 그건 진짜 이상이다).
     """
     n = nums or {}
     warns: list[str] = []
 
     target, month, rate = n.get("target"), n.get("month"), n.get("rate")
-    if isinstance(target, (int, float)) and canon_target and round(target) != canon_target:
-        warns.append(f"⚠️ 시트 월목표({round(target):,}원)가 정본({canon_target:,}원)과 다릅니다")
+    if nums is not None and not isinstance(target, (int, float)):
+        warns.append("⚠️ 현실 목표(시트 월목표) 값을 못 읽었습니다")
+    if nums is not None and canon_target is None:
+        warns.append("⚠️ 이상 목표(정본, status/sales_targets.json) 값을 못 읽었습니다")
 
     if "INDIRECT" in str(n.get("rate_formula", "")):
         warns.append("⚠️ 달성률 수식이 다른 시트 부분합을 분모로 씁니다(배351 재발)")
@@ -240,20 +243,33 @@ def check_sales_numbers(nums: "dict | None", canon_target: "int | None") -> list
 
 
 def build_sales_numbers_text(target_date: datetime, nums: "dict | None") -> str:
+    """배464(2026-08-08 GM 정정): 목표는 현실(시트)·이상(정본) 두 줄로 나란히 보이고,
+    그 격차가 곧 남은 과제의 크기다 — 어긋남 경고로 다루지 않는다."""
     weekday_kr = _WEEKDAY_KR[target_date.weekday()]
     n = nums or {}
-    warns = check_sales_numbers(nums, _canon_monthly_target())
+    canon_target = _canon_monthly_target()
+    warns = check_sales_numbers(nums, canon_target)
     for w in warns:
         log(f"[경고] 매출 핵심숫자 대조: {w}")
-    return (
+
+    month, target, rate = n.get("month"), n.get("target"), n.get("rate")
+    lines = [
         f"📊 회장님 매출보고 핵심숫자 ({target_date.month}.{target_date.day}({weekday_kr})분, "
-        f"사진 대조용)\n"
-        f"금일 매출: {_fmt_won(n.get('today'))}\n"
-        f"당월 누적: {_fmt_won(n.get('month'))}\n"
-        f"당월 목표: {_fmt_won(n.get('target'))}\n"
-        f"당월 달성률: {_fmt_rate(n.get('rate'))}"
-        + ("\n\n" + "\n".join(warns) if warns else "")
-    )
+        f"사진 대조용)",
+        f"금일 매출: {_fmt_won(n.get('today'))}",
+        f"당월 누적: {_fmt_won(month)}",
+        f"당월 목표(현실): {_fmt_won(target)} · 달성률 {_fmt_rate(rate)}",
+    ]
+    if isinstance(canon_target, (int, float)) and canon_target and isinstance(month, (int, float)):
+        ideal_rate = month / canon_target
+        lines.append(f"당월 목표(이상): {_fmt_won(canon_target)} · 달성률 {_fmt_rate(ideal_rate)}")
+        if isinstance(target, (int, float)):
+            gap_pt = (rate - ideal_rate) * 100 if isinstance(rate, (int, float)) else None
+            gap_pt_txt = f"{gap_pt:.2f}%p" if gap_pt is not None else "미수집"
+            lines.append(f"격차(이상-현실): {round(canon_target - target):,}원 · {gap_pt_txt}")
+
+    text = "\n".join(lines)
+    return text + ("\n\n" + "\n".join(warns) if warns else "")
 
 
 def send_sales_numbers_text(target_date: datetime) -> bool:
@@ -423,12 +439,18 @@ def main() -> int:
         ok = {"today": 1, "month": 160817436, "target": 610500000,
               "rate": 160817436 / 610500000, "rate_formula": "=J4/K4"}
         assert check_sales_numbers(ok, 610500000) == []
-        assert any("정본" in w for w in check_sales_numbers(ok, 660000000))
+        assert check_sales_numbers(ok, 660000000) == []  # 현실≠이상 정상(배464 GM 정정) — 경고 없음
+        assert any("정본" in w for w in check_sales_numbers(ok, None))  # 정본 값 못 읽으면 경고
         assert any("배351" in w for w in check_sales_numbers(
             {**ok, "rate_formula": '=SUM(INDIRECT("x"))'}, 610500000))
         assert any("월누적÷목표" in w for w in check_sales_numbers({**ok, "rate": 0.9}, 610500000))
         assert check_sales_numbers(None, 610500000) == []
-        print("PASS — check_sales_numbers 5종")
+        text = build_sales_numbers_text(datetime(2026, 8, 8), ok)
+        assert "당월 목표(현실): 610,500,000원" in text
+        assert "당월 목표(이상): 660,000,000원" in text
+        assert "격차(이상-현실): 49,500,000원" in text
+        assert "정본" not in text and "다릅니다" not in text
+        print("PASS — check_sales_numbers/build_sales_numbers_text 6종")
         return 0
 
     if sys.platform != "win32":
