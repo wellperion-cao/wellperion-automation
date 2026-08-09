@@ -107,6 +107,73 @@ def set_mood(mood: str, day: str | None = None) -> dict:
     return state(day)
 
 
+# ── 시점별 체크(끼니·운동) 4슬롯 — GM 요청 2026-08-09 "아침에 먹는것도 운동하는것도 다
+#   체크하고, 점심 먹는거 간식 먹는거 저녁 먹고 운동도". 저녁 설문(TOROKS)이 하루가
+#   끝난 뒤 5토막·기분을 묻는 것과 달리, 이건 그때그때(아침/점심/간식/저녁) 끼니·운동만
+#   묻는다 — 겹치지 않는다. 운동 축은 TOROKS 가 이미 쓰는 morning_ex·evening_run 재사용.
+#   (슬롯id, 시, 분, 카드제목, [(축id, 문항라벨), ...])
+SLOTS = [
+    ('morning', 9, 0, '🌅 아침', [('meal_breakfast', '🍚 아침 먹었다'), ('morning_ex', '🏃 아침 운동')]),
+    ('lunch', 13, 30, '🍚 점심', [('meal_lunch', '점심 먹었다')]),
+    ('snack', 16, 30, '🍪 간식', [('snack', '간식 먹었다')]),
+    ('dinner', 21, 0, '🌆 저녁', [('meal_dinner', '🍚 저녁 먹었다'), ('evening_run', '🏃 저녁 운동')]),
+]
+_MEAL_AXES = ('meal_breakfast', 'meal_lunch', 'snack', 'meal_dinner')
+_EX_AXES = ('morning_ex', 'evening_run')
+
+
+def _derive_meals3(axes: dict) -> None:
+    """세 끼(아침·점심·저녁)가 다 O 면 meals3 도 따라 O — 사람이 따로 안 누르게(파생값).
+    meals3 는 G1 화면이 읽으므로 지우지 않는다."""
+    if all(axes.get(k) == 'O' for k in ('meal_breakfast', 'meal_lunch', 'meal_dinner')):
+        axes['meals3'] = 'O'
+
+
+def _meal_ex_line(day: str | None = None) -> str:
+    """그날 체크된 끼니·운동 개수 한 줄 — 🍚2 🏃1. 저녁 마무리·주간 카드가 공유해서 쓴다."""
+    day = day or today()
+    axes = _day(load(), day).get('axes') or {}
+    meals = sum(1 for k in _MEAL_AXES if axes.get(k) == 'O')
+    ex = sum(1 for k in _EX_AXES if axes.get(k) == 'O')
+    return f"🍚{meals} 🏃{ex}"
+
+
+def build_slot(slot_id: str, day: str | None = None) -> dict:
+    """시점 카드 하나. 항목마다 ○했다/－안했다 두 버튼, 답한 항목은 버튼이 사라진다.
+    전부 답하면 본문을 「오늘 여기까지」 요약으로 바꾼다."""
+    day = day or today()
+    slot = next((s for s in SLOTS if s[0] == slot_id), None)
+    if not slot:
+        return {'text': '', 'markup': None}
+    _sid, _h, _m, title, items = slot
+    axes = _day(load(), day).get('axes') or {}
+    if all(axes.get(axis) in ('O', 'X') for axis, _label in items):
+        return {'text': f"오늘 여기까지 — {_meal_ex_line(day)}", 'markup': None}
+    lines = [title, '']
+    rows = []
+    for axis, label in items:
+        v = axes.get(axis)
+        mark = {'O': '✅', 'X': '－'}.get(v, '·')
+        lines.append(f"{mark} {label}")
+        if v not in ('O', 'X'):
+            rows.append([{'text': '○ 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
+                         {'text': '－ 안 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
+    return {'text': '\n'.join(lines), 'markup': {'inline_keyboard': rows}}
+
+
+def set_slot_answer(slot_id: str, axis: str, code: str, day: str | None = None) -> None:
+    """시점 카드 버튼 하나의 답을 그 자리에서 저장한다."""
+    if code not in ('O', 'X'):
+        return
+    day = day or today()
+    data = load()
+    d = _day(data, day)
+    axes = d.setdefault('axes', {})
+    axes[axis] = code
+    _derive_meals3(axes)
+    _write(data)
+
+
 # ── 저녁 설문 — 한 번에 하나씩 (GM 2026-08-08 "Survey 처럼 기록해도 좋을 것 같긴한데") ──
 #   왜 바꿨나: 버튼 10개가 한 화면에 깔리니 무엇부터 눌러야 할지 알 수 없었다(GM: "난해하다").
 #   같은 메시지를 문항마다 갈아 끼운다(editMessageText) — 방이 카드로 더러워지지 않는다.
@@ -171,7 +238,7 @@ def _finish_text(day: str) -> str:
         mark = {'O': '○', '△': '△', 'X': '－'}.get(v, '·')
         lines.append(f"{mark} {icon} {label}   {p.get(tid, '')}")
     lines.append("")
-    lines.append(f"담긴 토막 {len(st['on'])}/{len(TOROKS)}"
+    lines.append(f"담긴 토막 {len(st['on'])}/{len(TOROKS)}   {_meal_ex_line(day)}"
                  + (f"   기분 {st['mood']}" if st['mood'] else ""))
     lines += ["", "한 줄 남기시려면 이 메시지에 답장해 주세요.",
               "", "📵 전자기기 off — 수면 루틴 시작",
@@ -205,7 +272,7 @@ def summary(day: str | None = None) -> str:
     st = state(day)
     marks = ' '.join(i if tid in st['on'] else '·' for tid, i, _l, _k in TOROKS)
     n = len(st['on'])
-    line = f"{marks}   담긴 토막 {n}/{len(TOROKS)}"
+    line = f"{marks}   담긴 토막 {n}/{len(TOROKS)}   {_meal_ex_line(day)}"
     if st['mood']:
         line += f"   기분 {st['mood']}"
     return line
@@ -329,7 +396,8 @@ def week_card(day: str | None = None) -> str:
         done = [(tid, icon) for tid, icon, _l, keys in TOROKS
                 if all(axes.get(x) == 'O' for x in keys)]
         filled += len(done)
-        head = f"{dt.month}/{dt.day}({wd})  {' '.join(i for _t, i in done) if done else '·'}   {len(done)}/4"
+        head = (f"{dt.month}/{dt.day}({wd})  {' '.join(i for _t, i in done) if done else '·'}   {len(done)}/4"
+                f"   {_meal_ex_line(dt.isoformat())}")
         if rec.get('mood'):
             head += f"  {rec['mood']}"
         lines.append(head)

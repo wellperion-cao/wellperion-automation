@@ -1909,6 +1909,28 @@ async def cmd_checkin_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             await q.answer("처리 실패 — 다시 눌러 주세요", show_alert=True)
         return
 
+    # ── 시점별 체크(끼니·운동) — ck:s:{슬롯}:{축}:{O|X} ─────────────────────────
+    #   저녁 설문(ck:q:)과 같은 갈아 끼우기 방식. 슬롯 안 항목을 다 답하면 요약으로 바뀌고
+    #   그때 커밋한다(build_slot 이 markup 없이 돌려주는 게 곧 '다 답했다' 신호).
+    if data.startswith("ck:s:"):
+        try:
+            _, _, slot_id, axis, code = data.split(":", 4)
+            await asyncio.to_thread(_checkin.set_slot_answer, slot_id, axis, code)
+            step = await asyncio.to_thread(_checkin.build_slot, slot_id)
+            if not step.get("markup"):
+                await asyncio.to_thread(_checkin.commit)
+            markup = None
+            if step.get("markup"):
+                markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(b["text"], callback_data=b["callback_data"]) for b in row]
+                    for row in step["markup"]["inline_keyboard"]])
+            await q.edit_message_text(text=step["text"], reply_markup=markup)
+            await q.answer()
+        except Exception as exc:
+            log.error(f"[checkin] 시점 카드 처리 실패: {exc}")
+            await q.answer("처리 실패 — 다시 눌러 주세요", show_alert=True)
+        return
+
     try:
         if data.startswith("ck:t:"):
             _checkin.toggle(data[5:])
