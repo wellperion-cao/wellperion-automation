@@ -33,7 +33,19 @@ try:
 except Exception:
     pass
 
-_TARGET_SUFFIX = "coo/reception/reception_block.html"
+# 워드프레스에 사본이 인라인으로 박혀 있어, 리포만 고치면 라이브가 안 바뀌는 파일들.
+# (경로 끝, 라이브 주소, 주입 명령) — 습득물 접수는 2026-08-10 추가(배315):
+# 리포는 08-03 에 고쳐 뒀는데 라이브는 나흘간 옛 폼('등록 직원(선택)')으로 접수받고 있었다.
+# 화면은 멀쩡히 떠서 아무도 못 알아챘다 — 종합접수처와 같은 부류라 같은 가드에 태운다(약속 L21).
+_TARGETS = [
+    ("coo/reception/reception_block.html",
+     "http://wellperion.com/ko/reception/",
+     "  대량변경=python scripts/wordpress_admin_playwright.py --mode draft-reception --post-id 8434\n"
+     "  한 문자열=python scripts/wordpress_admin_playwright.py --mode swap-reception-text\n"),
+    ("coo/reception/wp_lost_found_register_block.html",
+     "http://wellperion.com/ko/lost-found-register/",
+     "  주입=python scripts/wordpress_admin_playwright.py --mode draft-page --page lf-register --post-id 8464\n"),
+]
 
 
 def _staged_files() -> set:
@@ -58,16 +70,15 @@ def main() -> int:
         if not staged:
             return 0
 
-        hit = any(s.replace("\\", "/").endswith(_TARGET_SUFFIX) for s in staged)
-        if not hit:
-            return 0
-
-        sys.stdout.write(
-            "\n⚠️ reception_block.html 변경 감지 — WP 라이브(page 8434) 반영 필요:\n"
-            "  대량변경=python scripts/wordpress_admin_playwright.py --mode draft-reception --post-id 8434\n"
-            "  한 문자열=python scripts/wordpress_admin_playwright.py --mode swap-reception-text\n"
-            "  저장 후 시크릿 크롬으로 http://wellperion.com/ko/reception/ 실측 확인.\n\n"
-        )
+        paths = {s.replace("\\", "/") for s in staged}
+        for suffix, live_url, how in _TARGETS:
+            if not any(p.endswith(suffix) for p in paths):
+                continue
+            sys.stdout.write(
+                f"\n⚠️ {suffix.rsplit('/', 1)[-1]} 변경 감지 — WP 라이브 반영 필요:\n"
+                f"{how}"
+                f"  저장 후 시크릿 크롬으로 {live_url} 실측 확인.\n\n"
+            )
         return 0
 
     except Exception as exc:
