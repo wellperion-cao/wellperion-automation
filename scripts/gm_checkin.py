@@ -122,6 +122,22 @@ _MEAL_AXES = ('meal_breakfast', 'meal_lunch', 'snack', 'meal_dinner')
 _EX_AXES = ('morning_ex', 'evening_run')
 
 
+def _selfcheck_slots() -> None:
+    """버튼 6종(아침식사·아침운동·점심식사·간식·저녁식사·저녁운동) ↔ 저장 축이 1:1인지 확인.
+    SLOTS 를 손대다 축 하나를 빼먹거나 중복 매핑하면 여기서 바로 터진다."""
+    slot_axes = [axis for _sid, _h, _m, _title, items in SLOTS for axis, _label in items]
+    assert len(slot_axes) == 6, f"버튼 6종이어야 하는데 {len(slot_axes)}개: {slot_axes}"
+    assert len(set(slot_axes)) == 6, f"축 중복: {slot_axes}"
+    assert set(slot_axes) == set(_MEAL_AXES) | set(_EX_AXES), \
+        f"SLOTS 축과 _MEAL_AXES/_EX_AXES 불일치: {set(slot_axes)} vs {set(_MEAL_AXES) | set(_EX_AXES)}"
+    for sid, _h, _m, _title, items in SLOTS:
+        for axis, _label in items:
+            for code in ('O', 'X'):
+                cb = f'ck:s:{sid}:{axis}:{code}'
+                _, _, back_sid, back_axis, back_code = cb.split(':', 4)
+                assert (back_sid, back_axis, back_code) == (sid, axis, code), cb
+
+
 def _derive_meals3(axes: dict) -> None:
     """세 끼(아침·점심·저녁)가 다 O 면 meals3 도 따라 O — 사람이 따로 안 누르게(파생값).
     meals3 는 G1 화면이 읽으므로 지우지 않는다."""
@@ -414,6 +430,7 @@ def week_card(day: str | None = None) -> str:
 if __name__ == '__main__':
     import sys
     sys.stdout.reconfigure(encoding='utf-8')
+    _selfcheck_slots()
     print(build_prompt())
     print(json.dumps(build_markup(), ensure_ascii=False))
     print('---')
