@@ -467,6 +467,106 @@ def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
     return []
 
 
+# -----------------------------------------------------------------
+# IG 비율 안전장치 — 모든 IG 업로드가 지나가는 단일 관문(run_publish)에 흡수 (2026-08-10)
+# GM 2026-08-09 두 번 지적("또 인스타그램 사진 짤렸네" / "장난 하는건가?") 재발방지.
+# 실측(260809_GM일요일_일요일 발행분): 소스 파일은 이미 1080x1350(4:5=0.8, IG 허용 비율) —
+# 비율 자체는 정상이었다. 잘림은 크롭 화면 기본값이 정사각(1:1)이라 "원본" 선택(라인 1329
+# _select_crop_aspect_ratio)이 셀렉터 미스·타이밍으로 실패하면 그대로 정사각 크롭이 적용돼
+# 상하 각 135px 이 잘려나가는 구조(2026-08-08 실측) — DOM 셀렉터 클릭 성공 여부에 계속 기대는
+# 건 재발이 증명됐다(같은 폴더 19:59·20:19 두 번 발행 모두 재현). 클릭 성공 여부와 무관하게
+# 잘림 자체가 불가능하도록, 업로드 직전 정사각이 아닌 이미지는 캔버스를 정사각으로 확장한다
+# (잘라내기 아님 — GM 2026-08-09 "사진을 자르지 않고 통째로 넣는다" 원칙과 동일한 방향).
+# 정사각이면 IG 기본 크롭과 이미 같은 비율이라 자를 여지가 없어 그대로 통과.
+# -----------------------------------------------------------------
+IG_PAD_CACHE_DIR = Path(r"C:\Users\jjky0\welperion-automation\scripts\.ig_pad_cache")
+
+
+def _edge_avg_color(im) -> tuple:
+    """이미지 가장자리 픽셀 평균색 — 패딩 배경을 흰색 고정 대신 슬라이드 톤에 맞춘다."""
+    w, h = im.size
+    px = im.load()
+    xs = range(0, w, max(1, w // 50))
+    ys = range(0, h, max(1, h // 50))
+    samples = [px[x, 0] for x in xs] + [px[x, h - 1] for x in xs] + \
+              [px[0, y] for y in ys] + [px[w - 1, y] for y in ys]
+    n = len(samples) or 1
+    return tuple(sum(c[i] for c in samples) // n for i in range(3))
+
+
+def _normalize_ig_ratio(path: Path) -> Path:
+    """업로드 직전 단일 관문 — 정사각이 아니면 캔버스를 정사각으로 확장(패딩)해 IG 기본
+    크롭이 잘라낼 여지 자체를 없앤다. 영상(mp4)·이미 정사각인 파일은 그대로 반환.
+    실패(PIL 부재·손상 파일 등)해도 원본 경로를 그대로 반환 — 업로드를 막지 않는다."""
+    if path.suffix.lower() == ".mp4":
+        return path
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            im = im.convert("RGB")
+            w, h = im.size
+            if w == h:
+                return path
+            side = max(w, h)
+            bg = _edge_avg_color(im)
+            canvas = Image.new("RGB", (side, side), bg)
+            canvas.paste(im, ((side - w) // 2, (side - h) // 2))
+            IG_PAD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            import hashlib
+            tag = hashlib.md5(str(path.resolve()).encode()).hexdigest()[:8]
+            dest = IG_PAD_CACHE_DIR / f"{path.stem}_{tag}_sq.jpg"
+            canvas.save(dest, quality=95)
+            return dest
+    except Exception as e:
+        print(f"[WARN]   IG 비율 패딩 실패({e}) — 원본 파일 그대로 업로드: {path.name}")
+        return path
+
+
+def _selftest_normalize_ig_ratio() -> None:
+    """assert 기반 자가검증 — 정사각 패딩이 콘텐츠를 자르지 않는지 확인.
+    실행: python scripts\\instagram_upload_playwright.py --mode selftest"""
+    import shutil
+    import tempfile
+    from PIL import Image, ImageDraw
+
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        # 4:5(0.8) 세로 이미지 — 상단 빨강/하단 파랑으로 절반씩 칠해 잘림 여부를 픽셀로 검증
+        w, h = 1080, 1350
+        im = Image.new("RGB", (w, h), (255, 0, 0))
+        ImageDraw.Draw(im).rectangle([0, h // 2, w, h], fill=(0, 0, 255))
+        src = tmp / "post_1.jpg"
+        im.save(src)
+
+        out = _normalize_ig_ratio(src)
+        assert out != src, "정사각이 아닌 입력인데 패딩이 적용되지 않았다"
+        with Image.open(out) as padded:
+            pw, ph = padded.size
+            assert pw == ph, f"패딩 결과가 정사각이 아님: {pw}x{ph}"
+            assert pw == max(w, h), f"패딩 캔버스 크기 오류: {pw} != {max(w, h)}"
+            off = (pw - h) // 2  # 세로는 패딩 없이 그대로 중앙 배치돼야 함(off는 가로 오프셋)
+            off_x = (pw - w) // 2
+            top_px = padded.getpixel((off_x + w // 2, off + 10))
+            bottom_px = padded.getpixel((off_x + w // 2, off + h - 10))
+            assert top_px[0] > top_px[2], f"상단 콘텐츠 손상(빨강 기대): {top_px}"
+            assert bottom_px[2] > bottom_px[0], f"하단 콘텐츠 손상(파랑 기대): {bottom_px}"
+        out.unlink(missing_ok=True)
+
+        # 이미 정사각이면 패딩 없이 원본 경로 그대로 반환(불필요한 재인코딩 방지)
+        sq_src = tmp / "sq.jpg"
+        Image.new("RGB", (500, 500), (10, 20, 30)).save(sq_src)
+        assert _normalize_ig_ratio(sq_src) == sq_src, "이미 정사각인데 불필요하게 패딩됨"
+
+        # mp4는 패딩 대상에서 제외(그대로 통과)
+        mp4_src = tmp / "clip.mp4"
+        mp4_src.write_bytes(b"\x00")
+        assert _normalize_ig_ratio(mp4_src) == mp4_src, "영상 파일이 패딩 대상이 됨"
+
+        print("[OK] _normalize_ig_ratio selftest 통과 — 정사각 패딩 3종(패딩·정사각 통과·mp4 통과) 확인")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def enforce_subject_collaborators(spec: PostSpec) -> None:
     """종목 키워드에 매핑된 collaborator를 강제 합류 (메모리 feedback_ig_squash_collaborators)."""
     subject_key = spec.subject.strip().lower()
@@ -928,6 +1028,7 @@ async def run_publish(
     for slot in present_slots:
         spec = posts[slot]
         spec.image_paths = collect_post_images(content_folder, slot)
+        spec.image_paths = [_normalize_ig_ratio(p) for p in spec.image_paths]  # IG 비율 안전장치(단일 관문)
         enforce_subject_collaborators(spec)
         # --collaborators CLI 인자 병합 (중복 제거)
         if extra_collaborators:
@@ -1674,13 +1775,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["setup", "setup-auto", "dryrun", "publish"],
+        choices=["setup", "setup-auto", "dryrun", "publish", "selftest"],
         default="dryrun",
         help=(
             "setup: 최초 1회 GM님 수동 로그인 (Enter로 저장) / "
             "setup-auto: 로그인 자동 감지 저장 (Enter 불필요·백그라운드 가능) / "
             "dryrun: 세션 확인 + publish 흐름 셀렉터 후보군 전체 탐색 (기본·발행 없음) / "
-            "publish: 콘텐츠 폴더 실 발행 (post_{A|B|C}_N 또는 ig_NN 형식 · 이미지+영상 혼합 캐러셀 · 비가역)"
+            "publish: 콘텐츠 폴더 실 발행 (post_{A|B|C}_N 또는 ig_NN 형식 · 이미지+영상 혼합 캐러셀 · 비가역) / "
+            "selftest: IG 비율 패딩 안전장치(_normalize_ig_ratio) 자가검증 (네트워크·로그인 불필요)"
         ),
     )
     parser.add_argument(
@@ -1737,7 +1839,9 @@ def parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = parse_args()
 
-    if args.mode == "setup":
+    if args.mode == "selftest":
+        _selftest_normalize_ig_ratio()
+    elif args.mode == "setup":
         asyncio.run(run_setup(account=args.account))
     elif args.mode == "setup-auto":
         asyncio.run(run_setup_auto(account=args.account))
