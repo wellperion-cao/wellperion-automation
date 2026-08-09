@@ -250,11 +250,12 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
             lines.append(f" • 외 {len(progressing) - WEEKLY_SHOW_N}건")
 
     if stalled:
-        lines.append(f"\n③ 멈춰 있는 것 {len(stalled)}건")
-        for r, tag, _age in stalled[:WEEKLY_SHOW_N]:
-            lines.append(f" • {str(r.get('업무명', '')).strip()} / {str(r.get('담당자', '')).strip()} / {tag}")
-        if len(stalled) > WEEKLY_SHOW_N:
-            lines.append(f" • 외 {len(stalled) - WEEKLY_SHOW_N}건")
+        # ★2026-08-09 시토 — 목록을 뺀다(GM "요약사진 중복일 수 있으니 최종검토"). 같은 회차에
+        #   바로 앞서 나가는 「멈춘 업무 정리」 카드가 같은 시트·같은 판정으로 이 목록을 이미
+        #   그림으로 보여 준다 — 글로 또 적으면 같은 12건이 한 방에 두 번 간다.
+        #   초안에는 건수만 남긴다. 초안의 존재 이유(②진행 중·✅끝난 것을 실장이 고쳐 올리는 것)는
+        #   그대로 살아 있고, 멈춘 건은 카드가 맡는다.
+        lines.append(f"\n③ 멈춰 있는 것 {len(stalled)}건 — 목록은 바로 위 카드에 있습니다")
 
     if done_this_week:
         lines.append(f"\n✅ 이번 주 끝난 것 {len(done_this_week)}건")

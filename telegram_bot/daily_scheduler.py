@@ -2974,6 +2974,15 @@ def run_weekly_ops_report() -> None:
         if not draft:
             logger.info("[주간 보고] 이번 주 진행/멈춤/완료 없음 — 발송 생략")
             return
+        # ★2026-08-09 시토 — 「멈춘 업무 정리」 카드를 초안보다 먼저 보낸다(GM 2026-08-08
+        #   "방마다 현황을 요약본(이미지)으로 — 글은 잘 읽지도 않고 반영도 안 된다").
+        #   ★중복은 초안 쪽에서 없앴다: 초안 ③멈춰 있는 것의 목록이 카드와 같은 판정·같은
+        #   시트라 그대로 두면 같은 12건이 사진과 글로 두 번 간다(GM 2026-08-09 지적).
+        #   초안은 건수 한 줄만 남기고 목록은 카드가 맡는다 — build_weekly_report_draft 참조.
+        #   record=True: 실제 발송 회차이므로 '몇 주째'를 올린다(미리보기에선 안 올린다).
+        _send_ops_card("stalled", "이번 주 멈춘 업무입니다. 막힌 이유 한 줄만 적어 주시면 저희가 풉니다.",
+                       _od.WEEKLY_ROOM, "멈춘업무카드", record=True)
+        time.sleep(5)
         proc = subprocess.run(
             [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
              "--message", draft, "--only-room", _od.WEEKLY_ROOM],
