@@ -128,8 +128,8 @@
 
 <script>
 /* ===== 백엔드 연동 — 자가성찰 전용 스코프 액션(onbo-self-*)만 사용.
-   [변경 2026-07-04 r2] 인증 = 본인 연락처(현재근무자 시트) 뒤 4자리. 관리자 마스터 비밀번호·멘토 PIN(1202)과 완전히 무관.
-   멘토는 체크인만(onboarding.html, PIN 1202), 신입 본인은 본인 성찰만(이 페이지) — 상호 교차 접근 불가. ===== */
+   [변경 2026-07-04 r2] 인증 = 본인 연락처(현재근무자 시트) 뒤 4자리. 관리자 마스터 비밀번호·멘토 PIN과 완전히 무관.
+   멘토는 체크인만(onboarding.html, PIN), 신입 본인은 본인 성찰만(이 페이지) — 상호 교차 접근 불가. ===== */
 const EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
 const SS_KEY = "wp_onbo_self";
 let SESSION = null; // { pin, name } — pin은 이제 "연락처 뒤4자리" 값(백엔드 파라미터명은 하위호환 위해 pin 유지)

@@ -148,7 +148,7 @@
 
 <script src="ob_guide_data.js"></script>
 <script>
-/* ===== 백엔드 연동 — 온보딩 위임 기입 전용 스코프 액션(onbo-checkin-*, PIN 1202)만 사용.
+/* ===== 백엔드 연동 — 온보딩 위임 기입 전용 스코프 액션(onbo-checkin-*, PIN)만 사용.
    관리자 마스터 비밀번호는 이 페이지 어디에도 없음. ===== */
 const EXEC_URL = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
 const SS_KEY = "wp_onbo_ck";
@@ -174,7 +174,7 @@ function getParamName(){
 
 /* ===== [추가 2026-07-04 r2] 모드 선택 화면 — PIN 게이트보다 먼저 표시.
    체크인(멘토·관리자용)=기존 흐름 그대로 진행 / 자가성찰(신입직원 본인용)=onboarding-self.html로 이동.
-   기존 체크인 기능·계약(onbo-checkin-*, PIN 1202)은 완전히 무변경. ===== */
+   기존 체크인 기능·계약(onbo-checkin-*, PIN)은 완전히 무변경. ===== */
 function renderModeSelect(){
   document.getElementById("hdrSub").textContent = "체크인(멘토용) · 자가성찰(신입직원 본인용) 중 선택하세요";
   setBanner("");
