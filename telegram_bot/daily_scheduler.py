@@ -2529,55 +2529,6 @@ def _kakao_fail_notify(tag: str, detail: str, room: str = "") -> None:
 # scripts/poc-evidence/kakao_send_★운영+시설+지원+주차_*.png). 역롤백(1줄): 아래를 False로.
 KAKAO_GO_STREAM2 = True
 KAKAO_OPS_ROOM = "★운영+시설+지원+주차"
-KAKAO_MGR_ROOM = "★중간관리자"
-
-
-def _send_ops_card(card: str, caption: str, room: str, tag: str, record: bool = False) -> bool:
-    """요약 카드 1장을 만들어 그 방으로 보낸다. 성공 True / 실패 False(호출부가 폴백).
-
-    ★2026-08-09 시토 — 카드는 어제(08-08) 만들어 뒀는데 **매일 내보내는 자리에 안 걸어**
-    하루도 안 나갔다(GM 지적 "요약사진 하나도 안 된 것 같은데?"). 손으로 한 번 보낸 것을
-    완료로 본 게 원인이라, 예약 회차 안에 넣는다 — 새 예약작업·새 발신기 없음(약속 L21).
-    기존 카드 엔진(scripts/kakao_summary_card.py)과 기존 카톡 관문(kakao_report_sender.py)만 쓴다.
-
-    ★카드는 글에 '더하는' 것이 아니라 '대신하는' 것이다. 같은 원천을 읽는 글을 함께 보내면
-    같은 사실이 한 방에 두 번 간다 — 그게 GM 이 줄이라고 한 바로 그 부하다.
-
-    record=True 는 stalled 카드 전용 — 이번 회차를 기록해 '몇 주째'를 올린다. 실제 발송
-    회차에서만 켠다(미리보기로 주차가 오르면 안 된다).
-    """
-    try:
-        builder = REPO_ROOT / "scripts" / "kakao_summary_card.py"
-        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
-        cmd = [sys.executable, str(builder), "--card", card]
-        if record:
-            cmd.append("--record")
-        proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", env=env, timeout=300)
-        line = next((l for l in (proc.stdout or "").splitlines() if l.startswith("IMAGE: ")), "")
-        if proc.returncode != 0 or not line:
-            tail = (proc.stdout or proc.stderr or "출력 없음").strip().splitlines()[-1:]
-            logger.error(f"카드 생성 실패({tag}): {tail[0] if tail else '출력 없음'}")
-            _kakao_fail_notify(tag, f"카드 생성 실패 — {tail[0] if tail else '출력 없음'}", room=room)
-            return False
-        png = line[len("IMAGE: "):].strip()
-
-        sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
-        proc2 = subprocess.run(
-            [sys.executable, str(sender), "--image", png, "--caption", caption, "--only-room", room],
-            cwd=str(REPO_ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", env=env, timeout=180,
-        )
-        tail2 = (proc2.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-        logger.info(f"카톡 {room}({tag}) 카드 발송: {tail2[0]}")
-        if proc2.returncode != 0:
-            _kakao_fail_notify(tag, tail2[0], room=room)
-            return False
-        return True
-    except Exception as e:
-        logger.error(f"카톡 {room}({tag}) 카드 예외: {e}")
-        _kakao_fail_notify(tag, str(e)[:120], room=room)
-        return False
 
 
 def _is_rest_day(d) -> bool:
@@ -2762,17 +2713,7 @@ def run_daily_digest(early: bool = False) -> None:
                 _kakao_fail_notify(tag, str(e)[:120])
 
         if s2_msg:
-            # ★2026-08-09 시토 — 점검현황 47줄 글을 「오늘 점검 마감」 카드 1장으로 바꾼다
-            #   (GM 2026-08-08 "글로 다 정리되니 잘 읽지도 않고 반영도 안 되는 것 같아").
-            #   ★중복 방지가 이 교체의 핵심이다(GM 2026-08-09 "요약사진 중복일 수 있으니 최종검토"):
-            #   카드와 s2_msg 는 같은 원천(report_stream_2_check)을 읽는다 — 둘 다 보내면 같은
-            #   사실이 같은 방에 두 번 간다. 그래서 '추가'가 아니라 '교체'다.
-            #   ▸종합접수(s2b_msg)는 카드가 담지 않는 별개 내용이라 그대로 둔다.
-            #   ▸카드 생성·발송이 실패하면 옛 글로 되돌아간다 — 알림을 잃지 않는 쪽(무중단).
-            if not _send_ops_card("check", "오늘 점검 — 빈 칸으로 남은 조는 내일 아침 제출 부탁드립니다.",
-                                  KAKAO_OPS_ROOM, "점검마감카드"):
-                logger.warning(f"{label} 점검 마감 카드 실패 — 옛 글(s2_msg)로 폴백")
-                _send_ops_kakao(s2_msg, "점검현황")
+            _send_ops_kakao(s2_msg, "점검현황")
             time.sleep(5)  # 두 메시지 사이 간격(플러드·방 창 포커스 경합 방지)
         else:
             logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}(점검현황) SKIP — s2_msg 없음(빌드 실패)")
@@ -2974,15 +2915,6 @@ def run_weekly_ops_report() -> None:
         if not draft:
             logger.info("[주간 보고] 이번 주 진행/멈춤/완료 없음 — 발송 생략")
             return
-        # ★2026-08-09 시토 — 「멈춘 업무 정리」 카드를 초안보다 먼저 보낸다(GM 2026-08-08
-        #   "방마다 현황을 요약본(이미지)으로 — 글은 잘 읽지도 않고 반영도 안 된다").
-        #   ★중복은 초안 쪽에서 없앴다: 초안 ③멈춰 있는 것의 목록이 카드와 같은 판정·같은
-        #   시트라 그대로 두면 같은 12건이 사진과 글로 두 번 간다(GM 2026-08-09 지적).
-        #   초안은 건수 한 줄만 남기고 목록은 카드가 맡는다 — build_weekly_report_draft 참조.
-        #   record=True: 실제 발송 회차이므로 '몇 주째'를 올린다(미리보기에선 안 올린다).
-        _send_ops_card("stalled", "이번 주 멈춘 업무입니다. 막힌 이유 한 줄만 적어 주시면 저희가 풉니다.",
-                       _od.WEEKLY_ROOM, "멈춘업무카드", record=True)
-        time.sleep(5)
         proc = subprocess.run(
             [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
              "--message", draft, "--only-room", _od.WEEKLY_ROOM],
