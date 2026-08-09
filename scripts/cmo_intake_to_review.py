@@ -730,13 +730,16 @@ def _compose_sunday_montage(slides: list[Path], output: Path) -> None:
     cell_w = 540
     cells = [im.resize((cell_w, int(im.height * cell_w / im.width))) for im in imgs]
     gap = 12
-    total_w = sum(c.width for c in cells) + gap * (len(cells) - 1)
-    total_h = max(c.height for c in cells)
+    # 한 줄로 이어 붙이면 8장에서 가로:세로가 6.5:1 이 된다 — 텔레그램이 그런 사진을
+    # 잘라 보여 줘 GM 이 '또 짤렸다'고 본다(2026-08-09). 격자로 접어 비율을 눕힌다.
+    cols = min(4, len(cells))
+    rows = (len(cells) + cols - 1) // cols
+    row_h = max(c.height for c in cells)
+    total_w = cols * cell_w + gap * (cols - 1)
+    total_h = rows * row_h + gap * (rows - 1)
     canvas = Image.new("RGB", (total_w, total_h), _SUNDAY_CREAM)
-    x = 0
-    for c in cells:
-        canvas.paste(c, (x, 0))
-        x += c.width + gap
+    for i, c in enumerate(cells):
+        canvas.paste(c, ((i % cols) * (cell_w + gap), (i // cols) * (row_h + gap)))
     output.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(output, "PNG", optimize=True)
 
