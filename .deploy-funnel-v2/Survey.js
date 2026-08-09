@@ -2390,7 +2390,7 @@ function _miReadRows_(sh) {
       lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
       // 지문키(rowKey, §4 R1) — 정규화 타임스탬프+정규화 전화. raw 셀 값(_normTsKey_ 입력)을 그대로 써야 함
       //   (위 timestamp 필드는 _miToISO_로 시각이 잘려있어 지문 재료로 쓰면 안 됨). 둘 중 하나라도 없으면 ''(지문키 미사용 → 프론트가 keyPhone 폴백). 2026-07-22 시포.
-      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''); return (_t && _p) ? (_t + '|' + _p) : ''; })()
+      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''), _n = _normNameKey_(iName >= 0 ? row[iName] : ''); /* 이름은 세 번째 파트로 붙인다(배491) — 없으면 두 파트 그대로라 옛 화면과 호환된다. */ return (_t && _p) ? (_t + '|' + _p + (_n ? '|' + _n : '')) : ''; })()
     };
     // 예약목록(가변): 양포맷(레거시 JSON·신규 평문) → 없으면 체험1·2 흡수(하위호환·무손실). 2026-07-03 시포·GM / 2026-07-22 GM(평문 전환)
     var _resArr = _resCellParse_(iRes >= 0 ? row[iRes] : '');
@@ -2468,7 +2468,8 @@ function _memberReconEvents_(month) {
     var _ph = iPhone >= 0 ? _fmtPhone_(row[iPhone]) : '';
     var _pg = iProg >= 0 ? String(row[iProg] == null ? '' : row[iProg]).trim() : '';
     var _rkTsN = _normTsKey_(iTsRk >= 0 ? row[iTsRk] : ''), _rkPhN = _normPhone_(iPhone >= 0 ? row[iPhone] : '');
-    var _rk = (_rkTsN && _rkPhN) ? (_rkTsN + '|' + _rkPhN) : '';
+    var _rkNmN = _normNameKey_(iName >= 0 ? row[iName] : '');   // 이름 세 번째 파트(배491)
+    var _rk = (_rkTsN && _rkPhN) ? (_rkTsN + '|' + _rkPhN + (_rkNmN ? '|' + _rkNmN : '')) : '';
     for (var ri = 0; ri < resArr.length; ri++) {
       var res = resArr[ri];
       if (!res.date) continue;                               // 날짜 없는 항목 스킵
@@ -3041,7 +3042,7 @@ function _lessonReadRows_(gid) {
       gid: gid,
       lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
       // 지문키(rowKey, §4 R1) — 정규화 타임스탬프+정규화 전화(raw 셀 값). 2026-07-22 시포(오지목 근본수리).
-      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''); return (_t && _p) ? (_t + '|' + _p) : ''; })()
+      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''), _n = _normNameKey_(iName >= 0 ? row[iName] : ''); /* 이름은 세 번째 파트로 붙인다(배491) — 없으면 두 파트 그대로라 옛 화면과 호환된다. */ return (_t && _p) ? (_t + '|' + _p + (_n ? '|' + _n : '')) : ''; })()
     });
   }
   return out;
@@ -3287,7 +3288,7 @@ function _lessonIntakeReadRows_(body) {
       contacts: histArr, bySport: {},
       gid: gid, lang: '', intake: true,
       // 지문키(rowKey, §4 R1) — 정규화 타임스탬프+정규화 전화(raw 셀 값). 2026-07-22 시포(오지목 근본수리).
-      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''); return (_t && _p) ? (_t + '|' + _p) : ''; })()
+      rowKey: (function(){ var _t = _normTsKey_(iTs >= 0 ? row[iTs] : ''), _p = _normPhone_(iPhone >= 0 ? row[iPhone] : ''), _n = _normNameKey_(iName >= 0 ? row[iName] : ''); /* 이름은 세 번째 파트로 붙인다(배491) — 없으면 두 파트 그대로라 옛 화면과 호환된다. */ return (_t && _p) ? (_t + '|' + _p + (_n ? '|' + _n : '')) : ''; })()
     });
   }
   return out;
@@ -9035,7 +9036,12 @@ function _hasRealReply_(memo) {
         if (!aaFull && aaNameKey) obj[aaNameKey] = _svMaskName_(obj[aaNameKey]);
         // 지문키(rowKey) — raw 셀 값(포맷 전) 사용. 2026-07-22 시포(오지목 근본수리).
         var _aaTsN = _normTsKey_(aiTsRk >= 0 ? arow[aiTsRk] : ''), _aaPhN = _normPhone_(aiPhRk >= 0 ? arow[aiPhRk] : '');
-        obj.rowKey = (_aaTsN && _aaPhN) ? (_aaTsN + '|' + _aaPhN) : '';
+        // ★이름 세 번째 파트(배491) — 등록일자는 날짜만이라 같은 날 등록한 가족이 완전히 겹친다
+        //   (실측: Maria Campero·Oscar Garcia Chacon). 이름이 붙으면 그 겹침이 사라진다.
+        //   ▸이름을 가려 보내는 화면(aaFull=false)에는 넣지 않는다 — 지문키에 실명을 실으면
+        //     가림이 무의미해진다. 그 경우 종전처럼 두 파트로 나가고 동작도 종전과 같다.
+        var _aaNmN = (aaFull && aiName >= 0) ? _normNameKey_(arow[aiName]) : '';
+        obj.rowKey = (_aaTsN && _aaPhN) ? (_aaTsN + '|' + _aaPhN + (_aaNmN ? '|' + _aaNmN : '')) : '';
         aaRows.push(obj);
       }
     }
