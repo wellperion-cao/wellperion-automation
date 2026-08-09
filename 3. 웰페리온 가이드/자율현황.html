@@ -374,6 +374,17 @@
   </div>
   <!-- ══ /쿵짝표 ══ -->
 
+  <!-- ══ 🏗 시설부 점검 맥박 (GM 지시 2026-08-08 · 배481) ══
+       점검일지는 매일 들어오는데 GM 화면 어디에도 그 값이 없어 "소장 진행 0건" 착시가 났다.
+       실무진 입력은 그대로 두고 읽기만 더한다 — 시설부에 무엇을 더 시키는 화면이 아니다.
+       소스 = 지원부와 같은 점검 GAS·같은 액션(dept 만 다르다) · 새 배선 0(약속 L21). ══ -->
+  <div id="facility-pulse" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
+    <h2 class="sec" style="margin-top:0;">🏗 시설부 점검 <span style="font-size:12px;font-weight:400;color:var(--dim);">(오늘 몇 회 돌았나 · 이상은 있었나)</span></h2>
+    <div id="facility-pulse-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+    <div id="facility-pulse-body" class="stats"></div>
+  </div>
+  <!-- ══ /시설부 점검 맥박 ══ -->
+
   <div id="layer-autonomy">
   <!-- 레이어 제목 "① 자율로 한 일" 삭제 (GM 2026-08-08) — 바로 아래 「🧭 항로」가 그 내용이다.
        머리만 하나 더 있으면 같은 것을 두 겹으로 읽게 된다. -->
@@ -1645,13 +1656,27 @@
       cards.push(cooMetricCard({ unmeasured:true, sh:'📅 지원부 이번달 완료율', big:'미측정', sub:'monthly_report 응답 실패 — 새로고침 시 재시도' }));
     }
 
-    // ═══ 시설부 — 매일 들어오는 값을 여기 올린다 (배481 · GM 지시 2026-08-08) ═══
-    //   2026-08-10 전까지 이 자리는 "집계는 시설부 체계 페이지 참조"라는 안내 타일이었다.
-    //   그래서 점검일지가 13영업일 100% 들어오는데도 GM 화면에는 시설부가 빈칸으로 보였고,
-    //   "소장 진행 0건"이라는 착시가 났다. 데이터는 처음부터 있었고 화면만 안 읽었다.
-    //   ★지표 고르는 기준(GM 2026-07-13): 시설부는 완료율이 핵심이 아니다 —
-    //     ①몇 번 점검했나 ②이상이 있었나 ③무슨 이상이었나. 입력률(%)은 부차로만 적는다.
-    //   소스는 지원부와 같은 GAS·같은 액션(dept 만 다름) — 새 배선 0(약속 L21).
+    // 시설부 타일은 여기서 그리지 않는다 — 이 함수가 쓰던 칸(#coo-live-metrics)은
+    // 2026-08-08 에 삭제돼 지금 아무것도 안 그려진다. 시설부는 아래 renderFacilityPulse 가
+    // 살아 있는 자기 칸에 그린다(배481).
+    // 주차 — 점검 체계 자체가 독립(project_parking_dept_standalone)
+    cards.push(cooMetricCard({ unmeasured:true, sh:'🅿️ 주차 완료율', big:'체계 외', sub:'주차관리부는 규정·가이드·매뉴얼만 운영 — 점검(today_live) 체계에 미포함(정책상 독립)' }));
+
+    el.innerHTML = cards.join('');
+  }
+
+  // ═══════════ 🏗 시설부 점검 맥박 (배481 · GM 지시 2026-08-08) ═══════════
+  //   왜 생겼나: 점검일지는 13영업일 100% 들어오고 있었는데(GAS 라이브 실측) GM 화면
+  //   어디에도 그 값이 없어 "소장 진행 0건"이라는 착시가 났다. 데이터는 처음부터 있었고
+  //   화면이 안 읽었다. 실무진에게 무엇을 더 시키는 게 아니라 이미 있는 것을 보이게 한다.
+  //   ★지표 기준(GM 2026-07-13): 시설부는 완료율이 핵심이 아니다 — ①몇 번 점검했나
+  //     ②이상이 있었나 ③무슨 이상이었나. 입력률(%)은 부차로만 적는다.
+  //   소스는 지원부와 같은 GAS·같은 액션(dept 만 다르다) — 새 URL·새 파일 0(약속 L21).
+  function renderFacilityPulse(mrFac){
+    var el = document.getElementById('facility-pulse-body');
+    var sum = document.getElementById('facility-pulse-summary');
+    if(!el) return;
+    var cards = [];
     if(mrFac && mrFac.monthTotals){
       var ft = mrFac.monthTotals;
       var fdaily = Array.isArray(mrFac.dailySeries) ? mrFac.dailySeries : [];
@@ -1688,9 +1713,18 @@
       cards.push(cooMetricCard({ unmeasured:true, sh:'🏗️ 시설부 오늘 점검', big:'미측정',
         sub:'점검 데이터 응답 실패 — 새로고침 시 재시도(가짜 수치 금지)' }));
     }
-    // 주차 — 점검 체계 자체가 독립(project_parking_dept_standalone)
-    cards.push(cooMetricCard({ unmeasured:true, sh:'🅿️ 주차 완료율', big:'체계 외', sub:'주차관리부는 규정·가이드·매뉴얼만 운영 — 점검(today_live) 체계에 미포함(정책상 독립)' }));
-
+    if(sum){
+      if(mrFac && mrFac.monthTotals){
+        var byIns = mrFac.byInspector || null;
+        var names = byIns ? (Array.isArray(byIns) ? byIns.map(function(x){ return x && (x.name || x.inspector); })
+                                                 : Object.keys(byIns)) : [];
+        names = names.filter(Boolean);
+        sum.innerHTML = '이번달 점검한 사람: ' + (names.length ? esc(names.join(' · ')) : '기록 없음')
+          + ' · 원천 = 점검 GAS 라이브(여기서 다시 세지 않습니다)';
+      } else {
+        sum.textContent = '점검 데이터를 못 불러왔습니다 — 새로고침 시 재시도.';
+      }
+    }
     el.innerHTML = cards.join('');
   }
 
@@ -2925,7 +2959,11 @@
     try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
     // 시우 섹션은 2026-08-08 에 삭제됐다 — 칸이 없으면 조용히 넘어간다.
     //   (없는 칸에 innerHTML 을 쓰면 여기서 예외가 나 아래 렌더가 통째로 멈춘다.)
-    try{ renderCooLiveMetrics(a[9], a[10], a[21]); }catch(e){
+    try{ renderFacilityPulse(a[21]); }catch(e){
+      var _fp = document.getElementById('facility-pulse-summary');
+      if(_fp) _fp.textContent = '시설부 점검 표시 오류.';
+    }
+    try{ renderCooLiveMetrics(a[9], a[10]); }catch(e){
       var _cl = document.getElementById('coo-live-metrics');
       if(_cl) _cl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">운영 실측 지표 표시 오류.</div>';
     }
