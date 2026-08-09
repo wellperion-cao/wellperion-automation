@@ -39,11 +39,16 @@ for (const [label, rem, reV, expect] of cases) {
   }
 }
 
-// 4개 호출부가 전부 이 함수 하나만 부르는지(재정의 없이 재사용하는지) 소스 레벨로도 확인 —
+// 호출부가 전부 이 함수 하나만 부르는지(재정의 없이 재사용하는지) 소스 레벨로도 확인 —
 // 과거 버그가 "각자 계산"이라 여기서 호출 개수로 회귀를 잡는다.
+// `//` 주석 줄은 제외(설명문에 "_memberIsValid_(약속..." 처럼 괄호가 붙어 실호출로 오검출되는 걸 막는다).
 // 정의(function _memberIsValid_() 1건) 제외 — 실제 호출부만 센다.
-const callSites = (src.match(/_memberIsValid_\(/g) || []).length - 1;
-assert.strictEqual(callSites, 4, `_memberIsValid_ 호출 개수 기대 4, 실제 ${callSites} — 판정 로직이 다시 복제됐을 수 있음`);
+const codeLines = src.split(/\r?\n/).filter((l) => !/^\s*\/\//.test(l)).join('\n');
+const callSites = (codeLines.match(/_memberIsValid_\(/g) || []).length - 1;
+// 배384 실측(2026-08-10): 원래 4곳(member_active_list/cpo_today_stats/member_owner_bulk_set/
+// member_active_summary) + 배302(2026-08-05 시토, LOSS일자 자동기록)가 같은 함수를 재사용해 5곳으로
+// 정당하게 늘었다 — 새로 복제된 게 아니라 새 소비처도 SSOT를 그대로 쓴 것이라 기대값을 5로 올린다.
+assert.strictEqual(callSites, 5, `_memberIsValid_ 호출 개수 기대 5, 실제 ${callSites} — 판정 로직이 다시 복제됐을 수 있음`);
 
 if (fail > 0) {
   console.error(`${fail}건 실패`);
