@@ -111,6 +111,8 @@ function doPost(e) {
     // ★2026-07-29 GM 지시(사진 첨부 확정) — 실무진 피드백 사진은 이 경로로 분기.
     //   기존 콘텐츠 접수(강사) 흐름은 이 분기 아래로 손대지 않는다(action 미지정 시 그대로 진행).
     if (d.action === 'staff_feedback_photo') return _handleFeedbackPhotoUpload_(d);
+    // ★2026-08-10 배492 — 텔레그램 봇이 던진 GM 사진·영상을 사진창고에 넣는 경로.
+    if (d.action === 'photo_vault') return _handlePhotoVault_(d);
     if (!d.name || !d.team || !d.agree) return _json({ ok: false, err: '필수 항목 누락' });
     var root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('INTAKE_DRIVE_FOLDER_ID'));
     var folder = root.createFolder(d.team + '_' + d.name + '_' + _stamp());
@@ -229,6 +231,28 @@ function _handleFeedbackPhotoUpload_(d) {
     return _json({ ok: true, urls: urls, folder: folder.getUrl(), sheetWrite: sheetWrite });
   } catch (err) {
     return _json({ ok: false, err: '사진 저장에 실패했습니다: ' + String(err) });
+  }
+}
+
+// ─── 사진창고 저장 (2026-08-10 CTO · 배492 · GM 선택 2026-08-08) ───
+// 텔레그램 봇에 사진·영상을 그냥 던지면 드라이브 「웰페리온 사진창고 · 00_들어온것(분류 전)」에
+// 그대로 쌓인다. 폴더 고르기·앱 열기 없음. 분류(공식/개인)와 색인은 시모가 나중에 한다.
+// ★시트에는 쓰지 않는다 — 여기 들어오는 건 접수 건이 아니라 소재다(마케팅 접수 시트 오염 방지).
+// 창고 규칙 정본 = instagram/_사진창고.md (폴더 ID는 그 문서에도 공개돼 있는 값).
+// 계약: { action:'photo_vault', photos:[{b64, mime, fname}] }  응답: {ok:true, urls, folder}
+var PHOTO_VAULT_INBOX_ID = '16kwoealKW6j5VBRDXOh-UHGksQ24N9Y8';
+
+function _handlePhotoVault_(d) {
+  var photos = d.photos || [];
+  if (!photos.length) return _json({ ok: false, err: '저장할 파일이 없습니다' });
+  try {
+    var folder = DriveApp.getFolderById(PHOTO_VAULT_INBOX_ID);
+    var urls = photos.map(function (p) {
+      return _saveFile_(p.b64, p.mime, p.fname || ('media_' + _stamp()), folder);
+    });
+    return _json({ ok: true, urls: urls, folder: folder.getUrl() });
+  } catch (err) {
+    return _json({ ok: false, err: '사진창고 저장에 실패했습니다: ' + String(err) });
   }
 }
 

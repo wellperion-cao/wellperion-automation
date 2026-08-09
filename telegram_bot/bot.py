@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -958,6 +959,84 @@ def _log_group_message(update: Update) -> None:
         )
     except Exception as e:
         log.error(f"GROUP_MSG 로깅 실패(비치명적 — 원 흐름은 계속 진행): {e}")
+
+
+# ─── 사진창고 수신 (2026-08-10 CTO · 배492 · GM 선택 2026-08-08) ───
+# GM 이 개인 대화에 사진·영상을 그냥 보내면 드라이브 「웰페리온 사진창고 · 00_들어온것」에 쌓인다.
+# 저장은 콘텐츠 접수 GAS(action='photo_vault') 재사용 — 새 백엔드를 만들지 않는다(약속 L21).
+# 그룹방은 제외한다: 실무진 방에 올라온 사진까지 창고로 빨려 들어가면 안 된다.
+# 창고 규칙·분류 기준 정본 = instagram/_사진창고.md
+_INTAKE_HTML = WORKDIR / "3. 웰페리온 가이드" / "cmo" / "intake" / "instructor_intake.html"
+_TG_FILE_LIMIT_MB = 20  # 텔레그램 Bot API getFile 다운로드 상한
+
+
+def _intake_gas_url() -> str:
+    """GAS 배포 URL 정본 = instructor_intake.html 의 GAS_PROD (약속 L01 — 복사본을 두지 않는다)."""
+    try:
+        m = re.search(r'GAS_PROD\s*=\s*"([^"]+)"', _INTAKE_HTML.read_text(encoding="utf-8"))
+        return m.group(1) if m else ""
+    except Exception as exc:
+        log.error(f"[photo_vault] 접수 GAS 주소 읽기 실패: {exc}")
+        return ""
+
+
+def _vault_filename(caption: str, ext: str) -> str:
+    """받은 시각 + 캡션(있으면)으로 파일명. 캡션은 시모가 분류할 때 힌트로 쓴다."""
+    slug = re.sub(r"[^0-9A-Za-z가-힣]+", "_", (caption or "").strip())[:40].strip("_")
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    return f"{stamp}_{slug}.{ext}" if slug else f"{stamp}.{ext}"
+
+
+async def handle_media(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+    if not msg or msg.chat.type != constants.ChatType.PRIVATE:
+        return
+    if not await authorized(update):
+        return
+
+    if msg.photo:
+        file_id, mime, ext = msg.photo[-1].file_id, "image/jpeg", "jpg"
+    elif msg.video:
+        file_id, mime, ext = msg.video.file_id, "video/mp4", "mp4"
+    else:
+        return
+
+    gas_url = _intake_gas_url()
+    if not gas_url:
+        await msg.reply_text("⚠️ 사진창고 저장 실패 — 접수 주소를 찾지 못했습니다.")
+        return
+
+    try:
+        tg_file = await ctx.bot.get_file(file_id)
+        blob = bytes(await tg_file.download_as_bytearray())
+    except Exception as exc:
+        await msg.reply_text(
+            f"⚠️ 사진창고 저장 실패 — 파일을 받지 못했습니다. "
+            f"{_TG_FILE_LIMIT_MB}MB 를 넘으면 접수 화면으로 올려 주세요. ({exc})")
+        return
+
+    payload = {"action": "photo_vault", "photos": [{
+        "b64": base64.b64encode(blob).decode("ascii"),
+        "mime": mime,
+        "fname": _vault_filename(msg.caption, ext),
+    }]}
+    try:
+        resp = await asyncio.to_thread(
+            requests.post, gas_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "text/plain;charset=utf-8"},
+            timeout=300,
+        )
+        result = resp.json()
+    except Exception as exc:
+        await msg.reply_text(f"⚠️ 사진창고 저장 실패 — {exc}")
+        return
+
+    if result.get("ok"):
+        log.info(f"[photo_vault] 저장 완료 {result.get('urls')}")
+        await msg.reply_text("📸 사진창고에 넣었습니다 — 00_들어온것 (분류는 시모가 합니다)")
+    else:
+        await msg.reply_text(f"⚠️ 사진창고 저장 실패 — {result.get('err') or '알 수 없는 오류'}")
 
 
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -2216,6 +2295,7 @@ def main():
     # GM 개인 하루 체크인 (ck:) — 2026-08-08 GM 승인 A안. 21:30 daily_scheduler 가 보낸
     # 카드의 토막·기분 버튼과 저장/건너뜀 처리. 저장은 gm_personal_routine.json 한 파일만 건드린다.
     app.add_handler(CallbackQueryHandler(cmd_checkin_callback, pattern=r"^ck:"))
+    app.add_handler(MessageHandler(filters.PHOTO | filters.VIDEO, handle_media))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 
