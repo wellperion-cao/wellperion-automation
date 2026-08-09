@@ -209,16 +209,51 @@ function _normMembershipProgram_(v){
 // 지문키(정규화 타임스탬프+정규화 전화) 동시일치 물리행 전부 탐색 — 안정 고유키(§4 R2). tsCol0/phCol0=0-based 컬럼.
 // 반환=물리행 배열(1-based,≥2, 보통 0~1건). 매칭 1건=진행/0건·2건+=거부(fail-closed) — 판단은 호출부 책임.
 // 2026-07-22 시포(오지목 근본수리 R2).
-function _findRowsByKey_(sh, tsCol0, phCol0, keyTsNorm, keyPhoneNorm) {
+// ★2026-08-10 시토(배491) — 이름을 세 번째 재료로 더한다(선택·하위호환).
+//   왜: 재료가 타임스탬프+전화뿐이라 **부모 번호를 함께 쓰는 형제**가 같은 날 접수되면 지문이
+//   100% 같아진다(실측: 조이진·조온동 둘 다 20260716000000|01092842623). 그래서 자동 배정이
+//   거부됐고, 한때 '중복행'으로 오해해 삭제 후보로 잡힐 뻔했다(GM 확인: 중복 아니라 자녀들).
+//   유효회원 쪽이 더 급하다 — 등록일자는 날짜만이라 같은 날 등록한 가족이 완전히 겹치는데
+//   (실측: Maria Campero·Oscar Garcia Chacon), 정렬 자동화가 매일 자정 시트를 재배치하므로
+//   옛 화면에서 저장하면 서로 뒤바뀔 위험이 매일 반복된다.
+//   ▸keyNameNorm 을 안 주면(옛 화면·이름 칸 없는 시트) 지금까지와 완전히 같은 동작 — 회귀 0.
+//     그 경우에도 형제는 2건이 잡혀 fail-closed 로 거부되므로 안전이 약해지지는 않는다.
+function _normNameKey_(v) {
+  return String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+}
+
+// 이름 칸 찾기 — 정확일치 먼저('보호자 이름' 같은 곁칸에 먼저 걸리지 않게), 없으면 부분일치.
+// 못 찾으면 -1 이라 이름 대조를 건너뛴다.
+function _nameColIdx_(hdr) {
+  var EXACT = ['회원명', '성함', '이름', 'name'];
+  var i, h, k;
+  for (i = 0; i < hdr.length; i++) {
+    h = String(hdr[i]).replace(/\s/g, '').toLowerCase();
+    for (k = 0; k < EXACT.length; k++) if (h === EXACT[k].toLowerCase()) return i;
+  }
+  for (i = 0; i < hdr.length; i++) {
+    h = String(hdr[i]).replace(/\s/g, '').toLowerCase();
+    for (k = 0; k < EXACT.length; k++) if (h.indexOf(EXACT[k].toLowerCase()) >= 0) return i;
+  }
+  return -1;
+}
+
+function _findRowsByKey_(sh, tsCol0, phCol0, keyTsNorm, keyPhoneNorm, nameCol0, keyNameNorm) {
   var out = [];
   if (!sh || tsCol0 < 0 || phCol0 < 0 || !keyTsNorm || !keyPhoneNorm) return out;
   var last = sh.getLastRow();
   if (last < 2) return out;
-  var minCol = Math.min(tsCol0, phCol0), width = Math.max(tsCol0, phCol0) - minCol + 1;
-  var data = sh.getRange(2, minCol + 1, last - 1, width).getValues();
-  var tsIdx = tsCol0 - minCol, phIdx = phCol0 - minCol;
+  var useName = (nameCol0 != null && nameCol0 >= 0 && !!keyNameNorm);
+  var cols = [tsCol0, phCol0];
+  if (useName) cols.push(nameCol0);
+  var minCol = Math.min.apply(null, cols), maxCol = Math.max.apply(null, cols);
+  var data = sh.getRange(2, minCol + 1, last - 1, maxCol - minCol + 1).getValues();
+  var tsIdx = tsCol0 - minCol, phIdx = phCol0 - minCol, nmIdx = useName ? (nameCol0 - minCol) : -1;
   for (var i = 0; i < data.length; i++) {
-    if (_normTsKey_(data[i][tsIdx]) === keyTsNorm && _normPhone_(data[i][phIdx]) === keyPhoneNorm) out.push(i + 2);
+    if (_normTsKey_(data[i][tsIdx]) !== keyTsNorm) continue;
+    if (_normPhone_(data[i][phIdx]) !== keyPhoneNorm) continue;
+    if (useName && _normNameKey_(data[i][nmIdx]) !== keyNameNorm) continue;
+    out.push(i + 2);
   }
   return out;
 }
@@ -226,17 +261,20 @@ function _findRowsByKey_(sh, tsCol0, phCol0, keyTsNorm, keyPhoneNorm) {
 // body.rowKey('tsNorm|phoneNorm', 프론트가 이미 정규화해 조립) 또는 body.keyTs+body.keyPhone(원시값, 서버가 정규화)
 // → {ts, phone} 파츠. 정규화 후 둘 다 있어야 유효(하나라도 없으면 null=지문키 미사용→기존 keyPhone 경로로 폴백).
 // 2026-07-22 시포(오지목 근본수리 R2).
+// ★2026-08-10 시토(배491): 세 번째 파트(이름)를 선택으로 받는다 — 'ts|phone|nameNorm' 또는 body.keyName.
+//   안 오면 name='' 이고 그때 동작은 종전과 완전히 동일하다(하위호환·회귀 0).
 function _rowKeyParts_(body) {
-  var ts = '', ph = '';
+  var ts = '', ph = '', nm = '';
   if (body.rowKey !== undefined && body.rowKey !== null && String(body.rowKey) !== '') {
     var parts = String(body.rowKey).split('|');
-    ts = parts[0] || ''; ph = parts[1] || '';
+    ts = parts[0] || ''; ph = parts[1] || ''; nm = _normNameKey_(parts[2] || '');
   } else {
     if (body.keyTs !== undefined && body.keyTs !== null && String(body.keyTs) !== '') ts = _normTsKey_(body.keyTs);
     if (body.keyPhone !== undefined && body.keyPhone !== null && String(body.keyPhone) !== '') ph = _normPhone_(body.keyPhone);
   }
+  if (!nm && body.keyName !== undefined && body.keyName !== null) nm = _normNameKey_(body.keyName);
   if (!ts || !ph) return null;
-  return { ts: ts, phone: ph };
+  return { ts: ts, phone: ph, name: nm };
 }
 
 // ─── 유입채널 표준화 (시모·GM 2026-06-13 확정 — 마케팅용 10버킷) ───
@@ -5498,7 +5536,8 @@ function _hasRealReply_(memo) {
     var _muRk = _rowKeyParts_(body);
     var _muTsCi = _muRk ? _miColIdx_(muHdr, ['타임스탬프','접수일','날짜']) : -1;
     if (_muRk && _muTsCi >= 0 && _muPhCi >= 0) {
-      var _muFpRows = _findRowsByKey_(muSh, _muTsCi, _muPhCi, _muRk.ts, _muRk.phone);
+      var _muFpRows = _findRowsByKey_(muSh, _muTsCi, _muPhCi, _muRk.ts, _muRk.phone,
+                                      _nameColIdx_(muHdr), _muRk.name);
       if (_muFpRows.length === 1) {
         muRow = _muFpRows[0];
       } else if (_muFpRows.length === 0) {
@@ -5583,6 +5622,20 @@ function _hasRealReply_(memo) {
     // 등록 전환 감지: 상태 변경 '전' 값 캡처(신규→SUC 실제 전환 시점만 이관·알림 — 중복발화 차단). 2026-06-26 시토·GM.
     var _muStatusCi  = _miColIdx_(muHdr, ['진행현황','진행상황','진행상태','상태']);
     var _muOldStatus = (_muStatusCi >= 0) ? String(muSh.getRange(muRow, _muStatusCi + 1).getValue() || '').trim() : '';
+    // ★LOSS 사유 서버 가드 (2026-08-10 시토 · 배491 · GM 지시 2026-08-08 "공백 없이 LOSS 처리 되는지 확인해줘")
+    //   화면은 2026-08-05 부터 사유 없이 LOSS 저장을 막는다. 그런데 서버는 상태와 사유를 따로 받아,
+    //   화면을 안 거치는 경로(구버전 캐시·스크립트)로 들어오면 사유 공란 LOSS 가 그대로 저장된다.
+    //   최종 사유 = 이번에 보낸 값(보냈으면) 또는 시트에 이미 있는 값. 둘 다 비면 아무것도 쓰지 않고 거부한다.
+    //   ※쓰기 전에 검사한다 — 뒤에서 막으면 상태만 먼저 바뀌고 사유는 빈 채로 남는다.
+    if (String(body.status == null ? '' : body.status).trim() === 'LOSS') {
+      var _lgCi  = _miColIdx_(muHdr, ['미등록 사유', '미등록사유']);
+      var _lgCur = (_lgCi >= 0) ? String(muSh.getRange(muRow, _lgCi + 1).getValue() || '').trim() : '';
+      var _lgNew = (body.lossReason !== undefined) ? String(body.lossReason || '').trim() : _lgCur;
+      if (!_lgNew) {
+        return _json({ ok: false, error: 'loss-reason-required',
+          detail: 'LOSS 로 바꾸려면 사유가 필요합니다 — 목록에서 LOSS 사유를 고른 뒤 다시 저장하세요' });
+      }
+    }
     _muSet(['성함','이름'], body.name);
     _muSet(['연락처','전화','휴대폰'], _fmtPhoneOrUndef_(body.phone));  // 하이픈 텍스트 저장 → 앞 0 보존(undefined는 스킵)
     _muSet(['관심 있는 프로그램 종류','관심프로그램','프로그램'], body.program);
@@ -5952,7 +6005,8 @@ function _hasRealReply_(memo) {
         var _mdTsCi = _miColIdx_(_mdHdr, ['타임스탬프','timestamp','Timestamp']);
         var _mdPhCi2 = _miColIdx_(_mdHdr, ['연락처','전화','휴대폰','Mobile Phone Number','Mobile Phone','Phone']);
         if (_mdTsCi < 0 || _mdPhCi2 < 0) return _json({ ok:false, error:'열 없음(지문키 대조 불가)' });
-        var _mdHits = _findRowsByKey_(mdSh, _mdTsCi, _mdPhCi2, _mdParts.ts, _mdParts.phone);
+        var _mdHits = _findRowsByKey_(mdSh, _mdTsCi, _mdPhCi2, _mdParts.ts, _mdParts.phone,
+                                      _nameColIdx_(_mdHdr), _mdParts.name);
         if (_mdHits.length === 0) return _json({ ok:false, error:'rowkey-not-found', detail:'대상 없음 — 새로고침 후 재시도' });
         if (_mdHits.length > 1) return _json({ ok:false, error:'rowkey-ambiguous', detail:'동일 시각+전화 다수 — 확인 필요' });
         mdRow = _mdHits[0];   // 지문키로 물리행 확정(rowIndex 불신)
@@ -6454,7 +6508,8 @@ function _hasRealReply_(memo) {
     var _luRk = _rowKeyParts_(body);
     var _luTsCi = _luRk ? _findCol_(luHdr, ['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜']) : -1;
     if (_luRk && _luTsCi >= 0 && _luPhCi >= 0) {
-      var _luFpRows = _findRowsByKey_(luSh, _luTsCi, _luPhCi, _luRk.ts, _luRk.phone);
+      var _luFpRows = _findRowsByKey_(luSh, _luTsCi, _luPhCi, _luRk.ts, _luRk.phone,
+                                      _nameColIdx_(luHdr), _luRk.name);
       if (_luFpRows.length === 1) {
         luRow = _luFpRows[0];
       } else if (_luFpRows.length === 0) {
@@ -6507,6 +6562,18 @@ function _hasRealReply_(memo) {
           _luNameCi >= 0 ? String(luSh.getRange(luRow, _luNameCi + 1).getValue() || '') : '',
           _luPhCi >= 0 ? _logMaskPhone_(luSh.getRange(luRow, _luPhCi + 1).getValue()) : '',
           String(luHdr[ci] || colNames[0]), _old, _new, '강습']);
+      }
+    }
+    // ★LOSS 사유 서버 가드 (2026-08-10 시토 · 배491 · 멤버십 member_inquiry_update 와 같은 규칙)
+    //   두 경로(종목별·row-level)가 갈리기 전에 한 번만 검사한다 — 분기 뒤에 각각 넣으면 한쪽만 고쳐진다.
+    //   최근 30일 실측(시포 2026-08-08): 강습에 사유 공란 LOSS 2건(임하윤·이봄)이 실제로 들어와 있었다.
+    if (String(body.status == null ? '' : body.status).trim() === 'LOSS') {
+      var _lgLuCi  = _findCol_(luHdr, ['LOSS사유', '미등록 사유', '미등록사유']);
+      var _lgLuCur = (_lgLuCi >= 0) ? String(luSh.getRange(luRow, _lgLuCi + 1).getValue() || '').trim() : '';
+      var _lgLuNew = (body.lossReason !== undefined) ? String(body.lossReason || '').trim() : _lgLuCur;
+      if (!_lgLuNew) {
+        return _json({ ok: false, error: 'loss-reason-required',
+          detail: 'LOSS 로 바꾸려면 사유가 필요합니다 — 목록에서 LOSS 사유를 고른 뒤 다시 저장하세요' });
       }
     }
     // ★종목별 독립 관리(축7, GM 2026-07-08 확정) 라우팅: body.sport(sportKey) 동봉 시 종목별 경로,
@@ -9053,7 +9120,8 @@ function _hasRealReply_(memo) {
       }
     }
     if (_auRk && _auTsI >= 0 && _auPhI >= 0) {
-      var _auFpRows = _findRowsByKey_(auSh, _auTsI, _auPhI, _auRk.ts, _auRk.phone);
+      var _auFpRows = _findRowsByKey_(auSh, _auTsI, _auPhI, _auRk.ts, _auRk.phone,
+                                      _nameColIdx_(auHdr), _auRk.name);
       if (_auFpRows.length === 1) {
         auRow = _auFpRows[0];
       } else if (_auFpRows.length === 0) {
@@ -9677,7 +9745,8 @@ function _hasRealReply_(memo) {
     var _tRk = _rowKeyParts_(body), tTsI = -1;
     if (_tRk) { var _UK = ['등록일자', '등록 일자', '타임스탬프', '등록일', '가입일']; for (var _ut = 0; _ut < tHdr.length; _ut++) { var _uth = tHdr[_ut].replace(/\s/g, ''); for (var _utk = 0; _utk < _UK.length; _utk++) { if (_uth.indexOf(_UK[_utk].replace(/\s/g, '')) >= 0) { tTsI = _ut; break; } } if (tTsI >= 0) break; } }
     if (_tRk && tTsI >= 0 && tPhI >= 0) {
-      var _tFp = _findRowsByKey_(tSh, tTsI, tPhI, _tRk.ts, _tRk.phone);
+      var _tFp = _findRowsByKey_(tSh, tTsI, tPhI, _tRk.ts, _tRk.phone,
+                                 _nameColIdx_(tHdr), _tRk.name);
       if (_tFp.length === 1) tRow = _tFp[0];
       else if (_tFp.length === 0) return _json({ ok: false, error: 'rowkey-not-found', detail: '회원 행 확인 불가 — 목록 새로고침 후 다시 시도하세요' });
       else return _json({ ok: false, error: 'rowkey-ambiguous', detail: '지문키 중복 매칭 — 목록 새로고침 후 다시 시도하세요' });
