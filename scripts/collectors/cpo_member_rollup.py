@@ -24,7 +24,8 @@ lesson_registered_roster 재호출일 뿐, 새 GAS 액션 아님) 재사용. 새
   · 대기 판정 = 시작일자가 오늘보다 미래(_isFutureStart와 동일 문자열 비교).
   · 회원구분 오타 정규화 = '맴버십'/'멥버십' → '멤버십'(member_active_summary MA_TYPO와 동일).
   · 신규/재등록 = member_registered_list newOnly(=_isNewRegistration_, 서버 판정) 재사용.
-  · LOSS 날짜 우선순위 = 이탈일→해지일→LOSS일자→종료일(member_active_summary와 동일 체인).
+  · LOSS 날짜 우선순위 = LOSS일자→이탈일→해지일→종료일(member_active_summary와 동일 체인,
+    2026-08-10 배483 — 시트 헤더 '이탈일'→'LOSS일자' 개명).
   · 데이터 완성도(멤버십) = _activeCompletenessGaps(담당 미배정·연락기록 없음·등록분류 상충).
   · 데이터 완성도(강습) = _lessonMemGapOf(담당 미배정·연락기록 없음·상태 미입력).
 
@@ -254,7 +255,7 @@ def collect(module=None) -> dict:
         re_str = "측정 안 됨"
     if ended_rows is not None:
         loss_col = None
-        for frag in ("이탈일", "해지일", "LOSS일자", "종료일"):
+        for frag in ("LOSS일자", "이탈일", "해지일", "종료일"):
             if ended_rows and _find_col(ended_rows[0], frag):
                 loss_col = frag
                 break

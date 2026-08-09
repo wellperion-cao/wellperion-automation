@@ -9747,7 +9747,9 @@ function _hasRealReply_(memo) {
         // 신규 판정용 두 칸(2026-08-06 시포) — 카드가 재등록까지 세던 것을 목록과 같은 기준으로 맞춘다.
         var crClsI  = _crIdx('등록분류'); if (crClsI < 0) crClsI = _crIdx('등록 분류');
         var crSeqI  = _crIdx('등록회차'); if (crSeqI < 0) crSeqI = _crIdx('등록 회차');
-        var crLossI = _crIdx('이탈일'); if (crLossI < 0) crLossI = _crIdx('해지일'); if (crLossI < 0) crLossI = _crIdx('종료일');
+        // LOSS 날짜 칸: LOSS일자→이탈일→해지일→종료일(member_active_summary._maIdx 체인과 동일). 2026-08-10 시토(배483).
+        //   '종료일'을 맨 마지막에 두는 이유 = 이 시트의 '종료\n일자'(다른 칸)와 구분 안 돼 오답나므로.
+        var crLossI = _crIdx('LOSS일자'); if (crLossI < 0) crLossI = _crIdx('이탈일'); if (crLossI < 0) crLossI = _crIdx('해지일'); if (crLossI < 0) crLossI = _crIdx('종료일');
         ctLossDated = (crLossI >= 0);
         var crAll = crSh.getRange(2, 1, crSh.getLastRow() - 1, crCols).getValues();
         for (var cr = 0; cr < crAll.length; cr++) {
@@ -9815,8 +9817,8 @@ function _hasRealReply_(memo) {
         function _czIdx(want){ var w = String(want).replace(/\s/g, ''); for (var i = 0; i < czHdr.length; i++){ if (czHdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; } return -1; }
         var czNm = _czIdx('회원명'); var czRem = _czIdx('잔여일'); var czRe = _czIdx('재등록분류');
         var czPg = _czIdx('등급'); if (czPg < 0) czPg = _czIdx('상품'); if (czPg < 0) czPg = _czIdx('프로그램');
-        // LOSS일자 컬럼(cpo_today_stats 와 동일 우선순위: 이탈일→해지일→종료일)
-        var czLossI = _czIdx('이탈일'); if (czLossI < 0) czLossI = _czIdx('해지일'); if (czLossI < 0) czLossI = _czIdx('종료일');
+        // LOSS일자 컬럼(cpo_today_stats 와 동일 우선순위: LOSS일자→이탈일→해지일→종료일) 2026-08-10 시토(배483).
+        var czLossI = _czIdx('LOSS일자'); if (czLossI < 0) czLossI = _czIdx('이탈일'); if (czLossI < 0) czLossI = _czIdx('해지일'); if (czLossI < 0) czLossI = _czIdx('종료일');
         var _CZ_LOSS = { 'LOSS':1, '환불':1, '양도LOSS':1 };
         var czAll = czSh.getRange(2, 1, czSh.getLastRow() - 1, czCols).getValues();
         for (var czr = 0; czr < czAll.length; czr++) {
