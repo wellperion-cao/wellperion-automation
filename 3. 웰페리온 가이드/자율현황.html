@@ -807,10 +807,14 @@
       window.gm1RenderNorthstar = function(){
         var target = document.getElementById('gm1-northstar-view');
         if (target) target.innerHTML = '<div class="wrap"><div class="fallback">불러오는 중…</div></div>';
+        // 2026-08-10 배517: GM 화면에 e.message 원문(개발자용 스택트레이스 문구)이 그대로 찍히던 것을
+        // 사람이 읽는 문장으로 바꾼다. 원문은 지우지 않고 console.error 로 남긴다("조용히 삼키지 않는다") —
+        // 브라우저 개발자도구에서 그대로 진단 가능. 실측(2026-08-10): 현재 voyage_map.json 은 정상 200·
+        // 파싱·렌더 전부 통과 — 재현 안 됨. 캐시 지연·일시적 배포 지연 등 간헐 상황 대비용 방어 문구로 남긴다.
         fetch(NS_URL + '?_=' + Date.now(), { cache:'no-store' })
           .then(function(res){ if(!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-          .then(function(data){ try { nsRender(data); } catch(e){ nsFallback('렌더 오류: ' + e.message); } })
-          .catch(function(e){ nsFallback('불러오기 실패: ' + e.message); });
+          .then(function(data){ try { nsRender(data); } catch(e){ console.error('[자율현황] 북극성별 보기 렌더 실패:', e); nsFallback('화면을 그리지 못했습니다 — 잠시 후 새로고침해 주세요.'); } })
+          .catch(function(e){ console.error('[자율현황] 북극성별 보기 조회 실패:', e); nsFallback('데이터를 불러오지 못했습니다 — 잠시 후 새로고침해 주세요.'); });
       };
 
       window.gm1RenderNorthstar();

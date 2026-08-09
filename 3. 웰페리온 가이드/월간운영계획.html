@@ -3014,7 +3014,11 @@
     if(rmEl){
       try{
         var rm = _data && _data.strategy_roadmap;
-        var items = (rm && rm.items) || [];
+        var itemsAll = (rm && rm.items) || [];
+        // Q1·Q2 = 회원 정원 분기목표(stage:"Q1"/"Q2", 다른 개념) — roadmap-board(전략 로드맵 타임라인)에
+        // 이미 별도 분기 그룹으로 표시된다(roadmapStripHtml). 여기 6단계 집계에 섞이면 분모가 8로
+        // 부풀려진다(정본 _doc="전략 로드맵 6단계" — 6단계만 센다). GM 지적 2026-08-10 · 배517.
+        var items = itemsAll.filter(function(it){ return typeof it.stage === 'number'; });
         if(items.length){
           var total = items.length;
           var curIdx = -1;
