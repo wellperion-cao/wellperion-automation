@@ -532,28 +532,43 @@ def _render_sunday_html(variant: str, output: Path, text: str,
         return False
 
 
-def _focus_crop(photo: Path, focus: tuple, dest: Path) -> Path:
-    """표지를 GM 이 맞춘 대로(위치 + 확대/축소) 1080x1350 한 장으로 미리 앉혀 둔다.
+def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True) -> Path:
+    """사진을 1080x1350 한 장으로 미리 앉혀 둔다 — 이후 합성기(HTML 엔진·Pillow 폴백)가
+    둘 다 '가운데 꽉 채워 자르기'라, 여기서 최종 크기·비율로 만들어 두면 그 다음 자르기가
+    아무것도 바꾸지 않는다(칸과 크기가 이미 같아서). 합성기를 건드리지 않고 앉히는 그림만 바꾼다.
 
-    합성기(HTML 엔진·Pillow 폴백)는 둘 다 '가운데 잘라 채우기'라 원본을 그대로 넘기면
-    맞춘 배치가 무시된다. 여기서 최종 크기·비율로 만들어 두면 그 다음 가운데 자르기가
-    아무것도 바꾸지 않는다 — 합성기를 건드리지 않고 배치만 살린다.
+    fit=True(기본) — 원본 전체를 담는다(자르지 않음). 남는 칸은 같은 사진을 키워
+    블러+살짝 어둡게 깐 배경으로 채운다(단색 배경은 시리즈 톤이 깨져 쓰지 않는다).
+    GM 지적 2026-08-09: "또 인스타그램 사진 짤렸네" — 가장자리 사람(손·발·머리)이 잘리던 것을 없앤다.
+
+    fit=False — GM 이 표지 배치를 직접 맞춘 경우(cover_focus 커스텀) 전용. 종전처럼 꽉 채워 자른다
+    — GM 이 정한 배치를 그대로 존중한다.
 
     focus = (x, y, zoom) · x·y 는 0~1(남는 공간을 어느 쪽으로 밀지) · zoom 1 = 꽉 채우기.
-    zoom 이 1보다 작으면 사진이 칸보다 작아져 여백이 생기고, 그 여백은 시안 배경색으로 채운다.
-    화면(GM의일요일.html placeIn)과 같은 식이라 미리보기와 결과가 어긋나지 않는다.
     실패하면 원본을 그대로 쓴다(표지가 아예 안 나오는 것보다 낫다).
     """
     try:
-        from PIL import ImageOps
+        from PIL import ImageOps, ImageFilter, ImageEnhance
         img = ImageOps.exif_transpose(Image.open(photo)).convert("RGB")
         tw, th = _SUNDAY_ASPECT
         fx, fy = float(focus[0]), float(focus[1])
         zoom = float(focus[2]) if len(focus) > 2 else 1.0
         sw, sh = img.size
-        scale = max(tw / sw, th / sh) * zoom
+
+        if fit:
+            # 배경 = 같은 사진을 꽉 채워 키운 뒤 블러+어둡게 — 여백을 시안 톤으로 자연스럽게 채운다.
+            bscale = max(tw / sw, th / sh)
+            bg = img.resize((max(1, round(sw * bscale)), max(1, round(sh * bscale))), Image.LANCZOS)
+            bx, by = (bg.width - tw) // 2, (bg.height - th) // 2
+            canvas = ImageEnhance.Brightness(
+                bg.crop((bx, by, bx + tw, by + th)).filter(ImageFilter.GaussianBlur(40))
+            ).enhance(0.72)
+            scale = min(tw / sw, th / sh) * zoom          # 원본 전체가 들어가는 축소율
+        else:
+            canvas = Image.new("RGB", (tw, th), _SUNDAY_DARK)
+            scale = max(tw / sw, th / sh) * zoom
+
         nw, nh = max(1, round(sw * scale)), max(1, round(sh * scale))
-        canvas = Image.new("RGB", (tw, th), _SUNDAY_DARK)
         canvas.paste(img.resize((nw, nh), Image.LANCZOS),
                      (round((tw - nw) * fx), round((th - nh) * fy)))
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -804,9 +819,15 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         return out_dir / name
 
     try:
-        cover_src = _focus_crop(downloaded[0], parsed["cover_focus"], src_dir / "cover_focus.jpg")
+        # GM 이 손댄 배치(zoom≠1 또는 x·y≠0.5)만 종전 '꽉 채워 자르기'를 존중 — 그 외 전부
+        # 원본 전체가 들어가는 fit(안 잘림).
+        cover_fit = parsed["cover_focus"] == (0.5, 0.5, 1.0)
+        cover_src = _focus_crop(downloaded[0], parsed["cover_focus"], src_dir / "cover_focus.jpg",
+                                 fit=cover_fit)
         _compose_sunday_cover(cover_src, intro, _add("post_1.jpg"))
-        for i, photo in enumerate(cards):
+        fit_cards = [_focus_crop(p, (0.5, 0.5, 1.0), src_dir / f"fit_{i + 1}.jpg")
+                     for i, p in enumerate(cards)]
+        for i, photo in enumerate(fit_cards):
             # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
             _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
                                        _add(f"post_{i + 2}.jpg"))
@@ -815,9 +836,9 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         # '정보를 따로 페이지로 만드는 것보다, 그냥 사진 페이지에 정리하는 게 낫다').
         # 그 사진의 문장 카드를 정보 카드로 갈아 끼우므로 장수는 늘지 않는다.
         info_rows = _sunday_info_rows((parsed or {}).get("facts"))
-        if info_rows and cards:
+        if info_rows and fit_cards:
             last_rel = slides_rel[-1]
-            if _compose_sunday_info(info_rows, out_dir / Path(last_rel).name, cards[-1]):
+            if _compose_sunday_info(info_rows, out_dir / Path(last_rel).name, fit_cards[-1]):
                 nxt = len(cards) + 2          # 문장 카드 자리를 그대로 쓴다(추가 없음)
             else:
                 print("[WARN] 정보 카드 렌더 실패 — 문장 카드 그대로 둔다", file=sys.stderr)
