@@ -20,11 +20,65 @@ from __future__ import annotations
 
 import datetime
 import json
+import re
 import subprocess
 from pathlib import Path
 
+import requests
+
 ROOT = Path(__file__).resolve().parent.parent
 JPATH = ROOT / 'status' / 'gm_personal_routine.json'
+
+# ── 오늘 일정 (배514, GM 지시 2026-08-10 "나의하루에 오늘 일정이 있으면 항상 정리해서 보고") ──
+#   출처 후보 2곳 실측: G1 개인 캘린더(wellperion_guide(main).html #gm1-cal-wrap)는
+#   localStorage 전용 — 브라우저 밖(이 서버 스크립트)에서 못 읽는다. 전사일정(schedule_ssot)은
+#   GAS 가 정본·저장소 JSON은 seed 폴백(전사_일정.html 과 동일 이중화) — 이것만 쓴다. 새 저장소
+#   신설 없음(약속 L21). GM 개인 일정은 그 안에서 담당자(assignee)에 "GM"·"김남욱"이 걸린 오늘자
+#   항목만 골라낸다.
+SCHEDULE_GAS_URL = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec'
+SCHEDULE_LOCAL = ROOT / 'status' / 'schedule_ssot.json'
+
+
+def _load_schedule_items() -> list:
+    try:
+        r = requests.get(SCHEDULE_GAS_URL, params={'action': 'load_schedule'}, timeout=8)
+        j = r.json()
+        if j.get('ok'):
+            return (j.get('data') or {}).get('items') or []
+    except Exception:
+        pass
+    try:
+        return json.loads(SCHEDULE_LOCAL.read_text(encoding='utf-8')).get('items') or []
+    except Exception:
+        return []
+
+
+def _filter_today_items(items: list, day: str) -> list:
+    """그날 GM 담당 항목만 (시각, 제목) 쌍으로 시각순 정렬해 돌려준다. 시각 없는 항목은 뒤로."""
+    out = []
+    for it in items or []:
+        if (it or {}).get('next_due') != day:
+            continue
+        assignee = it.get('assignee') or ''
+        if 'GM' not in assignee and '김남욱' not in assignee:
+            continue
+        name = it.get('name') or ''
+        m = re.search(r'\((\d{1,2}:\d{2})\)', name)
+        time_s = m.group(1) if m else ''
+        title = re.sub(r'\s*\(\d{1,2}:\d{2}\)\s*', '', name).strip()
+        out.append((time_s, title))
+    out.sort(key=lambda p: p[0] or '99:99')
+    return out
+
+
+def _format_schedule(pairs: list) -> str:
+    return '\n'.join(f"{t} {title}" if t else title for t, title in pairs)
+
+
+def schedule_lines(day: str | None = None) -> str:
+    """오늘 일정 본문(줄바꿈 join). 0건이면 빈 문자열 — 호출부가 그 자리를 통째로 뺀다."""
+    day = day or today()
+    return _format_schedule(_filter_today_items(_load_schedule_items(), day))
 
 # 생활 토막 → 트래커 축(axes). 정본 = gm_personal_routine.json 의 toroks[].axes 와 같은 매핑.
 # 여기서 다시 적는 이유는 버튼 4개로 줄이기 위해서다 — 축 9개를 다 물으면 원래 문제로 돌아간다.
@@ -342,6 +396,9 @@ def build_morning(day: str | None = None) -> str:
     for tid, icon, label, _k in TOROKS:
         if p.get(tid):
             lines.append(f"{icon} {label}   {p[tid]}")
+    sched = schedule_lines(day)
+    if sched:  # 0건인 날은 이 자리를 통째로 비운다(GM 지시 2026-08-10, "일정 없음" 줄 안 넣음)
+        lines += ["", "📅 오늘 일정", sched]
     lines += ["", "저녁에 이 다섯 가지를 그대로 다시 여쭙겠습니다."]
     return '\n'.join(lines)
 
@@ -427,10 +484,26 @@ def week_card(day: str | None = None) -> str:
               "점수가 아니라 거울입니다 — 비어 있어도 괜찮습니다.")
 
 
+def _selfcheck_schedule() -> None:
+    """배514 — 일정 필터·정렬 self-check(네트워크 없이, 고정 표본으로). 0건→빈 자리, 다건→시각순."""
+    sample = [
+        {'next_due': '2026-08-10', 'assignee': 'GM', 'name': '오후 미팅 (15:00)'},
+        {'next_due': '2026-08-10', 'assignee': '김남욱GM', 'name': '오전 미팅 (09:30)'},
+        {'next_due': '2026-08-10', 'assignee': '수영팀', 'name': '수영장 청소'},  # GM 아님 → 제외
+        {'next_due': '2026-08-11', 'assignee': 'GM', 'name': '내일 건 (10:00)'},  # 다른 날 → 제외
+    ]
+    got = _filter_today_items(sample, '2026-08-10')
+    assert [t for t, _ in got] == ['09:30', '15:00'], got
+    assert _format_schedule(got) == '09:30 오전 미팅\n15:00 오후 미팅', _format_schedule(got)
+    assert _filter_today_items(sample, '2099-01-01') == []
+    assert _format_schedule([]) == ''
+
+
 if __name__ == '__main__':
     import sys
     sys.stdout.reconfigure(encoding='utf-8')
     _selfcheck_slots()
+    _selfcheck_schedule()
     print(build_prompt())
     print(json.dumps(build_markup(), ensure_ascii=False))
     print('---')
