@@ -187,7 +187,10 @@
       var need = _items.filter(function (it) { return !it.reported; });
       var done = _items.filter(function (it) { return it.reported; });
       elCount.textContent = '보고 필요 ' + need.length + '건 · 보고 완료 ' + done.length + '건';
-      elGrpCnt.textContent = _items.length + '건';
+      // 「보고 대기」 소제목 바로 아래 붙는 카운트라 대기 건수만 보인다 — 완료 건수는 아래
+      // 「보고 완료」접힘에 이미 있다(GM 지적 2026-08-08 "보고대기 옆에 다른 맥락" — 대기 표식
+      // 아래에 완료 수까지 섞여 있어 헷갈렸다). repbar의 owner-count(위 줄)는 대기+완료 상세를 그대로 유지.
+      elGrpCnt.textContent = need.length + '건';
       // 대표님 보고건이 0건이어도 회장님 보고건 현황만으로 보낼 수 있게 열어 둔다(둘 다 0일 때만 잠금).
       elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && chairmanPending().length);
 
@@ -303,7 +306,8 @@
     function renderChairman() {
       if (!elChSum) return;
       var pend = chairmanPending(), done = chairmanDone();
-      if (elChCnt) elChCnt.textContent = '보고 대기 ' + pend.length + '건 · 보고 완료 ' + done.length + '건';
+      // 🤵 대표님 줄(owner-grp-cnt)과 같은 형식으로 통일 — 완료 수는 아래 「보고 완료」 접힘에 있다.
+      if (elChCnt) elChCnt.textContent = pend.length + '건';
       elChSum.innerHTML = pend.length ? chRows(pend, false) : '<tr><td colspan="3">보고 대기 중인 회장님 보고건이 없습니다.</td></tr>';
       if (elChDoneSum) elChDoneSum.innerHTML = done.length ? chRows(done, true) : '';
       // 대표님 칸과 같은 규칙 — 양쪽 다 보고 대기 0건이면 문안 복사 버튼을 잠근다.
