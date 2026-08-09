@@ -212,7 +212,8 @@ def build_html(S, items, unlinked):
 <header>
   <div class="eyebrow">운영 · 시우 (AI COO)</div>
   <h1>업무판 채움 보드</h1>
-  <div class="stamp">실측 {S['date']} 기준 · 업무 현황 SSOT + {mm}월 운영계획 · 실무진 {S['act']}건
+  <div class="stamp">실측 {S['date']} 기준 · 매주 월요일 10:00 자동 재실측(1회성 스냅샷 아님) ·
+    업무 현황 SSOT + {mm}월 운영계획 · 실무진 {S['act']}건
     (경영진 {S['excluded']}건은 월간 운영계획에서 따로 관리)</div>
 </header>
 
