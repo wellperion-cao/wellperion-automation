@@ -665,6 +665,11 @@ _MACHINE_OUTPUTS = (
     "status/kakao_dedup_ledger.json",             # scripts/kakao_report_sender.py
     "status/kakao_last_send.json",                # scripts/kakao_auto_daily_report.py 등
     "status/kpi_values.json",                     # scripts/build_voyage_map.py 등
+    # ★2026-08-10 시토(배488) — 자율현황 🥁 쿵짝표가 읽는 파일이다. emit 은 3분마다
+    #   돌고 있었는데(cpo_inquiry_snapshot.bat) 커밋이 안 붙어 HEAD 는 08-08 것에 멈춰
+    #   있었다 — 화면은 멀쩡히 뜨고 어떤 경보도 안 울린다(voyage_map 과 같은 부류).
+    #   전용 커밋을 3분마다 만들지 않고 여기 태운다: 커밋이 일어날 때 같이 올라간다(약속 L21).
+    "status/kungjjak_today.json",                 # scripts/kungjjak_board.py --emit
     "status/module_silence_snapshot.json",        # scripts/module_silence_detector.py
     "status/northstar_reach.json",                # scripts/northstar_reach.py
     # ★2026-08-03 시토 — 자율현황 「북극성별 보기」가 raw.githubusercontent 로 읽는 파일이다.
