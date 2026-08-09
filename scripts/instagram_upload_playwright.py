@@ -468,18 +468,25 @@ def collect_post_images(content_folder: Path, slot: str) -> list[Path]:
 
 
 # -----------------------------------------------------------------
-# IG 비율 안전장치 — 모든 IG 업로드가 지나가는 단일 관문(run_publish)에 흡수 (2026-08-10)
+# IG 비율 안전장치 — 모든 IG 업로드가 지나가는 단일 관문(run_publish)에 흡수 (2026-08-10 배503)
 # GM 2026-08-09 두 번 지적("또 인스타그램 사진 짤렸네" / "장난 하는건가?") 재발방지.
 # 실측(260809_GM일요일_일요일 발행분): 소스 파일은 이미 1080x1350(4:5=0.8, IG 허용 비율) —
-# 비율 자체는 정상이었다. 잘림은 크롭 화면 기본값이 정사각(1:1)이라 "원본" 선택(라인 1329
-# _select_crop_aspect_ratio)이 셀렉터 미스·타이밍으로 실패하면 그대로 정사각 크롭이 적용돼
-# 상하 각 135px 이 잘려나가는 구조(2026-08-08 실측) — DOM 셀렉터 클릭 성공 여부에 계속 기대는
-# 건 재발이 증명됐다(같은 폴더 19:59·20:19 두 번 발행 모두 재현). 클릭 성공 여부와 무관하게
-# 잘림 자체가 불가능하도록, 업로드 직전 정사각이 아닌 이미지는 캔버스를 정사각으로 확장한다
-# (잘라내기 아님 — GM 2026-08-09 "사진을 자르지 않고 통째로 넣는다" 원칙과 동일한 방향).
-# 정사각이면 IG 기본 크롭과 이미 같은 비율이라 자를 여지가 없어 그대로 통과.
+# 비율 자체는 정상이었다. 잘림은 크롭 화면 기본값이 정사각(1:1)이라 "원본" 선택
+# (_select_crop_aspect_ratio)이 실패하면 그대로 정사각 크롭이 적용돼 상하 각 135px 이
+# 잘려나가는 구조(2026-08-08 실측) — 같은 폴더가 19:59·20:19 두 번 발행 모두 재현됐다.
+#
+# 1순위 = 4:5 원본 그대로 업로드(웰페리온 표준 디자인 유지) — 정사각 패딩을 무조건 태우지
+# 않는다(정사각으로 나가면 좌우 여백이 생겨 매 발행마다 디자인이 훼손된다). 크롭화면에서
+# "원본" 선택을 시도·검증(_select_crop_aspect_ratio, 최대 2회)하고, 그래도 실패할 때만
+# CropAspectVerifyFailed 로 run_publish 가 이 패딩을 적용해 1회 재시도한다(마지막 안전망 —
+# 잘라내기 아님, 캔버스 확장). 정사각이면 IG 기본 크롭과 이미 같은 비율이라 그대로 통과.
 # -----------------------------------------------------------------
 IG_PAD_CACHE_DIR = Path(r"C:\Users\jjky0\welperion-automation\scripts\.ig_pad_cache")
+
+
+class CropAspectVerifyFailed(Exception):
+    """크롭 화면에서 원본(4:5) 비율 선택을 검증하지 못했다 — run_publish 가 이 예외를 잡아
+    정사각 패딩 폴백(_normalize_ig_ratio) 적용 후 1회 재시도한다(2026-08-10 배503)."""
 
 
 def _edge_avg_color(im) -> tuple:
@@ -495,8 +502,9 @@ def _edge_avg_color(im) -> tuple:
 
 
 def _normalize_ig_ratio(path: Path) -> Path:
-    """업로드 직전 단일 관문 — 정사각이 아니면 캔버스를 정사각으로 확장(패딩)해 IG 기본
-    크롭이 잘라낼 여지 자체를 없앤다. 영상(mp4)·이미 정사각인 파일은 그대로 반환.
+    """마지막 안전망(폴백 전용) — 원본(4:5) 유지 시도(CropAspectVerifyFailed 미발생)가
+    실패했을 때만 run_publish 가 호출한다. 정사각이 아니면 캔버스를 정사각으로 확장(패딩)해
+    IG 기본 크롭이 잘라낼 여지 자체를 없앤다. 영상(mp4)·이미 정사각인 파일은 그대로 반환.
     실패(PIL 부재·손상 파일 등)해도 원본 경로를 그대로 반환 — 업로드를 막지 않는다."""
     if path.suffix.lower() == ".mp4":
         return path
@@ -562,7 +570,17 @@ def _selftest_normalize_ig_ratio() -> None:
         mp4_src.write_bytes(b"\x00")
         assert _normalize_ig_ratio(mp4_src) == mp4_src, "영상 파일이 패딩 대상이 됨"
 
-        print("[OK] _normalize_ig_ratio selftest 통과 — 정사각 패딩 3종(패딩·정사각 통과·mp4 통과) 확인")
+        # 정상 경로(4:5 원본 유지) 속성 — _select_crop_aspect_ratio 의 스킵 판정 기준.
+        # 4:5 원본은 "1:1"이 아니므로 크롭 화면에서 원본 비율 선택을 실제로 시도해야 하고
+        # (패딩 없이 그대로 감), 패딩된 정사각 파일만 "1:1"로 판정돼 클릭을 건너뛴다.
+        spec_45 = PostSpec("A")
+        spec_45.image_paths = [src]
+        assert _detect_aspect_label(spec_45) != "1:1", "4:5 원본이 정사각으로 오판정됨 — 원본 유지 경로가 깨진다"
+        spec_sq = PostSpec("A")
+        spec_sq.image_paths = [sq_src]
+        assert _detect_aspect_label(spec_sq) == "1:1", "정사각 파일이 1:1로 판정되지 않음 — 폴백 후 크롭 재시도 스킵이 깨진다"
+
+        print("[OK] _normalize_ig_ratio selftest 통과 — 정사각 패딩·정사각 통과·mp4 통과·원본유지 판정 4종 확인")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -1028,7 +1046,11 @@ async def run_publish(
     for slot in present_slots:
         spec = posts[slot]
         spec.image_paths = collect_post_images(content_folder, slot)
-        spec.image_paths = [_normalize_ig_ratio(p) for p in spec.image_paths]  # IG 비율 안전장치(단일 관문)
+        # IG 비율 패딩(_normalize_ig_ratio)은 여기서 무조건 태우지 않는다 — 정사각으로 나가면
+        # 웰페리온 표준 4:5 디자인이 매번 좌우 여백과 함께 작아진다(GM 요구는 "안 잘리게"지
+        # "정사각으로 바꿔라"가 아니다). 1순위=4:5 원본 그대로 업로드 → 크롭화면에서 원본 비율
+        # 선택 검증(_select_crop_aspect_ratio) → 검증 실패시에만 CropAspectVerifyFailed 로
+        # run_publish 재시도 루프가 패딩을 적용한다(아래 except CropAspectVerifyFailed).
         enforce_subject_collaborators(spec)
         # --collaborators CLI 인자 병합 (중복 제거)
         if extra_collaborators:
@@ -1076,6 +1098,24 @@ async def run_publish(
             print(f"\n[INFO] ── post {slot} 발행 시작 ── images={len(spec.image_paths)} / collab={len(spec.collaborators)}")
             try:
                 url, outcome = await _publish_single_post(page, spec, content_folder, location=effective_location, mentions=mentions, account=account)
+            except CropAspectVerifyFailed:
+                # 4:5 원본 비율 선택(1순위)이 검증 실패 — 마지막 안전망(정사각 패딩)만 적용해
+                # 1회 재시도. 조용히 넘어가지 않음(WARN + 텔레그램) — 배503(2026-08-10).
+                print(f"[WARN] post {slot} 원본(4:5) 비율 선택 검증 실패 → 정사각 패딩 폴백 적용 후 재시도")
+                spec.image_paths = [_normalize_ig_ratio(p) for p in spec.image_paths]
+                telegram_report(
+                    f"⚠️ AI CTO 인스타 publish — 4:5 원본 비율 선택 실패, 정사각 패딩 폴백 발동\n"
+                    f"post: {slot}\n폴더: {content_folder.name}\n(잘리지 않지만 정사각으로 나감 — 셀렉터 점검 필요)"
+                )
+                try:
+                    url, outcome = await _publish_single_post(page, spec, content_folder, location=effective_location, mentions=mentions, account=account)
+                except Exception as e2:
+                    print(f"[ERROR] post {slot} 폴백 재시도 실패: {e2}")
+                    telegram_report(
+                        f"⚠️ AI CTO 인스타 publish 실패 → 수동 진단 격상\npost: {slot}\n폴더: {content_folder.name}\n사유: {e2}"
+                    )
+                    await context.close()
+                    sys.exit(7)
             except Exception as e:
                 print(f"[ERROR] post {slot} 발행 예외: {e}")
                 # 자동 재시도 1회 (지시 v1.0) — 예외(UI 크래시)에만 재시도.
@@ -1228,8 +1268,11 @@ async def _publish_single_post(
     print(f"[INFO]   파일 업로드 시작 — 이미지 {image_count}장 + 영상 {video_count}개 (총 {len(spec.image_paths)})")
     await page.wait_for_timeout(3500)
 
-    # 크롭 화면 종횡비 선택 (기본값 정사각 → 4:5 이미지 상하 잘림 방지). 실패해도 발행 계속.
-    await _select_crop_aspect_ratio(page, spec, evidence_prefix)
+    # 크롭 화면 종횡비 선택 (기본값 정사각 → 4:5 이미지 상하 잘림 방지). 검증 실패시 예외를
+    # 던져 run_publish 가 정사각 패딩 폴백 후 1회 재시도하게 한다(무조건 진행하지 않음 —
+    # 2026-08-09 GM 재지적 재발방지, 배503).
+    if not await _select_crop_aspect_ratio(page, spec, evidence_prefix):
+        raise CropAspectVerifyFailed(spec.slot)
 
     # "다음" 2회 클릭 (자르기 → 편집 → 캡션) — 인스타 데스크탑 표준 흐름.
     # ★2026-07-10 실측(F3): 2차 '편집' 화면은 우측 편집 패널로 모달이 넓어져 top-right
@@ -1427,53 +1470,79 @@ def _detect_aspect_label(spec) -> str | None:
     return None
 
 
-async def _select_crop_aspect_ratio(page, spec, evidence_prefix: Path) -> None:
+async def _select_crop_aspect_ratio(page, spec, evidence_prefix: Path) -> bool:
     """크롭 화면에서 종횡비 선택 아이콘 → "원본"(없으면 실제 비율 라벨) 클릭.
-    셀렉터 미발견/클릭 실패 시 [WARN]+스크린샷 후 기존 흐름(정사각 기본값)대로 진행 —
-    업로드 자체를 막지 않는다."""
-    trigger = None
-    for sel in CROP_ASPECT_TRIGGER_SELECTORS:
-        loc = page.locator(sel).first
-        if await loc.count() > 0:
-            trigger = loc
-            print(f"[INFO]   크롭 종횡비 선택 아이콘: {sel!r}")
-            break
-    if trigger is None:
-        print("[WARN]   크롭 종횡비 선택 아이콘 미발견 — 기본값(정사각)으로 진행")
-        await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_trigger.png")))
-        return
-    try:
-        await trigger.click(timeout=3000)
-    except Exception as e:
-        print(f"[WARN]   크롭 종횡비 아이콘 클릭 실패: {e} — 기본값(정사각)으로 진행")
-        await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_trigger_click.png")))
-        return
-    await page.wait_for_timeout(700)
 
-    option_selectors = list(CROP_ASPECT_ORIGINAL_SELECTORS)
-    fallback_label = _detect_aspect_label(spec)
-    if fallback_label:
-        option_selectors += [
-            f'div[role="menuitem"]:has-text("{fallback_label}")',
-            f'div[role="button"]:has-text("{fallback_label}")',
-            f'span:has-text("{fallback_label}")',
-        ]
+    반환: True = 원본 비율 선택 성공(또는 이미 정사각이라 애초에 크롭될 여지가 없음) —
+          이 경우 4:5 원본 그대로 업로드된다(브랜드 디자인 유지, 1순위 경로).
+          False = 트리거·옵션 둘 다 못 찾음(2회 시도 후에도) — 호출부(run_publish)가
+          CropAspectVerifyFailed 를 일으켜 정사각 패딩 폴백 후 재시도한다(마지막 안전망).
+    2026-08-10 실측(260809_GM일요일_일요일 08-09 두 차례 실 발행분 poc-evidence): 트리거
+    자체가 미발견이었다(warn_crop_trigger.png) — 라이브 IG DOM 재확인이 불가능해 셀렉터
+    텍스트를 추정으로 더 늘리지 않는다. 대신 실패를 놓치지 않는 구조(검증→재시도→폴백)로
+    막는다 — 셀렉터가 맞든 틀리든 최종 결과가 잘리지 않는 게 목표다.
+    """
+    # 이미 정사각(폴백 재시도 등)이면 IG 기본 크롭과 비율이 같아 클릭 자체가 불필요 — 안전.
+    if _detect_aspect_label(spec) == "1:1":
+        print("[INFO]   이미 정사각 파일 — 크롭 비율 선택 불필요(기본값과 동일)")
+        return True
 
-    for sel in option_selectors:
-        loc = page.locator(sel).first
-        if await loc.count() > 0:
-            try:
-                await loc.click(timeout=3000)
-                print(f"[INFO]   크롭 종횡비 옵션 선택 완료: {sel!r}")
-                await page.screenshot(path=str(evidence_prefix.with_suffix(".crop_aspect.png")))
-                await page.wait_for_timeout(500)
-                return
-            except Exception as e:
-                print(f"[WARN]   크롭 종횡비 옵션 클릭 실패: {sel!r} — {e}")
+    for attempt in (1, 2):
+        trigger = None
+        for sel in CROP_ASPECT_TRIGGER_SELECTORS:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                trigger = loc
+                print(f"[INFO]   크롭 종횡비 선택 아이콘: {sel!r} (시도 {attempt}/2)")
+                break
+        if trigger is None:
+            print(f"[WARN]   크롭 종횡비 선택 아이콘 미발견 (시도 {attempt}/2)")
+            if attempt == 1:
+                await page.wait_for_timeout(1200)  # 화면 렌더 지연 대비 재시도
                 continue
+            await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_trigger.png")))
+            return False
+        try:
+            await trigger.click(timeout=3000)
+        except Exception as e:
+            print(f"[WARN]   크롭 종횡비 아이콘 클릭 실패: {e} (시도 {attempt}/2)")
+            if attempt == 1:
+                await page.wait_for_timeout(1200)
+                continue
+            await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_trigger_click.png")))
+            return False
+        await page.wait_for_timeout(700)
 
-    print("[WARN]   크롭 종횡비 옵션('원본' 등) 전부 미발견/클릭실패 — 기본값(정사각)으로 진행")
-    await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_option.png")))
+        option_selectors = list(CROP_ASPECT_ORIGINAL_SELECTORS)
+        fallback_label = _detect_aspect_label(spec)
+        if fallback_label:
+            option_selectors += [
+                f'div[role="menuitem"]:has-text("{fallback_label}")',
+                f'div[role="button"]:has-text("{fallback_label}")',
+                f'span:has-text("{fallback_label}")',
+            ]
+
+        for sel in option_selectors:
+            loc = page.locator(sel).first
+            if await loc.count() > 0:
+                try:
+                    await loc.click(timeout=3000)
+                    print(f"[INFO]   크롭 종횡비 옵션 선택 완료: {sel!r}")
+                    await page.screenshot(path=str(evidence_prefix.with_suffix(".crop_aspect.png")))
+                    await page.wait_for_timeout(500)
+                    return True
+                except Exception as e:
+                    print(f"[WARN]   크롭 종횡비 옵션 클릭 실패: {sel!r} — {e}")
+                    continue
+
+        print(f"[WARN]   크롭 종횡비 옵션('원본' 등) 전부 미발견/클릭실패 (시도 {attempt}/2)")
+        if attempt == 1:
+            await page.wait_for_timeout(1200)
+            continue
+        await page.screenshot(path=str(evidence_prefix.with_suffix(".warn_crop_option.png")))
+        return False
+
+    return False  # 방어적 — 위 루프가 항상 return 하지만 정적분석/가독성용
 
 
 async def _add_location(page, location: str, evidence_prefix: Path) -> None:
