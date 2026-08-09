@@ -1699,7 +1699,7 @@
       }));
       // ② 이번달 이상 — 시설부의 본질은 "이상을 잡았나"다.
       cards.push(cooMetricCard({
-        sc: (oorM || warnM) ? '#ff8a80' : 'var(--green)',
+        sc: oorM ? '#ff8a80' : (warnM ? 'var(--gold)' : 'var(--green)'),
         sh: '🏗️ 시설부 이번달 이상',
         big: oorM,
         small: '건',
@@ -1720,7 +1720,7 @@
                                                  : Object.keys(byIns)) : [];
         names = names.filter(Boolean);
         sum.innerHTML = '이번달 점검한 사람: ' + (names.length ? esc(names.join(' · ')) : '기록 없음')
-          + ' · 원천 = 점검 GAS 라이브(여기서 다시 세지 않습니다)';
+          + ' — 원천 = 점검 GAS 라이브(여기서 다시 세지 않습니다)';
       } else {
         sum.textContent = '점검 데이터를 못 불러왔습니다 — 새로고침 시 재시도.';
       }
