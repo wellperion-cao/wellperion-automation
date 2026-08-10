@@ -41,6 +41,7 @@ function route(p){
     case "sales_month": return salesMonthTot(p);
     case "labor_time":  return laborTime(p);
     case "labor_zero":  return laborZero(p);
+    case "ops_digest_write": return opsDigestWrite(p);
     case "ping":        return out({ ok:true, service:"sales-api", at:Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm:ss") });
     default:            return out({ ok:false, error:"unknown action: " + p.action });
   }
@@ -364,6 +365,35 @@ function laborZero(p){
   for (var m=from; m<=12; m++) zeros.push(0);
   rng.setValues([zeros]);
   return out({ ok:true, row:row, name:String(p.name), from:from, before:before });
+}
+
+/** 운영 현황 한눈에 — 매출 보고 시트에 인사&파트너팀·핵심 업무·시설/지원/주차 요약을
+ *  자동으로 얹는 단일 쓰기 액션(2026-08-10 GM 승인). 판정·집계는 여기서 하지 않는다 —
+ *  이미 매일 만들어지는 텍스트(text)를 받아 그대로 덮어쓸 뿐이다.
+ *  대상 = 이번달 매출 보고 파일의 "운영 현황 한눈에" 탭(없으면 새로 만듦) — 이 탭 하나만
+ *  지우고 다시 쓴다. 다른 탭(특히 '보고' 탭 H2:S21 — 매일 회장님께 가는 이미지 원본)은
+ *  절대 열지도 않는다. 같은 요청 안에서 재조회한 값도 같이 돌려줘 "성공 응답"만으로
+ *  끝내지 않는다(GM 지시). */
+function opsDigestWrite(p){
+  var text = String(p.text||"");
+  if (!text) return out({ ok:false, error:"text 비어있음" });
+  var files = salesFiles_();
+  var curMo = parseInt(Utilities.formatDate(new Date(),"Asia/Seoul","M"),10);
+  var fid = files[curMo];
+  if (!fid) return out({ ok:false, error:"이번달(" + curMo + "월) 매출 보고 파일을 못 찾음", months:Object.keys(files) });
+  var who = "";
+  try { who = Session.getEffectiveUser().getEmail(); } catch(e){}
+  var ss = SpreadsheetApp.openById(fid);
+  var TAB = "운영 현황 한눈에";
+  var sh = ss.getSheetByName(TAB);
+  if (!sh){ sh = ss.insertSheet(TAB); sh.setColumnWidth(1, 640); }
+  else { sh.clear(); } // 이 탭만 지운다 — 다른 탭은 절대 건드리지 않음
+  var lines = text.split("\n");
+  sh.getRange(1, 1, lines.length, 1).setValues(lines.map(function(l){ return [l]; }));
+  var stamp = Utilities.formatDate(new Date(),"Asia/Seoul","yyyy-MM-dd HH:mm");
+  var readback = sh.getRange(1, 1, lines.length, 1).getDisplayValues().map(function(r){ return r[0]; });
+  var verified = readback.join("\n") === text;
+  return out({ ok:true, month:curMo, tab:TAB, rows:lines.length, at:stamp, verified:verified, execUser:who });
 }
 
 /** 최초 1회 권한 승인용 — Apps Script 편집기에서 이 함수를 실행하면

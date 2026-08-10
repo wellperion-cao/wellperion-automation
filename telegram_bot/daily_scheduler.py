@@ -2986,6 +2986,14 @@ def run_stream_3_mgmt() -> None:
         import report_stream_3_mgmt as _s3
         _s3.run(dry_run=False, kakao_go=False, prefix_parts=prefix_parts)
 
+        # 매출 보고 시트 '운영 현황 한눈에' 탭 자동 갱신(2026-08-10 GM 승인) — 텔레그램 발송에
+        # 얹는 한 줄. 실패해도 위 텔레그램 발송은 이미 끝난 뒤라 무영향(best-effort).
+        try:
+            import ops_digest_sheet_push as _odp
+            _odp.push()
+        except Exception as e:
+            logger.error(f"{label} 운영현황시트 갱신 실패(무영향): {e}")
+
         if absorbed:
             keys = [it["source"] for it in absorbed]
             _mr.mark_bundle_sent(keys, cadence="daily")
