@@ -683,14 +683,29 @@ def _selfcheck_schedule() -> None:
 #   08:00 업무 브리핑(할 일)의 짝 — 저녁엔 오늘 GM지시 worklog 를 ok/warn ref 로 짝지어
 #   끝낸 것·아직 남은 것으로 가른다. 자동 접수(UserPromptSubmit)엔 "오 된 것 같다" 같은
 #   대화 부스러기가 섞이므로 노이즈 필터로 거른다(GM 지시 원문 규칙 4종).
-def _recap_noise(event: str) -> bool:
-    """대화 부스러기 판정 — True 면 항목 후보에서 뺀다."""
+def _recap_noise_legacy(event: str) -> bool:
+    """레거시 겉모양 규칙 4종 — ref 기준 필터가 전부 걸러버릴 때만 쓰는 안전장치 폴백."""
     e = (event or '').strip()
     if e.startswith('C-Level 부팅'):
         return True
     if len(e) < 15:
         return True
     if e.endswith('?') and len(e) < 30:
+        return True
+    return False
+
+
+_GM_REF_RE = re.compile(r'^GM-\d{8}-(\d+)$')
+
+
+def _recap_noise(rec: dict) -> bool:
+    """자동 접수(UserPromptSubmit) 원문 판정 — True 면 항목 후보에서 뺀다.
+    ref 끝자리가 GM-YYYYMMDD-NN 형식에서 세 자리 이상 숫자면 자동 접수(잡담·부팅문 다 섞임),
+    두 자리면 웰리가 실제 업무 지시로 판단해 직접 남긴 것. 그 외 형식(예: CEO-… task_id)은 그대로 둔다."""
+    m = _GM_REF_RE.match(str(rec.get('ref', '')))
+    if m and len(m.group(1)) >= 3:
+        return True
+    if '자동 접수' in str(rec.get('detail', '')):
         return True
     return False
 
@@ -724,8 +739,7 @@ def _dedup_consecutive(items: list[dict]) -> tuple[list[dict], int]:
     return out, dropped
 
 
-def _build_done_pending(day: str) -> tuple[list[dict], list[dict], int]:
-    """오늘 GM지시 worklog(ref 로 warn=접수/ok=완료 짝짓기) → (끝낸 것, 아직 남은 것, 걸러진 건수)."""
+def _build_done_pending_pass(day: str, noise_fn) -> tuple[list[dict], list[dict], int]:
     by_ref: dict[str, list[dict]] = {}
     for rec in _load_today_gm_worklog(day):
         by_ref.setdefault(rec.get('ref', ''), []).append(rec)
@@ -735,8 +749,8 @@ def _build_done_pending(day: str) -> tuple[list[dict], list[dict], int]:
         oks = [r for r in group if r.get('result') == 'ok']
         warns = [r for r in group if r.get('result') != 'ok']
         if oks:
-            item = next((r['event'] for r in warns if not _recap_noise(r.get('event', ''))), None) \
-                or next((r['event'] for r in oks if not _recap_noise(r.get('event', ''))), None)
+            item = next((r['event'] for r in warns if not noise_fn(r)), None) \
+                or next((r['event'] for r in oks if not noise_fn(r)), None)
             if item is None:
                 filtered += 1
                 continue
@@ -745,7 +759,7 @@ def _build_done_pending(day: str) -> tuple[list[dict], list[dict], int]:
             done.append({'ts': max(r.get('ts', '') for r in group),
                          'item': item.strip()[:70], 'result': result[:60]})
         else:
-            item = next((r['event'] for r in warns if not _recap_noise(r.get('event', ''))), None)
+            item = next((r['event'] for r in warns if not noise_fn(r)), None)
             if item is None:
                 filtered += 1
                 continue
@@ -758,6 +772,17 @@ def _build_done_pending(day: str) -> tuple[list[dict], list[dict], int]:
     return done, pending, filtered + d1 + d2
 
 
+def _build_done_pending(day: str) -> tuple[list[dict], list[dict], int, bool]:
+    """오늘 GM지시 worklog(ref 로 warn=접수/ok=완료 짝짓기) → (끝낸 것, 아직 남은 것, 걸러진 건수, 폴백여부).
+    ref/detail 기준 새 필터가 둘 다 0건으로 만들면 과필터 신호 — 레거시 겉모양 필터로 되돌린다(빈 카드 금지)."""
+    done, pending, filtered = _build_done_pending_pass(day, _recap_noise)
+    if not done and not pending:
+        legacy_fn = lambda rec: _recap_noise_legacy(rec.get('event', ''))
+        done, pending, filtered = _build_done_pending_pass(day, legacy_fn)
+        return done, pending, filtered, True
+    return done, pending, filtered, False
+
+
 RECAP_MAX_BUTTONS = 8  # 버튼 20개 넘으면 지저분해진다(GM 지시) — 「아직 남은 것」 상위 8개만 버튼
 
 
@@ -768,7 +793,7 @@ def _recap_snapshot(day: str) -> dict:
     if d.get('recap'):
         return d['recap']
 
-    done, pending, filtered = _build_done_pending(day)
+    done, pending, filtered, fallback = _build_done_pending(day)
 
     sched_items, sched_ok = _load_schedule_items_ex()
     sched_pairs = _filter_today_items(sched_items, day) if sched_ok else []
@@ -785,6 +810,7 @@ def _recap_snapshot(day: str) -> dict:
         'sched_lines': sched_lines,
         'plan_lines': plan_lines,
         'filtered': filtered,
+        'fallback': fallback,
         'ack': {},
     }
     d['recap'] = snap
@@ -825,6 +851,8 @@ def build_evening_recap(day: str | None = None) -> dict:
         lines += ['', b]
 
     lines += ['', '오늘 하루도 고생 많으셨습니다 — 남은 건 편하실 때 확인 버튼으로 지워 주세요.']
+    if snap.get('fallback'):
+        lines += ['', '(정리 기준 확인 필요)']
 
     rows = [[{'text': f'☑ {i + 1}번 확인', 'callback_data': f'ck:r:{i}'}]
             for i, x in enumerate(pending[:RECAP_MAX_BUTTONS]) if not ack.get(str(i))]
@@ -845,30 +873,47 @@ def ack_recap_item(idx: int, day: str | None = None) -> dict:
 
 
 def _selfcheck_recap() -> None:
-    """배 — 노이즈 필터·ref 짝짓기·연속중복·버튼 인덱스 self-check(네트워크 없이, 고정 표본)."""
-    assert _recap_noise('C-Level 부팅: (0) caveman ...') is True
-    assert _recap_noise('짧다') is True
-    assert _recap_noise('그럼 CLI창 다시 예전처럼 돌아오는거야?') is True  # 30자 미만 물음표
-    assert _recap_noise('오넛티 추석 단체 할인 기준 명확화 — 소비자가 기준 30% 확정') is False
+    """배 — 노이즈 필터(ref 기준)·ref 짝짓기·연속중복·폴백안전장치·버튼 인덱스 self-check(고정 표본)."""
+    assert _recap_noise({'ref': 'GM-20260810-1001', 'detail': '받음 · 자동 접수(UserPromptSubmit)'}) is True
+    assert _recap_noise({'ref': 'GM-20260810-03', 'detail': '받음'}) is False  # 두 자리 = 웰리 직접 기록
+    assert _recap_noise({'ref': 'GM-20260810-01', 'detail': '받음 · 자동 접수(어떤 이유로든)'}) is True  # detail 규칙
+    assert _recap_noise({'ref': 'CEO-morning-01', 'detail': ''}) is False  # GM-YYYYMMDD-NN 형식 아니면 그대로
 
     sample = [
-        {'ts': '2026-08-10T09:00:00+09:00', 'result': 'warn', 'ref': 'A', 'event': '테스트 지시사항 접수 항목 A'},
-        {'ts': '2026-08-10T09:05:00+09:00', 'result': 'ok', 'ref': 'A', 'event': '완료', 'detail': 'A 처리 결과 요약'},
-        {'ts': '2026-08-10T09:10:00+09:00', 'result': 'warn', 'ref': 'B', 'event': '테스트 지시사항 접수 항목 B'},
-        {'ts': '2026-08-10T09:11:00+09:00', 'result': 'warn', 'ref': 'C', 'event': '테스트 지시사항 접수 항목 B'},  # 연속중복
-        {'ts': '2026-08-10T09:12:00+09:00', 'result': 'warn', 'ref': 'D', 'event': '짧음'},  # 노이즈
+        {'ts': '2026-08-10T09:00:00+09:00', 'result': 'warn', 'ref': 'GM-20260810-03', 'event': '테스트 지시사항 접수 항목 A'},
+        {'ts': '2026-08-10T09:05:00+09:00', 'result': 'ok', 'ref': 'GM-20260810-03', 'event': '완료', 'detail': 'A 처리 결과 요약'},
+        {'ts': '2026-08-10T09:10:00+09:00', 'result': 'warn', 'ref': 'GM-20260810-04', 'event': '테스트 지시사항 접수 항목 B'},
+        {'ts': '2026-08-10T09:11:00+09:00', 'result': 'warn', 'ref': 'GM-20260810-05', 'event': '테스트 지시사항 접수 항목 B'},  # 연속중복
+        {'ts': '2026-08-10T09:12:00+09:00', 'result': 'warn', 'ref': 'GM-20260810-1006', 'event': '실제로는 긴 자동접수 원문이 여기 들어온다',
+         'detail': '받음 · 자동 접수(UserPromptSubmit)'},  # 네 자리 ref → 제외 대상
     ]
     global _load_today_gm_worklog
     _orig = _load_today_gm_worklog
     _load_today_gm_worklog = lambda day: sample
     try:
-        done, pending, filtered = _build_done_pending('2026-08-10')
+        done, pending, filtered, fallback = _build_done_pending('2026-08-10')
     finally:
         _load_today_gm_worklog = _orig
     assert [x['item'] for x in done] == ['테스트 지시사항 접수 항목 A'], done
     assert done[0]['result'] == 'A 처리 결과 요약', done
     assert [x['item'] for x in pending] == ['테스트 지시사항 접수 항목 B'], pending
-    assert filtered == 2, filtered  # 연속중복 1 + 노이즈 1
+    assert filtered == 2, filtered  # 연속중복 1 + 네 자리 ref 노이즈 1
+    assert fallback is False, fallback
+    # 세 자리 이상 ref(자동 접수 원문)를 가진 항목이 결과 목록에 하나도 없을 것
+    assert not any('긴 자동접수 원문' in x['item'] for x in done + pending), (done, pending)
+
+    # ★안전장치 — 전부 자동 접수뿐이면(끝낸 것·남은 것 둘 다 0건) 레거시 필터로 폴백해야 한다
+    all_noise = [
+        {'ts': '2026-08-10T09:00:00+09:00', 'result': 'warn', 'ref': 'GM-20260810-2001',
+         'event': '오넛티 추석 단체 할인 기준 명확화 — 소비자가 기준 30% 확정', 'detail': '받음 · 자동 접수(UserPromptSubmit)'},
+    ]
+    _load_today_gm_worklog = lambda day: all_noise
+    try:
+        done2, pending2, _, fallback2 = _build_done_pending('2026-08-10')
+    finally:
+        _load_today_gm_worklog = _orig
+    assert fallback2 is True, (done2, pending2, fallback2)
+    assert [x['item'] for x in pending2] == ['오넛티 추석 단체 할인 기준 명확화 — 소비자가 기준 30% 확정'], pending2
 
 
 if __name__ == '__main__':
