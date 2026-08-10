@@ -217,6 +217,16 @@
   .statchip.static{color:var(--dim); background:transparent; border:1px dashed var(--border-strong); font-weight:700;}
   .statchip.dead{color:#c9c6c1; background:#3a3735; border:1px solid #55504c;}
 
+  /* ── 🥁 쿵짝표 칸 구분 (GM 지적 2026-08-10 — 무스타일 나열을 표처럼 보이게) ── */
+  #kungjjak-board .whowrap{border:1px solid var(--border); border-radius:10px; padding:9px 12px; margin:0 0 8px; background:var(--surface);}
+  #kungjjak-board .whowrap.esc{border-color:rgba(226,105,95,0.4); border-left:3px solid #e2695f; background:rgba(226,105,95,0.07);}
+  #kungjjak-board .whowrap .lab{font-weight:800; font-size:12.5px; color:var(--text); margin-bottom:6px;}
+  #kungjjak-board .srow{display:flex; align-items:center; gap:10px; padding:5px 2px; border-top:1px dashed var(--border);}
+  #kungjjak-board .srow:first-of-type{border-top:none;}
+  #kungjjak-board .srow .sd{flex:0 0 52px; color:var(--dim); font-size:11.5px; font-variant-numeric:tabular-nums;}
+  #kungjjak-board .srow .st{flex:1 1 auto; min-width:0; color:var(--text-soft); word-break:keep-all; overflow-wrap:anywhere;}
+  #kungjjak-board .srow .sw{flex:0 0 auto; font-size:11px; font-weight:700; color:var(--text-soft); background:var(--paper); border:1px solid var(--border-strong); border-radius:20px; padding:2px 9px; white-space:nowrap;}
+
   #layer-automation .sysrow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; margin-bottom:6px;}
   #layer-automation .sysrow .sysname{min-width:150px; font-weight:700; color:var(--text);}
   #layer-automation .sysrow .sysdetail{color:var(--dim);}
