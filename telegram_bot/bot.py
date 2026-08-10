@@ -2010,6 +2010,25 @@ async def cmd_checkin_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             await q.answer("처리 실패 — 다시 눌러 주세요", show_alert=True)
         return
 
+    # ── 저녁 정리 카드(오늘 하신 일) — ck:r:{인덱스} ────────────────────────────
+    #   GM 지시 2026-08-10 — 08:00 업무 브리핑의 짝(저녁판). 「아직 남은 것」 버튼을 누르면
+    #   그 항목만 확인 표시로 바뀐다. 저장 로직은 gm_checkin.ack_recap_item 단일 출처.
+    if data.startswith("ck:r:"):
+        try:
+            idx = int(data[5:])
+            step = await asyncio.to_thread(_checkin.ack_recap_item, idx)
+            markup = None
+            if step.get("markup"):
+                markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(b["text"], callback_data=b["callback_data"]) for b in row]
+                    for row in step["markup"]["inline_keyboard"]])
+            await q.edit_message_text(text=step["text"], reply_markup=markup)
+            await q.answer("확인했습니다")
+        except Exception as exc:
+            log.error(f"[checkin] 저녁정리 확인 처리 실패: {exc}")
+            await q.answer("처리 실패 — 다시 눌러 주세요", show_alert=True)
+        return
+
     try:
         if data.startswith("ck:t:"):
             _checkin.toggle(data[5:])

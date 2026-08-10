@@ -478,6 +478,7 @@ def week_card(day: str | None = None) -> str:
 #   objectives 「(GM 직접)」·업무SSOT 김남욱 담당·회장님 보고건)을 모으되, 기한 필드가 없는
 #   GM업무·회장님 보고건을 "오늘 할 일"로 몰지 않는다(지어내기 금지) — 4묶음으로 정직히 나눈다.
 MONTHLY_PLAN = ROOT / 'status' / 'monthly_ops_plan.json'
+WORKLOG_PATH = ROOT / 'status' / 'worklog.jsonl'  # 저녁 정리 카드(build_evening_recap) 소스
 CHAIRMAN_ITEMS_JS = ROOT / '3. 웰페리온 가이드' / 'coo' / 'chairman' / '_chairman_items.js'
 CHAIRMAN_REPORTED = ROOT / '3. 웰페리온 가이드' / 'coo' / 'chairman' / 'chairman_reported.json'
 GM_WORK_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/chairman/GM%EC%97%85%EB%AC%B4.html'
@@ -678,15 +679,210 @@ def _selfcheck_schedule() -> None:
     assert _format_schedule([]) == ''
 
 
+# ── 20:30 「오늘 하신 일」 저녁 정리 카드 (나의하루 방) — GM 지시 2026-08-10 ─────────
+#   08:00 업무 브리핑(할 일)의 짝 — 저녁엔 오늘 GM지시 worklog 를 ok/warn ref 로 짝지어
+#   끝낸 것·아직 남은 것으로 가른다. 자동 접수(UserPromptSubmit)엔 "오 된 것 같다" 같은
+#   대화 부스러기가 섞이므로 노이즈 필터로 거른다(GM 지시 원문 규칙 4종).
+def _recap_noise(event: str) -> bool:
+    """대화 부스러기 판정 — True 면 항목 후보에서 뺀다."""
+    e = (event or '').strip()
+    if e.startswith('C-Level 부팅'):
+        return True
+    if len(e) < 15:
+        return True
+    if e.endswith('?') and len(e) < 30:
+        return True
+    return False
+
+
+def _load_today_gm_worklog(day: str) -> list[dict]:
+    try:
+        lines = WORKLOG_PATH.read_text(encoding='utf-8').splitlines()
+    except Exception:
+        return []
+    out = []
+    for ln in lines:
+        try:
+            rec = json.loads(ln)
+        except Exception:
+            continue
+        if rec.get('area') == 'GM지시' and str(rec.get('ts', ''))[:10] == day:
+            out.append(rec)
+    out.sort(key=lambda r: r.get('ts', ''))
+    return out
+
+
+def _dedup_consecutive(items: list[dict]) -> tuple[list[dict], int]:
+    """연속 동일 항목 텍스트는 하나만 남긴다. (남은 목록, 걸러진 건수)."""
+    out, dropped, last = [], 0, None
+    for it in items:
+        if last is not None and it['item'] == last:
+            dropped += 1
+            continue
+        out.append(it)
+        last = it['item']
+    return out, dropped
+
+
+def _build_done_pending(day: str) -> tuple[list[dict], list[dict], int]:
+    """오늘 GM지시 worklog(ref 로 warn=접수/ok=완료 짝짓기) → (끝낸 것, 아직 남은 것, 걸러진 건수)."""
+    by_ref: dict[str, list[dict]] = {}
+    for rec in _load_today_gm_worklog(day):
+        by_ref.setdefault(rec.get('ref', ''), []).append(rec)
+
+    done, pending, filtered = [], [], 0
+    for group in by_ref.values():
+        oks = [r for r in group if r.get('result') == 'ok']
+        warns = [r for r in group if r.get('result') != 'ok']
+        if oks:
+            item = next((r['event'] for r in warns if not _recap_noise(r.get('event', ''))), None) \
+                or next((r['event'] for r in oks if not _recap_noise(r.get('event', ''))), None)
+            if item is None:
+                filtered += 1
+                continue
+            ok = oks[-1]
+            result = (ok.get('detail') or ok.get('event') or '').strip()
+            done.append({'ts': max(r.get('ts', '') for r in group),
+                         'item': item.strip()[:70], 'result': result[:60]})
+        else:
+            item = next((r['event'] for r in warns if not _recap_noise(r.get('event', ''))), None)
+            if item is None:
+                filtered += 1
+                continue
+            pending.append({'ts': max(r.get('ts', '') for r in warns), 'item': item.strip()[:70]})
+
+    done.sort(key=lambda x: x['ts'])
+    pending.sort(key=lambda x: x['ts'])
+    done, d1 = _dedup_consecutive(done)
+    pending, d2 = _dedup_consecutive(pending)
+    return done, pending, filtered + d1 + d2
+
+
+RECAP_MAX_BUTTONS = 8  # 버튼 20개 넘으면 지저분해진다(GM 지시) — 「아직 남은 것」 상위 8개만 버튼
+
+
+def _recap_snapshot(day: str) -> dict:
+    """그날의 저녁 정리 재료를 얼린다(plan() 과 같은 관례) — 버튼 인덱스가 그날 안 바뀌게."""
+    data = load()
+    d = _day(data, day)
+    if d.get('recap'):
+        return d['recap']
+
+    done, pending, filtered = _build_done_pending(day)
+
+    sched_items, sched_ok = _load_schedule_items_ex()
+    sched_pairs = _filter_today_items(sched_items, day) if sched_ok else []
+    sched_lines = [f"· {(t + ' ') if t else ''}{title}" for t, title in sched_pairs]
+
+    objs = _fetch_gm_direct_objectives(day) or []
+    top_objs = sorted(objs, key=lambda o: -(o.get('progress') or 0))[:3]
+    plan_lines = [f"· {str(o.get('title', '')).replace(' (GM 직접)', '')} — {o.get('progress', 0)}%"
+                  for o in top_objs]
+
+    snap = {
+        'done': [{'item': x['item'], 'result': x['result']} for x in done],
+        'pending': [{'item': x['item']} for x in pending],
+        'sched_lines': sched_lines,
+        'plan_lines': plan_lines,
+        'filtered': filtered,
+        'ack': {},
+    }
+    d['recap'] = snap
+    _write(data)
+    return snap
+
+
+def build_evening_recap(day: str | None = None) -> dict:
+    """20:30 저녁 정리 카드 — {'text', 'markup'}. 08:00 업무 브리핑의 짝(할 일 ↔ 한 일)."""
+    day = day or today()
+    snap = _recap_snapshot(day)
+    d = datetime.date.fromisoformat(day)
+    wd = '월화수목금토일'[d.weekday()]
+    ack = snap.get('ack') or {}
+
+    lines = [f"🌙 오늘 하신 일  ·  {d.month}월 {d.day}일({wd})"]
+
+    done_lines = [f"✅ {x['item']} — {x['result']}" if x['result'] else f"✅ {x['item']}"
+                  for x in snap['done']]
+    b = _bucket('끝낸 것', done_lines)
+    if b:
+        lines += ['', b]
+
+    pending = snap['pending']
+    if pending:
+        p_lines = [f"{'✅' if ack.get(str(i)) else '⬜'} {x['item']} — 아직 진행 중"
+                   for i, x in enumerate(pending)]
+        shown = p_lines[:RECAP_MAX_BUTTONS]
+        tail = f"\n외 {len(p_lines) - RECAP_MAX_BUTTONS}건" if len(p_lines) > RECAP_MAX_BUTTONS else ''
+        lines += ['', f"■ 아직 남은 것 ({len(p_lines)})\n" + '\n'.join(shown) + tail]
+
+    b = _bucket('오늘 일정', snap['sched_lines'])
+    if b:
+        lines += ['', b]
+
+    b = _bucket('진행 중 과제', snap['plan_lines'])
+    if b:
+        lines += ['', b]
+
+    lines += ['', '오늘 하루도 고생 많으셨습니다 — 남은 건 편하실 때 확인 버튼으로 지워 주세요.']
+
+    rows = [[{'text': f'☑ {i + 1}번 확인', 'callback_data': f'ck:r:{i}'}]
+            for i, x in enumerate(pending[:RECAP_MAX_BUTTONS]) if not ack.get(str(i))]
+    return {'text': '\n'.join(lines), 'markup': {'inline_keyboard': rows} if rows else None}
+
+
+def ack_recap_item(idx: int, day: str | None = None) -> dict:
+    """저녁 정리 카드의 「☑ N번 확인」 버튼 — 기존 상태 파일(gm_personal_routine.json)에 키만 얹는다."""
+    day = day or today()
+    data = load()
+    d = _day(data, day)
+    recap = d.get('recap')
+    if not recap:
+        return {'text': '', 'markup': None}
+    recap.setdefault('ack', {})[str(idx)] = True
+    _write(data)
+    return build_evening_recap(day)
+
+
+def _selfcheck_recap() -> None:
+    """배 — 노이즈 필터·ref 짝짓기·연속중복·버튼 인덱스 self-check(네트워크 없이, 고정 표본)."""
+    assert _recap_noise('C-Level 부팅: (0) caveman ...') is True
+    assert _recap_noise('짧다') is True
+    assert _recap_noise('그럼 CLI창 다시 예전처럼 돌아오는거야?') is True  # 30자 미만 물음표
+    assert _recap_noise('오넛티 추석 단체 할인 기준 명확화 — 소비자가 기준 30% 확정') is False
+
+    sample = [
+        {'ts': '2026-08-10T09:00:00+09:00', 'result': 'warn', 'ref': 'A', 'event': '테스트 지시사항 접수 항목 A'},
+        {'ts': '2026-08-10T09:05:00+09:00', 'result': 'ok', 'ref': 'A', 'event': '완료', 'detail': 'A 처리 결과 요약'},
+        {'ts': '2026-08-10T09:10:00+09:00', 'result': 'warn', 'ref': 'B', 'event': '테스트 지시사항 접수 항목 B'},
+        {'ts': '2026-08-10T09:11:00+09:00', 'result': 'warn', 'ref': 'C', 'event': '테스트 지시사항 접수 항목 B'},  # 연속중복
+        {'ts': '2026-08-10T09:12:00+09:00', 'result': 'warn', 'ref': 'D', 'event': '짧음'},  # 노이즈
+    ]
+    global _load_today_gm_worklog
+    _orig = _load_today_gm_worklog
+    _load_today_gm_worklog = lambda day: sample
+    try:
+        done, pending, filtered = _build_done_pending('2026-08-10')
+    finally:
+        _load_today_gm_worklog = _orig
+    assert [x['item'] for x in done] == ['테스트 지시사항 접수 항목 A'], done
+    assert done[0]['result'] == 'A 처리 결과 요약', done
+    assert [x['item'] for x in pending] == ['테스트 지시사항 접수 항목 B'], pending
+    assert filtered == 2, filtered  # 연속중복 1 + 노이즈 1
+
+
 if __name__ == '__main__':
     import sys
     sys.stdout.reconfigure(encoding='utf-8')
     _selfcheck_slots()
     _selfcheck_schedule()
     _selfcheck_morning_brief()
+    _selfcheck_recap()
     print(build_prompt())
     print(json.dumps(build_markup(), ensure_ascii=False))
     print('---')
     print(week_card())
     print('---')
     print(build_morning_brief())
+    print('---')
+    print(build_evening_recap())

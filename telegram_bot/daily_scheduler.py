@@ -2931,6 +2931,28 @@ def run_gm_morning_brief(chat_id: str | None = None) -> None:
         logger.warning(f"{label} 실패: {e}")
 
 
+# ── 20:30 GM 저녁 정리 카드(월~토 · 나의하루 방) — GM 지시 2026-08-10 ──────────────
+#   08:00 업무 브리핑(할 일)의 짝 — 저녁엔 오늘 worklog GM지시 항목을 ok/warn ref 로 짝지어
+#   끝낸 것·아직 남은 것 체크 카드로 낸다(gm_checkin.build_evening_recap). 21:00 저녁 끼니슬롯·
+#   22:00 저녁 설문과 겹치지 않게 20:30 을 쓴다. chat_id 인자는 시험 발송용.
+def run_gm_evening_recap(chat_id: str | None = None) -> None:
+    label = "[GM 저녁 정리]"
+    try:
+        import gm_checkin as _ck
+        from tg_outbound_log import send as _send
+        token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
+        if not token:
+            logger.warning(f"{label} 토큰 없음 — 건너뜀")
+            return
+        chat = chat_id or _checkin_chat_id()
+        step = _ck.build_evening_recap()
+        extra = {"reply_markup": json.dumps(step["markup"], ensure_ascii=False)} if step.get("markup") else None
+        ok = _send(token, chat, step["text"], source="gm_evening_recap", extra=extra)
+        logger.info(f"{label} 발송 ok={ok} chat={chat}")
+    except Exception as e:
+        logger.warning(f"{label} 실패: {e}")
+
+
 # ── 시점별 체크(끼니·운동) 4슬롯 (09:00·13:30·16:30·21:00 · 개인 방) — GM 요청 2026-08-09 ──
 #   기존 22:00 저녁 설문(run_gm_checkin)은 하루가 끝난 뒤 5토막·기분을 묻는다. 이 4슬롯은
 #   그때그때 끼니·운동만 묻는다 — 겹치지 않는다. 시각·항목 정본 = gm_checkin.SLOTS.
@@ -3779,6 +3801,20 @@ def main():
             logger.info("gm_morning_brief 등록 완료 — 월~토 08:00 나의하루 방(일요일 스킵)")
         except Exception as e:
             logger.warning(f"gm_morning_brief 등록 실패: {e}")
+
+        # ── GM 저녁 정리 카드(월~토 20:30 · 나의하루 방) — GM 지시 2026-08-10 ──────
+        #   08:00 브리핑의 짝. 21:00 저녁 끼니슬롯·22:00 저녁 설문과 안 겹치는 20:30.
+        try:
+            scheduler.add_job(
+                run_gm_evening_recap,
+                trigger=CronTrigger(day_of_week="mon-sat", hour=20, minute=30, timezone="Asia/Seoul"),
+                id="gm_evening_recap_2030",
+                misfire_grace_time=1800,
+                coalesce=True,
+            )
+            logger.info("gm_evening_recap 등록 완료 — 월~토 20:30 나의하루 방(일요일 스킵)")
+        except Exception as e:
+            logger.warning(f"gm_evening_recap 등록 실패: {e}")
 
         # ── 운영부 주간 보고 초안 (금요일 17:00 · ★중간관리자 방) — CTO 2026-08-06 ──
         try:
