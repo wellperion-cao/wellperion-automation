@@ -54,6 +54,7 @@ function route(p){
     case "asset_label":  return assetLabel(p);  // 라벨 부착완료 표시
     case "asset_update": return assetUpdate(p); // 위치·관리자·상태·비고 수정
     case "asset_del":    return assetDel(p);    // 오발급 라벨 회수(미부착만 — 실물 부착분은 불용 처리로)
+    case "asset_relabel": return assetRelabel(p); // 라벨번호 교체(미부착만 — 형식 변경·오기 정정용)
     case "receipt": return addReceipt(p);
     case "photo":   return addPhoto(p);
     case "delete":  return delRow(p);
@@ -366,10 +367,18 @@ function assetIssue(p){
     var rows = assetRows_(s);
     var dup = rows.filter(function(r){ return r.품의번호 === 품의; });
     if (dup.length) return out({ ok:true, already:true, labels: dup.map(function(r){ return r.라벨; }) });
-    var pre = "WP-" + Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy") + "-";
+    // 라벨 형식 = WP{연도2자리} {4자리} (예: WP26 0002) — 2026-08-10 GM 지시로 변경.
+    // 구형 'WP-2026-0001' 도 같은 연도면 번호를 이어받도록 아래에서 함께 훑는다(번호 충돌 방지).
+    var yy2 = Utilities.formatDate(new Date(), "Asia/Seoul", "yy");
+    var yy4 = Utilities.formatDate(new Date(), "Asia/Seoul", "yyyy");
+    var pre = "WP" + yy2 + " ";
+    var preOld = "WP-" + yy4 + "-";
     var mx = 0;
     rows.forEach(function(r){
-      if (r.라벨.indexOf(pre) === 0){ var x = parseInt(r.라벨.slice(pre.length), 10); if (x > mx) mx = x; }
+      var n = 0;
+      if (r.라벨.indexOf(pre) === 0) n = parseInt(r.라벨.slice(pre.length), 10);
+      else if (r.라벨.indexOf(preOld) === 0) n = parseInt(r.라벨.slice(preOld.length), 10); // 구형 라벨도 번호는 이어받는다
+      if (n > mx) mx = n;
     });
     var 취득일 = String(p.취득일||"") || today();
     var vals = [], labels = [];
@@ -408,6 +417,22 @@ function assetUpdate(p){
     if (p[k] != null){ s.getRange(t.row, MAP[k]).setValue(String(p[k])); ch.push(k); }
   });
   return out({ ok:true, 라벨:t.라벨, changed:ch });
+}
+
+/** 라벨번호 교체 — 형식 변경(WP-2026-0002 → WP26 0002)이나 오기 정정용.
+ *  ★부착완료된 라벨은 바꾸지 않는다: 실물 스티커와 대장이 어긋나면 추적이 끊긴다.
+ *  이미 쓰이는 번호로는 바꿀 수 없다(중복 차단).
+ */
+function assetRelabel(p){
+  var from = String(p.라벨||"").trim(), to = String(p.새라벨||"").trim();
+  if (!from || !to) return out({ ok:false, error:"need 라벨/새라벨" });
+  var s = assetSh_(), rows = assetRows_(s);
+  var t = rows.filter(function(r){ return r.라벨 === from; })[0];
+  if (!t) return out({ ok:false, error:"not_found" });
+  if (t.부착) return out({ ok:false, error:"attached_locked" }); // 실물에 붙은 라벨은 못 바꾼다
+  if (rows.some(function(r){ return r.라벨 === to; })) return out({ ok:false, error:"duplicate" });
+  s.getRange(t.row, 1).setValue(to);
+  return out({ ok:true, from:from, to:to });
 }
 
 /** 오발급 라벨 회수 — 수량 오입력 등으로 잘못 발급된 라벨을 대장에서 제거한다.
