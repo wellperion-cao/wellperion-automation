@@ -2879,11 +2879,9 @@ def _checkin_chat_id() -> str:
     return str(ENV.get("TELEGRAM_PERSONAL_CHAT_ID") or _GM_REPORT_CHAT_ID)
 
 
-def run_gm_checkin(weekly: bool = False, morning: bool = False) -> None:
-    """morning=오늘 할 네 가지 제안(버튼 없음) · 기본=저녁 확인(버튼) · weekly=한 주 카드.
-
-    아침·저녁을 나눈 이유(GM 2026-08-08): 체크만 하면 "했나/안 했나"로 끝난다.
-    아침에 토막마다 한 가지를 정해 두고 저녁에 같은 문장을 다시 보여 줘야 하루가 남는다.
+def run_gm_checkin(weekly: bool = False) -> None:
+    """기본=저녁 확인(버튼) · weekly=한 주 카드. (아침 「오늘 하나씩」은 06:00 하루시작 카드에
+    _checkin_morning_block() 이 흡수 — 별도 morning 분기 없음. 업무 브리핑은 run_gm_morning_brief.)
     """
     label = "[GM 개인 체크인]"
     try:
@@ -2898,10 +2896,6 @@ def run_gm_checkin(weekly: bool = False, morning: bool = False) -> None:
             ok = _send(token, chat, _ck.week_card(), source="gm_checkin_week")
             logger.info(f"{label} 한 주 카드 발송 ok={ok} chat={chat}")
             return
-        if morning:
-            ok = _send(token, chat, _ck.build_morning(), source="gm_checkin_morning")
-            logger.info(f"{label} 아침 제안 발송 ok={ok} chat={chat}")
-            return
         # 저녁은 설문 첫 문항 하나만 보낸다 — 나머지는 같은 메시지를 갈아 끼우며 진행한다
         # (GM 2026-08-08 "Survey 처럼"). 버튼 10개를 한 화면에 깔던 옛 카드는 폐기.
         # 취침 안내·명언은 마지막 마무리 화면 꼬리로 옮겼다(build_step 마지막 단계).
@@ -2909,6 +2903,30 @@ def run_gm_checkin(weekly: bool = False, morning: bool = False) -> None:
         ok = _send(token, chat, step["text"], source="gm_checkin",
                    extra={"reply_markup": json.dumps(step["markup"], ensure_ascii=False)})
         logger.info(f"{label} 저녁 설문 1문항 발송 ok={ok} chat={chat}")
+    except Exception as e:
+        logger.warning(f"{label} 실패: {e}")
+
+
+# ── 08:00 GM 업무 브리핑 (월~토 · 나의하루 방) — 배514 미배선 해소, GM 지시 2026-08-10 ──
+#   gm_checkin.schedule_lines() 는 있었는데 그걸 부르는 08:00 잡이 저장소에 0건이었다(죽은
+#   코드) — 이 잡이 그걸 실제로 쓴다. 전사일정+GM업무(월간 「GM 직접」)+업무SSOT 김남욱 담당+
+#   회장님 보고건 4소스를 gm_checkin.build_morning_brief() 가 4묶음으로 정직하게 낸다.
+#   받는 방 = 개인 나의하루(TELEGRAM_PERSONAL_CHAT_ID) — ceo_morning_pipeline.py 의 08:00
+#   통합브리프(업무보고방·회사 전체용)와는 방·내용이 다르므로 "08시 중복 발송 없음" 원칙과
+#   충돌하지 않는다(위 파일 헤더 주석 참조). chat_id 인자는 시험 발송용(기본=나의하루 방).
+def run_gm_morning_brief(chat_id: str | None = None) -> None:
+    label = "[GM 아침 브리핑]"
+    try:
+        import gm_checkin as _ck
+        from tg_outbound_log import send as _send
+        token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
+        if not token:
+            logger.warning(f"{label} 토큰 없음 — 건너뜀")
+            return
+        chat = chat_id or _checkin_chat_id()
+        text = _ck.build_morning_brief()
+        ok = _send(token, chat, text, source="gm_morning_brief")
+        logger.info(f"{label} 발송 ok={ok} chat={chat}")
     except Exception as e:
         logger.warning(f"{label} 실패: {e}")
 
@@ -3748,6 +3766,19 @@ def main():
             logger.info("gm_checkin_slot 등록 완료 — 09:00 아침·13:30 점심·16:30 간식·21:00 저녁 4슬롯")
         except Exception as e:
             logger.warning(f"gm_checkin_slot 등록 실패: {e}")
+
+        # ── GM 아침 업무 브리핑 (월~토 08:00 · 나의하루 방) — 배514 미배선 해소, GM 2026-08-10 ──
+        try:
+            scheduler.add_job(
+                run_gm_morning_brief,
+                trigger=CronTrigger(day_of_week="mon-sat", hour=8, minute=0, timezone="Asia/Seoul"),
+                id="gm_morning_brief_0800",
+                misfire_grace_time=1800,
+                coalesce=True,
+            )
+            logger.info("gm_morning_brief 등록 완료 — 월~토 08:00 나의하루 방(일요일 스킵)")
+        except Exception as e:
+            logger.warning(f"gm_morning_brief 등록 실패: {e}")
 
         # ── 운영부 주간 보고 초안 (금요일 17:00 · ★중간관리자 방) — CTO 2026-08-06 ──
         try:

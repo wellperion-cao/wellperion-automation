@@ -39,18 +39,23 @@ SCHEDULE_GAS_URL = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODby
 SCHEDULE_LOCAL = ROOT / 'status' / 'schedule_ssot.json'
 
 
-def _load_schedule_items() -> list:
+def _load_schedule_items_ex() -> tuple[list, bool]:
+    """일정 항목 + 성공여부. 실패(양쪽 다 못 읽음)와 0건을 구분한다(자가점검 7번 「0 위장」 금지)."""
     try:
         r = requests.get(SCHEDULE_GAS_URL, params={'action': 'load_schedule'}, timeout=8)
         j = r.json()
         if j.get('ok'):
-            return (j.get('data') or {}).get('items') or []
+            return (j.get('data') or {}).get('items') or [], True
     except Exception:
         pass
     try:
-        return json.loads(SCHEDULE_LOCAL.read_text(encoding='utf-8')).get('items') or []
+        return json.loads(SCHEDULE_LOCAL.read_text(encoding='utf-8')).get('items') or [], True
     except Exception:
-        return []
+        return [], False
+
+
+def _load_schedule_items() -> list:
+    return _load_schedule_items_ex()[0]
 
 
 def _filter_today_items(items: list, day: str) -> list:
@@ -385,24 +390,6 @@ def plan(day: str | None = None) -> dict:
     return picked
 
 
-def build_morning(day: str | None = None) -> str:
-    """아침 카드 — 오늘 할 다섯 가지. 버튼 없음, 읽고 지나가면 된다."""
-    day = day or today()
-    p = plan(day)
-    d = datetime.date.fromisoformat(day)
-    wd = '월화수목금토일'[d.weekday()]
-    lines = [f"🌅 오늘 하나씩 — {d.month}/{d.day}({wd})",
-             "다섯 가지만. 큰 거 아닙니다.", ""]
-    for tid, icon, label, _k in TOROKS:
-        if p.get(tid):
-            lines.append(f"{icon} {label}   {p[tid]}")
-    sched = schedule_lines(day)
-    if sched:  # 0건인 날은 이 자리를 통째로 비운다(GM 지시 2026-08-10, "일정 없음" 줄 안 넣음)
-        lines += ["", "📅 오늘 일정", sched]
-    lines += ["", "저녁에 이 다섯 가지를 그대로 다시 여쭙겠습니다."]
-    return '\n'.join(lines)
-
-
 def build_prompt(day: str | None = None) -> str:
     """카드 자체가 설명서다.
 
@@ -484,6 +471,198 @@ def week_card(day: str | None = None) -> str:
               "점수가 아니라 거울입니다 — 비어 있어도 괜찮습니다.")
 
 
+# ── 08:00 GM 업무 브리핑 (배514 미배선 해소, GM 지시 2026-08-10) ──────────────────
+#   왜: schedule_lines() 는 있었는데 그걸 부르는 08:00 잡이 저장소에 0건이었다 — 실제 06:00은
+#   daily_scheduler._checkin_morning_block() 이 나가는데 그건 schedule_lines() 를 안 부른다.
+#   여기서 실제로 쓰이게 배선한다(더 이상 죽은 코드 아님). 소스 4종(전사일정·GM업무 월간
+#   objectives 「(GM 직접)」·업무SSOT 김남욱 담당·회장님 보고건)을 모으되, 기한 필드가 없는
+#   GM업무·회장님 보고건을 "오늘 할 일"로 몰지 않는다(지어내기 금지) — 4묶음으로 정직히 나눈다.
+MONTHLY_PLAN = ROOT / 'status' / 'monthly_ops_plan.json'
+CHAIRMAN_ITEMS_JS = ROOT / '3. 웰페리온 가이드' / 'coo' / 'chairman' / '_chairman_items.js'
+CHAIRMAN_REPORTED = ROOT / '3. 웰페리온 가이드' / 'coo' / 'chairman' / 'chairman_reported.json'
+GM_WORK_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/chairman/GM%EC%97%85%EB%AC%B4.html'
+G1_URL = 'https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#G1'
+_CHAIRMAN_ITEM_RE = re.compile(r"\{\s*id:\s*'([^']+)',\s*title:\s*'([^']+)'")
+
+
+def _fetch_gm_direct_objectives(day: str) -> list | None:
+    """이번 달 objectives 중 제목에 「(GM 직접)」 이 든 것. 실패 시 None."""
+    try:
+        data = json.loads(MONTHLY_PLAN.read_text(encoding='utf-8'))
+        objs = ((data.get('months') or {}).get(day[:7]) or {}).get('objectives') or []
+        return [o for o in objs if '(GM 직접)' in str(o.get('title', ''))]
+    except Exception:
+        return None
+
+
+def _fetch_gm_ssot_open() -> list | None:
+    """업무 SSOT(GAS todo_list) 담당자=김남욱·상태 열려있는 항목. 실패 시 None."""
+    try:
+        from collectors.ops_shared import SSOT_API_URL, TODO_DONE_STATUSES, gas_get
+    except Exception:
+        return None
+    resp = gas_get(SSOT_API_URL, params={'action': 'todo_list'}, label='gm_morning_brief')
+    if resp is None:
+        return None
+    try:
+        data = resp.json()
+        if not data.get('ok'):
+            return None
+        items = data.get('data') or []
+        return [x for x in items
+                if '김남욱' in str(x.get('담당자', ''))
+                and str(x.get('상태', '')) not in TODO_DONE_STATUSES]
+    except Exception:
+        return None
+
+
+def _parse_due(s: str):
+    try:
+        return datetime.datetime.fromisoformat(str(s or '').rstrip('Z').replace('T', ' ')).date()
+    except Exception:
+        return None
+
+
+def _split_by_due(items: list, day: str) -> tuple[list, list]:
+    """(종료일 오늘+3일 이내·이미 지남, 나머지) — (항목, due) 쌍 리스트로."""
+    base = datetime.date.fromisoformat(day)
+    near, rest = [], []
+    for x in items:
+        due = _parse_due(x.get('종료일'))
+        (near.append((x, due)) if due is not None and due <= base + datetime.timedelta(days=3)
+         else rest.append(x))
+    return near, rest
+
+
+def _due_label(due, day: str) -> str:
+    delta = (datetime.date.fromisoformat(day) - due).days
+    if delta > 0:
+        return f"D+{delta} 지남"
+    if delta == 0:
+        return "오늘 마감"
+    return f"D{delta} 마감"
+
+
+def _fetch_chairman_open() -> list | None:
+    """회장님 보고건 중 chairman_reported.json 에 완료일이 없는 것만. 실패 시 None."""
+    try:
+        js = CHAIRMAN_ITEMS_JS.read_text(encoding='utf-8')
+    except Exception:
+        return None
+    items = [{'id': m.group(1), 'title': m.group(2)} for m in _CHAIRMAN_ITEM_RE.finditer(js)]
+    try:
+        reported = json.loads(CHAIRMAN_REPORTED.read_text(encoding='utf-8'))
+    except Exception:
+        reported = {}
+    return [it for it in items if not reported.get(it['id'])]
+
+
+def _bucket(title: str, lines: list, fail_note: str = '') -> str:
+    """묶음 한 칸. 0건·실패없음이면 빈 문자열(호출부가 그 자리를 통째로 뺀다). 5줄 초과는 접는다."""
+    if not lines and not fail_note:
+        return ''
+    head = f"■ {title}" + (f" ({len(lines)})" if lines else '')
+    if fail_note:
+        head += f" {fail_note}"
+    if not lines:
+        return head
+    body = '\n'.join(lines[:5])
+    tail = f"\n외 {len(lines) - 5}건" if len(lines) > 5 else ''
+    return f"{head}\n{body}{tail}"
+
+
+def _pick_secretary_line(sched_pairs: list, due_pairs: list, waiting_lines: list, day: str) -> str:
+    """맨 위 비서 한 줄 — 오늘 가장 먼저 볼 것 1개. 지목할 게 없으면 빈 문자열(억지로 안 씀)."""
+    if due_pairs:
+        x, due = due_pairs[0]
+        return f"오늘은 {x.get('업무명', '')} 마감({_due_label(due, day)})이 가장 급합니다."
+    if sched_pairs:
+        t, title = sched_pairs[0]
+        return f"오늘은 {title}{f'({t})' if t else ''}이 가장 큽니다."
+    if waiting_lines:
+        return f"오늘은 {waiting_lines[0][2:]}이 먼저 기다리고 있습니다."
+    return ''
+
+
+def build_morning_brief(day: str | None = None) -> str:
+    """08:00 「나의하루」 GM 업무 브리핑 — 월~토 발송. 전사일정·GM업무·업무SSOT·회장님 보고건 4묶음."""
+    day = day or today()
+    d = datetime.date.fromisoformat(day)
+    wd = '월화수목금토일'[d.weekday()]
+
+    sched_items, sched_ok = _load_schedule_items_ex()
+    sched_pairs = _filter_today_items(sched_items, day) if sched_ok else []
+    sched_lines = [f"· {(t + ' ') if t else ''}{title}" for t, title in sched_pairs]
+
+    ssot = _fetch_gm_ssot_open()
+    due_pairs, ssot_rest = _split_by_due(ssot, day) if ssot is not None else ([], [])
+    due_lines = [f"· {x.get('업무명', '(제목없음)')} — {_due_label(due, day)}" for x, due in due_pairs]
+
+    chairman = _fetch_chairman_open()
+    waiting_lines = []
+    if ssot is not None:
+        waiting_lines += [f"· {x.get('업무명', '(제목없음)')} — {x.get('상태', '')}" for x in ssot_rest]
+    if chairman is not None:
+        waiting_lines += [f"· {it['title']} — 회장님 보고 대기" for it in chairman]
+    if ssot is None and chairman is None:
+        waiting_note = '(불러오지 못함)'
+    elif ssot is None or chairman is None:
+        waiting_note = '— 일부 소스 불러오지 못함'
+    else:
+        waiting_note = ''
+
+    objs = _fetch_gm_direct_objectives(day)
+    prog_lines = [f"· {str(o.get('title', '')).replace(' (GM 직접)', '')} — "
+                  f"{o.get('progress', 0)}% · {o.get('status', '')}" for o in (objs or [])]
+
+    sections = [
+        _bucket('오늘 잡힌 일정', sched_lines, '' if sched_ok else '(불러오지 못함)'),
+        _bucket('기한이 임박했습니다', due_lines, '' if ssot is not None else '(불러오지 못함)'),
+        _bucket('답을 기다리는 것', waiting_lines, waiting_note),
+        _bucket('진행 중', prog_lines, '' if objs is not None else '(불러오지 못함)'),
+    ]
+    sections = [s for s in sections if s]
+
+    secretary = _pick_secretary_line(sched_pairs, due_pairs, waiting_lines, day)
+
+    lines = [f"🌅 오늘의 업무  ·  {d.month}월 {d.day}일({wd})"]
+    if secretary:
+        lines += ['', secretary]
+    for s in sections:
+        lines += ['', s]
+    lines += ['', f"GM업무 화면: {GM_WORK_URL}", f"G1 항로: {G1_URL}"]
+    return '\n'.join(lines)
+
+
+def _selfcheck_morning_brief() -> None:
+    """배514 — GM 직접 필터·기한임박 분리·회장님 파싱·버킷 폴딩 self-check(네트워크 없이)."""
+    sample_plan_objs = [
+        {'title': 'A (GM 직접)', 'status': '진행', 'progress': 40},
+        {'title': 'B', 'status': '진행', 'progress': 10},
+    ]
+    assert [o for o in sample_plan_objs if '(GM 직접)' in o['title']] == [sample_plan_objs[0]]
+
+    day = '2026-08-10'
+    items = [
+        {'업무명': '지남', '종료일': '2026-08-08T00:00:00.000Z', '상태': '대기'},
+        {'업무명': '임박', '종료일': '2026-08-12T00:00:00.000Z', '상태': '대기'},
+        {'업무명': '멀음', '종료일': '2026-09-29T00:00:00.000Z', '상태': '대기'},
+    ]
+    near, rest = _split_by_due(items, day)
+    assert [x['업무명'] for x, _d in near] == ['지남', '임박'], near
+    assert [x['업무명'] for x in rest] == ['멀음'], rest
+    assert _due_label(near[0][1], day) == 'D+2 지남', _due_label(near[0][1], day)
+    assert _due_label(near[1][1], day) == 'D-2 마감', _due_label(near[1][1], day)
+
+    sample_js = "window.X = [\n{ id: 'd1', title: '테스트 항목', when: '오늘', cat: '기타' },\n];"
+    ids = [(m.group(1), m.group(2)) for m in _CHAIRMAN_ITEM_RE.finditer(sample_js)]
+    assert ids == [('d1', '테스트 항목')], ids
+
+    assert '외 2건' in _bucket('테스트', [f'· 항목{i}' for i in range(7)])
+    assert _bucket('빈', []) == ''
+    assert _bucket('실패', [], '(불러오지 못함)') == '■ 실패 (불러오지 못함)'
+
+
 def _selfcheck_schedule() -> None:
     """배514 — 일정 필터·정렬 self-check(네트워크 없이, 고정 표본으로). 0건→빈 자리, 다건→시각순."""
     sample = [
@@ -504,7 +683,10 @@ if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
     _selfcheck_slots()
     _selfcheck_schedule()
+    _selfcheck_morning_brief()
     print(build_prompt())
     print(json.dumps(build_markup(), ensure_ascii=False))
     print('---')
     print(week_card())
+    print('---')
+    print(build_morning_brief())
