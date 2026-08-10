@@ -57,6 +57,11 @@ def collect(module=None) -> dict:
     # 이 칸이 없어서 강습 166건(2026-03~)이 아무 화면에도 안 잡히고 방치됐다.
     lesson_un = cpo_report.lesson_unassigned_summary(days=30)
 
+    # 등록(SUC)됐는데 회원 명단에 안 들어간 건 — 2026-08-10 GM 지적으로 여기로 옮겨 왔다.
+    # 종전엔 GAS가 등록 전환 순간 즉시 알렸는데, 등록 저장이 두 단계라 정상 흐름마다 울렸다.
+    # 하루 지나도 안 들어간 것만 여기서 한 줄로 모아 본다(건별 알림 없음).
+    suc_missing = cpo_report.suc_missing_from_member_list(rows)
+
     metrics = [
         {"label": "오늘 신규 문의", "value": len(today_new)},
         {"label": "미컨택(연락기록 0건)", "value": len(uncontacted)},
@@ -68,6 +73,8 @@ def collect(module=None) -> dict:
         # 안 나타나 2021년 문의까지 남아 있었다. 별도 목록을 만들지 않고 이 한 칸으로 밝힌다.
         {"label": "강습 미응대 전체(오래된 것 포함)",
          "value": lesson_un.get("total_all", "미측정") if lesson_un else "미측정"},
+        {"label": "등록됐는데 회원 명단에 없음(하루 지난 것)",
+         "value": suc_missing["total"] if suc_missing else "미측정"},
     ]
     summary = (
         f"신규 {len(today_new)}건 · 미컨택 {len(uncontacted)}건 · "
@@ -104,6 +111,13 @@ def collect(module=None) -> dict:
             summary += f"\n  ▸ 오래된 순: {_head}"
     else:
         summary += " · 강습 미응대 미측정(조회 실패)"
+
+    if suc_missing is None:
+        summary += " · 등록·명단 대조 미측정(조회 실패)"
+    elif suc_missing["total"]:
+        _head = " / ".join(f"{o['name']}({o['date'][:10]})" for o in suc_missing["oldest"])
+        summary += (f" · ⚠️ 등록됐는데 회원 명단에 없음 {suc_missing['total']}명"
+                    f" — 오래된 순: {_head} → {_LINK}")
 
     return make_payload(
         title="문의 라이프사이클 일일 액션",

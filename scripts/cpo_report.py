@@ -302,6 +302,55 @@ def _is_active_status(status: str) -> bool:
     return bool(s) and s not in _LOSS_STATUSES and s not in _SUCCESS_STATUSES
 
 
+def _phone_key(v) -> str:
+    """전화번호 대조키 — 숫자만 남긴다(하이픈·공백·국가번호 표기 차이 흡수)."""
+    return re.sub(r"\D", "", str(v or ""))
+
+
+def suc_missing_from_member_list(rows: list[dict], grace_days: int = 1) -> dict | None:
+    """등록(SUC) 처리됐는데 회원 명단(유효+법인)에 없는 건.
+
+    ★왜 여기 있나(2026-08-10 시포 · GM 지적).
+    종전엔 GAS(Survey.js)가 SUC 로 바뀌는 **그 순간** 텔레그램으로 "회원 명단 미반영"을 쐈다.
+    그런데 등록은 저장이 두 번으로 갈린다 — ①진행상태를 SUC 로 ②곧이어 뜨는 '등록 종목' 모달 저장.
+    ①에서 알림이 나가고 ②로 몇 초 뒤 정상 반영되므로, **정상 흐름마다 경보가 울렸다**
+    (유선영님 건 — GM 이 "종목 등록돼 명단에 있는데?" 라고 지적). 즉시 알림은 그래서 뺐다.
+    대신 하루가 지나도 여전히 안 들어간 건만 이 일일 점검이 잡는다 — 새 장치를 만들지 않고
+    이미 매일 도는 문의 일일 액션에 한 칸 붙인다(약속 L21).
+
+    grace_days: 오늘 막 등록한 건은 아직 종목 저장 중일 수 있어 뺀다(기본 1일).
+    반환 None = 조회 실패(0 으로 위장하지 않는다).
+    """
+    valid = fetch_active_members("valid")
+    corp = fetch_active_members("corp")
+    if valid is None or corp is None:
+        return None
+
+    have = set()
+    for m in list(valid) + list(corp):
+        for k, v in m.items():
+            if "휴대폰" in str(k) or "연락처" in str(k):
+                key = _phone_key(v)
+                if key:
+                    have.add(key)
+
+    cutoff = (datetime.now().date() - timedelta(days=grace_days)).isoformat()
+    missing = []
+    for r in rows:
+        if str(r.get("status") or "").strip() not in _SUCCESS_STATUSES:
+            continue
+        ts = str(r.get("timestamp") or "")
+        if ts and ts > cutoff:
+            continue  # 오늘·어제 건은 아직 종목 저장 중일 수 있다
+        key = _phone_key(r.get("phone"))
+        if key and key not in have:
+            missing.append({"name": r.get("name") or "이름미상",
+                            "phone": r.get("phone") or "",
+                            "date": ts})
+    missing.sort(key=lambda x: x["date"])
+    return {"total": len(missing), "oldest": missing[:3], "rows": missing}
+
+
 # ── 라이프사이클 분류기 (일일 보고 3종 소스) ──────────────────────────────────
 def uncontacted_candidates(rows: list[dict]) -> list[dict]:
     """연락이력(contacts) 0건 + 진행상태 활성 — 아직 한 번도 컨택 기록이 없는 후보."""
