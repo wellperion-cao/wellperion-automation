@@ -282,6 +282,13 @@ body{
         <span class="hint">결제·승인·공식 발표·회원 개인정보 관련은 GM 확인. 그 외 일상 업무는 자율적으로 진행해도 됩니다.</span></li>
     </ol>
 
+    <div class="sect" style="margin-top:30px">실무진이 물어본 것 (쌓이는 중)</div>
+    <div class="gloss" id="staffQna">
+      <div class="shot"><span class="ico">💬</span>
+        <b>아직 쌓인 질문이 없습니다.</b> 단체 대화방에서 나온 질문과 답이 정리되면 여기 자동으로 쌓입니다.
+        <br><span style="font-size:12px">같은 질문을 두 번 하지 않도록, 한 번 답한 것은 여기 남습니다.</span></div>
+    </div>
+
     <div class="sect" style="margin-top:30px">쉬운 말 사전 (어려운 단어 풀이)</div>
     <div class="gloss">
       <div class="g"><div class="w">웰페리온 ERP</div><div class="m">회사 일을 한곳에 모아 둔 안내판 웹사이트. 공식 명칭은 "웰페리온 ERP"이며, 구 명칭은 "가이드허브"입니다.</div></div>
@@ -328,6 +335,20 @@ body{
   }
   boxes.forEach(function(b){ b.addEventListener('change', update); });
   update();
+})();
+
+// 실무진이 물어본 것 — staff_qna.json 에 쌓이면 여기 렌더 (배480, 짝배 시토469 채움)
+// 형식: [{"q":"질문(사람 말 그대로)","a":"답(쉬운 말)","link":"참고 링크(선택)"}]
+// 비어 있으면 위 안내 문구를 그대로 둔다 — 억지로 채우지 않는다.
+(function(){
+  fetch('staff_qna.json').then(function(r){ return r.ok ? r.json() : []; }).then(function(items){
+    if(!items || !items.length) return;
+    var box = document.getElementById('staffQna');
+    box.innerHTML = items.map(function(it){
+      var link = it.link ? '<br><a href="' + it.link + '" style="color:var(--orange);font-size:12.5px">자세히 보기 →</a>' : '';
+      return '<div class="g"><div class="w">' + it.q + '</div><div class="m">' + it.a + link + '</div></div>';
+    }).join('');
+  }).catch(function(){ /* 자리 그대로 둔다 */ });
 })();
 </script>
 </body></html>
