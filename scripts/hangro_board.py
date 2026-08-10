@@ -584,11 +584,13 @@ def _owner_label(it: dict) -> str:
     return f"{nick} {sn}" if sn else nick
 
 
-def _md_table(rows: list[tuple[str, str, str, str, str]]) -> str:
-    """마크다운 5칸 표: 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언"""
+def _md_table(rows: list[tuple[str, str, str, str, str]], header: str | None = None) -> str:
+    """마크다운 5칸 표. header 생략 시 기본(배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언).
+    칸 이름만 다른 표(쿵짝 합친 표 등 — 칸 5개 구조는 그대로, 이름만 바뀜)는 header만 넘긴다
+    (2026-08-10 — 새 렌더 함수 만들지 않고 이 함수 재사용)."""
     if not rows:
         return "| — | — | (없음) | | |\n"
-    header = "| 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언 |"
+    header = header or "| 배 | 담당 | 진행명 | 간단설명 | 본질에 대한 핵심조언 |"
     sep    = "|---|---|---|---|---|"
     body   = "\n".join(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} |" for r in rows)
     return f"{header}\n{sep}\n{body}\n"
@@ -673,13 +675,19 @@ def _stall_days(item: dict) -> int | None:
     return None if last is None else (dt.date.today() - last).days
 
 
+def _escalation_tag(days: int) -> str:
+    """며칠째면 누가 봐야 하는지 — 3일 담당 · 7일 웰리 · 14일 GM(2026-07-31 GM 지시).
+    쿵짝 합친 표(_kungjjak_row)도 같은 문턱을 쓴다 — 판정 기준이 두 곳에서 갈리지 않게."""
+    if days >= 14:
+        return "🔴GM"
+    if days >= 7:
+        return "🟠웰리"
+    return "🟡담당"
+
+
 def _stall_tag(item: dict) -> str:
     d = _stall_days(item) or 0
-    if d >= 14:
-        return f"{d}일🔴GM"
-    if d >= 7:
-        return f"{d}일🟠웰리"
-    return f"{d}일🟡담당"
+    return f"{d}일{_escalation_tag(d)}"
 
 
 def _stalled(items: list[dict], min_days: int = _STALL_MIN_DAYS) -> list[dict]:
@@ -731,7 +739,12 @@ def _long_open(items: list[dict], min_days: int = _LONG_OPEN_MIN_DAYS) -> list[d
 #   지금까지 웰리에게만 걸려 있던 규칙을 역할과 무관하게(약속 L01) 여기 한 곳에 얹는다. ──
 def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
     """role이 다른 역할에게 띄운 배 중 아직 열려 있는(답 없는) 것. 오래된 순.
-    1일 미만(오늘 띄운 배)은 뺀다 — 매일 뜨면 아무도 안 본다."""
+    1일 미만(오늘 띄운 배)은 뺀다 — 매일 뜨면 아무도 안 본다.
+    ★정렬·필터 기준 = _open_days(넘긴 날 enqueued_at 기준 경과일), _stall_days(마지막
+    note 기록 기준) 아님(2026-08-10 GM 지시 "소요시간도 보여줘야해" 대응 — 표에 찍는
+    ⏱소요시간과 정렬 기준이 다르면 "오래 기다린 순"이 실제로는 다른 값으로 정렬된 것처럼
+    보인다. 누가 옆에 note 한 줄만 남겨도(=stall_days 리셋) 쿵 넘긴 지 오래된 배가 이
+    목록에서 조용히 빠지던 것도 이걸로 같이 고쳐진다)."""
     role = (role or "").strip().lower()
     if not role:
         return []
@@ -740,14 +753,15 @@ def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
            if it.get("_from") == role
            and str(it.get("owner", "")).lower() != role
            and str(it.get("status", "")).upper() in open_status
-           and (_stall_days(it) or 0) >= 1]
-    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+           and (_open_days(it) or 0) >= 1]
+    return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
 def _received_unanswered(items: list[dict], role: str) -> list[dict]:
     """쿵짝의 받는 쪽 짝(2026-08-06 배397 — 남이 나에게 띄운 배는 대기중 섹터에 자기
     배와 섞여 있어 눈에 안 띈다는 실측 지적). role이 남에게서 받아 아직 열려 있는 것.
-    오래된 순, 1일 미만은 뺀다(위와 동일 기준). AI 내부 배(audience=='ai')는 자율현황行이라 제외."""
+    오래된 순, 1일 미만은 뺀다. 기준 = _open_days(위 _sent_unanswered와 동일 이유).
+    AI 내부 배(audience=='ai')는 자율현황行이라 제외."""
     role = (role or "").strip().lower()
     if not role:
         return []
@@ -757,8 +771,31 @@ def _received_unanswered(items: list[dict], role: str) -> list[dict]:
            and it.get("_from") and it.get("_from") != role
            and it.get("audience") != "ai"
            and str(it.get("status", "")).upper() in open_status
-           and (_stall_days(it) or 0) >= 1]
-    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+           and (_open_days(it) or 0) >= 1]
+    return sorted(out, key=lambda it: -(_open_days(it) or 0))
+
+
+# 상위 몇 척만 표에 싣고 나머지는 건수로 접는다 — 저장소 관례 그대로(_LONG_OPEN_CAP·
+# _SELFCHECK_CAP도 7). GM 8/8 지적 "쿵짝표 장난아니던데 눈에 잘 안 들어온다"에 대응해
+# 자의적 숫자를 새로 정하지 않고 이미 쓰는 값을 맞춘다.
+_KUNGJJAK_CAP = 7
+
+
+def _kungjjak_row(it: dict) -> tuple[str, str, str, str, str]:
+    """쿵짝 합친 표 한 줄 — 쿵(누가 누구에게 넘겼나)과 짝(답 왔나·며칠째)을 같은 줄에.
+    ⏱소요시간 = enqueued_at(쿵 넘긴 날 · queue_dispatch.build_ship이 dispatch 당일에 찍음)
+    기준 오늘까지 경과일. _open_days를 그대로 쓴다 — 쿵짝 배는 항상 넘긴 날 그대로
+    enqueued_at이 찍히므로 같은 값이다(새 계산 함수를 안 만든다).
+    enqueued_at을 못 찾으면(옛 배·값 손상) '—'로 두고 이유를 그대로 적는다 — 지어내지 않는다."""
+    ship = it["_ship"]
+    icon = ship["icon"]
+    frm = _nick(str(it.get("_from", ""))) or "?"
+    to  = _owner_label(it)
+    d = _open_days(it)
+    dur = f"{d}일{_escalation_tag(d)}" if d is not None else "—(enqueued_at 없음)"
+    badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
+    title_col = f"{it.get('title', '')}{badges}".strip()
+    return (icon, f"{frm}→{to}", title_col, dur, _derive_desc(it))
 
 
 # ── 📨 GM 지시 짝맞추기 (2026-08-05 GM 지시 — status/worklog.jsonl area=="GM지시" 미완
@@ -1128,16 +1165,24 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
                                     for it in long_open[:_LONG_OPEN_CAP]]))
             if len(long_open) > _LONG_OPEN_CAP:
                 lines.append(f"… 외 {len(long_open) - _LONG_OPEN_CAP}척")
-        if sent_unanswered:
-            lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
-                          "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
-                                    for it in sent_unanswered]))
-        if received_unanswered:
-            lines.append(f"짝 — 남이 내게 띄우고 내가 답 안 한 배 {len(received_unanswered)}척 "
-                          "(보낸이=상대 · 담당=나 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
-                                    for it in received_unanswered]))
+        # 🥁 쿵짝 — 쿵(내가 넘김)과 짝(답 왔나)을 한 표에(2026-08-10 GM 지시 "쿵이랑 짝이랑
+        # 같은 표에 나와야하고 소요시간도 보여줘야해"). 예전엔 방향별로 표 두 개를 따로
+        # 냈다 — 그건 "내가 보낸 목록"과 "내가 받은 목록"일 뿐 쌍이 아니었다(GM "쿵짝표
+        # 잘 모르는 것 같은데" 지적). 한 줄 = 한 쌍: 보낸이→받는이 · 배 · ⏱소요시간 ·
+        # 간단설명. 오래 기다린 순, 상위 _KUNGJJAK_CAP 척만 싣고 나머지는 건수로 접는다.
+        kungjjak = sorted(sent_unanswered + received_unanswered,
+                          key=lambda it: -(_open_days(it) or 0))
+        if kungjjak:
+            shown = kungjjak[:_KUNGJJAK_CAP]
+            extra = f" (외 {len(kungjjak) - len(shown)}척)" if len(kungjjak) > len(shown) else ""
+            lines.append(
+                f"🥁 쿵짝 {len(kungjjak)}척{extra} — 답 없는 배 한 표(쿵=내가 넘김·짝=내가 받음, "
+                "보낸이→받는이 칸으로 구분), ⏱소요시간(쿵 넘긴 날→오늘 경과일) 오래 기다린 순"
+            )
+            lines.append(_md_table(
+                [_kungjjak_row(it) for it in shown],
+                header="| 배 | 보낸이→받는이 | 일감 | ⏱ 소요시간(쿵→오늘) | 간단설명 |",
+            ))
         if gm_gaps:
             lines.append(f"📨 GM 지시 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
             for g in gm_gaps:
