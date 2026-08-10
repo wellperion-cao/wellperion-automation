@@ -1175,13 +1175,18 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         if kungjjak:
             shown = kungjjak[:_KUNGJJAK_CAP]
             extra = f" (외 {len(kungjjak) - len(shown)}척)" if len(kungjjak) > len(shown) else ""
+            # ★이름 주의(2026-08-10 시토): 이 표는 「쿵짝표」가 아니다. 쿵짝표 정본은
+            #   scripts/kungjjak_board.py — 하루치 GM 지시 접수↔완료 짝을 worklog.jsonl 로 낸다
+            #   (.claude/skills/wellperion-gm-report/SKILL.md §4-3). 여기 표는 배(큐 항목) 기준
+            #   "답 없는 배" 목록이라 물건이 다르다. 같은 이름·같은 이모지를 쓰면 GM 이 둘을
+            #   같은 것으로 읽는다 — 실제로 2026-08-10 그 혼동이 났다. 이름을 갈라 둔다.
             lines.append(
-                f"🥁 쿵짝 {len(kungjjak)}척{extra} — 답 없는 배 한 표(쿵=내가 넘김·짝=내가 받음, "
-                "보낸이→받는이 칸으로 구분), ⏱소요시간(쿵 넘긴 날→오늘 경과일) 오래 기다린 순"
+                f"📮 답 없는 배 {len(kungjjak)}척{extra} — 넘긴 것과 받은 것을 한 표에"
+                "(보낸이→받는이 칸으로 구분), ⏱소요시간(넘긴 날→오늘 경과일) 오래 기다린 순"
             )
             lines.append(_md_table(
                 [_kungjjak_row(it) for it in shown],
-                header="| 배 | 보낸이→받는이 | 일감 | ⏱ 소요시간(쿵→오늘) | 간단설명 |",
+                header="| 배 | 보낸이→받는이 | 일감 | ⏱ 소요시간(넘긴 날→오늘) | 간단설명 |",
             ))
         if gm_gaps:
             lines.append(f"📨 GM 지시 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
