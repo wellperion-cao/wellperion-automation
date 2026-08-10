@@ -8918,6 +8918,20 @@ function _hasRealReply_(memo) {
     return _json({ ok: true, data: mlOut, started: MEMBER_LOG_STARTED });
   }
 
+  // ─── 배350(GM 2026-08-04) 1회성 관리 액션 — 유효회원 시트에 '대기' 전용 칸 신설 ───
+  //   '대기'를 등록분류/재등록분류 칸에 적으면 원래 신규/재등록 값이 지워지던 문제(박기순 케이스)를
+  //   전용 칸으로 분리한다(웰리 2026-08-10, membership.html _isFutureStart 짝). 새 장치 아님 —
+  //   이미 있는 _miEnsureCol_(휴회기간 칸 신설에 쓰던 것과 동일) 재사용. 멱등 — 이미 있으면 그대로 둔다.
+  //   맨 끝에 헤더 1개만 추가(행 삭제·이동 0, 다른 칸 무손상).
+  if (action === 'member_ensure_wait_col') {
+    var ewSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!ewSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var ewHdr = ewSh.getRange(1, 1, 1, ewSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var ewBefore = ewHdr.length;
+    var ewIdx = _miEnsureCol_(ewSh, ewHdr, '대기');
+    return _json({ ok: true, added: ewHdr.length > ewBefore, colIndex: ewIdx + 1, headerCount: ewHdr.length });
+  }
+
   if (action === 'member_active_list') {
     var aaScope = String(body.scope || 'valid'); if (aaScope !== 'ended' && aaScope !== 'corp') aaScope = 'valid';
     var aaSs0 = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
