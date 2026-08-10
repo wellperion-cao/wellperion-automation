@@ -273,6 +273,89 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# ★중간관리자 매일 결정거리 요약 (배469 · GM 확정 2026-08-08, 배선 2026-08-10)
+#
+# ★운영부(공유 전용)와 읽는 사람이 다르다(약속 L24) — 이경연 실장·이정헌 소장·나우열M·GM
+# 은 판단·배정을 받는 방이다. 그래서 실무 나열이 아니라 "결정거리"만 추린다: 종합접수
+# 오래 묵은 미해결(담당·처리 판단 필요) + 어제 완료(build_daily_done_section 과 같은
+# OPS_STAFF 필터 재사용 — 이경연 실장 포함, weekly 절과 동일 관례). 소스에 없는 값
+# (담당자 미배정 칸·마감일 칸)은 만들지 않는다 — 있는 두 가지만 쓴다. 전부 비면 빈
+# 문자열(발송 안 함, GM 지시: 억지로 채우지 않는다).
+# ══════════════════════════════════════════════════════════════════════════
+MGR_DAILY_STALE_DAYS = 14  # ops_daily_digest.build_reception_block 과 동일 관례(2주)
+MGR_DAILY_SHOW_N = 3
+MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
+
+
+def build_mgr_daily_brief(rows: list, target_date: str) -> str:
+    """★중간관리자용 '어제 정리' — 판단·배정거리만. rows=업무 시트 전체 행(_fetch_todo_rows())."""
+    from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days
+
+    lines = []
+    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="mgr-digest 종합접수")
+    if resp is not None:
+        try:
+            recv_data = resp.json()
+            recv_rows = recv_data.get("data", []) if recv_data.get("ok") else []
+        except Exception:
+            recv_rows = []
+        today_dt = datetime.now()
+        unresolved = [r for r in recv_rows if str(r.get("status", "")) != "완료"]
+        stale = sorted(
+            (r for r in unresolved if reception_elapsed_days(r, today_dt) >= MGR_DAILY_STALE_DAYS),
+            key=lambda r: -reception_elapsed_days(r, today_dt),
+        )
+        if stale:
+            lines.append(f"🔴 오래 묵은 미해결 {len(stale)}건 — 배정·처리 판단 필요")
+            for r in stale[:MGR_DAILY_SHOW_N]:
+                content = re.sub(r"\s+", " ", str(r.get("content", "") or "")).strip()[:30]
+                lines.append(f" • {content} · {reception_elapsed_days(r, today_dt)}일째")
+            if len(stale) > MGR_DAILY_SHOW_N:
+                lines.append(f" • 외 {len(stale) - MGR_DAILY_SHOW_N}건")
+
+    done = [r for r in _ops_done_rows(rows) if str(r.get("수정일", "") or "").startswith(target_date)]
+    if done:
+        names = ", ".join(str(r.get("업무명", "")).strip()
+                          for r in done[:MGR_DAILY_SHOW_N] if str(r.get("업무명", "")).strip())
+        tail = f" 외 {len(done) - MGR_DAILY_SHOW_N}건" if len(done) > MGR_DAILY_SHOW_N else ""
+        lines.append(f"✅ 어제 완료 {len(done)}건({names}{tail})")
+
+    if not lines:
+        return ""
+    _, m, d = target_date.split("-")
+    return "\n".join([f"🧭 {int(m)}/{int(d)} 어제 정리 — 판단·배정 필요한 것만"] + lines)
+
+
+def _mgr_already_sent(target_date: str) -> bool:
+    from module_heartbeat import last_heartbeat
+    rec = last_heartbeat(MGR_DAILY_HEARTBEAT_ID)
+    return bool(rec) and (rec.get("state") or {}).get("date") == target_date
+
+
+def _mark_mgr_sent(target_date: str) -> None:
+    from module_heartbeat import record_heartbeat
+    record_heartbeat(MGR_DAILY_HEARTBEAT_ID, detail=f"★중간관리자 결정거리 요약 발송 — {target_date}",
+                     extra={"state": {"date": target_date}})
+
+
+def preview_mgr_brief() -> int:
+    """★중간관리자 결정거리 요약 미리보기 — 방에 손 안 댐(발신·상태기록 없음)."""
+    target_date = ""
+    if PENDING.exists():
+        try:
+            target_date = json.loads(PENDING.read_text(encoding="utf-8")).get("date", "")
+        except Exception:
+            pass
+    if not target_date:
+        from datetime import timedelta as _td
+        target_date = (datetime.now() - _td(days=1)).strftime("%Y-%m-%d")
+    message = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    print(f"\n===== {WEEKLY_ROOM} 결정거리 요약 ({target_date}) =====")
+    print(message or "(보낼 내용 0건 — 발송 안 함)")
+    return 0
+
+
+# ══════════════════════════════════════════════════════════════════════════
 # 사람에게 넘기는 배 전달 (2026-08-05 GM 편제 확정)
 #
 # 왜 필요한가. AI 로 도는 C-Level 은 웰리·시토·시모·시포 넷뿐이고, 시우·시로·시뽀의
@@ -668,10 +751,15 @@ def main() -> int:
                     help="사람 처리 배 전달 본문만 렌더(방에 손 안 댐 · 발신·지문기록 없음)")
     ap.add_argument("--relay-approved", action="store_true",
                     help="GM 승인 받은 회차 — 승인 대기를 건너뛰고 실무진 방으로 실제 발신")
+    ap.add_argument("--mgr-preview", action="store_true",
+                    help="★중간관리자 결정거리 요약 본문만 렌더(방에 손 안 댐 · 발신·지문기록 없음)")
     args = ap.parse_args()
 
     if args.relay_preview:
         return preview_relays()
+
+    if args.mgr_preview:
+        return preview_mgr_brief()
 
     if not args.force and not kill_switch_enabled():
         log(f"킬스위치 OFF({KILL_SWITCH}) — 발송 생략")
@@ -738,6 +826,21 @@ def main() -> int:
             PENDING.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
             if done_bootstrap or done_current != done_prev:
                 _save_done_state(done_current)
+            mgr_target_date = str(data.get("date", ""))
+            if mgr_target_date and not _mgr_already_sent(mgr_target_date):
+                mgr_msg = build_mgr_daily_brief(_fetch_todo_rows(), mgr_target_date)
+                if mgr_msg:
+                    mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM]
+                    log(f"[mgr] 결정거리 요약 발송 → {WEEKLY_ROOM}")
+                    mproc = subprocess.run(mcmd, capture_output=True, text=True, encoding="utf-8")
+                    mout = (mproc.stdout or "").strip()
+                    if mproc.returncode == 0 and "DONE" in mout:
+                        _mark_mgr_sent(mgr_target_date)
+                        log("[mgr] 발송 완료")
+                    else:
+                        log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
+                else:
+                    log("[mgr] 보낼 내용 0건 — 발송 생략")
         print(f"DONE: 다이제스트 발송 완료 — {TARGET_ROOM}")
         return 0
     print(f"FAILED: 발송 실패(rc={proc.returncode}) — {tail}")
