@@ -1909,6 +1909,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_breakdown:       true,  // 종목별 등록수만 반환(PII 미노출) — 면제 안전
   // 문의회원 페이지(CPO) 익명 읽기 — 이름·전화·메모 0 노출 → 공개 안전(2026-06-22 A안)
   member_inquiry_list:    true,
+  member_inquiry_summary: true,  // 담당자별 건수만(이름·전화·메모 0) — 업무 SSOT 상단 판이 숫자 4개만 쓰는데
+                                 //   member_inquiry_list 를 부르면 694행 PII 를 통째로 내려받게 된다. 그래서 집계 전용.
   member_calendar:        true,
   member_inquiry_update:  true,  // 2026-06-22 GM '전체 공개' — 실명·전화 포함 수정
   member_inquiry_add:     true,  // 2026-06-23 전화·직접 문의 수기 추가
@@ -5286,6 +5288,54 @@ function _hasRealReply_(memo) {
   //   from/to(YYYY-MM-DD, 옵션) — 2026-07-20 시포. 타임스탬프(B열) 기준 필터(row.timestamp=_miToISO_ 결과,
   //   '타임스탬프' 칼럼을 '날짜'보다 우선탐색하는 _miColIdx_ 순서 그대로 재사용 — A열 '날짜' 문자열 불신 이슈 무관).
   //   미전달 시 기존과 100% 동일(전체 반환) — 하위호환. 부분 지정(from만/to만)도 허용.
+  /* 담당자별 문의 집계 — 숫자만 반환(이름·전화·메모·내용 일절 없음). 2026-08-10 GM 지시.
+     쓰임: 업무 현황 SSOT 상단 판. 그 화면은 담당자별 건수 4개만 필요한데
+     member_inquiry_list 를 부르면 694행 PII 를 통째로 내려보내게 된다 — 그래서 집계 전용 경로를 둔다.
+     기간 파라미터(from/to)는 member_inquiry_list 와 같은 규칙(YYYY-MM-DD 문자열 비교). */
+  if (action === 'member_inquiry_summary') {
+    var msFrom = String(body.from || '').trim();
+    var msTo   = String(body.to   || '').trim();
+    var msCache = CacheService.getScriptCache();
+    var msKey = 'misummary_' + msFrom + '_' + msTo;
+    if (!_nc) { var msHit = _cacheGetJson_(msCache, msKey); if (msHit) return _json(msHit); }
+
+    var msRows = _miReadRows_(_miSheet_());
+    try { msRows = msRows.concat(_miReadRows_(_miSheetEn_())); } catch (eMsEn) {}
+
+    var msAll = {}, msPeriod = {};
+    var msBump = function (bag, owner, status) {
+      if (!bag[owner]) bag[owner] = { owner: owner, total: 0, reg: 0, contacting: 0, lost: 0, etc: 0 };
+      var b = bag[owner];
+      b.total++;
+      if (status === 'SUC' || status === '단기SUC') b.reg++;
+      else if (status === '컨택중' || status === '신규' || status === '가망') b.contacting++;
+      else if (status === 'LOSS') b.lost++;
+      else b.etc++;
+    };
+    msRows.forEach(function (row) {
+      var msOwner = String(row.owner || '').trim() || '(미지정)';
+      var msStatus = String(row.status || '').trim();
+      msBump(msAll, msOwner, msStatus);                 // 누적(전환율 산출용)
+      var msTs = String(row.timestamp || '');
+      if (!msTs) return;
+      if (msFrom && msTs < msFrom) return;
+      if (msTo && msTs > msTo) return;
+      msBump(msPeriod, msOwner, msStatus);              // 지정 기간
+    });
+    var msArr = function (bag) {
+      return Object.keys(bag).map(function (k) {
+        var b = bag[k];
+        b.rate = b.total ? Math.round(b.reg / b.total * 1000) / 10 : 0;
+        return b;
+      }).sort(function (a, b) { return b.total - a.total; });
+    };
+    var msRes = { ok: true, from: msFrom, to: msTo, count: msRows.length,
+                  all: msArr(msAll), period: msArr(msPeriod),
+                  at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') };
+    try { _cachePutJson_(msCache, msKey, msRes, 60); } catch (eMsC) {}
+    return _json(msRes);
+  }
+
   if (action === 'member_inquiry_list') {
     var miFrom = String(body.from || '').trim();
     var miTo   = String(body.to   || '').trim();

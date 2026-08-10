@@ -3942,8 +3942,43 @@ window.ssotShowTasks=ssotShowTasks;
           (s.late ? '<b class="late">' + s.late + '</b>' : '0') + '</span>' +
         '</div>';
     });
-    box.innerHTML = h;
+    box.innerHTML = h + (_consultHtml || '');
     return true;
+  }
+
+  /* 회원 상담(임정은M) — 업무 SSOT 밖에서 도는 일이라 프로젝트 단위로 안 잡힌다(2026-08-10 GM).
+     문의 1건씩 업무로 올리면 보드가 수백 장이 되고, '회원 상담' 업무 1건만 두면 영원히 진행중·완료율 0% 가 된다.
+     그래서 문의 원장 집계를 업무판 마지막 줄로 얹는다.
+     ★member_inquiry_list(이름·전화 포함 694행) 대신 집계 전용 member_inquiry_summary 를 쓴다 — PII 미노출.
+     순위는 매기지 않는다: 이 원장은 담당이 사실상 한 명(91%)이라 등수가 의미 없다. */
+  var CPO_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+  var CONSULT_OWNER = '임정은';
+  var _consultHtml = '';
+  function loadConsult() {
+    var d = new Date();
+    var mm = (d.getMonth() + 1); mm = (mm < 10 ? '0' : '') + mm;
+    var from = d.getFullYear() + '-' + mm + '-01', to = d.getFullYear() + '-' + mm + '-31';
+    fetch(CPO_API + '?action=member_inquiry_summary&from=' + from + '&to=' + to)
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) return;
+        var pick = function (arr) {
+          return (arr || []).filter(function (o) { return String(o.owner || '').indexOf(CONSULT_OWNER) >= 0; })[0];
+        };
+        var cur = pick(j.period), acc = pick(j.all);
+        if (!cur && !acc) return;
+        cur = cur || { total: 0, reg: 0, contacting: 0 };
+        _consultHtml =
+          '<div class="ls-row" style="border-top:1px dashed var(--border);padding-top:8px;margin-top:2px">' +
+          '<span class="ls-rank" style="background:var(--purple-bg);color:var(--purple)">👤</span>' +
+          '<span class="ls-name">임정은M</span>' +
+          '<span class="ls-pt">상담 ' + cur.total + '</span>' +
+          '<span class="ls-detail">컨택중 ' + cur.contacting + ' · 등록 ' + cur.reg +
+            (acc ? (' · 누적 전환율 ' + acc.rate + '%') : '') + ' <span style="opacity:.7">(회원 문의 원장)</span></span>' +
+          '</div>';
+        renderTodoTable();
+      })
+      .catch(function () { /* 상담 줄은 보조 정보 — 실패해도 업무판은 그대로 뜬다 */ });
   }
   function todoFallback() {
     if (renderTodoTable()) return;
@@ -3953,6 +3988,7 @@ window.ssotShowTasks=ssotShowTasks;
     }, 4000);
   }
   todoFallback();
+  loadConsult();
 
   /* 접수 처리 점수판 — 접수 GAS(reg_scoreboard)를 그대로 표시한다. 새 셈법 없음.
      이 백엔드는 응답이 6~9초로 느리고 간헐적으로 실패한다 — 한 번 실패하면 '불러오는 중…' 에
