@@ -6993,8 +6993,25 @@ function _regClassMerged(row) {
   if (a === '신규' && b === '재등록') return { text: a + ' / ' + b, conflict: true };   // 둘 중 하나가 틀렸다
   return { text: b, conflict: false };   // 둘째 칸만 아는 값(L재등록·단기재등록·대기)
 }
+// 배350(GM 2026-08-04) — '대기'를 등록분류/재등록분류 칸에 적으면 원래 신규/재등록 값이
+// 지워진다(박기순님 케이스). 전용 '대기' 칸을 시트에 새로 두면 그 칸+시작일로만 판정하고,
+// 분류 칸은 원래 값을 그대로 유지한다. 시트에 그 칸이 아직 없으면(기존 12명 등) 예전 방식
+// (분류 칸 문자열)으로 그대로 폴백 — 새 칸 추가 전까지 지금 화면을 안 깨뜨린다.
+function _waitFlagKey(row) {
+  return Object.keys(row || {}).find(function(k){ return k.replace(/\s/g, '') === '대기'; });
+}
 function _isFutureStart(row) {   // 이름은 그대로 둔다(호출부 6곳) — 판정 기준만 바뀌었다
-  var keys = _memClassKeys(row);
+  var wfKey = _waitFlagKey(row);
+  if (wfKey) {
+    if (!String(row[wfKey] || '').trim()) return false;   // 대기칸 꺼짐 — 대기자 아님
+    var sKey = _memStartKey(row);
+    var sVal = sKey ? String(row[sKey] || '').trim() : '';
+    if (!/^\d{4}-\d{2}-\d{2}/.test(sVal)) return true;   // 시작일 형식 아니면 안전하게 대기 유지
+    var td = new Date();   // 문자열(YYYY-MM-DD)끼리 직접 비교 — Date 객체 비교는 자정 경계에서 시간대 오차가 난다
+    var todayStr = td.getFullYear() + '-' + String(td.getMonth() + 1).padStart(2, '0') + '-' + String(td.getDate()).padStart(2, '0');
+    return sVal.slice(0, 10) > todayStr;   // 시작일 아직 안 왔을 때만 대기자(당일 포함 시작 = 더 이상 대기 아님)
+  }
+  var keys = _memClassKeys(row);   // 폴백(대기 전용 칸 아직 없음) — 분류 칸 문자열로 판정(구버전)
   for (var i = 0; i < keys.length; i++) {
     if (String(row[keys[i]] || '').trim() === '대기') return true;
   }
