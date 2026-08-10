@@ -2331,6 +2331,44 @@ function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || '';
 
+    /* 업무 처리 현황 — 담당자별 건수만 반환(읽기 전용). 2026-08-07 GM 결재 A안.
+       셈법을 서버 한 곳에 두는 이유: 화면이 따로 세면 여는 사람마다·열 때마다 숫자가 달라져
+       아무도 안 믿는다(reg_scoreboard 와 같은 원칙). 시트에는 아무것도 쓰지 않는다.
+       점수·순위·정렬 없음 — 건수는 배분 현황이지 평가가 아니다(GM 결정).
+       김남욱GM 행은 todo_list 와 같은 기준으로 제외한다(배326 — 이 중계는 무인증이다).
+       칸은 3개: 진행중·완료(누적)·기한 초과. '이번주 완료'는 월요일마다 0이 되어 뺐고,
+       '종료일 미기재'는 현황 판단에 안 쓰여 뺐다(2026-08-10 GM). */
+    if (action === 'todo_scoreboard') {
+      const _sh = initTodoSheet();
+      const _rows = _readAll(_sh).filter(r => String(r['담당자'] || '').indexOf('김남욱GM') < 0);
+      const TZ = 'Asia/Seoul';
+      const _today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+      const _ymd = function (v) {                       // 셀이 날짜형이든 문자열이든 yyyy-MM-dd 로
+        if (!v) return '';
+        if (Object.prototype.toString.call(v) === '[object Date]') return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+        const m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
+        return m ? (m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2)) : '';
+      };
+      const _agg = {};
+      _rows.forEach(function (r) {
+        // 담당자 칸에 여러 명이 들어올 수 있다(쉼표) — 첫 사람을 주담당으로 본다(화면 카드도 주담당 기준).
+        const name = String(r['담당자'] || '').split(',')[0].trim();
+        if (!name) return;                              // 담당 공란은 카드로 만들지 않는다
+        if (!_agg[name]) _agg[name] = { name: name, inProgress: 0, done: 0, overdue: 0 };
+        const a = _agg[name];
+        const st = String(r['상태'] || '').trim();
+        const end = _ymd(r['종료일']);
+        if (st === '진행중') a.inProgress++;
+        if (st === '완료') a.done++;
+        if (st === '진행중' && end && end < _today) a.overdue++;
+      });
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: true,
+        at: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'),
+        board: Object.keys(_agg).map(function (k) { return _agg[k]; })
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (action === 'todo_list') {
       // 필터 없는 전체 조회만 캐시한다 — 업무 현황 SSOT·G1 이 부르는 게 이 형태다.
       //   실측 2026-07-28: 이 호출 하나가 페이지 로딩 3.95초 중 3.15초를 먹었다(183KB·매번 시트 전량 재읽기).
