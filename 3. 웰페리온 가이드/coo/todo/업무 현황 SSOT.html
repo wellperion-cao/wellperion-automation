@@ -59,30 +59,31 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 /* ── Filter Bar ── */
 .sticky-top{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);}
-/* ── 라이브 점수판 2단 (2026-08-07) ── */
-.livestrip{padding:12px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.livestrip .ls-foot{grid-column:1/-1;font-size:11.5px;color:var(--dim);text-align:center;padding:2px 0 0}
+/* ── 라이브 점수판 2단 (2026-08-07 신설 · 2026-08-10 GM 지시로 1/5 크기 축소) ──
+   카드·격자를 걷어내고 한 줄짜리 인라인 목록으로 바꿨다. 업무 보드가 주인공이고
+   이건 머리말이라 자리를 많이 먹으면 안 된다. 업무 칸은 3개만(진행중·완료·기한초과). */
+.livestrip{padding:6px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:11px;line-height:1.5}
+.livestrip .ls-foot{grid-column:1/-1;font-size:9.5px;color:var(--dim);text-align:center;padding:0 0 2px}
 @media(max-width:860px){.livestrip{grid-template-columns:1fr}}
-.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0}
-.ls-head{font-size:13px;font-weight:700;color:var(--text);margin-bottom:9px}
-.ls-head .ls-sub{font-size:11px;font-weight:500;color:var(--dim);margin-left:5px}
-.ls-body{display:flex;flex-direction:column;gap:6px}
-.ls-dim{font-size:12px;color:var(--dim)}
-/* 접수 점수판 줄 */
-.ls-row{display:flex;align-items:center;gap:8px;font-size:13px}
-.ls-rank{min-width:19px;height:19px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ls-card{min-width:0}
+.ls-head{font-size:10.5px;font-weight:700;color:var(--dim);margin-bottom:2px}
+.ls-head .ls-sub{font-weight:400;margin-left:3px;opacity:.8}
+.ls-body{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline}
+.ls-dim{font-size:10.5px;color:var(--dim)}
+/* 접수 점수판 — 인라인 */
+.ls-row{display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap}
+.ls-rank{color:var(--accent);font-weight:800;font-size:10px}
 .ls-name{font-weight:700;color:var(--text)}
 .ls-pt{font-weight:800;color:var(--accent)}
-.ls-detail{font-size:11.5px;color:var(--dim)}
-/* 업무 현황 카드 */
-.ls-person{border:1px solid var(--border);border-radius:9px;padding:8px 10px;background:var(--bg)}
-.ls-person-name{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px}
-.ls-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.ls-num{text-align:center}
-.ls-num b{display:block;font-size:16px;font-weight:800;line-height:1.2;color:var(--text)}
-.ls-num span{font-size:10px;color:var(--dim)}
+.ls-detail{font-size:9.5px;color:var(--dim)}
+/* 업무 현황 — 인라인(이름 + 숫자 3) */
+.ls-person{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
+.ls-person-name{font-weight:700;color:var(--text)}
+.ls-nums{display:inline-flex;gap:5px}
+.ls-num{font-size:10.5px;color:var(--dim)}
+.ls-num b{font-weight:800;color:var(--text);font-size:11.5px}
 .ls-num.warn b{color:var(--red)}
-.ls-note{font-size:11.5px;color:var(--dim);font-style:italic}
+.ls-note{font-size:9.5px;color:var(--dim);font-style:italic}
 @media print{.livestrip{display:none!important}}
 .filter-bar{background:var(--bg);padding:8px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .filter-bar::-webkit-scrollbar{display:none}
@@ -3883,12 +3884,12 @@ window.ssotShowTasks=ssotShowTasks;
     var b = (j && j.board) || [];
     if (!b.length) { box.innerHTML = '<div class="ls-dim">이번 달 기록이 아직 없습니다.</div>'; return; }
     box.innerHTML = b.map(function (r) {
-      return '<div class="ls-row">' +
+      return '<span class="ls-row">' +
         '<span class="ls-rank">' + esc(r.rank) + '</span>' +
         '<span class="ls-name">' + esc(r.name) + '</span>' +
-        '<span class="ls-pt">' + esc(r.total) + '점</span>' +
-        '<span class="ls-detail">접수 ' + esc(r.intake) + '·완료 ' + esc(r.done) + '</span>' +
-        '</div>';
+        '<span class="ls-pt">' + esc(r.total) + '</span>' +
+        '<span class="ls-detail">(접수' + esc(r.intake) + '·완료' + esc(r.done) + ')</span>' +
+        '</span>';
     }).join('');
   }
 
@@ -3897,19 +3898,20 @@ window.ssotShowTasks=ssotShowTasks;
     if (!box) return;
     var map = {};
     ((j && j.board) || []).forEach(function (r) { map[r.name] = r; });
+    // 칸은 3개만 — 진행중·완료·기한 초과 (2026-08-10 GM). '이번주 완료'는 월요일마다 0이라 빼고 누적 완료로,
+    // '종료일 미기재'는 현황 판단에 안 쓰여 뺐다.
     box.innerHTML = ORDER.map(function (name) {
       if (PENDING_LINK[name]) {
-        return '<div class="ls-person"><div class="ls-person-name">' + esc(name) + '</div>' +
-               '<div class="ls-note">' + esc(PENDING_LINK[name]) + '</div></div>';
+        return '<span class="ls-person"><span class="ls-person-name">' + esc(name) + '</span>' +
+               '<span class="ls-note">' + esc(PENDING_LINK[name]) + '</span></span>';
       }
-      var r = map[name] || { inProgress: 0, weekDone: 0, overdue: 0, noEnd: 0 };
+      var r = map[name] || { inProgress: 0, done: 0, overdue: 0 };
       var cell = function (v, label, warn) {
-        return '<div class="ls-num' + (warn && v > 0 ? ' warn' : '') + '"><b>' + esc(v) + '</b><span>' + label + '</span></div>';
+        return '<span class="ls-num' + (warn && v > 0 ? ' warn' : '') + '">' + label + ' <b>' + esc(v) + '</b></span>';
       };
-      return '<div class="ls-person"><div class="ls-person-name">' + esc(name) + '</div><div class="ls-nums">' +
-        cell(r.inProgress, '진행중') + cell(r.weekDone, '이번주 완료') +
-        cell(r.overdue, '기한 초과', true) + cell(r.noEnd, '종료일 미기재') +
-        '</div></div>';
+      return '<span class="ls-person"><span class="ls-person-name">' + esc(name) + '</span><span class="ls-nums">' +
+        cell(r.inProgress, '진행') + cell(r.done, '완료') + cell(r.overdue, '초과', true) +
+        '</span></span>';
     }).join('');
   }
 
@@ -3940,15 +3942,13 @@ window.ssotShowTasks=ssotShowTasks;
     ALL_TASKS.forEach(function (t) {
       var name = String(t.owner || t['담당자'] || '').split(',')[0].trim();
       if (!name || name.indexOf('김남욱GM') >= 0) return;
-      if (!agg[name]) agg[name] = { name: name, inProgress: 0, weekDone: 0, overdue: 0, noEnd: 0 };
+      if (!agg[name]) agg[name] = { name: name, inProgress: 0, done: 0, overdue: 0 };
       var a = agg[name];
       var st = String(t.status || t['상태'] || '').trim();
       var end = norm(t.endDate || t['종료일']);
-      var done = norm(t['완료일'] || t.doneDate);
       if (st === '진행중') a.inProgress++;
-      if (st === '완료' && done && done >= since) a.weekDone++;
+      if (st === '완료') a.done++;                      // 누적 완료(이번주 한정 아님)
       if (st === '진행중' && end && end < today) a.overdue++;
-      if (!end) a.noEnd++;
     });
     return { ok: true, local: true, weekSince: since, board: Object.keys(agg).map(function (k) { return agg[k]; }) };
   }
