@@ -222,12 +222,26 @@
         );
       }).join('');
 
+      // 회장님 표(chRows)와 같은 4열(번호·제목+카테고리·상태/일정·액션)로 통일(GM 지적 2026-08-10).
       elSum.innerHTML = _items.map(function (it, i) {
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
-        return '<tr><td>' + no + '</td><td>' + esc(it.title) + (it.reported ? ' <span class="done-badge">✓</span>' : '') + '</td><td>' + esc(it.schedule) + '</td></tr>';
+        var noteFull = it.note || '';
+        var noteShort = noteFull.length > 12 ? (noteFull.slice(0, 12) + '…') : noteFull;
+        var statusHtml = esc(it.status || '—') + ' · ' + esc(it.schedule) +
+          (it.status === '보류' && noteFull ? ' <span class="cat" title="' + esc(noteFull) + '">(' + esc(noteShort) + ')</span>' : '');
+        var actionHtml = it.reported
+          ? '<span class="done-badge">✓ 보고 완료</span>'
+          : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
+        return '<tr><td>' + no + '</td><td>' + esc(it.title) +
+          (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td><td>' + statusHtml + '</td>' +
+          '<td class="rpt-actions">' + actionHtml + '</td></tr>';
       }).join('');
 
       elGrid.querySelectorAll('button[data-id]').forEach(function (btn) {
+        btn.addEventListener('click', function () { markReported(btn, btn.getAttribute('data-id')); });
+      });
+      // 요약표 행 버튼(카드는 CSS로 숨어 있어 이 표가 유일한 조작 지점 — GM 지적 2026-08-10).
+      elSum.querySelectorAll('button[data-id]').forEach(function (btn) {
         btn.addEventListener('click', function () { markReported(btn, btn.getAttribute('data-id')); });
       });
     }
@@ -297,9 +311,10 @@
         var act = isDone
           ? '<span class="done-badge">✓ ' + esc(chDate(it)) + ' 보고</span>'
           : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
+        // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + '</td><td>' + esc(it.when || '일정 미정') +
-          '<div class="rpt-actions" style="margin-top:4px;">' + act + '</div></td></tr>';
+          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + '</td><td>' + esc(it.when || '일정 미정') + '</td>' +
+          '<td class="rpt-actions">' + act + '</td></tr>';
       }).join('');
     }
 
