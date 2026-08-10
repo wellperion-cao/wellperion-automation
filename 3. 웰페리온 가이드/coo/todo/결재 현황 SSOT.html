@@ -487,7 +487,7 @@ const OWNER_COLORS = {
   '백승화 사원': {bg:'var(--orange-bg)', color:'var(--orange)'},
   '이지영 사원': {bg:'var(--orange-bg)', color:'var(--orange)'},   /* 2026-06-27 퇴사 — 지난 결재 기록 색 유지용(선택지 아님) */
   '김남욱GM':    {bg:'var(--accent-bg)', color:'var(--accent)'},
-  '전응준 대표': {bg:'var(--red-bg)',    color:'var(--red)'}
+  '전응준 대표님': {bg:'var(--red-bg)',    color:'var(--red)'}
 };
 function ownerChip(name) {
   var c = OWNER_COLORS[name];
@@ -507,7 +507,7 @@ function deptHeadNameOf(t) {
 
 let ALL_TASKS = [];
 let activeFilter = '전체';      // '전체' | '결재완료' | '반려' | '미결'
-let activeRoleFilter = '전체';  // '전체' | 부서장 실명 | 'GM' (약속 L09: 대표 단계 폐지)
+let activeRoleFilter = '전체';  // '전체' | 부서장 실명 | 'GM' (약속 L09: 대표님 단계 폐지)
 let activeCatFilter = '전체';   // '전체' | 카테고리
 let searchQuery = '';            // 키워드
 let activeSortBy = '최신순';    // '최신순' | '결재상태' | '카테고리' | '시작일순'
@@ -870,7 +870,7 @@ function buildApprovalPrint(list) {
         + '<div class="rr-approval-sign">' + (signed ? '✅' : '') + '</div></td>';
     });
     // 대표 단계 — URL=서명본(서명완료) ✅, 그 외=빈 서명 공간 (페이퍼 도장칸).
-    apCells.push('<td><div class="rr-approval-role">전응준 대표 (인)</div>'
+    apCells.push('<td><div class="rr-approval-role">전응준 대표님 (인)</div>'
       + '<div class="rr-approval-sign">' + (_repDone ? '✅ 서명완료' : '') + '</div></td>');
     var approvalHtml = '<table class="rr-approval-table"><tr>'
       + '<td class="rr-approval-label">결재</td>' + apCells.join('') + '</tr></table>';
@@ -894,7 +894,7 @@ function buildApprovalPrint(list) {
     var routeSteps = apRoles.map(function(r){
       return (r === '부서장') ? (deptHeadNameOf(t) || '부서장') : (nameMap[r] || r);
     });
-    routeSteps.push('전응준 대표');
+    routeSteps.push('전응준 대표님');
     var routeHtml = '<div class="rr-route"><b>결재선</b> '
       + routeSteps.map(function(s){ return '<span class="rr-route-step">' + esc(s) + '</span>'; })
                   .join('<span class="rr-route-arrow">→</span>')
@@ -997,13 +997,13 @@ function repStageOf(t) {
 function renderRepApprovalRow(t) {
   var stage = repStageOf(t);
   var id = t.id;
-  var h = '<div class="rep-sign-row" style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;"><span style="flex-basis:100%;font-size:10px;color:var(--dim);line-height:1.6;">※ 시스템 결재는 GM 종착. 대표 보고는 선택적 오프라인 종이 절차로, 결재완료와 무관.</span>';
+  var h = '<div class="rep-sign-row" style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;"><span style="flex-basis:100%;font-size:10px;color:var(--dim);line-height:1.6;">※ 시스템 결재는 GM 종착. 대표님 보고는 선택적 오프라인 종이 절차로, 결재완료와 무관.</span>';
   if (stage === 'none') {
     // 대표 미올림 → [대표 결재 올리기]
-    h += '<button onclick="event.stopPropagation();repEscalate(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.4);cursor:pointer;font-family:inherit;">🏛 대표 보고 올리기(선택·종이)</button>';
+    h += '<button onclick="event.stopPropagation();repEscalate(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(167,139,218,0.4);cursor:pointer;font-family:inherit;">🏛 대표님 보고 올리기(선택·종이)</button>';
   } else if (stage === 'pending') {
     // 대표 올림(서명본 대기) → 상태 + 🖨 인쇄(대표 서명란 포함) + 📄 업로드 + 올림 취소
-    h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--yellow);background:var(--yellow-bg);border:1px solid rgba(214,166,79,0.3);padding:4px 10px;border-radius:7px;">🏛 대표 보고 대기(오프라인 종이)</span>';
+    h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--yellow);background:var(--yellow-bg);border:1px solid rgba(214,166,79,0.3);padding:4px 10px;border-radius:7px;">🏛 대표님 보고 대기(오프라인 종이)</span>';
     h += '<button onclick="event.stopPropagation();printApprovalCard(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(183,159,138,0.3);cursor:pointer;font-family:inherit;">🖨 인쇄</button>';
     // 📷 촬영 업로드 — 휴대폰에서 결재판을 바로 찍어 올린다(GM 지시 2026-08-06). capture 는 모바일에서만
     //    카메라를 바로 열고, 데스크톱에서는 그냥 파일 선택으로 동작해 기존 흐름을 깨지 않는다.
@@ -1015,10 +1015,10 @@ function renderRepApprovalRow(t) {
     h += '<span id="repSignStatus_' + escAttr(id) + '" style="font-size:10px;color:var(--accent);"></span>';
   } else {
     // 대표 결재완료 → 배지 + 📎 서명본 링크
-    h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid rgba(11,128,67,0.3);padding:4px 10px;border-radius:7px;">🏛 대표 서명본 수령 ✅</span>';
+    h += '<span class="chip" style="font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid rgba(11,128,67,0.3);padding:4px 10px;border-radius:7px;">🏛 대표님 서명본 수령 ✅</span>';
     var u = String((t.repSign || t['대표싸인']) || '').trim();
-    h += '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);text-decoration:none;">📎 대표 서명본</a>';
-    h += '<button onclick="event.stopPropagation();repCancel(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;" title="대표 보고 올림 취소(주의) — 대표싸인 비움">↩ 취소</button>';
+    h += '<a href="' + escAttr(u) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:var(--green-bg);color:var(--green);border:1px solid rgba(11,128,67,0.3);text-decoration:none;">📎 대표님 서명본</a>';
+    h += '<button onclick="event.stopPropagation();repCancel(\'' + escAttr(id) + '\')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:transparent;color:var(--dim);border:1px solid var(--border);cursor:pointer;font-family:inherit;" title="대표님 보고 올림 취소(주의) — 대표싸인 비움">↩ 취소</button>';
     h += '<span id="repSignStatus_' + escAttr(id) + '" style="font-size:10px;color:var(--accent);"></span>';
   }
   h += '</div>';
@@ -1027,19 +1027,19 @@ function renderRepApprovalRow(t) {
 
 // 대표 결재 올리기 — 결재상태='결재완료'일 때만 대표싸인='PENDING' (서버 검증).
 async function repEscalate(id) {
-  if (!confirm('이 건을 대표 보고 라인에 올립니다(선택·오프라인 종이).\n인쇄 → 대표 서명 → 서명본 업로드 시 대표 서명본 수령으로 기록됩니다.\n※ 시스템 결재는 GM 종착. 대표 보고는 선택적 오프라인 종이 절차로, 결재완료와 무관.\n\n계속하시겠습니까?')) return;
+  if (!confirm('이 건을 대표님 보고 라인에 올립니다(선택·오프라인 종이).\n인쇄 → 대표님 서명 → 서명본 업로드 시 대표님 서명본 수령으로 기록됩니다.\n※ 시스템 결재는 GM 종착. 대표님 보고는 선택적 오프라인 종이 절차로, 결재완료와 무관.\n\n계속하시겠습니까?')) return;
   try {
     var params = new URLSearchParams({ action: 'approval_rep_escalate', id: id });
     var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
     var res = await r.json();
     if (res.ok) { loadTasks(); }
-    else { alert('대표 올리기 실패: ' + (res.error || '알 수 없는 오류')); }
+    else { alert('대표님 올리기 실패: ' + (res.error || '알 수 없는 오류')); }
   } catch (e) { alert('연결 실패: ' + e.message); }
 }
 
 // 대표 올림 취소 — 대표싸인 비움. URL(서명완료)이어도 허용하되 한 번 더 확인.
 async function repCancel(id) {
-  if (!confirm('대표 보고 올림을 취소합니다 (대표싸인 비움).\n이미 서명본이 있으면 그 연결도 끊깁니다.\n\n계속하시겠습니까?')) return;
+  if (!confirm('대표님 보고 올림을 취소합니다 (대표싸인 비움).\n이미 서명본이 있으면 그 연결도 끊깁니다.\n\n계속하시겠습니까?')) return;
   try {
     var params = new URLSearchParams({ action: 'approval_rep_cancel', id: id });
     var r = await fetch(TODO_API_URL + '?' + params.toString(), { redirect: 'follow' });
@@ -1110,12 +1110,12 @@ async function uploadRepSign(id, input) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     var res = await r.json();
     if (!res.ok) throw new Error(res.error || '업로드 실패');
-    _status('✅ 대표 서명본 수령');
+    _status('✅ 대표님 서명본 수령');
     input.value = '';
-    loadTasks();  // 카드 재렌더 → '🏛 대표 서명본 수령 ✅' + 📎 서명본 링크
+    loadTasks();  // 카드 재렌더 → '🏛 대표님 서명본 수령 ✅' + 📎 서명본 링크
   } catch (e) {
     _status('');
-    alert('대표 서명본 업로드 실패: ' + e.message);
+    alert('대표님 서명본 업로드 실패: ' + e.message);
     input.value = '';
   }
 }
@@ -1173,7 +1173,7 @@ function todayDateStr() {
 }
 
 /* 결재 필요 여부 산출용 (실제 라인은 buildEffectiveRoute가 (부서장)→GM으로 통일).
-   금액 임계 분기 폐지 — 결재 필요 건은 GM 최종 (약속 L09: 결재 종착=GM, 대표 단계 폐지). */
+   금액 임계 분기 폐지 — 결재 필요 건은 GM 최종 (약속 L09: 결재 종착=GM, 대표님 단계 폐지). */
 function routeApproval(category, amount) {
   switch (category) {
     case '일상 운영비':
@@ -1527,7 +1527,7 @@ function renderApprovalCard(t, idx) {
   const _MID = ['이경연 실장','이정헌 소장','나우열M'];
   // 부서장 실명: 카테고리 매핑 우선, 없으면 수동 결재요청 포함 부서장 (2026-06-02 GM 복원)
   const _midName = deptHeadNameOf(t) || '부서장';
-  const signMap = { '부서장': t.deptSign, 'GM': t.gmSign };  // 대표 단계 폐지(2026-06-16)
+  const signMap = { '부서장': t.deptSign, 'GM': t.gmSign };  // 대표님 단계 폐지(2026-06-16)
   const signedRoles = route.filter(r => String(signMap[r] || '').trim());
   // 대표 단계(대표싸인 컬럼 3상태) — 결재상태와 독립. 빈값/PENDING/URL → 미올림/대기/완료.
   const _repStage = repStageOf(t);  // 'none' | 'pending' | 'done'
@@ -1536,7 +1536,7 @@ function renderApprovalCard(t, idx) {
     stCls = 'st-done'; chipCls += ' done';
     // (GM 결재완료)·(대표 결재완료) 두 칸 시각 분리
     chipText = '✅ GM 결재완료'
-      + (_repStage === 'done' ? ' · 🏛 대표 서명본 수령' : _repStage === 'pending' ? ' · 🏛 대표 보고 대기(종이)' : '');
+      + (_repStage === 'done' ? ' · 🏛 대표님 서명본 수령' : _repStage === 'pending' ? ' · 🏛 대표님 보고 대기(종이)' : '');
   } else if (isRejected) {
     stCls = 'st-rejected'; chipCls += ' rejected'; chipText = '❌ ' + (t.approvalStatus || '반려');
   } else if (signedRoles.length) {
@@ -1969,7 +1969,7 @@ function setView(v) {
 }
 
 /* 결재 컬럼 분류 — '다음 서명자'별(2026-06-03 GM). 결재자 필터 버튼과 1:1 정합.
-   반려 → reject / 결재완료 → done / 그 외 → 다음 서명할 사람 실명(부서장 실명·GM). 약속 L09: 대표 단계 폐지. */
+   반려 → reject / 결재완료 → done / 그 외 → 다음 서명할 사람 실명(부서장 실명·GM). 약속 L09: 대표님 단계 폐지. */
 function approvalBucketOf(t) {
   const s = String(t.approvalStatus || '');
   if (/반려/.test(s)) return 'reject';
@@ -1982,7 +1982,7 @@ function approvalBucketOf(t) {
 }
 
 /* 트렐로(칸반) 뷰 — 다음 서명자별 컬럼(이경연·이정헌·나우열 서명대기 | GM(최종) | 결재완료 | 반려).
-   각 카드는 리스트와 동일한 renderApprovalCard 사용 → PIN·승인/반려 버튼·진행바 전부 보존. 대표 단계 폐지(2026-06-16). */
+   각 카드는 리스트와 동일한 renderApprovalCard 사용 → PIN·승인/반려 버튼·진행바 전부 보존. 대표님 단계 폐지(2026-06-16). */
 function renderKanban(list) {
   let COLS = [
     { key:'이경연 실장', cls:'col-waiting', icon:'⏳', label:'이경연 실장 서명 대기' },
