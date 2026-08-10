@@ -980,6 +980,12 @@ async function loadOne(k){
   var cached=loadCache(k);
   try{
     var raw=await queryDB(k);
+    // [추가 2026-08-10 A-5 즉시반영 경합수정] 위 진입시점 가드는 이 fetch 시작 "전" 상태만 본다 — db:appl은
+    // 캐시 상한 초과로 매회 풀스캔(시스템-레퍼런스 성능절, 응답 수 초 소요)이라, 대기 중에 사용자가 단계
+    // 변경·불합격 처리를 완료하면(applyLocalWrite가 방금 로컬 반영) 이 오래된 응답이 뒤늦게 도착해 방금
+    // 반영분을 되돌려 쓴다(TOCTOU — 매니저 실증 결함: 불합격 처리 후 화면 미반영). await 직후 가드를
+    // 재확인해 그 사이 로컬쓰기가 있었으면 이 스테일 응답을 버리고 이미 반영된 로컬 상태를 지킨다.
+    if(localWriteGuardActive_(k)) return;
     RAWSAMPLE[k]=sampleOf(raw);
     var rows=extractResults(raw);
     rows=Array.isArray(rows)?rows:[];
@@ -990,6 +996,7 @@ async function loadOne(k){
       saveCache(k,rows);
     }
   }catch(e){
+    if(localWriteGuardActive_(k)) return; // 위와 동일 사유 — 실패 응답도 로컬쓰기보다 늦게 도착하면 무시
     if(cached&&cached.rows&&cached.rows.length>0){
       DB[k]=cached.rows;ROWCOUNT[k]=cached.rows.length;ERR[k]=false;STALE[k]=cached.ts;
       ERRMSG[k]=String((e&&e.message)||e);
