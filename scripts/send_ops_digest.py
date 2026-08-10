@@ -437,6 +437,15 @@ def relay_routes() -> "list[tuple[str, dict]]":
     for role_label, contact, _paths, _room, _note in DOMAIN_MODIFY_RULES:
         clevel = role_label.split("(")[0].strip().lower()  # "COO(시우)" → "coo"
         contacts[clevel] = contact
+    # ★2026-08-10 GM 확정 — 시포(CPO) 몫도 이 통합본에 싣는다. GM 원문: "그냥 담당자없이
+    #   전달해줘 운영부 장에게". 그래서 개인 담당자(임정은M 등) 이름은 줄에 안 붙이고
+    #   운영부 장(이경연 실장) 한 사람 앞으로 보낸다 — 실장이 실무진에게 나눈다(약속 L24).
+    #   ▸종전엔 이 표에 시포가 없어 조건(clevel not in contacts)에서 통째로 걸러졌다.
+    #     전달문을 채워도 사람 방에 영영 안 나가는 상태였고, 발송 실패가 아니라
+    #     '보낼 게 없음'으로 보여 아무 경보도 안 울렸다(실측 2026-08-10 · 배 7척).
+    #   ▸safe_commit 의 커밋 가드 표(DOMAIN_MODIFY_RULES)에는 넣지 않는다 — 그 표는
+    #     '누가 어느 파일을 고칠 수 있나'를 정하는 다른 목적이라 여기 필요로 건드리지 않는다.
+    contacts.setdefault("cpo", "이경연 실장")
     return [(RELAY_ROOM, contacts)]
 
 
