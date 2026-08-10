@@ -34,9 +34,22 @@ def tree_with_blob(path, content_bytes):
 
 head = sc._git_out(['rev-parse','HEAD'], ROOT)
 
-# ① 낡은 사본(워크트리가 HEAD 보다 옛것) → 되돌림으로 차단돼야 한다
-stale = ['3. 웰페리온 가이드/coo/reception/종합접수처_현황.html']
-w, r = sc._detect_concurrent_edit_warnings(stale, ROOT, tree_from_worktree(stale), head)
+# ① 낡은 사본(과거 커밋 버전과 바이트가 똑같은 내용을 다시 올림) → 되돌림으로 차단돼야 한다
+# ★2026-08-10 시토 — 예전엔 이 파일의 '지금 워크트리' 내용이 실제로 옛 사본이라
+#   tree_from_worktree 로도 통과했다(작성 당시 실측 전제). 그런데 그 전제는
+#   디스크 상태에 얹혀 있어 나중에 그 파일이 정상 커밋되면(=워크트리가 HEAD와
+#   같아지면) 조용히 깨진다 — 실제로 2026-08-10 재실행에서 그렇게 깨진 것을
+#   조사로 확인했다(가드 본체 결함이 아니라 이 전제 자체가 낡은 것). 디스크
+#   상태에 기대지 않도록 과거 커밋의 blob 을 tree_with_blob 으로 직접 얹어
+#   결정론적으로 만든다 — 검사 강도는 그대로(여전히 byte-exact 과거 버전 매칭을
+#   요구한다), 전제만 고정한다.
+stale = '3. 웰페리온 가이드/coo/reception/종합접수처_현황.html'
+_stale_hist = subprocess.run(['git', 'log', '--format=%H', '-5', 'HEAD', '--', stale],
+                             cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+assert len(_stale_hist) >= 2, f"{stale} 이력이 테스트에 부족합니다(2개 이상 필요)"
+_old_content = subprocess.run(['git', 'show', f'{_stale_hist[1]}:{stale}'],
+                              cwd=ROOT, capture_output=True, check=True).stdout
+w, r = sc._detect_concurrent_edit_warnings([stale], ROOT, tree_with_blob(stale, _old_content), head)
 assert r, "낡은 사본을 되돌림으로 못 잡았다"
 print("① 낡은 사본 차단 OK:", r[0][:110])
 
