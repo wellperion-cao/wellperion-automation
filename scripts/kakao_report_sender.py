@@ -1094,6 +1094,12 @@ _HOLD_REASON_LABEL = {
     "chairman_gate": "새 내용 게이트로 이번 회차 보류 — GM 텔레그램 미리보기 발송됨",
     "dedup": "중복 발신 가드로 스킵(최근 동일 발신 있음)",
 }
+# 요약 한 줄에 넣을 짧은 표기. 긴 라벨을 글자수로 자르면 "새 내용 게" 처럼 말이 끊긴다
+# (2026-08-10 실제로 그렇게 남았다) — 자르지 말고 처음부터 짧은 말을 따로 둔다.
+_HOLD_REASON_SHORT = {
+    "chairman_gate": "새 문구 확인 대기",
+    "dedup": "중복 방지",
+}
 
 
 def _status_summary(rooms: list[dict], failures: list, dedup_skipped: dict, suffix: str = "") -> str:
@@ -1102,7 +1108,7 @@ def _status_summary(rooms: list[dict], failures: list, dedup_skipped: dict, suff
     sent = len(rooms) - len(failures) - len(dedup_skipped)
     text = f"{sent}/{len(rooms)}개 방 발송" + (f"({suffix})" if suffix else "")
     if dedup_skipped:
-        names = ", ".join(f"{name}({_HOLD_REASON_LABEL.get(reason, reason)[:6]})"
+        names = ", ".join(f"{name}({_HOLD_REASON_SHORT.get(reason, reason)})"
                            for name, reason in dedup_skipped.items())
         text += f" · {len(dedup_skipped)}개 보류: {names}"
     return text
