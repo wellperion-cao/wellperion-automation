@@ -229,6 +229,55 @@ def _domain_modify_violation(diff_pairs, role_label: str, contact: str,
         f" ★강행은 사람·리드가 판단한다 — 막혔다고 자동으로 누르지 마라.{note}"
     )
 
+# ── GAS 사본 축소 차단(2026-08-10 시토 — 커밋 cd2e79cae 사고 재발방지) ──────────
+# 2026-08-08 09:19 커밋 cd2e79cae — 커밋 메시지는 매출보고 건뿐인데 실제로는
+# .deploy-todo/업무&결재 현황.js 를 옛 사본으로 덮어 CHRO todo_scoreboard 기능
+# 47줄이 통째로 지워졌다(8/7 GM 결재로 막 넣은 기능 — 나우열M 이 8/10 복구).
+# .deploy-*/ 안 GAS 사본은 로컬에서 옛 버전(clasp pull 류)으로 자주 덮인다.
+# 위 선검증(무관 경로 혼입)은 "지정 안 한 경로"만 걸렀다 — 이 사고는 파일이
+# rel_paths 에 지정은 됐는데 내용이 옛 사본인 경우라 그 판정을 그냥 통과했다.
+# 여기서 그 구멍을 메운다: .deploy-*/ 안 파일이 "수정(M)"이면서 삭제 줄 수가
+# 임계값 이상이면 위반으로 잡는다. 강행: env WP_ALLOW_GAS_SHRINK=1.
+GAS_SHRINK_BLOCK_LINES = 20  # 이번 사고가 47줄 삭제였다 — 그보다 낮춰 잡는다
+_GAS_SHRINK_FORCE_ENV = "WP_ALLOW_GAS_SHRINK"
+_GAS_DEPLOY_PREFIX = ".deploy-"
+
+
+def _gas_shrink_violations(head_tree: str, tree: str, diff_pairs, root: Path) -> list[str]:
+    """.deploy-*/ 안 GAS 사본이 이번 커밋으로 크게 줄면 위반 문구를 만든다(없으면 빈 리스트).
+
+    줄 수는 diff-tree 가 아니라 numstat 으로 잰다(diff-tree --name-status 는 상태
+    문자만 주지 줄 수는 안 준다). 호출 방식은 _tree_diff_status 와 동일하게 이미
+    있는 _git() 헬퍼로 트리 대 트리 비교한다(새 실행 헬퍼 안 만듦).
+    """
+    hits: list[tuple[str, int]] = []
+    for status, path in diff_pairs:
+        if status != "M" or not path.startswith(_GAS_DEPLOY_PREFIX):
+            continue
+        out = _git(["diff", "--numstat", head_tree, tree, "--", path], root)
+        if out.returncode != 0 or not out.stdout.strip():
+            continue
+        parts = out.stdout.strip().split("\t")
+        if len(parts) < 2 or not parts[1].isdigit():
+            continue  # 바이너리 등 "-" 표시는 줄 수 비교 불가 — 건너뜀
+        deleted = int(parts[1])
+        if deleted >= GAS_SHRINK_BLOCK_LINES:
+            hits.append((path, deleted))
+    if not hits:
+        return []
+    if os.environ.get(_GAS_SHRINK_FORCE_ENV) == "1":
+        _domain_guard_log("gas_shrink_force", [p for p, _ in hits], str(root))
+        print(f"[WARN] {_GAS_SHRINK_FORCE_ENV}=1 — GAS 사본 축소 가드 강행 통과: "
+              + ", ".join(f"{p}({d}줄)" for p, d in hits))
+        return []
+    return [
+        f"GAS 사본 축소 차단: {p} 에서 {d}줄이 사라집니다 — 옛 사본으로 덮은 것 아닌지 "
+        f"확인하세요(2026-08-08 같은 사고). 의도한 정리면 {_GAS_SHRINK_FORCE_ENV}=1 로 "
+        f"다시 실행하세요."
+        for p, d in hits
+    ]
+
+
 _MAX_RETRIES = 5          # HEAD 경합 재시도 상한(경쟁 커밋이 계속 끼어들면 실패 보고)
 _RETRY_WAIT_SEC = 0.4
 _INDEX_LOCK_WAIT_SEC = 0.5
@@ -532,6 +581,9 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
         v = _domain_modify_violation(diff_pairs, role_label, contact, domain_paths, room, judgment_note, root)
         if v:
             violations.append(v)
+
+    # GAS 사본 축소 차단(2026-08-10 — 위 GAS_SHRINK_BLOCK_LINES 주석 참조)
+    violations.extend(_gas_shrink_violations(head_tree, tree, diff_pairs, root))
 
     # 일반 혼입 삭제 판정(2026-08-04 GM 근본분석 — 로직은 가드 모듈 단일 출처):
     # 비삭제 변경과 섞인 커밋의 삭제는 caller 가 rel_paths 에 **파일 단위로 정확히**
