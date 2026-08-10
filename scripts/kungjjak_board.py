@@ -118,10 +118,35 @@ def load_work(day: str, role: str | None, limit: int = 12):
     return dedup[-limit:]
 
 
-def upload_state(detail: str, has_done: bool) -> str:
-    """저장·업로드 칸. 커밋 해시가 있으면 원격 도달까지 확인한다."""
+def _role_commits(role: str, start: datetime.datetime, end: datetime.datetime) -> list[str]:
+    """그 역할이 그 시간대(±10분)에 남긴 커밋 해시 — 커밋 메시지 관례 스코프 `(role)`로 판별
+    (예: chore(cpo): ... / ...auto-log 입항완료 배 — <sha> (ceo)). 완료 기록의 detail 에
+    해시를 안 적었어도(예: 큐를 mutate_queue 로 직접 닫아 완료 훅을 안 거친 경우) 실제
+    커밋을 잡기 위한 보강 — GM 2026-08-10 "시포 쿵짝표에는 커밋푸시 이건 안해줬네".
+    ponytail: 시간창 휴리스틱(±10분) — 같은 역할이 같은 창 안에서 다른 지시로도 커밋하면
+    섞일 수 있다. 오탐이 늘면 커밋 메시지에 ref 를 박아 정확 매칭으로 승격."""
+    try:
+        since = (start - datetime.timedelta(minutes=10)).isoformat()
+        until = (end + datetime.timedelta(minutes=10)).isoformat()
+        r = subprocess.run(
+            ['git', 'log', f'--since={since}', f'--until={until}',
+             f'--grep=({role})', '--format=%H'],
+            cwd=str(ROOT), capture_output=True, text=True, timeout=10)
+        return [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+    except Exception:
+        return []
+
+
+def upload_state(detail: str, has_done: bool, role: str | None = None,
+                  start: datetime.datetime | None = None,
+                  end: datetime.datetime | None = None) -> str:
+    """저장·업로드 칸. 커밋 해시가 있으면 원격 도달까지 확인한다.
+    detail 에 해시가 없으면(완료 메모에 안 적었거나 완료 훅을 안 거친 경우) 같은
+    시간대의 역할 스코프 커밋을 대신 찾는다(_role_commits)."""
     shas = [m.group(1) for m in SHA_RE.finditer(detail)
             if len(m.group(1)) >= 7 and not m.group(1).isdigit()]
+    if not shas and has_done and role and start:
+        shas = _role_commits(role, start, end or start)
     for s in shas:
         if _pushed(s):
             return f'✅ 올림 ({s[:9]})'
@@ -243,7 +268,7 @@ def emit(day: str) -> int:
                 'start': st.strftime('%H:%M') if st else None,
                 'end': en.strftime('%H:%M') if en else None,
                 'minutes': mins,
-                'upload': upload_state(did, bool(oks)),
+                'upload': upload_state(did, bool(oks), role=role, start=st, end=en),
                 'open': not oks,
             })
         work = load_work(day, role)
@@ -324,7 +349,8 @@ def main() -> int:
 
         got = str(ev[0].get('event') or '').strip()
         did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
-        up = upload_state(did, bool(oks))
+        item_role = str(ev[0].get('role') or '').strip().lower()
+        up = upload_state(did, bool(oks), role=item_role, start=st, end=en)
         print(f'| {ref_no(ref, day)} | {got[:52]} | {did[:74]} | {dur} | {up} |')
 
     print()

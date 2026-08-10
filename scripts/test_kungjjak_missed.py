@@ -8,7 +8,8 @@ python scripts/kungjjak_board.py 옆에서 실행:
   C:/Python314/python.exe scripts/test_kungjjak_missed.py
 """
 import datetime
-from kungjjak_board import classify_open, find_repeats, GRACE_MIN
+import kungjjak_board
+from kungjjak_board import classify_open, find_repeats, GRACE_MIN, upload_state
 
 NOW = datetime.datetime(2026, 8, 8, 15, 0)
 
@@ -52,4 +53,22 @@ assert rep == [], rep
 # ── 한 번뿐인 것은 반복이 아니다
 assert find_repeats([item('11', '쿵짝표 보여줘', '09:00')]) == []
 
-print('OK — 놓친·반복 지시 적발 판정 9건 통과')
+# ── 저장·업로드 칸: detail 에 해시가 없어도(mutate_queue 로 직접 닫은 경우) 같은 시간대
+#    역할 스코프 커밋을 찾아 잡는다 (GM 2026-08-10 "시포 쿵짝표에는 커밋푸시 안 잡힘")
+_orig_role_commits, _orig_pushed = kungjjak_board._role_commits, kungjjak_board._pushed
+kungjjak_board._role_commits = lambda role, start, end: ['deadbee123']
+kungjjak_board._pushed = lambda sha: True
+assert upload_state('완료 처리', True, role='cpo', start=NOW, end=NOW).startswith('✅')
+kungjjak_board._role_commits = lambda role, start, end: []
+assert upload_state('완료 처리', True, role='cpo', start=NOW, end=NOW) == '기록만'
+kungjjak_board._role_commits, kungjjak_board._pushed = _orig_role_commits, _orig_pushed
+
+# ── detail 에 해시가 이미 있으면(정상 완료 훅 경로) 그대로 우선 사용된다
+kungjjak_board._pushed = lambda sha: True
+assert upload_state('커밋 abc1234 완료', True).startswith('✅')
+kungjjak_board._pushed = _orig_pushed
+
+# ── 아직 완료 안 된 건은 시도조차 안 한다 (진행중 = '—')
+assert upload_state('', False, role='cpo', start=NOW, end=NOW) == '—'
+
+print('OK — 놓친·반복 지시 적발 + 저장·업로드 판정 12건 통과')
