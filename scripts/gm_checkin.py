@@ -599,8 +599,12 @@ QUEUE_PATH = ROOT / 'status' / '_queue.json'
 _DEPT_ROLES = tuple(r for r in ('cpo', 'coo', 'cmo', 'cto', 'ceo') if r not in _QUEUE_EXCLUDED_ROLES)
 _DEPT_OPEN_EXCLUDE = ('DONE', 'EXCLUDED', 'CANCELLED')
 _DEPT_PRIORITY_WEIGHT = {'🛳️크루즈': 3, '⛴️여객선': 2, '⛵돛단배': 1}
-_DEPT_TITLE_MAX = 24
+_DEPT_TITLE_MAX = 30
 _DEPT_TITLE_PREFIX_RE = re.compile(r'^\[[^\]]+\]\s*')
+# ·는 뺐다 — 실측(2026-08-10)해보니 "회원관리·강습"·"블로그·카페"처럼 붙여쓴
+# 병렬명사 접속으로도 흔히 쓰여, 여기서 자르면 "회원관리"·"다음 블로그"처럼
+# 핵심어만 남고 뜻이 날아간다(뜻 유지가 글자수보다 우선 — 지시문 본문 기준).
+_DEPT_TITLE_CUT_RE = re.compile(r'[—(]')
 
 
 def _filter_office_ships(data: list) -> list:
@@ -631,8 +635,12 @@ def _rank_office_ships_by_role(ships: list, day: str) -> dict:
 
 
 def _clean_ship_title(title) -> str:
-    """어색한 중간 잘림 방지 — 자를 때 단어(공백) 경계에서 자른다(약속 자연줄바꿈 원칙)."""
+    """어색한 중간 잘림 방지 — 역할표식 제거 후, 부연(—,(,·) 앞까지만 쓰고
+    그래도 길면 단어(공백) 경계에서 자른다(약속 자연줄바꿈 원칙). 말줄임은 맨 뒤 … 하나뿐."""
     t = _DEPT_TITLE_PREFIX_RE.sub('', str(title or '')).strip()
+    m = _DEPT_TITLE_CUT_RE.search(t)
+    if m and m.start() > 0:
+        t = t[:m.start()].rstrip()
     if len(t) <= _DEPT_TITLE_MAX:
         return t
     cut = t[:_DEPT_TITLE_MAX]
@@ -658,7 +666,8 @@ def _format_department_highlights(by_role: dict, day: str) -> str:
         rows = by_role.get(role) or []
         for i, x in enumerate(rows):
             reason = _dept_ship_reason(x, day)
-            body = f"배{x.get('ship_no')} {_clean_ship_title(x.get('title'))}" + (f" — {reason}" if reason else '')
+            sn = str(x.get('short_no') or x.get('ship_no') or '').strip()
+            body = f"배{sn} {_clean_ship_title(x.get('title'))}" + (f" — {reason}" if reason else '')
             lines.append((f" [{_CLEVEL_NICKS.get(role, role)}] · " if i == 0 else '        · ') + body)
     if not lines:
         return ''
