@@ -7294,7 +7294,13 @@ function _activeApplyData(headers, rows) {
   _activeLoaded  = true;
   if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
   else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
-  _activeRender(_activeBaseRows());   // 대기자 필터 + 월단위 보기 결합(2026-07-20 시포·GM, 기존 2026-07-16 GM 지시 위에 확장)
+  /* ★검색어가 남아 있으면 그 검색을 그대로 다시 건다 (FB260810-093039 이경연 실장 · 2026-08-10 시포).
+     증상: "조회할 때 이름을 지우고 똑같은 이름을 다시 쳐야 조회된다."
+     원인: 새로고침이 끝나면 여기서 전체 명단을 다시 그려 검색 결과가 풀린다. 검색칸의 글자는 그대로라
+     input 이벤트가 안 나고, 그래서 사람이 지웠다 다시 쳐야 필터가 재실행됐다. */
+  var _q = (document.getElementById('activeSearch') || {}).value || '';
+  if (_q.trim()) _activeFilter(_q);
+  else _activeRender(_activeBaseRows());   // 대기자 필터 + 월단위 보기 결합(2026-07-20 시포·GM, 기존 2026-07-16 GM 지시 위에 확장)
   renderActiveSummary();
   renderChurnActionPanel();   // 이탈방지 액션 모듈(배754 후속) — scope 전환마다 재계산
   if (typeof _tapReady !== 'undefined' && _tapReady) renderTodayActionPanel();   // 오늘 할 일의 갱신임박·저이용 섹션도 _activeRows 도착 시 동기 재계산(2026-07-15 병합)
@@ -8924,6 +8930,14 @@ function _wireActiveDblclick(){
           );
         }
       }
+      /* ★고친 값을 보관분에도 함께 적는다 (FB260810-093039 이경연 실장 · 2026-08-10 시포).
+         증상: "수정 후 새로고침하면 수정이 안 될 때가 있다."
+         원인: 새로고침은 localStorage 보관분을 먼저 그린다(_activeCacheLoad). 그런데 저장 경로가
+         그 보관분을 갱신하지 않아, 서버 쓰기가 아직 안 끝난 사이 새로고침하면 **옛 값**이 다시 그려졌다.
+         _activeCacheClear 는 "저장 관문에서 호출"이라 주석만 달려 있고 실제 호출부가 없었다(죽은 포인터).
+         지우지 않고 다시 적는 이유: 지우면 다음 화면이 14초 재조회를 기다린다 — _activeRows 는 이미
+         새 값을 들고 있으므로 그대로 보관분에 덮으면 기다림 0. */
+      if (_activeHeaders && _activeRows) _activeCacheSave(_activeScope || 'valid', _activeHeaders, _activeRows);
     }
 
     // 입력기가 바뀔 수 있어(분류값 select → '직접 입력' 선택 시 글자 입력으로 교체) 배선을 함수로 묶는다.
