@@ -437,6 +437,9 @@ def _build_item(q: dict, st: str, title: str) -> dict:
             #   열린 배 67척 **전부 비어** 있어 한 건도 안 걸러졌다 — 아침 보고는 AI 배까지 다 싣고,
             #   화면은 빼고 있었다. 아무도 안 채우는 칸으로 판정하던 것이 원인이라 칸째로 뺀다.
             "audience": str(q.get("audience") or "").strip(),
+            # 🎯 오늘 반드시 끝낼 것(GM 2026-08-10) — C-Level이 스스로 지목한 날짜(YYYY-MM-DD).
+            # 지목 수단 = queue_dispatch.py --must-finish (build_ship/dup-absorb 양쪽에서 채움).
+            "must_finish_on": str(q.get("must_finish_on") or "").strip(),
             # 담당 식별번호(약속 L16: 담당=닉네임+ship_no·배마다 고정). _queue 배만 보유.
             "ship_no":  q.get("ship_no", ""),
             # 화면표시 전용 짧은 번호(배10012 2단계) — 내부 조인은 위 ship_no 그대로,
@@ -450,6 +453,16 @@ def _build_item(q: dict, st: str, title: str) -> dict:
 
 
 # ── 섹션 분류 ──────────────────────────────────────────────────────────────
+def _must_finish_days_late(item: dict) -> int | None:
+    """must_finish_on(YYYY-MM-DD)이 오늘보다 며칠 지났나. 못 지웠으면 None."""
+    raw = str(item.get("must_finish_on") or "")[:10]
+    try:
+        d = dt.datetime.strptime(raw, "%Y-%m-%d").date()
+    except Exception:
+        return None
+    return (dt.date.today() - d).days
+
+
 def _is_recent(date_str: str, days: int = 3) -> bool:
     """완료일(수정일)이 KST 오늘~days일 전 이내인가. 입항 섹션 = 최근 완료만(일일 다이제스트, 주말 커버 3일).
     ※ G1 웹 대시보드는 30일 창(영구 보드) — 텔레그램 일일보고와 목적이 달라 창 크기 다름(의도)."""
@@ -474,7 +487,26 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         "done":    [],   # 🏁 완료 (입항·도착)
         "drift":   [],   # 🌀 표류 (완료인데 '다음' 없는 건 — "👉 다음 정하기" 촉구 동반)
         "autonomy": [],  # 🤖 자율화 미션 (board='자율현황') — 항로 제외, 자율현황 보드行 (GM 2026-07-15)
+        "must_finish_today":   [],  # 🎯 오늘 반드시 끝낼 것 (must_finish_on == 오늘, 미완료)
+        "must_finish_overdue": [],  # 🔴 어제 못 지킴 (must_finish_on < 오늘, 미완료 · 조용히 안 사라짐)
     }
+    # ── 🎯 오늘 반드시 끝낼 것 (GM 2026-08-10 "놓치지 않게") ──
+    #   audience(office/ai) 무관하게 지목된 배는 전부 잡는다 — AI 배도 자율현황行으로 안 빠지고
+    #   여기 뜬다(아래 audience=='ai' continue보다 먼저 본다). DONE은 자동으로 빠진다(요구사항 그대로).
+    for item in items:
+        if str(item.get("status", "")) in STATUS_DONE:
+            continue
+        if not str(item.get("must_finish_on") or "").strip():
+            continue
+        if "_ship" not in item:
+            item["_ship"] = classify_ship({
+                "title": item["title"], "priority": item["priority"], "deadline": item["end_date"]})
+        late = _must_finish_days_late(item)
+        if late is None or late < 0:  # 미래 날짜(아직 안 옴)는 조용히 건너뛴다 — 오늘 되면 자동으로 뜬다
+            continue
+        (sections["must_finish_overdue"] if late > 0 else sections["must_finish_today"]).append(item)
+    sections["must_finish_overdue"].sort(key=lambda it: -(_must_finish_days_late(it) or 0))
+
     # ── 후속 브릿지 인덱스 (표류 판정 보조) ──
     #   브릿지 메커니즘(project_bridge_mechanized): 완료 시 post_action --next/--terminal로
     #   후속 PENDING이 _queue에 자동 등록된다. 그 후속이 원건 task_id를 참조하면 '다리 놓임'.
@@ -1082,6 +1114,20 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     lines.append(f"🧭 오늘의 항로  {today} ({wd_kor})")
     lines.append("━" * 36)
     lines.append(summary_table)
+
+    # ── 🎯 오늘 반드시 끝낼 것 (GM 2026-08-10) — 보드 맨 위. 못 지킨 건 조용히 안 사라진다 ──
+    mf_overdue = secs["must_finish_overdue"]
+    mf_today   = secs["must_finish_today"]
+    if mf_overdue or mf_today:
+        lines.append("")
+        if mf_overdue:
+            lines.append(f"### 🔴 못 지킴 {len(mf_overdue)}척 — 반드시 끝낼 것 지남")
+            lines.append(_md_table([
+                _item_to_row(it, ship_col_extra=f"{_must_finish_days_late(it)}일 지남")
+                for it in mf_overdue]))
+        if mf_today:
+            lines.append("### 🎯 오늘 반드시 끝낼 것")
+            lines.append(_md_table([_item_to_row(it) for it in mf_today]))
 
     # 항로 정합경고
     try:

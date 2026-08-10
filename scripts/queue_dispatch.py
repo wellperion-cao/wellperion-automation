@@ -126,6 +126,8 @@ def build_ship(args, queue):
         # 비어 있으면 그 배는 아예 안 싣는다(잘린 배 제목을 보내던 것을 2026-08-06 배423 에서
         # 끊었다). 즉 이 칸이 비면 그 일은 사람에게 영원히 안 알려진다 — 아래 경고가 그 자리다.
         "staff_message": args.staff_message or "",
+        # 🎯 오늘 반드시 끝낼 것(GM 2026-08-10) — YYYY-MM-DD, 미지정이면 빈 문자열(일반 배).
+        "must_finish_on": args.must_finish or "",
     }
 
 
@@ -181,8 +183,18 @@ def main() -> int:
                          "비우면 이 배는 사람 방에 안 실린다(배423).")
     ap.add_argument("--work-type", dest="work_type", choices=("update", "new"), default=None,
                      help="update=기존 수정 / new=신규 생성(미지정=선별기 기존 동작 유지)")
+    # 🎯 오늘 반드시 끝낼 것(GM 2026-08-10 지시 — "무조건 진척을 마무리 해야하는 건도 1~2개씩
+    # 기록해서 내가 계속 놓치지 않게끔"). 새 스크립트·새 원장 없이 이 관문(배 생성·중복흡수
+    # 단일 지점)에 얹는다 — 이미 배를 다루는 유일한 곳이라(약속 L21).
+    ap.add_argument("--must-finish", dest="must_finish", nargs="?", const="TODAY", default="",
+                     metavar="YYYY-MM-DD",
+                     help="오늘 반드시 끝낼 배로 지목. 값 생략=오늘 날짜, 날짜를 직접 주면 그 날짜로 "
+                          "지목(예: 못 지킨 걸 소급 기록). hangro_board 맨 위·자율현황·08시 보고에 뜬다 — "
+                          "다음날까지 안 끝나면 status=DONE 될 때까지 조용히 안 사라진다.")
     args = ap.parse_args()
     args.reversible = {"yes": True, "no": False, None: None}[args.reversible]
+    if args.must_finish == "TODAY":
+        args.must_finish = _dt.date.today().isoformat()
 
     if args.to.lower() in EXCLUDED_ROLES:
         print(excluded_role_notice(args.to.lower()))
@@ -226,6 +238,9 @@ def main() -> int:
                             made["absorbed"] = True
                         if (args.next or "").strip():
                             it["next"] = (args.next or "").strip()
+                    if (args.must_finish or "").strip():
+                        it["must_finish_on"] = args.must_finish
+                        made["must_finish_absorbed"] = True
                     made["dup"] = it
                     return queue
         ship = build_ship(args, queue)
@@ -239,7 +254,7 @@ def main() -> int:
         ship = build_ship(args, q)
         print("[미리보기 — 큐에 쓰지 않음]")
         for k in ("task_id", "clevel", "title", "status", "priority", "ship_no", "short_no", "next",
-                  "audience", "reversible", "work_type"):
+                  "audience", "reversible", "work_type", "must_finish_on"):
             print("  %-10s %s" % (k, ship[k]))
         print("  note       %s" % (ship["note"][:160] or "(없음)"))
         _warn_missing_staff_message(ship)
@@ -254,6 +269,8 @@ def main() -> int:
         print("  배 %s · %s · %s" % (disp, d.get("status"), d.get("title")))
         if made.get("absorbed"):
             print("  보낸 내용(맥락·다음)은 그 배 설명에 붙였습니다 — 유실 없음.")
+        if made.get("must_finish_absorbed"):
+            print("  🎯 반드시 끝낼 것으로 지목: %s" % d.get("must_finish_on"))
         return 0
 
     s = made["ship"]
@@ -263,6 +280,8 @@ def main() -> int:
     print("  배 번호 : %s" % disp)
     print("  제목    : %s" % s["title"])
     print("  다음    : %s" % s["next"])
+    if s.get("must_finish_on"):
+        print("  🎯 반드시 끝낼 것 : %s" % s["must_finish_on"])
     print("  기록    : status/_queue.json  (커밋·푸시하면 받는 쪽 항로에 뜹니다)")
     return 0
 

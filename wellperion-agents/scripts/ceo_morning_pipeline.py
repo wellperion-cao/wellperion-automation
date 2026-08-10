@@ -1458,6 +1458,11 @@ def _board_summary_lines(secs: dict) -> list[str]:
         "상세 목록 → 자율 작업 현황 ▸ 🧭 항로",
         _HANGRO_URL,
     ]
+    # 🎯 오늘 반드시 끝낼 것(GM 2026-08-10 "놓치지 않게") — 한 줄만. 길게 안 쓴다.
+    _mf_n, _mf_od = len(secs.get("must_finish_today", [])), len(secs.get("must_finish_overdue", []))
+    if _mf_n or _mf_od:
+        out.append(
+            f"🎯 오늘 반드시 끝낼 것 {_mf_n}건" + (f" · 🔴 못 지킴 {_mf_od}건" if _mf_od else ""))
     # 🌀 표류는 링크 너머로 밀지 않는다 — CLAUDE.md §3-1 "그냥 두지 않는다"(촉구 의무).
     if secs.get("drift"):
         out.append(f"🌀 표류 {len(secs['drift'])}건 — 완료인데 '다음'이 없습니다. 👉 다음 정하세요")

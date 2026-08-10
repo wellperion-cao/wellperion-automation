@@ -1271,16 +1271,32 @@
   //  대상 = AI 배(isAiShip)만. G1 은 그 나머지를 그린다 — 두 화면이 서로 안 겹친다.
   //  섹터 판정도 status 필드만 본다: 🚢 IN_PROGRESS · ⚓ 그 외 열린 배 · 🏁 오늘 처리된 완료.
   //  행 렌더는 「🗂 전체 배」가 쓰는 헬퍼(missionBoat·missionCleanTitle·nextCellHtml)를 그대로 재사용.
+  // 🎯 오늘 반드시 끝낼 것(GM 2026-08-10 "놓치지 않게") — must_finish_on(YYYY-MM-DD) 몇 일 지났나.
+  function mfDaysLate(s){
+    if(!s || !s.must_finish_on) return null;
+    var d = new Date(String(s.must_finish_on).slice(0,10) + 'T00:00:00');
+    if(isNaN(d.getTime())) return null;
+    return Math.round((localTodayMs() - d.getTime()) / 86400000);
+  }
+
   function renderHangro(){
     var el = document.getElementById('hangro-board'); if(!el) return;
     var live = _queueAll.filter(function(s){ return isAiShip(s) && !isTrashed(s); });
     var t0 = localTodayMs(), t1 = t0 + 86400000;
     var isDone = function(s){ return s.status === 'DONE' || s.status === '완료'; };
-    var secs = [
+    // 🎯 오늘 반드시 끝낼 것 — audience(office/ai) 무관 전체 큐에서 본다(위 live는 AI배만이라 다른 스코프).
+    //   status/_queue.json에 이미 있는 필드(must_finish_on)를 얹을 뿐 — 새 파일 없음.
+    var mfLive = _queueAll.filter(function(s){ return s && s.must_finish_on && !isTrashed(s) && !isDone(s); });
+    var mfOverdue = mfLive.filter(function(s){ return (mfDaysLate(s) || 0) > 0; });
+    var mfToday = mfLive.filter(function(s){ return mfDaysLate(s) === 0; });
+    var secs = [];
+    if(mfOverdue.length) secs.push({ key:'mfOverdue', title:'🔴 못 지킴 — 반드시 끝낼 것 지남', list: mfOverdue });
+    if(mfToday.length) secs.push({ key:'mfToday', title:'🎯 오늘 반드시 끝낼 것', list: mfToday });
+    secs.push(
       { key:'run',  title:'🚢 진행중', list: live.filter(function(s){ return s.status === 'IN_PROGRESS'; }) },
       { key:'wait', title:'⚓ 대기·정박', list: live.filter(function(s){ return !isDone(s) && s.status !== 'IN_PROGRESS'; }) },
       { key:'done', title:'🏁 오늘 입항', list: live.filter(function(s){ var m = ts(s.processed_at); return isDone(s) && m >= t0 && m < t1; }) }
-    ];
+    );
     // 칸 폭 재배분(2026-08-04 GM 표면점검 — 「다음」칸이 「배」보다 3.1배 빽빽한데 폭은 366px vs 37px로 접혔다):
     // 다음 30%→38%(+8pp, 미션의 남은 폭에서 흡수) · 담당 96px→84px. 배(37px)는 아이콘 칸이라 더 못 줄인다.
     var HEAD = '<tr><th style="width:36px">배</th><th style="width:84px">담당</th><th>미션</th><th style="width:38%">다음</th></tr>';
@@ -1292,7 +1308,8 @@
           return '<tr><td style="text-align:center;">' + missionBoat(s.priority) + '</td>'
             + '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>'
             + '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>'
-            + (staleDays(s) >= 14 ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '') + '</td>'
+            + (staleDays(s) >= 14 ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '')
+            + (sec.key === 'mfOverdue' ? '<br><span style="font-size:11px;color:#c62828;">' + mfDaysLate(s) + '일 지남</span>' : '') + '</td>'
             + '<td>' + nextCellHtml(s.next || s.depends_on) + '</td></tr>';
         });
       return '<details class="coo-details" style="margin-top:8px;"' + (sec.key === 'done' ? '' : ' open') + '>'
