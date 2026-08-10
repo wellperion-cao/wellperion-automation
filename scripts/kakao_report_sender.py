@@ -955,11 +955,14 @@ def open_or_find_room(room_name: str):
     return room_win
 
 
-def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
+def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[bool, str]:
     """이미지 없이 텍스트만 전송(휴관일 안내문 등). 이미지 팝업 경로를 전혀 타지 않고
     채팅 입력창에 바로 paste_text → send_enter 한다.
 
-    반환: True = 실제 발송(또는 dry-run 진행), False = 중복 발신 가드로 스킵."""
+    반환: (발송여부, 보류사유). 발송여부 True=실제 발송(또는 dry-run 진행), False=미발신.
+    보류사유는 미발신일 때만 채워짐 — "chairman_gate"(회장님 방 새 내용 게이트) 또는
+    "dedup"(중복 발신 가드). 둘을 한 문구로 뭉뚱그리면 호출측이 원인을 잘못 기록한다
+    (2026-08-10: 새내용게이트 보류를 "중복 발신 가드" 로 잘못 적은 사고)."""
     room_name = room["name"]
     # 링크에 낀 공백을 %20 으로 — 카톡은 공백에서 링크를 끊어 앞부분만 눌리고 404 가 난다.
     # 정본 = tg_outbound_log.encode_url_spaces (텔레그램·카톡 두 관문이 같은 함수를 쓴다).
@@ -968,11 +971,11 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     log(f"── {room_name} 텍스트 전용 처리 시작 (dry_run={dry_run}, text={text!r}) ──")
 
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(text):
-        return False
+        return False, "chairman_gate"
 
     if check_dedup(room_name, text=text):
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
-        return False
+        return False, "dedup"
 
     room_win = open_or_find_room(room_name)
     focus_window(room_win, room_name)
@@ -985,7 +988,7 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
         screenshot(room_win, room_name, "dryrun_message_preview")
         clear_input(input_box)  # 실제 전송 안 하고 미리보기 텍스트만 지워 잔여물 방지
         log(f"[{room_name}] DRY-RUN: 텍스트 미리보기까지 확인, 전송 생략(안전) — {text!r}")
-        return True
+        return True, ""
 
     send_enter(input_box)
     time.sleep(0.5)
@@ -994,21 +997,21 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> bool:
     record_dedup_sent(room_name, text=text)
     _log_outbound(text, chat_id=room_name, source="kakao_report_sender.message",
                   ok=True, kind="message", channel="kakao")
-    return True
+    return True, ""
 
 
-def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> bool:
-    """반환: True = 실제 발송(또는 dry-run 진행), False = 중복 발신 가드로 스킵."""
+def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool) -> tuple[bool, str]:
+    """반환: (발송여부, 보류사유) — send_message_to_room과 동일 계약."""
     room_name = room["name"]
     caption = build_caption(room, base_caption)
     log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
 
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(caption):
-        return False
+        return False, "chairman_gate"
 
     if check_dedup(room_name, text=caption, image_path=image_path):
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
-        return False
+        return False, "dedup"
 
     room_win = open_or_find_room(room_name)
     focus_window(room_win, room_name)
@@ -1023,7 +1026,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
         else:
             clear_input(input_box)  # 팝업 없이 인라인 미리보기였던 구버전 카톡용 폴백
         log(f"[{room_name}] DRY-RUN: 미리보기까지 확인, 전송 생략(안전) — 캡션 미리보기: {caption!r}")
-        return True
+        return True, ""
 
     if popup is not None:
         confirm_clipboard_popup(popup, room_name)  # 이미지 전송(팝업 캡션칸 Enter)
@@ -1043,7 +1046,7 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     record_dedup_sent(room_name, text=caption, image_path=image_path)
     _log_outbound(caption, chat_id=room_name, source="kakao_report_sender.image",
                   ok=True, kind="image+caption", channel="kakao")
-    return True
+    return True, ""
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -1083,8 +1086,32 @@ def write_status(status_file: str, detail: str, kind: str, room_results: dict) -
         log(f"[경고] {status_file} 기록 실패(무시): {exc}")
 
 
-def _room_results(rooms: list[dict], failures: list, dedup_skipped: list) -> dict:
-    """이번 호출이 처리한 각 방의 결과를 write_status용 dict로 정리."""
+# 보류 사유 코드 → 사람이 읽는 문구(2026-08-10) — send_message_to_room/send_to_room이
+# "chairman_gate"(회장님 방 새 내용 게이트)와 "dedup"(중복 발신 가드)을 구분해 반환하므로
+# 여기서도 갈라 적는다. 이전엔 둘 다 "중복 발신 가드로 스킵" 한 문구로 뭉뚱그려, 08-10
+# 09:30 회장님 방이 새내용게이트로 보류됐는데도 기록엔 "중복 발신 가드"로 남는 오류가 있었다.
+_HOLD_REASON_LABEL = {
+    "chairman_gate": "새 내용 게이트로 이번 회차 보류 — GM 텔레그램 미리보기 발송됨",
+    "dedup": "중복 발신 가드로 스킵(최근 동일 발신 있음)",
+}
+
+
+def _status_summary(rooms: list[dict], failures: list, dedup_skipped: dict, suffix: str = "") -> str:
+    """write_status용 요약 문구. 실제로 발송된 방 수만 '발송'으로 센다 — 보류(dedup_skipped)를
+    성공에 섞지 않는다(2026-08-10: "4/4개 방 성공"이라 적혔지만 실제론 회장님 방 1개 보류였던 사고)."""
+    sent = len(rooms) - len(failures) - len(dedup_skipped)
+    text = f"{sent}/{len(rooms)}개 방 발송" + (f"({suffix})" if suffix else "")
+    if dedup_skipped:
+        names = ", ".join(f"{name}({_HOLD_REASON_LABEL.get(reason, reason)[:6]})"
+                           for name, reason in dedup_skipped.items())
+        text += f" · {len(dedup_skipped)}개 보류: {names}"
+    return text
+
+
+def _room_results(rooms: list[dict], failures: list, dedup_skipped: dict) -> dict:
+    """이번 호출이 처리한 각 방의 결과를 write_status용 dict로 정리.
+    dedup_skipped: {방이름: 보류사유코드} — ok는 기존 소비자 호환을 위해 True로 유지하고,
+    보류 여부는 별도 held 필드로 추가한다(ok 의미를 바꾸지 않음)."""
     fail_map = dict(failures)
     results = {}
     for room in rooms:
@@ -1092,7 +1119,9 @@ def _room_results(rooms: list[dict], failures: list, dedup_skipped: list) -> dic
         if name in fail_map:
             results[name] = {"ok": False, "detail": fail_map[name]}
         elif name in dedup_skipped:
-            results[name] = {"ok": True, "detail": "중복 발신 가드로 스킵(최근 동일 발신 있음)"}
+            reason = dedup_skipped[name]
+            results[name] = {"ok": True, "held": True,
+                              "detail": _HOLD_REASON_LABEL.get(reason, f"보류({reason})")}
         else:
             results[name] = {"ok": True, "detail": ""}
     return results
@@ -1193,14 +1222,14 @@ def _selftest() -> None:
 
         # 전량 성공
         write_status(str(status_path), "4/4개 방 성공", "IMAGE_REPORT",
-                     _room_results(rooms4, [], []))
+                     _room_results(rooms4, [], {}))
         s1 = json.loads(status_path.read_text(encoding="utf-8"))
         assert s1["ok"] is True and len(s1["rooms"]) == 4, f"전량성공인데 ok=False거나 방 수 틀림: {s1}"
         print("  [전량 성공] ok=True, 4개 방 기록 — 통과")
 
         # 부분 실패(2방 실패) — 같은 파일에 다시 기록
         write_status(str(status_path), "2/4개 방 성공", "IMAGE_REPORT",
-                     _room_results(rooms4, [("차의주 회장님", "err1"), ("★관리부", "err2")], []))
+                     _room_results(rooms4, [("차의주 회장님", "err1"), ("★관리부", "err2")], {}))
         s2 = json.loads(status_path.read_text(encoding="utf-8"))
         assert s2["ok"] is False, f"2방 실패인데 ok=True: {s2}"
         assert s2["rooms"]["차의주 회장님"]["ok"] is False and s2["rooms"]["★관리부"]["ok"] is False
@@ -1210,7 +1239,7 @@ def _selftest() -> None:
         # 병합 검증 — 실패했던 2방만 재발송 성공(나머지 2방은 이번 호출에 안 나옴).
         # 이전에 기록된 나머지 2방 값이 지워지지 않고 그대로 남아야 정직한 병합이다.
         write_status(str(status_path), "2/2개 방 성공(재발송)", "IMAGE_REPORT",
-                     _room_results([{"name": "차의주 회장님", "prefix": ""}, {"name": "★관리부", "prefix": ""}], [], []))
+                     _room_results([{"name": "차의주 회장님", "prefix": ""}, {"name": "★관리부", "prefix": ""}], [], {}))
         s3 = json.loads(status_path.read_text(encoding="utf-8"))
         assert s3["ok"] is True, f"재발송으로 4방 다 성공했는데 ok=False: {s3}"
         assert len(s3["rooms"]) == 4, f"병합 후 방 수가 4가 아님(이전 기록 유실): {s3['rooms'].keys()}"
@@ -1218,12 +1247,37 @@ def _selftest() -> None:
 
         # 전량 실패
         write_status(str(status_path), "0/4개 방 성공", "IMAGE_REPORT",
-                     _room_results(rooms4, [(r["name"], "err") for r in rooms4], []))
+                     _room_results(rooms4, [(r["name"], "err") for r in rooms4], {}))
         s4 = json.loads(status_path.read_text(encoding="utf-8"))
         assert s4["ok"] is False and all(not r["ok"] for r in s4["rooms"].values())
         print("  [전량 실패] ok=False, 4개 방 전부 False — 통과")
 
         print("SELFTEST OK: write_status 전량성공/부분실패/재발송병합/전량실패 정상")
+
+        # ⑤ 보류 사유 분리 + 요약문구 정확성(2026-08-10 사고 재발 방지) — 회장님 방이
+        # 새내용게이트로 보류됐는데 "중복 발신 가드로 스킵"·"4/4개 방 성공"으로 잘못
+        # 기록된 사고. 새내용게이트/중복가드 사유가 각각 다르게 남는지, 보류가 발송
+        # 수에서 빠지는지 검증.
+        held = {"차의주 회장님": "chairman_gate"}
+        summary = _status_summary(rooms4, [], held, "텍스트")
+        assert "3/4" in summary, f"보류 1건인데 발송 수가 3/4이 아님: {summary!r}"
+        assert "성공" not in summary, f"보류가 성공으로 표기됨(원인은닉 재발): {summary!r}"
+        assert "보류" in summary, f"보류 사실이 요약에 안 드러남: {summary!r}"
+        print(f"  [요약문구] {summary!r} — 성공 아닌 보류로 정확히 표기 — 통과")
+
+        held_results = _room_results(rooms4, [], held)
+        chairman_r = held_results["차의주 회장님"]
+        assert chairman_r["ok"] is True, "보류도 ok=True 유지(기존 소비자 호환 — S2 결정)"
+        assert chairman_r.get("held") is True, "보류 방에 held=True 표시 안 됨"
+        assert "중복" not in chairman_r["detail"], \
+            f"새내용게이트 보류인데 중복가드 문구가 남음(08-10 원인오기 재발): {chairman_r['detail']!r}"
+        assert chairman_r["detail"] == "새 내용 게이트로 이번 회차 보류 — GM 텔레그램 미리보기 발송됨"
+
+        dedup_results = _room_results(rooms4, [], {"★관리부": "dedup"})
+        assert dedup_results["★관리부"]["detail"] == "중복 발신 가드로 스킵(최근 동일 발신 있음)"
+        print("  [보류 사유] chairman_gate≠dedup, 문구·held 필드 정확 — 통과")
+
+        print("SELFTEST OK: 보류(성공 아님) 표기 정확성 + 사유 분리 정상")
     finally:
         CHAIRMAN_BASELINE_PATH = orig_baseline_path
         MONTHLY_PLAN_PATH = orig_plan_path
@@ -1326,7 +1380,7 @@ def main() -> int:
             pass  # 안내용이라 실패해도 발송을 막지 않는다
 
     failures = []
-    dedup_skipped = []  # 발신 안 함(실패 아님 — 중복 발신 가드 또는 회장님 방 승인 대기)
+    dedup_skipped: dict[str, str] = {}  # 발신 안 함(실패 아님) — {방이름: "chairman_gate"|"dedup"}
 
     if args.message:
         log(f"대상 방 {len(rooms)}개: {room_names} / message={args.message!r} / dry_run={args.dry_run}")
@@ -1334,23 +1388,24 @@ def main() -> int:
         for idx, room in enumerate(rooms):
             room_name = room["name"]
             try:
-                if not send_message_to_room(room, args.message, args.dry_run):
-                    dedup_skipped.append(room_name)
+                sent, hold_reason = send_message_to_room(room, args.message, args.dry_run)
+                if not sent:
+                    dedup_skipped[room_name] = hold_reason
             except Exception as exc:
                 log(f"실패 [{room_name}]: {exc}")
                 failures.append((room_name, str(exc)))
             if idx < len(rooms) - 1:
                 time.sleep(2.0)  # 방 사이 지연
         if args.status_file and not args.dry_run:
-            write_status(args.status_file, f"{len(rooms) - len(failures)}/{len(rooms)}개 방 성공(텍스트)",
+            write_status(args.status_file, _status_summary(rooms, failures, dedup_skipped, "텍스트"),
                          args.status_kind, _room_results(rooms, failures, dedup_skipped))
         if failures:
             print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
             return 1
         if dedup_skipped and len(dedup_skipped) == len(rooms):
-            print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {dedup_skipped}")
+            print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {list(dedup_skipped)}")
             return 1
-        note = f" (미발신 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""
+        note = f" (미발신 {len(dedup_skipped)}개: {list(dedup_skipped)})" if dedup_skipped else ""
         print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방{note}")
         return 0
 
@@ -1364,8 +1419,9 @@ def main() -> int:
     for idx, room in enumerate(rooms):
         room_name = room["name"]
         try:
-            if not send_to_room(room, image_path, args.caption, args.dry_run):
-                dedup_skipped.append(room_name)
+            sent, hold_reason = send_to_room(room, image_path, args.caption, args.dry_run)
+            if not sent:
+                dedup_skipped[room_name] = hold_reason
         except Exception as exc:
             log(f"실패 [{room_name}]: {exc}")
             failures.append((room_name, str(exc)))
@@ -1373,17 +1429,17 @@ def main() -> int:
             time.sleep(2.0)  # 방 사이 지연
 
     if args.status_file and not args.dry_run:
-        write_status(args.status_file, f"{len(rooms) - len(failures)}/{len(rooms)}개 방 성공",
+        write_status(args.status_file, _status_summary(rooms, failures, dedup_skipped),
                      args.status_kind, _room_results(rooms, failures, dedup_skipped))
 
     if failures:
         print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
         return 1
     if dedup_skipped and len(dedup_skipped) == len(rooms):
-        print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {dedup_skipped}")
+        print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {list(dedup_skipped)}")
         return 1
 
-    note = f" (중복 발신 가드 스킵 {len(dedup_skipped)}개: {dedup_skipped})" if dedup_skipped else ""
+    note = f" (보류 {len(dedup_skipped)}개: {list(dedup_skipped)})" if dedup_skipped else ""
     print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료 — {len(rooms)}개 방{note}")
     return 0
 
