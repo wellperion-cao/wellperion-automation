@@ -108,7 +108,11 @@ def _issue_text(iss) -> str:
 
 
 def fetch_check_status(fetch_fn=_http_get_json) -> dict:
-    """공통 status 계약 반환: {display, anomaly, reasons, tag, metrics} + 기존 depts(하위호환)."""
+    """공통 status 계약 반환: {display, anomaly, reasons, tag, metrics} + 기존 depts(하위호환).
+    depts[dept]["date"] = 그 값이 실제로 어느 날짜 행인지(2026-08-10 추가 — 집계 범위·판정은
+    그대로, 이미 응답에 있던 date 필드를 그대로 통과만 시킨다 — 소비자가 "몇일자 값인지"
+    정직하게 라벨링하도록 함. weekly는 오늘 행이 없으면 마지막 행으로 폴백하므로 date가
+    오늘과 다를 수 있다 — 그것도 그대로 드러난다)."""
     depts, reasons = {}, []
     for dept, query in CHECK_QUERIES.items():
         row = _pick_today(fetch_fn(f"{CHECK_API}?{query}&_pv=0"))
@@ -116,7 +120,7 @@ def fetch_check_status(fetch_fn=_http_get_json) -> dict:
         done = int(row.get("done") or 0)
         pct = row.get("pct")
         pct = int(pct) if pct is not None else (round(done / total * 100) if total else None)
-        depts[dept] = {"pct": pct, "done": done, "total": total}
+        depts[dept] = {"pct": pct, "done": done, "total": total, "date": row.get("date")}
         if pct is None or pct > 100:
             reasons.append(f"{dept} 완료율 이상({pct}% — 100% 초과/미산출)")
         for iss in (row.get("allIssues") or []):
