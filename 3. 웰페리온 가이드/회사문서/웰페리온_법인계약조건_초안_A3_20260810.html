@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>웰페리온 법인 계약 조건 초안 · 2026-08-10</title>
+<!--
+  법인 계약 조건 초안 A3 1장 (2026-08-10 · 시모 작성)
+  ─ GM 결정 2026-08-10: 법인 = 임직원 전원 + 가족. 그 결정으로 새로 정해야 할 6가지에 대한 첫 안이다.
+  ─ GM 지시: "그냥 초안을 먼저 만들어줘, 그것을 가지고 수정을 해볼게" — 확정본이 아니라 고치기 위한 판이다.
+  ─ 결정 권한은 회원 도메인(시포)·GM 에 있다. 마케팅은 근거를 붙여 안을 낼 뿐이다.
+  ─ 근거 없는 항목은 "근거 없음 · 판단 필요"로 적고 숫자를 지어내지 않는다.
+-->
+<style>
+  @page { size: A3 landscape; margin: 8mm; }
+  :root{
+    --ground:#FFFFFF; --ink:#1D1A1B; --ink-2:#4A433E; --dim:#8B8177;
+    --line:#DED5CA; --shade:#F5F0E9; --beige:#B79F8A; --deep:#6E5C4B;
+    --go:#2F6B4F; --warn:#A9701F; --stop:#B23A22;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--ground);color:var(--ink)}
+  body{font-family:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic","맑은 고딕",sans-serif;
+       font-size:10.2px;line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .sheet{width:1587px;min-height:1123px;margin:0 auto;padding:26px 30px 22px;display:flex;flex-direction:column;gap:13px}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid var(--ink);padding-bottom:11px}
+  .eyebrow{font-size:9.5px;letter-spacing:.2em;color:var(--deep);font-weight:700;margin-bottom:3px}
+  h1{font-size:25px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15}
+  .meta{font-size:9.5px;color:var(--dim);text-align:right;line-height:1.65}
+  .meta b{color:var(--ink)}
+
+  .band{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+  .bcell{background:var(--shade);padding:9px 12px;display:flex;flex-direction:column;gap:1px}
+  .bcell .k{font-size:8.8px;color:var(--dim);font-weight:700}
+  .bcell .v{font-size:15px;font-weight:800;letter-spacing:-.02em}
+  .bcell .n{font-size:8.6px;color:var(--dim)}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;flex:1}
+  .card{border:1px solid var(--line);display:flex;flex-direction:column}
+  .card>h2{margin:0;padding:7px 11px;background:var(--ink);color:#fff;font-size:10.4px;font-weight:750;
+           display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .card>h2 .no{font-size:9px;opacity:.62;font-weight:600}
+  .card .body{padding:10px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
+
+  .ask{font-size:9.6px;color:var(--dim);font-style:normal}
+  .prop{background:var(--shade);border-left:2.5px solid var(--go);padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+  .prop .lab{font-size:8.4px;letter-spacing:.08em;color:var(--go);font-weight:800}
+  .prop .txt{font-size:10.4px;font-weight:750;line-height:1.42}
+  .why{display:flex;flex-direction:column;gap:3px}
+  .why .t{font-size:8.4px;letter-spacing:.08em;color:var(--dim);font-weight:800}
+  .why ul{margin:0;padding-left:13px;display:flex;flex-direction:column;gap:3px}
+  .why li{font-size:9.4px;color:var(--ink-2)}
+  .why li b{color:var(--ink)}
+  .alt{font-size:9.3px;color:var(--ink-2);border-top:1px dashed var(--line);padding-top:6px;margin-top:auto}
+  .alt b{color:var(--warn)}
+
+  table{border-collapse:collapse;width:100%;font-size:9.5px;margin-top:2px}
+  th,td{padding:4px 6px;text-align:left;border-bottom:1px solid var(--line)}
+  th{font-size:8.3px;color:var(--dim);font-weight:700;background:var(--shade);white-space:nowrap}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tr.on td{background:#EFF4F0;font-weight:750}
+  tr.off td{color:var(--stop)}
+
+  .note{background:var(--shade);border-left:2.5px solid var(--beige);padding:8px 10px;font-size:9.4px;color:var(--ink-2)}
+  .note b{color:var(--ink)}
+  footer{border-top:1px solid var(--line);padding-top:8px;font-size:8.8px;color:var(--dim);display:flex;justify-content:space-between;gap:20px}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <div>
+      <div class="eyebrow">WELLPERION · 법인 계약 조건 <b style="color:var(--stop)">초안</b></div>
+      <h1>임직원 전원 + 가족으로 가면, 여섯 가지를 정해야 합니다</h1>
+    </div>
+    <div class="meta">
+      GM 결정 2026-08-10 · <b>법인 = 임직원 전원 + 가족</b><br>
+      결정 권한 = 회원 담당 · GM / 안 작성 = 마케팅<br>
+      <b style="color:var(--stop)">확정본 아님 — 고치기 위한 초안</b>
+    </div>
+  </header>
+
+  <div class="band">
+    <div class="bcell"><span class="k">정원</span><span class="v">1,000명</span><span class="n">유효회원 999명 · 사실상 마감</span></div>
+    <div class="bcell"><span class="k">지금 1인당 값</span><span class="v">연 265만</span><span class="n">회원권 매출 ÷ 999명 (실측)</span></div>
+    <div class="bcell"><span class="k">법인 할인 상한</span><span class="v">15%</span><span class="n">5인 10% · 10인 이상 15%</span></div>
+    <div class="bcell"><span class="k">실제 방문</span><span class="v">일 600명</span><span class="n">출석률 60% · 수용 부하의 기준</span></div>
+  </div>
+
+  <div class="cards">
+
+    <div class="card">
+      <h2><span>가족 범위</span><span class="no">01</span></h2>
+      <div class="body">
+        <div class="ask">배우자·자녀까지인가, 부모 세대까지인가</div>
+        <div class="prop">
+          <span class="lab">제안</span>
+          <span class="txt">개인 회원권과 똑같이 — 직계 가족, 가족관계증명서로 확인</span>
+        </div>
+        <div class="why">
+          <span class="t">근거</span>
+          <ul>
+            <li>개인 상품에 <b>“가족증명 필수”</b> 기준이 이미 있다. 두 벌을 만들면 현장에서 갈린다.</li>
+            <li>부모 세대를 넣는 것이 웰페리온에 유리하다 — 시니어 프로그램이 있고, 낮 시간대가 비교적 여유롭다.</li>
+          </ul>
+        </div>
+        <div class="alt"><b>다른 길</b> — 배우자·자녀로 좁히면 정원 부담은 줄지만, 법인 제안의 가장 센 문구(“가족까지 닿는다”)가 약해진다.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>1인당 가족 수</span><span class="no">02</span></h2>
+      <div class="body">
+        <div class="ask">몇 명까지인가, 아니면 세대 단위인가</div>
+        <div class="prop">
+          <span class="lab">제안</span>
+          <span class="txt">임직원 1명당 가족 3명까지 — 본인 포함 4인</span>
+        </div>
+        <div class="why">
+          <span class="t">근거</span>
+          <ul>
+            <li>개인 가족 회원권이 <b>2~4인 구간</b>으로 이미 설계돼 있다. 같은 구간을 그대로 쓴다.</li>
+            <li>세대 단위(무제한)로 열면 한 계약의 실제 이용 인원을 예측할 수 없다 — 정원 관리가 불가능해진다.</li>
+          </ul>
+        </div>
+        <div class="alt"><b>다른 길</b> — 회사 전체 총량으로만 묶고 배분은 회사에 맡기는 방식. 유연하지만 누가 쓰는지 우리가 못 센다.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>정원을 무엇으로 세나</span><span class="no">03 · 가장 중요</span></h2>
+      <div class="body">
+        <div class="ask">계약 인원인가, 실제 이용 인원인가</div>
+        <div class="prop">
+          <span class="lab">제안</span>
+          <span class="txt">실제로 이용하는 사람 1명 = 1석. 가족도 각각 1석을 씁니다</span>
+        </div>
+        <div class="why">
+          <span class="t">근거</span>
+          <ul>
+            <li><b>정원은 계약서가 아니라 시설이 견디는 수다.</b> 락커·샤워·레인·주차는 사람 수만큼 쓴다.</li>
+            <li>계약 인원으로 세면 <b>정원이 조용히 넘친다</b> — 20인 계약에 가족까지 오면 실제는 60~80명이다.</li>
+            <li>혼잡이 늘면 기존 999명이 먼저 불만을 낸다. 그 손실이 법인 매출보다 크다.</li>
+          </ul>
+        </div>
+        <div class="alt"><b>다른 길</b> — 계약 인원으로 세고 혼잡도를 따로 관리. 다만 지금 <b>출입 기록이 없어</b> 혼잡을 잴 수단이 없다.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>회사당 · 전체 상한</span><span class="no">04</span></h2>
+      <div class="body">
+        <div class="ask">한 회사에 몇 석까지, 법인 전체로는 몇 석까지</div>
+        <div class="prop">
+          <span class="lab">제안</span>
+          <span class="txt">한 회사 20석 · 법인 전체 100석(정원의 10%)</span>
+        </div>
+        <div class="why">
+          <span class="t">근거</span>
+          <ul>
+            <li>한 회사 비중이 커지면 <b>그 회사 사정에 클럽이 흔들린다</b> — 이전·감원 한 번에 수십 석이 빈다.</li>
+            <li>10%면 100석. 전부 채워도 개인 회원 900명이 남아 클럽 성격이 바뀌지 않는다.</li>
+            <li><b>이 두 숫자는 근거가 되는 실측값이 없다</b> — 위험을 나누는 관점에서 낸 첫 안이다. 고쳐 주시면 그대로 간다.</li>
+          </ul>
+        </div>
+        <div class="alt"><b>다른 길</b> — 상한 없이 받고 계약마다 판단. 첫 계약이 크게 들어오면 되돌리기 어렵다.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>어느 구성까지 받나</span><span class="no">05 · 숫자로 답이 나옴</span></h2>
+      <div class="body">
+        <div class="ask">플래티넘도 받을까, 노블레스 이상만 받을까</div>
+        <div class="prop">
+          <span class="lab">제안</span>
+          <span class="txt">노블레스 이상만. 플래티넘 법인은 받지 않습니다</span>
+        </div>
+        <table>
+          <thead><tr><th>구성</th><th class="num">법인가(15%↓)</th><th class="num">1석당 손익</th></tr></thead>
+          <tbody>
+            <tr class="off"><td>플래티넘</td><td class="num">2,550,000</td><td class="num">−99,194</td></tr>
+            <tr><td>플래티넘+골프</td><td class="num">2,890,000</td><td class="num">+240,806</td></tr>
+            <tr class="on"><td>노블레스</td><td class="num">3,060,000</td><td class="num">+410,806</td></tr>
+            <tr class="on"><td>노블레스+골프</td><td class="num">3,400,000</td><td class="num">+750,806</td></tr>
+          </tbody>
+        </table>
+        <div class="alt">지금 1인당 평균 연 265만원과 견준 값이다. <b>플래티넘 법인은 한 석 받을 때마다 연 9만 9천원씩 준다</b> — 정원 안에서 개인 자리를 바꿔 앉히는 구조라서다.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>가족 이용분의 값</span><span class="no">06</span></h2>
+      <div class="body">
+        <div class="ask">임직원과 같은 단가인가, 따로인가</div>
+        <div class="prop">
+          <span class="lab">제안</span>
+          <span class="txt">임직원 본인만 법인 단가. 가족은 개인 가족가 그대로 — 할인 없음</span>
+        </div>
+        <div class="why">
+          <span class="t">근거</span>
+          <ul>
+            <li>개인 상품에서 가족은 <b>“2번째부터 각 270만원 · 할인이 아닌 정가”</b>다. 원래 할인이 없는 자리다.</li>
+            <li>법인 가족에 15%를 주면 <b>개인 가족 회원보다 싸진다</b> — 같은 가족인데 회사 다니는 쪽이 싸면 개인 회원이 먼저 묻는다.</li>
+            <li>회사는 임직원 몫만 부담하고 가족 몫은 개인이 낼 수도 있다 — 회사 부담이 줄어 계약이 오히려 쉬워진다.</li>
+          </ul>
+        </div>
+        <div class="alt"><b>다른 길</b> — 가족도 법인 단가 일괄 적용. 제안은 세지지만 개인 가족 회원과 값이 어긋난다.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <b>이 초안이 서면 따라오는 것 —</b> ①제안서의 “이용 범위” 칸을 이 값으로 채운다 ②정원 관리 방식이 정해지면 <b>지금 없는 출입·이용 기록</b>이 필요해진다(누가 몇 석을 쓰는지 세야 하므로) ③05번이 확정되면 영업 대상 안내 문구에서 플래티넘을 빼야 한다. <b>세 가지 모두 이 여섯 칸이 정해진 뒤에 움직인다.</b>
+  </div>
+
+  <footer>
+    <span>숫자 출처 — 정원·유효회원: 회원 지표 / 1인당 265만원: 회원권 월 매출 2억 2,054만원(2026년 7월 확정) × 12 ÷ 999명 / 정가·가족 조건: 상품기획 문서 / 일 방문 600명: 회사소개서.</span>
+    <span>04번 두 숫자는 실측 근거가 없는 제안값입니다.</span>
+  </footer>
+
+</div>
+</body>
+</html>
