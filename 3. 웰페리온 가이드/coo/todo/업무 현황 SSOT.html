@@ -3949,6 +3949,24 @@ window.ssotShowTasks=ssotShowTasks;
     }, 4000);
   }
   todoFallback();
+
+  /* 접수 처리 점수판 — 접수 GAS(reg_scoreboard)를 그대로 표시한다. 새 셈법 없음.
+     이 백엔드는 응답이 6~9초로 느리고 간헐적으로 실패한다 — 한 번 실패하면 '불러오는 중…' 에
+     영영 갇히므로 점증 간격으로 다시 묻는다. 끝까지 안 되면 그때만 안내를 띄운다. */
+  function getReg(i) {
+    var delays = [0, 1500, 3500, 6000];
+    return new Promise(function (rs) { setTimeout(rs, delays[i]); })
+      .then(function () {
+        return fetch(REG_API + '?action=reg_scoreboard&period=month', { redirect: 'follow' })
+          .then(function (r) { return r.json(); }).catch(function () { return null; });
+      })
+      .then(function (j) {
+        if (j && j.ok) return renderReg(j);
+        if (i + 1 < delays.length) return getReg(i + 1);
+        fail('lsReg', '접수 점수판을 불러오지 못했습니다 — 새로고침 해주세요.');
+      });
+  }
+  getReg(0);
 })();
 </script>
 </body>
