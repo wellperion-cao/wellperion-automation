@@ -1715,7 +1715,7 @@ function jobItem(h){
     (h["주요 업무"]?'<div style="margin-top:9px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+
       esc(h["주요 업무"])+'</div>':"")+
     (applicants.length
-      ? '<details class="appl-details" style="margin-top:12px;border-top:1px solid var(--line-soft);padding-top:10px">'+
+      ? '<details class="appl-details" data-jobid="'+esc(hireId)+'" style="margin-top:12px;border-top:1px solid var(--line-soft);padding-top:10px">'+
         '<summary style="cursor:pointer;font-weight:650;font-size:13px;color:var(--gold-deep)">▸ 지원자 '+applicants.length+'명 (면접 우선·등급순) — 클릭하여 펼치기</summary>'+
         '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">'+
           applicants.map(applicantRow).join("")+
@@ -2456,7 +2456,7 @@ function renderHire(){
         var cc=document.getElementById("ivCalCard"); if(cc&&window.__renderIvCal) cc.innerHTML=window.__renderIvCal(mm.y,mm.m);
         return;}
       if(t.closest("a"))return;
-      var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){(function(){var _scc=t.closest("[data-stagechg]");if(_scc){window.openApplicantInfo(_scc.getAttribute("data-stagechg"),_scc.getAttribute("data-stagepid"));return;}var _pg=__ap.getAttribute("data-applicant")||"";if(!_pg){var _nm=__ap.getAttribute("data-applname")||"";var _f=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===_nm;});if(_f)_pg=normId(_f.url);}if(_pg&&typeof openPrintView==="function"){openPrintView(_pg,true);}else{window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}})();}return;}
+      var __ap=t.closest("[data-applname]");if(__ap){if(typeof window.openApplicantInfo==="function"){(function(){var _scc=t.closest("[data-stagechg]");if(_scc){window.openApplicantInfo(_scc.getAttribute("data-stagechg"),_scc.getAttribute("data-stagepid"),__ap.getAttribute("data-applicant"));return;}var _pg=__ap.getAttribute("data-applicant")||"";if(!_pg){var _nm=__ap.getAttribute("data-applname")||"";var _f=(DB.appl||[]).find(function(x){return String(x["지원자명"]||"")===_nm;});if(_f)_pg=normId(_f.url);}if(_pg&&typeof openPrintView==="function"){openPrintView(_pg,true);}else{window.openApplicantInfo(__ap.getAttribute("data-applname"), __ap.getAttribute("data-apppid"));}})();}return;}
     });
   }
   try{ window.__lastHireSig=hireSig(); }catch(e){}
@@ -4337,6 +4337,22 @@ var __localWriteTs={};             // db키 → 마지막 로컬 변이 시각(m
 function localWriteGuardActive_(k){
   try{ return !!(__localWriteTs[k] && (Date.now()-__localWriteTs[k])<LOCAL_WRITE_GUARD_MS); }catch(e){ return false; }
 }
+// [추가 2026-08-10 A-5] 공고별 지원자 펼침(details.appl-details, jobItem 렌더) 상태 보존 — 팝업 닫힘
+// 후 부분 재렌더·30초 자동갱신마다 매번 접혀 다시 펼쳐야 하던 불편(매니저 실증) 수정. 공고별로 여러 개
+// 열려 있을 수 있어 data-jobid(공고 고유 pageId) 기준 집합으로 캡처·복원한다.
+function __hireOpenApplSets_(){
+  var s={};
+  document.querySelectorAll('[data-panel="hire"] details.appl-details[open]').forEach(function(d){
+    var id=d.getAttribute("data-jobid"); if(id) s[id]=true;
+  });
+  return s;
+}
+function __hireRestoreApplSets_(s){
+  if(!s) return;
+  document.querySelectorAll('[data-panel="hire"] details.appl-details').forEach(function(d){
+    var id=d.getAttribute("data-jobid"); if(id && s[id]) d.open=true;
+  });
+}
 // 탭 1개 제자리 재렌더 — 비활성 탭은 무효화만(다음 방문 시 재렌더, rerenderHireForBlacklist 관용구).
 function rerenderTabInPlace(tab){
   RENDERED[tab]=false;
@@ -4347,8 +4363,10 @@ function rerenderTabInPlace(tab){
       var dEl=document.querySelector('[data-panel="hire"] details.closed-jobs');
       var wasOpen=!!(dEl&&dEl.open);                               // 채용 마감건 토글 보존
       var keepMonth=(window.__ivMonth&&typeof window.__ivMonth.y==="number")?{y:window.__ivMonth.y,m:window.__ivMonth.m}:null; // 캘린더 월 보존
+      var wasApplOpen=__hireOpenApplSets_();                       // [추가 2026-08-10 A-5] 공고별 지원자 펼침 보존
       renderHire();RENDERED.hire=true;
       if(wasOpen){var d2=document.querySelector('[data-panel="hire"] details.closed-jobs');if(d2)d2.open=true;}
+      __hireRestoreApplSets_(wasApplOpen);
       if(keepMonth){window.__ivMonth=keepMonth;var cc=document.getElementById("ivCalCard");if(cc&&window.__renderIvCal)cc.innerHTML=window.__renderIvCal(keepMonth.y,keepMonth.m);}
     }else if(tab==="dash"){
       var dashYM=window.__dashYM;                                  // 대시보드 캘린더 월 보존
@@ -4450,8 +4468,10 @@ async function autoRefreshHire(){
       var dEl=document.querySelector('[data-panel="hire"] details.closed-jobs');
       var wasOpen=!!(dEl&&dEl.open);                  // 채용 마감건 토글 보존
       var keepMonth=(window.__ivMonth&&typeof window.__ivMonth.y==="number")?{y:window.__ivMonth.y,m:window.__ivMonth.m}:null; // 캘린더 보던 월 보존
+      var wasApplOpen=__hireOpenApplSets_();          // [추가 2026-08-10 A-5] 공고별 지원자 펼침 보존
       RENDERED.hire=false;renderHire();RENDERED.hire=true;  // 제자리 재렌더(__lastHireSig 갱신)
       if(wasOpen){var d2=document.querySelector('[data-panel="hire"] details.closed-jobs');if(d2)d2.open=true;}
+      __hireRestoreApplSets_(wasApplOpen);
       if(keepMonth){window.__ivMonth=keepMonth;var cc=document.getElementById("ivCalCard");if(cc&&window.__renderIvCal)cc.innerHTML=window.__renderIvCal(keepMonth.y,keepMonth.m);}
       updateSyncMeta();
       window.scrollTo(sx,sy);
@@ -5021,11 +5041,20 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
     return html;
   }
   var APPS_BY_NAME = {};
+  var APPS_BY_ROWID = {};  // [추가 2026-08-10 A-5] 동명 지원자 중복행 오적재 방지 — pageId(normId(url)) 우선키
   window.__registerAppls = function(arr){
-    (arr||[]).forEach(function(a){ if(a && a["지원자명"]) APPS_BY_NAME[a["지원자명"]] = a; });
+    (arr||[]).forEach(function(a){
+      if(a && a["지원자명"]) APPS_BY_NAME[a["지원자명"]] = a;
+      var rid = (typeof normId==="function") ? normId(a && a.url) : "";
+      if(rid) APPS_BY_ROWID[rid] = a;
+    });
   };
-  window.openApplicantInfo = function(name, pid){
-    var a = APPS_BY_NAME[name];
+  window.openApplicantInfo = function(name, pid, rowId){
+    // [수정 2026-08-10 A-5] 동일 성명의 지원자가 2행 이상 존재하면(재지원·중복 등록) 이름만으로는 어느
+    // 행인지 특정 못 해 엉뚱한(주로 더 오래된) 행이 열리고, 그 행의 sheetRow로 단계가 저장되는 결함이
+    // 있었다(매니저 실증: 보류→불합격 처리해도 화면엔 그대로) — 클릭한 행의 고유 pageId(rowId)가 전달되면
+    // 그 행을 우선 사용, 없을 때만 기존 이름 기반 조회로 폴백(호출부 하위호환).
+    var a = (rowId && APPS_BY_ROWID[rowId]) || APPS_BY_NAME[name];
     if(!a){ alert("지원자 데이터를 찾을 수 없습니다: "+name); return; }
     window.__currentAppl = a;
     window.__currentApplPid = pid;
