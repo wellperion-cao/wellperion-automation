@@ -2858,5 +2858,25 @@
     "updated_at": "2026-08-10",
     "id": "CTO-2026-08-10-구매비품-GAS-배포경로-부재",
     "work_type": "update"
+  },
+  {
+    "task_id": "CTO-2026-08-10-중간관리자-방도-매일-자동-내보내기-운영부-파이프라",
+    "clevel": "cto",
+    "title": "[시토] ★중간관리자 방도 매일 자동 내보내기 — ★운영부 파이프라인에 방 하나 추가 (GM 요청 2026-08-10)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-10",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-10] GM 요청 원문(2026-08-10): 'GM업무 현황에 카카오톡방 중간관리자방에서 나온 내용들이 추가되고, 체크되고, 진행률 확인하고 등등을 정리해줄 수 있어?' ■ 웰리 실측(2026-08-10): ★운영부 방은 매일 07:30 자동 내보내기가 돌아 1. AI자료_아카이브/11_카카오톡/★운영부/2026-08/ 에 원문이 쌓이고 _digest_ledger.json(날짜별 이슈 원장)·_pending_digest.json 까지 자동 생성된다. 반면 ★중간관리자 방은 2026-08-08 에 사람이 한 번 수동 실행한 파일 1개(★중간관리자_auto_20260808.txt, 144KB)만 있고 요약·원장 산출물이 없다. 원인 = scripts/kakao_export_chat.py 의 ROOM_DIR_NAME 매핑과 ops_export_kakao.py·ops_daily_digest.py·ops_morning_pipeline.py 의 KAKAO_ROOM_DIR 이 전부 '★운영부' 하드코딩이라 그 방만 돈다. ■ 요청: 새 파이프라인을 만들지 말고 기존 ★운영부 경로에 방 하나를 더 태운다(약속 L21 — 장치 늘리지 않는다). 방 이름 하드코딩을 목록으로 바꾸는 정도면 충분해 보인다(웰리 추정 — 실제 구조는 시토가 판단). ■ 주의: ★중간관리자 방은 지금 편도(AI→사람)로만 배선돼 있다(send_ops_digest.RELAY_ROOM · mgmt_notice_queue 17:05 발송). 이번 건은 반대 방향(사람 대화 → 저장소)이다. ■ 웰리 후속: 원문·이슈 원장이 매일 들어오기 시작하면 웰리가 GM업무 화면에 '중간관리자방에서 나온 것' 섹션을 붙인다(프론트 분).",
+    "next": "kakao_export_chat.py·ops_export_kakao.py·ops_daily_digest.py·ops_morning_pipeline.py 의 방 하드코딩을 ★운영부+★중간관리자 두 방으로 확장하고, 내일 아침 ★중간관리자/2026-08/ 에 새 원문과 이슈 원장이 실제로 생기는지 확인해 웰리에게 회신",
+    "depends_on": "",
+    "ship_no": 10730,
+    "short_no": 536,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "updated_at": "2026-08-10"
   }
 ]
