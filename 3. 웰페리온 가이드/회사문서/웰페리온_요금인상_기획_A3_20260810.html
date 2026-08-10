@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>웰페리온 회원권 요금 인상 기획 · 2026년 10월 시행</title>
+<!--
+  요금 인상 기획 A3 1장 (2026-08-10 · 시모 작성 · GM 지시)
+  ─ 결정·실행 주체는 회원 도메인(시포)이며 이 문서는 기획·정리본이다(GM 교정 2026-08-10 "가격은 시포 영역").
+  ─ 값 출처 = 상품기획 정가표 · 홈 지표 스냅샷(7월 확정) · 멤버십 문의 원장 · 만기 알림 기록.
+  ─ 근거 없는 수치는 "기록 없음"으로 적고 추정치를 숫자로 쓰지 않는다.
+  ─ 인쇄 = A3 가로 1장. PNG 사본 = 같은 이름 .png
+-->
+<style>
+  @page { size: A3 landscape; margin: 8mm; }
+  :root{
+    --ground:#FFFFFF; --ink:#1D1A1B; --ink-2:#4A433E; --dim:#8B8177;
+    --line:#DED5CA; --shade:#F5F0E9; --beige:#B79F8A; --deep:#6E5C4B;
+    --go:#2F6B4F; --warn:#A9701F; --stop:#B23A22;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--ground);color:var(--ink)}
+  body{
+    font-family:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic","맑은 고딕",sans-serif;
+    font-size:10.2px; line-height:1.5; -webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+  }
+  .sheet{width:1587px;min-height:1123px;margin:0 auto;padding:26px 30px 22px;display:flex;flex-direction:column;gap:14px}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid var(--ink);padding-bottom:11px}
+  .ttl{display:flex;flex-direction:column;gap:3px}
+  .eyebrow{font-size:9.5px;letter-spacing:.2em;color:var(--deep);font-weight:700}
+  h1{font-size:25px;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1.15}
+  .meta{font-size:9.5px;color:var(--dim);text-align:right;line-height:1.65}
+  .meta b{color:var(--ink)}
+
+  .band{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+  .bcell{background:var(--shade);padding:9px 12px;display:flex;flex-direction:column;gap:1px}
+  .bcell .k{font-size:8.8px;color:var(--dim);font-weight:700;letter-spacing:.03em}
+  .bcell .v{font-size:16px;font-weight:800;letter-spacing:-.02em}
+  .bcell .n{font-size:8.6px;color:var(--dim)}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;flex:1}
+  .col{display:flex;flex-direction:column;gap:12px}
+
+  .blk{border:1px solid var(--line);display:flex;flex-direction:column}
+  .blk>h2{
+    margin:0;padding:7px 11px;background:var(--ink);color:#fff;
+    font-size:10.5px;font-weight:750;letter-spacing:.02em;
+    display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  }
+  .blk>h2 span{font-size:8.8px;font-weight:500;opacity:.72}
+  .blk .body{padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+
+  table{border-collapse:collapse;width:100%;font-size:9.6px}
+  th,td{padding:5px 7px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:8.4px;letter-spacing:.06em;color:var(--dim);font-weight:700;background:var(--shade);white-space:nowrap}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tr.hi td{background:var(--shade);font-weight:700}
+
+  ul{margin:0;padding-left:14px;display:flex;flex-direction:column;gap:4px}
+  ul li{font-size:9.7px;color:var(--ink-2)}
+  ul li b{color:var(--ink)}
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:6px}
+  ol.steps li{counter-increment:s;display:flex;gap:8px;align-items:flex-start;font-size:9.7px;color:var(--ink-2)}
+  ol.steps li::before{content:counter(s);flex:0 0 15px;height:15px;margin-top:1px;display:grid;place-items:center;
+    background:var(--deep);color:#fff;font-size:8.4px;font-weight:800;border-radius:50%}
+  ol.steps b{color:var(--ink)}
+
+  .chk{display:flex;flex-direction:column;gap:3px}
+  .chk div{font-size:9.6px;color:var(--ink-2);padding-left:14px;position:relative}
+  .chk div::before{content:"□";position:absolute;left:0;color:var(--dim)}
+  .chk div.on::before{content:"☑";color:var(--go)}
+  .chk .h{font-weight:750;color:var(--ink);padding-left:0;margin-top:4px}
+  .chk .h::before{content:""}
+
+  .risk{display:flex;flex-direction:column;gap:7px}
+  .risk .r{border-left:2.5px solid var(--stop);padding-left:8px;display:flex;flex-direction:column;gap:2px}
+  .risk .r.mid{border-left-color:var(--warn)}
+  .risk .r .t{font-size:9.8px;font-weight:750}
+  .risk .r .d{font-size:9.4px;color:var(--ink-2)}
+  .risk .r .f{font-size:9.4px;color:var(--go);font-weight:600}
+
+  .qa{display:flex;flex-direction:column;gap:6px}
+  .qa .q{font-size:9.7px;font-weight:750;color:var(--ink);padding-left:13px;position:relative}
+  .qa .q::before{content:"Q";position:absolute;left:0;color:var(--deep);font-weight:800}
+  .qa .a{font-size:9.4px;color:var(--ink-2);padding-left:13px;position:relative;margin-bottom:2px}
+  .qa .a::before{content:"A";position:absolute;left:0;color:var(--dim);font-weight:800}
+  .qa .a b{color:var(--ink)}
+  .note{background:var(--shade);border-left:2.5px solid var(--beige);padding:8px 10px;font-size:9.4px;color:var(--ink-2)}
+  .note b{color:var(--ink)}
+
+  footer{border-top:1px solid var(--line);padding-top:8px;font-size:8.8px;color:var(--dim);display:flex;justify-content:space-between;gap:20px}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <div class="ttl">
+      <div class="eyebrow">WELLPERION · 회원권 요금 인상 기획</div>
+      <h1>올리기 전에, 올라갈 이유부터 만든다</h1>
+    </div>
+    <div class="meta">
+      시행 <b>2026년 10월</b> · 2년 주기(26.10 / 28.10)<br>
+      결정·실행 = 회원 담당 · 기획 정리 = 마케팅<br>
+      작성 2026-08-10 · 기준 데이터 2026년 7월 확정치
+    </div>
+  </header>
+
+  <div class="band">
+    <div class="bcell"><span class="k">회원권 월 매출</span><span class="v">2억 2,054만</span><span class="n">2026년 7월 확정</span></div>
+    <div class="bcell"><span class="k">+5% 인상 시</span><span class="v">월 +1,103만</span><span class="n">연 1.3억</span></div>
+    <div class="bcell"><span class="k">+10% 인상 시</span><span class="v">월 +2,205만</span><span class="n">연 2.6억</span></div>
+    <div class="bcell"><span class="k">영향받는 회원</span><span class="v">999명</span><span class="n">정원 1,000명 · 사실상 마감</span></div>
+    <div class="bcell"><span class="k">고지 마감선</span><span class="v">9월 1일</span><span class="n">결정은 8월 말까지</span></div>
+  </div>
+
+  <div class="cols">
+
+    <!-- ── 1열 ── -->
+    <div class="col">
+
+      <div class="blk">
+        <h2>1 · 왜 지금인가 <span>근거</span></h2>
+        <div class="body">
+          <ul>
+            <li><b>가격 정책이 이미 그렇게 서 있다</b> — 무할인 · 2년 주기 인상(26.10 / 28.10). 새로 정하는 게 아니라 예정된 것을 실행한다.</li>
+            <li><b>정원이 찼다</b> — 999/1,000. 회원 수로 매출을 못 늘리므로 자리 하나의 값을 올리는 것이 남은 길이다.</li>
+            <li><b>초안이 이미 있다</b> — 회원 담당이 만든 인상안 3가지가 결재를 기다리고 있다.</li>
+          </ul>
+          <div class="note">
+            <b>단, 지금 그대로 올리면 안 된다.</b> 값이 오르는 만큼 <b>눈에 보이는 것이 달라져 있어야</b> 회원이 납득한다.
+            공사를 끝내고 올리는 것과, 올린 뒤에 고치는 것은 같은 돈이라도 전혀 다르게 받아들여진다.
+          </div>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>2 · 얼마나 올릴까 <span>초안 3안</span></h2>
+        <div class="body">
+          <table>
+            <thead><tr><th>안</th><th>방식</th><th class="num">월 증가</th></tr></thead>
+            <tbody>
+              <tr><td>가</td><td>등급별 정률 +10~15%</td><td class="num">2,205~3,308만</td></tr>
+              <tr><td>나</td><td>종목별 정액 +50~100만원</td><td class="num">기록 없음</td></tr>
+              <tr><td>다</td><td>정원 충족률 연동</td><td class="num">기록 없음</td></tr>
+            </tbody>
+          </table>
+          <div class="note" style="border-left-color:var(--warn)">
+            <b>나·다안의 증가액을 못 냈다.</b> 종목별 회원 수와 충족률 데이터가 저장소에 없다 —
+            회원 담당이 그 수치를 채워야 세 안을 나란히 비교할 수 있다.
+          </div>
+          <table>
+            <thead><tr><th>현재 정가 (연)</th><th class="num">플래티넘</th><th class="num">노블레스+골프</th></tr></thead>
+            <tbody>
+              <tr><td>개인</td><td class="num">3,000,000</td><td class="num">4,000,000</td></tr>
+              <tr><td>법인 10인 이상(15%↓)</td><td class="num">2,550,000</td><td class="num">3,400,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>3 · 같이 정해야 하는 것</h2>
+        <div class="body">
+          <ul>
+            <li><b>강습도 같이 올릴까</b> — 강습 6종 합계 월 3억 4,310만원으로 회원권(2억 2,054만)보다 크다. 여기서 실제 효과가 갈린다.</li>
+            <li><b>법인 단가</b> — 인상 후에도 5인 10% · 10인 이상 15% 상한이 그대로인지. 계약 중인 법인은 언제부터 적용할지.</li>
+            <li><b>조기 갱신을 열까</b> — 인상 전 갱신을 허용하면 10월 매출이 9월로 당겨진다.</li>
+            <li><b>인상일에 걸치는 회원</b> — 8월 만기 84명 · 9월 만기 65명. 갱신가 기준을 미리 못 박지 않으면 현장에서 말이 갈린다.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── 2열 ── -->
+    <div class="col">
+
+      <div class="blk" style="flex:1">
+        <h2>4 · 그 전에 좋아져야 할 것 <span>인상의 명분</span></h2>
+        <div class="body">
+          <div class="note">
+            요금이 오르면 <b>그만한 서비스와 시설이 응당 함께 올라가야 한다.</b>
+            아래는 10월 이전에 회원 눈에 보이게 만들 수 있는 것들이다.
+          </div>
+          <div class="chk">
+            <div class="h">공간 — 이미 진행 중</div>
+            <div>박수철 대표님 공간 디자인 — 리셉션 상담실 · 휴게공간 · 야외테라스</div>
+            <div>공간 사진 전달 → 요구사항 문서 → 대표님·회장님 보고 → 승인 → 설계</div>
+            <div>공사 일정을 10월 앞에 놓을 수 있는지 확인 <b>(이것이 전체 일정을 좌우한다)</b></div>
+            <div class="h">시설 — 확인 필요</div>
+            <div>노후 기구·설비 교체 목록 — 회원이 매일 만지는 것부터</div>
+            <div>사우나·탈의·라커 등 회복 동선 점검</div>
+            <div>주차 운영 — 기본 4시간 무료 조건을 손댈지</div>
+            <div class="h">서비스 — 값이 안 드는 것부터</div>
+            <div>예약·응대 흐름 정비 — 사전 예약제가 불편으로 느껴지지 않게</div>
+            <div>강습 대기·배정 규칙을 회원이 알 수 있게 공개</div>
+            <div>파트너 3사(스파·뷰티·라운지) 회원 혜택을 눈에 보이게 정리</div>
+            <div class="h">알림 — 인상 고지와 짝</div>
+            <div>“무엇이 나아졌는지” 한 장 — 인상 안내와 같이 나가야 한다</div>
+          </div>
+          <div class="note" style="border-left-color:var(--go)">
+            <b>순서가 중요하다.</b> 개선이 먼저 보이고 인상이 뒤따르면 “좋아져서 오른다”가 되고,
+            반대면 “올려놓고 이제 고친다”가 된다. 같은 일도 순서로 뜻이 바뀐다.
+          </div>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>7 · 회원이 물어볼 것 <span>답을 미리 맞춰 둔다</span></h2>
+        <div class="body">
+          <div class="qa">
+            <div class="q">얼마나 오르나요</div>
+            <div class="a">확정 뒤에 정확한 금액으로 답한다. 확정 전에는 “아직 정해지지 않았다”가 유일하게 맞는 답이다 — 담당자가 어림수를 말하면 그게 기준이 되어 버린다.</div>
+            <div class="q">저는 언제부터 적용인가요</div>
+            <div class="a">갱신일 기준으로 답한다. 인상일에 걸친 회원의 기준을 <b>미리 정해 두는 것이 이 항목의 핵심</b>이다 — 만기 149명이 여기 걸린다.</div>
+            <div class="q">뭐가 좋아졌길래 올리나요</div>
+            <div class="a">“무엇이 나아졌는지” 한 장을 그대로 보여준다. 말로 설명하면 담당자마다 달라진다.</div>
+            <div class="q">미리 갱신하면 지금 가격인가요</div>
+            <div class="a">조기 갱신 개방 여부가 정해져야 답할 수 있다. 열면 10월 매출이 9월로 당겨지고, 안 열면 그 문의가 불만으로 남는다.</div>
+            <div class="q">강습도 오르나요</div>
+            <div class="a">회원권만 올릴지 같이 올릴지 확정 전에는 답하지 않는다. 강습이 매출의 더 큰 축이라 이 답이 가장 민감하다.</div>
+          </div>
+          <div class="note" style="border-left-color:var(--warn)">
+            <b>고지 전에 응대 문구 1벌이 나가야 한다.</b> 회원은 담당자에게 먼저 묻는다 —
+            문구가 없으면 그날부터 답이 사람마다 갈리고, 그 뒤는 수습이다.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── 3열 ── -->
+    <div class="col">
+
+      <div class="blk">
+        <h2>5 · 리스크와 대비</h2>
+        <div class="body">
+          <div class="risk">
+            <div class="r">
+              <span class="t">기존 회원 갱신 이탈</span>
+              <span class="d">인상의 진짜 위험은 신규가 아니라 갱신이다. 정원이 차 있어 신규는 어차피 못 받는다.</span>
+              <span class="f">→ 만기 149명(8월 84·9월 65)을 인상 전에 먼저 접촉해 의사를 확인한다.</span>
+            </div>
+            <div class="r">
+              <span class="t">가격 때문에 떠난 이력이 있다</span>
+              <span class="d">못 받은 문의 278건 중 이탈 사유 2위가 ‘금액·프로모션’ 40건이다.</span>
+              <span class="f">→ 그 40건은 신규였다. 기존 회원에 같은 반응이 나올지는 별개로 봐야 한다.</span>
+            </div>
+            <div class="r mid">
+              <span class="t">개선이 늦어지면 명분이 빈다</span>
+              <span class="d">공사가 10월을 넘기면 “올려놓고 고친다”가 된다.</span>
+              <span class="f">→ 8월 말까지 공사 일정을 확정하지 못하면 인상 시점 재검토를 올린다.</span>
+            </div>
+            <div class="r mid">
+              <span class="t">현장에서 말이 갈린다</span>
+              <span class="d">인상일에 걸친 회원의 갱신가를 미리 정하지 않으면 담당자마다 다르게 답한다.</span>
+              <span class="f">→ 응대 문구 1벌을 고지 전에 만들어 배포한다.</span>
+            </div>
+            <div class="r mid">
+              <span class="t">강습만 남고 회원권이 빠진다</span>
+              <span class="d">회원권만 올리면 회원권을 끊고 강습만 듣는 쪽으로 옮겨갈 수 있다.</span>
+              <span class="f">→ 강습 동반 인상 여부를 같이 결정한다(3번 항목).</span>
+            </div>
+            <div class="r mid">
+              <span class="t">대외 문구 사고</span>
+              <span class="d">정원 마감 상태라 모집·할인 표현이 금지돼 있다. 인상 안내도 같은 규칙을 따른다.</span>
+              <span class="f">→ 문구는 마케팅이 만들고 회원 담당이 확인한 뒤 나간다.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>6 · 일정 <span>10월 1일 시행 기준 역산</span></h2>
+        <div class="body">
+          <ol class="steps">
+            <li><b>8월 중</b> — 공사 일정 확정 · 인상폭 결정 · 강습 동반 여부 결정</li>
+            <li><b>8월 말</b> — 만기 149명 갱신가 기준 확정 · 조기 갱신 개방 여부 결정</li>
+            <li><b>9월 1일</b> — 회원 고지 (시행 한 달 전) · “무엇이 나아졌는지” 한 장 동시 발송</li>
+            <li><b>9월 중</b> — 실무진 응대 문구 배포 · 문의 대응</li>
+            <li><b>10월 1일</b> — 시행</li>
+          </ol>
+          <div class="note">
+            <b>가장 이른 마감선은 8월 말이다.</b> 공사 일정과 인상폭 둘 중 하나라도 8월을 넘기면
+            9월 1일 고지가 흔들리고, 고지가 밀리면 10월 시행 자체가 밀린다.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <span>
+      숫자 출처 — 회원권·강습 매출: 홈 지표 스냅샷(2026년 7월 확정) · 정가표: 상품기획 문서 ·
+      이탈 사유: 멤버십 문의 원장 278건 · 만기 인원: 만기 알림 기록(8월분)·만기 요약(9월분) · 유효회원 999명: 회원 지표.
+    </span>
+    <span>근거 없는 항목은 “기록 없음”으로 적었고 추정치를 숫자로 쓰지 않았습니다.</span>
+  </footer>
+
+</div>
+</body>
+</html>
