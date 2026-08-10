@@ -1436,8 +1436,9 @@ async function _supPush(){
 var SUP_CATS=['청소','세탁/타월','어메니티/소모품','사무','비품','장비','기타'];
 function renderSupply(){
   var fc=document.getElementById("supFilter");if(!fc)return;
-  var liveRows=SUPPLY_ROWS.filter(function(r){return !supIsDead(r);});
-  var lowN=SUPPLY_ROWS.filter(supIsLow).length,deadN=SUPPLY_ROWS.length-liveRows.length;
+  // '전체' 개수는 실제로 보이는 것만 센다 — 숨긴 이관 자리표시가 숫자에만 남으면 표와 안 맞아 혼란스럽다.
+  var liveRows=SUPPLY_ROWS.filter(function(r){return !supIsDead(r)&&!supIsLegacyStub(r);});
+  var lowN=SUPPLY_ROWS.filter(supIsLow).length,deadN=SUPPLY_ROWS.filter(supIsDead).length; // 불용 개수는 불용만 센다(숨긴 이관분과 섞이지 않게)
   var astPend=astLive().filter(function(a){return !a.부착;}).length;
   var FL=[{k:"전체",l:"전체 "+liveRows.length},{k:"발주필요",l:"🔴 발주 필요 "+lowN},{k:"자산",l:"🏷 자산대장 "+astLive().length+(astPend?(" · 부착대기 "+astPend):"")},{k:"불용",l:"불용 "+deadN}];
   fc.innerHTML=FL.map(function(f){return '<button class="team-chip'+(f.k===supFilter?' on':'')+'" data-f="'+f.k+'">'+f.l+'</button>';}).join('');
