@@ -153,6 +153,18 @@ _DOMAIN_FORCE_ENV = "WP_DOMAIN_FORCE"
 CHRO_DOMAIN_PATHS = frozenset({
     "3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html",
     "3. 웰페리온 가이드/coo/todo/결재 현황 SSOT.html",
+    # ★2026-08-10 추가(시토 · GM 지시 "예방 대책"). 아래 2개는 오늘 실측에서
+    #   "이 PC 작업본이 저장소보다 뒤진" 상태로 남아 있었는데 이 목록에 없어
+    #   커밋이 그대로 통과할 수 있었다 — 2026-08-08 사고(cd2e79cae)와 같은 물리경로다.
+    #   ▸chro/hub/index.html = 인사허브 첫 화면(폴더가 chro 라 소유는 명백하다.
+    #     PROTECTED_DELETE_PREFIXES 가 chro/ 접두사로 "삭제"는 이미 막고 있었으나
+    #     "수정"은 안 막았다 — 그 구멍).
+    #   ▸.deploy-todo/업무&결재 현황.js = 위 업무·결재 SSOT 두 화면의 서버코드.
+    #     화면만 막고 그 뒷단을 안 막으면 8/8 처럼 뒷단만 지워진다(실제로 그렇게 났다).
+    #     GAS 배선은 원칙상 시토 소유지만, 이 파일은 시로 화면의 기능 자체를 담고 있어
+    #     예외로 둔다. 시토가 정당하게 고칠 때는 WP_DOMAIN_FORCE=CHRO 로 선언하고 한다.
+    "3. 웰페리온 가이드/chro/hub/index.html",
+    ".deploy-todo/업무&결재 현황.js",
 })
 #   시뽀 domain="운영 매출·지출" → cfo/finance/ 안의 매출·지출 대시보드 3종
 #   (apps_script_expense.js 등 배선 파일은 제외 — COO 와 동일 원칙: 내용 화면은
