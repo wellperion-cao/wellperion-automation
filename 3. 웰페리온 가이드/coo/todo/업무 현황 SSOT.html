@@ -62,30 +62,24 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 /* ── 라이브 점수판 2단 (2026-08-07 신설 · 2026-08-10 GM 지시로 1/5 크기 축소) ──
    카드·격자를 걷어내고 한 줄짜리 인라인 목록으로 바꿨다. 업무 보드가 주인공이고
    이건 머리말이라 자리를 많이 먹으면 안 된다. 업무 칸은 3개만(진행중·완료·기한초과). */
-.livestrip{padding:6px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:11px;line-height:1.5}
-.livestrip .ls-foot{grid-column:1/-1;font-size:9.5px;color:var(--dim);text-align:center;padding:0 0 2px}
+/* 두 판을 같은 카드 형태로 통일 — 접수 점수판 디자인이 낫다는 GM 판단(2026-08-10). */
+.livestrip{padding:12px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.livestrip .ls-foot{grid-column:1/-1;font-size:11.5px;color:var(--dim);text-align:center;padding:2px 0 0}
 @media(max-width:860px){.livestrip{grid-template-columns:1fr}}
-.ls-card{min-width:0}
-.ls-head{font-size:10.5px;font-weight:700;color:var(--dim);margin-bottom:2px}
-.ls-head .ls-sub{font-weight:400;margin-left:3px;opacity:.8}
-.ls-body{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline}
-.ls-dim{font-size:10.5px;color:var(--dim)}
-/* 접수 점수판 — 인라인 */
-.ls-row{display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap}
-.ls-rank{color:var(--accent);font-weight:800;font-size:10px}
-.ls-name{font-weight:700;color:var(--text)}
-.ls-pt{font-weight:800;color:var(--accent)}
-.ls-detail{font-size:9.5px;color:var(--dim)}
-/* 업무 현황 — 대시보드 담당자별 통계와 같은 표(2026-08-10 GM). 가중점수·그래프 대신 '지연'. */
-.ls-tbl{width:100%;border-collapse:collapse;font-size:10.5px}
-.ls-tbl th{background:var(--paper);color:var(--dim);font-weight:700;padding:2px 5px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:center}
-.ls-tbl th:first-child{text-align:left}
-.ls-tbl td{padding:2px 5px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap}
-.ls-tbl td:first-child{text-align:left;font-weight:700;color:var(--text)}
-.ls-tbl tr:last-child td{border-bottom:none}
-.ls-tbl .lt-late{color:var(--red);font-weight:800}
-.ls-tbl .lt-zero{color:var(--dim)}
-.ls-note{font-size:9.5px;color:var(--dim);font-style:italic}
+.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0}
+.ls-head{font-size:13px;font-weight:700;color:var(--text);margin-bottom:9px}
+.ls-head .ls-sub{font-size:11px;font-weight:500;color:var(--dim);margin-left:5px}
+.ls-body{display:flex;flex-direction:column;gap:6px}
+.ls-dim{font-size:12px;color:var(--dim)}
+/* 한 줄 = 한 사람. 왼쪽 배지 · 이름 · 강조 숫자 · 상세 */
+.ls-row{display:flex;align-items:center;gap:8px;font-size:13px}
+.ls-rank{min-width:19px;height:19px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ls-rank.plain{background:var(--border);color:var(--dim)}   /* 업무 쪽 — 순위가 아니라 자리표시 */
+.ls-name{font-weight:700;color:var(--text);white-space:nowrap}
+.ls-pt{font-weight:800;color:var(--accent);white-space:nowrap}
+.ls-detail{font-size:11.5px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ls-detail b.late{color:var(--red);font-weight:800}
+.ls-note{font-size:11.5px;color:var(--dim);font-style:italic}
 @media print{.livestrip{display:none!important}}
 .filter-bar{background:var(--bg);padding:8px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .filter-bar::-webkit-scrollbar{display:none}
@@ -3893,12 +3887,12 @@ window.ssotShowTasks=ssotShowTasks;
     var b = (j && j.board) || [];
     if (!b.length) { box.innerHTML = '<div class="ls-dim">이번 달 기록이 아직 없습니다.</div>'; return; }
     box.innerHTML = b.map(function (r) {
-      return '<span class="ls-row">' +
+      return '<div class="ls-row">' +
         '<span class="ls-rank">' + esc(r.rank) + '</span>' +
         '<span class="ls-name">' + esc(r.name) + '</span>' +
-        '<span class="ls-pt">' + esc(r.total) + '</span>' +
-        '<span class="ls-detail">(접수' + esc(r.intake) + '·완료' + esc(r.done) + ')</span>' +
-        '</span>';
+        '<span class="ls-pt">' + esc(r.total) + '점</span>' +
+        '<span class="ls-detail">접수 ' + esc(r.intake) + ' · 완료 ' + esc(r.done) + '</span>' +
+        '</div>';
     }).join('');
   }
 
@@ -3920,7 +3914,9 @@ window.ssotShowTasks=ssotShowTasks;
       var m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
       return m ? (m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3])) : '';
     };
-    var h = '<table class="ls-tbl"><tr><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th>지연</th></tr>';
+    // 접수 점수판과 같은 줄 모양으로 맞춘다(2026-08-10 GM). 왼쪽 배지는 순위가 아니라 자리표시 —
+    // 업무 건수로 등수를 매기면 '많이 배분받은 사람'이 1등이 된다.
+    var h = '', idx = 0;
     names.forEach(function (m) {
       var mine = all.filter(function (t) { return String(t.owner || t['담당자'] || '').indexOf(m) >= 0; });
       if (!mine.length) return;                       // 이 원장에 업무가 없는 사람은 줄을 만들지 않는다(0 으로 채우면 왜곡)
@@ -3933,11 +3929,15 @@ window.ssotShowTasks=ssotShowTasks;
         return st(t) !== '완료' && st(t) !== '보류' && e && e < today;
       }).length;
       var rate = mine.length ? Math.round(done / mine.length * 100) : 0;
-      h += '<tr><td>' + esc(m) + '</td><td>' + mine.length + '</td><td>' + prog + '</td><td>' + done +
-           '</td><td>' + hold + '</td><td>' + rate + '%</td>' +
-           '<td class="' + (late ? 'lt-late' : 'lt-zero') + '">' + late + '</td></tr>';
+      idx++;
+      h += '<div class="ls-row">' +
+        '<span class="ls-rank plain">' + idx + '</span>' +
+        '<span class="ls-name">' + esc(m) + '</span>' +
+        '<span class="ls-pt">진행 ' + prog + '</span>' +
+        '<span class="ls-detail">완료 ' + done + ' · 보류 ' + hold + ' · 완료율 ' + rate + '% · 지연 ' +
+          (late ? '<b class="late">' + late + '</b>' : '0') + '</span>' +
+        '</div>';
     });
-    h += '</table>';
     box.innerHTML = h;
     return true;
   }
