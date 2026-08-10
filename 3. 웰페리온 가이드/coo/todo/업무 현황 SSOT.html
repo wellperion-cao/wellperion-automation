@@ -3918,11 +3918,48 @@ window.ssotShowTasks=ssotShowTasks;
   }
   get(REG_API + '?action=reg_scoreboard&period=month').then(renderReg)
     .catch(function () { fail('lsReg', '접수 점수판을 불러오지 못했습니다.'); });
+  /* 화면 집계 — 서버 액션(todo_scoreboard)이 아직 없을 때만 쓰는 대체 경로.
+     서버가 준비되면 그쪽 값이 항상 이긴다(아래 호출 순서). 두 구현이 동시에 쓰이지 않으므로
+     '화면이 따로 세서 숫자가 갈리는' 문제는 생기지 않는다 — 셈법은 서버 코드와 같은 규칙이다.
+     원천도 같다: 화면이 이미 받아 둔 todo_list(ALL_TASKS) 하나만 본다.
+     ※ GAS 배포 권한이 열리면 이 블록은 지워도 된다. */
+  function localBoard() {
+    if (typeof ALL_TASKS === 'undefined' || !ALL_TASKS.length) return null;
+    var d = new Date();
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var ymdOf = function (x) { return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); };
+    var today = ymdOf(d);
+    var mon = new Date(d); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); // 월요일 시작
+    var since = ymdOf(mon);
+    var norm = function (v) {
+      if (!v) return '';
+      var m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
+      return m ? (m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3])) : '';
+    };
+    var agg = {};
+    ALL_TASKS.forEach(function (t) {
+      var name = String(t.owner || t['담당자'] || '').split(',')[0].trim();
+      if (!name || name.indexOf('김남욱GM') >= 0) return;
+      if (!agg[name]) agg[name] = { name: name, inProgress: 0, weekDone: 0, overdue: 0, noEnd: 0 };
+      var a = agg[name];
+      var st = String(t.status || t['상태'] || '').trim();
+      var end = norm(t.endDate || t['종료일']);
+      var done = norm(t['완료일'] || t.doneDate);
+      if (st === '진행중') a.inProgress++;
+      if (st === '완료' && done && done >= since) a.weekDone++;
+      if (st === '진행중' && end && end < today) a.overdue++;
+      if (!end) a.noEnd++;
+    });
+    return { ok: true, local: true, weekSince: since, board: Object.keys(agg).map(function (k) { return agg[k]; }) };
+  }
+  function todoFallback() {
+    var j = localBoard();
+    if (j) { renderTodo(j); }
+    else { setTimeout(function () { var k = localBoard(); if (k) renderTodo(k); else fail('lsTodo', '업무 현황을 불러오지 못했습니다 — 새로고침 해주세요.'); }, 4000); }
+  }
   get(TODO_API + '?action=todo_scoreboard').then(function (j) {
-    if (j && j.ok) renderTodo(j);
-    // 서버(GAS)에 todo_scoreboard 가 아직 배포되지 않은 동안은 '고장'이 아니라 '대기'다 — 그렇게 알린다.
-    else fail('lsTodo', '서버 집계 반영 대기 중 — GAS 배포 후 표시됩니다.');
-  }).catch(function () { fail('lsTodo', '업무 현황을 불러오지 못했습니다 — 새로고침 해주세요.'); });
+    if (j && j.ok) renderTodo(j); else todoFallback();   // 서버 우선, 없으면 화면 집계
+  }).catch(todoFallback);
 })();
 </script>
 </body>
