@@ -981,6 +981,46 @@ function _syncLessonRegistry_() {
         }
       });
     });
+    /* ─── [배523 · 2026-08-10 시포] 팀시트가 못 잡는 등록자 보충 ───────────────────
+       ▸증상: 등록 원장이 2026-07-20 이후 21일째 새 등록을 못 받았다(실측 — 원장 2,515행 중
+         마지막 실제 등록일 07-20, 그 뒤 0건). 회원 명단·실무진 화면은 멀쩡했고 KPI 집계만 멈췄다.
+       ▸원인: 위 루프는 팀시트(LESSON_TEAM_SHEETS)에서만 등록자를 모은다. 그 팀시트를 채우던
+         IMPORTRANGE 가 죽었고(배173 — GM 이 '복구 안 함, ERP 로 간다'로 확정), 그 뒤 아무도
+         원장 쪽을 다른 원천으로 옮기지 않았다. 새로 등록한 사람이 팀시트에 안 나타나니 원장에도 없다.
+       ▸보충: 강습 응답탭(문의 정본)에서 등록(SUC)인데 원장에 전화키가 아예 없는 사람만 담는다.
+         실측 28명(성인 13·유소년 15 · 2026-08-10). 이미 있는 사람은 건드리지 않는다.
+       ▸★등록일은 지어내지 않는다 — 기준선(2000-01-01)으로 넣는다. 응답탭에는 등록일 칸이
+         자체가 없어서(배198·배365 가 그 칸 신설 건이다) 실제 등록일을 알 수 없다. 오늘로 찍으면
+         오늘 28명이 등록한 것처럼 보인다. 명단 정합만 여기서 맞추고, '최근 N일 등록' 측정은
+         등록일 칸이 생겨야 가능하다 — 위 응답탭發 불변식(①)과 같은 규칙이다. */
+    try {
+      ['성인강습', '유소년강습'].forEach(function(bType){
+        var bGid = (bType === '유소년강습') ? LESSON_GID_YOUTH : LESSON_GID;
+        var bHave = {};
+        for (var bi = 0; bi < rows.length; bi++) {
+          var bp = _normPhone_(rows[bi][3]);
+          if (bp && String(rows[bi][0] || '') === bType) bHave[bp] = 1;
+        }
+        (_lessonReadRows_(bGid) || []).forEach(function(irow){
+          if (!_isLessonReg_(irow.status)) return;
+          var bnp = _normPhone_(irow.phone);
+          if (!bnp || bHave[bnp]) return;                 // 원장에 이미 있는 사람은 제외
+          var bBuckets = _sportBuckets_(irow.sport) || [];
+          var bSport = bBuckets.length ? bBuckets[0] : String(irow.sport || '').trim();
+          if (!bSport) return;                            // 종목 판정 실패분은 지어내지 않고 건너뛴다
+          var bKey = bnp + '|' + bType + '|' + bSport;
+          if (keyIdx.hasOwnProperty(bKey)) return;
+          rows.push([bType, bSport, String(irow.name || ''), _fmtPhone_(irow.phone),
+                     String(irow.status || '').trim(), '2000-01-01', bKey]);
+          keyIdx[bKey] = rows.length - 1;
+          bHave[bnp] = 1;
+          dirty = true;
+          // newIdx 에 넣지 않는다 — 이 보충분은 '금일 신규'가 아니라 뒤늦은 편입이라
+          // 아래 대량 신규 가드의 판정 대상이 아니다(이미 기준선으로 적재했다).
+        });
+      });
+    } catch (eBackfill) { Logger.log('강습원장 응답탭 보충 실패: ' + eBackfill.message); }
+
     // ─── 대량 신규 가드(2026-07-15 시포 · KPI 오염 재발방지, 배973 사고 근본수리) ───
     //   sync-on-load 는 '금일 증분 등록'을 잡는 용도(정상 신규 ≤ 십수 건). 팀시트 이관·일괄 연결로
     //   한 번에 다수 신규 키가 유입되면 그것은 '금일 등록'이 아니라 과거 등록자의 뒤늦은 편입 →
