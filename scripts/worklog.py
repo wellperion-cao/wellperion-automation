@@ -90,7 +90,11 @@ def record_gm_prompt_hook() -> None:
             # 사람이 친 것만 접수한다. 훅은 시스템이 주입하는 알림·명령 출력에도 똑같이 걸려서,
             # 2026-08-08 에 `<task-notification>` 한 줄이 GM 지시로 원장에 박혀 쿵짝표에
             # "진행중" 으로 떴다. 아무도 시키지 않은 일이 놓친 일로 보이면 판단이 어긋난다.
-            if event.startswith(('<', '[SYSTEM NOTIFICATION', '[형식 고정')):
+            # 'C-Level 부팅'(부팅 지시문)·'너는 …'(서브에이전트 역할 프롬프트)도 사람이 친 게 아니라
+            # 붙여넣은 실행문이다. 2026-08-11 실측: 미완 91건 중 16건이 이 둘이었다 —
+            # GM 이 시킨 적 없는 일이 "미완"으로 쌓여 쿵짝표 숫자를 부풀렸다.
+            if event.startswith(('<', '[SYSTEM NOTIFICATION', '[형식 고정',
+                                 'C-Level 부팅', '너는 ')):
                 event = ''
             if len(event) > 120:
                 event = event[:120] + "…"
