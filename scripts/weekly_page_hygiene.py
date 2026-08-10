@@ -116,6 +116,13 @@ PAGE_TARGETS: list[dict] = [
 
 DEFAULT_LOG_PATH = os.path.join(_PROJECT_ROOT, "status", "weekly_page_hygiene_log.jsonl")
 
+# 자동삭제 잠금 — 소유자가 사람이라 AI 가 파일을 직접 고치지 않는다.
+#   chro·cfo = 나우열M 라인(자율화규약 §9 · 약속 L22 — 접촉 금지)
+#   coo      = 이경연 실장 라인(safe_commit.COO_DOMAIN_PATHS 가 커밋도 막는다 —
+#              여기서 막지 않으면 파일만 고쳐지고 커밋은 거부되는 어중간한 상태가 된다)
+#   ★GM 확정 2026-08-10: "업무&결재 SSOT도 CHRO 건이라 건드리면 안 된다"
+AUTO_APPLY_LOCKED_CLEVELS = frozenset({"chro", "cfo", "coo"})
+
 # ── 오탐 영구 제외 목록 (웰리 판정 2026-08-05, 배386/배8) ──
 # (path_contains, symbol_or_snippet_contains) — 두 조건이 모두 맞으면 후보 제외.
 FALSE_POSITIVE_EXCLUSIONS: list[tuple[str, str]] = [
@@ -529,7 +536,8 @@ def _audit_one_target(target: dict, working_content: str, apply_gate: bool, forc
             "applied": [], "proposed": [], "content": working_content,
         }
 
-    live_apply = apply_gate and not force_dry_run
+    domain_locked = target.get("clevel") in AUTO_APPLY_LOCKED_CLEVELS
+    live_apply = apply_gate and not force_dry_run and not domain_locked
     applied: list[dict] = []
     proposed: list[dict] = []
     content = working_content
@@ -553,6 +561,10 @@ def _audit_one_target(target: dict, working_content: str, apply_gate: bool, forc
                 applied.append({**cand, "gate_reason": result["reason"]})
             else:
                 proposed.append({**cand, "gate_reason": result["reason"], "would_auto_apply": False})
+        elif domain_locked:
+            reason = f"자동적용 잠김(소유={target.get('clevel')} 도메인 · 사람이 판단)"
+            print(f"[weekly_page_hygiene] {reason} — {target.get('label')} / {cand.get('symbol')}", file=sys.stderr)
+            proposed.append({**cand, "gate_reason": reason, "would_auto_apply": False})
         else:
             symbol = (cand.get("symbol") or "").strip()
             snippet = cand.get("snippet") or ""

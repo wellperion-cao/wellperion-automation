@@ -21,5 +21,8 @@ REM committed per-file. B/C/D are always proposal-only. Design: scripts\weekly_p
 REM module docstring.
 cd /d C:\Users\jjky0\welperion-automation
 set PYTHONIOENCODING=utf-8
-REM set PAGE_HYGIENE_APPLY=1
+REM GM go 2026-08-10: "밀린 14건부터 진행" - live ON. Domain-locked clevels (chro/cfo/coo -
+REM see AUTO_APPLY_LOCKED_CLEVELS in weekly_page_hygiene.py) still never auto-apply even with
+REM this flag on. Rollback (1-stage): comment this line back out.
+set PAGE_HYGIENE_APPLY=1
 C:\Python314\python.exe -u scripts\weekly_page_hygiene.py --clevel all >> logs\weekly_page_hygiene.log 2>&1
