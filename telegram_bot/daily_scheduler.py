@@ -2542,7 +2542,8 @@ def run_daily_digest(early: bool = False) -> None:
     휴일(주말·close_days)은 20:00(early=True)만 실행 / 평일은 22:30(early=False)만 실행
     (GM 2026-07-20, close_days 공휴일 반영 — 기존 요일 고정 mon-fri/sat,sun 을 대체).
     문의 정리는 카카오톡 ★부서장 방에도 추가 발송(GM 2026-07-18). ★중간관리자 방
-    알림성 합본(mgmt_notice_queue)도 같은 회차에 얹는다(배499 · GM 2026-08-10)."""
+    알림성 합본(mgmt_notice_queue)은 여기 안 얹는다 — run_mgmt_notice_digest(매일
+    17:00)가 분리 발송한다(GM 지시 2026-08-10: 알림성 카톡을 밤으로 미루지 않는다)."""
     from datetime import timezone as _tz3
     now_dt = datetime.now(_tz3.utc) + timedelta(hours=9)
     today = now_dt.strftime("%Y-%m-%d")
@@ -2775,13 +2776,16 @@ def run_daily_digest(early: bool = False) -> None:
         except Exception as e:
             logger.error(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송 예외: {e}")
 
-    # ── ★중간관리자 알림성 합본 — 하루 일과 정리에 얹기 (배499 · GM 결정 2026-08-10) ──
-    #   GM: "그럼 하루일과정리로 평일 22시30분 주말 및 공휴일은 20시 어때?" — 이 함수가
-    #   이미 그 두 시각(early=20:00 휴일 / 22:30 평일, 위 rest_day=close_days 판정)으로
-    #   돈다. 새 발신·새 예약작업 없음 — 여기 한 블록만 얹는다(약속 L21). 알림성 건은
-    #   mgmt_notice_queue(scripts/mgmt_notice_queue.py)에 하루 동안 쌓이고 여기서 한
-    #   번에 팝해 보낸다. 답요구 건·3-트리거(💰🔒🚫) 긴급건은 그 모듈 add()가 category
-    #   가드로 거부해 여기 안 섞인다 — 그런 건 지금처럼 즉시 개별 발송 유지.
+
+def run_mgmt_notice_digest() -> None:
+    """★중간관리자 알림성 합본 — 매일 17:00 낮 시간 단독 발송(배499 큐 그대로 재사용).
+    처음엔 run_daily_digest(평일 22:30/휴일 20:00) 안에 얹혀 밤에 나갔으나, GM 지시
+    2026-08-10 "갑자기 낮시간 카톡 자동화 중단 발송은 밤으로 이동하면 안되" 로 낮
+    시간(17:00)으로 분리했다. 알림성 건은 mgmt_notice_queue(scripts/mgmt_notice_queue.py)
+    에 하루 동안 쌓이고 여기서 한 번에 팝해 보낸다. 답요구 건·3-트리거(💰🔒🚫) 긴급건은
+    그 모듈 add()가 category 가드로 거부해 여기 안 섞인다 — 그런 건 즉시 개별 발송 유지."""
+    label = "[★중간관리자 알림성 합본]"
+    today = datetime.now().strftime("%Y-%m-%d")
     try:
         import mgmt_notice_queue as _mnq
         import send_ops_digest as _od3
@@ -2796,13 +2800,13 @@ def run_daily_digest(early: bool = False) -> None:
                 env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
             )
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            logger.info(f"{label} 카톡 {_od3.RELAY_ROOM}(알림성 합본 {len(notice_items)}건) 발송: {tail[0]}")
+            logger.info(f"{label} 카톡 {_od3.RELAY_ROOM}({len(notice_items)}건) 발송: {tail[0]}")
             if proc.returncode != 0:
                 _kakao_fail_notify("알림성 합본", tail[0], room=_od3.RELAY_ROOM)
         else:
-            logger.info(f"{label} ★중간관리자 알림성 합본 — 오늘 큐 0건, 발송 없음")
+            logger.info(f"{label} 오늘 큐 0건, 발송 없음")
     except Exception as e:
-        logger.error(f"{label} ★중간관리자 알림성 합본 예외: {e}")
+        logger.error(f"{label} 예외: {e}")
 
 
 # ── 완료 즉시 알림 (10분 주기) — GM 2026-08-06 "완료 시 즉각 1회" ────────────────────
@@ -3749,6 +3753,21 @@ def main():
             logger.info("weekly_ops_report 등록 완료 — 매주 금 17:00 ★중간관리자 발송")
         except Exception as e:
             logger.warning(f"weekly_ops_report 등록 실패: {e}")
+
+        # ── ★중간관리자 알림성 합본 (매일 17:05) — GM 지시 2026-08-10: 알림성 카톡을
+        #   밤으로 미루지 않는다. 금요일 17:00 weekly_ops_report(위)와 같은 방이라
+        #   5분 뒤로 둬 두 발신이 겹치지 않게 한다(약속 L21 — 새 방·새 발신기 안 만듦).
+        try:
+            scheduler.add_job(
+                run_mgmt_notice_digest,
+                trigger=CronTrigger(hour=17, minute=5, timezone="Asia/Seoul"),
+                id="mgmt_notice_digest_1705",
+                misfire_grace_time=600,
+                coalesce=True,
+            )
+            logger.info("mgmt_notice_digest 등록 완료 — 매일 17:05 ★중간관리자 알림성 합본")
+        except Exception as e:
+            logger.warning(f"mgmt_notice_digest 등록 실패: {e}")
 
     # ── git 죽은 잠금 청소 (배9889 · 2026-07-23 시토) ──────────────────────
     #   `git commit -- <경로>` 가 쓰는 임시 인덱스(next-index-<PID>.lock)는 그 프로세스가
