@@ -263,9 +263,11 @@ def _gm_confirm_pending(case: dict) -> bool:
     (선등록 단계에서 의도적으로 send_card=False 로 남겨둔 상태와 동일 취급).
     """
     folder = ROOT / case["folder"]
-    diary_html = folder / f"ep{case['num']:02d}_diary_source.html"
+    diary_html = _find_diary_html(folder, case["num"])
     caption_md = folder / "caption.md"
     for p in (diary_html, caption_md):
+        if p is None:
+            continue
         try:
             if p.exists() and _GM_CONFIRM_RE.search(p.read_text(encoding="utf-8")):
                 return True
@@ -361,23 +363,64 @@ def _count_pads(html: str) -> int:
     return len(re.findall(r'<div class="pad [a-z]+">', html))
 
 
+MIN_SLIDES = 6  # 최소 장수. 시리즈에 따라 7장 이상도 정상(2026-08-08 「하루의 완성」 재가동분 = 7장)
+
+
+def _find_diary_html(folder: Path, num: int) -> Path | None:
+    """대본 html 찾기. 재고표 전역번호(ep18) 우선, 없으면 폴더 안 ep*_diary_source.html 하나.
+
+    폴더당 대본은 1편이라 글롭 결과가 여러 개일 일은 없다. 여러 개면 이름순 첫 번째.
+    번호 체계가 전역(ep18)/폴더로컬(ep01) 두 벌로 갈린 이력이 있어 이름 하나로 못 박지 않는다.
+    """
+    exact = folder / f"ep{num:02d}_diary_source.html"
+    if exact.exists():
+        return exact
+    hits = sorted(folder.glob("ep*_diary_source.html"))
+    return hits[0] if hits else None
+
+
+def _rendered_ok(out_dir: Path) -> tuple[bool, Path | None]:
+    """슬라이드가 이미 완성돼 있는지. 반환: (완성 여부, 미리보기 경로).
+
+    장수를 못 박지 않고 post_1 부터 연속으로 몇 장인지 센다 — 시리즈마다 6·7장으로 다르다.
+    """
+    if not out_dir.is_dir():
+        return False, None
+    n = 0
+    while (out_dir / f"post_{n + 1}.jpg").exists():
+        n += 1
+    if n < MIN_SLIDES:
+        return False, None
+    montages = sorted(out_dir.glob("_검수_미리보기_*장.png"))
+    if not montages:
+        return False, None
+    return True, montages[-1]
+
+
 def validate_case_folder(case: dict) -> tuple[bool, str, Path | None, Path | None]:
     """대본 불량 검증. 반환: (ok, 사유_또는_공백, diary_html_path, caption_path)."""
     folder = ROOT / case["folder"]
-    diary_html = folder / f"ep{case['num']:02d}_diary_source.html"
     caption_md = folder / "caption.md"
 
     if not folder.is_dir():
         return False, f"제작 폴더 미존재: {case['folder']}", None, None
-    if not diary_html.exists():
-        return False, f"대본 html 미존재: {diary_html.name}", None, None
-    try:
-        html = diary_html.read_text(encoding="utf-8")
-    except Exception as exc:
-        return False, f"대본 html 읽기 실패: {exc}", None, None
-    pad_count = _count_pads(html)
-    if pad_count != 6:
-        return False, f".pad 블록 {pad_count}장(6장 아님)", diary_html, None
+
+    diary_html = _find_diary_html(folder, case["num"])
+    already_rendered, _ = _rendered_ok(folder / "output")
+
+    # 대본 검증은 '아직 렌더 전'일 때만 의미가 있다. 슬라이드가 이미 완성돼 있으면
+    # 대본 파일이 없거나 이름이 달라도 발송을 막지 않는다(2026-08-10 · 배474).
+    if not already_rendered:
+        if diary_html is None:
+            return False, f"대본 html 미존재(ep*_diary_source.html) · 렌더 산출물도 없음: {case['folder']}", None, None
+        try:
+            html = diary_html.read_text(encoding="utf-8")
+        except Exception as exc:
+            return False, f"대본 html 읽기 실패: {exc}", None, None
+        pad_count = _count_pads(html)
+        if pad_count < MIN_SLIDES:
+            return False, f".pad 블록 {pad_count}장({MIN_SLIDES}장 미만)", diary_html, None
+
     if not caption_md.exists():
         return False, "caption.md 미존재", diary_html, None
     caption_text = caption_md.read_text(encoding="utf-8").strip()
@@ -386,19 +429,21 @@ def validate_case_folder(case: dict) -> tuple[bool, str, Path | None, Path | Non
     return True, "", diary_html, caption_md
 
 
-def render_reuse_or_build(case: dict, diary_html: Path) -> tuple[bool, str, Path | None]:
-    """output/post_1..6.jpg + 미리보기 6장 모두 있으면 재사용, 아니면 render_hand_slides.py 호출.
+def render_reuse_or_build(case: dict, diary_html: Path | None) -> tuple[bool, str, Path | None]:
+    """슬라이드가 이미 완성돼 있으면 재사용, 아니면 render_hand_slides.py 호출.
 
     반환: (ok, 사유, montage_path)
     """
     folder = ROOT / case["folder"]
     out_dir = folder / "output"
-    posts = [out_dir / f"post_{i}.jpg" for i in range(1, 7)]
-    montage = out_dir / "_검수_미리보기_6장.png"
 
-    if all(p.exists() for p in posts) and montage.exists():
-        print(f"[INFO] #{case['num']} 렌더 재사용(이미 6장+미리보기 존재) — 렌더 생략")
+    ok, montage = _rendered_ok(out_dir)
+    if ok:
+        print(f"[INFO] #{case['num']} 렌더 재사용(슬라이드·미리보기 존재) — 렌더 생략")
         return True, "", montage
+
+    if diary_html is None:
+        return False, "렌더가 필요한데 대본 html 이 없다(ep*_diary_source.html)", None
 
     print(f"[INFO] #{case['num']} 렌더 필요 — render_hand_slides.py 호출")
     script = ROOT / "scripts" / "render_hand_slides.py"
@@ -420,8 +465,9 @@ def render_reuse_or_build(case: dict, diary_html: Path) -> tuple[bool, str, Path
     except Exception as exc:
         return False, f"render_hand_slides.py 예외: {exc}", None
 
-    if not (all(p.exists() for p in posts) and montage.exists()):
-        return False, "렌더 후에도 post_1..6.jpg/미리보기 6장 확인 실패", None
+    ok, montage = _rendered_ok(out_dir)
+    if not ok:
+        return False, f"렌더 후에도 슬라이드 {MIN_SLIDES}장/미리보기 확인 실패", None
     return True, "", montage
 
 
@@ -582,8 +628,10 @@ def mark_case_dispatched(case: dict, today_iso: str) -> bool:
 # ─────────────────────────────────────────────────────────────────────────────
 # 메인
 # ─────────────────────────────────────────────────────────────────────────────
-def run(dry_run: bool, plan_only: bool) -> int:
-    now = datetime.now()
+def run(dry_run: bool, plan_only: bool, as_of: str | None = None) -> int:
+    # as_of = 놓친 배치 재실행용 기준일 오버라이드. 요일 분기·슬롯 날짜가 전부 이 값을 따르므로
+    # 지난 일요일을 넣으면 그날 못 돈 주간배치를 그대로 다시 돌릴 수 있다(2026-08-10 · 배474).
+    now = datetime.strptime(as_of, "%Y-%m-%d") if as_of else datetime.now()
     today_iso = now.strftime("%Y-%m-%d")
     print(f"[INFO] === 실전사례 07:30 디스패처 시작 === {now.isoformat(timespec='seconds')} "
           f"(dry_run={dry_run}, plan_only={plan_only})")
@@ -826,8 +874,10 @@ def main() -> int:
                      help="렌더·M5 등록·검수카드 없이 선정·검증만 검증")
     ap.add_argument("--plan-only", action="store_true",
                      help="다음 편 선정 결과만 출력하고 즉시 종료")
+    ap.add_argument("--as-of", metavar="YYYY-MM-DD",
+                     help="기준일 오버라이드 — 놓친 일요일 주간배치를 그날짜로 다시 돌릴 때만 쓴다")
     args = ap.parse_args()
-    return run(dry_run=args.dry_run, plan_only=args.plan_only)
+    return run(dry_run=args.dry_run, plan_only=args.plan_only, as_of=args.as_of)
 
 
 if __name__ == "__main__":
