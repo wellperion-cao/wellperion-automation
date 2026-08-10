@@ -854,25 +854,16 @@ def record_dedup_sent(room_name: str, text: str = "", image_path: Path | None = 
 # 다르면 그냥 나간다.
 #
 # 판정: 줄마다 숫자·요일·진행바를 지운 "줄 종류"의 집합을 만들어(_content_signature)
-# 기준선(status/kakao_chairman_content_baseline.json, 새 파일 1개)과 비교.
-# 기준선 = "직전 발신 1건"이 아니라 **GM 확인을 거친 모든 줄 종류의 누적 목록**
-# (2026-08-10 수정 — 직전 1건만 기억하면 형태 A→B→A 순서로 오갈 때마다 매번
-# "새 내용"으로 오판해 정상 발신이 반복 보류됐다: 휴관 안내문 발신 뒤 기준선이 그
-# 문구로 통째로 덮여, 다음날 정상 매출보고가 다시 "새 내용" 취급당함).
+# 직전 발신 기준선(status/kakao_chairman_content_baseline.json, 새 파일 1개)과 비교.
 # 새 종류가 있으면 이번 회차만 보류하고 GM 업무보고방(8254867551)에 미리보기+무엇이
-# 새로운지 알린 뒤, **기준선에 이번 내용을 추가(병합)**한다 — 그래서 같은 형태가
-# 다음에 다시 오면(정상 매출보고든 휴관 안내든) 자동으로 통과된다. 처음 보는 형태는
-# 여전히 막는다(병합은 "known 목록에 추가"일 뿐 게이트를 우회하지 않는다). 새
-# 폴러·새 프로세스 없음 — 이 발신 관문 안에서 매 실행마다 1회 비교할 뿐이다.
+# 새로운지 알린 뒤, **기준선을 즉시 이번 내용으로 갱신**한다 — 그래서 다음 회차는
+# 자동으로 다시 정상 발신된다(사람이 매번 풀어줄 필요 없음). 새 폴러·새 프로세스 없음
+# — 이 발신 관문 안에서 매 실행마다 1회 비교할 뿐이다.
 # ══════════════════════════════════════════════════════════════════════════
 CHAIRMAN_BASELINE_PATH = ROOT / "status" / "kakao_chairman_content_baseline.json"
 _NUM_RE = re.compile(r"[0-9][0-9,.]*")
 _BAR_RE = re.compile(r"[▓░]+")
 _WEEKDAY_RE = re.compile(r"\([월화수목금토일]\)")
-# 기준선(known 줄 종류) 상한 — 회장님 방은 하루 1~2회, 실측상 서로 다른 줄 종류는
-# 한 자릿수(정상 매출보고 캡션 1종 + 휴관 안내 1종 등)뿐이다. 50이면 앞으로 수십 종류
-# 새 문구가 늘어도 이미 확인된 형태가 밀려날 일이 없다. 넘으면 오래된 것부터 버린다.
-CHAIRMAN_BASELINE_CAP = 50
 
 
 def _line_kind(line: str) -> str:
@@ -926,21 +917,9 @@ def _send_chairman_preview(text: str, new_kinds: list[str]) -> None:
         log(f"[chairman-content] 미리보기 발송 실패(무시): {exc}")
 
 
-def _merge_chairman_baseline(baseline: list[str], kinds: list[str]) -> list[str]:
-    """기준선에 새로 확인된 줄 종류를 추가(기존 것은 유지 — 덮어쓰기 아님).
-    상한 초과 시 오래된 것부터 버린다(FIFO, CHAIRMAN_BASELINE_CAP 사유는 위 주석)."""
-    merged = list(baseline)
-    for k in kinds:
-        if k not in merged:
-            merged.append(k)
-    if len(merged) > CHAIRMAN_BASELINE_CAP:
-        merged = merged[-CHAIRMAN_BASELINE_CAP:]
-    return merged
-
-
 def chairman_content_allows(text: str) -> bool:
     """True=평소대로 발신 진행. False=새 구성 발견 — 이번 회차만 보류(미리보기 발송 +
-    기준선에 추가, 다음부터 같은 형태는 자동 재개)."""
+    기준선 갱신, 다음 회차부터 자동 재개)."""
     kinds = _content_signature(text)
     baseline = _load_chairman_baseline()
     if not baseline:
@@ -951,11 +930,8 @@ def chairman_content_allows(text: str) -> bool:
     new_kinds = [k for k in kinds if k not in baseline]
     if new_kinds:
         _send_chairman_preview(text, new_kinds)
-        # 병합 저장 — 기존에 확인된 종류(예: 정상 매출보고)는 그대로 남기고 이번에
-        # 새로 확인된 종류만 추가한다. 통째로 덮어쓰면 다음 회차에 예전 형태가 다시
-        # "새 내용"으로 오판된다(2026-08-10 사고 원인).
-        _save_chairman_baseline(_merge_chairman_baseline(baseline, kinds))
-        log(f"[chairman-content] 새 구성 {len(new_kinds)}건 발견 — 이번 회차 보류, 미리보기 발송, 기준선에 추가")
+        _save_chairman_baseline(kinds)  # 다음 회차부터는 이 구성이 기준 — 자동 재개
+        log(f"[chairman-content] 새 구성 {len(new_kinds)}건 발견 — 이번 회차 보류, 미리보기 발송, 기준선 갱신")
         return False
     return True
 
@@ -1243,42 +1219,7 @@ def _selftest() -> None:
         assert resumed is True, "미리보기 이후 기준선이 안 바뀌어 다음 회차도 계속 보류됨"
         assert len(calls) == 1, "이미 기준선에 반영된 구성인데 미리보기가 또 감"
 
-        # ③-2 회귀 검사(2026-08-10 사고 재현) — 서로 무관한 두 형태(A=정상 매출보고,
-        # B=휴관 안내)가 번갈아 오는 실제 시나리오. 옛 코드는 기준선을 "직전 1건"으로
-        # 덮어써서 B 확인 뒤 A가 다시 "새 내용"으로 오판됐다. 목록(누적) 방식이면 안 그래야 함.
-        form_a = "회장님, 8.10(월) 매출 및 운영사항 보고드립니다."
-        form_b = "회장님, 8/11(화)은 특별점검일이었습니다. 내일 정상 보고드리겠습니다."
-        form_c = "회장님, 이번 달 임시휴관 안내드립니다."  # 처음 보는 제3의 형태(게이트가 여전히 무는지 검증용)
-
-        held_a1 = chairman_content_allows(form_a)
-        print(f"  [회귀①] A(정상보고) 최초: {'통과' if held_a1 else '보류'} (보류 기대 — 이 selftest 안에서는 처음 봄)")
-        assert held_a1 is False, "A가 최초인데 통과됨(테스트 전제 오류)"
-
-        pass_a = chairman_content_allows(form_a)
-        print(f"  [체크1] 목록에 있는 형태(A=정상보고) 재확인: {'통과' if pass_a else '보류'} (통과 기대)")
-        assert pass_a is True, "목록에 있는 형태(A)인데 보류됨"
-
-        held_b1 = chairman_content_allows(form_b)
-        print(f"  [회귀②] B(휴관 안내) 최초: {'통과' if held_b1 else '보류'} (보류 기대)")
-        assert held_b1 is False, "B가 최초인데 통과됨(테스트 전제 오류)"
-
-        pass_b = chairman_content_allows(form_b)
-        print(f"  [체크2] 목록에 있는 다른 형태(B=휴관안내) 재확인: {'통과' if pass_b else '보류'} (통과 기대)")
-        assert pass_b is True, "목록에 있는 형태(B)인데 보류됨"
-
-        pass_a_again = chairman_content_allows(form_a)
-        print(f"  [핵심 회귀] B 확인 이후 A(정상보고) 재발신: {'통과' if pass_a_again else '보류'} (통과 기대 — 실패하면 8/10 사고 재발)")
-        assert pass_a_again is True, "B를 확인한 뒤 A가 다시 '새 내용'으로 오판됨(직전 1건만 기억하는 옛 버그 재발)"
-
-        held_c = chairman_content_allows(form_c)
-        print(f"  [체크3] 목록에 없는 처음 보는 형태(C): {'통과' if held_c else '보류'} (보류 기대 — 장치가 여전히 무는지)")
-        assert held_c is False, "처음 보는 형태(C)인데 통과됨 — 게이트가 약해짐(금지 사항 위반)"
-
-        pass_c = chairman_content_allows(form_c)
-        print(f"  [체크4] C가 목록에 추가된 뒤 재발신: {'통과' if pass_c else '보류'} (통과 기대)")
-        assert pass_c is True, "새로 확인된 형태(C)가 목록에 안 남아 다음에도 보류됨"
-
-        print("SELFTEST OK: 회장님 새내용게이트(누적 목록·회귀 재현 포함)/정제/평균정확성 정상(발신 0건)")
+        print("SELFTEST OK: 회장님 새내용게이트/정제/평균정확성 정상(발신 0건)")
 
         # ④ 상태 기록 관문(write_status) — 전량 성공/부분 실패/전량 실패 3가지 + 병합(부분
         # 재발송 누적) 자가검사. 실제 status 파일은 안 건드리고 tmp_dir 안 임시 파일로만 검증.
