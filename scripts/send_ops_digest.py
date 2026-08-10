@@ -276,43 +276,34 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 # ★중간관리자 매일 결정거리 요약 (배469 · GM 확정 2026-08-08, 배선 2026-08-10)
 #
 # ★운영부(공유 전용)와 읽는 사람이 다르다(약속 L24) — 이경연 실장·이정헌 소장·나우열M·GM
-# 은 판단·배정을 받는 방이다. 그래서 실무 나열이 아니라 "결정거리"만 추린다: 종합접수
-# 오래 묵은 미해결(담당·처리 판단 필요) + 어제 완료(build_daily_done_section 과 같은
-# OPS_STAFF 필터 재사용 — 이경연 실장 포함, weekly 절과 동일 관례). 소스에 없는 값
-# (담당자 미배정 칸·마감일 칸)은 만들지 않는다 — 있는 두 가지만 쓴다. 전부 비면 빈
-# 문자열(발송 안 함, GM 지시: 억지로 채우지 않는다).
+# 은 판단·배정을 받는 방이다.
+#
+# ★2026-08-11 GM 지적으로 미해결 블록을 뺐다. GM 원문: "중간관리자방에도 운영자방처럼
+# 어제 정리를 해주긴 했는데 내용이 톡방 내용정리가 아니라 미해결건이던데? 그건 따로
+# 보내는걸로 알고 있는데?" — 맞다. 오래 묵은 미해결건은 이미 별도 발신이 담당한다
+# (2026-08-10 11:48 웰리 「담당이 안 잡혀 멈춘 건들」 · 18:02 시토 「마감일 지난 업무
+# 11건」). 여기서 또 내보내면 같은 방에 같은 목록이 두 번 간다.
+#
+# 그럼 이 자리에 무엇이 와야 하나 = ★운영부와 같은 「어제 그 방 대화 정리」다. 그런데
+# ★중간관리자 방은 대화 원문이 2026-08-08 이후 안 쌓인다(1. AI자료_아카이브/11_카카오톡/
+# ★중간관리자/ 마지막 파일 = 20260808). 원문이 없으면 정리를 만들 수 없다 — 그래서
+# 미해결건이 그 빈자리를 채우고 있었던 것이다. 원문 수집·대화 정리 배선은 시토 배536
+# 소관이고, 붙는 즉시 ops_daily_digest 의 방 디렉터리만 갈아 끼우면 된다(새 생성기를
+# 만들지 않는다 · 약속 L21).
+#
+# 그때까지 이 함수는 「어제 완료」만 낸다. 낼 게 없으면 빈 문자열 = 발송 안 함
+# (GM 지시: 억지로 채우지 않는다 — 잘못된 것을 보내느니 안 보낸다).
 # ══════════════════════════════════════════════════════════════════════════
-MGR_DAILY_STALE_DAYS = 14  # ops_daily_digest.build_reception_block 과 동일 관례(2주)
 MGR_DAILY_SHOW_N = 3
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
 
 
 def build_mgr_daily_brief(rows: list, target_date: str) -> str:
-    """★중간관리자용 '어제 정리' — 판단·배정거리만. rows=업무 시트 전체 행(_fetch_todo_rows())."""
-    from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get, reception_elapsed_days
+    """★중간관리자용 '어제 정리'. rows=업무 시트 전체 행(_fetch_todo_rows()).
 
+    미해결건은 담지 않는다 — 별도 발신이 담당한다(2026-08-11 GM 지적, 위 주석 참조).
+    """
     lines = []
-    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="mgr-digest 종합접수")
-    if resp is not None:
-        try:
-            recv_data = resp.json()
-            recv_rows = recv_data.get("data", []) if recv_data.get("ok") else []
-        except Exception:
-            recv_rows = []
-        today_dt = datetime.now()
-        unresolved = [r for r in recv_rows if str(r.get("status", "")) != "완료"]
-        stale = sorted(
-            (r for r in unresolved if reception_elapsed_days(r, today_dt) >= MGR_DAILY_STALE_DAYS),
-            key=lambda r: -reception_elapsed_days(r, today_dt),
-        )
-        if stale:
-            lines.append(f"🔴 오래 묵은 미해결 {len(stale)}건 — 배정·처리 판단 필요")
-            for r in stale[:MGR_DAILY_SHOW_N]:
-                content = re.sub(r"\s+", " ", str(r.get("content", "") or "")).strip()[:30]
-                lines.append(f" • {content} · {reception_elapsed_days(r, today_dt)}일째")
-            if len(stale) > MGR_DAILY_SHOW_N:
-                lines.append(f" • 외 {len(stale) - MGR_DAILY_SHOW_N}건")
-
     done = [r for r in _ops_done_rows(rows) if str(r.get("수정일", "") or "").startswith(target_date)]
     if done:
         names = ", ".join(str(r.get("업무명", "")).strip()
