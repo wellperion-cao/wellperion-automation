@@ -30,6 +30,7 @@ GAS 응답이 정상 도착했고 그 안의 done/total 값이 진짜 0이라는
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import os
 import sys
@@ -45,21 +46,35 @@ import coo_registry  # noqa: E402 — fetch_check_status() 재사용(중복 복�
 _LINK = "https://wellperion-cao.github.io/wellperion-automation/wellperion_guide(main).html#O1"
 
 _DEPT_LABEL = {"facility": "시설", "support": "지원"}
+# ★조회 범위가 서로 다르다 — 같은 줄에 나란히 놓으면 같은 기준처럼 보이니 각자 밝힌다.
+#   시설=weekly 응답에서 오늘 행만 골라 씀(없으면 마지막 행 폴백) / 지원=today_live 그대로.
+_DEPT_SOURCE_NOTE = {"facility": "일자별 집계 중 오늘 행", "support": "실시간 조회"}
 
 
-def _dept_line(dept_key: str, d: dict) -> str:
-    """분모·분자 병기. total=0(대상 없음)과 pct 산출 불가를 서로 다른 문구로 정직 표기."""
+def _dept_line(dept_key: str, d: dict, today: str = "") -> str:
+    """분모·분자 병기 + 조회 방식(일자별 집계/실시간) 병기. total=0(대상 없음)과
+    pct 산출 불가와 '입력 전(done=0)'을 서로 다른 문구로 정직 표기. d["date"]가 today와
+    다르면(weekly 폴백으로 오늘 행이 없었던 경우) 그 날짜를 그대로 드러낸다."""
     label = _DEPT_LABEL.get(dept_key, dept_key)
+    note = _DEPT_SOURCE_NOTE.get(dept_key, "")
     if not d:
         return f"{label} 측정 안 됨"
     total = d.get("total") or 0
     done = d.get("done") or 0
     pct = d.get("pct")
+    date = d.get("date")
+    stale = f" · {date} 최신(오늘자 없음)" if date and today and date != today else ""
     if total == 0:
-        return f"{label} 0%(0/0건 — 수집 정상·오늘 대상 없음)"
+        return f"{label} 0%(0/0건 · {note}{stale} — 수집 정상·오늘 대상 없음)"
+    if done == 0:
+        # ★2026-08-10: 이른 아침엔 그날 입력이 아직 안 들어와 0% 로 찍힌다. 실제로
+        #   09:13 보고가 "지원 0%" 로 나가 GM 이 '이번 주 지원부가 아무것도 안 했다'
+        #   로 읽으실 수 있었다(같은 날 오후 재측정 42%). '진짜 0' 과 '아직 입력 전'
+        #   은 done 으로 갈린다 — 대상은 있는데 완료가 0이면 마감 전일 가능성이 크다.
+        return f"{label} 0%(0/{total}건 · {note}{stale} — 오늘 입력 아직 없음·마감 전일 수 있음)"
     if pct is None:
-        return f"{label} 산출 불가({done}/{total}건)"
-    return f"{label} {pct}%({done}/{total}건)"
+        return f"{label} 산출 불가({done}/{total}건 · {note}{stale})"
+    return f"{label} {pct}%({done}/{total}건 · {note}{stale})"
 
 
 def _translate_reason(r: str) -> str:
@@ -85,8 +100,18 @@ def collect(module=None) -> dict:
         )
 
     depts = st.get("depts") or {}
-    line1 = "■ 이번 주 점검 — " + " · ".join(
-        _dept_line(k, depts.get(k)) for k in _DEPT_LABEL
+    # ★라벨 정직(2026-08-10 GM 지시 "보고 개선"). 이 보고는 (weekly) 로 나가지만
+    #   실제로 읽는 값은 '오늘 하루'다 — coo_registry.CHECK_QUERIES 가 시설은
+    #   action=weekly 응답에서 KST 오늘 행만 골라 쓰고(없으면 마지막 행 폴백),
+    #   지원은 action=today_live 를 그대로 쓴다. 제목만 보고 주간 실적으로 읽으면
+    #   사실과 다르게 판단하시게 된다. 값의 범위를 문구가 스스로 말하게 한다.
+    #   ▸집계 범위 자체(무엇을 한 주 점검으로 세는가)는 시우(COO) 소유라 안 바꿨다.
+    kst_today = coo_registry._kst_today()  # "YYYY-MM-DD" — d["date"]와 같은 포맷으로 비교
+    _today = _dt.datetime.now(_dt.timezone(_dt.timedelta(hours=9))).strftime("%-m/%-d"
+             ) if os.name != "nt" else _dt.datetime.now(
+             _dt.timezone(_dt.timedelta(hours=9))).strftime("%#m/%#d")
+    line1 = f"■ 오늘 점검({_today} 기준) — " + " · ".join(
+        _dept_line(k, depts.get(k), kst_today) for k in _DEPT_LABEL
     )
 
     reasons = [_translate_reason(r) for r in (st.get("reasons") or [])]
@@ -109,11 +134,20 @@ def collect(module=None) -> dict:
 
 
 def _selftest():
-    """분기 검증(그물 없는 assert) — 네트워크 없이 _dept_line/_translate_reason만 확인."""
-    assert _dept_line("facility", {"total": 0, "done": 0, "pct": None}) == \
-        "시설 0%(0/0건 — 수집 정상·오늘 대상 없음)"
-    assert _dept_line("facility", {"total": 10, "done": 5, "pct": 50}) == "시설 50%(5/10건)"
-    assert _dept_line("facility", {"total": 10, "done": 5, "pct": None}) == "시설 산출 불가(5/10건)"
+    """분기 검증(그물 없는 assert) — 네트워크 없이 _dept_line/_translate_reason만 확인.
+    ★done=0(입력 전) vs total=0(대상 없음) 구분, weekly 폴백 시 stale 날짜 노출도 확인
+    (2026-08-10 GM 지시 — "아침 0%가 이번 주 0건처럼 읽힌다" 재발 방지)."""
+    assert _dept_line("facility", {"total": 0, "done": 0, "pct": None, "date": "2026-08-10"}, "2026-08-10") == \
+        "시설 0%(0/0건 · 일자별 집계 중 오늘 행 — 수집 정상·오늘 대상 없음)"
+    assert _dept_line("support", {"total": 109, "done": 0, "pct": 0, "date": "2026-08-10"}, "2026-08-10") == \
+        "지원 0%(0/109건 · 실시간 조회 — 오늘 입력 아직 없음·마감 전일 수 있음)"
+    assert _dept_line("facility", {"total": 10, "done": 5, "pct": 50, "date": "2026-08-10"}, "2026-08-10") == \
+        "시설 50%(5/10건 · 일자별 집계 중 오늘 행)"
+    assert _dept_line("facility", {"total": 10, "done": 5, "pct": None, "date": "2026-08-10"}, "2026-08-10") == \
+        "시설 산출 불가(5/10건 · 일자별 집계 중 오늘 행)"
+    # weekly 폴백 — 오늘(08-10) 행이 없어 어제(08-09) 행으로 대체된 경우, 날짜가 그대로 드러나야 한다.
+    assert _dept_line("facility", {"total": 31, "done": 23, "pct": 74, "date": "2026-08-09"}, "2026-08-10") == \
+        "시설 74%(23/31건 · 일자별 집계 중 오늘 행 · 2026-08-09 최신(오늘자 없음))"
     assert _dept_line("support", None) == "지원 측정 안 됨"
     assert _translate_reason("facility: 창문 파손") == "시설: 창문 파손"
 
