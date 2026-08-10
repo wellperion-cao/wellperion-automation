@@ -344,6 +344,54 @@ def _fill_missing_from_index(root: str, old_head: str, new_sha: str) -> list:
         return []
 
 
+def _detect_stale_worktree_copies(root: str, old_head: str, new_sha: str) -> list:
+    """무접촉 통합 직후 '뒤진 작업본' 감지 (2026-08-10 GM 지시 · 예방 대책).
+
+    왜: 위 통합은 작업트리를 절대 안 건드린다. 그래서 원격이 고친 파일이 이 PC
+    디스크엔 옛 내용 그대로 남고, git status 엔 조용히 " M"(unstaged)으로만 뜬다.
+    그 상태로 커밋하면 방금 들어온 개선을 지운다(2026-08-08 사고 cd2e79cae — 인사
+    화면 47줄 삭제). 여기서는 **감지·경고만** 한다 — 작업트리를 자동으로 덮으면
+    지금 편집 중인 남의 파일을 잃을 위험이 있어(설계가 일부러 피한 부분) 이번
+    범위가 아니다.
+
+    판정: 통합으로 내용이 바뀐 경로(diff-tree old_head..new_sha) 중 디스크에
+    실재하면서 새 HEAD 내용과 다른 것. 줄바꿈만 다른 건 제외(\\r\\n 정규화 후
+    비교) — 안 하면 디스크 CRLF 파일이 통째로 오탐된다(실측)."""
+    try:
+        r = subprocess.run(
+            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "-z",
+             old_head, new_sha],
+            cwd=root, capture_output=True, timeout=60,
+        )
+        if r.returncode != 0:
+            return []
+        paths = [p.decode("utf-8", "replace") for p in r.stdout.split(b"\x00") if p]
+        stale: list = []
+        # ponytail: 경로마다 git show 1회 — 통합이 수백 파일 규모로 흔해지면
+        # git cat-file --batch 로 묶어 왕복 줄이기.
+        for p in paths:
+            fp = os.path.join(root, p)
+            if not os.path.isfile(fp):
+                continue
+            try:
+                with open(fp, "rb") as fh:
+                    disk = fh.read()
+            except OSError:
+                continue
+            show = subprocess.run(
+                ["git", "show", f"{new_sha}:{p}"],
+                cwd=root, capture_output=True, timeout=30,
+            )
+            if show.returncode != 0:
+                continue
+            if disk.replace(b"\r\n", b"\n") != show.stdout.replace(b"\r\n", b"\n"):
+                stale.append(p)
+        return stale
+    except Exception as e:
+        _log(f"POST_COMMIT_PUSH 뒤진 작업본 감지 실패(best-effort) {e}", root)
+        return []
+
+
 def _reconcile(root: str) -> tuple[bool, str]:
     """원격이 앞섰을 때 fetch 후 로컬 커밋을 origin 위로 통합.
     ★언제나 merge 로만 통합한다(rebase 경로는 배147에서 껐다 — 아래 _ALLOW_REBASE 주석 참고).
@@ -512,9 +560,21 @@ def _reconcile(root: str) -> tuple[bool, str]:
                         synced = _sync_index_to_new_head(root, head, new)
                         # (다) 원격 추가분 실체화 — 인덱스 동기화 뒤에 호출(인덱스 기준으로 쓰므로).
                         filled = _fill_missing_from_index(root, head, new)
+                        # (라) 뒤진 작업본 감지 — 실체화 뒤에 호출(디스크 최신 상태 기준으로 비교).
+                        stale = _detect_stale_worktree_copies(root, head, new)
+                        if stale:
+                            warn = (
+                                f"⚠️ 이 PC 파일 {len(stale)}개가 방금 들어온 최신본보다 뒤져 "
+                                f"있습니다 — 그대로 커밋하면 남의 작업을 지웁니다: "
+                                + ", ".join(stale[:10])
+                                + (f" 외 {len(stale) - 10}건" if len(stale) > 10 else "")
+                            )
+                            print(warn, file=sys.stderr)
+                            _log(f"POST_COMMIT_PUSH {warn}", root)
                         _log("POST_COMMIT_PUSH ok(작업트리 무접촉 통합 — 배245"
                              + (f" · 인덱스 동기화 {len(synced)}건" if synced else "")
                              + (f" · 실체화 {len(filled)}건" if filled else "")
+                             + (f" · ★뒤진 작업본 {len(stale)}건" if stale else "")
                              + ")", root)
                         return True, ""
                     reason = _tail("update-ref 실패(그새 HEAD 이동): "
