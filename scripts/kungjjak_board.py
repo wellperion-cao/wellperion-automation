@@ -294,29 +294,9 @@ def emit(day: str) -> int:
     return 0
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--role', default=None, help='ceo·cto·cmo·cpo·coo·chro·cfo')
-    ap.add_argument('--date', default=None, help='YYYY-MM-DD (기본 오늘)')
-    ap.add_argument('--all-roles', action='store_true')
-    ap.add_argument('--emit', action='store_true',
-                    help='status/kungjjak_today.json 으로 발행 (자율현황 화면용)')
-    a = ap.parse_args()
-
-    if a.emit:
-        return emit(a.date or datetime.date.today().isoformat())
-
-    day = a.date or datetime.date.today().isoformat()
-    role = None if a.all_roles else (a.role or 'ceo')
-    by = load(day, role)
-
-    who = '전 역할' if a.all_roles else NICK.get(role, role)
-    print(f'## 🥁 쿵짝표 — {who} · {day}')
-    print()
-    if not by:
-        print('오늘 받은 GM 지시가 없습니다.')
-        return 0
-
+def _render_table(by: dict, day: str) -> None:
+    """표 한 장 + 요약 줄. `day` 는 # 칸 서식(ref_no)에만 쓴다 — 오늘 날짜를 넘기면
+    지난 날짜 ref 는 자동으로 'MM/DD NN' 로 찍혀 오늘 것과 섞이지 않는다(--carry 가 그걸 쓴다)."""
     print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 |')
     print('|---|---|---|---|---|')
     total = done = measured = 0
@@ -365,6 +345,47 @@ def main() -> int:
     if miss:
         line += f' · **진행중 {miss}건**'
     print(line)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--role', default=None, help='ceo·cto·cmo·cpo·coo·chro·cfo')
+    ap.add_argument('--date', default=None, help='YYYY-MM-DD (기본 오늘)')
+    ap.add_argument('--all-roles', action='store_true')
+    ap.add_argument('--emit', action='store_true',
+                    help='status/kungjjak_today.json 으로 발행 (자율현황 화면용)')
+    ap.add_argument('--carry', action='store_true',
+                    help='어제 못 끝낸 것(완료 짝 없는 지시)도 함께 낸다 — 부팅용. '
+                         '기본 동작(옵션 없음)은 바꾸지 않는다.')
+    a = ap.parse_args()
+
+    if a.emit:
+        return emit(a.date or datetime.date.today().isoformat())
+
+    day = a.date or datetime.date.today().isoformat()
+    role = None if a.all_roles else (a.role or 'ceo')
+    who = '전 역할' if a.all_roles else NICK.get(role, role)
+
+    if a.carry:
+        yday = (datetime.date.fromisoformat(day) - datetime.timedelta(days=1)).isoformat()
+        yby = load(yday, role)
+        carried = {ref: ev for ref, ev in yby.items()
+                   if not any(e.get('result') == 'ok' for e in ev)}
+        if carried:
+            print(f'## 🥁 쿵짝표 — {who} · 어제 못 끝낸 것 ({len(carried)}건)')
+            print()
+            # day(오늘)를 넘겨 ref_no 가 'MM/DD NN' 로 찍히게 한다 — 오늘 표와 섞이지 않게.
+            _render_table(carried, day)
+            print()
+
+    by = load(day, role)
+    print(f'## 🥁 쿵짝표 — {who} · {day}')
+    print()
+    if not by:
+        print('오늘 받은 GM 지시가 없습니다.')
+        return 0
+
+    _render_table(by, day)
     return 0
 
 
