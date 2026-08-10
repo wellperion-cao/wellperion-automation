@@ -6994,16 +6994,17 @@ function _regClassMerged(row) {
   return { text: b, conflict: false };   // 둘째 칸만 아는 값(L재등록·단기재등록·대기)
 }
 // 배350(GM 2026-08-04) — '대기'를 등록분류/재등록분류 칸에 적으면 원래 신규/재등록 값이
-// 지워진다(박기순님 케이스). 전용 '대기' 칸을 시트에 새로 두면 그 칸+시작일로만 판정하고,
-// 분류 칸은 원래 값을 그대로 유지한다. 시트에 그 칸이 아직 없으면(기존 12명 등) 예전 방식
-// (분류 칸 문자열)으로 그대로 폴백 — 새 칸 추가 전까지 지금 화면을 안 깨뜨린다.
+// 지워진다(박기순님 케이스). 전용 '대기' 칸(2026-08-10 시트에 신설)이 켜져 있으면 그 칸+시작일로만
+// 판정하고, 분류 칸은 원래 값을 그대로 유지한다. ★그 칸이 이번 회원 행에 아직 안 켜져 있으면(기존
+// 12명처럼 이관 전이거나, 칸 자체가 비어 있는 회원) 예전 방식(분류 칸 문자열)으로 그대로 폴백한다 —
+// "칸이 시트에 존재하느냐"가 아니라 "이번 행에 값이 켜져 있느냐"로 갈라야 한다. 칸만 먼저 만들고
+// 아직 아무도 안 옮긴 상태에서 존재 여부로 가르면, 기존 12명이 그 순간 전부 대기자 표시에서 빠진다.
 function _waitFlagKey(row) {
   return Object.keys(row || {}).find(function(k){ return k.replace(/\s/g, '') === '대기'; });
 }
 function _isFutureStart(row) {   // 이름은 그대로 둔다(호출부 6곳) — 판정 기준만 바뀌었다
   var wfKey = _waitFlagKey(row);
-  if (wfKey) {
-    if (!String(row[wfKey] || '').trim()) return false;   // 대기칸 꺼짐 — 대기자 아님
+  if (wfKey && String(row[wfKey] || '').trim()) {   // 전용 칸이 이번 행에 켜져 있을 때만 새 로직
     var sKey = _memStartKey(row);
     var sVal = sKey ? String(row[sKey] || '').trim() : '';
     if (!/^\d{4}-\d{2}-\d{2}/.test(sVal)) return true;   // 시작일 형식 아니면 안전하게 대기 유지
