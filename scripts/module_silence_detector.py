@@ -456,7 +456,17 @@ def build_digest_message(silent_list, now=None):
 def run_detector(*, dry_run=True, root: Path = PROJECT_ROOT, now=None,
                   registry_path=None, log_path=LOG_PATH, rooms_path=ROOMS_PATH,
                   sender=None):
-    """전체 스캔 → 침묵 있으면 하루 1통(멱등) 발송/드라이런. 반환: 결과 dict."""
+    """전체 스캔 → 침묵 있으면 하루 1통(멱등) 발송/드라이런. 반환: 결과 dict.
+
+    ★2026-08-10 시토 — 이 함수의 독자 --live 발신경로는 은퇴했다. 다시 켜지 마라.
+    scan_registry()/silent_modules()(위)는 self_health_watchdog.py §1 이 그대로
+    재사용해 cto-automation-health 의 09:10 다이제스트에 이미 매일 실린다. 이 함수를
+    예약작업으로 따로 켜면 같은 침묵 정보가 같은 방(자동화현황방)에 두 번 나간다
+    (self_health_watchdog.py 의 2026-07-31/08-08 은퇴 선례와 동일 사유·동일 패턴).
+    등록부에 "GM go 대기"로 21일 남아 있던 건 대기가 아니라 이미 대체된 것이었다
+    (module_registry.json cto-automation-health 항목 참조). 실행 로직은 수동
+    점검용으로만 남긴다 — 예약작업 등록 금지.
+    """
     now = _now_utc(now)
     date_str = now.strftime("%Y-%m-%d")
 
