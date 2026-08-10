@@ -1756,7 +1756,7 @@
           '<span class="t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + '</span></div>' +
         '<div class="t3-title">' + esc(o.title) + '</div>' +
         // top3 카드도 상세표·부서카드와 같은 정직 기준(honestyNoEvidence) — GM 지적 원문 예시(웰페리온 ERP/브로제이=2순위·manual)가 바로 이 카드였다.
-        '<div class="t3-prog">' + (honestyNoEvidence(o) ? '<span class="q-none">근거 없음</span>' : progBar(o.progress, o.status, false, '', false)) + '</div>' +
+        '<div class="t3-prog">' + (honestyNoEvidence(o) ? noEvidenceHtml(o) : progBar(o.progress, o.status, false, '', false)) + '</div>' +
         '<div class="t3-ns">' + nsBadge(o) + '</div>' +
       '</div>';
     }).join('');
@@ -1806,6 +1806,12 @@
   function honestyLevel(o){ return (o.honesty && o.honesty.level) || 'manual'; }
   function honestyHasEvidence(o){ var l = honestyLevel(o); return l === 'measured' || l === 'basis'; }
   function honestyNoEvidence(o){ var l = honestyLevel(o); return l === 'manual' || l === 'observed'; }
+  // 근거 없는 항목이라도 하위 축 실측이 있으면(honesty.basis) 병기한다 — 합산 % 는 안 만들되
+  // GM 이 진척을 아예 못 보는 것도 막는다(GM 지시 2026-08-10, 2순위 ERP/브로제이 사례).
+  function noEvidenceHtml(o){
+    var basis = (o.honesty && o.honesty.basis) || '';
+    return '<span class="q-none">근거 없음</span>' + (basis ? '<span class="q-sub"> · ' + esc(basis) + '</span>' : '');
+  }
   // 🔗 #obj-{id} 로 들어오면 그 행을 찾아 보여준다 — 표가 비동기로 그려지므로 렌더 직후 호출한다.
   function focusHashObj(){
     var h = String(location.hash || '');
@@ -2282,7 +2288,7 @@
     }
     var pct = clampPct(o.progress);
     var noEv = (!_editMode && honestyNoEvidence(o));
-    var pctCell = _editMode ? '' : (noEv ? '<span class="q-none">근거 없음</span>' : ('<span class="dg-obj-p">' + pct + '%</span>'));
+    var pctCell = _editMode ? '' : (noEv ? noEvidenceHtml(o) : ('<span class="dg-obj-p">' + pct + '%</span>'));
     var barCell = _editMode
       ? progBar(pct, st, true, 'data-id="' + esc(o.id) + '" data-f="progress"', false)
       : (noEv ? '' : ('<div class="dg-obj-bar"><i style="width:' + pct + '%"></i></div>'));
