@@ -365,7 +365,10 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
   ];
 
   // ── 백엔드 GAS ──
-  var GAS_PROD = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+  // 2026-08-10 시토(GM 승인) — 접수 백엔드를 intake-api 로 전환. 왕복 2.00s → 1.33s(n=8 median).
+  // 되돌리려면 아래 ROLLBACK 주소로 되돌리고 draft-page --page survey 재주입하면 끝(2줄·1분).
+  // ROLLBACK: https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec
+  var GAS_PROD = 'https://script.google.com/macros/s/AKfycbyLc2cnOeyyCpdrluJrgrUNrfhSJS3W-9wte5ndOBNS5S8Dux7KwcV8WAAXs2bwi2yFcw/exec';
   var GAS_HEAD = 'https://script.google.com/macros/s/AKfycbzeGDag3XgoSn6A4UIGdsBCkR3v-joepgRYfW3MWzi9/exec';
   var GAS_URL = GAS_PROD;
   try { if ((new URLSearchParams(location.search).get('gas')||'') === 'head') GAS_URL = GAS_HEAD; } catch(e){}
