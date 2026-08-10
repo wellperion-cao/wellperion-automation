@@ -477,6 +477,8 @@ def week_card(day: str | None = None) -> str:
 #   여기서 실제로 쓰이게 배선한다(더 이상 죽은 코드 아님). 소스 4종(전사일정·GM업무 월간
 #   objectives 「(GM 직접)」·업무SSOT 김남욱 담당·회장님 보고건)을 모으되, 기한 필드가 없는
 #   GM업무·회장님 보고건을 "오늘 할 일"로 몰지 않는다(지어내기 금지) — 4묶음으로 정직히 나눈다.
+from queue_dispatch import ROLES as _CLEVEL_NICKS, EXCLUDED_ROLES as _QUEUE_EXCLUDED_ROLES  # noqa: E402
+
 MONTHLY_PLAN = ROOT / 'status' / 'monthly_ops_plan.json'
 WORKLOG_PATH = ROOT / 'status' / 'worklog.jsonl'  # 저녁 정리 카드(build_evening_recap) 소스
 CHAIRMAN_ITEMS_JS = ROOT / '3. 웰페리온 가이드' / 'coo' / 'chairman' / '_chairman_items.js'
@@ -585,6 +587,93 @@ def _pick_secretary_line(sched_pairs: list, due_pairs: list, waiting_lines: list
     return ''
 
 
+# ── ■ 부문별 오늘 핵심 (배538, GM 지시 2026-08-10) ──────────────────────────────
+#   왜: C-Level 마다 큐(status/_queue.json)에 쌓인 현실업무(office)가 브리핑에 안 보여
+#   GM 이 작업 중 놓쳤다. 새 저장소·새 발송 신설 없이(약속 L21) 기존 큐에서 계산만 해
+#   08:00 브리핑에 얹는다. 대상 5역할·순서 = 시포·시우·시모·시토·웰리(GM 지정, 실무비중순).
+#   시로·시뽀 제외 — queue_dispatch.EXCLUDED_ROLES 를 import 해 거른다(정본 재사용).
+#   ※2026-08-05부로 EXCLUDED_ROLES 자체는 비어 있다(재확정 경위=queue_dispatch.py 주석) —
+#   그래도 상수를 import 해 두면 그 결정이 바뀔 때 여기도 자동 반영된다(하드코딩 방지).
+#   시로·시뽀 배제 자체는 아래 목록에 그 둘을 안 넣는 것으로 확정한다.
+QUEUE_PATH = ROOT / 'status' / '_queue.json'
+_DEPT_ROLES = tuple(r for r in ('cpo', 'coo', 'cmo', 'cto', 'ceo') if r not in _QUEUE_EXCLUDED_ROLES)
+_DEPT_OPEN_EXCLUDE = ('DONE', 'EXCLUDED', 'CANCELLED')
+_DEPT_PRIORITY_WEIGHT = {'🛳️크루즈': 3, '⛴️여객선': 2, '⛵돛단배': 1}
+_DEPT_TITLE_MAX = 24
+_DEPT_TITLE_PREFIX_RE = re.compile(r'^\[[^\]]+\]\s*')
+
+
+def _filter_office_ships(data: list) -> list:
+    """열린 배 & audience=office & 대상 5역할만. (기한이 지났거나 임박한 배가 있으면 최우선
+    이어야 하지만 _queue.json 스키마 조사 결과(2026-08-10, 151건 전수) due/deadline 계열
+    필드가 아예 없다 — 그 규칙은 항상 건너뛴다. 필드가 생기면 여기부터 손댄다.)"""
+    return [x for x in data
+            if x.get('status') not in _DEPT_OPEN_EXCLUDE
+            and x.get('audience') == 'office'
+            and x.get('clevel') in _DEPT_ROLES]
+
+
+def _dept_ship_sort_key(x: dict, day: str) -> tuple:
+    """②정체일수 내림차순 → ③무게(priority) 내림차순."""
+    d = _parse_due(x.get('updated_at') or x.get('enqueued_at'))
+    idle = (datetime.date.fromisoformat(day) - d).days if d else -1
+    return (-idle, -_DEPT_PRIORITY_WEIGHT.get(x.get('priority'), 0))
+
+
+def _rank_office_ships_by_role(ships: list, day: str) -> dict:
+    """role → 정렬된 상위 최대 3배."""
+    out = {}
+    for role in _DEPT_ROLES:
+        rows = sorted((x for x in ships if x.get('clevel') == role),
+                      key=lambda x: _dept_ship_sort_key(x, day))
+        out[role] = rows[:3]
+    return out
+
+
+def _clean_ship_title(title) -> str:
+    """어색한 중간 잘림 방지 — 자를 때 단어(공백) 경계에서 자른다(약속 자연줄바꿈 원칙)."""
+    t = _DEPT_TITLE_PREFIX_RE.sub('', str(title or '')).strip()
+    if len(t) <= _DEPT_TITLE_MAX:
+        return t
+    cut = t[:_DEPT_TITLE_MAX]
+    sp = cut.rfind(' ')
+    if sp >= _DEPT_TITLE_MAX // 2:
+        cut = cut[:sp]
+    return cut.rstrip(' ·—-') + '…'
+
+
+def _dept_ship_reason(x: dict, day: str) -> str:
+    """왜 지금인지 — 계산된 사실만(N일째 멈춤). 못 구하면 빈 문자열(감상·추측 금지)."""
+    d = _parse_due(x.get('updated_at') or x.get('enqueued_at'))
+    if d is None:
+        return ''
+    idle = (datetime.date.fromisoformat(day) - d).days
+    return f"{idle}일째 멈춤" if idle >= 0 else ''
+
+
+def _format_department_highlights(by_role: dict, day: str) -> str:
+    """역할별 최대 3줄. office 배가 0건인 역할은 줄 자체를 뺀다(★없는 것을 만들지 마라)."""
+    lines = []
+    for role in _DEPT_ROLES:
+        rows = by_role.get(role) or []
+        for i, x in enumerate(rows):
+            reason = _dept_ship_reason(x, day)
+            body = f"배{x.get('ship_no')} {_clean_ship_title(x.get('title'))}" + (f" — {reason}" if reason else '')
+            lines.append((f" [{_CLEVEL_NICKS.get(role, role)}] · " if i == 0 else '        · ') + body)
+    if not lines:
+        return ''
+    return "■ 부문별 오늘 핵심\n" + '\n'.join(lines)
+
+
+def _load_office_ships() -> list | None:
+    """실패 시 None(자가점검 7번 「0 위장」 금지 — 0건과 못 읽음을 구분)."""
+    try:
+        data = json.loads(QUEUE_PATH.read_text(encoding='utf-8'))
+    except Exception:
+        return None
+    return _filter_office_ships(data)
+
+
 def build_morning_brief(day: str | None = None) -> str:
     """08:00 「나의하루」 GM 업무 브리핑 — 월~토 발송. 전사일정·GM업무·업무SSOT·회장님 보고건 4묶음."""
     day = day or today()
@@ -616,7 +705,12 @@ def build_morning_brief(day: str | None = None) -> str:
     prog_lines = [f"· {str(o.get('title', '')).replace(' (GM 직접)', '')} — "
                   f"{o.get('progress', 0)}% · {o.get('status', '')}" for o in (objs or [])]
 
+    office_ships = _load_office_ships()
+    dept_section = (_format_department_highlights(_rank_office_ships_by_role(office_ships, day), day)
+                     if office_ships is not None else '■ 부문별 오늘 핵심 (불러오지 못함)')
+
     sections = [
+        dept_section,
         _bucket('오늘 잡힌 일정', sched_lines, '' if sched_ok else '(불러오지 못함)'),
         _bucket('기한이 임박했습니다', due_lines, '' if ssot is not None else '(불러오지 못함)'),
         _bucket('답을 기다리는 것', waiting_lines, waiting_note),
@@ -662,6 +756,41 @@ def _selfcheck_morning_brief() -> None:
     assert '외 2건' in _bucket('테스트', [f'· 항목{i}' for i in range(7)])
     assert _bucket('빈', []) == ''
     assert _bucket('실패', [], '(불러오지 못함)') == '■ 실패 (불러오지 못함)'
+
+    # ── 배538 부문별 오늘 핵심: audience=office만·시로시뽀 제외·역할당 최대 3건 ──
+    dept_sample = [
+        {'clevel': 'cpo', 'status': 'PENDING', 'audience': 'office', 'ship_no': 1, 'title': '[시포] A',
+         'priority': '🛳️크루즈', 'updated_at': '2026-08-01', 'enqueued_at': '2026-07-01'},
+        {'clevel': 'cpo', 'status': 'PENDING', 'audience': 'office', 'ship_no': 2, 'title': '[시포] B',
+         'priority': '⛵돛단배', 'updated_at': '2026-08-05', 'enqueued_at': '2026-07-01'},
+        {'clevel': 'cpo', 'status': 'PENDING', 'audience': 'office', 'ship_no': 3, 'title': '[시포] C',
+         'priority': '⛴️여객선', 'updated_at': '2026-08-06', 'enqueued_at': '2026-07-01'},
+        {'clevel': 'cpo', 'status': 'PENDING', 'audience': 'office', 'ship_no': 4, 'title': '[시포] D',
+         'priority': '⛴️여객선', 'updated_at': '2026-08-07', 'enqueued_at': '2026-07-01'},  # 4번째 → 잘려야
+        {'clevel': 'cpo', 'status': 'PENDING', 'audience': 'ai', 'ship_no': 5, 'title': '[시포] AI배',
+         'priority': '🛳️크루즈', 'updated_at': '2026-08-01', 'enqueued_at': '2026-07-01'},  # audience=ai → 제외
+        {'clevel': 'chro', 'status': 'PENDING', 'audience': 'office', 'ship_no': 6, 'title': '[시로] E',
+         'priority': '🛳️크루즈', 'updated_at': '2026-08-01', 'enqueued_at': '2026-07-01'},  # chro → 제외
+        {'clevel': 'cfo', 'status': 'PENDING', 'audience': 'office', 'ship_no': 7, 'title': '[시뽀] F',
+         'priority': '🛳️크루즈', 'updated_at': '2026-08-01', 'enqueued_at': '2026-07-01'},  # cfo → 제외
+        {'clevel': 'cpo', 'status': 'DONE', 'audience': 'office', 'ship_no': 8, 'title': '[시포] G',
+         'priority': '🛳️크루즈', 'updated_at': '2026-08-01', 'enqueued_at': '2026-07-01'},  # DONE → 제외
+    ]
+    filtered = _filter_office_ships(dept_sample)
+    assert all(x.get('audience') != 'ai' for x in filtered), filtered  # ①
+    assert all(x.get('clevel') not in ('chro', 'cfo') for x in filtered), filtered  # ②
+    assert {x['ship_no'] for x in filtered} == {1, 2, 3, 4}, filtered
+
+    by_role = _rank_office_ships_by_role(filtered, day)
+    assert all(len(v) <= 3 for v in by_role.values()), by_role  # ③
+    assert len(by_role['cpo']) == 3, by_role['cpo']
+    assert [x['ship_no'] for x in by_role['cpo']] == [1, 2, 3], by_role['cpo']  # 정체일수 내림차순
+
+    text = _format_department_highlights(by_role, day)
+    assert text.startswith('■ 부문별 오늘 핵심'), text
+    assert '[시포]' in text and '배1 A — 9일째 멈춤' in text, text
+    assert '[시로]' not in text and '[시뽀]' not in text, text
+    assert _format_department_highlights({}, day) == ''
 
 
 def _selfcheck_schedule() -> None:
