@@ -76,13 +76,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .ls-name{font-weight:700;color:var(--text)}
 .ls-pt{font-weight:800;color:var(--accent)}
 .ls-detail{font-size:9.5px;color:var(--dim)}
-/* 업무 현황 — 인라인(이름 + 숫자 3) */
-.ls-person{display:inline-flex;align-items:baseline;gap:5px;white-space:nowrap}
-.ls-person-name{font-weight:700;color:var(--text)}
-.ls-nums{display:inline-flex;gap:5px}
-.ls-num{font-size:10.5px;color:var(--dim)}
-.ls-num b{font-weight:800;color:var(--text);font-size:11.5px}
-.ls-num.warn b{color:var(--red)}
+/* 업무 현황 — 대시보드 담당자별 통계와 같은 표(2026-08-10 GM). 가중점수·그래프 대신 '지연'. */
+.ls-tbl{width:100%;border-collapse:collapse;font-size:10.5px}
+.ls-tbl th{background:var(--paper);color:var(--dim);font-weight:700;padding:2px 5px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:center}
+.ls-tbl th:first-child{text-align:left}
+.ls-tbl td{padding:2px 5px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap}
+.ls-tbl td:first-child{text-align:left;font-weight:700;color:var(--text)}
+.ls-tbl tr:last-child td{border-bottom:none}
+.ls-tbl .lt-late{color:var(--red);font-weight:800}
+.ls-tbl .lt-zero{color:var(--dim)}
 .ls-note{font-size:9.5px;color:var(--dim);font-style:italic}
 @media print{.livestrip{display:none!important}}
 .filter-bar{background:var(--bg);padding:8px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -1743,9 +1745,17 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn" title="이 업무로 바로 가는 링크 복사 (공유용)" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">🔗 링크</button>';
   // 결재 넘어간 업무(결재요청됨) = 업무현황에선 잠금, 결재현황(GM)에서만 관리 (2026-06-05 GM 화면분리)
   // 단 반려된 업무는 담당자에게 반송 — 업무현황에서 다시 수정 가능하게 잠금 해제 (2026-06-05 GM)
+  // ★결재자가 실제로 결재하기 전까지는 담당자가 계속 수정할 수 있다 (2026-08-10 GM).
+  //   기존엔 결재요청만 걸리면 편집 버튼이 통째로 사라져, GM 이 아직 안 봤는데도 손을 못 댔다.
+  //   (2026-08-07 에 푼 건 편집 창 '안'의 잠금이었고, 창을 여는 버튼은 여기서 따로 막고 있었다.)
+  //   완료·삭제는 결재 흐름이 어긋나므로 그대로 결재 현황에서만 처리한다.
+  const _apprDone = String(t['결재상태'] || '') === '결재완료';
   if (String(t.approval || '').trim() && !/반려/.test(String(t['결재상태'] || ''))) {
     html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
-    html += '<span style="font-size:11px;color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 결재 진행 중 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리</span>';
+    if (!_apprDone) html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
+    html += '<span style="font-size:11px;color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 ' +
+      (_apprDone ? '결재 완료 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리'
+                 : '결재 대기 — 수정 가능 · 완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리') + '</span>';
   } else {
     html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
     html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
@@ -3863,10 +3873,9 @@ window.ssotShowTasks=ssotShowTasks;
 (function () {
   var REG_API  = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
   var TODO_API = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-  // 카드 순서 고정 — 건수순 정렬 금지(많이 맡은 사람이 위로 올라가면 그게 순위가 된다).
+  // 표 순서 고정 — 건수순 정렬 금지(많이 맡은 사람이 위로 올라가면 그게 곧 순위가 된다).
+  // MEMBERS 가 있으면 그쪽을 쓰고(대시보드와 동일 명단), 없을 때만 이 목록으로 떨어진다.
   var ORDER = ['나우열M', '이경연 실장', '최준용M', '윤병현AM', '임정은M'];
-  // 임정은M 은 업무 SSOT 밖(문의 시트·등록 원장)에서 일한다 — 0건으로 띄우면 왜곡이라 문구로 대체.
-  var PENDING_LINK = { '임정은M': '회원 업무 — 문의·등록 원장 집계 (연결 예정)' };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -3893,73 +3902,53 @@ window.ssotShowTasks=ssotShowTasks;
     }).join('');
   }
 
-  function renderTodo(j) {
+  /* 담당자별 통계 표 — 대시보드(renderDashboard) 상단 표와 같은 내용.
+     가중점수·가중점수 그래프는 빼고 '지연'(진행중인데 종료일이 지난 건)으로 대체했다(2026-08-10 GM).
+     원천을 대시보드와 똑같이 잡아(ALL_TASKS·excludeNonStaff·MEMBERS) 두 화면 숫자가 갈릴 수 없게 한다.
+     순위·메달은 넣지 않는다: 가중점수를 뺀 뒤 남는 건 건수뿐이고, 건수는 배분 현황이지 평가가 아니다(GM 결정). */
+  function renderTodoTable() {
     var box = document.getElementById('lsTodo');
-    if (!box) return;
-    var map = {};
-    ((j && j.board) || []).forEach(function (r) { map[r.name] = r; });
-    // 칸은 3개만 — 진행중·완료·기한 초과 (2026-08-10 GM). '이번주 완료'는 월요일마다 0이라 빼고 누적 완료로,
-    // '종료일 미기재'는 현황 판단에 안 쓰여 뺐다.
-    box.innerHTML = ORDER.map(function (name) {
-      if (PENDING_LINK[name]) {
-        return '<span class="ls-person"><span class="ls-person-name">' + esc(name) + '</span>' +
-               '<span class="ls-note">' + esc(PENDING_LINK[name]) + '</span></span>';
-      }
-      var r = map[name] || { inProgress: 0, done: 0, overdue: 0 };
-      var cell = function (v, label, warn) {
-        return '<span class="ls-num' + (warn && v > 0 ? ' warn' : '') + '">' + label + ' <b>' + esc(v) + '</b></span>';
-      };
-      return '<span class="ls-person"><span class="ls-person-name">' + esc(name) + '</span><span class="ls-nums">' +
-        cell(r.inProgress, '진행') + cell(r.done, '완료') + cell(r.overdue, '초과', true) +
-        '</span></span>';
-    }).join('');
-  }
-
-  function get(url) {
-    return fetch(url, { redirect: 'follow' }).then(function (r) { return r.json(); });
-  }
-  get(REG_API + '?action=reg_scoreboard&period=month').then(renderReg)
-    .catch(function () { fail('lsReg', '접수 점수판을 불러오지 못했습니다.'); });
-  /* 화면 집계 — 서버 액션(todo_scoreboard)이 아직 없을 때만 쓰는 대체 경로.
-     서버가 준비되면 그쪽 값이 항상 이긴다(아래 호출 순서). 두 구현이 동시에 쓰이지 않으므로
-     '화면이 따로 세서 숫자가 갈리는' 문제는 생기지 않는다 — 셈법은 서버 코드와 같은 규칙이다.
-     원천도 같다: 화면이 이미 받아 둔 todo_list(ALL_TASKS) 하나만 본다.
-     ※ GAS 배포 권한이 열리면 이 블록은 지워도 된다. */
-  function localBoard() {
-    if (typeof ALL_TASKS === 'undefined' || !ALL_TASKS.length) return null;
-    var d = new Date();
+    if (!box) return false;
+    if (typeof ALL_TASKS === 'undefined' || !ALL_TASKS.length) return false;
+    var all = (typeof excludeNonStaff === 'function') ? excludeNonStaff(ALL_TASKS) : ALL_TASKS;
+    var names = (typeof MEMBERS !== 'undefined' && MEMBERS.length) ? MEMBERS : ORDER;
     var pad = function (n) { return (n < 10 ? '0' : '') + n; };
-    var ymdOf = function (x) { return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); };
-    var today = ymdOf(d);
-    var mon = new Date(d); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); // 월요일 시작
-    var since = ymdOf(mon);
-    var norm = function (v) {
+    var d = new Date();
+    var today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    var ymd = function (v) {
       if (!v) return '';
       var m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
       return m ? (m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3])) : '';
     };
-    var agg = {};
-    ALL_TASKS.forEach(function (t) {
-      var name = String(t.owner || t['담당자'] || '').split(',')[0].trim();
-      if (!name || name.indexOf('김남욱GM') >= 0) return;
-      if (!agg[name]) agg[name] = { name: name, inProgress: 0, done: 0, overdue: 0 };
-      var a = agg[name];
-      var st = String(t.status || t['상태'] || '').trim();
-      var end = norm(t.endDate || t['종료일']);
-      if (st === '진행중') a.inProgress++;
-      if (st === '완료') a.done++;                      // 누적 완료(이번주 한정 아님)
-      if (st === '진행중' && end && end < today) a.overdue++;
+    var h = '<table class="ls-tbl"><tr><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th>지연</th></tr>';
+    names.forEach(function (m) {
+      var mine = all.filter(function (t) { return String(t.owner || t['담당자'] || '').indexOf(m) >= 0; });
+      if (!mine.length) return;                       // 이 원장에 업무가 없는 사람은 줄을 만들지 않는다(0 으로 채우면 왜곡)
+      var st = function (t) { return String(t.status || t['상태'] || '').trim(); };
+      var done = mine.filter(function (t) { return st(t) === '완료'; }).length;
+      var hold = mine.filter(function (t) { return st(t) === '보류'; }).length;
+      var prog = mine.filter(function (t) { return st(t) !== '완료' && st(t) !== '보류'; }).length;
+      var late = mine.filter(function (t) {
+        var e = ymd(t.endDate || t['종료일']);
+        return st(t) !== '완료' && st(t) !== '보류' && e && e < today;
+      }).length;
+      var rate = mine.length ? Math.round(done / mine.length * 100) : 0;
+      h += '<tr><td>' + esc(m) + '</td><td>' + mine.length + '</td><td>' + prog + '</td><td>' + done +
+           '</td><td>' + hold + '</td><td>' + rate + '%</td>' +
+           '<td class="' + (late ? 'lt-late' : 'lt-zero') + '">' + late + '</td></tr>';
     });
-    return { ok: true, local: true, weekSince: since, board: Object.keys(agg).map(function (k) { return agg[k]; }) };
+    h += '</table>';
+    box.innerHTML = h;
+    return true;
   }
   function todoFallback() {
-    var j = localBoard();
-    if (j) { renderTodo(j); }
-    else { setTimeout(function () { var k = localBoard(); if (k) renderTodo(k); else fail('lsTodo', '업무 현황을 불러오지 못했습니다 — 새로고침 해주세요.'); }, 4000); }
+    if (renderTodoTable()) return;
+    // 업무 목록이 아직 안 왔으면 잠시 뒤 한 번 더 — 그래도 없으면 그때만 안내를 띄운다.
+    setTimeout(function () {
+      if (!renderTodoTable()) fail('lsTodo', '업무 현황을 불러오지 못했습니다 — 새로고침 해주세요.');
+    }, 4000);
   }
-  get(TODO_API + '?action=todo_scoreboard').then(function (j) {
-    if (j && j.ok) renderTodo(j); else todoFallback();   // 서버 우선, 없으면 화면 집계
-  }).catch(todoFallback);
+  todoFallback();
 })();
 </script>
 </body>
