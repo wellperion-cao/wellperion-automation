@@ -52,6 +52,28 @@ KAKAO_ROOM_DIR = ROOM_DIR_BASE / "★운영부"
 LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
 PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
 
+# ── 방 이름 ASCII 별칭 (2026-08-12 시토 · 실사고 수리) ─────────────────────────
+#   왜: 예약 배치(scripts/ops_morning_digest.bat)는 CP949 로 읽히는 .bat 이라 파일 안에 적은
+#   한글 인자가 깨진다. 실측 — `--room "★중간관리자"` 가 자식 프로세스에 '?낆쨷媛꾧?由ъ옄'
+#   로 도착해 방을 못 찾고 매일 조용히 실패했다(2026-08-12 07:30 로그). 그래서 배치에는
+#   ASCII 만 넘기고 실제 방 이름은 여기서 푼다.
+#   ▸별칭 정본 = scripts/kakao_rooms.json 의 room_aliases (방 이름 SSOT 와 같은 파일).
+#     파이썬 모듈에 두면 다른 스크립트가 그걸 import 하다가 stdout 이중 감싸기로 죽는다
+#     (실측 — 두 모듈 다 import 시점에 sys.stdout 을 감싼다).
+def _load_room_aliases() -> dict:
+    try:
+        data = json.loads((Path(__file__).resolve().parent / "kakao_rooms.json")
+                          .read_text(encoding="utf-8"))
+        aliases = data.get("room_aliases") or {}
+        if aliases:
+            return aliases
+    except Exception:
+        pass
+    return {"ops": DEFAULT_ROOM, "mgr": "★중간관리자"}  # 파일을 못 읽어도 예약 실행은 멈추지 않는다
+
+
+ROOM_KEYS = _load_room_aliases()
+
 # 지출품의 GAS(배97 · 매출/지출/구매물품 정본) — 매출지출현황.html PROC_API와 동일 배포본.
 # 비밀번호는 telegram_bot/.env(저장소 밖)에서 읽는다(배328 — .js 소스 평문 노출 제거, 배326 과 같은 계열).
 PROC_EXEC_URL = os.environ.get(
@@ -903,8 +925,11 @@ def main():
                         help="대상일 수동 지정(YYYY-MM-DD, 테스트·재실행용). 미지정 시 어제→최근 완결일 자동.")
     parser.add_argument("--room", dest="room", default=DEFAULT_ROOM,
                         help=f"카톡 방 제목(기본 '{DEFAULT_ROOM}') — 배536(2026-08-11), 예: '★ 중간관리자'")
+    parser.add_argument("--room-key", dest="room_key", choices=sorted(ROOM_KEYS),
+                        help="방 이름 ASCII 별칭(ops·mgr) — .bat 에서 부를 때 쓴다(한글 인자는 깨진다)")
     args = parser.parse_args()
-    sys.exit(run(forced_date=args.date, room=args.room))
+    room = ROOM_KEYS[args.room_key] if args.room_key else args.room
+    sys.exit(run(forced_date=args.date, room=room))
 
 
 if __name__ == "__main__":

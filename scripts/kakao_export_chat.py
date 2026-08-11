@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import io
 import os
 import subprocess
@@ -175,11 +176,18 @@ def main() -> int:
     ap.add_argument("--room", default="★ 운영부", help="카톡 방 제목(기본 '★ 운영부')")
     ap.add_argument("--out", default=None, help="저장 전체경로 직접 지정(미지정 시 아카이브 오늘자)")
     ap.add_argument("--date", default=None, help="파일명 날짜 YYYYMMDD(기본 오늘)")
+    # 방 이름 별칭 정본 = scripts/kakao_rooms.json 의 room_aliases (여기서 복제하지 않는다).
+    # .bat 은 CP949 로 읽혀 한글 인자가 깨지므로 예약 실행은 이 별칭으로 부른다(2026-08-12 수리).
+    ROOM_KEYS = json.loads((Path(__file__).resolve().parent / "kakao_rooms.json")
+                           .read_text(encoding="utf-8")).get("room_aliases") or {}
+    ap.add_argument("--room-key", dest="room_key", choices=sorted(ROOM_KEYS),
+                    help="방 이름 ASCII 별칭(ops·mgr) — .bat 에서 부를 때 쓴다")
     args = ap.parse_args()
+    room = ROOM_KEYS[args.room_key] if args.room_key else args.room
 
-    out_path = _resolve_out_path(args.room, args.out, args.date)
-    log(f"내보내기 시작 — 방='{args.room}' → {out_path}")
-    ok = export_room_chat(args.room, out_path)
+    out_path = _resolve_out_path(room, args.out, args.date)
+    log(f"내보내기 시작 — 방='{room}' → {out_path}")
+    ok = export_room_chat(room, out_path)
     if ok:
         print(f"DONE: 내보내기 완료 — {out_path}")
         return 0
