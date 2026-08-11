@@ -99,6 +99,12 @@ def record_gm_prompt_hook() -> None:
             if len(event) > 120:
                 event = event[:120] + "…"
             if event:
+                # ★새 지시를 접수하기 전에 **직전 지시들을 닫는다**(2026-08-11).
+                #   GM 이 다음 말을 걸었다는 건 앞 물음에 답이 끝났다는 뜻이다.
+                #   Stop 훅에도 같은 호출을 뒀지만 그쪽은 실측상 이 세션에서 한 번도 발화하지
+                #   않았다 — 접수는 100% 쌓이고 있으므로(이 훅) 닫는 것도 여기서 보장한다.
+                #   멱등이라 두 곳에서 불려도 같은 ref 가 두 번 닫히지 않는다.
+                close_gm_refs(role)
                 day = datetime.now(tz=KST).strftime("%Y%m%d")
                 ref = _next_gm_ref(role, day)
                 log(role, "GM지시", event, result="warn",
