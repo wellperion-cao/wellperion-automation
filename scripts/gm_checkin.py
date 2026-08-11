@@ -586,6 +586,14 @@ def _bucket(title: str, lines: list, fail_note: str = '') -> str:
     return f"{head}\n{body}{tail}"
 
 
+def _josa(word: str, with_batchim: str, without_batchim: str) -> str:
+    """앞말 받침 유무로 조사 선택. 한글이 아니면(숫자·영문·기호) 받침 있는 쪽으로 둔다."""
+    ch = (word or '').rstrip()[-1:]
+    if not ch or not ('가' <= ch <= '힣'):
+        return with_batchim
+    return with_batchim if (ord(ch) - 0xAC00) % 28 else without_batchim
+
+
 def _pick_secretary_line(sched_pairs: list, due_pairs: list, waiting_lines: list, day: str) -> str:
     """맨 위 비서 한 줄 — 오늘 가장 먼저 볼 것 1개. 지목할 게 없으면 빈 문자열(억지로 안 씀)."""
     if due_pairs:
@@ -593,9 +601,11 @@ def _pick_secretary_line(sched_pairs: list, due_pairs: list, waiting_lines: list
         return f"오늘은 {x.get('업무명', '')} 마감({_due_label(due, day)})이 가장 급합니다."
     if sched_pairs:
         t, title = sched_pairs[0]
-        return f"오늘은 {title}{f'({t})' if t else ''}이 가장 큽니다."
+        head = f"{title}{f'({t})' if t else ''}"
+        return f"오늘은 {head}{_josa(head, '이', '가')} 가장 큽니다."
     if waiting_lines:
-        return f"오늘은 {waiting_lines[0][2:]}이 먼저 기다리고 있습니다."
+        head = waiting_lines[0][2:]
+        return f"오늘은 {head}{_josa(head, '이', '가')} 먼저 기다리고 있습니다."
     return ''
 
 
@@ -757,11 +767,15 @@ def build_morning_brief(day: str | None = None) -> str:
     due_lines = [f"· {x.get('업무명', '(제목없음)')} — {_due_label(due, day)}" for x, due in due_pairs]
 
     chairman = _fetch_chairman_open()
-    waiting_lines = []
+    # (표시줄, 식별키) — 「오늘 이것부터」에 이미 실린 항목은 아래에서 걸러 낸다.
+    # 안 거르면 같은 회장님 보고건이 한 메시지에 두 번(맨 위 + 답 대기) 나와 GM 이 두 번 읽는다.
+    waiting_pairs = []
     if ssot is not None:
-        waiting_lines += [f"· {x.get('업무명', '(제목없음)')} — {x.get('상태', '')}" for x in ssot_rest]
+        waiting_pairs += [(f"· {x.get('업무명', '(제목없음)')} — {x.get('상태', '')}",
+                           ('ssot', x.get('업무명', ''))) for x in ssot_rest]
     if chairman is not None:
-        waiting_lines += [f"· {it['title']} — 회장님 보고 대기" for it in chairman]
+        waiting_pairs += [(f"· {it['title']} — 회장님 보고 대기",
+                           ('chairman', it['id'])) for it in chairman]
     if ssot is None and chairman is None:
         waiting_note = '(불러오지 못함)'
     elif ssot is None or chairman is None:
@@ -779,6 +793,7 @@ def build_morning_brief(day: str | None = None) -> str:
 
     first_lines, first_used = _first_thing_lines(
         _first_thing_candidates(sched_pairs, chairman, due_pairs, day))
+    waiting_lines = [line for line, key in waiting_pairs if key not in first_used]
     if first_lines:
         first_section = f"🎯 오늘 이것부터 ({len(first_lines)})\n" + '\n'.join(first_lines)
     elif not sched_ok or chairman is None or ssot is None:
@@ -799,6 +814,9 @@ def build_morning_brief(day: str | None = None) -> str:
     sections = [s for s in sections if s]
 
     secretary = _pick_secretary_line(sched_pairs, due_pairs, waiting_lines, day)
+    if not secretary and first_lines:
+        # 답 대기 항목이 「오늘 이것부터」로 전부 올라간 날 — 비서 줄만 사라지지 않게 건수로 잇는다.
+        secretary = f"오늘은 답을 기다리는 {len(first_lines)}건이 먼저입니다."
 
     lines = [f"🌅 오늘의 업무  ·  {d.month}월 {d.day}일({wd})"]
     if secretary:
