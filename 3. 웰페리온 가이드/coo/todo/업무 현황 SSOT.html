@@ -2458,6 +2458,68 @@ function _seImageUploadBefore(files, info, core, uploadHandler) {
   })();
   return undefined; // uploadHandler 수동 호출 대기
 }
+/* ── Ctrl+V 이미지 축소(붙여넣기 전용) ── 2026-08-11 나우열M 지시(사진 붙여넣기 결함 수정)
+   스마트폰 캡처 등 큰 원본을 그대로 올리면 저장 글자수 한도에 걸리기 쉬워, 임계값을 넘을 때만
+   긴 변 1600px·JPEG q0.82로 축소해 기존 업로드 파이프라인에 넘긴다. 작은 이미지는 원본 그대로
+   두고(불필요한 손실압축 방지), 축소가 실패하면 원본으로 안전 폴백한다. 붙여넣기 경로에만 적용
+   — 툴바 이미지버튼·드래그앤드롭 등 기존 업로드 동작은 무변경. */
+var _PASTE_RESIZE_MAX_DIM = 1600;
+var _PASTE_RESIZE_SIZE_THRESHOLD = 900 * 1024;
+function _resizeImageFileIfLarge(file) {
+  return new Promise(function (resolve) {
+    if (!file || file.size <= _PASTE_RESIZE_SIZE_THRESHOLD || typeof createImageBitmap !== 'function') {
+      resolve(file); return;
+    }
+    createImageBitmap(file).then(function (bmp) {
+      var scale = Math.min(1, _PASTE_RESIZE_MAX_DIM / Math.max(bmp.width, bmp.height));
+      if (scale >= 1) { resolve(file); return; }
+      var w = Math.max(1, Math.round(bmp.width * scale));
+      var h = Math.max(1, Math.round(bmp.height * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      canvas.toBlob(function (blob) {
+        if (!blob) { resolve(file); return; }
+        var newName = (file.name || 'paste').replace(/\.[^.]+$/, '') + '.jpg';
+        resolve(new File([blob], newName, { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.82);
+    }).catch(function () { resolve(file); });
+  });
+}
+/* ── 기획안·결과보고 편집기 Ctrl+V 이미지 붙여넣기 ── 2026-08-11 나우열M 지시
+   SunEditor 기본 붙여넣기는 이미지를 base64로 그대로 본문에 박아 넣어(업로드 경로를 타지 않음),
+   실사진 크기에서는 저장 글자수 한도(45,000자)를 즉시 넘겨 "사진은 여기에 Ctrl+V 하세요"
+   안내문구와 달리 실제로는 저장이 막히던 결함(2026-08-11 실측 확인). 문서 편집기 영역에서
+   이미지가 포함된 붙여넣기만 캡처 단계에서 가로채, 기존 _seImageUploadBefore(드라이브 업로드)
+   경로로 대신 흘려보낸다 — 새 백엔드·새 저장경로 없음, 기존 파이프라인 그대로 재사용.
+   (붙여넣기 전용 수정 — 일반 '내용'칸·툴바 이미지버튼·드래그앤드롭은 기존 그대로 무변경) */
+var _docPasteHookInstalled = false;
+function _installDocPasteImageHook() {
+  if (_docPasteHookInstalled) return;
+  _docPasteHookInstalled = true;
+  document.addEventListener('paste', function (e) {
+    var wrap = e.target && e.target.closest ? e.target.closest('#docPlanWrap, #docResultWrap') : null;
+    if (!wrap) return;
+    var files = e.clipboardData && e.clipboardData.files ? Array.prototype.slice.call(e.clipboardData.files) : [];
+    var imgFiles = files.filter(function (f) { return /^image\//.test(f.type); });
+    if (!imgFiles.length) return;   // 이미지가 없는(텍스트) 붙여넣기는 기존 동작 그대로
+    e.preventDefault();
+    e.stopPropagation();
+    var which = wrap.id === 'docResultWrap' ? 'result' : 'plan';
+    var ed = which === 'result' ? _resultEd : _planEd;
+    if (!ed) return;
+    Promise.all(imgFiles.map(_resizeImageFileIfLarge)).then(function (resized) {
+      _seImageUploadBefore(resized, {}, null, function (res) {
+        if (res && res.result) {
+          res.result.forEach(function (item) {
+            ed.insertHTML('<img src="' + escAttr(item.url) + '" alt="">');
+          });
+        }
+        // 실패(문자열) 시 _seImageUploadBefore 자체가 이미 showToast로 안내함 — 추가 처리 불요
+      });
+    });
+  }, true);   // capture 단계 — SunEditor 자체 붙여넣기(base64 삽입) 처리보다 먼저 가로채 막는다
+}
 function _createDocEditor(targetId, minH) {
   return SUNEDITOR.create(targetId, {
     lang: (typeof SUNEDITOR_LANG !== 'undefined' ? SUNEDITOR_LANG['ko'] : undefined),
@@ -2485,6 +2547,7 @@ function ensureDocEditors() {
   try {
     if (!_planEd)   _planEd   = _createDocEditor('fPlan', '360px');
     if (!_resultEd) _resultEd = _createDocEditor('fResult', '260px');
+    _installDocPasteImageHook();
     return true;
   } catch (e) { return false; }
 }
