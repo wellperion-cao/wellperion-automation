@@ -85,6 +85,17 @@ def record_gm_prompt_hook() -> None:
         data = json.loads(sys.stdin.read())
         prompt = str(data.get("prompt") or "").strip()
         role = (os.environ.get("WELLPERION_ROLE") or "").strip().lower()
+        # ★역할을 못 읽으면 조용히 건너뛰지 않는다(시포 배490 · 2026-08-08 실사고).
+        #   그날 시포는 GM 지시 17건을 받아 16건을 끝냈는데 쿵짝표가 "오늘 받은 지시 없음"을 냈다.
+        #   훅은 돌았고 리마인더도 나갔지만 role 이 비어 접수만 건너뛴 탓이었다 — 아무 흔적이
+        #   없어서 그날 하루가 통째로 사라진 것처럼 보였다. 흔적을 남겨 다음엔 바로 잡히게 한다.
+        if prompt and not role:
+            try:
+                log("", "GM지시", "역할 미인식 — 접수를 남기지 못했다",
+                    result="fail",
+                    detail="WELLPERION_ROLE 이 훅 프로세스에 안 넘어왔다. 부팅 배치의 환경변수 상속을 확인할 것(배490).")
+            except Exception:
+                pass
         if prompt and role:
             event = prompt.splitlines()[0].strip()
             # 사람이 친 것만 접수한다. 훅은 시스템이 주입하는 알림·명령 출력에도 똑같이 걸려서,
