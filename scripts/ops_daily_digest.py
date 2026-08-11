@@ -855,8 +855,14 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM) -> int:
     # 아님: 매출은 같은 방(★운영부)에 09:30~31 매출보고 이미지로, 업무 SSOT는 같은 방에
     # 09:30 「하루 일과 정리」 메시지(report_stream_3)로 그날 안에 더 상세히 나간다.
     # finance_block 은 원장 metrics 스냅샷(다음날 전일대비 계산용)을 위해 계속 계산만 한다.
+    # 배536(2026-08-11 GM 확정) — 📩문의·등록/📣종합접수는 같은 GAS 원천이라 두 방에 그대로
+    # 나가면 중복이다. ★운영부(공유 전용, 약속 L24)만 유지하고 ★중간관리자는 뺀다.
+    # ⚠️오늘 챙길 것은 LLM 출력(llm_body) 안에 있고 두 방 다 그 방 대화가 달라 내용도 다르므로
+    # 손대지 않는다(GM: "오늘 챙길 것은 두 방의 대화가 다르니 내용도 서로 다르다 — 중복 아니다").
     header, llm_body, warm = _split_llm(message)
-    parts = [header, llm_body, mid_block, reception_block]
+    parts = [header, llm_body]
+    if room_dir_name == "★운영부":
+        parts += [mid_block, reception_block]
     final_message = "\n\n".join(p.strip() for p in parts if p and p.strip())
     if warm:
         final_message += "\n\n" + warm.strip()

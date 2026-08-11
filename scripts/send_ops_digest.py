@@ -55,6 +55,8 @@ except Exception:
 ROOT = Path(__file__).resolve().parent.parent
 SENDER = ROOT / "scripts" / "kakao_report_sender.py"
 PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부" / "_pending_digest.json"
+# 배536(2026-08-11) — ops_daily_digest.py --room "★중간관리자" 가 만드는 그 방 전용 대화 정리.
+MGR_PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★중간관리자" / "_pending_digest.json"
 KILL_SWITCH = ROOT / "status" / "ops_digest_send.json"
 TARGET_ROOM = "★운영부"  # 2026-08-04 시토: SSOT(kakao_rooms.json)와 표기 일치(공백 제거) —
 # 발송 자체는 _title_key 정규화로 공백 무관하게 동작하지만, 등록부 드리프트 체커가
@@ -284,18 +286,31 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 # (2026-08-10 11:48 웰리 「담당이 안 잡혀 멈춘 건들」 · 18:02 시토 「마감일 지난 업무
 # 11건」). 여기서 또 내보내면 같은 방에 같은 목록이 두 번 간다.
 #
-# 그럼 이 자리에 무엇이 와야 하나 = ★운영부와 같은 「어제 그 방 대화 정리」다. 그런데
-# ★중간관리자 방은 대화 원문이 2026-08-08 이후 안 쌓인다(1. AI자료_아카이브/11_카카오톡/
-# ★중간관리자/ 마지막 파일 = 20260808). 원문이 없으면 정리를 만들 수 없다 — 그래서
-# 미해결건이 그 빈자리를 채우고 있었던 것이다. 원문 수집·대화 정리 배선은 시토 배536
-# 소관이고, 붙는 즉시 ops_daily_digest 의 방 디렉터리만 갈아 끼우면 된다(새 생성기를
-# 만들지 않는다 · 약속 L21).
+# 그럼 이 자리에 무엇이 와야 하나 = ★운영부와 같은 「어제 그 방 대화 정리」다. 원문 수집·
+# 대화 정리 배선은 시토 배536 — ops_daily_digest.py --room "★중간관리자" 가 그 방 폴더에
+# _pending_digest.json 을 만든다(새 생성기 아님, 방 디렉터리만 갈아 끼운 기존 생성기).
+# 이 함수는 그 message를 몸통으로 쓰고, 업무 시트 완료건은 뒤에 덧붙인다.
 #
-# 그때까지 이 함수는 「어제 완료」만 낸다. 낼 게 없으면 빈 문자열 = 발송 안 함
+# 대화 정리가 없으면(원문 미수집 등) 「어제 완료」만 낸다. 낼 게 없으면 빈 문자열 = 발송 안 함
 # (GM 지시: 억지로 채우지 않는다 — 잘못된 것을 보내느니 안 보낸다).
 # ══════════════════════════════════════════════════════════════════════════
 MGR_DAILY_SHOW_N = 3
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
+
+
+def _mgr_conversation_message(target_date: str) -> str:
+    """ops_daily_digest.py --room "★중간관리자" 가 만든 그 방 대화 정리 원문.
+    MGR_PENDING의 date가 target_date와 다르면(생성 실패로 옛 회차가 남아있는 등) 빈 문자열 —
+    옛 정리 재발송 사고 방지(배536 요건)."""
+    if not MGR_PENDING.exists():
+        return ""
+    try:
+        data = json.loads(MGR_PENDING.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    if str(data.get("date", "")) != target_date:
+        return ""
+    return (data.get("message") or "").strip()
 
 
 def build_mgr_daily_brief(rows: list, target_date: str) -> str:
@@ -303,18 +318,22 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> str:
 
     미해결건은 담지 않는다 — 별도 발신이 담당한다(2026-08-11 GM 지적, 위 주석 참조).
     """
-    lines = []
+    convo = _mgr_conversation_message(target_date)
+    parts = [convo] if convo else []
+
     done = [r for r in _ops_done_rows(rows) if str(r.get("수정일", "") or "").startswith(target_date)]
     if done:
         names = ", ".join(str(r.get("업무명", "")).strip()
                           for r in done[:MGR_DAILY_SHOW_N] if str(r.get("업무명", "")).strip())
         tail = f" 외 {len(done) - MGR_DAILY_SHOW_N}건" if len(done) > MGR_DAILY_SHOW_N else ""
-        lines.append(f"✅ 어제 완료 {len(done)}건({names}{tail})")
+        done_line = f"✅ 어제 완료 {len(done)}건({names}{tail})"
+        if convo:
+            parts.append(done_line)  # 대화 정리가 이미 제목을 갖고 있으니 완료줄만 덧붙인다
+        else:
+            _, m, d = target_date.split("-")
+            parts.append(f"🧭 {int(m)}/{int(d)} 어제 정리 — 판단·배정 필요한 것만\n{done_line}")
 
-    if not lines:
-        return ""
-    _, m, d = target_date.split("-")
-    return "\n".join([f"🧭 {int(m)}/{int(d)} 어제 정리 — 판단·배정 필요한 것만"] + lines)
+    return "\n\n".join(parts)
 
 
 def _mgr_already_sent(target_date: str) -> bool:
