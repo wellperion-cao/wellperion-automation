@@ -2041,10 +2041,13 @@ def _build_18_body() -> str:
 
 
 def _build_21_body() -> str:
-    """21시 — 오늘 최종 정리 + 내일 항로점 브릿지 [개인&회사]
+    """21시 — 오늘 최종 정리 + 내일 항로점 브릿지 [회사] · 업무보고방(GM_DM)
 
     ★배10011(2026-07-24, GM 승인): 18:00 퇴근인사·저녁루틴·명언(_18_evening_lines)을
-    본문 서두에 흡수(18시 단독 발신 폐지). 나머지 구조는 무변경."""
+    본문 서두에 흡수(18시 단독 발신 폐지).
+    ★배541(2026-08-12): 그 개인 3줄을 20:30 하루 방 저녁 정리본(run_gm_evening_recap)으로
+    옮겼다. GM 정의상 이 메시지가 가는 업무보고방은 개인 내용을 담지 않는다 — 지운 게 아니라
+    방을 바꾼 것이라 개인 슬롯은 그대로 살아 있고 하루 발신 통수도 그대로다."""
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
     weekday_kor = _WEEKDAY_KOR[now.weekday()]
@@ -2110,8 +2113,7 @@ def _build_21_body() -> str:
     bridge_block = "\n".join(bridge_lines) if bridge_lines else "  (미완료 이월 항목 없음 — 오늘 항로 완주)"
 
     return (
-        f"{_unified_header('21', '개인&회사', '오늘 마감·내일 정립')}\n"
-        f"{_18_evening_lines()}\n"
+        f"{_unified_header('21', '회사', '오늘 마감·내일 정립')}\n"
         f"{_DIVIDER}\n"
         f"   오늘의 성과\n"
         f"{table_str}\n\n"
@@ -2947,7 +2949,11 @@ def run_gm_evening_recap(chat_id: str | None = None) -> None:
         chat = chat_id or _checkin_chat_id()
         step = _ck.build_evening_recap()
         extra = {"reply_markup": json.dumps(step["markup"], ensure_ascii=False)} if step.get("markup") else None
-        ok = _send(token, chat, step["text"], source="gm_evening_recap", extra=extra)
+        # 퇴근인사·저녁루틴·명언은 개인 몫이라 하루 방(여기)에 붙인다 — 21시 업무보고방 본문에서
+        # 옮겨 온 것이다(배541 · 2026-08-12). GM 정의: 하루 방은 업무 제외, 업무관리는 개인 제외.
+        # 배10011(2026-07-24)로 18시 단독 발신을 접으면서 21시에 얹었던 것이 그 정의보다 앞선다.
+        text = step["text"].rstrip() + "\n\n" + _18_evening_lines().rstrip()
+        ok = _send(token, chat, text, source="gm_evening_recap", extra=extra)
         logger.info(f"{label} 발송 ok={ok} chat={chat}")
     except Exception as e:
         logger.warning(f"{label} 실패: {e}")
