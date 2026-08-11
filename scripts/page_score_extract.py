@@ -16,11 +16,13 @@
 쓰는 곳
   hangro_board.py 부팅 슬라이스가 이 파일을 읽어 저점 화면을 띄운다.
 
-사용:  python scripts/page_score_extract.py [--check]
+사용:  python scripts/page_score_extract.py [--check|--ping]
        --check 는 파일을 쓰지 않고 몇 건 잡히는지만 낸다.
+       --ping  은 화면 열람 흔적을 걷어 status/page_ping.json 으로 낸다(매일 07:40 자동).
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import re
 import sys
@@ -130,7 +132,76 @@ def extract() -> dict:
     }
 
 
+# ── 화면 열람 흔적 수집 (2026-08-12 · GM 승인) ────────────────────────────────
+#   화면 쪽 짝 = 3. 웰페리온 가이드/_assets/page_ping.js (열릴 때 경로+시각만 남긴다).
+#   여기서는 그 흔적을 하루 1회 걷어 status/page_ping.json 으로 낸다.
+#   ★새 저장소를 만들지 않는다 — 이미 쓰는 점검 GAS 의 범용 보드 통로를 그대로 읽는다(L21).
+PING_GAS = ("https://script.google.com/macros/s/"
+            "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec")
+PING_OUT = _REPO / "status" / "page_ping.json"
+_PAGES_PREFIX = "/wellperion-automation/"  # 라이브 주소엔 '3. 웰페리온 가이드' 가 안 붙는다
+
+
+def _ping_key(name: str) -> str | None:
+    stem = re.sub(r"\s*\(.*$", "", name).strip()
+    hits = list(_GUIDE_ROOT.rglob(f"{stem}.html"))
+    if not hits:
+        return None
+    return "ping:" + _PAGES_PREFIX + hits[0].relative_to(_GUIDE_ROOT).as_posix()
+
+
+def collect_pings() -> dict:
+    """채점 대상 화면의 마지막 열람 시각을 모아 status/page_ping.json 으로."""
+    import time
+    import urllib.parse
+    import urllib.request
+    from concurrent.futures import ThreadPoolExecutor
+
+    scored = json.loads(OUT.read_text(encoding="utf-8"))["pages"]
+    targets = [(p["name"], _ping_key(p["name"])) for p in scored]
+
+    def fetch(item):
+        name, key = item
+        if not key:
+            return name, None, "화면 파일을 못 찾음"
+        url = f"{PING_GAS}?action=board&key={urllib.parse.quote(key, safe='')}"
+        # GAS 는 동시 요청을 조이면 404 를 낸다(2026-08-12 실측: 8줄 병렬에서 43건 중 28건
+        # 404, 같은 주소를 하나씩 부르면 전부 200). 그래서 줄을 좁히고 재시도를 둔다 —
+        # 여기서 404 를 그냥 넘기면 '아무도 안 열었다'로 잘못 읽혀 멀쩡한 화면이 정리 후보가 된다.
+        last_err = ""
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(url, timeout=30) as r:
+                    body = json.loads(r.read().decode("utf-8"))
+                return name, (body.get("board") or {}).get("last"), ""
+            except Exception as e:
+                last_err = f"{type(e).__name__}: {e}"
+                time.sleep(1.5 * (attempt + 1))
+        return name, None, f"조회 실패(3회): {last_err}"
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        rows = list(pool.map(fetch, targets))
+
+    pages = [{"name": n, "last_open": last, "note": note} for n, last, note in rows]
+    opened = [p for p in pages if p["last_open"]]
+    data = {
+        "_doc": "화면 열람 흔적 — 생성물. 화면 쪽 짝 = _assets/page_ping.js. "
+                "last_open 이 비어 있으면 '핑을 넣은 뒤로 아직 아무도 안 열었다'는 뜻이다 "
+                "(핑을 못 넣은 화면은 note 에 사유가 적힌다). 갱신 = python scripts/page_score_extract.py --ping",
+        "collected_at": _dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "count": len(pages),
+        "opened_count": len(opened),
+        "pages": sorted(pages, key=lambda p: (p["last_open"] or "")),
+    }
+    PING_OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return data
+
+
 def main() -> None:
+    if "--ping" in sys.argv:
+        d = collect_pings()
+        print(f"[OK] {PING_OUT.relative_to(_REPO)} — {d['count']}건 중 열람 흔적 {d['opened_count']}건")
+        return
     data = extract()
     if "--check" in sys.argv:
         print(f"{data['count']}건 · 최저 {data['pages'][0]['score']}% ({data['pages'][0]['name']})")

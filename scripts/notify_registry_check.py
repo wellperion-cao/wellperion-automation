@@ -174,6 +174,7 @@ def main(write_json=None):
         'bot_health_check',         # 실패 시 이 PC 데스크톱 알림창만(local_fallback_alert) · API 발신 없음
         'sales_session_guard_0810', # sales_session_guard.py 에 발신 호출 0건 · 만료 시 로그인 창만 띄움
         'ig_publish_verify_sweep',  # 발행완료 도장+커밋만 · 결과 요약은 ig-publish-multichannel-summary 담당
+        'page_ping_collect',        # 화면 열람 흔적을 status/page_ping.json 으로만 낸다 · 발신 없음
     }
     reg_job_ids: set[str] = set()
     for item in reg_items:

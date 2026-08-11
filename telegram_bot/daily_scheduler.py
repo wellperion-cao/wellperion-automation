@@ -3418,6 +3418,36 @@ def main():
     )
     logger.info("kpi_collector 등록 완료 (07:50·21:00 일 2회) — S2 KPI 라이브 배지")
 
+    # ── 화면 열람 흔적 수집 (매일 07:40) — 시토 2026-08-12 · 배478 (GM 승인) ──────
+    #   화면 쪽 짝 = _assets/page_ping.js 가 열릴 때 경로+시각만 남긴다. 여기서 하루 한 번
+    #   걷어 status/page_ping.json 으로 낸다 → 부팅 저점 목록이 "아무도 안 여는 화면"을
+    #   함께 보여 준다. 사람 방으로 아무것도 안 보낸다(발신 아님).
+    #   새 모듈·새 예약작업을 만들지 않고 이미 도는 이 스케줄러에 얹었다(약속 L21).
+    def _collect_page_ping():
+        try:
+            proc = subprocess.run(
+                [sys.executable, "scripts/page_score_extract.py", "--ping"],
+                cwd=str(BASE.parent), timeout=300,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
+        except Exception as e:
+            logger.error(f"page_ping 수집 실패(예외): {type(e).__name__}: {e}")
+            return
+        if proc.returncode != 0:
+            tail = (proc.stderr or b"").decode("utf-8", "replace").strip()[-400:]
+            logger.error(f"page_ping 수집 종료코드 {proc.returncode} — stderr: {tail}")
+            return
+        logger.info((proc.stdout or b"").decode("utf-8", "replace").strip() or "page_ping 수집 완료")
+
+    scheduler.add_job(
+        _collect_page_ping,
+        trigger=CronTrigger(hour=7, minute=40),
+        id="page_ping_collect",
+        misfire_grace_time=1800,
+        coalesce=True,
+    )
+    logger.info("page_ping 수집 등록 완료 (매일 07:40) — 화면 열람 흔적")
+
     # ── 구역 전체 미점검 알림 (14:00·20:00 · 0건일 때만 · 구역당 하루 1회) — 웰리 2026-07-31 ──
     # GM 지시: "실무진에서 매일 돌아가야 하는 부분이 안 돌아가면 알림 줘야 할 것 같은데 —
     #   오늘은 여자 지원부 점검을 안 했는데." 그날 실측 = 여성구역 0/52(전 회차 0).
