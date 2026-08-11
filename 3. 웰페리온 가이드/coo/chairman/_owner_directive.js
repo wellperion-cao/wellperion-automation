@@ -35,6 +35,13 @@
     var d = new Date();
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
+  // 보고완료 날짜 표시 — 연도 없이 "M/D"(GM 지시 2026-08-11). 저장(todayStr)은 그대로 YYYY-MM-DD —
+  // 여기서 화면 표시용으로만 짧게 자른다. 이 함수 하나만 고치면 회장님·대표님·결재문서 인쇄까지
+  // 전부 같이 바뀐다(아래 chDate·reportedDate가 이 함수를 거쳐 나가므로 — 약속 L01, 표시 로직 복제 없음).
+  function fmtNoYear(s) {
+    var m = /^\d{4}-0?(\d{1,2})-0?(\d{1,2})/.exec(String(s || '').trim());
+    return m ? (m[1] + '/' + m[2]) : '';
+  }
   // 내용칸 꼬리표(분류용 "대표님 보고건(...)"·보고완료로 표시할 때 붙이는 "[…보고완료 날짜]") 를 화면·문안에서
   // 걷어낸 본문. 붙는 순서가 항상 "…원문 → 대표님 보고건(...) → [보고완료 …]"라 끝에서부터 역순으로 떼어낸다
   // (먼저 [보고완료] 를 떼야 그 아래 있던 대표님 보고건(...) 이 다시 맨 끝으로 나와 두 번째 규칙에 걸린다).
@@ -50,7 +57,7 @@
   // 완료 배지에 쓸 날짜 — 위 표식([마크 YYYY-MM-DD])에서 날짜만 뽑는다(회장님 쪽 chDate()와 형식 통일, GM 지적 2026-08-10).
   function reportedDate(content, markPrefix) {
     var m = new RegExp('\\[' + markPrefix + ' (\\d{4}-\\d{2}-\\d{2})\\]').exec(String(content || ''));
-    return m ? m[1] : '';
+    return m ? fmtNoYear(m[1]) : '';
   }
 
   // 업무&결재 SSOT(action=todo_list) — 월간운영계획.html readWorkApproval() 과 동일 조회 + AI배 제외.
@@ -120,7 +127,7 @@
       .then(function (j) { return j || get(RAW_STATE); })
       .then(function (j) { chReported = j || {}; });
   }
-  function chDate(it) { return String(chReported[it.id] || '').trim(); }
+  function chDate(it) { return fmtNoYear(chReported[it.id]); }
   function chairmanPending() {
     return (window.WellperionChairmanItems || []).filter(function (it) { return !chDate(it); });
   }
@@ -326,9 +333,13 @@
       return list.map(function (it, i) {
         var n = base + i + 1;
         var no = String(n).length < 2 ? '0' + n : String(n);
+        // ★2026-08-11 GM 실측 — 이 버튼(commit_file → GitHub API)이 "GitHub 401: Bad credentials"로
+        // 항상 실패한다(Apps Script 속성 GITHUB_TOKEN 만료·GM업무 화면과 무관한 서버측 인증 문제,
+        // 대표님 쪽 버튼은 시트 저장이라 영향 없음). 고칠 때까지 눌러도 되는 것처럼 두지 않는다 —
+        // 비활성 표시로 바꾸고, 그동안은 에이전트에게 chairman_reported.json 직접 수정을 요청.
         var act = isDone
           ? '<span class="done-badge">✅ 보고완료 ' + esc(chDate(it)) + '</span>'
-          : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
+          : '<button type="button" class="ebtn save" disabled title="서버 저장 연동 점검 중(GitHub 인증 만료) — 지금은 저장되지 않습니다. GM께 알려 관리자 확인 필요">저장 일시중단</button>';
         // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
           ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') + '</td>' +
