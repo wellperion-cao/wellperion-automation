@@ -150,7 +150,15 @@ ENV_PATH = _REPO_ROOT / "telegram_bot" / ".env"
 TELEGRAM_TOKEN_ENV_KEY = "TELEGRAM_BOT_TOKEN"
 
 # 역롤백: 이 값을 "" 로 바꾸면 즉시 미발송(브리프 생성·저장은 그대로 계속됨).
-WEEKLY_SUMMARY_CHAT_ID = "-5516675010"  # 문의알림방(시모 담당) — 메모리 project_telegram_3room_split
+# ★2026-08-11 GM 재배치: 문의관리방(-5516675010) → 업무관리(GM_DM).
+# GM 이 방 5종 용도를 확정하면서 문의관리방은 "자동 문의·컨택·등록"만 받는 방이 됐다 —
+# 마케팅 카드(일일·주간·월간)는 그 정의 밖이라 현실 업무 방으로 옮긴다.
+# 분류 판단은 alert_router 한 곳에서만 한다(약속 L01) — 여기서 chat_id 를 새로 정하지 않는다.
+try:
+    from alert_router import GM_ACTION as _GM_ACTION, route as _route
+    WEEKLY_SUMMARY_CHAT_ID = str(_route(_GM_ACTION))
+except Exception:  # 라우터를 못 읽어도 발송을 잃지 않는다
+    WEEKLY_SUMMARY_CHAT_ID = "8254867551"  # 업무관리(GM_DM)
 
 try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
     from tg_outbound_log import send as _tg_send
