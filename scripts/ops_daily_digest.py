@@ -43,7 +43,12 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 # ── 경로 상수 (gitignore된 아카이브 하위 전용 — 절대 status/·docs/ 등 추적경로 금지) ──
 ROOT = Path(__file__).resolve().parent.parent
-KAKAO_ROOM_DIR = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부"
+DEFAULT_ROOM = "★ 운영부"
+ROOM_DIR_BASE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
+# 아래 3개는 기본(★운영부) 값 — run(room=...)이 room 인자를 받으면 실행 시점에 이 전역을
+# 해당 방 폴더로 재바인딩한다(배536 2026-08-11 — "ops_daily_digest 의 방 디렉터리만 갈아
+# 끼우면 된다", send_ops_digest.py 주석 참조). --room 미지정 시 아래 값 그대로 = 회귀 없음.
+KAKAO_ROOM_DIR = ROOM_DIR_BASE / "★운영부"
 LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
 PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
 
@@ -677,18 +682,19 @@ def save_ledger(ledger: list[dict]) -> None:
 # ═══════════════════════════════════════════
 #  5) 두뇌 — claude CLI (model_router 폴백 체인 재사용)
 # ═══════════════════════════════════════════
-def build_prompt(target_date: str, conversation: str, past_issues_digest: str) -> str:
+def build_prompt(target_date: str, conversation: str, past_issues_digest: str, room_dir_name: str = "★운영부") -> str:
+    room_short = room_dir_name.replace("★", "")  # 헤더용 짧은 표기(예: "운영부"·"중간관리자")
     try:
         _d = datetime.strptime(target_date, "%Y-%m-%d")
         disp = f"{_d.month}/{_d.day}(" + "월화수목금토일"[_d.weekday()] + ")"
-        # 대상일이 '진짜 어제'면 '어제 운영부 정리 · 날짜', 아니면(휴관 폴백 등) 날짜만 — 오해 방지
+        # 대상일이 '진짜 어제'면 '어제 {방} 정리 · 날짜', 아니면(휴관 폴백 등) 날짜만 — 오해 방지
         _yest = (datetime.now().date() - _d.date()).days == 1
-        header_label = f"어제 운영부 정리 · {disp}" if _yest else f"{disp} 운영부 정리"
+        header_label = f"어제 {room_short} 정리 · {disp}" if _yest else f"{disp} {room_short} 정리"
     except Exception:
         disp = target_date
-        header_label = f"{target_date} 운영부 정리"
+        header_label = f"{target_date} {room_short} 정리"
     return f"""당신은 웰페리온(프리미엄 스포츠클럽 멤버십 커뮤니티) AI COO '시우'입니다.
-★운영부 카카오톡 방의 어제({target_date}) 하루 대화를 읽고, 오늘 아침 방에 바로 보낼 요약 메시지 1통을 작성합니다.
+{room_dir_name} 카카오톡 방의 어제({target_date}) 하루 대화를 읽고, 오늘 아침 방에 바로 보낼 요약 메시지 1통을 작성합니다.
 
 [어제({target_date}) 대화 원문]
 {conversation}
@@ -762,8 +768,14 @@ def parse_brain_json(raw: str) -> tuple[str, list[dict], bool]:
 # ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
-def run(forced_date: str | None = None) -> int:
-    print(f"[시작] ★운영부 카톡 아침 요약 두뇌 — {now_str()}")
+def run(forced_date: str | None = None, room: str = DEFAULT_ROOM) -> int:
+    global KAKAO_ROOM_DIR, LEDGER_PATH, PENDING_DIGEST_PATH
+    room_dir_name = room.replace(" ", "")
+    KAKAO_ROOM_DIR = ROOM_DIR_BASE / room_dir_name
+    LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
+    PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
+
+    print(f"[시작] {room_dir_name} 카톡 아침 요약 두뇌 — {now_str()}")
 
     export_path = find_latest_export()
     if export_path is None:
@@ -793,7 +805,7 @@ def run(forced_date: str | None = None) -> int:
     past_digest = recent_issues_digest(ledger, before_date=target_date)
 
     print("[4/5] 두뇌(claude CLI · model_router 폴백) 호출...")
-    prompt = build_prompt(target_date, conversation, past_digest)
+    prompt = build_prompt(target_date, conversation, past_digest, room_dir_name=room_dir_name)
     raw_out, used_model = call_brain(prompt)
     if raw_out is None:
         print("[실패] claude CLI 전 모델 실패 — 메시지 생성 불가(원장도 갱신 안 함). model_router 로그·텔레그램 경보 확인 요망.")
@@ -875,8 +887,10 @@ def main():
     )
     parser.add_argument("--date", dest="date", default=None,
                         help="대상일 수동 지정(YYYY-MM-DD, 테스트·재실행용). 미지정 시 어제→최근 완결일 자동.")
+    parser.add_argument("--room", dest="room", default=DEFAULT_ROOM,
+                        help=f"카톡 방 제목(기본 '{DEFAULT_ROOM}') — 배536(2026-08-11), 예: '★ 중간관리자'")
     args = parser.parse_args()
-    sys.exit(run(forced_date=args.date))
+    sys.exit(run(forced_date=args.date, room=args.room))
 
 
 if __name__ == "__main__":

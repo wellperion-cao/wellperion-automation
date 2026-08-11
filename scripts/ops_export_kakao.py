@@ -14,12 +14,14 @@
 
 사용:
     C:\\Python314\\python.exe -u scripts\\ops_export_kakao.py
+    C:\\Python314\\python.exe -u scripts\\ops_export_kakao.py --room "★ 중간관리자"   # 배536(2026-08-11)
 
 주의: 라이브 카카오톡 PC 앱 UI 조작(클릭·키 입력)이다 — 실행 시 실제 창을 건드린다.
-      ★운영부 방이 닫혀 있으면 카톡 검색으로 직접 연다(kakao_report_sender.open_or_find_room 재사용, GM 2026-07-13).
+      대상 방이 닫혀 있으면 카톡 검색으로 직접 연다(kakao_report_sender.open_or_find_room 재사용, GM 2026-07-13).
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import os
 import shutil
@@ -43,16 +45,26 @@ except Exception:
     pass
 
 ROOT = Path(__file__).resolve().parent.parent
-MONTH_DIR = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부" / datetime.now().strftime("%Y-%m")
+DEFAULT_ROOM = "★ 운영부"
+ROOM_DIR_BASE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
 HOME = Path.home()
 SEARCH_DIRS = [
-    ROOT / "1. AI자료_아카이브" / "11_카카오톡",
+    ROOM_DIR_BASE,
     HOME / "Documents",
     HOME / "Downloads",
     HOME / "Desktop",
 ]
-ROOM_NAME_CONTAINS = "운영부"  # 방 창 제목에 포함되어야 하는 문자열(★ 운영부)
 ENV_PATH = ROOT / "telegram_bot" / ".env"
+
+
+def _room_paths(room: str) -> "tuple[Path, str]":
+    """방 제목(예: '★ 운영부')에서 (월별 아카이브 폴더, 창제목 매칭 문자열) 파생.
+    폴더=공백만 제거("★운영부", 기존 관례) · 매칭문자열=★·공백 모두 제거("운영부",
+    카톡 창 제목에 포함되는 문자열). 배536(2026-08-11) — 방 하드코딩을 인자화."""
+    dir_name = room.replace(" ", "")
+    name_contains = room.replace("★", "").replace(" ", "").strip()
+    month_dir = ROOM_DIR_BASE / dir_name / datetime.now().strftime("%Y-%m")
+    return month_dir, name_contains
 
 
 def log(*a) -> None:
@@ -136,49 +148,50 @@ def eva_menus(win32gui):
     return acc
 
 
-def run_export() -> "tuple[bool, str]":
-    """라이브 카톡 PC 앱 조작으로 ★운영부 대화 내보내기 실행. 반환: (성공여부, 성공시 저장경로/실패시 사유)."""
+def run_export(room: str = DEFAULT_ROOM) -> "tuple[bool, str]":
+    """라이브 카톡 PC 앱 조작으로 room 대화 내보내기 실행. 반환: (성공여부, 성공시 저장경로/실패시 사유)."""
     import win32con
     import win32gui
     import pyautogui
     from pywinauto import Desktop
 
-    MONTH_DIR.mkdir(parents=True, exist_ok=True)
+    month_dir, room_name_contains = _room_paths(room)
+    month_dir.mkdir(parents=True, exist_ok=True)
 
     log("[0] 어수선한 저장/에러창 정리")
     close_dialogs(win32gui, win32con, pyautogui)
 
     # 방 찾기 + 잡팝업 닫기
-    room = None
+    room_h = None
     for h, t, r in eva(win32gui):
-        if ROOM_NAME_CONTAINS in t:
-            room = h
+        if room_name_contains in t:
+            room_h = h
         elif t.strip() == "" and (r[2] - r[0]) < 700:
             try:
                 win32gui.PostMessage(h, win32con.WM_CLOSE, 0, 0)
             except Exception:
                 pass
-    if not room:
+    if not room_h:
         # 방이 닫혀 있으면 시토가 카톡 검색으로 직접 연다 (GM 2026-07-13) — kakao_report_sender 검증 로직 재사용
         log("[방] 창 없음 → 카톡 검색으로 자동 열기 시도")
         try:
             import kakao_report_sender as _krs
-            _krs.open_or_find_room("★ 운영부")
+            _krs.open_or_find_room(room)
             time.sleep(1.0)
             for h, t, r in eva(win32gui):
-                if ROOM_NAME_CONTAINS in t:
-                    room = h
+                if room_name_contains in t:
+                    room_h = h
                     break
         except Exception as e:
             log(f"[방] 자동 열기 실패: {e}")
-    if not room:
-        return False, f"'{ROOM_NAME_CONTAINS}' 방 창을 열지 못함(검색 자동열기도 실패 — 카톡 메인창 확인)"
+    if not room_h:
+        return False, f"'{room_name_contains}' 방 창을 열지 못함(검색 자동열기도 실패 — 카톡 메인창 확인)"
     time.sleep(0.5)
     try:
-        Desktop(backend="win32").window(handle=room).set_focus()
+        Desktop(backend="win32").window(handle=room_h).set_focus()
     except Exception as e:
         log("focus warn", e)
-    L, T, R, B = win32gui.GetWindowRect(room)
+    L, T, R, B = win32gui.GetWindowRect(room_h)
     pyautogui.click((L + R) // 2, (T + B) // 2)
     time.sleep(0.5)  # 방 포커스
 
@@ -254,7 +267,7 @@ def run_export() -> "tuple[bool, str]":
         return False, "저장 직후 생성된 txt 파일을 찾지 못함(저장 안 됐거나 다른 폴더에 저장됨)"
 
     src = cand[0]
-    dst = MONTH_DIR / f"운영부_autoexport_{datetime.now().strftime('%Y%m%d')}.txt"
+    dst = month_dir / f"{room_name_contains}_autoexport_{datetime.now().strftime('%Y%m%d')}.txt"
     shutil.move(src, str(dst))
     sz = dst.stat().st_size
     log(f"[성공] {os.path.basename(src)} → {dst} ({round(sz / 1024, 1)} KB)")
@@ -266,8 +279,12 @@ def main() -> int:
         print("EXPORT_FAIL: Windows(카카오톡 PC 앱) 전용 스크립트입니다.")
         return 1
 
+    ap = argparse.ArgumentParser(description="카톡 방 대화 무인 내보내기")
+    ap.add_argument("--room", default=DEFAULT_ROOM, help=f"카톡 방 제목(기본 '{DEFAULT_ROOM}')")
+    args = ap.parse_args()
+
     try:
-        ok, detail = run_export()
+        ok, detail = run_export(args.room)
     except Exception as exc:
         ok, detail = False, f"예외 발생: {exc}"
 
@@ -275,7 +292,7 @@ def main() -> int:
         print(f"EXPORT_OK: {detail}")
         return 0
 
-    msg = f"⚠️ ★운영부 카톡 대화 내보내기 실패 — {detail}"
+    msg = f"⚠️ {args.room} 카톡 대화 내보내기 실패 — {detail}"
     log(msg)
     send_owner_alert(msg)
     print(f"EXPORT_FAIL: {detail}")

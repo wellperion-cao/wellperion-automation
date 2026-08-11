@@ -45,7 +45,9 @@ KAKAO_EXE = os.environ.get(
 )
 ARCHIVE_BASE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
 # 카톡 방 제목 → 파일시스템 폴더명(★·공백 등 정규화, 기존 관례 유지)
-ROOM_DIR_NAME = {"★ 운영부": "★운영부"}
+# 배536(2026-08-11 GM→시토) — ★중간관리자도 ★운영부와 동일 배선(매핑 없어도 아래 fallback
+# room_name.replace(" ", "")로 이미 "★중간관리자"가 나오지만, 관례대로 명시해 둔다.
+ROOM_DIR_NAME = {"★ 운영부": "★운영부", "★ 중간관리자": "★중간관리자"}
 
 
 def log(msg: str) -> None:
