@@ -683,6 +683,53 @@ def _load_office_ships() -> list | None:
     return _filter_office_ships(data)
 
 
+# ── 🎯 오늘 이것부터 (GM 지시 2026-08-11 "중요한 건을 기준으로 · 놓치는 게 없도록") ──
+#   비서 한 줄 바로 아래, 브리핑 맨 위. 기존 「부문별 오늘 핵심」이 정체일수만 보다 보니
+#   15줄이 전부 "N일째 멈춤"이 돼 GM 이 오늘 뭘 봐야 할지 못 골랐다 — 이건 반대로
+#   "오늘 움직여야 할 것"만 우선순위 순으로 최대 5건 뽑는다. 새 원천 신설 없음(약속 L21) —
+#   build_morning_brief 가 이미 계산해 둔 sched_pairs·chairman·due_pairs 만 재사용한다.
+#   순위 ①오늘 일정 ②회장님 보고 대기 ③기한 지난 것. "사람이 GM 회신 기다리는 것"·
+#   "매출·안전·법"은 팀장 지시 원안엔 있었으나 지어내지 않고는 뽑을 근거(신뢰 가능한 날짜·
+#   플래그)가 저장소에 없어 뺐다 — 근거 생기면 여기 추가한다.
+FIRST_THINGS_MAX = 5
+
+
+def _first_thing_candidates(sched_pairs: list, chairman_open: list | None,
+                             due_pairs: list, day: str) -> list[tuple[str, tuple]]:
+    """(표시줄, 식별키) 우선순위 순 후보. 식별키로 「놓친 것 없나」와 겹치지 않게 뺀다."""
+    cands = []
+    for t, title in sched_pairs:
+        cands.append((f"· {(t + ' ') if t else ''}{title}", ('sched', title)))
+    for it in (chairman_open or []):
+        cands.append((f"· {it['title']} — 회장님 보고 대기", ('chairman', it['id'])))
+    for x, due in due_pairs:
+        label = _due_label(due, day)
+        if label.startswith('D+'):  # 지난 것만 — 임박은 기존 「기한이 임박했습니다」가 이미 다룬다
+            cands.append((f"· {x.get('업무명', '(제목없음)')} — {label}", ('ssot', x.get('업무명', ''))))
+    return cands
+
+
+def _first_thing_lines(cands: list) -> tuple[list, set]:
+    """최대 5건으로 자르고, 실제로 쓰인 항목의 식별키 집합을 함께 돌려준다."""
+    picked = cands[:FIRST_THINGS_MAX]
+    return [line for line, _k in picked], {k for _l, k in picked}
+
+
+def _missed_lines(chairman_open: list | None, ssot_rest: list | None, used: set, max_n: int = 3) -> list:
+    """「놓친 것 없나」— 오늘 이것부터에 못 들어간 답 대기 항목 중 최대 3개."""
+    out = []
+    for it in (chairman_open or []):
+        if ('chairman', it['id']) in used:
+            continue
+        out.append(f"· {it['title']} — 회장님 보고 대기")
+    for x in (ssot_rest or []):
+        title = x.get('업무명', '(제목없음)')
+        if ('ssot', title) in used:
+            continue
+        out.append(f"· {title} — {x.get('상태', '')} · 답 대기")
+    return out[:max_n]
+
+
 def build_morning_brief(day: str | None = None) -> str:
     """08:00 「나의하루」 GM 업무 브리핑 — 월~토 발송. 전사일정·GM업무·업무SSOT·회장님 보고건 4묶음."""
     day = day or today()
@@ -718,7 +765,19 @@ def build_morning_brief(day: str | None = None) -> str:
     dept_section = (_format_department_highlights(_rank_office_ships_by_role(office_ships, day), day)
                      if office_ships is not None else '■ 부문별 오늘 핵심 (불러오지 못함)')
 
+    first_lines, first_used = _first_thing_lines(
+        _first_thing_candidates(sched_pairs, chairman, due_pairs, day))
+    if first_lines:
+        first_section = f"🎯 오늘 이것부터 ({len(first_lines)})\n" + '\n'.join(first_lines)
+    elif not sched_ok or chairman is None or ssot is None:
+        first_section = "🎯 오늘 이것부터 (일부 소스 조회 실패 — 재확인 필요)"
+    else:
+        first_section = ''
+    missed_section = _bucket('놓친 것 없나', _missed_lines(chairman, ssot_rest, first_used))
+
     sections = [
+        first_section,
+        missed_section,
         dept_section,
         _bucket('오늘 잡힌 일정', sched_lines, '' if sched_ok else '(불러오지 못함)'),
         _bucket('기한이 임박했습니다', due_lines, '' if ssot is not None else '(불러오지 못함)'),
@@ -800,6 +859,18 @@ def _selfcheck_morning_brief() -> None:
     assert '[시포]' in text and '배1 A — 9일째 멈춤' in text, text
     assert '[시로]' not in text and '[시뽀]' not in text, text
     assert _format_department_highlights({}, day) == ''
+
+    # ── 「오늘 이것부터」 우선순위·5건 절단·「놓친 것 없나」 중복제외 self-check ──
+    sched_pairs = [('14:00', '브로제이 방문'), ('', '주차관리인 면접'), ('09:00', 'A'), ('10:00', 'B')]
+    chairman_open = [{'id': 'd9', 'title': 'X'}, {'id': 'd10', 'title': 'Y'}, {'id': 'd11', 'title': 'Z'}]
+    due_pairs = [({'업무명': '지남건', '종료일': '2026-08-08'}, datetime.date(2026, 8, 8))]
+    cands = _first_thing_candidates(sched_pairs, chairman_open, due_pairs, day)
+    assert [k for _l, k in cands[:4]] == [('sched', t) for _t, t in sched_pairs], cands  # 일정이 최우선
+    first_lines, used = _first_thing_lines(cands)
+    assert len(first_lines) == 5, first_lines  # 4(일정) + 1(회장님 d9) 로 5 절단, d10·d11·지남건은 밀림
+    assert ('chairman', 'd9') in used and ('chairman', 'd10') not in used, used
+    missed = _missed_lines(chairman_open, [], used)
+    assert missed == ['· Y — 회장님 보고 대기', '· Z — 회장님 보고 대기'], missed  # d9 는 이미 썼으니 제외
 
 
 def _selfcheck_schedule() -> None:
