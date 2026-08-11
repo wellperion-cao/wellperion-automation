@@ -1,7 +1,7 @@
 {
   "_doc": "전사 일정 SSOT — 날짜가 정해진 반복 의무·이벤트(정기점검·계약갱신·정기행사 등)의 단일 출처. 각 부서 체계 페이지·전체 마스터가 렌더. type으로 일정 종류 구분(현재=정기점검). 경계: G1 항로=수시 할일 / 회원 예약달력=투어·상담 / 이 파일=반복 일정. 기한 도래분만 업무·결재로 자동 배(gate.auto_workapproval·기본OFF). 실제 날짜는 지어내지 않는다(미확인=빈칸+cycle_confirmed=false).",
   "정본": "status/schedule_ssot.json (전사 일정 SSOT · COO 시우 소유 · 2026-07-10 GM 승인)",
-  "updated_at": "2026-08-05",
+  "updated_at": "2026-08-12",
   "types": {
     "정기점검": {
       "label": "정기 안전·법정 점검",
@@ -716,6 +716,44 @@
       "evidence": "",
       "applies": "있음",
       "note": "차의주 회장님 · 김남욱 GM · 나우열M(인사&파트너) · 수영팀. 13:00 시작. 성격=격려·소통(실적 점검 아님, GM 확정 2026-08-04). 1차 — 후속 차수는 1차 완료 후 GM 결정.",
+      "vendor_id": "",
+      "repeat": ""
+    },
+    {
+      "id": "evt-오넛티-추석-0831-공지",
+      "type": "이벤트",
+      "name": "오넛티 추석 선물세트 공지·노출 시작",
+      "category": "event",
+      "dept": "운영부",
+      "cycle": "",
+      "cycle_confirmed": true,
+      "period_months": null,
+      "legal_basis": "",
+      "assignee": "나우열",
+      "last_done": "",
+      "next_due": "2026-08-31",
+      "evidence": "",
+      "applies": "있음",
+      "note": "GM 확정 2026-08-12. 오넛티 추석 선물세트 사전예약 공지·노출 시작일. 9/1(화) 예약접수 오픈과 쌍으로 움직인다. 근거: status/_queue.json CMO-2026-08-12-오넛티-3구-세트-제품사진-확보-시안-3종의-마지막",
+      "vendor_id": "",
+      "repeat": ""
+    },
+    {
+      "id": "evt-오넛티-추석-0901-예약",
+      "type": "이벤트",
+      "name": "오넛티 추석 선물세트 예약접수 오픈",
+      "category": "event",
+      "dept": "운영부",
+      "cycle": "",
+      "cycle_confirmed": true,
+      "period_months": null,
+      "legal_basis": "",
+      "assignee": "나우열",
+      "last_done": "",
+      "next_due": "2026-09-01",
+      "evidence": "",
+      "applies": "있음",
+      "note": "GM 확정 2026-08-12. 오넛티 추석 선물세트 사전예약 접수 오픈일. 전날(8/31 월) 공지·노출 시작 후 다음날 접수 오픈. 근거: status/_queue.json CMO-2026-08-12-오넛티-3구-세트-제품사진-확보-시안-3종의-마지막",
       "vendor_id": "",
       "repeat": ""
     }
