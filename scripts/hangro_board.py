@@ -831,10 +831,21 @@ def _pair_gm_directives(entries: list[dict]) -> list[dict]:
     return out
 
 
+def _is_gm_directive_log(d: dict) -> bool:
+    """이 로그 줄이 GM 지시 짝맞추기 대상인가 — ref 가 GM- 로 시작하면 접수든 완료든 대상이다."""
+    return str(d.get("ref", "")).startswith("GM-")
+
+
 def _gm_directive_unresolved(role: str = "") -> list[dict]:
     """status/worklog.jsonl 을 읽어(읽기 전용 — 절대 쓰지 않는다, 다른 세션이 쓰는 중일 수
-    있다) area=='GM지시' 항목만 걸러 _pair_gm_directives 로 미완을 판정한다.
-    role 지정 시 그 role 이 남긴 로그만 본다."""
+    있다) GM 지시 ref(GM-…) 를 가진 항목을 걸러 _pair_gm_directives 로 미완을 판정한다.
+    role 지정 시 그 role 이 남긴 로그만 본다.
+
+    ★거르는 기준 = area 가 아니라 ref (2026-08-12 시토 실측 수리). 접수(warn)는 area=='GM지시'
+    로 들어오지만 **완료(ok)는 그 일의 도메인 area 로 적힌다**(자동화·회원·강습·작업…).
+    area 로 거르면 완료 기록이 통째로 안 보여 이미 끝난 지시가 계속 미완으로 남았다 —
+    실측 당시 전역 미완 28건 중 11건(39%)이 이 오탐이었고, 부팅 화면이 매일 거짓을 냈다.
+    쿵짝표(kungjjak_board)는 처음부터 ref 로만 짝을 맞춰 두 화면 숫자가 어긋나 있었다."""
     entries: list[dict] = []
     try:
         with WORKLOG_PATH.open(encoding="utf-8") as f:
@@ -846,7 +857,7 @@ def _gm_directive_unresolved(role: str = "") -> list[dict]:
                     d = json.loads(line)
                 except Exception:
                     continue
-                if d.get("area") != "GM지시":
+                if not _is_gm_directive_log(d):
                     continue
                 if role and str(d.get("role", "")).strip().lower() != role.strip().lower():
                     continue
@@ -870,7 +881,18 @@ def _selftest_gm_directives() -> None:
     result = _pair_gm_directives(sample)
     assert len(result) == 1, f"기대 미완 1건, 실제 {len(result)}건: {result}"
     assert result[0]["event"] == "대표님 보고건 4가지 접수", f"엉뚱한 건이 남음: {result[0]}"
-    print("[OK] _gm_directive selftest 통과 — warn/ok/warn 스택 짝맞추기 정상(21:03 건만 미완)")
+
+    # 완료(ok)는 그 일의 도메인 area 로 적힌다 — 거르는 기준이 area 로 되돌아가면 여기서 걸린다.
+    cross = [
+        {"ts": "2026-08-10T18:22:00+09:00", "area": "GM지시", "result": "warn",
+         "event": "접수", "ref": "GM-TEST-02"},
+        {"ts": "2026-08-10T18:30:00+09:00", "area": "자동화", "result": "ok",
+         "event": "완료", "ref": "GM-TEST-02"},
+    ]
+    assert all(_is_gm_directive_log(d) for d in cross), "ref=GM- 인 줄이 대상에서 빠졌다"
+    assert _pair_gm_directives([d for d in cross if _is_gm_directive_log(d)]) == [], \
+        "도메인 area 로 적힌 완료가 접수를 못 닫는다"
+    print("[OK] _gm_directive selftest 통과 — warn/ok/warn 스택 + area 다른 완료도 짝으로 인정")
 
 
 # ── 🤔 큐 자기정합 (2026-08-04 GM 지시 "줄기 3 큐 자기정합부터") ──────────────
