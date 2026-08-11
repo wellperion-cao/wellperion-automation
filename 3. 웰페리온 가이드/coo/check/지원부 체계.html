@@ -501,6 +501,37 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 #a3-supply-print{display:none}
 /* ── A3 신입 온보딩 교육자료 인쇄 전용 컨테이너 (배64) ── */
 #a3-onboarding-print{display:none}
+/* ── 🧺 세탁물 출하표 A3 인쇄 (GM 2026-08-11 — 현장은 종이에 손으로 적고, 점검할 때 화면에 옮긴다) ── */
+@media print{
+  body.a3-ldy-mode{font-size:11px;line-height:1.4;color:#111;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.a3-ldy-mode .header,
+  body.a3-ldy-mode .tabs,
+  body.a3-ldy-mode .submit-bar,
+  body.a3-ldy-mode .saving,
+  body.a3-ldy-mode .toast-msg,
+  body.a3-ldy-mode .header-util-btns,
+  body.a3-ldy-mode .util-btn,
+  body.a3-ldy-mode .sheet-links,
+  body.a3-ldy-mode .content,
+  body.a3-ldy-mode #a3-guideline-print,
+  body.a3-ldy-mode #a3-manual-print{display:none!important}
+  body.a3-ldy-mode #a3-laundry-print{display:block!important}
+  #a3-laundry-print .a3l-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #4a3a2e;padding-bottom:6px;margin-bottom:8px}
+  #a3-laundry-print .a3l-title{font-size:26px;font-weight:800;letter-spacing:0.04em;color:#2a2018}
+  #a3-laundry-print .a3l-meta{font-size:15px;color:#2a2018}
+  #a3-laundry-print .a3l-meta span{display:inline-block;margin-left:22px}
+  #a3-laundry-print .a3l-blank{display:inline-block;min-width:120px;border-bottom:1px solid #8a7a6c}
+  table.a3l-grid{width:100%;border-collapse:collapse;table-layout:fixed}
+  table.a3l-grid th,table.a3l-grid td{border:0.8px solid #8a7a6c;text-align:center}
+  table.a3l-grid thead th{background:#4a3a2e!important;color:#fff!important;font-size:14px;font-weight:800;padding:8px 2px;line-height:1.25}
+  table.a3l-grid thead th.a3l-item{background:#2a2018!important}
+  table.a3l-grid td{height:66px;font-size:15px}
+  table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weight:800;color:#2a2018;text-align:left;padding-left:9px}
+  table.a3l-grid td.a3l-shade{background:#faf7f3!important}
+  table.a3l-grid tr.a3l-sum td{height:44px;background:#f3ede7!important;font-weight:800}
+  #a3-laundry-print .a3l-guide{margin-top:10px;font-size:13px;line-height:1.85;color:#2a2018}
+  #a3-laundry-print .a3l-guide b{font-weight:800}
+}
 /* ── A3 인쇄 모드 (body.a3-print-mode → @media print 분기) ── */
 @media print{
   body.a3-print-mode{font-size:10px;line-height:1.4;color:#111;background:#fff}
@@ -940,6 +971,28 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div><!-- /sticky-top -->
 <div class="saving" id="saveIndicator">저장 중...</div>
 <div class="save-fail-banner" id="saveFailBanner">⚠️ 저장 실패 — 서버에 반영되지 않았습니다<div class="sfb-sub" id="saveFailBannerSub">잠시 후 자동 재시도합니다. 계속되면 새로고침 후 다시 체크해주세요.</div></div>
+
+<!-- ══ 🧺 세탁물 출하표 A3 인쇄 전용 컨테이너 (GM 2026-08-11) ══
+     현장은 이 종이에 손으로 적는다 → 점검할 때 화면(🧺 세탁물 관리)에 그 숫자를 옮긴다.
+     칸을 미리 채우지 않는다 — 종이가 원본이고 화면이 옮겨 적는 쪽이다. ══ -->
+<div id="a3-laundry-print" style="display:none">
+  <div class="a3l-head">
+    <div class="a3l-title">세탁물 출하표</div>
+    <div class="a3l-meta">
+      <span>날짜 <b class="a3l-blank"></b></span>
+      <span>작성 <b class="a3l-blank"></b></span>
+      <span>확인 <b class="a3l-blank"></b></span>
+    </div>
+  </div>
+  <div id="a3l-table-host"></div>
+  <div class="a3l-guide">
+    <b>①</b> 전날 저녁(20:30~22:00) 세탁물이 들어오면 <b>거래명세서에 적힌 수량</b>을 「입고」 칸에 적는다.<br>
+    <b>②</b> 다음날 오픈 때 깔아 놓은 수량을 「오픈 셋팅」 칸에 적는다.<br>
+    <b>③</b> 중간에 채울 때마다 「보충」 칸에 <b>한 칸씩</b> 적는다(횟수도 같이 남는다).<br>
+    <b>④</b> 마감 때 쓰지 않고 남은 세탁물과 창고 재고를 각각 적는다.<br>
+    <b>⑤</b> 이 종이는 다음 점검 때 화면 「🧺 세탁물 관리」에 그대로 옮겨 적는다.
+  </div>
+</div>
 
 <!-- ══ A3 매뉴얼(주간) 인쇄 전용 컨테이너 (화면 숨김 / 인쇄 시 전용 표시) ══ -->
 <div id="a3-manual-print">
@@ -1811,9 +1864,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .wp-ldy__qrow{display:flex;gap:7px}
   .wp-ldy__qbtn{flex:1;min-height:46px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;font-weight:750;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
   .wp-ldy__qbtn:active{background:var(--accent,#4ec4c4);color:#141312}
-  .wp-ldy__qlabel{flex:0 0 34px;align-self:center;font-size:12px;font-weight:700;color:var(--dim)}
   .wp-ldy__qbtn--open{border-color:rgba(78,196,196,0.55)}
-  .wp-ldy__qrow+.wp-ldy__qrow{margin-top:6px}
+  .wp-ldy__qin{flex:0 0 92px;min-height:46px;text-align:center;font-size:16px;font-weight:750}
   @media(max-width:430px){
     .wp-ldy__tbl th,.wp-ldy__tbl td{padding:5px 4px;font-size:12px}
     .wp-ldy__in{width:62px;padding:5px 4px}
@@ -1833,9 +1885,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <!-- 사용 가이드 — 실무진이 화면만 보고 바로 쓰게(GM 지시 2026-08-08, 08-08 흐름 정정 반영) -->
       <div class="wp-ldy__guide">
         <b>① 받을 때</b> — 크린토피아 배송이 오면 품목별 받은 개수를 <b>입고</b> 칸에 적습니다(하루 1번).<br>
-        <b>② 배치할 때마다</b> — 세탁물을 꺼내 배치할 때마다 아래 <b>출고 기록</b> 버튼을 그 수량만큼 누릅니다(하루 여러 번, 숫자 입력 없이 버튼만).<br>
-        <b>③ 마감할 때</b> — 마감 점검 때 남은 개수를 세서 <b>마감재고</b> 칸에 적습니다(하루 1번). <b>차이</b> 칸이 빨간 글씨로 뜨면 이론재고와 실제 개수가 다르다는 뜻 — 분실·미기록 신호입니다.<br>
-        <b>④ 잘못 눌렀다면</b> — 출고 기록 위 <b>↩ 직전 출고 취소</b> 버튼으로 바로 되돌립니다.
+        <b>② 오픈 때</b> — 깔아 놓은 수량을 아래 칸에 쳐 넣고 <b>오픈 셋팅</b>을 누릅니다(하루 1번).<br>
+        <b>③ 보충할 때마다</b> — 채운 수량을 쳐 넣고 <b>보충</b>을 누릅니다(하루 여러 번). 오픈과 보충을 나누는 이유는, 보충량이 그날 실제 이용량을 말해 주기 때문입니다.<br>
+        <b>④ 마감할 때</b> — 남은 개수를 세서 <b>마감재고</b> 칸에 적습니다(하루 1번). <b>차이</b> 칸이 빨간 글씨면 이론재고와 실제가 다르다는 뜻 — 분실·미기록 신호입니다.<br>
+        <b>⑤ 종이로 적을 때</b> — 위 <b>🖨 출하표 인쇄 (A3)</b> 로 뽑아 현장에서 손으로 적고, 점검할 때 그 숫자를 이 화면에 옮겨 넣습니다.<br>
+        <b>⑥ 잘못 눌렀다면</b> — <b>↩ 직전 출고 취소</b> 버튼으로 바로 되돌립니다.
       </div>
       <div class="wp-ldy__bar">
         <input type="date" id="wpLdyDate" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderToday()">
@@ -1843,6 +1897,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <span id="wpLdyClosed"></span>
         <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySaveToday()">저장</button>
         <span id="wpLdySaveState" class="wp-ldy__k"></span>
+        <button class="wp-ldy__btn" onclick="printA3Laundry()" title="A3 가로 한 장 — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A3)</button>
       </div>
       <!-- 출고 기록 — 배치할 때마다 누르는 곳(하루 여러 번, 모바일 우선 · GM 정정 2026-08-08) -->
       <div class="wp-ldy__bar" style="margin-bottom:8px">
@@ -6833,6 +6888,12 @@ function wpLdyRenderIssueCards(){
   var box = document.getElementById('wpLdyIssueCards'); if (!box) return;
   var dEl = document.getElementById('wpLdyDate'); if (!dEl) return;
   var d = dEl.value;
+  /* 한 품목을 기록하면 카드가 통째로 다시 그려진다 — 다른 칸에 미리 쳐 둔 숫자가 날아가지 않게
+     값과 포커스를 붙들었다 다시 얹는다(A3 종이 보고 여러 품목을 연달아 옮겨 적는 흐름). */
+  var keep = {}, focusId = (document.activeElement && document.activeElement.id) || '';
+  Array.prototype.forEach.call(box.querySelectorAll('input[id^="wpLdyQ_"]'), function(el){
+    if (el.value) keep[el.id] = el.value;
+  });
   box.innerHTML = wpLdyItems().map(function(m){
     var theo = wpLdyTheoretical(m.id, d), issue = wpLdyIssueQty(m.id, d);
     var open = wpLdyIssueQtyBy(m.id, d, 'open'), refill = wpLdyIssueQtyBy(m.id, d, 'refill');
@@ -6842,15 +6903,18 @@ function wpLdyRenderIssueCards(){
       + '<span class="wp-ldy__icard-stat">오픈 <b>' + open + '</b> · 보충 <b>' + refill + '</b> = 오늘 <b>' + issue + '</b>개'
       + (left === null ? '' : ' · 어제 입고분 남음 <b>' + left + '</b>개')
       + ' · 이론재고 <b>' + (theo === null ? '–' : theo) + '</b>개</span></div>'
-      /* ★오픈 셋팅 줄과 보충 줄을 나눈다(GM 프로세스 2026-08-11).
-         오픈은 하루 한 번 큰 수량이라 25·50·100 을, 보충은 자주 조금씩이라 1·5·10·20 을 둔다. */
-      + '<div class="wp-ldy__qrow"><span class="wp-ldy__qlabel">오픈</span>' + [10, 25, 50, 100].map(function(q){
-          return '<button class="wp-ldy__qbtn wp-ldy__qbtn--open" onclick="wpLdyIssue(\'' + m.id + '\',' + q + ',\'open\')">' + q + '</button>';
-        }).join('') + '</div>'
-      + '<div class="wp-ldy__qrow"><span class="wp-ldy__qlabel">보충</span>' + [1, 5, 10, 20].map(function(q){
-          return '<button class="wp-ldy__qbtn" onclick="wpLdyIssue(\'' + m.id + '\',' + q + ',\'refill\')">' + q + '</button>';
-        }).join('') + '</div></div>';
+      /* ★수량을 직접 친다(GM 2026-08-11 "일단 수량을 입력하게끔 만들어야할 것 같아").
+         현장은 A3 출하표에 손으로 적고, 점검할 때 그 숫자를 여기 옮겨 넣는다 —
+         고정 버튼(10·25·50…)으로는 종이에 적힌 실제 숫자를 그대로 넣을 수 없다. */
+      + '<div class="wp-ldy__qrow">'
+      + '<input class="wp-ldy__in wp-ldy__qin" id="wpLdyQ_' + m.id + '" type="number" min="1" step="1" placeholder="수량"'
+      + ' onkeydown="if(event.key===\'Enter\')wpLdyIssueTyped(\'' + m.id + '\',\'refill\')">'
+      + '<button class="wp-ldy__qbtn wp-ldy__qbtn--open" onclick="wpLdyIssueTyped(\'' + m.id + '\',\'open\')">오픈 셋팅</button>'
+      + '<button class="wp-ldy__qbtn" onclick="wpLdyIssueTyped(\'' + m.id + '\',\'refill\')">보충</button>'
+      + '</div></div>';
   }).join('');
+  Object.keys(keep).forEach(function(id){ var el = document.getElementById(id); if (el) el.value = keep[id]; });
+  if (focusId){ var f = document.getElementById(focusId); if (f) f.focus(); }
 }
 /* 출고 기록 — 버튼 1탭 = 이벤트 1건(날짜+품목+수량+시각). 즉시 저장, 표 통째로 안 그림(입력칸 깨짐 방지). */
 function wpLdyIssue(itemId, qty, kind){
@@ -6870,6 +6934,48 @@ function wpLdyIssue(itemId, qty, kind){
   var st = document.getElementById('wpLdyUndoState');
   if (st) st.textContent = (m ? m.name : itemId) + ' ' + qty + '개 출고 기록함';
   wpLdyMarkTodo();
+}
+/* 🧺 세탁물 출하표 A3 인쇄(GM 2026-08-11) — 기존 A3 인쇄 방식 그대로 재사용(새 방식 안 만듦).
+   품목 목록만 화면에서 가져오고 숫자는 전부 빈칸이다 — 종이가 원본이고, 화면이 나중에 옮겨 적는 쪽이다. */
+function printA3Laundry(){
+  var items = wpLdyItems();
+  var REFILL = 6;   // 보충 칸 수 — A3 가로 한 장에 들어가는 최대치(실측)
+  var h = '<table class="a3l-grid"><colgroup><col style="width:122px">'
+        + '<col style="width:78px"><col style="width:88px">'
+        + new Array(REFILL + 1).join('<col>')
+        + '<col style="width:78px"><col style="width:92px"><col style="width:78px"><col style="width:118px"></colgroup>'
+        + '<thead><tr><th class="a3l-item">품목</th><th>입고<br>(명세서)</th><th>오픈<br>셋팅</th>';
+  for (var i = 1; i <= REFILL; i++) h += '<th>보충<br>' + i + '</th>';
+  h += '<th>출고<br>합계</th><th>남은<br>세탁물</th><th>재고</th><th>비고</th></tr></thead><tbody>';
+  items.forEach(function(m){
+    h += '<tr><td class="a3l-name">' + wpLdyEsc(m.name) + '</td><td class="a3l-shade"></td><td></td>';
+    for (var i = 0; i < REFILL; i++) h += '<td></td>';
+    h += '<td class="a3l-shade"></td><td></td><td></td><td></td></tr>';
+  });
+  h += '<tr class="a3l-sum"><td class="a3l-name">합계</td><td></td><td></td>';
+  for (var j = 0; j < REFILL; j++) h += '<td></td>';
+  h += '<td></td><td></td><td></td><td></td></tr></tbody></table>';
+  var host = document.getElementById('a3l-table-host');
+  if (host) host.innerHTML = h;
+  document.body.classList.add('a3-ldy-mode');
+  var styleTag = document.getElementById('a3-ldy-page-style');
+  if (!styleTag){
+    styleTag = document.createElement('style');
+    styleTag.id = 'a3-ldy-page-style';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent = '@media print{ @page{ size:A3 landscape; margin:9mm; } }';
+  window.print();
+  document.body.classList.remove('a3-ldy-mode');
+  styleTag.textContent = '';
+}
+/* 카드 입력칸에 친 수량으로 기록(GM 2026-08-11). 기록 뒤 칸을 비워 다음 입력을 바로 받는다. */
+function wpLdyIssueTyped(itemId, kind){
+  var el = document.getElementById('wpLdyQ_' + itemId);
+  var q = el ? parseFloat(el.value) : NaN;
+  if (isNaN(q) || q <= 0){ if (el) el.focus(); return; }
+  wpLdyIssue(itemId, q, kind);
+  if (el) el.value = '';
 }
 function wpLdyIssueManual(){
   var item = document.getElementById('wpLdyOutItem').value;
