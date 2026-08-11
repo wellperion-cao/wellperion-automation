@@ -242,6 +242,9 @@ function repaint(){const a=document.querySelector('.tab.active');if(a)select(a.t
 const RENEWAL_FUNNEL_URL='https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 const RENEWAL_SUMMARY_URL='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/member_expiry_summary.json';
 const RT_END_KEY='종료\n일자',RT_OWNER_KEY='담당자',RT_NAME_KEY='회원명',RT_CDATE_KEY='재등록상담 날짜',RT_CNOTE_KEY='재등록상담 내용';
+const RT_CONTACT_STATUS_KEY='컨택상태'; // 미컨택·컨택중·컨택완
+const RT_NOREG_REASON_KEY='미등록사유';
+const NOREG_REASONS=['금액·프로모션','강습전환','건강문제','주차문제','시설 불만족','일정문제','타센터등록','거주지변경','동선','무응답(기타)','한종목만 이용','회원권 서비스','대기자'];
 const RT_SUBJECTS=[['PT','PT 담당자'],['골프','골프 담당자'],['필라테스','P.L 담당자'],['스쿼시','스쿼시 담당자'],['수영','수영 담당자']];
 const RT_UNASSIGNED_MARKERS={'':1,'담당자x':1,'-':1,'미정':1,'미배정':1,'tbd':1,'n/a':1};
 const RT_TIPS_HTML='<b>💡 컨택 팁</b><br>'+
@@ -307,7 +310,14 @@ function rtGuideRepaint(){
 
 function rtNormOwner(v){const s=String(v==null?'':v).trim();if(!s)return '';const c=s.replace(/\s+/g,'').toLowerCase();return RT_UNASSIGNED_MARKERS[c]?'':s;}
 function rtLessons(row){const out=[];RT_SUBJECTS.forEach(pair=>{const t=rtNormOwner(row[pair[1]]);if(t)out.push([pair[0],t]);});return out;}
-function rtIsContacted(row){return !!(String(row[RT_CDATE_KEY]||'').trim()||String(row[RT_CNOTE_KEY]||'').trim());}
+// 3-way: 컨택완·컨택중·미컨택
+// RT_CONTACT_STATUS_KEY 필드 우선, 없으면 날짜(완)·메모(중)로 폴백
+function rtContactStatus(row){
+  const cs=String(row[RT_CONTACT_STATUS_KEY]||'').trim();
+  if(cs==='컨택완'||String(row[RT_CDATE_KEY]||'').trim())return '컨택완';
+  if(cs==='컨택중'||String(row[RT_CNOTE_KEY]||'').trim())return '컨택중';
+  return '미컨택';
+}
 function rtNextMonthStr(){const d=new Date();let y=d.getFullYear(),m=d.getMonth()+2;if(m>12){y++;m=1;}return y+'-'+String(m).padStart(2,'0');}
 
 function rtLoadSummary(){
@@ -342,21 +352,38 @@ function rtFetchRoster(){
     })
     .catch(e=>{RT_LOADING=false;RT_ROWS=null;RT_ERR='명단 조회 실패(네트워크): '+e.message;rtRepaint();});
 }
-function rtMarkContacted(rowIndex,phone,btnEl){
-  if(!confirm('컨택완료로 표시할까요? (재등록상담 날짜에 오늘 날짜가 기록됩니다)'))return;
+function rtMarkStatus(rowIndex,phone,status,btnEl){
+  const label={'컨택중':'컨택중으로 표시','컨택완':'컨택완료로 표시'}[status]||status;
+  if(!confirm(label+'할까요?'))return;
   if(btnEl){btnEl.disabled=true;btnEl.textContent='저장 중…';}
   const today=new Date(),todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
   const payload={action:'member_active_update',rowIndex:rowIndex,keyPhone:phone||'',fields:{}};
+  payload.fields[RT_CONTACT_STATUS_KEY]=status;
+  if(status==='컨택완')payload.fields[RT_CDATE_KEY]=todayStr;
+  fetch(RENEWAL_FUNNEL_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    .then(r=>r.text())
+    .then(txt=>{let data;try{data=JSON.parse(txt);}catch(e){data={ok:false,error:'응답 파싱 실패'};}
+      if(!data.ok)throw new Error(data.error||'저장 실패');
+      RT_ROWS=null;rtFetchRoster();})   // 재조회로 실제 반영 확인
+    .catch(e=>{if(btnEl){btnEl.disabled=false;btnEl.textContent=status==='컨택완'?'완료 표시':'컨택중 표시';}alert('저장 실패: '+e.message+' — 다시 시도해주세요.');});
+}
+function rtPickReason(rowIndex,phone){
+  const list=NOREG_REASONS.map((r,i)=>(i+1)+'. '+r).join('\n');
+  const ans=prompt('미등록 사유 번호 입력 (직접 입력도 가능):\n\n'+list);
+  if(!ans||!ans.trim())return;
+  const n=parseInt(ans);
+  const reason=(n>=1&&n<=NOREG_REASONS.length)?NOREG_REASONS[n-1]:ans.trim();
+  const today=new Date(),todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const payload={action:'member_active_update',rowIndex:rowIndex,keyPhone:phone||'',fields:{}};
+  payload.fields[RT_NOREG_REASON_KEY]=reason;
+  payload.fields[RT_CONTACT_STATUS_KEY]='컨택완';
   payload.fields[RT_CDATE_KEY]=todayStr;
   fetch(RENEWAL_FUNNEL_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
     .then(r=>r.text())
     .then(txt=>{let data;try{data=JSON.parse(txt);}catch(e){data={ok:false,error:'응답 파싱 실패'};}
       if(!data.ok)throw new Error(data.error||'저장 실패');
-      RT_ROWS=null;rtFetchRoster();})   // 조용히 성공한 척 금지 — 재조회로 실제 반영 확인
-    .catch(e=>{
-      if(btnEl){btnEl.disabled=false;btnEl.textContent='완료 표시';}
-      alert('저장 실패: '+e.message+' — 다시 시도해주세요.');
-    });
+      RT_ROWS=null;rtFetchRoster();})
+    .catch(e=>{alert('저장 실패: '+e.message+' — 다시 시도해주세요.');});
 }
 function rtRosterSection(){
   if(!AUTHED)return `<button class="rosterBtn" onclick="reqRoster()">🔒 재등록 대상 명단 보기 (PIN)</button> <span class="pii-note">이름·강습 담당자 포함 · 사내 전용</span>`;
@@ -369,13 +396,24 @@ function rtRosterSection(){
     const lessons=rtLessons(r);
     const lessonHtml=lessons.length?lessons.map(l=>(typeof sportDot==='function'?sportDot(l[0]):'')+esc(l[0])+'('+esc(l[1])+')').join(' · '):'담당자 미배정';
     const owner=rtNormOwner(r[RT_OWNER_KEY])||'미배정';
-    const contacted=rtIsContacted(r);
+    const cStatus=rtContactStatus(r);
     const phone=String(r['휴대폰 번호']||'').replace(/'/g,"\\'");
-    const statusHtml=contacted?'<span style="color:#4F9D7F;font-weight:700">컨택완</span>':
-      `<span style="color:${CORAL};font-weight:700">미컨택</span> <button class="rosterBtn" style="padding:2px 8px;font-size:11px" onclick="rtMarkContacted(${r.rowIndex},'${phone}',this)">완료 표시</button>`;
+    const _bs='padding:2px 8px;font-size:11px';
+    const noreason=String(r[RT_NOREG_REASON_KEY]||'').trim();
+    const statusHtml=cStatus==='컨택완'
+      ?`<span style="color:#4F9D7F;font-weight:700">컨택완</span>${noreason?` <span style="font-size:11px;color:var(--muted)">(${esc(noreason)})</span>`:''}`
+      :cStatus==='컨택중'
+        ?`<span style="color:#E6A93C;font-weight:700">컨택중</span> <button class="rosterBtn" style="${_bs}" onclick="rtMarkStatus(${r.rowIndex},'${phone}','컨택완',this)">완료 표시</button> <button class="rosterBtn" style="${_bs}" onclick="rtPickReason(${r.rowIndex},'${phone}')">미등록 사유</button>`
+        :`<span style="color:${CORAL};font-weight:700">미컨택</span> <button class="rosterBtn" style="${_bs}" onclick="rtMarkStatus(${r.rowIndex},'${phone}','컨택중',this)">컨택중 표시</button> <button class="rosterBtn" style="${_bs}" onclick="rtMarkStatus(${r.rowIndex},'${phone}','컨택완',this)">완료 표시</button>`;
     return `<tr><td>${i+1}</td><td>${esc(end)}</td><td>${esc(r[RT_NAME_KEY]||'')}</td><td>${esc(owner)}</td><td>${lessonHtml}</td><td>${statusHtml}</td></tr>`;
   }).join('');
-  return `<div style="font-size:12px;color:var(--muted);margin:8px 0 4px">🔓 재등록 대상 명단 · ${rows.length}명 <span class="pii-note">(개인정보 · 외부 공유 금지)</span></div>`+
+  const lc={미컨택:0,컨택중:0,컨택완:0};rows.forEach(r=>lc[rtContactStatus(r)]++);
+  const liveBar=`<div style="display:flex;gap:16px;margin:6px 0 4px;font-size:12px;flex-wrap:wrap">`+
+    `<span style="color:${CORAL}"><b>${lc['미컨택']}</b>명 미컨택</span>`+
+    `<span style="color:#E6A93C"><b>${lc['컨택중']}</b>명 컨택중</span>`+
+    `<span style="color:#4F9D7F"><b>${lc['컨택완']}</b>명 컨택완</span></div>`;
+  return `<div style="font-size:12px;color:var(--muted);margin:8px 0 2px">🔓 재등록 대상 명단 · ${rows.length}명 <span class="pii-note">(개인정보 · 외부 공유 금지)</span></div>`+
+    liveBar+
     `<div style="overflow-x:auto"><table class="roster"><thead><tr><th>No</th><th>종료일</th><th>회원명</th><th>멤버십담당</th><th>강습(종목·강사)</th><th>컨택 상태</th></tr></thead><tbody>${body||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:14px 0">대상 없음</td></tr>'}</tbody></table></div>`;
 }
 function rtRepaint(){
