@@ -232,7 +232,10 @@
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
         var noteFull = it.note || '';
         var noteShort = noteFull.length > 12 ? (noteFull.slice(0, 12) + '…') : noteFull;
-        var statusHtml = esc(it.status || '—') + ' · ' + esc(it.schedule) +
+        // 진행 상태 색으로 직관화(GM 지시 2026-08-11) — 숫자 진척률은 이 목록에 없어 지어내지 않는다.
+        // GM업무.html에 이미 있는 .st 색 클래스(GM 직접 카드와 동일)를 재사용 — 새 CSS 없음.
+        var stCls = it.status === '진행중' ? 'on' : (it.status === '보류' ? 'carry' : 'plan');
+        var statusHtml = '<span class="st ' + stCls + '">' + esc(it.status || '—') + '</span> · ' + esc(it.schedule) +
           (it.status === '보류' && noteFull ? ' <span class="cat" title="' + esc(noteFull) + '">(' + esc(noteShort) + ')</span>' : '');
         var actionHtml = it.reported
           ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'

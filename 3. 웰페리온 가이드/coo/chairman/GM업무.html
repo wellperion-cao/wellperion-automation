@@ -273,14 +273,10 @@
            두면 버튼을 눌러도 화면 밖이라 안 보였다. -->
       <pre class="digest" id="owner-digest"></pre>
 
-      <!-- ② 갈 곳 안내 — 링크 클릭 시 alert 대신 여기 한 줄로 표시(GM 지시 2026-08-06, 데이터는 자동 이동 안 함) -->
-      <div class="rnote" id="moveToGmNote"></div>
-
-      <!-- ① 보고 대기 / 보고 완료 분리 — 판정은 _owner_directive.js 가 이미 끝낸 것(.done-badge)을
-           그대로 읽어 화면에서만 두 구획으로 가른다(GM 지시 2026-08-06, 판정 로직 복제 없음). -->
-      <div class="sub-h"><span class="who">보고 대기</span><span class="cnt3" id="rep-pending-cnt">—</span></div>
-
-      <div class="sub-h" style="margin-top:10px;"><span class="who">👑 회장님</span><span style="font-size:10.5px;color:var(--grey);font-weight:600;">등록 순</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
+      <!-- ① 보고 대기·완료 통합 — 판정은 _owner_directive.js 가 이미 끝낸 것을 그대로 읽어, 표 하나 안에
+           대기 건은 위·완료 건은 아래로 정렬해서 그린다(GM 지시 2026-08-10, 판정 로직 복제 없음). 전체
+           대기·완료 합계는 위 「📋 경영 보고건」 옆 배지(id="rep-total")에 표시된다. -->
+      <div class="sub-h"><span class="who">👑 회장님</span><span style="font-size:10.5px;color:var(--grey);font-weight:600;">등록 순</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
       <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 회장님 목록 정본은 이 시트가 아니라
            별도 하드코딩 배열(_chairman_items.js)이다. 어디서 오는지 화면에 밝혀 대표님 목록과 헷갈리지 않게 한다. -->
       <div style="font-size:11.5px;color:var(--grey);margin:2px 0 6px;">회장님께 직접 보고하는 시설·인사 등 건 · 목록 정본 = 회장님 지시사항 페이지</div>
@@ -299,21 +295,12 @@
         <span class="rstatus" id="owner-bulk-status"></span>
       </div>
       <div class="grid" id="owner-grid"><div class="rep-empty">불러오는 중…</div></div>
+      <!-- owner-done-grid — 화면엔 안 보인다(#owner-grid,#owner-done-grid{display:none} 위 CSS).
+           완료로 표시된 카드를 여기로 옮겨 결재 문서 인쇄(printGmApprovalDoc)가 대기/완료를 가른다. -->
+      <div class="grid" id="owner-done-grid"></div>
       <div class="sum">
         <table><tbody id="owner-sum-body"></tbody></table>
       </div>
-
-      <details class="fold" id="rep-done-fold">
-        <summary>보고 완료 <span id="rep-done-cnt">0건</span> <span style="font-size:11px;font-weight:600;color:var(--grey);">— 👑 회장님 + 🤵 대표님 합산, 행마다 소속 배지로 구분</span></summary>
-        <!-- 👑 회장님 완료분 — 회장님건도 대표님건처럼 완료로 내려간다(GM 2026-08-06). 문안 복사에서도 빠진다. -->
-        <div class="sum" style="margin-top:8px;">
-          <table><tbody id="chairman-done-sum-body"></tbody></table>
-        </div>
-        <div class="grid" id="owner-done-grid" style="margin-top:8px;"></div>
-        <div class="sum" style="margin-top:8px;">
-          <table><tbody id="owner-done-sum-body"></tbody></table>
-        </div>
-      </details>
 
     </div>
   </details>
@@ -872,15 +859,8 @@
     el.style.background = 'var(--pick)';
     setTimeout(function () { el.style.background = ''; }, 2200);
   }
-  /* 경영 보고건 합계 — 두 목록이 각자 채워지므로 잠시 뒤 더해 표시한다. */
-  function sumReports() {
-    var a = (document.getElementById('chairman-grp-cnt') || {}).textContent || '';
-    var b = (document.getElementById('owner-grp-cnt') || {}).textContent || '';
-    var na = parseInt(a, 10), nb = parseInt(b, 10);
-    var el = document.getElementById('rep-total');
-    if (el) el.textContent = (isNaN(na) ? 0 : na) + (isNaN(nb) ? 0 : nb) + '건';
-  }
-  setTimeout(sumReports, 2500); setTimeout(sumReports, 6000);
+  // 경영 보고건 합계(id="rep-total") — 회장님·대표님 표가 각자 그려질 때마다 updateReportCounts()가
+  // 갱신한다(아래 IIFE). 두 목록이 비동기로 채워지므로 시간차 setTimeout 대신 MutationObserver로 잡는다.
 
   window.addEventListener('hashchange', focusHashCard);
   setTimeout(focusHashCard, 1200);
@@ -909,87 +889,51 @@
   });
 
   // ══════════════════════════════════════════════════════════════════
-  // ① 보고 대기/완료 분리 · ② 소속 배지+GM 업무로 링크 · ③ 결재 문서 인쇄
-  // (GM 지시 2026-08-06). _owner_directive.js 의 isReported 판정을 다시 짜지 않고,
-  // 그 판정이 이미 그려낸 표식(.done-badge = 보고완료)만 DOM에서 읽어 구획을 가른다.
+  // ① 보고건 합계 집계 · ② 완료건도 같은 표에 표시(_owner_directive.js가 대기·완료 순서로 이미 그림) ·
+  // ③ 결재 문서 인쇄. (GM 지시 2026-08-10 — 우측 칸의 부서 배지는 뺐다. 소속은 소제목이 이미 말한다.)
+  // _owner_directive.js 의 isReported 판정을 다시 짜지 않고, 그 판정이 이미 그려낸 표식
+  // (.done-badge = 보고완료)만 DOM에서 읽어 집계·인쇄용으로만 쓴다.
   // ══════════════════════════════════════════════════════════════════
   (function () {
     var elGrid = document.getElementById('owner-grid');
     var elSum = document.getElementById('owner-sum-body');
     var elDoneGrid = document.getElementById('owner-done-grid');
-    var elDoneSum = document.getElementById('owner-done-sum-body');
-    var elPendCnt = document.getElementById('rep-pending-cnt');
-    var elDoneCnt = document.getElementById('rep-done-cnt');
-    var elChSum = document.getElementById('chairman-sum-body');
-    var elNote = document.getElementById('moveToGmNote');
+    var elRepTotal = document.getElementById('rep-total');
     if (!elGrid || !elSum) return;
 
-    var OWNER_BADGE = '🤵 대표님'; // 🤵 대표님
-    var CHAIRMAN_BADGE = '👑 회장님'; // 👑 회장님
+    // 화면 표 우측 칸에서는 뺐지만(GM 지시 2026-08-10), 결재 문서 인쇄(printGmApprovalDoc)의 구분 칸에는
+    // 그대로 쓴다 — 인쇄물은 회장님·대표님 건이 한 표에 섞이므로 소속 표시가 여전히 필요하다.
+    var OWNER_BADGE = '🤵 대표님';
+    var CHAIRMAN_BADGE = '👑 회장님';
 
-    // 표 각 행 끝에 소속 배지 + "GM 업무로" 링크를 한 번만 붙인다(재실행돼도 중복 추가 안 함).
-    function decorateRow(tr, badgeLabel) {
-      if (!tr || tr.querySelector('.row-actions')) return;
-      var td = document.createElement('td');
-      td.className = 'row-actions';
-      // 행별 「GM 업무로 →」 링크는 뺐다(GM 지시 2026-08-07) — 누르면 월간운영계획으로 넘어가
-      // 지금 보던 자리를 잃는다. 이동은 섹션 머리의 「월간운영계획」 버튼 하나로 모았다.
-      td.innerHTML = '<span class="dept-badge">' + badgeLabel + '</span>';
-      tr.appendChild(td);
-    }
-
-    // 회장님 표 — 보고 완료 상태(chairman_reported.json)를 받은 뒤 그려지므로 다시 그려질 때마다 붙인다.
-    var elChDoneSum = document.getElementById('chairman-done-sum-body');
-    function decorateChairman() {
-      [elChSum, elChDoneSum].forEach(function (tb) {
-        if (!tb) return;
-        Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) { decorateRow(tr, CHAIRMAN_BADGE); });
-      });
-      updateReportCounts();
-    }
-    if (elChSum) {
-      decorateChairman();
-      new MutationObserver(decorateChairman).observe(elChSum, { childList: true });
-      if (elChDoneSum) new MutationObserver(decorateChairman).observe(elChDoneSum, { childList: true });
-    }
-
-    // 「GM 업무로」 클릭 — alert 대신 화면 안 안내 줄로(GM 지시). 새 창 이동은 기본 링크 동작 그대로 둔다.
-    // 데이터는 자동 이동하지 않는다 — 사람이 월간운영계획에서 직접 추가.
-    document.getElementById('sec-report').addEventListener('click', function (e) {
-      var a = e.target.closest ? e.target.closest('.move-to-gm') : null;
-      if (!a || !elNote) return;
-      elNote.textContent = '이 건을 GM 업무(월간운영계획 목표)로 옮기려면 월간운영계획에서 목표로 추가하세요.';
-    });
-
-    // 보고 대기·완료 건수 — 회장님(판정=_owner_directive.js)과 대표님(DOM 카드) 양쪽을 더한다.
+    // 보고 대기·완료 건수 — 회장님(판정=_owner_directive.js)과 대표님(DOM 카드) 양쪽을 더해
+    // 「📋 경영 보고건」 옆 배지(rep-total)에 「대기 N건 · 완료 M건」으로 표시한다.
     function chPend() { return (window.OwnerDirective.chairmanPending ? window.OwnerDirective.chairmanPending() : (window.WellperionChairmanItems || [])); }
     function chDone() { return (window.OwnerDirective.chairmanDone ? window.OwnerDirective.chairmanDone() : []); }
     function updateReportCounts() {
       var pendCount = elGrid.querySelectorAll('.item').length;
       var doneCount = elDoneGrid.querySelectorAll('.item').length;
-      if (elPendCnt) elPendCnt.textContent = (chPend().length + pendCount) + '건';
-      if (elDoneCnt) elDoneCnt.textContent = (chDone().length + doneCount) + '건';
+      var totalPend = chPend().length + pendCount;
+      var totalDone = chDone().length + doneCount;
+      if (elRepTotal) elRepTotal.textContent = '대기 ' + totalPend + '건 · 완료 ' + totalDone + '건';
+    }
+    var elChSum = document.getElementById('chairman-sum-body');
+    if (elChSum) {
+      updateReportCounts();
+      new MutationObserver(updateReportCounts).observe(elChSum, { childList: true });
     }
 
-    // 대표님 항목이 새로 그려질 때마다(초기 로드·보고완료 표시·새로고침) 다시 갈라 담는다.
+    // 대표님 카드가 새로 그려질 때마다(초기 로드·보고완료 표시·새로고침) 완료 카드만 숨은 done-grid로
+    // 옮긴다 — 결재 문서 인쇄(printGmApprovalDoc)가 대기/완료를 가르는 데 쓴다. 화면 표(elSum)는
+    // _owner_directive.js가 이미 대기 위·완료 아래 순서로 그려내므로 여기서 다시 가르지 않는다.
     function regroupReports() {
       var doneItems = Array.prototype.filter.call(elGrid.children, function (el) {
         return el.classList && el.classList.contains('item') && el.querySelector('.done-badge');
       });
       doneItems.forEach(function (el) { elDoneGrid.appendChild(el); });
-
-      var doneRows = Array.prototype.filter.call(elSum.children, function (tr) {
-        return tr.tagName === 'TR' && tr.querySelector('.done-badge');
-      });
-      doneRows.forEach(function (tr) { elDoneSum.appendChild(tr); });
-
-      Array.prototype.forEach.call(elSum.querySelectorAll('tr'), function (tr) { decorateRow(tr, OWNER_BADGE); });
-      Array.prototype.forEach.call(elDoneSum.querySelectorAll('tr'), function (tr) { decorateRow(tr, OWNER_BADGE); });
-
       updateReportCounts();
     }
     new MutationObserver(regroupReports).observe(elGrid, { childList: true });
-    new MutationObserver(regroupReports).observe(elSum, { childList: true });
 
     // ── ③ 결재 문서형 인쇄 — 담당(김남욱 GM)·대표(전응준)·회장(차의주) 3란 결재 문서.
     //    모양은 coo/todo/결재 현황 SSOT.html #approvalPrintArea 를 본떴다(그 파일 미수정).
