@@ -6900,6 +6900,22 @@ function _regReclassKey(row) {
     return f.indexOf('재등록') >= 0 && f.indexOf('분류') >= 0;
   });
 }
+/* 배547(웰리 실측 2026-08-11) — 등록 분류가 등록 회차와 어긋난 채 저장되는 일이 계속 생긴다
+   (최준석 회차3인데 '신규' · 서현동 회차2인데 '신규'). 뒤에서 값을 고치는 속도가 새로 생기는 속도를
+   못 따라간다. 판정은 여기 한 곳에만 두고 두 자리(표 ⚠ 표시 · 저장 직전 확인)가 같이 쓴다.
+   회차가 비었거나 숫자가 아니면 판정하지 않는다(모르면 조용히 통과 — 없는 경고를 만들지 않는다). */
+function _regCountOf(row) {
+  var k = Object.keys(row || {}).find(function(x){ return x.replace(/\s/g, '') === '등록회차'; });
+  var n = k ? parseInt(String(row[k]).replace(/[^0-9]/g, ''), 10) : NaN;
+  return isNaN(n) ? null : n;
+}
+function _regClassMismatch(row, cls) {
+  var n = _regCountOf(row);
+  if (n === null) return '';
+  if (cls === '신규' && n >= 2) return '회차 ' + n + '회인데 신규';
+  if (cls === '재등록' && n === 1) return '회차 1회인데 재등록';
+  return '';
+}
 function _regClassMerged(row) {
   var a = String(row[REG_CLASS_COL] || '').trim();
   var bKey = _regReclassKey(row);
@@ -8331,9 +8347,12 @@ function _activeRowHtml(row, displayCols) {
       // 분류 통합 표시(GM 결정 2026-08-03) — 「재등록 분류」에만 있던 값을 이 칸에서 같이 보여준다.
       if (h === REG_CLASS_COL) {
         var mg = _regClassMerged(row);
+        var _mm = _regClassMismatch(row, mg.text);   // 배547 — 회차와 어긋난 분류도 같은 ⚠로 드러낸다
+        var _warn = mg.conflict ? '등록 분류와 재등록 분류가 서로 다릅니다 — 어느 쪽이 맞는지 확인이 필요합니다'
+                  : (_mm ? (_mm + '입니다 — 어느 쪽이 맞는지 확인이 필요합니다') : '');
         html += '<td style="white-space:nowrap"' + editAttr +
-          (mg.conflict ? ' title="등록 분류와 재등록 분류가 서로 다릅니다 — 어느 쪽이 맞는지 확인이 필요합니다"' : '') + '>' +
-          (mg.conflict ? '<span style="color:var(--orange,#c8912b);font-weight:800">⚠ </span>' : '') +
+          (_warn ? ' title="' + esc(_warn) + '"' : '') + '>' +
+          (_warn ? '<span style="color:var(--orange,#c8912b);font-weight:800">⚠ </span>' : '') +
           esc(mg.text || '—') + '</td>';
         return;
       }
@@ -8818,8 +8837,18 @@ function _wireActiveDblclick(){
       if (td.dataset.raw != null) { td.dataset.raw = newVal; td.textContent = _actDateLabel(newVal); }
       else { td.textContent = newVal || '—'; }
       if (newVal === origText) return;
-      // 로컬 _activeRows 갱신
       var r = _activeRows.find(function(x){ return x.rowIndex == rowIndex; });
+      /* 배547 — 등록 분류를 회차와 어긋나게 저장하려 하면 한 번 묻는다. 막지는 않는다(양도·재입회처럼
+         사람이 맞는 경우가 있다). 새 검사 장치를 만들지 않고 저장이 지나는 이 관문에만 둔다(약속 L21). */
+      if (col === REG_CLASS_COL && r) {
+        var _mmSave = _regClassMismatch(r, String(newVal).trim());
+        if (_mmSave && !confirm('등록 ' + _mmSave + '로 저장합니다.\n회차와 맞지 않습니다 — 그대로 저장할까요?')) {
+          if (td.dataset.raw != null) td.dataset.raw = origText;
+          td.textContent = origText || '—';
+          return;
+        }
+      }
+      // 로컬 _activeRows 갱신
       if (r) r[col] = newVal;
       var _keyPhone = (r && (r['휴대폰 번호'] || r['휴대폰'])) || '';   // 행키(서버 rowIndex 밀림 검증용)
       // ★등록일자 편집 시 rowKey 즉시 갱신(2026-08-05 시포 — INC: 동기화 실패 연쇄 근본수리).
