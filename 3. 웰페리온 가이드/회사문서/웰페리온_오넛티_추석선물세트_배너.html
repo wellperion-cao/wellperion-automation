@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 × 오넛티 추석 선물세트 — 배너 시안 (2026-08-11)</title>
+<style>
+  :root{
+    --beige:#B79F8A; --black:#221F20; --white:#FFFFFF; --dim:#5b5450;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#eee9e2; color:var(--black);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    word-break:keep-all; overflow-wrap:break-word;}
+
+  /* 세로형 배너 — 실사이즈 예시 600×1600mm(롤업 배너 표준 비율) 참고용 화면 시안.
+     최종 제작 파일은 오넛티팀 편집 원본(.ai)에서 나온다 — 이 HTML 은 문구·구성 시안. */
+  .sheet{width:480px; aspect-ratio:600/1600; margin:0 auto; background:var(--black); color:var(--white);
+    padding:38px 30px; display:flex; flex-direction:column; text-align:center;}
+
+  .brand{font-size:14px; font-weight:800; letter-spacing:.16em; color:var(--beige);}
+  .rule{height:2px; background:var(--beige); width:40px; margin:14px auto 0;}
+
+  .mid{flex:1; display:flex; flex-direction:column; justify-content:center; gap:8px;}
+  .kick{font-size:15px; letter-spacing:.1em; color:var(--beige);}
+  .ttl{font-size:52px; font-weight:800; letter-spacing:-.02em; line-height:1.1;}
+  .copy{font-size:16px; color:#e8e2da; margin-top:4px;}
+
+  .period{border:1.5px solid var(--beige); padding:16px 10px; margin-bottom:8px;}
+  .period .l{font-size:11.5px; letter-spacing:.1em; color:var(--beige); margin-bottom:6px;}
+  .period .d{font-size:20px; font-weight:800;}
+  .presale{font-size:11.5px; color:#c9c0b6;}
+
+  .foot{border-top:1px solid #4a433d; padding-top:14px; margin-top:16px;}
+  .foot .ask{font-size:13px; color:var(--white); font-weight:700;}
+
+  @media print{
+    body{background:#fff;}
+    .noprint{display:none !important;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:480px; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--black); background:var(--black); color:#fff;}
+  .printbar .msg{font-size:12px; color:var(--dim); margin-right:8px;}
+  .note{max-width:480px; margin:4px auto 0; font-size:11.5px; color:#8a7b6c; text-align:right;}
+</style>
+</head>
+<body>
+
+<!-- PNG 저장 — 웰페리온_오넛티_추석선물세트_A3.html saveA3Png() 과 동일 html2canvas CDN 방식 재사용(새 라이브러리 아님).
+     .sheet 만 캡처하므로 이 인쇄바(.noprint, .sheet 바깥)는 PNG 결과물에 찍히지 않는다. -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<div class="printbar noprint">
+  <span class="msg" id="banner-png-msg"></span>
+  <button id="banner-png-btn" onclick="saveBannerPng()">🖼 PNG로 저장</button>
+</div>
+<div class="note noprint">시안 — 실제 제작 파일은 오넛티팀 편집 원본(.ai)에서 확정</div>
+
+<div class="sheet">
+  <div class="brand">WELLPERION</div>
+  <div class="rule"></div>
+
+  <div class="mid">
+    <div class="kick">추석 선물세트</div>
+    <div class="ttl">오넛티</div>
+    <div class="copy">건강을 선물하세요</div>
+  </div>
+
+  <div class="period">
+    <div class="l">팝업 스토어</div>
+    <div class="d">2026. 9. 4(금) – 9. 21(월)</div>
+  </div>
+  <div class="presale">사전예약 접수는 팝업 시작 전 진행됩니다</div>
+
+  <div class="foot">
+    <div class="ask">구매 문의 : 리셉션 &amp; 운영사무실</div>
+  </div>
+</div>
+
+<script>
+  // saveBannerPng() — 웰페리온_오넛티_추석선물세트_A3.html saveA3Png() 과 동일 패턴. 파일명만 이 문서명으로 고정.
+  function saveBannerPng() {
+    var btn = document.getElementById('banner-png-btn');
+    var msg = document.getElementById('banner-png-msg');
+    if (typeof html2canvas !== 'function') {
+      if (msg) msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+      return;
+    }
+    if (btn) btn.disabled = true;
+    if (msg) msg.textContent = '이미지를 만드는 중입니다…';
+    html2canvas(document.querySelector('.sheet'), { scale: 2, backgroundColor: '#221F20', useCORS: true, logging: false })
+      .then(function (canvas) {
+        var a = document.createElement('a');
+        a.download = '웰페리온_오넛티_추석선물세트_배너.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        if (msg) msg.textContent = '저장했습니다.';
+        if (btn) btn.disabled = false;
+        setTimeout(function () { if (msg) msg.textContent = ''; }, 4000);
+      })
+      .catch(function () {
+        if (msg) msg.textContent = '이미지 저장에 실패했습니다.';
+        if (btn) btn.disabled = false;
+      });
+  }
+</script>
+
+</body>
+</html>

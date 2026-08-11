@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>웰페리온 × 오넛티 추석 선물세트 — 홍보 포스터 시안 (A4, 2026-08-11)</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm; }
+  :root{
+    --beige:#B79F8A; --black:#221F20; --highlight:#ED5B3F; --white:#FFFFFF;
+    --beige-soft:#f4efe9; --dim:#5b5450; --line:#d8cfc4;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#eee9e2; color:var(--black);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    word-break:keep-all; overflow-wrap:break-word;}
+  .sheet{max-width:210mm; min-height:296mm; margin:0 auto; background:var(--white);
+    padding:16mm 14mm; text-align:left; display:flex; flex-direction:column;}
+
+  .kick{font-size:12px; letter-spacing:.16em; color:var(--beige); font-weight:700; text-transform:uppercase;}
+  .ttl{font-size:38px; font-weight:800; letter-spacing:-.02em; line-height:1.15; margin:6px 0 4px;}
+  .sub{font-size:15px; color:var(--dim); margin-bottom:16px;}
+  .rule{height:3px; background:var(--beige); width:56px; margin:0 0 22px;}
+
+  .period{background:var(--black); color:var(--white); padding:14px 18px; text-align:center; margin-bottom:6px;}
+  .period .l{font-size:12px; color:var(--beige); letter-spacing:.08em; margin-bottom:4px;}
+  .period .d{font-size:20px; font-weight:800; letter-spacing:-.01em;}
+  .presale{font-size:12.5px; color:var(--dim); text-align:center; margin-bottom:24px;}
+
+  .prod-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;}
+  .prod{border:1px solid var(--line); padding:14px;}
+  .ph{border:1.5px dashed var(--beige); background:var(--beige-soft); height:150px;
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      font-size:11px; color:#8a7b6c; padding:8px; margin-bottom:10px;}
+  .prod .name{font-size:15px; font-weight:800; margin-bottom:4px;}
+  .prod .price{font-size:13.5px; line-height:1.5;}
+  .prod .price .was{color:#9a9088; text-decoration:line-through; margin-right:6px;}
+  .prod .price .now{color:var(--highlight); font-weight:800; font-size:16px;}
+  .prod .disc{font-size:11.5px; color:var(--dim); margin-top:2px;}
+
+  .group{border:2px solid var(--black); padding:14px 16px; margin-bottom:24px;}
+  .group .gh{font-size:14px; font-weight:800; margin-bottom:8px;}
+  .group table{width:100%; border-collapse:collapse; font-size:13px;}
+  .group td{padding:4px 0;}
+  .group td.n{color:var(--dim);}
+  .group td.v{text-align:right; font-weight:700; white-space:nowrap;}
+
+  .copy{font-size:17px; font-weight:700; text-align:center; margin:8px 0 auto; color:var(--black);}
+
+  .foot{border-top:1px solid var(--line); padding-top:12px; margin-top:20px; text-align:center;}
+  .foot .brand{font-size:13px; font-weight:800; letter-spacing:.1em; color:var(--beige); margin-bottom:4px;}
+  .foot .ask{font-size:13px; color:var(--black);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:210mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--black); background:var(--black); color:#fff;}
+  .printbar .msg{font-size:12px; color:var(--dim); margin-right:8px;}
+</style>
+</head>
+<body>
+
+<!-- PNG 저장 — 웰페리온_오넛티_추석선물세트_A3.html saveA3Png() 과 동일 html2canvas CDN 방식 재사용(새 라이브러리 아님).
+     .sheet 만 캡처하므로 이 인쇄바(.noprint, .sheet 바깥)는 PNG·인쇄 결과물에 찍히지 않는다. -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<div class="printbar noprint">
+  <span class="msg" id="poster-png-msg"></span>
+  <button id="poster-png-btn" onclick="savePosterPng()">🖼 PNG로 저장</button>
+  <button onclick="window.print()">A4 세로로 인쇄</button>
+</div>
+
+<div class="sheet">
+  <div class="kick">WELLPERION × OHNUTTY</div>
+  <div class="ttl">추석 선물세트</div>
+  <div class="sub">건강을 선물하세요</div>
+  <div class="rule"></div>
+
+  <div class="period">
+    <div class="l">팝업 스토어 안내</div>
+    <div class="d">2026. 9. 4(금) – 9. 21(월)</div>
+  </div>
+  <div class="presale">사전예약 접수는 팝업 시작 전 진행됩니다.</div>
+
+  <div class="prod-grid">
+    <div class="prod">
+      <div class="ph">[230g 2구 제품 사진 — 설 시안 원본에서 이관 예정]</div>
+      <div class="name">230g 2구</div>
+      <div class="price"><span class="was">25,800원</span><span class="now">20,640원</span></div>
+      <div class="disc">20% 할인 (25,800원 → 20,640원)</div>
+    </div>
+    <div class="prod">
+      <div class="ph">[3구 제품 사진 — 오넛티팀 수령 후 삽입]</div>
+      <div class="name">80g 3구</div>
+      <div class="price"><span class="was">25,600원</span><span class="now">20,480원</span></div>
+      <div class="disc">20% 할인 (25,600원 → 20,480원)</div>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="gh">단체 구매 · 10세트 이상</div>
+    <table>
+      <tr><td class="n">230g 2구 — 정상가 대비 30% 할인</td><td class="v">25,800원 → 18,060원</td></tr>
+      <tr><td class="n">80g 3구 — 정상가 대비 30% 할인</td><td class="v">25,600원 → 17,920원</td></tr>
+    </table>
+  </div>
+
+  <div class="copy">가을, 소중한 사람의 건강한 하루를 선물하세요.</div>
+
+  <div class="foot">
+    <div class="brand">WELLPERION</div>
+    <div class="ask">구매 문의 : 리셉션 &amp; 운영사무실</div>
+  </div>
+</div>
+
+<script>
+  // savePosterPng() — 웰페리온_오넛티_추석선물세트_A3.html saveA3Png() 과 동일 패턴. 파일명만 이 문서명으로 고정.
+  function savePosterPng() {
+    var btn = document.getElementById('poster-png-btn');
+    var msg = document.getElementById('poster-png-msg');
+    if (typeof html2canvas !== 'function') {
+      if (msg) msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+      return;
+    }
+    if (btn) btn.disabled = true;
+    if (msg) msg.textContent = '이미지를 만드는 중입니다…';
+    html2canvas(document.querySelector('.sheet'), { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      .then(function (canvas) {
+        var a = document.createElement('a');
+        a.download = '웰페리온_오넛티_추석선물세트_포스터_A4.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        if (msg) msg.textContent = '저장했습니다.';
+        if (btn) btn.disabled = false;
+        setTimeout(function () { if (msg) msg.textContent = ''; }, 4000);
+      })
+      .catch(function () {
+        if (msg) msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+        if (btn) btn.disabled = false;
+      });
+  }
+</script>
+
+</body>
+</html>
