@@ -45,17 +45,19 @@
   // 진척률(%) — 원천(회장님 when 문구·대표님 SSOT 상태값)에 % 칸이 없어, 이미 화면에 보이는 상태
   // 문구를 단계로 읽어 산출한다(GM 확정 2026-08-11 "약간의 색깔 및 %로" — 웰리 방침: 지어내지 않고
   // 단계표 하나로 근거를 남긴다). 여기 표 하나만 고치면 회장님·대표님 전부 같이 바뀐다.
-  // 순서=우선순위. "조사 착수"처럼 여러 단계 단어가 겹치면 더 구체적인(낮은) 단계가 먼저 잡히게
-  // 100·70을 맨 앞에, 30(조사 계열)을 50(단순 "착수") 보다 앞에 둔다 — GM 확정 표의 "조사 착수"=30% 예시와 일치.
+  // 순서=우선순위. 겹친 단어는 더 구체적인 쪽이 이긴다 — "조사 착수"=30(50 아님), "보고 완료·결재 대기"=70
+  // (100 아님, "완료"가 있어도 뒤에 결재대기가 붙으면 그쪽이 실제 단계) — GM 확정 표의 두 예시와 일치.
   var PCT_STAGES = [
-    { pct: 100, re: /완료|보고완료/ },
     { pct: 70, re: /결재\s*대기|승인\s*대기/ },
+    { pct: 100, re: /완료|보고완료/ },
     { pct: 30, re: /조사|검토|현장\s*확인|통화\s*완료/ },
     { pct: 50, re: /진행\s*중|착수/ },
     { pct: 10, re: /예정|다음\s*주/ }
   ];
-  function stagePct(text, isDone) {
-    if (isDone) return 100; // 화면에 "✅ 보고완료" 표기가 곧 완료 단계(위 표의 완료 항목과 동치).
+  // ★2026-08-11 웰리 정정 — isDone(보고완료 배지)으로 100%를 단정하지 않는다. 보고완료="회장님/대표님께
+  // 알렸다"이지 "일이 끝났다"가 아니다(다른 축). 오늘 그 배지 자체도 GAS 토큰 만료로 갱신이 막혀 있어
+  // 죽은 값으로 진척을 정하면 거짓말이 된다. 진척은 오직 상태 문구로만 판단 — 배지는 배지대로 따로 보인다.
+  function stagePct(text) {
     var s = String(text || '');
     for (var i = 0; i < PCT_STAGES.length; i++) { if (PCT_STAGES[i].re.test(s)) return PCT_STAGES[i].pct; }
     return null; // 어느 단계인지 못 가리면 비운다(지어내지 않음).
@@ -268,7 +270,7 @@
         var stCls = it.status === '진행중' ? 'on' : (it.status === '보류' ? 'carry' : 'plan');
         var statusHtml = '<span class="st ' + stCls + '">' + esc(it.status || '—') + '</span> · ' + esc(it.schedule) +
           (it.status === '보류' && noteFull ? ' <span class="cat" title="' + esc(noteFull) + '">(' + esc(noteShort) + ')</span>' : '') +
-          pctBadge(stagePct(it.status, it.reported));
+          pctBadge(stagePct(it.status));
         var actionHtml = it.reported
           ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
@@ -368,7 +370,7 @@
         // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
           ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') +
-          pctBadge(stagePct(it.when, isDone)) + '</td>' +
+          pctBadge(stagePct(it.when)) + '</td>' +
           '<td class="rpt-actions">' + act + '</td></tr>';
       }).join('');
     }
