@@ -58,6 +58,19 @@ def _load_schedule_items() -> list:
     return _load_schedule_items_ex()[0]
 
 
+_NOTE_TIME_RE = re.compile(r'^\s*(\d{1,2}:\d{2})\s*·')
+
+
+def _extract_time(name: str, note: str) -> str:
+    """일정 시각 — 제목 속 (HH:MM) 우선, 없으면 note 앞머리 'HH:MM · ...'(전사일정은 날짜 단위라
+    시각을 note 에 적는 관례, 2026-08-11 팀장 지적). 둘 다 없으면 빈 문자열(지어내지 않음)."""
+    m = re.search(r'\((\d{1,2}:\d{2})\)', name)
+    if m:
+        return m.group(1)
+    m = _NOTE_TIME_RE.match(note or '')
+    return m.group(1) if m else ''
+
+
 def _filter_today_items(items: list, day: str) -> list:
     """그날 GM 담당 항목만 (시각, 제목) 쌍으로 시각순 정렬해 돌려준다. 시각 없는 항목은 뒤로."""
     out = []
@@ -68,8 +81,7 @@ def _filter_today_items(items: list, day: str) -> list:
         if 'GM' not in assignee and '김남욱' not in assignee:
             continue
         name = it.get('name') or ''
-        m = re.search(r'\((\d{1,2}:\d{2})\)', name)
-        time_s = m.group(1) if m else ''
+        time_s = _extract_time(name, it.get('note') or '')
         title = re.sub(r'\s*\(\d{1,2}:\d{2}\)\s*', '', name).strip()
         out.append((time_s, title))
     out.sort(key=lambda p: p[0] or '99:99')
@@ -880,10 +892,16 @@ def _selfcheck_schedule() -> None:
         {'next_due': '2026-08-10', 'assignee': '김남욱GM', 'name': '오전 미팅 (09:30)'},
         {'next_due': '2026-08-10', 'assignee': '수영팀', 'name': '수영장 청소'},  # GM 아님 → 제외
         {'next_due': '2026-08-11', 'assignee': 'GM', 'name': '내일 건 (10:00)'},  # 다른 날 → 제외
+        # ↓ 팀장 지적(2026-08-11) — 전사일정은 날짜 단위라 시각을 note 에 적는다("HH:MM · ...").
+        {'next_due': '2026-08-10', 'assignee': 'GM', 'name': '면접', 'note': '11:00 · 면접 진행'},
+        {'next_due': '2026-08-10', 'assignee': 'GM', 'name': '시각 없는 건', 'note': '메모만 있음'},
     ]
     got = _filter_today_items(sample, '2026-08-10')
-    assert [t for t, _ in got] == ['09:30', '15:00'], got
-    assert _format_schedule(got) == '09:30 오전 미팅\n15:00 오후 미팅', _format_schedule(got)
+    assert [t for t, _ in got] == ['09:30', '11:00', '15:00', ''], got  # note 시각도 순서에 섞이고, 없는 건 맨 뒤
+    assert ('11:00', '면접') in got, got
+    assert _extract_time('제목 (15:00)', '11:00 · 다른시각') == '15:00'  # 제목 시각이 note 보다 우선(중복 방지)
+    assert _extract_time('제목', '') == ''  # 둘 다 없으면 지어내지 않는다
+    assert _format_schedule(got) == '09:30 오전 미팅\n11:00 면접\n15:00 오후 미팅\n시각 없는 건', _format_schedule(got)
     assert _filter_today_items(sample, '2099-01-01') == []
     assert _format_schedule([]) == ''
 
