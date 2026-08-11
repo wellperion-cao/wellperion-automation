@@ -150,6 +150,53 @@ def main(write_json=None):
                           f"안 걸림 — 신규 발신이면 등록부에 추가 필요(이름 휴리스틱, 오탐 가능)",
             })
 
+    # ── 3-2) daily_scheduler 발신 잡 → 등록부 커버 확인 (2026-08-12 시토 · 배541) ──
+    #   왜: 3번 검사는 **schtasks 예약작업만** 본다. 텔레그램 발신의 대부분은 상주
+    #   daily_scheduler 의 apscheduler 잡인데, 그쪽은 2번(마커가 아직 있나)만 있어서
+    #   **새 잡이 생겨도 아무 검사에도 안 걸렸다.** 실측 2026-08-12: 웰리가 2026-08-10 에 건
+    #   08:00 아침 브리핑·20:30 저녁 정리본이 매일 정상 발송 중인데 등록부엔 없었다 —
+    #   자율현황 「알림 한 장」에 안 보이고, 죽어도 아무도 모르는 상태로 이틀 갔다.
+    #   판정 = add_job(id="…") 을 긁어 등록부 어느 항목의 job_id 에도 없으면 UNREGISTERED_JOB.
+    #   ▸id 를 f-string 등으로 동적 생성하는 잡(끼니 슬롯·시간대 보고)은 긁히지 않는다 —
+    #     이 검사가 못 보는 사각이며, 그 잡들은 사람이 등록부에 직접 넣어야 한다.
+    NON_NOTIFY_JOBS = {
+        # 사람 방으로 아무것도 안 보내는 내부 잡 — 코드 확인 후 제외(이름 휴리스틱 아님)
+        'env_reload_watcher',       # .env 변경 감지 재적재
+        'erp_status_publisher',     # status/erp_status.json 갱신
+        'kpi_collector_morning', 'kpi_collector_evening',  # status/kpi_values.json 갱신
+        'parking_revenue_crawler',  # 주차 매출 수집
+        'dashboard_cache_warm',     # 회원 목록 캐시 예열
+        'push_sweeper',             # 미푸시 커밋 밀어내기
+        'queue_archive_sweep',      # 큐 보관함 이동
+        'git_lock_janitor_10min',   # 죽은 .git/index.lock 청소
+        'test_hourly',              # 스케줄러 생존 표시용 로그 한 줄
+    }
+    reg_job_ids: set[str] = set()
+    for item in reg_items:
+        jid = item.get('job_id')
+        if isinstance(jid, str):
+            reg_job_ids.add(jid)
+        elif isinstance(jid, list):
+            reg_job_ids.update(str(x) for x in jid)
+    if scheduler_src:
+        seen_jobs = []
+        for m in re.finditer(r'\.add_job\(', scheduler_src):
+            seg = scheduler_src[m.end():m.end() + 700]
+            j = re.search(r'\bid\s*=\s*["\']([^"\']+)["\']', seg)
+            if j:
+                seen_jobs.append(j.group(1))
+        for job_id in sorted(set(seen_jobs)):
+            if job_id in reg_job_ids or job_id in NON_NOTIFY_JOBS:
+                continue
+            mismatches.append({
+                'kind': 'UNREGISTERED_JOB',
+                'registry_id': None,
+                'task_name': job_id,
+                'detail': f"daily_scheduler 잡 '{job_id}'이 notify_registry.json 어느 항목의 job_id 에도 "
+                          f"없음 — 사람 방으로 보내는 발신이면 등록부에 추가하고, 내부 전용이면 "
+                          f"NON_NOTIFY_JOBS 에 근거와 함께 넣는다",
+            })
+
     # ── 4) 등록부 room → 방 SSOT 존재 확인 (2026-08-01 시토 · 배202) ──────────
     #   왜: 방 이름이 등록부·발신 코드·화면에 제각각 적혀 있었다. 실측 3건 —
     #     ①'★운영부'(공백 없음) vs 발신 코드가 실제로 찾는 창 제목 '★ 운영부'(공백 있음)
