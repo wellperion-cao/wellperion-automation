@@ -796,6 +796,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 
   var activeSid = '';   // 현재 화면에서 방금 제출한 submissionId(완료/실패 UX 대상)
   var flushTimer = null;
+  var _submitClickT = 0; // 체감시간 측정용 — submitBtn 클릭 시각(ms)
 
   function scheduleFlush(delay){
     if (flushTimer) clearTimeout(flushTimer);
@@ -873,6 +874,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 
   function showDone(id){
     clearBanner();
+    if (_submitClickT) { try { var _ms=Date.now()-_submitClickT; var _l=JSON.parse(localStorage.getItem('wlp_timing')||'[]'); _l.push({t:new Date().toISOString().slice(0,19),ms:_ms}); localStorage.setItem('wlp_timing',JSON.stringify(_l.slice(-10))); } catch(e){} _submitClickT=0; }
     $('rcptNo').textContent = id ? ('접수번호: ' + id) : '';
     $('formWrap').style.display='none';
     $('doneWrap').style.display='block';
@@ -926,6 +928,7 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     qUpsert(item);   // ★먼저 대기큐에 적재 → 이 순간 이후 이탈/새로고침에도 유실 0
 
     var b=this; b.disabled=true; b.textContent='접수 중…'; clearBanner();
+    _submitClickT = Date.now();
     send(item);
   });
 
