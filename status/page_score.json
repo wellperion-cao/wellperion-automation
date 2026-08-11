@@ -1,15 +1,9 @@
 {
-  "_doc": "ERP 화면 완성도 채점 — 생성물. 원천 = GM업무.html #sec-erp-score(웰리 배465 재채점). 재채점하면 python scripts/page_score_extract.py 를 다시 돌린다. 손으로 고치지 않는다.",
+  "_doc": "ERP 화면 완성도 채점 — 생성물. 원천 = GM업무.html #sec-erp-score(웰리 배465 재채점). 재채점하면 python scripts/page_score_extract.py 를 다시 돌린다. 손으로 고치지 않는다. pages = 채점 대상 / excluded = 화면이 아닌 것(리다이렉트 스텁·파일 부재)이라 점수를 일감으로 쓰지 않는다(2026-08-12 · GM 결정 '실무진이 실제로 쓰는 화면만').",
   "source": "3. 웰페리온 가이드/coo/chairman/GM업무.html #sec-erp-score",
-  "count": 49,
+  "count": 43,
+  "excluded_count": 6,
   "pages": [
-    {
-      "name": "문의흐름지도",
-      "score": 30,
-      "note": "스텁 — meta refresh 리다이렉트뿐(원 콘텐츠는 ERP 홈 M1로 통합됨)",
-      "role": "cmo",
-      "owner_nick": "시모"
-    },
     {
       "name": "업무판 채움 보드",
       "score": 42,
@@ -186,13 +180,6 @@
       "owner_nick": "시모"
     },
     {
-      "name": "lesson",
-      "score": 88,
-      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
-      "role": "cpo",
-      "owner_nick": "시포"
-    },
-    {
       "name": "membership",
       "score": 88,
       "note": "영업교육 섹션 \"준비 중\" 방치",
@@ -203,13 +190,6 @@
       "name": "실무진피드백",
       "score": 88,
       "note": "인쇄 CSS 없음(모달이라 경미)",
-      "role": "cpo",
-      "owner_nick": "시포"
-    },
-    {
-      "name": "휴회접수",
-      "score": 88,
-      "note": "스텁 — 안내+3초 리다이렉트(GM 지시 반영)",
       "role": "cpo",
       "owner_nick": "시포"
     },
@@ -233,27 +213,6 @@
       "note": "대형 파일 발췌 확인(전수 미스캔)",
       "role": "coo",
       "owner_nick": "시우"
-    },
-    {
-      "name": "강습회원관리",
-      "score": 90,
-      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
-      "role": "cpo",
-      "owner_nick": "시포"
-    },
-    {
-      "name": "강습회원관리_가이드",
-      "score": 90,
-      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
-      "role": "cpo",
-      "owner_nick": "시포"
-    },
-    {
-      "name": "문의회원",
-      "score": 90,
-      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
-      "role": "cpo",
-      "owner_nick": "시포"
     },
     {
       "name": "문의현황",
@@ -345,6 +304,56 @@
       "note": "감점 없음(정적 공지문, 입력칸 해당없음)",
       "role": "coo",
       "owner_nick": "시우"
+    }
+  ],
+  "excluded": [
+    {
+      "name": "문의흐름지도",
+      "score": 30,
+      "note": "스텁 — meta refresh 리다이렉트뿐(원 콘텐츠는 ERP 홈 M1로 통합됨)",
+      "role": "cmo",
+      "owner_nick": "시모",
+      "excluded_reason": "저장소에 같은 이름의 화면 파일이 없다"
+    },
+    {
+      "name": "lesson",
+      "score": 88,
+      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
+      "role": "cpo",
+      "owner_nick": "시포",
+      "excluded_reason": "리다이렉트 스텁(1217바이트) — 본문 없이 다른 주소로 넘긴다"
+    },
+    {
+      "name": "휴회접수",
+      "score": 88,
+      "note": "스텁 — 안내+3초 리다이렉트(GM 지시 반영)",
+      "role": "cpo",
+      "owner_nick": "시포",
+      "excluded_reason": "리다이렉트 스텁(3569바이트) — 본문 없이 다른 주소로 넘긴다"
+    },
+    {
+      "name": "강습회원관리",
+      "score": 90,
+      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
+      "role": "cpo",
+      "owner_nick": "시포",
+      "excluded_reason": "리다이렉트 스텁(2054바이트) — 본문 없이 다른 주소로 넘긴다"
+    },
+    {
+      "name": "강습회원관리_가이드",
+      "score": 90,
+      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
+      "role": "cpo",
+      "owner_nick": "시포",
+      "excluded_reason": "리다이렉트 스텁(2638바이트) — 본문 없이 다른 주소로 넘긴다"
+    },
+    {
+      "name": "문의회원",
+      "score": 90,
+      "note": "스텁 — 콘텐츠 없는 리다이렉트(기능은 정상)",
+      "role": "cpo",
+      "owner_nick": "시포",
+      "excluded_reason": "리다이렉트 스텁(2600바이트) — 본문 없이 다른 주소로 넘긴다"
     }
   ]
 }

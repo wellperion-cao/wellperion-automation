@@ -42,6 +42,38 @@ _ROW = re.compile(
 )
 
 
+# ── 채점 대상이 아닌 화면 걸러내기 (2026-08-12 시토 · 배478 2단계) ──────────────
+#   GM 결정 2026-08-11: "채점 대상 = 실무진이 실제로 쓰는 화면만". 그런데 채점표 49건 안에
+#   **화면이 아닌 것**이 섞여 있었다 — 실측: 리다이렉트 스텁 5건(1.2~3.6KB, 본문 없이 다른
+#   주소로 넘김) + 저장소에 파일 자체가 없는 것 1건. 이것들이 점수가 낮게 매겨져 부팅 화면
+#   저점 목록의 윗자리를 차지했다(최저 30% '문의흐름지도' = 파일 없음). 없는 화면을 고치라고
+#   매일 띄우는 셈이라, 점수판이 일감을 만드는 게 아니라 헛일감을 만들고 있었다.
+#   ▸원천(GM업무.html)은 웰리 소유라 건드리지 않는다. 파생물인 이 JSON 에서만 갈라 담는다.
+_GUIDE_ROOT = _REPO / "3. 웰페리온 가이드"
+_STUB_MAX_BYTES = 4096
+_REDIRECT_MARKS = ('http-equiv="refresh"', "location.replace", "location.href")
+
+
+def _classify_page(name: str) -> tuple[str, str]:
+    """(판정, 사유) — 판정은 'scored'(채점 대상) 또는 'excluded'(대상 아님)."""
+    # 채점표 이름에 붙은 괄호 꼬리표는 사람 설명이다("GM업무 (이 화면 자체·GM 전용)") —
+    # 떼고 찾지 않으면 실재하는 화면을 '파일 없음'으로 잘못 제외한다(2026-08-12 실측 2건).
+    stem = re.sub(r"\s*\(.*$", "", name).strip()
+    hits = list(_GUIDE_ROOT.rglob(f"{stem}.html"))
+    if not hits:
+        return "excluded", "저장소에 같은 이름의 화면 파일이 없다"
+    path = hits[0]
+    try:
+        raw = path.read_bytes()
+    except Exception:
+        return "scored", ""
+    if len(raw) <= _STUB_MAX_BYTES:
+        text = raw.decode("utf-8", "ignore")
+        if any(mark in text for mark in _REDIRECT_MARKS):
+            return "excluded", f"리다이렉트 스텁({len(raw)}바이트) — 본문 없이 다른 주소로 넘긴다"
+    return "scored", ""
+
+
 def _section(html: str) -> str:
     """채점 섹션만 잘라 낸다. 끝 = 그 다음 최상위 섹션(<details class="sec") 또는 문서 끝."""
     i = html.find(SECTION_ID)
@@ -76,13 +108,25 @@ def extract() -> dict:
             "role": role,
             "owner_nick": nick,
         })
-    pages.sort(key=lambda p: p["score"])
+    scored, excluded = [], []
+    for p in pages:
+        verdict, why = _classify_page(p["name"])
+        if verdict == "excluded":
+            excluded.append({**p, "excluded_reason": why})
+        else:
+            scored.append(p)
+    scored.sort(key=lambda p: p["score"])
+    excluded.sort(key=lambda p: p["score"])
     return {
         "_doc": "ERP 화면 완성도 채점 — 생성물. 원천 = GM업무.html #sec-erp-score(웰리 배465 재채점). "
-                "재채점하면 python scripts/page_score_extract.py 를 다시 돌린다. 손으로 고치지 않는다.",
+                "재채점하면 python scripts/page_score_extract.py 를 다시 돌린다. 손으로 고치지 않는다. "
+                "pages = 채점 대상 / excluded = 화면이 아닌 것(리다이렉트 스텁·파일 부재)이라 점수를 "
+                "일감으로 쓰지 않는다(2026-08-12 · GM 결정 '실무진이 실제로 쓰는 화면만').",
         "source": "3. 웰페리온 가이드/coo/chairman/GM업무.html #sec-erp-score",
-        "count": len(pages),
-        "pages": pages,
+        "count": len(scored),
+        "excluded_count": len(excluded),
+        "pages": scored,
+        "excluded": excluded,
     }
 
 
