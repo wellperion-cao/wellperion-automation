@@ -6906,7 +6906,16 @@ function _regClassMerged(row) {
   var b = bKey ? String(row[bKey] || '').trim() : '';
   if (!b || b === a) return { text: a, conflict: false };
   if (a === '신규' && b === '재등록') return { text: a + ' / ' + b, conflict: true };   // 둘 중 하나가 틀렸다
-  return { text: b, conflict: false };   // 둘째 칸만 아는 값(L재등록·단기재등록·대기)
+  // 배350(GM 2026-08-04) — '대기'가 원래 분류값을 화면에서 덮어쓰던 문제.
+  // 실측(2026-08-11) 분류칸이 '대기'인 8명 중 5명은 「등록 분류」에 원래 값(신규·재등록)이 그대로 살아 있는데
+  // 여기서 '대기'만 보여주고 있었다. 원래 값을 살려 보여주고, 아직 시작일 전일 때만 '· 대기' 꼬리표를 붙인다.
+  // 시작일이 지나면 꼬리표가 저절로 떨어져 원래 분류만 남는다 — 시트 자동 수정 0·새 칸 0.
+  if (b === '대기') {
+    var base = (a && a !== '대기') ? a : '';
+    if (!base) return { text: '대기', conflict: false };   // 원래 값이 시트에도 없음(임정은M 확인 대상)
+    return { text: _isFutureStart(row) ? base + ' · 대기' : base, conflict: false };
+  }
+  return { text: b, conflict: false };   // 둘째 칸만 아는 값(L재등록·단기재등록)
 }
 // 배350(GM 2026-08-04) — '대기'를 등록분류/재등록분류 칸에 적으면 원래 신규/재등록 값이
 // 지워진다(박기순님 케이스). 전용 '대기' 칸(2026-08-10 시트에 신설)이 켜져 있으면 그 칸+시작일로만
