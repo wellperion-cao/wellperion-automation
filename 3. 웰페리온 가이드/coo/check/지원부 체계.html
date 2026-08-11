@@ -529,6 +529,15 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   table.a3l-grid td.a3l-name{background:#f3ede7!important;font-size:16px;font-weight:800;color:#2a2018;text-align:left;padding-left:9px}
   table.a3l-grid td.a3l-shade{background:#faf7f3!important}
   table.a3l-grid tr.a3l-sum td{height:44px;background:#f3ede7!important;font-weight:800}
+  /* 주간판(A3 세로 1장 = 7일) — 행이 많아 높이를 항목별로 나눠 준다. 보충만 두 배(여러 번 적는다). */
+  table.a3l-week td{height:26px}
+  table.a3l-week td.a3l-tall{height:52px}
+  table.a3l-week td.a3l-name{font-size:17px;text-align:center;padding:0;vertical-align:middle}
+  table.a3l-week td.a3l-rowkey{background:#faf7f3!important;font-size:13px;font-weight:700;color:#4a3a2e;text-align:left;padding-left:7px}
+  table.a3l-week tr.a3l-itemtop td{border-top:2px solid #4a3a2e}
+  table.a3l-week thead th{font-size:16px;padding:6px 2px}
+  table.a3l-week .a3l-datebox{margin:5px auto 2px;width:78%;height:20px;border-bottom:1px solid rgba(255,255,255,0.75)}
+  table.a3l-week td.a3l-stockline{height:46px;text-align:left;padding:6px 10px;font-size:14px;font-weight:600;letter-spacing:0.02em}
   #a3-laundry-print .a3l-guide{margin-top:10px;font-size:13px;line-height:1.85;color:#2a2018}
   #a3-laundry-print .a3l-guide b{font-weight:800}
 }
@@ -979,18 +988,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <div class="a3l-head">
     <div class="a3l-title">세탁물 출하표</div>
     <div class="a3l-meta">
-      <span>날짜 <b class="a3l-blank"></b></span>
+      <span>기간 <b class="a3l-blank"></b> ~ <b class="a3l-blank"></b></span>
       <span>작성 <b class="a3l-blank"></b></span>
       <span>확인 <b class="a3l-blank"></b></span>
     </div>
   </div>
   <div id="a3l-table-host"></div>
   <div class="a3l-guide">
-    <b>①</b> 전날 저녁(20:30~22:00) 세탁물이 들어오면 <b>거래명세서에 적힌 수량</b>을 「입고」 칸에 적는다.<br>
-    <b>②</b> 다음날 오픈 때 깔아 놓은 수량을 「오픈 셋팅」 칸에 적는다.<br>
-    <b>③</b> 중간에 채울 때마다 「보충」 칸에 <b>한 칸씩</b> 적는다(횟수도 같이 남는다).<br>
-    <b>④</b> 마감 때 쓰지 않고 남은 세탁물과 창고 재고를 각각 적는다.<br>
-    <b>⑤</b> 이 종이는 다음 점검 때 화면 「🧺 세탁물 관리」에 그대로 옮겨 적는다.
+    <b>①</b> 맨 위 요일 칸에 <b>그 주의 날짜</b>를 먼저 적는다(월요일부터 일요일까지 한 장).<br>
+    <b>②</b> 전날 저녁(20:30~22:00) 세탁물이 들어오면 <b>거래명세서에 적힌 수량</b>을 그날 「입고」 칸에 적는다.<br>
+    <b>③</b> 오픈 때 깔아 놓은 수량을 「오픈 셋팅」 칸에 적는다.<br>
+    <b>④</b> 중간에 채울 때마다 「보충」 칸에 <b>이어서</b> 적는다(예: 20 · 15 · 10 — 횟수도 같이 남는다).<br>
+    <b>⑤</b> 마감 때 쓰지 않고 남은 수량을 「남은 것」 칸에 적는다. 창고 재고는 주 1회 맨 아래 줄에 적는다.<br>
+    <b>⑥</b> 이 종이는 다음 점검 때 화면 「🧺 세탁물 관리」에 그대로 옮겨 적는다.
   </div>
 </div>
 
@@ -1864,8 +1874,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .wp-ldy__qrow{display:flex;gap:7px}
   .wp-ldy__qbtn{flex:1;min-height:46px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;font-weight:750;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
   .wp-ldy__qbtn:active{background:var(--accent,#4ec4c4);color:#141312}
+  /* 입력칸+버튼 2개 줄 — 버튼을 카드 폭만큼 늘리지 않는다(GM 2026-08-11 "좌우로 길게 가져갔어야해?").
+     퀵탭 시절엔 숫자 버튼 4개가 폭을 나눠 가져 flex:1 이 맞았지만, 지금은 버튼이 둘뿐이라
+     늘리면 손가락이 갈 자리보다 빈 공간이 커진다. 내용 폭 + 누르기 편한 최소치로 고정한다. */
   .wp-ldy__qbtn--open{border-color:rgba(78,196,196,0.55)}
-  .wp-ldy__qin{flex:0 0 92px;min-height:46px;text-align:center;font-size:16px;font-weight:750}
+  .wp-ldy__qrow--type{justify-content:flex-start}
+  .wp-ldy__qrow--type .wp-ldy__qbtn{flex:0 0 auto;padding:0 18px;font-size:14px}
+  .wp-ldy__qin{flex:0 0 84px;min-height:46px;text-align:center;font-size:16px;font-weight:750}
   @media(max-width:430px){
     .wp-ldy__tbl th,.wp-ldy__tbl td{padding:5px 4px;font-size:12px}
     .wp-ldy__in{width:62px;padding:5px 4px}
@@ -6906,7 +6921,7 @@ function wpLdyRenderIssueCards(){
       /* ★수량을 직접 친다(GM 2026-08-11 "일단 수량을 입력하게끔 만들어야할 것 같아").
          현장은 A3 출하표에 손으로 적고, 점검할 때 그 숫자를 여기 옮겨 넣는다 —
          고정 버튼(10·25·50…)으로는 종이에 적힌 실제 숫자를 그대로 넣을 수 없다. */
-      + '<div class="wp-ldy__qrow">'
+      + '<div class="wp-ldy__qrow wp-ldy__qrow--type">'
       + '<input class="wp-ldy__in wp-ldy__qin" id="wpLdyQ_' + m.id + '" type="number" min="1" step="1" placeholder="수량"'
       + ' onkeydown="if(event.key===\'Enter\')wpLdyIssueTyped(\'' + m.id + '\',\'refill\')">'
       + '<button class="wp-ldy__qbtn wp-ldy__qbtn--open" onclick="wpLdyIssueTyped(\'' + m.id + '\',\'open\')">오픈 셋팅</button>'
@@ -6938,23 +6953,36 @@ function wpLdyIssue(itemId, qty, kind){
 /* 🧺 세탁물 출하표 A3 인쇄(GM 2026-08-11) — 기존 A3 인쇄 방식 그대로 재사용(새 방식 안 만듦).
    품목 목록만 화면에서 가져오고 숫자는 전부 빈칸이다 — 종이가 원본이고, 화면이 나중에 옮겨 적는 쪽이다. */
 function printA3Laundry(){
+  /* ★A3 한 장 = 일주일(GM 2026-08-11 "매일 한장씩 줄 순없어 A3 한장으로 1주일정도").
+     그래서 세로로 세운다 — 열은 7일이면 되고, 행(품목 × 항목)이 많아 높이가 더 급하다.
+     품목마다 4줄: 입고 / 오픈 셋팅 / 보충(여러 번 적으니 두 배 높이) / 남은 것.
+     재고 실사는 매일 하는 일이 아니라 표 맨 아래 주 1회 줄로 뺐다. */
   var items = wpLdyItems();
-  var REFILL = 6;   // 보충 칸 수 — A3 가로 한 장에 들어가는 최대치(실측)
-  var h = '<table class="a3l-grid"><colgroup><col style="width:122px">'
-        + '<col style="width:78px"><col style="width:88px">'
-        + new Array(REFILL + 1).join('<col>')
-        + '<col style="width:78px"><col style="width:92px"><col style="width:78px"><col style="width:118px"></colgroup>'
-        + '<thead><tr><th class="a3l-item">품목</th><th>입고<br>(명세서)</th><th>오픈<br>셋팅</th>';
-  for (var i = 1; i <= REFILL; i++) h += '<th>보충<br>' + i + '</th>';
-  h += '<th>출고<br>합계</th><th>남은<br>세탁물</th><th>재고</th><th>비고</th></tr></thead><tbody>';
+  var DOW = ['월', '화', '수', '목', '금', '토', '일'];
+  var ROWS = [
+    { key: '입고',      cls: 'a3l-shade' },
+    { key: '오픈 셋팅', cls: '' },
+    { key: '보충',      cls: 'a3l-tall' },
+    { key: '남은 것',   cls: 'a3l-shade' }
+  ];
+  var h = '<table class="a3l-grid a3l-week"><colgroup><col style="width:96px"><col style="width:78px">'
+        + new Array(DOW.length + 1).join('<col>') + '</colgroup><thead>'
+        + '<tr><th class="a3l-item" colspan="2">품목 / 기록</th>'
+        + DOW.map(function(d){ return '<th>' + d + '<div class="a3l-datebox"></div></th>'; }).join('')
+        + '</tr></thead><tbody>';
   items.forEach(function(m){
-    h += '<tr><td class="a3l-name">' + wpLdyEsc(m.name) + '</td><td class="a3l-shade"></td><td></td>';
-    for (var i = 0; i < REFILL; i++) h += '<td></td>';
-    h += '<td class="a3l-shade"></td><td></td><td></td><td></td></tr>';
+    ROWS.forEach(function(r, ri){
+      h += '<tr class="' + (ri === 0 ? 'a3l-itemtop' : '') + '">';
+      if (ri === 0) h += '<td class="a3l-name" rowspan="' + ROWS.length + '">' + wpLdyEsc(m.name) + '</td>';
+      h += '<td class="a3l-rowkey">' + r.key + '</td>';
+      for (var i = 0; i < DOW.length; i++) h += '<td class="' + r.cls + '"></td>';
+      h += '</tr>';
+    });
   });
-  h += '<tr class="a3l-sum"><td class="a3l-name">합계</td><td></td><td></td>';
-  for (var j = 0; j < REFILL; j++) h += '<td></td>';
-  h += '<td></td><td></td><td></td><td></td></tr></tbody></table>';
+  h += '<tr class="a3l-sum"><td class="a3l-name" colspan="2">주간 재고 실사 (주 1회)</td>'
+     + '<td colspan="' + DOW.length + '" class="a3l-stockline">'
+     + items.map(function(m){ return wpLdyEsc(m.name) + ' ______'; }).join('&nbsp;&nbsp;&nbsp;')
+     + '</td></tr></tbody></table>';
   var host = document.getElementById('a3l-table-host');
   if (host) host.innerHTML = h;
   document.body.classList.add('a3-ldy-mode');
@@ -6964,7 +6992,7 @@ function printA3Laundry(){
     styleTag.id = 'a3-ldy-page-style';
     document.head.appendChild(styleTag);
   }
-  styleTag.textContent = '@media print{ @page{ size:A3 landscape; margin:9mm; } }';
+  styleTag.textContent = '@media print{ @page{ size:A3 portrait; margin:8mm; } }';
   window.print();
   document.body.classList.remove('a3-ldy-mode');
   styleTag.textContent = '';
