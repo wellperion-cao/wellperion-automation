@@ -92,6 +92,12 @@ DATE_SEP_RE = re.compile(r"^-{3,}.*?(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일.*-{
 MSG_RE = re.compile(r"^\[(?P<name>.+?)\]\s*\[(?P<ampm>오전|오후)\s*(?P<h>\d{1,2}):(?P<m>\d{2})\]\s*(?P<msg>.*)$")
 SYSTEM_LINE_RE = re.compile(r".*(들어왔습니다|나갔습니다|저장한 날짜)\.?\s*$")
 
+# 카톡 표시명 → 실명 (배536 후속 2026-08-11 — 발신 직전 웰리 손 치환 목격). 파싱 단계에서
+# 바로잡아 두면 대화 원문·프롬프트·LLM 출력 전부 실명으로 나간다(후처리 문자열치환보다 안 깨짐).
+# ★확신 있는 것만: ssot/kpi.json roles.cfo/chro.staff · ssot/ownership_map.json 리더/구성원 ·
+# scripts/kakao_rooms.json members 전부 "나우열M"인데 카톡 표시명만 "라우열"로 어긋난다.
+DISPLAY_NAME_ALIAS = {"라우열": "나우열M"}
+
 
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -588,7 +594,9 @@ def parse_export(raw: str) -> dict[str, list[dict]]:
             if m.group("ampm") == "오후":
                 h += 12
             time_str = f"{h:02d}:{int(m.group('m')):02d}"
-            cur_msg = {"time": time_str, "name": m.group("name").strip(), "msg": m.group("msg")}
+            name = m.group("name").strip()
+            name = DISPLAY_NAME_ALIAS.get(name, name)
+            cur_msg = {"time": time_str, "name": name, "msg": m.group("msg")}
             by_date[cur_date].append(cur_msg)
             continue
 
