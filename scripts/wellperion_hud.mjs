@@ -831,7 +831,9 @@ function buildLine(cwd, role, transcript, sessionId) {
   const busy = !!(lv && lv.working);
   if (s && s.cur) {
     const n = (s.shortOf[s.cur.no] != null) ? s.shortOf[s.cur.no] : s.cur.no;
-    head += `${C}▶${n}${X}`;
+    // ★'진행'을 글자로 적는다(GM 2026-08-11 "▶39가 대기인지 진행인지 하나도 모르겠고").
+    //   기호만으로는 옆의 ⚓(대기)와 구분이 안 됐다.
+    head += ` ${G}진행${n}${X}`;
     title = String(s.cur.title || '').replace(/^\[[^\]]*\]\s*/, '').trim();
   } else if (lc && lc.ship != null) {
     const n = (s && s.shortOf[lc.ship] != null) ? s.shortOf[lc.ship] : lc.ship;
@@ -845,24 +847,22 @@ function buildLine(cwd, role, transcript, sessionId) {
   //   잡은 배와 실제로 하는 일이 다를 때 배 제목은 GM 을 오히려 헷갈리게 한다(실측 재현:
   //   배81 을 잡은 채 상태줄을 고치고 있었는데 화면엔 "텔레그램 방 재편"이 떠 있었다).
   if (busy && lv.ask) title = `「${lv.ask}」`;
+  // ★멈춰 있을 때도 배 제목이 아니라 **방금 한 일**을 쓴다(GM 2026-08-11 "지금도 뭔 작업을
+  //   하는지 모르겠어"). 잡아둔 배와 실제로 한 일이 다른 게 보통이다 — 오늘 시토는 배39 를
+  //   손도 안 댔는데 화면엔 하루 종일 "시스템 단순화 이니셔티브"가 떠 있었다.
+  else {
+    const w = lastWork(cwd, role).trim();
+    if (w) title = w;
+  }
   // 시각 칸 — ★1순위는 세션 기록에서 읽은 '지금 하는 일 + 경과'(GM 지시 2026-07-27).
   //   커밋은 일이 **끝나야** 찍히고, 진행 한 줄은 내가 손으로 써야 움직인다. 둘 다 일하는
   //   동안에는 멎어 보였다. 세션 기록만이 보고와 무관하게 항상 움직인다 → 이걸 먼저 쓴다.
   let time = '';
   if (lv) {
     const when = `${clockText(lv.at)}부터`;
-    /** 멈춰 있을 때도 **안고 있는 일**을 같이 적는다 (GM 결정 2026-07-28 · B안).
-     *  왜: '대기'는 그 창이 GM 말을 기다린다는 뜻인데, GM 은 '회사가 일하고 있나'로 읽으신다.
-     *  실제로 시포는 열린 배 17척(진행 5)을 안고도 화면엔 '대기'만 떠 노는 것처럼 보였다
-     *  (GM 2026-07-28 "시포 13건 진행중이라는데 statusline엔 계속 대기로만 남는데").
-     *  항로 칸(🚢⚓)은 폭이 좁으면 접히지만 이 칸은 안 접히므로 여기 붙인다. */
-    const idleLoad = (st) => (st && st.run > 0) ? `${D} · 진행${X}${st.run}${D}척${X}` : '';
-    /** 손이 비었을 때 붙이는 **다음에 집을 배** (GM 2026-08-05 지시).
-     *  왜: '대기'만 떠 있으면 GM 은 '멈춰 있다'로 읽으신다. 정작 큐에는 집을 배가 있는데
-     *  화면이 그걸 말해 주지 않으니, 다음 한 걸음을 GM 이 매번 지시해야 했다.
-     *  대기 중일 때만 붙인다 — 일하는 중에는 지금 하는 일이 더 급한 정보다. */
-    const nextUp = (st) => (st && st.next)
-      ? `${D} ▸다음 ${X}${C}⚓${st.next.no}${X} ${D}${shortTitle(st.next.title, 14)}${X}` : '';
+    // '진행N척'(idleLoad)·'▸다음 <배>'(nextUp) 삭제 — GM 2026-08-11 "진행7척 다음 25AWS
+    // 멀티테넌트ERP … 이런건 의미가없고 답답하네". 숫자와 남의 배 제목이 정작 '지금 뭐 하나'를
+    // 밀어냈다. 그 자리는 아래에서 **방금 한 일**(lastWork)이 받는다.
     if (lv.working && lv.idle <= 900) {
       // ① 돌고 있음 — 도구를 부를 때마다 다시 그려지므로 여기서만 경과 초가 실제로 움직인다.
       const name = lv.act ? (ACT[lv.act.tool] || lv.act.tool) : '작업중';
@@ -881,17 +881,14 @@ function buildLine(cwd, role, transcript, sessionId) {
       const since = (bg && bg.since) ? bg.since : null;
       const elapsed = since ? ` ${G}${elapsedText(Math.max(0, Math.round((Date.now() - since) / 1000)))}${X}` : '';
       time = `${D}·${X}${G}🟢위임중 ${count}척${X}${elapsed}`;
-    } else if (s && s.ask) {
-      // ② GM 이 답해야 진행되는 상태 — ★무엇을 기다리는지까지 적는다(GM 2026-07-27
-      //    "어떤 답을 기다리는건데?"). 배 번호 + 제목 핵심이라 되물을 필요가 없다.
-      time = `${D}·${X}${Y}❓GM답 ${s.ask.no} ${shortTitle(s.ask.gist, 14)}${X} ${D}${when}${X}`;
     } else if (lv.idle > 1800) {
-      // ③ 아무도 안 기다리는데 30분 넘게 멈춤 = **문제다**(GM 2026-07-27 "멎음은 문제인 것 같은데").
-      //    기다릴 답도 없는데 일이 안 도는 것이므로 눈에 띄게 — 2시간 넘으면 빨강.
-      time = `${D}·${X}${lv.idle > 7200 ? R : Y}⏸멈춤 ${when}${X}${idleLoad(s)}${nextUp(s)}`;
+      // ② 30분 넘게 멈춤 = 문제다. 2시간 넘으면 빨강.
+      time = `${D}·${X}${lv.idle > 7200 ? R : Y}⏸멈춤 ${when}${X}${lastWork(cwd, role)}`;
     } else {
-      // ④ 방금 끝냄 — 정상. 조용히 둔다.
-      time = `${D}·💤GM답 기다림 ${when}${X}${idleLoad(s)}${nextUp(s)}`;
+      // ③ 방금 끝냄 — ★'GM답 기다림'이 아니라 **방금 무엇을 했는지**를 적는다
+      //    (GM 2026-08-11 "GM답 기다림 11:56부터 · 진행7척 · 다음 25… 이런건 의미가없고 답답하네").
+      //    GM 이 창을 볼 때 알고 싶은 건 '내 답을 기다린다'가 아니라 '방금 뭘 했나'다.
+      time = `${D}·${X}${D}방금${X}${lastWork(cwd, role)} ${D}${when}${X}`;
     }
   } else if (bg) {
     // ★transcript 를 못 읽어도(유실 등) 배경 에이전트가 실측으로 살아있으면 대기로 보이면 안 된다.
@@ -969,7 +966,10 @@ function roleActivity(cwd, role) {
   // _라인분담_2026_08_05_chro_cfo_queue_revival). 시로·시뽀는 여전히 AI 에이전트가
   // 안 뜬다(worklog 가 안 쌓여 그냥 '—'로 뜬다) — 그래도 줄 자체는 남아야 밀린 게 보인다.
   const EXCLUDED = [];
-  const others = Object.keys(NICK).filter((r) => r !== role && !EXCLUDED.includes(r));
+  // ★내 역할도 넣는다(GM 2026-08-11 "시토창인데 시토건은 안보이니 답답한거지").
+  //   전에는 내 역할을 빼고 남의 역할만 줄에 냈다 — 내 줄에 배 번호가 있으니 충분하다고 봤는데,
+  //   GM 은 그 번호가 진행인지 대기인지 모르겠다고 하셨다. 내 것이 목록 맨 앞에 보여야 한다.
+  const others = [role, ...Object.keys(NICK).filter((r) => r !== role && !EXCLUDED.includes(r))];
   const found = new Map();
   try {
     const p = path.join(cwd, 'status', 'worklog.jsonl');
@@ -981,6 +981,10 @@ function roleActivity(cwd, role) {
         let rec;
         try { rec = JSON.parse(raw); } catch { continue; }
         if (!rec || found.has(rec.role) || !others.includes(rec.role)) continue;
+        // ★'GM지시' 접수 레코드는 건너뛴다(2026-08-11). 그걸 잡으면 GM 이 방금 친 문장이
+        //   그 역할의 '한 일'로 떠서, 화면이 "지금도 뭔 작업을 하는지 모르겠어"를 작업명으로 보여줬다.
+        //   여기서 알고 싶은 건 무엇을 **했나**이므로 실제 작업 기록만 본다.
+        if (String(rec.area || '') === 'GM지시') continue;
         const ts = Date.parse(rec.ts || '');
         if (!Number.isFinite(ts)) continue;
         const m = String(rec.detail || '').match(/배\s?(\d{1,6})/);
@@ -993,6 +997,16 @@ function roleActivity(cwd, role) {
     }
   } catch { /* worklog 없거나 깨짐 — 아래서 전부 빈 값(—)으로 채운다 */ }
   return others.map((r) => ({ role: r, ...(found.get(r) || {}) }));
+}
+
+/** 내가 **방금 무엇을 했나** — 멈춰 있을 때 'GM답 기다림' 대신 적는 값(GM 2026-08-11).
+ *  새 데이터를 만들지 않는다 — roleActivity 가 이미 읽어 둔 그 역할의 마지막 작업 기록을 쓴다. */
+function lastWork(cwd, role) {
+  try {
+    const me = roleActivity(cwd, role).find((a) => a.role === role);
+    if (!me || !me.event) return '';
+    return ` ${C}${shortTitle(me.event, 34)}${X}`;
+  } catch { return ''; }
 }
 
 /** 표시 폭(dw 기준) 만큼 공백을 채운다 — 여러 줄이 세로로 대략 맞춰 보이게. */
@@ -1066,7 +1080,7 @@ function buildRoleLines(cwd, role) {
     //   묶으면 6줄→최대 3줄, 이스케이프도 역할마다 3벌씩 붙던 것이 상태당 1벌로 준다.
     //   비어 있는 상태는 줄 자체를 안 낸다 — 줄 수를 더 줄이는 쪽이 항상 안전하다.
     const q = loadQueue(cwd);
-    const run = [], wait = [], idle = [];
+    const run = [], wait = [];
     for (const a of acts) {
       const nick = NICK[a.role];
       if (a.deleg || (a.age != null && a.age < PAUSE_MS)) {
@@ -1074,14 +1088,14 @@ function buildRoleLines(cwd, role) {
       } else if (a.age != null && isToday(a.age)) {
         const nx = q ? nextShipOf(waitingOf(q, a.role)) : null;
         wait.push(nx ? `${nick} ▸${shortTitle(nx.title, 12)}` : nick);
-      } else {
-        idle.push(nick);
       }
+      // 오늘 아무것도 안 한 역할은 줄에 안 낸다(GM 2026-08-11 "오늘 없는건 의미없고").
     }
     const lines = [];
     if (run.length)  lines.push(`${G}● 진행중${X} ${run.join(' · ')}`);
     if (wait.length) lines.push(`${Y}◐ 대기${X} ${wait.join(' · ')}`);
-    if (idle.length) lines.push(`${D}○ 오늘 없음 ${idle.join(' · ')}${X}`);
+    // '○ 오늘 없음' 줄 삭제(GM 2026-08-11 "오늘 없는건 의미없고").
+    // 오늘 아무것도 안 한 역할을 나열해 봐야 GM 이 할 일이 생기지 않는다 — 줄만 먹었다.
     return lines;
   } catch { return []; }
 }
