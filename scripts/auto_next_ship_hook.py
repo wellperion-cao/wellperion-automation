@@ -172,6 +172,17 @@ def main() -> None:
     if not role or role in EXCLUDED_ROLES:
         allow_stop("역할 없음/배제 역할: %s" % role)
 
+    # 쿵짝 완료 짝 — 접수는 UserPromptSubmit 훅이 기계로 남기는데 완료는 손으로 남기던 탓에
+    # 답을 다 한 물음이 "미완"으로 쌓였다(2026-08-11 실측 91건). 턴이 끝나는 이 자리에서 닫는다.
+    # 새 훅·새 파일을 만들지 않고 이미 모든 턴이 지나가는 관문에 얹는다(약속 L21).
+    try:
+        import worklog
+        closed = worklog.close_gm_refs(role)
+        if closed:
+            print("[auto-next] GM지시 완료 짝 %d건 자동 기록" % closed, file=sys.stderr)
+    except Exception as e:  # noqa: BLE001
+        print("[auto-next] 완료 짝 기록 실패(무시): %s" % e, file=sys.stderr)
+
     tail = read_tail(transcript)
     if waiting_on_gm(tail):
         allow_stop("GM 선택 카드 대기 중")

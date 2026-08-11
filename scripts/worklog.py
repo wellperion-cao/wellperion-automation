@@ -110,6 +110,58 @@ def record_gm_prompt_hook() -> None:
                       ensure_ascii=False))
 
 
+def close_gm_refs(role: str, detail: str = "") -> int:
+    """그 역할의 열린 GM 지시 접수(warn 만 있고 ok 짝 없는 것)를 닫는다. 닫은 건수를 돌려준다.
+
+    왜 있나(2026-08-11): 접수는 UserPromptSubmit 훅이 기계로 남기는데 완료 짝은 사람이 손으로
+    남겨야 해서, 답을 다 한 물음도 "미완"으로 쌓였다. 실측 — 시토 3/30 · 웰리 26/38 · 시모
+    13/16 · 시포 8/12 로 역할마다 제각각이었고 미완이 91건까지 불었다.
+
+    ★쿵짝표는 '물음↔답' 대장이다. '지시↔완수' 추적은 배(status/_queue.json)가 한다(약속 L15).
+    두 벌을 만들면 진실이 둘이 된다(L01). 그래서 세션이 응답을 끝내면 여기서 닫고,
+    후속 작업이 남은 건은 배가 이어받는다.
+
+    """
+    try:
+        if not WORKLOG_PATH.exists():
+            return 0
+        role_v = (role or "").strip().lower()
+        if not role_v:
+            return 0
+        warn: dict[str, str] = {}
+        ok: set[str] = set()
+        with open(WORKLOG_PATH, encoding="utf-8") as f:
+            for line in f:
+                if "GM-" not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:  # noqa: BLE001
+                    continue
+                if (d.get("role") or "").strip().lower() != role_v:
+                    continue
+                ref = str(d.get("ref") or "")
+                if not ref.startswith("GM-"):
+                    continue
+                if d.get("result") == "warn":
+                    warn.setdefault(ref, str(d.get("ts") or ""))
+                elif d.get("result") == "ok":
+                    ok.add(ref)
+        n = 0
+        for ref, ts in sorted(warn.items(), key=lambda kv: kv[1]):
+            if ref in ok:
+                continue
+            if log(role_v, "GM지시", "답변 종결 — 세션이 응답을 마쳤다",
+                   result="ok",
+                   detail=detail or "후속 작업이 있으면 배(_queue)가 추적한다",
+                   ref=ref):
+                n += 1
+        return n
+    except Exception as exc:  # noqa: BLE001
+        print(f"[WARN] close_gm_refs 예외(best-effort): {exc}")
+        return 0
+
+
 def log(
     role: str,
     area: str,
