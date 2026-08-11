@@ -170,6 +170,10 @@ def main(write_json=None):
         'queue_archive_sweep',      # 큐 보관함 이동
         'git_lock_janitor_10min',   # 죽은 .git/index.lock 청소
         'test_hourly',              # 스케줄러 생존 표시용 로그 한 줄
+        # 아래 3개는 2026-08-12 코드 전수 확인 — 사람 방으로 가는 발신이 0건이다.
+        'bot_health_check',         # 실패 시 이 PC 데스크톱 알림창만(local_fallback_alert) · API 발신 없음
+        'sales_session_guard_0810', # sales_session_guard.py 에 발신 호출 0건 · 만료 시 로그인 창만 띄움
+        'ig_publish_verify_sweep',  # 발행완료 도장+커밋만 · 결과 요약은 ig-publish-multichannel-summary 담당
     }
     reg_job_ids: set[str] = set()
     for item in reg_items:
