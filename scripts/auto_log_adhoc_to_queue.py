@@ -235,7 +235,16 @@ def _attribute_clevel(root: str, subject: str, body: str) -> str:
     role = _ok(_bounded_role(low))
     if role:
         return role
-    # ④ 기본 — 전사 소유자 ceo(웰리). 세션마커 폴백 폐지(멀티세션 오귀속 방지).
+    # ④ 그 커밋을 만든 세션의 역할(WELLPERION_ROLE) — safe_commit 이 자식 프로세스로 이 스크립트를
+    #    부르므로 환경변수가 그대로 상속된다. 프로세스 환경이라 세션끼리 섞이지 않는다
+    #    (폐지된 '세션마커 파일' 폴백과 다른 신호다 — 그건 파일 한 벌을 여러 세션이 덮어써서 위험했다).
+    #    ★2026-08-11 실측: 시토가 오늘 올린 커밋 5건이 전부 웰리(ceo) 작업으로 기록됐다.
+    #    GM 이 "시토가 지금 작업 중인지 어디서 확인하냐"고 물었을 때 어느 화면에도 안 보인 이유다.
+    #    예약 스크립트·무인 러너는 이 변수가 없어 종전대로 ceo 로 떨어진다(회귀 0).
+    env_role = _ok((os.environ.get("WELLPERION_ROLE") or "").strip().lower())
+    if env_role:
+        return env_role
+    # ⑤ 기본 — 전사 소유자 ceo(웰리).
     return "ceo"
 
 
