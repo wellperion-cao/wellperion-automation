@@ -1307,6 +1307,37 @@ def _kpi_slice(role_slug: str) -> str:
             "※ 역할분담 결정 경위 등 전체는 ssot/kpi.json 파일 자체를 여세요.")
 
 
+def _page_score_slice(role_slug: str) -> str:
+    """status/page_score.json → 내 소유 화면 중 점수 낮은 것 5개 (배478 · GM 지시 2026-08-08).
+
+    GM 원문: "완성도를 말도안되게 높게 잡으니 문제점이 보일리가 없을 것 같은데?" —
+    웰리가 배465 로 다시 채점했지만 결과가 화면 안 표로만 있어 **아침 자가점검이 못 읽었다.**
+    점수판이 장식이 되면 실패라고 그 배가 스스로 적어 뒀다. 여기서 부팅 화면에 올려
+    낮은 점수가 곧 그날 볼 것이 되게 한다. 새 화면을 만들지 않고 이미 매일 지나가는
+    이 자리에 얹는다(약속 L21)."""
+    path = _REPO / "status" / "page_score.json"
+    if not path.exists():
+        return ""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"[WARN] page_score.json 슬라이스 실패: {e}", file=sys.stderr)
+        return ""
+    mine = [p for p in data.get("pages", []) if p.get("role") == role_slug]
+    if not mine:
+        return ""
+    mine.sort(key=lambda p: p.get("score", 100))
+    low = [p for p in mine if p.get("score", 100) < 85][:5]
+    if not low:
+        return (f"\n📉 내 화면 완성도 — {len(mine)}개 전부 85% 이상. "
+                "(원천 = GM업무 화면 재채점 · 갱신 = python scripts/page_score_extract.py)")
+    lines = [f"  {p['score']:3}%  {p['name']} — {p['note'][:52]}" for p in low]
+    return (f"\n📉 내 화면 완성도 낮은 순 {len(low)}개 (전체 {len(mine)}개 중 85% 미만)\n"
+            + "\n".join(lines)
+            + "\n※ 이 줄이 오늘 볼 것이다. 원천 = GM업무 화면 재채점 · "
+              "갱신 = python scripts/page_score_extract.py")
+
+
 _GM_PROFILE_SECTIONS = {"선호", "습관", "자주 놓치는 것"}
 _RE_MD_H2 = re.compile(r"(?m)^## ")
 
@@ -1380,6 +1411,7 @@ def main() -> None:
             "특정 배의 전체 기록은 그 배 하나만 status/_queue.json 에서 찾아 읽으세요."
         )
         board_text += _kpi_slice(role_slug)
+        board_text += _page_score_slice(role_slug)
         board_text += _gm_profile_slice()
     print(board_text)
 
