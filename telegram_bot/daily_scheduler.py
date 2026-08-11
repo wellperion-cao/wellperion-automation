@@ -2931,6 +2931,35 @@ def run_gm_morning_brief(chat_id: str | None = None) -> None:
         logger.info(f"{label} 발송 ok={ok} chat={chat}")
     except Exception as e:
         logger.warning(f"{label} 실패: {e}")
+    # 같은 08:00 에 카톡 「김남욱」 방으로도 짧은 일정판 — GM 지시 2026-08-12
+    # ("텔레그램이랑 카카오톡 8:00으로 하자"). 잡을 새로 만들지 않고 이 잡에 붙인다(약속 L21):
+    # 시각이 두 곳에 적히면 한쪽만 바뀌어 어긋난다. 시험 발송(chat_id 지정)일 땐 카톡은 건너뛴다.
+    if chat_id is None:
+        _run_gm_morning_kakao()
+
+
+# 카톡은 PC 앱 UI 자동화라 텔레그램보다 느리고 실패할 수 있다(창이 안 떠 있는 등).
+# 그래서 위 텔레그램 발송과 분리해 두고, 여기서 실패해도 텔레그램은 이미 나간 상태가 되게 한다.
+def _run_gm_morning_kakao() -> None:
+    label = "[GM 아침 일정 카톡]"
+    room = "김남욱"
+    try:
+        import gm_checkin as _ck
+        text = _ck.build_morning_kakao()
+        proc = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
+             "--message", text, "--only-room", room],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
+            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"), timeout=300,
+        )
+        tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+        logger.info(f"{label} {room} 발송: {tail[0]}")
+        if proc.returncode != 0:
+            _kakao_fail_notify("GM아침일정", tail[0], room)
+    except Exception as e:
+        logger.error(f"{label} 예외: {e}")
+        _kakao_fail_notify("GM아침일정", str(e)[:120], room)
 
 
 # ── 20:30 GM 저녁 정리 카드(월~토 · 나의하루 방) — GM 지시 2026-08-10 ──────────────
