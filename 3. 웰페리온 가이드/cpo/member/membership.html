@@ -8047,7 +8047,7 @@ function _activeDisplayCols() {
     var out = cols.filter(function(h){ return h !== CHURN_REASON_COL && h !== CHURN_REASON_NOTE_COL && h !== _urc; });
     out.push('__churn__');
     out.push('__reactivate__');
-    if (_urc) out.push('__unregreason__');
+    out.push('__unregreason__');  // FB260811-113153 — 컬럼 미존재 시에도 항상 노출(클릭→GAS 자동생성)
     return out;
   }
   // valid/corp: 종료사유(+메모)는 항상 빈값이라 숨김·미등록사유는 LOSS 탭 전용으로 여기서도 숨김. 2026-08-01
@@ -9880,6 +9880,13 @@ function saveChurnModal() {
       { action: 'member_active_update', rowIndex: rowIndex, col: _churnModal.endCol, value: _churnModal.endDate, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '' },
       { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + _churnModal.endCol, label: '종료일자(LOSS처리)', who: (_churnModal && _churnModal.name) || '', overlay: _ov2 }
     );
+    // FB260811-113153 이경연M — 미등록사유 자동 기록: LOSS 처리 시 선택한 종료사유를 미등록사유 칸에도 동시 저장
+    var _urcN = _capCol(_activeHeaders, '미등록사유') || '미등록사유';
+    var _ov3 = {}; _ov3[_urcN] = reason;
+    WriteBuffer.enqueue(
+      { action: 'member_active_update', rowIndex: rowIndex, col: _urcN, value: reason, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '' },
+      { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:미등록사유', label: '미등록사유(LOSS처리 자동)', who: (_churnModal && _churnModal.name) || '', overlay: _ov3 }
+    );
     _activeRows = (_activeRows || []).filter(function(x){ return x.rowIndex != rowIndex; });
     _activeCacheSave('valid', _activeHeaders, _activeRows);
     _activeRender(_activeRows);
@@ -10323,11 +10330,12 @@ function saveLossReasonModal() {
   var saveBtn = document.getElementById('lrSaveBtn'); saveBtn.disabled = true;
   var _isLesson = (_lossModal.mode === 'lesson');
   var _isActiveMember = (_lossModal.mode === 'activemember');   // FB260807-121152 — 미등록사유 직접 편집
-  var _amOverlay = {}; if (_lossModal.col) _amOverlay[_lossModal.col] = reason;
+  var _amCol = _lossModal.col || '미등록사유';  // FB260811-113153 — 컬럼 미존재 시 GAS 자동생성용 폴백
+  var _amOverlay = {}; _amOverlay[_amCol] = reason;
   var _payload = _isLesson
     ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _lossModal.gid, lossReason: reason }
     : _isActiveMember
-    ? { action: 'member_active_update', rowIndex: rowIndex, col: _lossModal.col, value: reason, keyPhone: keyPhone, rowKey: rowKey }
+    ? { action: 'member_active_update', rowIndex: rowIndex, col: _amCol, value: reason, keyPhone: keyPhone, rowKey: rowKey }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, lossReason: reason };
   if (_lossModal.pendingStatusSave) { _payload.status = 'LOSS'; }
   var _t = _isLesson ? _lossModal.t : null;
