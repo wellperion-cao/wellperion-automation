@@ -83,6 +83,12 @@ def build_ship(args, queue):
     nick = ROLES[role]
     nos = [x.get("ship_no") or 0 for x in queue if isinstance(x, dict)]
     ship_no = (max(nos) + 1) if nos else 1
+    # 이미 쓰는 번호면 비켜 간다. max+1 만으로는 보관함에서 되살린 배·다른 경로가 복사해 넣은
+    # 번호와 부딪힐 수 있다 — 2026-08-11 실측: 배39(진행중)와 배535(대기)가 같은 9640 을 써서
+    # 상태줄이 진행중 자리에 대기 배를 찍었고, GM 이 "535 진행 중이야?"라고 되물었다.
+    used = {x.get("ship_no") for x in queue if isinstance(x, dict)}
+    while ship_no in used:
+        ship_no += 1
     # 배10012(2단계) — 화면표시 전용 짧은 번호. ship_no는 절대 안 건드림(내부 키·조인은
     # 여전히 ship_no). 재사용 방지 로직은 assign_short_no.next_short_no() 단일 소스.
     short_no = next_short_no(queue)
