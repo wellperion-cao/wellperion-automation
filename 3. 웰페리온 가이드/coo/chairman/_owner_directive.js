@@ -47,6 +47,11 @@
   function isReported(content, markPrefix) {
     return new RegExp('\\[' + markPrefix + ' \\d{4}-\\d{2}-\\d{2}\\]').test(String(content || ''));
   }
+  // 완료 배지에 쓸 날짜 — 위 표식([마크 YYYY-MM-DD])에서 날짜만 뽑는다(회장님 쪽 chDate()와 형식 통일, GM 지적 2026-08-10).
+  function reportedDate(content, markPrefix) {
+    var m = new RegExp('\\[' + markPrefix + ' (\\d{4}-\\d{2}-\\d{2})\\]').exec(String(content || ''));
+    return m ? m[1] : '';
+  }
 
   // 업무&결재 SSOT(action=todo_list) — 월간운영계획.html readWorkApproval() 과 동일 조회 + AI배 제외.
   function readWorkApproval() {
@@ -169,7 +174,8 @@
         note: String(r['보류사유'] || '').trim(),
         content: stripTags(content),
         rawContent: content,
-        reported: isReported(content, cfg.markPrefix)
+        reported: isReported(content, cfg.markPrefix),
+        reportedAt: reportedDate(content, cfg.markPrefix)
       };
     }
 
@@ -187,10 +193,8 @@
       var need = _items.filter(function (it) { return !it.reported; });
       var done = _items.filter(function (it) { return it.reported; });
       elCount.textContent = '보고 필요 ' + need.length + '건 · 보고 완료 ' + done.length + '건';
-      // 「보고 대기」 소제목 바로 아래 붙는 카운트라 대기 건수만 보인다 — 완료 건수는 아래
-      // 「보고 완료」접힘에 이미 있다(GM 지적 2026-08-08 "보고대기 옆에 다른 맥락" — 대기 표식
-      // 아래에 완료 수까지 섞여 있어 헷갈렸다). repbar의 owner-count(위 줄)는 대기+완료 상세를 그대로 유지.
-      elGrpCnt.textContent = need.length + '건';
+      // 소제목 옆 카운트 — 대기·완료 둘 다 보인다(GM 지시 2026-08-10, 대기·완료 한 표 통합에 맞춰 통일).
+      elGrpCnt.textContent = '대기 ' + need.length + '건 · 완료 ' + done.length + '건';
       // 대표님 보고건이 0건이어도 회장님 보고건 현황만으로 보낼 수 있게 열어 둔다(둘 다 0일 때만 잠금).
       elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && chairmanPending().length);
 
@@ -203,7 +207,7 @@
       elGrid.innerHTML = _items.map(function (it, i) {
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
         var actionHtml = it.reported
-          ? '<span class="done-badge">✓ 보고 완료</span>'
+          ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         return (
           '<div class="item">' +
@@ -223,14 +227,15 @@
       }).join('');
 
       // 회장님 표(chRows)와 같은 4열(번호·제목+카테고리·상태/일정·액션)로 통일(GM 지적 2026-08-10).
-      elSum.innerHTML = _items.map(function (it, i) {
+      // 대기 건이 위, 완료 건이 아래로 오도록 정렬한다(GM 지시 2026-08-10 — 대기·완료 한 표 통합).
+      elSum.innerHTML = need.concat(done).map(function (it, i) {
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
         var noteFull = it.note || '';
         var noteShort = noteFull.length > 12 ? (noteFull.slice(0, 12) + '…') : noteFull;
         var statusHtml = esc(it.status || '—') + ' · ' + esc(it.schedule) +
           (it.status === '보류' && noteFull ? ' <span class="cat" title="' + esc(noteFull) + '">(' + esc(noteShort) + ')</span>' : '');
         var actionHtml = it.reported
-          ? '<span class="done-badge">✓ 보고 완료</span>'
+          ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
           (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td><td>' + statusHtml + '</td>' +
@@ -294,7 +299,6 @@
     // 그 파일을 안 실은 페이지에는 요소 자체가 없어 그냥 건너뛴다.
     var elChCnt = document.getElementById('chairman-grp-cnt');
     var elChSum = document.getElementById('chairman-sum-body');
-    var elChDoneSum = document.getElementById('chairman-done-sum-body');
 
     // 자료 링크(docs) — 결재건·시안·A3 정리본이 실재하는 항목만 제목 옆에 그린다(2026-08-06 GM 지시).
     // 클래스는 doc-link 그대로 재사용(GM업무.html .item .doc-link 스타일과 동일 클래스 — 새 클래스 없음).
@@ -305,15 +309,26 @@
       }).join('');
     }
 
-    function chRows(list, isDone) {
+    // 관련 GM 직접 업무로 연결(2026-08-11 GM 지시 "스토리가 이어지는 맥락으로") — it.link 있는 건만
+    // GM업무.html #gm-<목표id> 카드로 바로 간다. 억지 연결 금지라 정본(_chairman_items.js)에 실재하는
+    // 건만 필드를 들고 있다 — 여기서는 있으면 그리고 없으면 건너뛴다.
+    function chLink(it) {
+      if (!it.link) return '';
+      return ' <a class="doc-link" href="' + esc(it.link.href) + '" target="_blank" rel="noopener">🔗 ' + esc(it.link.label) + '</a>';
+    }
+
+    // startNo — 대기·완료를 한 표에 이어붙일 때(GM 지시 2026-08-10) 번호가 1부터 다시 시작하지 않게.
+    function chRows(list, isDone, startNo) {
+      var base = startNo || 0;
       return list.map(function (it, i) {
-        var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
+        var n = base + i + 1;
+        var no = String(n).length < 2 ? '0' + n : String(n);
         var act = isDone
-          ? '<span class="done-badge">✓ ' + esc(chDate(it)) + ' 보고</span>'
+          ? '<span class="done-badge">✅ 보고완료 ' + esc(chDate(it)) + '</span>'
           : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + '</td><td>' + esc(it.when || '일정 미정') + '</td>' +
+          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') + '</td>' +
           '<td class="rpt-actions">' + act + '</td></tr>';
       }).join('');
     }
@@ -321,10 +336,11 @@
     function renderChairman() {
       if (!elChSum) return;
       var pend = chairmanPending(), done = chairmanDone();
-      // 🤵 대표님 줄(owner-grp-cnt)과 같은 형식으로 통일 — 완료 수는 아래 「보고 완료」 접힘에 있다.
-      if (elChCnt) elChCnt.textContent = pend.length + '건';
-      elChSum.innerHTML = pend.length ? chRows(pend, false) : '<tr><td colspan="3">보고 대기 중인 회장님 보고건이 없습니다.</td></tr>';
-      if (elChDoneSum) elChDoneSum.innerHTML = done.length ? chRows(done, true) : '';
+      // 🤵 대표님 줄(owner-grp-cnt)과 같은 형식으로 통일(GM 지시 2026-08-10) — 대기·완료 둘 다 보인다.
+      if (elChCnt) elChCnt.textContent = '대기 ' + pend.length + '건 · 완료 ' + done.length + '건';
+      // 대기 건이 위, 완료 건이 아래로 오도록 한 표에 합친다(GM 지시 2026-08-10) — 대기 0건이어도
+      // 빈 안내문 대신 완료 행이 그대로 보인다.
+      elChSum.innerHTML = chRows(pend, false, 0) + chRows(done, true, pend.length);
       // 대표님 칸과 같은 규칙 — 양쪽 다 보고 대기 0건이면 문안 복사 버튼을 잠근다.
       if (elBulkBtn) {
         var needOwner = (_items || []).filter(function (it) { return !it.reported; }).length;
