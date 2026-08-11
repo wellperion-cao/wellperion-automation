@@ -2590,6 +2590,15 @@ select, select option{ color:var(--text); background-color:var(--paper); }
       <input type="date" id="rvEndDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
       <div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5">재등록하신 회원의 새 유효기간을 넣으면 멤버십 회원 명단으로 돌아갑니다.</div>
     </div>
+    <div id="rvRegDateRow" style="margin-top:10px">
+      <div class="consult-field-label">등록일자 (계약일)</div>
+      <input type="date" id="rvRegDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+    </div>
+    <div id="rvStartDateRow" style="margin-top:10px">
+      <div class="consult-field-label">시작일자 (이용 시작)</div>
+      <input type="date" id="rvStartDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+    </div>
+    <div id="rvSeqInfo" style="margin-top:10px;font-size:11.5px;color:var(--dim)"></div>
 
     <div class="consult-actions">
       <button class="consult-btn-cancel" onclick="closeReactivateModal()">취소</button>
@@ -9948,6 +9957,17 @@ function openReactivateModal(rowIndex) {
   var cur = String(r[endCol] || '').trim();
   var dm = cur.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
   document.getElementById('rvEndDate').value = dm ? (dm[1] + '-' + ('0' + dm[2]).slice(-2) + '-' + ('0' + dm[3]).slice(-2)) : '';
+  var regDateCol = _capCol(_activeHeaders, '등록일자');
+  var startDateCol = _capCol(_activeHeaders, '시작일자');
+  var seqCol = _capCol(_activeHeaders, '등록회차');
+  var lossDateCol = _capCol(_activeHeaders, 'LOSS일자');
+  _reactivateModal.regDateCol = regDateCol; _reactivateModal.startDateCol = startDateCol;
+  _reactivateModal.seqCol = seqCol; _reactivateModal.lossDateCol = lossDateCol;
+  var _rv_today = (function(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); })();
+  var _rvRd = document.getElementById('rvRegDate'); if (_rvRd) _rvRd.value = _rv_today;
+  var _rvSd = document.getElementById('rvStartDate'); if (_rvSd) _rvSd.value = _rv_today;
+  var _rvSI = document.getElementById('rvSeqInfo');
+  if (_rvSI) { var _curSeq = seqCol ? (parseInt(r[seqCol]) || 0) : 0; _rvSI.textContent = '등록회차 ' + _curSeq + ' → ' + (_curSeq + 1) + ' (저장 시 자동 증가)'; }
   var _ts = document.getElementById('rvType'); if (_ts) { _ts.value = '재등록'; _rvTypeChange(); }
   document.getElementById('reactivateOverlay').classList.add('open');
 }
@@ -9957,8 +9977,9 @@ function closeReactivateModal() {
 }
 function _rvTypeChange() {
   var t = (document.getElementById('rvType') || {}).value;
-  var row = document.getElementById('rvEndDateRow');
-  if (row) row.style.display = (t === '환불') ? 'none' : '';
+  ['rvEndDateRow', 'rvRegDateRow', 'rvStartDateRow', 'rvSeqInfo'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.style.display = (t === '환불') ? 'none' : '';
+  });
 }
 function saveReactivateModal() {
   if (!_reactivateModal) return;
@@ -9993,7 +10014,13 @@ function saveReactivateModal() {
   var val = document.getElementById('rvEndDate').value;
   if (!val) { showToast('새 유효기간을 입력해 주세요', 'err'); saveBtn.disabled = false; return; }
   var fields = {}; fields[m.endCol] = val; fields[m.reCol] = REACTIVATE_RECLASS_VALUE;
-  var _ov = {}; _ov[m.endCol] = val; _ov[m.reCol] = REACTIVATE_RECLASS_VALUE;
+  // 등록일자·시작일자·등록회차·LOSS일자 갱신 (FB260811-184804 재등록 시 나머지 칸 미갱신 수정)
+  var _rvRd2 = document.getElementById('rvRegDate'), _rvSd2 = document.getElementById('rvStartDate');
+  if (m.regDateCol && _rvRd2 && _rvRd2.value) fields[m.regDateCol] = _rvRd2.value;
+  if (m.startDateCol && _rvSd2 && _rvSd2.value) fields[m.startDateCol] = _rvSd2.value;
+  if (m.seqCol) { var _reR2 = _churnFindMember(rowIndex); fields[m.seqCol] = String((_reR2 ? (parseInt(_reR2[m.seqCol]) || 0) : 0) + 1); }
+  if (m.lossDateCol) fields[m.lossDateCol] = '';
+  var _ov = Object.assign({}, fields);
   [(_activeScope === 'ended' ? _activeRows : null), _endedRowsBg].forEach(function(arr){
     if (!arr) return;
     var idx = arr.findIndex(function(x){ return x.rowIndex == rowIndex; });
