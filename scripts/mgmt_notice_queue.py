@@ -37,15 +37,27 @@ def _save(data: dict) -> None:
     QUEUE_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def add(text: str, category: str = "notice", today: str | None = None) -> None:
+def add(text: str, category: str = "notice", today: str | None = None,
+        gm_task_id: str | None = None, gm_task_title: str | None = None) -> None:
     """알림성 한 줄 추가. category="notice"만 받는다 — 답요구 건·3-트리거 긴급건을
-    실수로 여기 태우는 사고를 막는다(그런 건 즉시 개별 발송이 원칙)."""
+    실수로 여기 태우는 사고를 막는다(그런 건 즉시 개별 발송이 원칙).
+
+    gm_task_id: GM업무 화면(3. 웰페리온 가이드/coo/chairman/GM업무.html) 항목을 인용할 때
+    쓰는 objective id(예 "2026-08-18", status/monthly_ops_plan.json 정본). 화면에 보이는
+    번호(1,2,3…)는 _gm_direct_tasks.js extract()가 렌더 시점에 배열 인덱스로 매겨 저장소엔
+    없다 — 그 번호를 저장소에서 재계산하는 별도 판정 로직을 새로 만들지 않고(약속 L01:
+    판정 함수 단일 출처) id를 대신 쓴다. gm_task_title을 같이 주면 본문에 제목도 실어
+    id만 보고는 못 찾는 사고를 막는다(배537 팀리드 결정). 어떤 항목을 태그할지는 호출측
+    (사람)이 고른다 — 여기서 자동 매칭하지 않는다."""
     if category != "notice":
         raise ValueError(f"mgmt_notice_queue.add는 category='notice'만 받는다 — 받음: {category!r} "
                           "(답요구·긴급건은 큐에 넣지 말고 즉시 개별 발송할 것)")
     text = (text or "").strip()
     if not text:
         return
+    if gm_task_id:
+        title_part = f"{gm_task_title.strip()} — " if gm_task_title else ""
+        text = f"[GM업무 {gm_task_id}] {title_part}{text}"
     today = today or _today()
     data = _load()
     if data.get("date") != today:
@@ -125,6 +137,13 @@ if __name__ == "__main__":
             assert lines[1:] == ["A건 — <link>", "B건 — <link>"], f"본문 불일치: {lines[1:]}"
             assert "" not in lines, "빈 줄 포함됨"
             assert build_digest_text([]) == "", "0건이면 빈 문자열이어야 함(발송 스킵 신호)"
+
+            # ⑤-1 GM업무 항목 태그 — id만 있으면 "[GM업무 <id>] <text>", title도 있으면
+            #    "[GM업무 <id>] <title> — <text>". 기존 호출부(태그 없음)는 그대로 동작(회귀 0).
+            add("승인 상태 알려주세요", today="2026-08-07", gm_task_id="2026-08-18")
+            assert pop_today(today="2026-08-07") == ["[GM업무 2026-08-18] 승인 상태 알려주세요"], "id만 태그 형식 불일치"
+            add("진행 상황 알려주세요", today="2026-08-07", gm_task_id="2026-08-18", gm_task_title="리셉션 상담실 리뉴얼")
+            assert pop_today(today="2026-08-07") == ["[GM업무 2026-08-18] 리셉션 상담실 리뉴얼 — 진행 상황 알려주세요"], "id+title 태그 형식 불일치"
 
             # ⑤ 평일/주말·공휴일 시각 판정 — daily_scheduler.run_daily_digest 가 이미 쓰는
             #    close_days.is_closed 기반 공식(_is_rest_day)을 그대로 재확인
