@@ -2653,6 +2653,7 @@ select, select option{ color:var(--text); background-color:var(--paper); }
       <div><div class="consult-field-label" style="margin-top:0">등록 분류</div>
         <select id="rpRegClass" class="rp-in">
           <option value="신규">신규</option><option value="재등록">재등록</option>
+          <option value="재등록대기">재등록대기</option>
           <option value="양수">양수</option><option value="양도">양도</option>
         </select></div>
       <div><div class="consult-field-label" style="margin-top:0">나이</div>
@@ -6954,7 +6955,8 @@ function _isFutureStart(row) {   // 이름은 그대로 둔다(호출부 6곳) �
   }
   var keys = _memClassKeys(row);   // 폴백(대기 전용 칸 아직 없음) — 분류 칸 문자열로 판정(구버전)
   for (var i = 0; i < keys.length; i++) {
-    if (String(row[keys[i]] || '').trim() === '대기') return true;
+    var _cv = String(row[keys[i]] || '').trim();
+    if (_cv === '대기' || _cv === '재등록대기') return true;
   }
   return false;
 }
