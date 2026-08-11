@@ -147,6 +147,10 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
       <input type="text" id="f_videoLink" placeholder="드라이브 등 공유 링크 (영상이 50MB를 넘을 때만)" autocomplete="off">
     </div>
     <div class="field">
+      <label class="fl" for="f_contact">연락받을 곳 <span class="opt">(선택 · 카톡 ID 또는 전화번호)</span></label>
+      <input type="text" id="f_contact" placeholder="제작/보류/폐기 결과를 알려드릴 때 씁니다" autocomplete="off">
+    </div>
+    <div class="field">
       <label class="consent" for="f_agree">
         <input type="checkbox" id="f_agree">
         <span>제출한 사진·영상이 웰페리온 공식 채널(@wellperion 등)에 게시되는 것에 동의합니다.</span>
@@ -262,7 +266,8 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
         // 한줄소개·회원이얻는것 입력칸은 폼에서 뺐다(GM 지시 2026-08-04 — "사진만 필수로 받자").
         // 시트 헤더·GAS 파서는 그대로라 빈 값으로 계속 보낸다(컬럼 어긋남 방지, 새 계약 없음).
         intro: '', benefit: '',
-        agree: agree, photos: photos, video: video, videoLink: $('f_videoLink').value.trim()
+        agree: agree, photos: photos, video: video, videoLink: $('f_videoLink').value.trim(),
+        contact: $('f_contact').value.trim()
       };
 
       var r = await fetch(GAS_PROD, {
@@ -290,6 +295,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
     $('f_videoLink').value=''; $('f_agree').checked=false;
     $('f_photos').value=''; $('f_video').value='';
     $('f_photosList').innerHTML=''; $('f_videoList').innerHTML='';
+    $('f_contact').value='';
   }
 })();
 </script>

@@ -23,7 +23,8 @@
 //   { name, team, intro, benefit, agree,
 //     photos: [{b64, mime, fname}, ...],           // 0~5장
 //     video: {b64, mime, fname} | null,             // 50MB 이하만 base64 첨부(폼 단에서 가드)
-//     videoLink: "" }                                // video 없을 때 대용량 링크 폴백
+//     videoLink: "",                                // video 없을 때 대용량 링크 폴백
+//     contact: "" }                                  // 선택 · 2026-08-11 배425(연락받을 곳)
 //   응답: {ok:true, drive_folder, sheet_row} | {ok:false, err}
 //
 // 계약(doPost body, staff_feedback_photo, JSON):
@@ -42,7 +43,10 @@ var ALLOW_MIME = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1, 'video/mp4'
 // ─── 시트 헤더 계약 (2026-07-23 수리) ───
 // doPost 가 append 하는 row 배열(아래 `var row = [...]`)과 1:1 동일 순서다. 순서 변경 금지.
 //   [new Date(), d.name, d.team, d.intro, d.benefit, urls.join, vurl, folder.getUrl(), '접수']
-var INTAKE_HEADER = ['접수일시', '성함', '분류', '한줄소개', '회원이얻는것', '사진링크', '영상링크', '드라이브폴더', '상태'];
+// ★2026-08-11 배425 — '연락처'를 10번째 칸으로 추가(맨 오른쪽에만 · 기존 9칸 이동 없음).
+//   신규 시트는 이 배열대로 10칸 헤더가 바로 찍힌다. 이미 9칸 헤더가 박힌 라이브 시트는
+//   _ensureContactHeader_ 가 doPost 시점에 10번째 칸을 동적으로 붙인다(첨부사진 칸과 동형 패턴).
+var INTAKE_HEADER = ['접수일시', '성함', '분류', '한줄소개', '회원이얻는것', '사진링크', '영상링크', '드라이브폴더', '상태', '연락처'];
 
 // ─── 접수 탭 지정 (2026-07-24 수리 · 배9888) ───
 // ★고친 이유: 종전 getSheets()[0] 은 '맨 앞 탭'을 잡는다. INTAKE_SHEET_ID 는 2021년부터
@@ -94,6 +98,18 @@ function _ensureIntakeHeader_(sh) {
   return true;
 }
 
+// '연락처' 헤더가 있는 칸 번호를 돌려준다. 없으면 맨 오른쪽에 새로 붙인다(기존 칸 이동 없음,
+// 첨부사진 칸 추가 방식과 동형 · 배425).
+function _ensureContactHeader_(sh) {
+  var lastCol = sh.getLastColumn();
+  if (lastCol < 1) { sh.getRange(1, 1).setValue('연락처'); return 1; }
+  var hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+  for (var i = 0; i < hdr.length; i++) { if (String(hdr[i]).trim() === '연락처') return i + 1; }
+  var col = lastCol + 1;
+  sh.getRange(1, col).setValue('연락처');
+  return col;
+}
+
 // ─── 파일 저장 (base64 → Drive, 공개 링크) — VOC _vUploadPhoto 패턴 복제 ───
 function _saveFile_(b64, mime, fname, folder) {
   if (!ALLOW_MIME[mime]) throw new Error('허용되지 않은 형식: ' + mime);
@@ -123,7 +139,12 @@ function doPost(e) {
     var row = [new Date(), d.name, d.team, d.intro || '', d.benefit || '', urls.join('\n'), vurl, folder.getUrl(), '접수'];
     try { _ensureIntakeHeader_(sh); } catch (hErr) { }             // 헤더 보장 실패해도 접수 저장은 계속
     sh.appendRow(row);
-    _notifyTelegram('🎬 새 강사 콘텐츠 접수: ' + d.name + ' / ' + d.team + ' (사진 ' + urls.length + '장' + (vurl ? '·영상' : '') + ')');
+    // ★2026-08-11 배425 — 연락처는 10번째 칸에 별도로 쓴다(기존 9칸 append 순서 불변).
+    //   라이브 시트에 아직 없으면 이 시점에 헤더를 붙인다(신규 배포 없이도 다음 제출부터 반영).
+    if (d.contact) {
+      try { var cCol = _ensureContactHeader_(sh); sh.getRange(sh.getLastRow(), cCol).setValue(d.contact); } catch (cErr) { }
+    }
+    _notifyTelegram('🎬 새 강사 콘텐츠 접수: ' + d.name + ' / ' + d.team + ' (사진 ' + urls.length + '장' + (vurl ? '·영상' : '') + (d.contact ? '·연락처 O' : '') + ')');
     return _json({ ok: true, drive_folder: folder.getUrl(), sheet_row: sh.getLastRow() });
   } catch (err) { return _json({ ok: false, err: String(err) }); }
 }
