@@ -42,6 +42,30 @@
     var m = /^\d{4}-0?(\d{1,2})-0?(\d{1,2})/.exec(String(s || '').trim());
     return m ? (m[1] + '/' + m[2]) : '';
   }
+  // 진척률(%) — 원천(회장님 when 문구·대표님 SSOT 상태값)에 % 칸이 없어, 이미 화면에 보이는 상태
+  // 문구를 단계로 읽어 산출한다(GM 확정 2026-08-11 "약간의 색깔 및 %로" — 웰리 방침: 지어내지 않고
+  // 단계표 하나로 근거를 남긴다). 여기 표 하나만 고치면 회장님·대표님 전부 같이 바뀐다.
+  // 순서=우선순위. "조사 착수"처럼 여러 단계 단어가 겹치면 더 구체적인(낮은) 단계가 먼저 잡히게
+  // 100·70을 맨 앞에, 30(조사 계열)을 50(단순 "착수") 보다 앞에 둔다 — GM 확정 표의 "조사 착수"=30% 예시와 일치.
+  var PCT_STAGES = [
+    { pct: 100, re: /완료|보고완료/ },
+    { pct: 70, re: /결재\s*대기|승인\s*대기/ },
+    { pct: 30, re: /조사|검토|현장\s*확인|통화\s*완료/ },
+    { pct: 50, re: /진행\s*중|착수/ },
+    { pct: 10, re: /예정|다음\s*주/ }
+  ];
+  function stagePct(text, isDone) {
+    if (isDone) return 100; // 화면에 "✅ 보고완료" 표기가 곧 완료 단계(위 표의 완료 항목과 동치).
+    var s = String(text || '');
+    for (var i = 0; i < PCT_STAGES.length; i++) { if (PCT_STAGES[i].re.test(s)) return PCT_STAGES[i].pct; }
+    return null; // 어느 단계인지 못 가리면 비운다(지어내지 않음).
+  }
+  // GM 직접 카드(GM업무.html)가 이미 쓰는 .pct/.pbar 재사용 — 새 CSS 없음. 표 칸 안이라 폭만 인라인으로 줄인다.
+  function pctBadge(pct) {
+    if (pct === null) return '';
+    return ' <span class="pct" style="font-size:11px;">' + pct + '%</span>' +
+      '<div class="pbar" style="width:44px;height:4px;display:inline-block;vertical-align:middle;margin:0 0 0 5px;"><i style="width:' + pct + '%"></i></div>';
+  }
   // 내용칸 꼬리표(분류용 "대표님 보고건(...)"·보고완료로 표시할 때 붙이는 "[…보고완료 날짜]") 를 화면·문안에서
   // 걷어낸 본문. 붙는 순서가 항상 "…원문 → 대표님 보고건(...) → [보고완료 …]"라 끝에서부터 역순으로 떼어낸다
   // (먼저 [보고완료] 를 떼야 그 아래 있던 대표님 보고건(...) 이 다시 맨 끝으로 나와 두 번째 규칙에 걸린다).
@@ -239,11 +263,12 @@
         var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
         var noteFull = it.note || '';
         var noteShort = noteFull.length > 12 ? (noteFull.slice(0, 12) + '…') : noteFull;
-        // 진행 상태 색으로 직관화(GM 지시 2026-08-11) — 숫자 진척률은 이 목록에 없어 지어내지 않는다.
-        // GM업무.html에 이미 있는 .st 색 클래스(GM 직접 카드와 동일)를 재사용 — 새 CSS 없음.
+        // 진행 상태 색+% 직관화(GM 확정 2026-08-11) — GM업무.html에 이미 있는 .st/.pct/.pbar
+        // 클래스(GM 직접 카드와 동일)를 재사용, 새 CSS 없음. %는 stagePct() 단계표 산출값(지어낸 값 아님).
         var stCls = it.status === '진행중' ? 'on' : (it.status === '보류' ? 'carry' : 'plan');
         var statusHtml = '<span class="st ' + stCls + '">' + esc(it.status || '—') + '</span> · ' + esc(it.schedule) +
-          (it.status === '보류' && noteFull ? ' <span class="cat" title="' + esc(noteFull) + '">(' + esc(noteShort) + ')</span>' : '');
+          (it.status === '보류' && noteFull ? ' <span class="cat" title="' + esc(noteFull) + '">(' + esc(noteShort) + ')</span>' : '') +
+          pctBadge(stagePct(it.status, it.reported));
         var actionHtml = it.reported
           ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
@@ -342,7 +367,8 @@
           : '<button type="button" class="ebtn save" disabled title="서버 저장 연동 점검 중(GitHub 인증 만료) — 지금은 저장되지 않습니다. GM께 알려 관리자 확인 필요">저장 일시중단</button>';
         // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') + '</td>' +
+          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') +
+          pctBadge(stagePct(it.when, isDone)) + '</td>' +
           '<td class="rpt-actions">' + act + '</td></tr>';
       }).join('');
     }
