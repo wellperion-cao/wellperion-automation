@@ -14,10 +14,10 @@ ops_daily_digest.py가 만든 _pending_digest.json 메시지를 카톡 ★운영
 발송=kakao_report_sender.py --message --only-room '★ 운영부' 재사용(밤 점검공유와 동일 경로).
 ★개인정보: 다이제스트 원문은 gitignore된 아카이브에만. 이 스크립트·산출물 커밋 안 함.
 
-[2026-08-05 추가] 같은 실행에서 '사람이 처리할 배 전달'도 한다(send_relays) —
-AI가 실행하지 않는 시우·시로·시뽀의 배를 담당자 이름과 함께 해당 방에 넘긴다.
-시우→★운영부(최준용M) · 시로·시뽀→★중간관리자(나우열M). 목록이 지난번과 같으면
-보내지 않는다. 자세한 이유는 아래 '사람에게 넘기는 배 전달' 주석 블록 참조.
+[2026-08-05 추가 · 2026-08-11 이관] '사람이 처리할 배 전달'(각 배 staff_message)은
+이제 build_mgr_daily_brief()의 '열린 요청' 절이 싣는다(★중간관리자 통합본, 배238·544).
+델타 비교·RELAY_SHOW_N=5 상한은 그대로 재사용 — 새로 생기거나 바뀐 것만, 목록이
+지난번과 같으면 그 절은 빈다. 자세한 이유는 아래 '사람에게 넘기는 배 전달' 주석 블록 참조.
 
 [2026-08-06 추가] 업무 시트(S3)에서 상태가 '완료'로 바뀐 운영부 담당 건을 다이제스트
 본문 끝에 "✅ 완료된 일" 절로 붙인다(GM 지시). ★한계: 카톡 발송은 이 PC 예약 시각에만
@@ -293,6 +293,14 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 #
 # 대화 정리가 없으면(원문 미수집 등) 「어제 완료」만 낸다. 낼 게 없으면 빈 문자열 = 발송 안 함
 # (GM 지시: 억지로 채우지 않는다 — 잘못된 것을 보내느니 안 보낸다).
+#
+# ★2026-08-11 웰리 — 세 번째 절 「열린 요청」 추가(배238·544). send_ops_digest 의
+# 옛 사람전달(send_relays)이 2026-08-08 GM 지시로 꺼진 뒤, 각 배의 staff_message(예:
+# "법정·정기점검 15건 실시일 확인해 주세요")가 3일째 어떤 방에도 안 나가고 있었다.
+# 새 스냅샷·새 발신기를 만들지 않는다(약속 L21) — 이미 있던 relay_routes/
+# build_relay_message(델타 비교·RELAY_SHOW_N=5 상한 포함)를 그대로 불러 절 하나로 붙인다.
+# 상태 저장은 여기서 안 한다(미리보기가 상태를 건드리면 안 됨) — 실제 발송 성공 후
+# main()이 relay_current를 저장한다.
 # ══════════════════════════════════════════════════════════════════════════
 MGR_DAILY_SHOW_N = 3
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
@@ -313,11 +321,12 @@ def _mgr_conversation_message(target_date: str) -> str:
     return (data.get("message") or "").strip()
 
 
-def build_mgr_daily_brief(rows: list, target_date: str) -> str:
+def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     """★중간관리자용 '어제 정리'. rows=업무 시트 전체 행(_fetch_todo_rows()).
 
     미해결건은 담지 않는다 — 별도 발신이 담당한다(2026-08-11 GM 지적, 위 주석 참조).
-    """
+    반환 (message, relay_current) — relay_current 는 '열린 요청' 절의 이번 회차 스냅샷.
+    빈 값이라도 항상 돌려준다(호출부가 상태 저장 여부를 스스로 결정)."""
     convo = _mgr_conversation_message(target_date)
     parts = [convo] if convo else []
 
@@ -333,7 +342,14 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> str:
             _, m, d = target_date.split("-")
             parts.append(f"🧭 {int(m)}/{int(d)} 어제 정리 — 판단·배정 필요한 것만\n{done_line}")
 
-    return "\n\n".join(parts)
+    relay_state = _relay_state()
+    _migrate_relay_state(relay_state)
+    room, contacts = relay_routes()[0]
+    open_msg, relay_current = build_relay_message(contacts, relay_state.get(room, {}))
+    if open_msg:
+        parts.append(open_msg)
+
+    return "\n\n".join(parts), relay_current
 
 
 def _mgr_already_sent(target_date: str) -> bool:
@@ -359,7 +375,7 @@ def preview_mgr_brief() -> int:
     if not target_date:
         from datetime import timedelta as _td
         target_date = (datetime.now() - _td(days=1)).strftime("%Y-%m-%d")
-    message = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    message, _relay_current = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
     print(f"\n===== {WEEKLY_ROOM} 결정거리 요약 ({target_date}) =====")
     print(message or "(보낼 내용 0건 — 발송 안 함)")
     return 0
@@ -404,13 +420,6 @@ _RELAY_WEIGHT = {"🛳️크루즈": 0, "⛴️여객선": 1, "⛵돛단배": 2}
 # ★중간관리자 방 한 곳으로 보낸다. 개인 이름으로 라우팅하지 않는다(방으로 라우팅).
 # ★운영부 방에는 기존 아침 다이제스트(공유 성격)가 그대로 나간다 — 그건 손대지 않았다.
 RELAY_ROOM = "★중간관리자"
-
-# 실무진 방 발신 전 GM 승인 단계 — status/ops_digest_send.json 의 키 하나로 켜고 끈다.
-# GM 결정 2026-08-07: "초반에만 이렇게 확인을 하고 나중에는 자율화 할거."
-# ★자율로 되돌릴 때는 이 키를 지운다(꺼둔 채 두면 죽은 코드가 된다 · 약속 L21).
-RELAY_APPROVAL_KEY = "relay_approval_required"
-GM_REPORT_ROOM_ID = 8254867551   # 업무보고방(@namuki_report_bot) — 승인 초안이 가는 곳
-ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 
 def log(msg: str) -> None:
@@ -604,8 +613,15 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
         for s in new_ships[:RELAY_SHOW_N]:
             tail = "" if solo else f" · {contacts[s['clevel']]}"
             lines.append(f" • {str(s['staff_message']).strip()}{tail}")
-        if len(new_ships) > RELAY_SHOW_N:
-            lines.append(f" • 외 {len(new_ships) - RELAY_SHOW_N}건")
+        overflow_new = new_ships[RELAY_SHOW_N:]
+        if overflow_new:
+            lines.append(f" • 외 {len(overflow_new)}건")
+            log(f"[relay] 상한({RELAY_SHOW_N}건) 초과 — {len(overflow_new)}건 다음 회차로 이월")
+            # ★한 번도 안 보여준 건을 '봤다'고 스냅샷에 찍으면 다음 회차에 영영 안 나온다
+            #   (new_ships 판정이 prev_items 키 존재로만 갈리므로). 안 보여준 건은 이번
+            #   스냅샷에서 뺀다 — 다음 회차에 다시 '신규'로 잡혀 우선순위 순서대로 드러난다.
+            for s in overflow_new:
+                current.pop(_relay_key(s), None)
     if closed:
         lines.append(f"✅ 처리 완료 {len(closed)}건")
         for snap in closed[:RELAY_SHOW_N]:
@@ -647,96 +663,6 @@ def _migrate_relay_state(state: dict) -> None:
     log(f"[relay] 방 통합 — 옛 방 {len(legacy)}곳 스냅샷을 '{RELAY_ROOM}'로 승계(첫 회차 대량발신 방지)")
 
 
-def _relay_approval_required() -> bool:
-    """실무진 방 발신 전 GM 승인을 받을지 — 기존 킬스위치 파일의 키 하나(새 파일 안 만든다).
-
-    GM 결정 2026-08-07: "초반에만 이렇게 확인을 하고 나중에는 자율화 할거."
-    ★자율로 되돌릴 때는 이 키를 지우고 이 함수·초안 경로도 같이 지운다 —
-      꺼둔 채로 두면 죽은 코드가 된다(약속 L21).
-    """
-    try:
-        return bool(json.loads(KILL_SWITCH.read_text(encoding="utf-8")).get(RELAY_APPROVAL_KEY, False))
-    except Exception:
-        return False
-
-
-def _send_approval_draft(room: str, message: str) -> bool:
-    """실무진 방으로 나갈 본문을 업무보고방에 초안으로만 올린다(카톡 방엔 손 안 댐)."""
-    try:
-        from tg_outbound_log import send as _tg_send
-        env = {}
-        for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-            if "=" in line and not line.strip().startswith("#"):
-                k, v = line.split("=", 1)
-                env[k.strip()] = v.strip()
-        token = env.get("TELEGRAM_BOT_TOKEN", "")
-        if not token:
-            log("[relay] 승인 초안 발송 생략 — 봇 토큰 없음")
-            return False
-        text = (f"📝 실무진 방 발신 승인 요청 — {room}\n"
-                f"아래 그대로 나갑니다. 보내려면 답장 대신 아래 명령을 돌리라고 알려주세요.\n"
-                f"  python scripts/send_ops_digest.py --relay-approved\n"
-                f"─────────────\n{message}")
-        ok = _tg_send(token, GM_REPORT_ROOM_ID, text,
-                      source="send_ops_digest.approval_draft", timeout=15)
-        log(f"[relay] 승인 초안 업무보고방 {'발송 완료' if ok else '발송 실패'}")
-        return ok
-    except Exception as exc:
-        log(f"[relay] 승인 초안 발송 예외 — {exc}")
-        return False
-
-
-def send_relays(dry_run: bool = False, approved: bool = False) -> None:
-    """방마다 '사람이 처리할 배' 변화분 1통. 새로 생긴 것·처리 완료된 것이 없으면 안 보낸다.
-
-    같은 목록을 매일 다시 보내면 실무진이 읽기를 멈춘다 — 배가 늘거나 줄었을 때만
-    다시 뜬다. 발신 실패 시 스냅샷을 안 적으므로 다음 회차에 자동 재시도된다.
-    전달 실패가 다이제스트 발송을 막지 않는다(fail-soft)."""
-    try:
-        routes = relay_routes()
-    except Exception as exc:
-        log(f"[relay] 전달 대상 규칙 로드 실패 — 전달 생략(다이제스트는 계속): {exc}")
-        return
-
-    known = _known_rooms()
-    state = _relay_state()
-    _migrate_relay_state(state)
-    need_approval = _relay_approval_required() and not approved and not dry_run
-    changed = False
-    for room, contacts in routes:
-        if _title_key(room) not in known:
-            log(f"[relay] '{room}' 는 kakao_rooms.json 에 없는 방 — 건너뜀")
-            continue
-        message, current = build_relay_message(contacts, state.get(room, {}))
-        if not message:
-            log(f"[relay] {room} — 변화 없음, 발신 생략")
-            if current != state.get(room, {}):
-                state[room], changed = current, True
-            continue
-
-        if need_approval:
-            # 스냅샷을 갱신하지 않는다 — 승인 후 실행에서 같은 목록이 그대로 다시 잡혀야 한다.
-            _send_approval_draft(room, message)
-            log(f"[relay] {room} — GM 승인 대기(초안만 올림, 카톡 미발신)")
-            continue
-
-        cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", room]
-        if dry_run:
-            cmd.append("--dry-run")
-        log(f"[relay] {room} 전달 발송({message.count(chr(10)) + 1}줄)")
-        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
-        out = (proc.stdout or "").strip()
-        if proc.returncode == 0 and "DONE" in out:
-            if not dry_run:
-                state[room], changed = current, True
-            log(f"[relay] {room} 전달 완료")
-        else:
-            tail = out.splitlines()[-1] if out else "출력 없음"
-            log(f"[relay] {room} 전달 실패(rc={proc.returncode}) — {tail} · 다음 회차 재시도")
-    if changed:
-        _save_relay_state(state)
-
-
 def preview_relays() -> int:
     """방에 손대지 않고 본문만 렌더해 보여준다(실방 검증용 — 발신·상태기록 없음)."""
     state = _relay_state()
@@ -768,8 +694,6 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="미발송")
     ap.add_argument("--relay-preview", action="store_true",
                     help="사람 처리 배 전달 본문만 렌더(방에 손 안 댐 · 발신·지문기록 없음)")
-    ap.add_argument("--relay-approved", action="store_true",
-                    help="GM 승인 받은 회차 — 승인 대기를 건너뛰고 실무진 방으로 실제 발신")
     ap.add_argument("--mgr-preview", action="store_true",
                     help="★중간관리자 결정거리 요약 본문만 렌더(방에 손 안 댐 · 발신·지문기록 없음)")
     args = ap.parse_args()
@@ -785,21 +709,9 @@ def main() -> int:
         print("SKIPPED: 킬스위치 비활성")
         return 0
 
-    # 사람이 처리할 배 전달은 다이제스트보다 먼저·독립으로 돈다 — 어제 카톡 대화가
-    # 없어(휴관 등) 다이제스트가 안 만들어진 날에도 이 전달은 나가야 한다.
-    # ★2026-08-08 GM 지시 — 자동 전달 중단.
-    #   GM: "운영부 방에는 어제 운영부 정리 이 1건만 자동 발송. 하루 일과 정리, 사람이 처리할
-    #        업무 건은 이제 삭제해줘. 통합해서 중간관리자방에 보내는걸로 웰리한테 전달할거야."
-    #   '사람이 처리할 업무' 전달은 웰리가 만드는 ★중간관리자 통합본으로 흡수된다. 그때까지
-    #   자동으로 내보내지 않는다 — 통합 전에 두 벌이 나가면 그게 GM 이 지적한 '안 읽히는' 상태다.
-    #   ▸코드는 지우지 않는다: 통합본이 이 조립(build_relay_message·델타 비교·스냅샷)을 그대로
-    #     쓸 예정이라 웰리가 이어받는다. 손으로 확인할 땐 --relay-preview 로 본다.
-    #   ▸인계가 끝나면 이 자리와 send_relays 를 함께 지운다(꺼둔 채 두지 않는다 · 약속 L21).
-    if args.relay_approved:
-        send_relays(dry_run=args.dry_run, approved=True)
-    else:
-        log("[relay] 자동 전달 중단(GM 2026-08-08) — ★중간관리자 통합본으로 이관 중. "
-            "확인은 --relay-preview · 수동 발송은 --relay-approved")
+    # ★2026-08-08 GM 지시로 여기 있던 독립 relay 발송(send_relays)은 중단했다 — '사람이
+    # 처리할 업무' 전달은 ★중간관리자 통합본(build_mgr_daily_brief, 아래 mgr 블록)이
+    # 대신 싣는다(배238·544, 2026-08-11 웰리 배선). 이 자리엔 이제 아무것도 없다.
 
     if not PENDING.exists():
         print(f"FAILED: 대기 다이제스트 없음 — {PENDING}")
@@ -847,7 +759,7 @@ def main() -> int:
                 _save_done_state(done_current)
             mgr_target_date = str(data.get("date", ""))
             if mgr_target_date and not _mgr_already_sent(mgr_target_date):
-                mgr_msg = build_mgr_daily_brief(_fetch_todo_rows(), mgr_target_date)
+                mgr_msg, relay_current = build_mgr_daily_brief(_fetch_todo_rows(), mgr_target_date)
                 if mgr_msg:
                     mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM]
                     log(f"[mgr] 결정거리 요약 발송 → {WEEKLY_ROOM}")
@@ -855,6 +767,12 @@ def main() -> int:
                     mout = (mproc.stdout or "").strip()
                     if mproc.returncode == 0 and "DONE" in mout:
                         _mark_mgr_sent(mgr_target_date)
+                        # 열린 요청 절 스냅샷 저장 — 발송 성공 후에만(미리보기·실패 시엔 안 찍음,
+                        # 기존 relay 하트비트 RELAY_HEARTBEAT_ID 재사용, 새 파일 없음 · 약속 L21).
+                        relay_state = _relay_state()
+                        _migrate_relay_state(relay_state)
+                        relay_state[WEEKLY_ROOM] = relay_current
+                        _save_relay_state(relay_state)
                         log("[mgr] 발송 완료")
                     else:
                         log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
