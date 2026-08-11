@@ -815,7 +815,10 @@ function termWidth() {
 /** 상태줄 한 줄 조립 — 웰리 결정 D안. 폭이 모자라면 **뒤에서부터** 접는다:
  *  전사(제목→번호→+N) → 오늘🏁 → 대기 번호목록(→개수) → 🆕 → 마지막까지 내 배(①②)만. */
 function buildLine(cwd, role, transcript, sessionId) {
-  const W = termWidth() - 1;                    // 마지막 칸 자동줄바꿈 여유 1칸
+  // ★여유 1칸→2칸(GM 2026-08-11 "2번째 줄이 조금 짤려서 보이긴 하는데" — 1칸으로는 실측 경계에서
+  //   한 칸 모자랐다). CONOUT$ 폭 실측이 창 프레임·마진 오차로 1~2칸 어긋날 수 있어 여유를 더 둔다.
+  const W = termWidth() - 2;
+
   const q = loadQueue(cwd);
   const s = q ? myShips(q, cwd, role) : null;
   const lv = liveAction(transcript);            // ★지금 하는 일 — 보고와 무관하게 항상 움직이는 신호
@@ -1081,23 +1084,53 @@ function buildRoleLines(cwd, role) {
     //   비어 있는 상태는 줄 자체를 안 낸다 — 줄 수를 더 줄이는 쪽이 항상 안전하다.
     const q = loadQueue(cwd);
     const run = [], wait = [];
+    // ★내 것(이 창의 role)을 맨 앞에 둔다 (GM 2026-08-11 "시토CLI에서 웰리CLI 작업건을 더
+    //   쉽게 알 수 있어" — 활동순 정렬(위 acts.sort)이 남을 앞세우면 정작 이 창 주인 줄이
+    //   뒤로 밀려 폭 밖으로 잘려 나갔다). 활동순 정렬은 유지하되(위임중·최근 우선은 여전히
+    //   유용) 내 역할만 각 줄 맨 앞으로 옮긴다 — 아래에서 절대 잘리지 않는 자리다.
+    let ownRun = null, ownWait = null;
     for (const a of acts) {
       const nick = NICK[a.role];
+      const mine = a.role === role;
       if (a.deleg || (a.age != null && a.age < PAUSE_MS)) {
-        run.push(a.event ? `${nick} ${shortTitle(a.event, 12)}` : nick);
+        const item = a.event ? `${nick} ${shortTitle(a.event, 12)}` : nick;
+        if (mine) ownRun = item; else run.push(item);
       } else if (a.age != null && isToday(a.age)) {
         const nx = q ? nextShipOf(waitingOf(q, a.role)) : null;
-        wait.push(nx ? `${nick} ▸${shortTitle(nx.title, 12)}` : nick);
+        const item = nx ? `${nick} ▸${shortTitle(nx.title, 12)}` : nick;
+        if (mine) ownWait = item; else wait.push(item);
       }
       // 오늘 아무것도 안 한 역할은 줄에 안 낸다(GM 2026-08-11 "오늘 없는건 의미없고").
     }
+    if (ownRun) run.unshift(ownRun);
+    if (ownWait) wait.unshift(ownWait);
     const lines = [];
-    if (run.length)  lines.push(`${G}● 진행중${X} ${run.join(' · ')}`);
-    if (wait.length) lines.push(`${Y}◐ 대기${X} ${wait.join(' · ')}`);
+    const W = termWidth() - 1;
+    if (run.length)  lines.push(foldRoleLine(`${G}● 진행중${X}`, run, W));
+    if (wait.length) lines.push(foldRoleLine(`${Y}◐ 대기${X}`, wait, W));
     // '○ 오늘 없음' 줄 삭제(GM 2026-08-11 "오늘 없는건 의미없고").
     // 오늘 아무것도 안 한 역할을 나열해 봐야 GM 이 할 일이 생기지 않는다 — 줄만 먹었다.
     return lines;
   } catch { return []; }
+}
+
+/** 라벨 + 항목들을 터미널 폭 안으로 접는다 — buildLine 의 fitCols 는 문자 단위라 항목 중간이
+ *  잘릴 수 있다(GM 이 이미 지적한 "어색한 중간 잘림"). 여기는 **항목째로만** 자른다 — 안 들어가는
+ *  항목은 통째로 빼고 '+N'으로 남은 개수만 밝힌다. 맨 앞 항목(=buildRoleLines 가 넣어둔 내 역할)은
+ *  폭을 넘어도 무조건 남긴다 — 없어지면 안 되는 자리다. */
+function foldRoleLine(prefix, items, W) {
+  const shown = [];
+  let w = dw(prefix);
+  for (const it of items) {
+    const sep = shown.length ? ' · ' : ' ';
+    w += dw(sep) + dw(it);
+    if (shown.length > 0 && w > W) { w -= dw(sep) + dw(it); break; }
+    shown.push(it);
+  }
+  const rest = items.length - shown.length;
+  let out = prefix + (shown.length ? ' ' + shown.join(' · ') : '');
+  if (rest > 0) out += ` ${D}+${rest}${X}`;
+  return out;
 }
 
 // OMC 원문(ANSI 색 포함)에서 GM 이 지정한 5개만 지운다(2026-08-08 GM 지정). 구조·줄 수·순서·
