@@ -8075,6 +8075,7 @@ function _activeDisplayCols() {
   });
   if (hasRecon && !remainCol) out.push('__recon__');           // 잔여일 컬럼 없으면 폴백(뒤)
   out.push('__owners__');                                       // 종목별 담당자 통합 요약셀(비어있지 않은 종목만 칩). 2026-07-18 시포·GM
+  out.push('__lossbtn__');                                      // LOSS 처리 버튼(valid 전용, FB260811-112656 임정은M)
   return out;
 }
 
@@ -8193,6 +8194,7 @@ function _activeRender(rows, isFiltered) {
       if (h === '__reactivate__') return '<th style="white-space:nowrap;text-align:center">재등록 처리</th>';
       if (h === '__unregreason__') return '<th style="white-space:nowrap;text-align:center">미등록사유</th>';   // FB260807-121152
       if (h === '__owners__') return '<th style="white-space:nowrap;text-align:center">담당 강사</th>';
+      if (h === '__lossbtn__') return '<th style="white-space:nowrap;text-align:center">LOSS 처리</th>';
       // 머리칸은 전부 가운데 정렬(GM 지시 2026-08-03) — 값 칸 정렬은 그대로 둔다.
       var arrow = (_activeSort.col === h) ? (_activeSort.dir < 0 ? ' ▼' : ' ▲') : '';
       return '<th data-sortcol="' + esc(h) + '" title="클릭하여 정렬" style="white-space:nowrap;cursor:pointer;user-select:none;text-align:center">' + esc(h) + arrow + '</th>';
@@ -8291,6 +8293,7 @@ function _activeRowHtml(row, displayCols) {
       if (h === '__reactivate__') { html += _reactivateCellHtml(row); return; }
       if (h === '__unregreason__') { html += _unregReasonCellHtml(row); return; }
       if (h === '__owners__') { html += _ownersCellHtml(row); return; }
+      if (h === '__lossbtn__') { html += _lossBtnCellHtml(row); return; }
       var isPhone = (h === '휴대폰 번호');
       // 칸 축소(FB260801-141806, 2026-08-01) — NARROW_COL_WIDTHS에 등록된 칸은 폭 고정+말줄임+마우스오버 전체보기(표시전용·데이터 무변경).
       var narrowW = NARROW_COL_WIDTHS[h];
@@ -9765,6 +9768,33 @@ function _reactivateCellHtml(row) {
   return '<td style="white-space:nowrap"><button type="button" onclick="openReactivateModal(' + ri + ')" ' +
     'style="padding:4px 10px;border-radius:7px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">재등록 처리</button></td>';
 }
+// LOSS 처리 버튼 셀 — 유효회원 전용(FB260811-112656 임정은M). __reactivate__ 패턴 대칭.
+function _lossBtnCellHtml(row) {
+  var ri = row.rowIndex != null ? row.rowIndex : 0;
+  return '<td style="white-space:nowrap"><button type="button" onclick="openValidLossModal(' + ri + ')" ' +
+    'style="padding:4px 10px;border-radius:7px;border:1px solid var(--red-border);background:var(--red-bg);color:var(--red);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">LOSS 처리</button></td>';
+}
+// 유효회원 → LOSS 처리 모달(FB260811-112656). 기존 churnOverlay 재사용 — 새 모달 없음.
+// 저장 시 종료사유 + 종료일자(오늘) 두 건 enqueue → valid 목록에서 즉시 제거.
+function openValidLossModal(rowIndex) {
+  var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
+  if (!r) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
+  var endCol = _capCol(_activeHeaders, '종료일자');
+  if (!endCol) { showToast('종료일자 컬럼을 찾지 못했습니다 — 시트 헤더 확인 필요', 'err'); return; }
+  var name = String(r['회원명'] || '').trim();
+  var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
+  var d = new Date();
+  var today = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+  _churnModal = { rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, fromValid: true, endCol: endCol, endDate: today };
+  document.getElementById('crMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '') + '  ·  종료일자 ' + today + ' 로 저장';
+  var sel = document.getElementById('crReasonSel');
+  sel.innerHTML = '<option value="">— 선택 —</option>' +
+    CHURN_REASON_OPTIONS.map(function(o){ return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('');
+  document.getElementById('crNoteInput').value = '';
+  _crUpdateNoteReq();
+  document.getElementById('churnOverlay').classList.add('open');
+}
+
 // 미등록사유 커스텀 셀 — LOSS 탭 전용(FB260807-121152 임정은M). __churn__ 패턴 재사용.
 function _unregReasonCellHtml(row) {
   var col = _capCol(_activeHeaders, '미등록사유');
@@ -9843,6 +9873,19 @@ function saveChurnModal() {
     { scope: 'active', phoneKey: keyPhone, fieldset: 'churnReason', label: '종료사유', who: (_churnModal && _churnModal.name) || '', overlay: _ovC }
   );
   showToast('종료사유 저장', 'ok');
+  // 유효회원 LOSS 처리 분기 — 종료일자(오늘) 추가 저장 + valid 목록 즉시 제거(FB260811-112656)
+  if (_churnModal && _churnModal.fromValid && _churnModal.endCol) {
+    var _ov2 = {}; _ov2[_churnModal.endCol] = _churnModal.endDate;
+    WriteBuffer.enqueue(
+      { action: 'member_active_update', rowIndex: rowIndex, col: _churnModal.endCol, value: _churnModal.endDate, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '' },
+      { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + _churnModal.endCol, label: '종료일자(LOSS처리)', who: (_churnModal && _churnModal.name) || '', overlay: _ov2 }
+    );
+    _activeRows = (_activeRows || []).filter(function(x){ return x.rowIndex != rowIndex; });
+    _activeCacheSave('valid', _activeHeaders, _activeRows);
+    _activeRender(_activeRows);
+    renderActiveSummary();
+    showToast((_churnModal.name || '회원') + ' LOSS 처리 완료', 'ok');
+  }
   closeChurnModal();
   saveBtn.disabled = false;
 }
