@@ -54,7 +54,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
 # ── 상수 ─────────────────────────────────────────────────────────────────────
 GM_CHAT_ID = 8254867551  # GM 개인 업무보고방 — 이 헬퍼의 목적지가 아니다(폴백 아님).
                          # is_routine 만 쓰는 기존 import 를 깨지 않으려 상수는 남긴다.
-ROOM_KEY = "자동화현황방"  # status/telegram_rooms.json 의 키. 방 표시명은 2026-07-25
+ROOM_KEY = "AI관리"  # status/telegram_rooms.json 의 키. 방 표시명은 2026-07-25
                           # GM 이 "AI 진행현황"으로 변경 — 키 개명은 별도 단계에서 참조
                           # 전수 정리와 함께(지금 키만 바꾸면 module_registry 참조가 끊긴다).
 ROOMS_PATH = _ROOT / "status" / "telegram_rooms.json"

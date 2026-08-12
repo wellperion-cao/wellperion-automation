@@ -114,7 +114,16 @@ def resolve_chat_id(bot_id, rooms):
     if isinstance(bot_id, int):
         return bot_id
     if isinstance(bot_id, str):
-        return rooms.get(bot_id) if isinstance(rooms, dict) else None
+        if not isinstance(rooms, dict):
+            return None
+        if bot_id in rooms:
+            return rooms[bot_id]
+        # 옛 이름으로 부르는 곳이 아직 남아 있다(GM 지시 2026-08-12 로 키를 실제 방 이름으로
+        # 바꿨다: 개인방→하루 · GM_DM→업무관리 · 자동화현황방→AI관리 …). 매핑 정본은
+        # telegram_rooms.json 의 _legacy_aliases — 여기서 복제하지 않는다. 이 한 줄이 없으면
+        # 옛 이름으로 부르던 발신이 방을 못 찾아 조용히 안 나간다.
+        alias = (rooms.get("_legacy_aliases") or {}).get(bot_id)
+        return rooms.get(alias) if alias else None
     return None
 
 
