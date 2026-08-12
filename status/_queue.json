@@ -2862,12 +2862,12 @@
     "task_id": "CTO-2026-08-12-WORKLOG-훅이-매-프롬프트마다-예외-MERGE",
     "clevel": "cto",
     "title": "[시토] worklog 훅이 매 프롬프트마다 예외 — _merge_gm_ref is not defined (GM 지시 접수 기록 누락 위험)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-08-12",
     "from": "cpo",
-    "note": "[시포 → 시토 전달 2026-08-12] [시포 실측 2026-08-12 저녁] GM 프롬프트를 제출할 때마다 훅 출력에 아래 경고가 2줄씩 찍힌다.\n\n  [WARN] worklog.log 예외(best-effort, 호출부 무영향): name '_merge_gm_ref' is not defined\n\n■ 확인한 것\n  · scripts/worklog.py 를 정상 import 해서 log() 를 부르면 재현되지 않는다(성공·True 반환).\n  · python scripts/worklog.py --hook-prompt 를 직접 실행해도 재현되지 않는다(정상 종료).\n  · worklog.py 사본은 저장소에 1개뿐(중복 파일 아님).\n  · 훅 배선 = .claude/settings.local.json UserPromptSubmit → worklog.py --hook-prompt.\n  · 정의 순서상 _merge_gm_ref(232행)가 log(248행)보다 앞이라 단순 순서 문제도 아니다.\n\n■ 왜 중요한가\n  best-effort 라 화면은 안 막지만, 이 경로가 죽으면 **GM 지시 접수(warn) 기록이 안 남는다.**\n  쿵짝표·아침 자가점검이 전부 status/worklog.jsonl 을 읽으므로, 접수가 빠지면 '오늘 GM이 시킨 것'이\n  통째로 안 보인다. 오늘 아침에 이미 같은 원장에서 오탐 4건이 나왔다(배572).\n\n■ 짐작(미검증): log() 를 다른 이름공간으로 복사해 부르는 호출부가 있어 모듈 전역이 안 잡히는 것으로 보인다.\n  worklog.log 를 import 해 쓰는 호출부를 훑으면 나올 것이다 — 시포는 여기까지만 확인하고 넘긴다.",
-    "next": "훅 실행 경로에서 log() 호출부를 찾아 _merge_gm_ref 전역 해석 실패 원인 수리 · 시포에 1줄 회신",
+    "note": "[시포 → 시토 전달 2026-08-12] [시포 실측 2026-08-12 저녁] GM 프롬프트를 제출할 때마다 훅 출력에 아래 경고가 2줄씩 찍힌다.\n\n  [WARN] worklog.log 예외(best-effort, 호출부 무영향): name '_merge_gm_ref' is not defined\n\n■ 확인한 것\n  · scripts/worklog.py 를 정상 import 해서 log() 를 부르면 재현되지 않는다(성공·True 반환).\n  · python scripts/worklog.py --hook-prompt 를 직접 실행해도 재현되지 않는다(정상 종료).\n  · worklog.py 사본은 저장소에 1개뿐(중복 파일 아님).\n  · 훅 배선 = .claude/settings.local.json UserPromptSubmit → worklog.py --hook-prompt.\n  · 정의 순서상 _merge_gm_ref(232행)가 log(248행)보다 앞이라 단순 순서 문제도 아니다.\n\n■ 왜 중요한가\n  best-effort 라 화면은 안 막지만, 이 경로가 죽으면 **GM 지시 접수(warn) 기록이 안 남는다.**\n  쿵짝표·아침 자가점검이 전부 status/worklog.jsonl 을 읽으므로, 접수가 빠지면 '오늘 GM이 시킨 것'이\n  통째로 안 보인다. 오늘 아침에 이미 같은 원장에서 오탐 4건이 나왔다(배572).\n\n■ 짐작(미검증): log() 를 다른 이름공간으로 복사해 부르는 호출부가 있어 모듈 전역이 안 잡히는 것으로 보인다.\n  worklog.log 를 import 해 쓰는 호출부를 훑으면 나올 것이다 — 시포는 여기까지만 확인하고 넘긴다.\n\n[시토 2026-08-13 완료] 원인은 못 잡았고, 피해는 막았다 — 둘을 갈라 적는다.\n▶재현 실패(시포와 같음): 정상 import 호출·--hook-prompt 직접 실행·실제 훅 배선 그대로 실행 전부 정상. 사본도 1개뿐. **추정** — 여러 세션이 작업트리 하나를 공유하니 다른 세션이 worklog.py 를 다시 쓰는 중에 훅이 그 파일을 읽은 것으로 본다. 단정하지 않는다.\n▶그래도 고칠 수 있는 것: 이 건의 실제 피해는 경고 문구가 아니라 **그때 log() 전체가 예외로 빠져 GM 지시 접수(warn) 줄이 통째로 안 남는 것**이다. 그래서 _merge_gm_ref 호출만 try 로 가뒀다 — 보조 ref 정리가 실패해도 원장 append 는 그대로 수행한다.\n▶2차 피해도 같이 막았다: 경고 3곳이 stdout 으로 나가고 있었다. 이 함수는 UserPromptSubmit 훅에서도 불리는데 그 훅의 stdout 은 JSON 계약이라, 경고 한 줄이 앞에 섞이면 리마인더가 통째로 깨진다. stderr 로 옮겼다.\n▶검증: ①시스템 주입 프롬프트로 훅 실행 → stdout 순수 JSON 파싱 성공 ②_merge_gm_ref 를 강제로 NameError 내게 하고 log() 호출 → True 반환·임시 원장에 1줄 정상 기록.\n▶부수 정리: 재현 시험이 원장에 남긴 2줄(가짜 GM 접수 1줄 + 08/12 미완 건을 잘못 닫은 종결 1줄)을 즉시 제거해 쿵짝표를 원상 복구했다(제거 후 08/12 미완 1건이 그대로 보이는 것 확인).\n▶커밋 09f29f44a.",
+    "next": "같은 경고가 다시 보이면 그때는 '접수 기록이 실제로 빠졌는지'만 확인한다 — 이제 안 빠진다(원인 추적은 재발 시)",
     "depends_on": "",
     "ship_no": 10785,
     "short_no": 590,
@@ -2877,7 +2877,8 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-08-12"
+    "updated_at": "2026-08-13",
+    "artifact_url": "scripts/worklog.py 09f29f44a · 훅 stdout JSON 파싱 성공 + 강제 NameError 하 기록 보존 확인"
   },
   {
     "task_id": "CTO-2026-08-13-이-PC-작업트리가-다른-세션이-만든-커밋을-파일-",
