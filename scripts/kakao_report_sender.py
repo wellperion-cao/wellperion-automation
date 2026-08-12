@@ -204,6 +204,28 @@ def _title_key(s: str) -> str:
     ▸공백만 지운다(글자·기호는 그대로) — 현재 방 4개는 공백을 지워도 서로 안 겹친다.
     """
     return "".join(str(s or "").split())
+
+
+# ★이름표만 바뀐 같은 방을 같은 방으로 본다 (2026-08-13 시토 · 배314).
+#   배314 의 남은 일 = GM 이 카톡에서 「웰페리온 관리부」를 「★관리부」로 바꾸는 것. 그런데 지금
+#   구조에서는 **이름을 바꾸는 순간과 목록을 고치는 순간이 같아야** 한다(안 맞으면 그 방 발송이
+#   조용히 실패). 그 동시성 요구 때문에 이 배가 10일 멈춰 있었다.
+#   그래서 대조를 한 단 더 둔다: 정확일치(공백 무시)로 못 찾으면, **꾸밈만 떼고** 다시 본다.
+#   꾸밈 = 앞뒤 별표류와 회사 이름 접두사. 「웰페리온 관리부」·「★관리부」·「★ 관리부」가
+#   모두 '관리부'로 모인다 → GM 이 언제 바꾸셔도 발송이 끊기지 않는다.
+#   ▸안전장치: 느슨한 대조로 후보가 **2개 이상이면 고르지 않는다**(엉뚱한 방에 매출이 나가는
+#     것이 발송 실패보다 나쁘다). 현재 4방은 꾸밈을 떼도 서로 겹치지 않는다 —
+#     차의주회장님 · 관리부 · 운영부 · 부서장.
+_ROOM_DECOR = ("★", "☆", "*", "웰페리온")
+
+
+def _room_core_key(s: str) -> str:
+    core = _title_key(s)
+    for token in _ROOM_DECOR:
+        core = core.replace(token, "")
+    return core
+
+
 KAKAO_MAIN_WINDOW_TITLE = "카카오톡"
 
 
@@ -316,9 +338,22 @@ def find_room_window(room_name: str, timeout: float = 3.0):
     (그 방이 카톡에서 열려 있지 않다는 뜻 — GM이 먼저 방을 열어둬야 함)."""
     deadline = time.time() + timeout
     while True:
-        for hwnd, title, cls in _enum_visible_top_level_windows():
-            if cls == KAKAO_ROOM_WINDOW_CLASS and _title_key(title) == _title_key(room_name):
+        rooms = [(h, t) for h, t, c in _enum_visible_top_level_windows()
+                 if c == KAKAO_ROOM_WINDOW_CLASS]
+        for hwnd, title in rooms:
+            if _title_key(title) == _title_key(room_name):
                 return Desktop(backend="uia").window(handle=hwnd)
+        # 정확일치 실패 — 꾸밈만 뗀 이름으로 다시 본다(배314). 후보가 딱 하나일 때만 쓴다.
+        want = _room_core_key(room_name)
+        loose = [(h, t) for h, t in rooms if want and _room_core_key(t) == want]
+        if len(loose) == 1:
+            hwnd, title = loose[0]
+            log(f"[{room_name}] 이름표가 달라 느슨한 대조로 찾음 → 실제 방 제목 '{title}' "
+                f"(목록의 이름을 이 제목으로 고쳐두면 이 줄이 사라진다)")
+            return Desktop(backend="uia").window(handle=hwnd)
+        if len(loose) > 1:
+            log(f"[{room_name}] 느슨한 대조 후보 {len(loose)}개 — 엉뚱한 방 발송을 막기 위해 "
+                f"고르지 않는다: {[t for _h, t in loose]}")
         if time.time() >= deadline:
             raise RoomNotOpenError(
                 f"[{room_name}] 방 창이 안 열려 있음 — 카카오톡에서 그 방을 먼저 열어두세요"
