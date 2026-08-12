@@ -330,6 +330,10 @@ function renderList(){
     var dueBadge=(comp.date&&comp.auto)?'<span class="tag auto">예상(자동)</span>':(repTxt?'<span class="tag rep">'+repTxt+'</span>':"");
     var vend=isEvent?null:vendorById(it.vendor_id);
     var vTxt=vend?('<div class="rvendor">🏢 담당: '+esc(vend.name)+' · <a href="tel:'+esc((""+(vend.contact||"")).replace(/[^0-9+]/g,""))+'">📞 '+esc(vend.contact||"")+'</a></div>'):"";
+    // 증빙은 지금까지 입력만 되고 목록에 안 보였다 — 넣어도 못 보면 없는 것과 같다(GM 지적 2026-08-12).
+    // 줄 클릭은 편집을 여는 동작이라, 링크만 눌렀을 땐 편집이 안 열리게 클릭을 멈춰 둔다.
+    var evTxt=(it.evidence&&(""+it.evidence).trim())
+      ? '<div class="rvendor"><a href="'+esc((""+it.evidence).trim())+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎 증빙 보기</a></div>' : "";
     var subTxt=isEvent?(cat.label+(repTxt?" · "+repTxt+" 반복":" · 1회")):(cat.label+' · '+it.cycle);
     var tailTxt=isTbd?'<span style="color:var(--accent)">📅 클릭해 날짜 입력</span>':(isEvent?(it.note?esc(it.note):(it.assignee?esc(it.assignee):"—")):('최근 '+(it.last_done||"—")));
     var editing=(it.id===inlineEditId);
@@ -340,7 +344,7 @@ function renderList(){
     if(comp.date)r.setAttribute("data-due",fmtDate(comp.date));
     var srcTag=(it.source==="monthly_ops")?'<span class="tag" style="border-color:var(--accent);color:var(--accent)" title="월간운영계획 목표에서 자동 연동">🎯 운영계획</span>':"";
     r.innerHTML='<div class="catbar" style="background:'+cat.color+'"></div>'+
-      '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+' '+srcTag+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+'</div>'+
+      '<div><div class="name">'+(esc(it.name)||'<span style="color:var(--dim)">(제목 없음 — 클릭해 입력)</span>')+' '+srcTag+'</div><div class="rsub">'+subTxt+'</div>'+vTxt+evTxt+'</div>'+
       '<div class="rdept">'+esc(it.dept)+'</div>'+
       '<div class="rd">'+(isEvent?"":"다음 ")+'<b>'+dueTxt+'</b>'+dueBadge+'<br><span style="opacity:.7">'+tailTxt+'</span></div>'+
       '<div class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유",tbd:"미정"}[st.k])+'</span><span>'+ddText(st)+'</span></div>';
@@ -463,6 +467,9 @@ function inlinePanelHtml(it,idx){
       efSelCat(idx,it)+
       efSel(idx,"dept","담당 부서",DATA.depts,it.dept)+
       efIn(idx,"assignee","담당자",it.assignee,"이름/팀")+
+      // 증빙 칸은 정기점검에만 있었다 — 이벤트로 적은 검사·점검(예: 수영장 수질검사)은
+      // 성적서를 넣을 자리가 없었다(GM 지적 2026-08-12). 같은 칸을 이벤트에도 그대로 쓴다.
+      efIn(idx,"evidence","증빙(링크)",it.evidence,"성적서·필증 URL — 드라이브 링크 붙여넣기")+
       efIn(idx,"note","메모",it.note,"준비물·비고")+
     '</div>';
   }else{
