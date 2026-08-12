@@ -6678,9 +6678,10 @@ function submitRegAdd() {
   var prog  = document.getElementById('regAddProg').value.trim();
   var date  = document.getElementById('regAddDate').value;
   var months = document.getElementById('regAddMonths').value.trim();  // 선택 — 있으면 서버가 종료일·잔여일 자동계산(배286)
+  var _memSd = (function(b){ if (!b) return ''; var d=new Date(b+'T00:00:00'); d.setDate(d.getDate()+1); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); })(date);
   if (!phone) { showToast('전화번호는 필수입니다(중복 방지 키)', 'err'); return; }
   if (!name)  { showToast('이름을 입력하세요', 'err'); return; }
-  apiPost({ action: 'member_registered_add', name: name, phone: phone, program: prog, regDate: date, months: months })
+  apiPost({ action: 'member_registered_add', name: name, phone: phone, program: prog, regDate: date, memStartDate: _memSd, months: months })
     .then(function(d){
       // ★ok:false도 실패로(2026-07-30 시토) — apiPost는 서버가 {ok:false}를 줘도 resolve한다(reject 아님,
       //   위 apiPost 정의). 이 체크가 없으면 서버가 논리적으로 거부해도 여기 성공 분기(필드 비우기+"🎉" 토스트)가
@@ -9976,8 +9977,9 @@ function openReactivateModal(rowIndex) {
   _reactivateModal.regDateCol = regDateCol; _reactivateModal.startDateCol = startDateCol;
   _reactivateModal.seqCol = seqCol; _reactivateModal.lossDateCol = lossDateCol;
   var _rv_today = (function(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); })();
+  var _rv_tomorrow = (function(){ var d=new Date(); d.setDate(d.getDate()+1); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); })();
   var _rvRd = document.getElementById('rvRegDate'); if (_rvRd) _rvRd.value = _rv_today;
-  var _rvSd = document.getElementById('rvStartDate'); if (_rvSd) _rvSd.value = _rv_today;
+  var _rvSd = document.getElementById('rvStartDate'); if (_rvSd) _rvSd.value = _rv_tomorrow;  // FB260812-143047: 익일 시작
   var _rvSI = document.getElementById('rvSeqInfo');
   if (_rvSI) { var _curSeq = seqCol ? (parseInt(r[seqCol]) || 0) : 0; _rvSI.textContent = '등록회차 ' + _curSeq + ' → ' + (_curSeq + 1) + ' (저장 시 자동 증가)'; }
   var _ts = document.getElementById('rvType'); if (_ts) { _ts.value = '재등록'; _rvTypeChange(); }
@@ -10576,6 +10578,8 @@ function openInquiryRegProgramModal(rowIndex) {
   var _prev = _rpFindActiveRow(r.phone);
   var _t = new Date();
   var _today = _t.getFullYear() + '-' + String(_t.getMonth()+1).padStart(2,'0') + '-' + String(_t.getDate()).padStart(2,'0');
+  var _t2 = new Date(_t.getTime()); _t2.setDate(_t2.getDate() + 1);
+  var _tomorrow = _t2.getFullYear() + '-' + String(_t2.getMonth()+1).padStart(2,'0') + '-' + String(_t2.getDate()).padStart(2,'0');
   // select 는 옵션에 없는 값을 넣으면 조용히 빈칸이 된다 → 없으면 기본값으로 되돌린다.
   //   실측: 시트 회원구분에 '맴버십'·'멥버십' 오타가 12건 있다 — 그걸 그대로 이어받지 않는다.
   var _setv = function(id, v, fallback){
@@ -10592,7 +10596,7 @@ function openInquiryRegProgramModal(rowIndex) {
   _setv('rpRegClass', _prev ? '재등록' : '신규', '신규');
   _setv('rpAge', _prevCell('나이'));
   _setv('rpRegDate', _today);
-  _setv('rpStartDate', _today);
+  _setv('rpStartDate', _tomorrow);  // FB260812-143047: 등록일 당일이 아닌 익일부터 이용 시작
   _setv('rpLocker', _prevCell('락커'));
   _regProgramModalFill(PROGRAM_OPTIONS, r.regProgram || r.program);
 }
