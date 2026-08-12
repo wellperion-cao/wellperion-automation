@@ -1133,6 +1133,10 @@ def _recent_kakao_text() -> str:
     return "\n".join(parts)
 
 
+# ponytail: 토큰[0]에 조사가 붙으면("분류값이") 로그 원문("등록분류")과 안 맞아 간헐
+#   오탐/누락이 난다(배356 실측 2026-08-13). 형태소 분석은 과함 — 안 고침. 좁히려면
+#   상위 토큰 1개가 아니라 상위 2개가 모두 없을 때만 걸리게. 지금은 오탐이 3~5건대로
+#   감당 범위이고, 놓치는 쪽보다 더 잡는 쪽이 안전해 이대로 둔다.
 def _unasked_evidence(item: dict) -> str:
     if not item.get("_has_staff_field"):
         return ""  # 실무진 릴레이 채널 자체를 안 쓰는 배(GM전용·AI내부) — 대상 아님
