@@ -25,6 +25,7 @@ GM 승인용 아침 메시지 1통을 생성한다. 메시지 4요소:
 사용법:
   python scripts/ops_daily_digest.py                # 대상일=어제(없으면 최근 완결일) 자동
   python scripts/ops_daily_digest.py --date 2026-07-11   # 대상일 수동 지정(테스트·재실행용)
+  python scripts/ops_daily_digest.py --room-key mgr --bridge-dry-run   # 업무 장부에 무엇이 올라갈지만 보기
 """
 from __future__ import annotations
 
@@ -73,6 +74,27 @@ def _load_room_aliases() -> dict:
 
 
 ROOM_KEYS = _load_room_aliases()
+
+# ── 업무 장부 다리 (2026-08-12 GM 승인) ────────────────────────────────────────
+#   GM: "다리를 놓고, 양방향으로 진행이 가능해? 이런 건들이 일정이 들어가서 놓치지 않게끔"
+#   ①정방향 = 아침 정리가 뽑은 열린 이슈 중 **담당이 분명한 것**을 업무 SSOT(S3)에 등록한다.
+#   ②역방향 = 그 건이 업무 SSOT에서 완료되면 다음 아침 정리에서 해결로 빠진다.
+#   ③일정 = 등록할 때 기한을 함께 넣어 이미 도는 지연·임박 알림(09:30)이 잡게 한다.
+#   ★담당이 비면 등록하지 않는다 — 주인 없는 일을 장부에 쌓지 않는 것이 약속 L23 의 순서다.
+#   ★새 원장·새 스크립트를 만들지 않는다(L21). 이미 있는 _digest_ledger.json 의 이슈 항목에
+#     todo_id 한 칸만 더 얹어 짝을 맞춘다.
+_OWNER_CHOICES = ["이경연 실장", "최준용M", "윤병현AM", "임정은M", "백승화 사원",
+                  "이정헌 소장", "나우열M"]
+_CATEGORY_CHOICES = ["[1] 매출 및 영업", "[2] 인사", "[3] 파트너팀", "[4] 운영 정책",
+                     "[5] 시설 및 환경", "[6] 회원·CS", "[7] IT·시스템·자동화",
+                     "[8] 교육·조직문화", "[9] 회의"]
+# 기한이 대화에 없을 때 넣는 임시 기한(일). 빈칸으로 두면 지연·임박 알림이 그 건을 영영
+# 안 잡아 '놓치지 않게'라는 요구가 깨진다 — 대신 제목에 (기한 임시)를 붙여 지어낸 값이
+# 아님을 사람이 바로 알게 한다.
+_DEFAULT_DUE_DAYS = 7
+_BRIDGE_CREATOR = "AI 아침정리"
+_OWNER_LIST = " · ".join(_OWNER_CHOICES)
+_CATEGORY_LIST = " · ".join(_CATEGORY_CHOICES)
 
 # 지출품의 GAS(배97 · 매출/지출/구매물품 정본) — 매출지출현황.html PROC_API와 동일 배포본.
 # 비밀번호는 telegram_bot/.env(저장소 밖)에서 읽는다(배328 — .js 소스 평문 노출 제거, 배326 과 같은 계열).
@@ -760,10 +782,21 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str, r
 {{
   "message": "위 구조 그대로 카카오톡에 보낼 아침 메시지 전문(한국어 · 글머리·이름별 정리)",
   "issues": [
-    {{"issue": "이슈 한 줄 요약", "status": "open 또는 resolved", "note": "근거·짧은 메모"}}
+    {{"issue": "이슈 한 줄 요약", "status": "open 또는 resolved", "note": "근거·짧은 메모",
+      "owner": "담당자", "due": "YYYY-MM-DD", "category": "분류"}}
   ]
 }}
 issues는 대화에서 실제로 확인되는 미해결·해결 이슈만 담는다(없으면 빈 배열 []).
+
+issues의 owner·due·category 규칙(이 세 칸은 업무 장부에 자동 등록될 때 쓰인다 — 틀리면 엉뚱한
+사람에게 일이 배정된다):
+- owner: 대화에서 그 일을 맡기로 한 사람이 분명할 때만 적는다. 아래 목록에 있는 이름만 쓴다.
+  {_OWNER_LIST}
+  분명하지 않거나 목록에 없는 사람(GM·회장님·대표님·외부 업체 등)이면 빈 문자열 "".
+  ★추측 금지 — 애매하면 빈 문자열이 정답이다. 빈 문자열이면 장부에 안 올라가고 사람이 정한다.
+- due: 대화에 기한·날짜가 나올 때만 YYYY-MM-DD 로. 없으면 빈 문자열 "".
+- category: 아래 중 하나를 고른다(가장 가까운 것). 애매하면 빈 문자열 "".
+  {_CATEGORY_LIST}
 """
 
 
@@ -798,7 +831,8 @@ def parse_brain_json(raw: str) -> tuple[str, list[dict], bool]:
 # ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
-def run(forced_date: str | None = None, room: str = DEFAULT_ROOM) -> int:
+def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
+        bridge_dry_run: bool = False) -> int:
     global KAKAO_ROOM_DIR, LEDGER_PATH, PENDING_DIGEST_PATH
     room_dir_name = room.replace(" ", "")
     KAKAO_ROOM_DIR = ROOM_DIR_BASE / room_dir_name
@@ -832,6 +866,12 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM) -> int:
         return 1
 
     ledger = load_ledger()
+    # 역방향 먼저 — 장부에서 닫힌 건을 원장에 반영하고 나서 프롬프트를 만든다. 순서가 바뀌면
+    # 이미 끝난 일이 오늘 정리의 '반복·미해결'에 또 실린다.
+    closed = pull_done_from_todo(ledger)
+    if closed:
+        save_ledger(ledger)
+        print(f"  → 장부에서 완료된 건 {closed}건을 원장에 반영(양방향 회수)")
     past_digest = recent_issues_digest(ledger, before_date=target_date)
 
     print("[4/5] 두뇌(claude CLI · model_router 폴백) 호출...")
@@ -913,7 +953,140 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM) -> int:
         encoding="utf-8",
     )
     print(f"  → 발송 대기 저장: {PENDING_DIGEST_PATH.relative_to(ROOT)} (발송은 범위 밖 — 게이트 대기)")
+
+    bridge_to_todo(ledger, target_date, room_dir_name, dry_run=bridge_dry_run)
     return 0
+
+
+# ═══════════════════════════════════════════
+#  업무 장부 다리 — 정방향(등록) · 역방향(완료 회수)
+#  GM 승인 2026-08-12. 위 상수 블록의 설명 참조.
+# ═══════════════════════════════════════════
+_BRIDGE_SWITCH = ROOT / "status" / "ops_digest_send.json"
+
+
+def _bridge_enabled() -> bool:
+    """킬스위치 — 기존 발송 스위치 파일에 키 하나만 얹는다(새 파일 금지 · 약속 L21).
+    키가 없으면 꺼진 것으로 본다: 실무진 장부에 줄을 만드는 일이라 기본값은 '안 함'이다."""
+    try:
+        return bool(json.loads(_BRIDGE_SWITCH.read_text(encoding="utf-8")).get("todo_bridge_enabled"))
+    except Exception:
+        return False
+
+
+def _todo_post(params: dict, timeout: int = 60) -> dict:
+    """업무 SSOT GAS 쓰기. 화면(업무 현황 SSOT.html)이 쓰는 것과 같은 통로·같은 action."""
+    import urllib.request
+    req = urllib.request.Request(
+        SSOT_API_URL, data=json.dumps(params, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "text/plain"},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _todo_status_by_id() -> dict:
+    """업무 SSOT 전체를 {id: 상태} 로. 실패하면 빈 dict — 역방향은 조용히 건너뛴다
+    (조회 실패를 '완료'로 읽으면 열린 일이 사라진다)."""
+    resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, timeout=40, label="다리 역방향")
+    if resp is None:
+        return {}
+    try:
+        data = resp.json()
+        if not data.get("ok"):
+            return {}
+        return {str(r.get("id")): str(r.get("상태", "")) for r in data.get("data", []) if r.get("id")}
+    except Exception:
+        return {}
+
+
+def pull_done_from_todo(ledger: list[dict]) -> int:
+    """역방향 — 장부에서 완료된 건을 원장에서 해결로 바꾼다.
+
+    이렇게 해야 다음 아침 정리의 '반복·미해결' 절에서 그 건이 저절로 빠진다(프롬프트가
+    원장을 읽는다). 사람이 장부에서 닫으면 카톡 정리도 따라 닫히는 것이 GM 이 말한 양방향이다."""
+    status_map = _todo_status_by_id()
+    if not status_map:
+        return 0
+    changed = 0
+    for entry in ledger:
+        for issue in entry.get("issues") or []:
+            tid = str(issue.get("todo_id") or "")
+            if not tid or issue.get("status") == "resolved":
+                continue
+            if status_map.get(tid, "") in _TODO_DONE_STATUSES:
+                issue["status"] = "resolved"
+                issue["note"] = (issue.get("note") or "").strip()
+                issue["note"] = (issue["note"] + " · " if issue["note"] else "") + "업무 장부에서 완료 처리됨"
+                changed += 1
+    return changed
+
+
+def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
+                   dry_run: bool = False) -> int:
+    """정방향 — target_date 의 열린 이슈 중 담당이 분명한 것을 업무 SSOT 에 등록한다.
+
+    등록 안 하는 것: 담당 빈칸(주인 없는 일은 장부에 안 쌓는다 · 약속 L23) · 이미 올린 것
+    (todo_id 존재) · 해결된 것. 기한이 대화에 없으면 오늘+7일을 임시로 넣고 제목에 그렇게
+    적는다 — 기한이 없으면 지연·임박 알림이 영영 안 잡아 '놓치지 않게'가 깨지기 때문이다."""
+    if not _bridge_enabled() and not dry_run:
+        print("  → 업무 장부 다리: 꺼져 있음(status/ops_digest_send.json todo_bridge_enabled) — 등록 생략")
+        return 0
+
+    entry = next((e for e in ledger if e.get("date") == target_date), None)
+    if not entry:
+        return 0
+    today = datetime.now()
+    fallback_due = (today + timedelta(days=_DEFAULT_DUE_DAYS)).strftime("%Y-%m-%d")
+    posted = 0
+    for issue in entry.get("issues") or []:
+        if issue.get("status") != "open" or issue.get("todo_id"):
+            continue
+        owner = str(issue.get("owner") or "").strip()
+        if owner not in _OWNER_CHOICES:
+            continue  # 담당 불명 — 사람이 정한다
+        due = str(issue.get("due") or "").strip()
+        temp_due = not due
+        title = str(issue.get("issue") or "").strip()[:80]
+        if not title:
+            continue
+        if temp_due:
+            due = fallback_due
+            title += " (기한 임시)"
+        params = {
+            "action": "todo_add",
+            "title": title,
+            "category": str(issue.get("category") or "").strip(),
+            "owner": owner,
+            "startDate": today.strftime("%Y-%m-%d"),
+            "endDate": due,
+            "content": (f"{issue.get('note') or ''}\n\n"
+                        f"— {room_dir_name} {target_date} 카톡 대화 정리에서 자동 등록"
+                        + ("\n— 기한은 대화에 없어 7일 뒤로 임시 지정했습니다. 담당자가 조정해 주세요."
+                           if temp_due else "")).strip(),
+            "link": "", "approval": "", "difficulty": "중",
+            "creator": _BRIDGE_CREATOR,
+        }
+        if dry_run:
+            print(f"  [다리·미리보기] {owner} ← {title} (기한 {due})")
+            posted += 1
+            continue
+        try:
+            res = _todo_post(params)
+        except Exception as e:
+            print(f"  [다리] 등록 실패({title}): {type(e).__name__}: {e}")
+            continue
+        new_id = str((res or {}).get("id") or (res or {}).get("data", {}).get("id") or "")
+        if not (res or {}).get("ok") or not new_id:
+            print(f"  [다리] 등록 거절({title}): {str(res)[:160]}")
+            continue
+        issue["todo_id"] = new_id
+        posted += 1
+        print(f"  [다리] 등록 — {owner} ← {title} (기한 {due} · id {new_id})")
+    if posted and not dry_run:
+        save_ledger(ledger)
+    print(f"  → 업무 장부 다리: {posted}건 {'미리보기' if dry_run else '등록'}")
+    return posted
 
 
 def main():
@@ -927,9 +1100,11 @@ def main():
                         help=f"카톡 방 제목(기본 '{DEFAULT_ROOM}') — 배536(2026-08-11), 예: '★ 중간관리자'")
     parser.add_argument("--room-key", dest="room_key", choices=sorted(ROOM_KEYS),
                         help="방 이름 ASCII 별칭(ops·mgr) — .bat 에서 부를 때 쓴다(한글 인자는 깨진다)")
+    parser.add_argument("--bridge-dry-run", dest="bridge_dry_run", action="store_true",
+                        help="업무 장부 다리를 실제로 등록하지 않고 무엇이 올라갈지만 보여준다")
     args = parser.parse_args()
     room = ROOM_KEYS[args.room_key] if args.room_key else args.room
-    sys.exit(run(forced_date=args.date, room=room))
+    sys.exit(run(forced_date=args.date, room=room, bridge_dry_run=args.bridge_dry_run))
 
 
 if __name__ == "__main__":

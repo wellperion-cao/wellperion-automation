@@ -2,5 +2,7 @@
   "_comment": "★운영부 아침 다이제스트 07:30 무인 발송 킬스위치(scripts/send_ops_digest.py). enabled=false=발송 중단. GM go 2026-07-14 발효. 역롤백=false로 되돌리기.",
   "enabled": true,
   "_comment_relay": "실무진 방(★중간관리자) 배 전달문 발신 전 GM 승인 단계. true=카톡 대신 업무보고방에 초안만 올리고 대기, 승인 후 send_ops_digest.py --relay-approved 로 실발신. GM 결정 2026-08-07 '초반에만 이렇게 확인을 하고 나중에는 자율화 할거' — 오발신 0건이 이어지면 이 키를 지우고 자율 발송으로 되돌린다(꺼둔 채 두지 않는다).",
-  "relay_approval_required": true
+  "relay_approval_required": true,
+  "_comment_bridge": "카톡 아침 정리 → 업무 SSOT 자동 등록 다리(ops_daily_digest.bridge_to_todo). GM 승인 2026-08-12. false=등록 중단(정리·발송은 그대로). 담당이 분명한 열린 이슈만 올라가고, 기한이 대화에 없으면 7일 뒤 임시 기한 + 제목에 (기한 임시) 표기.",
+  "todo_bridge_enabled": true
 }
