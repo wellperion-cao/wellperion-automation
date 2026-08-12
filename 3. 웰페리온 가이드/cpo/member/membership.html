@@ -12824,10 +12824,17 @@ var WriteBuffer = (function(){
     if (failed.length > 0) {
       chip.className = 'sync-chip failed show';
       var names = failed.map(function(it){ return (it.who || '') + (it.label ? '·' + it.label : ''); }).filter(Boolean).slice(0, 4).join(', ');
+      // ★버리기(2026-08-12 GM 신고 "한성일님 검색하면 저장실패 뭐가 계속 뜨네") — 대상 행을 못 찾아
+      //   park 된 건(parkedHard)은 재시도해도 결과가 같아서, 버리는 통로가 없으면 실패 칩이 영영 안 사라진다.
+      //   실무진은 이미 화면에서 손으로 고쳐 놨는데 실패 표시만 남아 "아직 안 됐나" 하고 다시 만지게 된다.
+      //   버리는 것은 '보내지 못한 저장 요청'이지 시트 값이 아니다 — 그래서 확인 한 번 받고 지운다.
+      var _lastErrs = failed.map(function(it){ return it.lastError; }).filter(Boolean).slice(0, 2).join(' / ');
       msg.innerHTML = '동기화 실패 ' + failed.length + '건' +
         '<button class="sc-retry" onclick="WriteBuffer.forceRetry()">재시도</button>' +
-        (names ? '<span class="sc-detail"> — ' + esc(names) + '</span>' : '');
-      chip.title = '시트 동기화 실패(재시도 상한 초과). 재시도를 누르거나 목록 새로고침 후 다시 시도하세요. 미동기분은 새로고침해도 보존됩니다.';
+        '<button class="sc-retry" onclick="WriteBuffer.discardFailed()">버리기</button>' +
+        (names ? '<span class="sc-detail"> — ' + esc(names) + '</span>' : '') +
+        (_lastErrs ? '<span class="sc-detail"> (' + esc(_lastErrs) + ')</span>' : '');
+      chip.title = '시트 동기화 실패(재시도 상한 초과). 재시도해도 같은 실패가 반복되면 [버리기]로 지우세요 — 화면에서 직접 고친 값은 그대로 남습니다. 미동기분은 새로고침해도 보존됩니다.';
     } else if (verifyAlerts.length > 0) {
       // ★대조 결과 표면화(2026-07-30) — 저장(POST)은 이미 성공. 그 뒤 배경 대조에서 값이 다르거나 재조회가
       //   안 된 건들 — 실패는 아니지만 확인 전까지 화면에 남겨야 "빨라 보이지만 틀린 화면"을 막는다.
@@ -12971,6 +12978,19 @@ var WriteBuffer = (function(){
   function forceRetry() {
     queue.forEach(function(it){ it.parked = false; it.attempts = 0; it.nextTry = 0; it.inflight = false; });
     _save(); renderChip(); scheduleFlush(0);
+  }
+
+  // 실패로 멈춘 저장 요청을 버린다(2026-08-12 · 위 renderChip 주석 참조). 시트 값은 건드리지 않는다 —
+  // 보내지 못한 요청만 지운다. 진행 중(inflight)·대기 중인 정상 건은 남긴다.
+  function discardFailed() {
+    var failed = failedItems();
+    if (!failed.length) return;
+    var who = failed.map(function(it){ return (it.who || '') + (it.label ? '·' + it.label : ''); }).filter(Boolean).join(', ');
+    if (!confirm('보내지 못한 저장 요청 ' + failed.length + '건을 버립니다.\n' + (who ? who + '\n' : '') +
+                 '\n시트에 저장된 값은 지워지지 않습니다. 화면에서 직접 고치신 값도 그대로 남습니다.\n계속할까요?')) return;
+    queue = queue.filter(function(it){ return !it.parked; });
+    _save(); renderChip();
+    showToast('보내지 못한 저장 요청 ' + failed.length + '건 버림', 'ok');
   }
 
   /* ── 저장 확인(read-back) 본체 — 2026-07-28 GM 지시. 상단 verifyBatches 주석 참고.
@@ -13187,7 +13207,7 @@ var WriteBuffer = (function(){
   setTimeout(function(){ scheduleFlush(300); }, 0);
 
   return {
-    enqueue: enqueue, flush: flush, forceRetry: forceRetry,
+    enqueue: enqueue, flush: flush, forceRetry: forceRetry, discardFailed: discardFailed,
     applyOverlay: applyOverlay, hasPending: hasPending,
     activeCount: activeCount, dismissVerifyAlerts: dismissVerifyAlerts,
     _queue: function(){ return queue; }
