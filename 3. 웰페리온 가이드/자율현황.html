@@ -1312,12 +1312,7 @@
     var d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   }
-  function cooFetchTodayLive(){
-    var url = COO_API_URL + '?action=today_live&dept=support&date=' + encodeURIComponent(cooTodayDate()) + '&_pv=' + Date.now();
-    return fetch(url, {redirect:'follow'}).then(function(r){ return r.json(); })
-      .then(function(j){ return (j && j.ok) ? j : null; })
-      .catch(function(){ return null; });
-  }
+  // cooFetchTodayLive() 제거 — renderCooLiveMetrics 만 부르던 함수라 그것과 같이 죽었다(배587 후속·2026-08-13).
   function cooFetchMonthlyReport(dept){
     var url = COO_API_URL + '?action=monthly_report&dept=' + (dept || 'support') + '&month=' + encodeURIComponent(cooMonthStr());
     return fetch(url, {redirect:'follow'}).then(function(r){ return r.json(); })
@@ -1334,46 +1329,9 @@
       (o.bar != null ? '<div class="sbar"><i style="width:' + o.bar + '%;background:linear-gradient(90deg,' + o.sc + ',' + o.sc + ')"></i></div>' : '') +
       '<div class="ssub">' + o.sub + '</div></div>';
   }
-  function renderCooLiveMetrics(tl, mr, mrFac){
-    var el = reqEl('coo-live-metrics', 'renderCooLiveMetrics');
-    if(!el) return;
-    var cards = [];
-
-    if(tl){
-      cards.push(cooMetricCard({ sc:cooPctColor(tl.pct), sh:'🏢 지원부 오늘 완료율', big:tl.pct, small:'%', bar:tl.pct,
-        sub:'완료 <b>' + tl.done + '</b> / 총 <b>' + tl.total + '</b>건 · 주말=오전+마감조 정상·소스 분모 통일(라이브) · 진행중 당일이라 시간 경과에 따라 상승' }));
-      var gm = (tl.byGender && tl.byGender.m) || null, gf = (tl.byGender && tl.byGender.f) || null;
-      if(gm) cards.push(cooMetricCard({ sc:cooPctColor(gm.pct), sh:'남성구역 완료율', big:gm.pct, small:'%', bar:gm.pct,
-        sub:'완료 <b>' + gm.done + '</b> / 총 <b>' + gm.total + '</b>건' }));
-      if(gf) cards.push(cooMetricCard({ sc:cooPctColor(gf.pct), sh:'여성구역 완료율', big:gf.pct, small:'%', bar:gf.pct,
-        sub:'완료 <b>' + gf.done + '</b> / 총 <b>' + gf.total + '</b>건' }));
-      var issN = (tl.allIssues || []).length;
-      cards.push(cooMetricCard({ sc: issN ? '#ff8a80' : 'var(--green)', sh:'🚨 오늘 이슈', big:issN, small:'건',
-        sub: issN ? issN + '건 접수 — 점검관리방 알림·시트 G열 기록(아래 2·3층 참조)' : '오늘 접수된 이슈 없음' }));
-    } else {
-      cards.push(cooMetricCard({ unmeasured:true, sh:'🏢 지원부 오늘 완료율', big:'미측정', sub:'today_live 응답 실패 — 새로고침 시 재시도(가짜 수치 금지)' }));
-    }
-
-    if(mr && mr.monthTotals){
-      var t = mr.monthTotals;
-      var daily = Array.isArray(mr.dailySeries) ? mr.dailySeries : [];
-      cards.push(cooMetricCard({ sc:cooPctColor(t.avgPct), sh:'📅 지원부 이번달 완료율', big:(t.avgPct != null ? t.avgPct : 0), small:'%', bar:(t.avgPct != null ? t.avgPct : 0),
-        sub:'분모=전체 스케줄 기대치(today_live와 통일·라이브) · 세션 <b>' + (t.sessionCount || 0) + '</b> · 활성일 <b>' + (t.activeDays || 0) + '</b> · 진행중 당일 포함' }));
-      var issueSum = daily.reduce(function(s, d){ return s + (Number(d && d.issueCount) || 0); }, 0);
-      cards.push(cooMetricCard({ sc: (issueSum ? '#ff8a80' : 'var(--green)'), sh:'📅 이번달 이슈 총계', big:issueSum, small:'건',
-        sub:'일별 dailySeries 합산 실측(지원부) · top-level 집계값 결측이라 일별 합산으로 산출' }));
-    } else {
-      cards.push(cooMetricCard({ unmeasured:true, sh:'📅 지원부 이번달 완료율', big:'미측정', sub:'monthly_report 응답 실패 — 새로고침 시 재시도' }));
-    }
-
-    // 시설부 타일은 여기서 그리지 않는다 — 이 함수가 쓰던 칸(#coo-live-metrics)은
-    // 2026-08-08 에 삭제돼 지금 아무것도 안 그려진다. 시설부는 아래 renderFacilityPulse 가
-    // 살아 있는 자기 칸에 그린다(배481).
-    // 주차 — 점검 체계 자체가 독립(project_parking_dept_standalone)
-    cards.push(cooMetricCard({ unmeasured:true, sh:'🅿️ 주차 완료율', big:'체계 외', sub:'주차관리부는 규정·가이드·매뉴얼만 운영 — 점검(today_live) 체계에 미포함(정책상 독립)' }));
-
-    el.innerHTML = cards.join('');
-  }
+  // renderCooLiveMetrics() 제거 — 쓰던 칸 #coo-live-metrics 는 2026-08-08 에 지워져 죽은 함수로
+  // 5일간 헛돌았다(배587 reqEl 가드가 잡음). 대체=renderFacilityPulse(#facility-pulse-body, 실측 확인됨) · 2026-08-13 정리.
+  // cooMetricCard·cooPctColor 는 renderFacilityPulse 가 그대로 재사용해 남겨 둔다.
 
   // ═══════════ 🏗 시설부 점검 맥박 (배481 · GM 지시 2026-08-08) ═══════════
   //   왜 생겼나: 점검일지는 13영업일 100% 들어오고 있었는데(GAS 라이브 실측) GM 화면
@@ -2634,8 +2592,8 @@
     gasReadText('status/audit_registry.json',         'status/audit_registry.json').catch(function(){ return ''; }),
     Promise.resolve(''),  // a[7] 자리 유지 — 구 CMO review_queue fetch 제거(마케팅 CMO 이관 2026-07-15)
     gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; }),
-    cooFetchTodayLive(),
-    cooFetchMonthlyReport(),
+    Promise.resolve(''),  // a[9] 자리 유지(인덱스 정렬) — cooFetchTodayLive, renderCooLiveMetrics 제거로 소비처 없음(배587 후속·2026-08-13)
+    Promise.resolve(''),  // a[10] 자리 유지(인덱스 정렬) — cooFetchMonthlyReport, 위와 동일 사유
     cpoFetchChurnStats(),
     gasReadText('status/module_registry.json',        'status/module_registry.json').catch(function(){ return ''; }),
     gasReadText('status/kakao_last_send.json',         'status/kakao_last_send.json').catch(function(){ return ''; }),
@@ -2693,10 +2651,6 @@
       var _fp = document.getElementById('facility-pulse-summary');
       if(_fp) _fp.textContent = '시설부 점검 표시 오류.';
     }
-    try{ renderCooLiveMetrics(a[9], a[10]); }catch(e){
-      var _cl = document.getElementById('coo-live-metrics');
-      if(_cl) _cl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">운영 실측 지표 표시 오류.</div>';
-    }
     try{ renderCpoLiveStrip(a[11]); }catch(e){ /* 조용히 실패 — 초기 "–" 유지(가짜 수치 금지) */ }
     try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
     try{ renderStats(d, feedItems); }catch(e){ document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">성과 지표 계산 오류.</div>'; }
@@ -2722,8 +2676,6 @@
     document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     var asEl0 = document.getElementById('all-ships');
     if(asEl0) asEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">배 목록을 불러오지 못했습니다.</div>';
-    var _cl2 = document.getElementById('coo-live-metrics');
-    if(_cl2) _cl2.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('stats').innerHTML = '<div class="feed-status" style="grid-column:1/-1;">데이터를 불러오지 못했습니다.</div>';
     document.getElementById('erp-sys-summary').innerHTML = '<span style="color:var(--dim);">현황을 아직 불러오지 못했습니다.</span>';
