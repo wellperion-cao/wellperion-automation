@@ -317,11 +317,36 @@ function renderTiles(){
   document.getElementById("summary").innerHTML=
     sitem("지남",o,"--red")+sitem("임박",s,"--yellow")+sitem("여유",k,"--green")+sitem("미정",t,"--dim");
 }
+// 지난 1회성 이벤트는 접는다 — GM 지적 2026-08-12 "지난건은 왜 보여주는거야? 일정 미리 체크하고
+// 놓치지만 않으면 되는데". 지우지는 않는다(기록은 남는다). 접는 대상 = 날짜가 지난 이벤트 중
+// 반복이 없는 것. 정기점검은 접지 않는다 — 날짜가 지났다는 건 법정 주기를 넘겼다는 뜻이라
+// 그게 바로 놓치면 안 되는 것이다. 반복 이벤트도 다음 회차가 계산되므로 그대로 둔다.
+var _pastOpen=false;
+function isPastOneOff(it){
+  return it.type==="이벤트" && !it.repeat && statusOf(it).k==="over";
+}
 function renderList(){
-  var f=items().slice().sort(function(a,b){var da=statusOf(a).dd,db=statusOf(b).dd;da=(da===null?99999:da);db=(db===null?99999:db);return da-db;});
+  var all=items().slice().sort(function(a,b){var da=statusOf(a).dd,db=statusOf(b).dd;da=(da===null?99999:da);db=(db===null?99999:db);return da-db;});
+  var past=all.filter(isPastOneOff);
+  var f=all.filter(function(it){return !isPastOneOff(it);});
   var el=document.getElementById("vList");el.innerHTML="";
-  if(!f.length){el.innerHTML='<div class="loading">이 부서의 정기점검 항목이 없습니다.</div>';return;}
-  f.forEach(function(it){
+  if(!f.length && !past.length){el.innerHTML='<div class="loading">이 부서의 정기점검 항목이 없습니다.</div>';return;}
+  f.forEach(function(it){ appendRow(it, el); });
+  if(past.length){
+    var t=document.createElement("div");
+    t.className="row editable";
+    t.style.cssText="cursor:pointer;opacity:.75;";
+    t.innerHTML='<div class="catbar" style="background:#666"></div>'+
+      '<div><div class="name">'+(_pastOpen?"▾":"▸")+' 지난 일정 '+past.length+'건</div>'+
+      '<div class="rsub">날짜가 지난 1회성 일정입니다 — 기록은 그대로 남아 있습니다</div></div>'+
+      '<div class="rdept"></div><div class="rd"></div><div class="pill ok"><span>접힘</span><span></span></div>';
+    t.onclick=function(){ _pastOpen=!_pastOpen; renderList(); fitFrame(); };
+    el.appendChild(t);
+    if(_pastOpen) past.forEach(function(it){ appendRow(it, el); });
+  }
+}
+function appendRow(it, el){
+  (function(){
     var comp=nextOccurrence(it),st=statusOf(it),cat=CATS[it.category]||{label:it.category,color:"#888"};
     var isEvent=(it.type==="이벤트");
     var isTbd=(st.k==="tbd");
@@ -359,7 +384,7 @@ function renderList(){
         panel.querySelector('[data-act="del"]').onclick=function(){deleteInline(_it.id);};
       })(it);
     }
-  });
+  })();
 }
 
 /* ── 월간 달력 ── */
