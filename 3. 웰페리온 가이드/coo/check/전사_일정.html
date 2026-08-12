@@ -560,7 +560,10 @@ function efEvidence(i,it){
       '<button type="button" class="ebtn" onclick="event.stopPropagation();document.getElementById(\'evCam_'+i+'\').click();">📷 사진 올리기</button>'+
       seen+'<span id="evStat_'+i+'" style="font-size:12px;color:var(--accent);"></span>'+
     '</div>'+
-    '<input type="file" id="evCam_'+i+'" accept="image/*" capture="environment" style="display:none;" onclick="event.stopPropagation();" onchange="uploadEvidence('+i+',this)">'+
+    // capture 속성을 빼 둔다 — 붙어 있으면 휴대폰이 카메라만 열고 갤러리를 못 고른다
+    // (GM 지적 2026-08-12: 이미 찍어 둔 성적서 사진이 갤러리에 있는 경우가 더 많다).
+    // 빼면 휴대폰이 '카메라 / 갤러리' 를 물어보고, PC 에서는 그냥 파일 선택창이 뜬다.
+    '<input type="file" id="evCam_'+i+'" accept="image/*" style="display:none;" onclick="event.stopPropagation();" onchange="uploadEvidence('+i+',this)">'+
   '</div>';
 }
 // 휴대폰 사진은 보통 4~8MB라 그대로 올리면 막힌다 — 긴 변을 maxPx 로 줄여 JPEG 로 다시 만든다.
