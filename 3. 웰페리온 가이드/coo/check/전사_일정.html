@@ -185,6 +185,8 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
       <div class="cal-dow">일</div><div class="cal-dow">월</div><div class="cal-dow">화</div><div class="cal-dow">수</div><div class="cal-dow">목</div><div class="cal-dow">금</div><div class="cal-dow">토</div>
     </div>
     <div class="cal-grid" id="calGrid" role="grid" aria-label="점검 일정 월간 달력"></div>
+    <!-- 날짜를 누르면 그날 항목이 여기 펼쳐진다 (GM 지시 2026-08-12 "달력 클릭 시 리스트가 나오게"). -->
+    <div id="dayPanel" style="display:none;margin-top:12px;border:1px solid var(--line,#ddd);border-radius:10px;padding:12px 14px;background:rgba(127,127,127,0.05);"></div>
   </div>
 
   <div class="bar">
@@ -442,7 +444,10 @@ function renderCalendar(){
       '</div>';
   }
   grid.innerHTML=html;
-  grid.querySelectorAll(".cal-cell.has").forEach(function(el){
+  // 일정이 없는 날도 누를 수 있어야 한다 — GM 이 "그날 뭐 있나"를 확인하는 동작이라,
+  // 빈 날은 "잡힌 일정이 없습니다"라고 답해 주는 것이 맞다(전엔 일정 있는 칸만 눌렸다).
+  grid.querySelectorAll(".cal-cell").forEach(function(el){
+    el.style.cursor="pointer";
     el.addEventListener("click",function(){highlightDate(el.getAttribute("data-date"));});
     el.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();highlightDate(el.getAttribute("data-date"));}});
   });
@@ -451,12 +456,51 @@ function calNav(delta){CAL_M+=delta;if(CAL_M<0){CAL_M=11;CAL_Y--;}else if(CAL_M>
 window.calNav=calNav;
 function calToday(){var t=kstToday();CAL_Y=t.getFullYear();CAL_M=t.getMonth();renderCalendar();}
 window.calToday=calToday;
+// 날짜를 누르면 그날 할 일이 달력 바로 아래에 뜬다 (GM 지시 2026-08-12).
+// 그 전엔 아래 「임박 순」 목록에서 해당 줄로 스크롤만 했다 — 그 목록은 기한 순이라
+// 고른 날짜의 것만 모아 보이지 않았고, 목록에 없는 날(예상 일정)은 "찾을 수 없습니다"만 떴다.
+// 시간은 항목에 시각 칸이 생기면 그 순서로 정렬한다(지금은 칸이 없어 '시간 미정'으로 둔다).
+var _dayPanelKey=null;
+function renderDayPanel(key){
+  var box=document.getElementById("dayPanel"); if(!box) return;
+  if(!key){ box.style.display="none"; box.innerHTML=""; _dayPanelKey=null; return; }
+  var list=(calBuildMap()[key]||[]).slice();
+  // 시각이 있으면 이른 순, 없으면 뒤로 — 같으면 이름 순.
+  list.sort(function(a,b){
+    var ta=String((a.it&&a.it.time)||""), tb=String((b.it&&b.it.time)||"");
+    if(ta&&tb&&ta!==tb) return ta<tb?-1:1;
+    if(ta&&!tb) return -1;
+    if(!ta&&tb) return 1;
+    return String(a.it.name||"").localeCompare(String(b.it.name||""));
+  });
+  var d=new Date(key+"T00:00:00");
+  var head=key+" ("+["일","월","화","수","목","금","토"][d.getDay()]+") — "+list.length+"건";
+  var body=list.length?list.map(function(x){
+    var c=(x.cat&&x.cat.color)||"#888";
+    var t=String((x.it&&x.it.time)||"").trim()||"시간 미정";
+    var who=String((x.it&&x.it.assignee)||"").trim();
+    var ev=String((x.it&&x.it.evidence)||"").trim();
+    return '<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid rgba(127,127,127,0.18);">'+
+      '<span style="flex:0 0 66px;font-size:12px;opacity:.75;">'+esc(t)+'</span>'+
+      '<span style="flex:0 0 3px;align-self:stretch;background:'+c+';border-radius:2px;"></span>'+
+      '<span style="flex:1 1 auto;font-size:13px;">'+esc(x.it.name||"(이름 없음)")+
+        (x.auto?' <span style="font-size:11px;opacity:.6;">(예상)</span>':'')+
+        (who?' <span style="font-size:11px;opacity:.6;">· '+esc(who)+'</span>':'')+
+        (ev?' <a href="'+esc(ev)+'" target="_blank" rel="noopener" style="font-size:11px;">📎 증빙</a>':'')+
+      '</span></div>';
+  }).join(""):'<div style="padding:8px 0;font-size:13px;opacity:.65;">이 날짜에 잡힌 일정이 없습니다.</div>';
+  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">'+
+      '<b style="font-size:13.5px;">📅 '+esc(head)+'</b>'+
+      '<button type="button" onclick="renderDayPanel(null)" style="border:none;background:transparent;cursor:pointer;font-size:13px;opacity:.6;">닫기 ✕</button>'+
+    '</div>'+body;
+  box.style.display="block";
+  _dayPanelKey=key;
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+window.renderDayPanel=renderDayPanel;
+
 function highlightDate(key){
-  var rows=document.querySelectorAll('#vList .row[data-due="'+key+'"]');
-  if(!rows.length){toast("해당 날짜의 항목을 리스트에서 찾을 수 없습니다.");return;}
-  rows[0].scrollIntoView({behavior:"smooth",block:"center"});
-  rows.forEach(function(r){r.classList.add("flash");});
-  setTimeout(function(){rows.forEach(function(r){r.classList.remove("flash");});},1600);
+  renderDayPanel(_dayPanelKey===key?null:key);   // 같은 날짜 다시 누르면 접힌다
 }
 window.highlightDate=highlightDate;
 
