@@ -59,6 +59,12 @@ _PROJECTS = [
     # 배포 관문(gas_deploy_guard)을 못 거치고 raw clasp deploy 우회로가 된다 — instructor·forms
     # 와 같은 사각지대 재발 방지.
     ("intake", "1zmXkpox9nuVY5x4rRDhMYD6k9GlNEjQnUU4c_F4ezEuKsn40OvJp7L8J", ".deploy-intake"),
+    # 매출 API(.deploy-sales) · 지출품의(.deploy-procurement) — 2026-08-13 등록(배535·시토).
+    # 남아 있던 마지막 두 사각지대. sales 는 .clasp.json 이 있는데 목록에 없었고,
+    # procurement 는 .clasp.json 자체가 없어 배포 자동 경로가 통째로 끊겨 있었다
+    # (그래서 편집기 직접 수정이 관행이 됐고 저장소 사본이 라이브와 어긋났다).
+    ("sales", "1Zx0PKWNjrvvVVPVstiYPf0M32moNhLIzAQFW1cL-kQWoGEU29BUCng77", ".deploy-sales"),
+    ("procurement", "1pCMppQK15EjSzgRSPfzWyXQl3L8cpbKxfl0WFIFctaYlJtnveU3fVMPj", ".deploy-procurement"),
 ]
 
 _HARD_LIMIT = 200
