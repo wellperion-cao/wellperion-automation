@@ -950,7 +950,10 @@
     secs.push(
       { key:'run',  title:'🚢 진행중', list: live.filter(function(s){ return s.status === 'IN_PROGRESS'; }) },
       { key:'wait', title:'⚓ 대기·정박', list: live.filter(function(s){ return !isDone(s) && s.status !== 'IN_PROGRESS'; }) },
-      { key:'done', title:'🏁 오늘 입항', list: live.filter(function(s){ var m = ts(s.processed_at); return isDone(s) && m >= t0 && m < t1; }) }
+      // processed_at 이 없는 배는 done_at·updated_at 으로 대신 본다(scripts/hangro_board.py 와 같은
+      // 대체 순서 · 웰리 2026-08-13 실측수리) — 안 그러면 오늘 완료됐는데도 완료일 칸을 안 채운 배가
+      // '오늘 입항'에서 조용히 빠진다(실측: 배447 이 이 사유로 누락돼 있었다).
+      { key:'done', title:'🏁 오늘 입항', list: live.filter(function(s){ var m = ts(s.processed_at || s.done_at || s.updated_at); return isDone(s) && m >= t0 && m < t1; }) }
     );
     // 칸 폭 재배분(2026-08-04 GM 표면점검 — 「다음」칸이 「배」보다 3.1배 빽빽한데 폭은 366px vs 37px로 접혔다):
     // 다음 30%→38%(+8pp, 미션의 남은 폭에서 흡수) · 담당 96px→84px. 배(37px)는 아이콘 칸이라 더 못 줄인다.
