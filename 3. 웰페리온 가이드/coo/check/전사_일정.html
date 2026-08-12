@@ -129,6 +129,11 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 .edel{flex-shrink:0;background:var(--red-bg);color:var(--red);border:1px solid rgba(237,91,63,0.4);border-radius:8px;font-size:12px;font-weight:700;padding:7px 11px;cursor:pointer;width:auto}
 .draftbanner{display:none;background:var(--yellow-bg);border:1px solid var(--yellow);color:var(--text);border-radius:10px;padding:10px 14px;font-size:13px;margin:12px 0;gap:10px;align-items:center;flex-wrap:wrap}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#111;color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+/* ── 임박순 팝업 (GM 지시 2026-08-12 "임박순 관련해서는 따로 팝업이 있으면") ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;align-items:flex-start;justify-content:center;padding:8vh 16px}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:16px 18px;max-width:480px;width:100%;max-height:76vh;overflow-y:auto}
+.modal-box-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .tag.rep{color:var(--purple);background:rgba(167,139,218,0.14)}
 .hlink-add{color:#221F20;background:var(--accent);border-color:var(--accent);font-weight:800;padding:8px 15px;box-shadow:0 4px 14px rgba(183,159,138,.28)}
@@ -157,6 +162,7 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
     </div>
     <div class="sheet-links">
       <a class="sheet-link hlink-add" id="addBtn" role="button" tabindex="0" onclick="startAddEvent()">➕ 일정 추가</a>
+      <a class="sheet-link" role="button" tabindex="0" onclick="openUrgentPopup()">🔥 임박순 팝업</a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
     </div>
   </div>
@@ -200,6 +206,12 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
   </div>
   <div id="vList" class="list"><div class="loading">불러오는 중…</div></div>
   <div class="toast" id="toast"></div>
+  <div class="modal-overlay" id="urgentModal" onclick="if(event.target===this)closeUrgentPopup()">
+    <div class="modal-box">
+      <div class="modal-box-head"><b style="font-size:14.5px;">🔥 임박순</b><button type="button" onclick="closeUrgentPopup()" style="border:none;background:transparent;cursor:pointer;font-size:13px;opacity:.6;">닫기 ✕</button></div>
+      <div id="urgentBody"></div>
+    </div>
+  </div>
 
   <footer id="foot">정본 = 서버(자동저장) · 전 부서 공유(<code>?dept=</code> 필터) · 편집→☁️ 자동저장으로 모두에게 즉시 반영 · 업무·결재 연동(게이트)</footer>
 </div>
@@ -534,6 +546,29 @@ function renderDayPanel(key){
 }
 window.renderDayPanel=renderDayPanel;
 
+// 임박순 팝업 — 기한 가까운 순으로 상단 버튼 하나에서 열림(GM 지시 2026-08-12). 부서·분류 필터 무관 전사 전체.
+function urgentItems(){
+  return (DATA.items||[]).filter(function(it){return it.applies!=="해당없음"&&!isPastOneOff(it);})
+    .map(function(it){return{it:it,st:statusOf(it)};})
+    .filter(function(x){return x.st.dd!==null;})
+    .sort(function(a,b){return a.st.dd-b.st.dd;});
+}
+function openUrgentPopup(){
+  var list=urgentItems();
+  document.getElementById("urgentBody").innerHTML=list.length?list.map(function(x){
+    var it=x.it,st=x.st,cat=CATS[it.category]||{label:it.category,color:"#888"};
+    return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid rgba(127,127,127,0.18);cursor:pointer;" onclick="closeUrgentPopup();openInline(\''+esc(it.id)+'\')">'+
+      '<span style="flex:0 0 3px;align-self:stretch;background:'+cat.color+';border-radius:2px;"></span>'+
+      '<span style="flex:1 1 auto;font-size:13px;">'+esc(it.name||"(이름 없음)")+' <span style="font-size:11px;opacity:.6;">· '+esc(it.dept)+'</span></span>'+
+      '<span class="pill '+st.k+'"><span>'+({over:"지남",soon:"임박",ok:"여유"}[st.k]||"")+'</span><span>'+ddText(st)+'</span></span>'+
+    '</div>';
+  }).join(""):'<div style="padding:12px 0;font-size:13px;opacity:.65;">표시할 일정이 없습니다.</div>';
+  document.getElementById("urgentModal").classList.add("show");
+}
+window.openUrgentPopup=openUrgentPopup;
+function closeUrgentPopup(){document.getElementById("urgentModal").classList.remove("show");}
+window.closeUrgentPopup=closeUrgentPopup;
+
 function highlightDate(key){
   renderDayPanel(_dayPanelKey===key?null:key);   // 같은 날짜 다시 누르면 접힌다
 }
@@ -556,7 +591,7 @@ var inlineEditId=null;
 // '➕ 일정 추가' — 새 이벤트 만들고 그 항목 인라인 편집 즉시 열기.
 function startAddEvent(){
   var id="evt-"+Date.now();
-  DATA.items.push({id:id,type:"이벤트",name:"",category:"event",dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",evidence:"",applies:"있음",note:"",vendor_id:"",repeat:""});
+  DATA.items.push({id:id,type:"이벤트",name:"",category:"event",dept:(cur!=="전체"?cur:DATA.depts[0]),cycle:"",cycle_confirmed:false,period_months:null,legal_basis:"",assignee:"",last_done:"",next_due:"",time:"",evidence:"",applies:"있음",note:"",vendor_id:"",repeat:""});
   saveDraft(); openInline(id);
 }
 window.startAddEvent=startAddEvent;
@@ -567,6 +602,7 @@ function inlinePanelHtml(it,idx){
     body='<div class="egrid">'+
       efIn(idx,"name","제목",it.name,"예) 정기교육")+
       efDate(idx,"next_due","날짜 (달력에 표시됨)",it.next_due)+
+      efTime(idx,it)+
       efRepeat(idx,it)+
       efSelCat(idx,it)+
       efSel(idx,"dept","담당 부서",DATA.depts,it.dept)+
@@ -586,6 +622,7 @@ function inlinePanelHtml(it,idx){
       efIn(idx,"last_done","최근 검사일",it.last_done,"YYYY-MM-DD")+
       efIn(idx,"period_months","주기(개월)",it.period_months,"예) 12")+
       efNextDue(idx,it)+
+      efTime(idx,it)+
       efIn(idx,"legal_basis","법적 근거",it.legal_basis,"")+
       efEvidence(idx,it)+
       efSel(idx,"vendor_id","담당 거래업체",[""].concat(vendorSorted().map(function(v){return v.id;})),it.vendor_id||"",function(id){if(!id)return "미지정";var v=vendorById(id);return v?(v.name+" ("+v.label+")"):"(알 수 없음)";})+
@@ -632,6 +669,8 @@ var DKEY="wp_schedule_draft_v1";
 function esc(s){return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function efIn(i,f,label,val,ph){return '<div class="efield"><label>'+label+'</label><input data-i="'+i+'" data-f="'+f+'" value="'+esc(val)+'" placeholder="'+esc(ph||"")+'"></div>';}
 function efDate(i,f,label,val){var v=String(val==null?"":val).replace(/^(\d{4}-\d{2}-\d{2}).*/,"$1");return '<div class="efield"><label>'+label+'</label><input type="date" data-i="'+i+'" data-f="'+f+'" value="'+esc(v)+'"></div>';}
+// 시간 칸 (GM 지시 2026-08-12 "시간단위로 정리되어서") — 선택 입력, 비우면 날짜별 팝업에서 "시간 미정"으로 맨 뒤.
+function efTime(i,it){return '<div class="efield"><label>시간 (선택 — 비우면 시간 미정)</label><input type="time" data-i="'+i+'" data-f="time" value="'+esc(it.time||"")+'"></div>';}
 // 증빙 = 사진을 찍어 올린다 (GM 지시 2026-08-12 "사진 업로드할 수 있게 해줘, 증빙(링크) 필요없어").
 // 주소를 손으로 붙여넣던 칸을 없애고 버튼 하나로 바꿨다. 값(드라이브 URL)은 그대로 evidence 에
 // 들어가므로 이미 붙여 둔 링크는 그대로 살아 있고 목록의 「📎 증빙 보기」도 그대로 뜬다.
