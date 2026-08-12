@@ -6959,8 +6959,10 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var apprDone = appr.filter(function(r){ return as(r) === '결재완료'; });
         var apprRej  = appr.filter(function(r){ return /반려/.test(as(r)); });
         var apprPend = appr.filter(function(r){ return as(r) !== '결재완료' && !/반려/.test(as(r)); });
+        // ★2026-08-13(배587 실측 후속): 라벨이 "진행 업무"만 적혀 있어 월간운영계획의 같은 이름 카드(GM
+        // 개인건 포함·모수 다름)와 같은 값처럼 보였다(19/46/53 실측). 계산은 그대로, 모수만 라벨에 드러낸다.
         el.innerHTML =
-            card(workActive.length, '진행 업무', 'var(--accent)', WORK_URL, '업무 SSOT')
+            card(workActive.length, '진행 업무(실무진)', 'var(--accent)', WORK_URL, '업무 SSOT')
           + card(workRate + '%', '완료율', 'var(--grow)', WORK_URL, '업무 SSOT')
           + card(apprPend.length, '결재 대기', 'var(--warm)', APPR_URL, '결재 SSOT')
           + card(apprDone.length, '결재 완료', 'var(--grow)', APPR_URL, '결재 SSOT')

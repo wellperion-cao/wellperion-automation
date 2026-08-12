@@ -2991,8 +2991,11 @@
           var workActiveAll = _workApprRows.filter(activeFn).length;
           var apprPendAll = _workApprRows.filter(apprPendFn).length;
           var mLabelW = _sel ? (Number(String(_sel).split('-')[1]) + '월') : '';
+          // ★2026-08-13(배587 실측 후속): 라벨 "실무진 기준"이 실제 필터(AI배만 제외 · GM 개인건 포함)와
+          // 안 맞았다 — ERP메인 S3 카드(실무진 7인만 세는 진짜 실무진 기준)와 같은 말을 쓰면서 다른 모수라
+          // 19/46/53 세 다른 숫자가 "왜 다르지"로 보였다. 계산은 그대로, 말만 실제 모수에 맞춘다.
           wkEl.innerHTML = '업무 진행 ' + workActiveM + '건 · 결재대기 ' + apprPendM + '건' +
-            '<div class="ss-sub">' + esc(mLabelW) + ' 생성분(실무진 기준) · 전체 누적 진행 ' + workActiveAll + '건·결재대기 ' + apprPendAll + '건</div>';
+            '<div class="ss-sub">' + esc(mLabelW) + ' 생성분(AI배 제외 · GM+실무진 전체, ERP메인 S3 카드는 실무진 7인만 센 값이라 모수가 다릅니다) · 전체 누적 진행 ' + workActiveAll + '건·결재대기 ' + apprPendAll + '건</div>';
         } else { wkEl.textContent = '측정 못 함(SSOT 조회 실패)'; }
       }catch(e){ wkEl.textContent = '—'; }
     }
