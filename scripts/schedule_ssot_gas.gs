@@ -15,6 +15,7 @@ var SCHEDULE_BAK_PROP = 'SCHEDULE_SSOT_BAK';
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) || '';
   if (action === 'load_schedule') return loadSchedule_();
+  if (action === 'schedule_dropped') return droppedLog_();
   return jsonRes_({ ok: true, msg: '웰페리온 전사 일정 SSOT 백엔드 정상 동작 중' });
 }
 
@@ -46,6 +47,19 @@ function loadSchedule_() {
 
 // ─── 저장: 전체 schedule JSON 덮어쓰기. items 배열 없으면 거부(파괴적 저장 방지) ───
 // 저장 직전 기존 값을 SCHEDULE_SSOT_BAK에 1개 백업(롤백 안전망).
+//
+// ★유실 방지 3종 (GM 지적 2026-08-12 "아무 기록없이 날라간것들이 많고")
+//   저장은 55건 전체를 한 덩어리로 덮어쓴다. 그래서 휴대폰과 PC를 같이 열어 두면 나중 저장이
+//   앞선 것을 통째로 밀어내고, 되돌릴 것은 직전 1벌뿐이라 그마저 다음 저장에 사라졌다.
+//   무엇이 언제 없어졌는지 적는 곳도 없었다. 아래 셋으로 막는다.
+//   ① 급감 거부 — 항목이 30% 넘게 줄면 저장을 거절한다(force:true 로만 통과).
+//   ② 백업 3벌 롤링 — 직전 1벌이 아니라 최근 3벌을 남긴다.
+//   ③ 사라진 항목 기록 — 없어진 id·이름을 남겨 무엇이 언제 빠졌는지 되짚을 수 있게 한다.
+var SCHEDULE_BAK_KEEP = 3;                       // 롤링 백업 벌 수
+var SCHEDULE_DROP_LOG_PROP = 'SCHEDULE_DROPPED'; // 사라진 항목 기록
+var SCHEDULE_DROP_LOG_MAX = 120;                 // 기록 상한(속성 용량 보호)
+var SCHEDULE_SHRINK_GUARD = 0.7;                 // 이전 건수의 70% 미만이면 거부
+
 function saveSchedule_(body) {
   var data = body.data;
   if (!data || typeof data !== 'object' || !Array.isArray(data.items)) {
@@ -53,13 +67,63 @@ function saveSchedule_(body) {
   }
   var props = PropertiesService.getScriptProperties();
   var prev = props.getProperty(SCHEDULE_PROP);
-  if (prev) props.setProperty(SCHEDULE_BAK_PROP, prev);
+  var prevItems = [];
+  if (prev) {
+    try { prevItems = (JSON.parse(prev) || {}).items || []; } catch (err) { prevItems = []; }
+  }
+
+  // ① 급감 거부 — 실수·경합으로 목록이 통째로 밀려나는 것을 서버에서 막는다.
+  if (prevItems.length >= 5 && data.items.length < Math.floor(prevItems.length * SCHEDULE_SHRINK_GUARD)
+      && body.force !== true) {
+    return jsonRes_({
+      ok: false,
+      error: '항목이 ' + prevItems.length + '건에서 ' + data.items.length + '건으로 크게 줄어 저장을 막았습니다. '
+           + '다른 기기에서 연 화면이 덮어쓰는 중일 수 있습니다 — 새로고침 후 다시 시도하세요.',
+      prevCount: prevItems.length, newCount: data.items.length
+    });
+  }
+
+  // ③ 사라진 항목 기록 — id 로 대조해 이번 저장에서 빠진 것을 남긴다.
+  var nowStr = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
+  var keep = {};
+  data.items.forEach(function (it) { if (it && it.id) keep[it.id] = true; });
+  var dropped = prevItems.filter(function (it) { return it && it.id && !keep[it.id]; });
+  if (dropped.length) {
+    var log = [];
+    try { log = JSON.parse(props.getProperty(SCHEDULE_DROP_LOG_PROP) || '[]') || []; } catch (err) { log = []; }
+    dropped.forEach(function (it) {
+      log.push({ at: nowStr, id: it.id, name: it.name || '', type: it.type || '', next_due: it.next_due || '' });
+    });
+    props.setProperty(SCHEDULE_DROP_LOG_PROP,
+      JSON.stringify(log.slice(-SCHEDULE_DROP_LOG_MAX)));
+  }
+
+  // ② 백업 3벌 롤링 — 오래된 것부터 밀어낸다.
+  if (prev) {
+    for (var i = SCHEDULE_BAK_KEEP; i > 1; i--) {
+      var older = props.getProperty(SCHEDULE_BAK_PROP + '_' + (i - 1));
+      if (older) props.setProperty(SCHEDULE_BAK_PROP + '_' + i, older);
+    }
+    props.setProperty(SCHEDULE_BAK_PROP + '_1', prev);
+    props.setProperty(SCHEDULE_BAK_PROP, prev);  // 옛 키도 유지 — 기존 복구 절차가 이걸 본다
+  }
+
   props.setProperty(SCHEDULE_PROP, JSON.stringify(data));
   return jsonRes_({
     ok: true,
     count: data.items.length,
-    savedAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
+    dropped: dropped.length,
+    savedAt: nowStr
   });
+}
+
+// ─── 사라진 항목 되짚기 (GET ?action=schedule_dropped) ───
+// 무엇이 언제 빠졌는지 사람이 확인하는 창구. 되살리기는 백업(SCHEDULE_SSOT_BAK_1~3)에서 한다.
+function droppedLog_() {
+  var raw = PropertiesService.getScriptProperties().getProperty(SCHEDULE_DROP_LOG_PROP);
+  var log = [];
+  if (raw) { try { log = JSON.parse(raw) || []; } catch (err) { log = []; } }
+  return jsonRes_({ ok: true, count: log.length, dropped: log });
 }
 
 // ─── 증빙 사진 업로드 (GM 지시 2026-08-12 "사진 업로드할 수 있게 해줘, 증빙(링크) 필요없어") ───

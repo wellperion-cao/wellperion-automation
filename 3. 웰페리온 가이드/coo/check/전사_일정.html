@@ -534,7 +534,12 @@ function saveInline(id){
 }
 function cancelInline(){
   var it=_inlineItem();
-  if(it&&it.type==="이벤트"&&!String(it.name||"").trim()&&!String(it.next_due||"").trim()){var idx=DATA.items.indexOf(it);if(idx>=0)DATA.items.splice(idx,1);saveDraft();}
+  // 편집을 취소했을 때 '완전히 빈 새 줄'만 걷어낸다. 예전에는 이름·다음예정일 둘만 보고 지워서,
+  // 담당이나 메모만 적어 둔 줄이 취소 한 번에 흔적 없이 사라졌다(GM 지적 2026-08-12
+  // "아무 기록없이 날라간것들이 많고"). 이제 사람이 적은 값이 하나라도 있으면 남긴다.
+  var _typed = ["name","next_due","last_done","assignee","note","evidence","legal_basis","cycle"]
+    .some(function(f){ return String((it&&it[f])||"").trim(); });
+  if(it&&it.type==="이벤트"&&!_typed){var idx=DATA.items.indexOf(it);if(idx>=0)DATA.items.splice(idx,1);saveDraft();}
   inlineEditId=null; renderAll();
 }
 function deleteInline(id){
