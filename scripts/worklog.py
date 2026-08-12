@@ -179,6 +179,72 @@ def close_gm_refs(role: str, detail: str = "") -> int:
         return 0
 
 
+# ── GM지시 접수 번호를 한 벌로 (GM 지시 2026-08-12 "구조문제도 해결해줘") ──────────────
+#   무엇이 문제였나: 같은 지시가 두 벌로 기록됐다. ①UserPromptSubmit 훅이 GM 이 말한 순간
+#   자동으로 접수(GM-YYYYMMDD-1xxx) ②그 뒤 역할이 손으로 또 접수(…-2xxx). 둘은 서로를 모르니
+#   짝맞춤이 한쪽을 영원히 못 닫고, 아침 미완 숫자가 실제보다 부풀었다(2026-08-12 실측 —
+#   겉보기 미완 23건 중 실질 3건, 나머지 20건이 이 중복이었다).
+#   어떻게 막나: 채번을 한 곳으로 모은다. 역할이 GM지시를 손으로 적을 때, 그날 아직 안 닫힌
+#   자동 접수가 있으면 새 번호를 따지 않고 그 번호에 얹는다. 손으로 적은 완료도 같은 번호로 간다.
+#   여기(log)에 두는 이유 = 모든 기록이 지나가는 유일한 관문이라서다(약속 L21).
+_GM_MANUAL_RANGE_MIN = 2000   # 역할이 손으로 쓰던 구간 — 이 위쪽만 흡수 대상
+
+
+def _open_auto_gm_ref(role: str, day: str) -> str:
+    """그날 그 역할의 자동 접수(1xxx) 중 아직 완료 짝이 없는 가장 최근 ref. 없으면 빈 문자열."""
+    prefix = f"GM-{day}-"
+    warns: list[str] = []
+    closed: set[str] = set()
+    try:
+        with open(WORKLOG_PATH, encoding="utf-8") as f:
+            for line in f:
+                if prefix not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if (d.get("role") or "") != role or (d.get("area") or "") != "GM지시":
+                    continue
+                ref = str(d.get("ref") or "")
+                if not ref.startswith(prefix):
+                    continue
+                try:
+                    nn = int(ref[len(prefix):])
+                except ValueError:
+                    continue
+                if not (1000 <= nn < _GM_MANUAL_RANGE_MIN):
+                    continue          # 자동 접수 구간만 본다
+                if d.get("result") == "warn":
+                    warns.append(ref)
+                elif d.get("result") == "ok":
+                    closed.add(ref)
+    except FileNotFoundError:
+        return ""
+    except Exception:
+        return ""
+    for ref in reversed(warns):
+        if ref not in closed:
+            return ref
+    return ""
+
+
+def _merge_gm_ref(role: str, area: str, result: str, ref: str) -> str:
+    """손으로 적은 GM지시 ref 를 그날 열려 있는 자동 접수 ref 로 합친다. 그 외는 그대로 둔다."""
+    if area != "GM지시" or not role or not ref.startswith("GM-"):
+        return ref
+    day = datetime.now(tz=KST).strftime("%Y%m%d")
+    if not ref.startswith(f"GM-{day}-"):
+        return ref                     # 지난 날 것을 소급 정리하는 중이면 손대지 않는다
+    try:
+        nn = int(ref.rsplit("-", 1)[-1])
+    except ValueError:
+        return ref
+    if nn < _GM_MANUAL_RANGE_MIN:
+        return ref                     # 자동 접수 자신은 그대로
+    return _open_auto_gm_ref(role, day) or ref
+
+
 def log(
     role: str,
     area: str,
@@ -202,6 +268,7 @@ def log(
         result_v = (result or "ok").strip().lower()
         if result_v not in VALID_RESULTS:
             result_v = "ok"
+        ref = _merge_gm_ref((role or "").strip().lower(), area or "", result_v, ref or "")
         record = {
             "ts": (ts or "").strip() or datetime.now(tz=KST).isoformat(timespec="seconds"),
             "role": (role or "").strip().lower(),
