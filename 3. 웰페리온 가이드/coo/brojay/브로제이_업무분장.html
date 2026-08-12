@@ -157,10 +157,8 @@
 <a class="back" href="../../월간운영계획.html">◂ 월간운영계획으로</a>
   </header>
 
-  <nav class="broj-tabs" id="broj-tabs">
-    <button type="button" class="broj-tab on" data-tab="assign">📋 업무분장</button>
-    <button type="button" class="broj-tab" data-tab="confirm">🔺 브로제이 확인</button>
-  </nav>
+  <!-- 탭 2개를 없앴다(GM 지시 2026-08-12 "탭이 2개니까 헷갈린다"). 업무분장 아래에
+       브로제이 확인 목록을 이어 붙여 한 화면에서 위에서 아래로 훑게 한다. -->
 
   <div id="tab-assign">
     <!-- 8/11(화) 브로제이 집중일 공유문 (GM 지시 2026-08-08 원본 → 2026-08-11 저녁 GM 결과보고로 갱신) — 정적 카드,
@@ -193,7 +191,9 @@
   <!-- 브로제이 확인 목록 — 같은 폴더의 브로제이_확인목록.html 을 그대로 끼워 넣는다.
        코드를 이 페이지로 옮겨 붙이지 않는 이유: 두 벌이 같은 저장소에 동시에 쓰면 서로 덮어쓴다.
        한 벌만 두고 화면만 갈아 끼운다(약속 L01·L21). 처음 탭을 누를 때만 로드한다. -->
-  <div id="tab-confirm" style="display:none;">
+  <div id="tab-confirm">
+    <h4 style="margin:22px 0 6px;">🔺 브로제이 확인 목록 — 외부 업체 회신이 필요한 것</h4>
+    <div class="broj-group-note" style="margin-bottom:8px;">위 업무분장은 <b>우리가 하는 일</b>, 여기는 <b>브로제이가 답을 줘야 풀리는 일</b>입니다. 답변 칸은 이 목록에서 바로 채우면 됩니다.</div>
     <iframe id="confirmFrame" data-src="브로제이_확인목록.html?embed=1" title="브로제이 확인 목록" style="height:1200px;"></iframe>
   </div>
 
@@ -281,6 +281,22 @@
         {title:'D. 가이드 작성 (2026-07-29 GM 지시 — 실무 절차 문서화)', items:[
           {id:'coo-guide-1', text:'골프 타석 예약 이용 가이드 작성 → 완료 시 아래 「📘 실무 가이드」 자리에 내용 등록'},
           {id:'coo-guide-2', text:'강사 앱 설치 가이드 작성(회원용과 별도 문서) → 완료 시 아래 「📘 실무 가이드」 자리에 내용 등록'}
+        ]},
+        {title:'E. 브로제이 대표님 통화 (2026-08-12)', note:'GM 이 브로제이 대표님과 통화한 내용을 그대로 옮긴 것입니다. 처리되는 대로 체크해 주세요.', items:[
+          {id:'coo-e1', text:'55인치 카메라 고정 — 회원님들이 만지면 위치가 바로 틀어진다. 고정 설치 필요', hot:true},
+          {id:'coo-e2', text:'회원 수강정보 마이그레이션이 안 된다 — 담당자 연락처 공유로 진행 (최준용M 010-8753-7909)', hot:true},
+          {id:'coo-e3', text:'일일락커 지정 단계가 많다. 지금은 ①얼굴인증 ②배정하기 아래 버튼 클릭 ③번호 선택 ④번호 확인 버튼 클릭 4단계 → 원하는 것은 「락커 발권 얼굴인증 → 번호 선택 → \'배정되었습니다\' 안내만 뜨고 끝」', hot:true},
+          {id:'coo-e4', text:'화면 UI 디자인 — 55인치 키오스크에 전체가 들어오도록 변경'},
+          {id:'coo-e5', text:'주차 관련 — 더함비즈에 연락해 개발 속도를 낼 수 있게 진행'}
+        ]},
+        {title:'F. 실무진 피드백 (2026-08-12)', note:'현장에서 올라온 것입니다. 브로제이 전달이 필요한 항목은 전달 후 체크해 주세요.', items:[
+          {id:'coo-f1', text:'데일리락커가 오프라인 1대에서만 쓰인다 — 컴퓨터 2대 이상에서 쓸 수 있게 필요', hot:true},
+          {id:'coo-f2', text:'발권 시작 시각을 06:00 → 05:50 으로 셋팅 필요 — 05:55 에 오시는 분들이 발권을 못 받는다 (GM 이 직접 수정)', hot:true},
+          {id:'coo-f3', text:'안면인식을 원하지 않는 회원의 대체 수단 필요 — 지금은 회원카드로 발권받고 있다'},
+          {id:'coo-f4', text:'리셉션 앞 안면인식기 — 수강이 없을 때 나는 소리를 더 강하고 다른 소리로 변경'},
+          {id:'coo-f5', text:'라카키가 없는 락커도 발권된다 — 키 없는 락커를 시스템이 못 걸러낸다. 고정락커로 배정한 번호(여 18·38·181 등)는 발권이 안 되게 잠그는 기능 필요', hot:true},
+          {id:'coo-f6', text:'자동문 앞 카메라 인식 후 문이 열리는 속도가 너무 느리다 — 전체적으로 얼굴 인식 후 반응이 늦다', hot:true},
+          {id:'coo-f7', text:'락커 키 발권 후 회원·직원이 직접 번호를 바꿔야 할 때 쓸 기능이 있는지 확인 필요'}
         ]}
       ]},
       { id:'cpo', label:'CPO — 임정은M', sub:'신규 회원 관리 · 기존 회원 재등록 집중 (GM 2026-07-29 담당 변경)', color:'#70AD47', groups:[
@@ -885,22 +901,18 @@
   // ── 탭 (GM 2026-07-30) — 주소 하나로 두고 화면만 갈아 끼운다.
   //    확인 목록은 처음 눌렀을 때만 로드하고(첫 화면 부담 0), 안쪽 높이에 맞춰 늘려
   //    스크롤이 두 겹으로 겹치지 않게 한다. ──
+  // 2026-08-12 GM 지시로 탭을 없앴다 — 두 화면이 한 페이지에 위아래로 같이 있다.
+  // 예전 탭 링크(data-goto-tab)는 그대로 살려 두고, 화면을 갈아 끼우는 대신 그 자리로 굴러간다.
   function showTab(name){
-    var isConfirm = name === 'confirm';
-    var a = document.getElementById('tab-assign'), c = document.getElementById('tab-confirm');
-    if(!a || !c) return;
-    a.style.display = isConfirm ? 'none' : '';
-    c.style.display = isConfirm ? '' : 'none';
-    Array.prototype.forEach.call(document.querySelectorAll('.broj-tab'), function(b){
-      b.classList.toggle('on', b.getAttribute('data-tab') === name);
-    });
-    if(isConfirm){
-      var f = document.getElementById('confirmFrame');
-      if(f && !f.src){ f.src = f.getAttribute('data-src'); }   // 처음 눌렀을 때만 로드
-      fitConfirmFrame();
-    }
-    try{ history.replaceState(null, '', isConfirm ? '#확인' : '#분장'); }catch(e){}
-    window.scrollTo(0, 0);
+    var el = document.getElementById(name === 'confirm' ? 'tab-confirm' : 'tab-assign');
+    if(!el) return;
+    loadConfirmFrame();
+    el.scrollIntoView({behavior:'smooth', block:'start'});
+    try{ history.replaceState(null, '', name === 'confirm' ? '#확인' : '#분장'); }catch(e){}
+  }
+  function loadConfirmFrame(){
+    var f = document.getElementById('confirmFrame');
+    if(f && !f.src){ f.src = f.getAttribute('data-src'); }
   }
   function fitConfirmFrame(){
     var f = document.getElementById('confirmFrame'); if(!f || !f.src) return;
@@ -921,7 +933,8 @@
     });
     var f = document.getElementById('confirmFrame');
     if(f) f.addEventListener('load', function(){ fitConfirmFrame(); setTimeout(fitConfirmFrame, 1200); setTimeout(fitConfirmFrame, 3500); });
-    setInterval(function(){ if(document.getElementById('tab-confirm').style.display !== 'none') fitConfirmFrame(); }, 2000);
+    setInterval(fitConfirmFrame, 2000);
+    loadConfirmFrame();   // 탭이 없어졌으므로 처음부터 같이 띄운다
     if((location.hash || '').indexOf('확인') >= 0) showTab('confirm');
   }
 
