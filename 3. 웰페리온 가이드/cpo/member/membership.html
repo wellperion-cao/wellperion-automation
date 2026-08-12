@@ -7050,8 +7050,17 @@ function _actSetPeriod(period) {
 }
 // 대기자 필터 + 월단위 보기 결합(신규 fetch 없이 로드분만 재필터) — loadActiveMembers·_activeFilter·헤더 카운트 공용.
 // 헤더 건수(§2-B·§2-C)와 표에 실제 뿌려지는 행이 항상 같은 값을 쓰도록 단일 함수로 통일.
+// 완성도 줄(담당 미배정·연락기록 없음)이 세는 모집단 — 2026-08-12 GM 지적 "담당 미배정 3인데
+//   유상두님만 나온다". 원인: 숫자는 _activeRows 전체로 세는데 목록은 기본이 '시작한 회원'만이라,
+//   시작일이 아직 안 온 회원(김혜선 9/1·유선영 8/24)이 숫자에만 잡히고 눌러도 안 나왔다.
+//   담당 배정·연락은 시작일 전에 해두는 일이므로 감추는 쪽이 아니라 **보이는 쪽**으로 맞춘다 —
+//   세는 곳과 빈칸 필터가 같은 이 함수를 쓰고, 시작 필터는 여기에 걸지 않는다.
+function _activeGapBaseRows() {
+  return _actPeriodFilter(_activeTypeFilterApply(_activeRows));
+}
 function _activeBaseRows() {
-  return _activeGapFilterApply(_actPeriodFilter(_activeTypeFilterApply(_activeStartFilterApply(_activeRows))));
+  if (_activeGapFilter) return _activeGapFilterApply(_activeGapBaseRows());
+  return _actPeriodFilter(_activeTypeFilterApply(_activeStartFilterApply(_activeRows)));
 }
 var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
@@ -8156,8 +8165,11 @@ function _renderActiveCompleteness() {
   var el = document.getElementById('activeCompleteness');
   if (!el) return;
   if (_activeScope !== 'valid' || !_activeRows.length) { el.innerHTML = ''; return; }
-  var n = _activeRows.length, owner = 0, contact = 0, cls = 0, complete = 0;
-  _activeRows.forEach(function(row){
+  // 목록에 실제로 뿌려지는 모집단으로 센다 — 숫자를 눌렀을 때 그 수만큼 나와야 한다(위 _activeGapBaseRows 주석).
+  var base = _activeGapBaseRows();
+  if (!base.length) { el.innerHTML = ''; return; }
+  var n = base.length, owner = 0, contact = 0, cls = 0, complete = 0;
+  base.forEach(function(row){
     var g = _activeCompletenessGaps(row);
     if (g.owner) owner++;
     if (g.contact) contact++;
