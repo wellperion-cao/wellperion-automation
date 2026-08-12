@@ -1861,7 +1861,19 @@
       var hr = d.obsLedger.filter(function(o){ return o.signal_type === 'hit_rate'; });
       var h = last(hr), ratio = null;
       if(h){ var m = String(h.summary || '').match(/(\d+)\s*\/\s*(\d+)/); if(m) ratio = [+m[1], +m[2]]; }
-      if(ratio && ratio[1] > 0){
+      // 기록이 오래 멈추면 지금 값이 아니다. 실측 2026-08-12 — 이 카드가 41일째(2026-07-02 기록)
+      // 같은 수치를 살아있는 지표처럼 띄우고 있었다. 30일 넘게 새 기록이 없으면 숫자를 접고
+      // 며칠째인지 밝힌다(가짜 최신값 금지 · 약속 L05).
+      var hrDay = h && String(h.observed_at || '').slice(0, 10), hrDays = null;
+      if(hrDay){
+        var t = Date.parse(hrDay);
+        if(!isNaN(t)) hrDays = Math.floor((Date.now() - t) / 86400000);
+      }
+      if(hrDays !== null && hrDays > 30){
+        cards.push('<div class="scard unmeasured"><div class="sh">🎯 포착 적중률</div>' +
+          '<div class="sbig">최근 기록 없음</div>' +
+          '<div class="ssub">마지막 기록 <b>' + hrDays + '일 전</b>(' + hrDay + ') — 그 뒤 새 값이 없어 지금 수치로 쓰지 않습니다.</div></div>');
+      } else if(ratio && ratio[1] > 0){
         var tiny = ratio[1] < 10;
         cards.push('<div class="scard" style="--sc:var(--gold)"><div class="sh">🎯 포착 적중률</div>' +
           '<div class="sbig">' + ratio[0] + '/' + ratio[1] + '<small>건</small></div>' +
