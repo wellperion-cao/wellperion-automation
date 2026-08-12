@@ -1390,6 +1390,15 @@ def _build_06_body() -> str:
     else:
         quote_line = "\n\n(추후 데이터 연결 필요 — 문구 DB 등록 후 활성화)\n"
 
+    # GM 지시 2026-08-12 — 아침에 무엇을 먹고 어떤 순서로 움직이는지를 G1 에 적어 둔 그대로 읊는다.
+    # 여기서 새로 적지 않는다: 정본은 status/gm_personal_routine.json 이고 그 값은 G1 「내 리듬」 표에서 왔다.
+    plan_lines = []
+    try:
+        import gm_checkin as _ck
+        plan_lines = _ck.morning_plan_lines()
+    except Exception as e:
+        logger.warning(f"[06시] 아침 계획 줄 실패: {e}")
+
     workout_lines = ["🏋️ 오늘 운동 점검"]
     for name, unit in DAILY_WORKOUT_ITEMS:
         workout_lines.append(f"  • {name}  ___{unit}  ☐")
@@ -1398,6 +1407,7 @@ def _build_06_body() -> str:
         f"{_unified_header('06', '개인', '하루시작·운동')}\n"
         f"오늘도 좋은 하루 되십시오."
         f"{quote_line}\n"
+        + ("\n".join(plan_lines) + "\n\n" if plan_lines else "")
         + "\n".join(workout_lines)
         + _checkin_morning_block()
         + f"\n\n{_AUTO_FOOTER}"

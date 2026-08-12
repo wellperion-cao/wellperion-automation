@@ -246,6 +246,44 @@ def _meal_ex_line(day: str | None = None) -> str:
     return f"🍚{meals} 🏃{ex}"
 
 
+def _axis_plan(axis: str, day: str) -> str:
+    """그 축의 '오늘 실제로 뭘 하기로 했나' 한 줄. 정본 = gm_personal_routine.json 의 axes[].plan
+    (G1 「내 리듬」 표에서 옮겨 온 값). 일요일은 plan_sun 이 있으면 그쪽을 쓴다. 없으면 빈 문자열."""
+    try:
+        rows = json.loads(JPATH.read_text(encoding='utf-8')).get('axes') or []
+    except Exception:
+        return ''
+    row = next((r for r in rows if r.get('id') == axis), None)
+    if not row:
+        return ''
+    if datetime.date.fromisoformat(day).weekday() == 6 and row.get('plan_sun'):
+        return str(row['plan_sun'])
+    return str(row.get('plan') or '')
+
+
+def wakeup_line() -> str:
+    """기상 직후 공복 보충제 순서 한 줄 — G1 「내 리듬」에서 옮겨 온 값. 없으면 빈 문자열."""
+    try:
+        return str(json.loads(JPATH.read_text(encoding='utf-8')).get('기상_공복보충제') or '')
+    except Exception:
+        return ''
+
+
+def morning_plan_lines(day: str | None = None) -> list:
+    """06시 하루 시작 카드에 붙일 '오늘 아침 이렇게' — 기상 보충제 · 아침 운동 · 아침 식사.
+    G1 표를 그대로 읊는다(GM 지시 2026-08-12). 값이 없는 줄은 빼고 낸다."""
+    day = day or today()
+    out = []
+    w = wakeup_line()
+    if w:
+        out.append(f"  • 기상 직후   {w}")
+    for axis, label in (('morning_ex', '아침 운동'), ('meal_breakfast', '아침 식사')):
+        plan = _axis_plan(axis, day)
+        if plan:
+            out.append(f"  • {label}   {plan}")
+    return (["🌅 오늘 아침 이렇게"] + out) if out else []
+
+
 def build_slot(slot_id: str, day: str | None = None) -> dict:
     """시점 카드 하나. 항목마다 ○했다/－안했다 두 버튼, 답한 항목은 버튼이 사라진다.
     전부 답하면 본문을 「오늘 여기까지」 요약으로 바꾼다."""
@@ -263,6 +301,11 @@ def build_slot(slot_id: str, day: str | None = None) -> dict:
         v = axes.get(axis)
         mark = {'O': '✅', 'X': '－'}.get(v, '·')
         lines.append(f"{mark} {label}")
+        # GM 이 G1 에 적어 둔 그날의 실제 구성을 그대로 읊는다 (GM 지시 2026-08-12 —
+        # "아침을 먹었다"만으로는 부족하고 무엇을 먹는지가 중요하다). 값이 없으면 아무 것도 안 붙인다.
+        plan = _axis_plan(axis, day)
+        if plan:
+            lines.append(f"   {plan}")
         if v not in ('O', 'X'):
             rows.append([{'text': '○ 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
                          {'text': '－ 안 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
