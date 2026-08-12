@@ -829,28 +829,46 @@ def _load_office_ships() -> list | None:
 #   순위 ①오늘 일정 ②회장님 보고 대기 ③기한 지난 것. "사람이 GM 회신 기다리는 것"·
 #   "매출·안전·법"은 팀장 지시 원안엔 있었으나 지어내지 않고는 뽑을 근거(신뢰 가능한 날짜·
 #   플래그)가 저장소에 없어 뺐다 — 근거 생기면 여기 추가한다.
+#   ★묵은순위 보정(GM 2026-08-13 지적 · 배558 후속) — 카테고리 ①이 5칸을 다 채우면 19일
+#   묵은 ③건이 영영 안 보였다. 경과일수를 "있는 데이터"에만 매긴다 — ③(업무SSOT 종료일)만
+#   신뢰 가능한 날짜가 있어 계산하고, ①②는 지어내지 않고 None(기존 순서 그대로 둔다).
+#   ③ 안에서는 오래 묵은 순으로 정렬 + 5칸 중 최소 1칸은 전체 후보 중 가장 오래 묵은 것에
+#   무조건 배정한다(이미 뽑혀 있으면 그대로).
 FIRST_THINGS_MAX = 5
 
 
 def _first_thing_candidates(sched_pairs: list, chairman_open: list | None,
-                             due_pairs: list, day: str) -> list[tuple[str, tuple]]:
-    """(표시줄, 식별키) 우선순위 순 후보. 식별키로 「놓친 것 없나」와 겹치지 않게 뺀다."""
+                             due_pairs: list, day: str) -> list[tuple[str, tuple, int | None]]:
+    """(표시줄, 식별키, 경과일수) 우선순위 순 후보. 식별키로 「놓친 것 없나」와 겹치지 않게 뺀다.
+    경과일수는 신뢰 가능한 날짜가 있는 ③만 채운다(①②는 None — 지어내지 않는다)."""
     cands = []
     for t, title in sched_pairs:
-        cands.append((f"· {(t + ' ') if t else ''}{title}", ('sched', title)))
+        cands.append((f"· {(t + ' ') if t else ''}{title}", ('sched', title), None))
     for it in (chairman_open or []):
-        cands.append((f"· {it['title']} — 회장님 보고 대기", ('chairman', it['id'])))
+        cands.append((f"· {it['title']} — 회장님 보고 대기", ('chairman', it['id']), None))
+    base = datetime.date.fromisoformat(day)
+    overdue = []
     for x, due in due_pairs:
         label = _due_label(due, day)
         if label.startswith('D+'):  # 지난 것만 — 임박은 기존 「기한이 임박했습니다」가 이미 다룬다
-            cands.append((f"· {x.get('업무명', '(제목없음)')} — {label}", ('ssot', x.get('업무명', ''))))
+            overdue.append((f"· {x.get('업무명', '(제목없음)')} — {label}",
+                             ('ssot', x.get('업무명', '')), (base - due).days))
+    overdue.sort(key=lambda c: -c[2])  # ③ 안에서는 오래 묵은 순
+    cands += overdue
     return cands
 
 
 def _first_thing_lines(cands: list) -> tuple[list, set]:
-    """최대 5건으로 자르고, 실제로 쓰인 항목의 식별키 집합을 함께 돌려준다."""
+    """최대 5건으로 자르고, 실제로 쓰인 항목의 식별키 집합을 함께 돌려준다.
+    묵은순위 보정 — 경과일수를 아는 후보 중 가장 오래 묵은 것이 5칸 밖으로 밀렸으면
+    마지막 칸을 내주고 대신 들어간다(이미 5칸 안이면 그대로)."""
     picked = cands[:FIRST_THINGS_MAX]
-    return [line for line, _k in picked], {k for _l, k in picked}
+    aged = [c for c in cands if c[2] is not None]
+    if aged:
+        oldest = max(aged, key=lambda c: c[2])
+        if oldest not in picked:
+            picked = picked[:-1] + [oldest]
+    return [line for line, _k, _a in picked], {k for _l, k, _a in picked}
 
 
 def _missed_lines(chairman_open: list | None, ssot_rest: list | None, used: set, max_n: int = 3) -> list:
@@ -1073,12 +1091,17 @@ def _selfcheck_morning_brief() -> None:
     chairman_open = [{'id': 'd9', 'title': 'X'}, {'id': 'd10', 'title': 'Y'}, {'id': 'd11', 'title': 'Z'}]
     due_pairs = [({'업무명': '지남건', '종료일': '2026-08-08'}, datetime.date(2026, 8, 8))]
     cands = _first_thing_candidates(sched_pairs, chairman_open, due_pairs, day)
-    assert [k for _l, k in cands[:4]] == [('sched', t) for _t, t in sched_pairs], cands  # 일정이 최우선
+    assert [k for _l, k, _a in cands[:4]] == [('sched', t) for _t, t in sched_pairs], cands  # 일정이 최우선
     first_lines, used = _first_thing_lines(cands)
-    assert len(first_lines) == 5, first_lines  # 4(일정) + 1(회장님 d9) 로 5 절단, d10·d11·지남건은 밀림
-    assert ('chairman', 'd9') in used and ('chairman', 'd10') not in used, used
+    assert len(first_lines) == 5, first_lines  # 4(일정)+1 로 5 절단인데, 묵은순위 보정이 마지막 칸을
+    # 가장 오래 묵은 '지남건'(D+ 최대)에 내준다 — 회장님 d9 가 밀리고 d9·d10·d11 전부 놓친 것으로 간다.
+    assert ('ssot', '지남건') in used and ('chairman', 'd9') not in used, used
     missed = _missed_lines(chairman_open, [], used)
-    assert missed == ['· Y — 회장님 보고 대기', '· Z — 회장님 보고 대기'], missed  # d9 는 이미 썼으니 제외
+    assert missed == ['· X — 회장님 보고 대기', '· Y — 회장님 보고 대기', '· Z — 회장님 보고 대기'], missed
+    # 묵은 후보가 없으면(빈 due_pairs) 기존 순서 그대로 — 지어낸 보정 없음.
+    cands2 = _first_thing_candidates(sched_pairs, chairman_open, [], day)
+    lines2, used2 = _first_thing_lines(cands2)
+    assert ('chairman', 'd9') in used2, used2
 
 
 def _selfcheck_schedule() -> None:
