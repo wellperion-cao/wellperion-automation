@@ -37,6 +37,11 @@ import os
 import re
 import subprocess
 import sys
+import time
+
+# auto-log 커밋을 묶는 간격(배445) — 이 시간 안에 이미 auto-log 커밋이 있었으면 이번엔 안 찍는다.
+# 5분 = push 스위퍼 주기와 같다(그보다 촘촘히 찍어도 원격 반영은 어차피 그 주기다).
+_AUTOLOG_MIN_INTERVAL_SEC = 300
 from contextlib import nullcontext
 from pathlib import Path
 
@@ -390,6 +395,27 @@ def _commit_queue(root: str, sha7: str, clevel: str) -> None:
         return  # git_lock 직독 실패 = fail-open.
 
     msg = f"chore(queue): auto-log 입항완료 배 — {sha7} ({clevel})"
+    # ★2026-08-13(시토 · 배445) — 커밋마다 찍지 않고 몇 분에 한 번만 묶는다.
+    #   왜: 이 커밋이 최근 3일 2,155건 중 969건이었다(GM 지적 "chore 는 의미가 없고").
+    #   커밋 하나가 곧바로 커밋 하나를 더 만드는 1:1 증폭 구조였다.
+    #   ▸디스크 쓰기(_write_queue)는 이미 끝나 있으므로 **기록이 사라지지 않는다** — 이 함수가
+    #     건너뛰어도 그 줄은 작업트리에 남아, 다음 회차나 다른 세션의 커밋에 함께 올라간다
+    #     (이 파일은 여러 세션이 상시 커밋하는 경로다). 원래도 락 경합 시 같은 방식으로 보류했다.
+    #   ▸타임스탬프를 저장할 새 파일을 만들지 않는다(약속 L21) — git 이력에서 직접 읽는다.
+    try:
+        _last = subprocess.run(
+            ["git", "log", "-1", "--format=%ct", "--grep=^chore(queue): auto-log 입항완료 배"],
+            cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15,
+        )
+        _ts = (_last.stdout or b"").decode("utf-8", "replace").strip()
+        if _ts and (time.time() - int(_ts)) < _AUTOLOG_MIN_INTERVAL_SEC:
+            from git_lock import _log as _gl_log  # type: ignore
+            _gl_log(f"AUTO_LOG 묶기 대기 — 직전 auto-log 커밋이 "
+                    f"{_AUTOLOG_MIN_INTERVAL_SEC}초 안이라 이번엔 커밋 안 함"
+                    f"(기록은 작업트리에 남아 다음 커밋에 실린다) {sha7}", root)
+            return
+    except Exception:
+        pass  # 이력 조회 실패는 막을 이유가 아니다 — 예전대로 커밋한다(fail-open).
     lock = GitLock("auto-log-adhoc", root)
     prev = _gl.ACQUIRE_TIMEOUT
     try:
