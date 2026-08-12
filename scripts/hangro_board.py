@@ -705,8 +705,8 @@ def _stall_days(item: dict) -> int | None:
     return None if last is None else (dt.date.today() - last).days
 
 
-def _stall_tag(item: dict) -> str:
-    d = _stall_days(item) or 0
+def _stall_tag(item: dict, days: int | None = None) -> str:
+    d = (_stall_days(item) or 0) if days is None else days
     if d >= 14:
         return f"{d}일🔴GM"
     if d >= 7:
@@ -763,7 +763,9 @@ def _long_open(items: list[dict], min_days: int = _LONG_OPEN_MIN_DAYS) -> list[d
 #   지금까지 웰리에게만 걸려 있던 규칙을 역할과 무관하게(약속 L01) 여기 한 곳에 얹는다. ──
 def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
     """role이 다른 역할에게 띄운 배 중 아직 열려 있는(답 없는) 것. 오래된 순.
-    1일 미만(오늘 띄운 배)은 뺀다 — 매일 뜨면 아무도 안 본다."""
+    1일 미만(오늘 띄운 배)은 뺀다 — 매일 뜨면 아무도 안 본다.
+    기준=_open_days(배를 넘긴 날부터, 배540) — _stall_days(마지막 기록일)를 쓰면
+    메모 한 줄만 붙어도 날짜가 초기화돼 실제로 오래 답 없는 배가 목록에서 빠진다."""
     role = (role or "").strip().lower()
     if not role:
         return []
@@ -772,8 +774,8 @@ def _sent_unanswered(items: list[dict], role: str) -> list[dict]:
            if it.get("_from") == role
            and str(it.get("owner", "")).lower() != role
            and str(it.get("status", "")).upper() in open_status
-           and (_stall_days(it) or 0) >= 1]
-    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+           and (_open_days(it) or 0) >= 1]
+    return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
 def _received_unanswered(items: list[dict], role: str) -> list[dict]:
@@ -789,8 +791,8 @@ def _received_unanswered(items: list[dict], role: str) -> list[dict]:
            and it.get("_from") and it.get("_from") != role
            and it.get("audience") != "ai"
            and str(it.get("status", "")).upper() in open_status
-           and (_stall_days(it) or 0) >= 1]
-    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+           and (_open_days(it) or 0) >= 1]
+    return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
 # ── 📨 GM 지시 짝맞추기 (2026-08-05 GM 지시 — status/worklog.jsonl area=="GM지시" 미완
@@ -1199,12 +1201,12 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         if sent_unanswered:
             lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)))
                                     for it in sent_unanswered]))
         if received_unanswered:
             lines.append(f"짝 — 남이 내게 띄우고 내가 답 안 한 배 {len(received_unanswered)}척 "
                           "(보낸이=상대 · 담당=나 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)))
                                     for it in received_unanswered]))
         if gm_gaps:
             lines.append(f"📨 GM 지시 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
