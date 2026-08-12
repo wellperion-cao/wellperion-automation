@@ -1033,19 +1033,44 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     else:
         send_enter(input_box)  # 팝업 없는 구버전 카톡 폴백 — 입력창에서 바로 전송
     time.sleep(1.0)
+    # ── 캡션은 사진 다음의 '별도 메시지' 다. 붙여넣기가 먹었는지 눈으로 확인하고 보낸다.
+    #   2026-08-12 실사고: 사진은 갔는데 캡션이 안 갔고, 로그에는 image+caption 성공으로
+    #   찍혔다. GM 이 방을 보고서야 알았다("내용을 사진에 넣지말고 따로 남겨줘"). 원인은
+    #   이미지 전송 팝업이 닫힌 직후 포커스가 방 입력창에 없어 붙여넣기가 허공에 떨어진 것.
+    #   그래서 ①방 창을 다시 앞으로 ②붙인 뒤 입력창에 글이 실제로 들어갔는지 확인
+    #   ③비어 있으면 한 번 더 ④그래도 비면 성공이라고 적지 않는다.
+    caption_sent = False
     if caption:
-        input_box = get_input_box(room_win, room_name)
-        input_box.click_input()
-        time.sleep(0.2)
-        paste_text(input_box, caption)
-        send_enter(input_box)  # 캡션 전송(이미지 다음 별도 메시지)
-        time.sleep(0.5)
+        for attempt in range(2):
+            focus_window(room_win, room_name)
+            time.sleep(0.3)
+            input_box = get_input_box(room_win, room_name)
+            input_box.click_input()
+            time.sleep(0.2)
+            paste_text(input_box, caption)
+            time.sleep(0.3)
+            try:
+                typed = (input_box.window_text() or "").strip()
+            except Exception:
+                typed = ""
+            if not typed:
+                log(f"[{room_name}] 캡션 붙여넣기가 안 먹었다 — 재시도 {attempt + 1}/2")
+                continue
+            send_enter(input_box)
+            time.sleep(0.5)
+            caption_sent = True
+            break
+        if not caption_sent:
+            log(f"[{room_name}] ⚠️ 사진은 갔으나 설명 글을 못 보냈다 — 사람이 직접 보내야 한다")
 
     screenshot(room_win, room_name, "sent")
-    log(f"[{room_name}] 전송 완료")
+    log(f"[{room_name}] 전송 완료" + ("" if caption_sent or not caption else " (설명 글 누락)"))
     record_dedup_sent(room_name, text=caption, image_path=image_path)
-    _log_outbound(caption, chat_id=room_name, source="kakao_report_sender.image",
-                  ok=True, kind="image+caption", channel="kakao")
+    # 로그는 실제로 나간 것만 적는다 — 캡션이 못 갔는데 image+caption 으로 적으면
+    # 어떤 감시기도 그 누락을 못 잡는다(오늘 사고의 실제 원인).
+    _log_outbound(caption if caption_sent else "", chat_id=room_name,
+                  source="kakao_report_sender.image", ok=True,
+                  kind="image+caption" if caption_sent else "image", channel="kakao")
     return True, ""
 
 
