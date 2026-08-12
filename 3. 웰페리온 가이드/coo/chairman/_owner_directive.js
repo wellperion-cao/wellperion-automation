@@ -139,6 +139,12 @@
   // GM 2026-08-06 "회장님건도 대표님건처럼 보고된 건이면 보고 완료로 문안 복사에서 제외".
   // 대표님건은 시트 '내용' 칸 표식으로, 회장님건은 시트에 없어 이 파일로 — 판정 규칙(있으면 완료)은 같다.
   var CH_STATE_PATH = '3. 웰페리온 가이드/coo/chairman/chairman_reported.json';
+  // ★2026-08-12 GM 지시 "회장님 저장 일시중단? 해결하자" — 저장 경로를 갈아탔다.
+  // 전에는 commit_file(GitHub API)로 저장소 파일을 직접 고쳤는데 그 출입 열쇠가 만료돼
+  // 눌러도 401 로 실패했다(그래서 버튼을 막아 뒀다). 열쇠를 새로 받는 대신, 부서보드·브로제이가
+  // 이미 쓰는 공용 키-값 저장소를 그대로 쓴다 — 새 저장소도, 새 열쇠도 만들지 않는다(약속 L21).
+  var CH_BOARD_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+  var CH_BOARD_KEY = 'CHAIRMAN_REPORTED';
   var chReported = {};   // 조회 실패 시 {} — 전부 '보고 대기'로 보여 문안에서 빠지는 일이 없게 한다.
   // 배포(GitHub Pages) 반영이 늦으면 같은 파일을 저장소 raw 에서 한 번 더 찾는다 — 못 읽은 채로 그리면
   // 이미 보고한 건이 다시 '보고 대기'로 올라가 문안에 섞인다(GM 2026-08-06 가 막으라고 한 바로 그 상태).
@@ -149,7 +155,11 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .catch(function () { return null; });
     }
-    return get('chairman_reported.json')
+    // 2026-08-12 GM 지시로 저장 경로를 공용 저장소로 옮겼다 — 정본은 이제 아래 CHECK_GAS 보드다.
+    // 파일 두 곳은 그 보드가 안 열릴 때만 쓰는 뒷받침이다(옛 값이라도 '보고 완료'를 잃지 않게).
+    return get(CH_BOARD_URL + '?action=board&key=' + CH_BOARD_KEY)
+      .then(function (j) { return (j && j.ok && j.board) ? j.board : null; })
+      .then(function (b) { return b || get('chairman_reported.json'); })
       .then(function (j) { return j || get(RAW_STATE); })
       .then(function (j) { chReported = j || {}; });
   }
@@ -360,13 +370,12 @@
       return list.map(function (it, i) {
         var n = base + i + 1;
         var no = String(n).length < 2 ? '0' + n : String(n);
-        // ★2026-08-11 GM 실측 — 이 버튼(commit_file → GitHub API)이 "GitHub 401: Bad credentials"로
-        // 항상 실패한다(Apps Script 속성 GITHUB_TOKEN 만료·GM업무 화면과 무관한 서버측 인증 문제,
-        // 대표님 쪽 버튼은 시트 저장이라 영향 없음). 고칠 때까지 눌러도 되는 것처럼 두지 않는다 —
-        // 비활성 표시로 바꾸고, 그동안은 에이전트에게 chairman_reported.json 직접 수정을 요청.
+        // ★2026-08-12 GM 지시로 되살렸다. 2026-08-11 에는 이 버튼이 commit_file(GitHub API)로 저장하다
+        // 열쇠 만료(401)로 항상 실패해 「저장 일시중단」으로 막아 뒀었다. 이제 부서보드·브로제이가 쓰는
+        // 공용 저장소로 갈아타 열쇠 없이 저장된다 — 위 CH_BOARD_URL·CH_BOARD_KEY 참조.
         var act = isDone
           ? '<span class="done-badge">✅ 보고완료 ' + esc(chDate(it)) + '</span>'
-          : '<button type="button" class="ebtn save" disabled title="서버 저장 연동 점검 중(GitHub 인증 만료) — 지금은 저장되지 않습니다. GM께 알려 관리자 확인 필요">저장 일시중단</button>';
+          : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
           ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') +
@@ -393,23 +402,19 @@
       });
     }
 
-    // 「보고 완료로 표시」(회장님) — 상태 파일 한 곳만 갱신한다(목록 정본은 손대지 않는다).
-    // 저장 경로 = 월간운영계획.html·GM 업무 페이지가 쓰는 commit_file 그대로(새 API 없음 · 약속 L21).
+    // 「보고 완료로 표시」(회장님) — 완료 날짜만 공용 저장소에 넣는다(목록 정본은 손대지 않는다).
+    // 저장 직전 최신값을 다시 읽어 얹는다 — 두 사람이 같이 눌러도 앞사람 표시가 지워지지 않게.
+    // 비밀번호를 묻지 않는다: 이 화면은 이미 잠금(1531)을 지나야 열리고, 저장하는 값은 날짜 하나다.
     function markChairmanReported(btn, id) {
       if (!id) return;
-      var pin = prompt('보고 완료로 표시 — GM 비밀번호를 입력하세요:');
-      if (pin === null || pin === '') return;
       btn.disabled = true; btn.textContent = '저장 중…';
       loadChairmanReported().then(function () {
         var next = {};
-        Object.keys(chReported).forEach(function (k) { next[k] = chReported[k]; });
+        Object.keys(chReported).forEach(function (k) { if (k.charAt(0) !== '_') next[k] = chReported[k]; });
         next[id] = todayStr();
-        return fetch(GAS_URL, {
+        return fetch(CH_BOARD_URL, {
           method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'commit_file', path: CH_STATE_PATH, content: JSON.stringify(next, null, 2),
-            message: '[회장님 보고건] 보고 완료 표시 ' + id + ' ' + todayStr(), key: pin
-          })
+          body: JSON.stringify({ action: 'saveBoard', key: CH_BOARD_KEY, board: next })
         }).then(function (r) { return r.json(); }).then(function (res) {
           if (res && res.ok) { chReported = next; renderChairman(); }
           else {
