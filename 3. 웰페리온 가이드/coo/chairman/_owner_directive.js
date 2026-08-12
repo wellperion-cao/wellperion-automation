@@ -149,19 +149,35 @@
   // 배포(GitHub Pages) 반영이 늦으면 같은 파일을 저장소 raw 에서 한 번 더 찾는다 — 못 읽은 채로 그리면
   // 이미 보고한 건이 다시 '보고 대기'로 올라가 문안에 섞인다(GM 2026-08-06 가 막으라고 한 바로 그 상태).
   var RAW_STATE = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/' + encodeURI(CH_STATE_PATH);
+  // ★2026-08-12 실측 — 표가 「불러오는 중…」에서 멈춰 있었다. 공용 저장소(Apps Script)가 느린 날
+  // 응답이 수십 초 걸리는데, 그걸 기다렸다 그리게 해 두어 화면 전체가 붙들렸다. 그래서:
+  //   ① 저장소에 시간 제한(8초)을 건다 — 늦으면 그냥 없는 셈 친다.
+  //   ② 같은 폴더 파일로 **먼저 그리고**, 저장소 답이 오면 그때 덮어 다시 그린다.
+  // 사람은 즉시 보고, 최신값은 오는 대로 반영된다. 어느 쪽도 못 읽으면 전부 '보고 대기'로 남는다.
+  function _chGet(url, ms) {
+    var u = url + (url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now();
+    var timed = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, ms || 8000); });
+    var req = fetch(u, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+    return Promise.race([req, timed]);
+  }
   function loadChairmanReported() {
-    function get(url) {
-      return fetch(url + (url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now(), { cache: 'no-store' })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .catch(function () { return null; });
-    }
-    // 2026-08-12 GM 지시로 저장 경로를 공용 저장소로 옮겼다 — 정본은 이제 아래 CHECK_GAS 보드다.
-    // 파일 두 곳은 그 보드가 안 열릴 때만 쓰는 뒷받침이다(옛 값이라도 '보고 완료'를 잃지 않게).
-    return get(CH_BOARD_URL + '?action=board&key=' + CH_BOARD_KEY)
-      .then(function (j) { return (j && j.ok && j.board) ? j.board : null; })
-      .then(function (b) { return b || get('chairman_reported.json'); })
-      .then(function (j) { return j || get(RAW_STATE); })
+    // 1차 = 파일(같은 폴더 → 저장소 raw). 빠르고 거의 항상 열린다.
+    return _chGet('chairman_reported.json', 6000)
+      .then(function (j) { return j || _chGet(RAW_STATE, 6000); })
       .then(function (j) { chReported = j || {}; });
+  }
+  // 2차 = 공용 저장소(정본). 늦게 와도 되고, 오면 화면을 다시 그린다.
+  function refreshChairmanFromBoard(onDone) {
+    return _chGet(CH_BOARD_URL + '?action=board&key=' + CH_BOARD_KEY, 12000)
+      .then(function (j) {
+        if (j && j.ok && j.board && Object.keys(j.board).length) {
+          chReported = j.board;
+          if (typeof onDone === 'function') onDone();
+        }
+      })
+      .catch(function () { /* 못 읽으면 파일 값 그대로 — 화면은 이미 그려져 있다 */ });
   }
   function chDate(it) { return fmtNoYear(chReported[it.id]); }
   function chairmanPending() {
@@ -408,7 +424,9 @@
     function markChairmanReported(btn, id) {
       if (!id) return;
       btn.disabled = true; btn.textContent = '저장 중…';
-      loadChairmanReported().then(function () {
+      // ★저장 전에 반드시 공용 저장소를 먼저 읽는다. 파일 값만 보고 저장하면, 저장소에만 있고
+      // 파일엔 아직 없는 완료 표시가 이 저장 한 번에 통째로 지워진다(덮어쓰기 저장이라서).
+      refreshChairmanFromBoard().then(function () {
         var next = {};
         Object.keys(chReported).forEach(function (k) { if (k.charAt(0) !== '_') next[k] = chReported[k]; });
         next[id] = todayStr();
@@ -428,7 +446,11 @@
       });
     }
 
-    loadChairmanReported().then(renderChairman);
+    // 파일 값으로 먼저 그리고(즉시), 공용 저장소 답이 오면 그때 다시 그린다.
+    loadChairmanReported().then(function () {
+      renderChairman();
+      refreshChairmanFromBoard(renderChairman);
+    });
     load();
   }
 
