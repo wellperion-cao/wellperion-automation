@@ -261,26 +261,29 @@ def _axis_plan(axis: str, day: str) -> str:
     return str(row.get('plan') or '')
 
 
-def wakeup_line() -> str:
-    """기상 직후 공복 보충제 순서 한 줄 — G1 「내 리듬」에서 옮겨 온 값. 없으면 빈 문자열."""
+def _routine_field(key: str) -> str:
+    """개인 루틴 파일의 한 줄짜리 값(기상 보충제·업무 시작 등). 없으면 빈 문자열."""
     try:
-        return str(json.loads(JPATH.read_text(encoding='utf-8')).get('기상_공복보충제') or '')
+        return str(json.loads(JPATH.read_text(encoding='utf-8')).get(key) or '')
     except Exception:
         return ''
 
 
 def morning_plan_lines(day: str | None = None) -> list:
-    """06시 하루 시작 카드에 붙일 '오늘 아침 이렇게' — 기상 보충제 · 아침 운동 · 아침 식사.
-    G1 표를 그대로 읊는다(GM 지시 2026-08-12). 값이 없는 줄은 빼고 낸다."""
+    """06시 하루 시작 카드에 붙일 '오늘 아침 이렇게' — 기상 보충제 · 아침 운동 · 아침 식사 ·
+    업무 시작. G1 표와 GM 정정을 그대로 읊는다(2026-08-12). 값이 없는 줄은 빼고 낸다."""
     day = day or today()
     out = []
-    w = wakeup_line()
+    w = _routine_field('기상_공복보충제')
     if w:
         out.append(f"  • 기상 직후   {w}")
     for axis, label in (('morning_ex', '아침 운동'), ('meal_breakfast', '아침 식사')):
         plan = _axis_plan(axis, day)
         if plan:
             out.append(f"  • {label}   {plan}")
+    work = _routine_field('업무시작')
+    if work:
+        out.append(f"  • 업무 시작   {work}")
     return (["🌅 오늘 아침 이렇게"] + out) if out else []
 
 
