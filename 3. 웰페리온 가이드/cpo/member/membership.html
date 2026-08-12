@@ -8621,6 +8621,10 @@ function _memberOverviewHtml() {
   var active = (d.memberActive != null) ? (Number(d.memberActive) || 0) : (_validTotal || 0);
   var validAll = active + corp;
   var wait = _validWaitCnt || 0;
+  // ★내역 합이 큰 숫자와 맞게 한다(2026-08-12 GM "유효 988 + 법인 32 + 대기자 9 = 1,029 이렇게 해야 정확").
+  //   대기자(시작일이 아직 안 온 회원)는 이미 active 안에 들어 있는데 옆에 한 번 더 적혀 있어서,
+  //   내역을 더하면 큰 숫자보다 대기자 수만큼 많아졌다(997+32+9=1,038 ≠ 1,029). 대기자를 빼서 적는다.
+  var activeStarted = Math.max(0, active - wait);
   return '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
       '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
         '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">유효회원</div>' +
@@ -8628,9 +8632,10 @@ function _memberOverviewHtml() {
         '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
       '</div>' +
       '<div style="font-size:12px;color:var(--dim);line-height:1.7;word-break:keep-all">' +
-        '유효 <b style="color:var(--text)">' + active.toLocaleString() + '</b>' +
+        '유효 <b style="color:var(--text)">' + activeStarted.toLocaleString() + '</b>' +
         ' + 법인 <b style="color:var(--text)">' + corp + '</b>' +
         ' + 대기자 <b style="color:var(--text)">' + wait + '</b>' +
+        ' = 총 <b style="color:var(--text)">' + validAll.toLocaleString() + '</b>명' +
       '</div>' +
     '</div>';
 }
