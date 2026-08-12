@@ -67,7 +67,7 @@ import html
 import json
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -317,6 +317,66 @@ def build_staff_feedback_block(today: str) -> str:
     return head + "\n<pre>\n" + "\n".join(lines) + more + "\n</pre>"
 
 
+SCHEDULE_GAS_URL = ("https://script.google.com/macros/s/"
+                    "AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec")
+
+
+def _schedule_today(today: str) -> list[str]:
+    """전사일정에서 오늘 날짜로 잡힌 항목 이름. 실패하면 빈 목록 — 못 읽었다고 보고를 막지 않는다.
+    (주기로 계산되는 '예상' 일정은 빼고, 사람이 날짜를 박아 둔 것만 센다.)"""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"{SCHEDULE_GAS_URL}?action=load_schedule", timeout=25) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        items = ((data.get("data") or {}).get("items")) or []
+    except Exception:
+        return []
+    out = []
+    for it in items:
+        if str(it.get("next_due", ""))[:10] == today:
+            name = str(it.get("name", "")).strip()
+            who = str(it.get("assignee", "")).strip()
+            if name:
+                out.append(f"{name}{' · ' + who if who else ''}")
+    return out
+
+
+def _today_changes_block(items, active, overdue, pending_approval, today: str) -> str:
+    """어제와 달라진 것만 — 오늘 새로 지연된 것 · 어제 끝난 것 · 오늘 잡힌 일정."""
+    yday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    newly = [x for x in overdue if _delta_days(_due_date10(x), today) == -1]
+    done_yday = [x for x in items
+                 if str(x.get("상태", "")).strip() in TODO_DONE_STATUSES
+                 and str(x.get("수정일", "") or x.get("updatedAt", ""))[:10] == yday]
+    sched = _schedule_today(today)
+
+    lines = ["🆕 어제와 달라진 것"]
+    if newly:
+        names = " · ".join(f"{_short_owner(x.get('담당자',''))} {_short_title(x.get('업무명',''), 20)}"
+                           for x in newly[:3])
+        lines.append(f"· ⏰ 오늘 새로 지연 {len(newly)}건 — {html.escape(names)}"
+                     + (f" 외 {len(newly)-3}건" if len(newly) > 3 else ""))
+    else:
+        lines.append("· ⏰ 오늘 새로 지연된 것 없음")
+    if done_yday:
+        names = " · ".join(_short_title(x.get("업무명", ""), 20) for x in done_yday[:3])
+        lines.append(f"· ✅ 어제 끝낸 것 {len(done_yday)}건 — {html.escape(names)}"
+                     + (f" 외 {len(done_yday)-3}건" if len(done_yday) > 3 else ""))
+    else:
+        lines.append("· ✅ 어제 끝낸 것 없음")
+    if sched:
+        # 한 줄에 하나씩 — 여러 건을 '·'로 이어 붙이면 줄이 길어져 훑히지 않는다(GM 지적 계열).
+        lines.append(f"· 📅 오늘 잡힌 일정 {len(sched)}건")
+        for s in sched[:4]:
+            lines.append(f"   – {html.escape(_short_title(s, 40))}")
+        if len(sched) > 4:
+            lines.append(f"   – 외 {len(sched)-4}건")
+    else:
+        lines.append("· 📅 오늘 잡힌 일정 없음")
+    return "\n".join(lines)
+
+
 def build_digest(today: str | None = None, channel: str = "telegram") -> list[str]:
     """v3: 액션 필요한 항목(지연·임박·결재대기)만 리스트로 남기고, 진행현황 전체 나열은
     카테고리별 건수 요약으로 대체한다(GM 피드백 "너무 길다"). 데이터 소스·판정 로직은 v2 재사용.
@@ -357,6 +417,13 @@ def build_digest(today: str | None = None, channel: str = "telegram") -> list[st
         f"■ 업무 총 {len(items)}건 · 진행중 {len(in_progress)}·보류 {len(standby)} | "
         f"⏰지연 {len(overdue)} · 📋결재대기 {len(pending_approval)}"
     )
+
+    # ── 🆕 오늘 달라진 것 (GM 지적 2026-08-12 "새로운 내용이 없을까? 9시면 그래도 하루
+    #    일과 정리하는 내용이 들어가야 할 것 같은데") ─────────────────────────────
+    #   그 전 본문은 '지금 상태 스냅샷'이라 매일 거의 같은 그림이었다 — 지연 목록 14건 중
+    #   대부분이 두 달 넘게 같은 자리에 있으니 훑어도 새 정보가 없었다. 그래서 맨 위에
+    #   **어제와 달라진 것만** 세 줄로 올린다. 새 소스·새 발신 없음(이미 읽는 데이터 + 전사일정).
+    changed_lines = _today_changes_block(items, active, overdue, pending_approval, today)
 
     # ⏰ 지연(일정 초과) — 종료일<오늘 & 활성. 최다 초과부터 정렬. (v3: [상태] 태그 제거)
     overdue_sorted = sorted(overdue, key=lambda x: _due_date10(x))
@@ -442,7 +509,7 @@ def build_digest(today: str | None = None, channel: str = "telegram") -> list[st
     section_feedback = build_staff_feedback_block(today)
 
     blocks = [
-        f"{header}\n\n{sales_line}\n{summary_line}",
+        f"{header}\n\n{sales_line}\n{summary_line}\n\n{changed_lines}",
         section_overdue,
         f"{divider}\n{section_progress}",
         f"{divider}\n{section_approval}",
