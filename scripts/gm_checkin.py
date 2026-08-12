@@ -312,6 +312,9 @@ def build_slot(slot_id: str, day: str | None = None) -> dict:
         if v not in ('O', 'X'):
             rows.append([{'text': '○ 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
                          {'text': '－ 안 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
+    # 구성이 적혀 있는 카드에만 고치는 길을 한 줄로 알린다(GM 지시 2026-08-12 "아닌건 수정하는 방향으로").
+    if any(_axis_plan(axis, day) for axis, _label in items):
+        lines += ['', '바뀐 게 있으면 답장으로 알려 주세요 — 그대로 고칩니다.']
     return {'text': '\n'.join(lines), 'markup': {'inline_keyboard': rows}}
 
 
@@ -547,7 +550,53 @@ def week_card(day: str | None = None) -> str:
     pct = round(filled / total * 100)
     return ("🗓️ 한 주 — 무엇이 담겼나\n" + '\n'.join(lines)
             + f"\n\n담긴 토막 {filled}/{total} · {pct}%\n"
-              "점수가 아니라 거울입니다 — 비어 있어도 괜찮습니다.")
+              "점수가 아니라 거울입니다 — 비어 있어도 괜찮습니다."
+            + routine_review(day))
+
+
+# ── 지킨 만큼만 세고, 세어 본 것에서만 제안한다 (GM 지시 2026-08-12) ────────────────
+#   GM: "위에것을 했는지 체크를 해주고, 기록해주고, 더 개선할게 있으면 제안해주고,
+#   아닌건 수정하는 방향으로." 제안은 계산된 사실에서만 나온다 — 감상·일반론 금지.
+_REVIEW_AXES = (('meal_breakfast', '아침 식사'), ('morning_ex', '아침 운동'),
+                ('meal_lunch', '점심 식사'), ('evening_run', '저녁 운동'))
+
+
+def _kept_counts(day: str, span: int = 7) -> dict:
+    """최근 span 일 동안 축별로 O 를 센다. 기록 없는 날도 분모에 넣는다(안 센 날을 빼면 거짓이 된다)."""
+    end = datetime.date.fromisoformat(day)
+    days = (load().get('days') or {})
+    out = {}
+    for axis, _label in _REVIEW_AXES:
+        n = 0
+        for i in range(span):
+            rec = days.get((end - datetime.timedelta(days=i)).isoformat()) or {}
+            if (rec.get('axes') or {}).get(axis) == 'O':
+                n += 1
+        out[axis] = n
+    return out
+
+
+def routine_review(day: str | None = None, span: int = 7) -> str:
+    """지킨 횟수 한 줄 + 그 숫자에서 나오는 제안 1개. 제안거리가 없으면 제안 줄을 안 붙인다."""
+    day = day or today()
+    kept = _kept_counts(day, span)
+    counts = ' · '.join(f"{label} {kept[axis]}/{span}" for axis, label in _REVIEW_AXES)
+    out = ["", "", f"📌 지난 {span}일 — {counts}"]
+
+    # 제안 — 조건에 맞는 첫 한 개만. 여러 개를 한꺼번에 내면 아무것도 안 남는다.
+    b, ex = kept['meal_breakfast'], kept['morning_ex']
+    if b <= span // 2:
+        out.append(f"제안 — 아침이 {b}/{span}입니다. 구성이 길어 부담이면 "
+                   "'미온수 + 달걀 + 주스'까지만 고정으로 줄여 보시죠.")
+    elif ex <= span // 2 < b:
+        out.append(f"제안 — 아침은 {b}/{span}인데 아침 운동은 {ex}/{span}입니다. "
+                   "운동을 식사 앞에 붙이면 하나로 굴러갑니다.")
+    else:
+        # 잘 지켜지는 주에는 내용 쪽 제안 — G1 「영양 관리」가 이미 적어 둔 단백질 부족(약 65g/권장 120g).
+        out.append("제안 — 아침 달걀 1개는 단백질 약 6g입니다. "
+                   "G1 영양 관리에 적힌 하루 부족분(약 65g/권장 120g)을 메우려면 달걀 2개가 가장 쉽습니다.")
+    out.append("맞지 않으면 이 방에 답장으로 적어 주세요 — 계획을 그대로 고치겠습니다.")
+    return '\n'.join(out)
 
 
 # ── 08:00 GM 업무 브리핑 (배514 미배선 해소, GM 지시 2026-08-10) ──────────────────
@@ -819,6 +868,16 @@ def _missed_lines(chairman_open: list | None, ssot_rest: list | None, used: set,
     return out[:max_n]
 
 
+def build_dept_block(day: str | None = None) -> str:
+    """부문별 오늘 핵심(배편) — 2026-08-12 GM 지시로 「나의하루」에서 빠져 AI 진행현황방으로 간다.
+    계산은 그대로 두고 받는 방만 옮긴 것이다(값·판정 무변경)."""
+    day = day or today()
+    ships = _load_office_ships()
+    if ships is None:
+        return '■ 부문별 오늘 핵심 (불러오지 못함)'
+    return _format_department_highlights(_rank_office_ships_by_role(ships, day), day)
+
+
 def build_morning_brief(day: str | None = None) -> str:
     """08:00 「나의하루」 GM 업무 브리핑 — 월~토 발송. 전사일정·GM업무·업무SSOT·회장님 보고건 4묶음."""
     day = day or today()
@@ -854,10 +913,6 @@ def build_morning_brief(day: str | None = None) -> str:
     prog_lines = [f"· {str(o.get('title', '')).replace(' (GM 직접)', '')} — "
                   f"{o.get('progress', 0)}% · {o.get('status', '')}" for o in (objs or [])]
 
-    office_ships = _load_office_ships()
-    dept_section = (_format_department_highlights(_rank_office_ships_by_role(office_ships, day), day)
-                     if office_ships is not None else '■ 부문별 오늘 핵심 (불러오지 못함)')
-
     first_lines, first_used = _first_thing_lines(
         _first_thing_candidates(sched_pairs, chairman, due_pairs, day))
     waiting_lines = [line for line, key in waiting_pairs if key not in first_used]
@@ -869,10 +924,11 @@ def build_morning_brief(day: str | None = None) -> str:
         first_section = ''
     missed_section = _bucket('놓친 것 없나', _missed_lines(chairman, ssot_rest, first_used))
 
+    # ★2026-08-12 GM 지시 — 「나의하루」 방은 개인 것만 온다. 부문별 배 목록(배편)은 여기서 빼고
+    # AI 진행현황방으로 보낸다(build_dept_block 이 그 몫). 이 방엔 일정·체크할 것·놓치면 안 되는 것만.
     sections = [
         first_section,
         missed_section,
-        dept_section,
         _bucket('오늘 잡힌 일정', sched_lines,
                 _schedule_stale_note() if sched_ok else '(불러오지 못함)'),
         _bucket('기한이 임박했습니다', due_lines, '' if ssot is not None else '(불러오지 못함)'),

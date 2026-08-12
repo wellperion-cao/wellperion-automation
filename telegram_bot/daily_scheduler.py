@@ -2941,11 +2941,36 @@ def run_gm_morning_brief(chat_id: str | None = None) -> None:
         logger.info(f"{label} 발송 ok={ok} chat={chat}")
     except Exception as e:
         logger.warning(f"{label} 실패: {e}")
+    # 부문별 배 목록(배편)은 「나의하루」에 안 보낸다 — GM 지시 2026-08-12 "하루 방은 개인것만".
+    # 계산은 그대로 두고 받는 방만 AI 진행현황방으로 옮긴다.
+    if chat_id is None:
+        _run_dept_block_to_ai_room()
     # 같은 08:00 에 카톡 「김남욱」 방으로도 짧은 일정판 — GM 지시 2026-08-12
     # ("텔레그램이랑 카카오톡 8:00으로 하자"). 잡을 새로 만들지 않고 이 잡에 붙인다(약속 L21):
     # 시각이 두 곳에 적히면 한쪽만 바뀌어 어긋난다. 시험 발송(chat_id 지정)일 땐 카톡은 건너뛴다.
     if chat_id is None:
         _run_gm_morning_kakao()
+
+
+def _run_dept_block_to_ai_room() -> None:
+    """부문별 오늘 핵심(배편) → AI 진행현황방. 발송 관문은 기존 notify_gm_progress 하나만 쓴다."""
+    label = "[부문별 배편]"
+    try:
+        import gm_checkin as _ck
+        from notify_gm_progress import resolve_room  # 목적지 해소도 그 관문이 갖고 있다
+        from tg_outbound_log import send as _send
+        text = _ck.build_dept_block()
+        if not text:
+            logger.info(f"{label} 보낼 것 없음 — 생략")
+            return
+        chat = resolve_room()
+        if not chat:
+            logger.warning(f"{label} AI 진행현황방 chat_id 해소 실패 — 생략")
+            return
+        ok = _send(ENV.get("TELEGRAM_BOT_TOKEN") or "", chat, text, source="dept_block_ai_room")
+        logger.info(f"{label} 발송 ok={ok} chat={chat}")
+    except Exception as e:
+        logger.warning(f"{label} 실패: {e}")
 
 
 # 카톡은 PC 앱 UI 자동화라 텔레그램보다 느리고 실패할 수 있다(창이 안 떠 있는 등).
