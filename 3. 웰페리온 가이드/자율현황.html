@@ -925,8 +925,17 @@
     return Math.round((localTodayMs() - d.getTime()) / 86400000);
   }
 
+  // 조용한 렌더 실패 가드(배587 후속·2026-08-13) — 2026-08-08 GM 결정 대기 컨테이너 삭제가
+  // renderGmApprovalSignal() 을 죽이지 않은 채(에러 0) 5일간 헛돌게 만들었다. 동작은 그대로
+  // return 하되(화면 무변경), 콘솔에 어느 함수가 어느 id 를 못 찾았는지만 남긴다.
+  function reqEl(id, from){
+    var el = document.getElementById(id);
+    if(!el) console.warn('[자율현황] ' + from + '() — #' + id + ' 없음, 렌더 스킵');
+    return el;
+  }
+
   function renderHangro(){
-    var el = document.getElementById('hangro-board'); if(!el) return;
+    var el = reqEl('hangro-board', 'renderHangro'); if(!el) return;
     var live = _queueAll.filter(function(s){ return isAiShip(s) && !isTrashed(s); });
     var t0 = localTodayMs(), t1 = t0 + 86400000;
     var isDone = function(s){ return s.status === 'DONE' || s.status === '완료'; };
@@ -971,7 +980,7 @@
   /* ════ 🚢 지금 도는 것 — 페이지 맨 위 미니 패널 (배587). renderHangro() 의 'run' 섹션과
      같은 판정(isAiShip + IN_PROGRESS)을 다시 걸러 쓴다 — _queueAll 은 이미 로드돼 있어 새 fetch 0. ════ */
   function renderNowRunning(){
-    var el = document.getElementById('now-running-board'); if(!el) return;
+    var el = reqEl('now-running-board', 'renderNowRunning'); if(!el) return;
     var running = _queueAll.filter(function(s){ return s && !isTrashed(s) && isAiShip(s) && s.status === 'IN_PROGRESS'; })
       .sort(function(a,b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); });
     if(!running.length){ el.innerHTML = '<div class="feed-status">지금 진행중인 AI 배가 없습니다.</div>'; return; }
@@ -1033,7 +1042,7 @@
 
 
   function renderAllShips(){
-    var el = document.getElementById('all-ships'); if(!el) return;
+    var el = reqEl('all-ships', 'renderAllShips'); if(!el) return;
     var q = String((document.getElementById('ship-search')||{}).value || '').trim().toLowerCase();
     var f = String((document.getElementById('ship-filter')||{}).value || 'all');
     var live = _queueAll.filter(function(s){ return s && !isTrashed(s); });
@@ -1118,7 +1127,7 @@
   }
 
   function renderTrash(){
-    var el = document.getElementById('trash-ships'); if(!el) return;
+    var el = reqEl('trash-ships', 'renderTrash'); if(!el) return;
     var list = _queueAll.filter(isTrashed);
     if(!list.length){ el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함이 비어 있습니다 — 아직 지운 배가 없습니다.</div>'; return; }
     list.sort(function(a,b){ return String(b.trashed_at||'').localeCompare(String(a.trashed_at||'')); });
@@ -1326,7 +1335,7 @@
       '<div class="ssub">' + o.sub + '</div></div>';
   }
   function renderCooLiveMetrics(tl, mr, mrFac){
-    var el = document.getElementById('coo-live-metrics');
+    var el = reqEl('coo-live-metrics', 'renderCooLiveMetrics');
     if(!el) return;
     var cards = [];
 
@@ -1374,7 +1383,7 @@
   //     ②이상이 있었나 ③무슨 이상이었나. 입력률(%)은 부차로만 적는다.
   //   소스는 지원부와 같은 GAS·같은 액션(dept 만 다르다) — 새 URL·새 파일 0(약속 L21).
   function renderFacilityPulse(mrFac){
-    var el = document.getElementById('facility-pulse-body');
+    var el = reqEl('facility-pulse-body', 'renderFacilityPulse');
     var sum = document.getElementById('facility-pulse-summary');
     if(!el) return;
     var cards = [];
@@ -2125,7 +2134,7 @@
 
   var _alertTroom = {};
   function alertApplyFilters(){
-    var wrap = document.getElementById('alert-board-rooms');
+    var wrap = reqEl('alert-board-rooms', 'alertApplyFilters');
     if(!wrap) return;
     var shown = _alertRowsCache.filter(function(r){
       if(_notifyState.channel !== 'all' && r.item.channel !== _notifyState.channel) return false;
@@ -2144,7 +2153,7 @@
      숫자 하나가 아니라 이런 문장에서 깎인다.
      ▸이제 단정하지 않고 **마지막 대조 시각을 그대로 보여준다.** 오래되면 오래됐다고 적는다. */
   function renderNotifyDriftNote(drift){
-    var el = document.getElementById('notifyDriftNote');
+    var el = reqEl('notifyDriftNote', 'renderNotifyDriftNote');
     if(!el) return;
     var at = drift && (drift.generated_at_kst || drift.generated_at || drift.updated_at);
     var days = daysStale(at);
@@ -2173,7 +2182,7 @@
      ▸데이터는 그대로(status/kungjjak_today.json) — 그리는 방식만 바꿨다. */
   function renderKungjjak(kj){
     var sum = document.getElementById('kungjjak-summary');
-    var box = document.getElementById('kungjjak-body');
+    var box = reqEl('kungjjak-body', 'renderKungjjak');
     if(!box) return;
     if(!kj || !kj.roles){
       if(sum) sum.textContent = '오늘 쿵짝표를 아직 못 불러왔습니다.';
@@ -2285,7 +2294,7 @@
 
   function renderAlertBoard(troomsRaw, reg, drift, erp, kakaoLast, modReg){
     renderNotifyDriftNote(drift);
-    var wrap = document.getElementById('alert-board-rooms');
+    var wrap = reqEl('alert-board-rooms', 'renderAlertBoard');
     var summaryEl = document.getElementById('alert-board-summary');
     var bannerEl = document.getElementById('notify-drift-banner');
     if(!wrap) return;
@@ -2385,7 +2394,7 @@
 
   // 필터 버튼(전체/텔레그램/카카오톡) + 문제만보기 토글 — 정적 버튼이라 부팅 시 1회 배선
   (function notifyWireFilters(){
-    var wrap = document.getElementById('notify-filters');
+    var wrap = reqEl('notify-filters', 'notifyWireFilters');
     if(!wrap) return;
     wrap.querySelectorAll('.nf-btn[data-f]').forEach(function(btn){
       btn.addEventListener('click', function(){
@@ -2486,7 +2495,7 @@
   }
   function renderRegistryCards(reg){
     var sm = document.getElementById('registry-card-summary');
-    var el = document.getElementById('registry-cards');
+    var el = reqEl('registry-cards', 'renderRegistryCards');
     var elDormant = document.getElementById('registry-cards-dormant');
     var elDormantWrap = document.getElementById('registry-cards-dormant-wrap');
     var elDormantSum = document.getElementById('registry-cards-dormant-summary');
@@ -2580,7 +2589,7 @@
   // ── 🔍 GM 승인 신호 — review_queue.json 직독(G1 이관 · 2026-08-06). status 정의 그대로 신뢰:
   //   '검수대기'=GM 승인 차례 / '발행검증대기'=웰리 IG↔M3 대조 차례. card_sent_at 있는 것만 진짜 GM 대기.
   function renderGmApprovalSignal(){
-    var box = document.getElementById('gm-approval-signal-body');
+    var box = reqEl('gm-approval-signal-body', 'renderGmApprovalSignal');
     if(!box) return;
     fetch('cmo/review/review_queue.json?_=' + Date.now(), { cache:'no-store' })
       .then(function(r){ return r.ok ? r.json() : []; })
