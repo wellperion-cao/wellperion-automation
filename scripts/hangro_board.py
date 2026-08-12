@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 from datetime import timezone
+import functools
 import io
 import json
 import os
@@ -441,6 +442,12 @@ def _build_item(q: dict, st: str, title: str) -> dict:
             # 지목 수단 = queue_dispatch.py --must-finish (build_ship/dup-absorb 양쪽에서 채움).
             "must_finish_on": str(q.get("must_finish_on") or "").strip(),
             # 담당 식별번호(약속 L16: 담당=닉네임+ship_no·배마다 고정). _queue 배만 보유.
+            # 배를 띄운 날 — _open_days('안 닫힌 지 며칠')의 1차 근거. ★이 칸이 여기 없어서
+            # (배540 수리 중 2026-08-13 발견) 지금까지 _open_days 가 전부 폴백(note 안 최소 날짜
+            # 훑기)으로 떨어졌다. 그래서 배39는 22일째인데 101일째로, 배236은 14일째인데 16일째로
+            # 찍혔다 — note 에 인용된 옛 날짜를 '뜬 날'로 오인한 것이다. 꼬리표·정렬이 쓰는 숫자라
+            # 여기서 한 줄 넘기는 것이 뿌리 수리다.
+            "enqueued_at": str(q.get("enqueued_at") or "")[:10],
             "ship_no":  q.get("ship_no", ""),
             # 화면표시 전용 짧은 번호(배10012 2단계) — 내부 조인은 위 ship_no 그대로,
             # _owner_label만 이 값을 우선 표시(없으면 ship_no 폴백).
@@ -449,6 +456,9 @@ def _build_item(q: dict, st: str, title: str) -> dict:
             # 보낸 역할(queue_dispatch.py build_ship의 "from" 그대로) — "쿵짝: 내가 넘긴 배"
             # 판정 단일 지점(2026-08-04 GM 지시). GAS 항목엔 이 칸이 없다(= "").
             "_from":    str(q.get("from", "")).strip().lower(),
+            # ❓ 안 물어봄 판정용(2026-08-13) — 키 유무로 "실무진 릴레이 채널을 쓰는 배인지"를 가른다.
+            "_has_staff_field": "staff_message" in q,
+            "staff_message": str(q.get("staff_message") or "").strip(),
     }
 
 
@@ -706,27 +716,37 @@ def _stall_days(item: dict) -> int | None:
 
 
 def _stall_tag(item: dict, days: int | None = None) -> str:
-    d = (_stall_days(item) or 0) if days is None else days
+    """꼬리표 기준 = _open_days(안 닫힌 지 며칠) — 배540.
+    _stall_days(마지막 기록일)로 재면 note 한 줄만 붙어도 0으로 돌아가, 22일째 열려 있는
+    배가 '1일🟡담당'으로 찍힌다(2026-08-10 실측). 축은 _open_days 하나로 통일하되,
+    기록 공백도 정보이므로 버리지 않고 괄호처럼 뒤에 함께 적는다 — 축 하나, 표시 둘."""
+    d = (_open_days(item) or 0) if days is None else days
     if d >= 14:
-        return f"{d}일🔴GM"
-    if d >= 7:
-        return f"{d}일🟠웰리"
-    return f"{d}일🟡담당"
+        tag = f"{d}일째🔴GM"
+    elif d >= 7:
+        tag = f"{d}일째🟠웰리"
+    else:
+        tag = f"{d}일째🟡담당"
+    quiet = _stall_days(item) or 0
+    return f"{tag}·기록{quiet}일전" if quiet >= _STALL_MIN_DAYS else tag
 
 
 def _stalled(items: list[dict], min_days: int = _STALL_MIN_DAYS) -> list[dict]:
-    out = [it for it in items if (_stall_days(it) or 0) >= min_days]
-    return sorted(out, key=lambda it: -(_stall_days(it) or 0))
+    """안 닫힌 지 오래된 배 — 오래된 순. 기준=_open_days(배540에서 _stall_days 에서 옮김).
+    옛 기준은 마지막 기록일만 봐서, 매일 한 줄씩 적히기만 하고 끝나지 않는 배를
+    목록에서 조용히 뺐다. 이 함수가 그 축을 흡수했으므로 별도 '오래 걸리는 배' 표는
+    없앴다(약속 L21 net-zero)."""
+    out = [it for it in items if (_open_days(it) or 0) >= min_days]
+    return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
-# ── 🧱 오래 걸리는 배 (2026-08-07 GM 지시 "문제·진행이 반복되고 처리가 안 되면 서포트해라") ──
-# 위 _stalled 는 **마지막으로 기록이 붙은 날**을 본다. 그런데 note 는 오늘 날짜만 스쳐도
-# 갱신된 것으로 보여서, 실측(2026-08-07) 결과 '멈춘 배 0척'인데 **열린 지 14일 넘은 배가
-# 21척**이었다. 매일 한 줄씩 적히기만 하고 끝나지 않는 배가 이 감지기를 통째로 빠져나간다.
-# 그래서 축을 하나 더 둔다: **처음 뜬 뒤로 며칠째 안 닫혔나.** 판정기를 새로 만들지 않고
-# 같은 섹션에 나란히 낸다(약속 L21).
-_LONG_OPEN_MIN_DAYS = 14
-_LONG_OPEN_CAP = 7          # 화면에 줄로 싣는 최대 척수(넘치면 '외 N척'으로 접는다)
+# ── '안 닫힌 날수' 축 (2026-08-07 GM 지시 "문제·진행이 반복되고 처리가 안 되면 서포트해라") ──
+# 옛 _stalled 는 **마지막으로 기록이 붙은 날**을 봤다. note 는 오늘 날짜만 스쳐도 갱신된 것으로
+# 보여서, 실측(2026-08-07) '멈춘 배 0척'인데 **열린 지 14일 넘은 배가 21척**이었다. 매일 한 줄씩
+# 적히기만 하고 끝나지 않는 배가 감지기를 통째로 빠져나갔다.
+# 그래서 2026-08-07 에 두 번째 표('오래 걸리는 배')를 나란히 뒀는데, 두 표가 같은 배를 다른
+# 숫자로 보여 GM 이 어느 쪽이 사실인지 되짚어야 했다. 2026-08-13(배540) 에 축을 이것 하나로
+# 통일하고 두 번째 표를 없앴다 — 기록 공백은 꼬리표 뒤에 함께 적어 정보 손실 0.
 _REPO_EPOCH = dt.date(2026, 1, 1)   # 이보다 이른 날짜는 오타·기본값(2000-01-01 등) — 나이 계산에서 뺀다
 
 
@@ -750,12 +770,6 @@ def _open_days(item: dict) -> int | None:
             if _REPO_EPOCH <= cand <= dt.date.today() and (first is None or cand < first):
                 first = cand
     return None if first is None else (dt.date.today() - first).days
-
-
-def _long_open(items: list[dict], min_days: int = _LONG_OPEN_MIN_DAYS) -> list[dict]:
-    """열린 지 오래된 배 — 오래된 순. 오늘 움직인 배도 포함한다(움직임과 무관하게 '안 끝난' 것)."""
-    out = [it for it in items if (_open_days(it) or 0) >= min_days]
-    return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
 # ── 🔔 쿵짝 회수 (2026-08-04 GM 지시 "작업 1개당 답변 1개" — 배를 띄우고 끝내지 마라.
@@ -1092,6 +1106,62 @@ def _self_consistency_findings(
     return looks_done, dupes, mismatch
 
 
+# ── ❓ 안 물어봄 (2026-08-13 웰리 — "실무진 전달 20건" 실측 파생, 배521·578 실사고) ──
+#   note/next에 "확인 대기" 류를 적어 놓고 실제로 그 질문을 실무진에게 띄운 적이 없는 배.
+#   staff_message 필드 자체가 없는 배(GM전용·AI내부간 확인)는 대상에서 뺀다 — 이 필드는
+#   coo·cpo 실무진 카톡 릴레이 배만 쓴다(2026-08-06 배423 짝). 판정 둘 중 하나면 걸린다:
+#   ①staff_message가 비어 있다(초안조차 없음) ②채워져 있어도 최근 발신 로그에 제목
+#   핵심 단어가 한 번도 안 나온다(써놓고 안 보냄). 로그는 최근 N일치만 본다(전수 스캔 비용).
+_RE_WAIT_ASK = re.compile(r"확인\s*대기|회신\s*대기|확인\s*요청|문의드림|여쭤")
+_UNASKED_LOG_WINDOW_DAYS = 21  # 실측 최장 사례(배117)가 19일째 — 여유 두고 3주
+_UNASKED_STOPWORDS = {"확인", "요청", "대기", "완료", "처리", "실측", "오늘", "여전히"}
+
+
+@functools.lru_cache(maxsize=1)
+def _recent_kakao_text() -> str:
+    """최근 N일치 카톡 발신 로그 본문만 이어붙인 캐시(프로세스당 1회만 읽는다)."""
+    files = sorted((_REPO / "logs").glob("kakao_sent-*.log"))[-_UNASKED_LOG_WINDOW_DAYS:]
+    parts = []
+    for fp in files:
+        try:
+            for line in fp.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line:
+                    parts.append(json.loads(line).get("text", ""))
+        except Exception:
+            continue
+    return "\n".join(parts)
+
+
+def _unasked_evidence(item: dict) -> str:
+    if not item.get("_has_staff_field"):
+        return ""  # 실무진 릴레이 채널 자체를 안 쓰는 배(GM전용·AI내부) — 대상 아님
+    blob = str(item.get("_raw_summary") or "") + " " + str(item.get("next") or "")
+    if not _RE_WAIT_ASK.search(blob):
+        return ""
+    sm = str(item.get("staff_message") or "").strip()
+    if not sm:
+        return "staff_message 빈 채로 방치 — 질문 초안조차 없음"
+    tokens = sorted(_title_tokens(item.get("title", "")) - _UNASKED_STOPWORDS, key=len, reverse=True)
+    if tokens and tokens[0] not in _recent_kakao_text():
+        return f"staff_message는 있는데 최근 {_UNASKED_LOG_WINDOW_DAYS}일 발신 로그에 '{tokens[0]}' 0건 — 안 보낸 듯"
+    return ""
+
+
+def _unasked_findings(items: list[dict]) -> list[tuple[dict, str]]:
+    out = []
+    for it in items:
+        if not _is_open_status(it) or _is_new_today(it) or _is_excluded_role(it.get("owner", "")):
+            continue
+        if it.get("audience") == "ai":
+            continue
+        ev = _unasked_evidence(it)
+        if ev:
+            out.append((it, ev))
+    out.sort(key=lambda pair: -(_stall_days(pair[0]) or 0))
+    return out
+
+
 def build_board(gas_items: list[dict], queue_items: list[dict],
                 role: str = "", sent_by_role: list[dict] | None = None) -> tuple[str, dict]:
     """보드 텍스트 + 섹션 dict 반환.
@@ -1166,7 +1236,6 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     #   새 알림·새 예약을 만들지 않는다(약속 L21) — 모든 표면(부팅 셸·G1 보드·08:00 보고)이 이미
     #   지나가는 이 보드에 얹는다. 한 곳에만 띄우면 그 화면을 안 여는 날 그냥 넘어간다.
     stalled = _stalled(secs["today"])
-    long_open = [it for it in _long_open(secs["today"]) if it not in stalled]
     sent_unanswered = _sent_unanswered(sent_by_role or [], role)
     received_unanswered = _received_unanswered(sent_by_role or [], role)
     gm_gaps = _gm_directive_unresolved(role)
@@ -1178,26 +1247,22 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
             "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
     # 🤔 큐 자기정합 3종(2026-08-04) — 같은 블록에 붙인다(새 ### 헤더 금지·약속 L21).
     looks_done, dupes, mismatch = _self_consistency_findings(all_items)
+    unasked = _unasked_findings(all_items)
     _SELFCHECK_CAP = 7
-    for pair_list in (looks_done, dupes, mismatch):
+    for pair_list in (looks_done, dupes, mismatch, unasked):
         for it, _ev in pair_list:
             it["_ship"] = classify_ship({
                 "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
-    if (stalled or long_open or sent_unanswered or received_unanswered
-            or looks_done or dupes or mismatch or gm_gaps):
+    if (stalled or sent_unanswered or received_unanswered
+            or looks_done or dupes or mismatch or unasked or gm_gaps):
         lines.append("")
-        lines.append(f"### 🔔 멈춰 있는 배 {len(stalled)}척 — 마지막 기록 이후 오래된 순")
+        # 표 제목이 무엇을 센 값인지 스스로 말한다(배540) — 옛 제목('마지막 기록 이후')은
+        # 실제 기준과 어긋나 있었다. 꼬리표: N일째=안 닫힌 날수 · 기록N일전=note 공백.
+        lines.append(f"### 🔔 안 닫힌 배 {len(stalled)}척 "
+                     f"— 뜬 지 {_STALL_MIN_DAYS}일 넘게 안 닫힌 순(기록이 3일 이상 없으면 뒤에 함께 적음)")
         if stalled:
             lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
                                     for it in stalled]))
-        if long_open:
-            # 매일 한 줄씩 적히지만 끝나지 않는 배 — 위 '멈춤' 판정은 기록 날짜만 보므로 이걸 놓친다.
-            lines.append(f"🧱 오래 걸리는 배 {len(long_open)}척 "
-                         f"(뜬 지 {_LONG_OPEN_MIN_DAYS}일 넘게 안 닫힘 · 오래된 순 · 위 멈춤 목록과 중복 제외)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=f"{_open_days(it)}일째")
-                                    for it in long_open[:_LONG_OPEN_CAP]]))
-            if len(long_open) > _LONG_OPEN_CAP:
-                lines.append(f"… 외 {len(long_open) - _LONG_OPEN_CAP}척")
         if sent_unanswered:
             lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
@@ -1217,6 +1282,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
             ("🤔 끝난 듯 — 확인 필요", looks_done),
             ("🔁 중복 의심", dupes),
             ("⚠️ note↔status 불일치", mismatch),
+            ("❓ 안 물어봄 — 확인 대기라 적고 질문은 안 나감", unasked),
         ):
             if not pair_list:
                 continue
