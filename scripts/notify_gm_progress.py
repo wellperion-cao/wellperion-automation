@@ -167,7 +167,10 @@ def resolve_room(rooms_path=None):
 #   — GM 지시 2026-08-06: "차라리 우리 쿵짝내용 처럼 정리해서 주는게 더 이해하기 쉬워질 것 같은데".
 #   두 곳(셸·방)이 다른 어휘를 쓰면 같은 일을 두 번 해독해야 한다.
 _SECTIONS = (("cause", "🔍 무엇이 문제였나"), ("fix", "✅ 무엇을 했나"),
-             ("check", "🔎 확인한 것"), ("next", "👉 다음"))
+             ("check", "🔎 확인한 것"), ("next", "👉 다음"),
+             # ★2026-08-13 웰리 — GM 결정거리를 "다음"과 분리(wellperion-gm-report §4-2-1,
+             #   입항/다음/GM 결정 3섹션). 안 주면 그냥 안 뜬다 — 기존 4종·호출부는 그대로.
+             ("gm_decision", "👉 GM 결정"))
 
 # 섹션 없이 통째로 보낼 수 있는 한 줄 보고의 상한(글자).
 #   왜: 이 관문은 2026-07-27 부터 섹션 인자를 갖고 있었는데 아무도 안 써서, 방에는 계속
@@ -178,6 +181,13 @@ PLAIN_SUMMARY_MAX = 120
 
 # GM 이 이미 아는 약어 — 이건 기술어로 세지 않는다.
 _OK_WORDS = {"ai", "gm", "erp", "ig", "kpi", "pc", "url", "sns", "voc", "cs", "qr", "pdf", "a3"}
+
+# 자주 쓰는 기술어 → 사람 말 제안. _OK_WORDS 와 반대(면제 아님·경고는 그대로 뜬다) —
+# 경고 문구에 "뭐라 바꿔 쓰면 되는지"만 덧붙인다(2026-08-13 웰리, GM 지적 "dedup이 뭔말이야").
+_JARGON_SUGGEST = {
+    "dedup": "중복 방지", "staff_message": "실무진 전달문", "worklog": "작업 기록",
+    "queue": "배 목록", "commit": "저장", "push": "올림",
+}
 
 
 def count_jargon(text: str) -> list[str]:
@@ -202,7 +212,7 @@ def build_text(summary: str, link: str | None = None, *,
                ship: str | None = None, step: str | None = None,
                state: str = DEFAULT_STATE, cause: str | None = None,
                fix: str | None = None, check: str | None = None,
-               nxt: str | None = None) -> str:
+               nxt: str | None = None, gm_decision: str | None = None) -> str:
     """진행현황방 본문 조립.
 
     ▸섹션 인자(cause·fix·check·nxt)를 하나라도 주면 **여러 줄 구조**로 낸다:
@@ -217,7 +227,7 @@ def build_text(summary: str, link: str | None = None, *,
     body = summary.strip()
     title = f"{icon} {head} — {body}" if head else f"{icon} {body}"
 
-    vals = {"cause": cause, "fix": fix, "check": check, "next": nxt}
+    vals = {"cause": cause, "fix": fix, "check": check, "next": nxt, "gm_decision": gm_decision}
     blocks = [f"{label}\n{_bullets(vals[key])}" for key, label in _SECTIONS if (vals.get(key) or "").strip()]
     if not blocks:
         return title + (" " + link.strip() if link else "")
@@ -281,6 +291,7 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
            sender=None, log_path=None, rooms_path=None,
            cause: str | None = None, fix: str | None = None,
            check: str | None = None, nxt: str | None = None,
+           gm_decision: str | None = None,
            image: str | None = None) -> dict:
     """
     AI 진행현황방으로 진행 1줄 발송.
@@ -298,7 +309,7 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
     #   방에 글벽이 남고 GM 은 읽어도 무슨 일인지 모른다. 섹션 인자는 2026-07-27 부터
     #   있었지만 강제가 없어 아무도 안 썼다 — 그래서 관문에서 막는다(약속 L02·L21).
     if (len(summary.strip()) > PLAIN_SUMMARY_MAX
-            and not any((v or "").strip() for v in (cause, fix, check, nxt))):
+            and not any((v or "").strip() for v in (cause, fix, check, nxt, gm_decision))):
         hint = ("진행현황방 보고가 너무 깁니다(%d자 > %d자)."
                 " 한 덩어리로 보내지 말고 --cause(무엇이 문제였나) ·"
                 " --fix(무엇을 했나) · --check(확인한 것) · --next(다음) 로 나눠 쓰세요."
@@ -309,7 +320,7 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
                 "chat_id": None, "hint": hint}
 
     text = build_text(summary, link, ship=ship, step=step, state=state,
-                      cause=cause, fix=fix, check=check, nxt=nxt)
+                      cause=cause, fix=fix, check=check, nxt=nxt, gm_decision=gm_decision)
 
     if dry_run:
         return {"sent": False, "reason": "dry_run", "text": text,
@@ -354,8 +365,10 @@ def notify(summary: str, link: str | None = None, *, ship: str | None = None,
         ok = bool(sender(chat_id, text))
     jargon = count_jargon(text)
     if jargon:
+        shown = [f"{w}(→{_JARGON_SUGGEST[w.lower()]})" if w.lower() in _JARGON_SUGGEST else w
+                 for w in jargon[:8]]
         print("[notify_gm_progress] GM 이 못 읽는 기술어 %d개: %s — 다음부터 사람 말로 바꿔 쓰세요."
-              % (len(jargon), ", ".join(jargon[:8])), file=sys.stderr)
+              % (len(jargon), ", ".join(shown)), file=sys.stderr)
     _append_log(log_path, {
         "ts": now.isoformat(), "summary": summary.strip(), "text": text,
         "link": link or "", "ship": ship or "", "step": step or "", "state": state,
@@ -407,6 +420,8 @@ def main(argv=None) -> int:
     ap.add_argument("--fix", default=None, help='고친 것 (여러 개면 "A|B")')
     ap.add_argument("--check", default=None, help='확인·실측 (여러 개면 "A|B")')
     ap.add_argument("--next", dest="nxt", default=None, help='다음 (여러 개면 "A|B")')
+    ap.add_argument("--gm-decision", dest="gm_decision", default=None,
+                    help='GM 결정거리 — "다음"과 분리해 별도 블록으로 (여러 개면 "A|B")')
     ap.add_argument("--image", default=None,
                     help="같이 보낼 그림 경로(요약 카드 등) — 그림+설명 한 통으로 나간다")
     ap.add_argument("--dry-run", action="store_true", help="실제 발송 없이 payload 미리보기")
@@ -415,7 +430,7 @@ def main(argv=None) -> int:
     out = notify(args.summary, args.link, ship=args.ship, step=args.step,
                  state=args.state, dry_run=args.dry_run,
                  cause=args.cause, fix=args.fix, check=args.check, nxt=args.nxt,
-                 image=args.image)
+                 gm_decision=args.gm_decision, image=args.image)
     print(json.dumps(out, ensure_ascii=False, indent=2))
     if args.dry_run or out["reason"] in ("sent", "gate_off", "dedup", "daily_cap"):
         return 0
