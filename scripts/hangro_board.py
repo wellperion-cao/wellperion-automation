@@ -1126,29 +1126,52 @@ def _self_consistency_findings(
 #   핵심 단어가 한 번도 안 나온다(써놓고 안 보냄). 로그는 최근 N일치만 본다(전수 스캔 비용).
 _RE_WAIT_ASK = re.compile(r"확인\s*대기|회신\s*대기|확인\s*요청|문의드림|여쭤")
 _UNASKED_LOG_WINDOW_DAYS = 21  # 실측 최장 사례(배117)가 19일째 — 여유 두고 3주
-_UNASKED_STOPWORDS = {"확인", "요청", "대기", "완료", "처리", "실측", "오늘", "여전히"}
+_UNASKED_STOPWORDS = {"확인", "요청", "대기", "완료", "처리", "실측", "오늘", "여전히",
+                       "종합접수처", "중간관리자"}  # 거의 모든 일일묶음 메시지에 등장하는 잡음 단어
 
 
 @functools.lru_cache(maxsize=1)
-def _recent_kakao_text() -> str:
-    """최근 N일치 카톡 발신 로그 본문만 이어붙인 캐시(프로세스당 1회만 읽는다)."""
+def _recent_kakao_entries() -> list[tuple[str, str]]:
+    """최근 N일치 카톡 발신 로그 (파일 날짜, 본문) 캐시(프로세스당 1회만 읽는다).
+    파일명 kakao_sent-YYYY-MM-DD.log 의 날짜를 그대로 발신일로 쓴다."""
     files = sorted((_REPO / "logs").glob("kakao_sent-*.log"))[-_UNASKED_LOG_WINDOW_DAYS:]
-    parts = []
+    out = []
     for fp in files:
+        date = fp.stem.replace("kakao_sent-", "")
         try:
             for line in fp.read_text(encoding="utf-8").splitlines():
                 line = line.strip()
                 if line:
-                    parts.append(json.loads(line).get("text", ""))
+                    out.append((date, json.loads(line).get("text", "")))
         except Exception:
             continue
-    return "\n".join(parts)
+    return out
+
+
+def _recent_kakao_text() -> str:
+    return "\n".join(t for _, t in _recent_kakao_entries())
+
+
+def _last_sent_date(token: str) -> str:
+    """token 이 담긴 가장 최근 발신일(YYYY-MM-DD) — 없으면 빈 문자열."""
+    dates = [d for d, t in _recent_kakao_entries() if token in t]
+    return max(dates) if dates else ""
 
 
 # ponytail: 토큰[0]에 조사가 붙으면("분류값이") 로그 원문("등록분류")과 안 맞아 간헐
 #   오탐/누락이 난다(배356 실측 2026-08-13). 형태소 분석은 과함 — 안 고침. 좁히려면
 #   상위 토큰 1개가 아니라 상위 2개가 모두 없을 때만 걸리게. 지금은 오탐이 3~5건대로
-#   감당 범위이고, 놓치는 쪽보다 더 잡는 쪽이 안전해 이대로 둔다.
+#   감당 범위이고, 놓치는 쪽보다 더 잡는 쪽이 안전해 이대로 둔다. 이 한계는 아래
+#   「⏳ 답 없음」에도 그대로 물려받는다(같은 토큰 추출을 재사용하므로).
+def _top_title_token(item: dict) -> str:
+    # 순수 숫자 토큰(날짜 "2026"·"08" 등)은 항상 잡음이라 뺀다. 부분일치로 걸러야
+    # "중간관리자에게"처럼 조사가 붙은 형태도 stopword 로 잡힌다(완전일치 set 뺄셈이면 못 잡음).
+    tokens = [t for t in _title_tokens(item.get("title", ""))
+              if not t.isdigit() and not any(sw in t for sw in _UNASKED_STOPWORDS)]
+    tokens.sort(key=lambda t: (-len(t), t))  # 동률이면 사전순 — 실행마다 픽이 안 흔들리게
+    return tokens[0] if tokens else ""
+
+
 def _unasked_evidence(item: dict) -> str:
     if not item.get("_has_staff_field"):
         return ""  # 실무진 릴레이 채널 자체를 안 쓰는 배(GM전용·AI내부) — 대상 아님
@@ -1158,9 +1181,9 @@ def _unasked_evidence(item: dict) -> str:
     sm = str(item.get("staff_message") or "").strip()
     if not sm:
         return "staff_message 빈 채로 방치 — 질문 초안조차 없음"
-    tokens = sorted(_title_tokens(item.get("title", "")) - _UNASKED_STOPWORDS, key=len, reverse=True)
-    if tokens and tokens[0] not in _recent_kakao_text():
-        return f"staff_message는 있는데 최근 {_UNASKED_LOG_WINDOW_DAYS}일 발신 로그에 '{tokens[0]}' 0건 — 안 보낸 듯"
+    token = _top_title_token(item)
+    if token and token not in _recent_kakao_text():
+        return f"staff_message는 있는데 최근 {_UNASKED_LOG_WINDOW_DAYS}일 발신 로그에 '{token}' 0건 — 안 보낸 듯"
     return ""
 
 
@@ -1172,6 +1195,50 @@ def _unasked_findings(items: list[dict]) -> list[tuple[dict, str]]:
         if it.get("audience") == "ai":
             continue
         ev = _unasked_evidence(it)
+        if ev:
+            out.append((it, ev))
+    out.sort(key=lambda pair: -(_stall_days(pair[0]) or 0))
+    return out
+
+
+# ── ⏳ 답 없음 (2026-08-13 웰리 — 「❓ 안 물어봄」의 짝. 물었는지는 위에서 이미 본다,
+#   여기는 "물었는데 그 뒤로 배가 안 움직였나"만 본다. 카톡 회신 원문은 안 읽는다 —
+#   자유 문장을 기계가 "이건 답이다"로 잘못 판정하면 조용히 틀린다. 그래서 판정은
+#   딱 두 가지만: ①실제 발신 기록이 있다(_last_sent_date 재사용 — 같은 계산 두 번 안 함)
+#   ②그 뒤로도 여전히 열려 있다("진전 없음" = status 그대로, 이미 findings 필터가 봄).
+#   ★mod_date(note 갱신일)는 신호로 안 쓴다 — AI가 내부 정리로 note 만 건드려도 mod_date
+#   가 갱신돼, 그 갱신을 "진전"으로 오인하면 실측(배371 등, 08-06 발신·08-07 내부
+#   갱신)이 걸러져 놓친다. 오탐(내부 노이즈를 답 없음으로 잘못 잡음)보다 누락(진짜
+#   방치된 배를 놓치는 것)이 더 위험해 이대로 둔다 — 오늘 「안 물어봄」과 같은 원칙. ──
+_NO_REPLY_MIN_DAYS = 3  # 하루 만에 띄우면 노이즈, 너무 길면 오늘 같은 19일 적체가 또 난다
+
+
+def _no_reply_evidence(item: dict) -> str:
+    if not item.get("_has_staff_field"):
+        return ""
+    sm = str(item.get("staff_message") or "").strip()
+    if not sm:
+        return ""  # 초안조차 없는 건 「안 물어봄」 몫
+    token = _top_title_token(item)
+    if not token:
+        return ""
+    sent = _last_sent_date(token)
+    if not sent:
+        return ""  # 발신 기록 자체가 없는 건 「안 물어봄」 몫
+    days = (dt.date.today() - dt.datetime.strptime(sent, "%Y-%m-%d").date()).days
+    if days < _NO_REPLY_MIN_DAYS:
+        return ""
+    return f"{sent} 발신 이후 {days}일째 답 없음(배는 여전히 열려 있음)"
+
+
+def _no_reply_findings(items: list[dict]) -> list[tuple[dict, str]]:
+    out = []
+    for it in items:
+        if not _is_open_status(it) or _is_new_today(it) or _is_excluded_role(it.get("owner", "")):
+            continue
+        if it.get("audience") == "ai":
+            continue
+        ev = _no_reply_evidence(it)
         if ev:
             out.append((it, ev))
     out.sort(key=lambda pair: -(_stall_days(pair[0]) or 0))
@@ -1264,13 +1331,14 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     # 🤔 큐 자기정합 3종(2026-08-04) — 같은 블록에 붙인다(새 ### 헤더 금지·약속 L21).
     looks_done, dupes, mismatch = _self_consistency_findings(all_items)
     unasked = _unasked_findings(all_items)
+    no_reply = _no_reply_findings(all_items)
     _SELFCHECK_CAP = 7
-    for pair_list in (looks_done, dupes, mismatch, unasked):
+    for pair_list in (looks_done, dupes, mismatch, unasked, no_reply):
         for it, _ev in pair_list:
             it["_ship"] = classify_ship({
                 "title": it["title"], "priority": it["priority"], "deadline": it["end_date"]})
     if (stalled or sent_unanswered or received_unanswered
-            or looks_done or dupes or mismatch or unasked or gm_gaps):
+            or looks_done or dupes or mismatch or unasked or no_reply or gm_gaps):
         lines.append("")
         # 표 제목이 무엇을 센 값인지 스스로 말한다(배540) — 옛 제목('마지막 기록 이후')은
         # 실제 기준과 어긋나 있었다. 꼬리표: N일째=안 닫힌 날수 · 기록N일전=note 공백.
@@ -1299,6 +1367,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
             ("🔁 중복 의심", dupes),
             ("⚠️ note↔status 불일치", mismatch),
             ("❓ 안 물어봄 — 확인 대기라 적고 질문은 안 나감", unasked),
+            ("⏳ 답 없음 — 물었는데 그 뒤로 배가 안 움직임", no_reply),
         ):
             if not pair_list:
                 continue
