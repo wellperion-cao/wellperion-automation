@@ -552,6 +552,25 @@ function installReceptionSlaTrigger() {
   return '설치 완료';
 }
 
+// 트리거 제거 (GM 지시 2026-08-12 "이것좀 더이상 안뜨게 하고싶은데").
+// 왜: 이 30분 알림은 '새로 기한을 넘긴 건'마다 즉시 울린다. 적체가 24건 쌓여 있는 동안은
+// 하루에도 여러 번 울리는데, 같은 내용을 매일 22:30 종합접수 정리(report_stream_2b_reception)가
+// 이미 한 번에 알려 준다 — 실시간 알림은 그 위에 얹힌 중복 소음이었다(약속 L21).
+// 정보 손실 0: 기한 초과 목록은 22:30 정리와 종합접수처 화면에 그대로 남는다.
+// 되돌리기: installReceptionSlaTrigger() 또는 action=reg_install_sla_trigger 한 번.
+function uninstallReceptionSlaTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var removed = 0;
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === '_regSlaCheckTrigger') {
+      ScriptApp.deleteTrigger(triggers[i]);
+      removed++;
+    }
+  }
+  Logger.log('uninstallReceptionSlaTrigger: ' + removed + '개 제거');
+  return { removed: removed };
+}
+
 // ─── 종합 접수처 라벨→키 별칭 (시트 실헤더 라벨 드리프트 흡수 · SSOT) ───
 // 시트 1행 실제 라벨이 REG_COMMON/EXTRA_HEADERS 정의 라벨과 다른 경우(예: 분실물 탭)를 흡수.
 var REG_LABEL_ALIASES = { '분실위치': 'loc', '위치': 'loc', '물품상세': 'content' };   // '위치'·'분실위치' = loc 구헤더 하위호환(장소 rename 전/후 모두 정독). '장소'는 REG_COMMON_HEADERS 정의라 자동 매핑.
@@ -2378,6 +2397,8 @@ function _vProcess(action, body, params) {
   }
   // SLA 초과 알림 30분 트리거 설치(멱등·일회성·GATED). 배포 직후 1회만 호출. 2026-07-27 시토.
   if (action === 'reg_install_sla_trigger') return _vJson({ ok: true, result: installReceptionSlaTrigger() });
+  // SLA 30분 실시간 알림 끄기(GATED · GM 지시 2026-08-12). 되돌리기 = 위 install 한 번.
+  if (action === 'reg_uninstall_sla_trigger') return _vJson({ ok: true, result: uninstallReceptionSlaTrigger() });
 
   // ── 습득 분실물(Lost & Found) 액션 (시토 배1069 · 2026-07-15) ──
   if (action === 'lf_submit')   return _lfSubmit(body);            // 직원 등록(게이트+제출토큰)
