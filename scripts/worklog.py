@@ -175,7 +175,7 @@ def close_gm_refs(role: str, detail: str = "") -> int:
                 n += 1
         return n
     except Exception as exc:  # noqa: BLE001
-        print(f"[WARN] close_gm_refs 예외(best-effort): {exc}")
+        print(f"[WARN] close_gm_refs 예외(best-effort): {exc}", file=sys.stderr)
         return 0
 
 
@@ -268,7 +268,14 @@ def log(
         result_v = (result or "ok").strip().lower()
         if result_v not in VALID_RESULTS:
             result_v = "ok"
-        ref = _merge_gm_ref((role or "").strip().lower(), area or "", result_v, ref or "")
+        # ref 합치기는 '있으면 좋은' 정리다 — 여기서 터져도 기록 자체는 남아야 한다(배590).
+        # 2026-08-12 시포 세션에서 이 호출이 매 프롬프트마다 NameError 를 냈고, 그때 log() 전체가
+        # 예외로 빠져 **GM 지시 접수(warn) 줄이 통째로 안 남았다.** 쿵짝표·아침 자가점검이 전부 이
+        # 원장을 읽으므로 '오늘 GM이 시킨 것'이 사라진다. 보조 정리가 본 기록을 죽이지 못하게 가둔다.
+        try:
+            ref = _merge_gm_ref((role or "").strip().lower(), area or "", result_v, ref or "")
+        except Exception as exc:
+            print(f"[WARN] worklog ref 합치기 건너뜀(기록은 그대로 남긴다): {exc}", file=sys.stderr)
         record = {
             "ts": (ts or "").strip() or datetime.now(tz=KST).isoformat(timespec="seconds"),
             "role": (role or "").strip().lower(),
@@ -292,10 +299,12 @@ def log(
                 if attempt < _APPEND_RETRIES - 1:
                     time.sleep(_APPEND_RETRY_WAIT_SEC)
         if last_exc:
-            print(f"[WARN] worklog.log append 실패(best-effort): {last_exc}")
+            print(f"[WARN] worklog.log append 실패(best-effort): {last_exc}", file=sys.stderr)
         return False
     except Exception as exc:
-        print(f"[WARN] worklog.log 예외(best-effort, 호출부 무영향): {exc}")
+        # ★stderr 로 낸다(배590). 이 함수는 UserPromptSubmit 훅에서도 불리는데, 그 훅의
+        #   stdout 은 JSON 계약이다 — 경고 한 줄이 앞에 섞이면 리마인더가 통째로 깨진다.
+        print(f"[WARN] worklog.log 예외(best-effort, 호출부 무영향): {exc}", file=sys.stderr)
         return False
 
 
