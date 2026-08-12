@@ -10006,6 +10006,9 @@ function saveReactivateModal() {
       { action: 'member_active_update', rowIndex: rowIndex, col: m.reCol, value: '환불', keyPhone: keyPhone, rowKey: m.rowKey || '' },
       { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + m.reCol, label: '환불 처리', who: m.name || '', overlay: _hov }
     );
+    // FB260812-131957 — 종료회원 뷰에서 처리 후 유효회원 뷰로 전환 시 stale valid 캐시가 남으면
+    // 구 rowKey로 저장 시도 → rowkey-not-found 실패. 처리 직후 valid 캐시도 명시적으로 비운다.
+    _activeCacheClear('valid');
     showToast((m.name || '회원') + '님 환불 처리 완료', 'ok');
     closeReactivateModal(); saveBtn.disabled = false; return;
   }
@@ -10032,6 +10035,10 @@ function saveReactivateModal() {
     { action: 'member_active_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: m.rowKey || '', fields: fields },
     { scope: 'active', phoneKey: keyPhone, fieldset: 'reactivate', label: '재등록 처리', who: m.name || '', overlay: _ov }
   );
+  // FB260812-131957 — enqueue scope:'active'는 _activeScope(='ended') 캐시만 비운다.
+  // 종료→유효 전환 직후 valid 뷰로 이동 시 stale valid 캐시 rowKey로 저장 시도 → rowkey-not-found.
+  // 재등록 처리는 유효회원 뷰에도 영향을 주므로 valid 캐시를 여기서 명시적으로 비운다.
+  _activeCacheClear('valid');
   showToast((m.name || '회원') + '님이 유효회원으로 이동했습니다', 'ok');
   closeReactivateModal();
   saveBtn.disabled = false;
