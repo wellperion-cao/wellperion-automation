@@ -49,6 +49,13 @@
 
   /* 2-column grid so 4 items lay out on one A3 sheet with room to spare */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;}
+  /* screen-only: .sheet/.bar are hardcoded to physical A3 width(297mm≈1123px) for the on-screen
+     paper-preview look — below 820px that alone overflows regardless of grid columns, so both
+     collapse to viewport width here. @media print untouched — @page still drives the real A3 output. */
+  @media screen and (max-width: 820px){
+    .grid{grid-template-columns:1fr;}
+    .sheet,.bar{width:100%;}
+  }
 
   /* item */
   .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
