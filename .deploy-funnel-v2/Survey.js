@@ -1233,7 +1233,13 @@ function _memberLog_(rows) {
       sh.setFrozenRows(1);
     }
     sh.getRange(sh.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
-  } catch (e) { /* 기록 실패가 회원 저장을 막지 않는다 */ }
+  } catch (e) {
+    // 기록 실패가 회원 저장을 막지 않는다(그건 그대로). 다만 **아무 흔적도 안 남기지는 않는다**
+    // — 배342·웰리 2026-08-04. 그동안 이 catch 가 통째로 삼켜서, 이력 append 가 실패해도
+    // 응답은 ok:true 였다. 실패가 성공으로 보이니 아무 감시기도 안 울렸다.
+    // Logger.log 는 이 파일의 기존 방식이고 Apps Script 실행기록에 남는다(새 장치 0 · 약속 L21).
+    Logger.log('[_memberLog_] 이력 기록 실패(회원 저장은 정상): ' + (e && e.message ? e.message : String(e)));
+  }
 }
 
 // ─── 시트 초기화 ───
@@ -9006,7 +9012,11 @@ function _hasRealReply_(memo) {
     var mlScope = String(body.scope || '').trim();
     var mlLimit = Math.min(parseInt(body.limit, 10) || 200, 500);
     var mlSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_LOG_SHEET);
-    if (!mlSh || mlSh.getLastRow() < 2) return _json({ ok: true, data: [], started: MEMBER_LOG_STARTED });
+    // '탭이 없다'와 '기록이 0건이다'를 응답에서 가른다(배342·웰리 2026-08-04). 그동안 둘이
+    // 똑같이 {ok:true,data:[]} 로 나가서, 화면만 보면 수집이 끊긴 것과 진짜 0건이 구분되지
+    // 않았다 — 자가점검이 말하는 '0 위장'이다. 기존 필드는 그대로 두고 한 칸만 더한다(비파괴).
+    if (!mlSh) return _json({ ok: true, data: [], started: MEMBER_LOG_STARTED, tab: false, reason: 'no_tab' });
+    if (mlSh.getLastRow() < 2) return _json({ ok: true, data: [], started: MEMBER_LOG_STARTED, tab: true, reason: 'empty' });
     var mlAll = mlSh.getRange(2, 1, mlSh.getLastRow() - 1, 8).getValues();
     var mlOut = [];
     for (var mi = mlAll.length - 1; mi >= 0 && mlOut.length < mlLimit; mi--) {
