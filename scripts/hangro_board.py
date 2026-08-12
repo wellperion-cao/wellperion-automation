@@ -731,12 +731,24 @@ def _stall_tag(item: dict, days: int | None = None) -> str:
     return f"{tag}·기록{quiet}일전" if quiet >= _STALL_MIN_DAYS else tag
 
 
+_RE_PERMANENT = re.compile(r"^\[[^\]]+\]\s*상설\b")
+
+
+def _is_permanent(item: dict) -> bool:
+    """제목이 '[닉네임] 상설 …'인 배 — 아침 자가점검을 계속 흡수하는 그릇이라 원래 안 닫힌다.
+    큐 스키마에 별도 표식(kind 등) 없어 제목이 가장 얇은 판별선(배591 후속·2026-08-13).
+    ⚓ 대기중 등 다른 목록에서는 그대로 보인다 — 여기서만(안 닫힌 배) 뺀다."""
+    return bool(_RE_PERMANENT.match(str(item.get("title") or "")))
+
+
 def _stalled(items: list[dict], min_days: int = _STALL_MIN_DAYS) -> list[dict]:
     """안 닫힌 지 오래된 배 — 오래된 순. 기준=_open_days(배540에서 _stall_days 에서 옮김).
     옛 기준은 마지막 기록일만 봐서, 매일 한 줄씩 적히기만 하고 끝나지 않는 배를
     목록에서 조용히 뺐다. 이 함수가 그 축을 흡수했으므로 별도 '오래 걸리는 배' 표는
-    없앴다(약속 L21 net-zero)."""
-    out = [it for it in items if (_open_days(it) or 0) >= min_days]
+    없앴다(약속 L21 net-zero).
+    상설 배(_is_permanent)는 뺀다 — 영원히 열려 있는 게 정상이라 매번 맨 위를 차지해
+    진짜 방치된 배를 묻는다(GM 지적 2026-08-13)."""
+    out = [it for it in items if (_open_days(it) or 0) >= min_days and not _is_permanent(it)]
     return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
