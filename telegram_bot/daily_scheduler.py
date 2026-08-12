@@ -673,13 +673,20 @@ def _fetch_yesterday_done_todos() -> list[str]:
         return []
 
 
-def _fetch_yesterday_queue_done() -> list[str]:
+def _fetch_yesterday_queue_done(day: str | None = None, with_evidence: bool = False) -> list[str]:
     """
-    status/_queue.json 에서 어제 완료된 배 제목 목록 반환.
-    processed_at(우선) 또는 enqueued_at 이 어제 날짜인 DONE/완료 항목.
-    실패 시 빈 리스트.
+    status/_queue.json 에서 그날 완료된 배 제목 목록 반환.
+    updated_at(우선) · processed_at · enqueued_at 중 하나가 그 날짜인 DONE/완료 항목.
+    day 를 안 주면 예전 그대로 '어제'(기존 호출부 동작 불변).
+    with_evidence=True 면 제목 앞에 증거 유무를 붙인다(✅=증거 있음 · 🔍=증거 없음).
+
+    ★2026-08-13(시토 · 배447) — 날짜 인자와 updated_at 을 더했다.
+      왜: 21시 알림이 업무 시트(GAS todo_list)만 보고 배 원장은 아예 안 봐서, 실제로 닫힌
+      배가 '업무 완료 0건'으로 나갔다(웰리 실측 2026-08-09 · 그날 DONE 2척). 21시 쪽에서
+      쓰려면 '오늘'이 필요하고, 배를 닫을 때 실제로 찍히는 칸은 updated_at 이다.
+      새 함수를 만들지 않고 이 함수 하나를 넓힌다(약속 L21·L01).
     """
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    target = day or (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     queue_path = REPO_ROOT / "status" / "_queue.json"
     try:
         with open(queue_path, encoding="utf-8") as _f:
@@ -691,11 +698,22 @@ def _fetch_yesterday_queue_done() -> list[str]:
     for x in items:
         if x.get("status") not in ("DONE", "완료", "done"):
             continue
-        date_val = str(x.get("processed_at") or x.get("enqueued_at") or "")
-        if not date_val.startswith(yesterday):
+        dates = [str(x.get(k) or "") for k in ("updated_at", "processed_at", "enqueued_at")]
+        if not any(d.startswith(target) for d in dates):
             continue
         title = str(x.get("title") or "").strip()
-        if title:
+        if not title:
+            continue
+        if with_evidence:
+            has_ev = bool(str(x.get("artifact_url") or "").strip())
+            # 낱말 중간에서 자르지 않는다 — 마지막 공백까지만 남기고 …를 붙인다.
+            short = title
+            if len(short) > 56:
+                cut = short[:56]
+                sp = cut.rfind(" ")
+                short = (cut[:sp] if sp > 30 else cut).rstrip(" ·—-") + "…"
+            result.append(("✅ " if has_ev else "🔍 ") + short)
+        else:
             result.append(title[:60])
     return result
 
@@ -2089,10 +2107,17 @@ def _build_21_body() -> str:
     # ③ 미완료 → 내일 항로점 (브릿지)
     open_cards = _fetch_open_todo_cards_for_tomorrow()
 
+    # ②-b 오늘 실제로 닫힌 '배'(status/_queue.json) — 업무 시트와 **다른 장부**다(배447).
+    #   GM 지적(2026-08-07) '업무 완료도 이상하고' 의 실체: 이 알림은 업무 시트만 봐서
+    #   회의 일정 제목을 '업무 완료 1건'으로 냈고, 실제로 닫힌 배 5척은 아예 안 보였다.
+    #   GM 결정 = 둘 다 보여준다. 단 **섹션을 갈라** 싣는다 — 섞으면 어느 쪽 숫자인지 모른다.
+    done_ships = _fetch_yesterday_queue_done(day=today_str, with_evidence=True)
+
     # 박스표: 오늘 성과 요약
     table_rows = [
         ("코드·자동화", str(n_commits)),
-        ("업무 완료",   str(len(done_today))),
+        ("끝낸 배",     str(len(done_ships))),
+        ("일정·회의",   str(len(done_today))),
         ("미완 이월",   str(len(open_cards))),
     ]
     table_str = "\n".join(_count_table(table_rows))
@@ -2103,11 +2128,17 @@ def _build_21_body() -> str:
         commit_lines.append(f"  ... 외 {n_commits - 7}건")
     commit_block = "\n".join(commit_lines) if commit_lines else "  (오늘 커밋 없음)"
 
-    # 업무 완료 목록
-    done_lines = [f"  ✅ {t}" for t in done_today[:5]]
-    if len(done_today) > 5:
-        done_lines.append(f"  ... 외 {len(done_today) - 5}건")
-    done_block = "\n".join(done_lines) if done_lines else "  (오늘 완료 항목 없음)"
+    # 끝낸 배 목록(배 원장) — 매일 바뀌는 쪽이라 일정보다 먼저 낸다
+    ship_lines = [f"  {t}" for t in done_ships[:6]]
+    if len(done_ships) > 6:
+        ship_lines.append(f"  ... 외 {len(done_ships) - 6}척")
+    ship_block = "\n".join(ship_lines) if ship_lines else "  (오늘 닫힌 배 없음)"
+
+    # 일정·회의 목록(업무 시트) — 고정 일정이 섞여 날마다 같을 수 있다
+    done_lines = [f"  · {t}" for t in done_today[:4]]
+    if len(done_today) > 4:
+        done_lines.append(f"  ... 외 {len(done_today) - 4}건")
+    done_block = "\n".join(done_lines) if done_lines else "  (오늘 처리 표시된 일정 없음)"
 
     # 내일 항로점 (미완료 → 이월)
     bridge_lines = []
@@ -2127,13 +2158,15 @@ def _build_21_body() -> str:
         f"{_DIVIDER}\n"
         f"   오늘의 성과\n"
         f"{table_str}\n\n"
+        f"🏁 오늘 끝낸 배 (작업 원장)\n"
+        f"{ship_block}\n\n"
+        f"🗓 일정·회의 (업무 시트)\n"
+        f"{done_block}\n\n"
         f"🚢 코드·자동화\n"
         f"{commit_block}\n\n"
-        f"✅ 업무 완료\n"
-        f"{done_block}\n\n"
         f"{_DIVIDER}\n"
         f"🔗 내일 항로점 ({tmr_str} {tmr_wd})\n"
-        f"  (오늘 미완 → 내일 이월)\n"
+        f"  (업무 시트 미완 → 이월 · 고정 일정 포함)\n"
         f"{bridge_block}\n\n"
         f"{_AUTO_FOOTER}"
     )
