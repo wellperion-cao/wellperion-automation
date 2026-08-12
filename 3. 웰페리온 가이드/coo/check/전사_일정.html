@@ -494,7 +494,7 @@ function inlinePanelHtml(it,idx){
       efIn(idx,"assignee","담당자",it.assignee,"이름/팀")+
       // 증빙 칸은 정기점검에만 있었다 — 이벤트로 적은 검사·점검(예: 수영장 수질검사)은
       // 성적서를 넣을 자리가 없었다(GM 지적 2026-08-12). 같은 칸을 이벤트에도 그대로 쓴다.
-      efIn(idx,"evidence","증빙(링크)",it.evidence,"성적서·필증 URL — 드라이브 링크 붙여넣기")+
+      efEvidence(idx,it)+
       efIn(idx,"note","메모",it.note,"준비물·비고")+
     '</div>';
   }else{
@@ -508,7 +508,7 @@ function inlinePanelHtml(it,idx){
       efIn(idx,"period_months","주기(개월)",it.period_months,"예) 12")+
       efNextDue(idx,it)+
       efIn(idx,"legal_basis","법적 근거",it.legal_basis,"")+
-      efIn(idx,"evidence","증빙(링크)",it.evidence,"성적서·필증 URL")+
+      efEvidence(idx,it)+
       efSel(idx,"vendor_id","담당 거래업체",[""].concat(vendorSorted().map(function(v){return v.id;})),it.vendor_id||"",function(id){if(!id)return "미지정";var v=vendorById(id);return v?(v.name+" ("+v.label+")"):"(알 수 없음)";})+
     '</div>';
   }
@@ -548,6 +548,72 @@ var DKEY="wp_schedule_draft_v1";
 function esc(s){return (s==null?"":(""+s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function efIn(i,f,label,val,ph){return '<div class="efield"><label>'+label+'</label><input data-i="'+i+'" data-f="'+f+'" value="'+esc(val)+'" placeholder="'+esc(ph||"")+'"></div>';}
 function efDate(i,f,label,val){var v=String(val==null?"":val).replace(/^(\d{4}-\d{2}-\d{2}).*/,"$1");return '<div class="efield"><label>'+label+'</label><input type="date" data-i="'+i+'" data-f="'+f+'" value="'+esc(v)+'"></div>';}
+// 증빙 = 사진을 찍어 올린다 (GM 지시 2026-08-12 "사진 업로드할 수 있게 해줘, 증빙(링크) 필요없어").
+// 주소를 손으로 붙여넣던 칸을 없애고 버튼 하나로 바꿨다. 값(드라이브 URL)은 그대로 evidence 에
+// 들어가므로 이미 붙여 둔 링크는 그대로 살아 있고 목록의 「📎 증빙 보기」도 그대로 뜬다.
+function efEvidence(i,it){
+  var url=(it.evidence&&(""+it.evidence).trim())||"";
+  var seen=url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" style="font-size:12px;">📎 올린 증빙 보기</a>':'<span style="font-size:12px;opacity:.6;">아직 없음</span>';
+  return '<div class="efield"><label>증빙 사진</label>'+
+    '<input type="hidden" data-i="'+i+'" data-f="evidence" value="'+esc(url)+'">'+
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+
+      '<button type="button" class="ebtn" onclick="event.stopPropagation();document.getElementById(\'evCam_'+i+'\').click();">📷 사진 올리기</button>'+
+      seen+'<span id="evStat_'+i+'" style="font-size:12px;color:var(--accent);"></span>'+
+    '</div>'+
+    '<input type="file" id="evCam_'+i+'" accept="image/*" capture="environment" style="display:none;" onclick="event.stopPropagation();" onchange="uploadEvidence('+i+',this)">'+
+  '</div>';
+}
+// 휴대폰 사진은 보통 4~8MB라 그대로 올리면 막힌다 — 긴 변을 maxPx 로 줄여 JPEG 로 다시 만든다.
+// (「결재 현황 SSOT」의 촬영 업로드와 같은 방식. 두 페이지가 서로를 못 불러 같은 20줄을 옮겨 적었다.)
+function shrinkImage(file,maxPx,quality){
+  return new Promise(function(resolve,reject){
+    var url=URL.createObjectURL(file), img=new Image();
+    img.onload=function(){
+      var w=img.naturalWidth,h=img.naturalHeight,scale=Math.min(1,maxPx/Math.max(w,h));
+      if(scale>=1&&file.size<=5*1024*1024){URL.revokeObjectURL(url);resolve(file);return;}
+      var cv=document.createElement('canvas');
+      cv.width=Math.round(w*scale);cv.height=Math.round(h*scale);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      cv.toBlob(function(blob){
+        URL.revokeObjectURL(url);
+        if(!blob){reject(new Error('축소 실패'));return;}
+        resolve(new File([blob],(file.name||'증빙').replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'}));
+      },'image/jpeg',quality);
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('이미지 읽기 실패'));};
+    img.src=url;
+  });
+}
+async function uploadEvidence(i,input){
+  var file=input&&input.files&&input.files[0]; if(!file) return;
+  var st=document.getElementById('evStat_'+i);
+  function _s(m){ if(st) st.textContent=m; }
+  try{ file=await shrinkImage(file,1800,0.8); }catch(e){ /* 축소 실패하면 원본 그대로 시도 */ }
+  if(file.size>5*1024*1024){ _s(''); alert('줄여도 5MB를 넘습니다. 다시 찍어 주세요.'); input.value=''; return; }
+  _s('올리는 중…');
+  try{
+    var b64=await new Promise(function(res,rej){
+      var r=new FileReader();
+      r.onload=function(){res(String(r.result).split(',')[1]);};
+      r.onerror=function(){rej(new Error('파일 읽기 실패'));};
+      r.readAsDataURL(file);
+    });
+    var nm=(DATA.items[i]&&DATA.items[i].name?DATA.items[i].name:'증빙').replace(/[\\/:*?"<>|]/g,'_');
+    var r=await fetch(SCHEDULE_GAS_URL,{method:'POST',redirect:'follow',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'upload_evidence',file:b64,fileName:nm+'_'+file.name,mimeType:file.type||'image/jpeg'})});
+    var res=await r.json();
+    // 서버가 아직 안 올라갔을 때를 따로 알려 준다 — '실패'로만 뜨면 사진이 잘못된 줄 안다.
+    if(!res.ok && /알 수 없는 action/.test(res.error||'')){
+      _s(''); alert('서버가 아직 사진을 받을 준비가 안 됐습니다.\n시토 배574 배포 후 다시 시도해 주세요.'); input.value=''; return;
+    }
+    if(!res.ok) throw new Error(res.error||'업로드 실패');
+    DATA.items[i].evidence=res.url;
+    _s('✅ 올렸습니다'); input.value='';
+    saveDraft(); renderAll(); saveToServer();
+  }catch(e){ _s(''); alert('사진 업로드 실패: '+e.message); input.value=''; }
+}
+window.uploadEvidence=uploadEvidence;
 function efSel(i,f,label,opts,val,labelFn){var o=opts.map(function(k){return '<option value="'+esc(k)+'"'+(k===val?" selected":"")+'>'+esc(labelFn?labelFn(k):k)+'</option>';}).join("");return '<div class="efield"><label>'+label+'</label><select data-i="'+i+'" data-f="'+f+'">'+o+'</select></div>';}
 // 분류 select — 색점 스와치가 현재 분류색을 보여주고, 선택 변경 시 즉시 반영
 function efSelCat(i,it){

@@ -25,6 +25,7 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     var action = body.action || '';
     if (action === 'save_schedule') return saveSchedule_(body);
+    if (action === 'upload_evidence') return uploadEvidence_(body);
     return jsonRes_({ ok: false, error: '알 수 없는 action: ' + action });
   } catch (err) {
     return jsonRes_({ ok: false, error: String(err) });
@@ -59,6 +60,36 @@ function saveSchedule_(body) {
     count: data.items.length,
     savedAt: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss')
   });
+}
+
+// ─── 증빙 사진 업로드 (GM 지시 2026-08-12 "사진 업로드할 수 있게 해줘, 증빙(링크) 필요없어") ───
+// 파일은 드라이브에 두고 URL 만 돌려준다. 일정 자체는 ScriptProperties 한 덩어리(9KB 상한)에
+// 들어가므로 사진을 그 안에 넣으면 일정 전체가 저장 불가가 된다 — 반드시 드라이브에 둔다.
+// 폴더는 처음 한 번만 만들고 그 id 를 속성에 적어 둔다(매번 검색하면 느리고 중복 폴더가 생긴다).
+var EVIDENCE_FOLDER_PROP = 'SCHEDULE_EVIDENCE_FOLDER_ID';
+var EVIDENCE_FOLDER_NAME = '웰페리온 전사일정 증빙';
+
+function evidenceFolder_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty(EVIDENCE_FOLDER_PROP);
+  if (id) {
+    try { return DriveApp.getFolderById(id); } catch (err) { /* 지워졌으면 아래에서 새로 만든다 */ }
+  }
+  var it = DriveApp.getFoldersByName(EVIDENCE_FOLDER_NAME);
+  var folder = it.hasNext() ? it.next() : DriveApp.createFolder(EVIDENCE_FOLDER_NAME);
+  props.setProperty(EVIDENCE_FOLDER_PROP, folder.getId());
+  return folder;
+}
+
+function uploadEvidence_(body) {
+  if (!body.file) return jsonRes_({ ok: false, error: '파일이 비어 있습니다.' });
+  var name = body.fileName || ('증빙_' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMdd_HHmmss') + '.jpg');
+  var mime = body.mimeType || 'image/jpeg';
+  var blob = Utilities.newBlob(Utilities.base64Decode(body.file), mime, name);
+  var file = evidenceFolder_().createFile(blob);
+  // 링크를 아는 사람은 열 수 있게 — 화면에서 바로 눌러 봐야 하기 때문이다.
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return jsonRes_({ ok: true, url: file.getUrl(), name: name });
 }
 
 function jsonRes_(obj) {
