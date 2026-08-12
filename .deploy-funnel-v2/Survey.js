@@ -1968,6 +1968,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
                                       //   중복전화 가드(_regRemove_) + 유효회원 동반 정리(_regActiveRemoveIfSole_)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
+  member_active_sort_now:     true,  // 2026-08-12 잔여일순 정렬 온디맨드(행 순서만 바꿈·값 무변경·PII 미반환)
   member_hold_preview:        true,  // 2026-07-22 휴회 경량안 — 미리보기/검증(read-only, 시트 무변경). 시포·GM
   member_hold_apply:          true,  // 2026-07-22 휴회 공개접수(쓰기전용 → '휴회접수' 탭·회원 판정 미반환). ★HOLD_LIVE 게이트(OFF). 시포·GM
   member_hold_intake_list:    true,  // 2026-07-22 휴회 접수관리 리스트(ERP read+서버 자동판정). 게이트 뒤. 시포·GM
@@ -2646,6 +2647,11 @@ function _memberCacheBump_() {
   try {
     var p = PropertiesService.getScriptProperties();
     p.setProperty('MEMBER_CACHE_GEN', String((parseInt(p.getProperty('MEMBER_CACHE_GEN'), 10) || 0) + 1));
+    // ★잔여일 정렬 표시(2026-08-12 GM "액션이 일어날 때만 움직여도 될 것 같은데") — 회원 시트에 쓰기가
+    //   있었다는 사실만 여기 한 곳에 남긴다. 워머는 이 표시가 켜져 있을 때만 정렬하고 끄므로,
+    //   아무도 안 고친 시간에는 시트를 열지도 않는다(전에는 하루 1회 무조건, 그 전 안은 5분마다 훑기).
+    //   이 함수가 회원 시트 쓰기의 단일 관문이라 여기 한 줄이면 모든 쓰기 경로가 덮인다(약속 L21).
+    p.setProperty('MEMBER_SORT_DIRTY', '1');
   } catch (e) { /* 캐시 무효화 실패가 저장 자체를 막지 않게 한다 */ }
 }
 
@@ -9026,6 +9032,16 @@ function _hasRealReply_(memo) {
     return _json({ ok: true, added: ewHdr.length > ewBefore, colIndex: ewIdx + 1, headerCount: ewHdr.length });
   }
 
+  // ─── 잔여일순 정렬 온디맨드(2026-08-12 GM 지시 "시트에 잔여일 기준으로 정렬해줘") ───
+  //   판정·정렬 본체는 member_active_sort_by_remaining_ 하나뿐이다(약속 L01·L21) — 여기서 다시 짜지 않고
+  //   그 함수를 부르기만 한다. 그 함수가 이미 집계블록 경계 확인·행수 대조·실패 시 텔레그램 경보까지 한다.
+  //   왜 필요한가: 정렬은 매일 자정 직후 워머에서 1회만 돌고 날짜 도장(MEMBER_SORT_LAST)으로 막혀 있어,
+  //   낮에 종료일자·잔여일이 바뀌어도 다음 날까지 시트 순서가 옛 상태로 남았다. dry=1 이면 쓰기 없이 대상만.
+  if (action === 'member_active_sort_now') {
+    var snRes = member_active_sort_by_remaining_({ dry: String(body.dry || '') === '1' });
+    return _json({ ok: !snRes.error, result: snRes, error: snRes.error || undefined });
+  }
+
   if (action === 'member_active_list') {
     var aaScope = String(body.scope || 'valid'); if (aaScope !== 'ended' && aaScope !== 'corp') aaScope = 'valid';
     var aaSs0 = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
@@ -11463,7 +11479,12 @@ function member_loss_date_auto_stamp_(opts) {
   }
   out.stamped = writes.length;
   out.targets = writes.map(function(w) { return { row: w.row, col: w.col, name: w.name, rem: w.rem, lossBefore: w.lossBefore }; });
-  if (!dry) writes.forEach(function(w) { sh.getRange(w.row, w.col).setValue(today); });
+  if (!dry) {
+    writes.forEach(function(w) { sh.getRange(w.row, w.col).setValue(today); });
+    // 이 자동 도장은 시트에 직접 써 왔는데 쓰기 관문을 안 거쳐, 찍은 뒤에도 회원 목록 캐시가 옛 값을
+    // 그대로 내주고 잔여일 정렬 표시도 안 켜졌다(2026-08-12 시포). 쓴 게 있을 때만 관문을 부른다.
+    if (writes.length) _memberCacheBump_();
+  }
   return out;
 }
 
@@ -11801,9 +11822,14 @@ function warmLessonRosterCache() {
     }
     // ★유효회원 잔여일순 정렬(2026-08-08 시포, GM 지시) — 같은 날짜 도장 가드로 하루 1회, 자정 직후
     //   (실무진 근무 전) 첫 5분 틱에서만 실행. 위 두 함수와 같은 자리(약속 L21, 새 트리거 없음).
-    if (_wrProps.getProperty('MEMBER_SORT_LAST') !== _wrToday) {
+    // ★쓰기가 있었을 때만 정렬(2026-08-12 GM "액션이 일어날 때만 움직여도 될 것 같은데").
+    //   구: 날짜 도장으로 하루 1회 — 낮에 값이 바뀐 날은 다음 날까지 옛 순서로 남았다(오늘 종료일자
+    //   521건 정정이 그 경우). 신: 회원 시트 쓰기 관문(_memberCacheBump_)이 표시를 켜고, 여기서 그
+    //   표시가 켜져 있을 때만 정렬한 뒤 끈다. 아무도 안 고친 틱은 속성 하나 읽고 끝난다(시트 접근 0).
+    //   ▸표시를 먼저 끄지 않고 정렬 성공 뒤에 끈다 — 정렬이 실패하면 다음 틱이 다시 시도한다.
+    if (_wrProps.getProperty('MEMBER_SORT_DIRTY') === '1') {
       var _ms = member_active_sort_by_remaining_();
-      _wrProps.setProperty('MEMBER_SORT_LAST', _wrToday);
+      if (_ms.sorted) _wrProps.deleteProperty('MEMBER_SORT_DIRTY');
       Logger.log('member_active_sort_by_remaining_(warm): sorted=' + _ms.sorted + ' memberRowCount=' + _ms.memberRowCount + (_ms.error ? ' error=' + _ms.error : ''));
     }
   } catch (e) { /* 워머가 죽어도 강습 캐시 워밍은 이미 끝났다 — 다음 주기 재시도 */ }
