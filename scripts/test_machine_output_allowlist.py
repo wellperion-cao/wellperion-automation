@@ -17,6 +17,7 @@ ALLOWED = [
     "status/morning_plans/2026-08-04.json",           # 아침 항로 근거
     "status/heartbeats/cpo-inquiry-snapshot.json",    # 기존 동작(회귀 방지)
     "status/erp_status.json",                         # 기존 개별 허용 항목
+    "status/learning_proposals.json",                 # 배518 — 학습제안 배지 지연 근본수리
 ]
 ALLOWED.append("status/_queue.json")  # 기존 항목 — 도구만 쓰는 배 원장(647~653줄 근거)
 

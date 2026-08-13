@@ -730,6 +730,10 @@ _MACHINE_OUTPUTS = (
     #   있었다 — 화면은 멀쩡히 뜨고 어떤 경보도 안 울린다(voyage_map 과 같은 부류).
     #   전용 커밋을 3분마다 만들지 않고 여기 태운다: 커밋이 일어날 때 같이 올라간다(약속 L21).
     "status/kungjjak_today.json",                 # scripts/kungjjak_board.py --emit
+    # ★2026-08-13 시토(배518) — 자율현황 학습제안 배지가 읽는 파일. ai_learning_proposer.py
+    #   가 쓰기만 하고 자체 커밋이 없어(scripts/ai_learning_proposer.py 에 safe_commit 호출
+    #   없음 실측 확인) kungjjak_today.json 과 같은 부류로 GM 화면이 뒤처졌다. 같은 관문에 흡수.
+    "status/learning_proposals.json",             # scripts/ai_learning_proposer.py
     "status/module_silence_snapshot.json",        # scripts/module_silence_detector.py
     "status/northstar_reach.json",                # scripts/northstar_reach.py
     # ★2026-08-03 시토 — 자율현황 「북극성별 보기」가 raw.githubusercontent 로 읽는 파일이다.
@@ -1065,6 +1069,46 @@ def _commit_stale_machine_outputs(root: str) -> None:
         _log(f"PUSH_SWEEPER 묵은 산출물 적재 예외 {e}", root)
 
 
+def _check_remote_drift(root: str) -> None:
+    """★2026-08-13(시토 · 배591) — 로컬 커밋 시도가 0건이어도 origin 이 이 PC 를
+    앞서 있는지 표면화한다(경고만·덮어쓰지 않음).
+
+    왜: 통합·뒤진작업본감지(_detect_stale_worktree_copies)는 지금까지 _reconcile()
+    안에서만, 즉 **이 PC 가 로컬 커밋을 push 하려다 non-ff 로 막혔을 때만** 돌았다.
+    이 PC 가 그 파일들을 아예 건드리지 않으면(도메인가드가 막거나 다른 세션만 고치는
+    파일) fetch 자체가 안 돌아 영원히 못 알아챈다 — 실측(배591·2026-08-13): GM 승인
+    기능 3건이 origin·HEAD 에는 이미 있는데 이 PC 디스크만 구버전으로 남아 있었다.
+    ▸fetch 는 하되 checkout·merge·reset 은 절대 안 한다 — 감지·경고까지가 안전선
+    (팀장 지시: 다른 세션이 편집 중인 파일을 덮어쓸 위험 때문에 일부러 자동화 범위
+    밖에 둔다). 로직은 _detect_stale_worktree_copies 재사용(약속 L01 — 복제 금지)."""
+    try:
+        f = subprocess.run(
+            ["git", "fetch", REMOTE, BRANCH],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
+        )
+        if f.returncode != 0:
+            return
+        head = _rev_parse(root, "HEAD")
+        theirs = _rev_parse(root, f"{REMOTE}/{BRANCH}")
+        if not head or not theirs or head == theirs:
+            return
+        stale = _detect_stale_worktree_copies(root, head, theirs)
+        if not stale:
+            return
+        warn = (
+            f"⚠️ 이 PC 디스크 파일 {len(stale)}개가 origin 최신본보다 뒤져 있습니다"
+            "(로컬 커밋 시도가 없어 자동 통합이 한 번도 안 돎) — 그대로 커밋하면 "
+            "남의 작업을 지웁니다: " + ", ".join(stale[:10])
+            + (f" 외 {len(stale) - 10}건" if len(stale) > 10 else "")
+        )
+        _log(f"PUSH_SWEEPER {warn}", root)
+        if _alert_should_send(root, warn):
+            _telegram_warn(root, warn)
+    except Exception as e:
+        _log(f"PUSH_SWEEPER 원격 표류 감지 실패(best-effort) {e}", root)
+
+
 def _sweep(root: str) -> int:
     """푸시 스위퍼 — 밀린 커밋을 안전하게 드레인(5분 주기 스케줄러용).
     부모 lock 밖에서 독립 실행되므로 GitLock 을 정상 타임아웃으로 획득해 fetch+rebase+push
@@ -1074,6 +1118,7 @@ def _sweep(root: str) -> int:
     # 커밋조차 안 됐다'는 다른 상태이고, 후자가 라이브를 옛 값으로 굳힌다.
     _commit_stale_machine_outputs(root)
     if _unpushed_count(root) == 0:
+        _check_remote_drift(root)  # 배591 — 로컬 커밋이 없을 때만 fetch 조차 안 돌던 사각지대
         return 0  # 밀린 것 없음
     # ★락을 잡기 **전에** 통합 방해물을 치운다 — safe_commit 이 자기 락을 잡으므로
     #   락 안에서 부르면 서로 기다리다 멈춘다(GitLock 은 재진입 불가).
