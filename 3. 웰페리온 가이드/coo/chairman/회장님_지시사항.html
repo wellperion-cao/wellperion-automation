@@ -115,6 +115,14 @@
   .ft{border-top:1px solid var(--line);margin-top:8px;padding-top:5px;
       display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
 
+  /* 체크리스트(GM 지시 2026-08-13 · 03·04·05·09번만) — GM업무.html 의 GM_TASK_CHECKS 와 같은
+     공용 CHECK_GAS 보드에 키만 새로 얹는다(새 백엔드 없음). 인쇄에는 네모가 아니라 완료 취소선으로. */
+  .chk-list{list-style:none;margin:10px 0 0;padding:0;}
+  .chk-list li{font-size:13px;line-height:1.6;padding:2px 0;}
+  .chk-list label{display:flex;gap:7px;align-items:baseline;cursor:pointer;}
+  .chk-list input[type=checkbox]{margin:0;flex-shrink:0;}
+  .chk-list li.done span{color:var(--grey);text-decoration:line-through;}
+
   @media print{
     html,body{background:#fff;}
     .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
@@ -124,6 +132,10 @@
          -webkit-print-color-adjust:exact;print-color-adjust:exact;}
     .linkbox{background:#fff;}
     .linkbox .go::after{content:" (별첨 참조)";font-weight:500;}
+    .chk-list input[type=checkbox]{display:none;}
+    .chk-list{display:flex;flex-wrap:wrap;margin:4px 0 0;gap:2px 14px;}
+    .chk-list li{font-size:10px;line-height:1.3;padding:0;}
+    .chk-list label{gap:3px;}
   }
 </style>
 </head>
@@ -249,6 +261,14 @@
       <div><dt>결정 사항</dt><dd>도입 여부, 도입 수량(4 / 6 / 8 / 10대), 예산 규모</dd></div>
     </dl>
 
+    <ul class="chk-list">
+      <li><label><input type="checkbox" data-key="03::0"><span>남·여 파우더룸별 필요 대수 확정</span></label></li>
+      <li><label><input type="checkbox" data-key="03::1"><span>콘센트 위치 및 회로 용량 점검(1,500W급 동시 사용 부하)</span></label></li>
+      <li><label><input type="checkbox" data-key="03::2"><span>거치 방식 및 도난 방지 대책 수립</span></label></li>
+      <li><label><input type="checkbox" data-key="03::3"><span>블라우풍트 대량 구매 할인 문의</span></label></li>
+      <li><label><input type="checkbox" data-key="03::4"><span>VIP 공간 조성 계획과 연계한 어메니티 등급 재검토</span></label></li>
+    </ul>
+
     <div class="note">
       <p style="margin:0 0 6px;"><b>후보 5종 중 4종은 가정용 제품입니다.</b> 파우더룸은 하루 수십 회 연속 사용되어 1년 내외 교체 주기를 전제해야 합니다. 다이슨 슈퍼소닉 r 프로만 살롱 환경 테스트를 거친 업소용 설계이며, 헤어 전문가 전용 제품이라 사업자등록증 확인 후 기업고객 채널로 구매해야 합니다.</p>
       <p style="margin:0;"><b>고가 기종은 도난 대책이 함께 필요합니다.</b> 개방된 파우더룸 특성상 고정형 거치대가 필수이며, 1대 분실이 제안 기종 8대분에 해당합니다.</p>
@@ -288,6 +308,13 @@
       <div><dt>병행 과제</dt><dd>팬회원 수 파악 · 이탈 예상 회원 수 파악 · "사랑받는" 기준 정립(8/10 회장님 지시)</dd></div>
     </dl>
 
+    <ul class="chk-list">
+      <li><label><input type="checkbox" data-key="04::0"><span>해지 원인 상위 3가지 도출 및 정책안 2개 비교표 제출</span></label></li>
+      <li><label><input type="checkbox" data-key="04::1"><span>팬회원 수 파악</span></label></li>
+      <li><label><input type="checkbox" data-key="04::2"><span>이탈 예상 회원 수 파악</span></label></li>
+      <li><label><input type="checkbox" data-key="04::3"><span>"사랑받는 클럽" 기준 정립</span></label></li>
+    </ul>
+
     <div class="note">
       <p style="margin:0;"><b>재입회율 검증 전에는 정책을 확정하지 않습니다.</b> 회원이 줄고 있는 시기에 재입회를 어렵게 하면 이탈 억제보다 복귀 유입 차단으로 작용할 수 있어, 순효과를 계산한 뒤 제안드리겠습니다. 해지 대신 휴회로 유도하는 방식이 가장 빠르게 효과를 볼 수 있는 대안으로 함께 검토합니다.</p>
     </div>
@@ -309,6 +336,12 @@
       <div><dt>리마인드</dt><dd>2026-08-05 GM 이 회장님께 리마인드 보고 완료</dd></div>
       <div><dt>다음 차수</dt><dd>아직 정해지지 않았습니다 — 1차 진행 후 정합니다.</dd></div>
     </dl>
+
+    <ul class="chk-list">
+      <li class="done"><label><input type="checkbox" data-key="05::0" checked><span>1차 수영팀 오찬 진행(8/6 완료)</span></label></li>
+      <li class="done"><label><input type="checkbox" data-key="05::1" checked><span>GM → 회장님 리마인드 보고(8/5 완료)</span></label></li>
+      <li><label><input type="checkbox" data-key="05::2"><span>2차 팀·일정 확정</span></label></li>
+    </ul>
 
     <a class="linkbox" href="회장님_오찬_수영팀_20260806.html">
       <div>
@@ -425,6 +458,12 @@
     <dl>
       <div><dt>완료 기준</dt><dd>자전거·스텝퍼 실물 확인 및 검토 결과 보고</dd></div>
     </dl>
+
+    <ul class="chk-list">
+      <li><label><input type="checkbox" data-key="09::0"><span>쇼룸 방문 예약</span></label></li>
+      <li><label><input type="checkbox" data-key="09::1"><span>자전거·스텝퍼 실물 확인</span></label></li>
+      <li><label><input type="checkbox" data-key="09::2"><span>검토 결과 보고</span></label></li>
+    </ul>
   </div>
 
   <!-- 10 -->
@@ -686,5 +725,42 @@
   </div>
 
 </div>
+<script>
+/* 체크리스트 저장(GM 지시 2026-08-13 · 03·04·05·09번만) — GM업무.html 의 GM_TASK_CHECKS 와 같은
+   공용 CHECK_GAS 보드(PIN 없음, 즉시 저장)에 키(CHAIRMAN_ITEM_CHECKS)만 새로 얹는다. 새 GAS 없음. */
+(function(){
+  "use strict";
+  var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+  var KEY = 'CHAIRMAN_ITEM_CHECKS';
+  var board = {};
+  function apply(){
+    document.querySelectorAll('.chk-list input[type=checkbox]').forEach(function(cb){
+      var k = cb.getAttribute('data-key');
+      if (Object.prototype.hasOwnProperty.call(board, k)) cb.checked = !!board[k];
+      cb.closest('li').classList.toggle('done', cb.checked);
+    });
+  }
+  fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(KEY), {method:'GET', redirect:'follow'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ board = (d && d.ok && d.board && typeof d.board === 'object') ? d.board : {}; apply(); })
+    .catch(function(){});
+  document.addEventListener('change', function(e){
+    var cb = e.target.closest ? e.target.closest('.chk-list input[type=checkbox]') : null;
+    if (!cb) return;
+    var k = cb.getAttribute('data-key'), checked = cb.checked;
+    cb.closest('li').classList.toggle('done', checked);
+    fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(KEY), {method:'GET', redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var fresh = (d && d.ok && d.board && typeof d.board === 'object') ? d.board : {};
+        fresh[k] = checked; board = fresh;
+        return fetch(CHECK_GAS, {method:'POST', redirect:'follow',
+          headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body: JSON.stringify({action:'saveBoard', key:KEY, board:fresh})});
+      })
+      .catch(function(){});
+  });
+})();
+</script>
 </body>
 </html>
