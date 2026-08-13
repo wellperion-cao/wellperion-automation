@@ -29,7 +29,7 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 /* 언어 전환(2026-07-20 GM 지시) — 네이티브 a.lang-header("ENG", 흰 배경용 흰 알약)가 헤더 숨김으로
    같이 숨어 이 페이지엔 안 보이던 것을, 같은 모양(2px 테두리·24px 라운드·대문자 표기)으로 베이지
    배경에 맞게 색만 반전해 히어로 우측 상단에 재현. 모바일도 같은 자리(터치 44px 이상 확보). */
-.wlp-inq .lang-switch{position:absolute;top:16px;right:16px;z-index:5;display:inline-flex;align-items:center;justify-content:center;
+.wlp-inq .lang-switch{position:absolute;top:16px;right:0;z-index:5;display:inline-flex;align-items:center;justify-content:center;
   padding:10px 18px;min-height:44px;min-width:44px;border:2px solid var(--ink);border-radius:24px;color:var(--ink);
   font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
 @media (max-width:520px){
@@ -97,30 +97,31 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
    위아래 여백을 줄이고 좌우 폭을 넓혀 같은 내용을 더 짧은 세로 길이에 담는다.
    조건(폭 700px 이상 + 세로 화면)이라 휴대폰·PC 가로 화면은 지금 그대로다. */
 @media (min-width:700px) and (orientation:portrait){
-  .wlp-inq .hero-band{max-width:1000px;padding:52px 20px 4px}
+  .wlp-inq .hero-band{max-width:1000px;padding:30px 20px 2px}
   .wlp-inq .hero-inner{max-width:820px}
   .wlp-inq .slogan-kr{margin-bottom:12px}
   .wlp-inq .gold-divider{margin-bottom:14px}
-  .wlp-inq .hero-desc{max-width:620px;font-size:19px;line-height:1.6}
-  .wlp-inq .hero-capacity{max-width:620px;font-size:20px;margin-top:12px}
-  .wlp-inq .wrap{max-width:1000px;padding:6px 20px 12px}
+  .wlp-inq .hero-desc{max-width:620px;font-size:17px;line-height:1.5}
+  .wlp-inq .hero-capacity{max-width:620px;font-size:18px;margin-top:8px}
+  .wlp-inq .wrap{max-width:1000px;padding:4px 20px 6px}
   .wlp-inq .reserve-note{margin-bottom:10px;font-size:17px}
-  .wlp-inq .video-frame{max-width:760px!important;margin:0 auto 18px}
-  .wlp-inq .sec-label{margin-bottom:16px}
+  /* 세로비는 원래 %(부모 폭 기준)라 폭만 줄여도 높이가 안 줄었다 — 화면비로 바꿔 실제로 줄인다 */
+  .wlp-inq .video-frame{max-width:620px!important;padding-top:0!important;aspect-ratio:16/9;margin:0 auto 12px}
+  .wlp-inq .sec-label{margin-bottom:10px}
   .wlp-inq .sec-label .tx{font-size:18px}
-  .wlp-inq .type-grid{gap:14px;margin-bottom:14px}
-  .wlp-inq .type-card{padding:16px 24px}
+  .wlp-inq .type-grid{gap:12px;margin-bottom:8px}
+  .wlp-inq .type-card{padding:11px 22px}
   .wlp-inq .type-card .cat-icon{margin-bottom:8px}
-  .wlp-inq .type-card .tc-kr{font-size:24px;margin-bottom:6px}
-  .wlp-inq .type-card .tc-desc{font-size:16px}
-  .wlp-inq .social-bar{margin:30px 0 18px;gap:38px}
+  .wlp-inq .type-card .tc-kr{font-size:23px;margin-bottom:4px}
+  .wlp-inq .type-card .tc-desc{font-size:15px}
+  .wlp-inq .social-bar{margin:14px 0 6px;gap:38px}
   .wlp-inq .back-kiosk{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px}
   /* 맨 아래 회사 정보 칸은 남기되 키오스크에서는 낮게 눌러 담는다 (2026-08-13 GM 지시) */
-  #footer-outer #footer-widgets{padding:20px 0 10px!important}
+  #footer-outer #footer-widgets{padding:6px 0 4px!important}
   #footer-outer .widget{margin-bottom:8px!important}
   #footer-outer h4{font-size:13px!important;margin-bottom:4px!important}
   #footer-outer .textwidget{font-size:13px!important;line-height:1.6!important}
-  #footer-outer #copyright{padding:8px 0!important;font-size:12px!important}
+  #footer-outer #copyright{padding:4px 0!important;font-size:12px!important}
   #footer-outer .widget_media_image img{max-width:150px!important}
 }
 @media (max-width:520px){
@@ -144,6 +145,7 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
     <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'en/inquiry/';return false;">ENG</a>
   <div class="hero-band">
     <a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
+    <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'en/inquiry/';return false;">ENG</a>
     <div class="hero-inner">
       <p class="eyebrow">Wellperion</p>
       <p class="slogan-en">A Day, Well Completed.</p>
