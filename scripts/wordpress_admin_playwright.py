@@ -424,12 +424,14 @@ async def run_publish_inquiry(post_id_arg: str, slug: str = "inquiry") -> int:
     return 0 if published else 8
 
 
-async def run_wpml_create_en_translation() -> int:
-    """WPML "+번역 추가" 자동 시도: 한국어 문의 페이지(8394) 편집화면에서
-    WPML 메타박스의 영어 '+' 아이콘을 클릭해 영어 번역 페이지 생성.
-    성공 시 생성된 영어 post_id를 출력. 실패 시 GM 수동 절차 안내."""
+async def run_wpml_create_en_translation(post_id: "str | None" = None) -> int:
+    """WPML "+번역 추가" 자동 시도: 한국어 페이지 편집화면에서 WPML 메타박스의
+    영어 '+' 아이콘을 눌러 영어 번역 페이지를 만든다. 성공 시 영어 post_id 출력.
+    post_id 미지정이면 문의 페이지(8394). 2026-08-13: 접수 조회·접수 페이지에도
+    쓰려고 대상 페이지를 인자로 받게 일반화(호출부 하나만 늘리고 로직은 그대로)."""
+    KO_POST = str(post_id or KO_INQUIRY_POST_ID)
     async_playwright = _import_playwright()
-    print("[INFO] === WPML 영어 번역 페이지 자동 생성 시도 (post=8394) ===")
+    print(f"[INFO] === WPML 영어 번역 페이지 자동 생성 시도 (post={post_id or KO_INQUIRY_POST_ID}) ===")
     if not PROFILE_DIR.exists():
         print("[ERROR] 프로필 미존재 — 먼저 --mode setup 실행 필요.")
         return 3
@@ -438,7 +440,7 @@ async def run_wpml_create_en_translation() -> int:
     page = ctx.pages[0] if ctx.pages else await ctx.new_page()
 
     # 한국어 문의 편집화면 진입
-    edit_url = f"http://wellperion.com/wp/wp-admin/post.php?post={KO_INQUIRY_POST_ID}&action=edit&lang=ko"
+    edit_url = f"http://wellperion.com/wp/wp-admin/post.php?post={KO_POST}&action=edit&lang=ko"
     await page.goto(edit_url, wait_until="domcontentloaded", timeout=40_000)
     await page.wait_for_timeout(3000)
     if "wp-login" in page.url:
@@ -1515,6 +1517,8 @@ LF_REGISTER_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception
 # 2026-08-07 GM 지시 — 오넛티 접수현황(cpo/member/오넛티_접수현황.html)을 회사 도메인 안 페이지로.
 # 정본=오넛티_접수현황.html, 이 블록=워드프레스 주입용 사본(게이트 인라인 복제·noindex 포함).
 OHNUTTY_STATUS_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cpo" / "member" / "wp_ohnutty_status_block.html"
+# 2026-08-13 GM 지시 — 종합접수처 영어판. 한글 원본(라이브 8584)에서 화면 문구만 영어로 바꾼 사본.
+LOOKUP_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lookup_block_en.html"
 
 # key: (block_file, 신규생성 시 기본 제목, 발행 시 기본 slug)
 _NEW_PAGE_SPECS = {
@@ -1522,6 +1526,7 @@ _NEW_PAGE_SPECS = {
     "lf-gallery":      (LF_GALLERY_BLOCK_FILE,      "습득 분실물 현황",     "lost-found"),
     "lf-register":     (LF_REGISTER_BLOCK_FILE,     "습득물 등록",          "lost-found-register"),
     "ohnutty-status":  (OHNUTTY_STATUS_BLOCK_FILE,  "OHNUTTY X WELLPERION", "ohnutty-status"),
+    "lookup-en":       (LOOKUP_BLOCK_FILE_EN,       "Reception Desk",       "lookup"),
 }
 
 

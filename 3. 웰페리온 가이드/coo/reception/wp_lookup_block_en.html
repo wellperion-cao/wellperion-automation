@@ -1,0 +1,365 @@
+<style>
+/* 전부 #wlp-lk 안에서만 적용 — 접수 폼/현황판/테마와 절대 안 섞임 */
+#wlp-lk *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+#wlp-lk{
+  --bg:#141419;--card:#22222c;--ink:#efe9dd;--muted:#a89f92;--line:rgba(255,255,255,.10);
+  --gold1:#e2c98d;--gold2:#c19a53;--dark:#0d0d12;
+  --s-recv:#e6944e;--s-prog:#5b9fd5;--s-done:#6abf7b;--shadow:0 10px 30px rgba(0,0,0,.45);
+  background:radial-gradient(120% 80% at 50% 0%,#20202a 0%,#141419 55%,#0d0d12 100%);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  display:flex;justify-content:center;min-height:100vh;margin:0;
+}
+/* 이 페이지 전용 — 테마 래퍼 다크 + 푸터/여백 제거로 세로 스크롤 없이 F11 전체화면 한 장에 딱 맞춤. 이 CSS는 이 페이지에만 로드됨 */
+html,body{margin:0!important;padding:0!important;background:#0d0d12!important;overflow-x:hidden}
+#ajax-content-wrap,.container-wrap,#main-content,.main-content,.container-wrap>.container,.post-area,.entry-content{background:#0d0d12!important;margin:0!important;padding:0!important;min-height:0!important}
+#footer-outer,#footer-widgets,.footer-outer,#footer-outer .row{display:none!important}
+.wpb_row,.vc_row,.wpb_column,.vc_column_container,.wpb_wrapper,.wpb_text_column,.wpb_raw_html,.vc_column-inner{margin:0!important;padding:0!important}
+#wlp-lk .kiosk{width:100%;max-width:820px;padding:28px 22px 40px;display:flex;flex-direction:column}
+#wlp-lk .brand{text-align:center;margin:10px 0 6px}
+/* 언어 전환 — 한국어 화면으로 (2026-08-13 GM 지시) */
+#wlp-lk .lang-switch{position:absolute;top:16px;right:16px;z-index:5;display:inline-flex;align-items:center;
+  justify-content:center;padding:10px 18px;min-height:44px;border:2px solid rgba(216,189,134,.6);
+  border-radius:24px;color:var(--gold1);font-size:13px;font-weight:700;letter-spacing:.02em;
+  background:transparent;text-decoration:none}
+#wlp-lk .kiosk{position:relative}
+@media (min-width:700px){ #wlp-lk .lang-switch{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px} }
+#wlp-lk .brand .logo-img{height:66px;width:auto;display:inline-block;filter:brightness(0) invert(1);opacity:.96}
+#wlp-lk .brand .w{font-size:30px;letter-spacing:6px;font-weight:700}
+#wlp-lk .brand .n{font-size:12px;letter-spacing:5px;color:var(--muted);margin-top:2px}
+#wlp-lk .tagline{text-align:center;margin:14px 0 4px;font-size:20px;font-weight:700}
+#wlp-lk .tagline{line-height:1.2}
+#wlp-lk .tagline .kr{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:8px;line-height:1.4}
+#wlp-lk .title{text-align:center;font-size:22px;font-weight:800;margin:20px 0 6px}
+#wlp-lk .sub{text-align:center;color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:8px}
+#wlp-lk .screen{display:none;flex:1;flex-direction:column}
+#wlp-lk .screen.on{display:flex}
+#wlp-lk .bigbtns{display:flex;flex-direction:column;gap:16px;margin-top:26px}
+#wlp-lk .bigbtn{border:none;border-radius:20px;padding:30px 24px;text-align:left;cursor:pointer;box-shadow:var(--shadow);font-family:inherit;display:flex;align-items:center;gap:18px}
+#wlp-lk .bigbtn .ic{font-size:34px;width:52px;text-align:center}
+#wlp-lk .bigbtn .t{display:block;font-size:22px;font-weight:800}
+#wlp-lk .bigbtn .d{display:block;font-size:14px;color:var(--muted);margin-top:5px;font-weight:500}
+#wlp-lk .bigbtn.primary{background:linear-gradient(135deg,var(--gold1),var(--gold2));color:#3a2f18}
+#wlp-lk .bigbtn.primary .d{color:#6b5a34}
+#wlp-lk .bigbtn.ghost{background:rgba(255,255,255,.045);border:1px solid rgba(216,189,134,.42);color:#efe9dd}
+#wlp-lk .bigbtn.ghost .ic{color:var(--gold1)}
+#wlp-lk .privacy{margin-top:24px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+/* 이 페이지 전용 — 테마 헤더 숨김(로고 겹침·잘림 방지). 이 페이지 CSS라 다른 페이지 영향 없음 */
+#header-outer,#header-space,#page-header-bg,#top,#buttonizer,.buttonizer,[class*="buttonizer"]{display:none!important}
+/* ↑ 떠다니는 노란 '문의하기'(Buttonizer)를 같은 줄에 합쳐 숨김 — 이 화면엔 문의 갈래가 따로 있어 겹친다 (2026-08-13 GM 지시) */
+/* 두 갈래(위=문의 · 아래=접수) — 2026-08-13 GM 지시 */
+#wlp-lk .branch{display:flex;flex-direction:column;gap:12px}
+#wlp-lk .branch + .branch{margin-top:0;padding-top:0;border-top:none}
+/* 선 통일 (2026-08-13 GM 지시) — 종합접수처 화면의 금색 선(양끝 흐림 + ◆)과 같은 모양 */
+#wlp-lk .gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;width:300px;margin:34px auto 30px}
+#wlp-lk .gd-line{width:120px;height:1px;flex:0 0 auto;display:block}
+#wlp-lk .gd-line.left{background:linear-gradient(90deg,transparent,rgba(226,201,141,.75))}
+#wlp-lk .gd-line.right{background:linear-gradient(90deg,rgba(226,201,141,.75),transparent)}
+#wlp-lk .gd-diamond{color:var(--gold1);font-size:11px;line-height:1}
+@media (min-width:700px){
+  #wlp-lk .bhead{gap:10px}
+  #wlp-lk .bhead .ben{font-size:20px}
+  #wlp-lk .bhead .bkr{font-size:clamp(34px,3.9vw,46px);white-space:nowrap}
+  #wlp-lk .gold-divider{width:460px;margin:44px auto 40px}
+  #wlp-lk .gd-line{width:190px}
+  #wlp-lk .branch .bigbtns{margin-top:30px}
+  #wlp-lk .branch .sub{font-size:27px;white-space:nowrap}
+  #wlp-lk .branch .bigbtn .d{font-size:24px;white-space:nowrap}
+}
+/* 두 갈래는 같은 뼈대다 (2026-08-13 GM 지시 — 일관성):
+   ①영문 라벨 + 한글 제목 한 줄 ②안내 한 줄 ③큰 버튼. 갈래 사이에만 실선 하나. */
+#wlp-lk .branch{margin-top:26px}
+#wlp-lk .branch .sub{margin-bottom:0}
+#wlp-lk .branch .bigbtns{margin-top:22px}
+#wlp-lk .bhead{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+#wlp-lk .bhead .ben{font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold2);font-weight:700}
+#wlp-lk .bhead .bkr{font-size:clamp(23px,4.8vw,34px);font-weight:800;letter-spacing:-.02em;line-height:1.2;text-align:center}
+#wlp-lk .branch .sub{font-size:15px}
+#wlp-lk .branch .bigbtn .d{font-size:14px}
+/* 문의 갈래는 제목 묶음만 둔다(큰 버튼 없음 · 2026-08-13 GM 지시) — 묶음 전체가 눌린다 */
+/* HOME — 로고+태그라인은 상단 고정, 나머지(제목·버튼·안내문)는 남은 공간 세로 가운데 정렬 */
+#wlp-lk [data-scr="home"].on{flex:1;justify-content:flex-start}
+#wlp-lk .topgroup{flex:0 0 auto;text-align:center}
+#wlp-lk .midwrap{flex:1;display:flex;flex-direction:column;justify-content:center}
+#wlp-lk [data-scr="lookup"].on{justify-content:center}
+#wlp-lk .hgroup{display:flex;flex-direction:column;flex:0 0 auto}
+#wlp-lk .topbar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+#wlp-lk .back{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 16px;font-size:15px;cursor:pointer;font-family:inherit;font-weight:600;color:var(--ink)}
+#wlp-lk .reset-pill{margin-left:auto;font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+#wlp-lk .reset-pill b{color:var(--s-recv)}
+#wlp-lk .field{margin:16px 0}
+#wlp-lk .field label{display:block;font-size:14px;font-weight:700;margin-bottom:8px}
+#wlp-lk .field input{width:100%;border:1px solid var(--line);background:#1c1c24;border-radius:14px;padding:18px 16px;font-size:18px;font-family:inherit;outline:none;color:var(--ink)}
+#wlp-lk .field input::placeholder{color:#7d766c}
+#wlp-lk .field input:focus{border-color:var(--gold2);box-shadow:0 0 0 3px rgba(193,154,83,.15)}
+#wlp-lk .cta{width:100%;border:none;border-radius:16px;padding:20px;margin-top:10px;font-size:19px;font-weight:800;color:#2a2214;background:linear-gradient(135deg,var(--gold1),var(--gold2));cursor:pointer;font-family:inherit}
+#wlp-lk .cta[disabled]{opacity:.6;pointer-events:none}
+#wlp-lk .warn{margin-top:12px;font-size:13.5px;color:#e8956f;text-align:center;min-height:18px}
+#wlp-lk .greet{font-size:16px;margin:10px 0 4px}
+#wlp-lk .greet b{font-weight:800}
+#wlp-lk .list{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+#wlp-lk .rcard{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;border:1px solid var(--line)}
+#wlp-lk .rcard .row1{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+#wlp-lk .badge{font-size:12px;font-weight:800;color:#fff;padding:4px 10px;border-radius:999px}
+#wlp-lk .rcard .cat{font-weight:800;font-size:16px}
+#wlp-lk .rcard .meta{color:var(--muted);font-size:13px;margin-left:auto}
+#wlp-lk .rcard .snip{color:#c4bcae;font-size:14px;line-height:1.5}
+#wlp-lk .empty,#wlp-lk .loading{text-align:center;color:var(--muted);background:var(--card);border-radius:16px;padding:40px 24px;box-shadow:var(--shadow);margin-top:20px;line-height:1.7;font-size:15px}
+#wlp-lk .d-cat{font-size:22px;font-weight:800;margin:8px 0 2px}
+#wlp-lk .d-meta{color:var(--muted);font-size:13px;margin-bottom:16px}
+#wlp-lk .steps{display:flex;align-items:center;margin:18px 0 22px}
+#wlp-lk .step{flex:1;text-align:center;position:relative}
+#wlp-lk .step .dot{width:26px;height:26px;border-radius:50%;background:#3a3844;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800}
+#wlp-lk .step .lb{font-size:12px;color:var(--muted)}
+#wlp-lk .step .bar{position:absolute;top:13px;left:-50%;width:100%;height:3px;background:#3a3844;z-index:0}
+#wlp-lk .step:first-child .bar{display:none}
+#wlp-lk .step .dot,#wlp-lk .step .lb{position:relative;z-index:1}
+#wlp-lk .step.done .dot{background:var(--s-done)}
+#wlp-lk .step.done .lb{color:var(--ink);font-weight:700}
+#wlp-lk .step.cur .lb{font-weight:800}
+#wlp-lk .block{background:var(--card);border-radius:16px;padding:18px;box-shadow:var(--shadow);margin-bottom:14px}
+#wlp-lk .block h4{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.3px}
+#wlp-lk .block .body{font-size:16px;line-height:1.65;white-space:pre-wrap}
+#wlp-lk .reply{border-left:4px solid var(--gold2)}
+#wlp-lk .reply .body{color:#efe4d0}
+#wlp-lk .reply .default{color:var(--muted)}
+#wlp-lk .spin{width:26px;height:26px;border:3px solid #3a3844;border-top-color:var(--gold2);border-radius:50%;display:inline-block;animation:wlplk-spin 1s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes wlplk-spin{to{transform:rotate(360deg)}}
+/* 키오스크(넓은 화면) — 글자·버튼·간격 확대 */
+@media (min-width:700px){
+  #wlp-lk .kiosk{max-width:940px;padding:44px 34px 60px}
+  #wlp-lk .tagline{font-size:44px}
+  #wlp-lk .tagline .kr{font-size:23px;margin-top:18px}
+  #wlp-lk .title{font-size:60px;margin:32px 0 28px;line-height:1.15}
+  #wlp-lk .sub{font-size:30px}
+  #wlp-lk .bigbtns{gap:26px;margin-top:34px}
+  #wlp-lk .bigbtn{padding:60px 44px;border-radius:26px;gap:28px}
+  #wlp-lk .bigbtn .ic{font-size:66px;width:86px}
+  #wlp-lk .bigbtn .t{font-size:42px}
+  #wlp-lk .bigbtn .d{font-size:25px;margin-top:8px}
+  #wlp-lk .field{margin:22px 0}
+  #wlp-lk .field label{font-size:19px;margin-bottom:10px}
+  #wlp-lk .field input{font-size:24px;padding:24px 22px;border-radius:18px}
+  #wlp-lk .cta{font-size:25px;padding:28px;border-radius:20px;margin-top:14px}
+  #wlp-lk .warn{font-size:16px}
+  #wlp-lk .back{font-size:18px;padding:14px 24px;border-radius:14px}
+  #wlp-lk .reset-pill{font-size:15px;padding:9px 18px}
+  #wlp-lk .greet{font-size:21px}
+  #wlp-lk .list{gap:16px;margin-top:16px}
+  #wlp-lk .rcard{padding:24px 26px;border-radius:20px}
+  #wlp-lk .badge{font-size:15px;padding:6px 15px}
+  #wlp-lk .rcard .cat{font-size:21px}
+  #wlp-lk .rcard .meta{font-size:15px}
+  #wlp-lk .rcard .snip{font-size:18px;margin-top:4px}
+  #wlp-lk .empty,#wlp-lk .loading{font-size:19px;padding:48px 28px}
+  #wlp-lk .d-cat{font-size:30px}
+  #wlp-lk .d-meta{font-size:16px}
+  #wlp-lk .steps{margin:24px 0 28px}
+  #wlp-lk .step .dot{width:34px;height:34px;font-size:17px}
+  #wlp-lk .step .lb{font-size:15px}
+  #wlp-lk .block{padding:22px;border-radius:20px}
+  #wlp-lk .block h4{font-size:15px}
+  #wlp-lk .block .body{font-size:21px}
+  #wlp-lk .privacy{font-size:21px;margin-top:52px;line-height:1.8}
+  #wlp-lk .brand{padding-top:0;margin-bottom:10px}
+  #wlp-lk .brand .logo-img{height:150px}
+  #wlp-lk .hgroup{margin-top:0}
+  #wlp-lk .bigbtns{margin-top:58px}
+}
+</style>
+
+<div id="wlp-lk">
+ <div class="kiosk">
+  <!-- HOME -->
+  <section data-scr="home" class="screen on">
+    <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'ko/lookup/';return false;">KOR</a>
+    <div class="topgroup">
+      <div class="brand">
+        <img class="logo-img" src="/wp/wp-content/uploads/2018/07/b_logo.png" alt="웰페리온 WELLPERION"
+             onerror="this.style.display='none';var f=this.parentNode.querySelector('.logo-fb');if(f)f.style.display='block'">
+        <div class="logo-fb" style="display:none"><div class="w">W&nbsp;E&nbsp;L&nbsp;L&nbsp;P&nbsp;E&nbsp;R&nbsp;I&nbsp;O&nbsp;N</div><div class="n">WELLPERION</div></div>
+      </div>
+      <div class="tagline">A Day, Well Completed.<span class="kr">Wellperion Private Sports Club</span></div>
+    </div>
+    <div class="midwrap">
+      <div class="branch inq">
+        <div class="bhead"><span class="ben">Inquiry</span><span class="bkr">Membership / Lessons</span></div>
+        <div class="sub">Membership, lessons, venue rental &mdash; tell us what you need.</div>
+        <div class="bigbtns">
+          <button class="bigbtn primary" data-go-inquiry><span class="ic">💬</span><span><span class="t">Send an Inquiry</span><span class="d">Membership · Adult/Youth lessons · Gift sets · Venue rental · Partnership</span></span></button>
+        </div>
+      </div>
+      <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
+      <div class="branch rcp">
+        <div class="bhead"><span class="ben">Reception</span><span class="bkr">Reception Desk</span></div>
+        <div class="sub">Submit a request, or check the status of one you already made.</div>
+        <div class="bigbtns">
+          <button class="bigbtn primary" data-go-submit><span class="ic">📝</span><span><span class="t">Submit a Request</span><span class="d">Issues · suggestions · lost items · facility faults</span></span></button>
+          <button class="bigbtn ghost" data-go="lookup"><span class="ic">🔎</span><span><span class="t">Check My Request</span><span class="d">See how your request is going</span></span></button>
+          <button class="bigbtn ghost" data-go-lost><span class="ic">🧺</span><span><span class="t">Lost &amp; Found</span><span class="d">Items found in the club and how to collect them</span></span></button>
+        </div>
+      </div>
+    <div class="privacy">· This is a shared screen. It resets automatically after you leave.<br>· You only see your own requests. Staff names and internal notes are never shown.</div>
+    </div>
+  </section>
+
+  <!-- LOOKUP -->
+  <section data-scr="lookup" class="screen">
+    <div class="topbar"><button class="back" data-go="home">← Home</button><span class="reset-pill" data-pill></span></div>
+    <div class="title" style="margin-top:8px">Check My Request</div>
+    <div class="sub">Enter the <b>name</b> and <b>phone number</b> you used when you submitted.</div>
+    <div class="field"><label>Name</label><input id="lkName" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Your full name"></div>
+    <div class="field"><label>Phone number</label><input id="lkPhone" inputmode="numeric" maxlength="13" autocomplete="off" placeholder="010-0000-0000"></div>
+    <button class="cta" data-lookup>Look up my requests</button>
+    <div class="warn" data-warn></div>
+    <div class="privacy">Your phone number is used only to confirm it is you. It is not stored or shown.</div>
+  </section>
+
+  <!-- RESULTS -->
+  <section data-scr="results" class="screen">
+    <div class="topbar"><button class="back" data-go="lookup">← Search again</button><span class="reset-pill" data-pill></span></div>
+    <div class="greet">Requests by <b data-rname></b></div>
+    <div data-listwrap></div>
+    <div class="privacy">Newest first. Tap one to see its progress and our reply.</div>
+  </section>
+
+  <!-- DETAIL -->
+  <section data-scr="detail" class="screen">
+    <div class="topbar"><button class="back" data-go="results">← Back to list</button><span class="reset-pill" data-pill></span></div>
+    <div class="d-cat" data-dcat></div>
+    <div class="d-meta" data-dmeta></div>
+    <div class="steps" data-dsteps></div>
+    <div class="block"><h4>What you submitted</h4><div class="body" data-dcontent></div></div>
+    <div class="block reply"><h4>Our reply</h4><div class="body" data-dreply></div></div>
+    <div class="privacy">※ Internal notes and staff details are never shown.</div>
+  </section>
+ </div>
+</div>
+
+<script>
+(function(){
+  var ROOT = document.getElementById('wlp-lk');
+  var REG_API = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
+  var STATUS = { "접수":"var(--s-recv)", "처리중":"var(--s-prog)", "완료":"var(--s-done)" };
+  var STEPS = ["접수","처리중","완료"];
+  // 원장 값은 한글 그대로 두고 화면 표기만 영어로 (값을 바꾸면 조회가 깨진다)
+  var LBL = { "접수":"Received", "처리중":"In progress", "완료":"Completed" };
+  var DEFREPLY = { "접수":"We have received your request. The team will review it shortly.", "처리중":"We are working on it. Thank you for your patience.", "완료":"This has been resolved. We are sorry for the inconvenience." };
+  var cur = "home", rows = [];
+  function $(s,r){ return (r||ROOT).querySelector(s); }
+  function $all(s,r){ return [].slice.call((r||ROOT).querySelectorAll(s)); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function show(id){
+    $all('.screen').forEach(function(s){ s.classList.toggle('on', s.getAttribute('data-scr')===id); });
+    cur = id; window.scrollTo(0,0); resetIdle();
+  }
+  // 화면 전환 버튼
+  $all('[data-go]').forEach(function(b){ b.addEventListener('click', function(){ show(b.getAttribute('data-go')); }); });
+  $('[data-go-submit]').addEventListener('click', function(){ location.href='/ko/reception/'; });
+  var _goInq = $('[data-go-inquiry]');
+  if(_goInq) _goInq.addEventListener('click', function(){ location.href='/en/inquiry/'; });
+  var _goLost = $('[data-go-lost]');
+  if(_goLost) _goLost.addEventListener('click', function(){ location.href = '/ko/lost-found/'; });
+
+  /* ← 키 = 한 화면 뒤로 (2026-08-13 GM 지시). 첫 화면에서는 아무 일도 하지 않는다.
+     글자를 입력하는 중(입력칸)에는 커서 이동이 우선이라 무시한다. */
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Backspace' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+    var b = ROOT.querySelector('.screen.on .back');
+    if(b){ e.preventDefault(); b.click(); }
+  });
+
+  // 전화번호 자동 하이픈
+  var inPhone = $('#lkPhone'), inName = $('#lkName');
+  // 공용 키오스크 자동완성/자동채움 차단 — 이전 사용자 이름·번호가 뜨지 않게 (readonly→포커스 시 해제)
+  [inName, inPhone].forEach(function(el){
+    el._arm = function(){ el.setAttribute('readonly','readonly'); };
+    var disarm = function(){ el.removeAttribute('readonly'); };
+    el._arm();
+    el.addEventListener('focus', disarm);
+    el.addEventListener('mousedown', disarm);
+    el.addEventListener('touchstart', disarm, {passive:true});
+  });
+  inPhone.addEventListener('input', function(){
+    var d = this.value.replace(/\D/g,'').slice(0,11), out=d;
+    if(d.length>7) out=d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);
+    else if(d.length>3) out=d.slice(0,3)+'-'+d.slice(3);
+    this.value = out;
+  });
+
+  // 조회
+  function doLookup(){
+    var name = inName.value.trim();
+    var phone = inPhone.value.trim();
+    var warn = $('[data-warn]');
+    warn.textContent = '';
+    if(!name){ warn.textContent = 'Please enter your name.'; return; }
+    if(phone.replace(/\D/g,'').length < 8){ warn.textContent = 'Please enter a valid phone number.'; return; }
+    var btn = $('[data-lookup]'); btn.disabled = true;
+    $('[data-rname]').textContent = name;
+    $('[data-listwrap]').innerHTML = '<div class="loading"><span class="spin"></span>Looking up…</div>';
+    show('results');
+    var url = REG_API + '?action=reg_lookup&phone=' + encodeURIComponent(phone) + '&name=' + encodeURIComponent(name) + '&_=' + Date.now();
+    fetch(url, {redirect:'follow', cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        btn.disabled = false;
+        if(!d || d.ok===false){
+          var msg = (d && d.code==='RATE_LIMIT') ? 'Too many requests. Please try again shortly.' : 'Something went wrong. Please try again in a moment.';
+          $('[data-listwrap]').innerHTML = '<div class="empty">'+msg+'</div>'; return;
+        }
+        rows = d.data || [];
+        renderList();
+      })
+      .catch(function(){
+        btn.disabled = false;
+        $('[data-listwrap]').innerHTML = '<div class="empty">We could not reach the server.<br>Please try again in a moment.</div>';
+      });
+  }
+  function renderList(){
+    if(!rows.length){
+      $('[data-listwrap]').innerHTML = '<div class="empty">No requests found for that name and number.<br>Please check the name and phone number.</div>';
+      return;
+    }
+    $('[data-listwrap]').innerHTML = '<div class="list">' + rows.map(function(r,i){
+      var st = r.status || '';
+      return '<div class="rcard" data-open="'+i+'">'
+        + '<div class="row1"><span class="badge" style="background:'+(STATUS[st]||'#999')+'">'+esc(LBL[st]||st)+'</span>'
+        + '<span class="cat">'+esc(r.category||'')+'</span><span class="meta">'+esc(String(r.createdAt||'').slice(0,10))+'</span></div>'
+        + '<div class="snip">'+esc(r.content||'')+'</div></div>';
+    }).join('') + '</div>';
+    $all('[data-open]').forEach(function(c){ c.addEventListener('click', function(){ openDetail(+c.getAttribute('data-open')); }); });
+  }
+  function openDetail(i){
+    var r = rows[i]; if(!r) return;
+    $('[data-dcat]').textContent = r.category || '';
+    $('[data-dmeta]').textContent = (r.regId||'') + ' · submitted ' + String(r.createdAt||'').slice(0,10);
+    $('[data-dcontent]').textContent = r.content || '';
+    var idx = STEPS.indexOf(r.status);
+    $('[data-dsteps]').innerHTML = STEPS.map(function(s,si){
+      var cls = si<=idx ? 'step done' : 'step'; if(si===idx) cls += ' cur';
+      return '<div class="'+cls+'"><div class="bar"></div><div class="dot">'+(si<=idx?'✓':(si+1))+'</div><div class="lb">'+(LBL[s]||s)+'</div></div>';
+    }).join('');
+    var rep = $('[data-dreply]');
+    if(r.memberReply && String(r.memberReply).trim()){ rep.innerHTML = '<span>'+esc(r.memberReply)+'</span>'; }
+    else { rep.innerHTML = '<span class="default">'+esc(DEFREPLY[r.status]||'We are reviewing your request.')+'</span>'; }
+    show('detail');
+  }
+  $('[data-lookup]').addEventListener('click', doLookup);
+
+  // 60초 무입력 자동 리셋
+  var IDLE=60, left=60;
+  function tick(){
+    left--;
+    var txt = (cur==='home') ? '' : ('무입력 시 <b>'+left+'초</b> 후 처음으로');
+    $all('[data-pill]').forEach(function(e){ e.innerHTML = txt; });
+    if(left<=0) hardReset();
+  }
+  function resetIdle(){ left=IDLE; if(cur==='home') $all('[data-pill]').forEach(function(e){ e.innerHTML=''; }); }
+  function hardReset(){ inName.value=''; inPhone.value=''; rows=[]; var w=$('[data-warn]'); if(w) w.textContent=''; if(inName._arm)inName._arm(); if(inPhone._arm)inPhone._arm(); show('home'); left=IDLE; }
+  ['click','touchstart','keydown','input'].forEach(function(ev){ ROOT.addEventListener(ev, resetIdle, true); });
+  setInterval(tick, 1000);
+})();
+</script>
