@@ -204,9 +204,12 @@ def build_evening_report(commits: list[str], done_q: list[dict],
         lines.append("✅ 오늘 한 일: 기록된 완료 없음")
     lines.append("")
 
-    # 상세 목록은 자율현황 🧭 항로 (GM 지시 2026-08-03 · 배10510) — 여기는 개수·대표만.
-    lines.append("상세 → 자율 작업 현황 ▸ 🧭 항로")
-    lines.append("https://wellperion-cao.github.io/wellperion-automation/자율현황.html#sec-hangro")
+    # 상세 목록은 자율현황 🗂 전체 배 (GM 지시 2026-08-03 · 배10510) — 여기는 개수·대표만.
+    # ★2026-08-13(배597 동형 오류 동시수정) — #sec-hangro 는 audience=='ai' 배만 그린다
+    #   (자율현황.html:914). 여기 집계(gm_decision·done_q 등)는 그 스코프와 안 맞아
+    #   audience 무관 전량을 그리는 #sec-all-ships로 옮긴다(08시 판과 동일 근거).
+    lines.append("상세 → 자율 작업 현황 ▸ 🗂 전체 배")
+    lines.append("https://wellperion-cao.github.io/wellperion-automation/자율현황.html#sec-all-ships")
     lines.append("")
 
     # ── 내일 이어서 할 일 (사람별 개수 + 대표 — '…외 N건' 숨김 제거) ──

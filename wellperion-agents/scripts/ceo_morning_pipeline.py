@@ -1447,7 +1447,13 @@ def _northstar_head() -> list[str]:
 # "딱 개인용 빼곤 다 자율현황으로" — 배 목록 나열을 자율현황 🧭 항로로 넘긴다.
 # 통째로 지우지 않는다: 몇 척이 어떤 상태인지 한 줄과, GM 이 직접 손댈 것(🔴 결재·마감임박)은 남긴다.
 # secs 는 hangro_board 가 이미 분류한 그 결과 — 새 집계 로직 없음.
-_HANGRO_URL = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#sec-hangro"
+# ★2026-08-13 근본수정(배597 — 웰리 실측) — 여기 세는 today/done/drift 는 hangro_board 가
+#   audience=='ai' 를 뺀 실무 스코프다. 그런데 자율현황.html#sec-hangro 는 정반대로
+#   audience==='ai' 인 배만 그린다(자율현황.html:914 isAiShip) — 실무 스코프 숫자를 보여주고
+#   AI 스코프 화면으로 보내던 것. 같은 페이지의 #sec-all-ships(🗂 전체 배)는 audience 무관
+#   백엔드 배 전부를 그린다(자율현황.html:9221 주석과 동일 근거) — 이 숫자와 스코프가 맞는
+#   쪽은 그쪽이라 링크를 옮긴다.
+_HANGRO_URL = "https://wellperion-cao.github.io/wellperion-automation/자율현황.html#sec-all-ships"
 
 
 def _board_summary_lines(secs: dict) -> list[str]:
@@ -1455,7 +1461,7 @@ def _board_summary_lines(secs: dict) -> list[str]:
         "🧭 오늘의 항로",
         f"진행·대기 {len(secs.get('today', []))}척 · 🏁 오늘 입항 "
         f"{len(secs.get('done', [])) + len(secs.get('drift', []))}척",
-        "상세 목록 → 자율 작업 현황 ▸ 🧭 항로",
+        "상세 목록 → 자율 작업 현황 ▸ 🗂 전체 배",
         _HANGRO_URL,
     ]
     # 🎯 오늘 반드시 끝낼 것(GM 2026-08-10 "놓치지 않게") — 한 줄만. 길게 안 쓴다.
@@ -1845,6 +1851,19 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
         notice = build_holiday_notice(_now, _now)
         print(f"[HOLIDAY] 오늘({_now.strftime('%Y-%m-%d')})은 휴관일 — "
               f"08:00 항로 보고를 휴관 안내문으로 대체: {notice!r}")
+        # ★2026-08-13(배518 근본수리) — 이 분기는 today_marker() 파일을 안 써서
+        #   once-per-day 가드가 안 걸렸다. 세션시작 훅(--once-per-day)이 GM 세션마다
+        #   재호출되므로, 휴관일엔 세션을 열 때마다 휴관 안내문이 중복 발송됐고
+        #   동시에 그날 morning_plans/*.json 이 저장소에 아예 안 남았다(08-09 공백의
+        #   실제 원인 — 실측: 08-09=2·4주 일요일). 정상 경로(save_plan, 1898줄)와 같은
+        #   순서로 — 발송 성공 여부와 무관하게 — 발송 전에 마커를 먼저 써서 가드를 살린다.
+        if not dry_run:
+            PLAN_DIR.mkdir(parents=True, exist_ok=True)
+            today_marker().write_text(
+                json.dumps({"generated_at": now_iso(), "date": today_kr(),
+                            "holiday": True, "notice": notice}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
         sent = send_reports(notice, "", dry_run)
         print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — "
               f"휴관 안내문 대체 {'OK' if sent else 'FAIL'}")
