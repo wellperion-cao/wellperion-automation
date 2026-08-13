@@ -655,7 +655,8 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
         lines.append(f"🆕 새로 생긴/바뀐 업무 {len(new_ships)}건")
         for s in new_ships[:RELAY_SHOW_N]:
             tail = "" if solo else f" · {contacts[s['clevel']]}"
-            lines.append(f" • {str(s['staff_message']).strip()}{tail}")
+            gm_tag = f"[GM업무 {s['gm_task_id']}] " if s.get("gm_task_id") else ""
+            lines.append(f" • {gm_tag}{str(s['staff_message']).strip()}{tail}")
         overflow_new = new_ships[RELAY_SHOW_N:]
         if overflow_new:
             lines.append(f" • 외 {len(overflow_new)}건")
@@ -669,7 +670,8 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
         lines.append(f"🔁 오래 열려 있어 재확인 {len(stale_ships)}건")
         for s in stale_ships[:RELAY_SHOW_N]:
             tail = "" if solo else f" · {contacts[s['clevel']]}"
-            lines.append(f" • {str(s['staff_message']).strip()}{tail}")
+            gm_tag = f"[GM업무 {s['gm_task_id']}] " if s.get("gm_task_id") else ""
+            lines.append(f" • {gm_tag}{str(s['staff_message']).strip()}{tail}")
         overflow_stale = stale_ships[RELAY_SHOW_N:]
         if overflow_stale:
             lines.append(f" • 외 {len(overflow_stale)}건")

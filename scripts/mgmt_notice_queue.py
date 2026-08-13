@@ -93,11 +93,15 @@ if __name__ == "__main__":
 
     p = argparse.ArgumentParser(description="★중간관리자 하루일과정리 알림성 큐")
     p.add_argument("--add", help="알림성 한 줄 추가")
+    p.add_argument("--gm-task-id", dest="gm_task_id",
+                   help="GM업무 항목 id(예: 2026-08-18) — 본문에 '[GM업무 <id>] ' 태그 붙임")
+    p.add_argument("--gm-task-title", dest="gm_task_title",
+                   help="GM업무 항목 제목(--gm-task-id 와 함께 쓰면 본문에 제목도 실림)")
     p.add_argument("--peek", action="store_true", help="오늘치 미리보기(비우지 않음)")
     a = p.parse_args()
 
     if a.add:
-        add(a.add)
+        add(a.add, gm_task_id=a.gm_task_id, gm_task_title=a.gm_task_title)
         print("추가 완료")
     elif a.peek:
         print(json.dumps(_load(), ensure_ascii=False, indent=2))
