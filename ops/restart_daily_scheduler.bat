@@ -1,5 +1,7 @@
 @echo off
-REM Wellperion daily_scheduler restart - self-elevating (triggers UAC prompt)
-REM Double-click this file, then click "Yes" on the admin prompt.
-REM Applies alert-text changes (nudge link removal + unchecked-items line).
-powershell -NoProfile -Command "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','%~dp0restart_daily_scheduler_core.ps1'"
+REM Wellperion daily_scheduler restart
+REM 2026-08-13 (bae596): admin elevation was not actually needed - Stop-Process +
+REM Start-ScheduledTask both work as the normal user. The UAC prompt only made
+REM people hesitate to restart. Runs directly now; no prompt.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0restart_daily_scheduler_core.ps1"
+pause

@@ -58,8 +58,39 @@ from pathlib import Path
 _PID_FILE = Path(__file__).parent / "daily_scheduler.pid"
 
 
+_LOCK_FILE = Path(__file__).parent / "daily_scheduler.lock"
+_LOCK_FH = None          # ★전역으로 붙들고 있어야 락이 유지된다(닫히면 풀린다)
+
+
+def _acquire_single_instance() -> None:
+    """진짜 중복 기동 차단 — 파일 배타 락. 프로세스가 죽으면 OS 가 알아서 놓는다.
+
+    ★왜 PID 파일로는 안 됐나 (2026-08-13 실측 · 배596):
+      PID 파일 방식은 '누가 파일에 적혀 있나'를 본다. 그런데 이 모듈을 **함수 하나 쓰려고
+      import 하는 짧은 프로세스**도 그 자리에서 자기 PID 를 적고 곧 죽었다. 그러면 파일은
+      죽은 PID 를 가리키게 되고, 다음에 뜨는 진짜 스케줄러는 가드를 그냥 통과한다 —
+      그래서 두 인스턴스가 같이 살았다(같은 방으로 두 번 발신될 뻔했다).
+      락은 '지금 이 순간 누가 쥐고 있나'를 본다. 적히는 게 아니라 쥐는 것이라 찌꺼기가 없다.
+      2026-08-01 배265 의 반대 사고(죽은 PID 를 살아있다고 오판해 12시간 정지)도 함께 사라진다.
+    """
+    global _LOCK_FH
+    import msvcrt
+    try:
+        _LOCK_FH = open(_LOCK_FILE, "a+")
+        _LOCK_FH.seek(0)
+        msvcrt.locking(_LOCK_FH.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError:
+        print("[daily_scheduler] 이미 실행 중. 중복 기동 차단 후 종료.", flush=True)
+        sys.exit(0)
+    except Exception as exc:  # noqa: BLE001
+        # 락 자체를 못 잡으면 조용히 통과시키지 않는다 — 통과 = 중복 발신 위험.
+        print(f"[daily_scheduler] 중복 기동 검사 실패({exc}) — 안전을 위해 종료.", flush=True)
+        sys.exit(1)
+    _PID_FILE.write_text(str(os.getpid()))    # 표시용(사람이 보는 값)
+
+
 def _check_pid_lock() -> None:
-    """이미 실행 중인 daily_scheduler.py 인스턴스가 있으면 즉시 종료."""
+    """구 PID 파일 검사 — 남겨 두되 더는 쓰지 않는다(위 _acquire_single_instance 가 정본)."""
     if _PID_FILE.exists():
         try:
             old_pid = int(_PID_FILE.read_text().strip())
@@ -81,7 +112,9 @@ def _check_pid_lock() -> None:
     _PID_FILE.write_text(str(os.getpid()))
 
 
-_check_pid_lock()
+# ★직접 실행할 때만 잠근다 — 함수만 쓰려고 import 하는 프로세스는 건드리지 않는다(배596 원인).
+if __name__ == "__main__":
+    _acquire_single_instance()
 
 import requests
 from apscheduler.schedulers.blocking import BlockingScheduler
