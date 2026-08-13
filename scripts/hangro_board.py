@@ -1689,6 +1689,13 @@ def _midmgr_reply_slice(role_slug: str) -> str:
         out.append("  (전원 회신 없음 — 없는 걸 있는 것처럼 만들지 않음)")
     out.append("※ 해석·판정 없음 — 원문 그대로. 판단해 현황 갱신하려면: "
                 "python scripts/hangro_board.py --daily-status <lee-gy|lee-jh> --done N --note \"...\"")
+    # ★회신에 답하는 순서 (GM 지시 2026-08-13). 순서를 바꾸지 않는다 —
+    #   감사가 뒤로 밀리면 남은 것 독촉만 남고, 회신할수록 잔소리를 듣는 자리가 된다.
+    out.append("┌ 회신에 답하는 순서 (GM 지시 2026-08-13) ─────────────")
+    out.append("│ ① 감사·격려 먼저 — 해 주신 것을 이름 붙여 짚는다(뭉뚱그린 '감사합니다' 말고)")
+    out.append("│ ② 그래서 무엇이 반영됐는지 — 화면 어디에 올라갔는지까지")
+    out.append("│ ③ 못 한 것·회신 없는 것은 빼지 않는다 — 남은 목록으로 다시 올려 계속 받는다")
+    out.append("└ 실무진 방 발신은 초안 → GM 승인 → 발송")
     return "\n".join(out)
 
 
