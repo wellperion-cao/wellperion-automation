@@ -14,6 +14,12 @@ const QA_INQUIRY_SHEET = '문의접수_QA';
 // 회원부 시트 (유효회원 탭)
 const MEMBER_SPREADSHEET_ID = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
 const MEMBER_SHEET = '유효회원';
+/* LOSS 보관 시트 — 2026-08-13 GM 지시("1년 단위로 옮기자"). 지난 연도에 LOSS 된 분들을 여기로 옮겨
+   유효회원 시트를 가볍게 유지한다. 실측: 1,697행 → 1,191행(30% 감소), 조회 8~11초 → 5.6~7.7초.
+   ▸숫자는 안 줄어든다 — LOSS 누적 인원을 세는 곳들은 이 시트 행 수를 더해서 낸다(아래 _lossArchiveCount_).
+     시트를 훑지 않고 마지막 행 번호만 읽으므로 속도에 영향이 없다.
+   ▸옮긴 분이 재등록하면 그때 유효회원 시트에 새 줄로 등록한다(원래 하던 방식 그대로). */
+const MEMBER_ARCHIVE_SHEET = 'LOSS보관';
 const MEMBER_PHONE_COL = '휴대폰 번호';   // 회원부 전화번호 헤더
 const MEMBER_DATE_COL  = '등록 일자';      // 회원부 등록일 헤더
 
@@ -121,6 +127,16 @@ function _normPhone_(v) { return String(v == null ? '' : v).replace(/[^0-9]/g, '
 //   유효 = (잔여일>=0 또는 잔여일 미기재) & 재등록분류가 이탈표시(LOSS/환불/양도LOSS)가 아님.
 //   remCell/reVCell = 시트 원본 셀 값(파싱 전) 그대로 넘긴다.
 var MEMBER_LOSS_TAGS_ = { 'LOSS': 1, '환불': 1, '양도LOSS': 1 };
+/* LOSS 보관 시트에 들어 있는 인원 수. 시트를 훑지 않고 마지막 행 번호만 읽는다(비용 거의 0).
+   LOSS 누적을 세는 자리들이 이 값을 더해, 옮기기 전과 **같은 숫자**를 유지한다(화면 숫자 안 바뀜). */
+function _lossArchiveCount_(ss) {
+  try {
+    var sh = (ss || SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID)).getSheetByName(MEMBER_ARCHIVE_SHEET);
+    if (!sh) return 0;
+    var last = sh.getLastRow();
+    return last > 1 ? last - 1 : 0;
+  } catch (e) { return 0; }
+}
 function _memberIsValid_(remCell, reVCell) {
   var remRaw = String(remCell == null ? '' : remCell).replace(/[^0-9\-]/g, '');
   var rem = (remRaw === '' || remRaw === '-') ? NaN : parseInt(remRaw, 10);
@@ -9053,7 +9069,9 @@ function _hasRealReply_(memo) {
   }
 
   if (action === 'member_active_list') {
-    var aaScope = String(body.scope || 'valid'); if (aaScope !== 'ended' && aaScope !== 'corp') aaScope = 'valid';
+    // scope='archive' = 지난 연도 LOSS 보관 시트(2026-08-13). 검색이 옛 회원을 놓치지 않도록 조회 통로를 연다.
+    var aaScope = String(body.scope || 'valid');
+    if (aaScope !== 'ended' && aaScope !== 'corp' && aaScope !== 'archive') aaScope = 'valid';
     var aaSs0 = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
     // 법인회원: 별도 시트(법인현황 gid=1612064257) 전체를 제네릭 표시 (2026-06-25 GM)
     if (aaScope === 'corp') {
@@ -9107,8 +9125,12 @@ function _hasRealReply_(memo) {
       var aaHit = _cacheGetJson_(aaCache, aaCacheKey);
       if (aaHit) return _json(aaHit);
     }
-    var aaSh = aaSs0.getSheetByName(MEMBER_SHEET);
-    if (!aaSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var aaSh = aaSs0.getSheetByName(aaScope === 'archive' ? MEMBER_ARCHIVE_SHEET : MEMBER_SHEET);
+    if (!aaSh) {
+      // 보관 시트는 아직 안 만들었을 수 있다 — 오류 대신 빈 목록으로 답한다(화면이 안 깨지게).
+      if (aaScope === 'archive') return _json({ ok: true, scope: aaScope, headers: [], count: 0, data: [] });
+      return _json({ ok: false, error: '유효회원 시트 없음' });
+    }
     var aaLast = aaSh.getLastRow();
     var aaCols = aaSh.getLastColumn();
     if (aaLast < 1 || aaCols < 1) return _json({ ok: true, scope: aaScope, headers: [], count: 0, data: [] });
@@ -9240,6 +9262,10 @@ function _hasRealReply_(memo) {
      값 이관은 하지 않기로 했고, 삭제 전 원본은 status/member_reclass_column_backup_20260813.json 에 있다.
      이 아래 코드들이 그 칸을 찾는 자리는 전부 '못 찾으면 건너뛴다'로 되어 있어 그대로 둔다 —
      유효/종료 판정·신규 판정 결과는 전수 대조에서 한 명도 바뀌지 않는다(1,697명 확인). */
+  /* 지난 연도(2025년 이전) LOSS 506명은 2026-08-13 GM 지시로 「LOSS보관」 시트로 옮겼다.
+     옮긴 원본은 status/loss_archive_backup_20260813.json 에 보관되어 있고, 이관용 일회성 액션은
+     실행 뒤 지웠다. 조회는 scope='archive' 로 열려 있고, LOSS 누적 숫자는 _lossArchiveCount_ 가
+     더해 주므로 옮기기 전과 같다. */
   if (action === 'member_active_update') {
     var auRow = parseInt(body.rowIndex, 10);
     if (!auRow || auRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
@@ -9644,6 +9670,7 @@ function _hasRealReply_(memo) {
           _maBump(maRes.lossPeriods, maLossI >= 0 ? _maISO(mrow[maLossI]) : '');
         }
       }
+      maRes.endedTotal += _lossArchiveCount_();   // 보관 시트분 합산 — 숫자 유지(2026-08-13)
     } catch (eMa) { return _json({ ok: false, action: 'member_active_summary', error: String(eMa) }); }
     try { maCache.put('member_active_summary_v1', JSON.stringify(maRes), 60); } catch (eMc) {}
     return _json(maRes);
@@ -10061,6 +10088,8 @@ function _hasRealReply_(memo) {
         }
       }
     } catch (eCorp) {}
+    // LOSS 보관 시트로 옮긴 지난 연도분을 더한다 — 옮기기 전과 같은 누적 숫자를 유지한다(2026-08-13).
+    ctEnded += _lossArchiveCount_(ctMemberSs);
     var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberCorp: ctCorp, memberEnded: ctEnded, todayLoss: ctLoss, monthLoss: ctMonthLoss, lossDated: ctLossDated };
     try { ctCache.put('cpo_today_stats_v5', JSON.stringify(ctResult), 60); } catch (eCc) {}
     return _json(ctResult);
@@ -10110,6 +10139,7 @@ function _hasRealReply_(memo) {
       }
     } catch (eCz) {}
     czRenew.sort(function(a, b){ return a.rem - b.rem; });
+    czLoss += _lossArchiveCount_();   // 보관 시트분 합산 — 누적 이탈율 분모·분자 유지(2026-08-13)
     var czTotal = czActive + czLoss;
     var czRate = czTotal > 0 ? Math.round(czLoss / czTotal * 1000) / 10 : 0;
     // 당월 LOSS율 — 분모=현재 유효+당월LOSS 근사(월초 스냅샷 없음, 라벨에 명시). 2026-07-03 시포·GM

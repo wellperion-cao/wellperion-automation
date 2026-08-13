@@ -8355,20 +8355,21 @@ function _activeFilter(query) {
   //   ▸화면 첫 로딩은 그대로다(추가 조회 0). **검색을 칠 때만** 반대편 명단을 한 번 불러온다.
   //   ▸결과는 지금 명단에서 즉시 뜨고, 반대편이 도착하면 조용히 덧붙는다(체감 지연 0).
   //   ▸법인은 시트가 달라 칸 구성이 아예 다르다 — 같은 표에 못 실으므로 제외한다(법인 탭에서 본다).
-  var other = (_activeScope === 'ended') ? 'valid' : (_activeScope === 'valid' ? 'ended' : '');
-  if (other) {
+  /* ★2026-08-13 — 지난 연도 LOSS 를 「LOSS보관」 시트로 옮겼으므로(GM 지시) 검색은 그쪽도 함께 뒤진다.
+     안 그러면 2024·2025년에 LOSS 된 506분이 이름을 쳐도 안 나온다 — 옮긴 것이 사라진 것으로 보이면 안 된다. */
+  var others = (_activeScope === 'ended') ? ['valid', 'archive']
+             : (_activeScope === 'valid') ? ['ended', 'archive'] : [];
+  _activeCrossExtra = 0;
+  others.forEach(function(other){
     var oc = _activeCache[other];
     if (oc && oc.rows) {
       var extra = oc.rows.filter(match);
       if (extra.length) filtered = filtered.concat(extra);
-      _activeCrossExtra = extra.length;
+      _activeCrossExtra += extra.length;
     } else {
-      _activeCrossExtra = 0;
       _activeLoadOtherScope(other, q);
     }
-  } else {
-    _activeCrossExtra = 0;
-  }
+  });
   _activeRender(filtered, true);
 }
 
@@ -8609,7 +8610,8 @@ function _activeRender(rows, isFiltered) {
   count.textContent = '총 ' + rows.length + '명' +
     (_activeRows.length !== rows.length ? ' (전체 ' + _activeRows.length + '명 중)' : '') +
     // 검색 결과에 반대편 명단(유효↔종료)이 섞였으면 몇 명인지 밝힌다 — 안 밝히면 왜 늘었는지 모른다.
-    (_activeCrossExtra ? ' · ' + (_activeScope === 'ended' ? '유효회원' : '종료회원') + ' ' + _activeCrossExtra + '명 포함' : '');
+    // 보관 시트까지 같이 뒤지므로(2026-08-13) 어느 명단인지 하나로 못 적는다 — '다른 명단'으로 묶어 적는다.
+    (_activeCrossExtra ? ' · 다른 명단(유효·LOSS·지난 연도 보관) ' + _activeCrossExtra + '명 포함' : '');
   // 휴회 접수 조회 끊음(2026-08-13 GM 승인) — 유효회원 목록을 그릴 때마다 GAS 를 한 번 더 부르고 있었다.
   // 휴회 관리는 종합접수처·시트로 옮긴다. 회원명 '휴회중' 배지는 이미 받아 둔 행 값으로 그리므로 영향 없다.
 
