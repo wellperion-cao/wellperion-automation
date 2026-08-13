@@ -1601,6 +1601,33 @@ def _latest_midmgr_file() -> Path | None:
     return files[-1] if files else None
 
 
+_RE_MIDMGR_SAVED = re.compile(r"저장한\s*날짜\s*:\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})")
+
+
+def _midmgr_saved_at(text: str) -> tuple[str, str]:
+    """카톡 아카이브 첫머리의 '저장한 날짜'와, 지금으로부터 얼마나 지났는지.
+
+    이 파일은 **만들어진 순간까지**만 담는다 — 그 뒤에 온 회신은 없다. 그 사실을
+    화면에 안 적어서 2026-08-13 에 소장님 회신 7건(16:29~18:44)을 '회신 없음'으로
+    GM 께 보고했다. 돌려주는 값: (사람이 읽는 저장시각, 제목 뒤에 붙일 경과 꼬리표).
+    """
+    m = _RE_MIDMGR_SAVED.search(text[:400])
+    if not m:
+        return "", " · ⚠️ 수집 시각 미상"
+    day, hm = m.group(1), m.group(2)
+    stamp = f"{day} {hm}"
+    try:
+        saved = dt.datetime.strptime(stamp, "%Y-%m-%d %H:%M")
+    except ValueError:
+        return stamp, ""
+    hours = (dt.datetime.now() - saved).total_seconds() / 3600
+    if hours < 1:
+        return stamp, ""
+    if hours < 3:
+        return stamp, f" · {int(hours)}시간 전 수집"
+    return stamp, f" · ⚠️ {int(hours)}시간 전 수집 — 그 뒤 회신은 안 보인다"
+
+
 def _midmgr_reply_slice(role_slug: str) -> str:
     """어제 ★중간관리자 방 회신 원문 — 실장·소장·나우열M 3명만, 웰리(ceo)만 본다(GM 지시 2026-08-13).
     "회신 받으면 웰리가 아침에 파악해서 신뢰할 수 있는 현황을" — 파악은 사람이 한다.
@@ -1636,7 +1663,16 @@ def _midmgr_reply_slice(role_slug: str) -> str:
         if cur_label and line.strip():
             msgs[cur_label].append(line.strip())
 
-    out = [f"\n📩 어제 실무진 회신 — 이 방에 남긴 것 ({collected_date} 수집분)"]
+    # ★수집본이 언제 뜬 것인지 먼저 밝힌다 (2026-08-13 실사고).
+    #   카톡 아카이브는 **그 파일을 만든 순간까지**만 담는다. 오늘 13:05 수집본을 최신으로
+    #   착각하고 "이정헌 소장 회신 없음"이라 GM 께 보고했는데, 소장님 회신 7건은 16:29~18:44
+    #   에 와 있었다. 파일 첫머리에 "저장한 날짜 : …"가 적혀 있는데 그걸 안 봤다.
+    #   그래서 화면에 경과 시간을 박는다 — 낡은 것을 최신으로 읽는 실수는 눈으로 막는다.
+    stamp, age_txt = _midmgr_saved_at(text)
+    out = [f"\n📩 실무진 회신 — 이 방에 남긴 것 ({collected_date} 대화분{age_txt})"]
+    if stamp:
+        out.append(f"  🕒 이 수집본은 {stamp} 까지만 담고 있다. 그 뒤 회신은 여기 없다.")
+        out.append('     최신으로 다시 받기: C:/Python314/python.exe scripts/kakao_export_chat.py --room-key mgr')
     any_reply = False
     for label in _MIDMGR_SENDERS.values():
         joined = " ".join(msgs[label]).strip()
