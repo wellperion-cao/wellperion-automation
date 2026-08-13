@@ -1607,15 +1607,12 @@ select, select option{ color:var(--text); background-color:var(--paper); }
         <div class="dash-line" style="font-size:10.5px"><span class="dash-k">단기</span><span class="dash-v"><b id="dMemShort" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">법인</span><span class="dash-v"><b id="dMemCorp" style="font-size:13px">–</b>명</span><span style="color:var(--dim);margin:0 1px">/</span><span class="dash-k">대기자</span><span class="dash-v"><b id="dMemWait" style="font-size:13px">–</b>명</span></div>
       </div>
     </a>
-    <!-- 휴회 회원 관리(2026-07-23 GM) — 기능은 있었는데 유효회원 목록 안 카드로만 존재해 진입점이 없었다
-         ('휴회 회원 관리 페이지는 안 만들었네?'). 다른 관리와 같은 층위의 카드로 올린다. -->
-    <a class="dash-card" data-kind="hold" href="javascript:void(0)" onclick="openHoldManage();_memHighlight(this)">
-      <div class="dash-head"><span class="dash-dot" style="background:var(--orange,#c8912b)"></span><span class="dash-title">휴회 회원 관리</span></div>
-      <div class="dash-metrics">
-        <div class="dash-line"><span class="dash-k">접수대기</span><span class="dash-v"><b class="lead" id="dHoldPending">–</b> 건</span></div>
-        <div class="dash-line" style="font-size:10.5px"><span class="dash-k">진행중</span><span class="dash-v"><b id="dHoldOngoing" style="font-size:13px">–</b>명</span></div>
-      </div>
-    </a>
+    <!-- 휴회 회원 관리 카드 삭제(2026-08-13 GM 승인 · 실무진 피드백) — 휴회는 이 화면에서 관리하지 않는다.
+         접수=종합접수처 → 기록=시트 → 관리=시트. 이 화면에 있으면 같은 일을 두 곳에서 하게 된다.
+         카드와 함께 렌더마다 돌던 휴회 접수 조회(_loadHoldIntake)도 끊었다 — 유효회원 목록을 열 때마다
+         GAS 를 한 번 더 부르고 있었다. 회원명 '휴회중' 배지(_holdActive)는 정보 표시라 그대로 둔다.
+         ponytail: 도달 경로가 사라진 휴회 카드·전용보기 JS(openHoldManage·_loadHoldIntake·holdStatusCard)는
+         종합접수처 배선(시우)이 선 뒤 일괄 제거한다. -->
     <!-- 카드5·6(대기자/LOSS 회원 관리) 삭제(FB260801-141806, 2026-08-01 GM 승인) — '멤버십 회원 관리' 카드
          진입 후 요약카드의 '회원 구분 선택칸'(대기/LOSS 포함)으로 진입점 이관. 데이터 배선(dMemWait·
          dMemLossToday/Month 기록 로직)은 다른 화면(오늘 할 일 등)이 재사용할 수 있어 JS는 그대로 둔다 —
@@ -8274,7 +8271,8 @@ function _activeRender(rows, isFiltered) {
     (_activeRows.length !== rows.length ? ' (전체 ' + _activeRows.length + '명 중)' : '') +
     // 검색 결과에 반대편 명단(유효↔종료)이 섞였으면 몇 명인지 밝힌다 — 안 밝히면 왜 늘었는지 모른다.
     (_activeCrossExtra ? ' · ' + (_activeScope === 'ended' ? '유효회원' : '종료회원') + ' ' + _activeCrossExtra + '명 포함' : '');
-  try { _loadHoldIntake(); } catch (e) {}   // 휴회 접수 관리 카드(공개 접수건 리스트·서버 자동판정). 2026-07-22 시포·GM
+  // 휴회 접수 조회 끊음(2026-08-13 GM 승인) — 유효회원 목록을 그릴 때마다 GAS 를 한 번 더 부르고 있었다.
+  // 휴회 관리는 종합접수처·시트로 옮긴다. 회원명 '휴회중' 배지는 이미 받아 둔 행 값으로 그리므로 영향 없다.
 
   if (rows.length === 0) {
     var span = displayCols.length || 1;
