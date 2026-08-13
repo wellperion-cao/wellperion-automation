@@ -16,6 +16,12 @@
 /* ── 종합접수처 페이지(8434) 한정 테마 보정 ── */
 /* 영어판 없음 → ENG 누르면 홈으로 튐. QR 한글 전용이므로 언어버튼 숨김 */
 body.page-id-8434 a.lang-header{display:none!important}
+/* 상단 테마 로고(누르면 링크가 걸린 이미지) 숨김 — 2026-08-13 GM 지시.
+   본문 맨 위 브랜드 문구(WELLPERION / A Day, Well Completed. / 하루의 완성, 웰페리온)가
+   그 역할을 대신한다. 로고 자리표시자까지 같이 없애 맨 위 빈 띠도 사라진다. */
+body.page-id-8434 #header-outer,
+body.page-id-8434 #header-space,
+body.page-id-8434 #top{display:none!important}
 /* 노란 Buttonizer 플로팅 '문의하기' 버튼 숨김 — 접수 폼 자체가 있어 불필요·가림 */
 body.page-id-8434 .buttonizer,
 body.page-id-8434 #buttonizer,
@@ -383,14 +389,14 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   .wlp-recept .photo-zone .ph-text{font-size:21px}
   .wlp-recept .submit{font-size:30px;padding:30px}
   .wlp-recept .hint-empty{font-size:20px}
-  .wlp-recept .back-kiosk{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px}
+  .wlp-recept .back-kiosk{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px;left:max(20px,calc(50% - 450px))}
   /* 키오스크에서는 회사 정보 푸터를 숨겨 접수 화면만 보이게 한다(접수 조회 화면과 같은 처리) */
   #footer-outer,#footer-widgets{display:none!important}
 }
 
 /* 종합접수처 첫 화면으로 돌아가기 — 화면 왼쪽 위, 본문과 겹치지 않게 (2026-08-13 GM 지시) */
 .wlp-recept{position:relative}
-.wlp-recept .back-kiosk{position:absolute;top:16px;left:16px;z-index:5;display:inline-flex;align-items:center;
+.wlp-recept .back-kiosk{position:absolute;top:16px;left:max(16px,calc(50% - 270px));z-index:5;display:inline-flex;align-items:center;
   justify-content:center;gap:6px;padding:10px 18px;min-height:44px;border:2px solid var(--text);
   border-radius:24px;color:var(--text);font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
 @media (max-width:520px){
@@ -912,18 +918,17 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 })();
 </script>
 
-<!-- [2026-07-20 GM] 종합접수처 페이지 로고 링크 → /ko/reception/ 변경 -->
+
+<!-- ← 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 화살표 한 번으로 첫 화면.
+     글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
 <script>
 (function(){
-  function fixLogoHref(){
-    // Salient 테마: #logo 자체가 <a> 태그
-    var a=document.getElementById('logo');
-    if(a && a.tagName==='A'){ a.href='/ko/reception/'; }
-    else { var a2=document.querySelector('#header-outer #logo a, #header-outer a#logo');
-      if(a2) a2.href='/ko/reception/';
-    }
-  }
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',fixLogoHref); }
-  else { fixLogoHref(); }
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'ArrowLeft' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+    e.preventDefault();
+    location.href = 'http://wellperion.com/ko/lookup/';
+  });
 })();
 </script>

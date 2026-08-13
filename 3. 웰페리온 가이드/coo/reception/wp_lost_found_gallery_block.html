@@ -125,10 +125,20 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .lf-policy li{position:relative;padding-left:15px;font-size:13px;color:#5c564d;line-height:1.75;list-style:none !important}
 .wlp-lfg .lf-policy li::before{content:"·";position:absolute;left:3px;color:var(--accent);font-weight:800}
 .wlp-lfg .lf-policy li b{color:var(--text);font-weight:700}
+
+/* 종합접수처 첫 화면으로 돌아가기 (2026-08-13 GM 지시) — 본문 기둥 왼쪽 끝에 맞춘다 */
+.wlp-lfg{position:relative}
+.wlp-lfg .back-kiosk{position:absolute;top:16px;left:max(16px,calc(50% - 540px));z-index:5;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:44px;
+  border:2px solid var(--text);border-radius:24px;color:var(--text);font-size:13px;font-weight:700;
+  letter-spacing:.02em;background:transparent;text-decoration:none}
+@media (min-width:1001px){ .wlp-lfg .back-kiosk{top:auto} }
+@media (max-width:520px){ .wlp-lfg .back-kiosk{top:10px;left:10px;padding:9px 14px;font-size:12.5px} }
 </style>
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
 <div class="wlp-lfg">
+<a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
 <div class="wrap">
 
   <div class="brand">
@@ -278,5 +288,19 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   var _kick=function(){ load(); loadDisposal(); };
   if('requestIdleCallback' in window){ requestIdleCallback(_kick,{timeout:1200}); }
   else { setTimeout(_kick,60); }
+})();
+</script>
+
+<!-- ← 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 화살표 한 번으로 첫 화면.
+     글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
+<script>
+(function(){
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'ArrowLeft' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+    e.preventDefault();
+    location.href = 'http://wellperion.com/ko/lookup/';
+  });
 })();
 </script>

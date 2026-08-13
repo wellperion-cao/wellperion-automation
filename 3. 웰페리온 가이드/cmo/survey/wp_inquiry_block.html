@@ -45,7 +45,13 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 .wlp-inq .eyebrow{font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--beige);text-transform:uppercase;margin:0 0 14px}
 .wlp-inq .slogan-en{font-size:clamp(24px,6vw,34px);font-weight:800;letter-spacing:-.02em;color:var(--ink);margin:0 0 6px}
 .wlp-inq .slogan-kr{font-size:clamp(13px,3vw,16px);color:var(--muted);letter-spacing:.02em;margin:0 0 18px}
-.wlp-inq .divider-coral{width:36px;height:2px;background:var(--beige);margin:0 auto 18px}
+/* 선 통일 (2026-08-13 GM 지시) — 종합접수처의 금색 선과 같은 모양으로 */
+.wlp-inq .gold-divider{display:flex;align-items:center;justify-content:center;gap:14px;
+  margin:0 auto 20px;max-width:300px}
+.wlp-inq .gd-line{flex:1;height:1px}
+.wlp-inq .gd-line.left{background:linear-gradient(90deg,transparent,#d9c4a3)}
+.wlp-inq .gd-line.right{background:linear-gradient(90deg,#d9c4a3,transparent)}
+.wlp-inq .gd-diamond{color:var(--beige);font-size:10px;line-height:1}
 .wlp-inq .hero-desc{font-size:13.5px;color:var(--muted);line-height:1.8;max-width:380px;margin:0 auto;word-break:keep-all}
 .wlp-inq .hero-capacity{font-size:14px;font-weight:700;color:var(--ink);line-height:1.7;max-width:380px;margin:20px auto 0}
 .wlp-inq .hero-capacity b{color:var(--beige);font-weight:800}
@@ -87,6 +93,31 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 .wlp-inq .social-icon:hover .social-btn{opacity:.85}
 .wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
 
+/* ── 키오스크(세로 큰 화면) — 2026-08-13 GM 지시: 스크롤을 줄인다 ──
+   위아래 여백을 줄이고 좌우 폭을 넓혀 같은 내용을 더 짧은 세로 길이에 담는다.
+   조건(폭 700px 이상 + 세로 화면)이라 휴대폰·PC 가로 화면은 지금 그대로다. */
+@media (min-width:700px) and (orientation:portrait){
+  .wlp-inq .hero-band{max-width:1000px;padding:14px 20px 4px}
+  .wlp-inq .hero-inner{max-width:820px}
+  .wlp-inq .slogan-kr{margin-bottom:12px}
+  .wlp-inq .gold-divider{margin-bottom:14px}
+  .wlp-inq .hero-desc{max-width:620px;font-size:19px;line-height:1.6}
+  .wlp-inq .hero-capacity{max-width:620px;font-size:20px;margin-top:12px}
+  .wlp-inq .wrap{max-width:1000px;padding:6px 20px 12px}
+  .wlp-inq .reserve-note{margin-bottom:10px;font-size:17px}
+  .wlp-inq .video-frame{max-width:520px!important;margin:0 auto 16px}
+  .wlp-inq .sec-label{margin-bottom:16px}
+  .wlp-inq .sec-label .tx{font-size:18px}
+  .wlp-inq .type-grid{gap:14px;margin-bottom:14px}
+  .wlp-inq .type-card{padding:16px 24px}
+  .wlp-inq .type-card .cat-icon{margin-bottom:8px}
+  .wlp-inq .type-card .tc-kr{font-size:24px;margin-bottom:6px}
+  .wlp-inq .type-card .tc-desc{font-size:16px}
+  .wlp-inq .social-bar{margin-bottom:6px;gap:34px}
+  .wlp-inq .back-kiosk{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px}
+  /* 키오스크에서는 회사 정보 푸터를 숨겨 문의 화면만 한 장에 담는다 */
+  #footer-outer,#footer-widgets{display:none!important}
+}
 @media (max-width:520px){
   .wlp-inq .type-grid{grid-template-columns:1fr}
 }
@@ -110,7 +141,7 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
       <p class="eyebrow">Wellperion</p>
       <p class="slogan-en">A Day, Well Completed.</p>
       <p class="slogan-kr">하루의 완성, 웰페리온</p>
-      <div class="divider-coral"></div>
+      <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
       <p class="hero-desc">단순한 운동 시설이 아닙니다.<br>하루 루틴의 일부로, 건강의 기준을 세우고<br>그 날의 완성도를 채워주는 공간입니다.</p>
       <p class="hero-capacity">웰페리온은 <b>1,000명 정원제</b>(멤버십) 운영으로<br>쾌적한 공간을 제공합니다.</p>
     </div>
@@ -248,5 +279,19 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
       a.href=url.href;
     }catch(e){}
   };
+})();
+</script>
+
+<!-- ← 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 화살표 한 번으로 첫 화면.
+     글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
+<script>
+(function(){
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'ArrowLeft' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+    e.preventDefault();
+    location.href = 'http://wellperion.com/ko/lookup/';
+  });
 })();
 </script>
