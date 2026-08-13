@@ -36,6 +36,15 @@ SSOT_API_URL = os.environ.get(
     "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec",
 )
 
+# 전사일정 GAS — action=load_schedule / save_schedule.
+# 2026-08-14 시토: 같은 리터럴이 gm_checkin·monthly_ops_sync·report_stream_3_impl 세 곳에
+# 따로 박혀 있었다(약속 L01 위반 — 배포본이 바뀌면 세 곳을 다 고쳐야 한다). 여기로 모으고
+# 세 소비자는 import 한다. 새 소비자도 여기서 가져다 쓴다.
+SCHEDULE_GAS_URL = os.environ.get(
+    "SCHEDULE_GAS_URL",
+    "https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec",
+)
+
 # todo_list '상태' 완료 판정 기준(양쪽 소비자 동일).
 TODO_DONE_STATUSES = {"완료", "폐기", "DONE", "완료됨"}
 

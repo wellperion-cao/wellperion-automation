@@ -35,7 +35,7 @@ JPATH = ROOT / 'status' / 'gm_personal_routine.json'
 #   GAS 가 정본·저장소 JSON은 seed 폴백(전사_일정.html 과 동일 이중화) — 이것만 쓴다. 새 저장소
 #   신설 없음(약속 L21). GM 개인 일정은 그 안에서 담당자(assignee)에 "GM"·"김남욱"이 걸린 오늘자
 #   항목만 골라낸다.
-SCHEDULE_GAS_URL = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec'
+from collectors.ops_shared import SCHEDULE_GAS_URL  # 전사일정 GAS 단일 출처(약속 L01)
 SCHEDULE_LOCAL = ROOT / 'status' / 'schedule_ssot.json'
 
 

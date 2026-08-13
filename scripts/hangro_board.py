@@ -1636,14 +1636,26 @@ def _midmgr_reply_slice(role_slug: str) -> str:
     아카이브(1. AI자료_아카이브/11_카카오톡/★중간관리자/)를 읽는다(약속 L21)."""
     if role_slug != "ceo":
         return ""
+    # ★못 읽은 것과 회신이 없는 것은 다르다 (배613 · 웰리 실측 2026-08-14).
+    #   수집기(kakao_export_chat.py)는 화면이 잠겨 있으면 실패하는데, 실패해도 아무 데도 안 남고
+    #   이 칸은 옛 수집본을 그대로 보여 준다. 그래서 "회신 없음"이 두 가지 뜻으로 읽혔다 —
+    #   ①정말 아무도 안 남겼다 ②우리가 오늘 것을 못 받아 왔다. 2026-08-13 에 ②를 ①로 읽고
+    #   "이정헌 소장 회신 없음"이라고 GM 께 잘못 보고했다(그때 회신 7건이 이미 와 있었다).
+    #   여기서는 새 감시기를 만들지 않는다(약속 L21) — 수집본이 오늘 것인지만 보고, 아니면
+    #   "회신 없음" 대신 "확인 못 함"이라고 적는다. 없는 정보를 있는 것처럼 만들지 않는다.
+    _today = dt.datetime.now().strftime("%Y-%m-%d")
     f = _latest_midmgr_file()
     if not f:
-        return ""
+        return ("\n📩 실무진 회신 — ❌ 확인 못 함(수집본이 하나도 없다)\n"
+                "  회신이 없는 게 아니라 우리가 못 읽은 것이다 — 이 상태로 '회신 없음'이라 보고하지 말 것.\n"
+                "  받아오기: C:/Python314/python.exe scripts/kakao_export_chat.py --room-key mgr\n"
+                "  (화면이 잠겨 있으면 실패한다 — 잠금 해제 후 다시)")
     try:
         text = f.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
         print(f"[WARN] 중간관리자 아카이브 읽기 실패: {e}", file=sys.stderr)
-        return ""
+        return (f"\n📩 실무진 회신 — ❌ 확인 못 함(수집본 파일을 못 열었다: {type(e).__name__})\n"
+                "  회신이 없는 게 아니라 우리가 못 읽은 것이다 — '회신 없음'이라 보고하지 말 것.")
     date_marks = list(_RE_MIDMGR_DATE.finditer(text))
     if not date_marks:
         return ""
@@ -1669,7 +1681,14 @@ def _midmgr_reply_slice(role_slug: str) -> str:
     #   에 와 있었다. 파일 첫머리에 "저장한 날짜 : …"가 적혀 있는데 그걸 안 봤다.
     #   그래서 화면에 경과 시간을 박는다 — 낡은 것을 최신으로 읽는 실수는 눈으로 막는다.
     stamp, age_txt = _midmgr_saved_at(text)
+    saved_day = stamp.split(" ")[0] if stamp else ""
+    stale = bool(saved_day) and saved_day < _today   # 오늘 수집분이 아예 없다 = 오늘 것은 못 읽었다
     out = [f"\n📩 실무진 회신 — 이 방에 남긴 것 ({collected_date} 대화분{age_txt})"]
+    if stale:
+        out.append(f"  ❌ 오늘({_today}) 수집본이 없다 — 아래는 {saved_day} 것이다. "
+                   "오늘 남긴 회신은 여기 없다.")
+        out.append("     수집이 실패했을 가능성(화면 잠김이면 수집기가 못 돈다). "
+                   "먼저 받아오고 나서 판단할 것.")
     if stamp:
         out.append(f"  🕒 이 수집본은 {stamp} 까지만 담고 있다. 그 뒤 회신은 여기 없다.")
         out.append('     최신으로 다시 받기: C:/Python314/python.exe scripts/kakao_export_chat.py --room-key mgr')
@@ -1683,10 +1702,13 @@ def _midmgr_reply_slice(role_slug: str) -> str:
             # 여기는 GM 화면이 아니라 웰리가 판단하려고 읽는 자리다 — 잘라서 얻는 게 없다.
             snippet = joined[:340] + ("…" if len(joined) > 340 else "")
             out.append(f'  · {label} ({len(msgs[label])}줄) — "{snippet}"')
+        elif stale:
+            out.append(f"  · {label} — 확인 못 함(오늘 수집본 없음 · '회신 없음'과 다르다)")
         else:
             out.append(f"  · {label} — 회신 없음")
     if not any_reply:
-        out.append("  (전원 회신 없음 — 없는 걸 있는 것처럼 만들지 않음)")
+        out.append("  (오늘 수집본이 없어 확인 못 함 — 회신 없음이라 보고하지 말 것)" if stale
+                   else "  (전원 회신 없음 — 없는 걸 있는 것처럼 만들지 않음)")
     out.append("※ 해석·판정 없음 — 원문 그대로. 판단해 현황 갱신하려면: "
                 "python scripts/hangro_board.py --daily-status <lee-gy|lee-jh> --done N --note \"...\"")
     # ★회신에 답하는 순서 (GM 지시 2026-08-13). 순서를 바꾸지 않는다 —

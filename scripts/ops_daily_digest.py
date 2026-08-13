@@ -784,6 +784,9 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str, r
   "issues": [
     {{"issue": "이슈 한 줄 요약", "status": "open 또는 resolved", "note": "근거·짧은 메모",
       "owner": "담당자", "due": "YYYY-MM-DD", "category": "분류"}}
+  ],
+  "schedules": [
+    {{"date": "YYYY-MM-DD", "title": "일정 한 줄 이름", "dept": "담당 부서 또는 사람", "note": "근거가 된 대화 내용 한 줄"}}
   ]
 }}
 issues는 대화에서 실제로 확인되는 미해결·해결 이슈만 담는다(없으면 빈 배열 []).
@@ -797,6 +800,15 @@ issues의 owner·due·category 규칙(이 세 칸은 업무 장부에 자동 등
 - due: 대화에 기한·날짜가 나올 때만 YYYY-MM-DD 로. 없으면 빈 문자열 "".
 - category: 아래 중 하나를 고른다(가장 가까운 것). 애매하면 빈 문자열 "".
   {_CATEGORY_LIST}
+
+schedules 규칙(이 칸은 전사일정 화면에 자동 등록된다 — 없는 일정을 만들면 회사 달력이 거짓이 된다):
+- 넣는 것: ①날짜가 대화에 분명히 나오고 ②앞으로 일어날 일이고 ③놓치면 회사에 영향이 있는 것.
+  해당 예 — 외부 방문·정기검사·법정점검·업체 미팅·납품·계약/보고 마감·면접·교육.
+- 넣지 않는 것: 부서 내부 청소 당번·일상 루틴·이미 지나간 일·날짜가 없거나 '다음 주쯤' 같은 어림.
+  ★확신이 없으면 넣지 않는다. 빈 배열 [] 이 정답인 날이 대부분이다.
+- date: 반드시 YYYY-MM-DD. '8/20', '다음 주 목요일' 같은 표현은 {target_date} 를 기준으로 실제 날짜로 바꿔 적는다.
+- title: 사람이 달력에서 보고 바로 아는 짧은 이름(예: '승강기 정기검사'). 대화 문장을 그대로 옮기지 않는다.
+- dept: 그 일을 맡는 부서·사람이 대화에 분명할 때만. 아니면 빈 문자열 "".
 """
 
 
@@ -809,8 +821,9 @@ def call_brain(prompt: str) -> tuple[str | None, str | None]:
     return run_claude(prompt, label="ops-daily-digest")
 
 
-def parse_brain_json(raw: str) -> tuple[str, list[dict], bool]:
-    """claude 응답에서 {"message","issues"} JSON 파싱. 실패 시 원문을 메시지로, issues=[] (정직 강등)."""
+def parse_brain_json(raw: str) -> tuple[str, list[dict], list[dict], bool]:
+    """claude 응답에서 {"message","issues","schedules"} JSON 파싱.
+    실패 시 원문을 메시지로, issues·schedules=[] (정직 강등)."""
     cleaned = raw.strip()
     if cleaned.startswith("```"):
         cleaned = re.sub(r"^```[a-zA-Z]*\n?", "", cleaned)
@@ -821,11 +834,14 @@ def parse_brain_json(raw: str) -> tuple[str, list[dict], bool]:
         issues = data.get("issues") or []
         if not isinstance(issues, list):
             issues = []
+        schedules = data.get("schedules") or []
+        if not isinstance(schedules, list):
+            schedules = []
         if message:
-            return message, issues, True
+            return message, issues, schedules, True
     except json.JSONDecodeError:
         pass
-    return raw.strip(), [], False
+    return raw.strip(), [], [], False
 
 
 # ═══════════════════════════════════════════
@@ -881,13 +897,18 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
         print("[실패] claude CLI 전 모델 실패 — 메시지 생성 불가(원장도 갱신 안 함). model_router 로그·텔레그램 경보 확인 요망.")
         return 1
 
-    message, issues, json_ok = parse_brain_json(raw_out)
+    message, issues, schedules, json_ok = parse_brain_json(raw_out)
     if not json_ok:
         print("  → 경고: JSON 파싱 실패 — 응답 원문을 메시지로 사용, 이번 회차 이슈 원장 갱신은 생략(정직 강등).")
     else:
         ledger = upsert_ledger(ledger, target_date, issues, source_file=export_path.name)
         save_ledger(ledger)
         print(f"  → 원장 갱신: {LEDGER_PATH.relative_to(ROOT)} (이슈 {len(issues)}건, 날짜 {target_date})")
+
+    # 전사일정 다리(배577) — 메시지를 조립하기 전에 등록한다. 등록 결과를 그 메시지에 한 줄로
+    # 붙여 같이 내보내기 위해서다(새 발송 경로를 만들지 않는다 · 약속 L21).
+    schedule_added = bridge_to_schedule(schedules, target_date, room_dir_name,
+                                        dry_run=bridge_dry_run) if json_ok else []
 
     print(f"[5/5] 생성 완료 (model={used_model})")
 
@@ -935,6 +956,9 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     _ask = _bridge_ask_lines(ledger, target_date)
     if _ask:
         parts.append(_ask)
+    _sched_reply = _schedule_reply_lines(schedule_added)
+    if _sched_reply:
+        parts.append(_sched_reply)
     if room_dir_name == "★운영부":
         parts += [mid_block, reception_block]
     final_message = "\n\n".join(p.strip() for p in parts if p and p.strip())
@@ -1130,6 +1154,156 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
         save_ledger(ledger)
     print(f"  → 업무 장부 다리: {posted}건 {'미리보기' if dry_run else '등록'}")
     return posted
+
+
+# ═══════════════════════════════════════════
+#  전사일정 다리 — 카톡 방 말 → 전사일정 자동 등록 (GM 결정 2026-08-12 · 배577)
+# ═══════════════════════════════════════════
+#  왜: 전사일정 입력칸이 8개라 현장에서 아무도 안 적는다. GM 원문 — "지금은 불편하니까 오히려
+#  작성을 잘 안하는듯? 작업자분들이 나이가 있어서 반응이 좋지않음". 그래서 실무진에게 새 화면을
+#  가르치는 대신, 이미 쓰는 카톡 방에 말한 것을 우리가 옮겨 적는다.
+#  ▸업무 SSOT 다리(위 bridge_to_todo)와 다르다. 그건 **사람의 할 일**이라 AI 가 대신 올리면 안 되고
+#    (배589), 이건 **날짜**라 놓치면 회사가 다친다. GM 이 이 방식을 골랐다.
+#  ▸새 스크립트·새 GAS·새 발송기를 만들지 않는다(약속 L21). 판독은 이미 도는 같은 LLM 패스에
+#    schedules 출력 하나를 얹었고, 등록은 전사일정이 원래 쓰는 save_schedule 을 그대로 부른다.
+#  ▸회신도 새 발송이 아니다 — 이 아침 메시지 본문에 한 줄로 붙여 같이 나간다.
+_SCHEDULE_SOURCE = "kakao_digest"
+_SCHEDULE_MAX_PER_RUN = 3      # 하루에 이 이상 나오면 판독이 헛짚은 것이다 — 넣지 않고 사람에게 남긴다
+_SCHEDULE_DUP_RATIO = 0.6      # 같은 날짜에 이 이상 닮은 이름이 있으면 같은 일로 본다
+
+
+def _schedule_norm(name: str) -> str:
+    return re.sub(r"[\s·\-—()\[\]]+", "", str(name or ""))
+
+
+def _schedule_is_dup(title: str, due: str, items: list[dict]) -> str:
+    """같은 날짜에 이미 같은 일이 있으면 그 이름을 돌려준다(없으면 빈 문자열).
+    사람이 손으로 적은 것도 대상이다 — 같은 사실이 두 줄로 사는 것을 막는다(약속 L23)."""
+    from difflib import SequenceMatcher
+    a = _schedule_norm(title)
+    if not a:
+        return ""
+    for it in items:
+        if str(it.get("next_due") or "").strip() != due:
+            continue
+        b = _schedule_norm(it.get("name"))
+        if not b:
+            continue
+        if a in b or b in a or SequenceMatcher(None, a, b).ratio() >= _SCHEDULE_DUP_RATIO:
+            return str(it.get("name") or "")
+    return ""
+
+
+def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: str,
+                       dry_run: bool = False) -> list[dict]:
+    """일정 후보를 전사일정에 등록하고, 실제로 등록된 것만 돌려준다(회신 줄 만들 때 쓴다).
+
+    거르는 것: 날짜 형식이 아닌 것 · 지난 날짜 · 이름 빈칸 · 같은 날짜에 이미 있는 일 ·
+    한 번에 3건 초과. 실패해도 아침 메시지는 그대로 나간다(등록은 부가 기능이지 본업이 아니다).
+    id 는 날짜+이름으로 고정이라 같은 날 다시 돌려도 덮어쓰기만 되고 줄이 늘지 않는다."""
+    if not schedules:
+        return []
+    try:
+        from collectors.ops_shared import SCHEDULE_GAS_URL
+    except ImportError:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from collectors.ops_shared import SCHEDULE_GAS_URL
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    cands = []
+    for s in schedules:
+        if not isinstance(s, dict):
+            continue
+        due = str(s.get("date") or "").strip()
+        title = str(s.get("title") or "").strip()[:80]
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", due) or not title:
+            continue
+        if due < today:
+            print(f"  [일정] 건너뜀 — '{title}' ({due}) 이미 지난 날짜")
+            continue
+        cands.append((due, title, str(s.get("dept") or "").strip(), str(s.get("note") or "").strip()))
+    if not cands:
+        return []
+    if len(cands) > _SCHEDULE_MAX_PER_RUN:
+        print(f"  [일정] 후보 {len(cands)}건 — 하루 상한 {_SCHEDULE_MAX_PER_RUN}건을 넘어 전부 건너뜀"
+              f"(판독이 헛짚었을 가능성 · 사람이 보고 넣는다)")
+        return []
+
+    resp = _gas_get(SCHEDULE_GAS_URL, {"action": "load_schedule"}, timeout=20,
+                    label="ops-digest 전사일정")
+    try:
+        cur = resp.json() if resp is not None else None
+    except Exception:
+        cur = None
+    data = cur.get("data") if isinstance(cur, dict) and cur.get("ok") else None
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+        print("  [일정] 조회 실패 — 등록 생략(원본 무변경)")
+        return []
+
+    items = data["items"]
+    by_id = {it.get("id"): it for it in items}
+    added = []
+    for due, title, dept, note in cands:
+        dup = _schedule_is_dup(title, due, items)
+        if dup:
+            print(f"  [일정] 건너뜀 — '{title}' ({due}) 같은 날짜에 이미 있음: {dup}")
+            continue
+        sid = f"kkd-{due}-{_schedule_norm(title)[:20]}"
+        item = {
+            "id": sid, "type": "이벤트", "name": title, "category": "general",
+            "dept": dept, "cycle": "", "cycle_confirmed": False, "period_months": None,
+            "legal_basis": "", "assignee": dept, "last_done": "", "next_due": due,
+            "evidence": "", "applies": "있음",
+            "note": f"{room_dir_name} {target_date} 카톡 대화에서 자동 등록"
+                    + (f" — {note[:60]}" if note else ""),
+            "vendor_id": "", "repeat": "", "source": _SCHEDULE_SOURCE,
+        }
+        if by_id.get(sid) == item:
+            continue  # 같은 날 재실행 — 값이 같으면 아무 일도 하지 않는다
+        by_id[sid] = item
+        added.append(item)
+        print(f"  [일정] 등록 — {due} {title}" + (f" · {dept}" if dept else ""))
+
+    if not added:
+        print("  → 전사일정 다리: 새로 넣을 일정 없음")
+        return []
+    if dry_run:
+        print(f"  → 전사일정 다리: {len(added)}건 미리보기(등록 안 함)")
+        return added
+    try:
+        import urllib.request
+        body = json.dumps({"action": "save_schedule", "data": {**data, "items": list(by_id.values())}},
+                          ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(SCHEDULE_GAS_URL, data=body,
+                                     headers={"Content-Type": "text/plain"}, method="POST")
+        with urllib.request.urlopen(req, timeout=25) as r:
+            res = json.loads(r.read())
+    except Exception as e:
+        print(f"  [일정] 등록 실패({type(e).__name__}: {e}) — 아침 메시지는 그대로 나간다")
+        return []
+    if not (isinstance(res, dict) and res.get("ok")):
+        print("  [일정] 등록 실패 — GAS 응답 오류")
+        return []
+    print(f"  → 전사일정 다리: {len(added)}건 등록 완료")
+    return added
+
+
+def _schedule_reply_lines(added: list[dict]) -> str:
+    """등록한 일정을 방에 한 줄로 알린다. 틀렸을 때 되돌릴 길을 같이 준다 —
+    말한 사람이 그 자리에서 아니라고 할 수 있어야 거짓 일정이 안 쌓인다."""
+    if not added:
+        return ""
+    rows = []
+    for it in added:
+        try:
+            d = datetime.strptime(it["next_due"], "%Y-%m-%d")
+            when = f"{d.month}/{d.day}({'월화수목금토일'[d.weekday()]})"
+        except Exception:
+            when = it.get("next_due", "")
+        rows.append("  · " + when + " " + str(it.get("name") or "")
+                    + (f" · {it['dept']}" if it.get("dept") else ""))
+    return ("📅 전사일정에 넣었습니다\n" + "\n".join(rows) +
+            "\n  (틀리면 한 줄만 주세요 — 바로 고칩니다)")
 
 
 def main():

@@ -52,10 +52,7 @@ HOME_KPI_URL = (
 
 # 전사일정 GAS(SCHEDULE_SSOT) — 3. 웰페리온 가이드/coo/check/전사_일정.html 이 쓰는 것과 동일 URL
 # 재사용(약속 L21 — 새 GAS·새 엔드포인트 금지). GM 배포 2026-07-14.
-SCHEDULE_GAS_URL = (
-    "https://script.google.com/macros/s/"
-    "AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec"
-)
+from collectors.ops_shared import SCHEDULE_GAS_URL  # 전사일정 GAS 단일 출처(약속 L01)
 
 GATE = os.environ.get("MONTHLY_SYNC_APPLY", "0").strip() == "1"
 

@@ -317,8 +317,7 @@ def build_staff_feedback_block(today: str) -> str:
     return head + "\n<pre>\n" + "\n".join(lines) + more + "\n</pre>"
 
 
-SCHEDULE_GAS_URL = ("https://script.google.com/macros/s/"
-                    "AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec")
+from collectors.ops_shared import SCHEDULE_GAS_URL  # 전사일정 GAS 단일 출처(약속 L01)
 
 
 def _schedule_today(today: str) -> list[str]:
