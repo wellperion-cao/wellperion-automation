@@ -1,4 +1,4 @@
-﻿<#
+﻿﻿<#
   ops/kiosk_install.ps1 — 키오스크 PC 전원 자동 개폐 설치 (GM 지시 2026-08-13)
 
   ★관리자 권한으로 1회만 실행한다. 키오스크 PC 에서 돌린다.
@@ -16,13 +16,25 @@
     매일 05:50 으로 잡아야 완성된다. 현장에서 1회.
 #>
 $ErrorActionPreference = 'Stop'
-$Here  = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Power = Join-Path $Here 'kiosk_power.ps1'
+$Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-if (-not (Test-Path $Power)) { throw "kiosk_power.ps1 이 같은 폴더에 없습니다: $Here" }
+if (-not (Test-Path (Join-Path $Here 'kiosk_power.ps1'))) {
+  throw "kiosk_power.ps1 이 같은 폴더에 없습니다: $Here"
+}
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()
            ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) { throw '관리자 권한으로 다시 실행하세요(마우스 오른쪽 → 관리자 권한으로 실행).' }
+
+# ★USB 에서 돌려도 예약작업은 이 PC 안 경로를 가리켜야 한다 (2026-08-13 실사고 방지).
+#   USB 경로로 등록하면 USB 를 뽑는 순간 예약작업이 조용히 죽는다 — 아무 경보도 안 뜬다.
+$Home2 = 'C:\Wellperion\kiosk'
+New-Item -ItemType Directory -Path $Home2 -Force | Out-Null
+foreach ($f in 'kiosk_power.ps1', 'kiosk_calendar.json') {
+  $src = Join-Path $Here $f
+  if (Test-Path $src) { Copy-Item $src (Join-Path $Home2 $f) -Force }
+}
+$Power = Join-Path $Home2 'kiosk_power.ps1'
+Write-Output "설치 위치 — $Home2 (USB 를 뽑아도 그대로 돕니다)"
 
 # 1) 최대절전과 깨우기 타이머를 켠다 — 주말 아침 05:50~07:50 을 재우는 데 쓴다.
 & powercfg.exe /hibernate on
