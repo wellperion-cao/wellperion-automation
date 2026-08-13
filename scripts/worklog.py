@@ -129,6 +129,63 @@ def record_gm_prompt_hook() -> None:
                       ensure_ascii=False))
 
 
+# 자동종결이 「한 것」 칸을 스스로 채운다 (GM 선택 2026-08-13 · 배606 후속)
+#   왜: 자동종결이 "⚠️ 별도 완료 기록 없음"만 적어서, 쿵짝표 「한 것」 칸이 오늘 시토 19건 중
+#   18건이 안내 문구였다. GM: "다 된 줄 알았는데 계속 빈틈이 생기네." 사람이 매번 손으로
+#   적게 하는 규칙은 이미 두 번 실패했으니(2026-08-11·08-13) 기계가 적게 한다.
+#   무엇을 적나: 그 지시를 받은 시각부터 다음 지시를 받기 전까지 **실제로 만들어진 커밋 제목**.
+#   지어내지 않는다 — 커밋이 없으면 기존 ⚠️ 문구 그대로 둔다(없는 일을 있는 것처럼 적지 않는다).
+_AUTO_NOISE = ("chore(auto)", "chore(queue): auto-log", "Merge ", "chore(sync)")
+
+
+def _commits_between(since: str, until: str = "", role: str = "") -> str:
+    """[since, until) 사이 **그 역할이 남긴** 커밋 제목을 사람 말로 잇는다. 없으면 빈 문자열.
+
+    ★역할 태그로 거른다(2026-08-13 실측). 이 저장소는 세션 5개가 동시에 커밋하므로 시각만으로
+    자르면 시포·시우가 같은 시각에 낸 커밋이 시토 칸에 붙는다 — 빈칸보다 나쁘다(GM 이 남의 일을
+    내 일로 읽는다). 그래서 `feat(cto):` 처럼 **머리 태그에 자기 역할이 박힌 것만** 가져오고,
+    하나도 없으면 빈 문자열을 돌려 기존 ⚠️ 문구가 그대로 남게 한다.
+    """
+    import subprocess
+
+    if not since or not role:
+        return ""
+    # -n 은 필터 전에 걸리므로 넉넉히 받는다 — 12 로 두면 같은 시각 남의 커밋에 밀려
+    # 내 커밋이 잘려 나가고 빈칸이 된다(2026-08-13 실측).
+    cmd = ["git", "log", "--no-merges", f"--since={since}", "--format=%s", "-n", "60"]
+    if until:
+        cmd.insert(3, f"--until={until}")
+    try:
+        out = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, timeout=10)
+        if out.returncode != 0:
+            return ""
+        subs = [s.strip() for s in out.stdout.decode("utf-8", "replace").splitlines() if s.strip()]
+    except Exception:  # noqa: BLE001
+        return ""
+    tag = f"({role.strip().lower()})"
+    subs = [s for s in subs
+            if not s.startswith(_AUTO_NOISE) and tag in s.split(":", 1)[0].lower()]
+    # 기계가 주기적으로 내는 발행 커밋은 「한 것」이 아니다 — 같은 제목이 몇 줄씩 반복돼
+    # GM 화면에서 진짜 결과를 밀어낸다(2026-08-13 실측: 시포 칸이 '문의 스냅샷 자동 발행' 로 도배).
+    subs = [s for s in subs if "자동 발행" not in s]
+    seen, uniq = set(), []
+    for s in subs:
+        if s in seen:
+            continue
+        seen.add(s)
+        uniq.append(s)
+    subs = uniq
+    if not subs:
+        return ""
+    # 커밋 제목의 앞머리 태그(feat(cto): 등)는 GM 화면에서 읽히지 않아 떼고 보여준다.
+    clean = []
+    for s in subs[:3]:
+        body = s.split(": ", 1)[1] if ": " in s[:24] else s
+        clean.append(body[:70])
+    tail = f" 외 {len(subs) - 3}건" if len(subs) > 3 else ""
+    return " · ".join(clean) + tail
+
+
 def close_gm_refs(role: str, detail: str = "") -> int:
     """그 역할의 열린 GM 지시 접수(warn 만 있고 ok 짝 없는 것)를 닫는다. 닫은 건수를 돌려준다.
 
@@ -167,16 +224,23 @@ def close_gm_refs(role: str, detail: str = "") -> int:
                 elif d.get("result") == "ok":
                     ok.add(ref)
         n = 0
-        for ref, ts in sorted(warn.items(), key=lambda kv: kv[1]):
-            if ref in ok:
-                continue
+        pending = [(r, t) for r, t in sorted(warn.items(), key=lambda kv: kv[1]) if r not in ok]
+        # 다음 접수 시각을 그 건의 창 끝으로 쓴다 — 그래야 지시마다 자기 커밋만 가져간다.
+        all_ts = sorted(warn.values())
+        for idx, (ref, ts) in enumerate(pending):
+            nxt = ""
+            for t in all_ts:
+                if t > ts:
+                    nxt = t
+                    break
             # 기본 detail 은 "정말 아무것도 안 적은 것"이다 — 쿵짝표가 이걸 완료로 세면서
             # GM 이 "빈틈이 생긴다"고 지적한 30건 중 다수가 이 자리였다(2026-08-13). 실제로
             # 처리한 게 없다는 사실 자체를 detail 에 정직하게 남긴다(⚠️ 로 시작 — 쿵짝표
             # evidence_state 가 상투어로 걸러낸다).
+            auto = detail or _commits_between(ts, nxt, role_v)
             if log(role_v, "GM지시", "답변 종결 — 세션이 응답을 마쳤다",
                    result="ok",
-                   detail=detail or "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+                   detail=auto or "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
                    ref=ref):
                 n += 1
         return n
