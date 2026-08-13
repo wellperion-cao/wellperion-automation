@@ -4120,14 +4120,15 @@ function closeStatusOnepager(){
   if (ov) ov.classList.remove('open');
 }
 // 인쇄하는 동안만 A3 한 장 규칙(body.op-printing)을 켠다 — 평소 이 페이지 인쇄는 기존 규칙 그대로.
-function printStatusOnepager(){
-  document.body.classList.add('op-printing');
-  window.addEventListener('afterprint', function _off(){
-    document.body.classList.remove('op-printing');
-    window.removeEventListener('afterprint', _off);
-  });
-  window.print();
-}
+function printStatusOnepager(){ window.print(); }
+/* 인쇄 버튼을 안 누르고 Ctrl+P 로 바로 눌러도 같게 나와야 한다(2026-08-13 GM "A3 한장 인쇄하면 이상한데").
+   그전엔 버튼을 눌러야만 A3 규칙이 켜져서, Ctrl+P 로 인쇄하면 현황 한 장이 아니라 뒤에 깔린
+   회원관리 화면 전체가 통째로 찍혔다. 이제 이 보기가 열려 있으면 어느 쪽으로 인쇄해도 같다. */
+window.addEventListener('beforeprint', function(){
+  var ov = document.getElementById('opOverlay');
+  if (ov && ov.classList.contains('open')) document.body.classList.add('op-printing');
+});
+window.addEventListener('afterprint', function(){ document.body.classList.remove('op-printing'); });
 function loadStatusOnepager(){
   var body = document.getElementById('opBody');
   fetch(_SNAP_RAW_BASE_ + 'cpo_status_onepager.json?t=' + Date.now(), { cache: 'no-store' })
@@ -4169,13 +4170,17 @@ function _opRender(d){
     h += '<div class="op-fail">회원 구성을 불러오지 못했습니다.</div>';
   } else {
     h += '<div class="op-grid">' +
+      '<div class="op-box"><div class="k">유효회원 전체</div><div class="v">' + _opUnit(c['유효회원_전체'], '명') + '</div></div>' +
       '<div class="op-box"><div class="k">정회원</div><div class="v">' + _opUnit(c['정회원'], '명') + '</div></div>' +
       '<div class="op-box"><div class="k">대기</div><div class="v">' + _opUnit(c['대기'], '명') + '</div></div>' +
       '<div class="op-box"><div class="k">법인</div><div class="v">' + _opUnit(c['법인'], '명') + '</div></div>' +
       '<div class="op-box"><div class="k">30일 내 갱신임박</div><div class="v">' + _opUnit(d['갱신임박_30일이내'], '명') + '</div></div>' +
       '</div>';
     if (c['대기_판정기준']) h += '<div class="op-note">대기 기준 — ' + esc(c['대기_판정기준']) + '</div>';
+    // 화면 카드와 숫자가 어긋나면 숨기지 않고 그 자리에 적는다 — 어긋난 걸 모르는 게 가장 나쁘다.
+    if (c['대기_대조']) h += '<div class="op-note" style="color:var(--red,#d64040);font-weight:700">⚠ 대기 인원 대조 — ' + esc(c['대기_대조']) + '</div>';
     h += '<div class="op-note" style="font-size:12px;color:var(--text);margin-top:8px">유형별 · ' + _opPairs(c['유형별']) + '</div>';
+    if (c['유형별_기준']) h += '<div class="op-note">' + esc(c['유형별_기준']) + '</div>';
     h += '<div class="op-note" style="margin-top:6px">데이터 위생 · ' + _opPairs(c['위생']) + ' (0이 아니면 실무진 확인이 필요한 칸입니다)</div>';
   }
   h += '</div>';

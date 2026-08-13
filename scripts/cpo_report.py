@@ -599,15 +599,30 @@ def build_status_onepager(valid_rows="unset") -> dict:
     now_kst = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     result: dict = {"generated_at": now_kst, "ts": int(datetime.now().timestamp() * 1000), "as_of": today}
 
+    # 화면(멤버십 회원관리 상단 카드)이 쓰는 서버 요약. 현황 한 장이 화면과 다른 숫자를 내면
+    # 어느 쪽을 믿어야 할지 알 수 없어진다 — 그래서 **화면과 같은 값을 정본으로 싣고**,
+    # 코드 판정이 다르면 그 차이를 숨기지 않고 같이 적는다(2026-08-13 GM "현황들 신뢰가게").
+    summary = _gas_get("member_active_summary")
+
     comp = _member_composition(valid_rows, today) if valid_rows is not None else None
     if comp is not None:
         corp_n = today_stats.get("memberCorp") if today_stats else None
+        srv_wait = summary.get("waitingCount") if summary else None
+        srv_total = summary.get("validTotal") if summary else None
+        wait_val = srv_wait if isinstance(srv_wait, (int, float)) else comp["waiting"]
+        regular_val = (srv_total - wait_val) if isinstance(srv_total, (int, float)) else comp["regular"]
+        gap = None
+        if isinstance(srv_wait, (int, float)) and srv_wait != comp["waiting"]:
+            gap = f"화면 {srv_wait}명 · 코드 재계산 {comp['waiting']}명 — 아직 어긋난다(대조 진행중, 배312)"
         result["composition"] = {
             "ok": True,
-            "정회원": comp["regular"],
-            "대기": comp["waiting"],
-            "대기_판정기준": "시작일자 미래(코드 SSOT — GM 수기집계와 소폭 차이 있음, 배312 대조 진행중)",
+            "유효회원_전체": srv_total if isinstance(srv_total, (int, float)) else None,
+            "정회원": regular_val,
+            "대기": wait_val,
+            "대기_판정기준": "회원관리 화면 상단 카드와 같은 값(서버 집계). 대기 = 시작일자가 아직 안 온 회원",
+            "대기_대조": gap,
             "법인": corp_n if isinstance(corp_n, (int, float)) else None,
+            "유형별_기준": "정회원만(대기 제외) — 합계가 유효회원 전체보다 대기 인원만큼 적다",
             "유형별": {t: c for t, c in comp["type_counts"].items() if c},
             "위생": {
                 "회원구분_오타": comp["typo_count"], "미기재": comp["blank_type_count"],
