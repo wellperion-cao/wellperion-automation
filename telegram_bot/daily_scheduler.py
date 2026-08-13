@@ -3630,29 +3630,14 @@ def main():
     # 판정은 support_check_summary.zero_zones() 한 곳(22:30 보고와 같은 원천 · 약속 L01).
     _ZERO_ALERT_STATE = REPO_ROOT / "status" / "check_zero_alert.json"
 
-    def _check_status_noon():
-        """낮 1회 점검 현황 — 점검관리방에만(카톡 실무진 방엔 안 보낸다).
-
-        ★2026-08-07 GM 지적("점검관리방에 시설부·지원부 점검이 아예 없는데?")로 되살린다.
-        실측: 22:30 하루 정리는 매일 정상 발송되고 있었다(8/3~8/6 로그 확인). 문제는
-        **낮에는 어디에도 안 보인다**는 것이었다 — 12시 발신은 2026-07-18 GM 결정으로
-        폐지됐고, 그 뒤 남은 것은 밤 정리와 '구역이 통째로 0건일 때만' 울리는 침묵형
-        경보뿐이었다. 그래서 진행 중인 상태(지원부 8%처럼)는 하루 종일 흔적이 없다.
-        ▸새 예약작업·새 방을 만들지 않는다 — 이미 있는 14:00 슬롯에 얹는다(약속 L21).
-        ▸본문은 22:30 과 같은 렌더(report_stream_2_check)를 그대로 쓴다(약속 L01).
-        """
-        try:
-            import report_stream_2_check as _s2n
-            body = _s2n.build_digest(datetime.now().strftime("%Y-%m-%d"))
-            ok = send_telegram(DIGEST_CHECK_CHAT_ID, "🕐 점심 점검 현황 (오늘 낮 기준)\n" + body)
-            logger.info(f"[낮 점검현황] 점검관리방 발송 {'완료' if ok else '실패'}")
-        except Exception as e:
-            logger.error(f"[낮 점검현황] 예외: {e}")
+    # ── 낮 1회 점검 현황 = 폐지 (GM 지시 2026-08-13 "점심 점검현황 하지말아줘 저녁에 한번만 해줘") ──
+    #   2026-08-07 에 "낮에는 어디에도 안 보인다"는 지적으로 14:00 슬롯에 얹었던 한 장이다.
+    #   GM 이 오늘 직접 그만하라고 했다 — 하루 정리는 22:30 한 번(report_stream_2_check)으로 족하다.
+    #   ▸게이트를 꺼서 남기지 않고 **지운다**(약속 L21 — 꺼둔 코드는 죽은 코드가 되고 누가 다시 켠다).
+    #     되살릴 일이 생기면 이 커밋을 되돌리면 된다. 렌더 함수(report_stream_2_check)는 그대로 산다.
+    #   ▸구역 0건 침묵형 경보(_zero_zone_alert)는 남긴다 — 문제가 있을 때만 울리는 다른 장치다.
 
     def _zero_zone_alert(shift_key: str):
-        # 오전조 슬롯(14:00)에서는 먼저 낮 현황 한 장을 보낸다 — 문제가 없어도 보인다.
-        if shift_key == "am":
-            _check_status_noon()
         try:
             import sys as _s
             _sp = str(REPO_ROOT / "scripts")
