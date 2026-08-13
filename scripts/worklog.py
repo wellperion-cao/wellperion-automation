@@ -191,7 +191,13 @@ _GM_MANUAL_RANGE_MIN = 2000   # 역할이 손으로 쓰던 구간 — 이 위쪽
 
 
 def _open_auto_gm_ref(role: str, day: str) -> str:
-    """그날 그 역할의 자동 접수(1xxx) 중 아직 완료 짝이 없는 가장 최근 ref. 없으면 빈 문자열."""
+    """그날 그 역할의 자동 접수 중 아직 완료 짝이 없는 가장 최근 ref. 없으면 빈 문자열.
+
+    ★역할별 구간을 _GM_REF_BLOCK 에서 그대로 가져온다(2026-08-13 배572 수리) — 예전엔
+    1000~1999 로 고정해 ceo(1000대) 말고는 절대 못 찾았다. cto(2000대)는 자기 자신의
+    구간이 '수동' 판정 구간(_GM_MANUAL_RANGE_MIN=2000)과 겹쳐, 이 함수가 항상 빈
+    문자열만 돌려주고 있었다 — d5919e40e 의 중복 warn 병합이 ceo 말고는 전부 무효였다."""
+    block = _GM_REF_BLOCK.get(role, 9000)
     prefix = f"GM-{day}-"
     warns: list[str] = []
     closed: set[str] = set()
@@ -213,8 +219,8 @@ def _open_auto_gm_ref(role: str, day: str) -> str:
                     nn = int(ref[len(prefix):])
                 except ValueError:
                     continue
-                if not (1000 <= nn < _GM_MANUAL_RANGE_MIN):
-                    continue          # 자동 접수 구간만 본다
+                if not (block <= nn < block + 1000):
+                    continue          # 자기 역할의 자동 접수 구간만 본다
                 if d.get("result") == "warn":
                     warns.append(ref)
                 elif d.get("result") == "ok":
@@ -229,20 +235,57 @@ def _open_auto_gm_ref(role: str, day: str) -> str:
     return ""
 
 
-def _merge_gm_ref(role: str, area: str, result: str, ref: str) -> str:
-    """손으로 적은 GM지시 ref 를 그날 열려 있는 자동 접수 ref 로 합친다. 그 외는 그대로 둔다."""
-    if area != "GM지시" or not role or not ref.startswith("GM-"):
-        return ref
+def _ref_taken_by_other_role(ref: str, role: str) -> bool:
+    """이 ref 문자열을 다른 역할이 이미 area=='GM지시' 로 쓰고 있는가(2026-08-13 실측 —
+    같은 날 GM-20260812-2001~2024 가 ceo·cto 양쪽에 동시에 존재했다. 손으로 번호를
+    짓는 경로가 역할 구간을 몰라 서로 다른 두 지시가 같은 ref 를 공유했다).
+    걸리면 True — 새 ref 를 다시 뽑아 충돌을 물리적으로 끊는다."""
+    try:
+        with open(WORKLOG_PATH, encoding="utf-8") as f:
+            for line in f:
+                if ref not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                if str(d.get("ref") or "") != ref or (d.get("area") or "") != "GM지시":
+                    continue
+                if (d.get("role") or "") and (d.get("role") or "") != role:
+                    return True
+    except Exception:
+        return False
+    return False
+
+
+def _merge_gm_ref(role: str, area: str, result: str, ref: str) -> tuple[str, bool]:
+    """손으로 적은 GM지시 ref 를 그날 열려 있는 자동 접수 ref 로 합친다. 그 외는 그대로 둔다.
+    (합쳐진 ref, 이미 열려 있던 것에 얹었나) 를 돌려준다.
+
+    ★warn 만 본다(2026-08-13 배506 수리) — result 를 안 가리면 손으로 남기는 **완료(ok)**
+    까지 '열려 있는 딴 ref' 로 재배정돼, 의도한 것과 다른 ref 가 엉뚱하게 닫힐 뻔했다.
+
+    ★이미 열려 있는 ref 에 얹었다는 신호를 함께 돌려준다(2026-08-13 배572 수리) — ref 만
+    합치고 warn 줄을 또 쓰면, 짝맞추기가 '건수'로 세는 이상(배506 수리) 그 두 번째 warn
+    이 영원히 미완 1건으로 남는다. 실제 새로 쓸 게 없다 — 이미 열린 접수를 호출부가
+    한 번 더 부른 것뿐이므로, 호출부(log)가 이 신호로 두 번째 줄 자체를 건너뛴다."""
+    if area != "GM지시" or result != "warn" or not role or not ref.startswith("GM-"):
+        return ref, False
     day = datetime.now(tz=KST).strftime("%Y%m%d")
     if not ref.startswith(f"GM-{day}-"):
-        return ref                     # 지난 날 것을 소급 정리하는 중이면 손대지 않는다
+        return ref, False              # 지난 날 것을 소급 정리하는 중이면 손대지 않는다
     try:
         nn = int(ref.rsplit("-", 1)[-1])
     except ValueError:
-        return ref
+        return ref, False
     if nn < _GM_MANUAL_RANGE_MIN:
-        return ref                     # 자동 접수 자신은 그대로
-    return _open_auto_gm_ref(role, day) or ref
+        return ref, False              # 자동 접수 자신은 그대로
+    merged = _open_auto_gm_ref(role, day)
+    if merged:
+        return merged, True            # 이미 열려 있다 — 중복, 두 번째 줄은 안 쓴다
+    if _ref_taken_by_other_role(ref, role):
+        return _next_gm_ref(role, day), False  # 남의 역할과 겹친 번호 — 내 구간에서 새로 뽑는다
+    return ref, False
 
 
 def log(
@@ -273,7 +316,11 @@ def log(
         # 예외로 빠져 **GM 지시 접수(warn) 줄이 통째로 안 남았다.** 쿵짝표·아침 자가점검이 전부 이
         # 원장을 읽으므로 '오늘 GM이 시킨 것'이 사라진다. 보조 정리가 본 기록을 죽이지 못하게 가둔다.
         try:
-            ref = _merge_gm_ref((role or "").strip().lower(), area or "", result_v, ref or "")
+            ref, dup = _merge_gm_ref((role or "").strip().lower(), area or "", result_v, ref or "")
+            if dup:
+                # 이미 열려 있는 접수에 얹혔다 — 같은 지시를 warn 줄로 또 남기면 짝맞추기가
+                # (건수 기준, 배506 수리) 영원히 미완 1건을 만든다(배572). 기록할 새 게 없다.
+                return True
         except Exception as exc:
             print(f"[WARN] worklog ref 합치기 건너뜀(기록은 그대로 남긴다): {exc}", file=sys.stderr)
         record = {

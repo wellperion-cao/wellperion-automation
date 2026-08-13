@@ -319,6 +319,30 @@ def _next_ship_no(active: list, archive: list) -> int:
     return (max(nums) + 1) if nums else 1
 
 
+# note 무한 append 상한(2026-08-13 배524 수리) — 배466 note 가 자동 커밋 로그로
+# 46,143자·603줄까지 불어 실제 내용이 파묻혔다(부팅 시 note 를 끝까지 읽으라는 규칙이
+# 사실상 불가능해졌다). 이 로그 줄(- [날짜] 제목 (커밋 sha) 형식)만 최근 N개로 캡핑한다
+# — 사람이 쓴 다른 줄은 손대지 않는다(기존 note 를 손으로 잘라내지 않는다·데이터 훼손 금지,
+# 다음 append 때부터 자연히 줄어든다).
+_ADHOC_LOG_LINE_RE = re.compile(r"^- \[\d{4}-\d{2}-\d{2}\] .* \(커밋 [0-9a-f]{7,40}\)$")
+_ADHOC_LOG_CAP = 30
+
+
+def _append_capped(prev: str, line: str, cap: int = _ADHOC_LOG_CAP) -> str:
+    """note 끝에 커밋 로그 한 줄을 보태되, 이 자동 로그 줄 형식은 최근 cap 개만 남긴다."""
+    lines = (prev.splitlines() if prev else []) + [line]
+    keep: list[str] = []
+    log_kept = 0
+    for ln in reversed(lines):
+        if _ADHOC_LOG_LINE_RE.match(ln):
+            if log_kept >= cap:
+                continue
+            log_kept += 1
+        keep.append(ln)
+    keep.reverse()
+    return "\n".join(keep).strip()
+
+
 def _build_item(meta: dict, clevel: str, ship_no: int) -> dict:
     nick = NICK.get(clevel, clevel)
     sha7 = meta["short"]
@@ -549,7 +573,7 @@ def main() -> int:
                         return 0
                     clean = _strip_conventional_prefix(meta["subject"])
                     line = f"- [{meta['date']}] {clean} (커밋 {sha7})"
-                    target["note"] = (prev + ("\n" if prev else "") + line).strip()
+                    target["note"] = _append_capped(prev, line)
                     if not _write_queue(queue_path, queue, crlf):
                         return 0
                     _commit_queue(root, sha7, str(target.get("clevel") or "cto"))
@@ -575,7 +599,7 @@ def main() -> int:
                 prev = str(target.get("note") or "")
                 if sha7 in prev:
                     return 0  # 멱등 — 이미 기록됨.
-                target["note"] = (prev + ("\n" if prev else "") + line).strip()
+                target["note"] = _append_capped(prev, line)
                 item = target
             else:
                 # ③ 상설 일일 ad-hoc 배 갱신(도배 방지 · 시포 배10014 방식 재사용):
@@ -593,7 +617,7 @@ def main() -> int:
                     prev = str(standing.get("note") or "")
                     if sha7 in prev:
                         return 0  # 멱등.
-                    standing["note"] = (prev + ("\n" if prev else "") + line).strip()
+                    standing["note"] = _append_capped(prev, line)
                     n = int(standing.get("adhoc_count") or 1) + 1
                     standing["adhoc_count"] = n
                     standing["title"] = (

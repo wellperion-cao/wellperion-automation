@@ -827,27 +827,27 @@ def _received_unanswered(items: list[dict], role: str) -> list[dict]:
 #   "ref 하나에 ok 가 있으면 끝난 것"으로 잘못 봐 09:23 ok 가 21:03 warn 을 덮었다. 게다가
 #   이 짝맞추기가 부팅 지시문(prose)에만 있어 세션마다 즉석으로 다시 짜다 보니 함정이
 #   안 걸러졌다 — 그래서 이미 전 역할이 지나가는 이 보드에 코드로 박는다(약속 L02·L21).
-#   판정 = 시간순 스택: warn 을 만나면 그 ref 대기열에 쌓고, ok 를 만나면 같은 ref
-#   대기열에서 가장 오래된 warn 하나만 닫는다. 다 훑고 남은 warn 이 미완이다. ──
+#   판정 = ref 별 건수 대조: warn 개수 - ok 개수 = 미완 건수. 미완으로 보일 건 = 그
+#   ref 의 warn 중 가장 나중 것들(오래된 것부터 ok 개수만큼은 닫힌 것으로 친다).
+#   ★시간순 스택이 아니라 건수인 이유(2026-08-13 배506 수리): 같은 ref 에 ok 가 warn
+#   보다 먼저 찍히는 레이스가 실측에서 나왔다(GM-20260807-23 — ok 16:37 · warn 16:38,
+#   1분 역전). ts 오름차순 스택은 이 역전에서 ok 를 빈 대기열에 버리고 뒤이은 warn 을
+#   영원히 못 닫았다. 건수만 세면 순서가 역전돼도 정확히 닫힌다. ──
 def _pair_gm_directives(entries: list[dict]) -> list[dict]:
-    """area=='GM지시' 로그 목록을 ts 오름차순 스택으로 짝맞춰 미완만 반환(오래된 순).
-    파일 I/O 없음 — 순수 함수(테스트용으로 분리, _gm_directive_unresolved 가 파일을 읽어 넘김)."""
-    ordered = sorted(entries, key=lambda d: str(d.get("ts", "")))
-    pending: dict[str, list[dict]] = {}
-    for d in ordered:
-        ref = str(d.get("ref", ""))
-        result = str(d.get("result", ""))
-        if result == "warn":
-            pending.setdefault(ref, []).append(d)
-        elif result == "ok":
-            queue = pending.get(ref)
-            if queue:
-                queue.pop(0)  # 가장 오래된 미짝 warn 하나만 닫는다
+    """area=='GM지시' 로그 목록을 ref 별로 모아 (warn 개수 - ok 개수)만큼만 미완으로 반환
+    (오래된 순). 파일 I/O 없음 — 순수 함수(테스트용으로 분리, _gm_directive_unresolved 가
+    파일을 읽어 넘김)."""
+    by_ref: dict[str, list[dict]] = {}
+    for d in entries:
+        by_ref.setdefault(str(d.get("ref", "")), []).append(d)
 
     today = dt.date.today()
     out: list[dict] = []
-    for queue in pending.values():
-        for d in queue:
+    for group in by_ref.values():
+        warns = sorted((d for d in group if str(d.get("result", "")) == "warn"),
+                        key=lambda d: str(d.get("ts", "")))
+        n_ok = sum(1 for d in group if str(d.get("result", "")) == "ok")
+        for d in warns[n_ok:]:          # 오래된 것부터 n_ok 개는 닫힌 것으로 치고 나머지만 미완
             ts = str(d.get("ts", ""))
             try:
                 days = (today - dt.datetime.strptime(ts[:10], "%Y-%m-%d").date()).days
@@ -920,7 +920,18 @@ def _selftest_gm_directives() -> None:
     assert all(_is_gm_directive_log(d) for d in cross), "ref=GM- 인 줄이 대상에서 빠졌다"
     assert _pair_gm_directives([d for d in cross if _is_gm_directive_log(d)]) == [], \
         "도메인 area 로 적힌 완료가 접수를 못 닫는다"
-    print("[OK] _gm_directive selftest 통과 — warn/ok/warn 스택 + area 다른 완료도 짝으로 인정")
+
+    # ok 가 warn 보다 먼저 찍히는 레이스(배506 실사고 — GM-20260807-23: ok 16:37·warn 16:38).
+    # 건수 대조라면 순서와 무관하게 닫혀야 한다.
+    race = [
+        {"ts": "2026-08-07T16:37:00+09:00", "area": "GM지시", "result": "ok",
+         "event": "완료", "ref": "GM-TEST-03"},
+        {"ts": "2026-08-07T16:38:00+09:00", "area": "GM지시", "result": "warn",
+         "event": "접수", "ref": "GM-TEST-03"},
+    ]
+    assert _pair_gm_directives(race) == [], "ok 가 warn 보다 먼저 찍히면 못 닫는다(배506)"
+
+    print("[OK] _gm_directive selftest 통과 — 건수 대조(순서 역전 포함) + area 다른 완료도 짝으로 인정")
 
 
 # ── 🤔 큐 자기정합 (2026-08-04 GM 지시 "줄기 3 큐 자기정합부터") ──────────────

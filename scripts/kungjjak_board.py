@@ -64,7 +64,21 @@ def _dur(start: datetime.datetime, end: datetime.datetime) -> str:
     return f'{m}분' if m < 60 else f'{m // 60}시간{m % 60}분'
 
 
+_REF_DAY_RE = re.compile(r'^GM-(\d{4})(\d{2})(\d{2})-')
+
+
+def _ref_day(ref: str) -> str:
+    """ref(GM-YYYYMMDD-NN)에 박힌 접수일. 없으면 빈 문자열."""
+    m = _REF_DAY_RE.match(str(ref or ''))
+    return f'{m.group(1)}-{m.group(2)}-{m.group(3)}' if m else ''
+
+
 def _read(day: str, role: str | None):
+    """GM- ref 가 있는 줄은 **ref 에 박힌 날짜**로 그날에 속하는지 가른다(이벤트 자체의
+    ts 가 아니다) — 접수는 어제, 완료는 오늘 넘겨서 찍히면(자정 넘긴 마무리) 예전엔 완료
+    줄이 오늘 날짜로 필터링돼 어제 그룹에 안 들어갔다. 그러면 --carry 가 이미 오늘 아침
+    닫힌 지시를 '아직'으로 오판했다(2026-08-13 실측 — GM-20260812-2024, 08:31 종결인데
+    --carry 가 미완으로 냈다). ref 없는 일반 작업 기록(load_work)은 그대로 ts 로 가른다."""
     for line in LOG.open(encoding='utf-8'):
         line = line.strip()
         if not line:
@@ -73,7 +87,11 @@ def _read(day: str, role: str | None):
             d = json.loads(line)
         except Exception:
             continue
-        if not str(d.get('ts') or '').startswith(day):
+        ref = str(d.get('ref') or '')
+        if ref.startswith('GM-'):
+            if _ref_day(ref) != day:
+                continue
+        elif not str(d.get('ts') or '').startswith(day):
             continue
         if role and d.get('role') != role:
             continue
