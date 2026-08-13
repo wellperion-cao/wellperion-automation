@@ -7245,6 +7245,42 @@ function _activeTypeFilterApply(rows) {
   return rows.filter(function(row){ return _memberTypeOf(row) === want; });
 }
 
+/* 등록 분류 선택칸 (GM 지시 2026-08-13 — "회원 구분 선택 옆에 등록 분류 선택도").
+   회원 구분과 AND 로 겹쳐 걸린다(예: 입주민 + 신규). 검색·대기자 보기·월단위 보기와도 그대로 겹친다.
+   판정은 시트 「등록 분류」 칸 값 그대로 — 새 계산·새 조회 0. 유효회원 스코프에서만 동작한다
+   (법인·LOSS 는 시트가 달라 이 칸의 뜻이 같지 않다). */
+var REG_CLASS_SELECT_OPTIONS = ['신규', '재등록', '양수', '환불', 'L재등록', 'L-가망', '대기'];
+var _activeRegClassFilter = '';
+function _activeRegClassFilterApply(rows) {
+  if (_activeScope !== 'valid' || !_activeRegClassFilter) return rows;
+  return rows.filter(function(row){ return String(row[REG_CLASS_COL] || '').trim() === _activeRegClassFilter; });
+}
+function setActiveRegClassFilter(val) {
+  _activeRegClassFilter = val || '';
+  if (_activeScope !== 'valid') { setActiveScope('valid'); return; }   // 다른 명단을 보고 있었으면 유효회원으로 돌아온다
+  renderActiveSummary();
+  var si = document.getElementById('activeSearch');
+  _activeFilter(si ? si.value : '');
+}
+function _regClassSelectHtml() {
+  var cur = _activeRegClassFilter;
+  var opts = '<option value=""' + (cur === '' ? ' selected' : '') + '>전체 분류</option>';
+  var seen = {};
+  REG_CLASS_SELECT_OPTIONS.forEach(function(o){ seen[o] = 1; });
+  // 시트에만 있고 정본 7종에 없는 값도 숨기지 않고 뒤에 붙인다 — 없는 척하면 그 회원을 못 찾는다.
+  (_activeScope === 'valid' ? (_activeRows || []) : []).forEach(function(r){
+    var v = String(r[REG_CLASS_COL] || '').trim();
+    if (v && !seen[v]) { seen[v] = 1; REG_CLASS_SELECT_OPTIONS.push(v); }
+  });
+  opts += REG_CLASS_SELECT_OPTIONS.map(function(o){
+    return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(o) + '</option>';
+  }).join('');
+  return '<div>' +
+      '<label style="display:block;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px">등록 분류 선택</label>' +
+      '<select onchange="setActiveRegClassFilter(this.value)" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12.5px;font-family:inherit;min-width:140px">' + opts + '</select>' +
+    '</div>';
+}
+
 /* LOSS·대기자 카드 월 단위 보기(2026-07-20 GM 지시) — 헤더가 항상 '총 유효회원'으로 고정 표시되던 결함(§2-B·§2-C)과
    짝으로 추가. 새 패턴 발명 금지 — 날짜범위 계산은 기존 _mdashPeriodRange(일/월/연/총)를 그대로 재사용한다.
    상태·전환 함수만 이 카드 전용으로 분리(_actPeriod/_actSetPeriod) — 마케팅 KPI 섹션의 _mdashPeriod와 변수를
@@ -7297,11 +7333,11 @@ function _actSetPeriod(period) {
 //   담당 배정·연락은 시작일 전에 해두는 일이므로 감추는 쪽이 아니라 **보이는 쪽**으로 맞춘다 —
 //   세는 곳과 빈칸 필터가 같은 이 함수를 쓰고, 시작 필터는 여기에 걸지 않는다.
 function _activeGapBaseRows() {
-  return _actPeriodFilter(_activeTypeFilterApply(_activeRows));
+  return _actPeriodFilter(_activeRegClassFilterApply(_activeTypeFilterApply(_activeRows)));
 }
 function _activeBaseRows() {
   if (_activeGapFilter) return _activeGapFilterApply(_activeGapBaseRows());
-  return _actPeriodFilter(_activeTypeFilterApply(_activeStartFilterApply(_activeRows)));
+  return _actPeriodFilter(_activeRegClassFilterApply(_activeTypeFilterApply(_activeStartFilterApply(_activeRows))));
 }
 var _activeSort    = { col: null, dir: -1 };  // 헤더 클릭 정렬(제목 클릭 = 정렬). 기본 정렬(잔여일 임박순=valid·종료일 내림차순=ended)은 클라이언트에서 적용(_applyRemainSort·_applyEndedSort). 2026-07-15 GM 지시
 function _activeSortBy(col) {
@@ -8999,7 +9035,7 @@ function renderActiveSummary() {
       (overview ? '<div style="flex:0 0 auto">' + overview + '</div>' : '') +
       ((overview && cross) ? vdiv : '') +
       (cross ? '<div style="flex:1 1 300px;min-width:250px">' + cross + '</div>' : '') +
-      '<div style="margin-left:auto;flex:0 0 auto">' + typeSelect + '</div>' +
+      '<div style="margin-left:auto;flex:0 0 auto;display:flex;gap:10px">' + typeSelect + _regClassSelectHtml() + '</div>' +
     '</div>';
 }
 
@@ -10302,8 +10338,12 @@ function openReactivateModal(rowIndex) {
   var r = _churnFindMember(rowIndex);   // 종료회원 조회 — 종료사유 모달과 동일 소스(_activeRows/_endedRowsBg)
   if (!r) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
   var endCol = _capCol(_activeHeaders, '종료일자');
-  var reCol = _capCol(_activeHeaders, '재등록분류');
-  if (!endCol || !reCol) { showToast('종료일자/재등록분류 컬럼을 찾지 못했습니다 — 시트 헤더를 확인하세요', 'err'); return; }
+  /* 2026-08-13 GM 지시로 시트의 「재등록 분류」 칸을 없앴다. 그 칸에 적던 값(환불·L재등록)은
+     「등록 분류」 정본 7종(신규·재등록·양수·환불·L재등록·L-가망·대기)에 이미 다 있다 —
+     칸이 있으면 그대로, 없으면 「등록 분류」에 적는다. 실무진의 환불·재등록 처리 버튼이
+     칸이 없어졌다고 멈추면 안 된다(그게 이 화면의 실제 업무다). */
+  var reCol = _capCol(_activeHeaders, '재등록분류') || REG_CLASS_COL;
+  if (!endCol || !reCol) { showToast('종료일자/등록 분류 컬럼을 찾지 못했습니다 — 시트 헤더를 확인하세요', 'err'); return; }
   var name = String(r['회원명'] || '').trim();
   var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
   _reactivateModal = { rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, endCol: endCol, reCol: reCol };
@@ -10354,8 +10394,8 @@ function saveReactivateModal() {
     // 해당 행의 재등록분류 칸 즉시 갱신
     var _tr = document.querySelector('#activeBody tr[data-rowindex="' + rowIndex + '"]');
     if (_tr) { Array.prototype.forEach.call(_tr.querySelectorAll('td[data-col]'), function(td){
-      var c = (td.getAttribute('data-col') || '').replace(/\s/g,'');
-      if (c.indexOf('재등록') >= 0 && c.indexOf('분류') >= 0) td.textContent = '환불';
+      // 실제로 쓴 칸(m.reCol)과 같은 칸만 갱신 — 「재등록 분류」가 없어져도 「등록 분류」 칸이 바로 바뀐다.
+      if ((td.getAttribute('data-col') || '').replace(/\s/g,'') === String(m.reCol).replace(/\s/g,'')) td.textContent = '환불';
     }); }
     WriteBuffer.enqueue(
       { action: 'member_active_update', rowIndex: rowIndex, col: m.reCol, value: '환불', keyPhone: keyPhone, rowKey: m.rowKey || '' },

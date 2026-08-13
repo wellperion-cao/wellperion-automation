@@ -9162,8 +9162,14 @@ function _hasRealReply_(memo) {
           if (key === MEMBER_PHONE_COL) { var pp = v.replace(/[^0-9]/g, ''); if (pp.length === 11) v = pp.slice(0,3) + '-' + pp.slice(3,7) + '-' + pp.slice(7); else if (pp.length === 10) v = pp.slice(0,3) + '-' + pp.slice(3,6) + '-' + pp.slice(6); }
           obj[key] = v;
         }
-        // 등록회차>=2 → 등록분류 '재등록' 표시(시트 미변경 · 표시 규칙) 2026-06-24 GM
-        if (aiCls >= 0) {
+        /* 등록회차>=2 이고 등록 분류가 **비어 있을 때만** '재등록'으로 채워 보여준다(시트 미변경·표시 규칙).
+           ★2026-08-13 시포 — 원래(2026-06-24 GM)는 회차만 보고 무조건 '재등록'으로 덮었다. 그러다 보니
+           실무진이 그 칸에 무엇을 적든(대기·양수·환불·L재등록·L-가망) 회차가 2 이상이면 화면이 전부
+           '재등록'으로 되돌려 보여줬다 — 고쳐도 안 고쳐진 것처럼 보이는 것이다(실측: 신상훈님 회차 7,
+           시트에는 '대기'인데 화면은 '재등록'. 그래서 대기 인원이 화면 7명 · 서버 8명으로 갈렸다).
+           GM 이 2026-08-13 에 등록 분류 7종을 정본으로 확정했으므로, 적힌 값은 그대로 보여준다.
+           빈칸을 회차로 메우는 원래 목적은 그대로 살아 있다. */
+        if (aiCls >= 0 && !String(arow[aiCls] == null ? '' : arow[aiCls]).trim()) {
           var _chaM = (aiCha >= 0 ? String(arow[aiCha] == null ? '' : arow[aiCha]) : '').match(/\d+/);
           if (_chaM && parseInt(_chaM[0], 10) >= 2) obj[aaHdrRaw[aiCls]] = '재등록';
         }
@@ -9230,6 +9236,10 @@ function _hasRealReply_(memo) {
   }
 
   // ─── 멤버십 회원관리: 셀 인라인 수정(유효회원 시트 write-back · 전화 컬럼 제외) 2026-06-24 GM ───
+  /* 유효회원 시트 「재등록 분류」 칸은 2026-08-13 GM 지시로 삭제했다(L열, 값 1,375개).
+     값 이관은 하지 않기로 했고, 삭제 전 원본은 status/member_reclass_column_backup_20260813.json 에 있다.
+     이 아래 코드들이 그 칸을 찾는 자리는 전부 '못 찾으면 건너뛴다'로 되어 있어 그대로 둔다 —
+     유효/종료 판정·신규 판정 결과는 전수 대조에서 한 명도 바뀌지 않는다(1,697명 확인). */
   if (action === 'member_active_update') {
     var auRow = parseInt(body.rowIndex, 10);
     if (!auRow || auRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
