@@ -3,6 +3,6 @@
   "enabled": true,
   "_comment_relay": "실무진 방(★중간관리자) 배 전달문 발신 전 GM 승인 단계. true=카톡 대신 업무보고방에 초안만 올리고 대기, 승인 후 send_ops_digest.py --relay-approved 로 실발신. GM 결정 2026-08-07 '초반에만 이렇게 확인을 하고 나중에는 자율화 할거' — 오발신 0건이 이어지면 이 키를 지우고 자율 발송으로 되돌린다(꺼둔 채 두지 않는다).",
   "relay_approval_required": true,
-  "_comment_bridge": "카톡 아침 정리 → 업무 SSOT 자동 등록 다리(ops_daily_digest.bridge_to_todo). GM 승인 2026-08-12. false=등록 중단(정리·발송은 그대로). 담당이 분명한 열린 이슈만 올라가고, 기한이 대화에 없으면 7일 뒤 임시 기한 + 제목에 (기한 임시) 표기.",
-  "todo_bridge_enabled": true
+  "_comment_bridge": "폐기 2026-08-13(배589 · GM 지시 2026-08-12). 카톡 대화 → 업무 SSOT 자동 등록은 코드에서 끊었다(ops_daily_digest.bridge_to_todo 가 항상 0을 돌려준다). 이 키는 남은 흔적이라 false 고정 — 다시 true 로 바꿔도 등록되지 않는다. 대신 방에 \"업무 SSOT 에 올리실 건가요?\" 되묻기가 나간다.",
+  "todo_bridge_enabled": false
 }

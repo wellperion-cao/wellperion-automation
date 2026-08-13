@@ -931,6 +931,10 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     # 손대지 않는다(GM: "오늘 챙길 것은 두 방의 대화가 다르니 내용도 서로 다르다 — 중복 아니다").
     header, llm_body, warm = _split_llm(message)
     parts = [header, llm_body]
+    # 자동 등록을 끊은 자리 — 대신 되묻는다 (GM 지시 2026-08-12 · 배589). 등록은 사람이 한다.
+    _ask = _bridge_ask_lines(ledger, target_date)
+    if _ask:
+        parts.append(_ask)
     if room_dir_name == "★운영부":
         parts += [mid_block, reception_block]
     final_message = "\n\n".join(p.strip() for p in parts if p and p.strip())
@@ -1022,6 +1026,33 @@ def pull_done_from_todo(ledger: list[dict]) -> int:
     return changed
 
 
+def _bridge_ask_lines(ledger: list[dict], target_date: str) -> str:
+    """자동 등록을 끊은 자리(배589)를 채우는 되묻기.
+
+    GM: "대신 할 수 있는 것 = 그 방에 한 줄로 '이건 SSOT 에 올리실 건가요?' 되묻는 것까지다."
+    담당이 분명하고 아직 안 올라간 열린 이슈만 이름과 함께 묻는다 — 주인 없는 일은 묻지 않는다
+    (약속 L23). 3건까지만: 매일 길게 나가면 아무도 안 읽는다(약속 L24 ★운영부는 공유 전용).
+    """
+    entry = next((e for e in ledger if e.get("date") == target_date), None)
+    if not entry:
+        return ""
+    rows = []
+    for issue in entry.get("issues") or []:
+        if issue.get("status") != "open" or issue.get("todo_id"):
+            continue
+        owner = str(issue.get("owner") or "").strip()
+        title = str(issue.get("issue") or "").strip()
+        if owner not in _OWNER_CHOICES or not title:
+            continue
+        rows.append("  · " + owner + " — " + title[:46])
+        if len(rows) >= 3:
+            break
+    if not rows:
+        return ""
+    return ("🗂 업무 SSOT 에 올리실 건가요?\n" + "\n".join(rows) +
+            "\n  (등록은 담당자가 직접 — AI 가 대신 올리지 않습니다)")
+
+
 def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
                    dry_run: bool = False) -> int:
     """정방향 — target_date 의 열린 이슈 중 담당이 분명한 것을 업무 SSOT 에 등록한다.
@@ -1029,8 +1060,20 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
     등록 안 하는 것: 담당 빈칸(주인 없는 일은 장부에 안 쌓는다 · 약속 L23) · 이미 올린 것
     (todo_id 존재) · 해결된 것. 기한이 대화에 없으면 오늘+7일을 임시로 넣고 제목에 그렇게
     적는다 — 기한이 없으면 지연·임박 알림이 영영 안 잡아 '놓치지 않게'가 깨지기 때문이다."""
-    if not _bridge_enabled() and not dry_run:
-        print("  → 업무 장부 다리: 꺼져 있음(status/ops_digest_send.json todo_bridge_enabled) — 등록 생략")
+    # ★★자동 등록은 끝났다 (GM 지시 2026-08-12 · 배589). 코드로 막는다 — 스위치로 두지 않는다.
+    #   GM 원문: "SSOT에 올린것들은 삭제해, 실무진들이 할 것 까지 다해버리면 어떻게해" /
+    #   "실무진들에게 SSOT올려서 작업하는 현황 보고 받을 수 있도록 진행해야해 웰리가 거기까지 해주면 안되"
+    #   무슨 일이었나: 2026-08-12 13:49 카톡 대화 정리에서 5건이 사람 담당으로 자동 등록됐고
+    #   (나우열M 2·이경연 실장 2·윤병현AM 1) 4건은 기한이 대화에 없어 7일 뒤로 임의로 박혔다.
+    #   왜 끄는가: 업무 SSOT 는 **실무진이 스스로 올리고 그 진행을 보고하는 판**이다. AI 가 대신
+    #   올리면 그 사람의 일이 사라지고 우리는 진행 보고를 받을 수 없다.
+    #   ▸스위치(todo_bridge_enabled)를 false 로만 두지 않는다 — 꺼둔 게이트는 죽은 코드가 되어
+    #     나중에 누가 다시 켠다(약속 L21). 그래서 등록 경로 자체를 여기서 끊는다.
+    #   ▸대신 하는 것: 방에 "이건 업무 SSOT 에 올리실 건가요?" 한 줄로 되묻는다(_bridge_ask_lines).
+    #     등록은 사람이 한다.
+    #   ▸구분: 전사일정 자동 등록(배577)은 그대로 간다 — 날짜는 놓치면 안 되고 GM 이 그 방식을 골랐다.
+    if not dry_run:
+        print("  → 업무 장부 자동 등록: 하지 않는다(GM 지시 2026-08-12 · 배589) — 방에 되묻기로 대체")
         return 0
 
     entry = next((e for e in ledger if e.get("date") == target_date), None)
