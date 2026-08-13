@@ -9994,17 +9994,41 @@ function _hasRealReply_(memo) {
         }
       }
     } catch (eCr) {}
-    // 법인회원 수(별도 시트 gid 1612064257 '법인현황' — 회원명 있는 행). 2026-06-29 시포.
+    // 법인회원 수(별도 시트 gid 1612064257 '법인현황'). 2026-06-29 시포.
+    // 2026-08-13 시포·GM — 회원명만 있으면 세던 것을 '지금 유효한 법인'만 세도록 고쳤다.
+    //   그 전엔 이미 끝난 회원(LOSS일자가 적혔거나 종료일자가 지난 행)도 함께 세어 실제보다 많았다
+    //   (실측: 32명으로 나왔으나 그중 1명은 2026-07-21 종료 — 진짜는 31명. GM 지적).
+    //   유효회원 시트(memberActive)는 이미 잔여일 기준으로 끝난 사람을 빼고 세는데 법인 시트만 안 그랬다 —
+    //   같은 카드 안에서 두 숫자의 기준이 달랐던 것이 원인이다.
     var ctCorp = 0;
     try {
       var ctCorpSs = ctMemberSs || SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID), ctCorpSh = null, ctCorpShs = ctCorpSs.getSheets();
       for (var cci = 0; cci < ctCorpShs.length; cci++) { if (ctCorpShs[cci].getSheetId() === 1612064257) { ctCorpSh = ctCorpShs[cci]; break; } }
       if (!ctCorpSh) ctCorpSh = ctCorpSs.getSheetByName('법인현황');
       if (ctCorpSh && ctCorpSh.getLastRow() >= 2) {
-        var ctCorpHdr = ctCorpSh.getRange(1, 1, 1, ctCorpSh.getLastColumn()).getValues()[0], ctCorpNmI = 0;
-        for (var cch = 0; cch < ctCorpHdr.length; cch++) { if (String(ctCorpHdr[cch]).replace(/\s/g, '').indexOf('회원명') >= 0) { ctCorpNmI = cch; break; } }
-        var ctCorpData = ctCorpSh.getRange(2, ctCorpNmI + 1, ctCorpSh.getLastRow() - 1, 1).getValues();
-        for (var ccd = 0; ccd < ctCorpData.length; ccd++) { if (String(ctCorpData[ccd][0] == null ? '' : ctCorpData[ccd][0]).trim()) ctCorp++; }
+        var ctCorpHdr = ctCorpSh.getRange(1, 1, 1, ctCorpSh.getLastColumn()).getValues()[0];
+        function _ctCorpIdx(want) {
+          var w = String(want).replace(/\s/g, '');
+          for (var i = 0; i < ctCorpHdr.length; i++) { if (String(ctCorpHdr[i]).replace(/\s/g, '').indexOf(w) >= 0) return i; }
+          return -1;
+        }
+        var ctCorpNmI = _ctCorpIdx('회원명'); if (ctCorpNmI < 0) ctCorpNmI = 0;
+        var ctCorpEndI = _ctCorpIdx('종료일자'), ctCorpLossI = _ctCorpIdx('LOSS일자');
+        var ctCorpRows = ctCorpSh.getRange(2, 1, ctCorpSh.getLastRow() - 1, ctCorpSh.getLastColumn()).getValues();
+        function _ctCorpDate(v) {
+          if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
+          return String(v == null ? '' : v).trim().slice(0, 10);
+        }
+        for (var ccd = 0; ccd < ctCorpRows.length; ccd++) {
+          var ctCorpRow = ctCorpRows[ccd];
+          if (!String(ctCorpRow[ctCorpNmI] == null ? '' : ctCorpRow[ctCorpNmI]).trim()) continue;
+          if (ctCorpLossI >= 0 && _ctCorpDate(ctCorpRow[ctCorpLossI])) continue;          // LOSS 기록됨 = 끝난 회원
+          if (ctCorpEndI >= 0) {
+            var ctCorpEnd = _ctCorpDate(ctCorpRow[ctCorpEndI]);
+            if (ctCorpEnd && ctCorpEnd < ctToday) continue;                                // 종료일자가 이미 지남
+          }
+          ctCorp++;
+        }
       }
     } catch (eCorp) {}
     var ctResult = { ok: true, date: ctToday, todayInquiry: ctTI, monthInquiry: ctMI, todayReg: ctTR, monthReg: ctMR, memberActive: ctActive, memberCorp: ctCorp, memberEnded: ctEnded, todayLoss: ctLoss, monthLoss: ctMonthLoss, lossDated: ctLossDated };

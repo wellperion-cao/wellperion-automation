@@ -8915,7 +8915,15 @@ function _memberOverviewHtml() {
 
 // 회원 구분 선택칸(FB260801-141806, 2026-08-01) — 대기자/LOSS 상단카드 삭제 후 유일 진입점.
 // 멤버십/입주민/단기/보증금/FAN VIP/기타=실제 '회원\n구분' 값(_memberTypeOf), 법인/대기/LOSS=기존 scope.
-var MEMBER_TYPE_SELECT_OPTIONS = ['멤버십', '입주민', '법인', '단기', '보증금', 'FAN VIP', '미기재', '대기', 'LOSS'];
+/* 2026-08-13 GM 지적 — "회원구분이랑 등록분류는 차이가 있어야 하는데 차이가 없는 것 같다."
+   이 선택칸이 두 가지를 한 줄에 섞어 놓고 있었다. 멤버십·입주민·법인은 그 사람이 **어떤 회원인가**(회원 구분,
+   시트의 '회원 구분' 칸)이고, 대기·LOSS는 **지금 어떤 상태인가**(등록 분류·잔여일에서 판정)다. 성격이 다른
+   두 축이 한 목록에 나란히 있으니 고르는 사람 입장에선 같은 종류로 보인다. 목록을 두 묶음으로 갈라 이름을
+   붙인다 — 값·동작은 그대로라 기존 선택은 전부 그대로 작동한다(새 기능 추가 없음). */
+var MEMBER_TYPE_SELECT_GROUPS = [
+  { label: '회원 구분 — 어떤 회원인가', items: ['멤버십', '입주민', '법인', '단기', '보증금', 'FAN VIP', '미기재'] },
+  { label: '상태 — 지금 어떤 상태인가', items: ['대기', 'LOSS'] }
+];
 function _activeTypeSelectValue() {
   if (_activeScope === 'ended') return 'LOSS';
   if (_activeScope === 'corp') return '법인';
@@ -8925,8 +8933,10 @@ function _activeTypeSelectValue() {
 function _memberTypeSelectHtml() {
   var cur = _activeTypeSelectValue();
   var opts = '<option value=""' + (cur === '' ? ' selected' : '') + '>전체 유형</option>' +
-    MEMBER_TYPE_SELECT_OPTIONS.map(function(o){
-      return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(o) + '</option>';
+    MEMBER_TYPE_SELECT_GROUPS.map(function(g){
+      return '<optgroup label="' + esc(g.label) + '">' + g.items.map(function(o){
+        return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(o) + '</option>';
+      }).join('') + '</optgroup>';
     }).join('');
   return '<div>' +
       '<label style="display:block;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px">회원 구분 선택</label>' +
