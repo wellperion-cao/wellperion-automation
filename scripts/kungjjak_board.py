@@ -507,13 +507,18 @@ def _render_table(by: dict, day: str) -> None:
         #   ▸그래서 소급으로 남길 때는 detail 끝에 '· 시각 추정'을 붙이는 것을 표식으로 삼는다.
         backfilled = any('시각 추정' in str(e.get('detail') or '') for e in ev)
 
-        dur, minutes = '**진행중**', None
+        # 상태 아이콘을 소요 앞에 붙인다(GM 지시 2026-08-13 — "진행 중인지 완료된 건지도
+        # 파악하면 좋겠다"). 칸을 6개로 늘리지 않는다: 늘리면 '접수한 것'·'한 것' 칸이 좁아져
+        # 본문이 더 잘리고, 오늘 되돌린 정본 5칸이 또 흔들린다. 소요 칸은 이미 상태를 겸하고
+        # 있었으나(시간=완료 / 진행중=미완) 완료 쪽이 암묵이라 GM 이 규칙을 외워야 읽혔다.
+        # 아이콘은 항해 표준 그대로 — 🏁 입항(완료) / 🚢 항해 중(진행).
+        dur, minutes = '🚢 **진행중**', None
         has_dur = bool(st and en)
         if has_dur:
             if backfilled:
-                dur = '소급'
+                dur = '🏁 소급'
             else:
-                dur = _dur(st, en)
+                dur = f'🏁 {_dur(st, en)}'
                 minutes = int((en - st).total_seconds() // 60)
 
         got = str(ev[0].get('event') or '').strip()
@@ -538,7 +543,7 @@ def _render_table(by: dict, day: str) -> None:
     # 증거 칸은 정본(wellperion-gm-report 스킬 §4-3, 5칸)에 없다 — 판정 로직(evidence_state)은
     # 살리되 별도 칸으로 안 낸다. '한 것'이 상투어면 그 문장 자체가 이미 증거 없음을 드러낸다
     # (GM 지적 2026-08-13 "형식 자체가 없어지고 다시 만드는거야?" — 6칸으로 늘렸던 걸 되돌림).
-    print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 |')
+    print('| # | 접수한 것 | 한 것 | 상태·소요 | 저장·업로드 |')
     print('|---|---|---|---|---|')
     for r in rows:
         print(f"| {r['no']} | {r['got'][:52]} | {r['did'][:74]} | {r['dur']} | {r['up']} |")
