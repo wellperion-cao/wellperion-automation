@@ -29,8 +29,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LOG = ROOT / 'status' / 'worklog.jsonl'
-QUEUE = ROOT / 'status' / '_queue.json'
 SHA_RE = re.compile(r'\b([0-9a-f]{7,40})\b')
+_SHIP_IN_TEXT_RE = re.compile(r'배\s*(\d{2,6})')
 
 NICK = {'ceo': '웰리', 'cto': '시토', 'cmo': '시모', 'cpo': '시포',
         'coo': '시우', 'chro': '시로', 'cfo': '시뽀'}
@@ -122,15 +122,38 @@ def _read(day: str, role: str | None):
         yield d
 
 
+_NOISE_TAIL_RE = re.compile(r'(줘봐|보여줘|열어줘)[?？]?$|(읽을만해|괜찮네|좋음)$')
+
+
+def _is_noise_got(got: str) -> bool:
+    """지시가 아닌 발화 — 승인 답변("응"·"A")·조회 요청("~줘봐")·감상("~읽을만해")·
+    미완성 발화(쉼표로 끝남). GM 지적 2026-08-13 "쿵짝표가 저게 아닌데?" — 표엔
+    실제 업무 지시만 남긴다(작업이 따라온 지적은 got 이 아니라 완료짝 유무로 걸러진다,
+    여긴 순수 발화 형태만 본다)."""
+    t = (got or '').strip()
+    if not t:
+        return True
+    core = re.sub(r'^[\d.,\s]+(번)?', '', t).strip()
+    if len(core) <= 4:
+        return True
+    if core.endswith(','):
+        return True
+    return bool(_NOISE_TAIL_RE.search(core))
+
+
 def load(day: str, role: str | None):
-    """GM 지시 짝(ref=GM-*)만 — 접수↔완료 대응이 있는 것. 부팅 프롬프트·시스템 문구가
-    섞인 ref 는 통째로 뺀다(그룹 안 아무 줄이나 걸리면 전체 제외 — 2026-08-13 GM 지적)."""
+    """GM 지시 짝(ref=GM-*)만 — 접수↔완료 대응이 있는 것. 부팅 프롬프트·시스템 문구·
+    지시가 아닌 발화(승인 답변·조회 요청·감상)가 섞인 ref 는 통째로 뺀다
+    (그룹 안 아무 줄이나 걸리면 전체 제외 — 2026-08-13 GM 지적)."""
     by: dict[str, list] = {}
     for d in _read(day, role):
         if str(d.get('ref') or '').startswith('GM-'):
             by.setdefault(d['ref'], []).append(d)
     for ref, ev in list(by.items()):
         if any(str(e.get('event') or '').startswith(_NOT_GM_PREFIX) for e in ev):
+            del by[ref]
+            continue
+        if _is_noise_got(ev[0].get('event')):
             del by[ref]
     return by
 
@@ -498,7 +521,13 @@ def _render_table(by: dict, day: str) -> None:
         item_role = str(ev[0].get('role') or '').strip().lower()
         up = upload_state(did, bool(oks), role=item_role, start=st, end=en)
         ev_state = evidence_state(got, did, up) if oks else '—'
-        rows.append({'ref': ref, 'no': ref_no(ref, day), 'got': got, 'did': did,
+        # # 칸에 배 번호를 같이 보여준다(GM 지시 2026-08-13 — "식별번호" 요구). did 에서
+        # "배NNN" 을 찾아 붙인다. 못 찾으면 접수번호만(빈칸으로 안 둔다).
+        no = ref_no(ref, day)
+        m = _SHIP_IN_TEXT_RE.search(did)
+        if m:
+            no = f'{no} · {NICK.get(item_role, item_role or "?")} {m.group(1)}'
+        rows.append({'ref': ref, 'no': no, 'got': got, 'did': did,
                       'dur': dur, 'up': up, 'ev': ev_state, 'sortkey': ref_sort_key(ref),
                       'has_dur': has_dur, 'minutes': minutes})
 
@@ -506,10 +535,13 @@ def _render_table(by: dict, day: str) -> None:
     rows = _dedup_rows(rows)
     rows.sort(key=lambda r: r['sortkey'])
 
-    print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 | 증거 |')
-    print('|---|---|---|---|---|---|')
+    # 증거 칸은 정본(wellperion-gm-report 스킬 §4-3, 5칸)에 없다 — 판정 로직(evidence_state)은
+    # 살리되 별도 칸으로 안 낸다. '한 것'이 상투어면 그 문장 자체가 이미 증거 없음을 드러낸다
+    # (GM 지적 2026-08-13 "형식 자체가 없어지고 다시 만드는거야?" — 6칸으로 늘렸던 걸 되돌림).
+    print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 |')
+    print('|---|---|---|---|---|')
     for r in rows:
-        print(f"| {r['no']} | {r['got'][:52]} | {r['did'][:74]} | {r['dur']} | {r['up']} | {r['ev']} |")
+        print(f"| {r['no']} | {r['got'][:52]} | {r['did'][:74]} | {r['dur']} | {r['up']} |")
 
     print()
     done = sum(1 for r in rows if r['has_dur'])
@@ -528,128 +560,6 @@ def _render_table(by: dict, day: str) -> None:
     if dup:
         line += f' · 중복 {dup}건 합침'
     print(line)
-
-
-# ══════════════════════════════════════════════════════════════════════════
-# 배·작업 단위 표 (GM 지시 2026-08-13 3차 — "쿵짝표 배편&업무&작업 등을 식별번호 /
-# 전달내용 / 결과 / 소요시간 / 커밋&푸시 이런거 몰라?")
-#   왜 갈아엎나: GM 발화 한 줄 = 표 한 줄이던 구조는 "응"·"A"·"컹" 같은 승인·감상까지
-#   줄로 만들었다(2026-08-13 GM 지적). GM 이 실제로 보고 싶은 건 **오늘 한 업무**다 —
-#   줄의 단위를 "GM 발화"에서 "배·작업"으로 바꾼다.
-# ══════════════════════════════════════════════════════════════════════════
-_EXCLUDE_NOISE = re.compile(r'배\s*\d+\s*(종결|DONE 처리)')  # 이미 배 표에 뜨는 종결 기록 — 중복
-
-
-_TOPIC_KEYWORDS: list[tuple[re.Pattern, str]] = [
-    # (화제 정규식, 표시 라벨) — 배 없이 한 작업을 화제로 묶는다. 새 화제가 나오면
-    # 매칭 안 되는 항목은 억지로 안 묶고 그 자체로 한 줄이 된다(오탐보다 누락이 낫다).
-    (re.compile(r'이경연|실장'), '실장 전달문'),
-    (re.compile(r'이정헌|소장'), '소장 전달문'),
-    (re.compile(r'나우열M'), '나우열M 전달문'),
-    (re.compile(r'쿵짝표'), '쿵짝표 정리'),
-    (re.compile(r'배233'), '배233(웰리 상설) 정리'),
-    (re.compile(r'GM업무|회장님 지시사항|오넛티'), 'GM업무·회장님 체크리스트'),
-    (re.compile(r'업무\s*SSOT'), '업무 SSOT 정리'),
-    (re.compile(r'CCTV|체육시설|점검'), '점검 2건(체육시설·CCTV)'),
-    (re.compile(r'전사일정'), '전사일정 갱신'),
-    (re.compile(r'statusline'), 'statusline 복구'),
-    (re.compile(r'브로제이'), '브로제이 확인'),
-    (re.compile(r'자율현황'), '자율현황 화면 정리'),
-    (re.compile(r'항로|안 물어봄|답 없음|GM 신호'), '항로 판정 신설'),
-    (re.compile(r'릴레이|worklog_gaps|빠진 것'), '릴레이·자가점검 보강'),
-    (re.compile(r'렌더|화면 열람|화면 숫자'), '화면 렌더·집계 오류 수리'),
-    (re.compile(r'배열람 핑|열람 핑'), '화면 열람 핑'),
-    (re.compile(r'업무 진행 건수|현황판 숫자'), '업무 진행 건수 라벨 정리'),
-    (re.compile(r'지원부'), '지원부 점검 관련'),
-    (re.compile(r'worklog\s*완료짝|완료 기록.*실제 내용|상투어'), 'worklog 완료짝 실증거 채움'),
-]
-
-
-def _load_queue() -> list[dict]:
-    try:
-        q = json.loads(QUEUE.read_text(encoding='utf-8'))
-    except Exception:
-        return []
-    return q if isinstance(q, list) else q.get('items', q.get('tasks', []))
-
-
-def _commit_cell(text: str) -> str:
-    """커밋&푸시 칸 — 해시가 있으면 원격 도달까지 확인, 없으면 '—'."""
-    shas = [m.group(1) for m in SHA_RE.finditer(text) if not m.group(1).isdigit()]
-    if not shas:
-        return '—'
-    return f"{shas[0][:9]}·{'푸시됨' if _pushed(shas[0]) else '푸시 안 됨'}"
-
-
-def build_task_rows(day: str, role: str) -> list[dict]:
-    """오늘 한 업무를 배·작업 단위로. ①오늘 닫힌 배(status/_queue.json DONE)
-    ②배 없이 한 작업(worklog 작업기록, 화제별로 묶음). GM 발화(ref)는 그룹핑
-    근거로만 쓰고 표엔 안 낸다."""
-    rows = []
-    for it in _load_queue():
-        if (it.get('clevel') or '').strip().lower() != role:
-            continue
-        if it.get('status') != 'DONE':
-            continue
-        d = str(it.get('processed_at') or it.get('updated_at') or '')
-        if not d.startswith(day):
-            continue
-        note = str(it.get('note') or '')
-        enq, proc = str(it.get('enqueued_at') or ''), str(it.get('processed_at') or '')
-        dur = '—'
-        if enq and proc:
-            try:
-                e = datetime.datetime.fromisoformat(enq.replace('Z', '+00:00'))
-                p = datetime.datetime.fromisoformat(proc) if 'T' in proc else None
-                if p:
-                    dur = _dur(e.replace(tzinfo=None), p.replace(tzinfo=None))
-            except Exception:
-                dur = '—'
-        rows.append({
-            'no': f"{NICK.get(role, role)} {it.get('short_no')}",
-            'title': str(it.get('title') or '').strip()[:40],
-            'result': note.strip()[-90:] or '(note 없음)',
-            'dur': dur,
-            'commit': _commit_cell(note),
-        })
-
-    grouped: dict[str, list] = {}
-    for w in load_work(day, role, limit=300):
-        if _EXCLUDE_NOISE.search(w['event']):
-            continue  # 배 표에 이미 뜬 종결 기록 — 중복 안 낸다
-        label = next((lab for pat, lab in _TOPIC_KEYWORDS if pat.search(w['event'])), None)
-        label = label or w['event'][:24]
-        grouped.setdefault(label, []).append(w)
-    for label, ws in grouped.items():
-        ws.sort(key=lambda x: x['time'])
-        span = f"{ws[0]['time']}~{ws[-1]['time']}" if len(ws) > 1 else ws[0]['time']
-        dur = '—'
-        if len(ws) > 1:
-            try:
-                t0 = datetime.datetime.strptime(ws[0]['time'], '%H:%M')
-                t1 = datetime.datetime.strptime(ws[-1]['time'], '%H:%M')
-                dur = _dur(t0, t1)
-            except Exception:
-                dur = '—'
-        rows.append({
-            'no': f"작업 · {span}",
-            'title': label,
-            'result': ws[-1]['event'][:60],
-            'dur': dur,
-            'commit': _commit_cell(ws[-1]['detail']),
-        })
-    return rows
-
-
-def _render_task_table(day: str, role: str) -> None:
-    rows = build_task_rows(day, role)
-    print('| 식별번호 | 전달내용 | 결과 | 소요시간 | 커밋&푸시 |')
-    print('|---|---|---|---|---|')
-    for r in sorted(rows, key=lambda r: r['no']):
-        print(f"| {r['no']} | {r['title']} | {r['result'][:60]} | {r['dur']} | {r['commit']} |")
-    print()
-    print(f'**{len(rows)}건**(배 {sum(1 for r in rows if not r["no"].startswith("작업"))}척 · '
-          f'작업 {sum(1 for r in rows if r["no"].startswith("작업"))}건)')
 
 
 def main() -> int:
@@ -683,18 +593,14 @@ def main() -> int:
             _render_table(carried, day)
             print()
 
+    by = load(day, role)
     print(f'## 🥁 쿵짝표 — {who} · {day}')
     print()
-    roles_to_show = list(NICK) if a.all_roles else [role]
-    for r in roles_to_show:
-        if a.all_roles:
-            print(f'### {NICK[r]}')
-        rows = build_task_rows(day, r)
-        if not rows:
-            print('오늘 닫힌 배·작업이 없습니다.')
-            continue
-        _render_task_table(day, r)
-        print()
+    if not by:
+        print('오늘 받은 GM 지시가 없습니다.')
+        return 0
+
+    _render_table(by, day)
 
     watch = find_stop_watch(role, day)
     if watch:
