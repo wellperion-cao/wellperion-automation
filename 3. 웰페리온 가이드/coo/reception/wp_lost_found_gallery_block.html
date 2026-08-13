@@ -291,12 +291,12 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 })();
 </script>
 
-<!-- ← 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 화살표 한 번으로 첫 화면.
+<!-- 백스페이스 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 백스페이스 한 번으로 첫 화면.
      글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
 <script>
 (function(){
   document.addEventListener('keydown', function(e){
-    if(e.key !== 'ArrowLeft' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if(e.key !== 'Backspace' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
     if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
     e.preventDefault();

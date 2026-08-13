@@ -124,7 +124,9 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 
 /* 종합접수처로 돌아가기 — ENG 버튼과 같은 줄·같은 모양, 왼쪽 (2026-08-13 GM 지시).
    본문 맨 위에 따로 두면 빈 칸이 한 줄 생겨서 ENG 와 같은 자리로 올렸다. */
-.wlp-inq .back-kiosk{position:absolute;top:16px;left:16px;z-index:5;display:inline-flex;align-items:center;
+/* 기둥 기준 — 본문(가운데 칸) 왼쪽 끝에 자동으로 맞는다 */
+.wlp-inq .hero-band{position:relative}
+.wlp-inq .back-kiosk{position:absolute;top:16px;left:0;z-index:5;display:inline-flex;align-items:center;
   justify-content:center;gap:6px;padding:10px 18px;min-height:44px;border:2px solid var(--ink);
   border-radius:24px;color:var(--ink);font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
 @media (max-width:520px){
@@ -134,9 +136,9 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 
 <div class="wlp-inq">
 
-  <a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
-  <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'en/inquiry/';return false;">ENG</a>
+    <a class="lang-switch" href="#" onclick="location.href='http://wellperion.com/'+'en/inquiry/';return false;">ENG</a>
   <div class="hero-band">
+    <a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
     <div class="hero-inner">
       <p class="eyebrow">Wellperion</p>
       <p class="slogan-en">A Day, Well Completed.</p>
@@ -282,12 +284,12 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 })();
 </script>
 
-<!-- ← 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 화살표 한 번으로 첫 화면.
+<!-- 백스페이스 키로 뒤로가기 (2026-08-13 GM 지시) — 키오스크에 키보드를 붙여 두면 백스페이스 한 번으로 첫 화면.
      글자를 입력하는 중(입력칸·선택칸)에는 커서 이동이 우선이라 무시한다. -->
 <script>
 (function(){
   document.addEventListener('keydown', function(e){
-    if(e.key !== 'ArrowLeft' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if(e.key !== 'Backspace' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
     if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
     e.preventDefault();
