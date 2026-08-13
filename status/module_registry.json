@@ -475,6 +475,38 @@
       "honesty_default": "measured"
     },
     {
+      "id": "coo-reception",
+      "owner_role": "coo",
+      "owner_nick": "시우",
+      "feature": "종합접수처 — VOC 6종(분실물·시설물고장·청결·칭찬·쓴소리·컴플레인) 접수·처리 현황과 SLA 초과 적체. 실무진 = 최준용M·윤병현AM(2026-08-13 이경연 실장 전달 기준). ★2026-08-13 GM 지시로 시우 소유 모듈로 독립 — 그 전까지 자기 항목 없이 coo-work-approval feature 안에 한 줄로만 있었고, 발송기는 시토가 만든 채 등록부에 안 잡혀 있었다. ▸발송 목적지(GM 확정 2026-08-03) = 카톡 ★운영+시설+지원+주차. 확정 전까지는 텔레그램 GM 업무보고방에서 다듬는다.",
+      "data_source": {
+        "kind": "gas+file",
+        "ref": "REG GAS(reg_dashboard / reg_board / reg_scoreboard / lf_list) + 3. 웰페리온 가이드/coo/reception/종합접수처_현황.html"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": true,
+        "monthly": false,
+        "channel": "kakao",
+        "bot_id": "★ 운영+시설+지원+주차"
+      },
+      "front_card": {
+        "window": "O1",
+        "anchor": "o1-module-hub"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "GAS가 접수 시트에서 자동 집계·SLA 초과분 산출 — 스크립트 1회 실행이면 현황 재생성(AI 없이 동작)",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm+clevel",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured",
+      "note": "발송기 = scripts/report_stream_2b_reception.py (스트림 #2b · 시토 작성 · 파일은 그대로 두고 소유만 시우로 옮겼다 — 파일을 옮기면 호출부가 깨진다). 카테고리·SLA 정본 = apps_script_voc.js REG_CATEGORIES. 칭찬은 slaHours=null 이라 적체 집계에서 제외. 점검(시설·지원·주차)과는 방을 나눠 단독 발송한다(GM 2026-07-22 지시로 점검현황방 병합을 되돌린 이력).",
+      "enabled": true
+    },
+    {
       "id": "coo-schedule-ssot",
       "owner_role": "coo",
       "owner_nick": "시우",
