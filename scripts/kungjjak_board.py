@@ -239,47 +239,6 @@ def evidence_state(got: str, did: str, up: str) -> str:
     return '⚠️없음'
 
 
-def find_stop_watch(role: str | None, today: str | None = None) -> list[dict]:
-    """'정지·중단·차단·삭제·끄기·해제·금지' 류 지시 — 완료 짝이 있어도 매일 다시 보여준다.
-    day 필터 없이 worklog.jsonl 전체를 본다 — 며칠 지난 지시라도 "지금도 그런가"는
-    매일 확인해야 한다(GM 2026-08-13 지적). 오래된 순(days_ago 큰 것 먼저)으로 낸다 —
-    "13줄이 표보다 길어 안 읽힌다"는 지적에 오래 방치된 것부터 보이게 한 것."""
-    today = today or datetime.date.today().isoformat()
-    by: dict[str, list] = {}
-    for line in LOG.open(encoding='utf-8'):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            d = json.loads(line)
-        except Exception:
-            continue
-        ref = str(d.get('ref') or '')
-        if not ref.startswith('GM-'):
-            continue
-        if role and d.get('role') != role:
-            continue
-        by.setdefault(ref, []).append(d)
-    out = []
-    for ref, ev in by.items():
-        got = str(ev[0].get('event') or '').strip()
-        if not any(k in got for k in STOP_KEYWORDS):
-            continue
-        oks = [e for e in ev if e.get('result') == 'ok']
-        if not oks:
-            continue  # 완료 짝이 아직 없으면 기존 진행중/놓침 목록이 이미 보여준다
-        day = _ref_day(ref)
-        try:
-            days_ago = (datetime.date.fromisoformat(today) - datetime.date.fromisoformat(day)).days
-        except ValueError:
-            days_ago = 0
-        out.append({
-            'ref': ref, 'no': ref_no(ref, day), 'day': day, 'days_ago': days_ago,
-            'got': got, 'did': str(oks[-1].get('detail') or '').strip(),
-        })
-    return sorted(out, key=lambda x: -x['days_ago'])
-
-
 def upload_state(detail: str, has_done: bool, role: str | None = None,
                   start: datetime.datetime | None = None,
                   end: datetime.datetime | None = None) -> str:
@@ -454,7 +413,9 @@ def emit(day: str) -> int:
                 'unclosed': [x for x in opened if x['kind'] == 'unclosed'],
                 'just': [x for x in opened if x['kind'] == 'just'],
                 'repeats': repeats,
-                'stop_watch': find_stop_watch(role, day),
+                # 'stop_watch' 는 2026-08-13 제거 — 끝난 지시를 매일 다시 띄우던 목록이다
+                # (사유는 아래 _render_table 호출부 주석). 화면(자율현황)은 `r.stop_watch || []`
+                # 로 방어하고 있어 키가 없으면 섹션 자체를 안 그린다 — 화면 수정 불필요.
             }
     p = ROOT / 'status' / 'kungjjak_today.json'
     p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -606,16 +567,15 @@ def main() -> int:
         return 0
 
     _render_table(by, day)
-
-    watch = find_stop_watch(role, day)
-    if watch:
-        print()
-        print(f'### 🔁 재확인 필요 — 정지·차단류 ({len(watch)}건, 완료짝 있어도 매일 확인 · 오래된 순)')
-        for w in watch:
-            age = f"[{w['days_ago']}일째]" if w['days_ago'] > 0 else '[오늘]'
-            # 한 줄 60자 안쪽(2026-08-13 GM 지적 — "각 줄이 너무 길어 안 읽힌다").
-            line = f"{age} {w['got']}"
-            print(f'- {line[:60]}')
+    # 「🔁 재확인 필요 — 정지·차단류」 섹션은 2026-08-13 같은 날 만들고 같은 날 없앴다.
+    # 의도: 정지 지시는 나중에 조용히 되살아나니 완료 짝이 있어도 매일 다시 본다
+    #       (실사고 — SSOT 자동등록 정지가 21시간 방치돼 7건 재발).
+    # 결과: 그 목록에 뜬 13건이 **전부 이미 끝난 것**이었고, GM 이 "지시한 것들 다
+    #       마무리된 것들 아냐?"라고 물으셨다. 판단거리를 만들지 못하고 잡음만 늘렸다.
+    # 원인 둘: ①끝난 것을 매일 다시 띄우는 설계 자체가 틀렸다 ②낱말 스캔이라
+    #       완료 보고문에 '삭제'가 들어간 것까지 걸렸다(자가점검 표가 이미 경고한 함정).
+    # 재발 방지는 목록이 아니라 **코드**로 한다 — 정지시킨 것은 킬스위치 값과 실행
+    # 결과로 확인하고(오늘 SSOT 에 한 이중 잠금이 그것), 화면에 매일 띄우지 않는다.
     return 0
 
 
