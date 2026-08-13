@@ -275,6 +275,15 @@ def verify_zero_consumers(symbol: str, declaring_path: str, repo_root: str | Non
     norm_declaring = declaring_path.replace("\\", "/")
     same_file = [ln for ln in lines if ln.replace("\\", "/").startswith(norm_declaring + ":")]
     other_file = [ln for ln in lines if not ln.replace("\\", "/").startswith(norm_declaring + ":")]
+
+    # ★한 건도 안 잡히면 "쓰는 데가 없다"가 아니라 "찾지 못했다"이다 (배507 · 2026-08-13).
+    #   git grep 은 **추적 중인 파일만** 본다. 선언이 있는 파일이 .gitignore 대상이거나 아직
+    #   커밋 전이면 선언조차 0건으로 나오고, 그 상태가 그대로 '소비자 0건 = 자동삭제 가능'이 된다.
+    #   선언은 반드시 잡혀야 정상이므로, 0건이면 판정을 거부한다(안전측).
+    if not lines:
+        return {"zero": False, "match_count": 0,
+                "reason": "선언조차 검색에 안 잡힘 — 추적 안 되는 파일일 수 있다. 판정 거부(안전측)"}
+
     zero = (len(other_file) == 0) and (len(same_file) <= 1)
     reason = (
         "소비자 0건(선언 자체만) — 자동삭제 가능"
@@ -427,7 +436,15 @@ def write_proposal_file(per_target_results: list[dict], clevel_label: str,
             lines.append(f"### {cat}. {CATEGORY_LABELS.get(cat, cat)} ({len(items)}건)")
             for c in items:
                 tag = " · 자동적용 조건 충족(다음 GM go 시 적용 예정)" if c.get("would_auto_apply") else ""
-                lines.append(f"- [{c.get('kind')}] {c.get('location', '')} — {c.get('reason')}{tag}")
+                # ★지울 대상 이름을 반드시 앞에 적는다 (배507 · 2026-08-10 실사고).
+                #   전에는 위치와 사유만 적었다. 사유 문장에 **살아있는 다른 함수 이름**이
+                #   등장하면(예: "…같은 역할을 usedAnnual2026() 이 수행") 읽는 사람은 그
+                #   함수가 지워지는 줄 안다. 실제로 웰리가 그렇게 읽고 "활성 함수를 죽은
+                #   코드로 찍었다"고 배를 띄웠는데, 판정기는 정상이었고 제안서 표기가 문제였다.
+                #   무엇이 지워지는지 안 보이면 사람이 확인할 수가 없다.
+                sym = (c.get("symbol") or "").strip()
+                head = f"`{sym}`" if sym else "⚠️ 대상 이름 없음(자동적용 불가)"
+                lines.append(f"- [{c.get('kind')}] {head} — {c.get('location', '')} — {c.get('reason')}{tag}")
                 if c.get("gate_reason"):
                     lines.append(f"  - 게이트: {c['gate_reason']}")
 
