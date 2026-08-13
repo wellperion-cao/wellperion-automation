@@ -155,6 +155,71 @@ def _role_commits(role: str, start: datetime.datetime, end: datetime.datetime) -
         return []
 
 
+STOP_KEYWORDS = ('정지', '중단', '차단', '삭제', '끄기', '해제', '금지')
+_STOCK_PHRASES = {
+    '완료', '처리함', '됨', '처리 완료', '완료함', '진행함', '받음',
+    '후속은 배가 추적한다', '후속 작업이 있으면 배(_queue)가 추적한다',
+}
+_PATH_RE = re.compile(r'[\w./ㄱ-힣-]+\.(?:py|json|jsonl|html|md|js|css|gs)\b')
+_URL_RE = re.compile(r'https?://')
+_NUM_UNIT_RE = re.compile(r'\d+\s*(?:건|%|분|개|명|일|원|줄|회|시간|시|명|행|가지)')
+
+
+def evidence_state(got: str, did: str, up: str) -> str:
+    """증거 칸 (GM 지시 2026-08-13 "쿵짝표로 다 끝난 줄 알았는데 계속 빈틈이 생기네").
+
+    ①정지·중단·차단·삭제·끄기·해제·금지 류 지시 = "했다"가 완료 조건이 아니라
+      "지금도 그런가"가 완료 조건이다. 완료 짝이 있어도 항상 재확인 필요로 찍는다
+      (8/12 "업무SSOT 자동등록 정지"가 완료 짝만 찍히고 8/13 07:34 에 7건 재발한 실사고).
+    ②그 외는 detail 에 실증거(커밋해시·파일경로·URL·실측숫자) 가 있는지로 가른다 —
+      "완료"·"처리함" 류 상투어만 있으면 진짜 끝난 것과 구분이 안 된다."""
+    if any(k in (got or '') for k in STOP_KEYWORDS):
+        return '🔁재확인'
+    t = (did or '').strip()
+    if not t or t in _STOCK_PHRASES:
+        return '⚠️없음'
+    if up.startswith('✅') or up.startswith('⚠️ 저장만'):
+        return '✅있음'
+    if _PATH_RE.search(t) or _URL_RE.search(t) or _NUM_UNIT_RE.search(t):
+        return '✅있음'
+    return '⚠️없음'
+
+
+def find_stop_watch(role: str | None) -> list[dict]:
+    """'정지·중단·차단·삭제·끄기·해제·금지' 류 지시 — 완료 짝이 있어도 매일 다시 보여준다.
+    day 필터 없이 worklog.jsonl 전체를 본다 — 며칠 지난 지시라도 "지금도 그런가"는
+    매일 확인해야 한다(GM 2026-08-13 지적)."""
+    by: dict[str, list] = {}
+    for line in LOG.open(encoding='utf-8'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        ref = str(d.get('ref') or '')
+        if not ref.startswith('GM-'):
+            continue
+        if role and d.get('role') != role:
+            continue
+        by.setdefault(ref, []).append(d)
+    out = []
+    for ref, ev in by.items():
+        got = str(ev[0].get('event') or '').strip()
+        if not any(k in got for k in STOP_KEYWORDS):
+            continue
+        oks = [e for e in ev if e.get('result') == 'ok']
+        if not oks:
+            continue  # 완료 짝이 아직 없으면 기존 진행중/놓침 목록이 이미 보여준다
+        day = _ref_day(ref)
+        out.append({
+            'ref': ref, 'no': ref_no(ref, day), 'day': day,
+            'got': got, 'did': str(oks[-1].get('detail') or '').strip(),
+        })
+    return sorted(out, key=lambda x: x['day'])
+
+
 def upload_state(detail: str, has_done: bool, role: str | None = None,
                   start: datetime.datetime | None = None,
                   end: datetime.datetime | None = None) -> str:
@@ -295,16 +360,19 @@ def emit(day: str) -> int:
                 total += mins
                 done += 1
             did = str(oks[-1].get('detail') or '').strip() if oks else ''
+            got = str(ev[0].get('event') or '').strip()
+            up = upload_state(did, bool(oks), role=role, start=st, end=en)
             items.append({
                 'ref': ref,
                 'no': ref_no(ref, day),
-                'got': str(ev[0].get('event') or '').strip(),
+                'got': got,
                 'did': did,
                 'start': st.strftime('%H:%M') if st else None,
                 'end': en.strftime('%H:%M') if en else None,
                 'minutes': mins,
-                'upload': upload_state(did, bool(oks), role=role, start=st, end=en),
+                'upload': up,
                 'open': not oks,
+                'evidence': evidence_state(got, did, up) if oks else None,
             })
         work = load_work(day, role)
         _now = datetime.datetime.now()
@@ -321,6 +389,7 @@ def emit(day: str) -> int:
                 'unclosed': [x for x in opened if x['kind'] == 'unclosed'],
                 'just': [x for x in opened if x['kind'] == 'just'],
                 'repeats': repeats,
+                'stop_watch': find_stop_watch(role),
             }
     p = ROOT / 'status' / 'kungjjak_today.json'
     p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -332,8 +401,8 @@ def emit(day: str) -> int:
 def _render_table(by: dict, day: str) -> None:
     """표 한 장 + 요약 줄. `day` 는 # 칸 서식(ref_no)에만 쓴다 — 오늘 날짜를 넘기면
     지난 날짜 ref 는 자동으로 'MM/DD NN' 로 찍혀 오늘 것과 섞이지 않는다(--carry 가 그걸 쓴다)."""
-    print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 |')
-    print('|---|---|---|---|---|')
+    print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 | 증거 |')
+    print('|---|---|---|---|---|---|')
     total = done = measured = 0
     for ref in sorted(by):
         ev = by[ref]
@@ -366,7 +435,8 @@ def _render_table(by: dict, day: str) -> None:
         did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
         item_role = str(ev[0].get('role') or '').strip().lower()
         up = upload_state(did, bool(oks), role=item_role, start=st, end=en)
-        print(f'| {ref_no(ref, day)} | {got[:52]} | {did[:74]} | {dur} | {up} |')
+        ev_state = evidence_state(got, did, up) if oks else '—'
+        print(f'| {ref_no(ref, day)} | {got[:52]} | {did[:74]} | {dur} | {up} | {ev_state} |')
 
     print()
     # 평균은 실제로 잰 건만으로 낸다 — 소급분을 섞으면 평균이 0분 쪽으로 끌려간다.
@@ -421,6 +491,13 @@ def main() -> int:
         return 0
 
     _render_table(by, day)
+
+    watch = find_stop_watch(role)
+    if watch:
+        print()
+        print(f'### 🔁 재확인 필요 — 정지·차단류 ({len(watch)}건, 완료짝 있어도 매일 확인)')
+        for w in watch:
+            print(f"- {w['no']} {w['got'][:60]} — {w['did'][:70]}")
     return 0
 
 
