@@ -710,6 +710,18 @@ select, select option{ color:var(--text); background-color:var(--paper); }
 }
 @media print{.sync-chip{display:none!important}}
 
+/* 저장 안 된 행 표시 — 배579(2026-08-13 시포). 저장 실패를 칩·토스트로만 알리면 실무진은 놓친다.
+   화면과 보관분(localStorage)에는 이미 새 값이 적혀 있어 저장된 것처럼 보이므로, 실패는 그 값이
+   있는 행 자체에 남겨야 한다. 자식 노드를 만들지 않고 클래스·속성만 쓴다(표 다시 그릴 때 안 꼬이게).
+   문구는 첫 칸의 data-wb-unsaved 속성에서 읽는다(WriteBuffer.paintFailed 가 채움). */
+tr.wb-unsaved>td{background:rgba(214,64,64,0.10)!important}
+tr.wb-unsaved>td:first-child{box-shadow:inset 3px 0 0 var(--red,#d64040)}
+tr.wb-unsaved>td[data-wb-unsaved]::after{
+  content:'⚠ ' attr(data-wb-unsaved);
+  display:block;margin-top:2px;font-size:10.5px;font-weight:700;line-height:1.3;
+  color:var(--red,#d64040);white-space:normal;
+}
+
 /* ═══════════════════════════════════════
    상담 모달 (달력 일정 클릭 → 방문완료·상담메모)
    ═══════════════════════════════════════ */
@@ -7605,7 +7617,9 @@ function _oaSaveOwner(sel){
     { action: 'member_owner_save', phone: phone, field: cfg.col, value: newVal },
     { scope: 'active', phoneKey: phone, fieldset: 'owner:' + cfg.col, label: '담당', who: (r && (r['회원명'] || r['성함'])) || '', overlay: _ovO }
   );
-  showToast('담당자 저장', 'ok');
+  // 여기서 뜨는 건 '보냈다'이지 '저장됐다'가 아니다(배579) — 서버가 받았는지는 아직 모른다.
+  // 실제 결과는 WriteBuffer 가 판정한다: 성공하면 조용히 끝나고, 실패하면 그 행이 붉게 남는다.
+  showToast('담당자 저장 중…', 'ok');
 }
 
 /* 연락 이력 추가(append-only) — 2026-08-05 GM 지시("아래에 있는 내용들은 추가 할 수 있게").
@@ -7640,8 +7654,9 @@ function _oaAppendContact(inp){
     { scope: 'active', phoneKey: phone, fieldset: 'cell:' + field, label: '컨택 추가',
       who: (member['회원명'] || member['성함']) || '', overlay: _ov }
   );
-  // 성공은 즉시 토스트(낙관적) — 실패는 WriteBuffer 자체가 감시해 '저장 실패 — …' 토스트를 띄운다(기존 방식 재사용).
-  showToast('컨택 이력 추가 · ' + String(field).replace('Contact','').trim(), 'ok');
+  // '보냈다'까지만 알린다(배579) — 저장 성공 판정은 서버 응답으로만 한다.
+  // 실패하면 WriteBuffer 가 그 행을 붉게 남긴다(새로고침해도 남는다).
+  showToast('컨택 이력 추가 중… · ' + String(field).replace('Contact','').trim(), 'ok');
 }
 
 function _oaRenderState(msg){
@@ -12887,6 +12902,7 @@ var WriteBuffer = (function(){
   function failedItems() { return queue.filter(function(it){ return it.parked; }); }
 
   function renderChip() {
+    paintFailed();   // 실패는 칩보다 먼저 그 행에 남긴다(배579) — 칩이 없거나 안 보여도 표시는 남는다
     var chip = document.getElementById('syncChip');
     var msg = document.getElementById('syncChipMsg');
     if (!chip || !msg) return;
@@ -12929,6 +12945,81 @@ var WriteBuffer = (function(){
       chip.title = '';
     }
   }
+
+  /* ══ 저장 안 된 행 표시 — 배579 근본수리(2026-08-13 시포, GM 지시 2026-08-12) ══════════════
+     GM 원문: "실무진이 저장하면서 제대로 동기화가 안되면서 넘어가니까 데이터가 없어졌다고 남겨두는".
+     지금까지 실패를 알리는 자리는 토스트(몇 초 뒤 사라짐)와 화면 아래 칩(전역·이름 4개까지) 둘뿐이었다.
+     그런데 편집한 값은 화면에도 보관분(localStorage)에도 이미 적혀 있다 — 새로고침해도 값이 보이니
+     실무진은 저장된 줄 안다. 나중에 보관분이 갈리면 그때 값이 사라진다("데이터가 없어졌다").
+     그래서 실패를 값이 있는 그 행에 붙인다. 실패 큐 자체가 localStorage 에 있으므로 새로고침해도
+     표시가 그대로 되살아난다. 저장 호출부는 하나도 손대지 않는다 — 모든 저장이 지나는 이 관문에서만
+     칠하므로 저장 경로가 늘어도 자동으로 따라온다.
+     한계: 행을 찾으려면 payload.rowIndex 와 그 행을 그린 표가 필요하다. 아래 표에 없는 화면
+     (예 mreg 카드는 행에 rowIndex 가 없다)은 종전대로 칩으로만 보인다.
+     # ponytail: 표 목록을 코드에 적어 둔다. 새 표가 생기면 여기 한 줄을 더한다 — 표마다 훅을
+     #   심는 것보다 싸고, 자동 탐지는 다른 표의 같은 rowIndex 를 잘못 칠할 위험이 있다. */
+  var _FAIL_BODIES = {
+    active: ['#activeBody', '#oaBody'],
+    member: ['#dbBody'],
+    lesson: ['#lessonBody_adult', '#lessonBody_youth']
+  };
+  function _failRowEls(item) {
+    var out = [];
+    var ri = item.payload && item.payload.rowIndex;
+    if (ri === undefined || ri === null || ri === '') return out;
+    var v = (window.CSS && CSS.escape) ? CSS.escape(String(ri)) : String(ri).replace(/["\\]/g, '');
+    (_FAIL_BODIES[item.scope] || []).forEach(function (body) {
+      // 표마다 속성 이름이 갈린다(data-rowindex / data-row-index) — 둘 다 본다.
+      var el = document.querySelector(body + ' tr[data-rowindex="' + v + '"]') ||
+               document.querySelector(body + ' tr[data-row-index="' + v + '"]');
+      if (el) out.push(el);
+    });
+    return out;
+  }
+  function paintFailed() {
+    if (!document.querySelectorAll) return;
+    Array.prototype.forEach.call(document.querySelectorAll('tr.wb-unsaved'), function (tr) {
+      tr.classList.remove('wb-unsaved');
+      tr.removeAttribute('title');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('td[data-wb-unsaved]'), function (td) {
+      td.removeAttribute('data-wb-unsaved');
+    });
+    failedItems().forEach(function (item) {
+      _failRowEls(item).forEach(function (tr) {
+        var td = tr.firstElementChild;
+        if (!td) return;
+        tr.classList.add('wb-unsaved');
+        // 같은 행에 실패가 여러 건이면 첫 칸 문구에 이어 붙인다(같은 문구는 한 번만).
+        var line = (item.label || '저장') + ' 저장 안 됨';
+        var prev = td.getAttribute('data-wb-unsaved') || '';
+        if (prev.indexOf(line) < 0) td.setAttribute('data-wb-unsaved', prev ? prev + ' · ' + line : line);
+        tr.setAttribute('title', '이 행의 「' + (item.label || '저장') + '」 은(는) 시트에 저장되지 않았습니다' +
+          (item.lastError ? ' (' + item.lastError + ')' : '') +
+          '. 화면에 보이는 값은 아직 이 컴퓨터에만 있습니다 — 화면 아래 동기화 칩에서 [재시도] 하거나, ' +
+          '계속 실패하면 값을 다시 확인해 저장하세요.');
+      });
+    });
+  }
+  // 표를 다시 그리면 표시가 지워진다 — 그릴 때마다 다시 칠한다. 그리는 함수마다 호출을 심지 않고
+  // tbody 의 자식 교체만 지켜본다(표시는 클래스·속성만 바꾸므로 이 감시가 되울리지 않는다).
+  var _paintTimer = null;
+  (function _watchRepaint() {
+    if (!window.MutationObserver) return;
+    var mo = new MutationObserver(function () {
+      clearTimeout(_paintTimer);
+      _paintTimer = setTimeout(paintFailed, 120);
+    });
+    function attach() {
+      ['activeBody', 'oaBody', 'dbBody', 'lessonBody_adult', 'lessonBody_youth'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) mo.observe(el, { childList: true });
+      });
+      paintFailed();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
+    else attach();
+  })();
 
   function enqueue(payload, opts) {
     opts = opts || {};
