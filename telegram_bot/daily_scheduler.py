@@ -3030,6 +3030,73 @@ def _run_gm_morning_kakao() -> None:
         _kakao_fail_notify("GM아침일정", str(e)[:120], room)
 
 
+# ── 미팅 30분 전 리마인드 → 카톡 「김남욱」 방 (배451 · GM 확정 2026-08-07) ──────────
+#   GM 원문: "미팅 30분 전에만 김남욱 방에다가 링크까지 포함해서 전달해주면 내가 리마인드 되어서
+#   놓칠 일이 없을 듯." (중간관리자 방 사전 공유는 사람이 그때그때 — 이 자동화 대상 아님)
+#
+#   ★새 예약작업·새 감시기·새 파일 0 (약속 L21). 이미 상주하는 이 스케줄러에 5분 주기 절 하나,
+#     일정 읽기는 gm_checkin(08:00 브리핑이 쓰는 그 함수), 발신은 kakao_report_sender 관문 그대로.
+#   ★중복 발신: 관문(kakao_report_sender)이 방+내용 서명으로 2시간 창 안 재발신을 이미 막는다.
+#     그 위에 프로세스 안 기억을 하나 더 둔다(같은 회차에 subprocess 를 두 번 띄우지 않으려고).
+#   ★시각 없는 종일 일정은 계산할 수 없다 — 빼되 **뺐다는 사실을 로그에 남긴다**(조용한 누락 금지).
+_MEETING_REMIND_SENT: set = set()
+_MEETING_REMIND_LEAD_MIN = 30
+_MEETING_REMIND_TOLERANCE = 3      # 5분 주기라 정확히 30분에 걸리지 않는다 — 27~33분 사이면 발신
+
+
+def _run_meeting_reminder() -> None:
+    label = "[미팅 30분전]"
+    room = "김남욱"
+    try:
+        import gm_checkin as _ck
+        now = datetime.now()
+        day = now.strftime("%Y-%m-%d")
+        items, ok = _ck._load_schedule_items_ex()
+        if not ok:
+            logger.warning(f"{label} 전사일정을 못 읽음 — 이번 회차 건너뜀(0건과 구분)")
+            return
+        pairs = _ck._filter_today_items(items, day)          # [(HH:MM, 제목)] · GM 담당분만
+        no_time = [t for hhmm, t in pairs if not hhmm]
+        if no_time:
+            logger.info(f"{label} 시각 없는 일정 {len(no_time)}건 제외(계산 불가): {', '.join(no_time[:3])}")
+        for hhmm, title in pairs:
+            if not hhmm:
+                continue
+            try:
+                hh, mm = [int(x) for x in hhmm.split(":")]
+            except Exception:
+                continue
+            start = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+            lead = (start - now).total_seconds() / 60.0
+            if abs(lead - _MEETING_REMIND_LEAD_MIN) > _MEETING_REMIND_TOLERANCE:
+                continue
+            key = f"{day}|{hhmm}|{title}"
+            if key in _MEETING_REMIND_SENT:
+                continue
+            text = (
+                f"⏰ 30분 뒤 미팅 — {hhmm}\n"
+                f"{title}\n\n"
+                f"GM업무 화면\n"
+                f"https://wellperion-cao.github.io/wellperion-automation/coo/chairman/GM%EC%97%85%EB%AC%B4.html"
+            )
+            proc = subprocess.run(
+                [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
+                 "--message", text, "--only-room", room],
+                cwd=str(REPO_ROOT), capture_output=True, text=True,
+                encoding="utf-8", errors="replace",
+                env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"), timeout=300,
+            )
+            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+            if proc.returncode == 0:
+                _MEETING_REMIND_SENT.add(key)
+                logger.info(f"{label} 발송 {hhmm} {title} → {room}: {tail[0]}")
+            else:
+                logger.error(f"{label} 발송 실패 {hhmm} {title}: {tail[0]}")
+                _kakao_fail_notify("미팅30분전", tail[0], room)
+    except Exception as e:
+        logger.error(f"{label} 예외: {e}")
+
+
 # ── 20:30 GM 저녁 정리 카드(월~토 · 나의하루 방) — GM 지시 2026-08-10 ──────────────
 #   08:00 업무 브리핑(할 일)의 짝 — 저녁엔 오늘 worklog GM지시 항목을 ok/warn ref 로 짝지어
 #   끝낸 것·아직 남은 것 체크 카드로 낸다(gm_checkin.build_evening_recap). 21:00 저녁 끼니슬롯·
@@ -3410,6 +3477,16 @@ def main():
         coalesce=True,
     )
     logger.info("env_reload_watcher 등록 완료 (5분 주기) — v1.2")
+
+    # ── 미팅 30분 전 리마인드 (5분 주기 · 카톡 김남욱 방) — 배451 · GM 확정 2026-08-07 ──
+    scheduler.add_job(
+        _run_meeting_reminder,
+        trigger=IntervalTrigger(minutes=5),
+        id="meeting_reminder_30min",
+        misfire_grace_time=120,
+        coalesce=True,
+    )
+    logger.info("meeting_reminder_30min 등록 완료 (5분 주기 · 전사일정 시각 있는 GM 일정만)")
 
     # ── 완료 즉시 알림 (10분 주기) — GM 2026-08-06 · 근거·중복방지 방식은 함수 정의부 주석 ──
     scheduler.add_job(
