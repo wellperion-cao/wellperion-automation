@@ -238,6 +238,26 @@ def log(msg: str) -> None:
     print(f"[{ts}] {msg}", flush=True)
 
 
+# ── 실무진 못 읽는 내부 용어 경고 (GM 지적 2026-08-13) ──────────────────────
+# notify_gm_progress.count_jargon(오늘 아침 추가)과 같은 패턴 — 채널만 카톡으로.
+# 오늘 실제로 나간 두 통(임정은M·이정헌 소장님 앞)에서 뽑은 용어 + GM 이 예시로 든 것들.
+# 막지 않는다 — 발신은 그대로, log() 로 경고만 남긴다(오탐 많으면 아무도 안 봄 → 목록은 좁게).
+_STAFF_JARGON = {
+    "staff_message": "실무진 전달문", "SSOT": "정본 자료", "dedup": "중복 방지",
+    "릴레이": "전달", "등록분류": "회원 등록 종류", "재등록분류": "재등록 종류",
+    "LOSS사유": "해지·이탈 사유", "원장불일치": "기록 불일치", "데이터 빈틈": "빠진 정보",
+}
+_SHIP_NO_RE = re.compile(r"배\d{2,5}")  # "배581" 류 배 번호 — 받는 사람은 무슨 뜻인지 모른다
+
+
+def warn_jargon(text: str) -> list[str]:
+    """경고만(차단 안 함). 반환 = 발견된 용어 목록(→바꿔 쓸 말 포함), 없으면 []."""
+    hits = [f"{term}(→{sug})" for term, sug in _STAFF_JARGON.items() if term in text]
+    if _SHIP_NO_RE.search(text):
+        hits.append("배N(→무슨 작업인지 말로 풀어쓰기)")
+    return hits
+
+
 def load_rooms_config() -> dict:
     return json.loads(ROOMS_CONFIG.read_text(encoding="utf-8"))
 
@@ -1004,6 +1024,9 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
     from tg_outbound_log import encode_url_spaces
     text = encode_url_spaces(build_caption(room, base_message))
     log(f"── {room_name} 텍스트 전용 처리 시작 (dry_run={dry_run}, text={text!r}) ──")
+    _jargon = warn_jargon(text)
+    if _jargon:
+        log(f"[{room_name}] ⚠ 실무진이 못 읽을 수 있는 말: {', '.join(_jargon)}")
 
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(text):
         return False, "chairman_gate"
@@ -1040,6 +1063,9 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     room_name = room["name"]
     caption = build_caption(room, base_caption)
     log(f"── {room_name} 처리 시작 (dry_run={dry_run}, caption={caption!r}) ──")
+    _jargon = warn_jargon(caption)
+    if _jargon:
+        log(f"[{room_name}] ⚠ 실무진이 못 읽을 수 있는 말: {', '.join(_jargon)}")
 
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(caption):
         return False, "chairman_gate"
