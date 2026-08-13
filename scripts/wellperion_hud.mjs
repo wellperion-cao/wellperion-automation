@@ -107,10 +107,31 @@ function isOmcBanner(s) {
   return !s || /\[OMC\]\s+HUD/.test(s) || /NOT configured/.test(s) || /HUD script:/.test(s);
 }
 
+// ★캐시를 **세션별로** 나눈다 (GM 지적 2026-08-13 "ctx 가 파워셸마다 통합되는거야? 예전엔 각각이었는데").
+//   원인: 캐시 파일이 저장소당 한 개(<repo>/tmp/hud_omc_cache.json)였다. OMC 줄에는 그 세션의
+//   맥락 사용률(ctx)·토큰 수가 들어 있는데, 창 5개가 같은 파일을 나눠 쓰니 **먼저 그린 창의 값**을
+//   나머지 창이 15초 동안 그대로 보여 준다 — 그래서 전부 같은 숫자로 보였다.
+//   고침: 한 파일 안에서 **세션 id 별로 칸을 나눈다**(파일 개수는 그대로 1개 · 새 파일 0).
+//   오래된 칸은 지운다(창을 닫으면 그 칸은 더 안 쓰인다 — 무한 증식 방지).
+const OMC_CACHE_MAX_SESSIONS = 12;
+const OMC_CACHE_STALE_MS = 10 * 60 * 1000;   // 10분 넘게 안 쓰인 세션 칸은 버린다
+
+function _sessionKey(input) {
+  try {
+    const j = JSON.parse(input);
+    return String(j?.session_id || j?.transcript_path || 'unknown').slice(-40);
+  } catch { return 'unknown'; }
+}
+
 function omcHud(input) {
   const cachePath = OMC_CACHE;
-  let cached = null;
-  try { cached = JSON.parse(readFileSync(cachePath, 'utf8')); } catch { /* 캐시 없음·깨짐 — 새로 계산 */ }
+  const key = _sessionKey(input);
+  let store = null;
+  try { store = JSON.parse(readFileSync(cachePath, 'utf8')); } catch { /* 캐시 없음·깨짐 — 새로 계산 */ }
+  if (!store || typeof store !== 'object' || Array.isArray(store)) store = {};
+  // 옛 형식({at,out} 한 벌)이 남아 있으면 버린다 — 세션 구분이 없던 값이라 남의 값일 수 있다.
+  if (Object.prototype.hasOwnProperty.call(store, 'out')) store = {};
+  const cached = store[key] || null;
 
   // 1) 살아있는 캐시가 있으면 프로세스를 띄우지 않는다. 빈 결과는 훨씬 짧은 TTL(위 상수 참고).
   if (cached && typeof cached.out === 'string') {
@@ -129,8 +150,15 @@ function omcHud(input) {
 
   // 3) 캐시 갱신 — 빈 결과도 쓴다(짧은 TTL 로 다음 렌더의 재기동을 막는다). 못 써도 표시는 정상.
   try {
+    store[key] = { at: Date.now(), out };
+    const now = Date.now();
+    for (const k of Object.keys(store)) {
+      if (now - (store[k]?.at || 0) > OMC_CACHE_STALE_MS) delete store[k];
+    }
+    const keys = Object.keys(store).sort((a, b) => (store[a].at || 0) - (store[b].at || 0));
+    for (const k of keys.slice(0, Math.max(0, keys.length - OMC_CACHE_MAX_SESSIONS))) delete store[k];
     mkdirSync(path.dirname(cachePath), { recursive: true });
-    writeFileSync(cachePath, JSON.stringify({ at: Date.now(), out }), 'utf8');
+    writeFileSync(cachePath, JSON.stringify(store), 'utf8');
   } catch { /* 캐시 못 써도 표시는 정상 — 다음 회차에 다시 계산할 뿐 */ }
 
   // 4) 이번 계산이 빈손이면 직전 값(있었다면)이라도 화면에 낸다(빈 화면보다 조금 늦은 값이 낫다).
