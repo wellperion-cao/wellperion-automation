@@ -4110,6 +4110,11 @@ function openStatusOnepager(){
   ov.classList.add('open');
   if (!_opLoaded) { _opLoaded = true; loadStatusOnepager(); }
 }
+/* 주소 뒤에 #onepager 를 붙이면 바로 이 보기로 연다(2026-08-13 GM "회원현황 한장 띄워줘").
+   비밀번호 화면이 새로고침을 하는데 # 뒤는 살아남으므로, 입장한 뒤에 열린다. */
+window.addEventListener('load', function(){
+  if (location.hash === '#onepager') setTimeout(openStatusOnepager, 300);
+});
 function closeStatusOnepager(){
   var ov = document.getElementById('opOverlay');
   if (ov) ov.classList.remove('open');
