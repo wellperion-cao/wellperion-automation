@@ -13002,7 +13002,8 @@ var WriteBuffer = (function(){
   }
 
   function forceRetry() {
-    queue.forEach(function(it){ it.parked = false; it.attempts = 0; it.nextTry = 0; it.inflight = false; });
+    // parkedHard(rowkey-not-found 등 결정적 거부)는 재시도해도 결과 동일 — _load()와 동일 제외 패턴(배1143 · 2026-08-13).
+    queue.forEach(function(it){ if (!it.parkedHard) { it.parked = false; it.attempts = 0; it.nextTry = 0; it.inflight = false; } });
     _save(); renderChip(); scheduleFlush(0);
   }
 
