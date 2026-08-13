@@ -212,6 +212,15 @@ def _dedupe_advice(desc: str, advice: str) -> str:
         rest = a[len(d):].lstrip()
         rest = re.sub(r"^[.·\-,:]+\s*", "", rest)
         return rest
+    # ★잘린 문장까지 잡는다 (2026-08-13 · GM "고도화된 부분을 단순화").
+    #   위 startswith 판정은 두 칸이 **같은 note 를 서로 다른 길이로 자른** 경우를 못 잡는다
+    #   (한쪽이 '…' 로 끝나면 접두 일치가 깨진다). 실측 — 설명·조언이 둘 다 있는 55줄 중
+    #   22줄이 앞 20자가 같은 같은 문장이었다. 같은 말을 두 번 읽는 것이고, 창마다 그만큼
+    #   맥락을 먹는다. 앞 30자가 같으면 같은 출처로 보고 조언 칸을 비운다 —
+    #   30자면 우연히 겹칠 길이가 아니다(제목·머리기호가 아니라 본문 첫 문장 수준).
+    _n = lambda s: re.sub(r"\s+", "", s)[:30]
+    if len(_n(d)) >= 20 and _n(a) == _n(d):
+        return ""
     return a
 
 
@@ -1574,6 +1583,35 @@ def _gm_profile_slice() -> str:
             + "\n※ 전체(표면점검·북극성·루틴준수 등)는 status/gm_profile.md 파일 자체를 여세요.")
 
 
+def _print_one_ship(num: str) -> None:
+    """배 한 척의 전체 기록만 낸다 — 큐 전체를 세션 맥락에 올리지 않기 위한 창구.
+    번호는 short_no 우선, 없으면 ship_no 로 찾는다. 못 찾으면 그렇게 말한다(지어내지 않는다)."""
+    want = str(num).strip()
+    try:
+        with open(QUEUE_PATH, encoding="utf-8") as f:
+            items = json.load(f)
+        if not isinstance(items, list):
+            items = items.get("items") or items.get("queue") or []
+    except Exception as exc:
+        print(f"큐를 못 읽었습니다: {exc}")
+        return
+    hits = [it for it in items
+            if str(it.get("short_no") or "") == want or str(it.get("ship_no") or "") == want]
+    if not hits:
+        print(f"배 {want} 를 큐에서 못 찾았습니다(보관함으로 옮겨졌을 수 있습니다).")
+        return
+    for it in hits:
+        print(f"■ 배 {it.get('short_no') or it.get('ship_no')} · {it.get('clevel')} · {it.get('status')}")
+        print(f"  제목  : {it.get('title')}")
+        print(f"  띄운날: {it.get('enqueued_at')}   마지막 기록: {it.get('updated_at') or '-'}")
+        print(f"  다음  : {it.get('next') or '-'}")
+        if it.get("artifact_url"):
+            print(f"  증거  : {it.get('artifact_url')}")
+        print("  ── 기록(note) ──")
+        print(it.get("note") or "(없음)")
+        print()
+
+
 # ── CLI ───────────────────────────────────────────────────────────────────
 def main() -> None:
     parser = argparse.ArgumentParser(description="항로 보드 생성기")
@@ -1584,7 +1622,18 @@ def main() -> None:
         help="본인 역할 배만 잘라서 출력 (ceo·cmo·coo·cpo·cto). 부팅 슬라이스 — "
              "원본은 한 벌 그대로, 읽을 때만 자른다(배10369).",
     )
+    parser.add_argument(
+        "--ship", default="", metavar="N",
+        help="배 하나만 전체 기록으로 출력(번호=short_no 또는 ship_no). "
+             "부팅 지시문이 '배를 착수할 땐 그 배 하나만 큐에서 찾아 끝까지 읽는다'고 하는데 "
+             "그 명령이 없어서, 세션마다 1MB 짜리 status/_queue.json 을 통째로 훑고 있었다"
+             "(2026-08-13 토큰 감사). 새 스크립트를 만들지 않고 여기 관문에 얹는다(약속 L21).",
+    )
     args = parser.parse_args()
+
+    if args.ship:
+        _print_one_ship(args.ship)
+        return
 
     if args.dry_run:
         gas_items = []
