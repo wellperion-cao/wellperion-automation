@@ -1678,8 +1678,11 @@ def _midmgr_reply_slice(role_slug: str) -> str:
         joined = " ".join(msgs[label]).strip()
         if joined:
             any_reply = True
-            snippet = joined[:100] + ("…" if len(joined) > 100 else "")
-            out.append(f'  · {label} — "{snippet}"')
+            # 100자였던 것을 340자로 넓힌다 (2026-08-13). 실장님이 남긴 회원 환불건(변호사
+            # 응대 여부 질문)이 100자 컷에 잘려 나가 화면에선 "사진 매출보고서…"까지만 보였다.
+            # 여기는 GM 화면이 아니라 웰리가 판단하려고 읽는 자리다 — 잘라서 얻는 게 없다.
+            snippet = joined[:340] + ("…" if len(joined) > 340 else "")
+            out.append(f'  · {label} ({len(msgs[label])}줄) — "{snippet}"')
         else:
             out.append(f"  · {label} — 회신 없음")
     if not any_reply:
