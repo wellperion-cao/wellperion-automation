@@ -3182,14 +3182,29 @@ function _snapActiveGet_() {
   if (!_snapActivePromise_) _snapActivePromise_ = _snapFetchJson_(_SNAP_RAW_BASE_ + 'member_active_snapshot.json');
   return _snapActivePromise_;
 }
-var _activeSnapOnly = false;
+/* LOSS(종료) 명단도 같은 방식으로 미리 담아 둔다 — 2026-08-13 GM "3번 진행".
+   실측: LOSS 명단 조회 6.6초 · 스냅샷 0.3초. 유효회원과 똑같이, 그린 뒤에도 진짜 조회는 그대로 나가
+   도착하는 즉시 덮는다(옛 명단이 남을 위험 없음). */
+var _snapEndedPromise_ = null;
+function _snapEndedGet_() {
+  if (!_snapEndedPromise_) _snapEndedPromise_ = _snapFetchJson_(_SNAP_RAW_BASE_ + 'member_ended_snapshot.json');
+  return _snapEndedPromise_;
+}
+function _snapForScope_(scope) {
+  if (scope === 'valid') return _snapActiveGet_();
+  if (scope === 'ended') return _snapEndedGet_();
+  return Promise.resolve(null);   // 법인은 32명뿐이라 4.6초 — 미리 담아 둘 값이 없다
+}
+// 값 = 스냅샷으로 그려 둔 명단 이름('valid'·'ended'). 빈 문자열이면 잠금 없음.
+//   이름을 담는 이유: 유효회원만 스냅샷을 쓰던 때는 참/거짓으로 충분했지만, LOSS 명단까지 쓰게 되면서
+//   "어느 명단이 아직 스냅샷인지"를 알아야 그 명단에서만 잠글 수 있다(2026-08-13).
+var _activeSnapOnly = '';
 function _activeSnapGuard() {
   /* ★2026-08-13 GM 신고 "LOSS 회원 박민님 종료일자를 고치려는데 동기화가 안 된다" 근본수리.
      스냅샷은 **유효회원 명단에만** 있다. 그런데 이 잠금은 스코프를 안 가려서, 스냅샷으로 그린 직후
      LOSS·법인 화면으로 넘어가면 그쪽 수정까지 같이 막혔다 — 실무진에겐 '눌러도 아무 일이 안 난다'로 보인다.
      잠금은 스냅샷이 실제로 그려져 있는 유효회원 화면에서만 건다. */
-  if (!_activeSnapOnly) return false;
-  if ((_activeScope || 'valid') !== 'valid') return false;
+  if (!_activeSnapOnly || _activeSnapOnly !== (_activeScope || 'valid')) return false;
   try { showToast('최신 명단 불러오는 중 — 잠시 후 수정할 수 있습니다', 'err'); } catch (e) {}
   return true;
 }
@@ -7565,16 +7580,14 @@ function loadActiveMembers() {
     _activeRenderState('loading');
     // 캐시 없는 첫 진입·새 기기 — 스냅샷으로 먼저 그린다(0.3초). 아래 GAS 재검증은 조건 없이 항상 발사돼
     // 도착하는 즉시 이 그림을 덮는다(유실 0). scope=valid 만 스냅샷이 있다.
-    if (scope === 'valid') {
-      _snapActiveGet_().then(function(snap){
-        if (_activeLoaded) return;                       // 실데이터가 이미 이겼으면 폐기(레이스 가드)
-        if ((_activeScope || 'valid') !== 'valid') return;
-        if (!_snapFresh_(snap)) return;
-        _activeSnapOnly = true;                          // 실데이터 도착 전까지 편집 잠금
-        _activeApplyData(snap.headers || [], snap.rows.slice(), true);
-        _activeLoaded = false;                           // 스냅샷은 '로드 완료'가 아니다 — 위 레이스 가드용
-      });
-    }
+    _snapForScope_(scope).then(function(snap){
+      if (_activeLoaded) return;                       // 실데이터가 이미 이겼으면 폐기(레이스 가드)
+      if ((_activeScope || 'valid') !== scope) return; // 기다리는 사이 다른 명단으로 옮겼으면 그리지 않는다
+      if (!_snapFresh_(snap)) return;
+      _activeSnapOnly = scope;                         // 실데이터 도착 전까지 이 명단만 편집 잠금
+      _activeApplyData(snap.headers || [], snap.rows.slice(), true);
+      _activeLoaded = false;                           // 스냅샷은 '로드 완료'가 아니다 — 위 레이스 가드용
+    });
   }
   var _seq = ++_activeReqSeq;
   return fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
@@ -7583,7 +7596,7 @@ function loadActiveMembers() {
       data = _maDecodeRowsFormat(data);   // format='rows' 배열응답 → 기존 {headers, data:[{...}]} 모양으로 복원
       // ★잠금 해제는 어떤 갈래로 빠져나가도 반드시 지난다(2026-08-13). 아래 경쟁 가드나 오류로 먼저
       //   빠져나가면 잠금이 영영 안 풀려 화면 전체가 수정 불가가 된다 — 실무진에겐 원인 없는 먹통이다.
-      if (scope === 'valid') _activeSnapOnly = false;
+      if (_activeSnapOnly === scope) _activeSnapOnly = '';
       if (_seq !== _activeReqSeq) return;   // 더 최신 요청이 있으면 이 응답 무시(경쟁 가드)
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
@@ -7592,7 +7605,7 @@ function loadActiveMembers() {
       _activeApplyData(data.headers, data.data, false);
     })
     .catch(function(err){
-      if (scope === 'valid') _activeSnapOnly = false;   // 실패해도 잠금은 푼다 — 못 불러온 것과 못 고치는 것은 다르다
+      if (_activeSnapOnly === scope) _activeSnapOnly = '';   // 실패해도 잠금은 푼다 — 못 불러온 것과 못 고치는 것은 다르다
       if (_seq !== _activeReqSeq) return;
       if (cached) return;   // 이미 보관분으로 그려 둔 화면은 지우지 않는다(빈 화면 대신 직전 값 유지)
       _activeRenderState('error', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');

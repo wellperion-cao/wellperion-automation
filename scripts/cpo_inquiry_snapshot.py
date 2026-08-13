@@ -51,6 +51,9 @@ LESSON_OUT = STATUS_DIR / "inquiry_snapshot_lesson.json"
 # 덩치 문제가 아니다). 같은 데이터를 이 스냅샷으로 받으면 0.3초다 — 이미 문의 2종이 쓰고 있는
 # 방식을 유효회원에도 그대로 붙인다(새 모듈·새 예약 0, 이 스크립트 안에서 한 벌 더 받을 뿐).
 ACTIVE_OUT = STATUS_DIR / "member_active_snapshot.json"
+# LOSS(종료) 회원 명단 스냅샷 — 2026-08-13 GM 지시("3번 진행"). 실측: LOSS 명단 조회는 6.6초 걸린다.
+# 유효회원과 같은 방식으로 미리 담아 두면 첫 화면이 0.3초다. 새 예약·새 모듈 없이 이 주기 안에서 한 벌 더 받는다.
+ENDED_OUT = STATUS_DIR / "member_ended_snapshot.json"
 # 회원 현황 한 장(2026-08-13 GM "현황 보는 게 너무 불편, 보고가 쉽게 들어가야" — 배312/578 데이터쪽).
 # 신규·재등록·LOSS 월별 롤업 + 유효회원 구성 — cpo_report.build_status_onepager() 조립 결과 그대로 dump.
 ONEPAGER_OUT = STATUS_DIR / "cpo_status_onepager.json"
@@ -173,16 +176,22 @@ def build_member(prev: dict | None, warnings: list) -> dict:
             "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
 
 
-def build_active(prev: dict | None, warnings: list) -> dict:
-    """유효회원 명단(scope=valid). 화면이 쓰는 모양 그대로 {headers, rows} 로 담는다.
+def build_active(prev: dict | None, warnings: list, scope: str = "valid") -> dict:
+    """회원 명단 스냅샷. 화면이 쓰는 모양 그대로 {headers, rows} 로 담는다.
+    scope='valid' 유효회원 · 'ended' LOSS 회원(2026-08-13 GM "3번 진행" — LOSS 명단도 첫 화면 0.3초로).
     실패 시 직전 값 carry-forward — 빈 명단으로 덮어쓰지 않는다(유실 0)."""
     now = _now_kst()
+    tag = "active" if scope == "valid" else f"active.{scope}"
     try:
-        data = _gas_get("member_active_list", {"scope": "valid"}, timeout=60, attempts=1)
+        data = _gas_get("member_active_list", {"scope": scope}, timeout=60, attempts=1)
     except Exception as e:
         data = None
-        warnings.append(f"active: 예외 {e}")
+        warnings.append(f"{tag}: 예외 {e}")
     rows = (data or {}).get("data")
+    if data is not None and isinstance(rows, list) and scope != "valid":
+        # LOSS 명단은 상단 카드 숫자를 쓰지 않는다 — 유효회원 쪽에서 이미 한 번 싣는다(중복 조회 0).
+        return {"ok": True, "count": len(rows), "headers": data.get("headers") or [], "rows": rows,
+                "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
     if data is not None and isinstance(rows, list):
         # 상단 카드 숫자(오늘/이번달 문의·등록·이탈)도 같이 실어 보낸다 — 화면이 이 값을 즉시 그리고,
         # 뒤이어 도착하는 GAS 실시간 값이 덮는다. 집계는 서버 값을 그대로 나르기만 한다(계산 복제 0).
@@ -197,9 +206,9 @@ def build_active(prev: dict | None, warnings: list) -> dict:
         return {"ok": True, "count": len(rows), "headers": data.get("headers") or [], "rows": rows,
                 "today_stats": stats,
                 "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
-    warnings.append("active: GAS 조회 실패(재시도는 다음 주기)")
+    warnings.append(f"{tag}: GAS 조회 실패(재시도는 다음 주기)")
     if prev and isinstance(prev.get("rows"), list):
-        warnings.append("active: 직전 스냅샷 carry-forward")
+        warnings.append(f"{tag}: 직전 스냅샷 carry-forward")
         carried = dict(prev)
         carried["ok"] = False
         return carried
@@ -303,10 +312,12 @@ def main() -> int:
         member_payload = build_member(prev_member, warnings)
         lesson_payload = build_lesson(prev_lesson, warnings)
         active_payload = build_active(prev_active, warnings)
+        ended_payload = build_active(_load_prev(ENDED_OUT), warnings, scope="ended")
         onepager_payload = build_onepager(prev_onepager, warnings, active_payload)
         member_payload["warnings"] = warnings[:]  # 전체 워닝 공유 게시(디버그 편의)
         lesson_payload["warnings"] = warnings[:]
         active_payload["warnings"] = warnings[:]
+        ended_payload["warnings"] = warnings[:]
 
         # 작업트리 파일은 항상 갱신(다음 회차 carry-forward가 최신 시도값을 보게) — 커밋 여부만 별도 판단.
         MEMBER_OUT.write_text(
@@ -318,15 +329,19 @@ def main() -> int:
         ACTIVE_OUT.write_text(
             json.dumps(active_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
         )
+        ENDED_OUT.write_text(
+            json.dumps(ended_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+        )
         ONEPAGER_OUT.write_text(
             json.dumps(onepager_payload, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         _log(f"[active] {active_payload.get('count', 0)}명, ok={active_payload.get('ok')}")
+        _log(f"[ended] {ended_payload.get('count', 0)}명, ok={ended_payload.get('ok')}")
         _log(f"[member] {member_payload.get('count', 0)}건, ok={member_payload.get('ok')}")
         a = lesson_payload["adult"]["year"]; y = lesson_payload["youth"]["year"]
         _log(f"[lesson] 성인 {a.get('count', 0)}건(ok={a.get('ok')}) · 유소년 {y.get('count', 0)}건(ok={y.get('ok')})")
         _op_comp = onepager_payload.get("composition", {})
-        _log(f"[onepager] 정회원 {_op_comp.get('정회원', '-')} · 대기 {_op_comp.get('대기', '-')} · 법인 {_op_comp.get('법인', '-')} (ok={_op_comp.get('ok')})")
+        _log(f"[onepager] 유효회원 {_op_comp.get('유효회원_전체', '-')} · 그중 대기 {_op_comp.get('대기', '-')} · 법인 {_op_comp.get('법인', '-')} (ok={_op_comp.get('ok')})")
 
         # 가동 신호는 하트비트 1곳에만 남긴다(2026-07-25 시포·배1). 예전엔 회차마다 커밋이
         # 완료-배를 낳아 G1 '입항 완료(오늘)'를 도배했다 — 배는 실무 신호용이고, 무인 모듈의
@@ -353,6 +368,8 @@ def main() -> int:
             _log("[lesson] HEAD 대비 무변경(하트비트 이내) — 커밋 스킵")
         if _should_commit(_load_prev_from_head(ACTIVE_OUT), active_payload):
             changed_paths.append(str(ACTIVE_OUT))
+        if _should_commit(_load_prev_from_head(ENDED_OUT), ended_payload):
+            changed_paths.append(str(ENDED_OUT))
         else:
             _log("[active] HEAD 대비 무변경(하트비트 이내) — 커밋 스킵")
         if _should_commit(_load_prev_from_head(ONEPAGER_OUT), onepager_payload):
