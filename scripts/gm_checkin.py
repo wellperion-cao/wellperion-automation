@@ -310,8 +310,16 @@ def build_slot(slot_id: str, day: str | None = None) -> dict:
         if plan:
             lines.append(f"   {plan}")
         if v not in ('O', 'X'):
-            rows.append([{'text': '○ 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
-                         {'text': '－ 안 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
+            # ★버튼에 무엇에 대한 답인지 적는다 (GM 지시 2026-08-13 "아침 식사 / 아침 운동
+            #   이렇게 별도로 했다 안했다로 해줘"). 전에는 두 축 다 안 눌린 아침 카드에
+            #   '○ 했다 / － 안 했다' 줄이 **똑같이 두 줄** 떠서 어느 줄이 식사고 어느 줄이
+            #   운동인지 눌러 보기 전엔 알 수 없었다. 이름은 기존 축 분류에서 뽑는다
+            #   (_MEAL_AXES/_EX_AXES — 새 표 만들지 않는다 · 약속 L01).
+            kind = '식사' if axis in _MEAL_AXES else '운동'
+            icon = label[0] if label and not label[0].isalnum() and label[0] not in ' ' else ''
+            tag = f"{icon} {kind}".strip()
+            rows.append([{'text': f'○ {tag} 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
+                         {'text': f'－ {tag} 안 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
     # 구성이 적혀 있는 카드에만 고치는 길을 한 줄로 알린다(GM 지시 2026-08-12 "아닌건 수정하는 방향으로").
     if any(_axis_plan(axis, day) for axis, _label in items):
         lines += ['', '바뀐 게 있으면 답장으로 알려 주세요 — 그대로 고칩니다.']
