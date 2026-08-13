@@ -34,3 +34,12 @@ for out in (a, b):
     assert len(parts) == len(set(parts)), out
 
 print("OK — worklog._commits_between 5개 검사 통과")
+
+# _window_end — 창 끝 = 다음 접수 + 유예 60분 (2026-08-13 수리분)
+_all = ["2026-08-13T15:57:28+09:00", "2026-08-13T15:58:38+09:00"]
+_end = w._window_end(_all[0], _all)
+assert _end.startswith("2026-08-13T16:58:38"), _end        # 다음 접수 +60분
+assert w._window_end(_all[1], _all) == ""                  # 마지막 지시는 창을 열어 둔다
+_used = set()
+assert w._commits_between("2099-01-01T00:00:00+09:00", "", "cto", _used) == ""
+print("OK — _window_end 3개 검사 통과")

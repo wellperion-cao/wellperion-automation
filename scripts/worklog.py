@@ -138,7 +138,8 @@ def record_gm_prompt_hook() -> None:
 _AUTO_NOISE = ("chore(auto)", "chore(queue): auto-log", "Merge ", "chore(sync)")
 
 
-def _commits_between(since: str, until: str = "", role: str = "") -> str:
+def _commits_between(since: str, until: str = "", role: str = "",
+                     used: set | None = None) -> str:
     """[since, until) 사이 **그 역할이 남긴** 커밋 제목을 사람 말로 잇는다. 없으면 빈 문자열.
 
     ★역할 태그로 거른다(2026-08-13 실측). 이 저장소는 세션 5개가 동시에 커밋하므로 시각만으로
@@ -175,6 +176,11 @@ def _commits_between(since: str, until: str = "", role: str = "") -> str:
         seen.add(s)
         uniq.append(s)
     subs = uniq
+    # 앞선 지시가 이미 가져간 커밋은 뺀다 — 창 끝을 열어 두면(아래 close_gm_refs 참조)
+    # 같은 커밋이 여러 지시의 「한 것」 칸에 중복으로 붙는다.
+    if used is not None:
+        subs = [s for s in subs if s not in used]
+        used.update(subs)
     if not subs:
         return ""
     # 커밋 제목의 앞머리 태그(feat(cto): 등)는 GM 화면에서 읽히지 않아 떼고 보여준다.
@@ -184,6 +190,31 @@ def _commits_between(since: str, until: str = "", role: str = "") -> str:
         clean.append(body[:70])
     tail = f" 외 {len(subs) - 3}건" if len(subs) > 3 else ""
     return " · ".join(clean) + tail
+
+
+_GRACE_MINUTES = 60
+
+
+def _window_end(ts: str, all_ts: list) -> str:
+    """그 지시의 커밋을 찾을 창의 끝 = 다음 접수 시각 + 유예 60분.
+
+    ★유예가 있어야 하는 이유(2026-08-13 수리): 접수 훅은 GM 이 말한 **순간** 찍히고,
+    커밋은 내가 일을 마친 **뒤**에 나온다. 그래서 '다음 접수 시각'을 그대로 창 끝으로 쓰면
+    GM 이 짧게 연달아 말씀하실 때 창이 70초짜리가 되고 그 안엔 커밋이 하나도 없다
+    (실측: 창 15:57:28~15:58:38, 정작 그 지시의 커밋은 16:0x). 그 결과 「⚠️ 자동종결」이
+    쌓여 하루에 두 번(7건·4건) GM 께 드리기 전에 손으로 채워야 했다.
+    유예를 무한대로 두면 반대로 한 지시가 하루치 커밋을 다 먹으므로 60분으로 끊는다.
+    """
+    import datetime as _dt
+
+    nxt = next((t for t in all_ts if t > ts), "")
+    if not nxt:
+        return ""  # 마지막 지시 — 창을 열어 둔다(그 뒤 커밋은 전부 이 지시 것)
+    try:
+        return (_dt.datetime.fromisoformat(nxt)
+                + _dt.timedelta(minutes=_GRACE_MINUTES)).isoformat()
+    except ValueError:
+        return nxt
 
 
 def close_gm_refs(role: str, detail: str = "") -> int:
@@ -225,19 +256,28 @@ def close_gm_refs(role: str, detail: str = "") -> int:
                     ok.add(ref)
         n = 0
         pending = [(r, t) for r, t in sorted(warn.items(), key=lambda kv: kv[1]) if r not in ok]
-        # 다음 접수 시각을 그 건의 창 끝으로 쓴다 — 그래야 지시마다 자기 커밋만 가져간다.
+        # ★창 끝을 열어 둔다(2026-08-13 수리). 전에는 '다음 접수 시각'을 창 끝으로 썼는데,
+        #   GM 이 짧게 연달아 말씀하시면 창이 1분짜리가 되고 **내 작업 커밋은 그 창이 닫힌
+        #   뒤에 나온다** — 접수 훅은 GM 이 말한 순간 찍히고, 커밋은 내가 일을 마친 뒤라
+        #   순서가 항상 어긋난다. 실측(2026-08-13): 창 15:57:28~15:58:38(70초) 안에 내
+        #   커밋이 하나도 없어 「⚠️ 자동종결」로 닫혔고, 정작 그 지시의 커밋은 16:0x 에 있었다.
+        #   같은 이유로 하루에 두 번(7건·4건) GM 께 드리기 전에 손으로 채워야 했다.
+        #   대신 같은 커밋이 여러 지시에 중복으로 붙지 않게 `used` 로 이미 쓴 제목을 뺀다.
+        #   ★순서도 뒤집는다 — **최신 지시부터** 커밋을 집는다. 창 끝을 열어 둔 채 오래된
+        #   것부터 돌리면 가장 오래된 지시가 최신 커밋까지 전부 먹고 뒤 지시는 빈칸이 된다
+        #   (실측 2026-08-13: 15:37 지시가 19:0x 커밋을 가져가고 15:57 지시가 빈칸).
+        #   ★순서도 뒤집는다 — **최신 지시부터** 커밋을 집는다. 창 끝을 늘린 채 오래된
+        #   것부터 돌리면 가장 오래된 지시가 뒤쪽 커밋까지 전부 먹고 뒤 지시는 빈칸이 된다
+        #   (실측 2026-08-13: 15:37 지시가 19:0x 커밋을 가져가고 15:57 지시가 빈칸).
+        used_subjects: set = set()
         all_ts = sorted(warn.values())
-        for idx, (ref, ts) in enumerate(pending):
-            nxt = ""
-            for t in all_ts:
-                if t > ts:
-                    nxt = t
-                    break
+        for idx, (ref, ts) in enumerate(reversed(pending)):
+            nxt = _window_end(ts, all_ts)
             # 기본 detail 은 "정말 아무것도 안 적은 것"이다 — 쿵짝표가 이걸 완료로 세면서
             # GM 이 "빈틈이 생긴다"고 지적한 30건 중 다수가 이 자리였다(2026-08-13). 실제로
             # 처리한 게 없다는 사실 자체를 detail 에 정직하게 남긴다(⚠️ 로 시작 — 쿵짝표
             # evidence_state 가 상투어로 걸러낸다).
-            auto = detail or _commits_between(ts, nxt, role_v)
+            auto = detail or _commits_between(ts, nxt, role_v, used_subjects)
             if log(role_v, "GM지시", "답변 종결 — 세션이 응답을 마쳤다",
                    result="ok",
                    detail=auto or "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
