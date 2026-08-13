@@ -321,13 +321,16 @@ def suc_missing_from_member_list(rows: list[dict], grace_days: int = 1) -> dict 
     grace_days: 오늘 막 등록한 건은 아직 종목 저장 중일 수 있어 뺀다(기본 1일).
     반환 None = 조회 실패(0 으로 위장하지 않는다).
     """
+    # 종료회원(ended)도 '명단에 있음'으로 친다 — 등록은 됐고 그 뒤 종료된 사람이라
+    # 미반영이 아니다. 2026-08-11 재대조에서 19명 중 11명이 이 누락 때문에 생긴 오탐이었다.
     valid = fetch_active_members("valid")
     corp = fetch_active_members("corp")
-    if valid is None or corp is None:
+    ended = fetch_active_members("ended")
+    if valid is None or corp is None or ended is None:
         return None
 
     have = set()
-    for m in list(valid) + list(corp):
+    for m in list(valid) + list(corp) + list(ended):
         for k, v in m.items():
             if "휴대폰" in str(k) or "연락처" in str(k):
                 key = _phone_key(v)
