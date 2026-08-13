@@ -203,7 +203,10 @@ def evidence_state(got: str, did: str, up: str) -> str:
     if any(k in (got or '') for k in STOP_KEYWORDS):
         return '🔁재확인'
     t = (did or '').strip()
-    if not t or t in _STOCK_PHRASES:
+    # '⚠️' 로 시작하는 detail 은 스스로 "증거 없음"이라 밝힌 것이다(close_gm_refs 자동종결
+    # 기본값, 2026-08-13). upload_state 가 근처 시간대 커밋을 주워 ✅로 보이게 하는 것보다
+    # 이 자기표시가 우선이다 — 안 그러면 "증거 없음"이라 적어 놓고 증거있음으로 뜬다.
+    if not t or t in _STOCK_PHRASES or t.startswith('⚠️'):
         return '⚠️없음'
     if up.startswith('✅') or up.startswith('⚠️ 저장만'):
         return '✅있음'
