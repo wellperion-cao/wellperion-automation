@@ -1,3 +1,10 @@
+<!-- 종합접수처 첫 화면으로 돌아가는 길 (2026-08-13 GM 지시) — 테마가 본문을 transform 으로 감싸
+     position:fixed 가 화면에 안 붙는다. 그래서 본문 맨 위 인라인으로 두고, 스타일도 인라인으로 박아
+     페이지별 CSS 스코프에 영향받지 않게 한다. -->
+<div style="padding:14px 0 2px 14px">
+  <a href="http://wellperion.com/ko/lookup/" style="display:inline-flex;align-items:center;gap:7px;padding:11px 18px;border-radius:999px;background:rgba(20,20,25,.9);color:#e2c98d;border:1px solid rgba(216,189,134,.5);text-decoration:none;font-weight:700;font-size:13.5px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.25)">&#8592; 종합접수처</a>
+</div>
+
 <!-- 웰페리온 종합접수처 블록 — 워드프레스 '종합접수처' 페이지(8434) 본문 직접 주입 소스 (SSOT)
      ★ 근본구조: iframe('미리보기 창') 폐기 → 폼을 페이지에 직접 인라인 주입.
         문의 페이지(8394)가 wp_inquiry_block.html 을 vc_raw_html 로 직접 심는 것과 완전히 동일한 방식.
