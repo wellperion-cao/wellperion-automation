@@ -961,21 +961,37 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <iframe id="scheduleFrame" data-src="전사_일정.html?dept=시설부&embed=1" title="시설부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
   <script>
-  /* 비어 있는 법정점검 건수를 원천(status/schedule_ssot.json)에서 세어 표시.
-     실패하면 숫자 없이 안내만 띄운다(가짜 숫자 금지). 0건이면 안내 자체를 감춘다 — 다 채웠으면 조용해야 한다. */
+  /* 비어 있는 법정점검 건수를 **전사일정 라이브(GAS)** 에서 세어 표시.
+     ★2026-08-13 수리(웰리): 여기가 저장소 폴백 파일(status/schedule_ssot.json)을 읽고 있었다.
+       그 파일은 시드일 뿐이고 정본은 GAS 라이브다(전사_일정.html 이 GAS 를 읽고 쓴다).
+       그래서 이정헌 소장님이 회신해 주신 실시일 4건을 라이브에 채워 넣어도 **이 화면의
+       "비어 있습니다 N건" 숫자는 그대로 남았다.** 회신했는데 화면이 안 바뀌면 다음엔
+       회신하지 않으신다 — 실무진 루프가 여기서 끊긴다.
+     라이브가 안 되면 예전 시드로 물러선다(숫자가 0이 되는 것보다 낫다). 0건이면 안내 자체를 감춘다. */
   (function(){
-    fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb=' + Date.now(), {cache:'no-store'})
+    var LIVE = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec?action=load_schedule&cb=';
+    var SEED = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb=';
+    function countBlank(items){
+      return (items||[]).filter(function(it){
+        return it && it.type === '정기점검' && String(it.dept||'').indexOf('시설') >= 0 && !String(it.last_done||'').trim();
+      }).length;
+    }
+    function show(n){
+      if(!n) return;                                    // 다 채워졌으면 안내 숨김 유지
+      document.getElementById('facLegalCount').textContent = '· ' + n + '건';
+      document.getElementById('facLegalAsk').style.display = 'block';
+    }
+    fetch(LIVE + Date.now(), {cache:'no-store'})
       .then(function(r){ return r.json(); })
-      .then(function(d){
-        var n = (d.items||[]).filter(function(it){
-          return it && it.type === '정기점검' && String(it.dept||'').indexOf('시설') >= 0 && !String(it.last_done||'').trim();
-        }).length;
-        if(!n) return;                                  // 다 채워졌으면 안내 숨김 유지
-        document.getElementById('facLegalCount').textContent = '· ' + n + '건';
-        document.getElementById('facLegalAsk').style.display = 'block';
+      .then(function(res){
+        if(!(res && res.ok && res.data && res.data.items)) throw new Error('live empty');
+        show(countBlank(res.data.items));
       })
-      .catch(function(){                                 // 못 셌으면 숫자 없이 안내만
-        document.getElementById('facLegalAsk').style.display = 'block';
+      .catch(function(){                                 // 라이브 실패 → 시드로 물러선다
+        fetch(SEED + Date.now(), {cache:'no-store'})
+          .then(function(r){ return r.json(); })
+          .then(function(d){ show(countBlank(d.items)); })
+          .catch(function(){ document.getElementById('facLegalAsk').style.display = 'block'; });
       });
   })();
   </script>
