@@ -29,6 +29,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LOG = ROOT / 'status' / 'worklog.jsonl'
+QUEUE = ROOT / 'status' / '_queue.json'
 SHA_RE = re.compile(r'\b([0-9a-f]{7,40})\b')
 
 NICK = {'ceo': '웰리', 'cto': '시토', 'cmo': '시모', 'cpo': '시포',
@@ -529,6 +530,128 @@ def _render_table(by: dict, day: str) -> None:
     print(line)
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 배·작업 단위 표 (GM 지시 2026-08-13 3차 — "쿵짝표 배편&업무&작업 등을 식별번호 /
+# 전달내용 / 결과 / 소요시간 / 커밋&푸시 이런거 몰라?")
+#   왜 갈아엎나: GM 발화 한 줄 = 표 한 줄이던 구조는 "응"·"A"·"컹" 같은 승인·감상까지
+#   줄로 만들었다(2026-08-13 GM 지적). GM 이 실제로 보고 싶은 건 **오늘 한 업무**다 —
+#   줄의 단위를 "GM 발화"에서 "배·작업"으로 바꾼다.
+# ══════════════════════════════════════════════════════════════════════════
+_EXCLUDE_NOISE = re.compile(r'배\s*\d+\s*(종결|DONE 처리)')  # 이미 배 표에 뜨는 종결 기록 — 중복
+
+
+_TOPIC_KEYWORDS: list[tuple[re.Pattern, str]] = [
+    # (화제 정규식, 표시 라벨) — 배 없이 한 작업을 화제로 묶는다. 새 화제가 나오면
+    # 매칭 안 되는 항목은 억지로 안 묶고 그 자체로 한 줄이 된다(오탐보다 누락이 낫다).
+    (re.compile(r'이경연|실장'), '실장 전달문'),
+    (re.compile(r'이정헌|소장'), '소장 전달문'),
+    (re.compile(r'나우열M'), '나우열M 전달문'),
+    (re.compile(r'쿵짝표'), '쿵짝표 정리'),
+    (re.compile(r'배233'), '배233(웰리 상설) 정리'),
+    (re.compile(r'GM업무|회장님 지시사항|오넛티'), 'GM업무·회장님 체크리스트'),
+    (re.compile(r'업무\s*SSOT'), '업무 SSOT 정리'),
+    (re.compile(r'CCTV|체육시설|점검'), '점검 2건(체육시설·CCTV)'),
+    (re.compile(r'전사일정'), '전사일정 갱신'),
+    (re.compile(r'statusline'), 'statusline 복구'),
+    (re.compile(r'브로제이'), '브로제이 확인'),
+    (re.compile(r'자율현황'), '자율현황 화면 정리'),
+    (re.compile(r'항로|안 물어봄|답 없음|GM 신호'), '항로 판정 신설'),
+    (re.compile(r'릴레이|worklog_gaps|빠진 것'), '릴레이·자가점검 보강'),
+    (re.compile(r'렌더|화면 열람|화면 숫자'), '화면 렌더·집계 오류 수리'),
+    (re.compile(r'배열람 핑|열람 핑'), '화면 열람 핑'),
+    (re.compile(r'업무 진행 건수|현황판 숫자'), '업무 진행 건수 라벨 정리'),
+    (re.compile(r'지원부'), '지원부 점검 관련'),
+    (re.compile(r'worklog\s*완료짝|완료 기록.*실제 내용|상투어'), 'worklog 완료짝 실증거 채움'),
+]
+
+
+def _load_queue() -> list[dict]:
+    try:
+        q = json.loads(QUEUE.read_text(encoding='utf-8'))
+    except Exception:
+        return []
+    return q if isinstance(q, list) else q.get('items', q.get('tasks', []))
+
+
+def _commit_cell(text: str) -> str:
+    """커밋&푸시 칸 — 해시가 있으면 원격 도달까지 확인, 없으면 '—'."""
+    shas = [m.group(1) for m in SHA_RE.finditer(text) if not m.group(1).isdigit()]
+    if not shas:
+        return '—'
+    return f"{shas[0][:9]}·{'푸시됨' if _pushed(shas[0]) else '푸시 안 됨'}"
+
+
+def build_task_rows(day: str, role: str) -> list[dict]:
+    """오늘 한 업무를 배·작업 단위로. ①오늘 닫힌 배(status/_queue.json DONE)
+    ②배 없이 한 작업(worklog 작업기록, 화제별로 묶음). GM 발화(ref)는 그룹핑
+    근거로만 쓰고 표엔 안 낸다."""
+    rows = []
+    for it in _load_queue():
+        if (it.get('clevel') or '').strip().lower() != role:
+            continue
+        if it.get('status') != 'DONE':
+            continue
+        d = str(it.get('processed_at') or it.get('updated_at') or '')
+        if not d.startswith(day):
+            continue
+        note = str(it.get('note') or '')
+        enq, proc = str(it.get('enqueued_at') or ''), str(it.get('processed_at') or '')
+        dur = '—'
+        if enq and proc:
+            try:
+                e = datetime.datetime.fromisoformat(enq.replace('Z', '+00:00'))
+                p = datetime.datetime.fromisoformat(proc) if 'T' in proc else None
+                if p:
+                    dur = _dur(e.replace(tzinfo=None), p.replace(tzinfo=None))
+            except Exception:
+                dur = '—'
+        rows.append({
+            'no': f"{NICK.get(role, role)} {it.get('short_no')}",
+            'title': str(it.get('title') or '').strip()[:40],
+            'result': note.strip()[-90:] or '(note 없음)',
+            'dur': dur,
+            'commit': _commit_cell(note),
+        })
+
+    grouped: dict[str, list] = {}
+    for w in load_work(day, role, limit=300):
+        if _EXCLUDE_NOISE.search(w['event']):
+            continue  # 배 표에 이미 뜬 종결 기록 — 중복 안 낸다
+        label = next((lab for pat, lab in _TOPIC_KEYWORDS if pat.search(w['event'])), None)
+        label = label or w['event'][:24]
+        grouped.setdefault(label, []).append(w)
+    for label, ws in grouped.items():
+        ws.sort(key=lambda x: x['time'])
+        span = f"{ws[0]['time']}~{ws[-1]['time']}" if len(ws) > 1 else ws[0]['time']
+        dur = '—'
+        if len(ws) > 1:
+            try:
+                t0 = datetime.datetime.strptime(ws[0]['time'], '%H:%M')
+                t1 = datetime.datetime.strptime(ws[-1]['time'], '%H:%M')
+                dur = _dur(t0, t1)
+            except Exception:
+                dur = '—'
+        rows.append({
+            'no': f"작업 · {span}",
+            'title': label,
+            'result': ws[-1]['event'][:60],
+            'dur': dur,
+            'commit': _commit_cell(ws[-1]['detail']),
+        })
+    return rows
+
+
+def _render_task_table(day: str, role: str) -> None:
+    rows = build_task_rows(day, role)
+    print('| 식별번호 | 전달내용 | 결과 | 소요시간 | 커밋&푸시 |')
+    print('|---|---|---|---|---|')
+    for r in sorted(rows, key=lambda r: r['no']):
+        print(f"| {r['no']} | {r['title']} | {r['result'][:60]} | {r['dur']} | {r['commit']} |")
+    print()
+    print(f'**{len(rows)}건**(배 {sum(1 for r in rows if not r["no"].startswith("작업"))}척 · '
+          f'작업 {sum(1 for r in rows if r["no"].startswith("작업"))}건)')
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--role', default=None, help='ceo·cto·cmo·cpo·coo·chro·cfo')
@@ -560,14 +683,18 @@ def main() -> int:
             _render_table(carried, day)
             print()
 
-    by = load(day, role)
     print(f'## 🥁 쿵짝표 — {who} · {day}')
     print()
-    if not by:
-        print('오늘 받은 GM 지시가 없습니다.')
-        return 0
-
-    _render_table(by, day)
+    roles_to_show = list(NICK) if a.all_roles else [role]
+    for r in roles_to_show:
+        if a.all_roles:
+            print(f'### {NICK[r]}')
+        rows = build_task_rows(day, r)
+        if not rows:
+            print('오늘 닫힌 배·작업이 없습니다.')
+            continue
+        _render_task_table(day, r)
+        print()
 
     watch = find_stop_watch(role, day)
     if watch:
