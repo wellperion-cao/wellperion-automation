@@ -1154,6 +1154,43 @@ tr.wb-unsaved>td[data-wb-unsaved]::after{
 }
 
 /* ═══════════════════════════════════════
+   회원 현황 한 장 (2026-08-13 GM "현황 보는 게 너무 불편, 보고가 쉽게 들어가야")
+   데이터 = status/cpo_status_onepager.json 을 그대로 그린다. 이 화면은 계산하지 않는다 —
+   집계는 서버 잡 한 곳에서만 하고 여기서는 값을 옮겨 담기만 한다(두 곳에서 세면 숫자가 갈린다).
+   신뢰도 문구가 붙은 값은 숫자 밑에 그 문구를 항상 같이 적는다(확정값 오해 방지).
+   ═══════════════════════════════════════ */
+#opBody{font-size:13px;line-height:1.55}
+.op-sec{margin-top:14px}
+.op-sec:first-child{margin-top:0}
+.op-h{font-size:13px;font-weight:800;margin:0 0 7px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.op-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
+.op-box{border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.op-box .k{font-size:11px;color:var(--dim)}
+.op-box .v{font-size:22px;font-weight:800;line-height:1.25}
+.op-box .v small{font-size:11px;font-weight:600;color:var(--dim);margin-left:2px}
+.op-note{font-size:10.5px;color:var(--dim);line-height:1.45;margin-top:3px;word-break:keep-all}
+table.op-t{width:100%;border-collapse:collapse;font-size:12px}
+table.op-t th,table.op-t td{border:1px solid var(--border);padding:5px 8px;text-align:left;vertical-align:top;word-break:keep-all}
+table.op-t th{background:rgba(127,127,127,0.10);font-weight:700}
+table.op-t td b{font-size:15px}
+.op-ask{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:6px 9px;margin-bottom:6px;font-size:12px;word-break:keep-all}
+.op-ask .d{font-size:10.5px;color:var(--dim);margin-top:2px}
+.op-fail{color:var(--red,#d64040);font-size:12px;font-weight:700}
+/* A3 한 장 인쇄 — 이 보기를 열고 인쇄할 때만 발동(body.op-printing). 평소 인쇄는 기존 규칙 그대로. */
+@media print{
+  @page{size:A3 portrait;margin:10mm}
+  body.op-printing>*{display:none!important}
+  body.op-printing>#opOverlay{display:block!important;position:static;inset:auto;padding:0;overflow:visible;background:#fff}
+  body.op-printing #opOverlay .gdoc-modal{max-width:none;width:100%;padding:0;border:none;border-radius:0;box-shadow:none;background:#fff}
+  body.op-printing #opOverlay,body.op-printing #opOverlay *{color:#000!important;background-color:transparent!important;border-color:#999!important}
+  body.op-printing #opOverlay table.op-t th{background-color:#eee!important}
+  body.op-printing .op-noprint{display:none!important}
+  body.op-printing .op-note,body.op-printing .op-ask .d{color:#444!important}
+  body.op-printing #opBody{font-size:11.5px}
+  body.op-printing .op-sec{break-inside:avoid;page-break-inside:avoid}
+}
+
+/* ═══════════════════════════════════════
    반응형 — 태블릿 768px
    ═══════════════════════════════════════ */
 @media(max-width:768px){
@@ -1367,6 +1404,11 @@ tr.wb-unsaved>td[data-wb-unsaved]::after{
         <div class="hz-zone z-status">
           <div class="hz-zone-label">📊 현황 (라이브)</div>
           <div class="hz-btns">
+            <!-- 회원 현황 한 장 — GM 지시(2026-08-13) "현황 보는 게 너무 불편, 보고가 쉽게 들어가야".
+                 흩어져 있던 회원 구성·이번달/지난달 신규·재등록·LOSS·문의 전환·갱신임박을 한 화면에 모아
+                 A3 한 장으로 인쇄된다. 데이터는 이미 서버가 만들어 둔 status/cpo_status_onepager.json 을
+                 그대로 그린다(여기서 다시 집계하지 않음). 조회는 모달을 열 때만(페이지 로딩 지연 0). -->
+            <button class="action-btn" id="btnStatusOnepager" onclick="openStatusOnepager()">📄 회원 현황 한 장</button>
             <button class="action-btn" id="btnInquiryDash" onclick="openInquiryDash()">🆕 신규 문의 & 등록 현황</button>
             <!-- 재등록 현황 버튼 — 원본 대시보드(renewal.html)를 모달 iframe으로 노출. 사본 생성 금지(원본 변경 시
                  어긋남 방지, 2026-07-16 시설부 기준값 사고 재발방지). openInquiryDash 패턴 벤치마킹, 기존 코드 미변경. 2026-07-20 GM 지시 -->
@@ -3009,6 +3051,22 @@ tr.wb-unsaved>td[data-wb-unsaved]::after{
   </div>
 </div>
 
+<!-- ══ 회원 현황 한 장 (버튼 📄 회원 현황 한 장 → openStatusOnepager). gdoc 모달 패턴 그대로 사용.
+     본문은 status/cpo_status_onepager.json 을 그린 것 — 값 계산은 서버 잡(scripts) 한 곳에서만 한다.
+     '🖨 인쇄' 는 body 에 op-printing 클래스를 붙였다 떼며, 그 동안만 A3 한 장 인쇄 규칙이 발동한다. ══ -->
+<div class="gdoc-overlay" id="opOverlay" onclick="if(event.target===this)closeStatusOnepager()">
+  <div class="gdoc-modal" role="dialog" aria-modal="true" style="max-width:960px">
+    <div class="gdoc-modal-head">
+      <span class="gdoc-modal-title">📄 회원 현황 한 장</span>
+      <span style="display:flex;align-items:center;gap:12px" class="op-noprint">
+        <button class="action-btn" type="button" onclick="printStatusOnepager()">🖨 A3 한 장 인쇄</button>
+        <button class="gdoc-close" type="button" onclick="closeStatusOnepager()" aria-label="닫기">&times;</button>
+      </span>
+    </div>
+    <div id="opBody"><div style="color:var(--dim);font-size:12px">불러오는 중…</div></div>
+  </div>
+</div>
+
 <!-- ══ 실무진 피드백 모달 (헤더 버튼 💬 실무진 피드백 → openStaffFeedback). openRenewDash 모달 iframe 패턴
      그대로 벤치마킹(신규 디자인 없음). 본문 = 실무진피드백.html을 iframe으로 로드, 모달을 처음 열 때만
      data-src→src 승격(지연 로드). GM 지시(2026-07-24) ══ -->
@@ -4036,6 +4094,142 @@ function openRenewDash(){
 function closeRenewDash(){
   var ov = document.getElementById('renewDashModalOverlay');
   if (ov) ov.classList.remove('open');
+}
+
+/* ══ 회원 현황 한 장 (버튼 📄 회원 현황 한 장 → openStatusOnepager) — GM 지시 2026-08-13 ══
+   ★이 블록은 집계를 하지 않는다. 서버가 만들어 둔 status/cpo_status_onepager.json 의 값을 그대로 옮겨
+     그린다(같은 숫자를 두 곳에서 세면 반드시 갈린다 — 시설부 기준값 사고와 같은 함정).
+   ★신뢰도 문구(신규_신뢰·재등록_신뢰·대기_판정기준)가 붙은 값은 숫자 밑에 그 문구를 항상 같이 적는다.
+     숫자만 크게 띄우면 확정값으로 오해된다.
+   ★못 받으면 숫자를 짐작해 채우지 않는다 — "불러오지 못했습니다"만 적는다.
+   조회 시점 = 모달을 처음 열 때 1회(페이지 로딩에는 아무것도 얹지 않는다). */
+var _opLoaded = false;
+function openStatusOnepager(){
+  var ov = document.getElementById('opOverlay');
+  if (!ov) return;
+  ov.classList.add('open');
+  if (!_opLoaded) { _opLoaded = true; loadStatusOnepager(); }
+}
+function closeStatusOnepager(){
+  var ov = document.getElementById('opOverlay');
+  if (ov) ov.classList.remove('open');
+}
+// 인쇄하는 동안만 A3 한 장 규칙(body.op-printing)을 켠다 — 평소 이 페이지 인쇄는 기존 규칙 그대로.
+function printStatusOnepager(){
+  document.body.classList.add('op-printing');
+  window.addEventListener('afterprint', function _off(){
+    document.body.classList.remove('op-printing');
+    window.removeEventListener('afterprint', _off);
+  });
+  window.print();
+}
+function loadStatusOnepager(){
+  var body = document.getElementById('opBody');
+  fetch(_SNAP_RAW_BASE_ + 'cpo_status_onepager.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d){ body.innerHTML = _opRender(d); _opLoadAsks(); })
+    .catch(function(e){
+      _opLoaded = false;   // 다시 열면 재시도
+      body.innerHTML = '<div class="op-fail">현황 파일을 불러오지 못했습니다 — 숫자를 표시하지 않습니다.' +
+        '<div class="op-note">(' + esc(e && e.message) + ') 잠시 후 다시 열어 주세요.</div></div>';
+    });
+}
+// ★esc()는 String(s||'')라 숫자 0을 빈 문자로 만든다 — 집계값은 반드시 이 래퍼를 거쳐 문자열로 바꾼 뒤 넘긴다.
+function _opTxt(v){ return (v === null || v === undefined) ? '' : esc(String(v)); }
+// 값이 비어 있으면 0으로 바꾸지 않는다 — 비어 있다는 사실 자체가 정보다.
+function _opEmpty(v){ return v === null || v === undefined || v === ''; }
+function _opV(v){ return _opEmpty(v) ? '<small>미기재</small>' : _opTxt(v); }
+// 숫자 + 단위. 값이 없으면 단위를 붙이지 않는다("미기재명"이 되지 않게).
+function _opUnit(v, unit){ return _opV(v) + (_opEmpty(v) ? '' : '<small>' + unit + '</small>'); }
+function _opPairs(obj){
+  if (!obj) return '<span style="color:var(--dim)">미기재</span>';
+  var ks = Object.keys(obj);
+  if (!ks.length) return '<span style="color:var(--dim)">없음</span>';
+  return ks.map(function(k){ return _opTxt(k) + ' <b>' + _opTxt(obj[k]) + '</b>'; }).join(' · ');
+}
+function _opRender(d){
+  d = d || {};
+  var c = d.composition || {};
+  var m = d['월별'] || {};
+  var cur = m['이번달'] || {}, prev = m['지난달'] || {};
+  var h = '';
+
+  h += '<div class="op-note" style="margin:0 0 10px">기준 시각 <b>' + esc(d.generated_at || '미기재') + '</b>' +
+       (d.as_of ? ' · 집계 기준일 ' + esc(d.as_of) : '') +
+       ' · 멤버십 회원 기준. 값은 서버 집계본(status/cpo_status_onepager.json)을 그대로 표시합니다.</div>';
+
+  /* ① 회원 구성 */
+  h += '<div class="op-sec"><div class="op-h">회원 구성</div>';
+  if (c.ok === false) {
+    h += '<div class="op-fail">회원 구성을 불러오지 못했습니다.</div>';
+  } else {
+    h += '<div class="op-grid">' +
+      '<div class="op-box"><div class="k">정회원</div><div class="v">' + _opUnit(c['정회원'], '명') + '</div></div>' +
+      '<div class="op-box"><div class="k">대기</div><div class="v">' + _opUnit(c['대기'], '명') + '</div></div>' +
+      '<div class="op-box"><div class="k">법인</div><div class="v">' + _opUnit(c['법인'], '명') + '</div></div>' +
+      '<div class="op-box"><div class="k">30일 내 갱신임박</div><div class="v">' + _opUnit(d['갱신임박_30일이내'], '명') + '</div></div>' +
+      '</div>';
+    if (c['대기_판정기준']) h += '<div class="op-note">대기 기준 — ' + esc(c['대기_판정기준']) + '</div>';
+    h += '<div class="op-note" style="font-size:12px;color:var(--text);margin-top:8px">유형별 · ' + _opPairs(c['유형별']) + '</div>';
+    h += '<div class="op-note" style="margin-top:6px">데이터 위생 · ' + _opPairs(c['위생']) + ' (0이 아니면 실무진 확인이 필요한 칸입니다)</div>';
+  }
+  h += '</div>';
+
+  /* ② 이번달·지난달 */
+  function col(x){ return '<th>' + esc(x['연월'] || '미기재') + '<div class="op-note" style="font-weight:400">' + esc(x['범위'] || '') + '</div></th>'; }
+  function cell(v, note){
+    return '<td><b>' + _opV(v) + '</b>' + (v === null || v === undefined || v === '' ? '' : '건') +
+           (note ? '<div class="op-note">' + esc(note) + '</div>' : '') + '</td>';
+  }
+  h += '<div class="op-sec"><div class="op-h">이번달 · 지난달</div><table class="op-t"><tr><th style="width:120px">항목</th>' +
+       col(cur) + col(prev) + '</tr>';
+  h += '<tr><th>신규</th>' + cell(cur['신규_건수'], cur['신규_신뢰']) + cell(prev['신규_건수'], prev['신규_신뢰']) + '</tr>';
+  h += '<tr><th>재등록</th>' + cell(cur['재등록_건수'], cur['재등록_신뢰']) + cell(prev['재등록_건수'], prev['재등록_신뢰']) + '</tr>';
+  h += '<tr><th>LOSS</th>' + cell(cur['LOSS_건수']) + cell(prev['LOSS_건수']) + '</tr>';
+  h += '<tr><th>LOSS 사유</th><td>' + _opPairs(cur['LOSS_사유분포']) + '</td><td>' + _opPairs(prev['LOSS_사유분포']) + '</td></tr>';
+  h += '<tr><th>문의</th>' + cell(cur['문의_건수']) + cell(prev['문의_건수']) + '</tr>';
+  h += '<tr><th>문의 → 등록</th><td><b>' + _opV(cur['문의_전환']) + '</b>건 (전환율 ' + _opV(cur['문의_전환율']) + ')</td>' +
+       '<td><b>' + _opV(prev['문의_전환']) + '</b>건 (전환율 ' + _opV(prev['문의_전환율']) + ')</td></tr>';
+  h += '</table></div>';
+
+  /* ③ 확인 요청 중(큐에서 지연 조회 — 이 보기를 열었을 때만) */
+  h += '<div class="op-sec"><div class="op-h">실무진 확인 요청 중</div>' +
+       '<div id="opAsks"><div style="color:var(--dim);font-size:12px">불러오는 중…</div></div></div>';
+  return h;
+}
+/* 확인 요청 중인 건 — 지금은 카카오톡으로만 오가서 화면만 봐서는 무엇에 답해야 하는지 알 수 없다.
+   큐 미러(status/_queue.json)에서 시포의 열린 배 중 staff_message 가 채워진 것만 뽑아 오래된 순으로 보여준다.
+   ★조회는 이 보기를 열었을 때만 — 페이지 로딩에 얹으면 오늘 잡은 속도가 도로 나빠진다.
+   답변 입력칸은 두지 않는다(회신은 기존 카카오톡 그대로). */
+function _opDays(s){
+  if (!s) return null;
+  var t = Date.parse(String(s).length === 10 ? s + 'T00:00:00' : s);
+  if (isNaN(t)) return null;
+  return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+}
+function _opLoadAsks(){
+  var el = document.getElementById('opAsks');
+  if (!el) return;
+  fetch(_SNAP_RAW_BASE_ + '_queue.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(list){
+      var rows = (Array.isArray(list) ? list : []).filter(function(x){
+        return x && x.clevel === 'cpo' && x.status !== 'DONE' && x.staff_message;
+      });
+      rows.sort(function(a, b){ return String(a.enqueued_at || '').localeCompare(String(b.enqueued_at || '')); });
+      rows = rows.slice(0, 10);
+      if (!rows.length) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">확인 요청 중인 건이 없습니다.</div>'; return; }
+      el.innerHTML = rows.map(function(x){
+        var first = String(x.staff_message).split('\n')[0].trim();
+        var days = _opDays(x.enqueued_at);
+        var meta = [];
+        if (x.ship_no) meta.push('배' + x.ship_no);
+        if (days !== null) meta.push(days + '일째');
+        meta.push(x.status === 'IN_PROGRESS' ? '진행중' : '대기');
+        return '<div class="op-ask">' + esc(first) + '<div class="d">' + esc(meta.join(' · ')) + '</div></div>';
+      }).join('');
+    })
+    .catch(function(){ el.innerHTML = '<div class="op-fail">확인 요청 목록을 불러오지 못했습니다.</div>'; });
 }
 function _renewDashLoadIframe(){
   var f = document.getElementById('renewDashIframe');
