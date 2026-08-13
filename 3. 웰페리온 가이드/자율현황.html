@@ -2141,14 +2141,14 @@
        ③했는데 도장 안 찍은 것. 끝난 일·방금 받은 일·자체 작업은 확인용이지 판단용이 아니라
        숫자만 남기고 목록은 접는다.
      ▸데이터는 그대로(status/kungjjak_today.json) — 그리는 방식만 바꿨다. */
-  /* 소요 표기 — 셸 표(kungjjak_board.py)와 같은 말로 쓴다. 완료 기록이 없으면 '진행중'. */
+  /* 상태·소요 — 셸 표(kungjjak_board.py)와 같은 칸·같은 아이콘(🏁 완료 / 🚢 진행중, 배607). */
   function kjSpent(x){
-    if(x.open) return '진행중';
+    if(x.open) return '🚢 진행중';
     var m = x.minutes;
-    if(m == null) return '—';
-    if(m < 60) return m + '분';
+    if(m == null) return '🏁 —';
+    if(m < 60) return '🏁 ' + m + '분';
     var h = Math.floor(m / 60), r = m % 60;
-    return h + '시간' + (r ? r + '분' : '');
+    return '🏁 ' + h + '시간' + (r ? r + '분' : '');
   }
 
   function renderKungjjak(kj){
@@ -2262,7 +2262,7 @@
         + '<span style="float:right;color:var(--dim);font-weight:400;">' + o.done + '/' + o.got + '</span></summary>'
         + '<div class="coo-tbl-wrap"><table>'
         + '<tr><th style="width:7%">#</th><th style="width:33%">접수한 것</th><th style="width:33%">한 것</th>'
-        + '<th style="width:11%">소요</th><th style="width:16%">저장·업로드</th></tr>'
+        + '<th style="width:13%">상태·소요</th><th style="width:14%">저장·업로드</th></tr>'
         + items.map(function(x){
             var did = String(x.did || '');
             return '<tr><td style="color:var(--dim);">' + esc(x.no || '') + '</td>'
