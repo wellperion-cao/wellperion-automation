@@ -3345,6 +3345,25 @@
         </table>
         <div class="callout" style="margin-top:12px;"><strong>표 위</strong>에 상태 1줄(✅완료 / ⏳진행 / ⚠️GM필요 / ❌막힘 + 닉네임+배번호 + 제목), <strong>표 아래</strong>에 기록 위치 1줄. 상세·커밋해시·로그는 접고 GM 이 "어떻게 했어" 물으실 때만 펼친다(정보 손실 0).</div>
         <div class="callout tip" style="margin-top:12px;"><strong>표 밖 줄글은 표로 못 담는 것만.</strong> 작업 과정 서술·중간 로그·표 내용을 산문으로 다시 푸는 반복은 금지. 판정 = 그 문장을 지워도 GM 판단이 달라지지 않으면 지운다.<br>정본 = <code>ssot/약속.json</code> L18 · 형식 상세 = <code>wellperion-gm-report</code> 스킬 §4 (부팅 때 반드시 로드).</div>
+
+        <!-- ══ 쿵짝표 두 종류 구분 (배606 · GM 지시 2026-08-13) ══
+             위 8요소는 '건별' 보고다. GM 이 "쿵짝표 보여줘" 라고 할 때 원하시는 것은 '하루치' 5칸 표다.
+             둘을 구분해 두지 않으면 역할마다 다른 표를 만든다(2026-08-13 실제로 흐트러졌다). ══ -->
+        <h4 style="margin-top:20px;">🥁 쿵짝표는 두 종류 — 섞지 않는다</h4>
+        <table style="margin-top:4px;">
+          <tr><th style="width:150px">언제</th><th>무엇을 낸다</th></tr>
+          <tr><td><strong>건별 보고</strong></td><td>위 <strong>8요소 표</strong>. GM 물음 하나에 표 하나</td></tr>
+          <tr><td><strong>"쿵짝표 보여줘"</strong></td><td><strong>하루치 5칸 표</strong> — 손으로 만들지 않고 <code>scripts/kungjjak_board.py --role {역할}</code> 로 낸다</td></tr>
+        </table>
+        <table style="margin-top:8px;">
+          <tr><th style="width:110px">칸</th><th>무엇을 적나</th></tr>
+          <tr><td><strong>#</strong></td><td>지시 접수번호 뒤 두 자리</td></tr>
+          <tr><td><strong>접수한 것</strong></td><td>GM 이 시킨 것 — 받은 그대로</td></tr>
+          <tr><td><strong>한 것</strong></td><td>실제로 한 결과</td></tr>
+          <tr><td><strong>소요</strong></td><td>접수 → 완료까지 걸린 시간 · 완료 기록이 없으면 <strong>진행중</strong></td></tr>
+          <tr><td><strong>저장·업로드</strong></td><td>✅올림(원격 도달) / ⚠️저장만(푸시 안 됨) / 발송 / 기록만 / —</td></tr>
+        </table>
+        <div class="callout tip" style="margin-top:10px;"><strong>원장은 하나뿐이다</strong> — <code>status/worklog.jsonl</code>. 같은 접수번호에 접수(warn)와 완료(ok)가 짝으로 쌓인다. <strong>완료 짝을 안 남기면 표가 거짓말을 한다</strong>(끝난 일을 다음 아침에 방치로 오판한다). 화면판 = 자율현황 🥁 쿵짝표 칸(같은 산출물 <code>status/kungjjak_today.json</code> 을 그린다 — 화면에서 다시 세지 않는다).<br>정본 = <code>wellperion-gm-report</code> 스킬 §4-3.</div>
         <!-- ══ /작업 사이클 보고 포맷 ══ -->
           </div>
         </details>

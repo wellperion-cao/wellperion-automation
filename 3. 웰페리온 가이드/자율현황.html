@@ -2141,6 +2141,16 @@
        ③했는데 도장 안 찍은 것. 끝난 일·방금 받은 일·자체 작업은 확인용이지 판단용이 아니라
        숫자만 남기고 목록은 접는다.
      ▸데이터는 그대로(status/kungjjak_today.json) — 그리는 방식만 바꿨다. */
+  /* 소요 표기 — 셸 표(kungjjak_board.py)와 같은 말로 쓴다. 완료 기록이 없으면 '진행중'. */
+  function kjSpent(x){
+    if(x.open) return '진행중';
+    var m = x.minutes;
+    if(m == null) return '—';
+    if(m < 60) return m + '분';
+    var h = Math.floor(m / 60), r = m % 60;
+    return h + '시간' + (r ? r + '분' : '');
+  }
+
   function renderKungjjak(kj){
     var sum = document.getElementById('kungjjak-summary');
     var box = reqEl('kungjjak-body', 'renderKungjjak');
@@ -2151,7 +2161,7 @@
     }
     var roles = kj.roles, order = ['ceo','cto','cmo','cpo','coo'];
     var got=0, done=0, openN=0, justN=0;
-    var missed=[], repeats=[], unclosed=[], rows=[];
+    var missed=[], repeats=[], unclosed=[], stopWatch=[], rows=[];
 
     order.forEach(function(rk){
       var r = roles[rk]; if(!r) return;
@@ -2162,6 +2172,7 @@
       (r.missed   || []).forEach(function(x){ missed.push({nick:r.nick, x:x}); });
       (r.repeats  || []).forEach(function(g){ repeats.push({nick:r.nick, g:g}); });
       (r.unclosed || []).forEach(function(x){ unclosed.push({nick:r.nick, x:x}); });
+      (r.stop_watch || []).forEach(function(x){ stopWatch.push({nick:r.nick, x:x}); });
       if(items.length || (r.work||[]).length){
         rows.push({nick:r.nick, r:r, got:items.length, done:items.length-rOpen,
                    open:rOpen, just:rJust, work:(r.work||[]).length});
@@ -2212,6 +2223,19 @@
           }).join('') + '</div>';
     }
 
+    // 🔁 재확인 필요 — 멈춰라·하지마라 류는 완료 짝이 있어도 매일 다시 본다(셸 표와 같은 목록).
+    //    ★2026-08-13(배606) 셸에만 있던 것을 화면에도 올렸다 — 5일째 묵은 것이 화면엔 안 보였다.
+    if(stopWatch.length){
+      stopWatch.sort(function(a,b){ return (b.x.days_ago||0) - (a.x.days_ago||0); });
+      html += '<div class="whowrap"><div class="lab">🔁 재확인 필요 — 정지·차단류 ' + stopWatch.length + '건</div>'
+        + stopWatch.map(function(o){
+            return '<div class="srow"><span class="sd">' + (o.x.days_ago || 0) + '일째</span>'
+              + '<span class="st">' + esc(o.x.got || '') + '</span>'
+              + '<span class="sw">' + esc(o.nick) + '</span></div>';
+          }).join('')
+        + '<div class="sub" style="margin-top:6px;">한 번 했다고 끝이 아닙니다 — 다시 살아나지 않았는지 매일 봅니다.</div></div>';
+    }
+
     // ④ 역할 한 줄 표 — 누가 얼마나 받아 얼마나 쳐냈나. 다섯 줄이면 끝난다.
     //    '하는 중' 옆 괄호에 방금 받은 수를 적어 그것이 경보가 아님을 보인다.
     if(rows.length){
@@ -2228,6 +2252,8 @@
     }
 
     // ⑤ 건별 상세 — 기본 닫힘. 열린 건이 있다고 자동으로 펼치지 않는다(그게 210줄의 원인이었다).
+    //    ★2026-08-13(배606) 칸을 셸 표준 5칸(# · 접수한 것 · 한 것 · 소요 · 저장·업로드)에 맞췄다.
+    //    GM 2026-08-10: "쿵이랑 짝이랑 같은 표에 나와야하고 소요시간도 보여줘야해."
     var detail = rows.map(function(o){
       var items = (o.r.items || []).slice().sort(function(a,b){ return (b.open?1:0)-(a.open?1:0); });
       if(!items.length) return '';
@@ -2235,11 +2261,14 @@
         + '<summary>' + esc(o.nick)
         + '<span style="float:right;color:var(--dim);font-weight:400;">' + o.done + '/' + o.got + '</span></summary>'
         + '<div class="coo-tbl-wrap"><table>'
-        + '<tr><th style="width:40%">시킨 것</th><th style="width:45%">된 것</th><th style="width:15%">상태</th></tr>'
+        + '<tr><th style="width:7%">#</th><th style="width:33%">접수한 것</th><th style="width:33%">한 것</th>'
+        + '<th style="width:11%">소요</th><th style="width:16%">저장·업로드</th></tr>'
         + items.map(function(x){
             var did = String(x.did || '');
-            return '<tr><td>' + esc(x.got || '') + '</td>'
+            return '<tr><td style="color:var(--dim);">' + esc(x.no || '') + '</td>'
+              + '<td>' + esc(x.got || '') + '</td>'
               + '<td style="color:var(--dim);">' + esc(x.open ? '아직' : (did.length > 40 ? did.slice(0,40) + '…' : did)) + '</td>'
+              + '<td style="font-variant-numeric:tabular-nums;">' + esc(kjSpent(x)) + '</td>'
               + '<td>' + (x.open ? '<span class="statchip warn">하는 중</span>'
                                  : '<span class="statchip ok">' + esc(x.upload || '완료') + '</span>') + '</td></tr>';
           }).join('') + '</table></div></details>';
