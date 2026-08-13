@@ -1272,6 +1272,23 @@ def _recap_snapshot(day: str) -> dict:
     return snap
 
 
+def _tomorrow_section(day: str) -> str:
+    """🔜 내일 — 저녁 카드 끝에 붙는 내일 일정 리마인드(GM 지시 2026-08-13).
+    새 수집 로직 없음(약속 L21) — 아침 브리핑이 쓰는 _load_schedule_items_ex·_filter_today_items를
+    날짜만 내일로 바꿔 재사용한다. 최대 3줄 + 외 N건. 0건이면 통째로 뺀다(빈 제목 금지)."""
+    tomorrow = (datetime.date.fromisoformat(day) + datetime.timedelta(days=1)).isoformat()
+    items, ok = _load_schedule_items_ex()
+    if not ok:
+        return '🔜 내일 — 내일 일정을 못 읽었습니다'
+    pairs = _filter_today_items(items, tomorrow)
+    if not pairs:
+        return ''
+    lines = [f"· {(t + ' ') if t else ''}{title}" for t, title in pairs[:3]]
+    if len(pairs) > 3:
+        lines.append(f"외 {len(pairs) - 3}건")
+    return '🔜 내일\n' + '\n'.join(lines)
+
+
 def build_evening_recap(day: str | None = None) -> dict:
     """20:30 저녁 정리 카드 — {'text', 'markup'}. 08:00 업무 브리핑의 짝(할 일 ↔ 한 일)."""
     day = day or today()
@@ -1307,6 +1324,10 @@ def build_evening_recap(day: str | None = None) -> dict:
     lines += ['', '오늘 하루도 고생 많으셨습니다 — 남은 건 편하실 때 확인 버튼으로 지워 주세요.']
     if snap.get('fallback'):
         lines += ['', '(정리 기준 확인 필요)']
+
+    tomorrow_section = _tomorrow_section(day)
+    if tomorrow_section:
+        lines += ['', tomorrow_section]
 
     rows = [[{'text': f'☑ {i + 1}번 확인', 'callback_data': f'ck:r:{i}'}]
             for i, x in enumerate(pending[:RECAP_MAX_BUTTONS]) if not ack.get(str(i))]
