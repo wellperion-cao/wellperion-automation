@@ -303,3 +303,17 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
   });
 })();
 </script>
+
+<!-- 키오스크 자동 초기화 (2026-08-13 GM 지시 — 전체 페이지 공통) — 90초 동안 아무 조작이 없으면
+     화면을 처음 상태로 되돌린다. 앞사람의 입력·스크롤 위치가 다음 사람에게 남지 않게 한다. -->
+<script>
+(function(){
+  var IDLE = 90000, t;
+  function reset(){ if (document.visibilityState === 'hidden') return; location.replace(location.pathname); }
+  function poke(){ clearTimeout(t); t = setTimeout(reset, IDLE); }
+  ['click','touchstart','keydown','input','change','scroll'].forEach(function(ev){
+    document.addEventListener(ev, poke, true);
+  });
+  poke();
+})();
+</script>

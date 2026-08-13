@@ -1520,6 +1520,7 @@ OHNUTTY_STATUS_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cpo" / "member
 # 2026-08-13 GM 지시 — 종합접수처 영어판. 한글 원본(라이브 8584)에서 화면 문구만 영어로 바꾼 사본.
 LOOKUP_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lookup_block_en.html"
 RECEPTION_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_reception_block_en.html"
+LF_GALLERY_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lost_found_gallery_block_en.html"
 
 # key: (block_file, 신규생성 시 기본 제목, 발행 시 기본 slug)
 _NEW_PAGE_SPECS = {
@@ -1529,6 +1530,7 @@ _NEW_PAGE_SPECS = {
     "ohnutty-status":  (OHNUTTY_STATUS_BLOCK_FILE,  "OHNUTTY X WELLPERION", "ohnutty-status"),
     "lookup-en":       (LOOKUP_BLOCK_FILE_EN,       "Reception Desk",       "lookup"),
     "reception-en":    (RECEPTION_BLOCK_FILE_EN,    "Submit a Request",     "reception"),
+    "lf-gallery-en":   (LF_GALLERY_BLOCK_FILE_EN,   "Lost & Found",         "lost-found"),
 }
 
 

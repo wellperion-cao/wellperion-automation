@@ -1,4 +1,4 @@
-<!-- 웰페리온 습득 분실물 현황 갤러리 블록 — 워드프레스 페이지 본문 직접 주입 소스 (SSOT)
+<!-- 웰페리온 Lost &amp; Found 갤러리 블록 — 워드프레스 페이지 본문 직접 주입 소스 (SSOT)
      ★ lost_found_gallery.html(스탠드얼론 원본)을 종합접수처(reception_block.html)와 동일한
         직접 인라인 주입 방식으로 변환: iframe 없이 vc_raw_html 로 페이지 본문에 그대로 심는다.
         결과: 페이지 단일 스크롤·헤더 로고/본문/푸터가 한 몸. self-contained(단일 정본).
@@ -7,10 +7,10 @@
         전용(이관 유지).
      ★ 2026-07-27(시포·GM FB260727-152907): 2026-07-20에 이 화면에 복구했던 '수령' 버튼·PIN게이트·서명모달을
         다시 제거했다 — PIN(LF_STAFF_PIN)이 소스보기로 노출돼 회원도 클릭·처리까지 가능했고, GM 지시가
-        "회원은 조회만, 수령 처리는 종합접수처 현황에서만"으로 확정됐다. 본인 물건이면 현장 직원(담당
+        "회원은 조회만, 수령 처리는 종합접수처 현황에서만"으로 확정됐다. If it is yours, ask 현장 직원(담당
         매니저)에게 문의하도록 안내만 남긴다.
-        lf_disposal(공개) upcoming만 병행 fetch → ⏳M월 처분예정 배지(폐기 완료 기록 제외).
-        습득월(foundWhen 우선·없으면 createdAt) 기준 월 선택 필터 추가 — 클라이언트 필터, 재조회 없음.
+        lf_disposal(공개) upcoming만 병행 fetch → ⏳M월 disposal due 배지(폐기 완료 기록 제외).
+        Found in(foundWhen 우선·없으면 createdAt) 기준 월 선택 필터 추가 — 클라이언트 필터, 재조회 없음.
      ★ CSS 충돌 방지: 전 규칙을 .wlp-lfg 래퍼 하위로 스코프 → Salient/WPBakery 테마 오염 차단.
         WP 페이지 타이틀·Buttonizer·ENG 언어버튼은 body.wlp-lfg-page 한정으로 숨김
         (body 클래스는 하단 스크립트가 부착 — 페이지 id 는 빌드 시점에 알 수 없으므로 클래스 방식 사용). -->
@@ -138,36 +138,36 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
 <div class="wlp-lfg">
-<a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
+<a class="back-kiosk" href="#" onclick="location.href='http://wellperion.com/'+'en/lookup/';return false;">&#8592; Back</a>
 <div class="wrap">
 
   <div class="brand">
     <p class="brand-eyebrow">Wellperion</p>
-    <h1>습득 분실물 현황</h1>
-    <p>클럽에서 습득된 물건입니다. 본인 물건을 발견하시면 현장 직원에게 문의해 주세요.</p>
+    <h1>Lost &amp; Found</h1>
+    <p>These items were found in the club. If one is yours, please ask a staff member on site.</p>
     <div class="gold-divider"><span class="gd-line left"></span><span class="gd-diamond">&#9670;</span><span class="gd-line right"></span></div>
   </div>
 
   <div class="lf-policy">
-    <div class="lf-policy-h">📋 습득 분실물 보관·처분 안내 <span class="badge">회원·직원 필독</span></div>
+    <div class="lf-policy-h">📋 How we keep and dispose of found items <span class="badge">Please read</span></div>
     <ul>
-      <li>📅 습득한 달 포함 약 <b>1~2개월 보관·공지 후 처분</b>합니다(습득월→다음달 공지→그다음달 처분).</li>
-      <li>🟢 소모품(우산·수건·양말)은 <b>처분월에 폐기</b> / 🟡 일반·🔴 귀중품은 관할 <b>경찰서·LOST112</b>로 인계합니다(유실물법).</li>
-      <li>귀중품(현금·지갑·귀금속·전자기기)은 접수 즉시 <b>별도 보관</b>합니다.</li>
-      <li>수령: 본인 물건이라 생각되면 <b>담당 매니저에게 문의</b>해 주세요 — 직원 확인 후 현장(리셉션·수영장·사우나 등)에서 서명하고 수령합니다.</li>
+      <li>📅 Kept for about <b>1–2 months including the month found, then disposed of</b> (found → listed next month → disposed the month after).</li>
+      <li>🟢 Consumables (umbrellas, towels, socks) are <b>discarded in the disposal month</b> / 🟡 general and 🔴 valuable items go to the local <b>police station / LOST112</b> (Lost Property Act).</li>
+      <li>Valuables (cash, wallets, jewellery, electronics) are <b>stored separately from the moment they arrive</b>.</li>
+      <li>To collect: if you think an item is yours, ask <b>the manager on duty</b> — a staff member will check it, then you sign for it at reception, the pool or the sauna.</li>
     </ul>
   </div>
 
   <div class="topbar">
     <div class="month-filter">
-      <label for="monthSel">습득월</label>
-      <select class="month-select" id="monthSel"><option value="">전체</option></select>
+      <label for="monthSel">Found in</label>
+      <select class="month-select" id="monthSel"><option value="">All</option></select>
     </div>
   </div>
 
-  <div class="grid" id="grid"><div class="state-msg">불러오는 중…</div></div>
+  <div class="grid" id="grid"><div class="state-msg">Loading…</div></div>
 
-  <p class="info-note">본인 물건이면 <b>현장 직원(담당 매니저)</b>에게 문의해 주세요 — 수령 처리는 직원 화면에서만 진행됩니다.<br>곧 처분 예정인 물품은 ⏳ 배지로 표시됩니다.<br>습득한 달의 다음 달까지 공지 후, 그다음 달에 처분됩니다(소모품 폐기·그 외 경찰 인계).<br>하루의 완성, 웰페리온</p>
+  <p class="info-note">If it is yours, ask <b>a staff member on site</b> — collection is completed on the staff screen.<br>Items due for disposal soon are marked with ⏳.<br>Items are listed through the month after they are found, then disposed of the following month (consumables discarded, others handed to the police).<br>Wellperion Private Sports Club</p>
 </div>
 </div>
 
@@ -175,18 +175,18 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 (function(){
   var RECEPTION_API = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
   var CACHE_KEY = 'wlp_lf_gallery_v1';
-  var CACHE_TTL = 90000; // 90초 짧은 TTL — 처분예정 배지 등 변화 시 무효화
+  var CACHE_TTL = 90000; // 90초 짧은 TTL — disposal due 배지 등 변화 시 무효화
 
   function $(id){ return document.getElementById(id); }
   function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function _thumb(url,sz){ var m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/); return m?('https://drive.google.com/thumbnail?id='+m[1]+'&sz=w'+(sz||400)):url; }
-  function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+'월'); } // 'YYYY-MM' → 'M월' (배지용)
-  function _fullMonthLabel(ym){ var p=String(ym||'').split('-'); var y=parseInt(p[0],10),m=parseInt(p[1],10); return (isNaN(y)||isNaN(m))?ym:(y+'년 '+m+'월'); } // 'YYYY-MM' → 'YYYY년 M월' (필터용)
+  function _monthLabel(ym){ var n=parseInt(String(ym||'').split('-')[1],10); return isNaN(n)?'':(n+''); } // 'YYYY-MM' → 'M월' (배지용)
+  function _fullMonthLabel(ym){ var p=String(ym||'').split('-'); var y=parseInt(p[0],10),m=parseInt(p[1],10); return (isNaN(y)||isNaN(m))?ym:(y+'-'+m+''); } // 'YYYY-MM' → 'YYYY-MM' (필터용)
   function _rowMonth(r){ var m=String(r.foundWhen||r.createdAt||'').slice(0,7); return /^\d{4}-\d{2}$/.test(m)?m:''; }
   function _catBadge(cat){
-    if(cat==='consumable') return '<span class="cat-badge">🟢 소모품</span>';
-    if(cat==='general') return '<span class="cat-badge">🟡 일반</span>';
-    if(cat==='valuable') return '<span class="cat-badge">🔴 고가·중요</span>';
+    if(cat==='consumable') return '<span class="cat-badge">🟢 Consumable</span>';
+    if(cat==='general') return '<span class="cat-badge">🟡 General</span>';
+    if(cat==='valuable') return '<span class="cat-badge">🔴 Valuable</span>';
     return '';
   }
 
@@ -198,12 +198,12 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   function _clearCache(){ try{ localStorage.removeItem(CACHE_KEY); }catch(e){} }
   function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s=''; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
 
-  // ── 월 선택 필터 (foundWhen 습득월 기준, 클라이언트 필터 · 재fetch 없음) ──
+  // ── 월 선택 필터 (foundWhen Found in 기준, 클라이언트 필터 · 재fetch 없음) ──
   function _populateMonths(rows){
     var seen={}; rows.forEach(function(r){ var m=_rowMonth(r); if(m) seen[m]=true; });
     var months=Object.keys(seen).sort().reverse(); // 내림차순(최신월 먼저)
     var sel=$('monthSel'); var cur=sel.value;
-    sel.innerHTML='<option value="">전체</option>'+months.map(function(m){ return '<option value="'+m+'">'+_esc(_fullMonthLabel(m))+'</option>'; }).join('');
+    sel.innerHTML='<option value="">All</option>'+months.map(function(m){ return '<option value="'+m+'">'+_esc(_fullMonthLabel(m))+'</option>'; }).join('');
     sel.value=(months.indexOf(cur)>=0)?cur:'';
     _monthSel=sel.value;
   }
@@ -218,7 +218,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   function _renderFiltered(){
     var grid=$('grid');
     var rows=_applyFilter(_lastRows);
-    if(!rows.length){ grid.innerHTML='<div class="state-msg">'+(_monthSel?'해당 월에 게시중인 습득물이 없습니다.':'현재 게시중인 습득물이 없습니다.')+'</div>'; return; }
+    if(!rows.length){ grid.innerHTML='<div class="state-msg">'+(_monthSel?'No items listed for that month.':'No items are listed right now.')+'</div>'; return; }
     // 폐기 임박(disposeMonth 있는 항목=전월 습득 코호트)을 그리드 상단으로 — 폐기월 오름차순, 그 외는 기존 순서 유지(안정 정렬)
     var sorted=rows.slice().sort(function(a,b){
       var ra=_upcoming[a.foundId], rb=_upcoming[b.foundId];
@@ -244,23 +244,23 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     fetch(RECEPTION_API+'?action=lf_gallery&_='+Date.now(),{redirect:'follow',cache:'no-store'})
       .then(function(r){ return r.json(); })
       .then(function(d){ _loading=false;
-        if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">현황을 불러오지 못했습니다 — '+_esc(d&&d.error||'')+'</div>'; } return; }
+        if(!d||!d.ok){ if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">Could not load the list — '+_esc(d&&d.error||'')+'</div>'; } return; }
         var rows=Array.isArray(d.data)?d.data:[];
         _writeCache(rows);
         _renderRows(rows);
       })
-      .catch(function(){ _loading=false; if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>'; } });
+      .catch(function(){ _loading=false; if(!grid.querySelector('.gcard:not(.skel)')){ grid.innerHTML='<div class="state-msg">Network error — please refresh.</div>'; } });
   }
 
   function _gcard(r){
     var when=String(r.foundWhen||r.createdAt||'').replace('T',' ');
-    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="습득물 사진" loading="lazy" decoding="async">'):'<div class="ph"></div>';
+    var ph=r.photoUrl?('<img class="ph" src="'+_esc(_thumb(r.photoUrl,400))+'" alt="Found item photo" loading="lazy" decoding="async">'):'<div class="ph"></div>';
     var disposeMonth=_upcoming[r.foundId];
     var imminent=disposeMonth!=null;
-    var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' 처분예정</div>'):'';
+    var badge=imminent?('<div class="disp-badge">⏳ '+_esc(_monthLabel(disposeMonth))+' disposal due</div>'):'';
     return '<div class="gcard'+(imminent?' imminent':'')+'">'+ph+
       '<div class="body">'+badge+_catBadge(r.category)+'<div class="gid">'+_esc(r.foundId||'')+'</div>'+
-      '<div class="desc">'+_esc(r.itemDesc||'(설명 없음)')+'</div>'+
+      '<div class="desc">'+_esc(r.itemDesc||'(no description)')+'</div>'+
       '<div class="meta"><span class="loc">📍 '+_esc(r.foundLoc||'-')+'</span><br>🕒 '+_esc(when||'-')+'</div>'+
       '</div></div>';
   }
@@ -300,7 +300,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     var t = e.target || {}, tag = String(t.tagName || '').toUpperCase();
     if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
     e.preventDefault();
-    location.href = 'http://wellperion.com/ko/lookup/';
+    location.href = 'http://wellperion.com/' + 'en/lookup/';
   });
 })();
 </script>

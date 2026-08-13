@@ -298,7 +298,8 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
    본문 맨 위에 따로 두면 빈 칸이 한 줄 생겨서 ENG 와 같은 자리로 올렸다. */
 /* 기둥 기준 — 본문(가운데 칸) 왼쪽 끝에 자동으로 맞는다 */
 .wlp-inq .wrap{position:relative}
-.wlp-inq .back-kiosk{position:absolute;top:16px;left:0;z-index:5;display:inline-flex;align-items:center;
+/* 문의 폼에서는 카드 위에 겹쳐서 가운데 걸려 보였다 — 흐름 안(카드 위)으로 내린다 (2026-08-13 GM) */
+.wlp-inq .back-kiosk{position:static;margin:0 0 12px;align-self:flex-start;z-index:5;display:inline-flex;align-items:center;
   justify-content:center;gap:6px;padding:10px 18px;min-height:44px;border:2px solid var(--ink);
   border-radius:24px;color:var(--ink);font-size:13px;font-weight:700;letter-spacing:.02em;background:transparent}
 @media (max-width:520px){
@@ -989,5 +990,19 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
     e.preventDefault();
     location.href = 'http://wellperion.com/ko/lookup/';
   });
+})();
+</script>
+
+<!-- 키오스크 자동 초기화 (2026-08-13 GM 지시 — 전체 페이지 공통) — 90초 동안 아무 조작이 없으면
+     화면을 처음 상태로 되돌린다. 앞사람의 입력·스크롤 위치가 다음 사람에게 남지 않게 한다. -->
+<script>
+(function(){
+  var IDLE = 90000, t;
+  function reset(){ if (document.visibilityState === 'hidden') return; location.replace(location.pathname); }
+  function poke(){ clearTimeout(t); t = setTimeout(reset, IDLE); }
+  ['click','touchstart','keydown','input','change','scroll'].forEach(function(ev){
+    document.addEventListener(ev, poke, true);
+  });
+  poke();
 })();
 </script>
