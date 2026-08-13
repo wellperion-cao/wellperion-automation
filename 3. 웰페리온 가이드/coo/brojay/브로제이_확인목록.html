@@ -390,7 +390,13 @@
       // 회신 대기는 대부분이라 한 줄로 짧게 — 같은 안내를 카드마다 길게 반복하지 않는다(약속 L12 ⑥).
       replyHtml = '<div class="vq-reply-none">💬 회신 대기</div>';
     } else {
-      replyHtml = '<div class="vq-reply-none">📌 시트에 없는 항목 — 브로제이는 못 봅니다. 전달하려면 시트에 옮겨 적어 주세요.</div>';
+      // ★2026-08-13(배594) 옮겨 적는 수고를 없앤다. 실측: 08-12 에 문안은 다 돼 있었는데
+      //   '시트에 옮겨 적기' 한 걸음이 안 돼 브로제이 전달이 하루 넘게 멈췄다(카톡으로 실장님께
+      //   다시 부탁까지 나갔다). 시트는 브로제이 소유라 우리가 직접 쓸 수 없으므로,
+      //   붙여넣기만 하면 되는 형태로 만들어 주는 것이 우리가 할 수 있는 최선이다.
+      replyHtml = '<div class="vq-reply-none">📌 시트에 없는 항목 — 브로제이는 못 봅니다. ' +
+        '<button type="button" class="vq-mini" data-action="copy-sheet" data-id="' + esc(it.id) + '" ' +
+        'title="시트에 붙여넣을 문장을 복사합니다">📋 시트용 복사</button></div>';
     }
 
     var memoHtml;
@@ -512,6 +518,26 @@
     var t = e.target.closest('[data-action]'); if(!t) return;
     var act = t.getAttribute('data-action');
     var id  = t.getAttribute('data-id');
+
+    // 시트에 없는 항목을 브로제이 시트에 옮겨 적을 때 쓰는 문장을 통째로 복사한다(배594).
+    // 시트가 브로제이 소유라 우리가 직접 못 쓴다 — 붙여넣기 한 번으로 줄여 주는 것이 최선이다.
+    if(act === 'copy-sheet'){
+      var src = items().filter(function(x){ return x.id === id; })[0];
+      if(!src){ return; }
+      var line = src.text + (src.want ? ' / 원하는 방향: ' + src.want : '')
+               + (src.memo ? ' / 우리 메모: ' + src.memo : '');
+      var done = function(){
+        var old = t.textContent;
+        t.textContent = '✅ 복사됨 — 시트에 붙여넣으세요';
+        setTimeout(function(){ t.textContent = old; }, 2500);
+      };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(line).then(done, function(){ window.prompt('아래를 복사해 시트에 붙여넣으세요', line); });
+      } else {
+        window.prompt('아래를 복사해 시트에 붙여넣으세요', line);
+      }
+      return;
+    }
 
     if(act === 'edit-memo'){ _editing = {id:id}; render(); return; }
     if(act === 'save'){ saveMemo(id); return; }
