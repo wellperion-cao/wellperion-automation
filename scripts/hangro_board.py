@@ -642,9 +642,18 @@ def _saw_badge(it: dict) -> str:
     return "✅" if str(it.get("saw") or "").strip() else "🔍미확인"
 
 
-def _item_to_row(it: dict, ship_col_extra: str = "") -> tuple[str, str, str, str, str]:
+def _item_to_row(it: dict, ship_col_extra: str = "", brief: bool = False) -> tuple[str, str, str, str, str]:
     """아이템 dict → 5-tuple for _md_table.
-    ship_col_extra: 꼬리표 (예: '보류', '🔗', '🌀') — 배 칸 아이콘 뒤에 붙음."""
+    ship_col_extra: 꼬리표 (예: '보류', '🔗', '🌀') — 배 칸 아이콘 뒤에 붙음.
+    brief=True: 간단설명·핵심조언을 접는다 — **아래 3섹터(진행중/대기중/입항)에 같은 배가
+    또 나오는 경우**에만 쓴다(위 진단 표들은 '이 배가 이런 상태다'만 말하면 되고, 설명·조언은
+    본 섹터 한 곳에서 읽으면 된다).
+
+    ★왜 (2026-08-13 · GM "고도화된 부분을 단순화"):
+      실측 — 시토 항로 출력 14,121자 중 표 줄 57개가 서로 다른 배 34척을 그렸다. 같은 배가
+      최대 4번(303·338·464) 실렸고 중복으로 더 실린 줄이 23줄이었다. 진단 층이 쌓이며
+      같은 설명·조언이 배마다 2~4벌 복사되고 있었다 — 읽는 사람에겐 같은 말 반복이고,
+      부팅 맥락에는 매 창마다 그만큼이 실린다."""
     ship  = it["_ship"]
     icon  = ship["icon"]
     nick  = _owner_label(it)
@@ -656,6 +665,8 @@ def _item_to_row(it: dict, ship_col_extra: str = "") -> tuple[str, str, str, str
     desc       = _derive_desc(it)
     advice     = _dedupe_advice(desc, _derive_advice(it))
     ship_col   = f"{icon} {ship_col_extra}".strip() if ship_col_extra else icon
+    if brief:
+        return (ship_col, nick, title_col, "↓ 아래 본 섹터에", "")
     return (ship_col, nick, title_col, desc, advice)
 
 
@@ -1280,6 +1291,17 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
 
     inprog  = [it for it in secs["today"] if it["status"] in STATUS_INPROGRESS or it["status"].upper() in STATUS_INPROGRESS]
     waiting = [it for it in secs["today"] if it not in inprog]
+
+    # ★같은 배를 두 번 설명하지 않는다 (2026-08-13 · GM "고도화된 부분을 단순화").
+    #   실측: 시토 항로 14,121자 · 표 57줄이 배 34척을 그렸다 — 중복으로 더 실린 줄 23개
+    #   (303·338·464 는 4번씩). 진단 표(안 닫힌 배·쿵짝·짝·자기정합)는 '이 배가 이런 상태다'만
+    #   말하면 되고, 간단설명·핵심조언은 아래 본 섹터(진행중/대기중/입항)에서 한 번 읽으면 된다.
+    #   그래서 본 섹터에도 나오는 배는 진단 표에서 설명·조언 두 칸을 접는다(제목·담당·꼬리표는 유지).
+    def _ship_key(it):
+        return f"{str(it.get('owner') or it.get('clevel') or '')}|{it.get('short_no') or it.get('ship_no') or it.get('title')}"
+    _main_keys = {_ship_key(it) for it in (inprog + waiting + list(secs["done"]))}
+    def _brief(it):
+        return _ship_key(it) in _main_keys
     n_total = n_urgent + len(inprog) + len(waiting) + n_appr
 
     _cnt_rows = [
@@ -1356,17 +1378,17 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         lines.append(f"### 🔔 안 닫힌 배 {len(stalled)}척 "
                      f"— 뜬 지 {_STALL_MIN_DAYS}일 넘게 안 닫힌 순(기록이 3일 이상 없으면 뒤에 함께 적음)")
         if stalled:
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it), brief=_brief(it))
                                     for it in stalled]))
         if sent_unanswered:
             lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=_brief(it))
                                     for it in sent_unanswered]))
         if received_unanswered:
             lines.append(f"짝 — 남이 내게 띄우고 내가 답 안 한 배 {len(received_unanswered)}척 "
                           "(보낸이=상대 · 담당=나 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=_brief(it))
                                     for it in received_unanswered]))
         if gm_gaps:
             lines.append(f"📨 GM 지시 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
@@ -1387,7 +1409,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
             lines.append(f"{label} {len(shown)}척{extra} — 판정은 의심형·자동 종료 안 함, 사람 확인")
             rows = []
             for it, ev in shown:
-                base = _item_to_row(it, ship_col_extra=_stall_tag(it))
+                base = _item_to_row(it, ship_col_extra=_stall_tag(it), brief=_brief(it))
                 rows.append((base[0], base[1], base[2], ev, "👉 status/note 대조 확인"))
             lines.append(_md_table(rows))
 
