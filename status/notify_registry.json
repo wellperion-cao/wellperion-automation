@@ -781,6 +781,21 @@
       "state_note": "[2026-08-08 시토 등록] 새 완료건이 없으면 조용히 넘어간다 — 로그에 없는 것이 곧 고장은 아니다(조건부). 킬스위치는 아침 다이제스트와 같은 status/ops_digest_send.json 하나를 공유한다.",
       "source": "telegram_bot/daily_scheduler.py _check_ops_done_immediate() → scripts/send_ops_digest.py build_done_section()",
       "job_id": "ops_done_immediate_alert"
+    },
+    {
+      "id": "kk-meeting-remind-30m",
+      "when": "수시",
+      "when_sort": "9999",
+      "freq": "conditional",
+      "channel": "kakao",
+      "room": "김남욱",
+      "what": "전사일정 미팅 30분 전 리마인드 — 일정이 있을 때만",
+      "owner": "시토",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "5분마다 검사해 시작 30분 전(±3분)에 1회만. 일정 없으면 침묵. 배451.",
+      "source": "telegram_bot/daily_scheduler.py _run_meeting_reminder()",
+      "job_id": "meeting_reminder_30min"
     }
   ],
   "_정리_2026_07_31": "웰리 — 이미 코드가 삭제돼 영구 미발신인 항목 4건(tg-1200-check·tg-1800-leave·tg-2300-check-dm·win-2300-kakao-check)과, 같은 방·같은 09:30 에 이미 live 발신(win-0930-kakao-sales)이 있어 켜면 중복이 되는 kakao-stream3-mgmt 1건을 등록부에서 뺐다. 약속 L21 — 꺼둔 것을 남겨 두면 죽은 코드가 되어 나중에 누가 다시 켠다. 폐지 경위는 status/_queue.json 배202(시토 알림 정리) note 에 옮겨 적었다.",

@@ -17,6 +17,7 @@ GM은 파일을 못 여니, 이 한 파일이 ERP "🖥️ 시스템 현황" 섹
 값은 사람이 바로 읽는 한국어 plain text 로 채운다(약속 L10/L12).
 """
 import json
+import re
 import subprocess
 import sys
 import urllib.request
@@ -296,6 +297,31 @@ def collect_archive_summary():
         return {"total": len(items), "done": done, "latest_processed_at": latest}
     except Exception:
         return None
+
+
+_SCHEDULER_SRC = Path(__file__).resolve().parent.parent / "telegram_bot" / "daily_scheduler.py"
+_JOB_ID_RE = re.compile(r"""add_job\((?:.|\n){0,600}?id\s*=\s*['"]([^'"]+)['"]""")
+
+
+def collect_scheduler_jobs():
+    """상주 스케줄러(daily_scheduler)가 들고 있는 정기 작업 목록.
+
+    ★왜 여기 붙였나(배39 · 2026-08-13): 자동화는 두 곳에서 돈다 —
+      ①윈도우 예약작업(schtasks) ②상주 스케줄러 안의 정기 작업.
+      화면은 지금까지 ①만 셌다. 그래서 "자동화 30개"라고 적혀 있어도 실제로는
+      그보다 훨씬 많이 돌고 있었고, ②가 통째로 멈춰도 화면 숫자는 안 변했다.
+      **새 등록부는 만들지 않는다** — 스케줄러 소스에 이미 있는 등록 목록을 그대로 읽는다.
+    """
+    try:
+        src = _SCHEDULER_SRC.read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        return {"count": 0, "items": [], "note": "스케줄러 소스를 못 읽었습니다"}
+    ids = []
+    for m in _JOB_ID_RE.finditer(src):
+        jid = m.group(1)
+        if jid not in ids:
+            ids.append(jid)
+    return {"count": len(ids), "items": ids, "note": ""}
 
 
 def collect_automation_health():
@@ -662,6 +688,8 @@ def build():
     systems = collect_processes() + collect_tasks()
     bridges = collect_bridges()
     automation_health = collect_automation_health()
+    # 예약작업 옆에 스케줄러 정기작업 수를 같이 실어 보낸다(배39) — 한 화면에서 둘 다 세도록.
+    automation_health["scheduler_jobs"] = collect_scheduler_jobs()
     git_sync = collect_git_sync()
     broken_bridges = [b["name"] for b in bridges if b["state"] == "이상"]
     abnormal = [s["name"] for s in systems if s["state"] == "이상"] + broken_bridges

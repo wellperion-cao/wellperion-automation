@@ -1,19 +1,19 @@
 {
   "_doc": "ERP 시스템 현황 단일 출처. erp_status_publisher.py 가 발행. ERP가 읽어 표시.",
-  "generated_at": "2026-08-13T09:28:23Z",
-  "generated_at_kst": "2026-08-13 18:28",
+  "generated_at": "2026-08-13T11:40:50Z",
+  "generated_at_kst": "2026-08-13 20:40",
   "summary": "✅ 전체 정상",
   "systems": [
     {
       "name": "일일 스케줄러",
       "state": "정상",
-      "detail": "12분 전 활동",
+      "detail": "6분 전 활동",
       "note": "정각 보고를 쏘는 시계"
     },
     {
       "name": "텔레그램 봇",
       "state": "정상",
-      "detail": "하트비트 0분 전(생존) · 최근 발신 270분 전",
+      "detail": "하트비트 2분 전(생존) · 최근 발신 402분 전",
       "note": "보고·승인 중계"
     },
     {
@@ -31,12 +31,12 @@
     {
       "name": "G1 큐 라이브",
       "state": "정상",
-      "detail": "HTTP 200 · active 91건 라이브=로컬 일치"
+      "detail": "HTTP 200 · active 88건 라이브=로컬 일치"
     },
     {
       "name": "큐 미러 동기",
       "state": "정상",
-      "detail": "일치 · active 91건/1066628B"
+      "detail": "드리프트 감지 → 자가치유 완료(자동 동기화) — 일치 · active 88건/1089370B"
     },
     {
       "name": "시트 GAS(todo_list)",
@@ -51,19 +51,19 @@
     {
       "name": "미푸시 커밋",
       "state": "정상",
-      "detail": "1건 동기화 진행 중(1s, 자가복구 창 내) — 정상"
+      "detail": "없음 — 로컬=origin/master 동기화"
     },
     {
       "name": "KPI 집계 신선도",
       "state": "정상",
-      "detail": "6.4h 전 갱신 — 정상"
+      "detail": "0.3h 전 갱신 — 정상"
     }
   ],
   "automation_health": {
-    "summary": "자동화 30/31 정상 (97%)",
+    "summary": "자동화 31/31 정상 (100%)",
     "total": 31,
-    "healthy": 30,
-    "rate": 97,
+    "healthy": 31,
+    "rate": 100,
     "items": [
       {
         "name": "Wellperion-AI-Education-Weekly",
@@ -89,9 +89,9 @@
       {
         "name": "Wellperion-CMO-Content-Intake-15min",
         "state": "정상",
-        "last_run": "2026-08-13 오후 6:15:01",
+        "last_run": "2026-08-13 오후 8:30:01",
         "last_result": 0,
-        "next_run": "2026-08-13 오후 6:30:00"
+        "next_run": "2026-08-13 오후 8:45:00"
       },
       {
         "name": "Wellperion-CMO-Daily-Marketing-2100",
@@ -124,9 +124,9 @@
       {
         "name": "Wellperion-CPO-Inquiry-Snapshot-3min",
         "state": "정상",
-        "last_run": "2026-08-13 오후 6:27:01",
+        "last_run": "2026-08-13 오후 8:39:01",
         "last_result": 0,
-        "next_run": "2026-08-13 오후 6:30:00"
+        "next_run": "2026-08-13 오후 8:42:00"
       },
       {
         "name": "Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000",
@@ -169,6 +169,13 @@
         "last_run": "2026-08-10 오전 6:10:00",
         "last_result": 0,
         "next_run": "2026-08-17 오전 6:10:00"
+      },
+      {
+        "name": "Wellperion-Kakao-Collect-Evening-1830",
+        "state": "대기",
+        "last_run": "1999-11-30 오전 12:00:00",
+        "last_result": 267011,
+        "next_run": "2026-08-14 오후 6:30:00"
       },
       {
         "name": "Wellperion-Kakao-Sales-Report-0930",
@@ -234,13 +241,6 @@
         "next_run": "2026-08-14 오전 7:30:00"
       },
       {
-        "name": "Wellperion-PC-Boot-Greeting",
-        "state": "실패",
-        "last_run": "2026-08-13 오전 5:56:28",
-        "last_result": -2147024894,
-        "next_run": "N/A"
-      },
-      {
         "name": "Wellperion-Telegram-HealthCheck-1300",
         "state": "정상",
         "last_run": "2026-08-13 오후 1:00:01",
@@ -271,7 +271,7 @@
       {
         "name": "WellperionDailyScheduler",
         "state": "정상",
-        "last_run": "2026-08-13 오전 11:58:12",
+        "last_run": "2026-08-13 오후 8:18:17",
         "last_result": 0,
         "next_run": "N/A"
       },
@@ -282,13 +282,46 @@
         "last_result": 0,
         "next_run": "N/A"
       }
-    ]
+    ],
+    "scheduler_jobs": {
+      "count": 27,
+      "items": [
+        "pre_task_notifier",
+        "bot_health_check",
+        "env_reload_watcher",
+        "meeting_reminder_30min",
+        "ops_done_immediate_alert",
+        "ig_publish_verify_sweep",
+        "erp_status_publisher",
+        "kpi_collector_morning",
+        "kpi_collector_evening",
+        "page_ping_collect",
+        "cpo_sheet_contract_check",
+        "parking_revenue_crawler",
+        "dashboard_cache_warm",
+        "push_sweeper",
+        "queue_archive_sweep",
+        "test_hourly",
+        "daily_digest_early",
+        "daily_digest_late",
+        "stream_3_mgmt_0930",
+        "gm_checkin_2200",
+        "gm_checkin_week_sun2210",
+        "gm_morning_brief_0800",
+        "gm_evening_recap_2030",
+        "weekly_ops_report_fri1700",
+        "mgmt_notice_digest_1705",
+        "sales_session_guard_0810",
+        "git_lock_janitor_10min"
+      ],
+      "note": ""
+    }
   },
   "git_sync": {
     "state": "정상",
     "detail": "미푸시 0건 · origin 최신 0분 전",
     "unpushed": 0,
-    "origin_at": "2026-08-13T18:28:16+09:00"
+    "origin_at": "2026-08-13T20:40:12+09:00"
   },
   "archive_summary": {
     "total": 3432,

@@ -1677,7 +1677,11 @@
           gsTxt = ' · 미푸시 ' + esc(gs.unpushed == null ? 0 : gs.unpushed);
         }
       }
-      hl.innerHTML = (ah.total ? ('예약작업 ' + ah.healthy + '/' + ah.total + ' 정상 · ' + esc(anomTxt)) : '집계 중') + gsTxt;
+      // ★2026-08-13(배39) 자동화는 두 곳에서 돈다 — 윈도우 예약작업 + 상주 스케줄러 안의 정기작업.
+      //   화면이 예약작업만 세는 바람에 실제로 도는 양이 절반도 안 보였다. 한 줄에 같이 센다.
+      var sj = ah.scheduler_jobs || null;
+      var sjTxt = (sj && sj.count) ? (' · 스케줄러 정기작업 ' + sj.count + '개') : '';
+      hl.innerHTML = (ah.total ? ('예약작업 ' + ah.healthy + '/' + ah.total + ' 정상' + sjTxt + ' · ' + esc(anomTxt)) : '집계 중') + gsTxt;
     }
     if(body){
       // 실패를 맨 위로(눈에 띄게) · 예정/정상은 아래. 원본 순서는 동률 유지.
