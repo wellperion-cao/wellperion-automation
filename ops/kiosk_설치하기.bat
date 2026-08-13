@@ -1,18 +1,29 @@
 @echo off
-chcp 65001 > nul
-title ì›°íŽ˜ë¦¬ì˜¨ í‚¤ì˜¤ìŠ¤í¬ ì „ì› ì„¤ì •
+rem À£Æä¸®¿Â Å°¿À½ºÅ© Àü¿ø ¼³Á¤ - µÎ ¹ø Å¬¸¯ ¼³Ä¡
+rem ¡ÚÀÌ ÆÄÀÏÀº ¹Ýµå½Ã CP949(ANSI ÇÑ±¹¾î) + CRLF ·Î ÀúÀåÇÑ´Ù.
+rem   UTF-8 ·Î ÀúÀåÇÏ°í chcp 65001 À» ¾²¸é cmd °¡ ÁÙ À§Ä¡¸¦ ÀÒ¾î
+rem   "¹èÄ¡ ÆÄÀÏÀÌ ¾Æ´Õ´Ï´Ù" ¿À·ù°¡ ¿©·¯ ÁÙ ¶á´Ù(2026-08-13 GM ½Ç»ç°í).
+setlocal
 cd /d "%~dp0"
 
-net session > nul 2>&1
-if errorlevel 1 (
-  echo ê´€ë¦¬ìž ê¶Œí•œì´ í•„ìš”í•©ë‹ˆë‹¤. ê¶Œí•œ ì°½ì´ ëœ¨ë©´ [ì˜ˆ]ë¥¼ ëˆŒëŸ¬ ì£¼ì„¸ìš”.
-  powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
-  exit /b
-)
+net session >nul 2>&1
+if errorlevel 1 goto NEEDADMIN
+
+if not exist "%~dp0kiosk_install.ps1" goto NOFILE
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0kiosk_install.ps1"
 echo.
-echo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-echo  ëë‚¬ìŠµë‹ˆë‹¤. ìœ„ ì•ˆë‚´ë¥¼ ì½ê³  ì°½ì„ ë‹«ìœ¼ì„¸ìš”.
-echo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+echo ³¡³µ½À´Ï´Ù. À§ ¾È³»¸¦ ÀÐ°í Ã¢À» ´ÝÀ¸¼¼¿ä.
 pause
+exit /b
+
+:NEEDADMIN
+echo °ü¸®ÀÚ ±ÇÇÑÀÌ ÇÊ¿äÇÕ´Ï´Ù. ±ÇÇÑ Ã¢ÀÌ ¶ß¸é [¿¹]¸¦ ´­·¯ ÁÖ¼¼¿ä.
+powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+exit /b
+
+:NOFILE
+echo °°Àº Æú´õ¿¡ kiosk_install.ps1 ÀÌ ¾ø½À´Ï´Ù.
+echo USB Æú´õ ÀüÃ¼¸¦ º¹»çÇØ¼­ ½ÇÇàÇØ ÁÖ¼¼¿ä.
+pause
+exit /b
