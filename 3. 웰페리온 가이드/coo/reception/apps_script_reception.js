@@ -982,6 +982,95 @@ function _regDraftMemoSelfCheck() {
 }
 
 // ─── reg_submit — 종합 접수처 제출 (public) ───
+// ─── 재제출 흡수 (배597 · GM 지적 2026-08-13) ────────────────────────────────
+//   왜 여기(관문)에 두나: 접수 쓰기는 _regSubmit 하나만 지난다. 폼마다 막으면 우회로가 생긴다(약속 L21).
+var REG_MERGE_WINDOW_MIN = 30;   // 이 시간 안의 같은 건만 흡수. 길게 잡으면 진짜 두 번째 신고를 삼킨다.
+var REG_MERGE_SCAN_ROWS  = 20;   // 시트는 최신순 정렬이라 위 몇 줄만 본다(전수 스캔 안 함).
+
+function _regNormPhone_(v) { return String(v == null ? '' : v).replace(/[^0-9]/g, ''); }
+function _regNormText_(v)  { return String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase(); }
+
+// createdAt 은 Date 로 오기도, 'yyyy-MM-dd HH:mm:ss' 문자열로 오기도 한다. 둘 다 받는다.
+function _regParseTs_(v) {
+  if (v instanceof Date) return v.getTime();
+  var s = String(v == null ? '' : v).trim();
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return 0;
+  return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+}
+
+// 최근 같은 건이 있으면 그 행의 **빈칸만** 채우고 접수ID 를 돌려준다. 없으면 빈 문자열.
+// 사람이 이미 적어 둔 값은 절대 덮지 않는다.
+function _regMergeRecent_(cat, headers, contact, content, body, loc, photoUrl) {
+  try {
+    var wantPhone = _regNormPhone_(contact);
+    if (!wantPhone) return '';                     // 익명·자동접수는 흡수 대상 아님
+    var sh = _regGetSheet(cat.key);
+    var last = sh.getLastRow();
+    if (last < 2) return '';
+    var width   = Math.max(sh.getLastColumn(), headers.length);
+    var keyCols = _regKeyCols(sh, headers);
+    var ci = keyCols['contact'], cai = keyCols['createdAt'], idi = keyCols['regId'];
+    if (ci === undefined || cai === undefined || idi === undefined) return '';
+    var sti = keyCols['status'], coi = keyCols['content'];
+
+    var extras     = REG_EXTRA_HEADERS[cat.key] || [];
+    var firstExtra = extras.length ? extras[0].key : '';   // 분실물=분실물품 · 고장=장비명 …
+    var wantItem   = (firstExtra && body[firstExtra] !== undefined)
+                     ? _regNormText_(body[firstExtra]) : '';
+    var wantSig    = _regNormText_(content) + '|' + wantItem;
+
+    var scan = Math.min(REG_MERGE_SCAN_ROWS, last - 1);
+    var vals = sh.getRange(2, 1, scan, width).getValues();
+    var nowMs = new Date().getTime();
+
+    for (var i = 0; i < scan; i++) {
+      var r = vals[i];
+      if (_regNormPhone_(r[ci]) !== wantPhone) continue;
+      if (sti !== undefined && String(r[sti] || '').trim() !== '접수') continue;  // 이미 처리 들어간 건은 건드리지 않는다
+      var haveItem = (firstExtra && keyCols[firstExtra] !== undefined)
+                     ? _regNormText_(r[keyCols[firstExtra]]) : '';
+      var haveSig  = _regNormText_(coi !== undefined ? r[coi] : '') + '|' + haveItem;
+      if (haveSig !== wantSig) continue;
+      var t = _regParseTs_(r[cai]);
+      if (!t || (nowMs - t) > REG_MERGE_WINDOW_MIN * 60 * 1000) continue;
+
+      var changed = false;
+      var fill = function (key, val) {
+        if (!val) return;
+        var k = keyCols[key];
+        if (k === undefined) return;
+        if (String(r[k] == null ? '' : r[k]).trim() !== '') return;   // 이미 값이 있으면 안 덮는다
+        r[k] = val;
+        changed = true;
+      };
+      fill('loc', loc);
+      fill('photoUrl', photoUrl);
+      extras.forEach(function (h) {
+        if (body[h.key] !== undefined) fill(h.key, String(body[h.key]));
+      });
+      if (changed) sh.getRange(i + 2, 1, 1, width).setValues([r]);
+
+      // 조용히 삼키지 않는다 — 보완이 있었으면 한 줄만 더 알린다(새 접수 알림은 안 나간다).
+      if (changed) {
+        try {
+          _vNotifyTelegram(
+            '📋 <b>[종합 접수처]</b> ' + cat.label + ' — 같은 건 보완\n' +
+            '접수ID: ' + String(r[idi] || '') + '\n' +
+            '보탠 내용: ' + (loc ? '장소 ' + loc + ' ' : '') + (photoUrl ? '사진 ' : '') + '\n' +
+            '(회원이 같은 건을 다시 보내 새 접수 대신 기존 건에 합쳤습니다)',
+            ''
+          );
+        } catch (e2) {}
+      }
+      return String(r[idi] || '');
+    }
+  } catch (e) {
+    Logger.log('[_regMergeRecent_] 흡수 판정 건너뜀(새 접수로 진행): ' + e);
+  }
+  return '';
+}
+
 function _regSubmit(body) {
   // 카테고리 해석: 키 우선, 없으면 라벨로 fallback
   var catRaw = String(body.category || '').trim();
@@ -1024,6 +1113,20 @@ function _regSubmit(body) {
   }
 
   var headers = _regHeadersFor(cat.key); // [{key,label}]
+  // ★같은 사람이 같은 건을 다시 보내면 새 접수를 만들지 않고 기존 접수에 얹는다 (GM 지적 2026-08-13).
+  //   실측: RECEPTION-103(08:48:30 · 장소 빈칸) 과 104(08:50:55 · 장소 '남자사우나') 가 같은 회원·
+  //   같은 물품으로 2분 24초 차이로 두 건 들어왔다. 회원이 잘못 보낸 것을 **고칠 방법이 없어서**
+  //   다시 보낸 것이다(회원 셀프 조회 reg_lookup 은 읽기 전용). 접수 창구에 '수정'이 없으니 재제출이
+  //   유일한 길이고, 그러면 운영부는 같은 물건을 두 번 찾는다.
+  //   판정은 좁게 — 같은 카테고리 · 같은 연락처(숫자만) · 같은 내용/물품 · 아직 '접수' 상태 · 30분 이내.
+  //   하나라도 다르면 새 접수로 둔다(진짜 두 번째 신고를 삼키지 않는다).
+  var _mergedId = _regMergeRecent_(cat, headers, contact, content, body, loc, photoUrl);
+  if (_mergedId) {
+    _regBoardCacheClear_();
+    return _vJson({ ok: true, id: _mergedId, dept: cat.dept, merged: true });
+  }
+
+
   var id  = _vNextSeqId();
   var now = _vNow();
 
