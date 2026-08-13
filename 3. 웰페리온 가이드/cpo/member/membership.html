@@ -7258,6 +7258,9 @@ function _activeRegClassFilterApply(rows) {
 }
 function setActiveRegClassFilter(val) {
   _activeRegClassFilter = val || '';
+  /* '대기'를 고르면 시작 필터를 풀어야 한다 — 대기 회원은 시작일이 아직 안 온 사람들이라,
+     기본값('시작한 회원만')이 걸린 채로는 골라도 명단이 비어 버린다. 다른 분류로 옮기면 되돌린다. */
+  _activeStartFilter = (_activeRegClassFilter === '대기') ? 'all' : 'started';
   if (_activeScope !== 'valid') { setActiveScope('valid'); return; }   // 다른 명단을 보고 있었으면 유효회원으로 돌아온다
   renderActiveSummary();
   var si = document.getElementById('activeSearch');
@@ -7460,11 +7463,11 @@ function setActiveSeg(seg, btn) {
 // 재필터(_activeTypeFilterApply) — 신규 fetch 없음.
 function setActiveTypeFilter(val) {
   if (val === '법인') { _activeTypeFilter = ''; setActiveScope('corp'); return; }
-  if (val === '대기') { _activeTypeFilter = ''; setActiveSeg('waiting'); return; }
-  if (val === 'LOSS') { _activeTypeFilter = ''; setActiveSeg('ended'); return; }
   _activeTypeFilter = val || '';
-  if (_activeScope !== 'valid' || _activeStartFilter !== 'started') {
-    _activeStartFilter = 'started';
+  // 등록 분류로 '대기'를 골라 둔 상태면 시작 필터를 되돌리지 않는다 — 되돌리면 두 칸을 겹쳐 고른 순간 명단이 빈다.
+  var _keepAll = (_activeRegClassFilter === '대기');
+  if (_activeScope !== 'valid' || (_activeStartFilter !== 'started' && !_keepAll)) {
+    if (!_keepAll) _activeStartFilter = 'started';
     setActiveScope('valid');   // valid로 전환 + 재조회(전환 중에도 renderActiveSummary가 select를 다시 그려 선택값 보존)
     return;
   }
@@ -8299,7 +8302,8 @@ function _mregSaveContact(inp){
 }
 
 // 구 showWaitMembers(대기자 카드 클릭 진입점)는 2026-08-01 카드 삭제(FB260801-141806)로 유일 호출부가
-// 사라져 제거 — 대기자 진입은 이제 회원 구분 선택칸(setActiveTypeFilter('대기') → setActiveSeg('waiting'))뿐.
+// 사라져 제거. 대기자 진입은 2026-08-13 GM 지시로 **등록 분류 선택칸의 '대기'** 하나로 모았다
+// (회원 구분 칸에 있던 '대기'는 뺐다 — 대기는 회원 구분이 아니라 등록 분류 값이다).
 function _activeWireSearch() {
   var input = document.getElementById('activeSearch');
   if (!input || input.dataset.wired) return;
@@ -8963,24 +8967,27 @@ function _memberOverviewHtml() {
     '</div>';
 }
 
-// 회원 구분 선택칸(FB260801-141806, 2026-08-01) — 대기자/LOSS 상단카드 삭제 후 유일 진입점.
-// 멤버십/입주민/단기/보증금/FAN VIP/기타=실제 '회원\n구분' 값(_memberTypeOf), 법인/대기/LOSS=기존 scope.
+// 회원 구분 선택칸(FB260801-141806, 2026-08-01) — 멤버십/입주민/보증금/FAN VIP/중단기=유효회원 명단 안에서
+// 클라이언트 재필터, 법인=시트가 달라 scope 전환. 대기·LOSS 는 2026-08-13 GM 지시로 이 칸에서 뺐다(아래 주석).
 /* 2026-08-13 GM 지적 — "회원구분이랑 등록분류는 차이가 있어야 하는데 차이가 없는 것 같다."
    이 선택칸이 두 가지를 한 줄에 섞어 놓고 있었다. 멤버십·입주민·법인은 그 사람이 **어떤 회원인가**(회원 구분,
    시트의 '회원 구분' 칸)이고, 대기·LOSS는 **지금 어떤 상태인가**(등록 분류·잔여일에서 판정)다. 성격이 다른
    두 축이 한 목록에 나란히 있으니 고르는 사람 입장에선 같은 종류로 보인다. 목록을 두 묶음으로 갈라 이름을
    붙인다 — 값·동작은 그대로라 기존 선택은 전부 그대로 작동한다(새 기능 추가 없음).
    ▸회원 구분 6종은 GM 확정 정본이다(2026-08-13): 멤버십·입주민·보증금·FAN VIP·중단기·법인.
-     '미기재'는 구분값이 아니라 칸이 비어 있다는 뜻이라, 실제로 그런 회원이 있을 때만 목록 끝에 붙인다. */
+     '미기재'는 구분값이 아니라 칸이 비어 있다는 뜻이라, 실제로 그런 회원이 있을 때만 목록 끝에 붙인다.
+   ▸2026-08-13 GM 재지적 — 「상태」 묶음(대기·LOSS)도 아예 뺐다. **대기는 등록 분류 값**이라 옆 칸에서
+     고르는 게 맞고, **LOSS는 기간이 지나거나 LOSS일자가 적힌 사람**이라 회원 구분도 등록 분류도 아니다.
+     LOSS 명단은 왼쪽 요약의 「LOSS 698명」 상자를 누르면 그대로 열린다(있던 길이라 새로 만들지 않았다).
+     이제 이 칸에는 회원 구분 6종만 있다 — 두 칸이 각자 한 가지만 말한다. */
 var MEMBER_TYPE_SELECT_GROUPS = [
-  { label: '회원 구분 — 어떤 회원인가', items: ['멤버십', '입주민', '보증금', 'FAN VIP', '중단기', '법인'] },
-  { label: '상태 — 지금 어떤 상태인가', items: ['대기', 'LOSS'] }
+  { label: '회원 구분', items: ['멤버십', '입주민', '보증금', 'FAN VIP', '중단기', '법인'] }
 ];
 function _activeTypeSelectValue() {
-  if (_activeScope === 'ended') return 'LOSS';
+  // LOSS·대기 명단을 보고 있을 땐 이 칸이 가리킬 것이 없다 — 회원 구분을 고르지 않은 상태로 둔다.
+  if (_activeScope === 'ended') return '';
   if (_activeScope === 'corp') return '법인';
-  if (_activeScope === 'valid' && _activeStartFilter === 'waiting') return '대기';
-  return (_activeTypeFilter === '중단기') ? '단기' : (_activeTypeFilter || '');
+  return _activeTypeFilter || '';
 }
 function _memberTypeSelectHtml() {
   var cur = _activeTypeSelectValue();
