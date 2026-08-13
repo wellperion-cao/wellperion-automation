@@ -940,3 +940,17 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   });
 })();
 </script>
+
+<!-- 키오스크 자동 초기화 (2026-08-13 검수) — 90초 동안 아무 조작이 없으면 화면을 처음 상태로 되돌린다.
+     앞사람이 적어 둔 이름·연락처가 다음 사람 화면에 남지 않게 하기 위함(접수 조회 화면과 같은 원칙). -->
+<script>
+(function(){
+  var IDLE = 90000, t;
+  function reset(){ if (document.visibilityState === 'hidden') return; location.replace(location.pathname); }
+  function poke(){ clearTimeout(t); t = setTimeout(reset, IDLE); }
+  ['click','touchstart','keydown','input','change'].forEach(function(ev){
+    document.addEventListener(ev, poke, true);
+  });
+  poke();
+})();
+</script>
