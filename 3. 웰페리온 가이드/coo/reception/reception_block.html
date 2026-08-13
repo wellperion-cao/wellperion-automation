@@ -20,6 +20,16 @@ body.page-id-8434 a.lang-header{display:none!important}
 body.page-id-8434 .buttonizer,
 body.page-id-8434 #buttonizer,
 body.page-id-8434 [class*="buttonizer"]{display:none!important}
+/* ── 맨 위 흰 띠 제거 (2026-08-13 GM 지시) ──
+   Salient 헤더 자리표시자(#header-space)와 헤더 바탕(#header-outer)이 흰색이라,
+   페이지 바탕색과 달라 화면 맨 위에 29px 흰 줄로 보였다. 바탕만 투명으로 돌려
+   페이지 바탕이 그대로 이어지게 한다(헤더 로고·메뉴는 그대로 둔다). */
+body.page-id-8434 #header-space,
+body.page-id-8434 #header-outer,
+body.page-id-8434 #header-outer .container,
+body.page-id-8434 #top{background:#f6f6f6!important;border:none!important;box-shadow:none!important}
+/* 이 페이지는 본문 바탕이 밝은 회색(#f6f6f6)인데 body 바탕은 어두워서, 투명으로 두면
+   흰 줄 대신 검은 줄이 생긴다 — 본문 바탕색을 그대로 물려 이어지게 한다. */
 /* WP 페이지 타이틀 숨김 — 폼 자체 헤더('종합접수처')를 사용 */
 body.page-id-8434 h1.entry-title,
 body.page-id-8434 .entry-title,

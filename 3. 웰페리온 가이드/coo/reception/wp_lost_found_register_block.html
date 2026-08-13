@@ -28,6 +28,16 @@ body.wlp-lfr-page .page-header h1{display:none!important}
 body.wlp-lfr-page .buttonizer,
 body.wlp-lfr-page #buttonizer,
 body.wlp-lfr-page [class*="buttonizer"]{display:none!important}
+/* ── 맨 위 흰 띠 제거 (2026-08-13 GM 지시) ──
+   Salient 헤더 자리표시자(#header-space)와 헤더 바탕(#header-outer)이 흰색이라,
+   페이지 바탕색과 달라 화면 맨 위에 29px 흰 줄로 보였다. 바탕만 투명으로 돌려
+   페이지 바탕이 그대로 이어지게 한다(헤더 로고·메뉴는 그대로 둔다). */
+body.wlp-lfr-page #header-space,
+body.wlp-lfr-page #header-outer,
+body.wlp-lfr-page #header-outer .container,
+body.wlp-lfr-page #top{background:#f6f6f6!important;border:none!important;box-shadow:none!important}
+/* 이 페이지는 본문 바탕이 밝은 회색(#f6f6f6)인데 body 바탕은 어두워서, 투명으로 두면
+   흰 줄 대신 검은 줄이 생긴다 — 본문 바탕색을 그대로 물려 이어지게 한다. */
 body.wlp-lfr-page a.lang-header{display:none!important}
 body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
 @media (max-width:1000px){

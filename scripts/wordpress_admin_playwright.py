@@ -309,7 +309,18 @@ async def run_draft_inquiry(post_id_arg: "str | None" = None) -> int:
 
     # Text(HTML) 모드 전환 후 본문 주입
     if probe.get("text_tab"):
-        await page.click("#content-html")
+        # Text(HTML) 탭 전환은 WP 네이티브 switchEditors API 우선 — 창이 작거나 버튼이 뷰포트
+        # 밖이면 순수 click 은 "element is outside of the viewport" 로 30초 타임아웃 난다
+        # (2026-08-13 실사고: 종합접수처 주입 실패). swap 경로가 쓰던 방식으로 통일.
+        _sw = await page.evaluate(
+            """() => { try {
+                if (window.switchEditors && switchEditors.go) { switchEditors.go('content','html'); return 'api'; }
+                const b=document.querySelector('#content-html'); if(b){ b.click(); return 'click'; }
+                return 'none';
+            } catch(e){ return 'err:'+e.message; } }"""
+        )
+        if _sw in ("none", "") or str(_sw).startswith("err:"):
+            await page.click("#content-html", force=True, timeout=8000)
         await page.wait_for_timeout(800)
     # textarea에 직접 세팅 + input 이벤트 (WP 제출 시 #content.value 사용)
     await page.evaluate(
@@ -603,7 +614,18 @@ async def run_draft_inquiry_en(post_id_arg: str, block_file: "Path | None" = Non
 
     # Text 모드 전환 후 본문 주입
     if probe.get("text_tab"):
-        await page.click("#content-html")
+        # Text(HTML) 탭 전환은 WP 네이티브 switchEditors API 우선 — 창이 작거나 버튼이 뷰포트
+        # 밖이면 순수 click 은 "element is outside of the viewport" 로 30초 타임아웃 난다
+        # (2026-08-13 실사고: 종합접수처 주입 실패). swap 경로가 쓰던 방식으로 통일.
+        _sw = await page.evaluate(
+            """() => { try {
+                if (window.switchEditors && switchEditors.go) { switchEditors.go('content','html'); return 'api'; }
+                const b=document.querySelector('#content-html'); if(b){ b.click(); return 'click'; }
+                return 'none';
+            } catch(e){ return 'err:'+e.message; } }"""
+        )
+        if _sw in ("none", "") or str(_sw).startswith("err:"):
+            await page.click("#content-html", force=True, timeout=8000)
         await page.wait_for_timeout(800)
     await page.evaluate(
         """(html) => { const ta = document.querySelector('#content');
@@ -1075,7 +1097,18 @@ async def run_draft_reception(post_id_arg: "str | None" = None) -> int:
         await page.wait_for_timeout(500)
 
     if probe.get("text_tab"):
-        await page.click("#content-html")
+        # Text(HTML) 탭 전환은 WP 네이티브 switchEditors API 우선 — 창이 작거나 버튼이 뷰포트
+        # 밖이면 순수 click 은 "element is outside of the viewport" 로 30초 타임아웃 난다
+        # (2026-08-13 실사고: 종합접수처 주입 실패). swap 경로가 쓰던 방식으로 통일.
+        _sw = await page.evaluate(
+            """() => { try {
+                if (window.switchEditors && switchEditors.go) { switchEditors.go('content','html'); return 'api'; }
+                const b=document.querySelector('#content-html'); if(b){ b.click(); return 'click'; }
+                return 'none';
+            } catch(e){ return 'err:'+e.message; } }"""
+        )
+        if _sw in ("none", "") or str(_sw).startswith("err:"):
+            await page.click("#content-html", force=True, timeout=8000)
         await page.wait_for_timeout(800)
     await page.evaluate(
         """(html) => { const ta = document.querySelector('#content');
@@ -1539,7 +1572,18 @@ async def run_draft_page(spec_key: str, post_id_arg: "str | None" = None) -> int
         await page.wait_for_timeout(500)
 
     if probe.get("text_tab"):
-        await page.click("#content-html")
+        # Text(HTML) 탭 전환은 WP 네이티브 switchEditors API 우선 — 창이 작거나 버튼이 뷰포트
+        # 밖이면 순수 click 은 "element is outside of the viewport" 로 30초 타임아웃 난다
+        # (2026-08-13 실사고: 종합접수처 주입 실패). swap 경로가 쓰던 방식으로 통일.
+        _sw = await page.evaluate(
+            """() => { try {
+                if (window.switchEditors && switchEditors.go) { switchEditors.go('content','html'); return 'api'; }
+                const b=document.querySelector('#content-html'); if(b){ b.click(); return 'click'; }
+                return 'none';
+            } catch(e){ return 'err:'+e.message; } }"""
+        )
+        if _sw in ("none", "") or str(_sw).startswith("err:"):
+            await page.click("#content-html", force=True, timeout=8000)
         await page.wait_for_timeout(800)
     await page.evaluate(
         """(html) => { const ta = document.querySelector('#content');
