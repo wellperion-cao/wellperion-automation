@@ -936,8 +936,11 @@ def build_morning_brief(day: str | None = None) -> str:
         waiting_note = ''
 
     objs = _fetch_gm_direct_objectives(day)
-    prog_lines = [f"· {str(o.get('title', '')).replace(' (GM 직접)', '')} — "
-                  f"{o.get('progress', 0)}% · {o.get('status', '')}" for o in (objs or [])]
+    # ★2026-08-13 GM 지시 — 「나의하루」는 "오늘 어떻게 살까"만 본다. 진행 중 배 목록(회사가
+    # 어떻게 도는가)은 업무보고방 몫이라 여기선 건수 한 줄만 남기고 항목 나열은 뺀다.
+    prog_count = len(objs or [])
+    prog_section = (f"■ 진행 중 {prog_count}건 — 상세는 GM업무 화면" if prog_count
+                     else '' if objs is not None else '■ 진행 중 (불러오지 못함)')
 
     first_lines, first_used = _first_thing_lines(
         _first_thing_candidates(sched_pairs, chairman, due_pairs, day))
@@ -959,7 +962,7 @@ def build_morning_brief(day: str | None = None) -> str:
                 _schedule_stale_note() if sched_ok else '(불러오지 못함)'),
         _bucket('기한이 임박했습니다', due_lines, '' if ssot is not None else '(불러오지 못함)'),
         _bucket('답을 기다리는 것', waiting_lines, waiting_note),
-        _bucket('진행 중', prog_lines, '' if objs is not None else '(불러오지 못함)'),
+        prog_section,
     ]
     sections = [s for s in sections if s]
 
