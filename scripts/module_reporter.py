@@ -69,6 +69,16 @@ ABSORB_BUNDLES.update({
     # 아니라 건너뜀(action="covered")으로 처리한다.
     ("daily", "GM_DM", "coo-check-status"): _COVERED_ELSEWHERE,
     ("daily", "GM_DM", "coo-work-approval"): _COVERED_ELSEWHERE,
+    # ★2026-08-13(GM 승인) — 같은 두 모듈이 bot_id "업무관리" 로도 매일 나가고 있었다.
+    #   위 GM_DM 키만 막아 둔 탓에 09:10 업무보고방 카드 2장은 그대로 살아 있었고, GM 이
+    #   "이건들도 난 의미없다고 생각하는데" 라고 짚었다. 실측 대조 —
+    #     08:00 "점검 현황: 시설 48% · 지원 0%" ↔ 09:10 "시설 48%(15/31) · 지원 0%(0/108)"
+    #     → 같은 숫자에 분모만 더 붙은 두 번째 발신(70분 뒤).
+    #     "전사 업무·결재" 는 마감 초과 13건이 46~68일째 같은 이름 그대로라 매일 같은 목록이었다.
+    #   잃는 것 0으로 옮겼다: 분모와 마감초과 건수를 08:00 한 줄에 합쳤다(coo_registry
+    #   fetch_check_status·fetch_workapproval_status display). 이름 목록은 업무·결재 SSOT 화면에 있다.
+    ("daily", "업무관리", "coo-check-status"): _COVERED_ELSEWHERE,
+    ("daily", "업무관리", "coo-work-approval"): _COVERED_ELSEWHERE,
 })
 
 

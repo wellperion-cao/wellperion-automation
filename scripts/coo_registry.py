@@ -127,7 +127,13 @@ def fetch_check_status(fetch_fn=_http_get_json) -> dict:
             reasons.append(f"{dept}: {_issue_text(iss)}")
     f_pct = depts.get("facility", {}).get("pct")
     s_pct = depts.get("support", {}).get("pct")
-    display = f"시설 {f_pct if f_pct is not None else '-'}% · 지원 {s_pct if s_pct is not None else '-'}%"
+    # ★분모를 같이 적는다 (GM 승인 2026-08-13). 09:10 독립 카드가 08:00 과 같은 숫자에 분모만
+    #   더 붙여 두 번 오고 있었다 — 그 카드를 없애는 대신 분모를 이 한 줄로 옮긴다(정보 손실 0).
+    def _frac(d):
+        t, done = d.get("total") or 0, d.get("done") or 0
+        return f"({done}/{t}건)" if t else "(대상 0건)"
+    display = (f"시설 {f_pct if f_pct is not None else '-'}%{_frac(depts.get('facility', {}))}"
+               f" · 지원 {s_pct if s_pct is not None else '-'}%{_frac(depts.get('support', {}))}")
     metrics = {f"{dept}_pct": d["pct"] for dept, d in depts.items()}
     return {"depts": depts, "anomaly": bool(reasons), "reasons": reasons, "tag": "measured",
             "display": display, "metrics": metrics}
@@ -143,7 +149,12 @@ def fetch_workapproval_status(fetch_fn=_http_get_json) -> dict:
     today = _kst_today()
     overdue = [r for r in active if r.get("종료일") and r["종료일"] < today]
     rejected = [r for r in rows if "반려" in (r.get("결재상태") or "")]
+    # ★마감 초과 건수를 본문에 같이 적는다 (GM 승인 2026-08-13). 09:10 독립 카드는 매일 같은
+    #   이름 13건을 그대로 다시 실어 곧 안 읽히는 상태였다 — 카드를 없애고 '몇 건인가'만 남긴다.
+    #   이름은 업무·결재 SSOT 화면에 있다. 숫자가 튀면 GM 이 그때 화면을 연다.
     display = f"활성 {len(active)}건 · 결재대기 {len(pending)}건"
+    if overdue:
+        display += f" · 마감초과 {len(overdue)}건"
     reasons = []
     if overdue:
         reasons.append(f"마감 초과 {len(overdue)}건")
