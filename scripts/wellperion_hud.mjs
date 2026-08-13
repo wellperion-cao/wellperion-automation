@@ -149,9 +149,18 @@ function git(cwd, args) {
 function roleOf(transcript) {
   if (!transcript) return null;
   try {
-    const head = readFileSync(transcript, 'utf8').slice(0, 60000);
-    const m = head.match(/ai-(ceo|cfo|chro|cmo|coo|cpo|cto)\.md/);
-    return m ? m[1] : null;
+    const raw = readFileSync(transcript, 'utf8');
+    const RE = /ai-(ceo|cfo|chro|cmo|coo|cpo|cto)\.md/;
+    const m = raw.slice(0, 60000).match(RE);
+    if (m) return m[1];
+    // ★꼬리도 본다 (2026-08-13 시토 · GM "시토 statusline 아래에 왜 저장소만 나와?").
+    //   앞머리 6만 자만 보던 탓에 **이어받은 창·앞이 잘린 긴 대화**에서 역할을 못 찾았고,
+    //   그러면 상태줄이 회색 한 줄("역할 확인중 · 작업표시 대기")로 죽어 GM 화면엔 저장소 줄만
+    //   남는다(실측 재현). 부팅 문구는 앞에 있지만, 역할 이름은 대화 중에도 계속 스친다.
+    //   전체를 훑지 않고 꼬리 6만 자만 더 본다 — 렌더마다 도는 자리라 비용을 늘리지 않는다.
+    const tail = raw.length > 60000 ? raw.slice(-60000) : '';
+    const t = tail && tail.match(RE);
+    return t ? t[1] : null;
   } catch { return null; }
 }
 
