@@ -1198,9 +1198,12 @@ function koreanizeBranchLine(raw) {
   const untracked = (rest.match(/\?(\d+)/) || [])[1];
   const ahead = (rest.match(/⇡(\d+)/) || [])[1];
   const parts = [];
-  if (staged != null) parts.push(`${D}저장대기 ${X}${staged}`);
-  if (modified != null) parts.push(`${D}미저장 ${X}${modified}`);
-  if (untracked != null) parts.push(`${D}새파일 ${X}${untracked}`);
+  // ★변경파일 수 3종(저장대기·미저장·새파일)은 뺀다 (GM 지시 2026-08-13 "의미없는데").
+  //   실측: 이 저장소는 자동 산출물이 상시 75~100개를 더럽게 유지해 이 숫자가 늘 크게 떠 있었고,
+  //   그래서 아무 신호도 되지 못했다(늘 크니까 커져도 모른다). GM 이 실제로 조치하는 값은
+  //   '미업로드'뿐이다 — 그건 0 이 아닐 때만 나타나므로 뜨면 진짜 신호다.
+  //   되살리려면 이 세 줄을 되돌리면 된다(위 파싱은 그대로 남아 있다).
+  void staged; void modified; void untracked;
   if (ahead != null) parts.push(`${B}${Y}미업로드 ${ahead}${X}`);   // ★0 이 아닐 때만 존재 — 눈에 띄게
   const newFirst = `${C}${branch}${X}` + (parts.length ? ` ${D}·${X} ${parts.join(`${D} · ${X}`)}` : '');
   return newFirst + restStr;
@@ -1247,7 +1250,11 @@ function main() {
 
   // ★OMC 줄에 이어 붙이지 않고 **줄을 따로 뺀다** (GM 2026-07-24 '시모·시우·시포는 잘리는데?').
   //   같은 줄이면 폭 경쟁으로 끝에 붙은 우리 부분부터 잘린다.
-  process.stdout.write(base + (line ? '\n' + line : '') + roleBlock);
+  // ★맨 위는 '지금 무슨 배로 뭘 하고 있나' (GM 지시 2026-08-13 — "웰페리온 저장소 경로 나오는데
+  //   의미없는데, 배편이랑 작업내용, GM지시내용으로 변경"). 전에는 git 브랜치·변경파일 수가
+  //   첫 줄이라 창을 흘깃 볼 때 저장소 상태만 보이고 일하는 내용은 아래로 밀려 있었다.
+  //   순서만 바꾼다 — 지운 정보는 없다(모델·맥락·미업로드는 그대로 아래 줄에 있다).
+  process.stdout.write((line ? line + '\n' : '') + base + roleBlock);
 }
 
 main();
