@@ -613,7 +613,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var el=document.getElementById('dailyStatusBoard');
       if(!el) return;
       if(!ds){ el.textContent='오늘 처리 현황 — 아직 값 없음'; return; }
-      el.innerHTML='🧭 <b style="color:var(--text);">오늘('+ds.date+') 처리 현황(이정헌 소장)</b> — 남은 '+ds.open_count+'건 · 최고 '+ds.oldest_days+'일째 · 오늘 처리 '+ds.processed+'건'
+      el.innerHTML='🧭 <b style="color:var(--text);">오늘('+ds.date+') 처리 현황(이정헌 소장)</b> — 마감 지난 '+ds.overdue_count+'건 · 최고 '+ds.oldest_days+'일 지남 · 오늘 처리 '+ds.processed+'건'
         +' <span style="opacity:0.75;">('+ds.note+')</span>';
     })
     .catch(function(){ var el=document.getElementById('dailyStatusBoard'); if(el) el.textContent='오늘 처리 현황 — 불러오기 실패'; });
