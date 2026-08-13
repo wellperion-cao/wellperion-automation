@@ -59,6 +59,16 @@ def ref_no(ref: str, day: str) -> str:
     return no if ymd == day else f'{m.group(2)}/{m.group(3)} {no}'
 
 
+def ref_sort_key(ref: str):
+    """표 정렬 키 — 번호 부분을 **숫자로** 비교한다. `sorted(by)` 가 ref 문자열을 그대로
+    비교하면 "10" < "1001" < "11" 이 돼 표가 01·02…10·1001…1029·11·12 처럼 깨진다
+    (2026-08-13 GM 지적). ymd 먼저, 그 다음 번호를 int 로 비교 — 접수일 순 안에서 번호순."""
+    m = re.match(r'GM-(\d{4})(\d{2})(\d{2})-(\d+)$', ref)
+    if not m:
+        return ('9999-99-99', 0, ref)
+    return (f'{m.group(1)}-{m.group(2)}-{m.group(3)}', int(m.group(4)), ref)
+
+
 def _dur(start: datetime.datetime, end: datetime.datetime) -> str:
     m = int((end - start).total_seconds() // 60)
     return f'{m}분' if m < 60 else f'{m // 60}시간{m % 60}분'
@@ -73,12 +83,22 @@ def _ref_day(ref: str) -> str:
     return f'{m.group(1)}-{m.group(2)}-{m.group(3)}' if m else ''
 
 
+_NOT_GM_PREFIX = ('<', '[SYSTEM NOTIFICATION', '[형식 고정', 'C-Level 부팅', '너는 ', '당신은 ')
+
+
 def _read(day: str, role: str | None):
     """GM- ref 가 있는 줄은 **ref 에 박힌 날짜**로 그날에 속하는지 가른다(이벤트 자체의
     ts 가 아니다) — 접수는 어제, 완료는 오늘 넘겨서 찍히면(자정 넘긴 마무리) 예전엔 완료
     줄이 오늘 날짜로 필터링돼 어제 그룹에 안 들어갔다. 그러면 --carry 가 이미 오늘 아침
     닫힌 지시를 '아직'으로 오판했다(2026-08-13 실측 — GM-20260812-2024, 08:31 종결인데
-    --carry 가 미완으로 냈다). ref 없는 일반 작업 기록(load_work)은 그대로 ts 로 가른다."""
+    --carry 가 미완으로 냈다). ref 없는 일반 작업 기록(load_work)은 그대로 ts 로 가른다.
+
+    부팅 프롬프트·시스템 문구는 여기서 걸러내지 않는다 — ref(GM-*) 는 접수 줄과 완료
+    줄이 따로 쌓이는데, 줄 단위로 거르면 접수 줄만 빠지고 완료 줄이 남아 그 ref 가 엉뚱한
+    '한 것' 텍스트로 표에 살아남는다(2026-08-13 실측 — 부팅문 접수 줄을 걸렀더니 같은
+    ref 의 완료 줄 "답변 종결…"이 '접수한 것' 자리에 뜨는 2차 오류가 났다). 그래서 거르기는
+    **ref 를 통째로 묶은 뒤**(load) 판단한다 — 정본 관문은 worklog.py 의 접수 훅
+    (UserPromptSubmit)이고, 여기는 그 훅 고치기 전에 이미 쌓인 과거 줄만 위한 방어선이다."""
     for line in LOG.open(encoding='utf-8'):
         line = line.strip()
         if not line:
@@ -91,19 +111,26 @@ def _read(day: str, role: str | None):
         if ref.startswith('GM-'):
             if _ref_day(ref) != day:
                 continue
-        elif not str(d.get('ts') or '').startswith(day):
-            continue
+        else:
+            if not str(d.get('ts') or '').startswith(day):
+                continue
+            if str(d.get('event') or '').startswith(_NOT_GM_PREFIX):
+                continue  # ref 없는 work 줄은 그 자리에서 걸러도 안전(그룹화 없음)
         if role and d.get('role') != role:
             continue
         yield d
 
 
 def load(day: str, role: str | None):
-    """GM 지시 짝(ref=GM-*)만 — 접수↔완료 대응이 있는 것."""
+    """GM 지시 짝(ref=GM-*)만 — 접수↔완료 대응이 있는 것. 부팅 프롬프트·시스템 문구가
+    섞인 ref 는 통째로 뺀다(그룹 안 아무 줄이나 걸리면 전체 제외 — 2026-08-13 GM 지적)."""
     by: dict[str, list] = {}
     for d in _read(day, role):
         if str(d.get('ref') or '').startswith('GM-'):
             by.setdefault(d['ref'], []).append(d)
+    for ref, ev in list(by.items()):
+        if any(str(e.get('event') or '').startswith(_NOT_GM_PREFIX) for e in ev):
+            del by[ref]
     return by
 
 
@@ -185,10 +212,12 @@ def evidence_state(got: str, did: str, up: str) -> str:
     return '⚠️없음'
 
 
-def find_stop_watch(role: str | None) -> list[dict]:
+def find_stop_watch(role: str | None, today: str | None = None) -> list[dict]:
     """'정지·중단·차단·삭제·끄기·해제·금지' 류 지시 — 완료 짝이 있어도 매일 다시 보여준다.
     day 필터 없이 worklog.jsonl 전체를 본다 — 며칠 지난 지시라도 "지금도 그런가"는
-    매일 확인해야 한다(GM 2026-08-13 지적)."""
+    매일 확인해야 한다(GM 2026-08-13 지적). 오래된 순(days_ago 큰 것 먼저)으로 낸다 —
+    "13줄이 표보다 길어 안 읽힌다"는 지적에 오래 방치된 것부터 보이게 한 것."""
+    today = today or datetime.date.today().isoformat()
     by: dict[str, list] = {}
     for line in LOG.open(encoding='utf-8'):
         line = line.strip()
@@ -213,11 +242,15 @@ def find_stop_watch(role: str | None) -> list[dict]:
         if not oks:
             continue  # 완료 짝이 아직 없으면 기존 진행중/놓침 목록이 이미 보여준다
         day = _ref_day(ref)
+        try:
+            days_ago = (datetime.date.fromisoformat(today) - datetime.date.fromisoformat(day)).days
+        except ValueError:
+            days_ago = 0
         out.append({
-            'ref': ref, 'no': ref_no(ref, day), 'day': day,
+            'ref': ref, 'no': ref_no(ref, day), 'day': day, 'days_ago': days_ago,
             'got': got, 'did': str(oks[-1].get('detail') or '').strip(),
         })
-    return sorted(out, key=lambda x: x['day'])
+    return sorted(out, key=lambda x: -x['days_ago'])
 
 
 def upload_state(detail: str, has_done: bool, role: str | None = None,
@@ -346,22 +379,18 @@ def emit(day: str) -> int:
     for role in NICK:
         by = load(day, role)
         items = []
-        done = total = 0
-        for ref in sorted(by):
+        for ref in by:
             ev = by[ref]
             warns = [e for e in ev if e.get('result') == 'warn']
             oks = [e for e in ev if e.get('result') == 'ok']
             start = warns[0] if warns else (oks[0] if oks else None)
             st = datetime.datetime.fromisoformat(start['ts']) if start else None
             en = datetime.datetime.fromisoformat(oks[-1]['ts']) if oks else None
-            mins = None
-            if st and en:
-                mins = int((en - st).total_seconds() // 60)
-                total += mins
-                done += 1
+            mins = int((en - st).total_seconds() // 60) if st and en else None
             did = str(oks[-1].get('detail') or '').strip() if oks else ''
             got = str(ev[0].get('event') or '').strip()
             up = upload_state(did, bool(oks), role=role, start=st, end=en)
+            ev_state = evidence_state(got, did, up) if oks else None
             items.append({
                 'ref': ref,
                 'no': ref_no(ref, day),
@@ -372,8 +401,17 @@ def emit(day: str) -> int:
                 'minutes': mins,
                 'upload': up,
                 'open': not oks,
-                'evidence': evidence_state(got, did, up) if oks else None,
+                'evidence': ev_state,
+                'ev': ev_state or '—',       # _dedup_rows 가 보는 랭킹용 키
+                'sortkey': ref_sort_key(ref),
             })
+        # 접수 훅 2개가 같은 지시를 다르게 채번하는 문제(2026-08-13) — CLI 표와 같은 방식으로 합친다.
+        items = _dedup_rows(items)
+        items.sort(key=lambda x: x['sortkey'])
+        for it in items:
+            del it['ev'], it['sortkey']
+        done = sum(1 for it in items if it['minutes'] is not None)
+        total = sum(it['minutes'] for it in items if it['minutes'] is not None)
         work = load_work(day, role)
         _now = datetime.datetime.now()
         opened = classify_open(items, work, _now)
@@ -389,7 +427,7 @@ def emit(day: str) -> int:
                 'unclosed': [x for x in opened if x['kind'] == 'unclosed'],
                 'just': [x for x in opened if x['kind'] == 'just'],
                 'repeats': repeats,
-                'stop_watch': find_stop_watch(role),
+                'stop_watch': find_stop_watch(role, day),
             }
     p = ROOT / 'status' / 'kungjjak_today.json'
     p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -398,13 +436,34 @@ def emit(day: str) -> int:
     return 0
 
 
+def _dedup_rows(rows: list[dict]) -> list[dict]:
+    """같은 지시가 접수 훅 2개(자동 UserPromptSubmit + 손으로 또 한 번) 때문에 ref 가
+    다른 두 줄로 잡히는 것을 하나로 합친다(2026-08-13 GM 지적 — 04↔1001·05↔1002…
+    47건 중 절반 가까이가 이 중복이었다). find_repeats() 와 같은 낱말-겹침 판정을
+    재사용해 같은 지시로 묶고, **증거가 있는 쪽 행을 통째로 살린다**(부분 병합이 아니라
+    행 전체 교체 — 필드가 서로 안 맞는 프랑켄슈타인 행을 막는다). 둘 다 증거가 같으면
+    번호가 앞선(sortkey 가 작은) 쪽을 남긴다."""
+    rank = {'✅있음': 0, '🔁재확인': 0, '⚠️없음': 1, '—': 2}
+    groups: list[list[dict]] = []
+    for r in rows:
+        w = _norm(r['got'])
+        for g in groups:
+            gw = _norm(g[0]['got'])
+            if w and gw:
+                need = max(1, (min(len(w), len(gw)) + 1) // 2)
+                if len(w & gw) >= need:
+                    g.append(r)
+                    break
+        else:
+            groups.append([r])
+    return [min(g, key=lambda r: (rank.get(r['ev'], 1), r['sortkey'])) for g in groups]
+
+
 def _render_table(by: dict, day: str) -> None:
     """표 한 장 + 요약 줄. `day` 는 # 칸 서식(ref_no)에만 쓴다 — 오늘 날짜를 넘기면
     지난 날짜 ref 는 자동으로 'MM/DD NN' 로 찍혀 오늘 것과 섞이지 않는다(--carry 가 그걸 쓴다)."""
-    print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 | 증거 |')
-    print('|---|---|---|---|---|---|')
-    total = done = measured = 0
-    for ref in sorted(by):
+    rows = []
+    for ref in by:
         ev = by[ref]
         warns = [e for e in ev if e.get('result') == 'warn']
         oks = [e for e in ev if e.get('result') == 'ok']
@@ -421,34 +480,49 @@ def _render_table(by: dict, day: str) -> None:
         #   ▸그래서 소급으로 남길 때는 detail 끝에 '· 시각 추정'을 붙이는 것을 표식으로 삼는다.
         backfilled = any('시각 추정' in str(e.get('detail') or '') for e in ev)
 
-        dur = '**진행중**'
-        if st and en:
-            done += 1
+        dur, minutes = '**진행중**', None
+        has_dur = bool(st and en)
+        if has_dur:
             if backfilled:
                 dur = '소급'
             else:
                 dur = _dur(st, en)
-                total += int((en - st).total_seconds() // 60)
-                measured += 1
+                minutes = int((en - st).total_seconds() // 60)
 
         got = str(ev[0].get('event') or '').strip()
         did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
         item_role = str(ev[0].get('role') or '').strip().lower()
         up = upload_state(did, bool(oks), role=item_role, start=st, end=en)
         ev_state = evidence_state(got, did, up) if oks else '—'
-        print(f'| {ref_no(ref, day)} | {got[:52]} | {did[:74]} | {dur} | {up} | {ev_state} |')
+        rows.append({'ref': ref, 'no': ref_no(ref, day), 'got': got, 'did': did,
+                      'dur': dur, 'up': up, 'ev': ev_state, 'sortkey': ref_sort_key(ref),
+                      'has_dur': has_dur, 'minutes': minutes})
+
+    n_before = len(rows)
+    rows = _dedup_rows(rows)
+    rows.sort(key=lambda r: r['sortkey'])
+
+    print('| # | 접수한 것 | 한 것 | 소요 | 저장·업로드 | 증거 |')
+    print('|---|---|---|---|---|---|')
+    for r in rows:
+        print(f"| {r['no']} | {r['got'][:52]} | {r['did'][:74]} | {r['dur']} | {r['up']} | {r['ev']} |")
 
     print()
+    done = sum(1 for r in rows if r['has_dur'])
+    measured_rows = [r for r in rows if r['minutes'] is not None]
     # 평균은 실제로 잰 건만으로 낸다 — 소급분을 섞으면 평균이 0분 쪽으로 끌려간다.
-    miss = len(by) - done
-    line = f'**{len(by)}건 접수 · {done}건 완료'
-    if measured:
-        line += f' · 평균 {total // measured}분(잰 것 {measured}건)'
+    miss = len(rows) - done
+    dup = n_before - len(rows)
+    line = f'**{len(rows)}건 접수 · {done}건 완료'
+    if measured_rows:
+        line += f' · 평균 {sum(r["minutes"] for r in measured_rows) // len(measured_rows)}분(잰 것 {len(measured_rows)}건)'
     else:
         line += ' · 잰 것 없음(전부 소급)'
     line += '**'
     if miss:
         line += f' · **진행중 {miss}건**'
+    if dup:
+        line += f' · 중복 {dup}건 합침'
     print(line)
 
 
@@ -492,12 +566,15 @@ def main() -> int:
 
     _render_table(by, day)
 
-    watch = find_stop_watch(role)
+    watch = find_stop_watch(role, day)
     if watch:
         print()
-        print(f'### 🔁 재확인 필요 — 정지·차단류 ({len(watch)}건, 완료짝 있어도 매일 확인)')
+        print(f'### 🔁 재확인 필요 — 정지·차단류 ({len(watch)}건, 완료짝 있어도 매일 확인 · 오래된 순)')
         for w in watch:
-            print(f"- {w['no']} {w['got'][:60]} — {w['did'][:70]}")
+            age = f"[{w['days_ago']}일째]" if w['days_ago'] > 0 else '[오늘]'
+            # 한 줄 60자 안쪽(2026-08-13 GM 지적 — "각 줄이 너무 길어 안 읽힌다").
+            line = f"{age} {w['got']}"
+            print(f'- {line[:60]}')
     return 0
 
 

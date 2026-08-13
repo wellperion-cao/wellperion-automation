@@ -104,8 +104,10 @@ def record_gm_prompt_hook() -> None:
             # 'C-Level 부팅'(부팅 지시문)·'너는 …'(서브에이전트 역할 프롬프트)도 사람이 친 게 아니라
             # 붙여넣은 실행문이다. 2026-08-11 실측: 미완 91건 중 16건이 이 둘이었다 —
             # GM 이 시킨 적 없는 일이 "미완"으로 쌓여 쿵짝표 숫자를 부풀렸다.
+            # '당신은 웰페리온…입니다'(7역할 부팅 프롬프트 1인칭 선언문)도 같은 부류 —
+            # 2026-08-13 쿵짝표에 시우 부팅문이 GM 지시로 두 줄 잡힌 실사고로 추가.
             if event.startswith(('<', '[SYSTEM NOTIFICATION', '[형식 고정',
-                                 'C-Level 부팅', '너는 ')):
+                                 'C-Level 부팅', '너는 ', '당신은 ')):
                 event = ''
             if len(event) > 120:
                 event = event[:120] + "…"
@@ -168,9 +170,13 @@ def close_gm_refs(role: str, detail: str = "") -> int:
         for ref, ts in sorted(warn.items(), key=lambda kv: kv[1]):
             if ref in ok:
                 continue
+            # 기본 detail 은 "정말 아무것도 안 적은 것"이다 — 쿵짝표가 이걸 완료로 세면서
+            # GM 이 "빈틈이 생긴다"고 지적한 30건 중 다수가 이 자리였다(2026-08-13). 실제로
+            # 처리한 게 없다는 사실 자체를 detail 에 정직하게 남긴다(⚠️ 로 시작 — 쿵짝표
+            # evidence_state 가 상투어로 걸러낸다).
             if log(role_v, "GM지시", "답변 종결 — 세션이 응답을 마쳤다",
                    result="ok",
-                   detail=detail or "후속 작업이 있으면 배(_queue)가 추적한다",
+                   detail=detail or "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
                    ref=ref):
                 n += 1
         return n
