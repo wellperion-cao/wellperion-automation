@@ -51,13 +51,17 @@ LESSON_OUT = STATUS_DIR / "inquiry_snapshot_lesson.json"
 # 덩치 문제가 아니다). 같은 데이터를 이 스냅샷으로 받으면 0.3초다 — 이미 문의 2종이 쓰고 있는
 # 방식을 유효회원에도 그대로 붙인다(새 모듈·새 예약 0, 이 스크립트 안에서 한 벌 더 받을 뿐).
 ACTIVE_OUT = STATUS_DIR / "member_active_snapshot.json"
+# 회원 현황 한 장(2026-08-13 GM "현황 보는 게 너무 불편, 보고가 쉽게 들어가야" — 배312/578 데이터쪽).
+# 신규·재등록·LOSS 월별 롤업 + 유효회원 구성 — cpo_report.build_status_onepager() 조립 결과 그대로 dump.
+ONEPAGER_OUT = STATUS_DIR / "cpo_status_onepager.json"
+ONEPAGER_STALE_SEC = 3 * 3600  # 3시간 — 월별 집계라 3분마다 새로 조회할 필요 없다(종료회원·등록월별 4콜 추가 부하 방지)
 
 KST = timezone(timedelta(hours=9))
 LOCK_STALE_SEC = 600        # 10분 — 3분 주기의 3배 이상이면 확실히 죽은 것
 HEARTBEAT_SEC = 15 * 60     # 15분 — 데이터 무변경이어도 이 이상 조용하면 강제 커밋(죽은 job과 구분)
 
 sys.path.insert(0, str(SCRIPTS_DIR))
-from cpo_report import _gas_get  # noqa: E402  (기존 검증된 GAS 조회 헬퍼 재사용 — 신규 포팅 없음)
+from cpo_report import _gas_get, build_status_onepager  # noqa: E402  (기존 검증된 GAS 조회·집계 재사용 — 신규 포팅 없음)
 from module_heartbeat import record_heartbeat, last_heartbeat  # noqa: E402  (공통 유틸 — 자체 재구현 금지)
 
 MODULE_ID = "cpo-inquiry-snapshot"
@@ -229,11 +233,34 @@ def build_lesson(prev: dict | None, warnings: list) -> dict:
     }
 
 
+def build_onepager(prev: dict | None, warnings: list, active_payload: dict) -> dict:
+    """회원 현황 한 장 — 신선도 게이트(ONEPAGER_STALE_SEC) 이내면 직전 값 그대로 반환(재조회 없음).
+    지날 때만 build_status_onepager() 호출 — 종료회원·월별 등록리스트 등 무거운 추가 GAS 콜은
+    이 게이트 통과 시에만 나간다(3분마다 쏘지 않는다, 월별 집계라 그럴 필요가 없다).
+    유효회원(scope=valid) 행은 이 회차의 active_payload에서 재사용 — 중복 조회 금지."""
+    now = _now_kst()
+    if prev and isinstance(prev.get("ts"), (int, float)):
+        age_sec = (now.timestamp() * 1000 - prev["ts"]) / 1000
+        if age_sec < ONEPAGER_STALE_SEC:
+            return prev  # 신선 — 이번 회차는 스킵(직전 값 그대로 carry)
+    valid_rows = active_payload.get("rows") if active_payload.get("ok") else None
+    try:
+        payload = build_status_onepager(valid_rows=valid_rows)
+    except Exception as e:
+        warnings.append(f"onepager: 예외 {e}")
+        if prev:
+            warnings.append("onepager: 직전 스냅샷 carry-forward")
+            return prev
+        return {"generated_at": now.strftime("%Y-%m-%d %H:%M:%S"), "ts": int(now.timestamp() * 1000),
+                "composition": {"ok": False, "detail": "조회 실패(못 잼)"}, "월별": {}}
+    return payload
+
+
 def _content_key(payload: dict) -> str:
     """generated_at_kst/ts를 뺀 실질 내용만 비교(불필요 커밋 방지용 키)."""
     def strip(d):
         if isinstance(d, dict):
-            return {k: strip(v) for k, v in d.items() if k not in ("ts", "generated_at_kst")}
+            return {k: strip(v) for k, v in d.items() if k not in ("ts", "generated_at_kst", "generated_at")}
         if isinstance(d, list):
             return [strip(x) for x in d]
         return d
@@ -271,9 +298,12 @@ def main() -> int:
         prev_lesson = _load_prev(LESSON_OUT)
         prev_active = _load_prev(ACTIVE_OUT)
 
+        prev_onepager = _load_prev(ONEPAGER_OUT)
+
         member_payload = build_member(prev_member, warnings)
         lesson_payload = build_lesson(prev_lesson, warnings)
         active_payload = build_active(prev_active, warnings)
+        onepager_payload = build_onepager(prev_onepager, warnings, active_payload)
         member_payload["warnings"] = warnings[:]  # 전체 워닝 공유 게시(디버그 편의)
         lesson_payload["warnings"] = warnings[:]
         active_payload["warnings"] = warnings[:]
@@ -288,10 +318,15 @@ def main() -> int:
         ACTIVE_OUT.write_text(
             json.dumps(active_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
         )
+        ONEPAGER_OUT.write_text(
+            json.dumps(onepager_payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         _log(f"[active] {active_payload.get('count', 0)}명, ok={active_payload.get('ok')}")
         _log(f"[member] {member_payload.get('count', 0)}건, ok={member_payload.get('ok')}")
         a = lesson_payload["adult"]["year"]; y = lesson_payload["youth"]["year"]
         _log(f"[lesson] 성인 {a.get('count', 0)}건(ok={a.get('ok')}) · 유소년 {y.get('count', 0)}건(ok={y.get('ok')})")
+        _op_comp = onepager_payload.get("composition", {})
+        _log(f"[onepager] 정회원 {_op_comp.get('정회원', '-')} · 대기 {_op_comp.get('대기', '-')} · 법인 {_op_comp.get('법인', '-')} (ok={_op_comp.get('ok')})")
 
         # 가동 신호는 하트비트 1곳에만 남긴다(2026-07-25 시포·배1). 예전엔 회차마다 커밋이
         # 완료-배를 낳아 G1 '입항 완료(오늘)'를 도배했다 — 배는 실무 신호용이고, 무인 모듈의
@@ -320,6 +355,10 @@ def main() -> int:
             changed_paths.append(str(ACTIVE_OUT))
         else:
             _log("[active] HEAD 대비 무변경(하트비트 이내) — 커밋 스킵")
+        if _should_commit(_load_prev_from_head(ONEPAGER_OUT), onepager_payload):
+            changed_paths.append(str(ONEPAGER_OUT))
+        else:
+            _log("[onepager] HEAD 대비 무변경(신선도 게이트 이내) — 커밋 스킵")
 
         if warnings:
             _log("[warn] " + " | ".join(warnings))

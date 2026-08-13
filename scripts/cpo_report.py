@@ -555,6 +555,133 @@ def build_monthly_report(today: str | None = None) -> str:
     return "\n".join(lines)
 
 
+# ── 회원 현황 한 장(status/cpo_status_onepager.json) ─────────────────────────
+def _month_range(months_back: int = 0, today: datetime | None = None) -> tuple[str, str, str]:
+    """이번달(0)/지난달(1) 시작일·종료일(YYYY-MM-DD)·연월(YYYY-MM). KST 오늘 기준(today 생략 시)."""
+    first = (today or datetime.now()).replace(day=1)
+    y, m = first.year, first.month
+    for _ in range(months_back):
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    start = datetime(y, m, 1)
+    ny, nm = (y + 1, 1) if m == 12 else (y, m + 1)
+    end = datetime(ny, nm, 1) - timedelta(days=1)
+    return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"), start.strftime("%Y-%m")
+
+
+def build_status_onepager(valid_rows="unset") -> dict:
+    """회원 현황 「한 장」 — GM 지시 2026-08-13(신규·재등록·LOSS·유효회원·문의를 한 장으로,
+    카톡·텔레그램 그대로 발송 가능하게). 산출물: status/cpo_status_onepager.json.
+
+    새 집계 로직 0개 — collectors.cpo_member_rollup._member_composition(정회원/대기/위생 판정
+    SSOT, 배312)과 이 파일의 기존 fetch_* 만 조립한다.
+
+    valid_rows: 이미 조회된 유효회원(scope=valid) 행이 있으면 그대로 재사용한다
+    (member_active_list 단독 36초 실측 — cpo_inquiry_snapshot.py 가 3분마다 이미 받아 둔 것을
+    다시 조회하지 않기 위함). 생략(기본값 "unset")이면 이 함수가 직접 조회한다.
+
+    재등록 신뢰도: 배578(2026-08-12) — 재등록분류 필드값 자체가 임정은M 확인 회신 대기중이라
+    "이번달 재등록"은 (전체 신규등록 - 신규) 산술값으로만 낸다(신규 판정은 서버 newOnly로 신뢰
+    가능 — 배578 검증 완료). 사유별로 쪼개지 않는다 — 값 사전이 안 굳은 상태에서 분포표를 내면
+    틀린 숫자가 보고서로 굳는다(약속 L05, 578 본문 그대로).
+    """
+    from collectors.cpo_member_rollup import _member_composition, _find_col, _cell  # 판정 SSOT 재사용
+
+    if valid_rows == "unset":
+        valid_rows = fetch_active_members("valid")
+    ended_rows = fetch_active_members("ended")
+    today_stats = fetch_cpo_today_stats()
+    churn = fetch_cpo_churn_stats()
+    inq_rows = fetch_member_inquiries()
+
+    today = _today_str()
+    now_kst = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    result: dict = {"generated_at": now_kst, "ts": int(datetime.now().timestamp() * 1000), "as_of": today}
+
+    comp = _member_composition(valid_rows, today) if valid_rows is not None else None
+    if comp is not None:
+        corp_n = today_stats.get("memberCorp") if today_stats else None
+        result["composition"] = {
+            "ok": True,
+            "정회원": comp["regular"],
+            "대기": comp["waiting"],
+            "대기_판정기준": "시작일자 미래(코드 SSOT — GM 수기집계와 소폭 차이 있음, 배312 대조 진행중)",
+            "법인": corp_n if isinstance(corp_n, (int, float)) else None,
+            "유형별": {t: c for t, c in comp["type_counts"].items() if c},
+            "위생": {
+                "회원구분_오타": comp["typo_count"], "미기재": comp["blank_type_count"],
+                "이름중복": comp["dup_count"], "잔여일_공백": comp["remain_blank"],
+            },
+        }
+    else:
+        result["composition"] = {"ok": False, "detail": "유효회원 조회 실패(못 잼)"}
+
+    months: dict = {}
+    for label, back in (("이번달", 0), ("지난달", 1)):
+        d_from, d_to, ym = _month_range(back)
+        p: dict = {"연월": ym, "범위": f"{d_from}~{d_to}"}
+
+        new_regs = fetch_member_registered_list(d_from, d_to, new_only=True)
+        all_regs = fetch_member_registered_list(d_from, d_to, new_only=False)
+        if new_regs is not None and all_regs is not None:
+            p["신규_건수"] = len(new_regs)
+            p["신규_신뢰"] = "높음(서버 newOnly 판정 — 배578 검증 완료)"
+            p["재등록_건수"] = len(all_regs) - len(new_regs)
+            p["재등록_신뢰"] = "낮음(전체-신규 산술값 — 재등록분류 필드 자체는 임정은M 확인요청 회신 대기, 배578)"
+        else:
+            p["신규_건수"] = None
+            p["재등록_건수"] = None
+            p["detail_등록"] = "조회 실패(못 잼)"
+
+        if ended_rows is not None:
+            loss_col = None
+            for frag in ("LOSS일자", "이탈일", "해지일", "종료일"):
+                if ended_rows and _find_col(ended_rows[0], frag):
+                    loss_col = frag
+                    break
+            reasons: dict = {}
+            loss_n = 0
+            for r in ended_rows:
+                if not _cell(r, "회원명") or not loss_col:
+                    continue
+                d = _cell(r, loss_col)[:10]
+                if d and d_from <= d <= d_to:
+                    loss_n += 1
+                    reason = _cell(r, "종료사유") or "미기재"
+                    reasons[reason] = reasons.get(reason, 0) + 1
+            p["LOSS_건수"] = loss_n
+            p["LOSS_사유분포"] = reasons
+        else:
+            p["LOSS_건수"] = None
+            p["detail_LOSS"] = "조회 실패(못 잼)"
+
+        if inq_rows is not None:
+            m_rows = [r for r in inq_rows if d_from <= (r.get("timestamp") or "") <= d_to]
+            converted = [r for r in m_rows if str(r.get("status", "") or "") in _SUCCESS_STATUSES]
+            p["문의_건수"] = len(m_rows)
+            p["문의_전환"] = len(converted)
+            p["문의_전환율"] = f"{round(len(converted) / len(m_rows) * 100, 1)}%" if m_rows else "표본 0건"
+        else:
+            p["문의_건수"] = None
+            p["detail_문의"] = "조회 실패(못 잼)"
+
+        months[label] = p
+    result["월별"] = months
+    result["갱신임박_30일이내"] = churn.get("renewCount") if churn is not None else None
+    return result
+
+
+def demo() -> None:
+    """자가점검 — _month_range 경계값(연말 넘어가는 지난달)만 확인. 네트워크 호출 없음."""
+    fixed = datetime(2026, 1, 15)
+    d_from, d_to, ym = _month_range(1, today=fixed)  # 2026-01 기준 지난달 = 2025-12
+    assert (d_from, d_to, ym) == ("2025-12-01", "2025-12-31", "2025-12"), (d_from, d_to, ym)
+    d_from0, d_to0, ym0 = _month_range(0, today=fixed)
+    assert (d_from0, d_to0, ym0) == ("2026-01-01", "2026-01-31", "2026-01"), (d_from0, d_to0, ym0)
+    print("demo ok")
+
+
 # ── 발신 + 상태 기록 ─────────────────────────────────────────────────────────
 def _send_telegram(chat_id: int, text: str) -> bool:
     if not TELEGRAM_TOKEN:
@@ -617,10 +744,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CPO 일/주/월 자동보고 생성기 (dry-run 기본)")
     parser.add_argument("--kind", choices=["daily", "weekly", "monthly", "all"], default="all")
     parser.add_argument("--send", action="store_true", help="실발신 시도(게이트 OFF면 여전히 렌더만)")
+    parser.add_argument("--onepager", action="store_true", help="회원 현황 한 장(status/cpo_status_onepager.json) 갱신만 하고 종료")
+    parser.add_argument("--demo", action="store_true", help="자가점검(demo()) 실행하고 종료 — 네트워크 호출 없음")
     args = parser.parse_args()
 
-    kinds = ["daily", "weekly", "monthly"] if args.kind == "all" else [args.kind]
-    for k in kinds:
-        print(f"===== {k} =====")
-        print(run(k, dry_run=not args.send))
-        print()
+    if args.demo:
+        demo()
+    elif args.onepager:
+        _op = build_status_onepager()
+        _op_out = REPO_ROOT / "status" / "cpo_status_onepager.json"
+        _op_out.write_text(json.dumps(_op, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[onepager] 저장됨: {_op_out}")
+        print(json.dumps(_op, ensure_ascii=False, indent=2))
+    else:
+        kinds = ["daily", "weekly", "monthly"] if args.kind == "all" else [args.kind]
+        for k in kinds:
+            print(f"===== {k} =====")
+            print(run(k, dry_run=not args.send))
+            print()
