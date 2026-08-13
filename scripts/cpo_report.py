@@ -600,8 +600,10 @@ def build_status_onepager(valid_rows="unset") -> dict:
     result: dict = {"generated_at": now_kst, "ts": int(datetime.now().timestamp() * 1000), "as_of": today}
 
     # 화면(멤버십 회원관리 상단 카드)이 쓰는 서버 요약. 현황 한 장이 화면과 다른 숫자를 내면
-    # 어느 쪽을 믿어야 할지 알 수 없어진다 — 그래서 **화면과 같은 값을 정본으로 싣고**,
-    # 코드 판정이 다르면 그 차이를 숨기지 않고 같이 적는다(2026-08-13 GM "현황들 신뢰가게").
+    # 어느 쪽을 믿어야 할지 알 수 없어진다 — 두 값이 갈리면 숨기지 않고 그 차이를 같이 적는다.
+    # ★2026-08-13 GM 확정 — 유효회원 999명이 전체이고, 그 **안에** 대기 8명·중단기 3명이 들어 있다.
+    #   전날까지는 999를 '정회원 971 + 대기 28'로 갈라 적었는데, 대기를 '시작일자 미도래'로 세어
+    #   나온 숫자였다. 대기는 실무진이 분류 칸에 '대기'라고 적어 둔 회원을 말한다.
     summary = _gas_get("member_active_summary")
 
     comp = _member_composition(valid_rows, today) if valid_rows is not None else None
@@ -609,20 +611,19 @@ def build_status_onepager(valid_rows="unset") -> dict:
         corp_n = today_stats.get("memberCorp") if today_stats else None
         srv_wait = summary.get("waitingCount") if summary else None
         srv_total = summary.get("validTotal") if summary else None
-        wait_val = srv_wait if isinstance(srv_wait, (int, float)) else comp["waiting"]
-        regular_val = (srv_total - wait_val) if isinstance(srv_total, (int, float)) else comp["regular"]
+        total_val = srv_total if isinstance(srv_total, (int, float)) else comp["total"]
         gap = None
         if isinstance(srv_wait, (int, float)) and srv_wait != comp["waiting"]:
-            gap = f"화면 {srv_wait}명 · 코드 재계산 {comp['waiting']}명 — 아직 어긋난다(대조 진행중, 배312)"
+            gap = f"화면 카드 {srv_wait}명 · 명단 재계산 {comp['waiting']}명 — 두 곳이 아직 다르게 셉니다"
         result["composition"] = {
             "ok": True,
-            "유효회원_전체": srv_total if isinstance(srv_total, (int, float)) else None,
-            "정회원": regular_val,
-            "대기": wait_val,
-            "대기_판정기준": "회원관리 화면 상단 카드와 같은 값(서버 집계). 대기 = 시작일자가 아직 안 온 회원",
+            "유효회원_전체": total_val,
+            "대기": comp["waiting"],
+            "대기_판정기준": "등록 분류(또는 재등록 분류) 칸에 '대기'라고 적힌 회원 — 유효회원 전체에 포함된 인원입니다",
             "대기_대조": gap,
             "법인": corp_n if isinstance(corp_n, (int, float)) else None,
-            "유형별_기준": "정회원만(대기 제외) — 합계가 유효회원 전체보다 대기 인원만큼 적다",
+            "법인_기준": "법인은 별도 시트라 위 유효회원 수에는 들어 있지 않습니다(따로 세는 인원)",
+            "유형별_기준": "유효회원 전체 기준 — 합계가 유효회원 수와 같습니다(대기 인원도 각자 유형에 들어 있습니다)",
             "유형별": {t: c for t, c in comp["type_counts"].items() if c},
             "위생": {
                 "회원구분_오타": comp["typo_count"], "미기재": comp["blank_type_count"],

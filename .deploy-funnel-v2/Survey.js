@@ -9548,7 +9548,7 @@ function _hasRealReply_(memo) {
     var maYearStart  = maToday.slice(0, 4) + '-01-01';
     var maRes = { ok: true, action: 'member_active_summary', date: maToday,
                   validTotal: 0, endedTotal: 0, waitingCount: 0,
-                  typeCounts: { '멤버십': 0, '입주민': 0, '중단기': 0, '보증금': 0, 'FAN VIP': 0, '기타': 0 },
+                  typeCounts: { '멤버십': 0, '입주민': 0, '중단기': 0, '보증금': 0, 'FAN VIP': 0, '법인': 0, '기타': 0 },
                   lossPeriods: { day: 0, month: 0, year: 0, total: 0 },
                   waitPeriods: { day: 0, month: 0, year: 0, total: 0 } };
     try {
@@ -9563,6 +9563,10 @@ function _hasRealReply_(memo) {
       var maReI  = _maIdx('재등록분류');
       var maTypI = _maIdx('회원구분');
       var maStI  = _maIdx('시작일자');
+      var maClsI = _maIdx('등록분류');
+      // '대기' 전용 칸 — 부분일치로 찾으면 다른 헤더에 걸릴 수 있어 이 칸만 완전일치로 찾는다.
+      var maWaitI = -1;
+      for (var _mw = 0; _mw < maHdr.length; _mw++) { if (maHdr[_mw].replace(/\s/g, '') === '대기') { maWaitI = _mw; break; } }
       // LOSS 날짜 칸: LOSS일자→이탈일→해지일→종료일.
       //   ★ GM 교정 2026-08-08: '이탈' 용어 전면 → LOSS. 시트 헤더도 'LOSS일자'로 변경 예정이므로 우선 순위 1위.
       //     '이탈일'은 헤더 변경 전 하위호환 폴백으로 유지 — 헤더 변경 완료 후 정리 가능.
@@ -9571,8 +9575,10 @@ function _hasRealReply_(memo) {
       if (maLossI < 0) maLossI = _maIdx('이탈일');
       if (maLossI < 0) maLossI = _maIdx('해지일');
       if (maLossI < 0) maLossI = _maIdx('종료일');
+      // 회원 구분 정본 6종(GM 확정 2026-08-13) — 멤버십·입주민·보증금·FAN VIP·중단기·법인.
+      //   법인은 별도 시트라 이 집계에선 0이지만, 목록에서 빼 두면 나중에 이 시트로 들어왔을 때 '기타'로 샌다.
       var MA_TYPO  = { '맴버십': '멤버십', '멥버십': '멤버십' };
-      var MA_KNOWN = { '멤버십': 1, '입주민': 1, '중단기': 1, '보증금': 1, 'FAN VIP': 1 };
+      var MA_KNOWN = { '멤버십': 1, '입주민': 1, '중단기': 1, '보증금': 1, 'FAN VIP': 1, '법인': 1 };
       function _maISO(v) {
         if (v instanceof Date && !isNaN(v.getTime())) return Utilities.formatDate(v, maTz, 'yyyy-MM-dd');
         return _miToISO_(v) || '';
@@ -9605,10 +9611,24 @@ function _hasRealReply_(memo) {
           mv = MA_TYPO[mv] || mv;
           if (!mv || !MA_KNOWN[mv]) mv = '기타';
           maRes.typeCounts[mv]++;
+          /* ★2026-08-13 GM 확정 — 대기 = 8명(999명 중). 그전엔 '시작일자가 아직 안 온 회원'으로 세어 28명이
+             나왔는데, 그건 대기가 아니라 '시작 예정'이다. 대기는 실무진이 분류 칸에 '대기'라고 적어 둔 회원이다.
+             화면(_isFutureStart)이 이미 그 규칙으로 세어 8명을 보여주고 있었는데 이 서버 집계만 달랐다 —
+             같은 이름의 숫자가 화면과 보고서에서 서로 달랐던 원인이다.
+             ▸전용 '대기' 칸이 그 행에 켜져 있으면 시작일 기준으로 본다(화면과 같은 규칙, 현재 켜진 행 0건). */
           var maStS = maStI >= 0 ? _maCell(mrow[maStI]).trim() : '';
-          if (/^\d{4}-\d{2}-\d{2}/.test(maStS) && maStS.slice(0, 10) > maToday) {
-            maRes.waitingCount++; _maBump(maRes.waitPeriods, maStS.slice(0, 10));
+          var maIsWait = false;
+          if (maWaitI >= 0 && String(mrow[maWaitI] == null ? '' : mrow[maWaitI]).trim()) {
+            maIsWait = !/^\d{4}-\d{2}-\d{2}/.test(maStS) || maStS.slice(0, 10) > maToday;
+          } else {
+            var maClsChk = [maClsI, maReI];
+            for (var mc = 0; mc < maClsChk.length; mc++) {
+              if (maClsChk[mc] < 0) continue;
+              var maCv = String(mrow[maClsChk[mc]] == null ? '' : mrow[maClsChk[mc]]).trim();
+              if (maCv === '대기' || maCv === '재등록대기') { maIsWait = true; break; }
+            }
           }
+          if (maIsWait) { maRes.waitingCount++; _maBump(maRes.waitPeriods, /^\d{4}-\d{2}-\d{2}/.test(maStS) ? maStS.slice(0, 10) : ''); }
         } else {
           maRes.endedTotal++;
           _maBump(maRes.lossPeriods, maLossI >= 0 ? _maISO(mrow[maLossI]) : '');

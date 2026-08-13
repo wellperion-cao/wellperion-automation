@@ -2712,10 +2712,14 @@ table.op-t td b{font-size:15px}
           <option value="법인">법인</option><option value="FAN VIP">FAN VIP</option><option value="중단기">중단기</option>
         </select></div>
       <div><div class="consult-field-label" style="margin-top:0">등록 분류</div>
+        <!-- 등록 분류 정본 7종(GM 확정 2026-08-13) — 회원 구분(멤버십·입주민·보증금·FAN VIP·중단기·법인)과
+             성격이 다른 칸이다. 여기는 '어떻게 등록됐나', 회원 구분은 '어떤 회원인가'.
+             종전 목록의 '재등록대기'는 '대기'로, '양도'는 넘긴 쪽 기록이라 이 칸에서 뺐다(넘겨받은 쪽=양수). -->
         <select id="rpRegClass" class="rp-in">
           <option value="신규">신규</option><option value="재등록">재등록</option>
-          <option value="재등록대기">재등록대기</option>
-          <option value="양수">양수</option><option value="양도">양도</option>
+          <option value="양수">양수</option><option value="환불">환불</option>
+          <option value="L재등록">L재등록</option><option value="L-가망">L-가망</option>
+          <option value="대기">대기</option>
         </select></div>
       <div><div class="consult-field-label" style="margin-top:0">나이</div>
         <input id="rpAge" type="number" min="1" max="120" class="rp-in" placeholder="예: 48"></div>
@@ -3180,7 +3184,12 @@ function _snapActiveGet_() {
 }
 var _activeSnapOnly = false;
 function _activeSnapGuard() {
+  /* ★2026-08-13 GM 신고 "LOSS 회원 박민님 종료일자를 고치려는데 동기화가 안 된다" 근본수리.
+     스냅샷은 **유효회원 명단에만** 있다. 그런데 이 잠금은 스코프를 안 가려서, 스냅샷으로 그린 직후
+     LOSS·법인 화면으로 넘어가면 그쪽 수정까지 같이 막혔다 — 실무진에겐 '눌러도 아무 일이 안 난다'로 보인다.
+     잠금은 스냅샷이 실제로 그려져 있는 유효회원 화면에서만 건다. */
   if (!_activeSnapOnly) return false;
+  if ((_activeScope || 'valid') !== 'valid') return false;
   try { showToast('최신 명단 불러오는 중 — 잠시 후 수정할 수 있습니다', 'err'); } catch (e) {}
   return true;
 }
@@ -4170,13 +4179,14 @@ function _opRender(d){
     h += '<div class="op-fail">회원 구성을 불러오지 못했습니다.</div>';
   } else {
     h += '<div class="op-grid">' +
-      '<div class="op-box"><div class="k">유효회원 전체</div><div class="v">' + _opUnit(c['유효회원_전체'], '명') + '</div></div>' +
-      '<div class="op-box"><div class="k">정회원</div><div class="v">' + _opUnit(c['정회원'], '명') + '</div></div>' +
-      '<div class="op-box"><div class="k">대기</div><div class="v">' + _opUnit(c['대기'], '명') + '</div></div>' +
-      '<div class="op-box"><div class="k">법인</div><div class="v">' + _opUnit(c['법인'], '명') + '</div></div>' +
+      '<div class="op-box"><div class="k">유효회원</div><div class="v">' + _opUnit(c['유효회원_전체'], '명') + '</div></div>' +
+      '<div class="op-box"><div class="k">그중 대기</div><div class="v">' + _opUnit(c['대기'], '명') + '</div></div>' +
+      '<div class="op-box"><div class="k">그중 중단기</div><div class="v">' + _opUnit((c['유형별'] || {})['중단기'], '명') + '</div></div>' +
+      '<div class="op-box"><div class="k">법인(별도)</div><div class="v">' + _opUnit(c['법인'], '명') + '</div></div>' +
       '<div class="op-box"><div class="k">30일 내 갱신임박</div><div class="v">' + _opUnit(d['갱신임박_30일이내'], '명') + '</div></div>' +
       '</div>';
     if (c['대기_판정기준']) h += '<div class="op-note">대기 기준 — ' + esc(c['대기_판정기준']) + '</div>';
+    if (c['법인_기준']) h += '<div class="op-note">' + esc(c['법인_기준']) + '</div>';
     // 화면 카드와 숫자가 어긋나면 숨기지 않고 그 자리에 적는다 — 어긋난 걸 모르는 게 가장 나쁘다.
     if (c['대기_대조']) h += '<div class="op-note" style="color:var(--red,#d64040);font-weight:700">⚠ 대기 인원 대조 — ' + esc(c['대기_대조']) + '</div>';
     h += '<div class="op-note" style="font-size:12px;color:var(--text);margin-top:8px">유형별 · ' + _opPairs(c['유형별']) + '</div>';
@@ -7531,15 +7541,18 @@ function loadActiveMembers() {
     .then(function(r){ return r.json(); })
     .then(function(data){
       data = _maDecodeRowsFormat(data);   // format='rows' 배열응답 → 기존 {headers, data:[{...}]} 모양으로 복원
+      // ★잠금 해제는 어떤 갈래로 빠져나가도 반드시 지난다(2026-08-13). 아래 경쟁 가드나 오류로 먼저
+      //   빠져나가면 잠금이 영영 안 풀려 화면 전체가 수정 불가가 된다 — 실무진에겐 원인 없는 먹통이다.
+      if (scope === 'valid') _activeSnapOnly = false;
       if (_seq !== _activeReqSeq) return;   // 더 최신 요청이 있으면 이 응답 무시(경쟁 가드)
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
       _activeCacheSave(scope, data.headers || [], data.data || []);   // 다음 새로고침 즉시 렌더용(D4)
-      _activeSnapOnly = false;   // 실데이터 도착 — 스냅샷 편집 잠금 해제
       if ((_activeScope || 'valid') !== scope) return;   // 기다리는 사이 다른 스코프로 옮겼으면 화면은 건드리지 않고 보관만
       _activeApplyData(data.headers, data.data, false);
     })
     .catch(function(err){
+      if (scope === 'valid') _activeSnapOnly = false;   // 실패해도 잠금은 푼다 — 못 불러온 것과 못 고치는 것은 다르다
       if (_seq !== _activeReqSeq) return;
       if (cached) return;   // 이미 보관분으로 그려 둔 화면은 지우지 않는다(빈 화면 대신 직전 값 유지)
       _activeRenderState('error', err.message || 'GAS URL 또는 배포 상태를 확인하세요.');
@@ -8919,9 +8932,11 @@ function _memberOverviewHtml() {
    이 선택칸이 두 가지를 한 줄에 섞어 놓고 있었다. 멤버십·입주민·법인은 그 사람이 **어떤 회원인가**(회원 구분,
    시트의 '회원 구분' 칸)이고, 대기·LOSS는 **지금 어떤 상태인가**(등록 분류·잔여일에서 판정)다. 성격이 다른
    두 축이 한 목록에 나란히 있으니 고르는 사람 입장에선 같은 종류로 보인다. 목록을 두 묶음으로 갈라 이름을
-   붙인다 — 값·동작은 그대로라 기존 선택은 전부 그대로 작동한다(새 기능 추가 없음). */
+   붙인다 — 값·동작은 그대로라 기존 선택은 전부 그대로 작동한다(새 기능 추가 없음).
+   ▸회원 구분 6종은 GM 확정 정본이다(2026-08-13): 멤버십·입주민·보증금·FAN VIP·중단기·법인.
+     '미기재'는 구분값이 아니라 칸이 비어 있다는 뜻이라, 실제로 그런 회원이 있을 때만 목록 끝에 붙인다. */
 var MEMBER_TYPE_SELECT_GROUPS = [
-  { label: '회원 구분 — 어떤 회원인가', items: ['멤버십', '입주민', '법인', '단기', '보증금', 'FAN VIP', '미기재'] },
+  { label: '회원 구분 — 어떤 회원인가', items: ['멤버십', '입주민', '보증금', 'FAN VIP', '중단기', '법인'] },
   { label: '상태 — 지금 어떤 상태인가', items: ['대기', 'LOSS'] }
 ];
 function _activeTypeSelectValue() {
@@ -8934,7 +8949,12 @@ function _memberTypeSelectHtml() {
   var cur = _activeTypeSelectValue();
   var opts = '<option value=""' + (cur === '' ? ' selected' : '') + '>전체 유형</option>' +
     MEMBER_TYPE_SELECT_GROUPS.map(function(g){
-      return '<optgroup label="' + esc(g.label) + '">' + g.items.map(function(o){
+      var items = g.items;
+      // 구분 칸이 빈 회원이 실제로 있을 때만 '미기재'를 보여준다 — 없는데 띄우면 정본 6종이 7종처럼 보인다.
+      if (g.items[0] === '멤버십' && ((_validTypeCounts && _validTypeCounts[MEMBER_TYPE_UNSET]) || cur === MEMBER_TYPE_UNSET)) {
+        items = items.concat([MEMBER_TYPE_UNSET]);
+      }
+      return '<optgroup label="' + esc(g.label) + '">' + items.map(function(o){
         return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(o) + '</option>';
       }).join('') + '</optgroup>';
     }).join('');

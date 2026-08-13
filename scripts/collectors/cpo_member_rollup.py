@@ -11,9 +11,9 @@ notify_spec.daily=false — 일일 발송 없음(cpo_report.py의 build_daily_re
 배312(2026-08-08, GM 확정 2026-08-03 기준 교체) — 옛 문의퍼널 기준(신규문의·전환율·
 LOSS율·예약활성)을 폐기하고 「멤버십 회원관리 기준」 5줄로 교체:
   ① 회원 구성(정회원/대기/법인) ② 이번 주 등록·LOSS ③ 문의→등록 ④ 데이터 위생 ⑤ 데이터 완성도.
-★배312 후속(GM 지적 2026-08-08 당일) — "유효회원 1,000명"을 정회원 수로 오해할 수 있다.
-  유효회원 시트(1,000행) = 정회원(시작일 도래) + 대기(시작일 미도래) 합계다. 보고 문구는
-  반드시 **정회원/대기/합계**로 갈라 쓴다("유효회원 N명" 같은 뭉뚱그린 표현 금지).
+★GM 확정(2026-08-13) — 유효회원 수가 전체이고, **대기는 그 안에 든 인원**이다(999명 중 대기 8명·
+  중단기 3명). 더해서 쓰지 않는다. 대기 판정은 등록 분류(또는 재등록 분류) 칸에 '대기'라고
+  적힌 회원 — '시작일자가 아직 안 왔다'로 세던 옛 방식(28명)은 대기가 아니라 '시작 예정'이었다.
 
 로직 재사용(중복 복사 금지): cpo_report.py 의 fetch_member_inquiries·fetch_cpo_today_stats·
 fetch_cpo_churn_stats·fetch_active_members(기존)에 더해 fetch_member_registered_list·
@@ -52,7 +52,11 @@ import cpo_report  # noqa: E402 — 기존 fetch 로직 재사용(중복 복사 
 _LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"
 
 _TYPO_MAP = {"맴버십": "멤버십", "멥버십": "멤버십"}
-_KNOWN_TYPES = ["멤버십", "입주민", "보증금", "FAN VIP", "중단기"]
+# 회원 구분 정본 6종(GM 확정 2026-08-13). 법인은 별도 시트라 이 집계에선 0이지만 목록에는 둔다.
+_KNOWN_TYPES = ["멤버십", "입주민", "보증금", "FAN VIP", "중단기", "법인"]
+# 등록 분류 정본 7종(GM 확정 2026-08-13) — 신규·재등록·양수·환불·L재등록·L-가망·대기.
+# 이 중 '대기'만 상태 판정에 쓴다. '재등록대기'는 옛 표기라 하위호환으로 함께 본다.
+_WAIT_VALUES = {"대기", "재등록대기"}
 
 # 유효회원 시트 완성도 판정 재료(membership.html OWNER_ASSIGN_SPORTS 그대로) — (담당자칸, Contact칸)
 _OWNER_SPORTS = [
@@ -150,8 +154,10 @@ def _member_composition(active_rows: list[dict], today: str) -> dict:
         if name:
             name_seen[name] = name_seen.get(name, 0) + 1
 
-        start_v = _cell(r, "시작일자")
-        is_waiting = bool(re.match(r"^\d{4}-\d{2}-\d{2}", start_v)) and start_v[:10] > today
+        # 대기 판정 = 실무진이 분류 칸에 '대기'라고 적어 둔 회원(GM 확정 2026-08-13 · 8명).
+        # 그전엔 '시작일자가 아직 안 왔다'로 세어 28명이 나왔는데 그건 대기가 아니라 '시작 예정'이다.
+        # 화면(membership.html _isFutureStart)이 이미 이 규칙으로 세고 있었다 — 여기만 달라서 숫자가 갈렸다.
+        is_waiting = _cell(r, "등록분류") in _WAIT_VALUES or _cell(r, "재등록분류") in _WAIT_VALUES
         if is_waiting:
             waiting += 1
 
@@ -161,11 +167,12 @@ def _member_composition(active_rows: list[dict], today: str) -> dict:
         if not raw_type:
             blank_type_count += 1
         norm_type = _TYPO_MAP.get(raw_type, raw_type)
-        if not is_waiting:
-            if norm_type in _KNOWN_TYPES:
-                type_counts[norm_type] += 1
-            else:
-                other += 1
+        # 유형별은 유효회원 **전체** 기준이다(GM 확정 2026-08-13 — "999명 중 대기 8명·중단기 3명").
+        # 대기를 빼고 세면 유형별 합이 전체와 안 맞아, 보는 사람이 어느 쪽이 맞는지 알 수 없어진다.
+        if norm_type in _KNOWN_TYPES:
+            type_counts[norm_type] += 1
+        else:
+            other += 1
 
         if not _cell(r, "잔여일"):
             remain_blank += 1
@@ -233,9 +240,10 @@ def collect(module=None) -> dict:
             type_str += ("·" if type_str else "") + f"기타 {comp['other']}"
         corp_n = today_stats.get("memberCorp") if today_stats else None
         corp_str = f"{corp_n}명(별도 시트)" if isinstance(corp_n, (int, float)) else "측정 안 됨"
+        # 유효회원이 전체이고 대기는 그 안에 든 인원이다(GM 확정 2026-08-13) — 더하는 값이 아니다.
         line1 = (
-            f"■ 회원 구성 — 정회원 {comp['regular']}명({type_str}) · "
-            f"대기 {comp['waiting']}명 · 법인 {corp_str}"
+            f"■ 회원 구성 — 유효회원 {comp['total']}명({type_str}) · "
+            f"그중 대기 {comp['waiting']}명 · 법인 {corp_str}"
         )
     else:
         line1 = "■ 회원 구성 — 측정 안 됨(유효회원 조회 실패)"
