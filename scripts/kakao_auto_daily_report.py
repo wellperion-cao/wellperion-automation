@@ -517,8 +517,11 @@ def main() -> int:
     wait_for_profile_chrome_clear()
     ok, failures = run_sender(rooms, image_path, caption, args.dry_run)
     if ok:
-        if not args.dry_run:
-            send_sales_numbers_text(target)  # 회장님 사진 발송 직후 — 같은 숫자를 업무보고방에 텍스트로(GM 2026-08-08)
+        # 핵심숫자 텍스트 = 폐지 (GM 지시 2026-08-13 "회장님 매출보고 핵심숫자도 보내지말아줘").
+        #   2026-08-08 에 '회장님 사진 발송 직후 같은 숫자를 업무보고방에도 텍스트로' 붙였던 한 줄이다.
+        #   같은 값이 사진에 이미 있고, 08:00 항로 부록에도 이달 매출·지출이 나간다 — 세 번째였다.
+        #   게이트로 끄지 않고 호출을 지운다(약속 L21). 되살릴 일이 생기면 이 커밋을 되돌린다.
+        #   build_sales_numbers_text 는 --selftest-numbers 와 되돌림용으로 남겨 둔다(호출부 0).
         detail = "DRY-RUN 검증 완료" if args.dry_run else "3방 전송 완료" if rooms is None else f"{rooms} 전송 완료"
         msg = f"DONE: 카톡 {'검증(dry-run)' if args.dry_run else '전송'} 완료 — {detail}"
         log(msg)
