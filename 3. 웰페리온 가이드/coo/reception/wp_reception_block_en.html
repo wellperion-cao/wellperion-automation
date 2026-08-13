@@ -398,6 +398,16 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
 .wlp-recept{position:relative}
 /* wrap 기준 — 본문 기둥 왼쪽 끝에 자동으로 맞는다(PC·키오스크·폰 공통) */
 .wlp-recept .wrap{position:relative}
+/* 날짜 칸 영어 표기 — 빈 칸일 때만 브라우저가 그리는 '연도-월-일' 을 감추고 yyyy-mm-dd 를 덧쓴다 */
+.wlp-recept .date-en{position:relative;display:block}
+.wlp-recept .date-en input[type=date],
+.wlp-recept .date-en input[type=datetime-local]{width:100%}
+.wlp-recept .date-en:not(.filled) input::-webkit-datetime-edit{color:transparent}
+.wlp-recept .date-en:not(.filled)::after{content:'yyyy-mm-dd';position:absolute;left:20px;top:50%;
+  transform:translateY(-50%);color:#c0b9b0;pointer-events:none;font-size:15px}
+@media (min-width:700px) and (orientation:portrait){
+  .wlp-recept .date-en:not(.filled)::after{left:22px;font-size:24px}
+}
 .wlp-recept .lang-switch{position:absolute;top:14px;right:16px;z-index:5;display:inline-flex;align-items:center;
   justify-content:center;padding:10px 18px;min-height:44px;border:2px solid var(--text);border-radius:24px;
   color:var(--text);font-size:13px;font-weight:700;background:transparent;text-decoration:none}
@@ -697,7 +707,14 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
             if (e) { e.min = this.value || _todayStr(); if (e.value && e.value < e.min) e.value = ''; }
           });
         }
-        field.appendChild(d);
+        var dwrap = document.createElement('span');
+        dwrap.className = 'date-en';
+        dwrap.appendChild(d);
+        var markFilled = function(){ dwrap.classList.toggle('filled', !!d.value); };
+        d.addEventListener('change', markFilled);
+        d.addEventListener('input', markFilled);
+        markFilled();
+        field.appendChild(dwrap);
       } else if (def.type === 'number') {
         // 숫자 입력(휴회 일수) — 모바일에서 숫자 키패드가 뜨도록 inputmode 지정
         var nb = document.createElement('input');
