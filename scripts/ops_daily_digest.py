@@ -1201,6 +1201,9 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
     거르는 것: 날짜 형식이 아닌 것 · 지난 날짜 · 이름 빈칸 · 같은 날짜에 이미 있는 일 ·
     한 번에 3건 초과. 실패해도 아침 메시지는 그대로 나간다(등록은 부가 기능이지 본업이 아니다).
     id 는 날짜+이름으로 고정이라 같은 날 다시 돌려도 덮어쓰기만 되고 줄이 늘지 않는다."""
+    # 0건도 소리를 낸다 — 아무 줄도 안 찍히면 '후보가 없었다'와 '이 다리가 안 돌았다'가
+    # 구분되지 않는다. 조용한 성공은 조용한 실패와 같은 얼굴이다.
+    print(f"  [일정] 판독 후보 {len(schedules)}건")
     if not schedules:
         return []
     try:
