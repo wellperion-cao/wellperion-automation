@@ -253,6 +253,23 @@ def find_repeats(items: list) -> list:
             for g in groups if len(g['items']) >= 2]
 
 
+def _tomorrow_block(day: str) -> dict:
+    """🔜 내일 — 자율현황 쿵짝 블록에 붙는 내일 일정(GM 지시 2026-08-13 "자율현황 하루칸에도").
+    새 수집 로직 없음(약속 L21) — gm_checkin._tomorrow_section 이 쓰는 같은 함수를 재사용.
+    실패(일정을 못 읽음)와 0건을 구분한다(자가점검 「0 위장」 금지) — ok=False 면 화면은 못 읽음으로 적는다."""
+    tomorrow = (datetime.date.fromisoformat(day) + datetime.timedelta(days=1)).isoformat()
+    try:
+        import gm_checkin
+        items, ok = gm_checkin._load_schedule_items_ex()
+    except Exception:
+        return {'ok': False, 'items': [], 'more': 0}
+    if not ok:
+        return {'ok': False, 'items': [], 'more': 0}
+    pairs = gm_checkin._filter_today_items(items, tomorrow)
+    lines = [f"{(t + ' ') if t else ''}{title}" for t, title in pairs[:3]]
+    return {'ok': True, 'items': lines, 'more': max(0, len(pairs) - 3)}
+
+
 def emit(day: str) -> int:
     """전 역할 오늘치를 status/kungjjak_today.json 으로 발행 — 자율현황 화면이 이걸 읽는다.
 
@@ -260,7 +277,7 @@ def emit(day: str) -> int:
     오늘치만 잘라 작은 파일로 낸다(오늘 실측 574줄 → 훨씬 작다).
     """
     out = {'_doc': '쿵짝표 — 역할별 오늘 GM 지시 접수↔완료. 원천 = status/worklog.jsonl (여기는 잘라낸 화면용)',
-           'date': day, 'roles': {}}
+           'date': day, 'roles': {}, 'tomorrow': _tomorrow_block(day)}
     for role in NICK:
         by = load(day, role)
         items = []

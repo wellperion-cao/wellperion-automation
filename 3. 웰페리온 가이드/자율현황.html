@@ -2250,7 +2250,21 @@
         + detail + '</details>';
     }
 
-    box.innerHTML = html || '<div class="feed-status">오늘 받은 GM 지시가 없습니다.</div>';
+    if(!html) html = '<div class="feed-status">오늘 받은 GM 지시가 없습니다.</div>';
+
+    // 🔜 내일 — 쿵짝 블록 바로 아래(GM 지시 2026-08-13 "자율현황 하루칸에도").
+    // 원천 = kj.tomorrow(kungjjak_board.py _tomorrow_block, gm_checkin 스케줄 재사용). 0건이면 통째로 뺀다.
+    var tmr = kj.tomorrow;
+    if(tmr && !tmr.ok){
+      html += '<div class="sub" style="margin-top:8px;">🔜 내일 — 내일 일정을 못 읽었습니다</div>';
+    } else if(tmr && tmr.items && tmr.items.length){
+      html += '<div class="whowrap" style="margin-top:8px;"><div class="lab">🔜 내일</div>'
+        + tmr.items.map(function(s){ return '<div class="srow"><span class="st">' + esc(s) + '</span></div>'; }).join('')
+        + (tmr.more ? '<div class="srow"><span class="st" style="color:var(--dim);">외 ' + tmr.more + '건</span></div>' : '')
+        + '</div>';
+    }
+
+    box.innerHTML = html;
   }
 
   function renderAlertBoard(troomsRaw, reg, drift, erp, kakaoLast, modReg){
