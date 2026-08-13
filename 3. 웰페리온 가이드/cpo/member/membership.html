@@ -2714,10 +2714,10 @@ table.op-t td b{font-size:15px}
       <div><div class="consult-field-label" style="margin-top:0">등록 분류</div>
         <!-- 등록 분류 정본 7종(GM 확정 2026-08-13) — 회원 구분(멤버십·입주민·보증금·FAN VIP·중단기·법인)과
              성격이 다른 칸이다. 여기는 '어떻게 등록됐나', 회원 구분은 '어떤 회원인가'.
-             종전 목록의 '재등록대기'는 '대기'로, '양도'는 넘긴 쪽 기록이라 이 칸에서 뺐다(넘겨받은 쪽=양수). -->
+             종전 목록의 '재등록대기'는 '대기'로 합쳤고, '양도'·'양수'는 시트 표기 그대로 '양도&양수' 한 값으로 통일했다(GM 확정). -->
         <select id="rpRegClass" class="rp-in">
           <option value="신규">신규</option><option value="재등록">재등록</option>
-          <option value="양수">양수</option><option value="환불">환불</option>
+          <option value="양도&amp;양수">양도&amp;양수</option><option value="환불">환불</option>
           <option value="L재등록">L재등록</option><option value="L-가망">L-가망</option>
           <option value="대기">대기</option>
         </select></div>
@@ -7249,7 +7249,8 @@ function _activeTypeFilterApply(rows) {
    회원 구분과 AND 로 겹쳐 걸린다(예: 입주민 + 신규). 검색·대기자 보기·월단위 보기와도 그대로 겹친다.
    판정은 시트 「등록 분류」 칸 값 그대로 — 새 계산·새 조회 0. 유효회원 스코프에서만 동작한다
    (법인·LOSS 는 시트가 달라 이 칸의 뜻이 같지 않다). */
-var REG_CLASS_SELECT_OPTIONS = ['신규', '재등록', '양수', '환불', 'L재등록', 'L-가망', '대기'];
+// '양수'가 아니라 '양도&양수'가 정본이다(GM 확정 2026-08-13) — 시트에 실제로 적혀 있는 말과 같게 맞춘다.
+var REG_CLASS_SELECT_OPTIONS = ['신규', '재등록', '양도&양수', '환불', 'L재등록', 'L-가망', '대기'];
 var _activeRegClassFilter = '';
 function _activeRegClassFilterApply(rows) {
   if (_activeScope !== 'valid' || !_activeRegClassFilter) return rows;
