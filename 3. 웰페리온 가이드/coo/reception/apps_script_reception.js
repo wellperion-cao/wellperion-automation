@@ -1189,6 +1189,7 @@ function _regSubmit(body) {
   );
 
   _regBoardCacheClear_();
+  _regLookupCacheClearFor_(contact, name);   // 방금 접수한 사람이 곧바로 조회해도 새 건이 보이게
   return _vJson({ ok: true, id: id, dept: cat.dept });
 }
 
@@ -1233,9 +1234,18 @@ function _regLookup(params) {
   if (!phone || !name) {
     return _vJson({ ok: false, error: '이름과 전화번호를 모두 입력해 주세요.' });
   }
+  // 조회 결과 캐시(45초) — 시트 6개를 매번 통째로 읽던 것을 재조회에서는 건너뛴다.
+  // reg_board·reg_dashboard 가 쓰던 방식 그대로다(새 장치 0). 쓰기 때 함께 지운다.
+  var _lkKey = _regLookupCacheKey_(phone, name);
+  try {
+    var _lkHit = CacheService.getScriptCache().get(_lkKey);
+    if (_lkHit) return _vJson(JSON.parse(_lkHit));
+  } catch (e) {}
+
   if (!_vRateLimitOk_(_vFp_('lookup|' + phone + '|' + name))) {
     return _vJson({ ok: false, error: '요청이 많아 잠시 후 다시 시도해 주세요.', code: 'RATE_LIMIT' });
   }
+
   var out = [];
   REG_CATEGORIES.forEach(function (cat) {
     var sh;
@@ -1257,7 +1267,9 @@ function _regLookup(params) {
     });
   });
   out.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
-  return _vJson({ ok: true, count: out.length, data: out });
+  var _lkOut = { ok: true, count: out.length, data: out };
+  try { CacheService.getScriptCache().put(_lkKey, JSON.stringify(_lkOut), 45); } catch (e) {}
+  return _vJson(_lkOut);
 }
 
 // ─── reg_list — 종합 접수처 목록 조회 (GATED) ───
@@ -1524,6 +1536,21 @@ function _regDashboard(params) {
 
 // ─── reg_update — 종합 접수처 갱신 (GATED) ───
 // reg_board 공개·직원(사진) 두 캐시 + reg_dashboard 캐시 동시 무효화 — 쓰기 액션(submit/update/delete/renumber 등)마다 호출.
+// 회원 셀프 조회 캐시 키 — 전화+이름 한 쌍당 하나(남의 결과가 섞이지 않게 지문으로 만든다)
+function _regLookupCacheKey_(phone, name) {
+  return 'reg_lookup_v1_' + _vFp_(phone + '|' + name);
+}
+
+// 쓰기 직후 회원 조회 캐시도 지운다 — 방금 접수한 건이 45초 동안 안 보이는 일을 막는다.
+function _regLookupCacheClearFor_(phone, name) {
+  try {
+    var pp = String(phone || '').replace(/[^0-9]/g, '');
+    var nn = String(name || '').replace(/\s/g, '');
+    if (!pp || !nn) return;
+    CacheService.getScriptCache().remove(_regLookupCacheKey_(pp, nn));
+  } catch (e) {}
+}
+
 function _regBoardCacheClear_() {
   try {
     var c = CacheService.getScriptCache();

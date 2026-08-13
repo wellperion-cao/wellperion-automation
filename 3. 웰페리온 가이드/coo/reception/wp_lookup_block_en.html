@@ -239,6 +239,10 @@ html,body{margin:0!important;padding:0!important;background:#0d0d12!important;ov
 (function(){
   var ROOT = document.getElementById('wlp-lk');
   var REG_API = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec";
+  // 키오스크 예열 — 첫 조회가 느린 이유의 절반은 서버(구글 앱스크립트)가 잠들어 있다 깨는 시간이다.
+  // 화면이 뜨자마자 가벼운 조회를 한 번 던져 깨워 둔다(응답은 쓰지 않는다 · 2026-08-13).
+  try { fetch(REG_API + '?action=reg_dashboard&scope=week', { mode: 'no-cors' }); } catch (e) {}
+
   var STATUS = { "접수":"var(--s-recv)", "처리중":"var(--s-prog)", "완료":"var(--s-done)" };
   var STEPS = ["접수","처리중","완료"];
   // 원장 값은 한글 그대로 두고 화면 표기만 영어로 (값을 바꾸면 조회가 깨진다)
