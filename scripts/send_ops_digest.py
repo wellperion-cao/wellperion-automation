@@ -39,7 +39,7 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -406,6 +406,9 @@ RELAY_OPEN_STATUSES = {"PENDING", "IN_PROGRESS"}
 RELAY_SHOW_N = 5            # 본문에 줄로 싣는 건수 — 나머지는 "외 N건"으로 접는다
 RELAY_TITLE_CAP = 34        # 스냅샷(닫힘 표시용) 길이 상한(카톡 한 줄)
 RELAY_HEARTBEAT_ID = "clevel-queue-human-relay"  # 지난 회차 목록 보관 = 상설 하트비트 1파일
+RELAY_STALE_DAYS = 7  # ★2026-08-13 근본수정(배592) — 내용 안 바뀐 채 이만큼 묵으면 재알림.
+#   그 전엔 task_id 키가 한 번 스냅샷에 들어가면 내용이 바뀌어도 다시는 '새 업무'가
+#   안 됐다(배364·379 실측). 짧게 잡으면 실무진 신뢰를 깎으니 주간 주기로 둔다.
 # 실무진이 받는 글에는 누가 보내는지가 드러나야 한다(unassigned_nudge.AI_SIGNOFF 와 같은 형식).
 # 전달 주체는 웰리 — GM 원문 "각기 담당자 이름 적어서 웰리가 전달".
 RELAY_SIGNOFF = "웰페리온 AI 총괄 담당 웰리 드림"
@@ -487,6 +490,26 @@ def _is_legacy_snapshot(prev_items: dict) -> bool:
     task_id 는 항상 "CTO-2026-07-22-..." 꼴 문자열이라 숫자만인 키가 하나라도 있으면
     옛 형식 — 이번 회차는 비교 없이 스냅샷만 새 키로 다시 찍는다(첫 회차 처리)."""
     return any(str(k).isdigit() for k in prev_items)
+
+
+def _unpack_snapshot(v, today: str) -> "tuple[str, str]":
+    """스냅샷 값 하나를 (문구, 마지막 발송일)로 푼다. ★2026-08-13 이전 값은 문구(str)만
+    있었다 — 그 옛 값을 만나면 '오늘 막 보낸 것'으로 시계를 시작한다(last_sent=today).
+    빈 값으로 두면 다음 회차부터 곧장 '7일 지남'으로 잡혀 형식전환 첫 회차에 밀린 배가
+    한꺼번에 재알림으로 쏟아진다(_is_legacy_snapshot 이 막던 것과 같은 함정)."""
+    if isinstance(v, dict):
+        return str(v.get("line", "")), str(v.get("last_sent", "")) or today
+    return str(v), today
+
+
+def _is_stale(last_sent: str, today: str) -> bool:
+    """내용은 안 바뀌었어도 이만큼 묵으면 다시 알린다(RELAY_STALE_DAYS)."""
+    if not last_sent:
+        return False
+    try:
+        return (date.fromisoformat(today) - date.fromisoformat(last_sent)).days >= RELAY_STALE_DAYS
+    except Exception:
+        return False
 
 
 def _is_done(task_id: str, queue: list, archive_cache: list) -> bool:
@@ -587,29 +610,49 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
         + (" · ".join(f"{k} {v}" for k, v in dropped_why.items() if v) or "없음"))
     ships.sort(key=lambda x: (_RELAY_WEIGHT.get(x.get("priority"), 9),
                               str(x.get("enqueued_at", ""))))
-    current = {_relay_key(s): _cap_line(str(s["staff_message"]).strip().splitlines()[0]) for s in ships}
 
     if _is_legacy_snapshot(prev_items):
+        today = date.today().isoformat()
+        current = {_relay_key(s): {"line": _cap_line(str(s["staff_message"]).strip().splitlines()[0]),
+                                    "last_sent": today} for s in ships}
         return "", current  # 옛 키 형식 — 비교 건너뛰고 새 키로 스냅샷만 다시 찍는다(첫 회차)
 
-    new_ships = [s for s in ships if _relay_key(s) not in prev_items]
+    today = date.today().isoformat()
+    prev_lines = {k: _unpack_snapshot(v, today)[0] for k, v in prev_items.items()}
+    prev_sent = {k: _unpack_snapshot(v, today)[1] for k, v in prev_items.items()}
+
+    new_ships = []    # 처음 보거나(키 없음) 내용이 바뀐 것(★2026-08-13 — 예전엔 키만 보고 놓쳤다)
+    stale_ships = []  # 내용은 그대로인데 RELAY_STALE_DAYS 이상 묵어 다시 알리는 것
+    current = {}
+    for s in ships:
+        k = _relay_key(s)
+        line = _cap_line(str(s["staff_message"]).strip().splitlines()[0])
+        if k not in prev_lines or prev_lines[k] != line:
+            new_ships.append(s)
+            current[k] = {"line": line, "last_sent": today}
+        elif _is_stale(prev_sent[k], today):
+            stale_ships.append(s)
+            current[k] = {"line": line, "last_sent": today}  # 재알림 보냈으니 시계 리셋
+        else:
+            current[k] = {"line": line, "last_sent": prev_sent[k]}  # 변화 없음 — 시계 유지
+
     # ★'완료'는 목록에서 사라진 것 전부가 아니라, 실제로 DONE/보관함행인 것만(위 _is_done).
     #   staff_message 가 지워지거나 audience 가 바뀌어 사라진 배는 아직 진행 중일 수 있다 —
     #   그런 배까지 '✅ 처리 완료'로 실무진에게 보내면 오보다.
-    dropped = [k for k in prev_items if k not in current]
+    dropped = [k for k in prev_lines if k not in current]
     if dropped:
         archive_cache = _load_archive()
-        closed = [prev_items[k] for k in dropped if _is_done(k, queue, archive_cache)]
+        closed = [prev_lines[k] for k in dropped if _is_done(k, queue, archive_cache)]
     else:
         closed = []
-    if not new_ships and not closed:
+    if not new_ships and not stale_ships and not closed:
         return "", current  # 지난번과 같은 목록 — 다시 보내지 않는다
 
     who = {contacts[s["clevel"]] for s in ships}
     solo = who.pop() if len(who) == 1 else None
     lines = [f"🧾 사람이 처리할 업무 {len(ships)}건" + (f" — {solo}" if solo else "")]
     if new_ships:
-        lines.append(f"🆕 새로 생긴 업무 {len(new_ships)}건")
+        lines.append(f"🆕 새로 생긴/바뀐 업무 {len(new_ships)}건")
         for s in new_ships[:RELAY_SHOW_N]:
             tail = "" if solo else f" · {contacts[s['clevel']]}"
             lines.append(f" • {str(s['staff_message']).strip()}{tail}")
@@ -622,6 +665,14 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
             #   스냅샷에서 뺀다 — 다음 회차에 다시 '신규'로 잡혀 우선순위 순서대로 드러난다.
             for s in overflow_new:
                 current.pop(_relay_key(s), None)
+    if stale_ships:
+        lines.append(f"🔁 오래 열려 있어 재확인 {len(stale_ships)}건")
+        for s in stale_ships[:RELAY_SHOW_N]:
+            tail = "" if solo else f" · {contacts[s['clevel']]}"
+            lines.append(f" • {str(s['staff_message']).strip()}{tail}")
+        overflow_stale = stale_ships[RELAY_SHOW_N:]
+        if overflow_stale:
+            lines.append(f" • 외 {len(overflow_stale)}건")
     if closed:
         lines.append(f"✅ 처리 완료 {len(closed)}건")
         for snap in closed[:RELAY_SHOW_N]:
