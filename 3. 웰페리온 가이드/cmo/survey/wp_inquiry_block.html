@@ -87,28 +87,6 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 .wlp-inq .social-icon:hover .social-btn{opacity:.85}
 .wlp-inq .social-label{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dim)}
 
-
-/* ===== 두 갈래 첫 화면 (2026-08-13 GM 지시) — 종합접수처 키오스크(/ko/lookup/)와 같은 얼굴.
-   위=문의하기(누르면 6종 유형이 펼쳐짐) · 아래=내 접수 조회(키오스크 조회 화면으로 이동).
-   유형 6종은 기본으로 접혀 있고, 채널 링크(?type=…)나 #types 로 들어오면 자동으로 펼쳐진다. ===== */
-.wlp-inq .gates{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:0 0 44px}
-.wlp-inq .gate{display:flex;flex-direction:column;align-items:flex-start;gap:9px;width:100%;border-radius:0!important;
-  border:1px solid var(--line);background:#fff;padding:30px 26px;text-align:left;cursor:pointer;
-  font-family:inherit;transition:border-color .18s,transform .18s,box-shadow .18s}
-.wlp-inq .gate:hover{border-color:var(--ink);transform:translateY(-2px);box-shadow:0 6px 20px rgba(34,31,32,.07)}
-.wlp-inq .gate:focus-visible{outline:2px solid var(--coral);outline-offset:3px}
-.wlp-inq .gate .g-en{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--beige);text-transform:uppercase}
-.wlp-inq .gate .g-kr{display:flex;align-items:center;width:100%;gap:8px;font-size:21px;font-weight:800;
-  color:var(--ink);letter-spacing:-.01em}
-.wlp-inq .gate .g-kr .g-arrow{margin-left:auto;font-size:16px;color:var(--beige);transition:transform .18s,color .18s}
-.wlp-inq .gate:hover .g-kr .g-arrow{color:var(--coral);transform:translateX(3px)}
-.wlp-inq .gate .g-desc{font-size:13px;color:var(--dim);line-height:1.65}
-.wlp-inq .gate.primary{background:var(--ink);border-color:var(--ink)}
-.wlp-inq .gate.primary .g-kr{color:#fff}
-.wlp-inq .gate.primary .g-en{color:var(--beige)}
-.wlp-inq .gate.primary .g-desc{color:#cfc7bd}
-.wlp-inq .gate.primary:hover{box-shadow:0 8px 26px rgba(34,31,32,.22)}
-.wlp-inq .types[hidden]{display:none}
 @media (max-width:520px){
   .wlp-inq .type-grid{grid-template-columns:1fr}
 }
@@ -132,26 +110,11 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
 
     <p class="reserve-note"><span class="dot"></span>상담 및 투어는 사전 예약제로 운영됩니다</p>
 
-    <!-- 두 갈래 — 문의하기 / 내 접수 조회 (2026-08-13 GM 지시) -->
-    <div class="gates">
-      <button type="button" class="gate primary" id="wlpGateInq" aria-expanded="false" aria-controls="wlpTypes">
-        <span class="g-en">Inquiry</span>
-        <span class="g-kr">문의하기<span class="g-arrow">&#8594;</span></span>
-        <span class="g-desc">멤버십 &middot; 성인/유소년 강습 &middot; 공간 렌트 &middot; 제휴</span>
-      </button>
-      <a class="gate" href="http://wellperion.com/ko/lookup/">
-        <span class="g-en">Reception</span>
-        <span class="g-kr">내 접수 조회<span class="g-arrow">&#8594;</span></span>
-        <span class="g-desc">접수하신 건의 진행 상태를 직접 확인하실 수 있습니다</span>
-      </a>
-    </div>
-
     <!-- 영상 자리 -->
     <div class="video-frame">
       <iframe src="https://www.youtube.com/embed/qpPYA3bAO7M" title="웰페리온 소개 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
 
-    <div class="types" id="wlpTypes" hidden>
     <div class="sec-label"><span class="ln"></span><span class="tx">원하시는 항목을 선택해 주세요</span><span class="ln"></span></div>
 
     <!-- 6종 문의 유형 — 전부 자체 Survey 폼(/ko/inquiry-form/?type=…) 연결. 구글폼 링크 없음. -->
@@ -210,8 +173,6 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
       </a>
 
     </div>
-
-    </div><!-- /.types -->
 
     <!-- 소셜/링크 아이콘 바 — 4개 채널: 홈페이지·인스타그램·네이버블로그·네이버지도 (인라인 SVG, 외부 의존 없음) -->
     <div class="social-bar">
@@ -277,22 +238,5 @@ body.page-id-8394 .wlp-inq { margin-bottom: -75px !important; }
       a.href=url.href;
     }catch(e){}
   };
-
-  // ── 두 갈래 첫 화면 (2026-08-13 GM 지시) ──
-  //   기본은 유형 6종을 접어 두고 「문의하기」를 누르면 편다. 채널 링크(?type=…)·#types 로 들어온
-  //   방문자는 곧바로 유형을 봐야 하므로 자동으로 편다(퍼널 손실 방지).
-  (function(){
-    var btn = document.getElementById('wlpGateInq');
-    var box = document.getElementById('wlpTypes');
-    if(!btn || !box) return;
-    function open(scroll){
-      box.hidden = false;
-      btn.setAttribute('aria-expanded','true');
-      if(scroll){ try{ box.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){ box.scrollIntoView(); } }
-    }
-    btn.addEventListener('click', function(){ open(true); });
-    var q = new URLSearchParams(location.search);
-    if(q.get('type') || location.hash === '#types'){ open(false); }
-  })();
 })();
 </script>
