@@ -7849,7 +7849,10 @@ function _mregRender(){
   // ★2026-08-04 배361(GM 재지시) — _mregRows는 이미 newOnly=1로 서버가 신규만 걸러 보낸 배열이라
   // 여기서 신규/그 외를 다시 가르지 않는다(구 배349 뱃지·분리집계 폐기 — 판정 로직 두 벌 금지, 약속 L01).
   var cnt = document.getElementById('mregCount');
-  if (cnt) cnt.textContent = '총 ' + _mregRows.length + '명';
+  var _mf = (document.getElementById('mregFrom') || {}).value || '';
+  var _mt = (document.getElementById('mregTo')   || {}).value || '';
+  var _mrange = _mf ? (' · ' + (_mf === _mt ? _mf : _mf + ' ~ ' + _mt)) : '';
+  if (cnt) cnt.textContent = '총 ' + _mregRows.length + '명' + _mrange;
   var mc = document.getElementById('mregMonthCount'); if (mc) mc.textContent = (_mregRangeMode === 'month') ? ('이 달 ' + _mregRows.length + '명') : '';
   var membersReady = !!(_ownerAssignRows && _ownerAssignRows.length);
   var _today = _mdashYmd(new Date());
