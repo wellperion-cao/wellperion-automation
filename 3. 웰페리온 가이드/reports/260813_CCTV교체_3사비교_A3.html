@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>노후 CCTV 교체 3사 비교 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>노후 CCTV 교체 — 3사 견적 비교 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">노후 CCTV 시스템 교체 — 3사 견적 비교 검토</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 (AI CEO 웰리)</b><br>
+      작성일 <b>2026. 08. 13.</b> · 문서번호 <b>WP-GM-260813-01</b><br>
+      대상 <b>본관 CCTV 93대 전면 교체</b> · 금액 <b>VAT 별도</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">동일 사양서를 만들어 3사에 재견적을 요청하는 것을 승인해 주십시오.</div>
+        <div class="d">견적 3건 모두 기한이 지났고 사양도 서로 달라, 지금 자료로는 어느 쪽이 유리한지 판정할 수 없습니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">관제·출동(무인경비)을 이번 계약에 포함할지 정해 주십시오.</div>
+        <div class="d">포함이면 ADT캡스 계열, CCTV 단독이면 블루캅·한국렌탈입니다. 이게 정해져야 사양서를 확정할 수 있습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    직접 비교 불가 — 견적 3건 전부 기한 경과(ADT 07/31 · 한국렌탈 07/30 만료 · 블루캅 미기재 55일 경과)
+    <span>&nbsp;/ 계약 5년·5년·3년, 모니터 6·6·0대, 관제 포함 여부 상이 — 아래 금액은 <b>같은 조건의 가격이 아닙니다.</b></span>
+  </div>
+
+  <!-- ③ 비교표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:186px"><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">판단 항목</th>
+        <th>ADT캡스 (에스케이쉴더스)<span class="sub">견적 2026.07.16 · QN0000210773</span></th>
+        <th>블루캅 (에이치디에스)<span class="sub">견적 2026.06.19 · 현대기아차그룹 협력사</span></th>
+        <th>한국렌탈<span class="sub">견적 2026.06.30</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">비 용</td></tr>
+      <tr><td class="k">계약 형태</td><td class="ctr">렌탈 (신규)</td><td class="ctr">임대</td><td class="ctr">렌탈</td></tr>
+      <tr><td class="k">계약 기간</td><td class="ctr">5년</td><td class="ctr">5년</td><td class="ctr warn">3년 (36개월)</td></tr>
+      <tr><td class="k">초기 공사비</td><td class="num">2,000,000 원</td><td class="num">2,000,000 원</td><td class="num good">0 원 <span class="est">(별도 청구 없음)</span></td></tr>
+      <tr><td class="k">월 이용료</td><td class="num strong">850,000 원</td><td class="num strong">800,000 원</td><td class="num strong good">750,000 원</td></tr>
+      <tr class="sum"><td class="k">3년 누계</td><td class="num strong">32,600,000 원</td><td class="num strong">30,800,000 원</td><td class="num strong good">27,000,000 원</td></tr>
+      <tr class="sum"><td class="k">5년 누계</td><td class="num strong">53,000,000 원</td><td class="num strong">50,000,000 원</td><td class="num strong">36,000,000 원 <span class="est">(추정)</span></td></tr>
+
+      <tr class="grp"><td colspan="4">자 산 · 서 비 스</td></tr>
+      <tr><td class="k">만료 후 장비 소유권</td><td class="ctr bad">미기재</td><td class="ctr bad">미기재</td><td class="ctr good">고객 소유 (설치 완료 시점)</td></tr>
+      <tr><td class="k">관제 · 출동</td><td class="good">포함 — 24시간 상황실, 최단거리 출동, 도난·화재 보상</td><td class="ctr bad">미기재</td><td class="ctr bad">미기재</td></tr>
+      <tr><td class="k">A/S 조건</td><td class="ctr">임대(계약) 기간 내</td><td class="ctr">임대 기간 내</td><td class="ctr good">무상 3년 · 3년 후 월정료 50% 인하 재계약</td></tr>
+
+      <tr class="grp"><td colspan="4">사 양 충 족 도</td></tr>
+      <tr><td class="k">카메라 수량 · 화소</td><td class="ctr">93대 · 500만 (실내외)</td><td class="ctr">93대 · 500만 (기존 88 교체 + 5 신설)</td><td class="ctr warn">90대 · 500만 <span class="est">(3대 부족)</span></td></tr>
+      <tr><td class="k">저장장치 · 용량</td><td class="ctr">16채널 <span class="est">(대수·용량 미기재)</span></td><td class="ctr">NVR 16채널 6대 · HDD 8TB 6대</td><td class="ctr">NVR 32채널 3대 · 8TB · AI 영상분석</td></tr>
+      <tr><td class="k">모니터</td><td class="ctr">27인치 6대</td><td class="ctr">24인치 6대 (+ 랙 1식)</td><td class="ctr bad">미포함</td></tr>
+      <tr><td class="k">제조사 · 원산지 · 인증</td><td class="ctr bad">미기재</td><td class="ctr bad">미기재</td><td class="ctr bad">미기재</td></tr>
+
+      <tr class="grp"><td colspan="4">검 증 상 태</td></tr>
+      <tr><td class="k">견적 유효기간</td><td class="ctr bad">만료 — 07/31 (견적일+15일)</td><td class="ctr bad">유효기간 미기재 · 55일 경과</td><td class="ctr bad">만료 — 07/30 (견적일+1개월)</td></tr>
+      <tr><td class="k">장비 단가 검증</td><td class="ctr bad">검증 불가 (단가 공란)</td><td class="ctr bad">검증 불가 (장비 단가 전부 공란)</td><td class="ctr bad">검증 불가 (단가 공란)</td></tr>
+      <tr class="sum"><td class="k">종합 위험도</td><td class="ctr bad strong">높음 — 상품 범위 상이</td><td class="ctr warn strong">중간 — 사양 근접, 서비스 미기재</td><td class="ctr bad strong">높음 — 사양 미달 + 기간 상이</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">3건 전부 기한 경과 — 이 금액으로는 계약되지 않는다.</li>
+        <li class="r1">사양이 다르다 — 최저가가 최저 비용이 아니다.</li>
+        <li class="r1">3사 모두 장비 단가 공란 — 금액 구성 검증 불가.</li>
+        <li class="r2">제조사·원산지·KC 인증 전 사 미기재.</li>
+        <li class="r2">소유권 이전은 한국렌탈만 명시 — 2사는 5년 뒤 자산 0.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">사양서 확정(카메라 93대·모니터 6대·저장채널·보관일수) 후 3사 동시 재견적</li>
+        <li class="n">장비별 단가표 제출 의무화 — 미제출 업체는 비교 대상 제외</li>
+        <li class="n">제조사·모델명·원산지·KC 인증번호 명기 요구</li>
+        <li class="n">만료 후 장비 소유권 귀속 조건을 견적서에 명문화 요구</li>
+        <li class="n">재견적 회수 후 본 문서 갱신·재보고 (목표 8월 말)</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li>현 자료로 <b>업체를 선정하지 않는다.</b> 1순위는 협상이 아니라 <b>비교 가능하게 만드는 것</b>.</li>
+        <li>표면 최저가 한국렌탈(월 75만)은 카메라 3대 부족·모니터 없음 — <b>같은 물건이 아니다.</b></li>
+        <li>사양이 가장 근접한 곳은 <b>블루캅</b>(93대·모니터 6대·5년) — 관제 조건만 확인되면 기준안.</li>
+        <li>ADT캡스는 CCTV가 아닌 <b>무인경비 통합상품</b> — CCTV 단독 견적을 따로 받아야 비교 가능.</li>
+        <li>소유권 이전 조건은 5년 총비용을 뒤집는다 — <b>전 사에 동일하게 요구.</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>산출 근거</b> — 3년·5년 누계 = (월 이용료 × 개월수) + 초기 공사비. 전 금액 VAT 별도. ADT캡스는 할인 적용 후 견적금액(월 표준 2,007,000 → 견적 850,000 / 공사비 표준 22,824,000 → 견적 2,000,000) 기준.</div>
+    <div><b>(추정) 표기</b> — 한국렌탈 5년 누계는 계약기간이 36개월뿐이라 <b>추정치</b>다. 특이사항 5항 「3년 후 월정료 50% 인하 유지보수 재계약」을 적용해 375,000원 × 24개월을 더했다. 재계약 조건은 확정되지 않았다.</div>
+    <div><b>출처</b> — 공유 드라이브 「26.6.29 CCTV 견적 비교」 폴더 원본 3건(ADT캡스 스마트견적서 11p · 블루캅 견적/제안 4p · 한국렌탈 견적서 이미지). <b>차기 보고</b> — 재견적 회수 후 본 문서 갱신(같은 문서번호 유지).</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260813_CCTV교체_3사비교_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
