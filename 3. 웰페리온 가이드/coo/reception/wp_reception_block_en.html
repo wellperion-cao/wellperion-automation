@@ -413,7 +413,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
 </style>
 </style>
 
-<div class="wlp-recept">
+<div class="wlp-recept" lang="en">
     <div class="toast" id="toast"></div>
   <div class="wrap" id="formWrap">
     <a class="back-kiosk" href="#" onclick="location.href='http://wellperion.com/'+'en/lookup/';return false;">&#8592; Back</a>
@@ -687,6 +687,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
         var d = document.createElement('input');
         d.type = def.type;   // 'date'(날짜만) 또는 'datetime-local'(날짜+시간)
         d.id = 'f_' + def.key;
+        d.lang = 'en';
         // Hold starts은 과거를 못 고르게 막는다(시포 규약과 동일 — 서버에서도 재검증)
         // 휴회 날짜는 과거를 못 고르게 막고, 종료일은 시작일 이전을 못 고르게 연동한다
         if (def.key === 'holdStart' || def.key === 'holdEnd') { d.min = _todayStr(); }
