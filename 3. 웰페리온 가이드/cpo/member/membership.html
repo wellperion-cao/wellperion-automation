@@ -931,14 +931,15 @@ select, select option{ color:var(--text); background-color:var(--paper); }
 /* 현황카드 일원화(한 줄) — 2026-07-15 GM 지시. 전환보드 삭제 후 멤버십 6카드·강습 6카드(2026-07-18 담당자 배정 카드를 멤버십→강습 family로 이동)를 각각 한 줄로. */
 /* 멤버십 카드 5장(대기자·LOSS 카드 삭제 2026-08-01, FB260801-141806) — 칸수를 카드 수에 맞춰
    한 줄을 유지한다(6칸으로 두면 빈 칸이 남거나 마지막 장이 다음 줄로 떨어짐, GM 지적 이력). */
-#memberTabNav{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* 카드 4장(2026-08-13 — 휴회 카드가 빠져 5칸 격자에 빈자리가 생겼다). 4칸으로 줄여 남은 카드를
+   그만큼 넓게 쓴다 — 제목이 말줄임 없이 들어가고 숫자도 커진다. */
+#memberTabNav{grid-template-columns:repeat(4,minmax(0,1fr))}
 /* 여러 장을 한 줄에 넣으면 칸이 좁아진다 → 여백을 조이고 제목이 길면 말줄임(줄바꿈으로 카드 높이가
    들쭉날쭉해지는 것 방지). 숫자는 그대로 크게 유지 — 한눈에 봐야 하는 건 숫자다. */
-#memberTabNav .dash-card{padding:13px 11px 13px}
+#memberTabNav .dash-card{padding:15px 15px 16px}
 #memberTabNav .dash-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #memberTabNav .dash-line{white-space:nowrap}
 #lessonComboBoard{grid-template-columns:repeat(6,1fr)}
-@media(max-width:1400px){#memberTabNav{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:1100px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){#memberTabNav,#lessonComboBoard{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){#memberTabNav,#lessonComboBoard{grid-template-columns:1fr}}
@@ -3096,6 +3097,22 @@ function _snapMemberGet_() {
 function _snapLessonGet_() {
   if (!_snapLessonPromise_) _snapLessonPromise_ = _snapFetchJson_(_SNAP_RAW_BASE_ + 'inquiry_snapshot_lesson.json');
   return _snapLessonPromise_;
+}
+/* 유효회원 명단 스냅샷(2026-08-13 시포 · GM "카드 현황 바로 뜨게 · 속도 향상").
+   실측 근거: member_active_list 는 응답이 515KB 인데도 36초가 걸린다(GAS 서버 처리가 느린 것).
+   같은 데이터를 이 스냅샷으로 받으면 0.3초 — 문의 2종이 이미 쓰던 방식을 그대로 붙인다.
+   ★스냅샷으로 그린 동안에는 편집을 막는다(_activeSnapOnly) — 행 번호로 쓰는 화면이라
+   옛 목록 위에서 저장하면 엉뚱한 사람 줄에 들어갈 수 있다. 실데이터가 오면 그 자리에서 풀린다. */
+var _snapActivePromise_ = null;
+function _snapActiveGet_() {
+  if (!_snapActivePromise_) _snapActivePromise_ = _snapFetchJson_(_SNAP_RAW_BASE_ + 'member_active_snapshot.json');
+  return _snapActivePromise_;
+}
+var _activeSnapOnly = false;
+function _activeSnapGuard() {
+  if (!_activeSnapOnly) return false;
+  try { showToast('최신 명단 불러오는 중 — 잠시 후 수정할 수 있습니다', 'err'); } catch (e) {}
+  return true;
 }
 // 스냅샷이 너무 오래됐으면(job이 오래 죽어있었을 가능성) 콜드 첫 화면용으로도 부적절 — 없는 것으로 취급.
 var _SNAP_MAX_AGE_MS_ = 24 * 60 * 60 * 1000; // 24시간
@@ -7278,7 +7295,21 @@ function loadActiveMembers() {
     if (_lsCached) cached = _activeCache[scope] = { headers: _lsCached.headers || [], rows: _lsCached.rows };
   }
   if (cached) _activeApplyData(cached.headers, cached.rows, true);   // 먼저 그린다(체감 0초)
-  else _activeRenderState('loading');
+  else {
+    _activeRenderState('loading');
+    // 캐시 없는 첫 진입·새 기기 — 스냅샷으로 먼저 그린다(0.3초). 아래 GAS 재검증은 조건 없이 항상 발사돼
+    // 도착하는 즉시 이 그림을 덮는다(유실 0). scope=valid 만 스냅샷이 있다.
+    if (scope === 'valid') {
+      _snapActiveGet_().then(function(snap){
+        if (_activeLoaded) return;                       // 실데이터가 이미 이겼으면 폐기(레이스 가드)
+        if ((_activeScope || 'valid') !== 'valid') return;
+        if (!_snapFresh_(snap)) return;
+        _activeSnapOnly = true;                          // 실데이터 도착 전까지 편집 잠금
+        _activeApplyData(snap.headers || [], snap.rows.slice(), true);
+        _activeLoaded = false;                           // 스냅샷은 '로드 완료'가 아니다 — 위 레이스 가드용
+      });
+    }
+  }
   var _seq = ++_activeReqSeq;
   return fetch(GAS_URL + '?action=member_active_list&scope=' + scope + '&format=rows' + _wpKeyParam())
     .then(function(r){ return r.json(); })
@@ -7288,6 +7319,7 @@ function loadActiveMembers() {
       if (!data.ok) throw new Error(data.error || 'GAS 응답 오류');
       _activeCache[scope] = { headers: data.headers || [], rows: data.data || [] };
       _activeCacheSave(scope, data.headers || [], data.data || []);   // 다음 새로고침 즉시 렌더용(D4)
+      _activeSnapOnly = false;   // 실데이터 도착 — 스냅샷 편집 잠금 해제
       if ((_activeScope || 'valid') !== scope) return;   // 기다리는 사이 다른 스코프로 옮겼으면 화면은 건드리지 않고 보관만
       _activeApplyData(data.headers, data.data, false);
     })
@@ -8829,6 +8861,7 @@ function _wireActiveDblclick(){
   tbody.dataset.dblwired = '1';
   // 재등록 상담 통합셀 = 단일 클릭 → 회원 고정 모달(인라인 편집 대상 아님). 2026-07-03 시포·GM
   tbody.addEventListener('click', function(e){
+    if (_activeSnapGuard()) return;   // 스냅샷으로 그린 동안엔 안내만 — 옛 행 번호로 저장되는 것 방지
     var cell = e.target.closest ? e.target.closest('td.recon-cell') : null;
     if (cell) { var ri = parseInt(cell.getAttribute('data-recon'), 10); if (ri) openReconForMember(ri); return; }
     var ccell = e.target.closest ? e.target.closest('td.churn-reason-cell') : null;
@@ -8840,6 +8873,7 @@ function _wireActiveDblclick(){
     }
   });
   tbody.addEventListener('dblclick', function(e){
+    if (_activeSnapGuard()) return;           // 스냅샷으로 그린 동안엔 편집 잠금(옛 행 번호 저장 방지)
     var td = e.target.closest('td');
     if (!td) return;
     var col = td.dataset.col;
@@ -9166,10 +9200,25 @@ function _noteLoadFail(what) {
 // CPO 오늘 현황 — 오늘/이번달 문의·등록 건수(PII 미노출 집계)
 function loadCpoTodayStats() {
   if (GAS_URL === GAS_PLACEHOLDER) return;
+  // 카드 숫자를 먼저 띄운다(2026-08-13 GM "카드 현황 바로 뜨게") — 스냅샷에 실려 온 같은 값을 0.3초에
+  // 그리고, 아래 GAS 실시간 값이 도착하면 그대로 덮는다. 계산은 서버 한 곳에서만 한다(값만 옮겨 담음).
+  if (!_cpoStats) {
+    _snapActiveGet_().then(function(snap){
+      if (_cpoStats) return;                      // 실시간 값이 이미 이겼으면 폐기
+      if (!snap || !_snapFresh_(snap) || !snap.today_stats) return;
+      _applyCpoStats(snap.today_stats);
+    });
+  }
   fetch(GAS_URL + '?action=cpo_today_stats')
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (!d || !d.ok) return;
+      _applyCpoStats(d);
+    })
+    .catch(function(){ _noteLoadFail('오늘 현황'); });
+}
+function _applyCpoStats(d) {
+  {
       // 카드3 등록 / 카드4 회원 현황. 신규 문의(todayInquiry)는 표면 DOM 없음 — renderSummaryHero가 _cpoStats에서 직접 읽음(배754).
       _setTxt('dRegToday', d.todayReg);     _setTxt('dRegMonth', d.monthReg);
       // 강습 화면 상단의 같은 카드도 여기서 함께 채운다(2026-08-10 — 세는 곳을 하나로).
@@ -9181,8 +9230,7 @@ function loadCpoTodayStats() {
       _setTxt('gToLoss', d.todayLoss); _setTxt('gMoLoss', d.monthLoss);   // CPO 가이드 이탈 현황(오늘/월)
       _setTxt('dMemLossToday', d.todayLoss); _setTxt('dMemLossMonth', d.monthLoss);   // 멤버십 4카드 LOSS 카드(CPO-2026-07-14-MEMBER-CARDS-FIX) — gToLoss/gMoLoss와 동일 소스 재사용
       if (typeof renderSummaryHero === 'function') renderSummaryHero();   // 오늘 현황 요약 히어로(배754) — 새 문의 카운트 갱신
-    })
-    .catch(function(){ _noteLoadFail('오늘 현황'); });
+  }
 }
 
 function changeMonth(delta) {

@@ -46,6 +46,11 @@ STATUS_DIR = ROOT / "status"
 LOCK_DIR = STATUS_DIR / ".locks" / "cpo_inquiry_snapshot"
 MEMBER_OUT = STATUS_DIR / "inquiry_snapshot_member.json"
 LESSON_OUT = STATUS_DIR / "inquiry_snapshot_lesson.json"
+# 유효회원 명단 스냅샷(2026-08-13 시포 · GM "조회 5~6개를 줄여보자").
+# 실측: member_active_list 는 응답이 515KB 인데도 36초가 걸린다(GAS 서버 처리가 느린 것이지
+# 덩치 문제가 아니다). 같은 데이터를 이 스냅샷으로 받으면 0.3초다 — 이미 문의 2종이 쓰고 있는
+# 방식을 유효회원에도 그대로 붙인다(새 모듈·새 예약 0, 이 스크립트 안에서 한 벌 더 받을 뿐).
+ACTIVE_OUT = STATUS_DIR / "member_active_snapshot.json"
 
 KST = timezone(timedelta(hours=9))
 LOCK_STALE_SEC = 600        # 10분 — 3분 주기의 3배 이상이면 확실히 죽은 것
@@ -164,6 +169,40 @@ def build_member(prev: dict | None, warnings: list) -> dict:
             "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
 
 
+def build_active(prev: dict | None, warnings: list) -> dict:
+    """유효회원 명단(scope=valid). 화면이 쓰는 모양 그대로 {headers, rows} 로 담는다.
+    실패 시 직전 값 carry-forward — 빈 명단으로 덮어쓰지 않는다(유실 0)."""
+    now = _now_kst()
+    try:
+        data = _gas_get("member_active_list", {"scope": "valid"}, timeout=60, attempts=1)
+    except Exception as e:
+        data = None
+        warnings.append(f"active: 예외 {e}")
+    rows = (data or {}).get("data")
+    if data is not None and isinstance(rows, list):
+        # 상단 카드 숫자(오늘/이번달 문의·등록·이탈)도 같이 실어 보낸다 — 화면이 이 값을 즉시 그리고,
+        # 뒤이어 도착하는 GAS 실시간 값이 덮는다. 집계는 서버 값을 그대로 나르기만 한다(계산 복제 0).
+        try:
+            stats = _gas_get("cpo_today_stats", None, timeout=30, attempts=1)
+        except Exception as e:
+            stats = None
+            warnings.append(f"active.stats: 예외 {e}")
+        if not (isinstance(stats, dict) and stats.get("ok")):
+            warnings.append("active.stats: 카드 숫자 조회 실패 — 화면은 GAS 실시간 값만 쓴다")
+            stats = None
+        return {"ok": True, "count": len(rows), "headers": data.get("headers") or [], "rows": rows,
+                "today_stats": stats,
+                "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
+    warnings.append("active: GAS 조회 실패(재시도는 다음 주기)")
+    if prev and isinstance(prev.get("rows"), list):
+        warnings.append("active: 직전 스냅샷 carry-forward")
+        carried = dict(prev)
+        carried["ok"] = False
+        return carried
+    return {"ok": False, "count": 0, "headers": [], "rows": [],
+            "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
+
+
 def build_lesson(prev: dict | None, warnings: list) -> dict:
     now = _now_kst()
     prev_adult = (prev or {}).get("adult", {}).get("year") if prev else None
@@ -230,11 +269,14 @@ def main() -> int:
         warnings: list[str] = []
         prev_member = _load_prev(MEMBER_OUT)
         prev_lesson = _load_prev(LESSON_OUT)
+        prev_active = _load_prev(ACTIVE_OUT)
 
         member_payload = build_member(prev_member, warnings)
         lesson_payload = build_lesson(prev_lesson, warnings)
+        active_payload = build_active(prev_active, warnings)
         member_payload["warnings"] = warnings[:]  # 전체 워닝 공유 게시(디버그 편의)
         lesson_payload["warnings"] = warnings[:]
+        active_payload["warnings"] = warnings[:]
 
         # 작업트리 파일은 항상 갱신(다음 회차 carry-forward가 최신 시도값을 보게) — 커밋 여부만 별도 판단.
         MEMBER_OUT.write_text(
@@ -243,6 +285,10 @@ def main() -> int:
         LESSON_OUT.write_text(
             json.dumps(lesson_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
         )
+        ACTIVE_OUT.write_text(
+            json.dumps(active_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+        )
+        _log(f"[active] {active_payload.get('count', 0)}명, ok={active_payload.get('ok')}")
         _log(f"[member] {member_payload.get('count', 0)}건, ok={member_payload.get('ok')}")
         a = lesson_payload["adult"]["year"]; y = lesson_payload["youth"]["year"]
         _log(f"[lesson] 성인 {a.get('count', 0)}건(ok={a.get('ok')}) · 유소년 {y.get('count', 0)}건(ok={y.get('ok')})")
@@ -270,6 +316,10 @@ def main() -> int:
             changed_paths.append(str(LESSON_OUT))
         else:
             _log("[lesson] HEAD 대비 무변경(하트비트 이내) — 커밋 스킵")
+        if _should_commit(_load_prev_from_head(ACTIVE_OUT), active_payload):
+            changed_paths.append(str(ACTIVE_OUT))
+        else:
+            _log("[active] HEAD 대비 무변경(하트비트 이내) — 커밋 스킵")
 
         if warnings:
             _log("[warn] " + " | ".join(warnings))
