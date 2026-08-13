@@ -342,6 +342,52 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 .wlp-recept .footer-links a{color:var(--accent);text-decoration:none}
 
 /*[GM 20260720] mobile spacing*/@media (max-width:600px){.wlp-recept .wrap{padding-top:26px;padding-bottom:30px}.wlp-recept .brand{margin-bottom:16px}.wlp-recept .footer-divider{margin:18px auto 14px}.container-wrap{padding-top:18px!important;padding-bottom:18px!important}}
+/* ── 키오스크(세로 큰 화면) 전용 확대 — 2026-08-13 GM 지시 ──
+   "회원님들, 나이 많으신 분들도 접수하고 문의할 수 있게." 세로 큰 화면(키오스크)에서만
+   글자·버튼·입력칸을 크게 키운다. 가로 PC·휴대폰은 지금 그대로(조건: 폭 700px 이상 + 세로 화면). */
+@media (min-width:700px) and (orientation:portrait){
+  .wlp-recept .wrap{max-width:900px;padding:36px 30px 60px}
+  .wlp-recept .brand{margin-bottom:34px}
+  .wlp-recept .brand-eyebrow{font-size:17px;letter-spacing:5px}
+  .wlp-recept .brand-slogan{font-size:40px}
+  .wlp-recept .brand-sub{font-size:21px}
+  .wlp-recept .brand h1{font-size:50px}
+  .wlp-recept .brand-desc{font-size:22px;line-height:1.75}
+  .wlp-recept .loc-chip{font-size:19px;padding:10px 20px}
+  .wlp-recept .lf-link{padding:24px 26px;gap:16px}
+  .wlp-recept .lf-link .lf-ico{font-size:36px}
+  .wlp-recept .lf-link .lf-txt b{font-size:25px}
+  .wlp-recept .lf-link .lf-txt span{font-size:18px}
+  .wlp-recept .lf-link .lf-arrow{font-size:30px}
+  .wlp-recept .lf-btn{padding:22px 22px}
+  .wlp-recept .lf-btn .lf-ico{font-size:32px}
+  .wlp-recept .lf-btn .lf-txt b{font-size:23px}
+  .wlp-recept .lf-btn .lf-txt span{font-size:17px}
+  .wlp-recept .card{padding:30px}
+  .wlp-recept label.fl{font-size:21px}
+  .wlp-recept label.fl .opt{font-size:17px}
+  .wlp-recept .field{margin-bottom:24px}
+  .wlp-recept .types{gap:16px}
+  .wlp-recept .type-btn{height:132px;min-height:132px}
+  .wlp-recept .type-btn .cat-icon{font-size:40px;margin-bottom:10px}
+  .wlp-recept .type-btn .cat-label{font-size:22px}
+  .wlp-recept .cat-sub{font-size:17px}
+  .wlp-recept input[type=text],
+  .wlp-recept input[type=tel],
+  .wlp-recept input[type=date],
+  .wlp-recept select,
+  .wlp-recept textarea{font-size:24px;padding:22px 20px}
+  .wlp-recept textarea{min-height:200px}
+  .wlp-recept .photo-zone{padding:34px}
+  .wlp-recept .photo-zone .ph-icon{font-size:44px}
+  .wlp-recept .photo-zone .ph-text{font-size:21px}
+  .wlp-recept .submit{font-size:30px;padding:30px}
+  .wlp-recept .hint-empty{font-size:20px}
+  .wlp-recept .back-kiosk{font-size:19px;padding:16px 26px;min-height:60px;border-radius:34px}
+  /* 키오스크에서는 회사 정보 푸터를 숨겨 접수 화면만 보이게 한다(접수 조회 화면과 같은 처리) */
+  #footer-outer,#footer-widgets{display:none!important}
+}
+
 /* 종합접수처 첫 화면으로 돌아가기 — 화면 왼쪽 위, 본문과 겹치지 않게 (2026-08-13 GM 지시) */
 .wlp-recept{position:relative}
 .wlp-recept .back-kiosk{position:absolute;top:16px;left:16px;z-index:5;display:inline-flex;align-items:center;
@@ -354,7 +400,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 </style>
 
 <div class="wlp-recept">
-<a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 종합접수처</a>
+<a class="back-kiosk" href="http://wellperion.com/ko/lookup/">&#8592; 뒤로가기</a>
     <div class="toast" id="toast"></div>
   <div class="wrap" id="formWrap">
 
