@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>웰페리온 골프 레슨 운영팀을 찾습니다 — 개인사업자 레슨 위탁운영</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%230b1f3a'/%3E%3Ctext%20x='16'%20y='23'%20font-size='17'%20text-anchor='middle'%20fill='%23e3ba62'%20font-family='serif'%20font-weight='700'%3EW%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ─────────────────────────────────────────────────────────────
+     웰페리온 리크루팅 하우스 토큰 (live operations/golfpro/parking/chauffeur 와 동일)
+     + ui-ux-pro-max 카탈로그 #38 Hotel/Hospitality "Luxury navy + gold service"에서
+       골드 액센트만 도입. 골드는 페이지 전체에서 '핵심 수치' 3곳 + 섹션 번호에만 쓴다.
+     ───────────────────────────────────────────────────────────── */
+  :root{
+    --navy:#0b1f3a; --navy-2:#173a5e; --accent:#3f6fa0; --accent-soft:#e8f0f7;
+    --gold:#a16207;          /* 카탈로그 WCAG 3:1 보정값 — 밝은 배경용 */
+    --gold-dk:#e3ba62;       /* 네이비 위에 얹는 골드 */
+    --ink:#141e2c; --muted:#5c6b7e; --line:#dbe5ef; --bg:#eef3f8; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+
+  /* ⛔ 숫자 세리프 금지 (매니저 2회 반려 — 2026-08-14 확정).
+     .se(디스플레이 세리프)는 워드마크 라틴 텍스트에만 쓴다: WELLPERION / Partnership.
+     숫자·수치·섹션번호·한글에는 절대 걸지 않는다 — 전부 본문 Pretendard로 통일하고,
+     숫자의 위계는 서체 대비가 아니라 크기·굵기·자간·색·여백으로만 만든다. */
+  .se{font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-feature-settings:"lnum" 1;}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
+
+  .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 58px;}
+
+  /* ── 상단 바 ── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .topbar .brand{font-size:19px;font-weight:600;letter-spacing:5px;color:var(--navy);}
+  .status{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;
+    padding:6px 14px;border-radius:999px;color:var(--navy);background:#fff;border:1px solid var(--line);}
+  .status i{width:6px;height:6px;border-radius:50%;background:var(--gold);flex:0 0 auto;}
+  /* 마감 동기 상태(리크루팅 공통 — public-job-status 매칭 시 전환) */
+  .status.closed{color:var(--muted);}
+  .status.closed i{background:var(--muted);}
+
+  .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:15px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 32px;
+    box-shadow:0 4px 16px rgba(11,31,58,.05);grid-column:span 12;}
+
+  /* ── 섹션 머리 — 번호(세리프·골드) + 라벨 + 여백을 채우는 헤어라인 ── */
+  .shead{display:flex;align-items:center;gap:13px;margin-bottom:22px;}
+  .shead .snum{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:1.2px;flex:0 0 auto;}
+  .shead .slab{font-size:13px;font-weight:800;letter-spacing:1.5px;color:var(--navy);flex:0 0 auto;}
+  .shead .srule{flex:1 1 auto;height:1px;background:var(--line);}
+  /* 사이드바 격 — 번호 없이 한 급 낮춘 머리 */
+  .shead.sub-h{margin-bottom:16px;}
+  .shead.sub-h .slab{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1.2px;}
+
+  /* ═══ Hero ═══ */
+  .m-hero{position:relative;overflow:hidden;border:none;padding:0;border-radius:22px;
+    background:var(--navy);box-shadow:0 12px 34px rgba(11,31,58,.17);}
+  .hero-img{position:absolute;inset:0;background-size:cover;background-position:64% 58%;}
+  .hero-scrim{position:absolute;inset:0;
+    background:linear-gradient(101deg,#0b1f3a 0%,#0b1f3a 33%,rgba(11,31,58,.95) 45%,
+      rgba(11,31,58,.70) 63%,rgba(11,31,58,.44) 84%,rgba(11,31,58,.40) 100%);}
+  .hero-top{position:absolute;left:0;right:0;top:0;height:3px;z-index:3;
+    background:linear-gradient(90deg,var(--gold-dk),rgba(227,186,98,.15));}
+  .hero-body{position:relative;z-index:2;padding:54px 52px 48px;max-width:63%;}
+  .m-hero .eyebrow{font-size:11px;letter-spacing:3.6px;color:var(--gold-dk);font-weight:700;text-transform:uppercase;}
+  .m-hero h1{font-size:50px;font-weight:800;margin-top:15px;letter-spacing:-1.6px;line-height:1.2;color:#fff;}
+  .m-hero h1 .thin{font-weight:400;color:#bed2e6;letter-spacing:-1px;}
+  .m-hero .sub{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:14.5px;color:#c9daea;font-weight:500;}
+  .m-hero .sub::before{content:"";width:26px;height:1px;background:var(--gold-dk);flex:0 0 auto;}
+  .m-hero .lead{font-size:14.5px;color:#dce7f1;margin-top:22px;max-width:520px;line-height:1.9;}
+  .m-hero .badges{margin-top:30px;display:flex;flex-wrap:wrap;gap:8px;}
+  .m-hero .badges span{background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.22);
+    padding:7px 15px;border-radius:999px;font-size:12.5px;font-weight:600;color:#eaf2f9;}
+  .m-hero .badges span.hi{background:rgba(227,186,98,.15);border-color:rgba(227,186,98,.45);color:#f0dcb2;}
+
+  /* ═══ 01 회원 기반 — 한 개의 주(主) 수치 + 세 개의 종(從) 수치.
+       수치 라벨이 이미 '정원 마감'·'평균 유지'를 말하므로 같은 사실을 산문으로 반복하지 않는다 ═══ */
+  .stat-band{display:flex;align-items:flex-start;gap:38px;flex-wrap:wrap;}
+  .stat-hero{flex:0 0 auto;padding-right:38px;border-right:1px solid var(--line);}
+  .stat-hero b{display:block;font-size:70px;font-weight:700;line-height:.94;color:var(--gold);letter-spacing:-2px;}
+  .stat-hero b em{font-style:normal;font-size:25px;font-weight:600;margin-left:6px;letter-spacing:-.5px;}
+  .stat-hero span{display:block;margin-top:13px;font-size:12.5px;font-weight:700;color:var(--navy);line-height:1.55;}
+  .stat-rest{flex:1 1 auto;display:grid;grid-template-columns:repeat(3,minmax(0,168px));
+    gap:22px 36px;justify-content:start;padding-top:8px;}
+  .stat-rest .s b{font-size:31px;font-weight:700;color:var(--navy);letter-spacing:-.8px;line-height:1;}
+  .stat-rest .s b em{font-style:normal;font-size:14px;font-weight:600;margin-left:3px;color:var(--muted);}
+  .stat-rest .s span{display:block;margin-top:9px;font-size:12px;color:var(--muted);line-height:1.5;}
+
+  .ratio{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);}
+  .ratio-bar{height:8px;border-radius:999px;background:var(--accent-soft);overflow:hidden;}
+  .ratio-fill{height:100%;width:43.6%;border-radius:999px;
+    background:linear-gradient(90deg,var(--navy),var(--accent));}
+  .ratio-legend{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;margin-top:13px;
+    font-size:12.5px;color:var(--muted);}
+  .ratio-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;vertical-align:middle;}
+  .sw-fill{background:linear-gradient(90deg,var(--navy),var(--accent));}
+  .sw-rest{background:var(--accent-soft);border:1px solid var(--line);}
+  /* '전체' 범례 표식 = 비율 바를 그대로 축소한 미니 바.
+     436명을 1,000명과 대등한 두 항목이 아니라 '막대 전체 안에 채워진 부분'으로 읽히게 한다. */
+  .ratio-legend .sw-total{width:26px;border-radius:999px;overflow:hidden;position:relative;
+    background:var(--accent-soft);border:1px solid var(--line);}
+  .ratio-legend .sw-total::after{content:"";position:absolute;left:0;top:0;bottom:0;width:43.6%;
+    background:linear-gradient(90deg,var(--navy),var(--accent));}
+  .ratio-legend span b{color:var(--navy);font-weight:700;letter-spacing:-.2px;}
+  .ratio-legend .pct{margin-left:auto;font-size:19px;font-weight:700;letter-spacing:-.4px;color:var(--navy);}
+  .ratio-legend .pct small{font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:0;margin-right:6px;}
+
+  /* ═══ 02 수익 구조 ═══ */
+  .col-7{grid-column:span 7;}
+  .col-5{grid-column:span 5;display:flex;flex-direction:column;}
+  .m-deal{background:linear-gradient(158deg,var(--navy-2),var(--navy));color:#fff;border:none;padding:32px 34px 30px;}
+  .m-deal .shead .snum{color:var(--gold-dk);}
+  .m-deal .shead .slab{color:#dce7f1;}
+  .m-deal .shead .srule{background:rgba(255,255,255,.17);}
+  .deal-rate{font-size:74px;font-weight:700;line-height:.9;letter-spacing:-2.6px;color:var(--gold-dk);}
+  .deal-rate small{font-size:29px;font-weight:600;margin-left:5px;letter-spacing:-.5px;}
+  .deal-cap{font-size:13.5px;color:#c9daea;margin-top:17px;line-height:1.8;}
+  .deal-rows{margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.16);display:grid;gap:14px;}
+  .deal-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:13.5px;}
+  .deal-row .k{color:#a9c9e8;flex:0 0 auto;}
+  .deal-row .v{font-weight:700;text-align:right;letter-spacing:-.2px;}
+  .deal-foot{margin-top:20px;font-size:11.5px;color:#93b4d4;line-height:1.85;}
+
+  /* ═══ 현재 팀 (02의 사이드바) ═══ */
+  /* 수익 구조 카드보다 낮아 남는 공간이 생긴다 — 목록을 가운데로 앉혀 빈 구멍을 없앤다 */
+  .team-body{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;}
+  .pro{display:flex;align-items:baseline;gap:12px;padding:17px 0;border-bottom:1px solid var(--line);}
+  .team-body .pro:last-child{border-bottom:none;}
+  .pro .pn{font-size:12px;color:var(--gold);font-weight:700;letter-spacing:.8px;flex:0 0 auto;}
+  .pro .pt{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+  .pro .pc{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:600;flex:0 0 auto;}
+  .team-note{margin-top:18px;padding-top:17px;border-top:1px solid var(--line);
+    font-size:12.5px;color:var(--muted);line-height:1.85;}
+
+  /* ═══ 03 모집 개요 — 카드 격자가 아니라 사양서(spec) 행 ═══ */
+  .spec{display:grid;grid-template-columns:1fr 1fr;column-gap:46px;}
+  .spec .row{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:start;
+    padding:16px 0;border-top:1px solid var(--line);}
+  .spec dt{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.4px;padding-top:3px;}
+  .spec dd{font-size:15px;font-weight:700;line-height:1.5;letter-spacing:-.2px;}
+  .spec dd small{display:block;font-size:12.5px;font-weight:500;color:var(--muted);margin-top:5px;line-height:1.6;}
+  .doc{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;letter-spacing:-.2px;}
+  .doc + .doc{margin-top:8px;}
+  .doc .tag{font-size:10px;font-weight:800;letter-spacing:.4px;padding:3px 9px;border-radius:999px;flex:0 0 auto;}
+  .doc .req{background:var(--navy);color:#fff;}
+  .doc .opt{background:var(--accent-soft);color:var(--accent);border:1px solid var(--line);}
+
+  /* ═══ 04 센터 소개 — 가장 조용한 구간 ═══ */
+  .m-about{margin-top:14px;}
+  .m-about p{font-size:14px;color:var(--muted);line-height:2.05;max-width:925px;}
+  .about-line{display:flex;flex-wrap:wrap;gap:12px 34px;margin-top:22px;padding-top:20px;border-top:1px solid var(--line);}
+  /* 지표 하나 = 수치 + 한글 설명이 한 덩어리로 읽혀야 한다.
+     같은 서체(Pretendard) · 같은 baseline · 같은 행간으로 묶는다(세리프 혼용 금지). */
+  .about-line div{display:inline-flex;align-items:baseline;gap:8px;
+    font-size:12.5px;color:var(--muted);line-height:1.45;}
+  .about-line b{font-size:19px;font-weight:700;color:var(--navy);letter-spacing:-.5px;line-height:1.2;}
+
+  /* ═══ 문의 ═══ */
+  .m-contact{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;border:none;
+    padding:34px 34px 32px;margin-top:14px;}
+  .c-lab{font-size:12px;font-weight:800;letter-spacing:2px;color:var(--gold-dk);margin-bottom:15px;}
+  .apply-line{font-size:14px;color:#dce7f1;line-height:1.9;margin-bottom:22px;max-width:640px;}
+  .apply-line b{color:#fff;font-weight:700;}
+  .contact-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;}
+  .cbox{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:15px;padding:19px 21px;}
+  .cbox .clab{font-size:11px;font-weight:700;color:#a9c9e8;letter-spacing:.6px;margin-bottom:9px;}
+  .cbox .cval{font-size:20px;font-weight:700;letter-spacing:-.2px;word-break:break-all;}
+  .cbox .csub{margin-top:5px;font-size:12px;color:#c9daea;}
+
+  /* ===== 지원하기 폼 (2026-08-14 A-5) — golfpro.html 등과 동일한 submit-application 액션, 자체 접수 ===== */
+  .apply-open-btn{display:block;width:100%;margin-top:16px;padding:13px 20px;border:none;border-radius:12px;
+    background:#ffffff;color:var(--navy);font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;
+    transition:transform .15s ease,box-shadow .15s ease;}
+  .apply-open-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.18);}
+  .m-contact.closed .apply-open-btn{display:none;}
+  .closed-badge2{display:inline-block;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:11.5px;padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.25);}
+  .apply-modal-overlay{display:none;position:fixed;inset:0;background:rgba(11,31,58,.55);z-index:100;align-items:center;justify-content:center;padding:20px;}
+  .apply-modal-overlay.open{display:flex;}
+  .apply-modal{background:#fff;border-radius:20px;max-width:440px;width:100%;max-height:88vh;overflow-y:auto;padding:26px 24px;position:relative;box-sizing:border-box;}
+  .apply-modal h3{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px;}
+  .apply-modal .am-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px;}
+  .apply-modal label{display:block;font-size:12.5px;font-weight:700;color:var(--navy);margin:14px 0 6px;}
+  .apply-modal input[type=text],.apply-modal input[type=tel],.apply-modal input[type=email]{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;box-sizing:border-box;}
+  .apply-modal input[readonly]{background:var(--bg);color:var(--muted);}
+  .apply-modal input[type=file]{width:100%;font-size:12.5px;margin-top:2px;}
+  .apply-modal .am-consent{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12px;color:var(--muted);}
+  .apply-modal .am-consent input{margin-top:2px;flex:0 0 auto;}
+  .apply-modal .am-honeypot{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;}
+  .apply-modal .am-actions{display:flex;gap:10px;margin-top:20px;}
+  .apply-modal .am-submit{flex:1;padding:12px;border:none;border-radius:10px;background:var(--navy);color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;}
+  .apply-modal .am-submit:disabled{opacity:.6;cursor:wait;}
+  .apply-modal .am-cancel{padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
+  .apply-modal .am-msg{margin-top:14px;font-size:12.5px;padding:10px 12px;border-radius:8px;display:none;}
+  .apply-modal .am-msg.err{display:block;background:#fdecec;color:#b23b3b;}
+  .apply-modal .am-msg.ok{display:block;background:#e6f4ea;color:#2f7d4f;}
+  .apply-modal .am-close-x{position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;}
+
+  .m-foot{grid-column:span 12;text-align:center;font-size:12px;color:var(--muted);
+    background:transparent;border:none;box-shadow:none;padding:14px 0 0;}
+  .m-foot b{color:var(--navy);letter-spacing:3px;font-weight:600;}
+  .m-foot .contact{margin-top:12px;display:inline-block;background:#fff;
+    border:1px solid var(--line);border-radius:999px;padding:8px 17px;font-size:12.5px;
+    font-weight:700;color:var(--navy);}
+
+  /* JPG 내려받기 (하우스 공통 기능) */
+  .jpg-dl-btn{position:fixed;bottom:20px;right:20px;z-index:50;display:inline-flex;align-items:center;gap:7px;
+    box-shadow:0 4px 14px rgba(11,31,58,.14);
+    background:rgba(255,255,255,.92);color:var(--navy);border:1px solid var(--line);border-radius:999px;
+    padding:9px 15px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;}
+  .jpg-dl-btn:hover{border-color:var(--gold);}
+  .jpg-dl-btn:disabled{opacity:.6;cursor:wait;}
+  .jpg-dl-btn svg{width:13px;height:13px;}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+
+  /* 등장 — 회원 수치만 한 번 */
+  @keyframes rise{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
+  @keyframes grow{from{width:0;}to{width:43.6%;}}
+  .stat-hero,.stat-rest .s{animation:rise .55s ease both;}
+  .stat-rest .s:nth-child(1){animation-delay:.08s;}
+  .stat-rest .s:nth-child(2){animation-delay:.15s;}
+  .stat-rest .s:nth-child(3){animation-delay:.22s;}
+  .ratio-fill{animation:grow 1s cubic-bezier(.2,.7,.2,1) .3s both;}
+  @media (prefers-reduced-motion:reduce){
+    .stat-hero,.stat-rest .s,.ratio-fill{animation:none;}
+  }
+
+  @media(max-width:900px){
+    .hero-body{max-width:78%;padding:46px 40px 42px;}
+    .m-hero h1{font-size:40px;letter-spacing:-1.3px;}
+    .col-7,.col-5{grid-column:span 12;}
+    .spec{grid-template-columns:1fr;column-gap:0;}
+    .stat-hero{padding-right:30px;}
+    .stat-rest{gap:20px 24px;grid-template-columns:repeat(3,minmax(0,120px));}
+  }
+  @media(max-width:640px){
+    .wrap{padding:18px 14px 44px;}
+    .card{padding:24px 20px;}
+    .m-hero{border-radius:18px;}
+    /* 세로 화면에선 cover가 이미지 위쪽(어두운 천장)만 잘라 보여준다.
+       상단 밴드로 높이를 고정하고 타석·그린이 걸리도록 위치를 내린다. px 정지점이라 카드 높이와 무관. */
+    .hero-img{bottom:auto;height:238px;background-position:50% 72%;}
+    .hero-scrim{background:linear-gradient(180deg,rgba(11,31,58,.22) 0px,rgba(11,31,58,.48) 96px,
+      rgba(11,31,58,.90) 196px,#0b1f3a 242px,#0b1f3a 100%);}
+    .hero-body{max-width:100%;padding:216px 22px 30px;}
+    .m-hero h1{font-size:30px;letter-spacing:-1px;}
+    .m-hero .lead{font-size:13.5px;margin-top:18px;}
+    .m-hero .badges{margin-top:22px;}
+    .stat-band{gap:24px;}
+    .stat-hero{padding-right:0;border-right:none;padding-bottom:22px;
+      border-bottom:1px solid var(--line);width:100%;}
+    .stat-hero b{font-size:56px;}
+    .stat-rest{grid-template-columns:repeat(3,1fr);gap:16px 10px;flex:1 1 100%;justify-content:stretch;}
+    .stat-rest .s b{font-size:24px;}
+    .stat-rest .s span{font-size:11px;}
+    .deal-rate{font-size:52px;letter-spacing:-1.4px;}
+    .spec .row{grid-template-columns:88px 1fr;gap:12px;}
+    .contact-grid{grid-template-columns:1fr;}
+    .about-line{gap:8px 22px;}
+    .jpg-dl-btn{bottom:12px;right:12px;padding:7px 12px;font-size:11px;}
+  }
+</style>
+<link rel="stylesheet" href="../../assets/wp-typography.css">
+</head>
+<body data-jobkey="골프팀 파트너">
+
+<button type="button" id="jpgDownloadBtn" class="jpg-dl-btn" onclick="downloadPageAsJpg()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+  <span>JPG 다운로드</span>
+</button>
+
+<div class="wrap" id="captureRoot">
+
+  <div class="topbar">
+    <div class="brand se">WELLPERION</div>
+    <div class="status" id="topStatus"><i></i>상시 모집 · 강습부 골프</div>
+  </div>
+
+  <div class="bento">
+
+    <!-- ══ Hero ══ -->
+    <div class="card m-hero">
+      <div class="hero-img" style="background-image:url('assets/golf-partner-hero.jpg')"></div>
+      <div class="hero-scrim"></div>
+      <div class="hero-top"></div>
+      <div class="hero-body">
+        <div class="eyebrow se">Partnership</div>
+        <h1>웰페리온 골프 레슨<br><span class="thin">운영팀을 찾습니다</span></h1>
+        <div class="sub">개인사업자 레슨 위탁운영</div>
+        <p class="lead">
+          성인 회원 <span class="nb num">1,000명</span>으로 정원이 마감된 센터입니다.
+          그중 골프가 포함된 회원권을 보유한 <span class="nb num">436명</span>을 기반으로
+          레슨을 운영할 팀을 찾습니다.
+        </p>
+        <div class="badges">
+          <span class="hi num">매출 65 ~ 70% 지급</span>
+          <span class="num">월평균 매출 3,000만원</span>
+          <span>기존 프로 2인 동반 근무</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 01 회원 기반 ══ -->
+    <div class="card">
+      <div class="shead"><span class="snum">01</span><span class="slab">회원 기반</span><span class="srule"></span></div>
+
+      <div class="stat-band">
+        <div class="stat-hero">
+          <b class="num">436<em>명</em></b>
+          <span>성인 회원 1,000명 중<br>골프가 포함된 회원권</span>
+        </div>
+        <div class="stat-rest">
+          <div class="s"><b class="num">1,000<em>명</em></b><span>성인 회원 전체<br>정원 마감</span></div>
+          <div class="s"><b class="num">550<em>명</em></b><span>유소년 회원<br>성인과 별도<br>평균 유지</span></div>
+          <div class="s"><b class="num">2<em>인</em></b><span>현재 소속 프로<br>동반 근무</span></div>
+        </div>
+      </div>
+
+      <div class="ratio">
+        <div class="ratio-bar"><div class="ratio-fill"></div></div>
+        <div class="ratio-legend">
+          <span class="num"><i class="sw sw-total"></i>막대 전체 · 성인 회원 <b>1,000명</b> 정원 마감</span>
+          <span class="num"><i class="sw sw-fill"></i>그중 골프가 포함된 회원권 <b>436명</b></span>
+          <b class="pct num"><small>1,000명 중</small>43.6%</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 02 수익 구조 ══ -->
+    <div class="card m-deal col-7">
+      <div class="shead"><span class="snum">02</span><span class="slab">수익 구조</span><span class="srule"></span></div>
+      <div class="deal-rate num">65 ~ 70<small>%</small></div>
+      <p class="deal-cap num">레슨 매출의 65% ~ 70%를 파트너에게 지급합니다.</p>
+      <div class="deal-rows">
+        <div class="deal-row">
+          <span class="k">월평균 매출</span>
+          <span class="v num">3,000만원</span>
+        </div>
+        <div class="deal-row">
+          <span class="k">지급률 적용 시</span>
+          <span class="v num">1,950 ~ 2,100만원</span>
+        </div>
+        <div class="deal-row">
+          <span class="k">요율 조정 기준</span>
+          <span class="v">운영 소모품 구매 주체</span>
+        </div>
+      </div>
+      <p class="deal-foot num">
+        운영 소모품을 센터가 구매하는지, 사업팀이 구매하는지에 따라 지급률을 조정해 협의합니다.<br>
+        지급액은 월평균 매출 3,000만원을 지급률에 그대로 대입한 값이며, 보장 금액이 아닙니다.
+      </p>
+    </div>
+
+    <!-- ══ 현재 팀 — 02의 사이드바 ══ -->
+    <div class="card col-5">
+      <div class="shead sub-h"><span class="slab">현재 팀 구성</span><span class="srule"></span></div>
+      <div class="team-body">
+        <div class="pro"><span class="pn">01</span><span class="pt">KPGA 투어프로</span><span class="pc num">1인</span></div>
+        <div class="pro"><span class="pn">02</span><span class="pt">KPGA 프로</span><span class="pc num">1인</span></div>
+      </div>
+      <p class="team-note">
+        현재 소속 프로 <span class="nb num">2인</span>은 새 파트너에게 인수인계된 뒤 계속 함께 근무하기를 희망합니다.
+        운영 중인 회원과 수업 일정을 그대로 이어받는 구조입니다.
+      </p>
+    </div>
+
+    <!-- ══ 03 모집 개요 ══ -->
+    <div class="card">
+      <div class="shead"><span class="snum">03</span><span class="slab">모집 개요</span><span class="srule"></span></div>
+      <dl class="spec">
+        <div class="row">
+          <dt>계약 형태</dt>
+          <dd>골프장 레슨 위탁운영<small>개인사업자</small></dd>
+        </div>
+        <div class="row">
+          <dt>모집</dt>
+          <dd>상시 모집<small>팀 단위 선호 · 팀장급 단독 지원 가능</small></dd>
+        </div>
+        <div class="row">
+          <dt>운영 시간</dt>
+          <dd class="num">평일 06:00 ~ 22:30<small>주말 · 공휴일 08:00 ~ 20:00</small></dd>
+        </div>
+        <div class="row">
+          <dt>휴관</dt>
+          <dd>매월 둘째 · 넷째 일요일<small>신정 · 구정 · 추석 연휴</small></dd>
+        </div>
+        <div class="row">
+          <dt>제출 서류</dt>
+          <dd>
+            <span class="doc"><span class="tag req">필수</span>이력서</span>
+            <span class="doc"><span class="tag opt">선택</span>운영계획서</span>
+          </dd>
+        </div>
+        <div class="row">
+          <dt>접수</dt>
+          <dd>이메일<small>cao@wellperion.com</small></dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- ══ 04 센터 소개 ══ -->
+    <div class="card m-about">
+      <div class="shead"><span class="snum">04</span><span class="slab">센터 소개</span><span class="srule"></span></div>
+      <p>
+        웰페리온은 단순한 운동 시설이 아닙니다.<br>
+        서울 한남동에 자리한, 하루 루틴에 자연스럽게 녹아들어 건강의 기준을 세우고 그날의 완성도를 채워주는 프리미엄 멤버십 스포츠 클럽입니다.<br>
+        스포츠 · 스파 · 커뮤니티 · 공간이 하나로 통합된 라이프스타일 인프라를 9년간 가꿔왔습니다.
+      </p>
+      <div class="about-line">
+        <div><b>한남동</b><span>Seoul · 프리미엄 입지</span></div>
+        <div><b class="num">9년+</b><span>검증된 운영</span></div>
+        <div><b class="num">3,000평</b><span>통합 라이프스타일 공간</span></div>
+        <div><b class="num">4 in 1</b><span>스포츠 · 스파 · 커뮤니티 · 카페</span></div>
+      </div>
+    </div>
+
+    <!-- ══ 문의 ══ -->
+    <div class="card m-contact" id="mContact">
+      <div class="c-lab">문의</div>
+      <p class="apply-line">
+        <b>이력서(필수)</b>와 <b>운영계획서(선택)</b>를 아래 메일로 보내주시면 확인 후 연락드립니다.<br>
+        팀 단위 지원을 우선하되, 팀장급 단독 지원도 받습니다.
+      </p>
+      <div class="contact-grid">
+        <div class="cbox">
+          <div class="clab">이메일</div>
+          <div class="cval">cao@wellperion.com</div>
+        </div>
+        <div class="cbox">
+          <div class="clab">문의 전화</div>
+          <div class="cval"><span class="nb num">02-6261-1202</span></div>
+          <div class="csub">나우열 매니저</div>
+        </div>
+      </div>
+      <button type="button" id="applyOpenBtn" class="apply-open-btn" onclick="openApplyModal()">지원하기</button>
+    </div>
+
+    <div class="m-foot">
+      <b class="se">WELLPERION</b> · 강습부 골프팀 파트너(개인사업자) 모집 — 레슨 위탁운영
+      <div class="contact">문의 : <span class="nb num">02-6261-1202</span> &nbsp;|&nbsp; 나우열 매니저</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="apply-modal-overlay" id="applyModalOverlay">
+  <div class="apply-modal">
+    <button type="button" class="am-close-x" onclick="closeApplyModal()" aria-label="닫기">×</button>
+    <h3>지원하기</h3>
+    <div class="am-sub">아래 정보와 이력서를 보내주시면 확인 후 연락드립니다.</div>
+    <form id="applyForm" onsubmit="return false;">
+      <label>이름 *</label>
+      <input type="text" id="amName" maxlength="50" required>
+      <label>연락처 *</label>
+      <input type="tel" id="amPhone" maxlength="20" required placeholder="010-0000-0000">
+      <label>이메일 (선택)</label>
+      <input type="email" id="amEmail" maxlength="100">
+      <label>지원 포지션</label>
+      <input type="text" id="amPosition" readonly>
+      <label>이력서 파일 * (PDF, JPG, PNG · 10MB 이하)</label>
+      <input type="file" id="amFile" accept=".pdf,.jpg,.jpeg,.png" required>
+      <div class="am-honeypot" aria-hidden="true">
+        <label>Website</label>
+        <input type="text" id="amWebsite" tabindex="-1" autocomplete="off">
+      </div>
+      <label class="am-consent"><input type="checkbox" id="amConsent" required>개인정보(이름·연락처·이메일·이력서)를 채용 검토 목적으로 수집·이용하는 데 동의합니다.</label>
+      <div class="am-msg" id="amMsg"></div>
+      <div class="am-actions">
+        <button type="button" class="am-cancel" onclick="closeApplyModal()">취소</button>
+        <button type="button" class="am-submit" id="amSubmitBtn" onclick="submitApplyForm()">제출하기</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// [추가 2026-08-14 A-5] 리크루팅 정적 페이지 마감 동기 — golfpro.html 등과 동일 패턴(런타임 fetch,
+// 실패/미매칭 시 현행 하드코딩 유지 — 폴백 안전). 이 포지션이 채용공고 탭에 아직 등록되지 않았다면
+// 매칭되는 항목이 없어 항상 "상시 모집" 상태를 유지한다(등록은 A-2 소관, 이 배포에서 하지 않음).
+(function(){
+  try{
+    var NOTION_FN="https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+    function normKey(s){ return String(s||"").replace(/\s|[()（）]/g,"").toLowerCase(); }
+    var pageBucket=document.body.getAttribute("data-jobbucket")||"";
+    var pageKey=document.body.getAttribute("data-jobkey")||"";
+    fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"public-job-status"})})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.ok||!Array.isArray(d.jobs))return;
+        var hit=null;
+        if(pageBucket) hit=d.jobs.find(function(j){return j.bucket&&j.bucket===pageBucket;});
+        if(!hit&&pageKey){
+          var pk=normKey(pageKey);
+          hit=d.jobs.find(function(j){var jk=normKey(j.position);return jk.length>=4&&pk.length>=4&&(jk.indexOf(pk)>=0||pk.indexOf(jk)>=0);});
+        }
+        if(hit&&hit.closed===true){
+          var contactBox=document.getElementById("mContact");
+          if(contactBox && !contactBox.classList.contains("closed")){
+            contactBox.classList.add("closed");
+            var lab=contactBox.querySelector(".c-lab");
+            if(lab) lab.innerHTML='문의 <span class="closed-badge2" style="margin-left:8px">모집 마감</span>';
+            var hint=contactBox.querySelector(".apply-line");
+            if(hint) hint.innerHTML='현재 이 채용공고는 마감되어 지원을 받지 않습니다. 다른 채용공고는 <a href="index.html" style="color:#a9c9e8;font-weight:700;">채용 목록</a>에서 확인해 주세요.';
+          }
+          var statusEl=document.getElementById("topStatus");
+          if(statusEl && !statusEl.classList.contains("closed")){
+            statusEl.classList.add("closed");
+            statusEl.innerHTML='<i></i>마감 · 강습부 골프';
+          }
+        }
+      }).catch(function(){ /* 실패 시 현행 하드코딩 유지 — 아무 것도 안 바꿈 */ });
+  }catch(e){}
+})();
+</script>
+<script>
+// JPG 다운로드 — 하우스 공통 기능(첫 클릭 시에만 라이브러리 로드).
+function downloadPageAsJpg(){
+  var btn=document.getElementById('jpgDownloadBtn');
+  if(!btn||btn.disabled)return;
+  var original=btn.innerHTML;
+  function capture(){
+    btn.disabled=true;
+    var lbl=btn.querySelector('span'); if(lbl)lbl.textContent='생성 중...';
+    var bg=getComputedStyle(document.body).backgroundColor||'#ffffff';
+    window.html2canvas(document.getElementById('captureRoot')||document.body,{
+      backgroundColor:bg,scale:2.5,useCORS:true,
+      ignoreElements:function(el){return el&&el.id==='jpgDownloadBtn';}
+    }).then(function(canvas){
+      var link=document.createElement('a');
+      link.download=(document.title||'wellperion_공고').replace(/[\\\/:*?"<>|]/g,'').trim()+'.jpg';
+      link.href=canvas.toDataURL('image/jpeg',0.92);
+      document.body.appendChild(link); link.click(); link.remove();
+    }).catch(function(){
+      alert('이미지 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    }).then(function(){ btn.disabled=false; btn.innerHTML=original; });
+  }
+  if(window.html2canvas){ capture(); return; }
+  btn.disabled=true;
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload=function(){ btn.disabled=false; capture(); };
+  s.onerror=function(){ btn.disabled=false; btn.innerHTML=original;
+    alert('이미지 변환 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); };
+  document.head.appendChild(s);
+}
+</script>
+<script>
+// [추가 2026-08-14 A-5] 자체 지원 접수 폼 — submit-application(무비번 공개 액션, 스팸가드는 백엔드).
+// golfpro.html/operations.html/parking.html/chauffeur.html과 동일 구현.
+function openApplyModal(){
+  var pos = document.body.getAttribute('data-jobkey') || document.body.getAttribute('data-jobbucket') || '';
+  var posEl = document.getElementById('amPosition');
+  if(posEl) posEl.value = pos;
+  var ov = document.getElementById('applyModalOverlay');
+  if(ov) ov.classList.add('open');
+}
+function closeApplyModal(){
+  var ov = document.getElementById('applyModalOverlay');
+  if(ov) ov.classList.remove('open');
+  var msg = document.getElementById('amMsg');
+  if(msg){ msg.className = 'am-msg'; msg.textContent = ''; }
+}
+function fileToBase64_(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(){ resolve(String(reader.result).split(',')[1] || ''); };
+    reader.onerror = function(){ reject(new Error('read_failed')); };
+    reader.readAsDataURL(file);
+  });
+}
+function submitApplyForm(){
+  var msg = document.getElementById('amMsg');
+  function showMsg(text, ok){
+    if(!msg) return;
+    msg.textContent = text;
+    msg.className = 'am-msg ' + (ok ? 'ok' : 'err');
+  }
+  var name = (document.getElementById('amName').value || '').trim();
+  var phone = (document.getElementById('amPhone').value || '').trim();
+  var email = (document.getElementById('amEmail').value || '').trim();
+  var position = (document.getElementById('amPosition').value || '').trim();
+  var consent = document.getElementById('amConsent').checked;
+  var fileInput = document.getElementById('amFile');
+  var file = fileInput && fileInput.files && fileInput.files[0];
+  var website = (document.getElementById('amWebsite').value || '').trim();
+
+  if(!name || !phone){ showMsg('이름과 연락처를 입력해 주세요.', false); return; }
+  if(!file){ showMsg('이력서 파일을 첨부해 주세요.', false); return; }
+  var okTypes = ['application/pdf','image/jpeg','image/png'];
+  if(okTypes.indexOf(file.type) === -1){ showMsg('PDF, JPG, PNG 파일만 첨부 가능합니다.', false); return; }
+  if(file.size > 10*1024*1024){ showMsg('파일 용량은 10MB 이하만 가능합니다.', false); return; }
+  if(!consent){ showMsg('개인정보 수집·이용 동의가 필요합니다.', false); return; }
+
+  var btn = document.getElementById('amSubmitBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '제출 중...'; }
+
+  fileToBase64_(file).then(function(base64){
+    var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+    return fetch(NOTION_FN, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "submit-application",
+        name: name, phone: phone, email: email, position: position,
+        fileName: file.name, fileMimeType: file.type, fileBase64: base64,
+        website: website
+      })
+    });
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if(res && res.ok){
+      showMsg(res.message || '지원이 접수되었습니다. 감사합니다.', true);
+      document.getElementById('applyForm').reset();
+      setTimeout(function(){ closeApplyModal(); }, 2200);
+    } else {
+      showMsg((res && res.message) || '접수에 실패했습니다. 잠시 후 다시 시도해 주세요.', false);
+    }
+  }).catch(function(err){
+    console.error('[apply-submit]', err);
+    showMsg('네트워크 오류로 접수에 실패했습니다. 잠시 후 다시 시도하시거나 이메일로 보내주세요.', false);
+  }).then(function(){
+    if(btn){ btn.disabled = false; btn.textContent = '제출하기'; }
+  });
+}
+</script>
+</body>
+</html>
