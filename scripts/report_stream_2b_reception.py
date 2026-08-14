@@ -125,6 +125,9 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
                 #   서버가 아직 그 값을 안 주면(옛 배포) 원문으로 떨어져 지금 동작을 유지한다.
                 "owners": [str(x).strip() for x in (r.get("assigneeCanon") or []) if str(x).strip()]
                           or ([str(r.get("assignee") or "").strip()] if str(r.get("assignee") or "").strip() else []),
+                # 부서 — 묶음 기준을 사람에서 부서로 옮기기 위해 같이 담는다(배627 · GM 지시 2026-08-14
+                # "담당자 칸은 없애고 각 부서에 전달되어야 한다"). 완료 통보 블록이 쓰는 것과 같은 칸이다.
+                "dept": str(r.get("dept") or "").strip(),
                 "content": " ".join(str(r.get("content") or "").split())[:28],  # 개행 제거 — 1건 1줄 유지
                 "elapsed_h": elapsed_h,
                 "days": reception_elapsed_days(r, now),  # 표시용 "N일째" 정본(SLA 판정은 elapsed_h 유지)
@@ -145,25 +148,29 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
         flag = "🔴" if ratio >= 3 else "⚠️"
         return f"  {flag} [{it['cat']}] {it['content']} — {_fmt_age(it['days'], it['elapsed_h'])} 경과 ({it['regId']})"
 
-    # 한 건에 담당이 둘이면 양쪽 목록에 모두 띄운다 — 그 전엔 '이경연/ 임정은' 이 제3의
-    # 사람처럼 잡혀 두 사람 어느 쪽 목록에도 안 떴다(2026-07-31 실측).
-    by_owner: dict[str, list[dict]] = {}
+    # ★2026-08-14 시토(배627 · GM 지시) — 묶음 기준을 **사람에서 부서로** 옮긴다.
+    #   GM 원문: "각 부서에 전달되어야 하고 그 부서에서 조치 및 회신까지 챙기는 게 낫다.
+    #   다 운영부 라인으로 넘기니 병목이 일어나고 처리가 안 된다. 담당자 칸은 없애고."
+    #   담당자 칸이 사라지면 사람 기준 묶음은 전건이 '미배정'으로 떨어져 목록이 무의미해진다.
+    #   부서는 접수 행에 이미 있고 완료 통보 블록이 쓰던 바로 그 칸이라 새로 만들 것이 없다(L21).
+    #   ▸사람 이름을 지우지는 않는다 — 부서 안에서 담당이 잡힌 건은 줄 끝에 괄호로 남겨
+    #     실장이 나눌 때 참고가 되게 한다(약속 L24 — 분배는 실장이 한다).
+    by_dept: dict[str, list[dict]] = {}
     for it in overdue:
-        for owner in (it["owners"] or ["미배정"]):
-            by_owner.setdefault(owner, []).append(it)
+        by_dept.setdefault(it.get("dept") or "부서 미정", []).append(it)
 
-    # 미배정을 맨 위(별도 표기)로 두고, 이후 담당자는 최고령 건 기준 오래된 순.
-    if "미배정" in by_owner:
-        items = sorted(by_owner.pop("미배정"), key=lambda x: -x["elapsed_h"])
-        lines.append(f"\n👤 미배정 ({len(items)}건)")
+    def _emit(title: str, items: list[dict]) -> None:
+        items = sorted(items, key=lambda x: -x["elapsed_h"])
+        lines.append(f"\n🏢 {title} ({len(items)}건)")
         for it in items:
-            lines.append(_fmt_item(it))
+            who = " · ".join(it["owners"]) if it["owners"] else ""
+            lines.append(_fmt_item(it) + (f" · {who}" if who else ""))
 
-    for owner in sorted(by_owner, key=lambda o: -max(i["elapsed_h"] for i in by_owner[o])):
-        items = sorted(by_owner[owner], key=lambda x: -x["elapsed_h"])
-        lines.append(f"\n👤 {owner} ({len(items)}건)")
-        for it in items:
-            lines.append(_fmt_item(it))
+    # 부서 미정을 맨 위로(주인이 없는 건이 묻히면 안 된다), 이후 최고령 건 기준 오래된 순.
+    if "부서 미정" in by_dept:
+        _emit("부서 미정", by_dept.pop("부서 미정"))
+    for dept in sorted(by_dept, key=lambda d: -max(i["elapsed_h"] for i in by_dept[d])):
+        _emit(dept, by_dept[dept])
 
     lines.append(f"\n👉 상세: {DASHBOARD_URL}")
     return "\n".join(lines)
