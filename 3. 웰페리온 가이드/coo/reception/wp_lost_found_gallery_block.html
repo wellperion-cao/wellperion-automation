@@ -107,6 +107,8 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .gcard .meta{font-size:12.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
 .wlp-lfg .gcard .meta .loc{color:var(--accent);font-weight:600}
 .wlp-lfg .state-msg{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--dim);font-size:14.5px}
+/* 스켈레톤 위 '불러오는 중' 한 줄 — GAS 응답 3초 동안 화면이 멈춘 것처럼 보이지 않게 (2026-08-14 GM 지시) */
+.wlp-lfg .loading-tag{grid-column:1/-1;padding:0 0 14px;text-align:center;color:var(--dim);font-size:13px}
 .wlp-lfg .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
 
 /* ── 폐기 임박 배지·강조 (lf_disposal upcoming) ── */
@@ -208,7 +210,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   function _readCache(){ try{ var o=JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (o&&Array.isArray(o.data))?o:null; }catch(e){ return null; } }
   function _writeCache(rows){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:rows})); }catch(e){} }
   function _clearCache(){ try{ localStorage.removeItem(CACHE_KEY); }catch(e){} }
-  function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s=''; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
+  function _skeleton(n){ var one='<div class="gcard skel" aria-hidden="true"><div class="ph skel-ph"></div><div class="body"><div class="skel-line w40"></div><div class="skel-line w80"></div><div class="skel-line w60"></div><div class="skel-btn"></div></div></div>'; var s='<div class="loading-tag">불러오는 중…</div>'; for(var i=0;i<(n||6);i++){ s+=one; } return s; }
 
   // ── 월 선택 필터 (foundWhen 습득월 기준, 클라이언트 필터 · 재fetch 없음) ──
   function _populateMonths(rows){
@@ -317,16 +319,46 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 })();
 </script>
 
-<!-- 키오스크 자동 초기화 (2026-08-13 GM 지시 — 전체 페이지 공통) — 90초 동안 아무 조작이 없으면
-     화면을 처음 상태로 되돌린다. 앞사람의 입력·스크롤 위치가 다음 사람에게 남지 않게 한다. -->
+<!-- 키오스크 자동 복귀 (2026-08-14 GM 지시) — 60초 동안 아무 조작이 없으면 첫 화면(조회)으로 이동.
+     남은 초를 화면 위쪽에 표시. 키오스크(폭 700px 이상+세로)에서만 동작 — 휴대폰·PC 방문 회원은 안 튄다. -->
 <script>
 (function(){
-  var IDLE = 90000, t;
-  function reset(){ if (document.visibilityState === 'hidden') return; location.replace(location.pathname); }
-  function poke(){ clearTimeout(t); t = setTimeout(reset, IDLE); }
+  var KIOSK = window.matchMedia('(min-width:700px) and (orientation:portrait)');
+  var LOOKUP = 'http://wellperion.com/ko/lookup/';
+  var IDLE = 60, left = IDLE, pill;
+  function hasInput(){
+    var els = document.querySelectorAll('input,textarea,select');
+    for (var i=0;i<els.length;i++){
+      var e = els[i];
+      if (e.type==='hidden'||e.type==='button'||e.type==='submit') continue;
+      if (e.type==='checkbox'||e.type==='radio'){ if (e.checked) return true; continue; }
+      if (e.value && String(e.value).trim()) return true;
+    }
+    return false;
+  }
+  function ensurePill(){
+    if (pill) return pill;
+    pill = document.createElement('div');
+    pill.style.cssText = 'position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:6;font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(0,0,0,.55);color:#fff;pointer-events:none;display:none';
+    document.body.appendChild(pill);
+    return pill;
+  }
+  function tick(){
+    if (document.visibilityState === 'hidden') return;
+    var on = KIOSK.matches, p = ensurePill();
+    p.style.display = on ? 'block' : 'none';
+    if (!on){ left = IDLE; return; }
+    left--;
+    p.textContent = left + '초 후 처음 화면으로';
+    if (left <= 0){
+      if (hasInput()){ left = IDLE; return; }
+      location.href = LOOKUP;
+    }
+  }
+  function poke(){ left = IDLE; }
   ['click','touchstart','keydown','input','change','scroll'].forEach(function(ev){
     document.addEventListener(ev, poke, true);
   });
-  poke();
+  setInterval(tick, 1000);
 })();
 </script>

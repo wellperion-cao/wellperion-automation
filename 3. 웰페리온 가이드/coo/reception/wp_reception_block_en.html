@@ -991,16 +991,47 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
 })();
 </script>
 
-<!-- 키오스크 자동 초기화 (2026-08-13 검수) — 90초 동안 아무 조작이 없으면 화면을 처음 상태로 되돌린다.
-     앞사람이 적어 둔 이름·연락처가 다음 사람 화면에 남지 않게 하기 위함(접수 조회 화면과 같은 원칙). -->
+<!-- 키오스크 자동 복귀 (2026-08-14 GM 지시) — 60초 동안 아무 조작이 없으면 첫 화면(조회)으로 이동.
+     남은 초를 화면 위쪽에 표시. 키오스크(폭 700px 이상+세로)에서만 동작 — 휴대폰·PC 방문 회원은 안 튄다.
+     입력칸에 뭔가 적혀 있으면 넘어가지 않는다(작성 중인 내용 보호). -->
 <script>
 (function(){
-  var IDLE = 90000, t;
-  function reset(){ if (document.visibilityState === 'hidden') return; location.replace(location.pathname); }
-  function poke(){ clearTimeout(t); t = setTimeout(reset, IDLE); }
+  var KIOSK = window.matchMedia('(min-width:700px) and (orientation:portrait)');
+  var LOOKUP = 'http://wellperion.com/en/lookup/';
+  var IDLE = 60, left = IDLE, pill;
+  function hasInput(){
+    var els = document.querySelectorAll('input,textarea,select');
+    for (var i=0;i<els.length;i++){
+      var e = els[i];
+      if (e.type==='hidden'||e.type==='button'||e.type==='submit') continue;
+      if (e.type==='checkbox'||e.type==='radio'){ if (e.checked) return true; continue; }
+      if (e.value && String(e.value).trim()) return true;
+    }
+    return false;
+  }
+  function ensurePill(){
+    if (pill) return pill;
+    pill = document.createElement('div');
+    pill.style.cssText = 'position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:6;font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(0,0,0,.55);color:#fff;pointer-events:none;display:none';
+    document.body.appendChild(pill);
+    return pill;
+  }
+  function tick(){
+    if (document.visibilityState === 'hidden') return;
+    var on = KIOSK.matches, p = ensurePill();
+    p.style.display = on ? 'block' : 'none';
+    if (!on){ left = IDLE; return; }
+    left--;
+    p.textContent = 'Returning to start in ' + left + 's';
+    if (left <= 0){
+      if (hasInput()){ left = IDLE; return; }
+      location.href = LOOKUP;
+    }
+  }
+  function poke(){ left = IDLE; }
   ['click','touchstart','keydown','input','change'].forEach(function(ev){
     document.addEventListener(ev, poke, true);
   });
-  poke();
+  setInterval(tick, 1000);
 })();
 </script>
