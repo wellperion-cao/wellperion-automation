@@ -973,7 +973,11 @@ def run_gm_surface_check() -> tuple[list, bool]:
     except Exception as e:
         return [{"kind": "check_crash", "detail": str(e)[:200]}], False
 
-    # ── "GM 일인가" — G1 항로가 AI 살림에 밀렸는지(렌더 아닌 큐 원천 직접 계산 — 더 정확) ──
+    # ── "GM 일인가" — 열린 배가 AI 살림에 밀렸는지(렌더 아닌 큐 원천 직접 계산 — 더 정확) ──
+    #   2026-08-14 시토: 화면 이름을 바로잡았다. 이 지표는 2026-08-05 에 G1 에서 AI 배 목록을
+    #   걷어내기 전에 만들어져 "G1 항로가 AI 살림에 밀림"이라고 알렸는데, 지금 G1 은 GM 개인 판만
+    #   남아 AI 배가 아예 안 뜬다(자율화규약 부칙 1 이행). 그대로 두면 GM 께 **없는 화면 문제**를
+    #   알리게 된다. 재는 값(큐의 ai:office 비율)은 그대로 뜻이 있으므로 지표는 살리고 이름만 고친다.
     try:
         active = read_json_array(QUEUE_ACTIVE)
         open_items = [it for it in active if it.get("status") in ("PENDING", "IN_PROGRESS")]
@@ -1047,7 +1051,7 @@ def render_gm_surface_block(rec: dict) -> str:
             elif kind == "block_too_long":
                 lines.append(f"- ⚠️ **{f['page']}** 블록이 {f['value']}자(기준 {f['limit']}자 초과) — 압축 필요")
             elif kind == "ai_over_office":
-                lines.append(f"- ⚠️ G1 항로: AI배 {f['ai']}척 > 실무배 {f['office']}척 — GM 화면이 AI 살림에 밀림")
+                lines.append(f"- ⚠️ 자율현황 🧭 항로: AI배 {f['ai']}척 > 실무배 {f['office']}척 — 우리 일이 AI 살림에 밀림")
             elif kind == "page_render_fail":
                 lines.append(f"- 🔧 **{f['page']}** 렌더 실패(점검 못함): {f.get('detail','')}")
             elif kind == "check_unavailable" or kind == "check_crash":
