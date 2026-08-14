@@ -2697,6 +2697,18 @@ def run_daily_digest(early: bool = False) -> None:
     # 판정을 기존 카카오 관문(kakao_report_sender.py --message --only-room)으로만 보낸다.
     # 도배 방지: run_daily_digest 자체가 하루 1회 게이트(위 rest_day 분기)라 별도 가드
     # 없이도 하루 1회. 위반 0건이면 build_sla_alert_text가 빈 문자열 — 발송 자체를 스킵.
+    # ── 멤버십 문의 담당 자동 배정 (GM 지시 2026-08-14) ────────────────────────────
+    #   GM: "멤버십은 담당자가 임정은M 밖에 없을텐데? 자동으로 배정해줘."
+    #   경보를 만들기 전에 먼저 채운다 — 그래야 '담당없음' 으로 잘못 실려 나가지 않는다.
+    #   대상 0건이면 GAS 쓰기 자체가 없다(조회 1회로 끝).
+    try:
+        _asg = _un.assign_member_owners(apply=True)
+        if _asg:
+            _bad = [x for x in _asg if not x.get("ok")]
+            logger.info(f"{label} 멤버십 담당 자동배정 {len(_asg) - len(_bad)}건 성공 · {len(_bad)}건 실패")
+    except Exception as e:
+        logger.error(f"{label} 멤버십 담당 자동배정 예외: {e}")
+
     try:
         sla_violations = _un.collect_sla_violations()
         sla_text = _un.build_sla_alert_text(sla_violations)

@@ -5698,16 +5698,36 @@ function _lessonApplyLocalMgmt(row, sportKey, patch) {
    ▸숨기기만 한다 — 시트·데이터는 그대로다(표시 전용·완전 가역). 통계 줄의 [옛 문의 N건 보기]로 되살려 본다.
    ▸24시간 미컨택 경보는 원래부터 8/1 이후만 보므로 이 기준과 어긋나지 않는다(unassigned_nudge.SLA_SINCE_DATE). */
 var ARCHIVE_CUT = '2026-08-01';
+var STALE_ARCHIVE_DAYS = 60;   // 마지막 움직임 후 이 일수를 넘기면 목록에서 뺀다(GM 확정 2026-08-14)
 var _showArchived = false;
 var _lessonArchivedN = 0;
 var _dbArchivedN = 0;   // 이번 렌더에서 숨긴 옛 문의 수(통계 줄 표시용)
+/* 마지막 움직임(접수·연락·투어·체험) 이후 며칠인지. 날짜가 하나도 없으면 null. */
+function _lastActivityDays(r) {
+  var ds = [];
+  var t = String(r.timestamp || '').slice(0, 10); if (t) ds.push(t);
+  (r.contacts || []).forEach(function(c){ var d = c && String(c.date || '').slice(0, 10); if (d) ds.push(d); });
+  ['exp1Time','exp2Time','exp3Time','tourDate','visitDate','visit2Date','contact1','contact2','contact3'].forEach(function(k){
+    var m = String(r[k] || '').match(/\d{4}-\d{2}-\d{2}/); if (m) ds.push(m[0]);
+  });
+  if (!ds.length) return null;
+  ds.sort();
+  var last = new Date(ds[ds.length - 1] + 'T00:00:00');
+  if (isNaN(last)) return null;
+  return Math.floor((Date.now() - last.getTime()) / 86400000);
+}
 function _isOldUncontacted(r) {
   if (_showArchived) return false;
   if (!r) return false;
-  var ts = String(r.timestamp || '').slice(0, 10);
-  if (!ts || ts >= ARCHIVE_CUT) return false;
   var st = String(r.status || '');
   if (st === 'SUC' || st === '단기SUC' || st === 'LOSS' || st === '재문의로 종결') return false;
+  /* ② 컨택중인데 60일 넘게 멈춘 건 — GM 확정 2026-08-14 '가'안. 실측 438건.
+        마지막 움직임 기준이라, 한 번이라도 다시 연락하면 그날로 목록에 되돌아온다. */
+  var la = _lastActivityDays(r);
+  if (la !== null && la >= STALE_ARCHIVE_DAYS) return true;
+  /* ① 8/1 이전 접수 + 연락 이력 0건 */
+  var ts = String(r.timestamp || '').slice(0, 10);
+  if (!ts || ts >= ARCHIVE_CUT) return false;
   var cs = r.contacts;
   if (cs && cs.length) return false;                    // 강습 — 연락 이력 배열
   if (String(r.contact1 || '').trim()) return false;    // 멤버십 — 1차 연락 칸

@@ -398,6 +398,50 @@ def _fmt_elapsed(hours: float) -> str:
     return f"{int(hours // 24)}일"
 
 
+MEMBER_DEFAULT_OWNER = "임정은"   # 멤버십 문의 담당은 이 한 사람뿐이다(GM 확정 2026-08-14)
+
+
+def assign_member_owners(apply: bool = False) -> list[dict]:
+    """담당이 비었거나 '웹 자동접수' 인 진행중 멤버십 문의를 임정은M 앞으로 채운다.
+
+    GM 지시 2026-08-14: "멤버십은 담당자가 임정은M 밖에 없을텐데? 자동으로 배정해줘."
+    ▸강습은 종목별 팀이 갈려 collect_auto_assign 이 따로 판단하지만, 멤버십은 후보가 한 명이라
+      판단할 것이 없다 — 비어 있으면 채운다.
+    ▸쓰기는 화면과 같은 관문(member_inquiry_update)만 쓴다. 새 액션 없음(약속 L21).
+    ▸대조키(rowKey·keyPhone) 동봉 — 행번호만 믿고 쓰면 남의 행을 고친다(INC-013·INC-020).
+    """
+    import json as _json
+    import requests
+    rows = R._fetch_list("member_inquiry_list")
+    out = []
+    for r in rows:
+        if R._is_test_row(r):
+            continue
+        if R._is_registered(r, False) or R._is_loss(r):
+            continue
+        owner = str(r.get("owner", "") or "").strip()
+        if owner and owner not in R._AUTO_OWNER_VALUES:
+            continue
+        item = {"name": str(r.get("name", "") or "-"), "rowIndex": r.get("rowIndex"), "ok": None}
+        if apply:
+            body = {"action": "member_inquiry_update", "rowIndex": r.get("rowIndex"),
+                    "gid": r.get("gid"), "rowKey": r.get("rowKey"), "keyPhone": r.get("phone"),
+                    "owner": MEMBER_DEFAULT_OWNER}
+            try:
+                res = requests.post(R.FUNNEL_EXEC_URL, data=_json.dumps(body).encode("utf-8"),
+                                    headers={"Content-Type": "text/plain;charset=utf-8"},
+                                    timeout=60, allow_redirects=True)
+                j = res.json()
+                item["ok"] = bool(j.get("ok"))
+                if not item["ok"]:
+                    item["error"] = str(j.get("error") or "")
+            except Exception as e:  # noqa: BLE001
+                item["ok"] = False
+                item["error"] = str(e)[:120]
+        out.append(item)
+    return out
+
+
 def collect_sla_violations(now: datetime | None = None) -> list[dict]:
     """8/1(SLA_SINCE_DATE) 이후 접수 강습 문의 중 24시간(SLA_HOURS) 경과 +
     (담당자 없음 또는 컨택기록 0건) 위반건. 이미 등록완료·이탈종결(LOSS)로 끝난
@@ -454,7 +498,10 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     # GM 지시 2026-08-14: 확인만 부탁하니 답이 없어 같은 건이 13일째 남았다.
     #   ①기준(24시간)을 매번 알리고 ②회신을 명시적으로 요청한다. 줄 수는 표시 건수로 상쇄.
     lines.append("문의는 접수 후 24시간 안에 첫 연락이 기준입니다(멤버십·강습 같은 기준).")
-    lines.append("부서장님, 아래 확인하시고 처리하신 건은 한 줄 회신 부탁드립니다 🙏")
+    # GM 지시 2026-08-14: "컨택이 안된건 컨택이 되게해줘야해, 기록이 안되었으면 기록하라고 전달."
+    #   두 경우를 갈라 적는다 — 실제로 연락을 안 한 건과, 연락은 했는데 화면 기록만 빠진 건.
+    lines.append("아직 연락 못 한 분은 연락을, 이미 연락하셨는데 기록만 빠진 건은 화면에 남겨 주세요.")
+    lines.append("처리하신 건은 한 줄 회신 부탁드립니다 🙏")
     for it in shown:
         # 유형(멤버십/강습)을 앞에 적는다 — 2026-08-14 회원 문의까지 넓히면서 어느 화면에서
         #   처리해야 하는지가 줄만 봐서는 안 보이게 됐다.
@@ -1091,9 +1138,24 @@ def main() -> int:
     p.add_argument("--auto-assign", action="store_true",
                    help=f"{AUTO_ASSIGN_MIN_DAYS}일 넘게 미배정인 강습 문의를 종목 팀장 이름으로 배정(기본 미리보기).")
     p.add_argument("--apply", action="store_true", help="--auto-assign/--fix-owners 를 실제로 시트에 쓴다.")
+    p.add_argument("--assign-member", action="store_true",
+                   help="담당 빈 멤버십 문의를 임정은M 앞으로 채운다(기본 미리보기 · --apply 로 실제 쓰기).")
     p.add_argument("--fix-owners", action="store_true",
                    help="담당이 그 종목 팀 사람이 아닌 문의를 팀장으로 통일(기본 미리보기).")
     args = p.parse_args()
+
+    if args.assign_member:
+        res = assign_member_owners(apply=args.apply)
+        if not args.apply:
+            print(f"[멤버십 배정] 대상 {len(res)}건 (미리보기 · --apply 로 실제 쓰기)")
+            for it in res[:20]:
+                print(f"  · {it['name']} (행 {it['rowIndex']})")
+            return 0
+        bad = [x for x in res if not x.get("ok")]
+        print(f"[멤버십 배정] 성공 {len(res) - len(bad)}건 · 실패 {len(bad)}건")
+        for x in bad:
+            print(f"  [실패] {x['name']} — {x.get('error', '')}")
+        return 0 if not bad else 1
 
     if args.fix_owners:
         today = args.today or datetime.now().strftime("%Y-%m-%d")
