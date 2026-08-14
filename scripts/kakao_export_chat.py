@@ -187,11 +187,28 @@ def main() -> int:
 
     out_path = _resolve_out_path(room, args.out, args.date)
     log(f"내보내기 시작 — 방='{room}' → {out_path}")
-    ok = export_room_chat(room, out_path)
-    if ok:
-        print(f"DONE: 내보내기 완료 — {out_path}")
-        return 0
-    print("FAILED: 내보내기 실패 — 로그 확인")
+
+    # ★한 번 실패했다고 하루를 버리지 않는다 (2026-08-14 시토 · 배613 계열).
+    #   실측 2026-08-14 07:30 — 두 방 모두 "카톡 검색창 활성화 실패(돋보기 클릭 후에도 Edit 못 찾음)"로
+    #   한 번에 끝났다. 그 결과 아침 정리가 **하루 지난 8/12 내용으로 나갔고**(오늘 것을 못 읽었으니
+    #   최근 완결일로 내려앉는다), 웰리가 08:05 에 손으로 다시 보내야 했다.
+    #   원인은 화면 상태에 따라 갈리는 UI 조작이라 대개 잠깐 뒤엔 된다 — 그래서 세 번까지 다시 해 본다.
+    #   ▸잠금 화면이면 세 번 다 실패한다(윈도우가 막는다). 그건 여기서 풀 수 없고, 그 사실이
+    #     항로 회신칸에 "확인 못 함"으로 뜬다(hangro_board · 배613).
+    #   ▸새 스크립트·새 감시기 0 — 이미 모든 호출이 지나가는 이 자리에만 넣는다(약속 L21).
+    attempts = 3
+    for i in range(1, attempts + 1):
+        ok = export_room_chat(room, out_path)
+        if ok:
+            if i > 1:
+                log(f"[export] {i}번째 시도에서 성공")
+            print(f"DONE: 내보내기 완료 — {out_path}")
+            return 0
+        if i < attempts:
+            wait = 5 * i
+            log(f"[export] {i}/{attempts} 실패 — {wait}초 뒤 다시 시도")
+            time.sleep(wait)
+    print(f"FAILED: 내보내기 실패({attempts}회 전부) — 화면이 잠겨 있으면 여기서는 못 푼다. 로그 확인")
     return 1
 
 
