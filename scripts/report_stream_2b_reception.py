@@ -313,6 +313,58 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
     return "\n".join(lines)
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 접수 즉시 부서 전달(배627 · GM 지시 2026-08-14) — 아직 발송하지 않는다(드라이런만).
+# GM: "컴플레인 접수 위치·내용이 나오면 각 부서에 전달되어야 하고, 그 부서에서 조치 및
+# 회신까지 챙기는 게 낫다. 다 운영부 라인으로 넘기니 병목이 일어나고 처리가 안 된다."
+# GM 결정(같은 날): 전달 범위는 컴플레인·고장만이 아니라 **전건**. 대신 폭주는 묶어서 막는다.
+#
+# ▸부서는 접수 시점에 카테고리로 이미 정해진다(apps_script_reception.js REG_CATEGORIES —
+#   분실물/칭찬/쓴소리/컴플레인=운영부 · 시설물고장=시설부 · 청결=지원부). 여기서 다시
+#   판정하지 않는다(약속 L01).
+# ▸새 상태 파일을 만들지 않는다(약속 L21) — 완료 통보가 쓰던 dept_completion_notify.json 에
+#   커서 키 하나만 얹는다. 커서 전진 규칙도 완료 통보와 같다(보낸 뒤에만 확정).
+# ▸게이트 intake_relay_enabled 기본 꺼짐. 실무진 방으로 나가는 새 발신이라 GM 이 문구를
+#   보고 확인한 뒤에만 켠다.
+# ══════════════════════════════════════════════════════════════════════════
+_INTAKE_CAP = 6  # 한 부서당 최대 노출 건수(나머지는 접어서 "…외 N건")
+
+
+def _intake_relay_block(rows: list[dict], state: dict | None = None,
+                        persist: bool = True, force: bool = False) -> str:
+    """직전 전달 이후 새로 들어온 접수를 부서별로 묶어 전달 문구로 렌더.
+    force=True면 게이트가 꺼져 있어도 문구를 만든다(드라이런 확인용 — 발송은 하지 않는다)."""
+    state = state if state is not None else _load_completion_state()
+    if not state.get("intake_relay_enabled") and not force:
+        return ""
+    seen = set(state.get("reception_seen_new_ids") or [])
+    all_ids = {str(r.get("regId")) for r in rows if str(r.get("regId") or "")}
+    new_rows = [r for r in rows if str(r.get("regId") or "") and str(r["regId"]) not in seen]
+    if persist:
+        global _pending_state
+        state["reception_seen_new_ids"] = sorted(all_ids)
+        _pending_state = state   # 파일 확정은 발송 성공 뒤 commit_completion_cursor()
+    if not new_rows:
+        return ""
+
+    by_dept: dict[str, list[dict]] = {}
+    for r in new_rows:
+        by_dept.setdefault(str(r.get("dept") or "").strip() or "부서 미정", []).append(r)
+
+    lines = [f"📮 새 접수 {len(new_rows)}건 — 해당 부서에서 조치·회신 부탁드립니다."]
+    for dept in sorted(by_dept, key=lambda d: -len(by_dept[d])):
+        items = by_dept[dept]
+        lines.append(f"\n🏢 {dept} ({len(items)}건)")
+        for r in items[:_INTAKE_CAP]:
+            cat = str(r.get("category") or "").strip()
+            content = " ".join(str(r.get("content") or "").split())[:28]
+            lines.append(f"  ▪ [{cat}] {content} ({r.get('regId')})")
+        if len(items) > _INTAKE_CAP:
+            lines.append(f"  …외 {len(items) - _INTAKE_CAP}건 더")
+    lines.append(f"\n👉 상세·처리: {DASHBOARD_URL}")
+    return "\n".join(lines)
+
+
 def build_digest(today: str | None = None, persist_completion: bool = True) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
@@ -349,6 +401,10 @@ def seed_completion_cursor() -> int:
     done_ids = {str(r["regId"]) for r in rows
                 if str(r.get("status", "")) == "완료" and str(r.get("regId") or "")}
     state["reception_seen_done_ids"] = sorted(done_ids)
+    # 접수 즉시 전달 커서도 같은 자리에서 채운다(배627) — 안 채우면 켜는 첫 회차에 기존
+    # 접수 전건(실측 100건)이 '새 접수'로 한꺼번에 나간다. 완료 통보와 같은 함정이라 같이 막는다.
+    state["reception_seen_new_ids"] = sorted(
+        {str(r["regId"]) for r in rows if str(r.get("regId") or "")})
     _save_completion_state(state)
     return len(done_ids)
 
@@ -378,7 +434,16 @@ if __name__ == "__main__":
     p.add_argument("--today", default=None, help="날짜 YYYY-MM-DD (기본=오늘)")
     p.add_argument("--seed-completion", action="store_true",
                     help="처리완료 통보 커서 시딩(enabled:true 켜기 직전 1회 — 백로그 통보 방지)")
+    p.add_argument("--intake-relay-dryrun", action="store_true",
+                    help="접수 즉시 부서 전달 문구만 렌더(발송·커서 갱신 없음 — GM 확인용)")
     a = p.parse_args()
+    if a.intake_relay_dryrun:
+        _rows = _fetch_rows()
+        if _rows is None:
+            print("[stream2b] 조회 실패 (GAS 응답 없음)")
+            sys.exit(1)
+        print(_intake_relay_block(_rows, persist=False, force=True) or "[stream2b] 새 접수 없음")
+        sys.exit(0)
     if a.seed_completion:
         n = seed_completion_cursor()
         print(f"[stream2b] 완료 커서 시딩 완료 — 현재 완료 {n}건을 '이미 통보됨'으로 표시")
