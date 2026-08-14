@@ -117,7 +117,14 @@ from precommit_phantom_delete_guard import (  # noqa: E402
 # ▶2026-08-05 GM 확정 — 월간운영계획·전사_일정 두 화면은 GM 소관으로 옮긴다(GM 이
 #   직접 지시해 수정하는 화면이라 이 가드에 걸리면 GM 지시가 막힌다). 나머지 7개는
 #   준용M 라인 그대로.
-COO_DOMAIN_PATHS = frozenset({
+# ▶★2026-08-14 GM 해제 — GM 원문: "시우것도 건드려도되, 준용M한테 이야기했어,
+#   너무 바빠서 당분간은 내가 봐줄거야". 준용M 께 GM 이 직접 말씀하셨고, 당분간
+#   GM 이 직접 보신다. 그래서 이 차단을 **비운다**(문서로만 '이제 되네' 라고 적으면
+#   가드는 그대로 막는다 — 정한 건 코드로 박는다, 약속 L02).
+#   ▸비우되 목록·주석은 남긴다: '당분간' 이라는 GM 말씀대로 준용M 이 돌아오시면
+#     아래 _COO_PATHS_PARKED 를 COO_DOMAIN_PATHS 로 되돌리면 원상복구다(한 줄).
+#   ▸시로·시뽀(나우열M 라인)는 **그대로 막혀 있다** — 이번 해제는 시우 것만이다.
+_COO_PATHS_PARKED = frozenset({
     "3. 웰페리온 가이드/전사회의.html",
     "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html",
     "3. 웰페리온 가이드/coo/check/시설부 체계.html",
@@ -126,6 +133,7 @@ COO_DOMAIN_PATHS = frozenset({
     "3. 웰페리온 가이드/coo/check/지원부 체계.html",
     "3. 웰페리온 가이드/coo/check/파트너팀 체계.html",
 })
+COO_DOMAIN_PATHS = frozenset()  # 2026-08-14 GM 해제 · 되돌리기 = _COO_PATHS_PARKED 대입
 
 # ── CHRO(시로)·CFO(시뽀) 도메인 파일 "수정" 차단(2026-08-05 GM 확정) ────────────
 # GM 원문(같은 날): "시우 및 시로, 시뽀 관련해서는 운영부 카카오톡 방에 전달해서
