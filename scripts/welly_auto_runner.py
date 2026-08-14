@@ -1374,6 +1374,31 @@ def run_once(
     child_env = dict(os.environ)
     child_env[GUARD_ENV_VAR] = "1"  # 재귀 폭주 방지: 이 세션이 러너를 다시 못 부르게
 
+    # ★남의 미커밋 작업을 쓸어담지 못하게 — 지시가 아니라 환경으로 막는다 (배296 · 2026-08-14).
+    #   무슨 일이었나: 2026-08-03 07:47 이 무인 러너의 자식 세션이 커밋 31841eec1 에 인사 허브
+    #   사진 2장 삭제를 딸려 넣었다. 하필 AI 전원이 손대지 않기로 코드로 막아 둔 시로(CHRO)
+    #   영역이었다. 큐 게이트는 '배를 만드는 것'만 막고 '커밋이 그 도메인 파일을 쓸어 담는 것'은
+    #   못 막는다.
+    #   왜 지금까지 안 막혔나: 프롬프트가 "safe_commit.py 로만 커밋해라"라고 **말은** 했다.
+    #   말은 기계를 못 막는다(약속 L02). 자식이 맨손 `git add` 를 한 번만 쳐도 여러 세션이
+    #   공유하는 라이브 인덱스에 이미 올라와 있던 남의 파일이 통째로 딸려 들어간다.
+    #   무엇을 하나: 자식에게 **HEAD 로 새로 뜬 임시 인덱스**를 쥐여 준다. 그러면 자식이 무슨
+    #   짓을 해도 라이브 인덱스에는 손이 닿지 않고, 커밋 트리는 'HEAD + 자기가 add 한 것'뿐이라
+    #   남의 스테이징이 섞일 통로 자체가 없다. safe_commit.py 는 자기 임시 인덱스를 따로 만들어
+    #   쓰므로 그대로 돌아간다(관문 하나 원칙 · L21 — 새 파일·새 가드 0).
+    child_index = os.path.join(_PROJECT_ROOT, ".git", f"index-runner-{os.getpid()}")
+    try:
+        subprocess.run(["git", "read-tree", "HEAD"], cwd=_PROJECT_ROOT, capture_output=True,
+                       timeout=30, env={**child_env, "GIT_INDEX_FILE": child_index}, check=True)
+        child_env["GIT_INDEX_FILE"] = child_index
+    except Exception as e:  # noqa: BLE001
+        # 임시 인덱스를 못 만들면 라이브 인덱스로 떨어지는 대신 **실행을 멈춘다** — 이 가드가
+        # 없는 채로 도는 것이 바로 2026-08-03 사고 상태다. 조용히 약해지지 않는다.
+        _append_log({"event": "child_index_setup_failed", "task_id": ship.get("task_id"),
+                     "error": f"{type(e).__name__}: {e}"}, log_path)
+        return {"mode": "live", "ship": ship, "prompt": prompt, "executed": False, "commit": None,
+                "reason": f"자식 임시 인덱스 준비 실패 — 실행 중단(공용 인덱스 보호): {type(e).__name__}"}
+
     cmd = [
         claude_bin, "-p",
         "--model", "claude-sonnet-4-6",
@@ -1396,6 +1421,13 @@ def run_once(
     except Exception as e:  # noqa: BLE001
         ok = False
         stderr_text = f"{type(e).__name__}: {e}"
+    finally:
+        # 임시 인덱스는 이 실행에서만 쓴다 — 남겨 두면 다음 실행이 낡은 것을 물려받는다.
+        try:
+            if os.path.exists(child_index):
+                os.remove(child_index)
+        except OSError:
+            pass
 
     after_commit = _git_head(_PROJECT_ROOT)
     new_commit = after_commit if (after_commit and after_commit != before_commit) else None
