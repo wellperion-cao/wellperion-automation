@@ -64,6 +64,13 @@
 
   /* 2-column grid */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 22px;}
+  /* screen-only: .sheet/.bar 는 화면 미리보기용으로 실물 A3 폭(297mm≈1123px)에 고정돼 있어
+     820px 아래에서는 그대로 넘친다 — 회장님_지시사항.html 과 같은 패턴으로 뷰포트 폭에 맞춘다
+     (2026-08-14 · 채점 배632). @media print 는 그대로 — @page 가 실제 A3 출력을 그대로 담당. */
+  @media screen and (max-width: 820px){
+    .grid{grid-template-columns:1fr;}
+    .sheet,.bar{width:100%;}
+  }
 
   /* item */
   .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
