@@ -157,6 +157,12 @@ body.wlp-lfr-page #header-outer #logo{margin-top:32px!important}
   letter-spacing:.02em;background:transparent;text-decoration:none}
 @media (min-width:1001px){ .wlp-lfr .back-kiosk{top:auto} }
 @media (max-width:520px){ .wlp-lfr .back-kiosk{top:10px;left:10px;padding:9px 14px;font-size:12.5px} }
+
+/* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
+   휴대폰·PC 브라우저에는 자체 뒤로가기가 있어 화면 안 버튼은 중복이다.
+   키오스크 판정은 다른 확대 규칙과 같은 조건(폭 700px 이상 + 세로 화면). */
+@media (max-width:699px){ .wlp-lfr .back-kiosk{display:none} }
+@media (orientation:landscape){ .wlp-lfr .back-kiosk{display:none} }
 </style>
 <script>try{document.body.classList.add('wlp-lfr-page');}catch(e){}
 /* ① 헤더 로고 링크: 홈(/ko/) → 종합접수처(/ko/reception/) (2026-07-15 시토·GM 지시).

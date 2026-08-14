@@ -134,6 +134,12 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   letter-spacing:.02em;background:transparent;text-decoration:none}
 @media (min-width:1001px){ .wlp-lfg .back-kiosk{top:auto} }
 @media (max-width:520px){ .wlp-lfg .back-kiosk{top:10px;left:10px;padding:9px 14px;font-size:12.5px} }
+
+/* 뒤로가기는 키오스크(세로 큰 화면) 전용 — 2026-08-14 GM 지시.
+   휴대폰·PC 브라우저에는 자체 뒤로가기가 있어 화면 안 버튼은 중복이다.
+   키오스크 판정은 다른 확대 규칙과 같은 조건(폭 700px 이상 + 세로 화면). */
+@media (max-width:699px){ .wlp-lfg .back-kiosk{display:none} }
+@media (orientation:landscape){ .wlp-lfg .back-kiosk{display:none} }
 </style>
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
