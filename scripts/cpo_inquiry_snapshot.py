@@ -61,7 +61,8 @@ ONEPAGER_STALE_SEC = 3 * 3600  # 3시간 — 월별 집계라 3분마다 새로 
 
 KST = timezone(timedelta(hours=9))
 LOCK_STALE_SEC = 600        # 10분 — 3분 주기의 3배 이상이면 확실히 죽은 것
-HEARTBEAT_SEC = 15 * 60     # 15분 — 데이터 무변경이어도 이 이상 조용하면 강제 커밋(죽은 job과 구분)
+# (구 HEARTBEAT_SEC 제거 2026-08-14 — 살아있음 도장용 강제 커밋을 걷어냈다. 근거는 _should_commit 주석.
+#  살아있음은 status/heartbeats/cpo-inquiry-snapshot.json + module_silence_detector 가 담당한다.)
 
 sys.path.insert(0, str(SCRIPTS_DIR))
 from cpo_report import _gas_get, build_status_onepager  # noqa: E402  (기존 검증된 GAS 조회·집계 재사용 — 신규 포팅 없음)
@@ -277,20 +278,24 @@ def _content_key(payload: dict) -> str:
 
 
 def _should_commit(prev_head: dict | None, new_payload: dict) -> bool:
-    """git HEAD 커밋본과 실내용이 같고 하트비트 주기도 안 지났으면 스킵(repo 건강 — 커밋 노이즈 절약).
-    HEAD 기준 비교라야 '직전 회차 push가 실패해 작업트리만 앞서 있는' 상태를 정확히 잡아 재시도한다."""
+    """git HEAD 커밋본과 실내용이 다를 때만 커밋한다(repo 건강 — 커밋 노이즈 절약).
+    HEAD 기준 비교라야 '직전 회차 push가 실패해 작업트리만 앞서 있는' 상태를 정확히 잡아 재시도한다.
+
+    ★살아있음 도장을 위한 강제 커밋을 걷어냈다 (2026-08-14 시토 · GM 물음).
+      무엇이었나: 내용이 그대로여도 15분마다 한 번은 커밋해 '이 job 이 죽지 않았다'를 남겼다.
+      실측(2026-08-14): 그 결과 오늘 커밋 354건 중 256건(72%)이 기계 커밋이었고, 이 스냅샷
+      파일만 61건이었다. 그중 40건을 표본으로 열어 보니 **40건 전부 바뀐 줄이 시각 한 줄뿐**
+      이었다(값 변화 0). 3분마다 도는 job 이 깃 이력을 도배하고, 커밋마다 push 가 붙어
+      동시 커밋 충돌(INC-008 계열)의 확률을 스스로 올리고 있었다.
+      왜 지워도 되나: 살아있음은 이미 **다른 곳에서 재고 있다** —
+      status/heartbeats/cpo-inquiry-snapshot.json 을 매 회차 갱신하고,
+      module_silence_detector 가 그 파일이 조용해지면 잡는다(module_reporter 가 매일 호출).
+      같은 신호를 두 곳에서 낼 이유가 없다(약속 L01·L21). 깃 이력은 사람이 읽는 곳이지
+      기계의 맥박을 적는 곳이 아니다.
+    """
     if prev_head is None:
         return True
-    if _content_key(prev_head) != _content_key(new_payload):
-        return True
-    try:
-        prev_ts = prev_head.get("ts") or prev_head.get("adult", {}).get("year", {}).get("ts")
-        if prev_ts is None:
-            return True
-        age_sec = (time.time() * 1000 - prev_ts) / 1000
-        return age_sec >= HEARTBEAT_SEC
-    except Exception:
-        return True
+    return _content_key(prev_head) != _content_key(new_payload)
 
 
 def main() -> int:
