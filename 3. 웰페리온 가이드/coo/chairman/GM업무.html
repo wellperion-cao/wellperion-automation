@@ -736,9 +736,17 @@
     }).join('');
   }
 
+  // ★계획을 먼저 그리고, 체크 상태는 오는 대로 채운다 (GM 지적 2026-08-14 "GM업무에 변경된게 없는데?").
+  // 전에는 Promise.all 로 계획(raw)과 체크보드(GAS) 둘 다 기다렸다. 계획은 7밀리초에 오는데
+  // 체크보드는 7초~100초로 들쭉날쭉하고 가끔 404가 나서(실측 2026-08-14), 그 사이 카드가 한 장도
+  // 안 그려져 GM 화면이 몇 분씩 '불러오는 중…' 이었다 — 고친 내용이 안 바뀐 것처럼 보였다.
   elGmGrid.innerHTML = '<div class="rep-empty">불러오는 중…</div>';
-  Promise.all([readPlan(), loadCheckBoard()]).then(function (r) {
-    renderGm(window.WellperionGmDirect.extract(r[0], now.getFullYear() + '-' + pad2(now.getMonth() + 1)));
+  var _monthKey = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
+  readPlan().then(function (plan) {
+    renderGm(window.WellperionGmDirect.extract(plan, _monthKey));   // 1차 — 체크 없이 즉시
+    loadCheckBoard()
+      .then(function () { renderGm(window.WellperionGmDirect.extract(plan, _monthKey)); })  // 2차 — 체크 입혀 다시
+      .catch(function () { /* 체크보드가 안 와도 1차 화면은 그대로 남는다 */ });
   }).catch(function () { renderGm(null); });
 
   function refreshCardProgress(id) {
