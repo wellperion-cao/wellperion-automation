@@ -434,6 +434,13 @@ table.sheet.fitw th,table.sheet.fitw td{padding:4px 6px}
 .manualbar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .manualbar span{font-size:12px;color:var(--ink-soft)}
 .manualFrame{width:100%;height:calc(100vh - 210px);min-height:480px;border:1px solid var(--line);border-radius:12px;background:#fff}
+
+/* ── Print (2026-08-14 · 채점 배632 — 이미 넣은 인쇄 패턴 재사용: 조작용 UI 숨김 + 카드 안 잘림) ── */
+@media print{
+  @page{margin:8mm;size:A4}
+  .btn,.btn-sm,#lkDrawer,#dvDrawer,.manualbar{display:none!important}
+  .grid-cards>*{break-inside:avoid}
+}
 </style>
 </head>
 <body>
