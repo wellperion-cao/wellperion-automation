@@ -13470,6 +13470,20 @@ var WriteBuffer = (function(){
           // 성공 — 단, 전송 후 재편집(coalesce)로 rev가 바뀌었으면 최신 payload 재전송(유실 방지).
           if (item.rev !== sentRev) { item.nextTry = 0; }
           else { scheduleVerify(item); }   // ★저장 확인(read-back) — 큐 제거는 대조 뒤로 미룬다(아래 정의)
+        } else if (data && data.error === 'rowkey-not-found' &&
+                   item.payload && item.payload.rowKey && item.payload.keyPhone && !item.rekeyTried) {
+          /* ★배579 근본 수리 (GM 지시 2026-08-12·착수 2026-08-14) — '저장했는데 사라진다'의 뿌리.
+             지문(rowKey)은 「등록일자|전화|이름」인데, 재등록 처리로 등록일자를 고치면 그 순간
+             화면이 들고 있던 지문이 낡아 서버가 rowkey-not-found 로 거부한다. 유효회원 996명 중
+             651명(65%)이 옛 방식이라 재등록이 일어날 때마다 같은 충돌이 난다.
+             ▸서버에는 이미 전화(keyPhone)로 행을 찾는 폴백 경로가 있다 — 지문을 빼고 한 번만
+               다시 보내면 그 경로를 탄다. 서버 코드·새 액션 0(약속 L21).
+             ▸전화가 겹치면 서버가 duplicate-phone-ambiguous 로 안전하게 거부한다(오지목 없음).
+             ▸딱 1회만(rekeyTried) — 실패가 반복되면 아래 기존 분기로 떨어져 화면에 남는다. */
+          item.rekeyTried = true;
+          delete item.payload.rowKey;
+          item.parked = false; item.nextTry = 0;
+          showToast('저장 다시 시도 중…', '');
         } else if (data && (data.error === 'row-key-unverified' || data.error === 'duplicate-phone-ambiguous' || data.error === 'rowkey-not-found' || data.error === 'rowkey-ambiguous')) {
           // ★오지목 봉합 B3(2026-07-22 시포, GM 지시) — 서버가 대상 행을 확정 못 해 결정적으로 거부(재시도해도
           //   같은 값이면 결과 동일 · 네트워크 일시장애 아님). 낙관 반영을 성공으로 삼키지 않는다:
