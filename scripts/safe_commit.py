@@ -95,45 +95,13 @@ from precommit_phantom_delete_guard import (  # noqa: E402
     _log_block as _domain_guard_log,
 )
 
-# ── COO(시우) 도메인 파일 차단(2026-08-05 GM 편제 확정) ─────────────────────────
-# GM 원문: "실무진들과 작업 충돌되는 부분... 시우건도 준용M 라인으로해서 건드리지말고,
-#   내용 전달만 할 수 있게 해줄래? 운영부 방에... 각기 담당자 이름 적어서 웰리가 전달"
-# GM 선택 ① — 시우 배(큐 항목)는 그대로 산다. 다만 **운영 도메인의 파일을 AI가
-#   직접 고치지 않는다** — 발견하면 ★운영부 카톡방에 담당자를 붙여 "전달"만 한다.
-#
-# ★층 구분(섞으면 안 됨) — queue_dispatch.py 의 EXCLUDED_ROLES(chro·cfo)는
-#   "배 생성 자체"를 큐 관문에서 차단한다(그 두 역할 앞으로는 배조차 안 만든다).
-#   이건 그와 다른 층이다: 시우는 배가 그대로 살아 있고, 이 관문(파일 커밋)에서
-#   "그 도메인 파일을 AI가 직접 쓰는 것"만 막는다 — 큐·항로에서 시우 배가
-#   사라지면 안 된다(EXCLUDED_ROLES 에 coo 를 넣는 것과는 다른 조치).
-#
-# 경로 출처(실측 · 임의 확장·축소 금지) — ssot/ownership_map.json roles[nick=시우]:
-#   primary_surface="월간운영계획·전사회의", domain="종합접수처·각 체계 페이지".
-#   + ssot/kpi.json _점검소유_2026_07_27: "점검 화면(coo/check/ 시설부 체계·
-#   운영부 체계·전사 일정)... 전부 시우 소유"(GAS 배선 파일은 시토 소유라 제외 —
-#   같은 문장 "점검의 배선(GAS·자동발송)은 시토"). coo/ 폴더 안이라도 소유가 다른
-#   것(예 coo/todo/업무 현황 SSOT.html·결재 현황 SSOT.html = 시로 domain 문구와
-#   일치)은 이 목록에 넣지 않았다 — GM 지시 원문의 그 반례와 정확히 일치.
-# ▶2026-08-05 GM 확정 — 월간운영계획·전사_일정 두 화면은 GM 소관으로 옮긴다(GM 이
-#   직접 지시해 수정하는 화면이라 이 가드에 걸리면 GM 지시가 막힌다). 나머지 7개는
-#   준용M 라인 그대로.
-# ▶★2026-08-14 GM 해제 — GM 원문: "시우것도 건드려도되, 준용M한테 이야기했어,
-#   너무 바빠서 당분간은 내가 봐줄거야". 준용M 께 GM 이 직접 말씀하셨고, 당분간
-#   GM 이 직접 보신다. 그래서 이 차단을 **비운다**(문서로만 '이제 되네' 라고 적으면
-#   가드는 그대로 막는다 — 정한 건 코드로 박는다, 약속 L02).
-#   ▸비우되 목록·주석은 남긴다: '당분간' 이라는 GM 말씀대로 준용M 이 돌아오시면
-#     아래 _COO_PATHS_PARKED 를 COO_DOMAIN_PATHS 로 되돌리면 원상복구다(한 줄).
-#   ▸시로·시뽀(나우열M 라인)는 **그대로 막혀 있다** — 이번 해제는 시우 것만이다.
-_COO_PATHS_PARKED = frozenset({
-    "3. 웰페리온 가이드/전사회의.html",
-    "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html",
-    "3. 웰페리온 가이드/coo/check/시설부 체계.html",
-    "3. 웰페리온 가이드/coo/check/운영부 체계.html",
-    "3. 웰페리온 가이드/coo/check/주차관리부 체계.html",
-    "3. 웰페리온 가이드/coo/check/지원부 체계.html",
-    "3. 웰페리온 가이드/coo/check/파트너팀 체계.html",
-})
-COO_DOMAIN_PATHS = frozenset()  # 2026-08-14 GM 해제 · 되돌리기 = _COO_PATHS_PARKED 대입
+# ── COO(시우) 도메인 차단 — 2026-08-14 GM 지시로 **완전 제거** ────────────────
+# GM 원문(2026-08-14): "시우것도 건드려도되, 준용M한테 이야기했어, 너무 바빠서 당분간은
+#   내가 봐줄거야" → 이어서 "당분간이라도 보관하지말고 진행해줘".
+# 그래서 경로 목록을 보관하지 않고 지웠다. 꺼둔 스위치를 남기면 죽은 코드가 되고
+#   나중에 누가 근거 없이 되켠다(약속 L21 '꺼둔 것은 남기지 않는다').
+# 되살려야 하면 git 이력에서 이 커밋 직전 판을 보면 된다 — 목록 7개가 거기 그대로 있다.
+# ▸시로·시뽀(나우열M 라인) 차단은 아래 그대로 살아 있다. 이번 해제는 시우 것만이다.
 
 # ── CHRO(시로)·CFO(시뽀) 도메인 파일 "수정" 차단(2026-08-05 GM 확정) ────────────
 # GM 원문(같은 날): "시우 및 시로, 시뽀 관련해서는 운영부 카카오톡 방에 전달해서
@@ -202,7 +170,6 @@ _CFO_GM_JUDGMENT_NOTE = (
 #   ▸개인 이름을 지우는 게 아니라 **받는 사람**을 실장으로 바꾸는 것이다 — 누가 실제로 할지는
 #     실장이 나눈다(본문 안에 개인 이름이 남는 것은 참고 정보라 그대로 둔다).
 DOMAIN_MODIFY_RULES = (
-    ("COO(시우)", "이경연 실장", COO_DOMAIN_PATHS, "★운영부", None),
     ("CHRO(시로)", "나우열M", CHRO_DOMAIN_PATHS, "★중간관리자", None),
     ("CFO(시뽀)", "나우열M", CFO_DOMAIN_PATHS, "★중간관리자", _CFO_GM_JUDGMENT_NOTE),
 )
@@ -593,8 +560,8 @@ def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: 
             extra = f" 외 {len(protected_deletes) - 1}건" if len(protected_deletes) > 1 else ""
             violations.append(f"보호된 삭제 차단(chro/cfo 도메인 혼입): {protected_deletes[0]}{extra}")
 
-    # COO(시우)·CHRO(시로)·CFO(시뽀) 도메인 파일 "수정" 차단(2026-08-05 GM 편제 확정
-    # — 위 COO_DOMAIN_PATHS/CHRO_DOMAIN_PATHS/CFO_DOMAIN_PATHS·DOMAIN_MODIFY_RULES
+    # CHRO(시로)·CFO(시뽀) 도메인 파일 "수정" 차단(2026-08-05 GM 편제 확정
+    # — 위 CHRO_DOMAIN_PATHS/CFO_DOMAIN_PATHS·DOMAIN_MODIFY_RULES
     # 주석 참조). 삭제뿐 아니라 추가·수정도 막는다 — 기본은 항상 차단이고, 사람이
     # 강행할 때만 통과(우회 로그는 _domain_modify_violation 안에서 남긴다).
     for role_label, contact, domain_paths, room, judgment_note in DOMAIN_MODIFY_RULES:
