@@ -151,7 +151,7 @@ HEARTBEAT_ID = "cpo-unassigned-nudge"  # 배10014 방식 — 상설 파일 1개 
 # ── 24시간 SLA 위반 → 카카오 ★부서장 방 (GM 2026-08-05 지시) ────────────────────
 SLA_SINCE_DATE = "2026-08-01"  # 대상 = 이 날짜(포함) 이후 접수분만
 SLA_HOURS = 24                 # 문턱 — 배정·컨택 둘 중 하나라도 없으면 위반
-SLA_MSG_DISPLAY_N = 5          # 본문에 줄로 싣는 건수(GM "10줄 안쪽")
+SLA_MSG_DISPLAY_N = 4          # 본문에 줄로 싣는 건수(GM "10줄 안쪽" · 2026-08-14 기준·회신요청 2줄 추가분 상쇄)
 KAKAO_DEPTHEAD_ROOM = "★부서장"  # scripts/kakao_rooms.json 정본과 동일 값(창-제목 대조용)
 ASSIGN_URL_MEMBER = _BASE + "membership.html"  # 회원 문의 처리 화면(60일 무응답 알림 링크용)
 
@@ -447,7 +447,10 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     shown = violations[:SLA_MSG_DISPLAY_N]  # 이미 경과시간 내림차순(오래된 순)
     rest_n = len(violations) - len(shown)
     lines = [f"⏰ 24시간 미배정·미컨택 · {len(violations)}건 (8/1 이후 접수분)"]
-    lines.append("부서장님, 아래 문의 확인 부탁드립니다 🙏")
+    # GM 지시 2026-08-14: 확인만 부탁하니 답이 없어 같은 건이 13일째 남았다.
+    #   ①기준(24시간)을 매번 알리고 ②회신을 명시적으로 요청한다. 줄 수는 표시 건수로 상쇄.
+    lines.append("문의는 접수 후 24시간 안에 첫 연락이 기준입니다(멤버십·강습 같은 기준).")
+    lines.append("부서장님, 아래 확인하시고 처리하신 건은 한 줄 회신 부탁드립니다 🙏")
     for it in shown:
         lines.append(f"· {it['date']} · {it['name']} · {_sport_short(it['sport'])} · "
                      f"{_fmt_elapsed(it['hours'])}째 · {it['reason']}")
