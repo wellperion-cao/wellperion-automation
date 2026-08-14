@@ -150,6 +150,16 @@ body.embed .calwrap{margin-top:8px}
    보였다(전사_거래업체 임베드에서 GM 지적된 것과 동일한 원인). '➕ 일정 추가'는 임베드에서도
    써야 하니 그대로 두고, 중복되는 ERP 링크만 숨긴다(단독으로 열면 그대로 나온다). */
 body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
+
+/* ── Print (2026-08-14 · 채점 배632 — 업무 현황 SSOT와 같은 패턴) ── */
+@media print{
+  @page{margin:8mm;size:A4}
+  :root{--bg:#fff;--paper:#fafafa;--text:#1a1a1a;--dim:#666;--border:#ccc}
+  body{background:#fff;color:#1a1a1a}
+  .sheet-links,.chip,#catchips,.draftbanner,.modal-overlay,.cal-btn,.cal-today-btn{display:none!important}
+  .row,.cal-cell{break-inside:avoid}
+  .calwrap{break-inside:avoid}
+}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
