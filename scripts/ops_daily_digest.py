@@ -1273,9 +1273,13 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
             print(f"  [일정] 건너뜀 — '{title}' ({due}) 같은 날짜에 이미 있음: {dup}")
             continue
         sid = f"kkd-{due}-{_schedule_norm(title)[:20]}"
+        # dept 칸은 부서 이름만 받는다(시설부·운영부…). 판독이 주는 값은 사람 이름일 때가 많아
+        # assignee 로 넣고 dept 는 비운다 — 부서를 지어내지 않는다(약속 L23 · 빈칸은 빈칸으로 둔다).
+        # 2026-08-14 실사고: 첫 등록건이 dept="이경연 실장" 으로 들어가 전사일정 계약 검증에
+        # '미등록 부서'로 걸렸다.
         item = {
             "id": sid, "type": "이벤트", "name": title, "category": "general",
-            "dept": dept, "cycle": "", "cycle_confirmed": False, "period_months": None,
+            "dept": "", "cycle": "", "cycle_confirmed": False, "period_months": None,
             "legal_basis": "", "assignee": dept, "last_done": "", "next_due": due,
             "evidence": "", "applies": "있음",
             "note": f"{room_dir_name} {target_date} 카톡 대화에서 자동 등록"

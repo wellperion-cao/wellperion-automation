@@ -61,7 +61,10 @@ def validate(cal: dict) -> list:
         if iid in seen:
             errors.append(f"중복 id: {iid}")
         seen.add(iid)
-        if it.get("dept") not in depts:
+        # 빈 부서는 오류가 아니다 — GM 이 직접 넣은 일정처럼 담당 부서가 아직 없는 건은
+        # 비었다고 보이게 두는 것이 규칙이다(약속 L23 · 빈칸을 지어 채우지 않는다).
+        # 값이 들어 있는데 부서 목록에 없을 때만 잡는다(사람 이름을 부서 칸에 넣는 사고 방지).
+        if it.get("dept") and it["dept"] not in depts:
             errors.append(f"[{iid}] 미등록 부서: {it.get('dept')}")
         if it.get("category") not in cats:
             errors.append(f"[{iid}] 미등록 분류: {it.get('category')}")
@@ -128,7 +131,64 @@ def summarize(cal: dict, dept: str = None, today: date = None) -> dict:
     return c
 
 
+def pull_from_live(path=CAL_PATH) -> dict:
+    """전사일정 라이브(GAS) → 이 JSON 으로 **단방향** 내려받기 (배621·625 · 2026-08-14 시토).
+
+    왜 필요한가: 사람이 쓰는 곳은 화면(GAS)인데, 기계가 읽는 곳은 이 파일이라 두 벌이 됐다.
+      실사고 2026-08-13~14 — 이정헌 소장이 회신한 법정점검 실시일 4건(전기·승강기·정화조·가스)이
+      화면에는 들어갔는데 이 파일은 빈칸 그대로였다. 그래서 다음날 아침 점검 보고가 "회신 0건
+      지속"이라고 GM 께 잘못 보고했다. 놓침을 잡아야 할 쪽이 옛 데이터를 보고 있었다.
+      (헌법 불변원리 1 — 한 진실 = 한 곳)
+
+    방향은 GAS → 파일 한쪽뿐이다. 사람이 쓰는 곳이 화면이므로 화면이 원천이다.
+    ★파일에만 있고 라이브에 없는 항목은 **지우지 않는다**(현재 0건이지만, 라이브 조회가
+      반쪽만 성공했을 때 로컬을 비우는 사고를 막는다). 라이브를 못 읽으면 파일을 건드리지
+      않고 그대로 둔다 — 못 읽은 것과 '없어진 것'은 다르다.
+    새 스크립트·새 예약을 만들지 않는다(약속 L21): 이 파일을 소유한 모듈에 함수 하나만 얹고,
+      매일 도는 monthly_ops_sync 끝에서 부른다.
+    """
+    import urllib.request  # noqa: PLC0415 — 읽기 경로에서만 쓴다
+    try:
+        from collectors.ops_shared import SCHEDULE_GAS_URL  # noqa: PLC0415
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from collectors.ops_shared import SCHEDULE_GAS_URL  # noqa: PLC0415
+
+    try:
+        with urllib.request.urlopen(SCHEDULE_GAS_URL + "?action=load_schedule", timeout=25) as r:
+            res = json.loads(r.read())
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "reason": f"라이브 조회 실패({type(e).__name__}) — 파일 무변경"}
+    live = res.get("data") if isinstance(res, dict) and res.get("ok") else None
+    if not isinstance(live, dict) or not isinstance(live.get("items"), list):
+        return {"ok": False, "reason": "라이브 응답이 비정상 — 파일 무변경"}
+
+    cal = load(path)
+    by_id = {it.get("id"): it for it in cal.get("items", []) if isinstance(it, dict)}
+    added = changed = 0
+    for it in live["items"]:
+        if not isinstance(it, dict) or not it.get("id"):
+            continue
+        cur = by_id.get(it["id"])
+        if cur is None:
+            by_id[it["id"]] = it
+            added += 1
+        elif cur != it:
+            by_id[it["id"]] = it
+            changed += 1
+    if not (added or changed):
+        return {"ok": True, "added": 0, "changed": 0, "total": len(by_id), "reason": "이미 같음"}
+
+    cal["items"] = list(by_id.values())
+    cal["updated_at"] = _kst_today().isoformat()
+    path.write_text(json.dumps(cal, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"ok": True, "added": added, "changed": changed, "total": len(by_id)}
+
+
 if __name__ == "__main__":
+    if "--pull" in sys.argv:
+        print("[전사일정 내려받기]", pull_from_live())
+        raise SystemExit(0)
     cal = load()
     errs = validate(cal)
     print("검증:", "통과 ✓" if not errs else errs)
