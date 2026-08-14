@@ -449,7 +449,11 @@ def run_watchdog(*, dry_run=True, now=None, log_path=LOG_PATH, rooms_path=ROOMS_
                 "reason": "dedup(오늘 이미 발송)", "text": text}
 
     rooms = _load_json(rooms_path, {})
-    chat_id = rooms.get(BOT_ROOM)
+    # 방 이름 해소는 정본 함수 하나만 쓴다(약속 L01·L21). 직접 rooms.get() 을 하면 2026-08-12
+    # 방 개명("자동화현황방"→"AI관리") 뒤 _legacy_aliases 폴백을 못 타 조용히 안 나간다 —
+    # 실제로 08-13·08-14 이틀 연속 room_unresolved 로 무발신이었다(2026-08-15 자가점검 실측).
+    from module_reporter import resolve_chat_id  # noqa: PLC0415
+    chat_id = resolve_chat_id(BOT_ROOM, rooms)
     if chat_id is None:
         _append_log({"date": date_str, "sent": False, "reason": "room_unresolved"}, log_path=log_path)
         return {"date": date_str, "sections": sections, "action": "skip",
