@@ -199,61 +199,38 @@
   .dept-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;
               background:var(--steam);color:var(--brass);white-space:nowrap;}
 
-  /* ── ③ 결재 문서형 인쇄(2026-08-06 GM: "결재 SSOT처럼") — 모양·글자크기는
-     coo/todo/결재 현황 SSOT.html #approvalPrintArea 의 rr-page·rr-approval-table·rr-info-table 을
-     그대로 따른다(그 파일은 수정하지 않고 값만 옮겨 온다). ── */
-  #aprPrintArea{display:none;}
-  @media print{
-    body[data-print-mode="apr"] > *:not(#aprPrintArea){display:none !important;}
-    body[data-print-mode="apr"] #aprPrintArea{display:block !important;}
-    #aprPrintArea .rr-page{font-family:"Malgun Gothic",sans-serif;color:#111;font-size:14px;line-height:1.6;padding:0;}
-    #aprPrintArea .rr-header{display:flex;align-items:flex-start;justify-content:space-between;
-      margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #111;}
-    #aprPrintArea .rr-wordmark{font-size:17px;font-weight:900;letter-spacing:0.18em;text-transform:uppercase;color:#111;}
-    #aprPrintArea .rr-wordmark small{display:block;font-size:10px;font-weight:600;letter-spacing:0.12em;color:#666;margin-top:2px;}
-    #aprPrintArea .rr-approval-table{border-collapse:collapse;font-size:12.5px;}
-    #aprPrintArea .rr-approval-table td{border:1px solid #555;padding:4px 8px;text-align:center;min-width:70px;vertical-align:top;}
-    #aprPrintArea .rr-approval-label{writing-mode:vertical-rl;text-orientation:mixed;font-weight:700;
-      padding:6px 4px;font-size:12.5px;background:#f0f0f0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    #aprPrintArea .rr-approval-role{font-weight:700;font-size:12.5px;border-bottom:1px solid #bbb;padding-bottom:3px;margin-bottom:5px;}
-    #aprPrintArea .rr-approval-sign{font-size:13px;min-height:52px;display:flex;align-items:center;justify-content:center;color:#0b8043;font-weight:700;}
-    #aprPrintArea .rr-doc-title{text-align:center;font-size:20px;font-weight:900;letter-spacing:0.08em;margin:10px 0 14px;}
-    #aprPrintArea .rr-meta{font-size:13px;color:#555;margin-bottom:10px;}
-    #aprPrintArea .rr-section-title{font-size:15px;font-weight:700;border-left:3px solid #111;padding-left:6px;margin:14px 0 6px;}
-    #aprPrintArea .rr-section-body{font-size:14px;color:#333;}
-    #aprPrintArea .rr-list-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px;}
-    #aprPrintArea .rr-list-table th{background:#f0f0f0;border:1px solid #bbb;padding:4px 8px;font-weight:700;text-align:left;
-      -webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    #aprPrintArea .rr-list-table td{border:1px solid #bbb;padding:4px 8px;vertical-align:top;}
-    #aprPrintArea .rr-footer{margin-top:16px;padding-top:6px;border-top:1px solid #bbb;
-      display:flex;justify-content:space-between;font-size:12px;color:#666;}
-  }
+  /* ── 인쇄·저장 버튼을 페이지 안 상단 우측으로(GM 지시 2026-08-14) — 종이에는 안 찍힌다. ── */
+  .hd{position:relative;}
+  .hd-act{position:absolute;top:0;right:0;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .hd-act button{font-size:12px;font-weight:700;padding:5px 10px;border:1px solid var(--deep);border-radius:6px;
+                 background:#fff;color:var(--deep);cursor:pointer;font-family:inherit;}
+  .hd-act button:hover{background:var(--deep);color:#fff;}
+  @media print{ .hd-act{display:none !important;} }
 </style>
 </head>
 <body>
 
 <div class="bar">
-  <!-- A3 인쇄 가로·세로 + PNG 저장 — 재사용: _assets/print_options.js(용지 A4/A3 겸용)는 이 페이지가
-       A3 전용이라 안 맞아 씀(GM "인쇄 버튼 1개"류 4부서 체계 페이지와 같은 예외) → 자체 @page 전환 함수로
-       구현. PNG 저장은 저장소 표준(coo/chairman/회장님_오찬_수영팀_20260806.html 과 동일 html2canvas
-       CDN 방식) 재사용 — 새 라이브러리 없음. (GM 지시 2026-08-07) -->
-  <button onclick="printA3('portrait')">🖨 인쇄 (A3 세로)</button>
-  <button onclick="printA3('landscape')">🖨 인쇄 (A3 가로)</button>
-  <span class="msg" id="gm-png-msg" style="align-self:center;font-size:12px;color:#fff;"></span>
-  <button id="gm-png-btn" onclick="saveGmPng()">🖼 PNG로 저장</button>
   <a href="../../월간운영계획.html">◂ 월간운영계획으로</a>
 </div>
 
 <div class="sheet">
 
   <div class="hd">
+    <!-- A3 인쇄 가로·세로 + PNG 저장 — 페이지 안 상단 우측(GM 지시 2026-08-14 "위에 A3인쇄 .png저장까지
+         있네 이것을 GM업무 페이지 안 상단우측에 배치하면 더 좋을듯"). 기능·함수는 그대로, 자리만 옮겼다. -->
+    <div class="hd-act">
+      <button onclick="printA3('portrait')">🖨 A3 세로</button>
+      <button onclick="printA3('landscape')">🖨 A3 가로</button>
+      <button id="gm-png-btn" onclick="saveGmPng()">🖼 PNG 저장</button>
+      <span class="msg" id="gm-png-msg" style="font-size:11.5px;color:var(--grey);"></span>
+    </div>
     <p class="brand">WELLPERION · 월간계획보고</p>
     <h1>경영 보고 · GM 업무 현황</h1>
     <p class="sub">회장님·대표님 보고건과 김남욱 GM 직접 업무를 한 장에서 봅니다</p>
     <div class="meta">
       <div><b>대상</b><span id="target-month">—</span></div>
       <div><b>기준일</b><span id="today-str">—</span></div>
-      <div><b>인쇄</b>A3 세로·가로 선택 가능 · 접힌 내용도 자동으로 펼쳐 인쇄됩니다</div>
     </div>
   </div>
 
@@ -270,10 +247,8 @@
            "경영 보고건 우측이 좋을 것 같고 열었다 닫을 수 있게"). id·판정 로직은 _owner_directive.js 그대로 재사용 —
            위치만 옮긴다. -->
       <button type="button" class="sec-act" id="owner-bulk-btn" disabled onclick="event.stopPropagation();">📋 보고 문안 복사</button>
-      <span class="sec-act rnote" style="border:none;padding:0;margin-left:0;">대표님·회장님 보고건이 한 문안으로 복사됩니다.</span>
-      <!-- ③ 결재 문서형 인쇄 — GM 지시 2026-08-06 "보고를 결재 SSOT처럼" -->
-      <button type="button" class="sec-act" style="background:transparent;cursor:pointer;font-family:inherit;"
-              id="print-approval-doc-btn" onclick="event.stopPropagation(); printGmApprovalDoc();">결재 문서 인쇄</button>
+      <!-- 안내문("대표님·회장님 보고건이 한 문안으로 복사됩니다.")·결재 문서 인쇄 버튼은 뺐다
+           (GM 지시 2026-08-14 — 칸 낭비 · 인쇄는 상단 우측 A3/PNG 로 충분). -->
     </summary>
     <div class="sec-body">
 
@@ -308,7 +283,7 @@
       </div>
       <div class="grid" id="owner-grid"><div class="rep-empty">불러오는 중…</div></div>
       <!-- owner-done-grid — 화면엔 안 보인다(#owner-grid,#owner-done-grid{display:none} 위 CSS).
-           완료로 표시된 카드를 여기로 옮겨 결재 문서 인쇄(printGmApprovalDoc)가 대기/완료를 가른다. -->
+           완료로 표시된 카드를 여기로 옮겨 대기/완료 건수를 가른다. -->
       <div class="grid" id="owner-done-grid"></div>
       <div class="sum">
         <table><tbody id="owner-sum-body"></tbody></table>
@@ -460,8 +435,6 @@
 
 </div>
 
-<!-- ③ 결재 문서 인쇄 영역 — 화면 숨김, printGmApprovalDoc() 실행 시에만 표시(coo/todo/결재 현황 SSOT.html 과 동일 기법) -->
-<div id="aprPrintArea"></div>
 
 <!-- 판정 로직 = _gm_direct_tasks.js / 대표님·회장님 = _owner_directive.js + _chairman_items.js (약속 L01 · 복제 없음) -->
 <script src="_gm_direct_tasks.js"></script>
@@ -694,18 +667,18 @@
   var elGmGrid = document.getElementById('gm-grid');
   var elGmSum = document.getElementById('gm-sum-body');
   // ① 할 일 체크 상태 — gmNoteLines[목표id] = progress_note 줄 배열(체크하면 이 배열만 바뀐다).
-  // dirtyIds = 아직 저장 안 한 목표id 모음. gmPrintRows = 결재 문서 인쇄용 GM 표 데이터(renderGm이 채운다).
-  var gmNoteLines = {}, dirtyIds = {}, gmPrintRows = [];
+  // dirtyIds = 아직 저장 안 한 목표id 모음.
+  var gmNoteLines = {}, dirtyIds = {};
 
   function renderGm(items) {
     if (items === null) {
       elGmGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
-      elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = ''; gmPrintRows = []; return;
+      elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = ''; return;
     }
     elGmCnt.textContent = items.length + '건';
     if (!items.length) {
       elGmGrid.innerHTML = '<div class="rep-empty">이번 달 GM 직접 관장 건이 없습니다.</div>';
-      elGmSum.innerHTML = ''; gmPrintRows = []; return;
+      elGmSum.innerHTML = ''; return;
     }
     gmNoteLines = {};
     elGmGrid.innerHTML = items.map(function (it, i) {
@@ -804,17 +777,6 @@
       return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
         esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + '</td></tr>';
     }).join('');
-    // ① 결재 문서 인쇄용 GM 업무 표(업무명·상태·진척·할 일 완료 수) — printGmApprovalDoc()이 재사용한다.
-    gmPrintRows = items.map(function (it) {
-      var todos = extractTodos(it.note);
-      var done = todos.filter(function (t) { return t.checked; }).length;
-      return {
-        title: it.title,
-        status: it.status || '—',
-        pct: (typeof it.progress === 'number') ? (it.progress + '%') : '—',
-        doneRatio: todos.length ? (done + '/' + todos.length) : '—'
-      };
-    });
   }
 
   elGmGrid.innerHTML = '<div class="rep-empty">불러오는 중…</div>';
@@ -975,11 +937,6 @@
     var elRepTotal = document.getElementById('rep-total');
     if (!elGrid || !elSum) return;
 
-    // 화면 표 우측 칸에서는 뺐지만(GM 지시 2026-08-10), 결재 문서 인쇄(printGmApprovalDoc)의 구분 칸에는
-    // 그대로 쓴다 — 인쇄물은 회장님·대표님 건이 한 표에 섞이므로 소속 표시가 여전히 필요하다.
-    var OWNER_BADGE = '🤵 대표님';
-    var CHAIRMAN_BADGE = '👑 회장님';
-
     // 보고 대기·완료 건수 — 회장님(판정=_owner_directive.js)과 대표님(DOM 카드) 양쪽을 더해
     // 「📋 경영 보고건」 옆 배지(rep-total)에 「대기 N건 · 완료 M건」으로 표시한다.
     function chPend() { return (window.OwnerDirective.chairmanPending ? window.OwnerDirective.chairmanPending() : (window.WellperionChairmanItems || [])); }
@@ -998,7 +955,7 @@
     }
 
     // 대표님 카드가 새로 그려질 때마다(초기 로드·보고완료 표시·새로고침) 완료 카드만 숨은 done-grid로
-    // 옮긴다 — 결재 문서 인쇄(printGmApprovalDoc)가 대기/완료를 가르는 데 쓴다. 화면 표(elSum)는
+    // 옮긴다 — 대기/완료 건수를 가르는 데 쓴다. 화면 표(elSum)는
     // _owner_directive.js가 이미 대기 위·완료 아래 순서로 그려내므로 여기서 다시 가르지 않는다.
     function regroupReports() {
       var doneItems = Array.prototype.filter.call(elGrid.children, function (el) {
@@ -1009,105 +966,6 @@
     }
     new MutationObserver(regroupReports).observe(elGrid, { childList: true });
 
-    // ── ③ 결재 문서형 인쇄 — 담당(김남욱 GM)·대표(전응준)·회장(차의주) 3란 결재 문서.
-    //    모양은 coo/todo/결재 현황 SSOT.html #approvalPrintArea 를 본떴다(그 파일 미수정).
-    function extractOwnerItems(container) {
-      var out = [];
-      if (!container) return out;
-      Array.prototype.forEach.call(container.querySelectorAll('.item'), function (el) {
-        var h2 = el.querySelector('.top h2');
-        var title = '';
-        if (h2) {
-          var clone = h2.cloneNode(true);
-          var noEl = clone.querySelector('.no'); if (noEl) noEl.remove();
-          var catEl = clone.querySelector('.cat'); if (catEl) catEl.remove();
-          title = clone.textContent.trim();
-        }
-        var status = '';
-        Array.prototype.forEach.call(el.querySelectorAll('dl > div'), function (row) {
-          var dt = row.querySelector('dt');
-          if (dt && dt.textContent.trim() === '상태') {
-            var dd = row.querySelector('dd');
-            status = dd ? dd.textContent.trim() : '';
-          }
-        });
-        out.push({ title: title, status: status || '—' });
-      });
-      return out;
-    }
-
-    function collectReportRows() {
-      var pending = chPend().map(function (it) {
-        return { dept: CHAIRMAN_BADGE, title: it.title, status: it.when || '—' };
-      });
-      extractOwnerItems(elGrid).forEach(function (it) {
-        pending.push({ dept: OWNER_BADGE, title: it.title, status: it.status });
-      });
-      var done = chDone().map(function (it) {
-        return { dept: CHAIRMAN_BADGE, title: it.title, status: (it.when || '—') + ' · ' + window.OwnerDirective.chairmanDate(it) + ' 보고' };
-      });
-      extractOwnerItems(elDoneGrid).forEach(function (it) {
-        done.push({ dept: OWNER_BADGE, title: it.title, status: it.status });
-      });
-      return { pending: pending, done: done };
-    }
-
-    function listTable(list) {
-      var rows = list.map(function (it, i) {
-        return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.dept) + '</td><td>' + esc(it.title) + '</td><td>' + esc(it.status) + '</td></tr>';
-      }).join('');
-      return '<table class="rr-list-table"><thead><tr><th>번호</th><th>구분</th><th>업무명</th><th>진행 상태</th></tr></thead><tbody>' + rows + '</tbody></table>';
-    }
-
-    // ① GM 업무 진행건 표(업무명·상태·진척·할 일 완료 수) — renderGm()이 채워 둔 gmPrintRows 재사용
-    // (GM 2026-08-06 "이 부분도 보고할 수 있게 정리해줘").
-    function gmListTable(list) {
-      var rows = list.map(function (it, i) {
-        return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.title) + '</td><td>' + esc(it.status) + '</td><td>' + esc(it.pct) + '</td><td>' + esc(it.doneRatio) + '</td></tr>';
-      }).join('');
-      return '<table class="rr-list-table"><thead><tr><th>번호</th><th>업무명</th><th>상태</th><th>진척</th><th>할 일 완료 수</th></tr></thead><tbody>' + rows + '</tbody></table>';
-    }
-
-    window.printGmApprovalDoc = function () {
-      var data = collectReportRows();
-      var now = new Date();
-      var dateStr = now.getFullYear() + '. ' + pad2(now.getMonth() + 1) + '. ' + pad2(now.getDate()) + '.';
-      var genTime = dateStr + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
-      var html = '<div class="rr-page">' +
-        '<div class="rr-header">' +
-        '<div class="rr-wordmark">WELLPERION<small>경영 보고서</small></div>' +
-        '<table class="rr-approval-table"><tr>' +
-        '<td class="rr-approval-label">결재</td>' +
-        '<td><div class="rr-approval-role">담당 김남욱 GM (인)</div><div class="rr-approval-sign"></div></td>' +
-        '<td><div class="rr-approval-role">대표 전응준 (인)</div><div class="rr-approval-sign"></div></td>' +
-        '<td><div class="rr-approval-role">회장 차의주 (인)</div><div class="rr-approval-sign"></div></td>' +
-        '</tr></table>' +
-        '</div>' +
-        '<div class="rr-doc-title">경 영 보 고 서</div>' +
-        '<div class="rr-meta">작성일 ' + dateStr + '</div>' +
-        '<div class="rr-section-title">보고 대기 ' + data.pending.length + '건</div>' +
-        (data.pending.length ? listTable(data.pending) : '<div class="rr-section-body">보고 대기 건이 없습니다.</div>') +
-        (data.done.length ? ('<div class="rr-section-title">보고 완료 ' + data.done.length + '건</div>' + listTable(data.done)) : '') +
-        '<div class="rr-section-title">김남욱 GM 업무 진행건 ' + gmPrintRows.length + '건</div>' +
-        (gmPrintRows.length ? gmListTable(gmPrintRows) : '<div class="rr-section-body">등록된 GM 업무가 없습니다.</div>') +
-        '<div class="rr-footer">' +
-        '<span>이 문서는 웰페리온 ERP 월간운영계획·업무 시트에서 자동 생성되었습니다.</span>' +
-        '<span>생성 시각: ' + genTime + '</span>' +
-        '</div>' +
-        '</div>';
-      var area = document.getElementById('aprPrintArea');
-      area.innerHTML = html;
-      document.body.setAttribute('data-print-mode', 'apr');
-      // 결재문서는 A4 스케일 문서인데 상단 고정 @page가 A3라 그대로 찍히면 의미가 없다 — printA3와 같은 방식으로
-      // 임시 오버라이드 후 afterprint에 원복(GM 지적 2026-08-08).
-      var st = document.getElementById('gm-apr-a4-style');
-      if (!st) { st = document.createElement('style'); st.id = 'gm-apr-a4-style'; document.head.appendChild(st); }
-      st.textContent = '@page{ size: A4 portrait; margin: 12mm; }';
-      function reset() { document.body.removeAttribute('data-print-mode'); st.textContent = ''; window.removeEventListener('afterprint', reset); }
-      window.addEventListener('afterprint', reset);
-      window.print();
-      setTimeout(reset, 2000);
-    };
   })();
 })();
 </script>

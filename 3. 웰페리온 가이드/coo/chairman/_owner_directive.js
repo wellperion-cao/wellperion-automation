@@ -189,23 +189,33 @@
   function chairmanSection() {
     var items = chairmanPending();
     if (!items.length) return '';
-    return '\n\n■ 회장님 보고건 ' + items.length + '건 (진행 현황)\n\n' +
+    return '■ 회장님 보고건 ' + items.length + '건 (진행 현황)\n\n' +
       items.map(function (it, i) {
         return (i + 1) + '. ' + it.title + ' (' + (it.cat || '분류 미정') + ')' +
-          '\n   · 진행: ' + it.when;
+          (it.when ? ('\n   · 진행: ' + it.when) : '');
       }).join('\n');
   }
 
+  /* 문안은 실제로 담긴 것만 적는다(GM 지적 2026-08-14 "보고문안복사도 이상해").
+     예전엔 대표님 보고건이 0건이어도 '■ 대표님 보고건 0건' 과 빈 줄이 그대로 찍히고,
+     회장님 건만 있는데도 첫 줄이 '대표님께 …' 로 나갔다. 0건 구획은 빼고 인사말을 실제 대상에 맞춘다. */
   function buildDigest(items, introLine, includeChairman) {
-    var body = items.map(function (it, i) {
-      return (i + 1) + '. ' + it.title +
-        '\n   · 카테고리: ' + (it.category || '—') +
-        '\n   · 일정: ' + it.schedule +
-        (it.content ? ('\n   · 내용: ' + it.content) : '');
-    }).join('\n\n');
-    var head = includeChairman ? '■ 대표님 보고건 ' + items.length + '건\n\n' : '';
-    return introLine + ' (' + todayStr() + ')\n\n' + head + body +
-      (includeChairman ? chairmanSection() : '') + '\n\n확인 부탁드립니다.';
+    var blocks = [];
+    if (items.length) {
+      var body = items.map(function (it, i) {
+        return (i + 1) + '. ' + it.title +
+          '\n   · 카테고리: ' + (it.category || '—') +
+          '\n   · 일정: ' + it.schedule +
+          (it.content ? ('\n   · 내용: ' + it.content) : '');
+      }).join('\n\n');
+      blocks.push((includeChairman ? '■ 대표님 보고건 ' + items.length + '건\n\n' : '') + body);
+    }
+    var ch = includeChairman ? chairmanSection() : '';
+    if (ch) blocks.push(ch);
+    var intro = (!items.length && ch) ? '회장님께 아래 업무를 보고드립니다.'
+              : (items.length && ch) ? '대표님·회장님께 아래 업무를 보고드립니다.'
+              : introLine;
+    return intro + ' (' + todayStr() + ')\n\n' + blocks.join('\n\n') + '\n\n확인 부탁드립니다.';
   }
 
   // ── 화면 렌더 + 이벤트(대표님/GM 페이지 공용 — cfg 로만 갈린다) ──
