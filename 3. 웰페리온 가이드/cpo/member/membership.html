@@ -5692,14 +5692,43 @@ function _lessonApplyLocalMgmt(row, sportKey, patch) {
 }
 // 필터 반영 후 화면에 보이는 '종목별 줄' — 문의 1행에 종목이 여러 개면 종목마다 별도 줄로 분리(축7, GM 확정).
 // 종목 미기재 행은 sportKey=''(레거시 단일 경로)로 줄 1개 유지(데이터 손실 방지).
+/* ── 옛 문의 아카이브 (GM 확정 2026-08-14) ─────────────────────────────
+   GM 원문: "그 전 것은 정리로 넘겨줘 그냥 아카이브라고 봐야지, 그것까지 체크하기에는 너무 힘들어."
+   기준 = 2026-08-01 이전 접수 + 연락 이력 0건 + 아직 안 끝난 건. 실측 293건(강습 283·멤버십 10).
+   ▸숨기기만 한다 — 시트·데이터는 그대로다(표시 전용·완전 가역). 통계 줄의 [옛 문의 N건 보기]로 되살려 본다.
+   ▸24시간 미컨택 경보는 원래부터 8/1 이후만 보므로 이 기준과 어긋나지 않는다(unassigned_nudge.SLA_SINCE_DATE). */
+var ARCHIVE_CUT = '2026-08-01';
+var _showArchived = false;
+var _lessonArchivedN = 0;
+var _dbArchivedN = 0;   // 이번 렌더에서 숨긴 옛 문의 수(통계 줄 표시용)
+function _isOldUncontacted(r) {
+  if (_showArchived) return false;
+  if (!r) return false;
+  var ts = String(r.timestamp || '').slice(0, 10);
+  if (!ts || ts >= ARCHIVE_CUT) return false;
+  var st = String(r.status || '');
+  if (st === 'SUC' || st === '단기SUC' || st === 'LOSS' || st === '재문의로 종결') return false;
+  var cs = r.contacts;
+  if (cs && cs.length) return false;                    // 강습 — 연락 이력 배열
+  if (String(r.contact1 || '').trim()) return false;    // 멤버십 — 1차 연락 칸
+  return true;
+}
+function toggleArchived() {
+  _showArchived = !_showArchived;
+  if (typeof renderDbTable === 'function' && document.getElementById('dbBody')) renderDbTable();
+  ['adult', 'youth'].forEach(function(t){ if (_lessonState && _lessonState[t]) lessonRender(t); });
+}
+
 function _lessonVisibleLines(t) {
   var st = _lessonState[t];
+  _lessonArchivedN = 0;
   var rows = _lessonVisibleRows(t);
   var q = String(st.q || '').trim().toLowerCase();
   var qd = q.replace(/[^0-9]/g, '');
   var lines = [];
   rows.forEach(function(r){
-    if (_lessonIsArchived(r)) return;   // 문의 현황=활성만. LOSS·SUC·대기는 각 전용 탭으로 분리(배973 · SUC 2026-07-23 GM)
+    if (_lessonIsArchived(r)) return;
+    if (_isOldUncontacted(r)) { _lessonArchivedN++; return; }   // 옛 문의 아카이브(GM 2026-08-14)   // 문의 현황=활성만. LOSS·SUC·대기는 각 전용 탭으로 분리(배973 · SUC 2026-07-23 GM)
     if (q) {   // 검색: 성함(부분) 또는 연락처(숫자) 매칭 — 팀 리더 빠른 찾기(배944 후속)
       var nm = String(r.name || '').toLowerCase();
       var ph = String(r.phone || '').replace(/[^0-9]/g, '');
@@ -6027,7 +6056,17 @@ function lessonRender(t) {
   }
   tbody.innerHTML = html;
   var _sl = document.getElementById('lessonStatLine_' + t);
-  if (_sl) _sl.textContent = '표시 ' + view.length + ' / ' + lines.length.toLocaleString() + '건';
+  if (_sl) {
+    _sl.textContent = '표시 ' + view.length + ' / ' + lines.length.toLocaleString() + '건';
+    // 옛 문의 아카이브 안내 — 숨긴 게 있을 때만 뜬다(GM 2026-08-14). 클릭하면 그 자리에서 펼쳐 본다.
+    if (_lessonArchivedN > 0 || _showArchived) {
+      var _a = document.createElement('a');
+      _a.href = '#'; _a.style.cssText = 'margin-left:8px;font-size:11px;color:var(--dim);text-decoration:underline';
+      _a.textContent = _showArchived ? '옛 문의 숨기기' : ('옛 문의 ' + _lessonArchivedN + '건 보기');
+      _a.onclick = function(e){ e.preventDefault(); toggleArchived(); return false; };
+      _sl.appendChild(_a);
+    }
+  }
 }
 
 // 종목 여러 개('/' 또는 ',' 구분) → 각 종목 한 줄씩. 단, 괄호 안 '/'·','는 종목 내부 옵션 나열
@@ -11895,7 +11934,9 @@ function _dbFilteredRows() {
   var hideReg = _hideRegEl && _hideRegEl.checked;   // '진행중만 보기' — 등록·완납·이탈 종결건 숨김
   var _TERMINAL = ['SUC','단기SUC','결제완납','재문의로 종결'];   // LOSS는 진행중만 보기에서도 노출(재등록 대응 대상). 2026-07-08 시포·GM. '재문의로 종결'=다른 행으로 재문의·등록 이관된 종결건(GM 확정, 2026-07-20) — 체크박스 해제 시에만 노출
   var searchDigits = search.replace(/\D/g, '');   // 연락처 숫자만 매칭용(하이픈·공백 무시). 2026-07-02 시포(GM)
+  _dbArchivedN = 0;
   return dbRows.filter(function(row){
+    if (_isOldUncontacted(row)) { _dbArchivedN++; return false; }   // 옛 문의 아카이브(GM 2026-08-14)
     var matchStatus = !filter || _memStatusDisplay(row.status) === filter;   // '미정' 필터=레거시 신규/예약/방문/빈값 포함
     var matchSearch = true;
     if (search) {
@@ -11971,7 +12012,16 @@ function renderDbTable() {
     moreTr.appendChild(moreTd);
     tbody.appendChild(moreTr);
   }
-  document.getElementById('dbCount').textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시' + (filtered.length > shown.length ? ' (' + shown.length + '건 렌더됨)' : '');
+  var _dbc = document.getElementById('dbCount');
+  _dbc.textContent = '총 ' + dbRows.length + '건 중 ' + filtered.length + '건 표시' + (filtered.length > shown.length ? ' (' + shown.length + '건 렌더됨)' : '');
+  // 옛 문의 아카이브 안내 — 숨긴 게 있을 때만(GM 2026-08-14). 클릭하면 그 자리에서 펼쳐 본다.
+  if (_dbArchivedN > 0 || _showArchived) {
+    var _da = document.createElement('a');
+    _da.href = '#'; _da.style.cssText = 'margin-left:8px;font-size:11px;color:var(--dim);text-decoration:underline';
+    _da.textContent = _showArchived ? '옛 문의 숨기기' : ('옛 문의 ' + _dbArchivedN + '건 보기');
+    _da.onclick = function(e){ e.preventDefault(); toggleArchived(); return false; };
+    _dbc.appendChild(_da);
+  }
   _updateDbUnfilledBadge(filtered);
   _updateDbGraduatedInfo();
 }
