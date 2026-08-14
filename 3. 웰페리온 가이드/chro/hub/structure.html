@@ -477,8 +477,14 @@
 
     <div class="item">
       <div class="item-head"><span class="badge bg-a3">A-3 직원담당자</span><h3>입사 확정</h3></div>
-      <p>"입사 확정" 지시 시 최종 합격 단계의 지원자에 한해 처리하며, <b>12주차 체크인 일정이 자동 생성</b>됩니다. 확정 후 온보딩 DB를 읽어 체크인이 실제 생성됐는지 검증하고 대상자 · 입사일 · 일정을 요약 보고합니다. <b>동일 지원자 재확정 시 중복가드(@81)가 차단</b>하며, 차단 안내문과 함께 <b>"강제 재등록으로 다시 요청" 버튼</b>이 뜹니다 — 클릭 시 confirm() 재확인을 한 번 더 거친 뒤에만 forceRegister:true로 재요청(무심코 중복 생성 방지, 2026-08-05 추가).</p>
+      <p>"입사 확정" 지시 시 최종 합격 단계의 지원자에 한해 처리하며, 성공 직후 <b>온보딩 부서 게이트 확인 팝업</b>이 뜹니다(구 "12주차 체크인 자동 생성" → 2026-08-12 확인형으로 전환, 아래 항목 참고). 확정 후 온보딩 DB를 읽어 체크인이 실제 생성됐는지 검증하고 대상자 · 입사일 · 일정을 요약 보고합니다. <b>동일 지원자 재확정 시 중복가드(@81)가 차단</b>하며, 차단 안내문과 함께 <b>"강제 재등록으로 다시 요청" 버튼</b>이 뜹니다 — 클릭 시 confirm() 재확인을 한 번 더 거친 뒤에만 forceRegister:true로 재요청(무심코 중복 생성 방지, 2026-08-05 추가).</p>
       <div class="tags"><span class="tag act">hire-complete</span><span class="tag db">db:onbo</span></div>
+    </div>
+
+    <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>온보딩 부서 게이트 (2026-08-12 신설)</h3></div>
+      <p>12주 체크인(정보1+체크인12+성찰12) 자동 생성은 <b>부서=운영부 AND 고용형태=정규직</b>일 때만 실행됩니다(2026-08-12 매니저 확정). 입사 확정 성공 직후 무조건 자동 생성하던 것을 <b>확인 팝업(입사확정에서 고른 부서를 기본값으로 이어받는 재선택 드롭다운)</b>으로 교체했고, "신규 입사자 온보딩 시작" 수동 모달의 부서 입력도 자유 텍스트에서 동일 6종 드롭다운으로 통일해 <b>진입점 2곳(자동 호출 · 수동 모달) 모두 같은 게이트</b>를 적용합니다. 대상이 아니면 생성 버튼 대신 차단 안내가 뜨고, 사전 준비 6항목(근로계약서 등)은 이 게이트와 무관하게 부서 · 고용형태 상관없이 그대로 생성됩니다. <b>프론트 전용 — 백엔드(Apps Script) 무변경</b>이라 화면을 거치지 않는 직접 API 호출은 이 게이트를 우회할 수 있음(2차 백엔드 안전장치는 매니저 판단으로 보류).</p>
+      <div class="tags"><span class="tag act">add-onboarding</span><span class="tag db">db:onbo</span><span class="tag db">db:emp</span></div>
     </div>
 
     <div class="item">
@@ -885,8 +891,8 @@
         <tr><td><span class="tag act">set-channels</span></td><td>채용 채널 설정</td><td><span class="badge bg-a2">A-2</span></td></tr>
         <tr><td><span class="tag act">update-headcount</span></td><td>모집인원 변경(전용 액션 · 0 이상 정수 검증)</td><td><span class="badge bg-a2">A-2</span></td></tr>
         <tr><td><span class="tag act">vacate-current</span></td><td>채용취소 정리(퇴사 기록 없이 행 값만 비움)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
-        <tr><td rowspan="5">온보딩 · 입사</td><td><span class="tag act">hire-complete</span></td><td>입사 확정 → 12주 체크인 자동 생성 · <b>@81 중복가드</b>(동일 지원자 재확정 시 차단) + 온보딩 기본항목 8→6 축소 — 차단 시 허브 모달에 안내문 + <b>"강제 재등록으로 다시 요청" 버튼</b>(confirm 재확인 후 forceRegister:true, 2026-08-05 A-5 추가)</td><td><span class="badge bg-a3">A-3</span></td></tr>
-        <tr><td><span class="tag act">add-onboarding</span></td><td>온보딩 항목 추가</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td rowspan="5">온보딩 · 입사</td><td><span class="tag act">hire-complete</span></td><td>입사 확정 → 온보딩 부서 게이트 확인 팝업(부서=운영부 AND 고용형태=정규직만 생성, 2026-08-12 화면 게이트) · <b>@81 중복가드</b>(동일 지원자 재확정 시 차단) + 온보딩 기본항목 8→6 축소 — 차단 시 허브 모달에 안내문 + <b>"강제 재등록으로 다시 요청" 버튼</b>(confirm 재확인 후 forceRegister:true, 2026-08-05 A-5 추가)</td><td><span class="badge bg-a3">A-3</span></td></tr>
+        <tr><td><span class="tag act">add-onboarding</span></td><td>온보딩 항목 추가(허브 화면 호출 시 부서 게이트 적용, 백엔드 자체는 무조건 생성 — 2026-08-12)</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">update-onboarding</span></td><td>온보딩 항목 갱신(완료 체크 등)</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">delete-onboarding</span></td><td>온보딩 항목 삭제</td><td><span class="badge bg-a3">A-3</span></td></tr>
         <tr><td><span class="tag act">onboarding-self</span></td><td>신입 성찰 기록(24항목 완료 시 인사이트 종합)</td><td><span class="badge bg-a3">A-3</span></td></tr>
