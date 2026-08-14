@@ -1519,6 +1519,8 @@ LF_REGISTER_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception
 OHNUTTY_STATUS_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "cpo" / "member" / "wp_ohnutty_status_block.html"
 # 2026-08-13 GM 지시 — 종합접수처 영어판. 한글 원본(라이브 8584)에서 화면 문구만 영어로 바꾼 사본.
 LOOKUP_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lookup_block_en.html"
+# 2026-08-14 GM 승인 — 한글판 SSOT 소스 부재 발각(배623 후속) → 라이브(8584)에서 원본을 복원해 여기로 되살림.
+LOOKUP_BLOCK_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lookup_block.html"
 RECEPTION_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_reception_block_en.html"
 LF_GALLERY_BLOCK_FILE_EN = ROOT / "3. 웰페리온 가이드" / "coo" / "reception" / "wp_lost_found_gallery_block_en.html"
 
@@ -1528,6 +1530,7 @@ _NEW_PAGE_SPECS = {
     "lf-gallery":      (LF_GALLERY_BLOCK_FILE,      "습득 분실물 현황",     "lost-found"),
     "lf-register":     (LF_REGISTER_BLOCK_FILE,     "습득물 등록",          "lost-found-register"),
     "ohnutty-status":  (OHNUTTY_STATUS_BLOCK_FILE,  "OHNUTTY X WELLPERION", "ohnutty-status"),
+    "lookup":          (LOOKUP_BLOCK_FILE,          "접수 조회",            "lookup"),
     "lookup-en":       (LOOKUP_BLOCK_FILE_EN,       "Reception Desk",       "lookup"),
     "reception-en":    (RECEPTION_BLOCK_FILE_EN,    "Submit a Request",     "reception"),
     "lf-gallery-en":   (LF_GALLERY_BLOCK_FILE_EN,   "Lost & Found",         "lost-found"),
@@ -1832,7 +1835,7 @@ def main() -> int:
         "swap-additional-css",
     ], default="setup")
     ap.add_argument("--page", dest="page", default=None,
-                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en"],
+                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en", "lookup"],
                     help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)/ohnutty-status(오넛티 접수현황)")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
