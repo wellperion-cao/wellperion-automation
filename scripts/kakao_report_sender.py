@@ -451,6 +451,50 @@ def find_kakao_main_window() -> int:
     raise RuntimeError("카카오톡 메인창을 찾지 못함 — 앱이 실행 중인지 확인 필요")
 
 
+def _dismiss_kakao_dialog() -> str | None:
+    """카톡이 띄운 알림 다이얼로그(#32770)를 닫는다. 닫은 문구를 돌려준다(없으면 None).
+
+    2026-08-15 실사고: "업데이트에 문제가 발생했습니다." 팝업이 떠 있어 메인창 조작이
+    전부 막혔고, 아침 요약이 ★운영부·★중간관리자 두 방 모두 안 나갔다. 겉으로는
+    "검색창 활성화 실패"로만 보여 진짜 원인을 찾는 데 시간이 걸렸다 — 이 함수가
+    그 문구를 로그에 남긴다.
+    ▸카톡 자기 다이얼로그만 닫는다(제목에 '카카오' 포함). 다른 앱 창은 건드리지 않는다.
+    """
+    closed = None
+    targets: list[int] = []
+
+    def _top(h, _):
+        if win32gui.GetClassName(h) == "#32770" and win32gui.IsWindowVisible(h) \
+                and "카카오" in win32gui.GetWindowText(h):
+            targets.append(h)
+        return True
+
+    try:
+        win32gui.EnumWindows(_top, None)
+    except Exception:
+        return None
+
+    for h in targets:
+        texts: list[str] = []
+
+        def _child(c, _):
+            if win32gui.GetClassName(c) == "Static":
+                t = win32gui.GetWindowText(c).strip()
+                if t:
+                    texts.append(t)
+            return True
+
+        try:
+            win32gui.EnumChildWindows(h, _child, None)
+            win32gui.PostMessage(h, win32con.WM_CLOSE, 0, 0)
+            time.sleep(1.0)
+            closed = " / ".join(texts) or "(문구 없음)"
+            log(f"[카톡] 알림 팝업을 닫고 진행합니다 — {closed}")
+        except Exception as e:  # noqa: BLE001
+            log(f"[카톡] 알림 팝업 닫기 실패: {e}")
+    return closed
+
+
 def _find_visible_search_edit(main_hwnd: int):
     """메인창 자식 중 '검색이 활성화된' Edit 컨트롤(hwnd)을 찾는다.
 
@@ -545,6 +589,10 @@ def open_room_via_search(main_hwnd: int, room_name: str, timeout: float = 10.0):
       5) 새 방 창(EVA_Window_Dblclk·제목=room_name **완전일치**)이 뜰 때까지 폴링.
          제목이 정확히 일치하는 창만 성공으로 인정한다 — 오발송 방지: 확인 안 된
          창에는 절대 진행하지 않는다(엉뚱한 방이 열려도 타임아웃으로 안전 실패)."""
+    # 카톡 알림 팝업이 떠 있으면 메인창 조작이 전부 막힌다 — 방 열기 전에 한 번 걷어낸다
+    # (2026-08-15 실사고: 업데이트 오류 팝업 하나로 아침 요약 2방이 통째로 안 나갔다).
+    _dismiss_kakao_dialog()
+
     main_win = Desktop(backend="win32").window(handle=main_hwnd)
     focus_window(main_win, "카카오톡(메인창)")
 
