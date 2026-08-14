@@ -4790,7 +4790,15 @@ async function submitRound(round,gender){
     await sendTelegramNotify(d,baseShift,sub,gender);     // 기존 조 마감 텔레그램(집계 정합)
     if(ONLINE)await appendSubmitSnapshot(d,baseShift,sub,gender);  // 기존 shift 스냅샷(집계 무손상)
   }
-  alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
+  /* 2026-08-14 시토(배631) — 서버 저장이 확인 안 됐으면 그렇게 말한다.
+     전에는 저장이 미확정이어도 똑같이 "제출되었습니다"라고 떠서, 실무진은 끝난 줄 알고 화면을
+     닫았다(점검관리방 알림도 그때는 안 나간다 — 조용히 빠진다). 끝났는지 아닌지는 그 자리에서
+     알려줘야 다시 눌러 볼 수 있다. */
+  if(ONLINE && !_saveConfirmed){
+    alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel}) — 화면에는 기록됐지만 서버 저장이 확인되지 않았습니다.\n\n인터넷 상태를 확인하고 [제출]을 한 번 더 눌러 주세요. 다시 눌러도 같은 안내가 나오면 알려 주세요.`);
+  } else {
+    alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
+  }
   drawUI(d,gender);
 }
 
@@ -4866,7 +4874,11 @@ async function sendTelegramRound(date,round,submitter,gender){
   const _t=timerKeys(date,gender,round);
   const _dur=_timerDuration(STATE[_t.sk],STATE[_t.ek]);
   const _durTxt=(_dur!=null)?_dur+'분':'미측정';
-  let msg=`[지원부 체계 점검 ${rdef.name} ${rdef.time} 제출 (${genderLabel})]\n날짜: ${date}\n점검자: ${escapeHTML(submitter)}\n근무자: ${escapeHTML(duty)||'-'}\n소요시간: ${_durTxt}\n완료: ${done}/${total} (${pct}%)`;
+  /* 2026-08-14 시토(배631 · GM 지적 "점검관리방에 시설부만 뜬다") — 첫 줄을 시설부와 같은 모양으로.
+     같은 방에 시설부는 `🏗 시설부 N회차 제출 · …` 한 줄로 뜨는데 지원부만 대괄호 텍스트로 시작해,
+     GM 눈에는 지원부 알림이 아예 없는 것처럼 읽혔다(실제로는 나가고 있었다). 이모지·어순을 맞춰
+     둘이 나란히 스캔되게 한다. 내용은 그대로 — 아래 상세 줄은 하나도 안 뺐다. */
+  let msg=`🧹 지원부 ${rdef.name} 제출 · ${genderLabel} · 점검자 ${escapeHTML(submitter)||'-'} · ${done}/${total} (${pct}%)\n시간: ${rdef.time} · 근무자: ${escapeHTML(duty)||'-'} · 소요: ${_durTxt}`;
   if(issues.length)msg+=`\n\n이슈 ${issues.length}건:\n${issues.join('\n')}`;
   /* 점검관리 방 알림의 '점검 페이지: 링크' 라인 제거 — GM 2026-07-16(미노출 요청). link 변수는 아래 pageLink 하위호환용으로만 유지. */
   try{
