@@ -75,7 +75,8 @@
 <div class="printbar noprint">
   <span class="msg" id="a3-png-msg"></span>
   <button id="a3-png-btn" onclick="saveA3Png()">🖼 PNG로 저장</button>
-  <button onclick="window.print()">A3 세로로 인쇄</button>
+  <button onclick="printA3('portrait')">🖨 A3 세로</button>
+  <button onclick="printA3('landscape')">🖨 A3 가로</button>
 </div>
 
 <div class="sheet">
@@ -201,6 +202,15 @@
 </div>
 
 <script>
+  // 가로·세로 선택 인쇄 (GM 지시 2026-08-14) — GM업무.html printA3() 과 같은 방식.
+  // 상단 고정 @page 가 A3 portrait 라, 버튼을 누를 때마다 규칙을 문서 뒤쪽에 다시 써서 이기게 한다.
+  function printA3(orientation) {
+    var st = document.getElementById('a3-page-style');
+    if (!st) { st = document.createElement('style'); st.id = 'a3-page-style'; document.head.appendChild(st); }
+    st.textContent = '@page{ size: A3 ' + orientation + '; margin: 11mm 13mm; }';
+    window.print();
+  }
+
   // saveA3Png() — 웰페리온_운영부_단일보고라인_A3.html 과 동일 패턴. 파일명만 이 문서명으로 고정.
   function saveA3Png() {
     var btn = document.getElementById('a3-png-btn');
