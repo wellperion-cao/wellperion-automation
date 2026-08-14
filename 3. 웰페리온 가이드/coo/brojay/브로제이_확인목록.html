@@ -106,6 +106,15 @@
   body.embed header.page-head .back{display:none;}
   .footnote{margin-top:22px; font-size:12.5px; color:var(--dim); line-height:1.8; border-top:1px solid var(--border); padding-top:12px;}
   .footnote code{background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:1px 6px; font-size:12px;}
+
+  /* ── Print (2026-08-14 · 채점 배632 — 브로제이_업무분장과 같은 패턴) ── */
+  @media print{
+    @page{margin:8mm;size:A4}
+    :root{--bg:#fff;--paper:#fff;--surface:#fafafa;--hero:#f2f2f2;--text:#1a1a1a;--text-soft:#444;--dim:#777;--border:#ccc;--border-strong:#999}
+    body{background:#fff;color:#1a1a1a}
+    header.page-head .sheet-btn,.vq-editbar,.vq-btn,.vq-mini{display:none!important}
+    .vq-owner-group{break-inside:avoid;border:1px solid #ccc;padding:6px 8px}
+  }
 </style>
 </head>
 <body>
