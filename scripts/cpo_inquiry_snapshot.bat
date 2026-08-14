@@ -5,7 +5,12 @@ REM Read-only accelerator job - fetches member/lesson inquiry lists via GAS and
 REM publishes status/inquiry_snapshot_member.json + status/inquiry_snapshot_lesson.json
 REM for instant cold-load rendering in member/document.html. Fail-soft (never blocks
 REM the live gviz/GAS re-verify path on the page - see design spec).
+REM 2026-08-14 (ship 624): each python call's exit code is now remembered. Before this only
+REM the LAST call's code survived, so Task Scheduler showed rc=0 on runs where a step had
+REM actually failed. Fail-soft is unchanged - a failed step still does not stop the ones
+REM after it; the task just ends non-zero so the failure is visible.
 setlocal
+set FAILED=
 set PYTHONIOENCODING=utf-8
 set ROOT=C:\Users\jjky0\welperion-automation
 set PY=C:\Python314\python.exe
@@ -13,10 +18,12 @@ if not exist "%PY%" set PY=python
 cd /d "%ROOT%"
 echo ===== %DATE% %TIME% cpo-inquiry-snapshot start ===== >> "%ROOT%\logs\cpo_inquiry_snapshot.log"
 "%PY%" "%ROOT%\scripts\cpo_inquiry_snapshot.py" >> "%ROOT%\logs\cpo_inquiry_snapshot.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% cpo_inquiry_snapshot
 REM Staff feedback watcher (2026-07-25 GM) - rides this 3-minute slot instead of a new
 REM scheduled task. New staff feedback becomes a CPO ship immediately so nothing sits
 REM unattended in the sheet. Fail-soft: never blocks the snapshot job above.
 "%PY%" "%ROOT%\scripts\collectors\cpo_staff_feedback_watch.py" >> "%ROOT%\logs\cpo_staff_feedback_watch.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% cpo_staff_feedback_watch
 REM Feedback-only live runner (2026-08-05 GM - "just process it right away?"). Bottleneck
 REM measured was ship-creation -> processing-START (median 20.5h, only because the sole
 REM executor was the once-daily 07:30 Wellperion-Welly-Auto-Runner-0730 task). Reuses that
@@ -32,8 +39,14 @@ REM no extra locking code needed. Fail-soft: never blocks the jobs above.
 set RUNNER_LIVE=1
 set RUNNER_PING_LIVE=1
 "%PY%" "%ROOT%\scripts\welly_auto_runner.py" --clevel all --feedback-only >> "%ROOT%\logs\welly_auto_runner.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% welly_auto_runner
 REM Kungjjak board emit (2026-08-08 GM) - publishes status/kungjjak_today.json so the
 REM autonomy page can show today GM-order vs done pairs live. Read-only over worklog.jsonl,
 REM no sending, no new scheduled task - rides this existing 3-minute slot. Fail-soft.
 "%PY%" "%ROOT%\scripts\kungjjak_board.py" --emit >> "%ROOT%\logs\kungjjak_board.log" 2>&1
-endlocal
+if errorlevel 1 set FAILED=%FAILED% kungjjak_board
+if not "%FAILED%"=="" goto :wpfailed
+endlocal & exit /b 0
+:wpfailed
+echo ===== %DATE% %TIME% cpo-inquiry-snapshot FAILED steps:%FAILED% =====
+endlocal & exit /b 1
