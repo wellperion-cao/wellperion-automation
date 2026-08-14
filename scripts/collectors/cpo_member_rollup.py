@@ -134,9 +134,28 @@ def _lesson_completeness_pct(lesson_type: str):
     return round((len(named) - gaps) / len(named) * 100)
 
 
+_DATE_OK = re.compile(r"^\s*\d{4}[-./]\d{1,2}[-./]\d{1,2}")
+_DATE_COLS = ("등록일자", "시작일자", "종료일자", "LOSS일자")
+
+
+def _broken_date_cols(row: dict) -> int:
+    """값은 있는데 날짜로 안 읽히는 칸 수. 2026-08-14 시포 — 위생 5번째 항목.
+
+    2026-08-08 에 김영경1 의 시작일자가 '25. 10 .15' 로 깨져 있었고, 집계가 그걸
+    미래 날짜로 오판해 대기 인원을 1명 더 세었다. 사람이 보면 바로 아는 오타인데
+    기계는 조용히 틀린 숫자를 냈다 — 그래서 위생 줄에 띄운다.
+    """
+    n = 0
+    for col in _DATE_COLS:
+        v = _cell(row, col)
+        if v and not _DATE_OK.match(v):
+            n += 1
+    return n
+
+
 def _member_composition(active_rows: list[dict], today: str) -> dict:
     """유효회원 시트(scope=valid) 전체를 정회원/대기로 가르고, 정회원만 회원구분별로
-    집계 + 데이터 위생(오타·미기재·이름중복·잔여일 공백) 동시 산출 — 시트 1회 순회로 재사용."""
+    집계 + 데이터 위생(오타·미기재·이름중복·잔여일 공백·날짜형식) 동시 산출 — 시트 1회 순회로 재사용."""
     total = len(active_rows)
     waiting = 0
     type_counts = {t: 0 for t in _KNOWN_TYPES}
@@ -144,6 +163,7 @@ def _member_composition(active_rows: list[dict], today: str) -> dict:
     typo_count = 0
     blank_type_count = 0
     remain_blank = 0
+    date_broken = 0
     gaps = 0
     name_seen: dict[str, int] = {}
 
@@ -180,6 +200,8 @@ def _member_composition(active_rows: list[dict], today: str) -> dict:
         if _active_completeness_gap(r):
             gaps += 1
 
+        date_broken += _broken_date_cols(r)
+
     dup_count = sum(c - 1 for c in name_seen.values() if c > 1)
     return {
         "total": total,
@@ -190,6 +212,7 @@ def _member_composition(active_rows: list[dict], today: str) -> dict:
         "typo_count": typo_count,
         "blank_type_count": blank_type_count,
         "remain_blank": remain_blank,
+        "date_broken": date_broken,
         "dup_count": dup_count,
         "gaps": gaps,
     }
@@ -303,7 +326,8 @@ def collect(module=None) -> dict:
     if comp is not None:
         line4 = (
             f"■ 데이터 위생 — 회원구분 오타 {comp['typo_count']} · 미기재 {comp['blank_type_count']} · "
-            f"이름중복 {comp['dup_count']} · 잔여일 공백 {comp['remain_blank']} "
+            f"이름중복 {comp['dup_count']} · 잔여일 공백 {comp['remain_blank']} · "
+            f"날짜형식 깨짐 {comp['date_broken']} "
             f"(지난주 대비 측정 안 됨 — 비교 이력 없음)"
         )
     else:
