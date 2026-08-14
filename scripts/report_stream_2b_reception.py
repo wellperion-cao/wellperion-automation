@@ -365,6 +365,46 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
     return "\n".join(lines)
 
 
+def run_intake_relay(dry_run: bool = True) -> list[str]:
+    """새 접수를 **부서별로 따로 한 통씩** 종합접수처방에 전달(GM 승인 2026-08-15).
+    부서별로 나누는 이유 = 그 부서가 자기 것만 보고 바로 조치하라는 GM 지시(배627).
+    새 접수가 없는 부서는 아무것도 보내지 않는다(빈 통보 금지)."""
+    rows = _fetch_rows()
+    if rows is None:
+        return []
+    state = _load_completion_state()
+    if not state.get("intake_relay_enabled") and not dry_run:
+        return []
+    seen = set(state.get("reception_seen_new_ids") or [])
+    depts = sorted({str(r.get("dept") or "").strip() or "부서 미정" for r in rows
+                    if str(r.get("regId") or "") and str(r["regId"]) not in seen})
+    if not depts:
+        return []
+
+    token = _load_env_val("TELEGRAM_BOT_TOKEN") if not dry_run else None
+    sent: list[str] = []
+    for dept in depts:
+        sub = [r for r in rows if (str(r.get("dept") or "").strip() or "부서 미정") == dept]
+        text = _intake_relay_block(sub, state={"intake_relay_enabled": True,
+                                               "reception_seen_new_ids": sorted(seen)},
+                                   persist=False, force=True)
+        if not text:
+            continue
+        if dry_run:
+            print(f"[intake-relay] DRY-RUN {dept}\n{text}\n", flush=True)
+            sent.append(dept)
+            continue
+        if token and tg_send(token, TELEGRAM_CHAT_ID, text, source="report_stream_2b_intake_relay"):
+            sent.append(dept)
+    # 커서는 **전부 보낸 뒤에만** 전진한다(완료 통보와 같은 규칙 — 중간에 실패하면 다음
+    # 회차에 다시 나간다. 잃는 것보다 겹치는 게 낫다).
+    if not dry_run and sent:
+        state["reception_seen_new_ids"] = sorted(
+            {str(r["regId"]) for r in rows if str(r.get("regId") or "")})
+        _save_completion_state(state)
+    return sent
+
+
 def build_digest(today: str | None = None, persist_completion: bool = True) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
@@ -434,15 +474,12 @@ if __name__ == "__main__":
     p.add_argument("--today", default=None, help="날짜 YYYY-MM-DD (기본=오늘)")
     p.add_argument("--seed-completion", action="store_true",
                     help="처리완료 통보 커서 시딩(enabled:true 켜기 직전 1회 — 백로그 통보 방지)")
-    p.add_argument("--intake-relay-dryrun", action="store_true",
-                    help="접수 즉시 부서 전달 문구만 렌더(발송·커서 갱신 없음 — GM 확인용)")
+    p.add_argument("--intake-relay", action="store_true",
+                    help="새 접수를 부서별로 종합접수처방에 전달(기본 드라이런 · --live 로 실발송)")
     a = p.parse_args()
-    if a.intake_relay_dryrun:
-        _rows = _fetch_rows()
-        if _rows is None:
-            print("[stream2b] 조회 실패 (GAS 응답 없음)")
-            sys.exit(1)
-        print(_intake_relay_block(_rows, persist=False, force=True) or "[stream2b] 새 접수 없음")
+    if a.intake_relay:
+        _sent = run_intake_relay(dry_run=not a.live)
+        print(f"[intake-relay] {'렌더' if not a.live else '발송'} {len(_sent)}개 부서 — {_sent or '새 접수 없음'}")
         sys.exit(0)
     if a.seed_completion:
         n = seed_completion_cursor()

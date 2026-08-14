@@ -3978,6 +3978,26 @@ def main():
         )
         logger.info("daily_digest 등록 완료 — 매일 20:00(휴일 게이트)/22:30(평일 게이트), 하루 일과 정리 3방 발송")
 
+        # ── 접수 즉시 부서 전달 (15분 간격) — CTO 배627 · GM 승인 2026-08-15 ───────────
+        # GM: "다 운영부 라인으로 넘기니 병목이 일어나고 처리가 안 된다. 각 부서에 전달되어
+        # 그 부서에서 조치·회신까지 챙기게 하라." 새 예약작업을 만들지 않고 이미 상주하는
+        # 이 스케줄러에 잡 하나만 얹는다(약속 L21). 부서별로 따로 한 통씩 나가고, 새 접수가
+        # 없는 부서는 아무것도 보내지 않는다. 게이트 = dept_completion_notify.json
+        # intake_relay_enabled(꺼두면 이 잡이 돌아도 발송 0).
+        try:
+            from report_stream_2b_reception import run_intake_relay  # noqa: PLC0415
+
+            scheduler.add_job(
+                lambda: run_intake_relay(dry_run=False),
+                trigger=IntervalTrigger(minutes=15),
+                id="reception_intake_relay_15min",
+                misfire_grace_time=300,
+                coalesce=True,
+            )
+            logger.info("reception_intake_relay 등록 완료 — 15분 간격, 새 접수를 부서별로 종합접수처방 전달")
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"reception_intake_relay 등록 실패: {e}")
+
         # ── 스트림 #3 매출+운영+인사 현황 보고 (매일 09:30) — CTO 2026-07-22 ───────────
         try:
             scheduler.add_job(
