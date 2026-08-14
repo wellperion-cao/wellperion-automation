@@ -75,6 +75,22 @@ tr.dirty .saveb{display:inline-block}
 .toast.bad{background:var(--orange)}
 .foot{border-top:1.5px solid var(--ink);margin-top:40px;padding:18px 0 46px;color:var(--muted);font-size:11.5px;text-align:center;line-height:1.8}
 ::-webkit-scrollbar{width:11px;height:11px}::-webkit-scrollbar-thumb{background:#D8C9B6;border-radius:8px;border:3px solid var(--paper)}
+
+/* ── 휴대폰 폭(2026-08-14 · 채점 배632 — media query 0개였던 것 추가) ──
+   letterhead 는 justify-content:space-between 고정폭이라 좁은 화면에서 겹침 위험 → 줄바꿈.
+   로그인 박스는 340px 고정이라 그보다 좁은 화면에서 잘림 → 화면폭 기준으로 축소.
+   표 칸의 큰 min-width 는 .tscroll(overflow:auto) 안에서 가로스크롤로 이미 흡수되지만,
+   폭을 줄여 스크롤을 덜 해도 되게 한다. */
+@media (max-width:600px){
+  .wrap{padding:0 14px}
+  .letterhead{flex-wrap:wrap;gap:8px}
+  .head-r{text-align:left}
+  #login .box{width:min(340px,88vw);padding:28px 22px}
+  td.wide{min-width:220px} td.wide textarea{min-width:200px}
+  td.tel{min-width:130px} td.tel input{min-width:120px}
+  td.exp{min-width:100px}
+  table{font-size:12px}
+}
 </style><link rel="stylesheet" href="../../../assets/wp-typography.css">
 </head><body>
 
