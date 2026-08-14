@@ -1832,7 +1832,7 @@ def main() -> int:
         "swap-additional-css",
     ], default="setup")
     ap.add_argument("--page", dest="page", default=None,
-                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status"],
+                    choices=["survey", "lf-gallery", "lf-register", "ohnutty-status", "reception-en", "lf-gallery-en", "lookup-en"],
                     help="draft-page/publish-page 대상: survey(자체Survey)/lf-gallery(습득분실물 보기)/lf-register(습득분실물 접수)/ohnutty-status(오넛티 접수현황)")
     ap.add_argument("--dry-run", dest="dry_run", action="store_true",
                     help="swap-reception-text: 저장 없이 카운트·무결성만 검증")
