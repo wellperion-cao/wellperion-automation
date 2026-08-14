@@ -286,6 +286,30 @@ a { color:var(--accent); text-decoration:none; }
 .cat-group-head .cat-name{ flex:1; }
 .cat-group-head .cat-n{ font-size:11.5px; font-weight:800; background:var(--bg); color:var(--dim); border-radius:9px; padding:1px 9px; }
 .cat-group-body{ padding-top:8px; }
+
+/* ── Print ── */
+@media print {
+  @page { margin:10mm; size:A4; }
+  :root{--bg:#fff;--paper:#fff;--text:#222;--dim:#555;--border:#ccc;--accent-bg:#f3ede7;--green-bg:#eef7f0;--red-bg:#fdeeeb;--yellow-bg:#fbf6e2;--blue-bg:#eaf3fb;--orange-bg:#fbf0e6}
+  body{background:#fff!important;color:#222!important;font-size:11px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sticky-top,.header-btns,.chips,.filter-label,.search-input,.score-tabs,.dc-btn,.save-row,.lf-ctrl-row{display:none!important}
+  .content{padding:0!important}
+  .board{display:block!important;overflow:visible!important}
+  .col{width:100%!important;min-width:0!important;margin-bottom:10px;break-inside:avoid;border:1px solid #ccc!important}
+  .col-body{max-height:none!important;overflow:visible!important}
+  .card{border:1px solid #ccc!important;break-inside:avoid;background:#fff!important}
+}
+/* ── 모바일 반응형 ── */
+@media (max-width:720px) {
+  .header{padding:10px 12px}
+  .header-btns{width:100%}
+  .header-btns button,.header-btns a{flex:1;justify-content:center;text-align:center}
+  .summary-bar{flex-direction:column;align-items:stretch}
+  .summary-bar .search-input{margin-left:0;flex:none;max-width:100%}
+  .board{flex-direction:column}
+  .col{min-width:0;width:100%}
+  .score-tabs{margin-left:0;width:100%}
+}
 </style>
 <!-- 🔒 사내 전용 커튼(GM 승인 2026-07-07) — 접수 회원 성함·연락처·내용(실명 포함) 대외 공개 차단. 인증 후 열람. (진짜 잠금=JWT ≈2026-09) -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
