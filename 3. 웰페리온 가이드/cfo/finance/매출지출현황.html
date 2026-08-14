@@ -1271,7 +1271,7 @@ function renderReqTbl(){
     else if(st==="완료")act='<span style="color:var(--green);font-size:12px;font-weight:700">✔ 완료</span>';
     else act='<span style="color:var(--ink-faint);font-size:11px">'+st+'</span>';
     if(st==="품의"||st==="검토"||st==="정산"||st==="승인")act+=' <button class="reqRej" data-row="'+r.row+'" style="'+btnCss("#b14238")+'">반려</button>';
-    act+=' <button class="reqDel" data-row="'+r.row+'" title="시트에서 삭제" style="font-size:12px;padding:3px 7px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:#fff">🗑</button>';
+    act+=' <button class="reqDel" data-row="'+r.row+'" data-no="'+escapeHtml(r.번호||"")+'" data-item="'+escapeHtml(r.물품||"")+'" title="시트에서 삭제" style="font-size:12px;padding:3px 7px;cursor:pointer;border:1px solid var(--line);border-radius:6px;background:#fff">🗑</button>';
     var attq=function(u){return String(u==null?"":u).replace(/"/g,"&quot;");}; // src 속성 따옴표 이스케이프 — 조작된 data URI의 속성 탈출 차단(검증 발견 수정 2026-07-14)
     var photo=(r.이미지&&(String(r.이미지).indexOf("http")===0||String(r.이미지).indexOf("data:")===0))?'<img src="'+attq(r.이미지)+'" class="'+tc+'" title="첨부사진 — 클릭하면 확대" onclick="openLightbox(this.src)" loading="lazy">':'';
     var pf=(r.지출증빙&&String(r.지출증빙).indexOf("http")===0)?'<img src="'+attq(r.지출증빙)+'" class="'+tc+'" title="영수증/증빙 — 클릭하면 확대" onclick="openLightbox(this.src)" loading="lazy">':'';
@@ -1288,15 +1288,28 @@ function renderReqTbl(){
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
   document.querySelectorAll(".reqRej").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,"반려","1",b);};});
-  document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b);};});
+  document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b,b.dataset.no,b.dataset.item);};});
   document.querySelectorAll(".capCk").forEach(function(b){b.onchange=function(){toggleCap(b.dataset.row);};});
   updateCapBar();
 }
-async function delReq(row,btn){
-  if(!confirm("이 행을 시트에서 완전히 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"))return;
-  if(btn){btn.disabled=true;btn.textContent="…";}
-  try{await procCall("delete",{row:row});}catch(e){}
-  loadReq();
+/* 삭제는 시트 행번호(row)로 지운다 — 한 건 지우면 아래 행이 한 칸씩 당겨지므로 화면이 들고 있는 row는
+   그 순간 낡는다. 갱신 전에 연속으로 누르면 엉뚱한 이웃 행이 지워진다(2026-08-13 #70 삭제 시 #71 동반 삭제).
+   그래서 ①무엇을 지우는지 번호·물품으로 확인받고 ②처리 동안 모든 🗑 를 잠가 낡은 row 재클릭을 막고
+   ③끝나면 목록(완료·반려 검색 결과 포함)을 강제 재조회해 새 row 를 받아온다. */
+var _delBusy=false;
+async function delReq(row,btn,no,item){
+  if(_delBusy){reqToast("이전 삭제를 처리하는 중입니다 — 목록이 갱신된 뒤 다시 눌러주세요",1);return;}
+  var nm=String(item||"").replace(/\s+/g," ").trim();
+  var label=(no?("#"+no+"  "):"")+(nm?(nm.length>60?nm.slice(0,60)+"…":nm):"(물품명 없음)");
+  if(!confirm("아래 품의를 시트에서 완전히 삭제합니다.\n\n    "+label+"\n\n되돌릴 수 없습니다. 번호와 물품이 맞는지 확인하고 계속할까요?"))return;
+  _delBusy=true;
+  document.querySelectorAll(".reqDel").forEach(function(b){b.disabled=true;}); // 처리 중 낡은 row 재클릭 차단
+  if(btn)btn.textContent="…";
+  try{
+    try{await procCall("delete",{row:row});}catch(e){}
+    if(reqFilter==="완료"||reqFilter==="반려"){var keep=reqFilter;await loadDone();reqFilter=keep;} // loadDone 은 필터를 '완료'로 되돌리므로 원복
+    await loadReq(); // 재렌더로 🗑 가 새 row 를 달고 다시 활성화된다
+  } finally{_delBusy=false;}
 }
 function addPhotoTo(row,btn){
   var inp=document.createElement("input");inp.type="file";inp.accept="image/*,application/pdf";
