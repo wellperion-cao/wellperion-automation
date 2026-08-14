@@ -19,6 +19,12 @@
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
+/* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
+   방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
+html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+.wlp-lfr{overscroll-behavior-y:contain}
+.wlp-lfr button,.wlp-lfr a,.wlp-lfr input,.wlp-lfr select,.wlp-lfr textarea{touch-action:manipulation}
+
 /* ── 습득물 접수(직원 전용) 페이지 한정 테마 보정 (body.wlp-lfr-page) ── */
 body.wlp-lfr-page h1.entry-title,
 body.wlp-lfr-page .entry-title,

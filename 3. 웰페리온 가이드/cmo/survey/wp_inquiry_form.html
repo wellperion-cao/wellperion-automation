@@ -148,6 +148,12 @@ body.page-id-8460 .wlp-inq { margin-bottom: -75px !important; }
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
+/* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
+   방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
+html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+.wlp-inq{overscroll-behavior-y:contain}
+.wlp-inq button,.wlp-inq a,.wlp-inq input,.wlp-inq select,.wlp-inq textarea{touch-action:manipulation}
+
 .wlp-inq{
   --bg:#f5f0ea;--paper:#ffffff;--ink:#221F20;--beige:#B79F8A;--coral:#ED5B3F;--line:#e6e1da;
   --dim:#8a7f72;--muted:#6b6258;--green:#2e7d5b;--red:#c0392b;

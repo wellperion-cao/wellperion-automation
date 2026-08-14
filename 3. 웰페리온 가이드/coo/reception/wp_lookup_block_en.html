@@ -9,8 +9,11 @@
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   display:flex;justify-content:center;min-height:100vh;margin:0;
 }
-/* 이 페이지 전용 — 테마 래퍼 다크 + 푸터/여백 제거로 세로 스크롤 없이 F11 전체화면 한 장에 딱 맞춤. 이 CSS는 이 페이지에만 로드됨 */
-html,body{margin:0!important;padding:0!important;background:#0d0d12!important;overflow-x:hidden}
+/* 이 페이지 전용 — 테마 래퍼 다크 + 푸터/여백 제거로 한 화면에 맞춤(F11 전체화면). 이 CSS는 이 페이지에만 로드됨
+   조회 결과가 많아 화면을 넘으면 스크롤 되도록 방어적으로 열어둔다(2026-08-14 GM 지시 — 키오스크 스크롤 보장). */
+html,body{margin:0!important;padding:0!important;background:#0d0d12!important;overflow-x:hidden;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+#wlp-lk{overscroll-behavior-y:contain}
+#wlp-lk button,#wlp-lk a,#wlp-lk input{touch-action:manipulation}
 #ajax-content-wrap,.container-wrap,#main-content,.main-content,.container-wrap>.container,.post-area,.entry-content{background:#0d0d12!important;margin:0!important;padding:0!important;min-height:0!important}
 #footer-outer,#footer-widgets,.footer-outer,#footer-outer .row{display:none!important}
 .wpb_row,.vc_row,.wpb_column,.vc_column_container,.wpb_wrapper,.wpb_text_column,.wpb_raw_html,.vc_column-inner{margin:0!important;padding:0!important}
