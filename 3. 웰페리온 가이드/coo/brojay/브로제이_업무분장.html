@@ -144,6 +144,19 @@
   .broj-vq-link-sub b{color:var(--text);}
   .broj-escalate-btn{font-size:11px !important;}
   .broj-item-escalated-tag{font-size:11px; font-weight:700; color:var(--rose); background:rgba(221,127,110,0.14); border:1px solid var(--rose); border-radius:20px; padding:1px 8px; margin-left:4px; white-space:nowrap;}
+
+  /* ── Print (2026-08-14 · 채점 배632 — 업무 현황 SSOT와 같은 패턴: 인쇄 전용 라이트 팔레트 +
+       조작용 UI 숨김 + 카드 단위 안 잘림) ── */
+  @media print{
+    @page{margin:8mm;size:A4}
+    :root{--bg:#fff;--paper:#fff;--surface:#fafafa;--hero:#f2f2f2;--text:#1a1a1a;--text-soft:#444;--dim:#777;--border:#ccc;--border-strong:#999}
+    body{background:#fff;color:#1a1a1a}
+    .feedback-cta-btn,.page-head .back,.broj-item-btns,.broj-add-row,.broj-hidden-toggle,
+    .broj-tabs,#tab-confirm,.gdoc-overlay,.broj-guide-editbar{display:none!important}
+    .broj-dept,.broj-guide-card,.broj-vq-link,.broj-progress-chip{break-inside:avoid;border:1px solid #ccc}
+    #broj-depts{display:block}
+    #broj-depts>.broj-dept{margin-bottom:10px}
+  }
 </style>
 </head>
 <body>
