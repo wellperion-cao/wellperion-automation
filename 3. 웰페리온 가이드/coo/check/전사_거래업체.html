@@ -129,6 +129,19 @@ body.embed .vendor-actions{margin-top:2px}
   .vendor-actions .va-right{margin-left:0;width:100%}
   .vendor-actions .va-right button{flex:1}
 }
+
+/* ── Print (2026-08-14 · 채점 배632) — "가로스크롤 고정폭" 문제의 실체: .board-scroll 은
+   화면에서 옆으로 스크롤해서 보는 칸반인데, 인쇄는 스크롤이 안 되니 410px 카드가 옆으로
+   잘려 나갔다. 인쇄에서는 카드를 세로로 쌓아 전부 나오게 한다. ── */
+@media print{
+  @page{margin:8mm;size:A4}
+  :root{--bg:#fff;--paper:#fafafa;--text:#1a1a1a;--dim:#666;--border:#ccc}
+  body{background:#fff;color:#1a1a1a}
+  .sheet-links,.chips,.vendor-actions,.dv-edit-btn,.dv-g-addrow,.admin-mgmt-form{display:none!important}
+  .board-scroll{display:block;overflow:visible}
+  .board-col{max-width:100%;width:100%;margin-bottom:10px;break-inside:avoid}
+  .dv-cell,.vendor-group{break-inside:avoid}
+}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
