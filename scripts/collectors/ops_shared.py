@@ -30,7 +30,9 @@ RECEPTION_EXEC_URL = os.environ.get(
     "RECEPTION_EXEC_URL",
     os.environ.get("VOC_EXEC_URL", "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"),
 )
-# 실무진 업무현황(G1 항로 SSOT·S3) GAS — action=todo_list.
+# 실무진 업무현황(업무 SSOT · S3) GAS — action=todo_list.
+# ※'G1 항로' 라고 적혀 있던 것을 바로잡았다(2026-08-14) — G1 은 GM 개인 판이고, 이 GAS 는
+#   실무진이 굴리는 업무 SSOT(S3) 다. AI 배의 항로는 자율현황 🧭 항로가 따로 갖는다.
 SSOT_API_URL = os.environ.get(
     "SSOT_API_URL",
     "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec",
