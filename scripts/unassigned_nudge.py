@@ -151,7 +151,7 @@ HEARTBEAT_ID = "cpo-unassigned-nudge"  # 배10014 방식 — 상설 파일 1개 
 # ── 24시간 SLA 위반 → 카카오 ★부서장 방 (GM 2026-08-05 지시) ────────────────────
 SLA_SINCE_DATE = "2026-08-01"  # 대상 = 이 날짜(포함) 이후 접수분만
 SLA_HOURS = 24                 # 문턱 — 배정·컨택 둘 중 하나라도 없으면 위반
-SLA_MSG_DISPLAY_N = 4          # 본문에 줄로 싣는 건수(GM "10줄 안쪽" · 2026-08-14 기준·회신요청 2줄 추가분 상쇄)
+SLA_MSG_DISPLAY_N = 3          # 본문에 줄로 싣는 건수(GM "10줄 안쪽" · 2026-08-14 기준·회신요청 2줄 추가분 상쇄)
 KAKAO_DEPTHEAD_ROOM = "★부서장"  # scripts/kakao_rooms.json 정본과 동일 값(창-제목 대조용)
 ASSIGN_URL_MEMBER = _BASE + "membership.html"  # 회원 문의 처리 화면(60일 무응답 알림 링크용)
 
@@ -404,9 +404,13 @@ def collect_sla_violations(now: datetime | None = None) -> list[dict]:
     건은 빼고(R._is_registered/_is_loss 재사용 — 판정 기준 두 벌 금지), 경과시간
     내림차순(오래된 위반 먼저)으로 반환한다."""
     now = now or datetime.now()
+    # 2026-08-14 GM 물음('이제 신경쓸 것 없나') 답하다 발견 — 멤버십이 이 경보에서 통째로 빠져 있었다.
+    #   실측: 8/1 이후 미컨택 멤버십 5건(맹기훈·익명여/신동아·이도경·정새벽·육세라)이 24시간을 한참
+    #   넘겼는데 한 번도 이 경보에 안 실렸다. 강습만 보던 것을 회원까지 넓힌다(판정·문턱은 그대로).
     sources = {
         "성인강습": R._fetch_list("lesson_inquiry_list", type="성인강습"),
         "유소년강습": R._fetch_list("lesson_inquiry_list", type="유소년강습"),
+        "멤버십": R._fetch_list("member_inquiry_list"),
     }
     out: list[dict] = []
     for label, rows in sources.items():
@@ -427,7 +431,7 @@ def collect_sla_violations(now: datetime | None = None) -> list[dict]:
                 continue  # 배정도 컨택도 됐으면 정상
             out.append({
                 "type": label,
-                "sport": str(r.get("sport", "") or "-").strip() or "-",
+                "sport": str(r.get("sport", "") or r.get("program", "") or "-").strip() or "-",  # 멤버십은 종목 대신 상품명
                 "name": str(r.get("name", "") or "-").strip() or "-",
                 "date": ts[:16] or "-",
                 "hours": hours,
@@ -452,11 +456,13 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     lines.append("문의는 접수 후 24시간 안에 첫 연락이 기준입니다(멤버십·강습 같은 기준).")
     lines.append("부서장님, 아래 확인하시고 처리하신 건은 한 줄 회신 부탁드립니다 🙏")
     for it in shown:
-        lines.append(f"· {it['date']} · {it['name']} · {_sport_short(it['sport'])} · "
+        # 유형(멤버십/강습)을 앞에 적는다 — 2026-08-14 회원 문의까지 넓히면서 어느 화면에서
+        #   처리해야 하는지가 줄만 봐서는 안 보이게 됐다.
+        lines.append(f"· [{it['type']}] {it['date']} · {it['name']} · {_sport_short(it['sport'])} · "
                      f"{_fmt_elapsed(it['hours'])}째 · {it['reason']}")
     if rest_n > 0:
         lines.append(f"… 외 {rest_n}건 (총 {len(violations)}건)")
-    lines.append(f"👉 처리하기: {ASSIGN_URL_LESSON} (입장코드 {ENTRY_CODE})")
+    lines.append(f"👉 강습: {ASSIGN_URL_LESSON} · 멤버십: {ASSIGN_URL_MEMBER} (입장코드 {ENTRY_CODE})")
     lines.append(AI_SIGNOFF)
     return "\n".join(lines)
 
