@@ -771,6 +771,8 @@ _rangeFromTo = monthRange(_navYear, _navMonth);
 _periodLabel = _navYear + '년 ' + _navMonth + '월';
 loadPeriod();
 loadTrend();
+// 자정 자동 새로고침 (항상 켜둔 화면용 — today 가 로드 시각 고정이라 날짜가 바뀌면 reload. renewal.html 의 하루 1회 reload 패턴 재사용)
+setInterval(function(){var n=new Date();if(n.getHours()===0&&n.getMinutes()===0)location.reload();},60000);
 })();
 </script>
 <script defer src="../_assets/page_ping.js"></script>

@@ -99,6 +99,19 @@ body.wlp-ons-page .vc_row,body.wlp-ons-page .wpb_column,body.wlp-ons-page .vc_co
 
 .wlp-ons .state-msg{padding:40px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .wlp-ons .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+
+/* ── 인쇄 (원본 오넛티_접수현황.html 과 같은 규칙 — 화면 전용 요소 숨김·배경 단순화) ── */
+@media print{
+  body.wlp-ons-page{background:#fff !important}
+  .wlp-ons *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  .wlp-ons .info-note{display:none !important}
+  .wlp-ons .tbl-scroll{overflow-x:visible;border:none;border-radius:0;box-shadow:none}
+  .wlp-ons table.otbl{min-width:0}
+  .wlp-ons table.otbl tr{break-inside:avoid;page-break-inside:avoid}
+  .wlp-ons .stile{box-shadow:none}
+  /* 상태 드롭다운(화면용 컨트롤) — 값은 남기고 컨트롤 장식만 제거 */
+  .wlp-ons .stat-sel{appearance:none;-webkit-appearance:none;border:none;background:transparent;padding:0}
+}
 </style>
 <script>try{document.body.classList.add('wlp-ons-page');}catch(e){}</script>
 

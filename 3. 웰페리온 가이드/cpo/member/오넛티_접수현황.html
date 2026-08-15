@@ -53,7 +53,7 @@ a{color:var(--accent);text-decoration:none}
 /* ── 목록 테이블 ── */
 .list-wrap{display:none}
 .list-wrap.show{display:block}
-.tbl-scroll{overflow-x:auto;background:var(--paper);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--paper);border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
 table.otbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
 table.otbl th{background:var(--accent-bg);color:var(--text);font-weight:700;text-align:left;padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
 table.otbl td{padding:11px 12px;border-bottom:1px solid var(--border);word-break:break-word}
@@ -67,6 +67,19 @@ table.otbl tr:last-child td{border-bottom:none}
 
 .state-msg{padding:40px 20px;text-align:center;color:var(--dim);font-size:14.5px}
 .info-note{text-align:center;font-size:12.5px;color:var(--dim);margin-top:26px;line-height:1.8}
+
+/* ── 인쇄 (문의현황.html 의 인쇄 규칙과 같은 형태 — 화면 전용 요소 숨김·배경 단순화) ── */
+@media print{
+  body{background:#fff !important}
+  body *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  .info-note{display:none !important}
+  .tbl-scroll{overflow-x:visible;border:none;border-radius:0;box-shadow:none}
+  table.otbl{min-width:0}
+  table.otbl tr{break-inside:avoid;page-break-inside:avoid}
+  .stile{box-shadow:none}
+  /* 상태 드롭다운(화면용 컨트롤) — 값은 남기고 컨트롤 장식만 제거 */
+  .stat-sel{appearance:none;-webkit-appearance:none;border:none;background:transparent;padding:0}
+}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
