@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>회원 감소 원인 분석 — 웰페리온 A3 보고서</title>
+<title>회원 감소 원인 분석 (2차 갱신) — 웰페리온 A3 보고서</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -29,52 +29,53 @@
   @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
 
   /* A3 가로 1장 */
-  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:28px 34px 20px;
     display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
 
   /* ① 헤더 */
-  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:8px; }
   .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
-    letter-spacing:6px; margin-bottom:5px; }
-  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
-  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+    letter-spacing:6px; margin-bottom:4px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:28px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.3px; line-height:1.6; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
   .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
   .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
   .sign div:last-child{ border-right:0; }
   .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
     border-bottom:1px solid var(--line); }
-  .sign .b{ height:38px; }
+  .sign .b{ height:36px; }
 
   /* ② 결정 요청 */
-  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask{ margin-top:10px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
   .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-right:1px solid rgba(255,255,255,.28); }
   .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
   .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
   .ask .items{ flex:1; display:flex; }
-  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it{ flex:1; padding:9px 16px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
-  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
-  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+  .ask .n em{ font-style:normal; opacity:.95; letter-spacing:0; margin-left:8px; }
+  .ask .q{ font-size:15px; font-weight:700; line-height:1.32; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.3px; line-height:1.45; opacity:.86; margin-top:4px; }
 
   /* 경고 밴드 */
   .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
-    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+    padding:6px 15px; font-size:12.6px; font-weight:700; line-height:1.45; }
   .alert span{ font-weight:400; color:#6B2020; }
 
   /* ③ 비교표 */
-  .tblwrap{ margin-top:11px; }
+  .tblwrap{ margin-top:9px; }
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
-  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12px; line-height:1.28; }
+  thead th{ height:31px; background:var(--navy); color:#fff; font-weight:700; font-size:12.6px; border-color:#2A4763; }
   thead th.k{ width:214px; background:#0E2439; }
   thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
-  tbody td{ height:29px; }
-  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
-  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:11.5px; letter-spacing:2.5px; }
+  tbody td{ height:26px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:11.8px; }
+  tr.grp td{ height:19px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.3px; letter-spacing:2.5px; }
   .num{ text-align:right; font-variant-numeric:tabular-nums; }
   .ctr{ text-align:center; }
   .good{ color:var(--good); font-weight:700; }
@@ -85,12 +86,49 @@
   tr.sum td{ background:#F0F3F7; }
   tr.sum td.k{ background:#E7ECF2; }
 
+  /* ③-2 월별 LOSS 추세 + 사유 구성 */
+  .mid{ margin-top:9px; display:flex; gap:11px; }
+  .mbox{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:7px 12px 6px; }
+  .mbox h3{ font-size:12.5px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:5px; }
+  .chartbox{ flex:1.6; }
+  .rsnbox{ flex:1; }
+  .chart{ display:flex; gap:16px; }
+  .yr{ flex:1; }
+  .yr.y26{ flex:0.72; }
+  .yr .bars{ display:flex; align-items:flex-end; gap:2px; height:97px; }
+  .m{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .m b{ font-size:10.5px; font-weight:500; color:#3C464F; margin-bottom:1px; font-variant-numeric:tabular-nums; }
+  .m i{ display:block; width:100%; background:var(--navy); border-radius:1px 1px 0 0; }
+  .m.part i{ background:repeating-linear-gradient(45deg,#9AAFC4 0 4px,#CDD8E2 4px 8px); border:1px solid #7E93A8; border-bottom:0; }
+  .m s{ text-decoration:none; font-size:10.5px; color:#5C666F; margin-top:2px; line-height:1; }
+  .yr .cap{ text-align:center; font-size:11px; font-weight:700; color:var(--navy); border-top:1.5px solid var(--navy);
+    margin-top:3px; padding-top:2px; }
+  .yr .cap span{ font-weight:400; color:#3C464F; }
+  .read{ margin-top:5px; font-size:11.2px; line-height:1.42; color:#3C464F; }
+  .read b{ color:var(--ink); }
+
+  /* 사유 구성 */
+  .stack{ display:flex; height:13px; border-radius:2px; overflow:hidden; margin-bottom:3px; }
+  .stack i{ display:block; height:100%; }
+  .chips{ font-size:11px; line-height:1.5; color:#3C464F; margin-bottom:5px; }
+  .chips b{ font-weight:700; }
+  .dot{ display:inline-block; width:8px; height:8px; border-radius:2px; margin:0 3px 0 8px; vertical-align:baseline; }
+  .dot:first-child{ margin-left:0; }
+  .c-us{ background:var(--bad); } .c-na{ background:#8A9099; } .c-tr{ background:#B9C6D4; } .c-et{ background:#E3E7EB; }
+  .rsn{ width:100%; border-collapse:collapse; }
+  .rsn td{ border:0; border-bottom:1px solid #EEF1F4; height:17px; font-size:11.2px; padding:0 4px; }
+  .rsn td.nm{ font-weight:500; }
+  .rsn td.n1{ text-align:right; font-variant-numeric:tabular-nums; width:44px; }
+  .rsn td.n2{ text-align:right; font-variant-numeric:tabular-nums; width:52px; color:#5C666F; }
+  .rsn td.cl{ width:74px; text-align:center; font-size:10.5px; font-weight:700; }
+  .cl.us{ color:var(--bad); } .cl.na{ color:#5C666F; } .cl.tr{ color:#7E93A8; }
+
   /* ④ 3분할 */
-  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
-  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
-  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .cols{ margin-top:9px; display:flex; gap:11px; flex:1; min-height:0; overflow:hidden; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:8px 13px 6px; overflow:hidden; }
+  .box h3{ font-size:12.8px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:5px; }
   .box ul{ list-style:none; }
-  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li{ font-size:11.6px; line-height:1.45; padding-left:15px; position:relative; margin-bottom:4px; }
   .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
   .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
   .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
@@ -103,8 +141,8 @@
   .box.rec b{ color:var(--good); }
 
   /* ⑤ 각주 */
-  .foot{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px;
-    display:flex; gap:22px; font-size:10.2px; line-height:1.45; color:#48525B; }
+  .foot{ margin-top:7px; border-top:1px solid var(--line); padding-top:5px;
+    display:flex; gap:22px; font-size:10.7px; line-height:1.42; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
 </style>
@@ -112,7 +150,7 @@
 <body>
 
 <div class="bar">
-  <b>회원 감소 원인 분석 (A3 1장)</b>
+  <b>회원 감소 원인 분석 (A3 1장 · 2차 갱신)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -125,12 +163,12 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">회원 감소 원인 분석 — 1차 실측 (회장님 최우선 지시건)</div>
+      <div class="title">회원 감소 원인 분석 — 2차 실측 갱신 (회장님 최우선 지시건)</div>
     </div>
     <div class="meta">
-      작성 <b>경영지원부 (AI CEO 웰리)</b><br>
-      작성일 <b>2026. 08. 15.</b> · 문서번호 <b>WP-GM-260815-01</b><br>
-      원천 <b>회원 DB 실측 2026-08-15 12:39</b> · 유효회원 <b>1,000명</b>
+      작성 <b>경영지원부 (AI CEO 웰리)</b> · 문서번호 <b>WP-GM-260815-01</b><br>
+      1차 <b>2026. 08. 15.</b> → 2차 갱신 <b>2026. 08. 15.</b> (LOSS 추세 32개월·사유 분포 실측 반영)<br>
+      원천 <b>회원 DB 실측</b> · 유효회원 <b>1,000명</b> · LOSS <b>697명 전수</b> (현행 191 + 보관 506)
     </div>
     <div class="sign">
       <div><div class="t">담당</div><div class="b"></div></div>
@@ -145,14 +183,14 @@
     <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
     <div class="items">
       <div class="it">
-        <div class="n">01</div>
-        <div class="q">종료 사유를 반드시 적게 하는 것을 승인해 주십시오.</div>
-        <div class="d">칸은 이미 있는데 기입률이 0%입니다. 지금까지 나간 697명이 왜 나갔는지 회사에 기록이 한 건도 없습니다. 이걸 안 채우면 다음 분석도 오늘과 똑같이 "모른다"로 끝납니다.</div>
+        <div class="n">01<em>· 승인 주체: GM</em></div>
+        <div class="q">종료 사유 기록을 「미등록사유」 칸 하나로 일원화하는 것을 승인해 주십시오.</div>
+        <div class="d">사유는 이미 682/697명(97.8%)이 기록돼 있습니다. 1차 보고의 "기입 0%"는 2026-07-09 신설된 뒤 한 번도 안 쓰인 별도 「종료사유」 칸(0건)을 본 오독이었습니다 — 정정합니다. 정본 칸을 하나로 확정해 같은 오독의 재발을 막습니다.</div>
       </div>
       <div class="it">
-        <div class="n">02</div>
+        <div class="n">02<em>· 승인 주체: 회장님</em></div>
         <div class="q">"사랑받는 회원"은 이미 쓰고 있는 등급표를 정본으로 삼는 것을 승인해 주십시오.</div>
-        <div class="d">FAN VIP·VIP·Member 61명이 결제금액 기준으로 이미 나뉘어 있고 혜택도 다릅니다. 이걸 회원 원장에 붙이면 매달 셀 수 있습니다. 나머지 939명은 등급이 없어 지금은 셀 수 없습니다.</div>
+        <div class="d">FAN VIP·VIP·Member 61명이 2025년 1년치 결제액 기준으로 이미 나뉘어 있고 혜택도 다릅니다. 이걸 회원 원장에 붙이면 매달 셀 수 있습니다. 나머지 939명은 등급이 없어 지금은 셀 수 없습니다.</div>
       </div>
     </div>
   </div>
@@ -160,7 +198,7 @@
   <!-- 경고 밴드 -->
   <div class="alert">
     가장 급한 것 — FAN VIP 4명 중 2명(손계자 잔여 5일 · 방형식 19일)이 30일 안에 만료됩니다.
-    <span>&nbsp;/ 만료 임박 72명 중 등급 보유 8명의 결제금액이 <b>1억 484만원</b> — 회원 수 8명이 아니라 <b>매출 1억이 빠진다.</b> &nbsp;·&nbsp; 다만 <b>월별 이탈 추세는 아직 못 그린다</b>(종료 날짜 기입 0%) — 아래는 오늘 시점의 단면이지 추세가 아니다.</span>
+    <span>&nbsp;만료 임박 72명 중 등급 보유 8명의 결제금액 합계가 <b>1억 484만원</b>입니다 — 회원 수 8명이 아니라 <b>매출 1억이 빠지는</b> 문제입니다.</span>
   </div>
 
   <!-- ③ 실측표 -->
@@ -177,30 +215,102 @@
     </thead>
     <tbody>
       <tr class="grp"><td colspan="4">지 금 상 태</td></tr>
-      <tr><td class="k">유효 회원</td><td class="num strong">1,000 명</td><td>종료 누적 697명 · 법인 31명</td><td>누적 종료 비율 <b class="warn">41.1%</b></td></tr>
-      <tr><td class="k">등록 분류</td><td>재등록 641 <span class="est">(64.1%)</span> · 신규 318 <span class="est">(31.8%)</span></td><td>L재등록 26 · 양도양수 8 · 대기 6</td><td>이미 <b>재등록으로 버티는 구조</b>다</td></tr>
+      <tr><td class="k">유효 회원</td><td class="num strong">1,000 명</td><td>LOSS 누적 697명 · 법인 31명</td><td>누적 LOSS 비율 <b class="warn">41.1%</b></td></tr>
+      <tr><td class="k">등록 분류</td><td>재등록 641 <span class="est">(64.1%)</span> · 신규 318 <span class="est">(31.8%)</span></td><td>L재등록 26 · 양도양수 8 · 대기 6</td><td>이미 <b>재등록으로 버티는 구조</b></td></tr>
 
       <tr class="grp"><td colspan="4">들 어 오 는 쪽</td></tr>
       <tr><td class="k">이번 달 신규 등록</td><td class="num strong bad">7 명</td><td>이번 달 문의 48건</td><td>문의 대비 등록 <b>14.6%</b> <span class="est">(추정 · 같은 달 대응 아님)</span></td></tr>
 
       <tr class="grp"><td colspan="4">나 가 는 쪽</td></tr>
-      <tr class="sum"><td class="k">30일 안에 만료</td><td class="num strong bad">72 명</td><td>이번 달 신규 등록 7명</td><td class="bad strong">유입이 유출의 1/10 — 감소의 실체는 여기다</td></tr>
-      <tr><td class="k">종료 사유 기입</td><td class="num bad strong">0 / 1,000 (0.0%)</td><td>이번 달 종료 8명 (0.8%) · 칸은 있다</td><td class="bad">왜 나갔는지 기록이 한 건도 없다</td></tr>
+      <tr class="sum"><td class="k">30일 안에 만료</td><td class="num strong bad">72 명</td><td>이번 달 신규 등록 7명</td><td class="bad strong">유입이 유출의 1/10 수준</td></tr>
+      <tr><td class="k">종료 사유 기입</td><td class="num strong good">682 / 697 (97.8%)</td><td>정본 = <b>미등록사유</b> 칸 · 신설 「종료사유」 칸 0건 <span class="est">(각주2)</span></td><td class="good">나간 이유 실측 가능 — 아래 사유 구성</td></tr>
       <tr class="sum"><td class="k">만료 임박자 중 상위 등급</td><td class="num strong bad">8 명 / 72명</td><td>결제금액 합계 104,846,400원</td><td class="bad strong">FAN VIP 4명 중 2명 포함 (손계자·방형식)</td></tr>
 
-      <tr class="grp"><td colspan="4">사 랑 받 는 회 원 — 이미 쓰고 있는 등급표 (2026 결제금액 기준)</td></tr>
+      <tr class="grp"><td colspan="4">사 랑 받 는 회 원 — 이미 쓰고 있는 등급표 (2025년 1년치 결제액 기준 · 각주3)</td></tr>
       <tr><td class="k">FAN VIP</td><td class="num strong good">4 명 <span class="est">· 평균 1,948만</span></td><td>결제 합계 77,937,150원</td><td>일일입장권 15장 · 카페 5만원</td></tr>
       <tr><td class="k">VIP</td><td class="num strong">11 명 <span class="est">· 평균 1,305만</span></td><td>결제 합계 143,497,950원</td><td>일일입장권 10장 · 카페 3만원</td></tr>
       <tr><td class="k">Member</td><td class="num strong">46 명 <span class="est">· 평균 960만</span></td><td>결제 합계 441,432,796원</td><td>일일입장권 5장 · 카페 미제공</td></tr>
-      <tr class="sum"><td class="k">등급 보유 소계</td><td class="num strong">61 명 <span class="est">(전체의 6.1%)</span></td><td class="strong">결제 합계 662,867,896원</td><td class="strong">연 매출 목표 72억의 <b class="good">9.2%</b>를 61명이 낸다</td></tr>
-      <tr><td class="k">등급 없는 회원</td><td class="num warn strong">939 명 <span class="est">(93.9%)</span></td><td>등록 회차 7회 이상 150명 · 1회 309명</td><td class="warn">등급표에 없어 지금은 셀 수 없다</td></tr>
+      <tr class="sum"><td class="k">등급 보유 소계</td><td class="num strong">61 명 <span class="est">(전체의 6.1%)</span></td><td class="strong">결제 합계 662,867,896원</td><td class="strong">61명이 2025년 한 해 <b>6.63억</b> 결제 <span class="est">(2026 매출 목표와는 기간이 달라 비교 제외 · 각주3)</span></td></tr>
+      <tr><td class="k">등급 없는 회원</td><td class="num warn strong">939 명 <span class="est">(93.9%)</span></td><td>등록 회차 7회 이상 150명 · 1회 309명</td><td class="warn">등급표에 없어 지금은 셀 수 없음</td></tr>
 
-      <tr class="grp"><td colspan="4">지 금 못 재 는 것 (다음 단계 조건)</td></tr>
-      <tr><td class="k">월별 이탈 추세</td><td class="ctr bad">불가</td><td>LOSS 날짜 기입 0%</td><td>종료 회원 697명 원장이 있어야 가능</td></tr>
+      <tr class="grp"><td colspan="4">지 금 못 재 는 것 (다음 단계 조건 — 정직 표기)</td></tr>
       <tr><td class="k">재등록까지 걸린 일수</td><td class="ctr bad">불가</td><td>재등록 상담 기록 15 / 1,000 (1.5%)</td><td>이경연 실장 가이드 건과 같은 뿌리</td></tr>
-      <tr><td class="k">방문 빈도 (충성도)</td><td class="ctr bad">불가</td><td>이용 일수 기입 151 / 1,000 (15.1%)</td><td>브로제이 출입 기록이 붙으면 가능해진다</td></tr>
+      <tr><td class="k">방문 빈도 (충성도)</td><td class="ctr bad">불가</td><td>이용 일수 기입 151 / 1,000 (15.1%)</td><td>브로제이 출입 기록이 붙으면 가능</td></tr>
     </tbody>
   </table>
+  </div>
+
+  <!-- ③-2 월별 LOSS 추세 + 종료 사유 구성 -->
+  <div class="mid">
+    <div class="mbox chartbox">
+      <h3>월별 LOSS 추세 — 32개월 전 구간 실측 (2024-01 ~ 2026-08 · 합계 697명 · 빈 달 0)</h3>
+      <div class="chart">
+        <div class="yr">
+          <div class="bars">
+            <div class="m"><b>11</b><i style="height:24px"></i><s>1</s></div>
+            <div class="m"><b>8</b><i style="height:18px"></i><s>2</s></div>
+            <div class="m"><b>10</b><i style="height:22px"></i><s>3</s></div>
+            <div class="m"><b>12</b><i style="height:26px"></i><s>4</s></div>
+            <div class="m"><b>10</b><i style="height:22px"></i><s>5</s></div>
+            <div class="m"><b>14</b><i style="height:31px"></i><s>6</s></div>
+            <div class="m"><b>22</b><i style="height:48px"></i><s>7</s></div>
+            <div class="m"><b>28</b><i style="height:62px"></i><s>8</s></div>
+            <div class="m"><b>12</b><i style="height:26px"></i><s>9</s></div>
+            <div class="m"><b>14</b><i style="height:31px"></i><s>10</s></div>
+            <div class="m"><b>21</b><i style="height:46px"></i><s>11</s></div>
+            <div class="m"><b>11</b><i style="height:24px"></i><s>12</s></div>
+          </div>
+          <div class="cap">2024 <span>· 연 173명 (월평균 14.4)</span></div>
+        </div>
+        <div class="yr">
+          <div class="bars">
+            <div class="m"><b>29</b><i style="height:64px"></i><s>1</s></div>
+            <div class="m"><b>22</b><i style="height:48px"></i><s>2</s></div>
+            <div class="m"><b>24</b><i style="height:53px"></i><s>3</s></div>
+            <div class="m"><b>36</b><i style="height:79px"></i><s>4</s></div>
+            <div class="m"><b>29</b><i style="height:64px"></i><s>5</s></div>
+            <div class="m"><b>26</b><i style="height:57px"></i><s>6</s></div>
+            <div class="m"><b>33</b><i style="height:73px"></i><s>7</s></div>
+            <div class="m"><b>37</b><i style="height:81px"></i><s>8</s></div>
+            <div class="m"><b>26</b><i style="height:57px"></i><s>9</s></div>
+            <div class="m"><b>15</b><i style="height:33px"></i><s>10</s></div>
+            <div class="m"><b>28</b><i style="height:62px"></i><s>11</s></div>
+            <div class="m"><b>28</b><i style="height:62px"></i><s>12</s></div>
+          </div>
+          <div class="cap">2025 <span>· 연 333명 (월평균 27.8)</span></div>
+        </div>
+        <div class="yr y26">
+          <div class="bars">
+            <div class="m"><b>23</b><i style="height:51px"></i><s>1</s></div>
+            <div class="m"><b>28</b><i style="height:62px"></i><s>2</s></div>
+            <div class="m"><b>29</b><i style="height:64px"></i><s>3</s></div>
+            <div class="m"><b>20</b><i style="height:44px"></i><s>4</s></div>
+            <div class="m"><b>20</b><i style="height:44px"></i><s>5</s></div>
+            <div class="m"><b>30</b><i style="height:66px"></i><s>6</s></div>
+            <div class="m"><b>33</b><i style="height:73px"></i><s>7</s></div>
+            <div class="m part"><b>8</b><i style="height:18px"></i><s>8</s></div>
+          </div>
+          <div class="cap">2026 <span>· 8월 15일까지 191명 — 8월은 진행 중(빗금)</span></div>
+        </div>
+      </div>
+      <div class="read">읽는 법 — 연 <b>173명 → 333명 → 191명</b>(8월 15일까지). LOSS는 2025년에 <b>1.93배</b>(월평균 14.4→27.8명)로 뛰었고, 2026년도 그 수준(1~7월 월평균 26.1명)이 이어지고 있습니다. 2026년은 연도가 끝나지 않아 연간 합계 직접 비교는 할 수 없습니다.</div>
+    </div>
+    <div class="mbox rsnbox">
+      <h3>종료 사유 구성 — 682 / 697명 실측 (97.8% · 정본 = 미등록사유 칸 · 각주2)</h3>
+      <div class="stack">
+        <i class="c-us" style="width:54.4%"></i><i class="c-na" style="width:23.5%"></i><i class="c-tr" style="width:18.9%"></i><i class="c-et" style="width:3.2%"></i>
+      </div>
+      <div class="chips"><span class="dot c-us"></span>우리가 손댈 수 있는 것 <b>379명 · 54.4%</b><span class="dot c-na"></span>불가항력 <b>164명 · 23.5%</b><span class="dot c-tr"></span>전환·구조 <b>132명 · 18.9%</b><span class="dot c-et"></span>공란·기타 <b>22명 · 3.2%</b></div>
+      <table class="rsn">
+        <tr><td class="nm">낮은 이용횟수</td><td class="n1">140</td><td class="n2">20.1%</td><td class="cl us">우리 몫</td></tr>
+        <tr><td class="nm">거주지 변경</td><td class="n1">125</td><td class="n2">17.9%</td><td class="cl na">불가항력</td></tr>
+        <tr><td class="nm">무응답(기타)</td><td class="n1">104</td><td class="n2">14.9%</td><td class="cl us">우리 몫</td></tr>
+        <tr><td class="nm">양도 / 강습 전환</td><td class="n1">75</td><td class="n2">10.8%</td><td class="cl tr">전환·구조</td></tr>
+        <tr><td class="nm">가망(재등록 여지)</td><td class="n1">73</td><td class="n2">10.5%</td><td class="cl us">우리 몫</td></tr>
+        <tr><td class="nm">단기 이용</td><td class="n1">57</td><td class="n2">8.2%</td><td class="cl tr">전환·구조</td></tr>
+        <tr><td class="nm">그 외 9종 + 공란 15</td><td class="n1">123</td><td class="n2">17.6%</td><td class="cl">혼합 <span class="est">(각주2)</span></td></tr>
+      </table>
+    </div>
   </div>
 
   <!-- ④ 3분할 -->
@@ -208,39 +318,38 @@
     <div class="box">
       <h3>핵심 리스크</h3>
       <ul>
-        <li class="r1"><b>FAN VIP 4명 중 2명</b>이 30일 안에 만료. 최상위 층의 절반이 이번 달에 걸려 있다.</li>
-        <li class="r1">만료 임박 상위 8명 = <b>결제 1억 484만원</b>. 회원 수가 아니라 매출이 빠지는 구조다.</li>
-        <li class="r1">30일 안에 72명이 만료되는데 이번 달 신규는 <b>7명</b>. 종료 사유는 <b>0건</b> 기록.</li>
-        <li class="r2">등급표가 <b>회원 원장과 따로 논다</b> — 상위 61명을 화면에서 못 가려낸다.</li>
-        <li class="r2">1회차 309명 → 2회차 220명. 첫 재등록 문턱에서 가장 많이 빠진다.</li>
+        <li class="r1"><b>FAN VIP 4명 중 2명</b>이 30일 안에 만료 — 최상위 층의 절반이 이번 달에 걸려 있습니다.</li>
+        <li class="r1">만료 임박 상위 8명 = <b>결제 1억 484만원</b> — 회원 수가 아니라 매출이 빠지는 구조입니다.</li>
+        <li class="r1">LOSS 최다 사유 = <b>낮은 이용횟수(140명 · 20.1%)</b> — 만료 전에 감지할 수단(방문 빈도)이 없는 것이 근본 리스크입니다.</li>
+        <li class="r2">등급표가 <b>회원 원장과 따로</b> 있어 상위 61명을 화면에서 못 가려냅니다 · 1회차 309명 → 2회차 220명, 첫 재등록 문턱에서 가장 많이 빠집니다.</li>
       </ul>
     </div>
     <div class="box">
       <h3>실행 액션</h3>
       <ul class="ord">
         <li class="n"><b>손계자·방형식 두 분 먼저</b> — FAN VIP 응대로 이경연 실장 직접 접촉(손계자 잔여 5일)</li>
-        <li class="n">등급표 61명을 회원 원장에 등급 칸으로 붙인다 — 화면에서 바로 가려지게</li>
-        <li class="n">종료 사유를 필수 입력으로 — 오늘부터 나가는 분부터 기록(승인 시 즉시)</li>
-        <li class="n">만료 임박 72명 명단을 등급 순으로 정렬해 전달 — 금액 큰 순으로 상담</li>
-        <li class="n">종료 회원 697명 원장 연결 → 월별 이탈 추세 · 9월 회장님 보고에 반영</li>
+        <li class="n">등급표 61명을 회원 원장에 등급 칸으로 연결 — 화면에서 바로 가려지게</li>
+        <li class="n">만료 임박 72명 명단을 등급·금액 순으로 정렬해 전달 — 금액 큰 순으로 상담</li>
+        <li class="n">사유 정본 칸 일원화(결정 01) — 공란 15건·무응답 104건 소급 확인</li>
+        <li class="n">'우리 몫' 379명 사유별 대응 설계 → 9월 회장님 보고에 반영</li>
       </ul>
     </div>
     <div class="box rec">
-      <h3>GM 권고</h3>
+      <h3>경영지원부 권고 — 회장님·GM께</h3>
       <ul>
-        <li>회원이 준 원인은 <b>이탈이 늘어서가 아니라 유입이 멈춰서</b>로 보인다 — 이번 달 신규 7명이 그 근거다. <span class="est">(단면 관측 · 추세 미확인)</span></li>
-        <li>그러나 <b>이번 달만은 순서가 다르다.</b> 만료 임박 상위 8명(1억 484만)이 먼저다 — 신규 유치보다 싸고 빠르다.</li>
-        <li>회장님 지시 "사랑받는 기준"은 <b>새로 만들 필요가 없다.</b> 등급표(FAN VIP·VIP·Member 61명)가 이미 답이다. 다만 <b>회원 원장 밖에 따로 있어</b> 화면에서 못 센다 — 붙이는 것이 이번 과제의 실질이다.</li>
-        <li>등급 없는 939명은 <b>등록 회차</b>를 보조 축으로 쓴다(7회 이상 150명) — 금액과 지속을 함께 본다.</li>
+        <li><b>원인 정정</b> — 1차 보고의 "유입 정체 단독 원인" 추정을 실측으로 정정합니다. LOSS가 2025년 <b>1.93배</b>로 늘어 그 수준이 유지되는 가운데, 유입까지 멈췄습니다(이번 달 신규 7명). <b>둘이 겹친 결과</b>입니다.</li>
+        <li><b>이번 달 순서</b> — 만료 임박 상위 8명(1억 484만원) 접촉이 신규 유치보다 싸고 빠릅니다.</li>
+        <li>회장님 지시 "사랑받는 기준"은 <b>새로 만들 필요가 없습니다</b> — 등급표 61명이 답이고, 원장에 붙이는 것이 과제의 실질입니다. 등급 없는 939명은 <b>등록 회차</b>를 보조 축으로 씁니다(7회 이상 150명).</li>
+        <li>사유의 <b>54.4%(379명)는 우리가 손댈 수 있는 영역</b>입니다 — 낮은 이용횟수·무응답이 최대. 방문 빈도 데이터(브로제이)가 붙으면 만료 전 선제 감지가 가능해집니다.</li>
       </ul>
     </div>
   </div>
 
   <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>산출 근거</b> — 회원 수·종료·만료는 회원관리 이탈 통계 직접 조회(2026-08-15). 등록 분류·회차·기입률은 유효회원 1,000명 전수 집계. 등급표 61명은 GM 공유 <b>회원 등급 시트</b> 값 그대로.</div>
-    <div><b>(추정) 표기</b> — 「문의 대비 등록 14.6%」는 <b>추정치</b>다. 이번 달 문의 48건 ÷ 등록 7건인데, 등록자가 같은 달 문의자라는 보장이 없다. 만료 임박자와 등급표의 대조는 <b>이름</b>으로 맞춰 동명이인이 있으면 어긋날 수 있다.</div>
-    <div><b>확인 필요</b> — 등급표 61명이 <b>몇 년치인지</b>(2026년 한 해인지 누적인지) 시트에 안 적혀 있다. <b>차기 보고</b> — 종료 사유 기록 시작 + 등급 칸 연결 + 종료 원장 연결 후 본 문서 갱신(문서번호 유지) · 9월 회장님 보고.</div>
+    <div><b>각주1 · 산출 근거</b> — LOSS 697명 = 현행 스냅샷 191명 + 2025년 이전 보관 506명 전수 직접 집계(2026-08-15). LOSS일자 기입 697/697(100%) · 32개월 빈 달 0. 회원 수·만료·기입률은 유효회원 1,000명 전수. 등급표 61명은 GM 공유 <b>회원 등급 시트</b> 값 그대로. 「문의 대비 등록 14.6%」는 <b>추정치</b>(등록자가 같은 달 문의자라는 보장 없음) · 만료 임박자↔등급표 대조는 이름 기준(동명이인 가능).</div>
+    <div><b>각주2 · 종료 사유 정본</b> — 종료 사유 정본 = <b>미등록사유 칸(682/697 · 97.8%)</b>. 2026-07-09 신설된 별도 「종료사유」 칸은 미사용(0건) — 칸 신설이 착오였음(2026-07-20 GM 확정). 이 칸을 보면 "사유 0%"로 오독하게 되니 주의. 「그 외 9종」 = 금액·프로모션 26 · 건강문제 31 · 타센터등록 10 · 주차·시설 9 · 운영 정책 9 · 바쁜 일정 8 · 고민중 4 · 환불 4 · 기타 7.</div>
+    <div><b>각주3 · 등급표 기간 확정</b> — 등급표 61명 = <b>2025년 1년치 결제액 기준</b>(가입 이후 누적 아님 · GM 확정 2026-08-15). 2025년 실적이므로 2026년 매출 목표(72억)와는 <b>기간이 달라 비교하지 않음</b>. <b>차기 보고</b> — 등급 칸 원장 연결 + '우리 몫' 379명 대응 설계 후 본 문서 갱신(문서번호 유지) · 9월 회장님 보고.</div>
   </div>
 
 </div>
