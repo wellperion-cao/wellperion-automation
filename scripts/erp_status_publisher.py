@@ -100,6 +100,34 @@ def _state_from_minutes(mins, warn_after=35):
     return "이상", f"{int(mins)}분째 조용함"
 
 
+# 봇 기동 직후 하트비트 첫 갱신을 기다려 주는 창(분). 하트비트 주기는 300초라
+# 두 번 놓칠 만큼만 준다 — 더 길면 진짜 폴링 정지를 그만큼 늦게 잡는다.
+_BOT_START_GRACE_MIN = 10
+_BOT_START_MARK = "Bot starting."
+_BOT_LOG_TAIL_BYTES = 65536   # 기동 줄은 항상 로그 끝쪽에 있다 — 전체를 읽지 않는다
+
+
+def _bot_start_minutes_ago(bot_log: Path):
+    """bot.log 의 마지막 'Bot starting.' 줄이 몇 분 전인지. 못 찾으면 None."""
+    try:
+        with open(bot_log, "rb") as f:
+            f.seek(0, 2)  # 파일 끝으로
+            f.seek(max(0, f.tell() - _BOT_LOG_TAIL_BYTES))
+            tail = f.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+    for line in reversed(tail.splitlines()):
+        if _BOT_START_MARK not in line:
+            continue
+        try:
+            stamp = datetime.strptime(line.split(" | ")[0].split(",")[0],
+                                      "%Y-%m-%d %H:%M:%S").replace(tzinfo=KST)
+        except (ValueError, IndexError):
+            return None
+        return (_now_kst() - stamp).total_seconds() / 60.0
+    return None
+
+
 def collect_processes():
     items = []
     sched_log = ROOT / "telegram_bot" / "scheduler.log"
@@ -118,10 +146,23 @@ def collect_processes():
     # 의심)은 telegram_health_check.py _HEARTBEAT_STALE_MIN 과 동일 재사용
     # (배102, 2026-07-03 CTO).
     hb_mins = _minutes_since(bot_heartbeat)
+    boot_mins = _bot_start_minutes_ago(bot_log)
     if hb_mins is None:
         b_state, b_detail = "불명", "하트비트 파일 없음(봇 미재기동)"
     elif hb_mins <= 20:
         b_state, b_detail = "정상", f"하트비트 {int(hb_mins)}분 전(생존)"
+    elif boot_mins is not None and boot_mins <= _BOT_START_GRACE_MIN:
+        # ★2026-08-16 시토 — 기동 직후 유예. 이 PC 는 00:30 에 꺼지고 05:55 에 켜진다.
+        #   재기동 직후엔 어제 밤에 멈춘 하트비트가 그대로 남아 있어 "329분째 미갱신"으로
+        #   보인다 — 봇은 멀쩡히 방금 떴는데 GM 이 ERP 를 열면 매일 아침 가짜 경보를 본다
+        #   (자가점검 실측 2026-08-16 · bot.log 기동 이력 90회 전부 05:56대).
+        #   가짜 경보가 매일 뜨면 진짜 경보도 안 읽히므로 여기서 없앤다.
+        #   ▸판정 근거는 bot.log 의 "Bot starting." 줄 시각이다 — 파일 mtime 이 아니다.
+        #     mtime 은 낮 시간대 발신에도 갱신돼, 폴링만 죽고 발신은 도는 진짜 사고
+        #     (INC-011)를 이 유예가 덮어 버린다. 기동 줄은 그 부류에 안 흔들린다.
+        b_state = "정상"
+        b_detail = (f"기동 {int(boot_mins)}분 전 — 하트비트 첫 갱신 대기(유예 "
+                    f"{_BOT_START_GRACE_MIN}분)")
     else:
         b_state, b_detail = "이상", f"하트비트 {int(hb_mins)}분째 미갱신(폴링 정지 의심)"
 
@@ -196,8 +237,15 @@ def collect_git_sync():
     except Exception:
         pass
 
+    # ★2026-08-16 시토 — origin 지연은 **올릴 게 남아 있을 때만** 경고다.
+    #   미푸시가 0이면 로컬과 origin 이 같다 = 막힌 게 없다. 그런데도 "origin 최신 N분 전"
+    #   하나로 경고를 띄우던 탓에, 아무도 커밋하지 않는 밤(PC 00:30 종료 · 05:55 기동)이
+    #   지나면 매일 아침 ERP 가 경고를 달고 떴다(자가점검 실측 2026-08-16 — 같은 화면의
+    #   bridges 는 "미푸시 없음·정상"이라 두 칸이 서로 어긋나 보였다).
+    #   이 지연 기준이 원래 잡으려던 것은 "push 배관이 죽어 커밋이 밀린다"이고, 그건
+    #   정의상 미푸시가 있어야 성립한다.
     warn = unpushed > GIT_UNPUSHED_WARN or (
-        origin_age_min is not None and origin_age_min > GIT_STALE_WARN_MIN
+        unpushed > 0 and origin_age_min is not None and origin_age_min > GIT_STALE_WARN_MIN
     )
     state = "경고" if warn else "정상"
     age_txt = f"{int(origin_age_min)}분 전" if origin_age_min is not None else "확인 불가"
