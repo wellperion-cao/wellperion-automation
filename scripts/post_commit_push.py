@@ -839,19 +839,25 @@ def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
     st = _alert_state_read(root)
     streak = int(st.get("precommit_streak") or 0)
     if streak >= _PRECOMMIT_MAX_STREAK:
-        if streak == _PRECOMMIT_MAX_STREAK:  # 넘어서는 순간 딱 한 번만 알린다
+        if streak == _PRECOMMIT_MAX_STREAK:  # 넘어서는 순간 딱 한 번만 알린다(설계상)
             _log(f"PUSH_SWEEPER 선커밋 중단 — {streak}회 연속 찍고도 push 실패(배242)", root)
             # ★2026-08-01(시토 · 배265) — '무엇이 막고 있는지'를 경고에 같이 보낸다.
             #   왜: 2026-08-01 경보를 받고도 원인(종합접수처 파일 merge 충돌)을 찾는 데
             #   따로 실측이 필요했다. 막은 이유는 이미 이 상태파일에 적혀 있었는데
             #   경고 문구에만 없었다 — 새 수집기 없이 있는 값을 한 줄 더 보낸다(약속 L21).
             why = str(st.get("reason") or "").strip()
-            _telegram_warn(
-                root,
-                f"⚠️ 자동 push 가 {streak}회 연속 막혀 '통합 여는 커밋'을 중단했습니다.\n"
-                + (f"막은 이유: {why[:180]}\n" if why else "")
-                + "커밋은 로컬에 안전히 남아 있습니다 — 원인 확인이 필요합니다.",
-            )
+            # ★2026-08-15 GM 지시(중복 알림 정리) — "streak==20을 막 넘는 순간에만"이 설계였지만,
+            #   이 저장소는 여러 프로세스가 동시에 push 를 재시도해 streak 가 성공→리셋→재적재를
+            #   반복하며 짧은 시간에 몇 번씩 다시 20을 넘긴다(실측 8/10 5통·8/11 6통, 20~30분
+            #   안·문구 동일). 이미 이 파일에 있는 같은 사유 60분 억제(_alert_should_send — 아래
+            #   push 실패 경보와 같은 장치)를 그대로 재사용한다(새 억제 장치 안 만듦).
+            if _alert_should_send(root, f"streak_max::{why}"):
+                _telegram_warn(
+                    root,
+                    f"⚠️ 자동 push 가 {streak}회 연속 막혀 '통합 여는 커밋'을 중단했습니다.\n"
+                    + (f"막은 이유: {why[:180]}\n" if why else "")
+                    + "커밋은 로컬에 안전히 남아 있습니다 — 원인 확인이 필요합니다.",
+                )
         st["precommit_streak"] = streak + 1
         _alert_state_write(root, st)
         return False
