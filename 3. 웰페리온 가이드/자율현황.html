@@ -23,13 +23,6 @@
   header.page-head .back{font-size:12px; color:var(--accent-soft); text-decoration:none; border:1px solid var(--border-strong); border-radius:7px; padding:4px 11px; white-space:nowrap;}
   header.page-head .back:hover{background:var(--surface);}
 
-  /* 자율화 배너 */
-  .auto-banner{display:flex; gap:12px; align-items:flex-start; margin:2px 0 18px; padding:12px 15px; border:1px solid rgba(124,58,237,0.30); border-left:4px solid var(--accent); border-radius:11px; background:rgba(124,58,237,0.06);}
-  .auto-banner .ab-ico{font-size:24px; line-height:1;}
-  .auto-banner .ab-h{font-size:11px; font-weight:800; color:var(--accent-soft); letter-spacing:0.02em; text-transform:uppercase; margin-bottom:3px;}
-  .auto-banner .ab-txt{font-size:13px; color:var(--text-soft); line-height:1.5;}
-  .auto-banner .ab-txt b{color:var(--text);}
-
   h2.sec{font-size:15px; font-weight:700; margin:20px 0 3px; display:flex; align-items:center; gap:7px;}
   .sec-note{font-size:11px; color:var(--dim); margin-bottom:10px; line-height:1.45;}
   /* 채널 로고(인라인 SVG) — 이모지 대신 실제 카카오톡·텔레그램 로고. AI운영한장.html 과 같은 규격. */
@@ -40,13 +33,6 @@
   .statnote{font-size:10.5px; color:var(--dim); margin-top:3px; line-height:1.35;}
   .statnote .cellmore summary{cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
-  /* ── 히어로 슬롯: renderHero()가 결과물 중심 한 줄 요약을 채움(배237) ── */
-  .hero:empty{display:none;}
-  .hero{margin:2px 0 16px;}
-  .hero-line{font-size:14.5px; font-weight:700; color:var(--text-soft); line-height:1.55; padding:13px 16px; border:1px solid rgba(124,58,237,0.32); border-left:4px solid var(--accent); border-radius:11px; background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(240,198,116,0.05));}
-  .hero-line b{color:var(--accent-soft); font-size:16px; font-weight:800;}
-  /* 0건일 때 '마지막으로 있었던 때' — 오늘 없었을 뿐인지, 오래 멈춘 건지 구분(2026-07-24) */
-  .hero-since{font-size:12px; font-weight:600; color:var(--dim); margin-left:3px; white-space:nowrap;}
   /* 표 칸 — 요약만 보이고 전문은 펼쳐보기(글벽 방지 · 정보 손실 0 · 2026-07-24) */
   .cellmore{max-width:520px;}
   .cellmore>summary{cursor:pointer; list-style:none; word-break:keep-all; overflow-wrap:anywhere; line-height:1.55;}
@@ -85,36 +71,7 @@
   .rrow .rv{color:var(--text-soft); flex:1; min-width:0; word-break:keep-all; overflow-wrap:break-word;}
   .rrow .rv b{color:var(--text);}
 
-  /* ── 섹션2: 통합 피드 ── */
-  .feed{border:1px solid var(--border); border-radius:12px; background:var(--paper); overflow:hidden;}
-  .feed-item{display:flex; gap:11px; align-items:flex-start; padding:9px 13px; border-top:1px solid var(--border);}
-  .feed-item:first-child{border-top:none;}
-  .fi-ico{font-size:15px; line-height:1.4; flex-shrink:0; width:20px; text-align:center;}
-  .fi-body{flex:1; min-width:0;}
-  .fi-when{font-size:10.5px; color:var(--dim); font-variant-numeric:tabular-nums;}
-  .fi-tag{display:inline-block; font-size:9.5px; font-weight:700; border-radius:5px; padding:1px 6px; margin-left:6px; vertical-align:1px; letter-spacing:0.02em;}
-  .fi-status{display:inline-block; font-size:9.5px; font-weight:800; border-radius:5px; padding:1px 7px; margin-left:5px; vertical-align:1px; letter-spacing:0.01em; white-space:nowrap;}
-  .fi-status--done{color:#0c1a10; background:var(--green);}
-  .fi-status--pending{color:#2a2004; background:var(--gold);}
-  .fi-what{font-size:12.5px; color:var(--text); line-height:1.45; margin-top:1px; word-break:break-word;}
-  .fi-res{font-size:11px; color:var(--text-soft); margin-top:1px; line-height:1.4;}
-  .fi-res b{color:var(--accent-soft);}
   .feed-status{padding:16px 14px; font-size:12px; color:var(--dim); text-align:center;}
-  .feed-more{padding:9px; text-align:center; font-size:11px; color:var(--dim); border-top:1px solid var(--border); background:var(--surface);}
-
-  /* ── 섹션3: 성과 요약 ── */
-  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:11px;}
-  .scard{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--sc,var(--border-strong)); border-radius:12px; padding:14px 15px;}
-  .scard .sh{font-size:11px; color:var(--dim); font-weight:700; letter-spacing:0.01em; margin-bottom:6px; display:flex; align-items:center; gap:5px;}
-  .scard .sbig{font-size:28px; font-weight:800; letter-spacing:-0.02em; line-height:1; color:var(--sc,var(--text));}
-  .scard .sbig small{font-size:14px; font-weight:700; color:var(--dim); margin-left:3px;}
-  .scard .ssub{font-size:11px; color:var(--text-soft); margin-top:6px; line-height:1.45;}
-  .scard .ssub b{color:var(--text);}
-  .scard.unmeasured .sbig{font-size:15px; color:var(--dim); font-weight:700;}
-  .sbar{height:7px; border-radius:4px; background:var(--surface); border:1px solid var(--border); overflow:hidden; margin:8px 0 2px;}
-  .sbar>i{display:block; height:100%; border-radius:4px; background:linear-gradient(90deg,var(--accent),var(--accent-soft));}
-  .sbar.g>i{background:linear-gradient(90deg,#3f8f4f,var(--green));}
-  .sbar.gold>i{background:linear-gradient(90deg,#b8860b,var(--gold));}
 
   /* ── 👥 시포 자율 회원관리·📣 시모 자율 마케팅 전용 스타일(.cmo-loop·.cpo-live-strip 등)
      삭제 — GM 승인 자율현황 5섹션 정리(2026-08-15). 해당 섹션 HTML과 함께 걷음. ── */
@@ -151,22 +108,6 @@
   code{background:rgba(255,255,255,0.07); color:#e6d9ff; border-radius:4px; padding:1px 5px; font-size:11px;}
 
 
-  /* ── 🤖 자율 처리 토글(히어로 하위 · 오늘 판단형 자율 실행 내역 + 증거) ── */
-  .auto-detail{margin:2px 0 14px; font-size:12px;}
-  .auto-detail > summary{cursor:pointer; color:var(--accent-soft); font-weight:700; list-style:none; padding:4px 0;}
-  .auto-detail > summary::-webkit-details-marker{display:none;}
-  .auto-detail > summary::before{content:'▸ '; color:var(--dim);}
-  .auto-detail[open] > summary::before{content:'▾ ';}
-  .auto-detail .ax-note{color:var(--dim); font-size:11px; line-height:1.55; margin:4px 0 8px;}
-  .auto-detail .ax-note b{color:var(--text-soft); font-weight:700;}
-  .ax-grp{border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:8px; padding:7px 11px; margin:6px 0; background:var(--surface);}
-  .ax-tgt{font-weight:700; color:var(--text); font-size:12px; margin-bottom:3px;}
-  .ax-badge{font-size:9.5px; font-weight:700; color:var(--dim); border:1px solid var(--border-strong); border-radius:20px; padding:1px 7px; margin-left:6px; white-space:nowrap;}
-  .ax-act{color:var(--text-soft); font-size:11.5px; line-height:1.5; padding:1px 0; word-break:break-all;}
-  .ax-ev{color:var(--dim); font-size:10.5px;}
-  .ax-routine{color:var(--dim); font-size:11px; margin-top:8px; padding-top:6px; border-top:1px dashed var(--border);}
-
-
   /* ── ② 돌아가는 자동화 (구 T2 위젯 이식 · 배237 · 2026-07-03) ── */
   .autopanel{background:var(--paper); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:12px; padding:14px 18px; margin:8px 0 18px;}
   .autopanel.health{border-left-color:var(--green);}
@@ -195,7 +136,7 @@
   .notify-drift-banner{display:flex; gap:9px; align-items:flex-start; margin:0 0 12px; padding:10px 13px; border:1px solid rgba(226,105,95,0.4); border-left:3px solid #e2695f; border-radius:9px; background:rgba(226,105,95,0.08); font-size:12px; color:var(--text-soft); line-height:1.55;}
   .notify-drift-banner b{color:#ff8a80;}
 
-  /* ── 🕘 최근 자율 처리 이력 접기(기본 접힘 · 2026-07-15) ── */
+  /* ── 🗂 접기 상자 공용(기본 접힘 · 2026-07-15 · 「배 정리·보관함」이 사용) ── */
   details.hist-fold{margin:16px 0 6px;}
   details.hist-fold > summary{cursor:pointer; list-style:none; font-size:15px; font-weight:700; color:var(--text); padding:6px 0; display:flex; align-items:baseline; gap:7px;}
   details.hist-fold > summary::-webkit-details-marker{display:none;}
@@ -256,21 +197,42 @@
         <span style="font-size:11.5px;font-weight:600;color:#cbb6f0;background:rgba(203,182,240,0.12);padding:4px 11px;border-radius:99px;">③ 성장이 지속되는 생태계</span>
       </div>
       <p style="color:#cfc7e8;font-size:12px;margin:14px 0 0;">오늘의 항로는 이 북극성을 향한 오늘의 뱃길입니다.</p>
+      <!-- ══ 🌊 자동화 → 자율화 — 별도 섹션이었던 것을 북극성 블록 안으로 흡수(GM 지시 2026-08-15 "북극성 아래에 자동화 → 자율화 병합"). 제목 한 겹(h2)만 없앴다, 문구는 그대로. ══ -->
+      <p style="color:#cfc7e8;font-size:12px;margin:6px 0 0;">🌊 <b style="color:#fff;">자동화 → 자율화</b>: <b style="color:#fff;">자동화</b>=정시 스크립트 · <b style="color:#fff;">자율화</b>=AI가 포착·판단·처리, 사람은 방향·결재.</p>
       <div style="display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11.5px;color:#bbb;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);"><span>🌟 <strong style="color:#cbb6f0;">북극성</strong>=목적지</span><span>🌊 항해=전체 여정</span><span>🧭 항로=오늘 할 일</span><span>🚢 배=개별 업무(난이도 ⛵·⛴️·🛳️)</span><span>⚓ <strong style="color:#8ca6d6;">닻</strong>=대기/정박</span><span>🏁 완료</span><span>🔗 항로점=완료하며 남긴 다음</span><span>🌀 표류=완료인데 다음없음</span></div>
     </div>
     <!-- ══ /북극성 ══ -->
 
-  <section id="hero-autonomy" class="hero">
-    <!-- renderHero() 채움 -->
-  </section>
-
-  <div class="auto-banner">
-    <span class="ab-ico">🌊</span>
-    <div>
-      <div class="ab-h">자동화 → 자율화</div>
-      <div class="ab-txt"><b>자동화</b>=정시 스크립트 · <b>자율화</b>=AI가 포착·판단·처리, 사람은 방향·결재.</div>
-    </div>
+  <!-- ══ 📨 알림 한 장 — 북극성 바로 아래(GM 지시 2026-08-15 "북극성 바로 아래 알림 한 장만 있으면 될듯")
+       (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · GM 지시 2026-07-31 · 구 3섹션[📋 텔레그램·카카오톡 전 방 한 장·📨 통합 알림 보드·📡 모듈 보고 현황] 통합)
+       ★2026-08-15 GM 승인 — 평소엔 요약 한 줄만, 이상이 있을 때만 펼쳐진다(id=alert-board-details 인
+       details 요소를 JS가 문제 건수·드리프트 여부로 open 을 켠다). 컨테이너 id·렌더 함수는 그대로. ══ -->
+  <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
+    <h2 class="sec" style="margin-top:0;">📨 알림 한 장 — 어느 방으로 · 누가 · 살아있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(방 기준 · 카톡·텔레그램 발신 전체)</span></h2>
+    <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
+    <div id="notify-drift-banner" style="display:none;"></div>
+    <details id="alert-board-details">
+      <summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--accent-soft);">방별로 펼쳐보기</summary>
+      <div class="sec-note" style="margin:8px 0 10px;">방을 펼치면 그 방으로 나가는 발신이 한 줄씩. 🟢 <b>가동</b> · 🟡 <b>조건부</b>(안 오면 정상일 수 있음) · 🔴 <b>꺼짐</b>(GM 킬스위치 OFF) · ⚫ <b>죽은배선</b>(실행 실패·스케줄러 정지·방 매핑 끊김) · ⚪ <b>못 잼</b>(대조·확인 자체가 멈춰 진짜인지 알 수 없음). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
+      <div class="notify-filters" id="notify-filters">
+        <button type="button" class="nf-btn active" data-f="all">전체</button>
+        <button type="button" class="nf-btn" data-f="telegram">텔레그램</button>
+        <button type="button" class="nf-btn" data-f="kakao">카카오톡</button>
+        <button type="button" class="nf-btn" data-owner-toggle="1">담당자별 ▾</button>
+        <span class="nf-sep"></span>
+        <!-- ⏱ 시간순 (GM 지시 2026-08-08 "시간대별로 자동 발송 내용이 정리되는게 나을 것 같은데")
+             방 기준은 '이 방에 뭐가 오나'(실무진 관점)이고, 시간순은 '오늘 몇 시에 뭐가 나가나'(GM 관점)다.
+             정렬 기준은 등록부에 이미 있는 when_sort 를 그대로 쓴다 — 새 데이터 없음. -->
+        <button type="button" class="nf-btn" id="notify-time-toggle">⏱ 시간순</button>
+        <span class="nf-sep"></span>
+        <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
+      </div>
+      <div id="notify-owner-filters" class="notify-filters" style="display:none;"></div>
+      <div id="alert-board-rooms">불러오는 중…</div>
+      <div class="sec-note" style="margin:6px 0 0;">소스: <code>telegram_rooms.json</code>·<code>kakao_rooms.json</code>(방·용도) · <code>notify_registry.json</code>(발신 배선·상태) · <code>module_registry.json</code>(모듈·소유) — <span id="alert-unwired-note"></span><span id="alert-freshness-note"></span></div>
+    </details>
   </div>
+  <!-- ══ /알림 한 장 ══ -->
 
   <!-- ══ 🟢 CLI 라이브 — GM PC 로컬 서버(scripts/live_cli_status_server.py, daily_scheduler.py 가
        데몬 스레드로 띄움 · 포트 8787 · 127.0.0.1 전용)를 3초마다 읽어 지금 이 순간 CLI 대화·도구호출을
@@ -313,47 +275,6 @@
   <!-- 👤 GM 본인 할 일 줄 삭제 (GM 지시 2026-08-08 "GM 본인 할일 0건 삭제").
        여기는 AI 판이다. GM 개인 할 일은 G1 에 있고, 이 화면에 개수만 뜨는 것은
        GM 이 볼 이유가 없는 줄 하나가 늘어난 것뿐이었다. -->
-
-  <!-- ══ 🏗 시설부 점검 맥박 (GM 지시 2026-08-08 · 배481) ══
-       점검일지는 매일 들어오는데 GM 화면 어디에도 그 값이 없어 "소장 진행 0건" 착시가 났다.
-       실무진 입력은 그대로 두고 읽기만 더한다 — 시설부에 무엇을 더 시키는 화면이 아니다.
-       소스 = 지원부와 같은 점검 GAS·같은 액션(dept 만 다르다) · 새 배선 0(약속 L21). ══ -->
-  <div id="facility-pulse" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
-    <h2 class="sec" style="margin-top:0;">🏗 시설부 점검 <span style="font-size:12px;font-weight:400;color:var(--dim);">(오늘 몇 회 돌았나 · 이상은 있었나)</span></h2>
-    <div id="facility-pulse-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
-    <div id="facility-pulse-body" class="stats"></div>
-  </div>
-  <!-- ══ /시설부 점검 맥박 ══ -->
-
-  <!-- ══ 📨 알림 한 장 (telegram_rooms.json + notify_registry.json + module_registry.json 조인 · 배10437 · GM 지시 2026-07-31 · 구 3섹션[📋 텔레그램·카카오톡 전 방 한 장·📨 통합 알림 보드·📡 모듈 보고 현황] 통합)
-       ★2026-08-15 GM 승인 — 평소엔 요약 한 줄만, 이상이 있을 때만 펼쳐진다(id=alert-board-details 인
-       details 요소를 JS가 문제 건수·드리프트 여부로 open 을 켠다). 컨테이너 id·렌더 함수는 그대로. ══ -->
-  <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
-    <h2 class="sec" style="margin-top:0;">📨 알림 한 장 — 어느 방으로 · 누가 · 살아있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(방 기준 · 카톡·텔레그램 발신 전체)</span></h2>
-    <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
-    <div id="notify-drift-banner" style="display:none;"></div>
-    <details id="alert-board-details">
-      <summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--accent-soft);">방별로 펼쳐보기</summary>
-      <div class="sec-note" style="margin:8px 0 10px;">방을 펼치면 그 방으로 나가는 발신이 한 줄씩. 🟢 <b>가동</b> · 🟡 <b>조건부</b>(안 오면 정상일 수 있음) · 🔴 <b>꺼짐</b>(GM 킬스위치 OFF) · ⚫ <b>죽은배선</b>(실행 실패·스케줄러 정지·방 매핑 끊김) · ⚪ <b>못 잼</b>(대조·확인 자체가 멈춰 진짜인지 알 수 없음). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
-      <div class="notify-filters" id="notify-filters">
-        <button type="button" class="nf-btn active" data-f="all">전체</button>
-        <button type="button" class="nf-btn" data-f="telegram">텔레그램</button>
-        <button type="button" class="nf-btn" data-f="kakao">카카오톡</button>
-        <button type="button" class="nf-btn" data-owner-toggle="1">담당자별 ▾</button>
-        <span class="nf-sep"></span>
-        <!-- ⏱ 시간순 (GM 지시 2026-08-08 "시간대별로 자동 발송 내용이 정리되는게 나을 것 같은데")
-             방 기준은 '이 방에 뭐가 오나'(실무진 관점)이고, 시간순은 '오늘 몇 시에 뭐가 나가나'(GM 관점)다.
-             정렬 기준은 등록부에 이미 있는 when_sort 를 그대로 쓴다 — 새 데이터 없음. -->
-        <button type="button" class="nf-btn" id="notify-time-toggle">⏱ 시간순</button>
-        <span class="nf-sep"></span>
-        <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
-      </div>
-      <div id="notify-owner-filters" class="notify-filters" style="display:none;"></div>
-      <div id="alert-board-rooms">불러오는 중…</div>
-      <div class="sec-note" style="margin:6px 0 0;">소스: <code>telegram_rooms.json</code>·<code>kakao_rooms.json</code>(방·용도) · <code>notify_registry.json</code>(발신 배선·상태) · <code>module_registry.json</code>(모듈·소유) — <span id="alert-unwired-note"></span><span id="alert-freshness-note"></span></div>
-    </details>
-  </div>
-  <!-- ══ /알림 한 장 ══ -->
 
   <!-- ════ 🗂 배 정리·보관함 (접힘) — 위 「🧭 항로」와 **같은 데이터**의 관리 도구 면이다. ════
        ★2026-08-03 시토(GM 지시 "중복 정리") — ①위치: 항로에서 멀리 떨어져 있어 같은 자료인 줄
@@ -420,16 +341,6 @@
        누적 성과는 「📊 성과 요약」 하나가, 오늘치는 맨 위 한 줄이 담당한다. 새 fetch 도 함께 줄었다. ══ -->
 
 
-  <!-- ════ 📣 마케팅 자율 → AI CMO(시모) 이관 (2026-07-15) — 자율현황=시토 시스템/자율 체계만. 마케팅은 시모 도메인에 몰기. ════ -->
-  <div class="honest-note" style="border-left-color:var(--pink);">
-    <span class="hn-ico">📣</span>
-    <div class="hn-txt">마케팅 자율 = <b>AI CMO(시모)</b> 관리 —
-      <a href="wellperion_guide(main).html#M1" style="color:var(--accent-soft);font-weight:700;">마케팅 현황 대시보드</a> ·
-      <a href="cmo/series/AI시리즈보드.html" style="color:var(--accent-soft);font-weight:700;">콘텐츠·AI시리즈 보드</a>.</div>
-  </div>
-
-
-
   <!-- ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 구 「🧑‍🤝‍🧑 시로(AI CHRO) 자율 인사」 전용 섹션 삭제.
        ▸이유: 이 섹션이 안고 있던 모듈은 chro-gmail-job-title-fetch 1건뿐인데, 전용 h2 + 요약줄 + 휴면 접기 +
          게이트 설명까지 달고 있어 화면에서 한 섹션을 통째로 차지했다. 게다가 "⏸️ GM 결정 대기(미발효·휴면)"로
@@ -438,16 +349,10 @@
          (나우열M 이 실제로 쓰는 채용 자동화 — 2026-07-27 '흔적 없다고 끄지 마라' 교훈).
        ▸GM 확정 2026-07-28: 시로·시뽀는 AI 큐에서 배제(담당=나우열M)이나 **자동화 모듈은 미변경**이 원칙이다. -->
 
-
-  <!-- ════ 섹션 3 · 루프가 돈 흔적 (기본 접힘 · 2026-07-15) ════ -->
-  <details class="hist-fold">
-    <summary>📁 최근 자율 처리 이력 (펼치기) <span class="hist-sub">— 루프가 돈 흔적</span></summary>
-    <div class="sec-note" style="margin-top:6px;">자율 판단·실행만 시간 역순 · 루틴 완료는 제외(GM 개인 루틴 = G1).</div>
-    <div class="feed" id="feed">
-      <div class="feed-status">처리 이력을 불러오는 중…</div>
-    </div>
-  </details>
-
+  <!-- 📣 마케팅 자율 배너·📁 최근 자율 처리 이력(펼치기) 삭제 (GM 지시 2026-08-15 "둘다 빼자").
+       마케팅 자율 안내는 M1 마케팅 현황 대시보드가 이미 담당(중복 안내였다). 처리 이력 접기는
+       "루프가 돈 흔적"을 다시 나열할 뿐 판단에 쓰이지 않아 GM: "의미가없다". buildFeed()·renderFeed()
+       함수와 전용 CSS(.feed-item·.fi-*·.feed-more)도 같이 걷었다 — 소비처가 이 블록 하나뿐이었다. -->
 
   <footer class="foot">
     정본 = <code>status/</code> 로그 직독 · 로그에 있는 것만 · 미측정은 미표기.
@@ -888,106 +793,13 @@
     document.addEventListener('change', function(ev){ if(ev.target && ev.target.id === id) renderAllShips(); });
   });
 
-  // ═══════════ 🤖 히어로: 결과물 중심 한 줄 요약(배237) ═══════════
-  function renderHero(d){
-    var el = document.getElementById('hero-autonomy');
-    var t0 = localTodayMs(), t1 = t0 + 86400000;
-    var isToday = function(when){ var m = ts(when); return m >= t0 && m < t1; };
-
-    var scan = d.scanLog || [];
-    var todayScan = scan.filter(function(s){ return isToday(s.logged_at); });
-
-    // 자율 처리 = 오늘 관찰원장 auto_exec 판단 실행(대상별) — 증거(before→after) 실재분만.
-    // 카드#6(틈 감지기)과 동일 소스로 통일 → 옛 scan auto_applied 카운터 폐기(숫자 불일치 해소).
-    var ledger = d.obsLedger || [];
-    var todayAuto = ledger.filter(function(o){ return o.signal_type === 'auto_exec' && isToday(o.observed_at); });
-    function autoTarget(o){ var m = String(o.summary || '').match(/^\[([^\]]+)\]/); return m ? m[1] : '기타'; }
-    var judgeGroups = {}, routineGroups = {};
-    todayAuto.forEach(function(o){
-      var t = autoTarget(o);
-      var g = /^NEXT-/.test(t) ? judgeGroups : routineGroups;
-      (g[t] = g[t] || []).push(o);
-    });
-    var judgeKeys = Object.keys(judgeGroups);
-    var autoTxt = todayAuto.length ? ('<b>' + judgeKeys.length + '</b>건') : '미측정';
-
-    // 토글 상세 — 판단형 자율(NEXT 대상)별 실제 행동 + 증거 (개발자 용어→한글 라벨)
-    var GAP_LABEL = { resumable_tag:'🔓 재개 가능 표시', nudge:'📣 담당 촉구', depends_resolved:'🔗 의존 해소', stall_tag:'🐌 정체 표시' };
-    var axGroups = judgeKeys.map(function(k){
-      var acts = judgeGroups[k].map(function(o){
-        var s = String(o.summary || '').replace(/^\[[^\]]*\]\s*/, '').replace(/^가역 자율실행:\s*/, '');
-        var code = s.split(/\s*[—-]\s*/)[0].trim();
-        var label = GAP_LABEL[code] || esc(s);
-        var ev = o.evidence ? ' <span class="ax-ev">' + esc(String(o.evidence).slice(0, 90)) + '</span>' : '';
-        return '<div class="ax-act">· ' + label + ev + '</div>';
-      }).join('');
-      return '<div class="ax-grp"><div class="ax-tgt">🚢 ' + esc(k) + '<span class="ax-badge">가역 · 자동 원복 가능</span></div>' + acts + '</div>';
-    }).join('');
-    var routineKeys = Object.keys(routineGroups);
-    var axRoutine = routineKeys.length ? ('<div class="ax-routine">그 외 루틴 자동 동기화 ' + routineKeys.length + '건: ' + routineKeys.map(esc).join(' · ') + '</div>') : '';
-    var autoDetailHtml = todayAuto.length
-      ? ('<details class="auto-detail"><summary>자율 처리 ' + judgeKeys.length + '건 — 내역 보기</summary>'
-         + '<div class="ax-note">GM 보좌 자율화(축③)가 오늘 스스로 처리한 <b>가역</b> 작업입니다. 선행 완료로 재개 가능해진 배에 태그·의존해소를 적용 — 모두 원장에 before→after로 기록(언제든 원복 가능).</div>'
-         + (axGroups || '<div class="ax-note">오늘 판단형 자율 처리 없음(루틴 동기화만 수행).</div>')
-         + axRoutine + '</details>')
-      : '';
-
-    // ── 0건일 때 '마지막으로 있었던 때'를 함께 적는다 (2026-07-24 시토 · GM 지적) ──
-    //   그냥 '0건'만 적으면 '오늘은 없었음'과 '한 달째 멈춤'이 구분되지 않는다.
-    //   실제로 학습 반영은 2026-06-23 이후 정지 상태였는데 화면상 그냥 0으로만 보였다.
-    function sinceHint(lastWhen){
-      if(!lastWhen) return '<span class="hero-since">(기록 없음)</span>';
-      var days = Math.floor((localTodayMs() - ts(lastWhen)) / 86400000);
-      var ago = days <= 0 ? '오늘' : (days === 1 ? '어제' : days + '일 전');
-      return '<span class="hero-since">(마지막 ' + fmtWhen(lastWhen) + ' · ' + ago + ')</span>';
-    }
-    // 0이면 힌트를 붙이고, 1건 이상이면 숫자만 — 잘 돌 때 화면을 어지럽히지 않는다.
-    function withHint(n, lastWhen){
-      return '<b>' + n + '</b>건' + (n > 0 ? '' : ' ' + sinceHint(lastWhen));
-    }
-    function lastWhenOf(arr, whenKey, ok){
-      for(var i = arr.length - 1; i >= 0; i--){ if(ok(arr[i])) return arr[i][whenKey]; }
-      return null;
-    }
-
-    if(autoTxt === '미측정'){
-      autoTxt = '미측정 ' + sinceHint(lastWhenOf(ledger, 'observed_at', function(o){ return o.signal_type === 'auto_exec'; }));
-    } else if(judgeKeys.length === 0){
-      // 판단형 0 — 루틴만 돌았다는 사실이 헤드라인에서 안 보여 '아무것도 안 함'으로 읽혔다.
-      autoTxt = '<b>0</b>건' + (routineKeys.length ? '<span class="hero-since">(루틴 동기화 ' + routineKeys.length + '건은 수행)</span>' : '');
-    }
-
-    // 포착 건수 = 오늘 gm_aide_scan_log 회차 captured 합
-    var capTxt;
-    if(!scan.length){ capTxt = '미측정 <span class="hero-since">(기록 없음)</span>'; }
-    else {
-      var capSum = todayScan.reduce(function(a, s){ return a + (s.captured|0); }, 0);
-      capTxt = withHint(capSum, lastWhenOf(scan, 'logged_at', function(s){ return (s.captured|0) > 0; }));
-    }
-
-    // 학습 반영 건수 = 오늘 반영일시로 status '반영' 처리된 learning_proposals 건수
-    var learn = d.learn || [];
-    var learnTxt;
-    if(!learn.length){ learnTxt = '미측정 <span class="hero-since">(기록 없음)</span>'; }
-    else {
-      var learnDone = learn.filter(function(p){ return p.status === '반영'; });
-      var learnN = learnDone.filter(function(p){ return isToday(p['반영일시']); }).length;
-      // 반영된 적이 없으면 '제안이 만들어진 마지막 때'라도 보여준다(완전 침묵보다 낫다).
-      var learnLast = learnDone.length ? last(learnDone)['반영일시']
-                                       : (learn.length ? last(learn)['생성일'] : null);
-      learnTxt = withHint(learnN, learnLast);
-    }
-
-    el.innerHTML = '<div class="hero-line">🤖 자율이 오늘 한 일 — 자율 처리 ' + autoTxt + ' · 포착 ' + capTxt + ' · 학습 반영 ' + learnTxt + '</div>' + autoDetailHtml;
-  }
-
+  // 🤖 히어로 "자율이 오늘 한 일" 삭제 (GM 지시 2026-08-15 "자율이 오늘 한일 이런건 삭제하자 의미가없다").
+  //   renderHero()·#hero-autonomy 섹션·전용 CSS(.hero·.hero-line·.hero-since·.auto-detail·.ax-*) 모두 함께 걷었다.
+  //   합계 지표는 남은 「🗂 배 정리·보관함」이 담당한다.
 
   // ═══════════ 📣 시모(CMO) 자율 마케팅 → AI CMO 페이지로 이관(2026-07-15) · 렌더 삭제 ═══════════
   // 마케팅 카드·발행 큐 렌더는 CMO 도메인 페이지(마케팅현황대시보드·AI시리즈보드·문의흐름지도)로 이관. 자율현황=시토 시스템/자율 체계만.
 
-  // ═══════════ 🔧 시우(COO) 실무 3층 v2 — 1층: 운영 실측 지표(today_live/monthly_report&dept=support 라이브) ═══════════
-  // COO_API_URL = 지원부 체계.html(coo/check/지원부 체계.html)과 동일 GAS 웹앱 — 신규 배포 없음, 기존 today_live·monthly_report 액션만 재사용.
-  var COO_API_URL = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
   // CPO_CHURN_URL = 회원 GAS(cpo_churn_stats 액션) — 시포 라이프사이클 루프 라이브 스탯 스트립용
   // 2026-07-04 수정(시토): 배포 ID 오타(AKfycbw…) → membership.html과 동일 정상 배포(AKfycbz…)로 정합. 라이브 CORS 실패 2건 해소.
   var CPO_CHURN_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
@@ -997,174 +809,14 @@
       .then(function(j){ return (j && j.ok !== false) ? j : null; })
       .catch(function(){ return null; });
   }
-  function cooTodayDate(){
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-  function cooMonthStr(){
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-  }
-  // cooFetchTodayLive() 제거 — renderCooLiveMetrics 만 부르던 함수라 그것과 같이 죽었다(배587 후속·2026-08-13).
-  function cooFetchMonthlyReport(dept){
-    var url = COO_API_URL + '?action=monthly_report&dept=' + (dept || 'support') + '&month=' + encodeURIComponent(cooMonthStr());
-    return fetch(url, {redirect:'follow'}).then(function(r){ return r.json(); })
-      .then(function(j){ return (j && j.ok !== false) ? j : null; })
-      .catch(function(){ return null; });
-  }
-  function cooPctColor(p){ p = Number(p) || 0; return p >= 90 ? 'var(--green)' : (p >= 60 ? 'var(--gold)' : '#ff8a80'); }
-  function cooMetricCard(o){
-    if(o.unmeasured){
-      return '<div class="scard unmeasured"><div class="sh">' + esc(o.sh) + '</div><div class="sbig">' + esc(o.big) + '</div><div class="ssub">' + o.sub + '</div></div>';
-    }
-    return '<div class="scard" style="--sc:' + o.sc + '"><div class="sh">' + esc(o.sh) + '</div>' +
-      '<div class="sbig" style="color:' + o.sc + '">' + o.big + (o.small ? '<small>' + esc(o.small) + '</small>' : '') + '</div>' +
-      (o.bar != null ? '<div class="sbar"><i style="width:' + o.bar + '%;background:linear-gradient(90deg,' + o.sc + ',' + o.sc + ')"></i></div>' : '') +
-      '<div class="ssub">' + o.sub + '</div></div>';
-  }
-  // renderCooLiveMetrics() 제거 — 쓰던 칸 #coo-live-metrics 는 2026-08-08 에 지워져 죽은 함수로
-  // 5일간 헛돌았다(배587 reqEl 가드가 잡음). 대체=renderFacilityPulse(#facility-pulse-body, 실측 확인됨) · 2026-08-13 정리.
-  // cooMetricCard·cooPctColor 는 renderFacilityPulse 가 그대로 재사용해 남겨 둔다.
+  // 🏗 시설부 점검 맥박(renderFacilityPulse·#facility-pulse) 삭제 (GM 지시 2026-08-15 "시설부점검도 여기엔
+  //   필요없고"). cooTodayDate·cooMonthStr·cooFetchMonthlyReport·cooPctColor·cooMetricCard·COO_API_URL 은
+  //   이 렌더 하나만 쓰던 헬퍼라 함께 걷었다(다른 화면 소비처 없음 확인 · 시설부 점검 데이터·GAS는 무변경 —
+  //   coo/check/지원부 체계.html 이 계속 같은 액션을 쓴다). .stats·.scard·.sbar 전용 CSS도 같이 걷었다.
 
-  // ═══════════ 🏗 시설부 점검 맥박 (배481 · GM 지시 2026-08-08) ═══════════
-  //   왜 생겼나: 점검일지는 13영업일 100% 들어오고 있었는데(GAS 라이브 실측) GM 화면
-  //   어디에도 그 값이 없어 "소장 진행 0건"이라는 착시가 났다. 데이터는 처음부터 있었고
-  //   화면이 안 읽었다. 실무진에게 무엇을 더 시키는 게 아니라 이미 있는 것을 보이게 한다.
-  //   ★지표 기준(GM 2026-07-13): 시설부는 완료율이 핵심이 아니다 — ①몇 번 점검했나
-  //     ②이상이 있었나 ③무슨 이상이었나. 입력률(%)은 부차로만 적는다.
-  //   소스는 지원부와 같은 GAS·같은 액션(dept 만 다르다) — 새 URL·새 파일 0(약속 L21).
-  function renderFacilityPulse(mrFac){
-    var el = reqEl('facility-pulse-body', 'renderFacilityPulse');
-    var sum = document.getElementById('facility-pulse-summary');
-    if(!el) return;
-    var cards = [];
-    if(mrFac && mrFac.monthTotals){
-      var ft = mrFac.monthTotals;
-      var fdaily = Array.isArray(mrFac.dailySeries) ? mrFac.dailySeries : [];
-      var ftoday = fdaily.length ? fdaily[fdaily.length - 1] : null;
-      var isToday = !!(ftoday && ftoday.date === cooTodayDate());
-      var oorM = Number(ft.outOfRangeCount) || 0;
-      var warnM = Number(ft.outOfRangeWarnCount) || 0;
-
-      // ① 오늘 몇 회 돌았나 — 오늘 자 행이 없으면 '아직 없음'으로 정직하게 적는다.
-      cards.push(cooMetricCard({
-        sc: isToday ? 'var(--green)' : 'var(--gold)',
-        sh: '🏗️ 시설부 오늘 점검',
-        big: isToday ? (Number(ftoday.sessionCount) || 0) : '아직',
-        small: isToday ? '회차' : ' 없음',
-        sub: isToday
-          ? ('입력 <b>' + (ftoday.done || 0) + '</b>/' + (ftoday.total || 0) + '건 · 기준이탈 <b>'
-             + (Number(ftoday.outOfRangeCount) || 0) + '</b>건 · 진행중 당일이라 시간이 갈수록 오른다')
-          : '오늘 제출이 아직 없습니다 — 마지막 제출일 ' + (ftoday ? esc(ftoday.date) : '기록 없음')
-            + ' (2·4주 일요일은 휴관이라 정상)'
-      }));
-      // ② 이번달 이상 — 시설부의 본질은 "이상을 잡았나"다.
-      cards.push(cooMetricCard({
-        sc: oorM ? '#ff8a80' : (warnM ? 'var(--gold)' : 'var(--green)'),
-        sh: '🏗️ 시설부 이번달 이상',
-        big: oorM,
-        small: '건',
-        sub: (oorM || warnM)
-          ? ('기준이탈 <b>' + oorM + '</b>건 · 주의 <b>' + warnM + '</b>건 — 내용·조치는 시설부 체계 ▸ 월간보고'
-             + ' · 점검 <b>' + (ft.sessionCount || 0) + '</b>회 / <b>' + (ft.activeDays || 0) + '</b>일')
-          : ('이상 없음 · 점검 <b>' + (ft.sessionCount || 0) + '</b>회 / <b>' + (ft.activeDays || 0)
-             + '</b>일 · 입력률 ' + (ft.avgPct != null ? ft.avgPct : '–') + '%(부차)')
-      }));
-    } else {
-      cards.push(cooMetricCard({ unmeasured:true, sh:'🏗️ 시설부 오늘 점검', big:'미측정',
-        sub:'점검 데이터 응답 실패 — 새로고침 시 재시도(가짜 수치 금지)' }));
-    }
-    if(sum){
-      if(mrFac && mrFac.monthTotals){
-        var byIns = mrFac.byInspector || null;
-        var names = byIns ? (Array.isArray(byIns) ? byIns.map(function(x){ return x && (x.name || x.inspector); })
-                                                 : Object.keys(byIns)) : [];
-        names = names.filter(Boolean);
-        sum.innerHTML = '이번달 점검한 사람: ' + (names.length ? esc(names.join(' · ')) : '기록 없음')
-          + ' — 원천 = 점검 GAS 라이브(여기서 다시 세지 않습니다)';
-      } else {
-        sum.textContent = '점검 데이터를 못 불러왔습니다 — 새로고침 시 재시도.';
-      }
-    }
-    el.innerHTML = cards.join('');
-  }
-
-  // ═══════════ 섹션 2: 통합 처리 이력 피드 ═══════════
-  // 완료/대기 분류 규칙(배237) — 애매하면 항상 안전 기본값(대기)으로: 자율성을 과장하지 않는다.
-  //  · 포착(scan)     : auto_applied>0 → 완료 / 그 외 → 대기 (아직 실행 안 된 포착일 뿐)
-  //  · 자기학습 제안    : status==='반영' → 완료 / 그 외('승인' 포함, 미반영) → 대기
-  //  · 자기학습 반영    : 항상 완료(정의상 반영일시가 있을 때만 생성됨)
-  //  · aide/관찰 신호   : signal_type이 auto_exec(자율실행 적용)·activation(자율실행 라이브 전환) → 완료 /
-  //                       hit_rate·missed·approval_pattern 등 관찰·메타 신호는 완료 증거가 아니므로 → 대기
-  function buildFeed(d){
-    var items = [];
-
-    // 06:30 포착 스캔
-    d.scanLog.forEach(function(s){
-      if(!s.logged_at) return;
-      var reg = s.registered|0, cap = s.captured|0;
-      items.push({ t:ts(s.logged_at), when:s.logged_at, ico:'🌅', tag:'포착', tagc:'var(--gold)',
-        what:'GM 보좌 06:30 스캔 실행',
-        res:'포착 <b>' + cap + '</b>건 · 신규등록 ' + reg + (s.auto_exec_on ? ' · 자율실행 ON' : ''),
-        done: (s.auto_applied|0) > 0 });
-    });
-    // 자기학습 제안/반영
-    d.learn.forEach(function(p){
-      var who = esc(p['대상_clevel'] || '');
-      var what = String(p['무엇을'] || '').slice(0, 64);
-      items.push({ t:ts(p['생성시각'] || p['생성일']), when:(p['생성시각'] || p['생성일']), ico:'📚', tag:'학습', tagc:'var(--blue)',
-        what:'자기학습 제안 — ' + who + (what ? (' · ' + esc(what) + (String(p['무엇을']||'').length > 64 ? '…' : '')) : ''),
-        res:'상태 <b>' + esc(p.status || '—') + '</b>' + (p['효과'] && p['효과'] !== '미확인' ? (' · ' + esc(p['효과'])) : ''),
-        done: p.status === '반영' });
-      if(p.status === '반영' && p['반영일시']){
-        items.push({ t:ts(p['반영일시']), when:p['반영일시'], ico:'✅', tag:'반영', tagc:'var(--green)',
-          what:'자기학습 반영 — ' + who + ' <span style="color:var(--dim)">(' + esc(p['반영위치'] || '') + ')</span>',
-          res: p['효과'] ? ('효과 <b>' + esc(p['효과']) + '</b>') : '', done:true });
-      }
-    });
-    // aide 포착·승인·활성화·적중률·놓침 관찰(진짜 자율 판단 신호)
-    // ※ 루틴 입항완료(_queue_archive adhoc)는 자율 판단이 아니라 일반 처리라 이력에서 제외(노이즈 방지).
-    var AUTO_SIG = { auto_exec:1, approval_pattern:1, hit_rate:1, activation:1, missed:1 };
-    var DONE_SIG = { auto_exec:1, activation:1 }; // 실제 자율실행 증거만 완료로 인정(관찰·통계 신호는 대기)
-    // 자율 틈 감지기(배237(b) US-005) 신규 action_type 전용 아이콘/태그 — dedup_key 파싱만(신규 필드 없이 기존 원장 재사용)
-    var GAP_TAG = {
-      stall_tag:        { ico:'🐌', tag:'정체태그', tagc:'var(--gold)' },
-      resumable_tag:    { ico:'🔓', tag:'재개가능', tagc:'var(--green)' },
-      nudge:            { ico:'📣', tag:'촉구', tagc:'var(--blue)' },
-      depends_resolved: { ico:'🔗', tag:'의존해소', tagc:'var(--green)' }
-    };
-    d.obsLedger.filter(function(o){ return /^gm_aide/.test(o.source || '') || AUTO_SIG[o.signal_type]; })
-      .forEach(function(o){
-        var m = /^gmaide_autoexec\|([a-z_]+)\|/.exec(o.dedup_key || '');
-        var g = m && GAP_TAG[m[1]];
-        items.push({ t:ts(o.observed_at), when:o.observed_at,
-          ico: g ? g.ico : '🔎', tag: g ? g.tag : '자율', tagc: g ? g.tagc : 'var(--pink)',
-          what: esc(String(o.summary || '').slice(0, 80)),
-          res: esc(o.pattern_hint || ''), done: !!DONE_SIG[o.signal_type] });
-      });
-
-    items.sort(function(a,b){ return b.t - a.t; });
-    return items;
-  }
-  function renderFeed(items){
-    var el = document.getElementById('feed');
-    if(!items.length){ el.innerHTML = '<div class="feed-status">표시할 자율 처리 이력이 없습니다.</div>'; return; }
-    var show = items.slice(0, 46);
-    el.innerHTML = show.map(function(it){
-      var statusBadge = it.done
-        ? '<span class="fi-status fi-status--done">✅ 자율 처리</span>'
-        : '<span class="fi-status fi-status--pending">🟡 제안(대기)</span>';
-      return '<div class="feed-item">' +
-        '<span class="fi-ico">' + it.ico + '</span>' +
-        '<span class="fi-body">' +
-          '<span class="fi-when">' + fmtWhen(it.when) +
-            '<span class="fi-tag" style="color:' + it.tagc + ';background:rgba(255,255,255,0.06);">' + esc(it.tag) + '</span>' +
-            statusBadge + '</span>' +
-          '<span class="fi-what">' + it.what + '</span>' +
-          (it.res ? '<span class="fi-res">' + it.res + '</span>' : '') +
-        '</span></div>';
-    }).join('') + '<div class="feed-more">진짜 자율 이력 ' + items.length + '건 중 최근 ' + show.length + '건 · 전체는 각 로그(<code>status/</code>) 직독</div>';
-  }
+  // 📁 최근 자율 처리 이력(buildFeed·renderFeed) 삭제 (GM 지시 2026-08-15 "자율이 오늘 한일 이런건
+  //   삭제하자 의미가없다" — 배 정리·보관함이 같은 사실을 이미 보여준다). 소스 원장(scanLog·learn·
+  //   obsLedger)은 그대로, 이 화면의 재가공 렌더만 걷었다.
 
   // ═══════════ ② 돌아가는 자동화: 📨 알림 한 장 — 공용 헬퍼 ═══════════
   // "2026-07-15 오전 9:30:01"(Task Scheduler 한글) → "07/15 09:30". 1999(첫 실행 전 placeholder)=없음.
@@ -1761,7 +1413,7 @@
     gasReadText('status/telegram_rooms.json',          'status/telegram_rooms.json').catch(function(){ return ''; }),
     gasReadText('scripts/kakao_rooms.json',            'scripts/kakao_rooms.json').catch(function(){ return ''; }),
     gasReadText('status/kungjjak_today.json',          'status/kungjjak_today.json').catch(function(){ return ''; }),
-    cooFetchMonthlyReport('facility')   // a[21] — 시설부 점검(배481). 지원부와 같은 GAS·같은 액션, dept 만 다르다.
+    Promise.resolve('')  // a[21] 자리 유지(인덱스 정렬) — cooFetchMonthlyReport('facility'), 시설부 점검 렌더 삭제로 소비처 없음(2026-08-15)
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
     var archRaw  = parseJson(a[4]);
@@ -1773,11 +1425,6 @@
       auditReg: parseJson(a[6]) || { pages: [] }
     };
     var erpStatus = parseJson(a[8]);
-    // 보관함 요약(총건수·입항완료·마지막) — 발행기가 미리 세어 erp_status 에 담아 준다.
-    // 이걸 d 에 실어 넘겨야 buildFeed 안에서 쓸 수 있다(erpStatus 는 그 함수 스코프 밖).
-    d.archiveSummary = (erpStatus && erpStatus.archive_summary) || null;
-    var feedItems = [];
-    try{ feedItems = buildFeed(d); }catch(e){ feedItems = []; }
     var _queueArr = parseJson(a[14]);
     // 전체 배 정리·보관함이 같은 배열을 쓴다 — 화면들이 서로 다른 사본을 보지 않게 한 곳에 담는다.
     _queueAll = Array.isArray(_queueArr) ? _queueArr : [];
@@ -1797,14 +1444,6 @@
       var tsEl = document.getElementById('trash-ships');
       if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
     }
-    try{ renderHero(d); }catch(e){ document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">히어로 요약 표시 오류.</div>'; }
-    // 시우 섹션은 2026-08-08 에 삭제됐다 — 칸이 없으면 조용히 넘어간다.
-    //   (없는 칸에 innerHTML 을 쓰면 여기서 예외가 나 아래 렌더가 통째로 멈춘다.)
-    try{ renderFacilityPulse(a[21]); }catch(e){
-      var _fp = document.getElementById('facility-pulse-summary');
-      if(_fp) _fp.textContent = '시설부 점검 표시 오류.';
-    }
-    try{ renderFeed(feedItems); }catch(e){ document.getElementById('feed').innerHTML = '<div class="feed-status">처리 이력 표시 오류.</div>'; }
     var moduleRegistry = parseJson(a[12]);
     // 방 용도·표시명은 두 SSOT 에서 읽어 먼저 채운다(a[18]=텔레그램 방 · a[19]=카톡 방).
     try{ buildRoomMeta(parseJson(a[18]), parseJson(a[19])); }catch(e){}
@@ -1816,10 +1455,8 @@
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
-    document.getElementById('hero-autonomy').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     var asEl0 = document.getElementById('all-ships');
     if(asEl0) asEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">배 목록을 불러오지 못했습니다.</div>';
-    document.getElementById('feed').innerHTML = '<div class="feed-status">데이터를 불러오지 못했습니다.</div>';
     var abEl0 = document.getElementById('alert-board-rooms');
     if(abEl0) abEl0.innerHTML = '<div class="feed-status">알림 한 장을 불러오지 못했습니다.</div>';
   });
