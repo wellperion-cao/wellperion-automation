@@ -318,6 +318,36 @@
     </div>
   </details>
 
+  <!-- ⑥ 외곽 인수인계 체크리스트 — GM 지시(2026-08-15) "GM업무에 인계 체크리스트 올려줘". 오늘 만든
+       A3 보고서(260815_외곽인수인계_인계비용_A3.html) 「인계 범위」표를 문구 그대로 옮긴다(내용 지어내지
+       않음). 8/20(목) 오전이 지나면 의미 없는 섹션이라 제목에 날짜를 박아 둔다. 체크 저장 — 새 저장소를
+       만들지 않고, 이 페이지가 이미 쓰는 공용 체크보드(CHECK_GAS action=board/saveBoard, key=GM_TASK_CHECKS)에
+       그대로 얹는다(키만 handover0820::N 로 구분, 기존 「목표id::줄번호::해시」 키와 겹치지 않음). -->
+  <details class="sec" id="sec-handover-0820">
+    <summary><span class="ic">🚚</span> 외곽 인수인계 체크리스트 (8/20 목 오전) <span class="cnt" id="handover-cnt">0/8 체크</span>
+      <a class="sec-act" href="../../reports/260815_외곽인수인계_인계비용_A3.html" onclick="event.stopPropagation();" target="_blank" rel="noopener">A3 원문</a>
+    </summary>
+    <div class="sec-body">
+      <div style="font-size:11.5px;color:var(--grey);margin:0 0 8px;">일시 2026-08-20(목) 오전 · 장소 현장 · 인계 황용석 팀장 · 인수 이연희 반장·박남일 반장·김남욱 GM · 인계비용 100,000원(결재 대기)</div>
+      <div class="chk-box" style="border-top:none;padding-top:0;">
+        <div class="nh">구역별</div>
+        <ul>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="1"><span><b>주차장 카처 장비</b> — 모델명·대수 / 구매인지 리스인지 / 소모품 재고와 구입처 / 정기점검 주기·업체 / 조작 교육 필요 인원</span></label></li>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="2"><span><b>헬스장</b> — 기구 목록·제조사·A/S 연락처 / 부품 재고 / 청소·점검 주기 / 유지보수 계약 여부와 만료일</span></label></li>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="3"><span><b>골프장</b> — 제어 방식과 조작 권한 / 타석 1기 고장 이력과 조치 경과 / A/S 연락처</span></label></li>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="4"><span><b>외곽 전체 라인</b> — '외곽' 물리적 범위 확정 / 점검 주기와 수행 주체 / 열쇠·출입 권한 / 위탁 업체 계약 조건</span></label></li>
+        </ul>
+        <div class="nh" style="margin-top:9px;">공통 — 서류로 받을 것</div>
+        <ul>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="5"><span><b>인수인계서·도면</b> (장비 매뉴얼 원본 포함)</span></label></li>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="6"><span><b>협력업체 연락처</b> (장비별 A/S 창구 · 담당자 이름과 직통 번호까지)</span></label></li>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="7"><span><b>미결 하자 목록</b> (진행 중 A/S 와 아직 안 고친 것)</span></label></li>
+          <li><label><input type="checkbox" class="handover-chk" data-hid="8"><span><b>인계 후 질문 창구</b> (며칠까지·어떤 방법으로)</span></label></li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
   <!-- ③ 김남욱 GM -->
   <details class="sec" id="sec-gm" open>
     <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span>
@@ -852,6 +882,46 @@
     new MutationObserver(regroupReports).observe(elGrid, { childList: true });
 
   })();
+})();
+</script>
+<!-- 인계 체크리스트 저장 — 위 큰 스크립트와 별도 IIFE(기존 코드 안 건드림). 같은 공용 체크보드(CHECK_GAS)
+     재사용, 새 저장소 없음. -->
+<script>
+(function () {
+  "use strict";
+  var boxes = document.querySelectorAll('.handover-chk');
+  if (!boxes.length) return;
+  var CHECK_GAS = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';
+  var BOARD_KEY = 'GM_TASK_CHECKS';
+  var cntEl = document.getElementById('handover-cnt');
+  function boardKey(cb) { return 'handover0820::' + cb.getAttribute('data-hid'); }
+  function updateCnt() {
+    if (cntEl) cntEl.textContent = document.querySelectorAll('.handover-chk:checked').length + '/' + boxes.length + ' 체크';
+  }
+  fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(BOARD_KEY), { method: 'GET', redirect: 'follow' })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var board = (data && data.ok && data.board) || {};
+      boxes.forEach(function (cb) { if (board[boardKey(cb)]) cb.checked = true; });
+      updateCnt();
+    })
+    .catch(function () {});
+  boxes.forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      updateCnt();
+      fetch(CHECK_GAS + '?action=board&key=' + encodeURIComponent(BOARD_KEY), { method: 'GET', redirect: 'follow' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var board = (data && data.ok && data.board) || {};
+          board[boardKey(cb)] = cb.checked;
+          return fetch(CHECK_GAS, {
+            method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'saveBoard', key: BOARD_KEY, board: board })
+          });
+        })
+        .catch(function () {});
+    });
+  });
 })();
 </script>
 <script defer src="../../_assets/page_ping.js"></script>
