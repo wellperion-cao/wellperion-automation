@@ -518,6 +518,79 @@ def _run_hook_guards(root: Path, index_path: Path) -> list[str]:
     return violations
 
 
+# ── 생산형 pre-commit 훅 이식(2026-08-16 시토 · 배637) ──────────────────────────
+# 위 _HOOK_GUARDS 는 "막는" 훅이다. .git/hooks/pre-commit 에는 그것 말고 **결과물을
+# 만들어 git add 하는** 훅이 두 개 더 있는데, safe_commit 은 commit-tree/update-ref 라
+# 훅이 아예 안 걸려 그 산출물이 커밋에서 통째로 빠졌다.
+#   증상(웰리 실측 2026-08-15): status/_queue.json 과 발행루트 미러
+#   "3. 웰페리온 가이드/status/_queue.json" 이 어긋난 채 남아 라이브 자율현황이 옛 큐를
+#   본다(INC-007 과 같은 결 — 라이브가 옛 상태). 영구 고장이 아니라 간헐적이었던 이유는
+#   safe_commit 이 아닌 커밋(자동로그 등)이 다음에 지나갈 때 우연히 딸려 들어가 자가
+#   치유됐기 때문이다. 그래서 아무도 구조 결함으로 못 봤다.
+# 두 훅 다 인덱스를 `git diff --cached`·`git show :경로`·`git add` 로만 다루고 셋 다
+# GIT_INDEX_FILE 을 존중하므로, 훅가드 이식과 똑같이 임시 인덱스를 넘겨 그대로 돌린다
+# (로직 복제 없음 · 새 스크립트 없음 — 약속 L21 관문 한 곳에만 박는다).
+# ▸세 번째 훅 precommit_skip_open_office.py 는 이식하지 않는다 — 그건 stage 에서 빼는
+#   (git restore --staged) 훅이라 누락돼도 "라이브가 옛것"이 되지 않는다. 잠긴 파일은
+#   여기선 git add 가 실패해 그 자리에서 드러난다.
+# 튜플: (라벨, 스크립트, 인자, 산출물을 디스크에만 쓰는가 → True 면 우리가 재stage)
+_PRODUCER_HOOKS = (
+    ("ship_no", "assign_ship_numbers.py", ["--pre-commit"], True),
+    ("queue_mirror", "sync_queue_mirror.py", ["--pre-commit"], False),
+)
+
+# 생산형 훅이 만들어 낼 수 있는 경로 = 미러 짝의 목적지. 목록은 sync_queue_mirror 가
+# 정본이라 여기서 다시 적지 않고 import 한다(약속 L01).
+try:
+    from sync_queue_mirror import SYNC_PAIRS as _MIRROR_SYNC_PAIRS  # noqa: E402
+except Exception:  # 스크립트가 없어도 커밋은 되어야 한다(fail-open, 훅 규약과 동일)
+    _MIRROR_SYNC_PAIRS = []
+_PRODUCED_PATHS = tuple(dst for _, dst in _MIRROR_SYNC_PAIRS)
+
+
+def _run_producer_hooks(root: Path, index_path: Path, rel_paths: list[str],
+                        restage) -> list[str]:
+    """생산형 훅을 임시 인덱스 기준으로 돌리고, 그 훅이 새로 stage 한 산출물 경로를 반환.
+
+    반환된 경로는 호출부가 rel_paths 에 편입시킨다 — 그래야 이후 선검증이 이걸
+    "무관 경로 혼입"으로 오판하지 않는다. **아는 산출물 목록(_PRODUCED_PATHS)
+    안에서만** 걷는다 — 훅이 뭘 stage 하든 무조건 통과시키면 "지정 경로만 담는다"는
+    safe_commit 의 계약 자체가 무너진다.
+    """
+    if not _PRODUCED_PATHS:
+        return []
+    hook_env = {"GIT_INDEX_FILE": str(index_path), "PYTHONUTF8": "1"}
+    run_env = dict(os.environ)
+    run_env.update(hook_env)
+    for label, fname, argv, disk_only in _PRODUCER_HOOKS:
+        script = _SCRIPTS_DIR / fname
+        if not script.exists():
+            continue  # 스크립트 없음 = fail-open(기존 훅 규약과 동일)
+        try:
+            subprocess.run(
+                [sys.executable, str(script), *argv],
+                cwd=str(root), env=run_env, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=60,
+            )
+        except Exception as exc:
+            print(f"[WARN] {label} 생산훅 실행 실패(fail-open): {type(exc).__name__}: {exc}")
+            continue
+        if disk_only:
+            # 이 훅은 디스크만 고치고 stage 는 pre-commit 셸이 해줬다 — 여기선 우리가 한다.
+            try:
+                restage(rel_paths)
+            except Exception as exc:
+                print(f"[WARN] {label} 산출물 재stage 실패(fail-open): {exc}")
+    produced: list[str] = []
+    for dst in _PRODUCED_PATHS:
+        if dst in rel_paths:
+            continue
+        r = _git(["diff", "--cached", "--name-only", "--", dst], root, hook_env)
+        if r.returncode == 0 and r.stdout.strip():
+            produced.append(dst)
+    return produced
+
+
 def _precheck_violations(head_tree: str, tree: str, rel_paths: list[str], root: Path) -> list[str]:
     """commit-tree/update-ref *이전* 선검증(배10009) — 무관 경로 혼입 + 유령 삭제 판정.
 
@@ -906,8 +979,8 @@ def safe_commit(
     rel_paths = [_rel(p, root) for p in paths if str(p).strip()]
     result = {"ok": False, "committed": False, "sha": "", "attempts": 0,
               "changed": [], "foreign": [], "hook_violations": [], "index_synced": [],
-              "auto_included": [], "concurrent_edit_warnings": [], "reverts": [],
-              "reason": ""}
+              "auto_included": [], "hook_produced": [], "concurrent_edit_warnings": [],
+              "reverts": [], "reason": ""}
     if not rel_paths:
         result["ok"] = True
         result["reason"] = "대상 경로 없음"
@@ -943,6 +1016,16 @@ def safe_commit(
 
                 # ② 지정 경로만 stage
                 _stage_with_retry(rel_paths, root, env)
+
+                # ②-a 생산형 훅 이식(배637) — pre-commit 훅이 만들어 stage 하던 산출물
+                # (ship_no 부여·발행루트 큐 미러)을 이 경로에서도 같은 커밋에 싣는다.
+                produced = _run_producer_hooks(
+                    root, index_path, rel_paths,
+                    lambda ps: _stage_with_retry(ps, root, env))
+                if produced:
+                    rel_paths = list(dict.fromkeys(rel_paths + produced))
+                    result["hook_produced"] = produced
+
                 tree = _git_out(["write-tree"], root, env)
 
                 head_tree = _git_out(["rev-parse", f"{head}^{{tree}}"], root)
@@ -1215,6 +1298,8 @@ def main() -> int:
         print(f"  ! 훅가드 {h}")
     for a in res["auto_included"]:
         print(f"  ~ 자동포함(append 로그) {a}")
+    for hp in res["hook_produced"]:
+        print(f"  ~ 훅 산출물 동봉 {hp}")
     for w in res["concurrent_edit_warnings"]:
         print(f"  ? {w}")
     return 0 if res["ok"] else 1

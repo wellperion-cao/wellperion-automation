@@ -104,6 +104,18 @@ def read_staged_bytes(root, rel_path):
         return None
 
 
+def git_add(root, rel_path):
+    """인덱스에 올린다. 이미 같은 내용이면 git 이 알아서 아무것도 안 한다(멱등)."""
+    try:
+        # cwd=root 명시(2026-07-20 배1307 실행 중 발견) — 이게 없으면 이 스크립트가 repo
+        # root 밖의 다른 프로세스 cwd에서 호출될 때 git add 가 엉뚱한 워킹트리에 걸린다
+        # (파일 읽기/쓰기는 root 기준인데 git 명령만 ambient cwd 기준이 되는 불일치).
+        subprocess.run(["git", "add", "--", rel_path], cwd=root,
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception:
+        pass
+
+
 def sync_one(root, src_rel, dst_rel, require_staged=False):
     """
     원본 → 미러 단방향 동기화 (멱등). 갱신 시 git add 수행. 실패=통과(fail-open).
@@ -124,7 +136,13 @@ def sync_one(root, src_rel, dst_rel, require_staged=False):
 
     dst_bytes = read_bytes(dst)
     if dst_bytes == src_bytes:
-        return  # 이미 동일 → 멱등 no-op
+        # ★2026-08-16 시토(배637) — 내용은 이미 맞는데 인덱스엔 안 올라가 있을 수 있다.
+        #   누군가 이 스크립트를 손으로 돌려 미러 파일만 고쳐 둔 경우가 그렇다(2026-08-15
+        #   실제로 그랬다). 그대로 두면 미러가 커밋마다 계속 빠져 라이브가 옛 큐를 본다.
+        #   git add 는 이미 인덱스와 같으면 아무것도 안 바꾸므로 그냥 한 번 더 부른다.
+        if require_staged:
+            git_add(root, dst_rel)
+        return  # 파일 쓰기는 멱등 no-op
 
     try:
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -136,14 +154,7 @@ def sync_one(root, src_rel, dst_rel, require_staged=False):
         )
         return
 
-    try:
-        # cwd=root 명시(2026-07-20 배1307 실행 중 발견) — 이게 없으면 이 스크립트가 repo
-        # root 밖의 다른 프로세스 cwd에서 호출될 때 git add 가 엉뚱한 워킹트리에 걸린다
-        # (파일 읽기/쓰기는 root 기준인데 git 명령만 ambient cwd 기준이 되는 불일치).
-        subprocess.run(["git", "add", "--", dst_rel], cwd=root,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except Exception:
-        pass
+    git_add(root, dst_rel)
 
     sys.stderr.write("[queue-mirror] 미러 동기화 → %s (git add 완료)\n" % dst_rel)
 
