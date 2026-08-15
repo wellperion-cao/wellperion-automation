@@ -232,7 +232,7 @@ body{
 var FUNNEL_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 
 function esc(s){
-  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function fmtN(n){ return (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('ko-KR'); }
 function fmtPct(n){ return (n == null || isNaN(n)) ? '—' : Number(n).toFixed(1) + '%'; }
@@ -438,8 +438,11 @@ function loadReviewQueue() {
   if (_rqCache) return Promise.resolve(_rqCache);
   return fetch('../cmo/review/review_queue.json', { redirect: 'follow' })
     .then(function(r) { return r.json(); })
-    .then(function(data) { _rqCache = Array.isArray(data) ? data : []; return _rqCache; })
-    .catch(function() { _rqCache = []; return _rqCache; });
+    .then(function(data) {
+      if (!Array.isArray(data)) return null;  // 모양이 다르면 실패로 본다
+      _rqCache = data; return _rqCache;
+    })
+    .catch(function() { return null; });  // 실패는 캐시하지 않는다 — 다음 조회에서 재시도(0으로 위장 금지)
 }
 function fcChannelMap(fcData) {
   var m = {};
@@ -531,7 +534,8 @@ function _convRowHtml(rec) {
     '<td class="conv-basis">' + esc(rec.matchBasis) + '</td>' +
     '</tr>';
 }
-function toggleConvDetail(btn, gasCh) {
+function toggleConvDetail(btn) {
+  var gasCh = btn.dataset.ch || '';  // 채널명은 data-ch로 — 인라인 onclick 문자열에 넣으면 따옴표에 깨진다
   var tr = btn.closest('tr');
   var next = tr.nextElementSibling;
   if (next && next.classList.contains('conv-detail-row')) {
@@ -579,6 +583,8 @@ function renderChannelTable(data, r, pubByCh, prevInqByCh) {
     if (foot) foot.textContent = '';
     return;
   }
+  var pubFail = (pubByCh == null);        // null=발행 수집 실패 — 0과 구별해 '수집 실패'로 표기
+  var prevFail = (prevInqByCh == null);   // null=직전기간 조회 실패 — 증감 계산 금지, '—' 표기
   pubByCh = pubByCh || {};
   prevInqByCh = prevInqByCh || {};
   var GAS_TO_CONTENT_CH = {};
@@ -593,17 +599,18 @@ function renderChannelTable(data, r, pubByCh, prevInqByCh) {
     var contentCh = GAS_TO_CONTENT_CH[chName] || null;
     var inq = row.inquiries || 0, conv = row.converted || 0;
     var rate = (row.rate == null) ? 0 : row.rate;
-    var pub = contentCh ? (pubByCh[contentCh] || 0) : null;
-    var perPost = (pub != null) ? (pub > 0 ? (inq / pub).toFixed(1) : '—') : '<span class="dim">해당없음</span>';
+    var pub = (!pubFail && contentCh) ? (pubByCh[contentCh] || 0) : null;
+    var perPost = pubFail ? '<span class="dim">—</span>'
+      : (pub != null) ? (pub > 0 ? (inq / pub).toFixed(1) : '—') : '<span class="dim">해당없음</span>';
     var convCell = conv === 0
       ? '<span style="color:var(--dim)">0</span>'
-      : '<button type="button" class="conv-toggle" data-expected="' + conv + '" onclick="CPO_INQUIRY.toggleConvDetail(this,\'' + esc(chName) + '\')">' + fmtN(conv) + '<span class="arrow">▸</span></button>';
+      : '<button type="button" class="conv-toggle" data-expected="' + conv + '" data-ch="' + esc(chName) + '" onclick="CPO_INQUIRY.toggleConvDetail(this)">' + fmtN(conv) + '<span class="arrow">▸</span></button>';
     return '<tr>'
       + '<td>' + esc(chName) + '</td>'
-      + '<td style="text-align:right;' + (pub ? 'font-weight:600' : 'color:var(--dim)') + '">' + (pub != null ? fmtN(pub) : '—') + '</td>'
+      + '<td style="text-align:right;' + (pub ? 'font-weight:600' : 'color:var(--dim)') + '">' + (pub != null ? fmtN(pub) : (pubFail && contentCh ? '수집 실패' : '—')) + '</td>'
       + '<td style="text-align:right;' + (inq === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + fmtN(inq) + '</td>'
       + '<td style="text-align:right">' + perPost + '</td>'
-      + '<td style="text-align:right">' + _deltaHtml(inq, prevInqByCh[chName] || 0) + '</td>'
+      + '<td style="text-align:right">' + (prevFail ? '<span class="delta flat" title="직전기간 조회 실패 — 비교 불가">—</span>' : _deltaHtml(inq, prevInqByCh[chName] || 0)) + '</td>'
       + '<td style="text-align:right">' + convCell + '</td>'
       + '<td style="text-align:right;' + (rate === 0 ? 'color:var(--dim)' : 'font-weight:600') + '">' + fmtPct(rate) + '</td>'
       + '</tr>';
@@ -695,13 +702,14 @@ function loadPeriod() {
     fetchLessonBreakdown(r.from, r.to)
   ]).then(function(res) {
     var rq = res[0], fcCur = res[1], fcPrev = res[2], lb = res[3];
-    var curItems = pubItemsInRange(rq, r.from, r.to);
-    var curPubByCh = pubCountByChannel(curItems);
-    var prevInqMap = fcChannelMap(fcPrev);
+    var curItems = rq ? pubItemsInRange(rq, r.from, r.to) : [];
+    var curPubByCh = rq ? pubCountByChannel(curItems) : null;   // null=수집 실패(0 아님)
+    var prevInqMap = fcPrev ? fcChannelMap(fcPrev) : null;      // null=직전기간 조회 실패(0 아님)
 
     renderKpi(fcCur, r);
     renderChannelTable(fcCur, r, curPubByCh, prevInqMap);
-    renderContentAttribution(curPubByCh, curItems.length);
+    if (rq) renderContentAttribution(curPubByCh, curItems.length);
+    else document.getElementById('content-attrib-wrap').innerHTML = '<div class="data-none">발행 데이터(review_queue.json) 수집 실패 — 기간을 다시 선택하면 재시도합니다.</div>';
     renderLessonBreakdown(lb);
     setPeriodStatus('실측 완료');
   });

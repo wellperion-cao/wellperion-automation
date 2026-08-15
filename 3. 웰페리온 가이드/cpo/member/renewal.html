@@ -353,6 +353,7 @@ function rtFetchRoster(){
     .catch(e=>{RT_LOADING=false;RT_ROWS=null;RT_ERR='명단 조회 실패(네트워크): '+e.message;rtRepaint();});
 }
 function rtMarkStatus(rowIndex,phone,status,btnEl){
+  if(!phone||!String(phone).trim()){alert('이 회원은 전화번호가 비어 있어 안전하게 저장할 수 없습니다.\n(행 번호만으로 저장하면 명단을 띄운 사이 시트 행이 밀렸을 때 다른 회원이 덮입니다)\n시트에서 전화번호를 먼저 채워 주세요.');return;}
   const label={'컨택중':'컨택중으로 표시','컨택완':'컨택완료로 표시'}[status]||status;
   if(!confirm(label+'할까요?'))return;
   if(btnEl){btnEl.disabled=true;btnEl.textContent='저장 중…';}
@@ -368,6 +369,7 @@ function rtMarkStatus(rowIndex,phone,status,btnEl){
     .catch(e=>{if(btnEl){btnEl.disabled=false;btnEl.textContent=status==='컨택완'?'완료 표시':'컨택중 표시';}alert('저장 실패: '+e.message+' — 다시 시도해주세요.');});
 }
 function rtPickReason(rowIndex,phone){
+  if(!phone||!String(phone).trim()){alert('이 회원은 전화번호가 비어 있어 안전하게 저장할 수 없습니다.\n(행 번호만으로 저장하면 명단을 띄운 사이 시트 행이 밀렸을 때 다른 회원이 덮입니다)\n시트에서 전화번호를 먼저 채워 주세요.');return;}
   const list=NOREG_REASONS.map((r,i)=>(i+1)+'. '+r).join('\n');
   const ans=prompt('미등록 사유 번호 입력 (직접 입력도 가능):\n\n'+list);
   if(!ans||!ans.trim())return;
@@ -458,7 +460,7 @@ function renderAll(){
   destroy('rev');const hasGoalV=DATA.some(m=>m.goal&&m.goal.rev);charts.rev=new Chart(document.getElementById('revChart'),{type:'bar',
     data:{labels:DATA.map(m=>m.key),datasets:[{type:'bar',label:'확정매출',data:DATA.map(m=>m.revenue),backgroundColor:DATA.map(m=>m===latest?CORAL:BEIGE),borderRadius:6,maxBarThickness:46},{type:'line',label:'목표매출',data:DATA.map(m=>m.goal&&m.goal.rev?m.goal.rev:null),borderColor:'#5A86C2',borderDash:[5,4],borderWidth:2,pointRadius:0,fill:false,spanGaps:true}]},
     options:{maintainAspectRatio:false,plugins:{legend:{display:hasGoalV,position:'bottom',labels:{boxWidth:12,boxHeight:12,padding:12}},tooltip:{callbacks:{label:c=>c.dataset.label+' '+won(c.parsed.y)+'원'}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>won(v)},grid:{color:'#F3EEE8'}},x:{grid:{display:false}}}}});
-  destroy('sbar');const stk=['완료','컨택완','가망','무응답','로스'];
+  destroy('sbar');const stk=SKEYS;  // 6종 전부 — '고민중' 빠지면 막대 합계가 대상 인원보다 적어진다
   charts.sbar=new Chart(document.getElementById('statusBar'),{type:'bar',
     data:{labels:DATA.map(m=>m.key),datasets:stk.map(k=>({label:dispLabel(k),data:DATA.map(m=>m.status[k]||0),backgroundColor:STC[k],stack:'s',borderRadius:3,maxBarThickness:54}))},
     options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,boxHeight:12,padding:14}},tooltip:{callbacks:{label:c=>c.dataset.label+' '+c.parsed.y+'명'}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#F3EEE8'},ticks:{precision:0}}}}});
@@ -526,17 +528,21 @@ window.__wp=function(p){try{DATA=(p&&p.months)||[];if(!DATA.length){fail('데이
   localStorage.setItem('wp_web',JSON.stringify(p));paint();ok(p&&p.updated);}catch(e){fail(e.message||e);}};
 function load(){
   let shown=false;
-  try{const c=localStorage.getItem('wp_web');if(c){const p=JSON.parse(c);if(p.months&&p.months.length){DATA=p.months;paint();shown=true;}}}catch(e){}
-  if(!shown&&typeof SNAPSHOT!=='undefined'&&SNAPSHOT.months&&SNAPSHOT.months.length){DATA=SNAPSHOT.months;paint();shown=true;
+  let src=null;
+  try{const c=localStorage.getItem('wp_web');if(c){const p=JSON.parse(c);if(p.months&&p.months.length)src=p;}}catch(e){}
+  // 캐시 vs 저장소 스냅샷 — updated 최신 쪽을 쓴다(묵은 브라우저 캐시가 더 새 스냅샷을 이기지 않게)
+  if(typeof SNAPSHOT!=='undefined'&&SNAPSHOT.months&&SNAPSHOT.months.length&&
+     (!src||new Date(SNAPSHOT.updated||0).getTime()>=new Date(src.updated||0).getTime()))src=SNAPSHOT;
+  if(src){DATA=src.months;paint();shown=true;
     /* ★묵은 폴백은 묵었다고 말한다 (배515 · 2026-08-10 시포).
-       이 상수는 라이브(JSONP)가 실패했을 때만 그려지는 예비값인데, 화면이 정상으로 보여서
+       이 값(캐시든 스냅샷이든)은 라이브(JSONP)가 실패했을 때만 그려지는 예비값인데, 화면이 정상으로 보여서
        두 달 전 숫자를 최신으로 오인하기 쉬웠다(실제로 2026-06-08 값이 그대로 박혀 있었다).
        35일 넘게 묵으면 붉게 경고한다 — 조용한 실패를 시끄럽게 만드는 것이 목적이다. */
-    var _snapAge=SNAPSHOT.updated?Math.floor((Date.now()-new Date(SNAPSHOT.updated).getTime())/86400000):null;
+    var _snapAge=src.updated?Math.floor((Date.now()-new Date(src.updated).getTime())/86400000):null;
     var _snapOld=(_snapAge!=null&&_snapAge>35);
     if(_snapOld)dot.classList.add('err');else dot.classList.remove('err');
     stx.textContent=_snapOld?('⚠ 예비 숫자 · '+_snapAge+'일 지남 — 라이브 연결 실패, 최신 아님'):'미리보기 · 현재 데이터 스냅샷';
-    if(SNAPSHOT.updated)document.getElementById('updTxt').textContent='· '+new Date(SNAPSHOT.updated).toLocaleString('ko-KR',{hour12:false});}
+    if(src.updated)document.getElementById('updTxt').textContent='· '+new Date(src.updated).toLocaleString('ko-KR',{hour12:false});}
   if(!APPS_URL||APPS_URL.indexOf('http')!==0){if(shown){stx.textContent='미리보기(스냅샷) · Apps Script 연결 시 실시간';}else fail('APPS_URL 미설정 — 상단에 /exec URL을 넣어주세요');return;}
   loadLive(1);
 }
