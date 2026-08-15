@@ -54,7 +54,7 @@ _PROJECT_ROOT = os.path.dirname(_SCRIPTS_DIR)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from welly_orchestrate import select_autonomous_ships  # noqa: E402  (기존 선별기 재사용)
+from welly_orchestrate import select_autonomous_ships, ACTIVE_STATUSES  # noqa: E402  (기존 선별기 재사용)
 from module_registry import load_registry  # noqa: E402
 from queue_dispatch import EXCLUDED_ROLES as _EXCLUDED_ROLES  # noqa: E402  (배제 역할 단일 정본)
 
@@ -113,6 +113,32 @@ CLEVEL_NICKS = {
 # 몰릴 때" 한 사이클에서 너무 많은 척이 한꺼번에 라이브로 나가는 것만 추가로 막는다
 # (전면 확산 전 GM go 존중 — 보수적 기본값).
 MAX_SHIPS_PER_CYCLE = 3
+
+# ★2026-08-16 GM 지시 — "자동으로 배가 30척 이상 되면 계속 처리해줘."
+#   상한 3척은 적체가 없을 때 맞는 값이다. 적체가 30척을 넘으면 하루 3척으로는 들어오는
+#   양을 못 따라가 큐가 단조 증가한다(실측 2026-08-16 열린 배 88척 · 10일 넘게 안 움직인 배 24척).
+#   그래서 상한을 적체에 따라 올린다 — 10척 밀릴 때마다 1척씩, 최대 8척.
+#   ▸세는 대상은 '실제로 손댈 수 있는 배'다: 반복 루틴·조건 대기(cadence)는 지금 집어도
+#     할 일이 없으니 적체로 세지 않는다(그렇게 세면 없는 적체를 보고 상한만 올린다).
+#   ▸상한을 무제한으로 두지 않는 이유: 한 회차에 claude 세션이 몰리면 그 자체가 위험이다
+#     (기존 주석의 판단을 그대로 존중 — 늘리되 천장은 남긴다).
+BACKLOG_RAISE_AT = 30       # 이 척수를 넘으면 상한을 올리기 시작
+BACKLOG_RAISE_STEP = 10     # 이만큼 더 밀릴 때마다 1척
+MAX_SHIPS_PER_CYCLE_CEILING = 8
+
+
+def cycle_cap(queue) -> int:
+    """적체에 따라 이번 사이클 상한을 정한다. 적체가 없으면 기본값 그대로."""
+    backlog = sum(
+        1 for s in (queue or [])
+        if s.get("status") in ACTIVE_STATUSES
+        and str(s.get("cadence") or "").strip() not in ("routine", "trigger")
+    )
+    if backlog <= BACKLOG_RAISE_AT:
+        return MAX_SHIPS_PER_CYCLE
+    extra = (backlog - BACKLOG_RAISE_AT + BACKLOG_RAISE_STEP - 1) // BACKLOG_RAISE_STEP
+    return min(MAX_SHIPS_PER_CYCLE + extra, MAX_SHIPS_PER_CYCLE_CEILING)
+
 
 _PRIORITY_WEIGHT = {"⛵돛단배": 0, "⛴️여객선": 1, "🛳️크루즈": 2}
 
@@ -1588,6 +1614,18 @@ def run_cycle(
     nicks = nicks or CLEVEL_NICKS
     results: dict = {}
     executed_count = 0
+
+    # ★2026-08-16 GM 지시("30척 이상 되면 계속 처리") — 적체가 크면 이번 사이클 상한을 올린다.
+    #   호출자가 상한을 명시했으면(기본값과 다르면) 그 뜻을 존중해 건드리지 않는다.
+    if max_total_ships == MAX_SHIPS_PER_CYCLE:
+        try:
+            raised = cycle_cap(_load_queue(queue_path or DEFAULT_QUEUE_PATH))
+            if raised != max_total_ships:
+                print(f"[run_cycle] 적체가 커서 이번 사이클 상한을 "
+                      f"{max_total_ships} → {raised}척으로 올립니다(GM 지시 2026-08-16).")
+                max_total_ships = raised
+        except Exception as exc:   # 상한 계산 실패가 사이클을 막지 않는다(fail-open)
+            print(f"[run_cycle] 상한 자동조정 건너뜀: {type(exc).__name__}: {exc}")
 
     for clevel in clevels:
         if executed_count >= max_total_ships:

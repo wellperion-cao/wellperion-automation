@@ -92,6 +92,7 @@ def select_autonomous_ships(clevel, queue, registry=None):
       3) 신규 생성(work_type=="new")이 아님
       4) 가역(비가역 키워드 없음)
       5) 해당 clevel의 등록부 모듈이 존재(get_modules_by_role)
+      6) 끝이 있는 일(cadence 가 routine·trigger 가 아님 · 2026-08-16 GM 지시)
     """
     if not get_modules_by_role(clevel, registry=registry):
         return []
@@ -111,6 +112,17 @@ def select_autonomous_ships(clevel, queue, registry=None):
             )
             continue
         if not _is_reversible(ship):
+            continue
+        # ★2026-08-16 GM 지시 — '의미없거나 중복되었거나 진행완료된 것들은 더 이상 작업 안 하게'.
+        #   cadence=routine(매일·매주 도는 일)·trigger(사건이 와야 시작)는 지금 집어도 할 일이
+        #   없다. 러너가 집으면 매 사이클 헛돌면서 진짜 밀린 배의 처리 자리를 뺏는다.
+        #   빈칸(=대부분의 기존 배)은 그대로 통과한다 — 회귀 0.
+        if str(ship.get("cadence") or "").strip() in ("routine", "trigger"):
+            print(
+                "[select_autonomous_ships] 제외(끝이 없는 일 · 반복 루틴/조건 대기): %r"
+                % ship.get("task_id"),
+                file=sys.stderr,
+            )
             continue
         selected.append(ship)
     return selected
@@ -153,6 +165,16 @@ if __name__ == "__main__":
     assert "T-UPDATE" in _ids, "work_type=update 이 통과하지 않음(회귀)"
     assert "T-UNSET" in _ids, "미선언 배가 통과하지 않음(회귀)"
     print("OK — work_type 게이트 3케이스(new 제외 · update/미선언 통과) 통과")
+
+    # cadence 게이트 3케이스(2026-08-16, GM 지시 — 끝이 없는 일은 자율 후보에서 뺀다)
+    _rout = {**_base, "task_id": "T-ROUTINE", "cadence": "routine"}
+    _trig = {**_base, "task_id": "T-TRIGGER", "cadence": "trigger"}
+    _ids2 = {s["task_id"] for s in
+             select_autonomous_ships("cto", [_rout, _trig, _unset], registry=_reg)}
+    assert "T-ROUTINE" not in _ids2, "반복 루틴이 자율 후보에서 제외되지 않음"
+    assert "T-TRIGGER" not in _ids2, "조건 대기가 자율 후보에서 제외되지 않음"
+    assert "T-UNSET" in _ids2, "cadence 빈칸 배가 통과하지 않음(회귀)"
+    print("OK — cadence 게이트 3케이스(routine/trigger 제외 · 빈칸 통과) 통과")
 
     # 낱말 폴백: 미선언 + 신규 생성 낱말 → new 로 간주(제외).
     _unset_new_word = {**_base, "task_id": "T-UNSET-NEW", "title": "새 페이지 신설"}
