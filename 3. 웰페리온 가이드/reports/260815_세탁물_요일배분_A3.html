@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>세탁물 공급 부족 — 요일 배분 조정 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>세탁물 공급 부족 — 요일 배분 조정 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">세탁물 공급 부족 — 요일 배분 조정</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 (AI CEO 웰리)</b><br>
+      작성일 <b>2026. 08. 15.</b> · 문서번호 <b>WP-GM-260815-05</b><br>
+      측정 <b>2026년 7월 입고 29일치 + 8월 1주차 대조</b> · 담당 <b>미정 (지원부)</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">업체에 화·수요일 배송량 상향 요청을 승인해 주십시오.</div>
+        <div class="d">기준선 = 목·금·토·일 평균: 바스타월 275장 · 세면타월 1,534장. 화 85% · 수 87%로 부족해 새 제품을 꺼내 쓰고 있습니다. 총량 부족이 아니라 요일 배분 문제입니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">일요일 개관 주의 월요일 배송 축소 중단 요청을 승인해 주십시오.</div>
+        <div class="d">개관 주에는 업체가 일요일에 물량을 몰아주고 월요일 배송을 줄여 화요일 사용분이 반토막(바스타월 120~140장)입니다. 월요일은 이미 109% 여유 — 같은 물량을 하루 뒤로 옮기면 풀리는 구조입니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    LOSS 측정 체계 부재 — 몇 장 나가고 몇 장 돌아오는지 세는 체계가 없어, 원인이 수요 예측인지·회수 지연인지·분실인지 가릴 수 없다
+    <span>&nbsp;/ 화·수 부족분은 <b>새 제품을 개봉해 메우는 중</b>이라 재고가 예정보다 빨리 준다. GM 원문: "이 문제를 못 찾고 있는 것 자체가 문제다." (2026-08-07)</span>
+  </div>
+
+  <!-- ③ 실측표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:186px"><col><col><col><col><col><col><col><col style="width:150px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k">요일별 공급 실측<span class="sub">2026년 7월 · 휴관일 제외</span></th>
+        <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th>토</th><th>일</th>
+        <th>기준선<span class="sub">목·금·토·일 평균</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">바스타월 (장)</td><td class="ctr">300</td><td class="ctr bad">235</td><td class="ctr bad">240</td><td class="ctr">272</td><td class="ctr">276</td><td class="ctr">284</td><td class="ctr">260</td><td class="ctr strong">275</td></tr>
+      <tr><td class="k">세면타월 (장)</td><td class="ctr">1,572</td><td class="ctr bad">1,390</td><td class="ctr bad">1,290</td><td class="ctr">1,564</td><td class="ctr">1,572</td><td class="ctr">1,456</td><td class="ctr">1,560</td><td class="ctr strong">1,534</td></tr>
+      <tr class="sum"><td class="k">기준 대비</td><td class="ctr good strong">109%</td><td class="ctr bad strong">85%</td><td class="ctr bad strong">87%</td><td class="ctr">99%</td><td class="ctr">100%</td><td class="ctr">103%</td><td class="ctr">94%</td><td class="ctr strong">100%</td></tr>
+      <tr class="grp"><td colspan="9">월 간 누 적 부 족 — 세면타월 2,150장 · 바스타월 430장 · 8월 1주차도 미회복(화요일 140장 — 개선되지 않고 있다)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div style="display:flex; gap:11px;">
+  <div class="tblwrap" style="flex:1;">
+  <table>
+    <colgroup><col style="width:186px"><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">현상 A — 수요일<span class="sub">전 품목 동시 최저</span></th>
+        <th>수요일 사용분</th><th>기준선</th><th>수준</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">양말</td><td class="ctr">212</td><td class="ctr">281</td><td class="ctr bad">75%</td></tr>
+      <tr><td class="k">샤워타월</td><td class="ctr">288</td><td class="ctr">385</td><td class="ctr bad">75%</td></tr>
+      <tr><td class="k">운동복 상 / 하</td><td class="ctr">225 / 214</td><td class="ctr">284 / 259</td><td class="ctr bad">79% / 83%</td></tr>
+      <tr><td class="k">세면타월 / 바스타월</td><td class="ctr">1,290 / 240</td><td class="ctr">1,534 / 275</td><td class="ctr bad">84% / 87%</td></tr>
+      <tr><td class="k">땀타월</td><td class="ctr">275</td><td class="ctr">306</td><td class="ctr bad">90%</td></tr>
+      <tr class="sum"><td class="k" colspan="4">특정 품목이 아니라 <b>화요일 배송분 전체가 통째로 적다.</b> 4주간 수치도 일정(바스타월 260·240·240·220) — 이용 변동이 아니라 <b>낮게 고정된 값</b>이다.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="tblwrap" style="flex:1;">
+  <table>
+    <colgroup><col style="width:120px"><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">현상 B — 격주<span class="sub">일요일 개관 주</span></th>
+        <th>일요일</th><th>화요일 바스타월</th><th>화요일 세면타월</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">1주</td><td class="ctr">개관</td><td class="ctr bad">140</td><td class="ctr bad">900</td></tr>
+      <tr><td class="k">2주</td><td class="ctr">휴관</td><td class="ctr">360</td><td class="ctr">1,810</td></tr>
+      <tr><td class="k">3주</td><td class="ctr">개관</td><td class="ctr bad">120</td><td class="ctr bad">990</td></tr>
+      <tr><td class="k">4주</td><td class="ctr">휴관</td><td class="ctr">320</td><td class="ctr">1,860</td></tr>
+      <tr class="sum"><td class="k" colspan="4">개관 주에는 일요일에도 배송이 들어오는 만큼 <b>월요일 배송량이 120~140장으로 줄고</b>, 그 월요일 배송분이 곧 화요일 사용분이 된다. 월요일 사용분은 300장(109%)으로 이미 여유가 있다.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">세는 체계가 없다 — LOSS(분실·훼손·미회수) 여부조차 모르고, 업체와 논의할 근거도 약해진다.</li>
+        <li class="r1">새 제품 개봉으로 메우는 중 — 재고가 예정보다 빨리 준다.</li>
+        <li class="r2">8월 1주차도 미회복 — 화요일 140장, 개선되지 않고 있다.</li>
+        <li class="r2">담당 미정(지원부) — 업체 요청을 실행할 사람이 정해지지 않아 진척 0%다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">업체에 화·수요일 배송량 상향 요청 (기준선 = 바스타월 275장 · 세면타월 1,534장)</li>
+        <li class="n">일요일 개관 주 월요일 배송 축소 중단 요청 (일요일 몰아주기 → 월요일 정상화)</li>
+        <li class="n">조정 후 2주간 요일별 입고량 재측정 — 기준 대비 95% 이상 회복 확인</li>
+        <li class="n">세탁물 관리 체계 가동 — 입출고 기록·회수율·요일별 소요량·새 제품 개봉 기록 (시토 구축 · 세탁물 관리 탭 2026-08-07 완료·라이브 반영)</li>
+        <li class="n">숫자가 나오는 대로 업체와 공유 — 무엇을 요청할지도 숫자가 정한다</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li>계약 검토가 아니라 <b>업체와 방법을 함께 찾는다</b> — 기존 「미회복 시 계약 검토」는 GM 정정(2026-08-07)으로 철회됐다.</li>
+        <li>요청 근거 숫자는 이미 있다(2026-08-05 분석 완료) — 남은 것은 <b>업체 요청 실행</b>뿐이며, 그래서 진척이 0%다. 담당부터 정한다.</li>
+        <li>관리 체계가 숫자를 내기 시작하면 원인(수요 예측 / 회수 지연 / 분실)을 비로소 가릴 수 있다.</li>
+        <li>같은 물량을 <b>하루 뒤로 옮기는 것</b>이라 업체 총 공급량 부담은 늘지 않는다 — 협의 난도가 낮은 요청이다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>측정 기준</b> — 입고 21:00 → 익일 사용 기준으로 재정렬. 휴관일(2·4주 일요일)은 건너뛰고 재정렬한 값. 본 문서의 모든 수치는 원본 그대로이며 추정치 없음.</div>
+    <div><b>출처</b> — 분석 보고서 원본 「웰페리온_세탁물_공급부족_분석_2026-07.pdf」(2026-08-05 경영지원부) · 검토 페이지 coo/chairman/세탁물_공급부족_20260806.html · status/monthly_ops_plan.json 목표 id 2026-08-28(2026-08-15 기준).</div>
+    <div><b>차기 보고</b> — 업체 요청 후 2주 재측정 결과로 본 문서 갱신(같은 문서번호 유지). 회복 기준 = 요일별 입고량이 기준선 대비 95% 이상.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260815_세탁물_요일배분_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
