@@ -424,7 +424,7 @@ tr:hover td{background:var(--accent-bg);}
           </div>
         </div>
       </div>
-      <div class="callout">💡 마스터 앵커 논리 — 월 정상 510,000 × 4종목 × 12개월 = 연 6,120,000 → 연간권 노블레스+골프 4,000,000으로 인하. 연간 절약 2,120,000 (35%↓). ※ 전 등급 웰컴팩 제공.</div>
+      <div class="callout">💡 마스터 앵커 논리 — 월 정상 510,000(4종목 1개월권) × 12개월 = 연 6,120,000 → 연간권 노블레스+골프 4,000,000으로 인하. 연간 절약 2,120,000 (35%↓). ※ 전 등급 웰컴팩 제공.</div>
     </div>
 
     <!-- 가족/단체/법인 -->
@@ -842,7 +842,7 @@ function _collectPolicy(){
   return rows;
 }
 function loadPolicyTable(force){
-  if(_policyLoaded && !force) return; _policyLoaded=true;
+  if(_policyLoaded && !force) return;
   _policyStatus('불러오는 중…');
   fetch(TODO_API_URL + '?action=product_plan_list', {redirect:'follow'})
     .then(function(r){ return r.json(); })
@@ -852,6 +852,7 @@ function loadPolicyTable(force){
       var rows=POLICY_TABLE_DEFAULT;
       if(found && found['\uad6c\ubd84']!==undefined && found['\uad6c\uc131']){ try{ var p=JSON.parse(found['\uad6c\uc131']); if(p&&p.length) rows=p; }catch(e){} }
       renderPolicyTable(rows);
+      _policyLoaded=true;
       _policyStatus(found?'시트 저장본 표시 중 · GM 수정 가능':'기본값 표시 중 · 저장하면 시트에 영속');
     })
     .catch(function(){ renderPolicyTable(POLICY_TABLE_DEFAULT); _policyStatus('네트워크 오류 — 기본값 표시'); });
@@ -1061,7 +1062,7 @@ function renderCard(it) {
       '<strong>가격가설</strong> ' + esc(it.가격가설||'') + '<br>' +
       '<strong>근거</strong> ' + esc(it.근거||'');
   }
-  var safeIt = JSON.stringify(it).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
+  var safeIt = JSON.stringify(it).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026').replace(/'/g,'\\u0027');
   return '<div class="plan-card" data-id="' + esc(it.id) + '">' +
     '<div class="plan-card-head"><div>' +
       '<div class="plan-card-title">' + esc(it.제안명||'') + seedMark + '</div>' +
@@ -1301,7 +1302,7 @@ if (document.readyState === 'loading') {
   try { if (sessionStorage.getItem('welp_gate_ok') === '1') loadPlans(); } catch(e) {}
 }
 </script>
-    <script src="/wellperion-automation/_assets/print_options.js"></script>
+    <script src="../../_assets/print_options.js"></script>
 <script defer src="../../_assets/page_ping.js"></script>
 </body>
 </html>
