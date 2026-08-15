@@ -1582,9 +1582,11 @@ def _reception_watch_slice(role_slug: str) -> str:
     parts = [f"{d} {info.get('open', 0)}건(최장 {info.get('max_age_days', 0)}일)"
              for d, info in sorted(by_dept.items(), key=lambda kv: -kv[1].get("open", 0))]
     line1 = "📮 접수 정체 — " + (" · ".join(parts) if parts else "없음")
-    line2 = (f"   회원 안내 못 나간 건 {data.get('member_reply_open', 0)}건 · "
-             f"3일 이상 {data.get('overdue_3d', 0)}건 · 7일 이상 {data.get('overdue_7d', 0)}건 · "
-             f"(분실물 {data.get('lost_items_open', 0)}건은 따로 셈)")
+    # 마감 기준 = 「처리 완료」 도장(GM 확정 2026-08-15). 실무진이 실제로 누르는 것이 그것이고,
+    # 직원 신고·익명 접수처럼 회원 안내가 애초에 필요 없는 건도 있다. 회원 안내 공란은 참고로만 뒤에 둔다.
+    line2 = (f"   3일 이상 {data.get('overdue_3d', 0)}건 · 7일 이상 {data.get('overdue_7d', 0)}건 · "
+             f"(분실물 {data.get('lost_items_open', 0)}건은 따로 셈) "
+             f"· 참고: 회원 안내 공란 {data.get('member_reply_open', 0)}건")
     stale = ""
     try:
         age_h = (dt.datetime.now()
