@@ -958,6 +958,12 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     if not json_ok:
         print("  → 경고: JSON 파싱 실패 — 응답 원문을 메시지로 사용, 이번 회차 이슈 원장 갱신은 생략(정직 강등).")
     else:
+        # 보내기 전 회신 대조(2026-08-15 GM 지시) — LLM 짝맞춤 지시만으론 안 새는 게
+        # 8/14 실측으로 드러났다(08:05→08:24 보완 발송). 코드 대조로 한 겹 더 거른다.
+        auto_resolved = mark_late_replied_resolved(issues, human_messages)
+        if auto_resolved:
+            print(f"  → 코드 대조: 대화 후반부 본인 확인 발언 감지 {len(auto_resolved)}건 자동 해결 처리(재요청 방지)")
+            message = strip_confirmed_bullets(message, [i["issue"] for i in auto_resolved])
         ledger = upsert_ledger(ledger, target_date, issues, source_file=export_path.name)
         save_ledger(ledger)
         print(f"  → 원장 갱신: {LEDGER_PATH.relative_to(ROOT)} (이슈 {len(issues)}건, 날짜 {target_date})")
@@ -1105,6 +1111,99 @@ def pull_done_from_todo(ledger: list[dict]) -> int:
                 issue["note"] = (issue["note"] + " · " if issue["note"] else "") + "업무 장부에서 완료 처리됨"
                 changed += 1
     return changed
+
+
+# ═══════════════════════════════════════════
+#  보내기 전 회신 대조 (GM 지시 2026-08-15 · 중복 알림 정리)
+#  배경: build_prompt(위)의 '★★짝맞춤 규칙'을 2026-08-14 넣었는데도 같은 날 08:05 발송이
+#  이미 답 준 항목을 다시 실었고, 08:24 에 사람이 「🔎 어제 정리 보완」을 따로 보내야 했다.
+#  LLM 지시만으론 안 샌다는 게 그날 바로 실측됐다 — 코드 대조를 한 겹 더 얹는다.
+#  낱말겹침 판정은 새로 만들지 않고 kungjjak_board.find_repeats 가 쓰는 것과 같은 기준
+#  (_norm 재사용, 낱말 절반 이상 겹치면 같은 내용)을 그대로 쓴다(약속 L21).
+# ═══════════════════════════════════════════
+from kungjjak_board import _norm as _word_set  # noqa: E402
+
+_LATE_REPLY_KEYWORDS = ("완료", "확인", "됐습니다", "됩니다", "끝났", "처리했", "전달했", "했습니다", "됨")
+
+
+def _late_reply_texts_by_owner(messages: list[dict]) -> dict[str, list[str]]:
+    """이름별로 해결·확인 신호가 담긴 문장만 모은다(오늘 대화 안 뒤쪽 자기 회신 탐지용)."""
+    out: dict[str, list[str]] = {}
+    for m in messages:
+        msg = str(m.get("msg") or "")
+        if any(k in msg for k in _LATE_REPLY_KEYWORDS):
+            out.setdefault(str(m.get("name") or ""), []).append(msg)
+    return out
+
+
+def _overlaps(a: str, b: str) -> bool:
+    """공통 낱말이 있으면 같은 내용으로 본다. ★kungjjak_board.find_repeats 는 '절반 이상'을
+    쓰지만(같은 사람이 짧은 지시를 비슷한 말로 반복하는 경우), 여기는 3~6낱말짜리 이슈
+    요약과 자연스러운 문장체 회신을 비교한다 — 실측(8/13 사례)해 보니 핵심 낱말 1개(예
+    '이관')만 겹치고 나머지는 다 다른 표현이라 '절반 이상'을 쓰면 하나도 안 걸린다.
+    같은 담당자·해결 키워드까지 이미 겹친 후보만 여기로 오므로(mark_late_replied_resolved),
+    낱말 1개 겹침도 오탐보다 다시 안 물어보는 쪽이 낫다는 판단(2026-08-15 GM 지시)."""
+    wa, wb = _word_set(a), _word_set(b)
+    if len(wa) < 2 or len(wb) < 2:
+        return False
+    return bool(wa & wb)
+
+
+def mark_late_replied_resolved(issues: list[dict], messages: list[dict]) -> list[dict]:
+    """오늘 대화 뒤쪽에 담당자 본인이 남긴 확인·완료 발언과 낱말이 겹치는 open 이슈를
+    resolved 로 자동 강등한다. 강등된 issue 목록을 반환(호출부가 메시지 본문 대조에도 쓴다).
+    ledger 에 그대로 저장되므로 다음 날 '반복·미해결'·SSOT 되묻기(_bridge_ask_lines)에도
+    다시 안 뜬다 — 오늘 발송분만 고치는 게 아니라 내일 재발도 같이 막는다."""
+    replies = _late_reply_texts_by_owner(messages)
+    fixed: list[dict] = []
+    for issue in issues:
+        if issue.get("status") != "open":
+            continue
+        owner = str(issue.get("owner") or "").strip()
+        title = str(issue.get("issue") or "").strip()
+        if not owner or not title:
+            continue
+        cand = next((v for k, v in replies.items() if k and (owner in k or k in owner)), None)
+        if not cand:
+            continue
+        if any(_overlaps(title, msg) for msg in cand):
+            issue["status"] = "resolved"
+            note = str(issue.get("note") or "").strip()
+            issue["note"] = (note + " · " if note else "") + "대화 후반부 본인 확인 발언 자동대조로 해결 처리"
+            fixed.append(issue)
+    return fixed
+
+
+def strip_confirmed_bullets(message: str, resolved_titles: list[str]) -> str:
+    """⚠️ 오늘 챙길 것 섹션에서 자동대조로 이미 해결 처리된 이슈와 겹치는 글머리를 뺀다
+    (보내기 전 대조 — 08:05 발송 뒤 08:24 보완 발송이 나갔던 사고 재발 방지). 섹션 표시
+    자체는 남기고(형식 유지), 다 빠지면 '특이사항 없음' 한 줄만 남긴다."""
+    if not resolved_titles:
+        return message
+    lines = message.split("\n")
+    out: list[str] = []
+    in_section = False
+    section_marker_idx = None
+    removed = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("⚠️"):
+            in_section = True
+            out.append(line)
+            section_marker_idx = len(out) - 1
+            continue
+        if in_section and stripped[:1] in ("👤", "✅", "🔁", "💪"):
+            in_section = False
+        if in_section and stripped[:1] in ("•", "-", "·"):
+            if any(_overlaps(line, t) for t in resolved_titles):
+                removed = True
+                continue
+        out.append(line)
+    if removed and section_marker_idx is not None:
+        tail = out[section_marker_idx + 1:]
+        if not any(t.strip()[:1] in ("•", "-", "·") for t in tail):
+            out.insert(section_marker_idx + 1, " • 특이사항 없음(코드 대조로 자동 확인 처리)")
+    return "\n".join(out)
 
 
 def _bridge_ask_lines(ledger: list[dict], target_date: str) -> str:
