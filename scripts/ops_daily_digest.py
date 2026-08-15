@@ -828,6 +828,8 @@ schedules 규칙(이 칸은 전사일정 화면에 자동 등록된다 — 없�
 - 넣지 않는 것: 부서 내부 청소 당번·일상 루틴·이미 지나간 일·날짜가 없거나 '다음 주쯤' 같은 어림.
   ★확신이 없으면 넣지 않는다. 빈 배열 [] 이 정답인 날이 대부분이다.
 - date: 반드시 YYYY-MM-DD. '8/20', '다음 주 목요일' 같은 표현은 {target_date} 를 기준으로 실제 날짜로 바꿔 적는다.
+- time: 대화에 시각이 나오면 24시간 HH:MM 으로. '오전 10시'→'10:00', '오후 2시'→'14:00', '2시반'→'14:30'.
+  ★시각이 안 나오면 빈 문자열 "". 지어내지 않는다 — 화면에는 '시간 미정'으로 뜨고 그게 정직한 표시다.
 - title: 사람이 달력에서 보고 바로 아는 짧은 이름(예: '승강기 정기검사'). 대화 문장을 그대로 옮기지 않는다.
 - dept: 그 일을 맡는 부서·사람이 대화에 분명할 때만. 아니면 빈 문자열 "".
 """
@@ -1245,7 +1247,13 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
         if due < today:
             print(f"  [일정] 건너뜀 — '{title}' ({due}) 이미 지난 날짜")
             continue
-        cands.append((due, title, str(s.get("dept") or "").strip(), str(s.get("note") or "").strip()))
+        # 시각은 화면이 이미 읽는 칸(전사_일정.html — it.time)인데 여태 아무도 쓰지 않아
+        # 전부 '시간 미정'으로 떴다(GM 지적 2026-08-15 — 카톡엔 '8/19 오전10시'인데 달력은 미정).
+        # 형식에 안 맞으면 빈칸으로 둔다 — 지어내지 않는다.
+        tm = str(s.get("time") or "").strip()
+        if not re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", tm):
+            tm = ""
+        cands.append((due, title, str(s.get("dept") or "").strip(), str(s.get("note") or "").strip(), tm))
     if not cands:
         return []
     if len(cands) > _SCHEDULE_MAX_PER_RUN:
@@ -1267,7 +1275,7 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
     items = data["items"]
     by_id = {it.get("id"): it for it in items}
     added = []
-    for due, title, dept, note in cands:
+    for due, title, dept, note, tm in cands:
         dup = _schedule_is_dup(title, due, items)
         if dup:
             print(f"  [일정] 건너뜀 — '{title}' ({due}) 같은 날짜에 이미 있음: {dup}")
@@ -1280,7 +1288,7 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
         item = {
             "id": sid, "type": "이벤트", "name": title, "category": "general",
             "dept": "", "cycle": "", "cycle_confirmed": False, "period_months": None,
-            "legal_basis": "", "assignee": dept, "last_done": "", "next_due": due,
+            "legal_basis": "", "assignee": dept, "last_done": "", "next_due": due, "time": tm,
             "evidence": "", "applies": "있음",
             "note": f"{room_dir_name} {target_date} 카톡 대화에서 자동 등록"
                     + (f" — {note[:60]}" if note else ""),
@@ -1290,7 +1298,7 @@ def bridge_to_schedule(schedules: list[dict], target_date: str, room_dir_name: s
             continue  # 같은 날 재실행 — 값이 같으면 아무 일도 하지 않는다
         by_id[sid] = item
         added.append(item)
-        print(f"  [일정] 등록 — {due} {title}" + (f" · {dept}" if dept else ""))
+        print(f"  [일정] 등록 — {due}{(' ' + tm) if tm else ''} {title}" + (f" · {dept}" if dept else ""))
 
     if not added:
         print("  → 전사일정 다리: 새로 넣을 일정 없음")
@@ -1328,7 +1336,8 @@ def _schedule_reply_lines(added: list[dict]) -> str:
             when = f"{d.month}/{d.day}({'월화수목금토일'[d.weekday()]})"
         except Exception:
             when = it.get("next_due", "")
-        rows.append("  · " + when + " " + str(it.get("name") or "")
+        tm = str(it.get("time") or "").strip()
+        rows.append("  · " + when + (f" {tm}" if tm else "") + " " + str(it.get("name") or "")
                     + (f" · {it['dept']}" if it.get("dept") else ""))
     return ("📅 전사일정에 넣었습니다\n" + "\n".join(rows) +
             "\n  (틀리면 한 줄만 주세요 — 바로 고칩니다)")
