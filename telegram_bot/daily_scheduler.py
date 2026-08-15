@@ -2613,6 +2613,9 @@ def _kakao_fail_notify(tag: str, detail: str, room: str = "") -> None:
 # scripts/poc-evidence/kakao_send_★운영+시설+지원+주차_*.png). 역롤백(1줄): 아래를 False로.
 KAKAO_GO_STREAM2 = True
 KAKAO_OPS_ROOM = "★운영+시설+지원+주차"
+# 카톡 발신 맨 끝에 한 번만 붙이는 웰리 서명 — report_stream_2/2b 가 각자 머리에 넣던 것과
+# 같은 문구(2026-08-15 GM 지시로 카톡 합본 머리글을 한 줄로 줄이며 맨 끝 1회로 이동).
+_SENDER_LINE_TAIL = "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다."
 
 
 def _is_rest_day(d) -> bool:
@@ -2794,9 +2797,12 @@ def run_daily_digest(early: bool = False) -> None:
     # 텔레그램 본문(s2_msg/s2b_msg) 그대로 재사용(중복 조립 금지). 텔레그램은 방이 서로 달라
     # (점검현황방/종합접수방) 2통 그대로 두지만, 카톡은 같은 방(KAKAO_OPS_ROOM)으로 나가
     # 제목이 완전히 같은 [하루 일과 정리] 2통이 연달아 뜨고 있었다(2026-08-15 GM 지시,
-    # 실측 22:32 연속 2통×5일=10통). 부문 소제목으로 갈라 한 통으로 합친다 — 내용 삭제 없음,
-    # s2b_msg 의 중복 날짜 제목 줄 하나만 뺀다(아래 _merge_ops_kakao). 실패해도 텔레그램
-    # 발송(위)은 이미 완료된 상태이므로 GM은 텔레그램으로 항상 현황을 받는다.
+    # 실측 22:32 연속 2통×5일=10통). 부문 소제목으로 갈라 한 통으로 합친다 — 내용 삭제 없음.
+    # ★2026-08-15 GM 추가 지시("헤드값을 변경해줘, 간단하게 타이틀로 [오늘 하루 정리]
+    #   이런식으로") — 3줄짜리 머리글(제목·부제·웰리 서명)을 한 줄 타이틀로 줄인다. 부문
+    #   구분은 머리글이 아니라 본문 소제목(🏗 점검/📮 종합접수)으로 옮기고, 웰리 서명은
+    #   맨 끝에 한 번만 둔다. 실패해도 텔레그램 발송(위)은 이미 완료된 상태이므로 GM은
+    #   텔레그램으로 항상 현황을 받는다.
     # ★한계(정직 표기): 카카오 발송은 PC 카톡 앱 UI자동화(kakao_report_sender.py)에 의존해
     # 트레이 최소화·포커스 경합 등으로 실패할 수 있다(배9423, 07-22 아침 09:30 3방 발송 실패
     # 전례). 주경로=카톡 창을 미리 열어둔 상태 유지. 역롤백(1줄): KAKAO_GO_STREAM2 = False.
@@ -2823,19 +2829,27 @@ def run_daily_digest(early: bool = False) -> None:
                 logger.error(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송 예외: {e}")
                 _kakao_fail_notify(tag, str(e)[:120])
 
-        def _merge_ops_kakao(a: str, b: str) -> str:
-            """a(점검현황)의 제목을 그대로 쓰고, b(종합접수현황)에서 중복되는 첫 줄
-            (📊 [하루 일과 정리] 날짜 제목)만 뺀 뒤 구분선으로 이어붙인다. 내용 삭제 없음 —
-            제목 1줄만 겹치지 않게 한다."""
-            b_body = b.split("\n", 1)[1] if b.startswith("📊 [하루 일과 정리]") and "\n" in b else b
-            return f"{a}\n\n{'━' * 10}\n{b_body}"
+        _ops_title = f"[오늘 하루 정리] {now_dt.month}/{now_dt.day}({_WEEKDAY_KOR[now_dt.weekday()]})"
+
+        def _strip_stream_header(text: str) -> str:
+            """report_stream_2/2b build_digest() 머리 3줄(제목·부제·웰리 서명)을 뗀다 —
+            텔레그램 발신(s2_msg/s2b_msg 원문)은 그대로 두고 카톡 합본을 새로 조립할 때만 쓴다."""
+            lines = text.split("\n")
+            return "\n".join(lines[3:]).lstrip("\n") if len(lines) > 3 else text
 
         if s2_msg and s2b_msg:
-            _send_ops_kakao(_merge_ops_kakao(s2_msg, s2b_msg), "점검현황+종합접수현황")
+            merged = (f"{_ops_title}\n\n"
+                      f"🏗 점검\n{_strip_stream_header(s2_msg)}\n\n"
+                      f"{'━' * 10}\n\n"
+                      f"📮 종합접수\n{_strip_stream_header(s2b_msg)}\n\n"
+                      f"{_SENDER_LINE_TAIL}")
+            _send_ops_kakao(merged, "점검현황+종합접수현황")
         elif s2_msg:
-            _send_ops_kakao(s2_msg, "점검현황")
+            _send_ops_kakao(f"{_ops_title}\n\n🏗 점검\n{_strip_stream_header(s2_msg)}\n\n{_SENDER_LINE_TAIL}",
+                            "점검현황")
         elif s2b_msg:
-            _send_ops_kakao(s2b_msg, "종합접수현황")
+            _send_ops_kakao(f"{_ops_title}\n\n📮 종합접수\n{_strip_stream_header(s2b_msg)}\n\n{_SENDER_LINE_TAIL}",
+                            "종합접수현황")
         else:
             logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — s2_msg/s2b_msg 둘 다 없음(빌드 실패)")
     else:
