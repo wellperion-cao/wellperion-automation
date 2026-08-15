@@ -266,18 +266,24 @@ a { color:var(--accent); text-decoration:none; }
 .mbtns .confirm{background:var(--green);color:#fff;}
 .mbtns .confirm:disabled{opacity:.45;cursor:not-allowed;}
 
-/* ── 📖 가이드 모달 콘텐츠 (GM 지시 2026-08-15 · 정적 안내, 기존 .modal 그대로 재사용) ── */
-.guide-body{font-size:13.5px;line-height:1.7;color:var(--text);}
-.guide-body h3{font-size:14px;font-weight:800;color:var(--accent);margin:18px 0 8px;}
+/* ── 📖 가이드 모달 콘텐츠 (GM 지시 2026-08-15 · 정적 안내, 기존 .modal 그대로 재사용 · 08-15 확장) ── */
+.guide-body{font-size:14.5px;line-height:1.75;color:var(--text);}
+.guide-body h3{font-size:16px;font-weight:800;color:var(--accent);margin:24px 0 10px;display:flex;align-items:center;gap:7px;}
 .guide-body h3:first-child{margin-top:0;}
-.guide-body ol{margin:0 0 4px 18px;}
-.guide-body ol li{margin-bottom:4px;}
-.guide-body table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
-.guide-body th,.guide-body td{border:1px solid var(--border);padding:7px 9px;text-align:left;vertical-align:top;}
+.guide-body ol{margin:0 0 6px 20px;}
+.guide-body ol li{margin-bottom:6px;}
+.guide-body ul{margin:0 0 6px 20px;}
+.guide-body ul li{margin-bottom:6px;}
+.guide-body table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+.guide-body th,.guide-body td{border:1px solid var(--border);padding:9px 11px;text-align:left;vertical-align:top;}
 .guide-body th{background:var(--paper);color:var(--dim);font-weight:700;}
 .guide-body td{background:var(--bg);}
-.guide-body p{margin-bottom:4px;}
+.guide-body p{margin-bottom:6px;}
 .guide-body .guide-em{color:var(--accent);font-weight:700;}
+.guide-body .guide-lead{font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px;padding:10px 14px;background:var(--accent-bg);border-radius:10px;border:1px solid rgba(183,159,138,0.3);}
+.guide-body .guide-mistake{background:var(--red-bg);border:1px solid rgba(237,91,63,0.35);border-radius:10px;padding:10px 14px;margin-bottom:4px;}
+.guide-body .guide-mistake ol{margin:0 0 0 18px;}
+.guide-body .guide-mistake li{margin-bottom:7px;}
 
 .toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90%;text-align:center;}
 .toast.show{transform:translateX(-50%) translateY(0);}
@@ -404,44 +410,77 @@ a { color:var(--accent); text-decoration:none; }
 
 <!-- 📖 가이드 모달 — 종합접수처 사용법(GM 지시 2026-08-15). 정적 텍스트만, 서버 조회 없음. -->
 <div class="modal-back" id="guideBack">
-  <div class="modal" style="max-width:640px;padding:16px">
+  <div class="modal" style="max-width:920px;padding:28px 32px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
-      <h2 style="margin:0">📖 가이드</h2>
+      <h2 style="margin:0;font-size:22px">📖 종합접수처 가이드</h2>
       <button type="button" onclick="closeGuide()" aria-label="닫기"
-        style="background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
+        style="background:none;border:0;color:var(--dim);font-size:26px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
     </div>
-    <div class="msub" style="margin-bottom:14px">종합접수처 현황판, 이렇게 씁니다.</div>
+    <div class="msub" style="margin-bottom:16px;font-size:13px">이 화면을 처음 쓰시는 분도 아래만 읽으면 바로 움직일 수 있습니다.</div>
     <div class="guide-body">
-      <h3>① 처리하는 법 3단계</h3>
-      <ol>
-        <li>그 건을 열어 「처리자」 칸에 본인 성함을 적습니다</li>
-        <li>「처리 메모」에 어떻게 하셨는지 한 줄 남기고 [저장]을 누릅니다</li>
-        <li>다 되었으면 [✅ 전달 완료]를 누릅니다</li>
-      </ol>
+      <div class="guide-lead">🙋 회원 접수 8종(분실물·습득물·시설물 고장·청결 이슈·컴플레인·칭찬·쓴소리·휴회)을 한 보드에서 접수→처리중→완료로 관리합니다. 모두 GAS 실시간 자동 반영 — 사람이 새로고침만 하면 됩니다.</div>
 
-      <h3>② 누가 무엇을 하나</h3>
+      <h3>① 접수 카테고리 8종 — 언제 쓰나</h3>
       <table>
-        <tr><th>이런 일이 들어오면</th><th>누가</th><th>무엇을</th></tr>
-        <tr><td>업장에서 생긴 일 (강습·헬스장·골프장·수영장·스쿼시)</td><td>담당 강사님</td><td>회원께 그 자리에서 먼저 안내</td></tr>
-        <tr><td>공지문·안내문이 있어야 풀리는 일</td><td>강사님 → 운영부</td><td>강사님이 문구·붙일 곳·기한을 정해 보내고, 운영부가 그대로 제작</td></tr>
-        <tr><td>덥다 · 습하다 · 고장났다</td><td>시설부</td><td>설비·온도·기기 확인</td></tr>
-        <tr><td>더럽다 · 냄새난다 · 벌레 · 사우나</td><td>지원부</td><td>남자구역 박남일 반장님 / 여자구역 이연희 반장님</td></tr>
-        <tr><td>회원 사이의 일 · 이용 규칙 · 발권시간</td><td>운영부</td><td>안내·중재, 필요하면 규칙 정리</td></tr>
-        <tr><td>분실물</td><td>리셉션</td><td>보관 후 주인이 오시면 [✅ 수령] 처리</td></tr>
+        <tr><th>카테고리</th><th>담당부서</th><th>언제 씁니까</th></tr>
+        <tr><td>📦 분실물 접수</td><td>운영부</td><td>회원이 물건을 잃어버렸다고 알려온 경우</td></tr>
+        <tr><td>🧳 습득물 접수</td><td>운영부</td><td>직원이 현장에서 물건을 주웠을 때 — 아래 ⑦ 참고(다른 카테고리와 흐름이 다름)</td></tr>
+        <tr><td>🔧 시설물 고장 접수</td><td>시설부</td><td>기기·설비·온도 등 "고장났다·안 된다" 신고</td></tr>
+        <tr><td>🧹 청결 이슈 접수</td><td>지원부</td><td>더럽다·냄새난다·벌레 등 청결 관련 신고</td></tr>
+        <tr><td>📣 컴플레인 접수</td><td>운영부</td><td>회원 사이의 일 · 이용 규칙 · 응대 불만 등</td></tr>
+        <tr><td>⭐ 직원·강사 칭찬합니다</td><td>운영부</td><td>특정 직원·강사에 대한 좋은 후기</td></tr>
+        <tr><td>💬 직원·강사 쓴소리합니다</td><td>운영부</td><td>특정 직원·강사에 대한 개선 요청</td></tr>
+        <tr><td>⏸️ 휴회 접수</td><td>운영부</td><td>회원 휴회 신청 현황 — 읽기 전용(아래 ⑨ 참고)</td></tr>
       </table>
 
-      <h3>③ 공지문이 있어야 풀리는 건 — 흐름</h3>
-      <p>업장에서 생긴 일 → 담당 강사님이 먼저 회원께 안내 → 공지문이 필요하면 강사님이 ①어떤 문구 ②어디에 붙일지 ③언제까지 필요한지 세 가지를 정해 운영부로 → 운영부가 그대로 제작.</p>
-      <p><span class="guide-em">"문안은 현장이 정하는 것이 맞습니다."</span></p>
+      <h3>② 새 접수를 넣는 법</h3>
+      <ul>
+        <li>대부분은 <b>회원이 직접</b> 홈페이지 접수 폼으로 넣습니다 → 헤더의 <span class="guide-em">📲 회원 접수 폼</span> 링크가 그 폼입니다. 회원이 제출하면 이 보드에 자동으로 뜹니다.</li>
+        <li>습득물만 다릅니다 — <b>직원이</b> 물건을 주우면 별도 습득물 접수 폼으로 직접 등록합니다(카드 안 링크, ⑦ 참고).</li>
+        <li>이 화면 자체에는 "새 접수 추가" 버튼이 없습니다 — 접수는 항상 폼에서 들어옵니다.</li>
+      </ul>
 
-      <h3>④ 회원께 답을 드릴 때</h3>
-      <p>[📋 문구 복사]를 누르면 안내 문구가 만들어집니다. 그대로 보내시면 됩니다.</p>
+      <h3>③ 처리 상태를 바꾸는 법</h3>
+      <ol>
+        <li>카드를 열어 「처리자」 칸에 본인 성함을 적습니다</li>
+        <li>「처리 메모」에 어떻게 하셨는지 남기고 [저장]을 누릅니다</li>
+        <li>「상태」 드롭다운에서 <b>접수 → 처리중 → 완료</b>로 바꾸면 즉시 저장됩니다 — 또는 [✅ 전달 완료] 버튼 한 번으로 바로 완료 처리도 됩니다</li>
+      </ol>
+      <p>단, 🧳 습득물은 상태 드롭다운이 없고 [✅ 수령] 버튼으로만 완료되며, ⏸️ 휴회 접수는 여기서 상태를 바꿀 수 없습니다(각 ⑦·⑨ 참고).</p>
 
-      <h3>⑤ 분실물</h3>
-      <p>주인이 찾아오시면 [✅ 수령]을 눌러 회원 성함·주시는 분 성함·확인 비밀번호를 넣습니다.</p>
+      <h3>④ 회원께 답변을 다는 법</h3>
+      <ul>
+        <li><b>처리 메모</b> = 내부 기록용입니다. 회원은 못 봅니다.</li>
+        <li><b>📣 회원 안내</b> = 회원이 접수를 조회할 때 실제로 보는 문구입니다. 비워두면 상태에 맞는 기본 문구가 대신 뜹니다.</li>
+        <li>카드의 [📋 문구 복사] 버튼을 누르면 전달문구(처리 메모)가 복사됩니다 — 문자·카톡으로 그대로 보내시면 됩니다.</li>
+      </ul>
 
-      <h3>⑥ 점수판</h3>
-      <p>접수 1점 + 처리 완료 1점입니다. 적어 주시는 것 자체가 점수라, 사소해 보여도 남겨 주시면 됩니다.</p>
+      <h3>⑤ 접수자·처리자 점수는 이렇게 매겨집니다</h3>
+      <ul>
+        <li>점수판 = <b>접수 1점 + 처리 완료 1점</b>. 서버가 자동 계산하며, 화면은 그 값을 그대로 보여줄 뿐입니다.</li>
+        <li>「접수자」 칸에 이름을 적어야 접수 1점이 붙습니다 — 비워두면 점수가 안 붙습니다.</li>
+        <li>「처리자」를 적고 상태를 "완료"로 바꾸면 완료 1점이 붙습니다.</li>
+        <li>점수판 상단 [이번 주]/[이번 달]/[전체] 탭으로 기간을 나눠 볼 수 있습니다.</li>
+      </ul>
+
+      <h3>⑥ 기한 초과란</h3>
+      <p>카드 상단 배지가 기한 상태를 보여줍니다 — <b>정상</b>(회색) → <b>임박</b>(주황) → <b>초과</b>(빨강, "+N시간/N일"). 카테고리마다 기본 기한이 있고, 카드마다 「기한(일)」 칸에 숫자를 넣어 그 건만 따로 조정할 수 있습니다(비우면 기본값 적용).</p>
+
+      <h3>⑦ 분실물·습득물은 흐름이 다릅니다</h3>
+      <p><b>📦 분실물 접수</b>는 다른 카테고리와 같습니다(③의 3단계 그대로). 회원의 신고를 접수해 처리합니다.</p>
+      <p><b>🧳 습득물 접수</b>는 별도 흐름입니다 — 직원이 습득물 접수 폼으로 등록하면 사진·습득 장소·시점이 카드에 뜹니다. 주인이 찾아오면 [✅ 수령]으로 서명을 받아 완료 처리하고, 잘못 등록했으면 [🗑 삭제], 폐기할 땐 [🖨 A3 처분공지]로 인쇄합니다. 습득 다음 달 공지 → 그다음 달 자동 폐기(월 사이클)이며, 카드 하단에 습득물 접수 폼·습득물 보기(공개)·운영 가이드 링크가 있습니다.</p>
+
+      <h3>⑧ 헷갈리기 쉬운 것</h3>
+      <div class="guide-mistake">
+        <ol>
+          <li>습득물 카드는 「상태」 드롭다운이 없습니다 — 완료 처리는 반드시 [✅ 수령] 버튼으로만 됩니다.</li>
+          <li>「처리 메모」와 「📣 회원 안내」는 다른 칸입니다 — 회원에게 실제로 보이는 건 후자뿐입니다.</li>
+          <li>「접수자」 칸을 비워두면 카드는 저장돼도 접수 점수는 잡히지 않습니다.</li>
+        </ol>
+      </div>
+
+      <h3>⑨ 휴회 접수</h3>
+      <p>이 보드에는 현황만 표시됩니다(읽기 전용). 승인·반려는 회원 관리 시트에서 처리합니다.</p>
     </div>
   </div>
 </div>
