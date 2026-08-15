@@ -936,7 +936,8 @@ def check_dedup(room_name: str, text: str = "", image_path: Path | None = None) 
 
 def record_dedup_sent(room_name: str, text: str = "", image_path: Path | None = None) -> None:
     """실제 발송 성공이 확정된 뒤에만 호출 — 원장에 "보냄"을 기록한다(배348).
-    dry-run 은 호출부에서 애초에 부르지 않는다. 우회 시(env)에는 기록도 생략."""
+    dry-run 은 호출부에서 애초에 부르지 않는다. 우회 시(env)에는 기록도 생략.
+    text 필드도 같이 남긴다 — check_near_dup(아래)의 유사도 판정용(2026-08-15 GM 지시)."""
     if os.environ.get(SKIP_DEDUP_ENV) == "1":
         return
     sig = _dedup_signature(room_name, text, image_path)
@@ -945,8 +946,46 @@ def record_dedup_sent(room_name: str, text: str = "", image_path: Path | None = 
     entries.append({
         "room": room_name, "sig": sig, "ts": now,
         "at_kst": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "text": (text or "").strip()[:2000],
     })
     _save_dedup_ledger(entries)
+
+
+# ── 근접 중복(형식만 고친 재발송) 가드 (2026-08-15 GM 지시 · 중복 알림 정리) ──────────
+# 실측 8/13 ★중간관리자 12분 사이 4통 — 본문에 스스로 "방금 보낸 것과 내용 같습니다.
+# 줄 간격만…"이라고 적혀 있었다. 위 check_dedup(정확 일치, 2시간)은 한 글자만 달라도
+# 못 잡는다 — 형식만 고쳐 다시 보내면 해시가 통째로 바뀌기 때문이다. 새 판정 로직을
+# 만들지 않고 kungjjak_board.find_repeats 와 같은 낱말겹침 기준(_norm)을 재사용하고,
+# 저장소도 새로 안 만들고 위 kakao_dedup_ledger.json 의 text 필드를 그대로 읽는다(약속 L21).
+NEAR_DUP_WINDOW_SEC = float(os.environ.get("KAKAO_NEAR_DUP_WINDOW_SEC", 1800))  # 30분
+NEAR_DUP_OVERLAP_RATIO = 0.7  # 짧은 쪽 낱말의 70% 이상 겹치면 "내용 같음"으로 본다
+
+
+def _word_set(t: str) -> set:
+    from kungjjak_board import _norm  # noqa: PLC0415  (낱말겹침 판정 재사용 — 새로 안 만듦)
+    return _norm(t)
+
+
+def check_near_dup(room_name: str, text: str) -> tuple[bool, float]:
+    """True = 30분 안에 같은 방으로 낱말이 크게 겹치는 내용을 이미 보냈다(형식만 고친
+    재발송 의심). (판정, 겹침비율) 반환 — 판정만 하고 기록은 하지 않는다(기록은
+    record_dedup_sent 가 이미 text 필드까지 같이 남긴다). 우회: env SKIP_KAKAO_DEDUP_GUARD=1."""
+    if os.environ.get(SKIP_DEDUP_ENV) == "1":
+        return False, 0.0
+    wt = _word_set(text)
+    if len(wt) < 3:  # 너무 짧은 메시지는 겹침 판정 자체가 불안정 — 스킵(오탐 방지)
+        return False, 0.0
+    now = time.time()
+    for e in _load_dedup_ledger():
+        if e.get("room") != room_name or now - e.get("ts", 0) >= NEAR_DUP_WINDOW_SEC:
+            continue
+        wp = _word_set(str(e.get("text") or ""))
+        if len(wp) < 3:
+            continue
+        overlap = len(wt & wp) / min(len(wt), len(wp))
+        if overlap >= NEAR_DUP_OVERLAP_RATIO:
+            return True, overlap
+    return False, 0.0
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -1099,6 +1138,12 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
         return False, "dedup"
 
+    _near, _ratio = check_near_dup(room_name, text)
+    if _near:
+        log(f"[{room_name}] 근접 중복 가드로 스킵(전송 안 함) — 30분 안 유사도 {_ratio:.0%} "
+            f"내용 이미 발신됨(형식만 고친 재발송 의심). 의도된 재발송이면 env {SKIP_DEDUP_ENV}=1 로 우회.")
+        return False, "near_dup"
+
     room_win = open_or_find_room(room_name)
     focus_window(room_win, room_name)
     input_box = get_input_box(room_win, room_name)
@@ -1137,6 +1182,13 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     if check_dedup(room_name, text=caption, image_path=image_path):
         log(f"[{room_name}] 중복 발신 가드로 스킵(전송 안 함)")
         return False, "dedup"
+
+    if caption:
+        _near, _ratio = check_near_dup(room_name, caption)
+        if _near:
+            log(f"[{room_name}] 근접 중복 가드로 스킵(전송 안 함) — 30분 안 유사도 {_ratio:.0%} "
+                f"캡션 이미 발신됨(형식만 고친 재발송 의심). 의도된 재발송이면 env {SKIP_DEDUP_ENV}=1 로 우회.")
+            return False, "near_dup"
 
     room_win = open_or_find_room(room_name)
     focus_window(room_win, room_name)
