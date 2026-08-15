@@ -957,10 +957,12 @@ function buildLine(cwd, role, transcript, sessionId) {
   const waitCount = s ? `${D}항로${X}🚢${s.run}${D}⚓${s.wait}${X}` : `${D}항로${X}${Y}읽기실패${X}`;
   const segDone = s ? `${D}오늘${X}🏁${s.done}` : null;
 
-  // 제목 최소 폭(20자 확보 — 배107) — 제목이 그보다 짧으면 그 길이만큼만.
+  // 제목 최소 폭(40자 확보 — 2026-08-15 GM 재지시 "작업 내용이 중요한데" — 배107 의 20자는
+  //   전사·오늘 배지가 다 들어갈 때도 우선순위를 못 이겨 20자에서 잘렸다. 작업 내용(title)이
+  //   배지보다 먼저다 — 보장폭을 넓혀 배지가 더 일찍 접히게 한다.
   const titleChars = Array.from(title);
   const minTitleW = titleChars.length
-    ? dw(titleChars.slice(0, 20).join('')) + (titleChars.length > 20 ? 2 : 0) : 0;
+    ? dw(titleChars.slice(0, 40).join('')) + (titleChars.length > 40 ? 2 : 0) : 0;
   const fixedW = dw(head) + dw(time) + (title ? 2 : 0);   // 제목 앞뒤 한 칸씩
   const SEPW = 3;                                          // ' · '
   const segsW = (arr) => arr.reduce((a, g) => a + SEPW + dw(g), 0);
