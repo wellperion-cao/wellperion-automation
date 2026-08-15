@@ -516,14 +516,20 @@
     return out;
   }
 
-  // 체크 줄 식별 키 = 목표id + 줄 순번 + 본문 해시. 본문이 바뀌면 해시가 달라져 저장된 체크를
+  // 체크 줄 식별 키 = 목표id + 본문 해시. 본문이 바뀌면 해시가 달라져 저장된 체크를
   // 안 살린다(잘못 살아난 체크보다 낫다 — GM 지시). 순수 djb2 해시, 암호용 아님.
+  //
+  // ★줄 순번(idx)은 키에서 뺐다 (GM 지적 2026-08-15 "체크 해둔 게 계속 날아가네").
+  // 원인 — progress_note 에 줄이 하나만 추가돼도 그 아래 모든 항목의 idx 가 밀려
+  // 저장된 키가 통째로 안 맞았다. 실측 2026-08-15: 저장 34개 중 32개 무효(켜짐 26개 소실).
+  // 본문 해시만 쓰면 항목이 위아래로 움직여도 살아남고, 본문이 정말 바뀌었을 때만 새 항목이 된다.
+  // 앞뒤 공백·연속 공백은 정규화한다 — 들여쓰기 손질에 체크가 죽지 않게.
   function hashText(s) {
     s = String(s || ''); var h = 0;
     for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
     return (h >>> 0).toString(36);
   }
-  function chkKey(id, idx, text) { return id + '::' + idx + '::' + hashText(text); }
+  function chkKey(id, idx, text) { return id + '::' + hashText(String(text || '').replace(/\s+/g, ' ').trim()); }
 
   var _gmCheckBoard = {};
   function loadCheckBoard() {
