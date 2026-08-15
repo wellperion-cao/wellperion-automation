@@ -29,7 +29,7 @@
   @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
 
   /* A3 가로 1장 */
-  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:22px 32px 16px;
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:17px 32px 14px;
     display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
 
   /* ① 헤더 */
@@ -47,11 +47,24 @@
     border-bottom:1px solid var(--line); }
   .sign .b{ height:32px; }
 
-  /* 문서의 답 — 첫 문장 */
+  /* 문서의 답 — 3초 안에 읽는 세 줄 */
   .answer{ margin-top:7px; background:var(--navy-bg); border-left:5px solid var(--navy);
-    padding:5px 14px; font-size:15.8px; font-weight:700; line-height:1.32; letter-spacing:-.4px; color:var(--ink); }
+    padding:4px 14px 3px; font-size:14.8px; font-weight:700; line-height:1.4; letter-spacing:-.4px; color:var(--ink); }
   .answer b{ color:var(--bad); }
-  .answer span{ font-weight:500; font-size:14px; color:#3C464F; }
+  .answer em{ font-style:normal; color:var(--good); }
+  .answer span{ font-weight:500; font-size:13.2px; color:#3C464F; }
+  .answer .no{ display:inline-block; width:20px; color:var(--navy); }
+
+  /* 거리 × 재등록 교차표 */
+  .xt{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  .xt th,.xt td{ border:1px solid var(--line); padding:2px 10px; font-size:13.3px; text-align:right; font-variant-numeric:tabular-nums; }
+  .xt th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; }
+  .xt col.k{ width:196px; }
+  .xt td.k{ text-align:left; background:#F6F8FA; font-weight:500; }
+  .xt th.k{ text-align:left; background:#0E2439; }
+  .xt td.core{ background:#DDEBE3; color:var(--good); font-weight:900; font-size:15.5px; }
+  .xt td.riskc{ background:#FBEDED; color:var(--bad); font-weight:700; }
+  .xt td.tot{ font-weight:700; background:#F0F3F7; }
 
   /* 경고 밴드 */
   .alert{ margin-top:5px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
@@ -61,7 +74,7 @@
   /* 좌우 2단 본문 */
   .body2{ margin-top:6px; display:flex; gap:12px; flex:1; min-height:0; }
   .colL{ width:50.5%; flex:none; display:flex; flex-direction:column; gap:5px; }
-  .colR{ flex:1; display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .colR{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
 
   /* ③ 실측표 — 칸 너비 고정(colgroup)으로 세로줄 정렬 */
   table.main{ width:100%; border-collapse:collapse; table-layout:fixed; }
@@ -160,7 +173,7 @@
   .ask .lb span{ font-size:10px; letter-spacing:3px; opacity:.85; }
   .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:17px; letter-spacing:-.5px; }
   .ask .items{ flex:1; display:flex; }
-  .ask .it{ flex:1; padding:7px 13px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it{ flex:1; padding:5px 12px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
   .ask .n em{ font-style:normal; opacity:.95; letter-spacing:0; margin-left:8px; }
@@ -204,10 +217,11 @@
     </div>
   </div>
 
-  <!-- 문서의 답 (첫 문장) -->
+  <!-- 문서의 답 (3초 안에 읽는 세 줄) -->
   <div class="answer">
-    회원 수는 줄지 않았습니다. <b>늘지 않고 있습니다.</b>
-    <span>순증(신규 등록 − LOSS)이 2024년 <b style="color:var(--ink)">+582명</b> → 2025년 <b>+40명</b> → 2026년 <b>+32명</b>(8월 15일까지)으로 주저앉았습니다 — 감소가 아니라 성장 정체입니다.</span>
+    <div><span class="no">①</span>회원 수는 줄지 않았습니다. <b>늘지 않고 있습니다.</b> <span>순증(신규 등록 − LOSS) 2024년 +582명 → 2025년 <b>+40명</b> → 2026년 <b>+32명</b>(8/15까지) — 감소가 아니라 성장 정체입니다.</span></div>
+    <div><span class="no">②</span>요금을 올려도 함께 갈 회원은 <em>409명(40.9%)</em>입니다. <span>걸어올 거리에 살면서 이미 세 번 이상 다시 등록한 분들입니다. 떠날 위험이 뚜렷한 분은 <b>63명(6.3%)</b>입니다.</span></div>
+    <div><span class="no">③</span>LOSS의 <b>54.4%(379명)</b>는 우리가 손댈 수 있었던 사유입니다. <span>가격이 이유였던 분은 3.7%(26명)뿐입니다.</span></div>
   </div>
 
   <!-- 경고 밴드 -->
@@ -219,8 +233,21 @@
   <!-- 좌우 2단 -->
   <div class="body2">
 
-    <!-- 왼쪽 = 숫자 (실측표 · 월별 그래프 · 사유 구성) -->
+    <!-- 왼쪽 = 숫자 (생존 지형 · 실측표 · 월별 그래프 · 사유 구성) -->
     <div class="colL">
+
+      <div class="mbox">
+        <h3>요금 인상 생존 지형 — 거리 × 재등록 교차 (유효 1,000명 전수 · 주소 98.4% 기입)</h3>
+        <table class="xt">
+          <colgroup><col class="k"><col><col><col><col></colgroup>
+          <thead><tr><th class="k">거리 ＼ 재등록</th><th>3회 이상</th><th>2회</th><th>1회</th><th>계</th></tr></thead>
+          <tbody>
+            <tr><td class="k">가까움 (용산구·성동구)</td><td class="core">409</td><td>183</td><td>253</td><td class="tot">848</td></tr>
+            <tr><td class="k">그 밖 (기타 구·미상 포함)</td><td>51</td><td>38</td><td class="riskc">63</td><td class="tot">152</td></tr>
+          </tbody>
+        </table>
+        <div class="read"><b>같이 갈 코어 = 409명(40.9%)</b> — 걸어올 거리 × 세 번 이상 재결제라 요금을 올려도 옮기기 어렵습니다. <b>떠날 위험 = 63명(6.3%)</b> — 먼 곳 × 1회차. 나머지 <b>528명(52.8%)은 판단 유보</b> — 이를 가르는 것이 다음 과제입니다 <span class="est">(미기입 3명은 계에만 · 각주1)</span>.</div>
+      </div>
 
       <table class="main">
         <colgroup><col style="width:146px"><col style="width:182px"><col style="width:200px"><col></colgroup>
@@ -242,15 +269,11 @@
           <tr><td class="k">유효 회원</td><td class="num strong">1,000 명</td><td>재등록 641 · 신규 318</td><td>LOSS 누적 697명(<b class="warn">41.1%</b>) · 법인 31</td></tr>
           <tr><td class="k">이번 달 신규 등록</td><td class="num strong bad">7 명</td><td>이번 달 문의 48건</td><td>문의 대비 등록 <b>14.6%</b> <span class="est">(추정 · 각주1)</span></td></tr>
           <tr class="sum"><td class="k">30일 안에 만료</td><td class="num strong bad">72 명</td><td>이번 달 신규 등록 7명</td><td class="bad strong">유입이 유출의 1/10 수준</td></tr>
-          <tr><td class="k">종료 사유 기입</td><td class="num strong good">682 / 697 (97.8%)</td><td>정본 = <b>미등록사유</b> 칸 <span class="est">(각주2)</span></td><td class="good">나간 이유 실측 가능 — 아래 사유 구성</td></tr>
           <tr class="sum"><td class="k">만료 임박 중 상위 등급</td><td class="num strong bad">8 명 / 72명</td><td>결제 합계 104,846,400원</td><td class="bad strong">FAN VIP 2 · VIP 2 · Member 4 <span class="est">(전화·이름 일치 검증)</span></td></tr>
 
           <tr class="grp"><td colspan="4">사 랑 받 는 회 원 — 이미 쓰고 있는 등급표 (2025년 결제액 기준 · 각주3)</td></tr>
-          <tr><td class="k">FAN VIP</td><td class="num strong good">4 명 <span class="est">· 평균 1,948만</span></td><td>결제 합계 77,937,150원</td><td>일일입장권 15장 · 카페 5만원</td></tr>
-          <tr><td class="k">VIP</td><td class="num strong">11 명 <span class="est">· 평균 1,305만</span></td><td>결제 합계 143,497,950원</td><td>일일입장권 10장 · 카페 3만원</td></tr>
-          <tr><td class="k">Member</td><td class="num strong">46 명 <span class="est">· 평균 960만</span></td><td>결제 합계 441,432,796원</td><td>일일입장권 5장 · 카페 미제공</td></tr>
-          <tr class="sum"><td class="k">등급 보유 소계</td><td class="num strong">61 명 <span class="est">(전체의 6.1%)</span></td><td class="strong">결제 합계 662,867,896원</td><td class="strong">61명이 2025년 한 해 <b>6.63억</b> 결제 <span class="est">(각주3)</span></td></tr>
-          <tr><td class="k">등급 61명 중 이미 LOSS</td><td class="num strong bad">4 명 <span class="est">(전원 Member)</span></td><td>2025년 결제 합계 38,371,800원</td><td><b class="good">FAN VIP·VIP는 LOSS 0명</b> — 지켜야 할 선 <span class="est">(각주3)</span></td></tr>
+          <tr class="sum"><td class="k">등급 보유 61명</td><td class="num strong">61 명 <span class="est">(전체의 6.1%)</span></td><td class="strong">결제 합계 662,867,896원</td><td class="strong">FAN VIP 4 · VIP 11 · Member 46 — 한 해 <b>6.63억</b> <span class="est">(각주3)</span></td></tr>
+          <tr><td class="k">그중 이미 LOSS</td><td class="num strong bad">4 명 <span class="est">(전원 Member)</span></td><td>2025년 결제 합계 38,371,800원</td><td><b class="good">FAN VIP·VIP는 LOSS 0명</b> — 지켜야 할 선</td></tr>
         </tbody>
       </table>
 
@@ -298,15 +321,7 @@
           <i class="c-us" style="width:54.4%"></i><i class="c-na" style="width:23.5%"></i><i class="c-tr" style="width:18.9%"></i><i class="c-et" style="width:3.2%"></i>
         </div>
         <div class="chips"><span class="dot c-us"></span>우리가 손댈 수 있는 것 <b>379명 · 54.4%</b><span class="dot c-na"></span>불가항력 <b>164명 · 23.5%</b><span class="dot c-tr"></span>전환·구조 <b>132명 · 18.9%</b><span class="dot c-et"></span>공란·기타 <b>22명 · 3.2%</b></div>
-        <table class="rsn">
-          <tr><td class="nm">낮은 이용횟수</td><td class="n1">140</td><td class="n2">20.1%</td><td class="cl us">우리 몫</td></tr>
-          <tr><td class="nm">거주지 변경</td><td class="n1">125</td><td class="n2">17.9%</td><td class="cl na">불가항력</td></tr>
-          <tr><td class="nm">무응답(기타)</td><td class="n1">104</td><td class="n2">14.9%</td><td class="cl us">우리 몫</td></tr>
-          <tr><td class="nm">양도 / 강습 전환</td><td class="n1">75</td><td class="n2">10.8%</td><td class="cl tr">전환·구조</td></tr>
-          <tr><td class="nm">가망(재등록 여지)</td><td class="n1">73</td><td class="n2">10.5%</td><td class="cl us">우리 몫</td></tr>
-          <tr><td class="nm">단기 이용</td><td class="n1">57</td><td class="n2">8.2%</td><td class="cl tr">전환·구조</td></tr>
-          <tr><td class="nm">그 외 9종 + 공란 15</td><td class="n1">123</td><td class="n2">17.6%</td><td class="cl">혼합 <span class="est">(각주2)</span></td></tr>
-        </table>
+        <div class="read" style="margin-top:2px">최다 사유 = <b>낮은 이용횟수 140명(20.1%)</b> · 거주지 변경 125명 · 무응답 104명 — 나머지 13종 313명은 각주2. 1위가 '가격'이 아니라 <b>'습관'</b>입니다.</div>
       </div>
 
     </div>
@@ -314,37 +329,49 @@
     <!-- 오른쪽 = 권고 · 등급별 모집 안건 · 결정 요청 -->
     <div class="colR">
 
+      <div class="box">
+        <h3>집중할 지표 3개 — GM 지시 (2026-08-15)</h3>
+        <table class="ag">
+          <colgroup><col style="width:168px"><col style="width:186px"><col></colgroup>
+          <thead><tr><th>지표</th><th>지금 상태</th><th>쓸 수 있나</th></tr></thead>
+          <tbody>
+            <tr><td class="a">주소 (거리)</td><td>98.4% 기입 (984/1,000)</td><td><b style="color:var(--good)">지금 바로 씁니다</b> — 위 교차표의 가로축</td></tr>
+            <tr><td class="a">재등록 회차</td><td>전수 기입 (미기입 3명)</td><td><b style="color:var(--good)">지금 바로 씁니다</b> — 위 교차표의 세로축</td></tr>
+            <tr><td class="a">일일 입장률 (이용일수)</td><td class="risk"><b>14.8% 기입</b> (148/1,000)</td><td><b class="risk">지금은 못 씁니다</b> — <b>이 칸을 채우는 것이 세 번째 축을 여는 열쇠</b></td></tr>
+          </tbody>
+        </table>
+        <p style="margin:0; font-size:12.6px; line-height:1.38; color:#22303B;">가격이 사유였던 분은 LOSS 697명 중 <b>26명(3.7%)</b>뿐입니다 — 요금 인상의 실제 위험은 가격 자체보다 <b>거리와 습관</b>에 달려 있습니다. 기입된 148명의 이용일수는 중앙값 155일로 값 자체는 쓸 만합니다 — 기입률만 올리면 됩니다.</p>
+      </div>
+
       <div class="box rec">
         <h3>경영지원부 권고 — 회장님·GM께</h3>
         <ul>
-          <li><b>원인 정정</b> — 1차 보고의 "유입 정체 단독 원인" 추정을 실측으로 정정합니다. LOSS가 월 27~28명 수준으로 이어지는 가운데(2025년 333명 · 2026년 191명, 진행 중) 유입까지 멈췄습니다(이번 달 신규 7명) — <b>둘이 겹친 결과</b>입니다.</li>
           <li><b>이번 달 순서</b> — 만료 임박 등급 8명(1억 485만원) 접촉이 신규 유치보다 싸고 빠릅니다. FAN VIP 손계자(잔여 5일)·방형식(19일)을 이경연 실장이 먼저 접촉합니다.</li>
-          <li><b>기준</b> — 회장님 지시 "사랑받는 기준"은 새로 만들 필요가 없습니다. 등급표 61명이 답이고 전화 키로 원장과 붙습니다(59/61 자동 판별). 사유의 54.4%(379명)는 우리가 손댈 수 있는 영역입니다 — 방문 빈도 데이터(브로제이)가 붙으면 만료 전 선제 감지가 가능해집니다.</li>
+          <li><b>기준</b> — 회장님 지시 "사랑받는 기준"은 새로 만들 필요가 없습니다. 등급표 61명이 답이고 전화 키로 원장과 자동으로 붙습니다(59/61 판별).</li>
         </ul>
       </div>
 
       <div class="box agenda">
         <h3>등급별 모집 안건 — 수익 극대화 (GM 지시 2026-08-15)</h3>
         <div class="concl">결론 — 정원이 찬 지금, 수익은 머릿수가 아니라 자리의 단가에서 납니다.</div>
-        <p class="prob"><b>문제</b> — 상위 6.1%(61명)가 연 6억 6,287만을 내는데, 그중 8명(1억 485만)이 30일 내 만료이고, 나머지 939명(93.9%)은 등급이 없어 지킬 대상도 채울 기준도 없습니다.</p>
+        <p class="prob"><b>문제</b> — 상위 6.1%(61명)가 연 6.63억을 내는데 8명(1억 485만)이 30일 내 만료, 나머지 939명은 등급이 없어 지킬 대상도 채울 기준도 없습니다.</p>
         <table class="ag">
           <colgroup><col style="width:128px"><col></colgroup>
           <tbody>
             <tr>
               <td class="a">안건 1 · 지키기<span class="sub">만료 임박 등급 8명 전담 재등록</span></td>
-              <td>이미 Member 4명이 LOSS 로 3,837만을 잃었습니다. 걸린 금액 = 8명의 2025년 결제액 합 <b>1억 485만/년</b>.<br><span class="lbl">첫 걸음</span> — 8명 개별 재등록 면담. <span class="lbl risk">위험</span> — 개별 관리가 판촉 압박으로 비치면 브랜드가 상합니다.</td>
+              <td>걸린 금액 = 8명의 2025년 결제액 합 <b>1억 485만/년</b> (이미 Member 4명이 LOSS 로 3,837만을 잃었습니다). <span class="lbl">첫 걸음</span> — 개별 재등록 면담. <span class="lbl risk">위험</span> — 판촉 압박으로 비치면 브랜드 훼손.</td>
             </tr>
             <tr>
-              <td class="a">안건 2 · 분류하기<span class="sub">등급 없는 939명 결제액 전수 분류</span></td>
-              <td>등급 부여는 모집이 아니라 분류라 정원 제약을 받지 않습니다. Member 기준(평균 960만)에 근접한 인원이 몇 명인지는 <b>분류 전에는 잴 수 없습니다</b> — 이 작업이 곧 그 측정입니다.<br><span class="lbl">첫 걸음</span> — 939명 결제액 집계 후 현행 등급 기준 대입. <span class="lbl risk">위험</span> — 결제액만 보면 이용이 없는 회원이 상위로 잡힙니다.</td>
+              <td class="a">안건 2 · 분류하기<span class="sub">등급 없는 939명 전수 분류</span></td>
+              <td>분류 축 = 결제액 + <b>거리(주소 98.4%) + 재등록 회차(전수)</b> — 지금 바로 쓸 수 있는 두 축이고, 등급 61명 중 34명이 이미 3회 이상 재등록자로 코어와 겹칩니다. <span class="lbl">첫 걸음</span> — 939명 세 축 집계 후 현행 등급 기준 대입. <span class="lbl risk">위험</span> — 결제액만 보면 이용 없는 회원이 상위로 잡힙니다.</td>
             </tr>
             <tr>
               <td class="a">안건 3 · 채우기<span class="sub">빈자리를 등급 기준으로 배정</span></td>
-              <td>빈자리는 LOSS 로만 생깁니다(2025년 333명 · 2026년 191명). 이번 달 문의 48건 대비 등록 7명 — 지금은 사실상 선착순입니다. 한 자리를 Member 평균(960만/년)급으로 채울 때마다 그만큼 자리 단가가 올라갑니다.<br><span class="lbl">첫 걸음</span> — 문의 48건에 예상 결제 규모를 적고, 대기 순번을 금액 기준으로 재편. <span class="lbl risk">위험</span> — 순번 기준이 밖으로 드러나면 공정성 시비 — 내부 기준으로만 운용합니다.</td>
+              <td>빈자리는 LOSS 로만 생기고, 지금은 사실상 선착순입니다. Member 평균(960만/년)급으로 채울 때마다 자리 단가가 올라갑니다. <span class="lbl">첫 걸음</span> — 문의 48건에 예상 결제 규모 기입, 대기 순번 금액 재편. <span class="lbl risk">위험</span> — 기준 노출 시 공정성 시비 — 내부 운용.</td>
             </tr>
           </tbody>
         </table>
-        <p class="jdg"><b>등급 체계 판정</b> — 2025년 결제액 한 축으로는 '오래 다니며 적게 쓴 회원'과 '한 번 크게 쓰고 안 오는 회원'이 구별되지 않습니다. 재등록 회차는 전수 데이터가 있어 지금 바로 둘째 축으로 쓸 수 있습니다(1회 309명 → 2회 220명, 최다 LOSS 지점). 방문 빈도는 기입률 15.1%라 지금은 쓸 수 없습니다.</p>
         <div class="decide"><b>회장님 결정 1건</b> — "빈자리는 선착순이 아니라 등급 기준(예상 결제액 순)으로 채운다"를 정해 주시면, 대기 명단이 금액순으로 재편되고 LOSS 로 자리가 날 때마다 상위 등급 후보부터 배정됩니다.</div>
         <p class="note">비고 — 2026년 10월 가격 인상 일정은 건드리지 않았고, 세 안건 모두 모집·할인·프로모션 대외 표기 없이 내부 운영만으로 굴러갑니다.</p>
       </div>
@@ -355,12 +382,12 @@
           <div class="it">
             <div class="n">01<em>· 승인 주체: GM</em></div>
             <div class="q">종료 사유 기록을 「미등록사유」 칸 하나로 일원화하는 것을 승인해 주십시오.</div>
-            <div class="d">682/697명(97.8%)이 이미 기입돼 있습니다 — 정본 칸을 확정해 "기입 0%" 오독의 재발을 막습니다 (각주2).</div>
+            <div class="d">682/697명(97.8%) 기입 완료 — 정본 칸 확정으로 "기입 0%" 오독 재발을 막습니다 (각주2).</div>
           </div>
           <div class="it">
             <div class="n">02<em>· 승인 주체: 회장님</em></div>
             <div class="q">"사랑받는 회원"은 이미 쓰고 있는 등급표를 정본으로 삼는 것을 승인해 주십시오.</div>
-            <div class="d">61명 중 59명을 전화 조인으로 자동 판별했습니다(유효 55 · LOSS 4) — 승인되면 매일 자동으로 잡히고, 등급 없는 939명은 안건 2로 분류합니다.</div>
+            <div class="d">59/61명 전화 조인 자동 판별(유효 55 · LOSS 4) — 승인 시 매일 자동 집계, 939명은 안건 2로 분류합니다.</div>
           </div>
         </div>
       </div>
@@ -370,9 +397,9 @@
 
   <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>각주1 · 산출 근거</b> — LOSS 697명 = 현행 스냅샷 191명 + 보관 506명 전수 직접 집계(2026-08-15) · LOSS일자 기입 697/697(100%). 회원 수·만료·기입률은 유효회원 1,000명 전수 · 「문의 대비 등록 14.6%」는 추정치(등록자가 같은 달 문의자라는 보장 없음). <b>2024년(173명)은 개업·대량 유치 구간(등록 755명)이라 전수 여부를 확인할 수 없어 추세에서 제외했습니다.</b> 2026년 등록 223명에는 9월 선등록 1명(재등록)이 포함돼 월별 그래프(1~8월 222명)와 1명 차이가 납니다. 회전율 33%의 분모는 현재 유효 1,000명(연중 평균 아님 · 근사값).</div>
-    <div><b>각주2 · 종료 사유 정본</b> — 정본 = <b>미등록사유 칸(682/697 · 97.8%)</b> · 2026-07-09 신설된 별도 「종료사유」 칸은 미사용(0건 · 칸 신설 착오, 2026-07-20 GM 확정 — 이 칸을 보면 "사유 0%"로 오독). 「그 외 9종」 = 금액·프로모션 26 · 건강문제 31 · 타센터등록 10 · 주차·시설 9 · 운영 정책 9 · 바쁜 일정 8 · 고민중 4 · 환불 4 · 기타 7.</div>
-    <div><b>각주3 · 등급표</b> — 61명 = <b>2025년 1년치 결제액 기준</b>(GM 확정 2026-08-15) · 2026년 매출 목표(72억)와는 기간이 달라 비교하지 않습니다 · 원장 대조 = 전화번호 조인(유효 55 + LOSS 4 + 미매칭 2). 미매칭 2명(결제액 합 19,319,840원) 중 1명은 원장에 이름·전화가 모두 없고, 1명은 가족 공유 전화라 본인 행이 없습니다. 회원 원장에는 결제액 칸이 없어 LOSS 전체의 매출 환산액은 지금 계산할 수 없습니다 — 금액이 확인되는 것은 등급 61명(2025년 결제액)뿐이며, 평균을 곱한 추정은 하지 않았습니다. <b>차기</b> — 등급 칸 원장 연결 + '우리 몫' 379명 대응 설계 후 본 문서 갱신 · 9월 회장님 보고.</div>
+    <div><b>각주1 · 산출 근거</b> — LOSS 697명 = 현행 191 + 보관 506 전수 집계(2026-08-15) · LOSS일자 기입 100% · 「문의 대비 등록 14.6%」는 추정치. <b>2024년(173명)은 개업·대량 유치 구간(등록 755명)이라 추세에서 제외.</b> 2026년 등록 223명에는 9월 선등록 1명이 포함돼 월별 그래프(222명)와 1명 차이. 회전율 33% 분모 = 현재 유효 1,000명(연중 평균 아님·근사값). <b>교차표</b> — 가까움 = 주소에 용산구·성동구(743+105) · 그 밖 152 = 중구 29·서초 22·강남 13·마포 10·동작 6·기타/미상 72 · 회차 = 1회 316 · 2회 221 · 3회 이상 460(46.0%) · 혼합 표기('단기 6' 등)는 선행 숫자로 집계.</div>
+    <div><b>각주2 · 종료 사유 정본</b> — 정본 = <b>미등록사유 칸(682/697 · 97.8%)</b> · 2026-07-09 신설된 별도 「종료사유」 칸은 미사용(0건 · 칸 신설 착오, 2026-07-20 GM 확정 — 이 칸을 보면 "사유 0%"로 오독). 「그 외 313명」 = 양도/강습 전환 75 · 가망(재등록 여지) 73 · 단기 이용 57 · 금액·프로모션 26 · 건강문제 31 · 타센터등록 10 · 주차·시설 9 · 운영 정책 9 · 바쁜 일정 8 · 고민중 4 · 환불 4 · 기타 7 · 공란 15 (가망은 우리 몫 · 양도·단기는 전환·구조로 분류).</div>
+    <div><b>각주3 · 등급표</b> — 61명 = <b>2025년 1년치 결제액 기준</b>(GM 확정 2026-08-15) · 구성 = FAN VIP 4(77,937,150) · VIP 11(143,497,950) · Member 46(441,432,796) · 2026년 매출 목표(72억)와는 기간이 달라 비교하지 않습니다 · 원장 대조 = 전화번호 조인(유효 55 + LOSS 4 + 미매칭 2 · 합 19,319,840원 — 전화 없음 1 · 가족 공유 전화 1). 원장에 결제액 칸이 없어 LOSS 전체의 매출 환산은 지금 계산할 수 없습니다 — 금액 확인은 등급 61명뿐이며 평균을 곱한 추정은 하지 않았습니다. <b>차기</b> — 등급 칸 원장 연결 + '우리 몫' 379명 대응 설계 · 9월 회장님 보고.</div>
   </div>
 
 </div>
