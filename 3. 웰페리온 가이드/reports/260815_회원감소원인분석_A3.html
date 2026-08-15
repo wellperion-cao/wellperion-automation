@@ -50,21 +50,21 @@
 
   /* 【상단】 핵심 3줄 — 문서에서 가장 크게 */
   .hero{ display:flex; gap:12px; margin-top:9px; }
-  .hc{ flex:1; border:1.5px solid var(--line); border-top:5px solid var(--navy); padding:6px 16px 5px; }
+  .hc{ flex:1; border:1.5px solid var(--line); border-top:5px solid var(--navy); padding:5px 15px 4px; }
   .hc.love{ border-top-color:var(--good); background:#F4FAF7; }
   .hc.leave{ border-top-color:var(--bad); background:#FBF5F5; }
   .hc.flat{ border-top-color:var(--navy); background:var(--navy-bg); }
-  .hc .lb{ font-size:16.5px; font-weight:700; letter-spacing:-.4px; line-height:1.25; }
+  .hc .lb{ font-size:15.5px; font-weight:700; letter-spacing:-.4px; line-height:1.25; }
   .hc.love .lb{ color:var(--good); }
   .hc.leave .lb{ color:var(--bad); }
   .hc.flat .lb{ color:var(--navy); }
-  .hc .big{ font-size:36px; font-weight:900; letter-spacing:-1.5px; line-height:1.08; margin:2px 0 3px;
+  .hc .big{ font-size:33px; font-weight:900; letter-spacing:-1.5px; line-height:1.08; margin:2px 0 3px;
     font-variant-numeric:tabular-nums; }
   .hc.love .big{ color:var(--good); }
   .hc.leave .big{ color:var(--bad); }
-  .hc.flat .big{ color:var(--navy); font-size:30px; letter-spacing:-1px; padding-top:5px; }
+  .hc.flat .big{ color:var(--navy); font-size:28px; letter-spacing:-1px; padding-top:5px; }
   .hc .big small{ font-size:20px; font-weight:700; letter-spacing:-.5px; }
-  .hc .ex{ font-size:13px; line-height:1.38; color:#2A343D; }
+  .hc .ex{ font-size:12.6px; line-height:1.34; color:#2A343D; }
   .hc .ex b{ font-weight:700; }
   .hc.leave .ex b{ color:var(--bad); }
   .hc.flat .ex b{ color:var(--bad); }
@@ -73,9 +73,9 @@
   .band{ margin-top:7px; }
   .band .tt{ font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:2px; }
   .band .tt span{ font-weight:400; color:#48525B; font-size:11.8px; }
-  .strip{ display:flex; height:25px; border-radius:3px; overflow:hidden; }
+  .strip{ display:flex; height:22px; border-radius:3px; overflow:hidden; }
   .strip i{ display:flex; align-items:center; justify-content:center; height:100%;
-    font-style:normal; font-size:12.8px; font-weight:700; color:#fff; white-space:nowrap; }
+    font-style:normal; font-size:12.3px; font-weight:700; color:#fff; white-space:nowrap; }
   .strip i.s1{ background:var(--good); }
   .strip i.s2{ background:#A63B3B; }
   .strip i.s3{ background:#7E93A8; }
@@ -83,11 +83,11 @@
 
   /* 【중단】 좌우 2단 */
   .body2{ margin-top:7px; display:flex; gap:14px; flex:1; min-height:0; }
-  .colL{ width:57%; flex:none; display:flex; flex-direction:column; gap:5px; }
+  .colL{ width:57%; flex:none; display:flex; flex-direction:column; gap:4px; }
   .colR{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
 
   /* 구체 사항 박스 */
-  .sec{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:4px 13px 4px; }
+  .sec{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:3px 12px 3px; }
   .sec h3{ font-size:14.3px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:3px; }
   .sec h3 .no{ display:inline-block; background:var(--navy); color:#fff; font-size:12.5px; padding:1px 8px;
     border-radius:2px; margin-right:7px; vertical-align:1px; }
@@ -95,7 +95,7 @@
   .sec.r{ border-top-color:var(--bad); } .sec.r h3{ color:var(--bad); } .sec.r h3 .no{ background:var(--bad); }
   .sec p{ font-size:13px; line-height:1.34; color:#22303B; margin-top:2px; }
   .sec p b{ font-weight:700; }
-  .key{ background:#FBEDED; border-left:4px solid var(--bad); padding:3px 11px; margin-top:4px;
+  .key{ background:#FBEDED; border-left:4px solid var(--bad); padding:2px 11px; margin-top:3px;
     font-size:13.2px; font-weight:700; line-height:1.38; color:var(--bad); }
   .key span{ font-weight:500; color:#6B2020; }
 
@@ -109,10 +109,10 @@
   .xt td.tot{ font-weight:700; background:#F0F3F7; }
 
   /* 월별 그래프 */
-  .chart{ display:flex; gap:18px; margin-top:2px; }
+  .chart{ display:flex; gap:18px; margin-top:0; }
   .yr{ flex:12; }
   .yr.y26{ flex:8; }
-  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:44px; }
+  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:43px; }
   .m{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
   .m b{ font-size:10.5px; font-weight:700; color:#3C464F; margin-bottom:1px; font-variant-numeric:tabular-nums; letter-spacing:-.3px; }
   .m .duo{ display:flex; align-items:flex-end; gap:1px; width:100%; }
@@ -124,36 +124,36 @@
   .m s{ text-decoration:none; font-size:10.5px; color:#5C666F; margin-top:1px; line-height:1.1; }
   .m.neg b{ color:var(--bad); }
   .m.neg s{ background:var(--bad); color:#fff; width:100%; text-align:center; border-radius:2px; font-weight:700; }
-  .legend{ margin-top:2px; font-size:11.5px; color:#3C464F; line-height:1.3; }
+  .legend{ margin-top:1px; font-size:11.2px; color:#3C464F; line-height:1.3; }
   .legend .sw{ display:inline-block; width:9px; height:9px; border-radius:2px; vertical-align:baseline; margin:0 3px 0 8px; }
   .legend .sw:first-child{ margin-left:0; }
   .legend .neg-sw{ background:var(--bad); }
   .yr .cap{ text-align:center; font-size:11.8px; font-weight:700; color:var(--navy); border-top:1.5px solid var(--navy);
-    margin-top:2px; padding-top:1px; }
+    margin-top:1px; padding-top:0; }
   .yr .cap span{ font-weight:400; color:#3C464F; }
 
   /* 사유 구성 스택 */
   .stack{ display:flex; height:11px; border-radius:2px; overflow:hidden; margin-top:4px; }
   .stack i{ display:block; height:100%; }
-  .chips{ font-size:12.3px; line-height:1.4; color:#3C464F; margin-top:2px; }
+  .chips{ font-size:12.2px; line-height:1.36; color:#3C464F; margin-top:2px; }
   .chips b{ font-weight:700; }
   .dot{ display:inline-block; width:8px; height:8px; border-radius:2px; margin:0 3px 0 9px; vertical-align:baseline; }
   .dot:first-child{ margin-left:0; }
   .c-us{ background:var(--bad); } .c-na{ background:#8A9099; } .c-tr{ background:#B9C6D4; } .c-et{ background:#E3E7EB; }
 
   /* 우측 — 안건 */
-  .box{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:6px 13px 6px; }
-  .box h3{ font-size:14px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:5px; }
+  .box{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:5px 12px 5px; }
+  .box h3{ font-size:13.8px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:4px; }
   .agenda .concl{ background:var(--navy-bg); border-left:4px solid var(--navy); color:var(--navy);
-    font-weight:700; font-size:13.5px; padding:4px 10px; margin-bottom:6px; line-height:1.35; }
-  .agenda p.prob{ font-size:13.1px; line-height:1.42; margin-bottom:6px; }
+    font-weight:700; font-size:13px; padding:3px 10px; margin-bottom:4px; line-height:1.35; }
+  .agenda p.prob{ font-size:12.8px; line-height:1.36; margin-bottom:4px; }
   .agenda p.prob b{ color:var(--bad); }
-  table.ag{ width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:7px; }
-  table.ag th, table.ag td{ border:1px solid var(--line); padding:4px 10px; font-size:13.1px; line-height:1.38; vertical-align:top; }
+  table.ag{ width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:5px; }
+  table.ag th, table.ag td{ border:1px solid var(--line); padding:3px 9px; font-size:12.8px; line-height:1.34; vertical-align:top; }
   table.ag td.a{ background:#F6F8FA; font-weight:700; }
   table.ag td.a .sub{ display:block; font-weight:500; font-size:11.8px; color:#3C464F; margin-top:2px; line-height:1.3; }
   table.ag .lbl{ font-weight:700; color:var(--navy); }
-  .agenda .decide{ background:var(--navy); color:#fff; font-size:13.3px; line-height:1.42; padding:7px 12px; }
+  .agenda .decide{ background:var(--navy); color:#fff; font-size:12.8px; line-height:1.38; padding:5px 11px; }
   .agenda .decide b{ color:#FFD9A0; }
 
   /* 결정 요청 */
@@ -163,29 +163,45 @@
   .ask .lb span{ font-size:10px; letter-spacing:3px; opacity:.85; }
   .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:17px; letter-spacing:-.5px; }
   .ask .items{ flex:1; display:flex; }
-  .ask .it{ flex:1; padding:6px 13px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it{ flex:1; padding:5px 12px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
   .ask .n em{ font-style:normal; opacity:.95; letter-spacing:0; margin-left:8px; }
   .ask .q{ font-size:13.8px; font-weight:700; line-height:1.32; margin-top:2px; letter-spacing:-.4px; }
-  .ask .d{ font-size:11.8px; line-height:1.4; opacity:.88; margin-top:3px; }
+  .ask .d{ font-size:11.5px; line-height:1.36; opacity:.88; margin-top:3px; }
 
   /* 【하단 마무리】 꼭 챙길 지표 */
-  .kpi{ margin-top:7px; border:1.5px solid var(--navy); border-top:5px solid var(--navy); padding:6px 14px 6px; background:#FBFCFE; }
-  .kpi h3{ font-size:15px; font-weight:700; color:var(--navy); letter-spacing:-.4px; margin-bottom:4px; }
+  .kpi{ margin-top:5px; border:1.5px solid var(--navy); border-top:5px solid var(--navy); padding:5px 14px 5px; background:#FBFCFE; }
+  .kpi h3{ font-size:14.2px; font-weight:700; color:var(--navy); letter-spacing:-.4px; margin-bottom:3px; }
   table.kt{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  table.kt th, table.kt td{ border:1px solid var(--line); padding:2px 11px; font-size:13px; line-height:1.32; }
+  table.kt th, table.kt td{ border:1px solid var(--line); padding:1px 10px; font-size:12.8px; line-height:1.3; }
   table.kt thead th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; text-align:left; }
   table.kt td.k{ background:#F6F8FA; font-weight:700; }
   table.kt td.v{ font-variant-numeric:tabular-nums; font-weight:700; }
   table.kt td.v .est{ font-weight:400; color:#5C666F; font-size:11.8px; }
-  .kpi .last{ margin-top:4px; background:var(--navy-bg); border-left:4px solid var(--navy);
-    padding:3px 11px; font-size:13.3px; font-weight:700; color:var(--navy); line-height:1.38; }
-  .kpi .last span{ font-weight:500; color:#3C464F; font-size:12.3px; }
+  .tiers{ display:flex; gap:10px; }
+  .tier{ flex:1; }
+  .tier.t1{ flex:1.25; }
+  .tier .th{ font-size:12.8px; font-weight:700; color:#fff; padding:2px 10px; letter-spacing:-.2px; }
+  .tier.t1 .th{ background:var(--navy); }
+  .tier.t2 .th{ background:#3D5A78; }
+  .tier.t3 .th{ background:#7E93A8; }
+  .tier .src{ font-size:11.3px; color:#48525B; margin-top:2px; line-height:1.32; }
+  .gbx{ margin-top:5px; display:flex; gap:10px; }
+  .gbx .must{ flex:1.55; border:2px solid var(--bad); background:#FBEDED; padding:4px 12px 5px; }
+  .must .bt{ font-size:13.4px; font-weight:900; color:var(--bad); }
+  .must ol{ margin:1px 0 0 18px; font-size:12.2px; line-height:1.36; color:#4A2020; }
+  .must ol b{ color:var(--bad); }
+  .gbx .open9{ flex:1; border:1px solid var(--line); border-left:4px solid var(--good); background:#F4FAF7;
+    padding:4px 12px; font-size:12.2px; line-height:1.38; color:#22303B; }
+  .open9 b{ color:var(--good); }
+  .closing{ margin-top:4px; background:var(--navy); color:#fff; text-align:center; font-size:13.8px;
+    font-weight:700; padding:4px 10px; letter-spacing:-.3px; line-height:1.4; }
+  .closing b{ color:#FFD9A0; }
 
   /* 각주 */
-  .foot{ margin-top:5px; border-top:1px solid var(--line); padding-top:3px;
-    display:flex; gap:18px; font-size:10.8px; line-height:1.32; color:#48525B; }
+  .foot{ margin-top:4px; border-top:1px solid var(--line); padding-top:3px;
+    display:flex; gap:16px; font-size:10.5px; line-height:1.28; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
 </style>
@@ -283,44 +299,37 @@
         <div class="chart">
           <div class="yr">
             <div class="bars">
-              <div class="m"><b>+34</b><span class="duo"><i class="in" style="height:32px"></i><i class="out" style="height:15px"></i></span><s>1</s></div>
-              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:11px"></i></span><s>2</s></div>
-              <div class="m"><b>+3</b><span class="duo"><i class="in" style="height:14px"></i><i class="out" style="height:12px"></i></span><s>3</s></div>
-              <div class="m neg"><b>−12</b><span class="duo"><i class="in" style="height:12px"></i><i class="out" style="height:18px"></i></span><s>4</s></div>
-              <div class="m"><b>+5</b><span class="duo"><i class="in" style="height:17px"></i><i class="out" style="height:15px"></i></span><s>5</s></div>
-              <div class="m"><b>+8</b><span class="duo"><i class="in" style="height:17px"></i><i class="out" style="height:13px"></i></span><s>6</s></div>
-              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:16px"></i><i class="out" style="height:17px"></i></span><s>7</s></div>
-              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:15px"></i><i class="out" style="height:19px"></i></span><s>8</s></div>
-              <div class="m neg"><b>−1</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:13px"></i></span><s>9</s></div>
-              <div class="m"><b>+26</b><span class="duo"><i class="in" style="height:21px"></i><i class="out" style="height:8px"></i></span><s>10</s></div>
-              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:14px"></i></span><s>11</s></div>
-              <div class="m neg"><b>−3</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:14px"></i></span><s>12</s></div>
+              <div class="m"><b>+34</b><span class="duo"><i class="in" style="height:19px"></i><i class="out" style="height:9px"></i></span><s>1</s></div>
+              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:6px"></i><i class="out" style="height:7px"></i></span><s>2</s></div>
+              <div class="m"><b>+3</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:7px"></i></span><s>3</s></div>
+              <div class="m neg"><b>−12</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:11px"></i></span><s>4</s></div>
+              <div class="m"><b>+5</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:9px"></i></span><s>5</s></div>
+              <div class="m"><b>+8</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:8px"></i></span><s>6</s></div>
+              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:11px"></i></span><s>7</s></div>
+              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:9px"></i><i class="out" style="height:11px"></i></span><s>8</s></div>
+              <div class="m neg"><b>−1</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:8px"></i></span><s>9</s></div>
+              <div class="m"><b>+26</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:5px"></i></span><s>10</s></div>
+              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:6px"></i><i class="out" style="height:8px"></i></span><s>11</s></div>
+              <div class="m neg"><b>−3</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:9px"></i></span><s>12</s></div>
             </div>
             <div class="cap">2025 <span>· 등록 373 − LOSS 333 = <b>+40</b> · 12개월 중 <b>7개월 순감소</b></span></div>
           </div>
           <div class="yr y26">
             <div class="bars">
-              <div class="m"><b>+15</b><span class="duo"><i class="in" style="height:19px"></i><i class="out" style="height:12px"></i></span><s>1</s></div>
-              <div class="m"><b>+14</b><span class="duo"><i class="in" style="height:21px"></i><i class="out" style="height:14px"></i></span><s>2</s></div>
-              <div class="m neg"><b>−6</b><span class="duo"><i class="in" style="height:12px"></i><i class="out" style="height:15px"></i></span><s>3</s></div>
-              <div class="m"><b>+10</b><span class="duo"><i class="in" style="height:15px"></i><i class="out" style="height:10px"></i></span><s>4</s></div>
-              <div class="m"><b>+2</b><span class="duo"><i class="in" style="height:11px"></i><i class="out" style="height:10px"></i></span><s>5</s></div>
-              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:11px"></i><i class="out" style="height:15px"></i></span><s>6</s></div>
-              <div class="m neg"><b>−20</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:17px"></i></span><s>7</s></div>
-              <div class="m part"><b>+24</b><span class="duo"><i class="in" style="height:16px"></i><i class="out" style="height:4px"></i></span><s>8</s></div>
+              <div class="m"><b>+15</b><span class="duo"><i class="in" style="height:11px"></i><i class="out" style="height:7px"></i></span><s>1</s></div>
+              <div class="m"><b>+14</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:8px"></i></span><s>2</s></div>
+              <div class="m neg"><b>−6</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:9px"></i></span><s>3</s></div>
+              <div class="m"><b>+10</b><span class="duo"><i class="in" style="height:9px"></i><i class="out" style="height:6px"></i></span><s>4</s></div>
+              <div class="m"><b>+2</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:6px"></i></span><s>5</s></div>
+              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:9px"></i></span><s>6</s></div>
+              <div class="m neg"><b>−20</b><span class="duo"><i class="in" style="height:4px"></i><i class="out" style="height:10px"></i></span><s>7</s></div>
+              <div class="m part"><b>+24</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:2px"></i></span><s>8</s></div>
             </div>
             <div class="cap">2026 <span>· 등록 223 − LOSS 191 = <b>+32</b> · 8개월 중 <b>3개월 순감소</b></span></div>
           </div>
         </div>
         <div class="legend"><span class="sw" style="background:var(--good)"></span>등록<span class="sw" style="background:#A63B3B"></span>LOSS<span class="sw neg-sw"></span>붉은 달 = 순감소 · 8월은 집계 진행 중(빗금) — 최대 낙폭 <b>2026년 7월 −20명</b> · 연 회전율 <b>33%</b>(해마다 셋 중 하나가 바뀝니다 · 각주1)</div>
-        <div class="stack">
-          <i class="c-us" style="width:54.4%"></i><i class="c-na" style="width:23.5%"></i><i class="c-tr" style="width:18.9%"></i><i class="c-et" style="width:3.2%"></i>
-        </div>
-        <div class="chips">LOSS 697명의 사유 —
-          <span class="dot c-us"></span>우리가 손댈 수 있는 것 <b>379명 · 54.4%</b>
-          <span class="dot c-na"></span>불가항력 <b>164명 · 23.5%</b>
-          <span class="dot c-tr"></span>전환·구조 <b>132명 · 18.9%</b>
-          <span class="dot c-et"></span>공란·기타 <b>22명</b> (각주2)</div>
+        <div class="chips" style="margin-top:2px">LOSS 697명의 사유 — 우리가 손댈 수 있는 것 <b>379명 · 54.4%</b> · 불가항력 <b>164명 · 23.5%</b> · 전환·구조 <b>132명 · 18.9%</b> · 공란·기타 <b>22명</b> (각주2)</div>
         <p style="margin-top:2px">등급 61명 중 이미 LOSS <b>4명</b>(전원 Member · 3,837만원) — <b style="color:var(--good)">FAN VIP·VIP는 LOSS 0명</b>, 지켜야 할 선입니다.</p>
       </div>
 
@@ -372,23 +381,60 @@
     </div>
   </div>
 
-  <!-- 【하단 마무리】 회원관리에서 꼭 챙겨야 할 지표 -->
+  <!-- 【하단 마무리】 회원관리에서 꼭 챙겨야 할 지표 — 3층 체계 -->
   <div class="kpi">
-    <h3>회원관리에서 꼭 챙겨야 할 지표 — 이것만 보시면 됩니다</h3>
-    <table class="kt">
-      <colgroup><col style="width:300px"><col style="width:420px"><col></colgroup>
-      <thead><tr><th>지표</th><th>지금 값</th><th>왜 챙기나</th></tr></thead>
-      <tbody>
-        <tr><td class="k">월별 순증감 (신규 − LOSS)</td><td class="v">2026년 +32명</td><td>회원이 느는지 주는지 보는 단 하나의 숫자입니다.</td></tr>
-        <tr><td class="k">사랑하는 회원 비율</td><td class="v">14.9% (149명)</td><td>요금·정책이 바뀌어도 남을 기반입니다.</td></tr>
-        <tr><td class="k">떠날 회원 비율</td><td class="v">19.2% (192명)</td><td>다음 LOSS는 여기서 나옵니다.</td></tr>
-        <tr><td class="k">재등록 문턱 통과율 (1회 → 2회)</td><td class="v">316명 → 221명</td><td>가장 크게 새는 자리입니다.</td></tr>
-        <tr><td class="k">LOSS 중 '우리 몫' 비율</td><td class="v">54.4% (379명)</td><td>막을 수 있었던 LOSS의 몫입니다.</td></tr>
-        <tr><td class="k">데이터 기입률</td><td class="v">주소 98.4% · 회차 전수 · 출석 76.9% · 사유 97.8%</td><td><b>이 칸이 비면 위 지표가 조용히 거짓말을 시작합니다.</b></td></tr>
-      </tbody>
-    </table>
-    <div class="last">출석 시트가 계속 들어오는지만 확인하면 됩니다. 원장의 「이용일수」 칸은 채우지 않아도 됩니다.
-      <span>(현재 출석 시트는 2025년 10월까지 · 이후분 공백 · 각주4)</span></div>
+    <h3>회원관리에서 꼭 챙겨야 할 지표 — 시트가 아니라 정의에 묶었습니다 (9월 1일 원천 교체 뒤에도 그대로 잽니다)</h3>
+    <div class="tiers">
+      <div class="tier t1">
+        <div class="th">층 1 · 회장님이 보시는 것 — 분기·반기</div>
+        <table class="kt">
+          <colgroup><col style="width:47%"><col style="width:31%"><col></colgroup>
+          <tbody>
+            <tr><td class="k">연 회전율 (연 LOSS ÷ 유효회원)</td><td class="v">33%</td><td>정하실 값</td></tr>
+            <tr><td class="k">연 순증감 (신규 − LOSS)</td><td class="v">+582 → +40 → +32</td><td><b>0 이상 유지</b></td></tr>
+            <tr><td class="k">사랑하는 회원 비율</td><td class="v">14.9% (149명)</td><td>상향 · 정하실 값</td></tr>
+            <tr><td class="k">LOSS 중 우리 몫</td><td class="v">54.4% (379/697)</td><td>하향 · 정하실 값</td></tr>
+          </tbody>
+        </table>
+        <div class="src">원천 전환(9/1) — 회원 원장 → 브로제이 회원DB · 출석 시트 → 입장기록 · 사유 칸 → 브로제이+상담기록</div>
+      </div>
+      <div class="tier t2">
+        <div class="th">층 2 · GM이 보는 것 — 매월</div>
+        <table class="kt">
+          <colgroup><col style="width:41%"><col style="width:37%"><col></colgroup>
+          <tbody>
+            <tr><td class="k">떠날 회원 비율</td><td class="v">19.2% (192명)</td><td>정하실 값</td></tr>
+            <tr><td class="k">재등록 1→2회 통과율</td><td class="v">69.9% (316→221명)</td><td>추이 상향</td></tr>
+            <tr><td class="k">등급 61명 유지</td><td class="v">LOSS 4명 · 만료 임박 8명</td><td><b>등급 LOSS 0</b></td></tr>
+            <tr><td class="k">1인당 월 방문 횟수</td><td class="v">지금은 못 잽니다</td><td>9월부터 측정</td></tr>
+          </tbody>
+        </table>
+        <div class="src">출석 시트가 2025년 10월까지라 방문 지표는 공백 — 원장 「이용일수」 칸은 채우지 않아도 됩니다(각주4).</div>
+      </div>
+      <div class="tier t3">
+        <div class="th">층 3 · 실무가 챙기는 것 — 매주</div>
+        <table class="kt">
+          <colgroup><col style="width:56%"><col></colgroup>
+          <tbody>
+            <tr><td class="k">30일 내 만료 저출석 회원 접촉</td><td class="v">23명</td></tr>
+            <tr><td class="k">30일 내 만료 등급 회원 접촉</td><td class="v">8명</td></tr>
+            <tr><td class="k">데이터 기입률 (주소·출석·사유)</td><td class="v">98.4% / 76.9% / 97.8%</td></tr>
+          </tbody>
+        </table>
+        <div class="src">기입률이 비면 위 두 층의 지표가 조용히 틀리기 시작합니다.</div>
+      </div>
+    </div>
+    <div class="gbx">
+      <div class="must">
+        <div class="bt">★ 9월 1일 브로제이 전환 전 반드시 확보 — 8월 31일까지</div>
+        <ol>
+          <li><b>대양CIS 전량 스냅샷</b>(회원 원장·출석·결제 전체) — 안 떠 두면 2026년 이전 추세를 영영 못 그립니다.</li>
+          <li><b>대양CIS ↔ 브로제이 회원 번호 대응표</b> — 같은 사람을 이어 봐야 재등록·LOSS 추적이 삽니다.</li>
+          <li><b>등록회차·LOSS 사유 칸이 브로제이에 있는지 확인</b> — 없으면 이관 요청.</li>
+        </ol>
+      </div>
+      <div class="open9"><b>9월부터 새로 열리는 것</b> — 입장객이 자동으로 쌓이면 1인당 월 방문·떠날 회원 감지가 실시간이 되고, 회원별 결제 기록이 생기면 <b>「LOSS 1명 = 매출 얼마」를 처음으로 잽니다</b> — 10월 가격 인상 판단의 근거가 됩니다.</div>
+    </div>
   </div>
 
   <!-- 각주 -->
@@ -398,6 +444,9 @@
     <div><b>각주3 · 등급표</b> — 61명 = 2025년 1년치 결제액 기준(GM 확정 2026-08-15) · FAN VIP 4(7,794만) · VIP 11(1억 4,350만) · Member 46(4억 4,143만) · 합 6.63억. 원장 대조 = 전화 조인 59/61(유효 55 · LOSS 4 · 미매칭 2). 원장에 결제액 칸이 없어 LOSS 전체 매출 환산은 하지 않았습니다.</div>
     <div><b>각주4 · 출석 축(GM 제공 출석 시트)</b> — 2025-01~10 · 10개월 누적, 원장과 전화 우선(없으면 유일 이름) 조인 = 769명(76.9%). 미조인 231명 중 191명은 2025-11 이후 등록 신규(2025년 출석부에 있을 수 없음) — 이 231명이 띠의 「출석 자료 없음」입니다. 상 = 194회 이상(3사분위 · 주 4~5회) · 하 = 62회 미만(1사분위 · 주 1회대) · 중앙값 126회.</div>
   </div>
+
+  <!-- 맺음 -->
+  <div class="closing">LOSS의 절반(54.4%)은 우리가 막을 수 있었던 것이었으니, 회원관리의 전부는 새로 채우는 일이 아니라 <b>지금 계신 1,000명을 지키는 일</b>입니다.</div>
 
 </div>
 
