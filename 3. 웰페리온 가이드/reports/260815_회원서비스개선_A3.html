@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>회원 서비스 개선 — 착수 결정 요청 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>회원 서비스 개선 — 편의 설비·집중 서비스·프로세스 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">회원 서비스 개선 — 편의 설비 · 집중 서비스 · 프로세스</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 (AI CEO 웰리)</b><br>
+      작성일 <b>2026. 08. 15.</b> · 문서번호 <b>WP-GM-260815-23</b><br>
+      진척 <b>0% (계획)</b> · 담당 <b>미정</b> · 측정 <b>원 지시 3건 중 완료 건수</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">담당(부서·책임자)을 지정해 주십시오.</div>
+        <div class="d">카드 원문 그대로 「담당 — 미정」입니다. 담당이 없어 실측·견적 수집이 시작되지 않았습니다. 설비 구매 건이라 견적은 결제(💰) GM 결재로 돌아옵니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">착수 순서를 정해 주십시오 — 10건 중 무엇부터.</div>
+        <div class="d">웰리 권고는 안마기(유일한 매출 항목·10분당 2,000원)부터 3사 견적 수집입니다. 순서가 정해지면 건별 비교 A3 로 결재 올립니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    진척 0% · 담당 미정 — GM 요청(08-12) 후 3일째 착수 기록 없음
+    <span>&nbsp;/ 이 문서는 업체 비교가 아니라 <b>착수 결정용 현황 정리</b>입니다. 금액·업체는 전부 미확인이라 표에 없습니다 — 지어내지 않았습니다.</span>
+  </div>
+
+  <!-- ③ 비교표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:280px"><col style="width:150px"><col><col><col style="width:270px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k">항목</th>
+        <th>출처</th>
+        <th>지금 아는 것 (사실)</th>
+        <th>아직 모르는 것</th>
+        <th>다음 한 걸음</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">회 원 편 의 설 비 — 원 지 시 (GM 요청 08-12)</td></tr>
+      <tr><td class="k">① 남 사우나 안마기 2대</td><td class="ctr">GM 08-12</td><td>카드결제 · 10분당 2,000원 — <b>유일한 매출 항목</b></td><td>기기 업체 · 금액 · 설치 위치 전부 미확인</td><td>현장 실측 → 3사 견적</td></tr>
+      <tr><td class="k">② 공용 휴게공간 안마기 2대</td><td class="ctr">대표님 아이디어</td><td>추가 <b>검토</b> 단계 (확정 아님)</td><td>추가 여부 자체가 미결</td><td>①과 묶어 견적 — 추가분은 옵션 표기</td></tr>
+      <tr><td class="k">③ 입구 신발장 + 의자</td><td class="ctr">GM 08-12</td><td>냄새 제거 고급형 신발장 구매 + 의자 배치</td><td>제품 · 금액 미확인</td><td>회장님 보고건 d2 와 같은 자리 — 묶어 견적</td></tr>
+      <tr><td class="k">④ 사우나 공기청정기</td><td class="ctr">GM 08-12</td><td>현재 소형 → 고급형 교체</td><td>모델 · 금액 미확인</td><td>견적</td></tr>
+      <tr class="grp"><td colspan="5">회 장 님 보 고 건 흡 수 (GM 요청 08-14 · 목록 원본은 회장님 지시사항 페이지 유지)</td></tr>
+      <tr><td class="k">⑤ 파우더룸 소독기 증설 (d1)</td><td class="ctr">회장님 보고건</td><td>증설 지시만 확인</td><td>수량 · 모델 미확인</td><td>현황 파악 후 견적</td></tr>
+      <tr><td class="k">⑥ 사우나 입구 정비 (d2)</td><td class="ctr">회장님 보고건</td><td>신발장·의자 고급화 — ③과 같은 건</td><td class="ctr">—</td><td>③에 합쳐 진행</td></tr>
+      <tr><td class="k">⑦ 파우더룸 헤어드라이기 교체 (d3)</td><td class="ctr">회장님 보고건</td><td>교체 지시만 확인</td><td>수량 · 모델 미확인</td><td>⑤와 묶어 파우더룸 일괄 견적</td></tr>
+      <tr><td class="k">⑧ 스팀다리미 설치 · 옷걸이 공간 (d7)</td><td class="ctr">회장님 보고건</td><td>파우더룸·탈의실 설치 + 공간 배치</td><td>위치 · 수량 미확인</td><td>⑤⑦과 묶어 진행</td></tr>
+      <tr><td class="k">⑨ 호텔 사우나 벤치마킹 (d22)</td><td class="ctr">회장님 보고건</td><td>시설·관리자 운영 벤치마킹</td><td>대상 호텔 · 방문 일정 미정</td><td>대상 선정안 보고</td></tr>
+      <tr class="grp"><td colspan="5">프 로 세 스 (GM 요청 08-14 합병)</td></tr>
+      <tr><td class="k">⑩ 집중할 서비스·프로세스 정리</td><td class="ctr">GM 08-14</td><td>방향 = 회원이 해지까지 가지 않게 만드는 쪽</td><td>범위 · 산출물 형태 미정</td><td>GM 이 범위 정하면 착수</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">담당 미정 — 지시(08-12) 후 3일째 착수 기록이 없다. 담당 없이는 어떤 건도 움직이지 않는다.</li>
+        <li class="r2">전 항목 금액 미확인 — 총 예산 규모를 아직 모른다. 견적이 모여야 잡힌다.</li>
+        <li class="r2">안마기는 유료 운영(10분당 2,000원) — 정산·유지관리 방식이 정해져 있지 않다.</li>
+        <li class="r2">파우더룸 3건(⑤⑦⑧)이 따로 놀면 공사·발주가 중복된다 — 일괄 처리 필요.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">담당 지정 (결정 01) — 이후 전부 표준 절차로 돈다</li>
+        <li class="n">현장 실측 — 사우나·입구·파우더룸 치수·전원 확인</li>
+        <li class="n">우선 건 3사 견적 수집 (결정 02 순서대로)</li>
+        <li class="n">건별 비교 A3 작성 → GM 결재 (💰 결제 트리거)</li>
+        <li class="n">벤치마킹 대상 호텔 선정안 보고 (⑨)</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li>정할 것은 <b>둘뿐이다 — 담당과 순서.</b> 정해지면 나머지는 표준 절차(실측→3사 견적→비교 A3→결재)다.</li>
+        <li>첫 착수는 <b>안마기 권고</b> — 10건 중 유일하게 매출이 붙는 항목이라 회수 구조를 먼저 검증할 수 있다.</li>
+        <li>같은 공간 건은 <b>묶어서 한 번에</b> — 입구(③=d2) · 파우더룸(⑤⑦⑧) 각각 일괄 발주가 싸고 빠르다.</li>
+        <li>⑩(프로세스 정리)은 설비 건과 성격이 다르다 — 범위만 정해 주시면 별도 한 장으로 올린다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>왜 표가 「아는 것 / 모르는 것」인가</b> — 진척 0% 건이라 비교할 견적·수치가 없다. 없는 계획을 지어내는 대신, 사실과 빈칸을 갈라 <b>무엇을 정해야 움직이는지</b>만 남겼다. 금액 언급이 없는 칸은 전부 「미확인」이다.</div>
+    <div><b>측정 기준</b> — 카드 metric = 원 지시 3건(안마기·신발장·공기청정기) 중 완료 건수. 흡수 5건(d1·d2·d3·d7·d22)과 프로세스 1건은 체크리스트로 관리 — 회장님 보고 목록 원본은 회장님 지시사항 페이지에 그대로 있다.</div>
+    <div><b>출처</b> — status/monthly_ops_plan.json 목표 2026-08-34 target·progress_note(GM 요청 08-12 · 흡수·합병 08-14). <b>차기 보고</b> — 담당 지정·견적 회수 후 건별 비교 A3 로 갱신.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260815_회원서비스개선_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
