@@ -266,6 +266,19 @@ a { color:var(--accent); text-decoration:none; }
 .mbtns .confirm{background:var(--green);color:#fff;}
 .mbtns .confirm:disabled{opacity:.45;cursor:not-allowed;}
 
+/* ── 📖 가이드 모달 콘텐츠 (GM 지시 2026-08-15 · 정적 안내, 기존 .modal 그대로 재사용) ── */
+.guide-body{font-size:13.5px;line-height:1.7;color:var(--text);}
+.guide-body h3{font-size:14px;font-weight:800;color:var(--accent);margin:18px 0 8px;}
+.guide-body h3:first-child{margin-top:0;}
+.guide-body ol{margin:0 0 4px 18px;}
+.guide-body ol li{margin-bottom:4px;}
+.guide-body table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+.guide-body th,.guide-body td{border:1px solid var(--border);padding:7px 9px;text-align:left;vertical-align:top;}
+.guide-body th{background:var(--paper);color:var(--dim);font-weight:700;}
+.guide-body td{background:var(--bg);}
+.guide-body p{margin-bottom:4px;}
+.guide-body .guide-em{color:var(--accent);font-weight:700;}
+
 .toast{position:fixed;top:22px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--green);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;transition:transform .3s;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90%;text-align:center;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast.err{background:var(--red);}
@@ -324,6 +337,9 @@ a { color:var(--accent); text-decoration:none; }
       <div class="header-meta">COO 관할 · 8종 접수 통합 칸반(습득물·휴회 포함) · GAS 실시간 (단일 SSOT)</div>
     </div>
     <div class="header-btns">
+      <!-- 📖 가이드 — 실무진이 오늘 이 화면을 처음 쓴다(GM 지시 2026-08-15). 쓰는 법이 어디에도
+           없어 맨 앞에 둔다. 정적 안내 모달(서버 조회 없음) — 기존 .modal-back/.modal 그대로 재사용. -->
+      <button onclick="openGuide()">📖 가이드</button>
       <!-- 실무진 피드백 — 멤버십 회원관리 화면과 같은 창구·같은 항목·같은 시트(GM 지시 2026-07-27).
            폼 사본을 만들지 않고 cpo/member/실무진피드백.html 을 그대로 iframe 으로 연다(사본 0 = 어긋남 0).
            ?screen=종합접수처 로 업무를 미리 골라 보내 담당을 바로 가릴 수 있게 한다. -->
@@ -385,6 +401,50 @@ a { color:var(--accent); text-decoration:none; }
 
 <!-- 🍞 토스트 -->
 <div class="toast" id="toast"></div>
+
+<!-- 📖 가이드 모달 — 종합접수처 사용법(GM 지시 2026-08-15). 정적 텍스트만, 서버 조회 없음. -->
+<div class="modal-back" id="guideBack">
+  <div class="modal" style="max-width:640px;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+      <h2 style="margin:0">📖 가이드</h2>
+      <button type="button" onclick="closeGuide()" aria-label="닫기"
+        style="background:none;border:0;color:var(--dim);font-size:22px;line-height:1;cursor:pointer;padding:0 4px">&times;</button>
+    </div>
+    <div class="msub" style="margin-bottom:14px">종합접수처 현황판, 이렇게 씁니다.</div>
+    <div class="guide-body">
+      <h3>① 처리하는 법 3단계</h3>
+      <ol>
+        <li>그 건을 열어 「처리자」 칸에 본인 성함을 적습니다</li>
+        <li>「처리 메모」에 어떻게 하셨는지 한 줄 남기고 [저장]을 누릅니다</li>
+        <li>다 되었으면 [✅ 전달 완료]를 누릅니다</li>
+      </ol>
+
+      <h3>② 누가 무엇을 하나</h3>
+      <table>
+        <tr><th>이런 일이 들어오면</th><th>누가</th><th>무엇을</th></tr>
+        <tr><td>업장에서 생긴 일 (강습·헬스장·골프장·수영장·스쿼시)</td><td>담당 강사님</td><td>회원께 그 자리에서 먼저 안내</td></tr>
+        <tr><td>공지문·안내문이 있어야 풀리는 일</td><td>강사님 → 운영부</td><td>강사님이 문구·붙일 곳·기한을 정해 보내고, 운영부가 그대로 제작</td></tr>
+        <tr><td>덥다 · 습하다 · 고장났다</td><td>시설부</td><td>설비·온도·기기 확인</td></tr>
+        <tr><td>더럽다 · 냄새난다 · 벌레 · 사우나</td><td>지원부</td><td>남자구역 박남일 반장님 / 여자구역 이연희 반장님</td></tr>
+        <tr><td>회원 사이의 일 · 이용 규칙 · 발권시간</td><td>운영부</td><td>안내·중재, 필요하면 규칙 정리</td></tr>
+        <tr><td>분실물</td><td>리셉션</td><td>보관 후 주인이 오시면 [✅ 수령] 처리</td></tr>
+      </table>
+
+      <h3>③ 공지문이 있어야 풀리는 건 — 흐름</h3>
+      <p>업장에서 생긴 일 → 담당 강사님이 먼저 회원께 안내 → 공지문이 필요하면 강사님이 ①어떤 문구 ②어디에 붙일지 ③언제까지 필요한지 세 가지를 정해 운영부로 → 운영부가 그대로 제작.</p>
+      <p><span class="guide-em">"문안은 현장이 정하는 것이 맞습니다."</span></p>
+
+      <h3>④ 회원께 답을 드릴 때</h3>
+      <p>[📋 문구 복사]를 누르면 안내 문구가 만들어집니다. 그대로 보내시면 됩니다.</p>
+
+      <h3>⑤ 분실물</h3>
+      <p>주인이 찾아오시면 [✅ 수령]을 눌러 회원 성함·주시는 분 성함·확인 비밀번호를 넣습니다.</p>
+
+      <h3>⑥ 점수판</h3>
+      <p>접수 1점 + 처리 완료 1점입니다. 적어 주시는 것 자체가 점수라, 사소해 보여도 남겨 주시면 됩니다.</p>
+    </div>
+  </div>
+</div>
 
 <!-- 💬 실무진 피드백 모달 — membership.html 의 모달 iframe 패턴 그대로. 본문은 이 저장소에 하나뿐인
      실무진 피드백 폼(cpo/member/실무진피드백.html)을 지연 로드한다(모달을 처음 열 때 data-src→src).
@@ -1059,6 +1119,11 @@ function openModal(){
 function closeModal(){ $('modalBack').classList.remove('show'); _cur = null; }
 $('mCancel').addEventListener('click', closeModal);
 $('modalBack').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+/* ── 📖 가이드 모달 (GM 지시 2026-08-15) ── 정적 내용이라 서버 조회 없이 열고 닫기만. */
+function openGuide(){ $('guideBack').classList.add('show'); }
+function closeGuide(){ $('guideBack').classList.remove('show'); }
+$('guideBack').addEventListener('click', function(e){ if(e.target===this) closeGuide(); });
 
 /* ── 💬 실무진 피드백 모달 (GM 지시 2026-07-27) ──
    membership.html openStaffFeedback 패턴 그대로. 폼은 cpo/member/실무진피드백.html 하나뿐이고
