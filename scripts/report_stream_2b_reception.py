@@ -71,6 +71,59 @@ def _fetch_rows() -> list[dict] | None:
         return None
 
 
+# 접수 정체 스냅샷(배627 후속 · GM 지시 2026-08-15) — "놓치지 않게 계속 챙겨줘".
+#   부팅 화면(hangro_board.py --role coo)이 매일 손으로 세지 않고도 접수 적체를 볼 수 있게,
+#   이 발송기가 이미 매 실행 읽는 rows(reg_list)로 status/reception_watch.json 하나만 남긴다.
+#   새 스크립트·새 예약을 만들지 않는다(약속 L21). 발송 성공 여부와 무관 — 쓰기가 실패해도
+#   발송을 막지 않는다(조용히 넘어가되 stderr에 한 줄 남긴다).
+RECEPTION_WATCH_PATH = REPO_ROOT / "status" / "reception_watch.json"
+
+
+def _write_reception_watch(rows: list[dict]) -> None:
+    """미완 건을 부서별로 세어 스냅샷으로 남긴다.
+    - 완료 도장이 아니라 memberReply(회원 안내) 빈칸을 진짜 마감 여부로 따로 센다
+      (GM 지적 2026-08-15: 접수는 회원 수만큼 있고 건별로 닫는다).
+    - 분실물 접수는 보관 성격이라 부서 적체 집계에서 빼고 따로 센다(웰리 실무진 공지 방침)."""
+    try:
+        now = datetime.now()
+        by_dept: dict[str, dict] = {}
+        member_reply_open = 0
+        overdue_3d = 0
+        overdue_7d = 0
+        lost_open = 0
+        for r in rows:
+            if str(r.get("status", "")) == "완료":
+                continue
+            cat = str(r.get("category") or "").strip()
+            days = reception_elapsed_days(r, now)
+            if cat == "분실물 접수":
+                lost_open += 1
+                continue
+            dept = str(r.get("dept") or "").strip() or "부서 미정"
+            slot = by_dept.setdefault(dept, {"open": 0, "max_age_days": 0, "max_age_reg_id": ""})
+            slot["open"] += 1
+            if days >= slot["max_age_days"]:
+                slot["max_age_days"] = days
+                slot["max_age_reg_id"] = str(r.get("regId") or "")
+            if not str(r.get("memberReply") or "").strip():
+                member_reply_open += 1
+            if days >= 3:
+                overdue_3d += 1
+            if days >= 7:
+                overdue_7d += 1
+        RECEPTION_WATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
+        RECEPTION_WATCH_PATH.write_text(json.dumps({
+            "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "by_dept": by_dept,
+            "member_reply_open": member_reply_open,
+            "overdue_3d": overdue_3d,
+            "overdue_7d": overdue_7d,
+            "lost_items_open": lost_open,
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        print(f"[stream2b] reception_watch.json 쓰기 실패: {e}", file=sys.stderr)
+
+
 def _parse_created(s) -> datetime | None:
     try:
         return datetime.strptime(str(s).strip(), "%Y-%m-%d %H:%M:%S")
@@ -449,6 +502,7 @@ def build_digest(today: str | None = None, persist_completion: bool = True) -> s
     rows = _fetch_rows()
     if rows is None:
         return f"{header}\n\n조회 실패 (GAS 응답 없음)"
+    _write_reception_watch(rows)
     # 2026-07-31 GM 지시 — 점수판을 맨 위로 올린다.
     #   "점수 랭킹하는 걸 상단에 알림으로 올려주고, 더 활성화될 수 있게."
     #   맨 아래에 있으면 스크롤 끝까지 내려야 보인다 = 사실상 없는 것과 같았다. 접수를 피할

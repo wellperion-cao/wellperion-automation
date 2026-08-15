@@ -1559,6 +1559,46 @@ def _page_score_slice(role_slug: str) -> str:
               "갱신 = python scripts/page_score_extract.py")
 
 
+def _reception_watch_slice(role_slug: str) -> str:
+    """status/reception_watch.json → 접수 정체 요약, COO 부팅화면 전용(GM 지시 2026-08-15
+    "놓치지 않게 계속 챙겨줘").
+
+    소유 스크립트(report_stream_2b_reception.py)가 이미 매일 도는 발송 직전 reg_list를
+    읽는 자리에 스냅샷만 남기고(약속 L21 — 새 스크립트·새 예약 없음), 여기서는 부팅 때
+    읽어 보여주기만 한다. 다른 역할 부팅 화면에는 안 뜬다."""
+    if role_slug != "coo":
+        return ""
+    path = _REPO / "status" / "reception_watch.json"
+    if not path.exists():
+        return ""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"[WARN] reception_watch.json 슬라이스 실패: {e}", file=sys.stderr)
+        return ""
+    by_dept = data.get("by_dept") or {}
+    if not by_dept and not data.get("lost_items_open"):
+        return ""
+    parts = [f"{d} {info.get('open', 0)}건(최장 {info.get('max_age_days', 0)}일)"
+             for d, info in sorted(by_dept.items(), key=lambda kv: -kv[1].get("open", 0))]
+    line1 = "📮 접수 정체 — " + (" · ".join(parts) if parts else "없음")
+    line2 = (f"   회원 안내 못 나간 건 {data.get('member_reply_open', 0)}건 · "
+             f"3일 이상 {data.get('overdue_3d', 0)}건 · 7일 이상 {data.get('overdue_7d', 0)}건 · "
+             f"(분실물 {data.get('lost_items_open', 0)}건은 따로 셈)")
+    stale = ""
+    try:
+        age_h = (dt.datetime.now()
+                 - dt.datetime.strptime(str(data.get("generated_at", "")), "%Y-%m-%d %H:%M:%S")
+                 ).total_seconds() / 3600
+        if age_h >= 24:
+            stale = f"\n   ⚠️ 스냅샷 {age_h / 24:.1f}일 전 갱신 — 낡았을 수 있음"
+    except Exception:
+        pass
+    return (f"\n{line1}\n{line2}{stale}\n"
+            "※ 원천 = status/reception_watch.json · "
+            "갱신 = python scripts/report_stream_2b_reception.py")
+
+
 _GM_PROFILE_SECTIONS = {"선호", "습관", "자주 놓치는 것"}
 _RE_MD_H2 = re.compile(r"(?m)^## ")
 
@@ -1875,6 +1915,7 @@ def main() -> None:
         )
         board_text += _kpi_slice(role_slug)
         board_text += _page_score_slice(role_slug)
+        board_text += _reception_watch_slice(role_slug)
         board_text += _gm_profile_slice()
         board_text += _midmgr_reply_slice(role_slug)
         board_text += _daily_status_stale_slice(role_slug)
