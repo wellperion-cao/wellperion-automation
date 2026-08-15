@@ -425,9 +425,48 @@ def emit(day: str) -> int:
                 # 로 방어하고 있어 키가 없으면 섹션 자체를 안 그린다 — 화면 수정 불필요.
             }
     p = ROOT / 'status' / 'kungjjak_today.json'
-    p.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding='utf-8')
+    body = json.dumps(out, ensure_ascii=False, indent=2)
     roles = ', '.join(f'{v["nick"]} {v["done"]}/{v["count"]}' for v in out['roles'].values())
-    print(f'발행 {p.name} — {day} · {roles or "기록 없음"}')
+
+    # ★2026-08-16 시토(배652 · 웰리 실측) — 값이 그대로면 쓰지도 커밋하지도 않는다.
+    #   왜 이게 필요한가: 이 발행본은 3분 슬롯에서 다시 만들어지는데, 내용이 같아도 매번
+    #   덮어써서 파일 수정시각이 계속 새로 찍혔다. 그래서 저장소로 올려 주는 장치
+    #   (post_commit_push._commit_stale_machine_outputs)가 "2시간 이상 묵은 산출물만
+    #   올린다"는 조건에 **영원히 걸리지 않았다** — 3분마다 새 파일처럼 보이니 영영 안 묵는다.
+    #   허용목록에는 진작 들어 있었는데도 한 번도 안 실린 이유가 이것이다.
+    #   결과: GM업무 화면 「오늘 처리 기록」과 자율현황이 아침 값에 머물렀다.
+    if p.exists() and p.read_text(encoding='utf-8') == body:
+        print(f'발행 생략 {p.name} — 값 동일 · {day} · {roles or "기록 없음"}')
+    else:
+        p.write_text(body, encoding='utf-8')
+        print(f'발행 {p.name} — {day} · {roles or "기록 없음"}')
+
+    # 저장소에 아직 안 올라간 값이면 여기서 올린다(웰리 요청 3번 — 3분마다 커밋이 쌓이지 않게).
+    # ★'쓸 게 없다'와 '올릴 게 없다'는 다르다 — 위에서 쓰기를 생략해도 그 값이 아직
+    #   저장소에 없을 수 있다(앞선 실행이 쓰기만 하고 커밋을 못 한 경우). 그래서 커밋 여부는
+    #   방금 썼는지가 아니라 **저장소와 다른지**로 판단한다. 이 대조는 락이 필요 없는 값싼
+    #   호출이라, 값이 그대로인 대부분의 3분 주기에는 커밋 관문을 아예 부르지 않는다.
+    # 새 스크립트·새 예약을 만들지 않고 이미 이 슬롯이 지나는 자리에서 기존 관문을 부른다(약속 L21).
+    # 실패해도 발행은 성공으로 둔다 — 다음 주기에 다시 시도하고, 그래도 못 가면 이제는
+    # 파일이 안 묵는 문제가 사라졌으므로 2시간 스위퍼가 받아 준다(이중 안전망).
+    try:
+        dirty = subprocess.run(
+            ['git', '-C', str(ROOT), 'diff', '--name-only', 'HEAD', '--', str(p)],
+            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30)
+        if (dirty.stdout or '').strip():
+            sys.path.insert(0, str(ROOT / 'scripts'))
+            from safe_commit import safe_commit
+            # ★push=False 인 이유(실측 2026-08-16) — push 경로는 커밋 뒤에 ad-hoc 자동기록을
+            #   부르고, 그게 worklog 에 한 줄을 쌓는다. 그런데 이 발행본의 원천이 바로 worklog 라,
+            #   커밋할 때마다 내용이 다시 바뀌어 3분마다 영원히 커밋이 찍히는 되먹임이 된다
+            #   (실측: 연속 3회 모두 새 커밋). 여기선 커밋만 하고, 올리기는 5분 스위퍼
+            #   (post_commit_push --sweep)가 이미 하던 일에 맡긴다 — 새 배선 0.
+            r = safe_commit([str(p)], f'chore(auto): 쿵짝 발행본 갱신 — {day}',
+                            holder='kungjjak-emit', push=False)
+            if not r.get('ok'):
+                print(f'[WARN] 쿵짝 발행본 커밋 건너뜀: {r.get("reason", "")[:120]}')
+    except Exception as exc:
+        print(f'[WARN] 쿵짝 발행본 커밋 건너뜀: {type(exc).__name__}: {exc}')
     return 0
 
 
