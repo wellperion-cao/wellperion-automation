@@ -1596,7 +1596,15 @@ def _reception_watch_slice(role_slug: str) -> str:
             stale = f"\n   ⚠️ 스냅샷 {age_h / 24:.1f}일 전 갱신 — 낡았을 수 있음"
     except Exception:
         pass
-    return (f"\n{line1}\n{line2}{stale}\n"
+    # 🧳 습득물 월 사이클(GM 지시 2026-08-15 "습득물 현황도 일정에 맞게끔 정리") — 값이
+    # 없으면(구 스냅샷·조회 실패) 이 줄만 조용히 건너뛴다.
+    lf = data.get("lost_found") or {}
+    lf_line = ""
+    if lf:
+        lf_line = (f"\n🧳 습득물 — 이번 달 처분 대상 {lf.get('dispose_this_month', 0)}건 · "
+                   f"공지 중 {lf.get('notice_this_month', 0)}건 · "
+                   f"다음 달 처분 예정 {lf.get('dispose_next_month', 0)}건")
+    return (f"\n{line1}\n{line2}{stale}{lf_line}\n"
             "※ 원천 = status/reception_watch.json · "
             "갱신 = python scripts/report_stream_2b_reception.py")
 
