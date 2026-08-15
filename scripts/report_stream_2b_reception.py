@@ -79,6 +79,52 @@ def _fetch_rows() -> list[dict] | None:
 RECEPTION_WATCH_PATH = REPO_ROOT / "status" / "reception_watch.json"
 
 
+def _ym_add(ym: str, delta: int) -> str:
+    y, m = (int(x) for x in ym.split("-"))
+    idx = y * 12 + (m - 1) + delta
+    return f"{idx // 12:04d}-{idx % 12 + 1:02d}"
+
+
+def _lost_found_month_cycle() -> dict | None:
+    """습득물(lf_list) 월 사이클 수치 — GM 지시 2026-08-15 "습득물 현황도 일정에 맞게끔
+    정리해야 하는 것들은 따로 리스트업". lf_list는 reg_list(rows)와 다른 조회라 여기서
+    한 번 더 gas_get 부른다 — 실패해도(GAS 무응답·파싱 오류 등) 발송을 막지 않게 통째로
+    감싸 None을 돌려준다.
+
+    사이클(정본=coo/reception/lost_found_guide.html): 습득월 M → M+1 공지 → M+2 처분.
+    - notice_this_month  = 지난달 습득 · 아직 게시중(이번 달 공지 대상)
+    - dispose_this_month = 지지난달 이전 습득 · 아직 게시중(이번 달 처분 대상 — 가장 급함)
+    - dispose_next_month = 사이클상 notice_this_month와 동일 모집단(지난달 습득분은 다음 달
+      처분월에 도달한다) — 새로 세지 않고 그대로 재사용."""
+    try:
+        resp = gas_get(RECEPTION_EXEC_URL, {"action": "lf_list"}, timeout=20, label="stream2b-lf")
+        if resp is None:
+            return None
+        data = resp.json()
+        if not data.get("ok"):
+            return None
+        posted = [r for r in data.get("data", []) if str(r.get("status", "")) == "게시중"]
+        this_ym = datetime.now().strftime("%Y-%m")
+        last_ym = _ym_add(this_ym, -1)
+
+        def _ym_of(r: dict) -> str:
+            return str(r.get("foundWhen") or r.get("createdAt") or "")[:7]
+
+        notice = [r for r in posted if _ym_of(r) == last_ym]
+        dispose = [r for r in posted if _ym_of(r) and _ym_of(r) < last_ym]
+        found_dates = [str(r.get("foundWhen") or r.get("createdAt") or "")[:10] for r in posted]
+        found_dates = [d for d in found_dates if d]
+        return {
+            "notice_this_month": len(notice),
+            "dispose_this_month": len(dispose),
+            "dispose_next_month": len(notice),
+            "oldest_found_date": min(found_dates) if found_dates else "",
+        }
+    except Exception as e:
+        print(f"[stream2b] 습득물 사이클 조회 실패: {e}", file=sys.stderr)
+        return None
+
+
 def _write_reception_watch(rows: list[dict]) -> None:
     """미완 건을 부서별로 세어 스냅샷으로 남긴다.
     - 완료 도장이 아니라 memberReply(회원 안내) 빈칸을 진짜 마감 여부로 따로 센다
@@ -119,6 +165,7 @@ def _write_reception_watch(rows: list[dict]) -> None:
             "overdue_3d": overdue_3d,
             "overdue_7d": overdue_7d,
             "lost_items_open": lost_open,
+            "lost_found": _lost_found_month_cycle(),
         }, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception as e:
         print(f"[stream2b] reception_watch.json 쓰기 실패: {e}", file=sys.stderr)
@@ -446,10 +493,13 @@ def _send_kakao(room: str, text: str) -> bool:
 
 
 def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
-    """새 접수를 **부서별로 따로 한 통씩** 해당 카톡 방에 전달(GM 확정 2026-08-15).
+    """새 접수를 부서별로 묶어 **목적지 방마다 한 통씩** 카톡 방에 전달(GM 확정 2026-08-15,
+    합본 지시 2026-08-15 후속).
 
-    부서별로 나누는 이유 = 그 부서가 자기 것만 보고 바로 조치하라는 GM 지시(배627).
-    새 접수가 없는 부서는 아무것도 보내지 않는다(빈 통보 금지).
+    부서별로 나누는 이유 = 그 부서가 자기 것만 보고 바로 조치하라는 GM 지시(배627). 단,
+    같은 방으로 갈 부서가 여럿이면(예: 시설부·운영부 둘 다 ★운영+시설+지원+주차) 한 통 안에서
+    부서 소제목(🏢)으로만 가른다 — 제목 동일한 메시지가 연달아 뜨는 것을 막는다(중복 알림
+    정리 2026-08-15, 실측 8/15 11:56 2통). 새 접수가 없는 방은 아무것도 보내지 않는다.
     ▸test=True면 실무진 방 대신 텔레그램 업무관리방으로만 보낸다(GM 확정 — 테스트는 늘 그 방).
     """
     rows = _fetch_rows()
@@ -464,25 +514,33 @@ def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
     if not depts:
         return []
 
-    sent: list[str] = []
+    # 2026-08-15 GM 지시(중복 알림 정리) — 같은 방으로 갈 부서가 여럿이면 한 통에 묶는다.
+    #   실측: 8/15 11:56 ★운영+시설+지원+주차 에 제목 동일 2통(시설부 1건·운영부 1건)이
+    #   따로 나갔다. _intake_relay_block 이 이미 부서별 소제목(🏢 …)으로 나눠 렌더하므로,
+    #   부서 단위 대신 **목적지 방 단위**로 rows 를 묶어 방마다 한 통만 보낸다(내용 그대로,
+    #   묶는 순서만 바꿈).
+    by_room: dict[str, list[str]] = {}
     for dept in depts:
-        sub = [r for r in rows if (str(r.get("dept") or "").strip() or "부서 미정") == dept]
+        by_room.setdefault(_intake_room_for(dept), []).append(dept)
+
+    sent: list[str] = []
+    for room, room_depts in by_room.items():
+        sub = [r for r in rows if (str(r.get("dept") or "").strip() or "부서 미정") in room_depts]
         text = _intake_relay_block(sub, state={"intake_relay_enabled": True,
                                                "reception_seen_new_ids": sorted(seen)},
                                    persist=False, force=True)
         if not text:
             continue
-        room = _intake_room_for(dept)
         if dry_run:
-            print(f"[intake-relay] DRY-RUN {dept} → {room}\n{text}\n", flush=True)
-            sent.append(dept)
+            print(f"[intake-relay] DRY-RUN {room_depts} → {room}\n{text}\n", flush=True)
+            sent.extend(room_depts)
         elif test:
             token = _load_env_val("TELEGRAM_BOT_TOKEN")
-            if token and tg_send(token, TEST_CHAT_ID, f"🧪 [테스트] {dept} → 실제로는 {room} 방\n\n{text}",
+            if token and tg_send(token, TEST_CHAT_ID, f"🧪 [테스트] {room_depts} → 실제로는 {room} 방\n\n{text}",
                                  source="report_stream_2b_intake_relay_test"):
-                sent.append(dept)
+                sent.extend(room_depts)
         elif _send_kakao(room, text):
-            sent.append(dept)
+            sent.extend(room_depts)
     # 커서는 **전부 보낸 뒤에만** 전진한다(완료 통보와 같은 규칙 — 중간에 실패하면 다음
     # 회차에 다시 나간다. 잃는 것보다 겹치는 게 낫다). 테스트 발신은 커서를 건드리지 않는다.
     if not dry_run and not test and sent:
