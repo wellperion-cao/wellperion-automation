@@ -30,7 +30,8 @@
 
   /* A3 가로 1장 */
   .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:18px 34px 14px;
-    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden;
+    word-break:keep-all; overflow-wrap:break-word; }
 
   /* 헤더 */
   .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:7px; }
@@ -49,7 +50,7 @@
 
   /* 【상단】 핵심 3줄 — 문서에서 가장 크게 */
   .hero{ display:flex; gap:12px; margin-top:9px; }
-  .hc{ flex:1; border:1.5px solid var(--line); border-top:5px solid var(--navy); padding:7px 16px 6px; }
+  .hc{ flex:1; border:1.5px solid var(--line); border-top:5px solid var(--navy); padding:6px 16px 5px; }
   .hc.love{ border-top-color:var(--good); background:#F4FAF7; }
   .hc.leave{ border-top-color:var(--bad); background:#FBF5F5; }
   .hc.flat{ border-top-color:var(--navy); background:var(--navy-bg); }
@@ -72,7 +73,7 @@
   .band{ margin-top:7px; }
   .band .tt{ font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:2px; }
   .band .tt span{ font-weight:400; color:#48525B; font-size:11.8px; }
-  .strip{ display:flex; height:28px; border-radius:3px; overflow:hidden; }
+  .strip{ display:flex; height:25px; border-radius:3px; overflow:hidden; }
   .strip i{ display:flex; align-items:center; justify-content:center; height:100%;
     font-style:normal; font-size:12.8px; font-weight:700; color:#fff; white-space:nowrap; }
   .strip i.s1{ background:var(--good); }
@@ -82,17 +83,17 @@
 
   /* 【중단】 좌우 2단 */
   .body2{ margin-top:7px; display:flex; gap:14px; flex:1; min-height:0; }
-  .colL{ width:57%; flex:none; display:flex; flex-direction:column; gap:6px; }
+  .colL{ width:57%; flex:none; display:flex; flex-direction:column; gap:5px; }
   .colR{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
 
   /* 구체 사항 박스 */
-  .sec{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:5px 13px 5px; }
+  .sec{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:4px 13px 4px; }
   .sec h3{ font-size:14.3px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:3px; }
   .sec h3 .no{ display:inline-block; background:var(--navy); color:#fff; font-size:12.5px; padding:1px 8px;
     border-radius:2px; margin-right:7px; vertical-align:1px; }
   .sec.g{ border-top-color:var(--good); } .sec.g h3{ color:var(--good); } .sec.g h3 .no{ background:var(--good); }
   .sec.r{ border-top-color:var(--bad); } .sec.r h3{ color:var(--bad); } .sec.r h3 .no{ background:var(--bad); }
-  .sec p{ font-size:13px; line-height:1.36; color:#22303B; margin-top:3px; }
+  .sec p{ font-size:13px; line-height:1.34; color:#22303B; margin-top:2px; }
   .sec p b{ font-weight:700; }
   .key{ background:#FBEDED; border-left:4px solid var(--bad); padding:3px 11px; margin-top:4px;
     font-size:13.2px; font-weight:700; line-height:1.38; color:var(--bad); }
@@ -111,7 +112,7 @@
   .chart{ display:flex; gap:18px; margin-top:2px; }
   .yr{ flex:12; }
   .yr.y26{ flex:8; }
-  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:48px; }
+  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:44px; }
   .m{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
   .m b{ font-size:10.5px; font-weight:700; color:#3C464F; margin-bottom:1px; font-variant-numeric:tabular-nums; letter-spacing:-.3px; }
   .m .duo{ display:flex; align-items:flex-end; gap:1px; width:100%; }
@@ -120,7 +121,7 @@
   .m i.out{ background:#A63B3B; }
   .m.part i.in{ background:repeating-linear-gradient(45deg,#4E8A70 0 4px,#C9DDD3 4px 8px); border:1px solid var(--good); border-bottom:0; }
   .m.part i.out{ background:repeating-linear-gradient(45deg,#B96A6A 0 4px,#EBD2D2 4px 8px); border:1px solid #A63B3B; border-bottom:0; }
-  .m s{ text-decoration:none; font-size:10.8px; color:#5C666F; margin-top:2px; line-height:1.15; }
+  .m s{ text-decoration:none; font-size:10.5px; color:#5C666F; margin-top:1px; line-height:1.1; }
   .m.neg b{ color:var(--bad); }
   .m.neg s{ background:var(--bad); color:#fff; width:100%; text-align:center; border-radius:2px; font-weight:700; }
   .legend{ margin-top:2px; font-size:11.5px; color:#3C464F; line-height:1.3; }
@@ -295,7 +296,7 @@
               <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:14px"></i></span><s>11</s></div>
               <div class="m neg"><b>−3</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:14px"></i></span><s>12</s></div>
             </div>
-            <div class="cap">2025 <span>· 등록 373 − LOSS 333 = 순증 <b>+40</b> · 12개월 중 <b>7개월 순감소</b></span></div>
+            <div class="cap">2025 <span>· 등록 373 − LOSS 333 = <b>+40</b> · 12개월 중 <b>7개월 순감소</b></span></div>
           </div>
           <div class="yr y26">
             <div class="bars">
@@ -308,10 +309,10 @@
               <div class="m neg"><b>−20</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:17px"></i></span><s>7</s></div>
               <div class="m part"><b>+24</b><span class="duo"><i class="in" style="height:16px"></i><i class="out" style="height:4px"></i></span><s>8</s></div>
             </div>
-            <div class="cap">2026 <span>· 등록 223 − LOSS 191 = 순증 <b>+32</b> · 8개월 중 <b>3개월 순감소</b> · 8월은 진행 중(빗금)</span></div>
+            <div class="cap">2026 <span>· 등록 223 − LOSS 191 = <b>+32</b> · 8개월 중 <b>3개월 순감소</b></span></div>
           </div>
         </div>
-        <div class="legend"><span class="sw" style="background:var(--good)"></span>등록<span class="sw" style="background:#A63B3B"></span>LOSS<span class="sw neg-sw"></span>붉은 달 = 순감소 — 최대 낙폭 <b>2026년 7월 −20명</b> · 연 회전율 <b>33%</b>(해마다 셋 중 하나가 바뀝니다 · 각주1)</div>
+        <div class="legend"><span class="sw" style="background:var(--good)"></span>등록<span class="sw" style="background:#A63B3B"></span>LOSS<span class="sw neg-sw"></span>붉은 달 = 순감소 · 8월은 집계 진행 중(빗금) — 최대 낙폭 <b>2026년 7월 −20명</b> · 연 회전율 <b>33%</b>(해마다 셋 중 하나가 바뀝니다 · 각주1)</div>
         <div class="stack">
           <i class="c-us" style="width:54.4%"></i><i class="c-na" style="width:23.5%"></i><i class="c-tr" style="width:18.9%"></i><i class="c-et" style="width:3.2%"></i>
         </div>
@@ -382,7 +383,7 @@
         <tr><td class="k">사랑하는 회원 비율</td><td class="v">14.9% (149명)</td><td>요금·정책이 바뀌어도 남을 기반입니다.</td></tr>
         <tr><td class="k">떠날 회원 비율</td><td class="v">19.2% (192명)</td><td>다음 LOSS는 여기서 나옵니다.</td></tr>
         <tr><td class="k">재등록 문턱 통과율 (1회 → 2회)</td><td class="v">316명 → 221명</td><td>가장 크게 새는 자리입니다.</td></tr>
-        <tr><td class="k">LOSS 중 '우리 몫' 비율</td><td class="v">54.4% (379명)</td><td>막을 수 있었던 이탈의 몫입니다.</td></tr>
+        <tr><td class="k">LOSS 중 '우리 몫' 비율</td><td class="v">54.4% (379명)</td><td>막을 수 있었던 LOSS의 몫입니다.</td></tr>
         <tr><td class="k">데이터 기입률</td><td class="v">주소 98.4% · 회차 전수 · 출석 76.9% · 사유 97.8%</td><td><b>이 칸이 비면 위 지표가 조용히 거짓말을 시작합니다.</b></td></tr>
       </tbody>
     </table>
