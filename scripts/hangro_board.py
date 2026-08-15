@@ -1588,12 +1588,13 @@ def _page_score_slice(role_slug: str) -> str:
     low = [p for p in mine if p.get("score", 100) < 85][:5]
     if not low:
         return (f"\n📉 내 화면 완성도 — {len(mine)}개 전부 85% 이상. "
-                "(원천 = GM업무 화면 재채점 · 갱신 = python scripts/page_score_extract.py)")
+                "(정본 = status/page_score.json 손 관리 · 재채점은 이 파일을 직접 고친다, "
+                "배641 · 구 원천 GM업무.html #sec-erp-score 는 08-15 삭제됨)")
     lines = [f"  {p['score']:3}%  {p['name']} — {p['note'][:52]}" for p in low]
     return (f"\n📉 내 화면 완성도 낮은 순 {len(low)}개 (전체 {len(mine)}개 중 85% 미만)\n"
             + "\n".join(lines)
-            + "\n※ 이 줄이 오늘 볼 것이다. 원천 = GM업무 화면 재채점 · "
-              "갱신 = python scripts/page_score_extract.py")
+            + "\n※ 이 줄이 오늘 볼 것이다. 정본 = status/page_score.json 손 관리 · "
+              "재채점은 이 파일을 직접 고친다(배641)")
 
 
 def _reception_watch_slice(role_slug: str) -> str:
