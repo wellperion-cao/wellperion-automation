@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -54,6 +55,12 @@ _GM_REF_BLOCK = {"ceo": 1000, "cto": 2000, "cmo": 3000, "cpo": 4000,
 _GM_REMINDER = ("[형식 고정] 말투=caveman ultra(군더더기·과정 서술 금지) · "
                 "GM 물음 1개 = 표 1개(8요소 📌GM요청 🔍실측 ✅반영 🔎검수 📤올림 ⏱소요 💡더나았을방법 👉GM액션) · "
                 "표 밖 줄글은 표로 못 담는 것만")
+
+# 단순 조회·질의는 접수하지 않는다(2026-08-16 · 배658 — "쿵짝표 보여줘" 같은 발화까지 지시로
+# 채번돼 완료 짝이 안 붙고 쿵짝표에 거짓 미완으로 남던 것). 짧은 문장 전체가 "<대상> 보여줘/
+# 알려줘" 꼴일 때만 거른다 — 길거나 다른 동사·조건이 섞인 문장(진짜 지시)은 그대로 접수한다.
+_SIMPLE_QUERY_RE = re.compile(
+    r'^[\w가-힣().%·/ ]{1,24}(보여\s*줘|보여\s*주세요|보여줄래\??|알려\s*줘|알려\s*주세요)[!.?~]*$')
 
 
 def _next_gm_ref(role: str, day: str) -> str:
@@ -114,6 +121,8 @@ def record_gm_prompt_hook() -> None:
             # 2026-08-13 쿵짝표에 시우 부팅문이 GM 지시로 두 줄 잡힌 실사고로 추가.
             if event.startswith(('<', '[SYSTEM NOTIFICATION', '[형식 고정',
                                  'C-Level 부팅', '너는 ', '당신은 ')):
+                event = ''
+            elif _SIMPLE_QUERY_RE.match(event):
                 event = ''
             if len(event) > 120:
                 event = event[:120] + "…"
@@ -471,11 +480,29 @@ def log(
         return False
 
 
+def _selfcheck() -> None:
+    """단순 조회 필터 회귀 검사(배658) — 조회 발화는 걸러지고 진짜 지시는 그대로 통과하는지."""
+    queries = ['쿵짝표 보여줘', '오늘 항로 보여줘', '현황 알려줘', '진행상황 알려주세요']
+    for q in queries:
+        assert _SIMPLE_QUERY_RE.match(q), f'조회 발화가 안 걸림: {q!r}'
+    directives = [
+        '쿵짝표 칸을 5개로 고정해줘',
+        '쿵짝표 보여주고 칸 하나 고쳐줘',
+        '이거 왜 안 되는지 확인하고 고쳐줘',
+        '배658 착수해',
+    ]
+    for d in directives:
+        assert not _SIMPLE_QUERY_RE.match(d), f'진짜 지시가 걸러짐: {d!r}'
+    print(f'[OK] worklog 단순조회 필터 자가검사 통과 — 조회 {len(queries)}건 거름·지시 {len(directives)}건 통과')
+
+
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "--hook-prompt":
         record_gm_prompt_hook()
+    elif len(sys.argv) >= 2 and sys.argv[1] == "--selfcheck":
+        _selfcheck()
     elif len(sys.argv) >= 4:
         ok = log(sys.argv[1], sys.argv[2], sys.argv[3])
         print(f"[{'OK' if ok else 'FAIL'}] worklog.log() 호출 — {WORKLOG_PATH}")
     else:
-        print("사용: python worklog.py <role> <area> <event> | python worklog.py --hook-prompt")
+        print("사용: python worklog.py <role> <area> <event> | python worklog.py --hook-prompt | python worklog.py --selfcheck")

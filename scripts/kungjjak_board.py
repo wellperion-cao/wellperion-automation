@@ -35,6 +35,12 @@ _SHIP_IN_TEXT_RE = re.compile(r'배\s*(\d{2,6})')
 NICK = {'ceo': '웰리', 'cto': '시토', 'cmo': '시모', 'cpo': '시포',
         'coo': '시우', 'chro': '시로', 'cfo': '시뽀'}
 
+# 정본 5칸(wellperion-gm-report 스킬 §4-3) — 표 렌더는 _render_table 단 하나뿐이고
+# 헤더는 여기서만 만든다. 칸 수·이름이 바뀌면 아래 _selfcheck()가 바로 깨진다
+# (2026-08-13 build_task_rows/_render_task_table 이라는 별도 경로가 몰래 생겨 5칸이
+# 6칸으로 벌어졌던 사고 재발 방지 · 배658).
+TABLE_COLUMNS = ['#', '접수한 것', '한 것', '상태·소요', '저장·업로드']
+
 
 def _pushed(sha: str) -> bool:
     """그 커밋이 원격(origin/master)까지 올라갔는지 — 저장만 하고 안 올리면 GM 화면은 옛것이다."""
@@ -552,8 +558,8 @@ def _render_table(by: dict, day: str) -> None:
     # 증거 칸은 정본(wellperion-gm-report 스킬 §4-3, 5칸)에 없다 — 판정 로직(evidence_state)은
     # 살리되 별도 칸으로 안 낸다. '한 것'이 상투어면 그 문장 자체가 이미 증거 없음을 드러낸다
     # (GM 지적 2026-08-13 "형식 자체가 없어지고 다시 만드는거야?" — 6칸으로 늘렸던 걸 되돌림).
-    print('| # | 접수한 것 | 한 것 | 상태·소요 | 저장·업로드 |')
-    print('|---|---|---|---|---|')
+    print('| ' + ' | '.join(TABLE_COLUMNS) + ' |')
+    print('|' + '---|' * len(TABLE_COLUMNS))
     for r in rows:
         print(f"| {r['no']} | {r['got'][:52]} | {r['did'][:74]} | {r['dur']} | {r['up']} |")
 
@@ -576,6 +582,38 @@ def _render_table(by: dict, day: str) -> None:
     print(line)
 
 
+def _selfcheck() -> None:
+    """최소 회귀 검사 — 정본 5칸(TABLE_COLUMNS)이 흔들리면 여기서 바로 깨진다.
+    역할이 달라도(cto·cpo…) _render_table 은 role 인자를 안 받는 단일 경로라
+    두 역할의 합성 데이터를 같은 함수에 넣어 헤더가 갈리지 않는지 함께 본다
+    (2026-08-10 '시토·시포 표가 서로 달랐다' 재발 방지 · 배658)."""
+    import contextlib
+    import io
+
+    now = datetime.datetime(2026, 8, 16, 10, 0, 0)
+    for role in ('cto', 'cpo'):
+        by = {
+            f'GM-{role}-01': [
+                {'ts': now.isoformat(), 'result': 'warn', 'event': f'{role} 접수', 'role': role},
+                {'ts': (now + datetime.timedelta(minutes=5)).isoformat(), 'result': 'ok',
+                 'detail': f'{role} 완료 배1', 'role': role},
+            ],
+        }
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            _render_table(by, '2026-08-16')
+        out = buf.getvalue()
+        lines = [ln for ln in out.splitlines() if ln.startswith('|')]
+        assert len(lines) >= 2, f'{role}: 표 본문이 안 찍혔다'
+        header_cells = [c.strip() for c in lines[0].strip('|').split('|')]
+        assert header_cells == TABLE_COLUMNS, (
+            f'{role}: 헤더 {header_cells} != 정본 {TABLE_COLUMNS} — 칸 수·이름 드리프트')
+        row_cells = lines[2].strip('|').split('|') if len(lines) > 2 else lines[1].strip('|').split('|')
+        assert len(row_cells) == len(TABLE_COLUMNS), (
+            f'{role}: 데이터 행 칸수 {len(row_cells)} != {len(TABLE_COLUMNS)}')
+    print(f'[OK] kungjjak_board 자가검사 통과 — {len(TABLE_COLUMNS)}칸 정본 유지, 역할 무관 동일 헤더')
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--role', default=None, help='ceo·cto·cmo·cpo·coo·chro·cfo')
@@ -586,7 +624,13 @@ def main() -> int:
     ap.add_argument('--carry', action='store_true',
                     help='어제 못 끝낸 것(완료 짝 없는 지시)도 함께 낸다 — 부팅용. '
                          '기본 동작(옵션 없음)은 바꾸지 않는다.')
+    ap.add_argument('--selfcheck', action='store_true',
+                    help='정본 5칸 회귀 검사만 돌리고 끝(배658)')
     a = ap.parse_args()
+
+    if a.selfcheck:
+        _selfcheck()
+        return 0
 
     if a.emit:
         return emit(a.date or datetime.date.today().isoformat())
