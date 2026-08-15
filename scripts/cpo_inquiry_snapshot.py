@@ -298,9 +298,39 @@ def _should_commit(prev_head: dict | None, new_payload: dict) -> bool:
     return _content_key(prev_head) != _content_key(new_payload)
 
 
+# ── 고객 접수 백엔드 예열 (배236 · GM 지시 2026-08-16) ──────────────────────────
+# 왜: 접수만 별도 백엔드(intake-api)로 떼어낸 것은 GM 결재(2026-08-06)다. 그런데 실측해
+#   보니 **예열된 상태 1.33초 vs 식은 상태 중앙값 8.87초(최대 69초)** 였다. 접수는 하루에
+#   몇 건뿐이라 대부분 식어 있고, 식은 컨테이너를 깨우는 값이 덩치를 줄여 번 값보다 훨씬
+#   크다 — 그래서 화면 주소를 옮기면 실제 고객 접수가 오히려 2초에서 9초로 느려진다.
+#   기존 백엔드가 빠른 이유도 실력이 아니라 하루 종일 화면들이 두드려 늘 데워져 있어서다.
+# 그래서 결재를 뒤집는 대신 같은 조건을 만들어 준다 — 3분마다 도는 이 job 이 지나가는 길에
+#   진단용 ping 을 한 번 던져 컨테이너를 깨워 둔다. 새 예약작업·새 스크립트 0(약속 L21).
+# ping 은 Intake.js 가 이미 갖고 있는 읽기 전용 진단 액션이다(쓰기·발신 없음).
+# 실패는 무시한다 — 이건 가속층이고, 못 데워도 접수 자체는 종전대로 동작한다.
+_INTAKE_PING_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbyLc2cnOeyyCpdrluJrgrUNrfhSJS3W-9wte5ndOBNS5S8Dux7KwcV8WAAXs2bwi2yFcw/exec"
+)
+
+
+def _warm_intake_api() -> None:
+    import urllib.request
+    t0 = time.time()
+    try:
+        req = urllib.request.Request(_INTAKE_PING_URL + "?action=ping",
+                                     headers={"User-Agent": "wellperion-warmup"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            r.read(200)
+        _log(f"[warm] 접수 백엔드 예열 {time.time() - t0:.2f}초")
+    except Exception as e:
+        _log(f"[warm] 접수 백엔드 예열 건너뜀(무해): {type(e).__name__}: {str(e)[:80]}")
+
+
 def main() -> int:
     no_push = "--no-push" in sys.argv
     STATUS_DIR.mkdir(parents=True, exist_ok=True)
+    _warm_intake_api()
 
     if not _lock_acquire():
         _log("[skip] 이전 회차가 아직 실행 중(락 보유) — 이번 회차 건너뜀")
