@@ -1041,21 +1041,37 @@ def chairman_content_allows(text: str) -> bool:
 
 def open_or_find_room(room_name: str):
     """방 창-제목 탐색(주 경로) → 실패 시 카톡 메인창 검색으로 자동 열기(폴백).
-    send_to_room·send_message_to_room 공용 — 방 열기 로직 중복 방지."""
+    send_to_room·send_message_to_room 공용 — 방 열기 로직 중복 방지.
+
+    ★자동 열기는 3번까지 다시 해 본다(2026-08-15 · 실사고). 07:36 아침 요약이
+    "검색창 활성화 실패" 한 번으로 rc=1 로 끝났는데, 08:49 손 재실행은 한 번에 됐다 —
+    화면 상태에 따라 갈리는 UI 조작이라 대개 잠깐 뒤엔 된다(kakao_export_chat.py 의
+    3회 재시도와 같은 근거·같은 간격). 모든 방 발신이 이 함수를 지나므로 여기 한 곳에만
+    넣는다(약속 L21). 잠금 화면이면 3번 다 실패한다 — 그건 여기서 못 푼다.
+    되돌리기 = 아래 for 루프를 지우고 본문을 1회 시도로 되돌린다(git revert 가능)."""
     try:
         room_win = find_room_window(room_name)
         log(f"[{room_name}] 방 창 발견(창-제목 탐색 성공, 이미 열려 있었음)")
+        return room_win
     except RoomNotOpenError:
         log(f"[{room_name}] 방 창이 안 열려 있음 — 카톡 메인창 검색으로 자동 열기 시도")
+    attempts = 3
+    for i in range(1, attempts + 1):
         try:
             main_hwnd = find_kakao_main_window()
             room_win = open_room_via_search(main_hwnd, room_name)
-            log(f"[{room_name}] 자동 열기 성공(검색)")
+            log(f"[{room_name}] 자동 열기 성공(검색{f' · {i}번째 시도' if i > 1 else ''})")
+            return room_win
         except Exception as open_exc:
-            raise RoomNotOpenError(
-                f"방 '{room_name}'을 자동으로 열지 못함({open_exc}). 카톡에서 직접 열어두세요."
-            ) from open_exc
-    return room_win
+            if i < attempts:
+                wait = 5 * i
+                log(f"[{room_name}] 자동 열기 실패 {i}/{attempts}({open_exc}) — {wait}초 뒤 다시 시도")
+                time.sleep(wait)
+            else:
+                raise RoomNotOpenError(
+                    f"방 '{room_name}'을 자동으로 열지 못함({open_exc} · {attempts}회 전부). "
+                    "카톡에서 직접 열어두세요."
+                ) from open_exc
 
 
 def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[bool, str]:

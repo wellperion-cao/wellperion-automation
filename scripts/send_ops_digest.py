@@ -305,6 +305,112 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 MGR_DAILY_SHOW_N = 3
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
 
+# ══════════════════════════════════════════════════════════════════════════
+# 📮 회신 부탁 절 (2026-08-15 GM 승인 · C안) — 물음은 나가는데 답을 세는 곳이 없어
+# 미회신이 쌓이던 것(8/15 실측 14건)을, 이미 매일 나가는 ★중간관리자 아침 정리 끝에
+# 절 하나로 흡수한다(약속 L21 — 새 스크립트·새 예약 0).
+#
+# 재료 = 그 방 원장(_digest_ledger.json · ops_daily_digest 가 매일 쌓는 이슈 목록).
+# 어제(target_date)치 열린 건은 정리문의 ⚠️ 절이 이미 다루므로 여기선 **그 전날들** 것만 —
+# 어제 대화에 다시 안 나와 ⚠️ 에서 빠졌지만 답도 안 온 건이 이 절의 몫이다.
+#
+# ★말투(GM 확정 · 8/15 손발신 표준): 감사 먼저(실제 해 주신 것을 이름 붙여) → 남은 것 →
+# 답하는 법을 낮춘다("한 마디면 됩니다") → "한꺼번에 안 주셔도 됩니다".
+# 'N일째'·'아직도'·'재요청' 금지 — 밀린 건 우리 사정이고 그 표기는 압박만 준다.
+# 되돌리기 = build_mgr_daily_brief 안의 build_reply_nudge 호출 한 줄만 지우면 절이 사라진다.
+# ══════════════════════════════════════════════════════════════════════════
+MGR_LEDGER = MGR_PENDING.parent / "_digest_ledger.json"
+NUDGE_LOOKBACK_DAYS = 7   # 이보다 오래된 건 원장에서 안 꺼낸다(오래 묵은 건 웰리가 사람으로 판단)
+NUDGE_SHOW_N = 3          # 사람당 이 이상은 다음 회차로 — 길면 아무도 안 읽는다
+NUDGE_TITLE_CAP = 46      # _bridge_ask_lines 와 같은 한 줄 상한
+# ★중간관리자 방 구성원(수신자). 담당이 운영부 실무진(윤병현AM 등)인 건은 약속 L24
+# (운영부는 실장 경유)에 따라 이경연 실장 묶음에 싣되, 줄에 원 담당 이름을 남긴다.
+_NUDGE_MEMBERS = ["이경연 실장", "이정헌 소장", "나우열M"]
+
+
+def _nudge_norm(s: str) -> str:
+    return re.sub(r"[\s·\-—()\[\]+/,.]+", "", str(s or ""))
+
+
+def _nudge_similar(a: str, b: str) -> bool:
+    """같은 건인가 — ops_daily_digest._schedule_is_dup 과 같은 규칙(포함 또는 0.6 유사)."""
+    from difflib import SequenceMatcher
+    na, nb = _nudge_norm(a), _nudge_norm(b)
+    if not na or not nb:
+        return False
+    return na in nb or nb in na or SequenceMatcher(None, na, nb).ratio() >= 0.6
+
+
+def build_reply_nudge(target_date: str) -> str:
+    """📮 회신 부탁 절 — 원장에서 '전날들의 열린 건(담당 있음)'을 사람별로 묶어 돌려준다.
+
+    거르는 것: ①어제(target_date) 대화에 나온 건(⚠️/✅ 절이 담당) ②나중에 resolved 로
+    닫힌 건 ③담당 빈칸(주인 없는 일은 사람한테 묻지 않는다 · 약속 L23) ④서로 닮은 중복
+    (최신 문구만 남김). 낼 게 없으면 빈 문자열 = 절 자체가 안 실린다."""
+    from datetime import timedelta
+    try:
+        ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
+        t = date.fromisoformat(target_date)
+    except Exception:
+        return ""
+    lo = (t - timedelta(days=NUDGE_LOOKBACK_DAYS - 1)).isoformat()
+    window = [e for e in ledger
+              if isinstance(e, dict) and lo <= str(e.get("date", "")) <= target_date]
+
+    resolved_texts, today_texts = [], []
+    latest_thanks: dict = {}      # member -> 감사할 실제 건(시간순 순회라 마지막 값=최신)
+    for e in sorted(window, key=lambda x: str(x.get("date", ""))):
+        for it in e.get("issues") or []:
+            title = str(it.get("issue") or "").strip()
+            if not title:
+                continue
+            if str(it.get("status") or "") == "resolved":
+                resolved_texts.append(title)
+                owner = str(it.get("owner") or "").strip()
+                if owner in _NUDGE_MEMBERS:
+                    latest_thanks[owner] = title
+            if str(e.get("date", "")) == target_date:
+                today_texts.append(title)
+
+    kept: dict = {}               # member -> [줄], 최신 날짜부터 채운다
+    extra: dict = {}              # member -> 상한 넘어 접은 건수
+    for e in sorted(window, key=lambda x: str(x.get("date", "")), reverse=True):
+        if str(e.get("date", "")) == target_date:
+            continue
+        for it in e.get("issues") or []:
+            title = str(it.get("issue") or "").strip()
+            owner = str(it.get("owner") or "").strip()
+            if not title or not owner or str(it.get("status") or "") != "open":
+                continue
+            if any(_nudge_similar(title, x) for x in resolved_texts + today_texts):
+                continue
+            member = owner if owner in _NUDGE_MEMBERS else _NUDGE_MEMBERS[0]
+            rows = kept.setdefault(member, [])
+            if any(_nudge_similar(title, r) for r in rows):
+                continue
+            if len(rows) >= NUDGE_SHOW_N:
+                extra[member] = extra.get(member, 0) + 1
+                continue
+            tag = f"({owner} 건) " if owner != member else ""
+            rows.append(tag + _cap_line(title, NUDGE_TITLE_CAP))
+
+    if not kept:
+        return ""
+    lines = ["📮 답 주시면 좋은 것들 — 각 건 한 마디면 충분합니다(진행 중/완료/날짜 하나)"]
+    for member in _NUDGE_MEMBERS:
+        rows = kept.get(member)
+        if not rows:
+            continue
+        if member in latest_thanks:
+            lines.append(f"🙏 {member}님, {_cap_line(latest_thanks[member], NUDGE_TITLE_CAP)} 처리해 주셔서 감사합니다.")
+        else:
+            lines.append(f"🙏 {member}님께")
+        lines += [f" · {r}" for r in rows]
+        if extra.get(member):
+            lines.append(f" · 나머지 {extra[member]}건은 다음에 나눠 여쭙겠습니다")
+    lines.append("한꺼번에 안 주셔도 됩니다 — 편하실 때 한 줄씩이면 충분합니다.")
+    return "\n".join(lines)
+
 
 def _mgr_conversation_message(target_date: str) -> str:
     """ops_daily_digest.py --room "★중간관리자" 가 만든 그 방 대화 정리 원문.
@@ -348,6 +454,11 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     open_msg, relay_current = build_relay_message(contacts, relay_state.get(room, {}))
     if open_msg:
         parts.append(open_msg)
+
+    # 📮 회신 부탁 절(C안 · GM 승인 2026-08-15) — 이 한 줄만 지우면 절이 사라진다(역롤백).
+    nudge = build_reply_nudge(target_date)
+    if nudge:
+        parts.append(nudge)
 
     return "\n\n".join(parts), relay_current
 
@@ -532,17 +643,17 @@ def _load_archive() -> list:
         return []
 
 
-def _cap_line(text: str) -> str:
+def _cap_line(text: str, cap: int = RELAY_TITLE_CAP) -> str:
     """카톡 한 줄용 길이 상한 — 낱말 한가운데서 자르지 않는다(GM 상시 지시).
 
     상한 안에서 마지막 띄어쓰기까지만 남긴다. 띄어쓰기가 아예 없으면(붙여 쓴 긴 문장)
     어쩔 수 없이 길이로 자른다 — 그때는 잘린 티가 나는 게 뜻이 끊기는 것보다 낫다."""
     t = re.sub(r"\s+", " ", str(text or "")).strip()
-    if len(t) <= RELAY_TITLE_CAP:
+    if len(t) <= cap:
         return t
-    head = t[:RELAY_TITLE_CAP]
-    cut = head.rfind(" ")
-    if cut >= RELAY_TITLE_CAP // 2:
+    head = t[:cap]
+    cut = max(head.rfind(" "), head.rfind("·"))
+    if cut >= cap // 2:
         head = head[:cut]
     return head.rstrip(" ·—-(→,") + "…"
 
