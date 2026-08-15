@@ -1214,11 +1214,20 @@ function collapseOmcLines(raw) {
 function koreanizeBranchLine(raw) {
   const str = String(raw || '');
   const nl = str.indexOf('\n');
-  const first = nl === -1 ? str : str.slice(0, nl);
+  let first = nl === -1 ? str : str.slice(0, nl);
   const restStr = nl === -1 ? '' : str.slice(nl);
+  // ★branch: 앞에 낀 세그먼트(cwd 경로·repo:·hostname — 전부 '경로' 계열)는 통째로 버린다
+  //   (GM 지시 2026-08-15 "브랜치 밑에 작업 경로를 또 찍어서 같은 정보가 두 번 나온다").
+  //   세션은 항상 이 저장소 한 곳에서만 돌아 경로는 볼 이유가 없다. OMC 설정이 흔들려
+  //   cwd·gitRepo 요소가 켜지는 순간에도 재발하지 않도록 파싱 단계에서 막는다(2026-08-13에
+  //   이미 한 번 겪은 증상이라 재발 방지 = 표시 순서가 아니라 이 함수에 건다).
+  //   branch: 를 아예 못 찾으면 첫 줄 전체가 경로류일 가능성이 높다 — 줄째로 버린다.
+  const bIdx = first.indexOf('branch:');
+  if (bIdx === -1) return restStr.replace(/^\n/, '');
+  if (bIdx > 0) first = first.slice(bIdx);
   const plain = first.replace(/\x1b\[[0-9;]*m/g, '');
   const m = plain.match(/^branch:(\S+)(?:\s*\|\s*(.*))?$/);
-  if (!m) return str;   // 형식이 다르면 원문 그대로
+  if (!m) return first + restStr;   // branch: 로 시작하는데 형식이 다르면 그대로(지어내지 않는다)
   const branch = m[1];
   const rest = m[2] || '';
   const staged = (rest.match(/\+(\d+)/) || [])[1];
@@ -1226,13 +1235,14 @@ function koreanizeBranchLine(raw) {
   const untracked = (rest.match(/\?(\d+)/) || [])[1];
   const ahead = (rest.match(/⇡(\d+)/) || [])[1];
   const parts = [];
-  // ★변경파일 수 3종(저장대기·미저장·새파일)은 뺀다 (GM 지시 2026-08-13 "의미없는데").
-  //   실측: 이 저장소는 자동 산출물이 상시 75~100개를 더럽게 유지해 이 숫자가 늘 크게 떠 있었고,
-  //   그래서 아무 신호도 되지 못했다(늘 크니까 커져도 모른다). GM 이 실제로 조치하는 값은
-  //   '미업로드'뿐이다 — 그건 0 이 아닐 때만 나타나므로 뜨면 진짜 신호다.
-  //   되살리려면 이 세 줄을 되돌리면 된다(위 파싱은 그대로 남아 있다).
-  void staged; void modified; void untracked;
-  if (ahead != null) parts.push(`${B}${Y}미업로드 ${ahead}${X}`);   // ★0 이 아닐 때만 존재 — 눈에 띄게
+  // ★커밋 안 된 파일 개수 — GM 재지시 2026-08-15. 저장대기·미저장·새파일 3종을 하나로 합쳐
+  //   '변경 N'으로만 보여준다(3종 나열은 2026-08-13에 소음으로 판정돼 뺐던 것 — 이번엔 합산 1개
+  //   배지라 그 판정과 부딪히지 않는다). 셋 다 없으면(=클린) 배지 자체가 없다.
+  const uncommitted = [staged, modified, untracked].reduce((sum, v) => sum + (v ? Number(v) : 0), 0);
+  if (uncommitted > 0) parts.push(`${D}변경 ${uncommitted}${X}`);
+  // ★미업로드(⇡ ahead) — 가장 중요한 값(GM "커밋만 하고 푸시 안 하면 공용 화면이 옛것으로 남는다"
+  //   가 실사고였다). 굵게 눈에 띄게. 0 이면 OMC 가 애초에 안 찍으므로 여기도 자연히 생략된다.
+  if (ahead != null) parts.push(`${B}${Y}미업로드 ${ahead}${X}`);
   const newFirst = `${C}${branch}${X}` + (parts.length ? ` ${D}·${X} ${parts.join(`${D} · ${X}`)}` : '');
   return newFirst + restStr;
 }
