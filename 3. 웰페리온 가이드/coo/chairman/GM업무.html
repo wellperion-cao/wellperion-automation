@@ -647,7 +647,11 @@
       var hasChecks = todos.length > 0;
       if (hasChecks) gmNoteLines[it.id] = it.note.split(/\r?\n/);
       var doneCount = todos.filter(function (t) { return t.checked; }).length;
-      var pct = (typeof it.progress === 'number') ? it.progress : null;
+      // % = 체크리스트 있으면 체크 개수로(월간운영계획.html effProgress 와 같은 규칙 — GM 지적
+      // 2026-08-16 "정본 80% vs 실제 체크 60% 어긋남"). 여기는 doneCount/todos.length 를 방금
+      // 위에서 이미 구했으니 그대로 쓴다 — 새 파싱 함수 안 만든다. 없으면 기존 it.progress 그대로.
+      var pct = hasChecks ? Math.round(doneCount / todos.length * 100)
+                          : ((typeof it.progress === 'number') ? it.progress : null);
       var stCls = it.status === '진행' ? 'on' : (it.status === '이월' ? 'carry' : 'plan');
       return '<div class="item" id="gm-' + esc(it.id) + '">' +
         '<div class="top"><h2><span class="no">' + no + '</span>' + esc(it.title) +
@@ -659,7 +663,9 @@
         ' <a class="ic-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '" title="월간운영계획에서 보기">📌</a>' +
         '</h2>' +
         '<span class="badges"><span class="st ' + stCls + '">' + esc(it.status || '—') + '</span>' +
-        (pct === null ? '' : '<span class="pct">' + pct + '%</span>') +
+        // 체크리스트 있으면 「n/m 완료」 배지가 %와 같은 사실이라 % 배지는 뺀다(중복 표시 제거, GM 지시
+        // 2026-08-16 — 새 배지 추가 아님, 있던 것 하나로 줄임). 진행바(.pbar)는 그대로 남긴다.
+        (pct === null || hasChecks ? '' : '<span class="pct">' + pct + '%</span>') +
         (hasChecks ? '<span class="chkcnt">' + doneCount + '/' + todos.length + ' 완료</span>' : '') +
         '</span></div>' +
         (pct === null ? '' : '<div class="pbar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>') +
