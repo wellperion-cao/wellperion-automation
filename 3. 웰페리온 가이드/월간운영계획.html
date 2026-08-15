@@ -1206,6 +1206,20 @@
   }
   function clampPct(v){ v = Number(v); if(isNaN(v)) return 0; return Math.max(0, Math.min(100, Math.round(v))); }
   function pad2(n){ return ('0' + n).slice(-2); }
+  // 체크리스트 있는 목표는 체크 개수를 진척률로 쓴다(GM 지적 2026-08-16 "정본 80% vs 실제 체크 60%
+  // 어긋남" — progress 필드는 GM이 PIN 눌러 「변경 저장」해야만 바뀌는데 사람이 실제로 만지는 건
+  // progress_note 체크(□/☑)라 화면 숫자가 실태와 따로 놀았다). 체크박스 없는 목표는 기존 progress
+  // 필드 그대로 — 표시 계산만 바꾼다, progress 필드 자체는 안 건드린다(다른 소비자가 읽는다).
+  function effProgress(o){
+    var lines = String((o && o.progress_note) || '').split(/\r?\n/);
+    var total = 0, done = 0;
+    lines.forEach(function(ln){
+      var m = /^\s*([□☑])/.exec(ln);
+      if(!m) return;
+      total++; if(m[1] === '☑') done++;
+    });
+    return total ? clampPct(done / total * 100) : clampPct(o && o.progress);
+  }
 
   // ── 읽기: 정적 정본(plan)=raw-GitHub 먼저(캐시 허용·수 ms) → 실패 시에만 GAS read_file 폴백. ──
   //    (기존 GAS-먼저는 매번 느린 길을 먼저 태워 첫 렌더를 지연시켰음. raw는 커밋 즉시 반영 · 편집 저장은 in-memory 모델로 갱신하므로 raw-먼저로 안전 — 2026-07-04 성능개선)
@@ -1620,7 +1634,7 @@
     var objs = ((m && m.objectives) || []).filter(honestyHasEvidence);
     if(!objs.length) return null;
     var s = 0;
-    objs.forEach(function(o){ s += (typeof o.progress === 'number' ? o.progress : 0); });
+    objs.forEach(function(o){ s += (typeof o.progress === 'number' ? effProgress(o) : 0); });
     return Math.round(s / objs.length);
   }
   function computeErpPctFor(monKey){
@@ -1715,7 +1729,7 @@
     var sw = (TOP3_STATUS_W[o.status] != null) ? TOP3_STATUS_W[o.status] : 1;
     var cw = isCompanyWide(o) ? 40 : 0;
     var ns = (o.northstar && _nsMap && _nsMap[o.northstar]) ? 20 : 0;
-    return CONTRIB_W[contribOf(o)] + sw + cw + ns + clampPct(o.progress) * 0.01;
+    return CONTRIB_W[contribOf(o)] + sw + cw + ns + effProgress(o) * 0.01;
   }
   // 북극성 기여도 배지(상/중/하) — GM 직접 지정 top3는 순위도 함께 표기(top3 카드·상세표 공용).
   function contribBadge(o){
@@ -1733,7 +1747,7 @@
       .map(function(o, i){ return {o:o, i:i, s:top3Score(o)}; })
       .sort(function(a, b){
         if(b.s !== a.s) return b.s - a.s;
-        var pb = clampPct(b.o.progress), pa = clampPct(a.o.progress);
+        var pb = effProgress(b.o), pa = effProgress(a.o);
         if(pb !== pa) return pb - pa;
         return a.i - b.i;
       }).map(function(x){ return x.o; });
@@ -1756,7 +1770,7 @@
           '<span class="t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + '</span></div>' +
         '<div class="t3-title">' + esc(o.title) + '</div>' +
         // top3 카드도 상세표·부서카드와 같은 정직 기준(honestyNoEvidence) — GM 지적 원문 예시(웰페리온 ERP/브로제이=2순위·manual)가 바로 이 카드였다.
-        '<div class="t3-prog">' + (honestyNoEvidence(o) ? noEvidenceHtml(o) : progBar(o.progress, o.status, false, '', false)) + '</div>' +
+        '<div class="t3-prog">' + (honestyNoEvidence(o) ? noEvidenceHtml(o) : progBar(effProgress(o), o.status, false, '', false)) + '</div>' +
         '<div class="t3-ns">' + nsBadge(o) + '</div>' +
       '</div>';
     }).join('');
@@ -2286,11 +2300,13 @@
           ' <span class="dg-obj-cnt-note">· 상시 업무라 진척률(%) 대신 건수로 봅니다</span></div>' + tgt + editExtra +
       '</div>';
     }
-    var pct = clampPct(o.progress);
+    // 편집 모드는 정본 progress 필드(저장 대상)를 그대로 보여준다 — 화면 표시만 체크 개수로 바꾼다.
+    var rawPct = clampPct(o.progress);
+    var pct = _editMode ? rawPct : effProgress(o);
     var noEv = (!_editMode && honestyNoEvidence(o));
     var pctCell = _editMode ? '' : (noEv ? noEvidenceHtml(o) : ('<span class="dg-obj-p">' + pct + '%</span>'));
     var barCell = _editMode
-      ? progBar(pct, st, true, 'data-id="' + esc(o.id) + '" data-f="progress"', false)
+      ? progBar(rawPct, st, true, 'data-id="' + esc(o.id) + '" data-f="progress"', false)
       : (noEv ? '' : ('<div class="dg-obj-bar"><i style="width:' + pct + '%"></i></div>'));
     return '<div class="dg-obj st-' + esc(st) + '"' + _anchorId(o) + '>' +
       '<div class="dg-obj-top"><span class="obadge ' + esc(st) + '">' + esc(st) + '</span>' +
@@ -2345,7 +2361,7 @@
   function qProgressPct(cfg, objs){
     var list = objsForDept(cfg, objs).filter(function(o){ return typeof o.progress === 'number'; });
     if(!list.length) return null;
-    var sum = list.reduce(function(a, o){ return a + o.progress; }, 0);
+    var sum = list.reduce(function(a, o){ return a + effProgress(o); }, 0);
     return {pct: Math.round(sum / list.length), n: list.length};
   }
   function qBar(pct, tone){
@@ -2701,7 +2717,7 @@
       var m = months[k], mnum = monNum(k);
       var news = (m.objectives || []).filter(function(o){ return !o.initiative_id; });
       var lis = news.length ? news.map(function(o){
-        return '<li>' + esc(o.title) + ' <span style="color:var(--dim)">(' + esc(nickOf(o.owner)) + ' · ' + clampPct(o.progress) + '%)</span></li>';
+        return '<li>' + esc(o.title) + ' <span style="color:var(--dim)">(' + esc(nickOf(o.owner)) + ' · ' + effProgress(o) + '%)</span></li>';
       }).join('') : '<li class="none">신규 과제 없음(연속 과제만)</li>';
       return '<div class="an-msum-card' + (mnum === curMn ? ' cur' : '') + '"><div class="an-msum-h">' + esc(k) +
         '<span class="mth-stat">' + esc(m.month_status || '') + '</span></div><ul>' + lis + '</ul></div>';
@@ -2822,7 +2838,7 @@
           contribBadge(o) +
           '<span class="obadge ' + esc(o.status || '') + '">' + esc(o.status || '') + '</span></div>' +
         '<div class="sm-t3-title">' + esc(o.title) + '</div>' +
-        '<div class="sm-t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + ' · 진척 ' + clampPct(o.progress) + '%</div>' +
+        '<div class="sm-t3-own">' + esc(nickOf(o.owner)) + (o.dept ? ' · ' + esc(o.dept) : '') + ' · 진척 ' + effProgress(o) + '%</div>' +
       '</div>';
     }).join('') : '<div class="sm-empty">이 달의 핵심 과제가 없습니다.</div>';
 
