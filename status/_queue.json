@@ -2093,5 +2093,26 @@
     "artifact": "https://wellperion-cao.github.io/wellperion-automation/3.%20%EC%9B%B0%ED%8E%98%EB%A6%AC%EC%98%A8%20%EA%B0%80%EC%9D%B4%EB%93%9C/cpo/member/membership.html",
     "saw": "유효회원 담당자 배정 필터 3종 추가: 상태(신규/재등록)·종목(수강반종목명)·연락이력정렬(오래된순/최신순) — 다중 조합 가능",
     "terminal": true
+  },
+  {
+    "task_id": "CTO-2026-08-15-PAGE-SCORE-EXTRACT-PY-원천-뒤집기",
+    "clevel": "cto",
+    "title": "[시토] page_score_extract.py 원천 뒤집기 — GM업무 채점표 이관 후속",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-15",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-15] GM 지시(08-15)로 GM업무.html #sec-erp-score(완성도·사용률 정적 표)를 삭제하고 자율현황.html이 status/page_score.json·page_ping.json을 직접 렌더하게 이관했다(웰리 처리). 후속 백엔드: ①page_score_extract.py의 extract()가 삭제된 HTML 섹션을 파싱하므로 이제 실행하면 SystemExit — status/page_score.json을 정본으로 뒤집고(재채점=JSON 직접 갱신) HTML 파싱 경로를 걷어낸다. --ping 경로(매일 07:40 daily_scheduler)는 HTML을 안 읽어 무영향, 그대로 유지. ②hangro_board.py _page_score_slice의 '원천 = GM업무 화면 재채점' 문구를 새 정본 기준으로 갱신.",
+    "next": "완료 후 python scripts/page_score_extract.py --ping 1회 실행으로 무영향 확인",
+    "depends_on": "",
+    "ship_no": 10838,
+    "short_no": 641,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-08-15"
   }
 ]

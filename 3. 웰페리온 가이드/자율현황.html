@@ -576,6 +576,73 @@
     </script>
     <!-- ══ /🧠 AI 자기학습 제안 ══ -->
 
+    <!-- ══ 📊 ERP 화면 완성도·열람 — GM업무.html #sec-erp-score 에서 이관(GM 지시 2026-08-15).
+         정적 79행 표 대신 기계 정본(status/page_score.json · page_ping.json)을 그대로 그린다.
+         아침 자가점검(hangro_board.py 저점 슬라이스)이 읽는 파일과 같은 원천 — 화면과 일감이
+         한 숫자를 본다. 열람 흔적은 _assets/page_ping.js → 매일 07:40 수집(page_ping.json).
+         발행 미러에 이 두 파일이 없어 raw.githubusercontent 에서 읽는다(기존 패턴, 753행과 동일). ══ -->
+    <details id="sec-page-score" style="margin:8px 0 24px;">
+      <summary style="cursor:pointer;list-style:none;"><h3 id="ps-title" style="display:inline;"><span class="ico">📊</span>ERP 화면 완성도·열람</h3><span id="ps-badge" style="font-size:0.78em;color:#888;font-weight:400;margin-left:8px;">불러오는 중…</span></summary>
+      <p style="font-size:12px;color:var(--dim);margin:6px 0 10px;">실무진 소유 화면을 AI가 채점한 품질 계기판 — 기준은 "실무진이 이 화면만 보고 자기 업무를 끝낼 수 있는가"(라이브 연동·입력저장·빈칸·죽은 버튼·인쇄/모바일 5축 감점). <b>85% 미만이 아침 자가점검의 그날 일감</b>이 됩니다. 열람 = 화면이 실제로 열린 마지막 시각(매일 07:40 수집). 시로·시뽀 화면은 나우열M 라인이라 채점하지 않습니다. 정본 = <code>status/page_score.json</code> · <code>status/page_ping.json</code>.</p>
+      <div id="ps-body"><div style="color:var(--dim);font-size:13px;padding:8px 0;">불러오는 중…</div></div>
+    </details>
+    <script>
+    (function(){
+      var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/';
+      function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+      function get(path){return fetch(RAW + path + '?_=' + Date.now(), {cache:'no-store'}).then(function(r){return r.ok ? r.json() : null;});}
+      Promise.all([get('status/page_score.json'), get('status/page_ping.json')])
+        .then(function(res){
+          var score = res[0], ping = res[1];
+          var badge = document.getElementById('ps-badge');
+          var body  = document.getElementById('ps-body');
+          if(!score || !Array.isArray(score.pages) || !score.pages.length){
+            if(badge) badge.textContent = '(데이터 없음)';
+            if(body)  body.innerHTML = '<div style="color:var(--dim);font-size:13px;padding:8px 0;">status/page_score.json 을 불러오지 못했습니다.</div>';
+            return;
+          }
+          var pages = score.pages.slice();
+          var lastOpen = {};
+          if(ping && Array.isArray(ping.pages)) ping.pages.forEach(function(p){ lastOpen[p.name] = p.last_open || ''; });
+          var avg = Math.round(pages.reduce(function(s,p){return s+(p.score||0);},0) / pages.length);
+          var low = pages.filter(function(p){ return (p.score||0) < 85; });
+          var opened = ping && ping.opened_count != null ? ping.opened_count : null;
+          if(badge) badge.textContent = pages.length + '개 · 평균 ' + avg + '% · 85% 미만 ' + low.length + '개' + (opened != null ? ' · 열람 흔적 ' + opened + '개' : '');
+          function row(p){
+            var lo = lastOpen[p.name];
+            return '<tr>'
+              + '<td style="padding:4px 8px;white-space:nowrap;font-weight:700;color:' + ((p.score||0)<70?'#dc2626':(p.score||0)<85?'#d97706':'#059669') + ';">' + (p.score||0) + '%</td>'
+              + '<td style="padding:4px 8px;">' + esc(p.name) + ' <span style="color:var(--dim);font-size:11px;">(' + esc(p.owner_nick||p.role||'') + ')</span></td>'
+              + '<td style="padding:4px 8px;font-size:12px;color:var(--dim);">' + esc(p.note||'') + '</td>'
+              + '<td style="padding:4px 8px;font-size:12px;white-space:nowrap;color:' + (lo?'var(--dim)':'#d97706') + ';">' + (lo ? esc(lo) : '열람 흔적 없음') + '</td>'
+              + '</tr>';
+          }
+          var head = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>'
+            + '<th style="text-align:left;padding:4px 8px;">완성도</th><th style="text-align:left;padding:4px 8px;">화면 (소유)</th>'
+            + '<th style="text-align:left;padding:4px 8px;">감점 사유</th><th style="text-align:left;padding:4px 8px;">마지막 열람</th></tr></thead><tbody>';
+          var h = '';
+          if(low.length){
+            h += '<div class="sec-note" style="border-left:3px solid #d97706;padding-left:10px;margin:0 0 8px;"><b>85% 미만 ' + low.length + '개</b> — 아침 자가점검이 이 목록을 일감으로 씁니다.</div>';
+            h += head + low.map(row).join('') + '</tbody></table>';
+          }
+          var rest = pages.filter(function(p){ return (p.score||0) >= 85; });
+          if(rest.length){
+            h += '<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:12px;color:var(--dim);">85% 이상 ' + rest.length + '개 펼치기</summary>'
+               + head + rest.map(row).join('') + '</tbody></table></details>';
+          }
+          if(score.excluded_count){
+            h += '<div style="font-size:11px;color:var(--dim);margin-top:6px;">채점 제외 ' + score.excluded_count + '개(리다이렉트 스텁·파일 부재)는 정본 JSON 의 excluded 에 있습니다.</div>';
+          }
+          if(body) body.innerHTML = h;
+        })
+        .catch(function(){
+          var badge = document.getElementById('ps-badge');
+          if(badge) badge.textContent = '(불러오기 실패)';
+        });
+    })();
+    </script>
+    <!-- ══ /📊 ERP 화면 완성도·열람 ══ -->
+
 
   <!-- ★2026-08-03 시토 — 「🏛️ 자율화를 떠받치는 4대 축」과 「🌟 북극성 지향 제작 루프」 삭제(GM 지시).
        체계 설명의 정본은 ssot/자율화규약.md 다. GM: "정본이 따로 있는데 링크로 이어가는건 의미 없다"
