@@ -469,6 +469,16 @@ function downloadPageAsJpg(){
     btn.disabled=true;
     var lbl=btn.querySelector('span'); if(lbl)lbl.textContent='생성 중...';
     var bg=getComputedStyle(document.body).backgroundColor||'#ffffff';
+    // [수정 2026-08-15 A-5] html2canvas는 캡처 대상 DOM을 별도 iframe에 복제해 렌더링하는데,
+    // 그 복제본에서 CSS 애니메이션(@keyframes rise/grow)이 처음부터 다시 재생되며 캡처 시점에
+    // 미완주 상태(낮은 opacity)로 포착되는 결함이 있다 — 소스 페이지를 몇 초 열어둔 뒤 캡처해도
+    // 동일하게 재현됨(실측 확인). .stat-hero(436명 수치·라벨)에서 특히 두드러져 거의 안 보이게 됨.
+    // 화면 디자인은 그대로 두고 캡처 순간에만 이미 있는 prefers-reduced-motion 폴백과 동일하게
+    // 해당 애니메이션을 끈다(애니메이션 종료 후 상태와 동일한 값으로 고정될 뿐, 시각 변경 아님).
+    var animGuard=document.createElement('style');
+    animGuard.id='__jpgCaptureNoAnim';
+    animGuard.textContent='.stat-hero,.stat-rest .s,.ratio-fill{animation:none !important;}';
+    document.head.appendChild(animGuard);
     window.html2canvas(document.getElementById('captureRoot')||document.body,{
       backgroundColor:bg,scale:2.5,useCORS:true,
       ignoreElements:function(el){return el&&el.id==='jpgDownloadBtn';}
@@ -479,7 +489,10 @@ function downloadPageAsJpg(){
       document.body.appendChild(link); link.click(); link.remove();
     }).catch(function(){
       alert('이미지 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-    }).then(function(){ btn.disabled=false; btn.innerHTML=original; });
+    }).then(function(){
+      var g=document.getElementById('__jpgCaptureNoAnim'); if(g) g.remove();
+      btn.disabled=false; btn.innerHTML=original;
+    });
   }
   if(window.html2canvas){ capture(); return; }
   btn.disabled=true;
