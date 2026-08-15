@@ -30,6 +30,7 @@ import argparse
 import importlib
 import json
 import os
+import re
 import sys
 from datetime import datetime
 
@@ -93,6 +94,28 @@ REPORT_LOG_PATH = os.path.join(_STATUS_DIR, "module_report_log.jsonl")
 
 VALID_CADENCES = ("daily", "weekly", "monthly")
 
+# ── 2026-08-15(GM 지시 "5통→1통, 가독성") ────────────────────────────────────
+# GM 업무관리방에 09:10 전후 여러 통이 따로 나가 못 읽겠다는 지적. 새 파일·새 예약작업
+# 없이 이 스크립트 안에서 (A) 문의·콘텐츠 두 모듈을 GM 업무관리방 한 통으로 묶고
+# (B) 지표 라벨을 사람말로 바꾸고 (C) cto-automation-health(AI관리 daily)는 사람말
+# 3줄로 줄이고 전부 정상이면 무발신한다. 아래 세 상수·표가 그 정본.
+GM_DAILY_BUNDLE_MODULES = ("cpo-inquiry-daily-actions", "cmo-content-pipeline")
+GM_DAILY_BUNDLE_KEY = "gm_daily_digest"
+GM_DAILY_BUNDLE_ROOM = "업무관리"
+
+# 지표 라벨 사람말 치환표(Part B) — 원문 라벨을 못 바꾸는 이유는 로그·화면(자율현황)이
+# 원문 키로 과거값과 대조하기 때문. 발신 텍스트에서만 통과시킨다.
+LABEL_HUMANIZE = {
+    "미컨택(연락기록 0건)": "아직 연락 못 드린 분",
+    "등록됐는데 회원 명단에 없음(하루 지난 것)": "등록은 됐는데 회원 명단에 없는 분",
+    "오늘 신규 문의": "새 문의",
+    "발행완료": "발행",
+}
+
+_JOB_NAME_HUMANIZE = {
+    "Wellperion-PC-Boot-Greeting": "PC 부팅 인사",
+}
+
 
 # ── 로더 ─────────────────────────────────────────────────────────────────────
 def load_json(path, default):
@@ -155,7 +178,8 @@ def format_report(payload, module_name, cadence, owner_role=None):
     if summary:
         lines.append(summary)
     for m in payload.get("metrics", []):
-        lines.append(f"  · {m.get('label')}: {m.get('value')}")
+        label = LABEL_HUMANIZE.get(m.get("label"), m.get("label"))
+        lines.append(f"  · {label}: {m.get('value')}")
     honesty = payload.get("honesty_tag")
     if honesty:
         lines.append(f"정직: {honesty}")
@@ -258,6 +282,94 @@ def _northstar_prefix(cadence):
         return ""
 
 
+# ── GM 업무관리방 daily 1통 묶음(Part A, 2026-08-15) ──────────────────────────
+def _metric_val(payload, label, default=None):
+    for m in (payload or {}).get("metrics") or []:
+        if m.get("label") == label:
+            return m.get("value")
+    return default
+
+
+def _format_gm_daily_bundle(payloads, prev, now):
+    """문의(시포)+콘텐츠(시모) → GM 업무관리방 「🧭 아침 보고」 한 통.
+    변화 있는 지표만 화살표로, 오늘 뉴스 아닌 줄·섹션은 뺀다(GM 지시 2026-08-15)."""
+    weekday = "월화수목금토일"[now.weekday()]
+    lines = [f"🧭 아침 보고 · {now.strftime('%m-%d')} ({weekday})"]
+
+    cpo = payloads.get("cpo-inquiry-daily-actions")
+    suc_missing, link = 0, None
+    if cpo:
+        prev_cpo = prev.get("cpo-inquiry-daily-actions") or {}
+        today_new = _metric_val(cpo, "오늘 신규 문의", 0)
+        todays_res = _metric_val(cpo, "오늘 상담·체험 예약", 0)
+        uncontacted = _metric_val(cpo, "미컨택(연락기록 0건)", 0)
+        suc_missing = _metric_val(cpo, "등록됐는데 회원 명단에 없음(하루 지난 것)", 0) or 0
+        link = cpo.get("link")
+        prev_unc = prev_cpo.get("미컨택(연락기록 0건)")
+        unc_txt = f"{uncontacted}명"
+        if isinstance(prev_unc, (int, float)) and prev_unc != uncontacted:
+            unc_txt = f"{prev_unc}명 → {uncontacted}명"
+        cpo_lines = [
+            f"▪ 오늘 상담·체험 예약 {todays_res}건",
+            f"▪ 새 문의 {today_new}건 · 아직 연락 못 드린 분 {unc_txt}",
+        ]
+        if suc_missing:
+            cpo_lines.append(f"▪ 등록은 됐는데 회원 명단에 없는 분 {suc_missing}명")
+        lines += ["", "📮 문의 — 시포"] + cpo_lines
+
+    cmo = payloads.get("cmo-content-pipeline")
+    if cmo:
+        prev_cmo = prev.get("cmo-content-pipeline") or {}
+        published = _metric_val(cmo, "발행완료", 0) or 0
+        prev_pub = prev_cmo.get("발행완료")
+        delta = published - prev_pub if isinstance(prev_pub, (int, float)) else 0
+        if delta > 0:  # 발행 소식 없으면 섹션째 뺀다
+            lines += ["", "📣 콘텐츠 — 시모", f"▪ 어제 발행 {delta}건 (누적 {published}건)"]
+
+    if suc_missing:
+        gm_line = f"▪ 명단 누락 {suc_missing}명"
+        if link:
+            gm_line += f" → {link}"
+        lines += ["", f"👉 GM 확인 1건", gm_line]
+
+    return "\n".join(lines)
+
+
+# ── AI관리방 자동화 이상 요약(Part C, 2026-08-15) ─────────────────────────────
+_FAIL_COUNT_RE = re.compile(r"실패\s*(\d+)\)")
+_FAIL_NAMES_RE = re.compile(r"실패:\s*(.+)$")
+_SHEET_COUNT_RE = re.compile(r"위반\s*(\d+)건")
+
+
+def _format_automation_health_ai_room(payload, now):
+    """cto-automation-health → AI관리방 사람말 3줄. 전부 정상이면 빈 문자열(무발신).
+    주간 회귀·침묵·결정정합('옛것 재생 차단' — 가드 정상작동 기록) 등은 로그에만 남고
+    텔레그램에는 안 나간다(GM 지시 2026-08-15 — 이상 있을 때만, 짧게)."""
+    ratio = str(_metric_val(payload, "자동화 가동", "") or "")
+    ok_s, _, total_s = ratio.partition("/")
+    schedule = str(_metric_val(payload, "스케줄·오늘 진행", "") or "")
+    sheet = str(_metric_val(payload, "이상 신호·sheet_contract", "") or "")
+
+    lines = []
+    if ok_s.isdigit() and total_s.isdigit() and ok_s != total_s:
+        lines.append(f"▪ {total_s}개 중 {ok_s}개 정상")
+
+    m = _FAIL_COUNT_RE.search(schedule)
+    if m and int(m.group(1)) > 0:
+        names_m = _FAIL_NAMES_RE.search(schedule)
+        names = [n.strip() for n in (names_m.group(1) if names_m else "").split(",") if n.strip()]
+        humans = [_JOB_NAME_HUMANIZE.get(n, n) for n in names]
+        lines.append(f"▪ 멈춘 것: {', '.join(humans) or '?'} {m.group(1)}건 → 오늘 중 복구")
+
+    m = _SHEET_COUNT_RE.search(sheet)
+    if m and int(m.group(1)) > 0:
+        lines.append(f"▪ 회원 시트 규칙 위반 {m.group(1)}건 → 시포가 처리 중")
+
+    if not lines:
+        return ""
+    return f"🔧 자동화 이상 · {now.strftime('%m-%d')} — 시토\n" + "\n".join(lines)
+
+
 # ── 핵심 실행 ────────────────────────────────────────────────────────────────
 def run_report(cadence, *, dry_run=False, only_module=None,
                registry_path=None, rooms_path=ROOMS_PATH,
@@ -286,6 +398,8 @@ def run_report(cadence, *, dry_run=False, only_module=None,
     results = []
     ns_block = _northstar_prefix(cadence)
     ns_applied = False
+    gm_bundle_payloads: dict = {}   # Part A(2026-08-15) — GM 업무관리방 1통 묶음 버퍼
+    gm_bundle_prev: dict = {}
 
     for mod in modules:
         mid = mod.get("id")
@@ -332,8 +446,41 @@ def run_report(cadence, *, dry_run=False, only_module=None,
                 pass  # 하트비트 실패가 리포터 본 작업을 막지 않는다(fail-soft)
 
         key = f"{mid}|{date_str}|{cadence}"
+
+        # Part A(2026-08-15) — GM 업무관리방 두 모듈은 개별발송 대신 버퍼링만 하고 다음
+        # 모듈로 넘어간다. 실제 합본 발송은 루프가 끝난 뒤 한 번(_format_gm_daily_bundle).
+        if cadence == "daily" and mid in GM_DAILY_BUNDLE_MODULES:
+            gm_bundle_payloads[mid] = payload
+            gm_bundle_prev[mid] = _last_metrics(log_path, mid)
+            if not dry_run:
+                _append_log(log_path, {
+                    "ts": now.isoformat(), "module": mid, "cadence": cadence,
+                    "dedup_key": key, "sent": True, "metrics": _metrics_of(payload),
+                    "note": "bundled_into:" + GM_DAILY_BUNDLE_KEY,
+                })
+            results.append({"module": mid, "action": "bundled",
+                            "bundle": GM_DAILY_BUNDLE_KEY, "dedup_key": key})
+            continue
+
         text = format_report(payload, mod.get("feature", mid), cadence,
                               owner_role=mod.get("owner_role"))
+
+        # Part C(2026-08-15) — AI관리방 자동화현황은 사람말 3줄로 덮어쓴다. 전부
+        # 정상이면 무발신(로그만 남기고 스킵) — module_report_log.jsonl 에는 그대로
+        # metrics 가 남으니 실측 이력은 유지된다.
+        if cadence == "daily" and mid == "cto-automation-health":
+            ai_text = _format_automation_health_ai_room(payload, now)
+            if not ai_text:
+                if not dry_run:
+                    _append_log(log_path, {
+                        "ts": now.isoformat(), "module": mid, "cadence": cadence,
+                        "dedup_key": key, "sent": False, "reason": "all_normal",
+                    })
+                results.append({"module": mid, "action": "skip",
+                                "reason": "all_normal", "dedup_key": key})
+                continue
+            text = ai_text
+
         bot_id = (mod.get("notify_spec") or {}).get("bot_id")
         chat_id = resolve_chat_id(bot_id, rooms)
 
@@ -421,6 +568,37 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         })
         results.append({"module": mid, "action": "sent" if ok else "send_failed",
                         "dedup_key": key, "sent": ok})
+
+    # Part A(2026-08-15) — 버퍼링해둔 GM 업무관리방 1통을 루프 끝에 한 번만 발송.
+    if cadence == "daily" and gm_bundle_payloads:
+        bundle_key = f"{GM_DAILY_BUNDLE_KEY}|{date_str}|daily"
+        bundle_text = _format_gm_daily_bundle(gm_bundle_payloads, gm_bundle_prev, now)
+        bundle_chat_id = resolve_chat_id(GM_DAILY_BUNDLE_ROOM, rooms)
+        if dry_run:
+            results.append({"module": GM_DAILY_BUNDLE_KEY, "action": "dry-run",
+                            "dedup_key": bundle_key, "bot_id": GM_DAILY_BUNDLE_ROOM,
+                            "chat_id": bundle_chat_id,
+                            "payload": {"bundled_modules": list(gm_bundle_payloads)},
+                            "text": bundle_text})
+        elif bundle_chat_id is None:
+            _append_log(log_path, {
+                "ts": now.isoformat(), "module": GM_DAILY_BUNDLE_KEY, "cadence": cadence,
+                "dedup_key": bundle_key, "sent": False, "reason": "room_unresolved",
+            })
+            results.append({"module": GM_DAILY_BUNDLE_KEY, "action": "skip",
+                            "reason": "room_unresolved", "dedup_key": bundle_key})
+        elif _already_sent(bundle_key, log_path):
+            results.append({"module": GM_DAILY_BUNDLE_KEY, "action": "skip",
+                            "reason": "dedup", "dedup_key": bundle_key})
+        else:
+            ok = bool(sender(bundle_chat_id, bundle_text))
+            _append_log(log_path, {
+                "ts": now.isoformat(), "module": GM_DAILY_BUNDLE_KEY, "cadence": cadence,
+                "dedup_key": bundle_key, "sent": ok, "chat_id": bundle_chat_id,
+            })
+            results.append({"module": GM_DAILY_BUNDLE_KEY,
+                            "action": "sent" if ok else "send_failed",
+                            "dedup_key": bundle_key, "sent": ok})
 
     # 침묵 감지기 스냅샷 갱신(배1307 4차) — 기존 daily 예약작업에 편승, 새 스케줄러 등록 없음.
     # 로컬 파일 기록뿐(알림·네트워크 없음) → dry-run "부작용 0" 계약 보존 위해 실발행에서만 실행.
