@@ -5488,7 +5488,10 @@ function lessonExpireDate(regDateStr, monthsRule){
   // '월말' = 등록일이 속한 달의 마지막 날(2026-07-25 GM — 성인 단체반은 매월 1일~말일).
   //   다음 달 0일 = 이번 달 말일(윤년·30/31일 자동 처리).
   if(monthsRule==='월말'){ return _mdashYmd(new Date(base.getFullYear(), base.getMonth()+1, 0)); }
-  var d = new Date(base.getTime()); d.setMonth(d.getMonth()+parseInt(monthsRule,10));
+  // 말일 클램프 — setMonth는 1/31+1개월=3/3으로 넘긴다. 대상 월 말일보다 크면 말일로. (감사 2026-08-15)
+  var _n = parseInt(monthsRule,10);
+  var _last = new Date(base.getFullYear(), base.getMonth()+_n+1, 0).getDate();
+  var d = new Date(base.getFullYear(), base.getMonth()+_n, Math.min(base.getDate(), _last));
   return _mdashYmd(d);
 }
 
@@ -6251,7 +6254,15 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   //   저장(saveLossReasonModal)까지 미룬다(회원 openInquiryLossModal pendingStatusSave와 동일 패턴 재사용,
   //   새 함수 없음). 취소 시 애초에 아무 것도 안 바뀌었으므로 select 색만 원복하면 된다.
   if (newVal === 'LOSS' && newVal !== prevVal) {
-    try { openLessonLossModal(t, rowIndex, true, prevVal, sel); } catch (e) {}
+    try { openLessonLossModal(t, rowIndex, true, prevVal, sel); }
+    catch (e) {
+      // 모달 실패 = 아무 것도 저장 안 됨 — 화면(값·색)을 이전 상태로 원복하고 알린다. (감사 2026-08-15)
+      sel.value = prevVal;
+      if (stCls) sel.classList.remove(stCls);
+      var _pvCls = _lessonStatusClass(prevVal);
+      if (_pvCls) sel.classList.add(_pvCls);
+      try { showToast('LOSS 사유 입력창을 열지 못했습니다 — 상태를 되돌렸습니다. 다시 시도해 주세요', 'err'); } catch (_e) {}
+    }
     return;
   }
   var payload = { action: 'lesson_inquiry_update', type: st.type, rowIndex: rowIndex, keyPhone: (row && row.phone) || '', rowKey: (row && row.rowKey) || '', sport: '', status: newVal, gid: (row && row.gid) || undefined };  // sport='' → 백엔드 flat(L~P) 경로. 배973
@@ -6279,11 +6290,11 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
   // 신규 전환은 위에서 이미 return(지연 커밋) — 여기 도달하는 LOSS는 '이미 LOSS인데 사유만 없는' 재촉발
   //   케이스뿐(오늘 할 일 백필 섹션에서 같은 select를 다시 건드리는 경우 등). 2026-07-18 시토(GM요청) 대행.
   if (newVal === 'LOSS' && prevVal === 'LOSS' && !String((row && row.lossReason) || '').trim()) {
-    try { openLessonLossModal(t, rowIndex); } catch (e) {}
+    try { openLessonLossModal(t, rowIndex); } catch (e) { try { showToast('LOSS 사유 입력창을 열지 못했습니다 — 다시 시도해 주세요', 'err'); } catch (_e) {} }
   }
   // 진행상태를 SUC로 바꾸면 등록종목 모달 자동 발동(LOSS와 대칭 — 종목 미기록 방지). 이미 등록종목 있으면 재촉발 안 함. 2026-07-20 시포(GM요청).
   if (newVal === 'SUC' && (prevVal !== 'SUC' || !String((row && row.regProgram) || '').trim())) {
-    try { openLessonRegProgramModal(t, rowIndex, sportKey); } catch (e) {}
+    try { openLessonRegProgramModal(t, rowIndex, sportKey); } catch (e) { try { showToast('등록종목 입력창을 열지 못했습니다 — 등록종목을 직접 기록해 주세요', 'err'); } catch (_e) {} }
   }
 }
 
@@ -9905,7 +9916,7 @@ function renderCalendarChips() {
 
 function _setTxt(id, v) {
   var el = document.getElementById(id);
-  if (el) el.textContent = (v === undefined || v === null || v === '') ? '0' : v;
+  if (el) el.textContent = (v === undefined || v === null || v === '') ? '—' : v;   // 빈 값(수집 실패)=— · 숫자 0=0 (감사 2026-08-15 — 0 위장 금지)
 }
 // 카드1(예약 달력) — 금일 예약 건수(상담·체험 전체). calEvents(표시 중인 달) 기준. 월간 합계는 표면 노출처 없음(배754, 정직 기록).
 function renderTopDash() {
@@ -10544,6 +10555,10 @@ function saveReactivateModal() {
   // 재등록 처리 — 기존 로직 유지
   var val = document.getElementById('rvEndDate').value;
   if (!val) { showToast('새 유효기간을 입력해 주세요', 'err'); saveBtn.disabled = false; return; }
+  // 과거 날짜 = 저장하자마자 종료 상태 → 다음 새로고침 때 유효회원 목록에서 다시 사라진다. 소급 등록도 있으니 막지 않고 한 번 되묻는다. (감사 2026-08-15)
+  var _rvNow = new Date();
+  var _rvTodayStr = _rvNow.getFullYear() + '-' + ('0' + (_rvNow.getMonth()+1)).slice(-2) + '-' + ('0' + _rvNow.getDate()).slice(-2);
+  if (val < _rvTodayStr && !confirm('새 유효기간(' + val + ')이 이미 지난 날짜입니다.\n이대로 저장하면 이 회원은 화면을 새로 열 때 종료회원으로 다시 내려갑니다.\n과거 날짜 그대로 저장할까요?')) { saveBtn.disabled = false; return; }
   var fields = {}; fields[m.endCol] = val; fields[m.reCol] = REACTIVATE_RECLASS_VALUE;
   // 등록일자·시작일자·등록회차·LOSS일자 갱신 (FB260811-184804 재등록 시 나머지 칸 미갱신 수정)
   var _rvRd2 = document.getElementById('rvRegDate'), _rvSd2 = document.getElementById('rvStartDate');
