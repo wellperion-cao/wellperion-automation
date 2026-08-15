@@ -3747,11 +3747,14 @@ def main():
                         + _page.replace(" ", "%20"))
             # parse_mode=None = 평문. 본문에 '—'·'('·'.' 가 있어 MarkdownV2 로 보내면 파싱 오류가 난다.
             text = "\n".join(body)
-            ok = send_telegram(DIGEST_CHECK_CHAT_ID, text, parse_mode=None)
-            # ★카톡에도 같은 문구로 보낸다(2026-07-31 GM: "웰리는 카카오톡 전달을 집중해서
-            #   실무진들이 놓치는 부분을 확실하게 체크해서 리마인드 전달을 계속해줘").
-            #   실무진이 실제로 보는 곳은 카톡 ★운영+시설+지원+주차다 — 텔레그램 점검관리방에만
-            #   보내면 정작 손을 움직일 사람에게 안 닿는다. 본문은 다시 만들지 않고 그대로 쓴다.
+            # 2026-08-15 GM 지시(중복 알림 정리) — 텔레그램 점검관리방(DIGEST_CHECK_CHAT_ID)
+            #   발신을 끊는다. 실측: 이 문구가 같은 시각 report_stream_2_check.py 의 22:30
+            #   점검현황과 겹쳐 실무진이 같은 내용을 텔레그램·카톡 두 채널로 받고 있었다
+            #   (8/10~14 8회×2채널=16통, 본문 한 글자까지 동일). 카톡만 남긴다 — 실무진이
+            #   실제로 보는 곳은 카톡 ★운영+시설+지원+주차다(2026-07-31 GM 지시 그대로 유지).
+            #   정보는 사라지지 않는다: 이 알림의 사실(0건 구역)은 카톡으로 그대로 나가고,
+            #   같은 사실이 텔레그램 점검관리방엔 22:30 하루 일과 정리(요약)로 이미 뜬다.
+            ok = False
             try:
                 kproc = subprocess.run(
                     [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
@@ -3762,7 +3765,8 @@ def main():
                 )
                 ktail = (kproc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
                 logger.info(f"[zero-zone {shift_key}] 카톡 {KAKAO_OPS_ROOM}: {ktail[0]}")
-                if kproc.returncode != 0:
+                ok = kproc.returncode == 0
+                if not ok:
                     _kakao_fail_notify(f"회차 제출누락({shift_key})", ktail[0])
             except Exception as ke:
                 logger.error(f"[zero-zone {shift_key}] 카톡 발송 예외: {ke}")
