@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>회원 감소 원인 분석 (7차 재구성) — 웰페리온 A3 보고서</title>
+<title>회원 감소 원인 분석 (8차 갱신) — 웰페리온 A3 보고서</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -46,34 +46,34 @@
   .sign div:last-child{ border-right:0; }
   .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
     border-bottom:1px solid var(--line); }
-  .sign .b{ height:32px; }
+  .sign .b{ height:24px; }
 
   /* 【상단】 핵심 3줄 — 문서에서 가장 크게 */
   .hero{ display:flex; gap:12px; margin-top:9px; }
-  .hc{ flex:1; border:1.5px solid var(--line); border-top:5px solid var(--navy); padding:5px 15px 4px; }
+  .hc{ flex:1; border:1.5px solid var(--line); border-top:5px solid var(--navy); padding:4px 15px 3px; }
   .hc.love{ border-top-color:var(--good); background:#F4FAF7; }
   .hc.leave{ border-top-color:var(--bad); background:#FBF5F5; }
   .hc.flat{ border-top-color:var(--navy); background:var(--navy-bg); }
-  .hc .lb{ font-size:15.5px; font-weight:700; letter-spacing:-.4px; line-height:1.25; }
+  .hc .lb{ font-size:14.2px; font-weight:700; letter-spacing:-.4px; line-height:1.25; }
   .hc.love .lb{ color:var(--good); }
   .hc.leave .lb{ color:var(--bad); }
   .hc.flat .lb{ color:var(--navy); }
-  .hc .big{ font-size:33px; font-weight:900; letter-spacing:-1.5px; line-height:1.08; margin:2px 0 3px;
+  .hc .big{ font-size:27px; font-weight:900; letter-spacing:-1.5px; line-height:1.08; margin:2px 0 3px;
     font-variant-numeric:tabular-nums; }
   .hc.love .big{ color:var(--good); }
   .hc.leave .big{ color:var(--bad); }
-  .hc.flat .big{ color:var(--navy); font-size:28px; letter-spacing:-1px; padding-top:5px; }
-  .hc .big small{ font-size:20px; font-weight:700; letter-spacing:-.5px; }
-  .hc .ex{ font-size:12.6px; line-height:1.34; color:#2A343D; }
+  .hc.flat .big{ color:var(--navy); font-size:25px; letter-spacing:-1px; padding-top:5px; }
+  .hc .big small{ font-size:18px; font-weight:700; letter-spacing:-.5px; }
+  .hc .ex{ font-size:12.3px; line-height:1.32; color:#2A343D; }
   .hc .ex b{ font-weight:700; }
   .hc.leave .ex b{ color:var(--bad); }
   .hc.flat .ex b{ color:var(--bad); }
 
   /* 전체 1,000명 네 갈래 띠 */
-  .band{ margin-top:7px; }
+  .band{ margin-top:6px; }
   .band .tt{ font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:2px; }
   .band .tt span{ font-weight:400; color:#48525B; font-size:11.8px; }
-  .strip{ display:flex; height:22px; border-radius:3px; overflow:hidden; }
+  .strip{ display:flex; height:20px; border-radius:3px; overflow:hidden; }
   .strip i{ display:flex; align-items:center; justify-content:center; height:100%;
     font-style:normal; font-size:12.3px; font-weight:700; color:#fff; white-space:nowrap; }
   .strip i.s1{ background:var(--good); }
@@ -82,26 +82,26 @@
   .strip i.s4{ background:#C9D2DB; color:#3C464F; }
 
   /* 【중단】 좌우 2단 */
-  .body2{ margin-top:7px; display:flex; gap:14px; flex:1; min-height:0; }
-  .colL{ width:57%; flex:none; display:flex; flex-direction:column; gap:4px; }
+  .body2{ margin-top:6px; display:flex; gap:14px; flex:1; min-height:0; }
+  .colL{ width:57%; flex:none; display:flex; flex-direction:column; gap:2px; }
   .colR{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
 
   /* 구체 사항 박스 */
-  .sec{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:3px 12px 3px; }
-  .sec h3{ font-size:14.3px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:3px; }
-  .sec h3 .no{ display:inline-block; background:var(--navy); color:#fff; font-size:12.5px; padding:1px 8px;
+  .sec{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:2px 12px 2px; }
+  .sec h3{ font-size:14px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:2px; }
+  .sec h3 .no{ display:inline-block; background:var(--navy); color:#fff; font-size:12.3px; padding:0 8px;
     border-radius:2px; margin-right:7px; vertical-align:1px; }
   .sec.g{ border-top-color:var(--good); } .sec.g h3{ color:var(--good); } .sec.g h3 .no{ background:var(--good); }
   .sec.r{ border-top-color:var(--bad); } .sec.r h3{ color:var(--bad); } .sec.r h3 .no{ background:var(--bad); }
-  .sec p{ font-size:13px; line-height:1.34; color:#22303B; margin-top:2px; }
+  .sec p{ font-size:12.5px; line-height:1.29; color:#22303B; margin-top:1px; }
   .sec p b{ font-weight:700; }
-  .key{ background:#FBEDED; border-left:4px solid var(--bad); padding:2px 11px; margin-top:3px;
-    font-size:13.2px; font-weight:700; line-height:1.38; color:var(--bad); }
+  .key{ background:#FBEDED; border-left:4px solid var(--bad); padding:2px 11px; margin-top:2px;
+    font-size:12.8px; font-weight:700; line-height:1.34; color:var(--bad); }
   .key span{ font-weight:500; color:#6B2020; }
 
   /* 3축 깔때기 표 */
   .xt{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  .xt th,.xt td{ border:1px solid var(--line); padding:1px 10px; font-size:13px; text-align:right; font-variant-numeric:tabular-nums; }
+  .xt th,.xt td{ border:1px solid var(--line); padding:0 9px; font-size:12.4px; text-align:right; font-variant-numeric:tabular-nums; }
   .xt th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; text-align:left; }
   .xt th:last-child{ text-align:right; }
   .xt td.k{ text-align:left; background:#F6F8FA; font-weight:500; }
@@ -112,7 +112,7 @@
   .chart{ display:flex; gap:18px; margin-top:0; }
   .yr{ flex:12; }
   .yr.y26{ flex:8; }
-  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:43px; }
+  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:38px; }
   .m{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
   .m b{ font-size:10.5px; font-weight:700; color:#3C464F; margin-bottom:1px; font-variant-numeric:tabular-nums; letter-spacing:-.3px; }
   .m .duo{ display:flex; align-items:flex-end; gap:1px; width:100%; }
@@ -124,11 +124,11 @@
   .m s{ text-decoration:none; font-size:10.5px; color:#5C666F; margin-top:1px; line-height:1.1; }
   .m.neg b{ color:var(--bad); }
   .m.neg s{ background:var(--bad); color:#fff; width:100%; text-align:center; border-radius:2px; font-weight:700; }
-  .legend{ margin-top:1px; font-size:11.2px; color:#3C464F; line-height:1.3; }
+  .legend{ margin-top:0; font-size:11.2px; color:#3C464F; line-height:1.3; }
   .legend .sw{ display:inline-block; width:9px; height:9px; border-radius:2px; vertical-align:baseline; margin:0 3px 0 8px; }
   .legend .sw:first-child{ margin-left:0; }
   .legend .neg-sw{ background:var(--bad); }
-  .yr .cap{ text-align:center; font-size:11.8px; font-weight:700; color:var(--navy); border-top:1.5px solid var(--navy);
+  .yr .cap{ text-align:center; font-size:11.4px; font-weight:700; color:var(--navy); border-top:1.5px solid var(--navy);
     margin-top:1px; padding-top:0; }
   .yr .cap span{ font-weight:400; color:#3C464F; }
 
@@ -171,10 +171,10 @@
   .ask .d{ font-size:11.5px; line-height:1.36; opacity:.88; margin-top:3px; }
 
   /* 【하단 마무리】 꼭 챙길 지표 */
-  .kpi{ margin-top:5px; border:1.5px solid var(--navy); border-top:5px solid var(--navy); padding:5px 14px 5px; background:#FBFCFE; }
-  .kpi h3{ font-size:14.2px; font-weight:700; color:var(--navy); letter-spacing:-.4px; margin-bottom:3px; }
+  .kpi{ margin-top:4px; border:1.5px solid var(--navy); border-top:5px solid var(--navy); padding:4px 14px 4px; background:#FBFCFE; }
+  .kpi h3{ font-size:13.8px; font-weight:700; color:var(--navy); letter-spacing:-.4px; margin-bottom:3px; }
   table.kt{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  table.kt th, table.kt td{ border:1px solid var(--line); padding:1px 10px; font-size:12.8px; line-height:1.3; }
+  table.kt th, table.kt td{ border:1px solid var(--line); padding:1px 9px; font-size:12.5px; line-height:1.28; }
   table.kt thead th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; text-align:left; }
   table.kt td.k{ background:#F6F8FA; font-weight:700; }
   table.kt td.v{ font-variant-numeric:tabular-nums; font-weight:700; }
@@ -186,22 +186,24 @@
   .tier.t1 .th{ background:var(--navy); }
   .tier.t2 .th{ background:#3D5A78; }
   .tier.t3 .th{ background:#7E93A8; }
-  .tier .src{ font-size:11.3px; color:#48525B; margin-top:2px; line-height:1.32; }
+  .tier .src{ font-size:11px; color:#48525B; margin-top:1px; line-height:1.3; }
   .gbx{ margin-top:5px; display:flex; gap:10px; }
   .gbx .must{ flex:1.55; border:2px solid var(--bad); background:#FBEDED; padding:4px 12px 5px; }
   .must .bt{ font-size:13.4px; font-weight:900; color:var(--bad); }
-  .must ol{ margin:1px 0 0 18px; font-size:12.2px; line-height:1.36; color:#4A2020; }
+  .must ol{ margin:1px 0 0 18px; font-size:12px; line-height:1.33; color:#4A2020; }
   .must ol b{ color:var(--bad); }
   .gbx .open9{ flex:1; border:1px solid var(--line); border-left:4px solid var(--good); background:#F4FAF7;
-    padding:4px 12px; font-size:12.2px; line-height:1.38; color:#22303B; }
+    padding:4px 12px; font-size:12px; line-height:1.35; color:#22303B; }
   .open9 b{ color:var(--good); }
-  .closing{ margin-top:4px; background:var(--navy); color:#fff; text-align:center; font-size:13.8px;
-    font-weight:700; padding:4px 10px; letter-spacing:-.3px; line-height:1.4; }
+  .closing{ margin-top:3px; background:var(--navy); color:#fff; text-align:center; font-size:13.4px;
+    font-weight:700; padding:3px 10px; letter-spacing:-.3px; line-height:1.4; }
   .closing b{ color:#FFD9A0; }
 
   /* 각주 */
-  .foot{ margin-top:4px; border-top:1px solid var(--line); padding-top:3px;
-    display:flex; gap:16px; font-size:10.5px; line-height:1.28; color:#48525B; }
+  .foot-src{ margin-top:4px; border-top:1px solid var(--line); padding-top:3px;
+    font-size:10.8px; line-height:1.32; color:#48525B; }
+  .foot-src b{ color:var(--ink); }
+  .foot{ margin-top:2px; display:flex; gap:16px; font-size:10.2px; line-height:1.24; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
 </style>
@@ -209,7 +211,7 @@
 <body>
 
 <div class="bar">
-  <b>회원 감소 원인 분석 (A3 1장 · 7차 재구성)</b>
+  <b>회원 감소 원인 분석 (A3 1장 · 8차 갱신)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -225,7 +227,7 @@
       <div class="title">회원 감소 원인 분석<span class="sub">회장님 최우선 지시건 · 유효회원 1,000명 전수 실측</span></div>
     </div>
     <div class="meta">
-      작성 <b>경영지원부 (AI CEO 웰리)</b> · 문서번호 <b>WP-GM-260815-01</b> · 7차 재구성 <b>2026. 08. 15.</b><br>
+      작성 <b>경영지원부 (AI CEO 웰리)</b> · 문서번호 <b>WP-GM-260815-01</b> · 8차 갱신 <b>2026. 08. 15.</b><br>
       원천 <b>회원 DB 실측</b> · 유효회원 <b>1,000명</b> · LOSS <b>697명 전수</b> · 등급 61명 전화 조인 · 출석 시트 10개월 조인 <b>769명</b> (각주4)
     </div>
     <div class="sign">
@@ -272,7 +274,7 @@
     <div class="colL">
 
       <div class="sec g">
-        <h3><span class="no">1번 구체 사항</span>사랑하는 회원 149명은 어떻게 골랐나</h3>
+        <h3><span class="no">1번 구체 사항</span>사랑하는 회원 149명은 이렇게 골랐습니다 — 거리·재등록·출석 세 관문</h3>
         <table class="xt">
           <colgroup><col style="width:150px"><col><col style="width:130px"></colgroup>
           <thead><tr><th>축</th><th>조건 (앞 조건에 하나씩 추가)</th><th>남는 인원</th></tr></thead>
@@ -287,49 +289,51 @@
       </div>
 
       <div class="sec r">
-        <h3><span class="no">2번 구체 사항</span>떠날 회원 192명은 누구인가</h3>
+        <h3><span class="no">2번 구체 사항</span>떠날 회원 192명은 이미 안 나오고 계십니다 — 나간 분들의 1위 사유와 같은 특징</h3>
         <p>10개월 동안 <b>62회 미만</b>(주 1회대)으로 나온 분들입니다. 그중 <b>30일 안에 만료 23명</b>, <b>등급 보유자 7명</b> — 금액이 큰 회원도 섞여 있습니다.</p>
-        <div class="key">이미 나간 사람의 1위 사유와, 앞으로 나갈 사람의 특징이 같습니다.
-          <span>LOSS 사유 1위가 「낮은 이용 횟수」 <b>140명</b>인데, 이 192명이 바로 그 무리입니다.</span></div>
+        <div class="key">LOSS 사유 1위 「낮은 이용 횟수」 <b>140명</b> — 이 192명이 바로 그 무리입니다.</div>
         <p style="margin-top:4px">별도로, 만료 임박 <b>72명</b> 중 등급 보유 <b>8명</b>의 2025년 결제액 합이 <b style="color:var(--bad)">1억 485만원</b>입니다(FAN VIP 2 · VIP 2 · Member 4 — FAN VIP 2명은 잔여 <b>5일 · 19일</b>). <b>회원 8명이 아니라 매출 1억이 걸린 문제</b>입니다.</p>
       </div>
 
       <div class="sec">
-        <h3><span class="no">3번 구체 사항</span>왜 늘지 않는가 — 월별 유입 vs LOSS (2025-01 ~ 2026-08 · 20개월 실측)</h3>
+        <h3><span class="no">3번 구체 사항</span>왜 늘지 않는가 — 들어오는 문이 좁아진 게 아니라, 나가는 문이 두 배로 열렸습니다</h3>
+        <p><b>① 유입이 준 것은 문제가 아닙니다.</b> 2024년 755명은 개업·대량 유치의 특수한 해였고, 지금은 정원이 차 새로 받을 자리 자체가 없습니다. 유입 755 → 373 → 올해 223명(연환산 359명)은 그 결과입니다.</p>
+        <p><b>② 진짜로 달라진 것은 나가는 쪽입니다.</b> LOSS가 173 → 333명으로 <b style="color:var(--bad)">1.92배</b>가 됐고(올해 191명 · 연환산 307명), 유입은 −50.6%로 줄었습니다. 순증이 주저앉은 원인은 여기입니다.</p>
+        <p><b>③ 그래서 지금 할 일은 채우기가 아니라 메우기입니다.</b> 2025년 빈자리 333개를 373명으로 겨우 메웠습니다. 연 회전율 <b>33%</b> — 해마다 셋 중 하나가 바뀌고, 그 LOSS의 <b>54.4%(379명)</b>는 우리가 막을 수 있었던 이유였습니다.</p>
         <div class="chart">
           <div class="yr">
             <div class="bars">
-              <div class="m"><b>+34</b><span class="duo"><i class="in" style="height:19px"></i><i class="out" style="height:9px"></i></span><s>1</s></div>
-              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:6px"></i><i class="out" style="height:7px"></i></span><s>2</s></div>
-              <div class="m"><b>+3</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:7px"></i></span><s>3</s></div>
-              <div class="m neg"><b>−12</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:11px"></i></span><s>4</s></div>
-              <div class="m"><b>+5</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:9px"></i></span><s>5</s></div>
-              <div class="m"><b>+8</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:8px"></i></span><s>6</s></div>
-              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:11px"></i></span><s>7</s></div>
-              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:9px"></i><i class="out" style="height:11px"></i></span><s>8</s></div>
-              <div class="m neg"><b>−1</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:8px"></i></span><s>9</s></div>
-              <div class="m"><b>+26</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:5px"></i></span><s>10</s></div>
-              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:6px"></i><i class="out" style="height:8px"></i></span><s>11</s></div>
+              <div class="m"><b>+34</b><span class="duo"><i class="in" style="height:14px"></i><i class="out" style="height:7px"></i></span><s>1</s></div>
+              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:4px"></i><i class="out" style="height:5px"></i></span><s>2</s></div>
+              <div class="m"><b>+3</b><span class="duo"><i class="in" style="height:6px"></i><i class="out" style="height:5px"></i></span><s>3</s></div>
+              <div class="m neg"><b>−12</b><span class="duo"><i class="in" style="height:5px"></i><i class="out" style="height:8px"></i></span><s>4</s></div>
+              <div class="m"><b>+5</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:7px"></i></span><s>5</s></div>
+              <div class="m"><b>+8</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:6px"></i></span><s>6</s></div>
+              <div class="m neg"><b>−2</b><span class="duo"><i class="in" style="height:6px"></i><i class="out" style="height:7px"></i></span><s>7</s></div>
+              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:8px"></i></span><s>8</s></div>
+              <div class="m neg"><b>−1</b><span class="duo"><i class="in" style="height:6px"></i><i class="out" style="height:6px"></i></span><s>9</s></div>
+              <div class="m"><b>+26</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:4px"></i></span><s>10</s></div>
+              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:4px"></i><i class="out" style="height:6px"></i></span><s>11</s></div>
               <div class="m neg"><b>−3</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:9px"></i></span><s>12</s></div>
             </div>
-            <div class="cap">2025 <span>· 등록 373 − LOSS 333 = <b>+40</b> · 12개월 중 <b>7개월 순감소</b></span></div>
+            <div class="cap">2025 <span>· 12개월 중 <b>7개월 순감소</b></span></div>
           </div>
           <div class="yr y26">
             <div class="bars">
-              <div class="m"><b>+15</b><span class="duo"><i class="in" style="height:11px"></i><i class="out" style="height:7px"></i></span><s>1</s></div>
-              <div class="m"><b>+14</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:8px"></i></span><s>2</s></div>
-              <div class="m neg"><b>−6</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:9px"></i></span><s>3</s></div>
-              <div class="m"><b>+10</b><span class="duo"><i class="in" style="height:9px"></i><i class="out" style="height:6px"></i></span><s>4</s></div>
-              <div class="m"><b>+2</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:6px"></i></span><s>5</s></div>
-              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:9px"></i></span><s>6</s></div>
-              <div class="m neg"><b>−20</b><span class="duo"><i class="in" style="height:4px"></i><i class="out" style="height:10px"></i></span><s>7</s></div>
-              <div class="m part"><b>+24</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:2px"></i></span><s>8</s></div>
+              <div class="m"><b>+15</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:5px"></i></span><s>1</s></div>
+              <div class="m"><b>+14</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:6px"></i></span><s>2</s></div>
+              <div class="m neg"><b>−6</b><span class="duo"><i class="in" style="height:5px"></i><i class="out" style="height:7px"></i></span><s>3</s></div>
+              <div class="m"><b>+10</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:4px"></i></span><s>4</s></div>
+              <div class="m"><b>+2</b><span class="duo"><i class="in" style="height:5px"></i><i class="out" style="height:4px"></i></span><s>5</s></div>
+              <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:5px"></i><i class="out" style="height:7px"></i></span><s>6</s></div>
+              <div class="m neg"><b>−20</b><span class="duo"><i class="in" style="height:3px"></i><i class="out" style="height:8px"></i></span><s>7</s></div>
+              <div class="m part"><b>+24</b><span class="duo"><i class="in" style="height:8px"></i><i class="out" style="height:2px"></i></span><s>8</s></div>
             </div>
-            <div class="cap">2026 <span>· 등록 223 − LOSS 191 = <b>+32</b> · 8개월 중 <b>3개월 순감소</b></span></div>
+            <div class="cap">2026 <span>· 8개월 중 <b>3개월 순감소</b> (8/15까지)</span></div>
           </div>
         </div>
-        <div class="legend"><span class="sw" style="background:var(--good)"></span>등록<span class="sw" style="background:#A63B3B"></span>LOSS<span class="sw neg-sw"></span>붉은 달 = 순감소 · 8월은 집계 진행 중(빗금) — 최대 낙폭 <b>2026년 7월 −20명</b> · 연 회전율 <b>33%</b>(해마다 셋 중 하나가 바뀝니다 · 각주1)</div>
-        <div class="chips" style="margin-top:2px">LOSS 697명의 사유 — 우리가 손댈 수 있는 것 <b>379명 · 54.4%</b> · 불가항력 <b>164명 · 23.5%</b> · 전환·구조 <b>132명 · 18.9%</b> · 공란·기타 <b>22명</b> (각주2)</div>
+        <div class="legend"><span class="sw" style="background:var(--good)"></span>등록<span class="sw" style="background:#A63B3B"></span>LOSS<span class="sw neg-sw"></span>붉은 달 = 순감소 · 8월은 집계 진행 중(빗금) — <b>막대 두 개의 벌어진 폭이 그 달의 순증입니다</b> (각주1)</div>
+        <div class="chips" style="margin-top:1px">LOSS 697명의 사유 — 우리가 손댈 수 있는 것 <b>379명 · 54.4%</b> · 불가항력 <b>164명 · 23.5%</b> · 전환·구조 <b>132명 · 18.9%</b> · 공란·기타 <b>22명</b> (각주2)</div>
         <p style="margin-top:2px">등급 61명 중 이미 LOSS <b>4명</b>(전원 Member · 3,837만원) — <b style="color:var(--good)">FAN VIP·VIP는 LOSS 0명</b>, 지켜야 할 선입니다.</p>
       </div>
 
@@ -347,7 +351,7 @@
           <tbody>
             <tr>
               <td class="a">안건 1 · 지키기<span class="sub">만료 임박 8명 + 23명</span></td>
-              <td>금액 큰 쪽(등급 8명 · 1억 485만원/년)과 안 나오는 쪽(192명 중 30일 내 만료 23명)을 나눠 개별 재등록 면담 — <span class="lbl">등급 8명 우선</span>. 판촉 압박으로 비치지 않게 조용히 진행합니다.</td>
+              <td>등급 8명과 저출석 23명을 나눠 개별 재등록 면담 — <span class="lbl">등급 8명 우선</span>. 판촉으로 비치지 않게 조용히 진행합니다.</td>
             </tr>
             <tr>
               <td class="a">안건 2 · 분류하기<span class="sub">등급 없는 939명 전수</span></td>
@@ -355,7 +359,7 @@
             </tr>
             <tr>
               <td class="a">안건 3 · 채우기<span class="sub">빈자리를 기준으로 배정</span></td>
-              <td>빈자리는 LOSS로만 생기는데 지금은 사실상 선착순입니다. Member 평균(960만원/년)급으로 채울 때마다 자리 단가가 오릅니다 — 대기 명단에 예상 결제 규모를 기입해 재편합니다(기준은 내부 운용).</td>
+              <td>빈자리는 LOSS로만 생기는데 지금은 사실상 선착순입니다 — 대기 명단에 예상 결제 규모를 기입해 금액순으로 재편합니다(기준은 내부 운용).</td>
             </tr>
           </tbody>
         </table>
@@ -433,16 +437,17 @@
           <li><b>등록회차·LOSS 사유 칸이 브로제이에 있는지 확인</b> — 없으면 이관 요청.</li>
         </ol>
       </div>
-      <div class="open9"><b>9월부터 새로 열리는 것</b> — 입장객이 자동으로 쌓이면 1인당 월 방문·떠날 회원 감지가 실시간이 되고, 회원별 결제 기록이 생기면 <b>「LOSS 1명 = 매출 얼마」를 처음으로 잽니다</b> — 10월 가격 인상 판단의 근거가 됩니다.</div>
+      <div class="open9"><b>9월부터 새로 열리는 것</b> — 입장객이 자동으로 쌓여 1인당 월 방문·떠날 회원 감지가 실시간이 되고, 회원별 결제 기록으로 <b>「LOSS 1명 = 매출 얼마」를 처음 잽니다</b> — 10월 가격 인상 판단의 근거입니다.</div>
     </div>
   </div>
 
   <!-- 각주 -->
+  <div class="foot-src"><b>출처</b> — 유효회원·종료 회원 = <b>ERP 멤버십 회원관리 화면과 같은 통로(유효회원 시트)</b> · 2025년 이전 LOSS 506명 = LOSS보관 시트 · 등급 61명·출석 1,638명 = GM 공유 시트. 화면은 오늘 한 시점만 보여 주므로, 이 보고서는 LOSS 보관분을 더해 2024년부터의 흐름을 그렸습니다.</div>
   <div class="foot">
-    <div><b>각주1 · 산출 근거</b> — LOSS 697명 = 현행 191 + 보관 506 전수 집계(2026-08-15). 2024년(등록 755 · LOSS 173)은 개업·대량 유치 구간이라 월별 추세에서 제외. 회전율 33% = 2025년 LOSS 333 ÷ 유효 약 1,000명(근사값). 거리 축 = 주소의 용산구·성동구 표기(743+105).</div>
+    <div><b>각주1 · 산출 근거</b> — LOSS 697명 = 현행 191 + 보관 506 전수 집계(2026-08-15). 2024년은 개업·대량 유치 구간이라 월별 추세에서 제외. 연환산 = 8/15까지 227일 실적 × 365/227. 회전율 33% = 2025년 LOSS 333 ÷ 유효 약 1,000명(근사값). 거리 축 = 주소의 용산구·성동구 표기(743+105).</div>
     <div><b>각주2 · 종료 사유 정본</b> — 정본 = 미등록사유 칸(682/697 · 97.8%) · 별도 「종료사유」 칸(0건)은 신설 착오로 미사용(2026-07-20 GM 확정). 최다 사유 = 낮은 이용 횟수 140 · 거주지 변경 125 · 무응답 104 · 양도/강습 전환 75 · 가망 73 · 단기 57 · 건강 31 · 금액 26 · 그 외 7종 51 · 공란 15.</div>
     <div><b>각주3 · 등급표</b> — 61명 = 2025년 1년치 결제액 기준(GM 확정 2026-08-15) · FAN VIP 4(7,794만) · VIP 11(1억 4,350만) · Member 46(4억 4,143만) · 합 6.63억. 원장 대조 = 전화 조인 59/61(유효 55 · LOSS 4 · 미매칭 2). 원장에 결제액 칸이 없어 LOSS 전체 매출 환산은 하지 않았습니다.</div>
-    <div><b>각주4 · 출석 축(GM 제공 출석 시트)</b> — 2025-01~10 · 10개월 누적, 원장과 전화 우선(없으면 유일 이름) 조인 = 769명(76.9%). 미조인 231명 중 191명은 2025-11 이후 등록 신규(2025년 출석부에 있을 수 없음) — 이 231명이 띠의 「출석 자료 없음」입니다. 상 = 194회 이상(3사분위 · 주 4~5회) · 하 = 62회 미만(1사분위 · 주 1회대) · 중앙값 126회.</div>
+    <div><b>각주4 · 출석 축(GM 제공 출석 시트)</b> — 2025-01~10 · 10개월 누적, 원장과 전화 우선(없으면 유일 이름) 조인 = 769명(76.9%). 미조인 231명 중 191명은 2025-11 이후 등록 신규(2025년 출석부에 있을 수 없음). 상 = 194회 이상(3사분위 · 주 4~5회) · 하 = 62회 미만(1사분위 · 주 1회대) · 중앙값 126회.</div>
   </div>
 
   <!-- 맺음 -->
