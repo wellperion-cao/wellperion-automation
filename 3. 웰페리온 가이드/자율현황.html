@@ -341,6 +341,21 @@
     </div>
   </div>
 
+  <!-- ══ 🟢 CLI 라이브 — GM PC 로컬 서버(scripts/live_cli_status_server.py, daily_scheduler.py 가
+       데몬 스레드로 띄움 · 포트 8787 · 127.0.0.1 전용)를 3초마다 읽어 지금 이 순간 CLI 대화·도구호출을
+       그대로 보여준다(GM 지시 2026-08-15 "정말 CLI로 작업하는 것을 라이브로 즉각 확인"). 커밋·푸시를
+       기다리는 위 배지들과 달리 지연 0 — 대신 GM PC 에서 서버가 떠 있을 때만 뜬다. 못 붙으면
+       섹션 전체를 숨긴다(다른 PC·GM PC 서버 미기동 시 빈 화면 대신 조용히 사라짐). ══ -->
+  <div id="cli-live" class="autopanel" style="border-left-color:var(--green);display:none;margin-top:14px;">
+    <h2 class="sec" style="margin-top:0;">
+      <span id="cli-live-dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--dim);margin-right:6px;"></span>
+      🟢 CLI 라이브 <span style="font-size:12px;font-weight:400;color:var(--dim);">(지금 이 PC 에서 도는 CLI 실시간 · GM PC 전용)</span>
+    </h2>
+    <div id="cli-live-status" class="sec-note" style="margin:0 0 8px;"></div>
+    <div id="cli-live-items"></div>
+  </div>
+  <!-- ══ /CLI 라이브 ══ -->
+
   <!-- ══ 🚢 지금 도는 것 — AI 배 진행중만 최상단으로 (GM 지시 2026-08-12 "가장 먼저 알고 싶은 것 =
        ⓐ지금 AI가 뭘 하고 있나·ⓑ막혀서 내가 정해야 할 게 뭔가" · 배587). 새 fetch 없음 — 🧭 항로가
        받아 두는 _queueAll 을 그대로 재사용해 IN_PROGRESS 만 추린다. ══ -->
@@ -2696,6 +2711,53 @@
   renderGmApprovalSignal();
   setInterval(renderGmApprovalSignal, 90000);
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') renderGmApprovalSignal(); });
+
+  // ── 🟢 CLI 라이브 — 127.0.0.1:8787/live(scripts/live_cli_status_server.py) 3초 폴링.
+  //   서버가 없으면(다른 PC·미기동) fetch 가 실패하고 섹션을 숨긴다 — 깨진 화면 금지.
+  var CLI_LIVE_URL = 'http://127.0.0.1:8787/live';
+  var CLI_KIND_ICON = { '지시':'💬', '도구':'🔧', '응답':'💡' };
+  function cliLiveAgo(iso){
+    var t = iso ? new Date(iso).getTime() : NaN;
+    if(isNaN(t)) return '—';
+    var sec = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if(sec < 60) return sec + '초 전';
+    if(sec < 3600) return Math.floor(sec / 60) + '분 전';
+    return Math.floor(sec / 3600) + '시간 전';
+  }
+  function cliLiveClock(iso){
+    var d = iso ? new Date(iso) : null;
+    return (d && !isNaN(d.getTime())) ? d.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }) : '—';
+  }
+  function renderCliLive(){
+    var sec = document.getElementById('cli-live');
+    if(!sec) return;
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 2000) : null;
+    fetch(CLI_LIVE_URL, ctrl ? { signal: ctrl.signal, cache:'no-store' } : { cache:'no-store' })
+      .then(function(r){ if(timer) clearTimeout(timer); if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function(d){
+        sec.style.display = '';
+        var dot = document.getElementById('cli-live-dot');
+        if(dot) dot.style.background = d.busy ? 'var(--green)' : 'var(--dim)';
+        var st = document.getElementById('cli-live-status');
+        if(st) st.textContent = (d.busy ? '작업 중' : '대기') + ' · 마지막 활동 ' + cliLiveAgo(d.last_activity_at);
+        var box = document.getElementById('cli-live-items');
+        if(!box) return;
+        var items = Array.isArray(d.items) ? d.items.slice().reverse() : [];
+        box.innerHTML = items.length
+          ? '<div class="gtbl-wrap"><table class="gtbl"><tr><th style="width:70px">시각</th><th style="width:50px">종류</th><th>내용</th></tr>'
+            + items.map(function(it){
+                return '<tr><td style="color:var(--dim);white-space:nowrap;">' + esc(cliLiveClock(it.ts)) + '</td>'
+                  + '<td>' + (CLI_KIND_ICON[it.kind] || '') + ' ' + esc(it.kind || '') + '</td>'
+                  + '<td>' + esc(it.text || '') + '</td></tr>';
+              }).join('')
+            + '</table></div>'
+          : '<div class="feed-status">최근 활동이 없습니다.</div>';
+      })
+      .catch(function(){ if(timer) clearTimeout(timer); sec.style.display = 'none'; });
+  }
+  renderCliLive();
+  setInterval(renderCliLive, 3000);
 
   // ═══════════ 로드 ═══════════
   Promise.all([

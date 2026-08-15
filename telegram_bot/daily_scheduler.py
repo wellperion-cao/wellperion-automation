@@ -139,6 +139,12 @@ except Exception:
     def muted(kind: str) -> bool:
         return False
 
+try:  # 자율현황 라이브 섹션용 로컬 읽기전용 서버(best-effort) — 임포트 실패해도 발신 무영향
+    from live_cli_status_server import start_server as start_live_cli_status_server
+except Exception:
+    def start_live_cli_status_server(logger=None):
+        return None
+
 # 배 분류 공유 모듈 (scripts/ship_classify.py)
 try:
     import os as _os2, sys as _sys2
@@ -4181,6 +4187,8 @@ def main():
         logger.info("git 잠금 청소 등록 완료 — 10분 간격(알림 없음·로그만)")
     except Exception as _exc:
         logger.warning(f"git 잠금 청소 주기 등록 실패(기동은 계속): {_exc}")
+
+    start_live_cli_status_server(logger)
 
     logger.info(f"스케줄러 기동 완료. PID={os.getpid()}")
     try:
