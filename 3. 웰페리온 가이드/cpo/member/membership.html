@@ -1531,6 +1531,19 @@ table.op-t td b{font-size:15px}
 
       <div class="active-search-wrap">
         <input type="text" id="oaSearch" class="active-search" placeholder="이름·전화 검색…" autocomplete="off">
+        <select id="oaStatusFilter" class="cell-select" style="padding:7px 10px;border-radius:var(--radius-btn);border:1px solid var(--border);font-size:13px;font-family:inherit;cursor:pointer">
+          <option value="">상태 전체</option>
+          <option value="신규">신규</option>
+          <option value="재등록">재등록</option>
+        </select>
+        <select id="oaProgFilter" class="cell-select" style="padding:7px 10px;border-radius:var(--radius-btn);border:1px solid var(--border);font-size:13px;font-family:inherit;cursor:pointer;max-width:160px">
+          <option value="">종목 전체</option>
+        </select>
+        <select id="oaContactSort" class="cell-select" style="padding:7px 10px;border-radius:var(--radius-btn);border:1px solid var(--border);font-size:13px;font-family:inherit;cursor:pointer">
+          <option value="">연락 기본순</option>
+          <option value="old">오래된 연락순</option>
+          <option value="new">최신 연락순</option>
+        </select>
         <button class="btn-refresh" onclick="ownerAssignReload()">새로고침</button>
       </div>
 
@@ -7842,6 +7855,17 @@ function _oaRenderTrainerChips(pop){
   }
 }
 
+// 연락 이력 마지막 날짜 추출(정렬용) — 이력 없음='', 있음=ISO 날짜 문자열(사전순=시간순). FB260815-102435.
+function _oaLastContactDate(r, cfg){
+  var s = String(r[cfg.contact]||'').trim(); if (!s) return '';
+  var lines = s.split('\n');
+  for (var i = lines.length - 1; i >= 0; i--){
+    var m = lines[i].trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+  }
+  return '';
+}
+
 function _oaRender(){
   var cfg = _oaSportCfg(_oaSport);
   _oaRenderSummary();   // 종목별 배정현황 요약 카드(데이터 로드·종목 전환마다 재계산)
@@ -7850,11 +7874,33 @@ function _oaRender(){
 
   var q = '';
   var si = document.getElementById('oaSearch'); if (si) q = si.value.trim().toLowerCase();
+  var statusVal = (document.getElementById('oaStatusFilter') || {}).value || '';
+  var sortVal   = (document.getElementById('oaContactSort') || {}).value || '';
+  // 종목 필터 옵션 동적 갱신(현재 선택값 보존, 현 탭 population 기준)
+  var progF = document.getElementById('oaProgFilter');
+  var progVal = '';
+  if (progF){
+    var progCur = progF.value;
+    var progSeen = {}, progOpts = [];
+    pop.forEach(function(r){ var lbl = _mregProgLabel(String(r['수강반종목명']||'').trim()); if (lbl && lbl !== '—' && !progSeen[lbl]){ progSeen[lbl]=1; progOpts.push(lbl); } });
+    progOpts.sort();
+    progF.innerHTML = '<option value="">종목 전체</option>' + progOpts.map(function(p){ return '<option value="'+esc(p)+'"'+(p===progCur?' selected':'')+'>'+esc(p)+'</option>'; }).join('');
+    if (progCur && !progSeen[progCur]) progF.value = '';
+    progVal = progF.value;
+  }
   var rows = pop.filter(function(r){
     if (_oaTrainer !== ''){ var v = String(r[cfg.col]||'').trim() || LESSON_UNASSIGNED_OPTION; if (v !== _oaTrainer) return false; }
     if (q){ var name = String(r['회원명']||'').toLowerCase(); var ph = String(r['휴대폰 번호']||r['휴대폰']||'').toLowerCase(); if (name.indexOf(q) < 0 && ph.indexOf(q) < 0) return false; }
+    if (statusVal){ if (String(r['등록 분류']||'').trim() !== statusVal) return false; }
+    if (progVal){ if (_mregProgLabel(String(r['수강반종목명']||'').trim()) !== progVal) return false; }
     return true;
   });
+  if (sortVal === 'old' || sortVal === 'new'){
+    rows = rows.slice().sort(function(a, b){
+      var da = _oaLastContactDate(a, cfg), db = _oaLastContactDate(b, cfg);
+      return sortVal === 'old' ? da.localeCompare(db) : db.localeCompare(da);
+    });
+  }
 
   var count = document.getElementById('oaCount');
   if (count) count.textContent = '총 ' + rows.length + '명' + (pop.length !== rows.length ? ' (' + cfg.label + ' 담당 전체 ' + pop.length + '명 중)' : '');
@@ -7937,6 +7983,11 @@ function _oaWireSearch(){
     si.addEventListener('compositionend', function(){ _oaComposing = false; _oaLimit = 200; _oaRender(); });
     si.addEventListener('input', function(){ if (!_oaComposing){ _oaLimit = 200; _oaRender(); } });
   }
+  // 필터 3종 이벤트 연결(FB260815-102435 — 상태·종목·연락 정렬)
+  ['oaStatusFilter', 'oaProgFilter', 'oaContactSort'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el && !el.dataset.wired){ el.dataset.wired = '1'; el.addEventListener('change', function(){ _oaLimit = 200; _oaRender(); }); }
+  });
   var body = document.getElementById('oaBody');
   if (body && !body.dataset.selWired){
     body.dataset.selWired = '1';
