@@ -738,6 +738,55 @@ def kill_switch_enabled() -> bool:
         return False
 
 
+def send_mgr_brief() -> None:
+    """★중간관리자 결정거리 요약 발송 — ★운영부 결과와 무관하게 자기 조건으로 돈다.
+
+    ★2026-08-15 수리(방마다 독립 · 배536 원칙): 예전엔 이 블록이 main()의 ★운영부 발송
+    '성공' 분기 안에 있었다. 그래서 ①★운영부 발송이 실패하면 ★중간관리자도 통째로 안 나갔고
+    ②같은 날 재실행하면 ★운영부가 '이미 발송됨'으로 먼저 return 해 — mgr 발송 실패 시
+    "다음 회차 재시도" 로그가 거짓이었다(재시도 기회가 그날 다시 오지 않는다).
+    중복방지는 원래대로 _mgr_already_sent(하트비트) 하나가 담당한다.
+
+    대상일 = 그 방 자신의 _pending_digest.json(date) — 오늘 생성분일 때만. 없으면 어제.
+    (예전엔 ★운영부 pending 의 date 를 빌려 썼다 — 두 방의 대화 폴백일이 갈리면 어긋난다.)"""
+    from datetime import timedelta
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    target_date = ""
+    if MGR_PENDING.exists():
+        try:
+            d = json.loads(MGR_PENDING.read_text(encoding="utf-8"))
+            if str(d.get("generated_at", "")).startswith(today):
+                target_date = str(d.get("date", ""))
+        except Exception:
+            pass
+    if not target_date:
+        target_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    if _mgr_already_sent(target_date):
+        log(f"[mgr] 이미 발송된 회차({target_date}) — 생략")
+        return
+    mgr_msg, relay_current = build_mgr_daily_brief(_fetch_todo_rows(), target_date)
+    if not mgr_msg:
+        log("[mgr] 보낼 내용 0건 — 발송 생략")
+        return
+    mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM]
+    log(f"[mgr] 결정거리 요약 발송(대상 {target_date}) → {WEEKLY_ROOM}")
+    mproc = subprocess.run(mcmd, capture_output=True, text=True, encoding="utf-8")
+    mout = (mproc.stdout or "").strip()
+    if mproc.returncode == 0 and "DONE" in mout:
+        _mark_mgr_sent(target_date)
+        # 열린 요청 절 스냅샷 저장 — 발송 성공 후에만(미리보기·실패 시엔 안 찍음,
+        # 기존 relay 하트비트 RELAY_HEARTBEAT_ID 재사용, 새 파일 없음 · 약속 L21).
+        relay_state = _relay_state()
+        _migrate_relay_state(relay_state)
+        relay_state[WEEKLY_ROOM] = relay_current
+        _save_relay_state(relay_state)
+        log("[mgr] 발송 완료")
+    else:
+        log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
+
+
 def main() -> int:
     if sys.platform != "win32":
         print("FAILED: Windows 전용")
@@ -763,9 +812,24 @@ def main() -> int:
         return 0
 
     # ★2026-08-08 GM 지시로 여기 있던 독립 relay 발송(send_relays)은 중단했다 — '사람이
-    # 처리할 업무' 전달은 ★중간관리자 통합본(build_mgr_daily_brief, 아래 mgr 블록)이
+    # 처리할 업무' 전달은 ★중간관리자 통합본(build_mgr_daily_brief → send_mgr_brief)이
     # 대신 싣는다(배238·544, 2026-08-11 웰리 배선). 이 자리엔 이제 아무것도 없다.
 
+    rc = _send_ops_room(args)
+
+    # ★중간관리자 — ★운영부 결과와 무관하게 시도한다(방마다 독립 · 2026-08-15 수리,
+    # send_mgr_brief docstring 참조). dry-run 은 방에 손대지 않으므로 원래대로 생략.
+    if not args.dry_run:
+        try:
+            send_mgr_brief()
+        except Exception as exc:
+            log(f"[mgr] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+    return rc
+
+
+def _send_ops_room(args) -> int:
+    """★운영부 아침 다이제스트 발송 본체 — 기존 main() 몸통을 그대로 옮긴 것(2026-08-15).
+    옮긴 이유 하나뿐: 이 함수의 조기 return 들이 ★중간관리자 발송까지 삼키지 않게."""
     if not PENDING.exists():
         print(f"FAILED: 대기 다이제스트 없음 — {PENDING}")
         return 1
@@ -810,27 +874,8 @@ def main() -> int:
             PENDING.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
             if done_bootstrap or done_current != done_prev:
                 _save_done_state(done_current)
-            mgr_target_date = str(data.get("date", ""))
-            if mgr_target_date and not _mgr_already_sent(mgr_target_date):
-                mgr_msg, relay_current = build_mgr_daily_brief(_fetch_todo_rows(), mgr_target_date)
-                if mgr_msg:
-                    mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM]
-                    log(f"[mgr] 결정거리 요약 발송 → {WEEKLY_ROOM}")
-                    mproc = subprocess.run(mcmd, capture_output=True, text=True, encoding="utf-8")
-                    mout = (mproc.stdout or "").strip()
-                    if mproc.returncode == 0 and "DONE" in mout:
-                        _mark_mgr_sent(mgr_target_date)
-                        # 열린 요청 절 스냅샷 저장 — 발송 성공 후에만(미리보기·실패 시엔 안 찍음,
-                        # 기존 relay 하트비트 RELAY_HEARTBEAT_ID 재사용, 새 파일 없음 · 약속 L21).
-                        relay_state = _relay_state()
-                        _migrate_relay_state(relay_state)
-                        relay_state[WEEKLY_ROOM] = relay_current
-                        _save_relay_state(relay_state)
-                        log("[mgr] 발송 완료")
-                    else:
-                        log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
-                else:
-                    log("[mgr] 보낼 내용 0건 — 발송 생략")
+            # ★중간관리자 발송은 여기(성공 분기 안)에 있다가 main() 끝의 send_mgr_brief()
+            # 호출로 나갔다(2026-08-15 — ★운영부 실패·기발송이 mgr 재시도를 삼키던 것 수리).
         print(f"DONE: 다이제스트 발송 완료 — {TARGET_ROOM}")
         return 0
     print(f"FAILED: 발송 실패(rc={proc.returncode}) — {tail}")
