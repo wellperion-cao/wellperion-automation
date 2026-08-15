@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>회원 감소 원인 분석 (6차 갱신) — 웰페리온 A3 보고서</title>
+<title>회원 감소 원인 분석 (7차 재구성) — 웰페리온 A3 보고서</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -29,10 +29,10 @@
   @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
 
   /* A3 가로 1장 */
-  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:17px 32px 14px;
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:18px 34px 14px;
     display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
 
-  /* ① 헤더 */
+  /* 헤더 */
   .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:7px; }
   .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:14px; color:var(--navy);
     letter-spacing:6px; margin-bottom:3px; }
@@ -47,60 +47,71 @@
     border-bottom:1px solid var(--line); }
   .sign .b{ height:32px; }
 
-  /* 문서의 답 — 3초 안에 읽는 세 줄 */
-  .answer{ margin-top:7px; background:var(--navy-bg); border-left:5px solid var(--navy);
-    padding:4px 14px 3px; font-size:14.8px; font-weight:700; line-height:1.4; letter-spacing:-.4px; color:var(--ink); }
-  .answer b{ color:var(--bad); }
-  .answer em{ font-style:normal; color:var(--good); }
-  .answer span{ font-weight:500; font-size:13.2px; color:#3C464F; }
-  .answer .no{ display:inline-block; width:20px; color:var(--navy); }
+  /* 【상단】 핵심 3줄 — 문서에서 가장 크게 */
+  .hero{ display:flex; gap:12px; margin-top:9px; }
+  .hc{ flex:1; border:1.5px solid var(--line); border-top:5px solid var(--navy); padding:7px 16px 6px; }
+  .hc.love{ border-top-color:var(--good); background:#F4FAF7; }
+  .hc.leave{ border-top-color:var(--bad); background:#FBF5F5; }
+  .hc.flat{ border-top-color:var(--navy); background:var(--navy-bg); }
+  .hc .lb{ font-size:16.5px; font-weight:700; letter-spacing:-.4px; line-height:1.25; }
+  .hc.love .lb{ color:var(--good); }
+  .hc.leave .lb{ color:var(--bad); }
+  .hc.flat .lb{ color:var(--navy); }
+  .hc .big{ font-size:36px; font-weight:900; letter-spacing:-1.5px; line-height:1.08; margin:2px 0 3px;
+    font-variant-numeric:tabular-nums; }
+  .hc.love .big{ color:var(--good); }
+  .hc.leave .big{ color:var(--bad); }
+  .hc.flat .big{ color:var(--navy); font-size:30px; letter-spacing:-1px; padding-top:5px; }
+  .hc .big small{ font-size:20px; font-weight:700; letter-spacing:-.5px; }
+  .hc .ex{ font-size:13px; line-height:1.38; color:#2A343D; }
+  .hc .ex b{ font-weight:700; }
+  .hc.leave .ex b{ color:var(--bad); }
+  .hc.flat .ex b{ color:var(--bad); }
 
-  /* 3축 깔때기 표 (거리 × 재등록 × 출석) */
+  /* 전체 1,000명 네 갈래 띠 */
+  .band{ margin-top:7px; }
+  .band .tt{ font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:2px; }
+  .band .tt span{ font-weight:400; color:#48525B; font-size:11.8px; }
+  .strip{ display:flex; height:28px; border-radius:3px; overflow:hidden; }
+  .strip i{ display:flex; align-items:center; justify-content:center; height:100%;
+    font-style:normal; font-size:12.8px; font-weight:700; color:#fff; white-space:nowrap; }
+  .strip i.s1{ background:var(--good); }
+  .strip i.s2{ background:#A63B3B; }
+  .strip i.s3{ background:#7E93A8; }
+  .strip i.s4{ background:#C9D2DB; color:#3C464F; }
+
+  /* 【중단】 좌우 2단 */
+  .body2{ margin-top:7px; display:flex; gap:14px; flex:1; min-height:0; }
+  .colL{ width:57%; flex:none; display:flex; flex-direction:column; gap:6px; }
+  .colR{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
+
+  /* 구체 사항 박스 */
+  .sec{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:5px 13px 5px; }
+  .sec h3{ font-size:14.3px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:3px; }
+  .sec h3 .no{ display:inline-block; background:var(--navy); color:#fff; font-size:12.5px; padding:1px 8px;
+    border-radius:2px; margin-right:7px; vertical-align:1px; }
+  .sec.g{ border-top-color:var(--good); } .sec.g h3{ color:var(--good); } .sec.g h3 .no{ background:var(--good); }
+  .sec.r{ border-top-color:var(--bad); } .sec.r h3{ color:var(--bad); } .sec.r h3 .no{ background:var(--bad); }
+  .sec p{ font-size:13px; line-height:1.36; color:#22303B; margin-top:3px; }
+  .sec p b{ font-weight:700; }
+  .key{ background:#FBEDED; border-left:4px solid var(--bad); padding:3px 11px; margin-top:4px;
+    font-size:13.2px; font-weight:700; line-height:1.38; color:var(--bad); }
+  .key span{ font-weight:500; color:#6B2020; }
+
+  /* 3축 깔때기 표 */
   .xt{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  .xt th,.xt td{ border:1px solid var(--line); padding:1px 10px; font-size:13.3px; text-align:right; font-variant-numeric:tabular-nums; }
-  .xt th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; }
-  .xt col.k{ width:196px; }
+  .xt th,.xt td{ border:1px solid var(--line); padding:1px 10px; font-size:13px; text-align:right; font-variant-numeric:tabular-nums; }
+  .xt th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; text-align:left; }
+  .xt th:last-child{ text-align:right; }
   .xt td.k{ text-align:left; background:#F6F8FA; font-weight:500; }
-  .xt th.k{ text-align:left; background:#0E2439; }
   .xt td.core{ background:#DDEBE3; color:var(--good); font-weight:900; font-size:15.5px; }
-  .xt td.riskc{ background:#FBEDED; color:var(--bad); font-weight:700; }
   .xt td.tot{ font-weight:700; background:#F0F3F7; }
 
-  /* 경고 밴드 */
-  .alert{ margin-top:4px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
-    padding:5px 14px; font-size:13.3px; font-weight:700; line-height:1.38; }
-  .alert span{ font-weight:400; color:#6B2020; }
-
-  /* 좌우 2단 본문 */
-  .body2{ margin-top:5px; display:flex; gap:12px; flex:1; min-height:0; }
-  .colL{ width:50.5%; flex:none; display:flex; flex-direction:column; gap:4px; }
-  .colR{ flex:1; display:flex; flex-direction:column; gap:5px; min-width:0; }
-
-  /* ③ 실측표 — 칸 너비 고정(colgroup)으로 세로줄 정렬 */
-  table.main{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  table.main th, table.main td{ border:1px solid var(--line); padding:2px 8px; font-size:13.3px; line-height:1.24; }
-  table.main thead th{ background:var(--navy); color:#fff; font-weight:700; font-size:13.3px; border-color:#2A4763; padding:5px 8px; }
-  table.main thead th.k{ background:#0E2439; }
-  table.main thead th .sub{ display:block; font-size:10.8px; font-weight:400; opacity:.8; margin-top:1px; }
-  td.k{ background:#F6F8FA; font-weight:500; }
-  tr.grp td{ background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:11.8px; letter-spacing:2.5px; padding:1px 8px; }
-  .num{ text-align:right; font-variant-numeric:tabular-nums; }
-  .good{ color:var(--good); font-weight:700; }
-  .warn{ color:var(--warn); font-weight:700; }
-  .bad{ color:var(--bad); font-weight:700; }
-  .est{ color:#5C666F; font-size:11px; font-weight:400; }
-  td.strong{ font-weight:700; }
-  tr.sum td{ background:#F0F3F7; }
-  tr.sum td.k{ background:#E7ECF2; }
-
-  /* ③-2 월별 LOSS + 사유 구성 (왼쪽 단) */
-  .mbox{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:4px 12px 3px; }
-  .mbox h3{ font-size:13.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:3px; }
-  .chart{ display:flex; gap:18px; }
+  /* 월별 그래프 */
+  .chart{ display:flex; gap:18px; margin-top:2px; }
   .yr{ flex:12; }
   .yr.y26{ flex:8; }
-  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:58px; }
+  .yr .bars{ display:flex; align-items:flex-end; gap:3px; height:48px; }
   .m{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
   .m b{ font-size:10.5px; font-weight:700; color:#3C464F; margin-bottom:1px; font-variant-numeric:tabular-nums; letter-spacing:-.3px; }
   .m .duo{ display:flex; align-items:flex-end; gap:1px; width:100%; }
@@ -112,59 +123,37 @@
   .m s{ text-decoration:none; font-size:10.8px; color:#5C666F; margin-top:2px; line-height:1.15; }
   .m.neg b{ color:var(--bad); }
   .m.neg s{ background:var(--bad); color:#fff; width:100%; text-align:center; border-radius:2px; font-weight:700; }
-  .legend{ margin-top:2px; font-size:11.3px; color:#3C464F; line-height:1.3; }
+  .legend{ margin-top:2px; font-size:11.5px; color:#3C464F; line-height:1.3; }
   .legend .sw{ display:inline-block; width:9px; height:9px; border-radius:2px; vertical-align:baseline; margin:0 3px 0 8px; }
   .legend .sw:first-child{ margin-left:0; }
   .legend .neg-sw{ background:var(--bad); }
-  .legend b{ color:var(--ink); }
-  .yr .cap{ text-align:center; font-size:11.5px; font-weight:700; color:var(--navy); border-top:1.5px solid var(--navy);
+  .yr .cap{ text-align:center; font-size:11.8px; font-weight:700; color:var(--navy); border-top:1.5px solid var(--navy);
     margin-top:2px; padding-top:1px; }
   .yr .cap span{ font-weight:400; color:#3C464F; }
-  .read{ margin-top:3px; font-size:11.8px; line-height:1.35; color:#3C464F; }
-  .read b{ color:var(--ink); }
 
-  /* 사유 구성 */
-  .stack{ display:flex; height:11px; border-radius:2px; overflow:hidden; margin-bottom:2px; }
+  /* 사유 구성 스택 */
+  .stack{ display:flex; height:11px; border-radius:2px; overflow:hidden; margin-top:4px; }
   .stack i{ display:block; height:100%; }
-  .chips{ font-size:11.8px; line-height:1.4; color:#3C464F; margin-bottom:2px; }
+  .chips{ font-size:12.3px; line-height:1.4; color:#3C464F; margin-top:2px; }
   .chips b{ font-weight:700; }
-  .dot{ display:inline-block; width:8px; height:8px; border-radius:2px; margin:0 3px 0 8px; vertical-align:baseline; }
+  .dot{ display:inline-block; width:8px; height:8px; border-radius:2px; margin:0 3px 0 9px; vertical-align:baseline; }
   .dot:first-child{ margin-left:0; }
   .c-us{ background:var(--bad); } .c-na{ background:#8A9099; } .c-tr{ background:#B9C6D4; } .c-et{ background:#E3E7EB; }
-  .rsn{ width:100%; border-collapse:collapse; }
-  .rsn td{ border:0; border-bottom:1px solid #EEF1F4; padding:0 4px; font-size:11.8px; line-height:1.45; }
-  .rsn td.nm{ font-weight:500; }
-  .rsn td.n1{ text-align:right; font-variant-numeric:tabular-nums; width:44px; }
-  .rsn td.n2{ text-align:right; font-variant-numeric:tabular-nums; width:54px; color:#5C666F; }
-  .rsn td.cl{ width:76px; text-align:center; font-size:11px; font-weight:700; }
-  .cl.us{ color:var(--bad); } .cl.na{ color:#5C666F; } .cl.tr{ color:#7E93A8; }
 
-  /* 오른쪽 단 박스 */
-  .box{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:5px 12px 5px; }
-  .box h3{ font-size:13.6px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:5px; }
-  .box ul{ list-style:none; }
-  .box li{ font-size:13.3px; line-height:1.38; padding-left:15px; position:relative; margin-bottom:4px; }
-  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
-  .box.rec{ border-top-color:var(--good); }
-  .box.rec h3{ color:var(--good); }
-  .box.rec b{ color:var(--good); }
-
-  /* 등급별 모집 안건 */
+  /* 우측 — 안건 */
+  .box{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:6px 13px 6px; }
+  .box h3{ font-size:14px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:5px; }
   .agenda .concl{ background:var(--navy-bg); border-left:4px solid var(--navy); color:var(--navy);
-    font-weight:700; font-size:13.6px; padding:4px 10px; margin-bottom:5px; line-height:1.35; }
-  .agenda p.prob{ font-size:13.1px; line-height:1.38; margin-bottom:6px; }
+    font-weight:700; font-size:13.5px; padding:4px 10px; margin-bottom:6px; line-height:1.35; }
+  .agenda p.prob{ font-size:13.1px; line-height:1.42; margin-bottom:6px; }
   .agenda p.prob b{ color:var(--bad); }
-  table.ag{ width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:6px; }
-  table.ag th, table.ag td{ border:1px solid var(--line); padding:3px 9px; font-size:13.1px; line-height:1.32; vertical-align:top; }
-  table.ag th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; padding:3px 9px; font-size:12.6px; }
+  table.ag{ width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:7px; }
+  table.ag th, table.ag td{ border:1px solid var(--line); padding:4px 10px; font-size:13.1px; line-height:1.38; vertical-align:top; }
   table.ag td.a{ background:#F6F8FA; font-weight:700; }
   table.ag td.a .sub{ display:block; font-weight:500; font-size:11.8px; color:#3C464F; margin-top:2px; line-height:1.3; }
   table.ag .lbl{ font-weight:700; color:var(--navy); }
-  table.ag .risk{ color:#6B2020; }
-  .agenda p.jdg{ font-size:12.9px; line-height:1.36; margin-bottom:6px; color:#22303B; }
-  .agenda .decide{ background:var(--navy); color:#fff; font-size:13.3px; line-height:1.4; padding:6px 11px; margin-bottom:5px; }
+  .agenda .decide{ background:var(--navy); color:#fff; font-size:13.3px; line-height:1.42; padding:7px 12px; }
   .agenda .decide b{ color:#FFD9A0; }
-  .agenda p.note{ font-size:11.5px; line-height:1.35; color:#48525B; }
 
   /* 결정 요청 */
   .ask{ background:var(--navy); color:#fff; display:flex; align-items:stretch; }
@@ -173,16 +162,29 @@
   .ask .lb span{ font-size:10px; letter-spacing:3px; opacity:.85; }
   .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:17px; letter-spacing:-.5px; }
   .ask .items{ flex:1; display:flex; }
-  .ask .it{ flex:1; padding:5px 12px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it{ flex:1; padding:6px 13px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
   .ask .n em{ font-style:normal; opacity:.95; letter-spacing:0; margin-left:8px; }
-  .ask .q{ font-size:13.8px; font-weight:700; line-height:1.3; margin-top:2px; letter-spacing:-.4px; }
+  .ask .q{ font-size:13.8px; font-weight:700; line-height:1.32; margin-top:2px; letter-spacing:-.4px; }
   .ask .d{ font-size:11.8px; line-height:1.4; opacity:.88; margin-top:3px; }
 
-  /* ⑤ 각주 */
-  .foot{ margin-top:3px; border-top:1px solid var(--line); padding-top:3px;
-    display:flex; gap:20px; font-size:10.9px; line-height:1.36; color:#48525B; }
+  /* 【하단 마무리】 꼭 챙길 지표 */
+  .kpi{ margin-top:7px; border:1.5px solid var(--navy); border-top:5px solid var(--navy); padding:6px 14px 6px; background:#FBFCFE; }
+  .kpi h3{ font-size:15px; font-weight:700; color:var(--navy); letter-spacing:-.4px; margin-bottom:4px; }
+  table.kt{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  table.kt th, table.kt td{ border:1px solid var(--line); padding:2px 11px; font-size:13px; line-height:1.32; }
+  table.kt thead th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; text-align:left; }
+  table.kt td.k{ background:#F6F8FA; font-weight:700; }
+  table.kt td.v{ font-variant-numeric:tabular-nums; font-weight:700; }
+  table.kt td.v .est{ font-weight:400; color:#5C666F; font-size:11.8px; }
+  .kpi .last{ margin-top:4px; background:var(--navy-bg); border-left:4px solid var(--navy);
+    padding:3px 11px; font-size:13.3px; font-weight:700; color:var(--navy); line-height:1.38; }
+  .kpi .last span{ font-weight:500; color:#3C464F; font-size:12.3px; }
+
+  /* 각주 */
+  .foot{ margin-top:5px; border-top:1px solid var(--line); padding-top:3px;
+    display:flex; gap:18px; font-size:10.8px; line-height:1.32; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
 </style>
@@ -190,7 +192,7 @@
 <body>
 
 <div class="bar">
-  <b>회원 감소 원인 분석 (A3 1장 · 6차 갱신)</b>
+  <b>회원 감소 원인 분석 (A3 1장 · 7차 재구성)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -199,15 +201,15 @@
 
 <div class="page" id="sheet">
 
-  <!-- ① 헤더 -->
+  <!-- 헤더 -->
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">회원 감소 원인 분석 — 6차 실측 갱신<span class="sub">회장님 최우선 지시건 · 실측 결론 = 감소가 아니라 성장 정체</span></div>
+      <div class="title">회원 감소 원인 분석<span class="sub">회장님 최우선 지시건 · 유효회원 1,000명 전수 실측</span></div>
     </div>
     <div class="meta">
-      작성 <b>경영지원부 (AI CEO 웰리)</b> · 문서번호 <b>WP-GM-260815-01</b> · 6차 갱신 <b>2026. 08. 15.</b><br>
-      원천 <b>회원 DB 실측</b> · 유효회원 <b>1,000명</b> · LOSS <b>697명 전수</b> · 등급 61명 전화 조인 · <b>출석 시트 10개월 조인 769명</b> (각주4) · 추세 <b>2025-01 ~ 2026-08</b> (각주1)
+      작성 <b>경영지원부 (AI CEO 웰리)</b> · 문서번호 <b>WP-GM-260815-01</b> · 7차 재구성 <b>2026. 08. 15.</b><br>
+      원천 <b>회원 DB 실측</b> · 유효회원 <b>1,000명</b> · LOSS <b>697명 전수</b> · 등급 61명 전화 조인 · 출석 시트 10개월 조인 <b>769명</b> (각주4)
     </div>
     <div class="sign">
       <div><div class="t">담당</div><div class="b"></div></div>
@@ -217,30 +219,46 @@
     </div>
   </div>
 
-  <!-- 문서의 답 (3초 안에 읽는 세 줄) -->
-  <div class="answer">
-    <div><span class="no">①</span>회원 수는 줄지 않았습니다. <b>늘지 않고 있습니다.</b> <span>순증(신규 등록 − LOSS) 2024년 +582명 → 2025년 <b>+40명</b> → 2026년 <b>+32명</b>(8/15까지) — 감소가 아니라 성장 정체입니다.</span></div>
-    <div><span class="no">②</span>요금을 올려도 확실히 남을 회원은 <em>149명(14.9%)</em>입니다. <span>걸어올 거리에 살고, 세 번 넘게 다시 등록했고, 주 4~5회 나오는 분들입니다. 기준을 주 2~3회로 넓히면 <em>265명</em> — 떠날 위험이 뚜렷한 분은 <b>18명</b>입니다.</span></div>
-    <div><span class="no">③</span>다음에 나갈 후보 <b>192명</b>이 이미 보입니다. <span>10개월 출석 62회 미만(주 1회대)인 분들로, 그중 <b>23명</b>은 30일 안에 만료 — LOSS 사유 1위 「낮은 이용횟수」(140명)와 같은 무리입니다.</span></div>
+  <!-- 【상단】 핵심 3줄 -->
+  <div class="hero">
+    <div class="hc love">
+      <div class="lb">① 웰페리온을 사랑하는 회원</div>
+      <div class="big">14.9% <small>· 149명</small></div>
+      <div class="ex">요금을 올려도 남습니다. <b>걸어올 거리</b>에 살고, <b>세 번 넘게</b> 다시 등록했고, <b>주 4~5회</b> 나오는 분들입니다.</div>
+    </div>
+    <div class="hc leave">
+      <div class="lb">② 웰페리온을 떠날 회원</div>
+      <div class="big">19.2% <small>· 192명</small></div>
+      <div class="ex">거의 안 나오는 분들입니다. 그중 <b>23명은 30일 안에 만료</b>됩니다.</div>
+    </div>
+    <div class="hc flat">
+      <div class="lb">③ 회원은 줄지 않았습니다 — 늘지 않고 있습니다</div>
+      <div class="big">+582 → +40 → <b style="color:var(--bad)">+32</b></div>
+      <div class="ex">연간 순증(신규 − LOSS)이 2024년 +582명 → 2025년 <b>+40명</b> → 2026년 <b>+32명</b>(8/15까지)으로 주저앉았습니다.</div>
+    </div>
   </div>
 
-  <!-- 경고 밴드 -->
-  <div class="alert">
-    가장 급한 것 — FAN VIP 4명 중 2명(손계자 잔여 5일 · 방형식 19일)이 30일 안에 만료됩니다.
-    <span>&nbsp;만료 임박 72명 중 등급 보유 <b>8명</b>의 결제금액 합계가 <b>1억 485만원</b>(전화·이름 일치 검증)입니다 — 회원 수 8명이 아니라 <b>매출 1억이 빠지는</b> 문제입니다.</span>
+  <!-- 전체 1,000명 네 갈래 띠 -->
+  <div class="band">
+    <div class="tt">유효회원 1,000명의 네 갈래 <span>— ① + ② + 중간 + 출석 자료 없음 = 1,000명 (출석 자료 없음 231명은 대부분 2025년 11월 이후 등록 신규 · 각주4)</span></div>
+    <div class="strip">
+      <i class="s1" style="width:14.9%">① 사랑 149명 · 14.9%</i>
+      <i class="s2" style="width:19.2%">② 떠날 192명 · 19.2%</i>
+      <i class="s3" style="width:42.8%">중간 428명 · 42.8%</i>
+      <i class="s4" style="width:23.1%">출석 자료 없음 231명 · 23.1%</i>
+    </div>
   </div>
 
-  <!-- 좌우 2단 -->
+  <!-- 【중단】 좌 = 구체 사항 1·2·3 / 우 = 안건·결정 -->
   <div class="body2">
 
-    <!-- 왼쪽 = 숫자 (생존 지형 · 실측표 · 월별 그래프 · 사유 구성) -->
     <div class="colL">
 
-      <div class="mbox">
-        <h3>요금 인상 생존 지형 — 3축으로 좁히기 (거리 × 재등록 × 출석 · 유효 1,000명)</h3>
+      <div class="sec g">
+        <h3><span class="no">1번 구체 사항</span>사랑하는 회원 149명은 어떻게 골랐나</h3>
         <table class="xt">
-          <colgroup><col class="k"><col><col style="width:140px"></colgroup>
-          <thead><tr><th class="k">축</th><th style="text-align:left">조건 (앞 조건에 하나씩 추가)</th><th>남는 인원</th></tr></thead>
+          <colgroup><col style="width:150px"><col><col style="width:130px"></colgroup>
+          <thead><tr><th>축</th><th>조건 (앞 조건에 하나씩 추가)</th><th>남는 인원</th></tr></thead>
           <tbody>
             <tr><td class="k">1축 — 거리</td><td style="text-align:left">용산구·성동구 거주 (걸어올 거리)</td><td class="tot">848명</td></tr>
             <tr><td class="k">2축 — 재등록</td><td style="text-align:left">+ 3회 이상 재등록</td><td class="tot">409명</td></tr>
@@ -248,39 +266,19 @@
             <tr><td class="k">(완화 기준)</td><td style="text-align:left">+ 주 2~3회 출석 (126회 이상)</td><td>265명</td></tr>
           </tbody>
         </table>
-        <div class="read"><b>확실한 코어 = 149명(14.9%)</b> — 가깝고, 세 번 넘게 재결제했고, 주 4~5회 나옵니다. <b class="bad">떠날 위험 = 18명</b> — 먼 곳 × 1회차 × 출석 하위 <span class="est">(출석 조인 769명 기준 · 각주4)</span>.</div>
+        <p>149명 중 등급 보유자는 <b>7명뿐</b> — 등급표가 사랑받는 회원을 다 담고 있지 않다는 뜻입니다(안건 2). 반대로 떠날 위험이 뚜렷한 분(먼 곳 × 1회차 × 출석 하위)은 <b style="color:var(--bad)">18명</b>입니다.</p>
       </div>
 
-      <table class="main">
-        <colgroup><col style="width:146px"><col style="width:182px"><col style="width:200px"><col></colgroup>
-        <thead>
-          <tr>
-            <th class="k">항목</th>
-            <th>실측값<span class="sub">2026-08-15 회원 DB</span></th>
-            <th>같이 봐야 할 숫자</th>
-            <th>무엇을 뜻하나</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="grp"><td colspan="4">연 도 별 순 증 감 — 이 보 고 서 의 본 론 (신규 등록 − LOSS)</td></tr>
-          <tr><td class="k">2024년</td><td class="num strong good">+582 명</td><td>등록 755 − LOSS 173</td><td>개업·대량 유치 구간 <span class="est">(각주1)</span></td></tr>
-          <tr class="sum"><td class="k">2025년</td><td class="num strong bad">+40 명</td><td>등록 373 − LOSS 333</td><td class="bad strong">12개월 중 7개월이 순감소</td></tr>
-          <tr class="sum"><td class="k">2026년 (8/15까지)</td><td class="num strong bad">+32 명</td><td>등록 223 − LOSS 191</td><td class="bad strong">8개월 중 3개월이 순감소</td></tr>
+      <div class="sec r">
+        <h3><span class="no">2번 구체 사항</span>떠날 회원 192명은 누구인가</h3>
+        <p>10개월 동안 <b>62회 미만</b>(주 1회대)으로 나온 분들입니다. 그중 <b>30일 안에 만료 23명</b>, <b>등급 보유자 7명</b> — 금액이 큰 회원도 섞여 있습니다.</p>
+        <div class="key">이미 나간 사람의 1위 사유와, 앞으로 나갈 사람의 특징이 같습니다.
+          <span>LOSS 사유 1위가 「낮은 이용 횟수」 <b>140명</b>인데, 이 192명이 바로 그 무리입니다.</span></div>
+        <p style="margin-top:4px">별도로, 만료 임박 <b>72명</b> 중 등급 보유 <b>8명</b>의 2025년 결제액 합이 <b style="color:var(--bad)">1억 485만원</b>입니다(FAN VIP 2 · VIP 2 · Member 4 — FAN VIP 2명은 잔여 <b>5일 · 19일</b>). <b>회원 8명이 아니라 매출 1억이 걸린 문제</b>입니다.</p>
+      </div>
 
-          <tr class="grp"><td colspan="4">지 금 상 태 · 들 어 오 는 쪽 · 나 가 는 쪽</td></tr>
-          <tr><td class="k">유효 회원</td><td class="num strong">1,000 명</td><td>재등록 641 · 신규 318</td><td>LOSS 누적 697명(<b class="warn">41.1%</b>) · 법인 31</td></tr>
-          <tr><td class="k">이번 달 신규 등록</td><td class="num strong bad">7 명</td><td>이번 달 문의 48건</td><td>문의 대비 등록 <b>14.6%</b> <span class="est">(추정 · 각주1)</span></td></tr>
-          <tr class="sum"><td class="k">30일 안에 만료</td><td class="num strong bad">72 명</td><td>이번 달 신규 등록 7명</td><td class="bad strong">유입이 유출의 1/10 수준</td></tr>
-          <tr class="sum"><td class="k">만료 임박 중 상위 등급</td><td class="num strong bad">8 명 / 72명</td><td>결제 합계 104,846,400원</td><td class="bad strong">FAN VIP 2 · VIP 2 · Member 4</td></tr>
-
-          <tr class="grp"><td colspan="4">사 랑 받 는 회 원 — 이미 쓰고 있는 등급표 (2025년 결제액 기준 · 각주3)</td></tr>
-          <tr class="sum"><td class="k">등급 보유 61명</td><td class="num strong">61 명 <span class="est">(전체의 6.1%)</span></td><td class="strong">결제 합계 662,867,896원</td><td class="strong">FAN VIP 4 · VIP 11 · Member 46 — 한 해 <b>6.63억</b> <span class="est">(각주3)</span></td></tr>
-          <tr><td class="k">그중 이미 LOSS</td><td class="num strong bad">4 명 <span class="est">(전원 Member)</span></td><td>2025년 결제 합계 38,371,800원</td><td><b class="good">FAN VIP·VIP는 LOSS 0명</b> — 지켜야 할 선</td></tr>
-        </tbody>
-      </table>
-
-      <div class="mbox">
-        <h3>월별 유입 vs LOSS — 2025-01 ~ 2026-08 실측 (20개월 · 등록 596명 / LOSS 524명 · 2024년은 각주1)</h3>
+      <div class="sec">
+        <h3><span class="no">3번 구체 사항</span>왜 늘지 않는가 — 월별 유입 vs LOSS (2025-01 ~ 2026-08 · 20개월 실측)</h3>
         <div class="chart">
           <div class="yr">
             <div class="bars">
@@ -297,7 +295,7 @@
               <div class="m neg"><b>−8</b><span class="duo"><i class="in" style="height:10px"></i><i class="out" style="height:14px"></i></span><s>11</s></div>
               <div class="m neg"><b>−3</b><span class="duo"><i class="in" style="height:13px"></i><i class="out" style="height:14px"></i></span><s>12</s></div>
             </div>
-            <div class="cap">2025 <span>· 등록 373 − LOSS 333 = 순증 <b>+40</b></span></div>
+            <div class="cap">2025 <span>· 등록 373 − LOSS 333 = 순증 <b>+40</b> · 12개월 중 <b>7개월 순감소</b></span></div>
           </div>
           <div class="yr y26">
             <div class="bars">
@@ -310,72 +308,48 @@
               <div class="m neg"><b>−20</b><span class="duo"><i class="in" style="height:7px"></i><i class="out" style="height:17px"></i></span><s>7</s></div>
               <div class="m part"><b>+24</b><span class="duo"><i class="in" style="height:16px"></i><i class="out" style="height:4px"></i></span><s>8</s></div>
             </div>
-            <div class="cap">2026 <span>· 등록 223 − LOSS 191 = 순증 <b>+32</b> (9월 선등록 1명 포함 · 각주1) — 8월은 진행 중(빗금)</span></div>
+            <div class="cap">2026 <span>· 등록 223 − LOSS 191 = 순증 <b>+32</b> · 8개월 중 <b>3개월 순감소</b> · 8월은 진행 중(빗금)</span></div>
           </div>
         </div>
-        <div class="legend"><span class="sw" style="background:var(--good)"></span>들어온 사람(등록 = 신규+재등록)<span class="sw" style="background:#A63B3B"></span>나간 사람(LOSS)<span class="sw neg-sw"></span>붉은 달 = 순감소 · 막대 위 숫자 = 그 달 순증감 · 빗금 = 집계 진행 중</div>
-        <div class="read">읽는 법 — 순감소가 <b>2025년 12개월 중 7개월 · 2026년 8개월 중 3개월</b> · 최대 낙폭 <b>2026년 7월 −20명</b>. 8월(+24)은 15일까지 집계 <b>착시</b>라 추세에서 제외. 회전율 — 2025년 LOSS 333명 ÷ 유효 약 1,000명 ≈ <b>연 33%</b> · 해마다 셋 중 하나가 바뀝니다 (각주1).</div>
-      </div>
-
-      <div class="mbox">
-        <h3>종료 사유 구성 — 682 / 697명 실측 (97.8% · 정본 = 미등록사유 칸 · 각주2)</h3>
+        <div class="legend"><span class="sw" style="background:var(--good)"></span>등록<span class="sw" style="background:#A63B3B"></span>LOSS<span class="sw neg-sw"></span>붉은 달 = 순감소 — 최대 낙폭 <b>2026년 7월 −20명</b> · 연 회전율 <b>33%</b>(해마다 셋 중 하나가 바뀝니다 · 각주1)</div>
         <div class="stack">
           <i class="c-us" style="width:54.4%"></i><i class="c-na" style="width:23.5%"></i><i class="c-tr" style="width:18.9%"></i><i class="c-et" style="width:3.2%"></i>
         </div>
-        <div class="chips"><span class="dot c-us"></span>우리가 손댈 수 있는 것 <b>379명 · 54.4%</b><span class="dot c-na"></span>불가항력 <b>164명 · 23.5%</b><span class="dot c-tr"></span>전환·구조 <b>132명 · 18.9%</b><span class="dot c-et"></span>공란·기타 <b>22명 · 3.2%</b></div>
-        <div class="read" style="margin-top:2px">최다 사유 = <b>낮은 이용횟수 140명(20.1%)</b> · 거주지 변경 125명 · 무응답 104명 — 나머지 13종 313명은 각주2. 1위가 '가격'이 아니라 <b>'습관'</b>입니다.</div>
+        <div class="chips">LOSS 697명의 사유 —
+          <span class="dot c-us"></span>우리가 손댈 수 있는 것 <b>379명 · 54.4%</b>
+          <span class="dot c-na"></span>불가항력 <b>164명 · 23.5%</b>
+          <span class="dot c-tr"></span>전환·구조 <b>132명 · 18.9%</b>
+          <span class="dot c-et"></span>공란·기타 <b>22명</b> (각주2)</div>
+        <p style="margin-top:2px">등급 61명 중 이미 LOSS <b>4명</b>(전원 Member · 3,837만원) — <b style="color:var(--good)">FAN VIP·VIP는 LOSS 0명</b>, 지켜야 할 선입니다.</p>
       </div>
 
     </div>
 
-    <!-- 오른쪽 = 권고 · 등급별 모집 안건 · 결정 요청 -->
+    <!-- 우측 = 등급별 모집 안건 · 결정 요청 -->
     <div class="colR">
 
-      <div class="box">
-        <h3>집중할 지표 3개 — GM 지시 (2026-08-15)</h3>
-        <table class="ag">
-          <colgroup><col style="width:168px"><col style="width:186px"><col></colgroup>
-          <thead><tr><th>지표</th><th>지금 상태</th><th>쓸 수 있나</th></tr></thead>
-          <tbody>
-            <tr><td class="a">주소 (거리)</td><td>회원 원장 · 98.4% 기입</td><td><b style="color:var(--good)">지금 바로 씁니다</b> — 3축 표의 1축</td></tr>
-            <tr><td class="a">재등록 회차</td><td>회원 원장 · 전수 기입</td><td><b style="color:var(--good)">지금 바로 씁니다</b> — 3축 표의 2축</td></tr>
-            <tr><td class="a">출석 횟수</td><td><b>별도 출석 시트</b>(2025-01~10) · 769명 조인</td><td><b style="color:var(--good)">지금 바로 씁니다</b> — 3축 표의 3축 (각주4)</td></tr>
-          </tbody>
-        </table>
-        <p style="margin:0; font-size:12.6px; line-height:1.38; color:#22303B;">가격이 사유였던 분은 LOSS 697명 중 <b>26명(3.7%)</b>뿐 — 실제 위험은 가격보다 <b>거리와 습관</b>입니다. 원장 「이용일수」 칸은 채울 필요 없고, 체크할 것은 <b>출석 시트가 계속 들어오는지</b> 하나뿐입니다 — 현재 <b>2025-10까지 · 이후분 공백</b>(각주4).</p>
-      </div>
-
-      <div class="box rec">
-        <h3>경영지원부 권고 — 회장님·GM께</h3>
-        <ul>
-          <li><b>이번 달 순서</b> — 만료 임박 등급 8명(1억 485만원) 접촉이 신규 유치보다 싸고 빠릅니다. FAN VIP 손계자(잔여 5일)·방형식(19일)을 이경연 실장이 먼저 접촉합니다.</li>
-          <li><b>기준</b> — 회장님 지시 "사랑받는 기준"은 새로 만들 필요가 없습니다. 등급표 61명이 답이고 전화 키로 원장과 자동으로 붙습니다(59/61 판별).</li>
-        </ul>
-      </div>
-
       <div class="box agenda">
-        <h3>등급별 모집 안건 — 수익 극대화 (GM 지시 2026-08-15)</h3>
-        <div class="concl">결론 — 정원이 찬 지금, 수익은 머릿수가 아니라 자리의 단가에서 납니다.</div>
-        <p class="prob"><b>문제</b> — 상위 6.1%(61명)가 연 6.63억을 내는데 8명(1억 485만)이 30일 내 만료, 나머지 939명은 등급이 없어 지킬 대상도 채울 기준도 없습니다.</p>
+        <h3>등급별 모집 안건 — 수익 극대화 (GM 요청 2026-08-15)</h3>
+        <div class="concl">정원이 찬 지금, 수익은 머릿수가 아니라 자리의 단가에서 납니다.</div>
+        <p class="prob"><b>문제</b> — 상위 6.1%(등급 61명)가 연 <b>6.63억</b>을 내는데 그중 8명(1억 485만원)이 30일 내 만료이고, 나머지 939명은 등급이 없어 지킬 대상도 채울 기준도 없습니다.</p>
         <table class="ag">
-          <colgroup><col style="width:128px"><col></colgroup>
+          <colgroup><col style="width:126px"><col></colgroup>
           <tbody>
             <tr>
-              <td class="a">안건 1 · 지키기<span class="sub">만료 임박 두 갈래 — 8명 + 23명</span></td>
-              <td>① 금액 큰 쪽 — 등급 8명, 2025년 결제액 합 <b>1억 485만/년</b> (이미 Member 4명이 LOSS 로 3,837만을 잃었습니다). ② 안 나오는 쪽 — 출석 하위 192명 중 <b>30일 내 만료 23명</b> = 다음 LOSS 후보. <span class="lbl">첫 걸음</span> — 개별 재등록 면담(등급 8명 우선). <span class="lbl risk">위험</span> — 판촉 압박으로 비치면 브랜드 훼손.</td>
+              <td class="a">안건 1 · 지키기<span class="sub">만료 임박 8명 + 23명</span></td>
+              <td>금액 큰 쪽(등급 8명 · 1억 485만원/년)과 안 나오는 쪽(192명 중 30일 내 만료 23명)을 나눠 개별 재등록 면담 — <span class="lbl">등급 8명 우선</span>. 판촉 압박으로 비치지 않게 조용히 진행합니다.</td>
             </tr>
             <tr>
-              <td class="a">안건 2 · 분류하기<span class="sub">등급 없는 939명 전수 분류</span></td>
-              <td>분류 축 = 결제액 + <b>거리 × 재등록 × 출석(3축)</b> — 위 3축 표의 축을 그대로 씁니다. <span class="lbl">첫 걸음</span> — 939명 3축 집계 후 현행 등급 기준 대입. <span class="lbl risk">위험</span> — 결제액만 보면 이용 없는 회원이 상위로 잡힙니다.</td>
+              <td class="a">안건 2 · 분류하기<span class="sub">등급 없는 939명 전수</span></td>
+              <td>사랑하는 회원 149명 중 등급 보유가 <b>7명뿐</b> — 등급표가 실제 애착 회원을 못 담고 있습니다. 결제액 + <span class="lbl">3축(거리 × 재등록 × 출석)</span>으로 939명을 전수 분류합니다.</td>
             </tr>
             <tr>
-              <td class="a">안건 3 · 채우기<span class="sub">빈자리를 등급 기준으로 배정</span></td>
-              <td>빈자리는 LOSS 로만 생기고, 지금은 사실상 선착순입니다. Member 평균(960만/년)급으로 채울 때마다 자리 단가가 올라갑니다. <span class="lbl">첫 걸음</span> — 문의 48건에 예상 결제 규모 기입, 대기 순번 금액 재편. <span class="lbl risk">위험</span> — 기준 노출 시 공정성 시비 — 내부 운용.</td>
+              <td class="a">안건 3 · 채우기<span class="sub">빈자리를 기준으로 배정</span></td>
+              <td>빈자리는 LOSS로만 생기는데 지금은 사실상 선착순입니다. Member 평균(960만원/년)급으로 채울 때마다 자리 단가가 오릅니다 — 대기 명단에 예상 결제 규모를 기입해 재편합니다(기준은 내부 운용).</td>
             </tr>
           </tbody>
         </table>
-        <div class="decide"><b>회장님 결정 1건</b> — "빈자리는 선착순이 아니라 등급 기준(예상 결제액 순)으로 채운다"를 정해 주시면, 대기 명단이 금액순으로 재편되고 LOSS 로 자리가 날 때마다 상위 등급 후보부터 배정됩니다.</div>
-        <p class="note">비고 — 2026년 10월 가격 인상 일정은 건드리지 않았고, 세 안건 모두 모집·할인·프로모션 대외 표기 없이 내부 운영만으로 굴러갑니다.</p>
+        <div class="decide"><b>회장님 결정 1건</b> — "빈자리는 선착순이 아니라 등급 기준(예상 결제액 순)으로 채운다"를 정해 주시면, LOSS로 자리가 날 때마다 상위 등급 후보부터 배정됩니다.</div>
       </div>
 
       <div class="ask">
@@ -397,12 +371,31 @@
     </div>
   </div>
 
-  <!-- ⑤ 각주 -->
+  <!-- 【하단 마무리】 회원관리에서 꼭 챙겨야 할 지표 -->
+  <div class="kpi">
+    <h3>회원관리에서 꼭 챙겨야 할 지표 — 이것만 보시면 됩니다</h3>
+    <table class="kt">
+      <colgroup><col style="width:300px"><col style="width:420px"><col></colgroup>
+      <thead><tr><th>지표</th><th>지금 값</th><th>왜 챙기나</th></tr></thead>
+      <tbody>
+        <tr><td class="k">월별 순증감 (신규 − LOSS)</td><td class="v">2026년 +32명</td><td>회원이 느는지 주는지 보는 단 하나의 숫자입니다.</td></tr>
+        <tr><td class="k">사랑하는 회원 비율</td><td class="v">14.9% (149명)</td><td>요금·정책이 바뀌어도 남을 기반입니다.</td></tr>
+        <tr><td class="k">떠날 회원 비율</td><td class="v">19.2% (192명)</td><td>다음 LOSS는 여기서 나옵니다.</td></tr>
+        <tr><td class="k">재등록 문턱 통과율 (1회 → 2회)</td><td class="v">316명 → 221명</td><td>가장 크게 새는 자리입니다.</td></tr>
+        <tr><td class="k">LOSS 중 '우리 몫' 비율</td><td class="v">54.4% (379명)</td><td>막을 수 있었던 이탈의 몫입니다.</td></tr>
+        <tr><td class="k">데이터 기입률</td><td class="v">주소 98.4% · 회차 전수 · 출석 76.9% · 사유 97.8%</td><td><b>이 칸이 비면 위 지표가 조용히 거짓말을 시작합니다.</b></td></tr>
+      </tbody>
+    </table>
+    <div class="last">출석 시트가 계속 들어오는지만 확인하면 됩니다. 원장의 「이용일수」 칸은 채우지 않아도 됩니다.
+      <span>(현재 출석 시트는 2025년 10월까지 · 이후분 공백 · 각주4)</span></div>
+  </div>
+
+  <!-- 각주 -->
   <div class="foot">
-    <div><b>각주1 · 산출 근거</b> — LOSS 697명 = 현행 191 + 보관 506 전수 집계(2026-08-15) · 「문의 대비 등록 14.6%」는 추정치. <b>2024년(173명)은 개업·대량 유치 구간(등록 755명)이라 추세에서 제외.</b> 회전율 33% 분모 = 현재 유효 1,000명(근사값). <b>3축 표</b> — 가까움 = 용산구·성동구(743+105) · 혼합 표기('단기 6' 등) 회차는 표기 속 숫자로 집계.</div>
-    <div><b>각주2 · 종료 사유 정본</b> — 정본 = <b>미등록사유 칸(682/697 · 97.8%)</b> · 별도 「종료사유」 칸(0건)은 신설 착오로 미사용(2026-07-20 GM 확정 — 이 칸을 보면 "사유 0%"로 오독). 「그 외 313명」 = 양도/강습 전환 75 · 가망(재등록 여지) 73 · 단기 이용 57 · 금액·프로모션 26 · 건강문제 31 · 그 외 7종 51 (가망은 우리 몫 · 양도·단기는 전환·구조로 분류 · 공란 15는 682 밖).</div>
-    <div><b>각주3 · 등급표</b> — 61명 = <b>2025년 1년치 결제액 기준</b>(GM 확정 2026-08-15) · 구성 = FAN VIP 4(77,937,150) · VIP 11(143,497,950) · Member 46(441,432,796) · 매출 목표(72억)와는 기간이 달라 비교 안 함 · 원장 대조 = 전화 조인(유효 55 + LOSS 4 + 미매칭 2 · 합 19,319,840원). 원장에 결제액 칸이 없어 LOSS 전체 매출 환산은 하지 않았습니다(평균 곱 추정 금지). <b>차기</b> — 등급 칸 원장 연결 + '우리 몫' 379명 대응 설계 · 9월 회장님 보고.</div>
-    <div><b>각주4 · 출석 축(GM 제공 출석 시트)</b> — 2025-01~10 · 10개월 누적 1,638명 · 원장과 전화 우선(없으면 유일 이름) 조인 = <b>769명(76.9%)</b>. 미조인 231명 중 <b>191명은 2025-11 이후 등록 신규</b>(2025년 출석부에 있을 수 없음) — 2025-10 이전 등록자만 보면 <b>94.7%</b>(717/757). 상 = 194회 이상(3사분위 · 주 4~5회) · 하 = 62회 미만(1사분위 · 주 1회대) · 중앙값 126회. 코어 149명 = 2축 409명 중 출석 붙은 405명 기준(상 149·중 214·하 42 · 미부착 4).</div>
+    <div><b>각주1 · 산출 근거</b> — LOSS 697명 = 현행 191 + 보관 506 전수 집계(2026-08-15). 2024년(등록 755 · LOSS 173)은 개업·대량 유치 구간이라 월별 추세에서 제외. 회전율 33% = 2025년 LOSS 333 ÷ 유효 약 1,000명(근사값). 거리 축 = 주소의 용산구·성동구 표기(743+105).</div>
+    <div><b>각주2 · 종료 사유 정본</b> — 정본 = 미등록사유 칸(682/697 · 97.8%) · 별도 「종료사유」 칸(0건)은 신설 착오로 미사용(2026-07-20 GM 확정). 최다 사유 = 낮은 이용 횟수 140 · 거주지 변경 125 · 무응답 104 · 양도/강습 전환 75 · 가망 73 · 단기 57 · 건강 31 · 금액 26 · 그 외 7종 51 · 공란 15.</div>
+    <div><b>각주3 · 등급표</b> — 61명 = 2025년 1년치 결제액 기준(GM 확정 2026-08-15) · FAN VIP 4(7,794만) · VIP 11(1억 4,350만) · Member 46(4억 4,143만) · 합 6.63억. 원장 대조 = 전화 조인 59/61(유효 55 · LOSS 4 · 미매칭 2). 원장에 결제액 칸이 없어 LOSS 전체 매출 환산은 하지 않았습니다.</div>
+    <div><b>각주4 · 출석 축(GM 제공 출석 시트)</b> — 2025-01~10 · 10개월 누적, 원장과 전화 우선(없으면 유일 이름) 조인 = 769명(76.9%). 미조인 231명 중 191명은 2025-11 이후 등록 신규(2025년 출석부에 있을 수 없음) — 이 231명이 띠의 「출석 자료 없음」입니다. 상 = 194회 이상(3사분위 · 주 4~5회) · 하 = 62회 미만(1사분위 · 주 1회대) · 중앙값 126회.</div>
   </div>
 
 </div>
