@@ -403,7 +403,9 @@ def emit(day: str) -> int:
             del it['ev'], it['sortkey']
         done = sum(1 for it in items if it['minutes'] is not None)
         total = sum(it['minutes'] for it in items if it['minutes'] is not None)
-        work = load_work(day, role)
+        # 30건 — 기본 12건이면 바쁜 날 아침 자체 작업이 창 밖으로 밀려 화면(GM업무·자율현황)에서
+        # 사라진다(2026-08-15 실측 — 06:04 자율화 선언이 오후에 안 보임).
+        work = load_work(day, role, limit=30)
         _now = datetime.datetime.now()
         opened = classify_open(items, work, _now)
         repeats = find_repeats(items)

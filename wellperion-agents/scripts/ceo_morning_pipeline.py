@@ -1931,6 +1931,16 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
             "serialized_conflicts": orch["serialized_conflicts"],
         }, ensure_ascii=False, indent=2))
 
+    # GM 직접 업무 자동 점검 — 체크리스트 배 대조 + 미완 푸시 (GM 요청 2026-08-15 · 웰리 설계 승인).
+    # 실패해도 아침 보고를 막지 않는다. 킬스위치 = status/gm_autocheck.json (false면 스스로 스킵).
+    try:
+        subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "gm_task_autocheck.py")]
+            + (["--dry-run"] if dry_run else []),
+            timeout=180)
+    except Exception as exc:
+        print(f"[WARN] gm_task_autocheck 실패({exc}) — 계속", file=sys.stderr)
+
     ok = sent
     print(f"=== 파이프라인 종료 — {'성공' if ok else '실패'} ===")
     return 0 if ok else 1
