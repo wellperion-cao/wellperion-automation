@@ -58,32 +58,41 @@ def resolve_today_edit_url() -> "tuple[str, str]":
     return f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit", ""
 
 
-def session_alive(edit_url: str) -> "tuple[bool, str]":
-    """시트 편집 페이지가 로그인으로 튕기지 않는지만 본다(PDF 내려받지 않음 — 가볍게)."""
-    from playwright.sync_api import sync_playwright
+def session_alive() -> "tuple[bool, str]":
+    """09:30 이 실제로 하는 그 동작(PDF 내려받기)을 그대로 한 번 해 본다.
 
-    G.close_profile_chrome()  # 잠긴 채면 판정 자체가 실패한다
+    ★2026-08-15 실사고로 바꿨다. 그 전에는 **시트 편집 페이지가 로그인으로 튕기는지만**
+      보고 "가볍게" 판정했다. 그런데 구글은 편집 페이지는 열어 주면서 export 엔드포인트만
+      401 로 막는 상태가 있다 — 실제로 그날 08:10 지킴이는 "세션 정상"을 찍었고, 같은
+      세션으로 09:30 매출보고가 401 로 펑크났다(로그 실측). 판정이 실동작과 다르면 그
+      판정은 매일 OK 만 찍는 장식이 된다.
+    ▸그래서 판정을 생성기의 export_pdf() **그 함수 자체**로 한다 — 판정용 사본을 따로
+      만들지 않는다(약속 L01). 받은 PDF 는 임시 파일이라 바로 지운다.
+    """
+    import tempfile  # noqa: PLC0415
 
-    with sync_playwright() as p:
-        context = None
+    sheet_id, gid, resolve_fail = G.resolve_sheet(datetime.now())
+    if resolve_fail:
+        return True, f"판정 스킵(시트 해석 실패 — 로그인 문제 아님): {resolve_fail}"
+
+    tmp = Path(tempfile.gettempdir()) / "wellperion_sales_session_probe.pdf"
+    try:
+        ok, fail = G.export_pdf(tmp, sheet_id, gid)
+    except Exception as exc:  # noqa: BLE001
+        # 판정 불가는 '만료'로 단정하지 않는다 — 괜히 로그인 창을 띄우면 프로필만 잠근다.
+        return True, f"판정 불가(예외라 살아있는 것으로 간주): {type(exc).__name__}: {exc}"
+    finally:
         try:
-            context = G._launch_context(p)
-            page = context.pages[0] if context.pages else context.new_page()
-            page.goto(edit_url, wait_until="domcontentloaded", timeout=45_000)
-            page.wait_for_timeout(2500)
-            url = page.url
-            if "accounts.google.com" in url or "signin" in url.lower():
-                return False, f"로그인 페이지로 리다이렉트({url[:90]}…)"
-            return True, url[:90]
-        except Exception as exc:
-            # 판정 불가는 '만료'로 단정하지 않는다 — 괜히 로그인 창을 띄우면 프로필만 잠근다.
-            return True, f"판정 불가(예외라 살아있는 것으로 간주): {type(exc).__name__}: {exc}"
-        finally:
-            if context is not None:
-                try:
-                    context.close()
-                except Exception:
-                    pass
+            tmp.unlink(missing_ok=True)
+        except Exception:
+            pass
+
+    if ok:
+        return True, "PDF 내려받기 성공"
+    # export 가 막힌 것만 '만료'로 본다. 그 밖의 실패(네트워크·예외)는 살아있는 것으로 둔다.
+    if "세션만료" in fail or "로그인" in fail:
+        return False, fail
+    return True, f"판정 불가(살아있는 것으로 간주): {fail}"
 
 
 def open_login_window(edit_url: str) -> bool:
@@ -117,7 +126,7 @@ def main() -> int:
         print(f"SKIP: 시트 해석 실패(로그인 문제 아님) — {resolve_fail}")
         return 0
 
-    alive, detail = session_alive(edit_url)
+    alive, detail = session_alive()
     G.log(f"세션 판정: {'살아있음' if alive else '만료'} — {detail}")
     if alive:
         print("OK: 세션 정상")
