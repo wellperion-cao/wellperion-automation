@@ -596,7 +596,11 @@ var CAT_META = [
   {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
   {label:'휴회 접수',            icon:'⏸️', dept:'운영부', color:'var(--yellow)', bg:'var(--yellow-bg)'}
 ];
-var DEPT_LIST = ['운영부','시설부','지원부'];
+var DEPT_LIST = ['운영부','시설부','지원부(남)','지원부(여)','수영팀','P.T팀','골프팀','스쿼시팀','체조팀','뮤지컬팀','루프메소드팀'];
+/* 옛 3분류 시절 '지원부' 값(세분 전 데이터)이 새 11개 목록엔 없어 그대로 두면 필터에서 안 잡힌다 —
+   목록에 없는 dept값을 모아 별도 칩으로 보여준다(데이터 자체는 손대지 않음). */
+var DEPT_OTHER = '__OTHER__';
+var DEPT_OTHER_LABEL = '지원부(구분 전)';
 
 /* 공통·SLA 키 → 나머지는 extras */
 var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','assigneeCanon','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply'];
@@ -731,6 +735,10 @@ function _renderChips(){
     var n = _allItems.filter(function(r){ return String(r.dept||'')===dep; }).length;
     dh += '<button class="chip' + (_curDept===dep?' active':'') + '" onclick="setDept(\'' + dep + '\')">' + _esc(dep) + ' (' + n + ')</button>';
   });
+  var otherN = _allItems.filter(function(r){ var d = String(r.dept||''); return d && DEPT_LIST.indexOf(d) < 0; }).length;
+  if(otherN){
+    dh += '<button class="chip' + (_curDept===DEPT_OTHER?' active':'') + '" onclick="setDept(\'' + DEPT_OTHER + '\')">' + _esc(DEPT_OTHER_LABEL) + ' (' + otherN + ')</button>';
+  }
   dc.innerHTML = dh;
 
   var mc = document.getElementById('monthChips');
@@ -751,7 +759,11 @@ function setMonth(m){ _curMonth = m; _render(); }
 function _filtered(){
   return _allItems.filter(function(r){
     if(_curCat && String(r.category||'') !== _curCat) return false;
-    if(_curDept && String(r.dept||'') !== _curDept) return false;
+    if(_curDept){
+      var d = String(r.dept||'');
+      if(_curDept === DEPT_OTHER){ if(!d || DEPT_LIST.indexOf(d) >= 0) return false; }
+      else if(d !== _curDept) return false;
+    }
     if(_curMonth && _monthOf(r) !== _curMonth) return false;
     if(_curSearch && _hay(r).indexOf(_curSearch) < 0) return false;
     return true;
