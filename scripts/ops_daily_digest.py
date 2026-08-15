@@ -136,6 +136,34 @@ DATE_SEP_RE = re.compile(r"^-{3,}.*?(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일.*-{
 MSG_RE = re.compile(r"^\[(?P<name>.+?)\]\s*\[(?P<ampm>오전|오후)\s*(?P<h>\d{1,2}):(?P<m>\d{2})\]\s*(?P<msg>.*)$")
 SYSTEM_LINE_RE = re.compile(r".*(들어왔습니다|나갔습니다|저장한 날짜)\.?\s*$")
 
+# 자동 발신(봇 리포트) 판별 — 4개방 확장(2026-08-15 GM 지시)으로 새로 생기는 요약 잡음 대응.
+# ★발신자명으로는 못 거른다(실측 2026-08-15 ★운영부·★중간관리자 8월 원문): 하루 일과 정리·
+# HR/CFO 브리핑·주간보고 초안 전부 GM 개인 카톡계정("김남욱")이나 나우열M 계정으로 나가고
+# 있어, 사람이 직접 쓴 말과 발신자가 같다. 대신 본문 첫 줄 고정 머리글/말미 서명으로 가른다.
+AUTO_BROADCAST_HEADER_RE = re.compile(
+    r"^("
+    r"🌅 .*정리 · |"                                    # ops_daily_digest 자신의 전날 정리(같은 방으로 되돌아온 것)
+    r"📊 \[하루 일과 정리\]|"                             # report_stream_1/2/2b/3 통일 포맷
+    r"📊 .*(아침 브리핑|회장님 매출보고)|"                  # module_reporter(CFO 등) · kakao_auto_daily_report
+    r"📋 (.*아침 브리핑|운영부 주간 보고 초안\(자동 생성)|"  # module_reporter(HR) · send_ops_digest 주간보고
+    r"🧭 .*(어제 정리 — 판단·배정 필요한 것만|아침 보고 ·)|"  # send_ops_digest · module_reporter
+    r"🧾 사람이 처리할 업무 "                              # send_ops_digest RELAY(업무 장부 전달)
+    r")"
+)
+AUTO_BROADCAST_SIGNOFF = ("웰페리온 AI 총괄 담당 웰리 드림", "— AI 웰리")
+
+
+def _is_auto_broadcast(msg: str) -> bool:
+    """카톡 메시지 1건이 AI 자동 리포트면 True(요약 대상에서 제외). 사람이 직접 쓴 말만
+    남겨야 사람 대화가 봇 발신에 묻히지 않는다(GM 2026-08-15 — 4개방 확장 지시)."""
+    body = msg.strip()
+    if not body:
+        return False
+    first_line = body.splitlines()[0]
+    if AUTO_BROADCAST_HEADER_RE.match(first_line):
+        return True
+    return any(sig in body for sig in AUTO_BROADCAST_SIGNOFF)
+
 # 카톡 표시명 → 실명 (배536 후속 2026-08-11 — 발신 직전 웰리 손 치환 목격). 파싱 단계에서
 # 바로잡아 두면 대화 원문·프롬프트·LLM 출력 전부 실명으로 나간다(후처리 문자열치환보다 안 깨짐).
 # ★확신 있는 것만: ssot/kpi.json roles.cfo/chro.staff · ssot/ownership_map.json 리더/구성원 ·
@@ -900,9 +928,14 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
         return 1
     print(f"[3/5] 대상일 = {target_date} ({why})")
 
-    conversation = format_conversation(by_date[target_date])
+    day_messages = by_date[target_date]
+    human_messages = [m for m in day_messages if not _is_auto_broadcast(m["msg"])]
+    auto_n = len(day_messages) - len(human_messages)
+    if auto_n:
+        print(f"  → 자동 발신(봇 리포트) {auto_n}건 제외 — 사람 대화 {len(human_messages)}건만 요약 대상")
+    conversation = format_conversation(human_messages)
     if not conversation.strip():
-        print(f"[실패] {target_date} 대화 내용이 비어 있습니다(메시지 0건).")
+        print(f"[실패] {target_date} 사람 대화 0건(자동 발신 {auto_n}건 제외) — 요약 생성 안 함.")
         return 1
 
     ledger = load_ledger()

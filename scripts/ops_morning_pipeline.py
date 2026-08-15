@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""scripts/ops_morning_pipeline.py — 아침 요약 자동 파이프라인 오케스트레이터 (★운영부 + ★중간관리자)
+"""scripts/ops_morning_pipeline.py — 아침 요약 자동 파이프라인 오케스트레이터
+(★운영부 + ★중간관리자 + ★운영+시설+지원+주차 + ★부서장)
 
 매일 08:00, 등록된 각 방(ROOMS)마다 순서대로: ①scripts/ops_export_kakao.py 실행(카톡 대화
 내보내기) → ②scripts/ops_daily_digest.py 실행해 '어제' 요약 텍스트 획득 → ③요약이 비었거나
@@ -82,9 +83,14 @@ def _load_env(path: Path) -> dict:
 
 # 배536 — 07:30 파이프라인이 순서대로 도는 방 목록. ★운영부만 GM 승인요청(카톡 발송 게이트)
 # 대상이다(위 모듈 docstring 참조). 새 방을 추가할 땐 이 목록에 한 줄 더하면 된다.
+# GM 2026-08-15 — ★운영+시설+지원+주차·★부서장 추가(수집·정리 생성까지만, ★중간관리자와
+# 동일하게 send_approval False). 자동 발신(하루 일과 정리 등) 제외는 ops_daily_digest.py의
+# 머리글 필터(_is_auto_broadcast)가 방 공통으로 처리한다.
 ROOMS = [
     {"room": "★ 운영부", "send_approval": True},
     {"room": "★ 중간관리자", "send_approval": False},
+    {"room": "★ 운영+시설+지원+주차", "send_approval": False},
+    {"room": "★ 부서장", "send_approval": False},
 ]
 
 

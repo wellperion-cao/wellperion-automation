@@ -13,16 +13,27 @@ set PY=C:\Python314\python.exe
 if not exist "%PY%" set PY=python
 cd /d "%ROOT%"
 echo ===== %DATE% %TIME% ops-morning-digest start ===== >> "%ROOT%\logs\ops_morning_digest.log"
-REM Room names are passed as ASCII aliases (--room-key ops|mgr). Korean text inside this .bat
-REM is read as CP949 and reaches the child process mangled - that silently broke the manager
-REM room export every morning until 2026-08-12. Alias table lives in ops_daily_digest.ROOM_KEYS.
+REM Room names are passed as ASCII aliases (--room-key ops|mgr|foursplit|dept). Korean text inside
+REM this .bat is read as CP949 and reaches the child process mangled - that silently broke the
+REM manager room export every morning until 2026-08-12. Alias table = scripts/kakao_rooms.json
+REM room_aliases (single SSOT - ops_daily_digest.py and kakao_export_chat.py both read it).
+REM 2026-08-15 (GM): added foursplit(★운영+시설+지원+주차)/dept(★부서장) - export+digest only,
+REM no send step (send_ops_digest.py stays ★운영부-only/gated - these two are collect+summarize).
 "%PY%" "%ROOT%\scripts\kakao_export_chat.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
 "%PY%" "%ROOT%\scripts\kakao_export_chat.py" --room-key mgr >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
+"%PY%" "%ROOT%\scripts\kakao_export_chat.py" --room-key foursplit >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
+"%PY%" "%ROOT%\scripts\kakao_export_chat.py" --room-key dept >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
 "%PY%" "%ROOT%\scripts\ops_daily_digest.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
 "%PY%" "%ROOT%\scripts\ops_daily_digest.py" --room-key mgr >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
+"%PY%" "%ROOT%\scripts\ops_daily_digest.py" --room-key foursplit >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
+"%PY%" "%ROOT%\scripts\ops_daily_digest.py" --room-key dept >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
 "%PY%" "%ROOT%\scripts\send_ops_digest.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% send_ops_digest
