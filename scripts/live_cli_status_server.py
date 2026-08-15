@@ -15,6 +15,7 @@ import os
 import re
 import socketserver
 import threading
+import time
 from datetime import datetime, timezone
 
 TRANSCRIPT_DIR = os.path.expanduser(
@@ -163,18 +164,40 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
-def start_server(logger=None):
+class _Server(socketserver.TCPServer):
+    # ★2026-08-15 실사고 — 전에는 TCPServer 를 만든 **뒤에** allow_reuse_address 를 켰다.
+    #   바인딩은 생성 그 순간에 일어나므로 그 설정은 아무 효과가 없었다. 스케줄러를 재기동하면
+    #   방금 죽인 프로세스가 아직 포트를 쥐고 있어(TIME_WAIT) 새 서버가 "주소 중복"으로 못 떴고,
+    #   그러면 화면의 라이브 섹션이 조용히 사라진다 — 아무 경보도 안 울리는 종류다.
+    allow_reuse_address = True
+
+
+def start_server(logger=None, retries: int = 4, delay: float = 5.0):
     """daily_scheduler.py 기동 시 1회 호출. 데몬 스레드라 스케줄러 종료 시 같이 죽는다.
-    실패해도 예외를 삼키고 None 을 돌려준다 — 스케줄러 본 기능은 이 서버 없이도 산다."""
-    try:
-        httpd = socketserver.TCPServer(('127.0.0.1', PORT), _Handler)
-        httpd.allow_reuse_address = True
-        threading.Thread(target=httpd.serve_forever, name='live-cli-status', daemon=True).start()
-        (logger.info if logger else print)(f"[live_cli_status_server] 기동 완료 http://127.0.0.1:{PORT}/live")
-        return httpd
-    except Exception as exc:  # noqa: BLE001
-        (logger.warning if logger else print)(f"[live_cli_status_server] 기동 실패(무시하고 계속): {exc}")
-        return None
+    포트가 아직 안 비었으면 백그라운드에서 몇 번 더 시도한다 — 재기동 직후가 바로 그 경우다.
+    실패해도 예외를 삼킨다(스케줄러 본 기능은 이 서버 없이도 산다)."""
+    log_i = (logger.info if logger else print)
+    log_w = (logger.warning if logger else print)
+
+    def _boot():
+        for attempt in range(1, retries + 1):
+            try:
+                httpd = _Server(('127.0.0.1', PORT), _Handler)
+                threading.Thread(target=httpd.serve_forever,
+                                 name='live-cli-status', daemon=True).start()
+                log_i(f"[live_cli_status_server] 기동 완료 http://127.0.0.1:{PORT}/live"
+                      + (f" (시도 {attempt}회)" if attempt > 1 else ""))
+                return
+            except OSError as exc:
+                if attempt < retries:
+                    time.sleep(delay)   # 앞 프로세스가 포트를 놓을 때까지
+                    continue
+                log_w(f"[live_cli_status_server] 기동 실패({retries}회 시도) — {exc}")
+            except Exception as exc:  # noqa: BLE001
+                log_w(f"[live_cli_status_server] 기동 실패(무시하고 계속): {exc}")
+                return
+
+    threading.Thread(target=_boot, name='live-cli-status-boot', daemon=True).start()
 
 
 def _selftest():
