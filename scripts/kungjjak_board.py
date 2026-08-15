@@ -52,11 +52,16 @@ def ref_no(ref: str, day: str) -> str:
     ref 는 `GM-YYYYMMDD-NN` 꼴이다. 전엔 `ref[-2:]` 로 잘라 썼는데, 어제·그제 받은
     지시를 오늘 끝내면 오늘 것과 같은 번호가 두 번 나와 어느 쪽인지 알 수 없었다
     (2026-08-08 실측: 04·06·13·25 가 각각 두 줄). 세 자리 이상 번호도 잘려 나갔다.
+
+    ref 안의 1000단위는 역할 구간(worklog._GM_REF_BLOCK — 시포=4000대)이라 all-roles 표에서
+    역할끼리 번호가 겹치지 않게 하는 **내부 장치**다. 화면에까지 실어 나르면 4001·4014 처럼
+    네 자리가 되어 읽는 데 방해만 된다(2026-08-15 GM 지적). 표에는 구간을 뺀 순번만 낸다.
     """
     m = re.match(r'GM-(\d{4})(\d{2})(\d{2})-(\d+)$', ref)
     if not m:
         return ref[-2:]
-    ymd, no = f'{m.group(1)}-{m.group(2)}-{m.group(3)}', m.group(4)
+    ymd = f'{m.group(1)}-{m.group(2)}-{m.group(3)}'
+    no = f'{int(m.group(4)) % 1000:02d}'
     return no if ymd == day else f'{m.group(2)}/{m.group(3)} {no}'
 
 
@@ -489,10 +494,12 @@ def _render_table(by: dict, day: str) -> None:
         ev_state = evidence_state(got, did, up) if oks else '—'
         # # 칸에 배 번호를 같이 보여준다(GM 지시 2026-08-13 — "식별번호" 요구). did 에서
         # "배NNN" 을 찾아 붙인다. 못 찾으면 접수번호만(빈칸으로 안 둔다).
+        # 닉네임은 뺀다(2026-08-15 GM 지적 — 칸이 길다). --role 표는 전부 같은 역할이라
+        # 잉여였고, --all-roles 에서도 배 번호가 역할별로 달라 구분이 된다.
         no = ref_no(ref, day)
         m = _SHIP_IN_TEXT_RE.search(did)
         if m:
-            no = f'{no} · {NICK.get(item_role, item_role or "?")} {m.group(1)}'
+            no = f'{no}·배{m.group(1)}'
         rows.append({'ref': ref, 'no': no, 'got': got, 'did': did,
                       'dur': dur, 'up': up, 'ev': ev_state, 'sortkey': ref_sort_key(ref),
                       'has_dur': has_dur, 'minutes': minutes})
