@@ -1200,10 +1200,17 @@ function trimOmcStats(raw) {
 // OMC 원문(branch·모델·ctx 등 3줄) + 서브에이전트 목록(└─ 줄, 개수만큼 늘어남)을 합쳐
 // 5줄이던 상태줄을 2줄로 접는다(GM 지시 2026-08-08 "5줄이나 잡아먹네"). 항목은 안 지운다 —
 // └─ 목록만 빼는데, 같은 줄에 이미 'agents:N'(정확히 그 개수)이 있어 정보 손실이 없다.
+// ★저장소 경로 단독 줄도 버린다(GM 재지시 2026-08-15 "● main 아래에 저장소 경로가 먼저 뜨네").
+//   koreanizeBranchLine 은 branch: 와 **같은 줄**에 붙은 cwd 세그먼트만 잘라낸다 — OMC 가
+//   cwd/repo 를 branch 줄과 **별도의 줄**로 내면 그 줄은 그대로 남아 다시 새 줄로 보인다.
+//   실측 대신 일반 규칙으로 막는다: 아이콘·공백 말고는 드라이브 경로 토큰 하나뿐인 줄은
+//   무조건 버린다(다른 값과 섞인 줄은 그대로 둔다 — 경로만 있는 줄만 노린다).
+const PATH_ONLY_LINE = /^\W*[A-Za-z]:[\\/]\S*\s*$/;
 function collapseOmcLines(raw) {
   const stripAnsi = (s) => String(s).replace(/\x1b\[[0-9;]*m/g, '');
   return String(raw || '').split('\n')
     .filter((l) => !stripAnsi(l).trimStart().startsWith('└'))
+    .filter((l) => !PATH_ONLY_LINE.test(stripAnsi(l)))
     .join(`${D} | ${X}`);
 }
 
