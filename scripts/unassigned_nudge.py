@@ -514,6 +514,46 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     return "\n".join(lines)
 
 
+# ── 24시간 SLA 위반 발신 게이트(2026-08-15 GM 지시 · 중복 알림 정리) ────────────────
+# 실측: 8/10~14 매일 같은 명단이 "9일째"→"13일째"로 숫자만 오르며 5번 독촉, 움직임 0건.
+#   변화 없는 재독촉은 소음이라 "직전 발신 대비 새로 생긴 건·해소된 건이 있을 때만" 보낸다.
+#   전체 명단(움직임 없는 오래된 건 포함)은 주 1회(월요일)만 재노출 — 잊혀지지 않게 하되
+#   매일 안 울린다. 새 예약작업 없음(약속 L21) — 기존 daily_scheduler SLA 발송 앞에 게이트만 얹는다.
+SLA_ALERT_STATE_PATH = Path(_HERE).parent / "status" / "sla_alert_state.json"
+
+
+def _sla_violation_key(it: dict) -> str:
+    return f"{it['type']}::{it['name']}::{it['date']}"
+
+
+def sla_alert_gate(violations: list[dict], now: datetime | None = None) -> bool:
+    """True = 오늘 보낸다. 월요일은 전체 재노출로 항상 True. 그 외 요일은 직전 발신 키셋과
+    비교해 달라졌을 때만 True(신규 발생 또는 해소 둘 다 '변화'). 상태 파일이 없거나 깨졌으면
+    비교 기준이 없으므로 보수적으로 True(놓치는 것보다 한 번 더 보내는 게 낫다)."""
+    now = now or datetime.now()
+    if now.weekday() == 0:  # 월요일 — 전체 재노출
+        return True
+    try:
+        prev = set(json.loads(SLA_ALERT_STATE_PATH.read_text(encoding="utf-8")).get("keys") or [])
+    except Exception:
+        return True
+    curr = {_sla_violation_key(it) for it in violations}
+    return curr != prev
+
+
+def record_sla_alert_sent(violations: list[dict], now: datetime | None = None) -> None:
+    """SLA 위반 알림이 실제로 나간 뒤 호출 — 다음 비교의 기준(직전 발신 키셋)을 남긴다."""
+    now = now or datetime.now()
+    try:
+        SLA_ALERT_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        SLA_ALERT_STATE_PATH.write_text(json.dumps({
+            "keys": sorted({_sla_violation_key(it) for it in violations}),
+            "sent_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def _last_activity_days(row: dict, today: str) -> int | None:
     """최근 활동(접수일 또는 연락이력[].date 중 가장 최근) 경과일. 날짜 전무=None(판정불가)."""
     dates = []

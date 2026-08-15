@@ -2718,6 +2718,13 @@ def run_daily_digest(early: bool = False) -> None:
     try:
         sla_violations = _un.collect_sla_violations()
         sla_text = _un.build_sla_alert_text(sla_violations)
+        # 2026-08-15 GM 지시(중복 알림 정리) — 변화 없는 재독촉을 끊는다. 실측: 8/10~14
+        #   같은 명단이 "9일째"→"13일째"로 숫자만 오르며 5번 독촉, 움직임 0건. 직전 발신
+        #   대비 신규·해소가 있을 때만 보내고, 전체 명단은 월요일에만 재노출(unassigned_nudge
+        #   .sla_alert_gate — 정본은 그 함수, 여기서 다시 판정하지 않는다).
+        if sla_text and not _un.sla_alert_gate(sla_violations):
+            logger.info(f"{label} 24h SLA 위반 {len(sla_violations)}건 — 직전 발신과 변화 없음, 발송 SKIP")
+            sla_text = ""
         if sla_text:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
@@ -2735,6 +2742,8 @@ def run_daily_digest(early: bool = False) -> None:
             # logger.info 한 줄뿐 — 아무도 안 봄).
             if proc.returncode != 0:
                 _kakao_fail_notify("24h SLA 위반", tail[0], room=KAKAO_DEPTHEAD_ROOM)
+            else:
+                _un.record_sla_alert_sent(sla_violations)  # 성공 뒤에만 커서 전진(실패 시 다음 회차 재비교)
         else:
             logger.info(f"{label} 24h SLA 위반 0건 — 카톡 발송 없음")
     except Exception as e:
