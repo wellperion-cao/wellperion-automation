@@ -441,7 +441,6 @@ function submitStaffFeedback(){
   }
   authorEl.classList.remove('err');
   if (authorErr) authorErr.classList.remove('show');
-  try { localStorage.setItem('wlp_fb_author', author); } catch(e) {}   // 다음 접수 때 자동 채움
 
   var payload = {
     action: 'staff_feedback_submit',
@@ -481,9 +480,10 @@ function submitStaffFeedback(){
         + '\n입력하신 내용은 그대로 있습니다. 잠시 뒤 다시 눌러 주세요.');
       return;
     }
-    _fbSubId = '';   // 접수 성공 → 다음 글은 새 번호로
+    try { localStorage.setItem('wlp_fb_author', author); } catch(e) {}   // 접수 성공 때만 저장 → 다음 접수 때 자동 채움
     var feedbackId = res.id || '';
     if (!_fbPhotos.length || !feedbackId) {
+      _fbSubId = '';   // 접수 성공 → 다음 글은 새 번호로
       if (sendBtn) sendBtn.disabled = false;
       _fbSetNotice(notice, 'ok', '✅ 접수됐습니다. (접수번호 ' + (feedbackId || '-') + ')\n'
         + '담당자가 확인하고 처리 결과를 남깁니다. 의견 주셔서 감사합니다.');
@@ -508,11 +508,13 @@ function submitStaffFeedback(){
     .then(function(pres){
       if (sendBtn) sendBtn.disabled = false;
       if (!pres || pres.ok !== true) {
+        // 사진 실패 → _fbSubId 를 비우지 않는다: '보내기'를 다시 눌러도 같은 접수번호 한 줄에 사진만 다시 붙는다.
         _fbSetNotice(notice, 'bad', '⚠️ 글은 접수됐지만(접수번호 ' + feedbackId + ') 사진 첨부에 실패했습니다 — '
           + ((pres && pres.err) || '알 수 없는 오류')
-          + '\n사진 없이 접수만 남겨졌습니다. 사진은 잠시 후 다시 시도하거나, 담당자에게 접수번호로 문의해 주세요.');
+          + '\n잠시 후 \'보내기\'를 다시 눌러 주세요 — 글은 중복되지 않고 사진만 다시 올라갑니다.');
         return;
       }
+      _fbSubId = '';   // 사진까지 성공 → 다음 글은 새 번호로
       _fbSetNotice(notice, 'ok', '✅ 접수됐습니다. (접수번호 ' + feedbackId + ')\n'
         + '사진 ' + _fbPhotos.length + '장도 함께 저장됐습니다. 의견 주셔서 감사합니다.');
       contentEl.value = '';
@@ -521,8 +523,9 @@ function submitStaffFeedback(){
     })
     .catch(function(){
       if (sendBtn) sendBtn.disabled = false;
+      // 통신 실패도 _fbSubId 유지 — '보내기' 재시도가 같은 접수번호 한 줄에 붙는다.
       _fbSetNotice(notice, 'bad', '⚠️ 글은 접수됐지만(접수번호 ' + feedbackId + ') 사진을 올리는 중 통신에 실패했습니다 — '
-        + '인터넷 연결을 확인하고 다시 시도해 주세요(글은 다시 보내지 않아도 됩니다).');
+        + '인터넷 연결을 확인하고 \'보내기\'를 다시 눌러 주세요(글은 중복되지 않습니다).');
     });
   })
   .catch(function(e){
@@ -562,11 +565,12 @@ function _fbNormName(s){ return String(s || '').trim().replace(/\s+/g, '').toLow
   var input = document.getElementById('fbStatusAuthor');
   if (!input) return;
   var saved = '';
-  try { saved = localStorage.getItem('wlp_fb_author') || ''; } catch(e) {}
+  // 조회칸은 별도 키 — 작성자 자동채움(wlp_fb_author)을 덮어쓰지 않는다. 처음엔 내 이름으로 미리 채움.
+  try { saved = localStorage.getItem('wlp_fb_status_filter') || localStorage.getItem('wlp_fb_author') || ''; } catch(e) {}
   input.value = saved;
   var timer = null;
   input.addEventListener('input', function(){
-    try { localStorage.setItem('wlp_fb_author', input.value.trim()); } catch(e) {}
+    try { localStorage.setItem('wlp_fb_status_filter', input.value.trim()); } catch(e) {}
     clearTimeout(timer);
     timer = setTimeout(_fbRenderFilteredStatus, 250);   // 타이핑마다 다시 그리지 않게
   });

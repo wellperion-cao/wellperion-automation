@@ -117,7 +117,8 @@ table.otbl tr:last-child td{border-bottom:none}
     }).join('');
     // st가 4종 밖의 값이면(예상밖 데이터) 원본 그대로 추가해 조용히 사라지지 않게 함
     if(st && STATUS_OPTIONS.every(function(o){return o.v!==st;})) opts += '<option value="'+_esc(st)+'" selected>'+_esc(st)+'</option>';
-    return '<select class="stat-sel" data-id="'+_esc(id)+'">'+opts+'</select>';
+    // data-prev = 현재 상태 — 첫 변경이 실패해도 원래 값으로 되돌릴 수 있게 심어 둔다.
+    return '<select class="stat-sel" data-id="'+_esc(id)+'" data-prev="'+_esc(st)+'">'+opts+'</select>';
   }
 
   function _renderSummary(stats){
