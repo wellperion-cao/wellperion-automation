@@ -844,9 +844,11 @@ function _card(r){
 
   h += '<div class="divider"></div>';
 
-  /* ⏸️ 휴회 접수 = 읽기 전용 현황만(승인·반려는 회원 관리 화면 전용 — 여기서 기능 추가 금지) */
+  /* ⏸️ 휴회 접수 = 읽기 전용 현황만(승인·반려는 시트 전용 — 여기서 기능 추가 금지).
+     구 링크(membership.html#holdStatusCard)는 죽은 링크 — 2026-08-13 GM 승인으로 멤버십 화면 카드 삭제,
+     휴회 관리는 이 화면(접수)→시트(기록·관리)로 일원화됐다. 배604, 2026-08-15 시우. */
   if(catLabel === '휴회 접수'){
-    h += '<div class="lf-note">⏸️ 승인·반려는 회원 관리 화면에서 처리합니다. <a href="../../cpo/member/membership.html#holdStatusCard" target="_blank" rel="noopener">휴회 회원 관리 바로가기 →</a></div>';
+    h += '<div class="lf-note">⏸️ 승인·반려는 회원 관리 시트에서 처리합니다(여기는 읽기 전용 현황).</div>';
     h += '</div>';
     return h;
   }
