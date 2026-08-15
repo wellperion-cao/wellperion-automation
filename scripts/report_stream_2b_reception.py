@@ -365,15 +365,45 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
     return "\n".join(lines)
 
 
-def run_intake_relay(dry_run: bool = True) -> list[str]:
-    """새 접수를 **부서별로 따로 한 통씩** 종합접수처방에 전달(GM 승인 2026-08-15).
+# 부서 → 실제로 나가는 카톡 방 (GM 확정 2026-08-15).
+#   강습 = ★부서장 방 / 그 밖의 부서 = ★운영+시설+지원+주차 방.
+# 방 이름은 카톡 창 제목과 같아야 한다(정본 = scripts/kakao_rooms.json all_rooms).
+_INTAKE_ROOM_DEFAULT = "★운영+시설+지원+주차"
+_INTAKE_ROOM_LESSON = "★부서장"
+TEST_CHAT_ID = 8254867551  # 텔레그램 업무관리방 — 테스트 발신은 항상 여기로(GM 확정)
+
+
+def _intake_room_for(dept: str) -> str:
+    return _INTAKE_ROOM_LESSON if "강습" in dept else _INTAKE_ROOM_DEFAULT
+
+
+def _send_kakao(room: str, text: str) -> bool:
+    """카톡 발신 관문(kakao_report_sender)을 그대로 탄다 — 새 발신 경로를 만들지 않는다(L21)."""
+    import subprocess  # noqa: PLC0415
+    proc = subprocess.run(
+        [sys.executable, "-u", str(SCRIPTS_DIR / "kakao_report_sender.py"),
+         "--message", text, "--only-room", room],
+        cwd=str(REPO_ROOT), capture_output=True,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+    )
+    if proc.returncode != 0:
+        tail = (proc.stdout or b"").decode("utf-8", "replace").strip().splitlines()
+        print(f"[intake-relay] 카톡 발송 실패({room}): {tail[-1] if tail else 'no output'}", flush=True)
+    return proc.returncode == 0
+
+
+def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
+    """새 접수를 **부서별로 따로 한 통씩** 해당 카톡 방에 전달(GM 확정 2026-08-15).
+
     부서별로 나누는 이유 = 그 부서가 자기 것만 보고 바로 조치하라는 GM 지시(배627).
-    새 접수가 없는 부서는 아무것도 보내지 않는다(빈 통보 금지)."""
+    새 접수가 없는 부서는 아무것도 보내지 않는다(빈 통보 금지).
+    ▸test=True면 실무진 방 대신 텔레그램 업무관리방으로만 보낸다(GM 확정 — 테스트는 늘 그 방).
+    """
     rows = _fetch_rows()
     if rows is None:
         return []
     state = _load_completion_state()
-    if not state.get("intake_relay_enabled") and not dry_run:
+    if not state.get("intake_relay_enabled") and not (dry_run or test):
         return []
     seen = set(state.get("reception_seen_new_ids") or [])
     depts = sorted({str(r.get("dept") or "").strip() or "부서 미정" for r in rows
@@ -381,7 +411,6 @@ def run_intake_relay(dry_run: bool = True) -> list[str]:
     if not depts:
         return []
 
-    token = _load_env_val("TELEGRAM_BOT_TOKEN") if not dry_run else None
     sent: list[str] = []
     for dept in depts:
         sub = [r for r in rows if (str(r.get("dept") or "").strip() or "부서 미정") == dept]
@@ -390,15 +419,20 @@ def run_intake_relay(dry_run: bool = True) -> list[str]:
                                    persist=False, force=True)
         if not text:
             continue
+        room = _intake_room_for(dept)
         if dry_run:
-            print(f"[intake-relay] DRY-RUN {dept}\n{text}\n", flush=True)
+            print(f"[intake-relay] DRY-RUN {dept} → {room}\n{text}\n", flush=True)
             sent.append(dept)
-            continue
-        if token and tg_send(token, TELEGRAM_CHAT_ID, text, source="report_stream_2b_intake_relay"):
+        elif test:
+            token = _load_env_val("TELEGRAM_BOT_TOKEN")
+            if token and tg_send(token, TEST_CHAT_ID, f"🧪 [테스트] {dept} → 실제로는 {room} 방\n\n{text}",
+                                 source="report_stream_2b_intake_relay_test"):
+                sent.append(dept)
+        elif _send_kakao(room, text):
             sent.append(dept)
     # 커서는 **전부 보낸 뒤에만** 전진한다(완료 통보와 같은 규칙 — 중간에 실패하면 다음
-    # 회차에 다시 나간다. 잃는 것보다 겹치는 게 낫다).
-    if not dry_run and sent:
+    # 회차에 다시 나간다. 잃는 것보다 겹치는 게 낫다). 테스트 발신은 커서를 건드리지 않는다.
+    if not dry_run and not test and sent:
         state["reception_seen_new_ids"] = sorted(
             {str(r["regId"]) for r in rows if str(r.get("regId") or "")})
         _save_completion_state(state)
@@ -475,11 +509,14 @@ if __name__ == "__main__":
     p.add_argument("--seed-completion", action="store_true",
                     help="처리완료 통보 커서 시딩(enabled:true 켜기 직전 1회 — 백로그 통보 방지)")
     p.add_argument("--intake-relay", action="store_true",
-                    help="새 접수를 부서별로 종합접수처방에 전달(기본 드라이런 · --live 로 실발송)")
+                    help="새 접수를 부서별 카톡 방에 전달(기본 드라이런 · --live 실발송 · --test 텔레그램 업무관리방)")
+    p.add_argument("--test", action="store_true",
+                    help="테스트 발신 — 실무진 방 대신 텔레그램 업무관리방으로만 보낸다")
     a = p.parse_args()
     if a.intake_relay:
-        _sent = run_intake_relay(dry_run=not a.live)
-        print(f"[intake-relay] {'렌더' if not a.live else '발송'} {len(_sent)}개 부서 — {_sent or '새 접수 없음'}")
+        _mode = "테스트발송" if a.test else ("발송" if a.live else "렌더")
+        _sent = run_intake_relay(dry_run=not (a.live or a.test), test=a.test)
+        print(f"[intake-relay] {_mode} {len(_sent)}개 부서 — {_sent or '새 접수 없음'}")
         sys.exit(0)
     if a.seed_completion:
         n = seed_completion_cursor()
