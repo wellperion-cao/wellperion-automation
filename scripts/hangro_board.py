@@ -451,6 +451,10 @@ def _build_item(q: dict, st: str, title: str) -> dict:
             #   열린 배 67척 **전부 비어** 있어 한 건도 안 걸러졌다 — 아침 보고는 AI 배까지 다 싣고,
             #   화면은 빼고 있었다. 아무도 안 채우는 칸으로 판정하던 것이 원인이라 칸째로 뺀다.
             "audience": str(q.get("audience") or "").strip(),
+            # 끝이 있는 일인가(빈칸) / 매일·매주 도는가(routine) / 사건이 와야 시작되나(trigger).
+            # routine·trigger 는 완료 도장을 찍을 수 있는 일이 아니라 진행대기 숫자 밖으로 뺀다
+            # (GM 지시 2026-08-16 — 위 _classify 분기 주석 참조). 빈칸 = 평범한 배(항로에 남는다).
+            "cadence": str(q.get("cadence") or "").strip(),
             # 🎯 오늘 반드시 끝낼 것(GM 2026-08-10) — C-Level이 스스로 지목한 날짜(YYYY-MM-DD).
             # 지목 수단 = queue_dispatch.py --must-finish (build_ship/dup-absorb 양쪽에서 채움).
             "must_finish_on": str(q.get("must_finish_on") or "").strip(),
@@ -510,6 +514,8 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         "done":    [],   # 🏁 완료 (입항·도착)
         "drift":   [],   # 🌀 표류 (완료인데 '다음' 없는 건 — "👉 다음 정하기" 촉구 동반)
         "autonomy": [],  # 🤖 자율화 미션 (board='자율현황') — 항로 제외, 자율현황 보드行 (GM 2026-07-15)
+        "routine": [],   # 🔁 반복 루틴 (cadence=routine) — 매일·매주 도는 일, 완료 도장이 없다 (GM 2026-08-16)
+        "trigger": [],   # 🪝 조건 대기 (cadence=trigger) — 사건이 와야 시작된다 (GM 2026-08-16)
         "must_finish_today":   [],  # 🎯 오늘 반드시 끝낼 것 (must_finish_on == 오늘, 미완료)
         "must_finish_overdue": [],  # 🔴 어제 못 지킴 (must_finish_on < 오늘, 미완료 · 조용히 안 사라짐)
     }
@@ -560,6 +566,22 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         #   미지정은 AI 가 아니다 = 항로에 남는다(화면과 동일한 안전측 판정).
         if item.get("audience") == "ai":
             sections["autonomy"].append(item)
+            continue
+
+        # ★2026-08-16 GM 지시 — '애초에 닫힐 수 없는 배'를 진행대기 숫자에서 뺀다.
+        #   GM: "진행대기배가 88척은 너무많네" → 실측해 보니 그중 15척은 끝이 없는 종류였다:
+        #   ①매일·매주 도는 반복 루틴(cadence=routine) ②사건이 와야 시작되는 조건 대기
+        #   (cadence=trigger). 둘 다 완료 도장을 찍을 수 있는 일이 아니라, 배로 세면
+        #   숫자만 영원히 부푼다 — 그러면 진짜 밀린 일이 그 안에 묻힌다.
+        #   ▸지우지 않는다. AI 배(audience=ai)를 자율현황行으로 빼는 것과 같은 방식으로
+        #     별도 칸에 모아 그대로 보여 준다(위 분기와 같은 구조 — 새 장치 아님).
+        #   ▸미지정은 여기 안 걸린다 = 항로에 남는다(안전측 판정, 위 audience 와 동일).
+        cadence = str(item.get("cadence") or "").strip()
+        if cadence in ("routine", "trigger") and item["status"] not in STATUS_DONE:
+            # 이 두 칸은 표로 그리므로 배 아이콘이 필요하다(자율화 미션은 포인터 한 줄이라 없어도 됐다).
+            item["_ship"] = classify_ship({
+                "title": item["title"], "priority": item["priority"], "deadline": item["end_date"]})
+            sections["routine" if cadence == "routine" else "trigger"].append(item)
             continue
 
         st = item["status"]
@@ -1330,6 +1352,10 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         _cnt_rows.append(("🌀 표류 (다음 미정)",          str(n_drift)))
     if secs["autonomy"]:
         _cnt_rows.append(("🤖 자율화 미션 (자율현황行)", str(len(secs["autonomy"]))))
+    if secs["routine"]:
+        _cnt_rows.append(("🔁 반복 루틴 (끝이 없는 일)", str(len(secs["routine"]))))
+    if secs["trigger"]:
+        _cnt_rows.append(("🪝 조건 대기 (사건 오면 시작)", str(len(secs["trigger"]))))
     _cnt_rows.append(("진행 합계",                    str(n_total)))
     summary_table = _box_table(_cnt_rows)
 
@@ -1444,6 +1470,17 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     if secs["autonomy"]:
         lines.append(f"🤖 자율화 미션 {len(secs['autonomy'])}건 — 항로 제외, 자율현황 보드에서 관리")
         lines.append("    https://wellperion-cao.github.io/wellperion-automation/%EC%9E%90%EC%9C%A8%ED%98%84%ED%99%A9.html")
+
+    # ── 🔁 반복 루틴 · 🪝 조건 대기 (진행대기 숫자 밖 · GM 2026-08-16) ──
+    #   숨기지 않는다 — 제목까지 그대로 보여 주되 '오늘 밀린 일'과 섞지 않는다.
+    for _key, _icon, _label, _why in (
+        ("routine", "🔁", "반복 루틴", "매일·매주 도는 일 — 완료 도장이 없다"),
+        ("trigger", "🪝", "조건 대기", "사건이 와야 시작된다"),
+    ):
+        if not secs[_key]:
+            continue
+        lines.append(f"\n### {_icon} {_label} {len(secs[_key])}건 — 진행대기 숫자 밖 ({_why})")
+        lines.append(_md_table([_item_to_row(it) for it in secs[_key]]))
 
     # ── ⚓ 대기중 섹터 ──
     lines.append("### ⚓ 대기중")
