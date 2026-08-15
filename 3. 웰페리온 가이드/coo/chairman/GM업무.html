@@ -292,6 +292,31 @@
     </div>
   </details>
 
+  <!-- ③ 김남욱 GM -->
+  <details class="sec" id="sec-gm" open>
+    <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span>
+      <!-- ① 할 일 체크 저장 — 체크마다 공용 체크보드(CHECK_GAS)에 즉시 저장되어 새로고침해도 남는다
+           (GM 지적 2026-08-07 "체크하고 새로고침하면 사라짐"). 「변경 저장」 버튼은 그 위에 정본
+           progress_note·진척률까지 커밋하는 별도 단계(GM PIN 필요, GM 2026-08-06 지시 그대로 유지) —
+           저장 경로는 월간운영계획.html window._planSave() 방식 그대로(신규 API 없음, prompt+commit_file). -->
+      <button type="button" class="sec-act" id="gm-save-btn" disabled onclick="event.stopPropagation(); window.gmSaveChecks();">변경 저장</button>
+      <span class="sec-act rnote" id="gm-chk-save-msg" style="border:none;padding:0;margin-left:0;"></span></summary>
+    <div class="sec-body">
+      <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 위 「경영 보고건」과 소스·기준이 다르다는 걸
+           밝힌다. 정본 = _gm_direct_tasks.js. 제목에 '대표'가 들어간 카드가 있어도(예: 외부 협업처 대표 등
+           인물 호칭) 그건 회사 대표님 보고 대상이 아니라 GM이 직접 관장하는 별개 실무다. -->
+      <div style="font-size:11.5px;color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 위 「경영 보고건」(회장님·대표님)과는 별개로 GM이 직접 챙기는 실무입니다</div>
+      <div class="sum">
+        <h3>업무명 · 상태</h3>
+        <table><tbody id="gm-sum-body"></tbody></table>
+      </div>
+      <div class="grid" id="gm-grid"><div class="rep-empty">불러오는 중…</div></div>
+    </div>
+  </details>
+    </div>
+  </details>
+
+
   <!-- ⑤ 오늘 처리 기록 — 자동 렌더(GM 요청 2026-08-15 "처리 기록한 것들이 완료되면 완료로 넘어가줘야").
        원천 = status/kungjjak_today.json (쿵짝표 발행본 — worklog.jsonl 접수↔완료 짝, 판정 로직은
        scripts/kungjjak_board.py 하나뿐 · 약속 L01). 손으로 적지 않으므로 낡을 일이 없고 완료가
@@ -324,31 +349,6 @@
         </tbody></table>
       </div>
       </details>
-    </div>
-  </details>
-
-
-  <!-- ③ 김남욱 GM -->
-  <details class="sec" id="sec-gm" open>
-    <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span>
-      <!-- ① 할 일 체크 저장 — 체크마다 공용 체크보드(CHECK_GAS)에 즉시 저장되어 새로고침해도 남는다
-           (GM 지적 2026-08-07 "체크하고 새로고침하면 사라짐"). 「변경 저장」 버튼은 그 위에 정본
-           progress_note·진척률까지 커밋하는 별도 단계(GM PIN 필요, GM 2026-08-06 지시 그대로 유지) —
-           저장 경로는 월간운영계획.html window._planSave() 방식 그대로(신규 API 없음, prompt+commit_file). -->
-      <button type="button" class="sec-act" id="gm-save-btn" disabled onclick="event.stopPropagation(); window.gmSaveChecks();">변경 저장</button>
-      <span class="sec-act rnote" id="gm-chk-save-msg" style="border:none;padding:0;margin-left:0;"></span></summary>
-    <div class="sec-body">
-      <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 위 「경영 보고건」과 소스·기준이 다르다는 걸
-           밝힌다. 정본 = _gm_direct_tasks.js. 제목에 '대표'가 들어간 카드가 있어도(예: 외부 협업처 대표 등
-           인물 호칭) 그건 회사 대표님 보고 대상이 아니라 GM이 직접 관장하는 별개 실무다. -->
-      <div style="font-size:11.5px;color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 위 「경영 보고건」(회장님·대표님)과는 별개로 GM이 직접 챙기는 실무입니다</div>
-      <div class="sum">
-        <h3>업무명 · 상태</h3>
-        <table><tbody id="gm-sum-body"></tbody></table>
-      </div>
-      <div class="grid" id="gm-grid"><div class="rep-empty">불러오는 중…</div></div>
-    </div>
-  </details>
 
   <!-- ⑥ 완료건(진척 0% 재확인) — GM 지시(2026-08-15) "진척 0% 된 건들은 아래에 토글 하나 더 추가해서
        완료건 따로 정리해줘". 위 「김남욱 GM 업무 진행건」 중 progress=0으로 뜬 4건을 오늘(08-15) 처리
