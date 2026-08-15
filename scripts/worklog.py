@@ -39,14 +39,20 @@ VALID_RESULTS = {"ok", "warn", "fail"}
 _APPEND_RETRIES = 3
 _APPEND_RETRY_WAIT_SEC = 0.2
 
-# GM지시 접수 자동화(2026-08-08, GM 지시 A안) — UserPromptSubmit 훅 진입점.
+# 단일 출처 — "GM 지시"를 "GM 요청"으로 바꾼다(2026-08-15 GM 요청). 새로 쓰는 값은 GM_AREA,
+# 과거 원장에 이미 쌓인 "GM지시" 까지 읽어야 하는 곳은 GM_AREAS 로 판정한다.
+# 다른 파일은 이 상수를 import 해서 쓴다 — 값을 복사하지 않는다(약속 L01).
+GM_AREA = "GM요청"
+GM_AREAS = ("GM요청", "GM지시")
+
+# GM요청 접수 자동화(2026-08-08, GM 지시 A안) — UserPromptSubmit 훅 진입점.
 # ref 채번 = 역할별 1000단위 구간(GM-YYYYMMDD-{구간+N}) — kungjjak_board.py --all-roles 가
 # ref 로만 짝을 묶으므로(role 필터 없음) 역할이 겹치는 번호를 쓰면 다른 역할 접수가 한 표에
 # 섞여버린다. 구간을 나눠 물리적으로 겹칠 수 없게 한다. 미지정 역할은 9000대로 격리.
 _GM_REF_BLOCK = {"ceo": 1000, "cto": 2000, "cmo": 3000, "cpo": 4000,
                   "coo": 5000, "chro": 6000, "cfo": 7000}
 _GM_REMINDER = ("[형식 고정] 말투=caveman ultra(군더더기·과정 서술 금지) · "
-                "GM 물음 1개 = 표 1개(8요소 📌GM지시 🔍실측 ✅반영 🔎검수 📤올림 ⏱소요 💡더나았을방법 👉GM액션) · "
+                "GM 물음 1개 = 표 1개(8요소 📌GM요청 🔍실측 ✅반영 🔎검수 📤올림 ⏱소요 💡더나았을방법 👉GM액션) · "
                 "표 밖 줄글은 표로 못 담는 것만")
 
 
@@ -79,7 +85,7 @@ def _next_gm_ref(role: str, day: str) -> str:
 
 
 def record_gm_prompt_hook() -> None:
-    """UserPromptSubmit 훅 진입점 — GM 프롬프트를 GM지시 접수로 best-effort 기록하고,
+    """UserPromptSubmit 훅 진입점 — GM 프롬프트를 GM요청 접수로 best-effort 기록하고,
     항상 리마인더 JSON 을 stdout 에 낸다(예외 나도 세션은 절대 막지 않는다)."""
     try:
         data = json.loads(sys.stdin.read())
@@ -91,7 +97,7 @@ def record_gm_prompt_hook() -> None:
         #   없어서 그날 하루가 통째로 사라진 것처럼 보였다. 흔적을 남겨 다음엔 바로 잡히게 한다.
         if prompt and not role:
             try:
-                log("", "GM지시", "역할 미인식 — 접수를 남기지 못했다",
+                log("", GM_AREA, "역할 미인식 — 접수를 남기지 못했다",
                     result="fail",
                     detail="WELLPERION_ROLE 이 훅 프로세스에 안 넘어왔다. 부팅 배치의 환경변수 상속을 확인할 것(배490).")
             except Exception:
@@ -120,7 +126,7 @@ def record_gm_prompt_hook() -> None:
                 close_gm_refs(role)
                 day = datetime.now(tz=KST).strftime("%Y%m%d")
                 ref = _next_gm_ref(role, day)
-                log(role, "GM지시", event, result="warn",
+                log(role, GM_AREA, event, result="warn",
                     detail="받음 · 자동 접수(UserPromptSubmit)", ref=ref)
     except Exception:
         pass
@@ -218,7 +224,7 @@ def _window_end(ts: str, all_ts: list) -> str:
 
 
 def close_gm_refs(role: str, detail: str = "") -> int:
-    """그 역할의 열린 GM 지시 접수(warn 만 있고 ok 짝 없는 것)를 닫는다. 닫은 건수를 돌려준다.
+    """그 역할의 열린 GM 요청 접수(warn 만 있고 ok 짝 없는 것)를 닫는다. 닫은 건수를 돌려준다.
 
     왜 있나(2026-08-11): 접수는 UserPromptSubmit 훅이 기계로 남기는데 완료 짝은 사람이 손으로
     남겨야 해서, 답을 다 한 물음도 "미완"으로 쌓였다. 실측 — 시토 3/30 · 웰리 26/38 · 시모
@@ -278,7 +284,7 @@ def close_gm_refs(role: str, detail: str = "") -> int:
             # 처리한 게 없다는 사실 자체를 detail 에 정직하게 남긴다(⚠️ 로 시작 — 쿵짝표
             # evidence_state 가 상투어로 걸러낸다).
             auto = detail or _commits_between(ts, nxt, role_v, used_subjects)
-            if log(role_v, "GM지시", "답변 종결 — 세션이 응답을 마쳤다",
+            if log(role_v, GM_AREA, "답변 종결 — 세션이 응답을 마쳤다",
                    result="ok",
                    detail=auto or "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
                    ref=ref):
@@ -289,12 +295,12 @@ def close_gm_refs(role: str, detail: str = "") -> int:
         return 0
 
 
-# ── GM지시 접수 번호를 한 벌로 (GM 지시 2026-08-12 "구조문제도 해결해줘") ──────────────
+# ── GM요청 접수 번호를 한 벌로 (GM 지시 2026-08-12 "구조문제도 해결해줘") ──────────────
 #   무엇이 문제였나: 같은 지시가 두 벌로 기록됐다. ①UserPromptSubmit 훅이 GM 이 말한 순간
 #   자동으로 접수(GM-YYYYMMDD-1xxx) ②그 뒤 역할이 손으로 또 접수(…-2xxx). 둘은 서로를 모르니
 #   짝맞춤이 한쪽을 영원히 못 닫고, 아침 미완 숫자가 실제보다 부풀었다(2026-08-12 실측 —
 #   겉보기 미완 23건 중 실질 3건, 나머지 20건이 이 중복이었다).
-#   어떻게 막나: 채번을 한 곳으로 모은다. 역할이 GM지시를 손으로 적을 때, 그날 아직 안 닫힌
+#   어떻게 막나: 채번을 한 곳으로 모은다. 역할이 GM요청을 손으로 적을 때, 그날 아직 안 닫힌
 #   자동 접수가 있으면 새 번호를 따지 않고 그 번호에 얹는다. 손으로 적은 완료도 같은 번호로 간다.
 #   여기(log)에 두는 이유 = 모든 기록이 지나가는 유일한 관문이라서다(약속 L21).
 _GM_MANUAL_RANGE_MIN = 2000   # 역할이 손으로 쓰던 구간 — 이 위쪽만 흡수 대상
@@ -320,7 +326,7 @@ def _open_auto_gm_ref(role: str, day: str) -> str:
                     d = json.loads(line)
                 except Exception:
                     continue
-                if (d.get("role") or "") != role or (d.get("area") or "") != "GM지시":
+                if (d.get("role") or "") != role or (d.get("area") or "") not in GM_AREAS:
                     continue
                 ref = str(d.get("ref") or "")
                 if not ref.startswith(prefix):
@@ -346,7 +352,7 @@ def _open_auto_gm_ref(role: str, day: str) -> str:
 
 
 def _ref_taken_by_other_role(ref: str, role: str) -> bool:
-    """이 ref 문자열을 다른 역할이 이미 area=='GM지시' 로 쓰고 있는가(2026-08-13 실측 —
+    """이 ref 문자열을 다른 역할이 이미 area가 GM_AREAS(GM요청·GM지시) 로 쓰고 있는가(2026-08-13 실측 —
     같은 날 GM-20260812-2001~2024 가 ceo·cto 양쪽에 동시에 존재했다. 손으로 번호를
     짓는 경로가 역할 구간을 몰라 서로 다른 두 지시가 같은 ref 를 공유했다).
     걸리면 True — 새 ref 를 다시 뽑아 충돌을 물리적으로 끊는다."""
@@ -359,7 +365,7 @@ def _ref_taken_by_other_role(ref: str, role: str) -> bool:
                     d = json.loads(line)
                 except Exception:
                     continue
-                if str(d.get("ref") or "") != ref or (d.get("area") or "") != "GM지시":
+                if str(d.get("ref") or "") != ref or (d.get("area") or "") not in GM_AREAS:
                     continue
                 if (d.get("role") or "") and (d.get("role") or "") != role:
                     return True
@@ -369,7 +375,7 @@ def _ref_taken_by_other_role(ref: str, role: str) -> bool:
 
 
 def _merge_gm_ref(role: str, area: str, result: str, ref: str) -> tuple[str, bool]:
-    """손으로 적은 GM지시 ref 를 그날 열려 있는 자동 접수 ref 로 합친다. 그 외는 그대로 둔다.
+    """손으로 적은 GM요청 ref 를 그날 열려 있는 자동 접수 ref 로 합친다. 그 외는 그대로 둔다.
     (합쳐진 ref, 이미 열려 있던 것에 얹었나) 를 돌려준다.
 
     ★warn 만 본다(2026-08-13 배506 수리) — result 를 안 가리면 손으로 남기는 **완료(ok)**
@@ -379,7 +385,7 @@ def _merge_gm_ref(role: str, area: str, result: str, ref: str) -> tuple[str, boo
     합치고 warn 줄을 또 쓰면, 짝맞추기가 '건수'로 세는 이상(배506 수리) 그 두 번째 warn
     이 영원히 미완 1건으로 남는다. 실제 새로 쓸 게 없다 — 이미 열린 접수를 호출부가
     한 번 더 부른 것뿐이므로, 호출부(log)가 이 신호로 두 번째 줄 자체를 건너뛴다."""
-    if area != "GM지시" or result != "warn" or not role or not ref.startswith("GM-"):
+    if area not in GM_AREAS or result != "warn" or not role or not ref.startswith("GM-"):
         return ref, False
     day = datetime.now(tz=KST).strftime("%Y%m%d")
     if not ref.startswith(f"GM-{day}-"):

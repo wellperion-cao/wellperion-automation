@@ -40,7 +40,7 @@
 ## 3. 보고·승인
 - 일일 08:00 통합 보고: `wellperion-agents/scripts/ceo_morning_pipeline.py` (예약작업 Wellperion-CEO-Morning-Brief-0800-Live). 구 ceo_morning_brief_08.py 폐기·미존재.
 - 텔레그램 (C-Level 보고 + GM 승인 회신 전용): `telegram_bot/bot.py` + `daily_scheduler.py` (PID 가동)
-- GM 지시 채널: CLI(현 세션) · 모바일 Claude Code (remote)
+- GM 요청 채널: CLI(현 세션) · 모바일 Claude Code (remote)
 - 봇 토큰 SSOT: `telegram_bot/.env`
 - CEO 인박스 DB(INB) = 폐기 — 호출 금지.
 - 보고 포맷·원칙 상세 = S2 공통탭 fetch (사이클 보고 3섹션+5필드 등 정본은 S2 단일 출처).

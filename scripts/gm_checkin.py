@@ -614,6 +614,7 @@ def routine_review(day: str | None = None, span: int = 7) -> str:
 #   objectives 「(GM 직접)」·업무SSOT 김남욱 담당·회장님 보고건)을 모으되, 기한 필드가 없는
 #   GM업무·회장님 보고건을 "오늘 할 일"로 몰지 않는다(지어내기 금지) — 4묶음으로 정직히 나눈다.
 from queue_dispatch import ROLES as _CLEVEL_NICKS, EXCLUDED_ROLES as _QUEUE_EXCLUDED_ROLES  # noqa: E402
+from worklog import GM_AREAS  # noqa: E402  — 정본=worklog.py(값 복사 금지·약속 L01)
 
 MONTHLY_PLAN = ROOT / 'status' / 'monthly_ops_plan.json'
 WORKLOG_PATH = ROOT / 'status' / 'worklog.jsonl'  # 저녁 정리 카드(build_evening_recap) 소스
@@ -1137,7 +1138,7 @@ def _selfcheck_schedule() -> None:
 
 
 # ── 20:30 「오늘 하신 일」 저녁 정리 카드 (나의하루 방) — GM 지시 2026-08-10 ─────────
-#   08:00 업무 브리핑(할 일)의 짝 — 저녁엔 오늘 GM지시 worklog 를 ok/warn ref 로 짝지어
+#   08:00 업무 브리핑(할 일)의 짝 — 저녁엔 오늘 GM요청 worklog 를 ok/warn ref 로 짝지어
 #   끝낸 것·아직 남은 것으로 가른다. 자동 접수(UserPromptSubmit)엔 "오 된 것 같다" 같은
 #   대화 부스러기가 섞이므로 노이즈 필터로 거른다(GM 지시 원문 규칙 4종).
 def _recap_noise_legacy(event: str) -> bool:
@@ -1178,7 +1179,7 @@ def _load_today_gm_worklog(day: str) -> list[dict]:
             rec = json.loads(ln)
         except Exception:
             continue
-        if rec.get('area') == 'GM지시' and str(rec.get('ts', ''))[:10] == day:
+        if rec.get('area') in GM_AREAS and str(rec.get('ts', ''))[:10] == day:
             out.append(rec)
     out.sort(key=lambda r: r.get('ts', ''))
     return out
@@ -1230,7 +1231,7 @@ def _build_done_pending_pass(day: str, noise_fn) -> tuple[list[dict], list[dict]
 
 
 def _build_done_pending(day: str) -> tuple[list[dict], list[dict], int, bool]:
-    """오늘 GM지시 worklog(ref 로 warn=접수/ok=완료 짝짓기) → (끝낸 것, 아직 남은 것, 걸러진 건수, 폴백여부).
+    """오늘 GM요청 worklog(ref 로 warn=접수/ok=완료 짝짓기) → (끝낸 것, 아직 남은 것, 걸러진 건수, 폴백여부).
     ref/detail 기준 새 필터가 둘 다 0건으로 만들면 과필터 신호 — 레거시 겉모양 필터로 되돌린다(빈 카드 금지)."""
     done, pending, filtered = _build_done_pending_pass(day, _recap_noise)
     if not done and not pending:

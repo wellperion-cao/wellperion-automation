@@ -41,6 +41,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from ship_classify import classify_ship, has_clevel_id  # noqa: E402
+from worklog import GM_AREA, GM_AREAS  # noqa: E402  — 정본=worklog.py(값 복사 금지·약속 L01)
 
 # stdout 한글 안전 처리 (Windows CP949 대응)
 # ※ sys 싱글톤에 가드 — __main__ 실행 뒤 모듈로 재import돼도 두 번 감싸지 않게.
@@ -844,7 +845,7 @@ def _received_unanswered(items: list[dict], role: str) -> list[dict]:
     return sorted(out, key=lambda it: -(_open_days(it) or 0))
 
 
-# ── 📨 GM 지시 짝맞추기 (2026-08-05 GM 지시 — status/worklog.jsonl area=="GM지시" 미완
+# ── 📨 GM 요청 짝맞추기 (2026-08-05 GM 지시 — status/worklog.jsonl area=="GM지시" 미완
 #   적발. 실사고: 대표님 보고건(GM-20260804-05, 21:03)이 접수만 되고 안 끝났는데 부팅
 #   점검은 "미완 0"이라 아무도 못 집었다. ref 가 하루 안에서 3~6회 재사용되는데 판정을
 #   "ref 하나에 ok 가 있으면 끝난 것"으로 잘못 봐 09:23 ok 가 21:03 warn 을 덮었다. 게다가
@@ -857,7 +858,7 @@ def _received_unanswered(items: list[dict], role: str) -> list[dict]:
 #   1분 역전). ts 오름차순 스택은 이 역전에서 ok 를 빈 대기열에 버리고 뒤이은 warn 을
 #   영원히 못 닫았다. 건수만 세면 순서가 역전돼도 정확히 닫힌다. ──
 def _pair_gm_directives(entries: list[dict]) -> list[dict]:
-    """area=='GM지시' 로그 목록을 ref 별로 모아 (warn 개수 - ok 개수)만큼만 미완으로 반환
+    """area 가 GM_AREAS(GM요청·GM지시) 인 로그 목록을 ref 별로 모아 (warn 개수 - ok 개수)만큼만 미완으로 반환
     (오래된 순). 파일 I/O 없음 — 순수 함수(테스트용으로 분리, _gm_directive_unresolved 가
     파일을 읽어 넘김)."""
     by_ref: dict[str, list[dict]] = {}
@@ -883,17 +884,17 @@ def _pair_gm_directives(entries: list[dict]) -> list[dict]:
 
 
 def _is_gm_directive_log(d: dict) -> bool:
-    """이 로그 줄이 GM 지시 짝맞추기 대상인가 — ref 가 GM- 로 시작하면 접수든 완료든 대상이다."""
+    """이 로그 줄이 GM 요청 짝맞추기 대상인가 — ref 가 GM- 로 시작하면 접수든 완료든 대상이다."""
     return str(d.get("ref", "")).startswith("GM-")
 
 
 def _gm_directive_unresolved(role: str = "") -> list[dict]:
     """status/worklog.jsonl 을 읽어(읽기 전용 — 절대 쓰지 않는다, 다른 세션이 쓰는 중일 수
-    있다) GM 지시 ref(GM-…) 를 가진 항목을 걸러 _pair_gm_directives 로 미완을 판정한다.
+    있다) GM 요청 ref(GM-…) 를 가진 항목을 걸러 _pair_gm_directives 로 미완을 판정한다.
     role 지정 시 그 role 이 남긴 로그만 본다.
 
-    ★거르는 기준 = area 가 아니라 ref (2026-08-12 시토 실측 수리). 접수(warn)는 area=='GM지시'
-    로 들어오지만 **완료(ok)는 그 일의 도메인 area 로 적힌다**(자동화·회원·강습·작업…).
+    ★거르는 기준 = area 가 아니라 ref (2026-08-12 시토 실측 수리). 접수(warn)는 area 가
+    GM_AREAS(GM요청·GM지시) 로 들어오지만 **완료(ok)는 그 일의 도메인 area 로 적힌다**(자동화·회원·강습·작업…).
     area 로 거르면 완료 기록이 통째로 안 보여 이미 끝난 지시가 계속 미완으로 남았다 —
     실측 당시 전역 미완 28건 중 11건(39%)이 이 오탐이었고, 부팅 화면이 매일 거짓을 냈다.
     쿵짝표(kungjjak_board)는 처음부터 ref 로만 짝을 맞춰 두 화면 숫자가 어긋나 있었다."""
@@ -922,11 +923,11 @@ def _selftest_gm_directives() -> None:
     """3줄(warn·ok·warn 같은 ref) 넣으면 미완 1건(가장 나중 warn)만 남는지 확인.
     GM-20260804-05 실사고(09:20 warn/09:23 ok/21:03 warn) 재현 — 21:03 만 남아야 한다."""
     sample = [
-        {"ts": "2026-08-04T09:20:00+09:00", "role": "ceo", "area": "GM지시",
+        {"ts": "2026-08-04T09:20:00+09:00", "role": "ceo", "area": GM_AREA,
          "event": "발화기록 오늘 것부터 체크", "result": "warn", "ref": "GM-TEST-01"},
-        {"ts": "2026-08-04T09:23:00+09:00", "role": "ceo", "area": "GM지시",
+        {"ts": "2026-08-04T09:23:00+09:00", "role": "ceo", "area": GM_AREA,
          "event": "오늘 기록으로 즉시 점검", "result": "ok", "ref": "GM-TEST-01"},
-        {"ts": "2026-08-04T21:03:00+09:00", "role": "ceo", "area": "GM지시",
+        {"ts": "2026-08-04T21:03:00+09:00", "role": "ceo", "area": GM_AREA,
          "event": "대표님 보고건 4가지 접수", "result": "warn", "ref": "GM-TEST-01"},
     ]
     result = _pair_gm_directives(sample)
@@ -935,7 +936,7 @@ def _selftest_gm_directives() -> None:
 
     # 완료(ok)는 그 일의 도메인 area 로 적힌다 — 거르는 기준이 area 로 되돌아가면 여기서 걸린다.
     cross = [
-        {"ts": "2026-08-10T18:22:00+09:00", "area": "GM지시", "result": "warn",
+        {"ts": "2026-08-10T18:22:00+09:00", "area": GM_AREA, "result": "warn",
          "event": "접수", "ref": "GM-TEST-02"},
         {"ts": "2026-08-10T18:30:00+09:00", "area": "자동화", "result": "ok",
          "event": "완료", "ref": "GM-TEST-02"},
@@ -947,9 +948,9 @@ def _selftest_gm_directives() -> None:
     # ok 가 warn 보다 먼저 찍히는 레이스(배506 실사고 — GM-20260807-23: ok 16:37·warn 16:38).
     # 건수 대조라면 순서와 무관하게 닫혀야 한다.
     race = [
-        {"ts": "2026-08-07T16:37:00+09:00", "area": "GM지시", "result": "ok",
+        {"ts": "2026-08-07T16:37:00+09:00", "area": GM_AREA, "result": "ok",
          "event": "완료", "ref": "GM-TEST-03"},
-        {"ts": "2026-08-07T16:38:00+09:00", "area": "GM지시", "result": "warn",
+        {"ts": "2026-08-07T16:38:00+09:00", "area": GM_AREA, "result": "warn",
          "event": "접수", "ref": "GM-TEST-03"},
     ]
     assert _pair_gm_directives(race) == [], "ok 가 warn 보다 먼저 찍히면 못 닫는다(배506)"
@@ -1403,7 +1404,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
             lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=_brief(it))
                                     for it in received_unanswered]))
         if gm_gaps:
-            lines.append(f"📨 GM 지시 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
+            lines.append(f"📨 GM 요청 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
             for g in gm_gaps:
                 tag = "🔴" if g["days"] >= 1 else "🟡"
                 lines.append(f"  - {tag} {g['days']}일째 · {g['ts']} · {g['event']} (ref={g['ref']})")
