@@ -2781,12 +2781,16 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 종합접수방(stream2b) 예외: {e}")
 
-    # ── 카카오톡 ★운영+시설+지원+주차 — 점검현황·종합접수현황 분리 발송 (GM 2026-07-22 go) ──
-    # 텔레그램 본문(s2_msg/s2b_msg) 그대로 재사용(중복 조립 금지) — 결합 아닌 별도 메시지 2통.
+    # ── 카카오톡 ★운영+시설+지원+주차 — 점검현황+종합접수현황 합본 1통 (GM 2026-07-22 go) ──
+    # 텔레그램 본문(s2_msg/s2b_msg) 그대로 재사용(중복 조립 금지). 텔레그램은 방이 서로 달라
+    # (점검현황방/종합접수방) 2통 그대로 두지만, 카톡은 같은 방(KAKAO_OPS_ROOM)으로 나가
+    # 제목이 완전히 같은 [하루 일과 정리] 2통이 연달아 뜨고 있었다(2026-08-15 GM 지시,
+    # 실측 22:32 연속 2통×5일=10통). 부문 소제목으로 갈라 한 통으로 합친다 — 내용 삭제 없음,
+    # s2b_msg 의 중복 날짜 제목 줄 하나만 뺀다(아래 _merge_ops_kakao). 실패해도 텔레그램
+    # 발송(위)은 이미 완료된 상태이므로 GM은 텔레그램으로 항상 현황을 받는다.
     # ★한계(정직 표기): 카카오 발송은 PC 카톡 앱 UI자동화(kakao_report_sender.py)에 의존해
     # 트레이 최소화·포커스 경합 등으로 실패할 수 있다(배9423, 07-22 아침 09:30 3방 발송 실패
-    # 전례). 주경로=카톡 창을 미리 열어둔 상태 유지. 실패해도 텔레그램 발송(위)은 이미 완료된
-    # 상태이므로 GM은 텔레그램으로 항상 현황을 받는다. 역롤백(1줄): KAKAO_GO_STREAM2 = False.
+    # 전례). 주경로=카톡 창을 미리 열어둔 상태 유지. 역롤백(1줄): KAKAO_GO_STREAM2 = False.
     if KAKAO_GO_STREAM2:
         _kakao_sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
         _kakao_env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
@@ -2810,15 +2814,21 @@ def run_daily_digest(early: bool = False) -> None:
                 logger.error(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송 예외: {e}")
                 _kakao_fail_notify(tag, str(e)[:120])
 
-        if s2_msg:
+        def _merge_ops_kakao(a: str, b: str) -> str:
+            """a(점검현황)의 제목을 그대로 쓰고, b(종합접수현황)에서 중복되는 첫 줄
+            (📊 [하루 일과 정리] 날짜 제목)만 뺀 뒤 구분선으로 이어붙인다. 내용 삭제 없음 —
+            제목 1줄만 겹치지 않게 한다."""
+            b_body = b.split("\n", 1)[1] if b.startswith("📊 [하루 일과 정리]") and "\n" in b else b
+            return f"{a}\n\n{'━' * 10}\n{b_body}"
+
+        if s2_msg and s2b_msg:
+            _send_ops_kakao(_merge_ops_kakao(s2_msg, s2b_msg), "점검현황+종합접수현황")
+        elif s2_msg:
             _send_ops_kakao(s2_msg, "점검현황")
-            time.sleep(5)  # 두 메시지 사이 간격(플러드·방 창 포커스 경합 방지)
-        else:
-            logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}(점검현황) SKIP — s2_msg 없음(빌드 실패)")
-        if s2b_msg:
+        elif s2b_msg:
             _send_ops_kakao(s2b_msg, "종합접수현황")
         else:
-            logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM}(종합접수현황) SKIP — s2b_msg 없음(빌드 실패)")
+            logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — s2_msg/s2b_msg 둘 다 없음(빌드 실패)")
     else:
         logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP (KAKAO_GO_STREAM2=False)")
 
