@@ -674,7 +674,7 @@ function render(){
 }
 
 function moveMonth(n){cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);render();}
-function goToday(){cur=new Date(2026,5,1);render();}
+function goToday(){var t=new Date();cur=new Date(t.getFullYear(),t.getMonth(),1);render();}
 
 /* 마감월 = 이미 끝난(말일 자정 지난) 월 = 현재 실제 월보다 이전. 매월 말일 24:00에 해당 월 수정 잠금, 다음 달 자동 해제 */
 function isLockedMonth(y,m){ const n=new Date(); return (y<n.getFullYear())||(y===n.getFullYear()&&m<n.getMonth()); }
@@ -830,7 +830,6 @@ function resolveGate(pw){
   erpLoad();
 }
 /* 부모 postMessage 경로(기존 유지)도 게이트를 해제하도록 래핑 */
-const _origMsgLoad=erpLoad;
 window.addEventListener("message", e=>{
   if(e.origin!==location.origin) return;
   if(e.data && e.data.type==="wp-pass" && e.data.pw){
