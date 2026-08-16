@@ -70,12 +70,13 @@ REPORT_CHAT_ID = _env("OWNER_ID") or "8254867551"  # GM 업무보고방
 
 # -----------------------------------------------------------------
 # 텔레그램 발신 (토큰 stdout 미노출)
+# sendMessage = 발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(약속 L21).
+# sendPhoto = 관문에 없는 경로라 기존 requests 직접 호출 그대로 유지(배255 지시대로 미변경).
 # -----------------------------------------------------------------
 def _tg_send(text: str, *, photo_path: Path | None = None) -> bool:
-    try:
-        import requests
-        headers = {}
-        if photo_path and photo_path.exists():
+    if photo_path and photo_path.exists():
+        try:
+            import requests
             caption = text[:1024]
             with open(photo_path, "rb") as f:
                 r = requests.post(
@@ -84,17 +85,21 @@ def _tg_send(text: str, *, photo_path: Path | None = None) -> bool:
                     files={"photo": f},
                     timeout=15,
                 )
-        else:
-            r = requests.post(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-                json={"chat_id": REPORT_CHAT_ID, "text": text, "parse_mode": "HTML",
-                      "disable_web_page_preview": True},
-                timeout=10,
-            )
-        return r.status_code == 200
+            return r.status_code == 200
+        except Exception as e:
+            print(f"[WARN] TG 발신 실패: {e}")
+            return False
+    try:
+        from tg_outbound_log import send as _tg_gateway_send
     except Exception as e:
-        print(f"[WARN] TG 발신 실패: {e}")
+        print(f"[WARN] TG 관문 임포트 실패: {e}")
         return False
+    return _tg_gateway_send(
+        BOT_TOKEN, REPORT_CHAT_ID, text,
+        source="naver_talktalk_custommenu",
+        extra={"parse_mode": "HTML", "disable_web_page_preview": "true"},
+        timeout=10,
+    )
 
 
 def tg(text: str, photo: Path | None = None) -> None:

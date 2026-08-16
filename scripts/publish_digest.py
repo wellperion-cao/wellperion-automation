@@ -46,14 +46,15 @@ import re
 import sys
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
 
-try:  # 전역 발송 페이싱(프로세스 간 429 방지) — best-effort
-    from tg_outbound_log import pace as _tg_pace
+try:  # 전역 발송 페이싱(프로세스 간 429 방지) + 발신 관문(sendMessage) — best-effort
+    from tg_outbound_log import pace as _tg_pace, send as _tg_gateway_send
 except Exception:
     def _tg_pace(*_a, **_k):
         return None
+    def _tg_gateway_send(*_a, **_k):
+        return False
 
 try:  # 결정 정합 게이트 공용 신호(§4) — dedup 이 재발송을 막을 때 1줄 남긴다(best-effort)
     from decision_replay_log import append as _replay_append
@@ -421,47 +422,22 @@ def _instagram_preview_url(group: list[dict]) -> str:
 
 
 def _send(token: str, chat_id: str, text: str, preview_url: str = "", reply_markup: str = "") -> bool:
-    payload: dict[str, str] = {"chat_id": chat_id, "text": text}
-    if reply_markup:  # 인라인 버튼(JSON 문자열) — GM 검토 게이트 승인/보류 카드용
-        payload["reply_markup"] = reply_markup
     # ★ 근본원인 (2026-07-16 진단): 인스타그램 게시물 URL의 link_preview는 텔레그램이 IG로부터
     #   미리보기 이미지를 못 가져와(IG가 봇 프리뷰 페처 차단) sendMessage 자체가 429로 실패한다.
     #   → 디제스트가 07-15 셋업 후 한 번도 도착 못한 진짜 원인. 미리보기를 끄면 즉시 200 성공(실측).
     #   따라서 IG URL 대용량 미리보기는 비활성으로 안정 배달을 보장한다.
     #   시각 카드가 필요하면 IG URL 프리뷰가 아니라 sendPhoto로 실제 슬라이드 이미지를 첨부(후속 옵션).
     _ = preview_url  # 시그니처 호환(미사용) — IG URL 프리뷰는 429 유발이라 사용 안 함
-    payload["link_preview_options"] = json.dumps({"is_disabled": True})
-    data = urllib.parse.urlencode(payload).encode("utf-8")
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    # 429(레이트리밋) 자가재시도 — retry_after 존중 + 백오프. 텔레그램 그룹 초당/분당 한계로
-    # 발행 run-end 텔레그램 버스트 직후 429가 잦아 디제스트가 조용히 유실되던 문제 근본 차단
-    # (2026-07-16 진단: 이력 파일 부재=한 번도 성공 못함, 재시도 0이 원인).
-    max_attempts = 6
-    for attempt in range(max_attempts):
-        req = urllib.request.Request(url, data=data, method="POST")
-        try:
-            _tg_pace()  # 발송 직전 전역 페이싱(초당 1건 미만·프로세스 간)
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                return resp.status == 200
-        except urllib.error.HTTPError as ex:
-            if ex.code == 429 and attempt < max_attempts - 1:
-                retry_after = 3
-                try:
-                    body = json.loads(ex.read().decode())
-                    retry_after = int(body.get("parameters", {}).get("retry_after", 3))
-                except Exception:
-                    pass
-                wait = min(retry_after + 2 * (attempt + 1), 60)  # 초당 한계 흡수 버퍼
-                print(f"[digest] 429 레이트리밋 — {wait}s 대기 후 재시도 "
-                      f"({attempt + 1}/{max_attempts})", file=sys.stderr)
-                time.sleep(wait)
-                continue
-            print(f"[digest] 전송 실패 HTTP {ex.code}: {ex.reason}", file=sys.stderr)
-            return False
-        except Exception as ex:  # 네트워크·타임아웃 등
-            print(f"[digest] 전송 오류: {ex}", file=sys.stderr)
-            return False
-    return False
+    extra = {"link_preview_options": json.dumps({"is_disabled": True})}
+    if reply_markup:  # 인라인 버튼(JSON 문자열) — GM 검토 게이트 승인/보류 카드용
+        extra["reply_markup"] = reply_markup
+    # 발신 관문(tg_outbound_log.send) 경유 — 페이싱·429 자가재시도·logs/telegram_sent-*.log
+    # 계측이 자동 편입된다(약속 L21, 배255 수렴). 직접 urllib 호출 제거.
+    try:
+        return _tg_gateway_send(token, chat_id, text, source="publish_digest._send", extra=extra, timeout=15)
+    except Exception as ex:
+        print(f"[digest] 전송 오류: {ex}", file=sys.stderr)
+        return False
 
 
 def _first_slide_image(group: list[dict]) -> str:
