@@ -206,6 +206,19 @@
                  background:#fff;color:var(--deep);cursor:pointer;font-family:inherit;}
   .hd-act button:hover{background:var(--deep);color:#fff;}
   @media print{ .hd-act{display:none !important;} }
+
+  /* ── 모바일 화면 대응 — 인쇄(@media print)는 무변경, 화면 전용 (GM 지시 2026-08-16, 배478 프론트분) ──
+     .sheet/.bar 는 297mm(≈1123px) 고정폭이라 그보다 좁은 화면은 전부 가로로 밀렸다. width는 그대로 두고
+     max-width:100%만 얹어 화면 폭을 넘지 않게 한다(297mm보다 넓은 화면은 min() 효과로 지금과 동일). */
+  @media screen{
+    .sheet,.bar{max-width:100%;}
+    .sum{overflow-x:auto;}
+  }
+  @media screen and (max-width:720px){
+    .sheet{padding:14mm 4vw 12mm;}
+    .bar{padding:0 4vw;}
+    .grid{grid-template-columns:1fr;}
+  }
 </style>
 </head>
 <body>
