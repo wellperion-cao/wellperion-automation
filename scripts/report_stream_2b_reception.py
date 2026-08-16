@@ -474,7 +474,15 @@ TEST_CHAT_ID = 8254867551  # 텔레그램 업무관리방 — 테스트 발신�
 
 
 def _intake_room_for(dept: str) -> str:
-    return _INTAKE_ROOM_LESSON if "강습" in dept else _INTAKE_ROOM_DEFAULT
+    """★2026-08-17 수리. 부서 구분이 3개에서 11개로 늘면서 이 판정이 죽어 있었다.
+    옛 값에는 「강습」이라는 부서가 있어 문자열 포함으로 갈렸는데, 새 11개 값
+    (운영부·시설부·지원부(남)·지원부(여)·수영팀·P.T팀·골프팀·스쿼시팀·체조팀·
+    뮤지컬팀·루프메소드팀) 중 「강습」을 품은 값이 **하나도 없다** → 업장 접수가
+    전부 기본 방으로 새고 있었다(GM 확정 2026-08-15 '강습·업장=부서장방'이 무효화).
+    업장 = 이름이 「팀」으로 끝나는 부서다. 옛 값 호환으로 「강습」 포함 판정도 남긴다.
+    """
+    d = str(dept or "").strip()
+    return _INTAKE_ROOM_LESSON if ("강습" in d or d.endswith("팀")) else _INTAKE_ROOM_DEFAULT
 
 
 def _send_kakao(room: str, text: str) -> bool:
