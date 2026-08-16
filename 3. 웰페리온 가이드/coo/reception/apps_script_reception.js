@@ -738,9 +738,9 @@ function _vExtractFileId_(url) {
 // ─── 텔레그램 알림 (점검 GAS handleNotify 패턴) — 토큰=ScriptProperties, repo 하드코딩 금지 ───
 // 핵심멤버방 chat_id = TELEGRAM_CHAT_ID (점검 GAS와 동일 키명 — GM이 신규 GAS 속성에 동일 등록).
 // photoUrl 있으면 sendPhoto(Drive blob 업로드, caption=text) 시도, 실패 시 sendMessage 폴백 → 알림 절대 유실 금지.
-function _vNotifyTelegram(text, photoUrl) {
+function _vNotifyTelegram(text, photoUrl, chatIdOverride) {
   var token = _vprop('TELEGRAM_BOT_TOKEN');
-  var chatId = _vprop('TELEGRAM_CHAT_ID');
+  var chatId = chatIdOverride || _vprop('TELEGRAM_CHAT_ID');   // 3번째 인자로 다른 방(예: 시설팀) 지정 가능. 2026-08-16.
   if (!token || !chatId) return false; // 미설정이면 조용히 통과 (제출 자체는 성공)
   var base = 'https://api.telegram.org/bot' + token;
 
@@ -1187,6 +1187,12 @@ function _regSubmit(body) {
     '🕒 ' + now,
     photoUrl
   );
+
+  // 시설부 접수는 시설팀 방에도 별도로 한 번 더 발송(TELEGRAM_FACILITY_CHAT_ID 속성). 드리프트로 사라진 것 복구 2026-08-16.
+  if (cat.key === 'facility') {
+    var _facChat = _vprop('TELEGRAM_FACILITY_CHAT_ID');
+    if (_facChat) _vNotifyTelegram('🔧 <b>[시설물 고장 접수]</b>\n이름: ' + name + '\n위치: ' + (loc || '-') + '\n내용: ' + (content ? content.slice(0, 100) : '-') + '\n🕒 ' + now, photoUrl, _facChat);
+  }
 
   _regBoardCacheClear_();
   _regLookupCacheClearFor_(contact, name);   // 방금 접수한 사람이 곧바로 조회해도 새 건이 보이게
