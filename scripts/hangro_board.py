@@ -1694,28 +1694,28 @@ def _latest_midmgr_file() -> Path | None:
 _RE_MIDMGR_SAVED = re.compile(r"저장한\s*날짜\s*:\s*(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})")
 
 
-def _midmgr_saved_at(text: str) -> tuple[str, str]:
+def _midmgr_saved_at(text: str) -> tuple[str, str, float | None]:
     """카톡 아카이브 첫머리의 '저장한 날짜'와, 지금으로부터 얼마나 지났는지.
 
     이 파일은 **만들어진 순간까지**만 담는다 — 그 뒤에 온 회신은 없다. 그 사실을
     화면에 안 적어서 2026-08-13 에 소장님 회신 7건(16:29~18:44)을 '회신 없음'으로
-    GM 께 보고했다. 돌려주는 값: (사람이 읽는 저장시각, 제목 뒤에 붙일 경과 꼬리표).
+    GM 께 보고했다. 돌려주는 값: (사람이 읽는 저장시각, 제목 뒤에 붙일 경과 꼬리표, 경과시간(h)).
     """
     m = _RE_MIDMGR_SAVED.search(text[:400])
     if not m:
-        return "", " · ⚠️ 수집 시각 미상"
+        return "", " · ⚠️ 수집 시각 미상", None
     day, hm = m.group(1), m.group(2)
     stamp = f"{day} {hm}"
     try:
         saved = dt.datetime.strptime(stamp, "%Y-%m-%d %H:%M")
     except ValueError:
-        return stamp, ""
+        return stamp, "", None
     hours = (dt.datetime.now() - saved).total_seconds() / 3600
     if hours < 1:
-        return stamp, ""
+        return stamp, "", hours
     if hours < 3:
-        return stamp, f" · {int(hours)}시간 전 수집"
-    return stamp, f" · ⚠️ {int(hours)}시간 전 수집 — 그 뒤 회신은 안 보인다"
+        return stamp, f" · {int(hours)}시간 전 수집", hours
+    return stamp, f" · ⚠️ {int(hours)}시간 전 수집 — 그 뒤 회신은 안 보인다", hours
 
 
 def _midmgr_reply_slice(role_slug: str) -> str:
@@ -1733,7 +1733,6 @@ def _midmgr_reply_slice(role_slug: str) -> str:
     #   "이정헌 소장 회신 없음"이라고 GM 께 잘못 보고했다(그때 회신 7건이 이미 와 있었다).
     #   여기서는 새 감시기를 만들지 않는다(약속 L21) — 수집본이 오늘 것인지만 보고, 아니면
     #   "회신 없음" 대신 "확인 못 함"이라고 적는다. 없는 정보를 있는 것처럼 만들지 않는다.
-    _today = dt.datetime.now().strftime("%Y-%m-%d")
     f = _latest_midmgr_file()
     if not f:
         return ("\n📩 실무진 회신 — ❌ 확인 못 함(수집본이 하나도 없다)\n"
@@ -1770,13 +1769,15 @@ def _midmgr_reply_slice(role_slug: str) -> str:
     #   착각하고 "이정헌 소장 회신 없음"이라 GM 께 보고했는데, 소장님 회신 7건은 16:29~18:44
     #   에 와 있었다. 파일 첫머리에 "저장한 날짜 : …"가 적혀 있는데 그걸 안 봤다.
     #   그래서 화면에 경과 시간을 박는다 — 낡은 것을 최신으로 읽는 실수는 눈으로 막는다.
-    stamp, age_txt = _midmgr_saved_at(text)
-    saved_day = stamp.split(" ")[0] if stamp else ""
-    stale = bool(saved_day) and saved_day < _today   # 오늘 수집분이 아예 없다 = 오늘 것은 못 읽었다
+    stamp, age_txt, hours = _midmgr_saved_at(text)
+    # ★날짜만 보면 놓친다 (웰리 실측 2026-08-17) — 07:30 수집 후 같은 날 저녁까지 그대로면
+    #   날짜는 안 바뀌어 "오늘 수집분" 취급을 받지만, 그 사이 온 회신은 여전히 안 보인다.
+    #   경과 "시간"으로 판정한다 — 12시간 넘게 낡았으면 날짜가 같아도 낡은 것으로 본다.
+    STALE_HOURS = 12
+    stale = hours is not None and hours >= STALE_HOURS
     out = [f"\n📩 실무진 회신 — 이 방에 남긴 것 ({collected_date} 대화분{age_txt})"]
     if stale:
-        out.append(f"  ❌ 오늘({_today}) 수집본이 없다 — 아래는 {saved_day} 것이다. "
-                   "오늘 남긴 회신은 여기 없다.")
+        out.append(f"  ❌ 이 수집본은 {int(hours)}시간 전 것이다 — 못 읽은 회신이 있을 수 있다.")
         out.append("     수집이 실패했을 가능성(화면 잠김이면 수집기가 못 돈다). "
                    "먼저 받아오고 나서 판단할 것.")
     if stamp:
@@ -1793,11 +1794,11 @@ def _midmgr_reply_slice(role_slug: str) -> str:
             snippet = joined[:340] + ("…" if len(joined) > 340 else "")
             out.append(f'  · {label} ({len(msgs[label])}줄) — "{snippet}"')
         elif stale:
-            out.append(f"  · {label} — 확인 못 함(오늘 수집본 없음 · '회신 없음'과 다르다)")
+            out.append(f"  · {label} — 확인 못 함({int(hours)}시간 전 수집 · '회신 없음'과 다르다)")
         else:
             out.append(f"  · {label} — 회신 없음")
     if not any_reply:
-        out.append("  (오늘 수집본이 없어 확인 못 함 — 회신 없음이라 보고하지 말 것)" if stale
+        out.append(f"  (수집본이 {int(hours)}시간 전 것이라 확인 못 함 — 회신 없음이라 보고하지 말 것)" if stale
                    else "  (전원 회신 없음 — 없는 걸 있는 것처럼 만들지 않음)")
     out.append("※ 해석·판정 없음 — 원문 그대로. 판단해 현황 갱신하려면: "
                 "python scripts/hangro_board.py --daily-status <lee-gy|lee-jh> --done N --note \"...\"")
