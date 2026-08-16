@@ -1214,6 +1214,15 @@ function _processAction(body) {
 
 /* ── 오넛티(추석 선물세트) 접수 — 2026-08-07 원본에서 이식. 분리 백엔드가 원본보다 뒤처지면
    주소를 갈아끼우는 순간 그 유형 접수가 통째로 죽는다. ── */
+// ★2026-08-17 시토 — 아래 상수 셋이 이 파일에 빠져 있었다(원본 Survey.js 에는 있다).
+//   아래 함수들이 참조만 하고 선언이 없어, 오넛티 접수가 들어오는 순간 ReferenceError 가 나고
+//   catch 에 잡혀 "서버 저장 오류"로 **매번 실패**한다. 접수 로직 대조 검사(test_intake_parity.py)는
+//   intake_submit 함수 본문만 보기 때문에 함수 밖 상수 누락을 못 잡았다.
+//   ▸값은 원본(.deploy-funnel-v2/Survey.js)과 한 글자도 다르면 안 된다 — 읽기(재고·팀조회)는
+//     아직 원본 쪽 배포가 담당하고 있어, 값이 갈리면 접수 시트와 재고 계산이 서로 다른 곳을 본다.
+var OHNUTTI_INTAKE_SHEET_NAME = '오넛티 선물세트 접수';
+var OHNUTTI_INTAKE_HEADERS = ['접수시각','접수번호','성함','연락처','수량','세트종류','수령방법','희망수령일','배송지','결제방법','요청사항','상태','순번','결제기한','비고'];
+var OHNUTTI_CAP = 500;   // 선착순 500세트(신청 건수가 아니라 세트 수량 합) — GM 확정
 function _ohnuttiIntakeSheet_(createIfMissing) {
   var ss = SpreadsheetApp.openById(_MI_SS_ID);
   var sh = ss.getSheetByName(OHNUTTI_INTAKE_SHEET_NAME);
