@@ -258,6 +258,51 @@ def warn_jargon(text: str) -> list[str]:
     return hits
 
 
+# ── 임정은M 건은 이경연 실장을 통해서만 (GM 지시 2026-08-16 · 약속 L24 실행판) ──────
+# GM 원문: "임정은m건은 이경연실장 통해서만".
+# 왜 코드로 박나: 같은 규칙이 약속 L24 에 글로만 있었고, 그 사이에도 임정은M 앞 요청이
+#   그분이 계신 ★운영부 방으로 바로 나갈 뻔했다(2026-08-16 배413). 문서는 기계를 못 막는다(L02).
+# 무엇을 막나: **요청·확인을 담은 글**이 임정은M 을 지목한 채, 그분이 멤버로 있는 방으로
+#   나가는 것. 실장을 건너뛰게 되기 때문이다. 이름만 스쳐 지나가는 현황 공유(아침 다이제스트
+#   등)는 막지 않는다 — 그건 답을 요구하지 않아 실장을 건너뛰는 일이 아니다.
+# 어디로 보내야 하나: ★중간관리자 방(이경연 실장이 계시고 임정은M 은 안 계신다 —
+#   kakao_rooms.json members 실측). 그 방에서 실장이 나눠 주신다.
+# 방 멤버 명단은 kakao_rooms.json 이 정본이라 여기 베끼지 않는다(약속 L01).
+_VIA_MANAGER_STAFF = "임정은"
+_VIA_MANAGER_ROOM = "★중간관리자"
+_VIA_MANAGER_ASK = ("부탁", "알려주", "주세요", "주시면", "확인해", "회신")
+_VIA_MANAGER_SKIP_ENV = "WP_ALLOW_DIRECT_TO_STAFF"
+
+
+def _room_members(room_name: str) -> str:
+    """그 방의 멤버 문자열(kakao_rooms.json 정본). 못 찾으면 빈 문자열."""
+    try:
+        cfg = load_rooms_config()
+    except Exception:
+        return ""
+    for r in cfg.get("all_rooms", []) or []:
+        if _room_core_key(str(r.get("name") or "")) == _room_core_key(room_name):
+            return str(r.get("members") or "")
+    return ""
+
+
+def via_manager_violation(room_name: str, text: str) -> str | None:
+    """실장을 건너뛰는 발신이면 차단 문구를 만든다(아니면 None)."""
+    if _VIA_MANAGER_STAFF not in text:
+        return None
+    if not any(k in text for k in _VIA_MANAGER_ASK):
+        return None                      # 요청이 아닌 단순 언급 — 막지 않는다
+    if _VIA_MANAGER_STAFF not in _room_members(room_name):
+        return None                      # 그분이 없는 방 = 실장을 건너뛰지 않는다
+    if os.environ.get(_VIA_MANAGER_SKIP_ENV) == "1":
+        log(f"[{room_name}] {_VIA_MANAGER_SKIP_ENV}=1 — 실장 경유 가드 강행 통과")
+        return None
+    return (f"임정은M 건은 이경연 실장을 통해서만 나갑니다(GM 지시 2026-08-16). "
+            f"'{room_name}' 방에는 임정은M 이 계셔서 실장을 건너뜁니다 — "
+            f"'{_VIA_MANAGER_ROOM}' 방으로 보내고 첫 줄을 '이경연 실장님, …' 으로 쓰세요. "
+            f"정말 이 방으로 보내야 하면 env {_VIA_MANAGER_SKIP_ENV}=1 로 다시 실행하세요.")
+
+
 def load_rooms_config() -> dict:
     return json.loads(ROOMS_CONFIG.read_text(encoding="utf-8"))
 
@@ -1130,6 +1175,11 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
     _jargon = warn_jargon(text)
     if _jargon:
         log(f"[{room_name}] ⚠ 실무진이 못 읽을 수 있는 말: {', '.join(_jargon)}")
+
+    _via = via_manager_violation(room_name, text)
+    if _via:
+        log(f"[{room_name}] ⛔ {_via}")
+        return False, "via_manager"
 
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(text):
         return False, "chairman_gate"
