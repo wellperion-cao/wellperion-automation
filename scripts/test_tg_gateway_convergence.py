@@ -7,6 +7,10 @@
 아래 8곳 중 실제 발신부 6곳을 관문 경유로 이동했다:
   naver_talktalk_custommenu.py · notify_gm_progress.py · publish_digest.py ·
   publish_register.py · send_review_card.py · wellperion-agents/telegram_notifier.py
+4차(2026-08-17 배255 4차): 남아있던 마지막 sendMessage 직접호출 2곳도 관문 경유로 이동 —
+  publish_register.py::_telegram_send_message · wellperion-agents/telegram_notifier.py::send.
+  telegram_notifier.send() 의 reply_markup(dict)은 gateway 가 urlencode 하므로 json.dumps 로
+  선직렬화해 extra 에 얹는다(send_review_card.py 가 이미 쓰던 방식과 동일, 회귀 아님).
 남긴 것(의도적, 회귀 아님):
   - precommit_sheet_link_guard.py — 발신부가 아니다. "sendPhoto" 는 이 파일이 *다른* 파일의
     알림 신호를 찾는 정규식 패턴 문자열일 뿐, 이 파일 자신은 텔레그램을 호출하지 않는다.
@@ -70,6 +74,23 @@ def _check_photo_targets() -> None:
         )
         assert "tg_outbound_log import" in src, f"{path.name} 이 발신 관문(tg_outbound_log)을 import 하지 않는다"
     print(f"OK[photo] — {len(PHOTO_TARGETS)}개 파일 sendPhoto/sendDocument 직접호출 0건 + 관문 import 확인")
+
+
+# 4차(2026-08-17) — 마지막 sendMessage 직접호출 2곳(경로가 scripts/ 밖에도 있어 별도 리스트).
+SENDMESSAGE_TARGETS = [
+    ROOT / "publish_register.py",
+    ROOT.parent / "wellperion-agents" / "telegram_notifier.py",
+]
+
+
+def _check_sendmessage_targets() -> None:
+    for path in SENDMESSAGE_TARGETS:
+        src = path.read_text(encoding="utf-8")
+        assert "/sendMessage" not in src, (
+            f"{path.name} 에 sendMessage 직접 호출이 남아있다 — tg_outbound_log.send() 관문 경유로 바꿔야 한다"
+        )
+        assert "tg_outbound_log import" in src, f"{path.name} 이 발신 관문(tg_outbound_log)을 import 하지 않는다"
+    print(f"OK[sendmessage] — {len(SENDMESSAGE_TARGETS)}개 파일 sendMessage 직접호출 0건 + 관문 import 확인")
 
 
 class _FakeResp:
@@ -211,9 +232,70 @@ def _check_send_review_card_message_id(tmp_path: Path) -> None:
     print("OK[callsite] — send_review_card.py 관문 호출 인자(chat_id/caption/photo/kind) + message_id 확인")
 
 
+def _check_publish_register_sendmessage() -> None:
+    """publish_register.py::_telegram_send_message 가 관문을 정확한 인자로 부르는지(4차)."""
+    import publish_register as pr_mod
+
+    calls = []
+
+    def _fake_gateway_send(token, chat_id, text, **kwargs):
+        calls.append({"token": token, "chat_id": chat_id, "text": text, **kwargs})
+        return True
+
+    with mock.patch.object(pr_mod, "_tg_gateway_send", side_effect=_fake_gateway_send), \
+         mock.patch.object(pr_mod, "_load_telegram_token", return_value="FAKE_TOKEN"):
+        pr_mod._telegram_send_message("테스트 문구")
+
+    assert len(calls) == 1, "gateway 가 정확히 1회 호출돼야 한다"
+    call = calls[0]
+    assert call["token"] == "FAKE_TOKEN"
+    assert call["chat_id"] == pr_mod.TELEGRAM_CHAT_ID
+    assert call["text"] == "테스트 문구"
+    assert call["kind"] == "sendMessage"
+    assert call["extra"] == {"disable_web_page_preview": "true"}, "disable_web_page_preview 옵션이 유실됐다"
+    print("OK[callsite] — publish_register._telegram_send_message 관문 호출 인자 확인")
+
+
+def _check_telegram_notifier_sendmessage() -> None:
+    """telegram_notifier.TelegramNotifier.send() 가 관문을 정확한 인자로 부르고
+    reply_markup 을 json.dumps 로 선직렬화해 얹는지 + message_id 왕복 확인(4차)."""
+    import sys as _sys
+    _wa = str((ROOT.parent / "wellperion-agents").resolve())
+    if _wa not in _sys.path:
+        _sys.path.insert(0, _wa)
+    import telegram_notifier as tn_mod
+
+    notifier = tn_mod.TelegramNotifier()
+    notifier.token = "FAKE_TOKEN"
+    notifier.chat_id = "12345"
+
+    calls = []
+
+    def _fake_gateway_send(token, chat_id, text, **kwargs):
+        calls.append({"token": token, "chat_id": chat_id, "text": text, **kwargs})
+        return {"ok": True, "result": {"message_id": 777}}
+
+    with mock.patch.object(tn_mod, "_tg_gateway_send", side_effect=_fake_gateway_send):
+        resp = notifier.send("본문", reply_markup={"inline_keyboard": [[{"text": "a", "callback_data": "b"}]]})
+
+    assert resp.get("result", {}).get("message_id") == 777, "full_response 로 message_id 를 못 뽑는다"
+    assert len(calls) == 1
+    call = calls[0]
+    assert call["token"] == "FAKE_TOKEN" and call["chat_id"] == "12345"
+    assert call["text"] == "본문"
+    assert call["kind"] == "sendMessage"
+    assert call.get("full_response") is True
+    assert call["extra"]["parse_mode"] == "HTML"
+    assert json.loads(call["extra"]["reply_markup"]) == {"inline_keyboard": [[{"text": "a", "callback_data": "b"}]]}, (
+        "reply_markup 이 json.dumps 로 선직렬화되지 않았다 — urlencode 되면 텔레그램이 거부한다"
+    )
+    print("OK[callsite] — telegram_notifier.send() 관문 호출 인자(reply_markup 직렬화) + message_id 확인")
+
+
 def main() -> int:
     _check_text_targets()
     _check_photo_targets()
+    _check_sendmessage_targets()
 
     import tempfile
     with tempfile.TemporaryDirectory() as td:
@@ -223,6 +305,9 @@ def main() -> int:
         _check_gateway_document(tmp_path)
         _check_gateway_missing_file_no_network()
         _check_send_review_card_message_id(tmp_path)
+
+    _check_publish_register_sendmessage()
+    _check_telegram_notifier_sendmessage()
 
     print("ALL OK — 텔레그램 발신 관문(sendMessage+sendPhoto+sendDocument) 수렴 검증 통과")
     return 0

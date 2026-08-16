@@ -1,4 +1,5 @@
 """텔레그램 업무 보고 알림 모듈 (인라인 버튼 승인 포함)"""
+import json
 import os
 import time
 import httpx
@@ -40,24 +41,22 @@ class TelegramNotifier:
         self.base_url = f"https://api.telegram.org/bot{self.token}"
 
     def send(self, message: str, reply_markup: dict = None) -> dict:
-        """메시지 전송. reply_markup 있으면 인라인 버튼 포함."""
+        """메시지 전송. reply_markup 있으면 인라인 버튼 포함.
+        발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입
+        (배255 4차, 2026-08-17)."""
         if not self.token or not self.chat_id:
             return {}
-        payload = {
-            "chat_id": self.chat_id,
-            "text": message,
-            "parse_mode": "HTML",
-        }
+        extra = {"parse_mode": "HTML"}
         if reply_markup:
-            payload["reply_markup"] = reply_markup
+            extra["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
         try:
-            pace()
-            resp = httpx.post(f"{self.base_url}/sendMessage", json=payload, timeout=10)
-            _r = resp.json()
-            log_outbound(message, chat_id=self.chat_id, source="telegram_notifier.send", ok=bool(_r.get("ok")), kind="sendMessage")
-            return _r
+            resp = _tg_gateway_send(
+                self.token, self.chat_id, message,
+                source="telegram_notifier.send", kind="sendMessage",
+                extra=extra, timeout=10, full_response=True,
+            )
+            return resp or {}
         except Exception:
-            log_outbound(message, chat_id=self.chat_id, source="telegram_notifier.send", ok=False, kind="sendMessage")
             return {}
 
     def send_approval_request(self, task_name: str, summary: str, task_key: str) -> int:

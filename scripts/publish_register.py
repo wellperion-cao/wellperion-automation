@@ -143,28 +143,20 @@ def _telegram_send_photo(photo_path: Path, caption: str) -> None:
 
 
 def _telegram_send_message(text: str) -> None:
-    """1줄 텍스트 보고 (montage 없거나 사진 발송 실패 시 폴백). 토큰 trace 미출력."""
+    """1줄 텍스트 보고 (montage 없거나 사진 발송 실패 시 폴백). 토큰 trace 미출력.
+    발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 4차, 2026-08-17)."""
     token = _load_telegram_token()
     if not token:
         print("[WARN] 텔레그램 토큰 미설정 — 보고 생략")
         return
     try:
-        import urllib.parse
-        import urllib.request
-
-        data = urllib.parse.urlencode(
-            {"chat_id": TELEGRAM_CHAT_ID, "text": text, "disable_web_page_preview": "true"}
-        ).encode("utf-8")
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST"
+        ok = _tg_gateway_send(
+            token, TELEGRAM_CHAT_ID, text,
+            source="publish_register._telegram_send_message", kind="sendMessage",
+            extra={"disable_web_page_preview": "true"}, timeout=10,
         )
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            ok = resp.status == 200
-        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_message", ok=ok, kind="sendMessage")
         print(f"[INFO] 텔레그램 보고 {'성공' if ok else '실패'}")
     except Exception:
-        log_outbound(text, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_message", ok=False, kind="sendMessage")
         print("[WARN] 텔레그램 보고 실패 (토큰 trace 노출 방지)")
 
 
