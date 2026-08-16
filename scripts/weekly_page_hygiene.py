@@ -28,6 +28,17 @@ weekly_page_hygiene.py — 주간 페이지 위생 자동화 (배 CTO-2026-07-14
      강제삭제·reset 금지).
   6) 텔레그램 요약 발송 + module_registry cto-weekly-page-hygiene 자율현황 노출.
 
+★2026-08-17 배662 수리(웰리 실측 25/44 실패 → 원인 규명): 실패 2종 다 콘텐츠 크기와
+  관련이지만 원인은 서로 다르다.
+    a) 타임아웃(20건) — claude -p 가 이 리포 cwd에서 매 호출마다 CLAUDE.md·메모리·
+       플러그인·훅을 통째로 로드해, 53KB짜리 작은 페이지조차 221초(240초 타임아웃 코앞)가
+       걸렸다. --safe-mode(훅·플러그인·CLAUDE.md 끄되 인증은 그대로 — --bare는
+       ANTHROPIC_API_KEY를 강제해 이 계정의 OAuth 로그인과 안 맞아 배제)로 같은 페이지가
+       28초로 줄었다(run_audit_claude).
+    b) JSON 파싱 실패(5건, 메인가이드·문의회원처럼 700KB+ 페이지) — 모델 생성이 늦은 게
+       아니라 claude -p 가 "Prompt is too long"으로 2초 만에 즉시 거부했다. CHUNK_MAX_CHARS
+       상수로 줄바꿈 경계에서 나눠 보낸다(_split_content_chunks/_run_audit_chunked).
+
 라이브 부작용 0 함수(순수) — build_audit_prompt, verify_zero_consumers(읽기전용 git grep),
 check_parse_integrity, apply_category_a(메모리상 문자열 연산), write_proposal_file은 파일
 1개만 쓴다(제안서). 실제 페이지 파일 쓰기·git commit은 run_pipeline()만 게이트에 따라 수행.
@@ -148,19 +159,58 @@ def _apply_live() -> bool:
     return os.environ.get(APPLY_ENV_VAR, "0") == "1"
 
 
+# ── 대형 페이지 청크 분할 (2026-08-17 배662 수리) ──
+# 실측(웰리 배662 재현): claude -p 프롬프트 783,664자(메인가이드 O1 섹션·페이지 원본 946KB)에서
+# "Prompt is too long"으로 2초 만에 즉시 거부됨 — 생성이 느린 게 아니라 CLI가 애초에 받지 않는다.
+# 505,639자(지원부 체계)는 거부되지 않고 접수됐다(경계는 그 사이 어딘가). CHUNK_MAX_CHARS는 그
+# 경계보다 넉넉히 낮게 잡아 페이지 크기와 무관하게 항상 통과하게 한다 — 이 값을 넘는 44페이지 중
+# 2곳(메인가이드·문의회원)만 분할 대상이고 나머지는 지금처럼 한 번에 감사한다.
+# ★200K로 잡은 이유(하드 상한 350K 대신): "Prompt too long" 회피 목적 하나뿐이면 350K도
+# 충분하지만, 실측 중 이 세션이 동시 실행 중인 다른 에이전트 다수와 자원을 다퉈 지원부 체계
+# (조각 250K)가 안전모드를 켜고도 240초 타임아웃을 두 조각 다 넘긴 사례가 나왔다 — 콘텐츠
+# 크기에 비례해 처리 시간도 늘어난다는 뜻. 조각을 더 작게 잡아 호출당 시간을 줄여 안전마진을 둔다.
+CHUNK_MAX_CHARS = 200_000
+
+
+def _split_content_chunks(content: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]:
+    """content가 max_chars보다 크면 줄바꿈 근처에서 잘라 청크 목록으로 나눈다(순수 함수).
+    후보(candidate)의 symbol/snippet은 항상 모델이 실제로 본 청크 텍스트 안에서만 나오므로
+    (청크 밖을 볼 수 없다) 청크 경계가 태그 중간을 지나도 안전 — apply_category_a의 게이트는
+    분할 없는 전체 파일 원문을 대상으로 별도 검증한다."""
+    if len(content) <= max_chars:
+        return [content]
+    chunks = []
+    start, n = 0, len(content)
+    while start < n:
+        end = min(start + max_chars, n)
+        if end < n:
+            nl = content.rfind("\n", start, end)
+            if nl > start:
+                end = nl + 1
+        chunks.append(content[start:end])
+        start = end
+    return chunks
+
+
 # ── 감사 프롬프트 조립 (순수 함수) ──
-def build_audit_prompt(target: dict, content: str) -> str:
+def build_audit_prompt(target: dict, content: str, chunk_index: int = 0, chunk_total: int = 1) -> str:
     anchor = target.get("anchor")
     scope_note = (
         f"\n\n★분석 범위 한정: id=\"{anchor}\" 섹션(및 그 하위 요소)만 후보 대상으로 삼는다. "
         "다른 섹션 내용은 후보에 포함하지 마라(참고용으로만 읽어라)."
         if anchor else ""
     )
+    chunk_note = (
+        f"\n\n★이 페이지는 커서 {chunk_total}개 조각으로 나눠 보낸다. 지금은 조각 {chunk_index + 1}/"
+        f"{chunk_total}만 보인다 — 이 조각 안에서 완결된 후보만 판단하라(잘린 태그·문장 경계는 "
+        "조각 분할 때문이니 그 자체를 낡은 코드로 보지 마라)."
+        if chunk_total > 1 else ""
+    )
     return (
         "너는 웰페리온 ERP 페이지 위생 감사관이다. 아래 HTML 페이지 전체를 검토해 "
         "무분별·무의미·중복·죽은 콘텐츠 후보를 찾아라. 너는 파일을 수정하지 않는다 — "
         "오직 JSON 분석 결과만 출력한다.\n\n"
-        f"페이지: {target.get('label')} ({target.get('path')}){scope_note}\n\n"
+        f"페이지: {target.get('label')} ({target.get('path')}){scope_note}{chunk_note}\n\n"
         "카테고리:\n"
         "A. 죽은 코드 — 미사용 CSS 클래스/ID, 미사용 JS 함수, 호출부 0인 죽은 마크업.\n"
         "B. 중복 설명 — 같은 내용이 페이지 내/페이지 간 두 곳 이상 반복.\n"
@@ -213,6 +263,13 @@ def run_audit_claude(prompt: str, timeout: int = 420, model: str = "claude-sonne
     """
     headless claude 감사 호출(welly_auto_runner의 LIVE 호출 패턴 재사용). 읽기전용 분석
     전용이라 --permission-mode plan(편집 불가)로 호출한다.
+
+    ★--safe-mode(2026-08-17 배662 수리): 실측 — 같은 53KB 페이지가 이 플래그 없이는 221초
+    (240초 타임아웃 코앞), 있으면 진짜 원인이 CLAUDE.md·메모리·플러그인·훅 로딩(콘텐츠 크기와
+    무관한 매 호출 고정비)이었음이 드러난다 — 이 감사는 순수 텍스트 분석뿐이라 그런 컨텍스트가
+    애초에 필요 없다. --bare는 더 강력하지만 ANTHROPIC_API_KEY를 강제해(OAuth·키체인 안 읽음)
+    이 계정 로그인 방식과 안 맞아 인증이 깨진다 — 확인 후 배제. --safe-mode는 인증 방식을
+    그대로 두고 훅·플러그인·CLAUDE.md만 끈다.
     반환: {"ok": bool, "candidates": list, "raw": str, "error": str|None}
     """
     claude_bin = _claude_bin()
@@ -224,6 +281,7 @@ def run_audit_claude(prompt: str, timeout: int = 420, model: str = "claude-sonne
         "--model", model,
         "--permission-mode", "plan",
         "--output-format", "text",
+        "--safe-mode",
     ]
     try:
         proc = subprocess.run(
@@ -536,6 +594,31 @@ def _append_log(entry: dict, path: str | None = None) -> None:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+def _run_audit_chunked(target: dict, content: str, claude_timeout: int, model: str) -> dict:
+    """content가 CHUNK_MAX_CHARS 이하면 지금처럼 1회 호출. 넘으면 여러 조각으로 나눠 각각
+    감사하고 후보를 합친다(부분 실패해도 성공한 조각 후보는 버리지 않는다 — 조용히 전부
+    버려지던 게 이번 수리의 핵심이라 일부 조각 성공을 온전한 실패로 뭉개면 안 된다).
+    반환: {"ok": bool, "candidates": list, "error": str|None(부분 실패 시 경고만)}
+    """
+    chunks = _split_content_chunks(content)
+    all_candidates: list[dict] = []
+    chunk_errors: list[str] = []
+    for i, chunk in enumerate(chunks):
+        prompt = build_audit_prompt(target, chunk, chunk_index=i, chunk_total=len(chunks))
+        audit = run_audit_claude(prompt, timeout=claude_timeout, model=model)
+        if audit["ok"]:
+            all_candidates.extend(audit["candidates"])
+        else:
+            chunk_errors.append(f"조각 {i + 1}/{len(chunks)}: {audit['error']}")
+
+    if chunk_errors and not all_candidates:
+        return {"ok": False, "candidates": [], "error": "; ".join(chunk_errors)}
+    if chunk_errors:
+        print(f"[weekly_page_hygiene] {target.get('label')} 일부 조각 실패(나머지로 계속): "
+              f"{'; '.join(chunk_errors)}", file=sys.stderr)
+    return {"ok": True, "candidates": all_candidates, "error": None}
+
+
 def _audit_one_target(target: dict, working_content: str, apply_gate: bool, force_dry_run: bool,
                        claude_timeout: int, model: str) -> dict:
     """
@@ -544,8 +627,7 @@ def _audit_one_target(target: dict, working_content: str, apply_gate: bool, forc
     적용 결과가 이미 반영된 상태일 수 있음).
     반환: {"target", "audit_ok", "error", "applied"(list), "proposed"(list), "content"(str, 최신)}
     """
-    prompt = build_audit_prompt(target, working_content)
-    audit = run_audit_claude(prompt, timeout=claude_timeout, model=model)
+    audit = _run_audit_chunked(target, working_content, claude_timeout, model)
     if not audit["ok"]:
         return {
             "target": target, "audit_ok": False, "error": audit["error"],
@@ -597,7 +679,7 @@ def _audit_one_target(target: dict, working_content: str, apply_gate: bool, forc
 
 
 def run_pipeline(clevel: str | None = "coo", apply: bool | None = None, force_dry_run: bool = False,
-                  claude_timeout: int = 240, model: str = "claude-sonnet-4-6",
+                  claude_timeout: int = 300, model: str = "claude-sonnet-4-6",
                   targets: list[dict] | None = None, notify: bool = True,
                   log_path: str | None = None) -> dict:
     """
@@ -715,7 +797,7 @@ def main() -> int:
     parser.add_argument("--clevel", default="coo", help="대상 C-Level(기본 coo). 'all'이면 전체 config 대상")
     parser.add_argument("--dry-run", action="store_true", help="PAGE_HYGIENE_APPLY=1이어도 이번 실행만 강제 미적용(검증용)")
     parser.add_argument("--no-notify", action="store_true", help="텔레그램 요약 발송 생략(검증용)")
-    parser.add_argument("--claude-timeout", type=int, default=240, help="페이지당 headless claude 타임아웃(초)")
+    parser.add_argument("--claude-timeout", type=int, default=300, help="조각(청크)당 headless claude 타임아웃(초)")
     parser.add_argument("--model", default="claude-sonnet-4-6", help="감사에 사용할 모델")
     parser.add_argument("--limit", type=int, default=None, help="대상 target 수 제한(검증용 — 앞에서부터 N개만)")
     args = parser.parse_args()
