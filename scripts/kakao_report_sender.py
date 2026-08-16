@@ -924,7 +924,11 @@ def _dedup_signature(room_name: str, text: str = "", image_path: Path | None = N
     """(방, 본문[, 이미지 내용]) 조합의 서명. 이미지가 있으면 파일 내용까지 해시에 포함해
     "같은 이미지를 다른 파일명으로 두 번 보내는" 케이스도 같은 서명으로 잡는다."""
     h = hashlib.sha256()
-    h.update(room_name.strip().encode("utf-8"))
+    # 방 이름은 _room_core_key 로 정규화한다(2026-08-17 시토). 방 찾기는 이미 공백·별표·
+    # 회사이름을 무시해 「★ 운영부」와 「★운영부」를 같은 방으로 보내는데, 중복 가드만
+    # 원문을 키로 써서 두 방으로 봤다 — 표기가 다른 호출부가 하나라도 남아 있으면 같은
+    # 내용이 같은 방에 두 번 나간다(실측 2026-08-15 ★운영부 두 표기 동시 사용).
+    h.update(_room_core_key(room_name).encode("utf-8"))
     h.update(b"\x00")
     h.update((text or "").strip().encode("utf-8"))
     if image_path is not None:
@@ -1022,7 +1026,8 @@ def check_near_dup(room_name: str, text: str) -> tuple[bool, float]:
         return False, 0.0
     now = time.time()
     for e in _load_dedup_ledger():
-        if e.get("room") != room_name or now - e.get("ts", 0) >= NEAR_DUP_WINDOW_SEC:
+        if (_room_core_key(e.get("room")) != _room_core_key(room_name)
+                or now - e.get("ts", 0) >= NEAR_DUP_WINDOW_SEC):
             continue
         wp = _word_set(str(e.get("text") or ""))
         if len(wp) < 3:
