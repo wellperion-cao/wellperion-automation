@@ -239,10 +239,9 @@ def _send_photo(chat_id: int, caption: str, image_path: str) -> bool:
     """그림 1장 + 설명을 방에 보낸다. 실패하면 False (호출부가 글만 보내는 쪽으로 떨어진다).
 
     2026-08-08 GM 지시로 추가 — 방별 요약 카드를 만들었는데 이 방에 보여줄 길이 없었다.
-    발신 관문은 하나로 유지한다: 새 발신 스크립트를 만들지 않고 이 파일 안에 둔다(약속 L21).
-    텔레그램 설명(caption)은 1024자 상한이라 넘치면 잘라 보낸다 — 잘린 티가 나게 …을 붙인다.
+    발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 3차,
+    2026-08-17). 텔레그램 설명(caption)은 1024자 상한이라 넘치면 잘라 보낸다.
     """
-    import mimetypes, urllib.request, uuid, io, json as _json
     p = Path(image_path)
     if not p.exists():
         print(f"[notify_gm_progress] 그림 파일 없음: {p}", file=sys.stderr)
@@ -260,29 +259,15 @@ def _send_photo(chat_id: int, caption: str, image_path: str) -> bool:
     if not token:
         return False
     cap = caption if len(caption) <= 1024 else caption[:1020].rstrip() + "…"
-    b = uuid.uuid4().hex
-    buf = io.BytesIO()
-
-    def part(name, val):
-        buf.write(f'--{b}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{val}\r\n'.encode())
-
-    part("chat_id", str(chat_id))
-    part("caption", cap)
-    ctype = mimetypes.guess_type(p.name)[0] or "image/png"
-    buf.write(f'--{b}\r\nContent-Disposition: form-data; name="photo"; '
-              f'filename="{p.name}"\r\nContent-Type: {ctype}\r\n\r\n'.encode())
-    buf.write(p.read_bytes())
-    buf.write(f"\r\n--{b}--\r\n".encode())
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendPhoto", data=buf.getvalue(),
-        headers={"Content-Type": f"multipart/form-data; boundary={b}"})
     try:
-        with urllib.request.urlopen(req, timeout=40) as r:
-            return bool(_json.loads(r.read().decode("utf-8")).get("ok"))
+        from tg_outbound_log import send as _tg_gateway_send
     except Exception as exc:
-        print(f"[notify_gm_progress] 그림 발송 예외: {type(exc).__name__}: {str(exc)[:120]}",
-              file=sys.stderr)
+        print(f"[notify_gm_progress] TG 관문 임포트 실패: {exc}", file=sys.stderr)
         return False
+    return _tg_gateway_send(
+        token, chat_id, cap, source="notify_gm_progress._send_photo",
+        kind="sendPhoto", photo=str(p), timeout=40,
+    )
 
 
 def notify(summary: str, link: str | None = None, *, ship: str | None = None,

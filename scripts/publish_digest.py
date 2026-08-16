@@ -44,15 +44,10 @@ import json
 import os
 import re
 import sys
-import time
-import urllib.error
-import urllib.request
 
-try:  # 전역 발송 페이싱(프로세스 간 429 방지) + 발신 관문(sendMessage) — best-effort
-    from tg_outbound_log import pace as _tg_pace, send as _tg_gateway_send
+try:  # 발신 관문(sendMessage/sendPhoto) — best-effort
+    from tg_outbound_log import send as _tg_gateway_send
 except Exception:
-    def _tg_pace(*_a, **_k):
-        return None
     def _tg_gateway_send(*_a, **_k):
         return False
 
@@ -461,51 +456,15 @@ def _first_slide_image(group: list[dict]) -> str:
 
 
 def _send_photo(token: str, chat_id: str, photo_path: str, caption: str) -> bool:
-    """인스타그램 메인 1장을 sendPhoto로 첨부 + 캡션(디제스트 본문). 페이싱 + 429 자가재시도.
+    """인스타그램 메인 1장을 sendPhoto로 첨부 + 캡션(디제스트 본문). 발신 관문
+    (tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 3차, 2026-08-17).
     GM 원안='메인 1장 뷰' — IG URL 프리뷰가 아니라 실제 이미지 업로드라 IG 차단과 무관하게 항상 뜬다."""
     try:
-        with open(photo_path, "rb") as f:
-            photo_bytes = f.read()
-    except Exception:
+        return _tg_gateway_send(token, chat_id, caption, source="publish_digest._send_photo",
+                                 kind="sendPhoto", photo=photo_path, timeout=20)
+    except Exception as ex:
+        print(f"[digest] sendPhoto 오류: {ex}", file=sys.stderr)
         return False
-    boundary = "----wpdigest" + os.urandom(8).hex()
-    fname = os.path.basename(photo_path) or "photo.jpg"
-
-    def _field(name: str, value: str) -> bytes:
-        return (f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n'
-                f'{value}\r\n').encode("utf-8")
-
-    body = (
-        _field("chat_id", str(chat_id))
-        + _field("caption", caption)
-        + (f'--{boundary}\r\nContent-Disposition: form-data; name="photo"; '
-           f'filename="{fname}"\r\nContent-Type: image/jpeg\r\n\r\n').encode("utf-8")
-        + photo_bytes + b"\r\n"
-        + f"--{boundary}--\r\n".encode("utf-8")
-    )
-    url = f"https://api.telegram.org/bot{token}/sendPhoto"
-    for attempt in range(6):
-        _tg_pace()
-        try:
-            req = urllib.request.Request(url, data=body, method="POST")
-            req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                return resp.status == 200
-        except urllib.error.HTTPError as ex:
-            if ex.code == 429 and attempt < 5:
-                ra = 3
-                try:
-                    ra = int(json.loads(ex.read().decode()).get("parameters", {}).get("retry_after", 3))
-                except Exception:
-                    pass
-                time.sleep(min(ra + 2 * (attempt + 1), 60))
-                continue
-            print(f"[digest] sendPhoto 실패 HTTP {ex.code}: {ex.reason}", file=sys.stderr)
-            return False
-        except Exception as ex:
-            print(f"[digest] sendPhoto 오류: {ex}", file=sys.stderr)
-            return False
-    return False
 
 
 def send_publish_digest(

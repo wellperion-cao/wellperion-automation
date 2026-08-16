@@ -18,16 +18,18 @@ if _canonical_env.exists():
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
     import sys as _sys
     _scr = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
     if _scr not in _sys.path:
         _sys.path.insert(0, _scr)
-    from tg_outbound_log import log_outbound, pace
+    from tg_outbound_log import log_outbound, pace, send as _tg_gateway_send
 except Exception:
     def log_outbound(*a, **k):
         pass
     def pace(*a, **k):
+        return None
+    def _tg_gateway_send(*a, **k):
         return None
 
 
@@ -75,51 +77,40 @@ class TelegramNotifier:
         return result.get("result", {}).get("message_id", 0)
 
     def send_photo(self, image_path: str, caption: str = None) -> dict:
-        """사진 전송 (sendPhoto). caption UTF-8 한글 지원. API 응답 dict 반환."""
+        """사진 전송 (sendPhoto). caption UTF-8 한글 지원. API 응답 dict 반환.
+        발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입
+        (배255 3차, 2026-08-17)."""
         if not self.token or not self.chat_id:
             return {}
         if not os.path.exists(image_path):
             return {"ok": False, "description": "file not found"}
-        data = {"chat_id": self.chat_id}
-        if caption:
-            data["caption"] = caption
-            data["parse_mode"] = "HTML"
         try:
-            pace()
-            with open(image_path, "rb") as f:
-                resp = httpx.post(
-                    f"{self.base_url}/sendPhoto",
-                    data=data,
-                    files={"photo": f},
-                    timeout=30,
-                )
-            _r = resp.json()
-            log_outbound(caption or "", chat_id=self.chat_id, source="telegram_notifier.send_photo", ok=bool(_r.get("ok")), kind="sendPhoto")
-            return _r
+            resp = _tg_gateway_send(
+                self.token, self.chat_id, caption or "",
+                source="telegram_notifier.send_photo", kind="sendPhoto", photo=image_path,
+                extra=({"parse_mode": "HTML"} if caption else None),
+                timeout=30, full_response=True,
+            )
+            return resp or {"ok": False}
         except Exception as e:
-            log_outbound(caption or "", chat_id=self.chat_id, source="telegram_notifier.send_photo", ok=False, kind="sendPhoto")
             return {"ok": False, "description": str(e)}
 
     def send_document(self, file_path: str, caption: str = None) -> dict:
-        """파일(산출물) 전송 (sendDocument). caption UTF-8 한글 지원. API 응답 dict 반환."""
+        """파일(산출물) 전송 (sendDocument). caption UTF-8 한글 지원. API 응답 dict 반환.
+        발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입
+        (배255 3차, 2026-08-17 — 이전엔 관문 밖 직접 호출이었다)."""
         if not self.token or not self.chat_id:
             return {}
         if not os.path.exists(file_path):
             return {"ok": False, "description": "file not found"}
-        data = {"chat_id": self.chat_id}
-        if caption:
-            data["caption"] = caption
-            data["parse_mode"] = "HTML"
         try:
-            pace()
-            with open(file_path, "rb") as f:
-                resp = httpx.post(
-                    f"{self.base_url}/sendDocument",
-                    data=data,
-                    files={"document": f},
-                    timeout=60,
-                )
-            return resp.json()
+            resp = _tg_gateway_send(
+                self.token, self.chat_id, caption or "",
+                source="telegram_notifier.send_document", kind="sendDocument", document=file_path,
+                extra=({"parse_mode": "HTML"} if caption else None),
+                timeout=60, full_response=True,
+            )
+            return resp or {"ok": False}
         except Exception as e:
             return {"ok": False, "description": str(e)}
 

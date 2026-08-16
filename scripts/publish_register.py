@@ -35,13 +35,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # review_queue.json 쓰기 단일 관문(락 직렬화 · 2026-07-23 · 07-21 AI하루 10편 소실 재발방지)
 from review_queue_util import mutate_review_queue  # noqa: E402
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound, pace, send as _tg_gateway_send
 except Exception:
     def log_outbound(*a, **k):
         pass
     def pace(*a, **k):
         return None
+    def _tg_gateway_send(*a, **k):
+        return False
 
 try:  # 저신호 무음 플래그(best-effort) — 임포트 실패해도 발신 무영향(False 폴백)
     _tgb = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'telegram_bot'))
@@ -118,7 +120,8 @@ TELEGRAM_CHAT_ID: str = _load_env_value(TELEGRAM_CHAT_ID_ENV_KEY)  # telegram_bo
 
 
 def _telegram_send_photo(photo_path: Path, caption: str) -> None:
-    """montage 사진 + 1줄 캡션 발송. 실패해도 절대 예외로 죽지 않음(토큰 trace 미출력)."""
+    """montage 사진 + 1줄 캡션 발송. 발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·
+    로깅 자동 편입(배255 3차, 2026-08-17). 실패해도 절대 예외로 죽지 않음(토큰 trace 미출력)."""
     token = _load_telegram_token()
     if not token:
         print("[WARN] 텔레그램 토큰 미설정 — montage 발송 생략 (env: TELEGRAM_BOT_TOKEN)")
@@ -128,45 +131,14 @@ def _telegram_send_photo(photo_path: Path, caption: str) -> None:
         _telegram_send_message(caption)
         return
     try:
-        import urllib.request
-        import uuid
-
-        boundary = f"----wp{uuid.uuid4().hex}"
-        url = f"https://api.telegram.org/bot{token}/sendPhoto"
-
-        def _field(name: str, value: str) -> bytes:
-            return (
-                f"--{boundary}\r\n"
-                f'Content-Disposition: form-data; name="{name}"\r\n\r\n'
-                f"{value}\r\n"
-            ).encode("utf-8")
-
-        photo_bytes = photo_path.read_bytes()
-        body = bytearray()
-        body += _field("chat_id", TELEGRAM_CHAT_ID)
-        body += _field("caption", caption)
-        body += (
-            f"--{boundary}\r\n"
-            f'Content-Disposition: form-data; name="photo"; filename="{photo_path.name}"\r\n'
-            f"Content-Type: image/png\r\n\r\n"
-        ).encode("utf-8")
-        body += photo_bytes
-        body += f"\r\n--{boundary}--\r\n".encode("utf-8")
-
-        req = urllib.request.Request(
-            url,
-            data=bytes(body),
-            method="POST",
-            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+        ok = _tg_gateway_send(
+            token, TELEGRAM_CHAT_ID, caption,
+            source="publish_register._telegram_send_photo",
+            kind="sendPhoto", photo=str(photo_path), timeout=20,
         )
-        pace()
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            ok = resp.status == 200
-        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_photo", ok=ok, kind="sendPhoto")
         print(f"[INFO] 텔레그램 montage 발송 {'성공' if ok else '실패'} (chat={TELEGRAM_CHAT_ID})")
     except Exception:
         # 토큰 trace 노출 방지 — 예외 상세 미출력
-        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="publish_register._telegram_send_photo", ok=False, kind="sendPhoto")
         print("[WARN] 텔레그램 montage 발송 실패 (상세 미출력 — 토큰 trace 노출 방지)")
 
 

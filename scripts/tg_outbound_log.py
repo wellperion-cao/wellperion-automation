@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """텔레그램 발신 메시지 공용 로깅 + 30일 자동 정리.
 best-effort: 로깅 실패가 실제 발신을 절대 막지 않는다(전부 예외 무시)."""
-import os, json, glob, datetime, time, re
+import os, json, glob, datetime, time, re, mimetypes
+from pathlib import Path
 
 _LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
 _RETAIN_DAYS = 30
@@ -149,23 +150,81 @@ def encode_url_spaces(text):
     return _URL_WITH_SPACE.sub(_fix, str(text or ''))
 
 
+# kind → 텔레그램 API 필드명(제목 텍스트를 담을 자리). sendMessage=text, 그 외는 caption.
+_TEXT_FIELD = {'sendMessage': 'text', 'sendPhoto': 'caption', 'sendDocument': 'caption'}
+
+
+def _read_upload(spec):
+    """spec = 파일 경로(str/Path). 반환 (bytes, filename) — 읽기 실패 시 (None, None)."""
+    try:
+        p = Path(spec)
+        return p.read_bytes(), p.name
+    except Exception:
+        return None, None
+
+
+def _build_multipart(payload, file_field, filename, file_bytes):
+    """{필드:값} + 파일 1개 → (body bytes, headers dict). sendPhoto/sendDocument 업로드용."""
+    boundary = 'wpgw' + os.urandom(12).hex()
+    parts = []
+    for k, v in payload.items():
+        parts.append(
+            ('--%s\r\nContent-Disposition: form-data; name="%s"\r\n\r\n%s\r\n'
+             % (boundary, k, v)).encode('utf-8'))
+    ctype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+    parts.append(
+        ('--%s\r\nContent-Disposition: form-data; name="%s"; filename="%s"\r\n'
+         'Content-Type: %s\r\n\r\n' % (boundary, file_field, filename, ctype)).encode('utf-8'))
+    parts.append(file_bytes)
+    parts.append(('\r\n--%s--\r\n' % boundary).encode('utf-8'))
+    return b''.join(parts), {'Content-Type': 'multipart/form-data; boundary=%s' % boundary}
+
+
 def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
-         min_interval=_MIN_INTERVAL, max_attempts=6, timeout=15):
+         min_interval=_MIN_INTERVAL, max_attempts=6, timeout=15,
+         photo=None, document=None, full_response=False):
     """페이싱 + 429 자가재시도(retry_after 존중) + 로깅 통합 발송. return ok(bool).
-    각 루틴이 자체 urlopen 대신 이 함수를 쓰면 전역 페이싱에 자동 편입된다."""
+    각 루틴이 자체 urlopen 대신 이 함수를 쓰면 전역 페이싱에 자동 편입된다.
+
+    photo/document: 파일 경로(str/Path). 주면 kind 는 자동으로 sendPhoto/sendDocument 로
+    바뀌고(명시 kind 는 무시) multipart 업로드로 보낸다. text 는 caption 으로 실린다
+    (배255, 2026-08-17 — 사진·문서 발신도 페이싱·재시도·로깅 관문에 편입).
+    full_response=True 면 bool 대신 텔레그램 응답 dict 를 그대로 돌려준다 — 호출측이
+    message_id 등 응답 필드가 필요할 때만 쓴다(기본은 기존과 동일한 bool, 회귀 없음)."""
     import urllib.request, urllib.parse, urllib.error
     text = encode_url_spaces(text)
     _log_lint(lint_outbound(text, chat_id, source), chat_id, source)
-    payload = {'chat_id': chat_id, 'text': text}
+
+    file_field = file_bytes = file_name = None
+    if photo is not None:
+        kind = 'sendPhoto'
+        file_field = 'photo'
+        file_bytes, file_name = _read_upload(photo)
+    elif document is not None:
+        kind = 'sendDocument'
+        file_field = 'document'
+        file_bytes, file_name = _read_upload(document)
+
+    if (photo is not None or document is not None) and file_bytes is None:
+        # 파일을 못 읽으면 네트워크를 두드리지 않는다 — 실패도 로그에는 남긴다.
+        log_outbound(text, chat_id=chat_id, source=source, ok=False, kind=kind)
+        return {'ok': False} if full_response else False
+
+    payload = {'chat_id': chat_id, _TEXT_FIELD.get(kind, 'text'): text}
     if extra:
         payload.update(extra)
-    data = urllib.parse.urlencode(payload).encode('utf-8')
-    url = 'https://api.telegram.org/bot%s/sendMessage' % token
+    url = 'https://api.telegram.org/bot%s/%s' % (token, kind)
     ok = False
+    resp_json = None
     for attempt in range(max_attempts):
         pace(min_interval)
         try:
-            req = urllib.request.Request(url, data=data, method='POST')
+            if file_bytes is not None:
+                data, headers = _build_multipart(payload, file_field, file_name, file_bytes)
+                req = urllib.request.Request(url, data=data, method='POST', headers=headers)
+            else:
+                data = urllib.parse.urlencode(payload).encode('utf-8')
+                req = urllib.request.Request(url, data=data, method='POST')
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 # ★2026-08-04 시토: HTTP 200 만으로는 부족하다 — 텔레그램 Bot API 는
                 #   일부 검증 오류에서도 200 + {"ok": false} 를 돌려준다(문서화된 동작).
@@ -173,7 +232,8 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
                 #   (오늘 카톡 발신에서 같은 부류 버그 2건 잡음 — 배347/348). 응답 본문의
                 #   ok 필드까지 확인해야 진짜 성공이다.
                 body = resp.read().decode('utf-8', 'replace')
-                ok = resp.status == 200 and json.loads(body).get('ok') is True
+                resp_json = json.loads(body)
+                ok = resp.status == 200 and resp_json.get('ok') is True
                 break
         except urllib.error.HTTPError as ex:
             if ex.code == 429 and attempt < max_attempts - 1:
@@ -191,6 +251,8 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
         log_outbound(text, chat_id=chat_id, source=source, ok=ok, kind=kind)
     except Exception:
         pass
+    if full_response:
+        return resp_json if resp_json is not None else {'ok': False}
     return ok
 
 

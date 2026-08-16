@@ -25,12 +25,14 @@ from pathlib import Path
 import urllib.parse
 import urllib.request
 
-try:  # 발신 공용 로깅(best-effort) — 임포트 실패해도 발신 무영향
-    from tg_outbound_log import log_outbound, pace
+try:  # 발신 관문(best-effort) — 임포트 실패해도 발신 무영향
+    from tg_outbound_log import log_outbound, pace, send as _tg_gateway_send
 except Exception:
     def log_outbound(*a, **k):
         pass
     def pace(*a, **k):
+        return None
+    def _tg_gateway_send(*a, **k):
         return None
 
 ROOT = Path(r"C:\Users\jjky0\welperion-automation")
@@ -166,17 +168,6 @@ def _save_msgids(d: dict) -> None:
         pass
 
 
-def _extract_msg_id(resp) -> int | None:
-    """텔레그램 API 응답 본문에서 result.message_id 추출."""
-    try:
-        payload = json.loads(resp.read().decode("utf-8"))
-        if payload.get("ok"):
-            return payload.get("result", {}).get("message_id")
-    except Exception:
-        pass
-    return None
-
-
 def _delete_message(token: str, msg_id: int) -> bool:
     """봇이 보낸 이전 카드 삭제(48시간 내 가능). 실패는 무시(이미 지웠거나 만료)."""
     data = urllib.parse.urlencode(
@@ -192,55 +183,37 @@ def _delete_message(token: str, msg_id: int) -> bool:
 
 
 def _send_text_card(token: str, caption: str, keyboard: dict, item_id: str) -> int | None:
-    """이미지 없을 때 텍스트 카드 폴백. message_id 반환(실패 None)."""
-    data = urllib.parse.urlencode({
-        "chat_id": TELEGRAM_CHAT_ID, "text": caption, "parse_mode": "HTML",
-        "disable_web_page_preview": "true",
-        "reply_markup": json.dumps(keyboard, ensure_ascii=False),
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendMessage", data=data, method="POST")
-    try:
-        pace()
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            mid = _extract_msg_id(resp)
-            print(f"[INFO] 카드(텍스트 폴백) 발송 {'성공' if mid else '실패'}: {item_id}")
-            log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_text_card", ok=bool(mid), kind="sendMessage")
-            return mid
-    except Exception:
-        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_text_card", ok=False, kind="sendMessage")
-        print("[WARN] 카드 발송 실패 (토큰 trace 노출 방지로 상세 미출력)")
-        return None
+    """이미지 없을 때 텍스트 카드 폴백. message_id 반환(실패 None).
+    발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 3차,
+    2026-08-17). full_response=True 로 응답 dict 를 받아 message_id 를 뽑는다."""
+    resp = _tg_gateway_send(
+        token, TELEGRAM_CHAT_ID, caption,
+        source="send_review_card._send_text_card", kind="sendMessage",
+        extra={"parse_mode": "HTML", "disable_web_page_preview": "true",
+               "reply_markup": json.dumps(keyboard, ensure_ascii=False)},
+        timeout=10, full_response=True,
+    )
+    mid = (resp or {}).get("result", {}).get("message_id")
+    print(f"[INFO] 카드(텍스트 폴백) 발송 {'성공' if mid else '실패'}: {item_id}")
+    return mid
 
 
 def _send_photo_card(token: str, caption: str, keyboard: dict,
                      photo: Path, item_id: str) -> int | None:
-    """sendPhoto multipart (montage 이미지 + caption + 인라인 버튼). message_id 반환(실패 None)."""
-    boundary = "----WellperionCard" + os.urandom(12).hex()
-    pre = []
-    for name, value in (("chat_id", TELEGRAM_CHAT_ID), ("caption", caption),
-                        ("parse_mode", "HTML"),
-                        ("reply_markup", json.dumps(keyboard, ensure_ascii=False))):
-        pre.append(
-            f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n"
-            .encode("utf-8"))
-    head = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"photo\"; "
-            f"filename=\"{photo.name}\"\r\nContent-Type: image/png\r\n\r\n").encode("utf-8")
-    body = b"".join(pre) + head + photo.read_bytes() + f"\r\n--{boundary}--\r\n".encode("utf-8")
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendPhoto", data=body, method="POST")
-    req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
-    try:
-        pace()
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            mid = _extract_msg_id(resp)
-            print(f"[INFO] 검수카드(이미지) 발송 {'성공' if mid else '실패'}: {item_id}")
-            log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_photo_card", ok=bool(mid), kind="sendPhoto")
-            return mid
-    except Exception:
-        log_outbound(caption, chat_id=TELEGRAM_CHAT_ID, source="send_review_card._send_photo_card", ok=False, kind="sendPhoto")
+    """sendPhoto (montage 이미지 + caption + 인라인 버튼). message_id 반환(실패 None).
+    발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 3차,
+    2026-08-17)."""
+    resp = _tg_gateway_send(
+        token, TELEGRAM_CHAT_ID, caption,
+        source="send_review_card._send_photo_card", kind="sendPhoto", photo=str(photo),
+        extra={"parse_mode": "HTML", "reply_markup": json.dumps(keyboard, ensure_ascii=False)},
+        timeout=20, full_response=True,
+    )
+    mid = (resp or {}).get("result", {}).get("message_id")
+    print(f"[INFO] 검수카드(이미지) 발송 {'성공' if mid else '실패'}: {item_id}")
+    if mid is None:
         print("[WARN] 검수카드(이미지) 발송 실패 — 텍스트 폴백 시도")
-        return None
+    return mid
 
 
 def send_card(item: dict, force: bool = False,
