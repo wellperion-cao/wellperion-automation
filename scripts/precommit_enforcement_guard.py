@@ -40,6 +40,15 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+# PASS/WARN/BLOCK 판정 로그 — 여러 가드 공용(2026-08-17, scripts/precommit_
+# phantom_delete_guard.py 참조). import 실패해도 가드는 그대로 동작(fail-soft).
+# (기존 E.log_event 는 그대로 둔다 — VIOLATION/BYPASS 세부는 logs/enforcement.log 몫.)
+try:
+    from precommit_phantom_delete_guard import log_guard_decision
+except Exception:
+    def log_guard_decision(*_a, **_kw):
+        pass
+
 
 def main() -> int:
     try:
@@ -50,15 +59,18 @@ def main() -> int:
             sys.stderr.write(f"[enforcement-guard][WARN] 엔진 로드 실패 — 통과: {exc!r}\n")
         except Exception:
             pass
+        log_guard_decision("enforcement", "WARN", f"엔진 로드 실패: {exc!r}")
         return 0
 
     try:
         mode = E.get_mode()
         if mode == E.ENFORCE_MODE_OFF:
+            log_guard_decision("enforcement", "PASS", "mode=off")
             return 0  # 완전 무동작
 
         files = E.staged_files()
         if not files:
+            log_guard_decision("enforcement", "PASS", "staged 파일 없음")
             return 0
 
         v_canon = E.check_canon_promise_change(files)
@@ -74,6 +86,7 @@ def main() -> int:
             violations.append(("보안 차단 라이브 발효", v_sec))
 
         if not violations:
+            log_guard_decision("enforcement", "PASS")
             return 0  # 위반 없음
 
         # GM 승인 우회?
@@ -84,6 +97,10 @@ def main() -> int:
                     f"{kind} 감지했으나 GM 승인 우회([GM-approved]/플래그) → 통과: {items[:3]}",
                 )
             print("[enforcement-guard] ✅ GM 승인 우회 — 위반 통과(로그 기록)")
+            log_guard_decision(
+                "enforcement", "WARN",
+                "위반 %d건 GM 승인 우회" % len(violations),
+            )
             return 0
 
         # 위반 출력 + 로그
@@ -97,10 +114,18 @@ def main() -> int:
 
         if E.should_block(mode):
             print("  → mode=block: 커밋 차단. 정당 변경이면 커밋 메시지에 [GM-approved] 추가 후 재커밋.")
+            log_guard_decision(
+                "enforcement", "BLOCK",
+                "위반 %d건(mode=block): %s" % (len(violations), ", ".join(k for k, _ in violations)),
+            )
             return 1
 
         # warn(또는 알 수 없는 값=warn 폴백): 절대 비차단
         print("  → mode=warn: 감지·로그만, 커밋은 통과(차단하려면 GM go 후 enforcement_mode.json mode=block).")
+        log_guard_decision(
+            "enforcement", "WARN",
+            "위반 %d건(mode=warn, 비차단): %s" % (len(violations), ", ".join(k for k, _ in violations)),
+        )
         return 0
 
     except Exception as exc:
@@ -109,11 +134,13 @@ def main() -> int:
             sys.stderr.write(f"[enforcement-guard][WARN] 내부 오류 — 통과(fail-open): {exc!r}\n")
         except Exception:
             pass
+        log_guard_decision("enforcement", "WARN", f"내부 오류 fail-open: {exc!r}")
         return 0
 
 
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except Exception:
+    except Exception as exc:
+        log_guard_decision("enforcement", "WARN", f"최상위 예외 fail-open: {exc!r}")
         sys.exit(0)

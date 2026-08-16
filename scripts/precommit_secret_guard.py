@@ -45,6 +45,14 @@ import re
 import subprocess
 import sys
 
+# PASS/WARN/BLOCK 판정 로그 — 여러 가드 공용(2026-08-17, scripts/precommit_
+# phantom_delete_guard.py 참조). import 실패해도 가드는 그대로 동작(fail-soft).
+try:
+    from precommit_phantom_delete_guard import log_guard_decision
+except Exception:
+    def log_guard_decision(*_a, **_kw):
+        pass
+
 # _archive·node_modules 는 검사 제외.
 EXCLUDE_SUBSTRINGS = ("scripts/_archive", "node_modules")
 
@@ -53,6 +61,7 @@ EXCLUDE_SUBSTRINGS = ("scripts/_archive", "node_modules")
 SELF_EXEMPT_PATHS = (
     "scripts/precommit_secret_guard.py",
     "tests/test_precommit_secret_guard.py",
+    "tests/test_precommit_guard_logging.py",
 )
 
 # (사람이 읽을 이름, 패턴) — 고신뢰 패턴만. 순서대로 검사.
@@ -178,11 +187,13 @@ def main():
         sys.stderr.write(
             "[secret-guard][WARN] %s=1 — 가드 우회(통과)\n" % SKIP_ENV
         )
+        log_guard_decision("secret", "WARN", "SKIP_SECRET_GUARD=1 우회")
         return 0
 
     files = staged_files()
     if files is None:
         sys.stderr.write("[secret-guard][WARN] git diff 실패 — 통과(fail-open)\n")
+        log_guard_decision("secret", "WARN", "git diff 실패 fail-open")
         return 0
 
     all_violations = []
@@ -230,8 +241,13 @@ def main():
             "============================================================\n"
             % SKIP_ENV
         )
+        log_guard_decision(
+            "secret", "BLOCK", "비밀값 %d건 감지" % len(all_violations),
+            [d for d, _, _, _ in all_violations],
+        )
         return 1
 
+    log_guard_decision("secret", "PASS")
     return 0
 
 
@@ -242,4 +258,5 @@ if __name__ == "__main__":
         sys.stderr.write(
             "[secret-guard][WARN] 가드 내부 오류 — 통과(fail-open): %r\n" % (exc,)
         )
+        log_guard_decision("secret", "WARN", "내부 오류 fail-open: %r" % (exc,))
         sys.exit(0)

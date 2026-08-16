@@ -79,6 +79,38 @@ def _log_block(kind: str, paths, root: str = "."):
         pass
 
 
+# ── 여러 가드 공용 PASS/WARN/BLOCK 판정 로그(2026-08-17 시토 — 배 가드판정로그구멍) ──
+# 배경: secret·truncation·enforcement·queue·erp_anchor·sheet_link 6개 pre-commit
+# 가드가 막았는지 통과시켰는지 아무 데도 안 남아, "한 번도 안 막혔는지 / 막혔는데
+# 기록만 없는지"를 구분할 수 없었다(2026-08-17 시토 자가점검). 2026-08-04 GM 이 이
+# 파일(_log_block)에 박은 "조용히 통과/차단 금지" 원칙이 바로 다음 날 만든
+# gas_deploy_guard 등에는 반영되지 않은 채 반복됐다 — 새 로그 파일을 또 만들지
+# 않고 이미 있는 이 자리(logs/phantom_delete_guard.jsonl, safe_commit.py 의 도메인
+# 강제 판정도 이미 여기 쌓인다)에 다른 가드들도 얹는다(약속 L21).
+def log_guard_decision(guard: str, decision: str, reason: str = "", paths=(), root: str = "."):
+    """가드 판정 기록 — decision 은 "PASS"/"WARN"/"BLOCK" 중 하나(느슨한 표기 허용).
+
+    판정 로직에는 관여하지 않는다(호출부가 이미 내린 결정을 기록만 함).
+    로그 쓰기 실패 = 가드 판정에 영향 없음(fail-soft, 위 _log_block 과 동일 원칙).
+    """
+    try:
+        p = os.path.join(root, _BLOCK_LOG)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        entry = {
+            "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "guard": guard,
+            "decision": decision,
+        }
+        if reason:
+            entry["reason"] = reason
+        if paths:
+            entry["paths"] = list(paths)[:50]
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
 def foreign_delete_violations(deleted, all_staged, explicit_paths=()):
     """일반 혼입 삭제 판정 (2026-08-04 GM 지시 — 유령 삭제 근본분석).
 

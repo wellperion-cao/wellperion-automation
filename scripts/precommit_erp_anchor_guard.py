@@ -35,6 +35,14 @@ import re
 import subprocess
 import sys
 
+# PASS/WARN/BLOCK 판정 로그 — 여러 가드 공용(2026-08-17, scripts/precommit_
+# phantom_delete_guard.py 참조). import 실패해도 가드는 그대로 동작(fail-soft).
+try:
+    from precommit_phantom_delete_guard import log_guard_decision
+except Exception:
+    def log_guard_decision(*_a, **_kw):
+        pass
+
 # ── 검사 대상 확장자·제외 경로 ─────────────────────────────────────────────
 WATCH_SUFFIXES = (".py", ".js", ".md")
 EXCLUDE_SUBSTRINGS = ("_archive", "node_modules", ".deploy-", "instagram/")
@@ -45,6 +53,7 @@ EXCLUDE_SUBSTRINGS = ("_archive", "node_modules", ".deploy-", "instagram/")
 SELF_EXEMPT_PATHS = (
     "scripts/precommit_erp_anchor_guard.py",
     "tests/test_precommit_erp_anchor_guard.py",
+    "tests/test_precommit_guard_logging.py",
 )
 
 GUIDE_REL_PATH = "3. 웰페리온 가이드/wellperion_guide(main).html"
@@ -149,20 +158,24 @@ def main():
         sys.stderr.write(
             "[erp-anchor-guard][WARN] %s=1 — 가드 우회(통과)\n" % SKIP_ENV
         )
+        log_guard_decision("erp_anchor", "WARN", "SKIP_ERP_ANCHOR_GUARD=1 우회")
         return 0
 
     files = staged_files()
     if files is None:
         sys.stderr.write("[erp-anchor-guard][WARN] git diff 실패 — 통과(fail-open)\n")
+        log_guard_decision("erp_anchor", "WARN", "git diff 실패 fail-open")
         return 0
 
     refs = collect_refs(files)
     if not refs:
+        log_guard_decision("erp_anchor", "PASS", "ERP 앵커 참조 없음")
         return 0  # 참조가 없으면 가이드 파일을 읽을 필요도 없음.
 
     root = repo_root()
     if root is None:
         sys.stderr.write("[erp-anchor-guard][WARN] git root 를 찾을 수 없음 — 통과(fail-open)\n")
+        log_guard_decision("erp_anchor", "WARN", "git root 탐색 실패 fail-open")
         return 0
 
     try:
@@ -171,6 +184,7 @@ def main():
         sys.stderr.write(
             "[erp-anchor-guard][WARN] 가이드 HTML 읽기 실패 — 통과(fail-open): %r\n" % (exc,)
         )
+        log_guard_decision("erp_anchor", "WARN", "가이드 HTML 읽기 실패: %r" % (exc,))
         return 0
 
     violations = [(disp, lineno, aid) for disp, lineno, aid in refs if aid not in anchors]
@@ -199,8 +213,13 @@ def main():
             "============================================================\n"
             % (candidates, " ..." if len(anchors) > 30 else "", SKIP_ENV)
         )
+        log_guard_decision(
+            "erp_anchor", "BLOCK", "죽은 앵커 참조 %d건" % len(violations),
+            [disp for disp, _, _ in violations],
+        )
         return 1
 
+    log_guard_decision("erp_anchor", "PASS")
     return 0
 
 
@@ -211,4 +230,5 @@ if __name__ == "__main__":
         sys.stderr.write(
             "[erp-anchor-guard][WARN] 가드 내부 오류 — 통과(fail-open): %r\n" % (exc,)
         )
+        log_guard_decision("erp_anchor", "WARN", "내부 오류 fail-open: %r" % (exc,))
         sys.exit(0)

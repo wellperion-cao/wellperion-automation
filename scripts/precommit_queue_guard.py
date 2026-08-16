@@ -42,6 +42,14 @@ import json
 import subprocess
 import sys
 
+# PASS/WARN/BLOCK 판정 로그 — 여러 가드 공용(2026-08-17, scripts/precommit_
+# phantom_delete_guard.py 참조). import 실패해도 가드는 그대로 동작(fail-soft).
+try:
+    from precommit_phantom_delete_guard import log_guard_decision
+except Exception:
+    def log_guard_decision(*_a, **_kw):
+        pass
+
 # ── 종결(terminal) 상태값 — 실제 파일 실측 기준 ───────────────────────────
 # status/_queue.json  : DONE·PENDING·IN_PROGRESS·STANDBY·BLOCKED
 # status/_queue_archive.json : DONE·폐기·완료  (queue_archive_sweep 이관 대상)
@@ -257,7 +265,13 @@ def main():
             "  정말 의도한 삭제라면 우회:  git commit --no-verify\n"
             "============================================================\n"
         )
+        log_guard_decision(
+            "queue", "BLOCK",
+            "%d개 파일에서 활성 항목 소멸" % len(violations),
+            [disp for disp, *_ in violations],
+        )
         return 1
+    log_guard_decision("queue", "PASS")
     return 0
 
 
@@ -268,4 +282,5 @@ if __name__ == "__main__":
         sys.stderr.write(
             "[queue-guard][WARN] 가드 내부 오류 — 통과(fail-open): %r\n" % (exc,)
         )
+        log_guard_decision("queue", "WARN", "내부 오류 fail-open: %r" % (exc,))
         sys.exit(0)
