@@ -1114,8 +1114,21 @@ function renderManual(){
   const host=document.getElementById('gridHost');
   host.innerHTML='<div class="manualbar"><span>📖 통합 메뉴얼 — 시트와 무관하게 즉시 열립니다</span>'
     +'<button class="btn-sm" style="margin-left:auto" onclick="manualSrc()">🧾 시트 원본 보기</button></div>'
-    +'<iframe id="manualFrame" class="manualFrame" title="업무 및 기초 메뉴얼"></iframe>';
-  document.getElementById('manualFrame').srcdoc=MANUAL_HTML;
+    +'<iframe id="manualFrame" class="manualFrame" title="업무 및 기초 메뉴얼" scrolling="no"></iframe>';
+  const fr=document.getElementById('manualFrame');
+  /* 이중 스크롤 제거(2026-08-16) — iframe 높이를 내용에 맞춰 자동 확장(안쪽 스크롤 소멸, 바깥 휠 하나로 이동) + 본문 폭 화면 맞춤 */
+  fr.onload=()=>{
+    const d=fr.contentDocument; if(!d||!d.body) return;
+    const st=d.createElement('style');
+    st.textContent='.wrap{max-width:none}.hd-top{max-width:none}html,body{overflow:hidden}#toTop{display:none!important}';
+    d.head.appendChild(st);
+    /* 높이는 body.scrollHeight 기준(documentElement은 뷰포트 클램프로 줄지 못함).
+       ResizeObserver는 srcdoc iframe body에 발화하지 않는 것을 실측 확인 → 폴링(변화 시에만 반영, 프레임 제거 시 자동 종료) */
+    const sync=()=>{ const h=Math.max(520,d.body.scrollHeight)+'px'; if(fr.style.height!==h) fr.style.height=h; };
+    sync();
+    const tm=setInterval(()=>{ if(!fr.isConnected){ clearInterval(tm); return; } sync(); },400);
+  };
+  fr.srcdoc=MANUAL_HTML;
 }
 function manualSrc(){ state.view='src'; load(); }
 /* 메뉴얼 시트의 원본 뷰 상단 [📖 메뉴얼 보기] 복귀 버튼 */
