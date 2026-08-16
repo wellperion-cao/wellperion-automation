@@ -96,6 +96,9 @@ except ImportError:
 # ── 경로 설정 ────────────────────────────────────────────────────
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SCRIPT_DIR.parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+import cpo_report  # noqa: E402 — 배523 원장 대체집계용 fetch_lesson_inquiries 재사용(중복 호출 금지)
 REVIEW_QUEUE_PATH = _REPO_ROOT / "3. 웰페리온 가이드" / "cmo" / "review" / "review_queue.json"
 BRIEFS_DIR = _REPO_ROOT / "status" / "briefs"
 
@@ -339,6 +342,38 @@ def fetch_lesson_registry(date_from: str, date_to: str) -> dict | None:
         return None
 
 
+def fetch_lesson_registry_with_fallback(date_from: str, date_to: str) -> dict | None:
+    """배523(2026-08-16) — lesson_registry_list(원장)이 07-20 이후 21일째 신규 0건이었다
+    (원인 = 팀시트 IMPORTRANGE 붕괴, 배173 규명·GM 07-27 'ERP로 간다' 확정). 원장이 진짜로
+    0건을 낼 때만, 마스터탭(lesson_inquiry_list · 화면 '강습 문의응답'과 동일 정상 원천)의
+    status=SUC 최근 컨택일을 등록일 근사로 세어 대체한다 — 웰리가 2026-08-10 같은 방식으로
+    수기 확인한 15건과 같은 방법. 원장이 정상 작동하면(값이 있으면) 그대로 원장을 쓴다
+    (재배선이 아니라 원장이 죽었을 때만 켜지는 폴백 — 새 원장을 만들지 않는다 · 약속 L21).
+    ★근사치다: contacts[].date 는 '마지막으로 손댄 날짜'지 계약서상 등록일이 아니다."""
+    lr = fetch_lesson_registry(date_from, date_to)
+    if lr is not None and (lr.get("count") or len(lr.get("data") or [])):
+        return lr
+    try:
+        rows_out = []
+        for ltype in ("성인강습", "유소년강습"):
+            rows = cpo_report.fetch_lesson_inquiries(ltype, scope="all")
+            for r in rows or []:
+                if r.get("status") != "SUC":
+                    continue
+                contacts = r.get("contacts") or []
+                if not contacts:
+                    continue
+                last_date = str(contacts[-1].get("date") or "")[:10]
+                if date_from <= last_date <= date_to:
+                    rows_out.append({"종목": str(r.get("sport") or r.get("bucket") or "기타")})
+        if not rows_out:
+            return lr  # 폴백도 0건 — 원래 값(None 또는 0건)을 그대로 낸다(지어내지 않음)
+        return {"ok": True, "data": rows_out, "count": len(rows_out), "_fallback": True}
+    except Exception as e:
+        print(f"[WARN] lesson_registry 폴백 집계 실패: {e}")
+        return lr
+
+
 def fetch_lesson_collection_health() -> str:
     """[배155 · 2026-07-27] 강습 등록 '수집이 성립하는지'를 매번 실측해 정직 꼬리표를 만든다.
 
@@ -421,13 +456,14 @@ def _fmt_registration_detail_md(mr: dict | None, lr: dict | None, date_from: str
     else:
         lines.append(f"- 멤버십 신규: {mrs['total']}건 (세부상품 칼럼 미기재 — 단일 버킷 집계)")
 
+    fb_note = " ⚠️근사치 — 원장 미쌓임(배523)으로 마스터탭 SUC 컨택일 기준 대체집계" if (lr or {}).get("_fallback") else ""
     if lrs is None:
         lines.append("- 강습 신규 등록(종목별): 미집계(수집 실패)")
     elif lrs["by_sport"]:
         detail = " · ".join(f"{k} {v}건" for k, v in sorted(lrs["by_sport"].items(), key=lambda kv: kv[1], reverse=True))
-        lines.append(f"- 강습 신규 등록(종목별): {lrs['total']}건 — {detail}")
+        lines.append(f"- 강습 신규 등록(종목별): {lrs['total']}건 — {detail}{fb_note}")
     else:
-        lines.append("- 강습 신규 등록(종목별): 0건(표본 없음)")
+        lines.append(f"- 강습 신규 등록(종목별): 0건(표본 없음){fb_note}")
 
     # [배140 · 2026-07-27 종료] 뮤지컬 배선 완료·교정 검증 통과(원장 2,515행 — 수영 1502·
     # 체조&트램폴린 371·골프 168 사고 전 값 복귀, 뮤지컬 11명 편입·등록일 전부 기준선).
@@ -850,7 +886,7 @@ def run_weekly(dry_run: bool = False):
 
     fc = fetch_funnel_conversion(date_from, date_to)
     mr = fetch_member_registered(date_from, date_to)
-    lr = fetch_lesson_registry(date_from, date_to)
+    lr = fetch_lesson_registry_with_fallback(date_from, date_to)
 
     brief_md = build_brief(items, fc, mr, lr, date_from, date_to, now)
 
@@ -896,7 +932,7 @@ def build_daily_card_text(now: datetime.datetime | None = None) -> str:
 
         fc = fetch_funnel_conversion(date_str, date_str)
         mr = fetch_member_registered(date_str, date_str)
-        lr = fetch_lesson_registry(date_str, date_str)
+        lr = fetch_lesson_registry_with_fallback(date_str, date_str)
 
         brief_md = build_daily_brief(items, fc, mr, lr, date_str, now)
 
