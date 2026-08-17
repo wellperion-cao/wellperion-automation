@@ -312,6 +312,17 @@ function _applyStatusColor(sh, row, status) {
 
 // 완료보관('업무 완료 현황') 시트에 완료 건 복사 (수동 완료·결재완료 공통)
 // 동시 완료 시 보관행 유실 방지 — getLastRow 읽기~append 임계구역을 ScriptLock 으로 보호(2026-06-26 시로).
+//
+// ⚠️ 2026-08-17 A-6 사전감사 지적①(수정) — 헤더명 기준 매핑으로 재작성.
+//   구 버전은 "TODO_HEADERS 위치 그대로 복사 + 맨 끝에 보관시각 push"였다. 이 시트는 최초 생성 시
+//   딱 한 번만 헤더를 쓰고 이후 마이그레이션이 없어서, TODO_HEADERS가 커지면(예: '규모점수' append)
+//   기존 doneSh의 '보관시각' 자리에 새 필드값이 밀려 들어가고 진짜 보관시각은 헤더 없는 다음 열로
+//   밀려나는 오정렬이 발생했다(324행 "시트 없을 때만 생성" 분기라 기존 아카이브는 구제되지 않음).
+//   재발 방지 = 위치(index) 의존을 제거하고 "헤더 이름"으로만 값을 채운다 + doneSh 자체도
+//   append-only 마이그레이션(TODO_HEADERS에 있는데 doneSh엔 없는 헤더를 시트 끝에 자동 추가,
+//   initTodoSheet()와 동일한 패턴)을 갖게 해 앞으로 TODO_HEADERS가 또 늘어도 같은 버그가 재발하지
+//   않는다. 기존 74건 아카이브 데이터·컬럼 위치는 완전 무접촉(insertColumnBefore 등 중간삽입 없음 —
+//   신규 헤더는 항상 기존 시트의 맨 끝 열에만 추가).
 function _copyToDoneSheet(srcSheet, srcRow) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   // ── 동시성 가드: 보관 append 직렬화(다중 완료 동시 호출 시 같은 newRow 덮어쓰기 방지) ──
@@ -337,17 +348,35 @@ function _copyToDoneSheet(srcSheet, srcRow) {
       doneSh.setFrozenRows(1);
     }
 
-    // 원본 행 데이터 읽기
-    const rowData = srcSheet.getRange(srcRow, 1, 1, TODO_HEADERS.length).getValues()[0];
-    // 보관시각 추가 (아카이브로 복사된 시점)
-    rowData.push(_now());
+    // 원본 행 데이터를 "헤더명 → 값" 맵으로 읽는다(위치 고정 아님).
+    const srcValues = srcSheet.getRange(srcRow, 1, 1, TODO_HEADERS.length).getValues()[0];
+    const srcMap = {};
+    TODO_HEADERS.forEach((h, i) => { srcMap[h] = srcValues[i]; });
+    srcMap['보관시각'] = _now(); // 아카이브로 복사된 시점
+
+    // doneSh 자체 마이그레이션 — TODO_HEADERS에는 있는데 doneSh 헤더엔 없는 필드를 시트 맨 끝에
+    // 자동 추가(insertColumnBefore 없음 — 기존 열 위치·데이터 완전 무접촉).
+    let doneHeaders = doneSh.getRange(1, 1, 1, doneSh.getLastColumn()).getValues()[0];
+    const missing = TODO_HEADERS.filter(h => doneHeaders.indexOf(h) < 0);
+    if (missing.length) {
+      const startCol = doneHeaders.length + 1;
+      doneSh.getRange(1, startCol, 1, missing.length).setValues([missing]);
+      doneSh.getRange(1, startCol, 1, missing.length)
+        .setFontWeight('bold')
+        .setBackground('#34a853')
+        .setFontColor('#ffffff');
+      doneHeaders = doneHeaders.concat(missing);
+    }
+
+    // doneSh의 "실제 헤더 순서" 그대로, 이름으로 값을 채운다(순서가 TODO_HEADERS와 달라도 무관).
+    const rowData = doneHeaders.map(h => (srcMap[h] !== undefined ? srcMap[h] : ''));
 
     // 완료 시트에 추가
     const newRow = doneSh.getLastRow() + 1;
     doneSh.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
-    // 상태 셀 녹색 표시
-    const statusCol = TODO_HEADERS.indexOf('상태') + 1;
-    doneSh.getRange(newRow, statusCol).setBackground('#34a853').setFontColor('#ffffff');
+    // 상태 셀 녹색 표시 (doneSh 자신의 헤더 위치 기준 — TODO_HEADERS 위치를 그대로 재사용하지 않음)
+    const statusCol = doneHeaders.indexOf('상태') + 1;
+    if (statusCol > 0) doneSh.getRange(newRow, statusCol).setBackground('#34a853').setFontColor('#ffffff');
     SpreadsheetApp.flush();  // 잠금 해제 전 기록 확정
   } finally {
     try { lock.releaseLock(); } catch (e) {}
