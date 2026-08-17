@@ -3971,6 +3971,22 @@ var WP_QUANT_PEOPLE=[
 function wpOwners(t){return String(t["담당자"]||"").split(",").map(function(s){return s.trim();}).filter(Boolean);}
 function wpDate(s){return s?new Date(s):null;}
 var WP_QUANT_LAST=[]; // 마지막 renderQuantEval() 계산 결과(카드별 items 포함) — 팝업 모달이 재조회 없이 재사용
+// ─── 규모점수 라이브 전환 스위치 (2026-08-17, 백엔드 필드 자동 감지 폴백) ───
+// 백엔드에 '규모점수' 필드가 배포·배필되기 전까지는 모든 카드가 이 필드를 안 보내므로 자동으로
+// 기존 정적 매핑(WP_R_SCORE)을 계속 쓴다. 배포·백필이 끝나 카드에 실제 값이 채워지면, 그 카드부터
+// 자동으로 라이브 값을 우선 사용한다 — 수동 플래그 전환 없이 카드 단위로 점진 전환된다.
+// 화이트리스트는 백엔드 SIZE_SCORE_WHITELIST(옵션 B, 2026-08-17 매니저 확정)와 동일하게 맞춘다.
+var WP_SIZE_SCORE_WHITELIST=["1","2","3","5","8"];
+function wpScoreLookup(t){
+  var live=t["규모점수"];
+  var liveStr=(live===undefined||live===null)?"":String(live).trim();
+  if(liveStr!==""){
+    if(WP_SIZE_SCORE_WHITELIST.indexOf(liveStr)>=0) return {has:true,score:Number(liveStr)};
+    return {has:true,score:null}; // 화이트리스트 밖 값(백엔드가 막지만 방어적으로) — 판정불가 취급
+  }
+  if(t.id in WP_R_SCORE) return {has:true,score:WP_R_SCORE[t.id]}; // 폴백: 정적 매핑(백필 전 구간)
+  return {has:false};
+}
 function quantEvalCompute(tasks){
   var out=[];
   WP_QUANT_PEOPLE.forEach(function(p){
@@ -3980,12 +3996,13 @@ function quantEvalCompute(tasks){
     tasks.forEach(function(t){
       var owners=wpOwners(t);
       if(owners.indexOf(p.key)<0) return;
-      if(!(t.id in WP_R_SCORE)){
+      var _lk=wpScoreLookup(t);
+      if(!_lk.has){
         unscored.push(t);
         items.push({title:t["업무명"],score:null,scoreTag:"미채점",status:t["상태"],dueTag:"—",createdAt:t["생성일"]});
         return;
       }
-      var score=WP_R_SCORE[t.id];
+      var score=_lk.score;
       if(score==null){ // 판정불가(사전 채점 제외) — 배정·완료 어느 쪽에도 안 잡음
         items.push({title:t["업무명"],score:null,scoreTag:"판정불가",status:t["상태"],dueTag:"—",createdAt:t["생성일"]});
         return;

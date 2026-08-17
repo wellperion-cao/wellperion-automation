@@ -75,7 +75,14 @@ const TODO_HEADERS = [
   //   'DATE:YYYY-MM'  (그 달이 되면 재부상)  /  'AFTER:<id 또는 배번호>' (그 업무가 끝나면 재부상)
   // 이 두 칸이 비면 보류 전환을 막는다(프론트 게이트). 자유서술 '나중에'는 재부상 불가 = 조용한 소멸의 원인.
   // append-only 맨 끝 → 기존 컬럼 인덱스 불변. initTodoSheet 자동 마이그레이션이 시트에 컬럼 추가.
-  '보류사유', '재개조건'
+  '보류사유', '재개조건',
+  // 업무 규모 점수 R1~R8(2026-08-17 매니저 확정 A안 — 평가탭 정량평가 산식 입력값, drafts\업무보드_평가_규격정본.md §2).
+  // 값 도메인 = '1'|'2'|'3'|'5'|'8' 만 허용(옵션 B 화이트리스트, SIZE_SCORE_WHITELIST) — todo_add·todo_update
+  // 진입점에서 값이 있을 때만 선검증, 그 외 값은 거부(부분갱신 없이 즉시 에러 반환). 빈값=미채점.
+  // '난이도'(하/중/상, 자기신고·폐기 결정)와는 다른 체계 — 재사용하지 않고 신규 헤더로 분리.
+  // append-only 맨 끝 → 기존 컬럼 인덱스 불변. initTodoSheet 자동 마이그레이션이 재배포 후 첫 호출 시
+  // 시트에 컬럼을 자동 추가한다(수동 시트 편집 불요 — 기존 컬럼·데이터 무접촉, 코드 확인 완료).
+  '규모점수'
 ];
 
 // 카테고리 목록 (2026-06-10 GM 확정 9분류 — 프론트(업무·결재·G1 SSOT)와 동일 라벨·띄어쓰기 통일)
@@ -2681,9 +2688,17 @@ function doGet(e) {
 // ═══════════════════════════════════════════
 // 영문 → 한글 필드 매핑
 function _mapFields(body) {
-  const map = {title:'업무명',name:'업무명',category:'카테고리',owner:'담당자',startDate:'시작일',endDate:'종료일',content:'내용',status:'상태',approval:'결재요청',link:'링크',fileUrl:'파일URL',creator:'생성자',difficulty:'난이도'};
+  const map = {title:'업무명',name:'업무명',category:'카테고리',owner:'담당자',startDate:'시작일',endDate:'종료일',content:'내용',status:'상태',approval:'결재요청',link:'링크',fileUrl:'파일URL',creator:'생성자',difficulty:'난이도',sizeScore:'규모점수'};
   Object.keys(map).forEach(en => { if (body[en] !== undefined && !body[map[en]]) body[map[en]] = body[en]; });
   return body;
+}
+
+// ─── 규모점수 화이트리스트 검증 (2026-08-17 매니저 확정 옵션 B) ───
+// R1~R8 5단계 중 실사용 점수값만 허용: 1/2/3/5/8. 그 외(예: 구 '판정불가' 자유값, 오타, 범위 밖 숫자)는 거부.
+// 빈값(미채점)은 이 함수 호출 전 별도 가드로 스킵 — 값이 "있을 때만" 검증한다.
+var SIZE_SCORE_WHITELIST = ['1', '2', '3', '5', '8'];
+function _validSizeScore(v) {
+  return SIZE_SCORE_WHITELIST.indexOf(String(v).trim()) >= 0;
 }
 
 // TODO action 처리 (doGet/doPost 공용)
@@ -2726,6 +2741,12 @@ function _processTodoAction(body) {
 
     // ─── 새 업무 추가 ───
     if (action === 'todo_add') {
+      // 규모점수 화이트리스트 검증(값이 있을 때만) — 2026-08-17. 시트 쓰기 전에 선검증해 잘못된 값이
+      // 애초에 행으로 들어가지 않게 한다(부분 기록 없이 즉시 에러).
+      if (body['규모점수'] !== undefined && body['규모점수'] !== null && body['규모점수'] !== ''
+          && !_validSizeScore(body['규모점수'])) {
+        return _json({ ok: false, error: '규모점수 값 오류 — 1/2/3/5/8만 허용(입력값: ' + body['규모점수'] + ')' });
+      }
       // sheet 파라미터 있으면 해당 탭에 insert (AI배(C레벨) 전용 탭 이관용)
       let sh;
       if (body['sheet']) {
@@ -2756,6 +2777,8 @@ function _processTodoAction(body) {
       row[17] = body['결재요청'] ? '대기' : '';
       // 업무 중요도: 담당자 제안값(하/중/상). 부서장 결재단계에서 확정·조정 가능. (index는 indexOf로 안전 산출)
       row[TODO_HEADERS.indexOf('난이도')] = body['난이도'] || '';
+      // 업무 규모 점수 R1~R8(1/2/3/5/8) — 위에서 이미 화이트리스트 선검증됨. 2026-08-17.
+      row[TODO_HEADERS.indexOf('규모점수')] = body['규모점수'] || '';
       const newRow = sh.getLastRow() + 1;
       sh.getRange(newRow, 1, 1, row.length).setValues([row]);
       _applyStatusColor(sh, newRow, row[7]);
@@ -2771,6 +2794,12 @@ function _processTodoAction(body) {
 
     // ─── 수정 ───
     if (action === 'todo_update') {
+      // 규모점수 화이트리스트 검증(값이 있을 때만) — 2026-08-17. id 조회·시트 read/write보다 먼저 검사해
+      // 잘못된 값이면 기존 행을 전혀 건드리지 않고(부분갱신 없이) 즉시 에러로 반환한다.
+      if (body['규모점수'] !== undefined && body['규모점수'] !== null && body['규모점수'] !== ''
+          && !_validSizeScore(body['규모점수'])) {
+        return _json({ ok: false, error: '규모점수 값 오류 — 1/2/3/5/8만 허용(입력값: ' + body['규모점수'] + ')' });
+      }
       const sh = initTodoSheet();
       const id = body.id;
       if (!id) return _json({ ok: false, error: 'id 필수' });
