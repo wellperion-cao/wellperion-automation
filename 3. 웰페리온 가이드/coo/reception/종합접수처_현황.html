@@ -589,6 +589,17 @@ a { color:var(--accent); text-decoration:none; }
       <input type="text" id="m_staff_other" placeholder="담당자 성함 직접 입력" autocomplete="off" style="display:none;margin-top:8px">
     </div>
 
+    <!-- ②-b 반환 정보 (선택 · 수령 시 기록) -->
+    <div class="mfield">
+      <label>반환 정보 (선택)</label>
+      <input type="text" id="m_ownerName" placeholder="주인 성함" autocomplete="off" style="margin-top:4px">
+      <input type="text" id="m_ownerPhone" placeholder="주인 연락처" autocomplete="off" inputmode="numeric" style="margin-top:6px">
+      <input type="text" id="m_receiverPhone" placeholder="수령자 연락처" autocomplete="off" inputmode="numeric" style="margin-top:6px">
+      <input type="text" id="m_storageLoc" placeholder="보관 위치" autocomplete="off" style="margin-top:6px">
+      <input type="date" id="m_providedDate" autocomplete="off" style="margin-top:6px">
+      <input type="text" id="m_memo" placeholder="내부 메모" autocomplete="off" style="margin-top:6px">
+    </div>
+
     <!-- ③ 확인 비밀번호 -->
     <div class="mfield">
       <label for="m_pw">③ 확인 비밀번호</label>
@@ -1307,6 +1318,8 @@ function openModal(){
   var img = _cur.photo ? ('<img src="' + _esc(_lfThumb(_cur.photo)) + '" alt="">') : '';
   $('mItem').innerHTML = img + '<div><div class="mt">' + _esc(_cur.desc||'(설명 없음)') + '</div><div class="mm">' + _esc(_cur.id) + ' · 📍 ' + _esc(_cur.loc||'-') + '</div></div>';
   $('m_pw').value = ''; $('m_receiver').value = ''; $('m_staff').value = ''; $('m_staff_other').value = ''; $('m_staff_other').style.display = 'none';
+  $('m_ownerName').value=''; $('m_ownerPhone').value=''; $('m_receiverPhone').value=''; $('m_storageLoc').value=''; $('m_memo').value='';
+  try{ $('m_providedDate').value = new Date().toISOString().slice(0,10); }catch(e){ $('m_providedDate').value=''; }
   if(_cur.loc){ $('m_loc').value = _cur.loc; }
   clearPad();
   $('modalBack').classList.add('show');
@@ -1393,7 +1406,8 @@ $('mConfirm').addEventListener('click', function(){
   if($('m_pw').value.trim()!=='62611200'){ toast('비밀번호가 올바르지 않습니다', true); $('m_pw').focus(); return; }
   var sign = _signCv.toDataURL('image/png');
   var btn = this; btn.disabled = true; btn.textContent = '처리 중…';
-  var payload = { action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+  var payload = { action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign,
+    ownerName:$('m_ownerName').value.trim(), ownerPhone:$('m_ownerPhone').value.trim(), receiverPhone:$('m_receiverPhone').value.trim(), storageLoc:$('m_storageLoc').value.trim(), providedDate:$('m_providedDate').value.trim(), memo:$('m_memo').value.trim() };
   fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify(payload), redirect:'follow' })
     .then(function(r){ return r.json(); })
     .then(function(d){
