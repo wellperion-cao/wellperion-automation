@@ -10349,8 +10349,8 @@ function _lossBtnCellHtml(row) {
   return '<td style="white-space:nowrap"><button type="button" onclick="openValidLossModal(' + ri + ')" ' +
     'style="padding:4px 10px;border-radius:7px;border:1px solid var(--red-border);background:var(--red-bg);color:var(--red);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">LOSS 처리</button></td>';
 }
-// 유효회원 → LOSS 처리 모달(FB260811-112656). 기존 churnOverlay 재사용 — 새 모달 없음.
-// 저장 시 종료사유 + 종료일자(오늘) 두 건 enqueue → valid 목록에서 즉시 제거.
+// 유효회원 → LOSS 처리 모달(FB260811-112656). FB260817-124841 임정은M — 종료사유 제거, lossReasonOverlay로 단일화.
+// 저장 시 미등록사유 + 종료일자(오늘) enqueue → valid 목록에서 즉시 제거.
 function openValidLossModal(rowIndex) {
   var r = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
   if (!r) { showToast('회원 정보를 찾을 수 없습니다', 'err'); return; }
@@ -10360,14 +10360,9 @@ function openValidLossModal(rowIndex) {
   var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
   var d = new Date();
   var today = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
-  _churnModal = { rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, fromValid: true, endCol: endCol, endDate: today };
-  document.getElementById('crMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '') + '  ·  종료일자 ' + today + ' 로 저장';
-  var sel = document.getElementById('crReasonSel');
-  sel.innerHTML = '<option value="">— 선택 —</option>' +
-    CHURN_REASON_OPTIONS.map(function(o){ return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('');
-  document.getElementById('crNoteInput').value = '';
-  _crUpdateNoteReq();
-  document.getElementById('churnOverlay').classList.add('open');
+  _lossModal = { mode: 'fromvalid', rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, endCol: endCol, endDate: today };
+  document.getElementById('lrMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '') + '  ·  종료일자 ' + today + ' 로 저장';
+  _lossModalFill('');
 }
 
 // 미등록사유 커스텀 셀 — LOSS 탭 전용(FB260807-121152 임정은M). __churn__ 패턴 재사용.
@@ -10449,26 +10444,6 @@ function saveChurnModal() {
     { scope: 'active', phoneKey: keyPhone, fieldset: 'churnReason', label: '종료사유', who: (_churnModal && _churnModal.name) || '', overlay: _ovC }
   );
   showToast('종료사유 저장', 'ok');
-  // 유효회원 LOSS 처리 분기 — 종료일자(오늘) 추가 저장 + valid 목록 즉시 제거(FB260811-112656)
-  if (_churnModal && _churnModal.fromValid && _churnModal.endCol) {
-    var _ov2 = {}; _ov2[_churnModal.endCol] = _churnModal.endDate;
-    WriteBuffer.enqueue(
-      { action: 'member_active_update', rowIndex: rowIndex, col: _churnModal.endCol, value: _churnModal.endDate, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '' },
-      { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + _churnModal.endCol, label: '종료일자(LOSS처리)', who: (_churnModal && _churnModal.name) || '', overlay: _ov2 }
-    );
-    // FB260811-113153 이경연M — 미등록사유 자동 기록: LOSS 처리 시 선택한 종료사유를 미등록사유 칸에도 동시 저장
-    var _urcN = _capCol(_activeHeaders, '미등록사유') || '미등록사유';
-    var _ov3 = {}; _ov3[_urcN] = reason;
-    WriteBuffer.enqueue(
-      { action: 'member_active_update', rowIndex: rowIndex, col: _urcN, value: reason, keyPhone: keyPhone, rowKey: _churnModal.rowKey || '' },
-      { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:미등록사유', label: '미등록사유(LOSS처리 자동)', who: (_churnModal && _churnModal.name) || '', overlay: _ov3 }
-    );
-    _activeRows = (_activeRows || []).filter(function(x){ return x.rowIndex != rowIndex; });
-    _activeCacheSave('valid', _activeHeaders, _activeRows);
-    _activeRender(_activeRows);
-    renderActiveSummary();
-    showToast((_churnModal.name || '회원') + ' LOSS 처리 완료', 'ok');
-  }
   closeChurnModal();
   saveBtn.disabled = false;
 }
@@ -10929,11 +10904,12 @@ function saveLossReasonModal() {
   var saveBtn = document.getElementById('lrSaveBtn'); saveBtn.disabled = true;
   var _isLesson = (_lossModal.mode === 'lesson');
   var _isActiveMember = (_lossModal.mode === 'activemember');   // FB260807-121152 — 미등록사유 직접 편집
-  var _amCol = _lossModal.col || '미등록사유';  // FB260811-113153 — 컬럼 미존재 시 GAS 자동생성용 폴백
+  var _isFromValid = (_lossModal.mode === 'fromvalid');          // FB260817-124841 임정은M — 유효회원 LOSS처리(미등록사유 단일화)
+  var _amCol = _lossModal.col || '미등록사유';
   var _amOverlay = {}; _amOverlay[_amCol] = reason;
   var _payload = _isLesson
     ? { action: 'lesson_inquiry_update', type: _lossModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _lossModal.gid, lossReason: reason }
-    : _isActiveMember
+    : (_isActiveMember || _isFromValid)
     ? { action: 'member_active_update', rowIndex: rowIndex, col: _amCol, value: reason, keyPhone: keyPhone, rowKey: rowKey }
     : { action: 'member_inquiry_update', rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, lossReason: reason };
   if (_lossModal.pendingStatusSave) { _payload.status = 'LOSS'; }
@@ -10945,11 +10921,11 @@ function saveLossReasonModal() {
       lr.lossReason = reason;
       if (_lossModal.pendingStatusSave) { lr.status = 'LOSS'; }
     }
-  } else if (_isActiveMember) {
-    var _uc = _lossModal.col;
+  } else if (_isActiveMember || _isFromValid) {
+    var _uc = _lossModal.col || '미등록사유';
     var _ra = (_activeRows || []).find(function(x){ return x.rowIndex == rowIndex; });
-    if (_ra && _uc) _ra[_uc] = reason;
-    (_endedRowsBg || []).forEach(function(x){ if (x.rowIndex == rowIndex && _uc) x[_uc] = reason; });
+    if (_ra) _ra[_uc] = reason;
+    (_endedRowsBg || []).forEach(function(x){ if (x.rowIndex == rowIndex) x[_uc] = reason; });
   } else {
     var r0 = dbRows.find(function(x){ return x.rowIndex === rowIndex; });
     if (r0) {
@@ -10957,16 +10933,29 @@ function saveLossReasonModal() {
       if (_lossModal.pendingStatusSave) { r0.status = 'LOSS'; }
     }
   }
-  var _overlay = _isActiveMember ? _amOverlay
+  var _overlay = (_isActiveMember || _isFromValid) ? _amOverlay
     : (_lossModal.pendingStatusSave) ? { lossReason: reason, status: 'LOSS' } : { lossReason: reason };
   WriteBuffer.enqueue(_payload, {
-    scope: _isLesson ? 'lesson' : (_isActiveMember ? 'active' : 'member'),
+    scope: _isLesson ? 'lesson' : ((_isActiveMember || _isFromValid) ? 'active' : 'member'),
     phoneKey: keyPhone,
-    fieldset: _isActiveMember ? ('cell:' + (_lossModal.col || '미등록사유')) : 'lossReason',
-    label: _isActiveMember ? '미등록사유' : 'LOSS 사유',
+    fieldset: (_isActiveMember || _isFromValid) ? ('cell:' + (_lossModal.col || '미등록사유')) : 'lossReason',
+    label: (_isActiveMember || _isFromValid) ? '미등록사유' : 'LOSS 사유',
     who: _who, overlay: _overlay
   });
-  showToast(_isActiveMember ? '미등록사유 저장' : 'LOSS 사유 저장', 'ok');
+  showToast((_isActiveMember || _isFromValid) ? '미등록사유 저장' : 'LOSS 사유 저장', 'ok');
+  // 유효회원 LOSS처리 추가 저장 — 종료일자(오늘) enqueue + valid 목록 즉시 제거(FB260817-124841)
+  if (_isFromValid && _lossModal.endCol) {
+    var _ov2 = {}; _ov2[_lossModal.endCol] = _lossModal.endDate;
+    WriteBuffer.enqueue(
+      { action: 'member_active_update', rowIndex: rowIndex, col: _lossModal.endCol, value: _lossModal.endDate, keyPhone: keyPhone, rowKey: rowKey },
+      { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + _lossModal.endCol, label: '종료일자(LOSS처리)', who: _who, overlay: _ov2 }
+    );
+    _activeRows = (_activeRows || []).filter(function(x){ return x.rowIndex != rowIndex; });
+    _activeCacheSave('valid', _activeHeaders, _activeRows);
+    _activeRender(_activeRows);
+    renderActiveSummary();
+    showToast((_who || '회원') + ' LOSS 처리 완료', 'ok');
+  }
   var _wasPending = _isLesson && _lossModal.pendingStatusSave;
   var _tt = _t;
   _lossModal.pendingStatusSave = false;
@@ -10983,7 +10972,7 @@ function saveLossReasonModal() {
     }
     try { renderTodayActionPanel(); } catch (e) {}
   }
-  else if (_tabLoaded.db) { renderDbTable(); }
+  else if (!_isFromValid && _tabLoaded.db) { renderDbTable(); }
 }
 
 /* ─────────────────────────────────────────────
