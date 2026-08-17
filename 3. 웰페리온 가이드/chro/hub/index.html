@@ -4086,16 +4086,73 @@ function evalConsole(){
     '</div>'+
   '</div>';
 }
+/* ---- 평가 기준 안내 (접이식) — A-5 2026-08-17 추가. 매니저 확정본
+   Desktop 운영부_평가기준_20260817.html §1·2·5·6·7 + 코드 내장 규모채점표(WP_R_SCORE 5단계)를
+   압축 요약. 위 업무 정량평가 섹션의 계산 방식과 반드시 일치시킬 것 — 산식 문구 수정 시 이 표도 동기 수정. ---- */
+function evalCriteriaSection(){
+  var who=[
+    ["대상","운영부·경영지원부 재직자 전원 — 업무 종류가 달라도 한 체계로 평가합니다"],
+    ["제외","GM — 업무를 지시·결재하는 자리라 평가 대상이 아닙니다"],
+    ["판정 유보","평가 기간의 50% 미만 재직한 인원(신입)은 이번 회차 판정을 보류합니다 — 온보딩 이후 첫 정식 평가"]
+  ];
+  var rLv=[
+    ["R1","1","한 번의 행동·전달·확인으로 끝남 · 새로 만드는 산출물 없음","공지 전달, 단순 확인 회신"],
+    ["R2","2","정해진 절차대로 1건 처리 · 새로 만드는 것은 없음","구매·교체·설치·발송 1건"],
+    ["R3","3","없던 문서·기준을 새로 만들거나 3단계 이상 조율","매뉴얼·기획안·체크리스트 작성"],
+    ["R5","5","부서 단위 제도를 세우거나 계약·채용을 완결","신규 제도 수립, 계약 체결, 채용 1건 완결"],
+    ["R8","8","전사에 걸치는 시스템을 구축하거나 신규 사업을 시작","ERP·자동화 시스템 구축, 신규 사업 런칭"]
+  ];
+  var gr=[
+    ["기대 초과","기대선 전 항목 충족 + 큰 산출물(R5 이상) 2건 이상 완결"],
+    ["기대 충족","기대선 전 항목 충족, 또는 과반 충족 + 나머지는 부분 충족"],
+    ["부분 미달","충족이 과반 미만, 또는 그 자리의 핵심 항목이 미충족"],
+    ["미달","기대선 전 항목이 미달"]
+  ];
+  var miss=["상담·응대의 실제 품질","회원 만족과 이탈 방어 기여","동료를 도운 일(기록에 안 남으면 확인 불가)",
+    "태도·성실성·팀 분위기 기여","어디에도 올리지 않은 업무"];
+  var h='<details class="closed-jobs" style="margin-top:14px">'+
+    '<summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--ink-soft);padding:11px 14px;'+
+      'background:var(--line-soft);border:1px solid var(--line);border-radius:10px">📐 평가 기준 — 어떻게 계산되는지 펼쳐보기</summary>'+
+    '<div class="stack" style="margin-top:10px">';
+  h+='<div class="card"><h3>누구를 평가하나</h3><div class="tbl-wrap"><table><thead><tr><th style="width:18%">구분</th><th>내용</th></tr></thead><tbody>'+
+    who.map(function(w){return '<tr><td class="t-name">'+esc(w[0])+'</td><td>'+esc(w[1])+'</td></tr>';}).join("")+
+    '</tbody></table></div></div>';
+  h+='<div class="card" style="margin-top:14px"><h3>업무 규모 5단계</h3><div class="tbl-wrap"><table><thead><tr>'+
+    '<th style="width:9%">단계</th><th style="width:9%">점수</th><th>설명</th><th>대표 예시</th></tr></thead><tbody>'+
+    rLv.map(function(r){return '<tr><td class="t-name">'+r[0]+'</td><td>'+r[1]+'점</td><td>'+esc(r[2])+'</td><td class="t-sub">'+esc(r[3])+'</td></tr>';}).join("")+
+    '</tbody></table></div></div>';
+  h+='<div class="card" style="margin-top:14px"><h3>점수를 합치는 법</h3>'+
+    '<div class="kv2"><b>총점 = 볼륨 45% + 품질 55%</b><span>완료한 업무 규모의 합(볼륨)과 완결력·기한준수·정체관리(품질)를 함께 봅니다.</span></div>'+
+    '<div class="kv2"><b>일이 적으면 만점이어도 만점으로 안 침</b><span>볼륨은 처리한 업무 규모의 합이라, 배정된 일 자체가 적으면 품질이 100%여도 총점은 낮게 잡힙니다.</span></div>'+
+    '<div class="kv2"><b>잘게 쪼개도 점수 안 늚</b><span>볼륨은 건수가 아니라 규모의 합계로 계산 — 큰 일 1건을 여러 건으로 나눠 등재해도 합계는 그대로입니다.</span></div>'+
+    '</div>';
+  h+='<div class="card" style="margin-top:14px"><h3>등급의 뜻</h3><div class="tbl-wrap"><table><thead><tr><th style="width:16%">등급</th><th>조건</th></tr></thead><tbody>'+
+    gr.map(function(g){return '<tr><td class="t-name">'+esc(g[0])+'</td><td>'+esc(g[1])+'</td></tr>';}).join("")+
+    '</tbody></table></div>'+
+    '<div class="muted" style="margin-top:9px">등급은 순위가 아닙니다 — 각자 자리 기대선에 대조한 절대평가이며, "몇 명은 무슨 등급" 식의 강제 배분은 없습니다.</div></div>';
+  h+='<div class="card" style="margin-top:14px"><h3>목표 적정성 — 달성률을 쓰기 전에</h3>'+
+    '<div class="muted">목표를 <b>본인이 스스로 정한 기록만</b> 있고 부여자·산출근거·사전확정 시점이 확인되지 않으면, 그 목표의 달성률로 점수를 매기지 않습니다. '+
+    '이 경우 과정 수행(수행·추적·보고)은 기록으로 확인되면 인정하되, 성과 수준은 "판정 불가"로 표기합니다.</div></div>';
+  h+='<div class="card" style="margin-top:14px"><h3>이 기준이 못 보는 것</h3><ul style="margin:0 0 0 18px;font-size:12.5px;line-height:1.7">'+
+    miss.map(function(m){return '<li>'+esc(m)+'</li>';}).join("")+
+    '</ul><div class="muted" style="margin-top:6px">기록에 남지 않는 기여가 있다면 이 평가에는 빠져 있습니다.</div></div>';
+  h+='<div class="alert"><b>⚠ 안내</b> 자리별 기대 기준선은 <b>잠정 — 매니저 확정 대기</b>입니다. 정성평가(상담 품질 등 기록에 없는 영역)는 <b>추후 별도 도입 예정</b>입니다.</div>';
+  h+='</div></details>';
+  return h;
+}
 function renderEval(){
   /* [정리 2026-08-17 A-5, 매니저 확정] 평가탭 표시를 "업무 정량평가" 섹션 단독으로 정리 —
      구 UI(평가 실시 콘솔·평가 제도/기준·평가 기록 목록)는 화면에서만 제거. evalConsole()/
-     criteriaSection() 등 함수 정의와 save-eval 등 백엔드 API는 무접촉 보존(git 복원 가능). */
+     criteriaSection() 등 함수 정의와 save-eval 등 백엔드 API는 무접촉 보존(git 복원 가능).
+     [추가 2026-08-17 A-5] 정량평가 섹션 아래에 evalCriteriaSection() 접이식 "평가 기준" 안내 추가
+     (매니저 지시 "평가탭에 평가기준은 정리되면 좋을 것 같아"). */
   var html='<div class="sec-title">인사평가 · 포상</div>';
   if(ERR.eval){setPanel("eval",html+errCard("인사평가 DB","eval"));return;}
   if(SESSION_ROLE==="admin"){
     html+='<div class="sec-title">업무 정량평가 (운영부)</div>'+
       '<div class="muted" style="margin-bottom:10px">정량평가 — 업무보드 기록 기반 자동 산출 · 정성평가는 추후 도입 예정</div>'+
-      '<div id="qevBox"><div class="card">'+emptyState("업무보드 데이터 로드 중…","◌")+'</div></div>';
+      '<div id="qevBox"><div class="card">'+emptyState("업무보드 데이터 로드 중…","◌")+'</div></div>'+
+      evalCriteriaSection();
   }else{
     html+='<div class="card">'+emptyState("관리자 모드에서만 조회할 수 있습니다.","◇")+'</div>';
   }
