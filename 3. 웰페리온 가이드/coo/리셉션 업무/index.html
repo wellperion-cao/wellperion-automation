@@ -116,13 +116,46 @@ nav::-webkit-scrollbar{display:none}
 .btn-sm:hover{border-color:var(--gold);color:var(--gold-deep);background:var(--surface-2)}
 .btn-sm.on{border-color:var(--gold-deep);background:rgba(169,138,82,.14);color:var(--gold-deep);font-weight:700}
 
+/* ══ [시안 2026-08-04] 통합 검색 + 홈 알림 스트립 — 테스트용 추가분 ══ */
+.mock-banner{background:var(--amber-bg);border:1px dashed var(--amber);border-radius:12px;
+  padding:10px 16px;font-size:12.5px;color:var(--ink);margin-bottom:20px;line-height:1.6}
+.uni-wrap{position:relative}
+#uniSearch{width:100%;padding:13px 18px;font-size:15px;font-family:inherit;color:var(--ink);
+  background:var(--surface);border:1.5px solid var(--gold);border-radius:14px;outline:none;box-shadow:var(--card-shadow)}
+#uniSearch:focus{border-color:var(--gold-deep);box-shadow:0 0 0 3px rgba(169,138,82,.18)}
+.uni-hint{font-size:11.5px;color:var(--ink-faint);margin:7px 4px 0}
+#uniResults{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--card-shadow);padding:4px 0 8px;max-height:520px;overflow-y:auto}
+.uni-sec{padding:10px 18px 5px;font-size:11px;font-weight:800;color:var(--ink-faint);letter-spacing:.5px}
+.uni-row+.uni-sec{border-top:1px solid var(--line-soft);margin-top:6px}
+.uni-row{display:flex;align-items:center;gap:11px;padding:8px 18px;font-size:13px;flex-wrap:wrap}
+.uni-row.clickable{cursor:pointer}
+.uni-row.clickable:hover{background:var(--surface-2)}
+.uni-row b{font-size:13.5px}
+.uni-dim{color:var(--ink-soft);font-size:12px}
+.uni-note{padding:10px 18px;color:var(--ink-soft);font-size:12px}
+.uni-warn{margin:10px 12px 4px;padding:11px 15px;border:1px solid var(--amber);background:var(--amber-bg);
+  border-radius:10px;font-size:12.5px;line-height:1.7;color:var(--ink)}
+.uni-alerts{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.uni-al{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+  border-radius:13px;padding:10px 14px;box-shadow:var(--card-shadow);font-size:13px}
+.uni-al-t{font-weight:700;margin-right:2px}
+.uni-al.dim{color:var(--ink-soft);font-size:12px;border-style:dashed}
+.uni-chip{border:none;border-radius:999px;padding:4.5px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}
+.uni-chip b{font-weight:800;font-size:13px}
+.uni-chip.red{background:var(--red-bg);color:var(--red)}
+.uni-chip.amber{background:var(--amber-bg);color:var(--amber)}
+.uni-chip.green{background:var(--green-bg);color:var(--green)}
+.uni-chip.zero{opacity:.45}
+.uni-chip:hover{filter:brightness(.96)}
+
 /* ── 홈: 시트 카드 ── */
 .hello p{color:var(--ink-soft);font-size:12.5px;margin-bottom:4px}
-.grid-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}   /* 2행×4열 고정(홈 카드 8개) */
+.grid-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:calc(80% + 11px)}   /* 2행×4열 고정(홈 카드 8개) · 카드 가로 4/5로 축소(2026-08-08: 간격 유지 보정 +11px) */
 @media(max-width:1100px){.grid-cards{grid-template-columns:repeat(2,1fr)}}
 .scard{position:relative;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;
   border-top:4px solid var(--fld,var(--gold));padding:24px 24px 21px;box-shadow:var(--card-shadow);
-  transition:transform .13s ease,box-shadow .13s ease;display:flex;flex-direction:column;gap:2px;min-height:185px}
+  transition:transform .13s ease,box-shadow .13s ease;display:flex;flex-direction:column;gap:2px;min-height:230px}   /* 카드 높이 상향(2026-08-08) — 내용물 자연 높이가 이미 ~200px라 그 이상으로 줘야 보임 */
 .scard:hover{transform:translateY(-2px);box-shadow:0 7px 20px rgba(138,111,63,.13);border-color:#ddd6c6;border-top-color:var(--fld,var(--gold))}
 .scard .ic{font-size:32px;margin-bottom:10px}
 .scard .nm{font-weight:750;font-size:18px;letter-spacing:-.2px;color:var(--ink)}
@@ -544,7 +577,16 @@ input.dvin-err{border-color:#b3261e!important;background:rgba(179,38,30,.07)}
 
 <!-- ═══ 홈 ═══ -->
 <section id="homeView" class="wrap panel-fade">
-  <div class="sec-title">업무 시트</div>
+  <div class="sec-title">🔎 회원 통합 검색</div>
+  <div class="uni-wrap" style="margin-top:10px">
+    <input type="search" id="uniSearch" placeholder="회원 이름 또는 전화번호 — 락커 4종 · 키관리 · 수동발권 · 현금입금을 한 번에" oninput="uniSearchInput()" autocomplete="off">
+    <div class="uni-hint">이름은 2글자, 전화번호는 숫자 4자리부터 검색됩니다 · 락커 결과를 누르면 해당 관리표로 이동합니다
+      · 동명이인이 있으면 ⚠️ 경고가 뜨며, <b>이름 뒤에 전화 뒷자리</b>를 붙이면 그 회원만 봅니다 (예: 홍길동 5678)</div>
+    <div id="uniResults" class="hidden"></div>
+  </div>
+  <div class="sec-title" style="margin-top:28px">📋 오늘 확인할 것</div>
+  <div id="homeAlerts" class="uni-alerts"></div>
+  <div class="sec-title" style="margin-top:28px">업무 시트</div>
   <div class="hello"><p>카드를 누르면 해당 시트를 이 화면 안에서 그대로 열고 편집합니다 · 원본 내용은 요약·변형 없이 그대로 표시됩니다.</p></div>
   <div class="grid-cards" id="folders" style="margin-top:14px"></div>
 </section>
@@ -954,6 +996,7 @@ function buildHome(){
     host.appendChild(b);
   });
   syncRolePill();
+  buildHomeAlerts();   /* [시안] 오늘 확인할 것 — 캐시가 이미 있으면 즉시 표시 */
   goHome();
   setTimeout(prefetchAll,400);   /* 홈이 뜬 뒤 전 시트 선읽기(1회) — 이후 시트 열기 즉시 표시 */
 }
@@ -967,15 +1010,321 @@ function toggleCashFolders(card){
 }
 function goHome(){
   state.tab=null; closeDrawer(); closeDvDrawer();
+  uniPendingSt=null; uniPendingQ=null;   /* [시안] 홈 복귀 시 관리표 프리셋 해제 */
   document.getElementById('detailView').classList.add('hidden');
   document.getElementById('homeView').classList.remove('hidden');
   syncNav();
   window.scrollTo(0,0);
 }
 
+/* ══════════════════════════════════════════════════════════
+   [시안 2026-08-04] ① 회원 통합 검색 ② 홈 "오늘 확인할 것" 알림
+   원리: prefetchAll이 채워둔 읽기 캐시(RC_MEM/localStorage)만 조합 — 추가 서버 호출 0, 쓰기 0.
+   ══════════════════════════════════════════════════════════ */
+let uniPendingSt=null, uniPendingQ=null, uniKeepPreset=false;   /* 관리표 진입 프리셋(상태 필터·검색어) */
+const UNI_LOCKERS=[
+  {tab:'락커관리(男)', label:'락커男',   icon:'🔵'},
+  {tab:'락커관리(女)', label:'락커女',   icon:'🔴'},
+  {tab:'골프락커',     label:'골프락커', icon:'⛳'},
+  {tab:'스쿼시 락커',  label:'스쿼시',   icon:'🎾'},
+];
+function uniData(tab){ const c=cacheGet(tab); return (c&&isReadPayload(c.d))?c.d:null; }
+/* parseLocker()의 관리표 부분만 캐시 데이터로 수행(배치도 블록 불필요) — 열 탐지·상태 판정 로직 동일 */
+function uniLockerRecs(tab){
+  const meta=SHEETS.find(s=>s.name===tab), d=uniData(tab);
+  if(!meta||!meta.mgmt||!d) return null;
+  const c0=meta.mgmt[0], c1=meta.mgmt[1], values=d.values, rows=d.rows;
+  let hr=-1;
+  for(let i=0;i<Math.min(rows,12)&&hr<0;i++)
+    for(let c=c0;c<=c1;c++) if(((values[i]&&values[i][c])||'').includes('만기')){hr=i;break;}
+  if(hr<0) return null;
+  let nameC=-1,numC=-1,dueC=-1,phoneC=-1,noteC=-1;
+  for(let c=c0;c<=c1;c++){
+    const v=((values[hr]&&values[hr][c])||'').trim();
+    if(nameC<0&&(v.includes('성함')||v.includes('이름'))&&!v.includes('이름표')) nameC=c;
+    if(dueC<0&&v.includes('만기')) dueC=c;
+    if(numC<0&&v.includes('번호')&&!v.includes('전화')) numC=c;
+    if(phoneC<0&&v.includes('전화')) phoneC=c;
+    if(noteC<0&&v.includes('참고')) noteC=c;
+  }
+  if(numC<0||numC===nameC) numC=c0;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const out=[], seen=new Set();
+  for(let i=hr+1;i<rows;i++){
+    const row=values[i]; if(!row) continue;
+    const t=(row[numC]||'').trim();
+    if(!/^\d{1,3}$/.test(t)||seen.has(+t)) continue;
+    seen.add(+t);
+    const g=c=>c>=0?((row[c]||'').trim()):'';
+    const name=g(nameC), dueRaw=g(dueC), phone=g(phoneC), note=g(noteC);
+    const due=parseDateLoose(dueRaw);
+    let st='ok', dd=null;
+    if(!name) st='empty';
+    else if(/삼성생명|운영부|시설팀|법인|분실물/.test(name)) st='special';
+    else if(due){ dd=Math.round((due-today)/86400000); if(dd<0) st='over'; else if(dd<=30) st='soon'; }
+    out.push({n:+t,name,dueRaw,due,dd,phone,note,st});
+  }
+  return out;
+}
+/* [시안 2026-08-07] 회원권 — "유효회원 리스트"(회원정보 시트 IMPORTRANGE 미러, 다리 재배포 필요).
+   헤더 행 위치가 유동적일 수 있어 앞쪽 6행에서 '회원명'+'종료 일자'가 함께 있는 행을 탐지 */
+const UNI_MEMBER_TAB='유효회원 리스트';
+function uniMemberCols(values){
+  const lim=Math.min(values.length,6);
+  for(let r=0;r<lim;r++){
+    const row=values[r]||[];
+    let name=-1,phone=-1,kind=-1,prod=-1,ds=-1,de=-1,reg=-1,lockerC=-1;
+    for(let c=0;c<row.length;c++){
+      const h=String(row[c]==null?'':row[c]).replace(/\s+/g,'');
+      if(name<0&&h==='회원명') name=c;
+      if(phone<0&&h.includes('휴대폰')) phone=c;
+      if(kind<0&&h.includes('회원구분')) kind=c;
+      if(prod<0&&(h.includes('수강반종목')||h.includes('회원권명'))) prod=c;
+      if(ds<0&&h.includes('시작일자')) ds=c;
+      if(de<0&&h.includes('종료일자')) de=c;
+      if(reg<0&&h.includes('재등록분류')) reg=c;
+      if(lockerC<0&&h==='락커') lockerC=c;
+    }
+    if(name>=0&&de>=0) return {hr:r,name,phone,kind,prod,ds,de,reg,lockerC};
+  }
+  return null;
+}
+/* 캐시 갱신 때마다 알림·열린 검색 결과 최신화(cachePut 훅에서 호출) */
+function uniOnData(){
+  buildHomeAlerts();
+  const i=document.getElementById('uniSearch'); if(i&&i.value.trim()) uniSearchRun();
+}
+/* ── 홈 알림 스트립 ── */
+function buildHomeAlerts(){
+  const host=document.getElementById('homeAlerts'); if(!host) return;
+  let h=''; const wait=[];
+  for(const L of UNI_LOCKERS){
+    const recs=uniLockerRecs(L.tab);
+    if(recs===null){ wait.push(L.label); continue; }
+    let over=0,soon=0;
+    for(const r of recs){ if(r.st==='over') over++; else if(r.st==='soon') soon++; }
+    h+='<div class="uni-al"><span class="uni-al-t">'+L.icon+' '+esc(L.label)+'</span>'
+      +'<button type="button" class="uni-chip red'+(over?'':' zero')+'" onclick="uniGoLockerSt(\''+escAttr(L.tab)+'\',\'over\')" title="만기 경과 회원만 관리표로 보기">만기 <b>'+over+'</b></button>'
+      +'<button type="button" class="uni-chip amber'+(soon?'':' zero')+'" onclick="uniGoLockerSt(\''+escAttr(L.tab)+'\',\'soon\')" title="30일 내 만기 회원만 관리표로 보기">D-30 <b>'+soon+'</b></button></div>';
+  }
+  const kd=uniData('키관리');
+  if(kd===null) wait.push('키관리');
+  else{
+    const n=keyUnreturned(kd).length;
+    h+='<div class="uni-al"><span class="uni-al-t">🔑 키관리</span>'
+      +'<button type="button" class="uni-chip '+(n?'red':'green')+'" onclick="openDvDrawer(\'키관리\',\'recall\')" title="미회수 체크 보드 열기">미회수 <b>'+n+'</b></button></div>';
+  }
+  if(wait.length) h+='<div class="uni-al dim">⏳ '+esc(wait.join(' · '))+' 동기화 중…</div>';
+  host.innerHTML=h||'<div class="uni-al dim">⏳ 데이터 동기화 중…</div>';
+}
+/* ── 알림·검색 → 관리표 진입(상태 필터/검색어 프리셋) ── */
+function uniGoLockerSt(tab,st){ uniPendingSt=st; uniPendingQ=null; uniKeepPreset=true; uniGo(tab); }
+function uniGoLockerQ(tab,q){ uniPendingQ=q; uniPendingSt=null; uniKeepPreset=true; uniGo(tab); }
+async function uniGo(tab){
+  const had=!!cacheGet(tab);
+  const pr=openSheet(tab); if(pr&&pr.catch) pr.catch(()=>{});
+  if(had){ if(state.mgmt) setView('list'); }               /* 캐시 있으면 즉시 관리표 */
+  else{ await pr; if(state.tab===tab&&state.mgmt&&state.locker) setView('list'); }
+}
+/* ── 통합 검색 ── */
+let uniQTimer=null;
+function uniSearchInput(){ clearTimeout(uniQTimer); uniQTimer=setTimeout(uniSearchRun,200); }
+function uniSearchRun(){
+  const inp=document.getElementById('uniSearch'), host=document.getElementById('uniResults');
+  if(!inp||!host) return;
+  const q=inp.value.trim();
+  /* 질의 해석: 숫자 토큰(4자리~)=전화번호, 글자 토큰=이름. 함께 쓰면 AND — 동명이인 구분용 (예: "홍길동 5678") */
+  const toks=q?q.split(/\s+/):[];
+  const digTok=toks.filter(t=>/^[\d\-]+$/.test(t)).map(t=>t.replace(/\D/g,'')).filter(t=>t.length>=4);
+  const txtToks=toks.filter(t=>!/^[\d\-]+$/.test(t)).map(t=>t.toLowerCase());
+  const phQ=digTok.length?digTok[0]:'';
+  if(!q||(!phQ&&txtToks.join('').length<2)){ host.innerHTML=''; host.classList.add('hidden'); return; }
+  const nameOk=s=>{ if(!txtToks.length) return false; const v=String(s||'').toLowerCase(); return txtToks.every(t=>v.includes(t)); };
+  const phoneOk=s=>{ if(!phQ) return false; const p=String(s||'').replace(/\D/g,''); return !!p&&p.includes(phQ); };
+  const hit=(nm,ph)=> (txtToks.length&&phQ) ? (nameOk(nm)&&phoneOk(ph))
+    : (phQ ? phoneOk(ph) : (nameOk(nm)||phoneOk(ph)));
+  /* 동명이인 감지(이름만으로 검색했을 때): 결과에 등장한 전화번호를 출처와 함께 수집 */
+  const nameMode=txtToks.length>0&&!phQ;
+  const dupPh={}; let noPhoneHit=false;
+  const addPh=(ph,src)=>{ const p=String(ph||'').replace(/\D/g,''); if(!p||p.length<7) return;
+    (dupPh[p]=dupPh[p]||{disp:String(ph).trim(),srcs:[]}); if(dupPh[p].srcs.indexOf(src)<0) dupPh[p].srcs.push(src); };
+  let html=''; const wait=[];
+  /* ⓪ 회원권 — 유효회원 리스트(회원정보 미러). 다리 재배포 전엔 캐시가 없어 건너뛰고 하단 안내로 대체 */
+  let memberOn=false;
+  const md=uniData(UNI_MEMBER_TAB);
+  if(md){
+    const mc=uniMemberCols(md.values);
+    if(mc){
+      memberOn=true;
+      const mToday=new Date(); mToday.setHours(0,0,0,0);
+      const hits=[];
+      for(let r=mc.hr+1;r<md.values.length;r++){
+        const row=md.values[r]; if(!row) continue;
+        const nm=String(row[mc.name]==null?'':row[mc.name]).trim(); if(!nm) continue;
+        const ph=mc.phone>=0?String(row[mc.phone]==null?'':row[mc.phone]).trim():'';
+        if(!hit(nm,ph)) continue;
+        addPh(ph,'회원권');
+        const g=c=>c>=0?String(row[c]==null?'':row[c]).trim():'';
+        const eRaw=g(mc.de), eD=parseDateLoose(eRaw);
+        let st='none', dd=null;
+        if(eD){ dd=Math.round((eD-mToday)/86400000); st= dd<0?'over':(dd<=30?'soon':'ok'); }
+        hits.push({nm,ph,kind:g(mc.kind),prod:g(mc.prod),sRaw:g(mc.ds),eRaw,dd,st,reg:g(mc.reg),locker:g(mc.lockerC)});
+      }
+      /* 같은 회원의 과거 등록 이력이 여러 행 → 종료일이 늦은(현행) 것부터 */
+      hits.sort((a,b)=>{const x=a.dd==null?-1e9:a.dd, y=b.dd==null?-1e9:b.dd; return y-x;});
+      if(hits.length){
+        let ms=''; const mshow=Math.min(hits.length,3);
+        for(let i=0;i<mshow;i++){
+          const m=hits[i];
+          const stB= m.st==='over'?['b-red',(m.reg?esc(m.reg)+' · ':'')+'만료 D+'+(-m.dd)]
+            : m.st==='soon'?['b-amber','만기 D-'+m.dd]
+            : m.st==='ok'?['b-green','이용 중 · 종료까지 '+m.dd+'일']:['b-gray','기간 미기재'];
+          ms+='<div class="uni-row"><span>🎫</span><b>'+esc(m.nm)+'</b>'
+            +(m.kind?'<span class="badge b-blue">'+esc(m.kind)+'</span>':'')
+            +'<span class="badge '+stB[0]+'">'+stB[1]+'</span>'
+            +(m.prod?'<span class="uni-dim">'+esc(m.prod)+'</span>':'')
+            +((m.sRaw||m.eRaw)?'<span class="uni-dim">📅 '+esc(m.sRaw)+' ~ '+esc(m.eRaw)+'</span>':'')
+            +(m.locker?'<span class="uni-dim">락커 '+esc(m.locker)+'</span>':'')
+            +(m.ph?'<span class="uni-dim">📞 '+esc(m.ph)+'</span>':'')+'</div>';
+        }
+        html+='<div class="uni-sec">🎫 회원권 (시작일·종료일) — 총 '+hits.length+'건 · 최신 '+mshow+'건 표시</div>'+ms;
+      }
+    }
+  }
+  /* ① 락커 4종 — 배정 현황 */
+  let lk='';
+  for(const L of UNI_LOCKERS){
+    const recs=uniLockerRecs(L.tab);
+    if(recs===null){ wait.push(L.label); continue; }
+    for(const r of recs){
+      if(!r.name||!hit(r.name,r.phone)) continue;
+      addPh(r.phone,L.label);
+      const stB= r.st==='over'?['b-red','만기 경과'+(r.dd!=null?' D+'+(-r.dd):'')]
+        : r.st==='soon'?['b-amber','만기 D-'+r.dd]
+        : r.st==='special'?['b-purple','시설']:['b-green','사용 중'];
+      lk+='<div class="uni-row clickable" onclick="uniGoLockerQ(\''+escAttr(L.tab)+'\',\''+escAttr(r.name)+'\')">'
+        +'<span>'+L.icon+' '+esc(L.label)+'</span><b>'+r.n+'번</b><b>'+esc(r.name)+'</b>'
+        +'<span class="badge '+stB[0]+'">'+stB[1]+'</span>'
+        +(r.dueRaw?'<span class="uni-dim">만기 '+esc(r.dueRaw)+'</span>':'')
+        +(r.phone?'<span class="uni-dim">📞 '+esc(r.phone)+'</span>':'')
+        +(r.note?'<span class="uni-dim">'+esc(r.note)+'</span>':'')+'</div>';
+    }
+  }
+  if(lk) html+='<div class="uni-sec">🚪 락커 배정</div>'+lk;
+  /* ② 키관리(男·女 분실 관리) — 최근순 5건 */
+  const kd=uniData('키관리');
+  if(kd===null) wait.push('키관리');
+  else{
+    let ks='', kn=0;
+    for(let r=kd.values.length-1;r>=2&&kn<5;r--){
+      const row=kd.values[r]; if(!row) continue;
+      const nm=String(row[2]==null?'':row[2]).trim(); if(!nm||!hit(nm,row[3])) continue;
+      kn++; addPh(row[3],'키관리');
+      const rec=String(row[6]==null?'':row[6]).trim(), bi=String(row[7]==null?'':row[7]).trim();
+      ks+='<div class="uni-row clickable" onclick="openDvDrawer(\'키관리\',\'recall\')">'
+        +'<span>🔑</span><b>'+esc(String(row[1]==null?'':row[1]).trim()||'-')+'번 키</b><b>'+esc(nm)+'</b>'
+        +'<span class="badge '+(rec?'b-green':'b-red')+'">'+(rec?esc(rec):'미회수')+'</span>'
+        +'<span class="uni-dim">분실 '+esc(String(row[0]==null?'':row[0]).trim())+'</span>'
+        +(bi?'<span class="uni-dim">'+esc(bi)+'</span>':'')+'</div>';
+    }
+    if(ks) html+='<div class="uni-sec">🔑 키 분실 이력 (최근순)</div>'+ks;
+  }
+  /* ③ 수동발권(카드미소지) — 총 횟수 + 최근 3건 */
+  const cd=uniData('카드미소지');
+  if(cd===null) wait.push('수동발권');
+  else{
+    let cs='', cn=0, cshow=0;
+    for(let r=cd.values.length-1;r>=1;r--){
+      const row=cd.values[r]; if(!row) continue;
+      const nm=String(row[1]==null?'':row[1]).trim(); if(!nm||!hit(nm,row[2])) continue;
+      cn++; addPh(row[2],'수동발권');
+      if(cshow<3){ cshow++;
+        const memo=String(row[8]==null?'':row[8]).trim();
+        cs+='<div class="uni-row"><span>🪪</span><b>'+esc(String(row[0]==null?'':row[0]).trim())+'</b>'
+          +'<span class="uni-dim">'+esc(String(row[6]==null?'':row[6]).trim())+'</span><b>'+esc(nm)+'</b>'
+          +(String(row[5]==null?'':row[5]).trim()?'<span class="uni-dim">락커 '+esc(String(row[5]).trim())+'</span>':'')
+          +(String(row[7]==null?'':row[7]).trim()?'<span class="uni-dim">담당 '+esc(String(row[7]).trim())+'</span>':'')
+          +(memo?'<span class="uni-dim">'+esc(memo)+'</span>':'')+'</div>';
+      }
+    }
+    if(cn) html+='<div class="uni-sec">🪪 수동발권 입장 — 총 '+cn+'회 · 최근 '+cshow+'건 표시</div>'+cs;
+  }
+  /* ④ 휴회(멤버십 일시정지) 신청 이력 — 시트에 있는 유일한 회원권 관련 데이터 */
+  const pd=uniData('휴회신청 응답(26년)');
+  if(pd===null) wait.push('휴회신청');
+  else{
+    const hv=pd.values, hh=hv[0]||[];
+    let cN=-1,cP=-1,cCha=-1,cS=-1,cE=-1,cSt=-1;
+    for(let c=0;c<hh.length;c++){
+      const h=String(hh[c]==null?'':hh[c]);
+      if(cN<0&&(h.includes('성명')||h.includes('이름'))) cN=c;
+      if(cP<0&&h.includes('연락')) cP=c;
+      if(cCha<0&&h.includes('차수')) cCha=c;
+      if(cS<0&&h.includes('시작')) cS=c;
+      if(cE<0&&(h.includes('만료')||h.includes('종료'))) cE=c;
+      if(cSt<0&&h.includes('진행')) cSt=c;
+    }
+    if(cN>=0){
+      let hs='', hn=0, hshow=0;
+      for(let r=hv.length-1;r>=1;r--){
+        const row=hv[r]; if(!row) continue;
+        const nm=String(row[cN]==null?'':row[cN]).trim(); if(!nm) continue;
+        if(!hit(nm,cP>=0?row[cP]:'')) continue;
+        hn++; if(cP>=0) addPh(row[cP],'휴회신청');
+        if(hshow<3){ hshow++;
+          const st=cSt>=0?String(row[cSt]==null?'':row[cSt]).trim():'';
+          const dates=(cS>=0?String(row[cS]==null?'':row[cS]).trim():'')+((cS>=0||cE>=0)?' ~ ':'')+(cE>=0?String(row[cE]==null?'':row[cE]).trim():'');
+          hs+='<div class="uni-row"><span>⏸️</span><b>'+esc(nm)+'</b>'
+            +(cCha>=0&&String(row[cCha]==null?'':row[cCha]).trim()?'<span class="uni-dim">'+esc(String(row[cCha]).trim())+'</span>':'')
+            +(dates.trim()!=='~'?'<span class="uni-dim">'+esc(dates)+'</span>':'')
+            +'<span class="badge '+(st.includes('완료')?'b-green':(st?'b-amber':'b-gray'))+'">'+(st?esc(st):'상태 미기재')+'</span></div>';
+        }
+      }
+      if(hn) html+='<div class="uni-sec">⏸️ 휴회(멤버십 일시정지) 신청 — 총 '+hn+'건 · 최근 '+hshow+'건 표시</div>'+hs;
+    }
+  }
+  /* ⑤ 현금입금 — 입금자 일치 최근 3건. ⚠ 이 시트에는 전화번호가 없어 동명이인 구분 불가 → 전화번호 포함 검색 시 제외 */
+  const sd=uniData('시재금입출내역');
+  if(sd===null) wait.push('시재금');
+  else if(!phQ){
+    let ss='', sn=0, sshow=0;
+    for(let r=sd.values.length-1;r>=3;r--){
+      const row=sd.values[r]; if(!row) continue;
+      const py=String(row[2]==null?'':row[2]).trim(); if(!py||!nameOk(py)) continue;
+      sn++; noPhoneHit=true;
+      if(sshow<3){ sshow++;
+        ss+='<div class="uni-row"><span>🏦</span><b>'+esc(String(row[0]==null?'':row[0]).trim())+'</b><b>'+esc(py)+'</b>'
+          +(String(row[3]==null?'':row[3]).trim()?'<span class="uni-dim">'+esc(String(row[3]).trim())+'</span>':'')
+          +'<span class="uni-dim">입금 '+esc(String(row[4]==null?'':row[4]).trim())+'</span></div>';
+      }
+    }
+    if(sn) html+='<div class="uni-sec">🏦 현금입금 — 총 '+sn+'건 · 최근 '+sshow+'건 표시</div>'+ss;
+  }
+  /* 동명이인 경고 — 이름 검색 결과에 서로 다른 전화번호가 2개 이상이면 맨 위에 표시 */
+  if(nameMode){
+    const pks=Object.keys(dupPh);
+    if(pks.length>=2){
+      const parts=pks.map(k=>dupPh[k].disp+' ('+dupPh[k].srcs.join('·')+')');
+      html='<div class="uni-warn">⚠️ <b>동명이인 가능성</b> — 검색 결과에 서로 다른 전화번호 <b>'+pks.length+'개</b>가 섞여 있습니다:<br>'
+        +esc(parts.join('  /  '))
+        +'<br>이름 뒤에 전화 뒷자리를 붙여 검색하면 그 회원 것만 표시됩니다 (예: <b>'+esc(toks.filter(t=>!/^[\d\-]+$/.test(t)).join(' '))+' '+esc(pks[0].slice(-4))+'</b>)'
+        +(noPhoneHit?'<br>※ 현금입금 기록에는 전화번호 칸이 없어 구분되지 않습니다 — 날짜·종목으로 확인해 주세요':'')
+        +'</div>'+html;
+    }
+  }
+  if(!html) html='<div class="uni-note">"'+esc(q)+'" 검색 결과가 없습니다'+(wait.length?' (일부 시트 동기화 중)':'')+'</div>';
+  if(wait.length) html+='<div class="uni-note">⏳ '+esc(wait.join(' · '))+' 시트는 아직 동기화 중입니다 — 잠시 후 다시 검색해 주세요</div>';
+  html+= memberOn
+    ? '<div class="uni-note">ℹ️ 회원권 정보는 "유효회원 리스트"(회원정보 시트 자동 미러) 기준 — 방금 등록·변경된 내용은 스포피아/ERP에서 확인해 주세요</div>'
+    : '<div class="uni-note">ℹ️ 회원권 정보 미연동 — 다리(웹앱) 재배포 후 "유효회원 리스트" 시트가 연결되면 시작일·종료일이 여기 표시됩니다. 그 전까지는 스포피아에서 확인해 주세요</div>';
+  host.innerHTML=html; host.classList.remove('hidden');
+}
+
 /* ── 시트 열기 ── */
 async function openSheet(name){
   const meta=SHEETS.find(s=>s.name===name); if(!meta) return;
+  /* [시안] 통합검색·홈 알림 경유가 아니면 관리표 프리셋 해제 */
+  if(!uniKeepPreset){ uniPendingSt=null; uniPendingQ=null; } uniKeepPreset=false;
   state.tab=name; state.hideEmpty=false; state.locker=null; state.mapFit=true; closeDrawer();
   state.mapEdit=false; state.layoutDraft=null; state.editSel=null;
   state.mgmt=meta.mgmt||null;
@@ -1027,6 +1376,7 @@ function cachePut(tab,payload){
     try{ Object.keys(localStorage).filter(k=>k.indexOf('rc_cache::')===0).forEach(k=>localStorage.removeItem(k));
          localStorage.setItem('rc_cache::'+tab, JSON.stringify(o)); }catch(e2){}
   }
+  try{ uniOnData(); }catch(e){}   /* [시안] 캐시 갱신 시 홈 알림·검색 결과 최신화 */
 }
 function hhmm(ts){ const d=ts?new Date(ts):new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 /* 수신 데이터 화면 반영(구 load 본문의 렌더 부분) */
@@ -1089,7 +1439,8 @@ async function load(){
 let rcPrefetchDone=false;
 async function prefetchAll(){
   if(rcPrefetchDone || !state.url || !state.pw) return; rcPrefetchDone=true;
-  const order=['락커관리(男)','락커관리(女)','골프락커','스쿼시 락커','카드미소지','시재금입출내역','키관리','휴회신청 응답(26년)','업무 및 기초 메뉴얼'];
+  /* '유효회원 리스트'는 SHEETS에 없는 데이터 전용 탭(회원권 검색용) — 다리 재배포 전엔 sheet not allowed 로 조용히 건너뜀 */
+  const order=['락커관리(男)','락커관리(女)','골프락커','스쿼시 락커','카드미소지','시재금입출내역','키관리','유효회원 리스트','휴회신청 응답(26년)','업무 및 기초 메뉴얼'];
   for(const n of order){
     if(state.tab===n) continue;   /* 지금 보고 있는 시트는 load()가 담당 */
     try{ const r=await call({action:'read', tab:n, password:state.pw}); if(isReadPayload(r)){ delete r.cached; cachePut(n,r); } }catch(e){}
@@ -2091,6 +2442,7 @@ function renderMgmtList(){
   const values=state.data.values, rows=state.data.rows, locked=state.data.lockedMask;
   const uni=isUni();
   mgFilters={}; mgFltOpts={}; closeMgPop();
+  if(uniPendingSt) mgFilters.st=uniPendingSt;   /* [시안] 홈 알림에서 진입 시 상태 필터 프리셋 */
   /* 표시할 열: 헤더가 있는 관리표 열 (uni: 3차 연락 열은 표시 제거 — 시트 데이터는 그대로) */
   const showCols=[], colLabels={};
   for(let c=p.c0;c<=p.c1;c++){
@@ -2155,6 +2507,9 @@ function renderMgmtList(){
     +'</div>'
     +'<div class="tbl-wrap"><table class="mgtbl"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
   host.querySelector('table.mgtbl').addEventListener('click', onCellClick);
+  /* [시안] 통합검색·홈 알림에서 넘어온 프리셋 적용(검색어 채움 + 필터 실행) */
+  if(uniPendingQ){ const si=document.getElementById('mgSearch'); if(si) si.value=uniPendingQ; }
+  if(mgFilters.st||uniPendingQ){ syncMgFltBtns(); filterMgmt(); }
 }
 /* 관리표 필터: 검색어 + 열별 팝오버 필터 결합 (▾ 클릭 → 값 선택) */
 let mgFilters={}, mgFltOpts={}, mgApplyFn=null;
@@ -2181,6 +2536,7 @@ function openMgPop(ev,flt,apply){
   pop.addEventListener('click',e=>{
     const it=e.target.closest('.mgpop-it'); if(!it) return;
     mgFilters[flt]=it.dataset.v;
+    if(flt==='st') uniPendingSt=null;   /* [시안] 사용자가 직접 상태 필터를 바꾸면 프리셋 해제 */
     syncMgFltBtns(); applyFn(); closeMgPop();
   });
   const q=pop.querySelector('.mgpop-q'); if(q) setTimeout(()=>q.focus(),30);
