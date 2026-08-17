@@ -10437,6 +10437,7 @@ function saveChurnModal() {
   var reason = document.getElementById('crReasonSel').value.trim();
   var note = document.getElementById('crNoteInput').value.trim();
   if (reason === '기타' && !note) { showToast('기타 선택 시 메모를 입력해 주세요', 'err'); return; }
+  if (!reason) { showToast('종료사유를 선택해 주세요', 'err'); return; }
   var rowIndex = _churnModal.rowIndex, keyPhone = _churnModal.keyPhone;
   var fields = {}; fields[CHURN_REASON_COL] = reason; fields[CHURN_REASON_NOTE_COL] = note;
   var saveBtn = document.getElementById('crSaveBtn'); saveBtn.disabled = true;
