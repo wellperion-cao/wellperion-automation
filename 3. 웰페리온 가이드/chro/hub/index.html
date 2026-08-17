@@ -4087,47 +4087,18 @@ function evalConsole(){
   '</div>';
 }
 function renderEval(){
+  /* [정리 2026-08-17 A-5, 매니저 확정] 평가탭 표시를 "업무 정량평가" 섹션 단독으로 정리 —
+     구 UI(평가 실시 콘솔·평가 제도/기준·평가 기록 목록)는 화면에서만 제거. evalConsole()/
+     criteriaSection() 등 함수 정의와 save-eval 등 백엔드 API는 무접촉 보존(git 복원 가능). */
   var html='<div class="sec-title">인사평가 · 포상</div>';
   if(ERR.eval){setPanel("eval",html+errCard("인사평가 DB","eval"));return;}
-  var all=DB.eval;
-  var ev=all.filter(function(e){return (e["평가명"]||"").indexOf("[제외")!==0;});
-  var excludedN=all.length-ev.length;
-  var rewarded=ev.filter(function(e){return isYes(e["포상 여부"]);}).length;
-  html+='<div class="kpi-grid" style="margin-bottom:6px">'+
-    kpi("평가 기록",ev.length+'<small> 건</small>',"정규직 평가 대상")+
-    kpi("포상 대상",rewarded+'<small> 건</small>',"")+'</div>';
-  if(excludedN){html+='<div class="muted" style="margin-bottom:10px">파트너 전환 등으로 제외된 '+excludedN+'건은 표시에서 숨겼습니다.</div>';}
-  if(SESSION_ROLE==="admin"){ html+='<div class="sec-title">평가 실시</div>'+evalConsole(); }
   if(SESSION_ROLE==="admin"){
     html+='<div class="sec-title">업무 정량평가 (운영부)</div>'+
       '<div class="muted" style="margin-bottom:10px">정량평가 — 업무보드 기록 기반 자동 산출 · 정성평가는 추후 도입 예정</div>'+
       '<div id="qevBox"><div class="card">'+emptyState("업무보드 데이터 로드 중…","◌")+'</div></div>';
+  }else{
+    html+='<div class="card">'+emptyState("관리자 모드에서만 조회할 수 있습니다.","◇")+'</div>';
   }
-  html+='<div class="sec-title">평가 제도 · 기준</div>'+criteriaSection();
-  html+='<div class="sec-title">평가 기록</div>';
-  if(!ev.length){
-    setPanel("eval",html+'<div class="card">'+emptyState("표시할 인사평가 기록이 없습니다.","◇")+'</div>');
-    if(SESSION_ROLE==="admin") renderQuantEval();
-    return;
-  }
-  html+='<div class="stack">'+ev.map(function(e){
-    var tgt=resolveRel(e["대상자"]).join(", ");
-    return '<div class="item"><div class="item-top">'+
-      '<div><div class="item-title">'+esc(txt(e["평가명"]))+'</div>'+
-      '<div class="item-meta">'+(e["평가 등급"]?badge(e["평가 등급"]):"")+
-        badge(e["평가 종류"])+badge(e["평가 주기"])+
-        (isYes(e["포상 여부"])?'<span class="badge b-gold">포상</span>':"")+
-      '</div></div>'+
-      '<div style="text-align:right"><div class="t-name" style="font-size:18px">'+
-        (e["총점"]!=null&&e["총점"]!==""?num(e["총점"]):"—")+'</div><div class="t-sub">총점</div></div></div>'+
-      '<div class="kv">'+
-      kv("대상자",txt(tgt))+kv("평가자",txt(e["평가자"]))+
-      kv("평가 기간",fmtD(dval(e,"평가 기간")))+kv("가산점",txt(e["가산점"]))+
-      '</div>'+
-      (e["포상 내역"]?'<div style="margin-top:8px;font-size:12px"><b>포상:</b> '+esc(e["포상 내역"])+'</div>':"")+
-      (e["피드백"]?'<div style="margin-top:6px;font-size:12px;color:var(--ink-soft);white-space:pre-wrap">'+esc(e["피드백"])+'</div>':"")+
-      '</div>';
-  }).join("")+'</div>';
   setPanel("eval",html);
   if(SESSION_ROLE==="admin") renderQuantEval();
 }
