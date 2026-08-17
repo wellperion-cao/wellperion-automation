@@ -3970,35 +3970,49 @@ var WP_QUANT_PEOPLE=[
 ];
 function wpOwners(t){return String(t["담당자"]||"").split(",").map(function(s){return s.trim();}).filter(Boolean);}
 function wpDate(s){return s?new Date(s):null;}
+var WP_QUANT_LAST=[]; // 마지막 renderQuantEval() 계산 결과(카드별 items 포함) — 팝업 모달이 재조회 없이 재사용
 function quantEvalCompute(tasks){
   var out=[];
   WP_QUANT_PEOPLE.forEach(function(p){
     var assignedScore=0,assignedCount=0,completedScore=0,completedCount=0;
     var dueNumer=0,dueDenom=0,staleNumer=0,staleDenom=0,unscored=[],now=new Date();
+    var items=[]; // 팝업 모달용 카드별 상세(집계 로직에는 영향 없음 — push만 추가)
     tasks.forEach(function(t){
       var owners=wpOwners(t);
       if(owners.indexOf(p.key)<0) return;
-      if(!(t.id in WP_R_SCORE)){ unscored.push(t); return; }
+      if(!(t.id in WP_R_SCORE)){
+        unscored.push(t);
+        items.push({title:t["업무명"],score:null,scoreTag:"미채점",status:t["상태"],dueTag:"—",createdAt:t["생성일"]});
+        return;
+      }
       var score=WP_R_SCORE[t.id];
-      if(score==null) return; // 판정불가(사전 채점 제외) — 배정·완료 어느 쪽에도 안 잡음
+      if(score==null){ // 판정불가(사전 채점 제외) — 배정·완료 어느 쪽에도 안 잡음
+        items.push({title:t["업무명"],score:null,scoreTag:"판정불가",status:t["상태"],dueTag:"—",createdAt:t["생성일"]});
+        return;
+      }
       assignedScore+=score; assignedCount++;
       var status=t["상태"];
+      var dueTag="—";
       if(status==="완료"){
         completedScore+=score; completedCount++;
         var due=wpDate(t["종료일"]), doneAt=wpDate(t["완료일"])||wpDate(t["수정일"]);
         if(due){
           dueDenom+=score;
-          if(doneAt && doneAt.getTime()<=due.getTime()+(23*3600+59*60)*1000) dueNumer+=score;
-        }
+          var _ok=doneAt && doneAt.getTime()<=due.getTime()+(23*3600+59*60)*1000;
+          if(_ok) dueNumer+=score;
+          dueTag=_ok?"준수":"초과";
+        }else{ dueTag="기한 미기재"; }
       }else if(status==="진행중"){
         staleDenom+=score;
         var mod=wpDate(t["수정일"])||wpDate(t["생성일"]);
         var idle=mod?((now-mod)/86400000):0;
         if(idle>=14) staleNumer+=score;
+        dueTag=idle>=14?("정체 "+Math.floor(idle)+"일"):"진행중";
       }
+      items.push({title:t["업무명"],score:score,scoreTag:String(score),status:status,dueTag:dueTag,createdAt:t["생성일"]});
     });
     var n=assignedCount, gateOk=n>=5;
-    var result={key:p.key,name:p.name,title:p.title,n:n,assignedScore:assignedScore,completedCount:completedCount,completedScore:completedScore,unscored:unscored,gateOk:gateOk};
+    var result={key:p.key,name:p.name,title:p.title,n:n,assignedScore:assignedScore,completedCount:completedCount,completedScore:completedScore,unscored:unscored,items:items,gateOk:gateOk};
     if(gateOk){
       var w=n/(n+20);
       var compRaw=assignedScore>0?completedScore/assignedScore:0;
@@ -4038,8 +4052,46 @@ function quantEvalCard(r){
   }else{
     body='<div class="muted">배정 '+r.n+'건 — 게이트(5건 이상) 미달로 등급 미산출.</div>';
   }
-  return '<div class="item">'+head+body+'</div>';
+  return '<div class="item" style="cursor:pointer" onclick="openQevPersonModal(\''+esc(r.key)+'\')" title="클릭하면 '+esc(r.name)+'님의 업무·점수 목록을 볼 수 있습니다">'+head+body+'</div>';
 }
+// ─── 인별 업무·점수 팝업 (2026-08-17 매니저 지시) — 추가 백엔드 호출 없이 quantEvalCompute() 결과(WP_QUANT_LAST) 재사용 ───
+function qevScoreBadgeHtml(it){
+  if(it.score==null) return '<span class="badge b-gray">'+esc(it.scoreTag)+'</span>';
+  var cls=it.score>=8?"b-red":it.score>=5?"b-amber":it.score>=3?"b-blue":"b-green";
+  return '<span class="badge '+cls+'">R'+it.score+'</span>';
+}
+function qevDueBadgeHtml(it){
+  if(it.dueTag==="준수") return '<span class="badge b-green">준수</span>';
+  if(it.dueTag==="초과") return '<span class="badge b-red">초과</span>';
+  if(it.dueTag&&it.dueTag.indexOf("정체")===0) return '<span class="badge b-amber">'+esc(it.dueTag)+'</span>';
+  return '<span class="muted">'+esc(it.dueTag||"—")+'</span>';
+}
+function openQevPersonModal(key){
+  var m=document.getElementById("qevPersonModal");
+  if(!m) return;
+  var r=null;
+  for(var i=0;i<WP_QUANT_LAST.length;i++){ if(WP_QUANT_LAST[i].key===key){ r=WP_QUANT_LAST[i]; break; } }
+  var nameEl=document.getElementById("qevpName"), subEl=document.getElementById("qevpSub"),
+      sumEl=document.getElementById("qevpSummary"), tblEl=document.getElementById("qevpTableWrap");
+  if(!r){ nameEl.textContent="데이터 없음"; subEl.textContent="—"; sumEl.innerHTML=""; tblEl.innerHTML=""; m.style.display="flex"; return; }
+  nameEl.textContent=r.name+" "+r.title;
+  subEl.textContent=r.gateOk?("총점 "+num(r.total)+" · 등급 "+r.grade):("게이트 미달 — 배정 "+r.n+"건(5건 이상 필요)");
+  sumEl.innerHTML=r.gateOk
+    ? ('<div class="kv">'+kv("볼륨",num(r.volume))+kv("품질",num(r.quality))+kv("배정",r.n+"건/"+r.assignedScore+"점")+kv("완료",r.completedCount+"건/"+r.completedScore+"점")+'</div>')
+    : ('<div class="muted">배정 '+r.n+'건 — 게이트(5건 이상) 미달로 등급 미산출.</div>');
+  var rows=(r.items||[]).slice().sort(function(a,b){ return String(b.createdAt||"").localeCompare(String(a.createdAt||"")); });
+  if(!rows.length){
+    tblEl.innerHTML='<div class="muted" style="padding:10px 2px">배정된 업무가 없습니다.</div>';
+  }else{
+    tblEl.innerHTML='<table class="og-tbl"><thead><tr><th class="wrap">업무명</th><th>규모</th><th>상태</th><th>기한/정체</th><th>등재일</th></tr></thead><tbody>'+
+      rows.map(function(it){
+        return '<tr><td class="wrap">'+esc(it.title||"—")+'</td><td>'+qevScoreBadgeHtml(it)+'</td><td>'+esc(it.status||"—")+'</td><td>'+qevDueBadgeHtml(it)+'</td><td>'+esc(it.createdAt||"—")+'</td></tr>';
+      }).join("")+
+      '</tbody></table>';
+  }
+  m.style.display="flex";
+}
+function closeQevPersonModal(){ var m=document.getElementById("qevPersonModal"); if(m) m.style.display="none"; }
 function quantEvalRenderHTML(list){
   var totalUnscored=0; list.forEach(function(r){totalUnscored+=r.unscored.length;});
   var html='<div class="stack">'+list.map(quantEvalCard).join("")+
@@ -4057,6 +4109,7 @@ async function renderQuantEval(){
     var raw=await withTimeout(fetch(COO_TODO_FN+"?action=todo_list",{redirect:"follow"}),20000).then(function(x){return x.json();});
     if(!(raw&&raw.ok&&raw.data)) throw new Error((raw&&raw.error)||"응답 없음");
     var list=quantEvalCompute(raw.data);
+    WP_QUANT_LAST=list;
     box.innerHTML=quantEvalRenderHTML(list);
   }catch(e){
     box.innerHTML='<div class="card">'+emptyState("업무보드 로드 실패: "+((e&&e.message)||String(e)),"⚠")+'</div>';
@@ -5258,6 +5311,19 @@ document.getElementById("gatePw").addEventListener("keydown",function(e){
     <div class="modal-act" style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" id="aiClose">닫기</button>
       <button class="btn" id="aiSubmit">단계 전환 + 일정 등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- ★ 업무 정량평가 — 인별 업무·점수 팝업 (2026-08-17 매니저 지시) ★ -->
+<div class="modal-bg" id="qevPersonModal" style="display:none" onclick="if(event.target.id==='qevPersonModal')closeQevPersonModal()">
+  <div class="modal" style="max-width:min(820px,95vw);max-height:88vh;overflow-y:auto">
+    <h3 id="qevpName" style="margin:0 0 4px">—</h3>
+    <div class="msub" id="qevpSub" style="color:var(--ink-soft);margin-bottom:10px">—</div>
+    <div id="qevpSummary"></div>
+    <div class="og-tbl-wrap" id="qevpTableWrap" style="margin-top:12px"></div>
+    <div class="modal-act" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeQevPersonModal()">닫기</button>
     </div>
   </div>
 </div>
