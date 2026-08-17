@@ -3948,14 +3948,19 @@ window.ssotShowTasks=ssotShowTasks;
     if (!box) return;
     var b = (j && j.board) || [];
     if (!b.length) { box.innerHTML = '<div class="ls-dim">이번 달 기록이 아직 없습니다.</div>'; return; }
-    box.innerHTML = b.map(function (r) {
+    // 상위 6명까지만 보인다(GM 지시 2026-08-17) — 1점 동점자가 길게 붙으면 판이 늘어져 위쪽이 안 읽힌다.
+    // 자른 인원은 숨기지 않고 '외 N명'으로 남긴다. 셈법·순위는 접수 GAS 그대로 손대지 않는다.
+    var REG_LIMIT = 6;
+    var shown = b.slice(0, REG_LIMIT), rest = b.length - shown.length;
+    box.innerHTML = shown.map(function (r) {
       return '<div class="ls-row">' +
         '<span class="ls-rank">' + esc(r.rank) + '</span>' +
         '<span class="ls-name">' + esc(r.name) + '</span>' +
         '<span class="ls-pt">' + esc(r.total) + '점</span>' +
         '<span class="ls-detail">접수 ' + esc(r.intake) + ' · 완료 ' + esc(r.done) + '</span>' +
         '</div>';
-    }).join('');
+    }).join('') +
+      (rest > 0 ? '<div class="ls-dim" style="padding-top:6px;font-size:12px">외 ' + rest + '명</div>' : '');
   }
 
   /* 담당자별 통계 표 — 대시보드(renderDashboard) 상단 표와 같은 내용.
