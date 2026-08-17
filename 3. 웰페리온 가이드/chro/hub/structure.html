@@ -524,6 +524,12 @@
     </div>
 
     <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>기존 직원 필드 정정 (2026-08-17 신설, 배포 대기)</h3></div>
+      <p>register(빈 슬롯 삽입 전용)·resign/vacate-current(값 비움 전용) 어디에도 없던 "이미 등록된 직원의 필드 1개만 정정" 계약입니다. <span class="warn">행 삽입 · 삭제 없음</span> — 지정 행의 지정 셀 1개만 setValue. <b>sheetRow+name 이중 대조</b>(그 행 실제 성명이 요청 성명과 일치할 때만 진행, 불일치=name_mismatch로 중단 — 동명이인 오폭 방지) · <b>정정 가능 필드는 화이트리스트 1종(현재 "입사일"만)</b>, 성명 · 부서 · No 등 구조 · 매칭 키는 대상에서 제외 · <b>수식 셀은 formula_cell_blocked로 보호</b> · 날짜 형식 + 달력 실존 검증. 첫 사용처는 조희제(r133) 입사일 오기 정정. <span class="warn">A-6 사전감사 + 매니저 승인 게이트 대기 — clasp "새 버전" 미배포</span>.</p>
+      <div class="tags"><span class="tag act">fix-emp-field</span><span class="tag db">db:emp</span></div>
+    </div>
+
+    <div class="item">
       <div class="item-head"><span class="badge bg-a4">A-4 평가담당자</span><h3>인사평가 저장 · 평가지 렌더</h3></div>
       <p>웰페리온 공식 기준 — <b>A/B/C 3등급 · 부서별 정원 사전 배분 · 다면평가 4종</b> + 4대 인재상 5축(A~F)으로 평가를 저장합니다. 평가지(openPrintView)는 메모를 키-값/불릿으로 렌더하므로 표준 양식으로 정리하며, 등급 분포가 정원을 벗어나면 알립니다. 근거 없는 점수는 만들지 않고, 저장 확정 전 A-6 감사를 거칩니다.</p>
       <p style="margin-top:8px"><b>정기 성과평가(2026 신설)</b> — 3기둥(직무성과 KPI · 공통역량 5축 BARS · 태도·가치) 가중합 → 100점 → A~F 6등급, 5직군별 KPI·가중 프로파일, 정직성 게이트(허위 기록 시 태도 블록 상한). 평가지(<span class="tag tool">openPerfEval</span>)에서 입력하면 프론트가 실시간 미리보기를 산출하고, <b>백엔드(save-eval)가 종합점수 · 등급을 서버에서 결정적으로 재계산</b>해 저장 — 클라이언트 값 신뢰 대신 서버가 최종 검산합니다. 구 3등급 체계는 "전환 검토 대상"으로 병존(폐지 여부 매니저 결정 대기).</p>
@@ -872,13 +878,14 @@
     </table>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 49종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-05 무비번 익명 일정 피드 hr-schedule-feed 추가)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 50종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>영역</th><th>액션</th><th>하는 일</th><th>주 담당</th></tr></thead>
       <tbody>
-        <tr><td rowspan="2">직원</td><td><span class="tag act">register</span></td><td>직원 입사 등록(부서 빈 슬롯 행 기입)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td rowspan="3">직원</td><td><span class="tag act">register</span></td><td>직원 입사 등록(부서 빈 슬롯 행 기입)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">resign</span></td><td>퇴사 처리(행 유지 · 값만 비움 + 퇴사 기록)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
+        <tr><td><span class="tag act">fix-emp-field</span></td><td>기존 직원 필드 정정(화이트리스트: 입사일 · sheetRow+name 이중대조 · 배포 대기)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td rowspan="4">지원자</td><td><span class="tag act">register-applicant</span></td><td>지원자 신규 등록(grade 포함 필수필드 계약)</td><td><span class="badge bg-a1">A-1</span></td></tr>
         <tr><td><span class="tag act">update-applicant</span></td><td>지원자 정보 갱신(보낸 필드만 덮음 · 단계 보존, 합류 가능일=첫 출근 예정일 포함 2026-08-04)</td><td><span class="badge bg-a2">A-2</span></td></tr>
         <tr><td><span class="tag act">set-stage</span></td><td>전형 단계 · 면접 일시 변경</td><td><span class="badge bg-a2">A-2</span></td></tr>
