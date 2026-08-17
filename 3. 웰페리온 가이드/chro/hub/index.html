@@ -1732,6 +1732,22 @@ function isAlreadyHiredEmp_(name){
   if(!n) return false;
   return (DB.emp||[]).some(function(e){return String(e["성명"]||e["이름"]||"").trim()===n;});
 }
+// [추가 2026-08-17 A-5] 대시보드 캘린더 "첫출근" 판정 전용 — 이름 단독매칭 금지(명부에 동명이인
+// 4쌍 실재, 2026-08-17 아침브리핑(kakao-brief.ps1) A-7 결함수정과 동일 실측 근거). 연락처(숫자만)
+// 우선매칭, 룰: ①전화 일치→등재 ②이름 일치+전화 한쪽 없음→등재(폴백) ③이름 일치+양쪽 전화 있고
+// 다름→동명이인(미등재). isAlreadyHiredEmp_(버튼 비활성화 등 기존 3곳)는 그대로 두고 이 캘린더
+// 파생표시 1곳에만 적용 — 범위 최소화.
+function digitsOnly_(v){return String(v||"").replace(/\D/g,"");}
+function isAlreadyHiredEmpByPhone_(name,tel){
+  var n=String(name||"").trim();if(!n)return false;
+  var rows=(DB.emp||[]).filter(function(e){return String(e["성명"]||e["이름"]||"").trim()===n;});
+  if(!rows.length)return false;
+  var t=digitsOnly_(tel);
+  if(t){for(var i=0;i<rows.length;i++){if(digitsOnly_(rows[i]["연락처"])===t)return true;}}
+  if(!t)return true;
+  for(var j=0;j<rows.length;j++){if(!digitsOnly_(rows[j]["연락처"]))return true;}
+  return false;
+}
 function applicantRow(a){
   var grade=a["면접 평점"]||"미평가";
   var gColor=COLOR[grade]||"gray";
@@ -3021,14 +3037,17 @@ function empOpenCard(nm){
   openPrintView(normId(best.url),true);
 }
 function dashCalEvents(){var out=[];(DB.appl||[]).forEach(function(a){var v=(typeof dval==="function")?dval(a,"면접 일정"):a["면접 일정"];var s=String(v||"");if(!s)return;var dt=new Date(s.replace(" ","T"));if(isNaN(dt.getTime()))return;out.push({kind:"면접",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:s,name:a["지원자명"]||"",label:(a["전형 단계"]||"면접"),done:false});});
-  // [추가 2026-08-04 A-5] 입사예정 — 최종합격+합류가능일 저장됐지만 아직 미확정(현재근무자 미등재)인
+  // [추가 2026-08-04 A-5, 2026-08-17 수정 A-5] 입사예정/첫출근 — 최종합격+합류가능일 저장된
   // 지원자를 파생 표시(로스터 등재 없음, 급여·연차 영향 0 — 조회 응답을 프론트에서 오버레이만 함).
+  // 2026-08-17 이전: 이미 임직원 등재된 대상은 전부 제외 → 입사확정을 미리 해 둔 신입은 실제
+  // 첫 출근일에 캘린더에서 통째로 사라지는 구조적 결함(조희제 r133 사례, 매니저 지적).
+  // 수정: 숨기지 않고 상태만 구분 표시 — 미등재="입사예정"(확정 필요) / 등재완료="첫출근"(사실 표시).
   (DB.appl||[]).forEach(function(a){
     if((a["전형 단계"]||"")!=="최종 합격")return;
     var jv=a["합류 가능일"];if(!jv)return;
-    if(typeof isAlreadyHiredEmp_==="function"&&isAlreadyHiredEmp_(a["지원자명"]))return;
     var ds=String(jv).slice(0,10);var dt=new Date(ds+"T00:00:00");if(isNaN(dt.getTime()))return;
-    out.push({kind:"입사예정",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:ds,name:a["지원자명"]||"",label:"입사예정",done:false});
+    var already=(typeof isAlreadyHiredEmpByPhone_==="function"&&isAlreadyHiredEmpByPhone_(a["지원자명"],a["연락처"]));
+    out.push({kind:already?"첫출근":"입사예정",y:dt.getFullYear(),m:dt.getMonth(),d:dt.getDate(),t:dt.getTime(),date:ds,name:a["지원자명"]||"",label:already?"첫출근":"입사예정",done:false});
   });
   obCheckEvents().forEach(function(e){out.push({kind:"온보딩",y:e.y,m:e.m,d:e.d,t:e.t,date:e.date,name:e.name,label:e.label,done:e.done,row:e.row});});return out;}
 function dashCalNav(delta){var ym=window.__dashYM||{};var m=ym.m+delta,y=ym.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}window.__dashYM={y:y,m:m};renderDash();}
@@ -3037,7 +3056,7 @@ function renderDashCalCard(){
   var y=ym.y,m=ym.m;var byDay={};ev.forEach(function(e){if(e.y===y&&e.m===m){(byDay[e.d]=byDay[e.d]||[]).push(e);}});
   var startDow=new Date(y,m,1).getDay();var days=new Date(y,m+1,0).getDate();var td=new Date();var isT=function(d){return td.getFullYear()===y&&td.getMonth()===m&&td.getDate()===d;};
   var h='<div class="card" style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><button class="ob-btn sec" onclick="dashCalNav(-1)">‹</button><div style="font-weight:700">'+y+'년 '+(m+1)+'월 <span style="color:#888;font-weight:500;font-size:11px">채용·온보딩 일정</span></div><button class="ob-btn sec" onclick="dashCalNav(1)">›</button></div>';
-  h+='<div style="display:flex;gap:13px;font-size:11px;color:#666;margin-bottom:7px"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f6d9e;margin-right:3px;vertical-align:middle"></span>면접</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#b08d57;margin-right:3px;vertical-align:middle"></span>온보딩 체크인</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3f8f5f;margin-right:3px;vertical-align:middle"></span>입사예정</span></div>';
+  h+='<div style="display:flex;gap:13px;font-size:11px;color:#666;margin-bottom:7px;flex-wrap:wrap"><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f6d9e;margin-right:3px;vertical-align:middle"></span>면접</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#b08d57;margin-right:3px;vertical-align:middle"></span>온보딩 체크인</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3f8f5f;margin-right:3px;vertical-align:middle"></span>입사예정</span><span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8a6f3f;margin-right:3px;vertical-align:middle"></span>첫출근</span></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px;color:#888;margin-bottom:3px">'+["일","월","화","수","목","금","토"].map(function(w){return "<div>"+w+"</div>";}).join("")+'</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
   for(var i=0;i<startDow;i++)h+="<div></div>";
@@ -3048,11 +3067,11 @@ function renderDashCalCard(){
     var chips='';
     if(has.length){
       chips=has.slice(0,2).map(function(e){
-        var col=e.kind==="면접"?"#2f6d9e":(e.kind==="공고마감"?"#b5532f":(e.kind==="입사예정"?"#3f8f5f":"#b08d57"));
+        var col=e.kind==="면접"?"#2f6d9e":(e.kind==="공고마감"?"#b5532f":(e.kind==="입사예정"?"#3f8f5f":(e.kind==="첫출근"?"#8a6f3f":"#b08d57")));
         var clk=(e.kind==="온보딩"&&e.row)?('onclick="obCheck('+e.row+')" '):'';
-        // [수정 2026-08-04 A-5] 입사예정은 "입사예정 · <실명>" 한 줄로 표시(요청 표기 그대로).
-        var __top=e.kind==="입사예정"?("입사예정 · "+esc(e.name)):(esc(e.name)+(e.done?" ✓":""));
-        var __bot=e.kind==="입사예정"?"":('<div style="font-size:9.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.kind)+" · "+esc(e.label)+'</div>');
+        // [수정 2026-08-04 A-5, 2026-08-17 A-5] 입사예정/첫출근은 "<상태> · <실명>" 한 줄로 표시(요청 표기 그대로).
+        var __top=(e.kind==="입사예정"||e.kind==="첫출근")?(e.kind+" · "+esc(e.name)):(esc(e.name)+(e.done?" ✓":""));
+        var __bot=(e.kind==="입사예정"||e.kind==="첫출근")?"":('<div style="font-size:9.5px;color:'+col+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(e.kind)+" · "+esc(e.label)+'</div>');
         return '<div '+clk+'style="'+(clk?'cursor:pointer;':'')+'margin-top:2px;background:#f7f4ee;border-left:2px solid '+col+';border-radius:3px;padding:1px 4px;line-height:1.2;overflow:hidden"><div style="font-size:11px;font-weight:700;color:#1f1e1b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+__top+'</div>'+__bot+'</div>';
       }).join('');
       if(has.length>2)chips+='<div style="margin-top:1px;font-size:10px;font-weight:700;color:#8a6f3f">+'+(has.length-2)+' 더</div>';
