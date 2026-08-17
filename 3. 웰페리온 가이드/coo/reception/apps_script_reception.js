@@ -2334,6 +2334,17 @@ function _lfHandover(body) {
   existing[_lfIdx_('signUrl')]       = signUrl;
   existing[_lfIdx_('signPurgeAt')]   = purgeStr;
   sh.getRange(rowNum, 1, 1, LF_HEADERS.length).setValues([existing]);
+  // Q~V 추가칸(주인성함·주인연락처·수령자연락처·보관위치·제공일·내부메모) — 헤더명으로 찾아 저장(positional 아님·컬럼순서 무관). 2026-08-16.
+  try {
+    var _hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(x){ return String(x).replace(/\s/g,''); });
+    var _setLF = function(name, val){ if(val==null || String(val)==='') return; var ci=_hdr.indexOf(name); if(ci>=0) sh.getRange(rowNum, ci+1).setValue(val); };
+    _setLF('주인성함',     String(body.ownerName    || '').trim());
+    _setLF('주인연락처',   String(body.ownerPhone   || '').trim());
+    _setLF('수령자연락처', String(body.receiverPhone || '').trim());
+    _setLF('보관위치',     String(body.storageLoc   || '').trim());
+    _setLF('제공일',       String(body.providedDate || '').trim());
+    _setLF('내부메모',     String(body.memo         || '').trim());
+  } catch(e) {}
 
   _vNotifyTelegram(
     '✅ <b>[습득물 수령완료]</b> ' + id + '\n' +
