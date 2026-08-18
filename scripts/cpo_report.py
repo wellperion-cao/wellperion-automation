@@ -664,7 +664,8 @@ def build_status_onepager(valid_rows="unset") -> dict:
                 d = _cell(r, loss_col)[:10]
                 if d and d_from <= d <= d_to:
                     loss_n += 1
-                    reason = _cell(r, "종료사유") or "미기재"
+                    # 정본=미등록사유(2026-08 이후 실제 사유는 여기 쌓임) · 옛칸(종료사유)은 그 이전 데이터용 보조 조회.
+                    reason = _cell(r, "미등록사유") or _cell(r, "종료사유") or "미기재"
                     reasons[reason] = reasons.get(reason, 0) + 1
             p["LOSS_건수"] = loss_n
             p["LOSS_사유분포"] = reasons
