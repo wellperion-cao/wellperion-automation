@@ -275,7 +275,7 @@ body.embed .vendor-actions{margin-top:2px}
 var API_URL="https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
 var ONLINE=true;
 var EMBED=/[?&]embed=1/.test(location.search);
-var DEPTS=["시설부","운영부","지원부","주차관리부","파트너팀"];
+var DEPTS=["시설부","운영부","지원부","주차관리부","파트너팀","경영지원부"];
 var CUR_DEPT="전체";
 
 function qDept(){try{var m=(location.search.match(/[?&]dept=([^&]+)/));return m?decodeURIComponent(m[1]):"전체";}catch(e){return "전체";}}
