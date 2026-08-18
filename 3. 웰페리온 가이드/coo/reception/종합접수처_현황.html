@@ -75,7 +75,7 @@
         }
         // ④ 그 밖의 메인 주소 '읽기'(습득물 lf_list, 필터 reg_board, 주/월 점수판 등) → 병렬 + 재시도.
         //    쓰기(reg_update/삭제/인계 등)는 가로채지 않고 원래 fetch 로 그대로 통과(중복·지연 방지).
-        var isWrite = /action=(reg_update|reg_delete|reg_submit|renumber|lf_delete|lf_handover|lf_update|lf_submit)/.test(u);
+        var isWrite = /action=(reg_update|reg_delete|reg_submit|renumber|lf_delete|lf_handover|lf_update|lf_submit|hold_complete)/.test(u);
         if (!isWrite) return fetchRetry(url, opts);
       }
 
@@ -589,6 +589,17 @@ a { color:var(--accent); text-decoration:none; }
       <input type="text" id="m_staff_other" placeholder="담당자 성함 직접 입력" autocomplete="off" style="display:none;margin-top:8px">
     </div>
 
+    <!-- ②-b 반환 정보 (선택 · 수령 시 기록) -->
+    <div class="mfield">
+      <label>반환 정보 (선택)</label>
+      <input type="text" id="m_ownerName" placeholder="주인 성함" autocomplete="off" style="margin-top:4px">
+      <input type="text" id="m_ownerPhone" placeholder="주인 연락처" autocomplete="off" inputmode="numeric" style="margin-top:6px">
+      <input type="text" id="m_receiverPhone" placeholder="수령자 연락처" autocomplete="off" inputmode="numeric" style="margin-top:6px">
+      <input type="text" id="m_storageLoc" placeholder="보관 위치" autocomplete="off" style="margin-top:6px">
+      <input type="date" id="m_providedDate" autocomplete="off" style="margin-top:6px">
+      <input type="text" id="m_memo" placeholder="내부 메모" autocomplete="off" style="margin-top:6px">
+    </div>
+
     <!-- ③ 확인 비밀번호 -->
     <div class="mfield">
       <label for="m_pw">③ 확인 비밀번호</label>
@@ -1005,6 +1016,9 @@ function _card(r){
      휴회 관리는 이 화면(접수)→시트(기록·관리)로 일원화됐다. 배604, 2026-08-15 시우. */
   if(catLabel === '휴회 접수'){
     h += '<div class="lf-note">⏸️ 승인·반려는 회원 관리 시트에서 처리합니다(여기는 읽기 전용 현황).</div>';
+    if(!_closed){
+      h += '<div style="margin-top:8px;"><button type="button" class="lf-btn lf-claim" data-hold-done data-h-name="' + _esc(String(r.name||'')) + '" data-h-phone="' + _esc(String(r.contact||'')) + '" data-h-start="' + _esc(String(r.holdStart||'')) + '">✅ 완료 처리</button></div>';
+    }
     h += '</div>';
     return h;
   }
@@ -1222,6 +1236,32 @@ function lfLoad(){
    ═══════════════════════════════════════════ */
 var HOLD_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 var HOLD_STATUS_MAP = { '접수대기':'접수', '승인':'처리중', '반려':'완료', '완료':'완료' };
+// ── 휴회 완료 자동 반영 — 회원GAS는 '처리메모(휴회완료)'를 안 주므로, 접수GAS가 같은 휴회접수 탭을 읽어
+//    완료 행의 키(전화+시작일+성함 해시)를 hold_done_keys 로 넘겨준다. 그 키의 카드를 목록에서 숨김. 실패시 목록 유지. 2026-08-16.
+function _wHash(s){ var str=String(s||''), h=0; for(var i=0;i<str.length;i++){ h=((h<<5)-h+str.charCodeAt(i))|0; } return String(h); }
+function _holdKey(it){
+  var ph  = String(it.contact   || '').replace(/\D/g,'');
+  var ymd = String(it.holdStart || '').replace(/\D/g,'').slice(0,8);
+  var nm  = String(it.name      || '').replace(/\s/g,'');
+  return _wHash(ph + '|' + ymd + '|' + nm);
+}
+function _holdMarkDone(){
+  function fin(){ try{ localStorage.setItem('wlp_hold_cache', JSON.stringify(_holdItems)); }catch(e){} _merge(); }
+  try{
+    var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
+    fetch(REG_API + '?action=hold_done_keys' + (key ? ('&key=' + encodeURIComponent(key)) : '') + '&_=' + Date.now(),
+          { redirect:'follow', cache:'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok && Array.isArray(d.keys)){
+          var set={}; d.keys.forEach(function(k){ set[k]=1; });
+          _holdItems = _holdItems.filter(function(it){ return !set[_holdKey(it)]; });
+        }
+        fin();
+      })
+      .catch(function(){ fin(); });
+  }catch(e){ fin(); }
+}
 var _holdLoading = false;
 function holdLoad(){
   if(_holdLoading) return;
@@ -1252,8 +1292,7 @@ function holdLoad(){
           holdReason:r.reason|| ''
         };
       });
-      try { localStorage.setItem('wlp_hold_cache', JSON.stringify(_holdItems)); } catch(e){}  // 최신 휴회 캐시에 저장
-      _merge();
+      _holdMarkDone();  // 처리메모 '휴회완료' 자동 인식 → 완료 반영(접수 GAS hold_done_keys) 후 캐시·머지
     })
     .catch(function(){ _holdLoading = false; toast('휴회 접수 현황을 불러오지 못했습니다', true); });
 }
@@ -1285,6 +1324,8 @@ function openModal(){
   var img = _cur.photo ? ('<img src="' + _esc(_lfThumb(_cur.photo)) + '" alt="">') : '';
   $('mItem').innerHTML = img + '<div><div class="mt">' + _esc(_cur.desc||'(설명 없음)') + '</div><div class="mm">' + _esc(_cur.id) + ' · 📍 ' + _esc(_cur.loc||'-') + '</div></div>';
   $('m_pw').value = ''; $('m_receiver').value = ''; $('m_staff').value = ''; $('m_staff_other').value = ''; $('m_staff_other').style.display = 'none';
+  $('m_ownerName').value=''; $('m_ownerPhone').value=''; $('m_receiverPhone').value=''; $('m_storageLoc').value=''; $('m_memo').value='';
+  try{ $('m_providedDate').value = new Date().toISOString().slice(0,10); }catch(e){ $('m_providedDate').value=''; }
   if(_cur.loc){ $('m_loc').value = _cur.loc; }
   clearPad();
   $('modalBack').classList.add('show');
@@ -1371,7 +1412,8 @@ $('mConfirm').addEventListener('click', function(){
   if($('m_pw').value.trim()!=='62611200'){ toast('비밀번호가 올바르지 않습니다', true); $('m_pw').focus(); return; }
   var sign = _signCv.toDataURL('image/png');
   var btn = this; btn.disabled = true; btn.textContent = '처리 중…';
-  var payload = { action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
+  var payload = { action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign,
+    ownerName:$('m_ownerName').value.trim(), ownerPhone:$('m_ownerPhone').value.trim(), receiverPhone:$('m_receiverPhone').value.trim(), storageLoc:$('m_storageLoc').value.trim(), providedDate:$('m_providedDate').value.trim(), memo:$('m_memo').value.trim() };
   fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify(payload), redirect:'follow' })
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -1391,17 +1433,39 @@ function _wireBoard(){
       _update(_sel.dataset.regId, _sel.dataset.regCat, {status:_sel.value}, null, _sel, _sel.getAttribute('data-prev-status')||'');
       return;
     }
-    /* 처리자 드롭다운: '기타(직접 입력)' 선택 시 옆 텍스트칸 노출, 명단 선택 시 숨김·비움 */
-    if(e.target && e.target.dataset && 'regHandlerSel' in e.target.dataset){
-      var kind = 'handler';
+    /* 처리자·접수자 드롭다운: '기타(직접 입력)' 선택 시 옆 텍스트칸 노출, 명단 선택 시 숨김·비움 */
+    var _selKind = null;
+    if(e.target && e.target.dataset){
+      if('regHandlerSel' in e.target.dataset) _selKind = 'handler';
+      else if('regReporterSel' in e.target.dataset) _selKind = 'reporter';   // 접수자도 '기타' 텍스트칸 노출(누락 수정 2026-08-16)
+    }
+    if(_selKind){
       var card2 = e.target.closest('[data-reg-card]');
-      var inp2 = card2 && card2.querySelector('[data-reg-' + kind + ']');
+      var inp2 = card2 && card2.querySelector('[data-reg-' + _selKind + ']');
       if(!inp2) return;
       if(e.target.value === '__other__'){ inp2.style.display = 'block'; inp2.focus(); }
       else { inp2.style.display = 'none'; inp2.value = ''; }
     }
   });
   board.addEventListener('click', function(e){
+    var holdDoneBtn = e.target.closest('[data-hold-done]');
+    if(holdDoneBtn){
+      var hnm = holdDoneBtn.dataset.hName || '', hph = holdDoneBtn.dataset.hPhone || '', hst = holdDoneBtn.dataset.hStart || '';
+      if(!confirm('이 휴회 접수를 완료 처리할까요?')) return;
+      holdDoneBtn.disabled = true;
+      fetch(REG_API, { method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:JSON.stringify({action:'hold_complete', name:hnm, phone:hph, start:hst}), redirect:'follow' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(d && d.ok){
+            toast('휴회 완료 처리됨 — 목록에서 숨김');
+            _holdItems = _holdItems.filter(function(it){ return !(String(it.name||'')===hnm && String(it.contact||'')===hph && String(it.holdStart||'')===hst); });
+            try{ localStorage.setItem('wlp_hold_cache', JSON.stringify(_holdItems)); }catch(e){}
+            _merge();
+          } else { toast((d && d.error) || '완료 처리 실패', true); holdDoneBtn.disabled = false; }
+        })
+        .catch(function(){ toast('네트워크 오류', true); holdDoneBtn.disabled = false; });
+      return;
+    }
     var saveBtn = e.target.closest('[data-reg-save]');
     if(saveBtn){
       var card = saveBtn.closest('[data-reg-card]');

@@ -738,9 +738,9 @@ function _vExtractFileId_(url) {
 // ─── 텔레그램 알림 (점검 GAS handleNotify 패턴) — 토큰=ScriptProperties, repo 하드코딩 금지 ───
 // 핵심멤버방 chat_id = TELEGRAM_CHAT_ID (점검 GAS와 동일 키명 — GM이 신규 GAS 속성에 동일 등록).
 // photoUrl 있으면 sendPhoto(Drive blob 업로드, caption=text) 시도, 실패 시 sendMessage 폴백 → 알림 절대 유실 금지.
-function _vNotifyTelegram(text, photoUrl) {
+function _vNotifyTelegram(text, photoUrl, chatIdOverride) {
   var token = _vprop('TELEGRAM_BOT_TOKEN');
-  var chatId = _vprop('TELEGRAM_CHAT_ID');
+  var chatId = chatIdOverride || _vprop('TELEGRAM_CHAT_ID');   // 3번째 인자로 다른 방(예: 시설팀) 지정 가능. 2026-08-16.
   if (!token || !chatId) return false; // 미설정이면 조용히 통과 (제출 자체는 성공)
   var base = 'https://api.telegram.org/bot' + token;
 
@@ -1216,6 +1216,12 @@ function _regSubmit(body) {
     '🕒 ' + now,
     photoUrl
   );
+
+  // 시설부 접수는 시설팀 방에도 별도로 한 번 더 발송(TELEGRAM_FACILITY_CHAT_ID 속성). 드리프트로 사라진 것 복구 2026-08-16.
+  if (cat.key === 'facility') {
+    var _facChat = _vprop('TELEGRAM_FACILITY_CHAT_ID');
+    if (_facChat) _vNotifyTelegram('🔧 <b>[시설물 고장 접수]</b>\n이름: ' + name + '\n위치: ' + (loc || '-') + '\n내용: ' + (content ? content.slice(0, 100) : '-') + '\n🕒 ' + now, photoUrl, _facChat);
+  }
 
   _regBoardCacheClear_();
   _regLookupCacheClearFor_(contact, name);   // 방금 접수한 사람이 곧바로 조회해도 새 건이 보이게
@@ -1778,6 +1784,66 @@ function _holdIntakeStats() {
   return _vJson({ ok: true, total: total, byStatus: byStatus, thisMonth: thisMonth,
                   hasStatus: iStat >= 0, hasDate: iWhen >= 0, month: ym });
 }
+// ─── hold_done_keys — 휴회접수 탭에서 '완료' 처리된 행의 매칭키(해시) 반환 (읽기 전용·PII 없음) ───
+function _holdDoneKeys() {
+  var ss = _vGetSpreadsheet();
+  var sh = ss.getSheetByName(HOLD_INTAKE_SHEET);   // '휴회접수'
+  if (!sh) return _vJson({ ok:false, error: HOLD_INTAKE_SHEET + ' 탭 없음' });
+  var last = sh.getLastRow();
+  if (last < 2) return _vJson({ ok:true, keys:[], count:0 });
+  var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(String);
+  function col(cands){ for(var i=0;i<headers.length;i++){ for(var j=0;j<cands.length;j++){ if(headers[i].indexOf(cands[j])>=0) return i; } } return -1; }
+  var iName=col(['성함','이름']), iTel=col(['연락처']), iStart=col(['휴회시작일','시작']),
+      iStat=col(['상태']), iDone=col(['처리일시']), iMemo=col(['처리메모','메모']);
+  var data = sh.getRange(2,1,last-1,headers.length).getValues();
+  var tz = 'Asia/Seoul';
+  function ymd(v){ if (v instanceof Date) return Utilities.formatDate(v,tz,'yyyyMMdd'); return String(v==null?'':v).replace(/\D/g,'').slice(0,8); }
+  var keys = [];
+  for (var r=0; r<data.length; r++){
+    var row = data[r];
+    var memo   = iMemo>=0 ? String(row[iMemo]||'') : '';
+    var stat   = iStat>=0 ? String(row[iStat]||'') : '';
+    var doneAt = iDone>=0 ? String(row[iDone]||'').trim() : '';
+    var done = memo.indexOf('휴회완료') >= 0;   // K열 '처리메모' = '휴회완료' 만 완료로 인정(빈칸·'휴회 X'는 유지). 2026-08-16.
+    if (!done) continue;
+    var ph  = iTel>=0   ? String(row[iTel]||'').replace(/\D/g,'') : '';
+    var st8 = iStart>=0 ? ymd(row[iStart]) : '';
+    var nm  = iName>=0  ? String(row[iName]||'').replace(/\s/g,'') : '';
+    keys.push(_vFp_(ph + '|' + st8 + '|' + nm));
+  }
+  return _vJson({ ok:true, keys:keys, count:keys.length });
+}
+
+// ─── hold_complete — 휴회접수 특정 행을 완료 처리(처리메모=휴회완료·처리일시=오늘) ───
+function _holdComplete(body){
+  var phone = String((body&&body.phone)||'').replace(/\D/g,'');
+  var start = String((body&&body.start)||'').replace(/\D/g,'').slice(0,8);
+  var name  = String((body&&body.name)||'').replace(/\s/g,'');
+  if(!phone && !name) return _vJson({ ok:false, error:'식별정보 부족' });
+  var ss=_vGetSpreadsheet(); var sh=ss.getSheetByName(HOLD_INTAKE_SHEET);
+  if(!sh) return _vJson({ ok:false, error:HOLD_INTAKE_SHEET+' 탭 없음' });
+  var last=sh.getLastRow(); if(last<2) return _vJson({ ok:false, error:'데이터 없음' });
+  var headers=sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(String);
+  function col(cands){ for(var i=0;i<headers.length;i++){ for(var j=0;j<cands.length;j++){ if(headers[i].indexOf(cands[j])>=0) return i; } } return -1; }
+  var iName=col(['성함','이름']),iTel=col(['연락처']),iStart=col(['휴회시작일','시작']),iDone=col(['처리일시']),iMemo=col(['처리메모','메모']);
+  var tz='Asia/Seoul';
+  function ymd(v){ if(v instanceof Date) return Utilities.formatDate(v,tz,'yyyyMMdd'); return String(v==null?'':v).replace(/\D/g,'').slice(0,8); }
+  var data=sh.getRange(2,1,last-1,headers.length).getValues();
+  for(var r=0;r<data.length;r++){
+    var row=data[r];
+    var ph=iTel>=0?String(row[iTel]||'').replace(/\D/g,''):'';
+    var st=iStart>=0?ymd(row[iStart]):'';
+    var nm=iName>=0?String(row[iName]||'').replace(/\s/g,''):'';
+    if(ph===phone && st===start && nm===name){
+      var rowNum=r+2;
+      if(iMemo>=0) sh.getRange(rowNum,iMemo+1).setValue('휴회완료');
+      if(iDone>=0 && !String(row[iDone]||'').trim()) sh.getRange(rowNum,iDone+1).setValue(Utilities.formatDate(new Date(),tz,'yyyy-MM-dd'));
+      return _vJson({ ok:true, matched:true });
+    }
+  }
+  return _vJson({ ok:false, error:'일치 행 없음' });
+}
+
 function _holdIntakeTestRows(body) {
   var ss = _vGetSpreadsheet();
   var sh = ss.getSheetByName(HOLD_INTAKE_SHEET);
@@ -2311,6 +2377,17 @@ function _lfHandover(body) {
   existing[_lfIdx_('signUrl')]       = signUrl;
   existing[_lfIdx_('signPurgeAt')]   = purgeStr;
   sh.getRange(rowNum, 1, 1, LF_HEADERS.length).setValues([existing]);
+  // Q~V 추가칸(주인성함·주인연락처·수령자연락처·보관위치·제공일·내부메모) — 헤더명으로 찾아 저장(positional 아님·컬럼순서 무관). 2026-08-16.
+  try {
+    var _hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(x){ return String(x).replace(/\s/g,''); });
+    var _setLF = function(name, val){ if(val==null || String(val)==='') return; var ci=_hdr.indexOf(name); if(ci>=0) sh.getRange(rowNum, ci+1).setValue(val); };
+    _setLF('주인성함',     String(body.ownerName    || '').trim());
+    _setLF('주인연락처',   String(body.ownerPhone   || '').trim());
+    _setLF('수령자연락처', String(body.receiverPhone || '').trim());
+    _setLF('보관위치',     String(body.storageLoc   || '').trim());
+    _setLF('제공일',       String(body.providedDate || '').trim());
+    _setLF('내부메모',     String(body.memo         || '').trim());
+  } catch(e) {}
 
   _vNotifyTelegram(
     '✅ <b>[습득물 수령완료]</b> ' + id + '\n' +
@@ -2416,6 +2493,7 @@ var _RECEPTION_PUBLIC_ACTIONS = {
   reg_submit:  true,  // 종합 접수처 제출 — 토큰 면제
   reg_board:   true,  // 마스킹 공개 보드 — 이름·연락처 가려서 반환, 토큰 면제
   reg_dashboard: true,  // 현황판 통합 조회 — reg_board 와 동일 마스킹(이름·연락처 가림), 읽기 전용, 토큰 면제
+  hold_done_keys: true,   // 완료 매칭키(해시)만 — PII 없음, 읽기 전용. 2026-08-16.
   reg_update:  true,  // 상태·담당·메모 갱신 — PII 미포함, 토큰 면제
   reg_lookup:  true,  // 회원 셀프 조회 — 전화+이름 2차확인·회원안전 필드만·rate-limit, 토큰 면제
   lf_submit:   true,  // 습득물 접수 — 제출토큰(_vSubmitGateOk_)으로 별도 보호, 접근키 면제
@@ -2520,6 +2598,8 @@ function _vProcess(action, body, params) {
   if (action === 'reg_draft_selftest') return _vJson(_regDraftMemoSelfCheck());
   if (action === 'reg_staff_suggest') return _regStaffSuggest();  // 담당자 입력 자동완성 제안(공개 read·PII 없음). 2026-07-31 웰리.
   if (action === 'hold_intake_stats') return _holdIntakeStats();  // 휴회접수 건수 집계(공개 read·PII 없음). 2026-07-31 웰리.
+  if (action === 'hold_done_keys') return _holdDoneKeys();   // 휴회 완료행 매칭키(읽기·PII없음). 2026-08-16.
+  if (action === 'hold_complete') return _holdComplete(body);   // 휴회 완료 버튼 처리(쓰기). 2026-08-16.
   if (action === 'reg_board') {
     // 마스킹 공개 보드 — _regList 결과에 _regMask 적용 후 카드별 SLA(처리기한) 계산
     // 필터 없는 호출(페이지 실사용 경로)만 45초 서버 캐시 — 재조회·다수 열람 즉답. 쓰기(reg_submit/update/delete/renumber) 시 즉시 무효화.
