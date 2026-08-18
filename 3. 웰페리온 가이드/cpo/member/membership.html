@@ -13354,13 +13354,17 @@ var WriteBuffer = (function(){
     var existing = null;
     for (var i = 0; i < queue.length; i++) { if (queue[i].key === key) { existing = queue[i]; break; } }
     if (existing) {
-      // coalesce — 같은 필드범위 재편집: 최신값 승. 재시도 리셋(새 편집이므로).
-      existing.payload = payload;
+      // coalesce — 같은 키 재편집: 병합(같은 칸이면 최신값 승, 다른 칸이면 둘 다 보존). 재시도 리셋(새 편집이므로).
+      //   ★2026-08-18 정독점검 — fieldset='row'(문의DB 인라인 편집)는 어떤 칸을 고쳐도 키가 같아서,
+      //   통째로 교체(existing.payload = payload)하면 아직 안 보낸 이전 칸 값이 조용히 사라졌다
+      //   (진행상황 고치고 바로 채널을 고치면 진행상황이 유실). Object.assign으로 병합하면 같은 칸
+      //   재편집은 그대로 최신값이 이기고(뒤 값이 앞 값을 덮음), 다른 칸끼리는 둘 다 남는다.
+      Object.assign(existing.payload, payload);
       existing.label = opts.label || existing.label;
       existing.who = opts.who || existing.who;
       existing.scope = opts.scope || existing.scope;
       existing.phoneKey = (opts.phoneKey !== undefined) ? opts.phoneKey : existing.phoneKey;
-      existing.overlay = opts.overlay || existing.overlay;
+      existing.overlay = Object.assign(existing.overlay || {}, opts.overlay || {});
       existing.attempts = 0;
       existing.parked = false;
       existing.nextTry = 0;
