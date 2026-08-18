@@ -5494,6 +5494,7 @@ function lessonExpireDate(regDateStr, monthsRule){
   var _n = parseInt(monthsRule,10);
   var _last = new Date(base.getFullYear(), base.getMonth()+_n+1, 0).getDate();
   var d = new Date(base.getFullYear(), base.getMonth()+_n, Math.min(base.getDate(), _last));
+  d.setDate(d.getDate() - 1);  // 종료일=마지막 유효일(포함) — 서버 _memberActiveUpsert_와 동일(배582, 2026-08-18)
   return _mdashYmd(d);
 }
 
