@@ -783,6 +783,22 @@
       "job_id": "ops_done_immediate_alert"
     },
     {
+      "id": "kakao-intake-relay-15min",
+      "when": "15분마다",
+      "when_sort": null,
+      "freq": "event",
+      "channel": "kakao",
+      "room": "★부서장 / ★운영+시설+지원+주차",
+      "chat_id": null,
+      "what": "새 접수를 부서별로 묶어 목적지 방마다 한 통씩 「📮 새 접수 N건 — 해당 부서에서 조치·회신 부탁드립니다」 전달 — 업장(이름이 '팀'으로 끝나는 부서)·강습=★부서장, 그 외=★운영+시설+지원+주차",
+      "owner": "시토",
+      "trigger": "apscheduler",
+      "state": "live",
+      "state_note": "2026-08-15 GM 승인(배627 \"각 부서에 전달되어 그 부서에서 조치·회신까지 챙기게 하라\")으로 신설했는데 등록부에 안 넣어 notify_registry_check.py 가 UNREGISTERED_JOB 드리프트로 잡음 — 2026-08-18 시토가 등록. 게이트=status/dept_completion_notify.json intake_relay_enabled(꺼두면 잡이 돌아도 발송 0). 새 접수가 없는 방은 발신 없음(조건부) · 실측 2026-08-17 15:41 ★운영+시설+지원+주차 발송 확인(logs/kakao_sent-2026-08-17.log).",
+      "source": "scripts/report_stream_2b_reception.py run_intake_relay() + telegram_bot/daily_scheduler.py:4033-4039",
+      "job_id": "reception_intake_relay_15min"
+    },
+    {
       "id": "kk-meeting-remind-30m",
       "when": "수시",
       "when_sort": "9999",
