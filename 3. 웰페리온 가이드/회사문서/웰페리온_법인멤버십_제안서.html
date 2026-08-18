@@ -3,17 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>웰페리온 법인 멤버십 제안서</title>
+<title>웰페리온 법인 멤버십 제안서 · Wellperion Corporate Membership</title>
 <!--
-  법인 멤버십 제안서 · 대외 발송용 (2026-08-10 신설 · 2026-08-18 회사소개서 v2.2 기준 갱신)
+  법인 멤버십 제안서 · 대외 발송용 (2026-08-10 신설 · 2026-08-18 회사소개서 v2.2 기준 갱신 + 국문/영문 2개 국어)
   ─ GM 지시 2026-08-10: "회사소개서에 법인 영업 관련 내용은 넣지 말고, 별도로 빼서 만들어라. 별도 영업만 할 수 있게."
   ─ 회사소개서(S0 계열)는 회사·브랜드를 말하는 문서이고, 이 파일은 법인 상대에게 내는 영업 문서다. 두 문서를 섞지 않는다.
   ─ 값·조건 출처 = 상품기획 문서 정가표 + GM 결정 2026-08-10(할인 15% 상한 · 정원 내 배정).
-  ─ 2026-08-18 갱신(GM 지시 "새로 쓰지 말고 2종을 기준으로 손봐줘") — 정본 = 회사소개서 통합판 v2.2.
-    맞춘 것: 설립연도(2017) · 연 갱신율 61%·LTV 3년 4개월 · 그룹 프로그램 전체 목록 · 시설 16경험 중 누락분(갤러리·파우더룸·야외 테라스)
-    · 대표전화 02-6261-1200 · 사업자 정식 주소. 매출·영업이익률은 내부 지표라 대외 영업문서에 넣지 않는다.
-  ─ 운영부가 쓰는 실행 순서(대상 목록·접촉 단계·응대 문구)는 이 문서가 아니라 별도 실행 가이드에 있다.
+
+  ─ 2026-08-18 갱신 ①(GM 지시 "새로 쓰지 말고 2종을 기준으로 손봐줘") — 정본 = 회사소개서 통합판 v2.2.
+    맞춘 것: 설립연도(2017) · 연 갱신율 61%·LTV 3년 4개월 · 그룹 프로그램 전체 목록 · 시설 16경험 중 누락분
+    (갤러리·파우더룸·야외 테라스) · 대표전화 02-6261-1200 · 사업자 정식 주소.
+    매출·영업이익률은 내부 지표라 대외 영업문서에 넣지 않는다.
+
+  ─ 2026-08-18 갱신 ②(GM 제안 "대사관/일반기업으로 나누지 말고 영어/한글 버전으로") — 언어로 가른다.
+    ★파일을 두 벌로 쪼개지 않은 이유: 가격표·정원·방문 수 같은 숫자가 두 곳이 되면 한쪽이 반드시 옛것으로 어긋난다
+    (약속 L01). 그래서 숫자는 한 벌만 두고 말만 두 개 국어로 겹쳐 두었다 — 값을 고칠 자리는 여전히 한 곳이다.
+    · 여는 법: 기본 국문. 오른쪽 위 KO / EN 단추로 전환.
+    · 영문으로 바로 열리게 하려면 주소 끝에 #en 을 붙여 보낸다 (예: …웰페리온_법인멤버십_제안서.html#en).
+      ▸카카오톡은 물음표(?) 뒤 주소를 지우므로 쿼리 대신 해시(#)를 쓴다.
+    · 대사관·외국계는 EN, 국내 기업은 KO — 대상이 늘어도 문서는 이 한 벌로 끝난다.
   ─ 대외 문구 규칙: 모집·할인·"지금 등록" 계열 금지(정원 마감) · "피트니스"·"하이엔드 프라이빗"·"사교" 금지.
+    영문도 같다 — fitness center 가 아니라 sports club, 브랜드 표기는 Premium Lifestyle Club(v2.2 공식 영문).
 -->
 <style>
   :root{
@@ -43,17 +53,31 @@
   }
   .wrap{max-width:960px;margin:0 auto;padding:0 40px 96px}
 
-  .cover{padding:88px 0 60px;border-bottom:1px solid var(--line)}
+  /* ── 언어 전환: 숫자는 한 벌, 말만 두 벌 ── */
+  .en{display:none}
+  body[data-lang="en"] .ko{display:none}
+  body[data-lang="en"] .en{display:revert}
+  .langbar{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;gap:0;
+           padding:12px 0 0;background:linear-gradient(var(--ground) 72%,transparent)}
+  .langbar button{
+    font:inherit;font-size:12.5px;font-weight:700;letter-spacing:.06em;cursor:pointer;
+    padding:6px 15px;border:1px solid var(--line);background:var(--surface);color:var(--dim);
+  }
+  .langbar button:first-of-type{border-radius:6px 0 0 6px;border-right:none}
+  .langbar button:last-of-type{border-radius:0 6px 6px 0}
+  .langbar button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+
+  .cover{padding:56px 0 60px;border-bottom:1px solid var(--line)}
   .wordmark{font-size:13px;letter-spacing:.42em;color:var(--deep);font-weight:700;margin:0 0 34px}
   .cover h1{font-size:clamp(30px,4.6vw,46px);line-height:1.26;font-weight:800;letter-spacing:-.025em;margin:0 0 22px;text-wrap:balance}
-  .cover .sub{font-size:18px;color:var(--ink-2);max-width:44ch;margin:0}
+  .cover .sub{font-size:18px;color:var(--ink-2);max-width:46ch;margin:0}
   .rule{width:56px;height:3px;background:var(--beige);margin:32px 0 0}
 
   section{padding:54px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:20px}
   section:last-of-type{border-bottom:none}
   h2{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--deep);font-weight:700;margin:0}
   h3{font-size:23px;font-weight:750;letter-spacing:-.02em;margin:0;text-wrap:balance}
-  p{margin:0;max-width:62ch;color:var(--ink-2)}
+  p{margin:0;max-width:64ch;color:var(--ink-2)}
   p.lead{font-size:17px;color:var(--ink)}
 
   .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
@@ -85,146 +109,307 @@
   .close .c{font-size:15px;color:var(--ink-2);margin:0}
   .close .c b{color:var(--ink)}
 
-  @media print{body{background:#fff}.wrap{padding:0;max-width:none}section{break-inside:avoid}.cover{padding:40px 0 36px}}
-  @media (max-width:640px){.wrap{padding:0 20px 64px}.cover{padding:48px 0 40px}}
+  @media print{
+    body{background:#fff}
+    .wrap{padding:0;max-width:none}
+    section{break-inside:avoid}
+    .cover{padding:40px 0 36px}
+    .langbar{display:none}      /* 인쇄물엔 보이는 언어 한 벌만 나간다 */
+  }
+  @media (max-width:640px){.wrap{padding:0 20px 64px}.cover{padding:32px 0 40px}}
 </style>
 </head>
-<body>
+<body data-lang="ko">
 <div class="wrap">
+
+  <nav class="langbar" aria-label="언어 선택 / Language">
+    <button type="button" id="btn-ko" aria-pressed="true"  onclick="setLang('ko')">KO</button>
+    <button type="button" id="btn-en" aria-pressed="false" onclick="setLang('en')">EN</button>
+  </nav>
 
   <header class="cover">
     <p class="wordmark">WELLPERION</p>
-    <h1>직원의 하루를<br>회사가 설계할 수 있다면</h1>
+    <h1>
+      <span class="ko">직원의 하루를<br>회사가 설계할 수 있다면</span>
+      <span class="en">What if a company could<br>design its people's day</span>
+    </h1>
     <p class="sub">
-      2017년 한남동에서 시작해 3,000평 한 공간에서 하루 600명의 리듬을 지켜 온 스포츠클럽입니다.
-      이제 법인 단위로 그 하루를 나눠 드립니다.
+      <span class="ko">2017년 한남동에서 시작해 3,000평 한 공간에서 하루 600명의 리듬을 지켜 온 스포츠클럽입니다.
+        이제 법인 단위로 그 하루를 나눠 드립니다.</span>
+      <span class="en">Founded in Hannam-dong in 2017, a single 10,000 m² sports club that has held the rhythm of
+        600 daily visits ever since. That day is now available to corporations.</span>
     </p>
     <div class="rule"></div>
   </header>
 
   <section>
-    <h2>웰페리온</h2>
-    <h3>운동하러 가는 곳이 아니라, 하루의 품질을 설계하는 곳</h3>
-    <p class="lead">A Day, Well Completed — 하루의 완성. 리더들을 위한 건강과 힐링의 커뮤니티입니다.</p>
+    <h2><span class="ko">웰페리온</span><span class="en">Wellperion</span></h2>
+    <h3>
+      <span class="ko">운동하러 가는 곳이 아니라, 하루의 품질을 설계하는 곳</span>
+      <span class="en">Not a place you go to exercise — a place where the quality of a day is designed</span>
+    </h3>
+    <p class="lead">
+      <span class="ko">A Day, Well Completed — 하루의 완성. 리더들을 위한 건강과 힐링의 커뮤니티입니다.</span>
+      <span class="en">A Day, Well Completed. A health and wellness community for leaders.</span>
+    </p>
     <p>
-      운동, 회복, 그리고 회복 뒤의 시간까지 한 자리에서 이어집니다.
-      다른 곳에서는 세 군데를 옮겨 다녀야 하는 하루가 여기서는 한 건물 안에서 끝납니다.
+      <span class="ko">운동, 회복, 그리고 회복 뒤의 시간까지 한 자리에서 이어집니다.
+        다른 곳에서는 세 군데를 옮겨 다녀야 하는 하루가 여기서는 한 건물 안에서 끝납니다.</span>
+      <span class="en">Training, recovery, and the hours that follow recovery all continue in one place.
+        A day that would otherwise take three separate destinations is completed inside a single building.</span>
     </p>
     <div class="facts">
-      <div class="fact"><span class="n">3,000평</span><span class="l">한남동 단일 시설</span></div>
-      <div class="fact"><span class="n">2017년</span><span class="l">설립 · 9년 운영 기록</span></div>
-      <div class="fact"><span class="n">1,000명</span><span class="l">제한 회원제</span></div>
-      <div class="fact"><span class="n">일 600명</span><span class="l">실제 방문 · 출석률 60%</span></div>
-      <div class="fact"><span class="n">61%</span><span class="l">연 갱신율 · 평균 이용 3년 4개월</span></div>
+      <div class="fact"><span class="n">3,000평</span>
+        <span class="l"><span class="ko">한남동 단일 시설</span><span class="en">10,000 m² · single site in Hannam-dong</span></span></div>
+      <div class="fact"><span class="n">2017</span>
+        <span class="l"><span class="ko">설립 · 9년 운영 기록</span><span class="en">Established · 9 years of operation</span></span></div>
+      <div class="fact"><span class="n">1,000</span>
+        <span class="l"><span class="ko">정원 제한 회원제</span><span class="en">Capped membership</span></span></div>
+      <div class="fact"><span class="n">600</span>
+        <span class="l"><span class="ko">일 실제 방문 · 출석률 60%</span><span class="en">Daily visits · 60% attendance</span></span></div>
+      <div class="fact"><span class="n">61%</span>
+        <span class="l"><span class="ko">연 갱신율 · 평균 이용 3년 4개월</span><span class="en">Annual renewal · 3 yrs 4 mos average tenure</span></span></div>
     </div>
   </section>
 
   <section>
-    <h2>무엇을 쓰게 되는가</h2>
-    <h3>한 건물 안에서 끝나는 하루</h3>
+    <h2><span class="ko">무엇을 쓰게 되는가</span><span class="en">What you get to use</span></h2>
+    <h3><span class="ko">한 건물 안에서 끝나는 하루</span><span class="en">A day that ends inside one building</span></h3>
     <div class="grid2">
-      <div class="item"><span class="t">수영</span><span class="d">25m 정규 풀과 유아 풀. 층고 7m 이상.</span></div>
-      <div class="item"><span class="t">헬스</span><span class="d">TechnoGym 머신 풀라인업.</span></div>
-      <div class="item"><span class="t">골프</span><span class="d">오토 티업 15타석과 퍼팅 그린.</span></div>
-      <div class="item"><span class="t">스쿼시</span><span class="d">국제 규격 정식 게임 코트. 관람석을 갖췄습니다.</span></div>
-      <div class="item"><span class="t">필라테스</span><span class="d">STOTT 리포머 · 캐딜락 · 래더배럴 풀라인업.</span></div>
-      <div class="item"><span class="t">그룹 프로그램</span><span class="d">요가, 바레, 발레, 뮤지컬, 줌바, 라인댄스, 명상, G.X.</span></div>
-      <div class="item"><span class="t">사우나</span><span class="d">히노키 건식 · 습식 찜질방. 온탕과 냉탕, 360평 스파.</span></div>
-      <div class="item"><span class="t">스파</span><span class="d">생크몽드(Cinq Mondes) — 다섯 대륙의 시그니처 트리트먼트.</span></div>
-      <div class="item"><span class="t">라운지 · 카페</span><span class="d">CUPS — 도착의 라운지에서 갤러리 월로. 야외 테라스까지 이어집니다.</span></div>
-      <div class="item"><span class="t">파우더룸</span><span class="d">운동 뒤 그대로 일정으로 이어질 수 있게.</span></div>
-      <div class="item"><span class="t">뷰티</span><span class="d">beautévu — 헤어 · 메이크업 · 네일을 한 자리에서.</span></div>
-      <div class="item"><span class="t">유소년</span><span class="d">WSC 7개 종목. 올림픽 규격 트램폴린과 승급제.</span></div>
-      <div class="item"><span class="t">가족</span><span class="d">유소년부터 시니어까지 전 연령이 같은 곳을 씁니다.</span></div>
+      <div class="item">
+        <span class="t"><span class="ko">수영</span><span class="en">Swimming</span></span>
+        <span class="d"><span class="ko">25m 정규 풀과 유아 풀. 층고 7m 이상.</span>
+                        <span class="en">25 m main pool and children's pool, under a 7 m ceiling.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">헬스</span><span class="en">Gym</span></span>
+        <span class="d"><span class="ko">TechnoGym 머신 풀라인업.</span>
+                        <span class="en">Full TechnoGym equipment line.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">골프</span><span class="en">Golf</span></span>
+        <span class="d"><span class="ko">오토 티업 15타석과 퍼팅 그린.</span>
+                        <span class="en">15 auto-tee bays and a putting green.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">스쿼시</span><span class="en">Squash</span></span>
+        <span class="d"><span class="ko">국제 규격 정식 게임 코트. 관람석을 갖췄습니다.</span>
+                        <span class="en">Regulation international court with spectator seating.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">필라테스</span><span class="en">Pilates</span></span>
+        <span class="d"><span class="ko">STOTT 리포머 · 캐딜락 · 래더배럴 풀라인업.</span>
+                        <span class="en">Full STOTT line — Reformer, Cadillac, Ladder Barrel.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">그룹 프로그램</span><span class="en">Group programs</span></span>
+        <span class="d"><span class="ko">요가, 바레, 발레, 뮤지컬, 줌바, 라인댄스, 명상, G.X.</span>
+                        <span class="en">Yoga, barre, ballet, musical theatre, Zumba, line dance, meditation, G.X.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">사우나</span><span class="en">Sauna</span></span>
+        <span class="d"><span class="ko">히노키 건식 · 습식 찜질방. 온탕과 냉탕, 360평 스파.</span>
+                        <span class="en">Hinoki dry sauna and steam room, hot and cold baths, 1,200 m² spa floor.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">스파</span><span class="en">Spa</span></span>
+        <span class="d"><span class="ko">생크몽드(Cinq Mondes) — 다섯 대륙의 시그니처 트리트먼트.</span>
+                        <span class="en">Cinq Mondes of Paris — signature treatments from five continents.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">라운지 · 카페</span><span class="en">Lounge &amp; café</span></span>
+        <span class="d"><span class="ko">CUPS — 도착의 라운지에서 갤러리 월로. 야외 테라스까지 이어집니다.</span>
+                        <span class="en">CUPS — from the arrival lounge through the gallery wall to an outdoor terrace.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">뷰티</span><span class="en">Beauty</span></span>
+        <span class="d"><span class="ko">beautévu — 헤어 · 메이크업 · 네일을 한 자리에서.</span>
+                        <span class="en">beautévu — hair, make-up and nail care in one place.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">파우더룸</span><span class="en">Powder room</span></span>
+        <span class="d"><span class="ko">운동 뒤 그대로 일정으로 이어질 수 있게.</span>
+                        <span class="en">So a session can lead straight into the next appointment.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">유소년</span><span class="en">Youth</span></span>
+        <span class="d"><span class="ko">WSC 7개 종목. 올림픽 규격 트램폴린과 승급제.</span>
+                        <span class="en">WSC across 7 disciplines, Olympic-spec trampolines and a grading system.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">가족</span><span class="en">Family</span></span>
+        <span class="d"><span class="ko">유소년부터 시니어까지 전 연령이 같은 곳을 씁니다.</span>
+                        <span class="en">From children to seniors, every generation uses the same place.</span></span></div>
     </div>
   </section>
 
   <section>
-    <h2>기업에게</h2>
-    <h3>임직원과 그 가족까지</h3>
+    <h2><span class="ko">기업에게</span><span class="en">For the company</span></h2>
+    <h3><span class="ko">임직원과 그 가족까지</span><span class="en">Your people, and their families</span></h3>
     <p>
-      임직원이 각자 알아서 운동하고 영수증을 제출하는 방식 대신,
-      <strong>회사가 한 곳에 자리를 확보</strong>합니다. 인사 이동이 있어도 자리는 회사에 남습니다.
-      그리고 <strong>임직원 본인뿐 아니라 가족까지</strong> 같은 곳을 씁니다 —
-      복지가 사무실에서 끝나지 않고 집까지 닿습니다.
+      <span class="ko">임직원이 각자 알아서 운동하고 영수증을 제출하는 방식 대신,
+        <strong>회사가 한 곳에 자리를 확보</strong>합니다. 인사 이동이 있어도 자리는 회사에 남습니다.
+        그리고 <strong>임직원 본인뿐 아니라 가족까지</strong> 같은 곳을 씁니다 —
+        복지가 사무실에서 끝나지 않고 집까지 닿습니다.</span>
+      <span class="en">Instead of each employee finding a facility and filing receipts,
+        <strong>the company secures places in one</strong>. When people move on, the places stay with the company.
+        And <strong>families use the same club as the employee</strong> — the benefit does not stop at the office,
+        it reaches home.</span>
     </p>
     <div class="grid2">
-      <div class="item"><span class="t">한 곳으로 모입니다</span><span class="d">여러 시설에 흩어지던 복지 예산이 한 자리에서 관리됩니다.</span></div>
-      <div class="item"><span class="t">이동 시간이 없습니다</span><span class="d">운동 · 회복 · 미팅이 한 건물에서 끝나 저녁 시간이 덜 깎입니다.</span></div>
-      <div class="item"><span class="t">접대와 미팅도 됩니다</span><span class="d">스파와 라운지가 함께 있어 손님을 모실 수 있습니다.</span></div>
-      <div class="item"><span class="t">가족까지 닿습니다</span><span class="d">배우자 · 자녀 · 부모 세대까지. 유소년 체조부터 시니어 프로그램까지 한 곳에서 이어집니다.</span></div>
+      <div class="item">
+        <span class="t"><span class="ko">한 곳으로 모입니다</span><span class="en">One line, not many</span></span>
+        <span class="d"><span class="ko">여러 시설에 흩어지던 복지 예산이 한 자리에서 관리됩니다.</span>
+                        <span class="en">A welfare budget spread across many venues is managed in a single place.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">이동 시간이 없습니다</span><span class="en">No travel between venues</span></span>
+        <span class="d"><span class="ko">운동 · 회복 · 미팅이 한 건물에서 끝나 저녁 시간이 덜 깎입니다.</span>
+                        <span class="en">Training, recovery and meetings finish in one building, so the evening is not eaten by transit.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">접대와 미팅도 됩니다</span><span class="en">Suitable for hosting</span></span>
+        <span class="d"><span class="ko">스파와 라운지가 함께 있어 손님을 모실 수 있습니다.</span>
+                        <span class="en">With the spa and lounge on site, guests can be received here.</span></span></div>
+      <div class="item">
+        <span class="t"><span class="ko">가족까지 닿습니다</span><span class="en">It reaches the family</span></span>
+        <span class="d"><span class="ko">배우자 · 자녀 · 부모 세대까지. 유소년 체조부터 시니어 프로그램까지 한 곳에서 이어집니다.</span>
+                        <span class="en">Spouses, children and parents — from children's gymnastics to senior programmes, all in one place.</span></span></div>
     </div>
   </section>
 
   <section>
-    <h2>계약</h2>
-    <h3>인원 규모에 따라 자리를 둡니다</h3>
+    <h2><span class="ko">계약</span><span class="en">Agreement</span></h2>
+    <h3><span class="ko">인원 규모에 따라 자리를 둡니다</span><span class="en">Places are set by headcount</span></h3>
 
     <div class="tablewrap">
       <table>
-        <thead><tr><th>구분</th><th class="num">1인 연간</th><th>비고</th></tr></thead>
+        <thead><tr>
+          <th><span class="ko">구분</span><span class="en">Headcount</span></th>
+          <th class="num"><span class="ko">1인 연간</span><span class="en">Per person / year</span></th>
+          <th><span class="ko">비고</span><span class="en">Note</span></th>
+        </tr></thead>
         <tbody>
-          <tr><td>5인</td><td class="num">2,700,000원</td><td>플래티넘 기준 5인 1,350만원</td></tr>
-          <tr><td>10인 이상</td><td class="num">2,550,000원</td><td>플래티넘 기준 10인 2,550만원</td></tr>
+          <tr><td><span class="ko">5인</span><span class="en">5 people</span></td>
+              <td class="num">KRW 2,700,000</td>
+              <td><span class="ko">플래티넘 기준 5인 1,350만원</span><span class="en">Platinum tier — KRW 13.5 M for 5</span></td></tr>
+          <tr><td><span class="ko">10인 이상</span><span class="en">10 or more</span></td>
+              <td class="num">KRW 2,550,000</td>
+              <td><span class="ko">플래티넘 기준 10인 2,550만원</span><span class="en">Platinum tier — KRW 25.5 M for 10</span></td></tr>
         </tbody>
       </table>
     </div>
 
-    <p>이용 범위는 네 가지 중에서 고르실 수 있습니다 — <strong>10인 이상 1인 연간 기준</strong>.</p>
+    <p>
+      <span class="ko">이용 범위는 네 가지 중에서 고르실 수 있습니다 — <strong>10인 이상 1인 연간 기준</strong>.</span>
+      <span class="en">Four levels of access are available — <strong>annual rate per person, 10 or more</strong>.</span>
+    </p>
 
     <div class="tablewrap">
       <table>
-        <thead><tr><th>구성</th><th>이용 범위</th><th class="num">1인 연간</th></tr></thead>
+        <thead><tr>
+          <th><span class="ko">구성</span><span class="en">Tier</span></th>
+          <th><span class="ko">이용 범위</span><span class="en">Access</span></th>
+          <th class="num"><span class="ko">1인 연간</span><span class="en">Per person / year</span></th>
+        </tr></thead>
         <tbody>
-          <tr><td>플래티넘</td><td>헬스 · 사우나</td><td class="num">2,550,000원</td></tr>
-          <tr><td>플래티넘 + 골프</td><td>헬스 · 사우나 · 골프</td><td class="num">2,890,000원</td></tr>
-          <tr><td>노블레스</td><td>헬스 · 수영 · 사우나</td><td class="num">3,060,000원</td></tr>
-          <tr><td>노블레스 + 골프</td><td>전 시설</td><td class="num">3,400,000원</td></tr>
+          <tr><td>Platinum</td>
+              <td><span class="ko">헬스 · 사우나</span><span class="en">Gym · sauna</span></td>
+              <td class="num">KRW 2,550,000</td></tr>
+          <tr><td>Platinum + Golf</td>
+              <td><span class="ko">헬스 · 사우나 · 골프</span><span class="en">Gym · sauna · golf</span></td>
+              <td class="num">KRW 2,890,000</td></tr>
+          <tr><td>Noblesse</td>
+              <td><span class="ko">헬스 · 수영 · 사우나</span><span class="en">Gym · swimming · sauna</span></td>
+              <td class="num">KRW 3,060,000</td></tr>
+          <tr><td>Noblesse + Golf</td>
+              <td><span class="ko">전 시설</span><span class="en">Full access</span></td>
+              <td class="num">KRW 3,400,000</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="tablewrap">
       <table>
-        <thead><tr><th>조건</th><th>내용</th></tr></thead>
+        <thead><tr>
+          <th><span class="ko">조건</span><span class="en">Term</span></th>
+          <th><span class="ko">내용</span><span class="en">Detail</span></th>
+        </tr></thead>
         <tbody>
-          <tr><td>계약 주체</td><td>회사 명의 · 사업자등록증 필요<span class="cond">회사가 자리를 확보하고 이용할 분을 지정합니다</span></td></tr>
-          <tr><td>이용 범위</td><td>임직원과 그 가족<span class="cond">가족 범위와 인원은 계약 시 협의합니다</span></td></tr>
-          <tr><td>인원 변경</td><td>계약 기간 중 1회<span class="cond">인사 이동에 맞춰 지정 인원을 바꾸실 수 있습니다</span></td></tr>
-          <tr><td>휴회</td><td>법인 계약은 휴회가 없습니다</td></tr>
-          <tr><td>자리 수</td><td>사전 협의<span class="cond">제한 회원제라 확보 가능한 자리 수를 먼저 확인해 드립니다</span></td></tr>
-          <tr><td>이용 방식</td><td>사전 예약제<span class="cond">예약 없이 방문하는 이용은 받지 않습니다</span></td></tr>
+          <tr><td><span class="ko">계약 주체</span><span class="en">Contracting party</span></td>
+              <td><span class="ko">회사 명의 · 사업자등록증 필요<span class="cond">회사가 자리를 확보하고 이용할 분을 지정합니다</span></span>
+                  <span class="en">In the company's name; business registration required
+                    <span class="cond">The company holds the places and nominates who uses them</span></span></td></tr>
+          <tr><td><span class="ko">이용 범위</span><span class="en">Who may use it</span></td>
+              <td><span class="ko">임직원과 그 가족<span class="cond">가족 범위와 인원은 계약 시 협의합니다</span></span>
+                  <span class="en">Employees and their families
+                    <span class="cond">Family scope and numbers are agreed at contract</span></span></td></tr>
+          <tr><td><span class="ko">인원 변경</span><span class="en">Changing nominees</span></td>
+              <td><span class="ko">계약 기간 중 1회<span class="cond">인사 이동에 맞춰 지정 인원을 바꾸실 수 있습니다</span></span>
+                  <span class="en">Once per contract term
+                    <span class="cond">Nominated members may be changed to follow staff movements</span></span></td></tr>
+          <tr><td><span class="ko">휴회</span><span class="en">Suspension</span></td>
+              <td><span class="ko">법인 계약은 휴회가 없습니다</span>
+                  <span class="en">Corporate agreements carry no suspension period</span></td></tr>
+          <tr><td><span class="ko">자리 수</span><span class="en">Number of places</span></td>
+              <td><span class="ko">사전 협의<span class="cond">제한 회원제라 확보 가능한 자리 수를 먼저 확인해 드립니다</span></span>
+                  <span class="en">Agreed in advance
+                    <span class="cond">Membership is capped, so we confirm available places first</span></span></td></tr>
+          <tr><td><span class="ko">이용 방식</span><span class="en">Access method</span></td>
+              <td><span class="ko">사전 예약제<span class="cond">예약 없이 방문하는 이용은 받지 않습니다</span></span>
+                  <span class="en">By prior reservation
+                    <span class="cond">Walk-in use is not accepted</span></span></td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2>진행</h2>
-    <h3>네 단계로 끝납니다</h3>
+    <h2><span class="ko">진행</span><span class="en">How it proceeds</span></h2>
+    <h3><span class="ko">네 단계로 끝납니다</span><span class="en">Four steps</span></h3>
     <ol class="flow">
-      <li><div><div class="t">문의</div><div class="d">인원과 관심 있는 이용 범위만 알려 주시면 됩니다.</div></div></li>
-      <li><div><div class="t">방문</div><div class="d">실제로 운영되는 시간대에 오셔서 보십니다. 말로 듣는 것보다 빠릅니다.</div></div></li>
-      <li><div><div class="t">조건 협의</div><div class="d">인원 · 구성 · 시작 시점에 맞춰 조건을 맞춥니다.</div></div></li>
-      <li><div><div class="t">계약 · 등록</div><div class="d">회사 명의로 계약하고 임직원을 지정합니다.</div></div></li>
+      <li><div>
+        <div class="t"><span class="ko">문의</span><span class="en">Enquiry</span></div>
+        <div class="d"><span class="ko">인원과 관심 있는 이용 범위만 알려 주시면 됩니다.</span>
+                       <span class="en">Tell us the headcount and the level of access you have in mind.</span></div></div></li>
+      <li><div>
+        <div class="t"><span class="ko">방문</span><span class="en">Visit</span></div>
+        <div class="d"><span class="ko">실제로 운영되는 시간대에 오셔서 보십니다. 말로 듣는 것보다 빠릅니다.</span>
+                       <span class="en">Come during operating hours and see it. It is faster than any description.</span></div></div></li>
+      <li><div>
+        <div class="t"><span class="ko">조건 협의</span><span class="en">Terms</span></div>
+        <div class="d"><span class="ko">인원 · 구성 · 시작 시점에 맞춰 조건을 맞춥니다.</span>
+                       <span class="en">Terms are set around headcount, tier and start date.</span></div></div></li>
+      <li><div>
+        <div class="t"><span class="ko">계약 · 등록</span><span class="en">Contract and registration</span></div>
+        <div class="d"><span class="ko">회사 명의로 계약하고 임직원을 지정합니다.</span>
+                       <span class="en">The agreement is signed in the company's name and members are nominated.</span></div></div></li>
     </ol>
   </section>
 
   <section>
-    <h2>위치</h2>
-    <h3>서울 용산구 서빙고로 413, 한남동</h3>
-    <p>한남동 중심. 인근 기업과 공관에서 이동 시간이 짧습니다.</p>
+    <h2><span class="ko">위치</span><span class="en">Location</span></h2>
+    <h3><span class="ko">서울 용산구 서빙고로 413, 한남동</span>
+        <span class="en">413 Seobinggo-ro, Hannam-dong, Yongsan-gu, Seoul</span></h3>
+    <p><span class="ko">한남동 중심. 인근 기업과 공관에서 이동 시간이 짧습니다.</span>
+       <span class="en">In the heart of Hannam-dong — a short journey from neighbouring offices and diplomatic residences.</span></p>
   </section>
 
   <div class="close">
-    <span class="q">먼저 한 번 보시겠습니까</span>
+    <span class="q"><span class="ko">먼저 한 번 보시겠습니까</span><span class="en">Would you like to see it first</span></span>
     <p class="c">
-      법인 이용은 <b>사전 방문 후 협의</b>로 진행합니다.<br>
-      전화 : <b>02-6261-1200</b> · 문의 : wellperion.com/ko/inquiry
+      <span class="ko">법인 이용은 <b>사전 방문 후 협의</b>로 진행합니다.<br>
+        전화 : <b>02-6261-1200</b> · 문의 : wellperion.com/ko/inquiry</span>
+      <span class="en">Corporate membership proceeds by <b>visit first, then discussion</b>.<br>
+        Tel : <b>+82-2-6261-1200</b> · Enquiries : wellperion.com/ko/inquiry</span>
     </p>
-    <p class="c" style="font-size:13.5px;color:var(--dim)">주식회사 웰페리온 · 서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동)</p>
+    <p class="c" style="font-size:13.5px;color:var(--dim)">
+      <span class="ko">주식회사 웰페리온 · 서울특별시 용산구 서빙고로 413, 101동 지1층 101호외 2 (한남동)</span>
+      <span class="en">Wellperion Co., Ltd. · 413 Seobinggo-ro, Bldg 101, B1 Unit 101 and 2 others, Hannam-dong, Yongsan-gu, Seoul</span>
+    </p>
   </div>
 
 </div>
+
+<script>
+  // 언어 전환 — 숫자·가격표는 한 벌 그대로 두고 말만 바꾼다.
+  // 주소 끝에 #en 을 붙여 보내면 영문으로 바로 열린다(카카오톡이 지우는 ?쿼리 대신 해시를 쓴다).
+  function setLang(lang){
+    document.body.dataset.lang = lang;
+    document.documentElement.lang = (lang === 'en') ? 'en' : 'ko';
+    document.getElementById('btn-ko').setAttribute('aria-pressed', String(lang === 'ko'));
+    document.getElementById('btn-en').setAttribute('aria-pressed', String(lang === 'en'));
+  }
+  setLang(location.hash.toLowerCase() === '#en' ? 'en' : 'ko');
+  addEventListener('hashchange', function(){
+    setLang(location.hash.toLowerCase() === '#en' ? 'en' : 'ko');
+  });
+</script>
 </body>
 </html>
