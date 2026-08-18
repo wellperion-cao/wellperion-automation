@@ -887,38 +887,6 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
-    },
-    {
-      "id": "ceo-kakao-evening-collect",
-      "owner_role": "ceo",
-      "owner_nick": "웰리",
-      "feature": "★중간관리자 방 저녁 재수집(매일 18:30) — 수집만 하고 발신하지 않는다. ▸왜 만들었나(2026-08-13): 그 방은 아침 07:30 에 하루 한 번만 내려받고 있어서, 근무 중에 온 회신이 다음 날 아침까지 안 보였다. 그날 이정헌 소장이 법정점검 6종을 16:29~18:44 에 회신했는데 웰리는 13:05 스냅샷을 최신으로 알고 GM 께 '소장님 회신 없음'이라 보고했다. 저녁에 한 번 더 읽으면 실무진 회신 반영이 하루에서 반나절로 줄어든다.",
-      "data_source": {
-        "kind": "file",
-        "ref": "1. AI자료_아카이브/11_카카오톡/★중간관리자/{YYYY-MM}/★중간관리자_auto_{YYYYMMDD}.txt + logs/kakao_collect_evening.log"
-      },
-      "notify_spec": {
-        "daily": false,
-        "weekly": false,
-        "monthly": false,
-        "channel": "none",
-        "bot_id": ""
-      },
-      "front_card": {
-        "window": "",
-        "anchor": ""
-      },
-      "autonomy": "auto",
-      "ai_free_fallback": "예약이 죽어도 손으로 한 줄이면 같은 결과: C:/Python314/python.exe scripts/kakao_export_chat.py --room-key mgr",
-      "feedback": {
-        "enabled": false,
-        "audience": "",
-        "entries": []
-      },
-      "reversible": true,
-      "honesty_default": "measured",
-      "note": "예약=Wellperion-Kakao-Collect-Evening-1830 (매일 18:30 · launchers/kakao_collect_evening_hidden.vbs → scripts/kakao_collect_evening.bat · 로그 logs/kakao_collect_evening.log · 역롤백=schtasks /Delete). 등록 스크립트=ops/register_kakao_collect_evening.bat. ★발신 경로 없음 — 이 배치는 대화 내보내기만 한다(카톡 창을 잠깐 조작하므로 근무시간 밖인 18:30 으로 잡았다). 아침 07:30 수집(scripts/ops_morning_digest.bat)은 그대로 둔다 — 이건 그 사이를 메우는 두 번째 읽기다.",
-      "enabled": true
     }
   ],
   "_removed": [
