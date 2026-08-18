@@ -41,6 +41,50 @@ SHRINK_LINES = 200       # AND 200줄 이상 감소
 MIN_HEAD_LINES = 200     # HEAD 가 이보다 작으면 비율 판정 스킵(소형파일 노이즈)
 WATCH_SUFFIXES = (".html", ".js")
 
+# ── 충돌 다발 파일 — 기준을 낮춰 잡는다 (2026-08-18 시우) ──────────────────────
+# 위 30%/200줄 기준은 '파일이 통째로 잘린' 사고용이다. 종합접수처 두 파일에서
+# 실제로 난 사고는 그보다 작다: 여러 세션이 같은 파일을 각자 들고 있던 옛 전체본으로
+# 덮어써 기능 단위(70~90줄)만 조용히 사라졌다. 2026-08-16 41480f4 가 이미 한 번
+# 재적용이었고, 2026-08-18 cd50bb4(76줄 삭제)·630bf0f(86줄 삭제)에서 또 났다.
+# 두 번 같은 자리에서 났으므로 문서가 아니라 이 관문에서 잡는다(약속 L02·L21 —
+# 새 가드 파일을 만들지 않고 이미 모든 커밋이 지나가는 여기에 조건 하나만 얹는다).
+# 우회는 기존과 동일: git commit --no-verify
+HOT_PREFIXES = ("3. 웰페리온 가이드/coo/reception/",)
+HOT_SHRINK_RATIO = 0.02   # 2% 이상 감소
+HOT_SHRINK_LINES = 40     # AND 40줄 이상 감소 (실사고 76·86줄보다 낮게)
+
+
+def _is_hot(disp: str) -> bool:
+    """충돌 다발 경로인지(경로 구분자는 git 출력 기준 '/')."""
+    return disp.startswith(HOT_PREFIXES)
+
+
+def over_threshold(disp: str, head_lines: int, dropped: int) -> bool:
+    """이 감소폭을 차단으로 볼지. 순수함수 — git 미의존이라 그대로 자가검사한다."""
+    if head_lines < MIN_HEAD_LINES or dropped <= 0:
+        return False
+    ratio = dropped / head_lines
+    if _is_hot(disp):
+        return ratio >= HOT_SHRINK_RATIO and dropped >= HOT_SHRINK_LINES
+    return ratio >= SHRINK_RATIO and dropped >= SHRINK_LINES
+
+
+def selfcheck() -> int:
+    """실사고 값으로 판정을 확인한다: python precommit_truncation_guard.py --selfcheck"""
+    hot_html = "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html"
+    hot_js = "3. 웰페리온 가이드/coo/reception/apps_script_reception.js"
+    other = "3. 웰페리온 가이드/cpo/member/membership.html"
+    # 2026-08-18 실사고 두 건 — 반드시 잡혀야 한다
+    assert over_threshold(hot_html, 1602, 76), "cd50bb4(76줄)을 못 잡는다"
+    assert over_threshold(hot_js, 2740, 86), "630bf0f(86줄)을 못 잡는다"
+    # 같은 파일의 정상 소폭 편집은 통과해야 한다
+    assert not over_threshold(hot_html, 1602, 12), "12줄 정리까지 막으면 오탐이다"
+    # 다발 경로가 아닌 파일은 옛 기준 그대로
+    assert not over_threshold(other, 2000, 86), "다발 경로 밖 기준이 바뀌었다"
+    assert over_threshold(other, 2000, 700), "옛 기준(30%·200줄)이 깨졌다"
+    print("[truncation-guard] 자가검사 5항목 통과")
+    return 0
+
 
 def run(args):
     """git 명령 실행 → (returncode, stdout_bytes)."""
@@ -145,7 +189,7 @@ def main():
                 continue  # 증가/동일 → OK
 
             ratio = dropped / head_lines
-            if ratio >= SHRINK_RATIO and dropped >= SHRINK_LINES:
+            if over_threshold(disp, head_lines, dropped):
                 violations.append((disp, head_lines, new_lines, dropped, ratio))
         except Exception:
             # 개별 파일 처리 실패 → 그 파일만 건너뜀(fail-open).
@@ -183,6 +227,8 @@ def main():
 
 if __name__ == "__main__":
     try:
+        if "--selfcheck" in sys.argv:
+            sys.exit(selfcheck())
         sys.exit(main())
     except Exception as exc:
         # 가드 자체 오류 → fail-open(커밋 통과). 진단 메시지만 출력.
