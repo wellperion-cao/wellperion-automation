@@ -51,9 +51,13 @@ h3{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--beig
   font-weight:700;margin-bottom:12px;padding-bottom:9px;border-bottom:2px solid var(--beige-lo)}
 .pf{display:flex;justify-content:space-between;align-items:center;margin-top:auto;
   padding-top:16px;border-top:2px solid var(--black);font-size:12.5px;letter-spacing:.10em;color:var(--ink-soft)}
-/* 남는 공간을 아래로만 밀지 않고 제목 뒤·본문 뒤로 나눠 준다(2026-08-18 GM 지적 — 내용이 위로 몰렸다).
-   flex 에서 margin auto 가 둘이면 남은 공간을 반씩 가져간다: 제목블록 / 여백 / 본문 / 여백 / 푸터. */
-.pad > .sec:first-of-type{margin-top:auto}
+/* 남는 공간을 여백으로 두지 않고 본문 블록이 실제로 채우게 한다
+   (2026-08-18 GM 지적 — 상단만 차고 아래가 비었다. 박스를 2열로 나눠 세로까지 채운다).
+   .fill = 남은 높이를 가져가는 본문 · 그 안 그리드는 높이를 100% 로 늘려 칸이 함께 커진다. */
+.pad > .sec.fill{flex:1;display:flex;flex-direction:column;min-height:0}
+.pad > .sec.fill > .grid{flex:1;min-height:0}
+/* 2열 2행 — 한 줄로 늘어서던 박스를 나눈다 */
+.two{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:20px}
 .a3.dark .pf{border-top-color:var(--beige-lo);color:rgba(255,255,255,.55)}
 .pf b{letter-spacing:.24em;color:var(--black)}
 .a3.dark .pf b{color:var(--beige)}
@@ -99,10 +103,10 @@ body[data-lang="en"] .en{display:revert}
 .plus .r .k{font-size:16px;font-weight:700;color:var(--black)}
 .plus .r .v{font-size:12.5px;color:var(--ink-soft);margin-left:auto;text-align:right;line-height:1.5}
 
-/* 기업에게 */
-.scope{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+/* 기업에게 — 2열 2행(2026-08-18 GM 지시 "박스를 2개 2개씩") */
+.scope{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:20px}
 .sc{background:var(--white);border:1px solid rgba(34,31,32,.10);border-top:3px solid var(--beige);
-  padding:26px 24px;display:flex;flex-direction:column;gap:9px}
+  padding:30px 30px;display:flex;flex-direction:column;gap:11px;justify-content:center}
 .a3.dark .sc{background:rgba(255,255,255,.05);border-color:var(--beige-lo)}
 .sc .n{font-size:11.5px;letter-spacing:.2em;color:var(--highlight);font-weight:700}
 .a3.dark .sc .n{color:var(--beige)}
@@ -110,9 +114,9 @@ body[data-lang="en"] .en{display:revert}
 .sc .d{font-size:14.5px;line-height:1.72;color:#3a352f}
 .a3.dark .sc .d{color:rgba(255,255,255,.72)}
 
-/* 요금 */
-.fees{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.fe{background:var(--white);border:1px solid rgba(34,31,32,.12);padding:26px 24px;display:flex;flex-direction:column;gap:10px}
+/* 요금 — 2열 2행 */
+.fees{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:20px}
+.fe{background:var(--white);border:1px solid rgba(34,31,32,.12);padding:26px 28px;display:flex;flex-direction:column;gap:11px;justify-content:center}
 .fe.rec2{border:2px solid var(--highlight)}
 .fe .tag{font-size:11.5px;letter-spacing:.2em;font-weight:700;color:var(--ink-soft)}
 .fe.rec2 .tag{color:var(--highlight)}
@@ -127,17 +131,19 @@ table.ft th{background:rgba(183,159,138,.16);color:var(--ink);font-size:12.5px;f
 table.ft th:first-child,table.ft td:first-child{text-align:left}
 table.ft td b{font-size:19px}
 
-/* 조건 */
-.arts{display:grid;grid-template-columns:1fr 1fr;gap:14px 30px}
-.ar{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.11)}
-.ar .no{font-size:12px;font-weight:800;color:var(--beige);letter-spacing:.1em;min-width:26px;padding-top:3px}
-.ar .bd .h{font-size:17px;font-weight:800;color:var(--white);margin-bottom:3px}
-.ar .bd .d{font-size:13.5px;line-height:1.66;color:rgba(255,255,255,.68)}
-.ar.key{background:rgba(237,91,63,.10);border-left:3px solid var(--highlight);padding:14px 16px;border-bottom:none}
+/* 조건 — 2열 3행 박스 */
+.arts{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:16px 24px}
+.ar{display:flex;gap:16px;padding:22px 24px;background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.12);align-items:flex-start}
+.ar .no{font-size:12px;font-weight:800;color:var(--beige);letter-spacing:.1em;min-width:26px;padding-top:4px}
+.ar .bd .h{font-size:18px;font-weight:800;color:var(--white);margin-bottom:5px}
+.ar .bd .d{font-size:14px;line-height:1.7;color:rgba(255,255,255,.7)}
+.ar.key{background:rgba(237,91,63,.12);border-color:rgba(237,91,63,.4);border-left:3px solid var(--highlight)}
 
-/* 진행 */
-.steps{display:flex;border:1px solid var(--beige-lo);background:var(--beige-lo);gap:1px}
-.st{background:var(--black);flex:1;padding:24px 22px;display:flex;flex-direction:column;gap:7px}
+/* 진행 — 2열 2행 */
+.steps{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:1px;
+  border:1px solid var(--beige-lo);background:var(--beige-lo)}
+.st{background:var(--black);padding:30px 30px;display:flex;flex-direction:column;gap:9px;justify-content:center}
 .st .n{font-size:11.5px;letter-spacing:.2em;color:var(--beige);font-weight:700}
 .st .h{font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--white)}
 .st .d{font-size:13.5px;line-height:1.66;color:rgba(255,255,255,.7)}
@@ -243,10 +249,10 @@ body[data-show] .shownav b{color:#fff;font-size:15px}
     </div>
     <p class="lead">
       <span class="ko">복지 시설을 고르는 기준은 무엇을 갖췄느냐가 아니라, 직원이 실제로 계속 가느냐입니다.
-        아래는 한남동 9년의 실측값입니다 — 회원 열 명 중 여섯 명이 해마다 다시 등록하고, 평균 3년 4개월을 머뭅니다.</span>
+        아래는 한남동에서 9년 동안 재어 온 값입니다. 서울 용산구 서빙고로 413 — 인근 기업과 공관에서 이동 시간이 짧습니다.</span>
       <span class="en">A benefit is judged not by what a facility owns but by whether people keep going.
-        The figures below are measured over nine years in Hannam-dong — six in ten members renew each year,
-        and the average membership lasts three years and four months.</span>
+        The figures below were measured over nine years in Hannam-dong. We are at 413 Seobinggo-ro —
+        a short journey from neighbouring offices and diplomatic residences.</span>
     </p>
 
     <div class="sec">
@@ -260,12 +266,26 @@ body[data-show] .shownav b{color:#fff;font-size:15px}
       </div>
     </div>
 
-    <div class="sec">
-      <h3>Where</h3>
-      <p class="lead" style="margin-top:0">
-        <span class="ko">서울 용산구 서빙고로 413, 한남동 — 인근 기업과 공관에서 이동 시간이 짧습니다.</span>
-        <span class="en">413 Seobinggo-ro, Hannam-dong, Yongsan-gu, Seoul — a short journey from neighbouring offices and diplomatic residences.</span>
-      </p>
+    <div class="sec fill">
+      <h3><span class="ko">9년 동안 쌓인 것</span><span class="en">What nine years produced</span></h3>
+      <div class="scope grid">
+        <div class="sc"><span class="n">01</span>
+          <span class="h"><span class="ko">사람이 남습니다</span><span class="en">People stay</span></span>
+          <span class="d"><span class="ko">열 명 중 여섯 명이 해마다 다시 등록하고, 평균 3년 4개월을 머뭅니다. 복지 시설을 몇 해마다 바꿔 다시 고르실 필요가 없습니다.</span>
+                          <span class="en">Six in ten renew each year and stay an average of three years and four months. You will not be reselecting a benefit provider every few years.</span></span></div>
+        <div class="sc"><span class="n">02</span>
+          <span class="h"><span class="ko">매일 쓰입니다</span><span class="en">It is used daily</span></span>
+          <span class="d"><span class="ko">정원 1,000명에 하루 600명이 실제로 옵니다. 등록만 해 두고 잊히는 복지가 아닙니다 — 예산이 출석으로 돌아옵니다.</span>
+                          <span class="en">Of 1,000 members, 600 come on an average day. This is not a benefit that is signed up for and forgotten — the budget returns as attendance.</span></span></div>
+        <div class="sc"><span class="n">03</span>
+          <span class="h"><span class="ko">한 건물에서 끝납니다</span><span class="en">It ends in one building</span></span>
+          <span class="d"><span class="ko">3,000평 단일 시설에 운동 · 회복 · 미팅이 함께 있습니다. 복지를 쓰지 않게 만드는 가장 큰 이유는 이동 시간입니다.</span>
+                          <span class="en">Training, recovery and meetings sit inside one 10,000 m² site. Travel time is the single biggest reason a benefit goes unused.</span></span></div>
+        <div class="sc"><span class="n">04</span>
+          <span class="h"><span class="ko">같은 자리에 있습니다</span><span class="en">It stays where it is</span></span>
+          <span class="d"><span class="ko">2017년 한남동에서 시작해 위치도 운영 주체도 바뀐 적이 없습니다. 계약 기간 내내 같은 곳, 같은 팀입니다.</span>
+                          <span class="en">Founded in Hannam-dong in 2017; neither the location nor the operator has changed since. The same place and the same team for the length of your agreement.</span></span></div>
+      </div>
     </div>
 
     <div class="pf"><span><b>WELLPERION</b> <span class="ko">법인 멤버십 제안서</span><span class="en">Corporate Membership</span></span><span>01</span></div>
@@ -354,8 +374,8 @@ body[data-show] .shownav b{color:#fff;font-size:15px}
         the benefit does not stop at the office, it reaches home.</span>
     </p>
 
-    <div class="sec">
-      <div class="scope">
+    <div class="sec fill">
+      <div class="scope grid">
         <div class="sc"><span class="n">01</span>
           <span class="h"><span class="ko">한 곳으로 모입니다</span><span class="en">One line, not many</span></span>
           <span class="d"><span class="ko">여러 시설에 흩어지던 복지 예산이 한 자리에서 관리됩니다. 정산할 영수증이 없습니다.</span>
@@ -393,9 +413,9 @@ body[data-show] .shownav b{color:#fff;font-size:15px}
       <span class="en">Rates below are per person per year for agreements of ten or more. The larger the headcount, the lower the rate.</span>
     </p>
 
-    <div class="sec">
+    <div class="sec fill">
       <h3>Access</h3>
-      <div class="fees">
+      <div class="fees grid">
         <div class="fe"><span class="tag">Platinum</span>
           <span class="h"><span class="ko">헬스 · 사우나</span><span class="en">Gym · sauna</span></span>
           <span class="f">KRW 2,550,000</span>
@@ -444,8 +464,8 @@ body[data-show] .shownav b{color:#fff;font-size:15px}
       <span class="en">The company signs,<br><span class="b">employees and their families use it.</span></span>
     </div>
 
-    <div class="sec">
-      <div class="arts">
+    <div class="sec fill">
+      <div class="arts grid">
         <div class="ar key"><span class="no">01</span><div class="bd">
           <div class="h"><span class="ko">계약 주체</span><span class="en">Contracting party</span></div>
           <div class="d"><span class="ko">회사 명의 · 사업자등록증이 필요합니다. 회사가 자리를 확보하고 이용할 분을 지정합니다.</span>
@@ -491,8 +511,8 @@ body[data-show] .shownav b{color:#fff;font-size:15px}
       <span class="en">The fastest route is to come and see it. Visit during operating hours and no description is needed.</span>
     </p>
 
-    <div class="sec">
-      <div class="steps">
+    <div class="sec fill">
+      <div class="steps grid">
         <div class="st"><span class="n">STEP 01</span>
           <span class="h"><span class="ko">문의</span><span class="en">Enquiry</span></span>
           <span class="d"><span class="ko">인원과 관심 있는 이용 범위만 알려 주시면 됩니다.</span><span class="en">Tell us the headcount and the level of access you have in mind.</span></span></div>
@@ -521,14 +541,16 @@ body[data-show] .shownav b{color:#fff;font-size:15px}
 <section class="a3 cv">
   <img class="bg" src="assets/facility/lounge.jpg" alt="">
   <div class="z">
-    <div class="eyebrow">Wellperion</div>
+    <div class="eyebrow">A Day, Well Completed</div>
     <h1>
-      <span class="ko">먼저 한 번<br><span class="b">보시겠습니까.</span></span>
-      <span class="en">Would you like<br><span class="b">to see it first.</span></span>
+      <span class="ko">그 하루에,<br><span class="b">자리를 하나 두십시오.</span></span>
+      <span class="en">Hold one place<br><span class="b">in that day.</span></span>
     </h1>
     <p class="sub">
-      <span class="ko">법인 이용은 사전 방문 후 협의로 진행합니다. 인원만 알려 주시면 확보 가능한 자리부터 확인해 드립니다.</span>
-      <span class="en">Corporate membership proceeds by visit first, then discussion. Tell us your headcount and we will start by confirming available places.</span>
+      <span class="ko">복지는 서류로 설명되지 않습니다. 직원이 퇴근길에 들르느냐로 증명됩니다.
+        인원만 알려 주시면 지금 확보 가능한 자리부터 확인해 드리고, 한 번 오셔서 직접 보시면 됩니다.</span>
+      <span class="en">A benefit is not proven on paper. It is proven when people stop by on the way home.
+        Tell us your headcount and we will confirm the places available now — then come and see it for yourself.</span>
     </p>
   </div>
   <div class="meta z" style="grid-template-columns:repeat(3,1fr)">
