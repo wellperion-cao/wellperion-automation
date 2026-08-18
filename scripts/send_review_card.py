@@ -337,6 +337,14 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
     else:
         pub_label = "승인하시는 즉시 올라갑니다"
 
+    # 슬라이드 안 잔글씨는 몽타주에서 안 읽힌다(8컷을 한 장에 줄여 붙이기 때문).
+    # 그래서 카드에 인쇄될 값을 글자로도 적는다 — 승인 전에 읽고 판단하시라고.
+    # (2026-08-16 실사고: 정보 슬라이드에 접수 메모 '테스트도 성공'이 그대로 실려 나갔는데
+    #  승인 화면에서는 보이지 않아 그대로 승인됐다.) 값이 없으면 이 줄은 아예 안 붙는다.
+    info_lines = [str(x).strip() for x in (item.get("info_lines") or []) if str(x).strip()]
+    info_block = ("\n<b>슬라이드에 인쇄될 값</b>\n" + "\n".join(f"· {x}" for x in info_lines) + "\n"
+                  if info_lines else "")
+
     caption = (
         f"🔎 <b>콘텐츠 검수 요청</b>\n"
         f"<b>{title}</b>\n"
@@ -344,6 +352,7 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
         f"폴더: {folder}\n"
         f"발행 — {pub_label}\n"
         f"{qc_line}\n"
+        f"{info_block}"
         f"슬라이드 미리보기 ↑ · <a href=\"{M1_URL}\">M1에서 전체 보기</a>\n"
         f"확인 후 아래에서 바로 발행 승인하세요."
     )

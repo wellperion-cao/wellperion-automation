@@ -941,6 +941,8 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         "mentions": [],
         "status": "검수대기",
         "preview": preview_rel or slides_rel[0],
+        # 정보 슬라이드에 실제로 인쇄될 값 — 승인 카드에 글자로도 실린다(몽타주에선 안 읽힌다).
+        "info_lines": [f"{label} · {val}" for label, val in info_rows],
         "id": item_id,
         "publish_at": parsed["publish_at"],
         "note": f"[GM의 일요일 접수 {row.get('접수일시', '')}] cmo_intake_to_review.py 자동 제작(GM의일요일 분기) · {copy_note}",
