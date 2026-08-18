@@ -5,5 +5,7 @@
   "relay_approval_required": true,
   "_comment_bridge": "폐기 2026-08-13(배589 · GM 지시 2026-08-12). 카톡 대화 → 업무 SSOT 자동 등록은 코드에서 끊었다(ops_daily_digest.bridge_to_todo 가 항상 0을 돌려준다). 이 키는 남은 흔적이라 false 고정 — 다시 true 로 바꿔도 등록되지 않는다. 대신 방에 \"업무 SSOT 에 올리실 건가요?\" 되묻기가 나간다.",
   "todo_bridge_enabled": false,
-  "todo_bridge_disabled_reason": "GM 지시 2026-08-12 — AI가 업무 SSOT에 실무진 업무를 자동 등록하지 않는다. 2026-08-13 재발 7건 후 재확인."
+  "todo_bridge_disabled_reason": "GM 지시 2026-08-12 — AI가 업무 SSOT에 실무진 업무를 자동 등록하지 않는다. 2026-08-13 재발 7건 후 재확인.",
+  "_comment_ovd": "기한 초과 접수 알림 킬스위치(send_ops_digest.send_overdue_reception_alerts). true=매일 아침 ★부서장·★운영+시설+지원+주차 방에 3일+ 미처리 접수 전송. false=전송 안 함. 배CTO-2026-08-18 GM 지시로 신설.",
+  "overdue_alert_enabled": true
 }

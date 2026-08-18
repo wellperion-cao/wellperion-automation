@@ -910,6 +910,130 @@ def send_mgr_brief() -> None:
         log(f"[mgr] 발송 실패(rc={mproc.returncode}) — 다음 회차 재시도")
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 기한 초과 접수 알림 (배CTO-2026-08-18 · GM 지시 2026-08-18)
+# 매일 아침 3일+ 미처리 접수를 부서별 방에 한 번씩 내보낸다. 분실물 제외(별도 주기).
+# 3일=건수 한 줄 / 7일+=부서·담당 이름 / 14일+=맨 앞. 담당 공란='담당 미정'.
+# 방: 팀/강습 → ★부서장 / 나머지 → ★운영+시설+지원+주차
+# 책임자(건마다 지목): 시설부=이정헌 소장 / 지원부=반장 / 운영부=이경연 실장
+# 킬스위치: ops_digest_send.json overdue_alert_enabled (기본 true)
+# ══════════════════════════════════════════════════════════════════════════
+_OVD_ROOM_LESSON = "★부서장"
+_OVD_ROOM_OPS = "★운영+시설+지원+주차"
+_OVD_LEADER: dict = {
+    "시설부": "이정헌 소장",
+    "지원부": "반장", "지원부(남)": "반장", "지원부(여)": "반장",
+    "운영부": "이경연 실장",
+}
+_OVD_HEARTBEAT_ID = "overdue-reception-alert"
+_OVD_CAT_EXCLUDE = "분실물 접수"
+
+
+def _ovd_room_for(dept: str) -> str:
+    d = str(dept or "").strip()
+    return _OVD_ROOM_LESSON if ("강습" in d or d.endswith("팀")) else _OVD_ROOM_OPS
+
+
+def _ovd_enabled() -> bool:
+    try:
+        return bool(json.loads(KILL_SWITCH.read_text(encoding="utf-8")).get("overdue_alert_enabled", True))
+    except Exception:
+        return True
+
+
+def _ovd_already_sent_today() -> bool:
+    from module_heartbeat import last_heartbeat
+    rec = last_heartbeat(_OVD_HEARTBEAT_ID)
+    return bool(rec) and str((rec.get("state") or {}).get("date", "")) == date.today().isoformat()
+
+
+def _ovd_mark_sent() -> None:
+    from module_heartbeat import record_heartbeat
+    record_heartbeat(_OVD_HEARTBEAT_ID,
+                     detail="기한 초과 접수 알림 발송",
+                     extra={"state": {"date": date.today().isoformat()}})
+
+
+def _build_ovd_block(rows_for_room: list) -> str:
+    """3일+ 미처리 접수 → tiered 알림 블록. 완료·분실물은 이미 제외된 상태로 들어온다."""
+    from collectors.ops_shared import reception_elapsed_days
+    now = datetime.now()
+    tier14: list = []
+    tier7: list = []
+    n3 = 0
+    for r in rows_for_room:
+        days = reception_elapsed_days(r, now)
+        if days < 3:
+            continue
+        dept = str(r.get("dept") or "").strip() or "부서 미정"
+        assignee_list = [str(x).strip() for x in (r.get("assigneeCanon") or []) if str(x).strip()]
+        assignee = "/".join(assignee_list) if assignee_list else (
+            str(r.get("assignee") or "").strip() or "담당 미정")
+        leader = _OVD_LEADER.get(dept, "")
+        entry = (days, dept, assignee, leader)
+        if days >= 14:
+            tier14.append(entry)
+        elif days >= 7:
+            tier7.append(entry)
+        else:
+            n3 += 1
+    if not tier14 and not tier7 and not n3:
+        return ""
+    tier14.sort(key=lambda x: -x[0])
+    tier7.sort(key=lambda x: -x[0])
+    lines = ["⏰ 기한 초과 접수 — 마무리 부탁드립니다"]
+    for days, dept, assignee, leader in tier14:
+        suffix = f" · {leader}" if leader and leader not in assignee else ""
+        lines.append(f"🔴 {days}일 {dept} · {assignee}{suffix}")
+    for days, dept, assignee, leader in tier7:
+        suffix = f" · {leader}" if leader and leader not in assignee else ""
+        lines.append(f"🟠 {days}일 {dept} · {assignee}{suffix}")
+    if n3:
+        lines.append(f"🟡 3일 이상 {n3}건")
+    return "\n".join(lines)
+
+
+def send_overdue_reception_alerts() -> None:
+    """기한 초과 접수를 ★부서장·★운영+시설+지원+주차 방에 아침 1회 발송."""
+    if not _ovd_enabled():
+        log("[ovd] 킬스위치 OFF — 생략")
+        return
+    if _ovd_already_sent_today():
+        log("[ovd] 이미 발송된 회차 — 생략")
+        return
+    from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get
+    resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ovd-alert")
+    if resp is None:
+        log("[ovd] 종합접수 조회 실패 — 생략")
+        return
+    try:
+        data = resp.json()
+        rows = data.get("data", []) if data.get("ok") else []
+    except Exception:
+        log("[ovd] 응답 파싱 실패 — 생략")
+        return
+    eligible = [r for r in rows
+                if str(r.get("status", "")) not in {"완료"}
+                and str(r.get("category") or "").strip() != _OVD_CAT_EXCLUDE]
+    sent_any = False
+    for room in (_OVD_ROOM_LESSON, _OVD_ROOM_OPS):
+        room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
+        block = _build_ovd_block(room_rows)
+        if not block:
+            log(f"[ovd] {room} — 3일+ 없음, 생략")
+            continue
+        cmd = [sys.executable, str(SENDER), "--message", block, "--only-room", room]
+        log(f"[ovd] 발송 → {room}")
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        out = (proc.stdout or "").strip()
+        tail = out.splitlines()[-1] if out else "출력 없음"
+        log(f"[ovd] rc={proc.returncode} · {tail}")
+        if proc.returncode == 0 and "DONE" in out:
+            sent_any = True
+    if sent_any:
+        _ovd_mark_sent()
+
+
 def main() -> int:
     if sys.platform != "win32":
         print("FAILED: Windows 전용")
@@ -947,6 +1071,10 @@ def main() -> int:
             send_mgr_brief()
         except Exception as exc:
             log(f"[mgr] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+        try:
+            send_overdue_reception_alerts()
+        except Exception as exc:
+            log(f"[ovd] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
     return rc
 
 
