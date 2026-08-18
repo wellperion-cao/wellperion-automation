@@ -472,7 +472,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 35
+          "waited": 38
         },
         {
           "ref": "GM-20260818-1016",
@@ -486,7 +486,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 35
+          "waited": 38
         }
       ],
       "repeats": []
@@ -634,7 +634,7 @@
           "start": "16:56",
           "end": "17:42",
           "minutes": 46,
-          "upload": "기록만",
+          "upload": "✅ 올림 (4648f7dd4)",
           "open": false,
           "evidence": "⚠️없음"
         },
@@ -747,13 +747,31 @@
           "area": "작업",
           "event": "종합접수처 완료화면에 조회 안내 추가 — 접수 후 처리상태 셀프조회 링크(ko/lookup)",
           "detail": "커밋 e1793645e · 배 10822"
+        },
+        {
+          "time": "17:48",
+          "area": "작업",
+          "event": "스케줄러 재기동 스크립트가 종료 실패를 삼키던 문제 수리",
+          "detail": "커밋 0a36eb6c6 · 배 10822"
+        },
+        {
+          "time": "17:48",
+          "area": "surface",
+          "event": "자율현황 CLI 라이브 도구 노출 제거 — 강제 재기동으로 라이브 실증",
+          "detail": "taskkill 로 옛 프로세스 종료 후 재기동, /live 도구 0건 확인. 재시작 스크립트가 실패를 삼키던 것도 함께 수리"
+        },
+        {
+          "time": "17:48",
+          "area": "작업",
+          "event": "CTO CLI 라이브 도구노출 제거 작업로그",
+          "detail": "커밋 045d2a773 · 배 10822"
         }
       ],
       "count": 13,
       "done": 12,
       "open": 1,
       "avg_minutes": 43,
-      "work_count": 16,
+      "work_count": 19,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -769,7 +787,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 4
+          "waited": 7
         }
       ],
       "repeats": []
@@ -917,7 +935,7 @@
           "start": "17:35",
           "end": "17:41",
           "minutes": 6,
-          "upload": "✅ 올림 (9175717c5)",
+          "upload": "✅ 올림 (22fbbf72b)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -925,8 +943,20 @@
           "ref": "GM-20260818-3014",
           "no": "14",
           "got": "직원 -> 임직원 // 마지막 페이지에 임직원들의 하루에 웰페리온이 있으면 좋겠습니다. 로 수정 완료",
-          "did": "",
+          "did": "법인 제안서 '직원'→'임직원' 통일 + 마무리 타이틀 GM 확정본 반영",
           "start": "17:41",
+          "end": "17:47",
+          "minutes": 6,
+          "upload": "✅ 올림 (22fbbf72b)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260818-3015",
+          "no": "15",
+          "got": "마지막 페이지에 왜 퇴근길이 붙었어? 우린 오전에도 중간에도 많이 오는편인데?",
+          "did": "",
+          "start": "17:47",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -1048,29 +1078,35 @@
           "area": "작업",
           "event": "법인 제안서 '직원'→'임직원' 통일 + 마무리 타이틀 GM 확정본 반영",
           "detail": "커밋 7c2c01661 · 배 10763"
+        },
+        {
+          "time": "17:48",
+          "area": "작업",
+          "event": "법인 제안서 마무리 문구 — 퇴근길 한정 표현 삭제(오전·일과중 방문 실태 반영)",
+          "detail": "커밋 22fbbf72b · 배 10763"
         }
       ],
-      "count": 13,
-      "done": 12,
+      "count": 14,
+      "done": 13,
       "open": 1,
-      "avg_minutes": 24,
-      "work_count": 19,
+      "avg_minutes": 23,
+      "work_count": 20,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260818-3014",
-          "no": "14",
-          "got": "직원 -> 임직원 // 마지막 페이지에 임직원들의 하루에 웰페리온이 있으면 좋겠습니다. 로 수정 완료",
+          "ref": "GM-20260818-3015",
+          "no": "15",
+          "got": "마지막 페이지에 왜 퇴근길이 붙었어? 우린 오전에도 중간에도 많이 오는편인데?",
           "did": "",
-          "start": "17:41",
+          "start": "17:47",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 5
+          "waited": 2
         }
       ],
       "repeats": []
@@ -1227,7 +1263,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 8
+          "waited": 11
         }
       ],
       "repeats": []
@@ -1275,8 +1311,20 @@
           "ref": "GM-20260818-5004",
           "no": "04",
           "got": "지금 근본적인 문제해결이 된거야? 다음부터 종합접수처나 실무진들이 수정한 내용을 내가 덮어쓰거나 반대로 되는 상황이 없었으면 좋겠는데",
-          "did": "",
+          "did": "옛 사본 덮어쓰기 근본 차단 — '최근 들어온 줄을 지우면 막는다' (INC-043)",
           "start": "17:39",
+          "end": "17:46",
+          "minutes": 7,
+          "upload": "✅ 올림 (746b967be)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260818-5005",
+          "no": "05",
+          "got": "종합접수처만 일단 운영부랑 같이 하고 있어서 걸면 될 것 같아",
+          "did": "",
+          "start": "17:46",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -1328,27 +1376,27 @@
           "detail": "커밋 746b967be · 배 10621"
         }
       ],
-      "count": 4,
-      "done": 3,
+      "count": 5,
+      "done": 4,
       "open": 1,
-      "avg_minutes": 81,
+      "avg_minutes": 63,
       "work_count": 7,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260818-5004",
-          "no": "04",
-          "got": "지금 근본적인 문제해결이 된거야? 다음부터 종합접수처나 실무진들이 수정한 내용을 내가 덮어쓰거나 반대로 되는 상황이 없었으면 좋겠는데",
+          "ref": "GM-20260818-5005",
+          "no": "05",
+          "got": "종합접수처만 일단 운영부랑 같이 하고 있어서 걸면 될 것 같아",
           "did": "",
-          "start": "17:39",
+          "start": "17:46",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 7
+          "waited": 3
         }
       ],
       "repeats": []
