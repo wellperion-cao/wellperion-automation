@@ -413,6 +413,10 @@ def _parse_copy_json(raw: str, n_lines: int, card_names: "list[str] | None" = No
         "think": str(data.get("think") or "").strip(),
         "caption": str(data.get("caption") or "").strip(),
         "hashtags": str(data.get("hashtags") or "").strip(),
+        # 정보 슬라이드에 인쇄할 값 — 접수 메모를 밖에 낼 말로 다듬은 것. 없으면 빈 dict.
+        "info": {str(k).strip(): str(v).strip()
+                 for k, v in (data.get("info") or {}).items() if str(v).strip()}
+        if isinstance(data.get("info"), dict) else {},
     }
 
 
@@ -475,6 +479,12 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         "  지어내지 마라) ③마지막 줄은 독자에게 던지는 질문 한 줄. 정보는 나열식 광고 문구가 아니라"
         " 문장 속에 자연스럽게 녹인다.",
         "- hashtags = 5개 안팎이고 맨 앞 3개가 가장 중요하다. #GM의일요일 을 반드시 포함한다.",
+        "- info = 정보 슬라이드에 그대로 인쇄될 값. 아래 '사진으로는 알 수 없는 사실'의"
+        "  각 항목을 **밖에 내보낼 말로 다듬어** 같은 키로 돌려준다."
+        "  ★접수 메모는 GM 이 본인에게 적은 쪽지다 — 그대로 인쇄하면 안 된다."
+        "  (2026-08-16 실사고: '저번 백운계곡 테스트도 성공 이번도 성공' 이 그대로 발행돼 나갔다.)"
+        "  내부 표현·업무 용어·중복은 걷어내고, 읽는 사람에게 뜻이 통하는 짧은 말로 바꾼다."
+        "  값이 없거나 밖에 낼 말이 아니면 그 키를 아예 빼라(빈 칸이 잘못된 칸보다 낫다).",
         "- 금지어: '피트니스'(→'스포츠클럽'), '하이엔드프라이빗', '사교'.",
         *(["- 사진 외에 영상도 함께 올라가지만 영상은 보지 못하니 언급하지 마라."] if video else []),
         "",
@@ -493,7 +503,8 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         "출력은 JSON 한 덩어리만. 설명·코드블록 없이 { 로 시작해 } 로 끝낸다.",
         '{"title":"두 줄 제목(\\n 포함)","lines":{'
         + ", ".join(f'"{p.name}":"그 사진 문장"' for p in photos[1:])
-        + '},"think":"생각 한 줄","caption":"본문 캡션","hashtags":"#태그 #태그"}',
+        + '},"think":"생각 한 줄","caption":"본문 캡션","hashtags":"#태그 #태그",'
+          '"info":{"장소":"다듬은 값","좋았던 점":"다듬은 값"}}',
     ])
 
     raw, used_model = run_claude(
@@ -869,7 +880,12 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         # 정보는 따로 글자 페이지를 만들지 않고 '마지막 사진 위'에 얹는다(GM 지시 2026-08-05:
         # '정보를 따로 페이지로 만드는 것보다, 그냥 사진 페이지에 정리하는 게 낫다').
         # 그 사진의 문장 카드를 정보 카드로 갈아 끼우므로 장수는 늘지 않는다.
-        info_rows = _sunday_info_rows((parsed or {}).get("facts"))
+        # 정보 슬라이드 값 = AI 가 밖에 낼 말로 다듬은 것(ai["info"]) 우선, 없으면 접수 원문.
+        # ★접수 메모를 그대로 인쇄하면 안 된다 — 2026-08-16 '테스트도 성공' 이 그대로 나갔다.
+        # AI 가 info 를 냈으면 그것만 쓴다 — 모델이 뺀 키는 '밖에 낼 말이 아니라' 뺀 것이므로
+        # 원문으로 되살리지 않는다(되살리면 애초 사고가 그대로 재발한다).
+        _polished = (ai or {}).get("info") or {}
+        info_rows = _sunday_info_rows(_polished or (parsed or {}).get("facts"))
         if info_rows and fit_cards:
             last_rel = slides_rel[-1]
             if _compose_sunday_info(info_rows, out_dir / Path(last_rel).name, fit_cards[-1]):
