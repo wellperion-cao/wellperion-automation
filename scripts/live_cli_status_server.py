@@ -121,10 +121,13 @@ def _events_from_lines(lines):
 
 
 def _build_payload():
+    """도구(tool_use) 이벤트는 '작업 중' 판정(last_ts/busy)에는 그대로 쓰되,
+    화면에 나가는 items 목록에는 절대 넣지 않는다 — GM 은 비개발자라 도구 호출은 노이즈다.
+    데이터를 서버에서 걸러 브라우저까지 보내지 않는다(2026-08-18)."""
     path = _latest_session()
     if not path:
         return {'busy': False, 'items': [], 'session_started': None, 'last_activity_at': None}
-    events = _events_from_lines(_read_tail_lines(path))[-MAX_ITEMS:]
+    events = _events_from_lines(_read_tail_lines(path))
     events.sort(key=lambda e: e[0] or '')
     last_ts = events[-1][0] if events else None
     busy = False
@@ -134,11 +137,12 @@ def _build_payload():
             busy = (datetime.now(timezone.utc) - dt).total_seconds() < BUSY_WINDOW_SEC
         except Exception:
             pass
+    visible = [e for e in events if e[1] != '도구'][-MAX_ITEMS:]
     return {
         'session_started': _read_head_timestamp(path),
         'last_activity_at': last_ts,
         'busy': busy,
-        'items': [{'ts': ts, 'kind': kind, 'text': text} for ts, kind, text in events],
+        'items': [{'ts': ts, 'kind': kind, 'text': text} for ts, kind, text in visible],
     }
 
 
