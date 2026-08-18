@@ -3400,47 +3400,6 @@ function _gzFmtContact_(v) {
   if (s.trim() && /^[\d\s\-+().]+$/.test(s.trim())) return _gzFmtPhone_(s);
   return s;
 }
-// 2026-07-20 시모: Survey.js CANONICAL_CHANNELS와 정합 — '유선전화' 10번째 버킷 추가(회원관리 드롭다운
-//   CHANNEL_OPTIONS엔 있었는데 이 배열엔 누락돼 있던 정본 불일치 수정, 상세 근거는 Survey.js 쪽 주석 참고).
-var GZ_CANONICAL_CHANNELS = ['네이버', '동부이촌동 커뮤니티', '인스타그램', '카카오톡', '당근마켓',
-                              '소개·지인', '기존·과거 회원', '오프라인', '유선전화', '기타·미상'];
-function _gzCanonicalChannel_(raw) {
-  var s = String(raw == null ? '' : raw).trim();
-  if (!s) return '기타·미상';
-  if (/^온라인\s*[\(（]/.test(s)) return '기타·미상';
-  if (/인스타|instagram|insta/i.test(s)) return '인스타그램';
-  if (/카카오|카톡|챗톡|쳇톡|챗봇|쳇봇|kakao/i.test(s)) return '카카오톡';
-  if (/당근|daangn|danggn/i.test(s)) return '당근마켓';
-  if (/동부이촌동|동커|동\.커|이촌동|카페/.test(s)) return '동부이촌동 커뮤니티';
-  if (/네이버|naver|플레이스|블로그|블러그|검색|인터넷/i.test(s)) return '네이버';
-  if (/소개|지인|친구|friend|추천|동기/i.test(s)) return '소개·지인';
-  if (/회원|가족|자녀|아이|아들|딸|형|누나|언니|동생|둘째|첫째|보호자|학부모|부모|母|수강|강습|다녔|다니|이용|경험|기존|과거|재수강|정회원|연회원|멤버십회원|멤버쉽|wsc|준회원|수강생/i.test(s)) return '기존·과거 회원';
-  if (/간판|현수막|홍보물|우편|워크인|방문|지나가|지나는|집근처|근처|동네|거주|입주|하이페리온|길에|봤|보여서|아파트|오프라인/.test(s)) return '오프라인';
-  if (/^유선\s*전화$|^전화\s*문의$/.test(s)) return '유선전화';
-  return '기타·미상';
-}
-// 유입채널 원문 3단 해석(대분류→중분류→자동UTM) — Survey.js _resolveInquiryChannelRaw_ 1:1 이식.
-// 2026-07-20 시모(GM 지시): gvizMiRows_(클라이언트 gviz 직독 경로)가 대분류 1칸만 읽어 Survey.js
-// _miReadRows_·M1(_collectFormInquiries_)과 다른 값을 보여주던 사고 재발방지 — 서버·클라 양쪽 모두
-// 같은 3단 규칙을 적용한다(런타임이 달라 함수 자체 공유는 불가 → 알고리즘을 동일하게 유지).
-function _gzResolveInquiryChannelRaw_(headers, row, channelKeys) {
-  var idxChan = _gzColIdx_(headers, channelKeys);
-  var idxChanFine = _gzColIdx_(headers, ['중분류']);
-  var idxAuto = _gzColIdx_(headers, ['유입경로(자동)', '유입경로자동', '유입경로_자동']);
-  var chanRaw = (idxChan >= 0 ? String(row[idxChan] || '').trim() : '');
-  if (idxChanFine >= 0) {
-    var midRaw = String(row[idxChanFine] || '').trim();
-    if (midRaw && _gzCanonicalChannel_(midRaw) !== '기타·미상') chanRaw = midRaw;
-  }
-  if (idxAuto >= 0) {
-    var autoRaw = String(row[idxAuto] || '').trim();
-    if (autoRaw) {
-      var autoSrc = autoRaw.split('|')[0].trim();
-      if (_gzCanonicalChannel_(autoSrc) !== '기타·미상') chanRaw = autoSrc;
-    }
-  }
-  return chanRaw;
-}
 function _gzToISO_(val) {
   if (!val) return '';
   if (val instanceof Date && !isNaN(val.getTime())) {
@@ -3585,100 +3544,6 @@ function _gzResCellParse_(raw) {
   return out;
 }
 
-// 멤버십 문의 행객체 배열 — Survey.js _miReadRows_ 1:1 이식(익명화 없음 — 원본과 동일 정책).
-// gid = 이 행들의 출처 물리 시트(한글/영문 병합 표시·저장 라우팅용). Survey.js _miReadRows_와 정합. 2026-07-09 시포·GM.
-function gvizMiRows_(headers, rows, gid) {
-  // ★영문 멤버십탭 헤더 별칭(2026-07-09 시포·GM, 영어 문의 누수 수리) — Survey.js _miReadRows_ 1:1 이식.
-  var iName  = _gzColIdx_(headers, ['성함','이름','Full Name']);
-  var iPhone = _gzColIdx_(headers, ['연락처','전화','휴대폰','Mobile Phone Number']);
-  var iProg  = _gzColIdx_(headers, ['관심 있는 프로그램 종류','관심프로그램','프로그램','Programs of Interest']);
-  var iStat  = _gzColIdx_(headers, ['진행현황','진행상황','진행상태','상태']);
-  var iTs    = _gzColIdx_(headers, ['타임스탬프','접수일','날짜']);
-  var iTour  = _gzColIdx_(headers, ['시설투어 및 상담 예약','시설견학 및 상담 일정','상담 예약','상담']);
-  var iExp1  = _gzColIdx_(headers, ['체험1 확정시간','체험1']);
-  var iExp2  = _gzColIdx_(headers, ['체험2 확정시간','체험2']);
-  var iV2Dt  = _gzColIdx_(headers, ['시설 체험 예약2(날짜 기록)','시설 체험 예약2','체험 예약2']);
-  var iVisited = _gzColIdx_(headers, ['방문완료일','방문완료','방문일자']);
-  var iOwner = _gzColIdx_(headers, ['담당','담당자']);
-  var iMemo  = _gzColIdx_(headers, ['메모','비고','담당자메모']);
-  var _GZ_CHAN_KEYS = ['문의채널','유입채널','채널','경로','알게','How Did You Hear About Us?'];  // 대분류 — 3단 우선순위는 _gzResolveInquiryChannelRaw_ 공용 로직(Survey.js와 정합, 2026-07-20)
-  var iContent = _gzColIdx_(headers, ['기타 웰페리온에 대한 문의 사항','기타 웰페리온','자유롭게 적어','문의 사항','문의사항','Health & Wellness Goals']);
-  var iRes  = _gzColIdx_(headers, [INQ_RES_COL_GZ]);
-  // 위치 폴백 17/18/19 제거(2026-07-20 시포) — Survey.js _miReadRows_와 정합. 정답 위치는 16/17/18인데 한 칸씩 밀린 폴백이 지뢰였음.
-  //   이름 탐색은 항상 성공(gviz 실측 검증) — 못 찾을 때만 콘솔 경고, 아래 소비처는 -1을 빈 값으로 안전 처리.
-  var iC1 = _gzColIdx_(headers, ['Contact1']); if (iC1 < 0) console.warn('gvizMiRows_: Contact1 칸 못찾음(헤더 확인 필요)');
-  var iC2 = _gzColIdx_(headers, ['Contact2']); if (iC2 < 0) console.warn('gvizMiRows_: Contact2 칸 못찾음(헤더 확인 필요)');
-  var iC3 = _gzColIdx_(headers, ['Contact3']); if (iC3 < 0) console.warn('gvizMiRows_: Contact3 칸 못찾음(헤더 확인 필요)');
-  var iHist = _gzColIdx_(headers, [CONTACT_HIST_COL_GZ]);
-  var iLang = _gzColIdx_(headers, ['Preferred Language','Language']);
-  var rowOffset = (gid === GVIZ_MI_GID_EN) ? _ROW_OFFSET_EN_GZ_ : 0;  // 영문 탭 행키 오프셋 — Survey.js와 정합. 2026-07-09 시포·GM.
-  var out = [];
-  for (var r = 0; r < rows.length; r++) {
-    var row = rows[r];
-    var hasName  = iName  >= 0 && row[iName];
-    var hasPhone = iPhone >= 0 && row[iPhone];
-    if (!hasName && !hasPhone) continue;
-    var _mo = {
-      rowIndex: r + 2 + rowOffset,
-      name:     iName  >= 0 ? String(row[iName]  || '') : '',
-      phone:    iPhone >= 0 ? _gzFmtPhone_(row[iPhone]) : '',
-      program:  iProg  >= 0 ? String(row[iProg]  || '') : '',
-      status:   iStat  >= 0 ? String(row[iStat]  || '') : '',
-      channel:  (function(){ var _cr = _gzResolveInquiryChannelRaw_(headers, row, _GZ_CHAN_KEYS); return _cr ? _gzCanonicalChannel_(_cr) : ''; })(),
-      exp1:     (_gzToISO_(iTour >= 0 ? row[iTour] : '') || _gzToISO_(iExp1 >= 0 ? row[iExp1] : '')),
-      exp1Time: _gzTime_(iExp1 >= 0 ? row[iExp1] : ''),
-      exp2:     (_gzToISO_(iV2Dt >= 0 ? row[iV2Dt] : '') || _gzToISO_(iExp2 >= 0 ? row[iExp2] : '')),
-      exp2Time: _gzTime_(iExp2 >= 0 ? row[iExp2] : ''),
-      inquiryContent: iContent >= 0 ? String(row[iContent] || '') : '',
-      tourDate: '', tourTime: '', exp3: '', exp3Time: '', visit2Date: '', visit2Time: '',
-      visited:    (iVisited >= 0 && String(row[iVisited] == null ? '' : row[iVisited]).trim() !== '') ? true : false,
-      visitDate:  (iVisited >= 0) ? _gzToISO_(row[iVisited]) : '',
-      timestamp:_gzToISODateTime_(iTs >= 0 ? row[iTs] : ''),
-      memo:     iMemo  >= 0 ? String(row[iMemo]  || '') : '',
-      owner:    iOwner >= 0 ? String(row[iOwner] || '') : '',
-      contact1: (iC1 >= 0 && iC1 < row.length) ? _gzFmtContact_(row[iC1]) : '',
-      contact2: (iC2 >= 0 && iC2 < row.length) ? _gzFmtContact_(row[iC2]) : '',
-      contact3: (iC3 >= 0 && iC3 < row.length) ? _gzFmtContact_(row[iC3]) : '',
-      gid: gid,
-      lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
-      // 지문키(rowKey, §4 R1) — 위 timestamp는 시:분까지만 보존(_gzToISODateTime_, 초 유실)이라 지문 재료로 쓰면
-      //   Survey.js(_normTsKey_, 초까지 보존)와 어긋난다. 반드시 raw 셀 값(row[iTs])으로 재계산. 2026-07-22 시포.
-      rowKey: _gzRowKey_(iTs >= 0 ? row[iTs] : '', iPhone >= 0 ? row[iPhone] : '')
-    };
-    var _resArr = _gzResCellParse_(iRes >= 0 ? row[iRes] : '');   // 양포맷(레거시 JSON·신규 평문). 2026-07-22 GM
-    if (!_resArr.length) {
-      if (_mo.exp1) _resArr.push({ date: _mo.exp1, time: _mo.exp1Time || '', note: '' });
-      if (_mo.exp2) _resArr.push({ date: _mo.exp2, time: _mo.exp2Time || '', note: '' });
-    }
-    _mo.reservations = _resArr;
-    // 연락 이력 = Contact1/2/3(앞 3건) + 연락이력 칸(4건째~)을 **합친다**. 2026-07-28 시포.
-    //   전에는 연락이력 칸이 비었을 때만 Contact1/2/3 을 읽어서, 둘 다 있는 행은 앞 3건이 통째로 빠졌다.
-    //   서버 _miReadRows_(Survey.js 2133~2150)는 이미 합쳐서 주는데 이 직접 읽기 경로만 옛 로직이었다
-    //   — 같은 계산이 두 벌이라 한쪽만 늙은 것(약속 L01). 서버와 같은 규칙(내용 중복 제거)으로 맞춘다.
-    var _histArr = [];
-    [_mo.contact1, _mo.contact2, _mo.contact3].forEach(function(cv){
-      if (!cv) return;
-      var _cbs = _ctBySplit(cv);   // 컨택자(배101): 셀 끝 '(컨택:이름)' → by 분리 (Survey.js _miReadRows_ 정합)
-      _histArr.push({ date: '', time: '', note: _cbs.note, by: _cbs.by });
-    });
-    var _histOverflow = _gzResParse_(iHist >= 0 ? row[iHist] : '');
-    if (_histOverflow.length) {
-      // 중복판정 키 = 내용+날짜+남긴사람(메모 글자만 쓰면 같은 날 다른 사람이 "부재중" 등 흔한
-      // 메모를 남겼을 때 나중 것이 조용히 버려진다 — 정독점검 2026-08-18, 실제 유실 0건이나 선제수정).
-      var _seenKey = function(e){ return String(e && e.note || '').trim() + '|' + String(e && e.date || '').trim() + '|' + String(e && e.by || '').trim(); };
-      var _seenNotes = {};
-      _histArr.forEach(function(e){ _seenNotes[_seenKey(e)] = 1; });
-      _histOverflow.forEach(function(e){
-        if (_seenNotes[_seenKey(e)]) return;   // 같은 날·같은 사람·같은 내용만 중복으로 친다
-        _histArr.push(e);
-      });
-    }
-    _mo.contacts = _histArr;
-    out.push(_mo);
-  }
-  return out;
-}
-
 // 강습 문의 행객체 배열 — Survey.js _lessonReadRows_ 1:1 이식.
 // gid = 이 행들의 출처 물리 시트(한글/영문 병합 표시·저장 라우팅용). Survey.js _lessonReadRows_와 정합. 2026-07-09 시포·GM.
 function gvizLessonRows_(headers, rows, gid) {
@@ -3783,18 +3648,6 @@ function _gzLessonScopeFilter_(rowsArr, scopeAll) {
 // 영문 탭 안전 fetch — 실패(네트워크·미공개 등)해도 한글 탭 결과는 그대로 보존(무중단). 2026-07-09 시포·GM.
 function _gzFetchSafe_(ssId, gid) {
   return gvizFetchTable_(ssId, gid).catch(function() { return { headers: [], rows: [] }; });
-}
-// 멤버십 문의 목록 — gviz 어댑터(GAS member_inquiry_list 대체). USE_GVIZ=true일 때만 호출.
-// 한글 '26년 신규문의' + 영문 멤버십 탭 병합 — 영어 문의 누수 수리(2026-07-09 시포·GM).
-function gvizLoadMemberInquiry_() {
-  return Promise.all([
-    gvizFetchTable_(GVIZ_MI_SS_ID, GVIZ_MI_GID),
-    _gzFetchSafe_(GVIZ_MI_SS_ID, GVIZ_MI_GID_EN)
-  ]).then(function(results) {
-    var krRows = gvizMiRows_(results[0].headers, results[0].rows, GVIZ_MI_GID);
-    var enRows = gvizMiRows_(results[1].headers, results[1].rows, GVIZ_MI_GID_EN);
-    return { ok: true, count: 0, data: krRows.concat(enRows), anon: false };
-  });
 }
 // 강습 문의 목록 — gviz 어댑터(GAS lesson_inquiry_list 대체). USE_GVIZ=true일 때만 호출.
 // type(성인/유소년)에 대응하는 한글+영문 탭 병합 — 영어 문의 누수 수리(2026-07-09 시포·GM).
@@ -11984,7 +11837,6 @@ function loadDbData() {
   //   이미 강습 scope=all에 대해 문서화해둔 바로 그 위험("시트 필터/숨김행으로 gviz 누락 위험", L3792 인근)이 멤버십
   //   탭에도 실제로 발생 중이었던 것. USE_GVIZ=true(2026-07-13) 이후 CS 상담사 화면에서 실제 문의 426건이 계속
   //   보이지 않고 있었을 가능성 — ★유실 0 최우선 원칙에 따라 즉시 보수적 소스(GAS)로 전환. GM 보고 필수.
-  //   역롤백: 이 3줄을 `var _dbPromise = USE_GVIZ ? gvizLoadMemberInquiry_() : fetch(...)` 삼항으로 되돌리면 됨.
   var _dbPromise = fetch(GAS_URL + '?action=member_inquiry_list' + _wpKeyParam()).then(function(r){ return r.json(); });
   return _dbPromise
     .then(function(data){
