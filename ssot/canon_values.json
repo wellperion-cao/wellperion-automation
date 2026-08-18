@@ -6,8 +6,19 @@
       "key": "cta_channel_rules",
       "이름": "채널별 CTA(문의 링크) 규칙",
       "source": "scripts/cta_utm.py",
-      "fingerprint_channels": ["블로그", "카페", "당근", "카카오", "인스타그램", "페이스북", "IG"],
-      "fingerprint_cta": ["CTA", "cta"],
+      "fingerprint_channels": [
+        "블로그",
+        "카페",
+        "당근",
+        "카카오",
+        "인스타그램",
+        "페이스북",
+        "IG"
+      ],
+      "fingerprint_cta": [
+        "CTA",
+        "cta"
+      ],
       "min_channels": 2,
       "window_lines": 5,
       "allow_globs": [
@@ -36,21 +47,66 @@
       "이름": "GM 결재 5종 게이트 (이 5종 외 전 C-Level 자율 진행)",
       "source": "3. 웰페리온 가이드/wellperion_guide(main).html #con-gm5 (S2 공통탭 'GM 결재 영역') — 라벨 원문 그대로",
       "categories": [
-        { "code": "결제", "icon": "💰", "label": "1원 이상 모든 결제",
-          "keywords": ["결제", "페이", "정산", "환불", "결재"],
-          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py(커밋가드)=신규 로직 없음, 결재현황 게이트를 재사용(자체 명시)" },
-        { "code": "보안", "icon": "🔒", "label": "비밀번호·결제·키값 등",
-          "keywords": ["보안", "차단", "발효", "jwt", "token_enforce"],
-          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py=TOKEN_ENFORCE를 켜는 staged diff 패턴만 좁게 감지(포괄적 '보안'은 커밋가드로 감지 불가)" },
-        { "code": "금지", "icon": "🚫", "label": "금지 항목 변경",
-          "keywords": ["금지", "블랙리스트"],
-          "layer_note": "sweep_classifier=2026-07-24 이전엔 이 카테고리 키워드가 부재였음(이번 A안에서 S2 원문 기반으로 신규 편입) / enforcement.py=FORBIDDEN_PATH_GLOBS(결재GAS·구버전 미끼 경로 3개)로 좁게 감지" },
-        { "code": "전략", "icon": "📐", "label": "전략·방향·포지셔닝 결정",
-          "keywords": ["전략", "북극성", "8차원"],
-          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py(커밋가드)=git diff로 판단 불가한 영역이라 감지 대상에서 명시적 제외(구현 누락 아님)" },
-        { "code": "공식값", "icon": "🏷️", "label": "브랜드·공식값 변경",
-          "keywords": ["공식값", "공식 링크", "공식링크", "대표 전화", "대표전화"],
-          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py=canon_values.json·약속.json 파일 자체의 staged 변경을 파일 단위로 감지" }
+        {
+          "code": "결제",
+          "icon": "💰",
+          "label": "1원 이상 모든 결제",
+          "keywords": [
+            "결제",
+            "페이",
+            "정산",
+            "환불",
+            "결재"
+          ],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py(커밋가드)=신규 로직 없음, 결재현황 게이트를 재사용(자체 명시)"
+        },
+        {
+          "code": "보안",
+          "icon": "🔒",
+          "label": "비밀번호·결제·키값 등",
+          "keywords": [
+            "보안",
+            "차단",
+            "발효",
+            "jwt",
+            "token_enforce"
+          ],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py=TOKEN_ENFORCE를 켜는 staged diff 패턴만 좁게 감지(포괄적 '보안'은 커밋가드로 감지 불가)"
+        },
+        {
+          "code": "금지",
+          "icon": "🚫",
+          "label": "금지 항목 변경",
+          "keywords": [
+            "금지",
+            "블랙리스트"
+          ],
+          "layer_note": "sweep_classifier=2026-07-24 이전엔 이 카테고리 키워드가 부재였음(이번 A안에서 S2 원문 기반으로 신규 편입) / enforcement.py=FORBIDDEN_PATH_GLOBS(결재GAS·구버전 미끼 경로 3개)로 좁게 감지"
+        },
+        {
+          "code": "전략",
+          "icon": "📐",
+          "label": "전략·방향·포지셔닝 결정",
+          "keywords": [
+            "전략",
+            "북극성",
+            "8차원"
+          ],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py(커밋가드)=git diff로 판단 불가한 영역이라 감지 대상에서 명시적 제외(구현 누락 아님)"
+        },
+        {
+          "code": "공식값",
+          "icon": "🏷️",
+          "label": "브랜드·공식값 변경",
+          "keywords": [
+            "공식값",
+            "공식 링크",
+            "공식링크",
+            "대표 전화",
+            "대표전화"
+          ],
+          "layer_note": "sweep_classifier=키워드 판정 가능 / enforcement.py=canon_values.json·약속.json 파일 자체의 staged 변경을 파일 단위로 감지"
+        }
       ],
       "excluded": {
         "콘텐츠 발행": "2026-07-24 GM 결정으로 5종에서 제외 — 자동발행이 표준 운영 중이며 배58에서 '임시저장·초안=자동 / 실제 publish만 승인'으로 이미 세분화됨. sweep_classifier가 발행·publish·게시·업로드·라이브 키워드로 발행 전체를 GM_GATE 처리하던 것은 그 이전 낡은 잔재였음 — 제거."
@@ -64,7 +120,13 @@
       "이름": "대표 전화",
       "value": "02-6261-1200",
       "source": "ssot/canon_values.json",
-      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "status/briefs/**", "Tempguide_check.html", "tmp/**"],
+      "allow_globs": [
+        "ssot/**",
+        "3. 웰페리온 가이드/**",
+        "status/briefs/**",
+        "Tempguide_check.html",
+        "tmp/**"
+      ],
       "note": "대표 전화 공식값 — 가이드·브리프·Tempguide 본문은 FP(정상사용)"
     },
     {
@@ -96,7 +158,16 @@
       "이름": "보고용 번호",
       "value": "8254867551",
       "source": "telegram_bot/.env",
-      "allow_globs": ["telegram_bot/**", "ssot/**", "CLAUDE.md", "INDEX.md", "Tempguide_check.html", "tmp/**", "3. 웰페리온 가이드/**", ".omc/**"],
+      "allow_globs": [
+        "telegram_bot/**",
+        "ssot/**",
+        "CLAUDE.md",
+        "INDEX.md",
+        "Tempguide_check.html",
+        "tmp/**",
+        "3. 웰페리온 가이드/**",
+        ".omc/**"
+      ],
       "note": "업무보고봇 Chat ID — env 단일출처. INC-004 GUARDED(2026-06-15). 잔여 문서류 6건은 FP"
     },
     {
@@ -125,7 +196,14 @@
       "이름": "회사 규모",
       "value": "3,000평",
       "source": "ssot/canon_values.json",
-      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "tmp/**", "status/briefs/**", "instagram/**", "Tempguide_check.html"],
+      "allow_globs": [
+        "ssot/**",
+        "3. 웰페리온 가이드/**",
+        "tmp/**",
+        "status/briefs/**",
+        "instagram/**",
+        "Tempguide_check.html"
+      ],
       "note": "시설 규모 공식값 — 가이드·콘텐츠·Tempguide 본문은 FP. 코드/설정 내 출현만 복사 후보"
     },
     {
@@ -133,7 +211,17 @@
       "이름": "회사 주소",
       "value": "서빙고로 413",
       "source": "ssot/canon_values.json",
-      "allow_globs": ["ssot/**", "3. 웰페리온 가이드/**", "tmp/**", "CLAUDE.md", "INDEX.md", "instagram/**", "Tempguide_check.html", "status/briefs/**", ".omc/**"],
+      "allow_globs": [
+        "ssot/**",
+        "3. 웰페리온 가이드/**",
+        "tmp/**",
+        "CLAUDE.md",
+        "INDEX.md",
+        "instagram/**",
+        "Tempguide_check.html",
+        "status/briefs/**",
+        ".omc/**"
+      ],
       "note": "본사 주소 공식값 — .omc/research/*.json 은 연구 아카이브(FP)"
     },
     {
@@ -217,7 +305,11 @@
       "이름": "네이버 카페 번호",
       "value": "11948735",
       "source": "scripts/cafe_upload_playwright.py",
-      "allow_globs": ["scripts/cafe_upload_playwright.py", "ssot/**", ".omc/**"],
+      "allow_globs": [
+        "scripts/cafe_upload_playwright.py",
+        "ssot/**",
+        ".omc/**"
+      ],
       "note": "동부이촌동커뮤니티 카페 클럽ID — 현재 정본 1곳. .omc/research 는 아카이브(FP). 복사 확산 방지용 등록"
     },
     {
@@ -225,7 +317,12 @@
       "이름": "언어 자동전환 설정",
       "value": "브라우저 언어 자동전환 끔(비활성화)",
       "source": "WordPress 관리자 화면 — WPML > Languages > 브라우저 언어 리다이렉트 (저장소 파일 아님, 관리자 설정값)",
-      "allow_globs": ["ssot/**", "status/_queue.json", "3. 웰페리온 가이드/**", "tmp/**"],
+      "allow_globs": [
+        "ssot/**",
+        "status/_queue.json",
+        "3. 웰페리온 가이드/**",
+        "tmp/**"
+      ],
       "note": "2026-07-20 GM 승인으로 변경 — 이전값: '번역이 존재하는 경우에만 자동전환'. 방문자 브라우저가 한국어일 때 영문 문의 페이지(/en/inquiry/)에 처음 들어가면 자동으로 한글 페이지로 튕겨서, 그날 새로 만든 KOR/ENG 언어전환 버튼이 무력화되는 문제 때문. 사이트 전역 설정(문의 페이지 한정 아님). 되돌리는 법: 워드프레스 관리자 > WPML > Languages > '브라우저 언어 리다이렉트'에서 '번역이 존재하는 경우에만 브라우저 언어에 따라 방문자 리다이렉트'를 다시 선택 후 저장. 상세 경위·검증 스크린샷 = status/_queue.json ship 9242"
     },
     {
@@ -261,6 +358,21 @@
         ".omc/**"
       ],
       "note": "GM 결재 2026-07-31(당월 매출에 포함) · 재확인 2026-08-01(GM: '정합 및 더이상 안묻게 해줘'). 두 번 물으신 이유: 07-31 결정이 당월(month) 계산에만 반영되고 연 누계(year)·월별 마감값 배열(sales_monthly)엔 안 들어가 화면마다 값이 갈렸다(parking_revenue.json은 월 단위 스냅샷만 있고 과거 이력이 없어 연 누계를 만들 근거가 없었음). 2026-08-01 해소: status/parking_revenue_monthly.json 월별 이력(2026-01~07 백필) 신설로 연 누계 원천 확보. 적용 범위 = 당월 매출·월별 마감값·연 누계·달성률·카톡 북극성 보고 전부. 부수 발견(2026-08-01): 매달 말일 아침에 크롤링하면 그 달 마지막날 매출이 아직 안 쌓여 통째로 빠지는 구조적 문제 확인(07월 실측 3,213,000→완전마감 3,334,500, 차이 121,500=07-31 하루치) — parking_revenue_crawler.py에 매월 1~3일 지난달 재수집·확정(확정:true) 로직 추가로 재발방지(새 스크립트·예약 신설 없이 기존 일일 크롤러 안에서 처리)."
+    },
+    {
+      "key": "golf_bay_systems",
+      "이름": "골프 타석 구성",
+      "value": "GDR · QED 2종",
+      "source": "ssot/canon_values.json",
+      "allow_globs": [
+        "ssot/**",
+        "3. 웰페리온 가이드/**",
+        "instagram/**",
+        "status/briefs/**",
+        "CLAUDE.md",
+        "tmp/**"
+      ],
+      "note": "GM 반복 지적 2026-08-18 — 골프는 GDR 한 종류가 아니라 GDR·QED 2종 타석이다. 대외 노출 문서(회사소개서 계열·제안서·홈페이지·콘텐츠)에 골프를 적을 땐 두 종류를 함께 적는다. 총 15타석·퍼팅 그린은 종전 값 그대로(두 종 간 배분 수치는 미확인이라 적지 않는다)."
     }
   ]
 }
