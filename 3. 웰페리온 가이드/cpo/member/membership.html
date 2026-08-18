@@ -12064,6 +12064,10 @@ function renderDbTable() {
   }
 
   _riIdx = _riBuildIndex();   // 재문의 배지용 전화 인덱스 — 매 렌더 재빌드(추가 GAS 호출 0, dbRows 재사용)
+  // ★재렌더 전 활성 셀 커밋(FB260818-123951 이경연 실장 · 2026-08-18 시포) — innerHTML=''이 textarea를
+  //   날리기 전에 blur()로 commit()을 먼저 실행해 입력 내용을 dbRows·WriteBuffer에 확보한다.
+  var _editEl = tbody.querySelector('td.cell-active textarea, td.cell-active input, td.cell-active select');
+  if (_editEl) try { _editEl.blur(); } catch (e) {}
   tbody.innerHTML = '';
   var shown = filtered.slice(0, _dbLimit);
   shown.forEach(function(row){
@@ -12703,6 +12707,10 @@ function _saveCell(rowIndex, patch, fallbackRow) {
       return ov;
     })()
   });
+  // ★편집 후 db 캐시 갱신(FB260818-123951 이경연 실장 · 2026-08-18 시포) — active 테이블 동일 패턴(FB260810-093039).
+  //   GAS 동기화 전 새로고침 시 localStorage 캐시가 옛 값을 그리는 문제 방지.
+  //   dbRows는 Object.assign으로 이미 새 값 반영됨.
+  _dbCacheSave(dbRows);
   return true;   // 저장 요청이 실제로 큐에 들어갔다 — 호출부가 성공/실패를 구분할 수 있게.
 }
 
