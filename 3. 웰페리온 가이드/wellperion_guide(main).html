@@ -1820,7 +1820,6 @@
       <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#B79F8A;font-weight:600;margin:18px 0 9px;">제안 · Proposals</div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a href="회사문서/웰페리온_법인멤버십_제안서.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:14px;font-weight:700;border-radius:9px;text-decoration:none;background:#3A3536;color:#F4F0EB;border:1px solid rgba(183,159,138,0.45);">🏛️ 법인 멤버십 제안서</a>
-        <a href="회사문서/웰페리온_법인멤버십_제안서.html#en" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 18px;font-size:13px;font-weight:700;border-radius:9px;text-decoration:none;background:transparent;color:#B79F8A;border:1px solid rgba(183,159,138,0.45);">EN</a>
         <a href="회사문서/웰페리온_위탁운영_제안서.html" target="_blank" style="display:inline-flex;align-items:center;gap:7px;padding:12px 22px;font-size:14px;font-weight:700;border-radius:9px;text-decoration:none;background:#3A3536;color:#F4F0EB;border:1px solid rgba(183,159,138,0.45);">🤝 위탁운영 제안서 <span style="font-size:11px;font-weight:600;color:#B79F8A;">초안</span></a>
       </div>
 
@@ -1922,23 +1921,30 @@
         // stage 필드가 'Q1'/'Q2' 면 분기 목표, 숫자 1~6 이면 6단계 (원천 스키마 그대로 사용).
         var q=items.filter(function(x){return /^Q/i.test(String(x.stage));});
         var st=items.filter(function(x){return !/^Q/i.test(String(x.stage));});
-        var rows=st.map(function(x,i){
+        // 단계 표를 따로 그리지 않는다(2026-08-18 GM 지적 — 아래 토글 01~06 과 제목·내용이 겹쳤다).
+        // 대신 실측 상태·진척만 그 토글 제목 옆에 배지로 붙인다 — 정보는 그대로, 화면만 한 벌.
+        var toggles=document.querySelectorAll('#S0 details.toggle > summary');
+        st.forEach(function(x,i){
           var p=(typeof x.progress==='number')?x.progress:null;
           var s=String(x.status||'');
           var col=(s==='완료')?'#2E6E5B':(s==='진행'?'#ED5B3F':'var(--dim)');
           var no=(typeof x.stage==='number')?x.stage:(i+1);
-          return '<tr><td style="width:44px"><strong>'+('0'+no).slice(-2)+'</strong></td>'
-            +'<td>'+esc(x.title)+(x.goal?'<br><span style="font-size:12px;color:var(--dim)">'+esc(x.goal)+'</span>':'')+'</td>'
-            +'<td style="width:92px;color:'+col+';font-weight:700">'+esc(s||'—')+'</td>'
-            +'<td style="width:70px;text-align:right">'+(p===null?'—':p+'%')+'</td></tr>';
-        }).join('');
+          var sm=null;
+          for(var k=0;k<toggles.length;k++){
+            if(toggles[k].textContent.trim().indexOf(('0'+no).slice(-2))===0){ sm=toggles[k]; break; }
+          }
+          if(!sm || sm.querySelector('.s0-stage-badge')) return;
+          var b=document.createElement('span');
+          b.className='s0-stage-badge';
+          b.style.cssText='margin-left:10px;font-size:12px;font-weight:700;color:'+col;
+          b.textContent=(s||'—')+(p===null?'':' '+p+'%');
+          sm.appendChild(b);
+        });
         var qline=q.map(function(x){
           return esc(x.title)+' '+(x.status==='완료'?'✅':'진행');
         }).join(' · ');
-        box.innerHTML='<table style="margin:0"><tr><th>단계</th><th>내용</th><th>상태</th><th style="text-align:right">진척</th></tr>'
-          +rows+'</table>'
-          +(qline?'<p style="margin:10px 0 0;font-size:12.5px;color:var(--dim);">분기 목표 — '+qline+'</p>':'')
-          +'<p style="margin:6px 0 0;font-size:12px;color:var(--dim);">위 진척은 월간 운영계획의 실측값을 그대로 읽어 옵니다 — 이 화면에 손으로 적지 않습니다.</p>';
+        box.innerHTML=(qline?'<p style="margin:0;font-size:12.5px;color:var(--dim);">분기 목표 — '+qline+'</p>':'')
+          +'<p style="margin:4px 0 0;font-size:12px;color:var(--dim);">아래 단계별 상태·진척은 월간 운영계획의 실측값을 그대로 읽어 옵니다 — 이 화면에 손으로 적지 않습니다.</p>';
       }).catch(function(e){
         box.innerHTML='<span style="color:var(--dim)">6단계 진척을 불러오지 못했습니다 ('+esc(e.message)
           +'). 아래 단계별 설명은 그대로 보실 수 있습니다.</span>';
