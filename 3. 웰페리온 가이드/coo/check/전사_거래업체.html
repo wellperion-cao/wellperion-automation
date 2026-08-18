@@ -572,7 +572,11 @@ function renderVendorBoard(){
   vendorRenderUnassignedNote();
   VENDOR_COLS.forEach(function(col){
     var cards=(VENDOR_DATA[col.key]||[]).filter(vendorVisible);
-    if(filtered && !cards.length) return;   /* 부서 필터 시 빈 분류는 숨김(가독성) */
+    /* ★2026-08-18 웰리 — 업체가 하나도 없는 분류는 전체 보기에서도 숨긴다.
+       서버에 분류 정의가 저장돼 있지 않으면 기본 8종(소방·CCTV/전기·공조설비…)으로 시작하는데,
+       실제로 쓰는 분류는 6종이라 빈 칸 일곱 개가 화면 위를 채우고 업체가 아래로 밀려 있었다.
+       분류 추가·이름변경·삭제는 ⚙ 분류 관리에서 그대로 되므로 기능은 잃지 않는다. */
+    if(!cards.length) return;
     shown++;
     var colCls=col.cls==='accent'?'':col.cls;
     html+='<div class="board-col">';
@@ -620,7 +624,7 @@ function renderVendorBoard(){
     html+='<button type="button" class="dv-g-addrow" onclick="vendorAddCard(\''+col.key+'\')">＋ 업체 추가</button>';
     html+='</div></div>';
   });
-  if(filtered && !shown){ html='<div class="mgmt-empty" style="padding:32px 0;text-align:center;">이 부서에 소속된 거래업체가 없습니다 — ＋ 업체 등록으로 추가하세요.</div>'; }
+  if(!shown){ html='<div class="mgmt-empty" style="padding:32px 0;text-align:center;">'+(filtered?'이 부서에 소속된 거래업체가 없습니다':'등록된 거래업체가 없습니다')+' — ＋ 업체 등록으로 추가하세요.</div>'; }
   wrap.innerHTML=html; fitFrame();
 }
 
@@ -656,7 +660,12 @@ function vendorToggleEdit(colKey,id){
     vv.name=get('vndname_').trim(); vv.manager=get('vndmgr_').trim(); vv.contact=get('vndtel_').trim();
     vv.contract=get('vndctr_').trim(); vv.price=get('vndprc_').trim(); vv.renewal=get('vndrwl_').trim();
     vv.status=get('vndst_')||'거래중'; vv.note=get('vndnote_');
-    vv.depts=DEPTS.filter(function(d,di){ var cb=document.getElementById('vnddept_'+di+'_'+cid); return cb&&cb.checked; });
+    /* ★2026-08-18 웰리 — 부서 목록(DEPTS)에 없는 소속은 체크박스가 아예 안 그려지므로,
+       그대로 덮어쓰면 저장하는 순간 조용히 지워진다(경영지원부 4곳이 실제로 그 상태였다).
+       화면에 없던 소속은 손대지 않고 그대로 이어 붙인다. */
+    var _picked=DEPTS.filter(function(d,di){ var cb=document.getElementById('vnddept_'+di+'_'+cid); return cb&&cb.checked; });
+    var _hidden=(vv.depts||[]).filter(function(d){ return DEPTS.indexOf(d)<0; });
+    vv.depts=_picked.concat(_hidden);
     vv.updatedAt=vendorToday();
     cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save');
     if(cancelbtn) cancelbtn.style.display='none';
