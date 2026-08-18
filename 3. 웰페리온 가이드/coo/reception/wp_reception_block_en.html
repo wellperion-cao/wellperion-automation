@@ -550,7 +550,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
   <div class="wrap done" id="doneWrap">
     <div class="dot">✅</div>
     <h2>Your request has been submitted</h2>
-    <p>Thank you for telling us.<br>The responsible team will look into it right away.</p>
+    <p id="doneMsg">Thank you for telling us.<br>The responsible team will look into it right away.</p>
     <button class="again" id="againBtn">Submit another request</button>
   </div>
 </div>
@@ -913,6 +913,7 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
           btn.disabled = false; btn.textContent = 'Submit'; return;
         }
         $('formWrap').style.display = 'none';
+        $('doneMsg').innerHTML = 'Thank you for telling us.<br>The responsible team will look into it right away.';
         $('doneWrap').style.display = 'block';
         window.scrollTo(0, 0);
       })
@@ -950,6 +951,9 @@ body.page-id-8751 #header-outer #logo{margin-top:32px!important}
     .then(function(res){
       if (res && res.ok) {
         $('formWrap').style.display = 'none';
+        $('doneMsg').innerHTML = 'Thank you for telling us.<br>The responsible team will look into it right away.'
+          + '<br><br>You can check the status below.<br>'
+          + '<a href="http://wellperion.com/en/lookup/" style="color:var(--accent);font-weight:700">wellperion.com/en/lookup</a>';
         $('doneWrap').style.display = 'block';
         window.scrollTo(0, 0);
       } else {

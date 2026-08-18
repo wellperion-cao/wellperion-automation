@@ -539,7 +539,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   <div class="wrap done" id="doneWrap">
     <div class="dot">✅</div>
     <h2>접수가 완료되었습니다</h2>
-    <p>소중한 의견 감사합니다.<br>담당 부서가 빠르게 확인하겠습니다.</p>
+    <p id="doneMsg">소중한 의견 감사합니다.<br>담당 부서가 빠르게 확인하겠습니다.</p>
     <button class="again" id="againBtn">새 건의 접수하기</button>
   </div>
 </div>
@@ -893,6 +893,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
           btn.disabled = false; btn.textContent = '접수하기'; return;
         }
         $('formWrap').style.display = 'none';
+        $('doneMsg').innerHTML = '소중한 의견 감사합니다.<br>담당 부서가 빠르게 확인하겠습니다.';
         $('doneWrap').style.display = 'block';
         window.scrollTo(0, 0);
       })
@@ -930,6 +931,9 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
     .then(function(res){
       if (res && res.ok) {
         $('formWrap').style.display = 'none';
+        $('doneMsg').innerHTML = '소중한 의견 감사합니다.<br>담당 부서가 빠르게 확인하겠습니다.'
+          + '<br><br>처리 상태는 아래에서 확인하실 수 있습니다.<br>'
+          + '<a href="http://wellperion.com/ko/lookup/" style="color:var(--accent);font-weight:700">wellperion.com/ko/lookup</a>';
         $('doneWrap').style.display = 'block';
         window.scrollTo(0, 0);
       } else {
