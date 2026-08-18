@@ -305,7 +305,9 @@ h1,h2,.title{ text-wrap:balance; }
 @media print{ html,body{background:#fff} .tbar{display:none!important}
   .a3{margin:0;box-shadow:none;page-break-after:always;break-after:page}
   .a3:last-of-type{page-break-after:auto;break-after:auto}
-  *{-webkit-print-color-adjust:exact;print-color-adjust:exact} }
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* A4 인쇄 (GM 지시 2026-08-18) — 이 판은 A3 한 장 기준이라 다시 짜지 않고 그대로 축소한다(420mm→297mm) */
+  body[data-paper="A4"] .a3{zoom:.707} }
 </style>
 <link rel="stylesheet" href="../assets/wp-typography.css">
 </head>
@@ -315,6 +317,9 @@ h1,h2,.title{ text-wrap:balance; }
   <b>웰페리온 · 위탁운영 제안서 (초안)</b>
   <span class="h">11장 · A3 가로 · 금액은 웰페리온 실측 기준 계산값 · 수수료와 계약 조항은 법률 검토 전 초안</span>
   <span class="sp"></span>
+  <span class="h" style="margin-right:-4px">용지</span>
+  <button id="p-a3" aria-pressed="true"  onclick="setPaper('A3')">A3</button>
+  <button id="p-a4" aria-pressed="false" onclick="setPaper('A4')">A4</button>
   <span style="width:1px;height:20px;background:rgba(255,255,255,.25);margin:0 2px"></span>
   <span class="h" style="margin-right:-4px">인쇄 바탕</span>
   <button id="ink-ink" onclick="setInk('ink')">잉크 절약</button>
@@ -770,6 +775,18 @@ h1,h2,.title{ text-wrap:balance; }
 
 
 <script>
+// 용지 A3·A4 — 방향은 A3 가로 한 가지로 고정된 판이라 용지만 고른다.
+function setPaper(p){
+  document.body.dataset.paper=p;
+  document.getElementById('p-a3').setAttribute('aria-pressed', p==='A3');
+  document.getElementById('p-a4').setAttribute('aria-pressed', p==='A4');
+  var s=document.getElementById('pagerule');
+  if(!s){ s=document.createElement('style'); s.id='pagerule'; document.head.appendChild(s); }
+  s.textContent='@page{size:'+p+' landscape;margin:0}';
+  try{ localStorage.setItem('wp_trust_paper', p); }catch(e){}
+}
+setPaper((function(){ try{ return localStorage.getItem('wp_trust_paper')||'A3'; }catch(e){ return 'A3'; } })());
+
 function setInk(v){
   document.body.dataset.ink=v;
   ['ink','plain','full'].forEach(function(k){
