@@ -771,7 +771,9 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
 
     who = {contacts[s["clevel"]] for s in ships}
     solo = who.pop() if len(who) == 1 else None
-    lines = [f"🧾 사람이 처리할 업무 {len(ships)}건" + (f" — {solo}" if solo else "")]
+    # ★2026-08-18 GM 지적 — "사람이 처리할 업무"는 문구 자체가 별로다. 읽는 쪽에서 보면
+    # 'AI가 못 하니 너희가 해라' 로 들린다. 우리가 부탁드리는 자리임을 문장이 먼저 밝힌다.
+    lines = [f"📌 오늘 확인 부탁드릴 것 {len(ships)}건" + (f" — {solo}" if solo else "")]
     if new_ships:
         lines.append(f"🆕 새로 생긴/바뀐 업무 {len(new_ships)}건")
         for s in new_ships[:RELAY_SHOW_N]:

@@ -147,7 +147,7 @@ AUTO_BROADCAST_HEADER_RE = re.compile(
     r"📊 .*(아침 브리핑|회장님 매출보고)|"                  # module_reporter(CFO 등) · kakao_auto_daily_report
     r"📋 (.*아침 브리핑|운영부 주간 보고 초안\(자동 생성)|"  # module_reporter(HR) · send_ops_digest 주간보고
     r"🧭 .*(어제 정리 — 판단·배정 필요한 것만|아침 보고 ·)|"  # send_ops_digest · module_reporter
-    r"🧾 사람이 처리할 업무 "                              # send_ops_digest RELAY(업무 장부 전달)
+    r"(🧾 사람이 처리할 업무|📌 오늘 확인 부탁드릴 것) "      # send_ops_digest RELAY(업무 장부 전달 · 2026-08-18 문구 교체, 옛 문구도 계속 거른다)
     r")"
 )
 AUTO_BROADCAST_SIGNOFF = ("웰페리온 AI 총괄 담당 웰리 드림", "— AI 웰리")
