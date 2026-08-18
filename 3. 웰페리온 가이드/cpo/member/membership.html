@@ -3663,10 +3663,13 @@ function gvizMiRows_(headers, rows, gid) {
     });
     var _histOverflow = _gzResParse_(iHist >= 0 ? row[iHist] : '');
     if (_histOverflow.length) {
+      // 중복판정 키 = 내용+날짜+남긴사람(메모 글자만 쓰면 같은 날 다른 사람이 "부재중" 등 흔한
+      // 메모를 남겼을 때 나중 것이 조용히 버려진다 — 정독점검 2026-08-18, 실제 유실 0건이나 선제수정).
+      var _seenKey = function(e){ return String(e && e.note || '').trim() + '|' + String(e && e.date || '').trim() + '|' + String(e && e.by || '').trim(); };
       var _seenNotes = {};
-      _histArr.forEach(function(e){ _seenNotes[String(e.note || '').trim()] = 1; });
+      _histArr.forEach(function(e){ _seenNotes[_seenKey(e)] = 1; });
       _histOverflow.forEach(function(e){
-        if (_seenNotes[String(e && e.note || '').trim()]) return;   // 같은 내용 두 번 보이지 않게
+        if (_seenNotes[_seenKey(e)]) return;   // 같은 날·같은 사람·같은 내용만 중복으로 친다
         _histArr.push(e);
       });
     }
