@@ -237,13 +237,13 @@
           "ref": "GM-20260818-21",
           "no": "21",
           "got": "매출보고 시트 보고탭 P20에 시설·지원·주차 운영현황 가독성 정리해 즉시 반영",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "did": "clasp로 시트 바인딩 스크립트 생성·push·웹앱 배포 · GM 승인 후 오늘치 반영(1046자→275자) · 예약 Wellperion-SalesReport-OpsSummary-0900 등록(내일 09:00 첫 가동)",
           "start": "19:43",
-          "end": "19:47",
-          "minutes": 3,
-          "upload": "✅ 올림 (78127c3b0)",
+          "end": "20:00",
+          "minutes": 17,
+          "upload": "✅ 올림 (8b779952c)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
         },
         {
           "ref": "GM-20260818-1001",
@@ -505,7 +505,7 @@
           "start": "19:47",
           "end": "19:55",
           "minutes": 8,
-          "upload": "✅ 올림 (78127c3b0)",
+          "upload": "✅ 올림 (8b779952c)",
           "open": false,
           "evidence": "✅있음"
         },
@@ -513,22 +513,16 @@
           "ref": "GM-20260818-1028",
           "no": "28",
           "got": "웰리가 .gs도 다 만들어줄순없어?",
-          "did": "",
+          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
           "start": "19:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null
+          "end": "19:59",
+          "minutes": 3,
+          "upload": "✅ 올림 (8b779952c)",
+          "open": false,
+          "evidence": "⚠️없음"
         }
       ],
       "work": [
-        {
-          "time": "07:33",
-          "area": "작업",
-          "event": "업무 SSOT 등록은 실무진이 직접 — AI는 안내·리마인드만(GM 지시 2026-08-18) · 배663 문구 교체",
-          "detail": "커밋 213d74ffd · 배 10864"
-        },
         {
           "time": "07:44",
           "area": "작업",
@@ -702,31 +696,22 @@
           "area": "작업",
           "event": "매출보고 시트 P20 운영현황 자동 채움 — GAS 웹앱 코드 + 텍스트 생성 스크립트(배693 방향 전환)",
           "detail": "커밋 78127c3b0 · 배 10885"
+        },
+        {
+          "time": "20:01",
+          "area": "작업",
+          "event": "매출보고 P20 운영현황 자동 채움 가동 — 시트 GAS 배포·09:00 예약 등록·오늘치 반영(배693 입항)",
+          "detail": "커밋 8b779952c · 배 10885"
         }
       ],
       "count": 43,
-      "done": 42,
-      "open": 1,
+      "done": 43,
+      "open": 0,
       "avg_minutes": 21,
       "work_count": 30,
       "missed": [],
       "unclosed": [],
-      "just": [
-        {
-          "ref": "GM-20260818-1028",
-          "no": "28",
-          "got": "웰리가 .gs도 다 만들어줄순없어?",
-          "did": "",
-          "start": "19:55",
-          "end": null,
-          "minutes": null,
-          "upload": "—",
-          "open": true,
-          "evidence": null,
-          "kind": "just",
-          "waited": 3
-        }
-      ],
+      "just": [],
       "repeats": []
     },
     "cto": {
@@ -1061,7 +1046,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 3
+          "waited": 6
         }
       ],
       "repeats": []
@@ -1265,8 +1250,20 @@
           "ref": "GM-20260818-3020",
           "no": "20",
           "got": "1. 그대로 둘건데, 다음번부터는 승인요청으로해서 승인 시 올려줘",
-          "did": "",
+          "did": "GM의 일요일 사진-문장 밀림 차단 — lines를 파일명 키 객체로 받음 + 시간·횟수 창작 금지 · IG 발행검증 자동 대조 → 발행완료 도장",
           "start": "19:46",
+          "end": "19:58",
+          "minutes": 12,
+          "upload": "✅ 올림 (1e7ece2b7)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260818-3021",
+          "no": "21",
+          "got": "다음번에 잘해줘 매번 GM의 일요일 신경써서 올릴게",
+          "did": "",
+          "start": "19:58",
           "end": null,
           "minutes": null,
           "upload": "—",
@@ -1406,29 +1403,35 @@
           "area": "작업",
           "event": "GM의 일요일 사진-문장 밀림 차단 — lines를 파일명 키 객체로 받음 + 시간·횟수 창작 금지",
           "detail": "커밋 43d7d189f · 배 10763"
+        },
+        {
+          "time": "20:01",
+          "area": "작업",
+          "event": "GM의 일요일 정보 슬라이드 — 접수 메모 원문 대신 다듬은 값만 인쇄",
+          "detail": "커밋 3fbfe430b · 배 10763"
         }
       ],
-      "count": 17,
-      "done": 16,
+      "count": 18,
+      "done": 17,
       "open": 1,
-      "avg_minutes": 21,
-      "work_count": 22,
+      "avg_minutes": 20,
+      "work_count": 23,
       "missed": [],
       "unclosed": [],
       "just": [
         {
-          "ref": "GM-20260818-3020",
-          "no": "20",
-          "got": "1. 그대로 둘건데, 다음번부터는 승인요청으로해서 승인 시 올려줘",
+          "ref": "GM-20260818-3021",
+          "no": "21",
+          "got": "다음번에 잘해줘 매번 GM의 일요일 신경써서 올릴게",
           "did": "",
-          "start": "19:46",
+          "start": "19:58",
           "end": null,
           "minutes": null,
           "upload": "—",
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 12
+          "waited": 3
         }
       ],
       "repeats": []
@@ -1841,7 +1844,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 11
+          "waited": 14
         }
       ],
       "repeats": []
