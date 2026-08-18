@@ -51,6 +51,9 @@ h3{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--beig
   font-weight:700;margin-bottom:12px;padding-bottom:9px;border-bottom:2px solid var(--beige-lo)}
 .pf{display:flex;justify-content:space-between;align-items:center;margin-top:auto;
   padding-top:16px;border-top:2px solid var(--black);font-size:12.5px;letter-spacing:.10em;color:var(--ink-soft)}
+/* 남는 공간을 아래로만 밀지 않고 제목 뒤·본문 뒤로 나눠 준다(2026-08-18 GM 지적 — 내용이 위로 몰렸다).
+   flex 에서 margin auto 가 둘이면 남은 공간을 반씩 가져간다: 제목블록 / 여백 / 본문 / 여백 / 푸터. */
+.pad > .sec:first-of-type{margin-top:auto}
 .a3.dark .pf{border-top-color:var(--beige-lo);color:rgba(255,255,255,.55)}
 .pf b{letter-spacing:.24em;color:var(--black)}
 .a3.dark .pf b{color:var(--beige)}
@@ -155,6 +158,19 @@ table.ft td b{font-size:19px}
 .tbar button:hover{background:rgba(255,255,255,.14)}
 .tbar button[aria-pressed="true"]{background:var(--beige);border-color:var(--beige);color:var(--black)}
 
+/* ── 슬라이드 쇼 (F5 · PPT 와 같은 조작) ──
+   한 장만 화면 가운데에 두고 화면 크기에 맞춰 키운다. ← → 로 넘기고 Esc 로 나온다. */
+body[data-show]{background:#000;overflow:hidden}
+body[data-show] .tbar{display:none}
+body[data-show] .a3{display:none}
+body[data-show] .a3.on{display:block;position:fixed;left:50%;top:50%;margin:0;box-shadow:none;
+  transform:translate(-50%,-50%) scale(var(--k,1));transform-origin:center center}
+.shownav{display:none}
+body[data-show] .shownav{display:flex;position:fixed;right:18px;bottom:14px;z-index:20;gap:14px;
+  align-items:center;font-size:13px;color:rgba(255,255,255,.62);letter-spacing:.14em;
+  font-family:"Pretendard",sans-serif;pointer-events:none}
+body[data-show] .shownav b{color:#fff;font-size:15px}
+
 @page{size:A3 landscape;margin:0}
 @media print{
   html,body{background:#fff}
@@ -185,7 +201,10 @@ table.ft td b{font-size:19px}
   <button id="p-a3" aria-pressed="true"  onclick="setPaper('A3')">A3</button>
   <button id="p-a4" aria-pressed="false" onclick="setPaper('A4')">A4</button>
   <button onclick="window.print()">인쇄 / PDF</button>
+  <button onclick="showStart()" title="F5">▶ 슬라이드 쇼</button>
 </div>
+
+<div class="shownav"><span><b id="show-no">1</b> / 8</span><span>← → 넘기기 · ESC 나가기</span></div>
 
 
 <!-- ========== 01 · 표지 ========== -->
@@ -562,6 +581,52 @@ function applyPage(){
   setPaper(g('wp_corp_paper','A3'));
 })();
 addEventListener('hashchange', function(){ if(location.hash.toLowerCase()==='#en') setLang('en'); });
+
+// ── 슬라이드 쇼 — PPT 와 같은 조작(F5 시작 · ← → 넘김 · Esc 종료) ──
+var slides=document.querySelectorAll('section.a3'), showIdx=0;
+function showFit(){
+  var el=slides[showIdx]; if(!el) return;
+  // 판형이 A3 가로냐 16:9 냐에 따라 장 크기가 다르므로 실제 치수를 읽어 화면에 맞춘다.
+  var w=el.offsetWidth, h=el.offsetHeight;
+  var k=Math.min(innerWidth/w, innerHeight/h);
+  document.body.style.setProperty('--k', k);
+}
+function showGo(i){
+  if(i<0||i>=slides.length) return;
+  slides[showIdx].classList.remove('on');
+  showIdx=i;
+  slides[showIdx].classList.add('on');
+  document.getElementById('show-no').textContent=i+1;
+  showFit();
+}
+function showStart(){
+  document.body.dataset.show='1';
+  slides[showIdx].classList.add('on');
+  showGo(showIdx);
+  if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){});
+}
+function showEnd(){
+  delete document.body.dataset.show;
+  slides[showIdx].classList.remove('on');
+  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
+}
+addEventListener('resize', function(){ if(document.body.dataset.show) showFit(); });
+addEventListener('keydown', function(e){
+  if(e.key==='F5' && !document.body.dataset.show){ e.preventDefault(); showStart(); return; }
+  if(!document.body.dataset.show) return;
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '||e.key==='Enter'){ e.preventDefault(); showGo(showIdx+1); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ e.preventDefault(); showGo(showIdx-1); }
+  else if(e.key==='Escape'){ showEnd(); }
+});
+// 전체화면을 브라우저 UI 로 빠져나갔을 때도 쇼를 함께 닫는다.
+addEventListener('fullscreenchange', function(){
+  if(!document.fullscreenElement && document.body.dataset.show) showEnd();
+});
+// 넘길 때 마우스로도 — 화면 오른쪽 절반 클릭은 다음, 왼쪽 절반은 이전.
+addEventListener('click', function(e){
+  if(!document.body.dataset.show) return;
+  showGo(showIdx + (e.clientX > innerWidth/2 ? 1 : -1));
+});
 </script>
 </body>
 </html>
