@@ -11,6 +11,7 @@
     --accent:#0f5c8c; --accent-soft:#e9f2f8;
     --warm:#8c5a0f; --warm-soft:#fdf3e0;
     --ok:#146b3a; --ok-soft:#e8f5ed;
+    --red:#9c2b1e; --red-soft:#fbeae7;
   }
   *{box-sizing:border-box;}
   body{margin:0; background:#eef1f4; color:var(--ink);
@@ -24,10 +25,12 @@
   .hd .ttl{font-size:23px; font-weight:800; letter-spacing:-.025em; line-height:1.12;}
   .hd-r{font-size:12.5px; text-align:right; line-height:1.4;}
   .hd-r .big{font-size:15px; font-weight:800;}
+  .hd-r .lead{font-weight:800; color:var(--accent);}
 
   h2{font-size:14px; font-weight:800; margin:0 0 4px; padding:2px 9px;
      background:var(--ink); color:#fff; letter-spacing:-.01em;}
   h2.big{font-size:15.5px; padding:4px 11px;}
+  h2.hot{background:var(--red);}
   .blk{break-inside:avoid;}
   .blk + .blk{margin-top:6px;}
   .grid{display:grid; grid-template-columns:1.15fr 1fr; gap:8px 16px; align-items:start; margin-top:7px;}
@@ -48,9 +51,15 @@
 
   .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:5px 10px; font-size:12px; line-height:1.32;}
   .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:5px 10px; font-size:12px; line-height:1.32;}
-  .note ul,.good ul{margin:3px 0 0; padding-left:17px;}
-  .note li,.good li{margin-bottom:2px;}
+  .stop{background:var(--red-soft); border-left:5px solid var(--red); padding:5px 10px; font-size:12px; line-height:1.32;}
+  .note ul,.good ul,.stop ul{margin:3px 0 0; padding-left:17px;}
+  .note li,.good li,.stop li{margin-bottom:2px;}
   .stat-line{font-size:11px; color:var(--dim); margin-top:3px;}
+
+  .st{font-weight:800; white-space:nowrap;}
+  .st.done{color:var(--ok);}
+  .st.wait{color:var(--warm);}
+  .st.no{color:var(--red);}
 
   .foot{margin-top:7px; padding-top:4px; border-top:1px solid var(--line); font-size:11.5px; color:var(--dim);}
 
@@ -87,21 +96,62 @@
       <div class="ttl">웰페리온 × 오넛티 — 추석 선물세트 (2차)</div>
     </div>
     <div class="hd-r">
-      <div class="big">2026. 08. 14 기준</div>
-      <div>담당 윤병현AM · 서포트 백승화 사원</div>
-      <div>리드 김남욱 GM</div>
+      <div class="big">2026. 08. 18 기준 · 미팅본</div>
+      <div class="lead">실무책임자 윤병현AM</div>
+      <div>서포트 백승화 사원 · 리드 김남욱 GM</div>
     </div>
   </div>
 
   <div class="lede">
-    목표 <em>500세트</em> — 지난 설 <em>248세트</em>의 2배 · 팝업 <em>9/5(토)~9/19(토)</em>
+    목표 <em>500세트</em> — 지난 설 <em>237세트</em>의 2배 · 팝업 <em>9/5(토)~9/19(토)</em> ·
+    오늘 미팅 안건 <em>시안물 · 셋팅</em>
   </div>
 
   <div class="grid">
     <div>
 
       <div class="blk" style="margin-top:8px;">
-        <h2 class="big">① 무엇을 파나</h2>
+        <h2 class="hot big">① 시안물 — 오늘 안건 1</h2>
+        <table class="hero">
+          <tr><th style="width:112px;">자산</th><th class="c" style="width:66px;">상태</th><th>남은 일</th></tr>
+          <tr><td class="who">A4 포스터</td><td class="c"><span class="st wait">뼈대 완료</span></td><td>문구·가격·레이아웃 확정. <b>제품사진 자리 2곳 비어 있음</b></td></tr>
+          <tr><td class="who">배너</td><td class="c"><span class="st wait">뼈대 완료</span></td><td>제목·기간 추석판 교체분 반영됨. 사진 대기</td></tr>
+          <tr><td class="who">현수막</td><td class="c"><span class="st no">미착수</span></td><td>규격·게시 위치가 안 정해져 시작 못 함</td></tr>
+          <tr><td class="who">제품사진 2종</td><td class="c"><span class="st no">미수령</span></td><td>오넛티 회신 대기 — <b>오늘(8/18) 오기로 한 날</b></td></tr>
+          <tr><td class="who">리셉션 안내</td><td class="c"><span class="st wait">초안 있음</span></td><td>미정 2곳(택배 마감일·입금 계좌) 채우면 그대로 배포</td></tr>
+          <tr><td class="who">배송일정 안내물</td><td class="c"><span class="st no">미착수</span></td><td>지난 설 「설연휴 배송일정」의 추석판</td></tr>
+        </table>
+        <div class="stop" style="margin-top:4px;">
+          <b>사진이 오늘도 안 오면 두 갈래다 — 오늘 고른다.</b>
+          <ul>
+            <li><b>ⓐ 미룬다</b> — 시안 확정을 8/26~27로. 인쇄 발주가 8/28에 몰린다.</li>
+            <li><b>ⓑ 먼저 간다</b> — 지난 설 2구 사진으로 인쇄본을 잡고, 3구만 나중에 넣는다.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2 class="hot big">② 셋팅 — 오늘 안건 2</h2>
+        <table class="hero">
+          <tr><th style="width:112px;">무엇</th><th class="c" style="width:66px;">상태</th><th>남은 일</th></tr>
+          <tr><td class="who">회원 접수 폼</td><td class="c"><span class="st done">완료</span></td><td>확정 단가 반영됨 · <span style="font-size:11px;">wellperion.com/ko/inquiry-form/?type=ohnutti</span></td></tr>
+          <tr><td class="who">문의 페이지 카드</td><td class="c"><span class="st done">완료</span></td><td>—</td></tr>
+          <tr><td class="who">오넛티팀 조회 화면</td><td class="c"><span class="st done">완료</span></td><td>접속코드 <b>기본값 1200</b> — 바꿔서 전달할지 결정</td></tr>
+          <tr><td class="who">접수 시트·500세트 집계</td><td class="c"><span class="st done">완료</span></td><td>15개 칸·조회·상태변경까지 들어가 있음</td></tr>
+          <tr><td class="who">실제 접수 1건 확인</td><td class="c"><span class="st no">미확인</span></td><td><b>접수가 오넛티 칸에 떨어지는지 아직 눈으로 못 봤다</b></td></tr>
+          <tr><td class="who">입금 계좌</td><td class="c"><span class="st no">미정</span></td><td>폼·리셉션 안내 문구가 비어 있다</td></tr>
+          <tr><td class="who">현장 판매분 기입</td><td class="c"><span class="st no">미정</span></td><td>담당자 없으면 500세트 한도가 어긋난다</td></tr>
+        </table>
+        <div class="stop" style="margin-top:4px;">
+          <b>실제 접수 1건 확인이 이번 준비의 마지막 구멍이다.</b> 코드는 다 들어가 있지만
+          <b>진짜 접수 한 건이 시트에 떨어지는 것을 아직 아무도 못 봤다.</b>
+          시험 행을 실고객 칸에 넣지 않는 것이 원칙이라 방식만 오늘 정하면 된다 —
+          ⓐ시험 1건 넣고 상태를 ‘취소’로 두기 / ⓑ첫 실제 접수를 그 자리에서 함께 보기.
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2 class="big">③ 무엇을 파나</h2>
         <table class="hero">
           <tr><th style="width:150px;">세트</th><th class="c">소비자가</th><th class="c">낱개</th><th class="c">10세트↑</th></tr>
           <tr><td class="who">230g 2구<br><span style="font-weight:400;font-size:11px;color:#5b6470;">땅콩 오리지널 + 크런치</span></td><td class="c">25,800</td><td class="c"><b>20,640</b></td><td class="c"><b>18,060</b></td></tr>
@@ -113,11 +163,29 @@
         </div>
       </div>
 
+    </div>
+    <div>
+
+      <div class="blk" style="margin-top:8px;">
+        <h2 class="hot big">④ 오늘 정할 것 — GM · 윤병현AM</h2>
+        <table class="hero">
+          <tr><th class="c" style="width:24px;">#</th><th>정할 것</th><th class="c" style="width:74px;">안 정하면</th></tr>
+          <tr><td class="c"><b>1</b></td><td><b>시안 확정일</b> — 8/24(월) vs 8/28(금) <span style="font-size:11px;color:#5b6470;">두 날짜가 문서마다 다르게 적혀 있다</span></td><td class="c">시안 역산 불가</td></tr>
+          <tr><td class="c"><b>2</b></td><td><b>사진 안 올 때</b> — ⓐ미룬다 / ⓑ2구로 먼저 간다</td><td class="c">인쇄 못 넘김</td></tr>
+          <tr><td class="c"><b>3</b></td><td><b>인쇄 수량·게시 위치</b> — 포스터 몇 장·어디, 현수막 유무</td><td class="c">발주 불가</td></tr>
+          <tr><td class="c"><b>4</b></td><td><b>접수 실증 방식</b> — ⓐ시험 1건 후 취소 / ⓑ첫 실접수 동석 확인</td><td class="c">구멍 남음</td></tr>
+          <tr><td class="c"><b>5</b></td><td><b>입금 계좌</b> · <b>현장 판매분 기입 담당자</b></td><td class="c">안내 문구 빈칸</td></tr>
+          <tr><td class="c"><b>6</b></td><td><b>공지 채널</b> — 회원이 보는 곳만(외부 확산 금지)</td><td class="c">공지 원고 규격 미정</td></tr>
+          <tr><td class="c"><b>7</b></td><td><b>윤병현AM 일일 확인 루틴</b> — 접수현황판 재고 흐름 하루 1회</td><td class="c">재고 판단 늦어짐</td></tr>
+        </table>
+      </div>
+
       <div class="blk">
-        <h2 class="big">② 일정</h2>
+        <h2 class="big">⑤ 일정</h2>
         <table class="hero">
           <tr><th class="c" style="width:96px;">날짜</th><th>할 일</th></tr>
-          <tr><td class="c">08.24(월)</td><td><b>홍보물 시안 확정</b> — 현수막·배너·포스터</td></tr>
+          <tr><td class="c"><b>08.18(화)</b></td><td><b>오넛티 회신 확인</b> — 일정 승인·사진 2종·박스/택배비 기준</td></tr>
+          <tr><td class="c">08.24(월)</td><td><b>홍보물 시안 확정</b> — 현수막·배너·포스터 <span style="font-size:11px;color:#9c2b1e;">(8/28 안과 충돌 — 오늘 결정)</span></td></tr>
           <tr><td class="c">08.31(월)</td><td>사전예약 공지·노출 시작</td></tr>
           <tr><td class="c">09.01(화)</td><td>접수 오픈 + <b>선입고 발주</b></td></tr>
           <tr><td class="c">09.03(목)</td><td><b>선입고 16박스 224세트</b> (2구 8 + 3구 8)</td></tr>
@@ -129,7 +197,7 @@
       </div>
 
       <div class="blk">
-        <h2 class="big">③ 재고 — 언제 주문하나</h2>
+        <h2 class="big">⑥ 재고 — 언제 주문하나</h2>
         <table class="hero">
           <tr><th style="width:130px;">시점</th><th class="c" style="width:120px;">재고 기준</th><th>주문량</th></tr>
           <tr><td class="who">평상시</td><td class="c"><b>110세트</b><br>(8박스)</td><td>140세트(10박스)</td></tr>
@@ -137,26 +205,13 @@
         </table>
         <div class="good" style="margin-top:4px;">
           주문하면 <b>이틀 뒤</b>에 옵니다(소량은 당일도 가능). 택배 <b>3,000원/건</b>·<b>14세트/박스</b> —
-          한 번에 쌓아두지 말고 <b>얇게 자주</b> 받는 편이 쌉니다.
+          한 번에 쌓아두지 말고 <b>얇게 자주</b> 받는 편이 쌉니다.<br>
+          <b>재고 흐름은 접수현황판에서 윤병현AM 이 하루 한 번 봅니다.</b>
         </div>
       </div>
 
-    </div>
-    <div>
-
-      <div class="blk" style="margin-top:8px;">
-        <h2 class="big">④ 미션 4단계</h2>
-        <table class="hero">
-          <tr><th class="c" style="width:26px;">#</th><th style="width:96px;">미션</th><th>끝나는 조건</th></tr>
-          <tr><td class="c"><b>1</b></td><td class="who">시안물</td><td>홍보물 시안 확정 — <b>08.24(월)</b></td></tr>
-          <tr><td class="c"><b>2</b></td><td class="who">입고·재고</td><td>09.05 전 입고 완료 + 예약분·현장분 재고 구분</td></tr>
-          <tr><td class="c"><b>3</b></td><td class="who">판매</td><td>09.19까지 <b>500세트</b></td></tr>
-          <tr><td class="c"><b>4</b></td><td class="who">보상</td><td>달성 시 <b>1인당 10만원</b> (09.19 이후 판정)</td></tr>
-        </table>
-      </div>
-
       <div class="blk">
-        <h2 class="big">⑤ 지난 설에서 배운 것</h2>
+        <h2 class="big">⑦ 지난 설에서 배운 것</h2>
         <div class="note">
           <ul>
             <li><b>시작 3일에 전체의 45%</b>가 나갔다 — 초반에 물건이 끊기면 회복이 안 된다.</li>
@@ -169,18 +224,7 @@
       </div>
 
       <div class="blk">
-        <h2 class="big">⑥ 홍보물 — 만들 것</h2>
-        <table>
-          <tr><th style="width:120px;">자산</th><th>추석판 작업</th></tr>
-          <tr><td><b>현수막 · 배너</b></td><td>제목·기간만 설 → 추석으로 교체</td></tr>
-          <tr><td><b>A4 포스터</b></td><td>낱개가만 있음 → <b>단체가 줄 추가</b></td></tr>
-          <tr><td><b>리셉션 안내</b></td><td>스크립트 없음 → 새로 작성</td></tr>
-          <tr><td><b>3구 세트 사진</b></td><td>지난 설 시안은 2구만 → 오넛티 수령 대기</td></tr>
-        </table>
-      </div>
-
-      <div class="blk">
-        <h2 class="big">⑦ 접수·집계는 한 곳으로</h2>
+        <h2 class="big">⑧ 접수·집계는 한 곳으로</h2>
         <div class="good">
           <b>회원 접수</b> wellperion.com/ko/inquiry-form/?type=ohnutti<br>
           <b>현황판</b> wellperion.com/ko/ohnutty-status/ (접속코드 1200)
@@ -190,13 +234,14 @@
             <li>날짜는 <b>YYYY-MM-DD</b> 한 가지 형식으로.</li>
           </ul>
         </div>
+        <div class="stat-line">미션 4단계 = ①시안물 ②입고·재고 ③500세트 판매 ④보상(1인당 10만원 · 결재 상신 중, 09.19 판정)</div>
       </div>
 
     </div>
   </div>
 
   <div class="foot">
-    정본 — status/monthly_ops_plan.json (GM업무 05) · 판매·재고 집계 = 「26 추석 오넛티 통합접수처」 시트 · 파트너 오넛티 차윤도 대표 · 문의 김남욱 GM
+    정본 — status/monthly_ops_plan.json (GM업무 05) · 판매·재고 집계 = 「26 추석 오넛티 통합접수처」 시트 · 파트너 오넛티 차윤도 대표 · 실무책임자 윤병현AM · 리드 김남욱 GM
   </div>
 
 </div>
