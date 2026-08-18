@@ -68,11 +68,25 @@
   .langbar button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
   .langbar .printbtn{margin-left:8px;border-radius:6px}
 
-  .cover{padding:56px 0 60px;border-bottom:1px solid var(--line)}
-  .wordmark{font-size:13px;letter-spacing:.42em;color:var(--deep);font-weight:700;margin:0 0 34px}
+  /* 표지 — 사진 위에 글. 회사소개서와 같은 자산(assets/facility)을 그대로 쓴다(약속 L01) */
+  .cover{position:relative;margin:14px -40px 0;padding:0;border-bottom:1px solid var(--line);
+         color:#F6F1EA;background:#171412;overflow:hidden;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.46}
+  .cover .covertext{position:relative;padding:96px 40px 76px;max-width:1040px}
+  .wordmark{font-size:13px;letter-spacing:.42em;color:#E4D3BE;font-weight:700;margin:0 0 34px}
   .cover h1{font-size:clamp(30px,4.6vw,46px);line-height:1.26;font-weight:800;letter-spacing:-.025em;margin:0 0 22px;text-wrap:balance}
-  .cover .sub{font-size:18px;color:var(--ink-2);max-width:46ch;margin:0}
+  .cover .sub{font-size:18px;color:#E7DED4;max-width:46ch;margin:0}
   .rule{width:56px;height:3px;background:var(--beige);margin:32px 0 0}
+
+  /* 시설 사진 카드 */
+  .ptour{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+  .pcell{margin:0;background:var(--surface);border:1px solid var(--line);overflow:hidden;break-inside:avoid}
+  .pcell img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+  .pcell figcaption{padding:11px 13px 13px;display:flex;flex-direction:column;gap:2px}
+  .pcell .pnm{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+  .pcell .pen{font-size:12.5px;color:var(--dim)}
+  .norow{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px 30px;
+         padding-top:16px;border-top:1px solid var(--line)}
 
   section{padding:54px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:20px}
   section:last-of-type{border-bottom:none}
@@ -120,10 +134,23 @@
     .wrap{padding:0;max-width:none}
     .langbar{display:none}      /* 인쇄물엔 보이는 언어 한 벌만 나간다 */
 
-    /* 표지는 한 장으로 — 뒤 내용이 표지에 딸려 올라오지 않게 */
-    .cover{padding:0 0 22mm;border-bottom:none;break-after:page}
+    /* 표지는 사진 한 장으로 꽉 차게 — 뒤 내용이 딸려 올라오지 않게 */
+    .cover{margin:0;border-bottom:none;break-after:page;min-height:60vh}
+    .cover .covertext{padding:26mm 16mm 20mm}
     .cover h1{font-size:30pt}
     .cover .sub{font-size:12pt}
+    :root[data-print-orientation="landscape"] .cover{min-height:78vh}
+    :root[data-print-orientation="landscape"] .cover .covertext{padding:18mm 18mm 14mm}
+
+    /* 사진 — 잉크를 먹으므로 크기를 줄이되 선명하게. 카드가 장 경계에서 잘리지 않게 */
+    .ptour{grid-template-columns:repeat(3,1fr);gap:4mm}
+    :root[data-print-orientation="landscape"] .ptour{grid-template-columns:repeat(5,1fr)}
+    .pcell{border-color:#bbb;break-inside:avoid}
+    .pcell img{aspect-ratio:4/3}
+    .pcell figcaption{padding:2.2mm 3mm 2.6mm}
+    .pcell .pnm{font-size:9pt}
+    .pcell .pen{font-size:8pt;color:#555}
+    .norow{grid-template-columns:repeat(4,1fr);gap:4mm 7mm;padding-top:5mm;border-top-color:#999}
 
     section{break-inside:avoid; padding:9mm 0; gap:4mm}
     h2{font-size:8pt}
@@ -170,18 +197,21 @@
   </nav>
 
   <header class="cover">
-    <p class="wordmark">WELLPERION</p>
-    <h1>
-      <span class="ko">직원의 하루를<br>회사가 설계할 수 있다면</span>
-      <span class="en">What if a company could<br>design its people's day</span>
-    </h1>
-    <p class="sub">
-      <span class="ko">2017년 한남동에서 시작해 3,000평 한 공간에서 하루 600명의 리듬을 지켜 온 스포츠클럽입니다.
-        이제 법인 단위로 그 하루를 나눠 드립니다.</span>
-      <span class="en">Founded in Hannam-dong in 2017, a single 10,000 m² sports club that has held the rhythm of
-        600 daily visits ever since. That day is now available to corporations.</span>
-    </p>
-    <div class="rule"></div>
+    <img src="assets/facility/lobby.jpg" alt="">
+    <div class="covertext">
+      <p class="wordmark">WELLPERION</p>
+      <h1>
+        <span class="ko">직원의 하루를<br>회사가 설계할 수 있다면</span>
+        <span class="en">What if a company could<br>design its people's day</span>
+      </h1>
+      <p class="sub">
+        <span class="ko">2017년 한남동에서 시작해 3,000평 한 공간에서 하루 600명의 리듬을 지켜 온 스포츠클럽입니다.
+          이제 법인 단위로 그 하루를 나눠 드립니다.</span>
+        <span class="en">Founded in Hannam-dong in 2017, a single 10,000 m² sports club that has held the rhythm of
+          600 daily visits ever since. That day is now available to corporations.</span>
+      </p>
+      <div class="rule"></div>
+    </div>
   </header>
 
   <section>
@@ -217,50 +247,68 @@
   <section>
     <h2><span class="ko">무엇을 쓰게 되는가</span><span class="en">What you get to use</span></h2>
     <h3><span class="ko">한 건물 안에서 끝나는 하루</span><span class="en">A day that ends inside one building</span></h3>
-    <div class="grid2">
-      <div class="item">
-        <span class="t"><span class="ko">수영</span><span class="en">Swimming</span></span>
-        <span class="d"><span class="ko">25m 정규 풀과 유아 풀. 층고 7m 이상.</span>
-                        <span class="en">25 m main pool and children's pool, under a 7 m ceiling.</span></span></div>
-      <div class="item">
-        <span class="t"><span class="ko">헬스</span><span class="en">Gym</span></span>
-        <span class="d"><span class="ko">TechnoGym 머신 풀라인업.</span>
-                        <span class="en">Full TechnoGym equipment line.</span></span></div>
-      <div class="item">
-        <span class="t"><span class="ko">골프</span><span class="en">Golf</span></span>
-        <span class="d"><span class="ko">오토 티업 15타석과 퍼팅 그린.</span>
-                        <span class="en">15 auto-tee bays and a putting green.</span></span></div>
-      <div class="item">
-        <span class="t"><span class="ko">스쿼시</span><span class="en">Squash</span></span>
-        <span class="d"><span class="ko">국제 규격 정식 게임 코트. 관람석을 갖췄습니다.</span>
-                        <span class="en">Regulation international court with spectator seating.</span></span></div>
-      <div class="item">
-        <span class="t"><span class="ko">필라테스</span><span class="en">Pilates</span></span>
-        <span class="d"><span class="ko">STOTT 리포머 · 캐딜락 · 래더배럴 풀라인업.</span>
-                        <span class="en">Full STOTT line — Reformer, Cadillac, Ladder Barrel.</span></span></div>
+
+    <div class="ptour">
+      <figure class="pcell"><img src="assets/facility/pool.jpg" alt="25m 메인 풀">
+        <figcaption>
+          <span class="pnm"><span class="ko">수영 · 25m 메인 풀</span><span class="en">Swimming · 25 m main pool</span></span>
+          <span class="pen"><span class="ko">정규 풀과 유아 풀. 층고 7m 이상.</span><span class="en">Main and children's pools, 7 m ceiling.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/gym-weight.jpg" alt="헬스 · TechnoGym">
+        <figcaption>
+          <span class="pnm"><span class="ko">헬스 · TechnoGym</span><span class="en">Gym · TechnoGym</span></span>
+          <span class="pen"><span class="ko">머신 풀라인업과 트레드밀 라인.</span><span class="en">Full equipment line and cardio floor.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/golf.jpg" alt="골프 · GDR 시스템">
+        <figcaption>
+          <span class="pnm"><span class="ko">골프 · GDR 시스템</span><span class="en">Golf · GDR system</span></span>
+          <span class="pen"><span class="ko">오토 티업 15타석과 퍼팅 그린.</span><span class="en">15 auto-tee bays and a putting green.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/squash.jpg" alt="스쿼시 매치 코트">
+        <figcaption>
+          <span class="pnm"><span class="ko">스쿼시 · 매치 코트</span><span class="en">Squash · match court</span></span>
+          <span class="pen"><span class="ko">국제 규격 정식 코트. 관람석을 갖췄습니다.</span><span class="en">Regulation court with spectator seating.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/pilates.jpg" alt="필라테스 STOTT">
+        <figcaption>
+          <span class="pnm"><span class="ko">필라테스 · STOTT</span><span class="en">Pilates · STOTT</span></span>
+          <span class="pen"><span class="ko">리포머 · 캐딜락 · 래더배럴 풀라인업.</span><span class="en">Reformer, Cadillac, Ladder Barrel.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/sauna-dry.jpg" alt="히노키 건식 사우나">
+        <figcaption>
+          <span class="pnm"><span class="ko">사우나 · 히노키</span><span class="en">Sauna · hinoki</span></span>
+          <span class="pen"><span class="ko">건식 · 습식과 온탕 · 냉탕, 360평 스파.</span><span class="en">Dry and steam, hot and cold baths, 1,200 m².</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/spa-treatment.jpg" alt="생크몽드 트리트먼트">
+        <figcaption>
+          <span class="pnm"><span class="ko">스파 · 생크몽드</span><span class="en">Spa · Cinq Mondes</span></span>
+          <span class="pen"><span class="ko">다섯 대륙의 시그니처 트리트먼트.</span><span class="en">Signature treatments from five continents.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/lounge.jpg" alt="라운지">
+        <figcaption>
+          <span class="pnm"><span class="ko">라운지 · 갤러리 월</span><span class="en">Lounge · gallery wall</span></span>
+          <span class="pen"><span class="ko">손님을 모시고 이야기를 나누는 자리.</span><span class="en">A place to receive and talk with guests.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/cafe.jpg" alt="CUPS 카페">
+        <figcaption>
+          <span class="pnm"><span class="ko">카페 · CUPS</span><span class="en">Café · CUPS</span></span>
+          <span class="pen"><span class="ko">야외 테라스까지 이어집니다.</span><span class="en">Continuing out to the terrace.</span></span>
+        </figcaption></figure>
+      <figure class="pcell"><img src="assets/facility/salon.jpg" alt="beautévu 헤어살롱">
+        <figcaption>
+          <span class="pnm"><span class="ko">뷰티 · beautévu</span><span class="en">Beauty · beautévu</span></span>
+          <span class="pen"><span class="ko">헤어 · 메이크업 · 네일을 한 자리에서.</span><span class="en">Hair, make-up and nails in one place.</span></span>
+        </figcaption></figure>
+    </div>
+
+    <div class="norow">
       <div class="item">
         <span class="t"><span class="ko">그룹 프로그램</span><span class="en">Group programs</span></span>
         <span class="d"><span class="ko">요가, 바레, 발레, 뮤지컬, 줌바, 라인댄스, 명상, G.X.</span>
                         <span class="en">Yoga, barre, ballet, musical theatre, Zumba, line dance, meditation, G.X.</span></span></div>
       <div class="item">
-        <span class="t"><span class="ko">사우나</span><span class="en">Sauna</span></span>
-        <span class="d"><span class="ko">히노키 건식 · 습식 찜질방. 온탕과 냉탕, 360평 스파.</span>
-                        <span class="en">Hinoki dry sauna and steam room, hot and cold baths, 1,200 m² spa floor.</span></span></div>
-      <div class="item">
-        <span class="t"><span class="ko">스파</span><span class="en">Spa</span></span>
-        <span class="d"><span class="ko">생크몽드(Cinq Mondes) — 다섯 대륙의 시그니처 트리트먼트.</span>
-                        <span class="en">Cinq Mondes of Paris — signature treatments from five continents.</span></span></div>
-      <div class="item">
-        <span class="t"><span class="ko">라운지 · 카페</span><span class="en">Lounge &amp; café</span></span>
-        <span class="d"><span class="ko">CUPS — 도착의 라운지에서 갤러리 월로. 야외 테라스까지 이어집니다.</span>
-                        <span class="en">CUPS — from the arrival lounge through the gallery wall to an outdoor terrace.</span></span></div>
-      <div class="item">
-        <span class="t"><span class="ko">뷰티</span><span class="en">Beauty</span></span>
-        <span class="d"><span class="ko">beautévu — 헤어 · 메이크업 · 네일을 한 자리에서.</span>
-                        <span class="en">beautévu — hair, make-up and nail care in one place.</span></span></div>
-      <div class="item">
         <span class="t"><span class="ko">파우더룸</span><span class="en">Powder room</span></span>
-        <span class="d"><span class="ko">운동 뒤 그대로 일정으로 이어질 수 있게.</span>
+        <span class="d"><span class="ko">운동 뒤 그대로 다음 일정으로 이어질 수 있게.</span>
                         <span class="en">So a session can lead straight into the next appointment.</span></span></div>
       <div class="item">
         <span class="t"><span class="ko">유소년</span><span class="en">Youth</span></span>
