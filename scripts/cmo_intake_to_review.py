@@ -351,12 +351,18 @@ def _clean_title(t: str) -> str:
     return t[:cut].strip() + "\n" + t[cut:].strip()
 
 
-def _parse_copy_json(raw: str, n_lines: int) -> dict | None:
+def _parse_copy_json(raw: str, n_lines: int, card_names: "list[str] | None" = None) -> dict | None:
     """AI 응답 텍스트 → 캐러셀 글 dict. 실패하면 None(예외를 밖으로 던지지 않는다).
 
     코드블록 펜스(```json …```)나 앞뒤 설명이 섞여 와도 첫 '{' ~ 마지막 '}' 만 떼어 읽는다.
     lines 는 표지를 뺀 사진 수(n_lines)와 정확히 맞춘다 — 모자라면 빈 문장으로 채우고
     (사진만 나가는 카드가 된다), 넘치면 잘라 버린다. 둘 다 stderr 에 남긴다.
+
+    ★lines 는 파일 이름을 키로 하는 객체로 받는다(card_names 순서대로 꺼낸다).
+      2026-08-16 실사고 — 배열로 받았더니 문장이 사진보다 한 칸씩 밀려 유모차 사진에
+      '저도 물에 들어가 엎어졌어요' 가 붙어 나갔다. 키로 매면 밀릴 수가 없다.
+      옛 배열 응답도 계속 받아 준다(모델이 지시를 어겨도 글이 통째로 날아가지 않게) —
+      다만 그때는 밀림을 못 막으므로 stderr 에 경고를 남긴다.
     """
     s = (raw or "").strip()
     i, j = s.find("{"), s.rfind("}")
@@ -371,7 +377,29 @@ def _parse_copy_json(raw: str, n_lines: int) -> dict | None:
     if not isinstance(data, dict):
         return None
 
-    lines = [str(x).strip() for x in (data.get("lines") or []) if isinstance(x, (str, int, float))]
+    raw_lines = data.get("lines")
+    if isinstance(raw_lines, dict):
+        # 파일 이름 키 → 사진 순서대로 꺼낸다. 키를 못 찾으면 그 카드는 문장을 비운다
+        # (사진만 나가는 카드가 된다 — 엉뚱한 문장이 붙는 것보다 낫다).
+        lookup = {str(k).strip().lower(): str(v).strip() for k, v in raw_lines.items()}
+        lines, missed = [], []
+        for name in (card_names or []):
+            key = str(name).strip().lower()
+            if key in lookup:
+                lines.append(lookup[key])
+            else:
+                lines.append("")
+                missed.append(name)
+        if missed:
+            print(f"[WARN] GM의 일요일 AI 문장 — 사진 키 미매칭 {len(missed)}장(문장 비움): {missed}",
+                  file=sys.stderr)
+        if not card_names:
+            lines = [v for _, v in sorted(lookup.items())]
+    else:
+        lines = [str(x).strip() for x in (raw_lines or []) if isinstance(x, (str, int, float))]
+        if lines:
+            print("[WARN] GM의 일요일 AI 문장 — 배열로 왔다(파일 키 객체 아님). "
+                  "사진↔문장 밀림을 막을 수 없으니 검수에서 한 장씩 대조할 것.", file=sys.stderr)
     if len(lines) > n_lines:
         print(f"[WARN] GM의 일요일 AI 문장 {len(lines) - n_lines}개 초과 — 잘라 맞춤", file=sys.stderr)
         lines = lines[:n_lines]
@@ -417,8 +445,10 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         f"이 시리즈가 향하는 한 문장: {SUNDAY_SLOGAN}",
         "  이 문장을 글에 그대로 베껴 넣지 마라. 글이 이 방향을 향하기만 하면 된다.",
         "",
-        "아래 사진 파일을 Read 도구로 전부 열어 실제로 보고 써라. 첫 번째가 표지다.",
-        *[str(p) for p in photos],
+        "아래 사진 파일을 Read 도구로 전부 열어 실제로 보고 써라.",
+        "★[표지] 는 문장을 달지 않는다. [카드] 만 문장을 단다.",
+        f"  [표지] {photos[0]}",
+        *[f"  [카드] {p}" for p in photos[1:]],
         "",
         "규칙:",
         "- 사진에 실제로 보이는 것만 쓴다. 안 보이는 사실(가족 구성·장소 이름·감정의 근거)을 지어내지 마라.",
@@ -432,9 +462,13 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         "  (실제 사고: '과일이랑 간식 폈어요' — '펴다'는 돗자리에나 쓴다).",
         "- title = 두 줄. 반드시 줄바꿈 문자 1개로 나눈다. 각 줄 12자 안팎.",
         "  제목에 'GM의 일요일' 같은 시리즈 이름을 넣지 마라(표지에 이미 있다). 줄표(—)로 잇지 마라.",
-        f"- lines = 표지를 뺀 사진 {n}장 각각에 대한 문장 {n}개, 사진 순서 그대로."
-        " 각 한 문장 25자 안팎. 사진에 보이는 걸 담담하게 적는다(같은 말투)."
+        f"- lines = [카드] 사진 {n}장에 대한 문장. ★배열이 아니라 **파일 이름을 키로 하는 객체**로 낸다."
+        "  (2026-08-16 실사고: 배열로 받았더니 문장이 사진보다 한 칸씩 밀려, 유모차에 앉은 아기 사진에"
+        "  '저도 물에 들어가 엎어졌어요' 가 붙어 나갔다. 키로 매어 두면 밀릴 수가 없다.)"
+        "  각 한 문장 25자 안팎. 그 사진에 실제로 보이는 것만 담담하게 적는다(같은 말투)."
         " 사진마다 다른 이야기이고, 꾸미는 말을 붙이지 않는다.",
+        "- ★시간·횟수를 지어내지 마라 — '종일'·'반나절'·'또 왔는데'·'매번' 처럼"
+        "  사진 한 장으로는 알 수 없는 말은 쓰지 않는다.",
         "- think = 그날 느낀 것 한 줄. 같은 말투(존댓말 구어체). 교훈조·설교조·미문 금지.",
         "- caption = 인스타 본문 5~8줄. 순서는 ①그날 있었던 일(기록) ②읽는 사람이 따라 해볼 수 있는"
         " 정보(아래 '사진으로는 알 수 없는 사실'에 적힌 것만 — 없으면 그 부분은 아예 쓰지 않는다.",
@@ -457,9 +491,9 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
            if facts and any(k not in ("컨셉", "슬로건") for k in facts) else [] ),
         "",
         "출력은 JSON 한 덩어리만. 설명·코드블록 없이 { 로 시작해 } 로 끝낸다.",
-        '{"title":"두 줄 제목(\\n 포함)","lines":['
-        + ", ".join(f'"사진{k + 2} 문장"' for k in range(n))
-        + '],"think":"생각 한 줄","caption":"본문 캡션","hashtags":"#태그 #태그"}',
+        '{"title":"두 줄 제목(\\n 포함)","lines":{'
+        + ", ".join(f'"{p.name}":"그 사진 문장"' for p in photos[1:])
+        + '},"think":"생각 한 줄","caption":"본문 캡션","hashtags":"#태그 #태그"}',
     ])
 
     raw, used_model = run_claude(
@@ -468,7 +502,7 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
     if not raw:
         print("[WARN] GM의 일요일 AI 글 생성 실패(전 모델) — 접수 원문으로 폴백", file=sys.stderr)
         return None
-    parsed = _parse_copy_json(raw, n)
+    parsed = _parse_copy_json(raw, n, [p.name for p in photos[1:]])
     if parsed is None:
         return None
     # ★마지막 장은 슬로건 자리다(GM 지시 2026-08-05). GM 이 준 게 있으면 그것을,
