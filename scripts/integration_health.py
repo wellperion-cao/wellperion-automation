@@ -14,6 +14,7 @@ GM이 먼저 발견하는 일이 반복됐다. 이 모듈이 모든 다리를 �
 from __future__ import annotations
 
 import json
+import re
 import urllib.request
 import urllib.error
 import subprocess
@@ -34,6 +35,12 @@ SSOT_API_URL = (
 
 LOCAL_QUEUE = ROOT / "status" / "_queue.json"
 MIRROR_QUEUE = ROOT / "3. 웰페리온 가이드" / "status" / "_queue.json"
+QUEUE_ARCHIVE = ROOT / "status" / "_queue_archive.json"
+PAGE_SCORE = ROOT / "status" / "page_score.json"
+
+_SHIP_NO_RE = re.compile(r"배(\d+)")
+# 이미 정정된 note 는 걸러줄 신호(문구는 GM 지정)
+_CORRECTION_SIGNALS = ("종결", "해소", "사실 아님", "정상 가동", "확인 완료")
 
 ACTIVE_STATUSES = ("PENDING", "IN_PROGRESS")
 HTTP_TIMEOUT = 15
@@ -283,6 +290,51 @@ def check_kpi_freshness() -> tuple[str, bool, str]:
         return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"
 
 
+def check_page_score_stale_ship_refs() -> tuple[str, bool, str]:
+    """⑦ 업무판 배번호 신선도: page_score.json 각 항목 note 가 인용한 '배NNN'이 이미 끝난
+    배(_queue_archive.json 등재 또는 _queue.json 에서 status=DONE)인데 정정 신호
+    (종결/해소/사실 아님/정상 가동/확인 완료) 없이 남아 있으면 걸린다.
+    (2026-08-18, '업무판 채움 보드'가 종결된 배617을 4일간 미해결로 인용 방치한 사고 후속.)
+    """
+    name = "업무판 배번호 신선도"
+    try:
+        score = json.loads(PAGE_SCORE.read_text(encoding="utf-8"))
+        pages = score.get("pages") if isinstance(score, dict) else None
+        if not isinstance(pages, list):
+            return name, False, "page_score.json 형식 이상(pages 배열 없음)"
+
+        queue = json.loads(LOCAL_QUEUE.read_text(encoding="utf-8"))
+        archive = json.loads(QUEUE_ARCHIVE.read_text(encoding="utf-8"))
+        queue_status = {
+            x["short_no"]: x.get("status")
+            for x in queue
+            if isinstance(x, dict) and isinstance(x.get("short_no"), int)
+        }
+        archived_nos = {
+            x["short_no"]
+            for x in archive
+            if isinstance(x, dict) and isinstance(x.get("short_no"), int)
+        }
+
+        stale = []
+        for p in pages:
+            if not isinstance(p, dict):
+                continue
+            note = p.get("note") or ""
+            if any(sig in note for sig in _CORRECTION_SIGNALS):
+                continue  # 이미 정정됨 — 통과
+            for no_s in _SHIP_NO_RE.findall(note):
+                no = int(no_s)
+                if no in archived_nos or queue_status.get(no) == "DONE":
+                    stale.append(f"{p.get('name', '?')}·배{no}")
+
+        if stale:
+            return name, False, "끝난 배 인용(정정 신호 없음) — " + ", ".join(stale)
+        return name, True, f"{len(pages)}개 화면 note 배번호 정상"
+    except Exception as e:
+        return name, False, f"점검 실패({type(e).__name__}): {str(e)[:80]}"
+
+
 def check_bridges() -> list[tuple[str, bool, str]]:
     """모든 연동 다리를 점검해 [(이름, ok, 상세)] 반환. 절대 예외로 죽지 않음."""
     checks = (
@@ -292,6 +344,7 @@ def check_bridges() -> list[tuple[str, bool, str]]:
         check_review_live,
         check_unpushed,
         check_kpi_freshness,
+        check_page_score_stale_ship_refs,
     )
     results: list[tuple[str, bool, str]] = []
     for fn in checks:
