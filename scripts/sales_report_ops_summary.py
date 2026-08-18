@@ -26,7 +26,7 @@ import json
 import os
 import sys
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -154,7 +154,11 @@ def post_to_sheet(text: str, cell: str = "P20") -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="매출 보고 시트 P20 운영 현황 채우기")
-    ap.add_argument("--date", default=date.today().isoformat())
+    # ★ 기본은 **어제**다. 09:30 매출보고는 전날 실적을 보고하므로(캡션 "8.16(일) 매출 및
+    # 운영사항"), 운영 현황도 같은 날이어야 한 화면에서 앞뒤가 맞는다. 오늘로 잡으면
+    # 매출은 전날인데 현황만 당일이 되고, 게다가 09:00 시점의 당일 점검은 아침 회차뿐이라 거의 비어 있다.
+    ap.add_argument("--date", default=(date.today() - timedelta(days=1)).isoformat(),
+                    help="기준일(기본=어제 · 매출보고와 같은 날)")
     ap.add_argument("--cell", default="P20")
     ap.add_argument("--dry-run", action="store_true", help="만들 텍스트만 보고 시트엔 쓰지 않는다")
     ap.add_argument("--value-up", action="append", default=[],
