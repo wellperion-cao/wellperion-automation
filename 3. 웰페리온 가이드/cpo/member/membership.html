@@ -8486,6 +8486,11 @@ function _activeFilter(query) {
     var oc = _activeCache[other];
     if (oc && oc.rows) {
       var extra = oc.rows.filter(match);
+      // 보관(archive) 시트 행은 rowIndex가 '유효회원' 시트와 다른 시트를 가리킨다 — 그대로 두면
+      // 저장 시 엉뚱한 사람 줄(전화번호 다름)을 대상으로 삼아 서버가 조용히 거부한다(2026-08-18
+      // GM 신고 "허나래님 유효기간 수정해도 반영 안됨" 근본원인). _archived 표시로 아래 렌더가
+      // 편집칸·특수버튼을 막는다(원본 캐시는 복사해서 안 건드림).
+      if (other === 'archive' && extra.length) extra = extra.map(function(r){ return Object.assign({ _archived: true }, r); });
       if (extra.length) filtered = filtered.concat(extra);
       _activeCrossExtra += extra.length;
     } else {
@@ -8809,6 +8814,16 @@ function _activeRowHtml(row, displayCols) {
     var ri = row.rowIndex != null ? String(row.rowIndex) : '';
     html += '<tr data-rowindex="' + esc(ri) + '">';
     displayCols.forEach(function(h){
+      // 보관(archive) 교차검색 행 — rowIndex가 다른 시트를 가리켜 저장 대상이 아니다(위 _activeFilter
+      // 주석 참고). 쓰기를 유발하는 특수칸·인라인수정을 전부 막고 보관중임만 알린다.
+      if (row._archived) {
+        if (h === '__recon__' || h === '__churn__' || h === '__reactivate__' || h === '__unregreason__' || h === '__owners__' || h === '__lossbtn__') {
+          html += '<td style="white-space:nowrap;color:var(--dim);font-size:11px">🗄️ 보관 기록</td>'; return;
+        }
+        var _av = row[h] != null ? row[h] : '—';
+        html += '<td style="' + (NARROW_COL_WIDTHS[h] ? ('max-width:' + NARROW_COL_WIDTHS[h] + 'px;white-space:normal;word-break:keep-all;') : '') + '">' + esc(_av) + '</td>';
+        return;
+      }
       if (h === '__recon__') { html += _reconCellHtml(row); return; }
       if (h === '__churn__') { html += _churnCellHtml(row); return; }
       if (h === '__reactivate__') { html += _reactivateCellHtml(row); return; }
