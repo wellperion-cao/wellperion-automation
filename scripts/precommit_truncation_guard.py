@@ -69,6 +69,59 @@ def over_threshold(disp: str, head_lines: int, dropped: int) -> bool:
     return ratio >= SHRINK_RATIO and dropped >= SHRINK_LINES
 
 
+# ── 최근 작업 삭제 차단 (2026-08-18 시우 · 위 줄수 기준의 구멍을 메운다) ────────
+# 줄수 기준만으로는 '옛 사본으로 덮기'를 다 못 잡는다. 옛 사본 위에 자기 수정을 얹어
+# 커밋하면 순 삭제가 작아져 그대로 통과한다(실제로 그렇게 두 번 통과했다). 사고의 본질은
+# 줄이 몇 개 줄었느냐가 아니라 **며칠 전 남이 넣은 것을 지웠느냐**다. 그래서 지워지는
+# 줄이 언제 들어온 줄인지를 본다 — 최근 것을 여러 줄 지우면 차단한다.
+# safe_commit 도 같은 이름의 가드를 재실행하므로 커밋 경로 둘 다 이 판정을 지난다.
+# 우회: git commit --no-verify (의도적 되돌리기·리팩터)
+RECENT_DAYS = 7            # 이 기간 안에 들어온 줄을 '최근 작업'으로 본다
+RECENT_DELETE_LINES = 10   # 최근 줄을 이만큼 지우면 차단(오탐 방지용 하한)
+
+
+def _blame_times(path: str, rev: str = "HEAD"):
+    """rev 시점 파일의 각 줄이 언제 들어왔는지(epoch 초) 리스트로. 실패하면 None."""
+    out = subprocess.run(
+        ["git", "blame", "--line-porcelain", rev, "--", path],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+    )
+    if out.returncode != 0 or not out.stdout:
+        return None
+    times = []
+    for line in out.stdout.split(b"\n"):
+        if line.startswith(b"author-time "):
+            try:
+                times.append(int(line.split(b" ", 1)[1]))
+            except Exception:
+                times.append(0)
+    return times or None
+
+
+def removed_line_numbers(head_text: str, new_text: str):
+    """HEAD 에는 있는데 새 내용에선 사라진 줄의 번호(1부터). 순수함수 — 자가검사 대상."""
+    import difflib
+    a = head_text.splitlines()
+    b = new_text.splitlines()
+    gone = []
+    for tag, i1, i2, _j1, _j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+        if tag in ("delete", "replace"):
+            gone.extend(range(i1 + 1, i2 + 1))
+    return gone
+
+
+def recent_deletions(path: str, head_text: str, new_text: str, now: int, rev: str = "HEAD") -> int:
+    """이번 변경이 지우는 줄 중 최근 RECENT_DAYS 안에 들어온 줄의 개수."""
+    gone = removed_line_numbers(head_text, new_text)
+    if len(gone) < RECENT_DELETE_LINES:
+        return 0  # 애초에 하한 미만이면 blame 비용도 쓰지 않는다
+    times = _blame_times(path, rev)
+    if not times:
+        return 0  # blame 실패 = fail-open
+    cutoff = now - RECENT_DAYS * 86400
+    return sum(1 for n in gone if n <= len(times) and times[n - 1] >= cutoff)
+
+
 def selfcheck() -> int:
     """실사고 값으로 판정을 확인한다: python precommit_truncation_guard.py --selfcheck"""
     hot_html = "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html"
@@ -82,7 +135,33 @@ def selfcheck() -> int:
     # 다발 경로가 아닌 파일은 옛 기준 그대로
     assert not over_threshold(other, 2000, 86), "다발 경로 밖 기준이 바뀌었다"
     assert over_threshold(other, 2000, 700), "옛 기준(30%·200줄)이 깨졌다"
-    print("[truncation-guard] 자가검사 5항목 통과")
+
+    # 지워지는 줄 번호 뽑기 — 순수함수라 그대로 확인한다
+    assert removed_line_numbers("a\nb\nc\n", "a\nc\n") == [2], "사라진 줄 번호를 못 짚는다"
+    assert removed_line_numbers("a\nb\n", "a\nb\nc\n") == [], "추가만 했는데 삭제로 본다"
+
+    # 실사고 재생 — 그때 그 커밋을 지금 이 가드에 다시 통과시켜 본다
+    replays = [
+        ("cd50bb4", "3. 웰페리온 가이드/coo/reception/종합접수처_현황.html"),
+        ("630bf0f", "3. 웰페리온 가이드/coo/reception/apps_script_reception.js"),
+    ]
+    replayed = 0
+    for sha, path in replays:
+        got = subprocess.run(["git", "show", "-s", "--format=%ct", sha],
+                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        if got.returncode != 0:
+            continue  # 이력이 없는 사본 저장소 — 건너뜀(fail-open)
+        when = int(got.stdout.strip())
+        old = subprocess.run(["git", "show", sha + "^:" + path], stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL).stdout.decode("utf-8", "replace")
+        newv = subprocess.run(["git", "show", sha + ":" + path], stdout=subprocess.PIPE,
+                              stderr=subprocess.DEVNULL).stdout.decode("utf-8", "replace")
+        n = recent_deletions(path, old, newv, when, rev=sha + "^")
+        assert n >= RECENT_DELETE_LINES, f"{sha} 를 여전히 통과시킨다(최근 삭제 {n}줄)"
+        replayed += 1
+        print(f"  재생 {sha}: 최근 {RECENT_DAYS}일 내 줄 {n}개 삭제 → 차단 확인")
+
+    print(f"[truncation-guard] 자가검사 7항목 통과 (실사고 재생 {replayed}/2)")
     return 0
 
 
@@ -157,8 +236,11 @@ def staged_blob(path_bytes):
 
 
 def main():
+    import time
     files = staged_files()
     violations = []
+    recent_hits = []   # (경로, 지워지는 최근 줄 수)
+    now = int(time.time())
 
     for code, path_bytes in files:
         try:
@@ -194,6 +276,56 @@ def main():
         except Exception:
             # 개별 파일 처리 실패 → 그 파일만 건너뜀(fail-open).
             continue
+
+    # ── 최근 작업 삭제 판정(충돌 다발 경로만) ─────────────────────────────
+    # 줄수 기준을 통과해도, 며칠 안에 들어온 줄을 여러 개 지우면 옛 사본으로 덮은 것이다.
+    for code, path_bytes in files:
+        try:
+            disp = path_bytes.decode("utf-8", "replace")
+            if not _is_hot(disp) or not disp.lower().endswith(WATCH_SUFFIXES):
+                continue
+            head = head_blob(path_bytes)
+            new = staged_blob(path_bytes)
+            if head is None or new is None:
+                continue
+            n = recent_deletions(
+                disp,
+                head.decode("utf-8", "replace"),
+                new.decode("utf-8", "replace"),
+                now,
+            )
+            if n >= RECENT_DELETE_LINES:
+                recent_hits.append((disp, n))
+        except Exception:
+            # 개별 파일 처리 실패 → 그 파일만 건너뜀(fail-open).
+            continue
+
+    if recent_hits:
+        sys.stderr.write(
+            "\n"
+            "============================================================\n"
+            "[truncation-guard] 커밋 차단 — 최근에 들어온 작업이 지워집니다\n"
+            "------------------------------------------------------------\n"
+        )
+        for disp, n in recent_hits:
+            sys.stderr.write(
+                "  - %s\n"
+                "      최근 %d일 안에 추가된 줄 %d개가 이번 커밋에서 사라집니다\n"
+                % (disp, RECENT_DAYS, n)
+            )
+        sys.stderr.write(
+            "------------------------------------------------------------\n"
+            "  들고 있던 옛 전체본으로 파일을 통째로 다시 쓰면 이렇게 됩니다.\n"
+            "  파일을 다시 읽어 최신 내용 위에 고쳐 올리세요.\n"
+            "  되돌리기가 의도라면 우회:  git commit --no-verify\n"
+            "============================================================\n"
+        )
+        log_guard_decision(
+            "truncation", "BLOCK",
+            "최근 작업 삭제 %d개 파일" % len(recent_hits),
+            [disp for disp, _ in recent_hits],
+        )
+        return 1
 
     if violations:
         sys.stderr.write(
