@@ -3156,6 +3156,7 @@ table.op-t td b{font-size:15px}
 </div>
 <!-- defer: 페이지 본문을 다 그린 뒤 실행 — 패널 때문에 화면 뜨는 게 늦어지지 않게(2026-07-24 GM 확인).
      실측(같은 날): 스크립트 7.2KB + 데이터 5.2KB = 12.4KB·91ms, 전부 백그라운드. -->
+<script src="../../_assets/loss_reasons.js"></script>
 
 <script>
 /* ── GAS URL (퍼널 Survey 웹앱 /exec — 2026-06-22 연결) ── */
@@ -10835,7 +10836,7 @@ function holdEarlyReturn(rowIndex) {
 /* ── LOSS 사유 체계 v4(FB260818-134726, 2026-08-18 박민서) — 실무진 피드백 반영 ──
    v3(08-18 임정은M, 16종) → v4: '연락처상이함' 추가(17종). 강습 회원관리 LOSS 처리 시 연락처 불일치 케이스 사유 기록 누락 방지.
    ★과거 시트 값은 덮어쓰지 않는다 — 아래 LOSS_REASON_LEGACY_MAP 이 읽기 시점에만 새 체계로 대응(원본 보존). */
-var INQ_LOSS_REASON_OPTIONS = ['금액·프로모션', '양도/강습전환', '건강문제', '단기', '낮은이용횟수', '타센터등록', '거주지변경', '무응답(기타)', '가망', '블랙', '수신거절', '연락처상이함', '재등록혜택', '시설불만', '주차불만', '휴회불만', '바쁜일정'];
+// INQ_LOSS_REASON_OPTIONS 정본 = ../../_assets/loss_reasons.js(<script src>, 위쪽 로드) — 배653 근본수리.
 // v1+v2 구값 → v3 대응. 과거 시트 원본 보존(읽기 전용 정규화).
 var LOSS_REASON_LEGACY_MAP = {
   // v2→v3
