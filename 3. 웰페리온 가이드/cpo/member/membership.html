@@ -8487,11 +8487,13 @@ function _activeFilter(query) {
     var oc = _activeCache[other];
     if (oc && oc.rows) {
       var extra = oc.rows.filter(match);
-      // 보관(archive) 시트 행은 rowIndex가 '유효회원' 시트와 다른 시트를 가리킨다 — 그대로 두면
-      // 저장 시 엉뚱한 사람 줄(전화번호 다름)을 대상으로 삼아 서버가 조용히 거부한다(2026-08-18
-      // GM 신고 "허나래님 유효기간 수정해도 반영 안됨" 근본원인). _archived 표시로 아래 렌더가
-      // 편집칸·특수버튼을 막는다(원본 캐시는 복사해서 안 건드림).
-      if (other === 'archive' && extra.length) extra = extra.map(function(r){ return Object.assign({ _archived: true }, r); });
+      // 교차검색으로 섞여 들어온 행(archive·ended·valid 어느 쪽이든) — 지금 켜진 탭(_activeScope)의
+      // 자기 명단이 아니다. archive는 rowIndex가 아예 다른 시트를 가리켜 쓰면 엉뚱한 사람이 훼손되고
+      // (2026-08-18 GM 신고 "허나래님 유효기간 수정해도 반영 안됨"), ended/valid는 같은 시트라 rowIndex
+      // 자체는 맞지만 지금 탭 맥락과 다른 사람 행이라 재등록·LOSS처리 버튼을 그 자리서 누르게 두면
+      // 안 된다(정독점검 2026-08-18). _crossFrom 표시로 아래 렌더가 편집칸·특수버튼을 전부 막는다
+      // (원본 캐시는 복사해서 안 건드림).
+      if (extra.length) extra = extra.map(function(r){ return Object.assign({ _crossFrom: other }, r); });
       if (extra.length) filtered = filtered.concat(extra);
       _activeCrossExtra += extra.length;
     } else {
@@ -8818,11 +8820,13 @@ function _activeRowHtml(row, displayCols) {
     var ri = row.rowIndex != null ? String(row.rowIndex) : '';
     html += '<tr data-rowindex="' + esc(ri) + '">';
     displayCols.forEach(function(h){
-      // 보관(archive) 교차검색 행 — rowIndex가 다른 시트를 가리켜 저장 대상이 아니다(위 _activeFilter
-      // 주석 참고). 쓰기를 유발하는 특수칸·인라인수정을 전부 막고 보관중임만 알린다.
-      if (row._archived) {
+      // 교차검색 행(archive·ended·valid) — 지금 탭의 자기 명단이 아니다(위 _activeFilter 주석 참고).
+      // 쓰기를 유발하는 특수칸·인라인수정을 전부 막고, 어느 탭에서 고쳐야 하는지 알린다.
+      if (row._crossFrom) {
         if (h === '__recon__' || h === '__churn__' || h === '__reactivate__' || h === '__unregreason__' || h === '__owners__' || h === '__lossbtn__') {
-          html += '<td style="white-space:nowrap;color:var(--dim);font-size:11px">🗄️ 보관 기록</td>'; return;
+          var _crossLabel = row._crossFrom === 'archive' ? '🗄️ 보관 기록'
+            : row._crossFrom === 'ended' ? '종료회원 탭에서 수정' : '유효회원 탭에서 수정';
+          html += '<td style="white-space:nowrap;color:var(--dim);font-size:11px">' + _crossLabel + '</td>'; return;
         }
         var _av = row[h] != null ? row[h] : '—';
         html += '<td style="' + (NARROW_COL_WIDTHS[h] ? ('max-width:' + NARROW_COL_WIDTHS[h] + 'px;white-space:normal;word-break:keep-all;') : '') + '">' + esc(_av) + '</td>';
