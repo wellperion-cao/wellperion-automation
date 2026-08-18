@@ -2755,6 +2755,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
     var sd = new Date(startDate + 'T00:00:00+09:00');
     if (!isNaN(sd.getTime())) {
       var ed = new Date(sd.getTime()); ed.setMonth(ed.getMonth() + moN);
+      ed.setDate(ed.getDate() - 1);  // 종료일=마지막 유효일(포함) — 시작+N개월을 그대로 쓰면 하루 더 붙는다(배582, 2026-08-18 시포)
       endDateStr = Utilities.formatDate(ed, 'Asia/Seoul', 'yyyy-MM-dd');
       remN = Math.round((ed.getTime() - Date.now()) / 86400000);
     }
