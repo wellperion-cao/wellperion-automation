@@ -369,13 +369,24 @@ body[data-fmt="portrait"] .mgrid,body[data-fmt="portrait"] .moments{grid-templat
 .tbar button:focus-visible{outline:2px solid var(--highlight);outline-offset:2px}
 @media print{ .tbar{display:none !important} }
 
+/* ── A4 인쇄 (GM 지시 2026-08-18 "인쇄를 기준으로") ──
+   이 시안은 A3 한 장을 기준으로 짜여 있다. A4 를 고르면 판을 다시 짜지 않고
+   그대로 축소해 앉힌다(420mm→297mm = 0.707). 내용·배치는 A3 와 똑같다. */
+@media print{
+  body[data-paper="A4"] .a3{zoom:.707}
+}
+
 </style>
 <div class="tbar">
   <b>웰페리온 회사소개서 (통합판)</b>
-  <span class="hint">A3 가로 시안 기준 &middot; 사진은 「한 공간, 열여섯 가지 경험」 한 장에만 &middot; 브랜드 확장 포함</span>
+  <span class="hint">A3 가로 시안 기준 &middot; 용지 A4 를 고르면 같은 판이 그대로 축소됩니다 &middot; 사진은 「한 공간, 열여섯 가지 경험」 한 장에만</span>
   <span class="sp"></span>
-  <button id="b-ls" aria-pressed="true" onclick="setFmt('landscape')">A3 가로</button>
+  <button id="b-ls" aria-pressed="true" onclick="setFmt('landscape')">가로</button>
   <button id="b-pt" aria-pressed="false" onclick="setFmt('portrait')">세로형 (책처럼)</button>
+  <span style="width:1px;height:20px;background:rgba(255,255,255,.25);margin:0 2px"></span>
+  <span class="h" style="margin-right:-4px">용지</span>
+  <button id="p-a3" aria-pressed="true"  onclick="setPaper('A3')">A3</button>
+  <button id="p-a4" aria-pressed="false" onclick="setPaper('A4')">A4</button>
   <span style="width:1px;height:20px;background:rgba(255,255,255,.25);margin:0 2px"></span>
   <span class="h" style="margin-right:-4px">인쇄 바탕</span>
   <button id="ink-ink" onclick="setInk('ink')">잉크 절약</button>
@@ -791,15 +802,30 @@ body[data-fmt="portrait"] .mgrid,body[data-fmt="portrait"] .moments{grid-templat
 </section>
 
 <script>
+// 방향(가로·세로)과 용지(A3·A4)를 따로 고르고, @page 는 그 둘을 합쳐 한 번만 쓴다.
+var _wpFmt = 'landscape', _wpPaper = 'A3';
+function _wpApplyPage(){
+  var s=document.getElementById('pagerule');
+  if(!s){ s=document.createElement('style'); s.id='pagerule'; document.head.appendChild(s); }
+  s.textContent='@page{size:'+_wpPaper+' '+_wpFmt+';margin:0}';
+  document.body.dataset.paper=_wpPaper;   // A4 면 인쇄 CSS 가 판을 0.707 로 줄인다
+}
 function setFmt(f){
+  _wpFmt=f;
   document.body.dataset.fmt=f;
   document.getElementById('b-ls').setAttribute('aria-pressed', f==='landscape');
   document.getElementById('b-pt').setAttribute('aria-pressed', f==='portrait');
-  var s=document.getElementById('pagerule');
-  if(!s){ s=document.createElement('style'); s.id='pagerule'; document.head.appendChild(s); }
-  s.textContent='@page{size:'+(f==='portrait'?'A3 portrait':'A3 landscape')+';margin:0}';
+  _wpApplyPage();
   try{ localStorage.setItem('wp_intro_fmt', f); }catch(e){}
 }
+function setPaper(p){
+  _wpPaper=p;
+  document.getElementById('p-a3').setAttribute('aria-pressed', p==='A3');
+  document.getElementById('p-a4').setAttribute('aria-pressed', p==='A4');
+  _wpApplyPage();
+  try{ localStorage.setItem('wp_intro_paper', p); }catch(e){}
+}
+setPaper((function(){ try{ return localStorage.getItem('wp_intro_paper')||'A3'; }catch(e){ return 'A3'; } })());
 setFmt((function(){ try{ return localStorage.getItem('wp_intro_fmt')||'landscape'; }catch(e){ return 'landscape'; } })());
 </script>
 

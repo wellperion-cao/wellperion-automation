@@ -63,9 +63,10 @@
     font:inherit;font-size:12.5px;font-weight:700;letter-spacing:.06em;cursor:pointer;
     padding:6px 15px;border:1px solid var(--line);background:var(--surface);color:var(--dim);
   }
-  .langbar button:first-of-type{border-radius:6px 0 0 6px;border-right:none}
-  .langbar button:last-of-type{border-radius:0 6px 6px 0}
+  .langbar #btn-ko{border-radius:6px 0 0 6px;border-right:none}
+  .langbar #btn-en{border-radius:0 6px 6px 0}
   .langbar button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .langbar .printbtn{margin-left:8px;border-radius:6px}
 
   .cover{padding:56px 0 60px;border-bottom:1px solid var(--line)}
   .wordmark{font-size:13px;letter-spacing:.42em;color:var(--deep);font-weight:700;margin:0 0 34px}
@@ -109,12 +110,51 @@
   .close .c{font-size:15px;color:var(--ink-2);margin:0}
   .close .c b{color:var(--ink)}
 
+  /* ═══ 인쇄 (GM 지시 2026-08-18 "인쇄를 기준으로 디자인") ═══
+     용지·방향은 공용 인쇄 옵션(_assets/print_options.js)이 A4/A3 × 세로/가로로 넣어 준다.
+     그 스크립트가 :root 에 data-print-paper / data-print-orientation 을 찍어 주므로,
+     여기서는 그 값에 맞춰 밀도만 바꾼다 — 새 인쇄 위젯을 따로 만들지 않는다(약속 L21). */
+  @page{ size: A4 portrait; margin: 14mm 13mm; }   /* 기본값 — 인쇄 옵션에서 고르면 그 값이 이긴다 */
   @media print{
-    body{background:#fff}
+    body{background:#fff; color:#000; font-size:10.6pt; line-height:1.5}
     .wrap{padding:0;max-width:none}
-    section{break-inside:avoid}
-    .cover{padding:40px 0 36px}
     .langbar{display:none}      /* 인쇄물엔 보이는 언어 한 벌만 나간다 */
+
+    /* 표지는 한 장으로 — 뒤 내용이 표지에 딸려 올라오지 않게 */
+    .cover{padding:0 0 22mm;border-bottom:none;break-after:page}
+    .cover h1{font-size:30pt}
+    .cover .sub{font-size:12pt}
+
+    section{break-inside:avoid; padding:9mm 0; gap:4mm}
+    h2{font-size:8pt}
+    h3{font-size:14pt}
+    p{max-width:none}
+    p.lead{font-size:11.4pt}
+
+    /* 종이에서는 회색 바탕이 잉크를 먹는다 — 선으로만 구분한다 */
+    .facts,.tablewrap,ol.flow{border-color:#999}
+    .fact,.close{background:#fff}
+    .fact{padding:4mm}
+    .fact .n{font-size:15pt}
+    th{background:#fff;border-bottom:1.2pt solid #000;color:#000}
+    td,th{padding:2.4mm 3.4mm}
+    thead{display:table-header-group}     /* 표가 다음 장으로 넘어가도 머리글 반복 */
+    tr{break-inside:avoid}
+    table{min-width:0}
+    .tablewrap{overflow:visible}
+    .close{border:1.2pt solid #000;margin-top:10mm;padding:7mm 8mm;break-inside:avoid}
+
+    /* A4 세로 = 1단. 좁으므로 항목 칸을 2열로 묶어 장수를 줄인다 */
+    :root[data-print-paper="A4"][data-print-orientation="portrait"] .grid2{
+      grid-template-columns:1fr 1fr; gap:5mm 8mm;
+    }
+    /* A4 가로 = 폭이 남는다. 3열로 펴서 한 장에 더 담는다 */
+    :root[data-print-orientation="landscape"] .grid2{
+      grid-template-columns:repeat(3,1fr); gap:5mm 9mm;
+    }
+    :root[data-print-orientation="landscape"] .cover{padding-bottom:14mm}
+    /* A3 는 글자가 작아 보이므로 살짝 키운다 */
+    :root[data-print-paper="A3"] body{font-size:12pt}
   }
   @media (max-width:640px){.wrap{padding:0 20px 64px}.cover{padding:32px 0 40px}}
 </style>
@@ -122,9 +162,11 @@
 <body data-lang="ko">
 <div class="wrap">
 
-  <nav class="langbar" aria-label="언어 선택 / Language">
+  <nav class="langbar" aria-label="언어 선택 · 인쇄 / Language and print">
     <button type="button" id="btn-ko" aria-pressed="true"  onclick="setLang('ko')">KO</button>
     <button type="button" id="btn-en" aria-pressed="false" onclick="setLang('en')">EN</button>
+    <!-- 공용 인쇄 옵션이 이 자리를 「🖨️ 인쇄 ▾」 드롭다운(A4/A3 · 세로/가로)으로 승격시킨다 -->
+    <button type="button" data-po-trigger class="printbtn">🖨️ 인쇄</button>
   </nav>
 
   <header class="cover">
@@ -411,5 +453,7 @@
     setLang(location.hash.toLowerCase() === '#en' ? 'en' : 'ko');
   });
 </script>
+<!-- 공용 인쇄 옵션(A4/A3 · 세로/가로 · 항목 선택) — 새로 만들지 않고 정본을 붙인다(약속 L21) -->
+<script src="../_assets/print_options.js"></script>
 </body>
 </html>

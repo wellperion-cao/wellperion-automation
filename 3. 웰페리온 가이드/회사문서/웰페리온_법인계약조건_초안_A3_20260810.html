@@ -17,6 +17,13 @@
 -->
 <style>
   @page { size: A3 landscape; margin: 8mm; }
+  /* 용지·방향은 공용 인쇄 옵션(_assets/print_options.js)이 A4/A3 × 세로/가로로 바꿔 준다(약속 L21).
+     이 판은 A3 가로 1장으로 짠 것이라, 다른 용지에서는 밀도만 맞춘다 — 내용은 그대로 한 장이다. */
+  @media print{
+    :root[data-print-paper="A4"][data-print-orientation="landscape"] .sheet{zoom:.707}  /* 420mm→297mm */
+    :root[data-print-paper="A4"][data-print-orientation="portrait"]  .sheet{zoom:.50}   /* 세로엔 폭이 없다 — 가로 인쇄 권장 */
+    :root[data-print-paper="A3"][data-print-orientation="portrait"]  .sheet{zoom:.71}
+  }
   :root{
     --ground:#FFFFFF; --ink:#1D1A1B; --ink-2:#4A433E; --dim:#8B8177;
     --line:#DED5CA; --shade:#F5F0E9; --beige:#B79F8A; --deep:#6E5C4B;
@@ -227,5 +234,7 @@
   </footer>
 
 </div>
+<!-- 공용 인쇄 옵션(A4/A3 · 세로/가로) — 트리거가 없는 문서라 우상단 플로팅 버튼으로 스스로 붙는다 -->
+<script src="../_assets/print_options.js"></script>
 </body>
 </html>
