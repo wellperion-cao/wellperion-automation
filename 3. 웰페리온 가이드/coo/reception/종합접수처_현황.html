@@ -648,7 +648,7 @@ var DEPT_OTHER = '__OTHER__';
 var DEPT_OTHER_LABEL = '지원부(구분 전)';
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','assigneeCanon','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','assigneeCanon','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply','memberReplyTemplate'];
 
 /* ── 🏆 점수판 (GM 지시 2026-07-28) ──
    셈법은 서버(reg_scoreboard) 한 곳에만 있다 — 화면에서 다시 계산하지 않는다.
@@ -1041,7 +1041,9 @@ function _card(r){
 
   /* 회원 안내 — 회원 셀프 조회에 노출되는 문구(처리메모와 별개). 비우면 조회화면에서 상태 기본문구가 대신 표시됨. 2026-08-03 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--green);display:block;margin-bottom:4px;">📣 회원 안내 <span style="font-weight:500;color:var(--dim);">(회원이 조회 시 봅니다)</span></label>';
-  h += '<textarea data-reg-memberreply rows="2" placeholder="회원에게 보일 안내 문구 (비우면 상태 기본문구 표시)">' + _esc(String(r.memberReply||'')) + '</textarea></div>';
+  /* placeholder = 완료 시 자동으로 채워질 카테고리 문구(GAS 의 memberReplyTemplate 그대로 표시,
+     여기서 재작성하지 않는다 — 정본 = apps_script_reception.js REG_MEMBER_REPLY_TEMPLATES 한 곳). */
+  h += '<textarea data-reg-memberreply rows="2" placeholder="' + _esc(String(r.memberReplyTemplate || '회원에게 보일 안내 문구 (비우면 상태 기본문구 표시)')) + '">' + _esc(String(r.memberReply||'')) + '</textarea></div>';
 
   /* 저장 */
   /* 삭제(테스트 접수 정리용) — 비밀번호 확인 후에만. 접수ID 정확일치 1건만 지운다.
