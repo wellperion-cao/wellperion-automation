@@ -140,12 +140,6 @@
           "detail": "커밋 d9f0aa278 · 배 10871"
         },
         {
-          "time": "09:47",
-          "area": "작업",
-          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
-          "detail": "커밋 b95bc3e4e · 배 10871"
-        },
-        {
           "time": "09:50",
           "area": "작업",
           "event": "하루 정리 신뢰 검수 — 마감조 0건은 발신시각(22:31)이 근무종료(22:40)보다 빠른 탓 · 28일 연속 재현 · 배670",
@@ -156,6 +150,12 @@
           "area": "작업",
           "event": "배670 진단 정정 — 마감조 0은 시계 아닌 만성 미체크(사후 재조회 확인) · 못 믿을 것은 주차부 빈 문구",
           "detail": "커밋 6a5ab578e · 배 10871"
+        },
+        {
+          "time": "09:57",
+          "area": "작업",
+          "event": "자동 산출물 적재 — 저장소까지 못 가던 것 올림",
+          "detail": "커밋 882ff18dd · 배 10871"
         }
       ],
       "count": 6,
@@ -178,7 +178,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 13
+          "waited": 16
         }
       ],
       "repeats": []
@@ -295,13 +295,31 @@
           "area": "작업",
           "event": "GM업무.html 채점 오류 정정 — 모바일 media query 오기 정정",
           "detail": "커밋 b977ab2d1 · 배 10822"
+        },
+        {
+          "time": "09:57",
+          "area": "작업",
+          "event": "add stale-ship-note bridge check",
+          "detail": "커밋 2439cf9e7 · 배 10822"
+        },
+        {
+          "time": "09:58",
+          "area": "page_score",
+          "event": "ERP 완성도 채점표 사실 정정 2건",
+          "detail": "업무판 채움 보드 55->88(배617 헛경보 종결 반영) · GM업무 82->90(모바일 대응 8/16 완료·카운트 혼선 수정 반영) · 커밋 c3b797a3b b977ab2d1"
+        },
+        {
+          "time": "09:58",
+          "area": "guard",
+          "event": "끝난 배를 인용한 낡은 기록 자동 검사 신설",
+          "detail": "integration_health.check_page_score_stale_ship_refs 추가 — 부팅 자가점검·30분 발행 두 관문에 자동 탑승 · 회귀검사 test_page_score_stale_ship_refs.py · 커밋 2439cf9e7"
         }
       ],
       "count": 5,
       "done": 4,
       "open": 1,
       "avg_minutes": 10,
-      "work_count": 8,
+      "work_count": 11,
       "missed": [],
       "unclosed": [],
       "just": [
@@ -317,7 +335,7 @@
           "open": true,
           "evidence": null,
           "kind": "just",
-          "waited": 12
+          "waited": 15
         }
       ],
       "repeats": []
