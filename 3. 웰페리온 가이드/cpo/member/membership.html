@@ -8343,6 +8343,9 @@ function _activeFilter(query) {
     var oc = _activeCache[other];
     if (oc && oc.rows) {
       var extra = oc.rows.filter(match);
+      // 현재 스코프에서 이미 찾은 rowIndex는 제외 — LOSS 직후 valid 캐시가 stale하면 같은 회원이 중복 표시되는 버그 방어(FB260819-174248).
+      var _seen = new Set(filtered.map(function(r){ return r.rowIndex; }));
+      extra = extra.filter(function(r){ return !_seen.has(r.rowIndex); });
       // 교차검색으로 섞여 들어온 행(archive·ended·valid 어느 쪽이든) — 지금 켜진 탭(_activeScope)의
       // 자기 명단이 아니다. archive는 rowIndex가 아예 다른 시트를 가리켜 쓰면 엉뚱한 사람이 훼손되고
       // (2026-08-18 GM 신고 "허나래님 유효기간 수정해도 반영 안됨"), ended/valid는 같은 시트라 rowIndex
