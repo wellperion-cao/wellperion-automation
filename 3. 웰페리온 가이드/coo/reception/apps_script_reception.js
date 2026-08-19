@@ -1683,6 +1683,25 @@ function _regUpdate(body) {
       var mri = _idx('memberReply');
       if (mri >= 0) existing[mri] = String(memberReply);
     }
+    // 접수자 이름 — 이름 표기 통합용(직함 붙은 표기로 일괄 수정 시). 2026-08-15 시우.
+    // 병합 손실(daeb4512b 2026-08-18) 복원 — 2026-08-20 시토.
+    var nameVal = body.name !== undefined ? body.name : undefined;
+    if (nameVal !== undefined) {
+      var nmi = _idx('name');
+      if (nmi >= 0) existing[nmi] = String(nameVal);
+    }
+    // 대상 직원·강사 칸 — praise/voice 카테고리에서 쓰인다. 2026-08-15 시우.
+    var targetStaffVal = body.targetStaff !== undefined ? body.targetStaff : undefined;
+    if (targetStaffVal !== undefined) {
+      var tsi = _idx('targetStaff');
+      if (tsi >= 0) existing[tsi] = String(targetStaffVal);
+    }
+    // 부서 재배정 — 수동 배정 또는 부서 체계 변경 시. 2026-08-15 시우.
+    var deptVal = body.dept !== undefined ? body.dept : undefined;
+    if (deptVal !== undefined) {
+      var dpi = _idx('dept');
+      if (dpi >= 0) existing[dpi] = String(deptVal);
+    }
     // 완료로 전환되는 순간, 회원 안내가 비어 있으면 카테고리 문구를 채운다(2026-08-18 GM 지시 —
     //   105건 중 3건만 채워져 사실상 안 쓰이던 문제). 사람이 이미 쓴 값은 절대 덮지 않는다.
     if (effStatus === '완료') {
