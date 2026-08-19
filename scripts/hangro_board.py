@@ -512,7 +512,6 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         "appr":    [],   # 🔴 GM 결재 대기 (GM 차례)
         "appr_inflight": [],  # ⏳ 결재 진행 중 (타 결재자 대기)
         "done":    [],   # 🏁 완료 (입항·도착)
-        "drift":   [],   # 🌀 표류 (완료인데 '다음' 없는 건 — "👉 다음 정하기" 촉구 동반)
         "autonomy": [],  # 🤖 자율화 미션 (board='자율현황') — 항로 제외, 자율현황 보드行 (GM 2026-07-15)
         "routine": [],   # 🔁 반복 루틴 (cadence=routine) — 매일·매주 도는 일, 완료 도장이 없다 (GM 2026-08-16)
         "trigger": [],   # 🪝 조건 대기 (cadence=trigger) — 사건이 와야 시작된다 (GM 2026-08-16)
@@ -536,16 +535,6 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         (sections["must_finish_overdue"] if late > 0 else sections["must_finish_today"]).append(item)
     sections["must_finish_overdue"].sort(key=lambda it: -(_must_finish_days_late(it) or 0))
 
-    # ── 후속 브릿지 인덱스 (표류 판정 보조) ──
-    #   브릿지 메커니즘(project_bridge_mechanized): 완료 시 post_action --next/--terminal로
-    #   후속 PENDING이 _queue에 자동 등록된다. 그 후속이 원건 task_id를 참조하면 '다리 놓임'.
-    #   _queue 항목이 id 교차참조를 항상 갖진 않으므로(보수적 기준) → '다음 없음' 판정은
-    #   ① terminal!=true 이고 ② 그 건을 잇는 후속 PENDING(_queue)이 없을 때.
-    #   후속 존재 = 같은 owner의 PENDING/IN_PROGRESS가 있거나 item['next'] 브릿지 문구가 있을 때.
-    _pending_owners: set[str] = {
-        str(it.get("owner", "")) for it in items
-        if str(it.get("status", "")).upper() in {"PENDING", "IN_PROGRESS", "진행중", "대기"}
-    }
     seen_ids: set[str] = set()
     seen_titles: set[str] = set()
 
@@ -607,12 +596,7 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         elif done:
             # 완료는 최근(오늘·어제) 완료만 — 옛 완료건은 이력이라 보드서 제외
             if _is_recent(item.get("mod_date", "")):
-                # 🌀 표류 판정은 폐지했다 (GM 지시 2026-08-19).
-                #   종전에는 '다음'을 안 남긴 완료를 표류로 몰고 "👉 다음 뭐 할지 정하세요"를 붙였다.
-                #   그 촉구 때문에 끝낼 때마다 후속을 지어냈고 그게 그대로 새 배가 됐다 —
-                #   GM: "억지로 안만들어도되, 그냥 종결처리해도되."
-                #   이제 '다음' 없는 완료는 그냥 완료다. drift 칸은 남겨 두되 아무도 담기지 않는다
-                #   (칸을 지우면 아래 집계·렌더 여러 곳을 함께 고쳐야 해서, 판정만 끊는다).
+                # '다음' 없는 완료도 그냥 완료다 (GM 확정 2026-08-19 · 약속 L11).
                 sections["done"].append(item)
         else:
             sections["today"].append(item)
@@ -1318,7 +1302,6 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     n_appr     = len(secs["appr"])
     n_inflight = len(secs["appr_inflight"])
     n_done     = len(secs["done"])
-    n_drift    = len(secs["drift"])
 
     inprog  = [it for it in secs["today"] if it["status"] in STATUS_INPROGRESS or it["status"].upper() in STATUS_INPROGRESS]
     waiting = [it for it in secs["today"] if it not in inprog]
@@ -1338,14 +1321,12 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     _cnt_rows = [
         ("🚢 진행중",              str(len(inprog))),
         ("⚓ 대기중",               str(len(waiting))),
-        ("🏁 입항 완료 (오늘)", str(n_done + n_drift)),
+        ("🏁 입항 완료 (오늘)", str(n_done)),
         ("🔴 급한 입항 (마감임박)", str(n_urgent)),
         ("🔴 GM 결재 대기",        str(n_appr)),
     ]
     if n_inflight:
         _cnt_rows.append(("⏳ 결재 진행 중 (타 결재자)", str(n_inflight)))
-    if n_drift:
-        _cnt_rows.append(("🌀 표류 (다음 미정)",          str(n_drift)))
     if secs["autonomy"]:
         _cnt_rows.append(("🤖 자율화 미션 (자율현황行)", str(len(secs["autonomy"]))))
     if secs["routine"]:
@@ -1492,25 +1473,13 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
 
     # ── 🏁 입항 완료 (오늘) 섹터 ──
     lines.append("### 🏁 입항 완료 (오늘)")
-    done_all = secs["done"] + secs["drift"]
+    done_all = secs["done"]
     if done_all:
         done_rows = []
         for it in secs["done"]:
             has_next = bool(str(it.get("next") or "").strip())
             tag = (("🔗 " if has_next else "") + _saw_badge(it)).strip()
             done_rows.append(_item_to_row(it, ship_col_extra=tag))
-        for it in secs["drift"]:
-            # 표류: 🌀 꼬리표, 핵심조언에 👉 촉구 반드시 포함 (약속 L16)
-            desc  = str(it.get("간단설명") or "").strip()
-            advice = _dedupe_advice(desc, _derive_advice(it))
-            advice_col = f"{advice} — 👉 다음 뭐 할지 정하세요" if advice else "👉 다음 뭐 할지 정하세요"
-            ship  = it["_ship"]
-            icon  = ship["icon"]
-            nick  = _owner_label(it)
-            title = str(it.get("title", ""))
-            badges = ("🔴" if ship.get("urgent") else "") + ("🌟" if ship.get("northstar") else "")
-            title_col = f"{title}{badges}".strip()
-            done_rows.append((f"{icon} 🌀 {_saw_badge(it)}", nick, title_col, desc, advice_col))
         lines.append(_md_table(done_rows))
     else:
         lines.append("_(없음)_\n")

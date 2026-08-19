@@ -36,7 +36,7 @@ status/_queue.json 에 '[GM보좌 제안]' PENDING 배로 자동등록한다(③
   - phase1은 '제안'까지. phase2 = 가역 포착 건을 실제 처리(자율실행)하되 **안전경계 엄수**:
     ① 휴면 기본: GM_AIDE_AUTO_EXEC(기본 OFF·dry-run). OFF면 '무엇을 자율실행할지' 로그만(변경 0). 라이브(ON)=GM go 후.
     ② 가역만: 비가역(발행·삭제·외부전송·시트·결제·보안·금지·전략·공식값)은 절대 자율실행 X → phase1대로 제안배.
-    ③ 크론-실행 가능한 가역 메타행위만: 현재=drift(next 없는 완료 표류) 배에 '다음 한 수' 후보 next 자동 보강.
+    ③ 크론-실행 가능한 가역 메타행위만: 정비 액션 5종(미러 동기·현황 재발행·KPI 재집계 등).
        도메인 실무(콘텐츠·GAS 변경 등)는 C-Level 세션 몫 → 여기서 실행 금지(제안/위임 대기로만).
     ④ ON 시 G1 기록 + 사후보고: ship.aide_auto_exec(원복 근거) + gm_observation_ledger.jsonl auto_exec 로그.
     ⑤ 웰리 직접실행 금지 원칙 유지: 스크립트는 '가역 메타행위'까지만, 도메인 실행은 담당 C-Level 경유.
@@ -203,7 +203,7 @@ def make_capture(ctype, reversibility, target_role, title, reason, evidence, rem
     """포착 이벤트 1건. reversibility = '가역' | '비가역'."""
     return {
         "captured_at": now_str(),
-        "type": ctype,                 # drift / long_pending / unapproved_recommendation / routine_missing
+        "type": ctype,                 # long_pending / unapproved_recommendation / routine_missing
         "reversibility": reversibility,
         "target_role": target_role,
         "title": title,
@@ -213,19 +213,6 @@ def make_capture(ctype, reversibility, target_role, title, reason, evidence, rem
         "dedup_key": dedup_key,
         "source_task_id": _ship_id(source_item) if source_item else "",
     }
-
-
-def scan_drift(active: list) -> list:
-    """폐지 — 항상 빈 목록 (GM 지시 2026-08-19).
-
-    종전: 완료인데 next 가 비면 '표류'로 잡아 담당에게 '다음 한 수'를 정하라고 촉구했고,
-    아래 next_augment 액션이 후보 문구를 자동으로 채워 넣기까지 했다. 그 촉구가
-    배를 늘리는 원인 중 하나였다 — 끝낸 일마다 후속이 하나씩 붙었다.
-    GM: "억지로 안만들어도되, 그냥 종결처리해도되." 이제 '다음' 없는 완료는 정상이다.
-    함수를 지우지 않고 빈 목록을 돌려주는 이유 = 호출부(phase1 스캔·phase2 액션 생성)가
-    이 이름을 그대로 부르고 있어, 여기 한 곳만 끊으면 두 경로가 함께 멈춘다(약속 L21).
-    """
-    return []
 
 
 #  ★정박 선언 = ⚓ (약속 L16 아이콘 표준 · '대기/정박'). next 가 이 표식으로 시작하면
@@ -423,8 +410,6 @@ def log_scan(event: str, **fields) -> None:
 #  ★경계: 가역(phase1 분류) 포착만 · 크론-실행 가능한 안전 '메타행위'만.
 #  도메인 실무(콘텐츠 제작·GAS 변경 등)는 담당 C-Level 세션 몫 → 여기서 실행 금지.
 #  지원 액션:
-#   - next_augment — 표류(next 없는 완료) 배에 '다음 한 수' 후보를
-#     자동 보강(가역: aide_auto_exec.old_next 로 원복). 멱등: next 이미 있으면 skip.
 #   - 정비 액션 5종(2026-07-04 추가 · plan_maintenance_actions) — 전부 조건부(실제
 #     문제 있을 때만 등재 · 억지 발동 금지) · 가역 · 기존 스크립트 재사용:
 #       mirror_sync                — 라이브↔미러 드리프트 시 sync_queue_mirror.py 재동기
@@ -437,38 +422,6 @@ def auto_exec_enabled(cli_flag: bool = False) -> bool:
     if cli_flag:
         return True
     return os.environ.get(AUTO_EXEC_ENV, "").strip().lower() in AUTO_EXEC_ON_VALUES
-
-
-def _augment_next_value(cap: dict) -> str:
-    tid = cap.get("source_task_id") or "?"
-    role = cap.get("target_role", "ceo")
-    nick = ROLE_NICK.get(role, role.upper())
-    return (f"👉 다음 정하세요(자동보강·gm_aide): [{tid}] 완료 후 다음 한 수 미정 표류 — "
-            f"담당 {nick}가 후속 한 수 확정 필요. (가역·원복=next 를 빈 값으로)")
-
-
-def _build_next_augment_actions(rev_caps: list, active: list) -> list:
-    """가역 포착(drift) → next_augment 액션. 표류(next 없는 완료) 배에 '다음 한 수' 보강."""
-    by_tid = {_ship_id(x): x for x in active}
-    actions = []
-    for c in rev_caps:
-        if c.get("type") != "drift":
-            continue  # drift 외 가역(리마인드형)은 새 알림 스트림 금지 → 여기서 실행 안 함
-        tid = c.get("source_task_id")
-        ship = by_tid.get(tid)
-        if not ship:
-            continue
-        if (ship.get("next") or "").strip():
-            continue  # 멱등: 이미 next 있으면 자율실행 대상 아님
-        actions.append({
-            "action_type": "next_augment",
-            "target_task_id": tid,
-            "reversibility": "가역",
-            "new_next": _augment_next_value(c),
-            "desc": f"next 보강 [{tid}] 표류 배에 '다음 한 수' 후보 자동 기입",
-            "dedup_key": f"gmaide_autoexec|next_augment|{tid}",
-        })
-    return actions
 
 
 # ── 정비 액션 5종 · 탐지(detector) — 전부 '실제 문제 있을 때만' 조건부(억지 발동 금지) ──
@@ -675,23 +628,17 @@ def plan_maintenance_actions() -> list:
 
 def build_auto_actions(rev_caps: list, active: list) -> list:
     """가역 포착 → 크론-실행 가능한 가역 메타행위 목록.
-    ① drift→next_augment(기존) ② 정비 액션 5종(신규 · plan_maintenance_actions)."""
-    return _build_next_augment_actions(rev_caps, active) + plan_maintenance_actions()
+    = 정비 액션 5종(plan_maintenance_actions)."""
+    return plan_maintenance_actions()
 
 
 def log_auto_exec(action_type: str, target: str, before: str, after: str,
                    restore_hint: str | None = None) -> None:
     """자율실행 사후로그 — 관찰 원장에 auto_exec 신호 + 원상복구 근거.
-    next_augment(기존)는 old_next/new_next 표기 그대로 유지 · 정비 액션 5종(신규)은
     before/after 일반 표기(restore_hint 로 원복법 명시)."""
-    if action_type == "next_augment":
-        summary = f"[{target}] 가역 자율실행: {action_type} (표류 배 next 자동보강)"
-        evidence = f"old_next={before!r} new_next_요약={after[:60]!r}"
-        pattern_hint = "가역 메타행위 자율실행 — 원복 가능(ship.aide_auto_exec.old_next)"
-    else:
-        summary = f"[{target}] 가역 자율실행: {action_type} — {after}"
-        evidence = f"before={before!r} after={after!r}"
-        pattern_hint = restore_hint or "가역 메타행위 자율실행 — 원복 가능"
+    summary = f"[{target}] 가역 자율실행: {action_type} — {after}"
+    evidence = f"before={before!r} after={after!r}"
+    pattern_hint = restore_hint or "가역 메타행위 자율실행 — 원복 가능"
     rec = {
         "observed_at": now_str(),
         "source": "gm_aide_auto_exec",
@@ -710,25 +657,6 @@ def log_auto_exec(action_type: str, target: str, before: str, after: str,
 
 
 # ── 정비 액션 5종 · 적용(executor) — 라이브(ON) 전용, 전부 기존 스크립트 재사용·가역 ──
-def _apply_next_augment(a: dict, fresh_queue: list) -> bool:
-    by_tid = {_ship_id(x): x for x in fresh_queue}
-    ship = by_tid.get(a["target_task_id"])
-    if not ship:
-        return False
-    if (ship.get("next") or "").strip():
-        return False  # 재확인(동시성) — 이미 채워졌으면 skip
-    old_next = ship.get("next", "")
-    ship["next"] = a["new_next"]
-    ship["aide_auto_exec"] = {
-        "action": a["action_type"],
-        "at": now_str(),
-        "old_next": old_next,
-        "restore": "next 를 old_next 값으로 되돌리면 원상복구(가역)",
-    }
-    log_auto_exec(a["action_type"], a["target_task_id"], old_next, a["new_next"])
-    return True
-
-
 def _apply_mirror_sync(a: dict) -> bool:
     sys.path.insert(0, str(ROOT / "scripts"))
     import sync_queue_mirror as sq  # type: ignore
@@ -806,8 +734,7 @@ _MAINTENANCE_APPLIERS = {
 def apply_auto_actions(actions: list, archive: list) -> int:
     """라이브(ON) 전용: read-before-write 재로드 후 가역 메타행위 적용 + 사후로그.
     각 액션 실행은 독립 try/except — 하나 실패해도 나머지는 계속 진행.
-    next_augment 는 _queue.json 배치 재로드/재저장(기존 동작 유지) · 정비 액션 5종은
-    각자 자기 산출물 파일만 건드리는 독립 실행(기존 스크립트 재사용)."""
+    정비 액션 5종은 각자 자기 산출물 파일만 건드리는 독립 실행(기존 스크립트 재사용)."""
     if not actions:
         return 0
     applied = 0
@@ -817,14 +744,8 @@ def apply_auto_actions(actions: list, archive: list) -> int:
         for a in actions[:MAX_AUTO_ACTIONS_PER_RUN]:
             atype = a.get("action_type")
             try:
-                if atype == "next_augment":
-                    if fresh_queue is None:
-                        fresh_queue = read_json(QUEUE_ACTIVE, [])
-                    ok = _apply_next_augment(a, fresh_queue)
-                    queue_dirty = queue_dirty or ok
-                else:
-                    applier = _MAINTENANCE_APPLIERS.get(atype)
-                    ok = applier(a) if applier else False
+                applier = _MAINTENANCE_APPLIERS.get(atype)
+                ok = applier(a) if applier else False
             except Exception as e:
                 print(f"  [WARN] 자율실행 실패({atype}·{a.get('target_task_id', '')}): {e}")
                 ok = False
@@ -1055,7 +976,6 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     # ── 포착 ──
     captures = []
     parked_ids: list[str] = []          # ⚓ 정박 선언으로 건너뛴 배 — 숨기지 않고 로그에 남긴다
-    captures += scan_drift(active)
     captures += scan_long_pending(active, parked_out=parked_ids)
     captures += scan_stale_approval(todo_rows)
     if parked_ids:

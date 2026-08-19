@@ -970,8 +970,8 @@ def yesterday_done() -> tuple[list[str], list[dict]]:
                         "clevel": (q.get("clevel") or "").upper(),
                         "task_id": q.get("task_id", ""),
                         "note": q.get("note", ""),
-                        "terminal": q.get("terminal", False),  # 표류 판정 보존
-                        "next": q.get("next", ""),             # 표류 판정 보존
+                        "terminal": q.get("terminal", False),
+                        "next": q.get("next", ""),
                     })
         except Exception:
             pass
@@ -1031,7 +1031,7 @@ def _next_waypoint(item: dict) -> str:
     """
     어제 완료한 배가 남긴 '다음 항로점'(🔗)을 도출.
       - note 의 후속 신호 문장(_FOLLOWUP_RE) 우선 — 어제가 남긴 '다음'.
-      - 없으면 '입항(종결)' (= 표류 아님, 정상 종결).
+      - 없으면 '입항(종결)'.
     depends_on 역참조는 G1 SSOT 완료 항목엔 note 기반이 더 신뢰도 높아 note 우선 사용.
     """
     note = str(item.get("note") or "").strip()
@@ -1043,31 +1043,6 @@ def _next_waypoint(item: dict) -> str:
                 if quote:
                     return quote
     return "입항(종결)"
-
-
-# 종결·후속 마커 — terminal/next 필드 기반 표류 제외 판정용
-_SETTLED_MARKERS_RE = re.compile(r"입항완료|입항 완료|다음 불필요|다음 불요|🏁|루틴")
-
-
-def _is_settled_or_bridged(d: dict) -> bool:
-    """
-    완료 배가 명시적으로 종결/후속 처리됐으면 True → 표류 아님.
-    1) terminal=True       → 명시적 최종 종결
-    2) next에 종결 마커    → 정상 입항(다음 불필요)
-    3) next에 후속 신호    → 🔗 항로점(다음 있음)
-    note 필드만 보던 기존 로직의 next·terminal 누락 버그 보완.
-    """
-    if d.get("terminal") is True:
-        return True
-    nxt = str(d.get("next") or "").strip()
-    if nxt:
-        if _SETTLED_MARKERS_RE.search(nxt):
-            return True
-        if "🔗" in nxt or "다음=" in nxt:
-            return True
-        if _FOLLOWUP_RE.search(nxt):
-            return True
-    return False
 
 
 # ── 08:00 흡수 섹션 (2026-07-18 GM 승인 — GM DM 알림 홍수 축소) ─────────────────
@@ -1235,7 +1210,7 @@ def _fold_board_done_section(board_text: str, secs: dict, max_rows: int = _DONE_
     '총 N건' 요약으로 접는다. 3섹터 분류·건수(상단 요약 표)·진행중/대기중/결재판정은
     100% 그대로 — G1 웹보드는 전량, 08:00 텔레그램은 요약(둘 다 secs 동일 출처).
     """
-    done_all = secs.get("done", []) + secs.get("drift", [])
+    done_all = secs.get("done", [])
     if len(done_all) <= max_rows:
         return board_text  # 접을 필요 없음 — 원문 그대로
 
@@ -1460,7 +1435,7 @@ def _board_summary_lines(secs: dict) -> list[str]:
     out = [
         "🧭 오늘의 항로",
         f"진행·대기 {len(secs.get('today', []))}척 · 🏁 오늘 입항 "
-        f"{len(secs.get('done', [])) + len(secs.get('drift', []))}척",
+        f"{len(secs.get('done', []))}척",
         "상세 목록 → 자율 작업 현황 ▸ 🗂 전체 배",
         _HANGRO_URL,
     ]
@@ -1469,9 +1444,6 @@ def _board_summary_lines(secs: dict) -> list[str]:
     if _mf_n or _mf_od:
         out.append(
             f"🎯 오늘 반드시 끝낼 것 {_mf_n}건" + (f" · 🔴 못 지킴 {_mf_od}건" if _mf_od else ""))
-    # 🌀 표류는 링크 너머로 밀지 않는다 — CLAUDE.md §3-1 "그냥 두지 않는다"(촉구 의무).
-    if secs.get("drift"):
-        out.append(f"🌀 표류 {len(secs['drift'])}건 — 완료인데 '다음'이 없습니다. 👉 다음 정하세요")
     if secs.get("urgent"):
         out.append(f"🔴 마감 임박 {len(secs['urgent'])}건 — 자율현황에서 확인")
     if secs.get("appr"):
@@ -1486,7 +1458,7 @@ def _board_item_count(secs: dict) -> int:
     """항로 3섹터(+긴급·결재) 표시 항목 총합. 0이면 '빈 표' — 발신 금지 판정에 사용
     (자율화 미션 secs['autonomy']은 애초 항로 제외 대상이라 카운트에서 뺀다)."""
     return sum(len(secs.get(k, [])) for k in
-               ("urgent", "today", "appr", "appr_inflight", "done", "drift"))
+               ("urgent", "today", "appr", "appr_inflight", "done"))
 
 
 def _build_appendix_lines() -> list[str]:

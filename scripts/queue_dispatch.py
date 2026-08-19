@@ -101,8 +101,10 @@ def build_ship(args, queue):
     sender = ROLES.get((args.sender or "").lower(), args.sender or "")
     note = args.note or ""
     if getattr(args, "mine", False):
-        # 내가 내 배로 올리는 경우(약속 L20 아침 자가점검) — 전달 마커는 뜻이 없다.
-        note = ("[%s 자가점검 %s] " % (nick, today)) + note
+        # 내가 내 배로 올리는 경우 — 전달 마커는 뜻이 없다. 대신 누가 기다리는지를 남긴다
+        # (배가 되려면 사람이 기다리고 있어야 한다 · 약속 L20 · GM 확정 2026-08-19).
+        waiting = (getattr(args, "waiting", "") or "").strip()
+        note = ("[%s %s · 기다리는 쪽: %s] " % (nick, today, waiting)) + note
     elif sender:
         note = ("[%s → %s 전달 %s] " % (sender, nick, today)) + note
 
@@ -164,7 +166,11 @@ def main() -> int:
     ap.add_argument("--next", default="", help="받는 쪽이 할 다음 한 걸음")
     ap.add_argument("--sender", default="ceo", help="보내는 역할 (기본 ceo)")
     ap.add_argument("--mine", action="store_true",
-                    help="내가 찾은 문제를 내 배로 올린다(약속 L20 아침 자가점검). --to 와 --sender 가 같아도 허용")
+                    help="내가 찾은 문제를 내 배로 올린다. --to 와 --sender 가 같아도 허용. "
+                         "★자가점검에서 그냥 발견한 것은 배로 만들지 않는다 — --waiting 필요(약속 L20)")
+    ap.add_argument("--waiting", default="",
+                    help="누가 이 일을 기다리는지 한 줄(실무진 이름·GM·장애 내용). "
+                         "--mine 으로 내 배를 만들 때 필수 — 기다리는 사람이 없으면 배가 아니라 아침 점검 표에 적는다")
     ap.add_argument("--priority", default="⛴️여객선", help="🛳️크루즈 / ⛴️여객선 / ⛵돛단배")
     ap.add_argument("--module", default="home")
     ap.add_argument("--depends-on", dest="depends_on", default="")
@@ -210,6 +216,16 @@ def main() -> int:
     if args.to.lower() == (args.sender or "").lower() and not args.mine:
         print("! 받는 역할과 보내는 역할이 같습니다.")
         print("  내가 찾은 문제를 내 배로 올리는 거라면 --mine 을 붙이세요(약속 L20 아침 자가점검).")
+        return 2
+
+    # ★자가점검 발견은 배가 되지 않는다 (GM 확정 2026-08-19 · 약속 L20).
+    #   배가 되는 것은 사람이 답을 기다릴 때뿐이다 — 실무진 신고 / GM 지시 / 실제 장애.
+    #   그냥 "고치면 더 좋겠다" 는 아침 점검 표에 적고 GM 이 전달해 주시면 그때 배가 된다.
+    #   문서로만 두면 안 지켜져서 관문에 박는다(약속 L02).
+    if args.mine and not args.waiting.strip():
+        print("! 자가점검에서 찾은 것은 배로 만들지 않습니다 (GM 확정 2026-08-19 · 약속 L20).")
+        print("  아침 점검 표에 한 줄로 적고, GM 이 보시고 전달해 주시면 그때 배로 만드세요.")
+        print('  사람이 답을 기다리는 건이면 누가 기다리는지 적으세요: --waiting "임정은M 회신 대기"')
         return 2
 
     made = {}
