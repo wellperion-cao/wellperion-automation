@@ -612,7 +612,10 @@ def main() -> int:
         #   같은 값이 사진에 이미 있고, 08:00 항로 부록에도 이달 매출·지출이 나간다 — 세 번째였다.
         #   게이트로 끄지 않고 호출을 지운다(약속 L21). 되살릴 일이 생기면 이 커밋을 되돌린다.
         #   build_sales_numbers_text 는 --selftest-numbers 와 되돌림용으로 남겨 둔다(호출부 0).
-        if not args.dry_run:
+        # 밀린 날 판정 근거는 **무인 3방 발송이 성공했을 때만** 남긴다.
+        #   --rooms 로 방 하나만 지정한 검증 실행까지 '그날 보고 끝남'으로 적으면,
+        #   진짜 못 나간 날이 다음 회차 인사말에서 빠진다(검증이 사실을 덮는다).
+        if not args.dry_run and rooms is None:
             record_ok_target(target)
         detail = "DRY-RUN 검증 완료" if args.dry_run else "3방 전송 완료" if rooms is None else f"{rooms} 전송 완료"
         msg = f"DONE: 카톡 {'검증(dry-run)' if args.dry_run else '전송'} 완료 — {detail}"
