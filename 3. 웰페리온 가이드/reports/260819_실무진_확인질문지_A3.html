@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실무진 확인 질문지 — GM 직접 확인용 (2026-08-19)</title>
+<style>
+  @page { size: A3 portrait; margin: 11mm 13mm; }
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+    --red:#9E2A2A; --red-soft:#fbeded;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:15px; line-height:1.5; word-break:keep-all; overflow-wrap:break-word;}
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:13mm; text-align:left;}
+
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:10px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .hd .kick{font-size:13px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:31px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:14.5px; text-align:right; line-height:1.6;}
+  .hd-r .big{font-size:19px; font-weight:800;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:10px 15px; font-size:16.5px; font-weight:600; line-height:1.5; margin-bottom:11px;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  h2{font-size:17px; font-weight:800; margin:0 0 5px; padding:4px 11px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em; display:flex;
+     justify-content:space-between; align-items:baseline;}
+  h2 .cnt{font-size:13px; font-weight:600; opacity:.82;}
+
+  .blk{break-inside:avoid; margin-bottom:11px;}
+  table{width:100%; border-collapse:collapse; font-size:14.5px;}
+  th,td{border:1px solid var(--line); padding:5px 9px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+  td.d{white-space:nowrap; text-align:center; font-weight:700; width:62px;}
+  td.a{width:190px; white-space:nowrap;}
+  .old{color:var(--red);}
+  .mid{color:var(--warm);}
+  .ans{color:var(--dim); font-size:13.5px;}
+  .via{font-size:12.5px; color:var(--dim); font-weight:400;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:8px 13px; font-size:14px; line-height:1.5;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:8px 13px; font-size:14px; line-height:1.5;}
+
+  .foot{margin-top:8px; padding-top:5px; border-top:1px solid var(--line); font-size:12px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff; margin-left:6px;}
+  .printbar button.ghost{background:#fff; color:var(--ink);}
+  .printbar .msg{font-size:13px; color:var(--dim); margin-right:8px;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint">
+  <span class="msg" id="pngMsg"></span>
+  <button class="ghost" id="pngBtn" onclick="savePng()">.png로 저장</button>
+  <button onclick="window.print()">A3로 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">GM 직접 확인용 · 사람별로 묶음</div>
+      <div class="ttl">실무진 확인 질문지</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">2026. 08. 19. 기준</div>
+      <div>답 대기 <b>22건</b> · 사람 <b>6명</b> + 외부 <b>5곳</b></div>
+      <div>작성 <b>AI 웰리</b></div>
+    </div>
+  </div>
+
+  <div class="lede">
+    한 분씩 <em>3~7가지</em>면 끝납니다. 대부분 <em>한 낱말·한 줄</em>이면 되는 것들이고,
+    가장 오래 기다린 것이 <em>22일</em>입니다.
+  </div>
+
+  <!-- 이경연 실장 -->
+  <div class="blk">
+    <h2><span>👤 이경연 실장 <span class="via">— 본인이 아시는 것</span></span><span class="cnt">6가지</span></h2>
+    <table>
+      <tr><th class="d">며칠</th><th>여쭐 것</th><th class="a">이렇게 답해 주시면 됩니다</th></tr>
+      <tr><td class="d old">16일</td><td><b>박원정 회원님</b>을 정회원으로 셀지 단기로 셀지<br><span class="ans">지금 잔여 18일·종료 8/26 — 매출표와 GM님 표가 1명 어긋납니다</span></td><td class="a">“정회원” 또는 “단기”</td></tr>
+      <tr><td class="d old">12일</td><td><b>세탁물 기초재고</b> — 품목 8종의 지금 실제 수량<br><span class="ans">이 값이 없으면 사용량이 계속 ‘-’로만 뜹니다</span></td><td class="a">품목별 숫자 (한 번만)</td></tr>
+      <tr><td class="d mid">5일</td><td><b>체육시설 안전점검(구청)</b> 최근 실시일<br><span class="ans">법정점검 10건 중 유일하게 운영부 소관입니다</span></td><td class="a">날짜 하나</td></tr>
+      <tr><td class="d mid">4일</td><td><b>상품기획 7가지</b>에 지금 실제로 제공 중인 것<br><span class="ans">①락커·어메니티 ②회복·웰니스 ③라운지·F&amp;B ④향·조명·음악 ⑤컨시어지 ⑥유소년 ⑦비품·브랜딩</span></td><td class="a">항목당 한 줄 (아는 것부터)</td></tr>
+      <tr><td class="d">2일</td><td><b>1년 계약 종료일</b>을 손으로 넣으실 때 어떤 날짜를 쓰시는지<br><span class="ans">‘9일 짧게 잡힌다’는 신고가 있었는데 코드는 정상이었습니다 — 관행이면 안내로 풉니다</span></td><td class="a">“시작일 +365” / “+364” 등</td></tr>
+      <tr><td class="d">—</td><td><b>매출보고서 당일 LOSS 칸</b> — 전에는 저절로 채워졌었는지<br><span class="ans">지금은 직접 넣으시는 게 맞습니다. 예전에 자동이었다면 고칠 수 있는지 봅니다</span></td><td class="a">“그랬다” / “원래 손으로”</td></tr>
+    </table>
+  </div>
+
+  <!-- 임정은M -->
+  <div class="blk">
+    <h2><span>👤 임정은M <span class="via">— 이경연 실장님을 통해서만 (GM 지시 2026-08-16)</span></span><span class="cnt">6가지</span></h2>
+    <table>
+      <tr><th class="d">며칠</th><th>여쭐 것</th><th class="a">이렇게 답해 주시면 됩니다</th></tr>
+      <tr><td class="d old">22일</td><td>회원 <b>2분이 원장에 없고</b>, <b>4분은 그만두신 이유</b>가 비어 있습니다</td><td class="a">화면에서 채워 주시면 됩니다</td></tr>
+      <tr><td class="d old">14일</td><td>문의 목록 <b>전화번호 빈칸 2분</b> — 김성은(이명숙님 따님) · 윤소녕(김혜리님 소개)<br><span class="ans">나머지 6분은 메모에 번호가 있어 저희가 채웠습니다</span></td><td class="a">번호 또는 “없음”</td></tr>
+      <tr><td class="d old">14일</td><td>하루 업무 중 <b>가장 시간을 많이 쓰시는 일</b> 두세 가지<br><span class="ans">회원관리 화면에서 불편한데 그냥 넘기신 것도 함께</span></td><td class="a">말씀만 주시면 됩니다</td></tr>
+      <tr><td class="d mid">9일</td><td><b>서장철 회원님</b> — 분류는 ‘재등록’인데 회차가 1로 적혀 있습니다</td><td class="a">맞는 회차 숫자</td></tr>
+      <tr><td class="d mid">8일</td><td>8월 이탈 처리된 <b>10분의 사유</b>가 비어 있습니다<br><span class="ans">앞으로 건은 자동으로 남지만 지난 건은 소급이 안 됩니다</span></td><td class="a">기억나시는 대로</td></tr>
+      <tr><td class="d">7일</td><td><b>신규 문의 6명</b> 연락이력 직접 입력<br><span class="ans">육세라·정새벽·최정호·이도경·익명여(신동아)·맹기훈</span></td><td class="a">화면에서 입력</td></tr>
+    </table>
+    <div class="good" style="margin-top:6px">
+      <b>전하늘 회원님 등록일자(0206년 → 2026년)</b>는 여쭙지 않습니다 — 명백한 오타라 <b>저희가 고칩니다.</b>
+    </div>
+  </div>
+
+  <!-- 이정헌 소장 -->
+  <div class="blk">
+    <h2><span>👤 이정헌 소장 <span class="via">— 시설부</span></span><span class="cnt">3가지</span></h2>
+    <table>
+      <tr><th class="d">며칠</th><th>여쭐 것</th><th class="a">이렇게 답해 주시면 됩니다</th></tr>
+      <tr><td class="d old">22일</td><td><b>법정·정기점검 실시일 9건</b><br><span class="ans">소방 작동점검 · 소방 종합점검 · 승강기 자체점검 · 에스컬레이터 정기검사 · 저수조 청소·수질검사 · 소독(방역) · 방제(해충) · 법정 의무교육(4대) · 소방안전관리자 실무교육</span></td><td class="a">아시는 것부터 “○○ 8/12” 한 줄씩</td></tr>
+      <tr><td class="d old">22일</td><td><b>설비 매뉴얼·점검 업체 연락처</b><br><span class="ans">기계실 6종·AHU·수영장 여과·사우나 온수탱크·승강기·저수조·정화조</span></td><td class="a">급하지 않습니다 — 시간 되실 때</td></tr>
+      <tr><td class="d">1일</td><td>앞으로 <b>업체 오는 일정을 미리</b> 한 줄만 남겨 주실 수 있는지<br><span class="ans">무엇을 · 언제 · 어느 구역 · 어느 업체 — 화면 입력은 안 하셔도 됩니다</span></td><td class="a">“그렇게 하겠다” 한 마디</td></tr>
+    </table>
+  </div>
+
+  <!-- 나머지 3인 -->
+  <div class="blk">
+    <h2><span>👤 최준용M · 윤병현AM · 나우열M</span><span class="cnt">4가지</span></h2>
+    <table>
+      <tr><th class="d">며칠</th><th style="width:96px">누구</th><th>여쭐 것</th><th class="a">답</th></tr>
+      <tr><td class="d mid">8일</td><td>나우열M</td><td><b>강습 종목별 정원</b> — 성인 8종목 · 유소년 8종목<br><span class="ans">이 숫자가 없어 빈자리를 못 세고 모집 판단이 막혀 있습니다</span></td><td class="a">“수영 20명” 한 줄씩</td></tr>
+      <tr><td class="d">3일</td><td>최준용M</td><td><b>정지원 회원님</b> 실제 쓰시는 번호 <span class="ans">(두 개가 겹칩니다)</span></td><td class="a">번호 하나</td></tr>
+      <tr><td class="d">3일</td><td>최준용M</td><td>여자 개인락커 <b>배정 현황</b></td><td class="a">현황 숫자</td></tr>
+      <tr><td class="d">4일</td><td>윤병현AM</td><td>여자 개인락커 <b>통로 폭</b> · 골프·스쿼시 락커 실측<br><span class="ans">리뉴얼 견적 요청서를 이 값 때문에 못 보내고 있습니다</span></td><td class="a">치수</td></tr>
+    </table>
+  </div>
+
+  <!-- 외부 -->
+  <div class="blk">
+    <h2><span>🏢 외부 업체 <span class="via">— 사람이 아니라 업체 회신 대기</span></span><span class="cnt">5곳</span></h2>
+    <table>
+      <tr><th class="d">며칠</th><th style="width:150px">어디</th><th>무엇</th></tr>
+      <tr><td class="d old">20일+</td><td>브로제이</td><td>안정화 5건 처리 결과 · 개선 요청 3건 전달 여부 <span class="ans">— 업체 확인목록 페이지를 먼저 열어보기로 했습니다</span></td></tr>
+      <tr><td class="d mid">9일</td><td>카처(김충만 과장)</td><td>청소장비 견적서 <span class="ans">— 내일 14:00 SUNGBO 미팅과 비교</span></td></tr>
+      <tr><td class="d mid">8일</td><td>탐라전자</td><td>중계기 A/S 결과 <span class="ans">— 교육 재일정이 이것에 걸려 있습니다</span></td></tr>
+      <tr><td class="d">1일</td><td>헬스장비 3사</td><td>견적 회신 <span class="ans">— 테크노짐 쇼룸 방문 완료 · 내일 11:00 매트릭스 미팅</span></td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>답을 받으시면 저희가 하는 일</b> — 받은 값을 각 화면·원장에 넣고, 그 건을 닫고,
+    다음 날 정말 반영됐는지 다시 확인합니다. <b>GM님이 같은 것을 두 번 물으실 일이 없게</b> 하는 것이 이 표의 목적입니다.
+  </div>
+
+  <div class="foot">
+    실측 2026-08-19 · 열린 업무 96건을 전수로 훑어 <b>사람의 답이 있어야만 닫히는 것</b> 22건을 골라 사람별로 묶었습니다.
+    ‘며칠’은 그 건이 뜬 뒤 지난 날수입니다. 임정은M 건은 이경연 실장님을 통해서만 여쭙니다(GM 지시 2026-08-16).
+    시로·시뽀 담당 영역은 나우열M 관할이라 이 표에 넣지 않았습니다. · 작성 AI 웰리
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+function savePng(){
+  var btn = document.getElementById('pngBtn');
+  var msg = document.getElementById('pngMsg');
+  if (typeof html2canvas !== 'function'){
+    msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+    return;
+  }
+  btn.disabled = true;
+  msg.textContent = '이미지를 만드는 중입니다…';
+  html2canvas(document.querySelector('.sheet'), {
+    scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+  }).then(function(canvas){
+    var a = document.createElement('a');
+    a.download = '실무진_확인질문지_20260819.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    msg.textContent = '저장했습니다.';
+    btn.disabled = false;
+    setTimeout(function(){ msg.textContent = ''; }, 4000);
+  }).catch(function(e){
+    msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>

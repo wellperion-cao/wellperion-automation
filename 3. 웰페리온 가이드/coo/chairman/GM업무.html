@@ -550,6 +550,21 @@
       elGmSum.innerHTML = ''; return;
     }
     gmNoteLines = {};
+    // 끝난 건은 아래로 내린다 (GM 지시 2026-08-19 "완료된 건이 있으면 아래로 내리는 거 아냐?").
+    // 완료 판정 = 상태가 '완료'이거나, 체크리스트가 있고 전부 체크된 것. 그 외에는 원래 순서 그대로다
+    // (안정 정렬 — 번호가 매일 뒤바뀌면 GM 이 "몇 번"으로 부르실 수 없다).
+    (function () {
+      function isDone(o) {
+        if (String(o.status || '').trim() === '완료') return true;
+        var t = extractTodos(o.note || '');
+        return t.length > 0 && t.every(function (x) {
+          var k = chkKey(o.id, x.idx, x.text);
+          return Object.prototype.hasOwnProperty.call(_gmCheckBoard, k) ? !!_gmCheckBoard[k] : !!x.checked;
+        });
+      }
+      items.forEach(function (o, i) { o._ord = i; o._done = isDone(o) ? 1 : 0; });
+      items.sort(function (a, b) { return (a._done - b._done) || (a._ord - b._ord); });
+    })();
     elGmGrid.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
       var sp = splitNote(it.note);
