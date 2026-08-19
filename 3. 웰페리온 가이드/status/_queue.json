@@ -1476,11 +1476,11 @@
     "task_id": "CTO-2026-08-19-강습부-접수건이-부서장-방으로-안-간다-22-30-",
     "clevel": "cto",
     "title": "[시토] 강습부 접수건이 ★부서장 방으로 안 간다 — 22:30 하루 정리 라우팅 (웰리 실측 2026-08-19)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-08-19",
     "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-08-19] GM 지시(2026-08-18): '강습부건은 부서장방에, 시설부/운영부/지원부건은 ★운영+시설+지원+주차 방에.'\n\n■ 실측 2026-08-19\n22:30 하루 정리(report_stream_2b_reception.build_digest → daily_scheduler run_daily_digest, KAKAO_GO_STREAM2=True)가 기한초과 목록을 ★운영+시설+지원+주차 방 **한 곳으로만** 보낸다. 부서별로 묶여 있긴 한데 방이 하나다.\n그래서 P.T팀 2건(RECEPTION-94 10일·RECEPTION-111 3일)·수영팀 1건(RECEPTION-107 4일)이 강습 담당이 안 보는 방에 섞여 나간다. 근거 = logs/kakao_sent-2026-08-18.log 22:32 발신 원문.\n\n■ 필요한 것\n같은 목록을 부서로 갈라 강습부(P.T팀·수영팀) 몫만 ★부서장 방으로 따로 보낸다. 나머지는 지금 그대로.\n방 별칭 정본 = scripts/kakao_rooms.json. 발신 관문은 kakao_report_sender 하나만 쓴다(약속 L21) — 새 발신 스크립트 만들지 말 것.\n\n■ 하지 말 것\n전체 목록을 ★부서장 방에도 통째로 보내면 같은 건이 두 방에 두 번 간다. 강습부 몫만 갈라 보낸다.\n\n■ 참고\n웰리 배692 에 오늘 실측·판단 전문이 있다.",
+    "note": "[웰리 → 시토 전달 2026-08-19] GM 지시(2026-08-18): '강습부건은 부서장방에, 시설부/운영부/지원부건은 ★운영+시설+지원+주차 방에.'\n\n■ 실측 2026-08-19\n22:30 하루 정리(report_stream_2b_reception.build_digest → daily_scheduler run_daily_digest, KAKAO_GO_STREAM2=True)가 기한초과 목록을 ★운영+시설+지원+주차 방 **한 곳으로만** 보낸다. 부서별로 묶여 있긴 한데 방이 하나다.\n그래서 P.T팀 2건(RECEPTION-94 10일·RECEPTION-111 3일)·수영팀 1건(RECEPTION-107 4일)이 강습 담당이 안 보는 방에 섞여 나간다. 근거 = logs/kakao_sent-2026-08-18.log 22:32 발신 원문.\n\n■ 필요한 것\n같은 목록을 부서로 갈라 강습부(P.T팀·수영팀) 몫만 ★부서장 방으로 따로 보낸다. 나머지는 지금 그대로.\n방 별칭 정본 = scripts/kakao_rooms.json. 발신 관문은 kakao_report_sender 하나만 쓴다(약속 L21) — 새 발신 스크립트 만들지 말 것.\n\n■ 하지 말 것\n전체 목록을 ★부서장 방에도 통째로 보내면 같은 건이 두 방에 두 번 간다. 강습부 몫만 갈라 보낸다.\n\n■ 참고\n웰리 배692 에 오늘 실측·판단 전문이 있다.\n\n■ 완료 검증 2026-08-20 (시토)\n- 코드: report_stream_2b_reception.build_lesson_digest + _aging_block(scope) · daily_scheduler run_daily_digest 분기 발송. 커밋 dde56dd8c(2026-08-19 20:05) 푸시 완료(origin/master 포함 확인).\n- 실측 대조 2026-08-20: 기한초과 전체 26건 = ops 23건 + lesson 3건. 합이 정확히 일치 — 중복 발신 0·누락 0.\n- lesson 몫 3건 = RECEPTION-94(P.T팀 12일)·RECEPTION-111(P.T팀 5일)·RECEPTION-107(수영팀 6일). 배 note 가 지목한 바로 그 3건.\n- 발신 본문 실물 확인: 텔레그램 업무보고방(8254867551)으로 테스트 발신 ok=True.\n- 08-19 22:30 에 안 나간 이유 = 그날 커밋(20:05) 시점에 스케줄러 프로세스가 이미 떠 있어 옛 코드로 돌았다. 프로세스는 08-20 05:56 재기동돼 오늘 22:30 부터 새 코드로 돈다.",
     "next": "22:30 하루 정리에서 강습부(P.T팀·수영팀) 접수건만 ★부서장 방으로 분기 발송",
     "depends_on": "",
     "ship_no": 10899,
@@ -1491,7 +1491,7 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-08-19"
+    "updated_at": "2026-08-20"
   },
   {
     "task_id": "CTO-2026-08-19-예약작업-26개가-실패해도-성공-으로-기록된다-숨김",
