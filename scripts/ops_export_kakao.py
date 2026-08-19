@@ -45,7 +45,7 @@ except Exception:
     pass
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_ROOM = "★ 운영부"
+DEFAULT_ROOM = "★운영부"
 ROOM_DIR_BASE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
 HOME = Path.home()
 SEARCH_DIRS = [
@@ -58,7 +58,7 @@ ENV_PATH = ROOT / "telegram_bot" / ".env"
 
 
 def _room_paths(room: str) -> "tuple[Path, str]":
-    """방 제목(예: '★ 운영부')에서 (월별 아카이브 폴더, 창제목 매칭 문자열) 파생.
+    """방 제목(예: '★운영부')에서 (월별 아카이브 폴더, 창제목 매칭 문자열) 파생.
     폴더=공백만 제거("★운영부", 기존 관례) · 매칭문자열=★·공백 모두 제거("운영부",
     카톡 창 제목에 포함되는 문자열). 배536(2026-08-11) — 방 하드코딩을 인자화."""
     dir_name = room.replace(" ", "")

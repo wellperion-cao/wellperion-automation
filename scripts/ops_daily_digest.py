@@ -44,7 +44,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 # ── 경로 상수 (gitignore된 아카이브 하위 전용 — 절대 status/·docs/ 등 추적경로 금지) ──
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_ROOM = "★ 운영부"
+DEFAULT_ROOM = "★운영부"
 ROOM_DIR_BASE = ROOT / "1. AI자료_아카이브" / "11_카카오톡"
 # 아래 3개는 기본(★운영부) 값 — run(room=...)이 room 인자를 받으면 실행 시점에 이 전역을
 # 해당 방 폴더로 재바인딩한다(배536 2026-08-11 — "ops_daily_digest 의 방 디렉터리만 갈아

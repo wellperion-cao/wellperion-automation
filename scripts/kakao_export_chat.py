@@ -15,8 +15,8 @@
 에만. 이 스크립트·산출물은 커밋하지 않는다. 발송·요약은 범위 밖(ops_daily_digest.py).
 
 사용법:
-  python scripts/kakao_export_chat.py                    # '★ 운영부' → 오늘자 auto export
-  python scripts/kakao_export_chat.py --room "★ 운영부"  # 방 지정
+  python scripts/kakao_export_chat.py                    # '★운영부' → 오늘자 auto export
+  python scripts/kakao_export_chat.py --room "★운영부"  # 방 지정
 """
 from __future__ import annotations
 
@@ -173,7 +173,7 @@ def main() -> int:
         print("FAILED: Windows 전용")
         return 1
     ap = argparse.ArgumentParser(description="★운영부 카톡 대화 무인 내보내기")
-    ap.add_argument("--room", default="★ 운영부", help="카톡 방 제목(기본 '★ 운영부')")
+    ap.add_argument("--room", default="★운영부", help="카톡 방 제목(기본 '★운영부')")
     ap.add_argument("--out", default=None, help="저장 전체경로 직접 지정(미지정 시 아카이브 오늘자)")
     ap.add_argument("--date", default=None, help="파일명 날짜 YYYYMMDD(기본 오늘)")
     # 방 이름 별칭 정본 = scripts/kakao_rooms.json 의 room_aliases (여기서 복제하지 않는다).

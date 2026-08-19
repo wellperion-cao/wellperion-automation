@@ -4,7 +4,7 @@
   "sends": [
     {
       "name": "09:30 매출보고 이미지 4방",
-      "room": "차의주 회장님 · ★부서장 · ★관리부 · ★운영부 (scripts/kakao_rooms.json rooms[] 순서대로)",
+      "room": "차의주 회장님 · ★부서장 · ★운영부 (scripts/kakao_rooms.json rooms[] 순서대로)",
       "when": "매일 09:30",
       "trigger": "Wellperion-Kakao-Sales-Report-0930 (Ready) → launchers/kakao_auto_daily_report_hidden.vbs",
       "entry": "scripts/kakao_auto_daily_report.py",
@@ -48,7 +48,7 @@
     },
     {
       "name": "09:30 매출+운영+인사 현황(스트림#3) — 카카오 비활성",
-      "room": "차의주 회장님 · ★관리부 · ★운영부 (활성화되면 kakao_rooms.json 방 전체)",
+      "room": "차의주 회장님 · ★부서장 · ★운영부 (활성화되면 kakao_rooms.json 방 전체)",
       "when": "매일 09:30(텔레그램만 실발송 · 카카오는 코드상 꺼짐)",
       "trigger": "WellperionDailyScheduler(상주 프로세스) 내부 잡 stream_3_mgmt_0930",
       "entry": "telegram_bot/daily_scheduler.py run_stream_3_mgmt() → scripts/report_stream_3_mgmt.py (kakao_go=False로 하드코딩 호출)",
@@ -150,7 +150,7 @@
   "rooms_unregistered": [],
   "notes": [
     "[시토 정정 2026-08-08] 릴레이 목적지가 로그(★운영부)와 코드(★중간관리자)로 어긋나 보이는 것은 드리프트가 아니다 — 오늘 09:5x 커밋 a36177094 로 방을 ★중간관리자 한 곳으로 바꿨고, 로그는 그 이전 회차다. 다음 07:30 회차부터 ★중간관리자로만 나간다.",
-    "등록부(kakao_rooms.json rooms[])에는 09:30 매출보고 대상이 4방(차의주 회장님·★부서장·★관리부·★운영부)으로 되어 있으나, kakao_auto_daily_report.py·send_ops_digest.py·telegram_bot/bot.py 등 여러 코드 주석·docstring은 여전히 '3방'이라고 적혀 있음(★부서장이 2026-08-03 배314로 추가된 뒤 문서만 안 고쳐진 것으로 보임) — 기능은 rooms[]를 동적으로 읽어 4방 모두 정상 발송되므로 실발송 오류는 아니고 주석 드리프트만 있음.",
+    "[해소 2026-08-19] 09:30 매출보고 대상이 4방과 3방으로 어긋나 보이던 주석 드리프트는 끝났다 — GM 지시로 ★관리부가 ★운영+시설+지원+주차 방에 합병돼 없어졌고, 매출보고 대상을 3방(차의주 회장님·★부서장·★운영부)으로 줄였다. 코드 주석의 '3방' 표기가 이제 실제와 맞는다. 발송 코드는 종전대로 rooms[]를 읽으므로 목록 한 곳만 고치면 전부 따라온다.",
     "최근 3일 로그(08-06~08-08)에는 등록된 파이프라인 외에도 '★운영부'·'★중간관리자'·'김남욱'(GM 개인방)·'희만이☆' 방으로 나간 다수의 단발성 메시지가 있음(공지 인쇄 안내, 오발신 정정·사과, GM 미팅 브리핑, AI 소개 등). 이들은 대응하는 등록 스크립트/예약작업을 찾지 못했고 kakao_report_sender.py CLI를 직접 호출한 수동/1회성 발신으로 보임 — 이번 조사는 요청 범위(등록된 자동 발송)에 집중했고 이 단발성 발신들은 sends[] 목록에 넣지 않았음.",
     "kakao_summary_card_auto.py(07:30 요약카드)는 완전히 꺼진 죽은 파이프라인 — 삭제 후보로 별도 검토 필요.",
     "report_stream_3_mgmt.py 의 카카오 경로(3~4방 매출+운영+인사 텍스트)는 코드에 kakao_go=False로 하드코딩돼 있어 GM go 이전 상태 — 텔레그램만 실제로 나가고 있음.",
