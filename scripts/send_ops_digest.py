@@ -926,7 +926,13 @@ _OVD_LEADER: dict = {
     "운영부": "이경연 실장",
 }
 _OVD_HEARTBEAT_ID = "overdue-reception-alert"
-_OVD_CAT_EXCLUDE = "분실물 접수"
+# 이 알림에서 빼는 분류.
+#  · 분실물 접수 = 보관 성격(30일 주기)이라 매일 재촉할 일이 아니다.
+#  · 직원·강사 칭찬합니다 = 기한(SLA)이 없는 분류다(정본 = GAS REG_CATEGORIES slaHours=null).
+#    2026-08-20 실측에서 칭찬 1건(RECEPTION-114)이 「마무리 부탁드립니다」 목록에 섞여 나갔다 —
+#    고맙다는 말을 밀린 일처럼 재촉한 셈이다. 22:30 적체 리마인드(_aging_block)는 이미 빼고
+#    있었는데 이 아침 알림만 안 빼고 있었다.
+_OVD_CAT_EXCLUDE = {"분실물 접수", "직원·강사 칭찬합니다"}
 
 
 def _ovd_room_for(dept: str) -> str:
@@ -1070,7 +1076,7 @@ def send_overdue_reception_alerts() -> None:
         return
     eligible = [r for r in rows
                 if str(r.get("status", "")) not in {"완료"}
-                and str(r.get("category") or "").strip() != _OVD_CAT_EXCLUDE]
+                and str(r.get("category") or "").strip() not in _OVD_CAT_EXCLUDE]
     sent_any = False
     for room in (_OVD_ROOM_LESSON, _OVD_ROOM_OPS):
         room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
