@@ -1,7 +1,7 @@
 {
   "_doc": "전사 일정 SSOT — 날짜가 정해진 반복 의무·이벤트(정기점검·계약갱신·정기행사 등)의 단일 출처. 각 부서 체계 페이지·전체 마스터가 렌더. type으로 일정 종류 구분(현재=정기점검). 경계: G1 항로=수시 할일 / 회원 예약달력=투어·상담 / 이 파일=반복 일정. 기한 도래분만 업무·결재로 자동 배(gate.auto_workapproval·기본OFF). 실제 날짜는 지어내지 않는다(미확인=빈칸+cycle_confirmed=false).",
   "정본": "status/schedule_ssot.json (전사 일정 SSOT · COO 시우 소유 · 2026-07-10 GM 승인)",
-  "updated_at": "2026-08-19T18:25:06+09:00",
+  "updated_at": "2026-08-19T18:41:14+09:00",
   "types": {
     "정기점검": {
       "label": "정기 안전·법정 점검",
@@ -1970,6 +1970,48 @@
       "assignee": "김남욱GM",
       "next_due": "2026-08-19",
       "note": "헬스장 장비 도입 비딩 건(회장님 보고 d20) 실물 확인. 장소=학동로 311. 소요 약 1시간 30분. 확인 내용은 3사 비교표에 반영 예정."
+    },
+    {
+      "id": "evt-20260819-블루캅-미팅",
+      "type": "이벤트",
+      "name": "블루캅 미팅 — CCTV 전체 교체 조건 확정",
+      "category": "general",
+      "dept": "시설부",
+      "cycle": "",
+      "cycle_confirmed": false,
+      "period_months": null,
+      "legal_basis": "",
+      "assignee": "김남욱GM · 블루캅사업부 김은경 부장",
+      "last_done": "2026-08-19",
+      "next_due": "2026-08-19",
+      "time": "14:00",
+      "evidence": "미팅 완료 2026-08-19 14:00 · 조건 확정",
+      "applies": "있음",
+      "note": "임대 5년·공사비 0·월 75만원. 93대(88교체+5신설)·NVR16채널 6대·HDD 8TB 6대·27인치 6대+랙1·시설부 사무실·저장 30일. 공사 약 10일 휴관일 포함. 보안은 ADT캡스로 9월부 계약 변경 필요. 8월 말일 계약 예정. 5년 후 소유권 미확인. 정리본=reports/260819_CCTV교체_블루캅계약_A3.html",
+      "vendor_id": "vnd_20260819_bluecop",
+      "repeat": "",
+      "source": "gm_2026-08-19"
+    },
+    {
+      "id": "evt-20260831-cctv-계약",
+      "type": "이벤트",
+      "name": "CCTV·보안 계약 체결 — 블루캅 / ADT캡스",
+      "category": "general",
+      "dept": "시설부",
+      "cycle": "",
+      "cycle_confirmed": false,
+      "period_months": null,
+      "legal_basis": "",
+      "assignee": "김남욱GM",
+      "last_done": "",
+      "next_due": "2026-08-31",
+      "time": "",
+      "evidence": "",
+      "applies": "있음",
+      "note": "CCTV 임대 5년(블루캅) + 보안 계약 9월부 ADT캡스 변경, 두 건 한 번에. ★계약 전 반드시 정할 것 = 5년 만료 후 장비 소유권. GM·대표 결재 필요.",
+      "vendor_id": "vnd_20260819_bluecop",
+      "repeat": "",
+      "source": "gm_2026-08-19"
     }
   ]
 }

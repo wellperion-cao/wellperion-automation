@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CCTV 전체 교체 — 블루캅 계약 조건 확정 · 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:12.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:86px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:11.5px; font-weight:700; color:var(--navy); padding:4px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:40px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:16.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.8px; line-height:1.5; opacity:.88; margin-top:4px; }
+
+  /* 밴드 */
+  .alert{ margin-top:6px; background:#EAF3EE; border:1.5px solid var(--good); color:var(--good);
+    padding:7px 15px; font-size:13.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#1B4A38; }
+
+  /* ③ 계약 조건표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:4px 10px; font-size:13.4px; line-height:1.4; vertical-align:top; }
+  thead th{ height:38px; background:var(--navy); color:#fff; font-weight:700; font-size:15px; border-color:#2A4763;
+    vertical-align:middle; }
+  thead th.k{ background:#0E2439; }
+  thead th .sub{ display:block; font-size:11.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:13.4px; color:var(--navy); vertical-align:middle; }
+  tr.grp td{ height:21px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:13px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:12.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:15px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12.6px; line-height:1.45; padding-left:16px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:11.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:11px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:11px; font-weight:700;
+    color:#fff; background:var(--navy); width:15px; height:15px; line-height:15px; text-align:center; border-radius:2px; top:3px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:22px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+  .box.risk{ border-top-color:var(--bad); }
+  .box.risk h3{ color:var(--bad); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:9px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:24px; font-size:11.4px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>CCTV 전체 교체 — 블루캅 계약 조건 확정 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">CCTV 전체 교체 — 블루캅 계약 조건 확정</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 미팅 <b>김남욱 GM</b><br>
+      작성일 <b>2026. 08. 19.</b> · 문서번호 <b>WP-GM-260819-02</b><br>
+      업체 <b>블루캅사업부 김은경 부장</b> · 미팅 <b>2026. 08. 19. 14:00</b> · 금액 <b>VAT 별도</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">블루캅과 CCTV 교체 계약 진행을 승인해 주십시오 — 8월 말일 계약.</div>
+        <div class="d">임대 5년 · 공사비 없음 · 월 750,000원. 93대 전면 교체(기존 88대 + 신설 5대)에 모니터 6대와 랙까지 포함된 조건입니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">9월부 보안(무인경비) 계약을 ADT캡스로 변경하는 것을 승인해 주십시오.</div>
+        <div class="d">블루캅 측이 보안까지 ADT캡스로 진행하게 되어, 우리 계약도 9월부로 변경이 필요하다는 안내를 받았습니다. CCTV 계약과 함께 8월 말일에 처리합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 밴드 -->
+  <div class="alert">
+    6월 견적보다 5년 총액이 500만원 낮아졌습니다 — 월 80만 → <b>75만</b>, 초기 공사비 200만 → <b>0원</b>.
+    <span>&nbsp;/ 6월 비교 당시 3사 중 사양이 가장 근접했던 곳이 블루캅이었고(93대·모니터 6대·5년), 그때 지적했던 <b>공사비 부담이 사라졌습니다.</b></span>
+  </div>
+
+  <!-- ③ 계약 조건표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:180px"><col style="width:430px"><col style="width:180px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">항목</th>
+        <th>확정 조건<span class="sub">2026-08-19 미팅에서 확인</span></th>
+        <th>6월 견적 대비</th>
+        <th>계약서에서 확인할 것</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">비 용</td></tr>
+      <tr>
+        <td class="k">계약 형태 · 기간</td>
+        <td>임대 · <b>5년</b></td>
+        <td class="ctr">동일</td>
+        <td>중도 해지 조건 · 위약금</td>
+      </tr>
+      <tr>
+        <td class="k">초기 공사비</td>
+        <td class="good"><b>0 원</b> — 없음</td>
+        <td class="ctr good">2,000,000 원 &rarr; <b>0</b></td>
+        <td>설치·배선·철거 비용이 정말 전부 포함인지</td>
+      </tr>
+      <tr>
+        <td class="k">월 이용료</td>
+        <td class="strong">750,000 원</td>
+        <td class="ctr good">800,000 &rarr; <b>750,000</b></td>
+        <td>인상 조항 유무 · 유지보수 포함 범위</td>
+      </tr>
+      <tr class="sum">
+        <td class="k">5년 총액</td>
+        <td class="strong">45,000,000 원 <span class="est">(750,000 × 60개월 · VAT 별도)</span></td>
+        <td class="ctr good"><b>5,000,000 원 절감</b></td>
+        <td>—</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">설 치 사 양</td></tr>
+      <tr>
+        <td class="k">카메라</td>
+        <td><b>93대</b> — 기존 88대 교체 + <b>신설 5대</b>(야외테라스 2 · 야외담장 3)</td>
+        <td class="ctr">동일</td>
+        <td>화소·기종 · 신설 5대 위치 도면</td>
+      </tr>
+      <tr>
+        <td class="k">저장장치</td>
+        <td>NVR <b>16채널 6대</b> · HDD <b>8TB 6대</b></td>
+        <td class="ctr">동일</td>
+        <td>고장 시 교체 주체·소요 시간</td>
+      </tr>
+      <tr>
+        <td class="k">모니터 · 랙</td>
+        <td><b>27인치 6대</b> + 랙 1개</td>
+        <td class="ctr good">24인치 &rarr; <b>27인치</b></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td class="k">설치 위치</td>
+        <td><b>시설부 사무실</b></td>
+        <td class="ctr">신규 확정</td>
+        <td>전원·통신 여건, 소음</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">운 영 · 일 정</td></tr>
+      <tr>
+        <td class="k">영상 저장기간</td>
+        <td><b>30일</b> 설정</td>
+        <td class="ctr">신규 확정</td>
+        <td>법정 기준 충족 여부 · 용량 여유</td>
+      </tr>
+      <tr>
+        <td class="k">공사 기간</td>
+        <td><b>약 10일</b> · <b>휴관일 포함</b>해서 진행 <span class="est">(일정은 실무진 조율)</span></td>
+        <td class="ctr">신규 확정</td>
+        <td>일자별 작업 구역 · 영업 중 촬영 공백 구간</td>
+      </tr>
+      <tr>
+        <td class="k">보안(무인경비)</td>
+        <td>블루캅 측이 보안까지 <b>ADT캡스로 진행</b> — 우리 계약도 <b>9월부로 변경 필요</b></td>
+        <td class="ctr">신규 사항</td>
+        <td class="warn">계약 주체가 누구인지 · 기존 조건 승계 여부</td>
+      </tr>
+      <tr class="sum">
+        <td class="k">계약 시점</td>
+        <td class="strong">2026년 8월 말일 계약 진행</td>
+        <td class="ctr">—</td>
+        <td class="strong">CCTV·보안 두 건을 한 번에</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">아 직 확 인 안 된 것</td></tr>
+      <tr>
+        <td class="k bad">5년 후 소유권</td>
+        <td class="bad" colspan="3"><b>미확인 — 계약 전에 반드시 정해야 합니다.</b> 5년 뒤 장비가 우리 것이 되는지, 반납인지, 재계약인지에 따라 실제 부담이 달라집니다. 6월 비교 때도 블루캅만 이 항목이 미기재였습니다.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box risk">
+      <h3>계약 전 확인</h3>
+      <ul>
+        <li class="r1"><b>5년 만료 후 장비 소유권</b> — 우리 것이 되는지 명문화. 이 한 줄이 5년 총비용을 뒤집습니다.</li>
+        <li class="r1"><b>보안 계약 변경</b>이 왜 필요한지, 조건은 그대로인지 — 안내만 받았고 조건은 아직 못 봤습니다.</li>
+        <li class="r2"><b>공사 10일 중 촬영 공백</b> — 구역별로 언제 비는지. 사고가 나면 그 구간 영상이 없습니다.</li>
+        <li class="r2"><b>월 이용료 인상 조항</b> — 5년 동안 75만원이 유지되는지.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">계약서 초안 수령 — 위 「계약서에서 확인할 것」 항목이 들어갔는지 대조</li>
+        <li class="n"><b>소유권 조항</b>을 넣어 달라고 요청 — 계약서 서명 전에</li>
+        <li class="n">보안 계약 변경건 조건서 별도 수령 — CCTV와 묶여 넘어가지 않게</li>
+        <li class="n">공사 일정을 실무진과 조율 — 휴관일 우선 배치, 구역별 순서 확정</li>
+        <li class="n">8월 말일 계약 · 9월 공사 착수 (10일 소요 기준)</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li>조건 자체는 <b>6월보다 확실히 좋아졌습니다.</b> 공사비가 빠지고 월 5만원이 내려가 5년에 500만원 차이입니다.</li>
+        <li>다만 <b>소유권 한 줄이 남았습니다.</b> 5년 뒤 반납이면 4,500만원을 쓰고 자산은 0입니다 — 계약 전에 정하는 것이 유일한 기회입니다.</li>
+        <li>보안 계약 변경은 <b>CCTV와 분리해서</b> 보시길 권합니다. 같은 날 처리하더라도 조건은 따로 확인해야 합니다.</li>
+        <li>공사는 <b>휴관일에 최대한 몰아</b> 주십시오. 회원이 계신 동안 사다리 작업이 도는 것은 그 자체가 위험입니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>출처</b> — 2026-08-19 14:00 블루캅사업부 김은경 부장 미팅에서 GM 이 확인한 조건입니다. <b>6월 견적 대비</b> 칸은 2026-06-19 블루캅 견적(초기 200만·월 80만·24인치 6대)과 대조한 값입니다. 앞 단계 문서 = 「노후 CCTV 교체 3사 견적 비교」(WP-GM-260813-01).</div>
+    <div><b>산출 근거</b> — 5년 총액 45,000,000원 = 월 750,000원 × 60개월. 초기 공사비 0원. 전 금액 VAT 별도. 절감액 5,000,000원 = 6월 견적 5년 총액 50,000,000원(200만 + 80만×60) − 45,000,000원.</div>
+    <div><b>확인하지 못한 것</b> — 5년 만료 후 장비 소유권 · 보안 계약 변경의 구체 조건과 계약 주체 · 월 이용료 인상 조항 · 중도 해지 위약금. 이 문서에 <b>추정치는 없습니다</b> — 확인 안 된 것은 비워 두었습니다. <b>차기 보고</b> — 계약서 수령 후 이 문서를 갱신합니다(같은 문서번호 유지).</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260819_CCTV교체_블루캅계약_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
