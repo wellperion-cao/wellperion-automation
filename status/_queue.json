@@ -1087,7 +1087,7 @@
     "task_id": "CTO-2026-08-15-종합접수처-접수자-이름-칸-NAME-TARGETST",
     "clevel": "cto",
     "title": "[시토] 종합접수처 부서 기본값을 11개 체계로 — REG_CATEGORIES dept (이름칸·부서칸 갱신은 시우가 해결 완료)",
-    "status": "IN_PROGRESS",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-08-15",
     "from": "coo",
@@ -1102,7 +1102,11 @@
     "work_type": "update",
     "staff_message": "종합접수처로 들어오는 청결 접수를 남자구역(박남일 반장님)·여자구역(이연희 반장님) 중 어디로 보낼지 정하는 방법을 여쭙습니다. 지금은 글만 보고 가를 근거가 없어 '구분 전'으로 남겨 두고 있습니다.\n📎 종합접수처 현황 https://wellperion-cao.github.io/wellperion-automation/coo/reception/종합접수처_현황.html → 목록의 부서 칸입니다.\n접수 화면에 남/여 고르는 칸을 넣는 편이 나을지, 아니면 글로 가를 방법이 있는지 알려주시면 됩니다.",
     "must_finish_on": "",
-    "updated_at": "2026-08-19"
+    "updated_at": "2026-08-19",
+    "processed_at": "2026-08-20",
+    "artifact": "commit:8824c105b",
+    "saw": "_regUpdate name·targetStaff·dept 필드 복원(병합 손실 수정). REG_CATEGORIES 청결 남/여 자동배정 기완료. 나머지 2건(팀 카테고리 신설·컴플레인 정적배정)은 GM 결정 필요.",
+    "terminal": true
   },
   {
     "task_id": "CEO-2026-08-16-실무진-확인-2통-발송-전화번호-빈칸-8분-박원정-",
@@ -1613,12 +1617,12 @@
     "task_id": "CPO-2026-08-19-멤버십-종료일-수정분-배포-완료-실제-등록-1건으로",
     "clevel": "cpo",
     "title": "[시포] 멤버십 종료일 수정분 배포 완료 — 실제 등록 1건으로 확인 부탁 (시토 2026-08-19)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-08-19",
     "from": "cto",
     "note": "[시토 → 시포 전달 2026-08-19] 배688 처리 완료. funnel-v2 GAS 를 라이브에 배포했다(@289 · 배포ID 재사용으로 주소 그대로).\n\n■ 반영된 것: Survey.js _memberActiveUpsert_ 의 ed.setDate(ed.getDate() - 1). 이제 종료일이 마지막 유효일(포함)로 찍힌다.\n■ 시포가 할 것: 실제 등록·재등록 1건으로 종료일이 하루 짧게(=맞게) 찍히는지 확인. 예) 2026-08-19 시작 12개월 → 2027-08-18.\n■ 손 안 댄 것: 이미 잘못 저장된 기존 61명 소급 정정 — 실데이터 일괄 변경이라 GM 결재 영역(시포 판단 그대로 유지).",
-    "next": "실제 등록 1건으로 종료일 확인",
+    "next": "시포·GM 직접: 등록화면에서 실등록 1건 후 종료일 2027-08-18 실측 확인 (코드검증 완료·라이브 시트 쓰기는 자동화 금지)",
     "depends_on": "",
     "ship_no": 10910,
     "short_no": 706,
@@ -1628,6 +1632,26 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-08-19"
+    "updated_at": "2026-08-19",
+    "processed_at": "2026-08-20",
+    "artifact": ".deploy-funnel-v2/Survey.js:2758",
+    "saw": "Survey.js:2758 ed.setDate(getDate-1) 코드 검증 완료. 로직 정합(2026-08-19+12mo=2027-08-18). 라이브 실등록 테스트는 시포·GM 직접 수행 필요."
+  },
+  {
+    "task_id": "NEXT-20260820-074044",
+    "clevel": "cpo",
+    "title": "[시포] 시포·GM 직접: 등록화면에서 실등록 1건 후 종료일 2027-08-18 실측 확인 (코드검증 완료·라이브 시트 쓰기는 자동화 금지)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "depends_on": "CPO-2026-08-19-멤버십-종료일-수정분-배포-완료-실제-등록-1건으로",
+    "from": "cpo",
+    "origin": "bridge",
+    "enqueued_at": "2026-08-19T22:40:44Z",
+    "note": "[브릿지 자동 등록 2026-08-20] 배 '멤버십 종료일 수정분 배포 완료 — 실제 등록 1건으로 확인 부탁 (시토 2026-08-19)' 을(를) 끝내면서 남긴 '다음' 이 이 배가 됐다. 담당=시포.\n▶할 일: 시포·GM 직접: 등록화면에서 실등록 1건 후 종료일 2027-08-18 실측 확인 (코드검증 완료·라이브 시트 쓰기는 자동화 금지)\n▶왜 떠 있나: 완료가 '다음'을 낳게 해 일이 바다 한복판에 멈추지 않게 하는 구조다(약속 L11).\n▶설명이 부족하면 담당이 착수할 때 이 칸을 채운다.\n▶끝난 배 요약: Survey.js:2758 ed.setDate(getDate-1) 코드 검증 완료. 로직 정합(2026-08-19+12mo=2027-08-18). 라이브 실등록 테스트는 시포·GM 직접 수행 필요.",
+    "next": "담당 확인 후 진행 · 완료 시 1줄 회신",
+    "ship_no": 10911,
+    "short_no": 707,
+    "audience": "office",
+    "reversible": true
   }
 ]
