@@ -981,60 +981,11 @@ def build_morning_brief(day: str | None = None) -> str:
     return '\n'.join(lines)
 
 
-# ── 08:00 카톡 「김남욱」 방 짧은 일정판 (GM 지시 2026-08-12) ────────────────────
-#   텔레그램 08:00 브리핑과 같은 시각·같은 원천을 쓴다. 카톡은 굵게가 안 먹고 폰에서
-#   화면이 짧으므로 오늘 움직일 것만 남긴다 — 부문별 배·진행률처럼 훑기용 블록은 뺀다.
-#   새 원천·새 발송기를 만들지 않는다(약속 L21): 아래 함수들은 build_morning_brief 가
-#   이미 쓰는 것 그대로이고, 발송은 관문 kakao_report_sender.py 가 한다.
-def build_morning_kakao(day: str | None = None) -> str:
-    day = day or today()
-    d = datetime.date.fromisoformat(day)
-    wd = '월화수목금토일'[d.weekday()]
-
-    sched_items, sched_ok = _load_schedule_items_ex()
-    sched_pairs = _filter_today_items(sched_items, day) if sched_ok else []
-    chairman = _fetch_chairman_open()
-    ssot = _fetch_gm_ssot_open()
-    due_pairs, _rest = _split_by_due(ssot, day) if ssot is not None else ([], [])
-
-    out = [f"📅 {d.month}/{d.day}({wd}) 오늘 일정 — AI 웰리"]
-
-    stale = _schedule_stale_note()
-    if not sched_ok:
-        out += ["", "■ 오늘 잡힌 것 — 일정을 불러오지 못했습니다(다시 확인하겠습니다)"]
-    elif sched_pairs:
-        out += ["", f"■ 오늘 잡힌 것 {len(sched_pairs)}건" + (f" {stale}" if stale else '')]
-        out += [f"· {(t + ' ') if t else ''}{title}" for t, title in sched_pairs]
-    elif stale:
-        out += ["", f"■ 오늘 잡힌 일정 {stale}"]
-    else:
-        out += ["", "■ 오늘 잡힌 일정은 없습니다"]
-
-    if due_pairs:
-        out += ["", f"■ 기한이 지났거나 오늘까지 {len(due_pairs)}건"]
-        out += [f"· {x.get('업무명', '(제목없음)')} — {_due_label(due, day)}" for x, due in due_pairs[:5]]
-
-    if chairman is None:
-        out += ["", "■ 회장님 보고 대기 — 불러오지 못했습니다"]
-    elif chairman:
-        out += ["", f"■ 회장님 보고 대기 {len(chairman)}건"]
-        out += [f"· {it['title']}" for it in chairman[:5]]
-
-    # 시각이 붙은 일정만 '미팅'으로 센다 — 시각 없는 항목을 미팅이라 부르면 GM 이 헛기다린다.
-    timed = [t for t, _title in sched_pairs if t]
-    out += ["", f"정해진 미팅 {len(timed)}건입니다." if timed else "정해진 미팅은 없습니다."]
-    return "\n".join(out)
-
-
-def _selfcheck_morning_kakao() -> None:
-    """카톡 짧은 일정판 — 빈 날에도 문장이 서는지, 미팅 판정이 시각 유무로 갈리는지."""
-    txt = build_morning_kakao()
-    assert txt.startswith('📅'), txt[:40]
-    assert '정해진 미팅' in txt, txt
-    assert '\n\n\n' not in txt, '빈 줄이 세 줄 이상 이어지면 카톡에서 화면만 먹는다'
-    assert len(txt.splitlines()) <= 30, f'카톡 일정판이 너무 길다: {len(txt.splitlines())}줄'
-
-
+# ── 08:00 카톡 「김남욱」 방 짧은 일정판 = 삭제 (GM 지시 2026-08-18 · 배691) ──────
+#   GM: "오늘의 업무 아침 브리핑과 카카오톡 오늘 일정 브리핑 — 일정없어도 매일 발신이랑
+#   중복이니까 병합하면 될듯." 위 build_morning_brief 의 「오늘 잡힌 일정」 절이 같은 원천을
+#   이미 낸다. 호출부(daily_scheduler._run_gm_morning_kakao)와 함께 지웠다 — 꺼두지 않고
+#   지우는 이유 = 꺼둔 코드는 죽은 코드가 되고 나중에 누가 다시 켠다(약속 L21).
 def _selfcheck_morning_brief() -> None:
     """배514 — GM 직접 필터·기한임박 분리·회장님 파싱·버킷 폴딩 self-check(네트워크 없이)."""
     sample_plan_objs = [

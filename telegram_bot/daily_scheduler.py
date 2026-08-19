@@ -3086,11 +3086,14 @@ def run_gm_morning_brief(chat_id: str | None = None) -> None:
     # 계산은 그대로 두고 받는 방만 AI 진행현황방으로 옮긴다.
     if chat_id is None:
         _run_dept_block_to_ai_room()
-    # 같은 08:00 에 카톡 「김남욱」 방으로도 짧은 일정판 — GM 지시 2026-08-12
-    # ("텔레그램이랑 카카오톡 8:00으로 하자"). 잡을 새로 만들지 않고 이 잡에 붙인다(약속 L21):
-    # 시각이 두 곳에 적히면 한쪽만 바뀌어 어긋난다. 시험 발송(chat_id 지정)일 땐 카톡은 건너뛴다.
-    if chat_id is None:
-        _run_gm_morning_kakao()
+    # ── 08:00 카톡 「김남욱」 개인방 짧은 일정판 삭제 (GM 지시 2026-08-18 · 배691) ──
+    # GM 원문: "하루(GM 개인)으로 오늘의 업무 아침 브리핑과 카카오톡 오늘 일정 브리핑 —
+    #          일정없어도 매일 발신이랑 중복이니까 병합하면 될듯."
+    # 위 텔레그램 브리핑(build_morning_brief)이 같은 원천(전사일정 오늘분)을 이미
+    # 「오늘 잡힌 일정」 절로 낸다 — 카톡 사본은 같은 것을 한 번 더 알리는 중복이었고,
+    # 일정이 없는 날에도 '오늘 잡힌 일정은 없습니다' 한 통이 따로 나갔다.
+    # ▸게이트로 꺼두지 않고 지운다 — 꺼둔 코드는 죽은 코드가 된다(약속 L21).
+    #   되살릴 일이 생기면 이 커밋을 되돌린다.
 
 
 def _run_dept_block_to_ai_room() -> None:
@@ -3114,33 +3117,13 @@ def _run_dept_block_to_ai_room() -> None:
         logger.warning(f"{label} 실패: {e}")
 
 
-# 카톡은 PC 앱 UI 자동화라 텔레그램보다 느리고 실패할 수 있다(창이 안 떠 있는 등).
-# 그래서 위 텔레그램 발송과 분리해 두고, 여기서 실패해도 텔레그램은 이미 나간 상태가 되게 한다.
-def _run_gm_morning_kakao() -> None:
-    label = "[GM 아침 일정 카톡]"
-    room = "김남욱"
-    try:
-        import gm_checkin as _ck
-        text = _ck.build_morning_kakao()
-        proc = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
-             "--message", text, "--only-room", room],
-            cwd=str(REPO_ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
-            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"), timeout=300,
-        )
-        tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-        logger.info(f"{label} {room} 발송: {tail[0]}")
-        if proc.returncode != 0:
-            _kakao_fail_notify("GM아침일정", tail[0], room)
-    except Exception as e:
-        logger.error(f"{label} 예외: {e}")
-        _kakao_fail_notify("GM아침일정", str(e)[:120], room)
-
-
-# ── 미팅 30분 전 리마인드 → 카톡 「김남욱」 방 (배451 · GM 확정 2026-08-07) ──────────
-#   GM 원문: "미팅 30분 전에만 김남욱 방에다가 링크까지 포함해서 전달해주면 내가 리마인드 되어서
-#   놓칠 일이 없을 듯." (중간관리자 방 사전 공유는 사람이 그때그때 — 이 자동화 대상 아님)
+# ── 미팅 30분 전 리마인드 → 텔레그램 「하루(개인)」 방 (배451 · GM 확정 2026-08-07 ·
+#   목적지 이전 2026-08-18 배691) ────────────────────────────────────────────────
+#   GM 원문(2026-08-07): "미팅 30분 전에만 김남욱 방에다가 링크까지 포함해서 전달해주면 내가
+#   리마인드 되어서 놓칠 일이 없을 듯." (중간관리자 방 사전 공유는 사람이 그때그때 — 자동화 대상 아님)
+#   GM 원문(2026-08-18): "미팅 30분전 리마인드도 하루(GM 개인) 텔레그램으로 병합" —
+#   시각 트리거·문구는 그대로 두고 **목적지만** 카톡 개인방에서 텔레그램 하루방으로 옮긴다.
+#   이로써 GM 개인 카톡방으로 나가는 자동 발신은 0건이 된다.
 #
 #   ★새 예약작업·새 감시기·새 파일 0 (약속 L21). 이미 상주하는 이 스케줄러에 5분 주기 절 하나,
 #     일정 읽기는 gm_checkin(08:00 브리핑이 쓰는 그 함수), 발신은 kakao_report_sender 관문 그대로.
@@ -3154,9 +3137,14 @@ _MEETING_REMIND_TOLERANCE = 3      # 5분 주기라 정확히 30분에 걸리지
 
 def _run_meeting_reminder() -> None:
     label = "[미팅 30분전]"
-    room = "김남욱"
     try:
         import gm_checkin as _ck
+        from tg_outbound_log import send as _send
+        token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
+        if not token:
+            logger.warning(f"{label} 토큰 없음 — 건너뜀")
+            return
+        chat = _checkin_chat_id()
         now = datetime.now()
         day = now.strftime("%Y-%m-%d")
         items, ok = _ck._load_schedule_items_ex()
@@ -3187,20 +3175,11 @@ def _run_meeting_reminder() -> None:
                 f"GM업무 화면\n"
                 f"https://wellperion-cao.github.io/wellperion-automation/coo/chairman/GM%EC%97%85%EB%AC%B4.html"
             )
-            proc = subprocess.run(
-                [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
-                 "--message", text, "--only-room", room],
-                cwd=str(REPO_ROOT), capture_output=True, text=True,
-                encoding="utf-8", errors="replace",
-                env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"), timeout=300,
-            )
-            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            if proc.returncode == 0:
+            if _send(token, chat, text, source="gm_meeting_reminder"):
                 _MEETING_REMIND_SENT.add(key)
-                logger.info(f"{label} 발송 {hhmm} {title} → {room}: {tail[0]}")
+                logger.info(f"{label} 발송 {hhmm} {title} → 하루방({chat})")
             else:
-                logger.error(f"{label} 발송 실패 {hhmm} {title}: {tail[0]}")
-                _kakao_fail_notify("미팅30분전", tail[0], room)
+                logger.error(f"{label} 발송 실패 {hhmm} {title} → 하루방({chat})")
     except Exception as e:
         logger.error(f"{label} 예외: {e}")
 
