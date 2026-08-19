@@ -645,6 +645,26 @@
         if (id !== '2026-08-26') return '';
         return '<a class="doc-link" href="../../회사문서/웰페리온_운영부_단일보고라인_A3.html" target="_blank" rel="noopener">📄 단일 보고라인 A3</a>';
       }
+      // 👑 회장님 보고건 자료 링크를 이 목표 카드에도 그린다(GM 지시 2026-08-19 "회장님 보고에 있는
+      // 링크들은 GM업무라인으로 넘겨줘"). 지금까지는 같은 자료가 회장님 표에만 붙어 있어, GM 이 본인
+      // 업무 라인을 볼 때는 그 건의 A3·검토서를 찾으러 회장님 표로 올라가야 했다.
+      // 정본은 _chairman_items.js 하나 — 여기서 링크를 복사하지 않고, link.href 가 이 목표(#gm-<id>)를
+      // 가리키는 항목의 docs 만 모아 그린다(약속 L01, 복제 없음). 회장님 건에 자료가 새로 붙으면
+      // 이 카드에도 자동으로 뜬다 — 목표마다 함수를 하나씩 늘리던 위 방식과 달리 배선이 한 번뿐이다.
+      function chairmanDocs(id) {
+        var arr = window.WellperionChairmanItems || [];
+        var seen = {}, out = [];
+        arr.forEach(function (c) {
+          if (!c.link || !c.docs || !c.docs.length) return;
+          if (String(c.link.href || '').indexOf('#gm-' + id) < 0) return;
+          c.docs.forEach(function (d) {
+            if (!d || !d.href || seen[d.href]) return;
+            seen[d.href] = 1;
+            out.push('<a class="doc-link" href="' + esc(d.href) + '" target="_blank" rel="noopener">👑 ' + esc(d.label) + '</a>');
+          });
+        });
+        return out.join(' ');
+      }
       // 아르모니움 소통체계 A3 버튼 — 이 목표(id 2026-08-27 「상가(아르모니움) 소통 체계·관리비 기준 운영」)
       // 카드에만(GM 지시 2026-08-07). 상대경로, 기존 doc-link 클래스 재사용 — 새 CSS 없음.
       function armoniumLink(id) {
@@ -696,6 +716,7 @@
         scoreDraftLink(it.id) +
         reportLineLink(it.id) +
         armoniumLink(it.id) +
+        chairmanDocs(it.id) +
         '</div>';
     }).join('');
     elGmSum.innerHTML = items.map(function (it, i) {
