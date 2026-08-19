@@ -2852,6 +2852,30 @@ def run_daily_digest(early: bool = False) -> None:
                             "종합접수현황")
         else:
             logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — s2_msg/s2b_msg 둘 다 없음(빌드 실패)")
+
+        # ── 강습·업장(팀) 기한초과분만 ★부서장 방으로 (GM 지시 2026-08-18 · 배696) ──
+        #   위 합본은 이제 강습·업장을 뺀 몫이다(_aging_block scope="ops"). 그 몫만 여기서
+        #   따로 보낸다 — 같은 목록을 두 방에 통째로 보내지 않는다(중복 발신 금지).
+        #   없는 날은 빈 문자열이 와서 아무것도 안 나간다.
+        try:
+            import report_stream_2b_reception as _s2b_lesson
+            _lesson_msg = _s2b_lesson.build_lesson_digest(today)
+            if _lesson_msg:
+                _room_lesson = _s2b_lesson._INTAKE_ROOM_LESSON
+                proc = subprocess.run(
+                    [sys.executable, str(_kakao_sender), "--message", _lesson_msg,
+                     "--only-room", _room_lesson],
+                    cwd=str(REPO_ROOT), capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", env=_kakao_env, timeout=180,
+                )
+                tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+                logger.info(f"{label} 카톡 {_room_lesson}(강습·업장 접수) 발송: {tail[0]}")
+                if proc.returncode != 0:
+                    _kakao_fail_notify("강습·업장 접수", tail[0])
+            else:
+                logger.info(f"{label} 강습·업장 기한초과 0건 — ★부서장 발신 없음")
+        except Exception as e:
+            logger.error(f"{label} 강습·업장 접수 발송 예외: {e}")
     else:
         logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP (KAKAO_GO_STREAM2=False)")
 

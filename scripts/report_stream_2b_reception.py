@@ -201,9 +201,19 @@ def _fmt_age(days: int, elapsed_h: float) -> str:
     return f"{days}일" if days >= 1 else f"{elapsed_h:.1f}시간"
 
 
-def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
-    """기한(SLA) 넘긴 미처리 건 — 담당자별 그룹(미배정 별도) + 오래된 순 상세."""
+def _aging_block(rows: list[dict], now: datetime | None = None,
+                 scope: str = "ops") -> str:
+    """기한(SLA) 넘긴 미처리 건 — 부서별 그룹 + 오래된 순 상세.
+
+    scope — 어느 방으로 갈 몫인가 (GM 지시 2026-08-18 '강습부건은 부서장방에,
+    시설부/운영부/지원부건은 ★운영+시설+지원+주차 방에'). 판정은 _intake_room_for
+    한 곳만 쓴다 — 부서 이름을 여기서 다시 따지면 규칙이 두 벌이 된다(약속 L01).
+      ops    = ★운영+시설+지원+주차 몫(강습·업장 제외)
+      lesson = ★부서장 몫(강습·업장만)
+      all    = 종전 동작(전부) — 되돌릴 때 쓴다
+    """
     now = now or datetime.now()
+    want_room = {"ops": _INTAKE_ROOM_DEFAULT, "lesson": _INTAKE_ROOM_LESSON}.get(scope)
     undone = [r for r in rows if str(r.get("status", "")) != "완료"]
 
     overdue: list[dict] = []
@@ -237,8 +247,13 @@ def _aging_block(rows: list[dict], now: datetime | None = None) -> str:
     # ★2026-08-07 시토(배429 · 약속 L24) — 받는 사람을 이경연 실장 한 곳으로 적는다.
     #   아래 담당자별 목록은 지우지 않는다 — 그건 '누구에게 시킨다'가 아니라 실장이 나눌 때
     #   보는 참고 정보다(GM 확정 2026-08-06: 실장이 분배하고, 상향 보고도 실장이 취합한다).
-    lines = ["⏰ 미처리 적체 리마인드 (이경연 실장)",
-             f"미처리 {len(undone)}건 · 기한초과 {len(overdue)}건"]
+    if want_room:
+        overdue = [it for it in overdue if _intake_room_for(it["dept"]) == want_room]
+
+    head = ("⏰ 미처리 적체 리마인드 (강습·업장)" if scope == "lesson"
+            else "⏰ 미처리 적체 리마인드 (이경연 실장)")
+    lines = [head, (f"기한초과 {len(overdue)}건" if scope == "lesson"
+                    else f"미처리 {len(undone)}건 · 기한초과 {len(overdue)}건")]
     if not overdue:
         lines.append("기한 초과 건 없음.")
         return "\n".join(lines)
@@ -583,6 +598,26 @@ def build_digest(today: str | None = None, persist_completion: bool = True) -> s
     if completion:
         parts.append(completion)
     return "\n\n".join(parts)
+
+
+def build_lesson_digest(today: str | None = None) -> str:
+    """★부서장 방 몫 — 강습·업장(팀) 기한초과분만. 없으면 빈 문자열(발신 안 함).
+
+    GM 지시 2026-08-18: '강습부건은 부서장방에, 시설부/운영부/지원부건은
+    ★운영+시설+지원+주차 방에'. 종전에는 전 부서가 한 방으로만 나가서 P.T팀·수영팀
+    건이 강습 담당이 안 보는 방에 섞여 있었다(2026-08-19 웰리 실측 · 배696).
+    같은 목록을 두 방에 통째로 보내지 않는다 — 방마다 자기 몫만 간다.
+    """
+    today = today or datetime.now().strftime("%Y-%m-%d")
+    rows = _fetch_rows()
+    if rows is None:
+        return ""
+    body = _aging_block(rows, scope="lesson")
+    if "기한 초과 건 없음" in body:
+        return ""      # 조용히 넘어간다 — 없는 날 매일 뜨면 소음이다
+    weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
+    return (f"📊 [하루 일과 정리] {today}({weekday})\n📮 강습·업장 접수 현황\n"
+            "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다.\n\n" + body)
 
 
 def seed_completion_cursor() -> int:
