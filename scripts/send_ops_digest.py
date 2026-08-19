@@ -954,43 +954,99 @@ def _ovd_mark_sent() -> None:
                      extra={"state": {"date": date.today().isoformat()}})
 
 
+# ★2026-08-20 GM 지적 — "부서랑 실무진 이름만 떠있는건 뭐야, 조금 더 친절하게".
+#   종전 한 줄은 「🔴 35일 운영부 · 최준용M」 이 전부였다. 받는 사람은 그게 어떤 접수인지
+#   모른 채 이름만 불린 셈이라, 화면에 들어가 스무 건을 뒤져야 자기 건을 찾을 수 있었다.
+#   그래서 ①무슨 건인지(분류·장소·내용) ②어디서(링크 + 화면 안 위치) ③무엇을 하면 되나
+#   (닫는 동작)를 넣는다 — 실무진 전달문 3줄 규칙(wellperion-gm-report §4-2-2).
+#   ▸「N일째」 표기는 뺀다. 밀린 건 우리 사정이고 그 숫자는 압박만 될 뿐 무엇을 하라는
+#     정보가 없다(같은 규칙). 대신 접수 날짜를 적는다 — 오래된 순 정렬은 그대로다.
+_OVD_LIST_CAP = 8            # 본문에 펼치는 최대 건수(나머지는 아래 한 줄로 접는다)
+_OVD_CONTENT_CAP = 24        # 내용 요약 길이 — 카톡 한 줄을 넘기지 않는 선
+_OVD_BOARD_URL = ("https://wellperion-cao.github.io/wellperion-automation/"
+                  "coo/reception/종합접수처_현황.html")
+
+
+def _ovd_short_cat(category: str) -> str:
+    """「컴플레인 접수」→「컴플레인」 · 「직원·강사 쓴소리합니다」→「쓴소리」.
+    분류 이름을 새로 정의하지 않는다 — 꼬리말만 떼서 줄인다(원본 = GAS REG_CATEGORIES)."""
+    c = str(category or "").strip()
+    for tail in (" 접수", "합니다"):
+        if c.endswith(tail):
+            c = c[: -len(tail)].strip()
+    return c.replace("직원·강사 ", "")
+
+
+def _ovd_who(row: dict, dept: str) -> str:
+    """이 건을 실제로 부를 사람 한 명. 담당자 이름이 없거나 방 이름(@운영부)이면 부서 책임자."""
+    names = [str(x).strip() for x in (row.get("assigneeCanon") or []) if str(x).strip()]
+    if not names:
+        one = str(row.get("assignee") or "").strip()
+        names = [one] if one else []
+    names = [n for n in names if not n.startswith("@")]
+    return "/".join(names) if names else (_OVD_LEADER.get(dept, "") or "담당 미정")
+
+
 def _build_ovd_block(rows_for_room: list) -> str:
-    """3일+ 미처리 접수 → tiered 알림 블록. 완료·분실물은 이미 제외된 상태로 들어온다."""
+    """3일+ 미처리 접수 → 알림 블록. 완료·분실물은 이미 제외된 상태로 들어온다."""
     from collectors.ops_shared import reception_elapsed_days
     now = datetime.now()
-    tier14: list = []
-    tier7: list = []
-    n3 = 0
+    items: list = []
     for r in rows_for_room:
         days = reception_elapsed_days(r, now)
         if days < 3:
             continue
         dept = str(r.get("dept") or "").strip() or "부서 미정"
-        assignee_list = [str(x).strip() for x in (r.get("assigneeCanon") or []) if str(x).strip()]
-        assignee = "/".join(assignee_list) if assignee_list else (
-            str(r.get("assignee") or "").strip() or "담당 미정")
-        leader = _OVD_LEADER.get(dept, "")
-        entry = (days, dept, assignee, leader)
-        if days >= 14:
-            tier14.append(entry)
-        elif days >= 7:
-            tier7.append(entry)
-        else:
-            n3 += 1
-    if not tier14 and not tier7 and not n3:
+        content = " ".join(str(r.get("content") or "").split())[:_OVD_CONTENT_CAP]
+        items.append({
+            "days": days,
+            "dept": dept,
+            "who": _ovd_who(r, dept),
+            "cat": _ovd_short_cat(r.get("category")),
+            "loc": str(r.get("loc") or "").strip(),
+            "content": content or "(내용 없음)",
+            "when": "/".join(str(int(x)) for x in str(r.get("createdAt") or "")[5:10].split("-")
+                             if x.isdigit()),
+        })
+    if not items:
         return ""
-    tier14.sort(key=lambda x: -x[0])
-    tier7.sort(key=lambda x: -x[0])
-    lines = ["⏰ 기한 초과 접수 — 마무리 부탁드립니다"]
-    for days, dept, assignee, leader in tier14:
-        suffix = f" · {leader}" if leader and leader not in assignee else ""
-        lines.append(f"🔴 {days}일 {dept} · {assignee}{suffix}")
-    for days, dept, assignee, leader in tier7:
-        suffix = f" · {leader}" if leader and leader not in assignee else ""
-        lines.append(f"🟠 {days}일 {dept} · {assignee}{suffix}")
-    if n3:
-        lines.append(f"🟡 3일 이상 {n3}건")
+    items.sort(key=lambda x: -x["days"])
+    shown, rest = items[:_OVD_LIST_CAP], items[_OVD_LIST_CAP:]
+
+    lines = [f"⏰ 아직 안 끝난 접수 {len(items)}건 — 마무리 부탁드립니다",
+             "회원분이 남겨 주신 뒤로 아직 안 닫힌 건들입니다."]
+    for it in shown:
+        icon = "🔴" if it["days"] >= 14 else ("🟠" if it["days"] >= 7 else "🟡")
+        # 장소가 내용 첫머리에 이미 적혀 있으면 두 번 쓰지 않는다("헬스장 헬스장 기구를…").
+        where = f"{it['loc']} " if it["loc"] and not it["content"].startswith(it["loc"]) else ""
+        lines.append(f"{icon} {it['when']} [{it['cat']}] {where}{it['content']}"
+                     f" — {it['dept']} {it['who']}")
+    if rest:
+        lines.append(f"…그 밖에 {len(rest)}건이 더 있습니다(화면에서 보실 수 있습니다).")
+    lines.append(f"📎 종합접수처 {_OVD_BOARD_URL}")
+    lines.append("   → 맨 위 부서 단추에서 본인 부서를 누르시면 그 부서 것만 남습니다.")
+    lines.append("처리하신 건은 「처리자」에 성함, 「처리 메모」에 한 줄 남기고 "
+                 "[저장] → [✅ 전달 완료]까지 눌러 주시면 목록에서 내려갑니다.")
     return "\n".join(lines)
+
+
+def _selfcheck_ovd_block() -> None:
+    """빈 값·방 이름 담당자·긴 내용에서도 한 줄이 서는지. 네트워크 없이 돈다."""
+    rows = [
+        {"createdAt": "2026-07-16 09:00:00", "category": "컴플레인 접수", "dept": "운영부",
+         "loc": "여자사우나", "content": "청결 관련 이용 가이드 필요" * 5,
+         "assigneeCanon": ["@운영부"], "status": "접수"},
+        {"createdAt": "2026-08-14 09:00:00", "category": "시설물 고장 접수", "dept": "시설부",
+         "loc": "", "content": "", "assignee": "", "status": "접수"},
+    ]
+    out = _build_ovd_block(rows)
+    assert "아직 안 끝난 접수 2건" in out, out
+    assert "이경연 실장" in out and "이정헌 소장" in out, "담당 공란·방이름이면 책임자로 떨어져야 한다"
+    assert "@운영부" not in out, "방 이름을 사람 이름 자리에 쓰지 않는다"
+    assert "일째" not in out and "일 운영부" not in out, "N일 표기는 쓰지 않는다"
+    assert _OVD_BOARD_URL in out and "전달 완료" in out, "어디서·무엇을 하면 되는지가 빠졌다"
+    assert max(len(x) for x in out.splitlines()) < 120, "카톡 한 줄이 너무 길다"
+    print("[selfcheck] _build_ovd_block OK")
 
 
 def send_overdue_reception_alerts() -> None:
