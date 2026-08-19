@@ -1091,6 +1091,50 @@ def _save_chairman_baseline(kinds: list[str]) -> None:
         log(f"[chairman-content] 기준선 저장 실패(무시): {exc}")
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 실패를 조용히 넘기지 않는다 (배669 · 웰리 전달 2026-08-18 · GM 손 쓰게 만든 날 2026-08-19)
+#   카톡 발신은 PC 앱 UI 자동화라 **화면이 잠겨 있거나 다른 창이 포그라운드를 쥐고 있으면**
+#   통째로 실패한다. 실측 2건: 08-17 저녁 수집(ElementNotEnabled) · 08-19 09:32 매출보고
+#   4방 전부(set_focus 거부 → 검색창 못 찾음). 그날 GM 이 4방을 손으로 보내셨다.
+#   ▸웰리가 바란 것은 자동 잠금해제 같은 새 장치가 아니라 **'잠김이라 못 했다'가 눈에 띄게
+#     남는 것**이다(약속 L21). 그래서 새 감시기를 만들지 않고 **이 관문의 실패 출구 한 곳**에만
+#     붙인다 — 이 파일을 지나지 않는 카톡 발신은 없다.
+#   ▸본문을 함께 실어 보낸다. 그래야 GM 이 그 자리에서 복사해 손으로 보낼 수 있다(폴백).
+_FAIL_ALERT_BODY_CAP = 900
+
+
+def _failure_reason(failures: list) -> str:
+    """실패 메시지에서 사람이 읽는 사유 한 줄. 못 가르면 '원인 불명'이라 적는다(지어내지 않음)."""
+    blob = " ".join(str(x) for pair in failures for x in pair).lower()
+    if "no active desktop" in blob or "fail-safe" in blob or "failsafe" in blob:
+        return "PC 화면이 잠겨 있어 카톡 창을 조작하지 못했습니다(세션 잠금·화면보호기)"
+    if "elementnotenabled" in blob:
+        return "카톡 창이 입력을 받지 않는 상태였습니다(다른 창·대화상자에 가림)"
+    if "setforegroundwindow" in blob or "set_focus" in blob or "검색창" in blob or "찾지" in blob:
+        return "카톡 창을 앞으로 띄우지 못했습니다(다른 창이 화면을 쥐고 있음)"
+    return "원인 불명 — 아래 오류 원문을 봐 주세요"
+
+
+def _notify_send_failure(failures: list, kind: str, body: str) -> None:
+    """실패했을 때 GM 업무보고방으로 한 통. best-effort — 여기서 또 실패해도 발신 결과는 안 바꾼다."""
+    try:
+        agents_dir = str(ROOT / "wellperion-agents")
+        if agents_dir not in sys.path:
+            sys.path.insert(0, agents_dir)
+        from telegram_notifier import TelegramNotifier
+        rooms = " · ".join(str(name) for name, _err in failures)
+        errs = "\n".join(f"  · {name}: {str(err)[:120]}" for name, err in failures)
+        preview = (body or "").strip()[:_FAIL_ALERT_BODY_CAP]
+        msg = (f"🔴 카톡 발신 실패 {len(failures)}개 방 ({kind})\n"
+               f"{_failure_reason(failures)}\n"
+               f"못 간 방: {rooms}\n{errs}\n\n"
+               f"— 아래 본문을 그대로 복사해 보내실 수 있습니다 —\n{preview}")
+        TelegramNotifier().send(msg)
+        log(f"[fail-alert] 업무보고방 통보 완료 — {len(failures)}개 방")
+    except Exception as exc:
+        log(f"[fail-alert] 통보 실패(무시): {exc}")
+
+
 def _send_chairman_preview(text: str, new_kinds: list[str]) -> None:
     """GM 업무보고방으로 '새 구성이 생겨 이번 회차를 보류했다'는 미리보기를 보낸다
     (best-effort — 실패해도 회장님 방 발신은 어차피 보류 상태이므로 안전)."""
@@ -1541,6 +1585,13 @@ def _selftest() -> None:
         print("  [보류 사유] chairman_gate≠dedup, 문구·held 필드 정확 — 통과")
 
         print("SELFTEST OK: 보류(성공 아님) 표기 정확성 + 사유 분리 정상")
+
+        # ⑥ 실패 사유 분류(배669) — 잠김·포커스거부·불명이 서로 안 섞이는지. 발신 0건.
+        assert "잠겨" in _failure_reason([("★운영부", "There is no active desktop required...")])
+        assert "입력을 받지" in _failure_reason([("★부서장", "ElementNotEnabled: ...")])
+        assert "앞으로 띄우지" in _failure_reason([("차의주 회장님", "카톡 검색창 활성화 실패")])
+        assert "원인 불명" in _failure_reason([("★관리부", "ZeroDivisionError")])
+        print("SELFTEST OK: 발신 실패 사유 분류 정상")
     finally:
         CHAIRMAN_BASELINE_PATH = orig_baseline_path
         MONTHLY_PLAN_PATH = orig_plan_path
@@ -1663,7 +1714,9 @@ def main() -> int:
             write_status(args.status_file, _status_summary(rooms, failures, dedup_skipped, "텍스트"),
                          args.status_kind, _room_results(rooms, failures, dedup_skipped))
         if failures:
-            print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
+            if not args.dry_run:
+                _notify_send_failure(failures, "텍스트", args.message)
+            print(f"BLOCKED: {len(failures)}개 방 실패 — {_failure_reason(failures)} — {failures}")
             return 1
         if dedup_skipped and len(dedup_skipped) == len(rooms):
             print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {list(dedup_skipped)}")
@@ -1696,7 +1749,11 @@ def main() -> int:
                      args.status_kind, _room_results(rooms, failures, dedup_skipped))
 
     if failures:
-        print(f"BLOCKED: {len(failures)}개 방 실패 — {failures}")
+        if not args.dry_run:
+            # 이미지 발신은 본문 대신 캡션을 싣는다(사진은 텔레그램으로 옮겨 붙일 수 없다 —
+            # GM 이 어느 방에 무엇이 못 갔는지 알고 손으로 보내실 수 있으면 충분하다).
+            _notify_send_failure(failures, "이미지", f"[사진 {image_path.name}]\n{args.caption or ''}")
+        print(f"BLOCKED: {len(failures)}개 방 실패 — {_failure_reason(failures)} — {failures}")
         return 1
     if dedup_skipped and len(dedup_skipped) == len(rooms):
         print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {list(dedup_skipped)}")
