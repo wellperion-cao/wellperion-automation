@@ -657,7 +657,8 @@ def _saw_badge(it: dict) -> str:
     return "✅" if str(it.get("saw") or "").strip() else "🔍미확인"
 
 
-def _item_to_row(it: dict, ship_col_extra: str = "", brief: bool = False) -> tuple[str, str, str, str, str]:
+def _item_to_row(it: dict, ship_col_extra: str = "", brief: bool = False,
+                 brief_note: str = "↓ 아래 본 섹터에") -> tuple[str, str, str, str, str]:
     """아이템 dict → 5-tuple for _md_table.
     ship_col_extra: 꼬리표 (예: '보류', '🔗', '🌀') — 배 칸 아이콘 뒤에 붙음.
     brief=True: 간단설명·핵심조언을 접는다 — **아래 3섹터(진행중/대기중/입항)에 같은 배가
@@ -681,7 +682,7 @@ def _item_to_row(it: dict, ship_col_extra: str = "", brief: bool = False) -> tup
     advice     = _dedupe_advice(desc, _derive_advice(it))
     ship_col   = f"{icon} {ship_col_extra}".strip() if ship_col_extra else icon
     if brief:
-        return (ship_col, nick, title_col, "↓ 아래 본 섹터에", "")
+        return (ship_col, nick, title_col, brief_note, "")
     return (ship_col, nick, title_col, desc, advice)
 
 
@@ -1394,17 +1395,20 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         lines.append(f"### 🔔 안 닫힌 배 {len(stalled)}척 "
                      f"— 뜬 지 {_STALL_MIN_DAYS}일 넘게 안 닫힌 순(기록이 3일 이상 없으면 뒤에 함께 적음)")
         if stalled:
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it), brief=_brief(it))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it), brief=True,
+                                                 brief_note=("↓ 아래 본 섹터에" if _brief(it) else ""))
                                     for it in stalled]))
         if sent_unanswered:
             lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=_brief(it))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=True,
+                                                 brief_note="")
                                     for it in sent_unanswered]))
         if received_unanswered:
             lines.append(f"짝 — 남이 내게 띄우고 내가 답 안 한 배 {len(received_unanswered)}척 "
                           "(보낸이=상대 · 담당=나 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=_brief(it))
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=True,
+                                                 brief_note=("↓ 아래 본 섹터에" if _brief(it) else ""))
                                     for it in received_unanswered]))
         if gm_gaps:
             lines.append(f"📨 GM 요청 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
@@ -1425,7 +1429,7 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
             lines.append(f"{label} {len(shown)}척{extra} — 판정은 의심형·자동 종료 안 함, 사람 확인")
             rows = []
             for it, ev in shown:
-                base = _item_to_row(it, ship_col_extra=_stall_tag(it), brief=_brief(it))
+                base = _item_to_row(it, ship_col_extra=_stall_tag(it), brief=True, brief_note="")
                 rows.append((base[0], base[1], base[2], ev, "👉 status/note 대조 확인"))
             lines.append(_md_table(rows))
 
