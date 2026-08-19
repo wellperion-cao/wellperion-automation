@@ -310,8 +310,81 @@ def build_caption(target_date: datetime) -> str:
     이 캡션도 "회장님, 🌟 북극성 대비 — …" 로 시작하고 인사말이 맨 아래로 밀렸다
     (08-01 09:30 발신 1회가 그렇게 나갔다). GM 이 그 형식을 되돌리도록 지시했고,
     북극성 대비는 정비 후 매월 1일에만 별도로 보낸다 — 일일 매출보고에는 안 붙는다."""
-    weekday_kr = _WEEKDAY_KR[target_date.weekday()]
-    return f"{target_date.month}.{target_date.day}({weekday_kr}) 매출 및 운영사항 보고드립니다."
+    return f"{_md(target_date)} 매출 및 운영사항 보고드립니다."
+
+
+def _md(d: datetime) -> str:
+    return f"{d.month}.{d.day}({_WEEKDAY_KR[d.weekday()]})"
+
+
+def last_reported_target() -> "datetime | None":
+    """마지막으로 실제 발송에 성공한 '보고 대상일'. 모르면 None.
+
+    STATUS_FILE 에 last_ok_target 이 있으면 그것이 정본이다(성공할 때마다 갱신).
+    옛 기록엔 그 칸이 없으므로, ok=true 인 IMAGE_REPORT 기록의 발송 시각에서
+    하루를 빼 대신 쓴다(발송일-1 = 그날의 보고 대상일)."""
+    try:
+        data = json.loads(STATUS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    raw = data.get("last_ok_target")
+    if raw:
+        try:
+            return datetime.strptime(raw, "%Y-%m-%d")
+        except ValueError:
+            pass
+    if data.get("ok") and data.get("kind") == "IMAGE_REPORT":
+        try:
+            return datetime.strptime(data["at"][:10], "%Y-%m-%d") - timedelta(days=1)
+        except Exception:
+            return None
+    return None
+
+
+def record_ok_target(target_date: datetime) -> None:
+    """발송 성공 시 STATUS_FILE 에 보고 대상일을 남긴다(다음 회차의 밀린 날 판정 근거).
+    새 파일을 만들지 않는다(약속 L21) — 이미 발신 관문이 쓰는 파일에 칸 하나만 더한다."""
+    try:
+        data = json.loads(STATUS_FILE.read_text(encoding="utf-8")) if STATUS_FILE.exists() else {}
+        data["last_ok_target"] = target_date.strftime("%Y-%m-%d")
+        STATUS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as exc:
+        log(f"[경고] 보고 대상일 기록 실패(무시): {exc}")
+
+
+def missed_targets(target_date: datetime, limit: int = 10) -> "list[datetime]":
+    """이번 대상일 이전에 보고가 안 나간 영업일 목록(오래된 순).
+
+    윈도우 업데이트·PC 꺼짐 등으로 회차를 통째로 놓치면 그날 인사말이 영영 안 나간다.
+    보고 이미지는 그 달 시트를 통째로 찍은 것이라 숫자는 저절로 따라잡히지만, 어느 날짜
+    분인지는 인사말에만 있다 — 그래서 밀린 날짜를 다음 회차 인사말에 함께 적는다
+    (GM 지시 2026-08-19: '못 나가면 오늘 것까지 내일 정리해서 같이 보내줘').
+    휴관일은 애초에 보고 대상이 아니라 뺀다. 마지막 성공을 모르면 빈 목록(=평소대로)."""
+    last_ok = last_reported_target()
+    if last_ok is None:
+        return []
+    out: list[datetime] = []
+    day = last_ok + timedelta(days=1)
+    while day < target_date and len(out) < limit:
+        if not is_closed(day):
+            out.append(day)
+        day += timedelta(days=1)
+    return out
+
+
+def build_caption_with_missed(target_date: datetime, missed: "list[datetime]") -> str:
+    """밀린 날이 있으면 인사말 한 줄에 날짜를 함께 적는다.
+
+    ★반드시 '한 줄'을 유지한다. 회장님 방에는 새 종류의 줄이 생기면 그 회차를 보류하는
+    게이트가 있어(kakao_report_sender.chairman_content_allows), 설명을 별도 줄로 붙이면
+    정작 밀린 날 발송이 또 막힌다. 그래서 줄 수를 늘리지 않고 날짜만 잇는다.
+    2일치 = 가운뎃점 연결 / 3일치 이상 = 처음~마지막 범위. 이 두 모양만 쓴다 —
+    모양이 늘 때마다 회장님 게이트 기준선에 미리 넣어 둬야 하기 때문이다."""
+    if not missed:
+        return build_caption(target_date)
+    days = missed + [target_date]
+    label = "·".join(_md(d) for d in days) if len(days) == 2 else f"{_md(days[0])}~{_md(days[-1])}"
+    return f"{label} 매출 및 운영사항 보고드립니다."
 
 
 def build_holiday_notice(target: datetime, as_of: datetime) -> str:
@@ -451,6 +524,19 @@ def main() -> int:
         assert "격차(이상-현실): 49,500,000원" in text
         assert "정본" not in text and "다릅니다" not in text
         print("PASS — check_sales_numbers/build_sales_numbers_text 6종")
+
+        # 밀린 회차 인사말(2026-08-19 GM 지시) — 줄 수가 늘지 않는지까지 함께 본다.
+        d = lambda s: datetime.strptime(s, "%Y-%m-%d")  # noqa: E731
+        assert build_caption_with_missed(d("2026-08-19"), []) == "8.19(수) 매출 및 운영사항 보고드립니다."
+        assert build_caption_with_missed(d("2026-08-19"), [d("2026-08-18")]) == \
+            "8.18(화)·8.19(수) 매출 및 운영사항 보고드립니다."
+        assert build_caption_with_missed(d("2026-08-19"), [d("2026-08-17"), d("2026-08-18")]) == \
+            "8.17(월)~8.19(수) 매출 및 운영사항 보고드립니다."
+        for cap in ("8.19(수) 매출 및 운영사항 보고드립니다.",
+                    "8.18(화)·8.19(수) 매출 및 운영사항 보고드립니다.",
+                    "8.17(월)~8.19(수) 매출 및 운영사항 보고드립니다."):
+            assert len(cap.splitlines()) == 1, f"인사말이 여러 줄이 되면 회장님 게이트가 막는다: {cap!r}"
+        print("PASS — 밀린 회차 인사말 3종(한 줄 유지)")
         return 0
 
     if sys.platform != "win32":
@@ -503,7 +589,11 @@ def main() -> int:
     image_path = image_or_reason
     log(f"이미지 생성 성공: {image_path}")
 
-    caption = build_caption(target)
+    missed = missed_targets(target)
+    if missed:
+        log(f"밀린 보고 대상일 {len(missed)}건 — 이번 회차에 함께 적는다: "
+            f"{[d.strftime('%Y-%m-%d') for d in missed]}")
+    caption = build_caption_with_missed(target, missed)
     log(f"caption: {caption!r}")
 
     # 정본 렌더 단일화(배99): 게이트 ON이면 같은 PNG를 텔레그램에도 발송(GAS 대체).
@@ -522,6 +612,8 @@ def main() -> int:
         #   같은 값이 사진에 이미 있고, 08:00 항로 부록에도 이달 매출·지출이 나간다 — 세 번째였다.
         #   게이트로 끄지 않고 호출을 지운다(약속 L21). 되살릴 일이 생기면 이 커밋을 되돌린다.
         #   build_sales_numbers_text 는 --selftest-numbers 와 되돌림용으로 남겨 둔다(호출부 0).
+        if not args.dry_run:
+            record_ok_target(target)
         detail = "DRY-RUN 검증 완료" if args.dry_run else "3방 전송 완료" if rooms is None else f"{rooms} 전송 완료"
         msg = f"DONE: 카톡 {'검증(dry-run)' if args.dry_run else '전송'} 완료 — {detail}"
         log(msg)
