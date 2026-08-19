@@ -185,7 +185,95 @@ def pull_from_live(path=CAL_PATH) -> dict:
     return {"ok": True, "added": added, "changed": changed, "total": len(by_id)}
 
 
+def _dup_norm(s) -> str:
+    """중복 판정용 정규화 — 공백·가운뎃점·괄호류를 지운 이름."""
+    import re
+    return re.sub(r"[\s·\-—()\[\]/,.]+", "", str(s or ""))
+
+
+def find_duplicate(name: str, next_due: str, path=CAL_PATH) -> list:
+    """같은 날 같은 일로 이미 등록된 항목을 돌려준다(빈 리스트 = 없음).
+
+    2026-08-19 실사고: 웰리가 「외곽 인수인계 — 황용석 팀장 방문」을 이미 있는데 한 번 더
+    만들어 전사일정에 같은 일이 두 줄로 떴다(GM 이 발견). 약속 L25 세 번째 대조("같은 게 이미
+    있나")를 문서가 아니라 여기서 재게 한다 — 넣기 전에 이 함수를 부른다.
+
+    판정: next_due 가 같고, 이름을 정규화했을 때 한쪽이 다른 쪽을 포함하거나 0.6 이상 닮으면 중복.
+    (ops_daily_digest·send_ops_digest 의 _nudge_similar 과 같은 규칙 — 새 판정 로직을 만들지 않는다.)
+    """
+    from difflib import SequenceMatcher
+    try:
+        items = load(path).get("items") or []
+    except Exception:
+        return []
+    na = _dup_norm(name)
+    if not na:
+        return []
+    out = []
+    for it in items:
+        if str(it.get("next_due") or "") != str(next_due or ""):
+            continue
+        nb = _dup_norm(it.get("name"))
+        if not nb:
+            continue
+        if na in nb or nb in na or SequenceMatcher(None, na, nb).ratio() >= 0.6:
+            out.append(it)
+    return out
+
+
+def add_event(item: dict, path=CAL_PATH, force: bool = False) -> dict:
+    """전사일정에 이벤트 1건 추가 — 같은 날 같은 일이 있으면 막는다(약속 L25).
+
+    반환 {"ok":True,"added":1} / {"ok":False,"reason":"중복","dups":[...]}.
+    정말 따로 세워야 하는 건이면 force=True 로 통과시키되, 그때는 note 에 왜 별건인지 적는다.
+    """
+    name = str(item.get("name") or "").strip()
+    due = str(item.get("next_due") or "").strip()
+    if not name or not due:
+        return {"ok": False, "reason": "name·next_due 필수"}
+    if not force:
+        dups = find_duplicate(name, due, path)
+        if dups:
+            return {"ok": False, "reason": "중복",
+                    "dups": [{"id": d.get("id"), "name": d.get("name"), "time": d.get("time")} for d in dups]}
+    cal = load(path)
+    items = cal.setdefault("items", [])
+    if any(str(x.get("id")) == str(item.get("id")) for x in items):
+        return {"ok": False, "reason": "같은 id 이미 있음"}
+    items.append(item)
+    cal["updated_at"] = _kst_today().isoformat()
+    Path(path).write_text(json.dumps(cal, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"ok": True, "added": 1, "total": len(items)}
+
+
+def _demo() -> None:
+    """중복 가드 자체 점검 — 실제 원장을 건드리지 않는다."""
+    import tempfile
+    seed = {"_doc": "t", "items": [
+        {"id": "a", "type": "이벤트", "name": "외곽 인수인계 — 황용석 팀장 방문", "next_due": "2026-08-20", "time": "오전"},
+    ]}
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "cal.json"
+        p.write_text(json.dumps(seed, ensure_ascii=False), encoding="utf-8")
+        # 같은 날 거의 같은 이름 → 막힌다
+        r = add_event({"id": "b", "name": "외곽 인수인계 시작 — 황용석 팀장 방문", "next_due": "2026-08-20"}, p)
+        assert r["ok"] is False and r["reason"] == "중복", r
+        # 날짜가 다르면 통과
+        r = add_event({"id": "c", "name": "외곽 인수인계 시작 — 황용석 팀장 방문", "next_due": "2026-09-20"}, p)
+        assert r["ok"] is True, r
+        # 아주 다른 일은 같은 날이어도 통과
+        r = add_event({"id": "d", "name": "매트릭스 상무이사 미팅", "next_due": "2026-08-20"}, p)
+        assert r["ok"] is True, r
+        # force 면 중복이어도 들어간다
+        r = add_event({"id": "e", "name": "외곽 인수인계 — 황용석 팀장 방문", "next_due": "2026-08-20"}, p, force=True)
+        assert r["ok"] is True, r
+    print("중복 가드 자체 점검 통과 ✓")
+
+
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        _demo()
+        raise SystemExit(0)
     if "--pull" in sys.argv:
         print("[전사일정 내려받기]", pull_from_live())
         raise SystemExit(0)

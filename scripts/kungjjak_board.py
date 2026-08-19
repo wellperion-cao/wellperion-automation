@@ -580,6 +580,45 @@ def _render_table(by: dict, day: str) -> None:
     if dup:
         line += f' · 중복 {dup}건 합침'
     print(line)
+    _print_gm_catch_count()
+
+
+def _print_gm_catch_count(role: str = 'ceo') -> None:
+    """★약속 L25 계기판 — 「GM 이 먼저 잡아 준 것」이 오늘 몇 건인지 한 줄로 낸다.
+
+    2026-08-19 GM 발효. 그날 기준선은 11건이었다(GM: "내가 다 일일이 체크해서 이야기하는 것도
+    너무 반복되는 것 같네"). 숫자가 안 줄면 L25 가 안 먹은 것이다 — 그때는 규칙을 늘리지 말고
+    왜 안 먹었는지를 본다.
+
+    새 원장을 만들지 않는다(약속 L21) — 이미 전 역할이 쓰는 status/worklog.jsonl 에서
+    area='GM지적' 줄만 세어 온다. 기록이 없으면 0건으로 조용히 지나간다(경고 아님).
+    """
+    import json as _json
+    import os as _os
+    path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                         'status', 'worklog.jsonl')
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    n = 0
+    try:
+        with open(path, encoding='utf-8') as f:
+            for ln in f:
+                ln = ln.strip()
+                if not ln or 'GM지적' not in ln:
+                    continue
+                try:
+                    d = _json.loads(ln)
+                except Exception:
+                    continue
+                if d.get('area') == 'GM지적' and str(d.get('ts', '')).startswith(today) \
+                        and (not role or d.get('role') == role):
+                    n += 1
+    except FileNotFoundError:
+        return
+    if n == 0:
+        print('🎯 GM 이 먼저 잡아 준 것 — **오늘 0건** (기준선 2026-08-19 11건 · 약속 L25)')
+    else:
+        print(f'🎯 GM 이 먼저 잡아 준 것 — **오늘 {n}건** (기준선 2026-08-19 11건 · 약속 L25). '
+              '줄지 않으면 규칙을 늘리지 말고 왜 안 먹었는지를 본다.')
 
 
 def _selfcheck() -> None:
