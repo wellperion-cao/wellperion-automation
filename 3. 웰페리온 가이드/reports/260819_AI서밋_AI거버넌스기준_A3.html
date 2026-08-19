@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>코엑스 AI Summit 참관 — 웰페리온 AI 도입 기준(안) · A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 인사이트 밴드 (경고 밴드 자리 · 색만 네이비 계열) */
+  .band{ margin-top:7px; background:var(--navy-bg); border-left:5px solid var(--navy); color:var(--navy);
+    padding:8px 15px; font-size:13px; font-weight:700; line-height:1.5; }
+  .band span{ font-weight:400; color:#2E3B47; }
+
+  /* ③ 기준표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:5px 9px; font-size:11.9px; line-height:1.38; vertical-align:top; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763;
+    vertical-align:middle; }
+  thead th.k{ background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:12.4px; color:var(--navy); vertical-align:middle; }
+  td.k .en{ display:block; font-size:10px; font-weight:400; color:#5C666F; letter-spacing:1.5px; margin-top:1px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.where{ background:#FAFBFC; font-size:11.4px; color:#3C464F; }
+  td.where b{ color:var(--ink); }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:11.6px; line-height:1.45; padding-left:15px; position:relative; margin-bottom:3px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+  .box.risk{ border-top-color:var(--bad); }
+  .box.risk h3{ color:var(--bad); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>코엑스 AI Summit 참관 — 웰페리온 AI 도입 기준(안) (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">AI Summit 참관 보고 — 웰페리온 AI 도입 기준(안) 5원칙</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 (AI CEO 웰리)</b> · 참관 <b>김남욱 GM</b><br>
+      작성일 <b>2026. 08. 19.</b> · 문서번호 <b>WP-GM-260819-01</b><br>
+      참관 <b>코엑스 AI Summit 서울 · 10:00~12:20 (2시간 20분)</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">아래 5원칙을 웰페리온 AI 도입·운영의 기준으로 확정해 주십시오.</div>
+        <div class="d">지금은 규칙이 문서·대화에 흩어져 있어 상황마다 다르게 적용됩니다. 5원칙은 새로 지어낸 것이 아니라, 이미 지키고 있거나 오늘 실제로 깨진 자리를 정리한 것입니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">적용 범위를 정해 주십시오 — AI 담당 4개 역할까지인지, 실무진이 쓰는 AI까지인지.</div>
+        <div class="d">지금 기준은 AI 담당(웰리·시토·시모·시포)에만 있습니다. 실무진이 개인 AI를 쓰기 시작하면 회원 정보·매출 자료가 기준 밖으로 나갑니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인사이트 밴드 -->
+  <div class="band">
+    GM 참관 인사이트 — “가장 컸던 것은 <b>AI Governance</b>. 체계와 방식에 대한 <b>우리만의 기준</b>이 있어야 한다.”
+    <span>&nbsp;/ “새로운 변화의 시작이다. 비즈니스하는 사람이 AI를 무시하거나 적대시하면 안 된다. 지금은 AI 시대로 급변하는 중이다.”</span>
+  </div>
+
+  <!-- ③ 기준표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:168px"><col style="width:372px"><col style="width:352px"><col style="width:300px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">원칙</th>
+        <th>지금 우리 상태<span class="sub">2026-08-19 실측 · 추정 아님</span></th>
+        <th>기준(안)</th>
+        <th>안 지키면 생기는 일</th>
+        <th>기준을 박을 자리<span class="sub">문서 아닌 코드·관문</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">말 하 기</td></tr>
+      <tr>
+        <td class="k">① 재기 전에<br>말하지 않는다<span class="en">TRUTH</span></td>
+        <td><b class="bad">오늘 하루에 3번 틀렸습니다.</b> AI가 사실처럼 보고했다가 되돌린 것 — ⑴“카톡 이틀 연속 고장”(실제는 GM PC 업데이트) ⑵“에어컨 컴플레인 43일 방치”(실제는 7/29·8/10 조치 완료) ⑶“배의 57%가 기계가 만든 것”(실제는 7/25에 이미 끝난 문제). <span class="est">세 번 다 날짜 하나·질문 하나만 확인했으면 안 틀렸습니다.</span></td>
+        <td>숫자와 단정은 <b>원천에서 직접 센 것</b>만 말한다. 요약된 줄을 옮겨 적지 않는다.<br>못 쟀으면 문장에 <b>“추정”</b>을 붙이고, 단정과 섞지 않는다.</td>
+        <td>GM이 <b>틀린 사실로 결정</b>하게 된다. 오늘은 되돌렸지만, 회장님·대표님 보고로 나갔으면 회수할 수 없습니다.</td>
+        <td class="where">GM 보고 표준 표의 <b>🔍실측 칸</b> — 그 칸을 채우려면 반드시 원천을 한 번 열게 만든다.</td>
+      </tr>
+
+      <tr class="grp"><td colspan="5">정 하 기</td></tr>
+      <tr>
+        <td class="k">② 사람이 정할 것을<br>AI가 정하지 않는다<span class="en">BOUNDARY</span></td>
+        <td class="good">지켜지고 있습니다. AI가 스스로 못 정하는 것 = 💰결제·🔒보안·🚫금지 3가지 + 신규 생성. 자율화 규약 v1.1이 <b>2026-08-15 발효</b>됐고 코드로 막혀 있습니다.<span class="est"> 오늘도 에어컨 설비 판단은 AI가 결론 내지 않고 GM께 올렸습니다.</span></td>
+        <td>이 경계는 <b>AI가 스스로 넓힐 수 없다.</b> 넓히려면 GM 결정이 있어야 한다.<br>애매하면 AI가 판단하지 말고 <b>멈추고 묻는다.</b></td>
+        <td>AI가 회사 결정을 <b>대신하게</b> 된다. 잘 돌아갈 때는 안 보이다가, 한 번 크게 틀리면 아무도 책임을 못 집니다.</td>
+        <td class="where">배 등록 관문(<b>queue_dispatch</b>)과 자율 실행 선별기 — 신규 생성 배는 자동으로 제외된다.</td>
+      </tr>
+
+      <tr class="grp"><td colspan="5">남 기 기 · 확 인 하 기</td></tr>
+      <tr>
+        <td class="k">③ 한 일은<br>반드시 남는다<span class="en">TRACE</span></td>
+        <td>원장 하나에 모입니다 — 지금까지 닫은 일 <b>3,577건</b>, 열려 있는 일 <b>96건</b>. <span class="warn">다만 앞으로 나아가는 일은 8건(8%)뿐이고, 두 달 넘게 멈춘 것이 8건 있습니다(최장 62일).</span></td>
+        <td>원장에 없으면 <b>한 일이 아니다.</b> 사소해도 적는다.<br>멈춘 일은 <b>왜 멈췄는지·언제 풀리는지</b>를 함께 남긴다.</td>
+        <td>누가 무엇을 했는지 <b>되짚을 수 없다.</b> 멈춘 일이 조용히 잊히고, 두 달 뒤에야 발견됩니다.</td>
+        <td class="where">업무 원장 <b>단일 파일</b> — 화면·보고·집계가 전부 이 하나를 읽는다(복사본 금지).</td>
+      </tr>
+      <tr>
+        <td class="k">④ “됐다”는<br>결과물로 증명한다<span class="en">EVIDENCE</span></td>
+        <td><b class="bad">오늘 두 건이 걸렸습니다.</b> ⑴아침 카톡 발신 — 예약 작업은 <b>“성공”</b>으로 찍혔는데 실제로는 4개 방 전부 안 나갔습니다. ⑵회원 컴플레인 5건 — 현장은 7월에 조치를 끝냈는데 접수 원장에는 43일째 열려 있었습니다.</td>
+        <td>상태값·응답코드·“완료” 표시를 근거로 삼지 않는다.<br><b>사람이 보는 화면·실물</b>로 확인한 것만 완료로 적는다.</td>
+        <td><b>조용히 죽어도 아무도 모른다.</b> 화면은 정상, 숫자는 0, 경보는 안 울립니다 — GM이 눈으로 볼 때까지.</td>
+        <td class="where">완료 처리 관문 — <b>증거(링크·화면)</b>가 없으면 완료로 닫히지 않게 막혀 있다.</td>
+      </tr>
+
+      <tr class="grp"><td colspan="5">사 람 과 의 관 계</td></tr>
+      <tr>
+        <td class="k">⑤ AI는 사람을<br>대신하지 않는다<span class="en">HUMAN</span></td>
+        <td class="good">방향이 잡혀 있습니다. <b>2026-08-17 GM 확정</b> — “AI가 업무 SSOT를 대신 올리면 안 된다. 실무진이 올릴 수 있게 안내·리마인드하라.” 실무진 대상 메시지는 AI가 보내되 <b>누가 보내는지 밝히고</b>, 승인 뒤 나갑니다.</td>
+        <td>AI는 <b>준비·안내·확인</b>까지. 사람의 판단과 기록을 대신 채우지 않는다.<br>사람에게만 답이 있는 것은 <b>사람에게 묻는다.</b></td>
+        <td>사람이 자기 일에서 밀려나고, <b>책임이 사라진다.</b> 편해 보이지만 현장이 무슨 일이 도는지 모르게 됩니다.</td>
+        <td class="where">실무진 전달문 규칙과 <b>발신 관문 하나</b> — 모든 사람 대상 메시지가 그 자리를 지난다.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box risk">
+      <h3>왜 지금인가 — 오늘 하루가 증거입니다</h3>
+      <ul>
+        <li class="r1">AI가 사실처럼 보고했다 되돌린 것 <b>3건</b>. 전부 “재기 전에 말해서”가 원인 — 원칙 ①이 없어서입니다.</li>
+        <li class="r1">예약 작업이 <b>“성공”인데 실제 발신 0건.</b> 상태값만 믿는 구조라 어떤 감시기도 못 잡았습니다 — 원칙 ④.</li>
+        <li class="r1">회원 불만 5건이 <b>43일째 미해결로 보였지만 실제로는 7월에 해결.</b> 현장과 기록이 안 이어져 있습니다 — 원칙 ③·④.</li>
+        <li class="r2">두 달 넘게 멈춘 큰 일 8건을 <b>한 번도 열어보지 않았습니다.</b> 열어보니 하나는 이미 끝나 있었습니다.</li>
+        <li class="r2">이 숫자들은 전부 <b>GM이 물으셔야 처음 세어진</b> 것입니다. 기준이 없으면 재지 않습니다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">5원칙 확정 후 <b>회사 기준 문서 한 곳</b>에 싣는다 — 새 문서를 만들지 않고 기존 운영 기준에 편입</li>
+        <li class="n">원칙마다 <b>“어디에 박을지”</b>를 코드·관문으로 옮긴다. 문서에만 있는 규칙은 지켜지지 않는다</li>
+        <li class="n">지킨 정도를 <b>매주 숫자 한 줄</b>로 낸다 — 틀린 단정 건수 / 증거 없는 완료 건수 / 멈춘 일 나이</li>
+        <li class="n">적용 범위가 실무진까지면, <b>회원 정보·매출 자료 취급 기준</b>을 한 장 더 만들어 배포</li>
+        <li class="n">한 달 뒤 <b>이 문서를 갱신</b>해 재보고 (같은 문서번호 유지 · 목표 9월 하순)</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li>기준을 <b>새로 만들 필요가 없습니다.</b> 이미 지키는 것 2개(②⑤), 오늘 깨진 것 3개(①③④) — 흩어진 것을 한 장으로 모으는 일입니다.</li>
+        <li>가장 급한 것은 <b>원칙 ①</b>입니다. 나머지 넷은 코드가 어느 정도 막고 있지만, ①은 <b>막는 장치가 없습니다.</b></li>
+        <li>적용 범위는 <b>지금은 AI 4역할로 좁게</b> 시작하시길 권합니다. 실무진까지 넓히면 교육이 함께 가야 하고, 기준이 검증되기 전에 넓히면 지켜지지 않습니다.</li>
+        <li>“AI를 무시하거나 적대시하면 안 된다”의 반대편도 같습니다 — <b>무조건 믿는 것도 위험</b>합니다. 기준은 그 사이를 잡는 장치입니다.</li>
+        <li>이 문서는 <b>대외 발표용이 아니라 내부 운영 기준</b>입니다. 회장님·대표님 보고는 확정 후 한 장으로 따로 올립니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>실측 출처</b> — 열린 일 96건·닫힌 일 3,577건·전진 8건·정박 8건(최장 62일)은 2026-08-19 업무 원장 전수 집계. 아침 발신 실패는 같은 날 발신 로그 07:39~09:32 원문. 회원 불만 5건은 종합접수처 원장 직접 조회(RECEPTION-12·25·48·90·92, 조치일 2026-07-29·08-10, 같은 날 완료 처리함).</div>
+    <div><b>(추정) 표기</b> — 이 문서에 추정치는 없습니다. AI Summit 참관 내용은 <b>GM 구술 그대로</b>이며 강연 자료·발표자 인용은 포함하지 않았습니다(참관 기록 미확보). 5원칙은 <b>웰리 제안(안)</b>이며 확정된 규칙이 아닙니다.</div>
+    <div><b>기존 규칙과의 관계</b> — ②는 자율화 규약 v1.1(2026-08-15 발효), ⑤는 2026-08-17 GM 확정 사항을 그대로 옮긴 것입니다. ①③④는 오늘 실측으로 드러난 빈자리입니다. <b>차기 보고</b> — 확정 후 원칙별 적용 상태를 한 달 뒤 같은 문서번호로 갱신.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260819_AI서밋_AI거버넌스기준_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
