@@ -170,7 +170,9 @@
   }
   // 2차 = 공용 저장소(정본). 늦게 와도 되고, 오면 화면을 다시 그린다.
   function refreshChairmanFromBoard(onDone) {
-    return _chGet(CH_BOARD_URL + '?action=board&key=' + CH_BOARD_KEY, 12000)
+    // 25초 — 실측 8.6초(2026-08-19)인데 12초로 잡아 두어 콜드스타트 때마다 정본을 놓쳤다.
+    // 놓치면 화면이 뒤처진 파일 값으로 남아 「보고 완료」가 되살아난다(GM 2026-08-19 실사고).
+    return _chGet(CH_BOARD_URL + '?action=board&key=' + CH_BOARD_KEY, 25000)
       .then(function (j) {
         if (j && j.ok && j.board && Object.keys(j.board).length) {
           chReported = j.board;
