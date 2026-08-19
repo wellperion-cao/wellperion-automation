@@ -732,7 +732,8 @@ def main() -> int:
         print("=" * 60, file=sys.stderr)
         print("[완료 거부] 완료(DONE)에는 증거 URL이 필수입니다 — 4요건 중 ④증거 누락.", file=sys.stderr)
         print("  → 완료의 단일 정의(4요건): ①커밋 [DONE][clevel][task_id] ②status DONE", file=sys.stderr)
-        print("     ③다음(--next/--terminal) ④증거(--artifact-url). 하나라도 빠지면 완료 아님.", file=sys.stderr)
+        print("     ③증거(--artifact-url). 빠지면 완료 아님.", file=sys.stderr)
+        print("     ※'다음'은 더 이상 필수가 아니다 — 안 적으면 종결이다(GM 지시 2026-08-19).", file=sys.stderr)
         print('  → 증거 URL을 첨부하세요: --artifact-url "<스크린샷/로그/라이브확인 링크>"', file=sys.stderr)
         print("  → 아직 증거가 없으면 --status 진행중 으로 보고하세요(완료 처리되지 않음).", file=sys.stderr)
         print("=" * 60, file=sys.stderr)
@@ -752,17 +753,15 @@ def main() -> int:
         dry_run=args.dry_run,
     )
 
-    # ── 일의 브릿지: 완료 시 '다음'을 구조로 기록(중앙 큐) ──────────────────
+    # ── 완료 처리 — '다음'은 있을 때만 남긴다 (GM 지시 2026-08-19) ──────────────
+    # 종전에는 --next 도 --terminal 도 없으면 "브릿지가 끊긴다"고 경고했다. 그 경고 때문에
+    # 담당들이 끝낼 때마다 억지로 후속 한 줄을 지어냈고, 그게 그대로 새 배가 됐다.
+    # GM 원문(2026-08-19): "배를 처리하고, 다음에 이어서 뭔가를 계속 하려고 하다보니 어쩔수없이
+    # 이어서 배가 늘어난 것 같은데, 이것도 없었으면 좋겠어. 억지로 안만들어도되, 그냥 종결처리해도되."
+    # 그래서 기본값을 뒤집는다 — 안 적으면 종결이다. 진짜 이어질 일이 있을 때만 --next 를 쓴다.
     is_done = normalize_status(args.status) == "DONE"
     if is_done and not args.next_desc and not args.terminal:
-        print("=" * 60, file=sys.stderr)
-        print("[브릿지 경고] 완료인데 --next(다음 한 줄) 또는 --terminal(종결) 미입력.",
-              file=sys.stderr)
-        print("  → 브릿지가 끊깁니다. 다음 부팅이 0에서 다시 시작합니다.",
-              file=sys.stderr)
-        print('  → 권장: --next "다음 할 일 한 줄"  또는  --terminal',
-              file=sys.stderr)
-        print("=" * 60, file=sys.stderr)
+        args.terminal = True
     # ── GM 신호 누락 알림(배 10267) — 사람이 낀 완료에만, 막지는 않는다 ────────
     # 배경: --gm-signal 흡수 경로는 2026-07-29 발효했는데 저장소 어디에서도 이 인자를
     # 부르지 않아 24시간 동안 실제 기록이 1건뿐이었다(경로는 있고 아무도 몰랐다).

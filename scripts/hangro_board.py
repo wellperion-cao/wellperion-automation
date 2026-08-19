@@ -607,17 +607,13 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         elif done:
             # 완료는 최근(오늘·어제) 완료만 — 옛 완료건은 이력이라 보드서 제외
             if _is_recent(item.get("mod_date", "")):
-                # 🌀 표류 판정 (보수적): 완료인데 '다음'을 안 남긴 것.
-                #   = terminal!=true 이고 next(브릿지 문구) 비었고, 그 owner의 후속 PENDING도 없음.
-                #   판정 모호 시(terminal·next 정보 없는 GAS 시트 항목 등)는 표류로 몰지 않고 완료로 둔다(안전).
-                is_terminal = bool(item.get("terminal", False))
-                has_next = bool(str(item.get("next") or "").strip())
-                has_follow_pending = str(item.get("owner", "")) in _pending_owners
-                if (item.get("source") == "queue" and not is_terminal
-                        and not has_next and not has_follow_pending):
-                    sections["drift"].append(item)
-                else:
-                    sections["done"].append(item)
+                # 🌀 표류 판정은 폐지했다 (GM 지시 2026-08-19).
+                #   종전에는 '다음'을 안 남긴 완료를 표류로 몰고 "👉 다음 뭐 할지 정하세요"를 붙였다.
+                #   그 촉구 때문에 끝낼 때마다 후속을 지어냈고 그게 그대로 새 배가 됐다 —
+                #   GM: "억지로 안만들어도되, 그냥 종결처리해도되."
+                #   이제 '다음' 없는 완료는 그냥 완료다. drift 칸은 남겨 두되 아무도 담기지 않는다
+                #   (칸을 지우면 아래 집계·렌더 여러 곳을 함께 고쳐야 해서, 판정만 끊는다).
+                sections["done"].append(item)
         else:
             sections["today"].append(item)
 

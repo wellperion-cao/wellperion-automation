@@ -216,27 +216,16 @@ def make_capture(ctype, reversibility, target_role, title, reason, evidence, rem
 
 
 def scan_drift(active: list) -> list:
-    """완료·terminal 인데 next 없음 = 표류. 조치=후속 정하기 촉구(가역 리마인드)."""
-    caps = []
-    for x in active:
-        if not (x.get("status") == "DONE" or x.get("terminal")):
-            continue
-        if (x.get("next") or "").strip():
-            continue
-        tid = _ship_id(x)
-        role = (x.get("clevel") or "ceo").lower()
-        caps.append(make_capture(
-            ctype="drift",
-            reversibility="가역",   # 촉구·리마인드는 되돌릴 수 있음 → phase1 제안대상 아님(표시만)
-            target_role=role,
-            title=f"[{tid}] 완료 후 '다음' 미정 표류",
-            reason="완료·terminal 인데 next 필드가 비어 다음 한 수가 없음",
-            evidence=f"status={x.get('status')} terminal={x.get('terminal')}",
-            remedy="담당 C-Level에 '다음 한 수' 지정 리마인드(가역)",
-            dedup_key=f"gmaide|drift|{tid}",
-            source_item=x,
-        ))
-    return caps
+    """폐지 — 항상 빈 목록 (GM 지시 2026-08-19).
+
+    종전: 완료인데 next 가 비면 '표류'로 잡아 담당에게 '다음 한 수'를 정하라고 촉구했고,
+    아래 next_augment 액션이 후보 문구를 자동으로 채워 넣기까지 했다. 그 촉구가
+    배를 늘리는 원인 중 하나였다 — 끝낸 일마다 후속이 하나씩 붙었다.
+    GM: "억지로 안만들어도되, 그냥 종결처리해도되." 이제 '다음' 없는 완료는 정상이다.
+    함수를 지우지 않고 빈 목록을 돌려주는 이유 = 호출부(phase1 스캔·phase2 액션 생성)가
+    이 이름을 그대로 부르고 있어, 여기 한 곳만 끊으면 두 경로가 함께 멈춘다(약속 L21).
+    """
+    return []
 
 
 #  ★정박 선언 = ⚓ (약속 L16 아이콘 표준 · '대기/정박'). next 가 이 표식으로 시작하면
