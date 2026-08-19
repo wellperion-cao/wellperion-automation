@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>외곽 인수인계 인계비용 지급 — 웰페리온 A3 보고서</title>
+<title>외곽 인수인계 — 반장님 인수·점검표 · 웰페리온 A3 보고서</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -52,38 +52,38 @@
   .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
-  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
-  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+  .ask .q{ font-size:17.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:13.5px; line-height:1.5; opacity:.86; margin-top:4px; }
 
-  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
-    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert{ margin-top:7px; background:var(--navy-bg); border:1.5px solid var(--navy); color:var(--navy);
+    padding:10px 16px; font-size:15px; font-weight:700; line-height:1.5; }
   .alert span{ font-weight:400; color:#6B2020; }
 
   .tblwrap{ margin-top:11px; }
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
-  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  th,td{ border:1px solid var(--line); padding:9px 12px; font-size:15.5px; line-height:1.45; vertical-align:top; }
+  thead th{ height:40px; background:var(--navy); color:#fff; font-weight:700; font-size:16px; border-color:#2A4763; vertical-align:middle; }
   thead th.k{ width:186px; background:#0E2439; }
   thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
-  tbody td{ height:29px; }
-  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
-  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:11.5px; letter-spacing:2.5px; }
+  tbody td{ height:auto; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:15.5px; color:var(--navy); vertical-align:middle; }
+  tr.grp td{ height:26px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:13.5px; letter-spacing:2.5px; }
   .num{ text-align:right; font-variant-numeric:tabular-nums; }
   .ctr{ text-align:center; }
   .good{ color:var(--good); font-weight:700; }
   .warn{ color:var(--warn); font-weight:700; }
   .bad{ color:var(--bad); font-weight:700; }
-  .est{ color:#5C666F; font-size:10.5px; }
+  .est{ color:#5C666F; font-size:13px; }
   td.strong{ font-weight:700; }
   tr.sum td{ background:#F0F3F7; }
   tr.sum td.k{ background:#E7ECF2; }
 
   .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
   .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
-  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box h3{ font-size:16px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
   .box ul{ list-style:none; }
-  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li{ font-size:14.5px; line-height:1.5; padding-left:17px; position:relative; margin-bottom:6px; }
   .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
   .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
   .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
@@ -95,8 +95,8 @@
   .box.rec h3{ color:var(--good); }
   .box.rec b{ color:var(--good); }
 
-  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
-    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:8px;
+    display:flex; gap:26px; font-size:12.5px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
 </style>
@@ -104,7 +104,7 @@
 <body>
 
 <div class="bar">
-  <b>외곽 인수인계 인계비용 지급 (A3 1장)</b>
+  <b>외곽 인수인계 — 반장님 인수·점검표 (A3 1장)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -113,16 +113,16 @@
 
 <div class="page" id="sheet">
 
-  <!-- ① 헤더 -->
+  <!-- (1) 헤더 -->
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">외곽 인수인계 — A3 정리본 (GM업무 14번)</div>
+      <div class="title">외곽 인수인계 &mdash; 반장님 인수·점검표</div>
     </div>
     <div class="meta">
       작성 <b>경영지원부 (AI CEO 웰리)</b><br>
-      작성일 <b>2026. 08. 15.</b> · 문서번호 <b>WP-GM-260815-02</b><br>
-      인계일 <b>2026. 08. 20.(목) 오전</b> · 인계자 <b>황용석 팀장</b>
+      작성일 <b>2026. 08. 15.</b> &middot; 갱신 <b>2026. 08. 19.</b> &middot; 문서번호 <b>WP-GM-260815-02</b><br>
+      인계 <b>2026. 08. 20.(목) 10:00</b> &middot; 인계자 <b>황용석 팀장</b> &middot; 인수 <b>이연희 반장 &middot; 박남일 반장</b>
     </div>
     <div class="sign">
       <div><div class="t">담당</div><div class="b"></div></div>
@@ -131,118 +131,129 @@
     </div>
   </div>
 
-  <!-- ② 결정 요청 -->
+  <!-- (2) 결정 요청 -->
   <div class="ask">
     <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
     <div class="items">
       <div class="it">
         <div class="n">01</div>
-        <div class="q">인계비용 100,000원 지급을 승인해 주십시오.</div>
-        <div class="d">주차장·헬스장·골프장·외곽 라인 네 구역을 황용석 팀장이 8월 20일 오전에 인계합니다. 장비 조작법과 협력업체 연락처가 그날 한 번에 넘어옵니다.</div>
+        <div class="q">네 구역을 두 반장님이 나눠 맡을지, 함께 보실지 정해 주십시오.</div>
+        <div class="d">나누면 각자 책임이 또렷해지고, 함께 보면 한 분이 자리를 비워도 이어집니다. 정해지면 아래 표 맨 오른쪽 칸에 이름을 넣어 확정합니다.</div>
       </div>
       <div class="it">
         <div class="n">02</div>
-        <div class="q">지급 방식과 명목을 정해 주십시오.</div>
-        <div class="d">계좌 이체인지 현금인지, 어떤 명목(인수인계 사례비·업무 협조비 등)으로 처리할지에 따라 회계 처리가 달라집니다. 정해 주시면 인계 당일 맞춰 준비합니다.</div>
+        <div class="q">체크한 결과를 지원부 점검일지에 함께 남길지 정해 주십시오.</div>
+        <div class="d">지원부 점검일지는 이미 매일 돌고 있습니다. 여기에 칸을 더하면 따로 관리할 것이 늘지 않고, 빠진 날도 바로 보입니다.</div>
       </div>
     </div>
   </div>
 
-  <!-- 경고 밴드 -->
+  <!-- 안내 밴드 -->
   <div class="alert">
-    인계는 하루뿐입니다 — 8월 20일 오전이 지나면 같은 자리에서 다시 물을 수 없습니다.
-    <span>&nbsp;/ 아래 「인수 시 확인할 것」을 그날 현장에서 다 받아야 합니다. 특히 <b>협력업체 A/S 연락처</b>와 <b>인계 후 질문 창구</b>가 빠지면 고장 났을 때 연락할 곳이 없습니다.</span>
+    이 표를 인쇄해 들고 가셔서, 인계받으며 빈칸을 그 자리에서 채워 주십시오.
+    <span>&nbsp;/ 인계는 8월 20일 오전 한 번입니다. 그날 적어 두지 않으면 나중에 같은 자리에서 다시 물을 수 없습니다.</span>
   </div>
 
-  <!-- ③ 인계 범위표 -->
+  <!-- (3) 구역별 인수·점검표 -->
   <div class="tblwrap">
   <table>
-    <colgroup><col style="width:186px"><col style="width:300px"><col><col style="width:210px"></colgroup>
+    <colgroup><col style="width:150px"><col style="width:340px"><col style="width:110px"><col><col style="width:150px"></colgroup>
     <thead>
       <tr>
-        <th class="k">인계 범위</th>
-        <th>넘겨받는 것</th>
-        <th>인수 시 반드시 확인할 것</th>
-        <th>인수자</th>
+        <th class="k">구역</th>
+        <th>황용석 팀장이 하시던 일<span class="sub">인계받으며 그 자리에서 적습니다</span></th>
+        <th>주기</th>
+        <th>앞으로 볼 것</th>
+        <th>맡는 분</th>
       </tr>
     </thead>
     <tbody>
-      <tr class="grp"><td colspan="4">구 역 별</td></tr>
       <tr>
-        <td class="k">주차장 — 카처 장비</td>
-        <td>세척 장비 일체 · 소모품(세제·브러시)</td>
-        <td>모델명·대수 / 구매인지 리스인지 / 소모품 재고와 구입처 / 정기점검 주기·업체 / 조작 교육 필요 인원</td>
-        <td class="ctr">이연희 반장<br>박남일 반장</td>
+        <td class="k">주차장<br><span class="est">카처 세척장비</span></td>
+        <td>&nbsp;</td>
+        <td class="ctr">&nbsp;</td>
+        <td>장비가 정상 작동하는지 &middot; 세제&middot;브러시가 남아 있는지 &middot; 다 쓰면 어디서 받는지</td>
+        <td class="ctr">&nbsp;</td>
       </tr>
       <tr>
         <td class="k">헬스장</td>
-        <td>운동 기구 · 부품 재고</td>
-        <td>기구 목록·제조사·A/S 연락처 / 부품 재고 / 청소·점검 주기 / 유지보수 계약 여부와 만료일</td>
-        <td class="ctr">이연희 반장<br>박남일 반장</td>
+        <td>&nbsp;</td>
+        <td class="ctr">&nbsp;</td>
+        <td>기구에 이상 소리&middot;흔들림이 없는지 &middot; 고장 난 기구가 방치돼 있지 않은지</td>
+        <td class="ctr">&nbsp;</td>
       </tr>
       <tr>
-        <td class="k">골프장</td>
-        <td>타석 장비(T업기 포함)</td>
-        <td>제어 방식과 조작 권한 / <span class="bad">현재 타석 1기 고장 미해결</span> — 이력과 조치 경과 / A/S 연락처</td>
-        <td class="ctr">이연희 반장<br>박남일 반장</td>
+        <td class="k">골프장<br><span class="est">타석</span></td>
+        <td>&nbsp;</td>
+        <td class="ctr">&nbsp;</td>
+        <td>타석이 정상 작동하는지 &middot; <b class="warn">지금 1기가 고장 나 있습니다</b> &mdash; 어디까지 진행됐는지 꼭 물어봐 주십시오</td>
+        <td class="ctr">&nbsp;</td>
       </tr>
       <tr>
-        <td class="k">외곽 전체 라인</td>
-        <td>조경 · 배수 · 외부 조명 · 울타리 등</td>
-        <td><b>'외곽'의 물리적 범위 확정</b>(어디까지인지) / 점검 주기와 현재 수행 주체 / 열쇠·출입 권한 / 위탁 업체 계약 조건</td>
-        <td class="ctr">이연희 반장<br>박남일 반장</td>
+        <td class="k">외곽 라인<br><span class="est">조경&middot;배수&middot;조명&middot;울타리</span></td>
+        <td>&nbsp;</td>
+        <td class="ctr">&nbsp;</td>
+        <td><b>어디부터 어디까지가 &lsquo;외곽&rsquo;인지 먼저 확인</b> &middot; 조명이 나간 곳 &middot; 물이 안 빠지는 곳 &middot; 울타리 파손</td>
+        <td class="ctr">&nbsp;</td>
       </tr>
 
-      <tr class="grp"><td colspan="4">공 통 — 서 류 로 받 을 것</td></tr>
-      <tr><td class="k">인수인계서 · 도면</td><td colspan="2">장비 매뉴얼 원본 포함 — 사본이 아니라 원본으로 받는다</td><td class="ctr">김남욱 GM</td></tr>
-      <tr><td class="k">협력업체 연락처</td><td colspan="2">장비별 A/S 창구 목록 — 담당자 이름과 직통 번호까지</td><td class="ctr">김남욱 GM</td></tr>
-      <tr><td class="k">미결 하자 목록</td><td colspan="2">진행 중인 A/S 와 아직 안 고친 것 — 넘겨받은 뒤에 알면 늦는다</td><td class="ctr">김남욱 GM</td></tr>
-      <tr class="sum"><td class="k">인계 후 질문 창구</td><td colspan="2" class="strong">며칠까지·어떤 방법으로 물어볼 수 있는지 — 이것 하나가 나머지를 보완한다</td><td class="ctr strong">김남욱 GM</td></tr>
-
-      <tr class="grp"><td colspan="4">금 액</td></tr>
-      <tr class="sum"><td class="k">인계비용</td><td class="num strong">100,000 원 <span class="est">(GM 제시)</span></td><td>지급 방식·명목 미정 — 결정 요청 02</td><td class="ctr">경영지원부</td></tr>
+      <tr class="grp"><td colspan="5">인 계 받 으 며 물 어 볼 것</td></tr>
+      <tr>
+        <td class="k">하루 중 언제</td>
+        <td colspan="3">이 일들을 하루 중 어느 때 하셨는지 &mdash; 아침 문 열 때인지, 마감할 때인지. 시간대가 정해져 있으면 그대로 이어받습니다.</td>
+        <td class="ctr">&nbsp;</td>
+      </tr>
+      <tr>
+        <td class="k">고장 났을 때</td>
+        <td colspan="3">지금까지 고장이 나면 어떻게 하셨는지 &mdash; 직접 고치셨는지, 부르셨는지. 부르셨다면 <b>어디에 어떻게 연락하셨는지.</b></td>
+        <td class="ctr">&nbsp;</td>
+      </tr>
+      <tr class="sum">
+        <td class="k">나중에 물어볼 곳</td>
+        <td colspan="3" class="strong">인계 후에도 궁금한 것이 생기면 <b>언제까지 어떻게 여쭤볼 수 있는지</b> &mdash; 이 한 가지가 나머지를 다 보완합니다.</td>
+        <td class="ctr">&nbsp;</td>
+      </tr>
     </tbody>
   </table>
   </div>
 
-  <!-- ④ 3분할 -->
+  <!-- (4) 3분할 -->
   <div class="cols">
     <div class="box">
-      <h3>핵심 리스크</h3>
-      <ul>
-        <li class="r1">인계는 <b>8월 20일 오전 한 번</b>이다. 그날 못 받은 것은 나중에 받기 어렵다.</li>
-        <li class="r1">'외곽'의 <b>범위가 아직 말로만</b> 있다 — 어디까지인지 그날 도면에 선을 그어 확정해야 한다.</li>
-        <li class="r1">골프 타석 1기가 <b>고장 난 채</b>로 넘어온다. 이력을 못 받으면 우리가 처음부터 다시 본다.</li>
-        <li class="r2">협력업체 연락처가 개인 휴대폰에만 있으면 인계와 함께 끊긴다.</li>
-        <li class="r2">지급 명목이 안 정해지면 회계 처리가 미뤄지고 지급도 늦어진다.</li>
+      <h3>인계 당일 (8/20 오전)</h3>
+      <ul class="ord">
+        <li class="n">이 표를 인쇄해 들고 네 구역을 <b>함께 한 바퀴</b> 돕니다.</li>
+        <li class="n">구역마다 <b>&ldquo;여기서 무슨 일을 하셨습니까&rdquo;</b>를 묻고 그 자리에서 빈칸에 적습니다.</li>
+        <li class="n">&lsquo;외곽&rsquo;이 어디까지인지 <b>걸으면서 눈으로 확인</b>합니다. 말로만 들으면 나중에 달라집니다.</li>
+        <li class="n">골프 타석 고장 건은 <b>지금 어디까지 진행됐는지</b> 반드시 확인합니다.</li>
+        <li class="n">사진으로 남겨 두시면 좋습니다 &mdash; 장비 위치&middot;조작판&middot;소모품 놓는 자리.</li>
       </ul>
     </div>
     <div class="box">
-      <h3>실행 액션</h3>
-      <ul class="ord">
-        <li class="n">결재 후 지급 방식대로 8/20 오전까지 준비 — 경영지원부</li>
-        <li class="n">인수 확인표(위 표 그대로) 인쇄해 현장에서 항목별 체크 — 이연희·박남일 반장</li>
-        <li class="n">'외곽' 범위를 도면에 표시해 서명 — 인계·인수 양측</li>
-        <li class="n">협력업체 연락처를 그 자리에서 공용 문서로 옮겨 적기</li>
-        <li class="n">인계 다음 날 빠진 항목 점검 → 질문 창구로 보완 요청</li>
+      <h3>인계 다음 날부터</h3>
+      <ul>
+        <li>적어 온 내용을 보면서 <b>같은 순서로 한 번 돌아 봅니다.</b> 빠진 것이 있으면 그날 안에 여쭙습니다.</li>
+        <li>주기가 정해진 일은 <b>점검일지에 칸을 만들어</b> 넣습니다(결정 요청 02).</li>
+        <li>이상한 것을 발견하면 <b>종합접수처에 접수</b>합니다 &mdash; 말로 넘기면 사라집니다.</li>
+        <li>일주일 뒤 <b>빠진 것이 없는지 한 번 더</b> 봅니다. 처음 일주일에 대부분 드러납니다.</li>
       </ul>
     </div>
     <div class="box rec">
       <h3>GM 권고</h3>
       <ul>
-        <li>금액 자체는 크지 않다. <b>이 문서의 목적은 금액 승인이 아니라 그날 무엇을 받아야 하는지를 고정하는 것</b>이다.</li>
-        <li>인계 당일 <b>이 표를 인쇄해 들고</b> 항목별로 체크하시길 권한다. 말로만 받으면 반드시 빠진다.</li>
-        <li>가장 값나가는 항목은 장비가 아니라 <b>협력업체 연락처와 질문 창구</b>다 — 이 둘이 있으면 나머지는 나중에도 메운다.</li>
-        <li>참석은 <b>이연희·박남일 두 반장과 GM</b> 세 분이다. 구역이 넷이라 나눠 받으면 빠진다 — 함께 돌기를 권한다.</li>
+        <li>이 인계의 목적은 <b>서류를 받는 것이 아니라 일이 끊기지 않는 것</b>입니다. 빈칸을 채워 오시는 것이 전부입니다.</li>
+        <li>네 구역을 <b>나누기보다 함께 도시길</b> 권합니다. 한 분이 쉬는 날 다른 분이 이어야 합니다.</li>
+        <li>가장 중요한 한 가지는 <b>&ldquo;나중에 어디로 물어보나&rdquo;</b>입니다. 이것만 확보되면 나머지는 천천히 메울 수 있습니다.</li>
+        <li>인계비용 10만원은 <b>대표님 서명 완료</b>되었습니다 &mdash; 이 문서에서 결재받을 것은 없습니다.</li>
       </ul>
     </div>
   </div>
 
-  <!-- ⑤ 각주 -->
+  <!-- (5) 각주 -->
   <div class="foot">
-    <div><b>이 문서의 자리</b> — 결재 자체는 업무·결재 SSOT 건(TODO-20260815105013207)에서 A4 로 진행한다(2026-08-15 15:06 GM 결재 완료). 이 A3 는 <b>GM업무 14번의 정리본</b>이다. &nbsp; <b>금액 근거</b> — 100,000원은 <b>GM 제시 금액</b>이다(2026-08-15, "10만원 정도"). 견적서나 계약서에 근거한 값이 아니라 <b>개산</b>이므로, 대표님 판단으로 조정 가능하다. 부가세·원천징수 여부는 지급 명목이 정해진 뒤 회계에서 확정한다.</div>
-    <div><b>일정 근거</b> — 전사일정 「외곽 인수인계 — 황용석 팀장 방문」 2026-08-20 오전(참석 이연희 반장·박남일 반장·김남욱 GM). 시각은 '오전'까지만 확정돼 있고 정확한 시간은 미정이다.</div>
-    <div><b>확인하지 못한 것</b> — 황용석 팀장의 소속·계약 관계, 인계 대상 장비의 자산 등재 여부. <b>차기 보고</b> — 인계 완료 후 받은 것·빠진 것을 이 문서에 채워 갱신한다(같은 문서번호 유지).</div>
+    <div><b>이 문서의 자리</b> &mdash; 2026-08-19 GM 지시로 내용을 바꿨습니다. 서류 수령 목록(인수인계서&middot;도면&middot;협력업체 연락처&middot;미결 하자)과 금액 항목을 <b>덜어냈습니다</b> &mdash; 인계비용 10만원은 대표님 서명이 끝났고, 이 문서는 <b>반장님들이 업무를 이어받아 체크하실 수 있게</b> 하는 데만 씁니다.</div>
+    <div><b>일정</b> &mdash; 전사일정 「외곽 인수인계 시작 &mdash; 황용석 팀장 방문」 2026-08-20(목) 10:00. 이연희 반장&middot;박남일 반장께 전달 완료(GM 2026-08-19). <b>빈칸은 일부러 비워 둔 것</b>입니다 &mdash; 저희가 모르는 내용을 지어 넣지 않았습니다.</div>
+    <div><b>확인하지 못한 것</b> &mdash; 황용석 팀장께서 각 구역에서 실제로 하시던 업무의 내용과 주기. 인계 당일 현장에서 채웁니다. <b>차기 보고</b> &mdash; 채워진 표를 이 문서에 반영해 갱신합니다(같은 문서번호 유지).</div>
   </div>
 
 </div>

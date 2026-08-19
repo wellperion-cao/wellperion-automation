@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회장님 팀별 오찬 2차 — P.T팀 (2026-09-03)</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm 14mm; }
+
+  :root{
+    --ink:#15181c; --dim:#5b6470; --line:#c9cfd6;
+    --accent:#0f5c8c; --accent-soft:#e9f2f8;
+    --warm:#8c5a0f; --warm-soft:#fdf3e0;
+    --ok:#146b3a; --ok-soft:#e8f5ed;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#eef1f4; color:var(--ink);
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    font-size:16px; line-height:1.55; word-break:keep-all; overflow-wrap:break-word;
+  }
+  .sheet{max-width:297mm; margin:0 auto; background:#fff; padding:14mm; text-align:left;}
+
+  /* 머리말 */
+  .hd{border-bottom:3px solid var(--ink); padding-bottom:7px; margin-bottom:11px;
+      display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+  .hd .kick{font-size:14px; letter-spacing:.1em; color:var(--dim); margin-bottom:2px;}
+  .hd .ttl{font-size:34px; font-weight:800; letter-spacing:-.025em; line-height:1.15;}
+  .hd-r{font-size:16px; text-align:right; line-height:1.6;}
+  .hd-r .big{font-size:20px; font-weight:800;}
+
+  h2{font-size:18px; font-weight:800; margin:0 0 6px; padding:4px 11px;
+     background:var(--ink); color:#fff; letter-spacing:-.01em;}
+
+  .lede{background:var(--accent-soft); border-left:5px solid var(--accent);
+        padding:12px 16px; font-size:19px; font-weight:600; line-height:1.55;}
+  .lede em{font-style:normal; color:var(--accent); font-weight:800;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-top:8px;}
+  .kpi{border:1.5px solid var(--line); padding:7px 12px;}
+  .kpi .k{font-size:13px; color:var(--dim);}
+  .kpi .v{font-size:25px; font-weight:800; letter-spacing:-.025em; line-height:1.2;}
+  .kpi .s{font-size:13px; color:var(--dim);}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; align-items:start; margin-top:13px;}
+  .blk{break-inside:avoid;}
+  .blk + .blk{margin-top:11px;}
+
+  table{width:100%; border-collapse:collapse; font-size:15.5px;}
+  th,td{border:1px solid var(--line); padding:6px 10px; vertical-align:top; text-align:left;}
+  th{background:#f4f6f9; font-weight:700; white-space:nowrap;}
+
+  .quote{border-left:5px solid var(--ok); background:var(--ok-soft); padding:12px 16px;
+         font-size:17px; line-height:1.6;}
+  .quote .tail{margin-top:7px; font-size:17px; font-weight:800; color:var(--ok);}
+  .quote .src{margin-top:8px; font-size:13px; color:var(--dim);}
+
+  .topics{list-style:none; padding:0; margin:0;}
+  .topics li{border-left:5px solid var(--accent); background:#f7f9fb;
+             padding:7px 13px; margin-bottom:4px; break-inside:avoid; font-size:17px;
+             font-weight:600; line-height:1.45;}
+  .topics .w{display:block; margin-top:2px; font-size:13.5px; font-weight:400; color:var(--dim); line-height:1.38;}
+
+  .note{background:var(--warm-soft); border-left:5px solid var(--warm); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .good{background:var(--ok-soft); border-left:5px solid var(--ok); padding:9px 14px; font-size:15.5px; line-height:1.5;}
+  .note ul,.good ul{margin:5px 0 0; padding-left:20px;}
+  .note li,.good li{margin-bottom:3px;}
+
+  .foot{margin-top:9px; padding-top:5px; border-top:1px solid var(--line); font-size:12.5px; color:var(--dim);}
+
+  @media print{
+    body{background:#fff;}
+    .sheet{max-width:none; padding:0;}
+    .noprint{display:none !important;}
+    .blk,.topics li{break-inside:avoid;}
+    *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  }
+  .printbar{max-width:297mm; margin:10px auto 0; text-align:right;}
+  .printbar button{font:inherit; font-size:14px; padding:7px 16px; cursor:pointer;
+                   border:1px solid var(--ink); background:var(--ink); color:#fff; margin-left:6px;}
+  .printbar button.ghost{background:#fff; color:var(--ink);}
+  .printbar button[disabled]{opacity:.5; cursor:default;}
+  .printbar .msg{font-size:13px; color:var(--dim); margin-right:8px;}
+</style>
+</head>
+<body>
+
+<div class="printbar noprint">
+  <span class="msg" id="pngMsg"></span>
+  <button class="ghost" id="pngBtn" onclick="savePng()">.png로 저장</button>
+  <button onclick="window.print()">A3로 인쇄</button>
+</div>
+
+<div class="sheet">
+
+  <div class="hd">
+    <div>
+      <div class="kick">회장님 팀별 오찬 · 2차</div>
+      <div class="ttl">P.T팀과의 오찬</div>
+    </div>
+    <div class="hd-r">
+      <div class="big">9월 3일(목) 12:00</div>
+      <div>회장님 · 김남욱 GM · 나우열M · P.T팀 전원</div>
+      <div>센터 내부 &mdash; <b>배달음식</b> (준비 나우열M)</div>
+    </div>
+  </div>
+
+  <div class="lede">
+    P.T팀은 <em>강습 6개 팀 중 매출 2위</em>이고, 7월 목표를 <em>104.7% 달성</em>했습니다.
+    안전사고는 <em>한 건도 없었습니다.</em>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="k">7월 매출</div><div class="v">1억 364만</div><div class="s">6팀 중 2위 · 30.2%</div></div>
+    <div class="kpi"><div class="k">목표 달성</div><div class="v">104.7%</div><div class="s">목표 9,900만</div></div>
+    <div class="kpi"><div class="k">파트너 강사</div><div class="v">10명</div><div class="s">메인·파트 구분 미확정</div></div>
+    <div class="kpi"><div class="k">안전사고</div><div class="v">0건</div><div class="s">최근 7주 접수 106건 중</div></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- 왼쪽 -->
+    <div>
+      <div class="blk">
+        <h2>수영팀과 무엇이 다른가</h2>
+        <div class="lede" style="font-size:17px; padding:10px 14px;">
+          수영은 <em>한 타임에 다섯 분</em>, P.T는 <em>한 분</em>입니다.
+          그래서 P.T의 매출은 자리가 아니라 <em>강사 한 사람의 시간</em>에서 나옵니다.
+        </div>
+        <table style="margin-top:8px">
+          <tr><th style="width:104px"></th><th>P.T (1:1)</th><th>수영 (1:5)</th></tr>
+          <tr><th>회원이 내는 돈<br>(1회당)</th><td><b>108,900 원</b> 정회원<br>123,900 원 준회원</td><td>52,250 원</td></tr>
+          <tr><th>강사 한 타임이<br>버는 돈</th><td><b>108,900 원</b><br><span style="color:var(--dim)">1명</span></td><td>261,250 원<br><span style="color:var(--dim)">5명 × 52,250</span></td></tr>
+          <tr><th>7월 매출</th><td><b>1억 364만</b> (2위)</td><td>1억 2,492만 (1위)</td></tr>
+        </table>
+        <div style="margin-top:7px; font-size:15.5px;">
+          한 타임 수익은 수영의 <b>42%</b>인데 팀 매출은 <b>83%</b>까지 따라옵니다.
+          <b>수업 횟수 자체가 많다는 뜻입니다.</b>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>회원이 두 번 말한 것</h2>
+        <div class="quote" style="border-left-color:var(--warm); background:var(--warm-soft);">
+          &ldquo;헬스장에서 앉아서 운동하는 머신 할 때마다 핸드폰을 보니까 <b>시간이 지연된다.</b>
+          안내문 부착 크게 해서 부탁한다. <b>강사들도 안내를 할 수 있어야 한다.</b>&rdquo;
+          <div class="tail" style="color:var(--warm)">회원이 강사의 역할을 직접 요청했습니다</div>
+          <div class="src">「컴플레인」 2026-08-15 접수 · 같은 취지 2026-08-08에도 1건 (총 2건 · 아직 처리 중)</div>
+        </div>
+        <div class="note" style="margin-top:9px">
+          <b>칭찬 접수는 아직 없습니다</b> &mdash; 다만 이건 P.T팀 문제가 아닙니다.
+          칭찬을 받는 창구 자체가 <b>7월 중순에 생겼고</b>, 지금까지 들어온 칭찬은 전체에서 2건뿐입니다(둘 다 수영팀).
+          <b>말씀 자리에서 직접 물어보시는 편이 가장 정확합니다.</b>
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>현황</h2>
+        <table>
+          <tr><th style="width:88px">파트너 강사<br>10명</th>
+              <td>김상식 · 김종진 · 최동오 · 김혜진 · 김재용 · 김지훈 · 이형진 · 최도희 · 양승문 · 김광수
+                  <span style="color:var(--dim)"> &mdash; 메인·파트 구분과 팀장 직책은 확인 중</span></td></tr>
+          <tr><th>강습 문의</th>
+              <td><b>48건</b> — 성인 31 · 유소년 17 <span style="color:var(--dim)">(8팀 중 6위)</span></td></tr>
+          <tr><th>요금</th>
+              <td>10회 108만 9천 · 30회 294만 (10% 할인) · 100회 816만 8천 (25% 할인)
+                  <span style="color:var(--dim)"> — 정회원 기준 · 50분</span></td></tr>
+          <tr><th>열린 회원<br>불만</th>
+              <td><b>2건</b> — 둘 다 &lsquo;기구를 오래 점유해 다음 사람이 못 쓴다&rsquo;는 같은 내용</td></tr>
+          <tr><th>개인별<br>실적</th>
+              <td><b>지금은 볼 수 없습니다.</b> 시스템에 강사별 매출·담당 회원 수가 남지 않습니다
+                  <span style="color:var(--dim)"> — 9월 1일 새 시스템 전환 후 가능</span></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- 오른쪽 -->
+    <div>
+      <div class="blk">
+        <h2>말씀 나누실 만한 주제</h2>
+        <ol class="topics">
+          <li>&ldquo;1:1 수업만으로 팀 매출 2위를 하시더군요. 하루에 몇 분을 보십니까?&rdquo;
+            <span class="w">P.T의 성과는 <b>강사 개인의 시간</b>에서 나옵니다. 그 부담을 알아봐 주는 것이 가장 정확한 칭찬입니다.</span></li>
+          <li>&ldquo;회원이 기구를 오래 잡고 있어 다음 분이 못 쓴다는 이야기가 두 번 들어왔습니다. 현장에서는 어떻습니까?&rdquo;
+            <span class="w">회원이 &lsquo;강사가 안내해 주면 좋겠다&rsquo;고 직접 적었습니다. 현장 판단을 들으실 수 있습니다.</span></li>
+          <li>&ldquo;P.T 회원이 오래 다니시게 만드는 데 가장 중요한 게 뭐라고 보십니까?&rdquo;
+            <span class="w">재등록이 P.T 매출의 핵심인데 <b>우리 시스템에 그 숫자가 없습니다.</b> 현장 감각을 먼저 들어 두면 나중에 숫자와 맞춰볼 수 있습니다.</span></li>
+          <li>&ldquo;있으면 훨씬 수월해질 것 같은 게 하나 있다면요?&rdquo;
+            <span class="w">부담 없이 건의를 여는 마무리 질문 — 나오면 적어 두시면 됩니다.</span></li>
+        </ol>
+      </div>
+
+      <div class="blk">
+        <h2>앞으로 나아갈 방향</h2>
+        <div style="font-size:16px; margin-bottom:6px;">
+          <b>P.T의 한계는 강사의 시간입니다.</b> 자리를 늘릴 수 없으니 길은 셋입니다.
+        </div>
+        <table>
+          <tr><th style="width:104px">단가를 올린다</th>
+              <td>회원권 요금 인상은 <b>2026년 10월 시행</b>으로 정해져 있는데,
+                  <b>강습 요금을 함께 올릴지는 아직 정해지지 않았습니다.</b>
+                  강습이 매출 최대 축(월 3.43억)이라 이 결정이 가장 큽니다.
+                  <span style="color:var(--dim)">(회장님·대표님 결정 사항)</span></td></tr>
+          <tr><th>프리미엄<br>1:1을 만든다</th>
+              <td>남의 눈에 띄지 않게 운동하고 싶어 하는 분들이 있습니다.
+                  <b>시간대·공간을 따로 두는 비공개 P.T</b>는 자리를 늘리지 않고 단가만 올리는 방법입니다.
+                  같은 한 타임에 더 받습니다.
+                  <span style="color:var(--dim)">(검토 착수 여부 결정 필요)</span></td></tr>
+          <tr><th>재등록을<br>보이게 한다</th>
+              <td>P.T는 한 번 등록하고 끝이 아니라 <b>다시 오시게 하는 것</b>이 매출입니다.
+                  그런데 지금은 어느 강사의 회원이 얼마나 다시 오는지 <b>숫자로 볼 수 없습니다.</b>
+                  9월 새 시스템 전환 때 이 칸을 넣어야 합니다.
+                  <span style="color:var(--dim)">(9월 1일 전환 과제)</span></td></tr>
+        </table>
+        <div class="note" style="margin-top:7px">
+          <b>먼저 정리할 것 하나</b> &mdash; 유소년 「키성장 P.T」를 P.T팀 실적으로 볼지 아직 정해지지 않았습니다.
+          이걸 정해야 <b>P.T팀 숫자가 확정</b>됩니다.
+        </div>
+      </div>
+
+      <div class="blk">
+        <h2>진행하실 때</h2>
+        <div class="good" style="margin-bottom:6px">
+          <b>이렇게 하시면 좋습니다</b> &mdash; 숫자는 한 번만(&ldquo;6개 팀 중 두 번째로 크다&rdquo;) ·
+          <b>1:1이라 한 분 한 분 붙어야 한다</b>는 점을 짚어 주시면 자리가 풀립니다 ·
+          건의는 <b>적어 두겠다</b>는 말씀이면 충분합니다.
+        </div>
+        <div class="note">
+          <b>피하는 편이 좋습니다</b> &mdash; <b>수영팀과의 비교</b>(구조가 달라 같은 잣대가 아닙니다) ·
+          <b>개인별 실적 언급</b>(격려 자리와 맞지 않고, 무엇보다 <b>우리에게 그 숫자가 없습니다</b>)
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    실측 2026-08-19 · 7월 매출·목표는 매출 원장, 문의 48건은 강습 문의 원장, 회원 불만 2건과 안전사고 0건은 종합접수처에서 직접 확인한 값입니다.
+    강사 10명은 회원관리 화면의 강습 담당 명단(정본)에서 가져왔습니다. 확인되지 않은 항목(개인별 매출·재등록률·메인/파트 구분)은 채우지 않고 그대로 &lsquo;확인 중&rsquo;으로 두었습니다. · 작성 웰리(AI CEO)
+  </div>
+
+</div>
+
+<!-- PNG 저장 — 저장소 표준(공지 템플릿·모집 페이지와 동일한 html2canvas 방식) -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+function savePng(){
+  var btn = document.getElementById('pngBtn');
+  var msg = document.getElementById('pngMsg');
+  if (typeof html2canvas !== 'function'){
+    msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
+    return;
+  }
+  btn.disabled = true;
+  msg.textContent = '이미지를 만드는 중입니다…';
+  html2canvas(document.querySelector('.sheet'), {
+    scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
+  }).then(function(canvas){
+    var a = document.createElement('a');
+    a.download = 'PT팀_오찬_20260903.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    msg.textContent = '저장했습니다.';
+    btn.disabled = false;
+    setTimeout(function(){ msg.textContent = ''; }, 4000);
+  }).catch(function(e){
+    msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>
