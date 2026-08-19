@@ -231,12 +231,8 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
         if (TODAY - d).days >= LONG_PENDING_DAYS:
             long_pending += 1
 
-    # 표류(완료·terminal 인데 next 없음) — 활성 큐 기준
+    # '다음' 없는 완료는 2026-08-19 GM 확정으로 정상이 됐다(약속 L11) — 더 세지 않는다.
     drift = 0
-    for x in active:
-        if x.get("status") == "DONE" or x.get("terminal"):
-            if not (x.get("next") or "").strip():
-                drift += 1
 
     return {
         "observations_total": len(ledger),
@@ -247,7 +243,7 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
         "session_signal_recent7": session_recent,
         "session_signal_roles": sorted(session_roles),
         "gm_decisions": by_type.get("decision", 0),
-        "drift_events_ledger": by_type.get("repeat", 0),
+        "drift_events_ledger": 0,   # 폐지(약속 L11 · 2026-08-19)
         "queue_active_total": len(active),
         "queue_status": dict(status_counter),
         "queue_archive_total": len(archive),
@@ -260,8 +256,19 @@ def compute_counters(ledger: list, active: list, archive: list) -> dict:
 # ═══════════════════════════════════════════
 #  두뇌 ① — claude CLI (model_router 폴백)
 # ═══════════════════════════════════════════
+# '완료했는데 다음이 없다'는 옛 관찰은 프로필에서 뺀다 — 2026-08-19 GM 확정으로 그건
+# 더 이상 빈틈이 아니라 정상이다(약속 L11). 원장의 옛 기록은 그대로 두되, GM 이 매일 읽는
+# 프로필 서술에는 안 넣는다. 안 그러면 폐지한 규칙을 프로필이 계속 되살려 말한다.
+_DEAD_PATTERN_WORDS = ("표류", "다음 미정", "다음 없이", "다음 한 수")
+
+
 def _ledger_digest(ledger: list, limit: int = 24) -> str:
     """원장에서 최근·대표 관찰 요약을 프롬프트용 다이제스트로."""
+    ledger = [
+        r for r in ledger
+        if not any(w in ((r.get("summary") or "") + (r.get("pattern_hint") or ""))
+                   for w in _DEAD_PATTERN_WORDS)
+    ]
     lines = []
     for r in ledger[-limit:]:
         st = r.get("signal_type", "?")
@@ -281,7 +288,6 @@ GM(대표)을 보좌하기 위해, 관찰 원장과 업무 큐 지표를 근거�
 [수치 지표(관찰 원장·큐 집계)]
 - 총 관찰 {ct['observations_total']}건 (유형별: {ct['observations_by_type']})
 - GM 결정 이력 {ct['gm_decisions']}건
-- 표류(완료 후 다음 미정) 관찰 {ct['drift_events_ledger']}건 / 라이브 표류 {ct['drift_live']}건
 - 활성 큐 {ct['queue_active_total']}척 (상태: {ct['queue_status']}) · 장기 대기(30일+) {ct['long_pending_live']}척
 
 [최근 관찰 다이제스트]
@@ -334,7 +340,6 @@ def brain_fallback(counters: dict) -> str:
     parts.append(f"- 완료 아카이브 {ct['queue_archive_total']}건 — 지속적으로 배를 완주·아카이브하는 흐름.")
     parts.append("")
     parts.append("## 자주 놓치는 것")
-    parts.append(f"- 표류(완료 후 다음 미정) 라이브 {ct['drift_live']}건 — 완료 시 '다음 한 수' 지정을 빠뜨리는 경향.")
     parts.append(
         f"- 장기 대기(30일+) {ct['long_pending_live']}척 — 우선순위 낮은 배의 정리·폐기 판단을 미룸."
         + (f" (정박 선언 {ct.get('long_pending_parked_skipped', 0)}척은 제외했다 — 재개조건이 적혀 있고 GM 결재도 끝난 배)"
@@ -342,12 +347,12 @@ def brain_fallback(counters: dict) -> str:
     )
     parts.append("")
     parts.append("## 루틴 준수")
-    parts.append("- (추정) 지시-실행-완료 사이클은 유지되나, 사후 '다음 정하기' 루틴은 느슨.")
+    parts.append("- (추정) 지시-실행-완료 사이클 유지.")
     parts.append("")
     parts.append("## 핵심 수치지표 해석")
     parts.append(f"- 총 관찰 {ct['observations_total']}건 / 유형: {ct['observations_by_type']}")
-    parts.append(f"- 활성 {ct['queue_active_total']}척 · 장기대기 {ct['long_pending_live']} · 표류 {ct['drift_live']}")
-    parts.append("- 해석(추정): 개입 지점은 '완료 후 다음 정하기' + '장기대기 정리' 2곳.")
+    parts.append(f"- 활성 {ct['queue_active_total']}척 · 장기대기 {ct['long_pending_live']}척")
+    parts.append("- 해석(추정): 개입 지점은 장기대기 정리.")
     return "\n".join(parts)
 
 
@@ -363,7 +368,6 @@ def render_counters_block(ct: dict) -> str:
         "|---|---|",
         f"| 총 관찰 | {ct['observations_total']}건 |",
         f"| GM 결정 이력 | {ct['gm_decisions']}건 |",
-        f"| 표류(원장/라이브) | {ct['drift_events_ledger']} / {ct['drift_live']}건 |",
         f"| 활성 큐 | {ct['queue_active_total']}척 (PENDING {q.get('PENDING', 0)}·IN_PROGRESS {q.get('IN_PROGRESS', 0)}·DONE {q.get('DONE', 0)}) |",
         f"| 장기 대기(30일+) | {ct['long_pending_live']}척"
         + (f" (정박 선언 {ct.get('long_pending_parked_skipped', 0)}척은 제외 — 재개조건 대기·결재 완료)"
@@ -1208,7 +1212,7 @@ def run(stdout_only: bool = False, skip_surface_check: bool = False) -> str:
 
     print(f"\n[요약] 수치 카운터")
     print(f"  · 총 관찰 {counters['observations_total']} · 결정 {counters['gm_decisions']}")
-    print(f"  · 표류 라이브 {counters['drift_live']} · 장기대기 {counters['long_pending_live']} · 활성 {counters['queue_active_total']}")
+    print(f"  · 장기대기 {counters['long_pending_live']} · 활성 {counters['queue_active_total']}")
 
     if stdout_only:
         print("\n[--stdout-only] 파일 기록 생략 (미리보기)\n")
