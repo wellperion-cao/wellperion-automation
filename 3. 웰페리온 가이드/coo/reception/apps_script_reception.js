@@ -152,6 +152,19 @@ function _regDefaultAssignee(catKey, currentAssignee) {
   var cat = _regCatByKey(catKey);
   return (cat && cat.defaultAssignee) || '';
 }
+// 청결 접수의 부서 — 남/여 구역 담당 반장님이 갈린다(GM 지시 2026-08-15 · 부서 3개 → 11개).
+// 장소에 남/여가 적혀 있을 때만 자동으로 가르고, 안 적혀 있으면 REG_CATEGORIES 의 옛 '지원부' 값을
+// 그대로 둔다 — 그 값은 11개 목록에 없어 화면의 '지원부(구분 전)' 칸으로 모이고 사람이 배정한다.
+// 임의로 남/여를 찍으면 엉뚱한 반장님께 연락이 간다(실측 2026-08-17: 청결 14건 중 장소가 성별을
+// 밝힌 건은 여자사우나 3건뿐, 나머지 11건은 수영장·골프장 등 성별과 무관한 장소였다).
+function _regDeptFor(cat, loc) {
+  if (!cat || cat.key !== 'clean') return cat ? cat.dept : '';
+  var s = String(loc || '');
+  if (/여자|여성/.test(s)) return '지원부(여)';
+  if (/남자|남성/.test(s)) return '지원부(남)';
+  return cat.dept;
+}
+
 // 사진 미수집 카테고리 — GM 결정(2026-07-08): 칭찬·쓴소리는 폼+시트컬럼 모두 사진 제거.
 // _regHeadersFor 가 photoUrl 을 정의에서 빼야 reg_submit/reg_update 의 위치기반(_set) 쓰기가
 // clean_reg_columns 로 물리 삭제된 실제 시트 컬럼과 계속 정렬된다(안 그러면 컬럼 밀림 발생).
@@ -1177,7 +1190,7 @@ function _regSubmit(body) {
   _set('content',  content);
   _set('photoUrl', photoUrl);
   _set('status',   '접수');
-  _set('dept',     cat.dept);
+  _set('dept',     _regDeptFor(cat, loc));
   _set('assignee', _regDefaultAssignee(cat.key, ''));
   // 접수자 (2026-07-28 시우 · 점수 랭킹제) — 직원이 대신 적어 준 경우 그 직원 이름,
   //   회원이 폼에서 직접 넣은 경우는 '회원'. 접수 1점의 근거가 되는 칸이라
@@ -1209,7 +1222,7 @@ function _regSubmit(body) {
   // 텔레그램 알림 (익명 접수 시 이름 표기) — 사진 있으면 sendPhoto 로 실제 첨부
   _vNotifyTelegram(
     '📋 <b>[종합 접수처]</b> ' + cat.label + '\n' +
-    '부서: ' + cat.dept + '\n' +
+    '부서: ' + _regDeptFor(cat, loc) + '\n' +
     '이름: ' + (isAnon ? '익명' : name) + '\n' +
     '위치: ' + (loc || '-') + '\n' +
     '내용: ' + (content ? content.slice(0, 100) : '-') + '\n' +
@@ -1225,7 +1238,7 @@ function _regSubmit(body) {
 
   _regBoardCacheClear_();
   _regLookupCacheClearFor_(contact, name);   // 방금 접수한 사람이 곧바로 조회해도 새 건이 보이게
-  return _vJson({ ok: true, id: id, dept: cat.dept });
+  return _vJson({ ok: true, id: id, dept: _regDeptFor(cat, loc) });
 }
 
 // ─── 접수일시(createdAt) 내림차순 정렬 — 최신이 상단 (헤더 1행 고정) ───
