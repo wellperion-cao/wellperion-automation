@@ -2005,5 +2005,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-08-19"
+  },
+  {
+    "task_id": "CTO-2026-08-19-예약작업-26개가-실패해도-성공-으로-기록된다-숨김",
+    "clevel": "cto",
+    "title": "[시토] 예약작업 26개가 실패해도 '성공'으로 기록된다 — 숨김 실행기가 종료코드를 안 돌려줌",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-19",
+    "from": "cto",
+    "note": "[시토 자가점검 2026-08-19] ■ 무엇 (2026-08-19 실측 · GM 물음 '윈도우 업데이트로 못 보낼 때 어떻게 할 수 없나'에서 나온 건)\nlaunchers/*.vbs 28개 중 26개가 WScript.Shell.Run(..., 0, False) 로 자식 프로세스를 기다리지 않고 즉시 끝난다. 그래서 안에서 파이썬이 실패로 끝나도 예약작업에는 항상 '성공(0)'으로 기록된다.\n- 실증: 2026-08-19 09:32 매출보고가 4개 방 전부 실패했는데 Get-ScheduledTaskInfo 의 LastTaskResult = 0 이었다.\n- 파급: 윈도우 예약작업의 '실패 시 재시도' 기능이 어느 작업에서도 발동할 수 없다. 실패 이력도 안 남아 나중에 세어 볼 수도 없다.\n\n■ 이미 고친 것 (매출보고 1건)\nlaunchers/kakao_auto_daily_report_hidden.vbs 를 Run(..., 0, True) + WScript.Quit rc 로 바꿨고, 예약작업 Wellperion-Kakao-Sales-Report-0930 에 실패 시 15분 간격 3회 재시도 + 놓친 회차 따라잡기(StartWhenAvailable)를 켰다. 종료코드 전달은 3단(파이썬 1 → 배치 → VBS 3) 실측 확인했다.\n\n■ 남은 것 = 나머지 23개 (일회성 작업만)\n★건드리면 안 되는 3개 = bot_hidden.vbs · scheduler_hidden.vbs · claude_session_hidden.vbs. 이 셋은 계속 떠 있는 상주 프로세스라 기다리게 바꾸면 예약작업이 영원히 '실행중'으로 물리고 다음 회차가 막힌다(MultipleInstances=IgnoreNew).\n나머지 23개는 일회성이라 같은 방식으로 바꾸면 된다. 다만 한 번에 다 바꾸지 않는다 — 작업마다 실제 소요시간을 보고 몇 개씩 나눠 바꾸고, 바꾼 뒤 다음 회차 LastTaskResult 를 확인한다.\n\n■ 확인 방법\nGet-ScheduledTaskInfo -TaskName '<이름>' | Select LastRunTime, LastTaskResult",
+    "next": "일회성 launcher 23개를 몇 개씩 나눠 종료코드 전달로 바꾸고, 회차마다 LastTaskResult 로 확인",
+    "depends_on": "",
+    "ship_no": 10900,
+    "short_no": 697,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-08-19"
   }
 ]
