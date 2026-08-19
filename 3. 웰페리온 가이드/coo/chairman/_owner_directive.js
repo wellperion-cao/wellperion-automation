@@ -373,14 +373,10 @@
     var elChCnt = document.getElementById('chairman-grp-cnt');
     var elChSum = document.getElementById('chairman-sum-body');
 
-    // 자료 링크(docs) — 결재건·시안·A3 정리본이 실재하는 항목만 제목 옆에 그린다(2026-08-06 GM 지시).
-    // 클래스는 doc-link 그대로 재사용(GM업무.html .item .doc-link 스타일과 동일 클래스 — 새 클래스 없음).
-    function chDocs(it) {
-      if (!it.docs || !it.docs.length) return '';
-      return it.docs.map(function (d) {
-        return ' <a class="doc-link" href="' + esc(d.href) + '" target="_blank" rel="noopener">📄 ' + esc(d.label) + '</a>';
-      }).join('');
-    }
+    // 자료 링크(docs)는 2026-08-19 GM 지시로 이 표에서 걷어냈다 — "회장님 보고에 있는 링크들은
+    // GM업무라인으로 넘겨줘 … 결국 내가 업무 진행하는 건들이니까". A3·검토서는 이제 GM 업무 목표
+    // (monthly_ops_plan objectives[].docs)에만 달린다. 아래 chLink 로 그 목표까지 한 번에 간다.
+    // chDocs() 는 읽을 데이터가 없어져 함께 지웠다(꺼둔 채 남기지 않는다 · 약속 L21).
 
     // 관련 GM 직접 업무로 연결(2026-08-11 GM 지시 "스토리가 이어지는 맥락으로") — it.link 있는 건만
     // GM업무.html #gm-<목표id> 카드로 바로 간다. 억지 연결 금지라 정본(_chairman_items.js)에 실재하는
@@ -404,7 +400,7 @@
           : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chDocs(it) + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') +
+          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') +
           pctBadge(stagePct(it.when)) + '</td>' +
           '<td class="rpt-actions">' + act + '</td></tr>';
       }).join('');
