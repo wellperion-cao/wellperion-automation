@@ -10246,7 +10246,14 @@ function openValidLossModal(rowIndex) {
   var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
   var d = new Date();
   var today = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
-  _lossModal = { mode: 'fromvalid', rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, col: _capCol(_activeHeaders, '미등록사유'), endCol: endCol, endDate: today };
+  // ★2026-08-20 시포 근본수리(GM 신고 "유효회원에서 LOSS 처리 클릭하고 사유 기록해도 LOSS 전환 이관이 안 됨").
+  //   서버가 유효/종료를 가르는 기준은 **잔여일**이다(_memberIsValid_ — 잔여일이 비었거나 0 이상이면 유효).
+  //   그런데 이 화면의 LOSS 처리는 '종료일자'만 써 왔다. 잔여일은 시트에 박힌 값이라 종료일자를 오늘로
+  //   당겨도 그대로 남고, 그래서 회원이 유효 명단에 계속 있었다(실측 2026-08-20: 최정호 님 종료일자
+  //   08-20인데 잔여일 366 · 손계자 님 종료일자 08-20인데 잔여일 0 — 둘 다 유효회원 탭에 잔류).
+  //   LOSS 처리는 잔여일을 -1 로 함께 내려 판정과 화면을 일치시킨다.
+  var remainCol = _capCol(_activeHeaders, '잔여일');
+  _lossModal = { mode: 'fromvalid', rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, col: _capCol(_activeHeaders, '미등록사유'), endCol: endCol, endDate: today, remainCol: remainCol };
   document.getElementById('lrMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '') + '  ·  종료일자 ' + today + ' 로 저장';
   _lossModalFill('');
 }
@@ -10832,7 +10839,9 @@ function saveLossReasonModal() {
     label: (_isActiveMember || _isFromValid) ? '미등록사유' : 'LOSS 사유',
     who: _who, overlay: _overlay
   });
-  showToast((_isActiveMember || _isFromValid) ? '미등록사유 저장' : 'LOSS 사유 저장', 'ok');
+  // ★2026-08-20 GM 지시 — 여기서 '저장'이라고 단정하지 않는다. 이 시점은 아직 화면에만 반영된 상태이고
+  //   시트에 들어갔는지는 모른다. 끝났다는 말은 대조까지 통과한 뒤 _verifyFinish 가 한다.
+  showToast((_isActiveMember || _isFromValid) ? '미등록사유 저장 중…' : 'LOSS 사유 저장 중…', '');
   // 유효회원 LOSS처리 추가 저장 — 종료일자(오늘) enqueue + valid 목록 즉시 제거(FB260817-124841)
   if (_isFromValid && _lossModal.endCol) {
     var _ov2 = {}; _ov2[_lossModal.endCol] = _lossModal.endDate;
@@ -10840,11 +10849,20 @@ function saveLossReasonModal() {
       { action: 'member_active_update', rowIndex: rowIndex, col: _lossModal.endCol, value: _lossModal.endDate, keyPhone: keyPhone, rowKey: rowKey },
       { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + _lossModal.endCol, label: '종료일자(LOSS처리)', who: _who, overlay: _ov2 }
     );
+    // ★2026-08-20 — 잔여일을 -1 로 함께 내린다. 서버의 유효/종료 판정은 잔여일만 본다(openValidLossModal 주석).
+    //   이걸 안 쓰면 종료일자만 바뀐 채 회원이 유효 명단에 남아 LOSS 탭으로 넘어가지 않는다.
+    if (_lossModal.remainCol) {
+      var _ov3 = {}; _ov3[_lossModal.remainCol] = '-1';
+      WriteBuffer.enqueue(
+        { action: 'member_active_update', rowIndex: rowIndex, col: _lossModal.remainCol, value: '-1', keyPhone: keyPhone, rowKey: rowKey },
+        { scope: 'active', phoneKey: keyPhone, fieldset: 'cell:' + _lossModal.remainCol, label: '잔여일(LOSS처리)', who: _who, overlay: _ov3 }
+      );
+    }
     _activeRows = (_activeRows || []).filter(function(x){ return x.rowIndex != rowIndex; });
     _activeCacheSave('valid', _activeHeaders, _activeRows);
     _activeRender(_activeRows);
     renderActiveSummary();
-    showToast((_who || '회원') + ' LOSS 처리 완료', 'ok');
+    showToast((_who || '회원') + ' LOSS 처리 중… 동기화 확인 뒤 알려드립니다', '');
   }
   var _wasPending = _isLesson && _lossModal.pendingStatusSave;
   var _tt = _t;
@@ -13647,7 +13665,13 @@ var WriteBuffer = (function(){
     //   verifyAlerts 목록에 남긴다 — 토스트는 그 순간 화면을 안 보고 있으면 놓친다(2026-07-30 GM 재지시:
     //   "불일치·조회 실패는 반드시 눈에 보이게, 조용히 삼키면 지금보다 나쁘다"). status 'ok'는 조용히 통과.
     var who = (item.who ? item.who + ' ' : '') + (item.label || '');
-    if (status === 'mismatch') {
+    // ★2026-08-20 GM 지시 — "동기화가 마무리 되었으면 완료, 안 되었으면 동기화 실패, 사유는 ~~ 이렇게
+    //   남겨줘야 해." 종전엔 성공이 조용히 지나가서, 실무진은 **저장 버튼을 누른 순간의 토스트**만 보고
+    //   끝난 줄 알았다(그 토스트는 서버에 보내기 전에 뜬다). 그래서 뒤에서 실패해도 모른 채 창을 닫았다.
+    //   이제 실제로 시트에 들어간 것이 확인된 뒤에만 '완료'라고 말한다.
+    if (status === 'ok') {
+      showToast('✅ 동기화 완료 — ' + (who || '저장'), 'ok');
+    } else if (status === 'mismatch') {
       verifyAlerts.push({ id: item.id, text: (who ? who + ' — ' : '') + detail + ' 값 다름' });
       showToast('⚠ 저장 확인 안 됨 — ' + who + ' ' + detail + ' 값이 다릅니다. 새로고침 후 확인하세요', 'err');
     } else if (status === 'unknown') {
