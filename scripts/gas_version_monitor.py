@@ -65,10 +65,6 @@ _PROJECTS = [
     # (그래서 편집기 직접 수정이 관행이 됐고 저장소 사본이 라이브와 어긋났다).
     ("sales", "1Zx0PKWNjrvvVVPVstiYPf0M32moNhLIzAQFW1cL-kQWoGEU29BUCng77", ".deploy-sales"),
     ("procurement", "1pCMppQK15EjSzgRSPfzWyXQl3L8cpbKxfl0WFIFctaYlJtnveU3fVMPj", ".deploy-procurement"),
-    # 회원관리 백엔드 분리 1단계(member-api) — 2026-08-20 GM 승인. 전례: intake(배240)와 동일 사각지대
-    # 재발방지 — 등록 안 하면 배포 관문(gas_deploy_guard)을 못 거치고 raw clasp deploy 우회로가 된다.
-    # 이번 배포 범위 = member_active_list(읽기 전용) 1개 액션 이관·왕복측정뿐, 화면 전환은 별도 결재.
-    ("member-api", "1_ZiRDIA_oS6anePmEMfj2FuO4ccJcyDZ6WDkT6lFQhswO5DDvCbk9AeG", ".deploy-member-api"),
 ]
 
 _HARD_LIMIT = 200

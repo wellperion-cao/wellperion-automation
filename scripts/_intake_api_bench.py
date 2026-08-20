@@ -7,8 +7,7 @@
   python scripts/_intake_api_bench.py --url <exec주소> --name 임시
 
 ⚠ 미승인(403) 상태면 median 을 못 낸다 — 그때는 에러 개수만 찍는다. 값을 지어내지 않는다.
-※ 2026-08-20: member-api 용으로 같은 파일이 하나 더 생겨 있었다(_member_api_bench.py).
-   같은 일을 하는 파일을 둘 두지 않는다(약속 L21) — 여기로 합치고 그쪽은 지웠다.
+※ 2026-08-20: 회원관리 뒤단 분리 건은 GM 결정으로 전부 되돌렸다 — 여기 대상 목록에도 남기지 않는다.
 """
 import argparse
 import statistics
@@ -18,8 +17,6 @@ import urllib.request
 TARGETS = {
     "intake": "https://script.google.com/macros/s/"
               "AKfycbyLc2cnOeyyCpdrluJrgrUNrfhSJS3W-9wte5ndOBNS5S8Dux7KwcV8WAAXs2bwi2yFcw/exec",
-    "member": "https://script.google.com/macros/s/"
-              "AKfycbw4KuH1j8x5pFx8yZtn0aMXouNd4I0Vywq1T6v-CTbf15GB1PIMCHK8IcloA7WWHpV8BQ/exec",
 }
 
 
