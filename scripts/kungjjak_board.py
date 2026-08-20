@@ -152,10 +152,14 @@ def _is_noise_got(got: str) -> bool:
     return bool(_NOISE_TAIL_RE.search(core))
 
 
-def load(day: str, role: str | None):
+def load(day: str, role: str | None, include_ai: bool = True):
     """GM 지시 짝(ref=GM-*)만 — 접수↔완료 대응이 있는 것. 부팅 프롬프트·시스템 문구·
     지시가 아닌 발화(승인 답변·조회 요청·감상)가 섞인 ref 는 통째로 뺀다
-    (그룹 안 아무 줄이나 걸리면 전체 제외 — 2026-08-13 GM 지적)."""
+    (그룹 안 아무 줄이나 걸리면 전체 제외 — 2026-08-13 GM 지적).
+
+    include_ai=False 면 area='AI지시'(현실 업무가 아닌 AI 내부 살림, 웰리가 판단해 붙인 값)로
+    표시된 그룹도 뺀다 — GM업무 화면용(배684 · GM 지시 2026-08-18 "AI건 말고 현실업무 기준").
+    자율현황(emit)은 전부를 보여주는 화면이라 기본값(True)을 그대로 쓴다."""
     by: dict[str, list] = {}
     for d in _read(day, role):
         if str(d.get('ref') or '').startswith('GM-'):
@@ -165,6 +169,9 @@ def load(day: str, role: str | None):
             del by[ref]
             continue
         if _is_noise_got(ev[0].get('event')):
+            del by[ref]
+            continue
+        if not include_ai and any(str(e.get('area') or '') == 'AI지시' for e in ev):
             del by[ref]
     return by
 
@@ -476,18 +483,31 @@ def emit(day: str) -> int:
     return 0
 
 
+def _row_ship_no(r: dict) -> str | None:
+    """행이 가리키는 배 번호('한 것' 칸에서 뽑는다) — 훅 접수(GM 원문 그대로)와 세션 재접수
+    (요약문)는 '접수한 것' 문구가 서로 달라 낱말겹침으로 안 잡히는 경우가 많다(배684 실측 —
+    47건 중 절반 가까이가 이런 미스). 그래도 '한 것'에 같은 배 번호가 적혀 있으면 같은 지시다."""
+    m = _SHIP_IN_TEXT_RE.search(r.get('did') or '')
+    return m.group(1) if m else None
+
+
 def _dedup_rows(rows: list[dict]) -> list[dict]:
     """같은 지시가 접수 훅 2개(자동 UserPromptSubmit + 손으로 또 한 번) 때문에 ref 가
     다른 두 줄로 잡히는 것을 하나로 합친다(2026-08-13 GM 지적 — 04↔1001·05↔1002…
-    47건 중 절반 가까이가 이 중복이었다). find_repeats() 와 같은 낱말-겹침 판정을
-    재사용해 같은 지시로 묶고, **증거가 있는 쪽 행을 통째로 살린다**(부분 병합이 아니라
-    행 전체 교체 — 필드가 서로 안 맞는 프랑켄슈타인 행을 막는다). 둘 다 증거가 같으면
-    번호가 앞선(sortkey 가 작은) 쪽을 남긴다."""
+    47건 중 절반 가까이가 이 중복이었다). 우선 같은 배 번호(_row_ship_no)를 가리키면
+    문구가 달라도 같은 지시로 묶고, 배 번호가 없으면 find_repeats() 와 같은 낱말-겹침
+    판정으로 묶는다. **증거가 있는 쪽 행을 통째로 살린다**(부분 병합이 아니라 행 전체
+    교체 — 필드가 서로 안 맞는 프랑켄슈타인 행을 막는다). 둘 다 증거가 같으면 번호가
+    앞선(sortkey 가 작은) 쪽을 남긴다."""
     rank = {'✅있음': 0, '🔁재확인': 0, '⚠️없음': 1, '—': 2}
     groups: list[list[dict]] = []
     for r in rows:
+        ship = _row_ship_no(r)
         w = _norm(r['got'])
         for g in groups:
+            if ship and ship == _row_ship_no(g[0]):
+                g.append(r)
+                break
             gw = _norm(g[0]['got'])
             if w and gw:
                 need = max(1, (min(len(w), len(gw)) + 1) // 2)
@@ -520,13 +540,24 @@ def _render_table(by: dict, day: str) -> None:
         #   ▸그래서 소급으로 남길 때는 detail 끝에 '· 시각 추정'을 붙이는 것을 표식으로 삼는다.
         backfilled = any('시각 추정' in str(e.get('detail') or '') for e in ev)
 
+        got = str(ev[0].get('event') or '').strip()
+        did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
+        # 자동종결(close_gm_refs)이 근처 커밋을 못 찾으면 "⚠️ 자동종결 — …별도 완료 기록
+        # 없음" 을 그대로 detail 에 남긴다 — 우리 사정을 설명하는 내부 문구지 GM 이 읽을
+        # 말이 아니다(배684 · GM 지시 2026-08-18). '⚠️' 로 시작하는 detail 은 스스로 증거
+        # 없다고 밝힌 것이니(evidence_state 와 같은 판정 기준) 완료로 세지 않고 진행중으로
+        # 되돌린다 — GM 화면·자율현황 모두 여기 한 곳만 고치면 같이 정직해진다.
+        auto_closed = did.startswith('⚠️')
+        if auto_closed:
+            did = '아직'
+
         # 상태 아이콘을 소요 앞에 붙인다(GM 지시 2026-08-13 — "진행 중인지 완료된 건지도
         # 파악하면 좋겠다"). 칸을 6개로 늘리지 않는다: 늘리면 '접수한 것'·'한 것' 칸이 좁아져
         # 본문이 더 잘리고, 오늘 되돌린 정본 5칸이 또 흔들린다. 소요 칸은 이미 상태를 겸하고
         # 있었으나(시간=완료 / 진행중=미완) 완료 쪽이 암묵이라 GM 이 규칙을 외워야 읽혔다.
         # 아이콘은 항해 표준 그대로 — 🏁 입항(완료) / 🚢 항해 중(진행).
         dur, minutes = '🚢 **진행중**', None
-        has_dur = bool(st and en)
+        has_dur = bool(st and en) and not auto_closed
         if has_dur:
             if backfilled:
                 dur = '🏁 소급'
@@ -534,8 +565,6 @@ def _render_table(by: dict, day: str) -> None:
                 dur = f'🏁 {_dur(st, en)}'
                 minutes = int((en - st).total_seconds() // 60)
 
-        got = str(ev[0].get('event') or '').strip()
-        did = str(oks[-1].get('detail') or '').strip() if oks else '아직'
         item_role = str(ev[0].get('role') or '').strip().lower()
         up = upload_state(did, bool(oks), role=item_role, start=st, end=en)
         ev_state = evidence_state(got, did, up) if oks else '—'
@@ -680,7 +709,7 @@ def main() -> int:
 
     if a.carry:
         yday = (datetime.date.fromisoformat(day) - datetime.timedelta(days=1)).isoformat()
-        yby = load(yday, role)
+        yby = load(yday, role, include_ai=False)
         carried = {ref: ev for ref, ev in yby.items()
                    if not any(e.get('result') == 'ok' for e in ev)}
         if carried:
@@ -690,7 +719,7 @@ def main() -> int:
             _render_table(carried, day)
             print()
 
-    by = load(day, role)
+    by = load(day, role, include_ai=False)
     print(f'## 🥁 쿵짝표 — {who} · {day}')
     print()
     if not by:
