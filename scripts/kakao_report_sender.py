@@ -286,10 +286,29 @@ def _room_members(room_name: str) -> str:
     return ""
 
 
+# 매일 정해진 시각에 나가는 현황 공유는 '지시'가 아니다 — 실장 경유 가드 대상이 아니다.
+#   ▸왜 필요한가(2026-08-20 실측): 아침 「🌅 어제 운영부 정리」가 임정은M 이름과 함께
+#     "…부탁", "주시면" 같은 낱말을 담자 가드가 통째로 막았다. 그 결과 ★운영부 방에
+#     8/19·8/20 이틀 연속 아침 정리가 안 나갔고, 발신 로그엔 '전량 스킵'으로만 남아
+#     아무도 몰랐다. GM 이 직접 "운영부방은 안되어있네?" 라고 물어서야 드러났다.
+#   ▸가드의 목적은 **지시가 실장을 건너뛰지 않게** 하는 것이다. 정해진 시각의 현황 공유는
+#     지시가 아니라 공유라 이 규칙의 대상이 아니다(약속 L24 — ★운영부 = 공유 전용).
+#   ▸판정은 좁게 둔다: 아침 정리 머리글로 시작할 때만 면제한다. 사람이 손으로 쓰는 전달문은
+#     이 머리글을 쓰지 않으므로 그대로 막힌다.
+_ROUTINE_DIGEST_HEADS = ("🌅 어제 ", "📊 [하루 일과 정리]", "[오늘 하루 정리]")
+
+
+def _is_routine_digest(text: str) -> bool:
+    head = str(text or "").lstrip()
+    return any(head.startswith(h) for h in _ROUTINE_DIGEST_HEADS)
+
+
 def via_manager_violation(room_name: str, text: str) -> str | None:
     """실장을 건너뛰는 발신이면 차단 문구를 만든다(아니면 None)."""
     if _VIA_MANAGER_STAFF not in text:
         return None
+    if _is_routine_digest(text):
+        return None                      # 매일 나가는 현황 공유 — 지시가 아니다(아래 함수 주석 참조)
     if not any(k in text for k in _VIA_MANAGER_ASK):
         return None                      # 요청이 아닌 단순 언급 — 막지 않는다
     if _VIA_MANAGER_STAFF not in _room_members(room_name):
@@ -1719,7 +1738,13 @@ def main() -> int:
             print(f"BLOCKED: {len(failures)}개 방 실패 — {_failure_reason(failures)} — {failures}")
             return 1
         if dedup_skipped and len(dedup_skipped) == len(rooms):
-            print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {list(dedup_skipped)}")
+            # 전량 보류도 조용히 넘기지 않는다 — 중복은 정상이지만 '가드에 막힘'은 사고다.
+            # 2026-08-20: 아침 정리가 실장 경유 가드에 이틀 걸려 있었는데 로그에만 남아
+            # 아무도 몰랐다(GM 이 물어서 드러남). 중복(dedup) 외 사유는 알린다.
+            if not args.dry_run and any(r != "dedup" for r in dedup_skipped.values()):
+                _notify_send_failure([(k, f"보류: {v}") for k, v in dedup_skipped.items()],
+                                     "텍스트(보류)", args.message)
+            print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {dedup_skipped}")
             return 1
         note = f" (미발신 {len(dedup_skipped)}개: {list(dedup_skipped)})" if dedup_skipped else ""
         print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방{note}")
