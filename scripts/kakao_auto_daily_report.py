@@ -363,9 +363,15 @@ def missed_targets(target_date: datetime, limit: int = 10) -> "list[datetime]":
     last_ok = last_reported_target()
     if last_ok is None:
         return []
+    # 기준일에서 시각을 떨군 뒤 비교한다. 호출부가 넘기는 target 은 datetime.now()-1일이라
+    # 시각이 붙어 있고, last_ok 는 문자열에서 읽어 자정이다. 그대로 비교하면 대상일 당일이
+    # 자기 자신보다 앞선 것으로 잡혀 '밀린 날' 목록에 들어간다.
+    # 2026-08-20 09:30 실사고 — 인사말이 "8.19(수)·8.19(수) 매출 및 운영사항 보고드립니다."
+    # 로 4개 방(회장님 포함)에 나갔다.
+    target_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
     out: list[datetime] = []
     day = last_ok + timedelta(days=1)
-    while day < target_date and len(out) < limit:
+    while day < target_day and len(out) < limit:
         if not is_closed(day):
             out.append(day)
         day += timedelta(days=1)
@@ -537,6 +543,22 @@ def main() -> int:
                     "8.17(월)~8.19(수) 매출 및 운영사항 보고드립니다."):
             assert len(cap.splitlines()) == 1, f"인사말이 여러 줄이 되면 회장님 게이트가 막는다: {cap!r}"
         print("PASS — 밀린 회차 인사말 3종(한 줄 유지)")
+
+        # 밀린 날 판정에 시각이 섞이면 대상일이 자기 자신을 밀린 날로 잡는다(2026-08-20 실사고).
+        # 위 3종은 전부 자정 datetime 이라 이 결함을 통과시켰다 — 호출부가 실제로 넘기는
+        # 모양(시각 있음)으로 한 번 더 본다.
+        _orig = globals()["last_reported_target"]
+        globals()["last_reported_target"] = lambda: d("2026-08-18")
+        try:
+            timed = datetime(2026, 8, 19, 9, 30)
+            assert missed_targets(timed) == [], "대상일 당일이 밀린 날로 잡히면 날짜가 두 번 찍힌다"
+            assert build_caption_with_missed(timed, missed_targets(timed)) == \
+                "8.19(수) 매출 및 운영사항 보고드립니다."
+            globals()["last_reported_target"] = lambda: d("2026-08-17")
+            assert missed_targets(timed) == [d("2026-08-18")]
+        finally:
+            globals()["last_reported_target"] = _orig
+        print("PASS — 밀린 날 판정(시각 섞인 기준일)")
         return 0
 
     if sys.platform != "win32":
