@@ -327,10 +327,35 @@ def _warm_intake_api() -> None:
         _log(f"[warm] 접수 백엔드 예열 건너뜀(무해): {type(e).__name__}: {str(e)[:80]}")
 
 
+# ── 회원관리 백엔드 예열 (배 · 2026-08-20 GM 승인) ────────────────────────────
+# 접수(intake-api)와 같은 사정 — member_active_list 를 별도 백엔드(member-api)로
+# 뗐다. 접수 예열 전례를 그대로 따라 같은 job 지나가는 길에 ping 한 번 얹는다
+# (새 예약작업·새 스크립트 0, 약속 L21). GM 이 authorize() 를 1회 승인하기 전까지는
+# 403 이 정상 — 실패는 무시한다(가속층일 뿐, 못 데워도 별개로 동작에 영향 없음).
+_MEMBER_API_PING_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbw4KuH1j8x5pFx8yZtn0aMXouNd4I0Vywq1T6v-CTbf15GB1PIMCHK8IcloA7WWHpV8BQ/exec"
+)
+
+
+def _warm_member_api() -> None:
+    import urllib.request
+    t0 = time.time()
+    try:
+        req = urllib.request.Request(_MEMBER_API_PING_URL + "?action=ping",
+                                     headers={"User-Agent": "wellperion-warmup"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            r.read(200)
+        _log(f"[warm] 회원관리 백엔드 예열 {time.time() - t0:.2f}초")
+    except Exception as e:
+        _log(f"[warm] 회원관리 백엔드 예열 건너뜀(무해): {type(e).__name__}: {str(e)[:80]}")
+
+
 def main() -> int:
     no_push = "--no-push" in sys.argv
     STATUS_DIR.mkdir(parents=True, exist_ok=True)
     _warm_intake_api()
+    _warm_member_api()
 
     if not _lock_acquire():
         _log("[skip] 이전 회차가 아직 실행 중(락 보유) — 이번 회차 건너뜀")
