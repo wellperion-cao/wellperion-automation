@@ -9108,6 +9108,60 @@ function _hasRealReply_(memo) {
   }
 
   if (action === 'member_active_list') {
+    /* ★단일 행 조회(2026-08-20 시포 — GM "동기화 진행·완료가 정말 늦게 뜬다").
+       저장 확인(read-back)은 방금 쓴 그 행 하나만 다시 읽으면 되는데, 지금까지 유효회원 전체(약 994명)를
+       받고 못 찾으면 종료(201명)까지 또 받았다 — 실측 6.3초 + 13.2초 = 저장 1건에 최대 19.5초.
+       화면이 rowIndexes=201,194 처럼 넘기면 그 행들만 읽어 같은 모양(data 배열)으로 돌려준다.
+       읽는 범위만 좁힐 뿐 판정·형식·마스킹 규칙은 아래 본문과 같은 것을 쓴다(새 액션 0 · 약속 L21). */
+    var aaOnly = String(body.rowIndexes || body.rowIndex || '').trim();
+    if (aaOnly) {
+      var aoWant = aaOnly.split(',').map(function(s){ return parseInt(String(s).trim(), 10); })
+                          .filter(function(n){ return n >= 2; });
+      if (!aoWant.length) return _json({ ok: false, error: 'rowIndexes 형식 오류(2 이상 정수)' });
+      var aoSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+      if (!aoSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+      var aoLastCol = aoSh.getLastColumn(), aoLastRow = aoSh.getLastRow();
+      var aoHdr = aoSh.getRange(1, 1, 1, aoLastCol).getValues()[0].map(function(v){ return String(v).trim(); });
+      var aoKeep = aoHdr.map(function(h){ return h && !/GMT|표준시/.test(h); });
+      // 지문키 재료 — 아래 본문(aaRows 생성부)과 같은 칸·같은 정규화를 쓴다.
+      var aoNameI = -1;
+      for (var aon = 0; aon < aoHdr.length; aon++) {
+        var aonh = aoHdr[aon].replace(/\s/g, '');
+        if (aonh === '성명' || aonh === '이름' || aonh.indexOf('회원명') >= 0) { aoNameI = aon; break; }
+      }
+      var aoTsI = -1;
+      for (var aot = 0; aot < aoHdr.length; aot++) {
+        var aoth = aoHdr[aot].replace(/\s/g, '');
+        if (aoth.indexOf('등록일자') >= 0 || aoth.indexOf('타임스탬프') >= 0) { aoTsI = aot; break; }
+      }
+      var aoPhI = aoHdr.indexOf(MEMBER_PHONE_COL);
+      var aoOut = [];
+      for (var aoi = 0; aoi < aoWant.length; aoi++) {
+        var aoR = aoWant[aoi];
+        if (aoR > aoLastRow) continue;
+        var aoRow = aoSh.getRange(aoR, 1, 1, aoLastCol).getValues()[0];
+        var aoObj = { rowIndex: aoR };
+        for (var aoc = 0; aoc < aoHdr.length; aoc++) {
+          if (!aoKeep[aoc]) continue;
+          var aoV = aoRow[aoc];
+          if (aoV instanceof Date && !isNaN(aoV.getTime())) aoV = Utilities.formatDate(aoV, 'Asia/Seoul', 'yyyy-MM-dd');
+          aoV = (aoV === null || aoV === undefined) ? '' : String(aoV);
+          if (aoHdr[aoc] === MEMBER_PHONE_COL) {
+            var aoP = aoV.replace(/[^0-9]/g, '');
+            if (aoP.length === 11) aoV = aoP.slice(0,3) + '-' + aoP.slice(3,7) + '-' + aoP.slice(7);
+            else if (aoP.length === 10) aoV = aoP.slice(0,3) + '-' + aoP.slice(3,6) + '-' + aoP.slice(6);
+          }
+          aoObj[aoHdr[aoc]] = aoV;
+        }
+        var _aoTsN = _normTsKey_(aoTsI >= 0 ? aoRow[aoTsI] : '');
+        var _aoPhN = _normPhone_(aoPhI >= 0 ? aoRow[aoPhI] : '');
+        var _aoNmN = aoNameI >= 0 ? _normNameKey_(aoRow[aoNameI]) : '';
+        aoObj.rowKey = (_aoTsN && _aoPhN) ? (_aoTsN + '|' + _aoPhN + (_aoNmN ? '|' + _aoNmN : '')) : '';
+        aoOut.push(aoObj);
+      }
+      return _json({ ok: true, scope: 'rows', headers: aoHdr.filter(function(h, i){ return aoKeep[i]; }),
+                     count: aoOut.length, data: aoOut });
+    }
     // scope='archive' = 지난 연도 LOSS 보관 시트(2026-08-13). 검색이 옛 회원을 놓치지 않도록 조회 통로를 연다.
     var aaScope = String(body.scope || 'valid');
     if (aaScope !== 'ended' && aaScope !== 'corp' && aaScope !== 'archive') aaScope = 'valid';
@@ -9463,6 +9517,7 @@ function _hasRealReply_(memo) {
     var _auMember = _auNameI >= 0 ? String(_auRowSnap[_auNameI] || '') : '';
     var _auPhone = _auPhI >= 0 ? String(_auRowSnap[_auPhI] || '') : '';
     var _auLog = [];
+    var _auSaved = {};   // 쓴 뒤 되읽은 실제 셀 값 — 응답에 실어 화면이 재조회 없이 대조한다(2026-08-20).
     function _auWriteCell(ix, colName, val) {
       var cell = auSh.getRange(auRow, ix + 1);
       var _old = String(_auRowSnap[ix] == null ? '' : _auRowSnap[ix]);
@@ -9470,6 +9525,15 @@ function _hasRealReply_(memo) {
       if (_cn.indexOf('재등록상담') >= 0 || _cn.indexOf('재등록예약목록') >= 0) cell.setNumberFormat('@');
       var _new = val == null ? '' : String(val);
       cell.setValue(_new);
+      /* ★쓴 값을 그 자리에서 다시 읽어 응답에 실어 준다(2026-08-20 시포 — GM "동기화 완료가 정말 늦게 뜬다").
+         화면은 저장이 진짜 들어갔는지 확인하려고 저장 뒤에 목록을 통째로 다시 받았다(실측: 저장 7.5초 +
+         재조회 9.1초 = 완료 표시까지 18.3초). 서버는 이미 그 셀을 손에 쥐고 있으므로 여기서 한 번 더
+         읽어 돌려주면 그 재조회가 통째로 필요 없어진다 — 왕복 3회가 1회가 된다.
+         ▸덤으로 '조용한 거부'도 여기서 잡힌다: 데이터확인 규칙이 값을 버리면 되읽은 값이 다르다
+           (2026-08-20 미등록사유 사고가 정확히 그 부류였다). */
+      var _back = cell.getValue();
+      if (_back instanceof Date && !isNaN(_back.getTime())) _back = Utilities.formatDate(_back, 'Asia/Seoul', 'yyyy-MM-dd');
+      _auSaved[colName] = (_back === null || _back === undefined) ? '' : String(_back);
       _auRowSnap[ix] = _new;  // 같은 요청 안에서 같은 칸이 다시 조회될 경우를 대비해 스냅샷도 갱신
       // 안 바뀐 칸은 안 남긴다 — 이력이 노이즈가 되면 아무도 안 본다.
       if (_old !== _new) _auLog.push([new Date(), _auStaff, _auMember, _logMaskPhone_(_auPhone), colName, _old, _new, '멤버십']);
@@ -9497,7 +9561,7 @@ function _hasRealReply_(memo) {
       }
       _memberLog_(_auLog);
       _aaCacheClear_();
-      return _json({ ok: true, rowIndex: auRow, cols: _auWrote });
+      return _json({ ok: true, rowIndex: auRow, cols: _auWrote, saved: _auSaved });
     }
     if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 시트에서 직접 수정해주세요' });
     var auIdx = _auFindCol(auCol);
@@ -9505,7 +9569,7 @@ function _hasRealReply_(memo) {
     _auWriteCell(auIdx, auCol, body.value);
     _memberLog_(_auLog);
     _aaCacheClear_();
-    return _json({ ok: true, rowIndex: auRow, col: auCol });
+    return _json({ ok: true, rowIndex: auRow, col: auCol, saved: _auSaved });
   }
 
   // ─── 종목별 담당자 저장(유효회원 5칸: PT/골프/P.L/스쿼시/수영 담당자) — 전화 매칭 단일셀 쓰기.

@@ -10748,6 +10748,8 @@ function _lossModalFill(reason) {
   INQ_LOSS_REASON_OPTIONS.forEach(function(opt){ var o = document.createElement('option'); o.value = opt; o.textContent = opt; sel.appendChild(o); });
   // 옛 체계 값은 새 체계로 대응해 표시(배101) — 시트 원본은 저장 버튼을 누르기 전까지 그대로(비파괴).
   var _rv = _normLossReason(reason);
+  // 열 때의 값을 기억한다 — 이미 적혀 있던 건은 '— 선택 —'으로 되돌릴 수 있어야 한다(GM 2026-08-20).
+  if (typeof _lossModal !== 'undefined' && _lossModal) _lossModal.initial = _rv;
   sel.value = _rv;
   if (_rv && sel.value !== _rv) {   // 매핑표에도 없는 미지의 값 — 옵션으로 살려 유실 없이 표시
     var oX = document.createElement('option'); oX.value = _rv; oX.textContent = _rv + ' (옛 체계)'; sel.appendChild(oX); sel.value = _rv;
@@ -10798,7 +10800,15 @@ function saveLossReasonModal() {
   //   '기타' 선택 시 메모 필수 규칙도 함께 폐기(메모칸 자체가 없어졌으므로).
   var reason = document.getElementById('lrReasonSel').value.trim();
   // 사유 필수(배101, 2026-07-25) — 강습 84건 전부·유소년 84건 공란으로 "왜 이탈했는지" 통계가 안 나오던 구멍.
-  if (!reason) { showToast('LOSS 사유를 선택해주세요 — 필수입니다', 'err'); return; }
+  //   ★2026-08-20 GM 지시 — "잘못 저장하면 다시 '— 선택 —' 으로 되돌릴 수 있어야 하는데 막아놨다."
+  //   처음 적을 때는 여전히 필수다(그게 배101 의 목적). 다만 **이미 적혀 있던 것을 지우는 것**은
+  //   되돌리기라서 막지 않는다 — 잘못 고른 값이 지워지지 않으면 틀린 통계가 그대로 굳는다.
+  if (!reason) {
+    if (!(_lossModal && _lossModal.initial)) {
+      showToast('LOSS 사유를 선택해주세요 — 필수입니다', 'err'); return;
+    }
+    if (!confirm('사유를 비웁니다(‘' + _lossModal.initial + '’ 를 지웁니다).\n잘못 저장한 것을 되돌리는 경우에만 쓰세요.\n\n비울까요?')) return;
+  }
   var rowIndex = _lossModal.rowIndex, keyPhone = _lossModal.keyPhone, rowKey = _lossModal.rowKey || '';
   var saveBtn = document.getElementById('lrSaveBtn'); saveBtn.disabled = true;
   var _isLesson = (_lossModal.mode === 'lesson');
@@ -13458,6 +13468,12 @@ var WriteBuffer = (function(){
         if (data && data.ok) {
           // 성공 — 단, 전송 후 재편집(coalesce)로 rev가 바뀌었으면 최신 payload 재전송(유실 방지).
           if (item.rev !== sentRev) { item.nextTry = 0; }
+          /* ★서버가 되읽은 값을 함께 보내 주면 목록을 다시 받을 필요가 없다(2026-08-20 시포).
+             GM: "동기화 진행·완료가 정말 늦게 뜬다" — 실측 18.3초 중 9.1초가 이 재조회였다.
+             서버는 쓴 셀을 그 자리에서 다시 읽어 saved 로 실어 준다(Survey.js _auWriteCell).
+             값이 같으면 그것으로 대조 끝, 다르면 조용한 거부이므로 즉시 '값 다름'으로 알린다.
+             saved 가 없는 옛 배포·다른 액션은 종전 재조회 경로로 그대로 떨어진다(회귀 0). */
+          else if (data.saved && typeof data.saved === 'object' && _verifySavedInline(item, data.saved)) { /* 인라인 대조로 종결 */ }
           else { scheduleVerify(item); }   // ★저장 확인(read-back) — 큐 제거는 대조 뒤로 미룬다(아래 정의)
         } else if (data && data.error === 'rowkey-not-found' &&
                    item.payload && item.payload.rowKey && item.payload.keyPhone && !item.rekeyTried) {
@@ -13596,6 +13612,29 @@ var WriteBuffer = (function(){
         .catch(function () { return null; });
     }
     if (key === 'member_active') {
+      /* ★2026-08-20 시포 — GM "동기화 진행·완료가 정말 늦게 뜬다".
+         대조는 방금 쓴 그 행 하나만 확인하면 되는데, 아래 경로는 유효회원 전체를 받고 못 찾으면
+         종료까지 또 받았다(실측 6.3초 + 13.2초 = 최대 19.5초). LOSS 탭에서 고친 건은 매번
+         두 번을 다 받아 가장 오래 걸렸다 — 완료 표시가 늦게 뜨던 이유가 이것이다.
+         대상 행 번호를 다 알고 있으면 그 행들만 읽어 온다(서버 member_active_list&rowIndexes,
+         읽는 범위만 좁힌 것 · 판정·형식 동일). 행 번호가 없는 항목이 하나라도 있으면
+         종전 전체 조회로 그대로 떨어진다(정확도 손실 0). */
+      var _vrIdx = (items || []).map(function(it){ return it.payload && it.payload.rowIndex; });
+      if (_vrIdx.length && _vrIdx.every(function(n){ return n && parseInt(n, 10) >= 2; })) {
+        return fetch(GAS_URL + '?action=member_active_list&rowIndexes=' + encodeURIComponent(_vrIdx.join(',')) + _wpKeyParam())
+          .then(function (r) { return r.json(); })
+          .then(function (d) { return (d && d.ok) ? (d.data || []) : null; })
+          .catch(function () { return null; })
+          .then(function (rows) { return rows && rows.length ? rows : _verifyFetchActiveFull(items); });
+      }
+      return _verifyFetchActiveFull(items);
+    }
+    return Promise.resolve(null);
+  }
+
+  // 종전 전체 조회 경로 — 행 번호를 모를 때만 쓴다(위 단일 행 경로가 실패한 경우 포함).
+  function _verifyFetchActiveFull(items) {
+    {
       // 재등록 처리(LOSS→유효 이동, saveReactivateModal)로 스코프가 바뀔 수 있어 유효+종료 둘 다 봐야 한다.
       // ★2026-07-30 웰리 — 다만 '둘 다 매번'은 비싸다(실측 유효 6.3초 + 종료 13.2초 = 저장 1건에 19.5초).
       //   그래서 유효를 먼저 받고, 거기서 대상 행을 찾으면 종료 조회를 아예 건너뛴다(흔한 경우 = 6.3초).
@@ -13682,6 +13721,26 @@ var WriteBuffer = (function(){
       if (_verifyCanon(ov[k]) !== _verifyCanon(row[k])) diffs.push(k);
     }
     return { ok: diffs.length === 0, diffs: diffs };
+  }
+
+  /* 서버가 돌려준 '되읽은 값'으로 그 자리에서 대조한다(2026-08-20). 처리했으면 true.
+     대상 = member_active_update 의 단일 칸(col/value) 또는 다중 칸(fields). 그 외는 false 를
+     돌려 종전 재조회 경로로 넘긴다 — 새 판정을 만들지 않고 비교식은 기존 _verifyCanon 을 쓴다. */
+  function _verifySavedInline(item, saved) {
+    var p = item.payload || {};
+    if (p.action !== 'member_active_update') return false;
+    var want = {};
+    if (p.fields && typeof p.fields === 'object') { for (var k in p.fields) if (Object.prototype.hasOwnProperty.call(p.fields, k)) want[k] = p.fields[k]; }
+    else if (p.col !== undefined) want[p.col] = p.value;
+    else return false;
+    var bad = null;
+    for (var c in want) {
+      if (!Object.prototype.hasOwnProperty.call(want, c)) continue;
+      if (!Object.prototype.hasOwnProperty.call(saved, c)) return false;   // 서버가 그 칸을 안 실어 줌 → 옛 경로로
+      if (_verifyCanon(saved[c]) !== _verifyCanon(want[c])) { bad = c; break; }
+    }
+    _verifyFinish(item, bad ? 'mismatch' : 'ok', bad || '');
+    return true;
   }
 
   function _verifyFinish(item, status, detail) {
