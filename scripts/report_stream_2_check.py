@@ -191,10 +191,13 @@ def _page_url(name: str) -> str:
       **띄어쓰기에서 주소를 끊는다.** 앞쪽 반쪽만 링크가 되어 404 가 뜬다.
       한글은 messenger 가 알아서 처리하므로 띄어쓰기만 바꾸면 된다(전체 인코딩하면
       사람이 주소를 읽고 어느 페이지인지 알 수 없게 된다 — 실무진이 보는 링크다).
+
+    ★2026-08-20 수정(배670 후속) — quote(safe="가-힣ㄱ-ㅎㅏ-ㅣ")는 저 문자열을 '범위'가
+      아니라 7개 낱글자(가·-·힣·ㄱ·ㅎ·ㅏ·ㅣ)로만 읽어 한글을 전부 %인코딩해왔다(실측:
+      URL 이 84자→132자). 의도(위 docstring)대로 한글은 그대로 두고 띄어쓰기만 바꾼다.
     """
-    from urllib.parse import quote
     return ("https://wellperion-cao.github.io/wellperion-automation/coo/check/"
-            + quote(f"{name}.html", safe="가-힣ㄱ-ㅎㅏ-ㅣ"))
+            + f"{name}.html".replace(" ", "%20"))
 
 def _praise_block(section_text: str) -> str:
     praise: list[str] = []
@@ -273,6 +276,11 @@ def build_kakao_digest(today: str | None = None) -> str:
         if issue:
             line += f" / {issue}"
         out.append(line)
+        # ★2026-08-20(배670 후속) — 짚을 점이 있을 때만 링크를 붙인다. 이상 없는 날 매번
+        #   붙이면 클릭할 것도 없는 링크가 800자 예산만 깎아먹는다. 미체크 화면(점검 남/여)은
+        #   PIN 게이트라 해시 딥링크 대상에서 제외돼 있어(약속 — PIN 우회 방지) 탭 이름만 안내한다.
+        if issue:
+            out.append(f"👉 지원부 상세: {_page_url('지원부 체계')} → 「점검(남)/(여)」 탭(PIN)")
 
     # 🔁 반복 미완료 — 원장 기반, 최근 7일 반복만(1회성 특이점 제외)
     rec = _scs.recurring_issue_lines(today, max_items=3)
@@ -287,9 +295,13 @@ def build_kakao_digest(today: str | None = None) -> str:
     fac_note = _pick(fac_lines, "📝 특이사항:", "❗ 기준이탈")
     if fac_note:
         out.append("📝 시설 특이 — " + fac_note.split(":", 1)[-1].strip())
+        # 시설점검 탭은 PIN 없음 — 해시 딥링크가 바로 먹힌다(위 지원부와 차이).
+        out.append(f"👉 시설부 상세: {_page_url('시설부 체계')}#fcheck")
 
     if par_lines:
         out.append(par_lines[0])
+        if not re.search(r"이슈사항:\s*없음", par_lines[0]):
+            out.append(f"👉 주차부 상세: {_page_url('주차관리부 체계')}#manual")
 
     return "\n".join(out)
 

@@ -895,6 +895,8 @@ function switchTab(tab){
   if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
 }
+/* 해시 딥링크(예 …#manual) → 로드 시 해당 탭 자동 열기(지원부·시설부 체계와 동일 패턴 · 밤 하루 정리 링크가 청결·점검 체크리스트로 바로 가도록 · 배670 후속 2026-08-20). */
+window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
 /* ── 인쇄 통합 드롭다운 헬퍼 (지원부·운영부·시설부 체계와 동일 패턴) ── */
 function openTabDropdown(btnEl, menuEl, e){
   e.stopPropagation();

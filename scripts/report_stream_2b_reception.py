@@ -642,7 +642,10 @@ def build_kakao_digest(today: str | None = None) -> str:
         oldest = (actionable or ranked)[:3]
         parts = [f"{it['content']}({it['created_md']} 접수)" for it in oldest]
         lines.append("오래된 순: " + "·".join(parts))
-    lines.append(f"👉 전체 목록: {DASHBOARD_URL}")
+    # 탭 없는 단일 보드라 해시 딥링크가 없다 — 카톡이 ?쿼리를 자르므로 필터 파라미터도
+    # 못 쓴다(2026-07-15 실측). 대신 화면 안 어디를 보면 되는지 한 줄로 안내한다
+    # (STATUS_LIST=['접수','처리중','완료'] 순서라 맨 왼쪽 칸이 미처리 · 배670 후속 2026-08-20).
+    lines.append(f"👉 전체 목록: {DASHBOARD_URL} → 맨 왼쪽 「접수」칸이 미처리 목록")
     return "\n".join(lines)
 
 
