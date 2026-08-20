@@ -634,7 +634,12 @@ def build_kakao_digest(today: str | None = None) -> str:
     line += f" · 미처리 {len(undone)}건" + (f"(기한 지난 {len(overdue)}건)" if overdue else "")
     lines = [line]
     if overdue:
-        oldest = sorted(overdue, key=lambda x: -x["elapsed_h"])[:3]
+        # 오래된 순 3건에서 분실물은 뒤로 뺀다 — 보관 성격(30일 주기)이라 늘 맨 위를 차지하는데,
+        # 그 자리에 있으면 실제로 손이 가야 할 컴플레인·고장이 밀려난다(2026-08-20 실측: 상위
+        # 3건이 전부 분실물이라 이 줄이 아무 행동도 못 만들었다). 건수(len)는 그대로 둔다.
+        ranked = sorted(overdue, key=lambda x: -x["elapsed_h"])
+        actionable = [it for it in ranked if it.get("cat") != "분실물 접수"]
+        oldest = (actionable or ranked)[:3]
         parts = [f"{it['content']}({it['created_md']} 접수)" for it in oldest]
         lines.append("오래된 순: " + "·".join(parts))
     lines.append(f"👉 전체 목록: {DASHBOARD_URL}")
