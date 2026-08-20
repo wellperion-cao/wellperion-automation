@@ -359,7 +359,7 @@
     },
     {
       "id": "tg-kakao-zerozone-alert",
-      "when": "14:00·20:00",
+      "when": "14:00·20:00·22:45",
       "when_sort": "1400",
       "freq": "conditional",
       "channel": "telegram",
@@ -369,11 +369,12 @@
       "owner": "시토",
       "trigger": "apscheduler",
       "state": "live",
-      "state_note": "회차별 하루 1회 dedup(state 파일) — 위반 0이면 발신 없음.",
+      "state_note": "회차별 하루 1회 dedup(state 파일) — 위반 0이면 발신 없음. 2026-08-20 마감조(22:45) 추가(배704 후속 GM 지시).",
       "source": "telegram_bot/daily_scheduler.py _zero_zone_alert()",
       "job_id": [
-        "zero_zone_alert_14",
-        "zero_zone_alert_20"
+        "zero_zone_alert_1400",
+        "zero_zone_alert_2000",
+        "zero_zone_alert_2245"
       ]
     },
     {
