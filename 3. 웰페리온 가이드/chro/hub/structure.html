@@ -562,6 +562,12 @@
     </div>
 
     <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>평가 가이드 — 직원용 안내문 게시 (2026-08-20 신설)</h3></div>
+      <p>매니저 지시로 <b>직원용 업무 평가 안내문</b>을 공개 정적 페이지로 게시하고, 평가 탭 「업무 정량평가」 섹션 상단에 「📖 평가 가이드」 버튼을 추가했습니다. 원본 = Desktop <code>직원용_평가가이드_20260820.html</code>(매니저 작성, 결재란 없는 A4 원안 그대로 확정) → 저장소 <code>chro/hub/eval-guide.html</code>에 무수정 복사 게시(외부 의존성 없는 단독 페이지, 비밀번호·PII·실명 0건 확인). 버튼은 <code>target="_blank"</code>로 새 탭 오픈, 기존 평가탭 관리자 게이트·탭 구조는 무접촉 보존.</p>
+      <div class="tags"><span class="tag tool">chro/hub/eval-guide.html(신규 정적 페이지)</span><span class="tag tool">index.html renderEval() 버튼 1개 추가</span></div>
+    </div>
+
+    <div class="item">
       <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>평가 기준 안내 (접이식, 2026-08-17 신설)</h3></div>
       <p>매니저 지시("평가탭에 평가기준은 정리되면 좋을 것 같아")로 정량평가 섹션 아래에 <code>evalCriteriaSection()</code> 접이식(<code>&lt;details&gt;</code>) 「평가 기준」 카드를 추가했습니다. 콘텐츠 정본 = Desktop <code>운영부_평가기준_20260817.html</code>(매니저 확정본) §1·2·5·6·7 압축 — <b>누구를 평가하나</b>(운영부·경영지원부 전원 단일체계·GM 제외·신입 판정 유보) · <b>업무 규모 5단계</b>(R1 1점~R8 8점, 코드 내장 <code>WP_R_SCORE</code> 채점표와 동일 단계) · <b>점수 합치는 법</b>(볼륨45%+품질55%, "일이 적으면 만점이어도 만점으로 안 침"·"잘게 쪼개도 점수 안 늚") · <b>등급의 뜻</b>(기대초과/충족/부분미달/미달 — 순위 아님·강제배분 없음) · <b>목표 적정성</b>(본인 단독 설정 기록만 있으면 달성률로 미평가) · <b>이 기준이 못 보는 것 5종</b>. "자리별 기대 기준선은 잠정 — 매니저 확정 대기"·"정성평가는 추후 별도 도입 예정" 안내 유지. 백엔드·데이터 로직 무접촉(순수 표시 텍스트 추가).</p>
       <div class="tags"><span class="tag tool">순수 프론트 텍스트(백엔드 무변경)</span><span class="tag tool">details/summary 접이식</span></div>

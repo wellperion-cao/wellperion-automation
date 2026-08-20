@@ -4221,6 +4221,8 @@ function renderEval(){
   if(SESSION_ROLE==="admin"){
     html+='<div class="sec-title">업무 정량평가 (운영부)</div>'+
       '<div class="muted" style="margin-bottom:10px">정량평가 — 업무보드 기록 기반 자동 산출 · 정성평가는 추후 도입 예정</div>'+
+      '<div style="margin:0 0 12px"><a href="eval-guide.html" target="_blank" rel="noopener" class="btn-sm" '+
+        'style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;color:var(--gold-deep);border-color:var(--gold)">📖 평가 가이드</a></div>'+
       '<div id="qevBox"><div class="card">'+emptyState("업무보드 데이터 로드 중…","◌")+'</div></div>'+
       evalCriteriaSection();
   }else{
