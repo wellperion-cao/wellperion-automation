@@ -2092,11 +2092,35 @@ async function loadParkingCheckState(){
       if(btn){ btn.disabled=true; btn.textContent='제출완료'; btn.classList.add('submitted'); }
       if(stat){
         const hhmm=/(\d{2}:\d{2})/.exec(String(row.submittedAt_am||''));
-        stat.textContent='오늘 제출완료 · '+(row.submitter_am||'-')+(hhmm?' · '+hhmm[1]:'');
+        stat.innerHTML='오늘 제출완료 · '+(row.submitter_am||'-')+(hhmm?' · '+hhmm[1]:'')
+          +' <button id="parkingUnlockBtn" onclick="unlockParkingRound()" style="margin-left:8px;padding:3px 10px;font-size:11px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;cursor:pointer;font-family:inherit;">🔓 잠금해제</button>';
         stat.style.color='var(--green)';
       }
     }
   }catch(e){ if(textEl) textEl.textContent='진행률 조회 실패'; }
+}
+
+/* 관리자 PIN 제출잠금 해제 — 지원부와 같은 백엔드 액션(unlock_round)·같은 PIN.
+   지원부·시설부엔 있는데 주차부에만 없어서, 잘못 눌린 제출을 되돌릴 방법이 아예 없었다.
+   백엔드는 그대로다(dept 값만 parking) — 새 액션·새 배포 없음(약속 L21). */
+async function unlockParkingRound(){
+  const pin=prompt('주차부 일일점검 잠금 해제\nPIN 번호를 입력하세요:');
+  if(!pin) return;
+  const date=new Date().toLocaleString('sv-SE').slice(0,10);
+  try{
+    const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'unlock_round',dept:'parking',date:date,gender:'m',round:'am',pin:pin})});
+    const j=await r.json();
+    if(j&&(j.success||j.ok)){
+      alert('잠금을 풀었습니다. 다시 점검·제출하실 수 있습니다.');
+      const btn=document.getElementById('parkingSubmitBtn');
+      if(btn){ btn.disabled=false; btn.textContent='일일 점검 제출'; btn.classList.remove('submitted'); }
+      PARK_CHECKLIST.daily.forEach(function(t,i){ const cb=document.getElementById('pchk_'+i); if(cb) cb.disabled=false; });
+      loadParkingCheckState();
+    }else{
+      alert('잠금 해제 실패: '+((j&&(j.reason||j.error))||'PIN 을 다시 확인해 주세요'));
+    }
+  }catch(e){ alert('잠금 해제 중 오류: '+e.message); }
 }
 loadParkingCheckState();
 
