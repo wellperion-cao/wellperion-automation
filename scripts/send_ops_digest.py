@@ -695,12 +695,24 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     if not items:
         return ""
     shown, rest = items[:ASKS_SHOW_N], items[ASKS_SHOW_N:]
-    lines = [f"🧾 확인 부탁드릴 것 {len(shown)}건"]
-    for i, it in enumerate(shown, 1):
-        lines.append(f"{i}. {it['who']} — {it['ask']}")
-        lines.append(f"   {it['how']}")
+    # ★2026-08-20 GM 지적("정말 복잡해, 직관적이고 명확해야해") — 사람 단위로 묶는다.
+    #   전에는 항목마다 「…님께 한 마디만 답해 주시면 됩니다」가 그대로 반복돼 같은 문장이
+    #   다섯 번 찍혔다. 답하는 방법은 맨 위에 한 번만 적고, 아래는 사람별로 자기 것만 모아
+    #   한 줄씩 둔다 — 받는 사람이 자기 이름만 찾으면 자기 몫이 다 보인다.
+    #   ▸어디서 하는지가 따로 있는 건(📎 링크가 붙은 건)만 그 줄을 살려 둔다.
+    lines = [f"🧾 확인 부탁드릴 것 {len(shown)}건 — 한 마디만 주시면 됩니다(진행 중 / 완료 / 날짜)"]
+    by_who: dict = {}
+    for it in shown:
+        by_who.setdefault(it["who"], []).append(it)
+    for who, group in by_who.items():
+        lines.append(f"👤 {who}")
+        for it in group:
+            lines.append(f" • {it['ask']}")
+            how = str(it.get("how") or "")
+            if "📎" in how or "http" in how:
+                lines.append(f"   {how}")
     if rest:
-        lines.append(f"…외 {len(rest)}건은 화면에서 확인하실 수 있습니다.")
+        lines.append(f"…외 {len(rest)}건이 더 있습니다 — 급한 것부터 위 5건만 추렸습니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
 
@@ -712,7 +724,10 @@ def _selfcheck_asks_section() -> None:
              for d in range(10, 17)]  # 7건 — relay 1건과 합쳐 총 8건, 상한(5) 초과
     out = build_asks_section(relay, nudge)
     assert "확인 부탁드릴 것 5건" in out, "헤더 건수가 실제 표시 줄 수와 달라야 할 이유 없음"
-    assert "외 3건은 화면에서" in out, out
+    assert "외 3건이 더 있습니다" in out, out
+    # 답하는 방법 안내는 맨 위 한 번뿐이어야 한다(2026-08-20 GM: 같은 문장이 다섯 번 찍혔다)
+    assert out.count("한 마디만 주시면 됩니다") == 1, out
+    assert out.count("👤 이정헌 소장") == 1, "같은 사람 것은 한 묶음으로 모여야 한다"
     for d in (10, 11, 12, 13, 14):
         assert f"n{d}건" in out, f"오래된 5건(n10~n14)은 화면에 보여야 한다: n{d}"
     for d in (15, 16):
