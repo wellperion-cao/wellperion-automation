@@ -6085,6 +6085,44 @@ function _hasRealReply_(memo) {
     return _json({ ok: true, rowIndex: muRowRaw, message: '수정되었습니다.' });
   }
 
+  // ─── 유효회원 시트 '미등록사유' 열 드롭다운 목록 동기화 ───
+  //   ★2026-08-20 시포 근본수리(GM 지시 · 임정은M 이 여러 날 반복 신고한 "LOSS 사유 적었는데 사라짐").
+  //   실측: 화면 드롭다운은 17종인데 시트 그 열의 데이터확인 목록은 11종뿐이었다. 목록 밖 값
+  //   (연락처상이함·재등록혜택·시설불만·주차불만·휴회불만·바쁜일정)을 고르면 setValue 가 **조용히
+  //   무시**되고 서버는 ok:true 를 돌려준다 — 실무진 화면엔 저장된 듯 보이고 새로고침하면 사라진다.
+  //   어떤 감시기도 못 잡던 이유가 이것이다(응답이 성공이라).
+  //   ▸목록은 여기 하드코딩하지 않는다 — 정본은 화면 쪽 `_assets/loss_reasons.js` 하나이고, 호출자가
+  //     그 파일에서 읽어 options 로 넘긴다(같은 값을 두 곳에 두지 않는다 · 약속 L01).
+  //   ▸setAllowInvalid(true) — 목록 밖 값도 **저장은 되게** 한다. 조용한 거부가 이번 사고의 본질이라,
+  //     드롭다운은 안내로만 두고 막지는 않는다. 오타는 화면이 드롭다운으로만 입력받아 막는다.
+  //   ▸mode=diag 면 현재 목록만 돌려주고 아무것도 쓰지 않는다.
+  if (action === 'member_unreg_reason_dv_sync') {
+    var dvSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
+    if (!dvSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var dvHdr = dvSh.getRange(1, 1, 1, dvSh.getLastColumn()).getValues()[0]
+      .map(function(v){ return String(v).replace(/\s/g, ''); });
+    var dvIx = dvHdr.indexOf('미등록사유');
+    if (dvIx < 0) return _json({ ok: false, error: '미등록사유 열 없음', headers: dvHdr });
+    var dvCell = dvSh.getRange(2, dvIx + 1);
+    var dvCur = dvCell.getDataValidation();
+    // getCriteriaValues()[0] 은 목록형이면 배열, 범위 참조형이면 Range 가 온다 — 배열일 때만 목록으로 쓴다.
+    var dvCurRaw = dvCur ? dvCur.getCriteriaValues()[0] : null;
+    var dvCurList = (dvCurRaw && typeof dvCurRaw.indexOf === 'function') ? dvCurRaw : [];
+    if (String(body.mode || '') === 'diag') {
+      return _json({ ok: true, mode: 'diag', col: dvIx + 1, current: dvCurList,
+                     allowInvalid: dvCur ? dvCur.getAllowInvalid() : null });
+    }
+    var dvOpts = body.options;
+    if (!dvOpts || !dvOpts.length) return _json({ ok: false, error: 'options 필수(정본=_assets/loss_reasons.js)' });
+    var dvRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(dvOpts, true).setAllowInvalid(true).build();
+    var dvRows = Math.max(1, dvSh.getMaxRows() - 1);
+    dvSh.getRange(2, dvIx + 1, dvRows, 1).setDataValidation(dvRule);
+    return _json({ ok: true, col: dvIx + 1, rows: dvRows,
+                   before: dvCurList, after: dvOpts,
+                   added: dvOpts.filter(function(o){ return dvCurList.indexOf(o) < 0; }) });
+  }
+
   // ─── 문의회원 페이지(CPO): 새 문의 중복 삭제(소프트) ───
   //   ★2026-08-05 GM 지시 — "새 문의에 중복된 건들이 있으면 임정은M 가 삭제 가능하게(비밀번호+이력)".
   //   ★물리 삭제 금지(INC-020 재발방지) — 예전엔 mdSh.deleteRow(mdRow)로 실제 행을 지웠으나, 행번호 밀림으로
