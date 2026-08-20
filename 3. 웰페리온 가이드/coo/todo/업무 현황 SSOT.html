@@ -581,6 +581,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <label><input type="radio" name="fOwner" value="임정은M">임정은M</label>
         <label><input type="radio" name="fOwner" value="윤병현AM">윤병현AM</label>
         <label><input type="radio" name="fOwner" value="백승화 사원">백승화 사원</label>
+        <label><input type="radio" name="fOwner" value="진수아 사원">진수아 사원</label>
         <label><input type="radio" name="fOwner" value="나우열M">나우열M</label>
         <label><input type="radio" name="fOwner" value="이정헌 소장">이정헌 소장</label>
       </div>
@@ -605,6 +606,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <label><input type="checkbox" value="임정은M">임정은M</label>
         <label><input type="checkbox" value="윤병현AM">윤병현AM</label>
         <label><input type="checkbox" value="백승화 사원">백승화 사원</label>
+        <label><input type="checkbox" value="진수아 사원">진수아 사원</label>
         <label><input type="checkbox" value="나우열M">나우열M</label>
         <label><input type="checkbox" value="이정헌 소장">이정헌 소장</label>
       </div>
@@ -755,7 +757,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    ═══════════════════════════════════════════ */
 const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
-const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
+const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장'];
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사','[3] 파트너팀','[4] 운영 정책',
@@ -855,7 +857,7 @@ let ALL_TASKS = [];
    GM건·결재건은 G1(김남욱 GM)에서, C레벨(AI)건은 자율현황 ▸ 🧭 항로에서 본다 (GM 결정 2026-08-03 이관).
    실무진 토큰이 하나라도 있으면 표시. 실무진이 전혀 없으면 숨김. */
 const STAFF_TOKENS = new Set([
-  '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'
+  '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장'
 ]);
 function hasNoStaff(t) {
   var owners = String((t && t.owner) || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
@@ -2356,7 +2358,7 @@ try { var _vs = document.querySelector('.header .sub'); if (_vs) _vs.textContent
 function isUnfilledTemplate(html, taskTitle) {
   if (!isDocHtml(html)) return false;
   if (/<img/i.test(html)) return false;   // 이미지가 있으면 작성으로 간주
-  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장','김남욱GM','GM'];
+  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장','김남욱GM','GM'];
   const S = ['WELLPERION','주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽','기 획 안','결 과 보 고','◆',
     '업무명','작성자','작성일','보고일','기간','수행 기간','핵심 요약',
     '결과를 한두 문장으로 요약해 주세요 — GM·대표님이 가장 먼저 읽는 칸입니다.','내용을 입력하세요.',
