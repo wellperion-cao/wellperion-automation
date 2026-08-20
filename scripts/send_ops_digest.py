@@ -314,15 +314,15 @@ MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
 # 어제(target_date)치 열린 건은 정리문의 ⚠️ 절이 이미 다루므로 여기선 **그 전날들** 것만 —
 # 어제 대화에 다시 안 나와 ⚠️ 에서 빠졌지만 답도 안 온 건이 이 절의 몫이다.
 #
-# ★말투(GM 확정 · 8/15 손발신 표준): 감사 먼저(실제 해 주신 것을 이름 붙여) → 남은 것 →
-# 답하는 법을 낮춘다("한 마디면 됩니다") → "한꺼번에 안 주셔도 됩니다".
 # 'N일째'·'아직도'·'재요청' 금지 — 밀린 건 우리 사정이고 그 표기는 압박만 준다.
-# 되돌리기 = build_mgr_daily_brief 안의 build_reply_nudge 호출 한 줄만 지우면 절이 사라진다.
+# ★2026-08-20 수리 — 이 절은 더 이상 따로 나가지 않는다. build_reply_nudge_items 가
+# 항목만 돌려주면 build_asks_section 이 배 전달(relay)과 합쳐 한 절로 낸다(GM 지적 —
+# 절 두 개·헤더 두 개가 따로 놀아 복잡했다). 되돌리기 = build_mgr_daily_brief 안의
+# build_reply_nudge_items 호출 두 줄만 지우면 이 항목들이 사라진다.
 # ══════════════════════════════════════════════════════════════════════════
 MGR_LEDGER = MGR_PENDING.parent / "_digest_ledger.json"
 NUDGE_LOOKBACK_DAYS = 7   # 이보다 오래된 건 원장에서 안 꺼낸다(오래 묵은 건 웰리가 사람으로 판단)
 NUDGE_SHOW_N = 3          # 사람당 이 이상은 다음 회차로 — 길면 아무도 안 읽는다
-NUDGE_TITLE_CAP = 46      # _bridge_ask_lines 와 같은 한 줄 상한
 # ★중간관리자 방 구성원(수신자). 담당이 운영부 실무진(윤병현AM 등)인 건은 약속 L24
 # (운영부는 실장 경유)에 따라 이경연 실장 묶음에 싣되, 줄에 원 담당 이름을 남긴다.
 _NUDGE_MEMBERS = ["이경연 실장", "이정헌 소장", "나우열M"]
@@ -341,39 +341,39 @@ def _nudge_similar(a: str, b: str) -> bool:
     return na in nb or nb in na or SequenceMatcher(None, na, nb).ratio() >= 0.6
 
 
-def build_reply_nudge(target_date: str) -> str:
-    """📮 회신 부탁 절 — 원장에서 '전날들의 열린 건(담당 있음)'을 사람별로 묶어 돌려준다.
+def build_reply_nudge_items(target_date: str) -> list:
+    """전날들의 열린 건(담당 있음)을 항목 리스트로 돌려준다 — {"date","who","ask","how"}.
+    build_asks_section 이 배 전달(relay) 항목과 합쳐 오래된 순으로 잘라 보여준다
+    (2026-08-20 GM 지적 — 📌·📮 절이 각자 헤더·건수를 가져 복잡하던 것을 하나로 합쳤다).
 
     거르는 것: ①어제(target_date) 대화에 나온 건(⚠️/✅ 절이 담당) ②나중에 resolved 로
     닫힌 건 ③담당 빈칸(주인 없는 일은 사람한테 묻지 않는다 · 약속 L23) ④서로 닮은 중복
-    (최신 문구만 남김). 낼 게 없으면 빈 문자열 = 절 자체가 안 실린다."""
+    (최신 문구만 남김). date = 이 창(window) 안에서 그 건이 처음 나온 날 — 오래 묵을수록
+    먼저 보이게 한다."""
     from datetime import timedelta
     try:
         ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
         t = date.fromisoformat(target_date)
     except Exception:
-        return ""
+        return []
     lo = (t - timedelta(days=NUDGE_LOOKBACK_DAYS - 1)).isoformat()
     window = [e for e in ledger
               if isinstance(e, dict) and lo <= str(e.get("date", "")) <= target_date]
 
     resolved_texts, today_texts = [], []
-    latest_thanks: dict = {}      # member -> 감사할 실제 건(시간순 순회라 마지막 값=최신)
+    earliest: dict = {}  # 정규화 제목 -> 이 창에서 처음 나온 날짜
     for e in sorted(window, key=lambda x: str(x.get("date", ""))):
         for it in e.get("issues") or []:
             title = str(it.get("issue") or "").strip()
             if not title:
                 continue
+            earliest.setdefault(_nudge_norm(title), str(e.get("date", "")))
             if str(it.get("status") or "") == "resolved":
                 resolved_texts.append(title)
-                owner = str(it.get("owner") or "").strip()
-                if owner in _NUDGE_MEMBERS:
-                    latest_thanks[owner] = title
             if str(e.get("date", "")) == target_date:
                 today_texts.append(title)
 
-    kept: dict = {}               # member -> [줄], 최신 날짜부터 채운다
-    extra: dict = {}              # member -> 상한 넘어 접은 건수
+    kept: dict = {}  # member -> [{"title","owner","date"}], 최신 날짜부터 채운다
     for e in sorted(window, key=lambda x: str(x.get("date", "")), reverse=True):
         if str(e.get("date", "")) == target_date:
             continue
@@ -386,30 +386,24 @@ def build_reply_nudge(target_date: str) -> str:
                 continue
             member = owner if owner in _NUDGE_MEMBERS else _NUDGE_MEMBERS[0]
             rows = kept.setdefault(member, [])
-            if any(_nudge_similar(title, r) for r in rows):
+            if any(_nudge_similar(title, r["title"]) for r in rows):
                 continue
             if len(rows) >= NUDGE_SHOW_N:
-                extra[member] = extra.get(member, 0) + 1
                 continue
-            tag = f"({owner} 건) " if owner != member else ""
-            rows.append(tag + _cap_line(title, NUDGE_TITLE_CAP))
+            rows.append({"title": title, "owner": owner,
+                        "date": earliest.get(_nudge_norm(title), str(e.get("date", "")))})
 
-    if not kept:
-        return ""
-    lines = ["📮 답 주시면 좋은 것들 — 각 건 한 마디면 충분합니다(진행 중/완료/날짜 하나)"]
-    for member in _NUDGE_MEMBERS:
-        rows = kept.get(member)
-        if not rows:
-            continue
-        if member in latest_thanks:
-            lines.append(f"🙏 {member}님, {_cap_line(latest_thanks[member], NUDGE_TITLE_CAP)} 처리해 주셔서 감사합니다.")
-        else:
-            lines.append(f"🙏 {member}님께")
-        lines += [f" · {r}" for r in rows]
-        if extra.get(member):
-            lines.append(f" · 나머지 {extra[member]}건은 다음에 나눠 여쭙겠습니다")
-    lines.append("한꺼번에 안 주셔도 됩니다 — 편하실 때 한 줄씩이면 충분합니다.")
-    return "\n".join(lines)
+    items = []
+    for member, rows in kept.items():
+        for r in rows:
+            tag = f"({r['owner']} 건) " if r["owner"] != member else ""
+            items.append({
+                "date": r["date"],
+                "who": member,
+                "ask": _cap_line(tag + r["title"], ASKS_TITLE_CAP),
+                "how": f"{member}님께 진행 중·완료·날짜 한 마디만 답해 주시면 됩니다.",
+            })
+    return items
 
 
 def _mgr_conversation_message(target_date: str) -> str:
@@ -451,14 +445,14 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     relay_state = _relay_state()
     _migrate_relay_state(relay_state)
     room, contacts = relay_routes()[0]
-    open_msg, relay_current = build_relay_message(contacts, relay_state.get(room, {}))
-    if open_msg:
-        parts.append(open_msg)
+    relay_items, relay_current = build_relay_message(contacts, relay_state.get(room, {}))
 
-    # 📮 회신 부탁 절(C안 · GM 승인 2026-08-15) — 이 한 줄만 지우면 절이 사라진다(역롤백).
-    nudge = build_reply_nudge(target_date)
-    if nudge:
-        parts.append(nudge)
+    # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 오래된 순
+    # ASKS_SHOW_N건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
+    nudge_items = build_reply_nudge_items(target_date)
+    asks = build_asks_section(relay_items, nudge_items)
+    if asks:
+        parts.append(asks)
 
     return "\n\n".join(parts), relay_current
 
@@ -514,8 +508,7 @@ def preview_mgr_brief() -> int:
 # ══════════════════════════════════════════════════════════════════════════
 QUEUE_PATH = ROOT / "status" / "_queue.json"
 RELAY_OPEN_STATUSES = {"PENDING", "IN_PROGRESS"}
-RELAY_SHOW_N = 5            # 본문에 줄로 싣는 건수 — 나머지는 "외 N건"으로 접는다
-RELAY_TITLE_CAP = 34        # 스냅샷(닫힘 표시용) 길이 상한(카톡 한 줄)
+RELAY_TITLE_CAP = 34        # 스냅샷 길이 상한(카톡 한 줄) — 화면표시 상한은 ASKS_TITLE_CAP
 RELAY_HEARTBEAT_ID = "clevel-queue-human-relay"  # 지난 회차 목록 보관 = 상설 하트비트 1파일
 RELAY_STALE_DAYS = 7  # ★2026-08-13 근본수정(배592) — 내용 안 바뀐 채 이만큼 묵으면 재알림.
 #   그 전엔 task_id 키가 한 번 스냅샷에 들어가면 내용이 바뀌어도 다시는 '새 업무'가
@@ -592,9 +585,6 @@ def relay_routes() -> "list[tuple[str, dict]]":
     return [(RELAY_ROOM, contacts)]
 
 
-ARCHIVE_PATH = ROOT / "status" / "_queue_archive.json"
-
-
 def _relay_key(ship: dict) -> str:
     """배 식별 키 — task_id 고정(배마다 불변). ★2026-08-06 GM 근본수정: 예전엔 short_no
     우선이었는데 short_no 는 나중에 붙는 경우가 있어, 같은 배가 키가 바뀌며 '완료'+
@@ -633,26 +623,6 @@ def _is_stale(last_sent: str, today: str) -> bool:
         return False
 
 
-def _is_done(task_id: str, queue: list, archive_cache: list) -> bool:
-    """이 task_id 가 실제로 완료됐는가 — 큐 안에서 status 가 DONE/완료이거나, 큐에서
-    아예 사라졌는데 보관함(queue_archive_sweep.py 가 terminal 배만 옮긴다)에 있으면
-    완료로 본다. 큐에 그대로 남아 PENDING/IN_PROGRESS 인 채 staff_message 가 지워지거나
-    audience 가 바뀌기만 한 배는 완료가 아니다(2026-08-06 GM 근본수정 — 그런 배를
-    '✅ 처리 완료'로 오보하던 문제)."""
-    for s in queue:
-        if isinstance(s, dict) and str(s.get("task_id", "")) == task_id:
-            return str(s.get("status", "")) in ("DONE", "완료")
-    return any(isinstance(s, dict) and str(s.get("task_id", "")) == task_id for s in archive_cache)
-
-
-def _load_archive() -> list:
-    try:
-        data = json.loads(ARCHIVE_PATH.read_text(encoding="utf-8"))
-        return data if isinstance(data, list) else []
-    except Exception:
-        return []
-
-
 def _cap_line(text: str, cap: int = RELAY_TITLE_CAP) -> str:
     """카톡 한 줄용 길이 상한 — 낱말 한가운데서 자르지 않는다(GM 상시 지시).
 
@@ -683,7 +653,77 @@ def _has_staff_message(ship: dict) -> bool:
     return bool(text) and text.strip(".…").lower() not in _EMPTY_STAFF_MESSAGE
 
 
-def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
+# ══════════════════════════════════════════════════════════════════════════
+# 📌+📮 통합 「확인 부탁드릴 것」 절 (2026-08-20 GM 지적 수리)
+#
+# GM 원문: "정말 복잡해, 직관적이고 명확해야해, 내용도 다 체크되거나 완료된건 등등
+# 정리안된 내용들이 너무 많아서 신뢰가 안되네." 실측(2026-08-20 07:41 발송본) —
+# 헤더는 "18건"인데 실제로 줄로 보이는 건 4건뿐이었다(나머지 14건은 지난 회차와
+# 안 바뀌어 조용히 숨어 있었는데 헤더 숫자엔 그대로 들어갔다). 거기에 배 전달(📌)과
+# 회신 부탁(📮)이 각자 헤더·건수를 따로 갖고, 완료된 배 스냅샷("✅ 처리 완료")까지
+# 같은 메시지에 섞여 있어 "확인해 달라"는 메시지 안에 "이미 끝났다"는 내용이 같이
+# 왔다 — 대화 정리 절의 "✅ 확인된 것"과도 겹치는 중복이었다.
+#
+# 고친 것: 두 절을 하나로 합친다(build_asks_section). 헤더 건수 = 화면에 실제로 보이는
+# 줄 수(더 이상 숨은 잔여분을 포함하지 않는다). 완료 스냅샷은 아예 안 싣는다(약속
+# "★중복 최소화" — 완료는 대화 정리 절의 "✅ 확인된 것"이 이미 담당). 한 건 = 두 줄
+# (①무엇을 확인해 달라는지 ②어디서·어떻게 답하면 되는지), 오래된 순 ASKS_SHOW_N건만.
+# ══════════════════════════════════════════════════════════════════════════
+ASKS_SHOW_N = 5          # 한 통 최대 건수 — 18건은 한 번에 못 본다(GM 지적)
+ASKS_TITLE_CAP = 50
+ASKS_HOW_CAP = 60
+_ROLE_TAG_RE = re.compile(r"^\[[^\]]*\]\s*")  # "[웰페리온 AI 웰리] " 같은 발신 태그
+
+
+def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
+    """전달문 원문(여러 줄일 수 있음)에서 ①확인해 달라는 한 줄 ②어디서·어떻게 답하면
+    되는지 한 줄을 뽑는다. 링크(📎)가 있으면 그 줄을 '어떻게'로 쓰고, 없으면 담당자에게
+    한 마디로 답해 달라는 기본 문구를 쓴다. 배 note 를 통째로 붙이지 않는다(GM 지적)."""
+    text = _ROLE_TAG_RE.sub("", str(staff_message or "").strip())
+    body_lines = [l.strip() for l in text.splitlines() if l.strip()]
+    ask = body_lines[0] if body_lines else text
+    how = next((l for l in body_lines[1:] if l.startswith("📎")), "")
+    if not how:
+        how = f"{who}님께 말씀해 주시거나 톡으로 한 마디만 답해 주시면 됩니다."
+    return _cap_line(ask, ASKS_TITLE_CAP), _cap_line(how, ASKS_HOW_CAP)
+
+
+def build_asks_section(relay_items: list, nudge_items: list) -> str:
+    """배 전달(relay)·회신 부탁(nudge) 항목을 한 목록으로 합쳐 오래된 순 ASKS_SHOW_N건만
+    보여주고 나머지는 한 줄로 접는다. 헤더 건수 = 화면에 실제로 보이는 줄 수뿐이다."""
+    items = sorted(relay_items + nudge_items, key=lambda x: x.get("date") or "9999-99-99")
+    if not items:
+        return ""
+    shown, rest = items[:ASKS_SHOW_N], items[ASKS_SHOW_N:]
+    lines = [f"🧾 확인 부탁드릴 것 {len(shown)}건"]
+    for i, it in enumerate(shown, 1):
+        lines.append(f"{i}. {it['who']} — {it['ask']}")
+        lines.append(f"   {it['how']}")
+    if rest:
+        lines.append(f"…외 {len(rest)}건은 화면에서 확인하실 수 있습니다.")
+    lines.append(RELAY_SIGNOFF)
+    return "\n".join(lines)
+
+
+def _selfcheck_asks_section() -> None:
+    """헤더 건수 = 실제로 보이는 줄 수인지, 오래된 순으로 자르는지. 네트워크 없이 돈다."""
+    relay = [{"date": "2026-08-18", "who": "이경연 실장", "ask": "가장 최신 건", "how": "h"}]
+    nudge = [{"date": f"2026-08-{d:02d}", "who": "이정헌 소장", "ask": f"n{d}건", "how": "h"}
+             for d in range(10, 17)]  # 7건 — relay 1건과 합쳐 총 8건, 상한(5) 초과
+    out = build_asks_section(relay, nudge)
+    assert "확인 부탁드릴 것 5건" in out, "헤더 건수가 실제 표시 줄 수와 달라야 할 이유 없음"
+    assert "외 3건은 화면에서" in out, out
+    for d in (10, 11, 12, 13, 14):
+        assert f"n{d}건" in out, f"오래된 5건(n10~n14)은 화면에 보여야 한다: n{d}"
+    for d in (15, 16):
+        assert f"n{d}건" not in out, f"상한 초과분(n15·n16)은 접혀야 한다: n{d}"
+    assert "가장 최신 건" not in out, "가장 최신(2026-08-18)은 상한 밖 — 안 보여야 한다"
+    assert out.splitlines()[-1] == RELAY_SIGNOFF
+    assert build_asks_section([], []) == "", "항목 0건이면 절 자체가 없어야 한다"
+    print("[selfcheck] build_asks_section OK")
+
+
+def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]":
     """열려 있는(PENDING·IN_PROGRESS) 배 중 '실무진 전달문'(staff_message)이 있는 것만 담는다.
 
     ★2026-08-06 GM 근본수정 — 예전엔 배 '제목'을 40자 근처에서 잘라 보냈다. 배 제목은
@@ -757,55 +797,20 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[str, dict]":
         else:
             current[k] = {"line": line, "last_sent": prev_sent[k]}  # 변화 없음 — 시계 유지
 
-    # ★'완료'는 목록에서 사라진 것 전부가 아니라, 실제로 DONE/보관함행인 것만(위 _is_done).
-    #   staff_message 가 지워지거나 audience 가 바뀌어 사라진 배는 아직 진행 중일 수 있다 —
-    #   그런 배까지 '✅ 처리 완료'로 실무진에게 보내면 오보다.
-    dropped = [k for k in prev_lines if k not in current]
-    if dropped:
-        archive_cache = _load_archive()
-        closed = [prev_lines[k] for k in dropped if _is_done(k, queue, archive_cache)]
-    else:
-        closed = []
-    if not new_ships and not stale_ships and not closed:
-        return "", current  # 지난번과 같은 목록 — 다시 보내지 않는다
+    # ★완료는 이 절에 안 싣는다(2026-08-20 GM 지적 — "확인해 달라"는 메시지에 "이미
+    #   끝났다"가 섞여 신뢰를 깎는다). 대화 정리 절의 "✅ 확인된 것"이 이미 담당한다.
+    #   목록에서 사라진 키는 스냅샷(current)에서도 그냥 빠진다 — 별도 처리 불필요.
+    if not new_ships and not stale_ships:
+        return [], current  # 지난번과 같은 목록 — 다시 보내지 않는다
 
-    who = {contacts[s["clevel"]] for s in ships}
-    solo = who.pop() if len(who) == 1 else None
-    # ★2026-08-18 GM 지적 — "사람이 처리할 업무"는 문구 자체가 별로다. 읽는 쪽에서 보면
-    # 'AI가 못 하니 너희가 해라' 로 들린다. 우리가 부탁드리는 자리임을 문장이 먼저 밝힌다.
-    lines = [f"📌 오늘 확인 부탁드릴 것 {len(ships)}건" + (f" — {solo}" if solo else "")]
-    if new_ships:
-        lines.append(f"🆕 새로 생긴/바뀐 업무 {len(new_ships)}건")
-        for s in new_ships[:RELAY_SHOW_N]:
-            tail = "" if solo else f" · {contacts[s['clevel']]}"
-            gm_tag = f"[GM업무 {s['gm_task_id']}] " if s.get("gm_task_id") else ""
-            lines.append(f" • {gm_tag}{str(s['staff_message']).strip()}{tail}")
-        overflow_new = new_ships[RELAY_SHOW_N:]
-        if overflow_new:
-            lines.append(f" • 외 {len(overflow_new)}건")
-            log(f"[relay] 상한({RELAY_SHOW_N}건) 초과 — {len(overflow_new)}건 다음 회차로 이월")
-            # ★한 번도 안 보여준 건을 '봤다'고 스냅샷에 찍으면 다음 회차에 영영 안 나온다
-            #   (new_ships 판정이 prev_items 키 존재로만 갈리므로). 안 보여준 건은 이번
-            #   스냅샷에서 뺀다 — 다음 회차에 다시 '신규'로 잡혀 우선순위 순서대로 드러난다.
-            for s in overflow_new:
-                current.pop(_relay_key(s), None)
-    if stale_ships:
-        lines.append(f"🔁 오래 열려 있어 재확인 {len(stale_ships)}건")
-        for s in stale_ships[:RELAY_SHOW_N]:
-            tail = "" if solo else f" · {contacts[s['clevel']]}"
-            gm_tag = f"[GM업무 {s['gm_task_id']}] " if s.get("gm_task_id") else ""
-            lines.append(f" • {gm_tag}{str(s['staff_message']).strip()}{tail}")
-        overflow_stale = stale_ships[RELAY_SHOW_N:]
-        if overflow_stale:
-            lines.append(f" • 외 {len(overflow_stale)}건")
-    if closed:
-        lines.append(f"✅ 처리 완료 {len(closed)}건")
-        for snap in closed[:RELAY_SHOW_N]:
-            lines.append(f" • {snap}")
-        if len(closed) > RELAY_SHOW_N:
-            lines.append(f" • 외 {len(closed) - RELAY_SHOW_N}건")
-    lines.append(RELAY_SIGNOFF)
-    return "\n".join(lines), current
+    # ★한 항목 = {"date","who","ask","how"} 로 돌려준다. 헤더·건수·상한은 이제
+    #   build_asks_section 이 nudge 항목과 합쳐서 한 번에 결정한다(중복 헤더 제거).
+    items = []
+    for s in new_ships + stale_ships:
+        who = contacts[s["clevel"]]
+        ask, how = _split_ask_how(s["staff_message"], who)
+        items.append({"date": str(s.get("enqueued_at", ""))[:10], "who": who, "ask": ask, "how": how})
+    return items, current
 
 
 def _relay_state() -> dict:
@@ -840,11 +845,13 @@ def _migrate_relay_state(state: dict) -> None:
 
 
 def preview_relays() -> int:
-    """방에 손대지 않고 본문만 렌더해 보여준다(실방 검증용 — 발신·상태기록 없음)."""
+    """방에 손대지 않고 배 전달(relay) 부분만 렌더해 보여준다(실방 검증용 — 발신·상태기록
+    없음). 회신 부탁(nudge) 은 --mgr-preview 쪽이 합쳐서 보여준다."""
     state = _relay_state()
     _migrate_relay_state(state)   # 실제 발신과 같은 조건으로 봐야 미리보기가 미리보기다
     for room, contacts in relay_routes():
-        message, _current = build_relay_message(contacts, state.get(room, {}))
+        items, _current = build_relay_message(contacts, state.get(room, {}))
+        message = build_asks_section(items, [])
         print(f"\n===== {room} ({'내용 없음' if not message else '발신 대상'}) =====")
         print(message or "(변화 없음 — 발신 안 함)")
         if message:
