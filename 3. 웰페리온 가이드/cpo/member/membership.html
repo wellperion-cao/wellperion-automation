@@ -694,6 +694,8 @@ select, select option{ color:var(--text); background-color:var(--paper); }
 .sync-chip.show{display:flex}
 .sync-chip.pending{background:rgba(38,34,22,0.96);color:#e6c14b;border:1px solid rgba(230,193,75,0.45)}
 .sync-chip.failed{background:rgba(40,26,22,0.96);color:var(--red);border:1px solid var(--red-border)}
+/* 완료 표시 — 2026-08-20 GM 지시("완료도 안 뜨고"). 성공 결과를 다음 저장 전까지 남긴다. */
+.sync-chip.ok{background:rgba(22,36,28,0.96);color:#5fbf82;border:1px solid rgba(95,191,130,0.45)}
 .sync-chip .sc-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:currentColor}
 .sync-chip.pending .sc-dot{animation:scPulse 1s ease-in-out infinite}
 @keyframes scPulse{0%,100%{opacity:0.35}50%{opacity:1}}
@@ -13227,6 +13229,13 @@ var WriteBuffer = (function(){
   //   이유가 된 과거 사고, 위 주석). 그래서 토스트에 더해 이 목록에 남겨 확인(dismiss)하기 전까지 칩에
   //   계속 보이게 한다 — 대상: mismatch(값 다름)·unknown(재조회 실패/행 미발견, 저장 자체는 성공 유지).
   var verifyAlerts = [];     // [{ id, text }] — _verifyFinish가 채움, dismissVerifyAlerts()로 비움
+  // ★마지막 저장 결과 — 다음 저장 전까지 칩에 남는다(2026-08-20 GM "완료도 안 뜨고").
+  //   { ok:true|false, text:'…' }. 토스트는 놓치면 끝이라 결과를 화면에 붙들어 둔다.
+  var lastResult = null;
+  function _hhmm() {
+    var d = new Date();
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
 
   function _load() {
     try {
@@ -13291,6 +13300,17 @@ var WriteBuffer = (function(){
       chip.className = 'sync-chip pending show';
       msg.textContent = '저장 동기화 ' + pending.length + '건…';
       chip.title = '';
+    } else if (lastResult) {
+      /* ★2026-08-20 GM 지시 — "동기화가 마무리 되었으면 완료, 안 되었으면 동기화 실패, 사유는 ~~
+         이렇게 남겨줘야 해." 그리고 곧바로 "완료도 안 뜨고" — 토스트로만 알리면 그 순간 화면을
+         안 보고 있으면 놓친다(정확히 실무진이 겪던 것). 그래서 마지막 저장 결과를 **다음 저장 전까지
+         칩에 남긴다.** 새 표시자리를 만들지 않고 이미 있는 칩 한 곳만 쓴다(약속 L21). */
+      chip.className = 'sync-chip ' + (lastResult.ok ? 'ok' : 'failed') + ' show';
+      msg.innerHTML = esc(lastResult.text) +
+        '<button class="sc-retry" onclick="WriteBuffer.clearLastResult()">확인</button>';
+      chip.title = lastResult.ok
+        ? '시트에 실제로 들어간 것까지 확인된 상태입니다.'
+        : '이 내용은 시트에 저장되지 않았습니다. 사유를 보고 다시 시도하세요.';
     } else {
       chip.className = 'sync-chip';
       msg.textContent = '';
@@ -13375,6 +13395,7 @@ var WriteBuffer = (function(){
 
   function enqueue(payload, opts) {
     opts = opts || {};
+    lastResult = null;   // 새 저장이 시작되면 지난 결과 표시는 치운다(2026-08-20) — 옛 '완료'가 새 저장의 결과로 오독되면 안 된다.
     var key = opts.key || (payload.action + '|' + (payload.keyPhone || payload.rowIndex) + '|' + (opts.scope || '') + '|' + (opts.fieldset || ''));
     var existing = null;
     for (var i = 0; i < queue.length; i++) { if (queue[i].key === key) { existing = queue[i]; break; } }
@@ -13466,6 +13487,8 @@ var WriteBuffer = (function(){
             : (data.error === 'rowkey-not-found'
               ? '대상 행을 찾을 수 없습니다(지문 불일치) — 데이터가 편집되었을 수 있습니다.'
               : '대상 행을 확인할 수 없습니다(연락처 정보 없음/불일치).');
+          lastResult = { ok: false, text: '❌ 동기화 실패 · ' + _hhmm() + ' — ' +
+            ((item.who ? item.who + ' ' : '') + (item.label || '저장')) + ' · 사유: ' + _hfMsg };
           alert('⚠️ 저장 실패 — ' + (item.who ? item.who + ' ' : '') + (item.label || '') + '\n' + _hfMsg + '\n목록을 새로고침한 뒤 대상을 다시 확인하고 저장하세요.');
           showToast('저장 거부 — 새로고침 필요', 'err');
         } else {
@@ -13488,6 +13511,10 @@ var WriteBuffer = (function(){
     if (reason) item.lastError = String(reason).slice(0, 120);   // 실패 사유 보존(칩·재시도 안내에 표시)
     if (item.attempts >= MAX_ATTEMPTS) {
       item.parked = true;   // 상한 초과 → park(무한루프 방지). 수동 재시도/새로고침 자동 flush로 복구.
+      // ★2026-08-20 GM 지시 — 실패도 사유와 함께 화면에 남긴다(토스트는 놓친다).
+      lastResult = { ok: false, text: '❌ 동기화 실패 · ' + _hhmm() + ' — ' +
+        ((item.who ? item.who + ' ' : '') + (item.label || '저장')) +
+        ' · 사유: ' + (item.lastError || '알 수 없음') };
       if (item.lastError) showToast('저장 실패 — ' + item.lastError, 'err');
     } else {
       item.nextTry = _now() + (BACKOFF[Math.min(item.attempts - 1, BACKOFF.length - 1)]);
@@ -13670,6 +13697,7 @@ var WriteBuffer = (function(){
     //   끝난 줄 알았다(그 토스트는 서버에 보내기 전에 뜬다). 그래서 뒤에서 실패해도 모른 채 창을 닫았다.
     //   이제 실제로 시트에 들어간 것이 확인된 뒤에만 '완료'라고 말한다.
     if (status === 'ok') {
+      lastResult = { ok: true, text: '✅ 동기화 완료 · ' + _hhmm() + ' — ' + (who || '저장') };
       showToast('✅ 동기화 완료 — ' + (who || '저장'), 'ok');
     } else if (status === 'mismatch') {
       verifyAlerts.push({ id: item.id, text: (who ? who + ' — ' : '') + detail + ' 값 다름' });
@@ -13753,6 +13781,7 @@ var WriteBuffer = (function(){
     enqueue: enqueue, flush: flush, forceRetry: forceRetry, discardFailed: discardFailed,
     applyOverlay: applyOverlay, hasPending: hasPending,
     activeCount: activeCount, dismissVerifyAlerts: dismissVerifyAlerts,
+    clearLastResult: function(){ lastResult = null; renderChip(); },
     _queue: function(){ return queue; }
   };
 })();
