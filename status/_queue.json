@@ -306,18 +306,18 @@
   {
     "task_id": "CMO-2026-08-21-ADHOC-DAILY",
     "clevel": "cmo",
-    "title": "[시모] IG 발행검증 자동 대조 → 발행완료 도장 외 1건 (CLI ad-hoc)",
+    "title": "[시모] IG 발행검증 자동 대조 → 발행완료 도장 외 2건 (CLI ad-hoc)",
     "status": "DONE",
     "terminal": true,
     "priority": "NORMAL",
     "enqueued_at": "2026-08-21",
     "processed_at": "2026-08-21",
     "ship_no": 10925,
-    "artifact": "IG 발행검증 자동 대조 → 발행완료 도장 (CLI ad-hoc · 커밋 bb3d735e6 · 누적 2건)",
+    "artifact": "IG 발행검증 자동 대조 → 발행완료 도장 (CLI ad-hoc · 커밋 040716c13 · 누적 3건)",
     "next": "🏁 입항완료(루틴) — 다음 불필요",
-    "adhoc_commit": "bb3d735e65cc629897622eab86ab48c602eb80cc",
-    "note": "- [2026-08-21] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 d4f60b2c1)\n- [2026-08-21] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 bb3d735e6)",
-    "adhoc_count": 2
+    "adhoc_commit": "040716c13f80eeaada72df9a3e08dd6632836d4a",
+    "note": "- [2026-08-21] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 d4f60b2c1)\n- [2026-08-21] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 bb3d735e6)\n- [2026-08-21] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 040716c13)",
+    "adhoc_count": 3
   },
   {
     "task_id": "CEO-2026-08-21-LOSS-사유-저장-수리-안내-실장-정은M-재확인-",
@@ -339,5 +339,20 @@
     "staff_message": "회원 LOSS 사유를 적어도 저장이 안 되고 사라지던 문제, 어제 원인을 찾아 고쳤습니다.\n📎 멤버십 회원관리 https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html → LOSS 탭에서 회원 줄의 'LOSS 사유' 칸입니다.\n김현수1·최정호 회원님 사유를 다시 넣어 보시고, 저장되면 '됐다' 안 되면 '아직'만 주시면 됩니다.",
     "must_finish_on": "",
     "updated_at": "2026-08-21"
+  },
+  {
+    "task_id": "AIDE-2026-08-21-STALE-APPROVAL-10927",
+    "clevel": "ceo",
+    "title": "[GM보좌 제안] [TODO-20260713140724303] 결재 39일째 무처리 — 인사평가 기획",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-08-21",
+    "ship_no": 10927,
+    "note": "[2026-08-21 GM보좌 제안·웰리 포착] 결재요청(GM) 후 39일째 미처리(결재상태=대기) — 정상 승인 소요(중앙값 2일·최대 14일) 대비 장기 방치 (포착유형=stale_approval · 가역성=비가역 · 근거=생성일=2026-07-13T05:07:24.000Z 결재요청=GM 담당자=나우열M 업무명=인사평가 기획). 조치안: GM 결정 필요(승인/반려) — 방치될수록 맥락 소실(58일 적체 실측 사례). KPI→북극성: [ceo·웰리] 현재 KPI(완결률=0.7143, 완료=10, 활성=4, 기계발행_건수=0, 멈춘배_건수=1, 멈춘배_최장일수=7, 멈춘배_최장배번호=626, 멈춘배_최장상태=PENDING, GM기록_미반영=0, 실무진_회신_미완료=1) → 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자' 로 잇는 결정 게이트. GM프로필 근거(자주 놓치는 것): **놓침(missed 12)보다 교정(correction 22)이 많다.** GM이 처음부터 빠뜨리기보다, 산출물이 어긋난 뒤 되돌리는 비중이 큼 — 사후 교정 의존. ※ phase1=제안(대기)까지만 — 실제 도메인 작업은 GM 결정 후.",
+    "next": "",
+    "depends_on": "",
+    "source": "gm_aide_scan",
+    "reversibility": "비가역",
+    "aide_proposal_key": "gmaide|stale_approval|TODO-20260713140724303"
   }
 ]
