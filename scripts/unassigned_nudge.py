@@ -144,6 +144,16 @@ DAILY_TOP_N = 10              # 회전 선발 상한(가드 대상) — 기존 �
 MSG_DISPLAY_N = 5             # 메시지 본문에 실제로 줄로 싣는 건수(GM 08-05 "10줄 안쪽")
 STALE_MIN_DAYS = 3           # 갓 들어온 문의는 정상 응대 흐름에 맡긴다
 DORMANT_OVER_DAYS = 100      # 이 일수 "초과" + 연락이력 0건 = 휴면
+# ★2026-08-20 시포 — 화면 아카이브 기준과 맞춘다(GM 신고: 알림에 뜬 이효주 님을 화면에서 못 찾음).
+#   membership.html 의 _isOldUncontacted/STALE_ARCHIVE_DAYS(=60, GM 확정 2026-08-14)가 마지막 움직임
+#   60일 초과 건을 목록에서 숨긴다. 그런데 이 알림은 "연락한 적 있나"를 contacts[].note 로 보고(_has_contact),
+#   화면은 contacts[].date 로 본다 — 날짜 없이 메모만 있는 행에서 두 판정이 갈려, 화면에 없는 건을
+#   알림이 배정하라고 보냈다(이효주 님 4/1 접수·140일째, 메모 "카카오톡 hyojoohk", 날짜 공란).
+#   같은 값을 두 벌로 판정하지 않는다(약속 L01) — 화면과 같은 '마지막 움직임' 기준을 여기서도 쓴다.
+STALE_ARCHIVE_DAYS = 60      # 마지막 움직임 후 이 일수 "이상" = 화면에서 숨겨진 건 → 알림도 보내지 않는다
+# 마지막 움직임으로 치는 날짜 칸 — membership.html _lastActivityDays 와 같은 목록(한 곳만 고치면 갈린다).
+_ACTIVITY_DATE_KEYS = ("exp1Time", "exp2Time", "exp3Time", "tourDate", "visitDate",
+                       "visit2Date", "contact1", "contact2", "contact3")
 RENOTIFY_GAP_DAYS = 1        # 같은 건 재알림 최소 간격 — 배정될 때까지 매일(GM 08-05). 같은 날 중복실행만 막는다.
 NOTIFIED_KEEP_DAYS = 30      # 가드 맵에서 이보다 오래된 기록은 청소(무한 비대 방지)
 HEARTBEAT_ID = "cpo-unassigned-nudge"  # 배10014 방식 — 상설 파일 1개 갱신
@@ -218,21 +228,51 @@ def collect_unassigned(today: str) -> list[dict]:
                 "date": str(r.get("timestamp", "") or "")[:10] or "-",
                 "days": days,
                 "contacted": _has_contact(r),
+                "last_days": _last_activity_days(r, today),
                 "key": _lead_key(r),
             })
     out.sort(key=lambda x: -x["days"])
     return out
 
 
+def _last_activity_days(row: dict, today: str) -> int | None:
+    """마지막 움직임(접수·연락·투어·체험) 이후 며칠 — membership.html _lastActivityDays 와 같은 계산.
+
+    날짜가 하나도 없으면 None(판정 보류 = 숨기지 않는다). 화면은 contacts[].date 만 보고
+    note 는 안 본다 — 여기서도 그대로 맞춘다(기준이 갈리면 화면과 알림이 또 어긋난다).
+    """
+    dates = []
+    ts = str(row.get("timestamp", "") or "")[:10]
+    if ts:
+        dates.append(ts)
+    for c in row.get("contacts") or []:
+        if isinstance(c, dict):
+            d = str(c.get("date", "") or "")[:10]
+            if d:
+                dates.append(d)
+    for k in _ACTIVITY_DATE_KEYS:
+        m = re.search(r"\d{4}-\d{2}-\d{2}", str(row.get(k, "") or ""))
+        if m:
+            dates.append(m.group(0))
+    if not dates:
+        return None
+    return R._days_since(max(dates), today)
+
+
 def split_dormant(items: list[dict]) -> tuple[list[dict], list[dict]]:
     """(배정 푸시 대상, 휴면) 분리.
 
-    휴면 = 연락이력 0건 AND 경과 100일 초과 → 푸시에서 제외만 한다(삭제·폐기 금지,
-    월 1회 --list-dormant 로 검토). 연락이력 있는 100일+ 건은 정상 대상 유지.
+    휴면 두 갈래(둘 다 '숨기기'일 뿐 삭제·폐기 아님 — 월 1회 --list-dormant 로 검토):
+      ① 연락이력 0건 AND 경과 100일 초과 (종전)
+      ② 마지막 움직임 후 STALE_ARCHIVE_DAYS(60일) 이상 — 화면이 목록에서 숨긴 건과 같은 기준.
+         화면에 없는 건을 배정하라고 보내면 받는 사람이 찾지 못한다(2026-08-20 GM 신고, 이효주 님).
     """
     eligible, dormant = [], []
     for it in items:
-        if (not it["contacted"]) and it["days"] > DORMANT_OVER_DAYS:
+        last = it.get("last_days")
+        if last is not None and last >= STALE_ARCHIVE_DAYS:
+            dormant.append(it)
+        elif (not it["contacted"]) and it["days"] > DORMANT_OVER_DAYS:
             dormant.append(it)
         else:
             eligible.append(it)
@@ -903,9 +943,24 @@ def build_payload(today: str | None = None, notified: dict[str, str] | None = No
     selected = select_daily(eligible, notified, today)
     done = newly_assigned(extra["open"], today)
     cheer = _render_cheer(done, len(eligible))
+    # 하루 일과 정리에서 옮겨 온 두 줄(2026-08-20 GM 신고 — 중복). 조회 실패해도 본 메시지는
+    # 나가야 한다(촉구 한 통이 통째로 멈추는 것이 더 나쁘다).
+    try:
+        _mem = R._fetch_list("member_inquiry_list")
+        _ad = R._fetch_list("lesson_inquiry_list", type="성인강습")
+        _yo = R._fetch_list("lesson_inquiry_list", type="유소년강습")
+        today_new = collect_today_unassigned(today, _mem, _ad, _yo)
+        uncontacted = R._uncontacted_membership(
+            {"membership": _mem, "adult": _ad, "youth": _yo}, today)
+    except Exception:
+        today_new, uncontacted = [], []
+    try:
+        loss_gaps = collect_loss_reason_gaps()
+    except Exception:
+        loss_gaps = []
     return {
         "today": today,
-        "text": _render_message(selected, eligible, dormant, cheer),
+        "text": _render_message(selected, eligible, dormant, cheer, today_new, uncontacted, loss_gaps),
         "selected": selected,
         "eligible": eligible,
         "dormant": dormant,
@@ -915,19 +970,29 @@ def build_payload(today: str | None = None, notified: dict[str, str] | None = No
 
 
 def _render_message(selected: list[dict], eligible: list[dict], dormant: list[dict],
-                    cheer: str = "") -> str:
+                    cheer: str = "", today_new: list | None = None,
+                    uncontacted: list | None = None, loss_gaps: list | None = None) -> str:
     """그것만 담은 독립 메시지(GM 2026-08-05) — 10줄 안쪽·한 줄에 한 건·부탁 조.
 
     텔레그램 굵게가 잘 안 먹어 줄바꿈·기호로 읽히게 한다. 표시는 선발 top MSG_DISPLAY_N
     건을 "오래된 순"으로 다시 정렬해서 싣는다(select_daily 의 회전 선발 순서는 종목별
     공정 배분용이라 화면 순서와 다르다). 나머지는 "외 N건"+총계로 접는다(도배 방지).
     """
+    today_new = today_new or []
+    uncontacted = uncontacted or []
+    loss_gaps = loss_gaps or []
+    _extra = _extra_sections(today_new, uncontacted, loss_gaps)
     if not eligible:
         # 팡파레가 있으면 그것만으로 충분(같은 뜻을 두 줄로 적지 않는다).
-        return cheer or "✅ 담당자 미배정 문의 0건 — 모두 배정 완료되었습니다. 감사합니다 🙏"
+        _head = cheer or "✅ 담당자 미배정 문의 0건 — 모두 배정 완료되었습니다. 감사합니다 🙏"
+        # 배정은 다 됐어도 '오늘 신규 미담당'·'멤버십 미컨택'은 남아 있을 수 있다 — 그 두 줄은
+        # 이제 이 통이 전담하므로 여기서 끊기면 아무 데도 안 나간다(2026-08-20).
+        return "\n".join([_head] + _extra + ([AI_SIGNOFF] if _extra else []))
     if not selected:
         # 대상은 있으나 전건이 오늘 이미 안내됨(같은 날 중복 실행 방지) — 다시 보내지 않는다.
         # 단, 그 사이 배정된 건이 있으면 팡파레만 보낸다(축하를 하루 미루지 않는다).
+        if _extra:
+            return "\n".join(([cheer] if cheer else []) + _extra + [AI_SIGNOFF])
         return cheer
 
     oldest = eligible[0]["days"]  # collect_unassigned() 에서 이미 -days 정렬됨
@@ -947,8 +1012,77 @@ def _render_message(selected: list[dict], eligible: list[dict], dormant: list[di
     if rest_n > 0:
         lines.append(f"… 외 {rest_n}건 (총 {len(eligible)}건)")
     lines.append(f"👉 배정하기: {ASSIGN_URL_LESSON} (입장코드 {ENTRY_CODE})")
+    lines += _extra_sections(today_new, uncontacted, loss_gaps)
     lines.append(AI_SIGNOFF)
     return "\n".join(lines)
+
+
+def collect_loss_reason_gaps(limit_days: int = 45) -> list[tuple[str, str]]:
+    """LOSS 처리는 됐는데 '미등록사유' 칸이 빈 회원 — 최근 limit_days 이내 LOSS 건만.
+
+    ★2026-08-20 시포(GM 지시 "실무진 말을 믿고 작업해줘"). 임정은M 이 사유를 적었는데
+    사라진다고 세 번 신고했고(FB260820-101541·101712·110540), 실측하니 회원변경이력에
+    저장 시도 자체가 안 남아 있었다 — 화면에서 서버로 요청이 나가지 못한 것이다.
+    화면 '오늘 할 일'에도 같은 목록이 있지만 그건 화면을 열어야 보인다. 저장이 조용히
+    유실돼도 다음 날 사람 눈에 닿게, **이미 매일 나가는 이 통에 한 줄로만** 얹는다
+    (새 알림·새 예약작업을 만들지 않는다 — 약속 L21).
+    """
+    from datetime import date as _date
+    rows = R._fetch_list("member_active_list", scope="ended", nocache="1")
+    cut = (datetime.now() - timedelta(days=limit_days)).strftime("%Y-%m-%d")
+    out = []
+    for r in rows:
+        if str(r.get("미등록사유", "") or "").strip():
+            continue
+        loss_at = str(r.get("LOSS\n일자", "") or r.get("종료\n일자", "") or "")[:10]
+        if not loss_at or loss_at < cut:
+            continue
+        nm = str(r.get("회원명", "") or "-").strip() or "-"
+        out.append((nm, loss_at))
+    out.sort(key=lambda x: x[1])
+    return out
+
+
+def _extra_sections(today_new: list, uncontacted: list, loss_gaps: list | None = None) -> list[str]:
+    """하루 일과 정리에 있던 촉구 두 줄을 이 통으로 옮겨 담는다(2026-08-20 GM 신고 — 중복).
+
+    옛 자리 = report_stream_1_impl.build_digest 의 「🆕 담당배정 필요」·「📌 연락 아직 안 된
+    문의(멤버십)」. 같은 방에 두 통이 연달아 나가면서 같은 제목의 촉구가 두 번 읽혔다.
+    데이터·판정은 그대로 stream1 함수를 재사용한다(새 판정 만들지 않는다 — 약속 L01·L21).
+    """
+    out: list[str] = []
+    if today_new:
+        names = " · ".join(f"{nm}({tp})" for nm, tp in today_new)
+        out.append(f"🆕 오늘 들어온 문의 중 담당 미정 {len(today_new)}건 — {names}")
+    if uncontacted:
+        head = ", ".join(f"{nm}({d}일째)" for nm, d in uncontacted[:5])
+        tail = f" 외 {len(uncontacted) - 5}건" if len(uncontacted) > 5 else ""
+        out.append(f"📌 아직 연락 못 드린 멤버십 문의 {len(uncontacted)}건 — {head}{tail}")
+    if loss_gaps:
+        # 최근 LOSS 부터 — 방금 처리하신 건이 맨 앞에 보여야 "내가 적은 게 안 들어갔구나"가 바로 읽힌다.
+        recent = sorted(loss_gaps, key=lambda x: x[1], reverse=True)
+        names = ", ".join(f"{nm}({d[5:]})" for nm, d in recent[:5])
+        tail2 = f" 외 {len(recent) - 5}명" if len(recent) > 5 else ""
+        out.append(f"🚪 LOSS 미등록사유 빈칸 {len(loss_gaps)}명 — {names}{tail2}")
+        out.append("   👉 적으셨는데 비어 있으면 저장이 안 된 것입니다. 사유 한 낱말만 주시면 저희가 넣겠습니다")
+    return out
+
+
+def collect_today_unassigned(today: str, mem_raw: list, adult_raw: list, youth_raw: list) -> list:
+    """당일 접수분 중 담당이 아직 안 정해진 건 — stream1 이 쓰던 판정 그대로."""
+    groups = {"membership": R._today_rows(mem_raw, today),
+              "adult": R._today_rows(adult_raw, today),
+              "youth": R._today_rows(youth_raw, today)}
+    out = []
+    for kind, rows in groups.items():
+        is_lesson = kind != "membership"
+        for r in rows:
+            if R._has_progress(r):
+                continue
+            if R._is_unassigned_active(r, is_lesson):
+                nm = str(r.get("name", "") or "-").strip() or "-"
+                out.append((nm, R._type_label(kind)))
+    return out
 
 
 def send(text: str, chat_id: int) -> dict:

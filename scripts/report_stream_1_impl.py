@@ -472,18 +472,13 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     if other_today:
         recon_parts.append(f"기타 {other_today}건")
     section_new += "\n└ " + " · ".join(recon_parts)
-    if unassigned_today:
-        names = " · ".join(f"{nm}({tp})" for nm, tp in unassigned_today)
-        section_new += (
-            f"\n🆕 담당배정 필요 {len(unassigned_today)}건 — {html.escape(names)} 👉 배정 필요"
-        )
-    if uncontacted:
-        head = ", ".join(f"{nm}({d}일째)" for nm, d in uncontacted[:5])
-        tail = f" 외 {len(uncontacted) - 5}건" if len(uncontacted) > 5 else ""
-        section_new += (
-            f"\n📌 연락 아직 안 된 문의(멤버십) {len(uncontacted)}건 — {html.escape(head)}{tail}"
-            f"\n   👉 운영부(멤버십)에서 컨택 부탁드립니다"
-        )
+    # ★2026-08-20 시포 — 이름 목록과 촉구 문구는 여기서 뺐다(GM 신고: "담당배정 필요건,
+    #   연락 아직 안 된 문의건 관련해서 중복된 것 같아").
+    #   같은 방에 이 정리와 배정 독려 두 통이 연달아 나가는데, 양쪽에 같은 제목의 촉구가
+    #   실려 있었다. 2026-08-05 에 배정 독려를 눈에 띄게 하려고 밖으로 뺄 때 원래 자리의
+    #   줄을 안 지워 15일간 둘 다 나갔다. 촉구·이름 목록은 배정 독려 한 통이 전담한다
+    #   (unassigned_nudge._render_message). 여기 남는 것은 위 `└ 진전 N건 · 담당배정 필요 N건`
+    #   정합 숫자뿐 — 목록이 아니라 당일 신규가 어떻게 갈렸는지 세는 줄이라 중복이 아니다.
 
     # 컨택&등록 현황 — 3리스트 통합, "실제 진전"(컨택이력≥1 또는 등록판정) 있는 행만.
     # 담당배정 필요 건은 위 신규 문의 섹션(🆕)으로 이전했다 — 정의상 진전이 없는 건이라
