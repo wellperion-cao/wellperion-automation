@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>AI Summit 2026 현장 참관 기록 — 웰페리온 · A3 보고서</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+         --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; --grey:#5A646E; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px;
+    box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; } .bar .sp{ flex:1; }
+  .bar .note{ font-size:11.5px; opacity:.8; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; }
+    .page{ margin:0 !important; box-shadow:none !important; } }
+
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:28px 32px 20px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:8px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:14px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:4px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:27px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.6; color:#3C464F; }
+  .meta b{ color:var(--ink); }
+  .sign{ display:flex; margin-left:24px; border:1px solid var(--line); }
+  .sign div{ width:70px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy);
+    padding:3px 0; border-bottom:1px solid var(--line); }
+  .sign .b{ height:34px; }
+
+  .lead{ margin-top:11px; background:var(--navy); color:#fff; padding:9px 14px; font-size:13.5px; line-height:1.6; }
+  .lead b{ font-weight:900; }
+  .lead .q{ display:block; font-size:12.5px; opacity:.92; margin-top:3px; }
+
+  .grid4{ margin-top:11px; display:grid; grid-template-columns:repeat(4,1fr); gap:9px; }
+  .card{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 11px 10px; }
+  .card h3{ font-size:13px; font-weight:900; letter-spacing:-.3px; margin-bottom:2px; }
+  .card .who{ font-size:10.5px; color:var(--grey); margin-bottom:6px; }
+  .card ul{ list-style:none; }
+  .card li{ font-size:11.2px; line-height:1.55; padding-left:9px; position:relative; margin-bottom:3px; }
+  .card li:before{ content:''; position:absolute; left:0; top:7px; width:3px; height:3px;
+    background:var(--navy); border-radius:50%; }
+  .card b{ font-weight:700; }
+  .num{ color:var(--bad); font-weight:900; }
+  .ok{ color:var(--good); font-weight:900; }
+  .card.hot{ border-top-color:var(--bad); }
+  .card.hot h3{ color:var(--bad); }
+
+  .mid{ margin-top:11px; display:grid; grid-template-columns:1.15fr 1fr; gap:11px; }
+  .sec{ border:1px solid var(--line); }
+  .sec > h4{ background:var(--navy-bg); color:var(--navy); font-size:12px; font-weight:900;
+    padding:5px 11px; border-bottom:1px solid var(--line); letter-spacing:-.2px; }
+  .sec .in{ padding:8px 11px 9px; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ border-bottom:1px solid var(--line); padding:5px 7px; font-size:11.2px; line-height:1.5; text-align:left; vertical-align:top; }
+  th{ background:#F6F8FA; font-weight:700; font-size:10.8px; color:var(--grey); }
+  tr:last-child td{ border-bottom:0; }
+  td b{ font-weight:700; }
+  .gap{ color:var(--bad); font-weight:900; }
+
+  .ord{ list-style:none; counter-reset:o; }
+  .ord li{ counter-increment:o; font-size:11.4px; line-height:1.55; padding-left:20px;
+    position:relative; margin-bottom:5px; }
+  .ord li:before{ content:counter(o); position:absolute; left:0; top:1px; width:14px; height:14px;
+    background:var(--navy); color:#fff; border-radius:50%; font-size:9.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; }
+
+  .quote{ margin-top:11px; border:1px solid var(--line); border-left:4px solid var(--warn);
+    padding:8px 13px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .quote div{ font-size:11.4px; line-height:1.55; }
+  .quote b{ font-weight:900; color:var(--warn); }
+
+  .foot{ margin-top:auto; padding-top:8px; border-top:1px solid var(--line);
+    font-size:10.3px; line-height:1.55; color:var(--grey); }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>AI Summit 2026 현장 참관 기록 — 웰페리온 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">AI Summit 2026 현장 참관 기록 — 본 것과 우리에게 닿는 것</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 (AI CEO 웰리)</b> · 참관 <b>김남욱 GM</b><br>
+      작성일 <b>2026. 08. 20.</b> · 문서번호 <b>WP-GM-260819-02</b><br>
+      <b>AI SUMMIT SEOUL &amp; EXPO 2026</b> · 코엑스 · 8/19(수)~8/21(금)
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <div class="lead">
+    현장이 한목소리로 말한 것은 <b>“AI를 만드는 것”이 아니라 “늘어난 AI를 관리하는 것”</b>이었습니다.
+    부스 정면 문구가 그대로입니다 — <b>“AI Agent가 늘어날수록, 필요한 건 거버넌스입니다”</b> · <b>“만들고 나서가, 진짜 문제다”</b>.
+    <span class="q">이 기록은 GM이 현장에서 남긴 <b>사진 47장·영상 4개</b>를 근거로 정리했습니다. 발표 슬라이드에 적힌 수치는 그대로 인용했고, 우리 숫자는 원장에서 직접 셌습니다.</span>
+  </div>
+
+  <div class="grid4">
+    <div class="card">
+      <h3>① 관리·감시 체계</h3>
+      <div class="who">AXFoundry · Open Network System</div>
+      <ul>
+        <li><b>통제 밖 AI(Shadow AI)</b>와 <b>승인된 AI(Authorized AI)</b>를 가른다 — 등록·승인 게이트를 지나야 회사 데이터에 닿는다</li>
+        <li>AI가 늘 때 확인할 <b>5가지</b> — 누가 만들었나 · 무슨 업무냐 · 어떤 데이터를 쓰나 · 누가 승인했나 · 어떻게 감사하나</li>
+        <li>데모 관제 화면 — 관리 대상 <span class="num">27개</span> · 실행 성공률 <span class="num">90.5%</span> · 승인 · 감사 로그 · 실시간 모니터</li>
+        <li>슬라이드 인용 — 제조기업 <span class="num">10곳 중 8곳(82.3%)</span>이 운영 체계 미비 · 2026. 06. 금융 AI 가이드 시행</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>② 직원이 직접 만드는 AI</h3>
+      <div class="who">Dify</div>
+      <ul>
+        <li>내건 문구 — <b>“모든 직원에게 각자의 AI를”</b></li>
+        <li>사내 AI 앱과 업무 흐름을 <b>코딩 없이</b> 만든다. 검색·문서·메신저 어떤 도구든 붙인다</li>
+        <li>지금 우리는 AI가 <b>대신 만들어</b> 드립니다. 이건 <b>실무진이 직접 만드는</b> 쪽 길입니다</li>
+        <li>같은 부스에서 ①번 관제와 <b>짝으로</b> 전시 — 만드는 것과 관리하는 것을 한 세트로 본다</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>③ 중소기업 AX 실행전략</h3>
+      <div class="who">Saltlux × DeepL · 고려대 디지털혁신연구센터</div>
+      <ul>
+        <li>세션 제목 — <b>「도입에서 성과와 확산으로」</b>. 도입 자체가 아니라 <b>성과로 증명</b>하는 단계를 다뤘습니다</li>
+        <li>사례 <b>(주)파나시아</b> — 설비 예지보전에 AI 적용</li>
+        <li>안전사고 <span class="ok">70%↓</span> · 운영효율 <span class="ok">30%↑</span> · 분석정확도 <span class="ok">95%</span> · 운영비용 <span class="ok">20%↓</span></li>
+        <li>성공 요인으로 꼽은 것 — <b>CEO의 의지와 지원</b> · 담당 책임자의 적극성 · 신규 패키지 상품화</li>
+      </ul>
+    </div>
+    <div class="card hot">
+      <h3>④ 우리 업에 바로 닿는 것</h3>
+      <div class="who">AI 체험존(EX ZONE) · 전시장</div>
+      <ul>
+        <li><b>formAIsion / (주)에이전</b> — AI 헬스 트레이너 솔루션. <b>AI 체형측정(근골격계)</b> 30초 이내 · AI 트레이너 <b>35종</b>(피트니스·요가) · 스트레칭 지도 <b>25종</b></li>
+        <li>KAIST 선정 12대 AI 혁신기업 · YTN Science AI 최강 기업 · 헬스케어 부문 브랜드 대상 <span style="color:var(--grey)">(부스 자체 표기)</span></li>
+        <li><b>Flitto</b> — 실시간 AI 통번역. <b>173개국 · 43개 언어</b>. 외국인 회원 응대에 닿습니다</li>
+        <li>둘 다 <b>접촉해 볼 가치</b>가 있습니다 — 우리 회원이 바로 체감하는 자리입니다</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mid">
+    <div class="sec">
+      <h4>웰페리온은 지금 어디에 있나 — 현장 기준과 나란히 놓고 본 것 (2026-08-20 실측)</h4>
+      <div class="in">
+        <table>
+          <tr><th style="width:20%">항목</th><th style="width:26%">현장에서 본 기준</th><th style="width:30%">웰페리온 현재</th><th style="width:24%">판정</th></tr>
+          <tr><td>관리 대상 AI</td><td>데모 관제 27개를 한 화면에</td><td>운영 4역할 — 웰리·시토·시모·시포</td><td><b>규모는 작지만 같은 구조</b></td></tr>
+          <tr><td>등록·승인 게이트</td><td>승인 안 지난 AI는 데이터에 못 닿음</td><td>자율화 규약 v1.1 · 2026-08-15 발효 · 3-트리거 결재</td><td class="ok">있음 · 코드로 막힘</td></tr>
+          <tr><td>감사 기록</td><td>감사 로그 · 실행 이력 화면</td><td>업무 원장 한 파일에 전량 · 발신 로그 일자별</td><td class="ok">있음</td></tr>
+          <tr><td>자동 발신 지도</td><td>—</td><td>50건 (텔레그램 39 · 카톡 11) · 13개 방</td><td class="ok">있음 · 8/18 정리</td></tr>
+          <tr><td>관제 화면 한 장</td><td>대시보드 하나로 전 계층</td><td>화면이 흩어져 있음</td><td class="gap">없음 → GM업무 01 컨트롤 타워</td></tr>
+          <tr><td>성공률 지표</td><td>실행 성공률 90.5%를 상시 표시</td><td>실패는 그때그때 경보로만 알림</td><td class="gap">없음 → 아래 1번</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h4>그래서 무엇을 할 것인가 — 제안 5</h4>
+      <div class="in">
+        <ul class="ord">
+          <li><b>컨트롤 타워에 「AI 성공률」 한 줄을 얹는다.</b> 지금 화면은 무엇이 나가는지는 보여 주는데 <b>얼마나 성공했는지</b>는 안 보입니다. 오늘도 카톡 발신이 하루 전부 실패한 날이 있었습니다.</li>
+          <li><b>(주)에이전 접촉 — AI 체형측정·AI 트레이너.</b> 회원이 바로 체감하는 자리이고, 우리 업과 정확히 겹칩니다. <b>회원 서비스 개선</b> 항목에 붙입니다.</li>
+          <li><b>Flitto 실시간 통번역 검토.</b> 외국인 회원·투어 응대. 도입 전 <b>실제 문의 건수</b>부터 세어 필요 여부를 먼저 확인합니다.</li>
+          <li><b>Dify — 실무진이 직접 만드는 길.</b> 지금은 AI가 대신 만듭니다. 실무진이 스스로 만들 수 있으면 요청·대기가 사라집니다. <b>직원 교육</b>과 묶습니다.</li>
+          <li><b>AI 도입 기준 5원칙(별도 A3)을 확정</b>하고, 확정본을 <b>컨트롤 타워 화면에 그대로 얹습니다.</b> 기준이 문서에만 있으면 지켜지지 않습니다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="quote">
+    <div><b>사람의 자리가 옮겨간다</b><br>2023 프롬프트를 잘 넣는 사람 → 2024 AI 도구를 잘 쓰는 사람 → 2025~ 바이브 코딩을 잘하는 사람 → <b>2026~ 최대한 많은 에이전트가 대신 일을 해 주는 사람</b></div>
+    <div><b>구도가 바뀐다</b><br>인간 vs AI 가 아니라 <b>인간 vs (인간 + AI)</b>. 겨루는 상대는 AI가 아니라 AI를 쓰는 사람입니다.</div>
+    <div><b>위험의 방향</b><br>“AI 때문에 회사가 어려워지는 게 아니라, <b>AI를 잘 쓰는 경쟁사 때문에</b> 어려워질 수 있다.”</div>
+  </div>
+
+  <div class="foot">
+    <div><b>근거</b> — 이 문서의 현장 내용은 GM이 2026-08-19 코엑스에서 남긴 <b>사진 47장·영상 4개</b>(공유 드라이브 「26.8.19 AI Summit」)를 웰리가 직접 열어 읽은 것입니다. 부스 문구·발표 슬라이드 수치는 <b>화면에 적힌 그대로</b> 옮겼고, 웰페리온 숫자(4역할·자동 발신 50건·13개 방)는 등록부에서 직접 셌습니다. <b>추정치는 없습니다.</b></div>
+    <div><b>주의</b> — 업체 표기(선정·수상 이력 등)는 부스에 적힌 자체 홍보 문구이며 웰페리온이 검증한 사실이 아닙니다. 도입 검토 시 별도 확인이 필요합니다. 세션 수치(파나시아 사례)는 발표자가 제시한 값입니다.</div>
+    <div><b>짝 문서</b> — 같은 참관에서 나온 <b>「AI 도입 기준(안) 5원칙」(WP-GM-260819-01)</b>이 별도 A3로 있습니다. 이 문서는 <b>무엇을 봤나</b>, 그 문서는 <b>그래서 우리는 어떻게 할 것인가</b>입니다. <b>차기</b> — 제안 5건의 담당·기한이 정해지면 GM업무 항목으로 옮겨 진척을 관리합니다.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260819_AI서밋_현장참관기록_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
