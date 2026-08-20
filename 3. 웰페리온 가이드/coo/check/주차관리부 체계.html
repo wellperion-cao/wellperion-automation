@@ -728,6 +728,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
         일일 8항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 4항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
       </p>
+      <div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;">
+        <div class="progress-bar" style="flex:1;"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
+        <span id="parkingProgressText" style="font-size:12px;color:var(--dim);white-space:nowrap;">오늘 0/8</span>
+        <button type="button" class="util-btn print-btn" style="padding:3px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button>
+      </div>
       <table class="schedule-table">
         <colgroup><col style="width:64px;"><col><col style="width:56px;"></colgroup>
         <thead><tr><th>주기</th><th>점검 항목</th><th>체크</th></tr></thead>
@@ -2059,6 +2064,40 @@ function renderParkingDailyCheck(){
 }
 renderParkingDailyCheck();
 
+/* ── 오늘 제출 상태 복원(잠금 표시)+진행률 (배672 후속 · 지원부/시설부 대조 배선 · GM 2026-08-20)
+   지원부의 회차·성별 복원 구조(loadState)는 단일 회차·단일 제출자뿐인 주차부엔 과함 → 서버
+   checkedLedger.c(체크된 항목 id 집합)+행의 submitted_am만 본다. 새로고침해도 오늘 이미 제출했으면
+   그대로 잠금 표시되도록(지원부·시설부 파리티), 페이지 로드 시 1회 + 🔄 버튼으로 수동 재조회. ── */
+async function loadParkingCheckState(){
+  const date=new Date().toLocaleString('sv-SE').slice(0,10);
+  const fillEl=document.getElementById('parkingProgressFill');
+  const textEl=document.getElementById('parkingProgressText');
+  const total=PARK_CHECKLIST.daily.length;
+  try{
+    const r=await fetch(API_URL+'?date='+date+'&dept=parking&gender=m',{redirect:'follow'});
+    const j=await r.json();
+    const doneIds=Object.keys((j&&j.checkedLedger&&j.checkedLedger.c)||{}).filter(function(k){ return j.checkedLedger.c[k]; });
+    if(fillEl) fillEl.style.width=Math.round(doneIds.length/total*100)+'%';
+    if(textEl) textEl.textContent='오늘 '+doneIds.length+'/'+total;
+    const row=(j.rows||[])[0]||{};
+    const btn=document.getElementById('parkingSubmitBtn');
+    const stat=document.getElementById('parkingSubmitStatus');
+    if(row.submitted_am){
+      PARK_CHECKLIST.daily.forEach(function(t,i){
+        const cb=document.getElementById('pchk_'+i);
+        if(cb){ cb.checked=doneIds.indexOf('p'+(i+1))>=0; cb.disabled=true; }
+      });
+      if(btn){ btn.disabled=true; btn.textContent='제출완료'; btn.classList.add('submitted'); }
+      if(stat){
+        const hhmm=/(\d{2}:\d{2})/.exec(String(row.submittedAt_am||''));
+        stat.textContent='오늘 제출완료 · '+(row.submitter_am||'-')+(hhmm?' · '+hhmm[1]:'');
+        stat.style.color='var(--green)';
+      }
+    }
+  }catch(e){ if(textEl) textEl.textContent='진행률 조회 실패'; }
+}
+loadParkingCheckState();
+
 async function submitParkingDailyCheck(){
   const insp=(document.getElementById('parkingInspector').value||'').trim();
   if(!insp){ alert('점검자 이름을 입력해 주세요.'); return; }
@@ -2088,6 +2127,12 @@ async function submitParkingDailyCheck(){
     if(stat){ stat.textContent='제출완료 · '+insp+' · '+nowIso.slice(11,16); stat.style.color='var(--green)'; }
     btn.textContent='제출완료'; btn.classList.add('submitted');
     PARK_CHECKLIST.daily.forEach(function(t,i){ document.getElementById('pchk_'+i).disabled=true; });
+    /* 🅿 주차부 텔레그램 알림(배672 후속) — 시설부가 쓰는 dept 무관 notify_round 엔드포인트 재사용
+       (백엔드 무변경·같은 점검관리방 chat_id). 실패해도 제출 자체는 이미 성공이므로 조용히 무시. */
+    fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'notify_round',dept:'parking',date:date,round:'am',
+        message:'🅿 주차부 일일점검 제출 · 점검자 '+insp+' · '+checkedIdx.length+'/'+PARK_CHECKLIST.daily.length+'건 체크'})}).catch(function(){});
+    loadParkingCheckState();
   }catch(e){
     btn.disabled=false;
     if(stat){ stat.textContent='제출 실패 — 인터넷 상태를 확인하고 다시 시도해 주세요.'; stat.style.color='var(--red)'; }
