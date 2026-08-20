@@ -10242,7 +10242,7 @@ function openValidLossModal(rowIndex) {
   var phone = String(r['휴대폰 번호'] || r['휴대폰'] || '').trim();
   var d = new Date();
   var today = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
-  _lossModal = { mode: 'fromvalid', rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, endCol: endCol, endDate: today };
+  _lossModal = { mode: 'fromvalid', rowIndex: r.rowIndex, keyPhone: phone, rowKey: r.rowKey || '', name: name, col: _capCol(_activeHeaders, '미등록사유'), endCol: endCol, endDate: today };
   document.getElementById('lrMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '') + '  ·  종료일자 ' + today + ' 로 저장';
   _lossModalFill('');
 }
