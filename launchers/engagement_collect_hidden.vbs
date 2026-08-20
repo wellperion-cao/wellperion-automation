@@ -7,4 +7,6 @@
 ' process") on every run, since two handles fight to open the same file for
 ' write. Fixed 2026-07-20 after 17 days of silent failure (root cause).
 ' Runs ops\start_engagement_collect.bat silently (danggn + blog, no login needed).
-CreateObject("WScript.Shell").Run "cmd /c cd /d C:\Users\jjky0\welperion-automation& ops\start_engagement_collect.bat", 0, False
+' 2026-08-20: wait=True + 자식 종료코드 전달로 변경 (예약작업 실패가 항상 성공 0으로 찍히던 문제 수정).
+rc = CreateObject("WScript.Shell").Run("cmd /c cd /d C:\Users\jjky0\welperion-automation& ops\start_engagement_collect.bat", 0, True)
+WScript.Quit rc

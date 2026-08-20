@@ -5,4 +5,6 @@
 ' activates it (proposal-mode default for the first weeks - see script module docstring).
 ' Registered trigger: weekly, Sunday 09:00 via Task Scheduler (schtasks) - see
 ' ops\register_weekly_page_hygiene.bat (NOT auto-run).
-CreateObject("WScript.Shell").Run "C:\Users\jjky0\welperion-automation\scripts\weekly_page_hygiene.bat", 0, False
+' 2026-08-20: wait=True + 자식 종료코드 전달로 변경 (예약작업 실패가 항상 성공 0으로 찍히던 문제 수정).
+rc = CreateObject("WScript.Shell").Run("C:\Users\jjky0\welperion-automation\scripts\weekly_page_hygiene.bat", 0, True)
+WScript.Quit rc

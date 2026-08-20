@@ -4,4 +4,6 @@
 ' Usage: wscript member_expiry_alert_hidden.vbs
 '   - Task: Wellperion-CPO-MemberExpiry-Monthly-4thMon-1000 (4th Monday of month, 10:00)
 '   - Sends to GM personal chat only (8254867551) - hardcoded in member_expiry_alert.py
-CreateObject("WScript.Shell").Run "C:\Users\jjky0\welperion-automation\scripts\member_expiry_alert.bat", 0, False
+' 2026-08-20: wait=True + 자식 종료코드 전달로 변경 (예약작업 실패가 항상 성공 0으로 찍히던 문제 수정).
+rc = CreateObject("WScript.Shell").Run("C:\Users\jjky0\welperion-automation\scripts\member_expiry_alert.bat", 0, True)
+WScript.Quit rc

@@ -2,4 +2,6 @@
 ' Window style 0 = hidden. Output preserved to logs\gm_aide_scan.log
 ' Created by AI CEO (2026-07-02): daily 06:30 GM aide capture scan via Task Scheduler.
 ' Recommended trigger: every day 06:30 via Task Scheduler (schtasks)
-CreateObject("WScript.Shell").Run "C:\Users\jjky0\welperion-automation\scripts\gm_aide_scan.bat", 0, False
+' 2026-08-20: wait=True + 자식 종료코드 전달로 변경 (예약작업 실패가 항상 성공 0으로 찍히던 문제 수정).
+rc = CreateObject("WScript.Shell").Run("C:\Users\jjky0\welperion-automation\scripts\gm_aide_scan.bat", 0, True)
+WScript.Quit rc

@@ -12,5 +12,7 @@
 '   확인: 같은 구조의 probe 를 대화형으로 실행하면 로그가 남았다(체인 자체는 정상) → 예약 경로에서만 죽는다.
 '   효과: True 면 wscript 가 배치 종료까지 살아 있어 자식이 죽지 않고, 작업 결과 코드도 실제 결과를 반영한다.
 '         창은 여전히 숨김(두 번째 인자 0) — 실무진 화면에 콘솔이 뜨지 않는다.
+' 2026-08-20: 종료코드가 캡처만 안 되고 버려지고 있었다(wait=True인데 WScript.Quit 없음=항상 암묵 0) — rc 캡처+전달 추가.
 Set WShell = CreateObject("WScript.Shell")
-WShell.Run "cmd /c C:\Users\jjky0\welperion-automation\scripts\ops_fill_board_weekly.bat", 0, True
+rc = WShell.Run("cmd /c C:\Users\jjky0\welperion-automation\scripts\ops_fill_board_weekly.bat", 0, True)
+WScript.Quit rc
