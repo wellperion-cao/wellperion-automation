@@ -718,34 +718,32 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
-  <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검. 지원부 점검 GAS와 별개·독립·정적 — 제출/저장/API 연동 없음, 인쇄·육안 체크 전용 · A3 인쇄 순서에 맞춰 비품 다음 배치 2026-08-18) ── -->
+  <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검 · 일일 8항목 제출형 배선 GM승인 2026-08-18 a안 배672 —
+       지원부·시설부와 동일 점검 GAS 재사용(dept=parking, 신규 백엔드·시트·예약작업 없음). 주간 4항목은 이번 범위 밖 · 인쇄 전용 유지.) ── -->
   <div class="manual-section" style="margin-top:16px;">
     <div class="manual-header" onclick="togManual(this)">
       <h3>🧹 주차장 청결·점검 체크리스트</h3><span class="arrow">&#9654;</span>
     </div>
     <div class="manual-body">
       <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
-        <span style="display:inline-block;margin-right:6px;padding:1px 8px;border-radius:8px;background:var(--purple-bg);color:var(--purple);font-weight:700;font-size:11px;">[AI 초안 — GM 검토]</span>
-        지원부 점검 시스템과 별개·독립 운영 — 제출·저장·API 연동 없는 정적 점검표(인쇄 후 육안 체크 전용). 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
+        일일 8항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 4항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
       </p>
       <table class="schedule-table">
         <colgroup><col style="width:64px;"><col><col style="width:56px;"></colgroup>
         <thead><tr><th>주기</th><th>점검 항목</th><th>체크</th></tr></thead>
+        <tbody id="parkingDailyCheckBody"></tbody>
         <tbody>
-          <tr><td rowspan="8">일일</td><td>지상·지하 바닥 청결 — 오염·기름때 제거</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>통행로 적치물 정리 / 쓰레기 수거</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>배수구 막힘·이물질 제거</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>주차장 화장실 청결·비품(화장지·손세정제)·악취·조명</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>주차선·표시선 식별 상태</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>조명 점등·사각지대 조도</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>차단기·정산기 정상 작동</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>CCTV 화면 이상·녹화 정상</td><td style="text-align:center;">☐</td></tr>
           <tr><td rowspan="4">주간</td><td>소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부</td><td style="text-align:center;">☐</td></tr>
           <tr><td>비상구 유도등 점등·피난통로 적치물·비상벨</td><td style="text-align:center;">☐</td></tr>
           <tr><td>발렛 동선·안전표지 점검</td><td style="text-align:center;">☐</td></tr>
           <tr><td>계절 대비(여름 배수·겨울 제설)</td><td style="text-align:center;">☐</td></tr>
         </tbody>
       </table>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        <input type="text" id="parkingInspector" placeholder="점검자 이름" style="flex:1;min-width:120px;max-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
+        <button type="button" class="submit-btn primary" style="flex:none;max-width:160px;padding:9px 18px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
+        <span id="parkingSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
+      </div>
       <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.</p>
     </div>
   </div>
@@ -2038,6 +2036,61 @@ async function loadParkingRevenue(){
     if(statusEl){ statusEl.textContent='주차 매출 데이터 없음/수집 실패'; statusEl.style.color='var(--dim)'; }
     if(kpiEl) kpiEl.innerHTML='';
     if(subEl) subEl.textContent='';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   주차부 일일 점검 8항목 제출형 (GM승인 2026-08-18 a안 배672)
+   PARK_CHECKLIST.daily(위 A3 인쇄와 동일 출처) 체크 → 지원부·시설부와 같은 점검 GAS(action=save,
+   roundChecks 방식) dept=parking 재사용. dept=parking 탭(주차_공용구역)은 백엔드 DEPT_TAB_MAP에
+   이미 등록돼 있어 신규 배포 없이 그대로 쓴다. 회차는 단일 회차(am1→'오전조' 라벨)로 고정 —
+   주차부는 회차 개념이 없어 자리표시일 뿐, 화면·보고에는 노출 안 됨.
+   ═══════════════════════════════════════════ */
+function renderParkingDailyCheck(){
+  const body=document.getElementById('parkingDailyCheckBody');
+  if(!body) return;
+  let html='';
+  PARK_CHECKLIST.daily.forEach(function(t,i){
+    html+='<tr>'+(i===0?'<td rowspan="'+PARK_CHECKLIST.daily.length+'">일일</td>':'')
+      +'<td>'+escapeHTML(t)+'</td>'
+      +'<td style="text-align:center;"><input type="checkbox" id="pchk_'+i+'"></td></tr>';
+  });
+  body.innerHTML=html;
+}
+renderParkingDailyCheck();
+
+async function submitParkingDailyCheck(){
+  const insp=(document.getElementById('parkingInspector').value||'').trim();
+  if(!insp){ alert('점검자 이름을 입력해 주세요.'); return; }
+  const checkedIdx=[];
+  PARK_CHECKLIST.daily.forEach(function(t,i){ if(document.getElementById('pchk_'+i).checked) checkedIdx.push(i); });
+  if(!checkedIdx.length && !confirm('체크된 항목이 하나도 없습니다. 그래도 제출하시겠습니까?')) return;
+  const btn=document.getElementById('parkingSubmitBtn');
+  const stat=document.getElementById('parkingSubmitStatus');
+  btn.disabled=true; if(stat){ stat.textContent='제출 중...'; stat.style.color='var(--dim)'; }
+  const nowIso=new Date().toLocaleString('sv-SE').replace('T',' ');   // 'YYYY-MM-DD HH:MM:SS' KST(타 제출경로와 통일)
+  const date=nowIso.slice(0,10);
+  const checks=PARK_CHECKLIST.daily.map(function(t,i){
+    return { itemId:'p'+(i+1), name:t, cat:'일일', checked:checkedIdx.indexOf(i)>=0, shift:'am' };
+  });
+  const roundChecks=checkedIdx.map(function(i){ return 'am1_p'+(i+1); });
+  const roundCheckMeta={};
+  roundChecks.forEach(function(k){ roundCheckMeta[k]={ by:insp, at:nowIso.slice(11,16) }; });
+  const payload={
+    action:'save', date:date, dept:'parking', genderTab:'m',
+    checks:checks, roundChecks:roundChecks, roundCheckMeta:roundCheckMeta,
+    submitter_am:insp, submittedAt_am:nowIso
+  };
+  try{
+    const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(!d || !d.success) throw new Error((d&&d.error)||'서버 응답 오류');
+    if(stat){ stat.textContent='제출완료 · '+insp+' · '+nowIso.slice(11,16); stat.style.color='var(--green)'; }
+    btn.textContent='제출완료'; btn.classList.add('submitted');
+    PARK_CHECKLIST.daily.forEach(function(t,i){ document.getElementById('pchk_'+i).disabled=true; });
+  }catch(e){
+    btn.disabled=false;
+    if(stat){ stat.textContent='제출 실패 — 인터넷 상태를 확인하고 다시 시도해 주세요.'; stat.style.color='var(--red)'; }
   }
 }
 </script>
