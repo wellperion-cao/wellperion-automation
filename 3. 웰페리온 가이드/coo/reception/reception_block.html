@@ -313,6 +313,8 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
 
 /* ── Misc (JS-generated elements) ── */
 .wlp-recept .hint-empty{font-size:13.5px;color:var(--dim);text-align:center;padding:10px 0 2px}
+/* 칸 아래 안내 한 줄(def.note) — 2026-08-20 휴회 '연장' 안내 */
+.wlp-recept .fnote{font-size:12.5px;color:var(--dim);line-height:1.65;margin:7px 2px 0;word-break:keep-all}
 .wlp-recept .chk-row{display:flex;align-items:center;gap:10px;padding:6px 0}
 .wlp-recept .chk-row input[type=checkbox]{
   width:20px;height:20px;
@@ -395,6 +397,7 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
   .wlp-recept .photo-zone .ph-text{font-size:21px}
   .wlp-recept .submit{font-size:30px;padding:30px}
   .wlp-recept .hint-empty{font-size:20px}
+  .wlp-recept .fnote{font-size:18px;line-height:1.7;margin-top:12px}
   /* ── 2026-08-13 GM 검수 보완 (키오스크 세로 화면 한정) ──
      ①사진 첨부는 감춘다 — 키오스크엔 카메라가 없어 누르면 윈도우 파일 탐색기가 열린다(필수 항목 아님).
      ②접수하기 버튼을 화면 아래에 고정 — 유형을 고르면 화면이 한 판 넘게 길어져 버튼이 밖으로 나갔다.
@@ -641,8 +644,13 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
       /* 라벨은 '사유' 대신 '휴회 유형' (GM 확정 2026-07-23) — 선택지가 여행·출장처럼 '상황'이라
          이유를 캐묻는 인상을 없애고, 앞 칸(휴회 시작일·종료일)과 '휴회 OO' 리듬을 맞춘다.
          ★백엔드로 보내는 키는 reason 유지 — 시포 규약(member_hold_apply)이 그대로다. */
+      /* '연장' 추가 — GM 확정 2026-08-20(운영부 실무진·책임자 결정).
+         이미 휴회 중인 분이 기간만 늘리는 경우다. 고르면 아래 제출부에서 구분(holdKind)을
+         '신규' 대신 '연장' 으로 보내, 종합접수처 현황의 「구분」 칸에 그대로 뜬다 —
+         새 칸을 만들지 않는다(약속 L21 · 구분 칸은 원래부터 있었고 값만 고정돼 있었다). */
       { key:'reason',    label:'휴회 유형',     type:'select', ph:'유형을 선택하세요',
-        opts:['여행','출장','병가·치료','임신·육아','개인 사정','기타'] }
+        opts:['여행','출장','병가·치료','임신·육아','개인 사정','기타','연장(이미 휴회 중)'],
+        note:'연장은 7일 이상 휴회 중일 때, 휴회 기간 안에서만 신청하실 수 있습니다. 횟수는 차감되지 않고 일수만 늘어납니다. 휴회가 끝난 뒤에 신청하시면 일반 휴회로 접수되어 횟수·일수가 함께 차감됩니다.' }
     ]
   };
   // 백엔드로 보낼 추가 필드 키 (없으면 빈값)
@@ -768,6 +776,15 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
         field.appendChild(chkRow);
       }
 
+      /* 칸 아래 안내 한 줄(def.note) — 필요한 칸에만 붙는다. 2026-08-20 휴회 '연장' 안내로 신설. */
+      if (def.note) {
+        var nt = document.createElement('p');
+        nt.className = 'fnote';
+        nt.id = 'note_' + def.key;
+        nt.textContent = def.note;
+        field.appendChild(nt);
+      }
+
       box.appendChild(field);
     });
 
@@ -874,7 +891,9 @@ body.page-id-8434 #header-outer #logo{margin-top:32px!important}
         body: JSON.stringify({
           action: 'member_hold_apply',
           name: vals.name || '', phone: vals.contact || '',
-          holdKind: '신규',                    // 회원 화면에서 구분을 없앴으므로 기본값 전송 — 실제 신규/연장 판정은 직원이 시트에서
+          // 구분 — 유형에서 '연장'을 고르면 연장, 아니면 신규(GM 확정 2026-08-20).
+          // 값 판정을 여기 한 곳에서만 한다 — 현황 화면은 이 값을 그대로 「구분」 칸에 띄운다.
+          holdKind: (String(vals.reason || '').indexOf('연장') === 0 ? '연장' : '신규'),
           holdStart: vals.holdStart || '',
           holdEnd: vals.holdEnd || '',        // 신규 칸 — 시트에서 기간을 그대로 보게
           holdDays: _days,                    // 시작~종료로 자동 계산(양끝 포함)
