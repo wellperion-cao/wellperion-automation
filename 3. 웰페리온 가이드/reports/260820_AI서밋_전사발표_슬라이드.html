@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 서밋 전사 발표 — 우리는 이미 시작했다 · 웰페리온</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  :root{
+    --navy:#14304E; --navy2:#1E4470; --ink:#101418; --grey:#5A646E; --line:#E3E7EB;
+    --bg:#F2F4F7; --gold:#B8894A; --good:#146B4F; --bad:#9E2A2A; --soft:#EDF1F6;
+  }
+  html,body{ height:100%; background:#3A424C; font-family:'Noto Sans KR',sans-serif; color:var(--ink); }
+
+  /* 조작 막대 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:44px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:12px; padding:0 16px; z-index:99; font-size:13px; }
+  .bar b{ font-weight:700; } .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:6px 13px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .cnt{ font-variant-numeric:tabular-nums; opacity:.9; }
+  .bar .hint{ font-size:11.5px; opacity:.75; }
+
+  /* 무대 */
+  .stage{ padding:56px 0 30px; display:flex; flex-direction:column; align-items:center; gap:22px; }
+  .slide{ width:1280px; height:720px; background:#fff; position:relative; overflow:hidden;
+    padding:52px 62px 46px; display:flex; flex-direction:column;
+    box-shadow:0 6px 26px rgba(0,0,0,.4); }
+  .slide .no{ position:absolute; right:26px; bottom:18px; font-size:12px; color:#9AA4AE;
+    font-variant-numeric:tabular-nums; }
+  .slide .kicker{ font-size:14px; font-weight:700; color:var(--gold); letter-spacing:2.5px; margin-bottom:9px; }
+  .slide h2{ font-family:'Noto Serif KR',serif; font-size:41px; line-height:1.2; letter-spacing:-1.2px;
+    font-weight:700; margin-bottom:6px; }
+  .slide h2 .em{ color:var(--navy); }
+  .slide .sub{ font-size:17px; color:var(--grey); line-height:1.6; margin-bottom:22px; }
+  .body{ flex:1; display:flex; flex-direction:column; justify-content:center; }
+
+  /* 표지 */
+  .cover{ background:var(--navy); color:#fff; justify-content:center; }
+  .cover .brand{ font-family:'Noto Serif KR',serif; font-size:17px; letter-spacing:10px; opacity:.8; margin-bottom:26px; }
+  .cover h1{ font-family:'Noto Serif KR',serif; font-size:62px; line-height:1.18; letter-spacing:-2px; font-weight:700; }
+  .cover h1 span{ color:#F0C987; }
+  .cover .lead{ font-size:20px; line-height:1.65; margin-top:24px; opacity:.94; max-width:920px; }
+  .cover .meta{ margin-top:auto; font-size:14px; opacity:.72; line-height:1.7; }
+
+  /* 마무리 문장 슬라이드 */
+  .quoteS{ background:var(--navy); color:#fff; justify-content:center; }
+  .quoteS .big{ font-family:'Noto Serif KR',serif; font-size:44px; line-height:1.45; letter-spacing:-1.4px; }
+  .quoteS .big span{ color:#F0C987; }
+  .quoteS .src{ margin-top:26px; font-size:15px; opacity:.7; }
+
+  /* 공용 조각 */
+  .cards{ display:grid; gap:16px; }
+  .c2{ grid-template-columns:repeat(2,1fr); } .c3{ grid-template-columns:repeat(3,1fr); }
+  .c4{ grid-template-columns:repeat(4,1fr); }
+  .card{ border:1px solid var(--line); border-top:4px solid var(--navy); padding:18px 20px; background:#fff; }
+  .card h3{ font-size:19px; font-weight:900; letter-spacing:-.5px; margin-bottom:8px; }
+  .card p{ font-size:15px; line-height:1.62; color:#2C353E; }
+  .card .n{ font-family:'Noto Serif KR',serif; font-size:38px; font-weight:700; color:var(--navy);
+    line-height:1; margin-bottom:6px; }
+  .card.hot{ border-top-color:var(--bad); } .card.hot .n{ color:var(--bad); }
+  .card.ok{ border-top-color:var(--good); } .card.ok .n{ color:var(--good); }
+
+  ul.pt{ list-style:none; } ul.pt li{ font-size:19px; line-height:1.75; padding-left:24px; position:relative; margin-bottom:12px; }
+  ul.pt li:before{ content:''; position:absolute; left:0; top:12px; width:8px; height:8px;
+    background:var(--navy); border-radius:50%; }
+  ul.pt b{ font-weight:900; }
+
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ border-bottom:1px solid var(--line); padding:11px 12px; font-size:16px; line-height:1.5; text-align:left; vertical-align:top; }
+  th{ background:var(--soft); color:var(--navy); font-weight:900; font-size:14.5px; }
+  tr:last-child td{ border-bottom:0; }
+  td b{ font-weight:900; }
+  .vs th:first-child,.vs td:first-child{ width:46%; }
+  .num{ font-family:'Noto Serif KR',serif; font-weight:700; color:var(--navy); }
+  .badnum{ color:var(--bad); font-weight:900; }
+  .goodnum{ color:var(--good); font-weight:900; }
+
+  .years{ display:grid; grid-template-columns:repeat(4,1fr); gap:0; align-items:stretch; }
+  .yr{ padding:22px 18px; border-right:1px solid var(--line); }
+  .yr:last-child{ border-right:0; background:var(--soft); }
+  .yr .y{ font-family:'Noto Serif KR',serif; font-size:30px; font-weight:700; color:var(--gold); margin-bottom:10px; }
+  .yr:last-child .y{ color:var(--navy); }
+  .yr p{ font-size:17px; line-height:1.55; }
+  .yr:last-child p{ font-weight:900; }
+
+  .timeline{ display:flex; gap:0; align-items:stretch; }
+  .tl{ flex:1; border-left:3px solid var(--navy); padding:14px 16px; }
+  .tl .t{ font-family:'Noto Serif KR',serif; font-size:24px; font-weight:700; color:var(--navy); }
+  .tl p{ font-size:15px; line-height:1.55; margin-top:6px; color:#2C353E; }
+
+  .note{ margin-top:16px; font-size:13.5px; color:var(--grey); line-height:1.6; border-top:1px solid var(--line); padding-top:11px; }
+  .note b{ color:var(--ink); }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line); }
+  .split > div{ padding:20px 22px; }
+  .split > div:first-child{ border-right:1px solid var(--line); background:#FBFCFD; }
+  .split h4{ font-size:15px; font-weight:900; color:var(--gold); letter-spacing:1.5px; margin-bottom:12px; }
+  .split:last-child h4{ color:var(--navy); }
+  .split li{ font-size:16px; line-height:1.7; list-style:none; padding-left:18px; position:relative; margin-bottom:7px; }
+  .split li:before{ content:''; position:absolute; left:0; top:10px; width:6px; height:6px; background:#B9C2CB; border-radius:50%; }
+
+  @media print{
+    .bar{ display:none !important; }
+    html,body{ background:#fff; }
+    .stage{ padding:0; gap:0; }
+    .slide{ box-shadow:none; page-break-after:always; break-after:page; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>AI 서밋 전사 발표 — 우리는 이미 시작했다</b>
+  <span class="cnt" id="cnt">14장</span>
+  <span class="sp"></span>
+  <span class="hint">← → 키로 이동 · 클릭하면 그 장으로</span>
+  <button onclick="window.print()">인쇄 / PDF</button>
+</div>
+
+<div class="stage" id="stage">
+
+<!-- 1 표지 -->
+<section class="slide cover">
+  <div class="brand">WELLPERION</div>
+  <h1>AI 서밋에서 보고 온 것,<br>그리고 <span>우리가 이미 하고 있는 것</span></h1>
+  <div class="lead">남의 자랑을 옮기지 않겠습니다. 앞의 절반만 밖에서 본 것이고,<br>뒤의 절반은 전부 우리 숫자입니다.</div>
+  <div class="meta">
+    2026. 08. 19. AI SUMMIT SEOUL &amp; EXPO 2026 · 코엑스 · 참관 김남욱 GM<br>
+    작성 경영지원부 · 2026. 08. 20.
+  </div>
+  <div class="no">01 / 14</div>
+</section>
+
+<!-- 2 현장이 한목소리로 말한 것 -->
+<section class="slide">
+  <div class="kicker">Ⅰ. 세상</div>
+  <h2>현장이 한목소리로 말한 것</h2>
+  <div class="sub">“AI를 만드는 시대”는 지나갔습니다. 지금은 <b>늘어난 AI를 관리하는 시대</b>입니다.</div>
+  <div class="body">
+    <div class="cards c2">
+      <div class="card">
+        <h3>“AI Agent가 늘어날수록,<br>필요한 건 거버넌스입니다”</h3>
+        <p>전시장 부스 정면에 걸린 문구입니다. 만드는 이야기가 아니라 <b>관리하는 이야기</b>가 중앙에 있었습니다.</p>
+      </div>
+      <div class="card hot">
+        <h3>“만들고 나서가,<br>진짜 문제다”</h3>
+        <p>도입은 시작일 뿐이고, 누가 만들었고 어떤 자료를 쓰는지 모르는 AI가 늘어나는 것이 실제 문제라는 것입니다.</p>
+      </div>
+    </div>
+    <div class="note"><b>근거</b> — 2026-08-19 코엑스 현장 사진. 문구는 촬영본 그대로입니다.</div>
+  </div>
+  <div class="no">02 / 14</div>
+</section>
+
+<!-- 3 세상이 움직이는 속도 -->
+<section class="slide">
+  <div class="kicker">Ⅰ. 세상</div>
+  <h2>세상은 이미 움직였습니다</h2>
+  <div class="sub">늘고 있고, 도입한 회사는 더 벌고 있으며, 그런데 <b>대부분은 관리 체계가 없습니다.</b></div>
+  <div class="body">
+    <div class="cards c4">
+      <div class="card"><div class="n">37.1%</div><p>국내 기업 <b>AI 도입 증가</b></p></div>
+      <div class="card ok"><div class="n">+7.6%</div><p>AI 도입 기업의 <b>부가가치 증가 효과</b></p></div>
+      <div class="card hot"><div class="n">82.3%</div><p>제조기업 10곳 중 8곳<br><b>운영 체계 미비</b></p></div>
+      <div class="card"><div class="n">2026.06</div><p>금융권 <b>AI 가이드 시행</b> — 규제가 먼저 온다</p></div>
+    </div>
+    <div class="note"><b>출처</b> — 서밋 발표 슬라이드에 제시된 값입니다. 웰페리온이 검증한 수치가 아닙니다.</div>
+  </div>
+  <div class="no">03 / 14</div>
+</section>
+
+<!-- 4 사람의 자리 -->
+<section class="slide">
+  <div class="kicker">Ⅰ. 세상</div>
+  <h2>“잘하는 사람”의 뜻이 3년 만에 네 번 바뀌었습니다</h2>
+  <div class="sub">우리가 배울 것은 코딩이 아니라 <b>일 시키는 법</b>입니다.</div>
+  <div class="body">
+    <div class="years">
+      <div class="yr"><div class="y">2023</div><p>질문을 잘 넣는 사람</p></div>
+      <div class="yr"><div class="y">2024</div><p>AI 도구를 잘 쓰는 사람</p></div>
+      <div class="yr"><div class="y">2025~</div><p>AI로 바로 만들어내는 사람</p></div>
+      <div class="yr"><div class="y">2026~</div><p>여러 AI에게 일을 맡기고<br>관리하는 사람</p></div>
+    </div>
+    <div class="note"><b>근거</b> — 전시장 게시 문구(현장 사진). 마지막 칸이 지금 우리가 서 있는 자리입니다.</div>
+  </div>
+  <div class="no">04 / 14</div>
+</section>
+
+<!-- 5 구도 -->
+<section class="slide quoteS">
+  <div class="kicker" style="color:#F0C987">Ⅰ. 세상</div>
+  <div class="body">
+    <div class="big">겨루는 상대는 AI가 아닙니다.<br><span>AI를 쓰는 사람</span>입니다.</div>
+    <div class="big" style="font-size:26px; margin-top:30px; opacity:.92">
+      인간 <span style="opacity:.6">vs</span> AI &nbsp;→&nbsp; 인간 <span style="opacity:.6">vs</span> <span>(인간 + AI)</span>
+    </div>
+    <div class="src">“AI 때문에 회사가 어려워지는 게 아니라, <b>AI를 잘 쓰는 경쟁사 때문에</b> 어려워질 수 있다.” — 전시장 게시 문구</div>
+  </div>
+  <div class="no" style="color:rgba(255,255,255,.5)">05 / 14</div>
+</section>
+
+<!-- 6 남의 회사가 증명한 것 -->
+<section class="slide">
+  <div class="kicker">Ⅰ. 세상 — 마지막 장</div>
+  <h2>남의 회사가 증명한 것 — 사례 하나만</h2>
+  <div class="sub">(주)파나시아 — 설비를 AI로 미리 점검해 고장 전에 잡는 방식</div>
+  <div class="body">
+    <div class="cards c4">
+      <div class="card ok"><div class="n">70%↓</div><p>안전사고 감소</p></div>
+      <div class="card ok"><div class="n">30%↑</div><p>운영 효율 향상</p></div>
+      <div class="card ok"><div class="n">95%</div><p>분석 정확도</p></div>
+      <div class="card ok"><div class="n">20%↓</div><p>운영 비용 절감</p></div>
+    </div>
+    <div style="margin-top:24px; background:var(--soft); border-left:5px solid var(--gold); padding:18px 22px;">
+      <p style="font-size:20px; line-height:1.6;">그런데 이 회사가 꼽은 <b>성공 요인 1위는 기술이 아니었습니다.</b><br>
+      <b style="font-size:24px; color:var(--navy)">“최고경영진의 의지와 지원”</b> 이었습니다.</p>
+    </div>
+    <div class="note"><b>출처</b> — 세션 「중소기업 AX, 도입에서 성과와 확산으로」 발표자 제시값.</div>
+  </div>
+  <div class="no">06 / 14</div>
+</section>
+
+<!-- 7 전환점 -->
+<section class="slide">
+  <div class="kicker">Ⅱ. 우리</div>
+  <h2>여기서부터는 <span class="em">우리 숫자</span>입니다</h2>
+  <div class="sub">웰페리온은 <b>88일 전</b>에 이미 시작했습니다. (2026-05-25 ~ 2026-08-20)</div>
+  <div class="body">
+    <div class="cards c3">
+      <div class="card"><div class="n">88일</div><p>실제로 굴러온 기간</p></div>
+      <div class="card"><div class="n">약 2.9만 건</div><p>남아 있는 작업 기록<br>— 하루 평균 약 <b>330건</b></p></div>
+      <div class="card ok"><div class="n">3,605건</div><p>완료로 닫은 업무</p></div>
+      <div class="card"><div class="n">50종</div><p>매일 도는 자동 알림<br><span style="color:var(--grey)">텔레그램 39 · 카카오톡 11</span></p></div>
+      <div class="card"><div class="n">27개</div><p>자동화 모듈</p></div>
+      <div class="card"><div class="n">25개</div><p>회사가 지키기로 한 약속</p></div>
+    </div>
+    <div class="note"><b>전부 원장에서 직접 센 값입니다</b>(2026-08-20 집계). 요약된 줄을 옮겨 적지 않았습니다.</div>
+  </div>
+  <div class="no">07 / 14</div>
+</section>
+
+<!-- 8 AI 임원 4명 -->
+<section class="slide">
+  <div class="kicker">Ⅱ. 우리</div>
+  <h2>우리가 일하는 방식 — AI 임원 4명</h2>
+  <div class="sub">사람 조직 옆에 AI 조직이 나란히 있고, <b>같은 규칙</b>(보고 라인·승인)을 따릅니다.</div>
+  <div class="body">
+    <div class="cards c4">
+      <div class="card"><h3>웰리</h3><p><b>전사 보좌</b> — 현실 업무·보고·실무진 소통</p></div>
+      <div class="card"><h3>시토</h3><p><b>시스템</b> — 자동화·발신 배선·점검</p></div>
+      <div class="card"><h3>시모</h3><p><b>콘텐츠</b> — 홍보물 제작·발행</p></div>
+      <div class="card"><h3>시포</h3><p><b>회원 응대 보조</b> — 문의·회원 자료</p></div>
+    </div>
+    <div style="margin-top:22px;">
+      <table>
+        <tr><th style="width:26%">지휘 계통</th><td>리드 2명(웰리·시토)이 지휘하고, 실행 AI가 <b>동시에</b> 일합니다. 사람 조직의 보고 라인을 그대로 옮긴 구조입니다.</td></tr>
+        <tr><th>스스로 못 정하는 것</th><td><b>결제 · 보안 · 금지 항목</b>, 그리고 <b>새로 만드는 일</b> — 이건 반드시 사람이 정합니다.</td></tr>
+      </table>
+    </div>
+    <div class="note"><b>근거</b> — 자율화 규약 v1.1(2026-08-15 발효) 원문.</div>
+  </div>
+  <div class="no">08 / 14</div>
+</section>
+
+<!-- 9 어느 하루 -->
+<section class="slide">
+  <div class="kicker">Ⅱ. 우리</div>
+  <h2>어느 하루의 실제</h2>
+  <div class="sub">여러분이 이미 매일 받아 보는 그 메시지들이 <b>전부 이 체계</b>입니다.</div>
+  <div class="body">
+    <div class="timeline">
+      <div class="tl"><div class="t">07:30</div><p>어제 대화 자동 저장 →<br>부서별 아침 정리 발송</p></div>
+      <div class="tl"><div class="t">08:00</div><p>오늘 일정·진행 중 과제<br>정리 발송</p></div>
+      <div class="tl"><div class="t">09:30</div><p>매출·운영 보고<br>회장님·부서방 발송</p></div>
+      <div class="tl"><div class="t">수시</div><p>회원 접수 들어오면<br>담당 부서로 자동 배분</p></div>
+      <div class="tl"><div class="t">22:30</div><p>점검·접수 현황<br>하루 정리 발송</p></div>
+    </div>
+    <div class="note"><b>근거</b> — 자동 발신 등록부 50종 중 대표 구간(2026-08-20 집계). 발신처는 <b>방 14곳</b>입니다.</div>
+  </div>
+  <div class="no">09 / 14</div>
+</section>
+
+<!-- 10 안 됐던 것 -->
+<section class="slide">
+  <div class="kicker">Ⅱ. 우리 — 정직하게</div>
+  <h2>안 됐던 것 세 가지, 그래서 배운 것</h2>
+  <div class="sub">감추면 다음 발표를 못 합니다. <b>셋 다 “그래서 사람이 필요하다”로 끝나는 이야기</b>입니다.</div>
+  <div class="body">
+    <table>
+      <tr><th style="width:38%">있었던 일</th><th>그래서 바꾼 것</th></tr>
+      <tr>
+        <td><b>AI가 확신에 찬 문장으로 틀렸다.</b><br><span style="color:var(--grey)">하루에 세 번. 셋 다 원본을 한 번만 열었으면 안 틀렸습니다.</span></td>
+        <td>“<b>숫자는 원본에서 직접 센 것만 말한다</b>”를 회사 <b>25번째 약속</b>으로 박았습니다. AI만이 아니라 <b>AI 결과를 받아 쓰는 모든 직원</b>에게 적용됩니다.</td>
+      </tr>
+      <tr>
+        <td><b>“발송 성공”이 떴는데 한 통도 안 나갔다.</b></td>
+        <td>표시가 아니라 <b>실물</b>로 확인합니다. 자동화가 늘수록 <b>실물을 확인하는 사람</b>의 값이 올라갑니다.</td>
+      </tr>
+      <tr>
+        <td><b>현장은 끝냈는데 기록에는 열려 있었다.</b></td>
+        <td>기록과 현장을 잇는 확인은 <b>사람이</b> 합니다. AI는 안내하고 리마인드할 뿐입니다.</td>
+      </tr>
+    </table>
+    <div class="note"><b>가장 큰 위험은 AI가 틀리는 것이 아니라 <b>‘그럴듯하게’ 틀리는 것</b>입니다.</b></div>
+  </div>
+  <div class="no">10 / 14</div>
+</section>
+
+<!-- 11 서밋의 답 vs 우리의 답 -->
+<section class="slide">
+  <div class="kicker">Ⅱ. 우리</div>
+  <h2>서밋의 답과 우리의 답</h2>
+  <div class="sub">서밋은 “AI 하나마다 다섯 가지를 확인하라”고 했습니다. 우리는 <b>이미 갖고 있습니다.</b></div>
+  <div class="body">
+    <div class="split">
+      <div>
+        <h4>서밋이 말한 확인 5가지</h4>
+        <ul>
+          <li>누가 만들었나</li>
+          <li>무슨 업무인가</li>
+          <li>어떤 자료를 쓰나</li>
+          <li>누가 승인했나</li>
+          <li>어떻게 감사하나</li>
+        </ul>
+      </div>
+      <div>
+        <h4>웰페리온이 이미 가진 장치</h4>
+        <ul>
+          <li>일마다 <b>담당 AI가 지정</b>돼 있다</li>
+          <li>업무 원장에 <b>전량 기록</b>된다 (열린 일 54건까지 추적)</li>
+          <li>자료 범위가 역할별로 갈려 있다</li>
+          <li><b>승인 관문</b>이 코드로 막고 있다</li>
+          <li><b>약속 25개</b>가 기준이 된다</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:20px; background:var(--navy); color:#fff; padding:18px 22px;">
+      <p style="font-size:21px; line-height:1.55;">서밋 시연 화면이 관리하던 AI가 <b style="color:#F0C987">27개</b>였습니다.
+      <b style="color:#F0C987">우리 자동화 모듈도 27개</b>입니다.<br>
+      <span style="font-size:18px; opacity:.9">거버넌스는 대기업 이야기가 아닙니다 — 우리는 이미 “관리가 필요한 규모”입니다.</span></p>
+    </div>
+  </div>
+  <div class="no">11 / 14</div>
+</section>
+
+<!-- 12 다음 6개월 -->
+<section class="slide">
+  <div class="kicker">Ⅲ. 다음</div>
+  <h2>다음 6개월 — 다섯 가지</h2>
+  <div class="sub">서밋에서 본 것 중 <b>우리에게 실제로 닿는 것</b>만 골랐습니다.</div>
+  <div class="body">
+    <table>
+      <tr><th style="width:5%">#</th><th style="width:33%">할 것</th><th>왜</th></tr>
+      <tr><td><b>1</b></td><td><b>AI 성공률 계기판</b></td><td>서밋 화면은 “성공률 90.5%”를 늘 띄웁니다. 우리는 실패를 그때그때 경보로만 압니다. <b>몇 % 성공했는지</b>가 화면에 있어야 합니다.</td></tr>
+      <tr><td><b>2</b></td><td><b>AI 체형측정·AI 트레이너 업체 접촉</b></td><td>회원이 <b>바로 체감</b>하는 자리입니다. 우리 업과 정확히 겹칩니다.</td></tr>
+      <tr><td><b>3</b></td><td><b>실시간 통번역 검토</b></td><td>외국인 회원 응대. 도입 전에 <b>실제 문의 건수부터 셉니다</b> — 지금은 미측정입니다.</td></tr>
+      <tr><td><b>4</b></td><td><b>직원이 자기 AI 도우미를 직접 만드는 길</b></td><td>지금은 AI가 대신 만들어 드립니다. 직접 만들 수 있으면 <b>요청·대기가 사라집니다.</b> 교육과 함께 갑니다.</td></tr>
+      <tr><td><b>5</b></td><td><b>AI 운영 기준 확정</b></td><td>기준이 문서에만 있으면 지켜지지 않습니다. 확정한 뒤 <b>관제 화면에 그대로 얹습니다.</b></td></tr>
+    </table>
+  </div>
+  <div class="no">12 / 14</div>
+</section>
+
+<!-- 13 각자의 시작 -->
+<section class="slide">
+  <div class="kicker">Ⅲ. 다음</div>
+  <h2>내일부터 각자 하나씩</h2>
+  <div class="sub">거창한 것 말고, <b>한 사람이 하나씩</b>이면 충분합니다.</div>
+  <div class="body">
+    <div class="cards c3">
+      <div class="card">
+        <h3>현장 실무진</h3>
+        <p>반복해서 하는 일 중 <b>AI에게 넘기고 싶은 것 하나</b>를 적어 실장님께 주세요. 그게 다음 자동화의 시작입니다.</p>
+      </div>
+      <div class="card">
+        <h3>중간관리자</h3>
+        <p>우리 부서에서 <b>AI가 이미 하고 있는 것</b>과 <b>사람이 해야 하는 것</b>을 한 번 갈라 보세요.</p>
+      </div>
+      <div class="card ok">
+        <h3>전원 공통</h3>
+        <p>AI가 준 결과를 <b>그대로 믿지 않고 한 번 확인하기.</b> 우리가 88일 동안 배운 것과 같은 규칙입니다.</p>
+      </div>
+    </div>
+    <div class="note">AI는 사람의 <b>판단과 기록을 대신 채우지 않습니다.</b> 이건 우리 회사 규칙에 이미 적혀 있습니다.</div>
+  </div>
+  <div class="no">13 / 14</div>
+</section>
+
+<!-- 14 마무리 -->
+<section class="slide quoteS">
+  <div class="body">
+    <div class="big">
+      AI 때문에 회사가 어려워지는 게 아니라,<br>
+      <span>AI를 잘 쓰는 경쟁사</span> 때문에 어려워집니다.<br><br>
+      웰페리온은 <span>88일 전에 이미 시작</span>했고,<br>
+      오늘부터는 <span>전 직원이 함께</span> 갑니다.
+    </div>
+  </div>
+  <div class="no" style="color:rgba(255,255,255,.5)">14 / 14</div>
+</section>
+
+<!-- 별지 : 경영진 1장 -->
+<section class="slide">
+  <div class="kicker" style="color:var(--navy)">별지 · 경영진용 (배포)</div>
+  <h2>석 달 성적표와 결정 요청</h2>
+  <div class="sub">회장님·대표님 보고용 한 장. 전 직원 발표에는 포함하지 않습니다.</div>
+  <div class="body">
+    <div class="cards c3" style="margin-bottom:18px;">
+      <div class="card"><div class="n">88일</div><p>2026-05-25 ~ 08-20</p></div>
+      <div class="card ok"><div class="n">3,605건</div><p>완료로 닫은 업무</p></div>
+      <div class="card"><div class="n">54건</div><p>지금 열려 있는 업무<br><span style="color:var(--grey)">진행 13 · 대기 39 · 정박 2</span></p></div>
+    </div>
+    <table>
+      <tr><th style="width:26%">위험 관리 장치</th><td><b>승인 관문</b> — 결제·보안·금지·신규 생성은 AI가 못 정합니다(코드로 차단) · <b>전량 기록</b> — 한 일은 업무 원장 하나에 남습니다 · <b>약속 25개</b> — 회사 기준이 문서가 아니라 장치에 박혀 있습니다</td></tr>
+      <tr><th>결정 요청 ①</th><td><b>AI 운영 기준 5원칙 확정</b> — 지금은 규칙이 문서·대화에 흩어져 상황마다 다르게 적용됩니다</td></tr>
+      <tr><th>결정 요청 ②</th><td><b>적용 범위</b> — AI 4역할부터 시작할지, 실무진이 쓰는 AI까지 넓힐지. 실무진까지 넓히면 <b>회원 정보·매출 자료 취급 기준</b>이 함께 가야 합니다</td></tr>
+    </table>
+    <div class="note"><b>숫자 출처</b> — 전부 2026-08-20 원장 직접 집계. 서밋 인용 수치(37.1%·82.3%·파나시아 지표 등)는 발표자·부스 제시값이며 웰페리온이 검증한 값이 아닙니다.</div>
+  </div>
+  <div class="no">별지</div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  document.getElementById('cnt').textContent = slides.length + '장';
+  var i = 0;
+  function go(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(i + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(i - 1); }
+    if (e.key === 'Home') { e.preventDefault(); go(0); }
+    if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+  });
+  slides.forEach(function (s, n) { s.addEventListener('click', function () { i = n; }); });
+})();
+</script>
+</body>
+</html>
