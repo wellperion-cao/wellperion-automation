@@ -227,6 +227,73 @@ def _praise_block(section_text: str) -> str:
     return "\n".join(["🏆 오늘 수고하신 곳"] + praise) + "\n"
 
 
+# ── 카카오 ★운영+시설+지원+주차 압축본 (2026-08-18 GM 결정 · 배670) ────────────────
+# 텔레그램(build_digest)은 전문 그대로 유지, 카카오만 800자 상한으로 줄인다. 회차별
+# 일지·측정값 20줄 등 기록성 데이터는 뺀다 — 점검 화면(체계 페이지)이 원본을 갖고 있으니
+# 카톡엔 이상치·완료율·반복미완료만. 데이터는 support_check_summary 절 함수를 그대로
+# 불러써서 재조회하지 않는다(약속 L01) — _check_section이 이미 하는 조회를 두 번 안 한다.
+def build_kakao_digest(today: str | None = None) -> str:
+    """🏗 시설·🛠 지원·🔁 반복미완료·🅿 주차 압축 4줄. 회차별 일지·측정값은 링크로 뺀다."""
+    import support_check_summary as _scs
+    today = today or datetime.now().strftime("%Y-%m-%d")
+
+    fac_lines, _fac_f = _scs.build_facility_section(today)
+    sup_data = _scs.fetch_gas({"action": "today_live", "dept": "support", "date": today})
+    sup_lines, _sup_f = _scs.build_support_section(today, data=sup_data)
+    par_lines, _par_f = _scs.build_parking_section(today)
+
+    def _pick(lines: list[str], *prefixes: str) -> str:
+        return next((ln.strip() for ln in lines if ln.strip().startswith(prefixes)), "")
+
+    out: list[str] = []
+
+    # 🏆 수고 인정 — 3부서 규칙은 _praise_block 그대로 재사용, 한 줄로 합친다.
+    praise = _praise_block("\n".join(fac_lines + sup_lines + par_lines))
+    if praise:
+        bits = []
+        for ln in praise.split("\n")[1:]:
+            if not ln.strip():
+                continue
+            t = re.sub(r"\s*고생하셨습니다\.?$", "", ln.lstrip("▪").strip())
+            t = re.sub(r"^(\S+)\s*—\s*", r"\1 ", t)
+            bits.append(t)
+        if bits:
+            out.append("🏆 " + " · ".join(bits) + " — 고생하셨습니다")
+
+    # 🛠 지원부 — 종일 완료율 + 구역 요약 + 오늘 짚을 점(있으면)만. sup_lines[0]에 이미
+    # "🛠 지원부 현황 …" 이모지가 있어 그대로 쓴다(중복 접두 방지).
+    if sup_lines:
+        line = sup_lines[0]
+        zone = " · ".join(
+            ln.strip().split(" — ")[0] for ln in sup_lines[1:3]
+            if ln.strip().startswith(("남성구역", "여성구역")))
+        if zone:
+            line += f" — {zone}"
+        issue = _pick(sup_lines, "❗ 짚을 점:")
+        if issue:
+            line += f" / {issue}"
+        out.append(line)
+
+    # 🔁 반복 미완료 — 원장 기반, 최근 7일 반복만(1회성 특이점 제외)
+    rec = _scs.recurring_issue_lines(today, max_items=3)
+    if rec:
+        items = " · ".join(ln.strip().lstrip("· ") for ln in rec[1:])
+        out.append(f"🔁 자주 빠지는 항목 — {items}")
+
+    # 🏗 시설부 — 회차·이상 유무 head 1줄(이미 "🏗 시설부 현황 …" 이모지 포함) + 특이사항만.
+    # 회차별 일지·측정값은 뺀다.
+    if fac_lines:
+        out.append(fac_lines[0])
+    fac_note = _pick(fac_lines, "📝 특이사항:", "❗ 기준이탈")
+    if fac_note:
+        out.append("📝 시설 특이 — " + fac_note.split(":", 1)[-1].strip())
+
+    if par_lines:
+        out.append(par_lines[0])
+
+    return "\n".join(out)
+
+
 def _send_telegram(text: str) -> bool:
     token = _load_env_val("TELEGRAM_BOT_TOKEN")
     if not token:

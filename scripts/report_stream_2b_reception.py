@@ -201,9 +201,10 @@ def _fmt_age(days: int, elapsed_h: float) -> str:
     return f"{days}일" if days >= 1 else f"{elapsed_h:.1f}시간"
 
 
-def _aging_block(rows: list[dict], now: datetime | None = None,
-                 scope: str = "ops") -> str:
-    """기한(SLA) 넘긴 미처리 건 — 부서별 그룹 + 오래된 순 상세.
+def _collect_overdue(rows: list[dict], now: datetime | None = None,
+                     scope: str = "ops") -> list[dict]:
+    """기한(SLA) 넘긴 미처리 건 원자료 — _aging_block(상세 렌더)과 build_kakao_digest
+    (압축 렌더) 양쪽이 같은 판정을 공유한다(약속 L01 — 판정을 두 곳에서 따로 하지 않는다).
 
     scope — 어느 방으로 갈 몫인가 (GM 지시 2026-08-18 '강습부건은 부서장방에,
     시설부/운영부/지원부건은 ★운영+시설+지원+주차 방에'). 판정은 _intake_room_for
@@ -242,6 +243,7 @@ def _aging_block(rows: list[dict], now: datetime | None = None,
                 "elapsed_h": elapsed_h,
                 "days": reception_elapsed_days(r, now),  # 표시용 "N일째" 정본(SLA 판정은 elapsed_h 유지)
                 "sla": sla,
+                "created_md": f"{created.month}/{created.day}",  # 압축본 "오래된 순" 표시용
             })
 
     # ★2026-08-07 시토(배429 · 약속 L24) — 받는 사람을 이경연 실장 한 곳으로 적는다.
@@ -249,6 +251,14 @@ def _aging_block(rows: list[dict], now: datetime | None = None,
     #   보는 참고 정보다(GM 확정 2026-08-06: 실장이 분배하고, 상향 보고도 실장이 취합한다).
     if want_room:
         overdue = [it for it in overdue if _intake_room_for(it["dept"]) == want_room]
+    return overdue
+
+
+def _aging_block(rows: list[dict], now: datetime | None = None,
+                 scope: str = "ops") -> str:
+    """기한(SLA) 넘긴 미처리 건 — 부서별 그룹 + 오래된 순 상세(텔레그램 전문)."""
+    overdue = _collect_overdue(rows, now, scope)
+    undone = [r for r in rows if str(r.get("status", "")) != "완료"]
 
     head = ("⏰ 미처리 적체 리마인드 (강습·업장)" if scope == "lesson"
             else "⏰ 미처리 적체 리마인드 (이경연 실장)")
@@ -598,6 +608,37 @@ def build_digest(today: str | None = None, persist_completion: bool = True) -> s
     if completion:
         parts.append(completion)
     return "\n\n".join(parts)
+
+
+# ── 카카오 ★운영+시설+지원+주차 압축본 (2026-08-18 GM 결정 · 배670) ────────────────
+# 미처리 적체 부서별 전체 목록(약 40줄)을 매일 재발신하던 것을 총건수+가장 오래된 3건+
+# 링크로 줄인다. 판정은 _collect_overdue 그대로 재사용(약속 L01) — 텔레그램(_aging_block)
+# 과 같은 숫자를 쓴다.
+def build_kakao_digest(today: str | None = None) -> str:
+    today = today or datetime.now().strftime("%Y-%m-%d")
+    rows = _fetch_rows()
+    if rows is None:
+        return "📮 접수 — 조회 실패"
+
+    today_rows = [r for r in rows if str(r.get("createdAt", "")).startswith(today)]
+    cat_cnt: dict[str, int] = {}
+    for r in today_rows:
+        cat = str(r.get("category") or "기타").strip()
+        cat_cnt[cat] = cat_cnt.get(cat, 0) + 1
+    cat_str = "·".join(f"{c}{n}" for c, n in sorted(cat_cnt.items(), key=lambda x: -x[1]))
+
+    undone = [r for r in rows if str(r.get("status", "")) != "완료"]
+    overdue = _collect_overdue(rows, scope="ops")
+
+    line = f"📮 접수 — 오늘 {len(today_rows)}건" + (f"({cat_str})" if cat_str else "")
+    line += f" · 미처리 {len(undone)}건" + (f"(기한 지난 {len(overdue)}건)" if overdue else "")
+    lines = [line]
+    if overdue:
+        oldest = sorted(overdue, key=lambda x: -x["elapsed_h"])[:3]
+        parts = [f"{it['content']}({it['created_md']} 접수)" for it in oldest]
+        lines.append("오래된 순: " + "·".join(parts))
+    lines.append(f"👉 전체 목록: {DASHBOARD_URL}")
+    return "\n".join(lines)
 
 
 def build_lesson_digest(today: str | None = None) -> str:

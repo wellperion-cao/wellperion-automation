@@ -686,23 +686,69 @@ def parse_export(raw: str) -> dict[str, list[dict]]:
 # ═══════════════════════════════════════════
 #  3) 대상일 결정 — 어제 우선, 없으면 파일 내 가장 최근 '완결된 하루'
 # ═══════════════════════════════════════════
-def pick_target_date(by_date: dict[str, list[dict]], forced_date: str | None) -> tuple[str | None, str]:
+# ★2026-08-19 GM 결정(배698) — 못 나간 날은 다음날이 흡수한다. 종전 fallback("파일 내
+#   가장 최근 완결일")의 문제: 그 완결일이 **이미 발송된 옛 날짜**일 수 있다 — 실측
+#   2026-08-19, ★운영부가 08-18을 못 잡고 08-17(이미 어제 보낸 날)을 다시 골랐다. 마지막
+#   발송일(하트비트)을 기준으로 "그 이후 아직 안 보낸 날"만 고르면 같은 날 재처리도,
+#   못 보낸 날이 조용히 사라지는 것도 막힌다. 여러 날이 밀렸으면 한 통에 모아 흡수
+#   (ABSORB_CAP_DAYS로 상한 — 안 그러면 한 통이 감당 못 하게 길어진다).
+ABSORB_CAP_DAYS = 3
+_LAST_SENT_HEARTBEAT = {"★운영부": "ops-digest-last-sent-ops", "★중간관리자": "ops-digest-last-sent-mgr"}
+
+
+def _last_sent_date(room_dir_name: str) -> str | None:
+    """그 방으로 마지막 발송 성공한 날짜 — send_ops_digest.py가 발송 성공 시에만 적는다.
+    하트비트가 없으면(콜드스타트) None — 옛 단일일 로직으로 폴백."""
+    hb_id = _LAST_SENT_HEARTBEAT.get(room_dir_name)
+    if not hb_id:
+        return None
+    try:
+        from module_heartbeat import last_heartbeat
+        rec = last_heartbeat(hb_id)
+    except Exception:
+        return None
+    if not rec:
+        return None
+    return str((rec.get("state") or {}).get("date") or "") or None
+
+
+def pick_target_dates(by_date: dict[str, list[dict]], forced_date: str | None,
+                      last_sent_date: str | None) -> tuple[list[str], str]:
+    """대상일(들) 결정. forced_date 지정 시 그 하루만(수동·테스트 경로 — 흡수 없음).
+
+    last_sent_date 가 있으면: 그 이후 ~ 어제까지 완결된 날을 전부 골라 흡수한다
+    (ABSORB_CAP_DAYS 상한 — 넘으면 최근 것만 남기고 그 앞은 생략, 생략분은 이유에 남긴다).
+    last_sent_date 가 없으면(콜드스타트) 종전 단일일 동작 그대로(어제 → 없으면 파일 내
+    최근 완결일)."""
     today = datetime.now().date()
     if forced_date:
         if forced_date in by_date:
-            return forced_date, f"수동 지정({forced_date})"
-        return None, f"수동 지정일({forced_date}) 대화 없음"
+            return [forced_date], f"수동 지정({forced_date})"
+        return [], f"수동 지정일({forced_date}) 대화 없음"
 
     yesterday = (today - timedelta(days=1)).isoformat()
-    if yesterday in by_date:
-        return yesterday, f"어제({yesterday})"
-
     completed_dates = sorted(d for d in by_date if d < today.isoformat())
-    if completed_dates:
-        chosen = completed_dates[-1]
-        return chosen, f"어제({yesterday}) 분 없음 → 파일 내 가장 최근 완결일({chosen}) 대체 사용"
 
-    return None, "완결된 하루(오늘 이전 날짜) 대화 없음 — 파일에 오늘자 또는 미완결 데이터만 존재"
+    if last_sent_date is None:
+        if yesterday in by_date:
+            return [yesterday], f"어제({yesterday})"
+        if completed_dates:
+            chosen = completed_dates[-1]
+            return [chosen], f"어제({yesterday}) 분 없음 → 파일 내 가장 최근 완결일({chosen}) 대체 사용"
+        return [], "완결된 하루(오늘 이전 날짜) 대화 없음 — 파일에 오늘자 또는 미완결 데이터만 존재"
+
+    pending = [d for d in completed_dates if d > last_sent_date]
+    if not pending:
+        return [], f"마지막 발송({last_sent_date}) 이후 새 완결일 없음"
+    if len(pending) > ABSORB_CAP_DAYS:
+        skipped = pending[:-ABSORB_CAP_DAYS]
+        pending = pending[-ABSORB_CAP_DAYS:]
+        return pending, (f"{last_sent_date} 이후 {len(skipped) + len(pending)}일 밀림 → "
+                         f"최근 {ABSORB_CAP_DAYS}일만 흡수(그 전 {len(skipped)}일 · "
+                         f"{skipped[0]}~{skipped[-1]} 생략)")
+    if len(pending) > 1:
+        return pending, f"{last_sent_date} 이후 {len(pending)}일 밀림 → {pending[0]}~{pending[-1]} 흡수"
+    return pending, f"어제({pending[0]})"
 
 
 def format_conversation(messages: list[dict]) -> str:
@@ -899,35 +945,11 @@ def parse_brain_json(raw: str) -> tuple[str, list[dict], list[dict], bool]:
 # ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
-def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
-        bridge_dry_run: bool = False) -> int:
-    global KAKAO_ROOM_DIR, LEDGER_PATH, PENDING_DIGEST_PATH
-    room_dir_name = room.replace(" ", "")
-    KAKAO_ROOM_DIR = ROOM_DIR_BASE / room_dir_name
-    LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
-    PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
-
-    print(f"[시작] {room_dir_name} 카톡 아침 요약 두뇌 — {now_str()}")
-
-    export_path = find_latest_export()
-    if export_path is None:
-        print(f"[실패] 내보낸 txt 없음 — {KAKAO_ROOM_DIR} 하위에 카카오톡 '대화 내보내기' .txt 파일이 필요합니다.")
-        return 1
-    print(f"[1/5] 최신 내보내기 파일: {export_path.relative_to(ROOT)}")
-
-    raw = read_text_robust(export_path)
-    by_date = parse_export(raw)
-    if not by_date:
-        print("[실패] 파싱 결과 대화가 0건입니다 — 내보내기 포맷을 확인하세요(예상: [이름] [오전 9:03] 메시지 + 날짜 구분선).")
-        return 1
-    print(f"[2/5] 파싱 완료 — {len(by_date)}일치 대화 발견: {sorted(by_date.keys())}")
-
-    target_date, why = pick_target_date(by_date, forced_date)
-    if target_date is None:
-        print(f"[실패] 대상일 결정 불가 — {why}")
-        return 1
-    print(f"[3/5] 대상일 = {target_date} ({why})")
-
+def _run_one_day(target_date: str, room_dir_name: str, by_date: dict,
+                 export_path: Path, bridge_dry_run: bool) -> str | None:
+    """하루치 정리 생성 — run()의 옛 몸통을 그대로(로직 변경 없음) 날짜 하나 단위로 뽑은 것
+    (배698 · 2026-08-19). 여러 날을 흡수할 때 이 함수를 날짜마다 호출해 결과를 이어붙인다
+    — 단일일 경로(절대다수)는 이 함수를 정확히 한 번만 불러 기존과 동일하게 동작한다."""
     day_messages = by_date[target_date]
     human_messages = [m for m in day_messages if not _is_auto_broadcast(m["msg"])]
     auto_n = len(day_messages) - len(human_messages)
@@ -936,7 +958,7 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     conversation = format_conversation(human_messages)
     if not conversation.strip():
         print(f"[실패] {target_date} 사람 대화 0건(자동 발신 {auto_n}건 제외) — 요약 생성 안 함.")
-        return 1
+        return None
 
     ledger = load_ledger()
     # 역방향 먼저 — 장부에서 닫힌 건을 원장에 반영하고 나서 프롬프트를 만든다. 순서가 바뀌면
@@ -952,7 +974,7 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     raw_out, used_model = call_brain(prompt)
     if raw_out is None:
         print("[실패] claude CLI 전 모델 실패 — 메시지 생성 불가(원장도 갱신 안 함). model_router 로그·텔레그램 경보 확인 요망.")
-        return 1
+        return None
 
     message, issues, schedules, json_ok = parse_brain_json(raw_out)
     if not json_ok:
@@ -1015,13 +1037,17 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     # 손대지 않는다(GM: "오늘 챙길 것은 두 방의 대화가 다르니 내용도 서로 다르다 — 중복 아니다").
     header, llm_body, warm = _split_llm(message)
     parts = [header, llm_body]
-    # 자동 등록을 끊은 자리 — 대신 되묻는다 (GM 지시 2026-08-12 · 배589). 등록은 사람이 한다.
-    _ask = _bridge_ask_lines(ledger, target_date)
-    if _ask:
-        parts.append(_ask)
-    _sched_reply = _schedule_reply_lines(schedule_added)
-    if _sched_reply:
-        parts.append(_sched_reply)
+    # ★2026-08-18 GM 결정(배670) — 되묻는 문구("SSOT 에 올리실 건가요?"·"틀리면 한 줄
+    #   주세요")는 ★운영부에 넣지 않는다. ★운영부는 공유 전용(약속 L24) — 답을 요구하지
+    #   않는다. 두 문구 다 실질적으로 회신을 구하는 질문이라 ★중간관리자(소통 창구)로만.
+    if room_dir_name != "★운영부":
+        # 자동 등록을 끊은 자리 — 대신 되묻는다 (GM 지시 2026-08-12 · 배589). 등록은 사람이 한다.
+        _ask = _bridge_ask_lines(ledger, target_date)
+        if _ask:
+            parts.append(_ask)
+        _sched_reply = _schedule_reply_lines(schedule_added)
+        if _sched_reply:
+            parts.append(_sched_reply)
     if room_dir_name == "★운영부":
         parts += [mid_block, reception_block]
     final_message = "\n\n".join(p.strip() for p in parts if p and p.strip())
@@ -1034,18 +1060,69 @@ def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
     print(final_message)
     print("=" * 60)
 
+    bridge_to_todo(ledger, target_date, room_dir_name, dry_run=bridge_dry_run)
+    return final_message
+
+
+def run(forced_date: str | None = None, room: str = DEFAULT_ROOM,
+        bridge_dry_run: bool = False) -> int:
+    global KAKAO_ROOM_DIR, LEDGER_PATH, PENDING_DIGEST_PATH
+    room_dir_name = room.replace(" ", "")
+    KAKAO_ROOM_DIR = ROOM_DIR_BASE / room_dir_name
+    LEDGER_PATH = KAKAO_ROOM_DIR / "_digest_ledger.json"
+    PENDING_DIGEST_PATH = KAKAO_ROOM_DIR / "_pending_digest.json"
+
+    print(f"[시작] {room_dir_name} 카톡 아침 요약 두뇌 — {now_str()}")
+
+    export_path = find_latest_export()
+    if export_path is None:
+        print(f"[실패] 내보낸 txt 없음 — {KAKAO_ROOM_DIR} 하위에 카카오톡 '대화 내보내기' .txt 파일이 필요합니다.")
+        return 1
+    print(f"[1/5] 최신 내보내기 파일: {export_path.relative_to(ROOT)}")
+
+    raw = read_text_robust(export_path)
+    by_date = parse_export(raw)
+    if not by_date:
+        print("[실패] 파싱 결과 대화가 0건입니다 — 내보내기 포맷을 확인하세요(예상: [이름] [오전 9:03] 메시지 + 날짜 구분선).")
+        return 1
+    print(f"[2/5] 파싱 완료 — {len(by_date)}일치 대화 발견: {sorted(by_date.keys())}")
+
+    last_sent = _last_sent_date(room_dir_name) if not forced_date else None
+    target_dates, why = pick_target_dates(by_date, forced_date, last_sent)
+    if not target_dates:
+        print(f"[실패] 대상일 결정 불가 — {why}")
+        return 1
+    print(f"[3/5] 대상일 = {target_dates} ({why})")
+
+    day_outputs: list[tuple[str, str]] = []
+    for d in target_dates:
+        msg = _run_one_day(d, room_dir_name, by_date, export_path, bridge_dry_run)
+        if msg:
+            day_outputs.append((d, msg))
+        else:
+            print(f"  → {d} 생성 실패 — 이 날짜는 흡수본에서 빠진다(다음 회차에 다시 시도됨)")
+    if not day_outputs:
+        print("[실패] 흡수 대상 날짜 전부 생성 실패")
+        return 1
+
+    if len(day_outputs) > 1:
+        # 배698(2026-08-19 GM 결정) — 못 나간 날은 다음날이 흡수한다. 흡수 표시를 본문에
+        # 남긴다(실무진이 '왜 이틀치가 오지' 하지 않게).
+        note = (f"※ {day_outputs[0][0]}~{day_outputs[-1][0]} 카톡 정리가 밀려 "
+               f"{len(day_outputs)}일치를 함께 보냅니다.")
+        final_message = note + "\n\n" + ("\n\n" + "━" * 10 + "\n\n").join(m for _, m in day_outputs)
+    else:
+        final_message = day_outputs[0][1]
+    final_date = day_outputs[-1][0]
+
     PENDING_DIGEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"date": final_date, "generated_at": now_str(), "message": final_message, "sent": False}
+    if len(day_outputs) > 1:
+        payload["absorbed_dates"] = [d for d, _ in day_outputs]
     PENDING_DIGEST_PATH.write_text(
-        json.dumps(
-            {"date": target_date, "generated_at": now_str(), "message": final_message, "sent": False},
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8",
     )
     print(f"  → 발송 대기 저장: {PENDING_DIGEST_PATH.relative_to(ROOT)} (발송은 범위 밖 — 게이트 대기)")
-
-    bridge_to_todo(ledger, target_date, room_dir_name, dry_run=bridge_dry_run)
     return 0
 
 

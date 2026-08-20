@@ -2718,6 +2718,12 @@ def run_daily_digest(early: bool = False) -> None:
     except Exception as e:
         logger.error(f"{label} 멤버십 담당 자동배정 예외: {e}")
 
+    # ★2026-08-18 GM 결정(배670) — 아래서 계산만 하고 보내지 않는다. ★부서장 방에
+    #   22:31 미배정(이 블록)·22:32 문의 정리(아래 inquiry_plain)가 1분 간격 두 통으로
+    #   따로 갔었다(실측). 같은 방·같은 목적(문의 도메인)이라 한 통으로 묶어 아래
+    #   inquiry_plain 발송 지점에서 함께 보낸다 — sla_violations/sla_text 만 여기서 만든다.
+    sla_violations: list = []
+    sla_text = ""
     try:
         sla_violations = _un.collect_sla_violations()
         sla_text = _un.build_sla_alert_text(sla_violations)
@@ -2728,29 +2734,11 @@ def run_daily_digest(early: bool = False) -> None:
         if sla_text and not _un.sla_alert_gate(sla_violations):
             logger.info(f"{label} 24h SLA 위반 {len(sla_violations)}건 — 직전 발신과 변화 없음, 발송 SKIP")
             sla_text = ""
-        if sla_text:
-            sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
-            env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
-            proc = subprocess.run(
-                [sys.executable, str(sender), "--message", sla_text, "--only-room", KAKAO_DEPTHEAD_ROOM],
-                cwd=str(REPO_ROOT), capture_output=True, text=True,
-                encoding="utf-8", errors="replace", env=env, timeout=180,
-            )
-            tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            logger.info(f"{label} 24h SLA 위반 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]} "
-                        f"(위반 {len(sla_violations)}건)")
-            # ★2026-08-05 시토 수리 — 이 블록은 _send_ops_kakao(2026-07-31)가 이미 세운
-            # "실패 시에만 GM 업무보고방 1줄" 관문을 안 물고 있었다. proc.returncode 를
-            # 확인 안 해 카톡 창이 닫혀 있어도 로그에 조용히 묻혔다(발송 성공 여부는
-            # logger.info 한 줄뿐 — 아무도 안 봄).
-            if proc.returncode != 0:
-                _kakao_fail_notify("24h SLA 위반", tail[0], room=KAKAO_DEPTHEAD_ROOM)
-            else:
-                _un.record_sla_alert_sent(sla_violations)  # 성공 뒤에만 커서 전진(실패 시 다음 회차 재비교)
-        else:
-            logger.info(f"{label} 24h SLA 위반 0건 — 카톡 발송 없음")
+        elif not sla_text:
+            logger.info(f"{label} 24h SLA 위반 0건")
     except Exception as e:
-        logger.error(f"{label} 24h SLA 위반 카톡 발송 예외: {e}")
+        logger.error(f"{label} 24h SLA 위반 집계 예외: {e}")
+        sla_violations, sla_text = [], ""
 
     # ── 60일 무응답 카톡 발송 삭제 (GM 지시 2026-08-08 "이거 보내지마") ──
     #   GM 원문: "이거 부서장에 보내는건데 이거 보내지마 일단 알림한장에서도 삭제해놔
@@ -2829,29 +2817,31 @@ def run_daily_digest(early: bool = False) -> None:
                 logger.error(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송 예외: {e}")
                 _kakao_fail_notify(tag, str(e)[:120])
 
-        _ops_title = f"[오늘 하루 정리] {now_dt.month}/{now_dt.day}({_WEEKDAY_KOR[now_dt.weekday()]})"
+        _ops_title = f"🌙 오늘 점검·접수 정리 {now_dt.month}/{now_dt.day}({_WEEKDAY_KOR[now_dt.weekday()]})"
 
-        def _strip_stream_header(text: str) -> str:
-            """report_stream_2/2b build_digest() 머리 3줄(제목·부제·웰리 서명)을 뗀다 —
-            텔레그램 발신(s2_msg/s2b_msg 원문)은 그대로 두고 카톡 합본을 새로 조립할 때만 쓴다."""
-            lines = text.split("\n")
-            return "\n".join(lines[3:]).lstrip("\n") if len(lines) > 3 else text
+        # ★2026-08-18 GM 결정(배670 · 재설계안 확정) — 카톡은 텔레그램 전문(s2_msg/s2b_msg)을
+        # 그대로 안 쓴다. 4,559자(회차별 일지·측정값 20줄·미처리 적체 전체목록)를 실측 지적받아
+        # 800자 상한 압축본으로 간다. 회차별 일지·전체 목록은 링크(체계 페이지)로 뺀다 —
+        # 텔레그램 쪽(위 s2_msg/s2b_msg 발송)은 전문 그대로라 정보 손실 없음.
+        try:
+            check_compact = _s2.build_kakao_digest(today) if s2_msg else ""
+        except Exception as e:
+            logger.error(f"{label} 카톡 압축본(점검) 빌드 예외: {e}")
+            check_compact = ""
+        try:
+            reception_compact = _s2b.build_kakao_digest(today) if s2b_msg else ""
+        except Exception as e:
+            logger.error(f"{label} 카톡 압축본(접수) 빌드 예외: {e}")
+            reception_compact = ""
 
-        if s2_msg and s2b_msg:
-            merged = (f"{_ops_title}\n\n"
-                      f"🏗 점검\n{_strip_stream_header(s2_msg)}\n\n"
-                      f"{'━' * 10}\n\n"
-                      f"📮 종합접수\n{_strip_stream_header(s2b_msg)}\n\n"
-                      f"{_SENDER_LINE_TAIL}")
-            _send_ops_kakao(merged, "점검현황+종합접수현황")
-        elif s2_msg:
-            _send_ops_kakao(f"{_ops_title}\n\n🏗 점검\n{_strip_stream_header(s2_msg)}\n\n{_SENDER_LINE_TAIL}",
-                            "점검현황")
-        elif s2b_msg:
-            _send_ops_kakao(f"{_ops_title}\n\n📮 종합접수\n{_strip_stream_header(s2b_msg)}\n\n{_SENDER_LINE_TAIL}",
-                            "종합접수현황")
+        if check_compact or reception_compact:
+            body = "\n".join(p for p in (check_compact, reception_compact) if p)
+            merged = f"{_ops_title}\n\n{body}\n\n{_SENDER_LINE_TAIL}"
+            if len(merged) > 900:
+                logger.warning(f"{label} 카톡 {KAKAO_OPS_ROOM} 압축본이 900자 초과({len(merged)}자) — 800자 상한 재검토 필요")
+            _send_ops_kakao(merged, "점검현황+종합접수현황(압축)")
         else:
-            logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — s2_msg/s2b_msg 둘 다 없음(빌드 실패)")
+            logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — 압축본 둘 다 없음(빌드 실패)")
 
         # ── 강습·업장(팀) 기한초과분만 ★부서장 방으로 (GM 지시 2026-08-18 · 배696) ──
         #   위 합본은 이제 강습·업장을 뺀 몫이다(_aging_block scope="ops"). 그 몫만 여기서
@@ -2881,12 +2871,10 @@ def run_daily_digest(early: bool = False) -> None:
 
     # ── 오늘 완료된 운영부 업무 — 하루 일과 정리에도 포함 (GM 2026-08-06 "완료 알림은
     #   완료 시 즉각 1회, 하루 일과 정리에서도 꼭 체크하고 정리해서 보내줘야해") ──────
-    #   판정은 즉각 알림(아래 _check_ops_done_immediate)과 같은 send_ops_digest 함수를
-    #   쓰지만, 여기는 build_daily_done_section 으로 '오늘' 완료건 전체를 매번 다시
-    #   모은다 — 이미 즉각 알림으로 나간 건도 다시 싣는다(중복억제 없음, GM 지시 —
-    #   즉각 알림은 스쳐가고 하루 정리는 남는다. 성격이 달라 배431 스냅샷을 안 씀).
-    #   발송처 = 즉각 알림과 같은 ★운영부(send_ops_digest.TARGET_ROOM) — 완료 소식은
-    #   한 곳에 모인다. 같은 킬스위치(status/ops_digest_send.json)를 공유해 GM이 그
+    #   (즉각 알림 자체는 2026-08-18 삭제 — 배670, 위 job 정의부 주석 참조. 이 밤 절은
+    #   그대로 유지) build_daily_done_section 으로 '오늘' 완료건 전체를 매번 다시
+    #   모은다(중복억제 없음, GM 지시). 발송처 = ★운영부(send_ops_digest.TARGET_ROOM).
+    #   같은 킬스위치(status/ops_digest_send.json)를 공유해 GM이 그
     #   기능을 끄면 여기도 같이 꺼진다(새 킬스위치 안 만듦).
     try:
         import send_ops_digest as _od
@@ -2912,20 +2900,27 @@ def run_daily_digest(early: bool = False) -> None:
         logger.error(f"{label} 오늘 완료건 카톡 발송 예외: {e}")
 
     # 카카오톡 ★부서장 방에도 문의 정리 발송 (GM 2026-07-18 · best-effort).
-    if inquiry_plain:
+    # ★2026-08-18 GM 결정(배670) — 문의 정리 + 24h SLA 위반(sla_text, 위에서 계산분)을
+    #   한 통으로 묶어 보낸다. 종전엔 22:31 미배정 557자·22:32 문의 639자가 1분 간격
+    #   두 통이었다(실측) — 같은 방·같은 문의 도메인이라 병합.
+    depthead_parts = [p for p in (inquiry_plain, sla_text) if p]
+    if depthead_parts:
+        depthead_msg = "\n\n".join(depthead_parts)
         try:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
             proc = subprocess.run(
-                [sys.executable, str(sender), "--message", inquiry_plain, "--only-room", KAKAO_DEPTHEAD_ROOM],
+                [sys.executable, str(sender), "--message", depthead_msg, "--only-room", KAKAO_DEPTHEAD_ROOM],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", env=env, timeout=180,
             )
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            logger.info(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송: {tail[0]}")
+            logger.info(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송(문의+SLA 병합): {tail[0]}")
             # ★2026-08-05 시토 수리 — 위 SLA·60일 무응답과 같은 구멍(returncode 미확인).
             if proc.returncode != 0:
-                _kakao_fail_notify("문의 정리", tail[0], room=KAKAO_DEPTHEAD_ROOM)
+                _kakao_fail_notify("문의 정리+SLA", tail[0], room=KAKAO_DEPTHEAD_ROOM)
+            elif sla_violations:
+                _un.record_sla_alert_sent(sla_violations)  # 병합 발송 성공 뒤에만 커서 전진
         except Exception as e:
             logger.error(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송 예외: {e}")
 
@@ -2962,51 +2957,12 @@ def run_mgmt_notice_digest() -> None:
         logger.error(f"{label} 예외: {e}")
 
 
-# ── 완료 즉시 알림 (10분 주기) — GM 2026-08-06 "완료 시 즉각 1회" ────────────────────
-#   진짜 즉시는 불가능하다 — 카톡 발송이 이 PC 데스크톱 카톡 앱을 직접 조작하는 구조라
-#   (scripts/kakao_report_sender.py) 서버가 완료 이벤트를 실시간으로 못 받는다. 최선은
-#   짧은 주기로 확인해 바로 보내는 것. 10분을 고른 이유: 5분 주기 잡이 이미 여럿(위
-#   pre_task_notifier·env_reload_watcher) GAS 를 두드리는데, 완료 통보가 몇 분 늦어도
-#   실무진 업무엔 지장이 없다 — git_lock_janitor 10분 주기(아래 등록부)와 같은 선.
-#   새 감시기·새 예약작업 아님(약속 L21) — 상주 스케줄러 안의 잡 하나로 흡수.
-#   판정·중복방지는 새로 안 짠다 — send_ops_digest.build_done_section(배431)을 그대로
-#   불러 아침 다이제스트와 하트비트 스냅샷(DONE_HEARTBEAT_ID) 하나를 공유한다: 여기서
-#   카톡 발송에 성공했을 때만 스냅샷을 전진시키므로, 같은 완료건이 아침 회차에서
-#   다시 '신규'로 잡히지 않는다.
-def _check_ops_done_immediate() -> None:
-    try:
-        import send_ops_digest as _od
-    except Exception as exc:
-        logger.warning(f"[완료 즉시알림] send_ops_digest import 실패: {exc}")
-        return
-    if _od.in_ops_quiet_hours(datetime.now().hour):
-        return  # 조용한 시간(22:00~08:00) — 확인 생략, 스냅샷 안 건드림(다음 확인·아침이 자연히 집어감)
-    try:
-        if not _od.kill_switch_enabled():
-            return  # 아침 다이제스트와 같은 킬스위치(status/ops_digest_send.json)
-        prev, bootstrap = _od._done_state()
-        section, current = _od.build_done_section(_od._fetch_todo_rows(), prev)
-        if bootstrap:
-            _od._save_done_state(current)  # 최초실행 — 과거 완료건 일괄 스팸 방지, 스냅샷만
-            return
-        if not section:
-            return
-        proc = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
-             "--message", section, "--only-room", _od.TARGET_ROOM],
-            cwd=str(REPO_ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=180,
-            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
-        )
-        out = (proc.stdout or "").strip()
-        if proc.returncode == 0 and "DONE" in out:
-            _od._save_done_state(current)  # 발송 성공 시에만 전진 — 실패하면 다음 주기 재시도
-            logger.info(f"[완료 즉시알림] {_od.TARGET_ROOM} 발송 완료 (신규 {len(current) - len(prev)}건)")
-        else:
-            tail = out.splitlines()[-1] if out else "출력없음"
-            logger.warning(f"[완료 즉시알림] 발송 실패(rc={proc.returncode}) — {tail} · 다음 주기 재시도(스냅샷 미전진)")
-    except Exception as exc:
-        logger.warning(f"[완료 즉시알림] 예외(다음 주기 재시도): {exc}")
+# (완료 즉시 알림 10분 주기 삭제 2026-08-18 GM 결정 · 배670 재설계안) ──────────────
+#   ★운영부가 매일 4통(아침정리+매출이미지+채움보드+완료알림)을 받던 것을 줄이는 재편의
+#   일부. 완료알림은 다음 날 아침 「어제 정리」의 「✅ 어제 완료 N건」(ops_daily_digest.py
+#   build_work_block)이 이미 같은 내용을 싣고 있어 순수 중복이었다(실측 확인). run_daily_digest
+#   의 밤 「오늘 완료된 운영부 업무」 절(build_daily_done_section)은 그대로 둔다 — 그건
+#   이 10분 즉시알림과 다른 별개 발신이다. 되살릴 일이 있으면 이 커밋을 되돌리면 된다.
 
 
 # ── 운영부 주간 보고 초안 — ★중간관리자 방 (GM 2026-08-06 "표준 양식은 의미없고,
@@ -3575,15 +3531,8 @@ def main():
     )
     logger.info("meeting_reminder_30min 등록 완료 (5분 주기 · 전사일정 시각 있는 GM 일정만)")
 
-    # ── 완료 즉시 알림 (10분 주기) — GM 2026-08-06 · 근거·중복방지 방식은 함수 정의부 주석 ──
-    scheduler.add_job(
-        _check_ops_done_immediate,
-        trigger=IntervalTrigger(minutes=10),
-        id="ops_done_immediate_alert",
-        misfire_grace_time=300,
-        coalesce=True,
-    )
-    logger.info("ops_done_immediate_alert 등록 완료 (10분 주기) — 완료 즉시 알림(조용한시간 22-08 제외)")
+    # (ops_done_immediate_alert 10분 주기 잡 삭제 2026-08-18 — 배670, _check_ops_done_immediate
+    #   정의부 자리의 주석 참조. 다음 날 아침 「어제 완료」가 커버해 순수 중복이었다.)
 
     # ── IG 발행검증 자동 대조 스윕 (30분 주기) — INC-003 자동화 ───────────────────
     scheduler.add_job(

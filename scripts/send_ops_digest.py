@@ -854,6 +854,23 @@ def preview_relays() -> int:
     return 0
 
 
+# 배698(2026-08-19 GM 결정) — "마지막 발송일" 하트비트. ops_daily_digest.pick_target_dates
+# 가 이 값을 읽어 그 이후 밀린 완결일을 한 통으로 흡수한다(id는 그쪽 _LAST_SENT_HEARTBEAT
+# 와 반드시 같은 문자열 — 약속 L01, 두 파일이 각자 상수로 들고 있으니 고칠 땐 같이 고친다).
+_LAST_SENT_HEARTBEAT_OPS = "ops-digest-last-sent-ops"
+_LAST_SENT_HEARTBEAT_MGR = "ops-digest-last-sent-mgr"
+
+
+def _record_last_sent(heartbeat_id: str, date_str) -> None:
+    if not date_str:
+        return
+    try:
+        from module_heartbeat import record_heartbeat
+        record_heartbeat(heartbeat_id, detail=f"발송 완료 — {date_str}", extra={"state": {"date": str(date_str)}})
+    except Exception as e:
+        log(f"[last-sent] 하트비트 기록 실패({heartbeat_id}): {e}")
+
+
 def kill_switch_enabled() -> bool:
     try:
         return bool(json.loads(KILL_SWITCH.read_text(encoding="utf-8")).get("enabled", False))
@@ -899,6 +916,7 @@ def send_mgr_brief() -> None:
     mout = (mproc.stdout or "").strip()
     if mproc.returncode == 0 and "DONE" in mout:
         _mark_mgr_sent(target_date)
+        _record_last_sent(_LAST_SENT_HEARTBEAT_MGR, target_date)  # 배698 — 흡수 판단용(위 참조)
         # 열린 요청 절 스냅샷 저장 — 발송 성공 후에만(미리보기·실패 시엔 안 찍음,
         # 기존 relay 하트비트 RELAY_HEARTBEAT_ID 재사용, 새 파일 없음 · 약속 L21).
         relay_state = _relay_state()
@@ -1187,6 +1205,10 @@ def _send_ops_room(args) -> int:
             PENDING.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
             if done_bootstrap or done_current != done_prev:
                 _save_done_state(done_current)
+            # 배698(2026-08-19) — 다음날 흡수 판단(ops_daily_digest.pick_target_dates)이 쓰는
+            # "마지막 발송일" 하트비트. data["date"]는 흡수본이면 최근 날짜(끝일)라 이 값이
+            # 그 이전 날짜를 다시 흡수 대상으로 잡지 않는다.
+            _record_last_sent(_LAST_SENT_HEARTBEAT_OPS, data.get("date"))
             # ★중간관리자 발송은 여기(성공 분기 안)에 있다가 main() 끝의 send_mgr_brief()
             # 호출로 나갔다(2026-08-15 — ★운영부 실패·기발송이 mgr 재시도를 삼키던 것 수리).
         print(f"DONE: 다이제스트 발송 완료 — {TARGET_ROOM}")
