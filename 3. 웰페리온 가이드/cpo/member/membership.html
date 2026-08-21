@@ -13511,6 +13511,72 @@ var WriteBuffer = (function(){
       if (it.nextTry <= now) { item = it; break; }
     }
     if (!item) { scheduleNext(); return; }
+
+    // ★배CPO-FLU(2026-08-21 시포) — member_active_update col/value 건을 배열 API로 묶어 한 번에 보낸다(최대 30건).
+    //   fields 방식(이탈·재등록 모달)과 단건은 아래 기존 경로로 그대로 떨어진다(회귀 0).
+    if (item.payload && item.payload.action === 'member_active_update' &&
+        !item.payload.fields && item.payload.col !== undefined) {
+      var batchItems = [item];
+      var _bBusy = {};
+      _bBusy[String(item.payload.rowIndex || '') + '|' + (item.scope || '')] = true;
+      for (var bj = 0; bj < queue.length && batchItems.length < 30; bj++) {
+        var bjt = queue[bj];
+        if (bjt === item || bjt.parked || bjt.inflight || bjt.verifying) continue;
+        if (!(bjt.payload && bjt.payload.action === 'member_active_update' && !bjt.payload.fields && bjt.payload.col !== undefined)) continue;
+        var _bk = String((bjt.payload && bjt.payload.rowIndex) || '') + '|' + (bjt.scope || '');
+        if (busyRows[_bk] || _bBusy[_bk] || bjt.nextTry > now) continue;
+        batchItems.push(bjt);
+        _bBusy[_bk] = true;
+      }
+      if (batchItems.length > 1) {
+        inflightCount++;
+        var _bRevs = batchItems.map(function(bi){ return bi.rev; });
+        batchItems.forEach(function(bi){ bi.inflight = true; });
+        if (inflightCount < MAX_LANES) scheduleFlush(0);
+        apiPost({ action: 'member_active_update',
+                  updates: batchItems.map(function(bi){ var p = bi.payload;
+                    return { rowIndex: p.rowIndex, col: p.col, value: p.value, keyPhone: p.keyPhone, rowKey: p.rowKey }; }) })
+          .then(function(data){
+            inflightCount--;
+            batchItems.forEach(function(bi){ bi.inflight = false; });
+            if (!data || !data.ok) {
+              batchItems.forEach(function(bi){ _fail(bi, (data && data.error) || '배치 오류'); });
+            } else {
+              var _bRes = data.results || [];
+              batchItems.forEach(function(bi, idx){
+                var res = _bRes[idx] || {};
+                var _bSentRev = _bRevs[idx];
+                if (res.ok) {
+                  if (bi.rev !== _bSentRev) { bi.nextTry = 0; }
+                  else if (res.saved && typeof res.saved === 'object' && _verifySavedInline(bi, res.saved)) { /* 인라인 대조 종결 */ }
+                  else { scheduleVerify(bi); }
+                } else if (res.error === 'rowkey-not-found' && bi.payload && bi.payload.rowKey && bi.payload.keyPhone && !bi.rekeyTried) {
+                  bi.rekeyTried = true; delete bi.payload.rowKey; bi.parked = false; bi.nextTry = 0;
+                  showToast('저장 다시 시도 중…', '');
+                } else if (res.error === 'row-key-unverified' || res.error === 'duplicate-phone-ambiguous' || res.error === 'rowkey-not-found' || res.error === 'rowkey-ambiguous') {
+                  bi.parked = true; bi.parkedHard = true; bi.overlay = null;
+                  var _bMsg = (res.error === 'duplicate-phone-ambiguous' || res.error === 'rowkey-ambiguous')
+                    ? '동일 연락처를 가진 회원이 여러 명이라 어느 행인지 확정할 수 없습니다.'
+                    : (res.error === 'rowkey-not-found' ? '대상 행을 찾을 수 없습니다(지문 불일치) — 데이터가 편집되었을 수 있습니다.' : '대상 행을 확인할 수 없습니다(연락처 정보 없음/불일치).');
+                  lastResult = { ok: false, text: '❌ 동기화 실패 · ' + _hhmm() + ' — ' + ((bi.who ? bi.who + ' ' : '') + (bi.label || '저장')) + ' · 사유: ' + _bMsg };
+                  alert('⚠️ 저장 실패 — ' + (bi.who ? bi.who + ' ' : '') + (bi.label || '') + '\n' + _bMsg + '\n목록을 새로고침한 뒤 대상을 다시 확인하고 저장하세요.');
+                  showToast('저장 거부 — 새로고침 필요', 'err');
+                } else { _fail(bi, res.error); }
+              });
+            }
+            _save(); renderChip(); scheduleNext();
+          })
+          .catch(function(err){
+            inflightCount--;
+            batchItems.forEach(function(bi){ bi.inflight = false; });
+            var _bReason = (err && err.name === 'AbortError') ? '응답 없음(시간 초과)' : '네트워크 오류';
+            batchItems.forEach(function(bi){ _fail(bi, _bReason); });
+            _save(); renderChip(); scheduleNext();
+          });
+        return;
+      }
+    }
+
     inflightCount++;
     item.inflight = true;
     if (inflightCount < MAX_LANES) scheduleFlush(0);   // 남은 레인을 곧바로 채운다(다음 건이 8.5초를 기다리지 않게)
