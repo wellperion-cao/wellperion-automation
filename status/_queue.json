@@ -358,5 +358,21 @@
     "adhoc_commit": "e615ba3141769b7602e6247a17f5d614d6e7dc9d",
     "note": "- [2026-08-22] 월간계획 자동반영 — 2026-08 진척갱신 0건·상태관찰갱신 0건 (ship9678) (커밋 e615ba314)",
     "adhoc_count": 1
+  },
+  {
+    "task_id": "CPO-2026-08-22-ADHOC-DAILY",
+    "clevel": "cpo",
+    "title": "[시포] WriteBuffer flush — member_active_update 복수 건 배열 API 묶음 전송(CPO-FLU)",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-08-22",
+    "processed_at": "2026-08-22",
+    "ship_no": 10957,
+    "artifact": "- flush()에 batch 경로 삽입: col/value 방식 member_active_update 큐가 2건 이상이면\n  updates 배열로 묶어 단일 POST(최대 30건). fields 방식(이탈·재등록 모달)·단건은\n  기존 단건 경로 그대로(회귀 0).\n- 배치 응답(results[])을 건별 처리: ok→scheduleVerify, rowkey-not-found→rekeyTried\n  재시도, hard 거부→parkedHard, 기타→_fail — 기존 단건 로직 1:1 매핑.\n- 배치 전체 실패(data.ok=fa (CLI ad-hoc · 커밋 4f3b66eea)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "4f3b66eeac228a25713142dc8287027a85424611",
+    "note": "- [2026-08-22] WriteBuffer flush — member_active_update 복수 건 배열 API 묶음 전송(CPO-FLU) (커밋 4f3b66eea)",
+    "adhoc_count": 1
   }
 ]
