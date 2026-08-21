@@ -1024,13 +1024,13 @@ def _ovd_short_cat(category: str) -> str:
 
 
 def _ovd_who(row: dict, dept: str) -> str:
-    """이 건을 실제로 부를 사람 한 명. 담당자 이름이 없거나 방 이름(@운영부)이면 부서 책임자."""
-    names = [str(x).strip() for x in (row.get("assigneeCanon") or []) if str(x).strip()]
-    if not names:
-        one = str(row.get("assignee") or "").strip()
-        names = [one] if one else []
-    names = [n for n in names if not n.startswith("@")]
-    return "/".join(names) if names else (_OVD_LEADER.get(dept, "") or "담당 미정")
+    """이 건을 실제로 부를 사람 한 명 = 그 부서 책임자.
+
+    ★2026-08-21 GM 확정 — 접수처에 '담당' 칸이 없어졌다(사람 분류는 접수자·처리자 둘뿐).
+      그전엔 담당자 이름을 먼저 봤는데, 그 값의 대부분이 자동으로 찍힌 방 이름(@운영부)이라
+      실제로는 늘 부서 책임자로 떨어지고 있었다. 이제 그 한 갈래만 남긴다.
+      처리자(handler)를 쓰지 않는 이유 = 이 블록은 '아직 안 끝난 건'만 다뤄 처리자가 비어 있다."""
+    return _OVD_LEADER.get(dept, "") or "담당 미정"
 
 
 def _build_ovd_block(rows_for_room: list) -> str:
@@ -1077,17 +1077,17 @@ def _build_ovd_block(rows_for_room: list) -> str:
 
 
 def _selfcheck_ovd_block() -> None:
-    """빈 값·방 이름 담당자·긴 내용에서도 한 줄이 서는지. 네트워크 없이 돈다."""
+    """빈 값·긴 내용에서도 한 줄이 서는지. 네트워크 없이 돈다.
+    ▸2026-08-21: 접수처에 담당 칸이 없어져 픽스처에서도 뺐다 — 부를 사람은 부서 책임자다."""
     rows = [
         {"createdAt": "2026-07-16 09:00:00", "category": "컴플레인 접수", "dept": "운영부",
-         "loc": "여자사우나", "content": "청결 관련 이용 가이드 필요" * 5,
-         "assigneeCanon": ["@운영부"], "status": "접수"},
+         "loc": "여자사우나", "content": "청결 관련 이용 가이드 필요" * 5, "status": "접수"},
         {"createdAt": "2026-08-14 09:00:00", "category": "시설물 고장 접수", "dept": "시설부",
-         "loc": "", "content": "", "assignee": "", "status": "접수"},
+         "loc": "", "content": "", "status": "접수"},
     ]
     out = _build_ovd_block(rows)
     assert "아직 안 끝난 접수 2건" in out, out
-    assert "이경연 실장" in out and "이정헌 소장" in out, "담당 공란·방이름이면 책임자로 떨어져야 한다"
+    assert "이경연 실장" in out and "이정헌 소장" in out, "부서 책임자로 떨어져야 한다"
     assert "@운영부" not in out, "방 이름을 사람 이름 자리에 쓰지 않는다"
     assert "일째" not in out and "일 운영부" not in out, "N일 표기는 쓰지 않는다"
     assert _OVD_BOARD_URL in out and "전달 완료" in out, "어디서·무엇을 하면 되는지가 빠졌다"
