@@ -539,5 +539,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-08-21"
+  },
+  {
+    "task_id": "CTO-2026-08-21-매출보고-시트-웹앱-허용-칸-1개-추가-P20-외-",
+    "clevel": "cto",
+    "title": "[시토] 매출보고 시트 웹앱 — 허용 칸 1개 추가 (P20 외 · GM업무 19번 자동화 선행)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-08-21",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-21] ■ 배경: GM 질문 2026-08-21 — 매출보고에서 사람이 손으로 치는 LOSS·예약/체험 칸을 자동으로 채울 수 있나. 실측 결과 원천 데이터는 이미 매일 19:00 자동으로 쌓인다(종료회원 원장 LOSS 일자·미등록사유 / 문의 원장 tourDate·exp1~3). 막는 것은 시트 쓰기 경로 하나뿐이다.\n■ 지금 상태: SALES_OPS_GAS_URL 웹앱이 P20 한 칸만 허용한다. 다른 칸을 주면 응답이 cell not allowed 로 막힌다(2026-08-21 웰리 실측, action=read/write 모두 동일).\n■ 요청: 그 웹앱의 허용 칸 목록에 한 칸만 더 넣어 주면 된다. 어느 칸인지는 GM 이 지정하기로 했으니 확정되면 웰리가 전달한다.\n■ 새로 만들지 않는다: 스크립트는 이미 있는 scripts/sales_report_ops_summary.py 를 그대로 쓴다(09:00 예약작업으로 P20 을 채우는 그 파일). 칸이 열리면 build_text 에 두 줄 얹는 것으로 끝난다 — 새 파일·새 예약작업·새 발신 경로 없음.\n■ 확인 방법: 허용 칸 추가 후 action=read 로 그 칸을 읽어 ok=true 가 나오면 된다.\n■ 주의: 토큰은 SALES_OPS_GAS_TOKEN. 시트 자체 수식은 건드리지 않는다 — 쓰기 허용 목록만 늘리는 일이다.",
+    "next": "GM 이 칸 지정 → 웹앱 허용 목록에 추가 → action=read 로 확인",
+    "depends_on": "",
+    "ship_no": 10948,
+    "short_no": 738,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-08-21"
   }
 ]
