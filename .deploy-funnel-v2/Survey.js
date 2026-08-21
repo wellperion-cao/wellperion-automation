@@ -254,6 +254,30 @@ function _nameColIdx_(hdr) {
   return -1;
 }
 
+/** 화면이 보낸 행 하나만 열어 지문이 맞는지 본다. 맞으면 전수 스캔을 건너뛴다 (2026-08-21 시토 · 배740).
+ *
+ *  왜: _findRowsByKey_ 는 매번 1,000행을 통째로 읽는다. 저장 1건이 8.5초인데 그중 약 1.4초가 이 스캔이다
+ *  (시포 실측 — 지문 없이 전화만으로 저장하면 7.1초).
+ *
+ *  안전한가: 결과가 달라지지 않는다. 전수 스캔이 하는 일은 ①1건이면 그 행 ②0건이면 거부 ③2건 이상이면
+ *  '후보 중 rowIndex 와 같은 행'을 고르는 것이다. 그런데 rowIndex 행의 지문이 이미 맞는다면 ①에서도
+ *  그 행이고 ③에서도 그 행이다 — 어느 쪽이든 같은 답이 나온다. 안 맞을 때만 종전대로 전수 스캔한다.
+ *  ▸그래서 이 함수는 '맞다'일 때만 지름길이고, '아니다'면 아무 판정도 하지 않는다(판정은 원래 자리에서).
+ */
+function _rowKeyHitsRow_(sh, row, tsCol0, phCol0, keyTsNorm, keyPhoneNorm, nameCol0, keyNameNorm) {
+  if (!sh || !row || row < 2 || tsCol0 < 0 || phCol0 < 0 || !keyTsNorm || !keyPhoneNorm) return false;
+  if (row > sh.getLastRow()) return false;
+  var useName = (nameCol0 != null && nameCol0 >= 0 && !!keyNameNorm);
+  var cols = [tsCol0, phCol0];
+  if (useName) cols.push(nameCol0);
+  var minCol = Math.min.apply(null, cols), maxCol = Math.max.apply(null, cols);
+  var v = sh.getRange(row, minCol + 1, 1, maxCol - minCol + 1).getValues()[0];
+  if (_normTsKey_(v[tsCol0 - minCol]) !== keyTsNorm) return false;
+  if (_normPhone_(v[phCol0 - minCol]) !== keyPhoneNorm) return false;
+  if (useName && _normNameKey_(v[nameCol0 - minCol]) !== keyNameNorm) return false;
+  return true;
+}
+
 function _findRowsByKey_(sh, tsCol0, phCol0, keyTsNorm, keyPhoneNorm, nameCol0, keyNameNorm) {
   var out = [];
   if (!sh || tsCol0 < 0 || phCol0 < 0 || !keyTsNorm || !keyPhoneNorm) return out;
@@ -9389,8 +9413,13 @@ function _hasRealReply_(memo) {
       }
     }
     if (_auRk && _auTsI >= 0 && _auPhI >= 0) {
-      var _auFpRows = _findRowsByKey_(auSh, _auTsI, _auPhI, _auRk.ts, _auRk.phone,
-                                      _nameColIdx_(auHdr), _auRk.name);
+      var _auNmI = _nameColIdx_(auHdr);
+      // ★지름길(2026-08-21 시토 · 배740) — 화면이 보낸 행의 지문이 이미 맞으면 1,000행 전수 스캔을
+      //   건너뛴다. 답은 달라지지 않는다(_rowKeyHitsRow_ 주석의 ①②③ 참조). 안 맞으면 종전대로 전수 스캔.
+      //   실측 근거: 저장 1건 8.5초 중 약 1.4초가 이 스캔이다(시포 2026-08-21).
+      var _auFpRows = _rowKeyHitsRow_(auSh, auRow, _auTsI, _auPhI, _auRk.ts, _auRk.phone, _auNmI, _auRk.name)
+        ? [auRow]
+        : _findRowsByKey_(auSh, _auTsI, _auPhI, _auRk.ts, _auRk.phone, _auNmI, _auRk.name);
       if (_auFpRows.length === 1) {
         auRow = _auFpRows[0];
       } else if (_auFpRows.length === 0) {
