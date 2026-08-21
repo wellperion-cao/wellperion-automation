@@ -260,10 +260,22 @@ def _aging_block(rows: list[dict], now: datetime | None = None,
     overdue = _collect_overdue(rows, now, scope)
     undone = [r for r in rows if str(r.get("status", "")) != "완료"]
 
+    # ★2026-08-21 시우(GM 지시 — 분실물은 접수 적체에서 뗀다).
+    #   분실물은 보관 성격(30일 주기)이라 실장이 '처리'해 닫는 일이 아니고, 처분은
+    #   습득물 사이클(coo/reception/lost_found_guide.html)이 따로 돈다. 부서 적체 집계
+    #   (reception_watch by_dept)는 이미 빼고 세는데 이 전문만 섞여 있어 같은 날 숫자가
+    #   두 벌로 보였다(약속 L01). 목록에서 빼고 건수만 한 줄로 남긴다 — 건수는 안 지운다.
+    lost_overdue = [it for it in overdue if it["cat"] == "분실물 접수"]
+    overdue = [it for it in overdue if it["cat"] != "분실물 접수"]
+    lost_undone = sum(1 for r in undone
+                      if str(r.get("category") or "").strip() == "분실물 접수")
+
     head = ("⏰ 미처리 적체 리마인드 (강습·업장)" if scope == "lesson"
             else "⏰ 미처리 적체 리마인드 (이경연 실장)")
     lines = [head, (f"기한초과 {len(overdue)}건" if scope == "lesson"
-                    else f"미처리 {len(undone)}건 · 기한초과 {len(overdue)}건")]
+                    else f"미처리 {len(undone) - lost_undone}건 · 기한초과 {len(overdue)}건")]
+    if lost_undone:
+        lines.append(f"🧳 분실물 {lost_undone}건은 별도 — 습득물 보관·처분 주기로 관리합니다.")
     if not overdue:
         lines.append("기한 초과 건 없음.")
         return "\n".join(lines)
