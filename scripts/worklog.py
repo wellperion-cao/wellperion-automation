@@ -496,9 +496,28 @@ def _selfcheck() -> None:
     print(f'[OK] worklog 단순조회 필터 자가검사 통과 — 조회 {len(queries)}건 거름·지시 {len(directives)}건 통과')
 
 
+def close_gm_refs_hook() -> None:
+    """Stop 훅 — 세션이 응답을 끝내면 그 역할의 열린 GM 접수를 닫는다.
+
+    왜 필요한가(2026-08-21 시토 실측): 닫는 일을 UserPromptSubmit 훅 하나가 다 하고 있었다.
+    그래서 **그날 마지막 지시는 영영 안 닫힌다** — 다음 프롬프트가 와야 닫히는데, 다음 프롬프트는
+    다음 날 부팅문이고 부팅문은 걸러져서 닫기 호출까지 건너뛴다. 실측: 08-20 마지막 발화
+    "나 퇴근해도되?" 가 다음 날 아침 쿵짝표에 미완으로 떴다. 코드 주석은 "Stop 훅에도 같은
+    호출을 뒀다"고 적혀 있었지만 **훅 등록이 없어 한 번도 발화한 적이 없었다.**
+    """
+    try:
+        role = (os.environ.get("WELLPERION_ROLE") or "").strip().lower()
+        if role:
+            close_gm_refs(role, detail="세션 응답 종료 · 자동 종결(Stop)")
+    except Exception:  # noqa: BLE001 — 훅은 절대 세션을 막지 않는다
+        pass
+
+
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "--hook-prompt":
         record_gm_prompt_hook()
+    elif len(sys.argv) >= 2 and sys.argv[1] == "--hook-stop":
+        close_gm_refs_hook()
     elif len(sys.argv) >= 2 and sys.argv[1] == "--selfcheck":
         _selfcheck()
     elif len(sys.argv) >= 4:
