@@ -65,15 +65,46 @@ function sh(){ return SpreadsheetApp.openById(SHEET_ID).getSheetByName(TAB); }
 /** SWR 이중 캐시(2026-07-07 성능 수술): 신선 20분 + 보존 6시간.
  *  신선 만료 시 보존본을 즉시 반환(stale:true) → 클라이언트가 백그라운드 nocache 재계산 유발.
  *  콜드 재계산(월별 보고서 7파일 오픈, 최대 3분+)을 사용자가 직접 기다리는 일 제거. */
+/** 2026-08-21 시토(배730) — 보존본에 나이 제한을 걸었다.
+ *  왜: 이 스크립트에서 CacheService.put 이 예외 없이 조용히 안 박힌다(실측 cacheErr=put-no-readback).
+ *  그래서 한 번 들어간 보존본이 갱신되지 않고 TTL 이 끝날 때까지 계속 나갔다 — 6월 회원권이
+ *  5시간 넘게 1,260만(정본 2.64억)으로 나간 것이 이 가지 때문이다. 재계산은 멀쩡히 정상값을 낸다.
+ *  put 이 왜 안 박히는지는 아직 모르지만, 그것과 무관하게 낡은 값을 내보내지 않는 것이 먼저다. */
+var SWR_STALE_MAX_MIN = 30;   // 보존본 최대 나이(분). 넘으면 안 쓰고 다시 계산한다.
+function _swrAgeMin_(at){
+  try{
+    var d = new Date(String(at).replace(" ", "T") + "+09:00");
+    if (isNaN(d.getTime())) return 1e9;
+    return (Date.now() - d.getTime()) / 60000;
+  }catch(e){ return 1e9; }
+}
 function swrGet_(p, key){
   if (p && p.nocache) return null;
   var c = CacheService.getScriptCache();
   var hit = c.get(key); if (hit) return JSON.parse(hit);
-  var st = c.get(key + "_L"); if (st){ var o = JSON.parse(st); o.stale = true; return o; }
+  var st = c.get(key + "_L");
+  if (st){
+    var o = JSON.parse(st);
+    if (_swrAgeMin_(o.at) <= SWR_STALE_MAX_MIN){ o.stale = true; return o; }
+    // 너무 묵었다 → 보존본을 버리고 재계산시킨다(낡은 값 노출 금지).
+  }
   return null;
 }
+/** 2026-08-21 시토(배730) — 두 곳을 고쳤다.
+ *  ① 조용한 실패 금지: 캐시 쓰기가 실패하면 catch 가 삼켜 아무 흔적이 없었다. 그 결과
+ *     "다시 계산하면 맞는데 그 값이 저장이 안 되는" 상태가 몇 시간씩 이어져도 아무도 몰랐다
+ *     (6월 회원권이 2.64억 대신 1,260만으로 나감). 실패하면 응답에 cacheErr 로 실어 보낸다.
+ *  ② 보존 캐시 6시간 -> 30분: GAS 에는 백그라운드 재계산이 없어서, 보존본이 살아 있는 동안
+ *     내내 낡은 값이 그대로 나간다. 6시간은 너무 길다 — 틀린 값이 최대 6시간 노출됐다. */
 function swrPut_(key, res){
-  try{ var js = JSON.stringify(res); var c = CacheService.getScriptCache(); c.put(key, js, 1200); c.put(key + "_L", js, 21600); }catch(e){}
+  try{
+    var js = JSON.stringify(res);
+    var c = CacheService.getScriptCache();
+    c.put(key, js, 1200);
+    c.put(key + "_L", js, 1800);
+    var back = c.get(key);
+    if (!back) res.cacheErr = "put-no-readback";   // 예외 없이 조용히 안 박히는 경우까지 잡는다
+  }catch(e){ try{ res.cacheErr = String(e); }catch(e2){} }
 }
 
 function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
