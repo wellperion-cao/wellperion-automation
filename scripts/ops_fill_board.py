@@ -8,7 +8,7 @@
 
 왜 있나 (GM 2026-07-23 지시)
   두 포인트로 본다 — ①업무판에 아직 안 올라온 일 ②올라왔는데 잠시 쉬고 있는 일.
-  세부는 마감일·점수(난이도) 미기재. 톤은 '기분 좋게' — 질책 어휘를 쓰지 않는다.
+  세부는 마감일 미기재. 톤은 '기분 좋게' — 질책 어휘를 쓰지 않는다.
 
 정직 원칙
   · 모든 수치는 실행 시점 실측. 추정·예시값 0 (약속 L05).
@@ -109,8 +109,6 @@ def collect(today: datetime.date):
             m.append("시작일")
         if not g(x, "종료일"):
             m.append("종료일")
-        if not g(x, "난이도"):
-            m.append("난이도")
         return m
 
     all_act = [x for x in rows if g(x, "상태") in ("진행중", "보류")]
@@ -145,7 +143,9 @@ def collect(today: datetime.date):
         "best_day": best[0], "best_n": best[1],
         "complete": sum(1 for i in items if not i["miss"]),
         "need_sched": sum(1 for i in items if "종료일" in i["miss"]),
-        "need_score": sum(1 for i in items if "난이도" in i["miss"]),
+        # ★2026-08-21 GM 확정 — 난이도(중요도)는 업무 SSOT 에서 뺐다. 실무자가 고민할 칸이 아니고,
+        #   업무 점수는 분기별로 CHRO 가 정해진 기준으로 매긴다. 지표도 함께 내린다.
+        "need_score": 0,
         "rest": sum(1 for i in items if i["d"] >= STALE_DAYS),
         "unlinked": len(unlinked),
     }
@@ -169,8 +169,7 @@ def build_html(S, items, unlinked):
         need = sum(len(x["miss"]) for x in lst)
         rows = "".join(
             f'<li><span class="tn">{e(x["t"][:40])}</span>'
-            + "".join(f'<span class="tag {"sc" if m == "난이도" else "dt"}">'
-                      f'{"점수" if m == "난이도" else "마감일"}</span>'
+            + "".join(f'<span class="tag dt">마감일</span>'
                       for m in x["miss"] if m != "시작일")
             + (f'<span class="tag rest">{x["d"]}일째 쉬는 중</span>' if x["d"] >= STALE_DAYS else "")
             + "</li>"
@@ -205,7 +204,7 @@ def build_html(S, items, unlinked):
 <!-- 카카오톡·메신저 링크 미리보기용(2026-08-03 GM 지적) — 이 태그가 없으면 카카오가 처음 긁어간
      화면을 캐시로 계속 보여준다. 제목·설명에 기준일을 박아, 방에 뜬 카드만 봐도 언제 것인지 안다. -->
 <meta property="og:title" content="업무판 채움 보드 · {S['date']} 기준">
-<meta property="og:description" content="오래 멈춘 일 {S['rest']}건 · 마감일 {S['need_sched']}건 · 점수 {S['need_score']}건 — 진행 중 {S['act']}건 기준">
+<meta property="og:description" content="오래 멈춘 일 {S['rest']}건 · 마감일 {S['need_sched']}건 — 진행 중 {S['act']}건 기준">
 <meta property="og:type" content="website">
 <style>{CSS}</style>
 <div class="wrap">
@@ -244,7 +243,7 @@ def build_html(S, items, unlinked):
 
 <section>
   <div class="sec-h"><span class="num">2</span><h2>마감일·점수가 빈 일</h2>
-    <span class="sub">마감일 {S['need_sched']}건 · 점수 {S['need_score']}건 — 점수는 그대로 인사평가 가중점수(혼자 <b>하</b> · 두 팀 <b>중</b> · 전사 <b>상</b>)</span></div>
+    <span class="sub">마감일 {S['need_sched']}건 — 업무 점수는 분기별로 인사(CHRO)에서 매깁니다. 담당자가 정하지 않습니다</span></div>
   <details><summary class="fold">담당자별로 보기</summary>
   <div class="grid">{''.join(cards)}</div></details>
 </section>
@@ -403,8 +402,8 @@ def build_caption(S) -> str:
         f"── 진행 중 {S['act']}건 · 이 중 {S['complete']}건은 빈칸 없이 완비 ──\n"
         f"① 오래 멈춘 일 {S['rest']}건 (30일 넘게 손 못 댄 것)\n"
         "  → 끝났으면 「완료」로, 기다리는 중이면 「보류」에 이유 한 줄. 때가 되면 자동으로 다시 올라옵니다.\n"
-        f"② 칸이 빈 일 — 마감일 {S['need_sched']}건 · 점수 {S['need_score']}건\n"
-        "  → 마감일이 있어야 도와드릴 시점을 알고, 점수는 그대로 인사평가 가중점수가 됩니다.\n"
+        f"② 칸이 빈 일 — 마감일 {S['need_sched']}건\n"
+        "  → 마감일이 있어야 도와드릴 시점을 알 수 있습니다. 업무 점수는 분기별로 인사(CHRO)에서 매깁니다.\n"
         "\n"
         "본인 것만 골라 보기 ↓\n"
         "https://wellperion-cao.github.io/wellperion-automation/coo/todo/"
@@ -419,7 +418,7 @@ def send_kakao(S) -> None:
     ★빈칸이 하나도 없으면 보내지 않는다 — 채울 게 없는데 매주 보내면 잔소리가 된다.
     """
     import subprocess
-    need = S["need_sched"] + S["need_score"] + S["rest"] + S["unlinked"]
+    need = S["need_sched"] + S["rest"] + S["unlinked"]
     if need == 0:
         print("[발송 생략] 채울 빈칸·쉬는 건이 0 — 보낼 이유가 없습니다(잔소리 방지).")
         return
@@ -472,7 +471,7 @@ def main():
         f"업무판 채움 보드 갱신 — 진행 {S['act']}건 · 완비 {S['complete']}건 · "
         f"미등록 {S['unlinked']}건 · 쉬는중 {S['rest']}건",
         result="ok",
-        detail=f"마감일 미기재 {S['need_sched']}건 · 점수 미기재 {S['need_score']}건",
+        detail=f"마감일 미기재 {S['need_sched']}건",
         ref=S["date"],
     )
 
@@ -499,7 +498,7 @@ def main():
     for out in OUTS:
         print("생성:", out)
     print(f"진행 {S['act']} · 완비 {S['complete']} · 미등록 {S['unlinked']} · "
-          f"쉬는중 {S['rest']} · 마감일 {S['need_sched']} · 점수 {S['need_score']} "
+          f"쉬는중 {S['rest']} · 마감일 {S['need_sched']} "
           f"· 제외(경영진) {S['excluded']}")
     if a.commit:
         import subprocess  # noqa: PLC0415
