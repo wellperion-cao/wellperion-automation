@@ -59,26 +59,30 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 /* ── Filter Bar ── */
 .sticky-top{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);}
-/* ── 라이브 점수판 2단 (2026-08-07 신설 · 2026-08-10 GM 지시로 1/5 크기 축소) ──
-   카드·격자를 걷어내고 한 줄짜리 인라인 목록으로 바꿨다. 업무 보드가 주인공이고
-   이건 머리말이라 자리를 많이 먹으면 안 된다. 업무 칸은 3개만(진행중·완료·기한초과). */
-/* 두 판을 같은 카드 형태로 통일 — 접수 점수판 디자인이 낫다는 GM 판단(2026-08-10). */
+/* ── 라이브 점수판 2단 (2026-08-07) ── */
 .livestrip{padding:12px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .livestrip .ls-foot{grid-column:1/-1;font-size:11.5px;color:var(--dim);text-align:center;padding:2px 0 0}
 @media(max-width:860px){.livestrip{grid-template-columns:1fr}}
-.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
-.ls-head{font-size:15px;font-weight:700;color:var(--text);margin-bottom:11px}
-.ls-head .ls-sub{font-size:12px;font-weight:500;color:var(--dim);margin-left:5px}
-.ls-body{display:flex;flex-direction:column;gap:9px}
-.ls-dim{font-size:13px;color:var(--dim)}
-/* 한 줄 = 한 사람. 순위 배지 · 이름 · 점수 · 상세 (2026-08-10 GM: 글씨 키움) */
-.ls-row{display:flex;align-items:center;gap:9px;font-size:15px}
-.ls-rank{min-width:23px;height:23px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ls-name{font-weight:700;color:var(--text);white-space:nowrap}
-.ls-pt{font-weight:800;color:var(--accent);white-space:nowrap;font-size:16px}
-.ls-detail{font-size:13px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ls-detail b.late{color:var(--red);font-weight:800}
-.ls-note{font-size:13px;color:var(--dim);font-style:italic}
+.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0}
+.ls-head{font-size:13px;font-weight:700;color:var(--text);margin-bottom:9px}
+.ls-head .ls-sub{font-size:11px;font-weight:500;color:var(--dim);margin-left:5px}
+.ls-body{display:flex;flex-direction:column;gap:6px}
+.ls-dim{font-size:12px;color:var(--dim)}
+/* 접수 점수판 줄 */
+.ls-row{display:flex;align-items:center;gap:8px;font-size:13px}
+.ls-rank{min-width:19px;height:19px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ls-name{font-weight:700;color:var(--text)}
+.ls-pt{font-weight:800;color:var(--accent)}
+.ls-detail{font-size:11.5px;color:var(--dim)}
+/* 업무 현황 카드 */
+.ls-person{border:1px solid var(--border);border-radius:9px;padding:8px 10px;background:var(--bg)}
+.ls-person-name{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:6px}
+.ls-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ls-num{text-align:center}
+.ls-num b{display:block;font-size:16px;font-weight:800;line-height:1.2;color:var(--text)}
+.ls-num span{font-size:10px;color:var(--dim)}
+.ls-num.warn b{color:var(--red)}
+.ls-note{font-size:11.5px;color:var(--dim);font-style:italic}
 @media print{.livestrip{display:none!important}}
 .filter-bar{background:var(--bg);padding:8px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .filter-bar::-webkit-scrollbar{display:none}
@@ -581,23 +585,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <label><input type="radio" name="fOwner" value="임정은M">임정은M</label>
         <label><input type="radio" name="fOwner" value="윤병현AM">윤병현AM</label>
         <label><input type="radio" name="fOwner" value="백승화 사원">백승화 사원</label>
-        <label><input type="radio" name="fOwner" value="진수아 사원">진수아 사원</label>
         <label><input type="radio" name="fOwner" value="나우열M">나우열M</label>
         <label><input type="radio" name="fOwner" value="이정헌 소장">이정헌 소장</label>
       </div>
     </div>
     <div class="field">
-      <label>업무 중요도 <span style="font-size:11px;color:var(--dim);font-weight:400;">(담당자 제안 — 부서장이 결재단계에서 확정)</span></label>
-      <select id="fDifficulty">
-        <option value="">미정</option>
-        <option value="하">하 (1점) · 본인 역할 및 팀 단위(1개 팀)</option>
-        <option value="중">중 (5점) · 팀 단위(2개 팀 이상)</option>
-        <option value="상">상 (10점) · 전사적 단위</option>
-      </select>
-      <div style="margin-top:6px;font-size:11px;line-height:1.7;color:var(--dim);background:var(--accent-bg,#1a1a2a);border:1px dashed var(--border);border-radius:8px;padding:8px 10px;">
-        <strong style="color:var(--text);">업무 중요도 기준</strong> — 기준 상세는 S2 COO 탭 단일 출처 참조
-      </div>
-    </div>
     <div class="field">
       <label>협조 담당자 (여러명)</label>
       <div class="checkbox-group" id="fCollabGroup">
@@ -606,7 +598,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <label><input type="checkbox" value="임정은M">임정은M</label>
         <label><input type="checkbox" value="윤병현AM">윤병현AM</label>
         <label><input type="checkbox" value="백승화 사원">백승화 사원</label>
-        <label><input type="checkbox" value="진수아 사원">진수아 사원</label>
         <label><input type="checkbox" value="나우열M">나우열M</label>
         <label><input type="checkbox" value="이정헌 소장">이정헌 소장</label>
       </div>
@@ -715,7 +706,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--border);padding-top:8px;">
           <span style="font-size:11px;color:var(--accent);font-weight:700;min-width:60px;">결재</span>
           <label><input type="checkbox" value="GM" onclick="warnApprovalCheck(this)">김남욱 GM</label>
-          <span style="font-size:10px;color:var(--dim);">· 대표님 최종결재는 결재현황 SSOT에서 자동 처리</span>
+          <span style="font-size:10px;color:var(--dim);">· 대표 최종결재는 결재현황 SSOT에서 자동 처리</span>
         </div>
       </div>
     </div>
@@ -757,7 +748,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    ═══════════════════════════════════════════ */
 const TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
-const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장'];
+const MEMBERS = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'];
 
 const CATEGORIES = [
   '[1] 매출 및 영업','[2] 인사','[3] 파트너팀','[4] 운영 정책',
@@ -785,40 +776,6 @@ const FIELD_MAP = {
   '생성일':'createdAt','수정일':'updatedAt'
 };
 
-/* 업무 중요도 3등급(하1·중5·상10) — 담당자 제안→부서장 확정. 가중점수=Σ완료 업무 중요도. (2026-06-03 GM · 2026-06-10 확정: 하=1·중=5·상=10, 팀범위 기준 S2 COO 탭) */
-const DIFF_WEIGHT = { '하': 1, '중': 5, '상': 10 };
-function diffWeight(t) { return DIFF_WEIGHT[String((t && t['난이도']) || '').trim()] || 0; }
-function diffBadgeHtml(t) {
-  const d = String((t && t['난이도']) || '').trim();
-  if (!d) return '';
-  const c  = d === '상' ? 'var(--red)'    : d === '중' ? 'var(--yellow)'    : 'var(--green)';
-  const bg = d === '상' ? 'var(--red-bg)' : d === '중' ? 'var(--yellow-bg)' : 'var(--green-bg)';
-  return '<span class="chip" title="업무 중요도 ' + d + ' (가중치 ' + (DIFF_WEIGHT[d] || 0) + ')" style="background:' + bg + ';color:' + c + ';font-weight:700;">⚙' + esc(d) + '</span>';
-}
-// 카드 인라인 업무 중요도 (2026-06-05 GM): 설정됨→칩 / 미설정+결재전→카드에서 바로 드롭다운 / 결재 넘어가면→잠금 안내
-function diffCardChip(t) {
-  const d = String((t && t['난이도']) || '').trim();
-  const inApproval = !!String((t && (t.approval || t['결재요청'])) || '').trim();
-  if (d) return diffBadgeHtml(t);
-  if (inApproval) {
-    return '<span class="chip" title="결재 요청되어 업무 중요도는 결재 현황에서 GM이 확정합니다" style="background:transparent;color:var(--dim);border:1px dashed var(--border);font-weight:600;">⚙ 업무 중요도 잠김</span>';
-  }
-  const opts = ['하','중','상'].map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
-  return '<select onclick="event.stopPropagation();" onchange="event.stopPropagation();setCardDifficulty(\'' + escAttr(t.id) + '\', this.value);" '
-       + 'title="업무 중요도를 카드에서 바로 설정 (하·중·상)" '
-       + 'style="font-size:11px;padding:2px 6px;border:1px dashed var(--accent);border-radius:8px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;font-weight:600;">'
-       + '<option value="">⚙ 업무 중요도?</option>' + opts + '</select>';
-}
-// 카드에서 업무 중요도 1건 즉시 저장 (빈값 스킵 GAS라 다른 필드 무손상). 2026-06-05 GM
-async function setCardDifficulty(id, val) {
-  if (!val) return;
-  showToast('업무 중요도 저장 중...');
-  try {
-    const res = await apiCall({ action: 'todo_update', id: id, difficulty: val });
-    if (res && res.ok) { showToast('업무 중요도 "' + val + '" 저장됨'); await loadTasks(); }
-    else throw new Error((res && res.error) || '저장 실패');
-  } catch (e) { showToast('업무 중요도 저장 실패: ' + e.message, true); }
-}
 
 /* 결재 진행중 판정 — 결재요청 있고 결재상태 미완·미반려. 활성/완료 분리·필터 카운트 공용(기준 드리프트 방지). 2026-06-03 */
 function isApprPending(t) { return String(t.approval || '').trim() && t['결재상태'] !== '결재완료' && !/반려/.test(String(t['결재상태'] || '')); }
@@ -857,7 +814,7 @@ let ALL_TASKS = [];
    GM건·결재건은 G1(김남욱 GM)에서, C레벨(AI)건은 자율현황 ▸ 🧭 항로에서 본다 (GM 결정 2026-08-03 이관).
    실무진 토큰이 하나라도 있으면 표시. 실무진이 전혀 없으면 숨김. */
 const STAFF_TOKENS = new Set([
-  '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장'
+  '이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장'
 ]);
 function hasNoStaff(t) {
   var owners = String((t && t.owner) || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
@@ -1633,7 +1590,6 @@ function renderTaskCard(t, idx) {
     _cardParsed.collab.forEach(c => { if (c) html += '<span class="chip collab">' + esc(c) + '</span>'; });
   }
 
-  html += diffCardChip(t);
 
   if (t.startDate || t.endDate) {
     const dateStr = formatDateRange(t.startDate, t.endDate);
@@ -1740,17 +1696,9 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn" title="이 업무로 바로 가는 링크 복사 (공유용)" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">🔗 링크</button>';
   // 결재 넘어간 업무(결재요청됨) = 업무현황에선 잠금, 결재현황(GM)에서만 관리 (2026-06-05 GM 화면분리)
   // 단 반려된 업무는 담당자에게 반송 — 업무현황에서 다시 수정 가능하게 잠금 해제 (2026-06-05 GM)
-  // ★결재자가 실제로 결재하기 전까지는 담당자가 계속 수정할 수 있다 (2026-08-10 GM).
-  //   기존엔 결재요청만 걸리면 편집 버튼이 통째로 사라져, GM 이 아직 안 봤는데도 손을 못 댔다.
-  //   (2026-08-07 에 푼 건 편집 창 '안'의 잠금이었고, 창을 여는 버튼은 여기서 따로 막고 있었다.)
-  //   완료·삭제는 결재 흐름이 어긋나므로 그대로 결재 현황에서만 처리한다.
-  const _apprDone = String(t['결재상태'] || '') === '결재완료';
   if (String(t.approval || '').trim() && !/반려/.test(String(t['결재상태'] || ''))) {
     html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
-    if (!_apprDone) html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
-    html += '<span style="font-size:11px;color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 ' +
-      (_apprDone ? '결재 완료 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리'
-                 : '결재 대기 — 수정 가능 · 완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리') + '</span>';
+    html += '<span style="font-size:11px;color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 결재 진행 중 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리</span>';
   } else {
     html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
     html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
@@ -2358,7 +2306,7 @@ try { var _vs = document.querySelector('.header .sub'); if (_vs) _vs.textContent
 function isUnfilledTemplate(html, taskTitle) {
   if (!isDocHtml(html)) return false;
   if (/<img/i.test(html)) return false;   // 이미지가 있으면 작성으로 간주
-  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장','김남욱GM','GM'];
+  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장','김남욱GM','GM'];
   const S = ['WELLPERION','주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽','기 획 안','결 과 보 고','◆',
     '업무명','작성자','작성일','보고일','기간','수행 기간','핵심 요약',
     '결과를 한두 문장으로 요약해 주세요 — GM·대표님이 가장 먼저 읽는 칸입니다.','내용을 입력하세요.',
@@ -2460,68 +2408,6 @@ function _seImageUploadBefore(files, info, core, uploadHandler) {
   })();
   return undefined; // uploadHandler 수동 호출 대기
 }
-/* ── Ctrl+V 이미지 축소(붙여넣기 전용) ── 2026-08-11 나우열M 지시(사진 붙여넣기 결함 수정)
-   스마트폰 캡처 등 큰 원본을 그대로 올리면 저장 글자수 한도에 걸리기 쉬워, 임계값을 넘을 때만
-   긴 변 1600px·JPEG q0.82로 축소해 기존 업로드 파이프라인에 넘긴다. 작은 이미지는 원본 그대로
-   두고(불필요한 손실압축 방지), 축소가 실패하면 원본으로 안전 폴백한다. 붙여넣기 경로에만 적용
-   — 툴바 이미지버튼·드래그앤드롭 등 기존 업로드 동작은 무변경. */
-var _PASTE_RESIZE_MAX_DIM = 1600;
-var _PASTE_RESIZE_SIZE_THRESHOLD = 900 * 1024;
-function _resizeImageFileIfLarge(file) {
-  return new Promise(function (resolve) {
-    if (!file || file.size <= _PASTE_RESIZE_SIZE_THRESHOLD || typeof createImageBitmap !== 'function') {
-      resolve(file); return;
-    }
-    createImageBitmap(file).then(function (bmp) {
-      var scale = Math.min(1, _PASTE_RESIZE_MAX_DIM / Math.max(bmp.width, bmp.height));
-      if (scale >= 1) { resolve(file); return; }
-      var w = Math.max(1, Math.round(bmp.width * scale));
-      var h = Math.max(1, Math.round(bmp.height * scale));
-      var canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
-      canvas.toBlob(function (blob) {
-        if (!blob) { resolve(file); return; }
-        var newName = (file.name || 'paste').replace(/\.[^.]+$/, '') + '.jpg';
-        resolve(new File([blob], newName, { type: 'image/jpeg' }));
-      }, 'image/jpeg', 0.82);
-    }).catch(function () { resolve(file); });
-  });
-}
-/* ── 기획안·결과보고 편집기 Ctrl+V 이미지 붙여넣기 ── 2026-08-11 나우열M 지시
-   SunEditor 기본 붙여넣기는 이미지를 base64로 그대로 본문에 박아 넣어(업로드 경로를 타지 않음),
-   실사진 크기에서는 저장 글자수 한도(45,000자)를 즉시 넘겨 "사진은 여기에 Ctrl+V 하세요"
-   안내문구와 달리 실제로는 저장이 막히던 결함(2026-08-11 실측 확인). 문서 편집기 영역에서
-   이미지가 포함된 붙여넣기만 캡처 단계에서 가로채, 기존 _seImageUploadBefore(드라이브 업로드)
-   경로로 대신 흘려보낸다 — 새 백엔드·새 저장경로 없음, 기존 파이프라인 그대로 재사용.
-   (붙여넣기 전용 수정 — 일반 '내용'칸·툴바 이미지버튼·드래그앤드롭은 기존 그대로 무변경) */
-var _docPasteHookInstalled = false;
-function _installDocPasteImageHook() {
-  if (_docPasteHookInstalled) return;
-  _docPasteHookInstalled = true;
-  document.addEventListener('paste', function (e) {
-    var wrap = e.target && e.target.closest ? e.target.closest('#docPlanWrap, #docResultWrap') : null;
-    if (!wrap) return;
-    var files = e.clipboardData && e.clipboardData.files ? Array.prototype.slice.call(e.clipboardData.files) : [];
-    var imgFiles = files.filter(function (f) { return /^image\//.test(f.type); });
-    if (!imgFiles.length) return;   // 이미지가 없는(텍스트) 붙여넣기는 기존 동작 그대로
-    e.preventDefault();
-    e.stopPropagation();
-    var which = wrap.id === 'docResultWrap' ? 'result' : 'plan';
-    var ed = which === 'result' ? _resultEd : _planEd;
-    if (!ed) return;
-    Promise.all(imgFiles.map(_resizeImageFileIfLarge)).then(function (resized) {
-      _seImageUploadBefore(resized, {}, null, function (res) {
-        if (res && res.result) {
-          res.result.forEach(function (item) {
-            ed.insertHTML('<img src="' + escAttr(item.url) + '" alt="">');
-          });
-        }
-        // 실패(문자열) 시 _seImageUploadBefore 자체가 이미 showToast로 안내함 — 추가 처리 불요
-      });
-    });
-  }, true);   // capture 단계 — SunEditor 자체 붙여넣기(base64 삽입) 처리보다 먼저 가로채 막는다
-}
 function _createDocEditor(targetId, minH) {
   return SUNEDITOR.create(targetId, {
     lang: (typeof SUNEDITOR_LANG !== 'undefined' ? SUNEDITOR_LANG['ko'] : undefined),
@@ -2549,7 +2435,6 @@ function ensureDocEditors() {
   try {
     if (!_planEd)   _planEd   = _createDocEditor('fPlan', '360px');
     if (!_resultEd) _resultEd = _createDocEditor('fResult', '260px');
-    _installDocPasteImageHook();
     return true;
   } catch (e) { return false; }
 }
@@ -2737,7 +2622,6 @@ function openAddModal() {
   document.getElementById('fStartDate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('fEndDate').value = '';
   document.getElementById('fContent').value = '';
-  document.getElementById('fDifficulty').value = '';
   document.getElementById('fLink').value = '';
   document.getElementById('fFile').value = '';
   _pendingFiles = [];
@@ -2898,7 +2782,6 @@ function openEditModal(id) {
   document.getElementById('editId').value = t.id;
   document.getElementById('fTitle').value = t.title || '';
   document.getElementById('fCategory').value = t.category || '';
-  document.getElementById('fDifficulty').value = t['난이도'] || t.difficulty || '';
   const ownerParts = (t.owner || '').split(',').map(s => s.trim()).filter(Boolean);
   const primaryOwner = ownerParts.slice(0, 1);
   const legacyCollab = ownerParts.slice(1);
@@ -3015,66 +2898,6 @@ function getCheckboxValues(groupId) {
   return vals.join(',');
 }
 
-/* 업무 중요도 소급 일괄책정 모달 — 기존 전 업무에 업무 중요도(하/중/상) 일괄 부여 (2026-06-03 GM, 전체 소급) */
-function openDifficultyBatchModal() {
-  const pool = excludeNonStaff(ALL_TASKS.filter(t => t.status !== '보류'));
-  // 미책정 건 우선 노출(공백 식별), 그다음 담당자·업무명
-  pool.sort((a, b) => ((diffWeight(a) ? 1 : 0) - (diffWeight(b) ? 1 : 0)) || String(a.owner||'').localeCompare(String(b.owner||'')));
-  const unrated = pool.filter(t => !diffWeight(t)).length;
-  const opt = (cur, v, lbl) => '<option value="' + v + '"' + (cur === v ? ' selected' : '') + '>' + lbl + '</option>';
-  const rowsHtml = pool.map(t => {
-    const cur = String(t['난이도'] || '').trim();
-    return '<tr data-id="' + escAttr(t.id) + '" data-orig="' + escAttr(cur) + '">' +
-      '<td style="font-size:12px;word-break:keep-all;">' + esc(t.title) + (t.status === '완료' ? ' <span style="color:var(--green);font-size:10px;">완료</span>' : '') + '</td>' +
-      '<td style="font-size:11px;color:var(--dim);white-space:nowrap;">' + esc(t.owner || '') + '</td>' +
-      '<td><select class="diffBatchSel" style="font-size:12px;padding:3px 6px;">' +
-        opt(cur, '', '미정') + opt(cur, '하', '하(1)') + opt(cur, '중', '중(5)') + opt(cur, '상', '상(10)') +
-      '</select></td></tr>';
-  }).join('');
-  const ov = document.createElement('div');
-  ov.id = 'diffBatchOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-  ov.innerHTML =
-    '<div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;max-width:680px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;">' +
-      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">' +
-        '<div><strong style="font-size:16px;">⚙ 업무 중요도 일괄책정</strong>' +
-        '<div style="font-size:12px;color:var(--dim);margin-top:2px;">전체 ' + pool.length + '건 · 미책정 ' + unrated + '건 — 변경분만 저장됩니다.</div></div>' +
-        '<button onclick="document.getElementById(\'diffBatchOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--dim);">&times;</button>' +
-      '</div>' +
-      '<div style="overflow-y:auto;flex:1;padding:0 20px;">' +
-        '<table class="dash-table" style="width:100%;"><tr><th>업무명</th><th>담당자</th><th style="width:84px;">업무 중요도</th></tr>' + rowsHtml + '</table>' +
-      '</div>' +
-      '<div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;">' +
-        '<button onclick="document.getElementById(\'diffBatchOverlay\').remove()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;">취소</button>' +
-        '<button onclick="saveDifficultyBatch()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;">변경분 저장</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(ov);
-}
-
-async function saveDifficultyBatch() {
-  const rows = Array.from(document.querySelectorAll('#diffBatchOverlay tr[data-id]'));
-  const changes = [];
-  rows.forEach(tr => {
-    const sel = tr.querySelector('.diffBatchSel');
-    if (sel && sel.value !== (tr.getAttribute('data-orig') || '')) changes.push({ id: tr.getAttribute('data-id'), difficulty: sel.value });
-  });
-  if (changes.length === 0) { showToast('변경된 업무 중요도가 없습니다.'); return; }
-  const ovBtn = document.querySelector('#diffBatchOverlay button[onclick="saveDifficultyBatch()"]');
-  if (ovBtn) { ovBtn.disabled = true; ovBtn.textContent = '저장 중...'; }
-  let ok = 0;
-  for (const c of changes) {
-    try {
-      const res = await apiCall({ action: 'todo_update', id: c.id, difficulty: c.difficulty });
-      if (res && res.ok) ok++;
-    } catch (e) { /* 개별 실패는 건너뜀 */ }
-    showToast('업무 중요도 저장 중... (' + ok + '/' + changes.length + ')');
-  }
-  const ov = document.getElementById('diffBatchOverlay');
-  if (ov) ov.remove();
-  showToast('업무 중요도 ' + ok + '/' + changes.length + '건 저장 완료');
-  await loadTasks();
-}
 
 /* 모달 기존 첨부 목록·삭제 — 업로드된 첨부를 개별 삭제(시트 링크 제거 + Drive 휴지통). 2026-06-03 GM */
 /* ── 첨부 예정 파일 목록 (2026-08-07 GM 지시) ──
@@ -3202,7 +3025,6 @@ async function saveTask() {
     content: composedContent,
     link: document.getElementById('fLink').value,
     approval: getCheckboxValues('fApprovalGroup'),
-    difficulty: document.getElementById('fDifficulty').value,
     creator: getUser()
   };
   if (editId) params.id = editId;
@@ -3275,7 +3097,7 @@ async function saveTask() {
    Actions: Done / Delete
    ═══════════════════════════════════════════ */
 function warnApprovalCheck(cb) {
-  if (cb.checked && !confirm('⚠️ 결재요청을 체크하면 이 업무는 자체 완료가 불가합니다.\n결재 현황에서 결재가 완료되어야 종료됩니다.\n\n• 업무 중요도도 더 이상 변경할 수 없습니다 (결재 현황에서 GM이 확정).\n• 이후 수정·완료·삭제는 결재 현황에서 GM만 관리합니다.\n\n계속하시겠습니까?')) {
+  if (cb.checked && !confirm('⚠️ 결재요청을 체크하면 이 업무는 자체 완료가 불가합니다.\n결재 현황에서 결재가 완료되어야 종료됩니다.\n\n• 이후 수정·완료·삭제는 결재 현황에서 GM만 관리합니다.\n\n계속하시겠습니까?')) {
     cb.checked = false;
   }
 }
@@ -3526,33 +3348,25 @@ function renderDashboard() {
   h += '<div class="dash-stat-card"><div class="num" style="color:' + (deadlineRate >= 70 ? 'var(--green)' : 'var(--red)') + '">' + deadlineRate + '%</div><div class="label">마감 준수율</div></div>';
   h += '</div>';
 
-  // Per-member stats — 가중 완료 점수(Σ완료 업무 중요도) + 순위 (2026-06-03 GM: 양·질 동시 포상 근거)
-  h += '<h3>담당자별 통계 <span style="font-size:11px;color:var(--dim);font-weight:400;">— 가중점수=Σ완료 업무 중요도(하1·중5·상10) · 포상 판단 근거</span>';
-  h += '<button class="dash-print-btn" onclick="openDifficultyBatchModal()" style="margin-left:8px;">⚙ 업무 중요도 일괄책정</button></h3>';
-  h += '<table class="dash-table"><tr><th>순위</th><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th>가중점수</th><th style="min-width:100px">가중점수 그래프</th></tr>';
+  // Per-member stats — 2026-08-21 GM 확정으로 가중점수(난이도 기반) 열을 내렸다. 업무 점수는 분기별로 CHRO 가 매긴다.
+  h += '<h3>담당자별 통계</h3>';
+  h += '<table class="dash-table"><tr><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th></tr>';
   const _memberStats = MEMBERS.map(m => {
     const mAll = all.filter(t => (t.owner||'').includes(m));
     const mDone = mAll.filter(t => t.status === '완료');
     const mActive = mAll.filter(t => t.status !== '완료' && t.status !== '보류');
     const mHold = mAll.filter(t => t.status === '보류');
     const mRate = mAll.length > 0 ? Math.round(mDone.length / mAll.length * 100) : 0;
-    const mWeight = mDone.reduce((s, t) => s + diffWeight(t), 0);                 // 가중 완료 점수
-    const mUnrated = mDone.filter(t => !diffWeight(t)).length;                    // 완료건 중 업무 중요도 미책정
-    return { m: m, all: mAll.length, active: mActive.length, done: mDone.length, hold: mHold.length, rate: mRate, weight: mWeight, unrated: mUnrated };
+    return { m: m, all: mAll.length, active: mActive.length, done: mDone.length, hold: mHold.length, rate: mRate };
   });
-  const _maxWeight = Math.max(1, ..._memberStats.map(s => s.weight));
-  _memberStats.slice().sort((a, b) => b.weight - a.weight || b.done - a.done).forEach((s, i) => {
-    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '위';
+  _memberStats.slice().sort((a, b) => b.done - a.done || b.rate - a.rate).forEach((s, i) => {
     h += '<tr>';
-    h += '<td style="text-align:center;font-weight:700;">' + medal + '</td>';
     h += '<td><strong>' + esc(s.m) + '</strong></td>';
     h += '<td>' + s.all + '</td>';
     h += '<td>' + s.active + '</td>';
     h += '<td>' + s.done + '</td>';
     h += '<td>' + s.hold + '</td>';
     h += '<td>' + s.rate + '%</td>';
-    h += '<td style="font-weight:700;color:var(--accent);">' + s.weight + (s.unrated ? ' <span style="color:var(--dim);font-weight:400;font-size:10px;">(미책정 ' + s.unrated + ')</span>' : '') + '</td>';
-    h += '<td><div class="dash-bar-wrap"><div class="dash-bar" style="width:' + Math.round(s.weight / _maxWeight * 100) + '%;background:var(--accent)"></div></div></td>';
     h += '</tr>';
   });
   h += '</table>';
@@ -3931,9 +3745,10 @@ window.ssotShowTasks=ssotShowTasks;
 (function () {
   var REG_API  = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
   var TODO_API = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
-  // 표 순서 고정 — 건수순 정렬 금지(많이 맡은 사람이 위로 올라가면 그게 곧 순위가 된다).
-  // MEMBERS 가 있으면 그쪽을 쓰고(대시보드와 동일 명단), 없을 때만 이 목록으로 떨어진다.
+  // 카드 순서 고정 — 건수순 정렬 금지(많이 맡은 사람이 위로 올라가면 그게 순위가 된다).
   var ORDER = ['나우열M', '이경연 실장', '최준용M', '윤병현AM', '임정은M'];
+  // 임정은M 은 업무 SSOT 밖(문의 시트·등록 원장)에서 일한다 — 0건으로 띄우면 왜곡이라 문구로 대체.
+  var PENDING_LINK = { '임정은M': '회원 업무 — 문의·등록 원장 집계 (연결 예정)' };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -3950,133 +3765,47 @@ window.ssotShowTasks=ssotShowTasks;
     if (!box) return;
     var b = (j && j.board) || [];
     if (!b.length) { box.innerHTML = '<div class="ls-dim">이번 달 기록이 아직 없습니다.</div>'; return; }
-    // 상위 6명까지만 보인다(GM 지시 2026-08-17) — 1점 동점자가 길게 붙으면 판이 늘어져 위쪽이 안 읽힌다.
-    // 자른 인원은 숨기지 않고 '외 N명'으로 남긴다. 셈법·순위는 접수 GAS 그대로 손대지 않는다.
-    var REG_LIMIT = 6;
-    var shown = b.slice(0, REG_LIMIT), rest = b.length - shown.length;
-    box.innerHTML = shown.map(function (r) {
+    box.innerHTML = b.map(function (r) {
       return '<div class="ls-row">' +
         '<span class="ls-rank">' + esc(r.rank) + '</span>' +
         '<span class="ls-name">' + esc(r.name) + '</span>' +
         '<span class="ls-pt">' + esc(r.total) + '점</span>' +
-        '<span class="ls-detail">접수 ' + esc(r.intake) + ' · 완료 ' + esc(r.done) + '</span>' +
+        '<span class="ls-detail">접수 ' + esc(r.intake) + '·완료 ' + esc(r.done) + '</span>' +
         '</div>';
-    }).join('') +
-      (rest > 0 ? '<div class="ls-dim" style="padding-top:6px;font-size:12px">외 ' + rest + '명</div>' : '');
+    }).join('');
   }
 
-  /* 담당자별 통계 표 — 대시보드(renderDashboard) 상단 표와 같은 내용.
-     가중점수·가중점수 그래프는 빼고 '지연'(진행중인데 종료일이 지난 건)으로 대체했다(2026-08-10 GM).
-     원천을 대시보드와 똑같이 잡아(ALL_TASKS·excludeNonStaff·MEMBERS) 두 화면 숫자가 갈릴 수 없게 한다.
-     순위·메달은 넣지 않는다: 가중점수를 뺀 뒤 남는 건 건수뿐이고, 건수는 배분 현황이지 평가가 아니다(GM 결정). */
-  function renderTodoTable() {
+  function renderTodo(j) {
     var box = document.getElementById('lsTodo');
-    if (!box) return false;
-    if (typeof ALL_TASKS === 'undefined' || !ALL_TASKS.length) return false;
-    var all = (typeof excludeNonStaff === 'function') ? excludeNonStaff(ALL_TASKS) : ALL_TASKS;
-    var names = (typeof MEMBERS !== 'undefined' && MEMBERS.length) ? MEMBERS : ORDER;
-    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
-    var d = new Date();
-    var today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-    var ymd = function (v) {
-      if (!v) return '';
-      var m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
-      return m ? (m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3])) : '';
-    };
-    // 접수 점수판과 같은 방식 — 완료 건수로 순위를 매긴다(2026-08-10 GM 지시).
-    // 동점은 접수판처럼 같은 순위를 준다.
-    var st = function (t) { return String(t.status || t['상태'] || '').trim(); };
-    var stats = [];
-    names.forEach(function (m) {
-      var mine = all.filter(function (t) { return String(t.owner || t['담당자'] || '').indexOf(m) >= 0; });
-      if (!mine.length) return;                       // 이 원장에 업무가 없는 사람은 줄을 만들지 않는다(0 으로 채우면 왜곡)
-      var done = mine.filter(function (t) { return st(t) === '완료'; }).length;
-      var hold = mine.filter(function (t) { return st(t) === '보류'; }).length;
-      var prog = mine.filter(function (t) { return st(t) !== '완료' && st(t) !== '보류'; }).length;
-      var late = mine.filter(function (t) {
-        var e = ymd(t.endDate || t['종료일']);
-        return st(t) !== '완료' && st(t) !== '보류' && e && e < today;
-      }).length;
-      stats.push({ name: m, done: done, hold: hold, prog: prog, late: late,
-                   rate: mine.length ? Math.round(done / mine.length * 100) : 0 });
-    });
-    stats.sort(function (a, b) { return b.done - a.done || b.rate - a.rate; });
-    var h = '', rank = 0, prev = null;
-    stats.forEach(function (s, i) {
-      if (prev === null || s.done !== prev) { rank = i + 1; prev = s.done; }   // 동점 = 같은 순위
-      h += '<div class="ls-row">' +
-        '<span class="ls-rank">' + rank + '</span>' +
-        '<span class="ls-name">' + esc(s.name) + '</span>' +
-        '<span class="ls-pt">완료 ' + s.done + '</span>' +
-        '<span class="ls-detail">진행 ' + s.prog + ' · 보류 ' + s.hold + ' · 완료율 ' + s.rate + '% · 지연 ' +
-          (s.late ? '<b class="late">' + s.late + '</b>' : '0') + '</span>' +
-        '</div>';
-    });
-    box.innerHTML = h + (_consultHtml || '');
-    return true;
+    if (!box) return;
+    var map = {};
+    ((j && j.board) || []).forEach(function (r) { map[r.name] = r; });
+    box.innerHTML = ORDER.map(function (name) {
+      if (PENDING_LINK[name]) {
+        return '<div class="ls-person"><div class="ls-person-name">' + esc(name) + '</div>' +
+               '<div class="ls-note">' + esc(PENDING_LINK[name]) + '</div></div>';
+      }
+      var r = map[name] || { inProgress: 0, weekDone: 0, overdue: 0, noEnd: 0 };
+      var cell = function (v, label, warn) {
+        return '<div class="ls-num' + (warn && v > 0 ? ' warn' : '') + '"><b>' + esc(v) + '</b><span>' + label + '</span></div>';
+      };
+      return '<div class="ls-person"><div class="ls-person-name">' + esc(name) + '</div><div class="ls-nums">' +
+        cell(r.inProgress, '진행중') + cell(r.weekDone, '이번주 완료') +
+        cell(r.overdue, '기한 초과', true) + cell(r.noEnd, '종료일 미기재') +
+        '</div></div>';
+    }).join('');
   }
 
-  /* 회원 상담(임정은M) — 업무 SSOT 밖에서 도는 일이라 프로젝트 단위로 안 잡힌다(2026-08-10 GM).
-     문의 1건씩 업무로 올리면 보드가 수백 장이 되고, '회원 상담' 업무 1건만 두면 영원히 진행중·완료율 0% 가 된다.
-     그래서 문의 원장 집계를 업무판 마지막 줄로 얹는다.
-     ★member_inquiry_list(이름·전화 포함 694행) 대신 집계 전용 member_inquiry_summary 를 쓴다 — PII 미노출.
-     순위는 매기지 않는다: 이 원장은 담당이 사실상 한 명(91%)이라 등수가 의미 없다. */
-  var CPO_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
-  var CONSULT_OWNER = '임정은';
-  var _consultHtml = '';
-  function loadConsult() {
-    var d = new Date();
-    var mm = (d.getMonth() + 1); mm = (mm < 10 ? '0' : '') + mm;
-    var from = d.getFullYear() + '-' + mm + '-01', to = d.getFullYear() + '-' + mm + '-31';
-    fetch(CPO_API + '?action=member_inquiry_summary&from=' + from + '&to=' + to)
-      .then(function (r) { return r.json(); })
-      .then(function (j) {
-        if (!j || !j.ok) return;
-        var pick = function (arr) {
-          return (arr || []).filter(function (o) { return String(o.owner || '').indexOf(CONSULT_OWNER) >= 0; })[0];
-        };
-        var cur = pick(j.period), acc = pick(j.all);
-        if (!cur && !acc) return;
-        cur = cur || { total: 0, reg: 0, contacting: 0 };
-        _consultHtml =
-          '<div class="ls-row" style="border-top:1px dashed var(--border);padding-top:8px;margin-top:2px">' +
-          '<span class="ls-rank" style="background:var(--purple-bg);color:var(--purple)">👤</span>' +
-          '<span class="ls-name">임정은M</span>' +
-          '<span class="ls-pt">상담 ' + cur.total + '</span>' +
-          '<span class="ls-detail">컨택중 ' + cur.contacting + ' · 등록 ' + cur.reg +
-            (acc ? (' · 누적 전환율 ' + acc.rate + '%') : '') + ' <span style="opacity:.7">(회원 문의 원장)</span></span>' +
-          '</div>';
-        renderTodoTable();
-      })
-      .catch(function () { /* 상담 줄은 보조 정보 — 실패해도 업무판은 그대로 뜬다 */ });
+  function get(url) {
+    return fetch(url, { redirect: 'follow' }).then(function (r) { return r.json(); });
   }
-  function todoFallback() {
-    if (renderTodoTable()) return;
-    // 업무 목록이 아직 안 왔으면 잠시 뒤 한 번 더 — 그래도 없으면 그때만 안내를 띄운다.
-    setTimeout(function () {
-      if (!renderTodoTable()) fail('lsTodo', '업무 현황을 불러오지 못했습니다 — 새로고침 해주세요.');
-    }, 4000);
-  }
-  todoFallback();
-  loadConsult();
-
-  /* 접수 처리 점수판 — 접수 GAS(reg_scoreboard)를 그대로 표시한다. 새 셈법 없음.
-     이 백엔드는 응답이 6~9초로 느리고 간헐적으로 실패한다 — 한 번 실패하면 '불러오는 중…' 에
-     영영 갇히므로 점증 간격으로 다시 묻는다. 끝까지 안 되면 그때만 안내를 띄운다. */
-  function getReg(i) {
-    var delays = [0, 1500, 3500, 6000];
-    return new Promise(function (rs) { setTimeout(rs, delays[i]); })
-      .then(function () {
-        return fetch(REG_API + '?action=reg_scoreboard&period=month', { redirect: 'follow' })
-          .then(function (r) { return r.json(); }).catch(function () { return null; });
-      })
-      .then(function (j) {
-        if (j && j.ok) return renderReg(j);
-        if (i + 1 < delays.length) return getReg(i + 1);
-        fail('lsReg', '접수 점수판을 불러오지 못했습니다 — 새로고침 해주세요.');
-      });
-  }
-  getReg(0);
+  get(REG_API + '?action=reg_scoreboard&period=month').then(renderReg)
+    .catch(function () { fail('lsReg', '접수 점수판을 불러오지 못했습니다.'); });
+  get(TODO_API + '?action=todo_scoreboard').then(function (j) {
+    if (j && j.ok) renderTodo(j);
+    // 서버(GAS)에 todo_scoreboard 가 아직 배포되지 않은 동안은 '고장'이 아니라 '대기'다 — 그렇게 알린다.
+    else fail('lsTodo', '서버 집계 반영 대기 중 — GAS 배포 후 표시됩니다.');
+  }).catch(function () { fail('lsTodo', '업무 현황을 불러오지 못했습니다 — 새로고침 해주세요.'); });
 })();
 </script>
 </body>
