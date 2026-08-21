@@ -9384,6 +9384,30 @@ function _hasRealReply_(memo) {
      실행 뒤 지웠다. 조회는 scope='archive' 로 열려 있고, LOSS 누적 숫자는 _lossArchiveCount_ 가
      더해 주므로 옮기기 전과 같다. */
   if (action === 'member_active_update') {
+    // ★여러 건을 한 요청으로 (2026-08-21 시토 · 배740 ①)
+    //   왜: 지금은 1건 = 1왕복이라 5건 고치면 8.5×5 ≈ 42초다. 오늘 미등록사유 5건이 정확히 그 경우였다.
+    //   묶으면 왕복 1회 + 시트 열기 1회로 줄어든다(같은 실행 안에서는 openById 가 다시 안 연다).
+    //   ▸가드는 하나도 건드리지 않는다 — 각 건이 아래 단건 경로를 **그대로** 다시 탄다(_processAction 재진입).
+    //     지문 대조·전화 대조·중복 거부가 건마다 원래대로 걸린다. 로직을 복제하지 않는다(약속 L21·L01).
+    //   ▸한 건이 실패해도 나머지는 계속한다. 결과는 건별로 돌려주니 화면이 어느 건이 실패했는지 안다.
+    if (Object.prototype.toString.call(body.updates) === '[object Array]' && body.updates.length) {
+      var _bu = body.updates;
+      if (_bu.length > 30) return _json({ ok: false, error: 'updates-too-many', detail: '한 번에 30건까지 — 나눠 보내세요' });
+      var _buOut = [], _buOk = 0;
+      for (var _bi = 0; _bi < _bu.length; _bi++) {
+        var _one = {}, _bk;
+        for (_bk in body) { if (_bk !== 'updates') _one[_bk] = body[_bk]; }
+        for (_bk in _bu[_bi]) { _one[_bk] = _bu[_bi][_bk]; }
+        _one.action = 'member_active_update';
+        delete _one.updates;                       // 재귀 폭주 차단(항목이 updates 를 품고 와도 무시)
+        var _br;
+        try { _br = JSON.parse(_processAction(_one).getContent()); }
+        catch (e) { _br = { ok: false, error: 'batch-item-failed', detail: String(e) }; }
+        if (_br && _br.ok) _buOk++;
+        _buOut.push(_br);
+      }
+      return _json({ ok: _buOk === _bu.length, count: _bu.length, okCount: _buOk, results: _buOut });
+    }
     var auRow = parseInt(body.rowIndex, 10);
     if (!auRow || auRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
     // 다중 필드(fields 객체) 또는 단일(col/value). fields 우선 — 재등록상담 달력 모달=날짜·시간·내용 3칸 동시 저장. 2026-07-03 시포·GM.
