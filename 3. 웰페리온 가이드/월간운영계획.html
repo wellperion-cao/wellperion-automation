@@ -1031,7 +1031,7 @@
          — A3 페이지 수 불변.
          ★2026-08-05 2차 GM 지시(가로스크롤 제거·간략화·카테고리 통일·브로제이 링크화·자세히보기 3페이지
          일관화·게이트 비번 1531 통일): table.rpt.exec(min-width:0)로 카드 내부 표 스크롤 제거·catName()으로
-         "[n] 이름" 표기에서 번호를 뗀 이름만 표시(회장님 칸도 CHAIRMAN_ITEMS.cat 동일 9종 체계로 분류)·
+         "[n] 이름" 표기에서 번호를 뗀 이름만 표시(회장님 칸은 2026-08-21 제거)·
          브로제이는 배지+링크 한 줄로 축소(loadBrojEntry 본문 렌더 제거)·대표님/GM 자세히보기는 각각
          전용 페이지(coo/chairman/대표님_지시사항.html, coo/chairman/GM업무.html — 회장님_지시사항.html
          과 동일 CSS·구조, 같은 담당자/상태/대표님보고건 판정을 재사용)로 분리(舊 업무 현황 SSOT.html 공유
@@ -1043,10 +1043,6 @@
          renderGmFold) — 두 칸이 서로 다른 소스를 쓰는 것이 의도된 분리다. -->
     <section class="blk" data-blkid="exec-toggles">
       <div class="toggle-row-2">
-        <details class="r-note-fold tg-card" id="chairman-fold" open>
-          <summary>👑 회장님 보고건 <span class="be-badge" id="chairman-badge">불러오는 중…</span></summary>
-          <div class="r-note" id="chairman-body">불러오는 중…</div>
-        </details>
         <details class="r-note-fold tg-card" id="ceo-fold" open>
           <summary>🤵 대표님 보고건 <span class="be-badge" id="ceo-fold-badge">불러오는 중…</span></summary>
           <div class="r-note" id="ceo-fold-body">불러오는 중…</div>
@@ -1072,7 +1068,6 @@
 
 <!-- 👤 김남욱GM 칸 소스(status/monthly_ops_plan.json GM 직접 건 판정) — coo/chairman/GM업무.html과 공용(약속 L01). -->
 <script src="coo/chairman/_gm_direct_tasks.js"></script>
-<script src="coo/chairman/_chairman_items.js"></script>
 <script>
 (function(){
   // ── 설정: 라이브 URL(AI운영한장.html 동일 GAS·raw 폴백 패턴) ──
@@ -3259,9 +3254,6 @@
     // 8) 🤝 브로제이 업무분장 — 진입 토글 요약만 로드(본문은 별도 페이지). (배214·2026-07-29 → 오후 분리 → 08-01 토글 승격)
     loadBrojEntry();
 
-    // 8-1) 👑 회장님 지시사항 — 진입 토글 요약만 로드(본문은 별도 페이지, coo/chairman/회장님_지시사항.html). (GM 지시 2026-08-01)
-    loadChairmanFold();
-
   }
 
   // ── 하단 점검·이슈 보드 로드: 부팅 시 즉시(eager) kpi/voc fetch — GM 지시 2026-07-06: 舊 IntersectionObserver 지연로드(스크롤해야 발동)는
@@ -3355,7 +3347,7 @@
     bodyEl.innerHTML = '<div class="rpt-wrap"><table class="rpt exec"><thead><tr>' + head + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>' + link;
   }
   // 시트 카테고리 "[n] 이름" → 번호를 뗀 이름만(GM 지시 2026-08-05 "인사·시설 및 환경 등으로 정리").
-  // 회장님 칸(CHAIRMAN_ITEMS.cat)도 같은 9종 체계 이름을 그대로 쓴다 — 이 함수는 시트값 표기만 정리.
+  // (회장님 칸은 2026-08-21 GM 지시로 제거됨 — 이 함수는 시트값 표기만 정리한다.)
   function catName(raw){
     return String(raw || '').trim().replace(/^\[\d+\]\s*/, '');
   }
@@ -3371,26 +3363,9 @@
     return s || e || '일정 미정';
   }
   // 👑 회장님 지시사항 — 항목 제목·기한은 그 페이지 고정 본문을 그대로 미러(사본 아님·정본은 그 페이지).
-  // ★2026-08-04 GM 지시로 원본 페이지의 진행 트래커(착수/진행/메모, CHAIRMAN_DIRECTIVES_2026_08 보드)를
-  // 통째로 없앴다 — 이제 GM 이 웰리에게 구두로 전달하면 웰리가 본문을 직접 정리한다. 그 보드는 더 이상
-  // 아무도 쓰지 않고(과거 오염 기록만 남아 있음, 데이터는 지우지 않음) 여기서도 fetch·상태 배지를 없애고
-  // 항목만 정적으로 나열한다(화면에서 안 쓰면 그만 — 약속 L21). id 는 시트 행이 아닌 이 배열 안 로컬
-  // 식별자라 renderExecCard 의 처리버튼(id 있는 항목만 붙음) 조건에서 의도적으로 뺀다(카드 3종 공용
-  // 렌더로 실어도 처리 버튼은 실제 시트 행에만 — 없는 기능을 있는 척 안 함).
-  // cat = 업무 시트와 같은 9종 카테고리([1]매출 및 영업 [2]인사 [3]파트너팀 [4]운영 정책 [5]시설 및 환경
-  // [6]회원·CS [7]IT·시스템·자동화 [8]교육·조직문화 [9]회의)로 내용을 보고 분류(GM 지시 2026-08-05·회장님
-  // 원본 데이터는 이 항목 자체에 카테고리 칸이 없어 화면 표시용으로만 판단 — 원본 GAS 보드는 안 건드림).
-  // 판단이 서지 않는 항목은 '분류 미정'으로 둔다(지어내지 않음) — 현재 8건 모두 내용상 분류 가능.
-  // ★배열 정본 = coo/chairman/_chairman_items.js (2026-08-05 GM 지시로 대표님 통합 보고 문안에도 같은
-  // 목록이 들어가게 되면서 읽는 곳이 둘이 됐다 — 배열을 두 벌 두지 않으려고 그 파일 하나로 뺐다, 약속 L01).
-  // 상세 본문은 coo/chairman/회장님_지시사항.html 이 갖는다. 항목이 늘면 그 페이지 + 그 js 두 곳을 함께 고친다.
-  var CHAIRMAN_ITEMS = window.WellperionChairmanItems || [];
-  function loadChairmanFold(){
-    // 카드 3종 통일(renderExecCard) — 카테고리 칸엔 위 9종 체계 분류를, 일정 칸엔 기존 when 텍스트를
-    // 그대로 싣는다(실제 시작·종료일이 없는 정적 항목이라 26.8.1~26.8.30 형식을 억지로 만들지 않음).
-    var items = CHAIRMAN_ITEMS.map(function(it){ return {title: it.title, category: it.cat, schedule: it.when}; });
-    renderExecCard('chairman-badge', 'chairman-body', items, '', 'coo/chairman/GM업무.html#sec-chairman', '자세히 보기 →');
-  }
+  // 👑 회장님 보고건 토글은 2026-08-21 GM 지시로 걷어냈다 — 본문을 GM 업무 목표
+  // (status/monthly_ops_plan.json objectives)로 옮긴 뒤에도 목록이 남아 같은 건이 두 곳에 보였다.
+  // 회장님께 올리는 원본은 coo/chairman/회장님_지시사항.html 에 그대로 있다.
   // 👤 김남욱GM 업무 진행건 / 🤵 대표님 보고건 — 업무&결재 SSOT(todo_list, 위 readWorkApproval 결과
   // 재사용·새 GAS 호출 0)에서 담당자=김남욱 + 상태(진행중·보류)만 추린 뒤(GM 지시 2026-08-05 — 애초 필터가
   // 생성자였는데 GM 이 시트에 업무를 등록한 사람이라 남의 업무 103건이 "김남욱GM 업무"로 잘못 표시됐다.

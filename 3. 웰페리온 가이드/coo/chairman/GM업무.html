@@ -247,7 +247,7 @@
 
 
   <!-- ① 경영 보고건 — 회장님·대표님을 한 묶음으로(2026-08-06 GM: "둘이 비슷한 맥락이고 업무는 다 내가 본다").
-       두 목록의 정본·판정 로직은 그대로다(회장님=_chairman_items.js / 대표님=업무 시트) — 화면에서만 한 블록으로 모은다. -->
+       회장님 목록은 2026-08-21 GM 지시로 걷어냈다(본문은 GM 업무 목표로 이관) — 이 블록에는 대표님 보고건만 남는다. -->
   <details class="sec" id="sec-report" open>
     <summary><span class="ic">📋</span> 경영 보고건 <span class="cnt"><span id="rep-total">—</span></span>
       <a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">회장님 A3</a>
@@ -274,14 +274,10 @@
       <!-- 진척률 출처 고지(GM 확정 2026-08-11 "약간의 색깔 및 %로") — 실측 수치 아님을 과대표기 없이 밝힌다. -->
       <div style="font-size:11px;color:var(--grey);margin:0 0 8px;">% ·막대는 상태 문구를 단계로 읽어 산출한 값입니다(실측 진척률 아님) — 아래 회장님·대표님 표 공통</div>
 
-      <div class="sub-h"><span class="who">👑 회장님</span><span style="font-size:10.5px;color:var(--grey);font-weight:600;">등록 순</span><span class="cnt3" id="chairman-grp-cnt">불러오는 중…</span></div>
-      <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 회장님 목록 정본은 이 시트가 아니라
-           별도 하드코딩 배열(_chairman_items.js)이다. 어디서 오는지 화면에 밝혀 대표님 목록과 헷갈리지 않게 한다. -->
-      <div style="font-size:11.5px;color:var(--grey);margin:2px 0 6px;">회장님께 직접 보고하는 시설·인사 등 건 · 목록 정본 = 회장님 지시사항 페이지</div>
-      <div class="sum">
-        <table><tbody id="chairman-sum-body"></tbody></table>
-      </div>
-
+      <!-- 👑 회장님 보고건 표는 2026-08-21 GM 지시로 걷어냈다. 본문(말씀·실행·기한·완료기준)을
+     GM 업무 목표(status/monthly_ops_plan.json objectives)로 옮긴 뒤에도 목록이 여기 남아
+     같은 건이 두 곳에 보였다. GM: "이관하고 목록 삭제할건 삭제해줘야하는데 왜 계속 남기는거야?"
+     회장님께 올리는 보고용 원본은 회장님_지시사항.html 에 그대로 있다. -->
       <div class="sub-h" style="margin-top:14px;"><span class="who">🤵 대표님</span><span style="font-size:10.5px;color:var(--grey);font-weight:600;">기한 순</span><span class="cnt3" id="owner-grp-cnt">불러오는 중…</span></div>
       <!-- ★ 분류 기준 명시(GM 2026-08-08) — 업무&결재 SSOT 중 담당=김남욱 + 내용칸에 '대표님 보고건' 표식이
            붙은 건만 여기 들어온다. 같은 시트의 다른 김남욱 건(표식 없음)은 여기 없다 — 삭제된 게 아니라 애초에
@@ -336,9 +332,8 @@
 </div>
 
 
-<!-- 판정 로직 = _gm_direct_tasks.js / 대표님·회장님 = _owner_directive.js + _chairman_items.js (약속 L01 · 복제 없음) -->
+<!-- 판정 로직 = _gm_direct_tasks.js / 대표님 = _owner_directive.js (약속 L01 · 복제 없음) -->
 <script src="_gm_direct_tasks.js"></script>
-<script src="_chairman_items.js"></script>
 <script src="_owner_directive.js"></script>
 <!-- PNG 저장 — 저장소 표준(회장님_오찬_수영팀_20260806.html·notice_template.html 과 동일 html2canvas CDN 방식, 새 라이브러리 아님) -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -820,7 +815,7 @@
     markPrefix: '대표님 보고완료',
     reportIntro: '대표님께 아래 업무를 보고드립니다.',
     emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.',
-    includeChairman: true
+    includeChairman: false
   });
 
   // ══════════════════════════════════════════════════════════════════
@@ -838,19 +833,12 @@
 
     // 보고 대기·완료 건수 — 회장님(판정=_owner_directive.js)과 대표님(DOM 카드) 양쪽을 더해
     // 「📋 경영 보고건」 옆 배지(rep-total)에 「대기 N건 · 완료 M건」으로 표시한다.
-    function chPend() { return (window.OwnerDirective.chairmanPending ? window.OwnerDirective.chairmanPending() : (window.WellperionChairmanItems || [])); }
-    function chDone() { return (window.OwnerDirective.chairmanDone ? window.OwnerDirective.chairmanDone() : []); }
     function updateReportCounts() {
       var pendCount = elGrid.querySelectorAll('.item').length;
       var doneCount = elDoneGrid.querySelectorAll('.item').length;
-      var totalPend = chPend().length + pendCount;
-      var totalDone = chDone().length + doneCount;
+      var totalPend = pendCount;
+      var totalDone = doneCount;
       if (elRepTotal) elRepTotal.textContent = '대기 ' + totalPend + '건 · 완료 ' + totalDone + '건';
-    }
-    var elChSum = document.getElementById('chairman-sum-body');
-    if (elChSum) {
-      updateReportCounts();
-      new MutationObserver(updateReportCounts).observe(elChSum, { childList: true });
     }
 
     // 대표님 카드가 새로 그려질 때마다(초기 로드·보고완료 표시·새로고침) 완료 카드만 숨은 done-grid로
