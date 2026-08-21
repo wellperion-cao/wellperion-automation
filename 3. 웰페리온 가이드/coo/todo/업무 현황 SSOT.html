@@ -1373,9 +1373,9 @@ function renderCalendar() {
   const evMap = {};
   const undated = [];
   tasks.forEach(t => {
-    const sd = (t.startDate || '').slice(0,10);
+    const sd = kstDateStr(t.startDate);
     if (!sd) { undated.push(t); return; }
-    const ed = (t.endDate || '').slice(0,10) || sd;
+    const ed = kstDateStr(t.endDate) || sd;
     const isSpan = ed !== sd;
     // 기간이 한 달 그리드를 넘지 않도록 안전 상한(최대 60칸)
     let cur = sd, guard = 0;
@@ -1816,7 +1816,7 @@ function renderDoneCard(t) {
     html += '<span class="chip" style="background:' + colors.bg + ';color:' + colors.color + '">' + esc(t.category) + '</span>';
   }
   if (t.updatedAt) {
-    html += '<span class="chip" style="background:var(--green-bg);color:var(--green)">완료: ' + esc(String(t.updatedAt).slice(0, 10)) + '</span>';
+    html += '<span class="chip" style="background:var(--green-bg);color:var(--green)">완료: ' + esc(kstDateStr(t.updatedAt)) + '</span>';
   }
   html += '</div></div>';
   // 액션: 링크 · 보고서 (🔗 개선·복원 — 2026-06-05 GM)
@@ -1855,16 +1855,30 @@ function formatDateRange(s, e) {
 }
 
 function fmtDate(d) {
+  return kstDateStr(d);
+}
+
+// KST 달력일 변환 (2026-08-21 A-5) — 종료/시작/완료일이 자정 KST를 UTC ISO로 저장한 값
+// (예: 2026-08-23T15:00:00.000Z = KST 08-24 00:00)이라, 문자열 앞 10자를 그대로 자르면
+// 화면상 하루가 앞당겨 보이는 결함이 있었다. 타임스탬프가 있으면 KST(UTC+9)로 환산해
+// 달력일을 뽑고, 이미 순수 날짜 문자열(YYYY-MM-DD)이면 그대로 쓴다. 표시 전용 — 저장값은
+// 그대로 둔다(데이터 무접촉).
+function kstDateStr(d) {
   if (!d) return '';
   const str = String(d);
-  // Handle various date formats
-  if (str.length >= 10) return str.slice(0, 10);
-  return str;
+  if (str.length >= 11 && str[10] === 'T') {
+    const dt = new Date(str);
+    if (!isNaN(dt.getTime())) {
+      const kst = new Date(dt.getTime() + 9 * 3600 * 1000);
+      return kst.getUTCFullYear() + '-' + String(kst.getUTCMonth() + 1).padStart(2, '0') + '-' + String(kst.getUTCDate()).padStart(2, '0');
+    }
+  }
+  return str.slice(0, 10);
 }
 
 function getDeadlineBadge(endDate) {
   if (!endDate) return null;
-  const end = new Date(String(endDate).slice(0, 10) + 'T23:59:59');
+  const end = new Date(kstDateStr(endDate) + 'T23:59:59');
   const now = new Date();
   const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
   if (diff < 0)   return { cls: 'overdue',   text: 'D+' + Math.abs(diff) + ' 지연' };
@@ -3253,8 +3267,8 @@ function openDateRangePicker(id, startVal, endVal) {
   overlay.className = 'modal-overlay show';
   overlay.innerHTML = '<div class="modal" style="max-width:320px;">'
     + '<div class="modal-header"><h3>일정 변경</h3></div>'
-    + '<div class="field"><label>시작일</label><input type="date" id="drpStart" value="' + (startVal ? startVal.slice(0,10) : '') + '"></div>'
-    + '<div class="field"><label>종료일</label><input type="date" id="drpEnd" value="' + (endVal ? endVal.slice(0,10) : '') + '"></div>'
+    + '<div class="field"><label>시작일</label><input type="date" id="drpStart" value="' + (startVal ? kstDateStr(startVal) : '') + '"></div>'
+    + '<div class="field"><label>종료일</label><input type="date" id="drpEnd" value="' + (endVal ? kstDateStr(endVal) : '') + '"></div>'
     + '<div class="modal-actions"><button class="modal-btn cancel" onclick="this.closest(\'.modal-overlay\').remove()">취소</button><button class="modal-btn save" id="drpSave">저장</button></div>'
     + '</div>';
   document.body.appendChild(overlay);
@@ -3323,8 +3337,8 @@ function renderDashboard() {
   done.forEach(t => {
     if (t.endDate) {
       deadlineTotal++;
-      const end = new Date(String(t.endDate).slice(0,10) + 'T23:59:59');
-      const completed = t.updatedAt ? new Date(String(t.updatedAt).slice(0,10)) : new Date();
+      const end = new Date(kstDateStr(t.endDate) + 'T23:59:59');
+      const completed = t.updatedAt ? new Date(kstDateStr(t.updatedAt)) : new Date();
       if (completed <= end) deadlineOk++;
     }
   });
@@ -3427,14 +3441,14 @@ function renderDashboard() {
   // Overdue active tasks
   const overdue = active.filter(t => {
     if (!t.endDate) return false;
-    const end = new Date(String(t.endDate).slice(0,10) + 'T23:59:59');
+    const end = new Date(kstDateStr(t.endDate) + 'T23:59:59');
     return end < now;
   });
   if (overdue.length > 0) {
     h += '<p style="font-size:13px;color:var(--red);font-weight:600;margin:8px 0 4px;">마감 초과 진행 건: ' + overdue.length + '건</p>';
     h += '<table class="dash-table"><tr><th>업무명</th><th>담당자</th><th>종료일</th><th>초과</th></tr>';
     overdue.forEach(t => {
-      const end = new Date(String(t.endDate).slice(0,10) + 'T23:59:59');
+      const end = new Date(kstDateStr(t.endDate) + 'T23:59:59');
       const diff = Math.ceil((now - end) / (1000*60*60*24));
       h += '<tr><td>' + esc(t.title) + '</td><td>' + esc(t.owner||'') + '</td><td>' + esc(fmtDate(t.endDate)) + '</td>';
       h += '<td style="color:var(--red);font-weight:600">+' + diff + '일</td></tr>';
@@ -3561,7 +3575,7 @@ function printResultReport(taskId, override) {
 
   /* ── 정보표 ── */
   var period = (t.startDate || t.endDate)
-    ? esc(String(t.startDate || '').slice(0,10) + (t.endDate ? ' ~ ' + String(t.endDate).slice(0,10) : ''))
+    ? esc(kstDateStr(t.startDate) + (t.endDate ? ' ~ ' + kstDateStr(t.endDate) : ''))
     : '-';
   var infoRows = [
     ['업무명', esc(t.title || '-')],
