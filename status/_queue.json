@@ -657,12 +657,12 @@
     "task_id": "CTO-2026-08-21-전사일정-ADD-EVENT가-GAS-SSOT-에-안",
     "clevel": "cto",
     "title": "[시토] 전사일정 add_event가 GAS(SSOT)에 안 써서 화면 누락 15건",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛴️여객선",
     "enqueued_at": "2026-08-21",
     "from": "ceo",
-    "note": "[웰리 → 시토 전달 2026-08-21] 증상: GM이 8/27 라이프피트니스 쇼룸 방문을 전사일정 화면에서 못 찾음(강제새로고침해도 없음). 원인: 전사_일정.html은 SCHEDULE_GAS_URL(GAS)을 SSOT로 읽고 github status/schedule_ssot.json은 seed 폴백일 뿐인데, scripts/schedule_ssot.py add_event()는 github JSON에만 쓴다. 그래서 스크립트로 넣은 일정은 화면에 영영 안 뜬다. 2026-08-21 21:10 실측 diff: GAS 97건 vs 로컬 111건 — 로컬에만 있는 15건이 전부 화면 누락 상태였고(8/26 캡스 계약서·현장실사, 8/27 도일트레이딩, 8/31 CCTV 계약 등 GM 지시 건 포함), MBC건축박람회 시각 수정분도 반영 안 돼 있었다. 웰리가 병합본 111건을 save_schedule 로 밀어넣어 화면은 복구했다(dropped 1 = 정화조 배기팬 중복). GAS 백업본은 스크래치패드 gas_schedule_backup.json. 요청: add_event/update 시 GAS save_schedule 도 함께 호출하도록 배선(실패 시 경고 로그). 안 고치면 다음에 또 같은 누락이 난다.",
-    "next": "schedule_ssot.py add_event 에 GAS 동기화 추가",
+    "note": "[웰리 → 시토 전달 2026-08-21] 증상: GM이 8/27 라이프피트니스 쇼룸 방문을 전사일정 화면에서 못 찾음(강제새로고침해도 없음). 원인: 전사_일정.html은 SCHEDULE_GAS_URL(GAS)을 SSOT로 읽고 github status/schedule_ssot.json은 seed 폴백일 뿐인데, scripts/schedule_ssot.py add_event()는 github JSON에만 쓴다. 그래서 스크립트로 넣은 일정은 화면에 영영 안 뜬다. 2026-08-21 21:10 실측 diff: GAS 97건 vs 로컬 111건 — 로컬에만 있는 15건이 전부 화면 누락 상태였고(8/26 캡스 계약서·현장실사, 8/27 도일트레이딩, 8/31 CCTV 계약 등 GM 지시 건 포함), MBC건축박람회 시각 수정분도 반영 안 돼 있었다. 웰리가 병합본 111건을 save_schedule 로 밀어넣어 화면은 복구했다(dropped 1 = 정화조 배기팬 중복). GAS 백업본은 스크래치패드 gas_schedule_backup.json. 요청: add_event/update 시 GAS save_schedule 도 함께 호출하도록 배선(실패 시 경고 로그). 안 고치면 다음에 또 같은 누락이 난다.\n\n[2026-08-21 시토 완료] add_event 가 파일에만 쓰던 것을 화면 원천(GAS)에도 함께 쓰게 배선했다(push_to_live 신설 · pull_from_live 의 짝). 전사일정이 원래 쓰는 save_schedule 을 그대로 부른다 — 새 GAS·새 액션 0. ▸실패를 숨기지 않는다: 못 올리면 synced=False 와 이유를 돌려주고 화면에 경고를 찍는다. 이번 사고가 조용했던 이유가 바로 그거였다(오류가 하나도 안 났다). ▸테스트용 임시 파일 경로는 라이브로 밀지 않는다(자체 점검이 실데이터를 건드리지 않게). ▸검증: 로컬 111 = GAS 111 · 어긋남 0 · 8/27 라이프피트니스 쇼룸 방문 존재 확인.",
+    "next": "",
     "depends_on": "",
     "ship_no": 10953,
     "short_no": 743,
@@ -672,6 +672,8 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-08-21"
+    "updated_at": "2026-08-21",
+    "processed_at": "2026-08-21",
+    "artifact": "실측 — 로컬 111건 = GAS 111건 · 어긋남 0 · 8/27 라이프피트니스 화면 원천에 존재 확인"
   }
 ]

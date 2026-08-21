@@ -185,6 +185,37 @@ def pull_from_live(path=CAL_PATH) -> dict:
     return {"ok": True, "added": added, "changed": changed, "total": len(by_id)}
 
 
+def push_to_live(cal: dict) -> dict:
+    """이 파일 내용을 전사일정 화면(GAS)에 밀어 넣는다 — 파일 → GAS 방향 (2026-08-21 시토 · 배743).
+
+    왜 필요한가: 화면(전사_일정.html)은 GAS 를 원천으로 읽고, 이 JSON 은 폴백 씨앗일 뿐이다.
+      그런데 add_event() 는 이 JSON 에만 썼다 — 스크립트로 넣은 일정이 화면에 **영영 안 떴다.**
+      실사고 2026-08-21: GM 이 8/27 라이프피트니스 쇼룸 방문을 화면에서 못 찾으셨고,
+      실측하니 로컬에만 있는 항목이 15건이었다(8/26 캡스 계약서·현장실사, 8/31 CCTV 계약 등
+      GM 지시 건 포함). 아무 오류도 안 났기 때문에 아무도 몰랐다.
+
+    pull_from_live() 와 짝이다 — 그쪽은 GAS → 파일, 이쪽은 파일 → GAS.
+    새 GAS·새 액션을 만들지 않는다: 전사일정이 원래 쓰는 save_schedule 을 그대로 부른다(약속 L21).
+    """
+    import urllib.request  # noqa: PLC0415
+    try:
+        from collectors.ops_shared import SCHEDULE_GAS_URL  # noqa: PLC0415
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from collectors.ops_shared import SCHEDULE_GAS_URL  # noqa: PLC0415
+    try:
+        body = json.dumps({"action": "save_schedule", "data": cal}).encode("utf-8")
+        req = urllib.request.Request(SCHEDULE_GAS_URL, data=body,
+                                     headers={"Content-Type": "text/plain"}, method="POST")
+        with urllib.request.urlopen(req, timeout=25) as r:
+            res = json.loads(r.read())
+        if isinstance(res, dict) and res.get("ok"):
+            return {"ok": True, "total": len(cal.get("items") or [])}
+        return {"ok": False, "reason": f"GAS 응답 비정상: {str(res)[:120]}"}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "reason": f"{type(e).__name__}: {e}"}
+
+
 def _dup_norm(s) -> str:
     """중복 판정용 정규화 — 공백·가운뎃점·괄호류를 지운 이름."""
     import re
@@ -243,7 +274,19 @@ def add_event(item: dict, path=CAL_PATH, force: bool = False) -> dict:
     items.append(item)
     cal["updated_at"] = _kst_today().isoformat()
     Path(path).write_text(json.dumps(cal, ensure_ascii=False, indent=2), encoding="utf-8")
-    return {"ok": True, "added": 1, "total": len(items)}
+    out = {"ok": True, "added": 1, "total": len(items)}
+    # ★화면(GAS)에도 같이 쓴다 (2026-08-21 시토 · 배743). 여기까지 해야 사람이 볼 수 있다.
+    #   실패하면 숨기지 않는다 — synced=False 와 이유를 함께 돌려주고 화면에 경고를 찍는다.
+    #   조용히 성공으로 넘기면 이번 사고(로컬에만 15건)가 그대로 되풀이된다.
+    if path == CAL_PATH:                       # 테스트용 임시 파일은 라이브로 밀지 않는다
+        push = push_to_live(cal)
+        out["synced"] = bool(push.get("ok"))
+        if not push.get("ok"):
+            out["sync_reason"] = push.get("reason")
+            print(f"[경고] 파일엔 넣었지만 전사일정 화면에는 못 올렸습니다 — {push.get('reason')}\n"
+                  f"       화면에 안 뜹니다. 다시 시도하거나 화면에서 직접 넣어 주세요.",
+                  file=sys.stderr)
+    return out
 
 
 def _demo() -> None:
