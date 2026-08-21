@@ -150,7 +150,9 @@ AUTO_BROADCAST_HEADER_RE = re.compile(
     r"(🧾 사람이 처리할 업무|📌 오늘 확인 부탁드릴 것) "      # send_ops_digest RELAY(업무 장부 전달 · 2026-08-18 문구 교체, 옛 문구도 계속 거른다)
     r")"
 )
-AUTO_BROADCAST_SIGNOFF = ("웰페리온 AI 총괄 담당 웰리 드림", "— AI 웰리")
+# 옛 문구도 계속 둔다 — 이미 방에 쌓인 지난 메시지가 다시 '사람 말'로 잡히면 안 된다.
+# "AI 웰리 드림" = 2026-08-21 GM 확정 신규 서명(send_ops_digest.RELAY_SIGNOFF).
+AUTO_BROADCAST_SIGNOFF = ("웰페리온 AI 총괄 담당 웰리 드림", "— AI 웰리", "AI 웰리 드림")
 
 
 def _is_auto_broadcast(msg: str) -> bool:
