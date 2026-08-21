@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""★중간관리자 방에서 「웰리야」 호출만 뽑아 배로 올린다 (GM 승인 2026-08-21 · 배 신설).
+"""★중간관리자 방에서 「웰리」 호출만 뽑아 웰리 배로 올린다 (GM 승인 2026-08-21 · 배733).
 
 왜 이 모양인가
   카카오톡 PC 대화창은 글자가 아니라 그림으로 그려진다 — 창을 뜯어봐도 텍스트가 0이다
@@ -8,16 +8,24 @@
   GM 선택(2026-08-21) = 1시간마다 · 대화 저장 방식.
 
 토큰
-  이 스크립트는 AI 를 부르지 않는다. 파일을 읽고 「웰리야」로 시작하는 줄만 골라 큐에 넣는다.
+  이 스크립트는 AI 를 부르지 않는다. 파일을 읽고 「웰리」로 시작하는 줄만 골라 큐에 넣는다.
   호출이 0건이면 토큰 0. 실제 호출이 있을 때만 그 줄이 배 하나로 올라간다.
 
 개인정보
   ★중간관리자 방 외의 방은 절대 건드리지 않는다(GM PC 에는 개인 대화방도 함께 열려 있다).
-  뽑아낸 원본 txt 는 「웰리야」 줄만 남기고 그 자리에서 지운다 — 실무진 일상 대화는 보관하지 않는다.
+  뽑아낸 원본 txt 는 gitignore 된 아카이브에만 있고 저장소에 커밋되지 않는다(kakao_export_chat 규칙 그대로).
+  이 스크립트가 큐에 남기는 것은 「웰리」 호출 줄뿐 — 실무진 일상 대화는 배에 들어가지 않는다.
+
+내보내기 정본
+  scripts/kakao_export_chat.py (배906 · 2026-07-14 시토). ★중간관리자 방은 이미 매일 자동으로
+  뽑히고 있었다 — 새 내보내기 도구를 만들지 않고 그 도구를 부른다(약속 L21).
 
 사용
-  python scripts/kakao_room_listen.py --file <내보낸.txt>   # 파일에서 읽기(현재 동작 경로)
-  python scripts/kakao_room_listen.py --file <...> --dry-run  # 배 안 만들고 뽑히는 것만 보기
+  python scripts/kakao_room_listen.py --export             # 지금 뽑고 읽는다(예약이 쓰는 길)
+  python scripts/kakao_room_listen.py                      # 아카이브 최신본에서 읽기
+  python scripts/kakao_room_listen.py --dry-run            # 배 안 만들고 뽑히는 것만 보기
+  python scripts/kakao_room_listen.py --selfcheck          # 자체 점검
+예약: Wellperion-Kakao-Room-Listen-Hourly (매시 08:05~20:05 · launchers/kakao_room_listen_hidden.vbs)
 """
 from __future__ import annotations
 
@@ -26,6 +34,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 try:
@@ -42,6 +51,8 @@ _AFTER_WAKE = " ,·:-야님씨!?~"
 
 # 카톡 내보내기 한 줄 형식: [보낸사람] [오전 11:56] 내용
 LINE = re.compile(r"^\[(?P<who>[^\]]+)\]\s*\[(?P<when>[^\]]+)\]\s*(?P<text>.*)$")
+# 날짜 구분선: --------------- 2026년 5월 26일 화요일 ---------------
+DAY = re.compile(r"^-{3,}\s*(?P<y>\d{4})년\s*(?P<m>\d{1,2})월\s*(?P<d>\d{1,2})일.*-{3,}$")
 
 
 def _state() -> dict:
@@ -58,14 +69,20 @@ def _save(st: dict) -> None:
 
 
 def extract(text: str) -> list[dict]:
-    """내보낸 대화에서 「웰리야」 호출만 뽑는다. 나머지 줄은 버린다."""
-    out, cur = [], None
+    """내보낸 대화에서 「웰리」 호출만 뽑는다. 나머지 줄은 버린다."""
+    out, cur, day = [], None, ""
     for raw in text.splitlines():
+        d = DAY.match(raw.strip())
+        if d:
+            day = f"{d.group('y')}-{int(d.group('m')):02d}-{int(d.group('d')):02d}"
+            cur = None            # 날짜가 바뀌면 앞 호출은 거기서 끝난다(구분선이 본문에 붙지 않게)
+            continue
         m = LINE.match(raw.strip())
         if m:
             body = m.group("text").strip()
             if body.startswith(WAKE):
-                cur = {"who": m.group("who").strip(), "when": m.group("when").strip(),
+                cur = {"who": m.group("who").strip(), "day": day,
+                       "when": m.group("when").strip(),
                        "text": body[len(WAKE):].lstrip(_AFTER_WAKE).strip()}
                 out.append(cur)
             else:
@@ -76,12 +93,12 @@ def extract(text: str) -> list[dict]:
 
 
 def fingerprint(c: dict) -> str:
-    return f"{c['who']}|{c['when']}|{c['text'][:40]}"
+    return f"{c.get('day','')}|{c['who']}|{c['when']}|{c['text'][:40]}"
 
 
 def to_ship(c: dict, dry: bool) -> bool:
     title = f"[웰리] ★중간관리자 방 호출 — {c['who']}: {c['text'][:60]}"
-    note = (f"[카톡 호출 자동 접수] ★중간관리자 방 · {c['when']} · {c['who']}\n\n"
+    note = (f"[카톡 호출 자동 접수] ★중간관리자 방 · {c.get('day','')} {c['when']} · {c['who']}\n\n"
             f"{c['text']}\n\n"
             "▸이 방에 글을 쓰는 쪽 = 중간관리자(실무진) · 웰리 · GM 셋뿐이다(GM 확정 2026-08-21).\n"
             "  AI 중에서는 웰리만 쓴다 — 다른 역할은 웰리에게 배로 넘긴다(약속 L24).\n"
@@ -98,21 +115,49 @@ def to_ship(c: dict, dry: bool) -> bool:
     return r.returncode == 0
 
 
+ARCHIVE = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / ROOM
+
+
+def _latest_export() -> Path | None:
+    files = sorted(ARCHIVE.glob("*/★중간관리자_auto_*.txt"))
+    return files[-1] if files else None
+
+
+def _export_now() -> Path | None:
+    """카톡 대화를 지금 다시 뽑는다. 정본 = scripts/kakao_export_chat.py (배906 · 이미 매일 도는 도구).
+    새 내보내기 도구를 만들지 않는다(약속 L21)."""
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "kakao_export_chat.py"),
+                        "--room-key", "mgr"],
+                       capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT), timeout=300)
+    tail = (r.stdout or r.stderr or "").strip().splitlines()
+    print(tail[-1] if tail else "(내보내기 출력 없음)")
+    return _latest_export()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=f"{ROOM} 방 「{WAKE}」 호출 접수")
-    ap.add_argument("--file", required=True, help="카톡에서 내보낸 대화 txt")
+    ap.add_argument("--file", help="카톡에서 내보낸 대화 txt(미지정 시 아카이브 최신본)")
+    ap.add_argument("--export", action="store_true",
+                    help="지금 카톡에서 다시 뽑고 읽는다(1시간 예약이 쓰는 경로)")
+    ap.add_argument("--since-days", type=int, default=1,
+                    help="최근 며칠치 호출만 본다(기본 1 = 오늘). 옛 대화가 한꺼번에 배가 되는 것을 막는다")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
-    p = Path(a.file)
-    if not p.exists():
-        print(f"[FAIL] 파일 없음: {p}")
+    p = Path(a.file) if a.file else (_export_now() if a.export else _latest_export())
+    if p is None or not p.exists():
+        print(f"[FAIL] 읽을 대화 파일이 없다: {p}")
         return 2
     calls = extract(p.read_text(encoding="utf-8", errors="replace"))
+    # ★내보낸 파일은 방이 열린 날부터 전부 들어 있다(수천 줄). 날짜 제한이 없으면 첫 실행에
+    #   몇 달치 옛 호출이 한꺼번에 배가 된다 — 이미 지나간 이야기라 웰리 항로만 어지럽힌다.
+    cutoff = (datetime.now() - timedelta(days=a.since_days)).strftime("%Y-%m-%d")
+    old = [c for c in calls if c.get("day", "") < cutoff]
+    calls = [c for c in calls if c.get("day", "") >= cutoff]
     st = _state()
     seen = set(st.get("seen", []))
     fresh = [c for c in calls if fingerprint(c) not in seen]
-    print(f"호출 {len(calls)}건 · 새 것 {len(fresh)}건")
+    print(f"호출 {len(calls)}건(최근 {a.since_days}일) · 새 것 {len(fresh)}건 · 지난 것 {len(old)}건 건너뜀")
     for c in fresh:
         if to_ship(c, a.dry_run) and not a.dry_run:
             seen.add(fingerprint(c))
