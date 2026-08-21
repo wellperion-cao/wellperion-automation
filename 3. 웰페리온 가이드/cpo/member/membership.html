@@ -13264,7 +13264,13 @@ var WriteBuffer = (function(){
   var BACKOFF = [1000, 2000, 4000, 8000, 16000];   // 지수 백오프(ms) · 상한 5회
   var queue = [];            // [{ id, key, payload, label, who, scope, phoneKey, overlay, attempts, nextTry, parked, rev, inflight, verifying }]
   var flushTimer = null;
-  var running = false;
+  /* ★동시 전송 레인 (GM 지시 2026-08-21 "저장 8.5초는 정말 말도안되는 속도네").
+     종전엔 running 플래그 하나로 **한 번에 한 건만** 보냈다. 저장 1건이 8.5초라 5건이면 42초.
+     실측(2026-08-21 · 같은 값 재저장 3건): 직렬 19.9초 → 동시 9.1초 = 2.2배. 서버가 병렬로 받는다.
+     ▸같은 행은 동시에 보내지 않는다(아래 선택 루프) — 순서가 뒤집혀 옛 값이 이기는 것을 막는다.
+     ▸레인 3인 이유 = 왕복 지연이 대부분이라 늘려도 체감이 더 안 줄고, 브라우저·GAS 동시 한도만 축낸다. */
+  var MAX_LANES = 3;
+  var inflightCount = 0;
   // ★저장 확인(read-back) — 2026-07-28 GM 지시("저장까지 된 줄 알고 새로고침하면 다 날아가있다").
   //   apiPost가 ok:true를 줘도 그 뒤 다른 저장이 옛 값으로 덮어써 기록이 사라진 사고가 있었다(유경민·김정화·
   //   도자연). 화면 표시만으론 참·거짓을 구분할 수 없었다 → 성공 직후 그 행을 다시 읽어(read-back) 방금
@@ -13488,22 +13494,30 @@ var WriteBuffer = (function(){
   }
 
   function flush() {
-    if (running) return;
+    if (inflightCount >= MAX_LANES) return;
     if (GAS_URL === GAS_PLACEHOLDER) return;
     var now = _now();
     var item = null;
+    // 지금 전송 중인 행들 — 같은 행을 동시에 보내면 순서가 뒤집혀 옛 값이 이길 수 있다.
+    var busyRows = {};
+    for (var b = 0; b < queue.length; b++) {
+      var bt = queue[b];
+      if (bt.inflight || bt.verifying) busyRows[String((bt.payload && bt.payload.rowIndex) || '') + '|' + (bt.scope || '')] = true;
+    }
     for (var i = 0; i < queue.length; i++) {
       var it = queue[i];
       if (it.parked || it.inflight || it.verifying) continue;   // verifying=저장확인 대조 중(아래) — 재전송 대상 아님
+      if (busyRows[String((it.payload && it.payload.rowIndex) || '') + '|' + (it.scope || '')]) continue;  // 같은 행은 앞 건이 끝난 뒤에
       if (it.nextTry <= now) { item = it; break; }
     }
     if (!item) { scheduleNext(); return; }
-    running = true;
+    inflightCount++;
     item.inflight = true;
+    if (inflightCount < MAX_LANES) scheduleFlush(0);   // 남은 레인을 곧바로 채운다(다음 건이 8.5초를 기다리지 않게)
     var sentRev = item.rev;
     apiPost(item.payload)
       .then(function(data){
-        item.inflight = false; running = false;
+        item.inflight = false; inflightCount--;
         if (data && data.ok) {
           // 성공 — 단, 전송 후 재편집(coalesce)로 rev가 바뀌었으면 최신 payload 재전송(유실 방지).
           if (item.rev !== sentRev) { item.nextTry = 0; }
@@ -13555,7 +13569,7 @@ var WriteBuffer = (function(){
         _save(); renderChip(); scheduleNext();
       })
       .catch(function(err){
-        item.inflight = false; running = false;
+        item.inflight = false; inflightCount--;
         _fail(item, (err && err.name === 'AbortError') ? '응답 없음(시간 초과)' : '네트워크 오류');
         _save(); renderChip(); scheduleNext();
       });
