@@ -59,6 +59,8 @@ LOG_PATH = os.path.join(_PROJECT_ROOT, "status", "sheet_contract_log.jsonl")
 MEMBERSHIP_HTML = os.path.join(
     _PROJECT_ROOT, "3. 웰페리온 가이드", "cpo", "member", "membership.html"
 )
+# LOSS/미등록 사유 17종 정본(배653 · 2026-08-18) — membership.html·renewal.html 이 이 파일을 읽는다.
+LOSS_REASONS_JS = os.path.join(_PROJECT_ROOT, "3. 웰페리온 가이드", "_assets", "loss_reasons.js")
 
 KST = timezone(timedelta(hours=9))
 GM_CHAT_ID = 8254867551  # 업무보고방 SSOT(CLAUDE.md §0) — 테스트도 이 방(GM 규칙)
@@ -68,10 +70,27 @@ GM_CHAT_ID = 8254867551  # 업무보고방 SSOT(CLAUDE.md §0) — 테스트도 
 _INTAKE_TOKEN = "wlp_intake_9f4c1b7e2a63"
 _MEMBER_HOLD_GID = 514238773
 
-# 진행현황/LOSS사유 등 값 규칙 — membership.html INQ_LOSS_REASON_OPTIONS 문자 단위 일치 확인
-# (2026-07-20, .deploy-funnel-v2/Survey.js loss_reason_setup 주석). 코드에서 매 실행 다시 읽어
-# 대조하므로(_read_front_loss_options) 여기 상수는 그 값이 안 읽힐 때의 폴백일 뿐.
-_LOSS_OPTIONS_FALLBACK = ["가격", "거리/위치", "시간대 안 맞음", "타업체 선택", "단순 문의(등록의사 없음)", "연락 두절", "기타"]
+# 진행현황/LOSS사유 등 값 규칙 — 화면 목록과 문자 단위 일치 확인.
+# 코드에서 매 실행 read_front_loss_options() 로 다시 읽어 대조하므로 여기 상수는 그 값이 안 읽힐 때의 폴백일 뿐.
+# ★2026-08-21 시포 — 폴백이 v1 시절 7종에 멈춰 있었다. 지금 쓰는 정본은 17종(_assets/loss_reasons.js)이라,
+#   정본을 못 읽는 순간 옛 7종으로 대조해 멀쩡한 값을 전부 위반으로 잡을 판이었다. 정본과 같은 17종으로 맞춘다.
+_LOSS_OPTIONS_FALLBACK = ["금액·프로모션", "양도/강습전환", "건강문제", "단기", "낮은이용횟수", "타센터등록",
+                          "거주지변경", "무응답(기타)", "가망", "블랙", "수신거절", "연락처상이함",
+                          "재등록혜택", "시설불만", "주차불만", "휴회불만", "바쁜일정"]
+
+# ★17종 밖에 이미 시트에 쌓여 있는 과거 값(2026-08-21 실측 전수 · 문의 14종 + 원장 7종 = 21종).
+#   이걸 allowed 에 함께 넣지 않으면 매일 같은 옛 값이 위반으로 잡혀 알림이 무뎌지고, 결국
+#   --accept 로 덮게 된다. 그런데 위반 지문은 (시트·칸·유형) 뿐이라 한 번 승인하면 **나중에 진짜
+#   새 이탈 값이 생겨도 영원히 침묵한다** — GM 이 막아 달라고 한 바로 그 유실을 못 잡게 된다.
+#   그래서 과거 값은 목록에 얹어 두고, 앞으로 생기는 낯선 값만 걸리게 한다.
+#   ▸새로 저장되는 값은 화면이 17종만 주므로 이 목록이 늘 이유는 없다. 늘면 그게 신호다.
+_LOSS_OPTIONS_LEGACY = ["강습전환", "거리/위치", "고민중", "기타", "기타 확인", "단순 문의(등록의사 없음)",
+                        "대기자", "동선", "바쁜 일정", "상품·시설 안 맞음", "시설 불만족", "심사대상",
+                        "운영 정책 이슈", "일정문제", "주자문제", "주차·시설 부족(불편)",
+                        "초대권단순이용", "한종목만 이용", "환불",
+                        "장기 무응답 — 2026-08-08 일괄 정리(연락기록 30일+ 없음)",
+                        "장기 무응답 — 2026-08-08 일괄 정리(연락기록 90일+ 없음)"]
+_LOSS_ALLOWED = _LOSS_OPTIONS_FALLBACK + _LOSS_OPTIONS_LEGACY
 
 _RECENT_WINDOW = 30       # 공란율 표본창
 _RECENT_TS_WINDOW = 10    # 타임스탬프 형식 표본창
@@ -135,22 +154,27 @@ ENRICHMENT_RULES = [
     ("inquiry_2026", "진행현황", {"req": True, "blank_check": False,
                                   # '신규'=미착수 기본값, '재문의로 종결'=2026-07-20 GM 확정 상태. 둘 다 정상값.
                                   "allowed": ["LOSS", "SUC", "컨택중", "가망", "단기SUC", "신규", "재문의로 종결"]}),
-    ("inquiry_2026", "LOSS사유", {"allowed": list(_LOSS_OPTIONS_FALLBACK), "front_check": True}),
+    # ★2026-08-21 시포 — 칸 이름이 실제 헤더와 달라 이 규칙이 한 번도 적용된 적이 없다.
+    #   시트 헤더는 "미등록 사유"(문의는 앞에 공백까지 있다)인데 여기엔 "LOSS사유"라고 적혀 있었다.
+    #   부분문자열 매칭이라 아무 칸에도 안 걸렸고, 그래서 사유 값이 목록 밖으로 새도 아무도 몰랐다.
+    ("inquiry_2026", "미등록 사유", {"allowed": list(_LOSS_ALLOWED), "front_check": True}),
 
     ("lesson_adult", "타임스탬프", {"req": True, "format": "datetime_hms", "date_col": True}),
     ("lesson_adult", "성함", {"req": True}),
     ("lesson_adult", "연락처", {"req": True}),
     ("lesson_adult", "개인정보", {"req": True, "blank_check": True}),
     ("lesson_adult", "진행 상황", {"req": True, "blank_check": False, "allowed": ["컨택중", "LOSS", "SUC", "신규", "가망"]}),
-    ("lesson_adult", "LOSS사유", {"allowed": list(_LOSS_OPTIONS_FALLBACK), "front_check": True}),
+    ("lesson_adult", "미등록 사유", {"allowed": list(_LOSS_ALLOWED), "front_check": True}),
 
     ("lesson_wsc", "타임스탬프", {"req": True, "format": "datetime_hms", "date_col": True}),
     ("lesson_wsc", "성함", {"req": True}),
     ("lesson_wsc", "연락처", {"req": True}),
     ("lesson_wsc", "개인정보", {"req": True, "blank_check": True}),
     ("lesson_wsc", "진행 상황", {"req": True, "blank_check": False, "allowed": ["컨택중", "LOSS", "SUC", "신규", "가망", "대기"]}),
-    ("lesson_wsc", "LOSS사유", {"allowed": list(_LOSS_OPTIONS_FALLBACK), "front_check": True}),
+    ("lesson_wsc", "미등록 사유", {"allowed": list(_LOSS_ALLOWED), "front_check": True}),
 
+    # 회원 원장 미등록사유도 같은 목록을 쓴다 — 여기엔 규칙 자체가 없어 감시 밖이었다(2026-08-21 시포).
+    ("member_active", "미등록사유", {"allowed": list(_LOSS_ALLOWED), "front_check": True}),
     ("member_active", "회원명", {"req": True}),
     ("member_active", "휴대폰 번호", {"req": True}),
     ("member_active", "등록\n일자", {"req": True, "date_col": True}),
@@ -271,18 +295,31 @@ def fetch_sheet(key):
 
 # ── 프론트 선택지 정적 추출(네트워크 불요) ───────────────────────────────────
 def read_front_loss_options():
-    """membership.html 에서 INQ_LOSS_REASON_OPTIONS 배열 리터럴을 정적 추출.
-    실패 시 None(미측정 — 폴백 상수로 대체하지 않고 그대로 알린다)."""
-    try:
-        with open(MEMBERSHIP_HTML, "r", encoding="utf-8") as f:
-            txt = f.read()
-        m = re.search(r"INQ_LOSS_REASON_OPTIONS\s*=\s*\[(.*?)\]", txt, re.S)
+    """화면이 실제로 보여 주는 LOSS/미등록 사유 목록을 정적 추출.
+    실패 시 None(미측정 — 폴백 상수로 대체하지 않고 그대로 알린다).
+
+    ★2026-08-21 시포 수리 — 이 함수는 그동안 항상 None 을 돌려주고 있었다.
+      목록이 2026-08-18(배653)에 membership.html 에서 _assets/loss_reasons.js 로 옮겨졌는데,
+      여기 정규식은 여전히 membership.html 안의 `INQ_LOSS_REASON_OPTIONS = [ ... ]` 를 찾았다.
+      옮겨진 뒤 그 파일에는 `var INQ_LOSS_REASON_OPTIONS = LOSS_REASON_OPTIONS;` 만 남아
+      `[` 가 없으므로 매칭 실패 → 화면↔계약서 대조가 한 번도 돌지 않았다(조용한 무력화).
+      → 정본 파일을 먼저 읽고, 없을 때만 옛 경로로 떨어진다."""
+    for path, pat in (
+        (LOSS_REASONS_JS, r"LOSS_REASON_OPTIONS\s*=\s*\[(.*?)\]"),
+        (MEMBERSHIP_HTML, r"INQ_LOSS_REASON_OPTIONS\s*=\s*\[(.*?)\]"),
+    ):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                txt = f.read()
+        except Exception:
+            continue
+        m = re.search(pat, txt, re.S)
         if not m:
-            return None
+            continue
         items = re.findall(r"'((?:[^'\\]|\\.)*)'", m.group(1))
-        return [i.replace("\\'", "'") for i in items]
-    except Exception:
-        return None
+        if items:
+            return [i.replace("\\'", "'") for i in items]
+    return None
 
 
 # ── 계약서 로드/저장 ─────────────────────────────────────────────────────────
@@ -493,7 +530,11 @@ def check_sheet(key, contract_sheet, headers, rows, front_loss_options, warnings
         if allowed:
             eff_allowed = allowed
             if col.get("front_check") and front_loss_options:
-                if set(front_loss_options) != set(allowed):
+                # ★2026-08-21 시포 — 완전일치에서 부분집합으로 완화.
+                #   allowed 에는 과거 값(_LOSS_OPTIONS_LEGACY)이 함께 들어 있어 완전일치는 항상 깨진다.
+                #   이 검사의 목적은 "화면이 주는 선택지를 시트가 다 받아들이는가" 이므로,
+                #   화면 목록이 계약서에 전부 있으면 통과다. 화면에만 있는 값이 생기면 그때 잡는다.
+                if set(front_loss_options) - set(allowed):
                     violations.append({"sheet": key, "col": name, "type": "허용값_프론트불일치",
                                         "severity": "R",
                                         "detail": f"계약서={allowed} vs 화면 INQ_LOSS_REASON_OPTIONS={front_loss_options}"})
