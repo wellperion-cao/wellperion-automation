@@ -1247,10 +1247,20 @@ def _notify_sweep(swept_files: list[str], recovery: dict) -> None:
         pass
 
 
+LOG_ROTATE_BYTES = 20 * 1024 * 1024
+
+
 def _append_log(entry: dict, path: str) -> None:
     entry = dict(entry)
     entry.setdefault("at", datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    # 로그 회전: 하루 ~2.5MB씩 append 되어 무한히 자란다(2026-08-21 실측 58MB).
+    # 20MB 넘으면 .1 로 밀어 두 세대만 남긴다 — .1 은 이전 세대를 덮어쓴다.
+    try:
+        if os.path.getsize(path) > LOG_ROTATE_BYTES:
+            os.replace(path, path + ".1")
+    except OSError:
+        pass
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
