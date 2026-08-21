@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>코엑스 AI Summit 참관 — 웰페리온 AI 도입 기준(안) · A3 보고서</title>
+<title>코엑스 AI Summit 참관 — 웰페리온 AX 전환 방향 · A3 보고서</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -56,55 +56,72 @@
   .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
-  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .q{ font-size:16.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
   .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
 
-  /* 인사이트 밴드 (경고 밴드 자리 · 색만 네이비 계열) */
-  .band{ margin-top:7px; background:var(--navy-bg); border-left:5px solid var(--navy); color:var(--navy);
-    padding:8px 15px; font-size:13px; font-weight:700; line-height:1.5; }
-  .band span{ font-weight:400; color:#2E3B47; }
+  /* 숫자 밴드 — 경영진이 3초에 읽는 자리 */
+  .kpi{ margin-top:12px; display:flex; border:1px solid var(--line); }
+  .kpi .c{ flex:1; padding:11px 8px 10px; text-align:center; border-right:1px solid var(--line); }
+  .kpi .c:last-child{ border-right:0; }
+  .kpi .n{ font-family:'Noto Serif KR',serif; font-size:38px; font-weight:700; line-height:1;
+    color:var(--navy); letter-spacing:-1.5px; }
+  .kpi .n i{ font-style:normal; font-size:19px; margin-left:2px; }
+  .kpi .l{ font-size:12px; font-weight:700; margin-top:6px; }
+  .kpi .s{ font-size:10.8px; color:#5C666F; margin-top:2px; line-height:1.4; }
+  .kpi .c.hi .n{ color:var(--good); }
 
-  /* ③ 기준표 */
-  .tblwrap{ margin-top:11px; }
-  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:5px 9px; font-size:11.9px; line-height:1.38; vertical-align:top; }
-  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763;
-    vertical-align:middle; }
-  thead th.k{ background:#0E2439; }
-  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
-  td.k{ background:#F6F8FA; font-weight:700; font-size:12.4px; color:var(--navy); vertical-align:middle; }
-  td.k .en{ display:block; font-size:10px; font-weight:400; color:#5C666F; letter-spacing:1.5px; margin-top:1px; }
-  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:11.5px; letter-spacing:2.5px; }
-  .ctr{ text-align:center; }
-  .good{ color:var(--good); font-weight:700; }
-  .warn{ color:var(--warn); font-weight:700; }
-  .bad{ color:var(--bad); font-weight:700; }
-  .est{ color:#5C666F; font-size:10.5px; }
-  td.where{ background:#FAFBFC; font-size:11.4px; color:#3C464F; }
-  td.where b{ color:var(--ink); }
-
-  /* ④ 3분할 */
+  /* ③ 3열 */
   .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
-  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
-  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:11px 15px 10px;
+    display:flex; flex-direction:column; }
+  .box h3{ font-size:14.5px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+  .box .sub{ font-size:11px; color:#5C666F; margin:2px 0 8px; }
   .box ul{ list-style:none; }
-  .box li{ font-size:11.6px; line-height:1.45; padding-left:15px; position:relative; margin-bottom:3px; }
+  .box li{ font-size:12.6px; line-height:1.55; padding-left:15px; position:relative; margin-bottom:6px; }
   .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li b{ font-weight:700; }
   .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
-  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
-  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
-    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
-  .box ul.ord{ counter-reset:a; }
-  .box li.n{ padding-left:20px; }
-  .box.rec{ border-top-color:var(--good); }
-  .box.rec h3{ color:var(--good); }
-  .box.rec b{ color:var(--good); }
   .box.risk{ border-top-color:var(--bad); }
   .box.risk h3{ color:var(--bad); }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:22px; margin-bottom:8px; }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--good); width:15px; height:15px; line-height:15px; text-align:center;
+    border-radius:2px; top:3px; }
+  .stage{ font-size:13px; font-weight:700; }
+  .when{ display:inline-block; font-size:10.5px; font-weight:700; color:var(--good);
+    border:1px solid var(--good); border-radius:2px; padding:0 5px; margin-left:5px; vertical-align:1px; }
+
+  /* ③-2 사업 확장 흐름 */
+  .grow{ margin-top:12px; flex:none; border:1px solid var(--line); border-top:3px solid var(--navy);
+    padding:11px 16px 12px; display:flex; flex-direction:column; }
+  .grow h3{ font-size:14.5px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+  .grow .sub{ font-size:11px; color:#5C666F; margin:2px 0 0; }
+  .flow{ margin-top:10px; flex:1; display:flex; align-items:stretch; gap:0; }
+  .flow .st{ flex:1; border:1px solid var(--line); background:#FAFBFC; padding:11px 15px;
+    display:flex; flex-direction:column; justify-content:center; }
+  .flow .st .tag{ font-size:10.5px; font-weight:700; letter-spacing:2px; color:#5C666F; }
+  .flow .st .h{ font-size:15.5px; font-weight:700; letter-spacing:-.4px; margin-top:3px; }
+  .flow .st .d{ font-size:12px; line-height:1.5; color:#3C464F; margin-top:5px; }
+  .flow .st.now{ background:var(--navy-bg); border-color:#C3D0DE; }
+  .flow .st.now .h{ color:var(--navy); }
+  .flow .st.goal{ background:#EDF6F1; border-color:#BCD9CC; }
+  .flow .st.goal .h{ color:var(--good); }
+  .flow .ar{ flex:none; width:42px; display:flex; align-items:center; justify-content:center;
+    font-size:21px; color:#9AA5AF; font-weight:700; }
+
+  /* ④ 목적 밴드 */
+  .why{ margin-top:11px; background:var(--navy-bg); border-left:5px solid var(--navy);
+    padding:11px 18px; display:flex; align-items:center; gap:20px; }
+  .why .h{ font-family:'Noto Serif KR',serif; font-size:17px; font-weight:700; color:var(--navy);
+    letter-spacing:-.5px; white-space:nowrap; }
+  .why .t{ font-size:13px; line-height:1.55; }
+  .why .t b{ font-weight:700; color:var(--navy); }
 
   /* ⑤ 각주 */
-  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+  .foot{ margin-top:9px; border-top:1px solid var(--line); padding-top:7px;
     display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
@@ -113,7 +130,7 @@
 <body>
 
 <div class="bar">
-  <b>코엑스 AI Summit 참관 — 웰페리온 AI 도입 기준(안) (A3 1장)</b>
+  <b>AI Summit 참관 보고 — 웰페리온 AX 전환 방향 (A3 1장)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -126,12 +143,12 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">AI Summit 참관 보고 — 웰페리온 AI 도입 기준(안) 5원칙</div>
+      <div class="title">AI Summit 참관 보고 — 웰페리온 AX 전환, 다음 단계</div>
     </div>
     <div class="meta">
-      작성 <b>경영지원부 (AI CEO 웰리)</b> · 참관 <b>김남욱 GM</b><br>
-      작성일 <b>2026. 08. 19.</b> · 문서번호 <b>WP-GM-260819-01</b><br>
-      참관 <b>코엑스 AI Summit 서울 · 10:00~12:20 (2시간 20분)</b>
+      참관·작성 <b>경영지원부 김남욱 GM</b><br>
+      참관일 <b>2026. 08. 19.</b> (코엑스) · 문서번호 <b>WP-GM-260819-01</b><br>
+      보고일 <b>2026. 08. 21.</b> · 대상 <b>회장님 · 대표님</b>
     </div>
     <div class="sign">
       <div><div class="t">담당</div><div class="b"></div></div>
@@ -147,122 +164,132 @@
     <div class="items">
       <div class="it">
         <div class="n">01</div>
-        <div class="q">아래 5원칙을 웰페리온 AI 도입·운영의 기준으로 확정해 주십시오.</div>
-        <div class="d">지금은 규칙이 문서·대화에 흩어져 있어 상황마다 다르게 적용됩니다. 5원칙은 새로 지어낸 것이 아니라, 이미 지키고 있거나 오늘 실제로 깨진 자리를 정리한 것입니다.</div>
+        <div class="q">AI 총괄 체계(AI Governance)를 GM 총괄로 지정해 주십시오.</div>
+        <div class="d">무엇을 AI에 맡기고 무엇을 사람이 확인하는지, 회사 기준을 한 곳에서 정합니다. 기준이 없으면 부서마다 제각각 쓰다 멈춥니다.</div>
       </div>
       <div class="it">
         <div class="n">02</div>
-        <div class="q">적용 범위를 정해 주십시오 — AI 담당 4개 역할까지인지, 실무진이 쓰는 AI까지인지.</div>
-        <div class="d">지금 기준은 AI 담당(웰리·시토·시모·시포)에만 있습니다. 실무진이 개인 AI를 쓰기 시작하면 회원 정보·매출 자료가 기준 밖으로 나갑니다.</div>
+        <div class="q">AI 활용을 소수에서 전 부서로 넓히는 것을 승인해 주십시오.</div>
+        <div class="d">지금 성과는 몇 사람 손에 묶여 있습니다. 조직의 것으로 만들어야 다음 단계(사업 확장)로 갑니다.</div>
       </div>
     </div>
   </div>
 
-  <!-- 인사이트 밴드 -->
-  <div class="band">
-    GM 참관 인사이트 — “가장 컸던 것은 <b>AI Governance</b>. 체계와 방식에 대한 <b>우리만의 기준</b>이 있어야 한다.”
-    <span>&nbsp;/ “새로운 변화의 시작이다. 비즈니스하는 사람이 AI를 무시하거나 적대시하면 안 된다. 지금은 AI 시대로 급변하는 중이다.”</span>
+  <!-- 숫자 밴드 -->
+  <div class="kpi">
+    <div class="c">
+      <div class="n">88<i>일</i></div>
+      <div class="l">웰페리온 AI 가동</div>
+      <div class="s">2026. 5. 25. 시작 — 이미 돌고 있습니다</div>
+    </div>
+    <div class="c">
+      <div class="n">27<i>개</i></div>
+      <div class="l">자동으로 도는 업무</div>
+      <div class="s">매출·점검·회원·콘텐츠 — 전부 가동 중</div>
+    </div>
+    <div class="c">
+      <div class="n">32<i>건</i></div>
+      <div class="l">사람 손 없이 뜨는 일정</div>
+      <div class="s">아침 보고·현황 발송이 시각에 맞춰 자동 실행</div>
+    </div>
+    <div class="c hi">
+      <div class="n">417<i>건</i></div>
+      <div class="l">카카오톡 자동 발송</div>
+      <div class="s">최근 28일 · 부서방 8곳에 자동으로 나감</div>
+    </div>
+    <div class="c">
+      <div class="n">2<i>명</i></div>
+      <div class="l">실제로 쓰는 사람</div>
+      <div class="s">경영지원부·운영부 계정 — 여기가 문제입니다</div>
+    </div>
   </div>
 
-  <!-- ③ 기준표 -->
-  <div class="tblwrap">
-  <table>
-    <colgroup><col style="width:168px"><col style="width:372px"><col style="width:352px"><col style="width:300px"><col></colgroup>
-    <thead>
-      <tr>
-        <th class="k">원칙</th>
-        <th>지금 우리 상태<span class="sub">2026-08-19 실측 · 추정 아님</span></th>
-        <th>기준(안)</th>
-        <th>안 지키면 생기는 일</th>
-        <th>기준을 박을 자리<span class="sub">문서 아닌 코드·관문</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr class="grp"><td colspan="5">말 하 기</td></tr>
-      <tr>
-        <td class="k">① 재기 전에<br>말하지 않는다<span class="en">TRUTH</span></td>
-        <td><b class="bad">오늘 하루에 3번 틀렸습니다.</b> AI가 사실처럼 보고했다가 되돌린 것 — ⑴“카톡 이틀 연속 고장”(실제는 GM PC 업데이트) ⑵“에어컨 컴플레인 43일 방치”(실제는 7/29·8/10 조치 완료) ⑶“배의 57%가 기계가 만든 것”(실제는 7/25에 이미 끝난 문제). <span class="est">세 번 다 날짜 하나·질문 하나만 확인했으면 안 틀렸습니다.</span></td>
-        <td>숫자와 단정은 <b>원천에서 직접 센 것</b>만 말한다. 요약된 줄을 옮겨 적지 않는다.<br>못 쟀으면 문장에 <b>“추정”</b>을 붙이고, 단정과 섞지 않는다.</td>
-        <td>GM이 <b>틀린 사실로 결정</b>하게 된다. 오늘은 되돌렸지만, 회장님·대표님 보고로 나갔으면 회수할 수 없습니다.</td>
-        <td class="where">GM 보고 표준 표의 <b>🔍실측 칸</b> — 그 칸을 채우려면 반드시 원천을 한 번 열게 만든다.</td>
-      </tr>
-
-      <tr class="grp"><td colspan="5">정 하 기</td></tr>
-      <tr>
-        <td class="k">② 사람이 정할 것을<br>AI가 정하지 않는다<span class="en">BOUNDARY</span></td>
-        <td class="good">지켜지고 있습니다. AI가 스스로 못 정하는 것 = 💰결제·🔒보안·🚫금지 3가지 + 신규 생성. 자율화 규약 v1.1이 <b>2026-08-15 발효</b>됐고 코드로 막혀 있습니다.<span class="est"> 오늘도 에어컨 설비 판단은 AI가 결론 내지 않고 GM께 올렸습니다.</span></td>
-        <td>이 경계는 <b>AI가 스스로 넓힐 수 없다.</b> 넓히려면 GM 결정이 있어야 한다.<br>애매하면 AI가 판단하지 말고 <b>멈추고 묻는다.</b></td>
-        <td>AI가 회사 결정을 <b>대신하게</b> 된다. 잘 돌아갈 때는 안 보이다가, 한 번 크게 틀리면 아무도 책임을 못 집니다.</td>
-        <td class="where">배 등록 관문(<b>queue_dispatch</b>)과 자율 실행 선별기 — 신규 생성 배는 자동으로 제외된다.</td>
-      </tr>
-
-      <tr class="grp"><td colspan="5">남 기 기 · 확 인 하 기</td></tr>
-      <tr>
-        <td class="k">③ 한 일은<br>반드시 남는다<span class="en">TRACE</span></td>
-        <td>원장 하나에 모입니다 — 지금까지 닫은 일 <b>3,577건</b>, 열려 있는 일 <b>96건</b>. <span class="warn">다만 앞으로 나아가는 일은 8건(8%)뿐이고, 두 달 넘게 멈춘 것이 8건 있습니다(최장 62일).</span></td>
-        <td>원장에 없으면 <b>한 일이 아니다.</b> 사소해도 적는다.<br>멈춘 일은 <b>왜 멈췄는지·언제 풀리는지</b>를 함께 남긴다.</td>
-        <td>누가 무엇을 했는지 <b>되짚을 수 없다.</b> 멈춘 일이 조용히 잊히고, 두 달 뒤에야 발견됩니다.</td>
-        <td class="where">업무 원장 <b>단일 파일</b> — 화면·보고·집계가 전부 이 하나를 읽는다(복사본 금지).</td>
-      </tr>
-      <tr>
-        <td class="k">④ “됐다”는<br>결과물로 증명한다<span class="en">EVIDENCE</span></td>
-        <td><b class="bad">오늘 두 건이 걸렸습니다.</b> ⑴아침 카톡 발신 — 예약 작업은 <b>“성공”</b>으로 찍혔는데 실제로는 4개 방 전부 안 나갔습니다. ⑵회원 컴플레인 5건 — 현장은 7월에 조치를 끝냈는데 접수 원장에는 43일째 열려 있었습니다.</td>
-        <td>상태값·응답코드·“완료” 표시를 근거로 삼지 않는다.<br><b>사람이 보는 화면·실물</b>로 확인한 것만 완료로 적는다.</td>
-        <td><b>조용히 죽어도 아무도 모른다.</b> 화면은 정상, 숫자는 0, 경보는 안 울립니다 — GM이 눈으로 볼 때까지.</td>
-        <td class="where">완료 처리 관문 — <b>증거(링크·화면)</b>가 없으면 완료로 닫히지 않게 막혀 있다.</td>
-      </tr>
-
-      <tr class="grp"><td colspan="5">사 람 과 의 관 계</td></tr>
-      <tr>
-        <td class="k">⑤ AI는 사람을<br>대신하지 않는다<span class="en">HUMAN</span></td>
-        <td class="good">방향이 잡혀 있습니다. <b>2026-08-17 GM 확정</b> — “AI가 업무 SSOT를 대신 올리면 안 된다. 실무진이 올릴 수 있게 안내·리마인드하라.” 실무진 대상 메시지는 AI가 보내되 <b>누가 보내는지 밝히고</b>, 승인 뒤 나갑니다.</td>
-        <td>AI는 <b>준비·안내·확인</b>까지. 사람의 판단과 기록을 대신 채우지 않는다.<br>사람에게만 답이 있는 것은 <b>사람에게 묻는다.</b></td>
-        <td>사람이 자기 일에서 밀려나고, <b>책임이 사라진다.</b> 편해 보이지만 현장이 무슨 일이 도는지 모르게 됩니다.</td>
-        <td class="where">실무진 전달문 규칙과 <b>발신 관문 하나</b> — 모든 사람 대상 메시지가 그 자리를 지난다.</td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-
-  <!-- ④ 3분할 -->
+  <!-- ③ 3열 -->
   <div class="cols">
-    <div class="box risk">
-      <h3>왜 지금인가 — 오늘 하루가 증거입니다</h3>
-      <ul>
-        <li class="r1">AI가 사실처럼 보고했다 되돌린 것 <b>3건</b>. 전부 “재기 전에 말해서”가 원인 — 원칙 ①이 없어서입니다.</li>
-        <li class="r1">예약 작업이 <b>“성공”인데 실제 발신 0건.</b> 상태값만 믿는 구조라 어떤 감시기도 못 잡았습니다 — 원칙 ④.</li>
-        <li class="r1">회원 불만 5건이 <b>43일째 미해결로 보였지만 실제로는 7월에 해결.</b> 현장과 기록이 안 이어져 있습니다 — 원칙 ③·④.</li>
-        <li class="r2">두 달 넘게 멈춘 큰 일 8건을 <b>한 번도 열어보지 않았습니다.</b> 열어보니 하나는 이미 끝나 있었습니다.</li>
-        <li class="r2">이 숫자들은 전부 <b>GM이 물으셔야 처음 세어진</b> 것입니다. 기준이 없으면 재지 않습니다.</li>
-      </ul>
-    </div>
+
     <div class="box">
-      <h3>실행 액션</h3>
-      <ul class="ord">
-        <li class="n">5원칙 확정 후 <b>회사 기준 문서 한 곳</b>에 싣는다 — 새 문서를 만들지 않고 기존 운영 기준에 편입</li>
-        <li class="n">원칙마다 <b>“어디에 박을지”</b>를 코드·관문으로 옮긴다. 문서에만 있는 규칙은 지켜지지 않는다</li>
-        <li class="n">지킨 정도를 <b>매주 숫자 한 줄</b>로 낸다 — 틀린 단정 건수 / 증거 없는 완료 건수 / 멈춘 일 나이</li>
-        <li class="n">적용 범위가 실무진까지면, <b>회원 정보·매출 자료 취급 기준</b>을 한 장 더 만들어 배포</li>
-        <li class="n">한 달 뒤 <b>이 문서를 갱신</b>해 재보고 (같은 문서번호 유지 · 목표 9월 하순)</li>
+      <h3>Ⅰ. 우리는 이미 앞서 있습니다</h3>
+      <div class="sub">AI Summit 현장에서 확인한 것 — 우리가 늦은 게 아니라 빠릅니다</div>
+      <ul>
+        <li>현장 기업들이 <b>"이제 도입해 보자"</b>를 말하는 자리에서, 우리는 <b>88일째 실제로 돌리고</b> 있었습니다.</li>
+        <li>중소기업 성공 사례(파나시아)가 꼽은 1순위 조건은 기술이 아니라 <b>"경영진의 의지"</b>였습니다. 우리는 그 조건을 이미 지났습니다.</li>
+        <li>카카오톡 부서방 보고까지 자동화된 곳은 현장에서 보지 못했습니다. <b>이건 우리 강점입니다.</b></li>
+        <li>현장 문구 그대로 — <b>"만들고 나서가, 진짜 문제다."</b> 우리는 지금 그 지점에 서 있습니다.</li>
       </ul>
     </div>
-    <div class="box rec">
-      <h3>GM 권고</h3>
+
+    <div class="box risk">
+      <h3>Ⅱ. 그런데 여기서 멈춥니다</h3>
+      <div class="sub">지금 구조의 한계 — 성과가 조직의 것이 아닙니다</div>
       <ul>
-        <li>기준을 <b>새로 만들 필요가 없습니다.</b> 이미 지키는 것 2개(②⑤), 오늘 깨진 것 3개(①③④) — 흩어진 것을 한 장으로 모으는 일입니다.</li>
-        <li>가장 급한 것은 <b>원칙 ①</b>입니다. 나머지 넷은 코드가 어느 정도 막고 있지만, ①은 <b>막는 장치가 없습니다.</b></li>
-        <li>적용 범위는 <b>지금은 AI 4역할로 좁게</b> 시작하시길 권합니다. 실무진까지 넓히면 교육이 함께 가야 하고, 기준이 검증되기 전에 넓히면 지켜지지 않습니다.</li>
-        <li>“AI를 무시하거나 적대시하면 안 된다”의 반대편도 같습니다 — <b>무조건 믿는 것도 위험</b>합니다. 기준은 그 사이를 잡는 장치입니다.</li>
-        <li>이 문서는 <b>대외 발표용이 아니라 내부 운영 기준</b>입니다. 회장님·대표님 보고는 확정 후 한 장으로 따로 올립니다.</li>
+        <li class="r1"><b>쓰는 사람이 2명입니다.</b> 그 사람이 자리를 비우면 88일간 쌓은 것이 그날 멈춥니다.</li>
+        <li class="r1"><b>기준이 없습니다.</b> 무엇을 AI에 맡기고 무엇을 사람이 확인할지 정해 두지 않으면, 부서가 늘수록 사고도 같이 늡니다.</li>
+        <li class="r1"><b>남은 부서는 아직 손으로 합니다.</b> 시설·주차·파트너팀은 자동화 혜택 밖에 있습니다.</li>
+        <li>정리하면 — 지금은 <b>도구가 있는 상태</b>이지, <b>회사가 쓸 줄 아는 상태</b>가 아닙니다.</li>
       </ul>
+    </div>
+
+    <div class="box rec">
+      <h3>Ⅲ. 그래서 이렇게 갑니다</h3>
+      <div class="sub">GM 권고 — 순서를 지켜야 합니다</div>
+      <ul class="ord">
+        <li class="n"><span class="stage">기준을 세운다</span><span class="when">8월</span><br>
+          GM 총괄로 AI 총괄 체계를 만듭니다. 맡길 일·확인할 일·책임 소재를 한 장으로 정합니다.</li>
+        <li class="n"><span class="stage">부서로 넓힌다</span><span class="when">9~10월</span><br>
+          그 기준 위에서 부서별로 한 사람씩 붙입니다. 교육은 이미 1회 했습니다(8/12 · 파트너 7명).</li>
+        <li class="n"><span class="stage">사업으로 넓힌다</span><span class="when">11월~</span><br>
+          안에서 검증된 방식을 신규 사업·확장 점포에 그대로 얹습니다. 같은 인원으로 더 큰 규모를 운영합니다.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- ③-2 사업 확장 -->
+  <div class="grow">
+    <h3>Ⅳ. 이것이 사업 확장과 이어지는 이유</h3>
+    <div class="sub">확장의 진짜 한계는 자본이 아니라 <b>운영이 사람 수에 묶여 있다는 것</b>입니다. 점포가 둘이 되면 관리도 둘이 되던 구조를, 한 번 만든 체계를 그대로 얹는 구조로 바꿉니다.</div>
+    <div class="flow">
+      <div class="st now">
+        <div class="tag">NOW</div>
+        <div class="h">한 곳에서 검증한다</div>
+        <div class="d">한남 본점의 보고·점검·회원 관리가 이미 자동으로 돕니다. 여기가 시험대입니다.</div>
+      </div>
+      <div class="ar">›</div>
+      <div class="st">
+        <div class="tag">STEP 2</div>
+        <div class="h">체계로 굳힌다</div>
+        <div class="d">사람이 아니라 <b>기준과 절차</b>에 담아 둡니다. 담당자가 바뀌어도 그대로 돌아갑니다.</div>
+      </div>
+      <div class="ar">›</div>
+      <div class="st">
+        <div class="tag">STEP 3</div>
+        <div class="h">그대로 복제한다</div>
+        <div class="d">신규 사업·확장 점포에 같은 체계를 얹습니다. 처음부터 다시 만들지 않습니다.</div>
+      </div>
+      <div class="ar">›</div>
+      <div class="st goal">
+        <div class="tag">RESULT</div>
+        <div class="h">규모가 늘어도<br>운영 인원은 그대로</div>
+        <div class="d">확장의 손익 구조가 달라집니다. 늘어나는 것은 매출이지 관리 인건비가 아닙니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 목적 -->
+  <div class="why">
+    <div class="h">사람을 줄이려는 것이<br>아닙니다</div>
+    <div class="t">
+      AI를 넣는 목적은 인원 감축이 아니라 <b>사람이 사람의 일을 하게 만드는 것</b>입니다.
+      반복 보고·집계·전달을 기계가 맡고, 직원은 회원과 파트너 앞에 서는 시간을 늘립니다.<br>
+      판단 기준은 하나입니다 — <b>회원과 파트너가 받는 경험이 실제로 좋아졌는가.</b> 그 답이 예가 아니면 그 자동화는 성공이 아닙니다.
     </div>
   </div>
 
   <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>실측 출처</b> — 열린 일 96건·닫힌 일 3,577건·전진 8건·정박 8건(최장 62일)은 2026-08-19 업무 원장 전수 집계. 아침 발신 실패는 같은 날 발신 로그 07:39~09:32 원문. 회원 불만 5건은 종합접수처 원장 직접 조회(RECEPTION-12·25·48·90·92, 조치일 2026-07-29·08-10, 같은 날 완료 처리함).</div>
-    <div><b>(추정) 표기</b> — 이 문서에 추정치는 없습니다. AI Summit 참관 내용은 <b>GM 구술 그대로</b>이며 강연 자료·발표자 인용은 포함하지 않았습니다(참관 기록 미확보). 5원칙은 <b>웰리 제안(안)</b>이며 확정된 규칙이 아닙니다.</div>
-    <div><b>기존 규칙과의 관계</b> — ②는 자율화 규약 v1.1(2026-08-15 발효), ⑤는 2026-08-17 GM 확정 사항을 그대로 옮긴 것입니다. ①③④는 오늘 실측으로 드러난 빈자리입니다. <b>차기 보고</b> — 확정 후 원칙별 적용 상태를 한 달 뒤 같은 문서번호로 갱신.</div>
+    <div><b>숫자 출처</b> — 가동 88일(2026.5.25~8.21) · 자동 업무 27개(자동화 등록부 전수, 전부 가동) · 자동 일정 32건(윈도 예약작업 Wellperion-* 전수) · 카카오톡 자동 발송 417건(최근 28일 발송 기록 전수, 2026.7.25~8.21 · 부서방 8곳).</div>
+    <div><b>정직 표기</b> — <b>"실제로 쓰는 사람 2명"</b>은 유료 계정 보유 부서(경영지원부·운영부) 기준이며 <b>(추정)</b>이다. 자동 발송 417건은 성공 기록만 센 값으로, 8/19에는 발송 실패로 사람이 대신 보낸 일이 있었다 — 무결이라는 뜻이 아니다.</div>
+    <div><b>현장 근거</b> — 2026.8.19 코엑스 AI Summit 참관(사진 47장·영상 4개, 공유 드라이브 「26.8.19 AI Summit」). 상세 현장 기록은 별도 문서 <b>260819_AI서밋_현장참관기록_A3</b>. <b>차기 보고</b> — 결정 01·02 승인 시 총괄 체계 초안을 8월 안에 같은 문서번호로 갱신 보고.</div>
   </div>
 
 </div>
@@ -278,7 +305,7 @@ document.getElementById('png').onclick = function () {
   html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
     .then(function (canvas) {
       var a = document.createElement('a');
-      a.download = '260819_AI서밋_AI거버넌스기준_A3.png';
+      a.download = '260819_AI서밋_AX전환방향_A3.png';
       a.href = canvas.toDataURL('image/png');
       a.click();
     })
