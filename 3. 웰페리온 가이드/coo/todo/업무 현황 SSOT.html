@@ -59,31 +59,26 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 /* ── Filter Bar ── */
 .sticky-top{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);}
-/* ── 라이브 점수판 2단 (2026-08-07) ── */
+/* ── 라이브 점수판 2단 (2026-08-07 신설 · 2026-08-10 GM 지시로 1/5 크기 축소) ──
+   카드·격자를 걷어내고 한 줄짜리 인라인 목록으로 바꿨다. 업무 보드가 주인공이고
+   이건 머리말이라 자리를 많이 먹으면 안 된다. 업무 칸은 3개만(진행중·완료·기한초과). */
+/* 두 판을 같은 카드 형태로 통일 — 접수 점수판 디자인이 낫다는 GM 판단(2026-08-10). */
 .livestrip{padding:12px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .livestrip .ls-foot{grid-column:1/-1;font-size:11.5px;color:var(--dim);text-align:center;padding:2px 0 0}
 @media(max-width:860px){.livestrip{grid-template-columns:1fr}}
-.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0}
-.ls-head{font-size:13px;font-weight:700;color:var(--text);margin-bottom:9px}
-.ls-head .ls-sub{font-size:11px;font-weight:500;color:var(--dim);margin-left:5px}
-.ls-body{display:flex;flex-direction:column;gap:6px}
-.ls-dim{font-size:12px;color:var(--dim)}
-/* 접수 점수판 줄 */
-.ls-row{display:flex;align-items:center;gap:8px;font-size:13px}
-.ls-rank{min-width:19px;height:19px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ls-name{font-weight:700;color:var(--text)}
-.ls-pt{font-weight:800;color:var(--accent)}
-.ls-detail{font-size:11.5px;color:var(--dim)}
-/* 업무 현황 — 대시보드 담당자별 통계와 같은 누적 집계 표(2026-08-21 나우열M 원설정 복원). */
-.ls-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
-.ls-tbl th{background:var(--paper);color:var(--dim);font-weight:700;padding:3px 6px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:center}
-.ls-tbl th:first-child{text-align:left}
-.ls-tbl td{padding:3px 6px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap}
-.ls-tbl td:first-child{text-align:left;font-weight:700;color:var(--text)}
-.ls-tbl tr:last-child td{border-bottom:none}
-.ls-tbl .lt-late{color:var(--red);font-weight:800}
-.ls-tbl .lt-zero{color:var(--dim)}
-.ls-note{font-size:11.5px;color:var(--dim);font-style:italic}
+.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
+.ls-head{font-size:15px;font-weight:700;color:var(--text);margin-bottom:11px}
+.ls-head .ls-sub{font-size:12px;font-weight:500;color:var(--dim);margin-left:5px}
+.ls-body{display:flex;flex-direction:column;gap:9px}
+.ls-dim{font-size:13px;color:var(--dim)}
+/* 한 줄 = 한 사람. 순위 배지 · 이름 · 점수 · 상세 (2026-08-10 GM: 글씨 키움) */
+.ls-row{display:flex;align-items:center;gap:9px;font-size:15px}
+.ls-rank{min-width:23px;height:23px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ls-name{font-weight:700;color:var(--text);white-space:nowrap}
+.ls-pt{font-weight:800;color:var(--accent);white-space:nowrap;font-size:16px}
+.ls-detail{font-size:13px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ls-detail b.late{color:var(--red);font-weight:800}
+.ls-note{font-size:13px;color:var(--dim);font-style:italic}
 @media print{.livestrip{display:none!important}}
 .filter-bar{background:var(--bg);padding:8px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .filter-bar::-webkit-scrollbar{display:none}
@@ -708,7 +703,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--border);padding-top:8px;">
           <span style="font-size:11px;color:var(--accent);font-weight:700;min-width:60px;">결재</span>
           <label><input type="checkbox" value="GM" onclick="warnApprovalCheck(this)">김남욱 GM</label>
-          <span style="font-size:10px;color:var(--dim);">· 대표 최종결재는 결재현황 SSOT에서 자동 처리</span>
+          <span style="font-size:10px;color:var(--dim);">· 대표님 최종결재는 결재현황 SSOT에서 자동 처리</span>
         </div>
       </div>
     </div>
@@ -777,7 +772,6 @@ const FIELD_MAP = {
   '파일URL':'fileUrl','생성자':'creator','id':'id',
   '생성일':'createdAt','수정일':'updatedAt'
 };
-
 
 /* 결재 진행중 판정 — 결재요청 있고 결재상태 미완·미반려. 활성/완료 분리·필터 카운트 공용(기준 드리프트 방지). 2026-06-03 */
 function isApprPending(t) { return String(t.approval || '').trim() && t['결재상태'] !== '결재완료' && !/반려/.test(String(t['결재상태'] || '')); }
@@ -1592,7 +1586,6 @@ function renderTaskCard(t, idx) {
     _cardParsed.collab.forEach(c => { if (c) html += '<span class="chip collab">' + esc(c) + '</span>'; });
   }
 
-
   if (t.startDate || t.endDate) {
     const dateStr = formatDateRange(t.startDate, t.endDate);
     html += '<span class="chip date-chip" onclick="event.stopPropagation();openDateRangePicker(\'' + escAttr(t.id) + '\',\'' + escAttr(t.startDate || '') + '\',\'' + escAttr(t.endDate || '') + '\')" title="클릭하여 시작일·종료일 변경">' + esc(dateStr) + '</span>';
@@ -1698,9 +1691,17 @@ function renderTaskCard(t, idx) {
   html += '<button class="action-btn" title="이 업무로 바로 가는 링크 복사 (공유용)" onclick="event.stopPropagation();copyItemLink(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:transparent;color:var(--dim);border-color:var(--border);">🔗 링크</button>';
   // 결재 넘어간 업무(결재요청됨) = 업무현황에선 잠금, 결재현황(GM)에서만 관리 (2026-06-05 GM 화면분리)
   // 단 반려된 업무는 담당자에게 반송 — 업무현황에서 다시 수정 가능하게 잠금 해제 (2026-06-05 GM)
+  // ★결재자가 실제로 결재하기 전까지는 담당자가 계속 수정할 수 있다 (2026-08-10 GM).
+  //   기존엔 결재요청만 걸리면 편집 버튼이 통째로 사라져, GM 이 아직 안 봤는데도 손을 못 댔다.
+  //   (2026-08-07 에 푼 건 편집 창 '안'의 잠금이었고, 창을 여는 버튼은 여기서 따로 막고 있었다.)
+  //   완료·삭제는 결재 흐름이 어긋나므로 그대로 결재 현황에서만 처리한다.
+  const _apprDone = String(t['결재상태'] || '') === '결재완료';
   if (String(t.approval || '').trim() && !/반려/.test(String(t['결재상태'] || ''))) {
     html += '<button class="action-btn" title="업무 보고서 인쇄 / PDF" onclick="event.stopPropagation();printResultReport(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">🖨 보고서</button>';
-    html += '<span style="font-size:11px;color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 결재 진행 중 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리</span>';
+    if (!_apprDone) html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
+    html += '<span style="font-size:11px;color:var(--dim);padding:4px 10px;display:inline-flex;align-items:center;">🔒 ' +
+      (_apprDone ? '결재 완료 — 수정·완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리'
+                 : '결재 대기 — 수정 가능 · 완료·삭제는 <b style="margin:0 3px;">결재 현황</b>에서 GM이 관리') + '</span>';
   } else {
     html += '<button class="action-btn edit" onclick="event.stopPropagation();openEditModal(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">편집</button>';
     html += '<button class="action-btn done" onclick="event.stopPropagation();markDone(\'' + escAttr(t.id) + '\')" style="padding:4px 10px;font-size:11px;">완료</button>';
@@ -2424,6 +2425,68 @@ function _seImageUploadBefore(files, info, core, uploadHandler) {
   })();
   return undefined; // uploadHandler 수동 호출 대기
 }
+/* ── Ctrl+V 이미지 축소(붙여넣기 전용) ── 2026-08-11 나우열M 지시(사진 붙여넣기 결함 수정)
+   스마트폰 캡처 등 큰 원본을 그대로 올리면 저장 글자수 한도에 걸리기 쉬워, 임계값을 넘을 때만
+   긴 변 1600px·JPEG q0.82로 축소해 기존 업로드 파이프라인에 넘긴다. 작은 이미지는 원본 그대로
+   두고(불필요한 손실압축 방지), 축소가 실패하면 원본으로 안전 폴백한다. 붙여넣기 경로에만 적용
+   — 툴바 이미지버튼·드래그앤드롭 등 기존 업로드 동작은 무변경. */
+var _PASTE_RESIZE_MAX_DIM = 1600;
+var _PASTE_RESIZE_SIZE_THRESHOLD = 900 * 1024;
+function _resizeImageFileIfLarge(file) {
+  return new Promise(function (resolve) {
+    if (!file || file.size <= _PASTE_RESIZE_SIZE_THRESHOLD || typeof createImageBitmap !== 'function') {
+      resolve(file); return;
+    }
+    createImageBitmap(file).then(function (bmp) {
+      var scale = Math.min(1, _PASTE_RESIZE_MAX_DIM / Math.max(bmp.width, bmp.height));
+      if (scale >= 1) { resolve(file); return; }
+      var w = Math.max(1, Math.round(bmp.width * scale));
+      var h = Math.max(1, Math.round(bmp.height * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+      canvas.toBlob(function (blob) {
+        if (!blob) { resolve(file); return; }
+        var newName = (file.name || 'paste').replace(/\.[^.]+$/, '') + '.jpg';
+        resolve(new File([blob], newName, { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.82);
+    }).catch(function () { resolve(file); });
+  });
+}
+/* ── 기획안·결과보고 편집기 Ctrl+V 이미지 붙여넣기 ── 2026-08-11 나우열M 지시
+   SunEditor 기본 붙여넣기는 이미지를 base64로 그대로 본문에 박아 넣어(업로드 경로를 타지 않음),
+   실사진 크기에서는 저장 글자수 한도(45,000자)를 즉시 넘겨 "사진은 여기에 Ctrl+V 하세요"
+   안내문구와 달리 실제로는 저장이 막히던 결함(2026-08-11 실측 확인). 문서 편집기 영역에서
+   이미지가 포함된 붙여넣기만 캡처 단계에서 가로채, 기존 _seImageUploadBefore(드라이브 업로드)
+   경로로 대신 흘려보낸다 — 새 백엔드·새 저장경로 없음, 기존 파이프라인 그대로 재사용.
+   (붙여넣기 전용 수정 — 일반 '내용'칸·툴바 이미지버튼·드래그앤드롭은 기존 그대로 무변경) */
+var _docPasteHookInstalled = false;
+function _installDocPasteImageHook() {
+  if (_docPasteHookInstalled) return;
+  _docPasteHookInstalled = true;
+  document.addEventListener('paste', function (e) {
+    var wrap = e.target && e.target.closest ? e.target.closest('#docPlanWrap, #docResultWrap') : null;
+    if (!wrap) return;
+    var files = e.clipboardData && e.clipboardData.files ? Array.prototype.slice.call(e.clipboardData.files) : [];
+    var imgFiles = files.filter(function (f) { return /^image\//.test(f.type); });
+    if (!imgFiles.length) return;   // 이미지가 없는(텍스트) 붙여넣기는 기존 동작 그대로
+    e.preventDefault();
+    e.stopPropagation();
+    var which = wrap.id === 'docResultWrap' ? 'result' : 'plan';
+    var ed = which === 'result' ? _resultEd : _planEd;
+    if (!ed) return;
+    Promise.all(imgFiles.map(_resizeImageFileIfLarge)).then(function (resized) {
+      _seImageUploadBefore(resized, {}, null, function (res) {
+        if (res && res.result) {
+          res.result.forEach(function (item) {
+            ed.insertHTML('<img src="' + escAttr(item.url) + '" alt="">');
+          });
+        }
+        // 실패(문자열) 시 _seImageUploadBefore 자체가 이미 showToast로 안내함 — 추가 처리 불요
+      });
+    });
+  }, true);   // capture 단계 — SunEditor 자체 붙여넣기(base64 삽입) 처리보다 먼저 가로채 막는다
+}
 function _createDocEditor(targetId, minH) {
   return SUNEDITOR.create(targetId, {
     lang: (typeof SUNEDITOR_LANG !== 'undefined' ? SUNEDITOR_LANG['ko'] : undefined),
@@ -2451,6 +2514,7 @@ function ensureDocEditors() {
   try {
     if (!_planEd)   _planEd   = _createDocEditor('fPlan', '360px');
     if (!_resultEd) _resultEd = _createDocEditor('fResult', '260px');
+    _installDocPasteImageHook();
     return true;
   } catch (e) { return false; }
 }
@@ -2913,7 +2977,6 @@ function getCheckboxValues(groupId) {
   document.querySelectorAll('#' + groupId + ' input[type=checkbox]:checked,#' + groupId + ' input[type=radio]:checked').forEach(cb => vals.push(cb.value));
   return vals.join(',');
 }
-
 
 /* 모달 기존 첨부 목록·삭제 — 업로드된 첨부를 개별 삭제(시트 링크 제거 + Drive 휴지통). 2026-06-03 GM */
 /* ── 첨부 예정 파일 목록 (2026-08-07 GM 지시) ──
@@ -3780,22 +3843,24 @@ window.ssotShowTasks=ssotShowTasks;
     if (!box) return;
     var b = (j && j.board) || [];
     if (!b.length) { box.innerHTML = '<div class="ls-dim">이번 달 기록이 아직 없습니다.</div>'; return; }
-    // 상위 5명까지만 보인다(나우열M 원설정 복원 2026-08-21) — 셈법·순위는 접수 GAS(reg_scoreboard)
-    // 응답 그대로 두고 화면 표시만 자른다. 잘린 인원 안내('외 N명')는 두지 않는다.
-    box.innerHTML = b.slice(0, 5).map(function (r) {
+    // 상위 5명까지만 보인다(나우열M 지시) — 1점 동점자가 길게 붙으면 판이 늘어져 위쪽이 안 읽힌다.
+    // 잘린 인원 안내('외 N명')는 두지 않는다. 셈법·순위는 접수 GAS 그대로 손대지 않는다.
+    var REG_LIMIT = 5;
+    var shown = b.slice(0, REG_LIMIT);
+    box.innerHTML = shown.map(function (r) {
       return '<div class="ls-row">' +
         '<span class="ls-rank">' + esc(r.rank) + '</span>' +
         '<span class="ls-name">' + esc(r.name) + '</span>' +
         '<span class="ls-pt">' + esc(r.total) + '점</span>' +
-        '<span class="ls-detail">접수 ' + esc(r.intake) + '·완료 ' + esc(r.done) + '</span>' +
+        '<span class="ls-detail">접수 ' + esc(r.intake) + ' · 완료 ' + esc(r.done) + '</span>' +
         '</div>';
     }).join('');
   }
 
   /* 담당자별 통계 표 — 대시보드(renderDashboard) 상단 표와 같은 내용.
-     ★2026-08-21 나우열M 지시로 '순위 점수판' 이전의 누적 집계 표로 되돌렸다.
-     원장 전체(ALL_TASKS)를 누적으로 세고 순위·메달은 매기지 않는다: 건수는 배분 현황이지 평가가 아니다.
-     원천을 대시보드와 똑같이 잡아(ALL_TASKS·excludeNonStaff·MEMBERS) 두 화면 숫자가 갈릴 수 없게 한다. */
+     가중점수·가중점수 그래프는 빼고 '지연'(진행중인데 종료일이 지난 건)으로 대체했다(2026-08-10 GM).
+     원천을 대시보드와 똑같이 잡아(ALL_TASKS·excludeNonStaff·MEMBERS) 두 화면 숫자가 갈릴 수 없게 한다.
+     순위·메달은 넣지 않는다: 가중점수를 뺀 뒤 남는 건 건수뿐이고, 건수는 배분 현황이지 평가가 아니다(GM 결정). */
   function renderTodoTable() {
     var box = document.getElementById('lsTodo');
     if (!box) return false;
@@ -3810,11 +3875,13 @@ window.ssotShowTasks=ssotShowTasks;
       var m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
       return m ? (m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3])) : '';
     };
-    var h = '<table class="ls-tbl"><tr><th>담당자</th><th>총</th><th>진행중</th><th>완료</th><th>보류</th><th>완료율</th><th>지연</th></tr>';
+    // 접수 점수판과 같은 방식 — 완료 건수로 순위를 매긴다(2026-08-10 GM 지시).
+    // 동점은 접수판처럼 같은 순위를 준다.
+    var st = function (t) { return String(t.status || t['상태'] || '').trim(); };
+    var stats = [];
     names.forEach(function (m) {
       var mine = all.filter(function (t) { return String(t.owner || t['담당자'] || '').indexOf(m) >= 0; });
       if (!mine.length) return;                       // 이 원장에 업무가 없는 사람은 줄을 만들지 않는다(0 으로 채우면 왜곡)
-      var st = function (t) { return String(t.status || t['상태'] || '').trim(); };
       var done = mine.filter(function (t) { return st(t) === '완료'; }).length;
       var hold = mine.filter(function (t) { return st(t) === '보류'; }).length;
       var prog = mine.filter(function (t) { return st(t) !== '완료' && st(t) !== '보류'; }).length;
@@ -3822,14 +3889,58 @@ window.ssotShowTasks=ssotShowTasks;
         var e = ymd(t.endDate || t['종료일']);
         return st(t) !== '완료' && st(t) !== '보류' && e && e < today;
       }).length;
-      var rate = mine.length ? Math.round(done / mine.length * 100) : 0;
-      h += '<tr><td>' + esc(m) + '</td><td>' + mine.length + '</td><td>' + prog + '</td><td>' + done +
-           '</td><td>' + hold + '</td><td>' + rate + '%</td>' +
-           '<td class="' + (late ? 'lt-late' : 'lt-zero') + '">' + late + '</td></tr>';
+      stats.push({ name: m, done: done, hold: hold, prog: prog, late: late,
+                   rate: mine.length ? Math.round(done / mine.length * 100) : 0 });
     });
-    h += '</table>';
-    box.innerHTML = h;
+    stats.sort(function (a, b) { return b.done - a.done || b.rate - a.rate; });
+    var h = '', rank = 0, prev = null;
+    stats.forEach(function (s, i) {
+      if (prev === null || s.done !== prev) { rank = i + 1; prev = s.done; }   // 동점 = 같은 순위
+      h += '<div class="ls-row">' +
+        '<span class="ls-rank">' + rank + '</span>' +
+        '<span class="ls-name">' + esc(s.name) + '</span>' +
+        '<span class="ls-pt">완료 ' + s.done + '</span>' +
+        '<span class="ls-detail">진행 ' + s.prog + ' · 보류 ' + s.hold + ' · 완료율 ' + s.rate + '% · 지연 ' +
+          (s.late ? '<b class="late">' + s.late + '</b>' : '0') + '</span>' +
+        '</div>';
+    });
+    box.innerHTML = h + (_consultHtml || '');
     return true;
+  }
+
+  /* 회원 상담(임정은M) — 업무 SSOT 밖에서 도는 일이라 프로젝트 단위로 안 잡힌다(2026-08-10 GM).
+     문의 1건씩 업무로 올리면 보드가 수백 장이 되고, '회원 상담' 업무 1건만 두면 영원히 진행중·완료율 0% 가 된다.
+     그래서 문의 원장 집계를 업무판 마지막 줄로 얹는다.
+     ★member_inquiry_list(이름·전화 포함 694행) 대신 집계 전용 member_inquiry_summary 를 쓴다 — PII 미노출.
+     순위는 매기지 않는다: 이 원장은 담당이 사실상 한 명(91%)이라 등수가 의미 없다. */
+  var CPO_API = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
+  var CONSULT_OWNER = '임정은';
+  var _consultHtml = '';
+  function loadConsult() {
+    var d = new Date();
+    var mm = (d.getMonth() + 1); mm = (mm < 10 ? '0' : '') + mm;
+    var from = d.getFullYear() + '-' + mm + '-01', to = d.getFullYear() + '-' + mm + '-31';
+    fetch(CPO_API + '?action=member_inquiry_summary&from=' + from + '&to=' + to)
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) return;
+        var pick = function (arr) {
+          return (arr || []).filter(function (o) { return String(o.owner || '').indexOf(CONSULT_OWNER) >= 0; })[0];
+        };
+        var cur = pick(j.period), acc = pick(j.all);
+        if (!cur && !acc) return;
+        cur = cur || { total: 0, reg: 0, contacting: 0 };
+        _consultHtml =
+          '<div class="ls-row" style="border-top:1px dashed var(--border);padding-top:8px;margin-top:2px">' +
+          '<span class="ls-rank" style="background:var(--purple-bg);color:var(--purple)">👤</span>' +
+          '<span class="ls-name">임정은M</span>' +
+          '<span class="ls-pt">상담 ' + cur.total + '</span>' +
+          '<span class="ls-detail">컨택중 ' + cur.contacting + ' · 등록 ' + cur.reg +
+            (acc ? (' · 누적 전환율 ' + acc.rate + '%') : '') + ' <span style="opacity:.7">(회원 문의 원장)</span></span>' +
+          '</div>';
+        renderTodoTable();
+      })
+      .catch(function () { /* 상담 줄은 보조 정보 — 실패해도 업무판은 그대로 뜬다 */ });
   }
   function todoFallback() {
     if (renderTodoTable()) return;
@@ -3839,12 +3950,25 @@ window.ssotShowTasks=ssotShowTasks;
     }, 4000);
   }
   todoFallback();
+  loadConsult();
 
-  function get(url) {
-    return fetch(url, { redirect: 'follow' }).then(function (r) { return r.json(); });
+  /* 접수 처리 점수판 — 접수 GAS(reg_scoreboard)를 그대로 표시한다. 새 셈법 없음.
+     이 백엔드는 응답이 6~9초로 느리고 간헐적으로 실패한다 — 한 번 실패하면 '불러오는 중…' 에
+     영영 갇히므로 점증 간격으로 다시 묻는다. 끝까지 안 되면 그때만 안내를 띄운다. */
+  function getReg(i) {
+    var delays = [0, 1500, 3500, 6000];
+    return new Promise(function (rs) { setTimeout(rs, delays[i]); })
+      .then(function () {
+        return fetch(REG_API + '?action=reg_scoreboard&period=month', { redirect: 'follow' })
+          .then(function (r) { return r.json(); }).catch(function () { return null; });
+      })
+      .then(function (j) {
+        if (j && j.ok) return renderReg(j);
+        if (i + 1 < delays.length) return getReg(i + 1);
+        fail('lsReg', '접수 점수판을 불러오지 못했습니다 — 새로고침 해주세요.');
+      });
   }
-  get(REG_API + '?action=reg_scoreboard&period=month').then(renderReg)
-    .catch(function () { fail('lsReg', '접수 점수판을 불러오지 못했습니다.'); });
+  getReg(0);
 })();
 </script>
 </body>
