@@ -158,13 +158,38 @@ def main() -> int:
     seen = set(st.get("seen", []))
     fresh = [c for c in calls if fingerprint(c) not in seen]
     print(f"호출 {len(calls)}건(최근 {a.since_days}일) · 새 것 {len(fresh)}건 · 지난 것 {len(old)}건 건너뜀")
+    made = []
     for c in fresh:
         if to_ship(c, a.dry_run) and not a.dry_run:
             seen.add(fingerprint(c))
+            made.append(c)
     if not a.dry_run:
         st["seen"] = sorted(seen)
         _save(st)
+        _ping(made)
     return 0
+
+
+def _ping(made: list[dict]) -> None:
+    """호출을 받았다는 사실만 AI 진행현황방에 한 줄. 발신 도구는 기존 것 하나뿐(약속 L21).
+
+    왜 필요한가: 배는 큐에 잘 쌓이지만 웰리 세션이 열려야 눈에 띈다. 실무진은 물어 놓고
+    답을 기다리는데 다음 날 아침까지 아무도 모르면, 받아 놓고 방치한 것과 같다.
+    ★한 번 실행에 한 줄만 보낸다 — 호출마다 보내면 여러 통이 몰아쳐 방이 시끄러워진다.
+    """
+    if not made:
+        return                      # 조용한 것이 정상 — 호출이 없으면 아무 말도 하지 않는다
+    who = " · ".join(dict.fromkeys(c["who"] for c in made))
+    first = made[0]["text"].replace("\n", " ")[:40]
+    msg = (f"★중간관리자 방에서 웰리를 {len(made)}번 불렀습니다 — {who}\n"
+           f"   첫 건: {first}…\n   웰리 항로에 배로 올려 뒀습니다.")
+    try:
+        subprocess.run([sys.executable, str(ROOT / "scripts" / "notify_gm_progress.py"),
+                        msg, "--ship", "시토 733", "--state", "done"],
+                       capture_output=True, text=True, encoding="utf-8",
+                       cwd=str(ROOT), timeout=60)
+    except Exception as e:          # 알림 실패가 접수를 되돌리면 안 된다 — 배는 이미 떴다
+        print(f"[WARN] 알림 실패(배는 정상 등록됨): {type(e).__name__}: {e}")
 
 
 def demo() -> None:
