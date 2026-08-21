@@ -131,6 +131,68 @@ def build_text(day: str, value_up: list[str]) -> str:
     return "\n".join(parts)
 
 
+def build_contact_text(send_day: str) -> str:
+    """「보고」탭 I16 — 금일 예상 컨택 및 매출 현황 (2026-08-21 시토 · 배738).
+
+    지금까지 사람이 손으로 치던 칸이다. 09:30 보고가 나가는 날(send_day) 기준으로
+    ①그날 투어·체험 예약자 ②전날 LOSS 를 적는다. 실무진이 쓰던 문구 틀을 그대로 따른다.
+
+    ★원천을 새로 만들지 않는다: 예약은 아침 정리(ops_daily_digest.build_reservation_block)가
+      쓰는 것과 **같은 규칙** — member_inquiry_list 의 reservations[].date 매칭이다.
+      2026-08-21 실측에서 체험일자(exp1) 로 뽑았더니 이미 등록 끝난 분까지 딸려 오고
+      실무진이 적은 분은 빠졌다. 사람이 세는 것과 어긋난 숫자가 회장님 보고에 실리면 안 된다.
+    """
+    from scripts.collectors.ops_shared import FUNNEL_EXEC_URL  # noqa: PLC0415
+
+    prev_day = (date.fromisoformat(send_day) - timedelta(days=1)).isoformat()
+    md = lambda d: f"{int(d[5:7])}/{int(d[8:10])}"  # noqa: E731 — '8/22' 표기
+
+    # ── 예약 ──
+    events: list[tuple[str, str]] = []
+    resp = gas_get(FUNNEL_EXEC_URL, {"action": "member_inquiry_list"}, timeout=40,
+                   label="I16 예약")
+    if resp is None:
+        return ""      # 못 읽으면 아무것도 쓰지 않는다 — 빈 값으로 사람 글을 지우지 않는다
+    try:
+        data = resp.json()
+        if not data.get("ok"):
+            return ""
+        for r in data.get("data", []) or []:
+            for res in (r.get("reservations") or []):
+                if res.get("date") == send_day:
+                    events.append((res.get("time") or "", r.get("name") or ""))
+    except Exception:
+        return ""
+    events.sort(key=lambda x: x[0])
+    names = " / ".join(n for _, n in events if n)
+
+    lines = [f"{md(send_day)} 기준 [총 예약자  {len(events)}명]", ""]
+    lines.append(f"[신   규  :  {len(events)} 명]")
+    lines.append(f" - 투어 및 체험 : {names}" if names else " - 투어 및 체험 : ")
+    lines.append("[재등록 : 0명]")
+    lines.append("- 멤버십 : ")
+    lines.append("")
+
+    # ── 전날 LOSS ── 종료회원 원장 스냅샷(19:00 자동 갱신)에서 센다
+    loss: list[str] = []
+    snap = ROOT / "status" / "member_ended_snapshot.json"
+    try:
+        rows = json.loads(snap.read_text(encoding="utf-8")).get("rows") or []
+        for r in rows:
+            for k, v in r.items():
+                if k.replace("\n", "") == "LOSS일자" and str(v or "").strip()[:10] == prev_day:
+                    nm = next((str(vv) for kk, vv in r.items() if kk.replace("\n", "") == "회원명"), "")
+                    if nm:
+                        loss.append(nm)
+                    break
+    except Exception:
+        pass
+    lines.append(f"{md(prev_day)} 기준 [LOSS : {len(loss)}명]")
+    lines.append(f"- 멤버십 : {' / '.join(loss)}" if loss else "- 멤버십 :")
+    lines.append("- 단   기 :")
+    return "\n".join(lines)
+
+
 def _parking_lines() -> list[str]:
     """주차 — 지금은 점검이 종이 체크라 셀 숫자가 없다. 없는 숫자를 지어내지 않는다.
     ponytail: 제출형 점검(시토 배672)이 붙으면 여기서 support_line 과 같은 방식으로 센다."""
@@ -163,18 +225,41 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="만들 텍스트만 보고 시트엔 쓰지 않는다")
     ap.add_argument("--value-up", action="append", default=[],
                     help="내부 환경 개선 줄(여러 번 지정 가능). 없으면 '집계 중'")
+    ap.add_argument("--contact", action="store_true",
+                    help="I16(금일 예상 컨택 및 매출 현황)도 함께 채운다 — 09:00 예약이 쓰는 길")
+    ap.add_argument("--send-day", default=date.today().isoformat(),
+                    help="09:30 보고가 나가는 날(기본 오늘). I16 의 '기준' 날짜가 된다")
+    ap.add_argument("--only-contact", action="store_true", help="I16 만 채운다(P20 건너뜀)")
     args = ap.parse_args()
 
-    value_up = [f" · {v}" for v in args.value_up]
-    text = build_text(args.date, value_up)
-    print(text)
-    print("---")
-    if args.dry_run:
-        print(f"[미리보기] {len(text)}자 · {text.count(chr(10)) + 1}줄 — 시트에 쓰지 않았습니다")
-        return 0
-    res = post_to_sheet(text, args.cell)
-    print("[결과]", json.dumps(res, ensure_ascii=False))
-    return 0 if res.get("ok") else 1
+    rc = 0
+    if not args.only_contact:
+        value_up = [f" · {v}" for v in args.value_up]
+        text = build_text(args.date, value_up)
+        print(text)
+        print("---")
+        if args.dry_run:
+            print(f"[미리보기 P20] {len(text)}자 · {text.count(chr(10)) + 1}줄 — 시트에 쓰지 않았습니다")
+        else:
+            res = post_to_sheet(text, args.cell)
+            print("[결과 P20]", json.dumps(res, ensure_ascii=False))
+            rc = rc or (0 if res.get("ok") else 1)
+
+    if args.contact or args.only_contact:
+        ctext = build_contact_text(args.send_day)
+        if not ctext:
+            # ★빈 값으로 사람이 쓴 글을 지우지 않는다. 원천을 못 읽으면 그냥 손대지 않는다.
+            print("[I16] 원천(문의 원장)을 못 읽어 이번엔 쓰지 않았습니다 — 기존 내용 그대로 둡니다")
+            return rc or 1
+        print(ctext)
+        print("---")
+        if args.dry_run:
+            print(f"[미리보기 I16] {len(ctext)}자 · {ctext.count(chr(10)) + 1}줄 — 시트에 쓰지 않았습니다")
+        else:
+            cres = post_to_sheet(ctext, "I16")
+            print("[결과 I16]", json.dumps(cres, ensure_ascii=False))
+            rc = rc or (0 if cres.get("ok") else 1)
+    return rc
 
 
 def _selftest() -> None:
