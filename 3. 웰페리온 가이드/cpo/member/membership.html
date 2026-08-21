@@ -5361,16 +5361,18 @@ function _lessonRosterKeyOf(sportKey) {
   // 아쿠아로빅 — 2026-07-27 시포. 여기서 안 잡혀 명단이 빈 채로 팀장(천주희) 1명만 뜨고 있었다(라이브 문의 18건).
   //   수영팀으로 본 근거: 팀장 정의(_lessonTeamLeadOf 아쿠아=천주희)가 수영 명단 소속이고, GM 07-08 명단에서도
   //   아쿠아가 수영 배열 안에 들어 있었다. 아쿠아로빅 전담 명단이 따로 있으면 이 줄만 바꾸면 된다.
-  if (/아쿠아/.test(s)) return '수영';
+  if (/아쿠아|aqua/i.test(s)) return '수영';           // FB260821-145441: Aqua Exercise·Aquarobics 영문 추가
   if (/수영/.test(s)) return '수영';
   if (/Parent.?Child|swim/i.test(s)) return '수영';   // 영문 WSC 폼 저장값(FB260805-214544 박민서 — 모자수영 문의 컨택 시 운영부 명단 노출 버그)
   if (/P\.?T/i.test(s)) return 'P.T';
-  if (/필라/.test(s)) return '필라테스';
+  if (/필라|pilates/i.test(s)) return '필라테스';      // FB260821-145441: Pilates 영문 추가
   if (/골프|golf/i.test(s)) return '골프';            // FB260817-172105: 영문 WSC 폼 "Golf" 추가
-  if (/스쿼시/.test(s)) return '스쿼시';
-  if (/체조|트램폴린|WSC/i.test(s)) return '체조&트램폴린';
+  if (/스쿼시|squash/i.test(s)) return '스쿼시';      // FB260821-145441: Squash Lessons 영문 추가
+  if (/체조|트램폴린|WSC|gymnas/i.test(s)) return '체조&트램폴린';  // FB260821-145441: Gymnastics 영문 추가
   if (/뮤지컬|musical|star\s*academy/i.test(s)) return '뮤지컬팀';  // FB260817-172105: 영문 "Musical" 추가
   if (/웰니스|wellness|루프/i.test(s)) return '웰니스';   // 웰니스 프로그램=루프메소드 단일 공급자(2026-07-16 GM)
+  if (/ballet/i.test(s)) return '발레';               // FB260821-145441: 영문 WP폼 Ballet → 한글 버킷
+  if (/barre/i.test(s)) return '바레';                // FB260821-145441: 영문 WP폼 Barre → 한글 버킷
   return null;
 }
 // 종목별 팀장 — 미배정(담당자 X) 건 기본배정 대상·항상 명단(옵션·valid)에 포함. 2026-07-16 GM
@@ -5696,7 +5698,18 @@ var LESSON_SPORT_DISPLAY_MAP = {
   'Gymnastics & Trampoline':'WSC 체조 & 트램폴린',
   'Pilates':'WSC 필라테스','pilates':'WSC 필라테스',
   'Golf':'WSC 골프','golf':'WSC 골프',
-  'Musical':'뮤지컬 (Brad Little Star Academy)','musical':'뮤지컬 (Brad Little Star Academy)'
+  'Musical':'뮤지컬 (Brad Little Star Academy)','musical':'뮤지컬 (Brad Little Star Academy)',
+  // FB260821-145441: 영문 WP폼·EN구글폼 종목값 표시명 누락 추가
+  'Musical Movement':'뮤지컬 (Brad Little Star Academy)',   // EN 유소년 구글폼
+  'English Musical':'뮤지컬 (Brad Little Star Academy)',    // EN WP폼
+  'Squash Lessons':'WSC 스쿼시',                            // EN 성인 구글폼
+  'Squash (Private / Group)':'스쿼시',                      // EN WP폼
+  'Pilates (Private / Group)':'필라테스',                   // EN WP폼
+  'Pilates (Youth)':'필라테스',                             // EN WP폼
+  'Aqua Exercise':'아쿠아로빅',                             // EN 성인 구글폼
+  'Aquarobics (Tue, Thu 13:00 class)':'아쿠아로빅',         // EN WP폼
+  'Ballet':'발레','ballet':'발레',                          // EN WP폼
+  'Barre':'바레','barre':'바레'                             // EN WP폼
 };
 // isYouth=true면 '수영'을 성인 라벨('성인 수영 (개인레슨 / 단체레슨)')로 확장하지 않고 원문 유지 — 유소년 '수영'은
 // 별도 'WSC수영/WSC 수영' 표기와 구분되는 원본 라벨이라 '성인' 접두가 붙으면 오표기(2026-07-18 GM).

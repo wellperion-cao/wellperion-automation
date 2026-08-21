@@ -239,22 +239,22 @@ function _sportBuckets_(raw) {
   var s = String(raw == null ? '' : raw);
   var out = [];
   function hit(re, key) { if (re.test(s)) out.push(key); }
-  hit(/수영/, '수영');
-  hit(/필라테스|필라/, '필라테스');
+  hit(/수영|swimming/i, '수영');              // FB260821-145441: Swimming 영문 추가
+  hit(/필라테스|필라|pilates/i, '필라테스'); // FB260821-145441: Pilates 영문 추가
   hit(/P\.?T|피티|퍼스널/i, 'P.T');
-  hit(/스쿼시/, '스쿼시');
-  hit(/골프/, '골프');
-  hit(/아쿠아/, '아쿠아로빅');
+  hit(/스쿼시|squash/i, '스쿼시');           // FB260821-145441: Squash 영문 추가
+  hit(/골프|golf/i, '골프');                 // FB260821-145441: Golf 영문 추가
+  hit(/아쿠아|aqua/i, '아쿠아로빅');         // FB260821-145441: Aqua Exercise 영문 추가
   // 발레·바레 분리(시토·GM 2026-07-15): 과거 합쳐진 옵션('웰니스 프로그램(바레, 발레)')은 legacy '루프메소드'로 잔류,
   //   신규 단독 '발레'/'바레'는 각각 분리 집계(다중체크면 각 +1). 종목명 표준=순수 '발레'/'바레'.
   if (/웰니스\s*프로그램|바레\s*[,·]\s*발레|발레\s*[,·]\s*바레/.test(s)) {
     out.push('루프메소드');       // legacy 합산 문자열(발레·바레 둘 다 포함) → 잔류 버킷
   } else {
-    hit(/발레/, '발레');
-    hit(/바레/, '바레');
+    hit(/발레|ballet/i, '발레'); // FB260821-145441: Ballet 영문 추가
+    hit(/바레|barre/i, '바레');  // FB260821-145441: Barre 영문 추가
   }
-  hit(/뮤지컬/, '뮤지컬');
-  hit(/체조/, '체조');
+  hit(/뮤지컬|musical|star\s*academy/i, '뮤지컬'); // FB260821-145441: Musical 영문 추가
+  hit(/체조|gymnas/i, '체조');               // FB260821-145441: Gymnastics 영문 추가
   if (out.length === 0 && s.trim()) out.push('기타');
   return out;
 }
