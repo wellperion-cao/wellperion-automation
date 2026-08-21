@@ -36,7 +36,9 @@ except Exception:
 ROOT = Path(__file__).resolve().parent.parent
 STATE = ROOT / "status" / "kakao_listen_state.json"
 ROOM = "★중간관리자"
-WAKE = "웰리야"
+WAKE = "웰리"          # GM 확정 2026-08-21 — "웰리야"가 아니라 "웰리"로 부른다
+# 부른 뒤 따라오는 호칭·구두점은 본문이 아니다: "웰리야 ~" · "웰리님, ~" · "웰리 - ~"
+_AFTER_WAKE = " ,·:-야님씨!?~"
 
 # 카톡 내보내기 한 줄 형식: [보낸사람] [오전 11:56] 내용
 LINE = re.compile(r"^\[(?P<who>[^\]]+)\]\s*\[(?P<when>[^\]]+)\]\s*(?P<text>.*)$")
@@ -64,7 +66,7 @@ def extract(text: str) -> list[dict]:
             body = m.group("text").strip()
             if body.startswith(WAKE):
                 cur = {"who": m.group("who").strip(), "when": m.group("when").strip(),
-                       "text": body[len(WAKE):].lstrip(" ,·:-").strip()}
+                       "text": body[len(WAKE):].lstrip(_AFTER_WAKE).strip()}
                 out.append(cur)
             else:
                 cur = None          # 다른 사람 말 — 이어붙이지 않는다
@@ -81,8 +83,9 @@ def to_ship(c: dict, dry: bool) -> bool:
     title = f"[웰리] ★중간관리자 방 호출 — {c['who']}: {c['text'][:60]}"
     note = (f"[카톡 호출 자동 접수] ★중간관리자 방 · {c['when']} · {c['who']}\n\n"
             f"{c['text']}\n\n"
-            "▸이 방 발신은 웰리만 한다(약속 L24). 사실 안내는 바로 답하고, 판단·약속·숫자가 들어가면 "
-            "GM 승인을 먼저 받는다(GM 확정 2026-08-21).")
+            "▸이 방에 글을 쓰는 쪽 = 중간관리자(실무진) · 웰리 · GM 셋뿐이다(GM 확정 2026-08-21).\n"
+            "  AI 중에서는 웰리만 쓴다 — 다른 역할은 웰리에게 배로 넘긴다(약속 L24).\n"
+            "▸사실 안내는 바로 답하고, 판단·약속·숫자가 들어가면 GM 승인을 먼저 받는다(GM 확정 2026-08-21).")
     cmd = [sys.executable, str(ROOT / "scripts" / "queue_dispatch.py"),
            "--to", "ceo", "--sender", "cto", "--priority", "⛴️여객선",
            "--audience", "office", "--reversible", "yes", "--work-type", "update",
@@ -120,22 +123,26 @@ def main() -> int:
 
 
 def demo() -> None:
-    """자체 점검 — 「웰리야」 줄만 뽑고 남의 대화는 안 가져오는지."""
+    """자체 점검 — 「웰리」 줄만 뽑고 남의 대화는 안 가져오는지."""
     sample = (
         "[이경연] [오전 9:10] 오늘 청소 시간 조정합니다\n"
         "[이정헌] [오전 9:12] 웰리야 정화조 공사 일정 언제였지?\n"
         "확인 부탁해\n"
         "[나우열] [오전 9:20] 네 확인했습니다\n"
-        "[임정은] [오전 9:31] 웰리야, 회원 명단 링크 좀\n"
+        "[임정은] [오전 9:31] 웰리, 회원 명단 링크 좀\n"
+        "[김남욱] [오전 9:40] 웰리님 어제 접수건 정리해줘\n"
     )
     got = extract(sample)
-    assert len(got) == 2, got
-    assert got[0]["who"] == "이정헌" and "정화조" in got[0]["text"]
+    assert len(got) == 3, got
+    assert got[0]["who"] == "이정헌" and got[0]["text"].startswith("정화조"), got[0]
     assert "확인 부탁해" in got[0]["text"], "여러 줄 호출이 이어붙지 않았다"
     assert "네 확인했습니다" not in got[0]["text"], "남의 대화가 딸려 들어왔다"
-    assert got[1]["who"] == "임정은" and got[1]["text"].startswith("회원 명단")
+    assert got[1]["text"].startswith("회원 명단"), got[1]
+    # 호칭이 붙어도 본문만 남는다 — "야"·"님"이 본문 앞에 남으면 그대로 배 제목이 된다.
+    assert got[2]["text"].startswith("어제 접수건"), got[2]
     assert extract("[A] [오전 1:00] 웰리야") == [], "본문 없는 호출은 버려야 한다"
-    print("[OK] 자체 점검 통과 — 호출 2건만 추출, 남의 대화 미포함")
+    assert extract("[A] [오전 1:00] 웰리") == [], "이름만 부른 것도 버려야 한다"
+    print("[OK] 자체 점검 통과 — 「웰리」·「웰리야」·「웰리님」 3건 추출, 남의 대화 미포함")
 
 
 if __name__ == "__main__":
