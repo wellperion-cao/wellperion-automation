@@ -627,5 +627,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-08-21"
+  },
+  {
+    "task_id": "CTO-2026-08-21-종합접수처-GAS-응답-8-11초-캐시-미적중-진단",
+    "clevel": "cto",
+    "title": "[시토] 종합접수처 GAS 응답 8~11초 — 캐시 미적중 진단·슬림화 (시우 실측 인계 2026-08-21)",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-08-21",
+    "from": "coo",
+    "note": "[시우 → 시토 전달 2026-08-21] 시우 → 시토 인계 (GM 지시 2026-08-21 \"시토에게 넘겨줘\").\n\n[무엇] 종합접수처 GAS 응답이 느리다. 시우가 실측만 하고 코드는 손대지 않았다.\n\n[실측 2026-08-21 20:2x · 라이브 직접 호출]\n· 접수 데이터 reg_list 8.6~9.9초(94KB) · reg_board 8.6~10.4초(100KB) · reg_dashboard 8.7~11.7초(86KB)\n· 업무 데이터 todo_list 3.35초(310KB) — 3배 큰 응답을 3배 빨리 준다. 접수 쪽만 느리다.\n· 화면(HTML)은 문제 없음 — 접수 0.03초 · 업무 0.05초 · 결재 0.05초(GitHub Pages).\n· 커밋 후 화면 반영 약 1분(최근 Pages 배포 4회 1분2초~1분9초).\n\n[관측된 이상]\n· reg_dashboard 를 연달아 3회 불러도 8.69 → 9.61 → 11.73초로 전혀 빨라지지 않는다.\n  코드에는 60초 캐시가 있다(_regDashboard · cacheKey 'reg_dash_v1..' · CacheService 60초,\n  apps_script_reception.js 1538~1547 / put 은 1611). put 이 try/catch 로 감싸여 있어\n  실패해도 조용히 넘어간다 — 캐시가 안 먹는 것으로 관측되나 원인은 재보지 않았다(단정 금지).\n· reg_list 에는 캐시가 아예 없다(코드 확인). 화면이 가장 자주 부르는 경로다.\n\n[줄일 후보 3가지 — 시토 판단]\n1. 캐시 미적중 원인 진단(값 크기 한도·키·무효화 타이밍 중 무엇인지 재고 나서 고친다)\n2. reg_list 캐시 신설(무효화는 기존 _regBoardCacheClear_ 관문 재사용 — 새 장치 만들지 말 것, 약속 L21)\n3. 응답 슬림화 — 오늘 담당(assignee) 칸을 뺀 것과 같은 방향. 지금 한 번에 86~100KB.\n\n[배경] 오늘 시우가 접수처 담당 칸 폐지·재배포까지 했고(커밋 497dc14c · 배포 @111),\nclasp 원격 실행 권한도 붙였다(GCP 688629282171 · 인증 ~/.clasp-creds/reception_desktop.json).\n그래서 시토가 clasp run 으로 함수 단위 실측·검증을 바로 할 수 있다.\n\n[경계] 화면에 실제로 손대는 건 GM 확인 뒤에 — GM 원문 \"실제 화면에 손대는 건 GM 확인 뒤에\" 를 시우가 약속했다.",
+    "next": "캐시 미적중 원인부터 재고, 그 결과로 reg_list 캐시·응답 슬림화 판단",
+    "depends_on": "",
+    "ship_no": 10952,
+    "short_no": 742,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-08-21"
   }
 ]
