@@ -660,7 +660,9 @@ var DEPT_OTHER = '__OTHER__';
 var DEPT_OTHER_LABEL = '지원부(구분 전)';
 
 /* 공통·SLA 키 → 나머지는 extras */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','assignee','assigneeCanon','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply','memberReplyTemplate'];
+/* ★2026-08-21 GM 확정 — 'assignee'(담당)·'assigneeCanon' 을 뺐다. 접수처의 사람 분류는
+   접수자(reporter)·처리자(handler) 둘뿐이다. 서버도 이 값을 더 이상 내려보내지 않는다. */
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply','memberReplyTemplate'];
 
 /* ── 🏆 점수판 (GM 지시 2026-07-28) ──
    셈법은 서버(reg_scoreboard) 한 곳에만 있다 — 화면에서 다시 계산하지 않는다.

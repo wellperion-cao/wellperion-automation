@@ -24,7 +24,7 @@
 var LEGACY_RECEPTION_SHEET = '접수 RECEPTION';
 var LEGACY_RECEPTION_HEADERS = [
   '접수ID', '접수일시', '유형', '위치', '사진URL',
-  '내용', '연락처', '상태', '담당', '처리메모'
+  '내용', '연락처', '상태', '처리메모'
 ];
 var LEGACY_RECEPTION_STATUSES = ['접수', '처리중', '완료'];
 
@@ -96,7 +96,6 @@ var REG_COMMON_HEADERS = [
   { key: 'content',   label: '내용'     },
   { key: 'photoUrl',  label: '사진URL'  },
   { key: 'status',    label: '상태'     },
-  { key: 'assignee',  label: '담당'     },
   { key: 'memo',      label: '처리메모' },
   { key: 'dept',      label: '부서'     }
 ];
@@ -310,7 +309,7 @@ function _vGetSheet() {
     .setFontWeight('bold')
     .setBackground('#B79F8A')
     .setFontColor('#ffffff');
-  var widths = [170, 150, 90, 110, 220, 320, 130, 80, 120, 280];
+  var widths = [170, 150, 90, 110, 220, 320, 130, 80, 280];
   widths.forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
   sh.setFrozenRows(1);
   return sh;
@@ -876,10 +875,6 @@ function _vUpdate(body) {
   var effStatus = _regEffectiveStatusOnMemo(curStatus, newStatus, memo);
   if (effStatus) existing[LEGACY_RECEPTION_HEADERS.indexOf('상태')] = effStatus;
 
-  var assignee = body.assignee !== undefined ? body.assignee
-    : (body['담당'] !== undefined ? body['담당'] : undefined);
-  if (assignee !== undefined) existing[LEGACY_RECEPTION_HEADERS.indexOf('담당')] = String(assignee);
-
   if (memo !== undefined) existing[LEGACY_RECEPTION_HEADERS.indexOf('처리메모')] = String(memo);
 
   sh.getRange(rowNum, 1, 1, LEGACY_RECEPTION_HEADERS.length).setValues([existing]);
@@ -888,7 +883,6 @@ function _vUpdate(body) {
   return _vJson({
     ok: true, id: id,
     status: existing[LEGACY_RECEPTION_HEADERS.indexOf('상태')],
-    assignee: existing[LEGACY_RECEPTION_HEADERS.indexOf('담당')],
     message: '접수건이 갱신되었습니다.'
   });
 }
@@ -1017,6 +1011,34 @@ function _regDraftMemoSelfCheck() {
                 'readall-content-matches-write-column', failures);
 
   return { ok: failures.length === 0, failures: failures, checked: Object.keys(REG_DRAFT_TEMPLATES).length * 2 + 9 + Object.keys(REG_MEMBER_REPLY_TEMPLATES).length + 3 };
+}
+
+// ─── 일회성 정비: 시트에서 '담당' 열 지우기 (2026-08-21 GM 확정 · 시우) ───
+// 접수처의 사람 분류는 접수자·처리자 둘뿐이다. 코드는 이 배포부터 '담당'을 읽지도 쓰지도
+// 않는다 — 남은 것은 시트에 박혀 있는 옛 '담당' 열과 그 값뿐이라 이 함수가 한 번만 지운다.
+//
+// 왜 열을 지워도 다른 값이 밀리지 않나: 이 스크립트의 읽기·쓰기는 전부 _regKeyCols 로
+//   '시트 실제 헤더 이름'에서 열 위치를 구한다(2026-07-28 시우 · 2026-08-05 시토). 코드에
+//   박힌 순번을 쓰는 곳은 존재하지 않는 레거시 탭('접수 RECEPTION') 경로뿐이다.
+// 되돌리기: 열은 다시 만들 수 있지만 값은 복구되지 않는다. 실행 전 스프레드시트 사본을 뜬다.
+// 여러 번 실행해도 안전하다(이미 없으면 건너뛴다).
+function regDropAssigneeColumn() {
+  var out = [];
+  REG_CATEGORIES.forEach(function (cat) {
+    var sh;
+    try { sh = _regGetSheet(cat.key); } catch (e) { out.push(cat.sheet + ' — 시트 없음'); return; }
+    var lastCol = sh.getLastColumn();
+    if (lastCol < 1) { out.push(cat.sheet + ' — 빈 시트'); return; }
+    var labels = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    var i = labels.indexOf('담당');
+    if (i < 0) { out.push(cat.sheet + ' — 담당 열 없음(이미 정리됨)'); return; }
+    sh.deleteColumn(i + 1);
+    out.push(cat.sheet + ' — 담당 열 삭제(' + (i + 1) + '번째)');
+  });
+  _regBoardCacheClear_();
+  var msg = out.join('\n');
+  Logger.log(msg);
+  return msg;
 }
 
 // ─── reg_submit — 종합 접수처 제출 (public) ───
@@ -1357,28 +1379,30 @@ function _regList(params) {
     return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1;
   });
 
-  // 담당·처리자 이름을 통일한 값을 같이 실어 보낸다(2026-07-31 웰리).
+  // 처리자 이름을 통일한 값을 같이 실어 보낸다(2026-07-31 웰리).
   // ★소비자(알림·보드)는 이 값으로 묶기만 하고 판정을 다시 만들지 않는다 — 규칙이 두 벌이 되면
   //   지금과 똑같이 갈라진다(약속 L01). 실제로 점수판은 통일하고 22:30 적체 알림은 안 해서
   //   같은 메시지 안에서 최준용M(3건)·최준용(5건)이 따로 떴다.
+  // ▸담당(assigneeCanon)은 2026-08-21 GM 확정으로 뺐다 — 접수처의 사람 분류는 접수자·처리자뿐.
   all.forEach(function (r) {
-    r.assigneeCanon = _regStaffCanonList(r.assignee);
-    r.handlerCanon  = _regStaffCanonList(r.handler);
+    r.handlerCanon = _regStaffCanonList(r.handler);
   });
 
   return _vJson({ ok: true, count: all.length, data: all });
 }
 
-// 담당자 입력 자동완성용 — 지금까지 실제로 쓰인 이름(통일된 표기)을 많이 쓰인 순으로.
-// 드롭다운(선택제)이 아니라 '제안'이다. GM 제약: 담당자가 회원일 수 있어 자유 입력을 막지 않는다.
+// 처리자 입력 자동완성용 — 지금까지 실제로 쓰인 이름(통일된 표기)을 많이 쓰인 순으로.
+// 드롭다운(선택제)이 아니라 '제안'이다. GM 제약: 처리자가 회원일 수 있어 자유 입력을 막지 않는다.
 // 고르는 사람은 표기가 통일되고, 새 이름은 그냥 쳐 넣으면 된다.
+// ▸담당(assignee)은 2026-08-21 GM 확정으로 제안 재료에서 뺐다 — 없앤 칸이라 옛 값이
+//   자동완성으로 되살아나면 안 된다. 접수자(reporter)는 '회원'·'자동(점검)'이 섞여 제외.
 function _regStaffSuggest() {
   var count = {};
   REG_CATEGORIES.forEach(function (cat) {
     var sh;
     try { sh = _regGetSheet(cat.key); } catch (e) { return; }
     _regReadAll(sh, _regHeadersFor(cat.key)).forEach(function (r) {
-      _regStaffCanonList(r.assignee).concat(_regStaffCanonList(r.handler)).forEach(function (n) {
+      _regStaffCanonList(r.handler).forEach(function (n) {
         count[n] = (count[n] || 0) + 1;
       });
     });
@@ -1445,7 +1469,9 @@ function _regStaffCanonList(raw) {
 //   → 적는 행위 자체에 점수를 붙여, 접수를 피할 이유를 없앤다.
 // 셈법(단순 유지 — 복잡해지면 아무도 안 믿는다):
 //   · 접수 1점 = reporter(접수자)에 직원 이름이 있는 건. '회원'·'자동(점검)'은 사람이 아니라 제외.
-//   · 완료 1점 = status='완료' 인 건의 처리자. handler 가 있으면 handler, 없으면 담당(assignee).
+//   · 완료 1점 = status='완료' 인 건의 처리자(handler). ▸2026-08-21 GM 확정으로 담당(assignee)
+//     대체 계산을 뺐다 — 담당 칸 자체가 없어졌다. 처리자가 비면 점수는 안 붙는다(완료 저장 시
+//     처리자를 필수로 받으므로 새 건은 항상 채워진다 · 2026-08-18 GM 지시).
 //   한 건이 최대 2점(적은 사람 1 + 끝낸 사람 1). 같은 사람이 둘 다 하면 2점 다 가져간다.
 // period: week(이번 주 월요일부터) | month(이번 달 1일부터) | all. 기본 month.
 function _regScoreboard(params) {
@@ -1481,7 +1507,7 @@ function _regScoreboard(params) {
       if (sinceStr && created && created < sinceStr) return;
       _add(r.reporter, 'intake');
       if (String(r.status || '') === '완료') {
-        _add(String(r.handler || '').trim() || r.assignee, 'done');
+        _add(r.handler, 'done');
       }
     });
   });
@@ -1528,10 +1554,9 @@ function _regDashboard(params) {
     try { sh = _regGetSheet(cat.key); } catch (e) { return; }
     _regReadAll(sh, _regHeadersFor(cat.key)).forEach(function (r) { rows.push(r); });
   });
-  // 담당·처리자 통일값 부착 — 판정은 _regStaffCanonList 단일 재사용(reg_list 와 동일)
+  // 처리자 통일값 부착 — 판정은 _regStaffCanonList 단일 재사용(reg_list 와 동일)
   rows.forEach(function (r) {
-    r.assigneeCanon = _regStaffCanonList(r.assignee);
-    r.handlerCanon  = _regStaffCanonList(r.handler);
+    r.handlerCanon = _regStaffCanonList(r.handler);
   });
   rows.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
 
@@ -1562,7 +1587,7 @@ function _regDashboard(params) {
     var created = String(r.createdAt || '').slice(0, 10);
     if (sinceStr && created && created < sinceStr) return;
     _add(r.reporter, 'intake');
-    if (String(r.status || '') === '완료') _add(String(r.handler || '').trim() || r.assignee, 'done');
+    if (String(r.status || '') === '완료') _add(r.handler, 'done');
   });
   var sbBoard = Object.keys(tally).map(function (name) {
     return { name: name, intake: tally[name].intake, done: tally[name].done, total: tally[name].intake + tally[name].done };
@@ -1573,10 +1598,10 @@ function _regDashboard(params) {
   var scoreboard = { ok: true, period: period, since: sinceStr,
     at: Utilities.formatDate(now, tz, 'yyyy-MM-dd HH:mm'), board: sbBoard };
 
-  // ── (3) 담당자 제안: 같은 rows 로 빈도순 — reg_staff_suggest 와 동일 ──
+  // ── (3) 처리자 제안: 같은 rows 로 빈도순 — reg_staff_suggest 와 동일 ──
   var scount = {};
   rows.forEach(function (r) {
-    _regStaffCanonList(r.assignee).concat(_regStaffCanonList(r.handler)).forEach(function (n) {
+    _regStaffCanonList(r.handler).forEach(function (n) {
       scount[n] = (scount[n] || 0) + 1;
     });
   });
@@ -1654,11 +1679,6 @@ function _regUpdate(body) {
     var effStatus = _regEffectiveStatusOnMemo(curStatus, newStatus, memo);
     if (effStatus && si >= 0) existing[si] = effStatus;
 
-    var assignee = body.assignee !== undefined ? body.assignee : undefined;
-    if (assignee !== undefined) {
-      var ai = _idx('assignee');
-      if (ai >= 0) existing[ai] = String(assignee);
-    }
     if (memo !== undefined) {
       var mi = _idx('memo');
       if (mi >= 0) existing[mi] = String(memo);
@@ -1717,12 +1737,10 @@ function _regUpdate(body) {
     if (effStatus) _regApplyStatusColor(sh, rowNum, effStatus, headers);
 
     var statusIdx = _idx('status');
-    var assigneeIdx = _idx('assignee');
     _regBoardCacheClear_();
     return _vJson({
       ok: true, id: id,
       status:   statusIdx  >= 0 ? existing[statusIdx]  : '',
-      assignee: assigneeIdx >= 0 ? existing[assigneeIdx] : '',
       message: '접수건이 갱신되었습니다.'
     });
   }

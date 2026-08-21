@@ -231,11 +231,6 @@ def _collect_overdue(rows: list[dict], now: datetime | None = None,
             overdue.append({
                 "regId": str(r.get("regId") or ""),
                 "cat": cat,
-                # 서버가 통일해 준 담당자 표기를 그대로 쓴다(2026-07-31 웰리).
-                # ★여기서 이름을 다시 판정하지 않는다 — 규칙이 두 벌이 되면 또 갈라진다(약속 L01).
-                #   서버가 아직 그 값을 안 주면(옛 배포) 원문으로 떨어져 지금 동작을 유지한다.
-                "owners": [str(x).strip() for x in (r.get("assigneeCanon") or []) if str(x).strip()]
-                          or ([str(r.get("assignee") or "").strip()] if str(r.get("assignee") or "").strip() else []),
                 # 부서 — 묶음 기준을 사람에서 부서로 옮기기 위해 같이 담는다(배627 · GM 지시 2026-08-14
                 # "담당자 칸은 없애고 각 부서에 전달되어야 한다"). 완료 통보 블록이 쓰는 것과 같은 칸이다.
                 "dept": str(r.get("dept") or "").strip(),
@@ -432,13 +427,12 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
         dept = str(r.get("dept") or "기타").strip() or "기타"
         cat = str(r.get("category") or "").strip()
         content = " ".join(str(r.get("content") or "").split())[:24]
-        # 서버가 통일해 준 표기(handlerCanon/assigneeCanon)를 쓴다(2026-08-01) — 원문을 여기서
-        # 다시 판정하면 '최준용'/'최준용M' 이 또 갈라진다(약속 L01, _aging_block과 동일 원칙).
-        # 서버가 아직 그 값을 안 주면(옛 배포) 원문으로 떨어져 지금 동작을 유지한다.
-        who_list = ([str(x).strip() for x in (r.get("handlerCanon") or []) if str(x).strip()]
-                    or [str(x).strip() for x in (r.get("assigneeCanon") or []) if str(x).strip()])
+        # 서버가 통일해 준 표기(handlerCanon)를 쓴다(2026-08-01) — 원문을 여기서 다시 판정하면
+        # '최준용'/'최준용M' 이 또 갈라진다(약속 L01, _aging_block과 동일 원칙).
+        # ★2026-08-21 GM 확정 — 담당(assignee) 대체값을 뺐다. 처리한 사람은 '처리자' 칸 하나다.
+        who_list = [str(x).strip() for x in (r.get("handlerCanon") or []) if str(x).strip()]
         who = "/".join(who_list) if who_list else (
-            str(r.get("handler") or r.get("assignee") or "").strip() or "담당")
+            str(r.get("handler") or "").strip() or "처리자 미기재")
         remain = remain_by_dept.get(dept, 0)
         return f"✅ [{dept}] {cat} {content} · 처리 {who} · 남은 미처리 {remain}건"
 
