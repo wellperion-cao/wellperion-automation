@@ -324,6 +324,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
     <div id="reqDoneSearch" style="display:none;margin-bottom:10px;font-size:12px;color:var(--ink-soft)">완료건 기간: <input type="date" id="doneFrom" style="padding:5px;border:1px solid var(--line);border-radius:6px"> ~ <input type="date" id="doneTo" style="padding:5px;border:1px solid var(--line);border-radius:6px"> <button class="btn" id="doneSearchBtn" style="padding:6px 12px;font-size:12px">검색</button> <span id="doneMsg" style="margin-left:6px"></span></div>
     <div id="reqSort" class="team-chips" style="display:none;margin-bottom:8px;align-items:center;gap:6px"></div>
     <div id="capBar" class="cap-bar"><span>🖨 출력할 건을 체크하세요 — <b>체크한 순서대로</b> 나열되어 인쇄됩니다</span><span id="capHint" style="color:var(--ink-soft)">선택 0건</span><button class="cap-btn" id="capPrintBtn" disabled>🖨 선택 출력</button><button class="cap-clear" id="capClearBtn">선택 해제</button></div>
+    <div id="revBar" class="cap-bar" style="display:none"><span>✅ 검토완료할 건을 체크하세요 — 비밀번호 한 번으로 한꺼번에 처리됩니다</span><span id="revHint" style="color:var(--ink-soft)">선택 0건</span><button class="cap-btn" id="revAllBtn">전체 선택</button><button class="cap-btn" id="revGoBtn" disabled>✅ 선택 일괄 검토완료</button><button class="cap-clear" id="revClearBtn">선택 해제</button></div>
     <div class="tbl-wrap"><table id="reqTbl"></table></div>
     <div class="notice">품의 → 검토 → 집행 → 정산(영수증). 상태를 바꾸거나 영수증을 올리면 시트에 실시간 반영됩니다.</div>
   </section>
@@ -937,6 +938,52 @@ function renderAnom(){
 var REQ_ACTIVE=[],REQ_DONE=[],reqFilter="품의",reqSort=""; // reqSort: ''=제출순 · 'pd_asc'/'pd_desc'=구매날짜 정렬(정산 탭)
 var capSel=[]; // 완료탭 선택 출력 — 체크한 '순서'가 곧 출력 나열 순서(행번호 문자열 배열, 2026-07-14 매니저 지시)
 function toggleCap(row){row=String(row);var i=capSel.indexOf(row);if(i>=0)capSel.splice(i,1);else capSel.push(row);renderReqTbl();}
+/* 검토탭 일괄 검토완료 (2026-08-21 매니저 지시 — 하나씩 누르면 버벅여서 체크 후 한 번에).
+   상태 변경은 행을 지우지 않아 행번호가 밀리지 않는다(삭제와 다름) — 순차 호출로 안전. */
+var revSel=[],_revBusy=false;
+function toggleRev(row){row=String(row);var i=revSel.indexOf(row);if(i>=0)revSel.splice(i,1);else revSel.push(row);renderReqTbl();}
+function updateRevBar(){
+  var hint=document.getElementById("revHint"),btn=document.getElementById("revGoBtn"),all=document.getElementById("revAllBtn"),clr=document.getElementById("revClearBtn");
+  if(!hint||!btn)return;
+  hint.textContent="선택 "+revSel.length+"건";
+  if(!_revBusy){btn.disabled=!revSel.length;btn.textContent="✅ 선택 일괄 검토완료";}
+  btn.onclick=bulkReview;
+  if(all)all.onclick=function(){if(_revBusy)return;revSel=REQ_ACTIVE.filter(function(r){return r.상태==="검토";}).map(function(r){return String(r.row);});renderReqTbl();};
+  if(clr)clr.onclick=function(){if(_revBusy)return;revSel=[];renderReqTbl();};
+}
+async function bulkReview(){
+  if(_revBusy)return;
+  var pool=REQ_ACTIVE.filter(function(r){return r.상태==="검토"&&revSel.indexOf(String(r.row))>=0;});
+  if(!pool.length){reqToast("선택한 건을 찾지 못했습니다 — 목록을 새로고침합니다",1);loadReq();return;}
+  var names=pool.map(function(r){var nm=String(r.물품||"").replace(/\s+/g," ").trim();return "  "+(r.번호?("#"+r.번호+"  "):"")+(nm?(nm.length>30?nm.slice(0,30)+"…":nm):"(물품명 없음)");});
+  var shown=names.slice(0,10).join("\n")+(names.length>10?("\n  …외 "+(names.length-10)+"건"):"");
+  if(!confirm("아래 "+pool.length+"건을 한 번에 [검토완료] 처리합니다.\n\n"+shown+"\n\n번호와 물품이 맞는지 확인하고 계속할까요?"))return;
+  var pw=prompt("검토완료 일괄 처리 — 부서장 비밀번호를 입력하세요");
+  if(pw===null)return;
+  if(String(pw).trim()!=="1202!"){alert("비밀번호가 올바르지 않습니다");return;}
+  _revBusy=true;
+  var goBtn=document.getElementById("revGoBtn");
+  document.querySelectorAll(".reqAct,.reqRej,.reqDel,.revCk").forEach(function(b){b.disabled=true;}); // 처리 중 개별 버튼 잠금(삭제 가드와 같은 원칙)
+  var okN=0,fail=[];
+  try{
+    for(var i=0;i<pool.length;i++){
+      if(goBtn){goBtn.disabled=true;goBtn.textContent="처리 중 "+(i+1)+"/"+pool.length+"…";}
+      try{
+        var d=await procCall("status",{row:pool[i].row,status:"정산"});
+        if(!(d&&d.ok))throw 0;
+        pool[i].상태="정산";okN++;
+      }catch(e){fail.push(pool[i].번호?("#"+pool[i].번호):("행"+pool[i].row));}
+      if(i<pool.length-1)await new Promise(function(r2){setTimeout(r2,250);}); // 서버 부하 완화 간격
+    }
+  } finally{
+    _revBusy=false;revSel=[];
+    if(goBtn)goBtn.textContent="✅ 선택 일괄 검토완료";
+    try{writeReqCache();}catch(e){}
+    await loadReq(); // 강제 재조회 — 화면과 시트를 다시 맞춘다
+    if(fail.length)reqToast("⚠️ "+okN+"건 완료, "+fail.length+"건 저장 실패("+fail.join(", ")+") — 실패 건은 다시 선택해주세요",1);
+    else reqToast("✔ "+okN+"건 검토완료 처리했습니다");
+  }
+}
 function updateCapBar(){var hint=document.getElementById("capHint"),btn=document.getElementById("capPrintBtn");if(!hint||!btn)return;
   hint.textContent="선택 "+capSel.length+"건";btn.disabled=!capSel.length;btn.textContent="🖨 선택 출력"+(capSel.length?(" ("+capSel.length+")"):"");}
 /* 선택 건을 체크 순서대로 나열한 인쇄 시트 구성 → 즉시 인쇄(프린터 또는 PDF 저장) */
@@ -1251,6 +1298,10 @@ function renderReqTbl(){
   var capTab=(reqFilter==="완료"); // 완료탭 한정: 선택 캡처·출력(체크 순서대로)
   var capBarEl=document.getElementById("capBar");
   if(capBarEl)capBarEl.style.display=capTab?"flex":"none";
+  var revTab=(reqFilter==="검토"); // 검토탭 한정: 일괄 검토완료(2026-08-21 매니저 지시)
+  var revBarEl=document.getElementById("revBar");
+  if(revBarEl)revBarEl.style.display=revTab?"flex":"none";
+  if(revTab){var _revRows=REQ_ACTIVE.filter(function(r){return r.상태==="검토";}).map(function(r){return String(r.row);});revSel=revSel.filter(function(x){return _revRows.indexOf(x)>=0;});} // 사라진 행 자동 해제
   var src=isDone?REQ_DONE.filter(function(r){return (reqFilter==="반려")?(r.상태==="반려"):(r.상태!=="반려");}):REQ_ACTIVE.filter(function(r){return r.상태===reqFilter;});
   document.getElementById("reqCount").textContent=isDone?"("+reqFilter+" "+src.length+"건)":"("+reqFilter+" "+src.length+"건 · 미완료 합 "+REQ_ACTIVE.length+")";
   var rows=src.slice().reverse();
@@ -1262,7 +1313,7 @@ function renderReqTbl(){
   var bigPhoto=(reqFilter==="정산"||reqFilter==="완료"); // 정산+완료 탭에서 사진 2배(완료 확장 2026-07-14 매니저 지시)
   var tc=bigPhoto?"thumb2":"thumb";
   document.getElementById("reqTbl").className=bigPhoto?"set-compact":""; // 큰 사진 탭은 컴팩트(가로 스크롤 제거, 2026-07-13 정산 → 완료 확장)
-  var h='<thead><tr>'+(capTab?'<th style="text-align:center">출력</th>':'')+'<th style="text-align:center">#</th><th>제출일</th><th>구매날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
+  var h='<thead><tr>'+(capTab?'<th style="text-align:center">출력</th>':(revTab?'<th style="text-align:center">선택</th>':''))+'<th style="text-align:center">#</th><th>제출일</th><th>구매날짜</th><th style="text-align:left">소속</th><th style="text-align:left">요청자</th><th style="text-align:left">승인자</th><th style="text-align:left">물품</th><th>금액</th><th style="text-align:center">사진/증빙</th><th style="text-align:center">상태</th><th style="text-align:center">승인 / 처리</th></tr></thead><tbody>';
   rows.forEach(function(r){
     var st=r.상태||"품의",act="";
     if(st==="품의"||st==="승인")act='<button class="reqAct" data-row="'+r.row+'" data-next="검토" data-pw="1" style="'+btnCss("#3c7a4a")+'">승인</button>';
@@ -1281,16 +1332,19 @@ function renderReqTbl(){
     var amtCell=won(r.가격)+(shipN>0?'<div class="ship-sub">└ 배송비 '+won(shipN)+'</div>':'')+(isCash?'<div class="pay-cash">💵 현금</div>':'');
     var ci=capTab?capSel.indexOf(String(r.row)):-1; // 체크 순서(0-base) — 배지엔 +1 표시
     var capCell=capTab?('<td style="text-align:center"><label class="cap-ck"><input type="checkbox" class="capCk" data-row="'+r.row+'"'+(ci>=0?' checked':'')+'>'+(ci>=0?('<b class="cap-ord">'+(ci+1)+'</b>'):'')+'</label></td>'):'';
-    h+='<tr'+(isCash?' class="row-cash"':'')+'>'+capCell+'<td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+escapeHtml(r.날짜)+'</td><td style="text-align:left;font-size:12px;color:var(--ink-soft)">'+escapeHtml(r.구매날짜||"")+'</td><td style="text-align:left">'+escapeHtml(r.소속||"")+'</td><td style="text-align:left">'+escapeHtml(r.요청자||"")+'</td><td style="text-align:left">'+escapeHtml(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+escapeHtml(r.물품||"")+'</span>'+(r.목적?'<div class="req-purpose">'+escapeHtml(r.목적)+'</div>':'')+astBadge(r)+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+amtCell+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+    var revCell=revTab?('<td style="text-align:center"><label class="cap-ck"><input type="checkbox" class="revCk" data-row="'+r.row+'"'+(revSel.indexOf(String(r.row))>=0?' checked':'')+(_revBusy?' disabled':'')+'></label></td>'):'';
+    h+='<tr'+(isCash?' class="row-cash"':'')+'>'+capCell+revCell+'<td style="text-align:center;font-weight:700;color:var(--gold-deep)">'+(r.번호?("#"+r.번호):"")+'</td><td style="text-align:left">'+escapeHtml(r.날짜)+'</td><td style="text-align:left;font-size:12px;color:var(--ink-soft)">'+escapeHtml(r.구매날짜||"")+'</td><td style="text-align:left">'+escapeHtml(r.소속||"")+'</td><td style="text-align:left">'+escapeHtml(r.요청자||"")+'</td><td style="text-align:left">'+escapeHtml(r.승인자||"")+'</td><td style="text-align:left"><span class="req-item">'+escapeHtml(r.물품||"")+'</span>'+(r.목적?'<div class="req-purpose">'+escapeHtml(r.목적)+'</div>':'')+astBadge(r)+reviewBadge(r,st)+priceLinks(r,st)+'</td><td>'+amtCell+'</td><td style="text-align:center">'+rcpt+'</td><td style="text-align:center"><span class="chip '+(stc[st]||"wait")+'">'+st+'</span></td><td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
   });
-  if(!rows.length)h+='<tr><td colspan="'+(capTab?12:11)+'" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
+  if(!rows.length)h+='<tr><td colspan="'+((capTab||revTab)?12:11)+'" style="color:var(--ink-faint)">'+(isDone?(REQ_DONE.length?("해당 기간에 "+reqFilter+" 건이 없습니다."):"기간을 선택하고 [검색]을 누르세요."):"해당 단계의 품의가 없습니다.")+'</td></tr>';
   h+='</tbody>';document.getElementById("reqTbl").innerHTML=h;
   document.querySelectorAll(".reqAct").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,b.dataset.next,b.dataset.pw,b);};});
   document.querySelectorAll(".reqPhoto").forEach(function(b){b.onclick=function(){addPhotoTo(b.dataset.row,b);};});
   document.querySelectorAll(".reqRej").forEach(function(b){b.onclick=function(){doAct(b.dataset.row,"반려","1",b);};});
   document.querySelectorAll(".reqDel").forEach(function(b){b.onclick=function(){delReq(b.dataset.row,b,b.dataset.no,b.dataset.item);};});
   document.querySelectorAll(".capCk").forEach(function(b){b.onchange=function(){toggleCap(b.dataset.row);};});
+  document.querySelectorAll(".revCk").forEach(function(b){b.onchange=function(){toggleRev(b.dataset.row);};});
   updateCapBar();
+  updateRevBar();
 }
 /* 삭제는 시트 행번호(row)로 지운다 — 한 건 지우면 아래 행이 한 칸씩 당겨지므로 화면이 들고 있는 row는
    그 순간 낡는다. 갱신 전에 연속으로 누르면 엉뚱한 이웃 행이 지워진다(2026-08-13 #70 삭제 시 #71 동반 삭제).
