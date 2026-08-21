@@ -290,8 +290,9 @@ def _aging_block(rows: list[dict], now: datetime | None = None,
     #   다 운영부 라인으로 넘기니 병목이 일어나고 처리가 안 된다. 담당자 칸은 없애고."
     #   담당자 칸이 사라지면 사람 기준 묶음은 전건이 '미배정'으로 떨어져 목록이 무의미해진다.
     #   부서는 접수 행에 이미 있고 완료 통보 블록이 쓰던 바로 그 칸이라 새로 만들 것이 없다(L21).
-    #   ▸사람 이름을 지우지는 않는다 — 부서 안에서 담당이 잡힌 건은 줄 끝에 괄호로 남겨
-    #     실장이 나눌 때 참고가 되게 한다(약속 L24 — 분배는 실장이 한다).
+    #   ▸★2026-08-21 GM 재확인 — 담당자 이름을 줄 끝에 남기던 것도 뗀다. 접수처의 사람
+    #     분류는 접수자·처리자 둘뿐이고 '담당'은 없앤 칸이라, 그 값을 계속 비추면
+    #     없앤 칸이 화면에서만 살아 있게 된다(약속 L01). 처리자는 완료 통보 블록이 낸다.
     by_dept: dict[str, list[dict]] = {}
     for it in overdue:
         by_dept.setdefault(it.get("dept") or "부서 미정", []).append(it)
@@ -300,8 +301,7 @@ def _aging_block(rows: list[dict], now: datetime | None = None,
         items = sorted(items, key=lambda x: -x["elapsed_h"])
         lines.append(f"\n🏢 {title} ({len(items)}건)")
         for it in items:
-            who = " · ".join(it["owners"]) if it["owners"] else ""
-            lines.append(_fmt_item(it) + (f" · {who}" if who else ""))
+            lines.append(_fmt_item(it))
 
     # 부서 미정을 맨 위로(주인이 없는 건이 묻히면 안 된다), 이후 최고령 건 기준 오래된 순.
     if "부서 미정" in by_dept:

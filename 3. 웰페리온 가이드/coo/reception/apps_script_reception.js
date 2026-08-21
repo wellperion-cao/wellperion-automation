@@ -75,13 +75,14 @@ var REG_CATEGORIES = [
   // 29건 중 12건이 이것이어서 진짜 방치된 컴플레인 10건이 숫자에 묻혔다. 30일 = 보관 기간
   // 개념(넘으면 폐기·기증 등 정리 대상). 기한 개념을 없애지 않은 이유 = 영원히 쌓이는 것도 막아야 해서.
   { key: 'lost',     label: '분실물 접수',         sheet: '접수_분실물',   dept: '운영부', slaHours: 720 },
-  { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24, defaultAssignee: '@시설폰' },
+  { key: 'facility', label: '시설물 고장 접수',     sheet: '접수_시설고장', dept: '시설부', slaHours: 24 },
   { key: 'clean',    label: '청결 이슈 접수',       sheet: '접수_청결',     dept: '지원부', slaHours: 12 },
   { key: 'praise',   label: '직원·강사 칭찬합니다', sheet: '접수_칭찬',     dept: '운영부', slaHours: null },
   { key: 'voice',    label: '직원·강사 쓴소리합니다', sheet: '접수_쓴소리', dept: '운영부', slaHours: 72 },
-  { key: 'complaint', label: '컴플레인 접수',        sheet: '접수_컴플레인', dept: '운영부', slaHours: 48, defaultAssignee: '@운영부' }
+  { key: 'complaint', label: '컴플레인 접수',        sheet: '접수_컴플레인', dept: '운영부', slaHours: 48 }
   // praise/voice → dept: '인사부' 로 바꿀 때 위 두 줄만 수정
-  // defaultAssignee — GM 확정 2026-08-04(이 두 카테고리만). 나머지는 공란 유지(_regDefaultAssignee 참고).
+  // ★defaultAssignee 는 2026-08-21 GM 확정으로 뺐다 — 접수처의 사람 분류는 접수자·처리자 둘뿐이다.
+  //   기본 담당자를 찍어 두면 '@운영부' 처럼 사람 아닌 값이 담당인 척 남는다. 배정은 부서가 한다.
 ];
 
 // 공통 12컬럼 (영문키: 한글헤더)
@@ -144,13 +145,6 @@ function _regCatByLabel(label) {
     if (REG_CATEGORIES[i].label === label) return REG_CATEGORIES[i];
   }
   return null;
-}
-// 카테고리 기본 담당자 — SSOT는 REG_CATEGORIES[].defaultAssignee 한 곳뿐(위 참고).
-// 이미 담당자가 있으면 그대로 보존(절대 덮어쓰지 않음). 매핑 없는 카테고리는 공란 유지.
-function _regDefaultAssignee(catKey, currentAssignee) {
-  if (String(currentAssignee || '').trim()) return currentAssignee;
-  var cat = _regCatByKey(catKey);
-  return (cat && cat.defaultAssignee) || '';
 }
 // 청결 접수의 부서 — 남/여 구역 담당 반장님이 갈린다(GM 지시 2026-08-15 · 부서 3개 → 11개).
 // 장소에 남/여가 적혀 있을 때만 자동으로 가르고, 안 적혀 있으면 REG_CATEGORIES 의 옛 '지원부' 값을
@@ -528,7 +522,9 @@ function _regNotifySlaOverdue(dryRun) {
         : overAbs < 24 ? Math.round(overAbs) + '시간'
         : Math.floor(overAbs / 24) + '일';
       lines.push('  🔴 [' + (r.category || '') + '] ' + _regCapLine(r.content, 28) +
-        ' — ' + over + ' 초과 (' + (r.regId || '') + (r.assignee ? ' · 담당 ' + r.assignee : ' · 미배정') + ')');
+        // ★2026-08-21 GM 확정 — '담당/미배정' 표기 제거(접수처에 담당자 개념 없음).
+        //   부서는 같은 줄 위 그룹 제목이 이미 말해 준다.
+        ' — ' + over + ' 초과 (' + (r.regId || '') + ')');
     });
     if (newlyOverdue.length > 10) lines.push('  … 외 ' + (newlyOverdue.length - 10) + '건');
     lines.push('👉 확인: ' + REG_DASHBOARD_URL);
@@ -1191,7 +1187,11 @@ function _regSubmit(body) {
   _set('photoUrl', photoUrl);
   _set('status',   '접수');
   _set('dept',     _regDeptFor(cat, loc));
-  _set('assignee', _regDefaultAssignee(cat.key, ''));
+  // ★2026-08-21 GM 확정 — 접수처의 사람 분류는 접수자·처리자 둘뿐이다. '담당'은 없앤 칸이라
+  //   새 접수에 기본 담당자를 더 이상 찍지 않는다. 그 자동값이 '@운영부' 같은 부서 문자열로
+  //   남아 사람이 정해진 것처럼 보였고, 실제로는 아무도 안 잡고 있었다(실측 2026-08-21: 기한초과
+  //   13건 중 8건). 배정은 부서가 하고, 처리한 사람은 완료할 때 '처리자' 칸에 남는다.
+  //   ▸시트의 '담당' 열과 기존 값은 지우지 않는다 — 옛 기록이고, 열을 지우면 인덱스가 밀린다.
   // 접수자 (2026-07-28 시우 · 점수 랭킹제) — 직원이 대신 적어 준 경우 그 직원 이름,
   //   회원이 폼에서 직접 넣은 경우는 '회원'. 접수 1점의 근거가 되는 칸이라
   //   비워 두면 점수가 안 붙는다(그래서 기본값을 반드시 남긴다).
