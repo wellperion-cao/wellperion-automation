@@ -229,10 +229,13 @@
   .pool .p .vv{ font-size:25px; font-weight:900; letter-spacing:-1.2px; line-height:1.15; font-variant-numeric:tabular-nums; }
   .pool .p .gg{ font-size:11px; color:#5C666F; line-height:1.3; }
   .g3{ display:flex; gap:12px; margin-top:9px; flex:1; min-height:0; }
-  .g3 .cc{ flex:1; display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .g3 .cc{ flex:1; display:flex; flex-direction:column; gap:12px; min-width:0; justify-content:space-between; }
   .mt{ width:100%; border-collapse:collapse; table-layout:fixed; }
   .mt th,.mt td{ border:1px solid var(--line); padding:2px 10px; font-size:13.4px; line-height:2.35;
-    text-align:right; font-variant-numeric:tabular-nums; }
+    text-align:right; font-variant-numeric:tabular-nums; vertical-align:middle; white-space:nowrap; }
+  /* 숫자 칸 폭 고정 — 표가 달라도 세로줄이 한 자리에서 맞는다 */
+  .mt th:nth-child(2),.mt td:nth-child(2){ width:74px; }
+  .mt th:nth-child(3),.mt td:nth-child(3){ width:86px; }
   .mt th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; text-align:left; font-size:13.4px; }
   .mt th:last-child{ text-align:right; }
   .mt td.k{ text-align:left; background:#F6F8FA; font-weight:500; }
@@ -385,7 +388,7 @@
           <tbody>
             <tr>
               <td class="a">올려도 되는 이유<span class="sub">인상 근거</span></td>
-              <td>가격 이탈 <b>26명(3.7%)</b> · <span class="lbl">3년 연속 감소</span> 4.0 → 3.9 → 3.0% · 정원 마감 · 재등록 회원 <b>64.2%</b></td>
+              <td>가격 이탈 <b>26명(3.7%)</b> · <span class="lbl">3년 연속 감소</span> 4.0 → 3.9 → 3.0% · 정원 마감 · 재등록 회원 <b>64.1%</b></td>
             </tr>
             <tr>
               <td class="a">잃을 수 있는 층<span class="sub">인상 제약</span></td>
@@ -504,7 +507,7 @@
         <tbody>
           <tr><td class="k">재등록</td><td class="go">638</td><td class="go">64.1%</td></tr>
           <tr><td class="k">신규</td><td>315</td><td>31.6%</td></tr>
-          <tr><td class="k">강습 재등록</td><td>28</td><td>2.8%</td></tr>
+          <tr><td class="k">L재등록</td><td>28</td><td>2.8%</td></tr>
           <tr><td class="k">양도&middot;양수</td><td>8</td><td>0.8%</td></tr>
           <tr><td class="k">대기 &middot; 미기재</td><td>7</td><td>0.7%</td></tr>
         </tbody>
