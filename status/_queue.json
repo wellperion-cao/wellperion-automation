@@ -311,5 +311,36 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-08-21"
+  },
+  {
+    "task_id": "AIDE-2026-08-22-STALE-APPROVAL-10954",
+    "clevel": "ceo",
+    "title": "[GM보좌 제안] [TODO-20260713140724303] 결재 40일째 무처리 — 인사평가 기획",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-08-22",
+    "ship_no": 10954,
+    "note": "[2026-08-22 GM보좌 제안·웰리 포착] 결재요청(GM) 후 40일째 미처리(결재상태=대기) — 정상 승인 소요(중앙값 2일·최대 14일) 대비 장기 방치 (포착유형=stale_approval · 가역성=비가역 · 근거=생성일=2026-07-13T05:07:24.000Z 결재요청=GM 담당자=나우열M 업무명=인사평가 기획). 조치안: GM 결정 필요(승인/반려) — 방치될수록 맥락 소실(58일 적체 실측 사례). KPI→북극성: [ceo·웰리] 현재 KPI(완결률=0.1, 완료=1, 활성=9, 기계발행_건수=0, 멈춘배_건수=1, 멈춘배_최장일수=8, 멈춘배_최장배번호=626, 멈춘배_최장상태=PENDING, GM기록_미반영=0, 실무진_회신_미완료=1) → 북극성 'ERP 시스템을 통해 반복을 자동화하고, 본질에 집중하자' 로 잇는 결정 게이트. GM프로필 근거(자주 놓치는 것): **관측 자체가 적음** — missed 13건(전체 2%). 놓침이 드물거나, 놓침을 잡는 관측 장치가 약함(추정: 후자일 가능성 — surface_check 38건에 비해 missed가 낮음). ※ phase1=제안(대기)까지만 — 실제 도메인 작업은 GM 결정 후.",
+    "next": "",
+    "depends_on": "",
+    "source": "gm_aide_scan",
+    "reversibility": "비가역",
+    "aide_proposal_key": "gmaide|stale_approval|TODO-20260713140724303"
+  },
+  {
+    "task_id": "CMO-2026-08-22-ADHOC-DAILY",
+    "clevel": "cmo",
+    "title": "[시모] IG 발행검증 자동 대조 → 발행완료 도장",
+    "status": "DONE",
+    "terminal": true,
+    "priority": "NORMAL",
+    "enqueued_at": "2026-08-22",
+    "processed_at": "2026-08-22",
+    "ship_no": 10955,
+    "artifact": "auto(cmo): IG 발행검증 자동 대조 → 발행완료 도장 (CLI ad-hoc · 커밋 cd24b4fa1)",
+    "next": "🏁 입항완료(루틴) — 다음 불필요",
+    "adhoc_commit": "cd24b4fa121a38a70b44edb629eec36ec9503673",
+    "note": "- [2026-08-22] IG 발행검증 자동 대조 → 발행완료 도장 (커밋 cd24b4fa1)",
+    "adhoc_count": 1
   }
 ]
