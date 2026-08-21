@@ -227,6 +227,44 @@
     font-weight:700; padding:3px 10px; letter-spacing:-.3px; line-height:1.4; }
   .closing b{ color:#FFD9A0; }
 
+
+  /* 2장 · 지표판 */
+  .pool{ display:flex; gap:9px; margin-top:8px; }
+  .pool .p{ flex:1; border:1px solid var(--line); border-top:4px solid var(--navy); background:#FBFCFE; padding:5px 12px 6px; }
+  .pool .p .lb{ font-size:12px; font-weight:700; color:var(--navy); }
+  .pool .p .vv{ font-size:25px; font-weight:900; letter-spacing:-1.2px; line-height:1.15; font-variant-numeric:tabular-nums; }
+  .pool .p .gg{ font-size:11px; color:#5C666F; line-height:1.3; }
+  .g3{ display:flex; gap:12px; margin-top:9px; flex:1; min-height:0; }
+  .g3 .cc{ flex:1; display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .mt{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  .mt th,.mt td{ border:1px solid var(--line); padding:2px 10px; font-size:13.4px; line-height:2.35;
+    text-align:right; font-variant-numeric:tabular-nums; }
+  .mt th{ background:var(--navy); color:#fff; font-weight:700; border-color:#2A4763; text-align:left; font-size:13.4px; }
+  .mt th:last-child{ text-align:right; }
+  .mt td.k{ text-align:left; background:#F6F8FA; font-weight:500; }
+  .mt td.hi{ font-weight:800; color:var(--bad); background:#FBF5F5; }
+  .mt td.go{ font-weight:800; color:var(--good); background:#F1F8F4; }
+  .why{ display:flex; gap:10px; margin-top:9px; }
+  .why .w{ flex:1; border:1px solid var(--line); border-left:5px solid #8A9099; background:#fff; padding:5px 12px 6px; }
+  .why .w.us{ border-left-color:var(--bad); background:#FBF7F7; }
+  .why .w .hd{ font-size:12.8px; font-weight:800; color:var(--navy); }
+  .why .w.us .hd{ color:var(--bad); }
+  .why .w .nn{ font-size:20px; font-weight:900; letter-spacing:-1px; line-height:1.2; font-variant-numeric:tabular-nums; }
+  .why .w.us .nn{ color:var(--bad); }
+  .why .w .dd{ font-size:12.2px; line-height:1.45; color:#3C464F; }
+
+
+  .sales{ margin-top:10px; border:1px solid var(--line); border-top:3px solid var(--good); padding:5px 14px 7px; }
+  .sales .hd{ font-size:13.6px; font-weight:700; color:var(--good); letter-spacing:-.3px; }
+  .sales .hd span{ font-weight:400; color:#48525B; font-size:12px; }
+  .sbars{ display:flex; align-items:flex-end; gap:10px; height:74px; margin-top:5px; }
+  .sbars .sm{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .sbars .sm b{ font-size:12.4px; font-weight:800; color:var(--good); margin-bottom:2px; font-variant-numeric:tabular-nums; }
+  .sbars .sm i{ display:block; width:100%; background:var(--good); border-radius:2px 2px 0 0; }
+  .sbars .sm s{ text-decoration:none; font-size:11.4px; color:#3C464F; margin-top:2px; font-weight:600; }
+  .sbars .sm.low i{ background:#8FB3A3; }
+  .sbars .sm.low b{ color:#5C7C6E; }
+
   /* 각주 */
   .foot-src{ margin-top:4px; border-top:1px solid var(--line); padding-top:3px;
     font-size:10.8px; line-height:1.32; color:#48525B; }
@@ -252,11 +290,11 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">회원 감소 원인 분석<span class="sub">회장님 최우선 지시건 · 유효회원 993명 전수 실측</span></div>
+      <div class="title">회원 감소 원인 분석<span class="sub">회장님 최우선 지시건 · 유효회원 996명 전수 실측</span></div>
     </div>
     <div class="meta">
       작성 <b>경영지원부</b> · 9차 갱신 <b>AI CPO 시포</b> · 문서번호 <b>WP-GM-260815-01</b> · 기준일 <b>2026. 08. 21.</b><br>
-      원천 <b>회원 DB 재실측</b> · 유효회원 <b>993명</b> · LOSS <b>708명 전수</b> · 등급 61명 전화 조인 · 출석 시트 10개월 조인 <b>762명</b>    </div>
+      원천 <b>회원 DB 재실측</b> · 유효회원 <b>996명</b> · LOSS <b>708명 전수</b> · 등급 61명 전화 조인 · 출석 시트 10개월 조인 <b>762명</b>    </div>
     <div class="sign">
       <div><div class="t">담당</div><div class="b"></div></div>
       <div><div class="t">GM</div><div class="b"></div></div>
@@ -279,19 +317,19 @@
     </div>
     <div class="hc flat">
       <div class="lb">③ 회원은 줄지 않았습니다 — 늘지 않고 있습니다</div>
-      <div class="big">+582 → +36 → <b style="color:var(--bad)">+30</b></div>
-      <div class="ex">연간 순증(신규 − LOSS)이 2024년 +582명 → 2025년 <b>+36명</b> → 2026년 <b>+30명</b>(8/21까지 · 연환산 +47)으로 주저앉았습니다.</div>
+      <div class="big">+582 → +36 → <b style="color:var(--bad)">+33</b></div>
+      <div class="ex">연간 순증(신규 − LOSS)이 2024년 +582명 → 2025년 <b>+36명</b> → 2026년 <b>+33명</b>(8/21까지 · 연환산 +52)으로 주저앉았습니다.</div>
     </div>
   </div>
 
   <!-- 전체 1,000명 네 갈래 띠 -->
   <div class="band">
-    <div class="tt">유효회원 993명의 네 갈래 <span>— ① + ② + 중간 + 출석 자료 없음 = 993명 (출석 자료 없음 231명은 대부분 2025년 11월 이후 등록 신규)</span></div>
+    <div class="tt">유효회원 996명의 네 갈래 <span>— ① + ② + 중간 + 출석 자료 없음 = 996명 (출석 자료 없음 234명은 대부분 2025년 11월 이후 등록 신규)</span></div>
     <div class="strip">
       <i class="s1" style="width:14.8%">① 사랑 147명 · 14.8%</i>
       <i class="s2" style="width:18.9%">② 떠날 188명 · 18.9%</i>
-      <i class="s3" style="width:43.0%">중간 427명 · 43.0%</i>
-      <i class="s4" style="width:23.3%">출석 자료 없음 231명 · 23.3%</i>
+      <i class="s3" style="width:42.9%">중간 427명 · 42.9%</i>
+      <i class="s4" style="width:23.5%">출석 자료 없음 234명 · 23.5%</i>
     </div>
   </div>
 
@@ -306,7 +344,7 @@
           <colgroup><col style="width:150px"><col><col style="width:130px"></colgroup>
           <thead><tr><th>축</th><th>조건 (앞 조건에 하나씩 추가)</th><th>남는 인원</th></tr></thead>
           <tbody>
-            <tr><td class="k">1축 — 거리</td><td style="text-align:left">용산구·성동구 거주 (걸어올 거리)</td><td class="tot">842명</td></tr>
+            <tr><td class="k">1축 — 거리</td><td style="text-align:left">용산구·성동구 거주 (걸어올 거리)</td><td class="tot">843명</td></tr>
             <tr><td class="k">2축 — 재등록</td><td style="text-align:left">+ 3회 이상 재등록</td><td class="tot">403명</td></tr>
             <tr><td class="k">3축 — 출석</td><td style="text-align:left">+ 10개월 194회 이상 출석 (월 19회쯤 · 주 4~5회)</td><td class="core">147명</td></tr>
           </tbody>
@@ -335,8 +373,8 @@
           <tbody>
             <tr><td class="k">2024 (개업 특수)</td><td>755</td><td>173</td><td class="tot">+582</td><td>—</td></tr>
             <tr><td class="k">2025</td><td>369</td><td>333</td><td class="tot">+36</td><td>7개월</td></tr>
-            <tr><td class="k">2026 (8/21까지)</td><td>232</td><td>202</td><td class="tot">+30</td><td>3개월</td></tr>
-            <tr><td class="k">2026 연환산</td><td>363</td><td class="core" style="font-size:13px;color:var(--bad);background:#FBEDED">316</td><td>+47</td><td>—</td></tr>
+            <tr><td class="k">2026 (8/21까지)</td><td>235</td><td>202</td><td class="tot">+33</td><td>3개월</td></tr>
+            <tr><td class="k">2026 연환산</td><td>368</td><td class="core" style="font-size:13px;color:var(--bad);background:#FBEDED">316</td><td>+52</td><td>—</td></tr>
           </tbody>
         </table>
         <div class="chart">
@@ -419,7 +457,7 @@
             </tr>
             <tr>
               <td class="rk">잃을 위험</td>
-              <td>회전율 <b>33.5%</b> 유지 — 매년 333명이 나갑니다</td>
+              <td>회전율 <b>33.4%</b> 유지 — 매년 333명이 나갑니다</td>
               <td>떠날 회원 <b>188명</b> 이탈이 빨라집니다</td>
               <td>188명 + 신규 <b>1회차 305명</b>이 흔들립니다</td>
             </tr>
@@ -440,7 +478,7 @@
         <table class="kt">
           <colgroup><col style="width:38%"><col style="width:31%"><col></colgroup>
           <tbody>
-            <tr><td class="k">유효회원</td><td class="v">1,000명 → <b>993명</b></td><td>신규 8 · LOSS 9 = <b style="color:var(--bad)">순증 −1</b></td></tr>
+            <tr><td class="k">유효회원</td><td class="v">1,000명 → <b>996명</b></td><td>신규 11 · LOSS 9 = <b>순증 +2</b></td></tr>
             <tr><td class="k">FAN VIP LOSS</td><td class="v">0명 → <b style="color:var(--bad)">1명</b></td><td>8/21 발생 · 1,958만원</td></tr>
           </tbody>
         </table>
@@ -455,12 +493,12 @@
     <div class="kpi4">
       <div class="c">
         <div class="lb">연 순증감 <span style="font-weight:400;color:#5C666F">신규 − LOSS</span></div>
-        <div class="vv">+30명</div>
-        <div class="gg">2024 +582 → 2025 +36 → 올해 +30 · 목표 <b>0 이상</b></div>
+        <div class="vv">+33명</div>
+        <div class="gg">2024 +582 → 2025 +36 → 올해 +33 · 목표 <b>0 이상</b></div>
       </div>
       <div class="c hot">
         <div class="lb">연 회전율 <span style="font-weight:400;color:#5C666F">연 LOSS ÷ 회원</span></div>
-        <div class="vv">33.5%</div>
+        <div class="vv">33.4%</div>
         <div class="gg">해마다 셋 중 하나가 바뀝니다 · 목표는 정하실 값</div>
       </div>
       <div class="c">
@@ -488,12 +526,186 @@
 
   <!-- 각주 -->
   <div class="foot">
-    <div><b>어디서 나온 숫자인가</b> — 2026-08-21 전수 재실측(회원 데이터 수정 0건). 유효회원 993·종료 202 = ERP 멤버십 회원관리와 같은 통로(유효회원 시트) · 2025년 이전 LOSS 506 = LOSS보관 시트 · 등급 61명·출석 1,638명 = GM 공유 시트. LOSS 708 = 202 + 506. 회전율 33.5% = 2025년 LOSS 333 ÷ 유효 993. 거리 축 = 주소의 용산구·성동구 표기(739+103). 출석 축은 2025년 1~10월 누적이라 <b>이번 주에 갱신되지 않는 유일한 축</b>입니다(조인 762명·76.7% · 상 194회 이상 · 하 62회 미만).</div>
+    <div><b>어디서 나온 숫자인가</b> — 2026-08-21 전수 재실측(회원 데이터 수정 0건). 유효회원 996·종료 202 = ERP 멤버십 회원관리와 같은 통로(유효회원 시트) · 2025년 이전 LOSS 506 = LOSS보관 시트 · 등급 61명·출석 1,638명 = GM 공유 시트. LOSS 708 = 202 + 506. 회전율 33.4% = 2025년 LOSS 333 ÷ 유효 996. 거리 축 = 주소의 용산구·성동구 표기(740+103). 출석 축은 2025년 1~10월 누적이라 <b>이번 주에 갱신되지 않는 유일한 축</b>입니다(조인 762명·76.5% · 상 194회 이상 · 하 62회 미만).</div>
     <div><b>종료 사유·요금 근거</b> — 사유 정본 = 미등록사유 칸(695/708 · 98.2%). 최다 = 낮은이용횟수 142 · 거주지변경 129 · 무응답 104 · 가망 76 · 양도/강습전환 76 · 단기 57 · 건강 31 · <b>금액·프로모션 26</b> · 그 외 9종 54 · 공란 13. <b>인상 효과</b> = 월별 매출보고 시트 말일탭 <b>Y70(멤버십·환불 반영)</b>의 2026년 1~7월 합 <b>1,900,829,673원</b> × 인상률(8월은 마감 전이라 제외). 등급 61명 = 2025년 결제액 6.63억(FAN VIP 4 · VIP 11 · Member 46) · 원장에 <b>회원별</b> 결제액 칸이 없어 1인당 금액은 9월 전환 후 처음 잽니다.</div>
   </div>
 
   <!-- 맺음 -->
-  <div class="closing">가격이 아니라 <b>이용 경험</b>이 회원을 내보내고 있습니다 — 요금 인상의 전제는 <b>지금 계신 993명을 먼저 지키는 일</b>입니다.</div>
+  <div class="closing">가격이 아니라 <b>이용 경험</b>이 회원을 내보내고 있습니다 — 요금 인상의 전제는 <b>지금 계신 996명을 먼저 지키는 일</b>입니다.</div>
+
+</div>
+
+
+<div class="page" id="sheet2">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">회원 분석 지표판<span class="sub">앞장의 숫자가 어디서 나왔는지 &middot; 2 / 2</span></div>
+    </div>
+    <div class="meta">
+      기준일 <b>2026. 08. 21.</b> &middot; 문서번호 <b>WP-GM-260815-01</b><br>
+      회원 데이터 <b>수정 0건</b> &middot; 전부 읽기만 했습니다
+    </div>
+  </div>
+
+  <div class="pool">
+    <div class="p"><div class="lb">유효회원</div><div class="vv">996</div><div class="gg">지금 다니시는 분</div></div>
+    <div class="p"><div class="lb">종료회원</div><div class="vv">202</div><div class="gg">올해 나가신 분</div></div>
+    <div class="p"><div class="lb">LOSS 보관</div><div class="vv">506</div><div class="gg">2025년 이전</div></div>
+    <div class="p"><div class="lb">LOSS 전수</div><div class="vv">708</div><div class="gg">202 + 506</div></div>
+    <div class="p"><div class="lb">법인회원</div><div class="vv">32</div><div class="gg">기업&middot;공관</div></div>
+    <div class="p"><div class="lb">문의 기록</div><div class="vv">714</div><div class="gg">등록까지 가는 길</div></div>
+  </div>
+
+  <div class="g3">
+
+    <div class="cc">
+      <table class="mt">
+        <colgroup><col><col style="width:76px"><col style="width:76px"></colgroup>
+        <thead><tr><th>회원 구분 &mdash; 어떤 회원인가</th><th>인원</th><th>비율</th></tr></thead>
+        <tbody>
+          <tr><td class="k">멤버십</td><td>859</td><td>86.2%</td></tr>
+          <tr><td class="k">입주민</td><td>79</td><td>7.9%</td></tr>
+          <tr><td class="k">보증금</td><td>47</td><td>4.7%</td></tr>
+          <tr><td class="k">FAN VIP</td><td>6</td><td>0.6%</td></tr>
+          <tr><td class="k">중단기 &middot; 미기재</td><td>5</td><td>0.5%</td></tr>
+        </tbody>
+      </table>
+      <table class="mt">
+        <colgroup><col><col style="width:76px"><col style="width:76px"></colgroup>
+        <thead><tr><th>등록 분류 &mdash; 어떻게 들어왔나</th><th>인원</th><th>비율</th></tr></thead>
+        <tbody>
+          <tr><td class="k">재등록</td><td class="go">638</td><td class="go">64.1%</td></tr>
+          <tr><td class="k">신규</td><td>315</td><td>31.6%</td></tr>
+          <tr><td class="k">강습 재등록</td><td>28</td><td>2.8%</td></tr>
+          <tr><td class="k">양도&middot;양수</td><td>8</td><td>0.8%</td></tr>
+          <tr><td class="k">대기 &middot; 미기재</td><td>7</td><td>0.7%</td></tr>
+        </tbody>
+      </table>
+      <table class="mt">
+        <colgroup><col><col style="width:76px"><col style="width:76px"></colgroup>
+        <thead><tr><th>재등록 회차 &mdash; 얼마나 오래 다니나</th><th>인원</th><th>비율</th></tr></thead>
+        <tbody>
+          <tr><td class="k">1회차 (첫 해)</td><td>308</td><td>30.9%</td></tr>
+          <tr><td class="k">2회차</td><td>225</td><td>22.6%</td></tr>
+          <tr><td class="k">3~5회차</td><td>246</td><td>24.7%</td></tr>
+          <tr><td class="k">6회차 이상 (6년 넘게)</td><td class="go">207</td><td class="go">20.8%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cc">
+      <table class="mt">
+        <colgroup><col><col style="width:76px"><col style="width:76px"></colgroup>
+        <thead><tr><th>사는 곳 &mdash; 걸어올 수 있나</th><th>인원</th><th>비율</th></tr></thead>
+        <tbody>
+          <tr><td class="k">용산구</td><td class="go">740</td><td class="go">74.3%</td></tr>
+          <tr><td class="k">성동구</td><td>103</td><td>10.3%</td></tr>
+          <tr><td class="k">그 외 지역</td><td>134</td><td>13.5%</td></tr>
+          <tr><td class="k">주소 미기재</td><td>19</td><td>1.9%</td></tr>
+        </tbody>
+      </table>
+      <table class="mt">
+        <colgroup><col><col style="width:76px"><col style="width:76px"></colgroup>
+        <thead><tr><th>출석 &mdash; 실제로 오시나 (2025년 10개월)</th><th>인원</th><th>비율</th></tr></thead>
+        <tbody>
+          <tr><td class="k">많이 옴 &middot; 194회 이상 (주 4~5회)</td><td class="go">193</td><td class="go">19.4%</td></tr>
+          <tr><td class="k">보통 &middot; 62~193회</td><td>381</td><td>38.3%</td></tr>
+          <tr><td class="k">거의 안 옴 &middot; 62회 미만</td><td class="hi">188</td><td class="hi">18.9%</td></tr>
+          <tr><td class="k">출석 자료 없음 (최근 등록)</td><td>234</td><td>23.5%</td></tr>
+        </tbody>
+      </table>
+      <table class="mt">
+        <colgroup><col><col style="width:70px"><col style="width:112px"></colgroup>
+        <thead><tr><th>등급 회원 61명 &mdash; 2025년 결제액</th><th>인원</th><th>결제액</th></tr></thead>
+        <tbody>
+          <tr><td class="k">FAN VIP</td><td>4</td><td>7,794만</td></tr>
+          <tr><td class="k">VIP</td><td>11</td><td>1억 4,350만</td></tr>
+          <tr><td class="k">Member</td><td>46</td><td>4억 4,143만</td></tr>
+          <tr><td class="k">합계 <span style="font-weight:400;color:#5C666F">전체의 6.1%</span></td><td class="go">61</td><td class="go">6억 6,287만</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cc">
+      <table class="mt">
+        <colgroup><col><col style="width:70px"><col style="width:70px"><col style="width:70px"></colgroup>
+        <thead><tr><th>해마다 몇 명 오고 몇 명 갔나</th><th>들어옴</th><th>나감</th><th>순증</th></tr></thead>
+        <tbody>
+          <tr><td class="k">2024 (개업 특수)</td><td>755</td><td>173</td><td class="go">+582</td></tr>
+          <tr><td class="k">2025</td><td>369</td><td>333</td><td>+36</td></tr>
+          <tr><td class="k">2026 (8/21까지)</td><td>235</td><td>202</td><td>+33</td></tr>
+          <tr><td class="k">2026 연환산</td><td>368</td><td class="hi">316</td><td>+52</td></tr>
+        </tbody>
+      </table>
+      <table class="mt">
+        <colgroup><col><col style="width:76px"><col style="width:76px"></colgroup>
+        <thead><tr><th>곧 만료되는 회원 &mdash; 접촉 시한</th><th>인원</th><th>등급</th></tr></thead>
+        <tbody>
+          <tr><td class="k">30일 안</td><td class="hi">67</td><td class="hi">6명</td></tr>
+          <tr><td class="k">60일 안</td><td>138</td><td>&mdash;</td></tr>
+          <tr><td class="k">90일 안</td><td>206</td><td>&mdash;</td></tr>
+          <tr><td class="k">가장 급한 분</td><td colspan="2" style="text-align:right">잔여 <b>9일</b> &middot; VIP &middot; 1,539만원</td></tr>
+        </tbody>
+      </table>
+      <table class="mt">
+        <colgroup><col><col style="width:112px"><col style="width:70px"></colgroup>
+        <thead><tr><th>회원권 매출 &mdash; 요금 인상의 모수</th><th>금액</th><th>기간</th></tr></thead>
+        <tbody>
+          <tr><td class="k">1~7월 합계 <span style="font-weight:400;color:#5C666F">마감 실적</span></td><td class="go">19억 83만</td><td>7개월</td></tr>
+          <tr><td class="k">월평균</td><td>2억 7,155만</td><td>&mdash;</td></tr>
+          <tr><td class="k">가장 높은 달</td><td>3억 1,899만</td><td>2월</td></tr>
+          <tr><td class="k">가장 낮은 달</td><td>2억 1,040만</td><td>5월</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+
+  <div class="sales">
+    <div class="hd">회원권 매출 &mdash; 요금을 올리면 여기에 곱해집니다 <span>&middot; 2026년 월별 마감 실적(억원) &middot; 8월은 마감 전이라 뺐습니다</span></div>
+    <div class="sbars">
+      <div class="sm"><b>2.91</b><i style="height:55px"></i><s>1월</s></div>
+      <div class="sm"><b>3.19</b><i style="height:60px"></i><s>2월</s></div>
+      <div class="sm"><b>3.13</b><i style="height:59px"></i><s>3월</s></div>
+      <div class="sm"><b>2.82</b><i style="height:53px"></i><s>4월</s></div>
+      <div class="sm low"><b>2.10</b><i style="height:40px"></i><s>5월</s></div>
+      <div class="sm"><b>2.64</b><i style="height:50px"></i><s>6월</s></div>
+      <div class="sm"><b>2.21</b><i style="height:42px"></i><s>7월</s></div>
+    </div>
+  </div>
+
+  <div class="why">
+    <div class="w us">
+      <div class="hd">&#9312; 우리가 막을 수 있었던 것</div>
+      <div class="nn">374명 &middot; 52.8%</div>
+      <div class="dd">낮은 이용 횟수 142 &middot; 무응답 104 &middot; 가망 76 &middot; 금액&middot;프로모션 26 &middot; 주차&middot;시설 불편 9 &middot; 운영 정책 9 &middot; 수신거절 4 &middot; 고민중 4</div>
+    </div>
+    <div class="w">
+      <div class="hd">&#9313; 어쩔 수 없던 것</div>
+      <div class="nn">168명 &middot; 23.7%</div>
+      <div class="dd">거주지 변경 129 &middot; 건강 문제 31 &middot; 바쁜 일정 8</div>
+    </div>
+    <div class="w">
+      <div class="hd">&#9314; 옮겨 가거나 원래 짧게 쓴 것</div>
+      <div class="nn">150명 &middot; 21.2%</div>
+      <div class="dd">양도&middot;강습 전환 76 &middot; 단기 상품 57 &middot; 타 센터 등록 10 &middot; 환불 4 &middot; 블랙 3</div>
+    </div>
+    <div class="w">
+      <div class="hd">&#9315; 사유가 비었거나 기타</div>
+      <div class="nn">16명 &middot; 2.3%</div>
+      <div class="dd">공란 13 &middot; 기타 확인 2 &middot; 심사 대상 1 &mdash; <b>기입률 98.2%</b></div>
+    </div>
+  </div>
+
+  <div class="foot" style="margin-top:9px">
+    <div><b>이 숫자를 어디서 읽나</b> &mdash; 유효회원&middot;종료회원&middot;법인 = 회원 원장(ERP 멤버십 회원관리와 같은 통로) &middot; LOSS 보관 506 = LOSS보관 시트 &middot; 문의 714 = 문의 시트 &middot; 등급 61명과 출석 1,638명 = GM 공유 시트 &middot; 회원권 매출 = 월별 매출보고 시트 말일탭 Y70. <b>매주 같은 자리에서 다시 셉니다.</b></div>
+    <div><b>갱신되지 않는 칸 하나</b> &mdash; 출석은 2025년 1~10월 누적이라 이번 주에 안 움직입니다(조인 762명&middot;76.5%). 9월 브로제이 전환 뒤 입장 기록이 자동으로 쌓이면 <b>1인당 월 방문</b>이 매주 갱신되고, 그때 &laquo;LOSS 1명 = 매출 얼마&raquo;를 처음 잽니다.</div>
+  </div>
+
+  <div class="closing">숫자 하나하나가 어느 시트 어느 칸에서 나왔는지 적어 두었습니다 &mdash; <b>되물으실 때 바로 답하기 위해서입니다.</b></div>
 
 </div>
 
@@ -505,13 +717,23 @@ document.getElementById('png').onclick = function () {
     return;
   }
   var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
-  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
-    .then(function (canvas) {
-      var a = document.createElement('a');
-      a.download = '260815_회원감소원인분석_A3.png';
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    })
+  // 2장(분석 + 지표판)을 차례로 저장한다 — 한 장만 받으면 근거가 빠진 채 돌아다닌다.
+  var pages = [
+    { el: 'sheet',  name: '260815_회원감소원인분석_A3.png' },
+    { el: 'sheet2', name: '260815_회원감소원인분석_A3_지표판.png' }
+  ];
+  pages.reduce(function (chain, p) {
+    return chain.then(function () {
+      var node = document.getElementById(p.el);
+      if (!node) return;
+      return html2canvas(node, { scale: 2, backgroundColor: '#ffffff' }).then(function (canvas) {
+        var a = document.createElement('a');
+        a.download = p.name;
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      });
+    });
+  }, Promise.resolve())
     .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
     .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
 };
