@@ -1185,7 +1185,11 @@ def chairman_content_allows(text: str) -> bool:
     new_kinds = [k for k in kinds if k not in baseline]
     if new_kinds:
         _send_chairman_preview(text, new_kinds)
-        _save_chairman_baseline(kinds)  # 다음 회차부터는 이 구성이 기준 — 자동 재개
+        # 합집합으로 누적한다(덮어쓰기 금지). 덮어쓰면 미리 승인해 둔 다른 문구
+        # (밀린 회차 인사말·휴관일 안내문 등)가 평소 발송 한 번에 지워지고, 정작
+        # 그 문구가 나가야 하는 날 다시 보류된다 — 2026-08-19 승인분 2종이 08-22
+        # 정상 발송으로 지워진 것이 실제 사례다.
+        _save_chairman_baseline(sorted(set(baseline) | set(kinds)))
         log(f"[chairman-content] 새 구성 {len(new_kinds)}건 발견 — 이번 회차 보류, 미리보기 발송, 기준선 갱신")
         return False
     return True
