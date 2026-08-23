@@ -434,7 +434,9 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
             common,
             PHOTO_HTML=photo_html,
             GRAD_HTML='<div class="sunday-grad"></div>' if v["grad"] else "",
-            LABEL_HTML=(f'<div class="sunday-label">{_esc(slide.get("label", "GM의 일요일"))}</div>'
+            # 라벨은 부르는 쪽(cmo_intake_to_review.SERIES_NAME)이 넘긴다. 여기 기본값은
+            # 그걸 안 넘겼을 때만 쓰이는 폴백이다 — 이름의 정본은 이 파일이 아니다.
+            LABEL_HTML=(f'<div class="sunday-label">{_esc(slide.get("label", "어떤 하루"))}</div>'
                         if v["label"] else ""),
             BAR_HTML='<div class="sunday-bar"></div>' if v["bar"] else "",
             TEXT=(_sunday_info_html(slide.get("rows") or [])

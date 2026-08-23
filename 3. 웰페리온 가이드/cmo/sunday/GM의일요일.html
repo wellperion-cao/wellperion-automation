@@ -3,13 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GM의 일요일 — 개인계정 주간 기록</title>
+<title>어떤 하루 — 개인계정 기록</title>
 <!--
-  GM의 일요일 모듈 (M1 콘텐츠 허브 · 2026-08-05 시모 · 배367)
+  「어떤 하루」 모듈 (M1 콘텐츠 허브 · 2026-08-05 시모 · 배367)
+  ★2026-08-23 GM 확정으로 시리즈 이름이 "GM의 일요일" → "어떤 하루" 로 바뀌었다.
+    요일과 사람 이름을 빼 평일에도 쓰고, 누구의 하루로도 읽히게 한다.
+    파일 이름·주소는 일부러 그대로 뒀다 — 바꾸면 GM 북마크와 기존 링크가 끊긴다.
+    이름의 정본은 cmo_intake_to_review.SERIES_NAME 한 곳이다.
   시안 정본: GM 제공 디자인(2026-08-04) — 5단계(사진→영상→자동초안→미리보기→검수요청)
 
   뒷단은 새로 만들지 않는다. 콘텐츠 접수 모듈(instructor_intake.html)이 쓰는 GAS를
-  그대로 재사용한다 — 분류(team)만 "GM의 일요일"로 보낸다.
+  그대로 재사용한다 — 분류(team)만 "어떤 하루"로 보낸다.
     접수 → GAS(드라이브 저장 + '마케팅 접수' 시트 append + 텔레그램 알림)
          → cmo_intake_to_review.py(15분 폴러) → 검수큐 "접수검토" + GM 카드 + 시모 배
   GAS 배포 URL은 여기에 복사하지 않는다(약속 L01) — 정본인 instructor_intake.html에서
@@ -118,7 +122,7 @@
       <div class="eyebrow">WELLPERION · PERSONAL</div>
       <div class="pill" id="statusLabel">작성 중</div>
     </div>
-    <div class="h1">GM의 일요일</div>
+    <div class="h1">어떤 하루</div>
     <div class="sub">@namuk.wellperion · 승인하면 바로 발행 · 승인 필수</div>
   </div>
 
@@ -241,7 +245,7 @@
     <div class="tg hide" id="tgCard">
       <div class="tg-h">TELEGRAM · 업무보고방</div>
       <div class="tg-box">
-        <div class="t">[검수요청] GM의 일요일 · <span id="t_date"></span></div>
+        <div class="t">[검수요청] 어떤 하루 · <span id="t_date"></span></div>
         <div>계정 @namuk.wellperion · <span id="t_cut"></span> · <span id="t_when"></span></div>
         <div class="d">제목 — <span id="t_title"></span></div>
         <div class="tg-act"><div>이 카드는 실제 텔레그램 업무보고방으로 나갑니다 — 승인·반려는 그곳에서</div></div>
@@ -381,7 +385,7 @@
     var box = $('cuts'); box.innerHTML = '';
 
     var c = cut('cut-cover', '<img><div class="shade"></div><div class="in">'
-      + '<div class="tag">GM의 일요일</div><div class="ttl"></div></div>');
+      + '<div class="tag">어떤 하루</div><div class="ttl"></div></div>');
     var ci = c.querySelector('img');
     ci.src = cover ? cover.url : '';
     ci.onload = function(){ layout(ci); };
@@ -561,10 +565,11 @@
     }
     renderWhen();
 
-  // '언제' 기본값 = 가장 가까운 지난 일요일(오늘이 일요일이면 오늘).
+  // '언제' 기본값 = 오늘. (2026-08-23 전까지는 '가장 가까운 지난 일요일' 이었다 —
+  //  일요일 전용 시리즈였기 때문이다. 평일에도 쓰게 되면서 그 기본값이 오히려 틀린 날을
+  //  넣게 됐다. 대개 그날 저녁에 올리니 오늘이 맞고, 아니면 GM 이 고쳐 넣는다.)
   (function(){
     var d = new Date();
-    d.setDate(d.getDate() - d.getDay());
     $('f_when').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   })();
   };
@@ -615,7 +620,7 @@
       // 시트 계약(instructor_intake.js INTAKE_HEADER)에 그대로 얹는다 — 새 칸을 만들지 않는다.
       var body = {
         name: '김남욱 GM',
-        team: 'GM의 일요일',
+        team: '어떤 하루',
         // 제목의 줄바꿈은 살려 보낸다 — 표지 슬라이드가 이 줄바꿈 그대로 두 줄로 앉힌다.
         intro: '',                                   // 제목도 뒷단이 사진을 보고 쓴다
         // 문장 카드는 번호(02·03·…)로, 생각은 '생각 ·' 으로 구분한다 — 뒷단이 그대로 읽는다.

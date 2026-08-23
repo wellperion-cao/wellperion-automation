@@ -86,8 +86,18 @@ _TEST_MARKERS = ("__TEST__", "__배포검증__", "__폼검증__")
 _ID_SAFE_RE = re.compile(r"[^0-9A-Za-z가-힣]+")
 _GAS_URL_RE = re.compile(r'GAS_PROD\s*=\s*"([^"]+)"')
 
-# "GM의 일요일" 접수(분류 값 정확히 이 문자열) — 다른 분류는 기존 접수검토 경로 그대로.
-SUNDAY_TEAM = "GM의 일요일"
+# 시리즈 이름 — 이 한 곳이 정본이다(표지 라벨·해시태그·폴더명·AI 프롬프트가 전부 여기서 뽑는다).
+# ★2026-08-23 GM 확정: "GM의 일요일" → "어떤 하루". 요일과 사람 이름을 이름에서 뺐다 —
+#   일요일에만 쓸 수 있던 것을 평일로 넓히고("평일에도 이렇게 할 수 있게"), 'GM' 을 빼
+#   누구의 하루로도 읽히게 한다(GM 원문: "GM을 넣으면 나만 하는거니까? 많은 사람들이
+#   편하게 내 하루의 철학적인 의미 전달과 기록이 되었으면").
+SERIES_NAME = "어떤 하루"
+SERIES_TAG = "#어떤하루"
+SERIES_SLUG = "어떤하루"                     # 폴더 이름에 쓰는 형태(공백 없음)
+# 접수 화면이 보내는 분류 값. 옛 이름으로 이미 접수된 건이 시트에 남아 있으므로 둘 다 받는다
+# — 이름을 바꿨다고 지난 접수가 처리 경로를 잃으면 안 된다.
+SUNDAY_TEAM = SERIES_NAME
+SERIES_TEAM_KEYS = (SERIES_NAME, "GM의 일요일")
 # 시리즈 슬로건 (GM 확정 2026-08-05) — 이 시리즈 글이 향하는 한 문장.
 SUNDAY_SLOGAN = "행복은 특별한 날에 오는 게 아니라, 평범한 하루를 함께 보낼 때 온다."
 # 글의 기준 (GM 2026-08-05) — 설명글이 아니라 기록이다.
@@ -238,7 +248,7 @@ def build_item(row: dict, item_id: str) -> dict:
 # 다른 분류(강사소개 등)는 위 build_item()/접수검토 경로 그대로(회귀 0).
 # ---------------------------------------------------------------------------
 def is_sunday_row(row: dict) -> bool:
-    return (row.get("분류") or "").strip() == SUNDAY_TEAM
+    return (row.get("분류") or "").strip() in SERIES_TEAM_KEYS
 
 
 def _parse_sunday_benefit(benefit: str) -> dict:
@@ -334,7 +344,7 @@ def _clean_title(t: str) -> str:
     줄바꿈이 없으면 가운데에 가장 가까운 띄어쓰기에서 두 줄로 나눈다.
     """
     t = (t or "").strip()
-    for lead in ("GM의 일요일", "GM 의 일요일"):
+    for lead in (SERIES_NAME, "GM의 일요일", "GM 의 일요일"):
         if t.startswith(lead):
             t = t[len(lead):]
     t = t.lstrip(" -—–·:|").strip()
@@ -441,7 +451,9 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
     n = len(photos) - 1  # 표지를 뺀 나머지 = 문장 카드 수
     prompt = "\n".join([
         "너는 웰페리온 GM(김남욱)의 개인 인스타그램 계정 @namuk.wellperion 에 올라갈",
-        "'GM의 일요일' 캐러셀 글을 쓴다. 회사 홍보가 아니라 한 사람의 일요일 기록이다.",
+        f"'{SERIES_NAME}' 캐러셀 글을 쓴다. 회사 홍보가 아니라 한 사람이 보낸 하루의 기록이다.",
+        "  주말일 수도 평일일 수도 있다 — 요일을 짐작해 쓰지 마라(사진에 안 나온다).",
+        "  읽는 사람이 '내 하루도 이랬지' 하고 자기 하루를 떠올리게 되는 글이면 맞다.",
         "",
         f"이 글의 기준: {SUNDAY_STANDARD}.",
         "  남에게 설명하는 글이 아니라, 몇 년 뒤 본인이 다시 읽었을 때 그날이 되살아나는 글이다.",
@@ -465,7 +477,7 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         "  ★낱말 짝이 어색하면 안 된다. 한국어로 실제로 쓰는 표현인지 스스로 읽어 보고 써라",
         "  (실제 사고: '과일이랑 간식 폈어요' — '펴다'는 돗자리에나 쓴다).",
         "- title = 두 줄. 반드시 줄바꿈 문자 1개로 나눈다. 각 줄 12자 안팎.",
-        "  제목에 'GM의 일요일' 같은 시리즈 이름을 넣지 마라(표지에 이미 있다). 줄표(—)로 잇지 마라.",
+        f"  제목에 '{SERIES_NAME}' 같은 시리즈 이름을 넣지 마라(표지에 이미 있다). 줄표(—)로 잇지 마라.",
         f"- lines = [카드] 사진 {n}장에 대한 문장. ★배열이 아니라 **파일 이름을 키로 하는 객체**로 낸다."
         "  (2026-08-16 실사고: 배열로 받았더니 문장이 사진보다 한 칸씩 밀려, 유모차에 앉은 아기 사진에"
         "  '저도 물에 들어가 엎어졌어요' 가 붙어 나갔다. 키로 매어 두면 밀릴 수가 없다.)"
@@ -478,7 +490,7 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         " 정보(아래 '사진으로는 알 수 없는 사실'에 적힌 것만 — 없으면 그 부분은 아예 쓰지 않는다.",
         "  지어내지 마라) ③마지막 줄은 독자에게 던지는 질문 한 줄. 정보는 나열식 광고 문구가 아니라"
         " 문장 속에 자연스럽게 녹인다.",
-        "- hashtags = 5개 안팎이고 맨 앞 3개가 가장 중요하다. #GM의일요일 을 반드시 포함한다.",
+        f"- hashtags = 5개 안팎이고 맨 앞 3개가 가장 중요하다. {SERIES_TAG} 를 반드시 포함한다.",
         "- info = 정보 슬라이드에 그대로 인쇄될 값. 아래 '사진으로는 알 수 없는 사실'의"
         "  각 항목을 **밖에 내보낼 말로 다듬어** 같은 키로 돌려준다."
         "  ★접수 메모는 GM 이 본인에게 적은 쪽지다 — 그대로 인쇄하면 안 된다."
@@ -559,7 +571,9 @@ def _render_sunday_html(variant: str, output: Path, text: str,
     Playwright/Chromium 이 없거나 렌더가 막히는 날이 있어, 실패를 예외로 올리지 않고
     호출부가 기존 Pillow 합성으로 떨어지게 한다 — 검수 카드가 통째로 안 나가는 것보다 낫다.
     """
-    slide = {"type": "sunday", "variant": variant, "text": text or ""}
+    # 라벨(표지 좌상단 시리즈 이름)은 여기서 명시적으로 넘긴다 — 엔진 쪽 기본값에 기대면
+    # 이름이 두 파일에 살게 되고, 한쪽만 바뀌면 어긋난다(약속 L01).
+    slide = {"type": "sunday", "variant": variant, "text": text or "", "label": SERIES_NAME}
     if photo is not None:
         slide["photo"] = str(photo)
     try:
@@ -639,7 +653,7 @@ def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True,
 
 def _compose_sunday_cover(photo: Path, title: str, output: Path) -> None:
     """post_1 — 표지: 사진 + 위→아래 그라디언트 + 하단 제목(줄바꿈 유지) + 상단 라벨."""
-    if _render_sunday_html("cover", output, title or "GM의 일요일", photo):
+    if _render_sunday_html("cover", output, title or SERIES_NAME, photo):
         return
     from slide_compositor import load_and_fit, apply_dark_gradient, load_font, draw_text_block
     from brand_constants import BRAND_PRESETS
@@ -653,13 +667,13 @@ def _compose_sunday_cover(photo: Path, title: str, output: Path) -> None:
     label_font = load_font("medium", int(w * 0.026))
     cx = margin
     label_y = int(h * 0.06)
-    for ch in "GM의 일요일":
+    for ch in SERIES_NAME:
         draw.text((cx, label_y), ch, font=label_font, fill=(255, 255, 255))
         bb = label_font.getbbox(ch)
         cx += (bb[2] - bb[0]) + int(label_font.size * 0.15)
 
     title_font = _sunday_serif(int(w * 0.078))          # GM 시안 = 세리프 제목
-    lines = (title or "GM의 일요일").split("\n")
+    lines = (title or SERIES_NAME).split("\n")
     line_h = int(title_font.size * 1.32)
     ty = h - len(lines) * line_h - int(h * 0.09)
     draw_text_block(draw, lines, title_font, (255, 255, 255), margin, ty, line_spacing=1.32)
@@ -829,8 +843,8 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
 
     date8 = re.sub(r"[^0-9]", "", str(row.get("접수일시") or ""))[:8]
     date6 = date8[2:8] if len(date8) == 8 else datetime.now().strftime("%y%m%d")
-    slug = _id_safe(intro)[:24] or "일요일"
-    folder_rel = f"instagram/namuk.wellperion/{date6}_GM일요일_{slug}"
+    slug = _id_safe(intro)[:24] or SERIES_SLUG
+    folder_rel = f"instagram/namuk.wellperion/{date6}_{SERIES_SLUG}_{slug}"
     src_dir = ROOT / folder_rel / "src"
     out_dir = ROOT / folder_rel / "output"
 
