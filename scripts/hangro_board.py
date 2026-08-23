@@ -476,6 +476,8 @@ def _build_item(q: dict, st: str, title: str) -> dict:
             # ❓ 안 물어봄 판정용(2026-08-13) — 키 유무로 "실무진 릴레이 채널을 쓰는 배인지"를 가른다.
             "_has_staff_field": "staff_message" in q,
             "staff_message": str(q.get("staff_message") or "").strip(),
+            # ✉️ 발신 대기 판정용(2026-08-24) — 채워졌으면 이미 사람 방에 나간 것.
+            "staff_message_sent_at": str(q.get("staff_message_sent_at") or "").strip(),
     }
 
 
@@ -1810,6 +1812,34 @@ def _daily_status_stale_slice(role_slug: str) -> str:
     return "\n⚠️ 현황 갱신 밀림\n" + "\n".join(lines)
 
 
+# ── ✉️ 발신 대기 (2026-08-24 — 웰리·시모 배는 아침 카톡 자동발송(send_ops_digest.py
+#   build_relay_message)에서 중복 발신 방지로 일부러 빠진다. 그래서 전달문을 채워도
+#   자동으로는 절대 안 나가는데 경보가 없어 2026-08-21~24 실무진 전달문 3통이 조용히
+#   멈춰 있었다(GM 실사고). --role ceo·cmo 화면 맨 위에서 짚는다. 새 유틸 없음 —
+#   아이콘·담당 칸은 _owner_label, 날수는 _open_days(다른 표가 이미 'N일째'에 쓰는 것) 재사용. ──
+def _unsent_relay_alert(items: list[dict]) -> str:
+    rows = []
+    for it in items:
+        if str(it.get("owner", "")).upper() not in {"CEO", "CMO"}:
+            continue
+        if str(it.get("status", "")).upper() not in {"PENDING", "IN_PROGRESS"}:
+            continue
+        if not str(it.get("staff_message") or "").strip():
+            continue
+        if str(it.get("staff_message_sent_at") or "").strip():
+            continue
+        icon = it.get("_ship", {}).get("icon", "⛵")
+        days = _open_days(it)
+        day_s = f"{days}일째" if days is not None else "-"
+        rows.append(f"| {icon} {_owner_label(it)} | {it.get('title', '')} | {day_s} |")
+    if not rows:
+        return ""
+    out = [f"### ✉️ 발신 대기 — 전달문은 썼는데 아직 안 나간 배 {len(rows)}척",
+           "| 배 | 진행명 | 며칠째 |", "|---|---|---|", *rows,
+           "※ 웰리·시모 배의 전달문은 아침 자동 발송에 안 실린다 — 직접 보내야 한다."]
+    return "\n".join(out)
+
+
 def _set_daily_status(prac_id: str, done: int, note: str) -> None:
     """--daily-status 한 줄 명령 — practitioners[].daily_status 를 손으로 JSON 안 열고 갱신.
     새 파일 안 만든다(약속 L21) — status/monthly_ops_plan.json 칸 하나 그대로 재사용."""
@@ -1924,6 +1954,10 @@ def main() -> None:
         queue_items = [it for it in queue_items if _nick(str(it.get("owner", ""))) == target]
 
     board_text, secs = build_board(gas_items, queue_items, role=role_slug, sent_by_role=sent_by_role)
+    if role_slug in {"ceo", "cmo"}:
+        alert = _unsent_relay_alert(queue_items)
+        if alert:
+            board_text = alert + "\n\n" + board_text
     if args.role:
         # 정보 손실 0 — 잘라 냈다는 사실과 전체를 어디서 보는지 같이 알린다.
         board_text += (
