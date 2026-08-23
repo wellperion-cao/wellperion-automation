@@ -70,6 +70,17 @@ PROFILE_MD = STATUS_DIR / "gm_profile.md"
 MATRIX_FILE = ROOT / "3. 웰페리온 가이드" / "coo" / "bootsetup_matrix.json"
 SCAN_LOG = STATUS_DIR / "gm_aide_scan_log.jsonl"
 
+# ── 기한 위생 점검(배732 · 약속 L26⑤ · GM 확정 2026-08-21) ──
+# "놓치는 것은 웰리가 찾아 알린다 — 전사일정 + 월간운영계획 + 결재 SSOT 세 곳을 이어서 보고,
+#  기간(기한)은 항상 채워져 있어야 하며 ... 보고를 마치면 목록에서 내려간다."
+# 결재 SSOT 다리는 scan_stale_approval(기존)이 이미 담당 — 여기선 나머지 두 다리(전사일정·월간운영계획)
+# + 보고완료 미이관(회장님 목록 vs chairman_reported.json)까지 한 표로 묶는다.
+MONTHLY_PLAN_FILE = STATUS_DIR / "monthly_ops_plan.json"
+SCHEDULE_SSOT_FILE = STATUS_DIR / "schedule_ssot.json"
+CHAIRMAN_ITEMS_JS = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman" / "_chairman_items.js"
+CHAIRMAN_REPORTED_JSON = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman" / "chairman_reported.json"
+CHECKLIST_ITEM = re.compile(r"^[□✅]\s*\d+\)")
+
 LONG_PENDING_DAYS = 30
 
 # ── 결재 장기 무처리 규칙(배69 · GM 07-24 지시 — 58일 적체 5건 재발 차단) ──
@@ -332,6 +343,72 @@ def _parse_date_loose(s) -> "datetime.date | None":
         return None
 
 
+def scan_due_hygiene() -> list:
+    """기한 위생 점검(배732 · 약속 L26⑤). 전사일정(schedule_ssot)·월간운영계획(monthly_ops_plan)·
+    회장님 보고 목록 3곳을 읽어 ①기한없음 ②기한넘김 ③체크리스트100%인데 미이관 ④전사일정 담당빈칸
+    ⑤보고완료인데 목록에 남음 — 5종을 찾는다. 항목마다 배를 만들면 board 가 넘친다(long_pending과
+    같은 함정) → 하루 1건짜리 표 한 장(캡처 1건)으로 묶는다. 지어낸 기한·담당 없음 — 원본 필드만 그대로."""
+    rows = []  # (구분, 항목, 담당, 사유)
+
+    plan = read_json(MONTHLY_PLAN_FILE, {})
+    months = plan.get("months", {}) if isinstance(plan, dict) else {}
+    cur = months.get(TODAY.strftime("%Y-%m"), {})
+    for o in cur.get("objectives", []):
+        if o.get("status") in ("진행", "계획") and not (o.get("due") or "").strip():
+            rows.append(("①기한없음", f"[{o.get('id')}] {(o.get('title') or '')[:30]}",
+                         o.get("owner") or "", "월간운영계획 due 미기재"))
+
+    all_objs = [o for m in months.values() for o in m.get("objectives", [])]
+    for o in all_objs:
+        due = _parse_date_loose(o.get("due"))
+        if due and due < TODAY and o.get("status") != "완료":
+            rows.append(("②기한넘김", f"[{o.get('id')}] {(o.get('title') or '')[:30]}",
+                         o.get("owner") or "", f"due={o.get('due')} 경과(status={o.get('status')})"))
+        if o.get("status") == "완료":
+            continue
+        items = [l.strip() for l in (o.get("progress_note") or "").splitlines() if CHECKLIST_ITEM.match(l.strip())]
+        if len(items) >= 2 and all(l.startswith("✅") for l in items):
+            rows.append(("③체크리스트100%", f"[{o.get('id')}] {(o.get('title') or '')[:30]}",
+                         o.get("owner") or "", "전항 완료·완료건 정리로 이관 안 됨"))
+
+    sched = read_json(SCHEDULE_SSOT_FILE, {})
+    for it in (sched.get("items") or []):
+        if not (it.get("assignee") or "").strip():
+            rows.append(("④전사일정담당빈칸", f"[{it.get('id')}] {(it.get('name') or '')[:30]}",
+                         it.get("dept") or "", "assignee 미기재"))
+
+    reported = read_json(CHAIRMAN_REPORTED_JSON, {})
+    try:
+        listed_ids = re.findall(r'id:\s*"(d\d+)"', CHAIRMAN_ITEMS_JS.read_text(encoding="utf-8"))
+    except Exception:
+        listed_ids = []
+    for i in listed_ids:
+        if i in reported:
+            rows.append(("⑤보고완료미이관", f"[{i}]", "회장님보고목록",
+                         f"chairman_reported.json {reported.get(i)} 보고완료 찍혔는데 목록에 남음"))
+
+    if not rows:
+        return []
+
+    counts = {}
+    for r in rows:
+        counts[r[0]] = counts.get(r[0], 0) + 1
+    summary = " · ".join(f"{k} {v}건" for k, v in sorted(counts.items()))
+    table = "| 구분 | 항목 | 담당 | 사유 |\n|---|---|---|---|\n" + "\n".join(
+        f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} |" for r in rows[:40])
+    if len(rows) > 40:
+        table += f"\n(외 {len(rows) - 40}건 더 — 스캔로그 참고)"
+
+    return [make_capture(
+        ctype="due_hygiene",
+        reversibility="비가역",
+        target_role="ceo",
+        title=f"⏰ 기한 빈칸·넘김 — {summary}",
+        reason=f"약속 L26⑤ 기한 위생 점검 — {summary}",
+        evidence=table,
+        remedy="각 항목 기한 채우기/완료 이관/담당 지정/보고목록 정리 — GM 결정 필요",
+        dedup_key="gmaide|due_hygiene|daily",
+    )]
 
 
 # ═══════════════════════════════════════════
@@ -978,6 +1055,7 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     parked_ids: list[str] = []          # ⚓ 정박 선언으로 건너뛴 배 — 숨기지 않고 로그에 남긴다
     captures += scan_long_pending(active, parked_out=parked_ids)
     captures += scan_stale_approval(todo_rows)
+    captures += scan_due_hygiene()
     if parked_ids:
         print(f"  ⚓ 정박 선언(next 가 ⚓ 로 시작) {len(parked_ids)}척은 장기미착수 포착에서 제외 — {', '.join(parked_ids[:5])}")
 
