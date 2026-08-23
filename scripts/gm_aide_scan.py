@@ -399,7 +399,7 @@ def scan_due_hygiene() -> list:
     if len(rows) > 40:
         table += f"\n(외 {len(rows) - 40}건 더 — 스캔로그 참고)"
 
-    return [make_capture(
+    cap = make_capture(
         ctype="due_hygiene",
         reversibility="비가역",
         target_role="ceo",
@@ -408,7 +408,9 @@ def scan_due_hygiene() -> list:
         evidence=table,
         remedy="각 항목 기한 채우기/완료 이관/담당 지정/보고목록 정리 — GM 결정 필요",
         dedup_key="gmaide|due_hygiene|daily",
-    )]
+    )
+    cap["counts"] = counts  # hangro_board._due_hygiene_alert 가 판정 재구현 없이 그대로 씀(약속 L01)
+    return [cap]
 
 
 # ═══════════════════════════════════════════
@@ -1055,7 +1057,9 @@ def run(commit: bool = False, auto_exec_flag: bool = False) -> dict:
     parked_ids: list[str] = []          # ⚓ 정박 선언으로 건너뛴 배 — 숨기지 않고 로그에 남긴다
     captures += scan_long_pending(active, parked_out=parked_ids)
     captures += scan_stale_approval(todo_rows)
-    captures += scan_due_hygiene()
+    # ★due_hygiene 은 여기 안 얹는다(약속 L20 · GM 확정 2026-08-19 "자가점검으로 배를 만들지 말고
+    #   전체 정리를 표로만 내라"). scripts/hangro_board.py 가 scan_due_hygiene() 을 직접 import 해
+    #   --role ceo 부팅 화면에 표로만 낸다 — captures/make_proposal_ship 경로 태우지 않는다.
     if parked_ids:
         print(f"  ⚓ 정박 선언(next 가 ⚓ 로 시작) {len(parked_ids)}척은 장기미착수 포착에서 제외 — {', '.join(parked_ids[:5])}")
 

@@ -1840,6 +1840,33 @@ def _unsent_relay_alert(items: list[dict]) -> str:
     return "\n".join(out)
 
 
+# ── ⏰ 기한 빈칸·넘김 (배732 · 약속 L20·L26⑤ — 2026-08-24 GM 지시로 배 등록에서
+#   부팅 표 전용으로 경로 변경. "자가점검을 토대로 배편을 만들지말고, 전체 정리를해주기만해."
+#   판정·집계는 gm_aide_scan.scan_due_hygiene() 그대로 재사용(약속 L01 · 복제 금지) — 여기선
+#   그 counts 를 표 모양으로만 그린다. --role ceo 화면 맨 위, ✉️ 발신 대기와 같은 자리·같은 방식. ──
+_DUE_HYGIENE_LABELS = {
+    "①기한없음": ("기한이 비어 있는 목표", "월간운영계획"),
+    "②기한넘김": ("기한이 지난 목표", "월간운영계획"),
+    "③체크리스트100%": ("체크리스트 100%인데 완료 이관 안 된 목표", "월간운영계획"),
+    "④전사일정담당빈칸": ("전사일정에 담당이 빈 건", "전사일정"),
+    "⑤보고완료미이관": ("보고 완료됐는데 목록에 남은 건", "회장님 보고목록"),
+}
+
+
+def _due_hygiene_alert() -> str:
+    import gm_aide_scan
+    caps = gm_aide_scan.scan_due_hygiene()
+    counts = caps[0]["counts"] if caps else {}
+    rows = [f"| {what} | {counts[code]}건 | {where} |"
+            for code, (what, where) in _DUE_HYGIENE_LABELS.items() if counts.get(code)]
+    if not rows:
+        return ""
+    return "\n".join([
+        "### ⏰ 기한 빈칸·넘김 — GM 업무 3곳 이어보기",
+        "| 무엇 | 건수 | 어디 |", "|---|---|---|", *rows,
+    ])
+
+
 def _set_daily_status(prac_id: str, done: int, note: str) -> None:
     """--daily-status 한 줄 명령 — practitioners[].daily_status 를 손으로 JSON 안 열고 갱신.
     새 파일 안 만든다(약속 L21) — status/monthly_ops_plan.json 칸 하나 그대로 재사용."""
@@ -1958,6 +1985,10 @@ def main() -> None:
         alert = _unsent_relay_alert(queue_items)
         if alert:
             board_text = alert + "\n\n" + board_text
+    if role_slug == "ceo":
+        due_alert = _due_hygiene_alert()
+        if due_alert:
+            board_text = due_alert + "\n\n" + board_text
     if args.role:
         # 정보 손실 0 — 잘라 냈다는 사실과 전체를 어디서 보는지 같이 알린다.
         board_text += (
