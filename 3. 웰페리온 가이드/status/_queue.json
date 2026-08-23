@@ -290,5 +290,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-08-23"
+  },
+  {
+    "task_id": "CTO-2026-08-24-주간-페이지-위생-8-23회차-웰리-선택-9건-실행",
+    "clevel": "cto",
+    "title": "[시토] 주간 페이지 위생 8/23회차 — 웰리 선택 9건 실행 (죽은 코드·고아 CSS 제거)",
+    "status": "PENDING",
+    "priority": "⛵돛단배",
+    "enqueued_at": "2026-08-24",
+    "from": "ceo",
+    "note": "[웰리 → 시토 전달 2026-08-24] 웰리가 배10963(주간 페이지 위생) 후보 106건을 검토해 실행 대상 9건을 골랐습니다. 근거=status/page_hygiene_proposal_20260823.md (자동감사 A등급·게이트잠김·조각 내 참조 0건 확인분).\n\n[실행 대상 9건]\n1) coo/check/시설부 체계.html — JS 함수 fcRenderChips (+fcUpdateChips·fcChipGo). 개발자가 '폐지-no-op' 명시, 바디 전체 주석, 호출부 0\n2) coo/check/지원부 체계.html — JS 함수 parseCSVLine. CSV fetch 경로 폐기(FALLBACK 고정 전환)로 호출부 0\n3) coo/check/지원부 체계.html — 상수 STAFF_CSV_URL. 위 함수 폐기로 참조 전무\n4) coo/notice/notice_template.html — 배열 noticeImages. v2.36에서 contenteditable 직접삽입으로 교체, push/read 없음\n5) coo/notice/notice_template.html — CSS .ntool-img-thumb 계열. 썸네일 DOM 생성 코드 파일 내 부재\n6) coo/notice/notice_template.html — CSS .ntool-fmt-bar-sep. class='sep' 요소가 정적·동적 어디에도 없음\n7) 3. 웰페리온 가이드/wellperion_guide(main).html — JS 함수 deptCard(O1). IIFE 내부 선언·미호출\n8) 3. 웰페리온 가이드/wellperion_guide(main).html — 탭 플레이스홀더 주석 2건(O4 'MCP→CLI 전환'·'핵심 프롬프트'). 대응 tab-panel div 자체가 없음\n\n[웰리가 뺀 것 — 실행하지 마세요]\n· chro/ 4건(onboarding .cm-msg.ok · chauffeur .val-chips · golfpro .badge.closed · operations .val-chips)과 cfo/ 1건(매출현황 .header-right) = 시로·시뽀 라인(나우열M 담당)이라 접촉 금지. 자동감사가 후보로 올렸어도 손대지 않습니다.\n· 강등 4건(iSportMgmt · wlp-inq .hero-band · hint · wp-typography.css) = 다른 곳에서 참조됨(최대 1058건). 삭제 금지.\n· B 중복병합 22건 · C 낡은안내 38건 · D 장황단순화 28건 = 삭제가 아니라 문안·편집 판단이라 이번 회차 실행 대상 아님.\n\n[주의] 자동감사의 '참조 0건'은 조각(chunk) 내부 기준입니다. 지우기 전에 파일 전체에서 해당 식별자를 한 번 더 grep 해 0건인지 확인하고, 확인되면 지웁니다. 하나라도 참조가 나오면 그 건만 빼고 진행하세요.\n\n[감사 실패분] 20개 페이지(운영부체계·주차관리부체계·업무현황SSOT·결재현황SSOT·상품기획·인사허브·전사회의 등)가 300초 타임아웃으로 감사 자체를 못 돌았습니다 — 다음 일요일 재감사 대상이며 이번 판단 범위 밖입니다.",
+    "next": "9건 grep 재확인 후 제거 → safe_commit 으로 커밋·푸시 → 라이브 페이지에서 화면 깨짐 없는지 확인",
+    "depends_on": "",
+    "ship_no": 10965,
+    "short_no": 748,
+    "module": "home",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-08-24"
   }
 ]
