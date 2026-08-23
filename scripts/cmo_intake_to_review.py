@@ -106,6 +106,10 @@ _SUNDAY_ASPECT = (1080, 1350)
 _SUNDAY_CREAM = (0xF4, 0xF1, 0xEA)
 _SUNDAY_DARK = (0x23, 0x20, 0x1C)
 _SUNDAY_ORANGE = (0xF0, 0xB2, 0x7A)
+# 문장 카드 아래쪽에서 글자가 읽히도록 어두운 그라디언트가 덮는 몫
+# (정본 = compose_html.SUNDAY_GRADS['card'] — 78% 부터 짙어져 100% 에서 거의 불투명).
+# 사진을 이 칸 위로 올려 앉힌다 — 안 그러면 사진 아랫부분이 어둠에 묻혀 잘린 것처럼 보인다.
+_CARD_TEXT_ROOM = 0.26
 
 
 # ---------------------------------------------------------------------------
@@ -577,7 +581,8 @@ def _render_sunday_html(variant: str, output: Path, text: str,
         return False
 
 
-def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True) -> Path:
+def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True,
+                bottom_room: float = 0.0) -> Path:
     """사진을 1080x1350 한 장으로 미리 앉혀 둔다 — 이후 합성기(HTML 엔진·Pillow 폴백)가
     둘 다 '가운데 꽉 채워 자르기'라, 여기서 최종 크기·비율로 만들어 두면 그 다음 자르기가
     아무것도 바꾸지 않는다(칸과 크기가 이미 같아서). 합성기를 건드리지 않고 앉히는 그림만 바꾼다.
@@ -588,6 +593,12 @@ def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True) -> Path
 
     fit=False — GM 이 표지 배치를 직접 맞춘 경우(cover_focus 커스텀) 전용. 종전처럼 꽉 채워 자른다
     — GM 이 정한 배치를 그대로 존중한다.
+
+    bottom_room — 문장 카드 전용. 카드 아래쪽은 글자가 읽히도록 어두운 그라디언트가 덮는다
+    (compose_html.SUNDAY_GRADS['card'] = 아래 약 25%). 사진을 가운데 앉히면 그 25% 안에
+    사진 아랫부분이 들어가 어둠에 묻히고, GM 눈에는 잘린 것으로 보인다(GM 지적 2026-08-23
+    "오리고기 사진 위아래가 짤린 것 같은데"). 그래서 남는 여백이 있으면 그만큼 아래로 몰아
+    사진을 글자 자리 위로 올린다. 여백이 모자라면(세로 사진처럼 꽉 차면) 종전 그대로 둔다.
 
     focus = (x, y, zoom) · x·y 는 0~1(남는 공간을 어느 쪽으로 밀지) · zoom 1 = 꽉 채우기.
     실패하면 원본을 그대로 쓴다(표지가 아예 안 나오는 것보다 낫다).
@@ -614,8 +625,12 @@ def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True) -> Path
             scale = max(tw / sw, th / sh) * zoom
 
         nw, nh = max(1, round(sw * scale)), max(1, round(sh * scale))
+        free = th - nh
+        if fit and bottom_room > 0 and free > 0:
+            # 남는 세로를 아래로 몰아 준다 — 글자가 덮는 칸만큼(모자라면 있는 만큼).
+            fy = (free - min(free, round(th * bottom_room))) / free
         canvas.paste(img.resize((nw, nh), Image.LANCZOS),
-                     (round((tw - nw) * fx), round((th - nh) * fy)))
+                     (round((tw - nw) * fx), round(free * fy)))
         dest.parent.mkdir(parents=True, exist_ok=True)
         canvas.save(dest, "JPEG", quality=95, optimize=True)
         return dest
@@ -870,7 +885,8 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         cover_src = _focus_crop(downloaded[0], parsed["cover_focus"], src_dir / "cover_focus.jpg",
                                  fit=cover_fit)
         _compose_sunday_cover(cover_src, intro, _add("post_1.jpg"))
-        fit_cards = [_focus_crop(p, (0.5, 0.5, 1.0), src_dir / f"fit_{i + 1}.jpg")
+        fit_cards = [_focus_crop(p, (0.5, 0.5, 1.0), src_dir / f"fit_{i + 1}.jpg",
+                                 bottom_room=_CARD_TEXT_ROOM)
                      for i, p in enumerate(cards)]
         for i, photo in enumerate(fit_cards):
             # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
