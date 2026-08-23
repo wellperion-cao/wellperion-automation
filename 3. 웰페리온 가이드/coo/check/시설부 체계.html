@@ -3747,10 +3747,6 @@ function vendorSubmitAddForm(){
     if(!fcStore.submissions)fcStore.submissions=[];
     fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveBoard',key:'FACILITY_CHECK_'+date,board:{date:date,inspector:insp,store:fcStore}})}).catch(function(){});
   }
-  // ─── (폐지) 회차 칩 UI — 시간대 선택 제거, 회차 통합(2026-07-08)으로 curRound 재할당 경로도 완전 제거. 잔존 호출 대비 no-op만 유지. ───
-  function fcRenderChips(){ /* 회차 칩 폐지 — no-op */ }
-  function fcUpdateChips(){ /* 회차 칩 폐지 — no-op */ }
-  window.fcChipGo=function(){ /* 회차 칩 폐지 — no-op(curRound는 항상 ROUND_DAILY 고정) */ };
   // 항목 done/measure 산정 — fields 중 값이 하나라도 있으면 done. measure=입력칸 JSON.
   function measureFromMap(map,item){
     var vals={}; item.fields.forEach(function(f){ var v=map[f]; if(v!==undefined&&String(v).trim()!=='')vals[f.replace('fc_','')]=String(v).trim(); });
@@ -3832,7 +3828,6 @@ function vendorSubmitAddForm(){
     else if(name){ sel.value='__custom__'; if(txt){txt.value=name; txt.style.display='';} }
     else { sel.value='박호균'; if(txt){txt.value='';txt.style.display='none';} }
   }
-  // (구) fcRound select onchange 핸들러 — select 폐지로 호출부 없음. 칩(fcChipGo)이 회차 전환 단일 수단.
   // 잔존 호출 대비 null-safe 유지: 현재 회차 캡처 후 화면 갱신만(select 참조 제거).
   window.fcRoundChange=function(){
     captureRound();

@@ -5474,7 +5474,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         </table>
       </div>
 
-      <!-- ── 탭 4: MCP→CLI 전환 (섹션 4 전수) ── -->
 
       <!-- ── 탭 6: 자기학습 프로세스 (GM님 최종 목표) ── -->
       <div class="tab-panel" data-panel="selflearn">
@@ -5569,7 +5568,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <!-- ══ /📓 반영·효과 로그 ══ -->
       </div>
 
-      <!-- ── 탭 7: 핵심 프롬프트 ── -->
 
     </div>
 
@@ -6649,9 +6647,6 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           ? '<a href="'+o.extra.href+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:7px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:9px;font-size:12px;font-weight:700;text-decoration:none;">'+o.extra.label+'</a>'
           : '';
         return '<div style="border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'+body+extra+'</div>';
-      }
-      function deptCard(icon, label, pctText, badge, href, tag){   // 하위호환(다른 호출부 대비) — 신규 카드로 위임
-        return moduleCard({icon:icon,label:label,caption:'오늘 점검 완료율',value:pctText==='—'?null:pctText,warn:tag,warnLevel:'ok',href:href});
       }
       function pctOf(row){ if(!row) return null; if(row.pct!=null) return row.pct; return row.total? Math.round(row.done/row.total*100):null; }
       function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }

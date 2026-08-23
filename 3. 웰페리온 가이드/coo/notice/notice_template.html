@@ -159,10 +159,6 @@
   #noticePreviewFrame.landscape .ntool-pv-ftr{flex:0 0 6%;padding:clamp(6px,1.2vw,12px);}
   #noticePreviewFrame.landscape .ntool-pv-ftr img{height:clamp(14px,2.4vw,30px);}
 
-  /* ── 사진 첨부 썸네일 ── */
-  .ntool-img-thumb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
-  .ntool-img-thumb img{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
-  .ntool-img-thumb .remove{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:var(--hl);color:#fff;border:none;border-radius:50%;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .ntool-img-item{position:relative;display:inline-block;}
 
   /* ── 저장 목록 ── */
@@ -464,7 +460,6 @@
     },
     custom: { kr: '', en: '', sub: '', body: '' }
   };
-  const noticeImages = [];
   function el(id){ return document.getElementById(id); }
   function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   /* v2.61 — 제목 줄바꿈 지원: 이스케이프 후 개행(\n)을 <br>로. 제목칸 textarea Enter 반영 */

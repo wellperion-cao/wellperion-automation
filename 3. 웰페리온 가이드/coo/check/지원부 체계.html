@@ -2078,7 +2078,6 @@ const ONLINE = API_URL.length > 0;
 const DEPT = 'support';
 function withDept(obj){ obj.dept = DEPT; return obj; }
 const DEPT_Q = '&dept=' + encodeURIComponent(DEPT);
-const STAFF_CSV_URL = 'https://docs.google.com/spreadsheets/d/1DKEKRrpsi9Nit7dNdNGsXLYtzie3PopbwD7EJzJCku0/gviz/tq?tqx=out:csv&sheet=%EC%A0%90%EA%B2%80%EC%9E%90';
 
 /* ── Track which gender tab is active ── */
 let activeGenderTab = 'm';
@@ -2346,17 +2345,6 @@ async function loadItemMasterFromSheet(){
   if(typeof renderManualItems==='function') renderManualItems();
 }
 
-function parseCSVLine(line){
-  const result=[];let cur='',inQ=false;
-  for(let i=0;i<line.length;i++){
-    const c=line[i];
-    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++}else{inQ=!inQ}}
-    else if(c===','&&!inQ){result.push(cur.trim());cur=''}
-    else{cur+=c}
-  }
-  result.push(cur.trim());
-  return result;
-}
 
 function getStaffForGender(g){
   // g='m' or 'f'
