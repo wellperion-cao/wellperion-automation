@@ -86,18 +86,46 @@ _TEST_MARKERS = ("__TEST__", "__배포검증__", "__폼검증__")
 _ID_SAFE_RE = re.compile(r"[^0-9A-Za-z가-힣]+")
 _GAS_URL_RE = re.compile(r'GAS_PROD\s*=\s*"([^"]+)"')
 
-# 시리즈 이름 — 이 한 곳이 정본이다(표지 라벨·해시태그·폴더명·AI 프롬프트가 전부 여기서 뽑는다).
-# ★2026-08-23 GM 확정: "GM의 일요일" → "어떤 하루". 요일과 사람 이름을 이름에서 뺐다 —
-#   일요일에만 쓸 수 있던 것을 평일로 넓히고("평일에도 이렇게 할 수 있게"), 'GM' 을 빼
-#   누구의 하루로도 읽히게 한다(GM 원문: "GM을 넣으면 나만 하는거니까? 많은 사람들이
-#   편하게 내 하루의 철학적인 의미 전달과 기록이 되었으면").
-SERIES_NAME = "어떤 하루"
-SERIES_TAG = "#어떤하루"
-SERIES_SLUG = "어떤하루"                     # 폴더 이름에 쓰는 형태(공백 없음)
-# 접수 화면이 보내는 분류 값. 옛 이름으로 이미 접수된 건이 시트에 남아 있으므로 둘 다 받는다
-# — 이름을 바꿨다고 지난 접수가 처리 경로를 잃으면 안 된다.
+# 시리즈 정의 — 정본은 코드가 아니라 아래 JSON 한 파일이다(약속 L01).
+#   접수 화면(cmo/sunday/GM의일요일.html)이 같은 파일을 읽어 고를 목록을 만들고,
+#   여기서는 이름·해시태그·폴더·계정을 뽑는다. 새 시리즈 = JSON 한 칸 추가, 코드 무변경.
+# ★2026-08-23 GM 확정 두 가지가 이 구조의 이유다.
+#   ①"GM의 일요일" → "어떤 하루" — 요일과 사람 이름을 뺐다(평일에도 쓰고, 누구의 하루로도 읽히게).
+#   ②"둘다" — 올리는 사람도 넓히고(이름을 적어 넣는다) 시리즈도 넓힌다(목록에서 고른다).
+SERIES_FILE = ROOT / "3. 웰페리온 가이드" / "cmo" / "sunday" / "series.json"
+
+
+def _load_series() -> list:
+    """시리즈 목록. 파일이 깨지거나 없으면 기본 1건으로 버틴다 — 접수 자체가 멈추면 안 된다."""
+    try:
+        rows = json.loads(SERIES_FILE.read_text(encoding="utf-8")).get("series") or []
+        if rows:
+            return rows
+    except Exception as exc:
+        print(f"[WARN] 시리즈 목록을 못 읽었습니다(기본값으로 진행): {exc}", file=sys.stderr)
+    return [{"key": "어떤 하루", "name": "어떤 하루", "tag": "#어떤하루", "slug": "어떤하루",
+             "account": "namuk.wellperion", "channel": "인스타그램 (namuk.wellperion)",
+             "aka": ["GM의 일요일"], "brief": "", "enabled": True}]
+
+
+SERIES_LIST = _load_series()
+
+
+def series_of(team: str) -> dict | None:
+    """접수 행의 분류 값 → 시리즈 정의. 옛 이름(aka)으로 들어온 건도 찾아 준다."""
+    t = (team or "").strip()
+    for s in SERIES_LIST:
+        if t == s.get("key") or t == s.get("name") or t in (s.get("aka") or []):
+            return s
+    return None
+
+
+# 기본 시리즈(목록 첫 줄) — 시리즈를 못 찾은 자리에서 쓰는 폴백값.
+_S0 = SERIES_LIST[0]
+SERIES_NAME = _S0.get("name", "어떤 하루")
+SERIES_TAG = _S0.get("tag", "#어떤하루")
+SERIES_SLUG = _S0.get("slug", "어떤하루")
 SUNDAY_TEAM = SERIES_NAME
-SERIES_TEAM_KEYS = (SERIES_NAME, "GM의 일요일")
 # 시리즈 슬로건 (GM 확정 2026-08-05) — 이 시리즈 글이 향하는 한 문장.
 SUNDAY_SLOGAN = "행복은 특별한 날에 오는 게 아니라, 평범한 하루를 함께 보낼 때 온다."
 # 글의 기준 (GM 2026-08-05) — 설명글이 아니라 기록이다.
@@ -248,7 +276,7 @@ def build_item(row: dict, item_id: str) -> dict:
 # 다른 분류(강사소개 등)는 위 build_item()/접수검토 경로 그대로(회귀 0).
 # ---------------------------------------------------------------------------
 def is_sunday_row(row: dict) -> bool:
-    return (row.get("분류") or "").strip() in SERIES_TEAM_KEYS
+    return series_of(row.get("분류") or "") is not None
 
 
 def _parse_sunday_benefit(benefit: str) -> dict:
@@ -430,7 +458,8 @@ def _parse_copy_json(raw: str, n_lines: int, card_names: "list[str] | None" = No
     }
 
 
-def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = None) -> dict | None:
+def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = None,
+                       series: dict | None = None) -> dict | None:
     """내려받은 사진을 실제로 열어 보고 캐러셀 글(제목·문장·생각·캡션·해시태그)을 쓴다.
 
     사람이 접수 화면에서 문장을 미리 채우는 대신, 올라온 사진에서 글이 나오게 하는 경로
@@ -448,12 +477,15 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         print(f"[WARN] GM의 일요일 AI 글 — model_router 임포트 실패: {exc}", file=sys.stderr)
         return None
 
+    s = series or _S0
+    s_name, s_tag = s.get("name", SERIES_NAME), s.get("tag", SERIES_TAG)
+    s_brief = (s.get("brief") or "").strip()
     n = len(photos) - 1  # 표지를 뺀 나머지 = 문장 카드 수
     prompt = "\n".join([
-        "너는 웰페리온 GM(김남욱)의 개인 인스타그램 계정 @namuk.wellperion 에 올라갈",
-        f"'{SERIES_NAME}' 캐러셀 글을 쓴다. 회사 홍보가 아니라 한 사람이 보낸 하루의 기록이다.",
-        "  주말일 수도 평일일 수도 있다 — 요일을 짐작해 쓰지 마라(사진에 안 나온다).",
-        "  읽는 사람이 '내 하루도 이랬지' 하고 자기 하루를 떠올리게 되는 글이면 맞다.",
+        f"너는 인스타그램 계정 @{s.get('account', 'namuk.wellperion')} 에 올라갈",
+        f"'{s_name}' 캐러셀 글을 쓴다.",
+        # 시리즈의 성격은 series.json 의 brief 가 정한다 — 코드에 시리즈별 문구를 박지 않는다.
+        f"  {s_brief}" if s_brief else "",
         "",
         f"이 글의 기준: {SUNDAY_STANDARD}.",
         "  남에게 설명하는 글이 아니라, 몇 년 뒤 본인이 다시 읽었을 때 그날이 되살아나는 글이다.",
@@ -477,7 +509,7 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         "  ★낱말 짝이 어색하면 안 된다. 한국어로 실제로 쓰는 표현인지 스스로 읽어 보고 써라",
         "  (실제 사고: '과일이랑 간식 폈어요' — '펴다'는 돗자리에나 쓴다).",
         "- title = 두 줄. 반드시 줄바꿈 문자 1개로 나눈다. 각 줄 12자 안팎.",
-        f"  제목에 '{SERIES_NAME}' 같은 시리즈 이름을 넣지 마라(표지에 이미 있다). 줄표(—)로 잇지 마라.",
+        f"  제목에 '{s_name}' 같은 시리즈 이름을 넣지 마라(표지에 이미 있다). 줄표(—)로 잇지 마라.",
         f"- lines = [카드] 사진 {n}장에 대한 문장. ★배열이 아니라 **파일 이름을 키로 하는 객체**로 낸다."
         "  (2026-08-16 실사고: 배열로 받았더니 문장이 사진보다 한 칸씩 밀려, 유모차에 앉은 아기 사진에"
         "  '저도 물에 들어가 엎어졌어요' 가 붙어 나갔다. 키로 매어 두면 밀릴 수가 없다.)"
@@ -490,7 +522,7 @@ def _write_sunday_copy(photos: list[Path], video: bool, facts: dict | None = Non
         " 정보(아래 '사진으로는 알 수 없는 사실'에 적힌 것만 — 없으면 그 부분은 아예 쓰지 않는다.",
         "  지어내지 마라) ③마지막 줄은 독자에게 던지는 질문 한 줄. 정보는 나열식 광고 문구가 아니라"
         " 문장 속에 자연스럽게 녹인다.",
-        f"- hashtags = 5개 안팎이고 맨 앞 3개가 가장 중요하다. {SERIES_TAG} 를 반드시 포함한다.",
+        f"- hashtags = 5개 안팎이고 맨 앞 3개가 가장 중요하다. {s_tag} 를 반드시 포함한다.",
         "- info = 정보 슬라이드에 그대로 인쇄될 값. 아래 '사진으로는 알 수 없는 사실'의"
         "  각 항목을 **밖에 내보낼 말로 다듬어** 같은 키로 돌려준다."
         "  ★접수 메모는 GM 이 본인에게 적은 쪽지다 — 그대로 인쇄하면 안 된다."
@@ -564,7 +596,7 @@ def _download_drive_image(url: str, dest: Path) -> bool:
 
 
 def _render_sunday_html(variant: str, output: Path, text: str,
-                        photo: Path | None = None) -> bool:
+                        photo: Path | None = None, label: str = "") -> bool:
     """HTML/CSS 엔진(compose_html)으로 슬라이드 1장 렌더 → output. 실패하면 False.
 
     HTML 쪽이 자간·행간·균형 줄바꿈·밴딩 없는 그라디언트에서 Pillow 를 이긴다. 다만
@@ -573,7 +605,8 @@ def _render_sunday_html(variant: str, output: Path, text: str,
     """
     # 라벨(표지 좌상단 시리즈 이름)은 여기서 명시적으로 넘긴다 — 엔진 쪽 기본값에 기대면
     # 이름이 두 파일에 살게 되고, 한쪽만 바뀌면 어긋난다(약속 L01).
-    slide = {"type": "sunday", "variant": variant, "text": text or "", "label": SERIES_NAME}
+    slide = {"type": "sunday", "variant": variant, "text": text or "",
+             "label": label or SERIES_NAME}
     if photo is not None:
         slide["photo"] = str(photo)
     try:
@@ -651,9 +684,12 @@ def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True,
         return photo
 
 
-def _compose_sunday_cover(photo: Path, title: str, output: Path) -> None:
-    """post_1 — 표지: 사진 + 위→아래 그라디언트 + 하단 제목(줄바꿈 유지) + 상단 라벨."""
-    if _render_sunday_html("cover", output, title or SERIES_NAME, photo):
+def _compose_sunday_cover(photo: Path, title: str, output: Path,
+                          series: dict | None = None) -> None:
+    """post_1 — 표지: 사진 + 위→아래 그라디언트 + 하단 제목(줄바꿈 유지) + 상단 라벨.
+    라벨 = 시리즈 이름. series 를 안 주면 기본 시리즈로 찍는다."""
+    name = (series or _S0).get("name", SERIES_NAME)
+    if _render_sunday_html("cover", output, title or name, photo, label=name):
         return
     from slide_compositor import load_and_fit, apply_dark_gradient, load_font, draw_text_block
     from brand_constants import BRAND_PRESETS
@@ -667,13 +703,13 @@ def _compose_sunday_cover(photo: Path, title: str, output: Path) -> None:
     label_font = load_font("medium", int(w * 0.026))
     cx = margin
     label_y = int(h * 0.06)
-    for ch in SERIES_NAME:
+    for ch in name:
         draw.text((cx, label_y), ch, font=label_font, fill=(255, 255, 255))
         bb = label_font.getbbox(ch)
         cx += (bb[2] - bb[0]) + int(label_font.size * 0.15)
 
     title_font = _sunday_serif(int(w * 0.078))          # GM 시안 = 세리프 제목
-    lines = (title or SERIES_NAME).split("\n")
+    lines = (title or name).split("\n")
     line_h = int(title_font.size * 1.32)
     ty = h - len(lines) * line_h - int(h * 0.09)
     draw_text_block(draw, lines, title_font, (255, 255, 255), margin, ty, line_spacing=1.32)
@@ -834,17 +870,19 @@ def _compose_sunday_montage(slides: list[Path], output: Path) -> None:
 def build_sunday_item(row: dict, item_id: str) -> dict | None:
     """'GM의 일요일' 접수 1건 → review_queue 항목(검수대기) 빌드. 사진 0장이거나
     다운로드가 전부 실패하면 None(경고는 여기서 stderr 로 남김 — 조용한 성공 처리 금지)."""
+    series = series_of(row.get("분류") or "") or _S0
+    writer = (row.get("성함") or "").strip()          # 올린 사람 — 접수 화면이 적어 보낸다
     intro = (row.get("한줄소개") or "").strip()
     parsed = _parse_sunday_benefit(row.get("회원이얻는것") or "")
     links = [u.strip() for u in (row.get("사진링크") or "").split("\n") if u.strip()]
     if not links:
-        print(f"[WARN] GM의 일요일 접수 사진 0장 — 제작 불가: {item_id}", file=sys.stderr)
+        print(f"[WARN] 하루 기록 접수 사진 0장 — 제작 불가: {item_id}", file=sys.stderr)
         return None
 
     date8 = re.sub(r"[^0-9]", "", str(row.get("접수일시") or ""))[:8]
     date6 = date8[2:8] if len(date8) == 8 else datetime.now().strftime("%y%m%d")
-    slug = _id_safe(intro)[:24] or SERIES_SLUG
-    folder_rel = f"instagram/namuk.wellperion/{date6}_{SERIES_SLUG}_{slug}"
+    slug = _id_safe(intro)[:24] or series["slug"]
+    folder_rel = f"instagram/{series['account']}/{date6}_{series['slug']}_{slug}"
     src_dir = ROOT / folder_rel / "src"
     out_dir = ROOT / folder_rel / "output"
 
@@ -864,7 +902,8 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
     cards = downloaded[1:]
 
     # 글은 사진을 보고 쓴다(주경로). 접수 화면이 보낸 문장(은행)은 AI 가 실패했을 때의 폴백이다.
-    ai = _write_sunday_copy(downloaded, bool((row.get("영상링크") or "").strip()), parsed.get("facts"))
+    ai = _write_sunday_copy(downloaded, bool((row.get("영상링크") or "").strip()),
+                            parsed.get("facts"), series)
     if ai:
         intro = ai["title"] or intro
         texts, think = ai["lines"], ai["think"]
@@ -896,7 +935,7 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         cover_fit = parsed["cover_focus"] == (0.5, 0.5, 1.0)
         cover_src = _focus_crop(downloaded[0], parsed["cover_focus"], src_dir / "cover_focus.jpg",
                                  fit=cover_fit)
-        _compose_sunday_cover(cover_src, intro, _add("post_1.jpg"))
+        _compose_sunday_cover(cover_src, intro, _add("post_1.jpg"), series)
         fit_cards = [_focus_crop(p, (0.5, 0.5, 1.0), src_dir / f"fit_{i + 1}.jpg",
                                  top_align=True)
                      for i, p in enumerate(cards)]
@@ -958,9 +997,9 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
 
     return {
         # 표지 제목은 두 줄(\n)이지만 큐·검수카드 제목은 한 줄이어야 한다 — 줄바꿈만 편다.
-        "title": "GM의 일요일 — " + " ".join(intro.split()),
-        "channel": "인스타그램 (namuk.wellperion)",
-        "account": "namuk.wellperion",
+        "title": f"{series['name']} — " + " ".join(intro.split()),
+        "channel": series["channel"],
+        "account": series["account"],
         "folder": folder_rel,
         "slides": slides_rel,
         "caption": caption_full,
@@ -973,7 +1012,10 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         "info_lines": [f"{label} · {val}" for label, val in info_rows],
         "id": item_id,
         "publish_at": parsed["publish_at"],
-        "note": f"[GM의 일요일 접수 {row.get('접수일시', '')}] cmo_intake_to_review.py 자동 제작(GM의일요일 분기) · {copy_note}",
+        "writer": writer,
+        "note": (f"[{series['name']} 접수 {row.get('접수일시', '')}"
+                 + (f" · 올린이 {writer}" if writer else "")
+                 + f"] cmo_intake_to_review.py 자동 제작 · {copy_note}"),
     }
 
 
@@ -1065,7 +1107,20 @@ def main() -> int:
     ap.add_argument("--once", action="store_true", help="1회 실행(반복 루프 없음 — 현재 기본 동작과 동일)")
     ap.add_argument("--include-test", action="store_true", help="테스트 접수행(__TEST__ 등)도 포함")
     ap.add_argument("--limit", type=int, default=500, help="GAS 조회 건수(기본 500)")
+    ap.add_argument("--selftest", action="store_true",
+                    help="시리즈 분기만 검사하고 끝낸다(네트워크·큐 접촉 0)")
     args = ap.parse_args()
+
+    if args.selftest:
+        # 여기가 깨지면 접수가 조용히 유실된다 — 옛 이름으로 들어온 건이 경로를 잃거나,
+        # 남의 분류(강사소개 등)를 이 경로로 끌고 오거나. 둘 다 아무 에러 없이 일어난다.
+        assert SERIES_LIST, "시리즈 목록이 비었다"
+        assert series_of(SERIES_NAME), "현재 이름으로 시리즈를 못 찾는다"
+        assert series_of("GM의 일요일"), "옛 이름(aka) 접수가 경로를 잃는다"
+        assert series_of("강사소개") is None, "남의 분류를 이 경로로 끌고 온다"
+        assert is_sunday_row({"분류": "GM의 일요일"}) and not is_sunday_row({"분류": "강사소개"})
+        print("[OK] 시리즈 분기 검사 통과 —", ", ".join(s["name"] for s in SERIES_LIST))
+        return 0
 
     gas_url = _extract_gas_url()
     if not gas_url:

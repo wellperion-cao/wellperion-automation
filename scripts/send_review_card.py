@@ -345,9 +345,13 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
     info_block = ("\n<b>슬라이드에 인쇄될 값</b>\n" + "\n".join(f"· {x}" for x in info_lines) + "\n"
                   if info_lines else "")
 
+    # 올린 사람 — 2026-08-23 부터 GM 말고 다른 사람도 올린다. 누가 올린 건지 안 보이면
+    # 승인하는 쪽이 되물어야 한다. 없는 건(옛 항목)은 줄 자체를 만들지 않는다.
+    writer_line = f"올린이: {item['writer']}\n" if (item.get("writer") or "").strip() else ""
     caption = (
         f"🔎 <b>콘텐츠 검수 요청</b>\n"
         f"<b>{title}</b>\n"
+        f"{writer_line}"
         f"채널: {ch_label}\n"
         f"폴더: {folder}\n"
         f"발행 — {pub_label}\n"
