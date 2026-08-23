@@ -475,11 +475,18 @@
   }
 
   // ── 영상 자동 축소 (GM 지시 2026-08-05) ───────────────────────
-  // 구글 스크립트가 한 번에 받을 수 있는 파일은 50MB 가 상한이다. 그래서 넘치는 영상은
-  // 브라우저가 가진 녹화기(MediaRecorder)로 다시 입혀 줄인다 — 설치할 프로그램도,
+  // 구글 스크립트가 한 번에 받을 수 있는 요청은 50MB 가 상한이다(2026-08-23 실측: 50MB=400
+  // 거부 · 60MB=연결 끊김 → 브라우저에는 "Failed to fetch" 로 뜬다). 우리가 보내는 건 파일이
+  // 아니라 base64 문자열이라 원본보다 약 1.34 배로 부푼다 — 즉 파일 크기로 50MB 를 재면
+  // 실제 요청은 67MB 가 되어 반드시 끊긴다(구 VIDEO_LIMIT=50MB 가 이 실패의 원인이었다).
+  // 그래서 한계는 "부푼 뒤 크기 + 사진 몫"까지 계산해 파일 크기로 되돌려 잡는다.
+  // 넘치는 영상은 브라우저가 가진 녹화기(MediaRecorder)로 다시 입혀 줄인다 — 설치할 프로그램도,
   // 외부로 나가는 것도 없다. 해상도는 그대로 두고 비트레이트만 낮춰 화질을 최대한 살린다.
-  var VIDEO_LIMIT = 50 * 1024 * 1024;
-  var VIDEO_TARGET = 42 * 1024 * 1024;      // 상한에 딱 붙이지 않는다(컨테이너 오버헤드 여유)
+  var B64_GROWTH   = 1.34;                  // base64 팽창률(4/3 + data URL 접두사·JSON 따옴표 여유)
+  var PHOTO_BUDGET = 8 * 1024 * 1024;       // 사진 9장(표지1+8)의 base64 몫으로 미리 떼어 둔다
+  var REQUEST_CAP  = 50 * 1024 * 1024;      // 구글이 받아 주는 요청 전체 상한(실측)
+  var VIDEO_LIMIT  = Math.floor((REQUEST_CAP * 0.8 - PHOTO_BUDGET) / B64_GROWTH);  // ≈ 23MB
+  var VIDEO_TARGET = Math.floor(VIDEO_LIMIT * 0.85);   // 상한에 딱 붙이지 않는다(컨테이너 오버헤드 여유)
 
   function canShrinkVideo(){
     return typeof MediaRecorder !== 'undefined'
@@ -658,7 +665,13 @@
       $('tgCard').classList.remove('hide');
       $('okBox').classList.remove('hide');
     }catch(e){
-      fail('전송 실패 — ' + e.message + ' (잠시 후 다시 시도해 주세요)');
+      // "Failed to fetch" 는 브라우저가 내는 말이라 읽는 사람이 무엇을 해야 할지 모른다.
+      // 이 오류가 나는 경우는 사실상 둘뿐이다 — 보낸 것이 너무 크거나, 인터넷이 끊겼거나.
+      var msg = /Failed to fetch|NetworkError|Load failed/i.test(e.message)
+        ? '보내지 못했습니다. 올리신 것이 너무 크거나 인터넷이 잠깐 끊긴 경우입니다.'
+          + ' 영상을 뺀 뒤 사진만 먼저 보내 보시고, 영상은 아래 드라이브 링크 칸에 주소로 넣어 주세요.'
+        : '보내지 못했습니다 — ' + e.message;
+      fail(msg);
       btn.disabled = false; btn.textContent = '텔레그램으로 검수 요청';
     }
   };
