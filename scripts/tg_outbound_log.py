@@ -210,6 +210,15 @@ def send(token, chat_id, text, source='', kind='sendMessage', extra=None,
         log_outbound(text, chat_id=chat_id, source=source, ok=False, kind=kind)
         return {'ok': False} if full_response else False
 
+    # ★파일 업로드는 글자 발신보다 오래 걸린다 — 여기 관문에서 바닥값을 보장한다(약속 L21:
+    #   호출부 네 곳에 같은 숫자를 흩뿌리지 않는다). 2026-08-23 실사고: 검수 카드 미리보기
+    #   4.24MB 가 timeout=20 안에 못 올라가 실패 → 텍스트 카드로 폴백 → GM 화면에서 이미지가
+    #   사라졌다. 같은 파일을 넉넉한 시간으로 다시 보내면 그대로 성공한다(실측 확인).
+    #   1MB 당 30초 + 30초, 최소 60초 — 느린 회선에서도 끊기지 않을 만큼만 준다.
+    if file_bytes is not None:
+        need = 30 + int(len(file_bytes) / (1024 * 1024) * 30)
+        timeout = max(timeout, 60, need)
+
     payload = {'chat_id': chat_id, _TEXT_FIELD.get(kind, 'text'): text}
     if extra:
         payload.update(extra)

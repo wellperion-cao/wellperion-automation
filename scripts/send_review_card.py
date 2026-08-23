@@ -202,7 +202,7 @@ def _send_photo_card(token: str, caption: str, keyboard: dict,
                      photo: Path, item_id: str) -> int | None:
     """sendPhoto (montage 이미지 + caption + 인라인 버튼). message_id 반환(실패 None).
     발신 관문(tg_outbound_log.send) 경유 — 페이싱·429재시도·로깅 자동 편입(배255 3차,
-    2026-08-17)."""
+    2026-08-17). 업로드 시간은 관문이 파일 크기를 보고 잡는다(tg_outbound_log.send)."""
     resp = _tg_gateway_send(
         token, TELEGRAM_CHAT_ID, caption,
         source="send_review_card._send_photo_card", kind="sendPhoto", photo=str(photo),
