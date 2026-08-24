@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ERP 고도화 — 안내 문자 자동화 · 매출·운영 보고 무인화 (A3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 작업표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:230px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>ERP 고도화 — 안내 문자 자동화 · 매출·운영 보고 무인화 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">웰페리온 ERP 고도화 — 안내 문자 자동화 · 매출·운영 보고 무인화</div>
+    </div>
+    <div class="meta">
+      작성 <b>시설·기술 (AI CTO 시토)</b><br>
+      작성일 <b>2026. 08. 24.</b> · 문서번호 <b>WP-GM-260824-01</b><br>
+      GM 업무 <b>02번 · 웰페리온 ERP 고도화</b> 하위
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">안내 문자를 언제 보낼지 정해 주십시오 — 접수 즉시 / 처리 완료 시 / 둘 다.</div>
+        <div class="d">이것만 정해지면 딜라이브 자료가 오는 날 바로 붙일 수 있습니다. 접수 확인과 완료 안내는 문구가 서로 다릅니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">매출 보고의 이탈(LOSS) 칸을 어느 날짜 기준으로 맞출지 정해 주십시오.</div>
+        <div class="d">매출은 전날 기준인데 이탈 칸은 다른 날짜로 적혀 있던 적이 있습니다. 전날 기준으로 통일하면 그대로 자동화합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    막고 있는 것은 딱 하나 — 딜라이브 연동 자료 미수령
+    <span>&nbsp;/ 회신 예정일 <b>08/19</b> 경과, 08/24 재문의 발송. 우리 쪽 준비(연락처·문구·발신번호·붙일 자리)는 <b>모두 끝나 있습니다.</b></span>
+  </div>
+
+  <!-- ③ 작업표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:230px"><col style="width:300px"><col><col style="width:150px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k">항목</th>
+        <th>지금 상태<span class="sub">2026-08-24 실측</span></th>
+        <th>해야 할 일</th>
+        <th>담당 · 시점</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <tr class="grp"><td colspan="4">1. 안내 문자 — 우리 쪽 준비 상태</td></tr>
+      <tr>
+        <td class="k">받는 사람 연락처</td>
+        <td><span class="good">준비 완료</span> — 종합접수 115건 전부, 문의 723건 중 715건 보유</td>
+        <td>그대로 사용. 비어 있는 8건은 문자 대상에서 자동 제외</td>
+        <td class="ctr">시토 · 완료</td>
+      </tr>
+      <tr>
+        <td class="k">보낼 문구</td>
+        <td><span class="good">접수처는 완료</span> — 종류별 안내 문구가 이미 만들어져 있음 / 문의용은 없음</td>
+        <td>문의 접수 확인 문구 1종 새로 작성 (GM 확인 후 확정)</td>
+        <td class="ctr">시토 · 회신 전</td>
+      </tr>
+      <tr>
+        <td class="k">보내는 번호</td>
+        <td><span class="good">등록 완료</span> — GM 등록 (2026-08-24)</td>
+        <td>딜라이브에 승인 상태만 확인</td>
+        <td class="ctr">GM · 완료</td>
+      </tr>
+      <tr>
+        <td class="k">시스템에 붙일 자리</td>
+        <td><span class="good">이미 있음</span> — 접수처 화면에 문자 칸이 만들어진 채 비어 있음</td>
+        <td>그 칸을 실제 발송 기록과 연결</td>
+        <td class="ctr">시토 · 회신 후</td>
+      </tr>
+      <tr>
+        <td class="k">딜라이브 연동 자료</td>
+        <td><span class="bad">미수령</span> — 08/19 회신 예정 경과 · 08/24 재문의</td>
+        <td>연동 안내서와 연동용 계정만 오면 착수</td>
+        <td class="ctr bad">딜라이브 · 대기</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">2. 자료가 오면 하는 일 — 순서와 걸리는 시간</td></tr>
+      <tr>
+        <td class="k">1단계 · 시험 발송</td>
+        <td>내부 번호로 1건 보내 도착 확인</td>
+        <td>실패 시 원인이 번호인지 연동인지 가른다</td>
+        <td class="ctr">시토 · 반나절</td>
+      </tr>
+      <tr>
+        <td class="k">2단계 · 종합접수처 연결</td>
+        <td>접수 상태가 바뀔 때 자동 발송되게 연결</td>
+        <td>문구는 이미 있는 것을 그대로 사용</td>
+        <td class="ctr">시토 · 1일</td>
+      </tr>
+      <tr>
+        <td class="k">3단계 · 문의 접수 연결</td>
+        <td>문의가 들어오면 접수 확인 문자 발송</td>
+        <td>상담 내용은 사람이 그대로 담당 — 확인 문자만 자동</td>
+        <td class="ctr">시토 · 1일</td>
+      </tr>
+      <tr>
+        <td class="k">4단계 · 하루 지켜보기</td>
+        <td>실제로 도착했는지, 중복 발송이 없는지 확인</td>
+        <td>이상 없으면 그대로 운영 · 문제 있으면 즉시 되돌림</td>
+        <td class="ctr">시토 · 1일</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">3. 매출·운영 보고 무인화 — 손으로 치는 칸 없애기</td></tr>
+      <tr>
+        <td class="k">시설·지원·주차 현황 칸</td>
+        <td><span class="good">자동</span> — 매일 09:00 자동으로 채워짐</td>
+        <td>없음</td>
+        <td class="ctr">완료</td>
+      </tr>
+      <tr>
+        <td class="k">예약·이탈 현황 칸</td>
+        <td><span class="good">자동</span> — 08/21 부터 자동. 08/24 이탈 사유까지 붙게 개선</td>
+        <td>없음</td>
+        <td class="ctr">완료</td>
+      </tr>
+      <tr>
+        <td class="k">사람이 고친 내용이 지워지던 문제</td>
+        <td><span class="good">해결</span> — 08/24 차단. 실장이 손으로 고친 칸은 그날 다시 덮어쓰지 않음</td>
+        <td>없음</td>
+        <td class="ctr">완료</td>
+      </tr>
+      <tr>
+        <td class="k">이탈자 (단기 N명) 칸</td>
+        <td><span class="warn">아직 손입력</span> — 원천 데이터는 이미 매일 쌓임</td>
+        <td>기준 날짜만 정해지면 자동으로 전환 (결정 요청 02)</td>
+        <td class="ctr warn">GM 결정 후</td>
+      </tr>
+      <tr>
+        <td class="k">이탈 사유 기입</td>
+        <td><span class="warn">사람 몫</span> — 회원 관리 시트에 실무진이 직접 적는 칸</td>
+        <td>자동화 대상 아님. 사유가 비면 이름만 나가게 처리 완료</td>
+        <td class="ctr">실무진</td>
+      </tr>
+
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>딜라이브에 요청할 것 (연락 오면 그대로)</h3>
+      <ul class="ord">
+        <li class="n"><b>연동 안내서</b> — 홈페이지에서 다운로드가 안 되던 그 문서</li>
+        <li class="n"><b>연동용 계정과 인증키</b> 발급</li>
+        <li class="n"><b>시험 발송용 환경</b> — 실제 회원에게 보내기 전 확인용</li>
+        <li class="n"><b>발신번호 승인 상태</b> 확인 — 등록한 번호가 바로 쓸 수 있는지</li>
+        <li class="n"><b>요금표</b> — 짧은 문자·긴 문자 건당 단가, 선불/후불. 월 200~250건 예상 <span class="est">(추정)</span></li>
+        <li class="n"><b>긴 문자 가능 여부</b>와 글자 수 한도</li>
+        <li class="n"><b>수신거부 처리 방법</b> — 나중에 재등록 안내를 보낼 때 법으로 필요</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>먼저 확인해야 할 것 · 위험</h3>
+      <ul>
+        <li class="r1"><b>접속 주소를 미리 등록해야 쓰는 방식인지</b> 반드시 물어야 한다. 그 방식이면 지금 우리 구조로는 못 붙고 방법을 바꿔야 한다</li>
+        <li class="r1"><b>보낸 문자가 도착했는지 확인하는 기능</b>이 없으면, 발송 실패를 아무도 모른 채 지나간다</li>
+        <li class="r2">접수·문의 회신 문자는 <b>본인이 요청한 건에 대한 답</b>이라 사전 동의 없이 보낼 수 있다</li>
+        <li class="r2">반면 <b>재등록·만기 안내는 광고성</b>으로 분류될 수 있어 수신 동의와 야간 발송 제한(21시~08시)을 지켜야 한다. 두 가지를 같은 통로로 묶지 않는다</li>
+        <li class="r2">회원 휴대폰으로 나가는 자동 발송은 <b>지금까지 한 건도 없었다</b>. 첫날은 소량으로 시작해 확인한다</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>시토 권고</h3>
+      <ul>
+        <li><b>서버는 지금 필요 없다.</b> 문자는 현재 구조 그대로 붙는다. 사고 45건 중 서버로 막혔을 것은 1건뿐이었다</li>
+        <li><b>종합접수처부터 시작한다.</b> 연락처가 100% 모여 있고 문구도 이미 있어 붙일 것이 가장 적다</li>
+        <li><b>문의 접수는 확인 문자까지만.</b> 상담 내용은 사람이 하는 편이 낫다</li>
+        <li><b>재등록·만기 안내는 나중에.</b> 법적 조건이 다르고, GM이 정한 하루 10~20명 분할 발송 원칙을 그대로 옮겨야 한다</li>
+        <li>회신이 이번 주에도 없으면 <b>다른 문자 업체를 함께 알아보는 것</b>을 권한다 — 준비는 이미 끝나 있어 업체만 바뀌면 된다</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>실측 근거</b> — 연락처 보유량은 종합접수처 원장 라이브 조회(115건 전수)와 문의 원장(723건) 실측. 월 발송량 <b>200~250건은 추정치</b>다: 접수 7월 73건·8월 41건(24일까지), 문의 최근 6개월 월평균 82건에 접수 확인과 완료 안내를 각 1통씩 보내는 경우로 계산했다.</div>
+    <div><b>이미 끝난 것</b> — 매출·운영 보고의 예약·이탈 칸 자동 기입(08/21), 이탈 명단에 사유 붙이기(08/24), 사람이 고친 칸을 자동 기입이 덮어쓰던 문제 차단(08/24). 남은 손입력은 이탈자 칸 하나이며 기준 날짜만 정해지면 전환된다.</div>
+    <div><b>출처·차기 보고</b> — 딜라이브 스마트레터 기업연동(letter.dlive.kr · 고객센터 1877-2240), 문의 접수 2026-08-19 예정 회신 미도착. <b>차기 보고</b> = 딜라이브 자료 수령 즉시 본 문서를 같은 문서번호로 갱신한다.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260824_ERP고도화_문자자동화_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
