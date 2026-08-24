@@ -817,6 +817,9 @@ function initFromData(d){
   CATS=DATA.categories;LEAD=(d.gate&&d.gate.lead_days)||30;
   cur=qDept();if(cur!=="전체"&&(DATA.depts||[]).indexOf(cur)<0)cur="전체";
   syncScope();renderChips();renderAll();loadDraftCheck();
+  // GM 지시 2026-08-24 "누르면 나오지말고 오늘 기준으로 기본 펼침" — 달력 클릭 없이도
+  // 오늘 날짜의 건수·내용이 바로 보이게 day 패널을 로드 시점에 미리 연다.
+  renderDayPanel(fmtDate(kstToday()));
 }
 function loadSeed(){
   fetch(CAL_URL,{cache:"no-store"}).then(function(r){return r.json();}).then(initFromData)
