@@ -2879,7 +2879,13 @@ def run_daily_digest(early: bool = False) -> None:
     try:
         import send_ops_digest as _od
         if _od.kill_switch_enabled():
-            daily_done_msg = _od.build_daily_done_section(_od._fetch_todo_rows(), today)
+            # 실무진 피드백 '처리완료' 건도 같은 한 통에 붙인다(GM 지시 2026-08-24 —
+            # 하루 1회 묶음). 발신을 두 번으로 늘리지 않는다.
+            _parts = [p for p in (
+                _od.build_daily_done_section(_od._fetch_todo_rows(), today),
+                _od.build_daily_feedback_done_section(today),
+            ) if p]
+            daily_done_msg = "\n\n".join(_parts)
             if daily_done_msg:
                 sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
                 proc = subprocess.run(

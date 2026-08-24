@@ -160,6 +160,53 @@ def build_daily_done_section(rows: list, date_str: str) -> str:
     return "\n".join(lines)
 
 
+# 실무진 피드백 시트의 작성자 칸은 직함 없이 이름만 들어온다(예 '이경연'). 방에 나갈 땐
+# 직함을 붙인다 — 시트 값 자체는 고치지 않는다(GM 지시 2026-08-24).
+FB_STAFF_TITLES = {
+    "이경연": "이경연 실장", "최준용": "최준용M", "윤병현": "윤병현AM",
+    "임정은": "임정은M", "백승화": "백승화 사원",
+}
+
+
+def _fb_staff_title(name: str) -> str:
+    name = (name or "").strip()
+    return FB_STAFF_TITLES.get(name, name)
+
+
+def build_daily_feedback_done_section(date_str: str) -> str:
+    """'하루 일과 정리'용 — date_str 에 '처리완료'로 닫힌 실무진 피드백을 묶어 보여준다
+    (GM 지시 2026-08-24 · 세 갈래 중 '하루 1회 묶음' 선택). 판정 = 처리상태가 '처리완료'로
+    시작 + 처리메모 앞머리 날짜 도장이 그날. 브로제이 건은 외부 업체 몫이라 뺀다.
+    한계: 처리메모에 날짜 도장이 없는 건(사람이 시트에서 메모만 손으로 쓴 경우)은 안 잡힌다."""
+    try:
+        from collectors.cpo_staff_feedback_watch import fetch_feedback
+        rows, err = fetch_feedback()
+    except Exception as exc:
+        log(f"[fbdone] 실무진 피드백 조회 예외 — 절 생략: {exc}")
+        return ""
+    if err or not rows:
+        if err:
+            log(f"[fbdone] 실무진 피드백 조회 실패 — 절 생략: {err}")
+        return ""
+
+    done = [r for r in rows if isinstance(r, dict)
+            and str(r.get("처리상태", "")).strip().startswith("처리완료")
+            and str(r.get("처리메모", "")).strip().startswith(f"[{date_str}")
+            and str(r.get("업무 구분", "")).strip() != "브로제이"]
+    if not done:
+        return ""
+
+    lines = [f"✅ 오늘 처리된 실무진 피드백 {len(done)}건"]
+    for r in done[:DONE_SHOW_N]:
+        gubun = str(r.get("업무 구분", "")).strip()
+        body = " ".join(str(r.get("내용", "")).split())[:24]
+        who = _fb_staff_title(str(r.get("작성자", "")))
+        lines.append(f" • {gubun} — {body} ({who})")
+    if len(done) > DONE_SHOW_N:
+        lines.append(f" • 외 {len(done) - DONE_SHOW_N}건")
+    return "\n".join(lines)
+
+
 def _done_state() -> "tuple[dict, bool]":
     """(지난 회차 완료건 스냅샷, 최초실행 여부). 최초실행(하트비트 파일 자체가 없음)이면
     이번 회차는 알리지 않고 스냅샷만 찍는다 — 안 그러면 시트에 쌓여 있던 과거 완료건이
