@@ -440,8 +440,11 @@
         if(!el) return;
         var items=[];
         var pend=numOf('kpiApprStripPend'); if(pend!==null) items.push({n:pend,label:'결재 대기',target:'kpiApprStripPend'});
-        var reply=numOf('kpiRecReplyOpen'); if(reply!==null) items.push({n:reply,label:'밀린 회신',target:'kpiRecOverdueRow'});
-        var overdue=numOf('kpiRecOverdue3d'); if(overdue!==null) items.push({n:overdue,label:'기한초과',target:'kpiRecOverdueRow'});
+        // 밀린 회신·기한초과 — reception_watch.json 직독이 이 스트립 자신의 dataset에 넣어둔 값(카드 중복 제거, GM 지적 2026-08-24)
+        var reply=el.dataset.replyOpen!=null?parseInt(el.dataset.replyOpen,10):null;
+        if(reply!=null&&!isNaN(reply)) items.push({n:reply,label:'밀린 회신',target:'homeReceptionCard'});
+        var overdue=el.dataset.overdue3d!=null?parseInt(el.dataset.overdue3d,10):null;
+        if(overdue!=null&&!isNaN(overdue)) items.push({n:overdue,label:'기한초과',target:'homeReceptionCard'});
         var checkEl=document.getElementById('home-check-kpi');
         var issueAttr=checkEl?checkEl.getAttribute('data-issue-total'):null;
         if(issueAttr!=null&&issueAttr!==''){ var issueN=parseInt(issueAttr,10); if(!isNaN(issueN)) items.push({n:issueN,label:'점검 이상',target:'home-check-kpi'}); }
@@ -629,25 +632,12 @@
            유형별 건수 그리드 6→3열로 확장(누적+이번달 접수/완료 3숫자 표기 공간 확보) · 문의&등록 카드와 칸 구조 통일. 2026-07-10 GM 지시.
            [2026-07-14 GM 지시] 링크 행 flex column+margin-top:auto로 하단 고정(문의&등록 카드 링크 행과 높이 정렬).
            [2026-07-15 시토(CTO)] 콜아웃(외곽 카드 프레임) 제거 — 일일점검 현황처럼 내부 타일 직접 노출(이중 박스 제거). border/bg/radius/padding 제거·내부 타일/링크/id 무변경. 헤더=피어 섹션 스케일(30px chip/17px). -->
-      <div style="display:flex;flex-direction:column;">
+      <div id="homeReceptionCard" style="display:flex;flex-direction:column;">
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">🙋</span>
           <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 누적 · 이번달</div></div>
         </div>
-        <!-- 밀린 회신·기한초과 타일 — status/reception_watch.json(report_stream_2b_reception.py가 발송마다 자동 갱신) 라이브 반영.
-             home_kpi_snapshot.json과 동일한 raw.githubusercontent 패턴 재사용(새 엔드포인트 없음). 값 없으면 조용히 숨김(row 기본 display:none). -->
-        <div id="kpiRecOverdueRow" style="display:none;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:6px;">
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center;">
-            <div style="font-size:9.5px;color:var(--dim);margin-bottom:2px;font-weight:600;">밀린 회신</div>
-            <div id="kpiRecReplyOpen" style="font-size:18px;font-weight:800;color:var(--text);line-height:1;">—</div>
-          </div>
-          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center;">
-            <div style="font-size:9.5px;color:var(--dim);margin-bottom:2px;font-weight:600;">기한초과(3일↑)</div>
-            <div id="kpiRecOverdue3d" style="font-size:18px;font-weight:800;color:var(--text);line-height:1;">—</div>
-            <div style="font-size:8.5px;color:var(--dim);margin-top:2px;">7일↑ <span id="kpiRecOverdue7d">—</span></div>
-          </div>
-        </div>
-        <div id="kpiRecWatchAsOf" style="display:none;font-size:9px;color:var(--dim);text-align:right;margin-bottom:4px;"></div>
+        <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남). -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
           <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
             <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수</div>
@@ -1644,32 +1634,20 @@
       .catch(function(){ /* "—" 유지 */ });
 
     // 밀린 회신·기한초과 — status/reception_watch.json 직독(같은 파일이 이미 쓰는 raw.githubusercontent 패턴 재사용).
-    // 실패/값없음이면 row를 그냥 안 열어(display:none 유지) 기존 3타일에 영향 없음(GM 요구사항).
+    // 종합접수처 카드엔 표시 안 함(예외 스트립과 중복 — GM 지적 2026-08-24) — 예외 스트립 dataset에만 값을 넘긴다.
     function renderReceptionWatch(d){
-      var row = document.getElementById('kpiRecOverdueRow');
-      if(!row || !d) return;
-      var replyOpen = d.member_reply_open, od3 = d.overdue_3d, od7 = d.overdue_7d;
+      var strip = document.getElementById('homeExceptionStrip');
+      if(!strip || !d) return;
+      var replyOpen = d.member_reply_open, od3 = d.overdue_3d;
       if(replyOpen == null && od3 == null) return;
-      setV('kpiRecReplyOpen', replyOpen != null ? String(replyOpen) : '—');
-      setV('kpiRecOverdue3d', od3 != null ? String(od3) : '—');
-      setV('kpiRecOverdue7d', od7 != null ? String(od7) : '—');
-      // 0건이면 평범한 색, 있으면 이 화면이 이미 쓰는 경고색(--warm, 결재대기 칩과 동일 톤)
-      var warn = (replyOpen > 0 || od3 > 0);
-      ['kpiRecReplyOpen', 'kpiRecOverdue3d'].forEach(function(id){
-        var el = document.getElementById(id);
-        if(el) el.style.color = warn ? 'var(--warm)' : 'var(--text)';
-      });
-      row.style.display = 'grid';
-      if(d.generated_at){
-        var asOf = document.getElementById('kpiRecWatchAsOf');
-        if(asOf){ asOf.textContent = String(d.generated_at).slice(11, 16) + ' 기준'; asOf.style.display = 'block'; }
-      }
+      if(replyOpen != null) strip.dataset.replyOpen = String(replyOpen);
+      if(od3 != null) strip.dataset.overdue3d = String(od3);
       if (window.updateHomeExceptionStrip) window.updateHomeExceptionStrip();
     }
     fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/reception_watch.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
-      .then(function(d){ try { renderReceptionWatch(d); } catch(_e){ /* 타일만 조용히 빠짐 */ } })
-      .catch(function(){ /* 타일만 조용히 빠짐 — 기존 3타일 무영향 */ });
+      .then(function(d){ try { renderReceptionWatch(d); } catch(_e){ /* 스트립만 조용히 빠짐 */ } })
+      .catch(function(){ /* 스트립만 조용히 빠짐 */ });
   })();
   </script>
 
