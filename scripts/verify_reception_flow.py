@@ -7,8 +7,13 @@
 넘겼다. 그건 확인을 실무진에게 떠넘긴 것이다. 이 스크립트가 그 자리를 대신한다.
 
 두 가지를 본다:
-  ① 습득물 한 바퀴 — 접수 폼이 보내는 것과 똑같은 요청을 실제로 보내 저장까지 확인하고,
-     만든 건을 지운 뒤 다른 습득물이 함께 사라지지 않았는지 전후 대조한다.
+  ① 습득물 한 바퀴 — 실무진이 하는 것과 같은 길로 간다. 브라우저로 접수 폼을 열어 칸을
+     채우고 제출 버튼을 누르고, 현황 화면을 (사내 비밀번호 커튼까지 통과해) 열어 카드에
+     값이 그려지는지 본다. 그다음 만든 건을 지우고, 다른 습득물이 함께 사라지지 않았는지
+     전후 대조한다.
+     ▸서버에 요청만 보내 확인하면 '서버가 저장한다'까지만 증명된다. 실무진이 겪는 건
+       폼 화면이고, 화면은 커튼 뒤에 있다 — 2026-08-24 에 커튼을 안 넘고 "카드에 안 보인다"고
+       잘못 판정할 뻔했다. 그래서 커튼 통과까지 이 점검에 넣었다.
   ② 키오스크 확대 고정 — 4개 화면을 실제 브라우저로 열어 확대 차단이 켜지는지 읽는다.
      (코드가 페이지에 실려 있는 것과 브라우저에서 도는 것은 다르다. 앞 스크립트가 죽으면
       뒤 코드는 실행되지 않는다.)
@@ -67,6 +72,22 @@ PIXEL = ("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwc
 
 KEEP_LOC = "리셉션 보관함 테스트칸"
 MEMO = "시스템 점검용 테스트 — 자동 삭제 예정"
+DESC = "[시스템 점검용 테스트] 곧 삭제됩니다"
+
+FORM_URL = "http://wellperion.com/ko/lost-found-register/"
+BOARD_URL = ("https://wellperion-cao.github.io/wellperion-automation/coo/reception/"
+             "%EC%A2%85%ED%95%A9%EC%A0%91%EC%88%98%EC%B2%98_%ED%98%84%ED%99%A9.html")
+# 사내 커튼 비밀번호는 gate.js 가 정본이다 — 여기 베껴 두면 한쪽이 바뀔 때 어긋난다(약속 L01).
+GATE_JS = _SCRIPTS.parent / "3. 웰페리온 가이드" / "_assets" / "gate.js"
+
+
+def _staff_gate_pw() -> str:
+    import re
+    m = re.search(r'GATE_PW_STAFF\s*=\s*"([^"]+)"', GATE_JS.read_text(encoding="utf-8"))
+    if not m:
+        raise SystemExit("gate.js 에서 실무진 커튼 비밀번호를 못 찾음 — 변수명이 바뀌었는지 확인")
+    return m.group(1)
+
 
 PAGES = [
     ("접수 조회", "http://wellperion.com/ko/lookup/"),
@@ -99,40 +120,105 @@ def _lf_list() -> list:
     return json.loads(urllib.request.urlopen(url, timeout=90).read().decode("utf-8"))["data"]
 
 
+async def _submit_via_form(tmp_jpg: Path) -> str:
+    """실무진처럼 브라우저로 폼을 채워 제출한다. 반환 = 토스트 문구."""
+    from wordpress_admin_playwright import _import_playwright
+    ap = _import_playwright()
+    async with ap() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page(viewport={"width": 800, "height": 1280},
+                                      has_touch=True, is_mobile=True)
+        errs: list = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        await page.goto(FORM_URL, wait_until="domcontentloaded", timeout=60_000)
+        await page.wait_for_timeout(2500)
+        await page.set_input_files("#f_photo", str(tmp_jpg))
+        await page.wait_for_timeout(1500)
+        await page.select_option("#f_foundLoc", "리셉션")
+        await page.fill("#f_itemDesc", DESC)
+        await page.select_option("#f_category", "consumable")
+        await page.fill("#f_staff", "자체 점검")
+        await page.fill("#f_storageLoc", KEEP_LOC)   # 2026-08-24 에 새로 넣은 칸
+        await page.fill("#f_memo", MEMO)             # 2026-08-24 에 새로 넣은 칸
+        await page.click("#submitBtn")
+        toast = ""
+        for _ in range(40):
+            await page.wait_for_timeout(500)
+            toast = (await page.inner_text("#toast")).strip()
+            if "등록 완료" in toast or "실패" in toast or "오류" in toast:
+                break
+        if errs:
+            print(f"  ⚠ 폼 스크립트 오류 {len(errs)}건: {errs[0][:140]}")
+        await page.close()
+        await browser.close()
+    return toast
+
+
+async def _card_on_board(found_id: str) -> str:
+    """현황 화면을 커튼까지 통과해 열고, 그 건을 검색해 카드 글자를 그대로 돌려준다."""
+    from wordpress_admin_playwright import _import_playwright
+    ap = _import_playwright()
+    async with ap() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page(viewport={"width": 1600, "height": 1200})
+        await page.goto(BOARD_URL, wait_until="domcontentloaded", timeout=60_000)
+        try:
+            await page.wait_for_selector("#welpGatePw", timeout=8000)
+            await page.fill("#welpGatePw", _staff_gate_pw())
+            await page.keyboard.press("Enter")
+            await page.wait_for_timeout(1500)
+        except Exception:
+            pass  # 커튼이 안 뜨면 이미 통과 상태
+        await page.wait_for_timeout(9000)   # 여러 소스를 불러오는 화면이라 넉넉히
+        await page.fill("#searchBox", found_id)
+        await page.wait_for_timeout(2500)
+        body = await page.inner_text("#board")
+        await page.close()
+        await browser.close()
+    return body
+
+
 def check_flow() -> list:
-    """습득물 접수 한 바퀴. 반환 = 실패 사유 목록(비면 통과)."""
+    """습득물 한 바퀴 — 폼 제출부터 현황 화면 카드까지. 반환 = 실패 사유 목록(비면 통과)."""
     print("── ① 습득물 한 바퀴 (라이브에 1건 만들었다 지운다) ──")
     fails: list = []
     new_id = None
     before_ids: set = set()
+    tmp = Path(__file__).resolve().parent / "_lf_verify_tmp.jpg"
     try:
         before_ids = {str(r.get("foundId")) for r in _lf_list()}
         print(f"  시작 — 습득물 {len(before_ids)}건")
 
-        res = _post({"action": "lf_submit", "t": TOKEN,
-                     "foundWhen": time.strftime("%Y-%m-%d %H:%M"), "foundLoc": "리셉션",
-                     "itemDesc": "[시스템 점검용 테스트] 곧 삭제됩니다",
-                     "category": "consumable", "staff": "자체 점검",
-                     "photo": PIXEL, "fileName": "lf_test.jpg", "mimeType": "image/jpeg",
-                     "storageLoc": KEEP_LOC, "memo": MEMO}, "접수")
-        if not res.get("ok"):
-            return [f"접수 자체가 실패: {res.get('error')}"]
-        new_id = res["id"]
+        import base64
+        tmp.write_bytes(base64.b64decode(PIXEL.split(",", 1)[1]))
+        toast = asyncio.run(_submit_via_form(tmp))
+        print(f"  폼 제출 결과 — {toast!r}")
+        if "등록 완료" not in toast:
+            return [f"폼에서 제출이 안 됐다: {toast!r}"]
 
         time.sleep(2)
-        row = next((r for r in _lf_list() if str(r.get("foundId")) == str(new_id)), None)
+        row = next((r for r in _lf_list() if str(r.get("itemDesc") or "") == DESC), None)
         if row is None:
-            fails.append("접수한 건이 직원 화면 목록에 안 나온다")
+            fails.append("폼으로 넣은 건이 직원 화면 목록에 안 나온다")
         else:
-            print(f"  저장 확인 — 보관위치={row.get('keepLoc')!r} · 내부메모={row.get('memo')!r}")
+            new_id = str(row["foundId"])
+            print(f"  저장 확인 — {new_id} · 보관위치={row.get('keepLoc')!r} · 내부메모={row.get('memo')!r}")
             if str(row.get("keepLoc") or "") != KEEP_LOC:
-                fails.append(f"보관위치가 안 저장됐다: {row.get('keepLoc')!r}")
+                fails.append(f"폼에 적은 보관위치가 안 저장됐다: {row.get('keepLoc')!r}")
             if str(row.get("memo") or "") != MEMO:
-                fails.append(f"내부메모가 안 저장됐다: {row.get('memo')!r}")
+                fails.append(f"폼에 적은 내부메모가 안 저장됐다: {row.get('memo')!r}")
             if str(row.get("status") or "") != "게시중":
                 fails.append(f"상태가 게시중이 아니다: {row.get('status')!r}")
             if not str(row.get("photoUrl") or ""):
                 fails.append("사진 URL 이 비었다")
+
+            # 현황 화면 카드에 실제로 그려지는가 (커튼 통과 후)
+            body = asyncio.run(_card_on_board(new_id))
+            shown = {"습득ID": new_id in body, "보관위치": KEEP_LOC in body, "내부메모": MEMO in body}
+            print(f"  현황 화면 카드 — {shown}")
+            for k, v in shown.items():
+                if not v:
+                    fails.append(f"현황 화면 카드에 {k}가 안 보인다")
 
         # 직원 전용 값이 공개 갤러리로 새지 않는지 — LF_HEADERS 분리의 목적이 이것이다.
         gal = urllib.request.urlopen(f"{API}?action=lf_gallery&_={time.time()}",
@@ -144,6 +230,10 @@ def check_flow() -> list:
         if row and row.get("photoUrl"):
             print(f"  ※ Drive 에 남는 사진 — {row['photoUrl']} (시트 행만 지워지니 손으로 정리)")
     finally:
+        try:
+            tmp.unlink()
+        except Exception:
+            pass
         if new_id:
             try:
                 d = _post({"action": "lf_delete", "t": TOKEN, "id": new_id}, "삭제")
