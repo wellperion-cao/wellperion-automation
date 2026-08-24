@@ -50,4 +50,15 @@ out6 = _praise_block(body(40, "오전조 0/25", "오전조 8/24",
                           facility_ok=False, parking_ok=False))
 assert out6 == "", out6
 
-print("OK — 수고하신 곳 판정 9건 통과")
+# ── 2026-08-24 실측 오탐: "이슈사항: 없음" 문구는 실제 무이슈 제출과 미제출 폴백("자체점검
+#   준비 중")이 똑같다. filled["parking"]=False(미제출)면 문구가 "없음"이어도 칭찬 안 나간다.
+out7 = _praise_block(body(40, "오전조 0/25", "오전조 8/24", facility_ok=False),
+                      filled={"parking": False})
+assert "주차부" not in out7, out7
+
+# ── filled["parking"]=True(실제 제출)면 칭찬 나간다
+out8 = _praise_block(body(40, "오전조 0/25", "오전조 8/24", facility_ok=False),
+                      filled={"parking": True})
+assert "주차부" in out8, out8
+
+print("OK — 수고하신 곳 판정 11건 통과")

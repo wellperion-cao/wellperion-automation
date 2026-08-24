@@ -48,14 +48,20 @@ _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 # 2026-08-01 GM 지시 — 북극성 대비 블록 제외(하루 일과 정리는 그대로 진행)
 
 
-def _check_section(today: str) -> str:
-    """support_check_summary 공용 모듈로 3섹션 핵심요약 렌더."""
+def _check_section_and_filled(today: str) -> tuple[str, dict]:
+    """support_check_summary 공용 모듈로 3섹션 핵심요약 렌더 + 판정용 filled(제출여부) 반환."""
     try:
         import support_check_summary as _scs
-        lines, _ = _scs.build_summary_lines(date=today)
-        return "\n".join(lines) if lines else "점검 데이터 없음."
+        lines, filled = _scs.build_summary_lines(date=today)
+        text = "\n".join(lines) if lines else "점검 데이터 없음."
+        return text, filled
     except Exception as e:
-        return f"점검 조회 실패: {e}"
+        return f"점검 조회 실패: {e}", {}
+
+
+def _check_section(today: str) -> str:
+    """support_check_summary 공용 모듈로 3섹션 핵심요약 렌더."""
+    return _check_section_and_filled(today)[0]
 
 
 def build_digest(today: str | None = None) -> str:
@@ -66,8 +72,8 @@ def build_digest(today: str | None = None) -> str:
         "🏗️ 시설&지원&주차 점검 및 이슈 현황\n"
         f"{_SENDER_LINE}"
     )
-    section = _check_section(today)
-    praise = _praise_block(section)
+    section, filled = _check_section_and_filled(today)
+    praise = _praise_block(section, filled)
     top = f"{header}\n\n{praise}\n" if praise else f"{header}\n\n"
     # 2026-08-01 GM 지시 — 법정·정기점검 공백 안내는 본문에서 빼고 run()에서 별도 메시지로 발송
     return f"{top}{section}"
@@ -199,7 +205,7 @@ def _page_url(name: str) -> str:
     return ("https://wellperion-cao.github.io/wellperion-automation/coo/check/"
             + f"{name}.html".replace(" ", "%20"))
 
-def _praise_block(section_text: str) -> str:
+def _praise_block(section_text: str, filled: dict | None = None) -> str:
     praise: list[str] = []
     m = re.search(r"🏗 시설부 현황\s*(\d+)회차\s*·\s*이상 없음", section_text)
     if m:
@@ -223,7 +229,12 @@ def _praise_block(section_text: str) -> str:
                     done_groups.append((f"{zone} {gname}", int(gt)))
         for name, cnt in done_groups[:2]:      # 두 개까지만 — 칭찬도 길면 안 읽힌다
             praise.append(f"▪ 지원부 {name} — {cnt}건 전부 완료. 고생하셨습니다.")
-    if re.search(r"🅿 주차부 이슈사항:\s*없음", section_text):
+    # ★2026-08-24 실측 오탐 — "이슈사항: 없음"은 실제 무이슈 제출과 미제출 폴백("자체점검
+    # 준비 중")이 문구가 같아 정규식만으로는 못 가른다. filled["parking"](실제 제출 있음)을
+    # 받으면 그걸로 판정하고, 없을 때만 옛 문구 매칭으로 되돌아간다(구버전 호출부 호환).
+    parking_submitted = (filled.get("parking") if filled is not None
+                          else bool(re.search(r"🅿 주차부 이슈사항:\s*없음", section_text)))
+    if parking_submitted:
         praise.append("▪ 주차부 — 오늘 이슈 없이 마감. 고생하셨습니다.")
     if not praise:
         return ""
@@ -240,10 +251,10 @@ def build_kakao_digest(today: str | None = None) -> str:
     import support_check_summary as _scs
     today = today or datetime.now().strftime("%Y-%m-%d")
 
-    fac_lines, _fac_f = _scs.build_facility_section(today)
+    fac_lines, fac_f = _scs.build_facility_section(today)
     sup_data = _scs.fetch_gas({"action": "today_live", "dept": "support", "date": today})
-    sup_lines, _sup_f = _scs.build_support_section(today, data=sup_data)
-    par_lines, _par_f = _scs.build_parking_section(today)
+    sup_lines, sup_f = _scs.build_support_section(today, data=sup_data)
+    par_lines, par_f = _scs.build_parking_section(today)
 
     def _pick(lines: list[str], *prefixes: str) -> str:
         return next((ln.strip() for ln in lines if ln.strip().startswith(prefixes)), "")
@@ -251,7 +262,8 @@ def build_kakao_digest(today: str | None = None) -> str:
     out: list[str] = []
 
     # 🏆 수고 인정 — 3부서 규칙은 _praise_block 그대로 재사용, 한 줄로 합친다.
-    praise = _praise_block("\n".join(fac_lines + sup_lines + par_lines))
+    filled = {**fac_f, **sup_f, **par_f}
+    praise = _praise_block("\n".join(fac_lines + sup_lines + par_lines), filled)
     if praise:
         bits = []
         for ln in praise.split("\n")[1:]:
