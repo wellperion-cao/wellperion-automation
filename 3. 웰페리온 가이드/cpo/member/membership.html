@@ -4998,6 +4998,7 @@ function switchFamily(fam) {
     var _mregPane = document.getElementById('pane-membershipReg');   // 멤버십 신규 등록현황 pane도 family 전환 시 항상 숨김(2026-07-18)
     if (_mregPane) _mregPane.style.display = 'none';
     if (fam === 'lesson') {
+      if (!_activeLoaded) loadActiveMembers();  // 강습탭 진입 시 회원목록 사전로드(배지용, FB260824-202030)
       lessonInit('adult'); lessonInit('youth');
       if (!_lessonState.adult.memLoaded) lessonRegLoad('adult');
       if (!_lessonState.youth.memLoaded) lessonRegLoad('youth');
@@ -5884,6 +5885,27 @@ function _lessonInqDateCell(r) {
   return '<td class="left" style="font-size:12px;color:var(--dim)">' + esc(_fmtInqDateTime(r.timestamp)) + '</td>';
 }
 
+// 강습문의 회원여부 배지 — 실무진 피드백 FB260824-202030 (2026-08-24 시포).
+// 유효회원 목록(_activeRows, scope=valid)에서 전화 digit 일치 확인. 로드 전이면 빈 문자열(graceful).
+var _liMemberPhoneCache_ = null;
+function _liMemberBadge_(phone) {
+  if (!_activeLoaded || !phone || _activeScope !== 'valid') return '';
+  var digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  var cacheKey = _activeRows.length + '|' + _activeScope;
+  if (!_liMemberPhoneCache_ || _liMemberPhoneCache_.key !== cacheKey) {
+    var obj = {};
+    _activeRows.forEach(function(r) {
+      var ph = String(r['휴대폰 번호'] || r['휴대폰'] || '').replace(/\D/g, '');
+      if (ph) obj[ph] = 1;
+    });
+    _liMemberPhoneCache_ = { key: cacheKey, obj: obj };
+  }
+  return _liMemberPhoneCache_.obj[digits]
+    ? '<span style="display:inline-block;font-size:9px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--emerald-bg);color:var(--emerald);border:1px solid var(--emerald-border);margin-left:4px;vertical-align:middle;white-space:nowrap" title="유효 회원 명단에 있는 번호">정회원</span>'
+    : '<span style="display:inline-block;font-size:9px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--gray-bg);color:var(--dim);border:1px solid var(--border);margin-left:4px;vertical-align:middle;white-space:nowrap" title="유효 회원 명단에 없는 번호">비회원</span>';
+}
+
 // 강습 문의 행 HTML(문의 현황·LOSS 회원 관리 공용) — 상태/담당 편집 셀렉트·CONTACT 편집. 배973.
 // isFirstLine/isMultiLine(2026-08-08 시포·GM) — 담당은 문의 1건에 1명(행 단위 저장, 07-14 GM 결정)인데 화면은
 // 다종목 문의를 종목마다 줄로 쪼갠다. 그래서 같은 담당 select가 줄마다 반복 렌더되어 "종목-담당이 안 맞는다"로
@@ -5904,7 +5926,7 @@ function _lessonRowHtml(t, r, sportKey, sportLabel, isFirstLine, isMultiLine) {
   return '<tr data-row-index="' + r.rowIndex + '">' +
     _lessonInqDateCell(r) +
     // 나이 배지 — 성인·유소년 모두 표시(기존 유소년 전용 조건 제거, 값 있으면 노출). 2026-07-21 시포·GM.
-    '<td class="left lesson-inq-cell-name" style="font-weight:700' + (isFirstLine === false ? ';color:var(--dim)' : ';cursor:pointer') + '" onclick="_lessonOpenMemberCard(\'' + t + '\',' + r.rowIndex + ')" title="' + esc(r.name || '') + '">' + (isFirstLine === false ? '<span title="다종목 같은 문의" style="color:var(--dim);font-size:10px;margin-right:2px">└</span>' : '') + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
+    '<td class="left lesson-inq-cell-name" style="font-weight:700' + (isFirstLine === false ? ';color:var(--dim)' : ';cursor:pointer') + '" onclick="_lessonOpenMemberCard(\'' + t + '\',' + r.rowIndex + ')" title="' + esc(r.name || '') + '">' + (isFirstLine === false ? '<span title="다종목 같은 문의" style="color:var(--dim);font-size:10px;margin-right:2px">└</span>' : '') + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + (isFirstLine !== false ? _liMemberBadge_(r.phone) : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
     // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 재문의 배지가 있으면 문의내용 위 자기 줄로 먼저 표시(성함 칸에서 이동, 2026-07-22). 길면 title 툴팁·빈값 '—'. 이전 문의 요약은 아래(2026-07-24).
@@ -7580,6 +7602,8 @@ function _activeApplyData(headers, rows) {
   _activeHeaders = headers || [];
   _activeRows    = rows    || [];
   _activeLoaded  = true;
+  _liMemberPhoneCache_ = null;  // 회원목록 변경 → 강습문의 배지 캐시 무효화(FB260824-202030)
+  try { ['adult','youth'].forEach(function(_lt){ var _ls=_lessonState[_lt]; if(_ls&&_ls.loaded&&(_ls.rows||[]).length){lessonRender(_lt);lessonLossRender(_lt);lessonWaitRender(_lt);} }); } catch(_le){}
   if (_activeScope === 'valid') _applyRemainSort();        // 기본=잔여일 임박순(작은 양수 먼저). 2026-07-03 시포·GM
   else if (_activeScope === 'ended') _applyEndedSort();    // 기본=종료일 내림차순(최근 종료 상단). 2026-07-15 GM 지시
   /* ★검색어가 남아 있으면 그 검색을 그대로 다시 건다 (FB260810-093039 이경연 실장 · 2026-08-10 시포).
