@@ -16,21 +16,16 @@ h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
 .sheet-links{display:flex;gap:8px;flex-wrap:wrap}
 .sheet-link{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--dim);background:var(--paper);border:1px solid var(--border);padding:7px 12px;border-radius:8px;text-decoration:none;cursor:pointer}
 .sheet-link:hover{color:var(--text);border-color:var(--accent)}
-.honesty{margin:16px 0 4px;display:flex;gap:9px;align-items:flex-start;background:var(--paper);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--dim)}
-.honesty b{color:var(--text)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 16px}
-.chip{font:inherit;font-size:13px;font-weight:600;color:var(--dim);background:var(--paper);border:1px solid var(--border);padding:7px 14px;border-radius:999px;cursor:pointer}
-.chip:hover{color:var(--text);border-color:var(--accent)}
-.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#221F20}
-.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-/* ── 분류 색 범례 + 필터 칩(색점이 곧 범례) ── */
-.catchips{display:flex;flex-wrap:wrap;gap:7px;margin:-4px 0 18px}
-.catchip{font:inherit;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--dim);background:var(--paper);border:1px solid var(--border);padding:5px 11px;border-radius:999px;cursor:pointer;transition:border-color .15s,color .15s}
-.catchip:hover{color:var(--text);border-color:var(--accent)}
-.catchip[aria-pressed="true"]{color:var(--text);border-color:var(--accent);background:var(--accent-bg)}
-.catchip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.catchip .cdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
-.catlegend-lbl{font-size:11.5px;font-weight:700;color:var(--dim);align-self:center;margin-right:2px;letter-spacing:.02em}
+/* ── 부서·분류 필터 드롭다운 (GM 지시 2026-08-24 — 칩 두 줄이 달력을 아래로 밀어내
+   일정이 안 보였다. '일정 추가' 옆에 드롭다운 2개로 접어 화면 위를 비운다) ── */
+.fsel{position:relative;display:inline-flex;align-items:center}
+.fsel select{font:inherit;font-size:12.5px;font-weight:600;color:var(--text);background:var(--paper);border:1px solid var(--border);padding:7px 26px 7px 12px;border-radius:8px;cursor:pointer;appearance:none;-webkit-appearance:none}
+.fsel.hascolor select{padding-left:28px}
+.fsel select:hover{border-color:var(--accent)}
+.fsel select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fsel.on select{border-color:var(--accent);background:var(--accent-bg)}
+.fsel .caret{position:absolute;right:10px;font-size:9px;color:var(--dim);pointer-events:none}
+.fsel .cdot{position:absolute;left:11px;width:9px;height:9px;border-radius:50%;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:0 0 18px}
 .summary .sitem{display:flex;flex-direction:column;gap:5px;background:var(--paper);border:1px solid var(--border);border-top:2px solid var(--sc,var(--border));border-radius:12px;padding:12px 15px;color:var(--dim)}
 .summary .sitem .snum{font-size:23px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.02em}
@@ -54,9 +49,12 @@ h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-legend .cal-dot{background:var(--dim)}
 .cal-legend .cal-dot.auto{border-color:var(--dim)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+/* minmax(0,1fr) — 1fr 만 쓰면 칸 안의 긴 일정 이름(nowrap)이 열 너비를 밀어내 토요일이 화면 밖으로
+   잘렸다. 라벨을 4개로 늘리면서 드러난 것이라 같이 고친다(GM 지시 2026-08-24). */
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .cal-dow{text-align:center;font-size:11.5px;font-weight:700;color:var(--dim);padding:2px 0 6px}
-.cal-cell{position:relative;background:var(--paper);border:1px solid var(--border);border-radius:9px;min-height:112px;padding:8px 8px 7px;transition:border-color .15s}
+/* 한 칸에 일정 이름 4줄 + '+N 더' 가 잘리지 않게 (GM 지시 2026-08-24) */
+.cal-cell{position:relative;background:var(--paper);border:1px solid var(--border);border-radius:9px;min-height:152px;padding:8px 8px 7px;transition:border-color .15s}
 .cal-cell.out{opacity:.32}
 .cal-cell.wknd{background:linear-gradient(180deg,rgba(183,159,138,.055),rgba(183,159,138,.015))}
 .cal-cell.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
@@ -141,7 +139,7 @@ footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-
 .row.editable{cursor:pointer}
 .row.editable:hover{border-color:var(--accent)}
 /* ── 부서 탭 임베드 모드(?embed=1) — 군더더기 숨김, 부서 고정 ── */
-body.embed .honesty,body.embed footer,body.embed #chips,body.embed .sub{display:none!important}
+body.embed footer,body.embed #deptSelWrap,body.embed .sub{display:none!important}
 body.embed .wrap{padding:12px 14px 24px}
 body.embed h1{font-size:16px}
 body.embed .calwrap{margin-top:8px}
@@ -156,7 +154,7 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
   @page{margin:8mm;size:A4}
   :root{--bg:#fff;--paper:#fafafa;--text:#1a1a1a;--dim:#666;--border:#ccc}
   body{background:#fff;color:#1a1a1a}
-  .sheet-links,.chip,#catchips,.draftbanner,.modal-overlay,.cal-btn,.cal-today-btn{display:none!important}
+  .sheet-links,.draftbanner,.modal-overlay,.cal-btn,.cal-today-btn{display:none!important}
   .row,.cal-cell{break-inside:avoid}
   .calwrap{break-inside:avoid}
 }
@@ -171,15 +169,12 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
       <p class="sub">날짜가 정해진 <b>전사 일정</b>의 단일 출처 — <b>정기 안전·법정 점검</b> + 부서 <b>주요 이벤트</b>(행사·납품·교육 등). 반복(매주·격주·매월·매년)은 규칙 한 줄로 고정하면 달력에 계속 표시. 부서 체계 페이지 <b>🗓️ 일정 탭</b>에서 직접 작성 → 여기로 모임.</p>
     </div>
     <div class="sheet-links">
+      <span class="fsel" id="deptSelWrap"><select id="deptSel" aria-label="담당 부서 필터"></select><span class="caret">▼</span></span>
+      <span class="fsel hascolor" id="catSelWrap"><span class="cdot" id="catSelDot"></span><select id="catSel" aria-label="분류 필터"></select><span class="caret">▼</span></span>
       <a class="sheet-link hlink-add" id="addBtn" role="button" tabindex="0" onclick="startAddEvent()">➕ 일정 추가</a>
       <a class="sheet-link" role="button" tabindex="0" onclick="openUrgentPopup()">🔥 임박순 팝업</a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">🏠 웰페리온 ERP</a>
     </div>
-  </div>
-
-  <div class="honesty">
-    <span>⚠️</span>
-    <div>소방 작동점검(연 1회)·전기안전(3년 1회) 외 항목은 주기·검사일 확인 중입니다. <b>'예상(자동)' 배지</b> = 최근 검사일 + 주기로 자동계산한 값(확정 아님) — <b>최근 검사일</b>만 입력하면 자동으로 채워집니다.</div>
   </div>
 
   <div class="draftbanner" id="draftBanner">
@@ -189,8 +184,6 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
   </div>
 
 
-  <div class="chips" id="chips"></div>
-  <div class="catchips" id="catchips"></div>
   <div class="summary" id="summary"></div>
 
   <div class="calwrap" id="calWrap">
@@ -232,6 +225,7 @@ var SCHEDULE_GAS_URL="https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoOD
 var CHECK_API_URL="https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";   // 거래업체 목록(vendor_list) 전용 GAS — SCHEDULE_GAS_URL과 별개.
 var DATA=null, CATS={}, LEAD=30, cur="전체", curCat="전체", VENDORS=[];
 var CAL_Y=null, CAL_M=null;
+var CAL_MAX_LABELS=4;   // 달력 한 칸에 이름으로 보여줄 일정 수 (GM 지시 2026-08-24 — 2개는 너무 적다)
 var EMBED=/[?&]embed=1/.test(location.search);
 var REPEAT_LABEL={weekly:"매주",biweekly:"격주",monthly:"매월",yearly:"매년"};
 function repeatLabel(r){return REPEAT_LABEL[(""+(r||"")).toLowerCase()]||"";}
@@ -323,21 +317,30 @@ function loadVendors(){
     .catch(function(){/* 조용히 무시 — 거래업체 미표시(기존 기능 무영향) */});
 }
 
+// 부서·분류 = 드롭다운 2개 (GM 지시 2026-08-24). 칩 두 줄을 접어 달력을 화면 위로 올린다.
 function renderChips(){
-  var depts=["전체"].concat(DATA.depts||[]);var c=document.getElementById("chips");c.innerHTML="";
-  depts.forEach(function(d){var b=document.createElement("button");b.className="chip";b.textContent=d;b.setAttribute("aria-pressed",d===cur);b.onclick=function(){cur=d;syncScope();renderAll();};c.appendChild(b);});
+  var sel=document.getElementById("deptSel");if(!sel)return;
+  var depts=["전체"].concat(DATA.depts||[]);
+  sel.innerHTML=depts.map(function(d){return '<option value="'+esc(d)+'"'+(d===cur?" selected":"")+'>'+esc(d==="전체"?"부서 전체":d)+'</option>';}).join("");
+  sel.onchange=function(){cur=sel.value;syncScope();renderAll();};
+  syncFilterState();
 }
 function renderCatChips(){
-  var box=document.getElementById("catchips");if(!box)return;
+  var sel=document.getElementById("catSel");if(!sel)return;
   var cats=usedCats();
-  if(!cats.length){box.innerHTML="";return;}
-  var allDot='<span class="cdot" style="background:conic-gradient(#ED5B3F,#e6c84e,#6abf7b,#5b9fd5,#a78bda,#ED5B3F)"></span>';
-  var html='<span class="catlegend-lbl">분류</span>'+
-    '<button type="button" class="catchip" data-cat="전체" aria-pressed="'+(curCat==="전체")+'">'+allDot+'전체</button>';
-  cats.forEach(function(k){var c=CATS[k]||{label:k,color:"#888"};
-    html+='<button type="button" class="catchip" data-cat="'+esc(k)+'" aria-pressed="'+(curCat===k)+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.label)+'</button>';});
-  box.innerHTML=html;
-  box.querySelectorAll(".catchip").forEach(function(b){b.onclick=function(){curCat=b.getAttribute("data-cat");renderAll();};});
+  if(curCat!=="전체"&&cats.indexOf(curCat)<0)curCat="전체";   // 필터 걸린 분류가 사라지면 전체로 되돌림
+  sel.innerHTML='<option value="전체"'+(curCat==="전체"?" selected":"")+'>분류 전체</option>'+
+    cats.map(function(k){var c=CATS[k]||{label:k};return '<option value="'+esc(k)+'"'+(curCat===k?" selected":"")+'>'+esc(c.label)+'</option>';}).join("");
+  sel.onchange=function(){curCat=sel.value;renderAll();};
+  syncFilterState();
+}
+// 드롭다운은 칩과 달리 '지금 걸린 필터'가 눈에 안 띈다 — 테두리 강조 + 분류 색점으로 보이게 한다.
+function syncFilterState(){
+  var dw=document.getElementById("deptSelWrap"),cw=document.getElementById("catSelWrap"),dot=document.getElementById("catSelDot");
+  if(dw)dw.classList.toggle("on",cur!=="전체");
+  if(cw)cw.classList.toggle("on",curCat!=="전체");
+  if(dot)dot.style.background=(curCat!=="전체"&&CATS[curCat])?CATS[curCat].color
+    :"conic-gradient(#ED5B3F,#e6c84e,#6abf7b,#5b9fd5,#a78bda,#ED5B3F)";
 }
 function syncScope(){document.getElementById("scopeLabel").textContent=(cur==="전체"?"":" · "+cur);}
 function sitem(l,n,v){return '<div class="sitem" style="--sc:var('+v+')"><span class="snum">'+n+'</span><span class="slabel"><span class="dot" style="background:var('+v+')"></span>'+l+'</span></div>';}
@@ -451,14 +454,15 @@ function renderCalendar(){
     var key=fmtDate(cellDate);
     var list=map[key]||[];
     var isToday=(key===todayStr);
-    // 데스크톱: 이름 라벨(분류색) 2개 + '+N 더' · 모바일: 점(dot) 폴백
+    // 데스크톱: 이름 라벨(분류색) 4개 + '+N 더' · 모바일: 점(dot) 폴백
+    // 2개까지만 보이고 나머지가 '+N'으로 접혀 일정이 안 읽혔다(GM 지시 2026-08-24 "적어도 3~4개는").
     var labelsHtml="";
-    list.slice(0,2).forEach(function(x){
+    list.slice(0,CAL_MAX_LABELS).forEach(function(x){
       var c=x.cat.color;
       var sv=x.auto?('color:'+c+';background:transparent;border:1px dashed '+c):('color:'+c+';background:'+c+'22;border-left:3px solid '+c);
       labelsHtml+='<span class="cal-label" style="'+sv+'" title="'+esc(x.it.name+(x.auto?" (예상)":""))+'">'+esc(x.it.name)+'</span>';
     });
-    if(list.length>2)labelsHtml+='<span class="cal-more">+'+(list.length-2)+' 더</span>';
+    if(list.length>CAL_MAX_LABELS)labelsHtml+='<span class="cal-more">+'+(list.length-CAL_MAX_LABELS)+' 더</span>';
     var dotsHtml="";
     list.slice(0,4).forEach(function(x){
       dotsHtml+=x.auto?('<span class="cal-dot auto" style="border-color:'+x.cat.color+'"></span>'):('<span class="cal-dot" style="background:'+x.cat.color+'"></span>');
@@ -584,7 +588,7 @@ function highlightDate(key){
 }
 window.highlightDate=highlightDate;
 
-function renderAll(){renderTiles();renderCatChips();renderList();renderCalendar();document.querySelectorAll("#chips .chip").forEach(function(b){b.setAttribute("aria-pressed",b.textContent===cur);});fitFrame();}
+function renderAll(){renderTiles();renderChips();renderCatChips();renderList();renderCalendar();fitFrame();}
 
 // 부서 탭 임베드 시: iframe 높이를 내용에 맞춰 자체 조정 → 안쪽 스크롤 제거(페이지 하나로 스크롤). 동일 출처라 frameElement 접근 가능.
 function fitFrame(){
