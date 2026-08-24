@@ -3982,9 +3982,11 @@ window.ssotShowTasks=ssotShowTasks;
     var d = new Date();
     var today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
     var ymd = function (v) {
-      if (!v) return '';
-      var m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
-      return m ? (m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3])) : '';
+      // 8/21 KST 환산 함수(kstDateStr)로 통일(2026-08-24 A-12 진단 인계) — 원문 절단 방식은
+      // 종료일이 'YYYY-MM-DDT15:00:00Z'(=KST 자정)일 때 하루 이른 날짜로 읽혀, 카드 배지·대시보드는
+      // 정상인데 이 지연 카운터만 오늘 마감 카드를 어제 마감으로 잘못 세는 결함이 있었다. 표시 전용,
+      // 저장값 무접촉. 카드 배지의 반대 방향 하루 밀림(별개 결함)은 이번 범위 밖 — 손대지 않는다.
+      return kstDateStr(v);
     };
     // 접수 점수판과 같은 방식 — 완료 건수로 순위를 매긴다(2026-08-10 GM 지시).
     // 동점은 접수판처럼 같은 순위를 준다.
