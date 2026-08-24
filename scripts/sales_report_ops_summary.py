@@ -182,8 +182,9 @@ def build_contact_text(send_day: str) -> str:
             for k, v in r.items():
                 if k.replace("\n", "") == "LOSS일자" and str(v or "").strip()[:10] == prev_day:
                     nm = next((str(vv) for kk, vv in r.items() if kk.replace("\n", "") == "회원명"), "")
+                    reason = next((str(vv).strip() for kk, vv in r.items() if kk.replace("\n", "") == "미등록사유"), "").strip()
                     if nm:
-                        loss.append(nm)
+                        loss.append(f"{nm}({reason})" if reason else nm)
                     break
     except Exception:
         pass
