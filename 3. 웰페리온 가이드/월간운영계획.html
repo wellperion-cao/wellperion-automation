@@ -1094,8 +1094,7 @@
   ];
   var RECEPTION_STATUS_LIST = ['접수','처리중','완료'];
   var FIN_YEAR = '2026';
-  var SALES_TARGET_DEFAULT = 600000000; // 대표 월 매출 목표 = 6억(=연 72억÷12, GM 06-20 결재). 헤드라인 '목표 대비' 통일 기준(2026-07-06).
-  var KPI_YEAR_TARGET = 7200000000;     // 연 매출 목표 72억(GM 06-20 결재·공식값). 히스토리 72억 프레임·부족분 계산에 사용.
+  var KPI_YEAR_TARGET = 7200000000;     // 연 매출 목표 72억(GM 06-20 결재·공식값). 히스토리 72억 프레임·부족분 계산에 사용. 월 목표는 salesTargetFor()가 sales_targets.json teams 합(평균 목표)에서 매번 계산 — 하드코딩 금지(2026-08-24 GM 확정: 6억 상수는 오류였다).
   // ── 매출·지출 SSOT = AI CFO 매출현황(cfo/finance/매출지출현황.html). 이 페이지는 그 페이지의 소스를 그대로 미러(읽기전용). ──
   // 매출(센터전체) 정본 = 「26년 매출 분석」 GAS(action=sales_monthly) — CFO 매출현황이 표시하는 '매출'과 동일 소스(회원권+강습+기타·주차). 실패 시 매출마스터 부서합 폴백.
   // 종목별 매출 분해 정본 = 「매출 보고」 말일탭 서버집계(action=sales_dept, PROC_API) — CFO 매출지출현황과 동일 소스(2026-07-08 재배선). 매출마스터 시트(SALES_GVIZ)는 폴백 베이스(라이브 없는 월만). 정본−부서합 = 기타·주차 등.
@@ -1589,10 +1588,13 @@
       return {sales:sales, exp:exp, salesDept:salesDept, laborDept:laborDept};
     }).catch(function(){ return {sales:null, exp:null, salesDept:null, laborDept:null}; });
   }
-  // 대표 월 매출 목표 = 6억(=연 72억÷12)으로 통일(GM 지시 2026-07-06). 헤드라인 '목표 대비'는 월별 상이한
-  // objectives.metric.target(예 7월 스트레치 6.5~6.6억) 대신 대표값 6억 단일 프레임 — 부서별 표(sales_targets.json 합 6.105억)는 별도 유지.
+  // 대표 월 매출 목표 = sales_targets.json teams 합(평균 목표, GM 확정 2026-08-24). 부서별 표(아래 teamRows)와
+  // 항상 동일 소스 — 이미 로드된 _salesTargets 재사용(신규 fetch 없음). 미로딩 시 null(6억 등으로 조용히 대체 금지).
   function salesTargetFor(monKey){
-    return SALES_TARGET_DEFAULT;
+    if(!_salesTargets || !_salesTargets.teams) return null;
+    var sum = 0;
+    _salesTargets.teams.forEach(function(t){ sum += Number(t.target) || 0; });
+    return sum;
   }
 
   // ── 월 선택 드롭다운 ──
@@ -2012,7 +2014,7 @@
         '<div class="fin-hero-top">' +
           '<div class="fin-hero-main"><span class="fin-hero-label">' + esc(heroLabel) + '</span>' +
             '<span class="fin-hero-val">' + fmtWon(sales) + '</span></div>' +
-          '<div class="fin-hero-target">목표 <b class="tv">' + fmtWon(target) + '</b> 대비 ' +
+          '<div class="fin-hero-target">목표 <b class="tv">' + fmtWon(target) + '</b><span style="font-size:0.72em;color:var(--dim)">(평균)</span> 대비 ' +
             (spct != null ? '<b>' + spct + '%</b>' : '—') +
             '<div class="mbar green"><i style="width:' + sw + '%"></i></div>' +
             '<span class="fin-hero-sub">' + (cfoS != null ? '● CFO 매출현황 정본(회원권+강습+기타·주차)' :
@@ -2023,7 +2025,7 @@
     } else {
       hero = '<div class="fin-hero"><div class="fin-hero-top"><div class="fin-hero-main"><span class="fin-hero-label">' + esc(heroLabel) + '</span>' +
         '<span class="fin-hero-none">측정 전 — 소스 미기재(가짜값 없음)</span></div>' +
-        '<div class="fin-hero-target">목표 <b class="tv">' + fmtWon(target) + '</b></div></div></div>';
+        '<div class="fin-hero-target">목표 <b class="tv">' + fmtWon(target) + '</b><span style="font-size:0.72em;color:var(--dim)">(평균)</span></div></div></div>';
     }
 
     // ── 부서별 매출(목표 vs 실적) & 지출 결합표(선택월) ──
@@ -2162,14 +2164,15 @@
         '<span class="fmo">' + lab + '</span></div>';
     }).join('');
 
-    // 연 72억 프레임(GM 06-20 결재): 누계 실측(1~선택월) · 목표 누계(6억×선택월수) · 부족분 · 연 72억 대비 진척%.
-    var tgtCum = SALES_TARGET_DEFAULT * upto;                       // 목표 누계 = 6억 × 선택월수
-    var gap = tgtCum - total;                                       // 부족분(+ 미달 · − 초과)
+    // 연 72억 프레임(GM 06-20 결재): 누계 실측(1~선택월) · 목표 누계(평균 목표×선택월수) · 부족분 · 연 72억 대비 진척%.
+    var monTgt = salesTargetFor(_sel);                               // 평균 목표(sales_targets.json teams 합) — 미로딩 시 null
+    var tgtCum = (monTgt != null) ? monTgt * upto : null;            // 목표 누계 = 평균 목표 × 선택월수
+    var gap = (tgtCum != null) ? tgtCum - total : null;              // 부족분(+ 미달 · − 초과)
     var yearPct = Math.round(total / KPI_YEAR_TARGET * 1000) / 10;  // 연 72억 대비 %
-    var gapTxt = known.length ? ((gap > 0 ? '−' : '+') + fmtWon(Math.abs(gap))) : '—';
+    var gapTxt = (known.length && gap != null) ? ((gap > 0 ? '−' : '+') + fmtWon(Math.abs(gap))) : '—';
     var summary = '<div class="fhist-sum">' +
       '<span>연간 매출(1~' + upto + '월) <b>' + (known.length ? fmtWon(total) : '—') + '</b></span>' +
-      '<span>목표 누계(6억×' + upto + ') <b>' + fmtWon(tgtCum) + '</b></span>' +
+      '<span>목표 누계(평균 ' + fmtWon(monTgt) + '×' + upto + ') <b>' + fmtWon(tgtCum) + '</b></span>' +
       '<span>부족분 <b>' + gapTxt + '</b></span>' +
       '<span>연 72억 대비 <b>' + (known.length ? yearPct + '%' : '—') + '</b></span>' +
       '<span>월평균(측정 ' + known.length + '개월) <b>' + (avg != null ? fmtWon(avg) : '—') + '</b></span>' +
@@ -2824,7 +2827,7 @@
     var salesBlock = '<div class="sm-fin">' +
       '<div class="sm-fin-main"><span class="sm-cap">💰 ' + (isNaN(mnum) ? '' : mnum + '월 ') + '매출 · 센터전체(CFO 정본)</span>' +
         '<span class="sm-fin-val">' + salesTxt + '</span>' +
-        '<span class="sm-fin-tgt">목표 ' + fmtWon(target) + ' 대비 <b>' + spctTxt + '</b></span></div>' +
+        '<span class="sm-fin-tgt">목표 ' + fmtWon(target) + '(평균) 대비 <b>' + spctTxt + '</b></span></div>' +
       '<div class="sm-bar"><i style="width:' + sw + '%"></i></div>' +
       '<div class="sm-fin-cum">📈 연간 매출(측정월 합) <b>' + cumTxt + '</b> <span class="sm-dim">· 지출·순액=구조개선 중(확정숫자 미표기)</span></div>' +
     '</div>';
@@ -3218,7 +3221,7 @@
     // 5) 목표매출 정본(정적) — 부서별 결합표 기준선. 도착 시 재무 갱신.
     withTimeout(readSalesTargets(), 8000, null).then(function(v){
       _salesTargets = v;
-      if(_data && _finReady) renderFinance();
+      if(_data && _finReady){ renderFinance(); renderSalesHistory(); renderSummaryBoard(); renderSummaryStrip(); }
     });
 
     // 6) 강사→팀 로스터(LABOR_GVIZ 공유·중복제거) — team_sales 팀합산용. 도착 시 재무 갱신.

@@ -437,7 +437,7 @@
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 매출<span id="salesMonthLabel"></span></div>
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
-            <div style="font-size:10.5px;color:var(--dim);">목표 <span id="heroSalesTarget" style="font-weight:700;">—</span></div>
+            <div style="font-size:10.5px;color:var(--dim);">내부 목표 <span id="heroSalesTarget" style="font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesRate" style="color:var(--grow);font-weight:700;">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);"><span id="heroSalesDayLabel">오늘</span> <span id="heroSalesDay" style="color:var(--grow);">—</span></div>
           </div>
@@ -1361,7 +1361,7 @@
           /* 월 목표 슬롯 — 마감 여부와 무관하게 고정 정본 표시 */
           if (monthlyTarget != null) {
             set('heroSalesTarget', krAmt(monthlyTarget));
-            setTitle('heroSalesTarget', krExact(monthlyTarget) + ' · sales_targets.json 정본(GM 결재 2026-07-03, 매월 동일)');
+            setTitle('heroSalesTarget', krExact(monthlyTarget) + ' · GM 내부 목표(sales_targets.json monthly_target_total, GM 확정 2026-08-24) — 부서 배분 평균 목표(6.36억)와 다름');
           } else {
             set('heroSalesTarget', '—');
           }
