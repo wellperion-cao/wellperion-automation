@@ -728,6 +728,13 @@
           <div style="background:var(--accent-bg);border:1px solid var(--border);border-radius:9px;padding:7px 5px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.1">2<span style="font-size:9.5px;color:var(--dim);font-weight:600"> 명</span></div><div style="font-size:9px;color:var(--dim);margin-top:2px">90일 퇴사</div></div>
         </div>
         <div id="ps-caption-top" style="font-size:9px;color:var(--dim-soft);margin-top:6px;text-align:right">스냅샷 기준 2026-06-22 · PII 비공개, 상세는 HR 허브</div>
+        <!-- 정직화(표시만) — 이 카드 6숫자는 정적 스냅샷, 갱신 배선 없음. 위 6숫자와 붙는 별도 요소(ps-home-stale)로
+             캡션 기준일 대비 경과일을 매일 자동 계산해 "얼마나 묵었는지"가 눈에 띄게 한다(값 자체는 무변경).
+             화면이 이미 쓰는 경고색(var(--warm))·⚠ 표기 재사용. id를 ps-caption-top 안에 안 넣고 별도 줄로 뺀 이유 —
+             id="ps-caption-top"가 H2(인사 허브)의 psSet()과 겹쳐 있어(다른 도메인 배선, 손대지 않음) 그쪽 실시간
+             갱신이 오면 innerHTML이 통째로 덮여 사라진다. 독립 요소라 그 갱신과 무관하게 항상 남는다. 2026-08-24 GM 지시(팀리드 위임). -->
+        <div id="ps-home-stale" style="font-size:9px;color:var(--warm);font-weight:700;margin-top:2px;text-align:right;"></div>
+        <script>(function(){var el=document.getElementById('ps-home-stale');if(!el)return;var days=Math.floor((Date.now()-new Date('2026-06-22T00:00:00+09:00').getTime())/86400000);if(days>0)el.textContent='⚠ '+days+'일 전 값';})();</script>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;">
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H1]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">취업규칙</a>
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=H3]').click();" style="font-size:12px;font-weight:600;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border-radius:99px;text-decoration:none;border:1px solid var(--border);">🗓️ 휴무</a>
