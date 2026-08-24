@@ -200,19 +200,57 @@ def _parking_lines() -> list[str]:
     return [" · 일일점검 전산화 진행 중"]
 
 
+LAST_WRITE = ROOT / "status" / "sales_ops_last_write.json"
+
+
+def _human_edited(prev: dict, current: str | None, today: str) -> bool:
+    """같은 날 우리가 쓴 값이 시트에서 달라져 있으면 = 사람이 손을 댔다.
+
+    하루가 바뀌면 내용 자체가 새것이라 판정 대상이 아니다(그 갱신이 이 칸의 본래 일이다).
+    현재 값을 못 읽었으면(None) 막지 않는다 — 못 읽은 것을 근거로 아침 기입을 거르면
+    조용히 며칠씩 안 채워진다.
+    """
+    if not prev or prev.get("day") != today or current is None:
+        return False
+    return current.strip() != str(prev.get("text") or "").strip()
+
+
 def post_to_sheet(text: str, cell: str = "P20") -> dict:
     url = _env("SALES_OPS_GAS_URL")
     if not url:
         return {"ok": False, "error": "SALES_OPS_GAS_URL 이 없습니다 — 웹앱 배포 후 .env 에 넣어 주세요"}
-    body = json.dumps({
-        "token": _env("SALES_OPS_GAS_TOKEN", "wellperion-2026"),
-        "cell": cell,
-        "text": text,
-    }).encode("utf-8")
+    token = _env("SALES_OPS_GAS_TOKEN", "wellperion-2026")
+    today = date.today().isoformat()
+
+    try:
+        seen = json.loads(LAST_WRITE.read_text(encoding="utf-8"))
+    except Exception:
+        seen = {}
+
+    # ★사람이 고친 칸은 같은 날 다시 덮어쓰지 않는다(GM 지시 2026-08-23 · 배749).
+    # 실장이 손으로 넣은 LOSS 사유가 재실행 때 지워지던 경로가 여기다.
+    if (seen.get(cell) or {}).get("day") == today:
+        resp = gas_get(url, {"token": token, "cell": cell}, timeout=30, label=f"{cell} 현재값")
+        current = None
+        if resp is not None:
+            try:
+                data = resp.json()
+                current = data.get("value") if data.get("ok") else None
+            except Exception:
+                current = None
+        if _human_edited(seen[cell], current, today):
+            return {"ok": True, "skipped": "human-edit", "cell": cell,
+                    "note": f"{cell} 은 사람이 고쳐 두었습니다 — 덮어쓰지 않았습니다"}
+
+    body = json.dumps({"token": token, "cell": cell, "text": text}).encode("utf-8")
     req = urllib.request.Request(url, data=body,
                                  headers={"Content-Type": "text/plain"}, method="POST")
     with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+        res = json.loads(resp.read().decode("utf-8"))
+    if res.get("ok"):
+        seen[cell] = {"day": today, "text": text}
+        LAST_WRITE.write_text(json.dumps(seen, ensure_ascii=False, indent=1), encoding="utf-8")
+    return res
 
 
 def main() -> int:
@@ -270,6 +308,14 @@ def _selftest() -> None:
     assert out.count("■") == 4, out
     assert "집계 중" in out  # value_up 이 비었으니 그 자리는 집계 중
     assert "8/18(화)" in out, out
+
+    # 사람 손입력 보호 판정
+    prev = {"day": "2026-08-24", "text": "자동으로 쓴 값"}
+    assert _human_edited(prev, "자동으로 쓴 값 + 실장 추가", "2026-08-24")      # 고쳐졌다 → 막는다
+    assert not _human_edited(prev, "자동으로 쓴 값", "2026-08-24")              # 그대로 → 덮어쓴다
+    assert not _human_edited(prev, "실장 추가", "2026-08-25")                   # 날이 바뀜 → 덮어쓴다
+    assert not _human_edited(prev, None, "2026-08-24")                          # 못 읽음 → 막지 않는다
+    assert not _human_edited({}, "무엇이든", "2026-08-24")                      # 기록 없음 → 덮어쓴다
     print("selftest ok")
 
 
