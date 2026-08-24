@@ -448,7 +448,7 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
     <div class="card">
       <h3>부서별 월 손익 <span style="font-size:11px;color:var(--ink-faint)">(「26년 총 지출 분석」 시트 실시간 · 부서 칩 클릭)</span></h3>
       <div class="desc">영업이익 = <b>소진매출</b> − 인적용역료 − 월관리비 − 월소모품 (소진 기준 · 전사관리는 멤버십 매출 기준). 원본 시트 값을 그대로 표시하며 임의 보정하지 않습니다.</div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="team-chip" id="dpPrintBtn" title="현재 선택된 부서·월 상태를 A3 가로로 인쇄">🖨 A3 인쇄</button></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:4px"><button class="team-chip" id="dpPrintBtnL" title="현재 선택된 부서·월 상태를 A3 가로 한 장으로 인쇄">🖨 A3 가로</button><button class="team-chip" id="dpPrintBtnP" title="현재 선택된 부서·월 상태를 A3 세로 한 장으로 인쇄">🖨 A3 세로</button></div>
       <div class="team-chips" id="dpChips"></div>
       <div class="tbl-wrap" style="margin-top:12px"><table id="dpTbl"></table></div>
       <div class="notice" id="dpNote">데이터를 불러오는 중…</div>
@@ -819,7 +819,8 @@ function renderDeptInstr(){
 }
 /* ── A3 인쇄 (매니저 지시 2026-08-24) — 현재 선택된 부서·월 상태를 그대로 정리해 인쇄.
    완료탭 선택출력과 동일한 #printSheet+body.printing 구조 재사용. @page A3 가로는 임시 <style>로 주입 후 afterprint 제거(기존 A4 인쇄 플로우 무간섭). */
-function dpPrint(){
+function dpPrint(orient){
+  orient=(orient==="portrait")?"portrait":"landscape";
   if(!DP_DATA||!DP_DATA[DP_SEL]){alert("데이터를 불러온 뒤 이용해 주세요.");return;}
   var ps=document.getElementById("printSheet");if(!ps)return;
   var cut=dpCut();
@@ -833,8 +834,12 @@ function dpPrint(){
   }
   h+='<div class="ps-foot">영업이익 = 소진매출 − 인적용역료 − 월관리비 − 월소모품 · 강사별 매출은 당월(판매) 기준 · WELLPERION AI CFO</div></div>';
   ps.innerHTML=h;
+  // A3 인쇄영역 근사(px@96dpi, 여백 8mm 제외): 가로 420×297 → 1527×1050 / 세로 297×420 → 1050×1527
+  var avail=(orient==="landscape")?{w:1527,h:1050}:{w:1050,h:1527};
   var st=document.createElement("style");st.id="dpA3";
-  st.textContent="@media print{@page{size:A3 landscape;margin:9mm}}"
+  st.textContent="@media print{@page{size:A3 "+orient+";margin:8mm}}"
+   +"body.printing #printSheet{width:"+avail.w+"px}"
+   +"#printSheet table{page-break-inside:avoid}"
    +"#printSheet .ps-sec{font-size:17px;font-weight:800;color:#0F1E3D;margin:12px 0 6px;border-left:5px solid #B88A44;padding-left:9px}"
    +"#printSheet .ps-a3 h1{font-size:26px}"
    +"#printSheet .ps-a3 table{font-size:16px}"
@@ -846,11 +851,19 @@ function dpPrint(){
    +"#printSheet .ps-a3 tr.dp-mut td{color:#98A0B3;font-style:italic}";
   document.head.appendChild(st);
   document.body.classList.add("printing");
-  var done=function(){document.body.classList.remove("printing");var s=document.getElementById("dpA3");if(s)s.remove();window.removeEventListener("afterprint",done);};
+  ps.style.zoom="";
+  var done=function(){document.body.classList.remove("printing");ps.style.zoom="";var s=document.getElementById("dpA3");if(s)s.remove();window.removeEventListener("afterprint",done);};
   window.addEventListener("afterprint",done);
-  setTimeout(function(){window.print();},60);
+  // 한 장 맞춤: 페이퍼 폭 기준으로 실측 후 넘치면 비율 축소(zoom) — 월별+강사별이 항상 A3 1장에 담긴다
+  setTimeout(function(){
+    var z=Math.min(avail.h/Math.max(ps.scrollHeight,1),1);
+    if(z<1)ps.style.zoom=String(Math.max(z,0.4));
+    window.print();
+  },80);
 }
-(function(){var b=document.getElementById("dpPrintBtn");if(b)b.onclick=dpPrint;})();
+(function(){var L=document.getElementById("dpPrintBtnL"),P=document.getElementById("dpPrintBtnP");
+  if(L)L.onclick=function(){dpPrint("landscape");};
+  if(P)P.onclick=function(){dpPrint("portrait");};})();
 /* 종목별 매출 라이브(sales_dept) — 월별 「매출 보고」 파일 말일탭을 백엔드가 서버 집계(강사→종목 매핑=인건비마스터, 집계만 반환·PII 없음).
    비블로킹: 성공 시 월별 병합(라이브 값 있는 월=라이브, 없는 월=기존 마스터/폴백 유지) 후 매출 의존 뷰만 재렌더. 운영부는 GM시트 정본 우선 유지. */
 async function loadSalesDept(){
