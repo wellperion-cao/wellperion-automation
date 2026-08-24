@@ -541,64 +541,6 @@
         </div>
       </div>
 
-      <!-- GM 업무 현황 카드 — 월간운영계획 이달 목표 중 GM 직접 관장 건을 한눈에(숫자+링크만).
-           260824_GM업무_전체지도_A3.html(중복 A3 한 장)을 지우고 여기로 흡수(2026-08-24 GM 지시
-           "그것은 중복이니까 삭제하고 home에서 한눈에 파악할 수 있게 해줘"). 판정 로직 = 정본
-           coo/chairman/_gm_direct_tasks.js 그대로 재사용(복제 없음, 약속 L01) — 이 파일에 due
-           필드 pass-through만 추가했다(GM업무.html·월간운영계획.html 기존 동작 무변경). -->
-      <div style="grid-column:1/-1;">
-        <div style="display:flex;align-items:center;gap:11px;margin:4px 0 14px;flex-wrap:wrap;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">👤</span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">GM 업무</span><span style="font-size:11.5px;color:var(--dim);">이번달 김남욱 GM 직접 관장 건 · 월간운영계획 실시간</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;min-width:0;"><a href="coo/chairman/GM업무.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">👤 GM 업무 →</a></span></div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-          <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiGmTotal">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">전체</div></div>
-          <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiGmDueSoon">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">기한 임박</div><div style="font-size:9px;color:var(--dim);margin-top:2px;">7일 이내</div></div>
-          <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiGmNoDue">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">기한 없음</div></div>
-          <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiGmZero">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">진척 0%</div></div>
-          <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiGmDone">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">완료</div></div>
-        </div>
-        <div id="kpiGmTaskNote" style="font-size:10px;color:var(--dim);margin-top:6px;"></div>
-      </div>
-      <script src="coo/chairman/_gm_direct_tasks.js"></script>
-      <script>
-      (function () {
-        var RAW = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json';
-        var elTotal = document.getElementById('kpiGmTotal');
-        var elDueSoon = document.getElementById('kpiGmDueSoon');
-        var elNoDue = document.getElementById('kpiGmNoDue');
-        var elZero = document.getElementById('kpiGmZero');
-        var elDone = document.getElementById('kpiGmDone');
-        var elNote = document.getElementById('kpiGmTaskNote');
-        if (!elTotal) return;
-        function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-        function fail() {
-          elTotal.textContent = '—'; elDueSoon.textContent = '—'; elNoDue.textContent = '—';
-          elZero.textContent = '—'; elDone.textContent = '—';
-          if (elNote) elNote.textContent = '불러오지 못했습니다 — GM 업무 화면에서 확인';
-        }
-        if (!window.WellperionGmDirect) { fail(); return; }
-        var now = new Date();
-        var monthKey = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
-        var todayISO = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
-        var soon = new Date(now.getTime() + 7 * 86400000);
-        var soonISO = soon.getFullYear() + '-' + pad2(soon.getMonth() + 1) + '-' + pad2(soon.getDate());
-        fetch(RAW + '?cb=' + Date.now(), { cache: 'no-store' }).then(function (r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status); return r.json();
-        }).then(function (plan) {
-          var items = window.WellperionGmDirect.extract(plan, monthKey);
-          if (!items) throw new Error('데이터 없음');
-          var dueSoon = items.filter(function (o) { return o.due && o.due >= todayISO && o.due <= soonISO; }).length;
-          // 기한 없음 = due 빈 값 + 완료 아님(이미 끝난 건은 '마감 없어 방치'가 아니다) + 상시 과제(조직문화)는 제외.
-          var noDue = items.filter(function (o) { return !o.due && o.status !== '완료' && o.category !== '교육·조직문화'; }).length;
-          var zero = items.filter(function (o) { return o.progress === 0; }).length;
-          var done = items.filter(function (o) { return o.status === '완료'; }).length;
-          elTotal.textContent = items.length + '건';
-          elDueSoon.textContent = dueSoon + '건';
-          elNoDue.textContent = noDue + '건';
-          elZero.textContent = zero + '건';
-          elDone.textContent = done + '건';
-        }).catch(fail);
-      })();
-      </script>
-
       <!-- 문의&등록 현황 카드 — 멤버십/강습 × 문의관리/등록 2×2(AI CPO 시포 소관 실무 구조), 이번달+올해(2026) 누적 병기.
            구 "문의 현황"(멤버십 문의·강습 문의 2칸)에 등록(가입) 실적을 더해 4칸으로 확장 — 문의만 보이고 등록 성과가
            안 보이던 문제 해소. 멤버십 등록=member_registered_list(유효회원 시트 등록일자) · 강습 등록=lesson_registry_list
