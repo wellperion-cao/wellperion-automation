@@ -440,8 +440,11 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
   #dpITbl tr.dp-cum td{font-weight:800;background:#f6f1e4;border-top:2px solid #a98a52}
   #dpTbl tr.dp-cum td{font-weight:800;background:#f6f1e4;border-top:2px solid #a98a52}
   #dpTbl td.dp-mut,#dpTbl tr.dp-mut td{color:var(--ink-faint);font-style:italic}
-  /* 숫자 가독성 확대(매니저 지시 2026-08-24) — 재무 표 한정, 구매요청·정산 컴팩트 레이아웃 무접촉 */
-  #dpTbl,#dpSumTbl,#dpITbl{font-size:15.5px}
+  /* 숫자 가독성 확대(매니저 지시 2026-08-24) — 재무 표 한정, 구매요청·정산 컴팩트 레이아웃 무접촉.
+     dpTbl·dpITbl은 열이 많아 14.5px+타이트 패딩으로 가로 스크롤 없이 한 화면 수납(매니저 지시) */
+  #dpTbl,#dpITbl{font-size:14.5px}
+  #dpSumTbl{font-size:15.5px}
+  #dpTbl th,#dpTbl td,#dpITbl th,#dpITbl td{padding:9px 8px}
   #salesTbl,#expTbl,#staffTbl{font-size:14.5px}
   </style>
   <section class="panel" data-panel="deptpnl">
@@ -712,8 +715,10 @@ function renderDeptPnl(){
   var d=DP_DATA[DP_SEL];if(!d){tbl.innerHTML="";return;}
   var cut=dpCut(),std=(DP_SEL!=="전사관리");
   var colIdx,heads;
-  if(std){colIdx=[0,1,2,3,6,7,9];heads=["당월매출","소진매출","잔여매출","인적용역료","월관리비","월소모품","영업이익"];} // 잔여매출 추가(매니저 지시 2026-08-24) — 잔액 성격이라 누계행은 합산 아닌 마지막 완결월 잔액
-  else{colIdx=[0,1,2,3,4,6,7,8,9];var srcH=d.heads||[];heads=colIdx.map(function(i){return srcH[i]||("항목"+(i+1));});}
+  // 가로 스크롤 방지(매니저 지시 2026-08-24): std=관리비+소모품 한 열로 통합 / 전사관리=상시 0인 세금·평당관리(강습) 열 제외
+  if(std){colIdx=[0,1,2,3,6,7,9];heads=["당월매출","소진매출","잔여매출","인적용역료","관리비·소모품","영업이익"];}
+  else{colIdx=[0,1,3,4,7,8,9];var srcH=d.heads||[];heads=colIdx.map(function(i){return srcH[i]||("항목"+(i+1));});}
+  function disp(a){return std?[a[0],a[1],a[2],a[3],(a[4]==null&&a[5]==null)?null:((a[4]||0)+(a[5]||0)),a[6]]:a;}
   var h='<thead><tr><th>월</th><th>'+escapeHtml(heads[0])+'</th><th>누적매출</th>'+heads.slice(1).map(function(x){return '<th>'+escapeHtml(x)+'</th>';}).join("")+'<th>이익률</th></tr></thead><tbody>';
   var cum=colIdx.map(function(){return 0;}),run=0; // run = 당월매출 누적(완결월만 — 자리표시 오염 차단)
   for(var mm=1;mm<=12;mm++){var v=d.months[mm];if(!v)continue;
@@ -722,15 +727,15 @@ function renderDeptPnl(){
     var mut=mm>cut;
     var rev=std?vals[1]:vals[0],op=vals[vals.length-1];
     var rate=(rev&&op!==null)?op/rev:null;
-    var cells=vals.map(function(x){return dpCell(x,mut);});
+    var cells=disp(vals).map(function(x){return dpCell(x,mut);});
     if(mut)cells.splice(1,0,'<td class="dp-mut">—</td>');
     else{run+=vals[0]||0;cells.splice(1,0,dpCell(run,false));}
     h+='<tr'+(mut?' class="dp-mut"':'')+'><td>'+mm+'월'+(mut?' ³':'')+'</td>'+cells.join("")+'<td'+((rate!==null&&rate<0)?' class="neg"':'')+'>'+dpFmtPct(rate)+'</td></tr>';
     if(!mut)vals.forEach(function(x,i){if(x!==null)cum[i]+=x;});
   }
   var crev=std?cum[1]:cum[0],cop=cum[cum.length-1];
-  var cumCells=cum.map(function(x){return dpCell(x,false);});cumCells.splice(1,0,dpCell(run,false));
-  if(std){var lr=d.months[cut]?dpV(d.months[cut][2]):null;cumCells[3]=dpCell(lr,false);} // 잔여매출 누계칸 = cut월 잔액(스플라이스 후 인덱스: 0당월 1누적 2소진 3잔여)
+  var cumCells=disp(cum).map(function(x){return dpCell(x,false);});cumCells.splice(1,0,dpCell(run,false));
+  if(std){var lr=d.months[cut]?dpV(d.months[cut][2]):null;cumCells[3]=dpCell(lr,false);} // 잔여매출 누계칸 = cut월 잔액(잔액 성격 — 합산 아님)
   h+='<tr class="dp-cum"><td>1~'+cut+'월 누계</td>'+cumCells.join("")+'<td'+((crev&&cop/crev<0)?' class="neg"':'')+'>'+dpFmtPct(crev?cop/crev:null)+'</td></tr></tbody>';
   tbl.innerHTML=h;
   var msgs=["누계 = 완결월(전월)까지 · ³ 표시 월 = 진행/자리표시 가능(누계 제외·원본 그대로 표시)"+(std?" · 누계행의 잔여매출 = "+cut+"월 잔액(잔액 성격이라 기간 합산 아님)":"")];
@@ -767,6 +772,12 @@ var DP_I_SALES={},DP_I_STATE="idle",DP_IMON="cum";
 var DP_TEAM2LAB={"P.T":"P.T","수영":"수영","골프":"골프","필라테스":"필라테스","스쿼시":"스쿼시","체조&트램폴린":"체조&트램"};
 var DP_I_EXC={"이정한":3}; // 강사명(nkey): 이 월부터 집계 제외 — 근무 종료 후 원장 잔재 차단(매니저 지시 2026-08-24 "P.T 이정한 3월부터 근무 안 함"). 원장 자체는 무수정.
 function dpExc(name,m){var f=DP_I_EXC[dpNkey(name)];return !!(f&&m>=f);}
+/* 강사별 소진매출 — 실시간 원천 없음(배관=당월 판매만·소진은 페이롤 원장 전용) → 페이롤 월마감 정적값(2026-08-24 검증, P.T 1~7월).
+   월마감 시 이 맵만 갱신하면 됨. 미등록 팀·월은 화면에 — 표시. */
+var DP_I_SOJIN={"P.T":{"김상식":[8803604,9421229,10292040,9344954,9443152,10614382,10587128],"김혜진":[13281953,10107975,12699363,10756611,8595164,10472989,10238155],"김재용":[8144763,6306181,7368455,8642070,9054303,6592592,6479430],"이정한":[2199800,1566200,0,0,0,0,0],"김종진":[13389140,10671398,13755301,14029028,13267060,13329618,16582975],"최동오":[11313991,9772938,10993903,11294945,11653106,10006343,11251968],"이형진":[5691203,6543151,5632691,8408823,8415736,7469550,8379736],"김지훈":[8848150,7239695,8369162,9356477,9649313,6967812,9769495],"최도희":[3971450,2121100,3810550,4126850,3834300,3081900,3964295],"김광수":[2212650,1366445,2202750,2638350,1777050,2554200,2371050],"양승문":[0,0,0,0,301745,3384982,6334568]}};
+function dpSojin(name,m){var t=DP_I_SOJIN[DP_SEL];if(!t)return null;var key=dpNkey(name),arr=null;
+  Object.keys(t).forEach(function(n2){if(dpNkey(n2)===key)arr=t[n2];});
+  if(!arr)return null;var v=arr[m-1];return (typeof v==="number")?v:null;}
 function dpNkey(s){return String(s==null?"":s).replace(/\s+/g,"").replace(/프로$/,"");}
 async function loadDeptInstr(){
   if(DP_I_STATE!=="idle")return;DP_I_STATE="loading";
@@ -812,19 +823,23 @@ function renderDeptInstr(){
     var csum=sales; // 누적매출 = 1~선택월 개인 매출 합(누계 모드에선 sales와 동일이라 컬럼 생략)
     if(DP_IMON!=="cum"){csum=0;for(var mc=1;mc<=DP_IMON;mc++){if(dpExc(keys[k],mc))continue;
       var sc=(DP_I_SALES[mc]&&DP_I_SALES[mc][k]&&DP_I_SALES[mc][k].team===lab)?DP_I_SALES[mc][k].val:0;csum+=sc;}}
+    var soj=null; // 소진매출(월마감 정적) — 등록 팀만
+    if(DP_I_SOJIN[DP_SEL]){var sj=0,sf=false;
+      months.forEach(function(m6){if(dpExc(keys[k],m6))return;var v6=dpSojin(keys[k],m6);if(v6!==null){sj+=v6;sf=true;}});
+      if(sf)soj=sj;}
     var net=sales-pay-mgmt;
-    rows.push({name:keys[k],sales:sales,csum:csum,pay:pay,mgmt:mgmt,net:net,rate:sales?pay/sales:null,mrg:sales?net/sales:null});
+    rows.push({name:keys[k],sales:sales,csum:csum,soj:soj,pay:pay,mgmt:mgmt,net:net,rate:sales?pay/sales:null,mrg:sales?net/sales:null});
   });
   rows.sort(function(a,b){return b.net-a.net;});
   var isCum=(DP_IMON==="cum");
-  var h='<thead><tr><th>강사</th><th>'+(isCum?'누적매출(1~'+cut+'월)':'당월매출')+'</th>'+(isCum?'':'<th>누적매출(1~'+DP_IMON+'월)</th>')+'<th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여</th><th>이익률</th></tr></thead><tbody>';
-  var ts=0,tp=0,tm=0,tc=0;
-  rows.forEach(function(x){ts+=x.sales;tp+=x.pay;tm+=x.mgmt;tc+=x.csum;
-    h+='<tr><td>'+escapeHtml(x.name)+'</td>'+dpCell(x.sales,false)+(isCum?'':dpCell(x.csum,false))+dpCell(x.pay,false)+'<td>'+dpFmtPct(x.rate)+'</td>'+dpCell(x.mgmt,false)+dpCell(x.net,false)+'<td'+((x.mrg!==null&&x.mrg<0)?' class="neg"':'')+'>'+dpFmtPct(x.mrg)+'</td></tr>';});
+  var h='<thead><tr><th>강사</th><th>'+(isCum?'누적매출(1~'+cut+'월)':'당월매출')+'</th>'+(isCum?'':'<th>누적매출(1~'+DP_IMON+'월)</th>')+'<th>소진매출(월마감)</th><th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여</th><th>이익률</th></tr></thead><tbody>';
+  var ts=0,tp=0,tm=0,tc=0,tso=0,tsoF=false;
+  rows.forEach(function(x){ts+=x.sales;tp+=x.pay;tm+=x.mgmt;tc+=x.csum;if(x.soj!==null){tso+=x.soj;tsoF=true;}
+    h+='<tr><td>'+escapeHtml(x.name)+'</td>'+dpCell(x.sales,false)+(isCum?'':dpCell(x.csum,false))+dpCell(x.soj,false)+dpCell(x.pay,false)+'<td>'+dpFmtPct(x.rate)+'</td>'+dpCell(x.mgmt,false)+dpCell(x.net,false)+'<td'+((x.mrg!==null&&x.mrg<0)?' class="neg"':'')+'>'+dpFmtPct(x.mrg)+'</td></tr>';});
   var tnet=ts-tp-tm;
-  h+='<tr class="dp-cum"><td>합계</td>'+dpCell(ts,false)+(isCum?'':dpCell(tc,false))+dpCell(tp,false)+'<td>'+dpFmtPct(ts?tp/ts:null)+'</td>'+dpCell(tm,false)+dpCell(tnet,false)+'<td'+((ts&&tnet/ts<0)?' class="neg"':'')+'>'+dpFmtPct(ts?tnet/ts:null)+'</td></tr></tbody>';
+  h+='<tr class="dp-cum"><td>합계</td>'+dpCell(ts,false)+(isCum?'':dpCell(tc,false))+dpCell(tsoF?tso:null,false)+dpCell(tp,false)+'<td>'+dpFmtPct(ts?tp/ts:null)+'</td>'+dpCell(tm,false)+dpCell(tnet,false)+'<td'+((ts&&tnet/ts<0)?' class="neg"':'')+'>'+dpFmtPct(ts?tnet/ts:null)+'</td></tr></tbody>';
   tbl.innerHTML=h;
-  if(note)note.textContent="⚠️ 강사별 매출 = 당월(판매) 기준(매출보고 강사별 서버집계) — 팀 손익표(소진 기준)와 산식이 달라 합계가 팀 표와 다를 수 있습니다. 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 손익기여 = 매출 − 인건비 − 관리비배분 · 이익률 = 손익기여 ÷ 매출."+(DP_SEL==="P.T"?" · 이정한은 3월부터 근무 종료 — 3월 이후 기록 집계 제외(매니저 지시).":"");
+  if(note)note.textContent="⚠️ 강사별 매출 = 당월(판매) 기준(매출보고 강사별 서버집계) — 팀 손익표(소진 기준)와 산식이 달라 합계가 팀 표와 다를 수 있습니다. 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 손익기여 = 매출 − 인건비 − 관리비배분 · 이익률 = 손익기여 ÷ 매출. 소진매출 = 페이롤 월마감 정적값(실시간 아님 · 현재 P.T 1~7월 검증분, 미반영 팀·월은 —)."+(DP_SEL==="P.T"?" · 이정한은 3월부터 근무 종료 — 3월 이후 기록 집계 제외(매니저 지시).":"");
 }
 /* ── A3 인쇄 (매니저 지시 2026-08-24) — 현재 선택된 부서·월 상태를 그대로 정리해 인쇄.
    완료탭 선택출력과 동일한 #printSheet+body.printing 구조 재사용. @page A3 가로는 임시 <style>로 주입 후 afterprint 제거(기존 A4 인쇄 플로우 무간섭). */
@@ -888,7 +903,8 @@ function dpPrint(orient){
   window.addEventListener("afterprint",done);
   // 한 장 맞춤: 페이퍼 폭 기준으로 실측 후 넘치면 비율 축소(zoom) — 월별+강사별이 항상 A3 1장에 담긴다
   setTimeout(function(){
-    var z=Math.min(avail.h/Math.max(ps.scrollHeight,1),1);
+    // 가로·세로 모두 실측해 넘치는 쪽 기준으로 축소(A3 인쇄 깨짐 해소 — 매니저 지적 2026-08-24: 구버전은 세로만 봐서 넓은 표가 잘림)
+    var z=Math.min(avail.w/Math.max(ps.scrollWidth,1),avail.h/Math.max(ps.scrollHeight,1),1);
     if(z<1)ps.style.zoom=String(Math.max(z,0.4));
     window.print();
   },80);
