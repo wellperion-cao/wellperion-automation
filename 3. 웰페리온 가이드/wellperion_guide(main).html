@@ -1113,7 +1113,9 @@
       // 영문 응답탭(GID_EN) 조회 제거(GM 2026-07-23) — 접수 0건(전 기간)으로 폐기 확정, 시트 삭제 예정.
       //   영어 문의는 자체 폼으로 전환돼 한글 탭에 '유입언어'·[영어] 표식으로 함께 쌓이므로 합산이 필요 없다.
       //   ★재개 시 = 아래 p2/en 두 줄과 합산만 되살리면 된다(GID_EN 상수는 남겨 둠).
-      var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); }).catch(function(){ return ''; });
+      // ★fetch 실패를 ''로 삼키지 않는다(2026-08-24 GM 지적 — "0"이 "못읽음"과 "진짜0건"을 구분 못해
+      //   문의 0건으로 오독됨). 실패는 Promise.all을 그대로 reject시켜 아래 최종 .catch가 "—" 유지하게 둔다.
+      var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); });
       Promise.all([p1]).then(function(results){
         var koRows = parseCSV(results[0]);
         // 한국어 탭은 A열'날짜'+B열'타임스탬프'가 별도로 존재 → '타임스탬프' 우선 매칭('날짜'는 뒤 후보).
@@ -1190,7 +1192,9 @@
       }
       Promise.all([fetchType('성인강습'), fetchType('유소년강습')]).then(function(results){
         var adult = results[0], youth = results[1];
-        if (!adult.ok && !youth.ok) return; // 둘 다 실패 시 "—" 유지
+        // ★한쪽만 실패해도 "—" 유지(2026-08-24) — 실패한 쪽이 total:0으로 대체돼 있어
+        //   AND로 두면 "성인 실패+유소년 성공"이 진짜 총합인 척 섞여 나간다.
+        if (!adult.ok || !youth.ok) return;
         // ★'누적' 라벨 정직화(GM 2026-07-23) — 강습 등록원장은 2026-06-30부터만 존재한다(실측 성인 49건).
         //   그런데 화면엔 '누적'이라고만 떠서 올해 전체 실적으로 읽혔다. 날짜를 코드에 박으면 나중에
         //   원장이 과거분까지 채워져도 라벨이 계속 거짓말을 하므로, 원장에 실제로 있는 가장 이른
