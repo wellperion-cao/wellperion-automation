@@ -497,20 +497,20 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 </div><!-- /sticky-top -->
 
-<!-- ══ 라이브 점수판 2단 (2026-08-07 GM 결재 A안 · 웰리 요청) ══
-     왼쪽 = 접수 처리 점수판(기존 reception GAS reg_scoreboard 를 그대로 표시 — 새 셈법 없음)
-     오른쪽 = 업무 처리 현황(todo_scoreboard). 점수·순위 없음.
-     ★두 판의 숫자는 절대 합치지 않는다 — 모수와 사람 집합이 다르다(접수 쪽엔 업무 SSOT 에 없는 이름이 있다). -->
+<!-- ══ 라이브 점수판 2단 (2026-08-07 GM 결재 A안 · 웰리 요청 → 2026-08-24 매니저 지시로 좌측 패널 교체) ══
+     왼쪽 = 실시간 평가점수(허브 평가탭 「업무 정량평가」 quantEvalCompute 포팅 — 이 파일 안에 자체완결, 허브 원본 무접촉)
+     오른쪽 = 업무 처리 현황(todo_scoreboard). 건수는 배분 현황, 평가 아님(변경 없음).
+     ★두 판의 셈법·모수가 다르다 — 왼쪽은 규모점수 가중 평가점수, 오른쪽은 단순 건수다. -->
 <div class="livestrip" id="liveStrip">
   <section class="ls-card">
-    <div class="ls-head">🏆 접수 처리 점수판 <span class="ls-sub">이번 달</span></div>
-    <div class="ls-body" id="lsReg"><div class="ls-dim">불러오는 중…</div></div>
+    <div class="ls-head">📊 실시간 평가점수 <span class="ls-sub">업무 정량평가</span></div>
+    <div class="ls-body" id="lsQeval"><div class="ls-dim">불러오는 중…</div></div>
   </section>
   <section class="ls-card">
     <div class="ls-head">📋 업무 처리 현황 <span class="ls-sub">라이브</span></div>
     <div class="ls-body" id="lsTodo"><div class="ls-dim">불러오는 중…</div></div>
   </section>
-  <div class="ls-foot">건수는 배분 현황이며 평가가 아닙니다.</div>
+  <div class="ls-foot">업무 처리 현황의 건수는 배분 현황이며 평가가 아닙니다. 평가점수는 완료 규모·품질 기반 정량 산출입니다(배정 5건 미만은 게이트 미달).</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3822,7 +3822,6 @@ window.ssotShowTasks=ssotShowTasks;
    화면이 따로 세면 여는 사람마다 숫자가 달라져 아무도 안 믿는다.
    두 판은 모수·사람 집합이 다르므로 절대 합치지 않는다. */
 (function () {
-  var REG_API  = 'https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec';
   var TODO_API = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
   // 표 순서 고정 — 건수순 정렬 금지(많이 맡은 사람이 위로 올라가면 그게 곧 순위가 된다).
   // MEMBERS 가 있으면 그쪽을 쓰고(대시보드와 동일 명단), 없을 때만 이 목록으로 떨어진다.
@@ -3838,23 +3837,117 @@ window.ssotShowTasks=ssotShowTasks;
     if (el) el.innerHTML = '<div class="ls-dim">' + esc(msg) + '</div>';
   }
 
-  function renderReg(j) {
-    var box = document.getElementById('lsReg');
+  /* ══ 실시간 평가점수 — 허브(chro/hub/index.html) 평가탭 「업무 정량평가」 quantEvalCompute 포팅 (2026-08-24 매니저 지시) ══
+     허브 원본은 무접촉 — 여기 함수들은 그 로직의 자체완결 사본(허브 모달·DOM 의존 없음).
+     총점=0.45×볼륨+0.55×품질 · 볼륨=100×√(완료규모합÷160) · 품질=완결력45%+기한준수35%+정체관리20%(베이지안수축 m=20).
+     노출 데이터는 이 보드가 이미 공개 표시하는 담당자·업무명·상태·종료일과 todo_list 가 이미 내려주는 규모점수의
+     집계뿐 — 허브 전용 데이터(개인 연락처·평가 메모 등)는 포함하지 않는다(2026-08-24 매니저 확정 게이트 규칙). */
+  var QEVAL_R_SCORE = {"TODO-20260713140724303":8,"TODO-20260626083243694":8,"TODO-20260626083339903":8,"TODO-20260724162243873":8,"TODO-20260810122252481":5,"TODO-20260528172848231":5,"TODO-20260813145021837":5,"TODO-20260710141713118":5,"TODO-20260612144444052":5,"TODO-20260731133203161":5,"TODO-20260728144308151":5,"TODO-20260807123535447":5,"TODO-20260610150040028":5,"TODO-20260730204721394":5,"TODO-20260526180143612":5,"TODO-20260605172323917":5,"TODO-20260526173157572":5,"TODO-20260605133653237":5,"TODO-20260526173224815":5,"TODO-20260708144442274":5,"TODO-20260629120110362":5,"TODO-20260811203254045":5,"TODO-20260527192601290":5,"TODO-20260708144348979":5,"TODO-20260526191513510":5,"TODO-20260729221854842":5,"TODO-20260526173229010":5,"TODO-20260805142106977":5,"TODO-20260715163059377":5,"TODO-20260715191123943":3,"TODO-20260713160054591":3,"TODO-20260609141020681":3,"TODO-20260731130634685":3,"TODO-20260706142514011":3,"TODO-20260623115324272":3,"TODO-20260622180236921":3,"TODO-20260526173241993":3,"TODO-20260811152606100":3,"TODO-20260616202642211":3,"TODO-20260529150352212":3,"TODO-20260605123326042":3,"TODO-20260718141905696":3,"TODO-20260526173220175":3,"TODO-20260812172933267":3,"TODO-20260811181218252":3,"TODO-20260814165111855":3,"TODO-20260729202350134":3,"TODO-20260603172844846":2,"TODO-20260718131400771":2,"TODO-20260612173857606":2,"TODO-20260603180038813":2,"TODO-20260610150413162":2,"TODO-20260616124031922":2,"TODO-20260718131712440":2,"TODO-20260526173255598":2,"TODO-20260701201757833":2,"TODO-20260714152744696":2,"TODO-20260713154536592":1,"TODO-20260526173153241":null,"TODO-20260526173207359":5,"TODO-20260526173211484":5,"TODO-20260715151938932":5,"TODO-20260623093017347":5,"TODO-20260602183606821":5,"TODO-20260601235855399":3,"TODO-20260623083811137":3,"TODO-20260629071132029":3,"TODO-20260713170115586":3,"TODO-20260714162947730":3,"TODO-20260707113119351":3,"TODO-20260802092843286":3,"TODO-20260802102340279":3,"TODO-20260625150721864":3,"TODO-20260601160012462":3,"TODO-20260526173304436":3,"TODO-20260716172146854":3,"TODO-20260603135304867":3,"TODO-20260616151858696":3,"TODO-20260720141539642":3,"TODO-20260701165226738":3,"TODO-20260617160300528":2,"TODO-20260526173340498":2,"TODO-20260601145731901":2,"TODO-20260714162729219":1,"TODO-20260802102709930":1,"TODO-20260802102815845":1,"TODO-20260603140906660":null,"TODO-20260601185527574":5,"TODO-20260612194459567":5,"TODO-20260715122523063":5,"TODO-20260601171335035":5,"TODO-20260612193113697":5,"TODO-20260705193325191":5,"TODO-20260618171855599":3,"TODO-20260811175720381":3,"TODO-20260612200312252":3,"TODO-20260702182317985":3,"TODO-20260618173638092":2,"TODO-20260526173347366":2,"TODO-20260615115335656":2,"TODO-20260615175118352":2,"TODO-20260526173320944":2,"TODO-20260615120511598":2,"TODO-20260615155124179":2,"TODO-20260616193758660":2,"TODO-20260612190623872":2,"TODO-20260616194057089":2,"TODO-20260602142906139":5,"TODO-20260813113632765":3,"TODO-20260617220721525":3,"TODO-20260615160040937":3,"TODO-20260615170210318":2,"TODO-20260814163530242":2,"TODO-20260710132515502":2};
+  var QEVAL_PRIOR = {comp:0.577,due:0.384,stale:0.344};
+  var QEVAL_PEOPLE = [
+    {key:"나우열M",name:"나우열",title:"과장"},
+    {key:"이경연 실장",name:"이경연",title:"실장"},
+    {key:"최준용M",name:"최준용",title:"대리"},
+    {key:"윤병현AM",name:"윤병현",title:"주임"}
+  ];
+  var QEVAL_SIZE_WHITELIST = ["1","2","3","5","8"];
+  function qevOwners(t){ return String(t["담당자"]||"").split(",").map(function(s){return s.trim();}).filter(Boolean); }
+  function qevDate(s){ return s?new Date(s):null; }
+  function qevScoreLookup(t){
+    var live=t["규모점수"];
+    var liveStr=(live===undefined||live===null)?"":String(live).trim();
+    if(liveStr!==""){
+      if(QEVAL_SIZE_WHITELIST.indexOf(liveStr)>=0) return {has:true,score:Number(liveStr)};
+      return {has:true,score:null};
+    }
+    if(t.id in QEVAL_R_SCORE) return {has:true,score:QEVAL_R_SCORE[t.id]};
+    return {has:false};
+  }
+  function quantEvalCompute(tasks){
+    var out=[];
+    QEVAL_PEOPLE.forEach(function(p){
+      var assignedScore=0,assignedCount=0,completedScore=0,completedCount=0;
+      var dueNumer=0,dueDenom=0,staleNumer=0,staleDenom=0,unscored=[],now=new Date();
+      tasks.forEach(function(t){
+        var owners=qevOwners(t);
+        if(owners.indexOf(p.key)<0) return;
+        var _lk=qevScoreLookup(t);
+        if(!_lk.has){ unscored.push(t); return; }
+        var score=_lk.score;
+        if(score==null) return;
+        assignedScore+=score; assignedCount++;
+        var status=t["상태"];
+        if(status==="완료"){
+          completedScore+=score; completedCount++;
+          var due=qevDate(t["종료일"]), doneAt=qevDate(t["완료일"])||qevDate(t["수정일"]);
+          if(due){
+            dueDenom+=score;
+            var _ok=doneAt && doneAt.getTime()<=due.getTime()+(23*3600+59*60)*1000;
+            if(_ok) dueNumer+=score;
+          }
+        }else if(status==="진행중"){
+          staleDenom+=score;
+          var mod=qevDate(t["수정일"])||qevDate(t["생성일"]);
+          var idle=mod?((now-mod)/86400000):0;
+          if(idle>=14) staleNumer+=score;
+        }
+      });
+      var n=assignedCount, gateOk=n>=5;
+      var result={key:p.key,name:p.name,title:p.title,n:n,assignedScore:assignedScore,completedCount:completedCount,completedScore:completedScore,unscored:unscored,gateOk:gateOk};
+      if(gateOk){
+        var w=n/(n+20);
+        var compRaw=assignedScore>0?completedScore/assignedScore:0;
+        var dueRaw=dueDenom>0?dueNumer/dueDenom:null;
+        var staleRaw=staleDenom>0?(1-staleNumer/staleDenom):null;
+        var compAdj=w*compRaw+(1-w)*QEVAL_PRIOR.comp;
+        var dueAdj=(dueRaw==null)?null:(w*dueRaw+(1-w)*QEVAL_PRIOR.due);
+        var staleAdj=(staleRaw==null)?null:(w*staleRaw+(1-w)*QEVAL_PRIOR.stale);
+        var wSum=0.45,numer=0.45*compAdj;
+        if(dueAdj!=null){wSum+=0.35;numer+=0.35*dueAdj;}
+        if(staleAdj!=null){wSum+=0.20;numer+=0.20*staleAdj;}
+        var quality=(numer/wSum)*100;
+        var volume=100*Math.sqrt(completedScore/160);
+        var total=0.45*volume+0.55*quality;
+        result.quality=Math.round(quality*10)/10;result.volume=Math.round(volume*10)/10;result.total=Math.round(total*10)/10;
+        result.grade=total>=80?"A":total>=60?"B":total>=40?"C":"D";
+      }
+      out.push(result);
+    });
+    return out;
+  }
+  function renderQeval(j) {
+    var box = document.getElementById('lsQeval');
     if (!box) return;
-    var b = (j && j.board) || [];
-    if (!b.length) { box.innerHTML = '<div class="ls-dim">이번 달 기록이 아직 없습니다.</div>'; return; }
-    // 상위 5명까지만 보인다(나우열M 지시) — 1점 동점자가 길게 붙으면 판이 늘어져 위쪽이 안 읽힌다.
-    // 잘린 인원 안내('외 N명')는 두지 않는다. 셈법·순위는 접수 GAS 그대로 손대지 않는다.
-    var REG_LIMIT = 5;
-    var shown = b.slice(0, REG_LIMIT);
-    box.innerHTML = shown.map(function (r) {
+    var tasks = (j && j.data) || [];
+    if (!tasks.length) { box.innerHTML = '<div class="ls-dim">업무 기록이 아직 없습니다.</div>'; return; }
+    var list = quantEvalCompute(tasks);
+    var rows = list.map(function (r) {
+      if (r.gateOk) {
+        return '<div class="ls-row">' +
+          '<span class="ls-rank">' + esc(r.grade) + '</span>' +
+          '<span class="ls-name">' + esc(r.name) + '</span>' +
+          '<span class="ls-pt">' + r.total + '점</span>' +
+          '<span class="ls-detail">볼륨 ' + r.volume + ' · 품질 ' + r.quality +
+            ' · 완료 ' + r.completedCount + '건/' + r.completedScore + '점' +
+            (r.unscored.length ? ' · 미채점 ' + r.unscored.length + '건' : '') + '</span>' +
+          '</div>';
+      }
       return '<div class="ls-row">' +
-        '<span class="ls-rank">' + esc(r.rank) + '</span>' +
+        '<span class="ls-rank" style="background:var(--dim-soft);color:var(--dim)">–</span>' +
         '<span class="ls-name">' + esc(r.name) + '</span>' +
-        '<span class="ls-pt">' + esc(r.total) + '점</span>' +
-        '<span class="ls-detail">접수 ' + esc(r.intake) + ' · 완료 ' + esc(r.done) + '</span>' +
+        '<span class="ls-pt" style="color:var(--dim);font-size:14px">게이트 미달</span>' +
+        '<span class="ls-detail">배정 ' + r.n + '건(5건 이상 필요)</span>' +
         '</div>';
-    }).join('');
+    });
+    rows.push(
+      '<div class="ls-row">' +
+      '<span class="ls-rank" style="background:var(--purple-bg);color:var(--purple)">–</span>' +
+      '<span class="ls-name">임정은</span>' +
+      '<span class="ls-pt" style="color:var(--dim);font-size:14px">별도 기준</span>' +
+      '<span class="ls-detail">상시 운영형 실적 — 규모채점 산식 적용 대상 아님</span>' +
+      '</div>'
+    );
+    box.innerHTML = rows.join('');
   }
 
   /* 담당자별 통계 표 — 대시보드(renderDashboard) 상단 표와 같은 내용.
@@ -3952,23 +4045,22 @@ window.ssotShowTasks=ssotShowTasks;
   todoFallback();
   loadConsult();
 
-  /* 접수 처리 점수판 — 접수 GAS(reg_scoreboard)를 그대로 표시한다. 새 셈법 없음.
-     이 백엔드는 응답이 6~9초로 느리고 간헐적으로 실패한다 — 한 번 실패하면 '불러오는 중…' 에
-     영영 갇히므로 점증 간격으로 다시 묻는다. 끝까지 안 되면 그때만 안내를 띄운다. */
-  function getReg(i) {
+  /* 실시간 평가점수 — todo_list(무인증 읽기, ALL_TASKS 와 동일 엔드포인트)를 독립 호출해 계산한다.
+     허브 렌더 타이밍·ALL_TASKS 정규화 시점과 무관하게 자체완결로 동작시키기 위해 별도 호출을 쓴다. */
+  function getQeval(i) {
     var delays = [0, 1500, 3500, 6000];
     return new Promise(function (rs) { setTimeout(rs, delays[i]); })
       .then(function () {
-        return fetch(REG_API + '?action=reg_scoreboard&period=month', { redirect: 'follow' })
+        return fetch(TODO_API + '?action=todo_list', { redirect: 'follow' })
           .then(function (r) { return r.json(); }).catch(function () { return null; });
       })
       .then(function (j) {
-        if (j && j.ok) return renderReg(j);
-        if (i + 1 < delays.length) return getReg(i + 1);
-        fail('lsReg', '접수 점수판을 불러오지 못했습니다 — 새로고침 해주세요.');
+        if (j && j.ok) return renderQeval(j);
+        if (i + 1 < delays.length) return getQeval(i + 1);
+        fail('lsQeval', '평가점수를 불러오지 못했습니다 — 새로고침 해주세요.');
       });
   }
-  getReg(0);
+  getQeval(0);
 })();
 </script>
 </body>
