@@ -433,6 +433,28 @@ body.printing #printSheet{display:block;background:#fff;color:#0F1E3D;padding:6p
     </div>
   </section>
 
+  <!-- ══ 부서별 손익 (26년 총 지출 분석 라이브 · 2026-08-24 매니저 지시) — 관리자 전용. 직원용(?req=1)은 TABS 오버라이드로 미노출 ══ -->
+  <style>
+  #dpTbl td,#dpSumTbl td{text-align:right;white-space:nowrap}
+  #dpTbl td:first-child,#dpSumTbl td:first-child{text-align:left}
+  #dpTbl tr.dp-cum td{font-weight:800;background:#f6f1e4;border-top:2px solid #a98a52}
+  #dpTbl td.dp-mut,#dpTbl tr.dp-mut td{color:var(--ink-faint);font-style:italic}
+  </style>
+  <section class="panel" data-panel="deptpnl">
+    <div class="card">
+      <h3>부서별 월 손익 <span style="font-size:11px;color:var(--ink-faint)">(「26년 총 지출 분석」 시트 실시간 · 부서 칩 클릭)</span></h3>
+      <div class="desc">영업이익 = <b>소진매출</b> − 인적용역료 − 월관리비 − 월소모품 (소진 기준 · 전사관리는 멤버십 매출 기준). 원본 시트 값을 그대로 표시하며 임의 보정하지 않습니다.</div>
+      <div class="team-chips" id="dpChips"></div>
+      <div class="tbl-wrap" style="margin-top:12px"><table id="dpTbl"></table></div>
+      <div class="notice" id="dpNote">데이터를 불러오는 중…</div>
+    </div>
+    <div class="card">
+      <h3>부서별 누계 영업이익 비교 <span style="font-size:11px;color:var(--ink-faint)" id="dpSumRange"></span></h3>
+      <div class="tbl-wrap"><table id="dpSumTbl"></table></div>
+      <div class="notice">⚠️ 원본 시트 참고: ①G.X는 매출 3열 미기재(비용만 집계 — 마이너스는 매출 미기재 영향) · 3~4월 인적용역료 110원/100원은 원본 이상치(확인 필요) ②진행월 이후 행은 자리표시/부분 데이터가 섞일 수 있어 누계에서 제외 ③강습팀 합계는 매출(6개 프로그램)·비용(G.X 포함) 기준이 달라 참고용 ④출처: GM시트 「2026년도 매출」 ▸ 26년 총 지출 분석 탭 (실시간 · 값 무보정).</div>
+    </div>
+  </section>
+
   </div>
 </main>
 
@@ -607,6 +629,119 @@ async function loadOpsSales(){
     OPS_SALES=arr;OPS_SALES_LIVE=arr.some(function(v){return v!==null;});OPS_SRC="GM시트";
   }catch(e){OPS_SALES=null;OPS_SALES_LIVE=false;}
 }
+
+/* ═══ 부서별 손익 — 「26년 총 지출 분석」 탭(gid 1837105712) gviz 라이브 (2026-08-24 매니저 지시) ═══
+   9개 서브테이블(라벨열 idx1/12/23 × 3블록): 전사관리·강습팀합계·G.X / P.T·필라테스·골프 / 수영·스쿼시·체조&트램폴린.
+   표준 스키마(전사관리 제외 8개) = 당월매출/소진매출/잔여매출/인적용역료/인원/지급율/월관리비/월소모품/총지출율/영업이익
+   — 블록2·3은 시트에 반복 헤더가 없어 위치 기반. 가드: 월별 영업이익=소진−용역료−관리비−소모품 재검산(±2원), 어긋나면 ⚠️ 표시(구조 변경 감지). 원본 값 무보정 원칙. */
+var DEPT_PNL_GVIZ="https://docs.google.com/spreadsheets/d/"+OPS_SHEET+"/gviz/tq?tqx=out:json&gid=1837105712";
+var DP_ORDER=["전사관리","P.T","수영","골프","필라테스","스쿼시","체조&트램폴린","G.X","강습팀 합계"];
+var DP_DATA=null,DP_SEL="전사관리",DP_WARN={};
+function dpName(t){t=String(t||"");
+  // ⚠️ 전사관리 제목이 "관리부&…합계 (28명) + 강습팀 월"이라 '강습' 판정보다 '관리부' 판정이 먼저여야 한다(실측 2026-08-24)
+  if(t.indexOf("관리부")>=0||t.indexOf("운영부")>=0)return"전사관리";
+  if(/P\.?T/i.test(t))return"P.T";if(t.indexOf("필라")>=0)return"필라테스";if(t.indexOf("골프")>=0)return"골프";
+  if(t.indexOf("수영")>=0)return"수영";if(t.indexOf("스쿼시")>=0)return"스쿼시";if(t.indexOf("체조")>=0)return"체조&트램폴린";
+  if(/G\.?X/i.test(t))return"G.X";if(t.indexOf("강습")>=0)return"강습팀 합계";
+  return t.replace(/\s+/g," ").trim().slice(0,10);}
+function dpV(c){return (c&&typeof c.v==="number")?c.v:null;}
+function dpTxt(c){return (c&&c.v!=null)?String(c.v).trim():"";}
+async function loadDeptPnl(){
+  try{
+    var r=await fetch(DEPT_PNL_GVIZ,{cache:"no-store"});var t=await r.text();
+    var json=JSON.parse(t.substring(t.indexOf("{"),t.lastIndexOf("}")+1));
+    var cols=json.table.cols||[],rows=json.table.rows||[],grid=[];
+    var lab=cols.map(function(c){return {v:(c&&c.label)?c.label:null};});
+    if(lab.some(function(c){return c.v&&String(c.v).trim();}))grid.push(lab);
+    rows.forEach(function(rw){grid.push(rw.c||[]);});
+    var mre=/^(1[0-2]|[1-9])월$/;
+    var byCol={}; // 라벨열별 월행 수집 → 연속 런 분할(1월 재시작·행 간격>2 = 새 서브테이블)
+    grid.forEach(function(row,ri){row.forEach(function(c,ci){var s=dpTxt(c);
+      if(mre.test(s)){(byCol[ci]=byCol[ci]||[]).push({r:ri,m:parseInt(s,10)});}});});
+    var depts={};
+    Object.keys(byCol).forEach(function(ck){var c=parseInt(ck,10),list=byCol[ck],run=[];
+      function flush(){if(!run.length)return;
+        var r0=run[0].r,title="";
+        for(var up=1;up<=3&&!title;up++){var rr=grid[r0-up]||[];
+          for(var j=c;j<=c+2;j++){var s=dpTxt(rr[j]);if(s&&s!=="월"&&!mre.test(s)){title=s;break;}}}
+        var m={};run.forEach(function(o){var row=grid[o.r]||[],vals=[];
+          for(var k=1;k<=10;k++)vals.push(row[c+k]);
+          m[o.m]=vals;});
+        var name=dpName(title);
+        depts[name]={col:c,months:m,title:String(title).replace(/\n/g," ")};
+        run=[];}
+      list.forEach(function(o,i){if(i>0&&(o.m<=list[i-1].m||o.r-list[i-1].r>2))flush();run.push(o);});
+      flush();});
+    if(depts["전사관리"]){var hd=grid[0]||[],hc=depts["전사관리"].col,hs=[];
+      for(var k=1;k<=10;k++)hs.push(dpTxt(hd[hc+k]).replace(/\n/g," "));
+      depts["전사관리"].heads=hs;}
+    DP_WARN={};
+    Object.keys(depts).forEach(function(n){if(n==="전사관리")return;var d=depts[n];
+      Object.keys(d.months).forEach(function(mm){var v=d.months[mm];
+        var so=dpV(v[1])||0,yr=dpV(v[3]),mg=dpV(v[6]),sm=dpV(v[7]),op=dpV(v[9]);
+        if(op===null||yr===null||mg===null)return;
+        if(Math.abs((so-yr-mg-(sm||0))-op)>2)DP_WARN[n]=(DP_WARN[n]||[]).concat(mm+"월");});});
+    DP_DATA=depts;
+    renderDeptPnl();
+  }catch(e){var el=document.getElementById("dpNote");if(el)el.textContent="⚠️ 부서별 손익 시트를 불러오지 못했습니다(공유/네트워크 확인). 새로고침 해보세요.";}
+}
+function dpCut(){var m=new Date().getMonth()+1;return Math.max(1,Math.min(12,m-1));}
+function dpFmtPct(v){return (v===null||!isFinite(v))?"—":(v*100).toFixed(1)+"%";}
+function dpCell(v,mut){if(v===null)return '<td class="'+(mut?'dp-mut':'')+'">—</td>';
+  return '<td class="'+((v<0)?'neg':'')+(mut?' dp-mut':'')+'">'+Math.round(v).toLocaleString("ko-KR")+'</td>';}
+function renderDeptPnl(){
+  if(!DP_DATA)return;
+  var chips=document.getElementById("dpChips"),tbl=document.getElementById("dpTbl"),note=document.getElementById("dpNote");
+  if(!chips||!tbl)return;
+  var names=DP_ORDER.filter(function(n){return DP_DATA[n];});
+  Object.keys(DP_DATA).forEach(function(n){if(names.indexOf(n)<0)names.push(n);});
+  chips.innerHTML=names.map(function(n){return '<button class="team-chip'+(n===DP_SEL?' on':'')+'" data-d="'+escapeHtml(n)+'">'+escapeHtml(n)+(n==="강습팀 합계"?" (참고)":"")+'</button>';}).join("");
+  chips.querySelectorAll(".team-chip").forEach(function(b){b.onclick=function(){DP_SEL=b.dataset.d;renderDeptPnl();};});
+  var d=DP_DATA[DP_SEL];if(!d){tbl.innerHTML="";return;}
+  var cut=dpCut(),std=(DP_SEL!=="전사관리");
+  var colIdx,heads;
+  if(std){colIdx=[0,1,3,6,7,9];heads=["당월매출","소진매출","인적용역료","월관리비","월소모품","영업이익"];}
+  else{colIdx=[0,1,2,3,4,6,7,8,9];var srcH=d.heads||[];heads=colIdx.map(function(i){return srcH[i]||("항목"+(i+1));});}
+  var h='<thead><tr><th>월</th>'+heads.map(function(x){return '<th>'+escapeHtml(x)+'</th>';}).join("")+'<th>이익률</th></tr></thead><tbody>';
+  var cum=colIdx.map(function(){return 0;});
+  for(var mm=1;mm<=12;mm++){var v=d.months[mm];if(!v)continue;
+    var vals=colIdx.map(function(i){return dpV(v[i]);});
+    if(vals.every(function(x){return x===null;}))continue;
+    var mut=mm>cut;
+    var rev=std?vals[1]:vals[0],op=vals[vals.length-1];
+    var rate=(rev&&op!==null)?op/rev:null;
+    h+='<tr'+(mut?' class="dp-mut"':'')+'><td>'+mm+'월'+(mut?' ³':'')+'</td>'+vals.map(function(x){return dpCell(x,mut);}).join("")+'<td'+((rate!==null&&rate<0)?' class="neg"':'')+'>'+dpFmtPct(rate)+'</td></tr>';
+    if(!mut)vals.forEach(function(x,i){if(x!==null)cum[i]+=x;});
+  }
+  var crev=std?cum[1]:cum[0],cop=cum[cum.length-1];
+  h+='<tr class="dp-cum"><td>1~'+cut+'월 누계</td>'+cum.map(function(x){return dpCell(x,false);}).join("")+'<td'+((crev&&cop/crev<0)?' class="neg"':'')+'>'+dpFmtPct(crev?cop/crev:null)+'</td></tr></tbody>';
+  tbl.innerHTML=h;
+  var msgs=["누계 = 완결월(전월)까지 · ³ 표시 월 = 진행/자리표시 가능(누계 제외·원본 그대로 표시)"];
+  if(DP_WARN[DP_SEL])msgs.push("⚠️ "+DP_SEL+" "+DP_WARN[DP_SEL].join("·")+" 영업이익이 산식(소진−용역료−관리비−소모품)과 불일치 — 원본 확인 필요");
+  if(DP_SEL==="G.X")msgs.push("⚠️ G.X: 원본에 매출 3열 미기재(비용만) · 3~4월 인적용역료 110원/100원은 원본 이상치(확인 필요)");
+  if(DP_SEL==="강습팀 합계")msgs.push("⚠️ 강습팀 합계: 매출은 6개 프로그램 합·비용은 G.X 포함 — 기준이 달라 참고용");
+  if(DP_SEL==="전사관리")msgs.push("전사관리 이익률 = 영업이익 ÷ 멤버십 매출 · 비용 = 인건비+세금 합계 + 전체 관리비용");
+  if(note)note.innerHTML=msgs.map(escapeHtml).join("<br>");
+  renderDpSum(cut);
+}
+function renderDpSum(cut){
+  var tbl=document.getElementById("dpSumTbl"),rng=document.getElementById("dpSumRange");if(!tbl||!DP_DATA)return;
+  if(rng)rng.textContent="(1~"+cut+"월 누계 · 영업이익 내림차순)";
+  var rows=[];
+  Object.keys(DP_DATA).forEach(function(n){var d=DP_DATA[n],std=(n!=="전사관리");
+    var rev=0,op=0,cost=0,has=false;
+    for(var mm=1;mm<=cut;mm++){var v=d.months[mm];if(!v)continue;
+      var o=dpV(v[9]),rv=std?dpV(v[1]):dpV(v[0]);
+      if(o!==null){op+=o;has=true;}
+      if(rv!==null)rev+=rv;
+      if(std)cost+=(dpV(v[3])||0)+(dpV(v[6])||0)+(dpV(v[7])||0);
+      else cost+=(dpV(v[3])||0)+(dpV(v[8])||0);}
+    if(has)rows.push({n:n,rev:rev,cost:cost,op:op,rate:rev?op/rev:null});});
+  rows.sort(function(a,b){return b.op-a.op;});
+  var h='<thead><tr><th>부서</th><th>매출(소진/멤버십)</th><th>비용(용역료+관리비+소모품)</th><th>영업이익</th><th>이익률</th></tr></thead><tbody>';
+  rows.forEach(function(x){h+='<tr><td>'+escapeHtml(x.n)+(x.n==="강습팀 합계"?" (참고)":"")+'</td>'+dpCell(x.rev,false)+dpCell(x.cost,false)+dpCell(x.op,false)+'<td'+((x.rate!==null&&x.rate<0)?' class="neg"':'')+'>'+dpFmtPct(x.rate)+'</td></tr>';});
+  tbl.innerHTML=h+'</tbody>';
+}
 /* 종목별 매출 라이브(sales_dept) — 월별 「매출 보고」 파일 말일탭을 백엔드가 서버 집계(강사→종목 매핑=인건비마스터, 집계만 반환·PII 없음).
    비블로킹: 성공 시 월별 병합(라이브 값 있는 월=라이브, 없는 월=기존 마스터/폴백 유지) 후 매출 의존 뷰만 재렌더. 운영부는 GM시트 정본 우선 유지. */
 async function loadSalesDept(){
@@ -687,7 +822,7 @@ function aggregate(){
   MEMBER_G=sum(SALES_MEMBER.slice(0,DATA_LAST));SALES_G=sum(salesMonth.slice(0,SALES_LAST));COST_G=LABOR_G+OPER_G+PROC_G+TIME_G;
 }
 
-var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"budget",label:"📊 예산·이상지출"}]; // 구매요청은 직원용(?req=1)으로 분리
+var TABS=[{id:"dash",label:"대시보드"},{id:"sales",label:"매출현황"},{id:"expense",label:"지출현황"},{id:"budget",label:"📊 예산·이상지출"},{id:"deptpnl",label:"📈 부서별 손익"}]; // 구매요청은 직원용(?req=1)으로 분리
 function renderNav(){var nav=document.getElementById("nav");
   nav.innerHTML=TABS.map(function(t,i){return '<button class="tab'+(i?'':' active')+'" data-p="'+t.id+'">'+t.label+'</button>';}).join('');
   nav.querySelectorAll(".tab").forEach(function(b){b.onclick=function(){
@@ -714,6 +849,7 @@ async function startApp(){
   loadOpsSales().then(opsSwapRender);
   loadSalesDept();
   loadLaborTime();
+  loadDeptPnl(); // 부서별 손익(26년 총 지출 분석 gviz 1회·경량) — 백그라운드, 실패해도 타 기능 무영향
   loadProc().then(function(){
     if(PROC_LIVE){aggregate();renderKpi();renderMain();renderExpTbl();renderPeople();renderBudget();}
     updateSyncMeta();
