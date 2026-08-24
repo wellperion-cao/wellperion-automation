@@ -558,5 +558,26 @@
     "staff_message": "",
     "must_finish_on": "",
     "updated_at": "2026-08-24"
+  },
+  {
+    "task_id": "CTO-2026-08-24-디스크-사본이-커밋본보다-옛것-12일간-경고-22번",
+    "clevel": "cto",
+    "title": "[시토] 디스크 사본이 커밋본보다 옛것 — 12일간 경고 22번, 원인은 pull 아님 (GM 지적 2026-08-24)",
+    "status": "PENDING",
+    "priority": "🛳️크루즈",
+    "enqueued_at": "2026-08-24",
+    "from": "coo",
+    "note": "[시우 → 시토 전달 2026-08-24] GM 지적 2026-08-24 — \"이건 계속 반복되는 것 같은데 아닌가?\" 맞다. 반복이다.\n\n■ 반복 실측\n텔레그램 경고 로그에서 세어 보니 2026-08-13 ~ 08-24, 12일 동안 22번 나갔다\n(logs/telegram_sent-*.log 에 \"origin 최신본보다 뒤져\" 로 검색). git_lock.log 에는 27건.\n대부분(status/*.json·worklog·_queue 등)은 다음 세션이 그 파일을 커밋하며 저절로 풀렸다.\n안 풀리는 것만 남아 계속 다시 뜬다.\n\n■ 진짜 원인은 pull 안 함이 아니다\n경고 문구는 \"자동 통합이 한 번도 안 돎\" 이라 pull 문제처럼 읽히는데, 실측해 보니 아니다.\n  3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html — HEAD 3876줄 / origin 3876줄 / 디스크 3600줄\n디스크가 origin 뿐 아니라 **HEAD(이 PC 가 이미 커밋한 내용)보다도 옛것**이다.\n즉 무언가가 옛 전체본을 디스크에 덮어썼다. 덮어쓴 판의 내용을 열어 확인했다 —\n\"라이브 점수판 2단(2026-08-07)\" CSS 가 들어 있다. HEAD 는 그걸 \"실시간 평가점수\"로 교체한\n뒤(커밋 0232b5954)다. 디스크판은 8/7 무렵 옛 사본이 맞고, 살릴 새 내용은 없다.\n\n■ 언제 덮어썼나 — 한 번에 무더기로\n디스크 파일 수정시각이 4개가 **2026-08-18 05:56 로 정확히 같다.** 같은 시각에\n.omc/state/sessions/ 아래 세션 폴더 2개가 새로 생겼다(그 시각 세션 2개 시작).\n같은 시각 되돌아간 파일(수정시각 05:55~05:58 전수):\n  .deploy-todo/업무&결재 현황.js · cfo/finance/매출지출현황.html ·\n  chro/hub/index.html · chro/hub/structure.html · chro/recruiting/golfpartner.html ·\n  chro/recruiting/index.html · coo/리셉션 업무/index.html ·\n  instagram/_실전사례_2주플랜.md · status/drafts/reply_nawool_20260813.md · status/_archive.json\n한 프로세스가 여러 파일을 한꺼번에 옛 시점으로 되돌린 모양이다(체크아웃·복원·동기화 계열 추정).\n업무 현황 SSOT.html 만 08-21 18:46 로 따로다 — 같은 종류인지 별건인지는 확인 못 했다.\n\n■ 지금 위험한 상태 (디스크가 커밋본보다 작은 것 5개 · 총 111KB)\n  39,782 바이트  08-18 05:56  3. 웰페리온 가이드/coo/리셉션 업무/index.html\n  23,291 바이트  08-18 05:56  3. 웰페리온 가이드/chro/hub/index.html\n  20,993 바이트  08-18 05:56  3. 웰페리온 가이드/cfo/finance/매출지출현황.html\n  17,104 바이트  08-21 18:46  3. 웰페리온 가이드/coo/todo/업무 현황 SSOT.html\n  10,069 바이트  08-18 05:56  3. 웰페리온 가이드/chro/hub/structure.html\n어떤 세션이 이 파일들을 담아 커밋하면 그만큼이 그대로 지워진다. 경고 문구가 정확하다.\n(cfo·chro 3개는 나우열M 라인이라 AI 가 손대지 않는 파일 = 아무도 안 닫아서 영원히 남는다.)\n\n■ 시토에게 넘기는 이유\n경고를 내는 장치(scripts/post_commit_push.py _check_remote_drift)가 시토 것이고,\n덮어쓴 원인도 인프라 쪽이다. 시우는 감지·정리까지만 하고 원인 수리는 넘긴다.\n\n■ 부탁\n① 08-18 05:56 에 무엇이 파일을 되돌렸는지 찾아 막아 달라. 막지 않으면 되돌리기만 반복된다.\n② 경고 문구를 고쳐 달라 — 지금은 \"자동 통합이 한 번도 안 돎\" 이라 원인을 pull 로 오해하게 한다.\n   HEAD 보다 옛것인 경우와 origin 보다 옛것인 경우를 갈라 적으면 사람이 바로 판단한다.\n③ 디스크 사본 되돌리기는 작업트리를 바꾸는 일이라 시우가 임의로 하지 않았다(약속 · 파괴적 git 금지).\n   GM 승인 받아 정리하되, 어느 쪽이 맡을지는 시토 판단에 따른다.",
+    "next": "08-18 05:56 에 파일을 되돌린 주체를 찾아 막고, 경고 문구를 HEAD기준·origin기준으로 갈라 적는다",
+    "depends_on": "",
+    "ship_no": 10978,
+    "short_no": 757,
+    "module": "cto-self-health-watch",
+    "audience": "ai",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-08-24"
   }
 ]
