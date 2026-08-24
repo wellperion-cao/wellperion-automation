@@ -1,9 +1,9 @@
 {
   "clevel": "cpo",
   "status": "DONE",
-  "last_task_id": "CPO-2026-08-22-FB-FB260822-125920",
+  "last_task_id": "CPO-2026-08-24-B754",
   "last_commit_sha": null,
-  "last_pushed_at": "2026-08-22T04:06:10Z",
+  "last_pushed_at": "2026-08-24T04:40:02Z",
   "active_tasks": [
     {
       "task_id": "CPO-2026-07-14-LESSON-LEDGER-CONSOLIDATION",
@@ -628,13 +628,21 @@
       "note": "[처리완료 2026-08-22] 동기화 실패는 일시적 GAS 응답 파싱 실패(JSON 아닌 응답 반환)로 발생. 이경연M 컴퓨터에서 '재시도' 클릭 시 GAS 정상이면 자동 해결. 컴퓨터마다 다른 이유는 WriteBuffer 상태가 브라우저별 localStorage 독립 보관(설계대로). 계속 실패 시 '버리기' 후 유상두 회원 데이터 직접 재입력.",
       "updated_at": "2026-08-22T04:06:10Z",
       "blocks": []
+    },
+    {
+      "task_id": "CPO-2026-08-24-B754",
+      "title": "회원관리 동기화 근본수리 B안 — 판독불가 재확인 + 캐시·예열",
+      "status": "DONE",
+      "note": "답을 못 읽은 저장을 실패로 단정하지 않고 시트를 다시 읽어 판정한다. 일치하면 완료, 아니면 재시도(유실 0). 라이브 검증 2갈래 통과·JS오류 0·예열 발사 확인. 커밋 1386c4274·dde28c71b",
+      "updated_at": "2026-08-24T04:40:02Z",
+      "blocks": []
     }
   ],
   "agent": "cpo",
-  "task_id": "CPO-2026-08-22-FB-FB260822-125920",
-  "title": "[처리완료 2026-08-22] 동기화 실패는 일시적 GAS 응답 파싱 실패(JSON 아닌 응답 반환)로 발생. 이경연M 컴퓨터에서 '재시도' 클릭 시 GAS 정상이면 자동 해결. 컴퓨터마다 다른 이유는 WriteBuffer 상태가 브라우저별 localStorage 독립 보관(설계대로). 계속 실패 시 '버리기' 후 유상두 회원 데이터 직접 재입력.",
-  "updated_at": "2026-08-22T04:06:10Z",
-  "artifact_url": "membership.html:13247(응답파싱실패catch)·13297(localStorage)",
+  "task_id": "CPO-2026-08-24-B754",
+  "title": "회원관리 동기화 근본수리 B안 — 판독불가 재확인 + 캐시·예열",
+  "updated_at": "2026-08-24T04:40:02Z",
+  "artifact_url": "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html",
   "commit": "e6ae8888c",
-  "note": "[처리완료 2026-08-22] 동기화 실패는 일시적 GAS 응답 파싱 실패(JSON 아닌 응답 반환)로 발생. 이경연M 컴퓨터에서 '재시도' 클릭 시 GAS 정상이면 자동 해결. 컴퓨터마다 다른 이유는 WriteBuffer 상태가 브라우저별 localStorage 독립 보관(설계대로). 계속 실패 시 '버리기' 후 유상두 회원 데이터 직접 재입력."
+  "note": "답을 못 읽은 저장을 실패로 단정하지 않고 시트를 다시 읽어 판정한다. 일치하면 완료, 아니면 재시도(유실 0). 라이브 검증 2갈래 통과·JS오류 0·예열 발사 확인. 커밋 1386c4274·dde28c71b"
 }
