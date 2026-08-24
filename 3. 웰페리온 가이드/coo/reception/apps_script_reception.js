@@ -2197,6 +2197,48 @@ var LF_STATUS = { POSTED: '게시중', HANDED: '수령완료', DISPOSED: '폐기
 var LF_PHOTO_FOLDER_NAME = 'LF_Photos';       // 공개 VIEW (갤러리용)
 var LF_SIGN_FOLDER_NAME  = 'LF_Signatures';   // 비공개 (수령 서명 = 분쟁 증거)
 
+// ★ Q~V 추가칸 (2026-08-16 에 시트에 손으로 붙인 6칸). 일부러 LF_HEADERS 밖에 둔다 — 두 가지 이유:
+//   ① LF_HEADERS 는 _lfSubmit·_lfHandover 가 위치(index) 기준으로 읽고 쓰는 목록이다. 여기에 칸을
+//      더하면 물리 컬럼 순서와 어긋나는 순간 남의 칸을 덮어쓴다.
+//   ② 공개 응답(lf_gallery·lf_disposal)은 LF_HEADERS 만 읽는다 → 내부메모·주인연락처가 자동으로
+//      공개 경로에서 빠진다. 목록을 분리해 두는 것 자체가 노출 차단이다.
+//   읽기·쓰기 모두 '헤더 이름'으로 칸을 찾는다(공백 무시) — 컬럼을 옮기거나 지워도 안전.
+var LF_EXTRA_HEADERS = [
+  { key: 'ownerName',     label: '주인성함'     },
+  { key: 'ownerContact',  label: '주인연락처'   },
+  { key: 'receiverPhone', label: '수령자연락처' },
+  { key: 'keepLoc',       label: '보관위치'     },
+  { key: 'providedDate',  label: '제공일'       },
+  { key: 'memo',          label: '내부메모'     }
+];
+
+// 시트 1행에서 Q~V 칸의 0-based 위치를 이름으로 찾는다. 시트에 없는 칸은 결과에서 빠진다.
+function _lfExtraCols_(sh) {
+  var out = {};
+  try {
+    var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+                .map(function (x) { return String(x).replace(/\s/g, ''); });
+    LF_EXTRA_HEADERS.forEach(function (h) {
+      var ci = hdr.indexOf(h.label);
+      if (ci >= 0) out[h.key] = ci;
+    });
+  } catch (e) {}
+  return out;
+}
+
+// 한 행의 Q~V 칸을 이름으로 찍는다(위치 기반 아님). 빈 값은 건드리지 않는다 — 기존 값 보존.
+function _lfSetByLabel_(sh, rowNum, values) {
+  try {
+    var cols = _lfExtraCols_(sh);
+    Object.keys(values).forEach(function (k) {
+      var v = values[k];
+      if (v == null || String(v) === '') return;
+      if (cols[k] === undefined) return;
+      sh.getRange(rowNum, cols[k] + 1).setValue(v);
+    });
+  } catch (e) {}
+}
+
 // LF-n 전용 단조증가 순번 (RECEPTION_SEQ 와 별개 번호공간) — LockService 로 동시 등록 충돌 방지
 function _lfNextSeqId_() {
   var lock = LockService.getScriptLock();
@@ -2342,6 +2384,12 @@ function _lfSubmit(body) {
   _set('status', LF_STATUS.POSTED); _set('staff', staff); _set('category', category);
   var newRow = sh.getLastRow() + 1;
   sh.getRange(newRow, 1, 1, row.length).setValues([row]);
+  // ★ 접수 시점에 채워지는 Q~V 칸 = 보관위치·내부메모 두 개 (실무진 신고 FB260820-143647).
+  //   나머지 4칸(주인성함·주인연락처·수령자연락처·제공일)은 수령할 때 정해지므로 _lfHandover 가 채운다.
+  _lfSetByLabel_(sh, newRow, {
+    keepLoc: String(body.storageLoc || body.keepLoc || '').trim(),
+    memo:    String(body.memo || '').trim()
+  });
 
   _vNotifyTelegram(
     '🧳 <b>[습득물 접수]</b> ' + id + '\n' +
@@ -2382,6 +2430,25 @@ function _lfList(params) {
   var sh = _lfGetSheet_();
   _lfAutoDispose_(sh); // read-time sweep: 월코호트 폐기 대상(현재월≥습득월+2) 자동 전환 후 조회
   var rows = _regReadAll(sh, LF_HEADERS);
+  // ★ Q~V 추가칸을 붙여 보낸다 (실무진 신고 FB260820-143647 · 2026-08-24 시우).
+  //   화면(종합접수처_현황.html 960~962행)은 keepLoc·memo·ownerName·ownerContact 를 이미 그리고
+  //   있었는데 lf_list 가 그 칸을 실어 보내지 않아 계속 빈 상태로 보였다. 화면이 아니라 여기가 원인이다.
+  //   _regReadAll 과 같은 범위(2행~마지막)를 같은 순서로 읽으므로 행 인덱스가 그대로 맞는다.
+  var _xCols = _lfExtraCols_(sh);
+  var _xKeys = Object.keys(_xCols);
+  if (_xKeys.length) {
+    var _lastRow = sh.getLastRow();
+    if (_lastRow >= 2) {
+      var _grid = sh.getRange(2, 1, _lastRow - 1, sh.getLastColumn()).getValues();
+      for (var _i = 0; _i < rows.length && _i < _grid.length; _i++) {
+        for (var _k = 0; _k < _xKeys.length; _k++) {
+          var _key = _xKeys[_k], _v = _grid[_i][_xCols[_key]];
+          if (_v instanceof Date) _v = Utilities.formatDate(_v, 'Asia/Seoul', 'yyyy-MM-dd');
+          rows[_i][_key] = _v;
+        }
+      }
+    }
+  }
   var status = String((params && params.status) || '').trim();
   if (status) rows = rows.filter(function (r) { return String(r.status || '') === status; });
   rows.sort(function (a, b) { return String(b.createdAt || '') > String(a.createdAt || '') ? 1 : -1; });
@@ -2428,6 +2495,9 @@ function _lfHandover(body) {
   existing[_lfIdx_('signPurgeAt')]   = purgeStr;
   sh.getRange(rowNum, 1, 1, LF_HEADERS.length).setValues([existing]);
   // Q~V 추가칸(주인성함·주인연락처·수령자연락처·보관위치·제공일·내부메모) — 헤더명으로 찾아 저장(positional 아님·컬럼순서 무관). 2026-08-16.
+  // ponytail: _lfSetByLabel_ 과 같은 일을 하는 블록이다. 2026-08-24 에 합치려 했으나
+  //   truncation-guard 가 "최근 7일 안에 들어온 줄 삭제"로 잡아 되돌렸다(가드 우회 안 함).
+  //   2026-08-23 이후 아무 때나 이 블록을 _lfSetByLabel_(sh, rowNum, {...}) 호출로 바꾸면 된다.
   try {
     var _hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function(x){ return String(x).replace(/\s/g,''); });
     var _setLF = function(name, val){ if(val==null || String(val)==='') return; var ci=_hdr.indexOf(name); if(ci>=0) sh.getRange(rowNum, ci+1).setValue(val); };

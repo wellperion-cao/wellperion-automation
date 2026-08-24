@@ -275,7 +275,9 @@ a { color:var(--accent); text-decoration:none; }
 .modal .mitem .mm{font-size:11.5px;color:var(--dim);}
 .mfield{margin-bottom:13px;}
 .mfield label{display:block;font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.3px;}
-.mfield input,.mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:15px;font-family:inherit;-webkit-appearance:none;appearance:none;}
+/* 글자 16px 고정 (2026-08-24 시우 · 실무진 신고 FB260820-144009) — 태블릿·키오스크 브라우저는
+   입력칸 글자가 16px 보다 작으면 칸을 누를 때 화면을 자동 확대한다. 15px 이하로 되돌리지 말 것. */
+.mfield input,.mfield select{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);padding:12px 13px;border-radius:11px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none;}
 .mfield input:focus,.mfield select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(183,159,138,.18);}
 .sign-wrap{border:1.5px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden;}
 .sign-wrap canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair;}

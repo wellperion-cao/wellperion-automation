@@ -78,7 +78,10 @@ label.fl .opt{font-size:12px;font-weight:500;color:var(--dim);margin-left:4px;te
 .fl-help{font-size:12px;color:var(--dim);margin-top:7px;line-height:1.6}
 input[type=text],input[type=datetime-local],textarea,select{
   width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--text);
-  padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;line-height:1.5;-webkit-appearance:none;appearance:none
+  /* 글자 16px 고정 (2026-08-24 시우 · 실무진 신고 FB260820-144009 "키오스크 화면이 저절로 확대된다").
+     모바일·태블릿 브라우저는 입력칸 글자가 16px 보다 작으면 칸을 누를 때 화면을 자동 확대한다.
+     15px 이하로 되돌리지 말 것. */
+  padding:13px 14px;border-radius:12px;font-size:16px;font-family:inherit;line-height:1.5;-webkit-appearance:none;appearance:none
 }
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(176,141,87,.09)}
 textarea{min-height:90px;resize:vertical}
@@ -179,6 +182,18 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
         <label class="fl" for="f_staff">접수 직원 <span class="opt" style="color:#c8756f;font-weight:800">*필수</span></label>
         <input type="text" id="f_staff" placeholder="접수한 직원 성함 (예: 리셉션 김OO)" autocomplete="off" required>
       </div>
+      <!-- 보관위치·내부메모 (2026-08-24 시우 · 실무진 요청 FB260820-143647) — 현황 보드판 카드에 그대로 뜬다.
+           직원 화면 전용이며 공개 갤러리에는 나가지 않는다. WP 블록(wp_lost_found_register_block.html)과 같은 내용. -->
+      <div class="field">
+        <label class="fl" for="f_storageLoc">보관 위치 <span class="opt">(선택)</span></label>
+        <input type="text" id="f_storageLoc" placeholder="예: 리셉션 보관함 2번 / 사무실 캐비닛" autocomplete="off">
+        <div class="fl-help">여기 적어 두면 현황 보드판에서 바로 보여 물건을 찾으러 다니지 않아도 됩니다.</div>
+      </div>
+      <div class="field">
+        <label class="fl" for="f_memo">내부 메모 <span class="opt">(선택)</span></label>
+        <textarea id="f_memo" placeholder="직원끼리만 보는 메모 (예: 지갑 안 현금 확인 안 함, 락커 12번 앞에서 습득)"></textarea>
+        <div class="fl-help">회원에게는 보이지 않습니다. 직원 현황 화면에만 나옵니다.</div>
+      </div>
     </div>
     <div class="submit-wrap">
       <button class="submit" id="submitBtn" type="button">🧳 습득물 접수하기</button>
@@ -244,7 +259,8 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
     var btn=this; btn.disabled=true; btn.textContent='등록 중…';
     var payload={ action:'lf_submit', t:RECEPTION_SUBMIT_TOKEN,
       foundWhen:$('f_foundWhen').value.trim(), foundLoc:foundLoc, itemDesc:itemDesc,
-      category:$('f_category').value, staff:staffName, photo:photoData, fileName:photoName, mimeType:photoMime };
+      category:$('f_category').value, staff:staffName, photo:photoData, fileName:photoName, mimeType:photoMime,
+      storageLoc:$('f_storageLoc').value.trim(), memo:$('f_memo').value.trim() };
     fetch(RECEPTION_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
       .then(function(res){
@@ -255,7 +271,7 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
   });
   function resetForm(){
     photoData=''; photoName=''; $('f_photo').value=''; $('f_preview').style.display='none';
-    $('f_itemDesc').value=''; $('f_staff').value='';
+    $('f_itemDesc').value=''; $('f_staff').value=''; $('f_storageLoc').value=''; $('f_memo').value='';
     var btn=$('submitBtn'); btn.disabled=false; btn.textContent='🧳 습득물 접수하기';
   }
 })();
