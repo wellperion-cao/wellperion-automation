@@ -3,12 +3,29 @@
 <head>
 <meta charset="UTF-8"><link rel="icon" type="image/png" href="/wellperion-automation/wellperion_favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- ★새로고침이 먹게 — 브라우저가 이 화면을 옛 상태로 붙들지 않도록 (배754 · 2026-08-24).
-     실무진이 F5 를 눌러도 며칠 전 화면이 그대로이던 원인 중 하나다(이 페이지엔 캐시 표시가 0개였다).
-     ▸한계 정직 표기: 이건 브라우저 쪽만 푼다. 배포 서버(GitHub Pages)가 주는 캐시 시간까지는 못 지운다. -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+<!-- ★옛 화면이 붙드는 문제 — meta 로는 안 된다는 걸 실측하고 방식을 바꿨다 (배754 · 2026-08-24).
+     실측(CDP · 같은 날): 배포 서버(GitHub Pages)가 Cache-Control: max-age=600 을 강제로 붙인다.
+       · F5·새로고침 버튼      → fromDiskCache=false (네트워크로 나간다. 새로고침은 먹는다)
+       · 북마크·링크로 재진입  → fromDiskCache=true  (10분간 옛 화면 그대로)
+     처음엔 <meta http-equiv="Cache-Control"> 3줄을 넣었는데, 그걸 넣은 채로 재봐도 재진입은
+     여전히 디스크 캐시였다 — 브라우저가 HTML meta 의 캐시 지시를 따르지 않는다. 안 먹는 줄을
+     남기면 다음 사람이 '이미 처리됨'으로 읽는다(약속 L21) → 지우고 아래 방식으로 바꿨다. -->
+<script>
+/* 다음 번 진입을 최신으로 만든다 — 지금 이 화면을 건드리지 않는다.
+   브라우저에게 이 주소를 캐시 무시하고 다시 받아 두라고 시킨다(cache:'reload'). 그러면 디스크
+   캐시가 그 자리에서 최신으로 갈리므로, 다음에 북마크로 들어와도 10분을 기다리지 않는다.
+   ▸받은 내용은 쓰지 않는다. 화면을 자동으로 새로 띄우지도 않는다(보던 화면이 갑자기 튀지 않게).
+   ▸그래서 남는 한계: 고친 직후 '첫' 진입 한 번은 여전히 옛 화면일 수 있다. 그때는 F5 가 답이다.
+   ▸백그라운드 1회뿐 · 실패해도 조용히 넘어간다 · 새 파일·새 화면 0. */
+(function _refreshDiskCache(){
+  try {
+    if (!window.fetch) return;
+    setTimeout(function(){
+      fetch(location.pathname, { cache: 'reload', credentials: 'same-origin' }).catch(function(){});
+    }, 4000);   // 첫 화면 그리기·데이터 조회가 끝난 뒤에 — 진입 속도를 건드리지 않는다
+  } catch (e) {}
+})();
+</script>
 <title>웰페리온 멤버십 회원 관리 — AI CPO</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
