@@ -2837,6 +2837,37 @@ table.op-t td b{font-size:15px}
   </div>
 </div>
 
+<!-- ══ 강습 문의 회원 상세 카드 — 성함 클릭 팝업 (FB260824-193719 김태엽) ══ -->
+<div class="consult-overlay" id="lessonMemberCardOverlay" onclick="if(event.target===this)_lessonCloseMemberCard()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind" id="lmcKind" style="background:var(--teal-bg);color:var(--teal);border:1px solid rgba(78,196,196,0.3)">강습 문의</span>
+      <span class="consult-modal-title">회원 상세</span>
+    </div>
+    <div style="text-align:center;margin:14px 0 10px">
+      <div id="lmcAvatarEl" style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:50%;background:var(--teal-bg);color:var(--teal);font-size:20px;font-weight:800;border:2px solid rgba(78,196,196,0.4)"></div>
+    </div>
+    <div class="consult-row"><span class="ck">성함</span><span class="cv" id="lmcName">—</span></div>
+    <div class="consult-row"><span class="ck">연락처</span><span class="cv" id="lmcPhone">—</span></div>
+    <div class="consult-row" id="lmcAgeRow"><span class="ck">나이</span><span class="cv" id="lmcAge">—</span></div>
+    <div class="consult-field-label" style="margin-top:12px">강습 문의</div>
+    <div class="consult-row"><span class="ck">종목</span><span class="cv" id="lmcSport">—</span></div>
+    <div class="consult-row"><span class="ck">문의 내용</span><span class="cv" id="lmcNote" style="white-space:pre-wrap;word-break:break-word;max-height:80px;overflow-y:auto">—</span></div>
+    <div class="consult-row" id="lmcWishRow"><span class="ck">희망 요일·시간</span><span class="cv" id="lmcWish">—</span></div>
+    <div class="consult-row"><span class="ck">진행 상태</span><span class="cv" id="lmcStatus">—</span></div>
+    <div id="lmcMemberSection" style="display:none">
+      <div class="consult-field-label" style="margin-top:12px">멤버십 현황 <span style="font-size:10px;font-weight:700;color:var(--teal)">✅ 회원 매칭</span></div>
+      <div id="lmcMemberBody"></div>
+    </div>
+    <div id="lmcNoMemberSection" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:12px;color:var(--dim)">
+      💡 멤버십 회원 미매칭 — 아직 등록 전이거나 연락처 불일치
+    </div>
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="_lessonCloseMemberCard()">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ 가이드 문서 모달 (회원관리.html에서 이식 — 운영원칙·정기루틴·이탈대응·이탈현황) 2026-06-26 시포 통합 ══ -->
 <div class="gdoc-overlay" id="gdocOverlay" onclick="if(event.target===this)closeGdoc()">
   <div class="gdoc-modal" role="dialog" aria-modal="true">
@@ -5873,7 +5904,7 @@ function _lessonRowHtml(t, r, sportKey, sportLabel, isFirstLine, isMultiLine) {
   return '<tr data-row-index="' + r.rowIndex + '">' +
     _lessonInqDateCell(r) +
     // 나이 배지 — 성인·유소년 모두 표시(기존 유소년 전용 조건 제거, 값 있으면 노출). 2026-07-21 시포·GM.
-    '<td class="left lesson-inq-cell-name" style="font-weight:700' + (isFirstLine === false ? ';color:var(--dim)' : '') + '" title="' + esc(r.name || '') + '">' + (isFirstLine === false ? '<span title="다종목 같은 문의" style="color:var(--dim);font-size:10px;margin-right:2px">└</span>' : '') + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
+    '<td class="left lesson-inq-cell-name" style="font-weight:700' + (isFirstLine === false ? ';color:var(--dim)' : ';cursor:pointer') + '" onclick="_lessonOpenMemberCard(\'' + t + '\',' + r.rowIndex + ')" title="' + esc(r.name || '') + '">' + (isFirstLine === false ? '<span title="다종목 같은 문의" style="color:var(--dim);font-size:10px;margin-right:2px">└</span>' : '') + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
     // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 재문의 배지가 있으면 문의내용 위 자기 줄로 먼저 표시(성함 칸에서 이동, 2026-07-22). 길면 title 툴팁·빈값 '—'. 이전 문의 요약은 아래(2026-07-24).
@@ -11392,6 +11423,64 @@ function openRepeatInquiryModal(rowIndex) {
 }
 function closeRepeatInquiryModal() {
   document.getElementById('repeatInquiryOverlay').classList.remove('open');
+}
+
+// 강습 문의 회원 상세 카드 (FB260824-193719 김태엽)
+function _lessonOpenMemberCard(t, rowIdx) {
+  var st = _lessonState[t] || {};
+  var r = (st.rows || []).find(function(x){ return x.rowIndex == rowIdx; });
+  if (!r) return;
+  var phoneK = _unifiedHeaderKey(_activeHeaders, /휴대폰|연락처|전화/);
+  document.getElementById('lmcAvatarEl').textContent = String(r.name || '?').trim().slice(0, 2);
+  document.getElementById('lmcKind').textContent = t === 'youth' ? '유소년 강습' : '성인 강습';
+  document.getElementById('lmcName').textContent = r.name || '—';
+  document.getElementById('lmcPhone').textContent = r.phone || '—';
+  var age = String(r.age || '').trim();
+  document.getElementById('lmcAge').textContent = age || '미기재';
+  document.getElementById('lmcAgeRow').style.display = age ? '' : 'none';
+  document.getElementById('lmcSport').textContent = r.sport ? (_lessonSportDisplay(r.sport, t === 'youth') || r.sport) : '—';
+  document.getElementById('lmcNote').textContent = String(r.note || '').trim() || '—';
+  var wish = String(r.wishTime || '').trim();
+  document.getElementById('lmcWish').textContent = wish || '—';
+  document.getElementById('lmcWishRow').style.display = wish ? '' : 'none';
+  document.getElementById('lmcStatus').textContent = String(r.status || '').trim() || '—';
+  var phone = String(r.phone || '').replace(/\D/g, '');
+  var member = null;
+  if (phone && _activeRows && _activeRows.length) {
+    member = _activeRows.find(function(m){
+      var mp = String((phoneK && m[phoneK]) || m['휴대폰 번호'] || m['휴대폰'] || '').replace(/\D/g, '');
+      return mp && mp === phone;
+    });
+  }
+  var memSec = document.getElementById('lmcMemberSection');
+  var noMemSec = document.getElementById('lmcNoMemberSection');
+  if (member) {
+    var progKey = _capCol(_activeHeaders, '수강반종목명');
+    var startKey = _capCol(_activeHeaders, '시작일자');
+    var endKey = _capCol(_activeHeaders, '종료일자');
+    var remKey = _capCol(_activeHeaders, '잔여일');
+    var clsKey = _capCol(_activeHeaders, '등록분류') || REG_CLASS_COL;
+    var prog = progKey ? String(member[progKey] || '').replace(/★/g, '').replace(/\s*▶\s*\d+개월\s*$/, '').trim() : '';
+    var cls  = String(member[clsKey] || '').trim();
+    var sd   = startKey ? String(member[startKey] || '').trim() : '';
+    var ed   = endKey   ? String(member[endKey]   || '').trim() : '';
+    var rem  = remKey   ? String(member[remKey]   || '').trim() : '';
+    document.getElementById('lmcMemberBody').innerHTML =
+      '<div class="consult-row"><span class="ck">등록 종목</span><span class="cv">' + esc(prog || '—') + '</span></div>' +
+      '<div class="consult-row"><span class="ck">등록 분류</span><span class="cv">' + esc(cls || '—') + '</span></div>' +
+      (sd ? '<div class="consult-row"><span class="ck">시작일자</span><span class="cv">' + esc(sd) + '</span></div>' : '') +
+      (ed ? '<div class="consult-row"><span class="ck">종료일자</span><span class="cv">' + esc(ed) + '</span></div>' : '') +
+      (rem ? '<div class="consult-row"><span class="ck">잔여일</span><span class="cv">' + esc(rem) + '일</span></div>' : '');
+    memSec.style.display = '';
+    noMemSec.style.display = 'none';
+  } else {
+    memSec.style.display = 'none';
+    noMemSec.style.display = _activeLoaded ? '' : 'none';
+  }
+  document.getElementById('lessonMemberCardOverlay').classList.add('open');
+}
+function _lessonCloseMemberCard() {
+  document.getElementById('lessonMemberCardOverlay').classList.remove('open');
 }
 
 function _resFillTimeOptions(sel, cur) {
