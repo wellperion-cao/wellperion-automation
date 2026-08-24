@@ -75,8 +75,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    통일하면 같은 결과). 좁은 화면은 1열로 자연 폴백. */
 /* minmax(0,1fr) 필수 — 그냥 1fr이면 트랙 자동 최소폭이 내용 크기(auto)라 좁은 화면에서
    행이 트랙을 뚫고 넘쳐버린다(2026-08-24 로컬 프리뷰로 발견한 그리드 블로우아웃). */
-.ls-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px 14px;align-items:start}
-@media(max-width:480px){.ls-body{grid-template-columns:minmax(0,1fr)}}
+.ls-body{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px 14px;align-items:start}
+/* 2열 사이 옅은 점선 구분선(2026-08-24 매니저 피드백) — 두 트랙이 항상 동폭(1fr 1fr)이라
+   좌우 50% 지점이 곧 두 칼럼 사이 간격의 정중앙. 기존 임정은M 상담 행 구분선과 같은
+   var(--border) 톤으로 통일해 시선을 뺏지 않는다. 1열 폴백 폭에서는 숨김. */
+.ls-body::after{content:'';position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed var(--border);pointer-events:none}
+@media(max-width:480px){.ls-body{grid-template-columns:minmax(0,1fr)}.ls-body::after{display:none}}
 .ls-dim{font-size:13px;color:var(--dim)}
 /* 특수 행(게이트 미달·임정은 별도기준·임정은M 상담) — 표 칼럼에 안 맞는 문장형이라 2열을 가로질러
    기존 인라인 방식 그대로 둔다. */
