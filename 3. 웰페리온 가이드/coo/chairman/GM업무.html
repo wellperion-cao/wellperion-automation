@@ -290,11 +290,11 @@
            (GM 지시 2026-08-24 "토글제목칸에 변경 저장 왼쪽에 버튼 하나 더"). 셋 중 A3 가로만 남긴다 —
            420mm 폭이라 2열 카드 그리드가 세로보다 덜 잘린다. 함수(printA3)는 그대로, 자리·개수만 줄였다. -->
       <button type="button" class="sec-act" id="gm-a3-btn" onclick="event.stopPropagation(); printA3('landscape');">🖨 전체 지도</button>
-      <!-- ① 할 일 체크 저장 — 체크마다 공용 체크보드(CHECK_GAS)에 즉시 저장되어 새로고침해도 남는다
-           (GM 지적 2026-08-07 "체크하고 새로고침하면 사라짐"). 「변경 저장」 버튼은 그 위에 정본
-           progress_note·진척률까지 커밋하는 별도 단계(GM PIN 필요, GM 2026-08-06 지시 그대로 유지) —
-           저장 경로는 월간운영계획.html window._planSave() 방식 그대로(신규 API 없음, prompt+commit_file). -->
-      <button type="button" class="sec-act" id="gm-save-btn" disabled onclick="event.stopPropagation(); window.gmSaveChecks();">변경 저장</button>
+      <!-- 「변경 저장」 버튼은 뺐다(GM 지시 2026-08-24 "필요없는 것 같고"). 할 일 체크는 여전히
+           클릭 즉시 공용 체크보드(CHECK_GAS)에 저장되어 새로고침해도 남는다 — 이 화면의 편집(체크)
+           자체는 그대로 살아 있다. 빠진 건 정본(monthly_ops_plan.json progress_note·progress%)
+           커밋 단계뿐(GM PIN 필요하던 그 단계) — 월간운영계획.html 등 다른 화면의 진척률은 이제
+           이 체크로 자동 반영되지 않는다. -->
       <span class="sec-act rnote" id="gm-chk-save-msg" style="border:none;padding:0;margin-left:0;"></span></summary>
     <div class="sec-body">
       <!-- ★ 분류 기준 명시(GM 2026-08-08 "섞인 느낌" 지적) — 위 「경영 보고건」과 소스·기준이 다르다는 걸
@@ -354,15 +354,21 @@
   }
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
-  // ── A3 인쇄 (GM 지시 2026-08-07 · 버튼 1개로 축소 2026-08-24) ──
-  // 접힌 <details> 강제 오픈은 beforeprint/afterprint 로 건다 — 버튼 클릭 시점이 아니라 실제
-  // 인쇄가 시작되는 시점(브라우저가 beforeprint 를 쏘는 순간)에 열어야, 그 사이 비동기로 늦게
-  // 그려진 GM 업무 카드(readPlan fetch 응답 지연)도 놓치지 않는다. window.print() 호출 없이
-  // 사람이 Ctrl+P 로 직접 인쇄해도 동일하게 펼쳐진다.
+  // ── A3 인쇄 (GM 지시 2026-08-07 · 버튼 1개 「전체 지도」로 축소 2026-08-24) ──
+  // 접힌 <details class="sec"> 3개(경영 보고건·GM 진행건·완료건) 강제 오픈은 beforeprint/afterprint 로
+  // 건다 — 버튼 클릭 시점이 아니라 실제 인쇄가 시작되는 시점(브라우저가 beforeprint 를 쏘는 순간)에
+  // 열어야, 그 사이 비동기로 늦게 그려진 GM 업무 카드(readPlan fetch 응답 지연)도 놓치지 않는다.
+  // window.print() 호출 없이 사람이 Ctrl+P 로 직접 인쇄해도 동일하게 펼쳐진다.
+  // ★선택자를 'details' → 'details.sec' 로 좁혔다(GM 지적 2026-08-24 "전체지도 누르면 이상한것 같아").
+  // 원인 실측: 예전 선택자는 각 카드 안의 「내용 전체」 접힘(.fold, 무클래스 details)까지 전부 강제
+  // 오픈해 18개 카드의 진행 이력 전문이 통째로 펼쳐졌다 — A3 가로 인쇄 시 44페이지(그중 다수가 텍스트만
+  // 빽빽하거나 마지막 장은 거의 공백)로 쏟아져 "지도"(요약)가 아니라 "전문"이 나왔다. 상위 섹션 3개만
+  // 펴면 카드 제목·상태·요약(lead)까지만 찍혀 개요에 맞고, 페이지 수도 크게 준다. 개별 카드를 화면에서
+  // 펼친 채로 인쇄하면 그 카드만 전문이 찍히는 건 그대로(수동 확장은 안 건드림).
   var a3FoldSaved = null;
   window.addEventListener('beforeprint', function () {
     a3FoldSaved = [];
-    document.querySelectorAll('details').forEach(function (d) { a3FoldSaved.push([d, d.open]); d.open = true; });
+    document.querySelectorAll('details.sec').forEach(function (d) { a3FoldSaved.push([d, d.open]); d.open = true; });
   });
   window.addEventListener('afterprint', function () {
     if (!a3FoldSaved) return;
@@ -515,9 +521,8 @@
   var elGmDoneCnt = document.getElementById('gm-done-cnt');
   var elGmDoneGrid = document.getElementById('gm-done-grid');
   var elGmDoneSum = document.getElementById('gm-done-sum-body');
-  // ① 할 일 체크 상태 — gmNoteLines[목표id] = progress_note 줄 배열(체크하면 이 배열만 바뀐다).
-  // dirtyIds = 아직 저장 안 한 목표id 모음.
-  var gmNoteLines = {}, dirtyIds = {};
+  // ① 할 일 체크 상태 — gmNoteLines[목표id] = progress_note 줄 배열(체크하면 이 배열만 바뀐다·화면 표시용).
+  var gmNoteLines = {};
 
   // 카드 하나 그리기 — 「진행건」·「완료건」 두 토글이 같은 카드 모양을 그대로 재사용한다(복제 없음).
   function cardHtml(it, i) {
@@ -722,7 +727,9 @@
     var b = card.querySelector('.chkcnt'); if (b) b.textContent = cntTxt;
   }
   // ① 체크박스 클릭 — gmNoteLines[id]와 화면 숫자를 즉시 갱신하고, 공용 체크보드에도 바로 저장한다
-  // (saveCheckImmediate — 새로고침 방어). progress_note 정본 커밋은 여전히 「변경 저장」에서만.
+  // (saveCheckImmediate — 새로고침 방어). 이게 이 화면 체크의 유일한 저장 경로다(2026-08-24 「변경
+  // 저장」 버튼·정본 commit 단계 제거 — GM "필요없는 것 같고"). monthly_ops_plan.json 의
+  // progress_note·progress% 는 이제 이 체크로 자동 갱신되지 않는다.
   elGmGrid.addEventListener('change', function (e) {
     var cb = e.target.closest ? e.target.closest('.gm-chk') : null;
     if (!cb) return;
@@ -730,69 +737,13 @@
     var idx = Number(cb.getAttribute('data-idx'));
     var lines = gmNoteLines[id];
     if (!lines || lines[idx] === undefined) return;
-    var m = /^(\s*)([\u25A1\u2611])(.*)$/.exec(lines[idx]);
+    var m = /^(\s*)([□☑])(.*)$/.exec(lines[idx]);
     if (!m) return;
     var text = m[3].trim();
-    lines[idx] = m[1] + (cb.checked ? '\u2611' : '\u25A1') + m[3];
-    dirtyIds[id] = true;
+    lines[idx] = m[1] + (cb.checked ? '☑' : '□') + m[3];
     refreshCardProgress(id);
-    var saveBtn = document.getElementById('gm-save-btn');
-    if (saveBtn) saveBtn.disabled = false;
-    saveCheckImmediate(id, idx, text, cb.checked); // \u2605 \uC0C8\uB85C\uACE0\uCE68\uC5D0\uB3C4 \uC0B4\uC544\uB0A8\uAC8C \uC989\uC2DC \uACF5\uC6A9 \uC800\uC7A5(GM \uC9C0\uC801 2026-08-07)
+    saveCheckImmediate(id, idx, text, cb.checked); // 새로고침에도 살아남게 즉시 공용 저장(GM 지적 2026-08-07)
   });
-
-  // 「변경 저장」 — 월간운영계획.html window._planSave() 방식 그대로 재사용(prompt+commit_file, 새 API 없음).
-  // 저장 직전 최신 정본을 다시 읽어 그 위에 체크만 얹는다 — 통째로 덮어써 남의 편집을 날리지 않는다(GM 지시).
-  window.gmSaveChecks = function () {
-    var ids = Object.keys(dirtyIds);
-    if (!ids.length) return;
-    var pin = prompt('변경 저장 — GM 비밀번호를 입력하세요:');
-    if (pin === null || pin === '') return;
-    var btn = document.getElementById('gm-save-btn');
-    if (btn) { btn.textContent = '저장 중…'; btn.disabled = true; }
-    var monthKey = now.getFullYear() + '-' + pad2(now.getMonth() + 1);
-    var todayStr = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
-    readPlan().then(function (freshPlan) {
-      var month = freshPlan && freshPlan.months && freshPlan.months[monthKey];
-      if (!month) throw new Error('이번 달 데이터를 찾지 못했습니다');
-      ids.forEach(function (id) {
-        var obj = (month.objectives || []).filter(function (o) { return o.id === id; })[0];
-        if (!obj || !gmNoteLines[id]) return;
-        var newNote = gmNoteLines[id].join('\n');
-        obj.progress_note = newNote;
-        // ① 진척률 자동 반영 — 체크 항목이 있는 목표만. 체크 항목 없는 목표는 손대지 않는다(GM 지시).
-        var todos = extractTodos(newNote);
-        if (todos.length) {
-          var done = todos.filter(function (t) { return t.checked; }).length;
-          obj.progress = Math.round(done / todos.length * 100);
-          obj.honesty = { level: 'basis', label: '🧮 근거계산', basis: '할 일 체크 ' + done + '/' + todos.length, at: todayStr };
-        }
-      });
-      freshPlan.updated_at = todayStr;
-      return fetch(GAS_URL, {
-        method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'commit_file', path: PLAN_PATH, content: JSON.stringify(freshPlan, null, 2),
-          message: '[GM 업무] 할 일 체크 갱신 ' + todayStr, key: pin
-        })
-      }).then(function (r) { return r.json(); });
-    }).then(function (res) {
-      if (res && res.ok) {
-        alert('저장 완료. (커밋: ' + ((res.commit || '') + '').slice(0, 7) + ')');
-        dirtyIds = {};
-        readPlan().then(function (plan) {
-          renderGm(window.WellperionGmDirect.extract(plan, monthKey));
-          var b2 = document.getElementById('gm-save-btn'); if (b2) { b2.textContent = '변경 저장'; b2.disabled = true; }
-        }).catch(function () { renderGm(null); });
-      } else {
-        alert('저장 실패: ' + ((res && res.error) || '알 수 없는 오류'));
-        if (btn) { btn.textContent = '변경 저장'; btn.disabled = false; }
-      }
-    }).catch(function (e) {
-      alert('저장 오류: ' + e.message);
-      if (btn) { btn.textContent = '변경 저장'; btn.disabled = false; }
-    });
-  };
 
   /* #gm-{id} 로 들어오면 그 카드로 가서 접힌 내용을 펴 준다 — '보러 왔는데 접혀 있음'을 막는다. */
   function focusHashCard() {
