@@ -760,6 +760,8 @@ function renderDpSum(cut){
    ⚠️ 강사별 매출은 당월(판매) 기준 — 팀 손익표(소진 기준)와 산식이 다름을 화면에 명시. 관리비 1/N = 그 달 지급액>0 강사 수. */
 var DP_I_SALES={},DP_I_STATE="idle",DP_IMON="cum";
 var DP_TEAM2LAB={"P.T":"P.T","수영":"수영","골프":"골프","필라테스":"필라테스","스쿼시":"스쿼시","체조&트램폴린":"체조&트램"};
+var DP_I_EXC={"이정한":3}; // 강사명(nkey): 이 월부터 집계 제외 — 근무 종료 후 원장 잔재 차단(매니저 지시 2026-08-24 "P.T 이정한 3월부터 근무 안 함"). 원장 자체는 무수정.
+function dpExc(name,m){var f=DP_I_EXC[dpNkey(name)];return !!(f&&m>=f);}
 function dpNkey(s){return String(s==null?"":s).replace(/\s+/g,"").replace(/프로$/,"");}
 async function loadDeptInstr(){
   if(DP_I_STATE!=="idle")return;DP_I_STATE="loading";
@@ -793,11 +795,12 @@ function renderDeptInstr(){
   Object.keys(keys).forEach(function(k){
     var sales=0,pay=0,mgmt=0;
     months.forEach(function(m4){
+      if(dpExc(keys[k],m4))return; // 근무 종료 이후 월 제외(원장 잔재 차단)
       var s=(DP_I_SALES[m4]&&DP_I_SALES[m4][k]&&DP_I_SALES[m4][k].team===lab)?DP_I_SALES[m4][k].val:0;
       var p=payMap[k]?(payMap[k].d[m4-1]||0):0;
       sales+=s;pay+=p;
       if(p>0){var v=d.months[m4]||[];var mg=(dpV(v[6])||0)+(dpV(v[7])||0);
-        var n=0;Object.keys(payMap).forEach(function(k2){if((payMap[k2].d[m4-1]||0)>0)n++;});
+        var n=0;Object.keys(payMap).forEach(function(k2){if((payMap[k2].d[m4-1]||0)>0&&!dpExc(payMap[k2].name,m4))n++;});
         if(n>0)mgmt+=mg/n;}
     });
     if(sales===0&&pay===0)return;
@@ -812,7 +815,7 @@ function renderDeptInstr(){
   var tnet=ts-tp-tm;
   h+='<tr class="dp-cum"><td>합계</td>'+dpCell(ts,false)+dpCell(tp,false)+'<td>'+dpFmtPct(ts?tp/ts:null)+'</td>'+dpCell(tm,false)+dpCell(tnet,false)+'<td'+((ts&&tnet/ts<0)?' class="neg"':'')+'>'+dpFmtPct(ts?tnet/ts:null)+'</td></tr></tbody>';
   tbl.innerHTML=h;
-  if(note)note.textContent="⚠️ 강사별 매출 = 당월(판매) 기준(매출보고 강사별 서버집계) — 팀 손익표(소진 기준)와 산식이 달라 합계가 팀 표와 다를 수 있습니다. 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 손익기여 = 매출 − 인건비 − 관리비배분 · 이익률 = 손익기여 ÷ 매출.";
+  if(note)note.textContent="⚠️ 강사별 매출 = 당월(판매) 기준(매출보고 강사별 서버집계) — 팀 손익표(소진 기준)와 산식이 달라 합계가 팀 표와 다를 수 있습니다. 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 손익기여 = 매출 − 인건비 − 관리비배분 · 이익률 = 손익기여 ÷ 매출."+(DP_SEL==="P.T"?" · 이정한은 3월부터 근무 종료 — 3월 이후 기록 집계 제외(매니저 지시).":"");
 }
 /* ── A3 인쇄 (매니저 지시 2026-08-24) — 현재 선택된 부서·월 상태를 그대로 정리해 인쇄.
    완료탭 선택출력과 동일한 #printSheet+body.printing 구조 재사용. @page A3 가로는 임시 <style>로 주입 후 afterprint 제거(기존 A4 인쇄 플로우 무간섭). */
