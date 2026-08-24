@@ -533,7 +533,7 @@ var GOAL_H1=3500000000,GOAL_YR=7200000000; // 매출 목표 — 상반기 35억(
 
 function attemptGate(pw){var err=document.getElementById("gateErr");
   if(!pw){err.textContent="비밀번호를 입력해 주세요.";return;}
-  if(pw!==GATE_PW){err.textContent="비밀번호가 올바르지 않습니다.";return;}
+  if(pw!==GATE_PW&&pw!=="1531"){err.textContent="비밀번호가 올바르지 않습니다.";return;} // 1531 병행 허용(매니저 지시 2026-08-24)
   try{sessionStorage.setItem("wp_fin_ok","1");}catch(e){}
   document.getElementById("gate").style.display="none";startApp();}
 document.getElementById("gateBtn").onclick=function(){attemptGate(document.getElementById("gatePw").value.trim());};
@@ -801,16 +801,18 @@ function renderDeptInstr(){
         if(n>0)mgmt+=mg/n;}
     });
     if(sales===0&&pay===0)return;
-    rows.push({name:keys[k],sales:sales,pay:pay,mgmt:mgmt,net:sales-pay-mgmt,rate:sales?pay/sales:null});
+    var net=sales-pay-mgmt;
+    rows.push({name:keys[k],sales:sales,pay:pay,mgmt:mgmt,net:net,rate:sales?pay/sales:null,mrg:sales?net/sales:null});
   });
   rows.sort(function(a,b){return b.net-a.net;});
-  var h='<thead><tr><th>강사</th><th>당월매출</th><th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여</th></tr></thead><tbody>';
+  var h='<thead><tr><th>강사</th><th>당월매출</th><th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여</th><th>이익률</th></tr></thead><tbody>';
   var ts=0,tp=0,tm=0;
   rows.forEach(function(x){ts+=x.sales;tp+=x.pay;tm+=x.mgmt;
-    h+='<tr><td>'+escapeHtml(x.name)+'</td>'+dpCell(x.sales,false)+dpCell(x.pay,false)+'<td>'+dpFmtPct(x.rate)+'</td>'+dpCell(x.mgmt,false)+dpCell(x.net,false)+'</tr>';});
-  h+='<tr class="dp-cum"><td>합계</td>'+dpCell(ts,false)+dpCell(tp,false)+'<td>'+dpFmtPct(ts?tp/ts:null)+'</td>'+dpCell(tm,false)+dpCell(ts-tp-tm,false)+'</tr></tbody>';
+    h+='<tr><td>'+escapeHtml(x.name)+'</td>'+dpCell(x.sales,false)+dpCell(x.pay,false)+'<td>'+dpFmtPct(x.rate)+'</td>'+dpCell(x.mgmt,false)+dpCell(x.net,false)+'<td'+((x.mrg!==null&&x.mrg<0)?' class="neg"':'')+'>'+dpFmtPct(x.mrg)+'</td></tr>';});
+  var tnet=ts-tp-tm;
+  h+='<tr class="dp-cum"><td>합계</td>'+dpCell(ts,false)+dpCell(tp,false)+'<td>'+dpFmtPct(ts?tp/ts:null)+'</td>'+dpCell(tm,false)+dpCell(tnet,false)+'<td'+((ts&&tnet/ts<0)?' class="neg"':'')+'>'+dpFmtPct(ts?tnet/ts:null)+'</td></tr></tbody>';
   tbl.innerHTML=h;
-  if(note)note.textContent="⚠️ 강사별 매출 = 당월(판매) 기준(매출보고 강사별 서버집계) — 팀 손익표(소진 기준)와 산식이 달라 합계가 팀 표와 다를 수 있습니다. 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 손익기여 = 매출 − 인건비 − 관리비배분.";
+  if(note)note.textContent="⚠️ 강사별 매출 = 당월(판매) 기준(매출보고 강사별 서버집계) — 팀 손익표(소진 기준)와 산식이 달라 합계가 팀 표와 다를 수 있습니다. 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 손익기여 = 매출 − 인건비 − 관리비배분 · 이익률 = 손익기여 ÷ 매출.";
 }
 /* ── A3 인쇄 (매니저 지시 2026-08-24) — 현재 선택된 부서·월 상태를 그대로 정리해 인쇄.
    완료탭 선택출력과 동일한 #printSheet+body.printing 구조 재사용. @page A3 가로는 임시 <style>로 주입 후 afterprint 제거(기존 A4 인쇄 플로우 무간섭). */
