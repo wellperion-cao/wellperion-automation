@@ -89,17 +89,19 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .ls-note{font-size:13px;color:var(--dim);font-style:italic}
 /* 사람 1명 = 1행, 모든 행이 같은 grid-template-columns → 완료/진행/보류/완료율/지연(또는 볼륨/품질/완료/점수)이
    칼럼별로 세로 정렬된다. */
-.ls-row-todo,.ls-row-eval{display:grid;align-items:center;column-gap:5px;min-width:0}
-.ls-row-todo{grid-template-columns:20px minmax(0,1fr) 26px 26px 26px 34px 26px}
-.ls-row-eval{grid-template-columns:20px minmax(0,1fr) 34px 34px 46px 40px}
-.ls-row-todo .ls-rank,.ls-row-eval .ls-rank{min-width:20px;width:20px;height:20px;font-size:11px}
-.ls-row-todo .ls-name,.ls-row-eval .ls-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.ls-fld{font-size:12px;color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;min-width:0}
-.ls-fld b{color:var(--text);font-weight:700}
+/* 매니저 피드백(2026-08-24 같은 날 재지시) — 2열 개편 후 수치가 너무 작아짐 → 1열 시절 이상으로
+   확대(이름·점수·완료 건수는 그 이상 강조). 칼럼폭도 그만큼 넓혀 겹침·오버플로 없게 재조정. */
+.ls-row-todo,.ls-row-eval{display:grid;align-items:center;column-gap:6px;min-width:0}
+.ls-row-todo{grid-template-columns:25px minmax(0,1fr) 28px 26px 26px 38px 26px}
+.ls-row-eval{grid-template-columns:25px minmax(0,1fr) 38px 38px 54px 50px}
+.ls-row-todo .ls-rank,.ls-row-eval .ls-rank{min-width:25px;width:25px;height:25px;font-size:13px}
+.ls-row-todo .ls-name,.ls-row-eval .ls-name{overflow:hidden;text-overflow:ellipsis;min-width:0;font-size:16px}
+.ls-fld{font-size:14.5px;color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;min-width:0}
+.ls-fld b{color:var(--text);font-weight:800;font-size:15.5px}
 .ls-fld.late-hot{color:var(--red);font-weight:800}
-.ls-fld.eval-total{color:var(--accent);font-weight:800;font-size:14px}
-.ls-hdr{padding-bottom:1px}
-.ls-hdr .ls-fld{font-size:9.5px;color:var(--dim);font-weight:700;letter-spacing:.02em}
+.ls-fld.eval-total{color:var(--accent);font-weight:800;font-size:18px}
+.ls-hdr{padding-bottom:2px}
+.ls-hdr .ls-fld{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.02em}
 /* 헤더 2장 중 우측열용(.ls-hdr-b)은 1열로 접히는 좁은 화면에서 숨긴다 — 안 그러면 같은 라벨이
    위아래로 겹쳐 보인다(2026-08-24 로컬 프리뷰로 발견). */
 @media(max-width:480px){.ls-hdr-b{display:none}}
