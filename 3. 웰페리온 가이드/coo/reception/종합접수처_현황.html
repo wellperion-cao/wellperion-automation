@@ -722,15 +722,13 @@ var _curCat = '';
 var _curDept = '';
 var _curMonth = '';
 var _curSearch = '';
-var _doneExpanded = false;
 var _loading = false;
 
 /* VOC + 습득물 + 휴회 병합 후 렌더 (하나만 갱신돼도 합쳐서 다시 그림) */
 function _merge(){ _allItems = _receptionItems.concat(_lfItems).concat(_holdItems); _render(); }
 
-/* 검색·완료접기 */
+/* 검색 (2026-08-24 시우: 옆에 있던 toggleDone/_doneExpanded 는 부르는 버튼이 없는 죽은 코드라 지웠다 — 약속 L21) */
 function setSearch(v){ _curSearch = String(v||'').trim().toLowerCase(); _render(); }
-function toggleDone(){ _doneExpanded = !_doneExpanded; _render(); }
 function _hay(r){ var s=''; for(var k in r){ if(r.hasOwnProperty(k) && k.charAt(0)!=='_' && r[k]!=null) s += ' ' + r[k]; } return s.toLowerCase(); }
 
 function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -962,6 +960,12 @@ function _card(r){
     if(r.keepLoc) lh += '<div class="card-loc">📦 보관위치: ' + _esc(String(r.keepLoc)) + '</div>';
     if(r.memo) lh += '<div class="card-loc">🔒 메모: ' + _esc(String(r.memo)) + '</div>';
     if(r.ownerName || r.ownerContact) lh += '<div class="card-loc">👤 주인: ' + _esc(String((r.ownerName || '') + (r.ownerContact ? ' · ' + _fmtTel(r.ownerContact) : ''))) + '</div>';
+    /* 수령완료 건은 '누가 찾아갔나 · 언제 · 누가 내줬나'가 카드에서 바로 보여야 한다(2026-08-24 시우).
+       텔레그램 수령완료 알림과 같은 세 가지를 같은 순서로 적는다 — 알림을 보고 화면에서 찾을 때 눈이 맞는다. */
+    if(r.receiver) lh += '<div class="card-loc">✅ 수령: ' + _esc(String(r.receiver))
+      + (r.handedAt ? ' · ' + _esc(String(r.handedAt).replace('T',' ')) : '')
+      + (r.handoverStaff ? ' · 담당 ' + _esc(String(r.handoverStaff)) : '')
+      + (r.handoverLoc ? ' · ' + _esc(String(r.handoverLoc)) : '') + '</div>';
     lh += '<div class="divider"></div>';
     lh += '<div class="lf-note">습득 다음 달 공지 → 그다음 달 폐기(월 사이클). <a href="http://wellperion.com/ko/lost-found-register/" target="_blank" rel="noopener">습득물 접수</a> · <a href="http://wellperion.com/ko/lost-found/" target="_blank" rel="noopener">습득물 보기</a> · <a href="lost_found_guide.html" target="_blank" rel="noopener">운영 가이드</a></div>';
     lh += '<div class="lf-ctrl-row">';
@@ -1221,7 +1225,15 @@ function lfLoad(){
           keepLoc:      r.keepLoc      || '',
           memo:         r.memo         || '',
           ownerName:    r.ownerName    || '',
-          ownerContact: r.ownerContact || ''
+          ownerContact: r.ownerContact || '',
+          /* ★ 수령 정보 (2026-08-24 시우 · GM 지적) — 이 네 칸이 안 실려 있었다.
+             그래서 수령완료 카드에 누가 찾아갔는지·언제·누가 내줬는지가 안 보였고,
+             검색창에 수령자 이름이나 담당자 이름을 쳐도 하나도 안 걸렸다(_hay 가 이 객체만 훑는다).
+             텔레그램 알림에는 그 세 가지가 다 찍히므로 GM 이 알림을 보고 화면에서 찾으면 없는 상태였다. */
+          receiver:      r.receiver      || '',
+          handedAt:      r.handedAt      || '',
+          handoverStaff: r.handoverStaff || '',
+          handoverLoc:   r.handoverLoc   || ''
         };
       });
       _merge();
