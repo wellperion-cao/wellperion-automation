@@ -229,7 +229,9 @@
     var elGrpCnt = document.getElementById('owner-grp-cnt');
     var elGrid = document.getElementById('owner-grid');
     var elSum = document.getElementById('owner-sum-body');
-    var origBtnLabel = elBulkBtn.textContent; // 조회 실패 시 「다시 불러오기」로 바꿨다가 성공하면 이 라벨로 되돌린다.
+    // owner-bulk-btn 은 없는 페이지도 있다(GM업무.html — GM 지시 2026-08-24 "보고문안 복사 버튼 삭제").
+    // 그 페이지에서 elBulkBtn 이 null 이어도 mount() 전체가 죽지 않게 아래 사용처마다 가드를 둔다.
+    var origBtnLabel = elBulkBtn ? elBulkBtn.textContent : ''; // 조회 실패 시 「다시 불러오기」로 바꿨다가 성공하면 이 라벨로 되돌린다.
 
     var _items = null; // {id,title,category,schedule,status,owner,note,content,reported}
 
@@ -255,19 +257,18 @@
         // 영구 잠금 대신 재시도 — 사람이 한 번 누르면 load()를 다시 돈다(GM 지적 2026-08-08).
         elGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
         elCount.textContent = '조회 실패';
-        elBulkBtn.disabled = false;
-        elBulkBtn.textContent = '다시 불러오기';
+        if (elBulkBtn) { elBulkBtn.disabled = false; elBulkBtn.textContent = '다시 불러오기'; }
         elBulkStatus.textContent = '업무·결재 자료를 못 불러왔습니다. 다시 불러오기를 눌러 주세요.';
         return;
       }
-      elBulkBtn.textContent = origBtnLabel;
+      if (elBulkBtn) elBulkBtn.textContent = origBtnLabel;
       var need = _items.filter(function (it) { return !it.reported; });
       var done = _items.filter(function (it) { return it.reported; });
       elCount.textContent = '보고 필요 ' + need.length + '건 · 보고 완료 ' + done.length + '건';
       // 소제목 옆 카운트 — 대기·완료 둘 다 보인다(GM 지시 2026-08-10, 대기·완료 한 표 통합에 맞춰 통일).
       elGrpCnt.textContent = '대기 ' + need.length + '건 · 완료 ' + done.length + '건';
       // 대표님 보고건이 0건이어도 회장님 보고건 현황만으로 보낼 수 있게 열어 둔다(둘 다 0일 때만 잠금).
-      elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && chairmanPending().length);
+      if (elBulkBtn) elBulkBtn.disabled = need.length === 0 && !(cfg.includeChairman && chairmanPending().length);
 
       if (!_items.length) {
         elGrid.innerHTML = '<div class="rep-empty">' + esc(cfg.emptyMsg) + '</div>';
@@ -353,7 +354,7 @@
     }
 
     // 「보고건 통합 보고」 — 아직 보고 안 한 건만 모아 문안 1개로 만들어 클립보드에 복사(자동 발송은 준비 중).
-    elBulkBtn.addEventListener('click', function () {
+    if (elBulkBtn) elBulkBtn.addEventListener('click', function () {
       if (_items === null) { elBulkStatus.textContent = '다시 불러오는 중…'; load(); return; } // 조회 실패 재시도
       var need = (_items || []).filter(function (it) { return !it.reported; });
       var chN = cfg.includeChairman ? chairmanPending().length : 0;
@@ -384,7 +385,9 @@
     // GM업무.html #gm-<목표id> 카드로 바로 간다. 억지 연결 금지라 정본(_chairman_items.js)에 실재하는
     // 건만 필드를 들고 있다 — 여기서는 있으면 그리고 없으면 건너뛴다.
     function chLink(it) {
-      if (!it.link) return '';
+      // cfg.hideChairmanLinks — GM업무.html 전용 지시(GM 2026-08-24 "회장님 등록 목록에 링크좀
+      // 안달았으면 좋겠어"). 대표님_지시사항.html 은 이 cfg 를 안 넘기므로 그대로 링크가 보인다.
+      if (!it.link || cfg.hideChairmanLinks) return '';
       return ' <a class="doc-link" href="' + esc(it.link.href) + '" target="_blank" rel="noopener">🔗 ' + esc(it.link.label) + '</a>';
     }
 

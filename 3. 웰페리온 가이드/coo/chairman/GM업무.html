@@ -155,6 +155,10 @@
   .st{font-size:11.5px;font-weight:800;letter-spacing:.02em;}
   .st.on{color:var(--deep);} .st.plan{color:var(--grey);} .st.carry{color:var(--brass);}
   .pct{font-size:12.5px;font-weight:800;color:var(--brass);}
+  /* 기한 배지 — 목록에 만료일이 안 보인다는 GM 지적(2026-08-24) 대응. 새 색 안 씀 — 지난 기한만
+     기존 주의색(--alert)으로, 나머지는 --mid. */
+  .badges .due{font-size:11.5px;font-weight:700;color:var(--mid);}
+  .badges .due.overdue{color:var(--alert);}
   .pbar{height:4px;background:var(--steam);margin:6px 0 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .pbar > i{display:block;height:100%;background:var(--mid);}
   .lead-p{font-size:13px;line-height:1.6;margin:0 0 8px;}
@@ -199,13 +203,8 @@
   .dept-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;
               background:var(--steam);color:var(--brass);white-space:nowrap;}
 
-  /* ── 인쇄·저장 버튼을 페이지 안 상단 우측으로(GM 지시 2026-08-14) — 종이에는 안 찍힌다. ── */
-  .hd{position:relative;}
-  .hd-act{position:absolute;top:0;right:0;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
-  .hd-act button{font-size:12px;font-weight:700;padding:5px 10px;border:1px solid var(--deep);border-radius:6px;
-                 background:#fff;color:var(--deep);cursor:pointer;font-family:inherit;}
-  .hd-act button:hover{background:var(--deep);color:#fff;}
-  @media print{ .hd-act{display:none !important;} }
+  /* ── A3 인쇄 버튼은 「김남욱 GM 업무 진행건」 토글 제목줄로 옮겼다(GM 지시 2026-08-24
+       "토글제목칸에 변경 저장 왼쪽에 버튼 하나 더") — .sec-act 재사용, 여기 전용 CSS 없음. ── */
 
   /* ── 모바일 화면 대응 — 인쇄(@media print)는 무변경, 화면 전용 (GM 지시 2026-08-16, 배478 프론트분) ──
      .sheet/.bar 는 297mm(≈1123px) 고정폭이라 그보다 좁은 화면은 전부 가로로 밀렸다. width는 그대로 두고
@@ -228,21 +227,11 @@
 <div class="sheet">
 
   <div class="hd">
-    <!-- A3 인쇄 가로·세로 + PNG 저장 — 페이지 안 상단 우측(GM 지시 2026-08-14 "위에 A3인쇄 .png저장까지
-         있네 이것을 GM업무 페이지 안 상단우측에 배치하면 더 좋을듯"). 기능·함수는 그대로, 자리만 옮겼다. -->
-    <div class="hd-act">
-      <button onclick="printA3('portrait')">🖨 A3 세로</button>
-      <button onclick="printA3('landscape')">🖨 A3 가로</button>
-      <button id="gm-png-btn" onclick="saveGmPng()">🖼 PNG 저장</button>
-      <span class="msg" id="gm-png-msg" style="font-size:11.5px;color:var(--grey);"></span>
-    </div>
     <p class="brand">WELLPERION · 월간계획보고</p>
     <h1>경영 보고 · GM 업무 현황</h1>
     <p class="sub">회장님·대표님 보고건과 김남욱 GM 직접 업무를 한 장에서 봅니다</p>
-    <div class="meta">
-      <div><b>대상</b><span id="target-month">—</span></div>
-      <div><b>기준일</b><span id="today-str">—</span></div>
-    </div>
+    <!-- 대상 월·기준일 표기는 뺐다(GM 지시 2026-08-24 "대상 및 기준일도 아래에 다 기록할거라서") —
+         각 업무 목표에 이제 기한(due)이 아래 목록에 직접 찍힌다. -->
   </div>
 
 
@@ -252,21 +241,12 @@
     <summary><span class="ic">📋</span> 경영 보고건 <span class="cnt"><span id="rep-total">—</span></span>
       <a class="sec-act" href="회장님_지시사항.html" onclick="event.stopPropagation();">회장님 A3</a>
       <a class="sec-act" href="대표님_지시사항.html" onclick="event.stopPropagation();">대표님 A3</a>
-      <a class="sec-act" href="../todo/결재 현황 SSOT.html" onclick="event.stopPropagation();">결재 현황</a>
       <!-- 월간운영계획 링크는 상단 바(◂ 월간운영계획으로)에만 남긴다 — 3중 중복 제거(GM 지적 2026-08-08) -->
-      <!-- ② 「보고 문안 복사」 — 대표님 구획 안에 있던 것을 헤더 우측으로 이동 + 토글(GM 지시 2026-08-06
-           "경영 보고건 우측이 좋을 것 같고 열었다 닫을 수 있게"). id·판정 로직은 _owner_directive.js 그대로 재사용 —
-           위치만 옮긴다. -->
-      <button type="button" class="sec-act" id="owner-bulk-btn" disabled onclick="event.stopPropagation();">📋 보고 문안 복사</button>
-      <!-- 안내문("대표님·회장님 보고건이 한 문안으로 복사됩니다.")·결재 문서 인쇄 버튼은 뺐다
-           (GM 지시 2026-08-14 — 칸 낭비 · 인쇄는 상단 우측 A3/PNG 로 충분). -->
+      <!-- 「보고 문안 복사」·「결재 현황」 버튼은 뺐다(GM 지시 2026-08-24). owner-bulk-btn 이 없어도
+           _owner_directive.js mount() 가 죽지 않도록 그 파일에 null 가드를 넣었다(대표님_지시사항.html은
+           같은 id 로 자기 버튼을 그대로 갖고 있어 영향 없음). -->
     </summary>
     <div class="sec-body">
-
-      <!-- 「보고 문안 복사」 결과 문안 — 버튼이 헤더 우측에 있으므로 문안도 경영 보고건 맨 위에 나온다
-           (GM 2026-08-06 "복사하면 경영 보고건 아래에서 보고 내용이 나와야 한다"). 대표님 구획 중간에
-           두면 버튼을 눌러도 화면 밖이라 안 보였다. -->
-      <pre class="digest" id="owner-digest"></pre>
 
       <!-- ① 보고 대기·완료 통합 — 판정은 _owner_directive.js 가 이미 끝낸 것을 그대로 읽어, 표 하나 안에
            대기 건은 위·완료 건은 아래로 정렬해서 그린다(GM 지시 2026-08-10, 판정 로직 복제 없음). 전체
@@ -306,6 +286,10 @@
   <!-- ③ 김남욱 GM -->
   <details class="sec" id="sec-gm" open>
     <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span>
+      <!-- 전체 지도(A3 인쇄) — 맨 위에 있던 A3 세로/A3 가로/PNG 저장 3버튼을 여기 하나로 합쳤다
+           (GM 지시 2026-08-24 "토글제목칸에 변경 저장 왼쪽에 버튼 하나 더"). 셋 중 A3 가로만 남긴다 —
+           420mm 폭이라 2열 카드 그리드가 세로보다 덜 잘린다. 함수(printA3)는 그대로, 자리·개수만 줄였다. -->
+      <button type="button" class="sec-act" id="gm-a3-btn" onclick="event.stopPropagation(); printA3('landscape');">🖨 전체 지도</button>
       <!-- ① 할 일 체크 저장 — 체크마다 공용 체크보드(CHECK_GAS)에 즉시 저장되어 새로고침해도 남는다
            (GM 지적 2026-08-07 "체크하고 새로고침하면 사라짐"). 「변경 저장」 버튼은 그 위에 정본
            progress_note·진척률까지 커밋하는 별도 단계(GM PIN 필요, GM 2026-08-06 지시 그대로 유지) —
@@ -340,8 +324,6 @@
 <script src="_gm_direct_tasks.js"></script>
 <script src="_chairman_items.js"></script>
 <script src="_owner_directive.js"></script>
-<!-- PNG 저장 — 저장소 표준(회장님_오찬_수영팀_20260806.html·notice_template.html 과 동일 html2canvas CDN 방식, 새 라이브러리 아님) -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -361,7 +343,7 @@
   }
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
-  // ── A3 인쇄(가로·세로) + PNG 저장 (GM 지시 2026-08-07) ──
+  // ── A3 인쇄 (GM 지시 2026-08-07 · 버튼 1개로 축소 2026-08-24) ──
   // 접힌 <details> 강제 오픈은 beforeprint/afterprint 로 건다 — 버튼 클릭 시점이 아니라 실제
   // 인쇄가 시작되는 시점(브라우저가 beforeprint 를 쏘는 순간)에 열어야, 그 사이 비동기로 늦게
   // 그려진 GM 업무 카드(readPlan fetch 응답 지연)도 놓치지 않는다. window.print() 호출 없이
@@ -385,37 +367,7 @@
     window.print();
   };
 
-  window.saveGmPng = function () {
-    var btn = document.getElementById('gm-png-btn');
-    var msg = document.getElementById('gm-png-msg');
-    if (typeof html2canvas !== 'function') {
-      if (msg) msg.textContent = '이미지 도구를 불러오지 못했습니다 — 새로고침 후 다시 눌러 주세요.';
-      return;
-    }
-    if (btn) btn.disabled = true;
-    if (msg) msg.textContent = '이미지를 만드는 중입니다…';
-    html2canvas(document.querySelector('.sheet'), { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
-      .then(function (canvas) {
-        var d = new Date();
-        var a = document.createElement('a');
-        a.download = 'GM업무_' + d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + '.png';
-        a.href = canvas.toDataURL('image/png');
-        a.click();
-        if (msg) msg.textContent = '저장했습니다.';
-        if (btn) btn.disabled = false;
-        setTimeout(function () { if (msg) msg.textContent = ''; }, 4000);
-      })
-      .catch(function () {
-        if (msg) msg.textContent = '이미지 저장에 실패했습니다 — 인쇄 후 PDF로 저장해 주세요.';
-        if (btn) btn.disabled = false;
-      });
-  };
-
   var now = new Date();
-  var elToday = document.getElementById('today-str');
-  if (elToday) elToday.textContent = now.getFullYear() + '. ' + pad2(now.getMonth() + 1) + '. ' + pad2(now.getDate()) + '.';
-  var elMon = document.getElementById('target-month');
-  if (elMon) elMon.textContent = now.getFullYear() + '년 ' + (now.getMonth() + 1) + '월';
 
   /* 내용(progress_note)을 읽히는 모양으로 — 소제목/불릿/체크/번호를 각각 다른 블록으로 끊는다.
      통짜로 쏟으면 "나열만 많다"가 된다(GM 2026-08-06). 정본 텍스트 자체는 바꾸지 않는다. */
@@ -530,6 +482,19 @@
           .then(function (r) { return r.json(); })
           .then(function (res) { if (res && res.ok && res.content) return JSON.parse(res.content); throw new Error('읽기 실패'); });
       });
+  }
+
+  // 기한 표시 — status/monthly_ops_plan.json objectives[].due(가공 없이 그대로 넘어온다,
+  // _gm_direct_tasks.js extract() 참조). GM 지적(2026-08-24) "시작일·만료일 정리했는데 목록에 반영이
+  // 안됨" 대응 — 목표에는 시작일(start) 칸 자체가 없다(있는 값만 표기, 지어내지 않음). 없으면 「—」.
+  function fmtDue(due) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(due || ''));
+    return m ? (m[1] + '.' + m[2] + '.' + m[3]) : '—';
+  }
+  function isOverdue(due) {
+    if (!due) return false;
+    var d = new Date(due + 'T23:59:59');
+    return !isNaN(d) && d < now;
   }
 
   var elGmCnt = document.getElementById('gm-grp-cnt');
@@ -656,6 +621,7 @@
         // 2026-08-16 — 새 배지 추가 아님, 있던 것 하나로 줄임). 진행바(.pbar)는 그대로 남긴다.
         (pct === null || hasChecks ? '' : '<span class="pct">' + pct + '%</span>') +
         (hasChecks ? '<span class="chkcnt">' + doneCount + '/' + todos.length + ' 완료</span>' : '') +
+        '<span class="due' + (isOverdue(it.due) ? ' overdue' : '') + '">기한 ' + esc(fmtDue(it.due)) + '</span>' +
         '</span></div>' +
         (pct === null ? '' : '<div class="pbar"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>') +
         '<p class="body">' + esc(it.target || '내용 없음') + '</p>' +
@@ -678,8 +644,10 @@
     elGmSum.innerHTML = items.map(function (it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
       var pct = (typeof it.progress === 'number') ? it.progress + '%' : '—';
+      var dueHtml = '기한 ' + esc(fmtDue(it.due));
+      if (isOverdue(it.due)) dueHtml = '<span style="color:var(--alert)">' + dueHtml + '</span>';
       return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
-        esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + '</td></tr>';
+        esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
     }).join('');
   }
 
@@ -800,27 +768,16 @@
   window.addEventListener('hashchange', focusHashCard);
   setTimeout(focusHashCard, 1200);
 
-  // ② 「보고 문안 복사」 토글 — _owner_directive.js 는 누를 때마다 항상 펼치기만 하므로, 그 파일은 고치지
-  // 않고 캡처 단계에서 먼저 가로채 '열려 있으면 접기만' 처리한다(GM 2026-08-06 "열었다 닫을 수 있게").
-  (function () {
-    var btn = document.getElementById('owner-bulk-btn');
-    var digest = document.getElementById('owner-digest');
-    if (!btn || !digest) return;
-    btn.addEventListener('click', function (e) {
-      if (digest.style.display === 'block') {
-        digest.style.display = 'none';
-        e.stopImmediatePropagation();
-      }
-    });
-  })();
-
   // 대표님 칸 + 회장님 표 — 판정·문안 로직은 _owner_directive.js 하나만 쓴다(복제 없음).
   OwnerDirective.mount({
     wantCeoRows: true,
     markPrefix: '대표님 보고완료',
     reportIntro: '대표님께 아래 업무를 보고드립니다.',
     emptyMsg: '아직 대표님 보고건으로 등록된 업무가 없습니다.',
-    includeChairman: true
+    includeChairman: true,
+    // 회장님 등록 목록에 GM 업무 카드로 가는 🔗 링크를 뺀다(GM 지시 2026-08-24 "링크좀 안달았으면
+    // 좋겠어"). 대표님_지시사항.html 은 cfg 를 안 넘기므로 그 페이지 표는 그대로 링크를 유지한다.
+    hideChairmanLinks: true
   });
 
   // ══════════════════════════════════════════════════════════════════
