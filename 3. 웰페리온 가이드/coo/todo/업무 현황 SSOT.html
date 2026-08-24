@@ -69,16 +69,40 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
 .ls-head{font-size:15px;font-weight:700;color:var(--text);margin-bottom:11px}
 .ls-head .ls-sub{font-size:12px;font-weight:500;color:var(--dim);margin-left:5px}
-.ls-body{display:flex;flex-direction:column;gap:9px}
+/* 2열 그리드 + 필드 줄맞춤(2026-08-24 나우열M 지시, #44 표시 전용) — 인원이 늘어도 세로 스크롤이
+   덜 늘어나게 좌→우로 채우고, 각 사람 행은 모두 같은 고정폭 칼럼(.ls-row-todo/.ls-row-eval)을
+   써서 완료·진행·보류 같은 숫자가 사람마다 세로로 맞는다(진짜 subgrid 없이도 폭을 고정값으로
+   통일하면 같은 결과). 좁은 화면은 1열로 자연 폴백. */
+/* minmax(0,1fr) 필수 — 그냥 1fr이면 트랙 자동 최소폭이 내용 크기(auto)라 좁은 화면에서
+   행이 트랙을 뚫고 넘쳐버린다(2026-08-24 로컬 프리뷰로 발견한 그리드 블로우아웃). */
+.ls-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px 14px;align-items:start}
+@media(max-width:480px){.ls-body{grid-template-columns:minmax(0,1fr)}}
 .ls-dim{font-size:13px;color:var(--dim)}
-/* 한 줄 = 한 사람. 순위 배지 · 이름 · 점수 · 상세 (2026-08-10 GM: 글씨 키움) */
-.ls-row{display:flex;align-items:center;gap:9px;font-size:15px}
+/* 특수 행(게이트 미달·임정은 별도기준·임정은M 상담) — 표 칼럼에 안 맞는 문장형이라 2열을 가로질러
+   기존 인라인 방식 그대로 둔다. */
+.ls-row{font-size:15px;padding:2px 0}
+.ls-row.ls-span2{grid-column:1/-1;display:flex;align-items:center;gap:9px;min-width:0}
 .ls-rank{min-width:23px;height:23px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ls-name{font-weight:700;color:var(--text);white-space:nowrap}
 .ls-pt{font-weight:800;color:var(--accent);white-space:nowrap;font-size:16px}
 .ls-detail{font-size:13px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ls-detail b.late{color:var(--red);font-weight:800}
 .ls-note{font-size:13px;color:var(--dim);font-style:italic}
+/* 사람 1명 = 1행, 모든 행이 같은 grid-template-columns → 완료/진행/보류/완료율/지연(또는 볼륨/품질/완료/점수)이
+   칼럼별로 세로 정렬된다. */
+.ls-row-todo,.ls-row-eval{display:grid;align-items:center;column-gap:5px;min-width:0}
+.ls-row-todo{grid-template-columns:20px minmax(0,1fr) 26px 26px 26px 34px 26px}
+.ls-row-eval{grid-template-columns:20px minmax(0,1fr) 34px 34px 46px 40px}
+.ls-row-todo .ls-rank,.ls-row-eval .ls-rank{min-width:20px;width:20px;height:20px;font-size:11px}
+.ls-row-todo .ls-name,.ls-row-eval .ls-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ls-fld{font-size:12px;color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;min-width:0}
+.ls-fld b{color:var(--text);font-weight:700}
+.ls-fld.late-hot{color:var(--red);font-weight:800}
+.ls-fld.eval-total{color:var(--accent);font-weight:800;font-size:14px}
+.ls-hdr{padding-bottom:1px}
+.ls-hdr .ls-fld{font-size:9.5px;color:var(--dim);font-weight:700;letter-spacing:.02em}
+/* 헤더 2장 중 우측열용(.ls-hdr-b)은 1열로 접히는 좁은 화면에서 숨긴다 — 안 그러면 같은 라벨이
+   위아래로 겹쳐 보인다(2026-08-24 로컬 프리뷰로 발견). */
+@media(max-width:480px){.ls-hdr-b{display:none}}
 @media print{.livestrip{display:none!important}}
 .filter-bar{background:var(--bg);padding:8px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .filter-bar::-webkit-scrollbar{display:none}
@@ -3939,26 +3963,37 @@ window.ssotShowTasks=ssotShowTasks;
     var tasks = (j && j.data) || [];
     if (!tasks.length) { box.innerHTML = '<div class="ls-dim">업무 기록이 아직 없습니다.</div>'; return; }
     var list = quantEvalCompute(tasks);
-    var rows = list.map(function (r) {
+    /* 헤더 2장을 맨 앞에 둔다 — 그리드 자동배치가 1장은 좌측열 맨 위, 1장은 우측열 맨 위에 앉혀
+       두 열 모두 "볼륨/품질/완료/점수" 칼럼 라벨이 보이게 한다(2026-08-24 표시 개편). */
+    var hdrFields = '<span></span><span></span>' +
+      '<span class="ls-fld">볼륨</span><span class="ls-fld">품질</span>' +
+      '<span class="ls-fld">완료</span><span class="ls-fld">점수</span>';
+    var rows = [
+      '<div class="ls-row ls-row-eval ls-hdr ls-hdr-a">' + hdrFields + '</div>',
+      '<div class="ls-row ls-row-eval ls-hdr ls-hdr-b">' + hdrFields + '</div>'
+    ];
+    list.forEach(function (r) {
       if (r.gateOk) {
-        return '<div class="ls-row">' +
+        rows.push('<div class="ls-row ls-row-eval">' +
           '<span class="ls-rank">' + esc(r.grade) + '</span>' +
           '<span class="ls-name">' + esc(r.name) + '</span>' +
-          '<span class="ls-pt">' + r.total + '점</span>' +
-          '<span class="ls-detail">볼륨 ' + r.volume + ' · 품질 ' + r.quality +
-            ' · 완료 ' + r.completedCount + '건/' + r.completedScore + '점' +
-            (r.unscored.length ? ' · 미채점 ' + r.unscored.length + '건' : '') + '</span>' +
-          '</div>';
+          '<span class="ls-fld">' + r.volume + '</span>' +
+          '<span class="ls-fld">' + r.quality + '</span>' +
+          '<span class="ls-fld">' + r.completedCount + '/' + r.completedScore +
+            (r.unscored.length ? '<br><span style="font-size:9.5px">미채점' + r.unscored.length + '</span>' : '') + '</span>' +
+          '<span class="ls-fld eval-total">' + r.total + '</span>' +
+          '</div>');
+      } else {
+        rows.push('<div class="ls-row ls-span2">' +
+          '<span class="ls-rank" style="background:var(--dim-soft);color:var(--dim)">–</span>' +
+          '<span class="ls-name">' + esc(r.name) + '</span>' +
+          '<span class="ls-pt" style="color:var(--dim);font-size:14px">게이트 미달</span>' +
+          '<span class="ls-detail">배정 ' + r.n + '건(5건 이상 필요)</span>' +
+          '</div>');
       }
-      return '<div class="ls-row">' +
-        '<span class="ls-rank" style="background:var(--dim-soft);color:var(--dim)">–</span>' +
-        '<span class="ls-name">' + esc(r.name) + '</span>' +
-        '<span class="ls-pt" style="color:var(--dim);font-size:14px">게이트 미달</span>' +
-        '<span class="ls-detail">배정 ' + r.n + '건(5건 이상 필요)</span>' +
-        '</div>';
     });
     rows.push(
-      '<div class="ls-row">' +
+      '<div class="ls-row ls-span2">' +
       '<span class="ls-rank" style="background:var(--purple-bg);color:var(--purple)">–</span>' +
       '<span class="ls-name">임정은</span>' +
       '<span class="ls-pt" style="color:var(--dim);font-size:14px">별도 기준</span>' +
@@ -4006,15 +4041,24 @@ window.ssotShowTasks=ssotShowTasks;
                    rate: mine.length ? Math.round(done / mine.length * 100) : 0 });
     });
     stats.sort(function (a, b) { return b.done - a.done || b.rate - a.rate; });
-    var h = '', rank = 0, prev = null;
+    /* 헤더 2장을 맨 앞에 둔다 — 그리드 자동배치가 1장은 좌측열, 1장은 우측열 맨 위에 앉혀
+       두 열 모두 "완료/진행/보류/완료율/지연" 칼럼 라벨이 보이게 한다(2026-08-24 표시 개편). */
+    var hdrFields = '<span></span><span></span>' +
+      '<span class="ls-fld">완료</span><span class="ls-fld">진행</span><span class="ls-fld">보류</span>' +
+      '<span class="ls-fld">완료율</span><span class="ls-fld">지연</span>';
+    var h = '<div class="ls-row ls-row-todo ls-hdr ls-hdr-a">' + hdrFields + '</div>' +
+      '<div class="ls-row ls-row-todo ls-hdr ls-hdr-b">' + hdrFields + '</div>';
+    var rank = 0, prev = null;
     stats.forEach(function (s, i) {
       if (prev === null || s.done !== prev) { rank = i + 1; prev = s.done; }   // 동점 = 같은 순위
-      h += '<div class="ls-row">' +
+      h += '<div class="ls-row ls-row-todo">' +
         '<span class="ls-rank">' + rank + '</span>' +
         '<span class="ls-name">' + esc(s.name) + '</span>' +
-        '<span class="ls-pt">완료 ' + s.done + '</span>' +
-        '<span class="ls-detail">진행 ' + s.prog + ' · 보류 ' + s.hold + ' · 완료율 ' + s.rate + '% · 지연 ' +
-          (s.late ? '<b class="late">' + s.late + '</b>' : '0') + '</span>' +
+        '<span class="ls-fld"><b>' + s.done + '</b></span>' +
+        '<span class="ls-fld">' + s.prog + '</span>' +
+        '<span class="ls-fld">' + s.hold + '</span>' +
+        '<span class="ls-fld">' + s.rate + '%</span>' +
+        '<span class="ls-fld' + (s.late ? ' late-hot' : '') + '">' + s.late + '</span>' +
         '</div>';
     });
     box.innerHTML = h + (_consultHtml || '');
@@ -4044,7 +4088,7 @@ window.ssotShowTasks=ssotShowTasks;
         if (!cur && !acc) return;
         cur = cur || { total: 0, reg: 0, contacting: 0 };
         _consultHtml =
-          '<div class="ls-row" style="border-top:1px dashed var(--border);padding-top:8px;margin-top:2px">' +
+          '<div class="ls-row ls-span2" style="border-top:1px dashed var(--border);padding-top:8px;margin-top:2px">' +
           '<span class="ls-rank" style="background:var(--purple-bg);color:var(--purple)">👤</span>' +
           '<span class="ls-name">임정은M</span>' +
           '<span class="ls-pt">상담 ' + cur.total + '</span>' +
