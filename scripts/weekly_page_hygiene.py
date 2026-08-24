@@ -259,7 +259,7 @@ def _claude_bin() -> str | None:
     return shutil.which("claude")
 
 
-def run_audit_claude(prompt: str, timeout: int = 420, model: str = "claude-sonnet-4-6") -> dict:
+def run_audit_claude(prompt: str, timeout: int = 900, model: str = "claude-sonnet-4-6") -> dict:
     """
     headless claude 감사 호출(welly_auto_runner의 LIVE 호출 패턴 재사용). 읽기전용 분석
     전용이라 --permission-mode plan(편집 불가)로 호출한다.
@@ -797,7 +797,13 @@ def main() -> int:
     parser.add_argument("--clevel", default="coo", help="대상 C-Level(기본 coo). 'all'이면 전체 config 대상")
     parser.add_argument("--dry-run", action="store_true", help="PAGE_HYGIENE_APPLY=1이어도 이번 실행만 강제 미적용(검증용)")
     parser.add_argument("--no-notify", action="store_true", help="텔레그램 요약 발송 생략(검증용)")
-    parser.add_argument("--claude-timeout", type=int, default=300, help="조각(청크)당 headless claude 타임아웃(초)")
+    # ★300 → 900 (2026-08-24 시토 · 실측 근거).
+    # 08-16 회차 감사 실패 25건 · 08-23 회차 21건이 전부 "타임아웃(300s)" 하나였다. 큰 페이지
+    # (시설부 체계·지원부 체계·메인가이드 O1/O4·문의회원)가 매주 같은 자리에서 잘렸고, 그만큼이
+    # 검사 없이 버려졌다. 같은 대상 3건을 900초로 재현하니 타임아웃 0건 — 값이 원인이 맞다.
+    # 타임아웃은 상한이지 소요가 아니라, 제때 끝나는 조각의 실행 시간은 이 값을 올려도 늘지 않는다.
+    # (남은 실패 1건은 "JSON 파싱 실패" 로 원인이 다르다 — 모델 응답 형식 문제, 별건.)
+    parser.add_argument("--claude-timeout", type=int, default=900, help="조각(청크)당 headless claude 타임아웃(초)")
     parser.add_argument("--model", default="claude-sonnet-4-6", help="감사에 사용할 모델")
     parser.add_argument("--limit", type=int, default=None, help="대상 target 수 제한(검증용 — 앞에서부터 N개만)")
     args = parser.parse_args()
