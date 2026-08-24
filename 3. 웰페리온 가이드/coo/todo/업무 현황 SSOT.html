@@ -3853,11 +3853,29 @@ window.ssotShowTasks=ssotShowTasks;
   var QEVAL_SIZE_WHITELIST = ["1","2","3","5","8"];
   function qevOwners(t){ return String(t["담당자"]||"").split(",").map(function(s){return s.trim();}).filter(Boolean); }
   function qevDate(s){ return s?new Date(s):null; }
+  /* 규모점수 열의 사후 지연 "날짜서식 오염" 방어 정규화(2026-08-24, A-12 진단 인계 · 함정노트 #7 취지).
+     시트 날짜 직렬값(1899-12-30=0일, 한국시간 기준)으로 표시되어도 원점수를 그대로 복원해 계산에 넣는다 —
+     원인(시트 서식) 미제거 상태에서 재오염돼도 이 화면 수치는 무너지지 않게 하는 방어선. 복호 불가 값은 기존과 동일하게 제외. */
+  function qevDecodeDateScore(raw){
+    var s = String(raw).trim();
+    if (!s) return null;
+    if (/^-?\d+(\.\d+)?$/.test(s)) return null; // 순수 숫자문자열은 날짜 오염이 아님(화이트리스트 판정은 호출측에서 이미 끝남)
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    var kst = new Date(d.getTime() + 9 * 3600 * 1000); // UTC 표시값 → KST 달력일로 정렬
+    var target = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
+    var epoch = Date.UTC(1899, 11, 30);
+    var days = Math.round((target - epoch) / 86400000);
+    var score = days + 1;
+    return QEVAL_SIZE_WHITELIST.indexOf(String(score)) >= 0 ? score : null;
+  }
   function qevScoreLookup(t){
     var live=t["규모점수"];
     var liveStr=(live===undefined||live===null)?"":String(live).trim();
     if(liveStr!==""){
       if(QEVAL_SIZE_WHITELIST.indexOf(liveStr)>=0) return {has:true,score:Number(liveStr)};
+      var decoded = qevDecodeDateScore(liveStr);
+      if(decoded!=null) return {has:true,score:decoded};
       return {has:true,score:null};
     }
     if(t.id in QEVAL_R_SCORE) return {has:true,score:QEVAL_R_SCORE[t.id]};
