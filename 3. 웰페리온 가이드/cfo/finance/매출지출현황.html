@@ -816,7 +816,7 @@ function renderDeptInstr(){
   });
   rows.sort(function(a,b){return b.net-a.net;});
   var isCum=(DP_IMON==="cum");
-  var h='<thead><tr><th>강사</th><th>당월매출</th>'+(isCum?'':'<th>누적매출(1~'+DP_IMON+'월)</th>')+'<th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여</th><th>이익률</th></tr></thead><tbody>';
+  var h='<thead><tr><th>강사</th><th>'+(isCum?'누적매출(1~'+cut+'월)':'당월매출')+'</th>'+(isCum?'':'<th>누적매출(1~'+DP_IMON+'월)</th>')+'<th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여</th><th>이익률</th></tr></thead><tbody>';
   var ts=0,tp=0,tm=0,tc=0;
   rows.forEach(function(x){ts+=x.sales;tp+=x.pay;tm+=x.mgmt;tc+=x.csum;
     h+='<tr><td>'+escapeHtml(x.name)+'</td>'+dpCell(x.sales,false)+(isCum?'':dpCell(x.csum,false))+dpCell(x.pay,false)+'<td>'+dpFmtPct(x.rate)+'</td>'+dpCell(x.mgmt,false)+dpCell(x.net,false)+'<td'+((x.mrg!==null&&x.mrg<0)?' class="neg"':'')+'>'+dpFmtPct(x.mrg)+'</td></tr>';});
