@@ -353,6 +353,20 @@
          이름을 쓰면서 **다른 것을 세고 있었다**(항로=AI 배만 / 요약=전 배 67척). 같은 이름 다른
          숫자는 중복보다 나쁘다. 숫자는 항로 섹터 머리 하나만 남긴다. ════ -->
   <!-- 데이터는 그대로 — 보여주는 방식만 접었다(숨김≠삭제). 아래 4구역(진행·정박·전체정리·보관함) 내용 무변경. -->
+  <!-- ════ 📚 학습 (GM 지시 2026-08-24 — "교육용은 자율현황 학습 영역에서 볼 수 있고, 다음에 또 학습할 수 있게")
+       ★새 저장소를 만들지 않았다(약속 L21). 교육 자료는 이미 있던 gm/GM_교육.html 에 번호로 쌓고,
+         AI 자기학습 제안은 이 화면이 이미 읽고 있던 status/learning_proposals.json 을 그대로 쓴다 —
+         그 파일은 여기서 fetch 만 하고 그리는 곳이 없어 33건이 화면에 한 번도 안 보였다(2026-08-24 시토 실측).
+       ★접힌 채로 둔다 — GM 이 매일 보는 것은 위 🧭 항로다. 세로를 늘리지 않으면서 자리는 만든다. ════ -->
+  <details class="hist-fold" id="learn-fold">
+    <summary>📚 학습 <span class="hist-sub">— GM 교육 자료 · AI 가 스스로 낸 학습 제안</span></summary>
+    <div class="sec-note" style="margin:8px 0 10px;">
+      새로 배운 것은 <a href="gm/GM_교육.html" target="_blank" rel="noopener"><b>📘 GM 교육 자료</b></a>에 번호를 붙여 쌓입니다(인쇄 가능).
+      아래는 <b>AI 가 스스로 낸 학습 제안</b>입니다 — 무엇을 바꾸면 나아지는지 근거와 함께 적힙니다.
+    </div>
+    <div id="learn-list"><div class="feed-status">불러오는 중…</div></div>
+  </details>
+
   <details class="hist-fold" id="ships-summary-fold">
     <summary>🗂 배 정리·보관함 <span class="hist-sub">— 백엔드에 실제로 있는 배 전부 · 무의미·중복은 여기서 지웁니다</span></summary>
 
@@ -781,7 +795,10 @@
       '<th style="width:88px">상태</th><th style="width:24%">재개조건 · 다음</th><th style="width:64px">정리</th></tr>';
     el.innerHTML = owners.map(function(nick){
       var g = byOwner[nick];
-      return '<details class="coo-details" style="margin-top:8px;" open>' +
+      /* ★기본 접힘 (GM 지시 2026-08-24 "세로 스크롤이 너무 길다").
+         담당자 그룹을 전부 펼친 채 두면 배 수만큼 표가 쌓여 이 구역만 3,000px 을 넘었다.
+         척수·진행중 수는 summary 에 그대로 있어 접어도 읽을 것은 다 보인다(정보 손실 0). */
+      return '<details class="coo-details" style="margin-top:8px;">' +
         '<summary>' + esc(nick) + '<span style="float:right;color:var(--dim);font-weight:400;">' +
           g.rows.length + '척 · 진행중 ' + g.running + '</span></summary>' +
         '<div class="gtbl-wrap"><table class="gtbl">' + HEAD + g.rows.join('') + '</table></div>' +
@@ -793,6 +810,31 @@
     if(s.ship_no == null) return '<span style="color:var(--dim);">—</span>';
     return '<button type="button" class="ship-trash" data-ship="' + esc(s.ship_no) + '" title="이 배를 보관함으로 옮깁니다"'
       + ' style="border:1px solid var(--line,#ccc);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;">🗑</button>';
+  }
+
+  /* 📚 학습 — status/learning_proposals.json 을 그대로 그린다(새 원장 없음 · GM 지시 2026-08-24).
+     최근 것이 위로 온다. 긴 본문은 기존 cellmore 접기를 재사용해 세로를 늘리지 않는다. */
+  function renderLearn(list){
+    var el = document.getElementById('learn-list'); if(!el) return;
+    var arr = Array.isArray(list) ? list.slice().reverse() : [];
+    var rows = arr.slice(0, 12).map(function(x){
+      var what = String((x && x['무엇을']) || '').trim();
+      var why  = String((x && x['왜_근거']) || '').trim();
+      var head = what.length > 74 ? what.slice(0, 74) + '…' : what;
+      var body = what + (why ? '\n\n[왜] ' + why : '');
+      return '<tr><td style="white-space:nowrap;color:var(--dim);">' + esc(String((x && x['생성일']) || '')) + '</td>'
+        + '<td style="white-space:nowrap;">' + esc(String((x && x['대상_clevel']) || '—')) + '</td>'
+        + '<td>' + (what.length > 74 || why
+            ? '<details class="cellmore"><summary>' + esc(head) + '</summary><div class="cellfull">' + esc(body) + '</div></details>'
+            : '<strong>' + esc(head) + '</strong>') + '</td>'
+        + '<td style="white-space:nowrap;color:var(--dim);">' + esc(String((x && x['반영위치']) || '')) + '</td></tr>';
+    });
+    el.innerHTML = rows.length
+      ? '<div class="gtbl-wrap"><table class="gtbl">'
+        + '<tr><th style="width:88px">날짜</th><th style="width:74px">대상</th><th>무엇을 바꾸자는 것인가</th><th style="width:132px">반영 위치</th></tr>'
+        + rows.join('') + '</table></div>'
+        + (arr.length > 12 ? '<div class="sec-note" style="margin-top:6px;">최근 12건만 보입니다 (전체 ' + arr.length + '건 · <code>status/learning_proposals.json</code>).</div>' : '')
+      : '<div class="feed-status">아직 학습 제안이 없습니다.</div>';
   }
 
   function renderTrash(){
@@ -1514,6 +1556,10 @@
     try{ renderTrash(); }catch(e){
       var tsEl = document.getElementById('trash-ships');
       if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
+    }
+    try{ renderLearn(d.learn); }catch(e){
+      var lnEl = document.getElementById('learn-list');
+      if(lnEl) lnEl.innerHTML = '<div class="feed-status">학습 표시 오류.</div>';
     }
     var moduleRegistry = parseJson(a[12]);
     // 방 용도·표시명은 두 SSOT 에서 읽어 먼저 채운다(a[18]=텔레그램 방 · a[19]=카톡 방).
