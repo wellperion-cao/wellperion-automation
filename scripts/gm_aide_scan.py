@@ -80,6 +80,7 @@ SCHEDULE_SSOT_FILE = STATUS_DIR / "schedule_ssot.json"
 CHAIRMAN_ITEMS_JS = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman" / "_chairman_items.js"
 CHAIRMAN_REPORTED_JSON = ROOT / "3. 웰페리온 가이드" / "coo" / "chairman" / "chairman_reported.json"
 CHECKLIST_ITEM = re.compile(r"^[□✅]\s*\d+\)")
+DUE_MARK = re.compile(r"\(~\s*(\d{1,2})/(\d{1,2})\s*\)")  # 체크 항목 완료예정일 표기(GM 확정 2026-08-24) — "(~9/5)" "(~09/05)"
 
 LONG_PENDING_DAYS = 30
 
@@ -346,8 +347,9 @@ def _parse_date_loose(s) -> "datetime.date | None":
 def scan_due_hygiene() -> list:
     """기한 위생 점검(배732 · 약속 L26⑤). 전사일정(schedule_ssot)·월간운영계획(monthly_ops_plan)·
     회장님 보고 목록 3곳을 읽어 ①기한없음 ②기한넘김 ③체크리스트100%인데 미이관 ④전사일정 담당빈칸
-    ⑤보고완료인데 목록에 남음 — 5종을 찾는다. 항목마다 배를 만들면 board 가 넘친다(long_pending과
-    같은 함정) → 하루 1건짜리 표 한 장(캡처 1건)으로 묶는다. 지어낸 기한·담당 없음 — 원본 필드만 그대로."""
+    ⑤보고완료인데 목록에 남음 ⑥체크 항목에 완료예정일(~M/D) 표기 없음 ⑦표기된 완료예정일이 지남
+    — 7종을 찾는다. 항목마다 배를 만들면 board 가 넘친다(long_pending과 같은 함정) → 하루 1건짜리
+    표 한 장(캡처 1건)으로 묶는다. 지어낸 기한·담당 없음 — 원본 필드만 그대로."""
     rows = []  # (구분, 항목, 담당, 사유)
 
     plan = read_json(MONTHLY_PLAN_FILE, {})
@@ -370,6 +372,21 @@ def scan_due_hygiene() -> list:
         if len(items) >= 2 and all(l.startswith("✅") for l in items):
             rows.append(("③체크리스트100%", f"[{o.get('id')}] {(o.get('title') or '')[:30]}",
                          o.get("owner") or "", "전항 완료·완료건 정리로 이관 안 됨"))
+        for l in items:
+            if l.startswith("✅"):
+                continue  # 끝난 항목엔 예정일을 요구 안 함
+            m = DUE_MARK.search(l)
+            if not m:
+                rows.append(("⑥완료예정일없음", f"[{o.get('id')}] {l[:40]}",
+                             o.get("owner") or "", "체크 항목에 (~M/D) 표기 없음"))
+                continue
+            try:
+                due_date = datetime(TODAY.year, int(m.group(1)), int(m.group(2))).date()
+            except ValueError:
+                continue  # 잘못된 날짜 표기 — 지어내지 않고 판정 보류
+            if due_date < TODAY:
+                rows.append(("⑦완료예정일지남", f"[{o.get('id')}] {l[:40]}",
+                             o.get("owner") or "", f"due=~{m.group(1)}/{m.group(2)} 경과"))
 
     sched = read_json(SCHEDULE_SSOT_FILE, {})
     for it in (sched.get("items") or []):
