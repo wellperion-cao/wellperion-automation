@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수영장 출입 게이트 도입 검토 — 사양서 · 3사 동일조건 견적</title>
+<style>
+  @page { size: A3 portrait; margin: 12mm; }
+  :root{
+    --deep:#22322D; --mid:#3D5A4F; --grey:#6E7772; --line:#C7CFC9;
+    --steam:#EDF1EE; --brass:#8F7029; --alert:#9A4A20; --alert-bg:#FAF0E5;
+    --ink:#111A16; --pick:#E4EDE7;
+    --font:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#8B948F;}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;}
+
+  .bar{width:273mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;}
+  .bar button,.bar a{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 16px;
+    border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
+    cursor:pointer;text-decoration:none;border-radius:2px;}
+  .bar button:hover,.bar a:hover{background:#fff;color:var(--deep);}
+
+  .sheet{width:273mm;min-height:393mm;margin:14px auto;background:#fff;
+    padding:12mm 13mm 10mm;box-shadow:0 3px 22px rgba(0,0,0,.3);}
+
+  .ref{font-size:11.5px;color:var(--grey);margin:0 0 9px;}
+  .hd{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:14px;}
+  .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-size:27px;font-weight:800;letter-spacing:-.025em;margin:0;line-height:1.2;}
+  .hd .rt{text-align:right;font-size:13.5px;line-height:1.8;white-space:nowrap;}
+  .hd .rt b{color:var(--grey);font-weight:600;font-size:11.5px;letter-spacing:.08em;margin-right:7px;}
+
+  .notice{background:var(--alert-bg);border-left:4px solid var(--alert);padding:10px 16px;
+    margin:0 0 14px;font-size:13.5px;line-height:1.6;color:#573015;}
+  .notice strong{font-weight:800;color:var(--alert);}
+
+  .purpose{border:2.5px solid var(--deep);padding:14px 18px;margin-bottom:14px;}
+  .purpose h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 10px;}
+  .purpose .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .purpose .item b{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;
+    color:var(--mid);margin-bottom:4px;}
+  .purpose .item p{font-size:13.5px;line-height:1.55;margin:0;}
+
+  h3{font-size:15px;font-weight:800;margin:18px 0 8px;padding-bottom:5px;
+     border-bottom:1.5px solid var(--deep);}
+  h3 span{font-size:12px;font-weight:500;color:var(--grey);margin-left:9px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.5;table-layout:fixed;margin-bottom:14px;}
+  th,td{border:1px solid var(--line);padding:7px 9px;vertical-align:middle;}
+  thead th{background:var(--deep);color:#fff;font-size:13px;font-weight:700;text-align:center;}
+  thead th:first-child{background:var(--mid);text-align:left;}
+  tbody th{background:var(--steam);font-weight:700;font-size:13px;white-space:nowrap;text-align:left;}
+  td{text-align:center;}
+  td.left{text-align:left;}
+  td.must{background:#FFF8F0;font-weight:700;color:var(--alert);text-align:center;}
+  .ok{color:var(--mid);font-weight:800;}
+  .na{color:var(--grey);font-size:12px;}
+  .blank{background:#FAFCFA;color:var(--grey);font-size:12px;font-style:italic;}
+
+  .spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .blk{border:1px solid var(--line);padding:13px 16px;}
+  .blk.warn{background:var(--alert-bg);border-color:#E2CDB6;}
+  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 10px;}
+  .blk.warn h4{color:var(--alert);}
+  .blk ul{margin:0;padding-left:17px;}
+  .blk li{font-size:13px;line-height:1.65;margin-bottom:4px;}
+  .blk li:last-child{margin-bottom:0;}
+  .blk.warn li{color:#573015;}
+  .blk strong{font-weight:700;}
+
+  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:12px 17px;margin-bottom:12px;}
+  .hold p{font-size:13px;line-height:1.6;margin:0 0 6px;}
+  .hold p:last-child{margin-bottom:0;}
+  .hold b{font-weight:800;color:var(--mid);}
+
+  .estimate{border:1px solid var(--line);background:var(--steam);padding:11px 16px;
+    font-size:13px;line-height:1.7;margin-bottom:14px;}
+  .estimate b{font-weight:800;color:var(--mid);}
+  .estimate .dim{color:var(--grey);font-size:11.5px;margin-left:8px;}
+
+  .checklist{margin-bottom:14px;}
+  .check-row{display:flex;align-items:baseline;gap:10px;padding:5px 0;
+    border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;}
+  .check-row:last-child{border-bottom:none;}
+  .check-box{width:16px;height:16px;border:1.5px solid var(--mid);flex-shrink:0;
+    display:inline-block;border-radius:2px;background:#fff;}
+  .check-label{flex:1;}
+  .check-note{font-size:11.5px;color:var(--grey);}
+
+  .type-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+  .type-card{border:1.5px solid var(--line);padding:12px 14px;}
+  .type-card.rec{border-color:var(--mid);background:var(--pick);}
+  .type-card.no{opacity:.65;}
+  .type-card .rank{font-size:11px;font-weight:800;letter-spacing:.12em;
+    color:var(--brass);margin:0 0 5px;}
+  .type-card.rec .rank{color:var(--mid);}
+  .type-card h5{font-size:14px;font-weight:700;margin:0 0 6px;}
+  .type-card p{font-size:12px;line-height:1.55;margin:0;color:var(--grey);}
+  .type-card.no p{color:#9A4A20;}
+
+  .ft{border-top:1px solid var(--line);margin-top:16px;padding-top:8px;
+    display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
+
+  @media print{
+    html,body{background:#fff;}
+    .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
+    .bar{display:none;}
+    .purpose,.spec-grid,.blk,table,.type-grid,.hold,.estimate{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+</div>
+
+<div class="sheet">
+  <p class="ref">시설부 · 수영장 출입 게이트 도입 검토 — 업체 3사 동일조건 견적 의뢰용</p>
+
+  <div class="hd">
+    <div>
+      <p class="brand">WELLPERION</p>
+      <h1>수영장 출입 게이트 2통로 도입 검토<br>사양서 · 3사 동일조건 견적</h1>
+    </div>
+    <div class="rt">
+      <div><b>작성일</b>2026. 08. 25.</div>
+      <div><b>작성</b>AI CTO (시토)</div>
+      <div><b>결재</b>GM 결재 전 — 사양서·비교표 단계</div>
+    </div>
+  </div>
+
+  <div class="notice">
+    <strong>⚠ 이 문서는 업체 견적 의뢰 전 사양 확정 단계입니다.</strong>
+    업체 선정·발주는 GM 결재 후 진행합니다. 아래 금액은 ChatGPT 사전조사 기준 추정치이며,
+    현장 실측 전까지는 확정 금액이 아닙니다.
+  </div>
+
+  <div class="purpose">
+    <h2>설치 개요</h2>
+    <div class="row">
+      <div class="item">
+        <b>설치 위치</b>
+        <p>수영장 남탈의실 입구 1대<br>수영장 여탈의실 입구 1대<br>(총 2통로)</p>
+      </div>
+      <div class="item">
+        <b>설치 목적</b>
+        <p>무단 이용 차단<br>· 꼬리물기(tailgating) 방지<br>· 게이트 월담 방지<br>(출입 기록이 아닌 차단이 목적)</p>
+      </div>
+      <div class="item">
+        <b>운영 조건</b>
+        <p>운영시간 06:00 ~ 22:00<br>출입 대상: 성인 연간 정회원 전용<br>기존 RFID 손목밴드 연동 필요</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>제품 유형 비교 <span>사전조사 결론 — 1순위 추천은 방습형 스윙 스피드게이트</span></h3>
+  <div class="type-grid">
+    <div class="type-card rec">
+      <p class="rank">★ 1순위 추천</p>
+      <h5>방습형 스윙 스피드게이트</h5>
+      <p>패널이 좌우로 열려 통행이 자연스럽다. 젖은 발·수영가방·어린이 동선에 유리. 방습 사양 필수.</p>
+    </div>
+    <div class="type-card">
+      <p class="rank">2순위</p>
+      <h5>플랩게이트 (Flap Gate)</h5>
+      <p>얇은 플랩이 개폐. 스윙 대비 소폭 저렴하나 고속 통행·물기 환경에서 내구성 확인 필요.</p>
+    </div>
+    <div class="type-card no">
+      <p class="rank">비권장</p>
+      <h5>3봉 턴게이트 (Tripod)</h5>
+      <p>봉을 몸으로 밀어야 해서 젖은 발·가방·어린이·계단 동선에 불리. 수영장 환경에 부적합.</p>
+    </div>
+  </div>
+
+  <h3>견적서 필수 사양 <span>이 항목들이 모두 명기되지 않은 견적서는 비교 대상에서 제외</span></h3>
+  <table>
+    <colgroup>
+      <col style="width:34%">
+      <col style="width:10%">
+      <col style="width:56%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th style="text-align:left">사양 항목</th>
+        <th>필수</th>
+        <th style="text-align:left">세부 기준 · 비고</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>IR 센서 조 수</th>
+        <td class="must">필수</td>
+        <td class="left">최소 6조 이상, 가능하면 10조 이상 명기</td>
+      </tr>
+      <tr>
+        <th>꼬리물기 감지 (Anti-tailgating)</th>
+        <td class="must">필수</td>
+        <td class="left">1인 인증 후 다수 통과 시 경보 작동 여부</td>
+      </tr>
+      <tr>
+        <th>역방향 진입 감지</th>
+        <td class="must">필수</td>
+        <td class="left">반대 방향 무단 진입 시 경보</td>
+      </tr>
+      <tr>
+        <th>무인증 진입 경보</th>
+        <td class="must">필수</td>
+        <td class="left">카드 미인증 진입 시 부저·알람 작동</td>
+      </tr>
+      <tr>
+        <th>1회 인증 = 1명 통과</th>
+        <td class="must">필수</td>
+        <td class="left">Memory 기능(연속통과) <strong>반드시 OFF 상태</strong>로 납품 · 켜져 있으면 설치 목적 불충족</td>
+      </tr>
+      <tr>
+        <th>통과 즉시 게이트 닫힘</th>
+        <td class="must">필수</td>
+        <td class="left">통과 완료 감지 후 즉시 패널 복귀</td>
+      </tr>
+      <tr>
+        <th>스윙패널 높이</th>
+        <td class="must">필수</td>
+        <td class="left">1.2m 전후 — 넘어가기 억제 목적. 전신형(1.8m+)은 과도하여 불필요</td>
+      </tr>
+      <tr>
+        <th>재질</th>
+        <td class="must">필수</td>
+        <td class="left">SUS304 이상 스테인리스 · 수영장 고습 환경 대응 방습 코팅 명기</td>
+      </tr>
+      <tr>
+        <th>정전·화재 시 자동 개방</th>
+        <td class="must">필수</td>
+        <td class="left">Fail-Open 방식 · 피난 동선 확보 (소방법 준수)</td>
+      </tr>
+      <tr>
+        <th>어린이 끼임방지 센서</th>
+        <td class="must">필수</td>
+        <td class="left">게이트 닫힘 경로에 장애물 감지 시 자동 정지</td>
+      </tr>
+      <tr>
+        <th>출입 로그 저장</th>
+        <td class="must">필수</td>
+        <td class="left">인증 시각·카드번호 로컬 저장. 보존 기간 및 조회 방법 명기</td>
+      </tr>
+      <tr>
+        <th>기존 RFID 연동</th>
+        <td class="must">필수</td>
+        <td class="left">현재 사용 중인 RFID 손목밴드 · 회원관리 프로그램(업체명: 미확인)과 연동 가능 여부 명기</td>
+      </tr>
+      <tr>
+        <th>Anti-passback (카드 돌려쓰기 방지)</th>
+        <td class="left na">견적 시 확인</td>
+        <td class="left">현재 퇴장 인증 없음 → 별도 설계 필요. 구현 가능 여부·추가 비용 견적에 명기</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>견적 포함 항목 <span>아래 항목이 모두 포함된 일괄 견적 제출 요청</span></h3>
+  <table>
+    <colgroup>
+      <col style="width:34%">
+      <col style="width:66%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th style="text-align:left">항목</th>
+        <th style="text-align:left">세부 내용</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th>게이트 본체</th><td class="left">2대 (남탈의실 1 · 여탈의실 1)</td></tr>
+      <tr><th>RFID 리더</th><td class="left">2대 · 기존 손목밴드 호환 확인 후 포함</td></tr>
+      <tr><th>컨트롤러</th><td class="left">게이트 제어 컨트롤러 · 수량·사양 명기</td></tr>
+      <tr><th>전기·LAN 배선</th><td class="left">현장 실측 후 배선 길이·공사 범위 명기</td></tr>
+      <tr><th>앵커·바닥 공사</th><td class="left">바닥 고정 앵커 작업 포함 · 마감재 복구 포함 여부 명기</td></tr>
+      <tr><th>방습 처리</th><td class="left">수영장 습기 환경 대응 추가 처리 (있을 경우 비용 분리 명기)</td></tr>
+      <tr><th>회원관리 프로그램 연동</th><td class="left">기존 프로그램과의 연동 작업비 · 불가 시 대안 명기</td></tr>
+      <tr><th>설치 전 현장 실측</th><td class="left">무상 실측 포함 여부 명기</td></tr>
+      <tr><th>하자보증 기간</th><td class="left">본체·부품·소프트웨어 각각 명기</td></tr>
+      <tr><th>사후 유지보수</th><td class="left">정기점검·긴급출동·부품 수급 조건 명기</td></tr>
+    </tbody>
+  </table>
+
+  <div class="spec-grid">
+    <div class="blk warn">
+      <h4>⚠ 계단 인접 설치 — 안전 조건 (필수 검토)</h4>
+      <ul>
+        <li>게이트 통과 직후 계단이 시작되는 구조.</li>
+        <li><strong>게이트~첫 계단 사이 평탄부 최소 1.2m 이상 확보</strong> 권고.</li>
+        <li>50~80cm 밖에 안 남는 구조라면 <strong>제품 선택보다 설치 위치를 먼저 재검토</strong>.</li>
+        <li>업체 현장 실측 시 계단 이격 거리 측정 · 의견 기재 요청.</li>
+        <li>멈춤·밀림·끼임이 추락으로 이어지는 위험 → 안전기준 충족 서면 확인 요청.</li>
+      </ul>
+    </div>
+    <div class="blk">
+      <h4>현장 실측 — 시설부 사전 확인 항목</h4>
+      <ul>
+        <li>남/여 탈의실 입구 통로 폭 (mm 단위)</li>
+        <li>게이트~첫 계단 거리 (mm 단위)</li>
+        <li>천장 높이 (조명·배선 간섭 확인)</li>
+        <li>인근 전원 콘센트 위치 (220V, 분전반 거리)</li>
+        <li>LAN 포트 또는 배선 경로</li>
+        <li>바닥재 종류 (타일·석재 등, 앵커 공사 영향)</li>
+        <li>남/여 입구 입면 사진 각 2장 이상</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="estimate">
+    <b>참고 — 사전조사 추정 비용 범위</b>
+    <span class="dim">ChatGPT 공개가 기준 · 현장 실측 전 추정치 · 확정 아님</span><br>
+    스윙형 2대 일괄 : <b>1,000만 ~ 1,300만 원</b> (VAT 포함) &nbsp;|&nbsp;
+    플랩형 2대 일괄 : <b>900만 ~ 1,100만 원</b> (VAT 포함)<br>
+    <span style="font-size:11.5px;color:var(--grey);">
+      구성: 본체 2 + RFID 리더 2 + 컨트롤러 + 배선 + 앵커 + 연동 + 방습 처리 포함 기준.
+      설치 위치가 '한쪽 벽 + 게이트 1대' 단순 구조면 800만~1,000만원대까지 가능.</span>
+  </div>
+
+  <h3>3사 동일조건 견적 비교표 <span>견적 회수 후 작성 · GM 결재 상신용</span></h3>
+  <table>
+    <colgroup>
+      <col style="width:26%">
+      <col style="width:24.7%">
+      <col style="width:24.7%">
+      <col style="width:24.6%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th style="text-align:left">비교 항목</th>
+        <th>A사 <span style="font-size:11px;font-weight:400;">(업체명 기재)</span></th>
+        <th>B사 <span style="font-size:11px;font-weight:400;">(업체명 기재)</span></th>
+        <th>C사 <span style="font-size:11px;font-weight:400;">(업체명 기재)</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><th>업체명 · 담당자</th><td class="blank">견적 후 기재</td><td class="blank">견적 후 기재</td><td class="blank">견적 후 기재</td></tr>
+      <tr><th>제품명 · 모델명</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>게이트 유형</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>스윙패널 높이</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>IR 센서 조 수</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>Anti-tailgating 지원</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>역방향·무인증 경보</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>Memory 기능 OFF 가능</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>재질 · 방습 사양</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>Fail-Open (정전 자동 개방)</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>끼임방지 센서</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>기존 RFID 연동 가능</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>Anti-passback 가능 여부</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>게이트 본체 2대</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>RFID 리더 2대</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>배선·앵커·설치</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>연동 작업비</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>방습 처리</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th style="font-weight:800;background:#EDF1EE;">합계 (VAT 포함)</th>
+        <td class="blank" style="font-weight:800;">—</td>
+        <td class="blank" style="font-weight:800;">—</td>
+        <td class="blank" style="font-weight:800;">—</td></tr>
+      <tr><th>하자보증 기간</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>유지보수 조건</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>납기 (설치 완료 예상)</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>계단 안전 이격 충족 여부</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+      <tr><th>시설부 종합 의견</th><td class="blank">—</td><td class="blank">—</td><td class="blank">—</td></tr>
+    </tbody>
+  </table>
+
+  <div class="hold">
+    <p><b>다음 단계 — 시설부 진행 순서</b></p>
+    <p>① 현장 실측(통로 폭·계단 이격·전원·LAN 위치·입구 사진) — 이장희 소장 협조 요청<br>
+    ② 이 사양서를 업체 3사에 동일 조건으로 전달 → 견적 요청<br>
+    ③ 견적 회수 후 위 비교표 작성 → GM 결재 상신</p>
+    <p style="margin-top:8px;color:var(--grey);font-size:12px;">
+      ※ 업체 선정·발주는 GM 결재 필요 (💰결제 라인). 시토 범위 = 사양서 + 비교표까지.
+    </p>
+  </div>
+
+  <div class="ft">
+    <span>주식회사 웰페리온 · AI CTO (시토) · 작성 2026-08-25</span>
+    <span>사전조사 출처: ChatGPT 「수영장 게이트 비교분석」 2026-08-24 · 현장 실측 전 추정치</span>
+  </div>
+</div>
+
+</body>
+</html>
