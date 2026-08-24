@@ -309,7 +309,18 @@
     </div>
   </details>
 
-
+  <!-- ④ 완료건 — 위 「진행건」에서 끝난 건만 별도 토글로 이관(GM 지시 2026-08-24 "완료 토글 하나 더 만들어서
+       완료건으로 이관"). 완료 판정은 진행건과 같은 isDone()을 그대로 재사용(복제 없음) — 기본 접힘. -->
+  <details class="sec" id="sec-gm-done" style="display:none;">
+    <summary><span class="ic">✅</span> 완료건 <span class="cnt" id="gm-done-cnt">0건</span></summary>
+    <div class="sec-body">
+      <div class="sum">
+        <h3>업무명 · 상태</h3>
+        <table><tbody id="gm-done-sum-body"></tbody></table>
+      </div>
+      <div class="grid" id="gm-done-grid"></div>
+    </div>
+  </details>
 
 
   <div class="ft">
@@ -500,37 +511,16 @@
   var elGmCnt = document.getElementById('gm-grp-cnt');
   var elGmGrid = document.getElementById('gm-grid');
   var elGmSum = document.getElementById('gm-sum-body');
+  var elGmDoneSec = document.getElementById('sec-gm-done');
+  var elGmDoneCnt = document.getElementById('gm-done-cnt');
+  var elGmDoneGrid = document.getElementById('gm-done-grid');
+  var elGmDoneSum = document.getElementById('gm-done-sum-body');
   // ① 할 일 체크 상태 — gmNoteLines[목표id] = progress_note 줄 배열(체크하면 이 배열만 바뀐다).
   // dirtyIds = 아직 저장 안 한 목표id 모음.
   var gmNoteLines = {}, dirtyIds = {};
 
-  function renderGm(items) {
-    if (items === null) {
-      elGmGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
-      elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = ''; return;
-    }
-    elGmCnt.textContent = items.length + '건';
-    if (!items.length) {
-      elGmGrid.innerHTML = '<div class="rep-empty">이번 달 GM 직접 관장 건이 없습니다.</div>';
-      elGmSum.innerHTML = ''; return;
-    }
-    gmNoteLines = {};
-    // 끝난 건은 아래로 내린다 (GM 지시 2026-08-19 "완료된 건이 있으면 아래로 내리는 거 아냐?").
-    // 완료 판정 = 상태가 '완료'이거나, 체크리스트가 있고 전부 체크된 것. 그 외에는 원래 순서 그대로다
-    // (안정 정렬 — 번호가 매일 뒤바뀌면 GM 이 "몇 번"으로 부르실 수 없다).
-    (function () {
-      function isDone(o) {
-        if (String(o.status || '').trim() === '완료') return true;
-        var t = extractTodos(o.note || '');
-        return t.length > 0 && t.every(function (x) {
-          var k = chkKey(o.id, x.idx, x.text);
-          return Object.prototype.hasOwnProperty.call(_gmCheckBoard, k) ? !!_gmCheckBoard[k] : !!x.checked;
-        });
-      }
-      items.forEach(function (o, i) { o._ord = i; o._done = isDone(o) ? 1 : 0; });
-      items.sort(function (a, b) { return (a._done - b._done) || (a._ord - b._ord); });
-    })();
-    elGmGrid.innerHTML = items.map(function (it, i) {
+  // 카드 하나 그리기 — 「진행건」·「완료건」 두 토글이 같은 카드 모양을 그대로 재사용한다(복제 없음).
+  function cardHtml(it, i) {
       var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
       var sp = splitNote(it.note);
       // 자료 링크 — 작은 아이콘(📄)은 GM 이 못 찾으셨다(2026-08-06 "링크를 추가해줘").
@@ -640,15 +630,69 @@
         armoniumLink(it.id) +
         docLinks(it.docs, it.doc) +
         '</div>';
-    }).join('');
-    elGmSum.innerHTML = items.map(function (it, i) {
-      var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
-      var pct = (typeof it.progress === 'number') ? it.progress + '%' : '—';
-      var dueHtml = '기한 ' + esc(fmtDue(it.due));
-      if (isOverdue(it.due)) dueHtml = '<span style="color:var(--alert)">' + dueHtml + '</span>';
-      return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
-        esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
-    }).join('');
+  }
+  // 요약표 행 하나 — 위 cardHtml과 같은 재사용 원칙.
+  function sumRowHtml(it, i) {
+    var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
+    var pct = (typeof it.progress === 'number') ? it.progress + '%' : '—';
+    var dueHtml = '기한 ' + esc(fmtDue(it.due));
+    if (isOverdue(it.due)) dueHtml = '<span style="color:var(--alert)">' + dueHtml + '</span>';
+    return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
+      esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
+  }
+
+  function renderGm(items) {
+    if (items === null) {
+      elGmGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
+      elGmCnt.textContent = '조회 실패'; elGmSum.innerHTML = '';
+      elGmDoneSec.style.display = 'none';
+      return;
+    }
+    if (!items.length) {
+      elGmCnt.textContent = '0건';
+      elGmGrid.innerHTML = '<div class="rep-empty">이번 달 GM 직접 관장 건이 없습니다.</div>';
+      elGmSum.innerHTML = '';
+      elGmDoneSec.style.display = 'none';
+      return;
+    }
+    gmNoteLines = {};
+    // 끝난 건은 「✅ 완료건」 토글로 뺀다 (GM 지시 2026-08-24 "완료건으로 이관"). 판정 = 상태가 '완료'이거나,
+    // 체크리스트가 있고 전부 체크된 것. 그 외 순서는 안정 정렬로 유지한다(번호가 매일 안 바뀌게).
+    (function () {
+      function isDone(o) {
+        if (String(o.status || '').trim() === '완료') return true;
+        var t = extractTodos(o.note || '');
+        return t.length > 0 && t.every(function (x) {
+          var k = chkKey(o.id, x.idx, x.text);
+          return Object.prototype.hasOwnProperty.call(_gmCheckBoard, k) ? !!_gmCheckBoard[k] : !!x.checked;
+        });
+      }
+      items.forEach(function (o, i) { o._ord = i; o._done = isDone(o) ? 1 : 0; });
+      items.sort(function (a, b) { return (a._done - b._done) || (a._ord - b._ord); });
+    })();
+    // 정렬이 이미 미완료→완료 순으로 묶어 놓았으니, 첫 완료 항목 위치가 곧 분기점이다.
+    var splitAt = items.length;
+    for (var si = 0; si < items.length; si++) { if (items[si]._done) { splitAt = si; break; } }
+    var activeItems = items.slice(0, splitAt);
+    var doneItems = items.slice(splitAt);
+
+    elGmCnt.textContent = activeItems.length + '건';
+    if (!activeItems.length) {
+      elGmGrid.innerHTML = '<div class="rep-empty">진행 중인 GM 직접 관장 건이 없습니다.</div>';
+      elGmSum.innerHTML = '';
+    } else {
+      elGmGrid.innerHTML = activeItems.map(cardHtml).join('');
+      elGmSum.innerHTML = activeItems.map(sumRowHtml).join('');
+    }
+
+    elGmDoneCnt.textContent = doneItems.length + '건';
+    if (!doneItems.length) {
+      elGmDoneSec.style.display = 'none';
+    } else {
+      elGmDoneSec.style.display = '';
+      elGmDoneGrid.innerHTML = doneItems.map(cardHtml).join('');
+      elGmDoneSum.innerHTML = doneItems.map(sumRowHtml).join('');
+    }
   }
 
   // ★계획을 먼저 그리고, 체크 상태는 오는 대로 채운다 (GM 지적 2026-08-14 "GM업무에 변경된게 없는데?").
