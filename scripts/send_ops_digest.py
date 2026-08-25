@@ -1010,11 +1010,35 @@ def send_mgr_brief() -> None:
 # ══════════════════════════════════════════════════════════════════════════
 _OVD_ROOM_LESSON = "★부서장"
 _OVD_ROOM_OPS = "★운영+시설+지원+주차"
-_OVD_LEADER: dict = {
+_OVD_LEADER_DEPT: dict = {
     "시설부": "이정헌 소장",
     "지원부": "반장", "지원부(남)": "반장", "지원부(여)": "반장",
     "운영부": "이경연 실장",
 }
+
+
+def _ovd_leaders() -> dict:
+    """부서·종목별로 '부를 사람' 한 명. 부서 4종은 여기, 종목 팀은 정본에서 읽는다.
+
+    ★2026-08-25 GM 지적 — 그날 아침 알림이 P.T팀 건 2개를 「담당 미정」으로 내보냈다.
+      팀 리더 명단은 GM 이 여러 번 말씀하셨는데 저장소 어디에도 표로 없어서, 코드가
+      부서 3종만 알고 있었다. 이름을 여기 또 적지 않고 정본(ssot/kpi.json 팀리더 표)에서
+      읽는다 — 사람이 바뀌면 그 표만 고치면 된다(약속 L01).
+    """
+    out = dict(_OVD_LEADER_DEPT)
+    try:
+        import json as _json
+        from pathlib import Path as _Path
+        canon = _json.loads((_Path(__file__).resolve().parent.parent /
+                             "ssot" / "kpi.json").read_text(encoding="utf-8"))
+        for key, block in canon.items():
+            if str(key).startswith("_팀리더") and isinstance(block, dict):
+                for team, who in (block.get("teams") or {}).items():
+                    if team and who:
+                        out.setdefault(str(team), str(who))
+    except Exception:
+        pass          # 정본을 못 읽어도 부서 4종은 그대로 동작한다(fail-soft)
+    return out
 _OVD_HEARTBEAT_ID = "overdue-reception-alert"
 # 이 알림에서 빼는 분류.
 #  · 분실물 접수 = 보관 성격(30일 주기)이라 매일 재촉할 일이 아니다.
@@ -1080,7 +1104,7 @@ def _ovd_who(row: dict, dept: str) -> str:
       그전엔 담당자 이름을 먼저 봤는데, 그 값의 대부분이 자동으로 찍힌 방 이름(@운영부)이라
       실제로는 늘 부서 책임자로 떨어지고 있었다. 이제 그 한 갈래만 남긴다.
       처리자(handler)를 쓰지 않는 이유 = 이 블록은 '아직 안 끝난 건'만 다뤄 처리자가 비어 있다."""
-    return _OVD_LEADER.get(dept, "") or "담당 미정"
+    return _ovd_leaders().get(dept, "") or "담당 미정"
 
 
 def _build_ovd_block(rows_for_room: list) -> str:
