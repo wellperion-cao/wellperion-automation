@@ -111,6 +111,19 @@ def reception_line() -> list[str]:
     return [f" · 미처리 접수 {len(fac)}건 — 최장 {oldest}일"]
 
 
+# 감염병 예방 강화 — GM 지시 2026-08-25(중국 코로나 재확산 대비). 3부서가 매일 같은 문장을
+# 보고 움직이도록 보고 칸에 고정으로 싣는다. 기존 점검 항목에 얹는 방식이라 새 점검표를 만들지
+# 않는다(약속 L21). 상황이 끝나면 이 리스트를 비우면 블록째 사라진다 — 끄는 스위치를 따로 두지
+# 않는다. 같은 문안이 부서 화면(지원부·주차관리부·시설부 체계)에도 실려 있다.
+INFECTION_PREVENTION: list[str] = [
+    " · 접점 소독 — 손잡이·락커·키오스크·발권기, 오픈 전·마감 후 2회 (기존 청소 동선에 포함)",
+    " · 환기 — 사우나·수면실·찜질방 회차마다 10분, 창 없는 구역은 배기팬 상시",
+    " · 공용 비품 — 바스타올·매트리스·침구, 회차 점검마다 상태 확인 후 교체",
+    " · 직원 — 발열·기침 시 근무 제외 후 즉시 보고, 청소 시 마스크·장갑 착용",
+    " · 비품 재고 — 손소독제·마스크 주 1회 확인(리셉션·사우나·주차 3곳)",
+]
+
+
 def build_text(day: str, value_up: list[str]) -> str:
     d = datetime.strptime(day, "%Y-%m-%d").date()
     head = f"[운영 현황]  시설 · 지원 · 주차   {d.month}/{d.day}({WEEKDAY_KO[d.weekday()]})"
@@ -121,6 +134,9 @@ def build_text(day: str, value_up: list[str]) -> str:
         ("■ 주차 관리", _parking_lines()),
         ("■ 내부 환경 개선", value_up),
     ]
+    # 이 블록만 '집계 중' 채움 대상이 아니다 — 수집 실패가 아니라 지침이라, 비면 안 싣는다.
+    if INFECTION_PREVENTION:
+        blocks.append(("■ 감염병 예방 (3부서 공통)", list(INFECTION_PREVENTION)))
     parts = [head]
     for title, lines in blocks:
         if not lines:
@@ -305,9 +321,15 @@ def _selftest() -> None:
     """텍스트 조립만 검사한다(네트워크 없이). 빈 묶음이 '집계 중'으로 채워지는지."""
     out = build_text("2026-08-18", [])
     assert "[운영 현황]" in out
-    assert out.count("■") == 4, out
+    assert out.count("■") == (4 + (1 if INFECTION_PREVENTION else 0)), out
     assert "집계 중" in out  # value_up 이 비었으니 그 자리는 집계 중
     assert "8/18(화)" in out, out
+    # 지침 블록은 '집계 중'으로 채워지지 않는다 — 비면 블록째 빠진다
+    saved = list(INFECTION_PREVENTION)
+    INFECTION_PREVENTION.clear()
+    assert "감염병 예방" not in build_text("2026-08-18", [])
+    INFECTION_PREVENTION.extend(saved)
+    assert "감염병 예방" in build_text("2026-08-18", [])
 
     # 사람 손입력 보호 판정
     prev = {"day": "2026-08-24", "text": "자동으로 쓴 값"}
