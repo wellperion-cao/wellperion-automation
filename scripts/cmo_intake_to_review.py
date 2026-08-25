@@ -596,7 +596,8 @@ def _download_drive_image(url: str, dest: Path) -> bool:
 
 
 def _render_sunday_html(variant: str, output: Path, text: str,
-                        photo: Path | None = None, label: str = "") -> bool:
+                        photo: Path | None = None, label: str = "",
+                        rows: list | None = None) -> bool:
     """HTML/CSS 엔진(compose_html)으로 슬라이드 1장 렌더 → output. 실패하면 False.
 
     HTML 쪽이 자간·행간·균형 줄바꿈·밴딩 없는 그라디언트에서 Pillow 를 이긴다. 다만
@@ -609,6 +610,8 @@ def _render_sunday_html(variant: str, output: Path, text: str,
              "label": label or SERIES_NAME}
     if photo is not None:
         slide["photo"] = str(photo)
+    if rows:
+        slide["rows"] = rows
     try:
         from compose_html import render_carousel
         with tempfile.TemporaryDirectory() as tmp:
@@ -818,10 +821,16 @@ def _compose_sunday_info(rows: list, output: Path, photo: Path | None = None) ->
         return False
 
 
-def _compose_sunday_think(caption: str, output: Path) -> None:
-    """post_4 — 사진 없음: 어두운 배경(#23201C) + 주황(#F0B27A) 바 + 문장3."""
-    if _render_sunday_html("think", output, caption):
+def _compose_sunday_think(caption: str, output: Path, rows: list | None = None) -> None:
+    """마무리 한 장 — 사진 없음: 어두운 배경(#23201C) + 주황(#F0B27A) 바 + 문장3 + 정보표.
+
+    GM 지시 2026-08-25: 정보표를 마지막 사진 위에 얹지 말고 이 마무리 카드와 합쳐 한 장으로
+    끝낸다. 사진 카드는 사진과 그 문장만 갖는다.
+    """
+    if _render_sunday_html("think", output, caption, rows=rows):
         return
+    # ponytail: Pillow 폴백은 문장만 그린다 — 브라우저 렌더가 막힌 날에도 카드가 나가게 하는
+    # 안전망이라 표까지 다시 구현하지 않는다. 표가 꼭 필요하면 HTML 렌더를 고치는 쪽이 맞다.
     from slide_compositor import load_font, wrap_text, draw_text_block
 
     w, h = _SUNDAY_ASPECT
@@ -944,22 +953,17 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
             _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
                                        _add(f"post_{i + 2}.jpg"))
         nxt = len(cards) + 2
-        # 정보는 따로 글자 페이지를 만들지 않고 '마지막 사진 위'에 얹는다(GM 지시 2026-08-05:
-        # '정보를 따로 페이지로 만드는 것보다, 그냥 사진 페이지에 정리하는 게 낫다').
-        # 그 사진의 문장 카드를 정보 카드로 갈아 끼우므로 장수는 늘지 않는다.
-        # 정보 슬라이드 값 = AI 가 밖에 낼 말로 다듬은 것(ai["info"]) 우선, 없으면 접수 원문.
+        # 정보는 마무리 카드와 한 장으로 합친다(GM 지시 2026-08-25: '표로 정리한 건은
+        # 백그라운드 맨 마지막이랑 병합해서 1장에 마무리'). 종전(2026-08-05~08-25)에는 정보를
+        # 마지막 사진 카드 위에 얹느라 그 사진의 문장이 통째로 사라졌다 — 사진 카드는 사진과
+        # 그 문장만 갖고, 정보는 마무리 카드가 받는다. 장수는 종전과 같다.
+        # 정보 값 = AI 가 밖에 낼 말로 다듬은 것(ai["info"]) 우선, 없으면 접수 원문.
         # ★접수 메모를 그대로 인쇄하면 안 된다 — 2026-08-16 '테스트도 성공' 이 그대로 나갔다.
         # AI 가 info 를 냈으면 그것만 쓴다 — 모델이 뺀 키는 '밖에 낼 말이 아니라' 뺀 것이므로
         # 원문으로 되살리지 않는다(되살리면 애초 사고가 그대로 재발한다).
         _polished = (ai or {}).get("info") or {}
         info_rows = _sunday_info_rows(_polished or (parsed or {}).get("facts"))
-        if info_rows and fit_cards:
-            last_rel = slides_rel[-1]
-            if _compose_sunday_info(info_rows, out_dir / Path(last_rel).name, fit_cards[-1]):
-                nxt = len(cards) + 2          # 문장 카드 자리를 그대로 쓴다(추가 없음)
-            else:
-                print("[WARN] 정보 카드 렌더 실패 — 문장 카드 그대로 둔다", file=sys.stderr)
-        _compose_sunday_think(think, _add(f"post_{nxt}.jpg"))
+        _compose_sunday_think(think, _add(f"post_{nxt}.jpg"), rows=info_rows)
     except Exception as exc:
         print(f"[WARN] GM의 일요일 슬라이드 제작 실패: {item_id}: {exc}", file=sys.stderr)
         return None
@@ -989,6 +993,22 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
             preview_rel = f"cmo/review/{dest.name}"
     except Exception as exc:
         print(f"[WARN] 미리보기 복사 실패(카드는 폴더 몽타주로 폴백): {exc}", file=sys.stderr)
+
+    # 영상은 슬라이드 뒤에 붙인다(GM 지적 2026-08-25: '영상까지 올리면 마지막에 영상은 안
+    # 들어가더라'). 종전에는 영상링크를 '영상도 함께 올라간다'는 힌트로만 읽어 글 쓰는 데만
+    # 쓰고 파일은 받지 않았다 — 그래서 캐러셀에 영상이 한 번도 실리지 않았다.
+    # 인스타 업로더는 이미 사진 뒤 영상 혼합 캐러셀을 지원한다(instagram_upload_playwright
+    # _scan_plain_pattern) — 파일을 output 에 놓기만 하면 된다. 검수 미리보기(몽타주)는 위에서
+    # 이미 만들었으므로 여기서 붙여야 몽타주가 영상 파일을 열려다 죽지 않는다.
+    for i, vurl in enumerate([u.strip() for u in (row.get("영상링크") or "").split("\n")
+                              if u.strip()], start=1):
+        vname = f"post_{len(slides_rel) + 1}.mp4"
+        if _download_drive_image(vurl, out_dir / vname):
+            slides_rel.append(f"{folder_rel}/output/{vname}")
+        else:
+            # 드라이브가 큰 파일에 확인 페이지를 돌려주면 실패로 잡힌다 — 조용히 넘기지 않는다.
+            print(f"[WARN] 하루 기록 영상 다운로드 실패(사진만 올라갑니다): {item_id} #{i} {vurl}",
+                  file=sys.stderr)
 
     caption_full = caption_body
     if hashtags:

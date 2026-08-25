@@ -338,6 +338,23 @@ def _sunday_info_html(rows: list) -> str:
     return '<div class="sunday-info">' + "".join(out) + "</div>"
 
 
+def _sunday_body_html(slide: dict) -> str:
+    """sunday 슬라이드 본문. 문장과 정보표를 한 장에 함께 담을 수 있다.
+
+    GM 지시 2026-08-25: 마무리는 한 장으로 끝낸다. 종전에는 정보표가 마지막 사진 카드의
+    문장 자리를 덮어써서 그 사진에 붙어야 할 문장이 통째로 사라졌고, 마무리 문장 카드가
+    따로 한 장 더 붙었다. 이제 마무리 카드 하나가 문장 + 정보표를 같이 갖는다.
+    """
+    rows = slide.get("rows") or []
+    text = str(slide.get("text") or "")
+    if rows and text:
+        return (f'<div style="margin-bottom:.9em">{_esc(text)}</div>'
+                + _sunday_info_html(rows))
+    if rows or slide.get("variant") == "info":
+        return _sunday_info_html(rows)
+    return _esc(text)
+
+
 def build_slide_html(slide: dict, *, w: int, h: int, account: str,
                      chip_label: str, index: int, total: int) -> str:
     kind = slide["type"]
@@ -439,8 +456,7 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
             LABEL_HTML=(f'<div class="sunday-label">{_esc(slide.get("label", "어떤 하루"))}</div>'
                         if v["label"] else ""),
             BAR_HTML='<div class="sunday-bar"></div>' if v["bar"] else "",
-            TEXT=(_sunday_info_html(slide.get("rows") or [])
-                  if slide.get("variant") == "info" else _esc(slide.get("text", ""))),
+            TEXT=_sunday_body_html(slide),
         ))
 
     if kind == "paper":
