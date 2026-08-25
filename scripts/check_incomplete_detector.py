@@ -141,6 +141,70 @@ def detect_recurring(
     return recurring
 
 
+# ── 정리 후보(계속 안 되는 항목) 집계 ────────────────────────────────────────
+# 판정 기준(2026-08-25 실측 28일치로 결정):
+#   미체크율 >= 50%  AND  (미체크율 − 같은 회차 평균) >= 25%p
+# 근거 — 회차 제출이 통째로 빠진 날 때문에 회차 전체가 같이 높아지는 것과,
+#        그 항목만 유독 높은 것을 가른다. 실측 마진:
+#   잡힘 : B-8 개인락커(마감조) 100%/평균43.8%=+56.2%p · B-8(오후조) 67.9%/27.2%=+40.7%p
+#          C-8 센터 화분(오후조) 60.7%/27.2%=+33.5%p
+#   안잡힘: A-1 사우나 탕(마감조) 57.1%/43.8%=+13.3%p · C-2 복도 휴지통(오후조) 42.9%=+15.7%p
+#   → 최대 제외폭 15.7%p 와 최소 포함폭 33.5%p 사이인 25%p 를 컷으로 둔다.
+# 회차 평균의 분모 = '원장에 한 번이라도 등장한 항목'만. 한 번도 안 빠진 항목은 원장에
+#   기록 자체가 없어 셀 수 없다 — 평균이 실제보다 높게 잡히므로 후보가 덜 나오는(보수적) 쪽이다.
+DEAD_MIN_RATE = 0.50
+DEAD_MIN_EXCESS = 0.25
+
+
+def detect_dead_items(
+    ledger: dict,
+    dept: str = "support",
+    min_rate: float = DEAD_MIN_RATE,
+    min_excess: float = DEAD_MIN_EXCESS,
+) -> list[dict]:
+    """원장 전체 기간에서 '같은 회차 평균보다 뚜렷이 안 되는 항목'을 집계.
+
+    반환: [{"shift", "shift_label", "item", "days", "total_days",
+            "rate", "shift_avg", "excess"}, ...] 초과폭 내림차순.
+    자동 삭제는 하지 않는다 — 사람이 판단할 후보 목록일 뿐.
+    """
+    dates = sorted(ledger or {})
+    total = len(dates)
+    if not total:
+        return []
+
+    counts: dict[str, Counter] = {}
+    for d in dates:
+        by_shift = (ledger[d] or {}).get(dept) or {}
+        for shift, items in by_shift.items():
+            bucket = counts.setdefault(shift, Counter())
+            for item in (items or []):
+                name = str(item).strip()
+                if name:
+                    bucket[name] += 1
+
+    out = []
+    for shift, bucket in counts.items():
+        if not bucket:
+            continue
+        avg = sum(bucket.values()) / len(bucket) / total
+        for name, cnt in bucket.items():
+            rate = cnt / total
+            if rate >= min_rate and rate - avg >= min_excess:
+                out.append({
+                    "shift": shift,
+                    "shift_label": SHIFT_LABELS.get(shift, shift),
+                    "item": name,
+                    "days": cnt,
+                    "total_days": total,
+                    "rate": rate,
+                    "shift_avg": avg,
+                    "excess": rate - avg,
+                })
+    out.sort(key=lambda r: (-r["excess"], r["item"]))
+    return out
+
+
 def format_suggestion_lines(
     recurring: list[dict],
     max_items: int = 3,
@@ -185,3 +249,19 @@ def suggestion_lines_for_today(ledger_path, today: str) -> list[str]:
         return format_suggestion_lines(recurring)
     except Exception:
         return []
+
+
+if __name__ == "__main__":
+    # 자체검사 — 실제 원장으로 판정 기준이 의도대로 가르는지 확인.
+    _led = load_ledger(Path(__file__).resolve().parent.parent / "status" / "check_incomplete_ledger.json")
+    _rows = detect_dead_items(_led)
+    for _r in _rows:
+        print("%-6s %5.1f%% (%2d/%d) 평균%4.1f%% 초과+%4.1f%%p  %s" % (
+            _r["shift_label"], _r["rate"] * 100, _r["days"], _r["total_days"],
+            _r["shift_avg"] * 100, _r["excess"] * 100, _r["item"]))
+    _hit = {(r["shift"], r["item"]) for r in _rows}
+    assert ("close", "B-8 개인락커 청결 관리(요청 시)") in _hit, "B-8(마감조) 100% 미체크가 후보에서 빠졌다"
+    assert ("pm", "C-8 센터 화분") in _hit, "C-8(오후조)가 후보에서 빠졌다"
+    assert ("close", "A-1 사우나 탕") not in _hit, "A-1(마감조)은 회차 통째 결측이라 후보가 아니어야 한다"
+    assert ("close", "C-1 내부 화장실") not in _hit, "C-1(마감조)은 회차 통째 결측이라 후보가 아니어야 한다"
+    print("자체검사 통과 — 후보 %d건" % len(_rows))

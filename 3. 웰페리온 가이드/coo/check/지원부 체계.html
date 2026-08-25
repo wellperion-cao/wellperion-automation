@@ -2059,6 +2059,14 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <div class="dash-section-title">개선 시사점</div>
   <div id="mrImprovements"></div>
+
+  <!-- 🧹 정리 후보 — status/check_incomplete_ledger.json 누적에서 '같은 회차 평균보다 뚜렷이 높은 미체크율' 항목만.
+       판정·근거 = scripts/check_incomplete_detector.py detect_dead_items. 후보 0건이면 통째로 숨긴다(빈 카드 금지). -->
+  <div id="wpDeadItems" style="display:none;">
+    <div class="dash-section-title">🧹 정리 후보 — 계속 안 되는 항목</div>
+    <div style="font-size:12px;color:var(--dim);margin:-2px 0 10px;">계속 체크되지 않는 항목입니다. 실제로 안 하는 일이면 목록에서 빼고, 필요한 일이면 주기나 담당을 바꿔 주세요.</div>
+    <div id="wpDeadItemsBody"></div>
+  </div>
 </div>
 
 <script src="../../_assets/board_sync.js" charset="utf-8"></script>
@@ -5793,7 +5801,7 @@ function switchTab(tab, opts){
   if(tab==='check-m'){activeGenderTab='m';renderG('m')}
   if(tab==='check-f'){activeGenderTab='f';renderG('f')}
   if(tab==='manual'){renderBoard();renderManualItems();}
-  if(tab==='monthly'){ if(typeof mrEnsureMonthInput==='function') mrEnsureMonthInput(); if(typeof loadMonthlyReport==='function') loadMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
+  if(tab==='monthly'){ if(typeof mrEnsureMonthInput==='function') mrEnsureMonthInput(); if(typeof loadMonthlyReport==='function') loadMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof wpDeadItemsLoad==='function') wpDeadItemsLoad(); }
 }
 // 해시 딥링크(예 …#supply) → 로드 시 해당 탭 자동 열기. 잠금 탭(점검 남/여)은 제외(PIN 우회 방지).
 window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && h!=='check-m' && h!=='check-f' && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
@@ -9267,6 +9275,63 @@ async function loadMonthlyPlanTab(){
   }catch(e){
     if(statusEl){ statusEl.style.display='block'; statusEl.textContent='월간 계획을 불러오지 못했습니다 — 새로고침'; statusEl.style.color='var(--red)'; }
   }
+}
+
+/* ═══════════════════════════════════════════
+   🧹 정리 후보 — 계속 안 되는 항목 (GM 2026-08-25)
+   원장 = status/check_incomplete_ledger.json (매일 22:30 daily_scheduler 적재).
+   판정 = 미체크율 >= 50% AND 같은 회차 평균보다 >= 25%p 높음.
+     회차 제출이 통째로 빠진 날 때문에 회차 전체가 같이 높아진 것(A-1 등)은 걸러지고,
+     그 항목만 유독 안 되는 것(B-8·C-8)만 남는다. 근거·실측 마진은 파이썬 쪽 주석이 정본
+     (scripts/check_incomplete_detector.py detect_dead_items — 같은 규칙).
+   자동 삭제 없음 — 사람이 판단할 목록만 보인다. 후보 0건이면 카드 자체를 숨긴다.
+   ═══════════════════════════════════════════ */
+var WP_DEAD_URL = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/check_incomplete_ledger.json';
+var WP_DEAD_SHIFT = {am:'오전조', pm:'오후조', close:'마감조', night:'야간조'};
+var WP_DEAD_LOADED = false;
+async function wpDeadItemsLoad(){
+  if(WP_DEAD_LOADED) return;
+  WP_DEAD_LOADED = true;
+  var box=document.getElementById('wpDeadItems');
+  if(!box) return;
+  try{
+    var r=await fetch(WP_DEAD_URL,{cache:'no-store'});
+    var led=await r.json();
+    var dates=Object.keys(led||{}).sort();
+    var total=dates.length;
+    if(!total) return;
+    var counts={};
+    dates.forEach(function(d){
+      var by=((led[d]||{}).support)||{};
+      Object.keys(by).forEach(function(sh){
+        var b=counts[sh]||(counts[sh]={});
+        (by[sh]||[]).forEach(function(it){ var n=String(it).trim(); if(n) b[n]=(b[n]||0)+1; });
+      });
+    });
+    var rows=[];
+    Object.keys(counts).forEach(function(sh){
+      var b=counts[sh], names=Object.keys(b);
+      if(!names.length) return;
+      var sum=0; names.forEach(function(n){ sum+=b[n]; });
+      var avg=sum/names.length/total;
+      names.forEach(function(n){
+        var rate=b[n]/total;
+        if(rate>=0.50 && rate-avg>=0.25) rows.push({shift:sh, item:n, days:b[n], rate:rate, avg:avg});
+      });
+    });
+    if(!rows.length) return;
+    rows.sort(function(a,b){ return (b.rate-b.avg)-(a.rate-a.avg); });
+    var pct=function(v){ return Math.round(v*100); };
+    document.getElementById('wpDeadItemsBody').innerHTML = rows.map(function(x){
+      return '<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;">'
+        +'<div style="font-size:14px;font-weight:700;">'+mpEsc(x.item)
+        +' <span style="font-size:12px;font-weight:600;color:var(--dim);">'+mpEsc(WP_DEAD_SHIFT[x.shift]||x.shift)+'</span></div>'
+        +'<div style="font-size:12px;color:var(--dim);margin-top:4px;">'
+        +total+'일 중 '+x.days+'일 안 됨('+pct(x.rate)+'%) · 같은 회차 평균 '+pct(x.avg)+'%보다 '+pct(x.rate-x.avg)+'%p 높음</div>'
+        +'</div>';
+    }).join('') + '<div style="font-size:12px;color:var(--dim);margin-top:6px;">항목을 빼거나 주기·담당을 바꾸려면 「매뉴얼」 탭에서 편집하세요.</div>';
+    box.style.display='block';
+  }catch(e){ /* 원장 못 읽으면 조용히 미표시 — 가짜 후보 금지 */ }
 }
 </script>
 
