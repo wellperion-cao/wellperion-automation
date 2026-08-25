@@ -896,14 +896,52 @@ def _fix_avg_for_chairman(text: str) -> str:
     return _AVG_LINE_RE.sub(_sub, text)
 
 
+# ── 존칭 보정(GM 지시 2026-08-26 — "카카오톡은 다 뒤에 님자를 붙여줬으면 좋겠어") ──
+# 사람에게 나가는 글에서 직함 뒤 '님'이 빠지는 자리는 한 곳이 아니다(배 전달문·기한초과
+# 알림·요약 카드가 각자 문장을 만든다). 문장을 만드는 자리마다 챙기면 새 발신 경로가
+# 생길 때 또 빠진다 — 모든 카톡 발신이 지나가는 이 관문 하나에만 둔다(약속 L21).
+# ▸이미 '님'이 붙은 것은 건드리지 않는다. '프로'는 프로그램·프로젝트에 걸리지 않게
+#   뒤에 글자가 없을 때만 본다. 'M'·'AM'은 한글 이름 뒤에 붙은 것만 본다(임정은M님).
+_HONORIFIC_RES = [
+    re.compile(r"(?<=[가-힣])\s?(실장|소장|팀장|반장|원장|프로|부장|과장|주임|사원|대리|점장)(?![가-힣님])"),
+    re.compile(r"(?<=[가-힣])(AM|GM|M)(?![A-Za-z가-힣님])"),
+]
+
+
+def add_honorifics(text: str) -> str:
+    """이름·직함 뒤에 '님'이 빠졌으면 붙인다. 이미 붙어 있으면 그대로 둔다."""
+    out = str(text or "")
+    for rx in _HONORIFIC_RES:
+        out = rx.sub(lambda m: m.group(0) + "님", out)
+    return out
+
+
+def _selfcheck_honorifics() -> None:
+    cases = [
+        ("이경연 실장 — 확인 부탁드립니다", "이경연 실장님 — 확인 부탁드립니다"),
+        ("이경연 실장님께 여쭙고 있습니다", "이경연 실장님께 여쭙고 있습니다"),   # 중복 금지
+        ("이연희 반장, 박남일 반장", "이연희 반장님, 박남일 반장님"),
+        ("임정은M 확인", "임정은M님 확인"),
+        ("윤병현AM 전달", "윤병현AM님 전달"),
+        ("김태엽 프로 담당", "김태엽 프로님 담당"),
+        ("프로그램 점검·프로젝트 일정", "프로그램 점검·프로젝트 일정"),          # 오탐 금지
+        ("실장님 자리", "실장님 자리"),
+    ]
+    for src, want in cases:
+        got = add_honorifics(src)
+        assert got == want, f"{src!r} → {got!r} (기대 {want!r})"
+    print("[selfcheck] add_honorifics OK")
+
+
 def build_caption(room: dict, base_caption: str) -> str:
     """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
-    _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향)."""
+    _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향).
+    마지막으로 모든 방 공통 존칭 보정(add_honorifics)을 거친다."""
     text = base_caption
     if room.get("name") == CHAIRMAN_ROOM_NAME:
         text = _sanitize_for_chairman(text)
         text = _fix_avg_for_chairman(text)
-    return f"{room.get('prefix', '')}{text}"
+    return add_honorifics(f"{room.get('prefix', '')}{text}")
 
 
 # ══════════════════════════════════════════════════════════════════════════

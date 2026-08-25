@@ -783,6 +783,13 @@ ASKS_TITLE_CAP = 50
 ASKS_HOW_CAP = 60
 _ROLE_TAG_RE = re.compile(r"^\[[^\]]*\]\s*")  # "[웰페리온 AI 웰리] " 같은 발신 태그
 _GREETING_RE = re.compile(r"^(답변\s*)?(감사|고맙|안녕|수고)")  # 인사·감사만 있는 줄
+_ADDRESS_ONLY_RE = re.compile(r"(님|께)\s*[,，]?$")            # 「이경연 실장님,」 같은 호칭 줄
+
+
+def _is_lead_in(line: str) -> bool:
+    """확인할 내용이 없는 머리줄(인사·감사·호칭만)인가. 짧은 줄에만 적용한다 —
+    「이경연 실장님 — 세탁물 화면에 …」 처럼 뒤에 내용이 붙은 줄은 그대로 쓴다."""
+    return bool(_GREETING_RE.match(line)) or (len(line) <= 15 and bool(_ADDRESS_ONLY_RE.search(line)))
 
 
 def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
@@ -791,9 +798,10 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
     한 마디로 답해 달라는 기본 문구를 쓴다. 배 note 를 통째로 붙이지 않는다(GM 지적)."""
     text = _ROLE_TAG_RE.sub("", str(staff_message or "").strip())
     body_lines = [l.strip() for l in text.splitlines() if l.strip()]
-    # ★인사·감사만 있는 첫 줄은 건너뛴다(2026-08-26 실측 — 배784 가 「답변 감사합니다.」
-    #   한 줄로 목록에 실려 무슨 건인지 알 수 없었다). 그 줄만으로는 확인할 것이 안 보인다.
-    idx = next((i for i, l in enumerate(body_lines) if not _GREETING_RE.match(l)), 0)
+    # ★인사·호칭만 있는 첫 줄은 건너뛴다(2026-08-26 실측 — 배784 는 「답변 감사합니다.」,
+    #   배778 은 「이경연 실장님,」 한 줄로 목록에 실려 무슨 건인지 알 수 없었다). 전달문을
+    #   쓰는 쪽이 매번 형식을 챙기게 하지 않고, 싣는 쪽에서 내용 있는 줄을 고른다.
+    idx = next((i for i, l in enumerate(body_lines) if not _is_lead_in(l)), 0)
     ask = body_lines[idx] if body_lines else text
     how = next((l for l in body_lines[idx + 1:] if l.startswith("📎")), "")
     if not how:
@@ -1073,10 +1081,12 @@ def send_mgr_brief() -> None:
 # ══════════════════════════════════════════════════════════════════════════
 _OVD_ROOM_LESSON = "★부서장"
 _OVD_ROOM_OPS = "★운영+시설+지원+주차"
+#   ★2026-08-26 GM — 지원부 반장 성함을 받았다(여=이연희 반장 / 남=박남일 반장). 이름을
+#   여기 적지 않고 정본(ssot/kpi.json `_부서반장_*`)에서 읽는다 — 팀 리더와 같은 방식(약속 L01).
+#   이 dict 는 정본을 못 읽을 때만 쓰는 최소 폴백이라 이름이 아니라 직함만 둔다.
 _OVD_LEADER_DEPT: dict = {
-    "시설부": "이정헌 소장",
-    "지원부": "반장", "지원부(남)": "반장", "지원부(여)": "반장",
-    "운영부": "이경연 실장",
+    "시설부": "소장", "지원부": "반장", "지원부(남)": "반장", "지원부(여)": "반장",
+    "운영부": "실장",
 }
 
 
@@ -1099,6 +1109,15 @@ def _ovd_leaders() -> dict:
                 for team, who in (block.get("teams") or {}).items():
                     if team and who:
                         out.setdefault(str(team), str(who))
+            # 부서 책임자 정본은 폴백(직함만)을 덮어쓴다 — 이름이 있는 쪽이 이긴다.
+            if str(key).startswith("_부서반장") and isinstance(block, dict):
+                for dept, who in (block.get("depts") or {}).items():
+                    if dept and who:
+                        out[str(dept)] = str(who)
+                # 부서명이 "지원부"로만 올 때는 여자 반장이 받는다(정본 `_주` 참조).
+                sup = (block.get("depts") or {}).get("지원부(여)")
+                if sup:
+                    out["지원부"] = str(sup)
     except Exception:
         pass          # 정본을 못 읽어도 부서 4종은 그대로 동작한다(fail-soft)
     return out
