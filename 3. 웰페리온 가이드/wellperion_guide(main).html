@@ -614,7 +614,7 @@
             <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonInqTotal">—</span></div>
           </div>
           <div style="background:var(--accent-bg);border-radius:10px;padding:11px 12px;min-height:126px;">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">강습 등록 · 이번달</div>
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;" id="kpiLessonRegMonthLabel">강습 등록 · 이번달</div>
             <div style="font-size:27px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonRegMonth">—</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;color:var(--dim);">성인</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegAdultMonth">—</span><span style="font-size:10px;color:var(--dim);">· 유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegYouthMonth">—</span></div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);" id="kpiLessonRegTotalLabel">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonRegTotal">—</span></div>
@@ -1200,53 +1200,37 @@
         .catch(function(){ /* "—" 유지 */ });
     })();
 
-    // 강습 등록 — 성인+유소년 lesson_registry_list 합산, 올해 누적 + 이번달 (강습 등록원장, from/to 실측).
-    // 소스: cpo/member/membership.html 강습 대시보드가 쓰는 동일 GAS 액션 — 새 GAS 없음. 2026-07-10 GM 지시.
+    // 강습 등록 — 성인+유소년, 소스를 문의 시트 등록성공(SUC) 건으로 교체(배767 · 2026-08-25).
+    //   강습 등록원장(lesson_registry_list)은 2026-07-20 이후 트리거 고장으로 8월분이 0건이라 못 쓴다.
+    //   문의 시트엔 '등록일'이 없고 '접수일'(timestamp)만 있어 — 이번달 값 = 이번달 접수 문의 중 등록성공 건(등록일 기준 아님).
+    //   새 GAS 액션 없음 — cpo/member/membership.html이 쓰는 lesson_inquiry_list 그대로 재사용.
     (function loadLessonRegKpi(){
       var ym = new Date().getFullYear() + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
+      function isSuc(row){ return row && (row.status === 'SUC' || row.status === '단기SUC'); }
       function fetchType(typeLabel){
-        return fetch(SURVEY_URL + '?action=lesson_registry_list&type=' + encodeURIComponent(typeLabel) + '&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' })
+        return fetch(SURVEY_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(typeLabel) + '&_pv=' + Date.now(), { redirect:'follow' })
           .then(function(r){ return r.json(); })
           .then(function(d){
-            if (!d || !d.ok || !Array.isArray(d.data)) return { total: 0, month: 0, ok: false, first: '' };
-            var total = (typeof d.count === 'number') ? d.count : d.data.length;
-            var month = d.data.filter(function(row){ return String(row['등록일'] || '').slice(0, 7) === ym; }).length;
-            // 원장에 실제로 존재하는 가장 이른 등록일 — '누적'이 언제부터인지 라벨에 쓴다.
-            var first = '';
-            d.data.forEach(function(row){
-              var v = String(row['등록일'] || '').trim();
-              if (/^\d{4}-\d{2}-\d{2}$/.test(v) && (!first || v < first)) first = v;
-            });
-            return { total: total, month: month, ok: true, first: first };
+            if (!d || !d.ok || !Array.isArray(d.data)) return { total: 0, month: 0, ok: false };
+            var sucRows = d.data.filter(isSuc);
+            var month = sucRows.filter(function(row){ return String(row.timestamp || '').slice(0, 7) === ym; }).length;
+            return { total: sucRows.length, month: month, ok: true };
           })
-          .catch(function(){ return { total: 0, month: 0, ok: false, first: '' }; });
+          .catch(function(){ return { total: 0, month: 0, ok: false }; });
       }
       Promise.all([fetchType('성인강습'), fetchType('유소년강습')]).then(function(results){
         var adult = results[0], youth = results[1];
         // ★한쪽만 실패해도 "—" 유지(2026-08-24) — 실패한 쪽이 total:0으로 대체돼 있어
         //   AND로 두면 "성인 실패+유소년 성공"이 진짜 총합인 척 섞여 나간다.
         if (!adult.ok || !youth.ok) return;
-        // ★'누적' 라벨 정직화(GM 2026-07-23) — 강습 등록원장은 2026-06-30부터만 존재한다(실측 성인 49건).
-        //   그런데 화면엔 '누적'이라고만 떠서 올해 전체 실적으로 읽혔다. 날짜를 코드에 박으면 나중에
-        //   원장이 과거분까지 채워져도 라벨이 계속 거짓말을 하므로, 원장에 실제로 있는 가장 이른
-        //   등록일을 매번 계산해 쓴다. 연초부터 있으면 그냥 '누적'으로 돌아간다(자동 원복).
-        var _first = [adult.first, youth.first].filter(Boolean).sort()[0] || '';
-        var _lbl = document.getElementById('kpiLessonRegTotalLabel');
-        if (_lbl) {
-          if (_first && _first > yearStart()) {
-            _lbl.textContent = _first.slice(5).replace('-', '/') + '~ 누적';
-            _lbl.title = '강습 등록원장에 기록이 있는 시작일은 ' + _first + ' 입니다. 그 이전 등록은 원장에 없어 집계되지 않습니다(올해 전체 실적 아님).';
-          } else {
-            _lbl.textContent = '누적';
-            _lbl.removeAttribute('title');
-          }
-        }
         set('kpiLessonRegTotal', (adult.total + youth.total).toLocaleString());
         set('kpiLessonRegMonth', adult.month + youth.month);
         set('kpiLessonRegAdultMonth', adult.month);
         set('kpiLessonRegYouthMonth', youth.month);
         var totalEl = document.getElementById('kpiLessonRegTotal');
-        if (totalEl) totalEl.title = '성인 ' + adult.total.toLocaleString() + ' · 유소년 ' + youth.total.toLocaleString() + ' (올해 누적)';
+        if (totalEl) totalEl.title = '성인 ' + adult.total.toLocaleString() + ' · 유소년 ' + youth.total.toLocaleString() + ' (올해 문의 접수분 중 등록성공(SUC) 누적)';
+        var monthLbl = document.getElementById('kpiLessonRegMonthLabel');
+        if (monthLbl) monthLbl.title = '이번달 접수된 강습 문의 중 등록성공(SUC) 건수 — 문의 시트엔 등록일이 없어 접수일 기준입니다(등록일 기준 아님).';
       });
     })();
 
