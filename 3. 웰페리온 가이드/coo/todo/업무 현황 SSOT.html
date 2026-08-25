@@ -113,6 +113,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .ls-fld b{color:var(--text);font-weight:800;font-size:15.5px}
 .ls-fld.late-hot{color:var(--red);font-weight:800}
 .ls-fld.eval-total{color:var(--accent);font-weight:800;font-size:18px}
+/* 미채점N 배지 — 행 높이 유지 수리(2026-08-25 매니저 지적). 예전엔 <br>로 완료 칸 안에 줄바꿈해
+   넣어서, 배지가 있는 사람 행만 다른 행보다 키가 커져 칼럼 줄맞춤이 흔들렸다. 지금은 문서
+   흐름에서 완전히 빼는 절대배치 코너 배지로 바꿔 — 배지 유무와 무관하게 모든 행이 항상 같은
+   1줄 높이를 유지한다(행 높이를 뻥튀기해서 맞추는 대신, 애초에 배지가 높이에 관여하지 않게).
+   완료 칸(.ls-fld)만 overflow:hidden을 visible로 국소 해제해 코너로 살짝 튀어나온 배지가
+   잘리지 않게 한다 — 다른 .ls-fld(볼륨·품질·점수 등, 가로 오버플로 방어가 필요한 칸)는 그대로
+   overflow:hidden 유지, 이 배지 있는 칸에만 좁게 적용. */
+.ls-fld-badged{position:relative;overflow:visible}
+.ls-unscored-badge{position:absolute;top:-5px;right:-4px;background:var(--dim-soft);color:var(--dim);
+  font-size:8px;font-weight:800;line-height:1;padding:1.5px 3.5px;border-radius:7px;white-space:nowrap;
+  pointer-events:none}
 .ls-hdr{padding-bottom:2px}
 .ls-hdr .ls-fld{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.02em}
 /* 헤더 2장 중 우측열용(.ls-hdr-b)은 1열로 접히는 좁은 카드에서 숨긴다 — 안 그러면 같은 라벨이
@@ -4034,8 +4045,8 @@ window.ssotShowTasks=ssotShowTasks;
           '<span class="ls-name">' + esc(r.name) + '</span>' +
           '<span class="ls-fld">' + r.volume + '</span>' +
           '<span class="ls-fld">' + r.quality + '</span>' +
-          '<span class="ls-fld">' + r.completedCount + '/' + r.completedScore +
-            (r.unscored.length ? '<br><span style="font-size:9.5px">미채점' + r.unscored.length + '</span>' : '') + '</span>' +
+          '<span class="ls-fld' + (r.unscored.length ? ' ls-fld-badged' : '') + '">' + r.completedCount + '/' + r.completedScore +
+            (r.unscored.length ? '<span class="ls-unscored-badge" title="미채점 ' + r.unscored.length + '건">' + r.unscored.length + '</span>' : '') + '</span>' +
           '<span class="ls-fld eval-total">' + r.total + '</span>' +
           '</div>');
       } else {
