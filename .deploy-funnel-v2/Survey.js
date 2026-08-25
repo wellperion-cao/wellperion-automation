@@ -3513,6 +3513,7 @@ var _RETIRED_ACTIONS_ = {
   'cpo_wsc_contact_migrate13': 1, 'member_active_phone_fix': 1,
   'member_hold_intake_migrate': 1, 'migrate_lesson_contact_json_to_plain': 1,
   'migrate_member_reservations_plain_gj': 1,
+  'lesson_multisport_split_0825': 1,   // 2026-08-25 강습 다종목 문의 줄 나누기(200건/315줄) — 실행 완료·본문 제거.
   // ↓ 2차 배치(41개) — 호출부 0·자체주석 "일회성/진단/읽기전용"+완료날짜(2026-07-20~22) 프로필. 본문 유지.
   'add_utm_field': 1, 'clear_loss_validation_20260722': 1,
   'clear_orphan_row_20260722': 1, 'consolidate_cols_20260720': 1,
@@ -6898,6 +6899,12 @@ function _hasRealReply_(memo) {
           String(luHdr[ci] || colNames[0]), _old, _new, '강습']);
       }
     }
+    // ★종목(강습종목) 칸 직접 수정(2026-08-25 GM 지시 — 다종목 문의 줄 나누기) — 지금까지 이 액션은
+    //   종목 칸(강습종목)을 쓰는 경로가 없었다(body.sport 는 종목별 관리 라우팅 키일 뿐 칸에 안 쓴다).
+    //   body.sport 의미는 그대로 두고 별도 파라미터로 연다 — 다른 호출부가 안 깨진다.
+    if (body.sportText !== undefined && body.sportText !== null) {
+      _luSet(['성인 강습 종목', 'WSC 강습 종목', 'WSC 강습 종류', '강습 종목', '종목', '과목', 'Program of Interest'], body.sportText);
+    }
     // ★LOSS 사유 서버 가드 (2026-08-10 시토 · 배491 · 멤버십 member_inquiry_update 와 같은 규칙)
     //   두 경로(종목별·row-level)가 갈리기 전에 한 번만 검사한다 — 분기 뒤에 각각 넣으면 한쪽만 고쳐진다.
     //   최근 30일 실측(시포 2026-08-08): 강습에 사유 공란 LOSS 2건(임하윤·이봄)이 실제로 들어와 있었다.
@@ -7130,6 +7137,8 @@ function _hasRealReply_(memo) {
     }
     return _json({ ok: true, rowIndex: luRowRaw, message: '수정되었습니다.' });
   }
+
+  // (2026-08-25 GM 승인 · 시포 실행 완료 — 강습 다종목 문의 줄 나누기 200건/315줄. 일회성 액션 lesson_multisport_split_0825 는 사용 후 이 자리에서 제거, _RETIRED_ACTIONS_ 등재. 백업=status/backups/lesson_multisport_before_20260825.json.
 
   // ─── 공간렌트·비즈니스 문의 페이지(CPO): 전체 목록 ───
   //   강습문의(lesson_inquiry_list)와 동일 구조 — type=rent|biz, scope=all(미지정=올해만).
