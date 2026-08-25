@@ -2016,6 +2016,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
                                       //   중복전화 가드(_regRemove_) + 유효회원 동반 정리(_regActiveRemoveIfSole_)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
+  member_archive_restore:     true,  // 2026-08-25 시토 — LOSS보관 회원 재등록 복귀(보관 행 유지+유효회원 신규행)
   member_active_sort_now:     true,  // 2026-08-12 잔여일순 정렬 온디맨드(행 순서만 바꿈·값 무변경·PII 미반환)
   member_hold_preview:        true,  // 2026-07-22 휴회 경량안 — 미리보기/검증(read-only, 시트 무변경). 시포·GM
   member_hold_apply:          true,  // 2026-07-22 휴회 공개접수(쓰기전용 → '휴회접수' 탭·회원 판정 미반환). ★HOLD_LIVE 게이트(OFF). 시포·GM
@@ -9811,6 +9812,119 @@ function _hasRealReply_(memo) {
     _memberLog_(_auLog);
     _aaCacheClear_();
     return _json({ ok: true, rowIndex: auRow, col: auCol, saved: _auSaved });
+  }
+
+  // ─── LOSS보관 회원 재등록 복귀(member_archive_restore) — 2026-08-25 시토(GM 지시, 최영천 010-3837-5107 재등록 신고).
+  //   왜: LOSS보관 시트는 조회전용이라(member_active_update 는 유효회원 시트만 쓴다) 보관된 분이 재등록해도
+  //   실무진이 화면에서 손댈 방법이 없었다. ▸행 삭제 0건(두 시트 모두) — 보관 행은 비고에 복귀 메모만 덧붙이고
+  //   그대로 둔다. ▸새 유효회원 행은 기존 _memberActiveUpsert_ 를 그대로 재사용 — 그 함수가 못 하는 것
+  //   (담당자는 opts.owner 를 무조건 MEMBER_DEFAULT_OWNER 로 덮는다·주소/비고 인계·등록회차 이어받기·명시적
+  //   종료일)만 뒤에서 직접 덧쓴다(약속 L21 — 새 쓰기 로직 중복 없음).
+  if (action === 'member_archive_restore') {
+    var arPhone = _normPhone_(body.phone);
+    if (!arPhone) return _json({ ok: false, error: 'phone 필수' });
+    var arSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+    var arArchSh = arSs.getSheetByName(MEMBER_ARCHIVE_SHEET);
+    if (!arArchSh) return _json({ ok: false, error: 'LOSS보관 시트 없음' });
+    var arArchHdr = arArchSh.getRange(1, 1, 1, arArchSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    function _arIdx(hdr, want) {
+      var w = String(want).replace(/\s/g, '');
+      for (var i = 0; i < hdr.length; i++) { if (hdr[i] && hdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+      return -1;
+    }
+    var arPhI = arArchHdr.indexOf(MEMBER_PHONE_COL); if (arPhI < 0) arPhI = _arIdx(arArchHdr, '휴대폰');
+    if (arPhI < 0) return _json({ ok: false, error: 'LOSS보관 시트에 휴대폰 칸 없음' });
+    // 0건·2건+ 거부(fail-closed) — 다른 쓰기 액션과 동일 가드(_countRowsByPhone_/_findRowByPhone_) 재사용.
+    var arHitN = _countRowsByPhone_(arArchSh, arPhI, arPhone);
+    if (arHitN === 0) return _json({ ok: false, error: 'archive-not-found', detail: 'LOSS보관에서 해당 전화번호를 찾을 수 없습니다' });
+    if (arHitN >= 2) return _json({ ok: false, error: 'archive-ambiguous', detail: 'LOSS보관에 같은 전화번호가 ' + arHitN + '건 있어 어느 분인지 정할 수 없습니다 — 시트에서 직접 확인해주세요' });
+    var arRow = _findRowByPhone_(arArchSh, arPhI, arPhone);
+    // 유효회원에 이미 있으면 거부(중복 회원 생성 금지).
+    var arActiveSh = arSs.getSheetByName(MEMBER_SHEET);
+    if (!arActiveSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    var arActiveHdr = arActiveSh.getRange(1, 1, 1, arActiveSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    var arActPhI = arActiveHdr.indexOf(MEMBER_PHONE_COL); if (arActPhI < 0) arActPhI = _arIdx(arActiveHdr, '휴대폰');
+    if (arActPhI < 0) return _json({ ok: false, error: '유효회원 시트에 휴대폰 칸 없음' });
+    if (_countRowsByPhone_(arActiveSh, arActPhI, arPhone) > 0) {
+      return _json({ ok: false, error: 'already-active', detail: '이미 유효회원에 등록된 전화번호입니다 — 중복 등록 방지를 위해 거부합니다' });
+    }
+    // 보관 행 값 읽기 — 물려줄 칸(나이·회원구분·수강반종목명·담당자·주소·비고·등록회차).
+    var arNmI = _arIdx(arArchHdr, '회원명');
+    var arAgeI = _arIdx(arArchHdr, '나이');
+    var arKndI = _arIdx(arArchHdr, '회원구분');
+    var arPgI = _arIdx(arArchHdr, '수강반종목'); if (arPgI < 0) arPgI = _arIdx(arArchHdr, '종목명'); if (arPgI < 0) arPgI = _arIdx(arArchHdr, '회원권'); if (arPgI < 0) arPgI = _arIdx(arArchHdr, '상품'); if (arPgI < 0) arPgI = _arIdx(arArchHdr, '프로그램');
+    var arOwnI = _arIdx(arArchHdr, '담당자');
+    var arAddrI = _arIdx(arArchHdr, '주소');
+    var arMemoI = _arIdx(arArchHdr, '비고'); if (arMemoI < 0) arMemoI = _arIdx(arArchHdr, '메모');
+    var arSeqI = _arIdx(arArchHdr, '등록회차');
+    var arRowVals = arArchSh.getRange(arRow, 1, 1, arArchHdr.length).getValues()[0];
+    function _arCell(i) { return i >= 0 ? arRowVals[i] : ''; }
+    var arName = String(_arCell(arNmI) || '').trim();
+    if (!arName) return _json({ ok: false, error: 'archive-row-invalid', detail: '보관 행에서 회원명을 읽지 못했습니다' });
+    var arAge = _arCell(arAgeI);
+    var arKind = String(_arCell(arKndI) || '').trim();
+    var arProgram = String(_arCell(arPgI) || '').trim();
+    var arOwner = String(_arCell(arOwnI) || '').trim();
+    var arAddr = String(_arCell(arAddrI) || '').trim();
+    var arMemo = String(_arCell(arMemoI) || '').trim();
+    var arSeqRaw = _arCell(arSeqI);
+    var arSeqN = parseInt(String(arSeqRaw == null ? '' : arSeqRaw).replace(/[^0-9]/g, ''), 10);
+    var arNewSeq = (!isNaN(arSeqN) && arSeqN > 0) ? (arSeqN + 1) : arSeqRaw;  // 숫자면 +1, 못 읽으면 그대로.
+
+    var arRegClass = String(body.regClass || 'L재등록').trim();
+    var arProgramNew = String(body.program || '').trim() || arProgram;
+    var arRegDate = String(body.regDate || '').trim() || _todayKR_();
+    var arMonths = parseInt(body.months, 10);
+    var arStartDate = String(body.startDate || '').trim();
+    var arEndDate = String(body.endDate || '').trim();
+    var arStaff = _logWho_(body);
+
+    var arPreview = {
+      target: { name: arName, phone: body.phone, archiveRow: arRow },
+      carried: { 나이: arAge, 회원구분: arKind, 수강반종목명: arProgram, 담당자: arOwner, 주소: arAddr, 비고: arMemo, 등록회차: String(arSeqRaw == null ? '' : arSeqRaw) + ' → ' + String(arNewSeq == null ? '' : arNewSeq) },
+      newValues: { regDate: arRegDate, startDate: arStartDate || null, endDate: arEndDate || null, months: (arMonths > 0 ? arMonths : null), regClass: arRegClass, program: arProgramNew }
+    };
+    if (body.dryRun === true || String(body.dryRun) === 'true') {
+      return _json({ ok: true, dryRun: true, preview: arPreview });
+    }
+
+    // ─── 실제 쓰기 ───
+    var arOpts = { age: arAge, kind: arKind, regClass: arRegClass };
+    if (arStartDate) arOpts.startDate = arStartDate;
+    _memberActiveUpsert_(arName, body.phone, arProgramNew, arRegDate, (arMonths > 0 ? arMonths : 0), arOpts);
+    // 방금 만든 새 행 확정 — 위에서 중복 0건을 이미 확인했으니 전화 단일매칭.
+    var arNewRow = _findRowByPhone_(arActiveSh, arActPhI, arPhone);
+    if (arNewRow < 2) return _json({ ok: false, error: 'restore-write-failed', detail: '유효회원 행 생성 후 확인 실패 — 시트를 확인해주세요' });
+    // upsert가 못 하는 칸(주소·비고 인계·담당자 강제고정 우회·등록회차 이어받기·명시적 시작/종료일) 직접 기록.
+    var arActAddrI = _arIdx(arActiveHdr, '주소');
+    var arActMemoI = _arIdx(arActiveHdr, '비고'); if (arActMemoI < 0) arActMemoI = _arIdx(arActiveHdr, '메모');
+    var arActOwnI = _arIdx(arActiveHdr, '담당자');
+    var arActSeqI = _arIdx(arActiveHdr, '등록회차');
+    var arActStI = _arIdx(arActiveHdr, '시작일자');
+    var arActEndI = _arIdx(arActiveHdr, '종료일자'); if (arActEndI < 0) arActEndI = _arIdx(arActiveHdr, '종료일');
+    var arActRemI = _arIdx(arActiveHdr, '잔여일');
+    if (arActAddrI >= 0 && arAddr) arActiveSh.getRange(arNewRow, arActAddrI + 1).setValue(arAddr);
+    if (arActMemoI >= 0 && arMemo) arActiveSh.getRange(arNewRow, arActMemoI + 1).setValue(arMemo);
+    if (arActOwnI >= 0 && arOwner) arActiveSh.getRange(arNewRow, arActOwnI + 1).setValue(arOwner);
+    if (arActSeqI >= 0) arActiveSh.getRange(arNewRow, arActSeqI + 1).setValue(arNewSeq);
+    // 명시적 시작/종료일은 개월수 계산보다 항상 우선(요청값 승리).
+    if (arStartDate && arActStI >= 0) { var _sC = arActiveSh.getRange(arNewRow, arActStI + 1); _sC.setNumberFormat('@'); _sC.setValue(arStartDate); }
+    if (arEndDate && arActEndI >= 0) {
+      var _eC = arActiveSh.getRange(arNewRow, arActEndI + 1); _eC.setNumberFormat('@'); _eC.setValue(arEndDate);
+      if (arActRemI >= 0) {
+        var _ed = new Date(arEndDate + 'T00:00:00+09:00');
+        if (!isNaN(_ed.getTime())) arActiveSh.getRange(arNewRow, arActRemI + 1).setValue(Math.round((_ed.getTime() - Date.now()) / 86400000));
+      }
+    }
+    // 보관 행은 지우지 않는다 — 비고 끝에 복귀 메모만 덧붙인다(기존 내용 보존).
+    if (arMemoI >= 0) {
+      var arNote = '[' + _todayKR_() + ' 재등록으로 복귀 — 처리: ' + arStaff + ']';
+      arArchSh.getRange(arRow, arMemoI + 1).setValue(arMemo ? (arMemo + ' ' + arNote) : arNote);
+    }
+    _memberLog_([[new Date(), arStaff, arName, _logMaskPhone_(body.phone), 'LOSS보관 재등록복귀',
+                  'LOSS보관 행 ' + arRow, '유효회원 행 ' + arNewRow + '(등록분류:' + arRegClass + ')', '멤버십']]);
+    _memberCacheBump_(); _aaCacheClear_();
+    return _json({ ok: true, restored: true, name: arName, phone: body.phone, archiveRow: arRow, newRow: arNewRow, regClass: arRegClass, seq: arNewSeq });
   }
 
   // ─── 종목별 담당자 저장(유효회원 5칸: PT/골프/P.L/스쿼시/수영 담당자) — 전화 매칭 단일셀 쓰기.

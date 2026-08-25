@@ -2714,6 +2714,48 @@ table.op-t td b{font-size:15px}
   </div>
 </div>
 
+<!-- ══ LOSS보관 재등록 복귀 모달 — 종료/유효회원 표 검색으로 찾은 「🗄️ 보관 기록」(LOSS보관 시트) 행의
+     '되살리기' 버튼. reactivateOverlay(재등록 처리)와 같은 구조(등록일·시작일·종료일 3칸+등록분류) 재사용.
+     저장=member_archive_restore — 보관 행은 비고에 복귀 메모만 덧붙이고 유지, 새 유효회원 행을 만든다.
+     나이·회원구분·수강반종목명·담당자·주소·비고·등록회차(+1)는 서버가 보관 행에서 그대로 물려받는다.
+     2026-08-25 시토·GM(최영천 010-3837-5107 재등록 신고). ══ -->
+<div class="consult-overlay" id="archiveRestoreOverlay" onclick="if(event.target===this)closeArchiveRestoreModal()">
+  <div class="consult-modal" role="dialog" aria-modal="true">
+    <div class="consult-modal-head">
+      <span class="consult-modal-kind experience">되살리기</span>
+      <span class="consult-modal-title">LOSS보관 → 유효회원 복귀</span>
+    </div>
+    <div class="consult-row"><span class="ck">회원</span><span class="cv" id="arMemberFixed">—</span></div>
+
+    <div class="consult-field-label">등록 분류</div>
+    <select id="arRegClass" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+      <option value="L재등록">L재등록</option>
+      <option value="신규">신규</option><option value="재등록">재등록</option>
+      <option value="양도&amp;양수">양도&amp;양수</option><option value="환불">환불</option>
+      <option value="L-가망">L-가망</option><option value="대기">대기</option>
+    </select>
+
+    <div style="margin-top:10px">
+      <div class="consult-field-label" style="margin-top:0">등록일자 (계약일)</div>
+      <input type="date" id="arRegDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+    </div>
+    <div style="margin-top:10px">
+      <div class="consult-field-label" style="margin-top:0">시작일자 (이용 시작)</div>
+      <input type="date" id="arStartDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+    </div>
+    <div style="margin-top:10px">
+      <div class="consult-field-label" style="margin-top:0">종료일자 (유효기간 만료일)</div>
+      <input type="date" id="arEndDate" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit">
+    </div>
+    <div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5">나이·회원구분·수강반종목명·담당자·주소·비고는 보관 기록에서 그대로 넘어옵니다. 등록회차는 이전 회차 +1로 이어집니다.</div>
+
+    <div class="consult-actions">
+      <button class="consult-btn-cancel" onclick="closeArchiveRestoreModal()">취소</button>
+      <button class="consult-btn-save" id="arSaveBtn" onclick="saveArchiveRestoreModal()">되살리기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 휴회 접수 모달(구 openHoldModal·member_hold_preview 온라인 조회) = 2026-07-22 GM 재설계로 폐기·제거.
      회원 접수=공개 페이지(cpo/member/휴회접수.html) / 직원=회원관리 '휴회 접수 관리' 카드(서버 자동판정+승인). -->
 
@@ -8847,6 +8889,9 @@ function _activeRowHtml(row, displayCols) {
       // 교차검색 행(archive·ended·valid) — 지금 탭의 자기 명단이 아니다(위 _activeFilter 주석 참고).
       // 쓰기를 유발하는 특수칸·인라인수정을 전부 막고, 어느 탭에서 고쳐야 하는지 알린다.
       if (row._crossFrom) {
+        // LOSS보관 교차검색 행 — '재등록 처리' 칸 자리에 되살리기 버튼(2026-08-25 시토·GM, member_archive_restore).
+        //   rowIndex는 다른 시트(LOSS보관)를 가리켜 그대로 쓰면 위험(위 주석 참고) → 서버는 전화만으로 대상을 찾는다.
+        if (h === '__reactivate__' && row._crossFrom === 'archive') { html += _archiveRestoreCellHtml(row); return; }
         if (h === '__recon__' || h === '__churn__' || h === '__reactivate__' || h === '__unregreason__' || h === '__owners__' || h === '__lossbtn__') {
           var _crossLabel = row._crossFrom === 'archive' ? '🗄️ 보관 기록'
             : row._crossFrom === 'ended' ? '종료회원 탭에서 수정' : '유효회원 탭에서 수정';
@@ -10421,6 +10466,13 @@ function _reactivateCellHtml(row) {
   return '<td style="white-space:nowrap"><button type="button" onclick="openReactivateModal(' + ri + ')" ' +
     'style="padding:4px 10px;border-radius:7px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">재등록 처리</button></td>';
 }
+// LOSS보관 재등록 복귀 버튼 셀 — 검색으로 찾은 archive 교차행 전용(member_archive_restore, 2026-08-25 시토·GM).
+function _archiveRestoreCellHtml(row) {
+  var name = String(row['회원명'] || '').trim();
+  var phone = String(row['휴대폰 번호'] || row['휴대폰'] || '').trim();
+  return '<td style="white-space:nowrap"><button type="button" data-restore-phone="' + esc(phone) + '" data-restore-name="' + esc(name) + '" onclick="openArchiveRestoreModal(this)" ' +
+    'style="padding:4px 10px;border-radius:7px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">되살리기</button></td>';
+}
 // LOSS 처리 버튼 셀 — 유효회원 전용(FB260811-112656 임정은M). __reactivate__ 패턴 대칭.
 function _lossBtnCellHtml(row) {
   var ri = row.rowIndex != null ? row.rowIndex : 0;
@@ -10647,6 +10699,56 @@ function saveReactivateModal() {
   showToast((m.name || '회원') + '님이 유효회원으로 이동했습니다', 'ok');
   closeReactivateModal();
   saveBtn.disabled = false;
+}
+
+/* ─────────────────────────────────────────────
+   LOSS보관 재등록 복귀 모달(2026-08-25 시토·GM) — 상세 배경은 위 archiveRestoreOverlay HTML 주석 참고.
+   대상 지목은 rowIndex가 아니라 전화 하나뿐이다 — 서버(member_archive_restore)가 LOSS보관에서
+   전화로 0/2건+이면 거부(fail-closed)하므로 여기서 잘못된 rowIndex를 들고 갈 위험이 없다. ───────────────────────────────────────────── */
+var _archiveRestoreModal = null;   // { phone, name }
+function openArchiveRestoreModal(btn) {
+  var phone = (btn && btn.dataset && btn.dataset.restorePhone) || '';
+  var name  = (btn && btn.dataset && btn.dataset.restoreName)  || '';
+  if (!phone) { showToast('전화번호를 확인할 수 없습니다', 'err'); return; }
+  _archiveRestoreModal = { phone: phone, name: name };
+  document.getElementById('arMemberFixed').textContent = (name || '—') + (phone ? ' · ' + phone : '');
+  var t = new Date();
+  var today = t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2);
+  document.getElementById('arRegDate').value = today;
+  document.getElementById('arStartDate').value = today;
+  document.getElementById('arEndDate').value = '';
+  document.getElementById('arRegClass').value = 'L재등록';
+  document.getElementById('archiveRestoreOverlay').classList.add('open');
+}
+function closeArchiveRestoreModal() {
+  document.getElementById('archiveRestoreOverlay').classList.remove('open');
+  _archiveRestoreModal = null;
+}
+function saveArchiveRestoreModal() {
+  if (!_archiveRestoreModal) return;
+  var m = _archiveRestoreModal;
+  var regDate   = document.getElementById('arRegDate').value;
+  var startDate = document.getElementById('arStartDate').value;
+  var endDate   = document.getElementById('arEndDate').value;
+  var regClass  = document.getElementById('arRegClass').value || 'L재등록';
+  if (!regDate) { showToast('등록일자를 입력해 주세요', 'err'); return; }
+  var saveBtn = document.getElementById('arSaveBtn'); saveBtn.disabled = true;
+  apiPost({ action: 'member_archive_restore', phone: m.phone, regDate: regDate, startDate: startDate, endDate: endDate, regClass: regClass })
+    .then(function(d){
+      // ok:false도 실패로(다른 새 행 생성 경로 submitRegAdd와 동일 패턴) — 실패 문구는 서버 detail 우선.
+      if (d && d.ok === false) { throw new Error(d.detail || d.error || '되살리기 실패'); }
+      showToast('🎉 ' + (m.name || '회원') + '님 되살리기 완료 — 유효회원 명단에 반영됩니다', 'ok');
+      closeArchiveRestoreModal();
+      // 새 행이 valid 시트에 생겼고 archive 비고도 바뀌었다 — 두 캐시(메모리+localStorage) 모두 비워 다음 조회가 서버를 다시 본다.
+      _activeCache.valid = null; _activeCache.archive = null;
+      _activeCacheClear('valid'); _activeCacheClear('archive');
+      loadActiveMembers();   // 지금 열린 탭(유효/종료) 새로고침 — 검색 중이면 _activeApplyData가 검색을 다시 건다.
+    })
+    .catch(function(e){
+      showToast('되살리기 실패: ' + (e.message || ''), 'err');
+      alert('⚠️ 되살리기 실패 — ' + (m.name || '') + '님\n' + (e.message || ''));
+    })
+    .then(function(){ saveBtn.disabled = false; });
 }
 
 /* ── 휴회(2026-07-22 GM 재설계) — 직원 직접-신청 모달(openHoldModal/member_hold_preview 조회) 폐기.
@@ -13629,7 +13731,7 @@ function apiPost(payload) {
     //   누가 적었는지가 안 남으면 다음 소실 때 또 못 짚는다(같은 관문에서 형제 액션 하나 누락 · 약속 L01).
     // ★2026-08-05 시토 — member_inquiry_delete(새 문의 중복 삭제) 추가. 빠뜨리면 회원변경이력에 실행자가 '자동'으로
     //   남는다(오늘 member_inquiry_update가 같은 패턴으로 이미 한 번 빠졌던 사고와 동일 부류 — 배359).
-    if (_a === 'member_active_update' || _a === 'member_owner_save' || _a === 'lesson_inquiry_update' || _a === 'member_inquiry_update' || _a === 'member_inquiry_delete') payload.staff = memberStaffName();
+    if (_a === 'member_active_update' || _a === 'member_owner_save' || _a === 'lesson_inquiry_update' || _a === 'member_inquiry_update' || _a === 'member_inquiry_delete' || _a === 'member_archive_restore') payload.staff = memberStaffName();
   } catch (e) {}
   // ★2026-07-30 웰리 — 응답이 영영 안 오면 저장 항목이 inflight 로 굳어 큐 전체가 멈춘다(무한 대기).
   //   30초 넘으면 끊고 실패로 넘겨 재시도 경로를 태운다.
