@@ -87,7 +87,7 @@ FETCH_FAILED = "조회 실패"   # '진짜 0' 과 '못 읽음' 을 가르는 표
 
 
 def fetch_gas(params: dict, url: str = DEFAULT_GAS_URL, timeout: float = 20.0,
-              tries: int = 3) -> dict | None:
+              tries: int = 3, require_ok: bool = True) -> dict | None:
     """GAS GET → dict(ok=true)만 반환. 끝까지 실패하면 None(정직 — 지어내기 금지).
 
     ★2026-08-06 GM 지적으로 재시도를 붙였다. GM 원문: "실무진들이 더 집중할 수 있게
@@ -103,7 +103,9 @@ def fetch_gas(params: dict, url: str = DEFAULT_GAS_URL, timeout: float = 20.0,
         try:
             with urllib.request.urlopen(urllib.request.Request(full), timeout=timeout) as r:
                 data = json.loads(r.read().decode("utf-8"))
-            if isinstance(data, dict) and data.get("ok"):
+            # 액션에 따라 ok 를 안 싣는 응답이 있다(조별 원장 조회가 그렇다 — 최상위가
+            # date/rows/checkedLedger 로 바로 온다). 그 경우만 require_ok=False 로 받는다.
+            if isinstance(data, dict) and (data.get("ok") or not require_ok):
                 return data
         except Exception:
             pass
@@ -195,6 +197,35 @@ def gender_shift_breakdown(part: dict) -> list[tuple[str, int, int, int]]:
     return out
 
 
+def shift_submits(today: str, url: str = DEFAULT_GAS_URL) -> dict | None:
+    """구역별·조별 '제출' 여부 — {'m': {'am': ('김종현 차장', '09:56')}, 'f': {}}.
+
+    ★어디를 읽나 (2026-08-25 GM 지적 "남자는 제출했는데? 정신차려"):
+      행 데이터의 submitted_am 계열은 **성별이 섞여 온다** — 같은 날 남·여를 각각 조회해도
+      같은 값이 돌아온다(그날 실측). 그걸 근거로 '여성 미제출'을 판정하면 틀린다.
+      화면이 실제로 믿는 곳은 회차원장(checkedLedger.sub)이고, 그건 성별로 갈린다.
+      실측 2026-08-25: 남성 sub={'am': '김종현 차장'} · 여성 sub={} — 화면 표기와 일치.
+    ★조회가 실패하면 None 을 돌려준다. '미제출'로 단정하지 않는다(못 읽음 ≠ 안 함).
+    """
+    out: dict = {}
+    for g in ("m", "f"):
+        d = fetch_gas({"date": today, "dept": "support", "gender": g}, url, require_ok=False)
+        if not isinstance(d, dict) or "checkedLedger" not in d:
+            return None
+        ledger = d.get("checkedLedger") or {}
+        sub = ledger.get("sub") or {}
+        sub_at = ledger.get("subAt") or {}
+        got = {}
+        for shift, who in sub.items():
+            who = str(who or "").strip()
+            if not who:
+                continue
+            stamp = str(sub_at.get(shift) or "").strip()
+            got[shift] = (who, stamp[11:16] if len(stamp) >= 16 else stamp)
+        out[g] = got
+    return out
+
+
 def recurring_issue_lines(today: str, max_items: int = 3) -> list[str]:
     """반복 미완료(원장 기반) → '이슈사항'으로 승격. 1회성 특이점과 구분(반복만). GM 2026-07-19 지시3.
     콜드스타트·원장부족·0건이면 [](정직 — 가짜 이슈 금지)."""
@@ -270,14 +301,38 @@ def build_support_section(today: str, url: str = DEFAULT_GAS_URL,
     lines = [f"🛠 지원부 현황 {done}/{total}({_pct_str(done, total)})"]
 
     # 남성구역·여성구역 각각(합산 아님) — 각 구역 완료율 + 회차분해(요일반영·분모>0만·한 줄 콤팩트)
+    submits = shift_submits(today, url)   # None = 못 읽음(미제출로 단정 금지)
+    unsubmitted: list[str] = []
     g = d.get("byGender", {}) or {}
     for gk, glabel in (("m", "남성구역"), ("f", "여성구역")):
         part = g.get(gk, {}) or {}
         g_t = sum(int(part.get(k + "Total", 0) or 0) for k, _ in _SHIFTS)
         g_d = sum(int(part.get(k, 0) or 0) for k, _ in _SHIFTS)
         br = gender_shift_breakdown(part)
-        detail = " — " + " · ".join(f"{lb} {dn}/{tt}" for lb, dn, tt, _ in br) if br else ""
+        # ★조별로 '몇 개 중 몇 개' 와 '제출했나' 를 함께 적는다 (GM 지시 2026-08-25 —
+        #   "오전조/오후조/마감조 점검 했는지 안 했는지 몇 개 중에 몇 개를 했는지 정확하게").
+        #   체크 개수와 제출은 다른 것이다 — 20/27 을 채워 놓고 제출을 안 하면 그 조는 안 끝난 것이다.
+        parts = []
+        for lb, dn, tt, _ in br:
+            key = next((k for k, l in _SHIFTS if l == lb), "")
+            if submits is None:
+                mark = ""                                   # 못 읽었으면 아무 말도 안 한다
+            elif key in (submits.get(gk) or {}):
+                who, at = submits[gk][key]
+                mark = f" ✅제출({who}{(' ' + at) if at else ''})"
+            else:
+                mark = " ⛔미제출"
+                unsubmitted.append(f"{glabel} {lb} {dn}/{tt}")
+            parts.append(f"{lb} {dn}/{tt}{mark}")
+        detail = " — " + " · ".join(parts) if parts else ""
         lines.append(f"  {glabel} {g_d}/{g_t}({_pct_str(g_d, g_t)}){detail}")
+
+    if submits is None:
+        lines.append("  ⚠ 제출 여부는 지금 확인이 안 됩니다(조회 실패) — 안 했다는 뜻이 아닙니다")
+    elif unsubmitted:
+        lines.append("  ⛔ 아직 제출 안 된 조 " + str(len(unsubmitted)) + "개 — " + " · ".join(unsubmitted))
+    else:
+        lines.append("  ✅ 전 조 제출 완료")
 
     # ── 이슈사항(현황과 함께) — 미점검 회차 전부 + 반복 이슈. GM 2026-07-19 피드백1·2 ──
     issues = support_issues(d)          # 1회성 미점검(빠짐없이)
