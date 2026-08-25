@@ -887,6 +887,37 @@
       "reversible": true,
       "enabled": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "cto-gm-day-pipeline",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "GM 하루 파이프라인 — 전사일정·GM업무·업무SSOT 김남욱 담당·회장님 보고건을 「하루」 방 표면 하나로 묶고(08:00 아침 브리핑·20:30 저녁 정리), 시각이 있는 GM 일정을 30분 전에 알린다(상주 스케줄러 5분 주기). GM업무 화면 맨 위 「오늘 일정」 띠도 이 배선의 표면이다. ★데이터는 소유하지 않는다 — 전사일정은 coo-schedule-ssot, GM업무 진행건은 월간운영계획이 정본이며 여기서는 가리키기만 한다(약속 L01).",
+      "data_source": {
+        "kind": "gas",
+        "ref": "전사일정 GAS(load_schedule) + status/monthly_ops_plan.json + 회장님 보고건 — 복사 없이 참조만"
+      },
+      "notify_spec": {
+        "daily": true,
+        "weekly": false,
+        "monthly": false,
+        "channel": "telegram",
+        "bot_id": null
+      },
+      "front_card": {
+        "window": "자율현황",
+        "anchor": "layer-automation"
+      },
+      "autonomy": "auto",
+      "ai_free_fallback": "AI 세션 없이 돈다 — 상주 daily_scheduler 가 08:00 브리핑·20:30 정리·30분 전 리마인드를 발신하고, GM업무·전사일정 화면은 GAS 를 직접 읽는다. 카톡 발화에서 일정을 뽑아내는 다리(ops_daily_digest.bridge_to_schedule)만 판독이 필요해 AI 부재 시 사람이 화면에서 직접 등록한다. ▸실측 근거(2026-08-25 시토): 30분 전 알림은 2026-08-24 13:36 실제 발신됨(베네뎀 화상채팅 14:05 건) — 등록만 되고 한 번도 안 울린 장치가 아니다.",
+      "feedback": {
+        "enabled": true,
+        "audience": "gm",
+        "entries": []
+      },
+      "reversible": true,
+      "honesty_default": "measured"
     }
   ],
   "_removed": [
