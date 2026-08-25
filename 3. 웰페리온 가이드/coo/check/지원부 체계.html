@@ -5196,7 +5196,7 @@ async function renderAdmin(){
   html+=`<div class="dash-stat-card"><div class="num">${data.total}</div><div class="label">총 점검 항목</div></div>`;
   html+=`<div class="dash-stat-card"><div class="num" style="color:var(--green)">${data.done}</div><div class="label">완료</div></div>`;
   html+=`<div class="dash-stat-card"><div class="num" style="color:var(--red)">${data.total-data.done}</div><div class="label">미완료</div></div>`;
-  html+=`<div class="dash-stat-card"><div class="num">${data.pct}%</div><div class="label">완료율</div></div>`;
+  html+=`<div class="dash-stat-card"><div class="num">${data.pct}%</div><div class="label">완료율 <span style="font-size:10px;color:var(--dim)">(오늘 예정 항목 기준)</span></div></div>`;
   html+=`</div>`;
 
   /* ━━━ 교대별 통계 ━━━ */
@@ -5220,8 +5220,10 @@ async function renderAdmin(){
   /* ━━━ 점검자별 통계 ━━━ */
   const subs=Object.entries(data.submitterStats);
   if(subs.length>0){
+    /* 2026-08-25 시우: 이 표의 total 은 그 사람이 제출한 시프트의 항목 수라 위 요약카드 완료율(오늘 예정 항목 전체)과 분모가 다르다. 계산은 그대로, 이름과 분모만 밝힌다. */
     html+=`<div class="dash-section-title">점검자별 통계</div>`;
-    html+=`<table class="dash-table"><tr><th>점검자</th><th>교대</th><th>완료</th><th>총 항목</th><th>이슈</th><th style="min-width:80px">완료율</th></tr>`;
+    html+=`<div style="font-size:12px;color:var(--dim);margin:-4px 0 8px;">분모 = 그 사람이 <b>제출한 교대의 항목만</b>입니다. 맨 위 완료율(오늘 예정 항목 전체 기준)과 분모가 달라 두 숫자를 비교하면 안 됩니다.</div>`;
+    html+=`<table class="dash-table"><tr><th>점검자</th><th>교대</th><th>완료</th><th>제출분 항목</th><th>이슈</th><th style="min-width:80px">제출분 체크율</th></tr>`;
     subs.forEach(([name,st])=>{
       const pct=st.total?Math.round(st.done/st.total*100):0;
       const shifts=[...st.shifts].join(', ');
@@ -8697,7 +8699,11 @@ function renderMrInspector(data){
   if(!el) return;
   const rows=data.byInspector||[];
   if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">점검자별 데이터 없음</div>'; return; }
-  let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>점검자</th><th>세션</th><th>평균완료율</th></tr>';
+  /* 2026-08-25 시우 — 분모 불일치 정직 표기. byInspector 의 avgPct 는 '그 사람이 제출한 세션 안에서의 체크율'이라
+     분모가 그 사람 제출분뿐이다(위 전체 완료율은 '오늘 예정 항목 전체'가 분모). 두 숫자를 나란히 두면
+     전체 46% vs 사람별 86~100% 처럼 보여 GM·실무진이 어긋남으로 읽는다. 계산은 그대로 두고 이름과 분모만 밝힌다. */
+  let html='<div style="font-size:12px;color:var(--dim);margin-bottom:6px;">분모 = 그 사람이 <b>제출한 항목만</b>입니다. 위 전체 완료율(예정 항목 전체 기준)과 분모가 달라 두 숫자를 비교하면 안 됩니다 — 제출을 안 한 날은 여기에 잡히지 않습니다.</div>';
+  html+='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>점검자</th><th>제출 세션</th><th>제출분 체크율</th></tr>';
   rows.forEach(function(r){
     html+='<tr><td>'+mrEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+mrPctColor(r.avgPct)+';font-weight:700;">'+r.avgPct+'%</td></tr>';
   });
@@ -8796,6 +8802,7 @@ function renderA3MonthlyFromData(month,data){
   if(bodyRow){
     let zoneRows=''; mrSortRows(data.byZone,mrZoneRank,'zone').forEach(function(r){ zoneRows+='<tr><td>'+mrEsc(r.zone)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
     let shiftRows=''; mrSortRows(data.byShift,mrShiftRank,'shift').forEach(function(r){ shiftRows+='<tr><td>'+mrEsc(r.shift)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.pct+'%</td><td>'+(r.issueCount||0)+'</td></tr>'; });
+    // 2026-08-25 시우: 인쇄본도 같은 라벨로 — 분모가 '제출분'임을 칸 이름에 박는다(위 KPI칩 완료율과 분모 다름).
     let inspRows=''; (data.byInspector||[]).slice(0,8).forEach(function(r){ inspRows+='<tr><td>'+mrEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+r.avgPct+'%</td></tr>'; });
     let dailyCells=''; (data.dailySeries||[]).forEach(function(d){ dailyCells+='<span style="display:inline-block;min-width:34px;text-align:center;font-size:9px;padding:1px 3px;color:'+mrPctColor(d.pct)+';">'+(d.date||'').slice(8,10)+':'+d.pct+'%</span>'; });
 
@@ -8806,7 +8813,7 @@ function renderA3MonthlyFromData(month,data){
       +'</div>'
       +'<div class="mrp-col"><div class="mrp-col-head">② 교대·점검자별 실적</div>'
       +'<div class="mrp-card"><div class="mrp-card-title">교대별</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>교대</td><td>세션</td><td>완료율</td><td>이슈</td></tr>'+(shiftRows||'<tr><td colspan="4">데이터 없음</td></tr>')+'</table></div>'
-      +'<div class="mrp-card"><div class="mrp-card-title">점검자별(상위)</div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>점검자</td><td>세션</td><td>평균완료율</td></tr>'+(inspRows||'<tr><td colspan="3">데이터 없음</td></tr>')+'</table></div>'
+      +'<div class="mrp-card"><div class="mrp-card-title">점검자별(상위) <span style="font-weight:400;font-size:9px;">— 분모=본인 제출분(위 완료율과 분모 다름)</span></div><table style="width:100%;font-size:10px;border-collapse:collapse;"><tr style="font-weight:800;"><td>점검자</td><td>제출 세션</td><td>제출분 체크율</td></tr>'+(inspRows||'<tr><td colspan="3">데이터 없음</td></tr>')+'</table></div>'
       +'</div>';
   }
 
