@@ -1919,6 +1919,33 @@ function kstDateStr(d) {
   return str.slice(0, 10);
 }
 
+// 오늘(KST) 날짜 문자열 — 브라우저 로컬시각(new Date().getFullYear() 등)에 기대지 않고
+// UTC now + 9h → UTC 성분 추출 방식으로 명시 계산한다. kstDateStr()과 같은 변환 방식(위 주석의
+// +9h 방식)이라 이 파일 안에서 "오늘이 며칠인가"의 기준이 항상 하나로 통일된다.
+// 2026-08-25 묵은 업무 등재 게이트(아래)를 위해 신설 — 다른 계산에는 쓰이지 않는다.
+function kstTodayStr() {
+  const kst = new Date(Date.now() + 9 * 3600 * 1000);
+  return kst.getUTCFullYear() + '-' + String(kst.getUTCMonth() + 1).padStart(2, '0') + '-' + String(kst.getUTCDate()).padStart(2, '0');
+}
+
+/* ══ 묵은 업무 등재 게이트 (2026-08-25 매니저 지시) ══
+   취지 = "업무는 그때그때 올려라" — 과거 날짜로 몰아서 등재하는 것 방지.
+   규칙: 신규 등재(수정 아님) 시 시작일이 오늘(KST) 포함 최근 3일(오늘·1일 전·2일 전·3일 전)
+   이면 자유 등재, 4일 이상 과거면 관리자 승인 없이는 등재 불가. 미래 시작일·시작일 공란은
+   자유(공란은 saveTask()의 필수 항목 검증에서 이미 걸러져 이 함수까지 실질 도달하지 않는다 —
+   그래도 방어적으로 자유 처리). fStartDate는 <input type="date"> 값이라 'YYYY-MM-DD' 순수
+   달력일 문자열이고 시간대 모호성이 없다 — 그래서 여기 날짜 뺄셈은 두 'YYYY-MM-DD'를 똑같이
+   T00:00:00Z 로 파싱해 순수 일수차만 구한다(시각 성분 개입 없음, 절단(slice) 방식 아님). */
+const STALE_GATE_DAYS = 3; // 오늘 포함 최근 N일까지는 자유, N+1일째부터 게이트
+function isStaleBacklog(startDateStr) {
+  if (!startDateStr) return false; // 공란 = 자유
+  const start = new Date(startDateStr + 'T00:00:00Z');
+  if (isNaN(start.getTime())) return false; // 파싱 불가 값은 여기서 막지 않음(형식 검증은 별도)
+  const today = new Date(kstTodayStr() + 'T00:00:00Z');
+  const daysAgo = Math.round((today - start) / 86400000);
+  return daysAgo > STALE_GATE_DAYS; // 음수(미래)·0~3은 자유, 4 이상만 게이트
+}
+
 function getDeadlineBadge(endDate) {
   if (!endDate) return null;
   const end = new Date(kstDateStr(endDate) + 'T23:59:59');
@@ -3100,6 +3127,14 @@ async function saveTask() {
   // 시작일 필수 · 종료일은 선택(있으면 기간) — 마감 없는 업무 허용 (2026-06-02 GM)
 
   const editId = document.getElementById('editId').value;
+
+  // 묵은 업무 등재 게이트(2026-08-25 매니저 지시) — 신규 등재(editId 없음)에만 적용, 수정 경로는
+  // 무접촉. 관리자 우회 경로는 이 파일 안에 안전하게 재사용 가능한 서버검증 인증 자산이 없어
+  // 미구현(차단만 — 상세는 배포 보고서 참조).
+  if (!editId && isStaleBacklog(startDate)) {
+    alert('시작일이 4일 이상 지난 업무는 관리자 승인 후 등재할 수 있습니다.\n업무는 발생 시점에 바로 올려 주세요.');
+    return;
+  }
 
   // 입력박스에 미합류 진척 텍스트 있으면 자동 합류 (저장 누락 방지)
   const pendingProgress = (document.getElementById('progressLogInput').value || '').trim();
