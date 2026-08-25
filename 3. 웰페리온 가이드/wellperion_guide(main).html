@@ -1066,108 +1066,30 @@
       })
       .catch(function(){ /* "—" 유지 */ });
 
-    // 멤버십 문의 관리 — 올해(2026) 누적 (2026-07-09 재편: 구 loadInqKpi 계승)
-    // 소스: 한국어 문의폼(gid 1902010032) + 영문 문의폼(gid 1887747109) CSV 직접 읽기 (한+영 합산)
-    // gid 1902010032 = cpo/member/membership.html "멤버십 문의 관리" 목록과 100% 동일 시트(한글행 실측 일치 확인).
+    // 멤버십 문의 관리 — 올해(2026) 누적 + 이번달.
+    // ★2026-08-25 GM 지적 수리: 홈과 화면(멤버십 회원관리)이 같은 숫자를 서로 다른 데서 셌다.
+    //   홈은 구글 시트 CSV 내보내기를 직접 읽었는데 ①구글이 캐시해 몇 분 늦고 ②지운 중복 건까지
+    //   세고 ③타임스탬프 형식이 늘면 조용히 빠졌다(실측 그날 홈 731·76 / 화면 729·75).
+    //   화면이 쓰는 GAS 액션 하나로 통일한다 — 정의가 한 곳뿐이면 두 화면이 어긋날 수가 없다.
+    //   이 액션은 진행현황 '중복(삭제)' 행을 서버에서 이미 제외한다. CSV 파서 90줄은 함께 삭제.
     (function loadMiInqKpi(){
-      var SS_ID  = '12AWcAlgmmYKr2nUbWmVpa71_z3zi0BaU4ZdnOwrI_7U';
-      var GID_KO = '1902010032';
-      var GID_EN = '1887747109';
-      var BASE   = 'https://docs.google.com/spreadsheets/d/' + SS_ID + '/export?format=csv&gid=';
-      // ★타임스탬프 2형식 혼재 — 날짜 부분만 뽑아 'YYYY-MM-DD'로 통일.
-      //   구글폼 접수: "2026. 7. 22 오후 6:20:59"  (실측 2건)
-      //   웹 접수    : "26-07-22 10:55:22"        (실측 634건 · 두 자리 연도)
-      //   구글폼형만 읽던 정규식 탓에 웹 접수 634건이 조용히 스킵돼 홈 카드가 636건을 2건으로
-      //   표시했다. 데이터는 멀쩡했고 읽는 쪽만 고장난 경우다(GM 2026-07-23 발견 · 배9879).
-      //   못 읽는 형식은 0으로 세지 말고 null로 남긴다 — 조용히 빠지면 또 못 찾는다.
-      var TS_RE_DOT = /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/;       // 2026. 7. 22
-      var TS_RE_ISO = /^\s*(\d{4})[-/](\d{1,2})[-/](\d{1,2})/;      // 2026-07-22
-      var TS_RE_YY  = /^\s*(\d{2})[-/](\d{1,2})[-/](\d{1,2})/;      // 26-07-22 → 2026-07-22
-      function parseDs(s) {
-        var v = String(s || ''), m;
-        m = TS_RE_DOT.exec(v) || TS_RE_ISO.exec(v);
-        if (m) return m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
-        m = TS_RE_YY.exec(v);
-        if (m) return '20' + m[1] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
-        return null;
-      }
-      // RFC 4180 CSV 파서 — 멀티라인 셀(따옴표 내 개행) 정확히 처리
-      function parseCSV(text) {
-        var rows = [], row = [], field = '', inQ = false, i = 0;
-        while (i < text.length) {
-          var c = text[i];
-          if (inQ) {
-            if (c === '"') {
-              if (text[i+1] === '"') { field += '"'; i += 2; continue; } // escaped quote
-              inQ = false; i++; continue;
-            }
-            field += c; i++; continue;
-          }
-          if (c === '"') { inQ = true; i++; continue; }
-          if (c === ',') { row.push(field); field = ''; i++; continue; }
-          if (c === '\r' && text[i+1] === '\n') { row.push(field); rows.push(row); row=[]; field=''; i+=2; continue; }
-          if (c === '\n') { row.push(field); rows.push(row); row=[]; field=''; i++; continue; }
-          field += c; i++;
-        }
-        if (field || row.length) { row.push(field); rows.push(row); }
-        return rows;
-      }
-      // CSV rows → 타임스탬프 컬럼(tsCol) 기준 올해누적(total)/이번달(month) 카운트. 헤더 행(0번) 제외.
-      // 헤더 '이름'으로 타임스탬프 칸 위치를 찾는다(2026-07-20 시포). 위치 인덱스 하드코딩은 칸이 하나만
-      //   추가·삭제돼도 엉뚱한 칸(성함 등)을 날짜로 읽어 KPI가 조용히 0이 된다 — 실제로 A열 '날짜' 삭제 예정.
-      //   못 찾으면 기존 인덱스로 폴백(무중단).
-      function tsColOf(rows, names, fallback) {
-        var h = rows && rows[0];
-        if (!h) return fallback;
-        // names 순서 = 우선순위. 반드시 후보명 바깥루프 — 칸을 바깥루프로 돌리면 A열 '날짜'가
-        //   B열 '타임스탬프'보다 먼저 걸려 우선순위가 무시된다(2026-07-20 실측으로 잡은 버그).
-        for (var n = 0; n < names.length; n++) {
-          for (var c = 0; c < h.length; c++) {
-            if (String(h[c] || '').replace(/\s/g, '').indexOf(names[n]) >= 0) return c;
-          }
-        }
-        return fallback;
-      }
-      function curYM(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2); }
-      // 지운 중복 건은 세지 않는다 (2026-08-25 GM 지적 — 홈 숫자가 화면보다 많았다).
-      //   화면 목록(member_inquiry_list)은 진행현황이 '중복(삭제)'인 행을 빼고 보여주는데, 홈은 시트를
-      //   그대로 읽어 그 행까지 셌다. 실측 그날: 홈 731 / 화면 727 · 이번달 76 / 73 — 차이 4건이 전부
-      //   지운 중복이었다. 물리 삭제를 안 하는 설계(INC-020)라 시트에는 계속 남는다 → 읽는 쪽이 빼야 한다.
-      function stColOf(rows) {
-        var h = rows && rows[0];
-        if (!h) return -1;
-        for (var c = 0; c < h.length; c++) {
-          var v = String(h[c] || '').replace(/\s/g, '');
-          if (v.indexOf('진행현황') >= 0 || v.indexOf('진행상황') >= 0) return c;
-        }
-        return -1;
-      }
-      function countRows(rows, tsCol, stCol) {
-        var yStart = yearStart(), ym = curYM(), total = 0, month = 0;
-        for (var i = 1; i < rows.length; i++) {
-          var r = rows[i];
-          if (!r || r.length <= tsCol) continue;
-          if (stCol >= 0 && r.length > stCol && String(r[stCol] || '').indexOf('중복(삭제)') >= 0) continue;
-          var ds = parseDs(r[tsCol]);
-          if (!ds) continue;
-          if (ds >= yStart) total++;
-          if (ds.slice(0,7) === ym) month++;
-        }
-        return { total: total, month: month };
-      }
-      // 영문 응답탭(GID_EN) 조회 제거(GM 2026-07-23) — 접수 0건(전 기간)으로 폐기 확정, 시트 삭제 예정.
-      //   영어 문의는 자체 폼으로 전환돼 한글 탭에 '유입언어'·[영어] 표식으로 함께 쌓이므로 합산이 필요 없다.
-      //   ★재개 시 = 아래 p2/en 두 줄과 합산만 되살리면 된다(GID_EN 상수는 남겨 둠).
-      // ★fetch 실패를 ''로 삼키지 않는다(2026-08-24 GM 지적 — "0"이 "못읽음"과 "진짜0건"을 구분 못해
-      //   문의 0건으로 오독됨). 실패는 Promise.all을 그대로 reject시켜 아래 최종 .catch가 "—" 유지하게 둔다.
-      var p1 = fetch(BASE + GID_KO + '&_pv=' + Date.now(), { redirect:'follow' }).then(function(r){ return r.text(); });
-      Promise.all([p1]).then(function(results){
-        var koRows = parseCSV(results[0]);
-        // 한국어 탭은 A열'날짜'+B열'타임스탬프'가 별도로 존재 → '타임스탬프' 우선 매칭('날짜'는 뒤 후보).
-        var ko = countRows(koRows, tsColOf(koRows, ['타임스탬프', '접수일', '날짜'], 1), stColOf(koRows));
-        set('kpiMiInqTotal', ko.total.toLocaleString()); // 올해 누적
-        set('kpiMiInqMonth', ko.month); // 이번달
-      }).catch(function(){ /* "—" 유지 */ });
+      var ym = new Date().getFullYear() + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
+      var yStart = yearStart();
+      fetch(SURVEY_URL + '?action=member_inquiry_list&_pv=' + Date.now(), { redirect:'follow' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d || !d.ok || !Array.isArray(d.data)) return;   // 실패는 "—" 유지(0으로 세지 않는다)
+          var total = 0, month = 0;
+          d.data.forEach(function(row){
+            var ts = String(row.timestamp || '').slice(0, 10);
+            if (!ts) return;
+            if (ts >= yStart) total++;
+            if (ts.slice(0, 7) === ym) month++;
+          });
+          set('kpiMiInqTotal', total.toLocaleString());
+          set('kpiMiInqMonth', month);
+        })
+        .catch(function(){ /* "—" 유지 */ });
     })();
 
     // 강습 문의 관리 — 성인+유소년 GAS lesson_stats 합산, 올해 기준 (2026-07-16 gviz 숨김행 감사 후 GAS 전환)
@@ -1202,7 +1124,9 @@
     // 소스: cpo/member/membership.html 멤버십 대시보드가 쓰는 동일 GAS 액션(from/to 실측) — 새 GAS 없음. 2026-07-10 GM 지시.
     (function loadMiRegKpi(){
       var ym = new Date().getFullYear() + '-' + ('0' + (new Date().getMonth() + 1)).slice(-2);
-      fetch(SURVEY_URL + '?action=member_registered_list&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' })
+      // ★newOnly=1 (2026-08-25 GM 지적 수리) — 화면(멤버십 회원관리 '가입')은 신규만 세는데
+      //   홈은 재등록·양수·환불·양도·대기까지 전부 세어 8월 46 vs 17 로 갈렸다. 화면이 정본이다(배361).
+      fetch(SURVEY_URL + '?action=member_registered_list&newOnly=1&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(d){
           if (!d || !d.ok || !Array.isArray(d.data)) return; // "—" 유지
