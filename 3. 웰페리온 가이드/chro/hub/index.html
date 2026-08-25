@@ -506,6 +506,7 @@
 <header>
   <div class="hd-inner">
     <button class="hd-btn" id="reloadBtn">↻ 새로고침</button>
+    <a class="hd-btn" id="calEntryBtn" href="calendar.html" style="display:none;right:132px;text-decoration:none">🗓️ 개인 캘린더</a>
     <div class="brand">
       <span class="mark">Wellperion</span>
       <h1>HR CONCIERGE</h1>
@@ -4566,6 +4567,10 @@ function finishLoad(forceTab){
     if(SESSION_ROLE==="admin"){rp.className="role-pill admin";rp.textContent="관리자 모드";}
     else{rp.className="role-pill viewer";rp.textContent="뷰어 모드";}
   }
+  // [추가 2026-08-25 A-5, 매니저 승인] 개인 캘린더 진입 링크 — 관리자 로그인 상태에서만 노출
+  // (calendar.html 자체도 admin 전용 게이트를 다시 거치지만, 뷰어에게는 존재조차 보이지 않게).
+  var calBtn=document.getElementById("calEntryBtn");
+  if(calBtn) calBtn.style.display=(SESSION_ROLE==="admin")?"inline-block":"none";
   updateSyncMeta();
   var target="dash";
   if(forceTab&&TABS.some(function(t){return t.id===forceTab;})){

@@ -153,8 +153,12 @@
   .detail-content{font-size:13px;color:var(--ink);white-space:pre-wrap;line-height:1.6;
     background:var(--bg-soft);border-radius:8px;padding:10px 12px;margin-bottom:12px;min-height:20px}
   .detail-place{font-size:12px;color:var(--ink-soft);margin-bottom:10px}
-  .btn-erp{width:100%;background:var(--surface-2);color:var(--ink-faint);border:1px dashed var(--line-strong);
-    border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:700;cursor:not-allowed;margin-top:6px}
+  .btn-erp{width:100%;border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:700;
+    cursor:pointer;margin-top:6px;border:1px solid var(--line-strong)}
+  .btn-erp.state-idle{background:var(--surface-2);color:var(--gold-deep);border-color:var(--gold)}
+  .btn-erp.state-idle:hover{background:#f6efdd}
+  .btn-erp.state-requested{background:var(--green-bg);color:var(--green);border-color:var(--green);border-style:dashed}
+  .btn-erp:disabled{cursor:not-allowed;opacity:.65}
   .erp-note{font-size:10.5px;color:var(--ink-faint);margin-top:6px;line-height:1.5}
   .ssot-link{font-size:11.5px;margin-top:6px;display:inline-block}
 
@@ -265,8 +269,8 @@
     <div class="detail-place" id="dPlace" style="display:none"></div>
     <div class="detail-content" id="dContent"></div>
     <div id="dSsotLinkWrap" style="display:none"><a class="ssot-link" id="dSsotLink" target="_blank" rel="noopener">업무 SSOT에서 열기 →</a></div>
-    <button class="btn-erp" id="dErpBtn" disabled>📌 전사일정에 추가하기 (연동 준비중)</button>
-    <div class="erp-note">※ 전사일정(coo/check) 자동 등재는 아직 지원되지 않습니다 — COO/GM 합의 및 안전한 단건 추가 API가 갖춰지면 연동됩니다. 지금 바로 반영이 필요하면 매니저님이 <a href="../../coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html" target="_blank" rel="noopener">전사일정 화면</a>에서 직접 추가해 주세요.</div>
+    <button class="btn-erp" id="dErpBtn" style="display:none"></button>
+    <div class="erp-note" id="dErpNote" style="display:none"></div>
     <div class="modal-actions" id="dActions" style="margin-top:14px">
       <button class="btn btn-ghost" id="detailClose">닫기</button>
       <button class="btn btn-danger" id="detailDelete" style="display:none">삭제</button>
@@ -388,7 +392,8 @@ function itemsForDay(dstr){
   CAL_ITEMS.forEach(function(it){
     var s=it["시작일"]||it.date||"", e=it["종료일"]||it.endDate||s;
     if(s && dstr>=s && dstr<=(e||s)) out.push({kind:"cal",id:it.id,title:it["제목"],type:it["유형"]||"기타",
-      date:s,endDate:e,startTime:it["시작시각"],endTime:it["종료시각"],content:it["내용"],place:it["장소"]});
+      date:s,endDate:e,startTime:it["시작시각"],endTime:it["종료시각"],content:it["내용"],place:it["장소"],
+      erpRequest:it["전사연동요청"]||""});
   });
   SSOT_ITEMS.forEach(function(it){
     if(dstr>=it.startDate && dstr<=it.endDate) out.push({kind:"ssot",id:it.id,title:it.title,type:"SSOT업무",
@@ -412,8 +417,10 @@ function renderCalendar(){
     var items=itemsForDay(dstr);
     var chips=items.map(function(it){
       var cls="chip type-"+it.type+(it.status==="완료"?" done":"");
-      var label=(it.startTime?it.startTime+" ":"")+esc(it.title);
-      return '<div class="'+cls+'" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'" title="'+esc(it.title)+'">'+label+'</div>';
+      var erpMark=(it.erpRequest==="요청됨")?"📌 ":"";
+      var label=erpMark+(it.startTime?it.startTime+" ":"")+esc(it.title);
+      var tt=it.title+(it.erpRequest==="요청됨"?" (전사일정 등재 요청됨)":"");
+      return '<div class="'+cls+'" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'" title="'+esc(tt)+'">'+label+'</div>';
     }).join("");
     html+='<div class="day'+(isOther?" other":"")+(isToday?" today":"")+'" data-date="'+dstr+'">'+
       '<div class="dnum">'+d.getDate()+'</div><div class="chips">'+chips+'</div></div>';
@@ -455,7 +462,8 @@ function renderDetail(){
     when=document.getElementById("dWhen"), place=document.getElementById("dPlace"),
     content=document.getElementById("dContent"), ssotWrap=document.getElementById("dSsotLinkWrap"),
     ssotLink=document.getElementById("dSsotLink"), delBtn=document.getElementById("detailDelete"),
-    editBtn=document.getElementById("detailEdit");
+    editBtn=document.getElementById("detailEdit"), erpBtn=document.getElementById("dErpBtn"),
+    erpNote=document.getElementById("dErpNote");
   if(ref.kind==="ssot"){
     var it=ref.item;
     badge.className="type-badge type-SSOT업무"; badge.textContent="SSOT업무 · 읽기전용";
@@ -466,6 +474,8 @@ function renderDetail(){
     ssotWrap.style.display="block";
     ssotLink.href=SSOT_BOARD_REL+"?edit="+encodeURIComponent(it.id);
     delBtn.style.display="none"; editBtn.style.display="none";
+    // 업무 SSOT 항목은 우리 소유 데이터가 아니라 등재요청 플래그를 붙일 수 없음(개인일정 전용 기능).
+    erpBtn.style.display="none"; erpNote.style.display="none";
   }else{
     var c=ref.item;
     var type=c["유형"]||"기타";
@@ -480,9 +490,46 @@ function renderDetail(){
     content.textContent=c["내용"]||"(내용 없음)";
     ssotWrap.style.display="none";
     delBtn.style.display="inline-block"; editBtn.style.display="inline-block";
+    renderErpButton(c);
   }
   document.getElementById("detailBg").classList.add("show");
 }
+// 전사일정 자동 연동은 여전히 미구현(제3 GAS 호출 코드 0건 유지) — 대신 "등재 요청" 플래그를
+// 우리 백엔드(개인일정 탭)에만 저장한다. 실제 전사일정 반영은 CHRO가 화면에서 수동 대행.
+function renderErpButton(c){
+  var erpBtn=document.getElementById("dErpBtn"), erpNote=document.getElementById("dErpNote");
+  var requested=(c["전사연동요청"]==="요청됨");
+  erpBtn.style.display="block"; erpNote.style.display="block";
+  erpBtn.disabled=false;
+  if(requested){
+    erpBtn.className="btn-erp state-requested";
+    erpBtn.textContent="✅ 요청됨 — 클릭하면 요청 취소";
+    erpNote.innerHTML="전사일정 등재를 요청했습니다. 자동 등재가 아니라 <b>CHRO가 전사일정 화면에서 직접 등재</b>합니다(실제 반영까지 시간이 걸릴 수 있습니다).";
+  }else{
+    erpBtn.className="btn-erp state-idle";
+    erpBtn.textContent="📌 전사일정에 추가하기";
+    erpNote.innerHTML="자동 연동은 아직 지원되지 않습니다(전사일정은 별도 시스템 · COO/GM 합의 필요) — 누르면 <b>CHRO에게 등재를 요청</b>만 하고, 실제 반영은 CHRO가 <a href=\"../../coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html\" target=\"_blank\" rel=\"noopener\">전사일정 화면</a>에서 직접 대행합니다.";
+  }
+}
+document.getElementById("dErpBtn").addEventListener("click",async function(){
+  if(!DETAIL_REF||DETAIL_REF.kind!=="cal") return;
+  var c=DETAIL_REF.item;
+  var nextVal=!(c["전사연동요청"]==="요청됨");
+  var btn=this; btn.disabled=true;
+  try{
+    var res=await calApi({action:"cal-update",id:c.id,erpRequest:nextVal});
+    if(res && res.ok){
+      c["전사연동요청"]=res.erpRequest||"";
+      renderErpButton(c);
+      toast(nextVal?"전사일정 등재를 요청했습니다.":"등재 요청을 취소했습니다.");
+      await loadCal();
+      renderCalendar();
+    }else{
+      toast("처리 실패: "+((res&&res.message)||(res&&res.error)||"알 수 없는 오류"));
+      btn.disabled=false;
+    }
+  }catch(e){ toast("처리 실패: "+e.message); btn.disabled=false; }
+});
 document.getElementById("detailClose").addEventListener("click",function(){document.getElementById("detailBg").classList.remove("show");DETAIL_REF=null;});
 document.getElementById("detailBg").addEventListener("click",function(e){if(e.target.id==="detailBg"){this.classList.remove("show");DETAIL_REF=null;}});
 document.getElementById("detailEdit").addEventListener("click",function(){
