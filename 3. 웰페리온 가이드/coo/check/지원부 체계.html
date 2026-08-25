@@ -190,6 +190,12 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submit-btn.night-btn{background:var(--orange);color:#fff}
 .submit-btn.night-btn:disabled{opacity:0.4;cursor:not-allowed}
 .submit-btn.submitted{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3)}
+/* 미제출 안내 — 점검은 했는데 제출을 안 눌러 기록이 안 남는 것을 화면에서 잡는다 (GM 2026-08-25) */
+.nosub-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--red-bg);border:1.5px solid var(--red);color:var(--red);border-radius:10px;padding:11px 14px;margin:14px 0 0;font-size:13.5px;font-weight:700}
+.nosub-banner button{padding:6px 14px;font-size:12.5px;font-weight:700;border:none;border-radius:8px;background:var(--red);color:#fff;cursor:pointer;font-family:inherit}
+.nosub-done{background:var(--green-bg);border:1px solid rgba(106,191,123,0.4);color:var(--green);border-radius:10px;padding:10px 14px;margin:14px 0 0;font-size:13px;font-weight:700}
+.submit-btn.nudge{background:var(--red);color:#fff;box-shadow:0 0 0 3px rgba(237,91,63,0.28)}
+.submit-btn.primary.nudge:disabled{opacity:0.8}
 .group-submit-bar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px 4px;border-top:1px dashed var(--border);margin-top:6px}
 .group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
 .group-submit-btn:hover{background:var(--accent);color:#fff}
@@ -2861,6 +2867,68 @@ function renderRoundBar(g){
 }
 
 /* ════════════════════════════════════════════════════════════
+   미제출 안내 (GM 지시 2026-08-25) — 남/여 공용 한 벌.
+   왜: 2026-08 지원부 실측에서 제출된 세션은 항목이 93% 채워지는데 예정 대비 제출률은 45%였다.
+   사람은 점검을 하는데 [제출]을 안 눌러 기록이 안 남는다. 화면 안에서만 잡는다(새 알림 채널·새 저장소 없음).
+   판정 단위 = 성별 × 회차. 이미 제출된 회차엔 절대 뜨지 않는다.
+   점차 줄이기: 연속 5회 제출한 브라우저는 띠를 접는다(이탈 확인창은 유지). 한 번이라도 빠뜨리면 다시 켠다.
+   ════════════════════════════════════════════════════════════ */
+const NOSUB_STREAK_TARGET=5;
+function _streakKey(g){return 'wcheck_subm_streak_'+g}
+function _streakMsgKey(g){return 'wcheck_subm_streak_msg_'+g}
+function getSubmitStreak(g){return parseInt(localStorage.getItem(_streakKey(g))||'0',10)||0}
+function setSubmitStreak(g,n){try{localStorage.setItem(_streakKey(g),String(n))}catch(e){}}
+/* 제출 1회 적립. 5회째에 '이제 접어 둡니다' 한 줄을 1회만 띄우도록 표시를 남긴다. */
+function bumpSubmitStreak(g){
+  const n=getSubmitStreak(g)+1;
+  setSubmitStreak(g,n);
+  if(n===NOSUB_STREAK_TARGET){try{localStorage.setItem(_streakMsgKey(g),'1')}catch(e){}}
+}
+/* 그 회차(성별 독립)에 찍힌 체크 수 */
+function roundCheckCount(g,rk){
+  let n=0;
+  const pfx='chk_'+g+'_'+rk+'_';
+  for(const k in STATE){if(k.indexOf(pfx)===0&&STATE[k]===true)n++;}
+  return n;
+}
+/* 그 회차가 '늦었는지' — 지난 날짜이거나 조 시각+3시간이 지났으면 빠뜨린 것으로 본다. */
+function isRoundOverdue(d,rk){
+  const _t=kstToday();
+  if(d>_t)return false;   // 아직 오지 않은 날
+  if(d<_t)return true;    // 지난 날의 미제출 = 빠뜨린 것
+  return new Date().getHours()>=roundHourFor(rk,d)+3;
+}
+/* 체크는 있는데 제출 안 된 회차 목록(남/여 · 회차별 각각). 이탈 확인창 게이트. */
+function pendingUnsubmitted(){
+  const out=[];
+  try{
+    ['m','f'].forEach(g=>{
+      const d=getDateG(g); if(!d)return;
+      getRoundsFor(d).forEach(r=>{
+        if(isRoundSubmitted(d,g,r.key))return;
+        const n=roundCheckCount(g,r.key);
+        if(n>0)out.push({g:g,round:r.key,n:n});
+      });
+    });
+  }catch(e){}
+  return out;
+}
+/* 띠의 [제출] 버튼 → 그 회차 제출 영역으로 스크롤·포커스 */
+function focusRoundSubmit(g){
+  const w=document.getElementById('roundSubmitWrap'+(g==='f'?'F':'M'));
+  if(!w)return;
+  try{w.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){w.scrollIntoView()}
+  const b=w.querySelector('button');
+  if(b&&!b.disabled){try{b.focus({preventScroll:true})}catch(e){b.focus()}}
+}
+/* 떠날 때 한 번 잡기 — 체크가 없거나 이미 제출됐으면 뜨지 않는다(매번 뜨면 무시하게 된다). */
+window.addEventListener('beforeunload',function(e){
+  if(!pendingUnsubmitted().length)return;
+  e.preventDefault();
+  e.returnValue='';
+});
+
+/* ════════════════════════════════════════════════════════════
    2a단계 — 항목 다회차(multi-round) 멤버십 + 구역별 그룹핑 (시우·GM 2026-06-11).
    · ROUND_MAP: 항목 id → 등장할 라운드 키 배열. 없으면 roundOfSlot 폴백(단일 라운드).
    · itemRounds(it): 그 항목이 멤버인 라운드 키 배열. CUSTOM override는 영향 없음.
@@ -3667,6 +3735,18 @@ function drawUI(d,gender){
     const rPct=rTotal?Math.round(rDone/rTotal*100):0;
     const rSubmitted=isRoundSubmitted(d,gender,curRound);
 
+    /* ── 미제출 띠(GM 2026-08-25) — 체크는 있는데 아직 제출 전인 회차만. 제출되면 사라진다. ── */
+    const _nosubN=rSubmitted?0:rDone;
+    if(_nosubN>0&&isRoundOverdue(d,curRound))setSubmitStreak(gender,0);   // 늦게까지 미제출 = 빠뜨림 → 안내 재개
+    if(localStorage.getItem(_streakMsgKey(gender))==='1'){
+      try{localStorage.removeItem(_streakMsgKey(gender))}catch(e){}
+      html+=`<div class="nosub-done">✅ 다섯 번 연속 제출하셨습니다 — 이제 이 안내는 접어 둡니다</div>`;
+    }else if(_nosubN>0&&getSubmitStreak(gender)<NOSUB_STREAK_TARGET){
+      const _rnm=String(rdef.name).replace(/\s*\[\d+\]/,'');
+      html+=`<div class="nosub-banner"><span>✍ ${_rnm} ${_nosubN}개 체크했는데 아직 제출 전입니다 — [제출]을 눌러야 기록에 남습니다</span>`
+          +`<button type="button" onclick="focusRoundSubmit('${gender}')">제출하러 가기</button></div>`;
+    }
+
     /* 조 헤더(진행바 + 제출완료 표시) */
     html+=`<div class="shift-divider"><div class="shift-label">${rdef.name} (${rdef.time})</div>
       <div class="shift-progress">
@@ -3724,12 +3804,12 @@ function drawUI(d,gender){
       rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" disabled>↑ 점검자 이름을 먼저 입력</button>`;
     }else if(!timerGatePassed(gender)){
       /* 점검 시작·종료 선행 게이트(GM 2026-06-24): 시작·종료 둘 다 눌러야 제출 가능 */
-      rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" disabled>▶ 점검 시작·종료 먼저</button>`;
+      rBtn=`<button class="submit-btn primary${rDone>0?' nudge':''}" style="max-width:none;width:100%;" disabled>▶ 점검 시작·종료 먼저</button>`;
     }else{
       /* 미제출=(0/1) — 항목수(27/30) 대신 조 이름·시각·제출여부로 표시. GM 2026-06-15 */
-      rBtn=`<button class="submit-btn primary" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${rDone===0?' disabled':''}>${_rlabel} 점검 제출 (0/1)</button>`;
+      rBtn=`<button class="submit-btn primary${rDone>0?' nudge':''}" style="max-width:none;width:100%;" onclick="submitRound('${curRound}','${gender}')"${rDone===0?' disabled':''}>${_rlabel} 점검 제출 (0/1)</button>`;
     }
-    html+=`<div style="margin:16px 0 8px;">${rBtn}</div>`;
+    html+=`<div id="roundSubmitWrap${sfx}" style="margin:16px 0 8px;">${rBtn}</div>`;
 
     /* 바닥 고정 제출바는 라운드 모드에서 숨김(라운드 버튼이 대체) */
     document.getElementById(submitBarId).style.display='none';
@@ -4780,6 +4860,7 @@ async function submitRound(round,gender){
   } else {
     alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
   }
+  bumpSubmitStreak(gender);   // 미제출 안내 접기용 연속 카운터(GM 2026-08-25)
   drawUI(d,gender);
 }
 
@@ -8660,7 +8741,7 @@ function mrSubmitBreakdown(data){
     +'<div style="font-size:12px;color:var(--dim);margin-top:6px;">제출만 되면 '+fillPct+'% 는 채워집니다. 완료율을 끌어내리는 것은 체크 누락이 아니라 <b>제출이 안 된 교대</b>입니다.</div>'
     +'<div style="font-size:12px;color:var(--dim);margin-top:4px;">구역별 제출 — '+mrEsc(zoneTxt)+'</div>'
     +gap
-    +'<div style="font-size:11.5px;color:var(--yellow);margin-top:8px;line-height:1.6;">⚠ <b>달 중간에 점검 항목을 늘리면 이달 지난 날짜의 분모도 같이 늘어납니다.</b> 그날 없던 항목까지 예정에 넣고 세기 때문입니다 — 실적이 나빠진 게 아닌데 완료율이 내려갑니다. 그래서 이달 완료율은 지난달과 곧바로 비교하지 마세요. 흐름은 위 <b>제출률</b>로 보는 편이 안전합니다.<br>실측 2026-08-25: 항목 3개를 더하자 이달 분모가 2,205 → 2,545(+340)로 뛰고 완료율이 46% → 42% 로 내려갔습니다.</div>'
+    +'<div style="font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.6;">이 값은 <b>월 단위</b>입니다 — 달 중간에 점검 항목이 늘면 그 달 전체를 새 기준으로 다시 셉니다. 실적이 나빠진 게 아니라 <b>기준이 늘어난 것</b>이니, 지난달과 비교할 땐 항목 구성이 달라졌는지 함께 보세요.<br>실측 2026-08-25: 항목 3개를 더하자 이달 예정이 2,205 → 2,545(+340)로 늘고 완료율이 46% → 42% 가 됐습니다.</div>'
     +'</div>';
 }
 
