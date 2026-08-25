@@ -13495,7 +13495,7 @@ var WriteBuffer = (function(){
       //   park 된 건(parkedHard)은 재시도해도 결과가 같아서, 버리는 통로가 없으면 실패 칩이 영영 안 사라진다.
       //   실무진은 이미 화면에서 손으로 고쳐 놨는데 실패 표시만 남아 "아직 안 됐나" 하고 다시 만지게 된다.
       //   버리는 것은 '보내지 못한 저장 요청'이지 시트 값이 아니다 — 그래서 확인 한 번 받고 지운다.
-      var _lastErrs = failed.map(function(it){ return it.lastError; }).filter(Boolean).slice(0, 2).join(' / ');
+      var _lastErrs = failed.map(function(it){ return _errKo(it.lastError); }).filter(Boolean).slice(0, 2).join(' / ');
       msg.innerHTML = '동기화 실패 ' + failed.length + '건' +
         '<button class="sc-retry" onclick="WriteBuffer.forceRetry()">재시도</button>' +
         '<button class="sc-retry" onclick="WriteBuffer.discardFailed()">실패 표시 지우기</button>' +
@@ -13582,7 +13582,7 @@ var WriteBuffer = (function(){
         var prev = td.getAttribute('data-wb-unsaved') || '';
         if (prev.indexOf(line) < 0) td.setAttribute('data-wb-unsaved', prev ? prev + ' · ' + line : line);
         tr.setAttribute('title', '이 행의 「' + (item.label || '저장') + '」 은(는) 시트에 저장되지 않았습니다' +
-          (item.lastError ? ' (' + item.lastError + ')' : '') +
+          (item.lastError ? ' (' + _errKo(item.lastError) + ')' : '') +
           '. 화면에 보이는 값은 아직 이 컴퓨터에만 있습니다 — 화면 아래 동기화 칩에서 [재시도] 하거나, ' +
           '계속 실패하면 값을 다시 확인해 저장하세요.');
       });
@@ -13801,6 +13801,34 @@ var WriteBuffer = (function(){
       });
   }
 
+  /* ★실패 사유를 실무진이 읽을 수 있는 말로 바꾼다 (GM 지시 2026-08-25).
+     그동안 화면에 'rowkey-not-found' 같은 영문 코드가 그대로 떴다. 읽는 분은 무슨 일인지도,
+     무엇을 하면 되는지도 알 수 없어 그대로 붙잡고 계셨다(유상두 회원 건). 코드마다 '무슨 일인가
+     + 무엇을 하면 되나'를 한 문장으로 붙인다. 모르는 코드는 원문을 그대로 보여준다(숨기지 않는다).
+     이 표가 사유 표기의 유일한 자리다 — 칩·토스트·서버 보고가 전부 여기를 거친다. */
+  var ERR_KO = {
+    'rowkey-not-found':          '이 회원 줄을 목록에서 못 찾았습니다 — [재시도]를 한 번 눌러 주세요',
+    'rowkey-ambiguous':          '같은 이름·번호가 둘 이상이라 어느 분인지 정할 수 없습니다 — 알려주시면 확인하겠습니다',
+    'row-key-mismatch':          '목록이 그새 바뀌었습니다 — 새로고침한 뒤 다시 저장해 주세요',
+    'row-key-unverified':        '연락처가 비어 있어 대상을 확인할 수 없습니다 — 연락처를 채운 뒤 저장해 주세요',
+    'duplicate-phone-ambiguous': '같은 연락처가 여러 건입니다 — 새로고침해 대상을 확인해 주세요',
+    'loss-reason-required':      'LOSS로 바꾸려면 사유가 필요합니다 — 사유를 고른 뒤 다시 저장해 주세요',
+    'locked':                    '다른 저장이 진행 중이었습니다 — 잠시 뒤 [재시도]를 눌러 주세요',
+    'bad-token':                 '권한 확인이 안 됐습니다 — 알려주시면 확인하겠습니다',
+    '시트 없음':                 '저장할 시트를 못 찾았습니다 — 알려주시면 확인하겠습니다',
+    '행 범위 초과':              '이 회원 줄을 목록에서 못 찾았습니다 — 새로고침한 뒤 다시 저장해 주세요',
+    '네트워크 오류':             '인터넷이 잠깐 끊겼습니다 — [재시도]를 한 번 눌러 주세요',
+    '응답 파싱 실패':            '저장은 됐을 수 있는데 답을 못 받았습니다 — [재시도]를 누르면 확인됩니다',
+    '응답 없음(시간 초과)':      '응답이 너무 늦어 끊겼습니다 — [재시도]를 한 번 눌러 주세요'
+  };
+  function _errKo(reason) {
+    var s = String(reason || '').trim();
+    if (!s) return '원인을 알 수 없습니다 — 알려주시면 확인하겠습니다';
+    if (ERR_KO[s]) return ERR_KO[s];
+    for (var k in ERR_KO) { if (ERR_KO.hasOwnProperty(k) && s.indexOf(k) >= 0) return ERR_KO[k]; }
+    return s;   // 모르는 사유는 원문 그대로 — 숨기면 원인을 아무도 못 본다
+  }
+
   /* ★저장 실패를 서버에도 알린다 (GM 승인 2026-08-25 · 0단계).
      못 보낸 저장 요청은 이 PC 브라우저 안에만 쌓이고 서버엔 흔적이 없었다. 실무진이 실패 표시를
      못 보고 지나가면 그 수정은 영영 시트에 안 들어가는데, 우리는 몇 건이 밀렸는지조차 몰랐다
@@ -13821,7 +13849,7 @@ var WriteBuffer = (function(){
       item.reported = true;   // 큐에 함께 저장된다 — 새로고침해도 같은 건을 다시 안 보낸다
       apiPost({ action: 'client_write_fail', browserId: _browserId(),
                 who: item.who || '', phone: item.phoneKey || '',
-                reason: reason || item.lastError || '알 수 없음',
+                reason: _errKo(reason || item.lastError),
                 count: failedItems().length })
         .catch(function(){ /* 보고 실패는 무시 — 저장 흐름에 영향 0 */ });
     } catch (e) { /* 무시 */ }
@@ -13850,8 +13878,8 @@ var WriteBuffer = (function(){
       // ★2026-08-20 GM 지시 — 실패도 사유와 함께 화면에 남긴다(토스트는 놓친다).
       lastResult = { ok: false, text: '❌ 동기화 실패 · ' + _hhmm() + ' — ' +
         ((item.who ? item.who + ' ' : '') + (item.label || '저장')) +
-        ' · 사유: ' + (item.lastError || '알 수 없음') };
-      if (item.lastError) showToast('저장 실패 — ' + item.lastError, 'err');
+        ' · 사유: ' + _errKo(item.lastError) };
+      if (item.lastError) showToast('저장 실패 — ' + _errKo(item.lastError), 'err');
     } else {
       item.nextTry = _now() + (BACKOFF[Math.min(item.attempts - 1, BACKOFF.length - 1)]);
     }

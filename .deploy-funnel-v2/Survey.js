@@ -6171,10 +6171,14 @@ function _hasRealReply_(memo) {
                   '멤버십 회원관리']]);
     // 시트에만 적으면 아무도 안 본다 — 그 PC 에서 이번 시간 첫 실패일 때만 한 줄 알린다
     // (같은 PC 연속 실패는 위 상한 카운터가 이미 막는다 · 새 알림 장치 0).
+    // ★반드시 업무보고방으로 (배209 와 같은 사고 재발방지 · 2026-08-25 GM 지적).
+    //   이건 우리가 고치라고 보는 내부 신호지 실무진이 읽을 글이 아니다. 기본 방으로 보내면
+    //   실무진 알림방에 영문 오류코드가 그대로 떠서 놀라게 만든다 — 실제로 그렇게 샜다.
     if (_cwN === 0) {
       try {
         _notifyTelegram('⚠️ 저장 실패(시트로 못 감) — PC ' + _cwId
-          + ' · ' + _cwCut(body.who, 20) + ' · 사유: ' + _cwCut(body.reason, 60));
+          + ' · ' + _cwCut(body.who, 20) + ' · 사유: ' + _cwCut(body.reason, 60),
+          TELEGRAM_REPORT_CHAT_ID);
       } catch (e) {}
     }
     return _json({ ok: true });
