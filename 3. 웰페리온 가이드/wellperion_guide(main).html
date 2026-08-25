@@ -635,24 +635,30 @@
       <div id="homeReceptionCard" style="display:flex;flex-direction:column;">
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">🙋</span>
-          <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 누적 · 이번달</div></div>
+          <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 이번달 · 누적</div></div>
         </div>
-        <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남). -->
+        <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남).
+             [2026-08-25 GM 지시] ①큰숫자=이번달 / 작은 서브=누적 으로 스왑(id 는 그대로 두고 표시 위치만 교체 —
+               문의&등록 카드가 2026-07-14 에 같은 방식으로 바꾼 전례). GM 원문: "이번달 현황을 숫자 글씨 크게 /
+               누적된것을 숫자 글씨 작게(아래) 배치해줘".
+             ②옆 문의&등록 카드와 글자 크기·간격을 맞춰 두 카드의 줄이 나란히 서게 했다(라벨 11px·큰숫자 27px·
+               서브 14.5px — 문의&등록 카드와 동일 값). GM 원문: "위아래 칸좀 맞춰줘".
+             ③칸 높이는 줄였다(90.25px → 84px, 안쪽 여백 10/12 → 9/10). GM 원문: "접수 처리중 완료 칸을 조금 줄여". -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
-          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">접수</div>
-            <div id="kpiVocNew" style="font-size:22px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">—</div>
-            <div style="margin-top:4px;height:13px;"><span style="font-size:9px;color:var(--dim);">이번달 신규 </span><span id="kpiVocNewMonth" style="font-size:13px;font-weight:700;color:var(--orange,#e6944e);">—</span></div>
+          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:9px 10px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:84px;">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">접수 · 이번달</div>
+            <div id="kpiVocNewMonth" style="font-size:27px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">—</div>
+            <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적 </span><span id="kpiVocNew" style="font-size:14.5px;font-weight:700;color:var(--orange,#e6944e);">—</span></div>
           </div>
-          <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">처리중</div>
-            <div id="kpiVocWip" style="font-size:22px;font-weight:800;color:var(--blue,#5b9fd5);line-height:1;">—</div>
-            <div style="margin-top:4px;height:13px;"><span style="font-size:9px;color:var(--dim);">현재 기준</span></div>
+          <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:9px 10px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:84px;">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">처리중</div>
+            <div id="kpiVocWip" style="font-size:27px;font-weight:800;color:var(--blue,#5b9fd5);line-height:1;">—</div>
+            <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">현재 기준</span></div>
           </div>
-          <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:10px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:90.25px;">
-            <div style="font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:600;">완료</div>
-            <div id="kpiVocDone" style="font-size:22px;font-weight:800;color:var(--grow,#6abf7b);line-height:1;">—</div>
-            <div style="margin-top:4px;height:13px;"><span style="font-size:9px;color:var(--dim);">이번달 </span><span id="kpiVocDoneMonth" style="font-size:13px;font-weight:700;color:var(--grow,#6abf7b);" title="처리(완료) 일자 데이터 없음 — 이번달 접수 건 중 현재 완료 상태 근사치">—</span></div>
+          <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:9px 10px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:84px;">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">완료 · 이번달</div>
+            <div id="kpiVocDoneMonth" style="font-size:27px;font-weight:800;color:var(--grow,#6abf7b);line-height:1;" title="처리(완료) 일자 데이터 없음 — 이번달 접수 건 중 현재 완료 상태 근사치">—</div>
+            <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적 </span><span id="kpiVocDone" style="font-size:14.5px;font-weight:700;color:var(--grow,#6abf7b);">—</span></div>
           </div>
         </div>
         <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);">
