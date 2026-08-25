@@ -26,6 +26,8 @@
   button:disabled{opacity:.5;cursor:not-allowed}
   input,textarea,select{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#1f1c1a;color:var(--ink)}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  /* resize:vertical만 허용 — 가로는 폭:100% 규칙과 충돌해 레이아웃이 깨지므로 세로만(2026-08-25 매니저 지적, 면담 작성칸 확대). */
+  textarea{resize:vertical}
   label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin:12px 0 6px}
 
   /* ===== 게이트 오버레이 ===== */
@@ -75,7 +77,8 @@
   .cm-msg{font-size:12px;margin:8px 0;min-height:16px}
   .cm-msg.err{color:var(--red)}
   .cm-msg.ok{color:var(--green)}
-  .modal.wide{max-width:480px;max-height:88vh;overflow:auto}
+  /* 면담 체크리스트 팝업 확대(2026-08-25 매니저 지적) — 480→680px, 답변칸도 아래에서 2줄→8줄로 확대(성찰 팝업과 동일 기준). */
+  .modal.wide{max-width:680px;max-height:90vh;overflow:auto}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
@@ -121,9 +124,9 @@
       <div><div class="cm-q">문화</div><select id="cm_cul"></select></div>
     </div>
     <label>어려운 점 / 이슈</label>
-    <textarea id="cm_issue" rows="2"></textarea>
+    <textarea id="cm_issue" rows="5"></textarea>
     <label>조치 / 후속</label>
-    <textarea id="cm_action" rows="2"></textarea>
+    <textarea id="cm_action" rows="5"></textarea>
     <label style="display:flex;align-items:center;gap:7px;margin-top:12px"><input type="checkbox" id="cm_risk" style="width:auto"> 이탈위험으로 표시</label>
     <div id="cm_verdictWrap" style="display:none">
       <label>수습 판정 (12주차 · 인사담당자 최종 결정)</label>
@@ -314,7 +317,7 @@ function openCheck(sr){
   if(g){ ge.style.display="block"; ge.innerHTML = "<b>"+esc(row.item)+"</b> — "+esc(g.focus); } else { ge.style.display="none"; }
   const qwrap = document.getElementById("cm_questions");
   if(g && g.q){
-    qwrap.innerHTML = g.q.map((q,i)=>`<div class="cm-q">${esc(q)}</div><textarea id="cm_q${i}" rows="2" placeholder="면담 내용·답변 기록"></textarea>`).join("");
+    qwrap.innerHTML = g.q.map((q,i)=>`<div class="cm-q">${esc(q)}</div><textarea id="cm_q${i}" rows="8" placeholder="면담 내용·답변 기록"></textarea>`).join("");
     __qN = g.q.length;
   } else { qwrap.innerHTML=""; __qN = 0; }
   ["cm_work","cm_rel","cm_cul"].forEach(id=>{ document.getElementById(id).innerHTML = scoreOpts(); document.getElementById(id).value=""; });
