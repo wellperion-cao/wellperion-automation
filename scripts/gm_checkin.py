@@ -82,13 +82,27 @@ def _load_schedule_items() -> list:
 _NOTE_TIME_RE = re.compile(r'^\s*(\d{1,2}:\d{2})\s*·')
 
 
-def _extract_time(name: str, note: str) -> str:
+def _extract_time(name: str, note: str, time_cell: str = '') -> str:
     """일정 시각 — 제목 속 (HH:MM) 우선, 없으면 note 앞머리 'HH:MM · ...'(전사일정은 날짜 단위라
-    시각을 note 에 적는 관례, 2026-08-11 팀장 지적). 둘 다 없으면 빈 문자열(지어내지 않음)."""
+    시각을 note 에 적는 관례, 2026-08-11 팀장 지적), 그래도 없으면 전사일정의 시각 칸.
+    셋 다 없으면 빈 문자열(지어내지 않음).
+
+    ★시각 칸을 읽게 된 경위(2026-08-25 · GM 지시 "다음부터 놓치지 않게 챙겨줘"):
+      전사일정 화면에는 시각 칸이 따로 있고 GM 도 거기에 시각을 적어 오셨는데, 이 함수가
+      제목과 note 만 봐서 그 값을 통째로 못 읽었다. 그래서 시각이 분명히 적힌 일정도
+      '시각 없음'으로 분류돼 30분 전 알림 대상에서 조용히 빠졌다.
+      실측(2026-08-25): 8/27 GM 일정 2건이 시각 칸에 10:30·14:00 을 갖고 있는데
+      이 함수는 둘 다 빈 문자열을 돌려주고 있었다 — 둘 다 알림이 안 울렸을 것이다.
+      ▸우선순위를 제목·note 뒤에 둔 이유 = 기존에 그 두 곳으로 잡히던 일정의 동작을
+        한 건도 바꾸지 않기 위해서다(회귀 0). 시각 칸은 '아무 데서도 못 찾았을 때'만 쓴다.
+    """
     m = re.search(r'\((\d{1,2}:\d{2})\)', name)
     if m:
         return m.group(1)
     m = _NOTE_TIME_RE.match(note or '')
+    if m:
+        return m.group(1)
+    m = re.match(r'^(\d{1,2}:\d{2})$', str(time_cell or '').strip())
     return m.group(1) if m else ''
 
 
@@ -102,7 +116,7 @@ def _filter_today_items(items: list, day: str) -> list:
         if 'GM' not in assignee and '김남욱' not in assignee:
             continue
         name = it.get('name') or ''
-        time_s = _extract_time(name, it.get('note') or '')
+        time_s = _extract_time(name, it.get('note') or '', it.get('time') or '')
         title = re.sub(r'\s*\(\d{1,2}:\d{2}\)\s*', '', name).strip()
         out.append((time_s, title))
     out.sort(key=lambda p: p[0] or '99:99')
@@ -905,6 +919,23 @@ def build_dept_block(day: str | None = None) -> str:
     return _format_department_highlights(_rank_office_ships_by_role(ships, day), day)
 
 
+def _tomorrow_missing_time_lines(items: list, day: str) -> list:
+    """내일 GM 일정 중 시각이 비어 있는 것 — 오늘 채워 두면 내일 30분 전 알림이 울린다.
+
+    GM 지시 2026-08-25 "다음부터 놓치지 않게 챙겨줘".
+    ▸당일 아침에 알리면 늦다(그날 30분 전 알림은 이미 계산이 끝난 뒤다). 그래서 하루 전에 짚는다.
+    ▸시각이 필요 없는 일정(계약 만료·양생 같은 날짜형)도 함께 걸리지만, 내일치로 좁혀 두면
+      드물게 뜬다 — 매일 우는 목록을 만들지 않는다.
+    ▸시각을 대신 채우지 않는다. 몇 시인지는 GM 만 아는 값이다(약속 L23·L25).
+    """
+    from datetime import date as _date, timedelta as _td
+    try:
+        tomorrow = (_date.fromisoformat(day) + _td(days=1)).isoformat()
+    except Exception:
+        return []
+    return [f"· {title}" for t, title in _filter_today_items(items, tomorrow) if not t]
+
+
 def _relayed_waiting_section(day: str) -> str:
     """「전달했는데 답이 없는 것」 절 한 칸. 0건이면 빈 문자열(그 자리가 통째로 빠진다).
 
@@ -1009,6 +1040,8 @@ def build_morning_brief(day: str | None = None) -> str:
         # 위 「답을 기다리는 것」은 업무 시트·회장님 보고건이 원천이다. 아래는 카톡 방으로
         # 나간 요청 — 원천이 달라 한 절에 섞지 않는다(섞으면 GM 이 어디를 봐야 할지 모른다).
         _relayed_waiting_section(day),
+        _bucket('내일 일정 — 시각이 비어 있습니다 (넣으시면 30분 전에 알려드립니다)',
+                _tomorrow_missing_time_lines(sched_items, day) if sched_ok else []),
         prog_section,
     ]
     sections = [s for s in sections if s]
@@ -1128,7 +1161,13 @@ def _selfcheck_schedule() -> None:
     assert [t for t, _ in got] == ['09:30', '11:00', '15:00', ''], got  # note 시각도 순서에 섞이고, 없는 건 맨 뒤
     assert ('11:00', '면접') in got, got
     assert _extract_time('제목 (15:00)', '11:00 · 다른시각') == '15:00'  # 제목 시각이 note 보다 우선(중복 방지)
-    assert _extract_time('제목', '') == ''  # 둘 다 없으면 지어내지 않는다
+    assert _extract_time('제목', '') == ''  # 셋 다 없으면 지어내지 않는다
+    # 시각 칸(2026-08-25) — 제목·note 에 없을 때만 쓰고, 있을 때는 기존 우선순위를 지킨다.
+    assert _extract_time('제목', '', '10:30') == '10:30'
+    assert _extract_time('제목 (15:00)', '', '10:30') == '15:00'
+    assert _extract_time('제목', '11:00 · 메모', '10:30') == '11:00'
+    assert _extract_time('제목', '', '종일') == ''      # 시각이 아닌 값은 안 읽는다
+    assert _extract_time('제목', '', None) == ''        # 빈 칸도 안전
     assert _format_schedule(got) == '09:30 오전 미팅\n11:00 면접\n15:00 오후 미팅\n시각 없는 건', _format_schedule(got)
     assert _filter_today_items(sample, '2099-01-01') == []
     assert _format_schedule([]) == ''
