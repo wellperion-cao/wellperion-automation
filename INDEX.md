@@ -11,6 +11,7 @@
 | scripts | 자동화 파이썬 (Notion·블로그·CMO·COO·CTO) |
 | wellperion-agents | C-Level 에이전트 정의 + R/R SSOT |
 | instagram | CMO 4채널 콘텐츠 작업 ({YYMMDD_콘텐츠명}/) |
+| training | 사내 교육 자산 (진입점 INDEX.md · 트리거 "교육") |
 | brand | 로고·컬러·가이드 (변경 시 GM 결재) |
 | .omc / .claude | 상태·메모리·hooks (자동 갱신) |
 | wellperion.bat | 단일 디스패처 (menu/health/inbox) |
@@ -38,6 +39,7 @@
 |---|---|
 | 텔레그램 | @namuki_report_bot (Chat ID 8254867551) |
 | 웰페리온 ERP | https://wellperion-cao.github.io/wellperion-automation/ |
+| 사내 교육 | 트리거 "교육" → training/INDEX.md |
 
 ## 5. 갱신 규칙
 신규 자산 등록·이동·폐기 시 본 파일 우선 patch → 메모리 동기화.
