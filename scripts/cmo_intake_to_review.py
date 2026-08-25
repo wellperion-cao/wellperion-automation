@@ -995,6 +995,12 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         caption_full = f"{caption_full}\n\n{hashtags}" if caption_full else hashtags
     (ROOT / folder_rel / "caption.md").write_text(caption_full, encoding="utf-8")
 
+    # 원본·중간물은 완성본이 나온 뒤 지운다(GM 확정 2026-08-25 A안). 원본은 접수 때
+    # 구글 드라이브 '마케팅 접수' 폴더에 그대로 남아 있으므로 PC 에 두면 두 벌이 된다.
+    # 완성본이 실제로 만들어졌을 때만 지운다 — 실패한 회차의 원본까지 날리면 재시도가 막힌다.
+    if src_dir.exists() and any(out_dir.glob("post_*.jpg")):
+        shutil.rmtree(src_dir, ignore_errors=True)
+
     return {
         # 표지 제목은 두 줄(\n)이지만 큐·검수카드 제목은 한 줄이어야 한다 — 줄바꿈만 편다.
         "title": f"{series['name']} — " + " ".join(intro.split()),
@@ -1148,11 +1154,15 @@ def main() -> int:
 
     existing = load_review_queue()
     existing_ids = {it.get("id") for it in existing if isinstance(it, dict)}
+    # 검수큐만 보면, 큐에서 지운 접수가 다음 폴링에 되살아난다(2026-08-25 실측 — 폐기건
+    # 정리 직후 같은 건이 신규후보로 다시 떴다). 이미 한 번 처리한 접수는 발신 원장에
+    # 남으므로 그것도 함께 무덤돌로 쓴다 — 새 파일을 만들지 않는다(약속 L21).
+    handled_ids = existing_ids | set(_load_sent_state())
 
     candidates = []
     for row in rows:
         item_id = make_id(row)
-        if item_id in existing_ids:
+        if item_id in handled_ids:
             continue
         candidates.append((item_id, row))
 
