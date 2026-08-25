@@ -875,6 +875,13 @@ def _pair_gm_directives(entries: list[dict]) -> list[dict]:
     for group in by_ref.values():
         warns = sorted((d for d in group if str(d.get("result", "")) == "warn"),
                         key=lambda d: str(d.get("ts", "")))
+        # 같은 GM 발화 하나가 warn 두 줄로 남는다 — UserPromptSubmit 훅이 자동으로 한 줄,
+        # C-Level 이 손으로 또 한 줄. 건수 대조라 이 중복이 영영 못 닫는 유령 미완이 된다
+        # (2026-08-25 시포 실측: 전역 미완 6건이 전부 이 형태였다). 손기록이 같이 있으면
+        # 자동 접수 줄은 세지 않는다. 자동 줄만 있는 ref 는 그대로 둔다 — 진짜 미착수다.
+        manual = [d for d in warns if not _is_auto_intake(d)]
+        if manual:
+            warns = manual
         n_ok = sum(1 for d in group if str(d.get("result", "")) == "ok")
         for d in warns[n_ok:]:          # 오래된 것부터 n_ok 개는 닫힌 것으로 치고 나머지만 미완
             ts = str(d.get("ts", ""))
@@ -886,6 +893,11 @@ def _pair_gm_directives(entries: list[dict]) -> list[dict]:
                         "ref": str(d.get("ref", ""))})
     out.sort(key=lambda x: x["ts"])
     return out
+
+
+def _is_auto_intake(d: dict) -> bool:
+    """UserPromptSubmit 훅이 자동으로 남긴 접수 줄인가 (사람이 손으로 남긴 접수와 구분)."""
+    return "자동 접수" in str(d.get("detail", ""))
 
 
 def _is_gm_directive_log(d: dict) -> bool:
@@ -949,6 +961,20 @@ def _selftest_gm_directives() -> None:
     assert all(_is_gm_directive_log(d) for d in cross), "ref=GM- 인 줄이 대상에서 빠졌다"
     assert _pair_gm_directives([d for d in cross if _is_gm_directive_log(d)]) == [], \
         "도메인 area 로 적힌 완료가 접수를 못 닫는다"
+
+    # 자동 접수 + 손 접수 중복(2026-08-25 시포 실측 — 전역 미완 6건이 전부 이 형태).
+    dup = [
+        {"ts": "2026-08-08T14:31:00+09:00", "area": GM_AREA, "result": "warn",
+         "event": "접수", "detail": "받음 · 자동 접수(UserPromptSubmit)", "ref": "GM-TEST-04"},
+        {"ts": "2026-08-08T14:32:00+09:00", "area": GM_AREA, "result": "warn",
+         "event": "확인요청 8건 답변", "detail": "GM 이 회신", "ref": "GM-TEST-04"},
+        {"ts": "2026-08-08T14:52:00+09:00", "area": "회원", "result": "ok",
+         "event": "확인요청 8건 답변", "detail": "반영 4건", "ref": "GM-TEST-04"},
+    ]
+    assert _pair_gm_directives(dup) == [], "자동 접수 중복이 유령 미완을 만든다"
+    # 자동 줄만 있고 완료가 없으면 진짜 미완 — 숨기면 안 된다.
+    auto_only = [dup[0]]
+    assert len(_pair_gm_directives(auto_only)) == 1, "자동 접수만 있는 진짜 미완이 사라졌다"
 
     # ok 가 warn 보다 먼저 찍히는 레이스(배506 실사고 — GM-20260807-23: ok 16:37·warn 16:38).
     # 건수 대조라면 순서와 무관하게 닫혀야 한다.
