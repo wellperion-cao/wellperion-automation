@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>조직 운영 체계 — 3라인 직속 · 컨트롤 타워 — 웰페리온 A3 보고서</title>
+<title>3라인 직속 및 핵심부서 개선 관련 결과보고 — 웰페리온 A3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -36,15 +36,9 @@
   .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
   .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
     letter-spacing:6px; margin-bottom:5px; }
-  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
-  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
-  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
-  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
-  .sign div:last-child{ border-right:0; }
-  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
-    border-bottom:1px solid var(--line); }
-  .sign .b{ height:38px; }
 
   /* ② 결정 요청 */
   .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
@@ -56,8 +50,8 @@
   .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
-  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
-  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+  .ask .q{ font-size:16.6px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.6px; line-height:1.5; opacity:.86; margin-top:4px; }
 
   /* 경고 밴드 */
   .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
@@ -67,20 +61,20 @@
   /* ③ 비교표 */
   .tblwrap{ margin-top:11px; }
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
-  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
   thead th.k{ width:186px; background:#0E2439; }
-  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
-  tbody td{ height:29px; }
-  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:32px; }
+  td.k{ background:#F6F8FA; font-weight:600; font-size:13.2px; }
   tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:11.5px; letter-spacing:2.5px; }
+    font-size:12.6px; letter-spacing:2.5px; }
   .num{ text-align:right; font-variant-numeric:tabular-nums; }
   .ctr{ text-align:center; }
   .good{ color:var(--good); font-weight:700; }
   .warn{ color:var(--warn); font-weight:700; }
   .bad{ color:var(--bad); font-weight:700; }
-  .est{ color:#5C666F; font-size:10.5px; }
+  .est{ color:#5C666F; font-size:11.4px; }
   td.strong{ font-weight:700; }
   tr.sum td{ background:#F0F3F7; }
   tr.sum td.k{ background:#E7ECF2; }
@@ -88,9 +82,9 @@
   /* ④ 3분할 */
   .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
   .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
-  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box h3{ font-size:14.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
   .box ul{ list-style:none; }
-  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li{ font-size:13.2px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
   .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
   .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
   .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
@@ -104,15 +98,14 @@
 
   /* ⑤ 각주 */
   .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
-    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+    display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
-</style>
-</head>
+</style></head>
 <body>
 
 <div class="bar">
-  <b>조직 운영 체계 — 3라인 직속 · 컨트롤 타워 (A3 1장)</b>
+  <b>3라인 직속 및 핵심부서 개선 관련 결과보고 (A3 1장)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -121,70 +114,37 @@
 
 <div class="page" id="sheet">
 
-  <!-- ① 헤더 -->
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">조직 운영 체계 — 3라인 직속 · 중간관리자방 컨트롤 타워</div>
+      <div class="title">3라인 직속 및 핵심부서 개선 관련 결과보고</div>
     </div>
     <div class="meta">
-      작성 <b>경영지원부 (AI CEO 웰리)</b><br>
-      작성일 <b>2026. 08. 15.</b> · 문서번호 <b>WP-GM-260815-21</b><br>
-      담당 <b>GM 김남욱 (직접)</b> · 진척 <b>49%</b> (하위 4부서 평균)
-    </div>
-    <div class="sign">
-      <div><div class="t">담당</div><div class="b"></div></div>
-      <div><div class="t">GM</div><div class="b"></div></div>
-      <div><div class="t">대표</div><div class="b"></div></div>
-      <div><div class="t">회장</div><div class="b"></div></div>
+      작성 <b>경영지원부 김남욱 GM</b> · 대상 <b>회장님 · 경영진</b><br>
+      최초 작성 2026. 08. 15. · <b>최신 갱신 2026. 08. 25.</b> · 문서번호 <b>WP-GM-260815-21</b><br>
+      범위 <b>GM 직속 3라인 지휘 계통 · 핵심 부서 개선 결과</b>
     </div>
   </div>
 
-  <!-- ② 결정 요청 -->
   <div class="ask">
     <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
     <div class="items">
       <div class="it">
         <div class="n">01</div>
-        <div class="q">3라인 규정의 빈칸 4개를 확정해 주십시오.</div>
-        <div class="d">①이정헌 소장 보고 주기 ②나우열M 보고 주기 ③나우열M 하위 인원 ④브로제이 조직군에 시설부 편입 여부 — 규정이 없어 리마인드를 걸 근거가 없습니다(법정점검 회신 11일 공백이 실사례).</div>
+        <div class="q">이정헌 소장·나우열M 라인의 보고 주기를 정해 주십시오.</div>
+        <div class="d">운영부만 주간·월간·수시 규정이 있고 나머지 두 라인은 아직 없습니다. 규정이 없으면 늦어져도 <b>리마인드를 걸 근거</b>가 없습니다 — 법정점검 회신이 11일 비었던 것이 그 사례입니다.</div>
       </div>
       <div class="it">
         <div class="n">02</div>
-        <div class="q">자동 컨트롤 타워(구 VIP룸) 셋업 범위를 정해 주십시오.</div>
-        <div class="d">상시 표시 화면(점검 현황 / 종합접수처 / 매출) · 설비(PC·모니터·네트워크) · 운영 담당 — 범위가 정해져야 셋업 진척을 다시 잴 수 있습니다(이동은 8/5 완료).</div>
+        <div class="q">주차관리부 전담 관리자 배치 여부를 정해 주십시오.</div>
+        <div class="d">3개 부서 중 주차관리부만 점검 제출이 <b>0건</b>입니다. 화면·배선은 8/20에 끝났고 사람이 쓰지 않는 상태입니다. 관리인이 청소를 겸하고 있어 볼 사람이 없습니다.</div>
       </div>
     </div>
   </div>
 
-  <!-- 경고 밴드 -->
-  <div class="alert">
-    배544(중간관리자 통합본 실제 가동·방 발신) PENDING — 실무진 방에 업무가 안 나가는 상태 지속(시포 실측 08-10)
-    <span>&nbsp;/ 소통 컨트롤 타워는 대화 자동 저장(매일 07:30)·안내 발송까지 됐고, <b>발신 가동만 남았습니다.</b></span>
-  </div>
-
-  <!-- ③ 비교표 -->
   <div class="tblwrap">
-  <table>
-    <colgroup><col style="width:186px"><col><col><col><col></colgroup>
-    <thead>
-      <tr>
-        <th class="k">판단 항목</th>
-        <th>지원부<span class="sub">4단계 중 ③ 도달</span></th>
-        <th>시설부<span class="sub">4단계 중 ② 도달</span></th>
-        <th>운영부<span class="sub">4단계 중 ① 착수</span></th>
-        <th>주차관리부<span class="sub">4단계 중 ① 정비 중</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr class="grp"><td colspan="5">4부서 × 4단계 구축 사이클 (①매뉴얼 → ②점검 리스트 → ③실무진 피드백 루프 → ④AI 고도화)</td></tr>
-      <tr class="sum"><td class="k">진척률 (평균 49%)</td><td class="ctr strong good">70%</td><td class="ctr strong">65%</td><td class="ctr strong bad">25%</td><td class="ctr strong warn">35%</td></tr>
-      <tr><td class="k">근거·산출물</td><td>점검 완료율 집계기준 통일(7월초)</td><td>설비 8종 편집형 카드 · 점검 7/6 라이브</td><td>매뉴얼만 착수 — ②~④ 섹션 없음(7/27 실측)</td><td>규정·매뉴얼 정비 중 (독립 체계·점검 제외)</td></tr>
-      <tr><td class="k">다음 단계</td><td>④ AI 고도화 착수</td><td>③ 실무진 피드백 루프</td><td class="bad">② 점검 리스트 착수 — 평균을 끌어내리는 축</td><td>매뉴얼 마무리 후 ②단계</td></tr>
-    </tbody>
-  </table>
   <table style="margin-top:9px">
-    <colgroup><col style="width:186px"><col><col><col></colgroup>
+    <colgroup><col style="width:172px"><col><col><col></colgroup>
     <thead>
       <tr>
         <th class="k">판단 항목</th>
@@ -194,54 +154,56 @@
       </tr>
     </thead>
     <tbody>
-      <tr class="grp"><td colspan="4">3라인 지휘 계통 — 세 사람은 서로 대등한 GM 직속 (08-08 GM 확정 · 「실장 경유」는 운영부 내부 한정)</td></tr>
+      <tr class="grp"><td colspan="4">3 라 인 지 휘 계 통 &nbsp;— 세 사람은 서로 대등한 GM 직속 (2026-08-08 GM 확정 · 「실장 경유」는 운영부 내부 한정)</td></tr>
       <tr><td class="k">담당</td><td>업무 분배 · 진행 관리 · 결과 취합 · GM 보고</td><td>시설 총괄 · 안전·소방 총괄 · 협력업체 · 공사</td><td>업무·결재 SSOT(인사) + 운영 매출·지출(재무)</td></tr>
-      <tr><td class="k">하위 인원</td><td>최준용M · 임정은M · 윤병현AM · 백승화 (오후조 채용 중)</td><td>박호균 과장</td><td class="bad">조직표 없음 — 미확정</td></tr>
+      <tr><td class="k">직속 라인</td><td>최준용M · 임정은M · 윤병현AM · 백승화 사원 · 진수아 사원</td><td><b>김종현 차장</b> · 박호균 과장</td><td class="warn">조직표 미확정</td></tr>
       <tr><td class="k">보고 주기</td><td class="ctr good">규정 있음 — 주간·월간·수시</td><td class="ctr bad">규정 없음</td><td class="ctr bad">규정 없음</td></tr>
-      <tr><td class="k">문서와 실제의 간극</td><td class="warn">규정은 있으나 이행 느슨 — 브로제이 상품등록 10일 미체크</td><td class="bad">간극 최대 — 법정점검 회신 11일 공백·마감(7/31) 초과</td><td class="warn">접근 권한 매트릭스 10일째 미체크 · 업무 폭 최대</td></tr>
+      <tr class="grp"><td colspan="4">핵 심 부 서 개 선 결 과 &nbsp;— 2026-08-25 실측</td></tr>
+      <tr><td class="k">점검 완료율<span class="est"> 최근 7일</span></td><td class="ctr">해당 없음</td><td class="ctr warn strong">시설부 70% <span class="est">130/185</span></td><td class="ctr">해당 없음</td></tr>
+      <tr><td class="k">소관 부서 실적</td><td>지원부 점검 <b class="good">95%</b>(365/384) · 주차관리부 <b class="bad">0%</b>(0/8)</td><td>일 8회차 점검 매일 가동 · 법정점검 실시일 3건 미확보</td><td>인사평가 기획 결재 완료(8/24) · 지원부 급여 체계 개편 진행</td></tr>
+      <tr><td class="k">기록 누락</td><td class="warn">업무 마감일 빈칸 23건 · 종합접수 기한 초과 22건</td><td class="warn">법정점검 이력 미비 — 정기점검 14줄 중 5줄 실시일 공란</td><td class="ctr">—</td></tr>
+      <tr><td class="k">8월 성과</td><td>결재 완료 36건 · 대기 2건 · 아침·밤 자동 정리 정착</td><td>ADT캡스 보안 이관 · 감염병 예방 5항목 점검 편입</td><td>박남일 반장 진급 · 김훈 주임 팀장 진급 상신(8/25)</td></tr>
+      <tr class="sum"><td class="k strong">지금 가장 급한 것</td><td class="strong">마감일 23건 · 기한 초과 22건 — 기한 관리</td><td class="strong">보고 주기 규정 · 법정점검 실시일 확보</td><td class="strong">조직표 확정</td></tr>
     </tbody>
   </table>
   </div>
 
-  <!-- ④ 3분할 -->
   <div class="cols">
-    <div class="box">
-      <h3>핵심 리스크</h3>
-      <ul>
-        <li class="r1">배544 미가동 — 중간관리자 통합본이 실무진 방에 안 나간다(08-10 실측).</li>
-        <li class="r1">운영부 25% — 평균 49%를 끌어내리는 축. ② 점검 리스트가 없다.</li>
-        <li class="r1">소장 라인 규정 공백 — 보고 주기가 없어 법정점검 공백을 리마인드할 근거가 없었다.</li>
-        <li class="r2">업무 SSOT가 등록자를 기록하지 못한다 — 로그인이 없어 전부 GM 이름으로 남는다.</li>
-        <li class="r2">실무진 점수 체계 — 나우열M 회신 없음(08-07 프롬프트 발송 후).</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>실행 액션</h3>
-      <ul class="ord">
-        <li class="n">배544 가동 — 07:30 중간관리자 통합본 발신 재개(저장·안내는 완료)</li>
-        <li class="n">운영부 ② 점검 리스트 착수 — 지원부 방식 이식</li>
-        <li class="n">주차부 매뉴얼 마무리 후 ②단계 진입</li>
-        <li class="n">09:30 「하루 일과 정리」 업그레이드분 정착 — 부서별 열린 건·날수·결재 승인건(배469 커밋 완료 08-10)</li>
-        <li class="n">이정헌 소장 업무가 시스템에 안 올라오는 구조 개선 — 업무 SSOT 담당 0건</li>
-      </ul>
-    </div>
     <div class="box rec">
+      <h3>개선된 것 — 8월</h3>
+      <ul class="ord">
+        <li class="n">4부서 점검 전산화 완료 — 운영·지원·시설·주차 전부 화면에서 제출</li>
+        <li class="n">밤 4부서 정리 <b>4,315자 → 812자</b> (81% 축소) · 5일 연속 정상 발송</li>
+        <li class="n">중간관리자 방 단일 창구 정착 — 질문·확인이 한 곳으로 모임</li>
+        <li class="n">지원부 급여 체계 3직급 개편 — 팀장 자리를 만들면서 <b>월 41만원 절감</b></li>
+        <li class="n">보안 인프라 ADT캡스 이관 계약 완료 — 무인경비·출입통제·CCTV</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>남은 것</h3>
+      <ul>
+        <li class="r1"><b>주차관리부 점검 제출 0건</b> — 8/20 배선 후 나흘 연속. 화면 문제가 아니라 쓰지 않는 것입니다(같은 기간 지원부는 정상).</li>
+        <li class="r1"><b>소장·나우열M 보고 주기 규정 공백</b> — 늦어져도 리마인드할 근거가 없습니다.</li>
+        <li class="r1"><b>운영부 기한 관리</b> — 마감일 빈칸 23건이 8/21 안내(11건) 이후 오히려 늘었습니다.</li>
+        <li class="r2">지원부는 실행이 아니라 <b>기록</b>이 빠집니다 — 제출된 점검은 93% 채워져 있는데 제출률이 절반입니다.</li>
+        <li class="r2">나우열M 라인 조직표 미확정 — 업무 폭이 가장 넓은데 인원 구조가 문서에 없습니다.</li>
+      </ul>
+    </div>
+    <div class="box">
       <h3>GM 권고</h3>
       <ul>
-        <li><b>결정 01(규정 빈칸 4개)이 먼저다.</b> 규정이 없으면 리마인드 자동화가 사실 기반으로 돌 수 없다.</li>
-        <li>진척은 <b>운영부가 가른다</b> — ② 점검 리스트 착수가 평균을 움직이는 최단 경로다.</li>
-        <li>소통 타워(★중간관리자 방)는 서 있다 — 남은 건 <b>발신 가동(배544)</b> 하나다.</li>
-        <li>화면 타워(구 VIP룸)는 범위 확정 대기 — 셋업 진척을 지어내지 않고 비워 뒀다.</li>
-        <li>관통 원칙 유지: <b>지시건은 보고가 와야 해결</b> — 받았다는 확인만으로 닫지 않는다.</li>
+        <li><b>사람을 더 넣기 전에 제출을 책임질 자리를 세웁니다.</b> 지원부 팀장 발령이 그 첫 수이고, 주차관리부가 다음입니다.</li>
+        <li>보고 주기 규정 <b>4개 빈칸</b>이 여전히 이 문서의 1순위입니다 — 규정이 없으면 자동 리마인드가 사실 위에서 돌지 못합니다.</li>
+        <li>운영부 기한 관리는 <b>안내로 해결되지 않았습니다</b>(11건 → 23건). 빈칸을 못 채우면 등록이 안 되게 화면에서 막는 쪽으로 갑니다.</li>
+        <li>관통 원칙 유지 — <b>지시건은 보고가 와야 닫습니다.</b> 받았다는 확인만으로 닫지 않습니다.</li>
       </ul>
     </div>
   </div>
 
-  <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>산출 근거</b> — 진척 49% = 하위 4부서 평균(지원 70 · 시설 65 · 주차 35 · 운영 25). 운영부 25% = 4단계 균등 배점 중 ①만 착수(1/4 · 2026-07-27 실측). 두 컨트롤 타워(소통=★중간관리자 방 / 화면=구 VIP룸)는 한 과제로 병합(GM 08-08).</div>
-    <div><b>기존 문서 판단</b> — 「운영부_조직운영체계_20260806.html」은 운영부 단일 보고 라인 한 갈래만 담고, 08-08 정정(3인 대등 직속) 이전 내용이라 승격하지 않고 새로 작성했다. 해당 문서는 실장용 실무 안내로 유지.</div>
-    <div><b>출처</b> — status/monthly_ops_plan.json 목표 2026-08-07 progress_note(08-06~08-11 기록·실측). <b>차기 보고</b> — 배544 가동·규정 확정 후 본 문서 갱신(같은 문서번호 유지).</div>
+    <div><b>산출 근거</b> — 점검 완료율은 부서 점검 원장 최근 7일 실측(2026-08-19~25). 업무·결재 수치는 업무·결재 SSOT 직독(146행 · 진행중·보류 54건 중 마감일 빈칸 23건 · 결재 완료 36건·대기 2건). 법정점검 공란은 전사일정 정기점검 14줄 직독.</div>
+    <div><b>표기 원칙</b> — 규정이 정해지지 않은 칸은 「규정 없음」으로 그대로 두었습니다. 나우열M 라인 조직표도 확정 전이라 인원을 지어 넣지 않았습니다.</div>
+    <div><b>갱신 이력</b> — 2026-08-15 최초 작성(구 「조직 운영 체계 — 3라인 직속·컨트롤 타워」) → <b>2026-08-25 결과보고로 개편</b>(제목 변경 · 결재란 제외 · 「하위 인원」을 「직속 라인」으로 · 김종현 차장 추가 · 8월 실적 전면 갱신).</div>
   </div>
 
 </div>
@@ -249,19 +211,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.getElementById('png').onclick = function () {
-  if (typeof html2canvas !== 'function') {
-    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
-    return;
-  }
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
   var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
   html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
-    .then(function (canvas) {
-      var a = document.createElement('a');
-      a.download = '260815_조직운영체계_A3.png';
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    })
-    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260825_3라인직속_핵심부서개선_결과보고_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
     .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
 };
 </script>
