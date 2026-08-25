@@ -2171,6 +2171,21 @@ async function submitParkingDailyCheck(){
     const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
     const d=await r.json();
     if(!d || !d.success) throw new Error((d&&d.error)||'서버 응답 오류');
+    /* 2026-08-25 시우 — 점검일지 스냅샷 적립. 이게 빠져 있어서 제출이 저장돼도 어떤 현황·보고에도
+       안 잡혔다(실측: save 는 success·saved 3 인데 weekly 는 src='sheet' 폴백에 0건, monthly 0건).
+       주차만 action='save' 하나로 끝냈고 지원부는 save 뒤 snapshot_append 를 따로 부른다 —
+       집계 1차 출처가 '점검일지_<dept>' 스냅샷 시트이기 때문이다. 같은 호출을 그대로 붙인다.
+       shift='am' 은 위 checks·roundChecks('am1_*')와 같은 값 — GAS _shiftBucket 이 'am' 을 am 버킷으로 읽는다. */
+    try{
+      const sr=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'snapshot_append',dept:'parking',date:date,zone:'m',shift:'am',
+          submitter:insp, submittedAt:nowIso,
+          total:PARK_CHECKLIST.daily.length, done:checkedIdx.length,
+          pct:PARK_CHECKLIST.daily.length?Math.round(checkedIdx.length/PARK_CHECKLIST.daily.length*100):0,
+          issuesCount:0, issues:'', startedAt:'', finishedAt:'', durationMin:''})});
+      let sok=false; try{ const sj=await sr.json(); sok=!!(sj&&(sj.ok||sj.success)&&!sj.error); }catch(_){ sok=false; }
+      if(!sok) alert('제출은 저장됐지만 점검일지 기록에 실패했습니다 — 현황에 안 잡힐 수 있습니다. 다시 제출해 주세요.');
+    }catch(e){ alert('제출은 저장됐지만 점검일지 기록 실패: '+((e&&e.message)||e)); }
     if(stat){ stat.textContent='제출완료 · '+insp+' · '+nowIso.slice(11,16); stat.style.color='var(--green)'; }
     btn.textContent='제출완료'; btn.classList.add('submitted');
     PARK_CHECKLIST.daily.forEach(function(t,i){ document.getElementById('pchk_'+i).disabled=true; });
