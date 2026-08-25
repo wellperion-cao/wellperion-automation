@@ -778,12 +778,6 @@ var DP_I_SOJIN={"P.T":{"김상식":[8803604,9421229,10292040,9344954,9443152,106
 function dpSojin(name,m){var t=DP_I_SOJIN[DP_SEL];if(!t)return null;var key=dpNkey(name),arr=null;
   Object.keys(t).forEach(function(n2){if(dpNkey(n2)===key)arr=t[n2];});
   if(!arr)return null;var v=arr[m-1];return (typeof v==="number")?v:null;}
-/* 강사별 잔여매출 — 페이롤 원장 '누적 미소진 매출 합계'(월말 잔액·선수금). 월마감 정적(2026-08-25 추출, P.T 1~7월).
-   검증: 11명 합 = 팀 잔여매출과 1원 일치(1월 215,429,603·7월 243,685,318). 잔액 성격 — 기간 합산 금지, 해당 월말 값만 표시. */
-var DP_I_RESID={"P.T":{"김상식":[39919242,66627900,68069242,55191903,47728751,42192154,53308730],"김종진":[39773095,49365810,62439509,57220458,54152280,52085794,42443660],"최동오":[24084087,29596586,29865865,26442769,24218390,29557906,28946393],"김혜진":[20548467,24877647,26683666,19788055,18390191,22074202,21175675],"김재용":[30526925,28576744,29031170,26748827,18276525,14187660,17039839],"김지훈":[35307236,35422268,38742773,32620786,28836201,34861116,33030857],"이형진":[12012901,13983750,17581786,18806809,13285800,15122250,15886105],"양승문":[0,0,0,0,3582982,16681500,19205386],"최도희":[3335850,4184750,6616200,7840350,7273050,7562150,9153973],"김광수":[4870800,3504764,4964850,6534000,7429950,5865750,3494700],"이정한":[5051000,3484800,0,0,0,0,0]}};
-function dpResid(name,m){var t=DP_I_RESID[DP_SEL];if(!t)return null;var key=dpNkey(name),arr=null;
-  Object.keys(t).forEach(function(n2){if(dpNkey(n2)===key)arr=t[n2];});
-  if(!arr)return null;var v=arr[m-1];return (typeof v==="number")?v:null;}
 function dpNkey(s){return String(s==null?"":s).replace(/\s+/g,"").replace(/프로$/,"");}
 async function loadDeptInstr(){
   if(DP_I_STATE!=="idle")return;DP_I_STATE="loading";
@@ -833,26 +827,19 @@ function renderDeptInstr(){
     if(DP_I_SOJIN[DP_SEL]){var sj=0,sf=false;
       months.forEach(function(m6){if(dpExc(keys[k],m6))return;var v6=dpSojin(keys[k],m6);if(v6!==null){sj+=v6;sf=true;}});
       if(sf)soj=sj;}
-    var resid=dpResid(keys[k],(DP_IMON==="cum")?cut:DP_IMON); // 잔여매출 = 해당(선택/완결) 월말 잔액 — 합산 아님
-    // 손익기여·이익률 = 소진매출 기준(팀 표와 통일 — 매니저 지시 2026-08-25). 소진 미등록 팀은 판매 기준 폴백.
-    var hasSojin=!!DP_I_SOJIN[DP_SEL];
-    var base=hasSojin?soj:sales;
-    var net=(base===null)?null:base-pay-mgmt;
-    rows.push({name:keys[k],sales:sales,csum:csum,soj:soj,resid:resid,pay:pay,mgmt:mgmt,net:net,rate:sales?pay/sales:null,mrg:(base&&net!==null)?net/base:null});
+    var net=sales-pay-mgmt;
+    rows.push({name:keys[k],sales:sales,csum:csum,soj:soj,pay:pay,mgmt:mgmt,net:net,rate:sales?pay/sales:null,mrg:sales?net/sales:null});
   });
-  rows.sort(function(a,b){return ((b.net===null)?-Infinity:b.net)-((a.net===null)?-Infinity:a.net);});
+  rows.sort(function(a,b){return b.net-a.net;});
   var isCum=(DP_IMON==="cum");
-  var residMon=(isCum?cut:DP_IMON);
-  var teamSojin=!!DP_I_SOJIN[DP_SEL],baseLbl=teamSojin?'소진 기준':'판매 기준';
-  var h='<thead><tr><th>강사</th><th>'+(isCum?'누적매출(1~'+cut+'월)':'당월매출')+'</th>'+(isCum?'':'<th>누적매출(1~'+DP_IMON+'월)</th>')+'<th>소진매출(월마감)</th><th>잔여매출('+residMon+'월 잔액)</th><th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여('+baseLbl+')</th><th>이익률('+baseLbl+')</th></tr></thead><tbody>';
-  var ts=0,tp=0,tm=0,tc=0,tso=0,tsoF=false,tre=0,treF=false;
-  rows.forEach(function(x){ts+=x.sales;tp+=x.pay;tm+=x.mgmt;tc+=x.csum;if(x.soj!==null){tso+=x.soj;tsoF=true;}if(x.resid!==null){tre+=x.resid;treF=true;}
-    h+='<tr><td>'+escapeHtml(x.name)+'</td>'+dpCell(x.sales,false)+(isCum?'':dpCell(x.csum,false))+dpCell(x.soj,false)+dpCell(x.resid,false)+dpCell(x.pay,false)+'<td>'+dpFmtPct(x.rate)+'</td>'+dpCell(x.mgmt,false)+dpCell(x.net,false)+'<td'+((x.mrg!==null&&x.mrg<0)?' class="neg"':'')+'>'+dpFmtPct(x.mrg)+'</td></tr>';});
-  var tbase=teamSojin?(tsoF?tso:null):ts;
-  var tnet=(tbase===null)?null:tbase-tp-tm;
-  h+='<tr class="dp-cum"><td>합계</td>'+dpCell(ts,false)+(isCum?'':dpCell(tc,false))+dpCell(tsoF?tso:null,false)+dpCell(treF?tre:null,false)+dpCell(tp,false)+'<td>'+dpFmtPct(ts?tp/ts:null)+'</td>'+dpCell(tm,false)+dpCell(tnet,false)+'<td'+((tbase&&tnet!==null&&tnet/tbase<0)?' class="neg"':'')+'>'+dpFmtPct((tbase&&tnet!==null)?tnet/tbase:null)+'</td></tr></tbody>';
+  var h='<thead><tr><th>강사</th><th>'+(isCum?'누적매출(1~'+cut+'월)':'당월매출')+'</th>'+(isCum?'':'<th>누적매출(1~'+DP_IMON+'월)</th>')+'<th>소진매출(월마감)</th><th>인건비(지급액)</th><th>지급율</th><th>관리비배분(1/N)</th><th>손익기여</th><th>이익률</th></tr></thead><tbody>';
+  var ts=0,tp=0,tm=0,tc=0,tso=0,tsoF=false;
+  rows.forEach(function(x){ts+=x.sales;tp+=x.pay;tm+=x.mgmt;tc+=x.csum;if(x.soj!==null){tso+=x.soj;tsoF=true;}
+    h+='<tr><td>'+escapeHtml(x.name)+'</td>'+dpCell(x.sales,false)+(isCum?'':dpCell(x.csum,false))+dpCell(x.soj,false)+dpCell(x.pay,false)+'<td>'+dpFmtPct(x.rate)+'</td>'+dpCell(x.mgmt,false)+dpCell(x.net,false)+'<td'+((x.mrg!==null&&x.mrg<0)?' class="neg"':'')+'>'+dpFmtPct(x.mrg)+'</td></tr>';});
+  var tnet=ts-tp-tm;
+  h+='<tr class="dp-cum"><td>합계</td>'+dpCell(ts,false)+(isCum?'':dpCell(tc,false))+dpCell(tsoF?tso:null,false)+dpCell(tp,false)+'<td>'+dpFmtPct(ts?tp/ts:null)+'</td>'+dpCell(tm,false)+dpCell(tnet,false)+'<td'+((ts&&tnet/ts<0)?' class="neg"':'')+'>'+dpFmtPct(ts?tnet/ts:null)+'</td></tr></tbody>';
   tbl.innerHTML=h;
-  if(note)note.textContent="손익기여·이익률 = "+(DP_I_SOJIN[DP_SEL]?"소진매출 기준(팀 표와 통일 — 소진 − 인건비 − 관리비배분)":"판매 기준(이 팀은 소진 월마감 미등록 — 등록 시 소진 기준 자동 전환)")+" · 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 소진매출·잔여매출 = 페이롤 월마감 정적값(현재 P.T 1~7월 검증분, 미반영 팀·월은 —) · 잔여매출은 선수금 잔액이라 합산 아닌 해당 월말 잔액. 당월매출은 판매(결제) 기준 참고 지표."+(DP_SEL==="P.T"?" · 이정한은 3월부터 근무 종료 — 3월 이후 기록 집계 제외(매니저 지시).":"");
+  if(note)note.textContent="⚠️ 강사별 매출 = 당월(판매) 기준(매출보고 강사별 서버집계) — 팀 손익표(소진 기준)와 산식이 달라 합계가 팀 표와 다를 수 있습니다. 관리비배분 = 그 달 (월관리비+소모품) ÷ 지급액 있는 강사 수. 손익기여 = 매출 − 인건비 − 관리비배분 · 이익률 = 손익기여 ÷ 매출. 소진매출 = 페이롤 월마감 정적값(실시간 아님 · 현재 P.T 1~7월 검증분, 미반영 팀·월은 —)."+(DP_SEL==="P.T"?" · 이정한은 3월부터 근무 종료 — 3월 이후 기록 집계 제외(매니저 지시).":"");
 }
 /* ── A3 인쇄 (매니저 지시 2026-08-24) — 현재 선택된 부서·월 상태를 그대로 정리해 인쇄.
    완료탭 선택출력과 동일한 #printSheet+body.printing 구조 재사용. @page A3 가로는 임시 <style>로 주입 후 afterprint 제거(기존 A4 인쇄 플로우 무간섭). */
@@ -908,17 +895,17 @@ function dpPrint(orient){
    +"#printSheet .ps-a3 td.neg{color:#b14238;font-weight:800}"
    +"#printSheet .ps-a3 tr.dp-cum td{font-weight:800;background:#F1E8D8;border-top:2px solid #B88A44}"
    +"#printSheet .ps-a3 tr.dp-mut td{color:#98A0B3;font-style:italic;font-weight:400}"
-   +"#printSheet .ps-foot{margin-top:12px;font-size:11px;color:#98A0B3;text-align:center}";
+   +"#printSheet .ps-foot{margin-top:12px;font-size:11px;color:#98A0B3;text-align:center}"
+   +"body.printing{background:#fff!important}"; // 인쇄 시 남는 영역은 백지(우측 배경 띠 제거 — 매니저 지적 2026-08-25)
   document.head.appendChild(st);
   document.body.classList.add("printing");
-  ps.style.zoom="";
-  var done=function(){document.body.classList.remove("printing");ps.style.zoom="";var s=document.getElementById("dpA3");if(s)s.remove();window.removeEventListener("afterprint",done);};
+  ps.style.zoom="";ps.style.width="";
+  var done=function(){document.body.classList.remove("printing");ps.style.zoom="";ps.style.width="";var s=document.getElementById("dpA3");if(s)s.remove();window.removeEventListener("afterprint",done);};
   window.addEventListener("afterprint",done);
-  // 한 장 맞춤: 페이퍼 폭 기준으로 실측 후 넘치면 비율 축소(zoom) — 월별+강사별이 항상 A3 1장에 담긴다
+  // 한 장 맞춤: 실측 후 넘치면 zoom 축소 + 축소 비율만큼 폭을 미리 넓혀 축소 후 정확히 종이 폭에 꽉 차게(우측 여백 띠 제거)
   setTimeout(function(){
-    // 가로·세로 모두 실측해 넘치는 쪽 기준으로 축소(A3 인쇄 깨짐 해소 — 매니저 지적 2026-08-24: 구버전은 세로만 봐서 넓은 표가 잘림)
     var z=Math.min(avail.w/Math.max(ps.scrollWidth,1),avail.h/Math.max(ps.scrollHeight,1),1);
-    if(z<1)ps.style.zoom=String(Math.max(z,0.4));
+    if(z<1){z=Math.max(z,0.4);ps.style.width=Math.floor(avail.w/z)+"px";ps.style.zoom=String(z);}
     window.print();
   },80);
 }
