@@ -856,7 +856,10 @@ def _compose_sunday_montage(slides: list[Path], output: Path) -> None:
     GM 이 텔레그램 카드에서 '실제로 올라갈 그림'을 보고 승인하게 하는 것이 목적이다.
     파일 이름은 send_review_card._preview_photo 가 찾는 규약(_검수_미리보기_*.png)을 따른다.
     """
-    imgs = [Image.open(p).convert("RGB") for p in slides if p.exists()]
+    # 영상(mp4)은 건너뛴다 — 슬라이드 목록에 영상이 섞이면서(GM 지시 2026-08-25) Image.open
+    # 이 그 파일에서 죽으면 검수 카드가 통째로 그림 없이 나간다.
+    imgs = [Image.open(p).convert("RGB") for p in slides
+            if p.exists() and p.suffix.lower() in (".jpg", ".jpeg", ".png")]
     if not imgs:
         raise FileNotFoundError("몽타주로 붙일 슬라이드가 없다")
     cell_w = 540
@@ -963,6 +966,20 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         # 원문으로 되살리지 않는다(되살리면 애초 사고가 그대로 재발한다).
         _polished = (ai or {}).get("info") or {}
         info_rows = _sunday_info_rows(_polished or (parsed or {}).get("facts"))
+
+        # 영상은 사진 뒤·마무리 카드 앞에 온다(GM 지시 2026-08-25). 인스타 업로더가 번호
+        # 순서를 그대로 따르므로 자리는 파일 이름으로만 정해진다.
+        for i, vurl in enumerate([u.strip() for u in (row.get("영상링크") or "").split("\n")
+                                  if u.strip()], start=1):
+            vname = f"post_{nxt}.mp4"
+            if _download_drive_image(vurl, out_dir / vname):
+                slides_rel.append(f"{folder_rel}/output/{vname}")
+                nxt += 1
+            else:
+                # 드라이브가 큰 파일에 확인 페이지를 돌려주면 실패로 잡힌다 — 조용히 넘기지 않는다.
+                print(f"[WARN] 하루 기록 영상 다운로드 실패(사진만 올라갑니다): {item_id} #{i} {vurl}",
+                      file=sys.stderr)
+
         _compose_sunday_think(think, _add(f"post_{nxt}.jpg"), rows=info_rows)
     except Exception as exc:
         print(f"[WARN] GM의 일요일 슬라이드 제작 실패: {item_id}: {exc}", file=sys.stderr)
@@ -993,22 +1010,6 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
             preview_rel = f"cmo/review/{dest.name}"
     except Exception as exc:
         print(f"[WARN] 미리보기 복사 실패(카드는 폴더 몽타주로 폴백): {exc}", file=sys.stderr)
-
-    # 영상은 슬라이드 뒤에 붙인다(GM 지적 2026-08-25: '영상까지 올리면 마지막에 영상은 안
-    # 들어가더라'). 종전에는 영상링크를 '영상도 함께 올라간다'는 힌트로만 읽어 글 쓰는 데만
-    # 쓰고 파일은 받지 않았다 — 그래서 캐러셀에 영상이 한 번도 실리지 않았다.
-    # 인스타 업로더는 이미 사진 뒤 영상 혼합 캐러셀을 지원한다(instagram_upload_playwright
-    # _scan_plain_pattern) — 파일을 output 에 놓기만 하면 된다. 검수 미리보기(몽타주)는 위에서
-    # 이미 만들었으므로 여기서 붙여야 몽타주가 영상 파일을 열려다 죽지 않는다.
-    for i, vurl in enumerate([u.strip() for u in (row.get("영상링크") or "").split("\n")
-                              if u.strip()], start=1):
-        vname = f"post_{len(slides_rel) + 1}.mp4"
-        if _download_drive_image(vurl, out_dir / vname):
-            slides_rel.append(f"{folder_rel}/output/{vname}")
-        else:
-            # 드라이브가 큰 파일에 확인 페이지를 돌려주면 실패로 잡힌다 — 조용히 넘기지 않는다.
-            print(f"[WARN] 하루 기록 영상 다운로드 실패(사진만 올라갑니다): {item_id} #{i} {vurl}",
-                  file=sys.stderr)
 
     caption_full = caption_body
     if hashtags:

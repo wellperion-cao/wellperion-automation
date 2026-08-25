@@ -397,9 +397,11 @@ def _scan_plain_pattern(search_dir: Path, allowed_exts: set, video_exts: set) ->
             idx = int(m.group(1))
             (plain_videos if p.suffix.lower() in video_exts else plain_images).append((idx, p))
     if plain_images or plain_videos:
-        plain_images.sort(key=lambda t: t[0])
-        plain_videos.sort(key=lambda t: t[0])
-        return [p for _, p in plain_images] + [p for _, p in plain_videos]
+        # 번호 순서 그대로 간다(GM 지시 2026-08-25: 영상을 마무리 카드 앞에 둔다).
+        # 종전엔 사진 전부 + 영상 전부로 갈라 영상이 무조건 맨 뒤였다. 기존 폴더들은 영상에
+        # 가장 큰 번호를 붙여 왔으므로(ig_01..06.jpg + ig_07.mp4) 번호 정렬 결과가 종전과
+        # 같다 — 순서를 정하는 자리를 파일 이름 한 곳으로 옮긴 것이다.
+        return [p for _, p in sorted(plain_images + plain_videos, key=lambda t: t[0])]
     return []
 
 
