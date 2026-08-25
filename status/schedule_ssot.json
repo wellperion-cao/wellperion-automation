@@ -1,7 +1,7 @@
 {
   "_doc": "전사 일정 SSOT — 날짜가 정해진 반복 의무·이벤트(정기점검·계약갱신·정기행사 등)의 단일 출처. 각 부서 체계 페이지·전체 마스터가 렌더. type으로 일정 종류 구분(현재=정기점검). 경계: G1 항로=수시 할일 / 회원 예약달력=투어·상담 / 이 파일=반복 일정. 기한 도래분만 업무·결재로 자동 배(gate.auto_workapproval·기본OFF). 실제 날짜는 지어내지 않는다(미확인=빈칸+cycle_confirmed=false).",
   "정본": "status/schedule_ssot.json (전사 일정 SSOT · COO 시우 소유 · 2026-07-10 GM 승인)",
-  "updated_at": "2026-08-25T09:33:07",
+  "updated_at": "2026-08-25T11:11:10",
   "types": {
     "정기점검": {
       "label": "정기 안전·법정 점검",
@@ -2514,6 +2514,76 @@
       "vendor_id": "",
       "repeat": "",
       "source": "monthly_ops"
+    },
+    {
+      "id": "evt-trampoline-to-squash-20260825",
+      "type": "이벤트",
+      "name": "트램폴린장 → 스쿼시장 변경 — 공사 비용 측정",
+      "category": "event",
+      "dept": "관리부",
+      "assignee": "나우열M · 김남욱GM",
+      "next_due": "",
+      "applies": "있음",
+      "time": "",
+      "repeat": "",
+      "vendor_id": "",
+      "note": "[대표님 지시사항 · GM 전달 2026-08-25] 체조&트램폴린 건. ①트램폴린장을 스쿼시장으로 바꾸는 공사 비용을 먼저 잰다. GM 이 함께 진행. ▸기한 미정 — 나우열M 회신으로 채운다(빈칸을 지어 채우지 않음)."
+    },
+    {
+      "id": "evt-trampoline-resale-20260825",
+      "type": "이벤트",
+      "name": "트램폴린 중고 판매 가능 여부 확인",
+      "category": "event",
+      "dept": "관리부",
+      "assignee": "나우열M",
+      "next_due": "",
+      "applies": "있음",
+      "time": "",
+      "repeat": "",
+      "vendor_id": "",
+      "note": "[대표님 지시사항 · GM 전달 2026-08-25] 철거할 트램폴린을 중고로 팔 수 있는지 확인. 위 스쿼시장 변경 건과 짝."
+    },
+    {
+      "id": "evt-bathtowel-into-sauna-20260825",
+      "type": "이벤트",
+      "name": "바스타올 사우나 내부로 이동 (GM 최종 승인 후 진행)",
+      "category": "event",
+      "dept": "운영부",
+      "assignee": "이경연 실장",
+      "next_due": "",
+      "applies": "있음",
+      "time": "",
+      "repeat": "",
+      "vendor_id": "",
+      "note": "[GM 전달 2026-08-25 · 리셉션 간소화 1차] 우선순위 높음(GM: 빠르게). ▸GM 최종 승인 전에는 착수하지 않는다."
+    },
+    {
+      "id": "evt-parking-ctrl-phone-move-20260825",
+      "type": "이벤트",
+      "name": "주차 컨트롤러·전화기 이동",
+      "category": "event",
+      "dept": "운영부",
+      "assignee": "이경연 실장 · 이정헌 소장",
+      "next_due": "",
+      "applies": "있음",
+      "time": "",
+      "repeat": "",
+      "vendor_id": "",
+      "note": "[GM 전달 2026-08-25 · 리셉션 간소화 1차] 시설팀 및 고문님과 논의 후 위치 확정."
+    },
+    {
+      "id": "evt-kiosk-detach-20260825",
+      "type": "이벤트",
+      "name": "발권 키오스크 리셉션 밖으로 분리 배치",
+      "category": "event",
+      "dept": "운영부",
+      "assignee": "이경연 실장",
+      "next_due": "",
+      "applies": "있음",
+      "time": "",
+      "repeat": "",
+      "vendor_id": "",
+      "note": "[GM 전달 2026-08-25 · 리셉션 간소화 1차] 뺄 수 있으면 일단 따로 빼 둔다."
     }
   ]
 }
