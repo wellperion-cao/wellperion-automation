@@ -518,6 +518,12 @@
     </div>
 
     <div class="item">
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>성찰일지 관리자 열람 확대 (2026-08-25)</h3></div>
+      <p>허브 온보딩 탭에서 관리자가 이미 열람하던 성찰 기록(카드별 "🪞 성찰 전체보기" · 개별 칩 클릭)에 <b>미작성 회차도 그 주차의 질문 문항을 미리 표시</b>하도록 보강했습니다(제출 전에도 "이번 주 무엇을 묻는지" 확인 가능, 답변 칸은 표시하지 않음 — 대필 방지 원칙 유지). 문항은 기존 <code>WEEK_QUESTIONS_MINI</code>(onboarding-self.html <code>WEEK_QUESTIONS</code>와 동일 SSOT) 재사용, 신규 문항 창작 없음. 신입이 성찰을 <b>작성하는 화면(onboarding-self.html)의 팝업 폭(480→680px)과 답변 입력칸(3~4줄→8줄)을 확대</b>했고(모바일은 기존 반응형 구조 그대로 자동 축소), 관리자 열람 팝업(허브 <code>#obReflectModal</code>)도 동일 폭으로 맞췄습니다. 프론트 표시 전용 — 백엔드 · db:onbo 데이터 무변경.</p>
+      <div class="tags"><span class="tag db">db:onbo</span></div>
+    </div>
+
+    <div class="item">
       <div class="item-head"><span class="badge bg-chro">CHRO</span><h3>직원 등록 · 퇴사 처리</h3></div>
       <p>직원 입사 등록과 퇴사 처리를 수행합니다. <span class="warn">인사현황 시트 행 고정 계약(매니저 확정)</span>: 행 삽입 · 삭제 절대 금지 — 신규 입사는 해당 부서 <b>빈 슬롯 행에 값만 기입</b>, 퇴사는 <b>행 유지 · 값만 비움</b>(수식 셀 보존). 빈 슬롯이 없으면 중단하고 매니저님이 행을 확보합니다.</p>
       <div class="tags"><span class="tag act">register</span><span class="tag act">resign</span><span class="tag db">db:emp</span><span class="tag db">db:exit</span></div>
