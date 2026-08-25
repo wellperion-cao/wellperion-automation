@@ -40,7 +40,21 @@ def main() -> int:
         hit, ratio = k.check_near_dup("★운영부", "어제 운영부 정리 · 8/16 접수 3건 완료 2건 남음")
         assert hit, f"근접중복을 표기 차이로 놓쳤다(겹침 {ratio:.2f})"
 
+        # 5) 접수 전달문: 접수번호만 다른 두 번째 접수는 통과해야 한다
+        RELAY_TMPL = (
+            "🔔 새 접수 안내\n접수번호: RECEPTION-{n}\n이름: 홍길동\n내용: 골프 강습 문의\n"
+            "처리: 담당자 배정 예정\n링크: https://wellperion.com/reception"
+        )
+        k.record_dedup_sent("★부서장", text=RELAY_TMPL.format(n=131))
+        hit2, ratio2 = k.check_near_dup("★부서장", RELAY_TMPL.format(n=132))
+        assert not hit2, f"접수번호가 다른 전달문을 근접중복으로 막았다(겹침 {ratio2:.2f})"
+
+        # 6) 같은 접수번호 재발송은 여전히 잡아야 한다
+        hit3, ratio3 = k.check_near_dup("★부서장", RELAY_TMPL.format(n=131))
+        assert hit3, f"같은 접수번호 재발송을 통과시켰다(겹침 {ratio3:.2f})"
+
     print("OK — 방 이름 표기 차이를 중복 가드가 같은 방으로 본다")
+    print("OK — 접수번호 다른 전달문은 통과, 같은 번호 재발송은 차단")
     return 0
 
 

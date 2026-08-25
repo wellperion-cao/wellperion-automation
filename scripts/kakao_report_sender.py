@@ -1034,6 +1034,15 @@ def _word_set(t: str) -> set:
     return _norm(t)
 
 
+_NUM_TOKENS_RE = re.compile(r'\d{2,}')
+
+
+def _num_tokens(t: str) -> frozenset:
+    """2자리 이상 숫자 토큰 집합 — 접수ID·건수 같은 고유 식별자 추출용.
+    ponytail: 단순 정규식. 복합 ID(RECEPTION-131) 도 분리 후 131만 잡혀 충분."""
+    return frozenset(_NUM_TOKENS_RE.findall(str(t or '')))
+
+
 def check_near_dup(room_name: str, text: str) -> tuple[bool, float]:
     """True = 30분 안에 같은 방으로 낱말이 크게 겹치는 내용을 이미 보냈다(형식만 고친
     재발송 의심). (판정, 겹침비율) 반환 — 판정만 하고 기록은 하지 않는다(기록은
@@ -1043,12 +1052,17 @@ def check_near_dup(room_name: str, text: str) -> tuple[bool, float]:
     wt = _word_set(text)
     if len(wt) < 3:  # 너무 짧은 메시지는 겹침 판정 자체가 불안정 — 스킵(오탐 방지)
         return False, 0.0
+    nt = _num_tokens(text)
     now = time.time()
     for e in _load_dedup_ledger():
         if (_room_core_key(e.get("room")) != _room_core_key(room_name)
                 or now - e.get("ts", 0) >= NEAR_DUP_WINDOW_SEC):
             continue
-        wp = _word_set(str(e.get("text") or ""))
+        ep = str(e.get("text") or "")
+        # 숫자 토큰(접수번호·건수 등)이 서로 다르면 내용이 다른 메시지 — 형식만 고친 재발송이 아니다
+        if nt and _num_tokens(ep) and nt != _num_tokens(ep):
+            continue
+        wp = _word_set(ep)
         if len(wp) < 3:
             continue
         overlap = len(wt & wp) / min(len(wt), len(wp))
