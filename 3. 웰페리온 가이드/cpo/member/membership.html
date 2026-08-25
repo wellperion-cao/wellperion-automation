@@ -2079,7 +2079,12 @@ table.op-t td b{font-size:15px}
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
         <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('all', this, 'adult')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
-        <button class="btn-refresh" onclick="lessonLoad('adult');lessonLoadStats('adult')" style="margin-left:auto">새로고침</button>
+        <button class="btn-add" id="btnLessonAddRow_adult" onclick="lessonAddNewRow('adult')" style="margin-left:auto">+ 전화·직접 문의</button>
+        <span id="lessonAddActions_adult" style="display:none;gap:6px;align-items:center">
+          <button class="row-btn btn-save" id="btnLessonAddSave_adult">추가</button>
+          <button class="row-btn btn-cancel" id="btnLessonAddCancel_adult">취소</button>
+        </span>
+        <button class="btn-refresh" onclick="lessonLoad('adult');lessonLoadStats('adult')">새로고침</button>
       </div>
 
       <div id="lessonSportBar_adult" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
@@ -2250,7 +2255,12 @@ table.op-t td b{font-size:15px}
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--teal-border);background:var(--teal-bg);color:var(--teal);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">올해(2026)만</button>
         <button type="button" class="lesson-scope-btn" onclick="lessonSetScope('all', this, 'youth')"
           style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--dim);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">전체 기간</button>
-        <button class="btn-refresh" onclick="lessonLoad('youth');lessonLoadStats('youth')" style="margin-left:auto">새로고침</button>
+        <button class="btn-add" id="btnLessonAddRow_youth" onclick="lessonAddNewRow('youth')" style="margin-left:auto">+ 전화·직접 문의</button>
+        <span id="lessonAddActions_youth" style="display:none;gap:6px;align-items:center">
+          <button class="row-btn btn-save" id="btnLessonAddSave_youth">추가</button>
+          <button class="row-btn btn-cancel" id="btnLessonAddCancel_youth">취소</button>
+        </span>
+        <button class="btn-refresh" onclick="lessonLoad('youth');lessonLoadStats('youth')">새로고침</button>
       </div>
 
       <div id="lessonSportBar_youth" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
@@ -9629,7 +9639,12 @@ var _tabLoaded = { calendar: true, db: false, registered: false, active: false, 
     }, 2500);
   }
   // 신규 문의 & 등록 현황 대시보드 = 🆕 버튼 → 팝업(openInquiryDash) lazy load. 전환율·퍼널·LOSS신호도 각 팝업 오픈 시 lazy fetch(배3, 2026-07-07 시포·GM).
-  if (!ALLOW_ADD) { var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none'; }
+  if (!ALLOW_ADD) {
+    var _ab = document.getElementById('btnAddRow'); if (_ab) _ab.style.display = 'none';
+    ['adult', 'youth'].forEach(function (t) {   // 강습 직접 추가 버튼(2026-08-25) — 멤버십과 같은 게이트
+      var _lab = document.getElementById('btnLessonAddRow_' + t); if (_lab) _lab.style.display = 'none';
+    });
+  }
 })();
 
 // §2-A 로딩속도 — LOSS·대기자·유형별·대기자 카드 숫자를 member_active_list(콜드 ~11초, 전체 행) 없이 즉시 채운다.
@@ -13260,6 +13275,148 @@ function submitNewRow(tr) {
     .catch(function(err){
       showToast('추가 실패: ' + err.message, 'err');
       _restoreAddToolbar();
+    });
+}
+
+/* ── 강습 문의 직접 추가(inline) — 멤버십 addNewRow/submitNewRow(위) 동일 패턴. t='adult'|'youth'. 2026-08-25 GM 지시. ── */
+var _lessonNewRowTr = {};
+
+function _lessonRestoreAddToolbar(t) {
+  var btnAdd = document.getElementById('btnLessonAddRow_' + t);
+  var addAct = document.getElementById('lessonAddActions_' + t);
+  if (btnAdd) btnAdd.style.display = '';
+  if (addAct) addAct.style.display = 'none';
+  _lessonNewRowTr[t] = null;
+}
+
+function lessonAddNewRow(t) {
+  if (GAS_URL === GAS_PLACEHOLDER) { showToast('GAS 미연동 — URL 교체 후 사용 가능', 'err'); return; }
+  var tbody = document.getElementById('lessonBody_' + t);
+  if (!tbody) return;
+  var emptyRow = tbody.querySelector('tr td[colspan]');
+  if (emptyRow) emptyRow.closest('tr').remove();
+
+  var tr = lessonBuildNewInputRow(t);
+  tbody.insertBefore(tr, tbody.firstChild);
+  _lessonNewRowTr[t] = tr;
+
+  var btnAdd = document.getElementById('btnLessonAddRow_' + t);
+  var addAct = document.getElementById('lessonAddActions_' + t);
+  if (btnAdd) btnAdd.style.display = 'none';
+  if (addAct) addAct.style.display = 'inline-flex';
+
+  var saveBtn = document.getElementById('btnLessonAddSave_' + t);
+  var cancelBtn = document.getElementById('btnLessonAddCancel_' + t);
+  var newSave = saveBtn.cloneNode(true);
+  var newCancel = cancelBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSave, saveBtn);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  newSave.onclick = function(){ lessonSubmitNewRow(t, _lessonNewRowTr[t]); };
+  newCancel.onclick = function(){ _lessonRestoreAddToolbar(t); lessonRender(t); };
+}
+
+// 강습종목 select = 화면이 이미 쓰는 명단(LESSON_INSTRUCTOR_ROSTER 키, 등록종목 모달과 동일 목록) 재사용 — 자유입력 금지.
+// 표에 없는 칸(문의내용·희망요일/시간·CONTACT)은 직접 추가 대상 필드(나이·유입경로·비고)를 겹쳐 담아 새 컬럼을 만들지 않는다.
+function lessonBuildNewInputRow(t) {
+  var tr = document.createElement('tr');
+  tr.classList.add('editing');
+
+  function makeCell(content){ var td = document.createElement('td'); td.appendChild(content); return td; }
+  function makeInput(field, ph){
+    var el = document.createElement('input');
+    el.className = 'cell-input'; el.type = 'text'; el.dataset.field = field;
+    if (ph) el.placeholder = ph;
+    el.style.width = '100%'; el.style.boxSizing = 'border-box';
+    return el;
+  }
+
+  var tdDate = document.createElement('td');
+  tdDate.style.color = 'var(--dim)'; tdDate.style.fontSize = '12px';
+  tdDate.textContent = new Date().toISOString().slice(0,10);
+  tr.appendChild(tdDate);
+
+  tr.appendChild(makeCell(makeInput('name', '성함')));
+  tr.appendChild(makeCell(makeInput('phone', '연락처')));
+
+  var selSport = document.createElement('select');
+  selSport.className = 'cell-select'; selSport.dataset.field = 'sport';
+  var blankOpt = document.createElement('option'); blankOpt.value = ''; blankOpt.textContent = '종목 선택';
+  selSport.appendChild(blankOpt);
+  Object.keys(LESSON_INSTRUCTOR_ROSTER).forEach(function(s){
+    var o = document.createElement('option'); o.value = s; o.textContent = s; selSport.appendChild(o);
+  });
+  tr.appendChild(makeCell(selSport));
+
+  var noteCell = document.createElement('td');
+  if (t === 'youth') {
+    var inputAge = makeInput('age', '연령/년생');
+    inputAge.style.marginBottom = '4px';
+    noteCell.appendChild(inputAge);
+  }
+  var inputChannel = makeInput('channel', '유입경로');
+  noteCell.appendChild(inputChannel);
+  tr.appendChild(noteCell);
+
+  tr.appendChild(document.createElement('td'));   // 희망 요일/시간 — 직접 추가 범위 밖(빈 칸)
+
+  var selStatus = document.createElement('select');
+  selStatus.className = 'cell-select'; selStatus.dataset.field = 'status';
+  ['신규'].concat(LESSON_STATUS_OPTIONS).forEach(function(opt){
+    var o = document.createElement('option'); o.value = opt; o.textContent = opt;
+    if (opt === '신규') o.selected = true;
+    selStatus.appendChild(o);
+  });
+  tr.appendChild(makeCell(selStatus));
+
+  tr.appendChild(makeCell(makeInput('owner', '배정 담당')));
+  tr.appendChild(makeCell(makeInput('memo', '비고')));   // CONTACT 칸 — 상담메모는 읽기 시 CONTACT로 합성 표시됨(서버 폴백)
+
+  return tr;
+}
+
+function lessonSubmitNewRow(t, tr, force) {
+  if (!tr) return;
+  var fields = {};
+  tr.querySelectorAll('[data-field]').forEach(function(el){ fields[el.dataset.field] = el.value; });
+
+  if (!fields.name && !fields.phone) {
+    showToast('이름 또는 전화번호를 입력하세요', 'err');
+    return;
+  }
+
+  var payload = {
+    action:    'lesson_inquiry_add',
+    type:      (_lessonState[t] && _lessonState[t].type) || '성인강습',
+    name:      fields.name    || '',
+    phone:     fields.phone   || '',
+    sport:     fields.sport   || '',
+    age:       fields.age     || '',
+    channel:   fields.channel || '',
+    status:    fields.status  || '신규',
+    owner:     fields.owner   || '',
+    memo:      fields.memo    || '',
+    timestamp: new Date().toISOString().slice(0,10)
+  };
+  if (force) payload.force = true;
+
+  apiPost(payload)
+    .then(function(data){
+      if (!data.ok) {
+        // 중복 알림 — 실무진이 문구를 보고 한 번 더 누르면(확인) force:true로 재전송. 입력값은 그대로 유지.
+        if (data.error === 'lesson-add-duplicate') {
+          if (confirm((data.detail || '같은 분의 문의가 이미 있습니다') + '\n\n확인을 누르면 그래도 추가합니다.')) {
+            lessonSubmitNewRow(t, tr, true);
+          }
+          return;
+        }
+        throw new Error(data.detail || data.error || '추가 실패');
+      }
+      showToast('추가 완료', 'ok');
+      _lessonRestoreAddToolbar(t);
+      lessonLoad(t);
+    })
+    .catch(function(err){
+      showToast('추가 실패: ' + err.message, 'err');
     });
 }
 

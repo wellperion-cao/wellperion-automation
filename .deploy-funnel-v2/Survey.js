@@ -2032,6 +2032,7 @@ var _SURVEY_PUBLIC_ACTIONS = {
   lesson_stats:               true,  // 강습 통계(총·이번달·종목·경로 분포)
   lesson_calendar:            true,  // 상담예약 달력
   lesson_inquiry_update:      true,  // 진행상태·담당·상담메모·상담예약·방문상태 수정
+  lesson_inquiry_add:         true,  // 2026-08-25 전화·직접 강습문의 수기 추가(member_inquiry_add 동일 취급)
   lesson_registered_roster:   true,  // 강습 등록현황·회원 명단(팀시트 상태열 _isLessonReg_) — PII 노출(전체공개 2026-06-22) 2026-06-27 시포
   lesson_registry_list:       true,  // 강습 금일 등록현황(원장 sync-on-load) — PII 노출(전체공개) 2026-06-27 시포
   lesson_team_sheet_diag:     true,  // [진단] 강습 팀시트 구조(헤더·상태열·빈칸 수) — 셀 값 미반환·토큰 필요. 2026-07-23 시포·GM
@@ -6725,6 +6726,96 @@ function _hasRealReply_(memo) {
       lcEvents.push({ date: d, time: row.consultTime || '', tmin: row.consultTmin, kind: '상담', name: row.name || '', phone: row.phone || '', sport: row.sport || '', status: row.status || '', memo: row.memo || '', rowIndex: row.rowIndex });
     });
     return _json({ ok: true, month: lcMonth, count: lcEvents.length, events: lcEvents });
+  }
+
+  // ─── 강습문의 페이지(CPO): 행 추가 (전화·직접 문의 수기 입력, member_inquiry_add 동일 구조) ───
+  //   2026-08-25 GM 지시 — 강습 문의는 화면에서 새 줄을 만들 경로가 아예 없어 전화·방문으로 받은 접수를
+  //   실무진이 못 넣고, 한 사람이 종목 두 개를 등록해도 줄을 나눌 수 없었다(딜런 승헌 델가도 실사례).
+  //   대상 시트 라우팅 = 기존 강습 액션과 동일(_lessonGidOf_ — type/gid). 행은 append만
+  //   (이 시트는 IMPORTRANGE 소스 — 기존 행 이동·삭제 절대 금지).
+  if (action === 'lesson_inquiry_add') {
+    if (!body.name || !body.phone) return _json({ ok: false, error: 'lesson-add-required', detail: '이름과 전화번호는 필수입니다 — 두 칸을 채운 뒤 다시 추가해 주세요' });
+    var laSh = _lessonSheet_(_lessonGidOf_(body));
+    if (!laSh) return _json({ ok: false, error: '시트 없음' });
+    var laHdr = _lessonEnsureCols_(laSh);
+    // 강습 등록정보 5칸(확정종목·등록일·횟수·시작일·종료일) — lesson_inquiry_update와 동일하게 보장 생성(SUC 가드 대상).
+    var _laCiProgram = _miEnsureCol_(laSh, laHdr, '확정종목');
+    var _laCiRegDate = _miEnsureCol_(laSh, laHdr, '등록일');
+    var _laCiCount   = _miEnsureCol_(laSh, laHdr, '횟수');
+    var _laCiStart   = _miEnsureCol_(laSh, laHdr, '시작일');
+    var _laCiEnd     = _miEnsureCol_(laSh, laHdr, '종료일');
+    // ★중복 방어(2026-08-25 GM 지시) — 같은 사람이 종목을 나눠 여러 줄 갖는 게 정상 사용례라 영구 차단하지 않는다.
+    //   같은 전화+같은 이름 행이 이미 있으면 한 번 알리고, force:true 로 다시 오면 그대로 추가한다.
+    var _laForce = (body.force === true || String(body.force || '').toLowerCase() === 'true' || String(body.force || '') === '1');
+    var _laPhoneNorm = _normPhone_(body.phone);
+    var _laNameNorm  = String(body.name || '').trim();
+    if (!_laForce) {
+      var _laDup = _lessonReadRowsMerged_(body).filter(function (r) {
+        return _normPhone_(r.phone) === _laPhoneNorm && String(r.name || '').trim() === _laNameNorm;
+      });
+      if (_laDup.length) {
+        return _json({
+          ok: false, error: 'lesson-add-duplicate',
+          detail: '같은 분의 문의가 이미 ' + _laDup.length + '건 있습니다 — 그래도 새로 추가하려면 다시 눌러 주세요',
+          existing: _laDup.map(function (r) { return { rowIndex: r.rowIndex, sport: r.sport, status: r.status, timestamp: r.timestamp }; })
+        });
+      }
+    }
+    // ★강습 등록정보 서버 가드 — SUC/단기SUC로 바로 들어오면 lesson_inquiry_update와 동일 규칙으로 막는다(우회로 차단).
+    var _laStatus = String(body.status || '신규').trim();
+    if (_laStatus === 'SUC' || _laStatus === '단기SUC') {
+      var _laFields = [
+        ['regProgram', '종목'], ['regDate', '등록일'], ['regCount', '횟수'],
+        ['startDate', '시작일'], ['regExpire', '종료일']
+      ];
+      var _laMissing = [];
+      _laFields.forEach(function (f) { if (!String(body[f[0]] || '').trim()) _laMissing.push(f[1]); });
+      if (_laMissing.length) {
+        return _json({ ok: false, error: 'lesson-reg-fields-required',
+          detail: '등록으로 바꾸려면 종목·등록일·횟수·시작일·종료일이 필요합니다 — 화면에서 채운 뒤 다시 저장해 주세요',
+          missing: _laMissing });
+      }
+    }
+    var laRow = new Array(laHdr.length).fill('');
+    function _laSet(colNames, val) {
+      if (val === undefined || val === null || val === '') return;
+      var ci = _findCol_(laHdr, colNames);
+      if (ci < 0) return;
+      while (laRow.length <= ci) laRow.push('');
+      laRow[ci] = val;
+    }
+    _laSet(['성함', '이름', 'Full Name'], body.name);
+    _laSet(['연락처', '전화', '휴대폰', 'Mobile Phone Number'], _fmtPhone_(body.phone));
+    _laSet(['성인 강습 종목', 'WSC 강습 종목', 'WSC 강습 종류', '강습 종목', '종목', '과목', 'Program of Interest'], body.sport);
+    _laSet(['나이', '연령', '자녀 나이', '자녀나이', '학년', 'Age'], body.age);
+    _laSet(['문의 경로', '경로', '채널', '알게', 'How Did You Hear About Us?'], body.channel);
+    _laSet(['진행상태', '진행현황', '진행상황', '진행 상황', '상태'], _laStatus);
+    _laSet(['지정 강사', '관리담당'], body.owner);
+    _laSet(['상담메모', '메모', '비고'], body.memo);
+    _laSet(['타임스탬프', 'timestamp', '시각', '일시', '접수일', '날짜'], body.timestamp || Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));
+    if (body.regProgram !== undefined) laRow[_laCiProgram] = body.regProgram;
+    if (body.regDate    !== undefined) laRow[_laCiRegDate] = body.regDate;
+    if (body.regCount   !== undefined) laRow[_laCiCount]   = body.regCount;
+    if (body.startDate  !== undefined) laRow[_laCiStart]   = body.startDate;
+    if (body.regExpire  !== undefined) laRow[_laCiEnd]     = body.regExpire;
+    laSh.appendRow(laRow);
+    // 회원 변경 이력(배327과 동일 방식, 기존 삭제·수정 경로 재사용) — 누가 추가했는지 한 줄.
+    _memberLog_([[new Date(), _logWho_(body), body.name || '', _logMaskPhone_(_fmtPhone_(body.phone)),
+                  '문의 추가', '', (body.sport || '(종목 미기재)') + ' / ' + _laStatus, '강습']]);
+    try {
+      var _laChatId = PropertiesService.getScriptProperties().getProperty('TELEGRAM_INQUIRY_CHAT_ID') || _INQUIRY_CHAT_ID_FALLBACK;
+      _notifyTelegram('➕ 강습 전화·직접 문의 추가 — ' + (body.name || '(이름없음)') + ' · ' + (body.phone || '-') + ' · ' + _teamChip(body.sport || '') + (body.sport || '-'), _laChatId);
+    } catch (e) {}
+    // 조회 캐시 무효화 — lesson_inquiry_update와 동일 4키(type별 licache/lscache year·all).
+    try {
+      var _laCache = CacheService.getScriptCache();
+      var _laType = String(body.type || '');
+      _cacheInvalidateJson_(_laCache, 'licache|' + _laType + '|year');
+      _cacheInvalidateJson_(_laCache, 'licache|' + _laType + '|all');
+      _cacheInvalidateJson_(_laCache, 'lscache|' + _laType + '|year');
+      _cacheInvalidateJson_(_laCache, 'lscache|' + _laType + '|all');
+    } catch (e) {}
+    return _json({ ok: true, message: '추가되었습니다.', rowIndex: laSh.getLastRow() });
   }
 
   // ─── 강습문의 페이지(CPO): 행 수정 (진행상태·담당·상담메모·상담예약·방문상태) ───
