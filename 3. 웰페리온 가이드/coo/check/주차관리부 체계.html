@@ -27,7 +27,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
-#tab-guide,#tab-policy,#tab-mplan,#tab-onb{max-width:none;margin-left:0;margin-right:0}
+#tab-guide,#tab-policy,#tab-mplan,#tab-onb,#tab-check{max-width:none;margin-left:0;margin-right:0}
+/* 점검 카드 그리드 — 지원부 #checklistM/#checklistF 와 같은 반응형 그리드(같은 시각 언어). GM 지적 2026-08-25 */
+#parkingDailyCheckBody{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start}
+#parkingDailyCheckBody > .category{margin-bottom:0}
 /* ── 온보딩 탭(화면) — A3 온보딩 인쇄본과 같은 구성(직원구성·발렛동선·응대상황표·가이드요지).
    a3m-* 마크업(a3mZoneHTML) 재사용, 화면용 다크 테마 스타일만 별도 정의(인쇄 스타일과 무간섭). ── */
 #tab-onb .a3m-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
@@ -775,26 +778,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
         일일 <span id="parkChecklistDailyN"></span>항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 <span id="parkChecklistWeeklyN"></span>항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
       </p>
-      <div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;">
-        <div class="progress-bar" style="flex:1;"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
-        <span id="parkingProgressText" style="font-size:12px;color:var(--dim);white-space:nowrap;">오늘 0/-</span>
-        <button type="button" class="util-btn print-btn" style="padding:3px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button>
+      <!-- 진행률 = 지원부 .shift-divider 자리의 .progress 카드(같은 paper 카드 계열) -->
+      <div class="progress" style="margin-bottom:12px;">
+        <div class="progress-text" style="justify-content:flex-start;gap:10px;align-items:center;"><span id="parkingProgressText">오늘 0/-</span><button type="button" class="util-btn print-btn" style="padding:2px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button></div>
+        <div class="progress-bar"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
       </div>
-      <table class="schedule-table">
-        <colgroup><col style="width:64px;"><col><col style="width:56px;"></colgroup>
-        <thead><tr><th>주기</th><th>점검 항목</th><th>체크</th></tr></thead>
-        <tbody id="parkingDailyCheckBody"></tbody>
-        <tbody>
-          <tr><td rowspan="5">주간</td><td>소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>비상구 유도등 점등·피난통로 적치물·비상벨</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>발렛 동선·안전표지 점검</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>손소독제·마스크 재고 확인 — 모자라면 접수처에 남겨 주세요</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>계절 대비(여름 배수·겨울 제설)</td><td style="text-align:center;">☐</td></tr>
-        </tbody>
-      </table>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">
-        <input type="text" id="parkingInspector" placeholder="점검자 이름" style="flex:1;min-width:120px;max-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
-        <button type="button" class="submit-btn primary" style="flex:none;max-width:160px;padding:9px 18px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
+      <!-- 일일·주간 카드 2장이 이 그리드 안에 렌더된다(renderParkingDailyCheck). 주간 정적 표는 제거 — 사본 없이 PARK_CHECKLIST.weekly 단일 출처. -->
+      <div id="parkingDailyCheckBody"></div>
+      <div class="submitter-bar" style="margin-top:12px;">
+        <label>점검자</label>
+        <input type="text" id="parkingInspector" placeholder="점검자 이름 입력" autocomplete="off" style="flex:1;min-width:120px;max-width:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;">
+        <button type="button" class="submit-btn primary" style="flex:none;max-width:180px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
         <span id="parkingSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
       </div>
       <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.<br><b style="color:var(--accent);">건강</b> — 열이 나거나 기침이 있으면 근무를 빼고 바로 알려 주세요.</p>
@@ -2063,13 +2057,44 @@ function renderParkingDailyCheck(){
   const progText=document.getElementById('parkingProgressText'); if(progText) progText.textContent='오늘 0/'+PARK_CHECKLIST.daily.length;
   const body=document.getElementById('parkingDailyCheckBody');
   if(!body) return;
-  let html='';
+  /* 항목명 ' — ' 뒤는 상세 설명으로 내린다(지원부 item-detail 과 같은 구성). */
+  function nameDetail(t){ const p=String(t).split(' — '); return {name:p[0], detail:p.slice(1).join(' — ')}; }
+  function itemHtml(t,cbHtml){
+    const nd=nameDetail(t);
+    return '<div class="item"><div class="item-row">'+cbHtml+'</div>'
+      +(nd.detail?'<div class="item-detail">'+escapeHTML(nd.detail)+'</div>':'')+'</div>';
+  }
+  let daily='';
   PARK_CHECKLIST.daily.forEach(function(t,i){
-    html+='<tr>'+(i===0?'<td rowspan="'+PARK_CHECKLIST.daily.length+'">일일</td>':'')
-      +'<td>'+escapeHTML(t)+'</td>'
-      +'<td style="text-align:center;"><input type="checkbox" id="pchk_'+i+'"></td></tr>';
+    const nd=nameDetail(t);
+    daily+=itemHtml(t,'<input type="checkbox" id="pchk_'+i+'" onchange="onParkCheck()"><label for="pchk_'+i+'">'+escapeHTML(nd.name)+'</label>');
   });
-  body.innerHTML=html;
+  let weekly='';
+  PARK_CHECKLIST.weekly.forEach(function(t){
+    const nd=nameDetail(t);
+    weekly+=itemHtml(t,'<input type="checkbox" disabled title="주간 점검은 육안 확인용 — 제출 대상이 아닙니다"><label>'+escapeHTML(nd.name)+'</label>');
+  });
+  body.innerHTML=
+    '<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">일일 점검</span>'
+      +'<span class="cat-badge pending" id="parkDailyBadge">0/'+PARK_CHECKLIST.daily.length+'</span></div>'
+      +'<div class="cat-body open">'+daily+'</div></div>'
+    +'<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">주간 점검 <span style="font-size:11px;font-weight:600;color:var(--dim);">· 육안 확인용</span></span>'
+      +'<span class="cat-badge pending">'+PARK_CHECKLIST.weekly.length+'항목</span></div>'
+      +'<div class="cat-body open">'+weekly+'</div></div>';
+}
+/* 체크 즉시 진행률·배지·취소선 반영(서버 왕복 없음). 서버 값은 loadParkingCheckState 가 덮어쓴다. */
+function onParkCheck(){
+  const total=PARK_CHECKLIST.daily.length;
+  let done=0;
+  PARK_CHECKLIST.daily.forEach(function(t,i){
+    const cb=document.getElementById('pchk_'+i); if(!cb) return;
+    if(cb.checked) done++;
+    const it=cb.closest('.item'); if(it) it.classList.toggle('checked',cb.checked);
+  });
+  const fill=document.getElementById('parkingProgressFill'); if(fill) fill.style.width=Math.round(done/total*100)+'%';
+  const text=document.getElementById('parkingProgressText'); if(text) text.textContent='오늘 '+done+'/'+total;
+  const badge=document.getElementById('parkDailyBadge');
+  if(badge){ badge.textContent=done===total?'완료':done+'/'+total; badge.className='cat-badge '+(done===total?'done':'pending'); }
 }
 renderParkingDailyCheck();
 
@@ -2103,6 +2128,7 @@ async function loadParkingCheckState(){
         const cb=document.getElementById('pchk_'+i);
         if(cb){ cb.checked=doneIds.indexOf('p'+(i+1))>=0; cb.disabled=true; }
       });
+      onParkCheck();   // 복원된 체크 → 카드 배지·취소선 동기(진행률은 위에서 서버값으로 이미 세팅)
       if(btn){ btn.disabled=true; btn.textContent='제출완료'; btn.classList.add('submitted'); }
       if(stat){
         const hhmm=/(\d{2}:\d{2})/.exec(String(row.submittedAt_am||''));
