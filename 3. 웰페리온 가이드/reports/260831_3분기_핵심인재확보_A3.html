@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>3분기 핵심 인재 확보 결과 보고 — 웰페리온 A3 (3/3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:16.6px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.6px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:32px; }
+  td.k{ background:#F6F8FA; font-weight:600; font-size:13.2px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:12.6px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:11.4px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:14.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:13.2px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style></head>
+<body>
+
+<div class="bar">
+  <b>3분기 핵심 인재 확보 결과 보고 (A3 1장 · 3/3)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">3분기 핵심 인재 확보 결과 보고</div>
+    </div>
+    <div class="meta">
+      보고 <b>경영지원부 김남욱 GM</b> · 대상 <b>회장님 · 경영진</b><br>
+      기간 <b>2026년 3분기 (6월 ~ 8월)</b> · 보고일 <b>2026. 08. 31.</b> · 문서번호 <b>WP-GM-260831-03</b><br>
+      구성 1/3 전략 로드맵 · 2/3 핵심 4개 조직 · <b>3/3 핵심 인재 확보</b>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">지원부 팀장 직급 신설과 김훈 주임 발령을 승인해 주십시오.</div>
+        <div class="d">정원 8인을 유지하면서 <b>월 41만원 · 연 492만원이 줄어듭니다.</b> 주임 급여 감액 동의는 완료했고 대표님 서명만 남았습니다. 상세는 별첨 품의(WP-HR-260825-01).</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">이정헌 소장·나우열M 라인의 보고 주기를 정해 주십시오.</div>
+        <div class="d">세 라인 중 <b>운영부만</b> 주간·월간·수시 규정이 있습니다. 규정이 없으면 늦어져도 리마인드를 걸 근거가 없습니다 — 법정점검 회신이 11일 비었던 것이 그 사례입니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:150px"><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">구분</th>
+        <th>이경연 실장 — 운영부<span class="sub">1라인 · GM 직속</span></th>
+        <th>이정헌 소장 — 시설부<span class="sub">2라인 · GM 직속</span></th>
+        <th>나우열M — 파트너팀·인사·재무<span class="sub">3라인 · GM 직속</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">지 휘 계 통 &nbsp;— 세 사람은 서로 대등한 GM 직속 (2026-08-08 확정 · 「실장 경유」는 운영부 내부 한정)</td></tr>
+      <tr><td class="k">담당</td><td>업무 분배 · 진행 관리 · 결과 취합 · GM 보고</td><td>시설 총괄 · 안전·소방 · 협력업체 · 공사</td><td>업무·결재 SSOT(인사) + 운영 매출·지출(재무)</td></tr>
+      <tr><td class="k">직속 라인</td><td>최준용M · 임정은M · 윤병현AM · 백승화 사원 · 진수아 사원</td><td>김종현 차장 · 박호균 과장</td><td class="warn">조직표 미확정</td></tr>
+      <tr><td class="k">보고 주기</td><td class="ctr good">규정 있음 — 주간·월간·수시</td><td class="ctr bad">규정 없음</td><td class="ctr bad">규정 없음</td></tr>
+      <tr class="grp"><td colspan="4">지 원 부 직 급 · 급 여 개 편 &nbsp;— 주 5일제 전환 · 2026-09-01 시행</td></tr>
+      <tr>
+        <td class="k">새 체계</td>
+        <td colspan="3">팀장 <b>280만원</b> × 1 (김훈) &nbsp;·&nbsp; 반장 <b>265만원</b> × 2 (이연희 · 박남일) &nbsp;·&nbsp; 주임 <b>235만원</b> × 5 (남 2 · 여 3) &nbsp;=&nbsp; <b>1,985만원</b></td>
+      </tr>
+      <tr>
+        <td class="k">기존 체계</td>
+        <td colspan="3">팀장 1 · 반장 1 · 주임 6 <span class="est">(월 6회 휴무)</span> = <b>2,026만원</b> &nbsp;·&nbsp; 탕청소 용역 385만원은 변동 없음</td>
+      </tr>
+      <tr class="sum">
+        <td class="k strong">차액</td>
+        <td class="ctr good strong">월 41만원 감소</td>
+        <td class="ctr good strong">연 492만원 감소</td>
+        <td class="strong">팀장 자리를 만들면서 인건비는 줄었다 — 조직을 키운 것이 아니라 구조를 바꾼 것</td>
+      </tr>
+      <tr><td class="k">역할 배정</td><td colspan="3"><b>김훈 팀장</b> 남·여 사우나 전체(채용 · 관리 · 서비스 응대 · 비품 · 청소용품 · 매뉴얼) &nbsp;/&nbsp; <b>박남일 반장</b> 외곽 중심 &nbsp;/&nbsp; <b>이연희 반장</b> 외곽 서포트 + 여자 사우나 중심</td></tr>
+      <tr class="grp"><td colspan="4">3 분 기 인 력 변 동</td></tr>
+      <tr><td class="k">진급</td><td colspan="3">박남일 주임 → <b>반장</b> (2026-08-01 · 호칭 변경 7/13 후 급여·인사 확정 8/1 2단계) &nbsp;·&nbsp; 김훈 주임 → <b>팀장</b> (진급 제안 8/25 결재 상신 · 대표님 보고 완료)</td></tr>
+      <tr><td class="k">입사</td><td colspan="3">김훈 주임 지원부 (2026-08-11) &nbsp;·&nbsp; 진수아 사원 운영부 (2026-08-18)</td></tr>
+      <tr><td class="k">채용 진행</td><td colspan="3">지원부 남자사우나 <b>2인 채용 진행 중</b> — 새 체계 정원 8인 중 남 주임 1석이 아직 비어 있다</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box rec">
+      <h3>3분기에 세운 것</h3>
+      <ul class="ord">
+        <li class="n">GM 직속 3라인 배치 — 세 사람이 대등하게 GM 에 직보하는 구조 확정</li>
+        <li class="n">지원부 직급을 <b>팀장·반장·주임 3단</b>으로 정리 (종전 주임·반장 2단)</li>
+        <li class="n">주 5일제 전환에 맞춘 급여 재편 — <b>인건비를 늘리지 않고</b> 관리자 자리 확보</li>
+        <li class="n">남·여 구역 각각에 반장 배치 — 여자 구역을 볼 사람이 생김</li>
+        <li class="n">진급 2건 · 입사 2건 — 사람이 실제로 늘고 올라간 분기</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>솔직하게 — 남은 것</h3>
+      <ul>
+        <li class="r1"><b>김훈 팀장은 재직 15일 발령입니다.</b> 정량 평가 자료가 없습니다 — 근거는 사우나·수면실·바니티존 <b>현장 개선 제안서</b> 하나입니다. 기존 7인에게 기준을 먼저 알리는 것이 조건입니다.</li>
+        <li class="r1"><b>보고 주기 규정이 두 라인에 없습니다.</b> 3분기 내내 비어 있었고 이번 분기에 못 채웠습니다.</li>
+        <li class="r1"><b>나우열M 라인 조직표가 아직 없습니다.</b> 업무 폭이 가장 넓은데 인원 구조가 문서에 없습니다.</li>
+        <li class="r2">남 주임 1석 공석 — 충원 전까지 실제 지출은 1,750만원이고 현장 부담이 남습니다.</li>
+        <li class="r2">주차관리부는 <b>전담 관리자가 없습니다.</b> 관리인이 청소를 겸하고 있어 점검을 볼 사람이 없습니다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>GM 권고</h3>
+      <ul>
+        <li><b>사람을 더 넣기 전에 볼 사람을 세웁니다.</b> 지원부 팀장이 그 첫 수이고, 다음이 주차관리부입니다.</li>
+        <li>김훈 팀장 발령의 명분은 <b>근속이 아니라 자리</b>입니다 — 남·여를 함께 볼 상급자가 없어 여자 구역 점검이 낮게 유지됩니다.</li>
+        <li>형평성은 <b>기준 공개</b>로 답합니다. 발표 전에 평가 기준과 자리 승계 방식을 먼저 알립니다.</li>
+        <li>보고 주기 규정은 <b>4분기로 넘기지 않는 편</b>이 좋습니다 — 9월 계약서 재작성 때 함께 넣으면 별도 절차가 없습니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>산출 근거</b> — 급여·정원은 「지원부 근무조건 변경안 검토」(GM 결재 2026-08-12) 실측. 기존 합계 2,026만원 = 298+253+243+243+245+258+243+243, 새 체계 1,985만원 = 280 + 265×2 + 235×5. 진급·입사 일자는 업무·결재 SSOT 직독.</div>
+    <div><b>표기 원칙</b> — 규정이 없는 칸은 「규정 없음」으로 두었습니다. 나우열M 라인 조직표는 확정 전이라 인원을 지어 넣지 않았습니다. 정량 평가 자료가 없다는 사실도 그대로 적었습니다.</div>
+    <div><b>별첨</b> — 지원부 급여 체계 개편 및 팀장 발령 품의(WP-HR-260825-01 · 대표님 결재). <b>차기 보고</b> — 9/1 재계약 시행 결과 및 남 주임 충원 현황.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260831_3분기_핵심인재확보_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
