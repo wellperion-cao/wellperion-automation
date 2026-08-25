@@ -905,6 +905,49 @@ def build_dept_block(day: str | None = None) -> str:
     return _format_department_highlights(_rank_office_ships_by_role(ships, day), day)
 
 
+def _relayed_waiting_section(day: str) -> str:
+    """「전달했는데 답이 없는 것」 절 한 칸. 0건이면 빈 문자열(그 자리가 통째로 빠진다).
+
+    제목에 총 건수와 사람 수를 함께 적는다 — 줄 수(=사람 수)만 세는 _bucket 을 쓰면
+    9건이 '(3)' 으로 보여 GM 이 건수를 오해한다.
+    """
+    lines, total = _relayed_waiting_lines(day)
+    if not lines:
+        return ''
+    head = f"■ 전달했는데 답이 없는 것 {total}건 · {len(lines)}명"
+    return head + '\n' + '\n'.join(lines[:5]) + (f"\n외 {len(lines) - 5}명" if len(lines) > 5 else '')
+
+
+def _relayed_waiting_lines(day: str):
+    """「전달했는데 답이 없는 것」 — 카톡 방으로 나간 요청 중 아직 회신이 없는 건을 사람별로 묶는다.
+
+    GM 지시 2026-08-25: "GM업무도 그렇지만, 전달했던 내용도 놓치지 않게 해줄 수 있어?"
+    ▸판정·수집은 새로 만들지 않는다 — ★중간관리자 아침 정리가 이미 쓰는
+      send_ops_digest.build_reply_nudge_items() 를 그대로 부른다(약속 L21·L01).
+      그 함수가 7일 창·중복 제거·담당 빈칸 제외·닫힌 건 제외까지 이미 해 준다.
+    ▸사람별로 묶는 이유 = GM 이 보는 것은 "누구에게 다시 말해야 하나"이지 항목 나열이 아니다.
+      항목을 다 펼치면 아침 브리핑이 그 절 하나로 길어진다.
+    ▸실패는 조용히 넘긴다(fail-soft) — 이 절 때문에 브리핑 전체가 안 나가면 안 된다.
+    """
+    try:
+        import send_ops_digest as _od
+        items = _od.build_reply_nudge_items(day) or []
+    except Exception:
+        return [], 0
+    if not items:
+        return [], 0
+    by_who: dict = {}
+    for it in items:
+        who = str(it.get('who') or '').strip() or '담당 미정'
+        by_who.setdefault(who, []).append(str(it.get('ask') or '').strip())
+    lines = []
+    for who, asks in sorted(by_who.items(), key=lambda kv: -len(kv[1])):
+        head = asks[0][:26] if asks else ''
+        more = f" 외 {len(asks) - 1}건" if len(asks) > 1 else ''
+        lines.append(f"· {who} {len(asks)}건 — {head}{more}")
+    return lines, len(items)
+
+
 def build_morning_brief(day: str | None = None) -> str:
     """08:00 「나의하루」 GM 업무 브리핑 — 월~토 발송. 전사일정·GM업무·업무SSOT·회장님 보고건 4묶음."""
     day = day or today()
@@ -963,6 +1006,9 @@ def build_morning_brief(day: str | None = None) -> str:
                 _schedule_stale_note() if sched_ok else '(불러오지 못함)'),
         _bucket('기한이 임박했습니다', due_lines, '' if ssot is not None else '(불러오지 못함)'),
         _bucket('답을 기다리는 것', waiting_lines, waiting_note),
+        # 위 「답을 기다리는 것」은 업무 시트·회장님 보고건이 원천이다. 아래는 카톡 방으로
+        # 나간 요청 — 원천이 달라 한 절에 섞지 않는다(섞으면 GM 이 어디를 봐야 할지 모른다).
+        _relayed_waiting_section(day),
         prog_section,
     ]
     sections = [s for s in sections if s]
