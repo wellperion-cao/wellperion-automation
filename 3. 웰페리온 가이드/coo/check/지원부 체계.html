@@ -8643,7 +8643,44 @@ function renderMrKpi(data){
     +'<div class="dash-stat-card"><div class="num" style="color:'+mrPctColor(pct)+'">'+pct+'%'+mrDenomBadge(data.denomNote)+'</div><div class="label">완료율</div></div>'
     +'<div class="dash-stat-card"><div class="num" style="color:var(--red)">'+(t.issueCount||0)+'</div><div class="label">이슈 총계</div></div>'
     +'</div>'
-    +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 16px;">'+mrEsc(data.denomNote||'')+(data.testExcludedCount?(' · 테스트 제외 '+data.testExcludedCount+'건'):'')+'</div>';
+    +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 10px;">'+mrEsc(data.denomNote||'')+(data.testExcludedCount?(' · 테스트 제외 '+data.testExcludedCount+'건'):'')+'</div>'
+    +mrSubmitBreakdown(data);
+}
+
+/* 2026-08-25 시우 — 완료율이 낮은 진짜 이유를 한 줄로 보여준다.
+   실측(2026-08): 예정 2205항목 중 제출된 세션에 담긴 건 1081항목뿐이고, 그 안에서는 1005개(93%)가 체크됐다.
+   즉 46% 는 '대충 체크했다'가 아니라 '아예 제출이 안 된 교대가 절반'이라는 뜻이다.
+   지금 화면은 46% 만 보여줘서 실장·GM 이 체크 태만으로 오독하게 돼 있었다.
+   새 데이터를 안 만들고 이미 오는 값(monthTotals.sumTotal / byZone·byShift.sumTotal)만 나눈다. */
+function mrSubmitBreakdown(data){
+  const t=data.monthTotals||{};
+  const expected=Number(t.sumTotal)||0;
+  const zones=data.byZone||[];
+  const submitted=zones.reduce(function(a,z){ return a+(Number(z.sumTotal)||0); },0);
+  if(!expected||!submitted) return '';
+  const submitPct=Math.round(submitted/expected*100);
+  const fillPct=Math.round((Number(t.sumDone)||0)/submitted*100);
+  const zoneName=function(z){ const s=String(z||''); return (s==='m'||s.indexOf('남')>=0)?'남성구역':((s==='f'||s.indexOf('여')>=0)?'여성구역':s); };
+  let zoneTxt=zones.map(function(z){ return zoneName(z.zone)+' '+(z.sumTotal||0)+'항목('+(z.sessionCount||0)+'세션)'; }).join(' · ');
+  // 남녀는 점검 항목 수가 같게 짜여 있다(오늘 스케줄 남 57 · 여 57) → 제출 항목 차이는 그대로 제출 누락 차이다.
+  const m=zones.filter(function(z){ return String(z.zone)==='m'; })[0];
+  const f=zones.filter(function(z){ return String(z.zone)==='f'; })[0];
+  let gap='';
+  if(m&&f&&Number(m.sumTotal)>0){
+    const ratio=Math.round(Number(f.sumTotal)/Number(m.sumTotal)*100);
+    if(ratio<80) gap='<div style="font-size:12px;color:var(--red);font-weight:600;margin-top:6px;">여성구역 제출이 남성구역의 '+ratio+'% 수준입니다 — 예정 항목 수는 남녀가 같습니다.</div>';
+    else if(ratio>125) gap='<div style="font-size:12px;color:var(--red);font-weight:600;margin-top:6px;">남성구역 제출이 여성구역의 '+Math.round(Number(m.sumTotal)/Number(f.sumTotal)*100)+'% 수준입니다 — 예정 항목 수는 남녀가 같습니다.</div>';
+  }
+  return '<div class="admin-card" style="padding:12px 14px;margin:0 0 16px;">'
+    +'<div style="font-size:13px;font-weight:700;margin-bottom:6px;">완료율 '+(t.avgPct!=null?t.avgPct:0)+'% 를 둘로 나누면</div>'
+    +'<div style="font-size:12.5px;line-height:1.7;">'
+    +'· <b>제출률 '+submitPct+'%</b> — 예정 '+expected+'항목 중 제출된 세션에 담긴 것 '+submitted+'항목<br>'
+    +'· <b>제출분 체크율 '+fillPct+'%</b> — 제출된 '+submitted+'항목 중 '+(t.sumDone||0)+'항목 체크'
+    +'</div>'
+    +'<div style="font-size:12px;color:var(--dim);margin-top:6px;">제출만 되면 '+fillPct+'% 는 채워집니다. 완료율을 끌어내리는 것은 체크 누락이 아니라 <b>제출이 안 된 교대</b>입니다.</div>'
+    +'<div style="font-size:12px;color:var(--dim);margin-top:4px;">구역별 제출 — '+mrEsc(zoneTxt)+'</div>'
+    +gap
+    +'</div>';
 }
 
 function renderMrDaily(data){
@@ -8769,6 +8806,17 @@ function mrA3Chip(key,desc){
   return '<div class="mrp-kpi-chip"><div class="mrp-kpi-key">'+key+'</div><div class="mrp-kpi-desc">'+desc+'</div></div>';
 }
 
+// 2026-08-25 시우: 인쇄본에도 제출률 칩 — 완료율만 보면 체크 태만으로 읽힌다(화면분 mrSubmitBreakdown과 같은 계산).
+function mrA3SubmitChip(data){
+  const t=data.monthTotals||{};
+  const expected=Number(t.sumTotal)||0;
+  const submitted=(data.byZone||[]).reduce(function(a,z){ return a+(Number(z.sumTotal)||0); },0);
+  if(!expected||!submitted) return '';
+  const submitPct=Math.round(submitted/expected*100);
+  const fillPct=Math.round((Number(t.sumDone)||0)/submitted*100);
+  return mrA3Chip('<span class="mrp-kpi-num">'+submitPct+'%</span> 제출률','예정 '+expected+'항목 중 제출 '+submitted+'항목 · 제출분 체크율은 '+fillPct+'%');
+}
+
 // 월간보고 구역·교대 표준 순서 강제 정렬 — GAS 응답이 무순서라 표가 뒤죽박죽이던 문제 수정(시설부 fmSortByCat 대응). 2026-07-06 시우.
 function mrZoneRank(z){ var s=String(z||''); if(s.indexOf('남')>=0) return 0; if(s.indexOf('여')>=0) return 1; if(s.indexOf('공용')>=0) return 2; return 9; }
 function mrShiftRank(s){ var v=String(s||''); if(v.indexOf('오전')>=0) return 0; if(v.indexOf('오후')>=0) return 1; if(v.indexOf('마감')>=0||v.indexOf('close')>=0) return 2; if(v.indexOf('야간')>=0||v.indexOf('탕청소')>=0) return 3; return 9; }
@@ -8795,6 +8843,7 @@ function renderA3MonthlyFromData(month,data){
       mrA3Chip((t.sessionCount||0)+' 세션','월간 점검 세션 수(회차 합계)')
       +mrA3Chip((t.activeDays||0)+' 일','점검이 1회 이상 실시된 활성일수')
       +mrA3Chip('<span class="mrp-kpi-num">'+pct+'%</span> 완료율 <span style="font-size:10px;color:'+(mrDenomWord(data.denomNote)==='확정'?'#1a7f37':'#a8710a')+';">('+mrDenomWord(data.denomNote)+')</span>',mrEsc(data.denomNote||''))
+      +mrA3SubmitChip(data)
       +mrA3Chip('<span class="mrp-kpi-num">'+(t.issueCount||0)+'건</span> 이슈','월중 등록된 이슈 총계');
   }
 
