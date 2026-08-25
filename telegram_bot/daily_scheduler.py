@@ -3706,7 +3706,9 @@ def main():
                 return                      # 오늘 이미 짚은 회차 — 두 번 보내지 않는다
             # ★사람이 옆에서 짚어주듯 쓴다(2026-07-31 GM 지시). 숫자만 던지면 받는 사람은
             #   무엇을 하라는 건지 모른다. '무슨 일이 일어난 것 같은지'까지 말해 준다.
-            miss = [g for g in fresh if g["likely"] == "제출누락"]
+            # '제출만 빠짐'(체크는 다 하고 제출 버튼만 안 누른 조)도 같은 문구로 묶는다
+            # — 받는 사람이 할 일이 똑같다: 들어가서 제출 한 번(GM 지시 2026-08-25).
+            miss = [g for g in fresh if g["likely"] in ("제출누락", "제출만 빠짐")]
             only_fac = all(g["zone"] == "시설부" for g in fresh)
             head = ("🔔 시설부 점검 입력이 아직 없습니다" if only_fac else
                     "🔔 점검은 도신 것 같은데 제출이 안 들어왔습니다" if miss else
@@ -3716,6 +3718,10 @@ def main():
                 if g["zone"] == "시설부":
                     body.append("▪ 시설부 — 오늘 점검 입력이 한 건도 없습니다")
                     body.append("   이미 도셨다면 입력만 부탁드립니다.")
+                    continue
+                if g["likely"] == "제출만 빠짐":
+                    body.append(f"▪ {g['zone']} {g['shift']} — {g.get('done', 0)}/{g['total']}건 체크하셨는데 제출이 안 들어왔습니다")
+                    body.append("   마지막에 [제출]만 한 번 눌러 주시면 됩니다.")
                     continue
                 body.append(f"▪ {g['zone']} {g['shift']} — {g['total']}건 예정인데 제출 0건")
                 if g["likely"] == "제출누락":

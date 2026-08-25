@@ -767,11 +767,23 @@ def shift_gaps(today: str, shift_key: str, url: str = DEFAULT_GAS_URL,
         stat[glabel] = (int(part.get(shift_key, 0) or 0),
                         int(part.get(shift_key + "Total", 0) or 0))
     any_done = any(dn > 0 for dn, tt in stat.values())
+    # ★체크는 했는데 제출을 안 한 조도 잡는다 (GM 지시 2026-08-25 "제출 안한조를 자동으로 알려줘").
+    #   종전에는 체크가 0건인 구역만 봤다 — 20/27 을 채워 놓고 제출을 안 한 조는 통과했고,
+    #   그날 GM 이 화면에서 직접 발견하셨다. 사람이 다 돌고 마지막 한 번을 안 누른 경우라
+    #   오히려 가장 아깝다. 조회 실패(None)면 이 판정을 건너뛴다 — 못 읽은 것을 안 한 것으로 만들지 않는다.
+    subs = shift_submits(today, url)
     out = []
     for glabel, (dn, tt) in stat.items():
-        if tt > 0 and dn == 0:
+        if tt <= 0:
+            continue
+        if dn == 0:
             out.append({"zone": glabel, "shift": label, "total": tt,
                         "likely": "제출누락" if any_done else "미시작"})
+            continue
+        gk = "m" if glabel == "남성구역" else "f"
+        if subs is not None and shift_key not in (subs.get(gk) or {}):
+            out.append({"zone": glabel, "shift": label, "total": tt, "done": dn,
+                        "likely": "제출만 빠짐"})
     return out
 
 
