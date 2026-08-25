@@ -158,11 +158,15 @@ ACCOUNTS = {
     # 공식=브랜드 블랙 잉크 #221F20 (brand_constants.BLACK_BG SSOT — 종이 위 프리미엄 펜
     # 느낌. HIGHLIGHT #ED5B3F(레드 계열)는 GM 피드백으로 폐기 — 브랜드 색 가이드 위반.
     # 에메랄드는 개인 전용이라 여전히 금지. 되그은 선은 같은 잉크의 반투명 톤(새 색상 아님).
+    # footer_mark = 판형 아래에 찍는 짧은 이름표. 개인 계정에 브랜드 워드마크를 찍으면
+    # 두 계정이 섞인다(GM 지적 2026-08-25) — 개인은 개인 계정 이름으로 찍는다.
     "official": {"logo_style": "full", "accent": BEIGE,
                  "marker": (BLACK, "rgba(34,31,32,0.55)"),
+                 "footer_mark": "WELLPERION",
                  "paper_whisper": "WELLPERION  ·  한남동"},
     "personal": {"logo_style": "symbol", "accent": EMERALD_ON_DARK,
                  "marker": (EMERALD_ON_LIGHT, EMERALD_ON_DARK),
+                 "footer_mark": "namuk.wellperion",
                  "paper_whisper": "namuk.wellperion  ·  한남동에서 천천히"},
 }
 
@@ -338,7 +342,7 @@ def _sunday_info_html(rows: list) -> str:
     return '<div class="sunday-info">' + "".join(out) + "</div>"
 
 
-def _sunday_four_html(slide: dict, w: int, h: int) -> str:
+def _sunday_four_html(slide: dict, w: int, h: int, cfg: dict | None = None) -> str:
     """네컷 판형 한 장 — 사진 4장을 스트립(booth) 또는 격자(grid)로 앉힌다.
 
     GM 확정 2026-08-25: 「어떤 하루」에 컨셉을 여러 벌 두고 접수할 때 고른다. 판형 하나에
@@ -352,6 +356,10 @@ def _sunday_four_html(slide: dict, w: int, h: int) -> str:
     meta = _esc(slide.get("meta", ""))          # 날짜 · 장소
     text = _esc(slide.get("text", ""))          # 그날 문장(격자 판형만 쓴다)
     tag = _esc(slide.get("tag", ""))
+    # 계정 분리 — 개인 계정에는 브랜드 워드마크를 찍지 않는다(GM 지적 2026-08-25).
+    cfg = cfg or ACCOUNTS["personal"]
+    mark = _esc(cfg.get("footer_mark", ""))
+    accent = cfg.get("accent", BEIGE)
 
     if slide.get("variant") == "strip4":
         cell_w, cell_h = 532, 230
@@ -365,12 +373,12 @@ def _sunday_four_html(slide: dict, w: int, h: int) -> str:
             'align-items:center;justify-content:center">'
             f'<div style="width:600px;background:{SUNDAY_DARK};padding:34px 34px 26px;'
             'display:flex;flex-direction:column;gap:12px">'
-            f'<div style="color:{BEIGE};font-size:20px;letter-spacing:.26em;padding-bottom:4px">{label}</div>'
+            f'<div style="color:{accent};font-size:20px;letter-spacing:.26em;padding-bottom:4px">{label}</div>'
             f'{cells}'
             '<div style="padding-top:16px;display:flex;justify-content:space-between;'
             'align-items:flex-end;color:#E8E3DA">'
             f'<div style="font-size:24px;letter-spacing:.06em">{meta}</div>'
-            f'<div style="font-size:18px;letter-spacing:.3em;color:#6E675E">WELLPERION</div>'
+            f'<div style="font-size:18px;letter-spacing:.12em;color:#6E675E">{mark}</div>'
             '</div></div></div>')
 
     # grid4 — 밝은 종이 바탕 + 2x2 + 그날 문장
@@ -390,8 +398,8 @@ def _sunday_four_html(slide: dict, w: int, h: int) -> str:
         f'<div style="margin-top:36px;font-size:44px;line-height:1.5">{text}</div>'
         '<div style="margin-top:auto;display:flex;justify-content:space-between;'
         'align-items:center;padding-top:26px;border-top:1px solid #D8D2C6">'
-        '<div style="font-size:22px;letter-spacing:.3em;color:#8A8377">WELLPERION</div>'
-        f'<div style="font-size:22px;color:{BEIGE}">{tag}</div></div></div>')
+        f'<div style="font-size:22px;letter-spacing:.12em;color:#8A8377">{mark}</div>'
+        f'<div style="font-size:22px;color:{accent}">{tag}</div></div></div>')
 
 
 def _sunday_body_html(slide: dict) -> str:
@@ -502,7 +510,7 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
         # 네컷 판형은 사진 자리를 통째로 쓴다 — 글자 자리(stage)는 비운다.
         if slide.get("photos"):
             return _fill(_load_template("sunday"), dict(
-                common, PHOTO_HTML=_sunday_four_html(slide, w, h),
+                common, PHOTO_HTML=_sunday_four_html(slide, w, h, cfg),
                 GRAD_HTML="", LABEL_HTML="", BAR_HTML="", TEXT=""))
         v = SUNDAY_VARIANTS[slide.get("variant", "card")]
         photo_html = ""
