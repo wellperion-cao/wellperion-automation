@@ -478,7 +478,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab active" onclick="switchTab('policy')">📋 주차관리부 규정</button>
   <button class="tab" onclick="switchTab('guide')">📘 가이드</button>
   <button class="tab" onclick="switchTab('manual')">📖 매뉴얼</button>
-  <button class="tab" onclick="switchTab('check')">🧹 주차점검</button>
+  <!-- 탭 이름 = '일일점검' (실무진 신고 2026-08-25 이경연 실장 "주차부 일일점검 체크 부분이 없다").
+       실측: 체크 항목 9개·제출 버튼 모두 정상 동작했고 PIN 게이트도 없었다. 못 찾으신 원인은 이름 불일치였다 —
+       안내문과 제출 버튼은 '일일 점검'인데 탭만 '주차점검'이라 그 이름을 찾다가 없다고 보신 것.
+       버튼(일일 점검 제출)과 같은 낱말로 맞춘다. -->
+  <button class="tab" onclick="switchTab('check')">🧹 일일점검</button>
   <button class="tab" onclick="switchTab('valet')">🚗 발렛 시스템</button>
   <button class="tab" onclick="switchTab('onb')">🎓 온보딩</button>
   <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
