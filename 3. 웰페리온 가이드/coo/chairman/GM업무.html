@@ -138,6 +138,15 @@
   .digest{display:none;white-space:pre-wrap;font-size:11.5px;line-height:1.6;background:#fafafa;
           border:1px solid var(--line);padding:10px 12px;margin:0 0 10px;max-height:260px;overflow:auto;}
   /* 내용 구조화 — 통짜로 쏟지 않고 소제목/불릿으로 끊는다 (GM 2026-08-06 "가독성 챙겨줘") */
+  /* 오늘 일정 띠 (2026-08-25) — 섹션이 아니라 머리띠다. 접히지 않고 항상 맨 위에 보인다. */
+  .today-sched{border:1px solid var(--line);border-left:3px solid var(--brass);background:var(--steam);
+               border-radius:4px;padding:9px 13px;margin:0 0 12px;font-size:14px;line-height:1.65;}
+  .today-sched b{color:var(--deep);font-weight:700;}
+  .today-sched .ts-row{display:flex;gap:9px;align-items:baseline;padding:2px 0;}
+  .today-sched .ts-time{color:var(--brass);font-weight:700;font-variant-numeric:tabular-nums;
+                        min-width:44px;flex:none;}
+  .today-sched .ts-who{color:var(--grey);font-size:13px;}
+  .today-sched .ts-none{color:var(--grey);}
   .nb{margin:9px 0 0;padding:11px 13px;border:1px solid var(--line);background:#FBFCFB;
       overflow-wrap:anywhere;word-break:break-word;max-height:40vh;overflow-y:auto;}
   .nb h4{font-size:12.5px;font-weight:800;color:var(--deep);margin:11px 0 5px;letter-spacing:-.01em;
@@ -234,6 +243,14 @@
          각 업무 목표에 이제 기한(due)이 아래 목록에 직접 찍힌다. -->
   </div>
 
+
+  <!-- ⓪ 오늘 일정 띠 (GM 지시 2026-08-25 "전사일정+GM업무는 일체화 되어있어야하고") —
+       전사일정과 GM업무가 텔레그램 「하루」 방 메시지에서는 이미 한 장으로 합쳐져 나가는데
+       (08:00 아침 브리핑) 화면끼리는 끊겨 있었다. 이 화면을 열면 전사일정을 따로 안 열어도
+       오늘 잡힌 것이 맨 위에 보인다.
+       원천 = 전사_일정.html 이 쓰는 그 GAS·그 액션 그대로(새 GAS·새 액션 0 · 약속 L01·L21).
+       판정은 '오늘자 표시'뿐이다 — 누가 담당인지 고르는 판정은 gm_checkin 한 곳에만 둔다. -->
+  <div id="todaySched" class="today-sched" hidden></div>
 
   <!-- ① 경영 보고건 — 회장님·대표님을 한 묶음으로(2026-08-06 GM: "둘이 비슷한 맥락이고 업무는 다 내가 본다").
        두 목록의 정본·판정 로직은 그대로다(회장님=_chairman_items.js / 대표님=업무 시트) — 화면에서만 한 블록으로 모은다. -->
@@ -818,6 +835,58 @@
     new MutationObserver(regroupReports).observe(elGrid, { childList: true });
 
   })();
+})();
+
+/* ── ⓪ 오늘 일정 띠 (GM 지시 2026-08-25) ────────────────────────────────────────
+   전사일정 GAS 를 그대로 읽어 오늘자만 맨 위에 띄운다. 기존 흐름과 섞이지 않게
+   독립 함수로 두고, 실패해도 이 화면의 다른 섹션에는 영향이 없다.
+   ▸'0건'과 '못 읽음'을 반드시 구분해 적는다 — 조용한 실패는 화면을 거짓말하게 만든다.
+   ▸시각이 없는 항목은 '종일'로 적고 뒤로 보낸다. 시각을 지어내지 않는다(약속 L23·L25). */
+(function () {
+  var SCHEDULE_GAS_URL = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec';
+  var box = document.getElementById('todaySched');
+  if (!box) return;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function show(html) { box.innerHTML = html; box.hidden = false; }
+
+  var today = todayStr();
+  fetch(SCHEDULE_GAS_URL + '?action=load_schedule&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+      if (!res || !res.ok || !res.data || !Array.isArray(res.data.items)) throw new Error('형식 불일치');
+      var rows = res.data.items.filter(function (it) {
+        return String((it && it.next_due) || '').slice(0, 10) === today;
+      });
+      rows.sort(function (a, b) {
+        var ta = String(a.time || '') || 'zz', tb = String(b.time || '') || 'zz';
+        return ta < tb ? -1 : ta > tb ? 1 : 0;
+      });
+      if (!rows.length) {
+        show('<b>오늘 일정</b> <span class="ts-none">— 전사일정에 오늘 잡힌 것은 없습니다.</span>');
+        return;
+      }
+      var body = rows.map(function (it) {
+        var t = String(it.time || '').trim() || '종일';
+        var who = String(it.assignee || '').trim();
+        return '<div class="ts-row"><span class="ts-time">' + esc(t) + '</span>' +
+               '<span>' + esc(it.name || '(제목 없음)') +
+               (who ? ' <span class="ts-who">· ' + esc(who) + '</span>' : '') + '</span></div>';
+      }).join('');
+      show('<b>오늘 일정 ' + rows.length + '건</b>' + body);
+    })
+    .catch(function (e) {
+      show('<b>오늘 일정</b> <span class="ts-none">— 전사일정을 불러오지 못했습니다(' + esc(e && e.message) + '). ' +
+           '0건이라는 뜻이 아닙니다 — 전사일정 화면에서 직접 확인해 주세요.</span>');
+    });
 })();
 </script>
 <script defer src="../../_assets/page_ping.js"></script>
