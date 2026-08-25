@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>주차장 상가 출입 안내 보드 제작 방식 비교 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>상가 출입 안내 보드 — 제작 방식 비교 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">주차장 상가 출입 안내 보드 — 제작 방식 비교</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부</b><br>
+      작성일 <b>2026. 08. 25.</b> · 문서번호 <b>WP-GM-260825-01</b><br>
+      대상 <b>지하주차장 102동 승강기 앞 안내 보드 1식</b> · 금액 <b>견적 전</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">보드 제작 방식을 정해 주십시오 — 아크릴 슬롯형으로 갈지, 다른 방식으로 갈지.</div>
+        <div class="d">설치 자체는 승인해 주셨습니다(2026-08-25). 남은 것은 재질 하나이며, 이것이 정해져야 업체에 규격서를 보낼 수 있습니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">입주사가 바뀔 때 누가 카드를 갈아 끼울지 정해 주십시오.</div>
+        <div class="d">교체형의 값어치는 여기서 갈립니다. 우리가 직접 갈면 비용 0원, 업체를 부르면 매번 출장비가 듭니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    금액 비교 불가 — 아직 어느 업체에도 견적을 넣지 않았습니다
+    <span>&nbsp;/ 아래 표의 값 칸은 <b>업계 통상 수준의 상대 비교</b>이며 실제 견적이 아닙니다. 방식을 정하신 뒤 같은 규격서로 3사 견적을 받아 다시 올리겠습니다.</span>
+  </div>
+
+  <!-- ③ 비교표 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:186px"><col><col><col><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">판단 항목</th>
+        <th>아크릴 슬롯형<span class="sub">시안이 만들어진 방식 · 카드만 교체</span></th>
+        <th>포맥스(PVC) 판<span class="sub">전면 인쇄 · 통판 교체</span></th>
+        <th>시트지 부착<span class="sub">벽·기둥에 직접 시공</span></th>
+        <th>금속 프레임 + 인쇄지<span class="sub">알루미늄 틀에 용지 삽입</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">비 용</td></tr>
+      <tr><td class="k">초기 제작비</td><td class="ctr warn">중간</td><td class="ctr good">낮음</td><td class="ctr good">가장 낮음</td><td class="ctr bad">가장 높음</td></tr>
+      <tr><td class="k">입주사 1곳 바뀔 때</td><td class="ctr good">카드 1장만 인쇄</td><td class="ctr bad">판 전체 재제작</td><td class="ctr bad">떼고 다시 시공</td><td class="ctr good">용지 1장만 인쇄</td></tr>
+      <tr><td class="k">우리가 직접 교체</td><td class="ctr good">가능 (끼우기)</td><td class="ctr bad">불가 (업체 시공)</td><td class="ctr bad">불가 (업체 시공)</td><td class="ctr good">가능 (틀 열기)</td></tr>
+      <tr class="sum"><td class="k">3년 총비용 방향</td><td class="ctr strong good">낮음 — 교체가 인쇄비뿐</td><td class="ctr strong bad">높음 — 바뀔 때마다 재제작</td><td class="ctr strong bad">높음 — 매번 시공비</td><td class="ctr strong warn">중간 — 초기가 크다</td></tr>
+
+      <tr class="grp"><td colspan="5">설 치 환 경 (지하주차장 · 차량 통행)</td></tr>
+      <tr><td class="k">습기·결로</td><td class="ctr good">강함</td><td class="ctr good">강함</td><td class="ctr bad">약함 — 들뜸·박리</td><td class="ctr good">강함</td></tr>
+      <tr><td class="k">긁힘·충격</td><td class="ctr warn">긁힘 남음</td><td class="ctr warn">눌림 자국</td><td class="ctr bad">찢김</td><td class="ctr good">가장 강함</td></tr>
+      <tr><td class="k">기대 수명</td><td class="ctr">5년 이상 <span class="est">(통상)</span></td><td class="ctr">3~5년 <span class="est">(통상)</span></td><td class="ctr bad">1~2년 <span class="est">(통상)</span></td><td class="ctr good">7년 이상 <span class="est">(통상)</span></td></tr>
+      <tr><td class="k">벽면 훼손</td><td class="ctr">브래킷 고정</td><td class="ctr">브래킷 고정</td><td class="ctr bad">제거 시 자국</td><td class="ctr">브래킷 고정</td></tr>
+
+      <tr class="grp"><td colspan="5">보 이 는 정 도</td></tr>
+      <tr><td class="k">글자 선명도</td><td class="ctr good">높음</td><td class="ctr good">높음</td><td class="ctr">보통</td><td class="ctr good">높음</td></tr>
+      <tr><td class="k">어두운 주차장에서</td><td class="ctr warn">표면 반사 있음</td><td class="ctr good">반사 적음</td><td class="ctr good">반사 적음</td><td class="ctr warn">표면 반사 있음</td></tr>
+      <tr><td class="k">고급스러움</td><td class="ctr good">있음</td><td class="ctr">보통</td><td class="ctr bad">낮음</td><td class="ctr good">가장 높음</td></tr>
+
+      <tr class="grp"><td colspan="5">검 증 상 태</td></tr>
+      <tr><td class="k">견적 확보</td><td class="ctr bad">없음</td><td class="ctr bad">없음</td><td class="ctr bad">없음</td><td class="ctr bad">없음</td></tr>
+      <tr><td class="k">시안 준비</td><td class="ctr good">완료 — A2 시안 있음</td><td class="ctr">같은 시안 전용 가능</td><td class="ctr">같은 시안 전용 가능</td><td class="ctr">같은 시안 전용 가능</td></tr>
+      <tr class="sum"><td class="k">종합</td><td class="ctr strong good">교체가 잦다면 유리</td><td class="ctr strong">한 번 만들고 안 바꿀 때</td><td class="ctr strong bad">임시·단기용</td><td class="ctr strong">오래 쓰고 격을 볼 때</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>짚어야 할 것</h3>
+      <ul>
+        <li class="r1">지하주차장은 습기·결로가 있는 자리라 <b>시트지는 1~2년이면 들뜹니다.</b> 값이 싸 보여도 다시 하게 됩니다.</li>
+        <li class="r1">입주사가 바뀌는 빈도가 이 결정의 핵심입니다. 자주 바뀌면 통판 방식은 매번 다시 만들어야 합니다.</li>
+        <li class="r2">아크릴은 표면 반사가 있어 어두운 주차장에서 각도에 따라 글자가 튑니다 — 무광 처리로 줄일 수 있습니다.</li>
+        <li class="r2">설치 위치는 아파트 공용부라 <b>아파트 측 협의가 선행</b>됩니다. 방식이 정해져도 위치 승인이 남습니다.</li>
+        <li class="r2">현재 어느 방식도 견적이 없습니다. 값은 방식 확정 후에야 실제 숫자로 올릴 수 있습니다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 순서</h3>
+      <ul class="ord">
+        <li class="n">대표님께서 제작 방식을 정하신다 (이 문서의 결정 01)</li>
+        <li class="n">점장님께 최종 시안을 공유하고 업장 표기·순서를 확정받는다</li>
+        <li class="n">확정 방식으로 <b>슬롯 규격서</b>를 만들어 3사에 같은 조건으로 견적을 요청한다</li>
+        <li class="n">아파트 관리사무소와 설치 위치·시공 시간을 협의한다</li>
+        <li class="n">견적·위치가 모이면 금액 포함 재보고 후 발주·설치한다</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>권고</h3>
+      <ul>
+        <li><b>아크릴 슬롯형을 권합니다.</b> 지금 시안이 그 방식으로 준비돼 있고, 지하 환경에서 5년 이상 버팁니다.</li>
+        <li>결정적인 이유는 <b>교체 비용</b>입니다. 1층 상가는 입주사가 바뀝니다 — 그때 카드 한 장만 인쇄하면 끝나는 구조가 3년을 놓고 보면 가장 쌉니다.</li>
+        <li>다만 <b>무광(안티글레어) 아크릴</b>로 요청해야 합니다. 일반 아크릴은 주차장 조명이 반사돼 글자가 안 읽힙니다.</li>
+        <li>격을 더 보시겠다면 금속 프레임이 낫습니다 — 초기 비용이 오르지만 교체 편의는 아크릴과 같습니다.</li>
+        <li>최종 선택은 대표님 결재 사항이며, 이 문서는 판단 재료까지입니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>표의 값 표기</b> — 이 문서에는 금액이 없습니다. 아직 견적을 받지 않았기 때문입니다. 표의 「낮음·중간·높음」은 같은 크기·같은 시안을 기준으로 한 <b>방식 간 상대 비교</b>이며, 실제 청구액은 크기·수량·시공 조건으로 달라집니다.</div>
+    <div><b>수명 표기</b> — 「통상」은 업계에서 일반적으로 말하는 기간이며 우리 현장에서 잰 값이 아닙니다(추정). 지하주차장의 습기·차량 통행량에 따라 짧아질 수 있습니다.</div>
+    <div><b>진행 상태</b> — 설치 자체는 대표님 승인 완료(2026-08-25). 시안 「상가출입안내_아크릴보드_A2」(PNG/PDF) 준비 완료, 점장님 의견(밝은 색상·큰 방향 표시) 반영됨. <b>차기 보고</b> — 방식 확정 후 3사 견적을 같은 규격서로 받아 금액 포함 재보고.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260813_CCTV교체_3사비교_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
