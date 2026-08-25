@@ -393,7 +393,14 @@ function appendRow(it, el){
     var evTxt=(it.evidence&&(""+it.evidence).trim())
       ? '<div class="rvendor"><a href="'+esc((""+it.evidence).trim())+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎 증빙 보기</a></div>' : "";
     var subTxt=isEvent?(cat.label+(repTxt?" · "+repTxt+" 반복":" · 1회")):(cat.label+' · '+it.cycle);
-    var tailTxt=isTbd?'<span style="color:var(--accent)">📅 클릭해 날짜 입력</span>':(isEvent?(it.note?esc(it.note):(it.assignee?esc(it.assignee):"—")):('최근 '+(it.last_done||"—")));
+    // 담당자는 note 가 있어도 항상 보인다 (GM 지시 2026-08-25 "담당자 설정할 수 있게 해줘").
+    // 종전엔 note 가 있으면 note 만 보여 줘, 설명을 적어 둔 건일수록 담당이 화면에서 사라졌다.
+    // 비어 있으면 「담당 미지정」을 눈에 띄게 남긴다 — 빈칸을 조용히 넘기지 않는다.
+    var whoTxt=isEvent
+      ? (it.assignee ? '<b>'+esc(it.assignee)+'</b>' : '<span style="color:var(--accent)">담당 미지정</span>')
+      : "";
+    var tailTxt=isTbd?'<span style="color:var(--accent)">📅 클릭해 날짜 입력</span>'
+      :(isEvent?(whoTxt+(it.note?' · '+esc(it.note):"")):('최근 '+(it.last_done||"—")));
     var editing=(it.id===inlineEditId);
     var r=document.createElement("div");r.className="row editable"+(editing?" editing-row":"")+(isTbd&&!editing?" tbd":"");
     r.setAttribute("data-eid",it.id);
