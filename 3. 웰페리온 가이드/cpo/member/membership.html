@@ -2777,15 +2777,24 @@ table.op-t td b{font-size:15px}
       </div>
     </div>
 
+    <!-- 강습 등록정보 5칸 — 확정종목(위 rpProgramSel)·등록일·횟수·시작일·종료일(멤버십은 숨김).
+         진행상태를 SUC로 바꿀 때 서버가 이 5칸을 필수로 요구한다(GM 지시 2026-08-25). -->
+    <div class="consult-field-label" id="regDateLabel" style="display:none">등록일</div>
+    <input id="regDateInput" type="date" class="rp-in" style="display:none;width:100%">
+
     <!-- 강습 전용 — 회수·유효기간(멤버십은 숨김). 2026-07-21 시포·GM. -->
     <div class="consult-field-label" id="regCountLabel" style="display:none">회수</div>
     <select id="regCountSel" style="display:none;width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit" onchange="_regValidityUpdate()"></select>
+
+    <div class="consult-field-label" id="regStartLabel" style="display:none">시작일</div>
+    <input id="regStartInput" type="date" class="rp-in" style="display:none;width:100%">
+
     <!-- 유효기간 — 규칙이 있으면 자동으로 채우고, 없거나 다르면 그 자리에서 고친다. GM 지시 2026-08-03
          ("강습 유효기간도 SUC 누르면 필요 항목값 기입할 수 있도록"). 전에는 읽기 전용 글자라
          규칙 미등재 종목(체조&트램폴린·뮤지컬팀·웰니스 등)은 '수동/해당없음'만 뜨고 빈 채로 저장됐다 — 배10266
-         "강습 유효기간이 등록 97%에서 빔"의 물리적 원인이 여기다. -->
+         "강습 유효기간이 등록 97%에서 빔"의 물리적 원인이 여기다. 저장칸명=종료일(SUC 필수가드 대상). -->
     <div id="regValidityRow" style="display:none">
-      <div class="consult-field-label">유효기간 (만료일)</div>
+      <div class="consult-field-label">종료일 (유효기간 만료일)</div>
       <input id="regExpireInput" type="date" class="rp-in" style="width:100%">
       <div id="regValidityText" style="font-size:11.5px;color:var(--dim);margin-top:5px;line-height:1.5">—</div>
     </div>
@@ -4628,8 +4637,10 @@ function _lessonFetchRegistry(lsType, from, to, cb){
 }
 // 배198: 등록원장에 등록일 칸 미존재 → 타임스탬프 폴백으로 클라이언트 구간 카운트.
 // GAS에 등록일 칸이 추가되면 이 헬퍼는 그대로 유지(등록일이 있으면 그쪽 우선).
+// 2026-08-25 배767 후속 — 문의 시트 SUC 행(lesson_inquiry_list, 필드=regDate/timestamp)도 같은 우선순위로
+//   지원(등록원장 raw dump 행의 한글 필드 r.등록일/r.타임스탬프와 공존, 서로 겹치지 않는 키라 안전).
 function _lessonRegDateStr(r) {
-  return String(r.등록일 || r.타임스탬프 || '').substring(0, 10);
+  return String(r.등록일 || r.regDate || r.타임스탬프 || r.timestamp || '').substring(0, 10);
 }
 
 // 강습 현황카드 "신규 등록 현황"(성인+유소년, 금일) — 위 _lessonFetchRegistry(기존 유틸, loadLessonDash·구 전환보드에서도
@@ -4660,15 +4671,15 @@ function loadLessonDash(t){
   body.innerHTML =
     '<div class="mdash-sec"><div class="mdash-sec-hd">① 이번달 성과</div>' +
       '<div id="lessonDashSecPerf_' + t + '" class="mdash-metrics cols2">' + _ld + '</div>' +
-      '<div class="mdash-caveat">문의=강습 문의 접수 실측(lesson_stats) · 등록=강습 등록 원장(lesson_registry_list) 클라이언트 구간 집계 — 등록일 칸 미존재 시 타임스탬프 폴백(배198 우회) · 지난달 델타=같은 일자까지 공정 비교 · 올해=1월~오늘 누적. 문의↔등록 코호트 미매칭으로 전환율 미표시.</div></div>' +
+      '<div class="mdash-caveat">문의=강습 문의 접수 실측(lesson_stats) · 등록=강습 문의 시트의 등록성공(SUC·단기SUC) 건(lesson_inquiry_list, 배767) — 기준일=등록일 칸(신설 2026-08-25, 없는 과거행은 접수일 폴백) · 지난달 델타=같은 일자까지 공정 비교 · 올해=1월~오늘 누적. 문의↔등록 코호트 미매칭으로 전환율 미표시.</div></div>' +
     '<div class="mdash-sec"><div class="mdash-sec-hd">② 채널 효율 (올해 누적)</div>' +
       '<div id="lessonDashSecChannel_' + t + '">' + _ld + '</div></div>' +
     '<div class="mdash-sec"><div class="mdash-sec-hd">③ 회원 구성 (수강 중)</div>' +
       '<div id="lessonDashSecMember_' + t + '">' + _ld + '</div></div>';
-  // ── §1 이번달·지난달·올해 문의(lesson_stats) + 등록(lesson_registry_list) ──
-  // 배198 우회: 등록원장에 등록일 칸이 아직 없어 GAS date 필터가 0을 반환 — YTD 전체를 1회 fetch해
-  // 클라이언트에서 _lessonRegDateStr(r)(등록일 || 타임스탬프)로 구간 카운트한다.
-  // GAS 등록일 칸 추가 후에도 동작은 보장됨(등록일이 있으면 그쪽 우선, 타임스탬프 무시).
+  // ── §1 이번달·지난달·올해 문의(lesson_stats) + 등록(lesson_inquiry_list, 배767) ──
+  // 2026-08-25 교체 — 강습 등록원장(lesson_registry_list)이 2026-07-20 이후 트리거 고장으로 8월분이 0건이라
+  // 못 쓴다(GM 신고). 문의 시트의 등록성공(SUC·단기SUC) 행으로 소스 교체 — 새 GAS 액션 없음, 기존 액션 재사용.
+  // 구간 카운트 기준일 = _lessonRegDateStr(r)(등록일 신설칸 우선, 없으면 접수일 폴백).
   var now = new Date();
   var today   = _mdashYmd(now);
   var mStart  = _mdashYmd(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -4682,12 +4693,12 @@ function loadLessonDash(t){
     var el = document.getElementById('lessonDashSecPerf_' + t); if (!el) return;
     var inqNow = res.stats ? res.stats.thisMonth : null;
     var inqYtd = res.stats ? res.stats.total : null;   // 백엔드 기본 scope=올해(연도 필터), 전체누적 아님
-    var allRows = (res.regAll && res.regAll.data) ? res.regAll.data : [];
-    var regNowN  = allRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=mStart && d<=today; }).length || null;
-    var regPrevN = allRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=lStart && d<=lEnd;  }).length || null;
-    var regYtdN  = allRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=yStart && d<=today; }).length || null;
+    var sucRows = res.regAll || [];
+    var regNowN  = sucRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=mStart && d<=today; }).length || null;
+    var regPrevN = sucRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=lStart && d<=lEnd;  }).length || null;
+    var regYtdN  = sucRows.filter(function(r){ var d=_lessonRegDateStr(r); return d>=yStart && d<=today; }).length || null;
     // 날짜 정보가 전혀 없으면 전체 count로 폴백 — 최소한 수강 규모라도 보여줌
-    if (!regNowN && !regYtdN && allRows.length) { regYtdN = allRows.length; }
+    if (!regNowN && !regYtdN && sucRows.length) { regYtdN = sucRows.length; }
     el.innerHTML =
       _mdashMetric('신규 문의', inqNow, null, inqYtd, false, false) +
       _mdashMetric('등록', regNowN, regPrevN, regYtdN, false, !!regPrevN);
@@ -4696,7 +4707,14 @@ function loadLessonDash(t){
   }
   fetch(GAS_URL + '?action=lesson_stats&type=' + encodeURIComponent(lsType))
     .then(function(r){ return r.json(); }).then(function(d){ res.stats = (d && d.ok) ? d : null; _perfReady(); }).catch(function(){ res.stats = null; _perfReady(); });
-  _lessonFetchRegistry(lsType, yStart, today, function(d){ res.regAll = d; _perfReady(); });
+  fetch(GAS_URL + '?action=lesson_inquiry_list&type=' + encodeURIComponent(lsType) + _wpKeyParam())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var rows = (d && d.ok && Array.isArray(d.data)) ? d.data : [];
+      res.regAll = rows.filter(function(r){ return r.status === 'SUC' || r.status === '단기SUC'; });
+      _perfReady();
+    })
+    .catch(function(){ res.regAll = []; _perfReady(); });
   // §3 회원 구성 — 독립 fetch(수강 중 headcount, roster 전체명단 재사용 없음)
   _lessonDashRenderMember(t, lsType);
 }
@@ -6233,6 +6251,20 @@ function lessonStatusChange(sel, t, rowIndex, sportKeyEnc) {
       var _pvCls = _lessonStatusClass(prevVal);
       if (_pvCls) sel.classList.add(_pvCls);
       try { showToast('LOSS 사유 입력창을 열지 못했습니다 — 상태를 되돌렸습니다. 다시 시도해 주세요', 'err'); } catch (_e) {}
+    }
+    return;
+  }
+  // ★신규 SUC 전환도 LOSS와 동일하게 지연 커밋(2026-08-25 GM 지시) — 서버가 등록정보 5칸(확정종목·등록일·
+  //   횟수·시작일·종료일)을 필수로 요구하므로, status만 먼저 커밋하면 가드에 막혀 상태만 SUC로 남고
+  //   나머지가 빈 채 굳는다. status+5칸을 등록종목 모달 저장(saveRegProgramModal) 시 한 번에 커밋한다.
+  if (newVal === 'SUC' && newVal !== prevVal) {
+    try { openLessonRegProgramModal(t, rowIndex, sportKey, true, prevVal, sel); }
+    catch (e) {
+      sel.value = prevVal;
+      if (stCls) sel.classList.remove(stCls);
+      var _pvCls2 = _lessonStatusClass(prevVal);
+      if (_pvCls2) sel.classList.add(_pvCls2);
+      try { showToast('등록정보 입력창을 열지 못했습니다 — 상태를 되돌렸습니다. 다시 시도해 주세요', 'err'); } catch (_e) {}
     }
     return;
   }
@@ -11066,6 +11098,11 @@ function _regProgramModalFill(options, current) {
   // 구분(개인레슨/단체레슨) — 강습 모드에서만 표시(멤버십=해당 없음). 2026-07-21 시포·GM.
   var _typeLabel = document.getElementById('regLessonTypeLabel');
   var _typeSel = document.getElementById('regLessonType');
+  // 등록일·시작일(2026-08-25) — 강습 모드에서만 표시(멤버십은 rpMemGrid 안의 rpRegDate/rpStartDate를 씀).
+  var _dateLabel = document.getElementById('regDateLabel');
+  var _dateInput = document.getElementById('regDateInput');
+  var _startLabel = document.getElementById('regStartLabel');
+  var _startInput = document.getElementById('regStartInput');
   // 멤버십 전용 회원 DB 칸(2026-08-03) — 강습 모드에서는 숨긴다.
   var _memGrid = document.getElementById('rpMemGrid');
   if (_memGrid) _memGrid.style.display = _isLessonMode ? 'none' : 'grid';
@@ -11075,6 +11112,10 @@ function _regProgramModalFill(options, current) {
     _validityRow.style.display = '';
     _typeLabel.style.display = '';
     _typeSel.style.display = '';
+    _dateLabel.style.display = '';
+    _dateInput.style.display = '';
+    _startLabel.style.display = '';
+    _startInput.style.display = '';
     _regFillCountOptions();
   } else {
     _countLabel.style.display = 'none';
@@ -11082,6 +11123,10 @@ function _regProgramModalFill(options, current) {
     _validityRow.style.display = 'none';
     _typeLabel.style.display = 'none';
     _typeSel.style.display = 'none';
+    _dateLabel.style.display = 'none';
+    _dateInput.style.display = 'none';
+    _startLabel.style.display = 'none';
+    _startInput.style.display = 'none';
   }
   document.getElementById('regProgramOverlay').classList.add('open');
 }
@@ -11169,21 +11214,37 @@ function openInquiryRegProgramModal(rowIndex) {
   _regProgramModalFill(PROGRAM_OPTIONS, r.regProgram || r.program);
 }
 // 강습 등록종목 모달 — 강습 진행상태를 SUC로 바꿀 때 발동(멤버십과 동일 UI, 저장=lesson_inquiry_update row-level).
-function openLessonRegProgramModal(t, rowIndex, sportKey) {
+// pendingStatusSave/prevStatus/sel(2026-08-25, LOSS 모달과 동일 패턴) — 신규 SUC 전환 시에만 동봉: status 저장을
+//   여기 모달 저장까지 미룬다(서버가 등록정보 5칸을 필수로 요구하므로, status만 먼저 커밋하면 가드에 막혀
+//   상태만 SUC로 남고 나머지가 빈 채 굳는다). 이미 SUC인데 종목만 미기록인 재촉발 케이스엔 비워 둔다.
+function openLessonRegProgramModal(t, rowIndex, sportKey, pendingStatusSave, prevStatus, sel) {
   var r = _lessonFindRow(t, rowIndex);
   if (!r) { showToast('강습 문의 정보를 찾을 수 없습니다', 'err'); return; }
   var st = _lessonState[t];
-  _regProgramModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid };
+  _regProgramModal = { mode: 'lesson', t: t, rowIndex: r.rowIndex, keyPhone: r.phone || '', rowKey: r.rowKey || '', name: r.name || '', type: (st && st.type) || '', gid: r.gid,
+    pendingStatusSave: !!pendingStatusSave, prevStatus: prevStatus || '', sel: sel || null };
   document.getElementById('rpMemberFixed').textContent = (r.name || '—') + (r.phone ? ' · ' + r.phone : '') + (sportKey ? ' · ' + sportKey : '');
   var _cur = String(r.regProgram || '').trim() || _lessonRosterKeyOf(sportKey) || '';
   _regProgramModalFill(Object.keys(LESSON_INSTRUCTOR_ROSTER), _cur);
-  // 회수·유효기간·구분 필드는 신규 모달 오픈 시 항상 초기화(이전 건 값 잔류 방지). 2026-07-21 시포·GM.
+  // 회수·유효기간·구분·등록일·시작일은 신규 모달 오픈 시 항상 초기화(이전 건 값 잔류 방지). 2026-07-21 시포·GM.
   document.getElementById('regCountSel').value = '';
   document.getElementById('regLessonType').value = '';
   document.getElementById('regExpireInput').value = '';   // 앞 건의 만료일이 남지 않게(2026-08-03)
+  var _t0 = new Date();
+  var _today0 = _t0.getFullYear() + '-' + String(_t0.getMonth() + 1).padStart(2, '0') + '-' + String(_t0.getDate()).padStart(2, '0');
+  document.getElementById('regDateInput').value = _today0;   // 등록일 기본값=오늘(2026-08-25)
+  document.getElementById('regStartInput').value = _today0;  // 시작일 기본값=오늘(2026-08-25) — 다르면 직접 고친다
   _regValidityUpdate();
 }
 function closeRegProgramModal() {
+  // SUC 신규전환 취소(2026-08-25, LOSS 모달과 동일 패턴) — status 저장을 미뤄둔 상태이므로 select 표시만
+  //   이전값으로 되돌린다(row·서버는 애초에 안 건드렸음 — lessonStatusChange가 커밋을 여기까지 미룸).
+  if (_regProgramModal && _regProgramModal.pendingStatusSave && _regProgramModal.mode === 'lesson' && _regProgramModal.sel) {
+    _regProgramModal.sel.classList.remove('st-consult', 'st-registered', 'st-hold', 'st-cancel', 'st-wait');
+    var _ps = _lessonStatusClass(_regProgramModal.prevStatus);
+    if (_ps) _regProgramModal.sel.classList.add(_ps);
+    _regProgramModal.sel.value = _regProgramModal.prevStatus;
+  }
   document.getElementById('regProgramOverlay').classList.remove('open');
   _regProgramModal = null;
 }
@@ -11191,19 +11252,32 @@ function saveRegProgramModal() {
   if (!_regProgramModal) return;
   var program = document.getElementById('rpProgramSel').value.trim();
   if (!program) { showToast('등록 종목을 선택해 주세요', 'err'); return; }
+  var _isLesson = (_regProgramModal.mode === 'lesson');
+  // 강습 등록정보 5칸 필수(GM 지시 2026-08-25) — 서버가 어차피 거부하니 화면에서 먼저 막고 우리말로 알린다.
+  var _regDateV = '', _regCountV = '', _regStartV = '', _regExpireV = '';
+  if (_isLesson) {
+    _regDateV   = document.getElementById('regDateInput').value.trim();
+    _regCountV  = document.getElementById('regCountSel').value.trim();
+    _regStartV  = document.getElementById('regStartInput').value.trim();
+    _regExpireV = document.getElementById('regExpireInput').value.trim();
+    var _missing = [];
+    if (!_regDateV)   _missing.push('등록일');
+    if (!_regCountV)  _missing.push('횟수');
+    if (!_regStartV)  _missing.push('시작일');
+    if (!_regExpireV) _missing.push('종료일');
+    if (_missing.length) { showToast(_missing.join('·') + ' 입력이 필요합니다 — 채운 뒤 다시 저장해 주세요', 'err'); return; }
+  }
   var rowIndex = _regProgramModal.rowIndex, keyPhone = _regProgramModal.keyPhone, rowKey = _regProgramModal.rowKey || '';
   var saveBtn = document.getElementById('rpSaveBtn'); saveBtn.disabled = true;
-  var _isLesson = (_regProgramModal.mode === 'lesson');
   var _payload = _isLesson
     ? { action: 'lesson_inquiry_update', type: _regProgramModal.type, rowIndex: rowIndex, keyPhone: keyPhone, rowKey: rowKey, sport: '', gid: _regProgramModal.gid, regProgram: program,
         // 강습 전용 — 구분(개인레슨/단체레슨). 백엔드 미배선 필드 — name-based payload라 무해(저장 배선은 별도 범위). 2026-07-21 시포·GM.
         lessonType: document.getElementById('regLessonType').value.trim(),
-        // 강습 전용 — 회수·유효기간(자동계산=명확 종목만, 그 외 수동/빈값). 2026-07-21 시포·GM.
-        regCount: document.getElementById('regCountSel').value.trim(),
-        // 유효기간 = 화면에 보이는 그 값 그대로 저장한다(GM 지시 2026-08-03).
-        //   전에는 저장 시점에 규칙으로 '다시' 계산해서 ⓐ사람이 고쳐도 반영이 안 되고
-        //   ⓑ규칙 미등재 종목·'기타' 회수는 무조건 빈값으로 나갔다(배10266).
-        regExpire: (function(){ var _e = document.getElementById('regExpireInput'); return _e ? String(_e.value || '').trim() : ''; })() }
+        // 강습 등록정보 5칸(2026-08-25) — 확정종목(program)·등록일·횟수·시작일·종료일. 서버 SUC 가드 대상.
+        regDate: _regDateV,
+        regCount: _regCountV,
+        startDate: _regStartV,
+        regExpire: _regExpireV }
     // 멤버십 — regProgram(등급, 문의 시트 표기 그대로) + 회원 DB 칸. activeProgram 은 조립된 시트 표준형이며,
     //   서버는 이 값이 있을 때만 유효회원에 쓴다(빈 껍데기 행 방지). GM 지시 2026-08-03.
     : (function(){
@@ -11219,13 +11293,16 @@ function saveRegProgramModal() {
                  memAge:       _v('rpAge'),
                  memLocker:    _v('rpLocker') };
       })();
+  // 신규 SUC 전환 지연커밋(2026-08-25, LOSS pendingStatusSave와 동일 패턴) — status+5칸을 여기서 한 번에 커밋.
+  var _wasPending = _isLesson && _regProgramModal.pendingStatusSave;
+  if (_wasPending) { _payload.status = 'SUC'; }
   var _t = _isLesson ? _regProgramModal.t : null;
   // ★서버 왕복 대기 제거(2026-07-23 GM) — LOSS 모달과 동일. 화면 먼저, 기록은 뒤에서.
   //   SUC 처리 직후 연달아 뜨는 모달이라 여기서 몇 초 멈추면 등록 작업 전체가 느리게 느껴진다.
   var _who = _regProgramModal.name || '';
   if (_isLesson) {
     var lr2 = _lessonFindRow(_t, rowIndex);
-    if (lr2) { lr2.regProgram = program; }
+    if (lr2) { lr2.regProgram = program; if (_wasPending) lr2.status = 'SUC'; }
     // 등록종목은 SUC 직후에 넣는다 → 그 회원은 등록 명단에 합류한다. 명단 캐시를 지워
     // [강습 회원 관리] 카드로 갔을 때 새 명단을 다시 받게 한다(안 지우면 옛 명단이 그대로 뜬다).
     if (_lessonState[_t]) _lessonState[_t].memLoaded = false;
@@ -11238,9 +11315,17 @@ function saveRegProgramModal() {
     label: '등록 종목', who: _who, overlay: { regProgram: program }
   });
   showToast('등록 종목 저장', 'ok');
+  _regProgramModal.pendingStatusSave = false;   // close가 되돌리기 로직을 타지 않도록(저장 성공 = 되돌리기 대상 아님)
   closeRegProgramModal();
   saveBtn.disabled = false;
-  if (_isLesson) { try { lessonRenderChips(_t); lessonRender(_t); } catch (e) {} }
+  if (_isLesson) {
+    try { lessonRenderChips(_t); lessonRender(_t); } catch (e) {}
+    if (_wasPending) {
+      // 상태 커밋이 여기서 처음 일어난 경우 — lessonStatusChange가 하던 버킷 갱신·이관 렌더를 여기서 대신 한다.
+      try { _lessonUpdateBucketCounts(_t); lessonLossRender(_t); lessonWaitRender(_t); } catch (e) {}
+      try { showToast('등록 처리 — 이 문의는 [강습 회원 관리]로 이동했습니다', 'ok'); } catch (e) {}
+    }
+  }
   else if (_tabLoaded.db) { renderDbTable(); }
 }
 

@@ -3094,7 +3094,8 @@ function _lessonReadRows_(gid) {
   var iSportMgmt = _findColExact_(hdr, [LESSON_SPORT_MGMT_COL]);  // 종목별관리(JSON) — 축7. 2026-07-08 시포·GM
   var iLossR  = _findCol_(hdr, ['LOSS사유', '미등록 사유', '미등록사유']);   // LOSS 사유(강습) — 실제 시트 칸='미등록 사유'(멤버십과 동일). 'LOSS사유' 칸은 미존재라 별칭 추가(불일치 수리). 2026-07-22 시포·GM.
   var iLossRN = _findCol_(hdr, ['LOSS사유메모']);
-  var iRegProgram = _findCol_(hdr, ['등록종목']);  // 등록(SUC) 시 실제 등록한 종목(강습) — 멤버십과 동일 체계. 2026-07-20 시포(GM요청).
+  var iRegProgram = _findCol_(hdr, ['확정종목', '등록종목']);  // 등록(SUC) 시 실제 등록한 종목(강습) — '확정종목' 신설(2026-08-25), 구 '등록종목'은 폐기칸(하위호환 폴백).
+  var iRegDate = _findCol_(hdr, ['등록일']);  // 강습 등록정보 5칸 신설(2026-08-25 GM 지시) — 등록일. 대시보드 집계 기준일로도 사용.
   var iLang  = _findCol_(hdr, ['Language']);  // 응답자 기재 언어(영문 탭 실측 헤더) — 영어 문의 뱃지 표시용. 2026-07-09 시포·GM
   // 영문 탭 행키 오프셋(_ROW_OFFSET_EN_) — 한글+영문 병합 시 rowIndex 충돌 방지(위 상수 주석 참고). 2026-07-09 시포·GM.
   var rowOffset = (gid === LESSON_GID_ADULT_EN || gid === LESSON_GID_YOUTH_EN) ? _ROW_OFFSET_EN_ : 0;
@@ -3135,6 +3136,7 @@ function _lessonReadRows_(gid) {
       lossReason:     iLossR  >= 0 ? String(row[iLossR]  || '') : '',   // LOSS 사유(강습 문의 퍼널). 2026-07-18 시토(GM요청) 대행.
       lossReasonNote: iLossRN >= 0 ? String(row[iLossRN] || '') : '',
       regProgram: iRegProgram >= 0 ? String(row[iRegProgram] || '') : '',   // 등록 종목(SUC 시 실제 등록한 종목, 강습). 2026-07-20 시포(GM요청).
+      regDate: iRegDate >= 0 ? _miToISO_(row[iRegDate]) : '',   // 등록일(신설 2026-08-25) — 대시보드 등록 집계 기준일(없으면 접수일 폴백).
       // 출처 물리 시트 gid + 기재 언어 — 영문 탭 병합 표시·저장 라우팅용(row.gid 그대로 되돌려 보내면 정확한 탭에 기록). 2026-07-09 시포·GM.
       gid: gid,
       lang: iLang >= 0 ? String(row[iLang] || '').trim() : '',
@@ -6418,8 +6420,8 @@ function _hasRealReply_(memo) {
       if (lrrMainSh) {
         var lrrMh = lrrMainSh.getRange(1, 1, 1, lrrMainSh.getLastColumn()).getValues()[0];
         var lrrPi = _findCol_(lrrMh, ['연락처', '전화', '휴대폰']);
-        var lrrCi = _findCol_(lrrMh, ['등록회수']);
-        var lrrEi = _findCol_(lrrMh, ['유효기간']);
+        var lrrCi = _findCol_(lrrMh, ['횟수', '등록회수']);  // 신칸 '횟수' 우선(2026-08-25), 구칸 '등록회수'는 과거행 폴백.
+        var lrrEi = _findCol_(lrrMh, ['종료일', '유효기간']);  // 신칸 '종료일' 우선, 구칸 '유효기간'은 과거행 폴백.
         // ★조인 확장(2026-07-23 GM: '정보가 너무 단출하다') — 팀시트는 종목·이름·전화·상태 4칸뿐이라
         //   문의 시트에 이미 있는 내용을 전화 매칭으로 더 붙인다. 새 시트·새 칸 0(읽기만).
         var lrrTi = _findCol_(lrrMh, ['타임스탬프', '문의일']);        // 문의일(등록 전 최초 접점)
@@ -6731,6 +6733,13 @@ function _hasRealReply_(memo) {
     if (luRow >= _ROW_OFFSET_INTAKE_) luRow -= _ROW_OFFSET_INTAKE_;   // 강습 신규문의(자체폼 유입, 배1037) 오프셋 우선 디코드(EN보다 큼)
     else if (luRow >= _ROW_OFFSET_EN_) luRow -= _ROW_OFFSET_EN_;      // 영문 탭 오프셋 디코드. 실제 물리 행으로 환원(시트 쓰기는 여기부터 물리 행 사용).
     var luHdr = _lessonEnsureCols_(luSh);
+    // ★강습 등록정보 5칸(확정종목·등록일·횟수·시작일·종료일) 신설(2026-08-25 GM 지시) — SUC 필수가드 대상.
+    //   기존 강습종목/등록회수/유효기간 칸은 그대로 둔다(삭제·이동 금지, 이 시트는 IMPORTRANGE 소스) — 새 칸에만 쓴다.
+    var _lrCiProgram = _miEnsureCol_(luSh, luHdr, '확정종목');
+    var _lrCiRegDate = _miEnsureCol_(luSh, luHdr, '등록일');
+    var _lrCiCount   = _miEnsureCol_(luSh, luHdr, '횟수');
+    var _lrCiStart   = _miEnsureCol_(luSh, luHdr, '시작일');
+    var _lrCiEnd     = _miEnsureCol_(luSh, luHdr, '종료일');
     var _luPhCi = _findCol_(luHdr, ['연락처', '전화', '휴대폰']);
     // ★★ 지문키(rowKey) 우선 경로(§4 R2) — 타임스탬프+연락처 조합. 매칭 1건=확정(아래 keyPhone 검증 스킵) /
     //   0건·2건+=거부(fail-closed). rowKey 미동봉(구클라)이거나 타임스탬프 칸 미탐지 시 기존 keyPhone 경로로 폴백. 2026-07-22 시포(오지목 근본수리).
@@ -6803,6 +6812,29 @@ function _hasRealReply_(memo) {
       if (!_lgLuNew) {
         return _json({ ok: false, error: 'loss-reason-required',
           detail: 'LOSS 로 바꾸려면 사유가 필요합니다 — 목록에서 LOSS 사유를 고른 뒤 다시 저장하세요' });
+      }
+    }
+    // ★강습 등록정보 서버 가드(2026-08-25 GM 지시) — SUC/단기SUC로 확정될 때 등록정보 5칸이 하나라도 비면
+    //   쓰기 전에 거부한다. LOSS 가드와 동일 원칙(주석 위 참고): 뒤에서 막으면 상태만 먼저 바뀌고
+    //   나머지가 빈 채 남는다. 최종값 = 이번에 보낸 값(body) 우선, 없으면 시트에 이미 있는 값.
+    if (String(body.status == null ? '' : body.status).trim() === 'SUC' || String(body.status == null ? '' : body.status).trim() === '단기SUC') {
+      var _lrFields = [
+        ['regProgram', _lrCiProgram, '종목'],
+        ['regDate',    _lrCiRegDate, '등록일'],
+        ['regCount',   _lrCiCount,   '횟수'],
+        ['startDate',  _lrCiStart,   '시작일'],
+        ['regExpire',  _lrCiEnd,     '종료일']
+      ];
+      var _lrMissing = [];
+      _lrFields.forEach(function(f) {
+        var _cur = String(luSh.getRange(luRow, f[1] + 1).getValue() || '').trim();
+        var _new = (body[f[0]] !== undefined) ? String(body[f[0]] || '').trim() : _cur;
+        if (!_new) _lrMissing.push(f[2]);
+      });
+      if (_lrMissing.length) {
+        return _json({ ok: false, error: 'lesson-reg-fields-required',
+          detail: '등록으로 바꾸려면 종목·등록일·횟수·시작일·종료일이 필요합니다 — 화면에서 채운 뒤 다시 저장해 주세요',
+          missing: _lrMissing });
       }
     }
     // ★종목별 독립 관리(축7, GM 2026-07-08 확정) 라우팅: body.sport(sportKey) 동봉 시 종목별 경로,
@@ -6904,11 +6936,15 @@ function _hasRealReply_(memo) {
       _luSet(['방문상태', '방문'], body.visited);
       _luSet(['LOSS사유', '미등록 사유', '미등록사유'], body.lossReason);   // LOSS 사유 → 실제 칸 '미등록 사유'(LOSS사유 칸 미존재 불일치 수리). 2026-07-22 시포·GM.
       // ★LOSS사유메모 폐기(2026-07-20 GM 확정) — "LOSS사유메모도 필요없어". 화면에서도 메모칸을 없앴다.
-      // 등록종목 칸 폐지→강습종목 덮어씀(2026-07-21 시포·GM 3단계) — 별도 '등록종목' 칸 대신 실제 강습종목 칸을
-      // SUC 시 등록값으로 덮어쓴다(멤버십 regProgram→관심프로그램 retarget과 동일 취지, 칸 자동생성 없음).
-      _luSet(['성인 강습 종목', 'WSC 강습 종목', '강습 종목', '종목'], body.regProgram);
-      if (body.regCount   !== undefined) _luSet(['등록회수'], body.regCount);      // 강습 등록 회수. 2026-07-21 시포·GM.
-      if (body.regExpire  !== undefined) _luSet(['유효기간'], body.regExpire);     // 강습 유효기간(만료일). 자동계산=명확종목만. 2026-07-21 시포·GM.
+      // ★강습 등록정보 5칸 신설(2026-08-25 GM 지시, 배경: 등록해도 화면엔 'SUC' 글자만 남는다는 팀장 신고).
+      //   종전엔 등록값을 실제 강습종목(관심종목) 칸에 덮어써 원래 문의 시 관심종목이 사라졌다 — 이제 별도
+      //   '확정종목' 칸에 쓴다(관심종목 칸은 더 이상 건드리지 않음). 등록회수·유효기간(구 칸)도 손대지 않는다
+      //   (삭제·이동 금지) — 새 칸(횟수·종료일)에만 쓴다.
+      if (body.regProgram !== undefined) _luSet(['확정종목'], body.regProgram);
+      if (body.regDate    !== undefined) _luSet(['등록일'],   body.regDate);
+      if (body.regCount   !== undefined) _luSet(['횟수'],     body.regCount);
+      if (body.startDate  !== undefined) _luSet(['시작일'],   body.startDate);
+      if (body.regExpire  !== undefined) _luSet(['종료일'],   body.regExpire);
       // ── 연락이력(가변) — 축2/축4: body.contacts(JSON 문자열/배열) 수신 시 저장. 미전송이면 무영향(기존 필드만 갱신).
       //    상담메모는 위 _luSet으로 그대로 유지(비파괴·원복 안전) — 신·구 컬럼 병존. 2026-07-08 시포·GM.
       var _luHistPrevCount = 0;
