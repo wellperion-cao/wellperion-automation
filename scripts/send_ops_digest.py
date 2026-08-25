@@ -557,9 +557,15 @@ QUEUE_PATH = ROOT / "status" / "_queue.json"
 RELAY_OPEN_STATUSES = {"PENDING", "IN_PROGRESS"}
 RELAY_TITLE_CAP = 34        # 스냅샷 길이 상한(카톡 한 줄) — 화면표시 상한은 ASKS_TITLE_CAP
 RELAY_HEARTBEAT_ID = "clevel-queue-human-relay"  # 지난 회차 목록 보관 = 상설 하트비트 1파일
-RELAY_STALE_DAYS = 7  # ★2026-08-13 근본수정(배592) — 내용 안 바뀐 채 이만큼 묵으면 재알림.
-#   그 전엔 task_id 키가 한 번 스냅샷에 들어가면 내용이 바뀌어도 다시는 '새 업무'가
-#   안 됐다(배364·379 실측). 짧게 잡으면 실무진 신뢰를 깎으니 주간 주기로 둔다.
+RELAY_STALE_DAYS = 1  # 내용 안 바뀐 채 이만큼 묵으면 재알림 = 회신이 올 때까지 매일 다시 싣는다.
+#   ★2026-08-25 GM 방침으로 7일 → 1일. GM 원문: "그냥 계속 푸시하면 안되는거야? 그리고
+#   답변 오면 질문 삭제하고, 업무체크or완료 처리하면 될 것 같은데." 주간 주기에서는 회신이
+#   안 오면 다음 알림까지 일주일이 비어 사실상 답을 못 받고 배만 열린 채 남았다.
+#   ▸압박 표기는 여전히 금지다(§4-2-2) — 문구는 그대로 다시 실릴 뿐 'N일째'·'재요청' 같은
+#     말은 붙지 않는다. 답이 와서 항목이 빠지면 그 줄만 사라지고, 배가 닫히면 목록에서 빠진다.
+#   ▸ASKS_SHOW_N(한 통 5건)이 여전히 상한이라 매일 나가도 한 통 길이는 그대로다.
+#   ▸그 전엔 task_id 키가 한 번 스냅샷에 들어가면 내용이 바뀌어도 다시는 '새 업무'가
+#   안 됐다(배364·379 실측 · 2026-08-13 배592 에서 stale 재알림 도입).
 # 실무진이 받는 글에는 누가 보내는지가 드러나야 한다(unassigned_nudge.AI_SIGNOFF 와 같은 형식).
 # 전달 주체는 웰리 — GM 원문 "각기 담당자 이름 적어서 웰리가 전달".
 # 2026-08-21 GM 확정 — "AI 총괄 웰리"가 아니라 그냥 "AI 웰리". 직함을 길게 붙이지 않는다.
@@ -629,9 +635,16 @@ def relay_routes() -> "list[tuple[str, dict]]":
     #   지적("기다리는 라인을 안 만들 수는 없나")의 실제 원인이 여기다.
     #   ▸담당자는 약속 L24 대로 운영부 장(이경연 실장) 한 사람 — 시설부 소장님께 여쭐 건은
     #     전달문 본문에 성함을 적는다(★중간관리자 방에 실장·소장·나우열M 이 함께 있다).
-    #   ▸시모(GM 직접 담당)·웰리(두 방에 직접 쓴다 · L24)는 넣지 않는다 — 중복 발신이 된다.
+    #   ▸시모(GM 직접 담당)는 넣지 않는다 — 담당이 GM 이라 사람 방으로 나갈 것이 없다.
     contacts.setdefault("cto", "이경연 실장")
     contacts.setdefault("coo", "이경연 실장")
+    # ★2026-08-25 GM 방침 — 웰리(ceo) 배도 이 표에 넣는다. GM 원문: "질문에 꼭 답을 해야해?
+    #   그냥 계속 푸시하면 안되는거야? 그리고 답변 오면 질문 삭제하고, 업무체크or완료 처리하면
+    #   될 것 같은데." 종전엔 웰리가 여기 없어 배 626·725·763 처럼 전달문을 채워 둔 배가
+    #   `clevel not in contacts` 에서 통째로 걸러졌고, 매번 웰리가 손으로 보내야 했다.
+    #   ▸중복 발신 걱정(옛 주석의 근거)은 반대로 뒤집혔다 — 자동으로 나가면 웰리가 손으로
+    #     보낼 이유가 없어진다. 손 발신을 멈추는 것이 짝 조치다(웰리 배로 전달).
+    contacts.setdefault("ceo", "이경연 실장")
     return [(RELAY_ROOM, contacts)]
 
 
@@ -699,8 +712,54 @@ def _has_staff_message(ship: dict) -> bool:
     응급 조치가 빈 값 대신 "None" 이라는 글자를 남겨, 다음 회차에 실무진 방으로
     「• None · 이경연 실장」 이 그대로 나갈 상태였다. 사람 눈에 뜻이 없는 값은 없는 값으로 친다.
     """
-    text = str(ship.get("staff_message") or "").strip()
+    text = _resolve_staff_message(ship).strip()
     return bool(text) and text.strip(".…").lower() not in _EMPTY_STAFF_MESSAGE
+
+
+SCHEDULE_SSOT_PATH = ROOT / "status" / "schedule_ssot.json"
+
+
+def _schedule_blank_names(dept: str) -> "list[str]":
+    """전사일정 SSOT 에서 실시일(last_done)이 아직 빈 정기점검 이름들.
+
+    이벤트(type='이벤트')는 제외한다 — 한 번 하고 끝나는 건은 '아직 못 받은 실시일'이
+    아니다. '해당없음'으로 이미 판정된 줄도 뺀다(물을 것이 없다)."""
+    try:
+        data = json.loads(SCHEDULE_SSOT_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log(f"[relay] 전사일정 읽기 실패 — 동적 전달문 생략: {exc}")
+        return []
+    return [str(x.get("name") or "").strip()
+            for x in data.get("items", [])
+            if str(x.get("type")) == "정기점검"
+            and (not dept or str(x.get("dept")) == dept)
+            and str(x.get("applies") or "") != "해당없음"
+            and not str(x.get("last_done") or "").strip()]
+
+
+def _resolve_staff_message(ship: dict) -> str:
+    """실제로 실을 전달문. staff_message_query 가 있으면 발송 시점에 원천에서 다시 만든다.
+
+    ★2026-08-25 실사고 — 배626(법정·정기점검 실시일)의 목록을 사람이 손으로 유지하다가,
+    이미 답을 받아 전사일정에 채워진 5건을 소장님께 다시 물었다. 사람이 목록을 지우는 일
+    자체를 없앤다: 채워진 줄은 다음 발송에서 자동으로 빠지고, 다 채워지면 전달문이 비어
+    그 배는 목록에서 사라진다(약속 L01 — 목록의 진실은 전사일정 한 곳).
+    """
+    q = ship.get("staff_message_query")
+    if not isinstance(q, dict) or q.get("kind") != "schedule_blank":
+        return str(ship.get("staff_message") or "")
+    names = _schedule_blank_names(str(q.get("dept") or ""))
+    if not names:
+        return ""   # 빈칸이 다 채워졌다 — 더 물을 것이 없다
+    who = str(q.get("to") or "").strip()
+    head = f"{who} — " if who else ""
+    lines = [f"{head}점검 실시일 중 아직 못 받은 것은 {len(names)}가지입니다."
+             " 아시는 것부터 한 줄씩 주시면 저희가 전사일정에 채웁니다."]
+    lines += [f"{i}) {n} — 최근 실시일" for i, n in enumerate(names, 1)]
+    tail = str(q.get("tail") or "").strip()
+    if tail:
+        lines.append(tail)
+    return "\n".join(lines)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -723,6 +782,7 @@ ASKS_SHOW_N = 5          # 한 통 최대 건수 — 18건은 한 번에 못 본
 ASKS_TITLE_CAP = 50
 ASKS_HOW_CAP = 60
 _ROLE_TAG_RE = re.compile(r"^\[[^\]]*\]\s*")  # "[웰페리온 AI 웰리] " 같은 발신 태그
+_GREETING_RE = re.compile(r"^(답변\s*)?(감사|고맙|안녕|수고)")  # 인사·감사만 있는 줄
 
 
 def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
@@ -731,8 +791,11 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
     한 마디로 답해 달라는 기본 문구를 쓴다. 배 note 를 통째로 붙이지 않는다(GM 지적)."""
     text = _ROLE_TAG_RE.sub("", str(staff_message or "").strip())
     body_lines = [l.strip() for l in text.splitlines() if l.strip()]
-    ask = body_lines[0] if body_lines else text
-    how = next((l for l in body_lines[1:] if l.startswith("📎")), "")
+    # ★인사·감사만 있는 첫 줄은 건너뛴다(2026-08-26 실측 — 배784 가 「답변 감사합니다.」
+    #   한 줄로 목록에 실려 무슨 건인지 알 수 없었다). 그 줄만으로는 확인할 것이 안 보인다.
+    idx = next((i for i, l in enumerate(body_lines) if not _GREETING_RE.match(l)), 0)
+    ask = body_lines[idx] if body_lines else text
+    how = next((l for l in body_lines[idx + 1:] if l.startswith("📎")), "")
     if not how:
         how = f"{who}님께 말씀해 주시거나 톡으로 한 마디만 답해 주시면 됩니다."
     return _cap_line(ask, ASKS_TITLE_CAP), _cap_line(how, ASKS_HOW_CAP)
@@ -839,7 +902,7 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
 
     if _is_legacy_snapshot(prev_items):
         today = date.today().isoformat()
-        current = {_relay_key(s): {"line": _cap_line(str(s["staff_message"]).strip().splitlines()[0]),
+        current = {_relay_key(s): {"line": _cap_line(_resolve_staff_message(s).strip().splitlines()[0]),
                                     "last_sent": today} for s in ships}
         return "", current  # 옛 키 형식 — 비교 건너뛰고 새 키로 스냅샷만 다시 찍는다(첫 회차)
 
@@ -852,7 +915,7 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     current = {}
     for s in ships:
         k = _relay_key(s)
-        line = _cap_line(str(s["staff_message"]).strip().splitlines()[0])
+        line = _cap_line(_resolve_staff_message(s).strip().splitlines()[0])
         if k not in prev_lines or prev_lines[k] != line:
             new_ships.append(s)
             current[k] = {"line": line, "last_sent": today}
@@ -873,7 +936,7 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     items = []
     for s in new_ships + stale_ships:
         who = contacts[s["clevel"]]
-        ask, how = _split_ask_how(s["staff_message"], who)
+        ask, how = _split_ask_how(_resolve_staff_message(s), who)
         items.append({"date": str(s.get("enqueued_at", ""))[:10], "who": who, "ask": ask, "how": how})
     return items, current
 
