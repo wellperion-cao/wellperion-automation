@@ -8986,7 +8986,11 @@ function _hasRealReply_(memo) {
     //   _regUpsert_는 이미 성공했고 멱등이므로 재시도가 안전하다.
     var _mauErr = null;
     try {
-      var _mauR = _memberActiveUpsert_(raName, raPhone, raProg, raDate, raMonths);
+      // 나이도 함께 넣는다(GM 지시 2026-08-25 "나이 누락건이 꽤 많네").
+      //   화면에서 직접 등록한 회원은 나이 칸이 늘 비어 있었다 — 이 경로가 나이를 안 받아서다.
+      //   유효회원 upsert 는 이미 opts.age 를 쓸 줄 안다(칸 배선 있음). 값을 안 보내면 종전 그대로.
+      var _mauR = _memberActiveUpsert_(raName, raPhone, raProg, raDate, raMonths,
+                                       { age: String(body.age || '').trim() });
       if (_mauR && _mauR.ok === false) _mauErr = _mauR.error || 'activeUpsert 거부';
     } catch (e) { _mauErr = String(e); }
     // 등록 추가 알림 → '문의 알림' 방(전환 3경로와 정합). override 누락 시 개인 OWNER방으로 새던 버그 수정 — 직접·법인 등록건도 문의알림방에 통보. 2026-07-06 시토·GM.
