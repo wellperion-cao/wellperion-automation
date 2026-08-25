@@ -13847,14 +13847,79 @@ var WriteBuffer = (function(){
     scheduleFlush(delay);
   }
 
+  /* ★재시도가 왜 안 먹었나 — 근본 (GM 지적 2026-08-25 "재시도 자체가 왜 뜨는지, 왜 이 건은
+     재시도해도 결과가 같은지 그 문제를 잡아야 하는 거 아냐").
+     행을 찾는 주소(rowKey)는 「등록일자|전화|이름」 지문이다. 그 세 칸이 바로 실무진이 화면에서
+     고치는 칸이라, 고치는 순간 화면·큐가 들고 있던 주소가 낡고 서버가 rowkey-not-found 로 거부한다.
+     그런데 큐에 담긴 요청은 그 **낡은 주소를 그대로 들고** 다시 갔다 — 새로고침을 해도 큐 항목의
+     주소는 안 바뀌므로 몇 번을 눌러도 같은 거부였다. 이게 실장님이 겪은 "재시도해도 안 됨"이다.
+     ▸그래서 재시도 전에 주소를 다시 매긴다. 지금 목록을 받아 같은 사람(전화·이름)의 현재 주소를
+       찾아 넣고 보낸다 — 새 함수·새 서버 액션 0, 저장 확인(read-back)이 이미 쓰는 세 함수를
+       그대로 재사용한다(_verifyListKeyOf · _verifyFetchList · 매칭은 아래 전용 함수).
+     ▸주소를 다시 매겨도 못 푸는 것 = 전화가 겹치거나(동일 연락처 여러 명) 그 사람이 목록에서
+       사라진 경우다. 그건 사람이 데이터를 봐야 하는 진짜 문제라 화면에 남긴다(오지목 금지 · INC-020). */
+  function _rekeyFindRow(rows, item) {
+    var ph = String((item.payload && item.payload.keyPhone) || item.phoneKey || '').replace(/[^0-9]/g, '');
+    if (!ph) return null;
+    var hits = rows.filter(function(r){
+      var cand = r.phone || r['휴대폰 번호'] || r['휴대폰'] || '';
+      return String(cand).replace(/[^0-9]/g, '') === ph;
+    });
+    if (hits.length > 1 && item.who) {
+      var nm = String(item.who).replace(/\s+/g, '');
+      var byName = hits.filter(function(r){
+        var cand = r['회원명'] || r.name || r['성함'] || r['이름'] || '';
+        return String(cand).replace(/\s+/g, '') === nm;
+      });
+      if (byName.length) hits = byName;
+    }
+    return hits.length === 1 ? hits[0] : null;   // 여럿이면 확정 못 함 — 남의 행을 덮지 않는다
+  }
+
+  function _rekeyFailed() {
+    var targets = failedItems().filter(function(it){ return it.parkedHard && it.payload; });
+    if (!targets.length) return Promise.resolve(0);
+    var groups = {};
+    targets.forEach(function(it){
+      var k = _verifyListKeyOf(it);
+      if (k) (groups[k] = groups[k] || []).push(it);
+    });
+    var keys = Object.keys(groups);
+    if (!keys.length) return Promise.resolve(0);
+    var fixed = 0;
+    return Promise.all(keys.map(function(k){
+      // 낡은 rowIndex 로 좁혀 받으면 엉뚱한 행을 볼 수 있다 — 재매기기는 항상 전체 목록을 본다.
+      return _verifyFetchList(k, []).then(function(rows){
+        if (!rows || !rows.length) return;
+        groups[k].forEach(function(it){
+          var r = _rekeyFindRow(rows, it);
+          if (!r) return;
+          if (r.rowKey) it.payload.rowKey = r.rowKey; else delete it.payload.rowKey;
+          if (r.rowIndex) it.payload.rowIndex = r.rowIndex;
+          it.parked = false; it.parkedHard = false; it.attempts = 0;
+          it.nextTry = 0; it.inflight = false; it.rekeyTried = false;
+          fixed++;
+        });
+      }).catch(function(){});
+    })).then(function(){
+      _save(); renderChip();
+      if (fixed) scheduleFlush(0);
+      return fixed;
+    });
+  }
+
   function forceRetry() {
-    // parkedHard(rowkey-not-found 등 결정적 거부)는 재시도해도 결과 동일 — _load()와 동일 제외 패턴(배1143 · 2026-08-13).
+    // parkedHard(rowkey-not-found 등 결정적 거부)는 같은 주소로 다시 보내면 결과가 같다 — 여기선 건너뛰고,
+    // 되살릴 게 없을 때 아래에서 주소를 다시 매겨 재시도한다(_load()와 동일 제외 패턴 · 배1143 2026-08-13).
     var revived = 0;
     queue.forEach(function(it){ if (!it.parkedHard) { it.parked = false; it.attempts = 0; it.nextTry = 0; it.inflight = false; revived++; } });
     _save(); renderChip(); scheduleFlush(0);
-    // 되살릴 게 하나도 없으면 버튼이 아무 일도 안 한 것처럼 보인다 — 실무진은 몇 번이고 다시 누른다
-    // (2026-08-22 이경연 실장 신고 "재시도했는데 더 이상 안 되네"가 정확히 이 상태였다). 말해 준다.
-    if (!revived) showToast('이 건은 다시 보내도 결과가 같습니다 — [실패 표시 지우기]를 눌러 정리해 주세요.', 'err');
+    if (revived) return;
+    showToast('대상을 다시 찾는 중…', '');
+    _rekeyFailed().then(function(fixed){
+      if (fixed) showToast('대상을 다시 찾아 ' + fixed + '건 저장을 다시 보냅니다', 'ok');
+      else showToast('대상을 찾지 못했습니다 — 목록을 새로고침해 값이 맞는지 보시고, 그래도 남으면 [실패 표시 지우기]를 눌러 주세요.', 'err');
+    });
   }
 
   // 실패로 멈춘 저장 요청을 버린다(2026-08-12 · 위 renderChip 주석 참조). 시트 값은 건드리지 않는다 —
