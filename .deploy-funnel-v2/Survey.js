@@ -6163,6 +6163,11 @@ function _hasRealReply_(memo) {
     var _cwN = parseInt(_cwCache.get(_cwKey) || '0', 10);
     if (_cwN >= 20) return _json({ ok: true, skipped: 'rate-limited' });   // 시간당 20줄까지
     _cwCache.put(_cwKey, String(_cwN + 1), 3600);
+    // 텔레그램 알림은 그 PC 하루 한 번만 (2026-08-25 GM — "계속 이렇게 오는데?").
+    //   시트 기록은 건마다 남긴다(그게 원장이다). 알림은 '이 PC 에 밀린 게 있다'는 신호라 하루 한 번이면 족하다.
+    var _cwDayKey = 'cwf_day_' + _cwId;
+    var _cwFirstToday = !_cwCache.get(_cwDayKey);
+    if (_cwFirstToday) _cwCache.put(_cwDayKey, '1', 21600);   // CacheService 상한 6시간
     var _cwCut = function (v, n) { return String(v == null ? '' : v).slice(0, n); };
     _memberLog_([[new Date(), 'PC ' + _cwId, _cwCut(body.who, 40),
                   _logMaskPhone_(_cwCut(body.phone, 20)),
@@ -6174,10 +6179,11 @@ function _hasRealReply_(memo) {
     // ★반드시 업무보고방으로 (배209 와 같은 사고 재발방지 · 2026-08-25 GM 지적).
     //   이건 우리가 고치라고 보는 내부 신호지 실무진이 읽을 글이 아니다. 기본 방으로 보내면
     //   실무진 알림방에 영문 오류코드가 그대로 떠서 놀라게 만든다 — 실제로 그렇게 샜다.
-    if (_cwN === 0) {
+    if (_cwFirstToday) {
       try {
-        _notifyTelegram('⚠️ 저장 실패(시트로 못 감) — PC ' + _cwId
-          + ' · ' + _cwCut(body.who, 20) + ' · 사유: ' + _cwCut(body.reason, 60),
+        _notifyTelegram('⚠️ 저장 못 간 건이 있습니다 — PC ' + _cwId
+          + ' · ' + _cwCut(body.who, 20) + ' · ' + _cwCut(body.reason, 60)
+          + '\n(이 PC 는 오늘 한 번만 알립니다 · 건별 기록은 회원변경이력 참조)',
           TELEGRAM_REPORT_CHAT_ID);
       } catch (e) {}
     }

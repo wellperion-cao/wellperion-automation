@@ -13790,7 +13790,10 @@ var WriteBuffer = (function(){
           // ★2026-07-30 웰리 — 서버가 준 실패 사유를 버리지 않는다.
           //   전에는 여기서 data.error 를 통째로 버려서, 시트 보호 거부·칸 미발견 같은 진짜 이유가
           //   화면엔 그냥 "동기화 실패"로만 뭉개졌다(원인을 아무도 못 봄).
-          _fail(item, data && data.error);
+          // ★서버가 우리말 설명(detail)을 같이 주면 그쪽을 쓴다 (2026-08-25 GM 지적).
+          //   코드(error)만 쓰면 화면에 'contacts-would-shrink' 같은 영문이 그대로 떴다 — 서버는
+          //   이미 "연락 기록이 지워질 뻔해 저장을 멈췄습니다…"를 함께 보내고 있었는데 버리고 있었다.
+          _fail(item, (data && (data.detail || data.error)) || '');
         }
         _save(); renderChip(); scheduleNext();
       })
@@ -13813,6 +13816,7 @@ var WriteBuffer = (function(){
     'row-key-unverified':        '연락처가 비어 있어 대상을 확인할 수 없습니다 — 연락처를 채운 뒤 저장해 주세요',
     'duplicate-phone-ambiguous': '같은 연락처가 여러 건입니다 — 새로고침해 대상을 확인해 주세요',
     'loss-reason-required':      'LOSS로 바꾸려면 사유가 필요합니다 — 사유를 고른 뒤 다시 저장해 주세요',
+    'contacts-would-shrink':     '연락 기록이 지워질 뻔해 저장을 멈췄습니다 — 새로고침한 뒤 다시 저장해 주세요',
     'locked':                    '다른 저장이 진행 중이었습니다 — 잠시 뒤 [재시도]를 눌러 주세요',
     'bad-token':                 '권한 확인이 안 됐습니다 — 알려주시면 확인하겠습니다',
     '시트 없음':                 '저장할 시트를 못 찾았습니다 — 알려주시면 확인하겠습니다',
