@@ -4513,7 +4513,7 @@ function mpRender(planData, monthKey, monthData){
   var badgeEl=document.getElementById('mpStatusBadge');
   if(badgeEl) badgeEl.innerHTML=monthData.month_status?mpStatusBadgeHtml(monthData.month_status):'';
   mpRenderReachHeader(planData, monthData);
-  var objectives=(monthData.objectives||[]).filter(function(o){ return (o.dept||'').indexOf(MP_DEPT)>=0; });
+  var objectives=(monthData.objectives||[]).filter(function(o){ return (o.dept||'').indexOf(MP_DEPT)>=0 && String(o.title||'').indexOf('(GM 직접)')===-1; });
   if(!objectives.length){
     cardsEl.innerHTML='<div style="color:var(--dim);font-size:13px;padding:12px 0;">이번 달 '+mpEsc(MP_DEPT)+' 핵심과제가 없습니다.</div>';
     return;
