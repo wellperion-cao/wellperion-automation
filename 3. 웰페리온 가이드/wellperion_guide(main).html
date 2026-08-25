@@ -648,7 +648,9 @@
           <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:9px 10px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:84px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">접수 · 이번달</div>
             <div id="kpiVocNewMonth" style="font-size:27px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">—</div>
-            <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적 </span><span id="kpiVocNew" style="font-size:14.5px;font-weight:700;color:var(--orange,#e6944e);">—</span></div>
+            <!-- kpiVocNew 는 누적이 아니라 '지금 상태가 접수인 것'(=아직 아무도 안 잡은 건)이다.
+                 라벨을 '누적'으로 달았더니 이번달 46 · 누적 31 이 되어 앞뒤가 안 맞았다(2026-08-25 실측). -->
+            <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">미처리 </span><span id="kpiVocNew" style="font-size:14.5px;font-weight:700;color:var(--orange,#e6944e);">—</span></div>
           </div>
           <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:9px 10px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:84px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">처리중</div>
