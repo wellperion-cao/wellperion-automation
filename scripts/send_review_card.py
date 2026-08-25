@@ -331,11 +331,19 @@ def _do_send_card(token, item, item_id, title, channel, folder, sig,
     if publish_at:
         try:
             _d = datetime.fromisoformat(publish_at)
-            pub_label = f"승인하시면 {_d.year}년 {_d.month}월 {_d.day}일 오전 {_d.hour}:{_d.minute:02d} 에 올라갑니다"
+            # 오전/오후를 값에서 뽑는다 — 종전엔 '오전'이 박혀 있어 저녁 예약이
+            # '오전 18:00' 으로 나갔다(2026-08-25 발견).
+            _ampm, _h12 = ("오전", _d.hour) if _d.hour < 12 else ("오후", _d.hour - 12 or 12)
+            if _h12 == 0:
+                _h12 = 12
+            pub_label = (f"승인하시면 {_d.year}년 {_d.month}월 {_d.day}일 "
+                         f"{_ampm} {_h12}:{_d.minute:02d} 에 올라갑니다")
         except ValueError:
             pub_label = f"승인하시면 {publish_at} 에 올라갑니다"
     else:
-        pub_label = "승인하시는 즉시 올라갑니다"
+        # 발행 감시기가 15분마다 도는 배치에 얹혀 있다(2026-08-25) — 승인과 실제 게시
+        # 사이가 최대 15분이다. '즉시'라고만 적으면 GM 이 안 올라간 줄 알고 다시 보신다.
+        pub_label = "승인하시면 15분 안에 올라갑니다"
 
     # 슬라이드 안 잔글씨는 몽타주에서 안 읽힌다(8컷을 한 장에 줄여 붙이기 때문).
     # 그래서 카드에 인쇄될 값을 글자로도 적는다 — 승인 전에 읽고 판단하시라고.
