@@ -26,6 +26,8 @@
   button:disabled{opacity:.5;cursor:not-allowed}
   input,textarea,select{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#1f1c1a;color:var(--ink)}
   input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  /* resize:vertical만 허용 — 가로는 폭:100% 규칙과 충돌해 레이아웃이 깨지므로 세로만 사용자가 더 늘릴 수 있게(2026-08-25 매니저 지적, 적는 칸 확대). */
+  textarea{resize:vertical}
   label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin:12px 0 6px}
 
   /* ===== 게이트 오버레이 ===== */
@@ -36,7 +38,10 @@
   .modal p.sub{color:var(--dim);font-size:12.5px;margin-bottom:16px}
   .modal-actions{margin-top:18px}
   .modal-actions button{width:100%;padding:12px}
-  .modal.wide{max-width:480px;max-height:88vh;overflow:auto}
+  /* 성찰 작성 팝업 확대(2026-08-25 매니저 지적 "한번에 안 보여") — 480→680px, 입력칸(textarea)도 아래에서
+     3~4줄→7~9줄로 확대. .ov가 padding:16px인 flex 오버레이라 width:100% 기반 max-width는 좁은 화면에서
+     자동으로 뷰포트 폭에 맞게 줄어든다(모바일 오버플로 없음, 별도 미디어쿼리 불요 — 기존 구조 그대로). */
+  .modal.wide{max-width:680px;max-height:90vh;overflow:auto}
 
   /* ===== 직원 선택 화면 ===== */
   .emp-empty{background:var(--card);border:1px solid var(--card-line);border-radius:14px;padding:34px 20px;text-align:center;color:var(--card-dim);font-size:13.5px}
@@ -112,11 +117,11 @@
     <h3 id="wf_title">성찰 작성</h3>
     <p class="sub" id="wf_sub"></p>
     <div class="wf-q" id="wf_q1_label">1) …</div>
-    <textarea id="wf_q1" rows="3" placeholder="자유롭게 적어주세요"></textarea>
+    <textarea id="wf_q1" rows="8" placeholder="자유롭게 적어주세요"></textarea>
     <div class="wf-q" id="wf_q2_label">2) …</div>
-    <textarea id="wf_q2" rows="3" placeholder="자유롭게 적어주세요"></textarea>
+    <textarea id="wf_q2" rows="8" placeholder="자유롭게 적어주세요"></textarea>
     <div class="wf-q">자유 소감 (선택)</div>
-    <textarea id="wf_free" rows="2" placeholder="이번 주를 돌아보며 자유롭게 남겨보세요"></textarea>
+    <textarea id="wf_free" rows="4" placeholder="이번 주를 돌아보며 자유롭게 남겨보세요"></textarea>
     <div class="lock-note">⚠ 저장 후에는 수정할 수 없습니다. 내용을 확인한 뒤 저장해 주세요.</div>
     <div class="wf-msg" id="wf_msg"></div>
     <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px">

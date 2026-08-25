@@ -2654,7 +2654,7 @@ function obInjectModals(){
   var d=document.createElement("div");
   d.id="obModalHost";
   d.innerHTML='<div class="modal-bg" id="obStartModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:440px;width:92%"><h3 style="margin:0 0 10px">신규 입사자 온보딩 시작</h3><div class="ob-fld"><label>성명 *</label><input id="obsName"></div><div class="ob-fld"><label>부서</label><select id="obsDept"><option value="">선택하세요</option><option>운영부</option><option>지원부</option><option>시설부</option><option>주차관리</option><option>강습부</option><option>경영지원부</option></select></div><div class="ob-fld"><label>멘토(버디)</label><input id="obsMentor" placeholder="예: 이경연"></div><div class="ob-fld"><label>입사일 *</label><input id="obsJoin" type="date"></div><div class="ob-fld"><label>담당</label><input id="obsOwner" value="관리자+HR"></div><div id="obsMsg" style="font-size:12px;margin:6px 0;color:#c0392b"></div><div style="text-align:right;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obStartModal\')">취소</button> <button class="ob-btn primary" id="obsSubmit" onclick="obSubmitStart()">90일 체크인 생성</button></div></div></div>'+
-    '<div class="modal-bg" id="obReflectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:580px;width:94%;max-height:88vh;overflow:auto"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px"><h3 id="obrTitle" style="margin:0">🪞 성찰 기록</h3><button class="ob-btn sec no-print" onclick="obReflectPrint()">🖨 인쇄</button></div><div id="obrSub" style="font-size:12px;color:#888;margin-bottom:14px"></div><div id="obrBody"></div><div class="no-print" style="text-align:right;margin-top:14px"><button class="ob-btn sec" onclick="obCloseModal(\'obReflectModal\')">닫기</button></div></div></div>'+
+    '<div class="modal-bg" id="obReflectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:680px;width:94%;max-height:90vh;overflow:auto"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px"><h3 id="obrTitle" style="margin:0">🪞 성찰 기록</h3><button class="ob-btn sec no-print" onclick="obReflectPrint()">🖨 인쇄</button></div><div id="obrSub" style="font-size:12px;color:#888;margin-bottom:14px"></div><div id="obrBody"></div><div class="no-print" style="text-align:right;margin-top:14px"><button class="ob-btn sec" onclick="obCloseModal(\'obReflectModal\')">닫기</button></div></div></div>'+
     '<div class="modal-bg" id="obCheckModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center"><div style="background:#fff;padding:20px;border-radius:10px;max-width:480px;width:92%;max-height:88vh;overflow:auto"><h3 id="obcTitle" style="margin:0 0 2px">체크인</h3><div id="obcSub" style="font-size:12px;color:#888;margin-bottom:8px"></div><div id="obcLockBadge" style="display:none;font-size:12px;font-weight:700;background:#eef6f0;color:#1a7f5a;border:1px solid #bfe6cf;border-radius:6px;padding:6px 10px;margin-bottom:8px">✅ 완료된 체크인 · 잠금(수정 불가)</div><div id="obcReflectBox" style="display:none;font-size:12.5px;line-height:1.6;background:#faf9f6;border:1px solid #efece4;border-radius:6px;padding:10px 12px;margin-bottom:8px;color:#3a3833"></div><div id="obcEditFields"><div id="obcGuide" style="font-size:11.5px;background:#fbf7ef;border:1px solid #ecdfc4;border-radius:6px;padding:8px 10px;margin-bottom:8px;color:#6b5a32;display:none"></div><div id="obcChecklist" style="margin-bottom:8px"></div><div style="font-size:10.5px;color:#888;margin-bottom:3px">적응도 1~5점 — 1 매우미흡 · 3 보통 · 5 매우우수 (업무/관계/문화)</div><div style="display:flex;gap:8px"><div class="ob-fld" style="flex:1"><label>업무</label><select id="obcWork">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>관계</label><select id="obcRel">'+obScoreOpts()+'</select></div><div class="ob-fld" style="flex:1"><label>문화</label><select id="obcCul">'+obScoreOpts()+'</select></div></div><div class="ob-fld"><label>어려운 점 / 이슈</label><textarea id="obcIssue" rows="2"></textarea></div><div class="ob-fld"><label>조치 / 후속</label><textarea id="obcAction" rows="2"></textarea></div><div class="ob-fld"><label><input type="checkbox" id="obcRisk" style="width:auto"> 이탈위험으로 표시</label></div><div class="ob-fld"><label>담당</label><input id="obcOwner" value="관리자+HR"></div><div id="obcPrev" style="font-size:11px;color:#888;background:#f7f7f7;padding:6px;border-radius:6px;display:none"></div><div id="obcVerdictWrap" class="ob-fld" style="display:none"><label>수습 판정 (90일 · 인사담당자 최종 결정)</label><select id="obcVerdict"><option value="">-</option><option>수습 통과</option><option>조건부 통과</option><option>수습 1개월 연장</option><option>부적합</option></select></div></div><div id="obcMsg" style="font-size:12px;margin:6px 0"></div><div style="display:flex;justify-content:space-between;margin-top:10px"><button class="ob-btn sec" onclick="obCloseModal(\'obCheckModal\')">취소</button><button class="ob-btn primary" id="obcSubmit" onclick="obSubmitCheck()">완료 기록</button></div></div></div>'+
     /* [추가 2026-08-12 A-5] 온보딩 부서 게이트 확인 팝업 — 입사확정 자동호출·수동모달 두 진입점 공용.
        부서=운영부 AND 고용형태=정규직일 때만 "생성" 버튼 노출, 그 외는 차단 안내(onboGateMsg). */
@@ -2849,10 +2849,10 @@ function obCheck(row){
     __editFields.style.display="none";
     __lockBadge.style.display="none";
     __submitBtn.style.display="none";
+    var __wk=obReflectWeek_(r["체크 항목"]);
+    var __qs=WEEK_QUESTIONS_MINI[__wk]||["",""];
     if(__isDone){
       var __note=String(r["비고"]||"");
-      var __wk=obReflectWeek_(r["체크 항목"]);
-      var __qs=WEEK_QUESTIONS_MINI[__wk]||["",""];
       var __pf2=obParseReflectNote_(__note);
       var __html="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+" — 작성 완료</b>"
         +"<div style='margin-top:8px'><b>Q1. "+esc(__qs[0])+"</b><div style='white-space:pre-wrap;margin-top:2px'>"+esc(__pf2.a1)+"</div></div>"
@@ -2860,7 +2860,11 @@ function obCheck(row){
         +(__pf2.free?"<div style='margin-top:8px'><b>소감</b><div style='white-space:pre-wrap;margin-top:2px'>"+esc(__pf2.free)+"</div></div>":"");
       __reflectBox.innerHTML=__html;
     } else {
-      __reflectBox.innerHTML="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+"</b><div style='margin-top:6px;color:#b08d57'>본인 작성 대기 — 신입 직원 본인이 온보딩 성찰 페이지에서 직접 작성합니다. 관리자가 대신 작성할 수 없습니다.</div>";
+      // 2026-08-25 매니저 지시 — 제출 전에도 이번 주차 질문 문항을 관리자가 미리 볼 수 있게 표시(답변 없음).
+      __reflectBox.innerHTML="<b>🪞 "+esc(r["체크 항목"]||"주간 성찰")+"</b>"
+        +"<div style='margin-top:8px'><b>Q1. "+esc(__qs[0])+"</b></div>"
+        +"<div style='margin-top:6px'><b>Q2. "+esc(__qs[1])+"</b></div>"
+        +"<div style='margin-top:8px;color:#b08d57'>본인 작성 대기 — 신입 직원 본인이 온보딩 성찰 페이지에서 직접 작성합니다. 관리자가 대신 작성할 수 없습니다.</div>";
     }
     __reflectBox.style.display="block";
   } else {
@@ -2985,8 +2989,11 @@ function obReflectView(name){
         +(pf.free?'<div class="orc-qa"><div class="orc-q">소감</div><div class="orc-a">'+esc(pf.free)+'</div></div>':"")
         +'</div>';
     } else {
+      // 2026-08-25 매니저 지시 — 제출 전에도 "이번 주차엔 무엇을 묻는지" 관리자가 볼 수 있게 질문만 미리 표시(답변 칸은 없음).
       html+='<div class="ob-reflect-card pending"><div class="orc-top"><b>'+esc(label)+'</b><span class="orc-badge pending">⏳ 대기 · 기한 '+esc(due)+'</span></div>'
-        +'<div class="orc-empty">본인 미작성</div></div>';
+        +'<div class="orc-qa"><div class="orc-q">Q1. '+esc(qs[0])+'</div></div>'
+        +'<div class="orc-qa"><div class="orc-q">Q2. '+esc(qs[1])+'</div></div>'
+        +'<div class="orc-empty">본인 미작성 — 위 질문에 아직 답하지 않았습니다.</div></div>';
     }
   }
   if(!html) html='<div class="orc-empty" style="padding:26px 0;text-align:center">성찰 기록이 없습니다.</div>';
