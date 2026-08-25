@@ -1129,11 +1129,25 @@
         return fallback;
       }
       function curYM(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2); }
-      function countRows(rows, tsCol) {
+      // 지운 중복 건은 세지 않는다 (2026-08-25 GM 지적 — 홈 숫자가 화면보다 많았다).
+      //   화면 목록(member_inquiry_list)은 진행현황이 '중복(삭제)'인 행을 빼고 보여주는데, 홈은 시트를
+      //   그대로 읽어 그 행까지 셌다. 실측 그날: 홈 731 / 화면 727 · 이번달 76 / 73 — 차이 4건이 전부
+      //   지운 중복이었다. 물리 삭제를 안 하는 설계(INC-020)라 시트에는 계속 남는다 → 읽는 쪽이 빼야 한다.
+      function stColOf(rows) {
+        var h = rows && rows[0];
+        if (!h) return -1;
+        for (var c = 0; c < h.length; c++) {
+          var v = String(h[c] || '').replace(/\s/g, '');
+          if (v.indexOf('진행현황') >= 0 || v.indexOf('진행상황') >= 0) return c;
+        }
+        return -1;
+      }
+      function countRows(rows, tsCol, stCol) {
         var yStart = yearStart(), ym = curYM(), total = 0, month = 0;
         for (var i = 1; i < rows.length; i++) {
           var r = rows[i];
           if (!r || r.length <= tsCol) continue;
+          if (stCol >= 0 && r.length > stCol && String(r[stCol] || '').indexOf('중복(삭제)') >= 0) continue;
           var ds = parseDs(r[tsCol]);
           if (!ds) continue;
           if (ds >= yStart) total++;
@@ -1150,7 +1164,7 @@
       Promise.all([p1]).then(function(results){
         var koRows = parseCSV(results[0]);
         // 한국어 탭은 A열'날짜'+B열'타임스탬프'가 별도로 존재 → '타임스탬프' 우선 매칭('날짜'는 뒤 후보).
-        var ko = countRows(koRows, tsColOf(koRows, ['타임스탬프', '접수일', '날짜'], 1));
+        var ko = countRows(koRows, tsColOf(koRows, ['타임스탬프', '접수일', '날짜'], 1), stColOf(koRows));
         set('kpiMiInqTotal', ko.total.toLocaleString()); // 올해 누적
         set('kpiMiInqMonth', ko.month); // 이번달
       }).catch(function(){ /* "—" 유지 */ });
