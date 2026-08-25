@@ -13489,14 +13489,16 @@ var WriteBuffer = (function(){
     if (failed.length > 0) {
       chip.className = 'sync-chip failed show';
       var names = failed.map(function(it){ return (it.who || '') + (it.label ? '·' + it.label : ''); }).filter(Boolean).slice(0, 4).join(', ');
-      // ★버리기(2026-08-12 GM 신고 "한성일님 검색하면 저장실패 뭐가 계속 뜨네") — 대상 행을 못 찾아
+      // ★실패 표시 지우기(2026-08-12 GM 신고 "한성일님 검색하면 저장실패 뭐가 계속 뜨네") — 대상 행을 못 찾아
+      //   ▸버튼 이름은 원래 '버리기'였는데 2026-08-25 GM 지적으로 바꿨다("데이터가 버려지는 줄 알고
+      //     오해할 수도 있을 것 같아"). 실무진이 회원 정보가 지워지는 것으로 읽으면 눌러야 할 때 못 누른다.
       //   park 된 건(parkedHard)은 재시도해도 결과가 같아서, 버리는 통로가 없으면 실패 칩이 영영 안 사라진다.
       //   실무진은 이미 화면에서 손으로 고쳐 놨는데 실패 표시만 남아 "아직 안 됐나" 하고 다시 만지게 된다.
       //   버리는 것은 '보내지 못한 저장 요청'이지 시트 값이 아니다 — 그래서 확인 한 번 받고 지운다.
       var _lastErrs = failed.map(function(it){ return it.lastError; }).filter(Boolean).slice(0, 2).join(' / ');
       msg.innerHTML = '동기화 실패 ' + failed.length + '건' +
         '<button class="sc-retry" onclick="WriteBuffer.forceRetry()">재시도</button>' +
-        '<button class="sc-retry" onclick="WriteBuffer.discardFailed()">버리기</button>' +
+        '<button class="sc-retry" onclick="WriteBuffer.discardFailed()">실패 표시 지우기</button>' +
         (names ? '<span class="sc-detail"> — ' + esc(names) + '</span>' : '') +
         (_lastErrs ? '<span class="sc-detail"> (' + esc(_lastErrs) + ')</span>' : '');
       chip.title = '시트 동기화 실패(재시도 상한 초과). 재시도해도 같은 실패가 반복되면 [버리기]로 지우세요 — 화면에서 직접 고친 값은 그대로 남습니다. 미동기분은 새로고침해도 보존됩니다.';
@@ -13847,8 +13849,12 @@ var WriteBuffer = (function(){
 
   function forceRetry() {
     // parkedHard(rowkey-not-found 등 결정적 거부)는 재시도해도 결과 동일 — _load()와 동일 제외 패턴(배1143 · 2026-08-13).
-    queue.forEach(function(it){ if (!it.parkedHard) { it.parked = false; it.attempts = 0; it.nextTry = 0; it.inflight = false; } });
+    var revived = 0;
+    queue.forEach(function(it){ if (!it.parkedHard) { it.parked = false; it.attempts = 0; it.nextTry = 0; it.inflight = false; revived++; } });
     _save(); renderChip(); scheduleFlush(0);
+    // 되살릴 게 하나도 없으면 버튼이 아무 일도 안 한 것처럼 보인다 — 실무진은 몇 번이고 다시 누른다
+    // (2026-08-22 이경연 실장 신고 "재시도했는데 더 이상 안 되네"가 정확히 이 상태였다). 말해 준다.
+    if (!revived) showToast('이 건은 다시 보내도 결과가 같습니다 — [실패 표시 지우기]를 눌러 정리해 주세요.', 'err');
   }
 
   // 실패로 멈춘 저장 요청을 버린다(2026-08-12 · 위 renderChip 주석 참조). 시트 값은 건드리지 않는다 —
@@ -13857,11 +13863,12 @@ var WriteBuffer = (function(){
     var failed = failedItems();
     if (!failed.length) return;
     var who = failed.map(function(it){ return (it.who || '') + (it.label ? '·' + it.label : ''); }).filter(Boolean).join(', ');
-    if (!confirm('보내지 못한 저장 요청 ' + failed.length + '건을 버립니다.\n' + (who ? who + '\n' : '') +
-                 '\n시트에 저장된 값은 지워지지 않습니다. 화면에서 직접 고치신 값도 그대로 남습니다.\n계속할까요?')) return;
+    if (!confirm('화면에 남은 실패 표시 ' + failed.length + '건을 지웁니다.\n' + (who ? who + '\n' : '') +
+                 '\n회원 정보는 지워지지 않습니다 — 시트에 저장된 값도, 화면에서 직접 고치신 값도 그대로 남습니다.\n' +
+                 '사라지는 것은 보내지 못한 저장 요청과 그 실패 표시뿐입니다.\n계속할까요?')) return;
     queue = queue.filter(function(it){ return !it.parked; });
     _save(); renderChip();
-    showToast('보내지 못한 저장 요청 ' + failed.length + '건 버림', 'ok');
+    showToast('실패 표시 ' + failed.length + '건 지움 (회원 정보는 그대로)', 'ok');
   }
 
   /* ── 저장 확인(read-back) 본체 — 2026-07-28 GM 지시. 상단 verifyBatches 주석 참고.
