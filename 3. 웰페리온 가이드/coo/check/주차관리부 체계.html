@@ -470,7 +470,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <!-- 탭 순서 = A3 인쇄 목록 순서(가이드라인=규정+가이드 → 매뉴얼 → 온보딩 → 응대·비품·청결은 해당 탭 안). 부서현황·일정·거래업체는 뒤쪽 관리 묶음. -->
   <button class="tab active" onclick="switchTab('policy')">📋 주차관리부 규정</button>
   <button class="tab" onclick="switchTab('guide')">📘 가이드</button>
-  <button class="tab" onclick="switchTab('manual')">📖 매뉴얼·점검</button>
+  <button class="tab" onclick="switchTab('manual')">📖 매뉴얼</button>
+  <button class="tab" onclick="switchTab('check')">🧹 주차점검</button>
   <button class="tab" onclick="switchTab('onb')">🎓 온보딩</button>
   <button class="tab" onclick="switchTab('valet')">🚗 발렛 시스템</button>
   <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
@@ -718,42 +719,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
 
-  <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검 · 일일 8항목 제출형 배선 GM승인 2026-08-18 a안 배672 —
-       지원부·시설부와 동일 점검 GAS 재사용(dept=parking, 신규 백엔드·시트·예약작업 없음). 주간 4항목은 이번 범위 밖 · 인쇄 전용 유지.) ── -->
-  <div class="manual-section" style="margin-top:16px;" id="parkChecklistSec">
-    <div class="manual-header" onclick="togManual(this)">
-      <h3>🧹 주차장 청결·점검 체크리스트</h3><span class="arrow">&#9654;</span>
-    </div>
-    <div class="manual-body">
-      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
-        일일 8항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 4항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
-      </p>
-      <div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;">
-        <div class="progress-bar" style="flex:1;"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
-        <span id="parkingProgressText" style="font-size:12px;color:var(--dim);white-space:nowrap;">오늘 0/8</span>
-        <button type="button" class="util-btn print-btn" style="padding:3px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button>
-      </div>
-      <table class="schedule-table">
-        <colgroup><col style="width:64px;"><col><col style="width:56px;"></colgroup>
-        <thead><tr><th>주기</th><th>점검 항목</th><th>체크</th></tr></thead>
-        <tbody id="parkingDailyCheckBody"></tbody>
-        <tbody>
-          <tr><td rowspan="5">주간</td><td>소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>비상구 유도등 점등·피난통로 적치물·비상벨</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>발렛 동선·안전표지 점검</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>손소독제·마스크 재고 확인 — 모자라면 접수처에 남겨 주세요</td><td style="text-align:center;">☐</td></tr>
-          <tr><td>계절 대비(여름 배수·겨울 제설)</td><td style="text-align:center;">☐</td></tr>
-        </tbody>
-      </table>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">
-        <input type="text" id="parkingInspector" placeholder="점검자 이름" style="flex:1;min-width:120px;max-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
-        <button type="button" class="submit-btn primary" style="flex:none;max-width:160px;padding:9px 18px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
-        <span id="parkingSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
-      </div>
-      <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.<br><b style="color:var(--accent);">건강</b> — 열이 나거나 기침이 있으면 근무를 빼고 바로 알려 주세요.</p>
-    </div>
-  </div>
-
   <!-- ── 🧾 주차 결제 영수증 취소 절차 (직원 내부용 · GM 지시 2026-07-27) ──
        ★계정 정보·거래취소 비밀번호는 여기 적지 않는다. 계정은 나우열 매니저 이메일로 개별 수신하고,
          6자리 취소 비밀번호는 담당자가 직접 설정해 본인만 안다(문서에 적는 순간 공유 비밀번호가 된다). ── -->
@@ -792,6 +757,50 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <!-- ══ 「🎓 온보딩」 탭 — A3 온보딩 인쇄본과 같은 구성을 화면에 렌더 (2026-08-18 GM 지시 · 인쇄 묶음=탭 정리).
      내용 사본 없음 — printA3ParkingOnboarding와 동일한 buildOnboardingGridHTML()이 직원구성(PARKING_TABLES.staff)·
      응대상황표(cs)·발렛동선(PARK_GUIDE_DATA pg_valet)·가이드요지(A3_GUIDELINE) 라이브 값을 조립. 탭 열 때마다 재렌더. ══ -->
+<!-- ── 🧹 주차점검 탭 (GM 지적 2026-08-25 "설마 매뉴얼·점검 맨아래에 있는 점검라인이야?") ──
+     지원부는 점검(남)·점검(여), 시설부는 🔧 시설점검이 각각 독립 탭인데 주차부만
+     매뉴얼 탭 안 세 번째 아코디언에 접혀 있었다 — 2클릭에 스크롤까지 해야 보였고,
+     그래서 2026-08-18 제출 배선을 연 뒤로 제출이 0건이었다. 다른 두 부서와 같은 모양으로 꺼낸다.
+     탭 id 를 check 로 둔 이유 = 기존 #check 딥링크가 그대로 이 탭을 연다(배선 추가 없음). ── -->
+<div id="tab-check" class="content hidden">
+  <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검 · 일일 8항목 제출형 배선 GM승인 2026-08-18 a안 배672 —
+       지원부·시설부와 동일 점검 GAS 재사용(dept=parking, 신규 백엔드·시트·예약작업 없음). 주간 4항목은 이번 범위 밖 · 인쇄 전용 유지.) ── -->
+  <div class="manual-section" id="parkChecklistSec" style="margin-top:0;">
+    <div class="manual-header" style="cursor:default;">
+      <h3>🧹 주차장 청결·점검 체크리스트</h3>
+    </div>
+    <div class="manual-body" style="display:block;">
+      <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
+        일일 8항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 4항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
+      </p>
+      <div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;">
+        <div class="progress-bar" style="flex:1;"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
+        <span id="parkingProgressText" style="font-size:12px;color:var(--dim);white-space:nowrap;">오늘 0/8</span>
+        <button type="button" class="util-btn print-btn" style="padding:3px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button>
+      </div>
+      <table class="schedule-table">
+        <colgroup><col style="width:64px;"><col><col style="width:56px;"></colgroup>
+        <thead><tr><th>주기</th><th>점검 항목</th><th>체크</th></tr></thead>
+        <tbody id="parkingDailyCheckBody"></tbody>
+        <tbody>
+          <tr><td rowspan="5">주간</td><td>소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>비상구 유도등 점등·피난통로 적치물·비상벨</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>발렛 동선·안전표지 점검</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>손소독제·마스크 재고 확인 — 모자라면 접수처에 남겨 주세요</td><td style="text-align:center;">☐</td></tr>
+          <tr><td>계절 대비(여름 배수·겨울 제설)</td><td style="text-align:center;">☐</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        <input type="text" id="parkingInspector" placeholder="점검자 이름" style="flex:1;min-width:120px;max-width:200px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:13px;font-family:inherit;">
+        <button type="button" class="submit-btn primary" style="flex:none;max-width:160px;padding:9px 18px;" id="parkingSubmitBtn" onclick="submitParkingDailyCheck()">일일 점검 제출</button>
+        <span id="parkingSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
+      </div>
+      <p style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.6;"><b style="color:var(--accent);">운영 원칙</b> — 주차관리인이 청결관리(청소)를 겸임합니다. 청소 시 고무장갑·마스크 착용, 환기 후 작업합니다.<br><b style="color:var(--accent);">건강</b> — 열이 나거나 기침이 있으면 근무를 빼고 바로 알려 주세요.</p>
+    </div>
+  </div>
+
+</div>
+
 <div id="tab-onb" class="content hidden">
   <div style="max-width:none;padding:0 0 8px;">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
