@@ -424,6 +424,11 @@
       if (!t) return;
       if (/^[\u25A0\u25A1\u2610\u25B6]/.test(t) || /^\[(20\d\d|GM|웰리|시토|시우|시모|시포)/.test(t)) seenStructural = true;
       if (!seenStructural) { lead.push(t); return; }
+      // ★체크 줄과 그 소제목은 「내용 전체」에서 뺀다 (GM 지적 2026-08-25 — "내용 전체에 체크리스트 같은
+      // 중복된 내용이 들어가 있다"). 위 「할 일」 박스가 같은 줄을 이미 그려 한 카드에 두 번 나왔다.
+      // 정보가 사라지는 게 아니라 두 번 그리던 것을 한 번으로 줄인 것이다 — 체크·해제도 그 박스에서만 한다.
+      if (/^[□☐☑]/.test(t)) return;
+      if (/^■\s*체크리스트/.test(t)) return;
       body.push(t);
     });
     return { lead: lead.join(' '), body: body };
