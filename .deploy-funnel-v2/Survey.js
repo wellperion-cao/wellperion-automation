@@ -6214,8 +6214,13 @@ function _hasRealReply_(memo) {
     //   _staffFeedbackWriteAuthed_(2026-08-04 시토)와 동일 패턴 재사용: 사내 게이트 비밀번호
     //   (_assets/gate.js GATE_PW ↔ ScriptProperties STAFF_GATE_PW, 정본=ScriptProperties)를 그대로 쓴다.
     //   새 비밀값을 코드에 평문 추가하지 않음 — 이 폴백 리터럴은 gate.js에 이미 커밋돼 있던 것과 동일.
+    // ★삭제 전용 번호(GM 지시 2026-08-25) — 이경연 실장·임정은M 두 분이 중복 문의를 직접 지우실 수 있게 연다.
+    //   공용 게이트 번호를 그대로 드리지 않는 이유: 그 번호는 다른 쓰기 관문과 함께 쓰여, 새면 삭제 말고도
+    //   열린다. 이 번호는 이 액션 하나에만 통한다. 삭제 자체는 되돌릴 수 있고(행은 남는다) 실행자 이름이
+    //   회원변경이력에 남으므로, 두 분께 열어도 되돌릴 수 없는 위험은 없다.
     var _mdGatePw = _accessProp_('STAFF_GATE_PW') || 'wellperion!@345';
-    if (String(body.password || '') !== _mdGatePw) {
+    var _mdStaffPw = _accessProp_('MEMBER_DELETE_PW') || '0914';
+    if (String(body.password || '') !== _mdGatePw && String(body.password || '') !== _mdStaffPw) {
       return _json({ ok: false, error: '비밀번호가 올바르지 않습니다.' });
     }
     // ★쓰기 직렬화(INC-020 재발방지 ③, 2026-07-20): 범위확인→전화대조→쓰기 사이에 동시 호출이 같은 시트에
