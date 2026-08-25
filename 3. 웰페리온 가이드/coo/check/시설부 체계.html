@@ -27,7 +27,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .tab.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
-#tab-policy,#tab-guide,#tab-manual,#tab-fcheck,#tab-vendor,#tab-monthly,#tab-schedule,#tab-vendorboard{max-width:none;margin-left:0;margin-right:0}/* 전체 탭 풀폭 좌측정렬 (GM 2026-06-23, 계획·보고 탭 추가 2026-07-07) */
+#tab-policy,#tab-guide,#tab-manual,#tab-fcheck,#tab-vendor,#tab-monthly{max-width:none;margin-left:0;margin-right:0}/* 전체 탭 풀폭 좌측정렬 (GM 2026-06-23, 계획·보고 탭 추가 2026-07-07) */
 #tab-vendor.content{text-align:left}
 .date-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .date-bar input{background:var(--paper);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:15px;font-family:inherit}
@@ -590,6 +590,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM7 12h5v5H7z"/></svg>
         전사 일정
       </a>
+      <a class="sheet-link" href="전사_거래업체.html?dept=시설부" style="color:var(--accent);border-color:rgba(183,159,138,0.35);">
+        <svg viewBox="0 0 24 24"><path d="M12 2 2 7v2h20V7L12 2zM4 10v9H2v2h20v-2h-2v-9h-2v9h-3v-9h-2v9h-3v-9H6v9H4v-9H4z"/></svg>
+        거래업체
+      </a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         웰페리온 ERP
@@ -629,8 +633,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <!-- 옛 점검(남)/(여) 탭 제거(2026-06-12). 신규 '시설점검'=날짜별 측정 작업일지(2026-06-16 GM·PDF 기반). -->
   <button class="tab" onclick="switchTab('fcheck')">🔧 시설점검</button>
   <button class="tab" onclick="switchTab('monthly')">📊 월간 시설부 현황·계획·보고</button>
-  <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
-  <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
+  <!-- 일정·거래업체 탭 폐기(GM 지적 2026-08-25) — 상단 우측 링크(sheet-links)로 통합(전사_일정/전사_거래업체 임베드와 내용 중복이었음). -->
   <div style="display:flex;gap:4px;margin-left:auto;">
     <!-- 인쇄 버튼 통합 드롭다운 (지원부·운영부 체계 동일 패턴 · 버튼 난립 해소) -->
     <div class="tab-dropdown" id="printDropdown">
@@ -722,6 +725,52 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 
 <div id="tab-fcheck" class="content hidden">
+  <!-- ── 법정 안전점검 실시일 채우기 요청 (배171 · GM 확정 2026-07-27 · 소유 시토→시우 이관) — 옛 「일정」 탭 폐기(2026-08-25)로 여기로 이관.
+       왜 여기냐: 시설점검 탭이 법정점검과 가장 가까운 자리다(약속 L21 · 껍데기 안 남김). 건수는 하드코딩하지 않고 원천에서 세어
+       표시한다 — 숫자를 박아두면 다 채운 뒤에도 계속 남아 거짓말이 된다. ── -->
+  <div id="facLegalAsk" style="display:none;margin:0 0 12px;padding:13px 15px;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;background:var(--accent-bg,rgba(183,159,138,0.10));line-height:1.65">
+    <div style="font-size:14px;font-weight:800;margin-bottom:4px">🧯 법정 안전점검 — 마지막 실시일이 비어 있습니다 <span id="facLegalCount" style="color:var(--accent)"></span></div>
+    <div style="font-size:13px;color:var(--dim)">
+      소방·전기·승강기·저수조·정화조·가스 등은 <b>법으로 주기가 정해진 점검</b>이라, 마지막에 언제 했는지가 비어 있으면
+      다음 기한을 계산할 수 없습니다. <b>전사 일정</b>(상단 우측 링크)에서 <b>「📅 클릭해 날짜 입력」</b>을 눌러 <b>마지막으로 실시한 날짜만</b> 넣어 주십시오.
+      <b>정확히 기억나지 않는 항목은 비워 두셔도 됩니다</b> — 추측해서 넣는 것보다 비워 두는 편이 낫습니다.
+    </div>
+  </div>
+  <script>
+  /* 비어 있는 법정점검 건수를 **전사일정 라이브(GAS)** 에서 세어 표시.
+     ★2026-08-13 수리(웰리): 여기가 저장소 폴백 파일(status/schedule_ssot.json)을 읽고 있었다.
+       그 파일은 시드일 뿐이고 정본은 GAS 라이브다(전사_일정.html 이 GAS 를 읽고 쓴다).
+       그래서 이정헌 소장님이 회신해 주신 실시일 4건을 라이브에 채워 넣어도 **이 화면의
+       "비어 있습니다 N건" 숫자는 그대로 남았다.** 회신했는데 화면이 안 바뀌면 다음엔
+       회신하지 않으신다 — 실무진 루프가 여기서 끊긴다.
+     라이브가 안 되면 예전 시드로 물러선다(숫자가 0이 되는 것보다 낫다). 0건이면 안내 자체를 감춘다. */
+  (function(){
+    var LIVE = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec?action=load_schedule&cb=';
+    var SEED = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb=';
+    function countBlank(items){
+      return (items||[]).filter(function(it){
+        return it && it.type === '정기점검' && String(it.dept||'').indexOf('시설') >= 0 && !String(it.last_done||'').trim();
+      }).length;
+    }
+    function show(n){
+      if(!n) return;                                    // 다 채워졌으면 안내 숨김 유지
+      document.getElementById('facLegalCount').textContent = '· ' + n + '건';
+      document.getElementById('facLegalAsk').style.display = 'block';
+    }
+    fetch(LIVE + Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if(!(res && res.ok && res.data && res.data.items)) throw new Error('live empty');
+        show(countBlank(res.data.items));
+      })
+      .catch(function(){                                 // 라이브 실패 → 시드로 물러선다
+        fetch(SEED + Date.now(), {cache:'no-store'})
+          .then(function(r){ return r.json(); })
+          .then(function(d){ show(countBlank(d.items)); })
+          .catch(function(){ document.getElementById('facLegalAsk').style.display = 'block'; });
+      });
+  })();
+  </script>
   <h2 style="font-size:20px;margin-bottom:6px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">시설 일일점검 <span style="font-size:13px;color:var(--dim);font-weight:400;">(작업일지 · PDF 기준)</span><span id="fc-title-date" style="margin-left:auto;font-size:15px;color:var(--accent);font-weight:700;"></span></h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:12px;line-height:1.6;">날짜를 고른 뒤 <b>⏱ 점검 시작</b> → 측정값 입력 → <b>⏱ 점검 종료</b> → <b>제출</b>하면 <b>1회차</b>로 기록됩니다. 제출하면 <b>측정 수치칸만 비워져</b> 바로 다음 회차를 이어서 점검할 수 있고, 위의 <b>회차 버튼(1회·2회…)</b>을 누르면 그 회차 기록을 <b>읽기전용</b>으로 볼 수 있습니다. <b>금일 작업사항·지시사항</b>은 하루 한 번만 적으면 회차가 넘어가도 유지됩니다.</p>
   <!-- 점검 가이드(접이식) — 짧은 안내, GM 승인 2026-07-13 시우 -->
@@ -939,71 +988,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div id="vendor-list-table"></div>
   </div>
-</div>
-
-<!-- ══ 「🗓️ 일정」 탭 — 전사_일정(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. 편집·저장 시 전사 일정에 즉시 합류. (배1042 시우 2026-07-15) ══ -->
-<div id="tab-schedule" class="content hidden">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
-    <span>🗓️ <b style="color:var(--text)">시설부 일정</b> — 행사·납품·교육 등 주요 일정과 정기점검. <b>✏️ 편집</b>으로 추가하고 <b>반복(매주·매월·매년)</b>을 정하면 달력에 계속 뜹니다. 저장하면 <b>전사 일정</b>에 바로 모입니다.</span>
-    <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
-  </div>
-  <!-- ── 법정 안전점검 실시일 채우기 요청 (배171 · GM 확정 2026-07-27 · 소유 시토→시우 이관) ──
-       왜 여기냐: 입력 화면(전사_일정)이 이미 이 탭 안에 임베드돼 있다. 새 폼·새 페이지를 만들지 않고
-       '무엇을 왜 채워야 하는지' 한 줄만 붙인다(약속 L21). 건수는 하드코딩하지 않고 원천에서 세어
-       표시한다 — 숫자를 박아두면 다 채운 뒤에도 계속 남아 거짓말이 된다. ── -->
-  <div id="facLegalAsk" style="display:none;margin:0 0 12px;padding:13px 15px;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;background:var(--accent-bg,rgba(183,159,138,0.10));line-height:1.65">
-    <div style="font-size:14px;font-weight:800;margin-bottom:4px">🧯 법정 안전점검 — 마지막 실시일이 비어 있습니다 <span id="facLegalCount" style="color:var(--accent)"></span></div>
-    <div style="font-size:13px;color:var(--dim)">
-      소방·전기·승강기·저수조·정화조·가스 등은 <b>법으로 주기가 정해진 점검</b>이라, 마지막에 언제 했는지가 비어 있으면
-      다음 기한을 계산할 수 없습니다. 아래 표에서 <b>「📅 클릭해 날짜 입력」</b>을 눌러 <b>마지막으로 실시한 날짜만</b> 넣어 주십시오.
-      <b>정확히 기억나지 않는 항목은 비워 두셔도 됩니다</b> — 추측해서 넣는 것보다 비워 두는 편이 낫습니다.
-    </div>
-  </div>
-  <iframe id="scheduleFrame" data-src="전사_일정.html?dept=시설부&embed=1" title="시설부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
-  <script>
-  /* 비어 있는 법정점검 건수를 **전사일정 라이브(GAS)** 에서 세어 표시.
-     ★2026-08-13 수리(웰리): 여기가 저장소 폴백 파일(status/schedule_ssot.json)을 읽고 있었다.
-       그 파일은 시드일 뿐이고 정본은 GAS 라이브다(전사_일정.html 이 GAS 를 읽고 쓴다).
-       그래서 이정헌 소장님이 회신해 주신 실시일 4건을 라이브에 채워 넣어도 **이 화면의
-       "비어 있습니다 N건" 숫자는 그대로 남았다.** 회신했는데 화면이 안 바뀌면 다음엔
-       회신하지 않으신다 — 실무진 루프가 여기서 끊긴다.
-     라이브가 안 되면 예전 시드로 물러선다(숫자가 0이 되는 것보다 낫다). 0건이면 안내 자체를 감춘다. */
-  (function(){
-    var LIVE = 'https://script.google.com/macros/s/AKfycbyHY37y5Cu2OGkqoODbygg5-Q-5ouCOqSOVu_HMFPlKXgudJMtiLXEtstTs3Ow4xvUn/exec?action=load_schedule&cb=';
-    var SEED = 'https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb=';
-    function countBlank(items){
-      return (items||[]).filter(function(it){
-        return it && it.type === '정기점검' && String(it.dept||'').indexOf('시설') >= 0 && !String(it.last_done||'').trim();
-      }).length;
-    }
-    function show(n){
-      if(!n) return;                                    // 다 채워졌으면 안내 숨김 유지
-      document.getElementById('facLegalCount').textContent = '· ' + n + '건';
-      document.getElementById('facLegalAsk').style.display = 'block';
-    }
-    fetch(LIVE + Date.now(), {cache:'no-store'})
-      .then(function(r){ return r.json(); })
-      .then(function(res){
-        if(!(res && res.ok && res.data && res.data.items)) throw new Error('live empty');
-        show(countBlank(res.data.items));
-      })
-      .catch(function(){                                 // 라이브 실패 → 시드로 물러선다
-        fetch(SEED + Date.now(), {cache:'no-store'})
-          .then(function(r){ return r.json(); })
-          .then(function(d){ show(countBlank(d.items)); })
-          .catch(function(){ document.getElementById('facLegalAsk').style.display = 'block'; });
-      });
-  })();
-  </script>
-</div>
-
-<!-- ══ 「🏢 거래업체」 탭 — 전사_거래업체(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. (배1074 시우 2026-07-15) ══ -->
-<div id="tab-vendorboard" class="content hidden">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
-    <span>🏢 <b style="color:var(--text)">시설부 거래업체</b> — 우리 부서 거래처. <b>＋업체 등록</b>·카드 <b>편집</b>으로 관리하고, 부서 체크박스로 <b>여러 부서 공유</b> 지정. 저장하면 <b>전사 거래업체</b>에 바로 모입니다.</span>
-    <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
-  </div>
-  <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=시설부&embed=1" title="시설부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
 </div>
 
 <!-- ══ 「🧑‍💼 채용 현황」 탭 — CHRO 채용 시트(db:hire) 라이브 연동. 값은 여기 없음(렌더만) · 실패 시 미표시.
@@ -1744,10 +1728,6 @@ function switchTab(tab, opts){
   document.getElementById('tab-vendor').classList.toggle('hidden',tab!=='vendor');
   document.getElementById('tab-fcheck').classList.toggle('hidden',tab!=='fcheck');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
-  var _sch=document.getElementById('tab-schedule'); if(_sch) _sch.classList.toggle('hidden',tab!=='schedule');
-  if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
-  var _vb=document.getElementById('tab-vendorboard'); if(_vb) _vb.classList.toggle('hidden',tab!=='vendorboard');
-  if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
   var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
   if(tab==='fcheck'){ if(typeof fcLoad==='function') fcLoad(); }
   if(tab==='monthly'){ if(typeof fmEnsureMonthInput==='function') fmEnsureMonthInput(); if(typeof loadFacilityMonthlyReport==='function') loadFacilityMonthlyReport(); if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }

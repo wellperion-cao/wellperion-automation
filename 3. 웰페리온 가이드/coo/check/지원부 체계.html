@@ -34,7 +34,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .tab-dropdown-menu button.active{background:var(--accent-bg);color:var(--accent)}
 .content{padding:16px 20px 140px;max-width:720px;margin:0 auto}
 /* 가이드 탭 본문 풀폭 (S2 · 운영부 정합 · GM 2026-06-11) */
-#tab-policy,#tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f,#tab-supply,#tab-monthly,#tab-schedule,#tab-vendorboard{max-width:none;margin-left:0;margin-right:0}
+#tab-policy,#tab-guide,#tab-chem,#tab-manual,#tab-check-m,#tab-check-f,#tab-supply,#tab-monthly{max-width:none;margin-left:0;margin-right:0}
 /* 약품 가이드 탭 — 스코프된 스타일(cg-) · 출처 standalone html 톤을 다크 페이지에 정리 (시우·GM 2026-06-13) */
 #tab-chem .cg-wrap{max-width:none;margin:0}
 #tab-chem h2{font-size:20px;margin-bottom:6px}
@@ -925,6 +925,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM7 12h5v5H7z"/></svg>
         전사 일정
       </a>
+      <a class="sheet-link" href="전사_거래업체.html?dept=지원부" style="color:var(--accent);border-color:rgba(183,159,138,0.35);">
+        <svg viewBox="0 0 24 24"><path d="M12 2 2 7v2h20V7L12 2zM4 10v9H2v2h20v-2h-2v-9h-2v9h-3v-9h-2v9h-3v-9H6v9H4v-9H4z"/></svg>
+        거래업체
+      </a>
       <a class="sheet-link" href="../../wellperion_guide(main).html">
         <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         웰페리온 ERP
@@ -951,8 +955,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
   <button class="tab" onclick="switchTab('monthly')">📊 월간 지원부 현황·계획·보고</button>
   <button class="tab" id="wpLdyTabBtn" onclick="switchTab('laundry')">🧺 세탁물 관리</button>
-  <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
-  <button class="tab" onclick="switchTab('vendorboard')">🏢 거래업체</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
   <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
     <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
@@ -1800,24 +1802,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <!-- ── 항목 관리 탭 (매뉴얼 탭으로 통합 이전 · 2026-05-29) ──
      폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
 <div id="tab-manage" class="content hidden"></div>
-
-<!-- ══ 「🗓️ 일정」 탭 — 전사_일정(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. 편집·저장 시 전사 일정에 즉시 합류. (배1042 시우 2026-07-15) ══ -->
-<div id="tab-schedule" class="content hidden">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
-    <span>🗓️ <b style="color:var(--text)">지원부 일정</b> — 행사·납품·교육 등 주요 일정과 정기점검. <b>✏️ 편집</b>으로 추가하고 <b>반복(매주·매월·매년)</b>을 정하면 달력에 계속 뜹니다. 저장하면 <b>전사 일정</b>에 바로 모입니다.</span>
-    <a href="전사_일정.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 일정 전체 보기 ↗</a>
-  </div>
-  <iframe id="scheduleFrame" data-src="전사_일정.html?dept=지원부&embed=1" title="지원부 일정" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
-</div>
-
-<!-- ══ 「🏢 거래업체」 탭 — 전사_거래업체(SSOT) 재활용 임베드. 부서 필터+군더더기 숨김. (배1074 시우 2026-07-15) ══ -->
-<div id="tab-vendorboard" class="content hidden">
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 10px;font-size:13px;color:var(--dim)">
-    <span>🏢 <b style="color:var(--text)">지원부 거래업체</b> — 우리 부서 거래처. <b>＋업체 등록</b>·카드 <b>편집</b>으로 관리하고, 부서 체크박스로 <b>여러 부서 공유</b> 지정. 저장하면 <b>전사 거래업체</b>에 바로 모입니다.</span>
-    <a href="전사_거래업체.html" target="_blank" rel="noopener" style="margin-left:auto;color:var(--accent);text-decoration:none;font-weight:650;white-space:nowrap">전사 거래업체 전체 보기 ↗</a>
-  </div>
-  <iframe id="vendorboardFrame" data-src="전사_거래업체.html?dept=지원부&embed=1" title="지원부 거래업체" style="width:100%;height:82vh;border:1px solid var(--border);border-radius:12px;background:var(--bg);display:block"></iframe>
-</div>
 
 <!-- ══ 「🧺 세탁물 관리」 탭 — GM 발주 2026-08-07(CTO지시_세탁물관리체계_구축.md) ══
      왜 만드나: 크린토피아 위탁 세탁이 매일 21:00 입고 → 익일 사용 구조인데 지금은 **입고량(명세서)만** 보인다.
@@ -5717,10 +5701,6 @@ function switchTab(tab, opts){
   document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
-  var _sch=document.getElementById('tab-schedule'); if(_sch) _sch.classList.toggle('hidden',tab!=='schedule');
-  if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
-  var _vb=document.getElementById('tab-vendorboard'); if(_vb) _vb.classList.toggle('hidden',tab!=='vendorboard');
-  if(tab==='vendorboard'){ var _vf=document.getElementById('vendorboardFrame'); if(_vf && !_vf.src && _vf.getAttribute('data-src')) _vf.src=_vf.getAttribute('data-src'); }
   var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
   var _ldy=document.getElementById('tab-laundry'); if(_ldy) _ldy.classList.toggle('hidden',tab!=='laundry');   // 🧺 세탁물 관리(2026-08-07 CTO)
   if(tab==='laundry'){ if(typeof wpLdyLoadFromBackend==='function') wpLdyLoadFromBackend(); if(typeof wpLdyRenderAll==='function') wpLdyRenderAll(); }
