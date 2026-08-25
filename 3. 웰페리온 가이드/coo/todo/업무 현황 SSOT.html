@@ -66,7 +66,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .livestrip{padding:12px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .livestrip .ls-foot{grid-column:1/-1;font-size:11.5px;color:var(--dim);text-align:center;padding:2px 0 0}
 @media(max-width:860px){.livestrip{grid-template-columns:1fr}}
-.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
+.ls-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0;container-type:inline-size}
 .ls-head{font-size:15px;font-weight:700;color:var(--text);margin-bottom:11px}
 .ls-head .ls-sub{font-size:12px;font-weight:500;color:var(--dim);margin-left:5px}
 /* 2열 그리드 + 필드 줄맞춤(2026-08-24 나우열M 지시, #44 표시 전용) — 인원이 늘어도 세로 스크롤이
@@ -80,7 +80,16 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
    좌우 50% 지점이 곧 두 칼럼 사이 간격의 정중앙. 기존 임정은M 상담 행 구분선과 같은
    var(--border) 톤으로 통일해 시선을 뺏지 않는다. 1열 폴백 폭에서는 숨김. */
 .ls-body::after{content:'';position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed var(--border);pointer-events:none}
-@media(max-width:480px){.ls-body{grid-template-columns:minmax(0,1fr)}.ls-body::after{display:none}}
+/* 2열 폴백 기준을 뷰포트 폭(@media)이 아니라 카드 자신의 렌더폭(@container)으로 잡는다(2026-08-25 수정).
+   원인: 이 카드는 바깥 .livestrip 그리드(뷰포트 860px에서 1열→2열 전환) 안에 있어, 뷰포트가 넓어도
+   카드 자체 폭은 860px 문턱 직후 반토막난다(예: 뷰포트 880px → 카드 418px). 옛 규칙은 "뷰포트
+   ≤480px일 때만 1열"이었는데, 카드가 실제로 좁아지는 구간(뷰포트 861~1080px 부근, 카드 폭
+   ~520px 미만)은 뷰포트 기준으로는 480px 초과라 2열 그리드를 유지 → 사람 행의 고정폭 칼럼 합이
+   카드 폭을 넘어 이름 칼럼이 0으로 짜부라지고 다음 사람 칸과 겹쳐 마치 인원이 빠진 것처럼 보였다
+   (실측: 실시간 평가점수 행 최소폭 235px, 업무 처리 현황 행 최소폭 205px + 칼럼갭 → 카드 폭
+   520px 미만이면 겹침 발생, 라이브 재현 확인). 카드 자신의 폭을 기준으로 삼으면 바깥 그리드가
+   몇 열이든 항상 안전하다. */
+@container(max-width:530px){.ls-body{grid-template-columns:minmax(0,1fr)}.ls-body::after{display:none}}
 .ls-dim{font-size:13px;color:var(--dim)}
 /* 특수 행(게이트 미달·임정은 별도기준·임정은M 상담) — 표 칼럼에 안 맞는 문장형이라 2열을 가로질러
    기존 인라인 방식 그대로 둔다. */
@@ -106,9 +115,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .ls-fld.eval-total{color:var(--accent);font-weight:800;font-size:18px}
 .ls-hdr{padding-bottom:2px}
 .ls-hdr .ls-fld{font-size:10.5px;color:var(--dim);font-weight:700;letter-spacing:.02em}
-/* 헤더 2장 중 우측열용(.ls-hdr-b)은 1열로 접히는 좁은 화면에서 숨긴다 — 안 그러면 같은 라벨이
-   위아래로 겹쳐 보인다(2026-08-24 로컬 프리뷰로 발견). */
-@media(max-width:480px){.ls-hdr-b{display:none}}
+/* 헤더 2장 중 우측열용(.ls-hdr-b)은 1열로 접히는 좁은 카드에서 숨긴다 — 안 그러면 같은 라벨이
+   위아래로 겹쳐 보인다(2026-08-24 로컬 프리뷰로 발견). .ls-body 1열 폴백과 같은 기준(카드 자신의
+   폭)으로 맞춰야 항상 같이 전환된다 — 2026-08-25 @container로 통일(사유는 위 .ls-body 폴백 주석). */
+@container(max-width:530px){.ls-hdr-b{display:none}}
 @media print{.livestrip{display:none!important}}
 .filter-bar{background:var(--bg);padding:8px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .filter-bar::-webkit-scrollbar{display:none}
@@ -3884,16 +3894,20 @@ window.ssotShowTasks=ssotShowTasks;
   function qevOwners(t){ return String(t["담당자"]||"").split(",").map(function(s){return s.trim();}).filter(Boolean); }
   function qevDate(s){ return s?new Date(s):null; }
   /* 규모점수 열의 사후 지연 "날짜서식 오염" 방어 정규화(2026-08-24, A-12 진단 인계 · 함정노트 #7 취지).
-     시트 날짜 직렬값(1899-12-30=0일, 한국시간 기준)으로 표시되어도 원점수를 그대로 복원해 계산에 넣는다 —
-     원인(시트 서식) 미제거 상태에서 재오염돼도 이 화면 수치는 무너지지 않게 하는 방어선. 복호 불가 값은 기존과 동일하게 제외. */
+     시트 날짜 직렬값(1899-12-30=0일)으로 표시되어도 원점수를 그대로 복원해 계산에 넣는다 —
+     원인(시트 서식) 미제거 상태에서 재오염돼도 이 화면 수치는 무너지지 않게 하는 방어선. 복호 불가 값은 기존과 동일하게 제외.
+     2026-08-25 수정: raw UTC 날짜 성분을 그대로 읽는다(시간대 보정 없음) — 이전 버전은 "+9h 후 Y/M/D
+     재추출"로 KST 달력일에 맞추려 했으나, 이 오염이 자정이 아닌 시각(예: T15:32:08Z)으로 나타나는
+     경우 +9h 보정이 다음 날로 캐리오버돼 오판정(허용값 밖 → 조용히 탈락)을 냈다. A-12 대조표(2점/3점/
+     5점) + 코드 내 정적 캐시(QEVAL_R_SCORE) 13건 실측 전부, 보정 없이 raw 날짜 성분을 그대로 쓸 때만
+     원점수와 100% 일치했다 — Sheets epoch가 이미 UTC 날짜 성분 자체로 나타나고 있었다는 뜻. */
   function qevDecodeDateScore(raw){
     var s = String(raw).trim();
     if (!s) return null;
     if (/^-?\d+(\.\d+)?$/.test(s)) return null; // 순수 숫자문자열은 날짜 오염이 아님(화이트리스트 판정은 호출측에서 이미 끝남)
     var d = new Date(s);
     if (isNaN(d.getTime())) return null;
-    var kst = new Date(d.getTime() + 9 * 3600 * 1000); // UTC 표시값 → KST 달력일로 정렬
-    var target = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
+    var target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); // raw UTC 날짜 성분 그대로(시간대 보정 없음)
     var epoch = Date.UTC(1899, 11, 30);
     var days = Math.round((target - epoch) / 86400000);
     var score = days + 1;
