@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>🗓️ 개인 캘린더 · 웰페리온</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iI2E5OGE1MiIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1zaXplPSIxOSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZmZmZiIgZm9udC1mYW1pbHk9IidBcHBsZSBTRCBHb3RoaWMgTmVvJywnTWFsZ3VuIEdvdGhpYycsc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjcwMCI+7J24PC90ZXh0Pjwvc3ZnPg==">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#efebe0; --surface:#ffffff; --surface-2:#f7f4eb; --bg-soft:#f5f1e7;
+    --ink:#211f1a; --ink-soft:#6b675c; --ink-faint:#9a958a;
+    --line:#e2ddcf; --line-soft:#ece8db; --line-strong:#cdc6b1;
+    --gold:#a98a52; --gold-deep:#8a6f3f;
+    --navy:#2a2620; --pine:#37332b; --pine-deep:#201d17;
+    --wine:#7d3a30; --wine-bg:#f5e9e6;
+    --green:#3c7a4a; --green-bg:#e9f1ea;
+    --blue:#2f6d9e; --blue-bg:#e8f0f6;
+    --amber:#b07d24; --amber-bg:#f6efdd;
+    --orange:#c1702c; --orange-bg:#f7ebe0;
+    --red:#b14238; --red-bg:#f6e6e4;
+    --purple:#6a5891; --purple-bg:#eeebf3;
+    --gray:#7c7a73; --gray-bg:#edece8;
+    --serif:"Noto Serif KR","Apple SD Gothic Neo",Georgia,serif;
+    --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    --shadow-card:0 1px 2px rgba(33,31,26,.045),0 4px 14px rgba(33,31,26,.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-variant-numeric:tabular-nums;font-size:14px;line-height:1.52;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  button,input,select,textarea{font-family:inherit}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:980px;margin:0 auto;padding:0 16px 60px}
+
+  /* ---- gate ---- */
+  #gate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+    padding:20px;background:radial-gradient(1100px 720px at 50% -8%,#464034 0%,var(--pine-deep) 58%,#121009 100%)}
+  .gate-card{background:var(--surface);border-radius:12px;padding:37px 28px 28px;width:100%;max-width:352px;
+    text-align:center;box-shadow:inset 0 3px 0 var(--gold),0 30px 70px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3)}
+  .gate-card .mark{font-size:11px;letter-spacing:.36em;color:var(--gold-deep);font-weight:650;text-transform:uppercase}
+  .gate-card h2{font-family:var(--serif);font-size:20px;font-weight:600;margin:10px 0 3px;letter-spacing:.075em;color:var(--navy)}
+  .gate-card p{font-size:12px;color:var(--ink-soft);margin-bottom:18px}
+  .gate-card input{width:100%;text-align:center;font-size:13px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px}
+  .gate-card .btn{width:100%;margin-top:10px;justify-content:center}
+  .gate-err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px}
+  .gate-foot{margin-top:16px;font-size:10.5px;color:var(--ink-faint);line-height:1.5}
+
+  /* ---- header ---- */
+  header{background:linear-gradient(176deg,var(--pine) 0%,var(--pine-deep) 88%);color:#f0eee3;
+    padding:21px 0 17px;border-top:3px solid var(--gold-deep);
+    border-bottom:1px solid rgba(169,138,82,.55);box-shadow:0 4px 20px rgba(18,15,10,.24)}
+  .hd-inner{max-width:980px;margin:0 auto;padding:0 16px;position:relative}
+  .brand{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+  .brand .mark{font-size:11px;letter-spacing:.34em;color:#cfb078;font-weight:650;text-transform:uppercase}
+  .brand h1{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:.06em;color:#f8f5ea}
+  .hd-sub{color:#b1aa9c;font-size:12px;margin-top:6px}
+  .hd-back{position:absolute;right:16px;top:2px;background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.22);color:#e9e6da;font-size:11.5px;font-weight:600;
+    padding:6px 12px;border-radius:7px;cursor:pointer;text-decoration:none;display:inline-block}
+  .hd-back:hover{background:rgba(255,255,255,.15);text-decoration:none}
+
+  main{padding-top:22px}
+
+  /* ---- toolbar ---- */
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .mo-nav{display:flex;align-items:center;gap:6px}
+  .mo-btn{background:var(--surface);border:1px solid var(--line-strong);border-radius:7px;
+    width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--ink-soft)}
+  .mo-btn:hover{background:var(--surface-2)}
+  .mo-label{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--navy);min-width:118px;text-align:center}
+  .mo-today{background:var(--surface);border:1px solid var(--line-strong);border-radius:7px;
+    padding:6px 11px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer}
+  .mo-today:hover{background:var(--surface-2)}
+  .spacer{flex:1}
+  .btn-add{background:var(--navy);color:#f5f2e8;border:none;border-radius:8px;padding:8px 15px;
+    font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(33,29,22,.2)}
+  .btn-add:hover{background:var(--pine-deep)}
+
+  /* ---- legend ---- */
+  .legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;color:var(--ink-soft)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+  /* ---- calendar grid ---- */
+  .cal-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow-card);overflow:hidden}
+  .wk-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface-2);
+    border-bottom:1px solid var(--line)}
+  .wk-head div{padding:8px 0;text-align:center;font-size:11.5px;font-weight:700;color:var(--ink-faint);letter-spacing:.03em}
+  .wk-head div:first-child{color:var(--red)}
+  .wk-head div:last-child{color:var(--blue)}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr)}
+  .day{min-height:96px;border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
+    padding:5px 5px 6px;position:relative;cursor:pointer}
+  .day:nth-child(7n){border-right:none}
+  .day:hover{background:var(--bg-soft)}
+  .day.other{background:var(--surface-2);color:var(--ink-faint)}
+  .day .dnum{font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .day.other .dnum{color:var(--ink-faint)}
+  .day.today .dnum{display:inline-flex;align-items:center;justify-content:center;
+    width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff}
+  .day .chips{margin-top:4px;max-height:76px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+  .chip{font-size:10.5px;padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;border-left:3px solid transparent;cursor:pointer;line-height:1.5}
+  .chip.type-소통{background:var(--blue-bg);color:var(--blue);border-left-color:var(--blue)}
+  .chip.type-미팅{background:var(--purple-bg);color:var(--purple);border-left-color:var(--purple)}
+  .chip.type-면접{background:var(--amber-bg);color:var(--amber);border-left-color:var(--amber)}
+  .chip.type-기타{background:var(--gray-bg);color:var(--gray);border-left-color:var(--gray)}
+  .chip.type-SSOT업무{background:#f6efdd;color:var(--gold-deep);border-left-color:var(--gold);font-weight:600}
+  .chip.done{opacity:.5;text-decoration:line-through}
+
+  .msg{font-size:12.5px;color:var(--ink-soft);padding:20px 4px}
+  .msg.err{color:var(--red)}
+
+  /* ---- modal ---- */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,17,12,.5);display:none;
+    align-items:center;justify-content:center;z-index:150;padding:16px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--surface);border-radius:12px;padding:22px;width:100%;max-width:420px;
+    max-height:88vh;overflow-y:auto;box-shadow:0 30px 70px rgba(0,0,0,.35)}
+  .modal h3{font-family:var(--serif);font-size:17px;font-weight:700;color:var(--navy);margin-bottom:14px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:4px}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line-strong);
+    border-radius:7px;padding:8px 10px;font-size:13px;color:var(--ink);background:var(--surface)}
+  .field textarea{min-height:64px;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .modal-actions{display:flex;gap:8px;margin-top:16px}
+  .btn{border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-primary{background:var(--navy);color:#f5f2e8;flex:1}
+  .btn-primary:hover{background:var(--pine-deep)}
+  .btn-ghost{background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}
+  .btn-danger{background:var(--wine-bg);color:var(--wine);border:1px solid rgba(125,58,48,.3)}
+  .modal-msg{font-size:12px;color:var(--red);min-height:16px;margin-top:8px}
+
+  .type-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:5px;margin-bottom:10px}
+  .type-badge.type-소통{background:var(--blue-bg);color:var(--blue)}
+  .type-badge.type-미팅{background:var(--purple-bg);color:var(--purple)}
+  .type-badge.type-면접{background:var(--amber-bg);color:var(--amber)}
+  .type-badge.type-기타{background:var(--gray-bg);color:var(--gray)}
+  .type-badge.type-SSOT업무{background:#f6efdd;color:var(--gold-deep)}
+  .detail-when{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
+  .detail-content{font-size:13px;color:var(--ink);white-space:pre-wrap;line-height:1.6;
+    background:var(--bg-soft);border-radius:8px;padding:10px 12px;margin-bottom:12px;min-height:20px}
+  .detail-place{font-size:12px;color:var(--ink-soft);margin-bottom:10px}
+  .btn-erp{width:100%;border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:700;
+    cursor:pointer;margin-top:6px;border:1px solid var(--line-strong)}
+  .btn-erp.state-idle{background:var(--surface-2);color:var(--gold-deep);border-color:var(--gold)}
+  .btn-erp.state-idle:hover{background:#f6efdd}
+  .btn-erp.state-requested{background:var(--green-bg);color:var(--green);border-color:var(--green);border-style:dashed}
+  .btn-erp:disabled{cursor:not-allowed;opacity:.65}
+  .erp-note{font-size:10.5px;color:var(--ink-faint);margin-top:6px;line-height:1.5}
+  .ssot-link{font-size:11.5px;margin-top:6px;display:inline-block}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--navy);
+    color:#f5f2e8;padding:10px 18px;border-radius:8px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.3);
+    z-index:300;display:none}
+
+  @media (max-width:640px){
+    .day{min-height:74px;padding:4px 3px 5px}
+    .day .chips{max-height:52px}
+    .chip{font-size:9.5px}
+    .mo-label{font-size:15px;min-width:96px}
+    .brand h1{font-size:18px}
+    .row2{grid-template-columns:1fr}
+    .hd-back{position:static;display:inline-block;margin-top:10px}
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="mark">Wellperion</div>
+    <h2>개인 캘린더</h2>
+    <p>매니저 전용 페이지입니다. 관리자 비밀번호를 입력하세요.</p>
+    <input type="password" id="gatePw" placeholder="관리자 비밀번호" autocomplete="current-password">
+    <button class="btn btn-primary" id="gateBtn" style="width:100%;justify-content:center">입장</button>
+    <div class="gate-err" id="gateErr"></div>
+    <div class="gate-foot">면접 등 이름이 포함된 일정을 다룹니다 — 관리자 인증 필수, 뷰어 비밀번호로는 열람할 수 없습니다.</div>
+  </div>
+</div>
+
+<header>
+  <div class="hd-inner">
+    <a class="hd-back" href="index.html">← 허브로</a>
+    <div class="brand"><span class="mark">Wellperion</span><h1>개인 업무 캘린더</h1></div>
+    <div class="hd-sub">나우열M 담당 업무(업무 SSOT) + 직접 추가한 일정을 한 달력에서 봅니다.</div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <div class="toolbar">
+      <div class="mo-nav">
+        <button class="mo-btn" id="prevMo">‹</button>
+        <div class="mo-label" id="moLabel">–</div>
+        <button class="mo-btn" id="nextMo">›</button>
+      </div>
+      <button class="mo-today" id="todayBtn">오늘</button>
+      <div class="spacer"></div>
+      <button class="btn-add" id="addBtn">+ 일정 추가</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background:var(--blue)"></span>소통</span>
+      <span><span class="dot" style="background:var(--purple)"></span>미팅</span>
+      <span><span class="dot" style="background:var(--amber)"></span>면접</span>
+      <span><span class="dot" style="background:var(--gray)"></span>기타</span>
+      <span><span class="dot" style="background:var(--gold)"></span>SSOT업무(읽기전용)</span>
+    </div>
+
+    <div class="cal-card">
+      <div class="wk-head"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="msg" id="loadMsg">불러오는 중…</div>
+
+  </div>
+</main>
+
+<!-- 추가/수정 모달 -->
+<div class="modal-bg" id="editBg">
+  <div class="modal">
+    <h3 id="editTitle">일정 추가</h3>
+    <div class="field"><label>제목</label><input type="text" id="fTitle" maxlength="100" placeholder="예: 파트너팀 면담"></div>
+    <div class="row2">
+      <div class="field"><label>유형</label>
+        <select id="fType"><option value="소통">소통</option><option value="미팅">미팅</option><option value="면접">면접</option><option value="기타">기타</option></select>
+      </div>
+      <div class="field"><label>장소 (선택)</label><input type="text" id="fPlace" maxlength="100" placeholder="예: 본점 사무실"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>시작일</label><input type="date" id="fDate"></div>
+      <div class="field"><label>시작시각 (선택)</label><input type="time" id="fStartTime"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>종료일 (선택, 여러 날인 경우만)</label><input type="date" id="fEndDate"></div>
+      <div class="field"><label>종료시각 (선택)</label><input type="time" id="fEndTime"></div>
+    </div>
+    <div class="field"><label>간략한 내용 (선택)</label><textarea id="fContent" maxlength="1000" placeholder="메모나 안건을 간단히"></textarea></div>
+    <div class="modal-msg" id="editMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="editCancel">취소</button>
+      <button class="btn btn-danger" id="editDelete" style="display:none">삭제</button>
+      <button class="btn btn-primary" id="editSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상세 팝업 -->
+<div class="modal-bg" id="detailBg">
+  <div class="modal">
+    <span class="type-badge" id="dType">-</span>
+    <h3 id="dTitle">-</h3>
+    <div class="detail-when" id="dWhen">-</div>
+    <div class="detail-place" id="dPlace" style="display:none"></div>
+    <div class="detail-content" id="dContent"></div>
+    <div id="dSsotLinkWrap" style="display:none"><a class="ssot-link" id="dSsotLink" target="_blank" rel="noopener">업무 SSOT에서 열기 →</a></div>
+    <button class="btn-erp" id="dErpBtn" style="display:none"></button>
+    <div class="erp-note" id="dErpNote" style="display:none"></div>
+    <div class="modal-actions" id="dActions" style="margin-top:14px">
+      <button class="btn btn-ghost" id="detailClose">닫기</button>
+      <button class="btn btn-danger" id="detailDelete" style="display:none">삭제</button>
+      <button class="btn btn-primary" id="detailEdit" style="display:none">수정</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 설정 ============ */
+var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+var TODO_API_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
+var MANAGER_NAME = "나우열M";  // MEMORY: 매니저님 = 나우열M(업무보드 담당자 표기)
+var SSOT_BOARD_REL = "../../coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html";
+
+var SESSION_PW = "";
+var VIEW_MONTH = new Date(); VIEW_MONTH.setDate(1);
+var CAL_ITEMS = [];   // 개인일정(cal-list)
+var SSOT_ITEMS = [];  // 업무 SSOT 나우열M 카드(읽기전용)
+var EDIT_TARGET = null; // 수정 중인 개인일정 원본(id 있으면 수정, 없으면 신규)
+
+function toast(m){var t=document.getElementById("toast");t.textContent=m;t.style.display="block";
+  clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none";},2600);}
+function pad2(n){n=String(n);return n.length<2?"0"+n:n;}
+function ymd(d){return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+/* ============ 비밀번호 게이트 (허브 index.html과 동일 패턴 — db:emp 조회로 role 판정, admin만 통과) ============ */
+function showGate(){document.getElementById("gate").style.display="flex";}
+function hideGate(){document.getElementById("gate").style.display="none";}
+async function attemptGate(pw, silent){
+  var errEl=document.getElementById("gateErr");
+  var btn=document.getElementById("gateBtn");
+  if(!pw || !String(pw).trim()){
+    if(!silent){ if(errEl)errEl.textContent="비밀번호를 입력해 주세요."; showGate(); }
+    return;
+  }
+  if(!silent){ if(btn){btn.disabled=true;btn.textContent="확인 중…";} if(errEl)errEl.textContent=""; }
+  var status=0,netErr=false,gateData={};
+  try{
+    var r=await fetch(NOTION_FN,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({db:"emp",password:pw})});
+    status=r.status;
+    try{gateData=await r.json();}catch(e){}
+  }catch(e){netErr=true;}
+  if(netErr){
+    if(!silent){ if(btn){btn.disabled=false;btn.textContent="입장";} if(errEl)errEl.textContent="서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."; showGate(); }
+    return;
+  }
+  var isAdmin = status!==401 && gateData && gateData.role==="admin";
+  if(!isAdmin){
+    try{sessionStorage.removeItem("wp_hr_pw");}catch(e){}
+    if(!silent){ if(btn){btn.disabled=false;btn.textContent="입장";} if(errEl)errEl.textContent="관리자 비밀번호가 아닙니다(뷰어 비밀번호로는 열람할 수 없습니다)."; showGate(); }
+    else { showGate(); }
+    return;
+  }
+  SESSION_PW=pw;
+  try{sessionStorage.setItem("wp_hr_pw",pw);}catch(e){}
+  hideGate();
+  boot();
+}
+document.getElementById("gateBtn").addEventListener("click",function(){attemptGate(document.getElementById("gatePw").value,false);});
+document.getElementById("gatePw").addEventListener("keydown",function(e){if(e.key==="Enter")attemptGate(this.value,false);});
+(function initGate(){
+  var saved="";
+  try{saved=sessionStorage.getItem("wp_hr_pw")||"";}catch(e){}
+  if(saved){ attemptGate(saved,true); } else { showGate(); }
+})();
+
+/* ============ 데이터 로드 ============ */
+function calApi(params){
+  params.adminPassword=SESSION_PW;
+  return fetch(NOTION_FN,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify(params)}).then(function(r){return r.json();});
+}
+async function loadCal(){
+  var res=await calApi({action:"cal-list"});
+  if(res && res.ok) CAL_ITEMS=res.results||[]; else CAL_ITEMS=[];
+}
+async function loadSsot(){
+  try{
+    var r=await fetch(TODO_API_URL+"?action=todo_list",{redirect:"follow"});
+    var res=await r.json();
+    var raw=(res && res.ok) ? (res.data||[]) : [];
+    SSOT_ITEMS=raw.filter(function(t){return String(t["담당자"]||t.owner||"").trim()===MANAGER_NAME;})
+      .map(function(t){
+        return {
+          id: t.id||"",
+          title: t["업무명"]||t.title||"(제목 없음)",
+          startDate: t["시작일"]||t.startDate||"",
+          endDate: t["종료일"]||t.endDate||t["시작일"]||t.startDate||"",
+          content: t["내용"]||t.content||"",
+          status: t["상태"]||t.status||"",
+          category: t["카테고리"]||t.category||""
+        };
+      }).filter(function(t){return t.startDate;});
+  }catch(e){ SSOT_ITEMS=[]; }
+}
+async function loadAll(){
+  document.getElementById("loadMsg").style.display="block";
+  document.getElementById("loadMsg").className="msg";
+  document.getElementById("loadMsg").textContent="불러오는 중…";
+  try{
+    await Promise.all([loadCal(), loadSsot()]);
+    document.getElementById("loadMsg").style.display="none";
+  }catch(e){
+    document.getElementById("loadMsg").className="msg err";
+    document.getElementById("loadMsg").textContent="불러오기 실패: "+((e&&e.message)||e);
+  }
+  renderCalendar();
+}
+function boot(){ loadAll(); }
+
+/* ============ 달력 렌더 ============ */
+function itemsForDay(dstr){
+  var out=[];
+  CAL_ITEMS.forEach(function(it){
+    var s=it["시작일"]||it.date||"", e=it["종료일"]||it.endDate||s;
+    if(s && dstr>=s && dstr<=(e||s)) out.push({kind:"cal",id:it.id,title:it["제목"],type:it["유형"]||"기타",
+      date:s,endDate:e,startTime:it["시작시각"],endTime:it["종료시각"],content:it["내용"],place:it["장소"],
+      erpRequest:it["전사연동요청"]||""});
+  });
+  SSOT_ITEMS.forEach(function(it){
+    if(dstr>=it.startDate && dstr<=it.endDate) out.push({kind:"ssot",id:it.id,title:it.title,type:"SSOT업무",
+      date:it.startDate,endDate:it.endDate,content:it.content,status:it.status,category:it.category});
+  });
+  return out;
+}
+function renderCalendar(){
+  var y=VIEW_MONTH.getFullYear(), m=VIEW_MONTH.getMonth();
+  document.getElementById("moLabel").textContent=y+"년 "+(m+1)+"월";
+  var first=new Date(y,m,1);
+  var startOffset=first.getDay(); // 0=일
+  var gridStart=new Date(y,m,1-startOffset);
+  var todayStr=ymd(new Date());
+  var html="";
+  for(var i=0;i<42;i++){
+    var d=new Date(gridStart.getFullYear(),gridStart.getMonth(),gridStart.getDate()+i);
+    var dstr=ymd(d);
+    var isOther=d.getMonth()!==m;
+    var isToday=dstr===todayStr;
+    var items=itemsForDay(dstr);
+    var chips=items.map(function(it){
+      var cls="chip type-"+it.type+(it.status==="완료"?" done":"");
+      var erpMark=(it.erpRequest==="요청됨")?"📌 ":"";
+      var label=erpMark+(it.startTime?it.startTime+" ":"")+esc(it.title);
+      var tt=it.title+(it.erpRequest==="요청됨"?" (전사일정 등재 요청됨)":"");
+      return '<div class="'+cls+'" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'" title="'+esc(tt)+'">'+label+'</div>';
+    }).join("");
+    html+='<div class="day'+(isOther?" other":"")+(isToday?" today":"")+'" data-date="'+dstr+'">'+
+      '<div class="dnum">'+d.getDate()+'</div><div class="chips">'+chips+'</div></div>';
+    if(i===41) break;
+  }
+  document.getElementById("grid").innerHTML=html;
+  // 이벤트 위임: 칩 클릭=상세, 빈 칸 클릭=해당 날짜로 추가
+  document.getElementById("grid").querySelectorAll(".chip").forEach(function(el){
+    el.addEventListener("click",function(e){
+      e.stopPropagation();
+      openDetailByRef(el.getAttribute("data-kind"), el.getAttribute("data-id"), el.closest(".day").getAttribute("data-date"));
+    });
+  });
+  document.getElementById("grid").querySelectorAll(".day").forEach(function(el){
+    el.addEventListener("click",function(){ openAddModal(el.getAttribute("data-date")); });
+  });
+}
+document.getElementById("prevMo").addEventListener("click",function(){VIEW_MONTH.setMonth(VIEW_MONTH.getMonth()-1);renderCalendar();});
+document.getElementById("nextMo").addEventListener("click",function(){VIEW_MONTH.setMonth(VIEW_MONTH.getMonth()+1);renderCalendar();});
+document.getElementById("todayBtn").addEventListener("click",function(){VIEW_MONTH=new Date();VIEW_MONTH.setDate(1);renderCalendar();});
+
+/* ============ 상세 팝업 ============ */
+var DETAIL_REF=null;
+function openDetailByRef(kind,id,dstr){
+  if(kind==="ssot"){
+    var it=SSOT_ITEMS.filter(function(x){return x.id===id;})[0];
+    if(!it) return;
+    DETAIL_REF={kind:"ssot",item:it};
+  }else{
+    var raw=CAL_ITEMS.filter(function(x){return x.id===id;})[0];
+    if(!raw) return;
+    DETAIL_REF={kind:"cal",item:raw};
+  }
+  renderDetail();
+}
+function renderDetail(){
+  var ref=DETAIL_REF; if(!ref) return;
+  var badge=document.getElementById("dType"), title=document.getElementById("dTitle"),
+    when=document.getElementById("dWhen"), place=document.getElementById("dPlace"),
+    content=document.getElementById("dContent"), ssotWrap=document.getElementById("dSsotLinkWrap"),
+    ssotLink=document.getElementById("dSsotLink"), delBtn=document.getElementById("detailDelete"),
+    editBtn=document.getElementById("detailEdit"), erpBtn=document.getElementById("dErpBtn"),
+    erpNote=document.getElementById("dErpNote");
+  if(ref.kind==="ssot"){
+    var it=ref.item;
+    badge.className="type-badge type-SSOT업무"; badge.textContent="SSOT업무 · 읽기전용";
+    title.textContent=it.title;
+    when.textContent=it.startDate+(it.endDate&&it.endDate!==it.startDate?" ~ "+it.endDate:"")+(it.status?" · "+it.status:"");
+    place.style.display="none";
+    content.textContent=it.content||"(내용 없음)";
+    ssotWrap.style.display="block";
+    ssotLink.href=SSOT_BOARD_REL+"?edit="+encodeURIComponent(it.id);
+    delBtn.style.display="none"; editBtn.style.display="none";
+    // 업무 SSOT 항목은 우리 소유 데이터가 아니라 등재요청 플래그를 붙일 수 없음(개인일정 전용 기능).
+    erpBtn.style.display="none"; erpNote.style.display="none";
+  }else{
+    var c=ref.item;
+    var type=c["유형"]||"기타";
+    badge.className="type-badge type-"+type; badge.textContent=type;
+    title.textContent=c["제목"];
+    var s=c["시작일"], e=c["종료일"];
+    var whenStr=s+(c["시작시각"]?" "+c["시작시각"]:"");
+    if(e && e!==s) whenStr+=" ~ "+e+(c["종료시각"]?" "+c["종료시각"]:"");
+    else if(c["종료시각"]) whenStr+=" ~ "+c["종료시각"];
+    when.textContent=whenStr;
+    if(c["장소"]){place.style.display="block";place.textContent="📍 "+c["장소"];}else{place.style.display="none";}
+    content.textContent=c["내용"]||"(내용 없음)";
+    ssotWrap.style.display="none";
+    delBtn.style.display="inline-block"; editBtn.style.display="inline-block";
+    renderErpButton(c);
+  }
+  document.getElementById("detailBg").classList.add("show");
+}
+// 전사일정 자동 연동은 여전히 미구현(제3 GAS 호출 코드 0건 유지) — 대신 "등재 요청" 플래그를
+// 우리 백엔드(개인일정 탭)에만 저장한다. 실제 전사일정 반영은 CHRO가 화면에서 수동 대행.
+function renderErpButton(c){
+  var erpBtn=document.getElementById("dErpBtn"), erpNote=document.getElementById("dErpNote");
+  var requested=(c["전사연동요청"]==="요청됨");
+  erpBtn.style.display="block"; erpNote.style.display="block";
+  erpBtn.disabled=false;
+  if(requested){
+    erpBtn.className="btn-erp state-requested";
+    erpBtn.textContent="✅ 요청됨 — 클릭하면 요청 취소";
+    erpNote.innerHTML="전사일정 등재를 요청했습니다. 자동 등재가 아니라 <b>CHRO가 전사일정 화면에서 직접 등재</b>합니다(실제 반영까지 시간이 걸릴 수 있습니다).";
+  }else{
+    erpBtn.className="btn-erp state-idle";
+    erpBtn.textContent="📌 전사일정에 추가하기";
+    erpNote.innerHTML="자동 연동은 아직 지원되지 않습니다(전사일정은 별도 시스템 · COO/GM 합의 필요) — 누르면 <b>CHRO에게 등재를 요청</b>만 하고, 실제 반영은 CHRO가 <a href=\"../../coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html\" target=\"_blank\" rel=\"noopener\">전사일정 화면</a>에서 직접 대행합니다.";
+  }
+}
+document.getElementById("dErpBtn").addEventListener("click",async function(){
+  if(!DETAIL_REF||DETAIL_REF.kind!=="cal") return;
+  var c=DETAIL_REF.item;
+  var nextVal=!(c["전사연동요청"]==="요청됨");
+  var btn=this; btn.disabled=true;
+  try{
+    var res=await calApi({action:"cal-update",id:c.id,erpRequest:nextVal});
+    if(res && res.ok){
+      c["전사연동요청"]=res.erpRequest||"";
+      renderErpButton(c);
+      toast(nextVal?"전사일정 등재를 요청했습니다.":"등재 요청을 취소했습니다.");
+      await loadCal();
+      renderCalendar();
+    }else{
+      toast("처리 실패: "+((res&&res.message)||(res&&res.error)||"알 수 없는 오류"));
+      btn.disabled=false;
+    }
+  }catch(e){ toast("처리 실패: "+e.message); btn.disabled=false; }
+});
+document.getElementById("detailClose").addEventListener("click",function(){document.getElementById("detailBg").classList.remove("show");DETAIL_REF=null;});
+document.getElementById("detailBg").addEventListener("click",function(e){if(e.target.id==="detailBg"){this.classList.remove("show");DETAIL_REF=null;}});
+document.getElementById("detailEdit").addEventListener("click",function(){
+  if(!DETAIL_REF||DETAIL_REF.kind!=="cal") return;
+  document.getElementById("detailBg").classList.remove("show");
+  openEditModal(DETAIL_REF.item);
+});
+document.getElementById("detailDelete").addEventListener("click",async function(){
+  if(!DETAIL_REF||DETAIL_REF.kind!=="cal") return;
+  if(!confirm("이 일정을 삭제할까요?\n\""+DETAIL_REF.item["제목"]+"\"")) return;
+  var id=DETAIL_REF.item.id;
+  try{
+    var res=await calApi({action:"cal-delete",id:id});
+    if(res && res.ok){
+      document.getElementById("detailBg").classList.remove("show"); DETAIL_REF=null;
+      toast("삭제했습니다."); await loadAll();
+    }else{ toast("삭제 실패: "+((res&&res.error)||"알 수 없는 오류")); }
+  }catch(e){ toast("삭제 실패: "+e.message); }
+});
+
+/* ============ 추가/수정 모달 ============ */
+function openAddModal(dstr){
+  EDIT_TARGET=null;
+  document.getElementById("editTitle").textContent="일정 추가";
+  document.getElementById("fTitle").value="";
+  document.getElementById("fType").value="소통";
+  document.getElementById("fPlace").value="";
+  document.getElementById("fDate").value=dstr||ymd(new Date());
+  document.getElementById("fStartTime").value="";
+  document.getElementById("fEndDate").value="";
+  document.getElementById("fEndTime").value="";
+  document.getElementById("fContent").value="";
+  document.getElementById("editMsg").textContent="";
+  document.getElementById("editDelete").style.display="none";
+  document.getElementById("editBg").classList.add("show");
+}
+function openEditModal(c){
+  EDIT_TARGET=c;
+  document.getElementById("editTitle").textContent="일정 수정";
+  document.getElementById("fTitle").value=c["제목"]||"";
+  document.getElementById("fType").value=c["유형"]||"소통";
+  document.getElementById("fPlace").value=c["장소"]||"";
+  document.getElementById("fDate").value=c["시작일"]||"";
+  document.getElementById("fStartTime").value=c["시작시각"]||"";
+  document.getElementById("fEndDate").value=(c["종료일"]&&c["종료일"]!==c["시작일"])?c["종료일"]:"";
+  document.getElementById("fEndTime").value=c["종료시각"]||"";
+  document.getElementById("fContent").value=c["내용"]||"";
+  document.getElementById("editMsg").textContent="";
+  document.getElementById("editDelete").style.display="inline-block";
+  document.getElementById("editBg").classList.add("show");
+}
+document.getElementById("addBtn").addEventListener("click",function(){openAddModal(ymd(new Date()));});
+document.getElementById("editCancel").addEventListener("click",function(){document.getElementById("editBg").classList.remove("show");});
+document.getElementById("editBg").addEventListener("click",function(e){if(e.target.id==="editBg")this.classList.remove("show");});
+document.getElementById("editDelete").addEventListener("click",async function(){
+  if(!EDIT_TARGET) return;
+  if(!confirm("이 일정을 삭제할까요?\n\""+EDIT_TARGET["제목"]+"\"")) return;
+  try{
+    var res=await calApi({action:"cal-delete",id:EDIT_TARGET.id});
+    if(res && res.ok){ document.getElementById("editBg").classList.remove("show"); toast("삭제했습니다."); await loadAll(); }
+    else{ document.getElementById("editMsg").textContent="삭제 실패: "+((res&&res.error)||"알 수 없는 오류"); }
+  }catch(e){ document.getElementById("editMsg").textContent="삭제 실패: "+e.message; }
+});
+document.getElementById("editSave").addEventListener("click",async function(){
+  var title=document.getElementById("fTitle").value.trim();
+  var date=document.getElementById("fDate").value;
+  var msg=document.getElementById("editMsg");
+  if(!title){ msg.textContent="제목을 입력해 주세요."; return; }
+  if(!date){ msg.textContent="시작일을 입력해 주세요."; return; }
+  var payload={
+    title:title, type:document.getElementById("fType").value, date:date,
+    startTime:document.getElementById("fStartTime").value,
+    endDate:document.getElementById("fEndDate").value,
+    endTime:document.getElementById("fEndTime").value,
+    content:document.getElementById("fContent").value.trim(),
+    place:document.getElementById("fPlace").value.trim()
+  };
+  var btn=document.getElementById("editSave");
+  btn.disabled=true; btn.textContent="저장 중…"; msg.textContent="";
+  try{
+    var action, body;
+    if(EDIT_TARGET){ action="cal-update"; body=Object.assign({action:action,id:EDIT_TARGET.id},payload); }
+    else{ action="cal-add"; body=Object.assign({action:action},payload); }
+    var res=await calApi(body);
+    if(res && res.ok){
+      document.getElementById("editBg").classList.remove("show");
+      toast(EDIT_TARGET?"수정했습니다.":"추가했습니다.");
+      await loadAll();
+    }else{
+      msg.textContent="저장 실패: "+((res&&res.message)||(res&&res.error)||"알 수 없는 오류");
+    }
+  }catch(e){ msg.textContent="저장 실패: "+e.message; }
+  finally{ btn.disabled=false; btn.textContent="저장"; }
+});
+</script>
+</body>
+</html>
