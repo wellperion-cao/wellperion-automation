@@ -1339,6 +1339,8 @@ def _rq_set_status_locked(item_ids: list, new_status: str) -> tuple:
                 box["cancelled"].append(t)
             else:
                 t["status"] = new_status
+                if new_status == "승인":
+                    t["publish_at"] = ""  # 카드 탭 승인 = 즉시 발행(publish_at 예약 무시)
                 box["targets"].append(t)
         if not box["targets"]:
             raise u.SkipSave   # 바꿀 게 없으면 파일 무변경
