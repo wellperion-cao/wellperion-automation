@@ -467,13 +467,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 </div>
 <div class="toast-msg" id="toastMsg"></div>
 <div class="tabs">
-  <!-- 탭 순서 = A3 인쇄 목록 순서(가이드라인=규정+가이드 → 매뉴얼 → 온보딩 → 응대·비품·청결은 해당 탭 안). 부서현황·일정·거래업체는 뒤쪽 관리 묶음. -->
+  <!-- 탭 순서(GM 지시 2026-08-25) = 매일 쓰는 것(규정·가이드·매뉴얼·주차점검) → 가끔 쓰는 것(발렛·온보딩·채용) → 보고·참조(월간·일정·거래업체). 일정·거래업체는 맨 오른쪽 고정. -->
   <button class="tab active" onclick="switchTab('policy')">📋 주차관리부 규정</button>
   <button class="tab" onclick="switchTab('guide')">📘 가이드</button>
   <button class="tab" onclick="switchTab('manual')">📖 매뉴얼</button>
   <button class="tab" onclick="switchTab('check')">🧹 주차점검</button>
-  <button class="tab" onclick="switchTab('onb')">🎓 온보딩</button>
   <button class="tab" onclick="switchTab('valet')">🚗 발렛 시스템</button>
+  <button class="tab" onclick="switchTab('onb')">🎓 온보딩</button>
   <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
   <button class="tab" onclick="switchTab('mplan')">📊 월간 주차관리부 현황·계획·보고</button>
   <button class="tab" onclick="switchTab('schedule')">🗓️ 일정</button>
@@ -771,11 +771,11 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
     <div class="manual-body" style="display:block;">
       <p style="font-size:12px;color:var(--dim);margin:0 0 10px;line-height:1.6;">
-        일일 8항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 4항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
+        일일 <span id="parkChecklistDailyN"></span>항목 = 체크 후 [일일 점검 제출]로 저장(지원부·시설부와 같은 점검 GAS). 주간 <span id="parkChecklistWeeklyN"></span>항목은 아직 인쇄·육안 체크 전용. 항목 근거: 위 매뉴얼 「주차관리인 청결관리」·「안전·소방·CCTV」 카드.
       </p>
       <div style="display:flex;align-items:center;gap:10px;margin:0 0 10px;">
         <div class="progress-bar" style="flex:1;"><div class="progress-fill" id="parkingProgressFill" style="width:0%;"></div></div>
-        <span id="parkingProgressText" style="font-size:12px;color:var(--dim);white-space:nowrap;">오늘 0/8</span>
+        <span id="parkingProgressText" style="font-size:12px;color:var(--dim);white-space:nowrap;">오늘 0/-</span>
         <button type="button" class="util-btn print-btn" style="padding:3px 9px;" onclick="loadParkingCheckState()" title="새로고침">🔄</button>
       </div>
       <table class="schedule-table">
@@ -896,9 +896,8 @@ function switchTab(tab){
     var oc=t.getAttribute('onclick')||'';
     t.classList.toggle('active', oc.indexOf("'"+tab+"'")>=0);
   });
-  ['policy','guide','manual','onb','valet','mplan','schedule','vendorboard','hiring'].forEach(function(id){
-    var el=document.getElementById('tab-'+id);
-    if(el) el.classList.toggle('hidden', id!==tab);
+  document.querySelectorAll('.content[id^="tab-"]').forEach(function(el){
+    el.classList.toggle('hidden', el.id!=='tab-'+tab);
   });
   if(tab==='onb'){ if(typeof renderOnboardingTab==='function') renderOnboardingTab(); }
   if(tab==='schedule'){ var _f=document.getElementById('scheduleFrame'); if(_f && !_f.src && _f.getAttribute('data-src')) _f.src=_f.getAttribute('data-src'); }
@@ -906,20 +905,15 @@ function switchTab(tab){
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
 }
 /* 해시 딥링크(예 …#manual) → 로드 시 해당 탭 자동 열기(지원부·시설부 체계와 동일 패턴 · 밤 하루 정리 링크가 청결·점검 체크리스트로 바로 가도록 · 배670 후속 2026-08-20). */
-window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && document.getElementById('tab-'+h)) switchTab(h); else if(h==='check') openParkingChecklist(); }catch(e){} });
+window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h==='check') openParkingChecklist(); else if(h && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
 /* 2026-08-25 시우 — #check 로 오면 점검 체크리스트를 '펼친 상태로' 보여준다.
    종전 #manual 딥링크는 탭만 열고 아코디언은 접힌 채였다(배670 의도는 "체크리스트로 바로"였는데 절반만 됐다).
    실측 2026-08-25: 첫 화면에서 제출칸까지 2클릭 — 매뉴얼 탭, 아코디언. 2026-08-18 배선 이후 제출 0건이었다. */
 function openParkingChecklist(){
-  switchTab('manual');
+  switchTab('check');
   var sec=document.getElementById('parkChecklistSec');
   if(!sec) return;
-  var body=sec.querySelector('.manual-body');
-  if(body && !body.classList.contains('open')){
-    var hdr=sec.querySelector('.manual-header');
-    if(hdr) togManual(hdr);            // 화살표 방향까지 같이 맞추려고 기존 토글을 그대로 쓴다
-  }
-  sec.scrollIntoView({behavior:'smooth',block:'start'});
+  sec.scrollIntoView({behavior:'smooth',block:'start'});   // #tab-check 아코디언은 항상 펼쳐진 상태(display:block 고정)라 토글 불필요
 }
 /* ── 인쇄 통합 드롭다운 헬퍼 (지원부·운영부·시설부 체계와 동일 패턴) ── */
 function openTabDropdown(btnEl, menuEl, e){
@@ -2082,6 +2076,9 @@ async function loadParkingRevenue(){
    주차부는 회차 개념이 없어 자리표시일 뿐, 화면·보고에는 노출 안 됨.
    ═══════════════════════════════════════════ */
 function renderParkingDailyCheck(){
+  const dN=document.getElementById('parkChecklistDailyN'); if(dN) dN.textContent=PARK_CHECKLIST.daily.length;
+  const wN=document.getElementById('parkChecklistWeeklyN'); if(wN) wN.textContent=PARK_CHECKLIST.weekly.length;
+  const progText=document.getElementById('parkingProgressText'); if(progText) progText.textContent='오늘 0/'+PARK_CHECKLIST.daily.length;
   const body=document.getElementById('parkingDailyCheckBody');
   if(!body) return;
   let html='';
