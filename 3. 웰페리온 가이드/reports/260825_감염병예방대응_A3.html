@@ -37,7 +37,7 @@
   .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
     letter-spacing:6px; margin-bottom:5px; }
   .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
-  .meta{ margin-left:auto; text-align:right; font-size:12.5px; line-height:1.75; color:#3C464F; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
 
   /* ② 결정 요청 */
@@ -61,7 +61,7 @@
   /* ③ 비교표 */
   .tblwrap{ margin-top:11px; }
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.32; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
   thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
   thead th.k{ width:186px; background:#0E2439; }
   thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
@@ -101,6 +101,15 @@
     display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
+</style><style>
+  .opt{ display:flex; gap:0; margin-top:3px; }
+  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
+  .opt .o:first-child{ border-right:0; }
+  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
+  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
+  .opt .o.rec{ background:rgba(255,255,255,.12); }
+  .opt .o.rec .h::after{ content:' · 권고'; font-weight:700; opacity:.85; }
+  .tblwrap+.tblwrap{ margin-top:11px; }
 </style>
 </head>
 <body>
@@ -115,40 +124,41 @@
 
 <div class="page" id="sheet">
 
-  <!-- ① 헤더 -->
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
       <div class="title">위생·감염 예방 차원의 선제 조치 정리</div>
     </div>
     <div class="meta">
-      작성 <b>운영부</b><br>
-      작성일 <b>2026. 08. 25.</b> · 문서번호 <b>WP-GM-260825-01</b><br>
-      배경 <b>회장님 말씀(2026-08-25) — 미리 조심하자는 차원에서 정리*</b> · 보고 <b>회장님·경영진</b>
+      작성 <b>운영부</b> · 작성일 <b>2026. 08. 25.</b> · 문서번호 <b>WP-GM-260825-01</b><br>
+      배경 <b>회장님 말씀(2026-08-25) — 미리 조심하자는 차원에서 정리*</b><br>
+      보고 <b>회장님 · 경영진</b> · 시행 <b>2026. 09. 01.(월) 1차 점검</b>
     </div>
   </div>
 
-  <!-- ② 결정 요청 -->
   <div class="ask">
-    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="lb"><span>DECISION</span><strong>방향 선택</strong></div>
     <div class="items">
       <div class="it">
-        <div class="n">01</div>
-        <div class="q">손소독제·마스크 현재 재고부터 확인하도록 지시해 주십시오.</div>
-        <div class="d">리셉션·사우나·주차 세 곳에 지금 얼마나 있는지 집계된 적이 없습니다. 재고를 먼저 확인한 뒤 부족분만 확보하는 순서로 진행합니다.</div>
+        <div class="n">01 · 손소독제 구매 방식</div>
+        <div class="opt">
+          <div class="o rec"><div class="h">1안 — 소모품 예산 상시 확보</div><div class="x">예산을 배정해 3곳(리셉션·사우나·주차)에 늘 채워 둡니다. 급할 때 조달보다 <b>단가가 쌉니다.</b></div></div>
+          <div class="o"><div class="h">2안 — 필요할 때 건별 구매</div><div class="x">예산 배정 없이 떨어질 때마다 결재로 삽니다. 초기 부담은 없으나 <b>비는 날이 생깁니다.</b></div></div>
+        </div>
       </div>
       <div class="it">
-        <div class="n">02</div>
-        <div class="q">회원 안내 없이 실행만 유지하는 방향을 확인해 주십시오.</div>
-        <div class="d">안내문·문자를 보내지 않고 매일 점검으로 꾸준히 시행하는 쪽으로 정했습니다. 알리면 설명·관리 비용이 따라오지만 예방 효과는 실행에서 나옵니다. 회원이 먼저 물으면 사실대로 답합니다.</div>
+        <div class="n">02 · 정기 방역 주기</div>
+        <div class="opt">
+          <div class="o rec"><div class="h">1안 — 현행 유지 (월 1회)</div><div class="x">세스코 계약 그대로. 최근 8/18 · 다음 9/18. <b>이미 매일 돌고 있는 청소·점검</b>이 있어 이것으로 충분합니다.</div></div>
+          <div class="o"><div class="h">2안 — 강화 기간 격주</div><div class="x">유행이 국내로 들어오면 격주로 올립니다. <b>비용이 늘고</b> 지금은 필요를 뒷받침할 근거가 없습니다.</div></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ③ 본문 표 -->
   <div class="tblwrap">
   <table>
-    <colgroup><col style="width:150px"><col><col style="width:150px"><col style="width:150px"><col><col style="width:130px"></colgroup>
+    <colgroup><col style="width:132px"><col><col style="width:118px"><col style="width:126px"><col style="width:214px"><col style="width:118px"><col style="width:230px"></colgroup>
     <thead>
       <tr>
         <th class="k">항목</th>
@@ -157,87 +167,51 @@
         <th>담당</th>
         <th>반영 위치</th>
         <th>상태</th>
+        <th>주의 · 남은 것</th>
       </tr>
     </thead>
     <tbody>
-      <tr class="grp"><td colspan="6">현 장 조 치</td></tr>
-      <tr><td class="k">1 접점 소독</td><td>손잡이·락커·키오스크·무인발권기·주차 정산기</td><td class="ctr">오픈 전·마감 후 2회</td><td class="ctr">지원부·주차관리부</td><td>지원부 일일점검 G-2 / 주차 일일점검</td><td class="ctr good">반영 완료(8/25)</td></tr>
-      <tr><td class="k">2 환기</td><td>사우나·수면실·찜질방 회차마다 10분, 창 없는 구역 배기팬 상시</td><td class="ctr">회차마다(3회)</td><td class="ctr">지원부</td><td>지원부 일일점검 G-3</td><td class="ctr good">반영 완료(8/25)</td></tr>
-      <tr><td class="k">3 공용 비품 상태</td><td>바스타올·매트리스·침구 상태 보고 교체</td><td class="ctr">회차 점검 시</td><td class="ctr">지원부</td><td>기존 OP-4 항목이 커버(신규 칸 없음)</td><td class="ctr">기존 항목 활용</td></tr>
-
-      <tr class="grp"><td colspan="6">인 력 · 비 품</td></tr>
-      <tr><td class="k">4 직원 건강</td><td>발열·기침 시 근무 제외·즉시 보고 / 청소 시 마스크·장갑</td><td class="ctr">상시</td><td class="ctr">전 부서</td><td>주차관리부 운영 원칙에 명문화 · 전 부서 카톡 안내</td><td class="ctr good">안내 완료(8/25)</td></tr>
-      <tr><td class="k">5 비품 재고</td><td>손소독제·마스크 (리셉션·사우나·주차)</td><td class="ctr">주 1회</td><td class="ctr">지원부·주차관리부</td><td>지원부 G-4(월요일) / 주차 주간점검</td><td class="ctr good">반영 완료(8/25)</td></tr>
-
-      <tr class="grp"><td colspan="6">방 역 계 약</td></tr>
-      <tr><td class="k">6 정기 방역</td><td>세스코 방역·방제</td><td class="ctr">월 1회</td><td class="ctr">시설부</td><td>전사일정 법정·정기점검</td><td class="ctr good">시행 중(최근 8/18)</td></tr>
+      <tr class="grp"><td colspan="7">현 장 조 치</td></tr>
+      <tr><td class="k">1 접점 소독</td><td>손잡이·락커·키오스크·무인발권기·주차 정산기</td><td class="ctr">오픈 전·마감 후 2회</td><td class="ctr">지원부·주차관리부</td><td>지원부 일일점검 G-2 / 주차 일일점검</td><td class="ctr good">반영 완료 (8/25)</td><td>주차관리부는 8/18 입사·적응 중이라 제출이 아직 1일뿐</td></tr>
+      <tr><td class="k">2 환기</td><td>사우나·수면실·찜질방 회차마다 10분, 창 없는 구역 배기팬 상시</td><td class="ctr">회차마다 (3회)</td><td class="ctr">지원부</td><td>지원부 일일점검 G-3</td><td class="ctr good">반영 완료 (8/25)</td><td>—</td></tr>
+      <tr><td class="k">3 공용 비품</td><td>바스타올·매트리스·침구 상태 보고 교체</td><td class="ctr">회차 점검 시</td><td class="ctr">지원부</td><td>기존 OP-4 항목이 커버 — 신규 칸 없음</td><td class="ctr">기존 항목 활용</td><td>—</td></tr>
+      <tr class="grp"><td colspan="7">인 력 · 비 품</td></tr>
+      <tr><td class="k">4 직원 건강</td><td>발열·기침 시 근무 제외·즉시 보고 / 청소 시 마스크·장갑</td><td class="ctr">상시</td><td class="ctr">전 부서</td><td>주차관리부 운영 원칙 명문화 · 전 부서 카톡 안내</td><td class="ctr good">안내 완료 (8/25)</td><td>신고 0건 — 체계가 도는지는 첫 신고 때 확인된다</td></tr>
+      <tr><td class="k">5 비품 재고</td><td>손소독제 (리셉션·사우나·주차 3곳) · 마스크는 직원 개별</td><td class="ctr">주 1회 (월요일)</td><td class="ctr">운영부 <span class="est">구매·관리</span></td><td>지원부 G-4 / 주차 주간점검</td><td class="ctr bad">재고 0 — 구매 필요</td><td class="bad"><b>8/26 결재 확인 → 8/31 3곳 설치 예정.</b> 9/1 시행 전에 실물이 놓여야 셀 것이 생긴다</td></tr>
+      <tr class="grp"><td colspan="7">방 역 계 약</td></tr>
+      <tr><td class="k">6 정기 방역</td><td>세스코 방역·방제</td><td class="ctr">월 1회</td><td class="ctr">시설부</td><td>전사일정 법정·정기점검</td><td class="ctr good">시행 중 <span class="est">최근 8/18</span></td><td>다음 9/18. 세스코 작업이 「소독」인지 「방제」인지 소장님 회신 대기</td></tr>
     </tbody>
   </table>
   </div>
 
-  <!-- ④ 3분할 -->
-  <div class="cols">
-    <div class="box">
-      <h3>핵심 리스크</h3>
-      <ul>
-        <li class="r1">지원부 점검 제출률 8월 약 49% — 제출된 것은 93% 채워져 있어 실행이 아니라 기록이 빠진다.</li>
-        <li class="r1">손소독제·마스크 재고가 집계된 적 없음 — 부족해도 지금은 알 방법이 없다.</li>
-        <li class="r2">항목 5개가 늘어 당분간 완료율 수치가 내려간다(분모 114→124, 실행 저하 아님).</li>
-        <li class="r2">방역 실시 기록이 두 곳에 나뉘어 있었다 — 정기점검 칸과 일정 이벤트. 오늘 일원화했다.</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>실행 액션</h3>
-      <ul class="ord">
-        <li class="n">8/25 지원부 점검에 3항목(G-2·G-3·G-4) 신설 — 새 점검표를 만들지 않고 기존 「G 방역&방제」 분류에 편입</li>
-        <li class="n">8/25 주차관리부 일일에 접점 소독, 주간에 재고 확인 추가</li>
-        <li class="n">8/25 전 부서 카톡 안내 발송(★운영+시설+지원+주차) · 중간관리자 경유 점검 기록 독려</li>
-        <li class="n">8/25 정기 방역 실시일 일원화 — 최근 8/18 · 다음 9/18 로 채움</li>
-        <li class="n">9/1(월) 손소독제·마스크 3개소 재고 첫 집계</li>
-        <li class="n">회원 안내는 하지 않음 — 문의 시 사실 답변으로만 대응(리셉션·종합접수처 기준)</li>
-      </ul>
-    </div>
-    <div class="box rec">
-      <h3>GM 권고</h3>
-      <ul>
-        <li>알리는 것과 하는 것은 다르다. <b>회원 안내 없이 실행을 꾸준히 유지</b>하는 편이 관리 비용이 가장 낮다.</li>
-        <li>방역은 이미 매월 돌고 있다. 새로 늘릴 것 없이 <b>실시 기록이 한 곳에 남게</b> 하는 것으로 충분하다.</li>
-        <li>비품은 <b>소모품 예산으로 상시 확보</b>하는 편이 급할 때 조달보다 싸다.</li>
-      </ul>
-    </div>
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:214px"><col style="width:186px"><col style="width:214px"><col style="width:118px"><col><col style="width:250px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k">경과 관찰 — 보는 것</th>
+        <th>지금 값</th>
+        <th>목표</th>
+        <th>확인 주기</th>
+        <th>확인 방법</th>
+        <th>다음 할 일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">지원부 점검 제출률</td><td class="ctr warn">8월 53% <span class="est">제출 23/25일</span></td><td class="ctr good">90% 이상</td><td class="ctr">주 1회</td><td>지원부 체계 · 월간 리포트</td><td>미제출을 부서장 확인 사항으로 올릴지 결정</td></tr>
+      <tr><td class="k">접점 소독·환기 이행</td><td class="ctr">8/25 시작</td><td class="ctr good">매일 2~3회 전 회차</td><td class="ctr">매일</td><td>지원부 일일점검 G-2·G-3</td><td>9/1 현장에서 실제로 도는지 눈으로 확인</td></tr>
+      <tr><td class="k">손소독제 재고 <span class="est">3곳</span></td><td class="ctr bad">재고 0 · 미집계</td><td class="ctr good">3곳 상시 확보</td><td class="ctr">주 1회 (월)</td><td>지원부 G-4 · 주차 주간점검</td><td class="bad"><b>8/26 결재 확인 · 8/31 설치 · 9/1 첫 집계</b></td></tr>
+      <tr><td class="k">정기 방역(세스코) 이행</td><td class="ctr good">최근 8/18 · 다음 9/18</td><td class="ctr good">계약 주기대로 월 1회</td><td class="ctr">월 1회</td><td>전사일정 법정·정기점검</td><td>소독/방제 구분 회신 받아 정기점검 줄에 채우기</td></tr>
+      <tr><td class="k">직원 발열·기침 신고</td><td class="ctr">0건</td><td class="ctr good">즉시 보고 체계 유지</td><td class="ctr">상시</td><td>종합접수처 · 부서 카톡</td><td>—</td></tr>
+      <tr><td class="k">주차관리부 점검 정착</td><td class="ctr warn">제출 1일 <span class="est">8/20 배선</span></td><td class="ctr good">매일 제출</td><td class="ctr">주 1회</td><td>주차 일일·주간점검</td><td>조희제 관리인 <b>입사 한 달(9/18)</b>까지 적응 기간으로 두고 그 뒤부터 센다</td></tr>
+    </tbody>
+  </table>
   </div>
 
-  <!-- 경과 관찰 -->
-  <div class="cols">
-    <div class="box">
-      <h3>경과 관찰 — 무엇으로 확인하는가</h3>
-      <table style="margin-top:8px">
-        <thead>
-          <tr>
-            <th class="k">보는 것</th>
-            <th>지금 값</th>
-            <th>목표</th>
-            <th>확인 주기</th>
-            <th>확인 방법</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td class="k">지원부 점검 제출률</td><td class="ctr">8월 약 49%</td><td class="ctr good">90% 이상</td><td class="ctr">주 1회</td><td>지원부 체계 · 월간 리포트</td></tr>
-          <tr><td class="k">접점 소독·환기 이행</td><td class="ctr">8/25 시작</td><td class="ctr good">매일 2~3회 전 회차</td><td class="ctr">매일</td><td>지원부 일일점검 G-2·G-3</td></tr>
-          <tr><td class="k">손소독제·마스크 재고</td><td class="ctr warn">미집계(첫 확인 9/1)</td><td class="ctr good">3개소 상시 확보</td><td class="ctr">주 1회(월)</td><td>지원부 G-4 · 주차 주간점검</td></tr>
-          <tr><td class="k">정기 방역(세스코) 이행</td><td class="ctr">최근 8/18 · 다음 9/18</td><td class="ctr good">계약 주기대로</td><td class="ctr">월 1회</td><td>전사일정 법정·정기점검</td></tr>
-          <tr><td class="k">직원 발열·기침 신고</td><td class="ctr">0건</td><td class="ctr good">즉시 보고 체계 유지</td><td class="ctr">상시</td><td>종합접수처 · 부서 카톡</td></tr>
-          <tr><td class="k">손소독제 비치 8곳</td><td class="ctr warn">미설치</td><td class="ctr good">8곳 설치·상시 유지</td><td class="ctr">주 1회</td><td>지원부 G-4 · 주차 주간점검</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>배경</b> — * 사고나 발병이 있어 대응하는 것이 아니다. 회장님 말씀에 따라 <b>미리 해 두면 좋을 일</b>을 지금 하던 청소·점검에 얹었다. 새 조직·새 점검표는 만들지 않았다.</div>
-    <div><b>산출 근거</b> — 점검 제출률·완료율 수치는 2026-08-01~08-25 지원부 점검 원장 실측. 분모 114→124는 2026-08-25 오늘 기준 점검 예정 항목 수. 정기 방역 최근 실시 2026-08-18(세스코) — 전사일정 실측.</div>
-    <div><b>차기 보고</b> — 2026-09-01(월) 첫 주간 재고 확인 결과 포함.</div>
+    <div><b>배경</b> — * 사고나 발병이 있어 대응하는 것이 아니다. 회장님 말씀에 따라 <b>미리 해 두면 좋을 일</b>을 지금 하던 청소·점검에 얹었다. <b>새 조직·새 점검표는 만들지 않았다.</b></div>
+    <div><b>산출 근거</b> — 제출률·완료율은 2026-06-01~08-25 점검 원장 전수 집계(지원부 7월 12% → 8월 53%). 정기 방역 최근 실시 2026-08-18(세스코) — 전사일정 실측. 손소독제 재고 0 은 이경연 실장 확인(8/25).</div>
+    <div><b>차기 보고</b> — 2026-09-01(월) 1차 점검 — 5항목이 실제로 도는지 현장 확인 + 손소독제 첫 재고 집계.</div>
   </div>
 
 </div>
@@ -245,19 +219,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 document.getElementById('png').onclick = function () {
-  if (typeof html2canvas !== 'function') {
-    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
-    return;
-  }
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
   var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
   html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
-    .then(function (canvas) {
-      var a = document.createElement('a');
-      a.download = '260825_위생감염예방_선제조치_A3.png';
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    })
-    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260825_위생감염예방_선제조치_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
     .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
 };
 </script>
