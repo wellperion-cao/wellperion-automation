@@ -766,6 +766,30 @@ SUNDAY_INFO_LABELS = {"장소": "어디", "날짜": "언제", "누구와": "누�
                       "좋았던 점": "좋았던 점", "다시 간다면": "다음엔"}
 
 
+def _four_variant(series: dict, facts: dict | None) -> str:
+    """접수에서 고른 판형 → 렌더 변형 이름('strip4'·'grid4'). 기본 판형이면 빈 문자열.
+
+    판형 목록의 정본 = series.json 의 concepts (약속 L01) — 코드에 이름을 박지 않는다.
+    모르는 값이 오면 기본 판형으로 간다(접수가 통째로 실패하는 것보다 낫다).
+    """
+    picked = str((facts or {}).get("판형", "")).strip()
+    if not picked:
+        return ""
+    for c in series.get("concepts") or []:
+        if picked in (c.get("key", ""), c.get("label", "")):
+            return str(c.get("variant") or "")
+    print(f"[WARN] 모르는 판형 '{picked}' — 기본 판형으로 만듭니다", file=sys.stderr)
+    return ""
+
+
+def _four_meta(parsed: dict | None) -> str:
+    """네컷 판형 머리글 — '2026.08.23 · 아차산'. 없는 값은 그냥 빠진다."""
+    facts = (parsed or {}).get("facts") or {}
+    date = str(facts.get("날짜", "")).strip().replace("-", ".")
+    place = str(facts.get("장소", "")).strip()
+    return " · ".join([x for x in (date, place) if x])
+
+
 def _sunday_info_rows(facts: dict | None) -> list:
     """접수 답변 → 정보 슬라이드 줄. 적힌 것만 뽑는다(빈 항목은 아예 만들지 않는다)."""
     rows = []
@@ -790,6 +814,34 @@ def _human_date(v: str) -> str:
         return v
     week = "월화수목금토일"[d.weekday()]
     return f"{d.month}월 {d.day}일 {week}요일"
+
+
+def _compose_sunday_four(photos: list, variant: str, output: Path, *,
+                         label: str, meta: str = "", text: str = "", tag: str = "") -> bool:
+    """네컷 판형 한 장(사진 4장 묶음). 실패하면 False — 호출부가 기본 판형으로 돌아간다.
+
+    GM 확정 2026-08-25(컨셉 A·B). 판형별 그림은 compose_html._sunday_four_html 한 곳에만
+    있다 — 여기서 다시 그리지 않는다.
+    """
+    if not photos:
+        return False
+    try:
+        from compose_html import render_carousel
+        # 결과 폴더에 바로 렌더하면 엔진이 첫 장을 늘 post_1.jpg 로 써서 표지를 덮는다
+        # (2026-08-05 실사고) — 임시 폴더에 렌더한 뒤 옮긴다.
+        with tempfile.TemporaryDirectory() as tmp:
+            made = render_carousel(
+                {"account": "personal", "size": "1080x1350",
+                 "slides": [{"type": "sunday", "variant": variant,
+                             "photos": [str(p) for p in photos],
+                             "label": label, "meta": meta, "text": text, "tag": tag}]},
+                Path(tmp), fmt="jpg", concurrency=1)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(made[0]), str(output))
+        return True
+    except Exception as exc:
+        print(f"[WARN] 네컷 판형 렌더 실패({variant}) — 기본 판형으로 갑니다: {exc}", file=sys.stderr)
+        return False
 
 
 def _compose_sunday_think(caption: str, output: Path, rows: list | None = None) -> None:
@@ -922,14 +974,32 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         cover_src = _focus_crop(downloaded[0], parsed["cover_focus"], src_dir / "cover_focus.jpg",
                                  fit=cover_fit, top_align=True)
         _compose_sunday_cover(cover_src, intro, _add("post_1.jpg"), series)
-        fit_cards = [_focus_crop(p, (0.5, 0.5, 1.0), src_dir / f"fit_{i + 1}.jpg",
-                                 top_align=True)
-                     for i, p in enumerate(cards)]
-        for i, photo in enumerate(fit_cards):
-            # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
-            _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
-                                       _add(f"post_{i + 2}.jpg"))
-        nxt = len(cards) + 2
+        # 판형(컨셉) — 접수 화면에서 고른다(GM 확정 2026-08-25). 값이 없거나 모르는 값이면
+        # 기본 판형(사진 1장 = 슬라이드 1장)이다. 판형 이름의 정본 = series.json concepts.
+        variant4 = _four_variant(series, (parsed or {}).get("facts"))
+        if variant4:
+            groups = [cards[i:i + 4] for i in range(0, len(cards), 4)]
+            nxt = 2
+            for gi, group in enumerate(groups):
+                sent = texts[gi * 4] if gi * 4 < len(texts) else ""
+                ok = _compose_sunday_four(
+                    group, variant4, _add(f"post_{nxt}.jpg"),
+                    label=series["name"], meta=_four_meta(parsed),
+                    text=sent, tag=series.get("tag", ""))
+                if not ok:                       # 한 묶음이라도 실패하면 기본 판형으로 되돌린다
+                    slides_rel[:] = slides_rel[:1]
+                    variant4 = ""
+                    break
+                nxt += 1
+        if not variant4:
+            fit_cards = [_focus_crop(p, (0.5, 0.5, 1.0), src_dir / f"fit_{i + 1}.jpg",
+                                     top_align=True)
+                         for i, p in enumerate(cards)]
+            for i, photo in enumerate(fit_cards):
+                # 문장이 없는 사진은 사진만 넣는다 — 없는 문장을 지어내지 않는다.
+                _compose_sunday_photo_card(photo, texts[i] if i < len(texts) else "",
+                                           _add(f"post_{i + 2}.jpg"))
+            nxt = len(cards) + 2
         # 정보는 마무리 카드와 한 장으로 합친다(GM 지시 2026-08-25: '표로 정리한 건은
         # 백그라운드 맨 마지막이랑 병합해서 1장에 마무리'). 종전(2026-08-05~08-25)에는 정보를
         # 마지막 사진 카드 위에 얹느라 그 사진의 문장이 통째로 사라졌다 — 사진 카드는 사진과

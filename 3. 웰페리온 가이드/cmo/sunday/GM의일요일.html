@@ -228,6 +228,12 @@
         <div class="f-lab">시리즈</div>
         <select class="fld" id="f_series"></select>
       </div>
+      <!-- 판형(컨셉) — 목록의 정본은 series.json concepts 다(GM 확정 2026-08-25). -->
+      <div class="f hide" id="layoutRow" style="margin-bottom:12px;">
+        <div class="f-lab">판형</div>
+        <select class="fld" id="f_layout"></select>
+        <div class="note" style="margin-top:6px;">네컷 판형은 사진 4장을 한 장에 담습니다 — 사진이 많은 날에 좋습니다.</div>
+      </div>
       <div class="kv">
         <div><span class="k">검수 채널</span><span>텔레그램 · 업무보고방</span></div>
         <div><span class="k">발행 계정</span><span id="k_account">@namuk.wellperion (개인)</span></div>
@@ -458,6 +464,16 @@
   }
   function writerName(){ return $('f_writer').value.trim() || '김남욱 GM'; }
 
+  // 판형 목록 — series.json concepts 를 그대로 그린다. 하나뿐이면 칸을 보이지 않는다.
+  function paintConcepts(){
+    var list = currentSeries().concepts || [];
+    var sel = $('f_layout');
+    sel.innerHTML = list.map(function(c){
+      return '<option value="' + c.key + '">' + (c.label || c.key) + '</option>';
+    }).join('');
+    $('layoutRow').classList.toggle('hide', list.length < 2);
+  }
+
   function paintSeries(){
     var s = currentSeries();
     $('h_series').textContent = s.name;
@@ -487,8 +503,9 @@
         }).join('');
         // 고를 게 하나뿐이면 칸을 보이지 않는다 — 안 늘려도 되는 화면은 안 늘린다.
         if (SERIES.length > 1) $('seriesRow').classList.remove('hide');
-        sel.addEventListener('change', paintSeries);
+        sel.addEventListener('change', function(){ paintSeries(); paintConcepts(); });
         paintSeries();
+        paintConcepts();
       });
   })();
 
@@ -685,6 +702,8 @@
           '계정 @' + currentSeries().account + ' · ' + cutCount(),
           // 사진으로 알 수 없는 사실 — 적혀 있을 때만 보낸다(빈 줄을 만들지 않는다).
           '컨셉 · ' + $('f_concept').value,
+          // 판형 = 사진을 어떤 모양으로 앉힐지(기본 / 네컷 스트립 / 네컷 그리드). 기본이면 안 보낸다.
+          ($('f_layout').value && $('f_layout').value !== '기본') ? '판형 · ' + $('f_layout').value : '',
           $('f_slogan').value.trim() ? '슬로건 · ' + $('f_slogan').value.trim() : '',
           $('f_place').value.trim() ? '장소 · ' + $('f_place').value.trim() : '',
           $('f_when').value        ? '날짜 · ' + $('f_when').value : '',

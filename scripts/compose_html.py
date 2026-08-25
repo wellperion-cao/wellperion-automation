@@ -338,6 +338,62 @@ def _sunday_info_html(rows: list) -> str:
     return '<div class="sunday-info">' + "".join(out) + "</div>"
 
 
+def _sunday_four_html(slide: dict, w: int, h: int) -> str:
+    """네컷 판형 한 장 — 사진 4장을 스트립(booth) 또는 격자(grid)로 앉힌다.
+
+    GM 확정 2026-08-25: 「어떤 하루」에 컨셉을 여러 벌 두고 접수할 때 고른다. 판형 하나에
+    새 템플릿 파일을 만들지 않는다(약속 L21) — sunday 템플릿의 사진 자리에 이 블록을 통째로
+    넣고, 색·여백은 인라인으로 들고 온다. 사진이 4장보다 적으면 있는 만큼만 채운다.
+    """
+    photos = [Path(p) for p in (slide.get("photos") or []) if str(p).strip()][:4]
+    if not photos:
+        return ""
+    label = _esc(slide.get("label", "어떤 하루"))
+    meta = _esc(slide.get("meta", ""))          # 날짜 · 장소
+    text = _esc(slide.get("text", ""))          # 그날 문장(격자 판형만 쓴다)
+    tag = _esc(slide.get("tag", ""))
+
+    if slide.get("variant") == "strip4":
+        cell_w, cell_h = 532, 230
+        cells = "".join(
+            f'<div style="width:{cell_w}px;height:{cell_h}px;overflow:hidden">'
+            f'<img src="{_photo_b64(p, cell_w, cell_h)}" '
+            'style="width:100%;height:100%;object-fit:cover;display:block"></div>'
+            for p in photos)
+        return (
+            f'<div style="position:absolute;inset:0;background:#1A1817;display:flex;'
+            'align-items:center;justify-content:center">'
+            f'<div style="width:600px;background:{SUNDAY_DARK};padding:34px 34px 26px;'
+            'display:flex;flex-direction:column;gap:12px">'
+            f'<div style="color:{BEIGE};font-size:20px;letter-spacing:.26em;padding-bottom:4px">{label}</div>'
+            f'{cells}'
+            '<div style="padding-top:16px;display:flex;justify-content:space-between;'
+            'align-items:flex-end;color:#E8E3DA">'
+            f'<div style="font-size:24px;letter-spacing:.06em">{meta}</div>'
+            f'<div style="font-size:18px;letter-spacing:.3em;color:#6E675E">WELLPERION</div>'
+            '</div></div></div>')
+
+    # grid4 — 밝은 종이 바탕 + 2x2 + 그날 문장
+    cell = 452
+    cells = "".join(
+        f'<div style="width:{cell}px;height:{cell}px;overflow:hidden">'
+        f'<img src="{_photo_b64(p, cell, cell)}" '
+        'style="width:100%;height:100%;object-fit:cover;display:block"></div>'
+        for p in photos)
+    return (
+        '<div style="position:absolute;inset:0;background:#F4F1EA;padding:54px;'
+        'display:flex;flex-direction:column;color:#221F20">'
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:26px">'
+        f'<div style="font-size:24px;letter-spacing:.24em">{label}</div>'
+        f'<div style="font-size:22px;color:#8A8377">{meta}</div></div>'
+        f'<div style="display:flex;flex-wrap:wrap;gap:16px;width:920px">{cells}</div>'
+        f'<div style="margin-top:36px;font-size:44px;line-height:1.5">{text}</div>'
+        '<div style="margin-top:auto;display:flex;justify-content:space-between;'
+        'align-items:center;padding-top:26px;border-top:1px solid #D8D2C6">'
+        '<div style="font-size:22px;letter-spacing:.3em;color:#8A8377">WELLPERION</div>'
+        f'<div style="font-size:22px;color:{BEIGE}">{tag}</div></div></div>')
+
+
 def _sunday_body_html(slide: dict) -> str:
     """sunday 슬라이드 본문. 문장과 정보표를 한 장에 함께 담을 수 있다.
 
@@ -373,7 +429,9 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
         f"--cover-photo-h: {cover_photo_h}px;"
     )
     if kind == "sunday":
-        v = SUNDAY_VARIANTS[slide.get("variant", "card")]
+        # 네컷 판형(strip4·grid4)은 색·여백을 블록 안에 인라인으로 들고 다닌다 — 토큰은
+        # card 값을 빌려 쓴다(없는 키로 죽지 않게).
+        v = SUNDAY_VARIANTS.get(slide.get("variant", "card"), SUNDAY_VARIANTS["card"])
         tokens += (
             f" --sunday-bg: {v['bg']}; --sunday-fg: {v['fg']}; "
             f"--sunday-accent: {SUNDAY_ORANGE}; --sunday-pad: {v['pad']}; "
@@ -441,6 +499,11 @@ def build_slide_html(slide: dict, *, w: int, h: int, account: str,
         ))
 
     if kind == "sunday":
+        # 네컷 판형은 사진 자리를 통째로 쓴다 — 글자 자리(stage)는 비운다.
+        if slide.get("photos"):
+            return _fill(_load_template("sunday"), dict(
+                common, PHOTO_HTML=_sunday_four_html(slide, w, h),
+                GRAD_HTML="", LABEL_HTML="", BAR_HTML="", TEXT=""))
         v = SUNDAY_VARIANTS[slide.get("variant", "card")]
         photo_html = ""
         if v["photo_frac"] > 0:
