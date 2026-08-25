@@ -2001,6 +2001,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
   member_inquiry_update:  true,  // 2026-06-22 GM '전체 공개' — 실명·전화 포함 수정
   member_inquiry_add:     true,  // 2026-06-23 전화·직접 문의 수기 추가
   member_inquiry_delete:  true,  // 행 삭제
+  client_write_fail:      true,  // 저장 실패 보고(밀린 건수만·회원 데이터 미저장) — 게이트가 켜져도 실무진 PC 에서
+                                 //   실패 신호는 올라와야 한다. 2026-08-25 시포·GM
   member_registered_list:     true,  // 2026-06-23 등록현황(SUC/단기SUC) 조회
   // member_registered_setmonth 제거(2026-08-06 시토, 배295 점검) — 호출부 0건(membership.html 어디서도
   //   부르지 않고, member_registered_list 응답에 월 필드 자체가 없어 체크해도 화면에 뜰 수가 없었다).
@@ -6145,6 +6147,37 @@ function _hasRealReply_(memo) {
     return _json({ ok: true, col: dvIx + 1, rows: dvRows,
                    before: dvCurList, after: dvOpts,
                    added: dvOpts.filter(function(o){ return dvCurList.indexOf(o) < 0; }) });
+  }
+
+  // ─── 저장 실패 보고(CPO 0단계 · GM 승인 2026-08-25) ───
+  //   왜: 화면에서 시트로 못 보낸 저장 요청은 그 PC 브라우저 안(localStorage)에만 남고 서버엔
+  //   흔적이 한 줄도 없었다. 그래서 실무진이 실패 표시를 못 보고 지나가면 그 수정은 영영
+  //   시트에 안 들어가고, 우리는 몇 건이 밀려 있는지조차 알 수 없었다(유상두 건·2026-08-22).
+  //   여기서는 '무엇이 몇 건 밀렸나'만 받는다 — 회원 데이터를 새로 저장하는 통로가 아니다.
+  //   새 시트·새 로그·새 알림을 만들지 않고 이미 있는 회원변경이력에 한 줄로 남긴다(약속 L21).
+  //   토큰 없이 받는 대신 append 전용 + 길이 제한 + 브라우저별 시간당 상한으로 막는다.
+  if (action === 'client_write_fail') {
+    var _cwId = String(body.browserId || '').replace(/[^A-Za-z0-9\-]/g, '').slice(0, 24) || '미상';
+    var _cwCache = CacheService.getScriptCache();
+    var _cwKey = 'cwf_' + _cwId;
+    var _cwN = parseInt(_cwCache.get(_cwKey) || '0', 10);
+    if (_cwN >= 20) return _json({ ok: true, skipped: 'rate-limited' });   // 시간당 20줄까지
+    _cwCache.put(_cwKey, String(_cwN + 1), 3600);
+    var _cwCut = function (v, n) { return String(v == null ? '' : v).slice(0, n); };
+    _memberLog_([[new Date(), 'PC ' + _cwId, _cwCut(body.who, 40),
+                  _logMaskPhone_(_cwCut(body.phone, 20)),
+                  '저장 실패(미전송)', _cwCut(body.reason, 120),
+                  '밀린 건수 ' + Math.max(0, Math.min(999, parseInt(body.count, 10) || 0)),
+                  '멤버십 회원관리']]);
+    // 시트에만 적으면 아무도 안 본다 — 그 PC 에서 이번 시간 첫 실패일 때만 한 줄 알린다
+    // (같은 PC 연속 실패는 위 상한 카운터가 이미 막는다 · 새 알림 장치 0).
+    if (_cwN === 0) {
+      try {
+        _notifyTelegram('⚠️ 저장 실패(시트로 못 감) — PC ' + _cwId
+          + ' · ' + _cwCut(body.who, 20) + ' · 사유: ' + _cwCut(body.reason, 60));
+      } catch (e) {}
+    }
+    return _json({ ok: true });
   }
 
   // ─── 문의회원 페이지(CPO): 새 문의 중복 삭제(소프트) ───
