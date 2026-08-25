@@ -25,7 +25,14 @@
   python scripts/kakao_room_listen.py                      # 아카이브 최신본에서 읽기
   python scripts/kakao_room_listen.py --dry-run            # 배 안 만들고 뽑히는 것만 보기
   python scripts/kakao_room_listen.py --selfcheck          # 자체 점검
-예약: Wellperion-Kakao-Room-Listen-Hourly (매시 08:05~20:05 · launchers/kakao_room_listen_hidden.vbs)
+언제 도나 (2026-08-25 GM 변경)
+  아침 07:30 운영부 다이제스트(scripts/ops_morning_digest.bat)가 하루 한 번 부른다.
+  ▸전에는 매시 08~20시 전용 예약작업(Wellperion-Kakao-Room-Listen-Hourly)이 돌았다. 실측 결과
+    하루 13번 돌아 4일에 새 호출 2건이었고, 매 회차마다 카카오톡 창을 앞으로 띄워 GM 화면을
+    가렸다. GM: "오전에만 하고, 어제 중간관리자 정리하는 것처럼만 진행하면 안될까?"
+  ▸다이제스트가 바로 앞 줄에서 이미 같은 방을 내보내므로 여기선 --export 를 쓰지 않는다
+    (창을 다시 띄우지 않는다). 하루 걸러도 놓치지 않게 --since-days 2 로 부른다.
+  ▸되돌리려면 status/_removed_tasks/ 에 보관한 예약작업 정의를 다시 등록한다.
 """
 from __future__ import annotations
 

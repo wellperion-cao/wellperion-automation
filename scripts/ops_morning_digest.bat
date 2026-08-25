@@ -27,6 +27,18 @@ REM   Rollback = re-add the --room-key foursplit / dept lines (this commit).
 if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
 "%PY%" "%ROOT%\scripts\kakao_export_chat.py" --room-key mgr >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% kakao_export_chat
+REM 2026-08-25 (GM): the hourly manager-room listener was removed; its work runs here once a
+REM   morning instead. GM: "오전에만 하고, 어제 중간관리자 정리하는 것처럼만 진행하면 안될까?
+REM   그때 웰리 불렀던 내용이 있으면 같이 정리해주면 좋을 것 같아."
+REM   Measured before the change: 13 runs a day, 2 new calls in 4 days, and every run pulled the
+REM   KakaoTalk window to the front for 5s. Export already happened on the line above, so this
+REM   reads the archive file (no --export) - no extra window, no extra token.
+REM   Rollback = re-create task Wellperion-Kakao-Room-Listen-Hourly (definition kept in
+REM   status/_removed_tasks/ 2026-08-25) and drop this line.
+REM   --since-days 2: once a day means a skipped run (PC off) would lose that day's calls.
+REM   Two days of overlap costs nothing - already-seen calls are skipped by fingerprint.
+"%PY%" "%ROOT%\scripts\kakao_room_listen.py" --since-days 2 >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
+if errorlevel 1 set FAILED=%FAILED% kakao_room_listen
 "%PY%" "%ROOT%\scripts\ops_daily_digest.py" >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
 if errorlevel 1 set FAILED=%FAILED% ops_daily_digest
 "%PY%" "%ROOT%\scripts\ops_daily_digest.py" --room-key mgr >> "%ROOT%\logs\ops_morning_digest.log" 2>&1
