@@ -101,7 +101,28 @@
     display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
-</style></head>
+</style>
+<style>
+  /* 방향 선택 — 결정 요청을 열린 질문 대신 1안/2안으로 (GM 지시 2026-08-25) */
+  .opt{ display:flex; gap:0; margin-top:3px; }
+  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
+  .opt .o:first-child{ border-right:0; }
+  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
+  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
+  .opt .o.rec{ background:rgba(255,255,255,.12); }
+  .opt .o.rec .h::after{ content:' · 권고'; font-weight:700; opacity:.85; }
+  .tblwrap+.tblwrap{ margin-top:11px; }
+  .rm{ display:flex; gap:10px; margin-top:6px; }
+  .rm .st{ flex:1; border:1px solid var(--line); padding:7px 10px 8px; }
+  .rm .st .t{ font-size:12.4px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .rm .st .g{ font-size:11.2px; color:#5C666F; line-height:1.4; margin-top:2px; }
+  .rm .st .b{ height:9px; background:#E7ECF2; margin-top:6px; position:relative; }
+  .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .rm .st .p{ font-size:13px; font-weight:800; margin-top:3px; }
+  .rm .st.done .b i{ background:var(--good); } .rm .st.done .p{ color:var(--good); }
+  .rm .st.wait .b i{ background:#B9C2CC; } .rm .st.wait .p{ color:#7A838C; }
+</style>
+</head>
 <body>
 
 <div class="bar">
@@ -127,17 +148,21 @@
   </div>
 
   <div class="ask">
-    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="lb"><span>DECISION</span><strong>방향 선택</strong></div>
     <div class="items">
       <div class="it">
-        <div class="n">01</div>
-        <div class="q">이정헌 소장·나우열M 라인의 보고 주기를 정해 주십시오.</div>
-        <div class="d">운영부만 주간·월간·수시 규정이 있고 나머지 두 라인은 아직 없습니다. 규정이 없으면 늦어져도 <b>리마인드를 걸 근거</b>가 없습니다 — 법정점검 회신이 11일 비었던 것이 그 사례입니다.</div>
+        <div class="n">01 · 소장·나우열M 라인 보고 주기</div>
+        <div class="opt">
+          <div class="o rec"><div class="h">1안 — 9월 계약서 재작성 때 함께 넣는다</div><div class="x">어차피 전원 계약서를 다시 씁니다. <b>별도 절차 없이</b> 두 라인 규정을 같이 정합니다.</div></div>
+          <div class="o"><div class="h">2안 — 4분기로 이월</div><div class="x">지금은 넘어갑니다. 다만 <b>3분기 내내 비어 있던 항목</b>이라 또 미뤄질 위험이 있습니다.</div></div>
+        </div>
       </div>
       <div class="it">
-        <div class="n">02</div>
-        <div class="q">주차관리부 전담 관리자 배치 여부를 정해 주십시오.</div>
-        <div class="d">3개 부서 중 주차관리부만 점검 제출이 <b>0건</b>입니다. 화면·배선은 8/20에 끝났고 사람이 쓰지 않는 상태입니다. 관리인이 청소를 겸하고 있어 볼 사람이 없습니다.</div>
+        <div class="n">02 · 주차관리부 관리 방식</div>
+        <div class="opt">
+          <div class="o rec"><div class="h">1안 — 겸임 유지 · 부담만 조정</div><div class="x">조희제 관리인이 8/18 입사했습니다. 청소 겸임을 유지하되 <b>점검 시간을 확보</b>해 줍니다. 인건비가 늘지 않습니다.</div></div>
+          <div class="o"><div class="h">2안 — 전담 관리자 배치</div><div class="x">점검만 보는 사람을 둡니다. <b>인건비가 늘고</b> 지금 업무량이 그만큼인지 근거가 없습니다.</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -168,36 +193,26 @@
   </table>
   </div>
 
-  <div class="cols">
-    <div class="box rec">
-      <h3>개선된 것 — 8월</h3>
-      <ul class="ord">
-        <li class="n">4부서 점검 전산화 완료 — 운영·지원·시설·주차 전부 화면에서 제출</li>
-        <li class="n">밤 4부서 정리 <b>4,315자 → 812자</b> (81% 축소) · 5일 연속 정상 발송</li>
-        <li class="n">중간관리자 방 단일 창구 정착 — 질문·확인이 한 곳으로 모임</li>
-        <li class="n">지원부 급여 체계 3직급 개편 — 팀장 자리를 만들면서 <b>월 41만원 절감</b></li>
-        <li class="n">보안 인프라 ADT캡스 이관 계약 완료 — 무인경비·출입통제·CCTV</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>남은 것</h3>
-      <ul>
-        <li class="r1"><b>주차관리부 점검 제출 0건</b> — 8/20 배선 후 나흘 연속. 화면 문제가 아니라 쓰지 않는 것입니다(같은 기간 지원부는 정상).</li>
-        <li class="r1"><b>소장·나우열M 보고 주기 규정 공백</b> — 늦어져도 리마인드할 근거가 없습니다.</li>
-        <li class="r1"><b>운영부 기한 관리</b> — 마감일 빈칸 23건이 8/21 안내(11건) 이후 오히려 늘었습니다.</li>
-        <li class="r2">지원부는 실행이 아니라 <b>기록</b>이 빠집니다 — 제출된 점검은 93% 채워져 있는데 제출률이 절반입니다.</li>
-        <li class="r2">나우열M 라인 조직표 미확정 — 업무 폭이 가장 넓은데 인원 구조가 문서에 없습니다.</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>GM 권고</h3>
-      <ul>
-        <li><b>사람을 더 넣기 전에 제출을 책임질 자리를 세웁니다.</b> 지원부 팀장 발령이 그 첫 수이고, 주차관리부가 다음입니다.</li>
-        <li>보고 주기 규정 <b>4개 빈칸</b>이 여전히 이 문서의 1순위입니다 — 규정이 없으면 자동 리마인드가 사실 위에서 돌지 못합니다.</li>
-        <li>운영부 기한 관리는 <b>안내로 해결되지 않았습니다</b>(11건 → 23건). 빈칸을 못 채우면 등록이 안 되게 화면에서 막는 쪽으로 갑니다.</li>
-        <li>관통 원칙 유지 — <b>지시건은 보고가 와야 닫습니다.</b> 받았다는 확인만으로 닫지 않습니다.</li>
-      </ul>
-    </div>
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:150px"><col></colgroup>
+    <thead><tr><th class="k">구분</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="2">개 선 된 것 — 8 월</td></tr>
+      <tr><td class="k">체계</td><td>4부서 점검 전산화 완료 — 운영·지원·시설·주차 전부 화면에서 제출</td></tr>
+      <tr><td class="k">보고</td><td>밤 4부서 정리 <b>4,315자 → 812자</b>(81% 축소) · 5일 연속 정상 발송</td></tr>
+      <tr><td class="k">소통</td><td>중간관리자 방 단일 창구 정착 — 질문·확인이 한 곳으로 모임</td></tr>
+      <tr><td class="k">인재</td><td>지원부 급여 체계 3직급 개편 — 팀장 자리를 만들면서 <b>월 41만원 절감</b> · 조희제 주차관리인 입사(8/18)</td></tr>
+      <tr><td class="k">인프라</td><td>보안 이관 계약 완료 — 블루캅 → ADT캡스 (CCTV · 무인경비 · 출입통제)</td></tr>
+      <tr class="grp"><td colspan="2">남 은 것</td></tr>
+      <tr><td class="k">주차관리부</td><td class="warn">점검 제출이 <b>아직 1일</b>(8/20 배선). 관리인이 청소를 겸하고 있어 <b>부담 조정</b>이 필요합니다.</td></tr>
+      <tr><td class="k">보고 주기</td><td class="bad">소장·나우열M 라인 <b>규정 공백</b> — 늦어져도 리마인드할 근거가 없습니다.</td></tr>
+      <tr><td class="k">운영부 기한</td><td class="bad">마감일 빈칸이 8/21 안내(11건) 이후 <b>23건으로 늘었습니다.</b> 안내로는 해결되지 않았습니다.</td></tr>
+      <tr><td class="k">지원부</td><td class="warn">실행이 아니라 <b>기록이 빠집니다</b> — 제출된 점검은 93% 채워지는데 제출이 빠진 날이 남습니다.</td></tr>
+      <tr><td class="k">나우열M 라인</td><td class="warn">조직표 미확정 — 업무 폭이 가장 넓은데 인원 구조가 문서에 없습니다.</td></tr>
+      <tr class="sum"><td class="k strong">GM 권고</td><td class="strong"><b>사람을 더 넣기 전에 제출을 책임질 자리를 세웁니다.</b> 지원부 팀장이 그 첫 수입니다. 운영부 기한은 <b>화면에서 막는 쪽</b>으로 가고, 지시건은 <b>보고가 와야 닫습니다</b> — 받았다는 확인만으로 닫지 않습니다.</td></tr>
+    </tbody>
+  </table>
   </div>
 
   <div class="foot">

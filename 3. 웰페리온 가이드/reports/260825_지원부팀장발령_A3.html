@@ -101,7 +101,28 @@
     display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
-</style></head>
+</style>
+<style>
+  /* 방향 선택 — 결정 요청을 열린 질문 대신 1안/2안으로 (GM 지시 2026-08-25) */
+  .opt{ display:flex; gap:0; margin-top:3px; }
+  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
+  .opt .o:first-child{ border-right:0; }
+  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
+  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
+  .opt .o.rec{ background:rgba(255,255,255,.12); }
+  .opt .o.rec .h::after{ content:' · 권고'; font-weight:700; opacity:.85; }
+  .tblwrap+.tblwrap{ margin-top:11px; }
+  .rm{ display:flex; gap:10px; margin-top:6px; }
+  .rm .st{ flex:1; border:1px solid var(--line); padding:7px 10px 8px; }
+  .rm .st .t{ font-size:12.4px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .rm .st .g{ font-size:11.2px; color:#5C666F; line-height:1.4; margin-top:2px; }
+  .rm .st .b{ height:9px; background:#E7ECF2; margin-top:6px; position:relative; }
+  .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .rm .st .p{ font-size:13px; font-weight:800; margin-top:3px; }
+  .rm .st.done .b i{ background:var(--good); } .rm .st.done .p{ color:var(--good); }
+  .rm .st.wait .b i{ background:#B9C2CC; } .rm .st.wait .p{ color:#7A838C; }
+</style>
+</head>
 <body>
 
 <div class="bar">
@@ -127,17 +148,21 @@
   </div>
 
   <div class="ask">
-    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="lb"><span>DECISION</span><strong>방향 선택</strong></div>
     <div class="items">
       <div class="it">
-        <div class="n">01</div>
-        <div class="q">지원부 3직급 급여 체계 개편을 승인해 주십시오.</div>
-        <div class="d">주 5일제 전환에 맞춰 팀장 280 / 반장 265 / 주임 235만원 3단으로 정리합니다. 정원 8인을 유지하면서 <b>월 41만원 · 연 492만원이 줄어듭니다.</b></div>
+        <div class="n">01 · 지원부 급여 체계</div>
+        <div class="opt">
+          <div class="o rec"><div class="h">1안 — 3직급 개편 승인</div><div class="x">팀장 280 / 반장 265 / 주임 235만원 3단. 정원 8인을 유지하면서 <b>월 41만원·연 492만원이 줄어듭니다.</b></div></div>
+          <div class="o"><div class="h">2안 — 현행 유지</div><div class="x">지금 체계를 그대로 둡니다. 다만 <b>남·여를 함께 볼 관리자 자리가 없고</b> 월 2,026만원이 유지됩니다.</div></div>
+        </div>
       </div>
       <div class="it">
-        <div class="n">02</div>
-        <div class="q">김훈 주임 팀장 발령을 9월 1일자로 확정해 주십시오.</div>
-        <div class="d">대표님 보고는 마쳤습니다. 9월 1일 근로계약서 재작성일에 함께 반영하면 별도 절차가 필요 없습니다. 재직 15일 발령이라 형평성 대응책을 우측에 함께 적었습니다.</div>
+        <div class="n">02 · 김훈 주임 팀장 발령 시점</div>
+        <div class="opt">
+          <div class="o rec"><div class="h">1안 — 9/1 재계약과 함께 확정</div><div class="x">대표님 보고 완료, 급여 감액 동의 완료. <b>서명만 남았고 별도 절차가 없습니다.</b></div></div>
+          <div class="o"><div class="h">2안 — 3개월 수습 후 발령</div><div class="x">평가 자료를 쌓습니다. 다만 <b>관리자 공백이 3개월 더</b> 이어지고 급여 개편도 함께 밀립니다.</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -210,36 +235,26 @@
   </table>
   </div>
 
-  <div class="cols">
-    <div class="box">
-      <h3>핵심 리스크</h3>
-      <ul>
-        <li class="r1">재직 15일 발령 — 기존 7인이 납득할 <b>기준 공개</b>가 먼저입니다. 발표 전에 평가 기준과 역할을 알립니다.</li>
-        <li class="r2">주임 급여 245~253만원 → 235만원 조정 — <b>개별 동의 완료</b>(2026-08-25). 남은 선행 조건은 <b>대표님 서명</b>뿐입니다.</li>
-        <li class="r2">남 주임 1석이 비어 있어 <b>실제 지출은 1,750만원</b>입니다. 충원 전까지 현장 부담이 남습니다.</li>
-        <li class="r2">반장이 1인 → 2인으로 늘어 반장 인건비만 보면 증가입니다. <b>총액으로 설명</b>해야 오해가 없습니다.</li>
-        <li class="r2">사우나 서비스 매뉴얼이 아직 없습니다 — 지금은 청결 점검만 있고 응대 기준이 없습니다.</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>실행 액션</h3>
-      <ul class="ord">
-        <li class="n">김훈 팀장 직무기술서 확정 — 채용 · 관리 · 서비스 응대 · 비품 · 청소용품 · 매뉴얼 6개 축</li>
-        <li class="n">지원부 8인 <b>재계약</b> 진행 (9/1 시행) — 3직급 급여 반영 · 대표님 서명 후 착수</li>
-        <li class="n">기존 7인에게 역할 배정·급여 기준 사전 설명 (발령 발표 전)</li>
-        <li class="n">남 주임 1인 충원 — 정원 8인 완성</li>
-        <li class="n">사우나 서비스 매뉴얼 착수 — 청결 점검에 응대 기준을 더한다</li>
-      </ul>
-    </div>
-    <div class="box rec">
-      <h3>GM 권고</h3>
-      <ul>
-        <li><b>인건비를 늘리지 않고 자리를 만들었습니다.</b> 팀장 직급을 신설하면서도 월 41만원이 줄어듭니다 — 조직을 키운 것이 아니라 <b>구조를 바꾼 것</b>입니다.</li>
-        <li>발령 명분은 근속이 아니라 <b>자리</b>입니다. 남·여 사우나를 함께 볼 사람이 없어 여자 구역 점검이 낮게 유지됩니다.</li>
-        <li>목표는 진급이 아니라 <b>사우나를 청결 + 서비스가 되는 곳으로 바꾸는 것</b>입니다. 김훈 팀장을 필두로 체계와 인재 셋팅을 완료합니다.</li>
-        <li>주임 급여 감액 동의는 <b>완료</b>했습니다(8/25). 이제 <b>대표님 서명</b>만 받으면 재계약을 바로 돌릴 수 있습니다.</li>
-      </ul>
-    </div>
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:150px"><col></colgroup>
+    <thead><tr><th class="k">짚어 둘 것</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="2">리 스 크</td></tr>
+      <tr><td class="k">재직 15일 발령</td><td class="warn">기존 7인이 납득할 <b>기준 공개</b>가 먼저입니다. 정량 평가 자료가 없고 근거는 사우나·수면실·바니티존 <b>현장 개선 제안서</b> 하나입니다.</td></tr>
+      <tr><td class="k">주임 급여 조정</td><td>245~253만원 → 235만원. <b>개별 동의 완료</b>(2026-08-25). 남은 선행 조건은 <b>대표님 서명</b>뿐입니다.</td></tr>
+      <tr><td class="k">남 주임 1석 공석</td><td class="warn">충원 전까지 <b>실제 지출은 1,750만원</b>이고 현장 부담이 남습니다.</td></tr>
+      <tr><td class="k">반장 인건비만 보면 증가</td><td>1인 → 2인이라 반장 항목은 늘어납니다. <b>총액으로 설명</b>해야 오해가 없습니다.</td></tr>
+      <tr><td class="k">서비스 매뉴얼 부재</td><td class="warn">지금은 <b>청결 점검만</b> 있고 응대 기준이 없습니다 — 팀장 미션의 「서비스 관리」가 서려면 이것이 먼저입니다.</td></tr>
+      <tr class="grp"><td colspan="2">실 행 순 서</td></tr>
+      <tr><td class="k">1</td><td>김훈 팀장 직무기술서 확정 — 채용 · 관리 · 서비스 응대 · 비품 · 청소용품 · 매뉴얼 6개 축</td></tr>
+      <tr><td class="k">2</td><td>기존 7인에게 역할 배정·급여 기준 <b>사전 설명</b> (발령 발표 전)</td></tr>
+      <tr><td class="k">3</td><td>지원부 8인 <b>재계약</b> 진행 (9/1 시행) — 3직급 급여 반영</td></tr>
+      <tr><td class="k">4</td><td>남 주임 1인 충원 — 정원 8인 완성</td></tr>
+      <tr><td class="k">5</td><td>사우나 서비스 매뉴얼 착수 — 청결 점검에 응대 기준을 더한다</td></tr>
+      <tr class="sum"><td class="k strong">GM 권고</td><td class="strong"><b>인건비를 늘리지 않고 자리를 만들었습니다.</b> 조직을 키운 게 아니라 구조를 바꾼 것입니다. 발령 명분은 근속이 아니라 <b>자리</b>이고, 형평성은 <b>기준 공개</b>로 답합니다.</td></tr>
+    </tbody>
+  </table>
   </div>
 
   <div class="foot">
