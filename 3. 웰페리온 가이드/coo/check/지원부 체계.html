@@ -941,7 +941,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="toast-msg" id="toastMsg"></div>
 <div class="tabs">
   <button class="tab active" onclick="switchTab('policy')">📋 지원부 규정</button>
-  <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
   <div class="tab-dropdown" id="tabDropdown">
     <button class="tab" id="tabDropdownBtn" onclick="openTabDropdown(this,document.getElementById('tabDropdownMenu'),event)">📚 가이드·관리 ▾</button>
     <div class="tab-dropdown-menu" id="tabDropdownMenu">
@@ -953,8 +952,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   </div>
   <button class="tab" onclick="switchTab('check-m','lock')">점검(남) 🔒</button>
   <button class="tab" onclick="switchTab('check-f','lock')">점검(여) 🔒</button>
+  <button class="tab" id="wpLdyTabBtn" onclick="switchTab('laundry')">🧺 린넨 관리</button>
+  <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
   <button class="tab" onclick="switchTab('monthly')">📊 월간 지원부 현황·계획·보고</button>
-  <button class="tab" id="wpLdyTabBtn" onclick="switchTab('laundry')">🧺 세탁물 관리</button>
   <!-- 구 '📅 월간 보고 ▾' 드롭다운(2026-06 고정 A3 인쇄) 삭제 — 월간보고 탭 안 '🖨 A3 인쇄' 버튼(선택월 동적)과 중복. 2026-07-06 시우·GM -->
   <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
     <!-- 인쇄 버튼 통합 드롭다운 (월간 보고와 동일 패턴 · 버튼 난립 해소 2026-07-02 시우, GM) -->
@@ -984,7 +984,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="save-fail-banner" id="saveFailBanner">⚠️ 저장 실패 — 서버에 반영되지 않았습니다<div class="sfb-sub" id="saveFailBannerSub">잠시 후 자동 재시도합니다. 계속되면 새로고침 후 다시 체크해주세요.</div></div>
 
 <!-- ══ 🧺 세탁물 출하표 A3 인쇄 전용 컨테이너 (GM 2026-08-11) ══
-     현장은 이 종이에 손으로 적는다 → 점검할 때 화면(🧺 세탁물 관리)에 그 숫자를 옮긴다.
+     현장은 이 종이에 손으로 적는다 → 점검할 때 화면(🧺 린넨 관리)에 그 숫자를 옮긴다.
      칸을 미리 채우지 않는다 — 종이가 원본이고 화면이 옮겨 적는 쪽이다. ══ -->
 <div id="a3-laundry-print" style="display:none">
   <div class="a3l-head">
@@ -1002,7 +1002,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     <b>③</b> 오픈 때 깔아 놓은 수량을 「오픈 셋팅」 칸에 적는다.<br>
     <b>④</b> 중간에 채울 때마다 「보충」 칸에 <b>이어서</b> 적는다(예: 20 · 15 · 10 — 횟수도 같이 남는다).<br>
     <b>⑤</b> 마감 때 쓰지 않고 남은 수량을 「남은 것」 칸에 적는다. 창고 재고는 주 1회 맨 아래 줄에 적는다.<br>
-    <b>⑥</b> 이 종이는 다음 점검 때 화면 「🧺 세탁물 관리」에 그대로 옮겨 적는다.
+    <b>⑥</b> 이 종이는 다음 점검 때 화면 「🧺 린넨 관리」에 그대로 옮겨 적는다.
   </div>
 </div>
 
@@ -1803,7 +1803,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
      폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
 <div id="tab-manage" class="content hidden"></div>
 
-<!-- ══ 「🧺 세탁물 관리」 탭 — GM 발주 2026-08-07(CTO지시_세탁물관리체계_구축.md) ══
+<!-- ══ 「🧺 린넨 관리」 탭 — GM 발주 2026-08-07(CTO지시_세탁물관리체계_구축.md) ══
      왜 만드나: 크린토피아 위탁 세탁이 매일 21:00 입고 → 익일 사용 구조인데 지금은 **입고량(명세서)만** 보인다.
      출고(사용)량·마감 재고가 없어 화·수 부족이 업체 배분 문제인지 로스인지 확정할 수 없다.
      이 탭은 매일 품목별 [입고]·[마감재고] 두 칸만 채우면 사용량·로스를 자동 산출한다.
@@ -5702,7 +5702,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
-  var _ldy=document.getElementById('tab-laundry'); if(_ldy) _ldy.classList.toggle('hidden',tab!=='laundry');   // 🧺 세탁물 관리(2026-08-07 CTO)
+  var _ldy=document.getElementById('tab-laundry'); if(_ldy) _ldy.classList.toggle('hidden',tab!=='laundry');   // 🧺 린넨 관리(2026-08-07 CTO)
   if(tab==='laundry'){ if(typeof wpLdyLoadFromBackend==='function') wpLdyLoadFromBackend(); if(typeof wpLdyRenderAll==='function') wpLdyRenderAll(); }
   if(tab==='supply'){ if(typeof loadSupplyFromBackend==='function') loadSupplyFromBackend(); }
   if(tab==='guide'){ if(typeof loadCsFromBackend==='function') loadCsFromBackend(); }
@@ -6577,7 +6577,7 @@ loadBoardData(); renderBoard(); loadBoardFromBackend(); // 요일별 보드: 로
 loadPolicyData(); renderPolicyBoard(); loadPolicyFromBackend(); // 규정 트렐로 보드: 로컬 즉시 렌더 후 백엔드 동기화
 loadSupplyData(); renderSupplyTable(); // 비품: 로컬 즉시 렌더(서버 동기화는 탭 열 때 loadSupplyFromBackend)
 /* ═══════════════════════════════════════════════
-   🧺 세탁물 관리 — GM 발주 2026-08-07 (CTO지시_세탁물관리체계_구축.md)
+   🧺 린넨 관리 — GM 발주 2026-08-07 (CTO지시_세탁물관리체계_구축.md)
    목적: 매일 품목별 [입고]·[마감재고] 두 칸만 채우면 사용량·로스가 자동으로 나오게 한다.
         지금은 입고(명세서)만 보여서, 화·수 부족이 업체 배분 문제인지 로스인지 확정할 수 없다.
    저장: 이 페이지의 기존 방식 그대로 — localStorage 즉시 + BoardSync saveBoard(key=SUPPORT_LAUNDRY).
@@ -6780,7 +6780,7 @@ function wpLdyLoadLocal(){
 }
 const LAUNDRY_SYNC_CFG = {key:LAUNDRY_STORAGE_KEY, wrapId:'tab-laundry', guard:'focus', renderBeforeFetch:true,
   localLoad:wpLdyLoadLocal, apply:wpLdyApplyStored, render:function(){ wpLdyRenderAll(); },
-  getData:function(){ return LAUNDRY_DATA; }, label:'세탁물'};
+  getData:function(){ return LAUNDRY_DATA; }, label:'린넨'};
 async function wpLdyLoadFromBackend(){ return BoardSync.load(LAUNDRY_SYNC_CFG); }
 function wpLdyPersist(){ return BoardSync.persistDebounced(LAUNDRY_SYNC_CFG); }
 
@@ -6848,7 +6848,7 @@ function wpLdyMarkTodo(){
     if (!wpLdyIsClosed(d) && wpLdyIn(m.id, d) === null) miss = true;
   });
   var btn = document.getElementById('wpLdyTabBtn');
-  if (btn) btn.innerHTML = '🧺 세탁물 관리' + (miss ? ' <span style="color:#e06b6b">●</span>' : '');
+  if (btn) btn.innerHTML = '🧺 린넨 관리' + (miss ? ' <span style="color:#e06b6b">●</span>' : '');
 }
 function wpLdyRenderToday(){
   wpLdyRenderOpeningWarn();
