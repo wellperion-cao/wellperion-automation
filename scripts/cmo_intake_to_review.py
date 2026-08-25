@@ -633,8 +633,8 @@ def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True,
     둘 다 '가운데 꽉 채워 자르기'라, 여기서 최종 크기·비율로 만들어 두면 그 다음 자르기가
     아무것도 바꾸지 않는다(칸과 크기가 이미 같아서). 합성기를 건드리지 않고 앉히는 그림만 바꾼다.
 
-    fit=True(기본) — 원본 전체를 담는다(자르지 않음). 남는 칸은 같은 사진을 키워
-    블러+살짝 어둡게 깐 배경으로 채운다(단색 배경은 시리즈 톤이 깨져 쓰지 않는다).
+    fit=True(기본) — 원본 전체를 담는다(자르지 않음). 남는 칸은 브랜드 다크 단색으로 둔다
+    (GM 확정 2026-08-25 A안 — 종전의 블러 배경은 가로 사진에서 얼룩으로 보였다).
     GM 지적 2026-08-09: "또 인스타그램 사진 짤렸네" — 가장자리 사람(손·발·머리)이 잘리던 것을 없앤다.
 
     fit=False — GM 이 표지 배치를 직접 맞춘 경우(cover_focus 커스텀) 전용. 종전처럼 꽉 채워 자른다
@@ -653,7 +653,7 @@ def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True,
     실패하면 원본을 그대로 쓴다(표지가 아예 안 나오는 것보다 낫다).
     """
     try:
-        from PIL import ImageOps, ImageFilter, ImageEnhance
+        from PIL import ImageOps
         img = ImageOps.exif_transpose(Image.open(photo)).convert("RGB")
         tw, th = _SUNDAY_ASPECT
         fx, fy = float(focus[0]), float(focus[1])
@@ -661,13 +661,11 @@ def _focus_crop(photo: Path, focus: tuple, dest: Path, fit: bool = True,
         sw, sh = img.size
 
         if fit:
-            # 배경 = 같은 사진을 꽉 채워 키운 뒤 블러+어둡게 — 여백을 시안 톤으로 자연스럽게 채운다.
-            bscale = max(tw / sw, th / sh)
-            bg = img.resize((max(1, round(sw * bscale)), max(1, round(sh * bscale))), Image.LANCZOS)
-            bx, by = (bg.width - tw) // 2, (bg.height - th) // 2
-            canvas = ImageEnhance.Brightness(
-                bg.crop((bx, by, bx + tw, by + th)).filter(ImageFilter.GaussianBlur(40))
-            ).enhance(0.72)
+            # 배경 = 브랜드 다크 단색(GM 확정 2026-08-25 A안). 종전에는 같은 사진을 키워
+            # 블러+어둡게 깔았는데, 가로 사진에서 아래 절반이 사진을 늘린 얼룩으로 보이고
+            # 사진마다 색이 달라 결과를 예측할 수 없었다 — GM: "깔끔하게 정리해줄 수 있어?"
+            # 단색이면 남는 자리가 그대로 문장 자리가 되고, 사진은 여전히 하나도 안 잘린다.
+            canvas = Image.new("RGB", (tw, th), _SUNDAY_DARK)
             scale = min(tw / sw, th / sh) * zoom          # 원본 전체가 들어가는 축소율
         else:
             canvas = Image.new("RGB", (tw, th), _SUNDAY_DARK)
@@ -794,33 +792,6 @@ def _human_date(v: str) -> str:
     return f"{d.month}월 {d.day}일 {week}요일"
 
 
-def _compose_sunday_info(rows: list, output: Path, photo: Path | None = None) -> bool:
-    """정보 슬라이드 1장. 줄이 2개 미만이면 만들지 않는다(빈 장을 끼우지 않는다).
-
-    GM 지적 2026-08-05: '정보들은 하나도 없네 — 이러면 정보를 왜 받은거야?'
-    받은 답변이 캡션 안에만 묻혀 있어 슬라이드로는 보이지 않던 것을 한 장으로 세운다.
-    """
-    if len(rows) < 2:
-        return False
-    try:
-        from compose_html import render_carousel
-        # ★임시 폴더에 렌더한 뒤 옮긴다. 결과 폴더에 바로 렌더하면 엔진이 첫 장을 항상
-        #   post_1.jpg 로 쓰기 때문에 이미 만들어 둔 표지(post_1.jpg)를 덮어쓰고 옮겨 간다
-        #   — 2026-08-05 실사고: 표지 파일이 사라져 M1 미리보기가 통째로 깨졌다.
-        with tempfile.TemporaryDirectory() as tmp:
-            made = render_carousel(
-                {"account": "personal", "size": "1080x1350",
-                 "slides": [dict({"type": "sunday", "variant": "info", "rows": rows},
-                                 **({"photo": str(photo)} if photo else {}))]},
-                Path(tmp), fmt="jpg", concurrency=1)
-            output.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(made[0]), str(output))
-        return True
-    except Exception as exc:
-        print(f"[WARN] 정보 슬라이드 렌더 실패(건너뜀): {exc}", file=sys.stderr)
-        return False
-
-
 def _compose_sunday_think(caption: str, output: Path, rows: list | None = None) -> None:
     """마무리 한 장 — 사진 없음: 어두운 배경(#23201C) + 주황(#F0B27A) 바 + 문장3 + 정보표.
 
@@ -945,8 +916,11 @@ def build_sunday_item(row: dict, item_id: str) -> dict | None:
         # GM 이 손댄 배치(zoom≠1 또는 x·y≠0.5)만 종전 '꽉 채워 자르기'를 존중 — 그 외 전부
         # 원본 전체가 들어가는 fit(안 잘림).
         cover_fit = parsed["cover_focus"] == (0.5, 0.5, 1.0)
+        # 표지도 사진을 위로 붙인다(GM 확정 2026-08-25 A안) — 가로 사진일 때 사진을 가운데
+        # 두면 위아래로 다크 띠가 갈라지고 제목이 사진 끝에 걸친다. 위로 붙이면 남는 자리가
+        # 아래 한 덩어리가 되어 제목이 그 위에 앉는다. 세로 사진은 여백이 없어 그대로다.
         cover_src = _focus_crop(downloaded[0], parsed["cover_focus"], src_dir / "cover_focus.jpg",
-                                 fit=cover_fit)
+                                 fit=cover_fit, top_align=True)
         _compose_sunday_cover(cover_src, intro, _add("post_1.jpg"), series)
         fit_cards = [_focus_crop(p, (0.5, 0.5, 1.0), src_dir / f"fit_{i + 1}.jpg",
                                  top_align=True)
