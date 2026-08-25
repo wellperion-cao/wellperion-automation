@@ -470,7 +470,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   <!-- 탭 순서 = A3 인쇄 목록 순서(가이드라인=규정+가이드 → 매뉴얼 → 온보딩 → 응대·비품·청결은 해당 탭 안). 부서현황·일정·거래업체는 뒤쪽 관리 묶음. -->
   <button class="tab active" onclick="switchTab('policy')">📋 주차관리부 규정</button>
   <button class="tab" onclick="switchTab('guide')">📘 가이드</button>
-  <button class="tab" onclick="switchTab('manual')">📖 매뉴얼</button>
+  <button class="tab" onclick="switchTab('manual')">📖 매뉴얼·점검</button>
   <button class="tab" onclick="switchTab('onb')">🎓 온보딩</button>
   <button class="tab" onclick="switchTab('valet')">🚗 발렛 시스템</button>
   <button class="tab" onclick="switchTab('hiring')">🧑‍💼 채용 현황</button>
@@ -720,7 +720,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
   <!-- ── 🧹 주차장 청결·점검 체크리스트 (GM 2026-07-07 주차부 자체 점검 · 일일 8항목 제출형 배선 GM승인 2026-08-18 a안 배672 —
        지원부·시설부와 동일 점검 GAS 재사용(dept=parking, 신규 백엔드·시트·예약작업 없음). 주간 4항목은 이번 범위 밖 · 인쇄 전용 유지.) ── -->
-  <div class="manual-section" style="margin-top:16px;">
+  <div class="manual-section" style="margin-top:16px;" id="parkChecklistSec">
     <div class="manual-header" onclick="togManual(this)">
       <h3>🧹 주차장 청결·점검 체크리스트</h3><span class="arrow">&#9654;</span>
     </div>
@@ -896,7 +896,21 @@ function switchTab(tab){
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); if(typeof loadParkingRevenue==='function') loadParkingRevenue(); }
 }
 /* 해시 딥링크(예 …#manual) → 로드 시 해당 탭 자동 열기(지원부·시설부 체계와 동일 패턴 · 밤 하루 정리 링크가 청결·점검 체크리스트로 바로 가도록 · 배670 후속 2026-08-20). */
-window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && document.getElementById('tab-'+h)) switchTab(h); }catch(e){} });
+window.addEventListener('DOMContentLoaded',function(){ try{ var h=(location.hash||'').replace('#',''); if(h && document.getElementById('tab-'+h)) switchTab(h); else if(h==='check') openParkingChecklist(); }catch(e){} });
+/* 2026-08-25 시우 — #check 로 오면 점검 체크리스트를 '펼친 상태로' 보여준다.
+   종전 #manual 딥링크는 탭만 열고 아코디언은 접힌 채였다(배670 의도는 "체크리스트로 바로"였는데 절반만 됐다).
+   실측 2026-08-25: 첫 화면에서 제출칸까지 2클릭 — 매뉴얼 탭, 아코디언. 2026-08-18 배선 이후 제출 0건이었다. */
+function openParkingChecklist(){
+  switchTab('manual');
+  var sec=document.getElementById('parkChecklistSec');
+  if(!sec) return;
+  var body=sec.querySelector('.manual-body');
+  if(body && !body.classList.contains('open')){
+    var hdr=sec.querySelector('.manual-header');
+    if(hdr) togManual(hdr);            // 화살표 방향까지 같이 맞추려고 기존 토글을 그대로 쓴다
+  }
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+}
 /* ── 인쇄 통합 드롭다운 헬퍼 (지원부·운영부·시설부 체계와 동일 패턴) ── */
 function openTabDropdown(btnEl, menuEl, e){
   e.stopPropagation();

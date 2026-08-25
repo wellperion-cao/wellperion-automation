@@ -646,7 +646,11 @@ def build_parking_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[
         # ★'못 읽음' 을 '준비 중' 으로 적지 않는다(2026-08-06 GM 지적 · 시설부와 같은 부류).
         filled["parking_fetch_failed"] = True
         return (["🅿 주차부: 지금 확인이 안 됩니다(조회 실패) — 점검 여부는 알 수 없습니다"], filled)
-    return (["🅿 주차부 이슈사항: 없음 (자체점검 준비 중)"], filled)
+    # 2026-08-25 시우: '준비 중'은 이제 사실이 아니다. 일일 8항목 제출 화면은 2026-08-18(배672)에 열렸고
+    # 지원부·시설부와 같은 점검 GAS 를 쓴다. 오늘 행이 없다는 건 준비가 안 된 게 아니라 **오늘 제출이 없다**는 뜻이다.
+    # 옛 문구를 그대로 두면 GM·실무진이 "아직 만드는 중"으로 읽어 제출 화면을 찾지 않는다(2026-08-25 GM 지적).
+    return (["🅿 주차부: 오늘 일일점검 제출 없음 — "
+             "https://wellperion-cao.github.io/wellperion-automation/coo/check/주차관리부 체계.html#check"], filled)
 
 
 # ── 통합 3섹션 핵심요약(두 채널 공용 본문 코어) ─────────────────────────────
