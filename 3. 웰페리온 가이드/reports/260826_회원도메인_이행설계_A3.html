@@ -1,0 +1,263 @@
+<title>[회원] 회원 도메인 이행 설계</title>
+<style>
+:root{
+  --paper:#ffffff;
+  --surface:#f1f3f5;
+  --sunk:#e8ebee;
+  --rule:#d7dde2;
+  --rule-soft:#e6eaee;
+  --ink:#15181c;
+  --ink-2:#3d454d;
+  --ink-3:#6b747d;
+  --accent:#0f5c63;
+  --accent-soft:#e2eff0;
+  --warn:#a24a18;
+  --warn-soft:#f7ece4;
+  --good:#2c6b4f;
+  --good-soft:#e6f0eb;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#101316;
+    --surface:#171b1f;
+    --sunk:#1e2428;
+    --rule:#2c333a;
+    --rule-soft:#232a30;
+    --ink:#e9edf0;
+    --ink-2:#b3bcc4;
+    --ink-3:#7f8a93;
+    --accent:#5cbcc4;
+    --accent-soft:#16302f;
+    --warn:#e08a52;
+    --warn-soft:#2b201a;
+    --good:#6cb894;
+    --good-soft:#182721;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#101316;
+  --surface:#171b1f;
+  --sunk:#1e2428;
+  --rule:#2c333a;
+  --rule-soft:#232a30;
+  --ink:#e9edf0;
+  --ink-2:#b3bcc4;
+  --ink-3:#7f8a93;
+  --accent:#5cbcc4;
+  --accent-soft:#16302f;
+  --warn:#e08a52;
+  --warn-soft:#2b201a;
+  --good:#6cb894;
+  --good-soft:#182721;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+  font-size:15px;
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:56px 32px 96px;display:flex;flex-direction:column;gap:52px}
+
+/* ── 머리 ── */
+.masthead{display:flex;flex-direction:column;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:22px}
+.kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{margin:0;font-size:clamp(29px,4vw,42px);line-height:1.15;letter-spacing:-.025em;font-weight:800;text-wrap:balance}
+.sub{margin:0;color:var(--ink-2);font-size:16px;max-width:62ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:12.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.meta b{color:var(--ink-2);font-weight:600}
+
+/* ── 섹션 ── */
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;align-items:baseline;gap:14px;border-top:1px solid var(--rule);padding-top:14px}
+.sec-num{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;font-variant-numeric:tabular-nums;flex:none}
+h2{margin:0;font-size:21px;font-weight:700;letter-spacing:-.015em;line-height:1.3}
+.sec-note{margin:0;color:var(--ink-3);font-size:13px;margin-left:auto;text-align:right}
+h3{margin:0;font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+p{margin:0;max-width:70ch}
+p+p{margin-top:10px}
+
+/* ── 결론 카드 ── */
+.verdict{background:var(--surface);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:22px 26px;display:flex;flex-direction:column;gap:14px}
+.verdict .line{display:grid;grid-template-columns:minmax(88px,132px) 1fr;gap:8px 20px;align-items:baseline}
+.verdict .k{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding-top:3px}
+.verdict .v{font-size:15px;color:var(--ink)}
+.verdict .v strong{font-weight:700}
+
+/* ── 표 ── */
+.tw{overflow-x:auto;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+caption{caption-side:top;text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:700;padding:0 0 8px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+thead th{background:var(--sunk);font-size:11.5px;letter-spacing:.05em;color:var(--ink-2);font-weight:700;border-bottom:1px solid var(--rule);white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td strong{font-weight:700}
+
+/* ── 수치 타일 ── */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.tile{background:var(--paper);padding:16px 18px;display:flex;flex-direction:column;gap:5px}
+.tile .n{font-size:27px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.tile .l{font-size:12px;color:var(--ink-2);line-height:1.45}
+.tile .s{font-size:11.5px;color:var(--ink-3)}
+.tile.bad .n{color:var(--warn)}
+.tile.ok .n{color:var(--good)}
+
+/* ── 칩 ── */
+.chip{display:inline-block;padding:1px 8px;border-radius:2px;font-size:11.5px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.chip.now{background:var(--warn-soft);color:var(--warn)}
+.chip.done{background:var(--good-soft);color:var(--good)}
+.chip.next{background:var(--accent-soft);color:var(--accent)}
+
+/* ── 단계 ── */
+.steps{display:flex;flex-direction:column;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.step{background:var(--paper);padding:16px 20px;display:grid;grid-template-columns:34px 1fr;gap:4px 16px;align-items:start}
+.step .no{grid-row:1/3;font-size:19px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.25}
+.step .t{font-weight:700;font-size:14.5px}
+.step .d{font-size:13px;color:var(--ink-2)}
+.step .c{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.step .c b{color:var(--accent);font-weight:700}
+.step.first{background:var(--accent-soft)}
+
+/* ── 안 고른 길 ── */
+.rejected{display:flex;flex-direction:column;gap:9px;border-left:2px solid var(--rule);padding-left:18px}
+.rejected div{font-size:13.5px;color:var(--ink-2)}
+.rejected b{color:var(--ink);font-weight:600}
+
+.ask{background:var(--accent-soft);border:1px solid var(--accent);padding:20px 24px;display:flex;flex-direction:column;gap:10px}
+.ask h2{color:var(--accent)}
+.ask ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;font-size:14.5px}
+
+footer{border-top:1px solid var(--rule);padding-top:16px;font-size:12px;color:var(--ink-3);display:flex;flex-direction:column;gap:5px}
+code{font-family:ui-monospace,'SFMono-Regular',Consolas,monospace;font-size:12px;background:var(--sunk);padding:1px 5px;border-radius:2px}
+
+@media print{
+  @page{size:A3 landscape;margin:12mm}
+  body{font-size:11.5pt;background:#fff;color:#000}
+  .wrap{max-width:none;padding:0;gap:22px}
+  section{break-inside:avoid}
+  .tw,.tiles,.steps,.verdict,.ask{break-inside:avoid}
+}
+@media (max-width:620px){
+  .wrap{padding:36px 18px 64px;gap:40px}
+  .verdict .line{grid-template-columns:1fr;gap:2px}
+  .sec-note{margin-left:0;text-align:left;width:100%}
+  .sec-head{flex-wrap:wrap}
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">회원 · AI CPO 시포</div>
+  <h1>회원 도메인 이행 설계</h1>
+  <p class="sub">시트 일곱 벌에 흩어진 회원 11,153행을, 사람마다 평생 안 바뀌는 번호 하나로 꿴다.</p>
+  <div class="meta">
+    <span><b>작성</b> 2026년 8월 26일</span>
+    <span><b>근거</b> 같은 날 라이브 실측</span>
+    <span><b>결재</b> 대기 — 항목 2건</span>
+    <span><b>비용</b> 없음</span>
+  </div>
+</header>
+
+<section>
+  <div class="sec-head"><span class="sec-num">01</span><h2>결론</h2></div>
+  <div class="verdict">
+    <div class="line"><div class="k">방향</div><div class="v"><strong>회원등기부와 평생 번호.</strong> 사람마다 한 번 주면 바뀌지 않는 번호(M00001…)를 부여하고, 흩어진 원장의 모든 줄을 그 번호로 꿴다.</div></div>
+    <div class="line"><div class="k">왜</div><div class="v">오늘 난 사고가 전부 한 뿌리다 — <strong>바뀌는 값(전화번호·등록일자)으로 사람을 찾는 것.</strong> 안 바뀌는 번호 하나면 그 뿌리가 뽑힌다.</div></div>
+    <div class="line"><div class="k">지금 시트</div><div class="v">버리지 않는다. 번호 칸 하나만 덧붙인다. 기존 칸·수식·화면 그대로.</div></div>
+    <div class="line"><div class="k">실무진</div><div class="v">쓰던 화면 그대로 쓴다. 주소도 생김새도 안 바뀐다. <strong>업무 중단 0일.</strong></div></div>
+    <div class="line"><div class="k">첫 결과물</div><div class="v"><strong>「사람 찾기」 화면</strong> — 이름 하나 넣으면 문의부터 지금까지가 한 화면에. 지금은 시트 서너 개를 사람이 뒤진다.</div></div>
+    <div class="line"><div class="k">사람 판정</div><div class="v">임정은M께 여쭐 것 <strong>19건뿐.</strong> 나머지는 기계가 분류하고, 애매하면 합치지 않고 표시만 한다.</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">02</span><h2>지금 무엇이 어긋나 있나</h2><p class="sec-note">전부 오늘 라이브에서 직접 센 값</p></div>
+
+  <div class="tiles">
+    <div class="tile bad"><div class="n">1,124</div><div class="l">같은 전화에 이름이 둘 이상</div><div class="s">가족·오타·아이 이름 병기</div></div>
+    <div class="tile bad"><div class="n">12</div><div class="l">한 사람이 회원 원장 두 곳에</div><div class="s">이름까지 같은 것 3건</div></div>
+    <div class="tile bad"><div class="n">14</div><div class="l">한 사람 문의가 갈라진 최대 줄 수</div><div class="s">종목마다 한 줄씩 생긴다</div></div>
+    <div class="tile bad"><div class="n">2 <span style="font-size:15px;font-weight:600;color:var(--ink-3)">/ 1,807</span></div><div class="l">강습 등록완료 중 등록일이 적힌 건</div><div class="s">나머지는 빈칸</div></div>
+    <div class="tile bad"><div class="n">7</div><div class="l">등록완료인데 회원 원장에 없는 분</div><div class="s">멤버십 206건 중</div></div>
+    <div class="tile"><div class="n">11,153</div><div class="l">시트 일곱 벌에 흩어진 총 줄 수</div><div class="s">회원 1,739 · 문의 9,414</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>증상과 뿌리</caption>
+      <thead><tr><th>증상</th><th>실측</th><th>뿌리</th></tr></thead>
+      <tbody>
+        <tr><td><strong>가족은 저장이 안 된다</strong></td><td>같은 전화에 이름 둘 이상 1,124건. 실제로 두 분이 어떤 칸도 못 고치는 상태였다</td><td>전화번호로 사람을 찾는다</td></tr>
+        <tr><td><strong>등록일자를 고치면 그 뒤 저장이 전부 막힌다</strong></td><td>실무진이 등록일자를 고치는 순간 그 줄을 못 찾게 된다. 유상두·전하늘 두 분이 겪었다</td><td>바뀌는 칸으로 사람을 지목한다</td></tr>
+        <tr><td><strong>같은 분이 여러 곳에 있다</strong></td><td>원장 두 곳 이상에 걸친 분 924명. 그중 회원 원장끼리 겹친 것 12건</td><td>상태가 바뀌면 다른 탭으로 옮긴다</td></tr>
+        <tr><td><strong>등록한 사실이 안 남는다</strong></td><td>강습 등록완료 1,807건 중 등록일 2건. 멤버십 등록완료 7건은 회원 원장에 아예 없다</td><td>등록을 담는 장부가 없다</td></tr>
+        <tr><td><strong>느리다 · 화면이 멈춘다</strong></td><td>저장 한 번 21~33초, 명단 조회 최대 83초. 그걸 덮으려 화면에 덧댄 코드만 811줄</td><td>구글 시트를 여럿이 쓰는 데이터베이스로 쓴다</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>느림은 이 설계로 못 고친다</strong> — AWS 이전(배101)에서만 풀린다. 어긋남은 지금 고칠 수 있고, 지금 고쳐야 이전도 가능하다. 어긋난 데이터는 옮겨지지 않는다.</p>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">03</span><h2>어떻게 바뀌나</h2></div>
+
+  <div class="tw">
+    <table>
+      <caption>사람을 담는 방식</caption>
+      <thead><tr><th>이런 경우</th><th>지금</th><th>바뀐 뒤</th></tr></thead>
+      <tbody>
+        <tr><td>부부가 번호를 같이 쓴다</td><td>둘 중 한 분은 저장 거부</td><td>각자 번호 한 줄씩. 전화는 같아도 된다</td></tr>
+        <tr><td>아이 둘을 한 칸에 적었다<br><span style="color:var(--ink-3);font-size:12.5px">「방태오(5세)/방현오(7세)」</span></td><td>이름 칸에 슬래시로 붙여 씀</td><td>아이 각각 한 줄 + 보호자 번호로 연결</td></tr>
+        <tr><td>동명이인</td><td>이름 뒤에 숫자를 붙여 구분<br><span style="color:var(--ink-3);font-size:12.5px">「김혜경」·「김혜경4」</span></td><td>번호가 구분한다. 이름은 원래대로</td></tr>
+        <tr><td>회원 상태가 바뀐다</td><td>다른 탭으로 옮긴다. 옮기다 원본이 남으면 두 번 보인다</td><td>같은 줄에서 상태 칸만 바뀐다</td></tr>
+        <tr><td>강습 종목이 늘어난다</td><td>회원 표에 담당자 칸이 두 개씩 는다</td><td>줄이 늘 뿐 칸은 안 는다</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">04</span><h2>어떤 순서로</h2><p class="sec-note">1~4단계는 비용 0 · 화면 중단 0일</p></div>
+
+  <div class="steps">
+    <div class="step"><div class="no">0</div><div class="t">시트 일곱 벌 통째로 사본 백업</div><div class="d">되돌릴 자리를 먼저 만든다. <span class="c">확인 = 사본 줄 수 합계가 <b>11,153</b></span></div></div>
+    <div class="step"><div class="no">1</div><div class="t">등기부를 만들고 회원 1,739분께 번호 부여</div><div class="d">여기서 임정은M께 <strong>19건</strong>을 여쭙는다 — 두 곳에 있는 12분, 등록됐는데 원장에 없는 7분. <span class="c">확인 = 번호 빈 줄 <b>0</b> · 판정 <b>19/19</b></span></div></div>
+    <div class="step first"><div class="no">2</div><div class="t">「사람 찾기」 화면 <span class="chip next">첫 결과물</span></div><div class="d">읽기만 하는 화면이라 데이터가 상할 위험이 없다. 서승규 님 열네 줄이 「한 분·문의 한 건·종목 일곱 개」로 접혀 보이면 성공이다. <span class="c">확인 = 표본 10분 대조 불일치 <b>0</b></span></div></div>
+    <div class="step"><div class="no">3</div><div class="t">저장 열쇠를 번호로 바꾼다</div><div class="d">가족도 저장되고, 등록일자를 고쳐도 안 막힌다. 스위치 하나로 되돌린다. <span class="c">확인 = 한 주 동안 지목 실패 저장 <b>0건</b></span></div></div>
+    <div class="step"><div class="no">4</div><div class="t">문의 세 벌(9,414줄)을 번호에 잇는다</div><div class="d">멤버십 → 성인강습 → 유소년강습 순. 큰 것을 마지막에 둔 이유는 앞에서 번호 체계를 검증하려는 것이다. <span class="c">확인 = 등록완료 1,807건 연결 <b>100%</b></span></div></div>
+    <div class="step"><div class="no">5</div><div class="t">AWS 회원 모듈로 이전</div><div class="d">지금 부여한 번호가 그대로 이전 열쇠가 된다. <strong>지금 번호를 꿰는 일이 곧 이전 준비다.</strong> <span class="c">시토 · 배101 착수 결재 후</span></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="sec-num">05</span><h2>검토했지만 안 고른 길</h2></div>
+  <div class="rejected">
+    <div><b>지금 방식(전화+이름)을 더 정교하게 고친다</b> — 바뀌는 칸에 기대는 한 반드시 또 무너진다. 이미 두 번 무너졌다.</div>
+    <div><b>시트 네 탭을 지금 하나로 합친다</b> — 실무진 화면과 수식이 탭을 전제로 짜여 있어 하루 멈출 위험이 있다. 합치는 일은 AWS에서 한다.</div>
+    <div><b>AWS 나올 때까지 시트를 안 건드린다</b> — 저장 막힘과 「대신 고쳐주세요」 카톡이 지금 진행형이다(어제 3건·오늘 3건). 못 기다린다.</div>
+    <div><b>중간에 외부 데이터베이스를 하나 끼운다</b> — 진실이 세 곳이 된다.</div>
+  </div>
+</section>
+
+<section class="ask">
+  <div class="sec-head" style="border-top:none;padding-top:0"><span class="sec-num">06</span><h2>GM님께 결재 올립니다</h2></div>
+  <ol>
+    <li><strong>회원등기부 탭 신설</strong> — 시트에 탭 하나를 새로 만듭니다. 기존 탭은 손대지 않고 번호 칸만 덧붙입니다. 되돌리려면 그 칸을 무시하면 끝입니다.</li>
+    <li><strong>AWS 회원 모듈 뼈대 확정</strong> — 이 설계의 장부 다섯 개를 배101 회원 모듈의 설계로 삼습니다. 배101 착수 비용은 별건이며 종전 결재 대기 그대로입니다.</li>
+  </ol>
+  <p style="font-size:13.5px;color:var(--ink-2);margin-top:2px">두 건 모두 <strong>비용이 들지 않습니다.</strong> 승인해 주시면 0단계 백업부터 시작해 나흘 안에 「사람 찾기」 화면을 보여 드립니다.</p>
+</section>
+
+<footer>
+  <div>전문(여덟 가지 질문에 대한 답·개발 상세) = 저장소 <code>status/briefs/CPO-2026-08-26-회원도메인-이행설계.md</code></div>
+  <div>근거 실측 = <code>status/briefs/CPO-2026-08-26-회원도메인-현행실측.md</code> · 원시 수치 <code>status/member_domain_survey.json</code> · 재현 <code>python scripts/cpo_member_domain_survey.py</code></div>
+</footer>
+
+</div>
