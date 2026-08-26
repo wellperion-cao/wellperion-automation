@@ -631,11 +631,12 @@
             <!-- kpiVocNew 는 누적이 아니라 '지금 상태가 접수인 것'(=아직 아무도 안 잡은 건)이다.
                  라벨을 '누적'으로 달았더니 이번달 46 · 누적 31 이 되어 앞뒤가 안 맞았다(2026-08-25 실측). -->
             <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">미처리 </span><span id="kpiVocNew" style="font-size:14.5px;font-weight:700;color:var(--orange,#e6944e);">—</span></div>
+            <!-- 이 칸 세 숫자는 전부 이번달 기준이다(2026-08-26) — 접수 = 미처리 + 처리중 + 완료 로 떨어진다. -->
           </div>
           <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:11px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:104px;">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">처리중</div>
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">처리중 · 이번달</div>
             <div id="kpiVocWip" style="font-size:27px;font-weight:800;color:var(--blue,#5b9fd5);line-height:1;">—</div>
-            <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">현재 기준</span></div>
+            <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적 </span><span id="kpiVocWipTotal" style="font-size:14.5px;font-weight:700;color:var(--blue,#5b9fd5);">—</span></div>
           </div>
           <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:11px 12px;text-align:center;display:flex;flex-direction:column;justify-content:flex-start;min-height:104px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">완료 · 이번달</div>
@@ -1510,13 +1511,19 @@
         var nNew = rows.filter(function(r){ return (r['상태'] || r['status']) === '접수'; }).length;
         var nWip = rows.filter(function(r){ return (r['상태'] || r['status']) === '처리중'; }).length;
         var nDone = rows.filter(function(r){ return (r['상태'] || r['status']) === '완료'; }).length;
-        setV('kpiVocNew',  String(nNew));
-        setV('kpiVocWip',  String(nWip));
-        setV('kpiVocDone', String(nDone));
-        // 이번달 신규 접수(전체 상태 무관, 접수일시 기준) · 이번달 완료(접수월=이번달 & 현재상태=완료, 근사) — 동일 fetch 재사용
+        // ★2026-08-26 GM 지적 — "접수가 이번달 47건(미처리 32건) / 처리중 4건 / 완료 27건 인데?"
+        //   세 칸의 기준이 서로 달랐다: 큰숫자는 이번달인데 '미처리 32'와 '처리중 4'는 전체 기준이라
+        //   47 = 32 + 4 + 27 로 읽히는데 맞지 않았다. 전부 이번달 기준으로 통일한다 —
+        //   실측(2026-08-26): 이번달 47 = 접수 17 + 처리중 3 + 완료 27 로 정확히 떨어진다.
+        //   전체 기준 값은 각 칸 서브에 '누적'으로 함께 적어 둘 다 보이게 한다.
         var monthRows = rows.filter(isThisMonth);
+        var byStatus = function(list, s){ return list.filter(function(r){ return (r['상태'] || r['status']) === s; }).length; };
+        setV('kpiVocNew',  String(byStatus(monthRows, '접수')));    // 이번달 미처리
+        setV('kpiVocWip',  String(byStatus(monthRows, '처리중')));  // 이번달 처리중
+        setV('kpiVocWipTotal', String(nWip));                       // 누적 처리중
+        setV('kpiVocDone', String(nDone));                          // 누적 완료
         setV('kpiVocNewMonth',  String(monthRows.length));
-        setV('kpiVocDoneMonth', String(monthRows.filter(function(r){ return (r['상태'] || r['status']) === '완료'; }).length));
+        setV('kpiVocDoneMonth', String(byStatus(monthRows, '완료')));
         // 6유형별 건수 — 누적 + 이번달 접수/완료(근사) 3숫자 · 동일 fetch 결과 재사용, 새 fetch 없음
         var grid = document.getElementById('kpiVocCatGrid');
         if(grid){
@@ -11246,7 +11253,11 @@ function crTab(btn, panelId) {
     }
 
     // 3카드(시설부·지원부남·지원부여) 세로 사이즈 통일 — GM 2026-07-14 후속지시. 구조(주=회차+이상, 부차=완료율 상세) 통일 + min-height 고정 병행.
-    var CHECK_CARD_MIN_H = '354px';
+    // [2026-08-26 GM 지시] "일일점검현황 위아래 사이즈도 축소가능할 것 같은데?"
+    //   354px 고정을 걷어낸다. 세 장은 같은 grid 안이라 stretch 로 이미 서로 높이가 같아지므로,
+    //   고정값은 '가장 긴 카드보다도 더 긴 여백'을 만들 때만 작동했다 — 내용이 짧은 날엔 아래가 비었다.
+    //   0 으로 두면 세 장이 그날 내용 중 가장 긴 것에 맞춰 함께 줄어든다(정렬은 그대로 유지).
+    var CHECK_CARD_MIN_H = '0';
 
     // 빈도 최다 키 — 이상/이슈 목록에서 가장 많이 반복되는 항목·회차를 뽑는다(정직 표기 — 지어내기 없이 실값 집계만).
     function topFreqKey(items, keyFn){
