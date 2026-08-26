@@ -258,6 +258,12 @@
        판정은 '오늘자 표시'뿐이다 — 누가 담당인지 고르는 판정은 gm_checkin 한 곳에만 둔다. -->
   <div id="todaySched" class="today-sched" hidden></div>
 
+  <!-- ⓪-2 리더 현황 띠 (GM 확정 2026-08-26) — GM 직속 3라인 리더(이경연 실장·이정헌 소장·나우열M)만.
+       실무진(최준용M 등)은 넣지 않는다. 데이터는 monthly_ops_plan.json(사람이 손으로 넣어 08-13 이후
+       멈춘 값)이 아니라 업무 현황 SSOT 시트(TODO_API_URL action=todo_list)를 그 자리에서 직접 센다.
+       읽기 전용 — 등록·수정 칸 없음, 등록은 담당자 본인이 업무 SSOT에서 한다. -->
+  <div id="leaderBand" class="today-sched" hidden></div>
+
   <!-- ① 경영 보고건 — 회장님·대표님을 한 묶음으로(2026-08-06 GM: "둘이 비슷한 맥락이고 업무는 다 내가 본다").
        두 목록의 정본·판정 로직은 그대로다(회장님=_chairman_items.js / 대표님=업무 시트) — 화면에서만 한 블록으로 모은다. -->
   <details class="sec" id="sec-report" open>
@@ -901,6 +907,70 @@
       show('<b>오늘 일정</b> <span class="ts-none">— 전사일정을 불러오지 못했습니다(' + esc(e && e.message) + '). ' +
            '0건이라는 뜻이 아닙니다 — 전사일정 화면에서 직접 확인해 주세요.</span>');
     });
+})();
+
+/* ── ⓪-2 리더 현황 띠 (GM 확정 2026-08-26) ────────────────────────────────────────
+   monthly_ops_plan.json의 practitioners[].daily_status는 08-13 이후 갱신이 멈춘 손입력값이라
+   쓰지 않는다. 업무 현황 SSOT.html이 쓰는 그 GAS·그 액션(action=todo_list)을 그대로 불러
+   그 페이지와 같은 방식(FIELD_MAP 한글→영문, status==='완료'가 종결)으로 그 자리에서 센다
+   (새 GAS·새 액션 0 · 약속 L01·L21). 통신 실패·응답 이상이면 조용히 숨긴다 — 에러 문구로
+   채우지 않는다(오늘 일정 띠와 달리 여기는 GM 확정 지시로 실패 시 완전히 숨김). */
+(function () {
+  var LEADER_TODO_API_URL = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
+  var LEADERS = ['이경연 실장', '이정헌 소장', '나우열M']; // MEMBERS(업무 현황 SSOT.html)와 정확히 일치
+  var box = document.getElementById('leaderBand');
+  if (!box) return;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function todayMidnight() {
+    var d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  var today0 = todayMidnight();
+
+  function isOverdue(endDate) {
+    if (!endDate) return false;
+    var d = new Date(String(endDate).slice(0, 10) + 'T23:59:59');
+    return !isNaN(d) && d < new Date();
+  }
+  function daysOverdue(endDate) {
+    var d = new Date(String(endDate).slice(0, 10) + 'T00:00:00');
+    return Math.max(1, Math.round((today0 - d) / 86400000));
+  }
+
+  fetch(LEADER_TODO_API_URL + '?action=todo_list&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (res) {
+      if (!res || !res.ok || !Array.isArray(res.data)) throw new Error('형식 불일치');
+      var tasks = res.data.map(function (raw) {
+        return {
+          title: raw.title || raw['업무명'] || '',
+          owner: raw.owner || raw['담당자'] || '',
+          status: raw.status || raw['상태'] || '',
+          endDate: raw.endDate || raw['종료일'] || ''
+        };
+      });
+      var rows = LEADERS.map(function (name) {
+        var mine = tasks.filter(function (t) {
+          return t.status !== '완료' && String(t.owner || '').split(',').map(function (s) { return s.trim(); }).indexOf(name) !== -1;
+        });
+        var overdue = mine.filter(function (t) { return isOverdue(t.endDate); })
+          .sort(function (a, b) { return String(a.endDate).slice(0, 10) < String(b.endDate).slice(0, 10) ? -1 : 1; });
+        var oldest = overdue[0];
+        var oldestTitle = oldest ? (String(oldest.title).length > 24 ? String(oldest.title).slice(0, 24) + '…' : oldest.title) : '';
+        return '<div class="ts-row"><b>👤 ' + esc(name) + '</b><span>미완 ' + mine.length + '건 · ' +
+          '<span class="due' + (overdue.length ? ' overdue' : '') + '">기한 지남 ' + overdue.length + '건</span>' +
+          (oldest ? ' · 가장 오래된 건 「' + esc(oldestTitle) + '」 ' + daysOverdue(oldest.endDate) + '일째' : '') +
+          '</span> <a class="doc-link" href="../todo/업무 현황 SSOT.html" target="_blank" rel="noopener">▸목록</a></div>';
+      });
+      box.innerHTML = '<b>리더 현황</b>' + rows.join('');
+      box.hidden = false;
+    })
+    .catch(function () { /* 통신 실패·응답 이상 — 조용히 숨김 유지(GM 확정 2026-08-26) */ });
 })();
 </script>
 <script defer src="../../_assets/page_ping.js"></script>
