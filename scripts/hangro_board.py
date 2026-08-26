@@ -1807,8 +1807,7 @@ def _midmgr_reply_slice(role_slug: str) -> str:
     if not any_reply:
         out.append(f"  (수집본이 {int(hours)}시간 전 것이라 확인 못 함 — 회신 없음이라 보고하지 말 것)" if stale
                    else "  (전원 회신 없음 — 없는 걸 있는 것처럼 만들지 않음)")
-    out.append("※ 해석·판정 없음 — 원문 그대로. 판단해 현황 갱신하려면: "
-                "python scripts/hangro_board.py --daily-status <lee-gy|lee-jh> --done N --note \"...\"")
+    out.append("※ 해석·판정 없음 — 원문 그대로.")
     # ★회신에 답하는 순서 (GM 지시 2026-08-13). 순서를 바꾸지 않는다 —
     #   감사가 뒤로 밀리면 남은 것 독촉만 남고, 회신할수록 잔소리를 듣는 자리가 된다.
     out.append("┌ 회신에 답하는 순서 (GM 지시 2026-08-13) ─────────────")
@@ -1819,33 +1818,6 @@ def _midmgr_reply_slice(role_slug: str) -> str:
     out.append("│    급한 순서가 다르면 그분이 잡은 순서를 따른다(우리 기한을 밀어붙이지 않는다)")
     out.append("└ 실무진 방 발신은 초안 → GM 승인 → 발송")
     return "\n".join(out)
-
-
-def _daily_status_stale_slice(role_slug: str) -> str:
-    """practitioners[].daily_status 가 2일 이상 안 갱신됐으면 경고(GM 지시 2026-08-13 — 안 하면
-    티가 나게). 0일이면 아무것도 안 낸다 — 매일 조용히 지나가는 게 정상이다."""
-    if role_slug != "ceo" or not MONTHLY_OPS_PLAN_PATH.exists():
-        return ""
-    try:
-        data = json.loads(MONTHLY_OPS_PLAN_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return ""
-    today = dt.date.today()
-    stale = []
-    for p in data.get("practitioners", []):
-        ds = p.get("daily_status")
-        if not ds or not ds.get("date"):
-            continue
-        try:
-            age = (today - dt.date.fromisoformat(ds["date"])).days
-        except Exception:
-            continue
-        if age >= 2:
-            stale.append((p.get("name", p.get("id")), age))
-    if not stale:
-        return ""
-    lines = [f"  · {name} — {age}일째 안 갱신" for name, age in stale]
-    return "\n⚠️ 현황 갱신 밀림\n" + "\n".join(lines)
 
 
 # ── ✉️ 발신 대기 (2026-08-24 — 웰리·시모 배는 아침 카톡 자동발송(send_ops_digest.py
@@ -1933,32 +1905,6 @@ def _due_hygiene_alert() -> str:
     ])
 
 
-def _set_daily_status(prac_id: str, done: int, note: str) -> None:
-    """--daily-status 한 줄 명령 — practitioners[].daily_status 를 손으로 JSON 안 열고 갱신.
-    새 파일 안 만든다(약속 L21) — status/monthly_ops_plan.json 칸 하나 그대로 재사용."""
-    if not MONTHLY_OPS_PLAN_PATH.exists():
-        print("monthly_ops_plan.json 이 없습니다.")
-        return
-    data = json.loads(MONTHLY_OPS_PLAN_PATH.read_text(encoding="utf-8"))
-    prac = next((p for p in data.get("practitioners", []) if p.get("id") == prac_id), None)
-    if prac is None:
-        print(f"practitioner id={prac_id} 를 못 찾았습니다.")
-        return
-    now = dt.datetime.now(tz=timezone(dt.timedelta(hours=9)))
-    ds = prac.get("daily_status") or {}
-    ds["date"] = now.date().isoformat()
-    ds["processed"] = done
-    ds["note"] = note
-    ds["updated_at"] = now.strftime("%Y-%m-%d %H:%M")  # 갱신일을 못 믿는다 — 오늘 겪은 것, 시각까지 남긴다
-    ds["updated_by"] = "웰리"
-    prac["daily_status"] = ds
-    MONTHLY_OPS_PLAN_PATH.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    print(f"daily_status 갱신 완료 — {prac_id}: processed={done} note={note!r} "
-          f"updated_at={ds['updated_at']}")
-
-
 def _print_one_ship(num: str) -> None:
     """배 한 척의 전체 기록만 낸다 — 큐 전체를 세션 맥락에 올리지 않기 위한 창구.
     번호는 short_no 우선, 없으면 ship_no 로 찾는다. 못 찾으면 그렇게 말한다(지어내지 않는다)."""
@@ -2005,18 +1951,7 @@ def main() -> None:
              "그 명령이 없어서, 세션마다 1MB 짜리 status/_queue.json 을 통째로 훑고 있었다"
              "(2026-08-13 토큰 감사). 새 스크립트를 만들지 않고 여기 관문에 얹는다(약속 L21).",
     )
-    parser.add_argument(
-        "--daily-status", default="", metavar="PRAC_ID",
-        help="실무진 회신→현황 한 줄 명령(GM 지시 2026-08-13). practitioner id(lee-gy·lee-jh)를 "
-             "주면 --done·--note 값으로 monthly_ops_plan.json 의 daily_status 를 갱신하고 끝낸다.",
-    )
-    parser.add_argument("--done", type=int, default=0, help="--daily-status 와 함께 — 오늘 처리 건수")
-    parser.add_argument("--note", default="", help="--daily-status 와 함께 — 판단 근거 한 줄")
     args = parser.parse_args()
-
-    if args.daily_status:
-        _set_daily_status(args.daily_status, args.done, args.note)
-        return
 
     if args.ship:
         _print_one_ship(args.ship)
@@ -2071,7 +2006,6 @@ def main() -> None:
         board_text += _reception_watch_slice(role_slug)
         board_text += _gm_profile_slice()
         board_text += _midmgr_reply_slice(role_slug)
-        board_text += _daily_status_stale_slice(role_slug)
     print(board_text)
 
     if args.json:
