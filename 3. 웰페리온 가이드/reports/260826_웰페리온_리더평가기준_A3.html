@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>웰페리온 리더 평가 기준 (안) — 웰페리온 A3 (5/5)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:16.6px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.6px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:32px; }
+  td.k{ background:#F6F8FA; font-weight:600; font-size:13.2px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:12.6px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:11.4px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:14.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:13.2px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style><style>
+  /* 4분기 방향성 — 결과보고에는 선택지(1안/2안)를 두지 않는다. 이미 끝난 분기를 두고 고르라 하는 것은
+     의미가 없다는 GM 지적(2026-08-26)에 따라 방향성 서술로 바꿨다. */
+  .opt{ display:flex; gap:0; margin-top:3px; }
+  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
+  .opt .o:first-child{ border-right:0; }
+  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
+  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
+  .opt .o.rec{ background:rgba(255,255,255,.12); }
+  .opt .o.rec{ border-color:rgba(255,255,255,.5); }
+  .tblwrap+.tblwrap{ margin-top:11px; }
+  .rm{ display:flex; gap:10px; margin-top:6px; }
+  .rm .st{ flex:1; border:1px solid var(--line); padding:7px 10px 8px; }
+  .rm .st .t{ font-size:12.4px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .rm .st .g{ font-size:11.2px; color:#5C666F; line-height:1.4; margin-top:2px; }
+  .rm .st .b{ height:9px; background:#E7ECF2; margin-top:6px; position:relative; }
+  .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .rm .st .p{ font-size:13px; font-weight:800; margin-top:3px; }
+  .rm .st.done .b i{ background:var(--good); } .rm .st.done .p{ color:var(--good); }
+  .rm .st.wait .b i{ background:#B9C2CC; } .rm .st.wait .p{ color:#7A838C; }
+</style>
+
+</head>
+<body>
+
+<div class="bar">
+  <b>웰페리온 리더 평가 기준 (안) — A3 1장 · 5/5</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">웰페리온 리더 평가 기준 (안)</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 김남욱 GM</b> · 대상 <b>GM 직속 3라인 리더</b> · 전달 예정 <b>나우열M</b><br>
+      기준 기간 <b>2026년 3분기 (6월 ~ 8월)</b> · 작성일 <b>2026. 08. 26.</b> · 문서번호 <b>WP-GM-260826-05</b><br>
+      구성 <b>5/5 리더 평가 기준</b> · 1/4 전략 로드맵 · 2/4 운영부 · 3/4 파트너팀 · 4/4 시설부
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>ABOUT</span><strong>쓰임</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01 · 무엇을 평가하나</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">사람 개인의 실적이 아니라 <b>리더로서의 값</b>을 본다</div>
+          <div class="x">본인이 얼마나 했나(실무 평가)는 <b>나우열M 인사평가 기준</b>(8/13 확정 · 일의 양 45% + 질 55% · 업무크기 1·2·3·5·8점)이 이미 본다. 이 문서는 그 위에 얹는 <b>리더 축</b>이다 — 자기 라인이 굴러가게 만들었는가.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">02 · 왜 6축인가</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">GM 지정 3축 + 3분기에 실제로 무너진 3축</div>
+          <div class="x">GM이 짚은 <b>진척·효율 / 리더 면모 / 목표 달성률</b>에, 3분기 결과보고에서 세 부서 공통으로 드러난 <b>위임·육성 · 기록 · 협업</b>을 더했다. 특히 <b>기록</b>은 셋 다 걸렸다.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">03 · 지금 상태</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">6축 중 <b>4축은 오늘 바로 잴 수 있고 2축은 못 잰다</b></div>
+          <div class="x">숫자가 나오는 축은 그대로 쓰고, 못 재는 축(리더 면모 일부·협업)은 <b>재는 방법부터</b> 나우열M과 정한다. 못 재는 것을 점수로 지어내지 않는다.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:190px"><col style="width:60px"><col><col style="width:300px"><col style="width:130px"></colgroup>
+    <thead><tr>
+      <th class="k">평가 축</th><th class="ctr">배점</th><th>무엇을 보나</th><th>무엇으로 재나 (원천)</th><th class="ctr">지금 잴 수 있나</th>
+    </tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">6 축 · 100 점 &nbsp;— GM 지정 3축(①②③) + 3분기에 무너진 3축(④⑤⑥)</td></tr>
+      <tr><td class="k">① 업무 진척·효율</td><td class="ctr">25</td><td>맡은 건을 <b>기한 안에</b> 닫는가. 건수보다 <b>완결률과 지연일</b></td><td>업무·결재 SSOT 담당자별 건수·완료율 · 기한 초과 일수</td><td class="ctr good">가능</td></tr>
+      <tr><td class="k">② 목표 달성률</td><td class="ctr">25</td><td>분기 목표를 <b>실제로 끝냈는가</b>. 진행률이 아니라 종결 수</td><td>월간운영계획 소관 objectives 진척·완료 수</td><td class="ctr good">가능</td></tr>
+      <tr><td class="k">③ 리더로서의 면모</td><td class="ctr">20</td><td>지시 수용·회신 속도 · <b>자기 라인의 실적</b>(하위 제출률·완료율) · 먼저 제안하는가</td><td>카톡 회신 소요 · 부서 점검 제출률 · 접수 처리율</td><td class="ctr warn">절반</td></tr>
+      <tr><td class="k">④ 위임·육성</td><td class="ctr">15</td><td>사람을 키우고 자리를 만들었는가 — 진급·배치·조직표 정비</td><td>진급·입사·발령 기록 · 라인 조직표 존재 여부</td><td class="ctr good">가능</td></tr>
+      <tr><td class="k">⑤ 기록·투명성</td><td class="ctr">10</td><td>끝난 것을 <b>원장에 남기는가</b>. 남이 찾아볼 수 있는가</td><td>전사일정 완료 기록률 · SSOT 진척 로그 채움률</td><td class="ctr good">가능</td></tr>
+      <tr class="sum"><td class="k">⑥ 협업</td><td class="ctr">5</td><td>다른 라인 요청에 응답하는가 · 경계 밖 일을 넘겨주는가</td><td><b>아직 원천 없음</b> — 재는 방법을 정해야 한다</td><td class="ctr bad">불가</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:190px"><col><col><col></colgroup>
+    <thead><tr>
+      <th class="k">3분기 실측 <span class="sub">점수 아님 — 기준을 붙이기 전 원자료</span></th>
+      <th>이경연 실장 <span class="sub">운영부 · 1라인</span></th>
+      <th>이정헌 소장 <span class="sub">시설부 · 2라인</span></th>
+      <th>나우열M <span class="sub">파트너팀·인사·재무 · 3라인</span></th>
+    </tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">축 별 원 자 료 &nbsp;— 세 사람의 일 성격이 달라 같은 잣대를 그대로 대면 안 된다</td></tr>
+      <tr><td class="k">① 진척·효율</td><td>업무 SSOT <b>24건 · 완료 75%</b></td><td>업무 SSOT <b>1건</b> — 점검·공사는 별도 체계로 돌아 SSOT에 안 올라온다</td><td>업무 SSOT <b>59건 · 완료 67%</b> — 전사 최다·업무 폭 최대</td></tr>
+      <tr><td class="k">② 목표 달성률</td><td>소관 9건 · <b>완료 0건</b> (진행 8 · 계획 1)</td><td>목표표에 시설부 단독 목표 없음 — <b>법정점검 14건 중 10건</b> 실시일 확보로 대체</td><td>소관 3건 · <b>완료 0건</b> (골프팀 리더 51일 미종결)</td></tr>
+      <tr><td class="k">③ 리더 면모</td><td>회신 빠름(당일) · 미답 5건 · <b>자기 라인 점검 제출 0건 회차 31회</b></td><td>회신 1~2일 · 미답 3건 · 자기 라인 점검 <b>완료율 61%→69% · 이탈 1→0</b></td><td>회신 당일 · <b>미회신 사실상 0</b> · 라인 실적은 강습 원천이 없어 못 봄</td></tr>
+      <tr><td class="k">④ 위임·육성</td><td>진수아 사원 배치 · 라인 5인</td><td>라인 2인(차장·과장) · <b>조직 변동 없음</b></td><td><b>진급 2 · 입사 3 · 급여 3단 개편 · 인사평가 체계 개편</b> — 3인 중 최다</td></tr>
+      <tr><td class="k">⑤ 기록·투명성</td><td>전사일정 28건 중 <b>완료 기록 1건</b></td><td>회신은 하는데 <b>화면에 안 남는다</b> — 8/25 답변이 원장 미반영</td><td>마감일 없는 본인 업무 <b>9건</b>(8/21 8건 → 늘었다)</td></tr>
+      <tr class="sum"><td class="k">⑥ 협업</td><td colspan="3" class="ctr est">세 사람 모두 <b>원천 없음</b> — 부서 간 요청·응답을 남기는 자리가 없다. 재는 방법을 먼저 정한다</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box rec">
+      <h3>이 기준의 원칙 3가지</h3>
+      <ul>
+        <li><b>건수로 줄 세우지 않는다</b> — 나우열M 59건 · 이정헌 1건은 일을 덜 한 게 아니라 <b>일이 SSOT에 안 올라오는 것</b>이다. 축마다 원천을 다르게 둔 이유다</li>
+        <li><b>못 재는 것은 비워 둔다</b> — 협업 5점은 재는 방법이 설 때까지 점수를 매기지 않는다</li>
+        <li><b>리더 축은 라인의 성적을 본다</b> — 본인이 얼마나 했나는 실무 평가가 이미 본다. 겹쳐 두 번 세지 않는다</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>먼저 메워야 할 구멍</h3>
+      <ul>
+        <li class="r1"><b>시설부는 잴 그릇이 없다</b> — 점검·공사가 업무 SSOT 밖에서 돌아 ①②축이 사실상 공란이다</li>
+        <li class="r1"><b>파트너팀도 라인 실적이 없다</b> — 강습 등록·매출 월별 기록이 없어 ③축 하위 실적을 못 본다</li>
+        <li class="r2">협업(⑥)은 <b>원천 자체가 없다</b> — 만들 것인지부터 정해야 한다</li>
+        <li class="r2">평가 주기는 <b>분기</b>로 맞춘다(나우열M 8/13 기준과 동일)</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>나우열M께 넘길 것 <span class="est">— 정리본과 함께</span></h3>
+      <ul class="ord">
+        <li class="n">6축·배점이 인사평가 기준(양45/질55)과 <b>어떻게 맞물리는지</b> 확정</li>
+        <li class="n">③축 「자기 라인 실적」을 부서마다 <b>무엇으로 볼지</b> 지정</li>
+        <li class="n">⑥ 협업을 <b>잴지 뺄지</b> 결정 — 못 재면 5점을 다른 축에 재분배</li>
+        <li class="n">시설부 점검·공사를 업무 SSOT에 <b>올릴지, 별도 축으로 볼지</b></li>
+        <li class="n">업무 SSOT 가이드 정리 — <b>기한 필수</b>(끝나는 조건 칸은 두지 않음 · GM 확정 8/26)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>산출 근거</b> — 업무 SSOT 건수·완료율은 3분기 핵심 인재 확보 보고(WP-GM-260831-03) 실측치. 목표 달성은 월간운영계획 소관 objectives 직독. 점검·접수·회신은 2/4 운영부 · 3/4 파트너팀 · 4/4 시설부 보고의 원자료와 같다.</div>
+    <div><b>표기 원칙</b> — 이 표의 숫자는 <b>점수가 아니라 원자료</b>다. 배점을 붙여 등급을 내는 것은 기준 확정 후다. 원천이 없는 칸은 <b>「원천 없음」</b>으로 두고 0점으로 적지 않는다. 세 사람의 일 성격이 달라 같은 잣대를 그대로 대면 왜곡된다.</div>
+    <div><b>다음</b> — 이 정리본을 나우열M께 전달해 인사평가 기준과 맞물리게 확정. <b>차기</b> — 4분기 첫 분기평가에 시범 적용 후 축·배점 조정.</div>
+  </div>
+
+</div>
+
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260826_웰페리온_리더평가기준_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
