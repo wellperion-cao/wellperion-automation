@@ -4236,10 +4236,26 @@ function renderFmDaily(data){
 function fmCatRank(cat){ var c=String(cat||'').trim().charAt(0).toUpperCase(); var i='ABCDEF'.indexOf(c); return i<0?99:i; }
 function fmSortByCat(rows){ return (rows||[]).slice().sort(function(a,b){ var ra=fmCatRank(a&&a.cat), rb=fmCatRank(b&&b.cat); if(ra!==rb) return ra-rb; return String((a&&a.cat)||'').localeCompare(String((b&&b.cat)||'')); }); }
 
+/* 같은 카테고리가 이름만 달라 두 줄로 갈린 것을 하나로 합친다 (2026-08-26 GM 지적 — "시설부점검 안전건은 계속 0%").
+   원인: 2026-08-25 에 「🟡AI초안」 배지를 떼면서 카테고리명을 'F 안전(AI초안)' → 'F 안전' 으로 바꿨는데,
+   시트에 이미 쌓인 옛 이름 행은 그대로 남았다. 그래서 표에 「F 안전(AI초안) 80칸 중 9칸(11%)」과
+   「F 안전 6칸 중 0칸(0%)」 두 줄이 동시에 떴고, 새 이름 줄이 아직 표본 2일치뿐이라 0% 로 보였다.
+   이름을 바꾸면 지난 데이터가 안 따라온다 — 표시 단계에서 접어 준다(시트는 그대로 두는 비파괴 방식). */
+function fmCatCanon(cat){ return String(cat||'').replace(/\s*\((AI초안|AI 초안)\)\s*$/,'').trim(); }
+function fmMergeCats(rows){
+  var byName={}, order=[];
+  (rows||[]).forEach(function(r){
+    var k=fmCatCanon(r&&r.cat);
+    if(!byName[k]){ byName[k]={cat:k,total:0,done:0}; order.push(k); }
+    byName[k].total+=(r&&r.total)||0; byName[k].done+=(r&&r.done)||0;
+  });
+  return order.map(function(k){ var o=byName[k]; o.pct=o.total?Math.round(o.done/o.total*100):null; return o; });
+}
+
 function renderFmCategory(data){
   const el=document.getElementById('fmCategoryView');
   if(!el) return;
-  const rows=fmSortByCat(data.byCategory);
+  const rows=fmSortByCat(fmMergeCats(data.byCategory));
   if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">카테고리별 데이터 없음</div>'; return; }
   let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>카테고리</th><th>항목수</th><th>입력완료</th><th>입력률</th></tr>';
   rows.forEach(function(r){
