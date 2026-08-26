@@ -511,7 +511,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       var el=document.getElementById('dailyStatusBoard');
       if(!el) return;
       if(!ds){ el.textContent='오늘 처리 현황 — 아직 값 없음'; return; }
-      el.innerHTML='🧭 <b style="color:var(--text);">오늘('+ds.date+') 처리 현황(나우열M)</b> — 마감 지난 '+ds.overdue_count+'건 · 최고 '+ds.oldest_days+'일 지남 · 오늘 처리 '+ds.processed+'건'
+      /* ★2026-08-26 시우 — 「오늘」이라 부르지 않는다. 손으로 채우는 칸이라 갱신이 멈추면
+         옛 숫자가 '오늘'로 보인다(실측: 8/13 값이 13일째 떠 있었고, 이 화면엔 경고 표기조차 없었다). */
+      var ageDays=Math.floor((Date.now()-new Date(ds.date+'T00:00:00+09:00').getTime())/86400000);
+      var stale=ageDays>=7;
+      var head='🧭 <b style="color:var(--text);">최근 확인 ('+ds.date+(ageDays>0?' · '+ageDays+'일 전':' · 오늘')+') — 나우열M</b>';
+      if(stale) head+=' <b style="color:var(--warm,#d98c5f);">갱신 멈춤 — 아래 숫자는 그날 값입니다</b>';
+      el.innerHTML=head+' <span style="opacity:'+(stale?'0.5':'1')+';">— 마감 지난 '+ds.overdue_count+'건 · 최고 '+ds.oldest_days+'일 지남 · 처리 '+ds.processed+'건</span>'
         +' <span style="opacity:0.75;">('+ds.note+')</span>';
     })
     .catch(function(){ var el=document.getElementById('dailyStatusBoard'); if(el) el.textContent='오늘 처리 현황 — 불러오기 실패'; });
