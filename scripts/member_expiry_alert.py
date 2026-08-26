@@ -41,6 +41,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -155,7 +156,29 @@ def compute_summary(today: str | None = None) -> dict | None:
 def write_summary_json(summary: dict) -> Path:
     SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
     SUMMARY_PATH.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    _push_summary()
     return SUMMARY_PATH
+
+
+def _push_summary() -> None:
+    """재등록 화면은 이 파일을 저장소(raw.githubusercontent)에서 읽는다 — 커밋하지 않으면
+    내 PC에만 남고 화면은 옛 숫자를 계속 보여준다(약속 L13).
+
+    실사고 2026-08-26: 로컬은 08-24 값(66명)이었는데 저장소는 08-08(65명)에 멈춰 있어
+    재등록 화면이 18일째 옛 집계를 띄우고 있었다. 이 스크립트에 커밋 배선이 아예 없었다.
+    새 도구를 만들지 않고 기존 커밋 관문(safe_commit)만 부른다(약속 L21).
+    커밋 실패가 알림 발송을 막지 않는다 — 조용히 넘어가되 흔적은 남긴다.
+    """
+    import subprocess
+    try:
+        subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "safe_commit.py"),
+             "-m", "chore(cpo): 재등록 대상 집계 갱신 (member_expiry_alert)",
+             "--", "status/member_expiry_summary.json"],
+            cwd=str(REPO_ROOT), capture_output=True, timeout=180,
+        )
+    except Exception as e:
+        print(f"[warn] 집계 커밋 실패 — 화면은 옛 값을 볼 수 있다: {e}")
 
 
 def build_message(today: str | None = None) -> str:
