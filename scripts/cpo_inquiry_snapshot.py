@@ -204,6 +204,7 @@ def build_active(prev: dict | None, warnings: list, scope: str = "valid") -> dic
         if not (isinstance(stats, dict) and stats.get("ok")):
             warnings.append("active.stats: 카드 숫자 조회 실패 — 화면은 GAS 실시간 값만 쓴다")
             stats = None
+        _append_daily_line(rows, stats, now, warnings)
         return {"ok": True, "count": len(rows), "headers": data.get("headers") or [], "rows": rows,
                 "today_stats": stats,
                 "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
@@ -215,6 +216,48 @@ def build_active(prev: dict | None, warnings: list, scope: str = "valid") -> dic
         return carried
     return {"ok": False, "count": 0, "headers": [], "rows": [],
             "ts": int(now.timestamp() * 1000), "generated_at_kst": now.strftime("%Y-%m-%d %H:%M")}
+
+
+DAILY_OUT = STATUS_DIR / "member_daily.jsonl"
+
+
+def _append_daily_line(rows: list, stats: dict | None, now, warnings: list) -> None:
+    """하루 1줄 — 그날 회원 구성이 어땠는지 남긴다(2026-08-26 시포 · GM 지적).
+
+    배경: 회원 수 스냅샷(member_active_snapshot.json)은 3분마다 같은 파일을 덮어써서
+    **어제 값이 남지 않는다.** 그래서 오늘 숫자가 어제와 달라도 무엇이 달라졌는지 댈 근거가
+    없었다 — GM 이 "어제 정원이랑 오늘 정원이랑 차이가 확 난다"고 본 그 자리다.
+    회원 롤업 모듈은 주간(월요일)이라 일 단위 비교를 못 받쳐 준다.
+
+    하루 첫 실행에만 한 줄 쓴다(같은 날 두 번 쓰지 않는다). 파일은 append 전용이라
+    .gitattributes 의 `*.jsonl merge=union` 이 세션 충돌을 알아서 합친다(새 장치 0).
+    """
+    try:
+        today = now.strftime("%Y-%m-%d")
+        if DAILY_OUT.exists():
+            tail = DAILY_OUT.read_text(encoding="utf-8").rstrip().rsplit("\n", 1)[-1]
+            if tail and f'"date": "{today}"' in tail:
+                return
+        kinds: dict[str, int] = {}
+        for r in rows:
+            v = str(r.get("회원\n구분") or r.get("회원구분") or "").strip() or "미기재"
+            kinds[v] = kinds.get(v, 0) + 1
+        line = {
+            "date": today,
+            "at": now.strftime("%H:%M"),
+            "유효회원": len(rows),
+            "구분별": kinds,
+        }
+        if isinstance(stats, dict) and stats.get("ok"):
+            for src, dst in (("memberCorp", "법인"), ("memberEnded", "종료"),
+                             ("monthReg", "당월등록"), ("monthLoss", "당월이탈")):
+                if stats.get(src) is not None:
+                    line[dst] = stats[src]
+        with DAILY_OUT.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+        _log(f"[daily] 회원 하루 기록 append — 유효 {len(rows)}명")
+    except Exception as e:
+        warnings.append(f"active.daily: 하루 기록 실패 {e}")
 
 
 def build_lesson(prev: dict | None, warnings: list) -> dict:
