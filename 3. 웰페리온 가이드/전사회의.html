@@ -383,11 +383,22 @@
   var _plan = null, _targets = null, _salesDept = null, _h1Sales = null;
 
   // 강습팀 1·2분기 실적 정본 — GAS action=team_sales_h1(월별 "매출 보고" 31시트 U:Y 직독 합산). 2026-07-07 정정.
-  function readTeamSalesH1(year){
+  /* ★2026-08-26 시우 — 한 번 실패하면 새로고침 전까지 영영 '—' 였다(실사: 팀별 실적 전 팀 '—').
+     GAS 는 빠를 때 1.6초·느릴 때 23초로 들쭉날쭉하다. 그래서 실패하면 3초 쉬고 두 번 더 부른다.
+     새 도구를 만들지 않고 이 함수 안에서만 끝낸다(약속 L21). */
+  function readTeamSalesH1(year, _try){
+    _try = _try || 1;
     return fetch(GAS_URL + '?action=team_sales_h1&year=' + year + '&_cb=' + Date.now(), {method:'GET', redirect:'follow', cache:'no-store'})
       .then(function(r){ return r.json(); })
-      .then(function(res){ return (res && res.ok) ? res : null; })
-      .catch(function(){ return null; });
+      .then(function(res){
+        if(res && res.ok) return res;
+        throw new Error('not ok');
+      })
+      .catch(function(){
+        if(_try >= 3) return null;
+        return new Promise(function(ok){ setTimeout(ok, 3000); })
+          .then(function(){ return readTeamSalesH1(year, _try + 1); });
+      });
   }
 
   function renderKicker(){
