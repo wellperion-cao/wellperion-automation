@@ -685,8 +685,10 @@ function scoreLoad(period){
   });
   box.innerHTML = '<span class="score-empty">불러오는 중…</span>';
   var _scoreTimedOut = {};
+  /* 30초 — 이 호출은 shim 이 reg_dashboard 한 번으로 합쳐 부른다. 그 응답이 실측 9초라
+     종전 8초 상한에 매번 걸려 점수판·현황판이 통째로 비었다(2026-08-26 시우 수리). */
   withTimeout(fetch(REG_API + '?action=reg_scoreboard&period=' + encodeURIComponent(period) + '&cb=' + Date.now(),
-        { cache:'no-store' }).then(function(r){ return r.json(); }), 8000, _scoreTimedOut)
+        { cache:'no-store' }).then(function(r){ return r.json(); }), 30000, _scoreTimedOut)
     .then(function(d){
       if(d === _scoreTimedOut){ box.innerHTML = '<span class="score-empty">점수를 불러오지 못했습니다.</span>'; return; }
       var board = (d && d.board) || [];
@@ -768,16 +770,23 @@ function regLoad(){
   var board = document.getElementById('board');
   board.innerHTML = '<div class="state-msg">불러오는 중…</div>';
   var url = REG_API + '?action=reg_board&pv=' + encodeURIComponent(REG_PV) + '&_=' + Date.now();
-  withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 8000, null)
+  /* 30초 — shim 이 이 호출을 reg_dashboard 로 합쳐 부르는데 실측 9초다. 종전 8초 상한에 걸려
+     접수 6종(컴플레인·시설물고장·청결·분실물·칭찬·쓴소리) 120건이 통째로 안 뜨고, 습득물·휴회만
+     보였다. 습득물은 별도 병렬 호출이라 빨라 정상으로 보이는 바람에 장애가 아니라 '데이터 없음'
+     처럼 읽혔다(2026-08-26 시우 수리 · 이경연 실장 신고 FB260825-093927 계기). */
+  withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 30000, null)
     .then(function(d){
       _loading = false;
-      if(!d || !d.ok){ board.innerHTML = '<div class="state-msg">현황을 불러오지 못했습니다 — ' + _esc(d && d.error || '') + '</div>'; return; }
+      /* 실패했는데 습득물 렌더가 뒤이어 board 를 덮어써 조용히 0건처럼 보이던 문제 —
+         토스트로 반드시 눈에 띄게 알린다. */
+      if(!d || !d.ok){ board.innerHTML = '<div class="state-msg">현황을 불러오지 못했습니다 — ' + _esc(d && d.error || '') + '</div>'; toast('접수 현황을 불러오지 못했습니다 — 새로고침 해주세요.', true); return; }
       _receptionItems = Array.isArray(d.data) ? d.data : [];
       _merge();
     })
     .catch(function(){
       _loading = false;
       board.innerHTML = '<div class="state-msg">네트워크 오류 — 새로고침 해주세요.</div>';
+      toast('접수 현황을 불러오지 못했습니다 — 새로고침 해주세요.', true);
     });
 }
 
@@ -1062,8 +1071,11 @@ function _card(r){
   h += '<div class="field-row"><label>접수자</label>' + _staffFieldHtml('reporter', '접수자', r.reporter) + '</div>';
 
   /* 메모 */
-  h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모</label>';
-  h += '<textarea data-reg-memo rows="2">' + _esc(String(r.memo||'')) + '</textarea></div>';
+  /* 라벨에 '진행상황'을 명시 — 이경연 실장이 "처리중 단계에서 진행상황을 적을 칸이 있었으면"
+     이라고 남기셨는데(FB260825-093927) 칸은 이미 이것이었다. 이름이 '처리 메모'뿐이라
+     진행 기록용인 줄 몰랐던 것이라 보고 라벨·예시를 붙인다(2026-08-26 시우). */
+  h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--dim);display:block;margin-bottom:4px;">처리 메모 <span style="font-weight:500;">(진행상황 기록 — 여러 줄 누적해 적으셔도 됩니다)</span></label>';
+  h += '<textarea data-reg-memo rows="3" placeholder="예) 8/26 담당자 확인 → 부품 주문 / 8/28 교체 완료">' + _esc(String(r.memo||'')) + '</textarea></div>';
 
   /* 회원 안내 — 회원 셀프 조회에 노출되는 문구(처리메모와 별개). 비우면 조회화면에서 상태 기본문구가 대신 표시됨. 2026-08-03 */
   h += '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--green);display:block;margin-bottom:4px;">📣 회원 안내 <span style="font-weight:500;color:var(--dim);">(회원이 조회 시 봅니다)</span></label>';
@@ -1592,7 +1604,9 @@ function loadStaffSuggest(){
     dl.id = 'reg-staff-names';
     document.body.appendChild(dl);
   }
-  withTimeout(fetch(REG_API + '?action=reg_staff_suggest', {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 8000, null)
+  /* 30초 — 이 호출도 shim 이 reg_dashboard(실측 9초)로 합쳐 부른다. 8초 상한이면 처리자
+     자동완성이 매번 비었다(2026-08-26 시우). */
+  withTimeout(fetch(REG_API + '?action=reg_staff_suggest', {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 30000, null)
     .then(function(d){
       if(!d || !d.ok || !d.names) return;
       dl.innerHTML = d.names.map(function(n){
