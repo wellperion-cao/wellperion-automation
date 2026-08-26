@@ -943,7 +943,11 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     #   build_asks_section 이 nudge 항목과 합쳐서 한 번에 결정한다(중복 헤더 제거).
     items = []
     for s in new_ships + stale_ships:
-        who = contacts[s["clevel"]]
+        # 받는 사람은 원래 clevel 당 한 사람으로 정해져 있었다. 그런데 같은 역할이 서로 다른
+        # 분께 여쭐 일이 생기면 그 가정이 깨진다 — 2026-08-26 실측에서 이정헌 소장님 앞
+        # 전달문(주차 일일점검 담당 시설부 확정)이 「이경연 실장」 묶음 아래로 들어갔다.
+        # 받는 사람이 배에 적혀 있으면(staff_to) 그것을 쓴다. 안 적힌 배는 종전 그대로다.
+        who = str(s.get("staff_to") or "").strip() or contacts[s["clevel"]]
         ask, how = _split_ask_how(_resolve_staff_message(s), who)
         items.append({"date": str(s.get("enqueued_at", ""))[:10], "who": who, "ask": ask, "how": how})
     return items, current
