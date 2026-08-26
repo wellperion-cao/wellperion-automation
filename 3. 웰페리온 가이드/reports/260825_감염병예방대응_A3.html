@@ -102,13 +102,19 @@
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
 </style><style>
-  .opt{ display:flex; gap:0; margin-top:3px; }
-  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
-  .opt .o:first-child{ border-right:0; }
-  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
-  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
-  .opt .o.rec{ background:rgba(255,255,255,.12); }
-  .opt .o.rec .h::after{ content:' · 권고'; font-weight:700; opacity:.85; }
+  /* 방향 — 고르는 자리가 아니라 정해진 한 줄을 싣는 자리(GM 지시 2026-08-26) */
+  .ask .one{ flex:1; padding:11px 18px; }
+  .ask .one .q{ font-size:18.4px; font-weight:700; line-height:1.32; letter-spacing:-.4px; }
+  .ask .one .d{ font-size:12.8px; line-height:1.5; opacity:.9; margin-top:4px; }
+
+  /* 방향에서 나오는 구체 실행 3칸 — 각 칸 맨 아래가 '어떻게 점검하나' */
+  .dirrow{ margin-top:8px; display:flex; gap:9px; }
+  .dcell{ flex:1; border:1px solid var(--line); border-left:3px solid var(--navy); padding:7px 12px 8px; background:#FAFBFC; }
+  .dcell .n{ font-size:12.4px; font-weight:800; color:var(--navy); letter-spacing:-.2px; }
+  .dcell .t{ font-size:13px; line-height:1.5; margin-top:3px; }
+  .dcell .chk{ font-size:12.4px; line-height:1.45; margin-top:5px; padding-top:5px;
+    border-top:1px dashed var(--line); color:var(--good); font-weight:500; }
+  .dcell .chk b{ color:var(--good); font-weight:700; }
   .tblwrap+.tblwrap{ margin-top:11px; }
 </style>
 </head>
@@ -137,22 +143,30 @@
   </div>
 
   <div class="ask">
-    <div class="lb"><span>DECISION</span><strong>방향 선택</strong></div>
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
     <div class="items">
-      <div class="it">
-        <div class="n">01 · 손소독제 구매 방식</div>
-        <div class="opt">
-          <div class="o rec"><div class="h">1안 — 소모품 예산 상시 확보</div><div class="x">예산을 배정해 3곳(리셉션·사우나·주차)에 늘 채워 둡니다. 급할 때 조달보다 <b>단가가 쌉니다.</b></div></div>
-          <div class="o"><div class="h">2안 — 필요할 때 건별 구매</div><div class="x">예산 배정 없이 떨어질 때마다 결재로 삽니다. 초기 부담은 없으나 <b>비는 날이 생깁니다.</b></div></div>
-        </div>
+      <div class="one">
+        <div class="q">새 조직도 새 점검표도 만들지 않는다 — 이미 매일 도는 청소·점검에 위생 5항목을 얹어 <b>상시로</b> 굴린다.</div>
+        <div class="d">유행이 오면 올리고 지나면 내리는 방식을 쓰지 않는다. 켜고 끄는 판단이 필요 없고, 실무진이 새로 외울 것도 늘지 않는다. <b>평소에 늘 같은 수준으로 돌고, 도는지는 기록으로 증명한다.</b></div>
       </div>
-      <div class="it">
-        <div class="n">02 · 정기 방역 주기</div>
-        <div class="opt">
-          <div class="o rec"><div class="h">1안 — 현행 유지 (월 1회)</div><div class="x">세스코 계약 그대로. 최근 8/18 · 다음 9/18. <b>이미 매일 돌고 있는 청소·점검</b>이 있어 이것으로 충분합니다.</div></div>
-          <div class="o"><div class="h">2안 — 강화 기간 격주</div><div class="x">유행이 국내로 들어오면 격주로 올립니다. <b>비용이 늘고</b> 지금은 필요를 뒷받침할 근거가 없습니다.</div></div>
-        </div>
-      </div>
+    </div>
+  </div>
+
+  <div class="dirrow">
+    <div class="dcell">
+      <div class="n">01 · 떨어지기 전에 채운다</div>
+      <div class="t">손소독제를 리셉션·사우나·주차 <b>3곳에 상시 비치</b>한다. 소모품 예산을 배정해 두고 운영부가 사서 채운다 — 떨어진 뒤 건별 결재로 사면 반드시 비는 날이 생긴다.</div>
+      <div class="chk">점검 — 매주 월요일 지원부 G-4·주차 주간점검에서 3곳 재고를 센다. <b>한 곳이라도 0이면 그날 보고</b>한다.</div>
+    </div>
+    <div class="dcell">
+      <div class="n">02 · 방역 주기는 올리지 않는다</div>
+      <div class="t">세스코 정기 방역 <b>월 1회 현행 유지</b>(최근 8/18 · 다음 9/18). 매일 도는 청소·점검이 이미 있어 주기를 올릴 근거가 없다. 늘리는 대신 <b>빠짐없이 하는 쪽</b>에 힘을 쓴다.</div>
+      <div class="chk">점검 — 전사일정 정기점검 줄에 실시일을 적는다. <b>줄이 비어 있으면 그달은 안 한 것</b>이다.</div>
+    </div>
+    <div class="dcell">
+      <div class="n">03 · 빠지는 회차를 메운다</div>
+      <div class="t">들어온 점검은 잘 채워진다 — 남 96%·여 87%. <b>빠지는 것은 회차</b>다. 하루 3회(오전·오후·마감) 중 8월 평균 <b>2.7회</b>만 들어와, 하루 기준 완료율이 44%로 내려앉는다.</div>
+      <div class="chk">점검 — 주 1회 지원부 월간 리포트에서 <b>하루 회차 수</b>를 본다. 목표 <b>매일 3회</b>, 빠진 날은 그 주에 부서장이 확인한다.</div>
     </div>
   </div>
 
@@ -198,7 +212,8 @@
       </tr>
     </thead>
     <tbody>
-      <tr><td class="k">지원부 점검 제출률</td><td class="ctr warn">8월 53% <span class="est">제출 23/25일</span></td><td class="ctr good">90% 이상</td><td class="ctr">주 1회</td><td>지원부 체계 · 월간 리포트</td><td>미제출을 부서장 확인 사항으로 올릴지 결정</td></tr>
+      <tr><td class="k">지원부 점검 회차</td><td class="ctr warn">하루 평균 2.7회 <span class="est">8월 64회 / 24일</span></td><td class="ctr good">매일 3회 (오전·오후·마감)</td><td class="ctr">주 1회</td><td>지원부 체계 · 월간 리포트</td><td>빠진 회차를 부서장 확인 사항으로 올린다</td></tr>
+      <tr><td class="k">지원부 점검 채움 정도</td><td class="ctr">남 <b class="good">96%</b> · 여 <b class="warn">87%</b> <span class="est">들어온 회차 기준</span></td><td class="ctr good">양쪽 95% 이상</td><td class="ctr">주 1회</td><td>지원부 체계 · 월간 리포트 구역별</td><td>여 구역이 8p 낮다 — 어느 항목이 남는지 본다</td></tr>
       <tr><td class="k">접점 소독·환기 이행</td><td class="ctr">8/25 시작</td><td class="ctr good">매일 2~3회 전 회차</td><td class="ctr">매일</td><td>지원부 일일점검 G-2·G-3</td><td>9/1 현장에서 실제로 도는지 눈으로 확인</td></tr>
       <tr><td class="k">손소독제 재고 <span class="est">3곳</span></td><td class="ctr bad">재고 0 · 미집계</td><td class="ctr good">3곳 상시 확보</td><td class="ctr">주 1회 (월)</td><td>지원부 G-4 · 주차 주간점검</td><td class="bad"><b>8/26 결재 확인 · 8/31 설치 · 9/1 첫 집계</b></td></tr>
       <tr><td class="k">정기 방역(세스코) 이행</td><td class="ctr good">최근 8/18 · 다음 9/18</td><td class="ctr good">계약 주기대로 월 1회</td><td class="ctr">월 1회</td><td>전사일정 법정·정기점검</td><td>소독/방제 구분 회신 받아 정기점검 줄에 채우기</td></tr>
@@ -210,7 +225,7 @@
 
   <div class="foot">
     <div><b>배경</b> — * 사고나 발병이 있어 대응하는 것이 아니다. 회장님 말씀에 따라 <b>미리 해 두면 좋을 일</b>을 지금 하던 청소·점검에 얹었다. <b>새 조직·새 점검표는 만들지 않았다.</b></div>
-    <div><b>산출 근거</b> — 제출률·완료율은 2026-06-01~08-25 점검 원장 전수 집계(지원부 7월 12% → 8월 53%). 정기 방역 최근 실시 2026-08-18(세스코) — 전사일정 실측. 손소독제 재고 0 은 이경연 실장 확인(8/25).</div>
+    <div><b>산출 근거</b> — 점검 숫자는 2026-08-26 지원부 점검 원장 전수 집계(8월 1~26일 · 64회 · 항목 2,531칸). <b>두 숫자의 분모가 다르다</b> — 「채움 정도」는 들어온 회차 안에서, 「하루 완료율 44%」는 하루 3회를 다 채웠다고 볼 때다. 빠진 날 8/9·8/23 은 휴관일이라 미제출이 아니다. 정기 방역 최근 실시 2026-08-18(세스코) — 전사일정 실측. 손소독제 재고 0 은 이경연 실장 확인(8/25).</div>
     <div><b>차기 보고</b> — 2026-09-01(월) 1차 점검 — 5항목이 실제로 도는지 현장 확인 + 손소독제 첫 재고 집계.</div>
   </div>
 
