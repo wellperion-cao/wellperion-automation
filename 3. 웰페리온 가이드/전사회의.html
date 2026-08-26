@@ -530,9 +530,11 @@
 
   // ── 부팅: 정본(plan)·목표(정적) 먼저 → 즉시 렌더. 매출은 도착 시 표·잘한팀 갱신. ──
   readJson(PLAN_PATH).then(function(p){ _plan = p; renderKicker(); renderSales(); renderAward(); renderDirs(); });
-  withTimeout(readJson(TARGETS_PATH), 8000, null).then(function(v){ _targets = v; renderSales(); });
+  /* ★2026-08-26 시우 실사 — 「팀별 상반기 실적」이 전부 '—' 로 떴다. GAS 응답이 실측 23.4초인데
+     상한이 30초라 조금만 느려도 통째로 끊긴다. 이 표를 채우는 네 조회의 상한을 전부 넉넉히 올린다. */
+  withTimeout(readJson(TARGETS_PATH), 20000, null).then(function(v){ _targets = v; renderSales(); });
   // 멤버십(운영부) 매출 = 매출마스터 부서맵 + GM시트 정본 오버라이드(월간운영계획과 동일 규칙, 기존 유지).
-  Promise.all([ withTimeout(readGvizDeptMap(SALES_GVIZ, 1), 8000, null), withTimeout(readOpsSalesTruth(), 6000, null) ]).then(function(a){
+  Promise.all([ withTimeout(readGvizDeptMap(SALES_GVIZ, 1), 20000, null), withTimeout(readOpsSalesTruth(), 20000, null) ]).then(function(a){
     var salesDept = a[0], opsTruth = a[1];
     if(opsTruth && salesDept){
       var base = salesDept['운영부'] || new Array(12).fill(0);
@@ -543,7 +545,7 @@
   });
   // 강습팀 매출 = GAS action=team_sales_h1('31'시트 U:Y 직독 합산 정본) — 2026-07-07 정정, 매출마스터 gviz 완전 대체.
   // 타임아웃 30초(라이브검증: 6파일 순차 openById 실측 ~19.5초 확인·GAS측 CacheService 10분 캐시 병행 추가).
-  withTimeout(readTeamSalesH1(2026), 30000, null).then(function(v){ _h1Sales = v; renderSales(); });
+  withTimeout(readTeamSalesH1(2026), 60000, null).then(function(v){ _h1Sales = v; renderSales(); });
 })();
 </script>
 <script>
