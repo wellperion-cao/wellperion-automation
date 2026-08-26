@@ -679,10 +679,28 @@
         docLinks(it.docs, it.doc) +
         '</div>';
   }
+  // 진척률 정본 하나 — 체크리스트가 있으면 체크 개수로, 없으면 it.progress.
+  // GM 지적 2026-08-16("정본 80% vs 실제 체크 60% 어긋남") 때 카드(cardHtml)만 고치고
+  // 요약표는 it.progress 를 그대로 읽고 있었다. 게다가 2026-08-24 「변경 저장」을 걷어낸
+  // 뒤로 JSON 의 progress 는 더 갱신되지 않아 격차가 계속 벌어졌다(01번 카드 7% vs 표 49%).
+  // 한 화면에서 같은 업무가 두 숫자로 보이던 것을 여기서 하나로 모은다.
+  function effPct(it) {
+    var todos = extractTodos(it.note);
+    todos.forEach(function (t) {
+      var k = chkKey(it.id, t.idx, t.text);
+      if (Object.prototype.hasOwnProperty.call(_gmCheckBoard, k)) t.checked = !!_gmCheckBoard[k];
+    });
+    if (todos.length) {
+      var done = todos.filter(function (t) { return t.checked; }).length;
+      return Math.round(done / todos.length * 100);
+    }
+    return (typeof it.progress === 'number') ? it.progress : null;
+  }
   // 요약표 행 하나 — 위 cardHtml과 같은 재사용 원칙.
   function sumRowHtml(it, i) {
     var no = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
-    var pct = (typeof it.progress === 'number') ? it.progress + '%' : '—';
+    var _p = effPct(it);
+    var pct = (_p === null) ? '—' : _p + '%';
     var dueHtml = '기한 ' + esc(fmtDue(it.due));
     if (isOverdue(it.due)) dueHtml = '<span style="color:var(--alert)">' + dueHtml + '</span>';
     return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
@@ -851,7 +869,9 @@
       var doneCount = elDoneGrid.querySelectorAll('.item').length;
       var totalPend = chPend().length + pendCount;
       var totalDone = chDone().length + doneCount;
-      if (elRepTotal) elRepTotal.textContent = '대기 ' + totalPend + '건 · 완료 ' + totalDone + '건';
+      // 완료 칸은 0이면 안 적는다 — 회장님 건은 보고를 마치면 배열에서 빼는 규칙이라(2026-08-21)
+      // 완료가 늘 0이었고, 영원히 0인 숫자는 읽는 사람에게 잡음일 뿐이다. 0이 아닐 때만 붙인다.
+      if (elRepTotal) elRepTotal.textContent = '대기 ' + totalPend + '건' + (totalDone ? ' · 완료 ' + totalDone + '건' : '');
     }
     var elChSum = document.getElementById('chairman-sum-body');
     if (elChSum) {
