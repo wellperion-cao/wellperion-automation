@@ -886,8 +886,19 @@
   function show(html) { box.innerHTML = html; box.hidden = false; }
 
   var today = todayStr();
-  fetch(SCHEDULE_GAS_URL + '?action=load_schedule&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
-    .then(function (r) { return r.json(); })
+  // 전사일정 GAS 는 응답이 60KB 라 느릴 때가 있고(실측 1.4~4.5초) 가끔 한 번씩 끊긴다.
+  // 그 한 번에 GM 화면이 「불러오지 못했습니다」로 바뀌던 것을 막는다 — 실패하면 2초 뒤 한 번만
+  // 다시 부르고, 그래도 안 되면 그때 안내를 띄운다(조용한 실패는 여전히 금지 · GM 지적 2026-08-26).
+  function loadSchedule(retry) {
+    return fetch(SCHEDULE_GAS_URL + '?action=load_schedule&cb=' + Date.now(), { method: 'GET', redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .catch(function (e) {
+        if (!retry) throw e;
+        return new Promise(function (ok) { setTimeout(ok, 2000); })
+          .then(function () { return loadSchedule(false); });
+      });
+  }
+  loadSchedule(true)
     .then(function (res) {
       if (!res || !res.ok || !res.data || !Array.isArray(res.data.items)) throw new Error('형식 불일치');
       var rows = res.data.items.filter(function (it) {
