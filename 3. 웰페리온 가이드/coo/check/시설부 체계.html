@@ -4251,16 +4251,34 @@ function fmMergeCats(rows){
   return order.map(function(k){ var o=byName[k]; o.pct=o.total?Math.round(o.done/o.total*100):null; return o; });
 }
 
+/* ★2026-08-26 배798 감사 — 「F 안전」은 2026-08-26 에 항목이 전부 폐지돼 입력 화면에 칸이 없다.
+   그런데 이달에 이미 쌓인 83칸이 서버 분모에 남아 월 입력률을 70%로 끌어내리고 있었다(빼면 78%).
+   시트는 건드리지 않는다(지난 기록은 기록이다) — 표에서만 빼고, 뺐다는 사실을 표 아래 한 줄로 밝힌다.
+   ▸폐지 사유: 에스컬레이터는 전사일정 이벤트가, 정수기는 지원부 「B-6 정수기 주변 청결 관리」가 이미 맡는다.
+     소방·경보확인은 각각 법정 주기·시스템 자동이라 사람이 매일 체크할 일이 아니었다. */
+var FM_RETIRED_CATS = { 'F 안전': '2026-08-26 폐지 — 입력 화면에 칸 없음' };
+
 function renderFmCategory(data){
   const el=document.getElementById('fmCategoryView');
   if(!el) return;
-  const rows=fmSortByCat(fmMergeCats(data.byCategory));
+  const all=fmSortByCat(fmMergeCats(data.byCategory));
+  const retired=all.filter(function(r){ return FM_RETIRED_CATS[r.cat]; });
+  const rows=all.filter(function(r){ return !FM_RETIRED_CATS[r.cat]; });
   if(rows.length===0){ el.innerHTML='<div style="padding:10px;color:var(--dim);font-size:13px;">카테고리별 데이터 없음</div>'; return; }
   let html='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>카테고리</th><th>항목수</th><th>입력완료</th><th>입력률</th></tr>';
   rows.forEach(function(r){
     html+='<tr><td>'+fmEsc(r.cat)+'</td><td>'+(r.total||0)+'</td><td>'+(r.done||0)+'</td><td style="color:'+fmPctColor(r.pct)+';font-weight:700;">'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>';
   });
+  // 합계 줄 — 폐지 카테고리를 뺀 실제 입력률(위 표와 같은 분모라 눈으로 검산된다)
+  var _t=rows.reduce(function(a,r){ return a+(r.total||0); },0);
+  var _d=rows.reduce(function(a,r){ return a+(r.done||0); },0);
+  html+='<tr style="font-weight:800;border-top:2px solid var(--border);"><td>합계</td><td>'+_t+'</td><td>'+_d+'</td>'
+      + '<td style="color:'+fmPctColor(_t?Math.round(_d/_t*100):null)+';">'+(_t?Math.round(_d/_t*100)+'%':'-')+'</td></tr>';
   html+='</table></div>';
+  // 뺀 것을 숨기지 않는다 — 무엇을 왜 뺐는지 그 자리에 적는다(정직 표기).
+  retired.forEach(function(r){
+    html+='<div style="margin-top:6px;font-size:12px;color:var(--dim);">※ <b>'+fmEsc(r.cat)+'</b> '+(r.total||0)+'칸('+(r.done||0)+'칸 입력)은 위 집계에서 뺐습니다 — '+fmEsc(FM_RETIRED_CATS[r.cat])+'. 지난 기록은 그대로 보존돼 있습니다.</div>';
+  });
   el.innerHTML=html;
 }
 
