@@ -1315,6 +1315,11 @@
               ydStale = Math.floor((Date.now() - new Date(yd.date + 'T00:00:00+09:00').getTime()) / 86400000);
               if (ydStale > 2) ydLabel += ' ⚠ 지연';
             }
+            /* ★2026-08-26 배798 감사 — 서버가 스스로 "두 셈이 안 맞는다"(mismatch:true)고 신고하는데
+               화면은 역산값만 띄우고 그 신고를 어디에도 안 쓰고 있었다.
+               실측 8/25: 역산 41,816,100 vs 시트 금일합계 41,290,600 — 52.55만 차이.
+               GM 이 이 숫자로 판단하시는데, 서버가 못 믿겠다고 말한 값을 아무 표시 없이 보여주면 안 된다. */
+            if (yd.mismatch) ydLabel += ' ⚠ 대조 불일치';
             set('heroSalesDayLabel', ydLabel);
             set('heroSalesDay', krAmt(yd.amount));
             // 진짜 0(휴관일 등)은 카테고리색(초록) 대신 중립색 — 0을 장애처럼 보이게 하지 않는다(GM 2026-08-24 위임).
@@ -1322,6 +1327,9 @@
             setTitle('heroSalesDay', krExact(yd.amount)
               + (typeof yd.parking === 'number' ? (' (주차 ' + krExact(yd.parking) + ' 포함)') : '')
               + ' · ' + (yd.date || '') + ' 확정치(보고 탭 누적차 역산)'
+              + (yd.mismatch ? (' · ⚠ 대조 불일치 — 역산값과 시트 금일합계'
+                  + (typeof yd.sheetToday === 'number' ? ('(' + krExact(yd.sheetToday) + ')') : '')
+                  + '가 다릅니다. 어느 쪽이 맞는지 확인 전까지 이 숫자를 근거로 쓰지 마세요') : '')
               + (ydStale > 2 ? (' · ⚠ ' + ydStale + '일 지난 값 — 일일 매출보고 시트 갱신/배선 확인 필요') : ''));
           } else {
             set('heroSalesDayLabel', '오늘');
