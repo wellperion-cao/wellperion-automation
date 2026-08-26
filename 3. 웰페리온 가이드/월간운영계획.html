@@ -997,8 +997,7 @@
     <!-- 🗂️ 부서별 내용 = 표(table.rpt) 전환(실무 도달율+AI 활용%+월 목표·진척+체계 페이지 매핑 · GM 지시 2026-07-07 3차: 카드 그리드 → 표·A3 1p 맞춤) -->
     <section class="blk dept-cards" data-blkid="deptcards">
       <h2 class="sec">🗂️ 부서별 내용 <span class="lvb lvb-off" title="월간계획 정본(objectives·수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">부서별 도달율 + 월 목표·진척 · 체계 페이지 매핑</span></h2>
-      <!-- 경영 보고·GM 업무 현황 링크 — 舊 「이달 핵심 과제 상세」 안에 있던 걸 여기로 이관(GM 지시 2026-08-08) -->
-      <div style="margin:0 0 10px;text-align:right;"><a class="tg-link" href="coo/chairman/GM업무.html" target="_blank">경영 보고·GM 업무 현황 열기 ▸</a></div>
+      <!-- 「경영 보고·GM 업무 현황 열기」 링크 삭제 (GM 지시 2026-08-26) — GM 업무는 GM업무 페이지에서 본다. -->
       <div id="dept-cards-board"></div>
     </section>
 
@@ -1041,26 +1040,11 @@
          status/monthly_ops_plan.json 해당월 objectives(제목에 "(GM 직접)")로 전환(renderGmDirectFold(),
          coo/chairman/_gm_direct_tasks.js 공용). 🤵 대표님 칸은 그대로 업무 시트(readWorkApproval/
          renderGmFold) — 두 칸이 서로 다른 소스를 쓰는 것이 의도된 분리다. -->
-    <section class="blk" data-blkid="exec-toggles">
-      <div class="toggle-row-2">
-        <details class="r-note-fold tg-card" id="chairman-fold" open>
-          <summary>👑 회장님 보고건 <span class="be-badge" id="chairman-badge">불러오는 중…</span></summary>
-          <div class="r-note" id="chairman-body">불러오는 중…</div>
-        </details>
-        <details class="r-note-fold tg-card" id="ceo-fold" open>
-          <summary>🤵 대표님 보고건 <span class="be-badge" id="ceo-fold-badge">불러오는 중…</span></summary>
-          <div class="r-note" id="ceo-fold-body">불러오는 중…</div>
-        </details>
-        <details class="r-note-fold tg-card" id="gm-fold" open>
-          <summary>👤 김남욱GM 업무 진행건 <span class="be-badge" id="gm-fold-badge">불러오는 중…</span></summary>
-          <div class="r-note" id="gm-fold-body">불러오는 중…</div>
-          <div class="r-note" style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-size:12.5px;">
-            🤝 브로제이 시스템 업무분장 <span class="be-badge" id="broj-fold-badge">불러오는 중…</span> ·
-            <a class="tg-link" href="coo/brojay/브로제이_업무분장.html" target="_blank">자세히 보기 →</a>
-          </div>
-        </details>
-      </div>
-    </section>
+    <!-- ★2026-08-26 GM 지시로 4칸(👑 회장님 보고건 · 🤵 대표님 보고건 · 👤 김남욱GM 업무 진행건 ·
+         🤝 브로제이 시스템 업무분장) 삭제. 같은 내용을 두 화면에 두지 않는다(약속 L01) —
+         회장님·대표님·GM 업무는 각 전용 페이지(coo/chairman/)에서, 브로제이는 GM 업무 「웰페리온 ERP
+         고도화」(objective 2026-08-08) 안으로 병합했다. 채우던 함수들(renderExecCard·loadBrojEntry 등)은
+         모두 `if(!el) return;` 가드가 있어 대상 id 가 없으면 조용히 빠진다 — 코드는 그대로 둔다. -->
 
     <!-- (구) 이달 핵심 과제 상세는 여기 있었다 — GM 지시 2026-08-08: 부서별 월 목표·진척 카드로 일원화하며 제거.
          편집 기능(상태·진척·마감·메모)은 dept-cards-board 카드 항목으로 이식, GM 업무 현황 링크는 위 부서별 내용 섹션으로 이관. -->
@@ -3274,10 +3258,12 @@
     if(_checkTriggered) return;
     _checkTriggered = true;
     Promise.all([
-      withTimeout(readKpiValues(), 8000, null),
-      withTimeout(readVocBoard(), 8000, null),
-      withTimeout(readLfBoard(), 8000, []),
-      withTimeout(readHoldIntake(), 8000, null)
+      /* 30초 — reg_board 응답이 실측 12.8초다. 종전 8초 상한에 매번 걸려 🗂️ 종합 접수처가
+         "연동 예정 — 접수 조회 실패"로만 떴다(2026-08-26 시우 수리 · GM 지적). */
+      withTimeout(readKpiValues(), 30000, null),
+      withTimeout(readVocBoard(), 30000, null),
+      withTimeout(readLfBoard(), 30000, []),
+      withTimeout(readHoldIntake(), 30000, null)
     ]).then(function(a){
       _kpiValues = a[0]; _receptionBoard = a[1]; _holdStats = a[3];
       // 습득물(lf) 병합 — VOC 보드가 정상 로드됐을 때만 덧붙인다(VOC 실패 시 습득물만 부분표시=오해 방지, ④ 카드 '측정 개통 전' 유지).
