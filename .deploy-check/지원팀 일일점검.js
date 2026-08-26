@@ -3525,8 +3525,12 @@ function _aggregateMonthly(snapRows, issueRows, month, scheduleTotals) {
     byZoneMap[s.zone].sessionCount++; byZoneMap[s.zone].sumTotal += total;
     byZoneMap[s.zone].sumDone += done; byZoneMap[s.zone].issueCount += issueCnt;
 
-    if (!byShiftMap[s.bucket]) byShiftMap[s.bucket] = { shift: s.bucket, sessionCount: 0, sumTotal: 0, sumDone: 0 };
+    // ★2026-08-26 배798 감사 — issueCount 가 여기만 빠져 있었다(byZone·byDate 에는 있다).
+    //   그래서 월간 화면의 교대별 표 「이슈」 칸이 전부 0 으로 떴다 — 실제로는 8월 57건이다.
+    //   화면은 없는 필드를 `||0` 으로 받아 가짜 0 을 그렸고, 아무도 못 채운 칸으로 보이지 않았다.
+    if (!byShiftMap[s.bucket]) byShiftMap[s.bucket] = { shift: s.bucket, sessionCount: 0, sumTotal: 0, sumDone: 0, issueCount: 0 };
     byShiftMap[s.bucket].sessionCount++; byShiftMap[s.bucket].sumTotal += total; byShiftMap[s.bucket].sumDone += done;
+    byShiftMap[s.bucket].issueCount += issueCnt;
 
     if (!byInspectorMap[inspector]) byInspectorMap[inspector] = { inspector: inspector, sessionCount: 0, pctSum: 0 };
     byInspectorMap[inspector].sessionCount++;
