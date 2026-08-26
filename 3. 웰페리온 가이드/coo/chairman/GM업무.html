@@ -962,9 +962,15 @@
           .sort(function (a, b) { return String(a.endDate).slice(0, 10) < String(b.endDate).slice(0, 10) ? -1 : 1; });
         var oldest = overdue[0];
         var oldestTitle = oldest ? (String(oldest.title).length > 24 ? String(oldest.title).slice(0, 24) + '…' : oldest.title) : '';
+        // 이정헌 소장은 업무 SSOT 건수가 0에 가까운 것이 정상이다 — 시설 점검·고장 접수는
+        // 업무 SSOT 가 아니라 점검 체계 화면에서 따로 돈다(GM 확정 2026-08-08). 그 사실을 안 적으면
+        // GM 화면에서 0건이 '일이 없다'로 읽힌다.
+        var note = (name === '이정헌 소장' && mine.length === 0)
+          ? ' <span class="due">— 시설 점검·고장 접수는 점검 화면에서 따로 돕니다</span>' : '';
         return '<div class="ts-row"><b>👤 ' + esc(name) + '</b><span>미완 ' + mine.length + '건 · ' +
           '<span class="due' + (overdue.length ? ' overdue' : '') + '">기한 지남 ' + overdue.length + '건</span>' +
           (oldest ? ' · 가장 오래된 건 「' + esc(oldestTitle) + '」 ' + daysOverdue(oldest.endDate) + '일째' : '') +
+          note +
           '</span> <a class="doc-link" href="../todo/업무 현황 SSOT.html" target="_blank" rel="noopener">▸목록</a></div>';
       });
       box.innerHTML = '<b>리더 현황</b>' + rows.join('');
