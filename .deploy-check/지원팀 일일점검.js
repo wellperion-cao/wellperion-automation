@@ -3110,8 +3110,10 @@ var FACILITY_ITEMS = [
   // 2-D AI초안(GM 검토) — 작업일지 미기재, 시설 매뉴얼상 권장 (배지 구분)
   { id:'fc_ai_fire',       name:'소방시설 일일 작동점검',            cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
   { id:'fc_ai_elev',       name:'엘리베이터·에스컬레이터 가동확인',  cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
-  { id:'fc_ai_water',      name:'정수기·비품 점검',                  cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
-  { id:'fc_ai_alarm',      name:'측정 기준범위 이탈 경보 확인',      cat:'F 안전(AI초안)',  unit:'ok/x', ai:true }
+  { id:'fc_ai_water',      name:'정수기·비품 점검',                  cat:'F 안전(AI초안)',  unit:'ok/x', ai:true }
+  // [2026-08-26 GM 승인] fc_ai_alarm(측정 기준범위 이탈 경보 확인) 제거 — 시스템이 자동으로 하는 일이라
+  //   사람이 매일 체크할 이유가 없는데 분모만 키워 안전 입력률을 깎았다(8월 실측 9/86=10%).
+  //   화면(시설부 체계 AI_DRAFT)에서도 같은 날 뺐다 — 양쪽 동시 수정.
 ];
 
 // ════════════════════════════════════════════
