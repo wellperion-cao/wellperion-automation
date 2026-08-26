@@ -3522,7 +3522,6 @@ function vendorSubmitAddForm(){
   function fcCheckAll(){
     ROUND_FIELD_IDS.forEach(fcCheckField);
     AHU.forEach(function(a){ fcCheckField('fc_ahu_'+a); });
-    AI_DRAFT.forEach(function(a){ fcCheckField(a[0]); });
     BROJAY_ITEMS.forEach(function(it){ it.fields.forEach(fcCheckField); });   // x 입력 시 빨간 강조(:3497 fcCheckField 재사용) — 현장에서 눈에 띄어야 함
     ['fc_eq_hotw','fc_eq_pump','fc_eq_heat'].forEach(fcCheckField);   // 기계실 ok/x 셀렉트는 아님(텍스트) — 값 'x'면 강조 안 함(SELECT만). 안전상 남겨도 무해.
     fcRenderReasonBox();
@@ -3572,13 +3571,13 @@ function vendorSubmitAddForm(){
   /* [2026-08-26 GM 승인] '측정 기준범위 이탈 경보 확인'(fc_ai_alarm) 제거 — 시스템이 자동으로 하는 일이라
      사람이 매일 손으로 체크할 이유가 없는데, 그 칸이 분모만 키워 안전 입력률을 깎고 있었다(8월 실측 9/86=10%).
      GM 원문 물음: "일일점검에서 시설부점검 안전건은 계속 0%인데 계속 놔둬야하나?" → 셋 중 이 항목만 뺀다. */
-  var AI_DRAFT=[['fc_ai_elev','에스컬레이터 가동확인'],['fc_ai_water','정수기·비품 점검']];
-  function aiBox(){
-    var h='<div style="font-weight:700;font-size:14px;margin:14px 0 4px;">안전 점검 (1일 1회)</div>';
-    h+='<div style="display:flex;flex-wrap:wrap;gap:10px;">';
-    AI_DRAFT.forEach(function(a){h+='<label style="font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:200px;">'+a[1]+'<select id="'+a[0]+'" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:5px;font-size:13px;font-family:inherit;"><option value=""></option><option value="ok">ok</option><option value="x">x</option></select></label>';});
-    return h+'</div>';
-  }
+  /* [2026-08-26 GM 확정] 「안전 점검」 카테고리 전체 제거.
+     GM 물음: "일일점검 현황 시설부점검 안전 칸 0/2개는? 꼭 필요한거야?" → 재보니 필요 없다.
+     ①8월 입력률 10%(9/86) — 사실상 아무도 안 채운다.
+     ②두 항목 다 다른 곳이 이미 맡고 있다: 에스컬레이터는 전사일정 이벤트(정밀진단·정기검사)로,
+       정수기는 지원부 점검 「B-6 정수기 주변 청결 관리」로 매일 들어온다 — 여기 칸은 중복이었다.
+     ③시설부 지표는 % 가 아니라 이벤트 중심으로 본다(GM 기존 방침).
+     소방(fc_ai_fire)·경보확인(fc_ai_alarm)은 같은 날 먼저 뺐고, 남은 둘까지 빼면서 F 안전은 사라진다. */
   // 🚪 브로제이 자동화 점검(GM 2026-08-08 직접 지시) — 오픈·마감 각 1회, 항목당 select 2칸(open/close).
   var BROJAY_ITEMS=[
     {id:'fc_brojay_door',name:'얼굴인증 자동문(3초 내 개폐)',cat:'G 브로제이',fields:['fc_brojay_door_open','fc_brojay_door_close']},
@@ -3623,11 +3622,8 @@ function vendorSubmitAddForm(){
     {id:'fc_eq_hotw',name:'고온수기(05:00)',cat:'E 기계실 가동값',fields:['fc_eq_hotw']},
     {id:'fc_eq_pump',name:'연동펌프(05:00)',cat:'E 기계실 가동값',fields:['fc_eq_pump']},
     {id:'fc_eq_heat',name:'축열조(14:00)',cat:'E 기계실 가동값',fields:['fc_eq_heat']},
-    {id:'fc_eq_final',name:'최종퇴실(시각/성명)',cat:'E 기계실 가동값',fields:['fc_eq_final']},
-    // 2026-08-25 GM 확정 — 소방(법정 연 1회로 이관·삭제) · 엘리베이터 제외(아파트 건) · 초안 딱지 제거. 상세는 AI_DRAFT 위 주석.
-    {id:'fc_ai_elev',name:'에스컬레이터 가동확인',cat:'F 안전',fields:['fc_ai_elev']},
-    {id:'fc_ai_water',name:'정수기·비품 점검',cat:'F 안전',fields:['fc_ai_water']}
-    // fc_ai_alarm(측정 기준범위 이탈 경보 확인)은 2026-08-26 GM 승인으로 제거 — 위 AI_DRAFT 주석 참조.
+    {id:'fc_eq_final',name:'최종퇴실(시각/성명)',cat:'E 기계실 가동값',fields:['fc_eq_final']}
+    // F 안전(에스컬레이터·정수기·경보확인·소방) 4항목은 2026-08-26 GM 확정으로 전부 제거 — 위 주석 참조.
   ];
   FC_DAILY_ITEMS.push.apply(FC_DAILY_ITEMS, BROJAY_ITEMS);   // fields는 DAILY_FIELD_IDS·제출 payload에 자동 흡수(회차 리셋 대상 아님 — 오픈 값이 마감 제출까지 보존됨)
   var ROUND_FIELD_IDS=[];   // 시간대별 항목의 모든 입력 필드 id (회차 전환 시 캡처·복원 대상)
@@ -3793,7 +3789,7 @@ function vendorSubmitAddForm(){
   };
   window.fcRender=function(){
     var el=document.getElementById('fc-body'); if(!el)return;
-    el.innerHTML='<div id="fc-rounds-bar"></div><div class="progress" id="fc-progress"></div>'+saunaTbl()+poolTbl()+'<div id="fc-reason-box" style="display:none;margin:6px 0 10px;"></div>'+equipBox()+aiBox()+brojayBox()+noteBox();
+    el.innerHTML='<div id="fc-rounds-bar"></div><div class="progress" id="fc-progress"></div>'+saunaTbl()+poolTbl()+'<div id="fc-reason-box" style="display:none;margin:6px 0 10px;"></div>'+equipBox()+brojayBox()+noteBox();
     // 항목 칸 입력 시 캡처 후 진행바 갱신(회차 통합 — 단일 버킷)
     el.querySelectorAll('[id^=fc_]').forEach(function(n){ n.addEventListener('input',fcProgress); n.addEventListener('change',fcProgress); });
     fcProgress(); fcRenderRoundsBar();

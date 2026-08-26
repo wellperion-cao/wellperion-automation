@@ -422,41 +422,10 @@
       <div style="font-size:13.5px;color:var(--dim);line-height:1.7;margin-top:12px;max-width:560px;margin-left:auto;margin-right:auto;">단순한 운동 시설이 아닙니다. 하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간.</div>
     </div>
 
-    <!-- 예외 한 줄 스트립 — 새 fetch 없음. 이미 화면이 계산해 DOM에 넣은 값(결재 대기·밀린 회신·기한초과·점검 이상)을
-         각 로더 완료 시점에 읽어 0 아닌 것만 나열. 전부 0/미로드면 안내 한 줄. 판단거리를 첫 화면(폴드 위)로 끌어올리는
-         용도 — 슬로건 배너·매출지출 스트립은 무변경. 2026-08-24 GM 지시(팀리드 위임). -->
-    <div id="homeExceptionStrip" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;padding:9px 14px;margin:0 0 16px;background:var(--paper);border:1px solid var(--border);border-radius:10px;"></div>
-    <script>(function(){
-      function numOf(id){
-        var el=document.getElementById(id);
-        if(!el) return null;
-        var t=el.textContent.trim();
-        if(t===''||t==='—') return null;
-        var n=parseInt(t,10);
-        return isNaN(n)?null:n;
-      }
-      window.updateHomeExceptionStrip=function(){
-        var el=document.getElementById('homeExceptionStrip');
-        if(!el) return;
-        var items=[];
-        var pend=numOf('kpiApprStripPend'); if(pend!==null) items.push({n:pend,label:'결재 대기',target:'kpiApprStripPend'});
-        // 밀린 회신·기한초과 — reception_watch.json 직독이 이 스트립 자신의 dataset에 넣어둔 값(카드 중복 제거, GM 지적 2026-08-24)
-        var reply=el.dataset.replyOpen!=null?parseInt(el.dataset.replyOpen,10):null;
-        if(reply!=null&&!isNaN(reply)) items.push({n:reply,label:'밀린 회신',target:'homeReceptionCard'});
-        var overdue=el.dataset.overdue3d!=null?parseInt(el.dataset.overdue3d,10):null;
-        if(overdue!=null&&!isNaN(overdue)) items.push({n:overdue,label:'기한초과',target:'homeReceptionCard'});
-        var checkEl=document.getElementById('home-check-kpi');
-        var issueAttr=checkEl?checkEl.getAttribute('data-issue-total'):null;
-        if(issueAttr!=null&&issueAttr!==''){ var issueN=parseInt(issueAttr,10); if(!isNaN(issueN)) items.push({n:issueN,label:'점검 이상',target:'home-check-kpi'}); }
-        if(!items.length){ el.style.display='none'; return; }
-        el.style.display='flex';
-        var nonZero=items.filter(function(x){return x.n>0;});
-        if(!nonZero.length){ el.innerHTML='<span style="color:var(--dim);font-weight:600;">✅ 대기·밀림 없음</span>'; return; }
-        el.innerHTML='<span style="color:var(--dim);font-weight:700;">⚠</span>'+nonZero.map(function(x){
-          return '<a href="#" onclick="event.preventDefault();var t=document.getElementById(\''+x.target+'\');if(t)t.scrollIntoView({behavior:\'smooth\',block:\'center\'});" style="color:var(--warm);font-weight:700;text-decoration:none;">'+x.label+' '+x.n+'</a>';
-        }).join('<span style="color:var(--border);">·</span>');
-      };
-    })();</script>
+    <!-- [2026-08-26 GM 지시] 예외 한 줄 스트립(결재 대기·밀린 회신·기한초과·점검 이상) 제거.
+         각 숫자는 아래 카드들이 이미 보여 주는 값이라 첫 화면에 같은 것이 두 번 있었다.
+         스트립 전용 코드(updateHomeExceptionStrip·renderReceptionWatch·reception_watch.json fetch)도
+         함께 지웠다 — 꺼두면 죽은 코드가 되어 누가 다시 켠다(약속 L21). -->
 
     <p class="lead"><strong>웰페리온 ERP</strong>(전사적 자원 관리 · Enterprise Resource Planning)는 웰페리온의 모든 일이 하나의 북극성을 향해 같은 항로로 나아가게 잇는 통합 플랫폼입니다. 인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에 모아 — 사람은 방향을 정하고, 시스템은 항해를 책임집니다.</p>
 
@@ -596,7 +565,14 @@
       <div style="display:flex;flex-direction:column;">
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">문의&등록 현황</div><div style="font-size:10.5px;color:var(--dim);">멤버십·강습 문의·등록 관리 · AI CPO(시포) · 이번달 · 올해(2026) 누적</div></div></div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <!-- [2026-08-26 GM 4번째 지적] "종합접수처 세로 사이즈 문의&등록 현황이랑 맞춰".
+             실측(라이브 렌더): 두 카드의 겉 높이·헤더·링크 행은 이미 정확히 같았다(398px, 헤더 top 1038, 링크 top 1398).
+             안 맞던 것은 **카드 안쪽**이다 — 이 카드 타일이 241px 에서 끝나 링크 행까지 59px 이 비었고,
+             옆 종합접수처는 292px 로 꽉 차 있었다. 그래서 두 카드의 '칸'이 세로로 어긋나 보였다.
+             ▸고정 픽셀로 맞추려 했던 것이 세 번 실패한 이유다 — 값은 데이터 양에 따라 매번 달라진다.
+               타일 그리드가 **남는 높이를 스스로 채우게** 한다(flex:1 + grid-auto-rows:1fr). 옆 카드에도 같은 처리를 해
+               어느 쪽 내용이 길어지든 두 카드가 항상 같이 늘어난다. min-height 는 최소 보장으로 남긴다. -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;grid-auto-rows:1fr;">
           <div style="background:var(--grow-bg);border-radius:10px;padding:11px 12px;min-height:104px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">멤버십 문의관리 · 이번달</div>
             <div style="font-size:27px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqMonth">—</div>
@@ -667,9 +643,11 @@
             <div style="margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적 </span><span id="kpiVocDone" style="font-size:14.5px;font-weight:700;color:var(--grow,#6abf7b);">—</span></div>
           </div>
         </div>
-        <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);">
+        <!-- 옆 문의&등록 카드와 짝 처리(2026-08-26) — 남는 높이를 이 블록이 채운다. 어느 카드 내용이 길어지든
+             두 카드의 타일이 같이 늘어나 세로가 어긋나지 않는다. -->
+        <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);flex:1;display:flex;flex-direction:column;">
           <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:6px;">유형별 건수 · 이번달 접수 · 누적/완료</div>
-          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1;grid-auto-rows:1fr;">
             <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
         </div>
@@ -1074,7 +1052,6 @@
           body.innerHTML = html;
         })();
 
-        if (window.updateHomeExceptionStrip) window.updateHomeExceptionStrip();
       })
       .catch(function(){ /* "—" 유지 */ });
 
@@ -1570,21 +1547,6 @@
       })
       .catch(function(){ /* "—" 유지 */ });
 
-    // 밀린 회신·기한초과 — status/reception_watch.json 직독(같은 파일이 이미 쓰는 raw.githubusercontent 패턴 재사용).
-    // 종합접수처 카드엔 표시 안 함(예외 스트립과 중복 — GM 지적 2026-08-24) — 예외 스트립 dataset에만 값을 넘긴다.
-    function renderReceptionWatch(d){
-      var strip = document.getElementById('homeExceptionStrip');
-      if(!strip || !d) return;
-      var replyOpen = d.member_reply_open, od3 = d.overdue_3d;
-      if(replyOpen == null && od3 == null) return;
-      if(replyOpen != null) strip.dataset.replyOpen = String(replyOpen);
-      if(od3 != null) strip.dataset.overdue3d = String(od3);
-      if (window.updateHomeExceptionStrip) window.updateHomeExceptionStrip();
-    }
-    fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/reception_watch.json?t=' + Date.now(), { cache: 'no-store' })
-      .then(function(r){ return r.json(); })
-      .then(function(d){ try { renderReceptionWatch(d); } catch(_e){ /* 스트립만 조용히 빠짐 */ } })
-      .catch(function(){ /* 스트립만 조용히 빠짐 */ });
   })();
   </script>
 
@@ -11151,13 +11113,10 @@ function crTab(btn, panelId) {
       {key:'B',label:'🏊 수영장 수질',    ids:['fc_pool_ph','fc_pool_temp','fc_pool_cl']},
       {key:'C',label:'🚿 온수탱크',       ids:['fc_tank_k2','fc_tank_k3','fc_tank_k4']},
       {key:'D',label:'💨 공조기',         ids:['fc_ahu_AHU1','fc_ahu_AHU2','fc_ahu_AHU3','fc_ahu_AHU4']},
-      {key:'E',label:'⚙️ 기계실',         ids:['fc_eq_night','fc_eq_tank1','fc_eq_gas','fc_eq_hotw','fc_eq_pump','fc_eq_heat','fc_eq_final']},
-      // [2026-08-26 GM 확정] 안전은 2항목만 남긴다.
-      //   ▸fc_ai_alarm(측정 기준범위 이탈 경보 확인) 제거 — 시스템이 자동으로 하는 일이라 사람 체크 칸이 분모만 키웠다.
-      //   ▸fc_ai_fire(소방시설 일일 작동점검) 제거 — 소방은 **전사일정(법정 주기) 소관**이지 일일 점검현황 라인이
-      //     아니다(GM: "그때 이야기했던 것 같은데?" — 전에 말씀하셨는데 코드에 안 박혀 되살아나 있었다).
-      //     정본 = status/schedule_ssot.json 의 fac-fire-func(작동점검·연 1회)·fac-fire-full(종합점검·연 1회).
-      {key:'F',label:'🛟 안전',           ids:['fc_ai_elev','fc_ai_water']}
+      {key:'E',label:'⚙️ 기계실',         ids:['fc_eq_night','fc_eq_tank1','fc_eq_gas','fc_eq_hotw','fc_eq_pump','fc_eq_heat','fc_eq_final']}
+      // [2026-08-26 GM 확정] F 안전 그룹 전체 제거 — 입력률 10%(9/86)에 두 항목 다 다른 곳이 이미 맡고 있다
+      //   (에스컬레이터=전사일정 이벤트 / 정수기=지원부 B-6 청결). 소방은 전사일정 법정 주기 소관.
+      //   상세 = coo/check/시설부 체계.html 의 같은 날 주석.
     ];
     // FACILITY_RANGES 하드코딩 삭제 → 계약서로 이관(2026-07-20 배9199). 정본=점검 스프레드시트「점검기준」시트 1장, 세 곳(입력화면·GAS·본 대시보드) 공통 GAS 액션 fcheck_ranges_get로 조회.
     // 계약서: docs/superpowers/specs/2026-07-20-fcheck-ranges-contract.md — 옛 값(복사본, 사고 원인)은 참고용으로만 아래 주석 보존.
@@ -11477,7 +11436,6 @@ function crTab(btn, panelId) {
       el.innerHTML=html;
       // 예외 스트립용 — 각 카드가 이미 세는 이상·이슈 건수를 그대로 합산해 태그(새 집계 없음).
       el.setAttribute('data-issue-total', String(fBoard.issues.length + sMIssues.length + sFIssues.length));
-      if (window.updateHomeExceptionStrip) window.updateHomeExceptionStrip();
     }
 
     function fetchBoth(onSuccess){
