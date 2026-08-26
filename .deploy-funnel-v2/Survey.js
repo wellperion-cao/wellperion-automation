@@ -1413,7 +1413,13 @@ function _cacheGetJson_(cache, key) {
 // ★2026-07-31 시토 — 유효회원 목록 캐시 무효화(한 곳). 유효회원 시트를 바꾸는 경로는 전부
 //   이걸 부른다. 캐시 TTL 이 60초라 안 불러도 1분이면 사라지지만, 편집 직후 옛 값이 보이면
 //   실무진은 "저장이 안 됐다"고 읽는다(오늘 GM 지적 부류). 그래서 즉시 지운다.
-function _aaCacheClear_() {
+/* scopeList = 지울 명단 이름 배열. 안 주면 종전대로 전부 지운다(하위호환).
+   ★2026-08-26 시포(실무진 신고 — "최신 명단 불러오는 중" 에서 수정이 안 됨) 근본수리.
+   회원 한 칸을 고칠 때마다 유효·종료·법인·보관 **네 명단 캐시를 전부** 날렸다. 유효회원 시트만
+   건드렸는데 나머지 셋까지 지우니, 그 직후 화면을 여는 사람은 콜드 조회를 맞는다 — 실측으로
+   그 첫 조회가 83초 걸리다 실패했고, 화면은 그동안 '불러오는 중' 잠금 상태로 멈춰 있었다.
+   이제 저장이 실제로 건드린 시트의 캐시만 지운다. */
+function _aaCacheClear_(scopeList) {
   try {
     var c = CacheService.getScriptCache();
     // ★2026-08-26 시포 — 'archive' 추가. LOSS보관 시트는 조회전용이라 목록 캐시를 지울 일이 없었는데,
@@ -1422,7 +1428,8 @@ function _aaCacheClear_() {
     /* ★2026-08-26 시포(배11001 1단계) — 키마다 _cacheInvalidateJson_ 을 부르면 캐시를 16번 친다
        (키 8개 × get+removeAll). 저장 1건 실측에서 이 구간만 0.66초였다. meta 를 한 번에 받고
        지울 키도 한 번에 넘겨 호출을 2번으로 줄인다 — 지우는 대상은 글자 하나 안 바뀐다. */
-    var scopes = ['valid', 'ended', 'corp', 'archive'], fmts = ['obj', 'rows'];
+    var scopes = (scopeList && scopeList.length) ? scopeList : ['valid', 'ended', 'corp', 'archive'];
+    var fmts = ['obj', 'rows'];
     var bases = [], metaKeys = [];
     for (var si = 0; si < scopes.length; si++) {
       for (var fi = 0; fi < fmts.length; fi++) {
@@ -2855,7 +2862,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
           var _prevSeq = parseInt(sh.getRange(row, seqI + 1).getValue(), 10);
           sh.getRange(row, seqI + 1).setValue((_prevSeq > 0 ? _prevSeq : 1) + 1);
         }
-        _memberCacheBump_(); _aaCacheClear_();   // member_active_list 캐시도 즉시 무효화(FB260806-150441 근본수리)
+        _memberCacheBump_(); _aaCacheClear_(['valid']);   // 유효회원 시트만 바뀌었다 — 그 명단 캐시만 지운다(FB260806-150441 근본수리)
         return;
       }
     }
@@ -2898,7 +2905,7 @@ function _memberActiveUpsert_(name, phone, program, regDate, months, opts) {
   var _newRow = sh.getLastRow();
   var _pc = sh.getRange(_newRow, phI + 1); _pc.setNumberFormat('@'); _pc.setValue(phone || '');
   if (regI >= 0) { var _rc2 = sh.getRange(_newRow, regI + 1); _rc2.setNumberFormat('@'); _rc2.setValue(regDate || _todayKR_()); }
-  _memberCacheBump_(); _aaCacheClear_();   // member_active_list 캐시도 즉시 무효화(FB260806-150441 근본수리)
+  _memberCacheBump_(); _aaCacheClear_(['valid']);   // 유효회원 시트만 바뀌었다 — 그 명단 캐시만 지운다(FB260806-150441 근본수리)
 }
 
 // ═══════════════════════════════════════════
@@ -9832,7 +9839,7 @@ function _hasRealReply_(memo) {
       _auMark('write');
       _memberLog_(_auLog);
       _auMark('log');
-      _aaCacheClear_();
+      _aaCacheClear_(['valid']);
       _auMark('total');
       return _json({ ok: true, rowIndex: auRow, cols: _auWrote, saved: _auSaved, ms: _auT });
     }
@@ -9843,7 +9850,7 @@ function _hasRealReply_(memo) {
     _auMark('write');
     _memberLog_(_auLog);
     _auMark('log');
-    _aaCacheClear_();
+    _aaCacheClear_(['valid']);
     _auMark('total');
     return _json({ ok: true, rowIndex: auRow, col: auCol, saved: _auSaved, ms: _auT });
   }
@@ -9900,7 +9907,7 @@ function _hasRealReply_(memo) {
                     'LOSS보관 행 ' + arRow + ' 삭제 · 원본: ' + JSON.stringify(_clVals).slice(0, 900),
                     '유효회원 행 ' + _clActRow, '멤버십']]);
       arArchSh.deleteRow(arRow);
-      _memberCacheBump_(); _aaCacheClear_();
+      _memberCacheBump_(); _aaCacheClear_(['archive']);
       return _json({ ok: true, cleaned: true, name: _clArchName, archiveRow: arRow, activeRow: _clActRow });
     }
     // 보관 행 값 읽기 — 물려줄 칸(나이·회원구분·수강반종목명·담당자·주소·비고·등록회차).
@@ -9981,7 +9988,7 @@ function _hasRealReply_(memo) {
     arArchSh.deleteRow(arRow);
     _memberLog_([[new Date(), arStaff, arName, _logMaskPhone_(body.phone), 'LOSS보관 재등록복귀',
                   'LOSS보관 행 ' + arRow, '유효회원 행 ' + arNewRow + '(등록분류:' + arRegClass + ')', '멤버십']]);
-    _memberCacheBump_(); _aaCacheClear_();
+    _memberCacheBump_(); _aaCacheClear_(['valid', 'archive']);
     return _json({ ok: true, restored: true, name: arName, phone: body.phone, archiveRow: arRow, newRow: arNewRow, regClass: arRegClass, seq: arNewSeq });
   }
 
@@ -10023,7 +10030,7 @@ function _hasRealReply_(memo) {
                     _logMaskPhone_(mosSh.getRange(mosRow, mosPhoneIdx + 1).getValue()),
                     mosField, _mosOld, mosValue, '멤버십']]);
     }
-    _aaCacheClear_();
+    _aaCacheClear_(['valid']);
     return _json({ ok: true, phone: mosPhone, field: mosField, value: mosValue, rowIndex: mosRow });
   }
 
