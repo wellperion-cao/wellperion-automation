@@ -118,6 +118,11 @@
   .chip.type-면접{background:var(--amber-bg);color:var(--amber);border-left-color:var(--amber)}
   .chip.type-기타{background:var(--gray-bg);color:var(--gray);border-left-color:var(--gray)}
   .chip.type-SSOT업무{background:#f6efdd;color:var(--gold-deep);border-left-color:var(--gold);font-weight:600}
+  /* HR 자동 일정 3종(2026-08-26, 읽기전용) — 개인일정 4종과 겹치지 않는 색(면접-HR은 개인 "면접"의
+     amber와 구분되도록 orange 채택, wine은 예약색이라 미사용) */
+  .chip.type-HR온보딩{background:var(--green-bg);color:var(--green);border-left-color:var(--green)}
+  .chip.type-HR면접{background:var(--orange-bg);color:var(--orange);border-left-color:var(--orange)}
+  .chip.type-HR첫출근{background:var(--red-bg);color:var(--red);border-left-color:var(--red)}
   .chip.done{opacity:.5;text-decoration:line-through}
   .more-link{font-size:10px;padding:2px 5px;border-radius:4px;color:var(--ink-soft);
     background:var(--surface-2);cursor:pointer;font-weight:700;text-align:center}
@@ -131,6 +136,9 @@
   .day-list-item.type-면접{background:var(--amber-bg);color:var(--amber);border-left-color:var(--amber)}
   .day-list-item.type-기타{background:var(--gray-bg);color:var(--gray);border-left-color:var(--gray)}
   .day-list-item.type-SSOT업무{background:#f6efdd;color:var(--gold-deep);border-left-color:var(--gold);font-weight:600}
+  .day-list-item.type-HR온보딩{background:var(--green-bg);color:var(--green);border-left-color:var(--green)}
+  .day-list-item.type-HR면접{background:var(--orange-bg);color:var(--orange);border-left-color:var(--orange)}
+  .day-list-item.type-HR첫출근{background:var(--red-bg);color:var(--red);border-left-color:var(--red)}
   .day-list-item.done{opacity:.5;text-decoration:line-through}
 
   .msg{font-size:12.5px;color:var(--ink-soft);padding:20px 4px}
@@ -163,6 +171,9 @@
   .type-badge.type-면접{background:var(--amber-bg);color:var(--amber)}
   .type-badge.type-기타{background:var(--gray-bg);color:var(--gray)}
   .type-badge.type-SSOT업무{background:#f6efdd;color:var(--gold-deep)}
+  .type-badge.type-HR온보딩{background:var(--green-bg);color:var(--green)}
+  .type-badge.type-HR면접{background:var(--orange-bg);color:var(--orange)}
+  .type-badge.type-HR첫출근{background:var(--red-bg);color:var(--red)}
   .detail-when{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
   .detail-content{font-size:13px;color:var(--ink);white-space:pre-wrap;line-height:1.6;
     background:var(--bg-soft);border-radius:8px;padding:10px 12px;margin-bottom:12px;min-height:20px}
@@ -174,6 +185,13 @@
   .btn-erp.state-requested{background:var(--green-bg);color:var(--green);border-color:var(--green);border-style:dashed}
   .btn-erp:disabled{cursor:not-allowed;opacity:.65}
   .erp-note{font-size:10.5px;color:var(--ink-faint);margin-top:6px;line-height:1.5}
+  /* [추가 2026-08-26] 개인 일정 완료 처리 토글 — btn-erp와 동일 형태, 완료=초록 강조 */
+  .btn-done{width:100%;border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:700;
+    cursor:pointer;margin-top:6px;border:1px solid var(--line-strong)}
+  .btn-done.state-idle{background:var(--surface-2);color:var(--ink-soft)}
+  .btn-done.state-idle:hover{background:var(--bg-soft)}
+  .btn-done.state-done{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+  .btn-done:disabled{cursor:not-allowed;opacity:.65}
   .ssot-link{font-size:11.5px;margin-top:6px;display:inline-block}
 
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--navy);
@@ -234,6 +252,9 @@
       <span><span class="dot" style="background:var(--purple)"></span>미팅</span>
       <span><span class="dot" style="background:var(--amber)"></span>면접</span>
       <span><span class="dot" style="background:var(--gray)"></span>기타</span>
+      <span class="legend-toggle" id="legendOnbo" title="클릭해서 온보딩 표시 켜기/끄기"><span class="dot" style="background:var(--green)"></span>온보딩(자동·읽기전용)</span>
+      <span class="legend-toggle" id="legendInterview" title="클릭해서 면접(HR연동) 표시 켜기/끄기"><span class="dot" style="background:var(--orange)"></span>면접-HR(자동·읽기전용)</span>
+      <span class="legend-toggle" id="legendFirstday" title="클릭해서 첫출근 표시 켜기/끄기"><span class="dot" style="background:var(--red)"></span>첫출근(자동·읽기전용)</span>
       <span class="legend-toggle" id="legendSsot" title="클릭해서 SSOT 업무 표시 켜기/끄기"><span class="dot" style="background:var(--gold)"></span>SSOT업무(읽기전용)</span>
     </div>
 
@@ -287,6 +308,7 @@
     <div id="dSsotLinkWrap" style="display:none"><a class="ssot-link" id="dSsotLink" target="_blank" rel="noopener">업무 SSOT에서 열기 →</a></div>
     <button class="btn-erp" id="dErpBtn" style="display:none"></button>
     <div class="erp-note" id="dErpNote" style="display:none"></div>
+    <button class="btn-done" id="dDoneBtn" style="display:none"></button>
     <div class="modal-actions" id="dActions" style="margin-top:14px">
       <button class="btn btn-ghost" id="detailClose">닫기</button>
       <button class="btn btn-danger" id="detailDelete" style="display:none">삭제</button>
@@ -322,6 +344,12 @@ var CAL_ITEMS = [];   // 개인일정(cal-list)
 var SSOT_ITEMS = [];  // 업무 SSOT 나우열M 카드(읽기전용)
 var EDIT_TARGET = null; // 수정 중인 개인일정 원본(id 있으면 수정, 없으면 신규)
 
+/* [추가 2026-08-26 매니저 지시] HR 자동 일정 3종(온보딩 완료기한·면접 일정·첫출근) — 읽기전용,
+   기존 읽기 액션(db:onbo/db:appl/db:emp) 재사용, 신규 백엔드 액션 없음. 각각 SSOT와 동일한
+   범례 토글 + localStorage 기억(독립 3개). */
+var SHOW_ONBO = true, SHOW_INTERVIEW = true, SHOW_FIRSTDAY = true;
+var ONBO_ITEMS = [], INTERVIEW_ITEMS = [], FIRSTDAY_ITEMS = [];
+
 function toast(m){var t=document.getElementById("toast");t.textContent=m;t.style.display="block";
   clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none";},2600);}
 function pad2(n){n=String(n);return n.length<2?"0"+n:n;}
@@ -351,6 +379,28 @@ function kstDateStr(d){
 // 달력 그리드 요일 계산 전용 — Date.UTC로 y/m/d를 앵커링해 호스트 브라우저의 타임존·DST 설정과
 // 무관하게(문자열 절단 없이) 항상 같은 결과를 낸다. 0=일요일 … 6=토요일.
 function weekdayOfUTC(y,mIdx,dnum){ return new Date(Date.UTC(y,mIdx,dnum)).getUTCDay(); }
+
+/* [추가 2026-08-26] HR 백엔드(readSchemaSheet_/readCurrentSheet_) 전용 날짜 파서 — kstDateStr()과
+   섞어 쓰면 안 된다. kstDateStr()의 +9h 보정은 "업무 SSOT" 외부 GAS가 돌려주는 진짜 UTC 'Z' ISO
+   타임스탬프 전용이다. 반면 이 HR 백엔드는 readSchemaSheet_ 안에서 이미 Utilities.formatDate(v,
+   "Asia/Seoul", "yyyy-MM-dd'T'HH:mm")로 "벽시계 KST 문자열"을 만들어 반환한다(Z도 오프셋도 없음).
+   이 문자열을 kstDateStr()처럼 new Date()+9h로 재해석하면 시각이 있는 값(예: 면접 일정 "14:30")에서
+   이중 보정이 걸려 날짜/시각이 틀어진다 — 그래서 Date 객체를 아예 만들지 않고 문자열을 그대로
+   슬라이스한다(시간 없는 값은 readSchemaSheet_가 애초에 'T' 없는 순수 "yyyy-MM-dd"로 내려주므로
+   양쪽 다 안전). */
+function hrDateOnly_(v){
+  if(!v) return "";
+  var m=String(v).trim().match(/^\d{4}-\d{2}-\d{2}/);
+  return m?m[0]:"";
+}
+function hrDateTime_(v){
+  if(!v) return {date:"",time:""};
+  var s=String(v).trim();
+  var m=s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+  if(m) return {date:m[1], time:m[2]};
+  var d=s.match(/^\d{4}-\d{2}-\d{2}/);
+  return {date:d?d[0]:"", time:""};
+}
 var VIEW_Y, VIEW_M; // 보고 있는 달(1-based 아님, mIdx=0=1월) — KST 오늘에서 시작
 (function initViewMonth(){
   var p=kstTodayStr().split("-");
@@ -437,12 +487,74 @@ async function loadSsot(){
       }).filter(function(t){return t.startDate;});
   }catch(e){ SSOT_ITEMS=[]; }
 }
+/* [추가 2026-08-26] HR 자동 일정 3종 — 기존 db 읽기 액션 재사용(신규 백엔드 액션 없음).
+   calendar.html은 admin 게이트를 통과해야만 들어오므로(SESSION_PW=admin 비번), index.html 게이트가
+   쓰는 것과 동일한 db:"appl"/"onbo"/"emp" POST를 그대로 재사용한다. PII 최소화: 응답 원본(연락처·
+   이메일·생년 등 포함)을 그대로 보관하지 않고, 여기서 화이트리스트 필드만 뽑아 저장한다 — 나중에
+   렌더 코드가 실수로 다른 필드를 참조해도 애초에 데이터가 없어 노출될 수 없는 구조. */
+function dbRead(dbName){
+  return fetch(NOTION_FN,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({db:dbName,password:SESSION_PW})}).then(function(r){return r.json();});
+}
+async function loadOnbo(){
+  try{
+    var res=await dbRead("onbo");
+    var raw=(res&&res.results)?res.results:[];
+    var mapped=raw.map(function(o){
+      var due=hrDateOnly_(o["완료 기한"]);
+      if(!due) return null;
+      var target=String(o["대상 신입 직원"]||"").trim()||"대상 미지정";
+      var item=String(o["체크 항목"]||"").trim()||"항목 미지정";
+      var dv=o["완료 여부"];
+      var done=(dv===true||dv==="Y"||dv==="true"||dv==="__YES__"); // 백엔드 isOnboDoneYes_와 동일 판정
+      return { date:due, title:target+" · "+item, done:done,
+        content:"카테고리: "+(o["카테고리"]||"미지정")+" · 담당자: "+(o["담당자"]||"미지정") };
+    }).filter(Boolean);
+    mapped.forEach(function(it,i){ it.id="OB"+i; });
+    ONBO_ITEMS=mapped;
+  }catch(e){ ONBO_ITEMS=[]; }
+}
+async function loadInterviews(){
+  try{
+    var res=await dbRead("appl");
+    var raw=(res&&res.results)?res.results:[];
+    var mapped=raw.map(function(a){
+      var dt=hrDateTime_(a["면접 일정"]);
+      if(!dt.date) return null;
+      var name=String(a["지원자명"]||"").trim()||"이름 미지정";
+      var stage=String(a["전형 단계"]||"").trim();
+      var interviewer=String(a["담당 면접관"]||"").trim();
+      return { date:dt.date, time:dt.time, title:name+" · "+(stage||interviewer||"단계 미지정"),
+        content:(interviewer?"담당 면접관: "+interviewer:"") };
+    }).filter(Boolean);
+    mapped.forEach(function(it,i){ it.id="IV"+i; });
+    INTERVIEW_ITEMS=mapped;
+  }catch(e){ INTERVIEW_ITEMS=[]; }
+}
+async function loadFirstDays(){
+  try{
+    var res=await dbRead("emp");
+    var raw=(res&&res.results)?res.results:[];
+    var mapped=raw.map(function(e){
+      if(String(e["재직 상태"]||"")==="퇴사") return null;
+      var jd=hrDateOnly_(e["입사일"]);
+      if(!jd) return null;
+      var name=String(e["성명"]||e["이름"]||"").trim()||"이름 미지정";
+      return { date:jd, title:name+" · 첫출근",
+        content:"부서: "+(e["부서"]||"미지정")+(e["직급"]?" · 직급: "+e["직급"]:"") };
+    }).filter(Boolean);
+    mapped.forEach(function(it,i){ it.id="FD"+i; });
+    FIRSTDAY_ITEMS=mapped;
+  }catch(e){ FIRSTDAY_ITEMS=[]; }
+}
 async function loadAll(){
   document.getElementById("loadMsg").style.display="block";
   document.getElementById("loadMsg").className="msg";
   document.getElementById("loadMsg").textContent="불러오는 중…";
   try{
-    await Promise.all([loadCal(), loadSsot()]);
+    // 1패스 병렬 조회 — cal/ssot/onbo/appl/emp 5개 전부 여기서만 부른다(월 이동·토글 시 재조회 없음,
+    // itemsForDay()가 이미 로드된 배열을 그날짜로 필터링만 함 — 중복 조회 금지).
+    await Promise.all([loadCal(), loadSsot(), loadOnbo(), loadInterviews(), loadFirstDays()]);
     document.getElementById("loadMsg").style.display="none";
   }catch(e){
     document.getElementById("loadMsg").className="msg err";
@@ -462,8 +574,29 @@ function itemsForDay(dstr){
     var s=it["시작일"]||it.date||"", e=it["종료일"]||it.endDate||s;
     if(s && dstr>=s && dstr<=(e||s)) out.push({kind:"cal",id:it.id,title:it["제목"],type:it["유형"]||"기타",
       date:s,endDate:e,startTime:it["시작시각"],endTime:it["종료시각"],content:it["내용"],place:it["장소"],
-      erpRequest:it["전사연동요청"]||""});
+      erpRequest:it["전사연동요청"]||"",
+      // [추가 2026-08-26] 완료 표시 — SSOT 완료 취소선과 동일 트리거(status==="완료")를 그대로 재사용.
+      status:(it["완료"]==="완료"?"완료":"")});
   });
+  // [추가 2026-08-26] HR 자동 일정 3종(읽기전용) — 각자 범례 토글로 독립 on/off.
+  if(SHOW_ONBO){
+    ONBO_ITEMS.forEach(function(it){
+      if(it.date===dstr) out.push({kind:"onbo",id:it.id,title:it.title,type:"HR온보딩",date:it.date,
+        content:it.content, status:(it.done?"완료":"")});
+    });
+  }
+  if(SHOW_INTERVIEW){
+    INTERVIEW_ITEMS.forEach(function(it){
+      if(it.date===dstr) out.push({kind:"interview",id:it.id,title:it.title,type:"HR면접",date:it.date,
+        startTime:it.time, content:it.content});
+    });
+  }
+  if(SHOW_FIRSTDAY){
+    FIRSTDAY_ITEMS.forEach(function(it){
+      if(it.date===dstr) out.push({kind:"firstday",id:it.id,title:it.title,type:"HR첫출근",date:it.date,
+        content:it.content});
+    });
+  }
   if(SHOW_SSOT){
     SSOT_ITEMS.forEach(function(it){
       var anchor=it.endDate||it.startDate;
@@ -471,8 +604,9 @@ function itemsForDay(dstr){
         date:it.startDate,endDate:it.endDate,content:it.content,status:it.status,category:it.category});
     });
   }
-  // 매니저가 직접 넣은 개인 일정(소통/미팅/면접/기타)이 SSOT업무보다 먼저 보이도록 정렬
-  out.sort(function(a,b){ return (a.kind==="cal"?0:1)-(b.kind==="cal"?0:1); });
+  // 우선순위: 개인 일정(0) → HR 자동 일정 3종(1: 온보딩·면접·첫출근) → SSOT업무(2) — 매니저 지시 순서 고정.
+  function priorityOf_(k){ return k==="cal"?0:(k==="ssot"?2:1); }
+  out.sort(function(a,b){ return priorityOf_(a.kind)-priorityOf_(b.kind); });
   return out;
 }
 function renderCalendar(){
@@ -550,6 +684,43 @@ document.getElementById("legendSsot").addEventListener("click",function(){
   renderCalendar();
 });
 
+/* [추가 2026-08-26] HR 자동 일정 3종 — SSOT 토글과 동일 UX(범례 클릭·localStorage 기억)를 독립
+   3벌로 복제. 기존 SSOT 토글 코드는 건드리지 않는다(회귀 리스크 최소화 — 이미 검증된 코드 보존). */
+function applyHrToggleUI_(elId,state,label){
+  var el=document.getElementById(elId); if(!el) return;
+  el.classList.toggle("off", !state);
+  el.title=state?("클릭하면 "+label+" 표시를 숨깁니다"):("클릭하면 "+label+"을(를) 표시합니다");
+}
+(function initHrToggles(){
+  try{
+    var v;
+    v=localStorage.getItem("wp_cal_show_onbo");      if(v==="0") SHOW_ONBO=false;
+    v=localStorage.getItem("wp_cal_show_interview");  if(v==="0") SHOW_INTERVIEW=false;
+    v=localStorage.getItem("wp_cal_show_firstday");   if(v==="0") SHOW_FIRSTDAY=false;
+  }catch(e){}
+  applyHrToggleUI_("legendOnbo",SHOW_ONBO,"온보딩");
+  applyHrToggleUI_("legendInterview",SHOW_INTERVIEW,"면접-HR");
+  applyHrToggleUI_("legendFirstday",SHOW_FIRSTDAY,"첫출근");
+})();
+document.getElementById("legendOnbo").addEventListener("click",function(){
+  SHOW_ONBO=!SHOW_ONBO;
+  try{localStorage.setItem("wp_cal_show_onbo",SHOW_ONBO?"1":"0");}catch(e){}
+  applyHrToggleUI_("legendOnbo",SHOW_ONBO,"온보딩");
+  renderCalendar();
+});
+document.getElementById("legendInterview").addEventListener("click",function(){
+  SHOW_INTERVIEW=!SHOW_INTERVIEW;
+  try{localStorage.setItem("wp_cal_show_interview",SHOW_INTERVIEW?"1":"0");}catch(e){}
+  applyHrToggleUI_("legendInterview",SHOW_INTERVIEW,"면접-HR");
+  renderCalendar();
+});
+document.getElementById("legendFirstday").addEventListener("click",function(){
+  SHOW_FIRSTDAY=!SHOW_FIRSTDAY;
+  try{localStorage.setItem("wp_cal_show_firstday",SHOW_FIRSTDAY?"1":"0");}catch(e){}
+  applyHrToggleUI_("legendFirstday",SHOW_FIRSTDAY,"첫출근");
+  renderCalendar();
+});
+
 /* ============ 하루 전체 목록 팝업("+N건 더") ============ */
 function openDayList(dstr){
   var items=itemsForDay(dstr);
@@ -579,6 +750,18 @@ function openDetailByRef(kind,id,dstr){
     var it=SSOT_ITEMS.filter(function(x){return x.id===id;})[0];
     if(!it) return;
     DETAIL_REF={kind:"ssot",item:it};
+  }else if(kind==="onbo"){
+    var it2=ONBO_ITEMS.filter(function(x){return x.id===id;})[0];
+    if(!it2) return;
+    DETAIL_REF={kind:"onbo",item:it2};
+  }else if(kind==="interview"){
+    var it3=INTERVIEW_ITEMS.filter(function(x){return x.id===id;})[0];
+    if(!it3) return;
+    DETAIL_REF={kind:"interview",item:it3};
+  }else if(kind==="firstday"){
+    var it4=FIRSTDAY_ITEMS.filter(function(x){return x.id===id;})[0];
+    if(!it4) return;
+    DETAIL_REF={kind:"firstday",item:it4};
   }else{
     var raw=CAL_ITEMS.filter(function(x){return x.id===id;})[0];
     if(!raw) return;
@@ -593,7 +776,7 @@ function renderDetail(){
     content=document.getElementById("dContent"), ssotWrap=document.getElementById("dSsotLinkWrap"),
     ssotLink=document.getElementById("dSsotLink"), delBtn=document.getElementById("detailDelete"),
     editBtn=document.getElementById("detailEdit"), erpBtn=document.getElementById("dErpBtn"),
-    erpNote=document.getElementById("dErpNote");
+    erpNote=document.getElementById("dErpNote"), doneBtn=document.getElementById("dDoneBtn");
   if(ref.kind==="ssot"){
     var it=ref.item;
     badge.className="type-badge type-SSOT업무"; badge.textContent="SSOT업무 · 읽기전용";
@@ -606,6 +789,21 @@ function renderDetail(){
     delBtn.style.display="none"; editBtn.style.display="none";
     // 업무 SSOT 항목은 우리 소유 데이터가 아니라 등재요청 플래그를 붙일 수 없음(개인일정 전용 기능).
     erpBtn.style.display="none"; erpNote.style.display="none";
+    doneBtn.style.display="none";
+  }else if(ref.kind==="onbo"||ref.kind==="interview"||ref.kind==="firstday"){
+    // [추가 2026-08-26] HR 자동 일정 3종 — 읽기전용(원본은 각 탭: 온보딩/지원자/현재근무자).
+    var hit=ref.item;
+    var kindLabel = ref.kind==="onbo" ? "온보딩" : (ref.kind==="interview" ? "면접(HR연동)" : "첫출근");
+    var typeCls = ref.kind==="onbo" ? "HR온보딩" : (ref.kind==="interview" ? "HR면접" : "HR첫출근");
+    badge.className="type-badge type-"+typeCls; badge.textContent=kindLabel+" · HR 자동·읽기전용";
+    title.textContent=hit.title;
+    when.textContent=hit.date+(hit.time?" "+hit.time:"");
+    place.style.display="none";
+    content.textContent=hit.content||"(추가 정보 없음)";
+    ssotWrap.style.display="none";
+    delBtn.style.display="none"; editBtn.style.display="none";
+    erpBtn.style.display="none"; erpNote.style.display="none";
+    doneBtn.style.display="none";
   }else{
     var c=ref.item;
     var type=c["유형"]||"기타";
@@ -621,8 +819,24 @@ function renderDetail(){
     ssotWrap.style.display="none";
     delBtn.style.display="inline-block"; editBtn.style.display="inline-block";
     renderErpButton(c);
+    renderDoneButton(c);
   }
   document.getElementById("detailBg").classList.add("show");
+}
+// [추가 2026-08-26 매니저 지시 — 개인 일정 완료 처리] 개인일정(kind:"cal") 전용 완료 토글.
+// SSOT/HR자동 3종은 우리 쓰기 권한이 없는(또는 원본이 다른 탭인) 읽기전용 데이터라 이 버튼을 붙이지
+// 않는다(renderDetail 각 분기에서 doneBtn.style.display="none" 처리).
+function renderDoneButton(c){
+  var btn=document.getElementById("dDoneBtn");
+  var done=(c["완료"]==="완료");
+  btn.style.display="block"; btn.disabled=false;
+  if(done){
+    btn.className="btn-done state-done";
+    btn.textContent="✅ 완료됨 — 클릭하면 완료 취소";
+  }else{
+    btn.className="btn-done state-idle";
+    btn.textContent="☐ 완료 처리";
+  }
 }
 // 전사일정 자동 연동은 여전히 미구현(제3 GAS 호출 코드 0건 유지) — 대신 "등재 요청" 플래그를
 // 우리 백엔드(개인일정 탭)에만 저장한다. 실제 전사일정 반영은 CHRO가 화면에서 수동 대행.
@@ -652,6 +866,28 @@ document.getElementById("dErpBtn").addEventListener("click",async function(){
       c["전사연동요청"]=res.erpRequest||"";
       renderErpButton(c);
       toast(nextVal?"전사일정 등재를 요청했습니다.":"등재 요청을 취소했습니다.");
+      await loadCal();
+      renderCalendar();
+    }else{
+      toast("처리 실패: "+((res&&res.message)||(res&&res.error)||"알 수 없는 오류"));
+      btn.disabled=false;
+    }
+  }catch(e){ toast("처리 실패: "+e.message); btn.disabled=false; }
+});
+// [추가 2026-08-26 매니저 지시] 완료 처리 토글 — dErpBtn 핸들러와 동일 패턴(낙관적 갱신 없이
+// 서버 응답을 신뢰, 실패 시 버튼 재활성화). 팝업 전용(칩 직접 토글은 오조작 위험 — 판단 근거는
+// 산출 md 참고).
+document.getElementById("dDoneBtn").addEventListener("click",async function(){
+  if(!DETAIL_REF||DETAIL_REF.kind!=="cal") return;
+  var c=DETAIL_REF.item;
+  var nextVal=!(c["완료"]==="완료");
+  var btn=this; btn.disabled=true;
+  try{
+    var res=await calApi({action:"cal-update",id:c.id,done:nextVal});
+    if(res && res.ok){
+      c["완료"]=res.done||"";
+      renderDoneButton(c);
+      toast(nextVal?"완료 처리했습니다.":"완료를 취소했습니다.");
       await loadCal();
       renderCalendar();
     }else{
