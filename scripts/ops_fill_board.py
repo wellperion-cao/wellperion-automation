@@ -195,7 +195,9 @@ def build_html(S, items, unlinked):
         f'<span class="tn">{e(x["t"][:44])}</span></li>'
         for x in sorted(rest, key=lambda y: -y["d"]))
 
-    hint = "오늘 첫 입항을 기다립니다 🚢" if S["done_today"] == 0 else "오늘도 들어왔습니다 🎉"
+    # 이 보드는 매주 월요일 10:00 스냅샷이다 — 화면을 여는 날과 실측일이 다르다.
+    # 그래서 '오늘'이라 부르지 않는다(2026-08-26 실사: 8/26 에 열었는데 '오늘 · 08월 24일'로 떠 있었다).
+    hint = "이 날 입항 없음 🚢" if S["done_today"] == 0 else "이 날 입항 있었습니다 🎉"
     best = S["best_day"][5:].replace("-", "/") if S["best_day"] else "-"
     mm = int(S["month"].split("-")[1])
     dd = S["date"][5:].replace("-", "월 ") + "일"
@@ -223,7 +225,7 @@ def build_html(S, items, unlinked):
 </div>
 
 <div class="period">
-  <div class="p-card today"><span class="k">오늘 · {dd}</span>
+  <div class="p-card today"><span class="k">실측일 · {dd}</span>
     <span class="v">{S['done_today']}</span><span class="n">건 끝냄</span>
     <span class="hint">{hint}</span></div>
   <div class="p-card"><span class="k">{mm}월 누적</span>
