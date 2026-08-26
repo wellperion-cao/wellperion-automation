@@ -632,7 +632,13 @@ function renderVendorBoard(){
     html+='<button type="button" class="dv-g-addrow" onclick="vendorAddCard(\''+col.key+'\')">＋ 업체 추가</button>';
     html+='</div></div>';
   });
-  if(!shown){ html='<div class="mgmt-empty" style="padding:32px 0;text-align:center;">'+(filtered?'이 부서에 소속된 거래업체가 없습니다':'등록된 거래업체가 없습니다')+' — ＋ 업체 등록으로 추가하세요.</div>'; }
+  /* ★2026-08-26 시우 — 서버 목록이 오기 전(실측 25~30초)에는 '없습니다'라고 말하지 않는다.
+     보드 전체가 비었을 때 뜨는 문구가 이것이고, 칸별 문구(위)만 고쳤더니 화면엔 이 줄이 떠 있었다. */
+  if(!shown){
+    html = (ONLINE && !VENDOR_SERVER_READY)
+      ? '<div class="mgmt-empty" style="padding:32px 0;text-align:center;">불러오는 중… — 목록이 도착하면 채워집니다(20~30초).</div>'
+      : '<div class="mgmt-empty" style="padding:32px 0;text-align:center;">'+(filtered?'이 부서에 소속된 거래업체가 없습니다':'등록된 거래업체가 없습니다')+' — ＋ 업체 등록으로 추가하세요.</div>';
+  }
   wrap.innerHTML=html; fitFrame();
 }
 
