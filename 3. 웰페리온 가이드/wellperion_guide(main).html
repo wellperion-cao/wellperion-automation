@@ -646,7 +646,7 @@
         <!-- 옆 문의&등록 카드와 짝 처리(2026-08-26) — 남는 높이를 이 블록이 채운다. 어느 카드 내용이 길어지든
              두 카드의 타일이 같이 늘어나 세로가 어긋나지 않는다. -->
         <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);flex:1;display:flex;flex-direction:column;">
-          <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:6px;">유형별 건수 · 이번달 접수 · 누적/완료</div>
+          <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:6px;">유형별 건수 · 이번달 접수/완료 · 누적 접수/완료</div>
           <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1;grid-auto-rows:1fr;">
             <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
@@ -1525,14 +1525,24 @@
             var catRows = rows.filter(function(r){ return (r['카테고리'] || r['category']) === m.cat; });
             var catMonthRows = catRows.filter(isThisMonth);
             var mNew  = catMonthRows.length;
-            var mDone = catMonthRows.filter(function(r){ return (r['상태'] || r['status']) === '완료'; }).length;
+            var isDone = function(r){ return (r['상태'] || r['status']) === '완료'; };
+            var mDone = catMonthRows.filter(isDone).length;
+            var tDone = catRows.filter(isDone).length;   // 누적 완료 — 2026-08-26 GM 요청으로 추가
             html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 6px;text-align:center;">'
               + '<div style="font-size:9px;color:var(--dim);margin-bottom:2px;font-weight:600;white-space:nowrap;">' + m.icon + ' ' + m.short + '</div>'
-              // ★2026-08-26 GM 재지시 — "유형별 건수에 이번달이 큰글자+큰숫자 / 누적이 작은글자+작은숫자".
-              //   종전엔 큰숫자가 누적(catRows.length)이었다. 카드 상단 3칸은 2026-08-25 에 이미 이번달을
-              //   큰숫자로 바꿨는데 이 그리드만 안 바뀌어 같은 카드 안에서 기준이 둘로 갈려 있었다.
-              + '<div style="font-size:20px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">' + mNew + '</div>'
-              + '<div style="font-size:8.5px;color:var(--dim);margin-top:3px;white-space:nowrap;">누적 <b style="color:var(--text);">' + catRows.length + '</b> · 완료 <b style="color:var(--grow,#6abf7b);">' + mDone + '</b></div>'
+              // ★2026-08-26 GM 지시 — 한 칸에 네 숫자를 위아래로 나눈다.
+              //   윗줄(큰글자) = 이번달 접수 / 이번달 완료 · 아랫줄(작은글자) = 누적 접수 / 누적 완료.
+              //   GM 원문: "이번달 기준 완료도 알려줘 아래칸에 누적 및 누적완료건도 알려주고".
+              //   ▸접수는 주황, 완료는 초록으로 색을 고정한다 — 카드 상단 3칸(접수·처리중·완료)과 같은 색이라
+              //     위아래로 훑을 때 같은 뜻이 같은 색으로 읽힌다.
+              + '<div style="line-height:1;white-space:nowrap;">'
+              +   '<span style="font-size:20px;font-weight:800;color:var(--orange,#e6944e);">' + mNew + '</span>'
+              +   '<span style="font-size:9px;color:var(--dim);margin:0 2px;">/</span>'
+              +   '<span style="font-size:14px;font-weight:800;color:var(--grow,#6abf7b);">' + mDone + '</span>'
+              + '</div>'
+              + '<div style="font-size:8px;color:var(--dim);margin-top:1px;white-space:nowrap;">이번달 접수/완료</div>'
+              + '<div style="font-size:8.5px;color:var(--dim);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border);white-space:nowrap;">'
+              +   '누적 <b style="color:var(--text);">' + catRows.length + '</b> · 완료 <b style="color:var(--grow,#6abf7b);">' + tDone + '</b></div>'
               + '</div>';
           });
           grid.innerHTML = html;
