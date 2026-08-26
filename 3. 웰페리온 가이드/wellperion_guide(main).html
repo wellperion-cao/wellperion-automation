@@ -11152,11 +11152,12 @@ function crTab(btn, panelId) {
       {key:'C',label:'🚿 온수탱크',       ids:['fc_tank_k2','fc_tank_k3','fc_tank_k4']},
       {key:'D',label:'💨 공조기',         ids:['fc_ahu_AHU1','fc_ahu_AHU2','fc_ahu_AHU3','fc_ahu_AHU4']},
       {key:'E',label:'⚙️ 기계실',         ids:['fc_eq_night','fc_eq_tank1','fc_eq_gas','fc_eq_hotw','fc_eq_pump','fc_eq_heat','fc_eq_final']},
-      // [2026-08-26 GM 승인] fc_ai_alarm(측정 기준범위 이탈 경보 확인) 제거 — 시스템이 자동으로 하는 일이라
-      //   사람 체크 칸이 분모만 키웠다. ▸fc_ai_fire(소방시설 일일 작동점검)는 입력 화면(시설부 체계 AI_DRAFT)에
-      //   아예 없는데 여기와 GAS 마스터에만 남아 있다 — 채울 자리가 없어 영원히 미입력이다. 처분은 GM 결정 대기라
-      //   지금은 그대로 둔다(임의로 소방 항목을 없애지 않는다).
-      {key:'F',label:'🛟 안전',           ids:['fc_ai_fire','fc_ai_elev','fc_ai_water']}
+      // [2026-08-26 GM 확정] 안전은 2항목만 남긴다.
+      //   ▸fc_ai_alarm(측정 기준범위 이탈 경보 확인) 제거 — 시스템이 자동으로 하는 일이라 사람 체크 칸이 분모만 키웠다.
+      //   ▸fc_ai_fire(소방시설 일일 작동점검) 제거 — 소방은 **전사일정(법정 주기) 소관**이지 일일 점검현황 라인이
+      //     아니다(GM: "그때 이야기했던 것 같은데?" — 전에 말씀하셨는데 코드에 안 박혀 되살아나 있었다).
+      //     정본 = status/schedule_ssot.json 의 fac-fire-func(작동점검·연 1회)·fac-fire-full(종합점검·연 1회).
+      {key:'F',label:'🛟 안전',           ids:['fc_ai_elev','fc_ai_water']}
     ];
     // FACILITY_RANGES 하드코딩 삭제 → 계약서로 이관(2026-07-20 배9199). 정본=점검 스프레드시트「점검기준」시트 1장, 세 곳(입력화면·GAS·본 대시보드) 공통 GAS 액션 fcheck_ranges_get로 조회.
     // 계약서: docs/superpowers/specs/2026-07-20-fcheck-ranges-contract.md — 옛 값(복사본, 사고 원인)은 참고용으로만 아래 주석 보존.

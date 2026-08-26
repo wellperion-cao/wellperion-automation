@@ -3108,7 +3108,10 @@ var FACILITY_ITEMS = [
   { id:'fc_eq_heat',       name:'축열조(14:00)',                     cat:'E 기계실 가동값', unit:'',     ai:false },
   { id:'fc_eq_final',      name:'최종퇴실(시각/성명)',               cat:'E 기계실 가동값', unit:'',     ai:false },
   // 2-D AI초안(GM 검토) — 작업일지 미기재, 시설 매뉴얼상 권장 (배지 구분)
-  { id:'fc_ai_fire',       name:'소방시설 일일 작동점검',            cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
+  // [2026-08-26 GM 확정] fc_ai_fire(소방시설 일일 작동점검) 제거 — 소방은 전사일정(법정 주기) 소관이지
+  //   일일 점검현황 라인이 아니다. GM 이 전에도 같은 말씀을 하셨는데 코드에 안 박혀 있어 되살아나 있었다.
+  //   정본 = status/schedule_ssot.json 의 fac-fire-func(소방 작동점검·연 1회)·fac-fire-full(종합점검·연 1회).
+  //   여기 남아 있던 동안 입력 화면에는 칸조차 없어 분모만 키우고 있었다.
   { id:'fc_ai_elev',       name:'엘리베이터·에스컬레이터 가동확인',  cat:'F 안전(AI초안)',  unit:'ok/x', ai:true },
   { id:'fc_ai_water',      name:'정수기·비품 점검',                  cat:'F 안전(AI초안)',  unit:'ok/x', ai:true }
   // [2026-08-26 GM 승인] fc_ai_alarm(측정 기준범위 이탈 경보 확인) 제거 — 시스템이 자동으로 하는 일이라
