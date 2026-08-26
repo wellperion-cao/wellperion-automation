@@ -304,6 +304,50 @@
       <div class="field"><label>종료시각 (선택)</label><input type="time" id="fEndTime"></div>
     </div>
     <div class="field"><label>간략한 내용 (선택)</label><textarea id="fContent" maxlength="1000" placeholder="메모나 안건을 간단히"></textarea></div>
+
+    <!-- [추가 2026-08-26 A-5, 매니저 지시 — 전사일정 등재용 항목] "전사일정에 추가하기" 요청 시
+         CHRO가 옮겨 적을 담당자·분류·부서·시각·메모. 평소엔 접혀 있어 개인 일정 입력을 복잡하게 하지
+         않는다. 미입력 허용 — 비우면 종전처럼 전사일정 화면 기본값을 그대로 쓴다. 분류·부서 선택지는
+         coo/check/전사_일정.html의 EVENT_CATS·DEPT_DEFAULTS 배열을 그대로 옮긴 값(임의값 아님, 그
+         파일이 바뀌면 이 목록도 같이 갱신해야 함). -->
+    <details id="erpDetails" style="margin:2px 0 12px;border:1px solid var(--line-strong);border-radius:9px;padding:0 12px;background:var(--bg-soft)">
+      <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--ink-soft);padding:9px 0;list-style:none">📌 전사일정 등재 정보 (선택)</summary>
+      <div style="padding:2px 0 12px">
+        <div class="row2">
+          <div class="field"><label>담당자</label><input type="text" id="fErpAssignee" maxlength="50" placeholder="이름/팀"></div>
+          <div class="field"><label>시각 (선택)</label><input type="time" id="fErpTime"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>분류</label><select id="fErpCategory">
+            <option value="">선택 안 함(기본값 사용)</option>
+            <option value="event">행사·모임</option>
+            <option value="meeting">회의·미팅</option>
+            <option value="gov">관공서·공문</option>
+            <option value="safety">안전·점검</option>
+            <option value="contract">계약·협약</option>
+            <option value="delivery">납품·배송</option>
+            <option value="visit">방문·외부</option>
+            <option value="facility">시설·공사</option>
+            <option value="edu">교육</option>
+            <option value="general">일반·기타</option>
+          </select></div>
+          <div class="field"><label>부서</label><select id="fErpDept">
+            <option value="">선택 안 함(기본값 사용)</option>
+            <option value="경영지원부">경영지원부</option>
+            <option value="경영부">경영부</option>
+            <option value="관리부">관리부</option>
+            <option value="운영부">운영부</option>
+            <option value="시설부">시설부</option>
+            <option value="지원부">지원부</option>
+            <option value="주차관리부">주차관리부</option>
+            <option value="파트너팀">파트너팀</option>
+          </select></div>
+        </div>
+        <div class="field"><label>메모 (선택 — 전사일정용, 개인 내용과 별개)</label><input type="text" id="fErpNote" maxlength="300" placeholder="전사일정에 남길 메모"></div>
+        <div style="font-size:10.5px;color:var(--ink-faint);line-height:1.5">비워 두면 CHRO가 전사일정에 등재할 때 화면 기본값을 사용합니다. 선택지는 전사일정 화면과 동일합니다.</div>
+      </div>
+    </details>
+
     <div class="modal-msg" id="editMsg"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="editCancel">취소</button>
@@ -324,6 +368,8 @@
     <div id="dSsotLinkWrap" style="display:none"><a class="ssot-link" id="dSsotLink" target="_blank" rel="noopener">업무 SSOT에서 열기 →</a></div>
     <button class="btn-erp" id="dErpBtn" style="display:none"></button>
     <div class="erp-note" id="dErpNote" style="display:none"></div>
+    <!-- [추가 2026-08-26 A-5, 매니저 지시] 전사일정 등재 정보(담당자·분류·부서·시각·메모) — 등재 요청 상태와 함께 노출 -->
+    <div class="erp-note" id="dErpInfo" style="display:none"></div>
     <button class="btn-done" id="dDoneBtn" style="display:none"></button>
     <div class="modal-actions" id="dActions" style="margin-top:14px">
       <button class="btn btn-ghost" id="detailClose">닫기</button>
@@ -351,6 +397,11 @@
 var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
 var TODO_API_URL = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
 var MANAGER_NAME = "나우열M";  // MEMORY: 매니저님 = 나우열M(업무보드 담당자 표기)
+// [추가 2026-08-26 A-5, 매니저 지시 — 전사일정 등재용 항목] 분류 코드→한글 라벨(상세 팝업 표시용).
+// coo/check/전사_일정.html CATEGORY_DEFAULTS 라벨과 동일값(그 파일이 바뀌면 이 표도 같이 갱신).
+var ERP_CAT_LABELS = {event:"행사·모임",meeting:"회의·미팅",gov:"관공서·공문",safety:"안전·점검",
+  contract:"계약·협약",delivery:"납품·배송",visit:"방문·외부",facility:"시설·공사",edu:"교육",general:"일반·기타"};
+function erpCategoryLabel_(k){ return ERP_CAT_LABELS[k] || k; }
 var SSOT_BOARD_REL = "../../coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html";
 
 var SESSION_PW = "";
@@ -793,6 +844,8 @@ function renderDetail(){
     ssotLink=document.getElementById("dSsotLink"), delBtn=document.getElementById("detailDelete"),
     editBtn=document.getElementById("detailEdit"), erpBtn=document.getElementById("dErpBtn"),
     erpNote=document.getElementById("dErpNote"), doneBtn=document.getElementById("dDoneBtn");
+  // [추가 2026-08-26 A-5] 등재 정보 블록 — 기본 숨김, "cal" 분기(renderErpButton)에서만 채워서 보임.
+  document.getElementById("dErpInfo").style.display="none";
   if(ref.kind==="ssot"){
     var it=ref.item;
     badge.className="type-badge type-SSOT업무"; badge.textContent="SSOT업무 · 읽기전용";
@@ -870,6 +923,17 @@ function renderErpButton(c){
     erpBtn.textContent="📌 전사일정에 추가하기";
     erpNote.innerHTML="자동 연동은 아직 지원되지 않습니다(전사일정은 별도 시스템 · COO/GM 합의 필요) — 누르면 <b>CHRO에게 등재를 요청</b>만 하고, 실제 반영은 CHRO가 <a href=\"../../coo/check/%EC%A0%84%EC%82%AC_%EC%9D%BC%EC%A0%95.html\" target=\"_blank\" rel=\"noopener\">전사일정 화면</a>에서 직접 대행합니다.";
   }
+  // [추가 2026-08-26 A-5, 매니저 지시 — 전사일정 등재용 항목] 담당자·분류·부서·시각·메모 중 하나라도
+  // 채워져 있으면 등재 요청 상태와 함께 보여준다(등재 요청 여부와 무관하게 — 값이 있으면 항상 표시).
+  var infoEl=document.getElementById("dErpInfo");
+  var parts=[];
+  if(c["등재담당자"]) parts.push("담당자: "+esc(c["등재담당자"]));
+  if(c["등재분류"]) parts.push("분류: "+esc(erpCategoryLabel_(c["등재분류"])));
+  if(c["등재부서"]) parts.push("부서: "+esc(c["등재부서"]));
+  if(c["등재시각"]) parts.push("시각: "+esc(c["등재시각"]));
+  if(c["등재메모"]) parts.push("메모: "+esc(c["등재메모"]));
+  if(parts.length){ infoEl.style.display="block"; infoEl.innerHTML="📋 <b>등재 정보</b> — "+parts.join(" · "); }
+  else{ infoEl.style.display="none"; infoEl.innerHTML=""; }
 }
 // [수정 2026-08-26 A-5 — 완료 처리 클릭 시 로딩 지연 진단·개선] 기존엔 cal-update 응답을 받은 뒤
 // loadCal()(=cal-list 재조회, 네트워크 왕복 1회 추가)까지 기다린 후에야 그리드가 갱신됐다. 실측
@@ -975,6 +1039,13 @@ function openAddModal(dstr){
   document.getElementById("fEndDate").value="";
   document.getElementById("fEndTime").value="";
   document.getElementById("fContent").value="";
+  // [추가 2026-08-26 A-5 — 전사일정 등재용 항목] 새 일정은 항상 빈 값으로 시작, 접힌 상태로.
+  document.getElementById("fErpAssignee").value="";
+  document.getElementById("fErpCategory").value="";
+  document.getElementById("fErpDept").value="";
+  document.getElementById("fErpTime").value="";
+  document.getElementById("fErpNote").value="";
+  document.getElementById("erpDetails").open=false;
   document.getElementById("editMsg").textContent="";
   document.getElementById("editDelete").style.display="none";
   document.getElementById("editBg").classList.add("show");
@@ -990,6 +1061,13 @@ function openEditModal(c){
   document.getElementById("fEndDate").value=(c["종료일"]&&c["종료일"]!==c["시작일"])?c["종료일"]:"";
   document.getElementById("fEndTime").value=c["종료시각"]||"";
   document.getElementById("fContent").value=c["내용"]||"";
+  // [추가 2026-08-26 A-5 — 전사일정 등재용 항목] 이미 저장된 값이 있으면 채우고, 하나라도 있으면 펼쳐서 보여준다.
+  document.getElementById("fErpAssignee").value=c["등재담당자"]||"";
+  document.getElementById("fErpCategory").value=c["등재분류"]||"";
+  document.getElementById("fErpDept").value=c["등재부서"]||"";
+  document.getElementById("fErpTime").value=c["등재시각"]||"";
+  document.getElementById("fErpNote").value=c["등재메모"]||"";
+  document.getElementById("erpDetails").open = !!(c["등재담당자"]||c["등재분류"]||c["등재부서"]||c["등재시각"]||c["등재메모"]);
   document.getElementById("editMsg").textContent="";
   document.getElementById("editDelete").style.display="inline-block";
   document.getElementById("editBg").classList.add("show");
@@ -1018,7 +1096,14 @@ document.getElementById("editSave").addEventListener("click",async function(){
     endDate:document.getElementById("fEndDate").value,
     endTime:document.getElementById("fEndTime").value,
     content:document.getElementById("fContent").value.trim(),
-    place:document.getElementById("fPlace").value.trim()
+    place:document.getElementById("fPlace").value.trim(),
+    // [추가 2026-08-26 A-5 — 전사일정 등재용 항목] 미입력은 빈 문자열로 전송 → 백엔드가 기존값 보존 계약과
+    // 동일 원칙(값이 있는 필드만 실제로 바뀜, cal-add는 그대로 저장·cal-update는 전달된 값으로 갱신).
+    erpAssignee:document.getElementById("fErpAssignee").value.trim(),
+    erpCategory:document.getElementById("fErpCategory").value,
+    erpDept:document.getElementById("fErpDept").value,
+    erpTime:document.getElementById("fErpTime").value,
+    erpNote:document.getElementById("fErpNote").value.trim()
   };
   var btn=document.getElementById("editSave");
   btn.disabled=true; btn.textContent="저장 중…"; msg.textContent="";
