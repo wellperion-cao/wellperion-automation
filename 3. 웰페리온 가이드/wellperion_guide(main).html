@@ -11341,9 +11341,21 @@ function crTab(btn, panelId) {
       if(issueCount>0){
         issueTitle=bi.issues.map(function(x){return '['+x.type+'] '+x.text;}).join(' / ').replace(/"/g,'&quot;');
       }
+      // ★2026-08-26 GM 지적 — "이상1건은 뭐야? 이런건 보고해주면 좋아".
+      //   내용은 title 툴팁에만 있어서 마우스를 올려야 보였다. 건수만 보고 무엇인지 모르면
+      //   GM 이 되물어야 한다 — 화면에 한 줄로 그대로 띄운다(툴팁은 전체 목록용으로 유지).
+      var esc=function(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      var issueDetail='';
+      if(issueCount>0){
+        issueDetail='<div style="font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5;">'
+          + bi.issues.slice(0,2).map(function(x){ return '· <span style="color:var(--text);">'+esc(x.type)+'</span> '+esc(x.text); }).join('<br>')
+          + (issueCount>2 ? '<br><span style="opacity:.75;">…외 '+(issueCount-2)+'건</span>' : '')
+          + '</div>';
+      }
       var primaryHtml='<div'+(issueTitle?' title="'+issueTitle+'"':'')+'>'
         +'<div style="font-size:15px;font-weight:800;color:var(--text);">오늘 '+bi.roundCount+'회 점검'+nextChip+'</div>'
         +'<div style="font-size:12px;margin-top:4px;">'+issueLine+'</div>'
+        +issueDetail
         +'</div>'
         +'<div style="height:1px;background:var(--border);margin:9px 0;"></div>';
       var rowsHtml='';
