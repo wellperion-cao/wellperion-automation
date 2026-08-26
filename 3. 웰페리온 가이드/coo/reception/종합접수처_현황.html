@@ -1213,7 +1213,10 @@ function lfLoad(){
   _lfLoading = true;
   var key=''; try{ key = localStorage.getItem('wp_access_token')||''; }catch(e){}
   var url = REG_API + '?action=lf_list&_=' + Date.now() + (key ? ('&key=' + encodeURIComponent(key)) : '');
-  withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 8000, null)
+  // ★2026-08-26 배798 감사 — 8초만 남아 있던 상한을 30초로 올린다(다른 호출은 8/26 에 이미 올렸다).
+  //   8/25 사고: 접수 6종이 안 보였는데 원인은 서버가 9초 걸리는데 화면이 8초에 끊은 것이었다.
+  //   이 줄은 그때 같이 안 올라가 남아 있었다 — 실측 4.3초로 지금은 통과하지만 여유가 2배 미만이라 같은 통로다.
+  withTimeout(fetch(url, {redirect:'follow', cache:'no-store'}).then(function(r){ return r.json(); }), 30000, null)
     .then(function(d){
       _lfLoading = false;
       if(!d || !d.ok){
