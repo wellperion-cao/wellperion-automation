@@ -43,6 +43,7 @@ TARGET_NAME  = "서승규"
 TARGET_FROM  = "이형주"
 TARGET_TO    = "박주혜"
 LESSON_TYPE  = "유소년강습"
+TARGET_BUCKET = "수영"
 SUC_STATUS   = ("SUC", "단기SUC")
 
 
@@ -69,8 +70,11 @@ def _find_target(rows: list[dict]) -> list[dict]:
     hits = []
     for r in rows:
         phone = str(r.get("phone") or r.get("휴대폰") or r.get("연락처") or "").replace("-", "").replace(" ", "")
-        status = str(r.get("status") or r.get("진행상태") or "")
-        if phone == phone_norm and status in SUC_STATUS:
+        # 2026-08-26 실측: 서승규 14행 전부 status='컨택중' — SUC 행이 시트에 없다(등록이 시트에
+        # 안 남는 문제 = 배11007). 담당 오기 교정은 그와 별개라 상태 대신 종목(수영)+현담당으로 특정한다.
+        bucket = str(r.get("bucket") or "")
+        owner = str(r.get("owner") or "").strip()
+        if phone == phone_norm and bucket == TARGET_BUCKET and owner == TARGET_FROM:
             hits.append(r)
     return hits
 
