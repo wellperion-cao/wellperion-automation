@@ -45,9 +45,13 @@
   .shead.sub-h{margin-bottom:16px;}
   .shead.sub-h .slab{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1.2px;}
 
-  /* ═══ Hero (사진 없음 — 원본 golfpro.html도 사진 없는 네이비 그라데이션) ═══ */
+  /* ═══ Hero — golfpartner.html과 동일 배경 사진 자산 재사용(2026-08-26 매니저 지적 반영) ═══ */
   .m-hero{position:relative;overflow:hidden;border:none;padding:0;border-radius:22px;
-    background:linear-gradient(135deg,var(--navy),var(--navy-2));box-shadow:0 12px 34px rgba(11,31,58,.17);}
+    background:var(--navy);box-shadow:0 12px 34px rgba(11,31,58,.17);}
+  .hero-img{position:absolute;inset:0;background-size:cover;background-position:64% 58%;}
+  .hero-scrim{position:absolute;inset:0;
+    background:linear-gradient(101deg,#0b1f3a 0%,#0b1f3a 33%,rgba(11,31,58,.95) 45%,
+      rgba(11,31,58,.70) 63%,rgba(11,31,58,.44) 84%,rgba(11,31,58,.40) 100%);}
   .hero-top{position:absolute;left:0;right:0;top:0;height:3px;z-index:3;
     background:linear-gradient(90deg,var(--gold-dk),rgba(227,186,98,.15));}
   .hero-body{position:relative;z-index:2;padding:48px 52px 44px;max-width:70%;}
@@ -167,7 +171,10 @@
     .wrap{padding:18px 14px 44px;}
     .card{padding:24px 20px;}
     .m-hero{border-radius:18px;}
-    .hero-body{max-width:100%;padding:34px 22px 30px;}
+    .hero-img{bottom:auto;height:238px;background-position:50% 72%;}
+    .hero-scrim{background:linear-gradient(180deg,rgba(11,31,58,.22) 0px,rgba(11,31,58,.48) 96px,
+      rgba(11,31,58,.90) 196px,#0b1f3a 242px,#0b1f3a 100%);}
+    .hero-body{max-width:100%;padding:216px 22px 30px;}
     .m-hero h1{font-size:28px;letter-spacing:-.8px;}
     .contact-grid{grid-template-columns:1fr;}
     .jpg-dl-btn{top:12px;right:12px;padding:7px 12px;font-size:11px;}
@@ -193,6 +200,8 @@
 
     <!-- ══ Hero ══ -->
     <div class="card m-hero">
+      <div class="hero-img" style="background-image:url('assets/golf-partner-hero.jpg')"></div>
+      <div class="hero-scrim"></div>
       <div class="hero-top"></div>
       <div class="hero-body">
         <div class="eyebrow se">Now Hiring</div>
