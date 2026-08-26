@@ -4020,7 +4020,12 @@ function vendorSubmitAddForm(){
         var _workLine=_fresh.length
           ? '작업일지: '+_fresh.slice(0,6).map(escapeHTML).join(' / ')+(_fresh.length>6?' 외 '+(_fresh.length-6):'')
           : '작업일지: (추가 작업 없음)';
-        var _fcMsg='🏗 시설부 '+subCount+'회차 제출 · 점검자 '+(insp||'-')+' · '+(_ab?('이상 '+_ab+'건'):'이상 없음')+'\n'+_workLine;
+        /* ★2026-08-26 배798 감사 — 건수만 보내면 받는 사람이 "이상 1건은 뭐야?" 라고 되물어야 한다
+           (GM 이 실제로 그렇게 물으셨다). 서버가 이미 계산해 둔 이상 내용(abnormalNote)을 함께 싣는다.
+           지어내지 않는다 — 서버가 안 주면(옛 배포) 종전처럼 건수만 나간다. */
+        var _abNote=String(_measureRes.abnormalNote||'').trim();
+        var _abText=_ab?('이상 '+_ab+'건'+(_abNote?(' — '+escapeHTML(_abNote.length>120?_abNote.slice(0,120)+'…':_abNote)):'')):'이상 없음';
+        var _fcMsg='🏗 시설부 '+subCount+'회차 제출 · 점검자 '+(insp||'-')+' · '+_abText+'\n'+_workLine;
         fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
           body:JSON.stringify({action:'notify_round',dept:'facility',date:date,round:curR,message:_fcMsg})}).catch(function(){});
       }catch(e){}
@@ -4201,7 +4206,10 @@ function renderFmKpi(data){
   const pct=(t.avgPct!=null?t.avgPct:0);
   el.innerHTML =
     '<div class="dash-stat-row">'
-    +'<div class="dash-stat-card"><div class="num">'+(t.sessionCount||0)+'</div><div class="label">세션수(회차 제출)</div></div>'
+    /* ★2026-08-26 배798 감사 — 라벨이 실체와 달랐다. 서버 sessionCount 는 하루=1 로 세는 값이라
+       활성일수와 같다(실제 회차 제출은 하루 여러 건 — 08-25 9건·08-26 5건). '회차 제출'로 읽히면
+       '한 달에 23회밖에 안 했다'는 오해가 생긴다. 세는 것 그대로 적는다. */
+    +'<div class="dash-stat-card"><div class="num">'+(t.sessionCount||0)+'</div><div class="label">점검한 날 수</div></div>'
     +'<div class="dash-stat-card"><div class="num">'+(t.activeDays||0)+'</div><div class="label">활성일</div></div>'
     +'<div class="dash-stat-card"><div class="num" style="color:'+fmPctColor(pct)+'">'+pct+'%</div><div class="label">입력률</div></div>'
     +'<div class="dash-stat-card"><div class="num" style="color:var(--yellow)">'+(t.outOfRangeCount||0)+'</div><div class="label">기준이탈(참고)</div></div>'
@@ -4384,7 +4392,7 @@ function renderA3FacilityMonthlyFromData(month,data){
   const kpiRow=doc.querySelector('.mrp-kpi-row');
   if(kpiRow){
     kpiRow.innerHTML=
-      fmA3Chip((t.sessionCount||0)+' 세션','월간 회차 제출 수(카테고리 항목 입력 세션)')
+      fmA3Chip((t.sessionCount||0)+'일','점검한 날 수(하루 여러 회차를 제출해도 1일로 셈)')
       +fmA3Chip((t.activeDays||0)+' 일','점검이 1회 이상 실시된 활성일수')
       +fmA3Chip('<span class="mrp-kpi-num">'+pct+'%</span> 입력률',fmEsc(data.denomNote||''))
       +fmA3Chip('<span class="mrp-kpi-num">'+(t.outOfRangeCount||0)+'건</span> 기준이탈(참고)','정식 이슈 아님 — 측정값 자동판정');

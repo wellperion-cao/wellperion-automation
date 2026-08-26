@@ -3209,6 +3209,10 @@ function saveFacilityMeasure(body) {
   // abnormalCount는 항상 안전한 값(시설부 per-check 텔레그램 알림 Phase2⑧이 이 반환값을 사용).
   var abnormalCount = 0;
   var warnCount = 0;   // 🟡 주의(목표이탈) — 배9199 신설. abnormalCount(🔴만)와 합산 금지(계약 §2).
+  // ★2026-08-26 배798 감사 — 이상 '내용'도 응답에 실어 준다. 종전엔 건수만 나가서
+  //   알림을 받은 GM 이 "이상 1건은 뭐야?" 라고 되물어야 했다(2026-08-26 실제 질문).
+  //   내용은 이미 계산해 스냅샷에 넣고 있었는데 응답에서만 빠져 있었다.
+  var abnormalNoteOut = '';
   // 3) 제출 이력 스냅샷 적립(점검일지_facility) — 시설_공용구역 본 저장과 독립, 실패해도 본 저장에 영향 없음.
   try {
     var totalCnt = rows.length;
@@ -3229,6 +3233,7 @@ function saveFacilityMeasure(body) {
     abnormalCount = abnormalHits.length;
     warnCount = warnHits.length;
     var abnormalNote = abnormalHits.join(' / ');
+    abnormalNoteOut = abnormalNote;   // 응답으로 내보낼 사본(스냅샷 try 밖에서도 살아 있게) — 2026-08-26
     // 점검 내용(항목별 측정값) — GM 2026-07-09: 이상내용만이 아니라 실제 점검 내용을 항목에 기록. 완료 항목의 name: 측정값 나열.
     var contentParts = [];
     rows.forEach(function (r) {
@@ -3257,7 +3262,7 @@ function saveFacilityMeasure(body) {
 
   // abnormalCount: 시설부 per-check 텔레그램 알림(Phase2⑧, 2026-07-18)이 "이상 Y건" 표기에 사용(🔴만, 불변).
   // warnCount: 배9199 신설(🟡만) — 기존 소비처는 없음(신규 필드 추가일 뿐, 하위호환).
-  return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0, abnormalCount: abnormalCount, warnCount: warnCount });
+  return jsonRes({ ok: true, dept: 'facility', date: date, round: round, total: rows.length, done: doneCnt, pct: rows.length ? Math.round(doneCnt / rows.length * 100) : 0, abnormalCount: abnormalCount, warnCount: warnCount, abnormalNote: abnormalNoteOut });
 }
 
 // ─── 금일 작업사항·지시사항만 스냅샷 갱신 (POST {action:'save_facility_notes', date, round, inspector, work, order, oocAction}) ───
