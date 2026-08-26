@@ -114,8 +114,18 @@ def build_ship(args, queue):
     elif sender:
         note = ("[%s → %s 전달 %s] " % (sender, nick, today)) + note
 
+    # ★2026-08-26 시토 — task_id 는 배마다 달라야 한다(배798 감사에서 실제 충돌 발견).
+    #   슬러그는 제목 앞부분만 잘라 쓰므로, 같은 날 같은 역할에 앞머리가 같은 제목이 두 번 오면
+    #   (예: "★중간관리자 방 호출 — 이경연 실장님: …" 두 건) task_id 가 똑같이 만들어진다.
+    #   hangro_board 는 task_id 로 중복을 거르므로 뒤에 온 배를 **조용히 버렸다** —
+    #   실측: 큐에 33척인데 아침 보고는 32척이었다(손소독제 회신 배가 사라짐).
+    #   같은 id 가 이미 있으면 배 번호를 붙여 가른다. 배 번호는 배마다 고정·불변이라 안전하다.
+    _tid = "%s-%s-%s" % (role.upper(), today, _slug(title))
+    if any(isinstance(t, dict) and str(t.get("task_id")) == _tid for t in queue):
+        _tid = "%s-%s" % (_tid, ship_no)
+
     return {
-        "task_id": "%s-%s-%s" % (role.upper(), today, _slug(title)),
+        "task_id": _tid,
         "clevel": role,
         "title": "[%s] %s" % (nick, title),
         "status": "PENDING",
