@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>위생·감염 예방 차원의 선제 조치 정리 — 웰페리온 A3</title>
+<title>위생·감염 예방 선제 조치 — 웰페리온 A3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -36,92 +36,82 @@
   .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
   .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
     letter-spacing:6px; margin-bottom:5px; }
-  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
-  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:32px; letter-spacing:-.8px; line-height:1.14; }
+  .subtitle{ font-size:14px; color:#3C464F; margin-top:5px; }
+  .meta{ margin-left:auto; text-align:right; font-size:12.6px; line-height:1.7; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; gap:0; margin-top:6px; }
+  .sign div{ width:74px; border:1px solid var(--line); text-align:center; }
+  .sign div span{ display:block; font-size:10.5px; background:#F6F8FA; color:#5C666F; padding:2px 0;
+    border-bottom:1px solid var(--line); }
+  .sign div i{ display:block; height:30px; }
 
-  /* ② 결정 요청 */
-  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
-  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  /* ② 방향 밴드 */
+  .dir{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .dir .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-right:1px solid rgba(255,255,255,.28); }
-  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
-  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
-  .ask .items{ flex:1; display:flex; }
-  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
-  .ask .it:last-child{ border-right:0; }
-  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
-  .ask .q{ font-size:16.6px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
-  .ask .d{ font-size:12.6px; line-height:1.5; opacity:.86; margin-top:4px; }
+  .dir .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .dir .lb strong{ font-family:'Noto Serif KR',serif; font-size:20px; letter-spacing:-.5px; }
+  .dir .body{ flex:1; padding:11px 18px; }
+  .dir .q{ font-size:19.5px; font-weight:700; line-height:1.3; letter-spacing:-.5px; }
+  .dir .d{ font-size:13px; line-height:1.5; opacity:.9; margin-top:4px; }
 
-  /* 경고 밴드 */
-  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
-    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
-  .alert span{ font-weight:400; color:#6B2020; }
+  /* 결정 요청 */
+  .ask{ margin-top:7px; border:1.5px solid var(--bad); background:#FBEDED; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; background:var(--bad); color:#fff; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.9; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:17px; }
+  .ask .body{ flex:1; padding:9px 18px; }
+  .ask .q{ font-size:16.5px; font-weight:700; color:var(--bad); line-height:1.35; }
+  .ask .d{ font-size:13px; line-height:1.5; color:#5A2323; margin-top:3px; }
 
-  /* ③ 비교표 */
+  /* ③ 한눈 숫자 */
+  .tiles{ margin-top:10px; display:flex; gap:10px; }
+  .tile{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:8px 14px 9px; background:#FAFBFC; }
+  .tile .lab{ font-size:12.2px; color:#5C666F; }
+  .tile .val{ font-size:25px; font-weight:900; letter-spacing:-1px; line-height:1.2; margin-top:1px; }
+  .tile .sub{ font-size:11.8px; color:#5C666F; margin-top:1px; }
+  .tile.g{ border-top-color:var(--good); } .tile.g .val{ color:var(--good); }
+  .tile.b{ border-top-color:var(--bad); }  .tile.b .val{ color:var(--bad); }
+
+  /* ④ 표 */
   .tblwrap{ margin-top:11px; }
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
-  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
-  thead th.k{ width:186px; background:#0E2439; }
-  thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
-  tbody td{ height:32px; }
-  td.k{ background:#F6F8FA; font-weight:600; font-size:13.2px; }
-  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:12.6px; letter-spacing:2.5px; }
-  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  th,td{ border:1px solid var(--line); padding:0 11px; font-size:14px; line-height:1.35; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.4px; border-color:#2A4763; }
+  thead th.k{ width:196px; background:#0E2439; }
+  tbody td{ height:44px; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:13.8px; }
   .ctr{ text-align:center; }
   .good{ color:var(--good); font-weight:700; }
   .warn{ color:var(--warn); font-weight:700; }
   .bad{ color:var(--bad); font-weight:700; }
-  .est{ color:#5C666F; font-size:11.4px; }
-  td.strong{ font-weight:700; }
-  tr.sum td{ background:#F0F3F7; }
-  tr.sum td.k{ background:#E7ECF2; }
+  .est{ color:#5C666F; font-size:11.8px; }
 
-  /* ④ 3분할 */
-  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
-  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
-  .box h3{ font-size:14.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
-  .box ul{ list-style:none; }
-  .box li{ font-size:13.2px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  /* ⑤ 3분할 */
+  .cols{ margin-top:11px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 14px 8px; }
+  .box h3{ font-size:15px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box li{ list-style:none; font-size:13.4px; line-height:1.5; padding-left:16px; position:relative; margin-bottom:5px; }
   .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
-  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
-  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
-  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
-    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
-  .box ul.ord{ counter-reset:a; }
-  .box li.n{ padding-left:20px; }
-  .box.rec{ border-top-color:var(--good); }
-  .box.rec h3{ color:var(--good); }
-  .box.rec b{ color:var(--good); }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:11px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10.5px; color:var(--warn); }
+  .box.ok{ border-top-color:var(--good); } .box.ok h3{ color:var(--good); }
+  .box.no{ border-top-color:var(--bad); }  .box.no h3{ color:var(--bad); }
+  .box b.d{ color:var(--navy); }
 
-  /* ⑤ 각주 */
+  /* ⑥ 각주 */
   .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
-    display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
+    display:flex; gap:24px; font-size:12px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
-</style><style>
-  /* 방향 — 고르는 자리가 아니라 정해진 한 줄을 싣는 자리(GM 지시 2026-08-26) */
-  .ask .one{ flex:1; padding:11px 18px; }
-  .ask .one .q{ font-size:18.4px; font-weight:700; line-height:1.32; letter-spacing:-.4px; }
-  .ask .one .d{ font-size:12.8px; line-height:1.5; opacity:.9; margin-top:4px; }
-
-  /* 방향에서 나오는 구체 실행 3칸 — 각 칸 맨 아래가 '어떻게 점검하나' */
-  .dirrow{ margin-top:8px; display:flex; gap:9px; }
-  .dcell{ flex:1; border:1px solid var(--line); border-left:3px solid var(--navy); padding:7px 12px 8px; background:#FAFBFC; }
-  .dcell .n{ font-size:12.4px; font-weight:800; color:var(--navy); letter-spacing:-.2px; }
-  .dcell .t{ font-size:13px; line-height:1.5; margin-top:3px; }
-  .dcell .chk{ font-size:12.4px; line-height:1.45; margin-top:5px; padding-top:5px;
-    border-top:1px dashed var(--line); color:var(--good); font-weight:500; }
-  .dcell .chk b{ color:var(--good); font-weight:700; }
-  .tblwrap+.tblwrap{ margin-top:11px; }
 </style>
 </head>
 <body>
 
 <div class="bar">
-  <b>위생·감염 예방 차원의 선제 조치 정리 (A3 1장)</b>
+  <b>위생·감염 예방 선제 조치 (A3 1장)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -133,100 +123,132 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">위생·감염 예방 차원의 선제 조치 정리</div>
+      <div class="title">위생·감염 예방 선제 조치</div>
+      <div class="subtitle">회장님 말씀(2026. 8. 25.)에 따라 <b>발병 전에 미리</b> 해 둔 조치와 현재 상태를 보고드립니다.</div>
     </div>
     <div class="meta">
-      작성 <b>운영부</b> · 작성일 <b>2026. 08. 25.</b> · 문서번호 <b>WP-GM-260825-01</b><br>
-      배경 <b>회장님 말씀(2026-08-25) — 미리 조심하자는 차원에서 정리*</b><br>
-      보고 <b>회장님 · 경영진</b> · 시행 <b>2026. 09. 01.(월) 1차 점검</b>
-    </div>
-  </div>
-
-  <div class="ask">
-    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
-    <div class="items">
-      <div class="one">
-        <div class="q">새 조직도 새 점검표도 만들지 않는다 — 이미 매일 도는 청소·점검에 위생 5항목을 얹어 <b>상시로</b> 굴린다.</div>
-        <div class="d">유행이 오면 올리고 지나면 내리는 방식을 쓰지 않는다. 켜고 끄는 판단이 필요 없고, 실무진이 새로 외울 것도 늘지 않는다. <b>평소에 늘 같은 수준으로 돌고, 도는지는 기록으로 증명한다.</b></div>
+      작성 <b>운영부</b> · 작성일 <b>2026. 08. 26.</b> · 문서번호 <b>WP-GM-260825-01</b><br>
+      보고 <b>회장님 · 경영진</b> · 첫 현장 확인 <b>2026. 09. 01.(월)</b>
+      <div class="sign">
+        <div><span>담당</span><i></i></div>
+        <div><span>실장</span><i></i></div>
+        <div><span>GM</span><i></i></div>
+        <div><span>대표</span><i></i></div>
+        <div><span>회장</span><i></i></div>
       </div>
     </div>
   </div>
 
-  <div class="dirrow">
-    <div class="dcell">
-      <div class="n">01 · 떨어지기 전에 채운다</div>
-      <div class="t">손소독제를 리셉션·사우나·주차 <b>3곳에 상시 비치</b>한다. 소모품 예산을 배정해 두고 운영부가 사서 채운다 — 떨어진 뒤 건별 결재로 사면 반드시 비는 날이 생긴다.</div>
-      <div class="chk">점검 — 매주 월요일 지원부 G-4·주차 주간점검에서 3곳 재고를 센다. <b>한 곳이라도 0이면 그날 보고</b>한다.</div>
+  <div class="dir">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="body">
+      <div class="q">조직도 새로 만들지 않고, <b>매일 하던 청소·점검에 위생 5가지를 얹어 늘 같은 수준으로</b> 돌립니다.</div>
+      <div class="d">유행이 번지면 올리고 잦아들면 내리는 방식은 쓰지 않았습니다. 켜고 끄는 판단이 필요 없고, 현장이 새로 외울 것도 늘지 않습니다. <b>8월 25일부터 이미 돌고 있으며, 도는지 여부는 매일 남는 점검 기록으로 확인합니다.</b></div>
     </div>
-    <div class="dcell">
-      <div class="n">02 · 방역 주기는 올리지 않는다</div>
-      <div class="t">세스코 정기 방역 <b>월 1회 현행 유지</b>(최근 8/18 · 다음 9/18). 매일 도는 청소·점검이 이미 있어 주기를 올릴 근거가 없다. 늘리는 대신 <b>빠짐없이 하는 쪽</b>에 힘을 쓴다.</div>
-      <div class="chk">점검 — 전사일정 정기점검 줄에 실시일을 적는다. <b>줄이 비어 있으면 그달은 안 한 것</b>이다.</div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="body">
+      <div class="q">손소독제를 상비품으로 두기 위한 <b>소모품 예산 배정</b> — 1건</div>
+      <div class="d">현재 손소독제 재고가 없습니다. 떨어질 때마다 건별로 사면 반드시 비는 날이 생기므로, <b>리셉션·사우나·주차 세 곳에 늘 채워 두는 방식</b>으로 바꾸고자 합니다. 구매와 관리는 운영부가 맡고, 예산 규모만 정해 주시면 됩니다. (8월 31일 세 곳 설치 예정)</div>
     </div>
-    <div class="dcell">
-      <div class="n">03 · 빠지는 회차를 메운다</div>
-      <div class="t">들어온 점검은 잘 채워진다 — 남 96%·여 87%. <b>빠지는 것은 회차</b>다. 하루 3회(오전·오후·마감) 중 8월 평균 <b>2.7회</b>만 들어와, 하루 기준 완료율이 44%로 내려앉는다.</div>
-      <div class="chk">점검 — 주 1회 지원부 월간 리포트에서 <b>하루 회차 수</b>를 본다. 목표 <b>매일 3회</b>, 빠진 날은 그 주에 부서장이 확인한다.</div>
-    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="lab">시행 시작</div><div class="val">8월 25일</div><div class="sub">회장님 말씀 당일 현장 반영</div></div>
+    <div class="tile"><div class="lab">시행 중인 조치</div><div class="val">5 가지</div><div class="sub">소독·환기·비품·직원건강·손소독제</div></div>
+    <div class="tile g"><div class="lab">점검이 들어온 날 채워진 정도</div><div class="val">남 96% · 여 87%</div><div class="sub">8월 실제 점검 기록 기준</div></div>
+    <div class="tile b"><div class="lab">아직 채워지지 않은 것</div><div class="val">손소독제 0</div><div class="sub">8월 31일 세 곳 설치 예정</div></div>
   </div>
 
   <div class="tblwrap">
   <table>
-    <colgroup><col style="width:132px"><col><col style="width:118px"><col style="width:126px"><col style="width:214px"><col style="width:118px"><col style="width:230px"></colgroup>
+    <colgroup><col style="width:196px"><col><col style="width:210px"><col style="width:170px"><col style="width:300px"></colgroup>
     <thead>
       <tr>
-        <th class="k">항목</th>
-        <th>내용</th>
-        <th>주기</th>
-        <th>담당</th>
-        <th>반영 위치</th>
-        <th>상태</th>
-        <th>주의 · 남은 것</th>
+        <th class="k">무엇을</th>
+        <th>구체적으로 어떻게 하고 있는가</th>
+        <th>얼마나 자주</th>
+        <th>누가</th>
+        <th>지금 상태</th>
       </tr>
     </thead>
     <tbody>
-      <tr class="grp"><td colspan="7">현 장 조 치</td></tr>
-      <tr><td class="k">1 접점 소독</td><td>손잡이·락커·키오스크·무인발권기·주차 정산기</td><td class="ctr">오픈 전·마감 후 2회</td><td class="ctr">지원부·주차관리부</td><td>지원부 일일점검 G-2 / 주차 일일점검</td><td class="ctr good">반영 완료 (8/25)</td><td>주차관리부는 8/18 입사·적응 중이라 제출이 아직 1일뿐</td></tr>
-      <tr><td class="k">2 환기</td><td>사우나·수면실·찜질방 회차마다 10분, 창 없는 구역 배기팬 상시</td><td class="ctr">회차마다 (3회)</td><td class="ctr">지원부</td><td>지원부 일일점검 G-3</td><td class="ctr good">반영 완료 (8/25)</td><td>—</td></tr>
-      <tr><td class="k">3 공용 비품</td><td>바스타올·매트리스·침구 상태 보고 교체</td><td class="ctr">회차 점검 시</td><td class="ctr">지원부</td><td>기존 OP-4 항목이 커버 — 신규 칸 없음</td><td class="ctr">기존 항목 활용</td><td>—</td></tr>
-      <tr class="grp"><td colspan="7">인 력 · 비 품</td></tr>
-      <tr><td class="k">4 직원 건강</td><td>발열·기침 시 근무 제외·즉시 보고 / 청소 시 마스크·장갑</td><td class="ctr">상시</td><td class="ctr">전 부서</td><td>주차관리부 운영 원칙 명문화 · 전 부서 카톡 안내</td><td class="ctr good">안내 완료 (8/25)</td><td>신고 0건 — 체계가 도는지는 첫 신고 때 확인된다</td></tr>
-      <tr><td class="k">5 비품 재고</td><td>손소독제 (리셉션·사우나·주차 3곳) · 마스크는 직원 개별</td><td class="ctr">주 1회 (월요일)</td><td class="ctr">운영부 <span class="est">구매·관리</span></td><td>지원부 G-4 / 주차 주간점검</td><td class="ctr bad">재고 0 — 구매 필요</td><td class="bad"><b>8/26 결재 확인 → 8/31 3곳 설치 예정.</b> 9/1 시행 전에 실물이 놓여야 셀 것이 생긴다</td></tr>
-      <tr class="grp"><td colspan="7">방 역 계 약</td></tr>
-      <tr><td class="k">6 정기 방역</td><td>세스코 방역·방제</td><td class="ctr">월 1회</td><td class="ctr">시설부</td><td>전사일정 법정·정기점검</td><td class="ctr good">시행 중 <span class="est">최근 8/18</span></td><td>다음 9/18. 세스코 작업이 「소독」인지 「방제」인지 소장님 회신 대기</td></tr>
+      <tr>
+        <td class="k">1 손 닿는 곳 소독</td>
+        <td>출입문 손잡이 · 락커 · 키오스크 · 무인발권기 · 주차 정산기를 소독제로 닦습니다</td>
+        <td class="ctr">문 열기 전 · 닫은 뒤 <b>하루 2회</b></td>
+        <td class="ctr">지원부 · 주차관리부</td>
+        <td class="good">시행 중 <span class="est">8/25부터 점검 항목에 포함</span></td>
+      </tr>
+      <tr>
+        <td class="k">2 환기</td>
+        <td>사우나 · 수면실 · 찜질방을 회차가 끝날 때마다 10분씩 엽니다. 창이 없는 구역은 배기팬을 계속 돌립니다</td>
+        <td class="ctr">회차마다 <b>하루 3회</b></td>
+        <td class="ctr">지원부</td>
+        <td class="good">시행 중</td>
+      </tr>
+      <tr>
+        <td class="k">3 몸에 닿는 비품</td>
+        <td>바스타올 · 매트리스 · 침구 상태를 점검 때마다 살펴 바로 교체합니다</td>
+        <td class="ctr">점검할 때마다</td>
+        <td class="ctr">지원부</td>
+        <td class="good">시행 중 <span class="est">기존 점검 항목 활용</span></td>
+      </tr>
+      <tr>
+        <td class="k">4 직원 건강</td>
+        <td>열이 나거나 기침이 있으면 <b>그날 근무에서 빼고 즉시 보고</b>합니다. 청소할 때는 마스크·장갑을 착용합니다</td>
+        <td class="ctr">상시</td>
+        <td class="ctr">전 부서</td>
+        <td class="good">전 부서 안내 완료 <span class="est">8/25 · 신고 0건</span></td>
+      </tr>
+      <tr>
+        <td class="k">5 손소독제</td>
+        <td>리셉션 · 사우나 · 주차 <b>세 곳에 비치</b>하고, 매주 월요일 남은 양을 확인해 채웁니다</td>
+        <td class="ctr">주 1회 (월요일)</td>
+        <td class="ctr">운영부 <span class="est">구매·관리</span></td>
+        <td class="bad">재고 없음 → <b>8/31 설치 예정</b></td>
+      </tr>
+      <tr>
+        <td class="k">6 정기 방역</td>
+        <td>전문업체(세스코)가 건물 전체를 방역·방제합니다. 계약대로 주기를 유지합니다</td>
+        <td class="ctr">월 1회</td>
+        <td class="ctr">시설부</td>
+        <td class="good">8/18 완료 · 다음 <b>9/18</b></td>
+      </tr>
     </tbody>
   </table>
   </div>
 
-  <div class="tblwrap">
-  <table>
-    <colgroup><col style="width:214px"><col style="width:186px"><col style="width:214px"><col style="width:118px"><col><col style="width:250px"></colgroup>
-    <thead>
-      <tr>
-        <th class="k">경과 관찰 — 보는 것</th>
-        <th>지금 값</th>
-        <th>목표</th>
-        <th>확인 주기</th>
-        <th>확인 방법</th>
-        <th>다음 할 일</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td class="k">지원부 점검 회차</td><td class="ctr warn">하루 평균 2.7회 <span class="est">8월 64회 / 24일</span></td><td class="ctr good">매일 3회 (오전·오후·마감)</td><td class="ctr">주 1회</td><td>지원부 체계 · 월간 리포트</td><td>빠진 회차를 부서장 확인 사항으로 올린다</td></tr>
-      <tr><td class="k">지원부 점검 채움 정도</td><td class="ctr">남 <b class="good">96%</b> · 여 <b class="warn">87%</b> <span class="est">들어온 회차 기준</span></td><td class="ctr good">양쪽 95% 이상</td><td class="ctr">주 1회</td><td>지원부 체계 · 월간 리포트 구역별</td><td>여 구역이 8p 낮다 — 어느 항목이 남는지 본다</td></tr>
-      <tr><td class="k">접점 소독·환기 이행</td><td class="ctr">8/25 시작</td><td class="ctr good">매일 2~3회 전 회차</td><td class="ctr">매일</td><td>지원부 일일점검 G-2·G-3</td><td>9/1 현장에서 실제로 도는지 눈으로 확인</td></tr>
-      <tr><td class="k">손소독제 재고 <span class="est">3곳</span></td><td class="ctr bad">재고 0 · 미집계</td><td class="ctr good">3곳 상시 확보</td><td class="ctr">주 1회 (월)</td><td>지원부 G-4 · 주차 주간점검</td><td class="bad"><b>8/26 결재 확인 · 8/31 설치 · 9/1 첫 집계</b></td></tr>
-      <tr><td class="k">정기 방역(세스코) 이행</td><td class="ctr good">최근 8/18 · 다음 9/18</td><td class="ctr good">계약 주기대로 월 1회</td><td class="ctr">월 1회</td><td>전사일정 법정·정기점검</td><td>소독/방제 구분 회신 받아 정기점검 줄에 채우기</td></tr>
-      <tr><td class="k">직원 발열·기침 신고</td><td class="ctr">0건</td><td class="ctr good">즉시 보고 체계 유지</td><td class="ctr">상시</td><td>종합접수처 · 부서 카톡</td><td>—</td></tr>
-      <tr><td class="k">주차관리부 점검 정착</td><td class="ctr warn">제출 1일 <span class="est">8/20 배선</span></td><td class="ctr good">매일 제출</td><td class="ctr">주 1회</td><td>주차 일일·주간점검</td><td>조희제 관리인 <b>입사 한 달(9/18)</b>까지 적응 기간으로 두고 그 뒤부터 센다</td></tr>
-    </tbody>
-  </table>
+  <div class="cols">
+    <div class="box ok">
+      <h3>잘 되고 있는 것</h3>
+      <li>점검이 들어온 날은 <b>남 96% · 여 87%</b>까지 채워집니다 — 현장이 실제로 손을 대고 있습니다</li>
+      <li>정기 방역이 계약 주기대로 <b>8월 18일 시행</b>됐고 다음 회차도 잡혀 있습니다</li>
+      <li>직원 발열·기침 시 근무 제외 기준을 <b>전 부서에 안내 완료</b>했습니다</li>
+      <li>5가지 조치가 <b>매일 아침 보고에 함께 실려</b> 같은 화면에서 보입니다</li>
+    </div>
+    <div class="box no">
+      <h3>아직 부족한 것</h3>
+      <li class="r1"><b>손소독제가 아직 없습니다.</b> 8월 31일 세 곳 설치 예정이며, 이후에는 매주 남은 양을 셉니다</li>
+      <li class="r2">하루 세 번 도는 점검이 <b>평균 2.7번</b>만 기록에 남습니다. 일을 안 한 것이 아니라 <b>기록이 빠지는 것</b>이라, 남기는 쪽을 부서장 확인 사항으로 올립니다</li>
+      <li class="r2">여성 구역이 남성 구역보다 <b>9%p 낮습니다.</b> 어떤 항목이 남는지 이번 주에 확인합니다</li>
+      <li class="r2">주차관리부는 <b>8월 18일 입사</b>한 인원이라 아직 적응 기간입니다. 9월 18일 이후부터 같은 기준으로 봅니다</li>
+    </div>
+    <div class="box">
+      <h3>앞으로 · 회원 안내 방침</h3>
+      <li><b class="d">9월 1일(월)</b> — 5가지가 현장에서 실제로 도는지 첫 확인, 손소독제 첫 재고 집계</li>
+      <li><b class="d">9월 18일</b> — 다음 정기 방역</li>
+      <li><b class="d">회원 안내는 하지 않습니다.</b> 발병 사례가 없는 상태에서 안내문을 붙이면 없던 불안을 만듭니다. 문의가 오면 사실대로 답합니다</li>
+      <li>국내에서 실제 확산이 확인되면 그때 <b>방역 주기 상향과 회원 안내를 함께</b> 다시 올려 드립니다</li>
+    </div>
   </div>
 
   <div class="foot">
-    <div><b>배경</b> — * 사고나 발병이 있어 대응하는 것이 아니다. 회장님 말씀에 따라 <b>미리 해 두면 좋을 일</b>을 지금 하던 청소·점검에 얹었다. <b>새 조직·새 점검표는 만들지 않았다.</b></div>
-    <div><b>산출 근거</b> — 점검 숫자는 2026-08-26 지원부 점검 원장 전수 집계(8월 1~26일 · 64회 · 항목 2,531칸). <b>두 숫자의 분모가 다르다</b> — 「채움 정도」는 들어온 회차 안에서, 「하루 완료율 44%」는 하루 3회를 다 채웠다고 볼 때다. 빠진 날 8/9·8/23 은 휴관일이라 미제출이 아니다. 정기 방역 최근 실시 2026-08-18(세스코) — 전사일정 실측. 손소독제 재고 0 은 이경연 실장 확인(8/25).</div>
-    <div><b>차기 보고</b> — 2026-09-01(월) 1차 점검 — 5항목이 실제로 도는지 현장 확인 + 손소독제 첫 재고 집계.</div>
+    <div><b>배경</b> — 사고나 발병이 있어 대응하는 것이 <b>아닙니다.</b> 중국 내 재확산 소식에 대한 회장님 말씀(2026. 8. 25.)에 따라 미리 해 두면 좋을 일을 지금 하던 청소·점검에 얹었습니다. <b>새 조직·새 점검표는 만들지 않았습니다.</b></div>
+    <div><b>숫자 근거</b> — 2026. 8. 26. 지원부 점검 기록 전수 집계(8월 1~26일 · 점검 64회 · 항목 2,531칸). 「채워진 정도」는 점검이 들어온 회차 안에서의 비율입니다. 8월 9일·23일은 <b>휴관일</b>이라 미점검이 아닙니다. 손소독제 재고 없음은 이경연 실장 확인(8/25).</div>
+    <div><b>차기 보고</b> — 2026. 9. 1.(월) 첫 현장 확인 결과. 본 건은 <b>3분기 종합 보고(8/31)의 별첨</b>으로 함께 올립니다.</div>
   </div>
 
 </div>
