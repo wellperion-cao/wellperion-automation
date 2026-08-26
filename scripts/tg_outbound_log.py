@@ -131,8 +131,12 @@ def _log_lint(issues, chat_id, source):
         pass   # 검수 실패가 발신을 막지 않는다
 
 
+# 공백을 건너뛰며 이어 붙이되 **다음 주소로 넘어가지 않는다**(`(?!https?://)`).
+# 이 울타리가 없으면 한 줄에 주소가 둘일 때 첫 주소가 확장자로 이미 끝났는데도
+# " · 멤버십: https://…" 를 통째로 삼켜 하나의 깨진 주소로 만든다(2026-08-27 실측 404).
 _URL_WITH_SPACE = re.compile(
-    r'https?://[^\s]+(?:[ ][^\s]+)+?\.(?:html?|png|jpe?g|pdf|json|csv|xlsx?)\b')
+    r'https?://(?:(?!https?://)\S)+(?:[ ](?:(?!https?://)\S)+)+?'
+    r'\.(?:html?|png|jpe?g|pdf|json|csv|xlsx?)\b')
 
 
 def encode_url_spaces(text):
@@ -148,6 +152,25 @@ def encode_url_spaces(text):
     def _fix(m):
         return m.group(0).replace(' ', '%20')
     return _URL_WITH_SPACE.sub(_fix, str(text or ''))
+
+
+def selfcheck_encode_url_spaces():
+    """공백 낀 주소는 인코딩하고, 주소 둘이 한 줄에 있으면 삼키지 않는다."""
+    base = 'https://wellperion-cao.github.io/wellperion-automation/'
+    # ① 경로에 공백 — 인코딩해야 한다
+    got = encode_url_spaces(base + 'coo/check/지원부 체계.html')
+    assert got.endswith('지원부%20체계.html'), got
+    # ② 한 줄에 주소 둘 — 첫 주소를 건드리지 않는다
+    two = f"강습: {base}cpo/member/lesson.html · 멤버십: {base}cpo/member/membership.html"
+    assert encode_url_spaces(two) == two, encode_url_spaces(two)
+    # ③ 주소 뒤 문장은 삼키지 않는다
+    tail = f"{base}cpo/member/lesson.html 에서 확인 부탁드립니다"
+    assert encode_url_spaces(tail) == tail, encode_url_spaces(tail)
+    print('[selfcheck] encode_url_spaces OK')
+
+
+if __name__ == '__main__':
+    selfcheck_encode_url_spaces()
 
 
 # kind → 텔레그램 API 필드명(제목 텍스트를 담을 자리). sendMessage=text, 그 외는 caption.

@@ -551,7 +551,10 @@ def build_sla_alert_text(violations: list[dict]) -> str:
                      f"{_fmt_elapsed(it['hours'])}째 · {it['reason']}")
     if rest_n > 0:
         lines.append(f"… 외 {rest_n}건 (총 {len(violations)}건)")
-    lines.append(f"👉 강습: {ASSIGN_URL_LESSON} · 멤버십: {ASSIGN_URL_MEMBER} (입장코드 {ENTRY_CODE})")
+    # 링크는 한 줄에 하나 — 704행과 같은 이유다. ' · ' 로 이어 붙이면 카톡이 첫 주소 뒤
+    # 구분자·다음 주소까지 하나의 링크로 먹어 404 가 난다(2026-08-08 실측, 2026-08-27 재발).
+    lines.append(f"👉 강습: {ASSIGN_URL_LESSON}")
+    lines.append(f"👉 멤버십: {ASSIGN_URL_MEMBER} (입장코드 {ENTRY_CODE})")
     lines.append(AI_SIGNOFF)
     return "\n".join(lines)
 
