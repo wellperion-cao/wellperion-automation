@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>쾌적한 이용을 위한 위생 관리 안내 — 웰페리온 A5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A5 portrait; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{ --ink:#101418; --navy:#14304E; --dim:#5C666F; --line:#E3E7EB; --soft:#F6F8FA; }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99; font-size:13px;
+    box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A5 세로 148 × 210mm */
+  .page{ width:559px; height:794px; background:#fff; margin:66px auto 30px; padding:46px 46px 34px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:12px; color:var(--navy);
+    letter-spacing:5.5px; }
+  .rule{ height:2px; background:var(--navy); margin-top:9px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:25px; line-height:1.32;
+    letter-spacing:-.6px; margin-top:20px; }
+  .lead{ font-size:13.6px; line-height:1.78; color:#3C464F; margin-top:12px; }
+
+  .sec{ margin-top:22px; }
+  .sec h3{ font-size:13.4px; font-weight:700; color:var(--navy); letter-spacing:-.2px;
+    padding-bottom:6px; border-bottom:1px solid var(--line); }
+  .sec ul{ list-style:none; margin-top:10px; }
+  .sec li{ font-size:13.4px; line-height:1.62; padding-left:16px; position:relative; margin-bottom:9px; }
+  .sec li::before{ content:''; position:absolute; left:2px; top:9px; width:5px; height:5px;
+    background:var(--navy); border-radius:50%; }
+  .sec li b{ font-weight:700; }
+  .sec li span{ display:block; font-size:12.4px; color:var(--dim); line-height:1.5; margin-top:1px; }
+
+  .req{ margin-top:20px; background:var(--soft); border-left:3px solid var(--navy); padding:14px 16px 13px; }
+  .req h3{ font-size:13.4px; font-weight:700; color:var(--navy); margin-bottom:8px; }
+  .req li{ list-style:none; font-size:13.2px; line-height:1.6; padding-left:15px; position:relative; margin-bottom:6px; }
+  .req li::before{ content:''; position:absolute; left:2px; top:8px; width:5px; height:5px;
+    background:var(--navy); border-radius:50%; opacity:.55; }
+
+  .foot{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
+  .foot .msg{ font-size:13px; line-height:1.7; color:#3C464F; }
+  .foot .sign{ font-family:'Noto Serif KR',serif; font-size:14.5px; font-weight:700; color:var(--navy);
+    margin-top:10px; text-align:right; letter-spacing:-.2px; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>회원 안내문 — 쾌적한 이용을 위한 위생 관리 (A5 1장)</b>
+  <span class="note">인쇄: A5 · 세로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A5 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="brand">WELLPERION</div>
+  <div class="rule"></div>
+
+  <div class="title">쾌적한 이용을 위한<br>위생 관리 안내</div>
+  <div class="lead">회원님께서 매일 편안하게 머무실 수 있도록,<br>웰페리온은 아래와 같이 위생 관리를 시행하고 있습니다.</div>
+
+  <div class="sec">
+    <h3>저희가 매일 하고 있습니다</h3>
+    <ul>
+      <li><b>손이 닿는 곳 소독</b> — 하루 두 번
+        <span>출입문 손잡이 · 락커 · 키오스크 · 무인발권기 · 주차 정산기</span></li>
+      <li><b>환기</b> — 이용 회차마다 10분
+        <span>사우나 · 수면실 · 찜질방</span></li>
+      <li><b>함께 쓰는 자리 점검</b> — 점검할 때마다
+        <span>수면실 매트리스 · 파우더룸 의자 · 소파</span></li>
+      <li><b>손소독제 비치</b>
+        <span>리셉션 · 사우나 · 주차장</span></li>
+      <li><b>직원 건강 관리</b>
+        <span>발열 · 기침이 있는 직원은 근무에서 제외합니다</span></li>
+    </ul>
+  </div>
+
+  <div class="req">
+    <h3>회원님께 한 가지만 부탁드립니다</h3>
+    <li>이용 전후 <b>손 소독</b>을 함께해 주시면 큰 도움이 됩니다.</li>
+    <li>컨디션이 좋지 않으신 날은 <b>편히 쉬어 가시길</b> 권해 드립니다.</li>
+  </div>
+
+  <div class="foot">
+    <div class="msg">불편하신 점이나 살펴봐 주었으면 하는 곳이 있으시면<br>언제든 리셉션으로 말씀해 주십시오. 바로 확인하겠습니다.</div>
+    <div class="sign">웰페리온</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A5 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 3, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260826_회원안내_위생관리_A5.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A5 인쇄] 에서 PDF 저장을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
