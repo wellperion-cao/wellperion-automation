@@ -1419,12 +1419,27 @@ function _aaCacheClear_() {
     // ★2026-08-26 시포 — 'archive' 추가. LOSS보관 시트는 조회전용이라 목록 캐시를 지울 일이 없었는데,
     //   이관 정리(member_archive_restore)가 그 시트에서 행을 지우기 시작했다. 안 지우면 실무진이
     //   정리 직후 새로고침해도 최대 60초 동안 지운 분이 그대로 보인다 — 최영천 건에서 실제로 겪었다.
+    /* ★2026-08-26 시포(배11001 1단계) — 키마다 _cacheInvalidateJson_ 을 부르면 캐시를 16번 친다
+       (키 8개 × get+removeAll). 저장 1건 실측에서 이 구간만 0.66초였다. meta 를 한 번에 받고
+       지울 키도 한 번에 넘겨 호출을 2번으로 줄인다 — 지우는 대상은 글자 하나 안 바뀐다. */
     var scopes = ['valid', 'ended', 'corp', 'archive'], fmts = ['obj', 'rows'];
+    var bases = [], metaKeys = [];
     for (var si = 0; si < scopes.length; si++) {
       for (var fi = 0; fi < fmts.length; fi++) {
-        _cacheInvalidateJson_(c, 'aacache|' + scopes[si] + '|' + fmts[fi]);
+        var _b = 'aacache|' + scopes[si] + '|' + fmts[fi];
+        bases.push(_b); metaKeys.push(_b + '__meta');
       }
     }
+    var metas = c.getAll(metaKeys) || {};
+    var kill = [];
+    for (var bi = 0; bi < bases.length; bi++) {
+      var b = bases[bi];
+      var n = parseInt(metas[b + '__meta'], 10) || 0;
+      var max = Math.max(n, 12);            // 메타 유실 대비 여유 청크까지 — 종전과 동일
+      kill.push(b + '__meta');
+      for (var i = 0; i < max; i++) kill.push(b + '__' + i);
+    }
+    for (var ki = 0; ki < kill.length; ki += 90) c.removeAll(kill.slice(ki, ki + 90));
   } catch (e) {}
 }
 
@@ -9600,6 +9615,12 @@ function _hasRealReply_(memo) {
       }
       return _json({ ok: _buOk === _bu.length, count: _bu.length, okCount: _buOk, results: _buOut });
     }
+    /* ★구간 계측(2026-08-26 시포 · 배11001 1단계 "왜 8.5초인지 재고 줄인다").
+       추정으로 고치면 엉뚱한 데를 깎는다 — 어느 구간이 오래 걸리는지 서버가 직접 재서 응답에 싣는다.
+       읽기·쓰기 로직은 하나도 안 건드린다(시각을 찍기만 한다). 응답에 ms 키가 하나 늘 뿐이라
+       화면 계약도 그대로다. 병목이 확정되면 이 계측은 남겨 둔다 — 다음에 또 느려지면 바로 잰다. */
+    var _auT = { t0: new Date().getTime() };
+    function _auMark(k) { _auT[k] = new Date().getTime() - _auT.t0; }
     var auRow = parseInt(body.rowIndex, 10);
     if (!auRow || auRow < 2) return _json({ ok: false, error: 'rowIndex 필수(2 이상)' });
     // 다중 필드(fields 객체) 또는 단일(col/value). fields 우선 — 재등록상담 달력 모달=날짜·시간·내용 3칸 동시 저장. 2026-07-03 시포·GM.
@@ -9608,7 +9629,9 @@ function _hasRealReply_(memo) {
     if (!auFields && !auCol) return _json({ ok: false, error: 'col 또는 fields 필수' });
     var auSh = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID).getSheetByName(MEMBER_SHEET);
     if (!auSh) return _json({ ok: false, error: '유효회원 시트 없음' });
+    _auMark('open');
     var auHdr = auSh.getRange(1, 1, 1, auSh.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+    _auMark('hdr');
     var _auPhI = -1;
     for (var _ap = 0; _ap < auHdr.length; _ap++) { var _aph = auHdr[_ap].replace(/\s/g, ''); if (_aph.indexOf('휴대폰') >= 0 || _aph.indexOf('전화') >= 0 || _aph.indexOf('연락처') >= 0) { _auPhI = _ap; break; } }
     // ★★ 지문키(rowKey) 우선 경로(§4 R2) — ⚠️정직한계: 유효회원(MEMBER_SHEET='유효회원') 시트는 구글폼 응답탭이 아니라
@@ -9758,7 +9781,9 @@ function _hasRealReply_(memo) {
     //   setValues로 합치면 그 사이 칸을 동시에 만지는 다른 저장을 덮어쓸 위험이 있다 — 이 파일 위쪽
     //   _muSetCol 주석의 Contact3가 진행현황을 덮던 사고가 그 위험의 실례라 쓰기 폭은 그대로 둔다).
     //   읽기만 배치화 = 정확성 회귀 없음(쓰는 값·쓰는 칸·검증 로직 전부 무변경).
+    _auMark('key');
     var _auRowSnap = auSh.getRange(auRow, 1, 1, auHdr.length).getValues()[0];
+    _auMark('snap');
     var _auMember = _auNameI >= 0 ? String(_auRowSnap[_auNameI] || '') : '';
     var _auPhone = _auPhI >= 0 ? String(_auRowSnap[_auPhI] || '') : '';
     var _auLog = [];
@@ -9804,17 +9829,23 @@ function _hasRealReply_(memo) {
           if (mi >= 0) _auWriteCell(mi, pair[0], pair[1]);
         });
       }
+      _auMark('write');
       _memberLog_(_auLog);
+      _auMark('log');
       _aaCacheClear_();
-      return _json({ ok: true, rowIndex: auRow, cols: _auWrote, saved: _auSaved });
+      _auMark('total');
+      return _json({ ok: true, rowIndex: auRow, cols: _auWrote, saved: _auSaved, ms: _auT });
     }
     if (auCol.replace(/\s/g, '').indexOf('휴대폰') >= 0) return _json({ ok: false, error: '전화번호는 시트에서 직접 수정해주세요' });
     var auIdx = _auFindCol(auCol);
     if (auIdx < 0) return _json({ ok: false, error: '컬럼 미발견: ' + auCol });
     _auWriteCell(auIdx, auCol, body.value);
+    _auMark('write');
     _memberLog_(_auLog);
+    _auMark('log');
     _aaCacheClear_();
-    return _json({ ok: true, rowIndex: auRow, col: auCol, saved: _auSaved });
+    _auMark('total');
+    return _json({ ok: true, rowIndex: auRow, col: auCol, saved: _auSaved, ms: _auT });
   }
 
   // ─── LOSS보관 회원 재등록 복귀(member_archive_restore) — 2026-08-25 시토(GM 지시, 최영천 010-3837-5107 재등록 신고).
