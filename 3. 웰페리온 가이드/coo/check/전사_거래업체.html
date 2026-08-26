@@ -300,6 +300,9 @@ function vendorUnassigned(v){ return !((v&&v.depts)||[]).length; }
 function vendorDeptDefaults(){ return (CUR_DEPT!=="전체")?[CUR_DEPT]:[]; }
 
 /* ── 저장키(로컬 캐시. 정본은 서버) ── */
+/* 서버 목록이 도착했는지 — 도착 전에는 빈 칸을 '등록된 업체가 없습니다'라고 말하지 않는다.
+   서버 응답이 실측 25~30초라 그 사이 화면이 "없다"고 거짓말을 했다(2026-08-26 실사). */
+var VENDOR_SERVER_READY = false;
 var VENDOR_STORAGE_KEY = 'ALLDEPT_VENDOR_BOARD';
 var VENDOR_CAT_KEY = 'ALLDEPT_VENDOR_CATEGORIES';
 
@@ -476,6 +479,7 @@ function loadVendorFromBackend(){
   return fetch(API_URL+'?action=vendor_list&cb='+Date.now(),{method:'GET',redirect:'follow',cache:'no-store'})
     .then(function(r){return r.json();})
     .then(function(data){
+      VENDOR_SERVER_READY = true;   /* 응답이 왔다 — 이제 '없다'고 말해도 된다 */
       if(data && data.ok && Array.isArray(data.vendors)){
         var grouped={};
         data.vendors.forEach(function(v){
@@ -491,7 +495,7 @@ function loadVendorFromBackend(){
         try{localStorage.setItem(VENDOR_STORAGE_KEY, JSON.stringify(VENDOR_DATA));}catch(e){}
       }
     })
-    .catch(function(){/* 백엔드 실패 — 로컬 폴백 표시 */})
+    .catch(function(){ VENDOR_SERVER_READY = true; /* 실패해도 '불러오는 중'에 영원히 머물지 않는다 */ })
     .then(function(){ var wrap=document.getElementById('vendor-board'); if(wrap && !wrap.querySelector('.dv-cell.editing')) renderVendorBoard(); });
 }
 
@@ -583,7 +587,11 @@ function renderVendorBoard(){
     html+='<div class="board-col-head"><span class="bday" style="font-size:17px;">'+escapeHTML(col.label)+'</span>'
         + '<span class="day-type weekday">'+cards.length+'개</span></div>';
     html+='<div class="board-col-body">';
-    if(!cards.length){ html+='<div class="dv-empty" style="padding:12px 8px;color:var(--dim);font-size:12px;">등록된 업체가 없습니다<br>아래 버튼으로 추가해 보세요.</div>'; }
+    if(!cards.length){
+      html += (ONLINE && !VENDOR_SERVER_READY)
+        ? '<div class="dv-empty" style="padding:12px 8px;color:var(--dim);font-size:12px;">불러오는 중…<br>목록이 도착하면 채워집니다(20~30초).</div>'
+        : '<div class="dv-empty" style="padding:12px 8px;color:var(--dim);font-size:12px;">등록된 업체가 없습니다<br>아래 버튼으로 추가해 보세요.</div>';
+    }
     cards.forEach(function(v){
       var cid=col.key+'__'+v.id;
       html+='<div class="dv-cell '+colCls+' card-collapsed" id="vndcell_'+cid+'">';
