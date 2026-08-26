@@ -40,7 +40,10 @@
   button,input,select,textarea{font-family:inherit}
   a{color:var(--blue);text-decoration:none}
   a:hover{text-decoration:underline}
-  .wrap{max-width:min(1560px,96vw);margin:0 auto;padding:0 16px 60px}
+  /* [가독성 확대 2026-08-26 매니저 지시] 컨테이너 폭 상한 재상향(1560→1760, 96→97vw) — 달력을
+     키워 칩·숫자 폰트를 더 키울 여지를 만든다. 모바일은 vw 상한이 그대로 화면폭을 넘지 않게 잡아줘
+     가로 이탈 없음(min() 이므로 1760px는 데스크톱 대형 모니터에서만 실제로 걸림). */
+  .wrap{max-width:min(1760px,97vw);margin:0 auto;padding:0 16px 60px}
 
   /* ---- gate ---- */
   #gate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
@@ -59,7 +62,7 @@
   header{background:linear-gradient(176deg,var(--pine) 0%,var(--pine-deep) 88%);color:#f0eee3;
     padding:21px 0 17px;border-top:3px solid var(--gold-deep);
     border-bottom:1px solid rgba(169,138,82,.55);box-shadow:0 4px 20px rgba(18,15,10,.24)}
-  .hd-inner{max-width:min(1560px,96vw);margin:0 auto;padding:0 16px;position:relative}
+  .hd-inner{max-width:min(1760px,97vw);margin:0 auto;padding:0 16px;position:relative}
   .brand{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
   .brand .mark{font-size:11px;letter-spacing:.34em;color:#cfb078;font-weight:650;text-transform:uppercase}
   .brand h1{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:.06em;color:#f8f5ea}
@@ -87,7 +90,8 @@
   .btn-add:hover{background:var(--pine-deep)}
 
   /* ---- legend ---- */
-  .legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;color:var(--ink-soft)}
+  /* [가독성 확대 2026-08-26] 범례: 11.5px/굵기없음 → 12.5px/650(살짝 굵게), 색은 ink-soft 유지(이미 대비 충분한 톤) */
+  .legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:12.5px;font-weight:650;color:var(--ink-soft)}
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .dot{width:8px;height:8px;border-radius:2px;display:inline-block}
 
@@ -96,23 +100,30 @@
     box-shadow:var(--shadow-card);overflow:hidden}
   .wk-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface-2);
     border-bottom:1px solid var(--line)}
-  .wk-head div{padding:8px 0;text-align:center;font-size:11.5px;font-weight:700;color:var(--ink-faint);letter-spacing:.03em}
-  .wk-head div:first-child{color:var(--red)}
-  .wk-head div:last-child{color:var(--blue)}
+  /* [가독성 확대 2026-08-26] 요일 헤더: 11.5px/700/ink-faint(옅은 회색) → 13px/800/ink-soft(대비 상향).
+     일·토 강조색(red/blue)은 그대로 두되 font-weight를 같이 올려 보인다(:first-child/:last-child). */
+  .wk-head div{padding:9px 0;text-align:center;font-size:13px;font-weight:800;color:var(--ink-soft);letter-spacing:.03em}
+  .wk-head div:first-child{color:var(--red);font-weight:800}
+  .wk-head div:last-child{color:var(--blue);font-weight:800}
   .grid{display:grid;grid-template-columns:repeat(7,1fr)}
-  .day{min-height:clamp(104px,calc((100vh - 300px)/6),210px);
+  /* 셀 높이: 바닥 104→128px, 상한 210→244px, 뷰포트 계산도 여유를 더 준다(300→260 차감).
+     '한 달이 스크롤 없이 들어오는 것'보다 가독성이 우선이라(매니저 지시) 화면이 낮으면 페이지가
+     세로로 살짝 더 스크롤될 수 있음을 감수한다 — 셀 내부 스크롤(.chips overflow-y)은 그대로 보조 안전장치. */
+  .day{min-height:clamp(128px,calc((100vh - 260px)/6),244px);
     border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
-    padding:6px 6px 7px;position:relative;cursor:pointer;display:flex;flex-direction:column}
+    padding:7px 7px 8px;position:relative;cursor:pointer;display:flex;flex-direction:column}
   .day:nth-child(7n){border-right:none}
   .day:hover{background:var(--bg-soft)}
   .day.other{background:var(--surface-2);color:var(--ink-faint)}
-  .day .dnum{font-size:12.5px;font-weight:700;color:var(--ink-soft);flex:0 0 auto}
+  /* 날짜 숫자: 12.5px/700/ink-soft(중간 회색) → 14px/800/ink(진한 잉크색, 대비 상향) */
+  .day .dnum{font-size:14px;font-weight:800;color:var(--ink);flex:0 0 auto}
   .day.other .dnum{color:var(--ink-faint)}
   .day.today .dnum{display:inline-flex;align-items:center;justify-content:center;
-    width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff}
+    width:22px;height:22px;border-radius:50%;background:var(--gold);color:#fff}
   .day .chips{margin-top:4px;flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-  .chip{font-size:10.5px;padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;border-left:3px solid transparent;cursor:pointer;line-height:1.5;flex:0 0 auto}
+  /* 일정 칩: 10.5px/굵기 없음 → 12px/700(굵게). 가장 자주 읽는 텍스트라 이번 개선의 핵심. */
+  .chip{font-size:12px;font-weight:700;padding:3px 6px;border-radius:4px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;border-left:3px solid transparent;cursor:pointer;line-height:1.45;flex:0 0 auto}
   .chip.type-소통{background:var(--blue-bg);color:var(--blue);border-left-color:var(--blue)}
   .chip.type-미팅{background:var(--purple-bg);color:var(--purple);border-left-color:var(--purple)}
   .chip.type-면접{background:var(--amber-bg);color:var(--amber);border-left-color:var(--amber)}
@@ -124,7 +135,7 @@
   .chip.type-HR면접{background:var(--orange-bg);color:var(--orange);border-left-color:var(--orange)}
   .chip.type-HR첫출근{background:var(--red-bg);color:var(--red);border-left-color:var(--red)}
   .chip.done{opacity:.5;text-decoration:line-through}
-  .more-link{font-size:10px;padding:2px 5px;border-radius:4px;color:var(--ink-soft);
+  .more-link{font-size:11px;padding:2px 5px;border-radius:4px;color:var(--ink-soft);
     background:var(--surface-2);cursor:pointer;font-weight:700;text-align:center}
   .more-link:hover{background:var(--line-soft)}
   .legend-toggle{cursor:pointer;user-select:none;border-radius:5px;padding:2px 6px;margin:-2px -6px}
@@ -199,13 +210,18 @@
     z-index:300;display:none}
 
   @media (max-width:640px){
-    /* 모바일은 뷰포트 높이에 칸을 억지로 맞추지 않고 고정 높이 + 페이지 세로 스크롤 허용(칸 안 스크롤은 보조 안전장치) */
-    .day{min-height:104px;padding:4px 3px 5px}
-    .day .chips{max-height:80px}
-    .chip{font-size:9.5px}
-    .more-link{font-size:9px}
-    .mo-label{font-size:15px;min-width:96px}
-    .brand h1{font-size:18px}
+    /* 모바일은 뷰포트 높이에 칸을 억지로 맞추지 않고 고정 높이 + 페이지 세로 스크롤 허용(칸 안 스크롤은 보조 안전장치).
+       [가독성 확대 2026-08-26] 데스크톱만 키우면 모바일이 상대적으로 더 작아 보여 모바일 폰트도 함께 상향
+       (칸 높이도 104→118px로 소폭 확대해 커진 글자를 받아준다). 날짜 숫자는 데스크톱 기본값(14px)이 좁은
+       칸엔 과할 수 있어 13px로 별도 지정(원래값 12.5px보다는 여전히 크다). */
+    .day{min-height:118px;padding:4px 3px 5px}
+    .day .chips{max-height:88px}
+    .day .dnum{font-size:13px}
+    .chip{font-size:11px;padding:2px 5px}
+    .more-link{font-size:10px}
+    .mo-label{font-size:16px;min-width:100px}
+    .brand h1{font-size:19px}
+    .legend{font-size:11.5px}
     .row2{grid-template-columns:1fr}
     .hd-back{position:static;display:inline-block;margin-top:10px}
   }
@@ -338,7 +354,7 @@ var MANAGER_NAME = "나우열M";  // MEMORY: 매니저님 = 나우열M(업무보
 var SSOT_BOARD_REL = "../../coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html";
 
 var SESSION_PW = "";
-var DAY_CHIP_CAP = 4; // 하루 칸 최대 표시 건수(초과분은 "+N건 더")
+var DAY_CHIP_CAP = 5; // 하루 칸 최대 표시 건수(초과분은 "+N건 더") — [가독성 확대 2026-08-26] 칸이 커져 4→5로 상향
 var SHOW_SSOT = true; // SSOT업무 표시 토글(범례 클릭) — localStorage 기억
 var CAL_ITEMS = [];   // 개인일정(cal-list)
 var SSOT_ITEMS = [];  // 업무 SSOT 나우열M 카드(읽기전용)
