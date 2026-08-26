@@ -1820,15 +1820,21 @@ def _midmgr_reply_slice(role_slug: str) -> str:
     return "\n".join(out)
 
 
-# ── ✉️ 발신 대기 (2026-08-24 — 웰리·시모 배는 아침 카톡 자동발송(send_ops_digest.py
-#   build_relay_message)에서 중복 발신 방지로 일부러 빠진다. 그래서 전달문을 채워도
-#   자동으로는 절대 안 나가는데 경보가 없어 2026-08-21~24 실무진 전달문 3통이 조용히
-#   멈춰 있었다(GM 실사고). --role ceo·cmo 화면 맨 위에서 짚는다. 새 유틸 없음 —
-#   아이콘·담당 칸은 _owner_label, 날수는 _open_days(다른 표가 이미 'N일째'에 쓰는 것) 재사용. ──
+# ── ✉️ 발신 대기 (2026-08-24 — 시모 배는 아침 카톡 자동발송(send_ops_digest.py
+#   build_relay_message)에서 빠진다(담당이 GM 이라 relay_routes 의 contacts 에 없다).
+#   그래서 전달문을 채워도 자동으로는 절대 안 나가는데 경보가 없어 2026-08-21~24 실무진
+#   전달문 3통이 조용히 멈춰 있었다(GM 실사고). --role cmo 화면 맨 위에서 짚는다.
+#   ★2026-08-27 웰리(배789) — 웰리(CEO) 배를 이 표에서 뺐다. 2026-08-25 부터
+#   send_ops_digest.relay_routes() 가 contacts["ceo"] 를 채워 웰리 전달문도 아침 정리에
+#   자동으로 실린다. 그런데 이 표는 staff_message_sent_at 이 비었는지로 판정하는데 그 칸을
+#   채우는 코드가 어디에도 없어(전 저장소 검색 결과 읽는 곳 2군데뿐) 이미 나간 전달문
+#   6척을 매일 아침 "직접 보내야 한다"고 띄우고 있었다 — 중복 발신을 부르는 거짓 경보다.
+#   시모는 실제로 자동발송에서 빠지므로 그대로 둔다.
+#   새 유틸 없음 — 아이콘·담당 칸은 _owner_label, 날수는 _open_days 재사용. ──
 def _unsent_relay_alert(items: list[dict]) -> str:
     rows = []
     for it in items:
-        if str(it.get("owner", "")).upper() not in {"CEO", "CMO"}:
+        if str(it.get("owner", "")).upper() != "CMO":
             continue
         if str(it.get("status", "")).upper() not in {"PENDING", "IN_PROGRESS"}:
             continue
@@ -1844,7 +1850,7 @@ def _unsent_relay_alert(items: list[dict]) -> str:
         return ""
     out = [f"### ✉️ 발신 대기 — 전달문은 썼는데 아직 안 나간 배 {len(rows)}척",
            "| 배 | 진행명 | 며칠째 |", "|---|---|---|", *rows,
-           "※ 웰리·시모 배의 전달문은 아침 자동 발송에 안 실린다 — 직접 보내야 한다."]
+           "※ 시모 배의 전달문은 아침 자동 발송에 안 실린다(담당이 GM) — 직접 보내야 한다."]
     return "\n".join(out)
 
 
