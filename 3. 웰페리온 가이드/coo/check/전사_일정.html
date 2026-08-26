@@ -788,16 +788,31 @@ function efRepeat(idx,it){
   var o=opts.map(function(p){return '<option value="'+p[0]+'"'+(p[0]===cur?" selected":"")+'>'+p[1]+'</option>';}).join("");
   return '<div class="efield"><label>반복 (규칙 1줄 → 달력 자동 반복)</label><select data-i="'+idx+'" data-f="repeat">'+o+'</select></div>';
 }
+// ★2026-08-26 시토(배783) — 화면을 연 뒤 다른 곳에서 저장했으면 덮어쓰지 않는다.
+//   2026-08-25 실사고: 두 세션이 각자 읽어 둔 목록을 통째로 저장해 3건이 소리 없이 사라졌다.
+//   load 때 받은 판번호(SERVER_REV)를 저장에 실어 보내고, 서버가 다르다고 하면 저장을 멈추고
+//   최신본을 받아 온다. 자동 병합은 하지 않는다 — 무엇이 겹쳤는지 모른 채 합치면 그게 새 유실이다.
+//   편집분은 초안으로 남겨 두고 사람이 확인한 뒤 다시 저장하게 한다.
+var SERVER_REV = '';
 function saveToServer(){
   if(!SCHEDULE_GAS_URL){toast("서버 배포 후 사용 가능합니다.");return;}
   fetch(SCHEDULE_GAS_URL,{method:'POST',redirect:'follow',
     headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'save_schedule',data:DATA})
+    body:JSON.stringify({action:'save_schedule',data:DATA,baseRev:SERVER_REV})
   }).then(function(r){return r.json();}).then(function(res){
     if(res&&res.ok){
+      if(res.rev!=null) SERVER_REV=String(res.rev);
       try{localStorage.removeItem(DKEY);}catch(e){}
       document.getElementById("draftBanner").style.display="none";
       toast("서버에 자동저장 완료"+(res.count!=null?" ("+res.count+"건)":""));
+    }else if(res&&(res.error==='stale-rev'||res.error==='silent-drop')){
+      saveDraft();
+      toast(res.message||"다른 곳에서 먼저 저장됐습니다 — 최신본을 받아 확인 후 다시 저장하세요.");
+      if(res.data&&Array.isArray(res.data.items)){
+        if(res.serverRev!=null) SERVER_REV=String(res.serverRev);
+        initFromData(res.data);
+        document.getElementById("draftBanner").style.display="flex";
+      }
     }else{
       toast("서버 저장 실패 — 내려받기로 백업하세요.");
     }
@@ -839,6 +854,8 @@ function boot(){
     fetch(SCHEDULE_GAS_URL+"?action=load_schedule&cb="+Date.now(),{method:"GET",redirect:"follow"})
       .then(function(r){return r.json();})
       .then(function(res){
+        // 판번호 기억(배783) — 저장할 때 이 값을 함께 보내 그 사이 남이 저장했는지 서버가 대조한다.
+        if(res&&res.rev!=null) SERVER_REV=String(res.rev);
         if(res&&res.ok&&res.data&&Array.isArray(res.data.items)){initFromData(res.data);}
         else{loadSeed();}
       })

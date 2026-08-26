@@ -37,12 +37,14 @@ function doPost(e) {
 
 // ─── 조회: 저장된 전체 schedule JSON 반환. 저장본 없으면 data:null(프론트가 github seed 폴백) ───
 function loadSchedule_() {
-  var raw = PropertiesService.getScriptProperties().getProperty(SCHEDULE_PROP);
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty(SCHEDULE_PROP);
   var data = null;
   if (raw) {
     try { data = JSON.parse(raw); } catch (err) { data = null; }
   }
-  return jsonRes_({ ok: true, data: data });
+  // rev = 이 저장본의 판번호. 저장할 때 받은 rev 와 서버 rev 가 다르면 그 사이에 남이 저장한 것이다.
+  return jsonRes_({ ok: true, data: data, rev: props.getProperty(SCHEDULE_REV_PROP) || '' });
 }
 
 // ─── 저장: 전체 schedule JSON 덮어쓰기. items 배열 없으면 거부(파괴적 저장 방지) ───
@@ -59,6 +61,14 @@ var SCHEDULE_BAK_KEEP = 3;                       // 롤링 백업 벌 수
 var SCHEDULE_DROP_LOG_PROP = 'SCHEDULE_DROPPED'; // 사라진 항목 기록
 var SCHEDULE_DROP_LOG_MAX = 120;                 // 기록 상한(속성 용량 보호)
 var SCHEDULE_SHRINK_GUARD = 0.7;                 // 이전 건수의 70% 미만이면 거부
+// ★2026-08-26 시토 — 낙관적 잠금(배783 · 실사고 2026-08-25).
+//   그날 141건이 134건으로 줄며 3건이 사라졌는데 위 급감 가드(70%)는 5% 감소라 그냥 통과했다.
+//   뿌리는 '먼저 읽어 둔 스냅샷을 나중에 통째로 저장' 이라 건수 비율로는 영영 못 잡는다.
+//   그래서 판번호(rev)를 대조한다 — load 때 받은 rev 를 save 에 실어 보내고, 서버 rev 와 다르면
+//   그 사이에 남이 저장한 것이므로 거부하고 최신본을 돌려준다(호출부가 다시 읽어 병합 후 재시도).
+//   ▸rev 를 안 보내는 옛 호출부는 그대로 통과시킨다(회귀 0) — 단 그 경우 **항목이 하나라도
+//     사라지는 저장이면 거부**한다. 오늘 사고는 이 한 줄만으로도 막혔다.
+var SCHEDULE_REV_PROP = 'SCHEDULE_SSOT_REV';
 
 function saveSchedule_(body) {
   var data = body.data;
@@ -88,6 +98,25 @@ function saveSchedule_(body) {
   var keep = {};
   data.items.forEach(function (it) { if (it && it.id) keep[it.id] = true; });
   var dropped = prevItems.filter(function (it) { return it && it.id && !keep[it.id]; });
+
+  // ④ 판번호 대조 — 내가 읽은 뒤 남이 저장했으면 덮어쓰지 않는다(배783 · 실사고 2026-08-25).
+  var serverRev = props.getProperty(SCHEDULE_REV_PROP) || '';
+  var baseRev = (body.baseRev == null) ? null : String(body.baseRev);
+  if (baseRev !== null && serverRev && baseRev !== serverRev && body.force !== true) {
+    return jsonRes_({
+      ok: false, error: 'stale-rev',
+      message: '이 화면을 연 뒤에 다른 곳에서 일정이 저장됐습니다. 최신본을 받아 합친 뒤 다시 저장하세요.',
+      serverRev: serverRev, baseRev: baseRev, data: prev ? JSON.parse(prev) : null
+    });
+  }
+  // rev 를 안 보내는 옛 호출부: 항목이 사라지는 저장만 막는다(늘거나 그대로면 통과 — 회귀 0).
+  if (baseRev === null && dropped.length && body.force !== true) {
+    return jsonRes_({
+      ok: false, error: 'silent-drop',
+      message: '이번 저장에서 ' + dropped.length + '건이 사라집니다. 다른 곳에서 저장한 항목을 덮어쓰는 중일 수 있어 막았습니다 — 새로고침 후 다시 시도하세요.',
+      droppedIds: dropped.map(function (it) { return it.id; }).slice(0, 20)
+    });
+  }
   if (dropped.length) {
     var log = [];
     try { log = JSON.parse(props.getProperty(SCHEDULE_DROP_LOG_PROP) || '[]') || []; } catch (err) { log = []; }
@@ -109,11 +138,14 @@ function saveSchedule_(body) {
   }
 
   props.setProperty(SCHEDULE_PROP, JSON.stringify(data));
+  var newRev = nowStr + '#' + data.items.length;   // 판번호 = 저장시각+건수(사람이 읽어도 뜻이 보인다)
+  props.setProperty(SCHEDULE_REV_PROP, newRev);
   return jsonRes_({
     ok: true,
     count: data.items.length,
     dropped: dropped.length,
-    savedAt: nowStr
+    savedAt: nowStr,
+    rev: newRev
   });
 }
 
