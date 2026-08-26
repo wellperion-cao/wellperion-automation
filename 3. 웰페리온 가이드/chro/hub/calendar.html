@@ -40,7 +40,7 @@
   button,input,select,textarea{font-family:inherit}
   a{color:var(--blue);text-decoration:none}
   a:hover{text-decoration:underline}
-  .wrap{max-width:980px;margin:0 auto;padding:0 16px 60px}
+  .wrap{max-width:min(1560px,96vw);margin:0 auto;padding:0 16px 60px}
 
   /* ---- gate ---- */
   #gate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
@@ -59,7 +59,7 @@
   header{background:linear-gradient(176deg,var(--pine) 0%,var(--pine-deep) 88%);color:#f0eee3;
     padding:21px 0 17px;border-top:3px solid var(--gold-deep);
     border-bottom:1px solid rgba(169,138,82,.55);box-shadow:0 4px 20px rgba(18,15,10,.24)}
-  .hd-inner{max-width:980px;margin:0 auto;padding:0 16px;position:relative}
+  .hd-inner{max-width:min(1560px,96vw);margin:0 auto;padding:0 16px;position:relative}
   .brand{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
   .brand .mark{font-size:11px;letter-spacing:.34em;color:#cfb078;font-weight:650;text-transform:uppercase}
   .brand h1{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:.06em;color:#f8f5ea}
@@ -100,24 +100,38 @@
   .wk-head div:first-child{color:var(--red)}
   .wk-head div:last-child{color:var(--blue)}
   .grid{display:grid;grid-template-columns:repeat(7,1fr)}
-  .day{min-height:96px;border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
-    padding:5px 5px 6px;position:relative;cursor:pointer}
+  .day{min-height:clamp(104px,calc((100vh - 300px)/6),210px);
+    border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);
+    padding:6px 6px 7px;position:relative;cursor:pointer;display:flex;flex-direction:column}
   .day:nth-child(7n){border-right:none}
   .day:hover{background:var(--bg-soft)}
   .day.other{background:var(--surface-2);color:var(--ink-faint)}
-  .day .dnum{font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .day .dnum{font-size:12.5px;font-weight:700;color:var(--ink-soft);flex:0 0 auto}
   .day.other .dnum{color:var(--ink-faint)}
   .day.today .dnum{display:inline-flex;align-items:center;justify-content:center;
     width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff}
-  .day .chips{margin-top:4px;max-height:76px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+  .day .chips{margin-top:4px;flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
   .chip{font-size:10.5px;padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;border-left:3px solid transparent;cursor:pointer;line-height:1.5}
+    text-overflow:ellipsis;border-left:3px solid transparent;cursor:pointer;line-height:1.5;flex:0 0 auto}
   .chip.type-소통{background:var(--blue-bg);color:var(--blue);border-left-color:var(--blue)}
   .chip.type-미팅{background:var(--purple-bg);color:var(--purple);border-left-color:var(--purple)}
   .chip.type-면접{background:var(--amber-bg);color:var(--amber);border-left-color:var(--amber)}
   .chip.type-기타{background:var(--gray-bg);color:var(--gray);border-left-color:var(--gray)}
   .chip.type-SSOT업무{background:#f6efdd;color:var(--gold-deep);border-left-color:var(--gold);font-weight:600}
   .chip.done{opacity:.5;text-decoration:line-through}
+  .more-link{font-size:10px;padding:2px 5px;border-radius:4px;color:var(--ink-soft);
+    background:var(--surface-2);cursor:pointer;font-weight:700;text-align:center}
+  .more-link:hover{background:var(--line-soft)}
+  .legend-toggle{cursor:pointer;user-select:none;border-radius:5px;padding:2px 6px;margin:-2px -6px}
+  .legend-toggle:hover{background:var(--surface-2)}
+  .legend-toggle.off{opacity:.4}
+  .day-list-item{font-size:12px;padding:6px 9px;border-radius:6px;border-left:3px solid transparent;cursor:pointer;line-height:1.5}
+  .day-list-item.type-소통{background:var(--blue-bg);color:var(--blue);border-left-color:var(--blue)}
+  .day-list-item.type-미팅{background:var(--purple-bg);color:var(--purple);border-left-color:var(--purple)}
+  .day-list-item.type-면접{background:var(--amber-bg);color:var(--amber);border-left-color:var(--amber)}
+  .day-list-item.type-기타{background:var(--gray-bg);color:var(--gray);border-left-color:var(--gray)}
+  .day-list-item.type-SSOT업무{background:#f6efdd;color:var(--gold-deep);border-left-color:var(--gold);font-weight:600}
+  .day-list-item.done{opacity:.5;text-decoration:line-through}
 
   .msg{font-size:12.5px;color:var(--ink-soft);padding:20px 4px}
   .msg.err{color:var(--red)}
@@ -167,9 +181,11 @@
     z-index:300;display:none}
 
   @media (max-width:640px){
-    .day{min-height:74px;padding:4px 3px 5px}
-    .day .chips{max-height:52px}
+    /* 모바일은 뷰포트 높이에 칸을 억지로 맞추지 않고 고정 높이 + 페이지 세로 스크롤 허용(칸 안 스크롤은 보조 안전장치) */
+    .day{min-height:104px;padding:4px 3px 5px}
+    .day .chips{max-height:80px}
     .chip{font-size:9.5px}
+    .more-link{font-size:9px}
     .mo-label{font-size:15px;min-width:96px}
     .brand h1{font-size:18px}
     .row2{grid-template-columns:1fr}
@@ -218,7 +234,7 @@
       <span><span class="dot" style="background:var(--purple)"></span>미팅</span>
       <span><span class="dot" style="background:var(--amber)"></span>면접</span>
       <span><span class="dot" style="background:var(--gray)"></span>기타</span>
-      <span><span class="dot" style="background:var(--gold)"></span>SSOT업무(읽기전용)</span>
+      <span class="legend-toggle" id="legendSsot" title="클릭해서 SSOT 업무 표시 켜기/끄기"><span class="dot" style="background:var(--gold)"></span>SSOT업무(읽기전용)</span>
     </div>
 
     <div class="cal-card">
@@ -279,6 +295,17 @@
   </div>
 </div>
 
+<!-- 하루 전체 목록 팝업("+N건 더") -->
+<div class="modal-bg" id="dayListBg">
+  <div class="modal">
+    <h3 id="dayListTitle">-</h3>
+    <div id="dayList" style="display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-ghost" id="dayListClose" style="flex:1">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -289,7 +316,8 @@ var MANAGER_NAME = "나우열M";  // MEMORY: 매니저님 = 나우열M(업무보
 var SSOT_BOARD_REL = "../../coo/todo/%EC%97%85%EB%AC%B4%20%ED%98%84%ED%99%A9%20SSOT.html";
 
 var SESSION_PW = "";
-var VIEW_MONTH = new Date(); VIEW_MONTH.setDate(1);
+var DAY_CHIP_CAP = 4; // 하루 칸 최대 표시 건수(초과분은 "+N건 더")
+var SHOW_SSOT = true; // SSOT업무 표시 토글(범례 클릭) — localStorage 기억
 var CAL_ITEMS = [];   // 개인일정(cal-list)
 var SSOT_ITEMS = [];  // 업무 SSOT 나우열M 카드(읽기전용)
 var EDIT_TARGET = null; // 수정 중인 개인일정 원본(id 있으면 수정, 없으면 신규)
@@ -297,8 +325,37 @@ var EDIT_TARGET = null; // 수정 중인 개인일정 원본(id 있으면 수정
 function toast(m){var t=document.getElementById("toast");t.textContent=m;t.style.display="block";
   clearTimeout(t._h);t._h=setTimeout(function(){t.style.display="none";},2600);}
 function pad2(n){n=String(n);return n.length<2?"0"+n:n;}
-function ymd(d){return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());}
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+/* ============ KST 날짜 유틸(`coo/todo/업무 현황 SSOT.html`과 동일 통일 방식, 2026-08-21/25 정본) ============
+   시트 값이 자정 KST를 UTC ISO로 저장한 타임스탬프(예: 2026-08-25T15:00:00.000Z=KST 08-26 00:00)로
+   돌아올 수 있어 문자열 앞 10자를 그냥 자르면(절단) 하루 앞당겨 보이는 결함이 생긴다 — 그래서 T가
+   있으면 +9h 환산 후 UTC 성분을 뽑는다. "오늘"도 브라우저 로컬시각에 기대지 않고 Date.now()+9h로
+   명시 계산해 이 파일 안에서 기준을 하나로 통일한다. */
+function kstTodayStr(){
+  var k=new Date(Date.now()+9*3600*1000);
+  return k.getUTCFullYear()+"-"+pad2(k.getUTCMonth()+1)+"-"+pad2(k.getUTCDate());
+}
+function kstDateStr(d){
+  if(!d) return "";
+  var str=String(d);
+  if(str.length>=11 && str[10]==="T"){
+    var dt=new Date(str);
+    if(!isNaN(dt.getTime())){
+      var k=new Date(dt.getTime()+9*3600*1000);
+      return k.getUTCFullYear()+"-"+pad2(k.getUTCMonth()+1)+"-"+pad2(k.getUTCDate());
+    }
+  }
+  return str.slice(0,10);
+}
+// 달력 그리드 요일 계산 전용 — Date.UTC로 y/m/d를 앵커링해 호스트 브라우저의 타임존·DST 설정과
+// 무관하게(문자열 절단 없이) 항상 같은 결과를 낸다. 0=일요일 … 6=토요일.
+function weekdayOfUTC(y,mIdx,dnum){ return new Date(Date.UTC(y,mIdx,dnum)).getUTCDay(); }
+var VIEW_Y, VIEW_M; // 보고 있는 달(1-based 아님, mIdx=0=1월) — KST 오늘에서 시작
+(function initViewMonth(){
+  var p=kstTodayStr().split("-");
+  VIEW_Y=Number(p[0]); VIEW_M=Number(p[1])-1;
+})();
 
 /* ============ 비밀번호 게이트 (허브 index.html과 동일 패턴 — db:emp 조회로 role 판정, admin만 통과) ============ */
 function showGate(){document.getElementById("gate").style.display="flex";}
@@ -350,7 +407,14 @@ function calApi(params){
 }
 async function loadCal(){
   var res=await calApi({action:"cal-list"});
-  if(res && res.ok) CAL_ITEMS=res.results||[]; else CAL_ITEMS=[];
+  var raw=(res && res.ok) ? (res.results||[]) : [];
+  // 백엔드가 날짜를 ISO 타임스탬프로 돌려줄 수 있어 여기서 한 번에 KST 달력일 문자열로 정규화
+  // (이후 비교·<input type=date> 표시가 전부 순수 YYYY-MM-DD를 전제로 동작).
+  raw.forEach(function(it){
+    if(it["시작일"]) it["시작일"]=kstDateStr(it["시작일"]);
+    if(it["종료일"]) it["종료일"]=kstDateStr(it["종료일"]);
+  });
+  CAL_ITEMS=raw;
 }
 async function loadSsot(){
   try{
@@ -359,11 +423,13 @@ async function loadSsot(){
     var raw=(res && res.ok) ? (res.data||[]) : [];
     SSOT_ITEMS=raw.filter(function(t){return String(t["담당자"]||t.owner||"").trim()===MANAGER_NAME;})
       .map(function(t){
+        var sd=kstDateStr(t["시작일"]||t.startDate||"");
+        var ed=kstDateStr(t["종료일"]||t.endDate||"")||sd;
         return {
           id: t.id||"",
           title: t["업무명"]||t.title||"(제목 없음)",
-          startDate: t["시작일"]||t.startDate||"",
-          endDate: t["종료일"]||t.endDate||t["시작일"]||t.startDate||"",
+          startDate: sd,
+          endDate: ed,
           content: t["내용"]||t.content||"",
           status: t["상태"]||t.status||"",
           category: t["카테고리"]||t.category||""
@@ -387,6 +453,9 @@ async function loadAll(){
 function boot(){ loadAll(); }
 
 /* ============ 달력 렌더 ============ */
+// SSOT 카드는 기간 전체(시작일~종료일)에 매일 반복 렌더하면 장기 진행 업무가 달력을 도배한다
+// (2026-08-26 매니저 지적). 마감 관리가 실제 목적이므로 "종료일(없으면 시작일)" 그 하루에만
+// 1회 표시한다 — loadSsot()에서 이미 endDate=시작일 폴백을 적용해 뒀으므로 anchor는 항상 채워져 있다.
 function itemsForDay(dstr){
   var out=[];
   CAL_ITEMS.forEach(function(it){
@@ -395,52 +464,113 @@ function itemsForDay(dstr){
       date:s,endDate:e,startTime:it["시작시각"],endTime:it["종료시각"],content:it["내용"],place:it["장소"],
       erpRequest:it["전사연동요청"]||""});
   });
-  SSOT_ITEMS.forEach(function(it){
-    if(dstr>=it.startDate && dstr<=it.endDate) out.push({kind:"ssot",id:it.id,title:it.title,type:"SSOT업무",
-      date:it.startDate,endDate:it.endDate,content:it.content,status:it.status,category:it.category});
-  });
+  if(SHOW_SSOT){
+    SSOT_ITEMS.forEach(function(it){
+      var anchor=it.endDate||it.startDate;
+      if(anchor===dstr) out.push({kind:"ssot",id:it.id,title:it.title,type:"SSOT업무",
+        date:it.startDate,endDate:it.endDate,content:it.content,status:it.status,category:it.category});
+    });
+  }
+  // 매니저가 직접 넣은 개인 일정(소통/미팅/면접/기타)이 SSOT업무보다 먼저 보이도록 정렬
+  out.sort(function(a,b){ return (a.kind==="cal"?0:1)-(b.kind==="cal"?0:1); });
   return out;
 }
 function renderCalendar(){
-  var y=VIEW_MONTH.getFullYear(), m=VIEW_MONTH.getMonth();
+  var y=VIEW_Y, m=VIEW_M;
   document.getElementById("moLabel").textContent=y+"년 "+(m+1)+"월";
-  var first=new Date(y,m,1);
-  var startOffset=first.getDay(); // 0=일
-  var gridStart=new Date(y,m,1-startOffset);
-  var todayStr=ymd(new Date());
+  // 그 달 1일의 요일을 Date.UTC로 명시 계산(호스트 타임존에 기대지 않음, 절단 방식 아님).
+  var firstWeekday=weekdayOfUTC(y,m,1); // 0=일…6=토
+  var firstUtcMs=Date.UTC(y,m,1);
+  var todayStr=kstTodayStr();
   var html="";
   for(var i=0;i<42;i++){
-    var d=new Date(gridStart.getFullYear(),gridStart.getMonth(),gridStart.getDate()+i);
-    var dstr=ymd(d);
-    var isOther=d.getMonth()!==m;
-    var isToday=dstr===todayStr;
+    var offsetDays=i-firstWeekday; // 그 주 일요일 기준 오프셋(음수=지난달)
+    var dd=new Date(firstUtcMs+offsetDays*86400000);
+    var dy=dd.getUTCFullYear(), dmIdx=dd.getUTCMonth(), dnum=dd.getUTCDate();
+    var dstr=dy+"-"+pad2(dmIdx+1)+"-"+pad2(dnum);
+    var isOther=(dmIdx!==m || dy!==y);
+    var isToday=(dstr===todayStr);
     var items=itemsForDay(dstr);
-    var chips=items.map(function(it){
+    var shown=items.slice(0,DAY_CHIP_CAP);
+    var moreCount=items.length-shown.length;
+    var chips=shown.map(function(it){
       var cls="chip type-"+it.type+(it.status==="완료"?" done":"");
       var erpMark=(it.erpRequest==="요청됨")?"📌 ":"";
       var label=erpMark+(it.startTime?it.startTime+" ":"")+esc(it.title);
       var tt=it.title+(it.erpRequest==="요청됨"?" (전사일정 등재 요청됨)":"");
       return '<div class="'+cls+'" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'" title="'+esc(tt)+'">'+label+'</div>';
     }).join("");
+    if(moreCount>0) chips+='<div class="more-link" data-more-date="'+dstr+'">+'+moreCount+'건 더</div>';
     html+='<div class="day'+(isOther?" other":"")+(isToday?" today":"")+'" data-date="'+dstr+'">'+
-      '<div class="dnum">'+d.getDate()+'</div><div class="chips">'+chips+'</div></div>';
-    if(i===41) break;
+      '<div class="dnum">'+dnum+'</div><div class="chips">'+chips+'</div></div>';
   }
   document.getElementById("grid").innerHTML=html;
-  // 이벤트 위임: 칩 클릭=상세, 빈 칸 클릭=해당 날짜로 추가
+  // 이벤트 위임: 칩 클릭=상세, "+N건 더"=그날 전체 목록, 빈 칸 클릭=해당 날짜로 추가
   document.getElementById("grid").querySelectorAll(".chip").forEach(function(el){
     el.addEventListener("click",function(e){
       e.stopPropagation();
       openDetailByRef(el.getAttribute("data-kind"), el.getAttribute("data-id"), el.closest(".day").getAttribute("data-date"));
     });
   });
+  document.getElementById("grid").querySelectorAll(".more-link").forEach(function(el){
+    el.addEventListener("click",function(e){
+      e.stopPropagation();
+      openDayList(el.getAttribute("data-more-date"));
+    });
+  });
   document.getElementById("grid").querySelectorAll(".day").forEach(function(el){
     el.addEventListener("click",function(){ openAddModal(el.getAttribute("data-date")); });
   });
 }
-document.getElementById("prevMo").addEventListener("click",function(){VIEW_MONTH.setMonth(VIEW_MONTH.getMonth()-1);renderCalendar();});
-document.getElementById("nextMo").addEventListener("click",function(){VIEW_MONTH.setMonth(VIEW_MONTH.getMonth()+1);renderCalendar();});
-document.getElementById("todayBtn").addEventListener("click",function(){VIEW_MONTH=new Date();VIEW_MONTH.setDate(1);renderCalendar();});
+function shiftViewMonth(delta){
+  VIEW_M+=delta;
+  if(VIEW_M<0){VIEW_M=11;VIEW_Y--;}
+  else if(VIEW_M>11){VIEW_M=0;VIEW_Y++;}
+}
+document.getElementById("prevMo").addEventListener("click",function(){shiftViewMonth(-1);renderCalendar();});
+document.getElementById("nextMo").addEventListener("click",function(){shiftViewMonth(1);renderCalendar();});
+document.getElementById("todayBtn").addEventListener("click",function(){
+  var p=kstTodayStr().split("-"); VIEW_Y=Number(p[0]); VIEW_M=Number(p[1])-1; renderCalendar();
+});
+
+/* ============ SSOT 표시 토글(범례 클릭, localStorage 기억) ============ */
+(function initSsotToggle(){
+  try{ var v=localStorage.getItem("wp_cal_show_ssot"); if(v==="0") SHOW_SSOT=false; }catch(e){}
+  applySsotToggleUI();
+})();
+function applySsotToggleUI(){
+  var el=document.getElementById("legendSsot"); if(!el) return;
+  el.classList.toggle("off", !SHOW_SSOT);
+  el.title=SHOW_SSOT?"클릭하면 SSOT 업무를 숨깁니다":"클릭하면 SSOT 업무를 표시합니다";
+}
+document.getElementById("legendSsot").addEventListener("click",function(){
+  SHOW_SSOT=!SHOW_SSOT;
+  try{localStorage.setItem("wp_cal_show_ssot",SHOW_SSOT?"1":"0");}catch(e){}
+  applySsotToggleUI();
+  renderCalendar();
+});
+
+/* ============ 하루 전체 목록 팝업("+N건 더") ============ */
+function openDayList(dstr){
+  var items=itemsForDay(dstr);
+  document.getElementById("dayListTitle").textContent=dstr+" 전체 일정 ("+items.length+"건)";
+  var listEl=document.getElementById("dayList");
+  listEl.innerHTML=items.map(function(it){
+    var cls="day-list-item type-"+it.type+(it.status==="완료"?" done":"");
+    var erpMark=(it.erpRequest==="요청됨")?"📌 ":"";
+    var label=erpMark+(it.startTime?it.startTime+" ":"")+esc(it.title);
+    return '<div class="'+cls+'" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'">'+label+'</div>';
+  }).join("")||'<div class="msg" style="padding:8px 2px">일정이 없습니다.</div>';
+  listEl.querySelectorAll(".day-list-item").forEach(function(el){
+    el.addEventListener("click",function(){
+      document.getElementById("dayListBg").classList.remove("show");
+      openDetailByRef(el.getAttribute("data-kind"), el.getAttribute("data-id"), dstr);
+    });
+  });
+  document.getElementById("dayListBg").classList.add("show");
+}
+document.getElementById("dayListClose").addEventListener("click",function(){document.getElementById("dayListBg").classList.remove("show");});
+document.getElementById("dayListBg").addEventListener("click",function(e){if(e.target.id==="dayListBg")this.classList.remove("show");});
 
 /* ============ 상세 팝업 ============ */
 var DETAIL_REF=null;
@@ -557,7 +687,7 @@ function openAddModal(dstr){
   document.getElementById("fTitle").value="";
   document.getElementById("fType").value="소통";
   document.getElementById("fPlace").value="";
-  document.getElementById("fDate").value=dstr||ymd(new Date());
+  document.getElementById("fDate").value=dstr||kstTodayStr();
   document.getElementById("fStartTime").value="";
   document.getElementById("fEndDate").value="";
   document.getElementById("fEndTime").value="";
@@ -581,7 +711,7 @@ function openEditModal(c){
   document.getElementById("editDelete").style.display="inline-block";
   document.getElementById("editBg").classList.add("show");
 }
-document.getElementById("addBtn").addEventListener("click",function(){openAddModal(ymd(new Date()));});
+document.getElementById("addBtn").addEventListener("click",function(){openAddModal(kstTodayStr());});
 document.getElementById("editCancel").addEventListener("click",function(){document.getElementById("editBg").classList.remove("show");});
 document.getElementById("editBg").addEventListener("click",function(e){if(e.target.id==="editBg")this.classList.remove("show");});
 document.getElementById("editDelete").addEventListener("click",async function(){
