@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>3분기 시설부 개선 평가 및 결과 보고 — 웰페리온 A3 (4/4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:16.6px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.6px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:32px; }
+  td.k{ background:#F6F8FA; font-weight:600; font-size:13.2px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:12.6px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:11.4px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:14.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:13.2px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style><style>
+  /* 4분기 방향성 — 결과보고에는 선택지(1안/2안)를 두지 않는다. 이미 끝난 분기를 두고 고르라 하는 것은
+     의미가 없다는 GM 지적(2026-08-26)에 따라 방향성 서술로 바꿨다. */
+  .opt{ display:flex; gap:0; margin-top:3px; }
+  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
+  .opt .o:first-child{ border-right:0; }
+  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
+  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
+  .opt .o.rec{ background:rgba(255,255,255,.12); }
+  .opt .o.rec{ border-color:rgba(255,255,255,.5); }
+  .tblwrap+.tblwrap{ margin-top:11px; }
+  .rm{ display:flex; gap:10px; margin-top:6px; }
+  .rm .st{ flex:1; border:1px solid var(--line); padding:7px 10px 8px; }
+  .rm .st .t{ font-size:12.4px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .rm .st .g{ font-size:11.2px; color:#5C666F; line-height:1.4; margin-top:2px; }
+  .rm .st .b{ height:9px; background:#E7ECF2; margin-top:6px; position:relative; }
+  .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .rm .st .p{ font-size:13px; font-weight:800; margin-top:3px; }
+  .rm .st.done .b i{ background:var(--good); } .rm .st.done .p{ color:var(--good); }
+  .rm .st.wait .b i{ background:#B9C2CC; } .rm .st.wait .p{ color:#7A838C; }
+</style>
+
+</head>
+<body>
+
+<div class="bar">
+  <b>3분기 시설부 개선 평가 및 결과 보고 (A3 1장 · 4/4)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">3분기 시설부 개선 평가 및 결과 보고</div>
+    </div>
+    <div class="meta">
+      보고 <b>경영지원부 김남욱 GM</b> · 대상 <b>회장님 · 경영진</b> · 부서 <b>시설부 · 이정헌 소장</b><br>
+      기간 <b>2026년 3분기 (6월 ~ 8월)</b> · 보고일 <b>2026. 08. 31.</b> · 문서번호 <b>WP-GM-260831-04</b><br>
+      구성 <b>4/4 시설부</b> · 1/4 전략 로드맵 · 2/4 운영부 · 3/4 파트너팀
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>4분기 방향성</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01 · 법정점검은 '언제까지'를 박는다</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">몇 번 요청했나가 아니라 회신 기한으로 관리한다</div>
+          <div class="x">법정·정기점검 <b>14건 중 4건</b>이 아직 실시일 빈칸이고, 8/14 첫 요청 이후 <b>12일째</b>다. 요청 횟수는 늘었는데 받는 날짜가 없었다.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">02 · 7월을 기준선으로 삼는다</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">6월 공백은 실적 0이 아니라 판이 없던 것으로 적는다</div>
+          <div class="x">6월 점검 회차가 0인 이유는 점검판 자체가 <b>가동 전</b>이었기 때문이다. 같은 시기 소방 작동점검(6/15)은 실제로 돌았다. 0을 실적으로 읽으면 평가가 틀린다.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">03 · 안전 항목부터 채운다</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">완료율이 가장 낮은 F 안전 카테고리를 4분기 첫 과제로</div>
+          <div class="x">사우나·기계실·수질은 60~83%인데 <b>안전은 7월 24% · 8월 11%</b>로 유일하게 내려갔다. 사고가 나면 가장 비싼 칸이다.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:150px"><col style="width:110px"><col style="width:110px"><col style="width:110px"><col style="width:100px"><col style="width:110px"><col></colgroup>
+    <thead><tr>
+      <th class="k">월</th><th class="ctr">점검 회차</th><th class="ctr">활동일</th><th class="ctr">전체 항목</th><th class="ctr">완료</th><th class="ctr">완료율</th><th>기준 이탈 · 메모</th>
+    </tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="7">점 검 실 적 &nbsp;— 시설부는 완료율보다 회차·이상 발생이 본 지표다</td></tr>
+      <tr><td class="k">2026년 6월</td><td class="ctr est">0</td><td class="ctr est">0</td><td class="ctr est">0</td><td class="ctr est">0</td><td class="ctr est">—</td><td><b>점검판 가동 전</b> — 실적 0이 아니라 데이터 없음. 같은 달 소방 작동점검(6/15)은 실시됨</td></tr>
+      <tr><td class="k">2026년 7월</td><td class="ctr">23회</td><td class="ctr">22일 / 31일</td><td class="ctr">572</td><td class="ctr">347</td><td class="ctr warn">61%</td><td>기준 이탈 <b>1건</b> — 수영장 잔류염소 0.37 (기준 0.4~1, 7/8)</td></tr>
+      <tr><td class="k">2026년 8월 <span class="est">(~26일)</span></td><td class="ctr">23회</td><td class="ctr good">23일 / 26일</td><td class="ctr">647</td><td class="ctr">448</td><td class="ctr good">69%</td><td>기준 이탈 <b>0건</b> — 활동일·완료율 모두 개선</td></tr>
+      <tr class="sum"><td class="k">점검자별 <span class="est">(7월 → 8월)</span></td><td class="ctr" colspan="2">박호균 과장 10회 → 11회</td><td class="ctr" colspan="2">김종현 차장 7회 → 10회</td><td class="ctr" colspan="2">이정헌 소장 6회 → 2회 <span class="est">(완료율은 82~86%로 최고)</span></td></tr>
+      <tr class="sum"><td class="k">취약 카테고리</td><td class="ctr bad" colspan="2">F 안전 — 7월 24% · 8월 11%</td><td class="ctr" colspan="4">그 외(사우나·공조기·기계실·온수탱크·수영장 수질)는 60~83%대</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:230px"><col style="width:150px"><col style="width:150px"><col><col style="width:330px"></colgroup>
+    <thead><tr>
+      <th class="k">항목</th><th class="ctr">채워짐</th><th class="ctr">빈칸</th><th>무엇을 뜻하나</th><th>솔직하게 — 안 된 것</th>
+    </tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">법 정 · 정 기 점 검 &nbsp;· 고 장 접 수 · 공 사</td></tr>
+      <tr><td class="k">법정·정기점검 실시일</td><td class="ctr good">10건</td><td class="ctr bad">4건</td><td>소방·전기·승강기·에스컬레이터·가스·정화조·소독·법정교육은 <b>날짜가 잡혀 있다</b></td><td>저수조 청소 · 방제(해충) · 소방안전관리자 실무교육 · 체육시설 안전점검 — <b>12일째 미회신</b></td></tr>
+      <tr><td class="k">종합접수 시설부 건 <span class="est">(7/1~8/25)</span></td><td class="ctr good">완료 35건</td><td class="ctr">미결 3건</td><td>고장 29 · 컴플레인 8 · 청결 1 중 <b>92%를 닫았다</b></td><td>미결 3건은 전부 <b>8/25 당일 접수</b> — 밀린 오래된 건은 없다</td></tr>
+      <tr><td class="k">3분기 공사·계약 <span class="est">(완료분)</span></td><td class="ctr good">4건</td><td class="ctr">—</td><td>B2 디지털 도어록 전환(8/16) · 정화조 배기팬 교체(8/20) · 삼성에어컨 냉매 A/S · <b>보안 이관 계약 ADT캡스(8/25 승인)</b></td><td>에어컨 A/S는 <b>2회 더</b> 남았다</td></tr>
+      <tr class="sum"><td class="k">진행 중 <span class="est">(4분기로 넘어감)</span></td><td class="ctr" colspan="2">4건</td><td>에스컬레이터 정밀진단(8/26) · ADT캡스 사양 미팅(8/27) · CCTV 계약 체결(8/31 목표) · ADT캡스 공사(9/4)</td><td>CCTV 93대 임대 5년 · 월 75만원 조건 확정 상태</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box rec">
+      <h3>잘된 것</h3>
+      <ul>
+        <li><b>접수 대응이 가장 빠르다</b> — 38건 중 35건 완료, 남은 3건은 당일 접수. 밀린 오래된 건이 0이다</li>
+        <li><b>점검이 8월에 개선됐다</b> — 활동일 22일 → 23일, 완료율 61% → 69%, 기준 이탈 1건 → 0건</li>
+        <li><b>보안 이관을 분기 안에 계약까지</b> — 블루캅 → ADT캡스, 8/25 대표 승인</li>
+        <li>질문에는 <b>1~2일 안에</b> 답한다 — 8/13 하루에 5건 연속 회신·오기 정정 포함</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>부족한 것</h3>
+      <ul>
+        <li class="r1"><b>법정점검 4건이 12일째 빈칸</b> — 서면 요청은 여러 번 갔는데 마감일이 없었다</li>
+        <li class="r1"><b>안전(F) 카테고리 11%</b> — 유일하게 내려간 칸이고 가장 위험한 칸이다</li>
+        <li class="r2">소장 본인 점검 회차가 <b>6회 → 2회</b>로 줄었다(완료율은 최고) — 공사·계약에 시간이 몰렸다</li>
+        <li class="r2">청소용품 국내업체 연결 건이 <b>8일째</b> 답 없이 떠 있다</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>아직 안 닫힌 것 <span class="est">— 오래된 순</span></h3>
+      <ul class="ord">
+        <li class="n"><b>12일</b> 법정점검 실시일 4건 <span class="est">(저수조·방제·소방교육·체육시설)</span></li>
+        <li class="n"><b>8일</b> 청소용품 국내업체 연결 <span class="est">(GM 재확인 대기)</span></li>
+        <li class="n"><b>1일</b> ADT캡스 이관 확인 5건 <span class="est">(9/4 공사 입회·구 RFID 재활용 등)</span></li>
+        <li class="n">오늘 에스컬레이터 정밀진단 소견서·견적서 접수</li>
+        <li class="n"><b>신규</b> 주차부 일일점검 제출 관리 — 8/26 시설부 소관 확정</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>산출 근거</b> — 점검 회차·완료율·기준 이탈은 시설부 체계 화면의 월간 리포트(GAS monthly_report, 2026-08-26 라이브 조회). 법정점검 14건은 전사일정(status/schedule_ssot.json) 직독. 접수 38건은 종합접수처 시설부 보드 라이브 조회.</div>
+    <div><b>측정의 한계</b> — 6월 0회는 <b>실적 0이 아니라 점검판 미가동</b>이다. 7·8월은 기간 길이가 달라(31일 / 26일) 회차 수를 그대로 비교하지 않는다. 접수 미결 경과일은 8/25 22:31 스냅샷 기준이다.</div>
+    <div><b>차기 보고</b> — 4분기 시작 시 ①법정점검 4건 회신 완료 여부 ②안전(F) 카테고리 완료율 ③CCTV·보안 공사(9/4) 결과. <b>세트 구성</b> — 1/4 전략 로드맵 · 2/4 운영부 · 3/4 파트너팀 · 4/4 시설부.</div>
+  </div>
+
+</div>
+
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260831_3분기_시설부_결과보고_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
