@@ -9126,23 +9126,18 @@ function crTab(btn, panelId) {
     };
 
     function gm1FetchSsot() {
-      // ① 시트(todo_list) + ② _queue.json 병렬 fetch — 어느 쪽 실패해도 나머지는 표시
+      // ① 시트(todo_list) fetch — GM 본인·결재 차례 항목. 이 결과(gm1SsotItems)는 캘린더·할 일 편집이 계속 쓴다.
+      // ★2026-08-26 배798 감사 — 여기서 함께 받던 _queue.json + _queue_archive.json(6.8MB) fetch 를 끊었다.
+      //   그 둘로 계산하던 것은 gm1InProgressCount·gm1ParkedCount·gm1QueueFetchFailed 셋뿐인데,
+      //   그리던 자리(#today-task-list)가 2026-08-08 에 삭제돼 **읽는 곳이 0** 이었다.
+      //   그런데도 페이지 로드 + 90초마다 + 탭 포커스마다 6.8MB 를 계속 받아오고 있었다.
+      //   배 목록 정본은 자율현황 ▸ 🧭 항로다 — G1 은 GM 개인 판이라 배를 그리지 않는다.
       var _k = gm1TodoKey();
       var sheetP = window.fetchTodoListShared(_k).catch(function(){ return null; });
-      var queueP = gm1FetchWithFallback(GM1_QUEUE_RAW_URL, GM1_QUEUE_MIRROR_URL);
-      // 아카이브 분리(2026-06-24): _queue.json 비대화 방지로 지난 입항·폐기 배는 _queue_archive.json 으로 옮겨짐.
-      //   지난 입항(🗄️)·검색(폐기) 보존을 위해 archive 도 병렬 fetch 해 active 와 합친다(다운스트림 무수정).
-      var archP = gm1FetchWithFallback(GM1_QUEUE_ARCH_RAW_URL, GM1_QUEUE_ARCH_MIRROR_URL);
 
-      Promise.all([sheetP, queueP, archP]).then(function(results){
+      Promise.all([sheetP]).then(function(results){
         var json  = results[0];
-        var queueResult = results[1] || { data: [], failed: true };
-        var archResult  = results[2] || { data: [], failed: true };
-        // ★활성 큐(_queue.json) 원본·미러 둘 다 실패한 경우만 경고 표시 대상 — 아카이브는 이력(지난 완료)용이라
-        //   실패해도 오늘 열린 배(대기·진행중) 표시엔 영향 없어 별도 경고 없이 console.warn만 남김.
-        gm1QueueFetchFailed = !!queueResult.failed;
-        if (archResult.failed) console.warn('[gm1] 큐 아카이브 fetch 실패 — 지난 완료 이력만 영향(오늘 항로엔 무영향)');
-        var queue = (Array.isArray(queueResult.data) ? queueResult.data : []).concat(Array.isArray(archResult.data) ? archResult.data : []);
+        var queue = [];   // 큐 fetch 중단 — 아래 루프는 자연히 비어 돈다(호출부 무수정)
         var items = [];
         var TD = todayStr();
 

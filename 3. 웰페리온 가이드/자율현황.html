@@ -267,7 +267,7 @@
   <!-- ════ 🧭 항로 — AI 배 목록 (G1 에서 이관 · GM 결정 2026-08-03 "GM 것만 G1, AI 건들은 다 자율현황으로" · 배10510) ════
        판정은 담당 구분(audience==='ai') 하나로만 — G1 렌더·아침 텔레그램 보고와 같은 기준이라 세 표면이
        자동으로 안 겹치고 안 샌다. 데이터는 아래 「🗂 배 정리」가 받아 둔 _queueAll 재사용(새 fetch 0). ════ -->
-  <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:11px;font-weight:400;color:var(--dim);">(AI 배 — 북극성으로 가는 오늘의 뱃길)</span></h2>
+  <h2 class="sec" id="sec-hangro" style="margin-top:2px;">🧭 항로 <span style="font-size:11px;font-weight:400;color:var(--dim);">(열린 배 전부 — 북극성으로 가는 오늘의 뱃길 · 🤖 는 AI 내부 살림)</span></h2>
   <div class="sec-note">⚓ 대기 · 🚢 진행중 · 🏁 오늘 입항 세 칸. GM 본인 할 일과 개인 북극성·루틴은 <strong>G1 김남욱 GM</strong>에 있습니다.</div>
   <div id="hangro-board"><div class="feed-status">항로를 불러오는 중…</div></div>
   <!-- GM 본인 할 일은 여기로 옮기지 않는다 — 개수·링크만. 본문은 G1 비번 뒤에 그대로 둔다
@@ -370,7 +370,7 @@
   </details>
 
   <details class="hist-fold" id="ships-summary-fold">
-    <summary>🗂 배 정리·보관함 <span class="hist-sub">— 백엔드에 실제로 있는 배 전부 · 무의미·중복은 여기서 지웁니다</span></summary>
+    <summary>🗄 보관함 <span class="hist-sub">— 지운 배(되돌릴 수 있습니다) · 배 지우기는 위 항로 표 맨 오른쪽 칸에서 합니다</span></summary>
 
   <!-- [2026-08-26 GM 확정] 「🗂 전체 배」 표 제거 — 위 「🧭 항로」와 같은 데이터를 두 번 그리고 있었다.
        GM: "고도화 및 단순화를 하려면 당연히 병합 및 개선이 되어야해" → 항로 하나가 열린 배 전부를 담고,
@@ -536,7 +536,6 @@
   //  ▸지우기 = 물리 삭제가 아니라 '폐기 표시'. 이유는 GAS 쪽 주석 참고(union 머지에서 되살아남).
   //  ▸GM 비밀번호는 결재에 쓰는 그 번호. 한 번 넣으면 이 창을 닫을 때까지만 기억한다(저장 안 함).
   var _queueAll = [];      // 백엔드에 실제로 있는 배 전부(폐기 포함)
-  var _northstarByRole = {}; // clevel → 북극성 문장 (voyage_map.json roles[].northstar · 배587 — 🗺️ 북극성별 보기 삭제하며 전체 배 표 칸으로 흡수)
   var _busyShips = {};     // 처리 중인 배 — 두 번 눌림 방지
 
   function gasPost(payload){
@@ -668,56 +667,11 @@
             : '<div class="feed-status">없습니다.</div>')
         + '</details>';
     }).join('');
-    el.innerHTML += renderAutonomyStats();
   }
 
-  /* ════ 📊 누적통계 — 자율 처리 vs 승인 대기 (자율화규약 v1.1 §5 · 배317) ════
-     "자율화 진척 계기판". 새 집계기·새 파일을 만들지 않는다(약속 L21) — 이미 받아 둔
-     _queueAll 의 세 칸(clevel·reversible·work_type)을 그 자리에서 셀 뿐이다.
-     판정은 아침 루틴 권한 분기와 같은 기준을 쓴다(약속 L01 — 판정 로직을 복제하지 않는다):
-       ✅ 자율   = 되돌릴 수 있다고 선언됐고(reversible===true) 신규 생성이 아니다(work_type!=='new')
-       ⛔ 승인   = 신규 생성(work_type==='new') **또는** 되돌릴 수 없다고 판정됨(reversible===false)
-       ❔ 미선언 = reversible 을 아직 **안 적은**(null·undefined) 배. 선별기가 낱말 스캔으로
-                  폴백하는 구간이라 안전측으로 막히는 일이 잦다 → 이 숫자가 크면 배에 칸을
-                  채워야 한다는 신호다.
-     ★'미선언'을 자율로 세지 않는다. 세면 계기판이 실제보다 좋게 보인다.
-     ★2026-08-06 수리: 처음엔 reversible===false 까지 '미선언'으로 셌다. 그러면 사람이
-       일부러 '사람이 해야 한다'고 판정해 둔 배가 "칸을 안 적은 배 — 채우면 자율로 돕니다"로
-       뜬다(계기판이 정반대로 안내). false 는 판정이 있는 것이니 승인 쪽으로 센다. */
-  function renderAutonomyStats(){
-    var open = _queueAll.filter(function(s){
-      return s && !isTrashed(s) && (s.status === 'PENDING' || s.status === 'IN_PROGRESS');
-    });
-    if(!open.length) return '';
-    var by = {}, tot = {auto:0, appr:0, unset:0};
-    open.forEach(function(s){
-      var role = s.clevel || '—';
-      var b = by[role] || (by[role] = {auto:0, appr:0, unset:0});
-      var k = (s.work_type === 'new' || s.reversible === false) ? 'appr'
-            : (s.reversible === true ? 'auto' : 'unset');
-      b[k]++; tot[k]++;
-    });
-    var pct = function(n){ return open.length ? Math.round(n * 100 / open.length) : 0; };
-    var rows = Object.keys(by).sort(function(a, b){
-      return (by[b].auto + by[b].appr + by[b].unset) - (by[a].auto + by[a].appr + by[a].unset);
-    }).map(function(role){
-      var b = by[role], n = b.auto + b.appr + b.unset;
-      return '<tr><td>' + esc(MISSION_NICK[role] || role) + '</td>'
-        + '<td style="text-align:right;">' + n + '</td>'
-        + '<td style="text-align:right;color:#2e7d32;">' + b.auto + '</td>'
-        + '<td style="text-align:right;color:#b07800;">' + b.appr + '</td>'
-        + '<td style="text-align:right;color:var(--dim);">' + b.unset + '</td></tr>';
-    });
-    // 📊 누적통계 삭제 (GM 지시 2026-08-08 "누적통계도 의미가 없고").
-    //   자율 처리 비율은 GM 이 보고 정할 것이 없는 숫자였다 — 진척은 항로가 보여 준다.
-    //   호출부는 그대로 두고 빈 문자열만 돌려준다(배선을 끊지 않는다).
-    return '';
-  }
-
-
-
-  // [2026-08-26] renderAllShips() 삭제 — 「🗂 전체 배」 표가 항로로 병합되면서 그릴 곳이 없어졌다.
-  //   꺼두면 죽은 코드가 되어 누가 다시 켠다(약속 L21) — 함수째 지운다. 되살려야 하면 git 이력에서 본다.
+  // [2026-08-26 배798 감사] renderAutonomyStats() 삭제 — 2026-08-08 GM 지시로 표시만 없앤 뒤
+  //   계산 루프는 산 채로 남아 매 렌더마다 전 배를 훑고 빈 문자열을 돌려주고 있었다.
+  //   꺼둔 것은 남기지 않는다(약속 L21) — 되살려야 하면 git 이력에서 본다.
   function trashBtn(s){
     if(s.ship_no == null) return '<span style="color:var(--dim);">—</span>';
     return '<button type="button" class="ship-trash" data-ship="' + esc(s.ship_no) + '" title="이 배를 보관함으로 옮깁니다"'
@@ -1412,14 +1366,15 @@
 
   // ═══════════ 로드 ═══════════
   Promise.all([
-    gasReadText('status/gm_aide_scan_log.jsonl',      'status/gm_aide_scan_log.jsonl').catch(function(){ return ''; }),
-    gasReadText('status/gm_observation_ledger.jsonl', 'status/gm_observation_ledger.jsonl').catch(function(){ return ''; }),
-    gasReadText('status/voyage_map.json',             'status/voyage_map.json').catch(function(){ return ''; }),  // a[2] — 🗺️ 북극성별 보기 섹션 삭제(배587)하며 「전체 배」 표 북극성 칸 소스로 흡수, 자리 재사용
+    Promise.resolve(''),  // a[0] 자리 유지 — gm_aide_scan_log fetch 중단(2026-08-26 배798 감사). d.scanLog 를 읽는 곳이 0이었다.
+    Promise.resolve(''),  // a[1] 자리 유지 — gm_observation_ledger fetch 중단(2026-08-26 배798 감사). d.obsLedger 소비 0.
+    Promise.resolve(''),  // a[2] 자리 유지 — voyage_map fetch 중단(2026-08-26 배798 감사). 유일 소비자였던
+                          //   「전체 배」 표 북극성 칸이 같은 날 항로 병합으로 사라져 _northstarByRole 이 죽었다.  // a[2] — 🗺️ 북극성별 보기 섹션 삭제(배587)하며 「전체 배」 표 북극성 칸 소스로 흡수, 자리 재사용
     gasReadText('status/learning_proposals.json',     'status/learning_proposals.json').catch(function(){ return ''; }),
     Promise.resolve(''),  // a[4] 자리 유지 — 보관함(3.2MB) fetch 중단(2026-07-31 시토). 이 화면이 쓰던 것은
                           //   숫자 셋뿐이라 erp_status.archive_summary 로 대체했다(새 요청 0·83% 감량).
     Promise.resolve(''),  // a[5] 자리 유지(인덱스 정렬) — 구 northstar_pending 임베드 제거(2026-07-04 GM), fetch 불필요
-    gasReadText('status/audit_registry.json',         'status/audit_registry.json').catch(function(){ return ''; }),
+    Promise.resolve(''),  // a[6] 자리 유지 — audit_registry fetch 중단(2026-08-26 배798 감사). d.auditReg 소비 0.
     Promise.resolve(''),  // a[7] 자리 유지 — 구 CMO review_queue fetch 제거(마케팅 CMO 이관 2026-07-15)
     gasReadText('status/erp_status.json',             'status/erp_status.json').catch(function(){ return ''; }),
     Promise.resolve(''),  // a[9] 자리 유지(인덱스 정렬) — cooFetchTodayLive, renderCooLiveMetrics 제거로 소비처 없음(배587 후속·2026-08-13)
@@ -1428,31 +1383,27 @@
     gasReadText('status/module_registry.json',        'status/module_registry.json').catch(function(){ return ''; }),
     gasReadText('status/kakao_last_send.json',         'status/kakao_last_send.json').catch(function(){ return ''; }),
     gasReadText('status/_queue.json',                  'status/_queue.json').catch(function(){ return ''; }),
-    gasReadText('status/module_silence_snapshot.json', 'status/module_silence_snapshot.json').catch(function(){ return ''; }),
+    Promise.resolve(''),  // a[15] 자리 유지 — module_silence_snapshot fetch 중단(2026-08-26 배798 감사). 읽는 곳 0.
     gasReadText('status/notify_registry.json',         'status/notify_registry.json').catch(function(){ return ''; }),
     gasReadText('status/notify_drift.json',            'status/notify_drift.json').catch(function(){ return ''; }),
     gasReadText('status/telegram_rooms.json',          'status/telegram_rooms.json').catch(function(){ return ''; }),
     gasReadText('scripts/kakao_rooms.json',            'scripts/kakao_rooms.json').catch(function(){ return ''; }),
-    gasReadText('status/kungjjak_today.json',          'status/kungjjak_today.json').catch(function(){ return ''; }),
+    Promise.resolve(''),  // a[20] 자리 유지 — kungjjak_today fetch 중단(2026-08-26 배798 감사). 읽는 곳 0.
     Promise.resolve('')  // a[21] 자리 유지(인덱스 정렬) — cooFetchMonthlyReport('facility'), 시설부 점검 렌더 삭제로 소비처 없음(2026-08-15)
   ]).then(function(a){
     var learnRaw = parseJson(a[3]);
-    var archRaw  = parseJson(a[4]);
+    // [2026-08-26 배798 감사] scanLog·obsLedger·archive·auditReg 칸 제거 — 만들기만 하고 읽는 곳이 0이었다.
+    //   위 fetch 도 함께 중단했다(꺼두면 죽은 코드가 되어 누가 다시 켠다 · 약속 L21).
     var d = {
-      scanLog:  parseJsonl(a[0]),
-      obsLedger:parseJsonl(a[1]),
-      learn:    Array.isArray(learnRaw) ? learnRaw : [],
-      archive:  Array.isArray(archRaw) ? archRaw : (archRaw && Array.isArray(archRaw.items) ? archRaw.items : []),
-      auditReg: parseJson(a[6]) || { pages: [] }
+      learn: Array.isArray(learnRaw) ? learnRaw : []
     };
     var erpStatus = parseJson(a[8]);
     var _queueArr = parseJson(a[14]);
     // 전체 배 정리·보관함이 같은 배열을 쓴다 — 화면들이 서로 다른 사본을 보지 않게 한 곳에 담는다.
     _queueAll = Array.isArray(_queueArr) ? _queueArr : [];
-    var voyageMap = parseJson(a[2]);
-    if(voyageMap && Array.isArray(voyageMap.roles)){
-      voyageMap.roles.forEach(function(r){ if(r && r.id) _northstarByRole[r.id] = r.northstar || ''; });
-    }
+    // [2026-08-26 배798 감사] voyage_map 읽기와 _northstarByRole 채우기를 함께 제거했다 —
+    //   소비자였던 「전체 배」 표의 북극성 칸이 같은 날 항로 병합으로 사라져 죽은 배선이 됐다.
+    //   되살려야 하면 git 이력에서 본다(약속 L21 — 꺼두면 누가 다시 켠다).
     try{ renderHangro(); }catch(e){
       var hgEl = document.getElementById('hangro-board');
       if(hgEl) hgEl.innerHTML = '<div class="feed-status">항로 표시 오류.</div>';
