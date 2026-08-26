@@ -20,6 +20,13 @@ const MEMBER_SHEET = '유효회원';
      시트를 훑지 않고 마지막 행 번호만 읽으므로 속도에 영향이 없다.
    ▸옮긴 분이 재등록하면 그때 유효회원 시트에 새 줄로 등록한다(원래 하던 방식 그대로). */
 const MEMBER_ARCHIVE_SHEET = 'LOSS보관';
+const MEMBER_CORP_SHEET_NAME = '법인현황';   // 법인 회원 원장 — 이름은 폴백일 뿐, 실제로는 아래 gid 로 찾는다
+const MEMBER_CORP_SHEET_GID = 1612064257;   // member_active_list scope='corp' 과 같은 탭(이름이 달라 gid 가 정본)
+// ★회원등기부(2026-08-26 GM 승인 · 배801) — 사람마다 평생 안 바뀌는 번호를 담는 단 하나의 탭.
+//   여기 번호가 모든 원장 줄을 꿰는 열쇠다. 상세 = status/briefs/CPO-2026-08-26-회원도메인-이행설계.md
+const MEMBER_REGISTRY_SHEET = '회원등기부';
+const MEMBER_REGISTRY_KEY_COL = '회원번호';
+const MEMBER_REGISTRY_COLS = ['회원번호', '이름', '전화', '종류', '보호자회원번호', '소속법인회원번호', '병합대표번호', '생성일', '메모'];
 const MEMBER_PHONE_COL = '휴대폰 번호';   // 회원부 전화번호 헤더
 const MEMBER_DATE_COL  = '등록 일자';      // 회원부 등록일 헤더
 
@@ -2041,7 +2048,8 @@ var _SURVEY_PUBLIC_ACTIONS = {
                                       //   중복전화 가드(_regRemove_) + 유효회원 동반 정리(_regActiveRemoveIfSole_)
   member_active_list:         true,  // 멤버십 회원 명단(유효회원·전화 마스킹)
   member_active_update:       true,  // 2026-06-24 멤버십 셀 인라인 수정(유효회원 시트·전화 제외)
-  member_archive_restore:     true,  // 2026-08-25 시토 — LOSS보관 회원 재등록 복귀(보관 행 유지+유효회원 신규행)
+  member_archive_restore:     true,  // 2026-08-25 시토 — LOSS보관 회원 재등록 복귀(보관 행 삭제+유효회원 신규행, 2026-08-26 개정)
+  member_registry_build:      true,  // 2026-08-26 시포(GM 승인·배801) — 회원등기부 구축·회원번호 부여(멱등·dryRun 지원)
   member_active_sort_now:     true,  // 2026-08-12 잔여일순 정렬 온디맨드(행 순서만 바꿈·값 무변경·PII 미반환)
   member_hold_preview:        true,  // 2026-07-22 휴회 경량안 — 미리보기/검증(read-only, 시트 무변경). 시포·GM
   member_hold_apply:          true,  // 2026-07-22 휴회 공개접수(쓰기전용 → '휴회접수' 탭·회원 판정 미반환). ★HOLD_LIVE 게이트(OFF). 시포·GM
@@ -3543,7 +3551,7 @@ var _RETIRED_ACTIONS_ = {
   // ↓ 2차 배치(41개) — 호출부 0·자체주석 "일회성/진단/읽기전용"+완료날짜(2026-07-20~22) 프로필. 본문 유지.
   'add_utm_field': 1, 'clear_loss_validation_20260722': 1,
   'clear_orphan_row_20260722': 1, 'consolidate_cols_20260720': 1,
-  'cpo_clean_intake_id_memo': 1, 'cpo_diag_gid_formula': 1,
+  'cpo_diag_gid_formula': 1,
   'cpo_diag_wsc_legacy_inversions': 1, 'cpo_lesson_sheet_diag_0721': 1,
   'cpo_lesson_sort_verify_0721': 1, 'cpo_lesson_teamsheet_dump': 1,
   'cpo_lesson_teamsheet_formulas': 1, 'cpo_lesson_ts_display_sort_0721': 1,
@@ -4851,39 +4859,6 @@ function _hasRealReply_(memo) {
     return _json({ ok: true, op: _claOp, report: _claRep });
   }
 
-  // ─── (임시) 강습 비고칸 접수ID 오염 정리 — 순수 접수ID 패턴만 빈칸화. 웰리 수동. 2026-07-20 시포 ───
-  //   배경: intake_submit이 접수ID를 비고에 흘려써 CONTACT(연락이력) 읽기 폴백을 오염시켰음(위 수정으로 신규 유입은 중단).
-  //   기존에 이미 쌓인 값만 대상. 값 기준 판정(행번호로 지우지 않음 — INC-020 행 인덱스 삭제 재발방지).
-  //   순수 접수ID 패턴(글자가 조금이라도 더 섞이면 실무진 메모로 간주해 절대 건드리지 않음)만 빈칸화.
-  //   dryRun 기본 true — 반드시 dry-run 결과(건수·샘플) 확인 후 { dryRun:false }로 재호출해야 실제 삭제.
-  if (action === 'cpo_clean_intake_id_memo') {
-    if (String(body.t || '') !== _intakeToken_()) return _json({ ok: false, error: 'bad-token', noRetry: true });
-    var _cimDry = (body.dryRun !== false);   // 명시적으로 false를 보내야만 실제 정리 실행
-    var _cimIdRe = /^\s*L?\d{6}-\d{6}\s*$|^\s*WEB-\d+\s*$/;   // 순수 접수ID 패턴(L+yyMMdd-HHmmss 또는 WEB-숫자)만 매치
-    var _cimRep = {};
-    [ { n: '1. 성인강습', gid: 111889422 }, { n: '2. WSC 강습', gid: 268994754 } ].forEach(function(cfg){
-      var sh = _sheetByGid_(LESSON_SS_ID, cfg.gid);
-      if (!sh) { _cimRep[cfg.n] = { error: '시트 없음' }; return; }
-      var lr = sh.getLastRow(), lc = sh.getLastColumn();
-      if (lr < 2) { _cimRep[cfg.n] = { matched: 0, samples: [] }; return; }
-      var hdr = sh.getRange(1, 1, 1, lc).getValues()[0].map(function(v){ return String(v).trim(); });
-      var memoCi = _findCol_(hdr, ['비고', '메모']);   // intake_submit이 쓰던 것과 동일 키 — 같은 칸을 찾는다
-      if (memoCi < 0) { _cimRep[cfg.n] = { error: '비고/메모 칸 없음' }; return; }
-      var data = sh.getRange(2, 1, lr - 1, lc).getValues();
-      var matched = [];
-      for (var r = 0; r < data.length; r++) {
-        var v = String(data[r][memoCi] || '');
-        if (v && _cimIdRe.test(v)) matched.push({ row: r + 2, value: v });
-      }
-      // 백업(정리 전 대상 행 전체를 로그로 남김) — 실제 실행 시에만
-      if (!_cimDry && matched.length > 0) {
-        Logger.log('[cpo_clean_intake_id_memo] ' + cfg.n + ' 정리 대상 백업(' + matched.length + '건): ' + JSON.stringify(matched));
-        matched.forEach(function(m){ sh.getRange(m.row, memoCi + 1).setValue(''); });
-      }
-      _cimRep[cfg.n] = { matched: matched.length, samples: matched.slice(0, 5) };
-    });
-    return _json({ ok: true, dryRun: _cimDry, result: _cimRep });
-  }
 
   // ─── (일회성 진단) 강습 두 탭(성인·WSC) 타임스탬프 원본 실측 — 시:분:초 결손 행수 확정 ───
   //   배경: 2026-07-18 자체폼 직접쓰기 전환 과도기 코드가 타임스탬프에 날짜만 기록한 버그(09452c5b·a8830062로
@@ -9990,6 +9965,134 @@ function _hasRealReply_(memo) {
                   'LOSS보관 행 ' + arRow, '유효회원 행 ' + arNewRow + '(등록분류:' + arRegClass + ')', '멤버십']]);
     _memberCacheBump_(); _aaCacheClear_(['valid', 'archive']);
     return _json({ ok: true, restored: true, name: arName, phone: body.phone, archiveRow: arRow, newRow: arNewRow, regClass: arRegClass, seq: arNewSeq });
+  }
+
+  /* ─── 회원등기부 구축(member_registry_build) — 2026-08-26 시포 · GM 승인 ────────────────────
+     설계 정본 = status/briefs/CPO-2026-08-26-회원도메인-이행설계.md
+
+     왜: 지금 사람을 찾는 열쇠가 전화번호와 '등록일자+전화+이름' 지문인데, 둘 다 바뀌는 값이다.
+     같은 전화에 이름이 둘 이상인 것이 1,124건이라 가족은 저장이 아예 거부되고, 등록일자를
+     고치면 그 뒤 저장이 전부 막힌다(유상두·전하늘 실사고). 그래서 사람마다 **한 번 주면 절대
+     안 바뀌는 번호**(M00001…)를 부여하고 모든 원장 줄을 그 번호로 꿴다.
+
+     안전:
+     · 기존 칸을 옮기거나 지우지 않는다. 각 탭 맨 뒤에 '회원번호' 칸 하나만 붙인다.
+     · 사람 묶는 키 = (전화, 이름) 둘 다 같을 때만. 전화만 같고 이름이 다르면 각자 번호를 받는다
+       — 잘못 합치는 것이 안 합치는 것보다 위험하다(INC-020). 같은 사람 후보는 표시만 하고
+       병합은 사람이 확인한 뒤에 한다.
+     · 멱등이다. 두 번 돌려도 이미 부여된 번호는 그대로다(등기부에서 찾아 재사용).
+     · dryRun:true 면 아무것도 쓰지 않고 무엇을 할지만 돌려준다.
+     · 행을 지우거나 옮기지 않는다. append 와 열 단위 쓰기뿐이다.                            */
+  if (action === 'member_registry_build') {
+    var rgDry = (body.dryRun === true || String(body.dryRun) === 'true');
+    var rgSs = SpreadsheetApp.openById(MEMBER_SPREADSHEET_ID);
+
+    // 대상 = 회원 원장이 실제로 들어 있는 물리 탭 3개. '종료회원'은 별도 탭이 아니라
+    // 유효회원 탭 안에서 잔여일·LOSS 태그로 갈리는 값이라 여기 없다(member_active_list 와 같은 사실).
+    // 법인 탭은 이름이 아니라 gid 로 찾는다 — member_active_list scope='corp' 이 쓰는 방식 그대로다
+    // (이름으로 찾으면 '시트 없음' 이 난다. 2026-08-26 실측으로 확인).
+    var rgCorpSh = null, rgAllSh = rgSs.getSheets();
+    for (var rcs = 0; rcs < rgAllSh.length; rcs++) {
+      if (rgAllSh[rcs].getSheetId() === MEMBER_CORP_SHEET_GID) { rgCorpSh = rgAllSh[rcs]; break; }
+    }
+    var rgTabs = [MEMBER_SHEET, (rgCorpSh ? rgCorpSh.getName() : MEMBER_CORP_SHEET_NAME), MEMBER_ARCHIVE_SHEET];
+
+    function _rgIdx(hdr, want) {
+      var w = String(want).replace(/\s/g, '');
+      for (var i = 0; i < hdr.length; i++) { if (hdr[i] && hdr[i].replace(/\s/g, '').indexOf(w) >= 0) return i; }
+      return -1;
+    }
+    function _rgKey(phone, name) { return _normPhone_(phone) + '|' + String(name || '').trim(); }
+
+    // ① 등기부 탭 확보
+    var rgReg = rgSs.getSheetByName(MEMBER_REGISTRY_SHEET);
+    var rgCreated = false;
+    if (!rgReg) {
+      if (rgDry) { rgCreated = true; }
+      else {
+        rgReg = rgSs.insertSheet(MEMBER_REGISTRY_SHEET);
+        rgReg.getRange(1, 1, 1, MEMBER_REGISTRY_COLS.length).setValues([MEMBER_REGISTRY_COLS]);
+        rgReg.setFrozenRows(1);
+        rgCreated = true;
+      }
+    }
+    // 등기부에 이미 있는 사람 = 번호 재사용(멱등의 핵심)
+    var rgKnown = {}, rgMaxNo = 0;
+    if (rgReg && rgReg.getLastRow() >= 2) {
+      var rgHdr0 = rgReg.getRange(1, 1, 1, rgReg.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
+      var rgNoI0 = rgHdr0.indexOf('회원번호'), rgNmI0 = rgHdr0.indexOf('이름'), rgPhI0 = rgHdr0.indexOf('전화');
+      if (rgNoI0 >= 0 && rgNmI0 >= 0 && rgPhI0 >= 0) {
+        var rgVals0 = rgReg.getRange(2, 1, rgReg.getLastRow() - 1, rgHdr0.length).getValues();
+        for (var rv = 0; rv < rgVals0.length; rv++) {
+          var _no = String(rgVals0[rv][rgNoI0] || '').trim();
+          if (!_no) continue;
+          rgKnown[_rgKey(rgVals0[rv][rgPhI0], rgVals0[rv][rgNmI0])] = _no;
+          var _n = parseInt(_no.replace(/[^0-9]/g, ''), 10);
+          if (_n > rgMaxNo) rgMaxNo = _n;
+        }
+      }
+    }
+
+    // ② 탭별로 읽어 사람 묶기
+    var rgPlan = [], rgNewPeople = [], rgSeen = {}, rgReport = [];
+    for (var rt = 0; rt < rgTabs.length; rt++) {
+      var sh = rgSs.getSheetByName(rgTabs[rt]);
+      if (!sh) { rgReport.push({ tab: rgTabs[rt], error: '시트 없음' }); continue; }
+      var last = sh.getLastRow(), cols = sh.getLastColumn();
+      if (last < 2) { rgReport.push({ tab: rgTabs[rt], rows: 0 }); continue; }
+      var hdr = sh.getRange(1, 1, 1, cols).getValues()[0].map(function(v){ return String(v).trim(); });
+      var nmI = _rgIdx(hdr, '회원명'), phI = _rgIdx(hdr, '휴대폰');
+      if (nmI < 0 || phI < 0) { rgReport.push({ tab: rgTabs[rt], error: '이름/전화 칸 없음' }); continue; }
+      var noI = hdr.indexOf(MEMBER_REGISTRY_KEY_COL);
+      var addCol = (noI < 0);
+      if (addCol && !rgDry) {
+        noI = cols;                                   // 맨 뒤에 붙인다(기존 칸 위치 불변)
+        sh.getRange(1, noI + 1).setValue(MEMBER_REGISTRY_KEY_COL);
+        cols = cols + 1;
+      }
+      var body2 = sh.getRange(2, 1, last - 1, Math.max(cols, hdr.length)).getValues();
+      var colOut = [], filled = 0, kept = 0;
+      for (var br = 0; br < body2.length; br++) {
+        var nm = String(body2[br][nmI] || '').trim();
+        var ph = body2[br][phI];
+        var cur = (noI >= 0 && noI < body2[br].length) ? String(body2[br][noI] || '').trim() : '';
+        if (!nm) { colOut.push([cur]); continue; }     // 이름 없는 줄은 사람이 아니다 — 건드리지 않는다
+        if (cur) { colOut.push([cur]); kept++; continue; }   // 이미 있으면 그대로(멱등)
+        var key = _rgKey(ph, nm);
+        var no = rgKnown[key] || rgSeen[key];
+        if (!no) {
+          rgMaxNo++;
+          no = 'M' + ('00000' + rgMaxNo).slice(-5);
+          rgSeen[key] = no;
+          rgNewPeople.push([no, nm, String(ph || ''), (rgTabs[rt] === MEMBER_CORP_SHEET_NAME ? '법인' : '개인'),
+                            '', '', '', _todayKR_(), '']);
+        }
+        colOut.push([no]);
+        filled++;
+      }
+      rgPlan.push({ tab: rgTabs[rt], sheet: sh, colIndex: noI, values: colOut, addCol: addCol });
+      rgReport.push({ tab: rgTabs[rt], rows: body2.length, 칸신설: addCol, 번호부여: filled, 기존유지: kept });
+    }
+
+    if (rgDry) {
+      return _json({ ok: true, dryRun: true, 등기부신설: rgCreated, 새사람: rgNewPeople.length,
+                     마지막번호: 'M' + ('00000' + rgMaxNo).slice(-5), 탭별: rgReport });
+    }
+
+    // ③ 실제 쓰기 — 등기부 append 먼저(번호가 어디서 왔는지 먼저 남긴다), 그다음 각 탭 열 쓰기
+    if (rgNewPeople.length && rgReg) {
+      rgReg.getRange(rgReg.getLastRow() + 1, 1, rgNewPeople.length, MEMBER_REGISTRY_COLS.length).setValues(rgNewPeople);
+    }
+    for (var rp = 0; rp < rgPlan.length; rp++) {
+      var pl = rgPlan[rp];
+      if (!pl.values.length || pl.colIndex < 0) continue;
+      pl.sheet.getRange(2, pl.colIndex + 1, pl.values.length, 1).setValues(pl.values);
+    }
+    _memberLog_([[new Date(), _logWho_(body), '(회원등기부)', '', '회원번호 부여',
+                  '등기부 ' + (rgCreated ? '신설' : '기존'), '새 번호 ' + rgNewPeople.length + '명', '멤버십']]);
+    _memberCacheBump_(); _aaCacheClear_(['valid', 'corp', 'archive']);
+    return _json({ ok: true, 등기부신설: rgCreated, 새사람: rgNewPeople.length,
+                   마지막번호: 'M' + ('00000' + rgMaxNo).slice(-5), 탭별: rgReport });
   }
 
   // ─── 종목별 담당자 저장(유효회원 5칸: PT/골프/P.L/스쿼시/수영 담당자) — 전화 매칭 단일셀 쓰기.
