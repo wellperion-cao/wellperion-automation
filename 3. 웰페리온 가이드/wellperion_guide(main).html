@@ -44,6 +44,22 @@
   @media(min-width:1100px){ #H3{ max-width:none; width:calc(100vw - 286px - 40px); margin-left:-20px; } }
   /* 구조도(H4): 그리드가 가로로 펼쳐지도록 본문 980px 제한을 풀고 화면 폭으로 확장 (H3와 동일 패턴, 넓은 화면에서만) */
   @media(min-width:1100px){ #H4{ max-width:none; width:calc(100vw - 286px - 40px); margin-left:-20px; } }
+  /* ★home 와이드 (2026-08-26 GM: "너무 좌측 정렬에 세로형인데 좌우폭을 더 늘릴 수 있을 것 같은데?")
+     실측(1920px 라이브): .main 이 980px 로 묶여 오른쪽 654px(화면의 34%)이 통째로 비어 있었다.
+     화면에서만 푼다 — 인쇄(A3)·1280px 미만·다른 문서 탭은 하나도 안 바뀐다.
+     위 H3/H4 의 "이 문서만 980 해제" 방식을 :has() 로 이어, 음수 마진 같은 편법 없이 home 에만 건다.
+     검증(설계 레인 실측): home 세로 3,158px → 2,336px(−26%) · 3열 각 440px 로 줄맞음. */
+  @media screen and (min-width:1280px){ .main:has(#home.active){max-width:1600px;} }
+  @media screen and (min-width:1400px){
+    /* 업무&결재 | 문의&등록 | 종합접수처 를 3열로. 인라인 스타일을 이기려면 !important 가 필요하다
+       (아래 모바일 규칙이 이미 같은 방식을 쓴다). */
+    .main:has(#home.active) .ops-detail-grid{grid-template-columns:repeat(3,1fr)!important;}
+    .main:has(#home.active) .ops-detail-grid>div:first-child{grid-column:auto!important;}
+    .main:has(#home.active) .wa-block-grid{grid-template-columns:1fr!important;gap:10px!important;}
+    .home-hero-row{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:14px;align-items:center;}
+    .home-links-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;margin:0 0 24px;}
+    .home-links-row>a{margin:0!important;}
+  }
   .doc{display:none; animation:fadeIn 0.18s ease-out;}
   .doc.active{display:block;}
   @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
@@ -416,6 +432,7 @@
     <div class="doc-header" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;"><h2 style="margin:0;">🏢 웰페리온 ERP</h2><div class="meta" style="margin:0;">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div></div>
 
     <!-- ══ 전사 공식 슬로건 (canon: ssot/canon_values.json · GM 결재 2026-06-24) ══ -->
+    <div class="home-hero-row"><!-- 1400px 이상 화면에서만 슬로건(좌)·설명(우)을 한 줄로. 그 아래 폭에서는 지금처럼 위아래로 쌓인다(2026-08-26) -->
     <div style="text-align:center;margin:4px 0 22px;padding:22px 18px;background:var(--paper);border:1px solid var(--border);border-radius:14px;">
       <div style="font-size:13px;letter-spacing:0.18em;color:var(--accent);font-weight:600;text-transform:uppercase;">A Day, Well Completed.</div>
       <div style="font-size:22px;font-weight:800;letter-spacing:-0.01em;color:var(--text);margin-top:8px;">하루의 완성, 웰페리온</div>
@@ -428,6 +445,7 @@
          함께 지웠다 — 꺼두면 죽은 코드가 되어 누가 다시 켠다(약속 L21). -->
 
     <p class="lead"><strong>웰페리온 ERP</strong>(전사적 자원 관리 · Enterprise Resource Planning)는 웰페리온의 모든 일이 하나의 북극성을 향해 같은 항로로 나아가게 잇는 통합 플랫폼입니다. 인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에 모아 — 사람은 방향을 정하고, 시스템은 항해를 책임집니다.</p>
+    </div><!-- /home-hero-row -->
 
     <!-- ⑤ 운영 현황 상세 (컴팩트 v2 2026-06-08) -->
     <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:22px 0 14px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">운영 현황 상세</span><span style="font-size:11.5px;color:var(--dim);">큰 숫자=총(올해 1/1~) · 작은 숫자=오늘</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><a href="월간운영계획.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">🗓️ 월간 운영계획·보고 ↗</a><a href="coo/check/전사_일정.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">📅 전사 일정 ↗</a></div>
@@ -774,6 +792,7 @@
     </div>
 
 
+    <div class="home-links-row"><!-- 1400px 이상 화면에서만 배너 2개를 좌우 한 줄로(2026-08-26) -->
     <!-- ONBOARDING-GAME LINK START (삭제 시 이 블록+onboarding/game.html 제거) -->
     <a href="onboarding/game.html" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;margin:0 0 24px;padding:16px 18px;background:linear-gradient(135deg,rgba(237,91,63,0.16),rgba(183,159,138,0.10));border:1px solid rgba(237,91,63,0.35);border-radius:14px;text-decoration:none;color:var(--text);transition:transform 0.12s,border-color 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--warm)';" onmouseout="this.style.transform='';this.style.borderColor='rgba(237,91,63,0.35)';">
       <span style="font-size:30px;line-height:1;">🔥</span>
@@ -795,6 +814,7 @@
       <span style="font-size:18px;color:var(--beige);">→</span>
     </a>
     <!-- STAFF-TRAINING LINK END -->
+    </div><!-- /home-links-row -->
   </article>
   <script>
   // PII 게이트는 서버(TOKEN_ENFORCE)에서 유지 — 화면은 집계만 공개, 원본은 보호된 시트에서 본다(GM 옵션A).
