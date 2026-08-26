@@ -704,7 +704,19 @@ def build_parking_section(today: str, url: str = DEFAULT_GAS_URL) -> tuple[list[
     # 2026-08-25 시우: '준비 중'은 이제 사실이 아니다. 일일 8항목 제출 화면은 2026-08-18(배672)에 열렸고
     # 지원부·시설부와 같은 점검 GAS 를 쓴다. 오늘 행이 없다는 건 준비가 안 된 게 아니라 **오늘 제출이 없다**는 뜻이다.
     # 옛 문구를 그대로 두면 GM·실무진이 "아직 만드는 중"으로 읽어 제출 화면을 찾지 않는다(2026-08-25 GM 지적).
-    return (["🅿 주차부: 오늘 일일점검 제출 없음 — "
+    #
+    # ★2026-08-26 배798 감사 — 「오늘 없음」만 적으니 하루치로 보였다. 실제로는 8/20 이후 6일 연속
+    #   제출이 없었는데 그 사실이 어디에도 안 떴다. 마지막으로 들어온 날을 함께 적는다.
+    #   ▸'N일째' 대신 날짜를 적는다 — 사람이 읽는 방으로도 나가는 글이라 재촉이 아니라 사실만 둔다.
+    last_done = ""
+    if isinstance(data, dict):
+        for row in sorted((data.get("data") or []), key=lambda r: str(r.get("date")), reverse=True):
+            t = row.get("total")
+            if isinstance(t, (int, float)) and t and str(row.get("date")) < today:
+                last_done = str(row.get("date"))
+                break
+    tail = f" (마지막 제출 {last_done[5:].replace('-', '/')})" if last_done else " (최근 제출 기록 없음)"
+    return ([f"🅿 주차부: 오늘 일일점검 제출 없음{tail} — "
              "https://wellperion-cao.github.io/wellperion-automation/coo/check/주차관리부 체계.html#check"], filled)
 
 
