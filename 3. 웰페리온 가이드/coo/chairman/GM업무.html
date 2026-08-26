@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>경영 보고·GM 업무 현황 · WELLPERION</title>
+<script>
+  /* GM 신고(2026-08-26) "열자마자 맨 아래로 스크롤" — 재현 결과 페이지 자체 스크롤 코드가 아니라
+     브라우저 기본 scrollRestoration('auto')이 원인이었다(재접속·뒤로가기·새로고침 시 이전 방문의
+     스크롤 위치를 그대로 복원). #gm-{id} 해시로 들어올 때만 movement가 필요하므로 그 외에는
+     항상 맨 위에서 시작하도록 브라우저 자동 복원을 끈다. */
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
 <!-- 사내 게이트(단일 소스 _assets/gate.js) — 회장님_지시사항.html과 동일(GM 지시 2026-08-05, 비밀번호 1531 통일). -->
 <script src="../../_assets/gate.js" charset="utf-8"></script>
