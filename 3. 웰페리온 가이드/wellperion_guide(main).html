@@ -375,22 +375,22 @@
 
   <div class="nav-label">AI C-Level</div>
   <nav class="nav">
-    <a data-toggle="cto-nav" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
+    <a data-toggle="cto-nav" data-id="T1" data-has-sub="true"><span class="num">🔧</span><span class="label">AI CTO 기술<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cto-nav">
       <a data-id="T1">🖥️ 기술 & AI 학습 상세</a>      <a data-id="T2">🤖 자율 작업 현황</a>
     </div>
 
-    <a data-toggle="cmo-nav2" data-has-sub="true"><span class="num">📢</span><span class="label">AI CMO 마케팅<span class="tag">김남욱 GM</span></span></a>
+    <a data-toggle="cmo-nav2" data-id="M1" data-has-sub="true"><span class="num">📢</span><span class="label">AI CMO 마케팅<span class="tag">김남욱 GM</span></span></a>
     <div class="sub-nav" data-parent="cmo-nav2">
       <a data-id="M1">📂 콘텐츠 제작 · 검수·발행</a>
     </div>
 
-    <a data-toggle="coo-nav2" data-has-sub="true"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
+    <a data-toggle="coo-nav2" data-id="O1" data-has-sub="true"><span class="num">🏢</span><span class="label">AI COO 운영<span class="tag">최준용M · 윤병현AM</span></span></a>
     <div class="sub-nav" data-parent="coo-nav2">
       <a data-id="O1">🏢 운영 통합 체계</a>
     </div>
 
-    <a data-toggle="cpo-nav2" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
+    <a data-toggle="cpo-nav2" data-id="P1" data-has-sub="true"><span class="num">🤝</span><span class="label">AI CPO 회원관리<span class="tag">임정은M</span></span></a>
     <div class="sub-nav" data-parent="cpo-nav2">
       <a href="cpo/product/상품기획.html" target="_blank">🏷️ 상품 기획</a>
       <a href="cpo/member/membership.html?manage=membership" target="_blank">📋 멤버십 회원관리</a>
@@ -7734,6 +7734,48 @@ function crTab(btn, panelId) {
     </script>
   </article>
 
+  <!-- ══ P1: 회원 통합 체계 (2026-08-26 GM 지시 — "AI C-LEVEL 메뉴칸을 클릭했을 때 각각 정리가 되는
+       페이지를 기준으로 하위탭 이동", "AI COO 운영 클릭하면 운영 통합체계가 나오는 것처럼")
+       ★새 파일이 아니다 — O1·M1·H2·F1 과 같은 방식의 이 파일 안 article 이다.
+       CPO 만 내부 허브가 없어 서브메뉴가 전부 외부 새창이었다(클릭해서 랜딩할 곳이 없었다).
+       스크립트 0줄 — 숫자는 각 대상 페이지가 이미 갖고 있고, 여기는 설명과 문만 둔다(O1 원칙 "카드 = 문"). ══ -->
+  <article class="doc" id="P1">
+    <div class="doc-header"><h2>회원 통합 체계</h2><div class="meta">CPO 회원 SSOT · 문의 → 등록 → 이용 → 재등록</div></div>
+
+    <div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:17px 20px;margin:14px 0 16px;">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:9px;">이 모듈은 · CPO 회원 허브</div>
+      <div style="font-size:14.5px;color:var(--text);line-height:1.7;font-weight:700;">한 분의 회원이 <span style="color:var(--accent);">문의 → 등록 → 이용 → 재등록</span>까지 어디쯤 계신지를 한 흐름으로 보는 곳입니다.</div>
+      <div style="font-size:12.5px;color:var(--dim);line-height:1.65;margin-top:6px;">화면마다 흩어져 있던 것을 한 자리에 모았습니다. <strong>지금 손이 필요한 분</strong>(회신 안 간 문의·만료 임박·휴회)이 먼저 보이고, 그 자리에서 담당 화면으로 바로 들어갑니다.</div>
+      <div style="margin-top:13px;padding-top:12px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12px;color:var(--dim);line-height:1.55;">
+        <div>🔗 <strong style="color:var(--text);">카드 = 문</strong> — 각 칸이 그 화면으로 가는 입구입니다. 화면들은 그대로 독립 유지(흡수 아님).</div>
+        <div>🚫 <strong style="color:var(--text);">가짜 숫자 없음</strong> — 못 센 것은 0 이 아니라 '아직 없음'으로 적습니다.</div>
+        <div>👤 <strong style="color:var(--text);">담당</strong> — 임정은M(회원·CS) · AI CPO 시포</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:14px 0 20px;">
+      <a href="cpo/member/membership.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:14px;font-weight:800;color:var(--text);">📋 멤버십 회원관리</span>
+        <span style="display:block;font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5;">유효회원·법인·대기자 원장. 등록·만료·휴회를 여기서 다룹니다.</span></a>
+      <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:14px;font-weight:800;color:var(--text);">🏃 강습 회원관리</span>
+        <span style="display:block;font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5;">성인·유소년 강습 등록 원장. 종목·횟수·유효기간을 봅니다.</span></a>
+      <!-- cpo/member/문의회원.html 은 membership.html 로 넘기는 껍데기라 링크하지 않는다(2026-08-26 실재 확인). -->
+      <a href="cpo/문의현황.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:14px;font-weight:800;color:var(--text);">📮 문의 현황</span>
+        <span style="display:block;font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5;">들어온 문의와 투어·체험 예약. 회신이 안 간 분이 먼저 뜹니다.</span></a>
+      <a href="cpo/product/상품기획.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:14px;font-weight:800;color:var(--text);">🏷️ 상품 기획</span>
+        <span style="display:block;font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5;">회원권·강습 상품 구성과 가격 기준.</span></a>
+      <a href="cpo/member/실무진피드백.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:14px;font-weight:800;color:var(--text);">🗣️ 실무진 피드백</span>
+        <span style="display:block;font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5;">현장에서 올라온 불편·요청. 접수되면 담당 배로 섭니다.</span></a>
+      <a href="coo/reception/종합접수처_현황.html" target="_blank" style="display:block;padding:14px 16px;background:var(--paper);border:1px solid var(--border);border-radius:12px;text-decoration:none;">
+        <span style="display:block;font-size:14px;font-weight:800;color:var(--text);">🙋 종합 접수처</span>
+        <span style="display:block;font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5;">회원이 직접 남긴 6종 접수(컴플레인·분실물 등). 운영부와 함께 봅니다.</span></a>
+    </div>
+  </article>
+
   <!-- ── G19: 업무자동화 ── -->
   <article class="doc" id="T2">
     <div class="doc-header"><h2><span class="g-id">T2</span>자율 작업 현황</h2><div class="meta">자동화 landscape 진입점 · 상세·자율 활동 라이브 = 자율 작업 현황 보드 · 2026-07-03 보드로 일원화</div></div>
@@ -7821,7 +7863,12 @@ function crTab(btn, panelId) {
     document.querySelectorAll('.sub-nav a').forEach(sa => sa.classList.remove('active'));
   }
 
-  // C-Level 대항목 클릭 — 서브메뉴 토글만 (페이지 이동 없음)
+  /* C-Level 대항목 클릭 — 서브메뉴 토글 + 그 역할의 허브 페이지로 이동
+     ★2026-08-26 GM 지시: "AI C-LEVEL 메뉴칸을 클릭했을 때 각각 정리가 되는 페이지를 기준으로
+       하위탭 이동할 수 있게" · "AI COO 운영 클릭하면 운영 통합체계가 나오는 것처럼".
+     종전엔 서브메뉴만 펼쳐지고 아무 데도 안 갔다.
+     ▸data-id 가 붙은 대항목만 랜딩한다 — 시로(CHRO)·시뽀(CFO)는 data-id 를 안 붙여 기존 동작 그대로다
+       (그 두 라인은 나우열M 담당이라 AI 가 건드리지 않는다). */
   document.querySelectorAll('.nav > a[data-toggle]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault();
@@ -7832,6 +7879,8 @@ function crTab(btn, panelId) {
       if (willOpen) subNav.classList.add('open');
       mainLinks.forEach(l => l.classList.remove('active'));
       document.querySelectorAll('.nav > a[data-toggle]').forEach(t => t.classList.toggle('active', t === link && willOpen));
+      const hubId = link.getAttribute('data-id');
+      if (hubId) { activateDoc(hubId, null); location.hash = hubId; }
     });
   });
 
