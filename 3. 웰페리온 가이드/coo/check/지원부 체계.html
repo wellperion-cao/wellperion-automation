@@ -8414,12 +8414,16 @@ async function renderWeekly(){
       const isToday=d.date===today;
       const barH=Math.max(Math.round((d.pct/maxPct)*80),3);
       const dateLabel=d.date.slice(5).replace('-','/');
-      const dayName=DASH_DN[new Date(d.date+'T00:00:00').getDay()];
-      const pctColor=d.pct>=90?'var(--green)':d.pct>=60?'var(--yellow)':'var(--red)';
+      const _dt=new Date(d.date+'T00:00:00');
+      const dayName=DASH_DN[_dt.getDay()];
+      /* ★2026-08-26 배798 감사 — 휴관일(2·4주 일요일)이 0% 빨간 막대로 떠서 '그날 점검을 안 했다'로
+         읽혔다. 휴관은 미제출이 아니다. 그날은 색을 빼고 '휴관'으로 적는다(정본 = 2·4주 일요일 휴관). */
+      const _isClosed=(_dt.getDay()===0)&&([2,4].indexOf(Math.ceil(_dt.getDate()/7))>=0);
+      const pctColor=_isClosed?'var(--dim)':(d.pct>=90?'var(--green)':d.pct>=60?'var(--yellow)':'var(--red)');
       html+=`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:34px;">
-        <div style="font-size:10px;font-weight:700;color:${pctColor};">${d.pct}%</div>
+        <div style="font-size:10px;font-weight:700;color:${pctColor};">${_isClosed?'휴관':d.pct+'%'}</div>
         <div style="flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;">
-          <div style="width:26px;height:${barH}px;border-radius:4px 4px 0 0;background:${isToday?'var(--green)':'var(--accent)'};min-height:3px;" title="${dashEsc(d.date+' '+d.pct+'% ('+d.done+'/'+d.total+')')}"></div>
+          <div style="width:26px;height:${_isClosed?6:barH}px;border-radius:4px 4px 0 0;background:${_isClosed?'var(--border)':(isToday?'var(--green)':'var(--accent)')};min-height:3px;" title="${dashEsc(d.date+' '+d.pct+'% ('+d.done+'/'+d.total+')')}"></div>
         </div>
         <div style="font-size:10px;color:var(--dim);text-align:center;line-height:1.3;">${dateLabel}<br><span style="color:${isToday?'var(--green)':'var(--dim)'};">(${dayName})</span></div>
       </div>`;
@@ -8810,11 +8814,34 @@ function renderMrInspector(data){
      분모가 그 사람 제출분뿐이다(위 전체 완료율은 '오늘 예정 항목 전체'가 분모). 두 숫자를 나란히 두면
      전체 46% vs 사람별 86~100% 처럼 보여 GM·실무진이 어긋남으로 읽는다. 계산은 그대로 두고 이름과 분모만 밝힌다. */
   let html='<div style="font-size:12px;color:var(--dim);margin-bottom:6px;">분모 = 그 사람이 <b>제출한 항목만</b>입니다. 위 전체 완료율(예정 항목 전체 기준)과 분모가 달라 두 숫자를 비교하면 안 됩니다 — 제출을 안 한 날은 여기에 잡히지 않습니다.</div>';
-  html+='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>점검자</th><th>제출 세션</th><th>제출분 체크율</th></tr>';
+  /* ★2026-08-26 배798 감사 — 같은 사람이 이름 표기가 달라 여러 줄로 쪼개져 있었다(실측 8명이 12줄).
+     「김종현」과 「김종현 차장」, 「박호균」과 「박호균 과장」, 「이정헌」과 「이정헌소장」 처럼 직함이 붙거나
+     띄어쓰기가 다른 경우다. 점검자 칸이 자유 입력이라 그렇다.
+     ▸직함·공백만 떼어 합친다. 오타(「박남잏」·「이정한」)는 합치지 않는다 — 사람이 고칠 일이고,
+       AI 가 비슷하다고 묶으면 엉뚱한 사람 실적이 섞인다(약속 L05). 대신 아래에 따로 알린다. */
+  var _TITLES=/\s*(차장|과장|부장|팀장|소장|실장|반장|주임|대리|사원|매니저|M|AM)\s*$/;
+  var _norm=function(n){ return String(n||'').replace(/\s+/g,'').replace(_TITLES,'').trim(); };
+  var _merged={}, _order=[], _variants={};
   rows.forEach(function(r){
-    html+='<tr><td>'+mrEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+mrPctColor(r.avgPct)+';font-weight:700;">'+r.avgPct+'%</td></tr>';
+    var k=_norm(r.inspector);
+    if(!_merged[k]){ _merged[k]={inspector:k,sessionCount:0,pctSum:0,n:0}; _order.push(k); _variants[k]={}; }
+    _merged[k].sessionCount+=(r.sessionCount||0);
+    if(r.avgPct!=null){ _merged[k].pctSum+=r.avgPct*(r.sessionCount||1); _merged[k].n+=(r.sessionCount||1); }
+    _variants[k][String(r.inspector)]=1;
+  });
+  var merged=_order.map(function(k){ var o=_merged[k]; o.avgPct=o.n?Math.round(o.pctSum/o.n):null; return o; })
+                   .sort(function(a,b){ return b.sessionCount-a.sessionCount; });
+  html+='<div style="overflow-x:auto;"><table class="dash-table"><tr><th>점검자</th><th>제출 세션</th><th>제출분 체크율</th></tr>';
+  merged.forEach(function(r){
+    var vs=Object.keys(_variants[r.inspector]||{});
+    var tip=vs.length>1?(' <span style="font-size:11px;color:var(--dim);" title="합친 표기: '+mrEsc(vs.join(' / '))+'">(표기 '+vs.length+'종 합침)</span>'):'';
+    html+='<tr><td>'+mrEsc(r.inspector)+tip+'</td><td>'+(r.sessionCount||0)+'</td><td style="color:'+mrPctColor(r.avgPct)+';font-weight:700;">'+(r.avgPct!=null?r.avgPct+'%':'-')+'</td></tr>';
   });
   html+='</table></div>';
+  if(rows.length>merged.length){
+    html+='<div style="margin-top:6px;font-size:11.5px;color:var(--dim);">※ 직함·띄어쓰기만 다른 표기를 합쳤습니다('+rows.length+'줄 → '+merged.length+'줄). '
+        + '이름 자체가 다르게 적힌 것(오타)은 합치지 않습니다 — 점검 화면에서 이름을 고쳐 주세요.</div>';
+  }
   el.innerHTML=html;
 }
 
