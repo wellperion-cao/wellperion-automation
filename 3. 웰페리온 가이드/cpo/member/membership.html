@@ -5998,7 +5998,7 @@ function _lessonRowHtml(t, r, sportKey, sportLabel, isFirstLine, isMultiLine) {
   return '<tr data-row-index="' + r.rowIndex + '">' +
     _lessonInqDateCell(r) +
     // 나이 배지 — 성인·유소년 모두 표시(기존 유소년 전용 조건 제거, 값 있으면 노출). 2026-07-21 시포·GM.
-    '<td class="left lesson-inq-cell-name" style="font-weight:700' + (isFirstLine === false ? ';color:var(--dim)' : ';cursor:pointer') + '" onclick="_lessonOpenMemberCard(\'' + t + '\',' + r.rowIndex + ')" title="' + esc(r.name || '') + '">' + (isFirstLine === false ? '<span title="다종목 같은 문의" style="color:var(--dim);font-size:10px;margin-right:2px">└</span>' : '') + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px">' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + (isFirstLine !== false ? _liMemberBadge_(r.phone) : '') + '</td>' +
+    '<td class="left lesson-inq-cell-name" style="font-weight:700' + (isFirstLine === false ? ';color:var(--dim)' : ';cursor:pointer') + '" onclick="_lessonOpenMemberCard(\'' + t + '\',' + r.rowIndex + ')" title="' + esc(r.name || '') + '">' + (isFirstLine === false ? '<span title="다종목 같은 문의" style="color:var(--dim);font-size:10px;margin-right:2px">└</span>' : '') + esc(r.name || '—') + (String(r.age || '').trim() ? '<span style="color:var(--accent);font-weight:600;font-size:11px;margin-left:4px"' + (t === 'youth' ? ' title="출생년도 — 나이·학년 대신 출생년도(예: 2019년생)로 기재"' : '') + '>' + esc(String(r.age).trim()) + '</span>' : '') + (_isEnRow_(r) ? '<span class="lang-badge-en" title="영어로 접수된 문의">EN</span>' : '') + (isFirstLine !== false ? _liMemberBadge_(r.phone) : '') + '</td>' +
     '<td class="lesson-inq-cell-phone" style="font-weight:700;color:var(--text);font-size:13px">' + esc(r.phone || '—') + '</td>' +
     '<td class="lesson-inq-cell-sport" style="font-size:12px" title="' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '"><span style="' + _lessonSportChipStyle(sportLabel) + '">' + esc(_lessonSportDisplay(sportLabel, t === 'youth')) + '</span></td>' +
     // 문의내용 셀 — r.note(gvizLessonRows_ iNote 배선, 3105행) 그대로 노출. 재문의 배지가 있으면 문의내용 위 자기 줄로 먼저 표시(성함 칸에서 이동, 2026-07-22). 길면 title 툴팁·빈값 '—'. 이전 문의 요약은 아래(2026-07-24).
@@ -13455,7 +13455,8 @@ function lessonBuildNewInputRow(t) {
 
   var noteCell = document.createElement('td');
   if (t === 'youth') {
-    var inputAge = makeInput('age', '연령/년생');
+    var inputAge = makeInput('age', '출생년도(예: 2019년생)');
+    inputAge.title = '출생년도(예: 2019년생) — 나이·학년 대신 출생년도로 기재하면 한국나이/만나이·학교 구분 없이 상담 정확도가 높아집니다';
     inputAge.style.marginBottom = '4px';
     noteCell.appendChild(inputAge);
   }
