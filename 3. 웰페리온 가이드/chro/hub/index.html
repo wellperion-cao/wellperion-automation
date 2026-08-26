@@ -2080,14 +2080,39 @@ function fmtMemoG(mm){
   if(!mm) return '<div style="color:#9a978e">(이력 요약 없음)</div>';
   mm=normMemo(mm);
   var out="";var lines=String(mm).split(/\n/);
+  // [추가 2026-08-26 A-5] 인사카드 1페이지 유지(매니저 지적) — 인쇄 전용 축약. 원본 메모(시트)는 무변경, 이 함수는
+  //   buildHrCard(인사카드)에서만 쓰인다(허브 상세 모달은 renderMemo로 별도 전문 표시 — 영향 없음).
+  //   ① "처리 특기사항" 섹션은 인쇄에서 통째 제외 ② "AI 서류(종합/평가)" 서술은 길이 상한으로 축약·말줄임
+  //     (5축 등급 "4대 인재상"과 종합 등급 배지(섹션3)는 이 로직 대상이 아니라 그대로 유지됨)
+  var AI_SUM_CAP=200, skipSec=false, aiSec=false, aiCount=0, aiCut=false;
   for(var k=0;k<lines.length;k++){var x=lines[k].replace(/\r/g,"").trim();
     if(!x) continue;
     if(/^[─—-]{3,}$/.test(x)) continue;
     if(/^\[자동 수집/.test(x)) continue;
-    if(/^[■◆□▣]/.test(x)){var c=x.replace(/^[■◆□▣]\s*/,"");var ci=c.search(/[:：]/);
-      if(ci>=0&&(c.length-ci)>20){out+='<div class="rs-h">'+esc(c.slice(0,ci).trim())+'</div><div class="rs-p">'+esc(c.slice(ci+1).trim())+'</div>';}
-      else{out+='<div class="rs-h">'+esc(c)+'</div>';}
-    } else if(/^[•·\-]/.test(x)){out+='<div class="rs-li">• '+esc(x.replace(/^[•·\-]\s*/,""))+'</div>';}
+    if(/^[■◆□▣]/.test(x)){
+      var c=x.replace(/^[■◆□▣]\s*/,"");var ci=c.search(/[:：]/);
+      var head=ci>=0?c.slice(0,ci).trim():c.trim();
+      skipSec=/^처리\s*특기사항/.test(head); aiSec=/^AI\s*서류/.test(head); aiCount=0; aiCut=false;
+      if(skipSec) continue;
+      if(ci>=0&&(c.length-ci)>20){
+        var body=c.slice(ci+1).trim();
+        if(aiSec&&body.length>AI_SUM_CAP){ body=body.slice(0,AI_SUM_CAP).trim()+"…"; aiCut=true; aiCount=AI_SUM_CAP; }
+        out+='<div class="rs-h">'+esc(head)+'</div><div class="rs-p">'+esc(body)+'</div>';
+      } else { out+='<div class="rs-h">'+esc(c)+'</div>'; }
+      continue;
+    }
+    if(skipSec) continue;
+    if(aiSec){
+      if(aiCut) continue;
+      var body2=x.replace(/^[•·\-]\s*/,"");
+      var remain=AI_SUM_CAP-aiCount;
+      if(remain<=0){ out+='<div class="rs-p">…</div>'; aiCut=true; continue; }
+      if(body2.length>remain){ body2=body2.slice(0,remain).trim()+"…"; aiCut=true; }
+      aiCount+=body2.length;
+      out+= /^[•·\-]/.test(x) ? ('<div class="rs-li">• '+esc(body2)+'</div>') : ('<div class="rs-p">'+esc(body2)+'</div>');
+      continue;
+    }
+    if(/^[•·\-]/.test(x)){out+='<div class="rs-li">• '+esc(x.replace(/^[•·\-]\s*/,""))+'</div>';}
     else{out+='<div class="rs-p">'+esc(x)+'</div>';}
   }
   return out;
