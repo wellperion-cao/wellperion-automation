@@ -770,13 +770,36 @@ function loadYtdTrend() {
     }
   }
 
+  // stale-while-revalidate + 30s 타임아웃 (CMO-2026-08-26 fix: 80초 무한대기 → 최대 30초 상한)
+  var _ytdNow = Date.now(), _ytdFreshMs = 3600000; // 1h — 신선 캐시는 재조회 스킵
   for (var mm = 1; mm <= lastM; mm++) {
     (function(m) {
       var f = y + '-' + String(m).padStart(2, '0') + '-01';
       var t = (m === lastM) ? _fmtYMD(today)
             : y + '-' + String(m).padStart(2, '0') + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0');
+
+      var cached = _cacheGet(_cacheKey('funnel_conversion', f, t));
+      if (cached && cached.data && cached.data.total) {
+        got.push({ m: m, inq: cached.data.total.inquiries || 0, conv: cached.data.total.converted || 0, rate: cached.data.total.rate });
+        if ((_ytdNow - cached.t) < _ytdFreshMs) { done++; repaint(); return; } // 신선 → 재조회 스킵
+        repaint(); // 오래된 캐시 → 일단 그리고 백그라운드 갱신 계속
+      }
+
+      var settled = false;
+      var tid = setTimeout(function() {
+        if (settled) return;
+        settled = true; done++; failed++;
+        if (!got.some(function(r) { return r.m === m; })) {
+          var tr = document.getElementById('ytd-r' + m);
+          if (tr) tr.innerHTML = '<td>' + m + '월</td><td colspan="4" style="color:var(--dim)">미측정(응답지연)</td>';
+        }
+        repaint();
+      }, 30000);
+
       fetchFunnelConversion(f, t).then(function(d) {
-        done++;
+        if (settled) return;
+        settled = true; clearTimeout(tid); done++;
+        got = got.filter(function(r) { return r.m !== m; }); // 캐시 렌더 교체
         if (!d || !d.total) {
           failed++;
           var tr = document.getElementById('ytd-r' + m);
