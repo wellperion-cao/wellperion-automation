@@ -764,6 +764,115 @@ def build():
     }
 
 
+# home 카드가 쓰는 GAS 주소 — 화면(wellperion_guide(main).html)과 같은 것을 본다.
+# 다른 주소를 쓰면 대조가 대조가 아니게 된다(약속 L01).
+RECEPTION_GAS = "https://script.google.com/macros/s/AKfycbwk2XS1FND9V2xtXlWgsXzgA5p0FG7jVm6YKD74JK_ME_ZvHsNUUfGE5A_8p0X8VcF3gQ/exec"
+TODO_GAS = "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec"
+CHECK_GAS = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
+
+KPI_CROSSCHECK_OUT = STATUS_DIR / "home_kpi_crosscheck.json"
+
+
+def _kpi_crosscheck_rules():
+    """home 카드 안에서 서로 맞아떨어져야 하는 관계만 모은다.
+
+    ★2026-08-26 GM 물음 "이제 home에 있는 데이터를 믿어도 되는거지?" 에 대한 장치다.
+      그날 하루에만 기준이 어긋난 곳이 3군데 나왔고(유형별 큰숫자가 누적 / 상단 3칸이 전체 기준 /
+      시설부 안전 카테고리가 이름 변경으로 두 줄로 갈림) 전부 GM 이 먼저 발견하셨다.
+      공통점은 '한 카드 안에서 기준이 둘로 갈렸다' 는 것이다 — 그건 원천을 몰라도 잡을 수 있다.
+      합이 맞는지만 보면 된다.
+    ▸새 감시 스크립트·새 예약작업을 만들지 않는다(약속 L21). 이미 30분마다 도는 이 발행기에 얹는다.
+    ▸판정은 '원천 대 원천'이다 — 화면 DOM 을 읽지 않는다. 화면이 이 원천을 그대로 그리므로,
+      원천에서 합이 안 맞으면 화면도 안 맞는다.
+    """
+    import datetime as _dt
+    import urllib.request as _ur
+
+    ym = _dt.date.today().strftime("%Y-%m")
+    out = []
+
+    def _get(url):
+        return json.loads(_ur.urlopen(url, timeout=60).read().decode("utf-8"))
+
+    # ① 종합접수처 — 이번달 접수 = 미처리 + 처리중 + 완료, 그리고 유형별 합 = 이번달 접수
+    try:
+        d = _get(RECEPTION_GAS + "?action=reg_board")
+        rows = d.get("data") or []
+        mon = [r for r in rows if str(r.get("createdAt") or "")[:7] == ym]
+        by = lambda st: len([r for r in mon if (r.get("status") or r.get("상태")) == st])
+        parts = by("접수") + by("처리중") + by("완료")
+        out.append({"card": "종합접수처", "what": "이번달 접수 = 미처리+처리중+완료",
+                    "left": len(mon), "right": parts, "ok": len(mon) == parts})
+        cats = {}
+        for r in mon:
+            cats[r.get("category") or r.get("카테고리") or ""] = cats.get(r.get("category") or r.get("카테고리") or "", 0) + 1
+        out.append({"card": "종합접수처", "what": "유형별 합 = 이번달 접수",
+                    "left": sum(cats.values()), "right": len(mon), "ok": sum(cats.values()) == len(mon)})
+    except Exception as e:
+        out.append({"card": "종합접수처", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
+    # ② 업무 카드 — 전체 = 진행 + 완료 + 보류 (이번달·전체 두 벌 다)
+    try:
+        rows = _get(TODO_GAS + "?action=todo_list").get("data") or []
+        staff = ["이경연 실장", "나우열M", "최준용M", "임정은M", "윤병현AM", "백승화 사원", "이정헌 소장"]
+        is_staff = lambda o: any(x.strip() in staff for x in str(o or "").split(","))
+        st = lambda r: str(r.get("상태") or "진행중").strip()
+        cr = lambda r: str(r.get("생성일") or "")[:10]
+        alls = [r for r in rows if is_staff(r.get("담당자"))]
+        for label, arr in (("전체", alls), ("이번달", [r for r in alls if cr(r)[:7] == ym])):
+            parts = (len([r for r in arr if st(r) not in ("완료", "보류")])
+                     + len([r for r in arr if st(r) == "완료"])
+                     + len([r for r in arr if st(r) == "보류"]))
+            out.append({"card": "업무 현황", "what": f"{label} 합계 = 진행+완료+보류",
+                        "left": len(arr), "right": parts, "ok": len(arr) == parts})
+    except Exception as e:
+        out.append({"card": "업무 현황", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
+    # ③ 시설부 점검 카테고리 — 이름만 다른 같은 카테고리가 두 줄로 갈려 있지 않은가
+    #    (2026-08-26 실사고: 'F 안전' 과 'F 안전(AI초안)' 이 따로 서서 새 줄이 0% 로 보였다)
+    try:
+        d = _get(CHECK_GAS + f"?action=monthly_report&dept=facility&month={ym}")
+        seen = {}
+        dup = []
+        for r in (d.get("byCategory") or []):
+            key = re.sub(r"\s*\((AI초안|AI 초안)\)\s*$", "", str(r.get("cat") or "")).strip()
+            if key in seen:
+                dup.append(key)
+            seen[key] = 1
+        out.append({"card": "시설부 점검", "what": "같은 카테고리가 두 줄로 갈리지 않았나",
+                    "left": len(d.get("byCategory") or []), "right": len(seen), "ok": not dup,
+                    "detail": (", ".join(dup) if dup else "")})
+    except Exception as e:
+        out.append({"card": "시설부 점검", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
+    return out
+
+
+def publish_kpi_crosscheck():
+    """home 카드의 내적 정합을 재고 status/home_kpi_crosscheck.json 에 남긴다.
+
+    어긋난 것이 있으면 아침 자가점검(hangro_board 부팅 슬라이스)이 이 파일을 읽어 표에 올린다 —
+    GM 이 먼저 발견하는 구조를 끊는 것이 목적이다(약속 L20).
+    """
+    try:
+        rows = _kpi_crosscheck_rules()
+    except Exception as e:
+        print(f"[erp_status] kpi_crosscheck: 실패({e}) — 기존 파일 유지")
+        return False
+    bad = [r for r in rows if r.get("ok") is False]
+    err = [r for r in rows if r.get("ok") is None]
+    payload = {
+        "_doc": "home 카드 내적 정합 대조 — 한 카드 안에서 합이 맞는지만 본다(원천 대 원천). "
+                "erp_status_publisher 가 30분마다 갱신. 어긋나면 아침 자가점검이 표에 올린다.",
+        "generated_at_kst": _now_kst().strftime("%Y-%m-%d %H:%M"),
+        "checked": len(rows), "mismatch": len(bad), "unmeasured": len(err),
+        "rows": rows,
+    }
+    KPI_CROSSCHECK_OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[erp_status] kpi_crosscheck: {len(rows)}건 중 어긋남 {len(bad)}건 · 못 잼 {len(err)}건")
+    return True
+
+
 def main():
     STATUS_DIR.mkdir(parents=True, exist_ok=True)
     payload = build()
@@ -774,6 +883,9 @@ def main():
     # home 히어로 KPI 스냅샷 — 같은 30분 주기에 편승(배9660). 실패해도 erp_status 발행에 무영향.
     home_kpi_ok = publish_home_kpi_snapshot()
     print(f"[erp_status] home_kpi_snapshot: {'갱신' if home_kpi_ok else '실패(기존 유지)'}")
+
+    # home 카드 내적 정합 대조 — 같은 30분 주기에 편승(2026-08-26 GM 지시). 새 예약작업 없음(L21).
+    publish_kpi_crosscheck()
 
     # 알림 등록부 드리프트 체크 — 30분 주기에 편승(배NOTI, 2026-08-01 시토). 신규 예약작업 없음(L21).
     if _nrc is not None:

@@ -918,6 +918,20 @@
       },
       "reversible": true,
       "honesty_default": "measured"
+    },
+    {
+      "id": "cto-kpi-crosscheck",
+      "enabled": true,
+      "owner_role": "cto",
+      "owner_nick": "시토",
+      "feature": "home 카드 숫자 정합 대조 — 한 카드 안에서 합이 맞는지만 본다(원천 대 원천, 화면 DOM 안 읽음). GM 물음 2026-08-26 '이제 home에 있는 데이터를 믿어도 되는거지?' 에 대한 장치. 그날 하루에만 기준이 어긋난 곳이 3군데 나왔고(유형별 큰숫자가 누적 / 상단 3칸이 전체 기준 / 시설부 안전 카테고리가 이름 변경으로 두 줄) 전부 GM 이 먼저 발견하셨다 — 공통점이 '한 카드 안에서 기준이 둘로 갈렸다' 라 합만 봐도 잡힌다. ★새 스크립트·새 예약작업을 만들지 않았다(약속 L21): 계산은 erp_status_publisher 30분 주기에 얹고, 표출은 hangro_board 시토 부팅 슬라이스가 결과 파일을 표로 그리기만 한다(판정 로직 복제 0).",
+      "data_source": {
+        "type": "json",
+        "path": "status/home_kpi_crosscheck.json"
+      },
+      "schedule": "30분(erp_status_publisher 편승)",
+      "surface": "시토 부팅 화면 「🔢 화면 숫자 정합」 — 어긋난 것만 표로",
+      "since": "2026-08-26"
     }
   ],
   "_removed": [

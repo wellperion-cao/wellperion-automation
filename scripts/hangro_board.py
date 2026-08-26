@@ -1881,6 +1881,34 @@ _DUE_HYGIENE_LABELS = {
 }
 
 
+# ── 🔢 화면 숫자 정합 (2026-08-26 GM 지시 "대조를 매일 돌려줘") ──
+#   판정·계산은 erp_status_publisher.publish_kpi_crosscheck() 가 30분마다 해서 파일로 남긴다.
+#   여기선 그 결과를 표로 그리기만 한다(약속 L01 — 판정 로직 복제 금지).
+#   시토 부팅 화면에만 붙인다 — 화면 숫자 배선이 시토 소관이라 다른 역할에겐 남의 살림이다.
+KPI_CROSSCHECK_PATH = _REPO / "status" / "home_kpi_crosscheck.json"
+
+
+def _kpi_crosscheck_alert() -> str:
+    try:
+        d = json.loads(KPI_CROSSCHECK_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    rows = [r for r in (d.get("rows") or []) if r.get("ok") is False or r.get("ok") is None]
+    if not rows:
+        return ""
+    out = ["### 🔢 화면 숫자 정합 — 어긋난 것만",
+           f"_{d.get('generated_at_kst', '')} 기준 · {d.get('checked', 0)}건 중 "
+           f"어긋남 {d.get('mismatch', 0)}건 · 못 잼 {d.get('unmeasured', 0)}건_",
+           "| 어디 | 무엇이 안 맞나 | 값 |", "|---|---|---|"]
+    for r in rows:
+        if r.get("ok") is None:
+            val = "못 쟀음 — " + str(r.get("error", ""))[:60]
+        else:
+            val = f"{r.get('left')} vs {r.get('right')}" + (f" ({r['detail']})" if r.get("detail") else "")
+        out.append(f"| {r.get('card', '')} | {r.get('what', '')} | {val} |")
+    return "\n".join(out)
+
+
 def _due_hygiene_alert() -> str:
     import gm_aide_scan
     caps = gm_aide_scan.scan_due_hygiene()
@@ -2017,6 +2045,10 @@ def main() -> None:
         due_alert = _due_hygiene_alert()
         if due_alert:
             board_text = due_alert + "\n\n" + board_text
+    if role_slug == "cto":
+        cc_alert = _kpi_crosscheck_alert()
+        if cc_alert:
+            board_text = cc_alert + "\n\n" + board_text
     if args.role:
         # 정보 손실 0 — 잘라 냈다는 사실과 전체를 어디서 보는지 같이 알린다.
         board_text += (

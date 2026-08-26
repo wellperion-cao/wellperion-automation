@@ -1,0 +1,45 @@
+{
+  "_doc": "home 카드 내적 정합 대조 — 한 카드 안에서 합이 맞는지만 본다(원천 대 원천). erp_status_publisher 가 30분마다 갱신. 어긋나면 아침 자가점검이 표에 올린다.",
+  "generated_at_kst": "2026-08-26 17:44",
+  "checked": 5,
+  "mismatch": 1,
+  "unmeasured": 0,
+  "rows": [
+    {
+      "card": "종합접수처",
+      "what": "이번달 접수 = 미처리+처리중+완료",
+      "left": 47,
+      "right": 47,
+      "ok": true
+    },
+    {
+      "card": "종합접수처",
+      "what": "유형별 합 = 이번달 접수",
+      "left": 47,
+      "right": 47,
+      "ok": true
+    },
+    {
+      "card": "업무 현황",
+      "what": "전체 합계 = 진행+완료+보류",
+      "left": 145,
+      "right": 145,
+      "ok": true
+    },
+    {
+      "card": "업무 현황",
+      "what": "이번달 합계 = 진행+완료+보류",
+      "left": 49,
+      "right": 49,
+      "ok": true
+    },
+    {
+      "card": "시설부 점검",
+      "what": "같은 카테고리가 두 줄로 갈리지 않았나",
+      "left": 8,
+      "right": 7,
+      "ok": false,
+      "detail": "F 안전"
+    }
+  ]
+}
