@@ -553,11 +553,16 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
                 continue
             seen_titles.add(_tkey)
 
-        # AI 배는 항로 전 섹터에서 제외 → 자율현황 보드로 (GM 2026-07-15 · 기준 교정 2026-08-03)
-        #   미지정은 AI 가 아니다 = 항로에 남는다(화면과 동일한 안전측 판정).
+        # ★2026-08-26 GM 확정 — AI 배를 항로 안으로 들인다(병합).
+        #   GM: "배 정리 보관함의 전체 배가 위 항로에 들어가면 안 되는거야? 대기정박이랑 같은 맥락 같은데"
+        #       → "고도화 및 단순화를 하려면 당연히 병합 및 개선이 되어야해"
+        #   같은 큐를 두 면으로 나눠 보여주던 것을 끝낸다 — 항로 하나가 열린 배 전부를 담는다.
+        #   구분은 화면을 나누는 대신 **꼬리표 한 글자**로 한다(🤖 = AI 내부 살림).
+        #   ▸종전 분기(audience=='ai' → 자율화 미션 칸으로 빼기)는 여기서 제거했다.
+        #     GM 2026-07-15 에 뺐던 이유는 "AI 살림이 GM 항로를 채운다" 였는데, 꼬리표로 구분되면
+        #     그 문제는 해결되고 '같은 자료가 두 곳'이라는 더 큰 문제가 없어진다(약속 L01).
         if item.get("audience") == "ai":
-            sections["autonomy"].append(item)
-            continue
+            item["_tag_ai"] = True
 
         # ★2026-08-16 GM 지시 — '애초에 닫힐 수 없는 배'를 진행대기 숫자에서 뺀다.
         #   GM: "진행대기배가 88척은 너무많네" → 실측해 보니 그중 15척은 끝이 없는 종류였다:
@@ -1471,11 +1476,13 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     lines.append("")
     lines.append("### 🚢 진행중")
     if inprog:
-        lines.append(_md_table([_item_to_row(it) for it in inprog]))
+        lines.append(_md_table([_item_to_row(it, ship_col_extra=("🤖" if it.get("_tag_ai") else ""))
+                                for it in inprog]))
     else:
         lines.append("_(없음)_\n")
 
-    # ── 🤖 자율화 미션 포인터 (항로 제외, 자율현황行) ──
+    # ── 🤖 자율화 미션 포인터 — 2026-08-26 병합으로 비어 있다(AI 배는 위 두 섹터에 🤖 꼬리표로 들어간다).
+    #    분기는 남겨 둔다: 다른 경로가 이 칸을 채우면 그때 다시 보이게(조용한 탈락 금지).
     if secs["autonomy"]:
         lines.append(f"🤖 자율화 미션 {len(secs['autonomy'])}건 — 항로 제외, 자율현황 보드에서 관리")
         lines.append("    https://wellperion-cao.github.io/wellperion-automation/%EC%9E%90%EC%9C%A8%ED%98%84%ED%99%A9.html")
@@ -1498,6 +1505,9 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         for it in waiting:
             st  = str(it.get("status", ""))
             tag = "보류" if st in {"보류", "ON_HOLD"} else ""
+            # 🤖 = AI 내부 살림(2026-08-26 병합). 화면을 나누는 대신 꼬리표로 구분한다.
+            if it.get("_tag_ai"):
+                tag = (tag + " 🤖").strip()
             wait_rows.append(_item_to_row(it, ship_col_extra=tag))
         lines.append(_md_table(wait_rows))
     else:

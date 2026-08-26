@@ -372,31 +372,10 @@
   <details class="hist-fold" id="ships-summary-fold">
     <summary>🗂 배 정리·보관함 <span class="hist-sub">— 백엔드에 실제로 있는 배 전부 · 무의미·중복은 여기서 지웁니다</span></summary>
 
-  <!-- ════ 🗂 전체 배 정리 (GM 지시 2026-07-27 — 백엔드에 있는 배를 빠짐없이 보여주고, 무의미·중복은 GM이 직접 지운다)
-       ★2026-08-01(시토 · GM "겹치는 것 전부 합치기") — 구 「🚢 진행·상시 미션」·「⚓ 정박·대기」 두 구역을 이 표로 합쳤다.
-         두 구역은 이 표를 상태별로 걸러 보여주던 것뿐이라, 아래 상태 고르기에 같은 조건을 넣어 정보 손실 없이 없앴다
-         (진행중만 = 구 진행·상시 / 정박·대기(자율) = 구 정박·대기). '재개조건 · 다음' 칸도 그대로 옮겼다. ════ -->
-  <h2 class="sec" id="sec-all-ships" style="margin-top:2px;">🗂 전체 배 <span style="font-size:11px;font-weight:400;color:var(--dim);">(백엔드에 실제로 있는 배 전부 — 무의미·중복은 여기서 지웁니다)</span></h2>
-  <div class="sec-note">
-    <code>status/_queue.json</code>에 <b>실제로 들어 있는 배 전부</b>입니다 — 화면과 백엔드가 같은지 여기서 확인하시면 됩니다.
-    상태를 골라 <b>진행중만</b>·<b>정박·대기</b>만 볼 수 있습니다.
-    <b>지우면 백엔드에서도 같이 빠지고</b>, 보관함에 남아 되돌릴 수 있습니다.
-  </div>
-  <div class="ships-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 8px;">
-    <input id="ship-search" type="search" placeholder="제목·담당·배 번호로 찾기" style="flex:1 1 220px;min-width:180px;padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
-    <select id="ship-filter" style="padding:7px 10px;border:1px solid var(--line,#ccc);border-radius:6px;font-size:13px;">
-      <option value="all">전체 상태</option>
-      <option value="IN_PROGRESS">진행중만</option>
-      <option value="parked">정박·대기(자율)</option>
-      <option value="PENDING">대기만</option>
-      <option value="stale">오래 멈춤(14일+)</option>
-      <option value="dup">중복 의심만</option>
-    </select>
-    <span id="ship-count" style="font-size:12px;color:var(--dim);"></span>
-  </div>
-  <div class="routines" id="all-ships">
-    <div class="feed-status" style="grid-column:1/-1;">전체 배를 불러오는 중…</div>
-  </div>
+  <!-- [2026-08-26 GM 확정] 「🗂 전체 배」 표 제거 — 위 「🧭 항로」와 같은 데이터를 두 번 그리고 있었다.
+       GM: "고도화 및 단순화를 하려면 당연히 병합 및 개선이 되어야해" → 항로 하나가 열린 배 전부를 담고,
+       이 표에만 있던 「정리(보관함으로)」 버튼은 항로 표의 맨 오른쪽 칸으로 옮겼다(기능 손실 0).
+       상태 고르기(진행중만·정박·대기)는 항로 3섹터가 이미 그 역할을 한다. 🗄 보관함은 아래 그대로 남는다. -->
 
   <!-- ════ 🗄 보관함 (지운 배 — 되돌리기 가능) ════ -->
   <h2 class="sec" id="sec-trash" style="margin-top:2px;">🗄 보관함 <span style="font-size:11px;font-weight:400;color:var(--dim);">(지운 배 — 되돌릴 수 있습니다)</span></h2>
@@ -614,8 +593,15 @@
   //   ★G1 렌더(wellperion_guide(main).html)와 **같은 한 줄**을 써야 두 화면이 안 겹치고 안 새다.
   function isAiShip(s){ return !!s && s.audience === 'ai'; }
 
-  // ═══════════ 🧭 항로 — AI 배 3섹터 (G1 이관 · 배10510) ═══════════
-  //  대상 = AI 배(isAiShip)만. G1 은 그 나머지를 그린다 — 두 화면이 서로 안 겹친다.
+  // ═══════════ 🧭 항로 — 열린 배 전부 (G1 이관 · 배10510) ═══════════
+  //  ★2026-08-26 GM 확정 — 「🗂 전체 배」와 병합했다.
+  //    GM: "배 정리 보관함의 전체 배가 위 항로에 들어가면 안 되는거야? 대기정박이랑 같은 맥락 같은데"
+  //        → "고도화 및 단순화를 하려면 당연히 병합 및 개선이 되어야해"
+  //    종전엔 항로가 audience==='ai' 4척만 그렸고, 나머지 27척은 아래 「전체 배」 표에만 있었다.
+  //    주석엔 "G1 이 나머지를 그린다"고 적혀 있었지만 G1 은 2026-08-14 부로 AI 배를 안 그린다
+  //    (규약 부칙 1) — 그래서 27척이 어느 항로에도 안 뜨는 상태로 남아 있었다. 그게 GM 이 짚은 것이다.
+  //    이제 항로 하나가 열린 배 전부를 담고, AI 내부 살림은 🤖 꼬리표로만 구분한다(화면을 나누지 않는다).
+  //  섹터 판정은 status 필드만 본다: 🚢 IN_PROGRESS · ⚓ 그 외 열린 배 · 🏁 오늘 처리된 완료.
   //  섹터 판정도 status 필드만 본다: 🚢 IN_PROGRESS · ⚓ 그 외 열린 배 · 🏁 오늘 처리된 완료.
   //  행 렌더는 「🗂 전체 배」가 쓰는 헬퍼(missionBoat·missionCleanTitle·nextCellHtml)를 그대로 재사용.
   // 🎯 오늘 반드시 끝낼 것(GM 2026-08-10 "놓치지 않게") — must_finish_on(YYYY-MM-DD) 몇 일 지났나.
@@ -637,7 +623,7 @@
 
   function renderHangro(){
     var el = reqEl('hangro-board', 'renderHangro'); if(!el) return;
-    var live = _queueAll.filter(function(s){ return isAiShip(s) && !isTrashed(s); });
+    var live = _queueAll.filter(function(s){ return s && !isTrashed(s); });   // 병합(2026-08-26): 열린 배 전부
     var t0 = localTodayMs(), t1 = t0 + 86400000;
     var isDone = function(s){ return s.status === 'DONE' || s.status === '완료'; };
     // 🎯 오늘 반드시 끝낼 것 — audience(office/ai) 무관 전체 큐에서 본다(위 live는 AI배만이라 다른 스코프).
@@ -658,18 +644,22 @@
     );
     // 칸 폭 재배분(2026-08-04 GM 표면점검 — 「다음」칸이 「배」보다 3.1배 빽빽한데 폭은 366px vs 37px로 접혔다):
     // 다음 30%→38%(+8pp, 미션의 남은 폭에서 흡수) · 담당 96px→84px. 배(37px)는 아이콘 칸이라 더 못 줄인다.
-    var HEAD = '<tr><th style="width:36px">배</th><th style="width:84px">담당</th><th>미션</th><th style="width:38%">다음</th></tr>';
+    var HEAD = '<tr><th style="width:36px">배</th><th style="width:84px">담당</th><th>미션</th>'
+              + '<th style="width:34%">다음</th><th style="width:56px">정리</th></tr>';   // 정리 칸 = 2026-08-26 병합으로 흡수
     el.innerHTML = secs.map(function(sec){
       var rows = sec.list
         .sort(function(a,b){ return String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0)); })
         .map(function(s){
           var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
+          // 🤖 = AI 내부 살림(2026-08-26 병합) · 맨 오른쪽 칸 = 보관함으로 옮기기(구 「전체 배」 표의 기능을 흡수)
           return '<tr><td style="text-align:center;">' + missionBoat(s.priority) + '</td>'
             + '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>'
             + '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>'
+            + (isAiShip(s) ? ' <span title="AI 내부 살림" style="font-size:11px;">🤖</span>' : '')
             + (staleDays(s) >= 14 ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '')
             + (sec.key === 'mfOverdue' ? '<br><span style="font-size:11px;color:#c62828;">' + mfDaysLate(s) + '일 지남</span>' : '') + '</td>'
-            + '<td>' + nextCellHtml(s.next || s.depends_on) + '</td></tr>';
+            + '<td>' + nextCellHtml(s.next || s.depends_on) + '</td>'
+            + '<td style="text-align:center;">' + trashBtn(s) + '</td></tr>';
         });
       return '<details class="coo-details" style="margin-top:8px;"' + (sec.key === 'done' ? '' : ' open') + '>'
         + '<summary>' + sec.title + '<span style="float:right;color:var(--dim);font-weight:400;">' + rows.length + '척</span></summary>'
@@ -726,88 +716,8 @@
 
 
 
-  function renderAllShips(){
-    var el = reqEl('all-ships', 'renderAllShips'); if(!el) return;
-    var q = String((document.getElementById('ship-search')||{}).value || '').trim().toLowerCase();
-    var f = String((document.getElementById('ship-filter')||{}).value || 'all');
-    var live = _queueAll.filter(function(s){ return s && !isTrashed(s); });
-    var dup = dupKeySet(live);
-    var list = live.filter(function(s){
-      if(f === 'IN_PROGRESS' && s.status !== 'IN_PROGRESS') return false;
-      // 정박·대기(자율) — 구 renderParkedMissions 와 같은 판정을 그대로 옮겨 왔다(2026-08-01 섹션 병합).
-      if(f === 'parked' && !(isAiShip(s) && s.status !== 'DONE' && s.status !== 'IN_PROGRESS')) return false;
-      if(f === 'PENDING' && !(s.status === 'PENDING' || s.status === 'STANDBY')) return false;
-      if(f === 'dup' && !isSuspect(s, dup)) return false;
-      if(f === 'stale' && staleDays(s) < 14) return false;
-      if(!q) return true;
-      var nick = MISSION_NICK[s.clevel] || s.clevel || '';
-      return (String(s.title||'') + ' ' + nick + ' ' + String(s.ship_no||'')).toLowerCase().indexOf(q) >= 0;
-    });
-    list.sort(function(a,b){
-      var r = (a.status === 'IN_PROGRESS' ? 0 : 1) - (b.status === 'IN_PROGRESS' ? 0 : 1);
-      return r || String(a.clevel||'').localeCompare(String(b.clevel||'')) || ((a.ship_no||0) - (b.ship_no||0));
-    });
-    var cnt = document.getElementById('ship-count');
-    if(cnt){
-      // ★2026-08-08 GM 지적 "대기정박건도 지금 진행이 안되는게 엄청 많네".
-      //   그동안 '몇 척 있다'만 셌다. 정작 볼 것은 **얼마나 멈춰 있나**인데 그 숫자가 없어서,
-      //   필터를 직접 '오래 멈춤'으로 바꿔야만 보였다. 세는 김에 같이 적는다(새 계산 없음).
-      var _stale = live.filter(function(x){ return staleDays(x) >= 14; }).length;
-      cnt.innerHTML = list.length + '척 표시 · 백엔드 전체 ' + live.length + '척'
-        + (_stale ? ' · <b style="color:#b07800;">14일+ 멈춤 ' + _stale + '척</b>' : '');
-    }
-    if(!list.length){ el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">해당하는 배가 없습니다.</div>'; return; }
-    var rows = list.map(function(s){
-      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
-      var sus = isSuspect(s, dup);
-      // 북극성 칸(배587) — voyage_map.json roles[].northstar, 담당(clevel) 단위 문구라 행마다 같은
-      // 값이 반복된다(그 담당이 향하는 목적지이므로 정상). 긴 칸은 clampLongCells() 이 자동으로 접는다.
-      var ns = (_northstarByRole[s.clevel] || '').replace(/\r?\n/g, ' · ');
-      return '<tr' + (sus ? ' style="background:rgba(255,196,0,.10);"' : '') + '>' +
-        '<td style="text-align:center;">' + missionBoat(s.priority) + '</td>' +
-        '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>' +
-        '<td><strong>' + esc(missionCleanTitle(s.title)) + '</strong>' + (sus ? ' <span style="font-size:11px;color:#b07800;">중복 의심</span>' : '') + '</td>' +
-        '<td style="color:var(--dim);">' + (ns ? esc(ns) : '—') + '</td>' +
-        '<td>' + esc(shipStatusLabel(s)) + (staleDays(s) >= 14
-            ? '<br><span style="font-size:11px;color:#b07800;">' + staleDays(s) + '일째 멈춤</span>' : '') + '</td>' +
-        // 재개조건 · 다음 — 구 진행/정박 두 표에만 있던 칸을 병합하며 옮겨 왔다(2026-08-01).
-        //   ★같은 날 수리: note 폴백을 뺐다. note 는 그 배의 누적 기록이라 1,000자가 넘는 것이
-        //   있고(실무진 피드백 배 실측 1,110자), 그게 이 칸에 통째로 들어가 표가 무너졌다
-        //   (GM 지적 "전체 배가 정리가 하나도 안 된 것 같다"). 이 칸이 답할 것은
-        //   '다음에 뭘 하나'뿐이다 — next·depends_on 만 쓴다. 기록은 배를 열어서 본다.
-        '<td>' + nextCellHtml(s.next || s.depends_on) + '</td>' +
-        '<td style="text-align:center;">' + trashBtn(s) + '</td>' +
-      '</tr>';
-    });
-    /* ★2026-08-01(시토 · GM 지적 "전체 배가 정리가 하나도 안 된 것 같다")
-       49척을 한 표에 쏟아부으니 스크롤만 길고 훑을 수가 없었다. 알림 한 장과 같은 방식으로
-       담당별로 접어 묶는다 — 담당 줄만 보면 누가 몇 척을 지고 있는지 한눈에 들어오고,
-       필요한 담당만 펼친다. 진행중이 많은 담당을 위로. 검색·상태 고르기는 그대로 동작한다
-       (걸러진 결과를 다시 묶는 것뿐이라 판정 로직은 손대지 않았다). */
-    var byOwner = {}, owners = [];
-    list.forEach(function(s, i){
-      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
-      if(!byOwner[nick]){ byOwner[nick] = { rows:[], running:0 }; owners.push(nick); }
-      byOwner[nick].rows.push(rows[i]);
-      if(s.status === 'IN_PROGRESS') byOwner[nick].running++;
-    });
-    owners.sort(function(a,b){ return byOwner[b].running - byOwner[a].running || byOwner[b].rows.length - byOwner[a].rows.length; });
-    var HEAD = '<tr><th style="width:36px">배</th><th style="width:96px">담당</th><th>미션</th>' +
-      '<th style="width:16%">🗺️ 북극성</th>' +
-      '<th style="width:88px">상태</th><th style="width:24%">재개조건 · 다음</th><th style="width:64px">정리</th></tr>';
-    el.innerHTML = owners.map(function(nick){
-      var g = byOwner[nick];
-      /* ★기본 접힘 (GM 지시 2026-08-24 "세로 스크롤이 너무 길다").
-         담당자 그룹을 전부 펼친 채 두면 배 수만큼 표가 쌓여 이 구역만 3,000px 을 넘었다.
-         척수·진행중 수는 summary 에 그대로 있어 접어도 읽을 것은 다 보인다(정보 손실 0). */
-      return '<details class="coo-details" style="margin-top:8px;">' +
-        '<summary>' + esc(nick) + '<span style="float:right;color:var(--dim);font-weight:400;">' +
-          g.rows.length + '척 · 진행중 ' + g.running + '</span></summary>' +
-        '<div class="gtbl-wrap"><table class="gtbl">' + HEAD + g.rows.join('') + '</table></div>' +
-      '</details>';
-    }).join('');
-  }
-
+  // [2026-08-26] renderAllShips() 삭제 — 「🗂 전체 배」 표가 항로로 병합되면서 그릴 곳이 없어졌다.
+  //   꺼두면 죽은 코드가 되어 누가 다시 켠다(약속 L21) — 함수째 지운다. 되살려야 하면 git 이력에서 본다.
   function trashBtn(s){
     if(s.ship_no == null) return '<span style="color:var(--dim);">—</span>';
     return '<button type="button" class="ship-trash" data-ship="' + esc(s.ship_no) + '" title="이 배를 보관함으로 옮깁니다"'
@@ -866,7 +776,7 @@
       var arr = parseJson(txt);
       if(!Array.isArray(arr)) return;
       _queueAll = arr;
-      renderAllShips(); renderTrash();
+      renderHangro(); renderTrash();   // 병합(2026-08-26): 전체 배 표가 항로로 흡수됨
     });
   }
 
@@ -902,10 +812,6 @@
     if(!t) return;
     ev.preventDefault();
     onShipAction(t.getAttribute('data-ship'), t.classList.contains('ship-trash') ? 'trash' : 'restore');
-  });
-  ['ship-search','ship-filter'].forEach(function(id){
-    document.addEventListener('input', function(ev){ if(ev.target && ev.target.id === id) renderAllShips(); });
-    document.addEventListener('change', function(ev){ if(ev.target && ev.target.id === id) renderAllShips(); });
   });
 
   // 🤖 히어로 "자율이 오늘 한 일" 삭제 (GM 지시 2026-08-15 "자율이 오늘 한일 이런건 삭제하자 의미가없다").
@@ -1551,10 +1457,6 @@
       var hgEl = document.getElementById('hangro-board');
       if(hgEl) hgEl.innerHTML = '<div class="feed-status">항로 표시 오류.</div>';
     }
-    try{ renderAllShips(); }catch(e){
-      var asEl = document.getElementById('all-ships');
-      if(asEl) asEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">전체 배 표시 오류.</div>';
-    }
     try{ renderTrash(); }catch(e){
       var tsEl = document.getElementById('trash-ships');
       if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
@@ -1574,8 +1476,6 @@
     var fl = document.getElementById('foot-loaded');
     if(fl) fl.innerHTML = ' · 로드 <b>' + fmtWhen(new Date().toISOString()) + '</b>';
   }).catch(function(){
-    var asEl0 = document.getElementById('all-ships');
-    if(asEl0) asEl0.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">배 목록을 불러오지 못했습니다.</div>';
     var abEl0 = document.getElementById('alert-board-rooms');
     if(abEl0) abEl0.innerHTML = '<div class="feed-status">알림 한 장을 불러오지 못했습니다.</div>';
   });
