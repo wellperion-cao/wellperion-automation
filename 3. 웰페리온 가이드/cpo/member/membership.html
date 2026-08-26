@@ -9209,9 +9209,11 @@ function _memberOverviewHtml() {
      고르는 게 맞고, **LOSS는 기간이 지나거나 LOSS일자가 적힌 사람**이라 회원 구분도 등록 분류도 아니다.
      LOSS 명단은 왼쪽 요약의 「LOSS 698명」 상자를 누르면 그대로 열린다(있던 길이라 새로 만들지 않았다).
      이제 이 칸에는 회원 구분 6종만 있다 — 두 칸이 각자 한 가지만 말한다. */
-var MEMBER_TYPE_SELECT_GROUPS = [
-  { label: '회원 구분', items: ['멤버십', '입주민', '보증금', 'FAN VIP', '중단기', '법인'] }
-];
+/* ★2026-08-26 GM 지적 — "회원구분 드롭다운에 '회원구분' 단어가 중복되어 들어가있어".
+   묶음이 둘(회원 구분 / 상태)이던 시절엔 optgroup 이 둘을 갈랐는데, 2026-08-13 에 상태 묶음을
+   빼면서 묶음이 하나만 남았다. 하나뿐인 묶음의 제목은 칸 라벨('회원 구분 선택')과 같은 말이라
+   목록을 열면 '회원 구분'이 두 번 보였다. optgroup 을 없애고 6종을 그대로 편다. */
+var MEMBER_TYPE_SELECT_ITEMS = ['멤버십', '입주민', '보증금', 'FAN VIP', '중단기', '법인'];
 function _activeTypeSelectValue() {
   // LOSS·대기 명단을 보고 있을 땐 이 칸이 가리킬 것이 없다 — 회원 구분을 고르지 않은 상태로 둔다.
   if (_activeScope === 'ended') return '';
@@ -9220,16 +9222,14 @@ function _activeTypeSelectValue() {
 }
 function _memberTypeSelectHtml() {
   var cur = _activeTypeSelectValue();
+  var items = MEMBER_TYPE_SELECT_ITEMS;
+  // 구분 칸이 빈 회원이 실제로 있을 때만 '미기재'를 보여준다 — 없는데 띄우면 정본 6종이 7종처럼 보인다.
+  if ((_validTypeCounts && _validTypeCounts[MEMBER_TYPE_UNSET]) || cur === MEMBER_TYPE_UNSET) {
+    items = items.concat([MEMBER_TYPE_UNSET]);
+  }
   var opts = '<option value=""' + (cur === '' ? ' selected' : '') + '>전체 유형</option>' +
-    MEMBER_TYPE_SELECT_GROUPS.map(function(g){
-      var items = g.items;
-      // 구분 칸이 빈 회원이 실제로 있을 때만 '미기재'를 보여준다 — 없는데 띄우면 정본 6종이 7종처럼 보인다.
-      if (g.items[0] === '멤버십' && ((_validTypeCounts && _validTypeCounts[MEMBER_TYPE_UNSET]) || cur === MEMBER_TYPE_UNSET)) {
-        items = items.concat([MEMBER_TYPE_UNSET]);
-      }
-      return '<optgroup label="' + esc(g.label) + '">' + items.map(function(o){
-        return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(o) + '</option>';
-      }).join('') + '</optgroup>';
+    items.map(function(o){
+      return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(o) + '</option>';
     }).join('');
   return '<div>' +
       '<label style="display:block;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.04em;margin-bottom:4px">회원 구분 선택</label>' +
