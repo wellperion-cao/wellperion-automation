@@ -1416,7 +1416,10 @@ function _cacheGetJson_(cache, key) {
 function _aaCacheClear_() {
   try {
     var c = CacheService.getScriptCache();
-    var scopes = ['valid', 'ended', 'corp'], fmts = ['obj', 'rows'];
+    // ★2026-08-26 시포 — 'archive' 추가. LOSS보관 시트는 조회전용이라 목록 캐시를 지울 일이 없었는데,
+    //   이관 정리(member_archive_restore)가 그 시트에서 행을 지우기 시작했다. 안 지우면 실무진이
+    //   정리 직후 새로고침해도 최대 60초 동안 지운 분이 그대로 보인다 — 최영천 건에서 실제로 겪었다.
+    var scopes = ['valid', 'ended', 'corp', 'archive'], fmts = ['obj', 'rows'];
     for (var si = 0; si < scopes.length; si++) {
       for (var fi = 0; fi < fmts.length; fi++) {
         _cacheInvalidateJson_(c, 'aacache|' + scopes[si] + '|' + fmts[fi]);
@@ -9816,8 +9819,12 @@ function _hasRealReply_(memo) {
 
   // ─── LOSS보관 회원 재등록 복귀(member_archive_restore) — 2026-08-25 시토(GM 지시, 최영천 010-3837-5107 재등록 신고).
   //   왜: LOSS보관 시트는 조회전용이라(member_active_update 는 유효회원 시트만 쓴다) 보관된 분이 재등록해도
-  //   실무진이 화면에서 손댈 방법이 없었다. ▸행 삭제 0건(두 시트 모두) — 보관 행은 비고에 복귀 메모만 덧붙이고
-  //   그대로 둔다. ▸새 유효회원 행은 기존 _memberActiveUpsert_ 를 그대로 재사용 — 그 함수가 못 하는 것
+  //   실무진이 화면에서 손댈 방법이 없었다. ▸★2026-08-26 GM 지시로 바뀐 것: 복귀는 '이관'이므로 보관 행을
+  //   **삭제한다**("이관건이니 기존 자료는 없어져야해"). 종전엔 보관 행을 비고 메모만 붙여 남겨서 같은 분이
+  //   유효회원·보관 양쪽에 보였다(최영천 010-3837-5107 실사고). 지우기 전 행 전체 값을 변경이력에 통째로
+  //   남겨 되돌릴 근거를 보존한다. ▸이미 유효회원인데 보관에도 남은 옛 건은 같은 액션의 뒷정리 경로가
+  //   치운다(이름이 같을 때만 — 전화가 같아도 이름이 다르면 가족 공유번호·양도 건이라 남의 기록이다).
+  //   ▸새 유효회원 행은 기존 _memberActiveUpsert_ 를 그대로 재사용 — 그 함수가 못 하는 것
   //   (담당자는 opts.owner 를 무조건 MEMBER_DEFAULT_OWNER 로 덮는다·주소/비고 인계·등록회차 이어받기·명시적
   //   종료일)만 뒤에서 직접 덧쓴다(약속 L21 — 새 쓰기 로직 중복 없음).
   if (action === 'member_archive_restore') {
@@ -9846,7 +9853,24 @@ function _hasRealReply_(memo) {
     var arActPhI = arActiveHdr.indexOf(MEMBER_PHONE_COL); if (arActPhI < 0) arActPhI = _arIdx(arActiveHdr, '휴대폰');
     if (arActPhI < 0) return _json({ ok: false, error: '유효회원 시트에 휴대폰 칸 없음' });
     if (_countRowsByPhone_(arActiveSh, arActPhI, arPhone) > 0) {
-      return _json({ ok: false, error: 'already-active', detail: '이미 유효회원에 등록된 전화번호입니다 — 중복 등록 방지를 위해 거부합니다' });
+      // ── 이관 뒷정리 경로(2026-08-26 GM 지시). 이미 유효회원인데 보관에도 남아 있으면 같은 분이 화면에
+      //    두 번 보인다 — 종전 코드가 보관 행을 남겼기 때문. 이름이 같을 때만 보관 행을 치운다.
+      //    전화가 같아도 이름이 다르면 가족 공유번호·양도 건이라 남의 기록이므로 종전대로 거부한다.
+      var _clNmI = _arIdx(arArchHdr, '회원명');
+      var _clArchName = _clNmI >= 0 ? String(arArchSh.getRange(arRow, _clNmI + 1).getValue() || '').trim() : '';
+      var _clActRow = _findRowByPhone_(arActiveSh, arActPhI, arPhone);
+      var _clActNmI = _arIdx(arActiveHdr, '회원명');
+      var _clActName = (_clActRow >= 2 && _clActNmI >= 0) ? String(arActiveSh.getRange(_clActRow, _clActNmI + 1).getValue() || '').trim() : '';
+      if (!_clArchName || _clArchName !== _clActName) {
+        return _json({ ok: false, error: 'already-active', detail: '이미 유효회원에 등록된 전화번호입니다 — 보관 기록의 이름(' + (_clArchName || '?') + ')과 유효회원 이름(' + (_clActName || '?') + ')이 달라 자동 정리하지 않습니다' });
+      }
+      var _clVals = arArchSh.getRange(arRow, 1, 1, arArchHdr.length).getValues()[0];
+      _memberLog_([[new Date(), _logWho_(body), _clArchName, _logMaskPhone_(body.phone), 'LOSS보관 이관정리',
+                    'LOSS보관 행 ' + arRow + ' 삭제 · 원본: ' + JSON.stringify(_clVals).slice(0, 900),
+                    '유효회원 행 ' + _clActRow, '멤버십']]);
+      arArchSh.deleteRow(arRow);
+      _memberCacheBump_(); _aaCacheClear_();
+      return _json({ ok: true, cleaned: true, name: _clArchName, archiveRow: arRow, activeRow: _clActRow });
     }
     // 보관 행 값 읽기 — 물려줄 칸(나이·회원구분·수강반종목명·담당자·주소·비고·등록회차).
     var arNmI = _arIdx(arArchHdr, '회원명');
@@ -9916,11 +9940,14 @@ function _hasRealReply_(memo) {
         if (!isNaN(_ed.getTime())) arActiveSh.getRange(arNewRow, arActRemI + 1).setValue(Math.round((_ed.getTime() - Date.now()) / 86400000));
       }
     }
-    // 보관 행은 지우지 않는다 — 비고 끝에 복귀 메모만 덧붙인다(기존 내용 보존).
-    if (arMemoI >= 0) {
-      var arNote = '[' + _todayKR_() + ' 재등록으로 복귀 — 처리: ' + arStaff + ']';
-      arArchSh.getRange(arRow, arMemoI + 1).setValue(arMemo ? (arMemo + ' ' + arNote) : arNote);
-    }
+    // 보관 행은 지운다 — 이관이라 원본을 남기지 않는다(2026-08-26 GM: "이관건이니 기존 자료는 없어져야해").
+    //   지우기 전 행 전체 값을 변경이력에 통째로 남겨 되돌릴 근거를 보존한다. 전화 단일매칭을 위에서
+    //   확인했고 그 뒤로 이 시트를 건드리지 않았으므로 arRow 는 여전히 그 사람 행이다.
+    var arArchVals = arArchSh.getRange(arRow, 1, 1, arArchHdr.length).getValues()[0];
+    _memberLog_([[new Date(), arStaff, arName, _logMaskPhone_(body.phone), 'LOSS보관 원본삭제',
+                  'LOSS보관 행 ' + arRow + ' 원본: ' + JSON.stringify(arArchVals).slice(0, 900),
+                  '유효회원 행 ' + arNewRow, '멤버십']]);
+    arArchSh.deleteRow(arRow);
     _memberLog_([[new Date(), arStaff, arName, _logMaskPhone_(body.phone), 'LOSS보관 재등록복귀',
                   'LOSS보관 행 ' + arRow, '유효회원 행 ' + arNewRow + '(등록분류:' + arRegClass + ')', '멤버십']]);
     _memberCacheBump_(); _aaCacheClear_();
