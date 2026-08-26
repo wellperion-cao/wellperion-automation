@@ -685,9 +685,9 @@
     </div>
 
     <div class="item">
-      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>매니저 개인 캘린더 (2026-08-25 신설·배포 대기)</h3></div>
-      <p><span class="mono">chro/hub/calendar.html</span> — 나우열M 담당 업무 SSOT(<span class="mono">todo_list</span> 독립 호출·읽기전용) + 매니저가 직접 추가하는 일정(소통/미팅/면접/기타)을 월간 달력 한 화면에서 봅니다. 허브와 같은 <b>SESSION_ROLE 관리자 게이트</b>(뷰어 비밀번호로는 진입 불가 — 면접 등 이름이 실릴 수 있는 자유서술 필드 보호)로 진입합니다. <span class="warn">"전사일정에 추가하기" 버튼은 비활성 상태</span> — 전사일정(<span class="mono">coo/check/전사_일정.html</span>)은 GM 배포의 별도 GAS이며 저장 액션이 전체교체(<span class="mono">save_schedule</span>) 방식이라 단건 안전추가 API가 없고, COO/GM 합의도 미확인(2026-08-05 조사 이후 미해소)이라 연동을 구현하지 않았습니다. 백엔드 신규 액션 4종(cal-add/list/update/delete)은 node vm 모의검증 완료 상태로 <b>clasp 새 버전 배포 대기</b>.</p>
-      <div class="tags"><span class="tag act">cal-add</span><span class="tag act">cal-list</span><span class="tag act">cal-update</span><span class="tag act">cal-delete</span><span class="tag tool">SESSION_ROLE 게이트 재사용</span></div>
+      <div class="item-head"><span class="badge bg-a5">A-5 배포담당자</span><h3>매니저 개인 캘린더 (2026-08-25 신설·배포완료 @84, 2026-08-26 완료처리+HR자동일정 확장·배포 대기)</h3></div>
+      <p><span class="mono">chro/hub/calendar.html</span> — 나우열M 담당 업무 SSOT(<span class="mono">todo_list</span> 독립 호출·읽기전용) + 매니저가 직접 추가하는 일정(소통/미팅/면접/기타)을 월간 달력 한 화면에서 봅니다. 허브와 같은 <b>SESSION_ROLE 관리자 게이트</b>(뷰어 비밀번호로는 진입 불가 — 면접 등 이름이 실릴 수 있는 자유서술 필드 보호)로 진입합니다. <span class="warn">"전사일정에 추가하기" 버튼은 비활성 상태</span> — 전사일정(<span class="mono">coo/check/전사_일정.html</span>)은 GM 배포의 별도 GAS이며 저장 액션이 전체교체(<span class="mono">save_schedule</span>) 방식이라 단건 안전추가 API가 없고, COO/GM 합의도 미확인(2026-08-05 조사 이후 미해소)이라 연동을 구현하지 않았습니다(대신 "등재 요청" 플래그만 저장 — 실제 등재는 CHRO 수동 대행). 백엔드 액션 4종(cal-add/list/update/delete)은 <b>2026-08-25 clasp @84로 배포 완료·라이브 왕복검증 완료</b>. <b>2026-08-26 추가</b>: 개인일정에 "완료" 열 신설(SSOT 완료 취소선과 동일 시각 규칙 재사용, 상세 팝업 [완료 처리] 토글) + 온보딩 완료기한(db:onbo)·면접 일정(db:appl)·첫출근(db:emp 입사일)을 읽기전용으로 병합 표시(신규 백엔드 액션 없이 기존 db 읽기만 재사용, 유형별 범례 토글). <span class="warn">이번 확장분은 A-6 사전 감사에서 헤더 마이그레이션 결함(기존 12열 헤더 탭에 신규 열 추가 시 readSchemaSheet_가 헤더 없는 열을 건너뛰어 완료값이 응답에서 누락되는 문제) 지적 → <span class="mono">ensureSchemaHeader_</span> 보정 헬퍼로 수리 완료, node vm 모의검증(마이그레이션 시나리오 포함) 통과 상태로 clasp 새 버전 배포 대기</span>.</p>
+      <div class="tags"><span class="tag act">cal-add</span><span class="tag act">cal-list</span><span class="tag act">cal-update</span><span class="tag act">cal-delete</span><span class="tag tool">SESSION_ROLE 게이트 재사용</span><span class="tag tool">완료 열(personalcal, 2026-08-26)</span><span class="tag tool">HR 자동 일정 3종(db:onbo·appl·emp 재사용, 읽기전용)</span></div>
     </div>
 
   </div>
@@ -915,12 +915,12 @@
         <tr><td><span class="tag db">업무평가 탭</span></td><td>업무평가</td><td>대상자 · 평가기간별 직무성과 · 업무목록JSON(관리자 전용, 공개 read 없음)</td><td>관리자 업무평가 · 정기평가지 가산점(≤+10) 프리필</td></tr>
         <tr><td><span class="tag db">자기평가 탭</span></td><td>자기평가</td><td>대상자 · 기간별 공통역량 5축 · 태도 · 자유서술(총점 · 등급 미산출, 관리자 전용)</td><td>정기평가지 갭 병렬표시</td></tr>
         <tr><td><span class="tag db">리더십평가 탭</span></td><td>리더십평가</td><td>팀장별 항목점수 · 개선서술(제출자 식별정보 미저장, append-only)</td><td>리더십 집계 · 열람(k-익명)</td></tr>
-        <tr><td><span class="tag db">개인일정 탭</span></td><td>개인일정</td><td>매니저 개인 캘린더(chro/hub/calendar.html) 저장소 — 제목 · 유형(소통/미팅/면접/기타) · 시작~종료일시 · 내용 · 장소, id 단위 upsert(2026-08-25 신설·배포 대기)</td><td>개인 캘린더 화면</td></tr>
+        <tr><td><span class="tag db">개인일정 탭</span></td><td>개인일정</td><td>매니저 개인 캘린더(chro/hub/calendar.html) 저장소 — 제목 · 유형(소통/미팅/면접/기타) · 시작~종료일시 · 내용 · 장소 · 전사연동요청 · <b>완료</b>(2026-08-26 신설), id 단위 upsert(2026-08-25 신설·배포완료 @84, 완료 열은 배포 대기 — 기존 12열 헤더 탭에 열 추가 시 ensureSchemaHeader_로 헤더 보정)</td><td>개인 캘린더 화면</td></tr>
       </tbody>
     </table>
   </div>
 
-  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 54종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포 대기)</span></h3>
+  <h3 style="font-size:15px;font-weight:800;margin:20px 0 10px">액션 전체 — 54종 <span style="font-weight:400;font-size:12px;color:var(--muted)">(공개 창구로 명시된 것 외 모든 쓰기는 관리자 인증 필수 · 쓰기 후 라운드트립 검증 · 2026-08-17 기존 직원 필드 정정 fix-emp-field 추가·배포 대기 · 2026-08-25 개인 캘린더 cal-* 4종 추가·배포완료 @84 · 2026-08-26 cal-* 완료 열 지원 확장(신규 액션 없음)·배포 대기)</span></h3>
   <div class="tbl-wrap">
     <table>
       <thead><tr><th>영역</th><th>액션</th><th>하는 일</th><th>주 담당</th></tr></thead>
@@ -975,10 +975,10 @@
         <tr><td><span class="tag act">log-add-bulk</span></td><td>자동화로그 일괄 기록(300행 이하)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
         <tr><td><span class="tag act">log-fix</span></td><td>기존 로그 행 정정(인코딩 복구 등 사후 정정 한정, 자동화로그 탭만)</td><td><span class="badge bg-a5">A-5</span></td></tr>
         <tr><td>운영</td><td><span class="tag act">migrate</span></td><td>데이터 이관(기타 운영)</td><td><span class="badge bg-chro">CHRO</span></td></tr>
-        <tr><td rowspan="4">개인 캘린더</td><td><span class="tag act">cal-add</span></td><td>개인일정 신규 추가(제목 · 유형 · 시작~종료일시 · 내용 · 장소, 관리자 전용 · 2026-08-25 신설·배포 대기)</td><td><span class="badge bg-a5">A-5</span></td></tr>
-        <tr><td><span class="tag act">cal-list</span></td><td>개인일정 전체 조회(관리자 전용 · 배포 대기)</td><td><span class="badge bg-a5">A-5</span></td></tr>
-        <tr><td><span class="tag act">cal-update</span></td><td>개인일정 갱신(id + 바꿀 필드만 전송, 미전달 필드는 서버가 보존 · 배포 대기)</td><td><span class="badge bg-a5">A-5</span></td></tr>
-        <tr><td><span class="tag act">cal-delete</span></td><td>개인일정 삭제(id, 실삭제 — 인사현황 행 고정 계약 밖 신규 탭이라 안전 · 배포 대기)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td rowspan="4">개인 캘린더</td><td><span class="tag act">cal-add</span></td><td>개인일정 신규 추가(제목 · 유형 · 시작~종료일시 · 내용 · 장소 · 전사연동요청, 관리자 전용 · 2026-08-25 신설·배포완료 @84 · 완료 열 지원은 2026-08-26 추가·배포 대기)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td><span class="tag act">cal-list</span></td><td>개인일정 전체 조회(관리자 전용 · 배포완료 @84, 완료 열 노출은 배포 대기 — 조회 시점에도 ensureSchemaHeader_로 헤더 보정)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td><span class="tag act">cal-update</span></td><td>개인일정 갱신(id + 바꿀 필드만 전송, 미전달 필드는 서버가 보존 · 배포완료 @84 · 완료 처리 토글 지원은 2026-08-26 추가·배포 대기)</td><td><span class="badge bg-a5">A-5</span></td></tr>
+        <tr><td><span class="tag act">cal-delete</span></td><td>개인일정 삭제(id, 실삭제 — 인사현황 행 고정 계약 밖 신규 탭이라 안전 · 배포완료 @84)</td><td><span class="badge bg-a5">A-5</span></td></tr>
       </tbody>
     </table>
   </div>
