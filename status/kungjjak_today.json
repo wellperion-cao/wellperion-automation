@@ -54,6 +54,18 @@
           "evidence": "✅있음"
         },
         {
+          "ref": "GM-20260827-07",
+          "no": "07",
+          "got": "GM업무 목록에 부서 칸 추가 + 목표 dept 값 9건 기재",
+          "did": "담당줄에 적힌 부서만 옮김. 부서 미기재 건은 '미정'으로 남겨 TF팀 후보로 보이게 함.",
+          "start": "09:49",
+          "end": "09:49",
+          "minutes": 0,
+          "upload": "기록만",
+          "open": false,
+          "evidence": "⚠️없음"
+        },
+        {
           "ref": "GM-20260827-1001",
           "no": "01",
           "got": "1. 만들어져있을텐데?",
@@ -76,6 +88,18 @@
           "upload": "✅ 올림 (1a9cf6aea)",
           "open": false,
           "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260827-1003",
+          "no": "03",
+          "got": "GM업무 목록이 있는데, 업무명 상태만 나오는데 중간에 부서도 붙여줘, 필요하다고 하면 TF팀도 이제는 활성화 시킬 생각이야",
+          "did": "",
+          "start": "09:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -146,14 +170,29 @@
           "detail": "커밋 f56919c8f · 배 10984"
         }
       ],
-      "count": 6,
-      "done": 6,
-      "open": 0,
+      "count": 8,
+      "done": 7,
+      "open": 1,
       "avg_minutes": 2,
       "work_count": 11,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260827-1003",
+          "no": "03",
+          "got": "GM업무 목록이 있는데, 업무명 상태만 나오는데 중간에 부서도 붙여줘, 필요하다고 하면 TF팀도 이제는 활성화 시킬 생각이야",
+          "did": "",
+          "start": "09:46",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 3
+        }
+      ],
       "repeats": []
     },
     "cto": {
@@ -220,16 +259,28 @@
           "evidence": "✅있음"
         },
         {
-          "ref": "GM-20260827-2005",
-          "no": "05",
-          "got": "카카오톡 운영+시설+지원+주차 종합접수처 시설물 고장접수 즉시로 전달되는데, 내용도 같이 넣어줘 길어도",
-          "did": "⚠️ 자동종결 — 세션 응답 뒤 별도 완료 기록 없음(Stop 훅)",
+          "ref": "GM-20260827-2006",
+          "no": "06",
+          "got": "카카오톡 운영+시설+지원+주차 종합접수처 시설물 고장접수 즉시로 전달되는데, 내용도 같이 넣어줘 길어도 다 넣어줘",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
           "start": "09:45",
-          "end": "09:45",
-          "minutes": 0,
-          "upload": "기록만",
+          "end": "09:47",
+          "minutes": 2,
+          "upload": "✅ 올림 (6379604f5)",
           "open": false,
-          "evidence": "⚠️없음"
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260827-2007",
+          "no": "07",
+          "got": "그리고 혹시 사진까지 첨부가능해?",
+          "did": "",
+          "start": "09:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
         }
       ],
       "work": [
@@ -262,16 +313,37 @@
           "area": "작업",
           "event": "하루 일과 정리 문의 보고를 방별로 분리 — 강습=부서장 / 멤버십=운영부",
           "detail": "커밋 1a251a3ba · 배 11029"
+        },
+        {
+          "time": "09:47",
+          "area": "작업",
+          "event": "새 접수 즉시 전달문에 접수 내용 전문 싣기",
+          "detail": "커밋 6379604f5 · 배 11029"
         }
       ],
-      "count": 6,
+      "count": 7,
       "done": 6,
-      "open": 0,
-      "avg_minutes": 2,
-      "work_count": 5,
+      "open": 1,
+      "avg_minutes": 3,
+      "work_count": 6,
       "missed": [],
       "unclosed": [],
-      "just": [],
+      "just": [
+        {
+          "ref": "GM-20260827-2007",
+          "no": "07",
+          "got": "그리고 혹시 사진까지 첨부가능해?",
+          "did": "",
+          "start": "09:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "cmo": {
@@ -307,16 +379,64 @@
           "area": "검수",
           "event": "발행완료 과대보고 감사 — 의심 0건(주소없음 0 · 주소죽음 0)",
           "detail": "검수큐 발행완료 항목의 공개주소 유무·라이브 실측(읽기 전용)"
+        },
+        {
+          "time": "09:47",
+          "area": "작업",
+          "event": "scheduled IG reach collect (ledger+summary, 배588)",
+          "detail": "커밋 af11ab6a8 · 배 11053"
         }
       ],
       "count": 0,
       "done": 0,
       "open": 0,
       "avg_minutes": null,
-      "work_count": 5,
+      "work_count": 6,
       "missed": [],
       "unclosed": [],
       "just": [],
+      "repeats": []
+    },
+    "cpo": {
+      "nick": "시포",
+      "items": [
+        {
+          "ref": "GM-20260827-4001",
+          "no": "01",
+          "got": "어제 기준 LOSS자 누구였어?",
+          "did": "",
+          "start": "09:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null
+        }
+      ],
+      "work": [],
+      "count": 1,
+      "done": 0,
+      "open": 1,
+      "avg_minutes": null,
+      "work_count": 0,
+      "missed": [],
+      "unclosed": [],
+      "just": [
+        {
+          "ref": "GM-20260827-4001",
+          "no": "01",
+          "got": "어제 기준 LOSS자 누구였어?",
+          "did": "",
+          "start": "09:48",
+          "end": null,
+          "minutes": null,
+          "upload": "—",
+          "open": true,
+          "evidence": null,
+          "kind": "just",
+          "waited": 1
+        }
+      ],
       "repeats": []
     },
     "coo": {
@@ -331,6 +451,18 @@
           "end": "09:37",
           "minutes": 11,
           "upload": "✅ 올림 (b400cdc1d)",
+          "open": false,
+          "evidence": "✅있음"
+        },
+        {
+          "ref": "GM-20260827-5002",
+          "no": "02",
+          "got": "카페 송출 넣어줘",
+          "did": "세션 응답 종료 · 자동 종결(Stop)",
+          "start": "09:47",
+          "end": "09:48",
+          "minutes": 1,
+          "upload": "✅ 올림 (b7e3b41a3)",
           "open": false,
           "evidence": "✅있음"
         }
@@ -353,13 +485,19 @@
           "area": "작업",
           "event": "CCTV 교체 A3 를 최종 보고용으로 개편 — 결재란 제거·결정요청을 방향성 2개로 교체·비교 데이터 삭제·ADT캡스 이관 계약 기준 갱신 (GM 지시 2026-08-27)",
           "detail": "커밋 b400cdc1d · 배 10930"
+        },
+        {
+          "time": "09:48",
+          "area": "작업",
+          "event": "카페 송출(수영장·체조룸) 을 8/27 사양 미팅 안건으로 등록 — 전사일정·월간운영계획·A3 3곳 반영 (GM 지시 2026-08-27)",
+          "detail": "커밋 b7e3b41a3 · 배 10930"
         }
       ],
-      "count": 1,
-      "done": 1,
+      "count": 2,
+      "done": 2,
       "open": 0,
-      "avg_minutes": 11,
-      "work_count": 3,
+      "avg_minutes": 6,
+      "work_count": 4,
       "missed": [],
       "unclosed": [],
       "just": [],
