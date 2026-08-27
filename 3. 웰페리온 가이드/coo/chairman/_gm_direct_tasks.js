@@ -81,6 +81,10 @@
           // direct=true → "(GM 직접)" 태그 건 / false → isGmTop3(ERP/브로제이)로만 편입된 전사 핵심과제(화면에서 배지로 구분).
           direct: isGmDirect(o.title),
           category: catFor(o.id),
+          // 부서 — 목표 자체의 dept 를 그대로 넘긴다(GM 지시 2026-08-27 "중간에 부서도 붙여줘").
+          // 여기서 추론하거나 표를 새로 만들지 않는다. 비어 있으면 화면이 '미정' 으로 그린다 —
+          // 그 '미정' 목록이 곧 부서가 안 잡힌 건이고, TF팀 편성 후보다.
+          dept: String(o.dept || '').trim(),
           schedule: schedule,
           target: o.target || '',
           status: o.status || '',

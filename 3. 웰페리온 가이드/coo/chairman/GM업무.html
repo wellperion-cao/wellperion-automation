@@ -107,6 +107,11 @@
   .sum tr:last-child td{border-bottom:none;}
   .sum td:first-child{width:22px;font-weight:800;color:var(--brass);}
   .sum td:last-child{width:118px;text-align:right;color:var(--mid);font-weight:600;white-space:nowrap;}
+  /* 부서 칸 (GM 지시 2026-08-27 "업무명 상태만 나오는데 중간에 부서도 붙여줘").
+     값은 목표 자체의 dept 를 그대로 쓴다 — 화면에 부서 표를 새로 만들지 않는다(약속 L01).
+     기록에 부서가 없으면 '미정' 으로 두고 지어 채우지 않는다. */
+  .sum td.dept{width:104px;color:var(--grey);font-weight:700;white-space:nowrap;}
+  .sum td.dept.none{color:var(--mid);font-weight:500;}
 
   .ft{border-top:1px solid var(--line);margin-top:8px;padding-top:5px;
       display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
@@ -365,7 +370,7 @@
            인물 호칭) 그건 회사 대표님 보고 대상이 아니라 GM이 직접 관장하는 별개 실무다. -->
       <div style="font-size:11.5px;color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 위 「경영 보고건」(회장님·대표님)과는 별개로 GM이 직접 챙기는 실무입니다</div>
       <div class="sum">
-        <h3>업무명 · 상태</h3>
+        <h3>업무명 · 부서 · 상태</h3>
         <table><tbody id="gm-sum-body"></tbody></table>
       </div>
       <div class="grid" id="gm-grid"><div class="rep-empty">불러오는 중…</div></div>
@@ -378,7 +383,7 @@
     <summary><span class="ic">✅</span> 완료건 <span class="cnt" id="gm-done-cnt">0건</span></summary>
     <div class="sec-body">
       <div class="sum">
-        <h3>업무명 · 상태</h3>
+        <h3>업무명 · 부서 · 상태</h3>
         <table><tbody id="gm-done-sum-body"></tbody></table>
       </div>
       <div class="grid" id="gm-done-grid"></div>
@@ -777,8 +782,12 @@
     var pct = (_p === null) ? '—' : _p + '%';
     var dueHtml = '기한 ' + esc(fmtDue(it.due));
     if (isOverdue(it.due)) dueHtml = '<span style="color:var(--alert)">' + dueHtml + '</span>';
+    // 부서 칸 — 기록에 있으면 그대로, 없으면 '미정'(지어 채우지 않는다 · GM 지시 2026-08-27).
+    var deptTxt = it.dept ? esc(it.dept) : '미정';
+    var deptCls = it.dept ? 'dept' : 'dept none';
     return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
-      esc(it.title) + '</a></td><td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
+      esc(it.title) + '</a></td><td class="' + deptCls + '">' + deptTxt + '</td>' +
+      '<td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
   }
 
   function renderGm(items) {
