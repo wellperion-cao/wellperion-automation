@@ -1508,6 +1508,18 @@ function _regStaffCanonList(raw) {
   return out;
 }
 
+// 점수가 붙지 않는 값 — 사람이 아닌 것(단일 정의 · reg_scoreboard 와 reg_dashboard 가 함께 쓴다).
+//   GM 지시 2026-08-27 "시설팀 / 회원 이런건 없애줘" — 실측 당시 '시설팀' 1건이 순위표에
+//   사람처럼 올라 있었다. 팀·부로 끝나는 이름은 조직이지 사람이 아니라 규칙 한 줄로 막는다
+//   (이름을 하나씩 적어 넣으면 다음에 '운영부'·'지원부'가 들어올 때 또 샌다).
+//   ▸종전에는 같은 목록이 두 함수 안에 각각 있어 한쪽만 고치면 갈라졌다 — 여기로 모았다(약속 L01).
+var REG_NON_STAFF = { '회원': 1, '익명': 1, '자동(점검)': 1, '지원부 점검': 1 };
+var REG_NON_STAFF_RE = /(팀|부)$/;
+function _regIsNonStaff(who) {
+  var s = String(who || '').trim();
+  return !!(REG_NON_STAFF[s] || REG_NON_STAFF_RE.test(s));
+}
+
 // ─── reg_scoreboard — 접수·처리 점수판 (GM 지시 2026-07-28) ───
 // 왜 만들었나: 접수한 사람이 곧 처리까지 떠안는 구조라, 적을수록 손해가 되어 아예 안 적게 된다.
 //   GM: "접수받는거 1점 + 처리 완료 1점 등으로 점수 랭킹제로 하는건 어때?"
@@ -1533,12 +1545,11 @@ function _regScoreboard(params) {
   }
   var sinceStr = since ? Utilities.formatDate(since, tz, 'yyyy-MM-dd') : '';
 
-  var NON_STAFF = { '회원': 1, '익명': 1, '자동(점검)': 1, '지원부 점검': 1 };
   var tally = {};   // 이름 → {intake, done}
   var _add = function (who, field) {
     // 한 칸에 두 사람이면 대표(첫 사람)에게만 준다 — 한 건 1점 원칙을 지킨다(2026-07-31 웰리).
     who = (_regStaffCanonList(who)[0] || '');
-    if (!who || NON_STAFF[who]) return;
+    if (!who || _regIsNonStaff(who)) return;
     if (!tally[who]) tally[who] = { intake: 0, done: 0 };
     tally[who][field]++;
   };
@@ -1620,11 +1631,10 @@ function _regDashboard(params) {
     since = new Date(now.getFullYear(), now.getMonth(), 1);
   }
   var sinceStr = since ? Utilities.formatDate(since, tz, 'yyyy-MM-dd') : '';
-  var NON_STAFF = { '회원': 1, '익명': 1, '자동(점검)': 1, '지원부 점검': 1 };
   var tally = {};
   var _add = function (who, field) {
     who = (_regStaffCanonList(who)[0] || '');
-    if (!who || NON_STAFF[who]) return;
+    if (!who || _regIsNonStaff(who)) return;
     if (!tally[who]) tally[who] = { intake: 0, done: 0 };
     tally[who][field]++;
   };
