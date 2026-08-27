@@ -369,26 +369,11 @@
     <div id="learn-list"><div class="feed-status">불러오는 중…</div></div>
   </details>
 
-  <details class="hist-fold" id="ships-summary-fold">
-    <summary>🗄 보관함 <span class="hist-sub">— 지운 배(되돌릴 수 있습니다) · 배 지우기는 위 항로 표 맨 오른쪽 칸에서 합니다</span></summary>
+  <!-- [2026-08-27 GM 확정] 🗄 보관함 칸 삭제 — "보관함은 다 넘겼는데, 칸 삭제해도될듯".
+       실측 당시 보관함 0척(지운 배는 이미 status/_queue_archive.json 으로 넘어갔다) — 빈 칸이
+       화면 세로만 차지하고 있었다. 배 지우기(항로 표 맨 오른쪽 칸)는 그대로 살아 있다.
+       지운 배는 큐에 trashed 표시로 남으니 되돌려야 하면 시토가 큐에서 되살린다. -->
 
-  <!-- [2026-08-26 GM 확정] 「🗂 전체 배」 표 제거 — 위 「🧭 항로」와 같은 데이터를 두 번 그리고 있었다.
-       GM: "고도화 및 단순화를 하려면 당연히 병합 및 개선이 되어야해" → 항로 하나가 열린 배 전부를 담고,
-       이 표에만 있던 「정리(보관함으로)」 버튼은 항로 표의 맨 오른쪽 칸으로 옮겼다(기능 손실 0).
-       상태 고르기(진행중만·정박·대기)는 항로 3섹터가 이미 그 역할을 한다. 🗄 보관함은 아래 그대로 남는다. -->
-
-  <!-- ════ 🗄 보관함 (지운 배 — 되돌리기 가능) ════ -->
-  <h2 class="sec" id="sec-trash" style="margin-top:2px;">🗄 보관함 <span style="font-size:11px;font-weight:400;color:var(--dim);">(지운 배 — 되돌릴 수 있습니다)</span></h2>
-  <div class="sec-note">지운 배는 사라지지 않고 여기 남습니다. 잘못 지웠으면 <b>되돌리기</b>를 누르면 원래 상태로 돌아갑니다.</div>
-  <div class="routines" id="trash-ships">
-    <div class="feed-status" style="grid-column:1/-1;">보관함을 불러오는 중…</div>
-  </div>
-
-  <!-- 🗺️ 북극성별 보기 삭제 (GM 승인 2026-08-12 · 배587). 같은 배를 담당·모듈별로 재편한 파생물이라, 큐에
-       없는 값은 northstar 문자열 하나뿐이었다 — 나머지(역할·모듈·상태)는 아래 🗂 전체 배가 이미 보여준다.
-       northstar 값은 아래 🗂 전체 배 표의 「🗺️ 북극성」 칸으로 흡수됐다(정보 손실 0). status/voyage_map.json
-       파일 자체는 다른 소비처가 생길 수 있어 지우지 않는다. -->
-  </details>
 
   <!-- ★2026-08-03 시토 — 「🏛️ 자율화를 떠받치는 4대 축」과 「🌟 북극성 지향 제작 루프」 삭제(GM 지시).
        체계 설명의 정본은 ssot/자율화규약.md 다. GM: "정본이 따로 있는데 링크로 이어가는건 의미 없다"
@@ -674,7 +659,7 @@
   //   꺼둔 것은 남기지 않는다(약속 L21) — 되살려야 하면 git 이력에서 본다.
   function trashBtn(s){
     if(s.ship_no == null) return '<span style="color:var(--dim);">—</span>';
-    return '<button type="button" class="ship-trash" data-ship="' + esc(s.ship_no) + '" title="이 배를 보관함으로 옮깁니다"'
+    return '<button type="button" class="ship-trash" data-ship="' + esc(s.ship_no) + '" title="이 배를 항로에서 지웁니다"'
       + ' style="border:1px solid var(--line,#ccc);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;">🗑</button>';
   }
 
@@ -703,26 +688,8 @@
       : '<div class="feed-status">아직 학습 제안이 없습니다.</div>';
   }
 
-  function renderTrash(){
-    var el = reqEl('trash-ships', 'renderTrash'); if(!el) return;
-    var list = _queueAll.filter(isTrashed);
-    if(!list.length){ el.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함이 비어 있습니다 — 아직 지운 배가 없습니다.</div>'; return; }
-    list.sort(function(a,b){ return String(b.trashed_at||'').localeCompare(String(a.trashed_at||'')); });
-    var rows = list.map(function(s){
-      var nick = MISSION_NICK[s.clevel] || (s.clevel || '—');
-      return '<tr>' +
-        '<td>' + esc(nick + (s.ship_no != null ? ' ' + s.ship_no : '')) + '</td>' +
-        '<td>' + esc(missionCleanTitle(s.title)) + '</td>' +
-        '<td>' + fmtWhen(s.trashed_at) + '</td>' +
-        '<td>' + esc(s.trash_reason || '—') + '</td>' +
-        '<td style="text-align:center;"><button type="button" class="ship-restore" data-ship="' + esc(s.ship_no) + '"'
-          + ' style="border:1px solid var(--line,#ccc);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;">되돌리기</button></td>' +
-      '</tr>';
-    }).join('');
-    el.innerHTML = '<div class="gtbl-wrap"><table class="gtbl">' +
-      '<tr><th style="width:96px">담당</th><th>미션</th><th style="width:96px">지운 때</th><th style="width:140px">사유</th><th style="width:88px"></th></tr>' +
-      rows + '</table></div>';
-  }
+  // [2026-08-27 GM 확정] renderTrash 삭제 — 🗄 보관함 칸을 없앴다(위 주석). isTrashed 는 그대로
+  //   남는다 — 항로가 지운 배를 걸러내는 데 계속 쓴다.
 
   // 저장소를 다시 읽어 화면 전체를 새로 그린다 — 화면과 백엔드가 어긋날 틈을 두지 않는다.
   function reloadQueueAndRender(){
@@ -730,7 +697,7 @@
       var arr = parseJson(txt);
       if(!Array.isArray(arr)) return;
       _queueAll = arr;
-      renderHangro(); renderTrash();   // 병합(2026-08-26): 전체 배 표가 항로로 흡수됨
+      renderHangro();   // 병합(2026-08-26): 전체 배 표가 항로로 흡수됨
     });
   }
 
@@ -741,7 +708,7 @@
     var name = s ? missionCleanTitle(s.title) : ('배 ' + shipNo);
     var reason = '';
     if(mode === 'trash'){
-      if(!window.confirm('이 배를 보관함으로 옮길까요?\n\n' + name + '\n\n(되돌릴 수 있습니다)')) return;
+      if(!window.confirm('이 배를 지울까요?\n\n' + name + '\n\n(기록은 남습니다 — 되살려야 하면 시토에게 말씀하세요)')) return;
       reason = window.prompt('왜 지우시는지 한 줄만 남겨주세요 (비워도 됩니다)', '무의미·중복') || '';
     }
     var pin = gmPin();
@@ -762,10 +729,10 @@
   }
 
   document.addEventListener('click', function(ev){
-    var t = ev.target.closest && ev.target.closest('.ship-trash, .ship-restore');
+    var t = ev.target.closest && ev.target.closest('.ship-trash');
     if(!t) return;
     ev.preventDefault();
-    onShipAction(t.getAttribute('data-ship'), t.classList.contains('ship-trash') ? 'trash' : 'restore');
+    onShipAction(t.getAttribute('data-ship'), 'trash');
   });
 
   // 🤖 히어로 "자율이 오늘 한 일" 삭제 (GM 지시 2026-08-15 "자율이 오늘 한일 이런건 삭제하자 의미가없다").
@@ -1407,10 +1374,6 @@
     try{ renderHangro(); }catch(e){
       var hgEl = document.getElementById('hangro-board');
       if(hgEl) hgEl.innerHTML = '<div class="feed-status">항로 표시 오류.</div>';
-    }
-    try{ renderTrash(); }catch(e){
-      var tsEl = document.getElementById('trash-ships');
-      if(tsEl) tsEl.innerHTML = '<div class="feed-status" style="grid-column:1/-1;">보관함 표시 오류.</div>';
     }
     try{ renderLearn(d.learn); }catch(e){
       var lnEl = document.getElementById('learn-list');
