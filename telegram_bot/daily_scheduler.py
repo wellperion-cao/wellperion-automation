@@ -2848,8 +2848,11 @@ def run_daily_digest(early: bool = False) -> None:
         if check_compact or reception_compact:
             body = "\n".join(p for p in (check_compact, reception_compact) if p)
             merged = f"{_ops_title}\n\n{body}\n\n{_SENDER_LINE_TAIL}"
-            if len(merged) > 900:
-                logger.warning(f"{label} 카톡 {KAKAO_OPS_ROOM} 압축본이 900자 초과({len(merged)}자) — 800자 상한 재검토 필요")
+            # ★2026-08-27 GM 지시 — 접수 내용은 자르지 않는다("내용 끊지말고 다 나오게").
+            #   오래된 순 3건이 전문으로 들어가 800자 상한은 더 이상 기준이 아니다. 경고선만
+            #   2,500자로 올려 둔다(진짜로 통째 목록이 새는 회귀를 잡으려는 그물이라 남긴다).
+            if len(merged) > 2500:
+                logger.warning(f"{label} 카톡 {KAKAO_OPS_ROOM} 압축본이 2,500자 초과({len(merged)}자) — 전체 목록이 새고 있는지 확인 필요")
             _send_ops_kakao(merged, "점검현황+종합접수현황(압축)")
         else:
             logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — 압축본 둘 다 없음(빌드 실패)")

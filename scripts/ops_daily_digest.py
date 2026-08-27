@@ -346,13 +346,14 @@ def build_reception_block(target_date: str) -> str:
     # 뒤에 숨던 실측). 보류 버킷 설계 자체는 유지하고 이 한 줄만 무조건 덧붙인다.
     oldest = max(unresolved, key=_elapsed_days)
     oldest_cat = _short_cat(oldest.get("category", ""))
+    # 자르지 않는다(GM 지시 2026-08-27 "내용 끊지말고 다 나오게") — 한 건뿐이라 길어도 된다.
     oldest_content = re.sub(r"\s+", " ", str(oldest.get("content", "") or "")).strip()
-    if len(oldest_content) > 30:
-        oldest_content = oldest_content[:30] + "…"
     oldest_bucket = "보류 버킷" if _elapsed_days(oldest) >= STALE_DAYS else "미해결 버킷"
     lines.append(
-        f" • ⏳ 가장 오래된 건: [{oldest_cat}] {oldest_content} · {_elapsed_days(oldest)}일째 ({oldest_bucket})"
+        f" • ⏳ 가장 오래된 건: [{oldest_cat}] · {_elapsed_days(oldest)}일째 ({oldest_bucket})"
     )
+    if oldest_content:
+        lines.append(f"     {oldest_content}")
 
     return "\n".join(lines)
 

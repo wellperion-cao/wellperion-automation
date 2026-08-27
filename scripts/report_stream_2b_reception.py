@@ -235,7 +235,8 @@ def _collect_overdue(rows: list[dict], now: datetime | None = None,
                 # 부서 — 묶음 기준을 사람에서 부서로 옮기기 위해 같이 담는다(배627 · GM 지시 2026-08-14
                 # "담당자 칸은 없애고 각 부서에 전달되어야 한다"). 완료 통보 블록이 쓰는 것과 같은 칸이다.
                 "dept": str(r.get("dept") or "").strip(),
-                "content": " ".join(str(r.get("content") or "").split())[:28],  # 개행 제거 — 1건 1줄 유지
+                # 개행만 없앤다 — 자르지 않는다(GM 지시 2026-08-27 "내용 끊지말고 다 나오게").
+                "content": " ".join(str(r.get("content") or "").split()),
                 "elapsed_h": elapsed_h,
                 "days": reception_elapsed_days(r, now),  # 표시용 "N일째" 정본(SLA 판정은 elapsed_h 유지)
                 "sla": sla,
@@ -279,7 +280,10 @@ def _aging_block(rows: list[dict], now: datetime | None = None,
     def _fmt_item(it: dict) -> str:
         ratio = it["elapsed_h"] / it["sla"] if it["sla"] else 0.0
         flag = "🔴" if ratio >= 3 else "⚠️"
-        return f"  {flag} [{it['cat']}] {it['content']} — {_fmt_age(it['days'], it['elapsed_h'])} 경과 ({it['regId']})"
+        # 제목 줄(분류·경과·접수번호)만 훑어도 뜻이 통하고, 내용은 다음 줄에 통째로 싣는다
+        # (GM 지시 2026-08-27 — 잘린 내용으로는 무엇을 하라는 건지 알 수 없다).
+        head = f"  {flag} [{it['cat']}] — {_fmt_age(it['days'], it['elapsed_h'])} 경과 ({it['regId']})"
+        return head + (f"\n     {it['content']}" if it["content"] else "")
 
     # ★2026-08-14 시토(배627 · GM 지시) — 묶음 기준을 **사람에서 부서로** 옮긴다.
     #   GM 원문: "각 부서에 전달되어야 하고 그 부서에서 조치 및 회신까지 챙기는 게 낫다.
@@ -427,7 +431,7 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
     def _fmt(r: dict) -> str:
         dept = str(r.get("dept") or "기타").strip() or "기타"
         cat = str(r.get("category") or "").strip()
-        content = " ".join(str(r.get("content") or "").split())[:24]
+        content = " ".join(str(r.get("content") or "").split())   # 자르지 않는다(GM 2026-08-27)
         # 서버가 통일해 준 표기(handlerCanon)를 쓴다(2026-08-01) — 원문을 여기서 다시 판정하면
         # '최준용'/'최준용M' 이 또 갈라진다(약속 L01, _aging_block과 동일 원칙).
         # ★2026-08-21 GM 확정 — 담당(assignee) 대체값을 뺐다. 처리한 사람은 '처리자' 칸 하나다.
@@ -435,7 +439,8 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
         who = "/".join(who_list) if who_list else (
             str(r.get("handler") or "").strip() or "처리자 미기재")
         remain = remain_by_dept.get(dept, 0)
-        return f"✅ [{dept}] {cat} {content} · 처리 {who} · 남은 미처리 {remain}건"
+        head = f"✅ [{dept}] {cat} · 처리 {who} · 남은 미처리 {remain}건"
+        return head + (f"\n     {content}" if content else "")
 
     shown = new_done[:_COMPLETION_CAP]
     lines = [f"{_DIVIDER}\n✅ 처리 완료 알림 {len(new_done)}건"]
@@ -714,8 +719,11 @@ def build_kakao_digest(today: str | None = None) -> str:
         ranked = sorted(overdue, key=lambda x: -x["elapsed_h"])
         actionable = [it for it in ranked if it.get("cat") != "분실물 접수"]
         oldest = (actionable or ranked)[:3]
-        parts = [f"{it['content']}({it['created_md']} 접수)" for it in oldest]
-        lines.append("오래된 순: " + "·".join(parts))
+        # 한 줄에 셋을 '·' 로 붙이면 내용이 길 때 덩어리가 된다 — 한 줄에 하나씩 전문으로
+        # 싣는다(GM 지시 2026-08-27 · 8/25 가독 규칙과 같은 골격).
+        lines.append("오래된 순")
+        for it in oldest:
+            lines.append(f"  · ({it['created_md']} 접수) {it['content']}")
     # 탭 없는 단일 보드라 해시 딥링크가 없다 — 카톡이 ?쿼리를 자르므로 필터 파라미터도
     # 못 쓴다(2026-07-15 실측). 대신 화면 안 어디를 보면 되는지 한 줄로 안내한다
     # (STATUS_LIST=['접수','처리중','완료'] 순서라 맨 왼쪽 칸이 미처리 · 배670 후속 2026-08-20).
