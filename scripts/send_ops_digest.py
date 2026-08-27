@@ -694,6 +694,12 @@ def _cap_line(text: str, cap: int = RELAY_TITLE_CAP) -> str:
     t = re.sub(r"\s+", " ", str(text or "")).strip()
     if len(t) <= cap:
         return t
+    # 링크는 절대 자르지 않는다 — 잘린 주소는 눌러도 404 다(2026-08-26 실측: 중간관리자
+    # 방 아침 정리의 멤버십·지원부 링크가 '…' 로 끝나 실무진이 못 들어갔다).
+    _m = re.search(r"https?://\S+", t)
+    if _m:
+        before = _cap_line(t[:_m.start()].strip(), cap) if _m.start() > cap else t[:_m.start()].strip()
+        return f"{before} {_m.group(0)}".strip()
     head = t[:cap]
     cut = max(head.rfind(" "), head.rfind("·"))
     if cut >= cap // 2:

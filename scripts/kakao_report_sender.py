@@ -936,12 +936,77 @@ def _selfcheck_honorifics() -> None:
 def build_caption(room: dict, base_caption: str) -> str:
     """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
     _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향).
-    마지막으로 모든 방 공통 존칭 보정(add_honorifics)을 거친다."""
+    마지막으로 모든 방 공통 존칭 보정(add_honorifics) + 링크 공백 인코딩을 거친다."""
+    from tg_outbound_log import encode_url_spaces
     text = base_caption
     if room.get("name") == CHAIRMAN_ROOM_NAME:
         text = _sanitize_for_chairman(text)
         text = _fix_avg_for_chairman(text)
-    return add_honorifics(f"{room.get('prefix', '')}{text}")
+    return encode_url_spaces(add_honorifics(f"{room.get('prefix', '')}{text}"))
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 발신 전 링크 검수(2026-08-27 GM 지시) — "실무진 카톡방은 검수 한 번 하고 보낸다".
+# 2026-08-26 시포 발신에서 링크 두 개를 한 줄에 이어 붙여 첫 주소가 깨졌고(404),
+# 실무진이 화면에 못 들어갔다. 사람이 매번 눈으로 보는 대신 관문에서 재고 보낸다.
+# 여기 한 곳에만 둔다(약속 L21) — 발신하는 모든 경로가 이 함수를 지난다.
+_LINK_RE = re.compile(r'https?://[^\s<>"\')]+')
+_LINK_TIMEOUT = 6.0
+_SKIP_LINK_CHECK_ENV = "WP_SKIP_LINK_CHECK"   # 급할 때 우회(값 1)
+_LINK_CACHE: dict[str, int | None] = {}
+
+
+def _link_status(url: str) -> int | None:
+    """URL 응답 코드. 네트워크 오류·타임아웃은 None(판정 불가)."""
+    if url in _LINK_CACHE:
+        return _LINK_CACHE[url]
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+    code: int | None = None
+    try:
+        # 우리 주소에는 한글 경로가 흔하다(.../지원부%20체계.html) — 그대로 요청하면
+        # urllib 이 터져 '못 쟀음'으로 빠지고 죽은 링크가 그냥 통과한다. 먼저 인코딩한다.
+        safe = urllib.parse.quote(url, safe="%/:=&?~#+!$,;'@()*[]")
+        req = urllib.request.Request(safe, method="GET", headers={"User-Agent": "wellperion-linkcheck"})
+        with urllib.request.urlopen(req, timeout=_LINK_TIMEOUT) as resp:
+            code = int(resp.status)
+    except urllib.error.HTTPError as e:
+        code = int(e.code)
+    except Exception:
+        code = None      # 못 쟀으면 막지 않는다 — 발신을 멈추는 쪽이 더 손해다
+    _LINK_CACHE[url] = code
+    return code
+
+
+def broken_links(text: str) -> list[str]:
+    """발신 전 검수 — 못 여는 링크만 돌려준다(빈 목록 = 통과).
+
+    ①한 줄에 링크가 둘이면 카톡이 첫 주소 뒤까지 먹어 깨진다 → 형식 위반으로 잡는다.
+    ②나머지는 실제로 열어 본다. 4xx·5xx 면 깨진 것, 못 쟀으면(None) 통과시킨다.
+    """
+    if os.environ.get(_SKIP_LINK_CHECK_ENV) == "1":
+        return []
+    bad: list[str] = []
+    for line in str(text or "").splitlines():
+        urls = _LINK_RE.findall(line)
+        if len(urls) > 1:
+            bad.append(f"{urls[0]} (한 줄에 링크 {len(urls)}개 — 줄을 나눠 주세요)")
+            continue
+        for u in urls:
+            code = _link_status(u)
+            if code is not None and code >= 400:
+                bad.append(f"{u} ({code})")
+    return bad
+
+
+def _selfcheck_broken_links() -> None:
+    base = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/"
+    two = f"강습: {base}lesson.html · 멤버십: {base}membership.html"
+    assert broken_links(two), "한 줄에 링크 둘 — 잡아야 한다"
+    assert not broken_links(f"👉 강습: {base}lesson.html"), "정상 링크는 통과해야 한다"
+    assert broken_links(base + "없는페이지.html"), "404 는 잡아야 한다"
+    print("[selfcheck] broken_links OK")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -1305,6 +1370,11 @@ def send_message_to_room(room: dict, base_message: str, dry_run: bool) -> tuple[
         log(f"[{room_name}] ⛔ {_via}")
         return False, "via_manager"
 
+    _bad = broken_links(text)
+    if _bad:
+        log(f"[{room_name}] ⛔ 못 여는 링크 — 발신 보류: {' / '.join(_bad)}")
+        return False, "broken_link"
+
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(text):
         return False, "chairman_gate"
 
@@ -1349,6 +1419,11 @@ def send_to_room(room: dict, image_path: Path, base_caption: str, dry_run: bool)
     _jargon = warn_jargon(caption)
     if _jargon:
         log(f"[{room_name}] ⚠ 실무진이 못 읽을 수 있는 말: {', '.join(_jargon)}")
+
+    _bad = broken_links(caption)
+    if _bad:
+        log(f"[{room_name}] ⛔ 못 여는 링크 — 발신 보류: {' / '.join(_bad)}")
+        return False, "broken_link"
 
     if room_name == CHAIRMAN_ROOM_NAME and not dry_run and not chairman_content_allows(caption):
         return False, "chairman_gate"
@@ -1667,6 +1742,16 @@ def _selftest() -> None:
         assert "앞으로 띄우지" in _failure_reason([("차의주 회장님", "카톡 검색창 활성화 실패")])
         assert "원인 불명" in _failure_reason([("★관리부", "ZeroDivisionError")])
         print("SELFTEST OK: 발신 실패 사유 분류 정상")
+
+        # ⑦ 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로 주소를 열어 보므로
+        #    망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는 사고가 나면 안 된다.
+        _selfcheck_honorifics()
+        try:
+            _selfcheck_broken_links()
+        except AssertionError:
+            raise
+        except Exception as exc:
+            print(f"  [링크 검수] 망 문제로 건너뜀 — {exc}")
     finally:
         CHAIRMAN_BASELINE_PATH = orig_baseline_path
         MONTHLY_PLAN_PATH = orig_plan_path
