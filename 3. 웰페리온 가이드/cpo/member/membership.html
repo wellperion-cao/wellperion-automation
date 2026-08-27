@@ -9056,6 +9056,9 @@ function _composeHtml() {
 var _validTypeCounts = null;   // {멤버십,입주민,중단기,보증금,FAN VIP,기타}
 var _validTotal = 0;
 var _validWaitCnt = 0;
+// 단기(중단기) — 유효 내역 줄에서 별도로 세는 수(GM 지시 2026-08-27 "유효 985에 단기 포함인 것 같은데 단기 별도로").
+// 대기자와 겹치면 내역 합이 총계보다 적어지므로, 대기자에 이미 잡힌 단기는 여기서 뺀 값을 담는다(실측 2026-08-27 겹침 0건).
+var _validShortCnt = 0;
 
 function _memberChip(label, val, kind, onclick) {
   var C = { type: ['var(--teal-bg)','var(--teal-border)','var(--teal)'],
@@ -9192,6 +9195,13 @@ function _memberOverviewHtml() {
   //   대기자(시작일이 아직 안 온 회원)는 이미 active 안에 들어 있는데 옆에 한 번 더 적혀 있어서,
   //   내역을 더하면 큰 숫자보다 대기자 수만큼 많아졌다(997+32+9=1,038 ≠ 1,029). 대기자를 빼서 적는다.
   var activeStarted = Math.max(0, active - wait);
+  // ★단기를 유효에서 떼어 따로 적는다(GM 지시 2026-08-27 — "유효 985명에 단기 포함인 것 같은데, 단기 별도로").
+  //   단기(중단기)는 한 달 안팎 이용이라 일반 유효회원과 성격이 다른데 한 숫자에 섞여 있었다.
+  //   명단이 아직 안 왔으면(_validTypeCounts null) 단기 칸을 만들지 않는다 — 0을 적으면 '확인된 0명'처럼 보인다.
+  //   Math.min 은 서버 잠정치가 활성 인원보다 클 수 없게 묶어, 내역 합이 항상 큰 숫자와 같게 유지한다.
+  var shortKnown = (_validTypeCounts != null);
+  var shortCnt = shortKnown ? Math.min(_validShortCnt || 0, activeStarted) : 0;
+  var activeCore = activeStarted - shortCnt;
   return '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
       '<div style="display:flex;flex-direction:column;align-items:center;min-width:64px">' +
         '<div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:0.08em;margin-bottom:2px">유효회원</div>' +
@@ -9199,7 +9209,8 @@ function _memberOverviewHtml() {
         '<div style="font-size:10px;color:var(--dim);margin-top:2px">명</div>' +
       '</div>' +
       '<div style="font-size:12px;color:var(--dim);line-height:1.7;word-break:keep-all">' +
-        '유효 <b style="color:var(--text)">' + activeStarted.toLocaleString() + '</b>' +
+        '유효 <b style="color:var(--text)">' + activeCore.toLocaleString() + '</b>' +
+        (shortKnown ? ' + 단기 <b style="color:var(--text)">' + shortCnt + '</b>' : '') +
         ' + 법인 <b style="color:var(--text)">' + corp + '</b>' +
         ' + 대기자 <b style="color:var(--text)">' + wait + '</b>' +
         ' = 총 <b style="color:var(--text)">' + validAll.toLocaleString() + '</b>명' +
@@ -9261,7 +9272,11 @@ function renderActiveSummary() {
     rows.forEach(function(row){ var v = _memberTypeOf(row); counts[v] = (counts[v] || 0) + 1; });
     _validTypeCounts = counts;
     _validTotal = rows.length;
-    _validWaitCnt = _waitMembers().length;
+    var waitRows = _waitMembers();
+    _validWaitCnt = waitRows.length;
+    var shortWait = 0;
+    waitRows.forEach(function(row){ if (_memberTypeOf(row) === '중단기') shortWait++; });
+    _validShortCnt = Math.max(0, (counts['중단기'] || 0) - shortWait);
     _setTxt('dMemShort', counts['중단기'] || 0);      // 카드4 단기 배선 유지(배299)
     _setTxt('dMemWait', _validWaitCnt);               // 카드4 대기자 배선(GM 지시 2026-08-03) — 이미 센 값 재사용
     // 카드4 유효 = server memberActive+memberCorp(법인, 총 유효회원 수에 합산·요약카드 '총 유효회원'과 동일값 고정). 대기자는 별도 지표로만 표기. 2026-07-18 시포·GM
@@ -9727,6 +9742,9 @@ function loadMemberActiveSummary() {
         _validTypeCounts = d.typeCounts || null;
         _validTotal = d.validTotal || 0;
         _validWaitCnt = d.waitingCount || 0;
+        // 잠정치 — 서버 요약엔 '단기이면서 대기자'가 몇인지가 없다. 명단(member_active_list)이 도착하면
+        // renderActiveSummary()가 겹침을 뺀 실측값으로 덮어쓴다. 렌더 쪽 Math.min 이 합계 어긋남을 막는다.
+        _validShortCnt = (d.typeCounts && d.typeCounts['중단기']) || 0;
       }
       renderActiveSummary();   // 이미 LOSS·대기자 드릴다운 중이면 헤더도 즉시 갱신
     })
