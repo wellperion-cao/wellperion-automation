@@ -10095,6 +10095,8 @@ function _hasRealReply_(memo) {
     }
     _memberLog_([[new Date(), _logWho_(body), '(회원번호)', '', '회원번호 부여',
                   '원장 탭 회원번호 칸', '새 번호 ' + rgNewPeople.length + '명', '멤버십']]);
+    // ④ 낡은 '회원등기부' 탭은 2026-08-27 에 백업(변경이력 '등기부탭 삭제 전 백업' 1,737행) 후 삭제 완료.
+    //    일회성 정리 코드는 같은 날 걷어냈다 — 다시 필요하면 git 이력에서 꺼낸다(약속 L21).
     _memberCacheBump_(); _aaCacheClear_(['valid', 'corp', 'archive']);
     return _json({ ok: true, 새사람: rgNewPeople.length,
                    마지막번호: 'M' + ('00000' + rgMaxNo).slice(-5), 탭별: rgReport });
