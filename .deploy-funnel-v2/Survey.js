@@ -22,11 +22,11 @@ const MEMBER_SHEET = '유효회원';
 const MEMBER_ARCHIVE_SHEET = 'LOSS보관';
 const MEMBER_CORP_SHEET_NAME = '법인현황';   // 법인 회원 원장 — 이름은 폴백일 뿐, 실제로는 아래 gid 로 찾는다
 const MEMBER_CORP_SHEET_GID = 1612064257;   // member_active_list scope='corp' 과 같은 탭(이름이 달라 gid 가 정본)
-// ★회원등기부(2026-08-26 GM 승인 · 배801) — 사람마다 평생 안 바뀌는 번호를 담는 단 하나의 탭.
-//   여기 번호가 모든 원장 줄을 꿰는 열쇠다. 상세 = status/briefs/CPO-2026-08-26-회원도메인-이행설계.md
-const MEMBER_REGISTRY_SHEET = '회원등기부';
+// ★회원번호(2026-08-26 GM 승인 · 배801 / 2026-08-27 GM 지시로 별도 탭 폐지) — 사람마다 평생 안 바뀌는 번호.
+//   번호는 원장 탭(유효회원·법인·LOSS보관)의 '회원번호' 칸에 산다. 같은 진실을 담던 '회원등기부' 탭은
+//   지웠다 — 번호·이름·전화만 중복으로 갖고 있었고, 관계 칸은 처음부터 비어 있었다(약속 L01).
+//   상세 = status/briefs/CPO-2026-08-26-회원도메인-이행설계.md
 const MEMBER_REGISTRY_KEY_COL = '회원번호';
-const MEMBER_REGISTRY_COLS = ['회원번호', '이름', '전화', '종류', '보호자회원번호', '소속법인회원번호', '병합대표번호', '생성일', '메모'];
 const MEMBER_PHONE_COL = '휴대폰 번호';   // 회원부 전화번호 헤더
 const MEMBER_DATE_COL  = '등록 일자';      // 회원부 등록일 헤더
 
@@ -9894,6 +9894,7 @@ function _hasRealReply_(memo) {
     var arAddrI = _arIdx(arArchHdr, '주소');
     var arMemoI = _arIdx(arArchHdr, '비고'); if (arMemoI < 0) arMemoI = _arIdx(arArchHdr, '메모');
     var arSeqI = _arIdx(arArchHdr, '등록회차');
+    var arNoI = _arIdx(arArchHdr, MEMBER_REGISTRY_KEY_COL);   // 회원번호 — 보관에서 돌아와도 같은 번호를 유지한다
     var arRowVals = arArchSh.getRange(arRow, 1, 1, arArchHdr.length).getValues()[0];
     function _arCell(i) { return i >= 0 ? arRowVals[i] : ''; }
     var arName = String(_arCell(arNmI) || '').trim();
@@ -9905,6 +9906,7 @@ function _hasRealReply_(memo) {
     var arAddr = String(_arCell(arAddrI) || '').trim();
     var arMemo = String(_arCell(arMemoI) || '').trim();
     var arSeqRaw = _arCell(arSeqI);
+    var arMemberNo = String(_arCell(arNoI) || '').trim();
     var arSeqN = parseInt(String(arSeqRaw == null ? '' : arSeqRaw).replace(/[^0-9]/g, ''), 10);
     var arNewSeq = (!isNaN(arSeqN) && arSeqN > 0) ? (arSeqN + 1) : arSeqRaw;  // 숫자면 +1, 못 읽으면 그대로.
 
@@ -9944,6 +9946,11 @@ function _hasRealReply_(memo) {
     if (arActMemoI >= 0 && arMemo) arActiveSh.getRange(arNewRow, arActMemoI + 1).setValue(arMemo);
     if (arActOwnI >= 0 && arOwner) arActiveSh.getRange(arNewRow, arActOwnI + 1).setValue(arOwner);
     if (arActSeqI >= 0) arActiveSh.getRange(arNewRow, arActSeqI + 1).setValue(arNewSeq);
+    // 회원번호 인계(2026-08-27 GM 지시) — 보관에서 돌아온 사람은 예전에 받은 번호를 그대로 쓴다.
+    //   이 한 줄이 없으면 새 행의 회원번호가 빈칸이 되고, 같은 사람이 번호를 두 개 갖게 된다.
+    //   값은 위에서 이미 읽어 둔 보관 행(arRowVals)에서 꺼내므로 시트를 다시 찾아보지 않는다.
+    var arActNoI = _arIdx(arActiveHdr, MEMBER_REGISTRY_KEY_COL);
+    if (arActNoI >= 0 && arMemberNo) arActiveSh.getRange(arNewRow, arActNoI + 1).setValue(arMemberNo);
     // 명시적 시작/종료일은 개월수 계산보다 항상 우선(요청값 승리).
     if (arStartDate && arActStI >= 0) { var _sC = arActiveSh.getRange(arNewRow, arActStI + 1); _sC.setNumberFormat('@'); _sC.setValue(arStartDate); }
     if (arEndDate && arActEndI >= 0) {
@@ -10004,32 +10011,30 @@ function _hasRealReply_(memo) {
     }
     function _rgKey(phone, name) { return _normPhone_(phone) + '|' + String(name || '').trim(); }
 
-    // ① 등기부 탭 확보
-    var rgReg = rgSs.getSheetByName(MEMBER_REGISTRY_SHEET);
-    var rgCreated = false;
-    if (!rgReg) {
-      if (rgDry) { rgCreated = true; }
-      else {
-        rgReg = rgSs.insertSheet(MEMBER_REGISTRY_SHEET);
-        rgReg.getRange(1, 1, 1, MEMBER_REGISTRY_COLS.length).setValues([MEMBER_REGISTRY_COLS]);
-        rgReg.setFrozenRows(1);
-        rgCreated = true;
-      }
-    }
-    // 등기부에 이미 있는 사람 = 번호 재사용(멱등의 핵심)
-    var rgKnown = {}, rgMaxNo = 0;
-    if (rgReg && rgReg.getLastRow() >= 2) {
-      var rgHdr0 = rgReg.getRange(1, 1, 1, rgReg.getLastColumn()).getValues()[0].map(function(v){ return String(v).trim(); });
-      var rgNoI0 = rgHdr0.indexOf('회원번호'), rgNmI0 = rgHdr0.indexOf('이름'), rgPhI0 = rgHdr0.indexOf('전화');
-      if (rgNoI0 >= 0 && rgNmI0 >= 0 && rgPhI0 >= 0) {
-        var rgVals0 = rgReg.getRange(2, 1, rgReg.getLastRow() - 1, rgHdr0.length).getValues();
-        for (var rv = 0; rv < rgVals0.length; rv++) {
-          var _no = String(rgVals0[rv][rgNoI0] || '').trim();
-          if (!_no) continue;
-          rgKnown[_rgKey(rgVals0[rv][rgPhI0], rgVals0[rv][rgNmI0])] = _no;
-          var _n = parseInt(_no.replace(/[^0-9]/g, ''), 10);
-          if (_n > rgMaxNo) rgMaxNo = _n;
-        }
+    /* ① 이미 나간 번호 모으기 — 원장 탭의 '회원번호' 칸이 곧 대장이다.
+       ★2026-08-27 GM 지시로 별도 '회원등기부' 탭 의존을 끊었다. GM: "코드랑 유효회원시트에 같이
+       넣어주면 안되나? 지금있는 등기부시트 삭제하고". 등기부 탭에 실제로 들어 있던 것은 번호·이름·
+       전화·생성일뿐이고(관계 칸 3개는 처음부터 빈칸으로 넣고 있었다), 그 번호는 세 탭의 회원번호
+       칸에 이미 그대로 박혀 있다 — 같은 진실을 두 곳에 두던 것을 한 곳으로 줄인다(약속 L01).
+       사람 묶는 키·멱등·다음 번호 규칙은 종전 그대로다. */
+    var rgKnown = {}, rgMaxNo = 0, rgBodies = {};
+    for (var rk = 0; rk < rgTabs.length; rk++) {
+      var kSh = rgSs.getSheetByName(rgTabs[rk]);
+      if (!kSh) continue;
+      var kLast = kSh.getLastRow(), kCols = kSh.getLastColumn();
+      if (kLast < 2) continue;
+      var kHdr = kSh.getRange(1, 1, 1, kCols).getValues()[0].map(function(v){ return String(v).trim(); });
+      var kBody = kSh.getRange(2, 1, kLast - 1, kCols).getValues();
+      rgBodies[rgTabs[rk]] = { hdr: kHdr, body: kBody, cols: kCols };   // 아래 ②가 다시 안 읽게 넘긴다
+      var kNoI = kHdr.indexOf(MEMBER_REGISTRY_KEY_COL);
+      if (kNoI < 0) continue;
+      var kNmI = _rgIdx(kHdr, '회원명'), kPhI = _rgIdx(kHdr, '휴대폰');
+      for (var kb = 0; kb < kBody.length; kb++) {
+        var _no = String(kBody[kb][kNoI] || '').trim();
+        if (!_no) continue;
+        if (kNmI >= 0 && kPhI >= 0) rgKnown[_rgKey(kBody[kb][kPhI], kBody[kb][kNmI])] = _no;
+        var _n = parseInt(_no.replace(/[^0-9]/g, ''), 10);
+        if (_n > rgMaxNo) rgMaxNo = _n;
       }
     }
 
@@ -10050,7 +10055,10 @@ function _hasRealReply_(memo) {
         sh.getRange(1, noI + 1).setValue(MEMBER_REGISTRY_KEY_COL);
         cols = cols + 1;
       }
-      var body2 = sh.getRange(2, 1, last - 1, Math.max(cols, hdr.length)).getValues();
+      // ①에서 이미 읽어 둔 값을 다시 쓴다(같은 탭을 두 번 읽지 않는다). 칸을 새로 붙인 탭만 다시 읽는다.
+      var _rgCached = rgBodies[rgTabs[rt]];
+      var body2 = (_rgCached && !addCol) ? _rgCached.body
+                : sh.getRange(2, 1, last - 1, Math.max(cols, hdr.length)).getValues();
       var colOut = [], filled = 0, kept = 0;
       for (var br = 0; br < body2.length; br++) {
         var nm = String(body2[br][nmI] || '').trim();
@@ -10075,23 +10083,20 @@ function _hasRealReply_(memo) {
     }
 
     if (rgDry) {
-      return _json({ ok: true, dryRun: true, 등기부신설: rgCreated, 새사람: rgNewPeople.length,
+      return _json({ ok: true, dryRun: true, 새사람: rgNewPeople.length,
                      마지막번호: 'M' + ('00000' + rgMaxNo).slice(-5), 탭별: rgReport });
     }
 
-    // ③ 실제 쓰기 — 등기부 append 먼저(번호가 어디서 왔는지 먼저 남긴다), 그다음 각 탭 열 쓰기
-    if (rgNewPeople.length && rgReg) {
-      rgReg.getRange(rgReg.getLastRow() + 1, 1, rgNewPeople.length, MEMBER_REGISTRY_COLS.length).setValues(rgNewPeople);
-    }
+    // ③ 실제 쓰기 — 각 탭의 회원번호 열에 쓴다(별도 등기부 탭 없음, 2026-08-27 GM 지시)
     for (var rp = 0; rp < rgPlan.length; rp++) {
       var pl = rgPlan[rp];
       if (!pl.values.length || pl.colIndex < 0) continue;
       pl.sheet.getRange(2, pl.colIndex + 1, pl.values.length, 1).setValues(pl.values);
     }
-    _memberLog_([[new Date(), _logWho_(body), '(회원등기부)', '', '회원번호 부여',
-                  '등기부 ' + (rgCreated ? '신설' : '기존'), '새 번호 ' + rgNewPeople.length + '명', '멤버십']]);
+    _memberLog_([[new Date(), _logWho_(body), '(회원번호)', '', '회원번호 부여',
+                  '원장 탭 회원번호 칸', '새 번호 ' + rgNewPeople.length + '명', '멤버십']]);
     _memberCacheBump_(); _aaCacheClear_(['valid', 'corp', 'archive']);
-    return _json({ ok: true, 등기부신설: rgCreated, 새사람: rgNewPeople.length,
+    return _json({ ok: true, 새사람: rgNewPeople.length,
                    마지막번호: 'M' + ('00000' + rgMaxNo).slice(-5), 탭별: rgReport });
   }
 
