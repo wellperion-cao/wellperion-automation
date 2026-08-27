@@ -145,14 +145,43 @@ function _regCatByLabel(label) {
   }
   return null;
 }
+// 컴플레인의 부서 — 장소로 가른다 (GM 확정 2026-08-25).
+//   그전에는 컴플레인이 분류만 보고 무조건 '운영부'로 갔다. GM 지적: "컴플레인이 강습부서일수도
+//   있고, 시설부 지원부 일수도 있는데, 무조건 운영부로 가게하면 안되는데?"
+//   실측(같은 날 컴플레인 39건 처리 이력): 운영부가 아닌 사람이 절반 가까이 처리하고 있었다
+//   — 이정헌 소장 5 · 김종현 차장 1 · 윤병현AM 1 · 이경연 실장 3 · 최준용M 13.
+//   장소 13개는 접수 폼의 고정 선택지(reception_block.html LOCATIONS)와 1:1로 맞춘 것이다.
+//   ▸컴플레인에만 적용한다 — 분실물·습득물은 리셉션 보관이라 운영부가 맞고, 시설물 고장은
+//     시설부, 청결은 아래 성별 규칙이 이미 맞다. 장소를 전 분류에 적용하면 분실물이 P.T팀으로 간다.
+//   ▸목록에 없는 장소(자유입력·빈칸)면 종전대로 그 분류의 기본 부서로 둔다.
+var REG_COMPLAINT_LOC_DEPT = {
+  '헬스장': 'P.T팀',
+  '수영장': '수영팀',
+  '남자사우나': '지원부(남)',
+  '여자사우나': '지원부(여)',
+  '락커': '지원부',
+  '골프장': '골프팀',
+  '스쿼시장': '스쿼시팀',
+  '체조장': '체조팀',
+  'G.X룸': 'G.X팀',
+  '주차장': '주차관리부',
+  '리셉션': '운영부',
+  '카페': '카페',
+  '기타': '운영부'
+};
+
 // 청결 접수의 부서 — 남/여 구역 담당 반장님이 갈린다(GM 지시 2026-08-15 · 부서 3개 → 11개).
 // 장소에 남/여가 적혀 있을 때만 자동으로 가르고, 안 적혀 있으면 REG_CATEGORIES 의 옛 '지원부' 값을
 // 그대로 둔다 — 그 값은 11개 목록에 없어 화면의 '지원부(구분 전)' 칸으로 모이고 사람이 배정한다.
 // 임의로 남/여를 찍으면 엉뚱한 반장님께 연락이 간다(실측 2026-08-17: 청결 14건 중 장소가 성별을
 // 밝힌 건은 여자사우나 3건뿐, 나머지 11건은 수영장·골프장 등 성별과 무관한 장소였다).
 function _regDeptFor(cat, loc) {
-  if (!cat || cat.key !== 'clean') return cat ? cat.dept : '';
-  var s = String(loc || '');
+  if (!cat) return '';
+  var s = String(loc || '').trim();
+  if (cat.key === 'complaint') {
+    return REG_COMPLAINT_LOC_DEPT[s] || cat.dept;
+  }
+  if (cat.key !== 'clean') return cat.dept;
   if (/여자|여성/.test(s)) return '지원부(여)';
   if (/남자|남성/.test(s)) return '지원부(남)';
   return cat.dept;
@@ -1241,12 +1270,24 @@ function _regSubmit(body) {
   //   행 전체(색상 포함)가 함께 이동하므로 상태색·사진URL 등 정합 유지. reg_update/delete 는 ID 스캔이라 행위치 무관.
   try { _regSortSheetDesc(sh, headers); } catch (e) {}
 
+  // 카테고리별 추가 칸(고장설비·분실물품 등)을 알림에도 싣는다 — 2026-08-27 GM 지적.
+  //   시설물 고장 폼은 '고장설비' 칸에 증상을 적고 '내용'은 비워 두는 경우가 많다(공개 폼에서
+  //   내용은 필수가 아니다). 그런데 알림 문구가 content 만 읽어서, 실제로는 내용이 들어와 있는
+  //   접수가 텔레그램에서는 '내용: -' 로 나갔다(실측 RECEPTION-136 정태용 · 2026-08-27).
+  //   원장에는 멀쩡히 저장돼 있었으므로 데이터 문제가 아니라 알림 문구 문제다.
+  var _extraLine = extras.map(function (h) {
+    var v = String(body[h.key] == null ? '' : body[h.key]).trim();
+    return v ? (h.label + ': ' + v.slice(0, 100)) : '';
+  }).filter(function (s) { return s; }).join('\n');
+  var _extraBlock = _extraLine ? (_extraLine + '\n') : '';
+
   // 텔레그램 알림 (익명 접수 시 이름 표기) — 사진 있으면 sendPhoto 로 실제 첨부
   _vNotifyTelegram(
     '📋 <b>[종합 접수처]</b> ' + cat.label + '\n' +
     '부서: ' + _regDeptFor(cat, loc) + '\n' +
     '이름: ' + (isAnon ? '익명' : name) + '\n' +
     '위치: ' + (loc || '-') + '\n' +
+    _extraBlock +
     '내용: ' + (content ? content.slice(0, 100) : '-') + '\n' +
     '🕒 ' + now,
     photoUrl
@@ -1255,7 +1296,7 @@ function _regSubmit(body) {
   // 시설부 접수는 시설팀 방에도 별도로 한 번 더 발송(TELEGRAM_FACILITY_CHAT_ID 속성). 드리프트로 사라진 것 복구 2026-08-16.
   if (cat.key === 'facility') {
     var _facChat = _vprop('TELEGRAM_FACILITY_CHAT_ID');
-    if (_facChat) _vNotifyTelegram('🔧 <b>[시설물 고장 접수]</b>\n이름: ' + name + '\n위치: ' + (loc || '-') + '\n내용: ' + (content ? content.slice(0, 100) : '-') + '\n🕒 ' + now, photoUrl, _facChat);
+    if (_facChat) _vNotifyTelegram('🔧 <b>[시설물 고장 접수]</b>\n이름: ' + name + '\n위치: ' + (loc || '-') + '\n' + _extraBlock + '내용: ' + (content ? content.slice(0, 100) : '-') + '\n🕒 ' + now, photoUrl, _facChat);
   }
 
   _regBoardCacheClear_();
@@ -1428,11 +1469,12 @@ function _regStaffSuggest() {
 var REG_STAFF_TITLE_RE = /(GM|AM|M|매니저|사원|주임|대리|과장|차장|부장|실장|소장|팀장|님)$/;
 // 규칙으로 못 잡는 것만 남긴다(오타 등). 명단이 아니라 예외표다 — 늘리지 말 것.
 var REG_STAFF_TYPO = { '벡승화': '백승화' };
-// 열쇠 → 화면에 보여줄 대표 표기(직급 포함). 없으면 열쇠를 그대로 쓴다(회원·외부인).
-var REG_STAFF_DISPLAY = {
-  '최준용': '최준용M', '백승화': '백승화사원', '윤병현': '윤병현AM',
-  '이경연': '이경연실장', '김남욱': '김남욱GM', '임정은': '임정은M', '나우열': '나우열M'
-};
+// 열쇠 → 화면에 보여줄 대표 표기. 없으면 열쇠를 그대로 쓴다.
+// ★2026-08-27 GM 확정 — 접수처 화면에는 직함을 붙이지 않고 이름만 보여준다.
+//   GM: "접수+완료 이름들이 나오는데 각 직함은 빼고 이름만 일단 하자, 다들 이름을 먼저 넣으니 그게 맞는 것 같아."
+//   표를 비우면 _regStaffCanon 이 직함을 벗긴 열쇠를 그대로 돌려준다 — 옛 저장값('박호균과장')도
+//   같은 열쇠('박호균')로 모이므로 점수판 집계는 그대로다(정규화는 _regStaffKey 한 곳).
+var REG_STAFF_DISPLAY = {};
 
 function _regStaffKey(name) {
   var s = String(name || '').replace(/\s+/g, '');
