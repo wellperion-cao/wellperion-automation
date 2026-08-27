@@ -488,8 +488,14 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
         lines.append(f"\n🏢 {dept} ({len(items)}건)")
         for r in items[:_INTAKE_CAP]:
             cat = str(r.get("category") or "").strip()
-            content = " ".join(str(r.get("content") or "").split())[:28]
-            lines.append(f"  ▪ [{cat}] {content} ({r.get('regId')})")
+            # ★2026-08-27 GM 지시 — "내용도 같이 넣어줘, 길어도 다 넣어줘". 종전에는 28자에서
+            # 잘라 「수영장 내 샤워부스 총2개 남자쪽 1개 여자쪽 1개」처럼 무엇을 고쳐야 하는지
+            # 모른 채 화면에 들어가야 했다. 이제 자르지 않는다.
+            content = " ".join(str(r.get("content") or "").split())
+            lines.append(f"  ▪ [{cat}] ({r.get('regId')})")
+            if content:
+                # 제목 줄만 훑어도 뜻이 통하게 — 상세는 다음 줄 들여쓰기(GM 2026-08-25 가독 규칙).
+                lines.append(f"     {content}")
         if len(items) > _INTAKE_CAP:
             lines.append(f"  …외 {len(items) - _INTAKE_CAP}건 더")
     lines.append(f"\n👉 상세·처리: {DASHBOARD_URL}")
