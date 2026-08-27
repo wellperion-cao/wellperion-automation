@@ -2586,6 +2586,9 @@ KAKAO_DEPTHEAD_ROOM = "★부서장"
 
 # (KAKAO_OPS_DEPT_ROOM 삭제 2026-08-08 — 업무 SSOT 09:30 카톡 ★운영부 발송을 GM 지시로
 #  없애면서 쓰는 곳이 사라졌다. 안 쓰는 상수를 남기면 다음 사람이 되살릴 자리로 오해한다.)
+# ★2026-08-27 GM 지시로 되살림 — 하루 일과 정리의 '멤버십' 몫이 이 방으로 간다
+#  (담당 임정은M). 강습 몫은 ★부서장 그대로. 표기는 kakao_rooms.json 과 같아야 한다.
+KAKAO_OPS_DEPT_ROOM = "★운영부"
 
 
 def _kakao_fail_notify(tag: str, detail: str, room: str = "") -> None:
@@ -2661,6 +2664,14 @@ def run_daily_digest(early: bool = False) -> None:
     # ── 스트림 #1 문의 및 컨택&등록 현황 (통일 포맷 msg5618 · 2026-07-22) ────────────────
     # 옛 _build_digest_inquiry(종목별 그룹) 대체. 확정 포맷: report_stream_1_inquiry.
     inquiry_plain = None  # 카카오용 평문(태그·엔티티 없음)
+    # 완료 알림 커서 — 아래 발송이 커서를 옮기기 전 상태를 떠 둔다. 같은 회차에서 방별로
+    # 다시 만들 때 이 사본을 물려야 "이미 알린 건"으로 지워지지 않는다(2026-08-27).
+    _completion_cursor_before = None
+    try:
+        import report_stream_1_impl as _s1i_pre
+        _completion_cursor_before = dict(_s1i_pre._load_completion_state())
+    except Exception as e:
+        logger.warning(f"{label} 완료 알림 커서 스냅샷 실패(방별 분리 시 완료 알림 누락 가능): {e}")
     try:
         import report_stream_1_inquiry as _s1
         import re as _re_s1, html as _html_s1
@@ -2909,26 +2920,60 @@ def run_daily_digest(early: bool = False) -> None:
     # ★2026-08-18 GM 결정(배670) — 문의 정리 + 24h SLA 위반(sla_text, 위에서 계산분)을
     #   한 통으로 묶어 보낸다. 종전엔 22:31 미배정 557자·22:32 문의 639자가 1분 간격
     #   두 통이었다(실측) — 같은 방·같은 문의 도메인이라 병합.
-    depthead_parts = [p for p in (inquiry_plain, sla_text) if p]
-    if depthead_parts:
-        depthead_msg = "\n\n".join(depthead_parts)
+    # ★2026-08-27 GM 지시 — 멤버십과 강습을 한 통에 섞어 보내니 각 담당이 자기 것을 못 찾고
+    #   컨택이 밀린다(실측: 멤버십 미컨택 11건 중앙값 13.9일 vs 강습 5~7일). 방을 가른다.
+    #   강습(성인+유소년) → ★부서장(강습 팀장) / 멤버십 → ★운영부(담당 임정은M).
+    #   완료 알림 커서는 회차 안에서 공유한다 — 앞선 문의알림방 발송이 이미 커서를 옮겼으므로
+    #   그 전 상태 사본을 두 통에 똑같이 물려 같은 회차에 같은 내용이 나가게 한다.
+    try:
+        import report_stream_1_impl as _s1i
+        import re as _re_s2, html as _html_s2
+        _cursor = dict(_completion_cursor_before or _s1i._load_completion_state())
+
+        def _scoped_plain(scope: str) -> str:
+            raw = _s1i.build_digest(today, persist_completion=False, scope=scope,
+                                    completion_state=dict(_cursor))
+            return _re_s2.sub(r"<[^>]+>", "", _html_s2.unescape(raw))
+
+        room_payload = [
+            (KAKAO_DEPTHEAD_ROOM, "강습",
+             _scoped_plain("lesson"),
+             _un.build_sla_alert_text([v for v in sla_violations if "강습" in v["type"]])
+             if sla_text else ""),
+            (KAKAO_OPS_DEPT_ROOM, "멤버십",
+             _scoped_plain("membership"),
+             _un.build_sla_alert_text([v for v in sla_violations if v["type"] == "멤버십"])
+             if sla_text else ""),
+        ]
+    except Exception as e:
+        logger.error(f"{label} 문의 정리 방별 분리 실패 — 종전 병합본으로 발송: {e}")
+        room_payload = [(KAKAO_DEPTHEAD_ROOM, "문의+SLA", inquiry_plain or "", sla_text)]
+
+    _sent_any = False
+    for _room, _tag, _body, _sla in room_payload:
+        parts = [p for p in (_body, _sla) if p]
+        if not parts:
+            logger.info(f"{label} 카톡 {_room}({_tag}) 보낼 내용 없음 — 발송 없음")
+            continue
         try:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
             proc = subprocess.run(
-                [sys.executable, str(sender), "--message", depthead_msg, "--only-room", KAKAO_DEPTHEAD_ROOM],
+                [sys.executable, str(sender), "--message", "\n\n".join(parts), "--only-room", _room],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", env=env, timeout=180,
             )
             tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-            logger.info(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송(문의+SLA 병합): {tail[0]}")
+            logger.info(f"{label} 카톡 {_room}({_tag}) 발송: {tail[0]}")
             # ★2026-08-05 시토 수리 — 위 SLA·60일 무응답과 같은 구멍(returncode 미확인).
             if proc.returncode != 0:
-                _kakao_fail_notify("문의 정리+SLA", tail[0], room=KAKAO_DEPTHEAD_ROOM)
-            elif sla_violations:
-                _un.record_sla_alert_sent(sla_violations)  # 병합 발송 성공 뒤에만 커서 전진
+                _kakao_fail_notify(f"문의 정리+SLA({_tag})", tail[0], room=_room)
+            else:
+                _sent_any = True
         except Exception as e:
-            logger.error(f"{label} 카톡 {KAKAO_DEPTHEAD_ROOM} 발송 예외: {e}")
+            logger.error(f"{label} 카톡 {_room}({_tag}) 발송 예외: {e}")
+    if _sent_any and sla_violations:
+        _un.record_sla_alert_sent(sla_violations)  # 발송 성공 뒤에만 커서 전진
 
 
 def run_mgmt_notice_digest() -> None:

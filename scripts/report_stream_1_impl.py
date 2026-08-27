@@ -420,23 +420,41 @@ def seed_completion_cursor() -> int:
     return len(all_true_keys)
 
 
+SCOPE_KINDS = {
+    "all": ("membership", "adult", "youth"),
+    "membership": ("membership",),          # 운영부(멤버십 담당) 몫
+    "lesson": ("adult", "youth"),           # 부서장(강습 팀장) 몫
+}
+
+
 def build_digest(today: str | None = None, sample: bool = False, sample_n: int = 15,
-                  persist_completion: bool = True) -> str:
+                  persist_completion: bool = True, scope: str = "all",
+                  completion_state: dict | None = None) -> str:
+    """scope — 'all'(종전 그대로) / 'membership'(멤버십만) / 'lesson'(성인+유소년 강습만).
+
+    2026-08-27 GM 지시: 한 통에 멤버십·강습이 섞여 있어 각 담당이 자기 것을 못 찾는다
+    (실측: 멤버십 미컨택 11건이 중앙값 13.9일 방치 — 강습 5~7일의 두 배). 방을 갈라 보낸다.
+    completion_state — 같은 회차에서 여러 번 부를 때 '이미 알린 건' 커서를 공유하려고 받는다.
+    안 주면 종전대로 파일에서 읽는다.
+    """
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
+    kinds = SCOPE_KINDS.get(scope) or SCOPE_KINDS["all"]
 
-    mem_raw = _fetch_list("member_inquiry_list")
-    adult_raw = _fetch_list("lesson_inquiry_list", type="성인강습")
-    youth_raw = _fetch_list("lesson_inquiry_list", type="유소년강습")
+    mem_raw = _fetch_list("member_inquiry_list") if "membership" in kinds else []
+    adult_raw = _fetch_list("lesson_inquiry_list", type="성인강습") if "adult" in kinds else []
+    youth_raw = _fetch_list("lesson_inquiry_list", type="유소년강습") if "youth" in kinds else []
 
     mem_t = _today_rows(mem_raw, today)
     adult_t = _today_rows(adult_raw, today)
     youth_t = _today_rows(youth_raw, today)
-    groups = {"membership": mem_t, "adult": adult_t, "youth": youth_t}
-    raw_groups = {"membership": mem_raw, "adult": adult_raw, "youth": youth_raw}
+    groups = {k: v for k, v in (("membership", mem_t), ("adult", adult_t), ("youth", youth_t))
+              if k in kinds}
+    raw_groups = {k: v for k, v in (("membership", mem_raw), ("adult", adult_raw), ("youth", youth_raw))
+                  if k in kinds}
 
     a, b, c = len(mem_t), len(adult_t), len(youth_t)
-    total_new = a + b + c
+    total_new = sum(len(rows) for rows in groups.values())
 
     # 당일 신규 3분류(정합 확인용) — 항상 today rows(groups, 테스트행 이미 제외) 기준,
     # sample 여부와 무관하게 always 계산한다(GM 07-23 지적: 서혜진·임동균 2건 증발 방지).
@@ -459,13 +477,19 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
     uncontacted = _uncontacted_membership(raw_groups, today)
     special = _special_notes(groups, raw_groups, today)
 
+    _scope_label = {"membership": " · 멤버십", "lesson": " · 강습(성인·유소년)"}.get(scope, "")
     header = (
         f"📊 [하루 일과 정리] {today}({weekday})\n"
-        f"🔔 문의 및 컨택&등록 현황 보고"
+        f"🔔 문의 및 컨택&등록 현황 보고{_scope_label}"
+    )
+    _breakdown = " + ".join(
+        p for p in (f"멤버십({a})" if "membership" in kinds else "",
+                    f"성인강습({b})" if "adult" in kinds else "",
+                    f"유소년강습({c})" if "youth" in kinds else "") if p
     )
     section_new = (
         f"■ 신규 문의  총 {total_new}건\n"
-        f"멤버십({a}) + 성인강습({b}) + 유소년강습({c})\n"
+        f"{_breakdown}\n"
         f"특이사항: {html.escape(special)}"
     )
     recon_parts = [f"진전 {progress_today}건", f"담당배정 필요 {len(unassigned_today)}건"]
@@ -549,7 +573,8 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
         )
     section_contact = f"{contact_head}\n{contact_body}"
 
-    completion = "" if sample else _completion_block(raw_groups, persist=persist_completion)
+    completion = "" if sample else _completion_block(raw_groups, state=completion_state,
+                                                      persist=persist_completion)
     tail = f"\n\n{completion}" if completion else ""
     return (
         f"{header}\n\n{section_new}\n\n"
