@@ -56,7 +56,13 @@
     .main:has(#home.active) .ops-detail-grid{grid-template-columns:repeat(3,1fr)!important;}
     .main:has(#home.active) .ops-detail-grid>div:first-child{grid-column:auto!important;}
     .main:has(#home.active) .wa-block-grid{grid-template-columns:1fr!important;gap:10px!important;}
-    .home-hero-row{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:14px;align-items:center;}
+    /* 슬로건(좌)·ERP 설명(우) — 위아래 끝을 맞춘다(GM 지시 2026-08-27). 종전에는 각자
+       바깥 여백(슬로건 4/22px · 설명 18/8px)을 갖고 가운데 정렬만 해서 두 칸의 위·아래가
+       어긋나 보였다. 같은 높이로 늘리고 바깥 여백은 행이 관리한다. */
+    .home-hero-row{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:14px;align-items:stretch;margin:8px 0 22px;}
+    .home-hero-row>*{margin:0!important;}
+    .home-hero-row>div:first-child{display:flex;flex-direction:column;justify-content:center;}
+    .home-hero-row>.lead{display:flex;align-items:center;}
     .home-links-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;margin:0 0 24px;}
     .home-links-row>a{margin:0!important;}
   }
