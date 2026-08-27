@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -522,12 +523,67 @@ def _intake_room_for(dept: str) -> str:
     return _INTAKE_ROOM_LESSON if ("강습" in d or d.endswith("팀")) else _INTAKE_ROOM_DEFAULT
 
 
-def _send_kakao(room: str, text: str) -> bool:
+# ── 접수 사진 첨부(GM 지시 2026-08-27) ────────────────────────────────────────
+# 접수 폼이 받은 사진은 구글 드라이브에 있고 행의 photoUrl 에 보기 주소로 들어온다
+# (실측: 124건 중 13건에 사진 · 시설물 고장 8건). 보기 주소는 카톡에서 눌러도 로그인
+# 화면이 뜰 수 있어, 파일을 내려받아 사진 자체를 붙인다. 발신은 기존 관문 그대로(L21).
+_DRIVE_ID_RE = re.compile(r"/d/([\w-]+)")
+_PHOTO_MAX_BYTES = 15 * 1024 * 1024
+_PHOTO_MAGIC = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n")
+
+
+def _download_photo(url: str, dest_dir: Path, name: str) -> Path | None:
+    """드라이브 보기 주소 → 로컬 이미지 파일. 실패하면 None(사진 없이 글만 나간다)."""
+    import urllib.request  # noqa: PLC0415
+    m = _DRIVE_ID_RE.search(str(url or ""))
+    if not m:
+        return None
+    dl = f"https://drive.usercontent.google.com/download?id={m.group(1)}&export=download"
+    try:
+        req = urllib.request.Request(dl, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            blob = resp.read(_PHOTO_MAX_BYTES + 1)
+    except Exception as e:
+        print(f"[intake-relay] 사진 내려받기 실패({name}): {e}", flush=True)
+        return None
+    # 권한이 없으면 구글이 이미지 대신 로그인 HTML 을 200 으로 준다 — 머리 몇 바이트로 가린다
+    if len(blob) > _PHOTO_MAX_BYTES or not blob.startswith(_PHOTO_MAGIC):
+        print(f"[intake-relay] 사진 아님/너무 큼 — 건너뜀({name})", flush=True)
+        return None
+    ext = ".png" if blob.startswith(_PHOTO_MAGIC[1]) else ".jpg"
+    path = dest_dir / f"{name}{ext}"
+    path.write_bytes(blob)
+    return path
+
+
+def _send_intake_photos(room: str, rows: list[dict]) -> int:
+    """사진이 딸린 접수만 골라 글 다음에 사진을 이어 보낸다. 반환 = 보낸 장수."""
+    import tempfile  # noqa: PLC0415
+    targets = [r for r in rows if str(r.get("photoUrl") or "").strip()]
+    if not targets:
+        return 0
+    n = 0
+    with tempfile.TemporaryDirectory(prefix="intake_photo_") as tmp:
+        for r in targets:
+            reg = str(r.get("regId") or "접수")
+            p = _download_photo(r["photoUrl"], Path(tmp), reg)
+            if not p:
+                continue
+            cat = str(r.get("category") or "").strip()
+            content = " ".join(str(r.get("content") or "").split())
+            caption = f"📷 {reg} · [{cat}]" + (f"\n{content}" if content else "")
+            if _send_kakao(room, caption, image=p):
+                n += 1
+    return n
+
+
+def _send_kakao(room: str, text: str, image: Path | None = None) -> bool:
     """카톡 발신 관문(kakao_report_sender)을 그대로 탄다 — 새 발신 경로를 만들지 않는다(L21)."""
     import subprocess  # noqa: PLC0415
+    args = (["--image", str(image), "--caption", text] if image else ["--message", text])
     proc = subprocess.run(
         [sys.executable, "-u", str(SCRIPTS_DIR / "kakao_report_sender.py"),
-         "--message", text, "--only-room", room],
+         *args, "--only-room", room],
         cwd=str(REPO_ROOT), capture_output=True,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
@@ -576,8 +632,10 @@ def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
                                    persist=False, force=True)
         if not text:
             continue
+        new_sub = [r for r in sub if str(r.get("regId") or "") and str(r["regId"]) not in seen]
         if dry_run:
-            print(f"[intake-relay] DRY-RUN {room_depts} → {room}\n{text}\n", flush=True)
+            _pn = sum(1 for r in new_sub if str(r.get("photoUrl") or "").strip())
+            print(f"[intake-relay] DRY-RUN {room_depts} → {room} (사진 {_pn}장)\n{text}\n", flush=True)
             sent.extend(room_depts)
         elif test:
             token = _load_env_val("TELEGRAM_BOT_TOKEN")
@@ -586,6 +644,10 @@ def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
                 sent.extend(room_depts)
         elif _send_kakao(room, text):
             sent.extend(room_depts)
+            # 글이 나간 뒤에만 사진을 잇는다 — 사진이 실패해도 접수 전달 자체는 이미 갔다.
+            _n = _send_intake_photos(room, new_sub)
+            if _n:
+                print(f"[intake-relay] {room} 사진 {_n}장 첨부", flush=True)
     # 커서는 **전부 보낸 뒤에만** 전진한다(완료 통보와 같은 규칙 — 중간에 실패하면 다음
     # 회차에 다시 나간다. 잃는 것보다 겹치는 게 낫다). 테스트 발신은 커서를 건드리지 않는다.
     if not dry_run and not test and sent:
