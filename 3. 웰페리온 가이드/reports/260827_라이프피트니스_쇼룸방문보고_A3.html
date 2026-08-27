@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>라이프피트니스 쇼룸 방문 보고 — 웰페리온 A3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:16.6px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.6px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:32px; }
+  td.k{ background:#F6F8FA; font-weight:600; font-size:13.2px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:12.6px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:11.4px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:14.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:13.2px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+
+  .shots{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:8px 0 0;}
+  .shot{border:1px solid var(--line,#E3E7EB);background:#fff;overflow:hidden;}
+  .shot img{display:block;width:100%;height:132px;object-fit:cover;}
+  .shot .cap{font-size:10.5px;line-height:1.35;padding:4px 6px 5px;color:#101418;}
+  .shot .cap b{display:block;font-size:11px;}
+  @media print{ .shot img{height:126px;} }
+</style><style>
+  /* 4분기 방향성 — 결과보고에는 선택지(1안/2안)를 두지 않는다. 이미 끝난 분기를 두고 고르라 하는 것은
+     의미가 없다는 GM 지적(2026-08-26)에 따라 방향성 서술로 바꿨다. */
+  .opt{ display:flex; gap:0; margin-top:3px; }
+  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
+  .opt .o:first-child{ border-right:0; }
+  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
+  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
+  .opt .o.rec{ background:rgba(255,255,255,.12); }
+  .opt .o.rec{ border-color:rgba(255,255,255,.5); }
+  .tblwrap+.tblwrap{ margin-top:11px; }
+  .rm{ display:flex; gap:10px; margin-top:6px; }
+  .rm .st{ flex:1; border:1px solid var(--line); padding:7px 10px 8px; }
+  .rm .st .t{ font-size:12.4px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .rm .st .g{ font-size:11.2px; color:#5C666F; line-height:1.4; margin-top:2px; }
+  .rm .st .b{ height:9px; background:#E7ECF2; margin-top:6px; position:relative; }
+  .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .rm .st .p{ font-size:13px; font-weight:800; margin-top:3px; }
+  .rm .st.done .b i{ background:var(--good); } .rm .st.done .p{ color:var(--good); }
+  .rm .st.wait .b i{ background:#B9C2CC; } .rm .st.wait .p{ color:#7A838C; }
+
+  .shots{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:8px 0 0;}
+  .shot{border:1px solid var(--line,#E3E7EB);background:#fff;overflow:hidden;}
+  .shot img{display:block;width:100%;height:132px;object-fit:cover;}
+  .shot .cap{font-size:10.5px;line-height:1.35;padding:4px 6px 5px;color:#101418;}
+  .shot .cap b{display:block;font-size:11px;}
+  @media print{ .shot img{height:126px;} }
+</style>
+
+</head>
+<body>
+
+<div class="bar">
+  <b>라이프피트니스 쇼룸 방문 보고 — A3 1장</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">라이프피트니스 쇼룸 방문 보고</div>
+    </div>
+    <div class="meta">
+      보고 <b>경영지원부 김남욱 GM</b> · 방문 <b>2026. 08. 27.(목) 14:00</b> · 장소 <b>FKI타워 4층 · 올빗(ORBIT) 피트니스센터</b> · 안내 <b>도일트레이딩</b><br>
+      대상 과제 <b>GM업무 15 — 헬스장 장비 도입(4사 비딩)</b> · 문서번호 <b>WP-GM-260827-07</b><br>
+      원본 사진·영상 <b>공유드라이브 ▸ 경영지원 ▸ 26.8.21 운동 장비 비교 ▸ 라이프피트니스</b> <span style="font-size:11.5px">(사진 32 · 영상 4 · 143MB)</span>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향성</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01 · 장비만 보러 갔다가</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">장비보다 <b>VIP를 어떻게 대접하는가</b>가 더 크게 보였다</div>
+          <div class="x">라이프피트니스 장비 자체는 예상 범위였다. 눈에 남은 것은 <b>VIP 전용 P.T·샤워·파우더 공간</b>과 <b>멤버십 전용 라운지</b>처럼 «회원을 어디까지 따로 모시는가»였다.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">02 · 우리에게 없는 것</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">전용 동선 · 전용 음료 · <b>무인 판매</b></div>
+          <div class="x">P.T 받는 분이 쓰는 별도 샤워·파우더, 회원 전용 라운지, 보충제·프로틴바를 카드로 사는 자판기 — 사람을 더 쓰지 않고 <b>서비스를 얹는 방식</b>이다.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">03 · 그래서 다음</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">장비 비딩과 별개로 <b>VIP 벤치마킹을 한 축 더</b> 세운다</div>
+          <div class="x">GM 지목 4곳(강남 아난티 · 하남 반트 · 하남 스타필드 콩코드 · 기장 아난티 앳 부산 코브)을 리뉴얼·장비·소재·분위기 기준으로 본다.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shots">
+    <div class="shot"><img src="img/260827_라이프피트니스/vip-pt.jpg" alt="VIP 전용 P.T 공간">
+      <div class="cap"><b>VIP 전용 P.T 공간</b>창측 전용 존 · 사진 이름 GM 표기 그대로</div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/vip-powder.jpg" alt="VIP 전용 파우더 공간">
+      <div class="cap"><b>VIP 전용 파우더·샤워</b>전용 동선 · 영상 1건 함께 보관</div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/lounge.jpg" alt="올빗 라운지">
+      <div class="cap"><b>올빗 라운지</b>멤버십 회원 전용 휴게·음료 서비스</div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/lounge-sign.jpg" alt="올빗 라운지 사이니지">
+      <div class="cap"><b>라운지 사이니지</b>서비스 범위를 입구에서 바로 알린다</div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/vending.jpg" alt="유료 자판기">
+      <div class="cap"><b>유료 자판기</b>보충제·크레아틴 음료·프로틴바 · <b>카드결제</b></div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/cardio-window.jpg" alt="창가 유산소 라인">
+      <div class="cap"><b>창가 유산소 라인</b>전면 창 배치 · 우드 바닥으로 톤 통일</div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/machine-zone.jpg" alt="머신 존">
+      <div class="cap"><b>머신 존</b>존별 바닥재 구분(우드/러버)으로 구역을 가름</div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/key-kiosk.jpg" alt="키 발권기">
+      <div class="cap"><b>온핏 키 발권기</b>락커 전자키 무인 발권 — 데스크 부담 감소</div></div>
+    <div class="shot"><img src="img/260827_라이프피트니스/wear-return.jpg" alt="운동복 수거">
+      <div class="cap"><b>운동복·양말 수거</b>제공–수거 동선이 한자리에 정리</div></div>
+    <div class="shot" style="display:flex;align-items:center;justify-content:center;background:#EDF1F6;">
+      <div class="cap" style="text-align:center;padding:10px 8px;"><b>원본 36건</b>사진 32 · 영상 4<br><span class="est">공유드라이브 폴더에 그대로 보관</span></div></div>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:132px"><col><col><col style="width:112px"></colgroup>
+    <thead><tr>
+      <th class="k">본 것</th><th>올빗은 이렇게 한다</th><th>웰페리온에 옮긴다면</th><th class="ctr">판단</th>
+    </tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">V I P 응 대 &nbsp;— <span style="letter-spacing:0">이번 방문에서 가장 크게 남은 축</span></td></tr>
+      <tr><td class="k">전용 P.T·샤워·파우더</td><td>P.T 회원이 일반 존을 거치지 않고 <b>전용 공간에서 운동·샤워·정리</b>까지 끝낸다</td><td>정원 마감 상태에서 <b>기존 회원 가치를 올리는</b> 방향과 맞는다. 공간 확보가 전제라 <b>박수철 대표 공간 디자인 건</b>과 함께 봐야 한다</td><td class="ctr good">검토 1순위</td></tr>
+      <tr><td class="k">멤버십 전용 라운지</td><td>회원 전용 라운지에서 <b>음료 서비스</b>를 제공한다</td><td>요금 인상(10월 시행)의 <b>명분 축</b>이 된다 — 값이 오를 이유가 눈에 보여야 한다</td><td class="ctr good">인상 명분 연결</td></tr>
+      <tr class="sum"><td class="k">유료 자판기</td><td>보충제·크레아틴 음료·프로틴바를 <b>카드결제 무인 판매</b></td><td><b>사람을 더 쓰지 않고</b> 얹는 서비스이자 부가 매출. 설치·정산 방식만 정하면 되는 <b>가장 빨리 되는 건</b></td><td class="ctr good">단기 실행</td></tr>
+      <tr class="grp"><td colspan="4">운 영 · 공 간 &nbsp;— <span style="letter-spacing:0">장비 외에 같이 본 것</span></td></tr>
+      <tr><td class="k">무인 키 발권</td><td>락커 전자키를 <b>발권기에서 직접</b> 받는다</td><td>리셉션 업무 축소 축과 같은 방향 — 다만 우리 락커 체계 교체가 전제다</td><td class="ctr warn">중장기</td></tr>
+      <tr class="sum"><td class="k">바닥재·톤</td><td>우드/러버로 <b>존을 나누고</b> 전면 창 쪽에 유산소를 붙였다</td><td>리뉴얼 때 <b>소재·분위기</b> 기준으로 참고. 장비 선정보다 먼저 정할 축이다</td><td class="ctr warn">리뉴얼 시</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box rec">
+      <h3>벤치마킹 4곳 <span class="est">— GM 지목</span></h3>
+      <ul class="ord">
+        <li class="n"><b>강남 아난티</b> — 하이엔드 멤버십 응대·라운지</li>
+        <li class="n"><b>하남 반트</b> — 리뉴얼 사례·장비 구성</li>
+        <li class="n"><b>하남 스타필드 콩코드</b> — 소재·분위기</li>
+        <li class="n"><b>기장 아난티 앳 부산 코브</b> — 전용 동선·리조트형 서비스</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>이번에 느낀 것</h3>
+      <ul>
+        <li><b>VIP 타겟은 장비가 아니라 동선과 서비스</b>다 — P.T 전용 샤워, 전용 음료 라운지처럼 «따로 모시는» 장치가 값을 만든다</li>
+        <li><b>사람을 더 쓰지 않고도 얹을 수 있다</b> — 자판기·무인 발권이 그 예다</li>
+        <li>우리 리뉴얼 논의가 <b>장비부터</b> 시작됐는데, <b>공간·서비스 설계가 먼저</b>라는 것이 이번에 보였다</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>다음 단계</h3>
+      <ul>
+        <li class="r1"><b>4사 비딩</b>은 그대로 진행 — 같은 조건 견적이 아직 0건이라 그것부터 맞춘다</li>
+        <li class="r2"><b>벤치마킹 4곳 방문 일정</b>을 잡는다 — 리뉴얼·요금 인상 시점 전에</li>
+        <li class="r2"><b>자판기</b>는 별도 건으로 떼어 설치·정산 방식 확인</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>산출 근거</b> — 방문 관찰·사진 = 2026-08-27 GM 현장 방문(공유드라이브 「26.8.21 운동 장비 비교 ▸ 라이프피트니스」 사진 32·영상 4). 4사 비딩 현황(같은 조건 견적 0건)·요금 인상 10월 시행·공간 디자인 건 = 월간운영계획 직독. 벤치마킹 4곳 = GM 지목 2026-08-27.</div>
+    <div><b>표기 원칙</b> — 금액·계약 조건은 이 문서에 없다. 올빗의 <b>요금표·브로슈어 사진은 원본 폴더에 있으나 타사 자료라 옮겨 싣지 않았다.</b> 「검토 1순위·단기 실행」은 <b>웰리 제안</b>이며 확정은 GM 결정이다.</div>
+  </div>
+
+</div>
+
+<!-- PNG 변환 라이브러리 — 다른 A3 보고서와 같은 것. 이 문서에만 빠져 있어
+     [PNG 다운로드] 가 항상 실패 안내만 띄우고 있었다(2026-08-27 웰리 수리). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260827_라이프피트니스_쇼룸방문보고_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
