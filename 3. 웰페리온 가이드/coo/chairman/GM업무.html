@@ -132,6 +132,20 @@
   /* 헤더로 옮겨온 「보고 문안 복사」 안내문 — 흰 배경 대신 옅은 색으로(GM 2026-08-06, 대표님구획→헤더 이동) */
   .sec > summary .rnote{color:#C9D2CC;font-weight:600;}
   @media print{ .sec > summary .sec-act{display:none;} }
+  /* 🗺 전체 지도 보기 막대 (GM 지시 2026-08-27 — "들어가서 보고, A3 인쇄(가로&세로) / .png 다운로드").
+     화면 위에 고정으로 뜨고 인쇄·PNG 캡처에는 안 나온다. 오버레이·복제본을 만들지 않는다 —
+     지금 화면을 그대로 펼쳐 보여주는 것이라 인쇄본과 보이는 것이 같다. */
+  .mapbar{position:fixed;top:0;left:0;right:0;z-index:9998;display:none;align-items:center;gap:8px;
+    padding:9px 14px;background:#12281C;color:#fff;box-shadow:0 3px 14px rgba(0,0,0,.28);
+    font-size:12.5px;font-weight:700;}
+  .mapbar.on{display:flex;}
+  .mapbar .t{margin-right:auto;letter-spacing:-.01em;}
+  .mapbar button{font-family:inherit;font-size:12px;font-weight:700;color:#fff;cursor:pointer;
+    background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.5);border-radius:99px;padding:5px 13px;}
+  .mapbar button:hover{background:rgba(255,255,255,.22);}
+  .mapbar button.x{border-color:rgba(255,255,255,.28);background:transparent;}
+  body.mapview{padding-top:44px;}
+  @media print{ .mapbar{display:none !important;} body.mapview{padding-top:0;} }
   .sec-body{padding:12px 14px 14px;}
   .sub-h{display:flex;align-items:baseline;gap:10px;border-bottom:1.5px solid var(--deep);
          padding-bottom:4px;margin-bottom:7px;}
@@ -248,6 +262,15 @@
 
 <!-- 상단 「◂ 월간운영계획으로」 링크는 2026-08-19 GM 지시로 뺐다 — 목표 카드마다 붙어 있는 📌 아이콘이 같은 곳으로 간다(중복). -->
 
+<!-- 🗺 전체 지도 보기 막대 — 「전체 지도」를 누르면 뜬다(GM 지시 2026-08-27). -->
+<div class="mapbar" id="mapbar">
+  <span class="t">🗺 전체 지도 — 아래 내용이 그대로 인쇄·저장됩니다</span>
+  <button type="button" onclick="printA3('landscape');">🖨 A3 가로 인쇄</button>
+  <button type="button" onclick="printA3('portrait');">🖨 A3 세로 인쇄</button>
+  <button type="button" id="map-png-btn" onclick="saveMapPng(this);">🖼 PNG 다운로드</button>
+  <button type="button" class="x" onclick="closeMapView();">✕ 닫기</button>
+</div>
+
 <div class="sheet">
 
   <div class="hd">
@@ -324,10 +347,12 @@
   <!-- ③ 김남욱 GM -->
   <details class="sec" id="sec-gm" open>
     <summary><span class="ic">👤</span> 김남욱 GM 업무 진행건 <span class="cnt" id="gm-grp-cnt">불러오는 중…</span>
-      <!-- 전체 지도(A3 인쇄) — 맨 위에 있던 A3 세로/A3 가로/PNG 저장 3버튼을 여기 하나로 합쳤다
-           (GM 지시 2026-08-24 "토글제목칸에 변경 저장 왼쪽에 버튼 하나 더"). 셋 중 A3 가로만 남긴다 —
-           420mm 폭이라 2열 카드 그리드가 세로보다 덜 잘린다. 함수(printA3)는 그대로, 자리·개수만 줄였다. -->
-      <button type="button" class="sec-act" id="gm-a3-btn" onclick="event.stopPropagation(); printA3('landscape');">🖨 전체 지도</button>
+      <!-- 전체 지도 — 맨 위에 있던 A3 세로/A3 가로/PNG 저장 3버튼을 여기 하나로 합쳤다
+           (GM 지시 2026-08-24 "토글제목칸에 변경 저장 왼쪽에 버튼 하나 더").
+           ★2026-08-27 GM 지시 — 누르자마자 인쇄가 뜨던 것을 「보기 먼저」로 바꿨다. 이제 이 버튼은
+           섹션 3개를 펼쳐 지도를 화면에 보여주고, 위에 뜨는 막대에서 A3 가로/세로 인쇄와 PNG
+           다운로드를 고른다. 인쇄 함수(printA3)는 그대로 재사용한다(새 인쇄 경로 안 만듦). -->
+      <button type="button" class="sec-act" id="gm-a3-btn" onclick="event.stopPropagation(); openMapView();">🗺 전체 지도</button>
       <!-- 「변경 저장」 버튼은 뺐다(GM 지시 2026-08-24 "필요없는 것 같고"). 할 일 체크는 여전히
            클릭 즉시 공용 체크보드(CHECK_GAS)에 저장되어 새로고침해도 남는다 — 이 화면의 편집(체크)
            자체는 그대로 살아 있다. 빠진 건 정본(monthly_ops_plan.json progress_note·progress%)
@@ -420,6 +445,55 @@
     if (!st) { st = document.createElement('style'); st.id = 'gm-a3-style'; document.head.appendChild(st); }
     st.textContent = '@page{ size: A3 ' + orientation + '; margin: 12mm; }';
     window.print();
+  };
+
+  // ── 🗺 전체 지도 보기 (GM 지시 2026-08-27 — 누르자마자 인쇄가 뜨던 것을 「보고 나서 고르기」로) ──
+  // 오버레이·복제본을 만들지 않는다. 지금 화면의 섹션 3개를 펼쳐 보여줄 뿐이라, 눈에 보이는 것과
+  // 인쇄·PNG 결과가 같다(위 beforeprint 강제 오픈과 같은 대상: details.sec).
+  var mapSaved = null;
+  window.openMapView = function () {
+    if (mapSaved) return;
+    mapSaved = [];
+    document.querySelectorAll('details.sec').forEach(function (d) { mapSaved.push([d, d.open]); d.open = true; });
+    document.getElementById('mapbar').classList.add('on');
+    document.body.classList.add('mapview');
+    window.scrollTo(0, 0);
+  };
+  window.closeMapView = function () {
+    document.getElementById('mapbar').classList.remove('on');
+    document.body.classList.remove('mapview');
+    if (!mapSaved) return;
+    mapSaved.forEach(function (pair) { pair[0].open = pair[1]; });
+    mapSaved = null;
+  };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMapView(); });
+
+  // PNG 다운로드 — reports/*.html A3 보고서들이 이미 쓰는 것과 같은 방식(html2canvas). 라이브러리는
+  // 처음 누를 때만 불러온다(평소 화면 로딩엔 안 실림). 실패하면 인쇄에서 PDF로 저장하도록 안내한다.
+  var H2C_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  function loadH2C() {
+    if (typeof html2canvas === 'function') return Promise.resolve();
+    return new Promise(function (ok, no) {
+      var s = document.createElement('script');
+      s.src = H2C_SRC; s.onload = ok; s.onerror = no;
+      document.head.appendChild(s);
+    });
+  }
+  window.saveMapPng = function (btn) {
+    var label = btn.textContent;
+    btn.textContent = '변환 중…'; btn.disabled = true;
+    var d = new Date();
+    var name = 'GM업무_전체지도_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.png';
+    loadH2C()
+      .then(function () {
+        return html2canvas(document.querySelector('.sheet'), { scale: 2, backgroundColor: '#ffffff', windowWidth: document.querySelector('.sheet').scrollWidth });
+      })
+      .then(function (c) {
+        var a = document.createElement('a');
+        a.download = name; a.href = c.toDataURL('image/png'); a.click();
+      })
+      .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
+      .finally(function () { btn.textContent = label; btn.disabled = false; });
   };
 
   var now = new Date();
