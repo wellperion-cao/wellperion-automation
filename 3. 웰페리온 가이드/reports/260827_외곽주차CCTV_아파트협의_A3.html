@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>외곽 주차장 CCTV 3대 — 아파트 협의 요청 · 웰페리온 A3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:31px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:13px; line-height:1.75; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:16.6px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:12.6px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:13.6px; line-height:1.3; }
+  thead th{ height:36px; background:var(--navy); color:#fff; font-weight:700; font-size:14.2px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:11.4px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:32px; }
+  td.k{ background:#F6F8FA; font-weight:600; font-size:13.2px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:12.6px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:11.4px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:14.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:13.2px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:24px; font-size:11.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style><style>
+  /* 4분기 방향성 — 결과보고에는 선택지(1안/2안)를 두지 않는다. 이미 끝난 분기를 두고 고르라 하는 것은
+     의미가 없다는 GM 지적(2026-08-26)에 따라 방향성 서술로 바꿨다. */
+  .opt{ display:flex; gap:0; margin-top:3px; }
+  .opt .o{ flex:1; border:1px solid rgba(255,255,255,.35); padding:5px 9px 6px; }
+  .opt .o:first-child{ border-right:0; }
+  .opt .o .h{ font-size:11.6px; font-weight:800; letter-spacing:.5px; }
+  .opt .o .x{ font-size:12px; line-height:1.45; margin-top:2px; opacity:.92; }
+  .opt .o.rec{ background:rgba(255,255,255,.12); }
+  .opt .o.rec{ border-color:rgba(255,255,255,.5); }
+  .tblwrap+.tblwrap{ margin-top:11px; }
+  .rm{ display:flex; gap:10px; margin-top:6px; }
+  .rm .st{ flex:1; border:1px solid var(--line); padding:7px 10px 8px; }
+  .rm .st .t{ font-size:12.4px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .rm .st .g{ font-size:11.2px; color:#5C666F; line-height:1.4; margin-top:2px; }
+  .rm .st .b{ height:9px; background:#E7ECF2; margin-top:6px; position:relative; }
+  .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .rm .st .p{ font-size:13px; font-weight:800; margin-top:3px; }
+  .rm .st.done .b i{ background:var(--good); } .rm .st.done .p{ color:var(--good); }
+  .rm .st.wait .b i{ background:#B9C2CC; } .rm .st.wait .p{ color:#7A838C; }
+</style>
+
+</head>
+<body>
+
+<div class="bar">
+  <b>외곽 주차장 CCTV 3대 — 아파트 협의 요청 · A3 1장</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">외곽 주차장 CCTV 3대 — 아파트 협의 요청</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 김남욱 GM</b> · 대상 <b>아파트 관리주체(관리사무소·입주자대표회의)</b> · 협의 창구 <b>김남욱 GM 단독</b><br>
+      작성일 <b>2026. 08. 27.</b> · 문서번호 <b>WP-GM-260827-06</b> · 근거 현장실사 <b>2026. 08. 27. 미팅 완료</b><br>
+      대상 설비 <b>CCTV 3대 (외곽 주차장)</b> <span style="font-size:11.5px">— 전체 교체 93대 중 단지 영역은 이 3대뿐</span>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>협의 명분</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01 · 우리가 원해서가 아니다</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">통신사가 <b>2026-12-31 사업을 접는다</b> — 안 바꾸면 12/31 이후 관제가 끊긴다</div>
+          <div class="x">SK브로드밴드 CCTV 사업부 종료로 기존 회선·장비를 그대로 쓸 수 없다. 전체 93대 교체는 <b>기한이 정해진 불가피한 공사</b>이고, 그 안에 외곽 주차장 3대가 들어 있다.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">02 · 비용은 전액 웰페리온</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">아파트 부담 <b>0원</b> — 설치비도 0원</div>
+          <div class="x">블루캅 임대 계약(5년) 기준 <b>공사비 0원 · 월 750,000원(VAT 별도) · 5년 총 45,000,000원</b>을 웰페리온이 전액 부담한다. 단지에 청구되는 금액은 없다.</div>
+        </div></div>
+      </div>
+      <div class="it">
+        <div class="n">03 · 이미 같은 방식으로 협의해 왔다</div>
+        <div class="opt"><div class="o rec">
+          <div class="h">단지 영역 건은 <b>사전 협의 후 진행</b>이 우리 원칙이다</div>
+          <div class="x">상가 안내보드 설치도 「아파트 측과 위치 협의 후 설치」로 진행 중이고, 10/10~11 주차장 바닥보수도 사전 협의·공지 절차를 밟고 있다. 이번 건도 같은 순서다.</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:120px"><col style="width:150px"><col><col style="width:150px"></colgroup>
+    <thead><tr>
+      <th class="k">묶음</th><th>협의 항목</th><th>웰페리온이 드리는 내용 <span class="sub">— 실측값은 원장 직독</span></th><th>단지에 남는 것</th>
+    </tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">① 왜 필요한가 &nbsp;— <span style="letter-spacing:0">주차 구역은 실제로 관리가 필요한 자리다 (종합접수처 원장 7~8월 전수)</span></td></tr>
+      <tr><td class="k" rowspan="3">필요성</td><td><b>주차 구역 민원 실적</b></td><td>7~8월 접수 <b>5건</b> — 2개 차선 물고 주차(7/15) · 강습 픽업 동선 혼잡(7/24) · <b>공회전·라이트 켜 둔 채 방치(8/20)</b> · 주차요금 관련(8/20) · B1 출입구 통제(7/5). 전부 <b>현장에 사람이 없을 때 벌어진 일</b>이라 사후 확인이 안 됐다</td><td>같은 민원이 오면 <b>영상으로 확인</b>돼 서로 얼굴 붉힐 일이 준다</td></tr>
+      <tr><td><b>차량 통행량</b></td><td>웰페리온 이용 차량 <b>8월 결제 433건</b>(8/1~27 · 하루 평균 16건) · 원장 표기 감면액 포함 시 실제 출입은 이보다 크다. <b>야간·주말에도 차량이 계속 드나든다</b></td><td>통행이 많은 구역이 <b>무인 사각지대로 남지 않는다</b></td></tr>
+      <tr class="sum"><td><b>정직하게 밝힐 것</b></td><td>차량 <b>파손·도난 접수는 7~8월 0건</b>이다. 사고가 나서 다는 것이 아니라 <b>사고가 나기 전에·나면 확인되게</b> 두는 것이다</td><td>사고 발생 시 <b>양측 모두</b> 근거를 갖는다</td></tr>
+
+      <tr class="grp"><td colspan="4">② 무엇을 어떻게 &nbsp;— <span style="letter-spacing:0">범위를 먼저 좁혀 드린다</span></td></tr>
+      <tr><td class="k" rowspan="3">설치 내용</td><td><b>수량·사양</b></td><td><b>3대</b>(전체 93대 중 단지 영역은 이것뿐 · 나머지 90대는 웰페리온 내부) · 210만 화소 · NVR 방식 · 원격 확인 지원</td><td>단지 시설물 변경은 <b>3대에 한정</b></td></tr>
+      <tr><td><b>촬영 범위</b></td><td>웰페리온 이용 차량이 드나드는 <b>외곽 주차 구역으로 한정</b>한다. 세대 현관·창·보행 동선 쪽으로 향하지 않게 설치 각도를 협의 단계에서 함께 정한다</td><td><b>사생활 침해 범위를 사전에 차단</b></td></tr>
+      <tr class="sum"><td><b>공사</b></td><td>설치는 <b>기존 CCTV 교체 공사에 포함</b>돼 별도 공사가 추가되지 않는다. 일정·소음·통제 여부는 협의 후 확정한다</td><td>공사가 <b>한 번으로 끝난다</b></td></tr>
+
+      <tr class="grp"><td colspan="4">③ 운영 약속 &nbsp;— <span style="letter-spacing:0">달고 끝이 아니라 어떻게 굴릴지까지 함께 드린다</span></td></tr>
+      <tr><td class="k" rowspan="3">약속</td><td><b>안내·표기</b></td><td>개인정보보호법에 따라 <b>안내판을 설치</b>하고 설치 목적·촬영 범위·관리 책임자·연락처를 표기한다</td><td>법적 요건을 <b>웰페리온이 이행</b></td></tr>
+      <tr><td><b>영상 열람</b></td><td>단지에서 사건 확인이 필요하면 <b>요청 시 협조</b>한다(관리주체·경찰 등 정당한 요청 기준). 보관 기간·열람 절차는 협의 때 문서로 남긴다</td><td>단지도 <b>필요할 때 쓸 수 있다</b></td></tr>
+      <tr class="sum"><td><b>책임·원상복구</b></td><td>설치·유지·고장 대응은 웰페리온과 계약 업체가 맡는다. <b>계약 종료 시 원상복구</b>도 웰페리온 부담으로 한다</td><td>단지에 <b>남는 부담이 없다</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box rec">
+      <h3>드릴 요청 3가지</h3>
+      <ul>
+        <li><b>설치 동의</b> — 외곽 주차 구역 CCTV 3대. 공용부 설치라 관리주체 절차가 필요하면 그 절차에 맞춰 서류를 드린다</li>
+        <li><b>위치·각도 현장 확인</b> — 담당자와 함께 한 바퀴 돌며 정한다. 세대 방향은 우리가 먼저 뺀다</li>
+        <li><b>일정</b> — 12/31 통신사 종료 전에 끝나야 한다. <b>10월 중 확정</b>을 부탁드린다</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>먼저 확인해야 할 것 <span class="est">— 아직 모르는 값</span></h3>
+      <ul>
+        <li class="r1"><b>외곽 주차 구역의 소유·관리 주체</b>가 문서로 확인되지 않았다 — 관리사무소인지 입주자대표회의인지</li>
+        <li class="r1"><b>공용부 설치 시 필요한 절차</b>(동의서·의결·사용승낙) 확인</li>
+        <li class="r2"><b>기존 단지 CCTV와 촬영 범위가 겹치는지</b> — 겹치면 대수를 줄일 여지가 있다</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>협의 순서 <span class="est">— GM 창구 단독</span></h3>
+      <ul class="ord">
+        <li class="n">관리주체·절차 확인 (전화 1통)</li>
+        <li class="n">이 문서로 <b>사전 설명</b> — 비용 0원·3대·범위 한정을 먼저 말한다</li>
+        <li class="n">현장 동행 — 위치·각도 확정</li>
+        <li class="n">필요 서류 제출 → 동의 → 교체 공사에 포함해 시공</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>산출 근거</b> — 민원 5건 = 종합접수처 원장 124건 전수 검색(2026-08-27 실측 · 주차·차량 키워드). 차량 통행 = 주차 결제 원장 2026-08-01~27(433건). CCTV 대수·사양·금액 = 월간운영계획 목표 「CCTV·무인경비·출입통제」 기록 및 블루캅 계약 조건(임대 5년 · 공사비 0 · 월 750,000원 VAT 별도).</div>
+    <div><b>표기 원칙</b> — <b>차량 파손·도난 접수는 0건</b>이라 그대로 적었다. 없는 사고를 만들어 명분으로 쓰지 않는다. 소유·관리 주체와 공용부 절차는 <b>미확인</b>으로 두고 확인 후 채운다. <b>대외 발송 전 GM 승인 필요.</b></div>
+  </div>
+
+</div>
+
+<!-- PNG 변환 라이브러리 — 다른 A3 보고서와 같은 것. 이 문서에만 빠져 있어
+     [PNG 다운로드] 가 항상 실패 안내만 띄우고 있었다(2026-08-27 웰리 수리). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') { alert('PNG 변환 기능을 불러오지 못했습니다. [A3 인쇄] 에서 PDF 저장을 쓰세요.'); return; }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (c) { var a = document.createElement('a'); a.download = '260827_외곽주차CCTV_아파트협의_A3.png'; a.href = c.toDataURL('image/png'); a.click(); })
+    .catch(function () { alert('PNG 변환 실패 — [A3 인쇄] 에서 PDF 저장을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
