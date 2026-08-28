@@ -673,7 +673,7 @@
              두 카드의 타일이 같이 늘어나 세로가 어긋나지 않는다. -->
         <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);flex:1;display:flex;flex-direction:column;">
           <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:4px;">유형별 · 위=이번달 접수/완료 · 아래=누적 접수/완료</div>
-          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;">
+          <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
             <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
         </div>
@@ -809,7 +809,10 @@
     // 이번달(생성일 기준) 범위 — 현재 월 1일~말일, 로컬(KST). home은 월+오늘만(일/주/월 셀렉터는 SSOT 페이지 소관).
     function monthStart(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-01'; }
     function monthEnd(){ var d=new Date(); var last=new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+last).slice(-2); }
-    function monthLabel(){ var d=new Date(); var last=new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); var y=d.getFullYear(), m=d.getMonth()+1; return y+'. '+m+'. 1 ~ '+m+'. '+last+' 기준'; }
+    function monthLabel(){ var d=new Date(); return (d.getMonth()+1)+'월 기준'; }
+    /* 정확한 기간(2026. 8. 1 ~ 8. 31)은 화면에서 빼고 툴팁으로만 — 한 줄에 다 넣으면 안내가
+       아래로 밀린다(GM 지적 2026-08-28). 값은 잃지 않는다. */
+    function monthRangeTitle(){ var d=new Date(); var last=new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); var y=d.getFullYear(), m=d.getMonth()+1; return y+'. '+m+'. 1 ~ '+m+'. '+last; }
 
     function isStaff(o){ return String(o||'').split(',').map(function(s){return s.trim();}).filter(Boolean).some(function(x){return STAFF.indexOf(x)>=0;}); }
     function getStatus(r){ return String(r.status||r['상태']||'진행중').trim(); }
@@ -835,6 +838,7 @@
         var mStart = monthStart(), mEnd = monthEnd();
         function inMonth(r){ var c=getCreated(r); return c && c>=mStart && c<=mEnd; }   // 생성일이 이번달
         set('kpiWaPeriodLabel', monthLabel());
+        (function(){ var el=document.getElementById('kpiWaPeriodLabel'); if(el) el.title=monthRangeTitle(); })();
 
         // ── 업무 블록 — 실무진 토큰 owner 기준(업무현황 SSOT renderDashboard 정의). 이번달(생성일) + 전체(필터 없음) 병기 (2026-06-20 GM) ──
         // 전체 = inMonth 필터만 뺀 동일 집계. home 큰 숫자=이번달(현행 유지), 작은 회색=전체.
@@ -1414,20 +1418,20 @@
             var mDone = catMonthRows.filter(isDone).length;
             var tDone = catRows.filter(isDone).length;   // 누적 완료 — 2026-08-26 GM 요청으로 추가
             html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;">'
-              + '<div style="font-size:9px;color:var(--dim);margin-bottom:2px;font-weight:600;white-space:nowrap;">' + m.icon + ' ' + m.short + '</div>'
+              + '<div style="font-size:10px;color:var(--dim);margin-bottom:1px;font-weight:600;white-space:nowrap;">' + m.icon + ' ' + m.short + '</div>'
               // ★2026-08-26 GM 지시 — 한 칸에 네 숫자를 위아래로 나눈다.
               //   윗줄(큰글자) = 이번달 접수 / 이번달 완료 · 아랫줄(작은글자) = 누적 접수 / 누적 완료.
               //   GM 원문: "이번달 기준 완료도 알려줘 아래칸에 누적 및 누적완료건도 알려주고".
               //   ▸접수는 주황, 완료는 초록으로 색을 고정한다 — 카드 상단 3칸(접수·처리중·완료)과 같은 색이라
               //     위아래로 훑을 때 같은 뜻이 같은 색으로 읽힌다.
               + '<div style="line-height:1;white-space:nowrap;">'
-              +   '<span style="font-size:17px;font-weight:800;color:var(--orange,#e6944e);">' + mNew + '</span>'
+              +   '<span style="font-size:19px;font-weight:800;color:var(--orange,#e6944e);">' + mNew + '</span>'
               +   '<span style="font-size:9px;color:var(--dim);margin:0 2px;">/</span>'
-              +   '<span style="font-size:14px;font-weight:800;color:var(--grow,#6abf7b);">' + mDone + '</span>'
+              +   '<span style="font-size:15px;font-weight:800;color:var(--grow,#6abf7b);">' + mDone + '</span>'
               + '</div>'
               /* [2026-08-28 GM 지시] 칸을 낮춘다 — '이번달 접수/완료' 라벨 줄은 위 안내문이 이미
                  같은 말을 하므로 뺐다. 누적은 한 줄로 붙인다(맨 위 3칸을 줄인 방식과 같게). */
-              + '<div style="font-size:8.5px;color:var(--dim);margin-top:2px;white-space:nowrap;">'
+              + '<div style="font-size:9.5px;color:var(--dim);margin-top:2px;white-space:nowrap;">'
               +   '누적 <b style="color:var(--text);">' + catRows.length + '</b>·<b style="color:var(--grow,#6abf7b);">' + tDone + '</b></div>'
               + '</div>';
           });
