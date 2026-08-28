@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>8월 운영 진행 및 9월 운영계획 — 웰페리온 A3 보고서</title>
+<title>8월 운영 현황 및 9월 운영계획 — 웰페리온 A3 보고서</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -10,8 +10,8 @@
   @page { size: A3 landscape; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root{
-    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
-    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+    --ink:#101418; --navy:#14304E; --navy-2:#0E2439; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB; --dim:#5C666F;
   }
   html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
     -webkit-print-color-adjust:exact; print-color-adjust:exact; word-break:keep-all; }
@@ -29,82 +29,122 @@
   @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
 
   /* A3 가로 1장 */
-  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:26px 32px 20px;
     display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
 
   /* ① 헤더 */
-  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
-  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
-    letter-spacing:6px; margin-bottom:5px; }
-  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
-  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:8px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:14px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:4px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:27px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11px; line-height:1.6; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
-  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
-  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign{ display:flex; margin-left:24px; border:1px solid var(--line); }
+  .sign div{ width:70px; text-align:center; border-right:1px solid var(--line); }
   .sign div:last-child{ border-right:0; }
-  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+  .sign .t{ background:var(--navy-bg); font-size:10px; font-weight:700; color:var(--navy); padding:3px 0;
     border-bottom:1px solid var(--line); }
-  .sign .b{ height:38px; }
+  .sign .b{ height:34px; }
 
-  /* ② 결정 요청 */
-  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
-  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  /* ② 본질 두 줄 — 이 한 장에서 가장 먼저 읽히는 자리 */
+  .core{ margin-top:11px; display:flex; gap:10px; }
+  .core .c{ flex:1; border:1px solid var(--line); border-left:5px solid var(--navy); padding:9px 15px 10px; background:#FAFBFC; }
+  .core .c.sep{ border-left-color:var(--good); }
+  .core .lb{ font-size:10.5px; font-weight:700; letter-spacing:2.5px; color:var(--navy); }
+  .core .c.sep .lb{ color:var(--good); }
+  .core .tx{ font-family:'Noto Serif KR',serif; font-size:17.5px; font-weight:700; line-height:1.4;
+    letter-spacing:-.6px; margin-top:3px; }
+  .core .sub{ font-size:11.5px; color:var(--dim); line-height:1.5; margin-top:4px; }
+
+  /* ③ 결정 요청 */
+  .ask{ margin-top:9px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:110px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-right:1px solid rgba(255,255,255,.28); }
-  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
-  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .lb span{ font-size:10px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:18px; letter-spacing:-.5px; }
   .ask .items{ flex:1; display:flex; }
-  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it{ flex:1; padding:9px 15px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
-  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
-  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
-  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+  .ask .n{ font-size:10.5px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:14.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11px; line-height:1.48; opacity:.87; margin-top:4px; }
 
-  /* 경고 밴드 */
-  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
-    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
-  .alert span{ font-weight:400; color:#6B2020; }
+  /* ④ 본문 2단 */
+  .body2{ margin-top:10px; display:flex; gap:12px; flex:1; min-height:0; }
+  .left{ width:62%; display:flex; flex-direction:column; gap:9px; }
+  .right{ width:38%; display:flex; flex-direction:column; gap:9px; }
 
-  /* ③ 비교표 */
-  .tblwrap{ margin-top:11px; }
+  .sec-h{ font-size:12.5px; font-weight:700; color:var(--navy); letter-spacing:-.2px;
+    border-bottom:1.5px solid var(--navy); padding-bottom:3px; margin-bottom:5px;
+    display:flex; align-items:baseline; }
+  .sec-h .hint{ margin-left:auto; font-size:10px; font-weight:400; color:var(--dim); letter-spacing:0; }
+
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
-  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
-  thead th.k{ width:150px; background:#0E2439; }
-  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
-  tbody td{ height:29px; }
-  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
-  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:11.5px; letter-spacing:2.5px; }
+  th,td{ border:1px solid var(--line); padding:0 8px; font-size:11.6px; line-height:1.28; }
+  thead th{ height:26px; background:var(--navy); color:#fff; font-weight:700; font-size:11.6px; border-color:#2A4763; }
+  thead th.k{ background:var(--navy-2); }
+  tbody td{ height:25px; }
+  td.k{ background:#F6F8FA; font-weight:600; font-size:11.3px; }
   .num{ text-align:right; font-variant-numeric:tabular-nums; }
   .ctr{ text-align:center; }
   .good{ color:var(--good); font-weight:700; }
   .warn{ color:var(--warn); font-weight:700; }
   .bad{ color:var(--bad); font-weight:700; }
-  .est{ color:#5C666F; font-size:10.5px; }
+  .est{ color:var(--dim); font-size:10.2px; }
   td.strong{ font-weight:700; }
-  tr.sum td{ background:#F0F3F7; }
-  tr.sum td.k{ background:#E7ECF2; }
 
-  /* ④ 3분할 */
-  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
-  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
-  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
-  .box ul{ list-style:none; }
-  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
-  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
-  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
-  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
-  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
-    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
-  .box ul.ord{ counter-reset:a; }
-  .box li.n{ padding-left:20px; }
-  .box.rec{ border-top-color:var(--good); }
-  .box.rec h3{ color:var(--good); }
-  .box.rec b{ color:var(--good); }
+  /* 목표 대비 막대 — 글씨는 막대 밖 오른쪽에 둔다(막대 안에 넣으면 채워진 부분과 겹쳐 안 읽힌다) */
+  .gwrap{ display:flex; align-items:center; gap:7px; }
+  .gbar{ position:relative; flex:1; height:11px; background:#E4E9ED; border-radius:2px; overflow:hidden; }
+  .gbar i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .gbar i.g{ background:var(--good); }
+  .glab{ flex:none; font-size:10.5px; font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums; }
 
-  /* ⑤ 각주 */
-  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
-    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  /* 전략 단계 */
+  .stage{ display:flex; align-items:center; gap:7px; margin-bottom:3.5px; }
+  .stage .no{ width:15px; height:15px; flex:none; border-radius:2px; background:var(--navy); color:#fff;
+    font-size:9.5px; font-weight:700; text-align:center; line-height:15px; }
+  .stage .no.done{ background:var(--good); }
+  .stage .no.wait{ background:#C3CBD3; color:#5C666F; }
+  .stage .nm{ width:150px; flex:none; font-size:11px; font-weight:600; letter-spacing:-.3px; }
+  .stage .tr{ flex:1; height:9px; background:#EDF0F3; border-radius:2px; overflow:hidden; }
+  .stage .tr i{ display:block; height:100%; background:var(--navy); }
+  .stage .tr i.g{ background:var(--good); }
+  .stage .pc{ width:34px; flex:none; text-align:right; font-size:10.2px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .stage.now .nm{ color:var(--navy); }
+  .stage.now{ background:#F2F6FA; padding:1.5px 3px; margin-left:-3px; margin-right:-3px; }
+
+  /* 3방향 대비 */
+  .dir li{ list-style:none; font-size:11.3px; line-height:1.45; padding:4px 0 4px 17px; position:relative;
+    border-bottom:1px dashed var(--line); }
+  .dir li:last-child{ border-bottom:0; }
+  .dir li::before{ content:''; position:absolute; left:2px; top:9px; width:7px; height:7px; border-radius:50%; background:var(--good); }
+  .dir li.mid::before{ background:var(--warn); }
+  .dir li.no::before{ background:#C3CBD3; }
+  .dir li b{ display:block; font-size:11.6px; }
+  .dir li span{ color:var(--dim); font-size:10.8px; }
+
+  /* 9월 타임라인 */
+  .tl{ display:flex; gap:6px; }
+  .tl .w{ flex:1; border:1px solid var(--line); border-top:2.5px solid var(--navy); padding:5px 8px 6px; }
+  .tl .wt{ font-size:10.5px; font-weight:700; color:var(--navy); letter-spacing:-.2px; margin-bottom:3px; }
+  .tl ul{ list-style:none; }
+  .tl li{ font-size:10.6px; line-height:1.42; padding-left:9px; position:relative; margin-bottom:1.5px; }
+  .tl li::before{ content:'·'; position:absolute; left:2px; font-weight:700; }
+  .tl li.key{ font-weight:700; }
+  .tl li.key::before{ content:'▪'; font-size:8px; top:1px; }
+
+  /* 위험 신호 */
+  .risk{ display:flex; gap:9px; }
+  .risk .r{ flex:1; border:1px solid var(--line); border-left:4px solid var(--bad); padding:6px 11px 7px; }
+  .risk .r.w{ border-left-color:var(--warn); }
+  .risk .r.g{ border-left-color:var(--good); }
+  .risk .rt{ font-size:11.8px; font-weight:700; letter-spacing:-.3px; }
+  .risk .rd{ font-size:10.8px; line-height:1.45; color:#3C464F; margin-top:2px; }
+
+  /* 각주 */
+  .foot{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px;
+    display:flex; gap:22px; font-size:10.2px; line-height:1.5; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
 </style>
@@ -112,7 +152,7 @@
 <body>
 
 <div class="bar">
-  <b>2026년 8월 운영 진행 및 9월 운영계획 (A3 1장 · 9/1 보고)</b>
+  <b>2026년 8월 운영 현황 및 9월 운영계획 (A3 1장 · 9/1 보고)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -125,119 +165,247 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">2026년 8월 운영 진행 및 9월 운영계획</div>
+      <div class="title">2026년 8월 운영 현황 및 9월 운영계획</div>
     </div>
     <div class="meta">
-      작성 <b>경영지원부 (AI CEO 웰리)</b><br>
+      작성 <b>경영지원부</b> · 보고 <b>김남욱 GM</b><br>
       보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-01</b><br>
-      8월 수치 기준 <b>2026-08-26 조회 · 8월 마감 전</b> · 금액 <b>원 단위</b>
+      8월 수치 기준 <b>2026-08-28 조회 · 마감 전</b> · 금액 <b>원</b>
     </div>
     <div class="sign">
       <div><div class="t">담당</div><div class="b"></div></div>
       <div><div class="t">GM</div><div class="b"></div></div>
-      <div><div class="t">대표</div><div class="b"></div></div>
-      <div><div class="t">회장</div><div class="b"></div></div>
+      <div><div class="t">대표님</div><div class="b"></div></div>
+      <div><div class="t">회장님</div><div class="b"></div></div>
     </div>
   </div>
 
-  <!-- ② 결정 요청 -->
+  <!-- ② 본질 두 줄 -->
+  <div class="core">
+    <div class="c">
+      <div class="lb">8월 의 본질</div>
+      <div class="tx">숫자는 궤도를 지켰습니다. 위험은 숫자가 아니라 <u>사람</u>에 있습니다.</div>
+      <div class="sub">매출 82.6%·회원 995명·이탈 감소로 지표는 안정. 그러나 <b>9월 만기 61명 중 60명이 아직 상담 전</b>이고, <b>유소년 문의가 두 달 만에 절반(−46%)</b>으로 줄었습니다. 두 가지 모두 9월 매출에 직접 닿습니다.</div>
+    </div>
+    <div class="c sep">
+      <div class="lb">9월 의 본질</div>
+      <div class="tx">실행의 달이 아니라 <u>결정의 달</u>입니다.</div>
+      <div class="sub">2027년 2월 요금 시행을 위해 <b>인상 폭·갱신가는 9월이 확정 기한</b>입니다(12월 사전 안내에서 역산). 부서 평가·전산 안정화도 모두 &lsquo;하는 일&rsquo;이 아니라 &lsquo;기준을 정하는 일&rsquo;입니다.</div>
+    </div>
+  </div>
+
+  <!-- ③ 결정 요청 -->
   <div class="ask">
     <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
     <div class="items">
       <div class="it">
         <div class="n">01</div>
-        <div class="q">회원권 인상 폭과 갱신가 기준을 9월 안에 확정해 주십시오.</div>
-        <div class="d">시행 = 2027년 2월 · 사전 안내 = 2026년 12월 · 공식 공지 = 2027년 1월(GM 확정 08-28). 12월 안내에서 역산하면 인상 폭·갱신가·고지 문구는 9월이 확정 기한입니다. 판단 재료(8/26 실측): 회원권 월매출 2억2,054만 기준 +5% 연 1.3억 / +10% 연 2.6억, 가격 사유 LOSS는 종료 207건 중 6건(3%).</div>
+        <div class="q">회원권 인상 폭과 갱신가 기준을 9월 안에 확정하여 주시기 바랍니다.</div>
+        <div class="d">시행 2027년 2월 · 사전 안내 2026년 12월 · 공식 공지 2027년 1월. 12월 안내에서 역산하면 9월이 마지막 확정 시점입니다. 판단 재료 — 회원권 월매출 2.54억 기준 <b>+5% 연 1.5억 / +10% 연 3.0억</b>, 가격을 이유로 한 이탈은 종료 207건 중 <b>6건(3%)</b>.</div>
       </div>
       <div class="it">
         <div class="n">02</div>
-        <div class="q">종합접수처 미완료 20건의 처리 라인을 결정해 주십시오.</div>
-        <div class="d">8월 접수 47건 중 미완료 20건 · 7일 초과 8건 · 최장 16일(청결, 8/10 접수). 8/21 부서 전달 후 회신이 멈춰 있어, 담당 배정과 회신 기한(3일)이 정해져야 9월 적체 소진이 시작됩니다.</div>
+        <div class="q">9월 만기 61명의 재등록 상담을 누가·언제까지 맡을지 정하여 주시기 바랍니다.</div>
+        <div class="d">상담 기록이 남은 분은 <b>1명</b>, 남은 <b>60명</b>은 아직 접촉 전입니다(멤버십 43·입주민 8·보증금 6·중단기 3·FAN VIP 1). 정원이 마감된 구조에서 만기 이탈은 곧 빈자리이며, 9월 매출에 가장 빠르게 닿는 항목입니다.</div>
       </div>
     </div>
   </div>
 
-  <!-- 경고 밴드 -->
-  <div class="alert">
-    매출 숫자가 조회 소스마다 다름 — home_kpi_snapshot(8/26 20:27) 4억9,342만 / 매출 GAS 라이브(8/26 21:17) 5억2,513만.
-    <span>&nbsp;판정: <b>원장 = 라이브 값</b>(매출보고 시트 말일탭 · GAS 2회 동일값) — 본 문서의 매출은 전부 라이브 기준. 차이 +3,156만은 당일 저녁 매출 기입 시차로 판단(추정). 이 불일치 해소가 9월 계획 ③(ERP 안정화)의 첫 과제.</span>
+  <!-- ④ 본문 2단 -->
+  <div class="body2">
+
+    <!-- 좌: 8월 현황 -->
+    <div class="left">
+
+      <div>
+        <div class="sec-h">Ⅰ. 8월 실적 <span class="hint">2026-08-28 조회 · 영업일 26일(휴관 8/9·8/23 제외) · 마감 시 변동</span></div>
+        <table>
+          <colgroup><col style="width:104px"><col><col style="width:196px"><col style="width:150px"></colgroup>
+          <thead><tr><th class="k">구분</th><th>8월 실적</th><th>목표 대비</th><th>전월 대비</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">매출</td>
+              <td class="strong">545,109,601 원 <span class="est">회원권 2.54억 · 강습 2.72억 · 기타 0.21억</span></td>
+              <td><div class="gwrap"><div class="gbar"><i style="width:82.6%"></i></div><span class="glab">월 6.6억 · <span class="warn">82.6%</span></span></div></td>
+              <td class="ctr">7월 5.70억의 <b>95.6%</b><br><span class="est">영업 26일 기준</span></td>
+            </tr>
+            <tr>
+              <td class="k">연 누계</td>
+              <td>4,591,603,014 원 <span class="est">1~8월 실측 합</span></td>
+              <td><div class="gwrap"><div class="gbar"><i class="g" style="width:63.8%"></i></div><span class="glab">연 72억 · <span class="good">63.8%</span></span></div></td>
+              <td class="ctr good">궤도 유지</td>
+            </tr>
+            <tr>
+              <td class="k">회원</td>
+              <td>유효 <b>995명</b> <span class="est">멤버십 858 · 입주민 79 · 보증금 48 · FAN VIP 7 · 중단기 3</span> + 법인 31</td>
+              <td class="ctr">정원 1,000명 <b>마감 유지</b><br><span class="est">모집·할인 없음</span></td>
+              <td class="ctr">8월 등록 <b>58건</b></td>
+            </tr>
+            <tr>
+              <td class="k">이탈</td>
+              <td><b>25건</b> <span class="est">가격 사유는 종료 207건 중 6건(3%)</span></td>
+              <td class="ctr">—</td>
+              <td class="ctr good">7월 33건 → <b>−8건</b></td>
+            </tr>
+            <tr>
+              <td class="k">멤버십 문의</td>
+              <td><b>78건</b> → 상담 성공 16 → 신규 등록 16 <span class="est">문의 대비 등록 20.5%</span></td>
+              <td class="ctr">—</td>
+              <td class="ctr good">7월 62건 → <b>+26%</b></td>
+            </tr>
+            <tr>
+              <td class="k">강습 문의</td>
+              <td>성인 <b>99건</b> / 유소년 <b>87건</b></td>
+              <td class="ctr">—</td>
+              <td class="ctr"><span class="good">성인 +12%</span> · <span class="bad">유소년 6월 162 → 87</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅱ. 현장 운영 <span class="hint">회원 접점에서 실제로 일어난 일</span></div>
+        <table>
+          <colgroup><col style="width:104px"><col><col style="width:196px"><col style="width:150px"></colgroup>
+          <thead><tr><th class="k">구분</th><th>8월 현황</th><th>판정</th><th>전월 대비</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">종합접수처</td>
+              <td><b>54건</b> 접수 <span class="est">컴플레인 20 · 시설물 고장 18 · 청결 7 · 분실물 6 · 칭찬 3</span></td>
+              <td class="ctr">완료 35 / <span class="bad">미완료 19</span><br><span class="est">7일 초과 9건 · 최장 18일</span></td>
+              <td class="ctr good">7월 73건 → <b>−26%</b></td>
+            </tr>
+            <tr>
+              <td class="k">일일 점검</td>
+              <td>시설부 <b>93%</b> · 지원부 <b>100%</b> <span class="est">8/28 기준</span></td>
+              <td class="ctr good">두 부서 정상 운영</td>
+              <td class="ctr">리듬 유지</td>
+            </tr>
+            <tr>
+              <td class="k">운영부·주차부</td>
+              <td class="bad">측정 불가 — 실적이 0이 아니라, 셀 수가 없습니다</td>
+              <td colspan="2"><span class="est">주차부는 점검 항목이 원장에 등록돼 있지 않고, 운영부는 일일 점검 화면 자체가 없습니다. 9월 첫 주 배선 후 집계 개시 예정.</span></td>
+            </tr>
+            <tr>
+              <td class="k">월간 과제</td>
+              <td><b>28건</b> 운영 <span class="est">완료 1 · 진행 중 다수</span></td>
+              <td class="ctr warn">8/31 기한 미완 <b>5건</b></td>
+              <td class="ctr warn">기한 미기재 <b>13건</b></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅲ. 8월에 실제로 진전된 일 <span class="hint">진척은 8/28 기준</span></div>
+        <div class="risk">
+          <div class="r g">
+            <div class="rt">시설·안전 기반</div>
+            <div class="rd">CCTV·무인경비·출입통제 <b>ADT캡스 이관 계약 (80%)</b> — 9/4 설치 공사<br>주차장 바닥 보수 <b>일정 확정 (65%)</b> — 10/11 공사·10/13 정상 운영<br>위생·감염 예방 체계 <b>수립 (75%)</b> — 해충 집중구역 3곳 확정</div>
+          </div>
+          <div class="r g">
+            <div class="rt">공간·조직</div>
+            <div class="rd">상가 1F·B1 전체 운영 총괄 <b>체계 수립 (85%)</b> — 소통 창구·관리비 기준<br>외곽 인수인계 <b>완료 (80%)</b> — 기록 체계 전달 마무리<br>지원부 8인 <b>재계약 · 주 5일제 시행</b> (9/1 발효)</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 우: 전략 위치 + 9월 -->
+    <div class="right">
+
+      <div>
+        <div class="sec-h">Ⅳ. 지금 우리가 서 있는 자리 <span class="hint">전략 로드맵 8단계</span></div>
+        <div class="stage"><span class="no done">1</span><span class="nm">정원 1,000명 마감</span><span class="tr"><i class="g" style="width:100%"></i></span><span class="pc">100%</span></div>
+        <div class="stage"><span class="no done">2</span><span class="nm">대기자 시스템 운영</span><span class="tr"><i class="g" style="width:100%"></i></span><span class="pc">100%</span></div>
+        <div class="stage now"><span class="no">3</span><span class="nm">자동화·매뉴얼 체계 완성</span><span class="tr"><i style="width:60%"></i></span><span class="pc">60%</span></div>
+        <div class="stage now"><span class="no">4</span><span class="nm">체크리스트 경영 + 핵심 인재</span><span class="tr"><i style="width:40%"></i></span><span class="pc">40%</span></div>
+        <div class="stage"><span class="no wait">5</span><span class="nm">브랜드 구축</span><span class="tr"><i style="width:0"></i></span><span class="pc">0%</span></div>
+        <div class="stage"><span class="no wait">6</span><span class="nm">파트너팀 채용 구조 정비</span><span class="tr"><i style="width:0"></i></span><span class="pc">0%</span></div>
+        <div class="stage"><span class="no wait">7</span><span class="nm">수익 모델 생성</span><span class="tr"><i style="width:0"></i></span><span class="pc">0%</span></div>
+        <div class="stage"><span class="no wait">8</span><span class="nm">사업 확장</span><span class="tr"><i style="width:0"></i></span><span class="pc">0%</span></div>
+        <div style="font-size:10.6px;line-height:1.5;color:var(--dim);margin-top:5px;border-top:1px dashed var(--line);padding-top:5px;">
+          1·2단계는 상반기에 끝났습니다. 지금은 <b style="color:var(--navy)">3·4단계를 동시에 진행</b>하는 구간이며, 9월 3대 과제가 정확히 이 두 단계를 밀어 올리는 일입니다.
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-h">Ⅴ. 하반기 3방향 대비 <span class="hint">기조 — 반복은 자동화, 사람은 본질에</span></div>
+        <ul class="dir">
+          <li><b>① 시설·설비·어메니티 밸류업</b><span>안마의자 도입·헬스장 장비 4사 비딩·주차장 보수 — 진행 중. 9월 장비 선정.</span></li>
+          <li class="mid"><b>② 전체 요금 인상 준비</b><span>기획·환불 기준·이탈 사유 분석 완료. <b>남은 것은 인상 폭 결정 하나</b> — 결정 요청 01.</span></li>
+          <li class="no"><b>③ 공간 활용 극대화·수익화</b><span>상가 운영 총괄 85%로 기반은 섰으나, 수익화 방안은 아직 착수 전입니다.</span></li>
+        </ul>
+      </div>
+
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="sec-h">Ⅵ. 9월 3대 과제 <span class="hint">GM 확정 · 전부 9/30 기한</span></div>
+        <table>
+          <colgroup><col style="width:22px"><col><col style="width:76px"></colgroup>
+          <tbody>
+            <tr><td class="ctr strong" style="background:var(--navy);color:#fff;">①</td><td><b>회원권 요금정책 초안·준비</b> <span class="est">인상 폭·갱신가·고지 문구</span></td><td class="ctr bad">결정 01</td></tr>
+            <tr><td class="ctr strong" style="background:var(--navy);color:#fff;">②</td><td><b>각 부서별 평가 및 개선</b> <span class="est">6축 100점 기준 · 리더·실무 평가</span></td><td class="ctr">9월 착수</td></tr>
+            <tr><td class="ctr strong" style="background:var(--navy);color:#fff;">③</td><td><b>전산 안정화</b> <span class="est">화면과 원천이 같은 숫자를 내게</span></td><td class="ctr warn">불일치 4건</td></tr>
+          </tbody>
+        </table>
+        <div style="font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.45;">
+          위 3건 외에 8월에서 넘어오는 <b>이월 7건</b>(위생·감염 9/5 · 추석 선물세트 9/19 · 약품비품 구매구조 · 세탁물 배분 · 회원서비스 개선 · 보고 무인화 · 헬스장 장비)이 함께 9월에 놓입니다.
+        </div>
+      </div>
+
+    </div>
   </div>
 
-  <!-- ③ 8월 실적 ↔ 9월 계획 대비표 -->
-  <div class="tblwrap">
-  <table>
-    <colgroup><col style="width:150px"><col style="width:560px"><col style="width:450px"><col style="width:120px"><col></colgroup>
-    <thead>
-      <tr>
-        <th class="k">구분</th>
-        <th>8월 실적<span class="sub">2026-08-26 조회 · 마감 전</span></th>
-        <th>9월 계획 · 목표<span class="sub">GM 확정 2026-08-27 기준</span></th>
-        <th>담당</th>
-        <th>판정 · 결정 필요<span class="sub">달성률 · 추세</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr class="grp"><td colspan="5">매 출</td></tr>
-      <tr><td class="k">8월 누적</td><td class="num strong">525,125,751 원 <span class="est">= 회원권 244,294,776 + 강습 280,830,975</span></td><td class="ctr">월 목표 6.6억(GM 내부) · 팀 배분 6.355억</td><td class="ctr">전 팀</td><td class="ctr strong">79.6% · 82.6%</td></tr>
-      <tr><td class="k">페이스 · 연 누적</td><td>26일 만에 7월 총액(570,228,114원)의 <b>92.1%</b> · 연 누적 <b>4,609,900,914 원</b></td><td class="ctr">연 목표 72억 궤도 유지 <span class="est">(현재 64.0%)</span></td><td class="ctr">전 팀</td><td class="ctr good">페이스 양호</td></tr>
-
-      <tr class="grp"><td colspan="5">회 원</td></tr>
-      <tr><td class="k">유효 · 등록</td><td>유효 <b>994명</b>(멤버십 857·입주민 79·보증금 48·FAN VIP 7·중단기 3) + 법인 31 · 8월 등록 <b>54건</b></td><td class="ctr">정원 1,000명 마감 상태 유지 관리 <span class="est">(모집·할인 없음)</span></td><td class="ctr">이경연 실장</td><td class="ctr good">등록 활발</td></tr>
-      <tr><td class="k">LOSS · 만기</td><td>LOSS <b>25건</b>(7월 33건 → −8) · 9월 만기 <b>64명</b> 중 컨택 완료 1명</td><td class="ctr"><b>만기 64명 · 미컨택 63명 전원 컨택</b> — 9월 최우선</td><td class="ctr">이경연 실장</td><td class="ctr bad">컨택 시급</td></tr>
-
-      <tr class="grp"><td colspan="5">문 의 · 전 환</td></tr>
-      <tr><td class="k">멤버십</td><td><b>78건</b> → SUC 16 → 신규등록 16(정합) <span class="est">· 7월 62 · 6월 84 · 유입 1위 소개·지인 22</span></td><td class="ctr">반등 유지 · SUC 전환 관리</td><td class="ctr">이경연 실장</td><td class="ctr good">반등 +26%</td></tr>
-      <tr><td class="k">강습 · 유소년</td><td>성인강습 <b>91건</b>(보합) · 유소년 <b>80건</b> <span class="est">— 162(6월)→114(7월)→80 두 달 연속 급감</span></td><td class="ctr"><b>유소년 급감 원인 분석</b> — 9월 첫 주 문의 경로 분석 후 별도 보고</td><td class="ctr">웰리</td><td class="ctr bad">6월比 −51%</td></tr>
-
-      <tr class="grp"><td colspan="5">점 검 (4부서 · 8월 영업일 24일)</td></tr>
-      <tr><td class="k">시설부 · 지원부</td><td>시설부 제출 <b>23/24일</b>·이슈 0 / 지원부 제출 <b>24/24일</b>·이슈 <b>57건</b></td><td class="ctr">제출 리듬 유지 · 지원부 이슈 57건 처리 확인</td><td class="ctr">이정헌 소장 · 이경연 실장</td><td class="ctr warn">지원부 이슈 다발</td></tr>
-      <tr><td class="k">운영부 · 주차부</td><td class="bad">집계 경로 미가동 — 점검 원장 위치 없음 (7월도 0 · 실적 아님)</td><td class="ctr"><b>집계 배선 확인</b> — 점검 보드에 두 부서 칸 신설 · 9/1 첫 집계</td><td class="ctr">시토</td><td class="ctr bad">측정 불가</td></tr>
-
-      <tr class="grp"><td colspan="5">종 합 접 수 처</td></tr>
-      <tr><td class="k">접수 · 처리</td><td><b>47건</b>(컴플레인 18·시설물고장 14·청결 6·분실물 6·칭찬 3) · 완료 27 → <b>미완료 20건</b> · 7일 초과 8 · 최장 16일</td><td class="ctr"><b>적체 해소</b> — 담당 배정 + 회신 기한 3일 · 웰리가 매일 미완료 목록 전달</td><td class="ctr">결정 대기</td><td class="ctr bad">결정 요청 02</td></tr>
-
-      <tr class="grp"><td colspan="5">9 월 운 영 계 획 (GM 확정 3건 · 2026-08-27)</td></tr>
-      <tr><td class="k">① 요금정책</td><td>8월까지 완료 — 기획 A3 · 준비현황 A3 · 만기회원 실측 · 환불 산식 명문화 · 이탈사유 데이터</td><td class="ctr">인상 폭·갱신가·고지/응대 문구 9월 확정 <span class="est">(시행 2027-02 · 안내 2026-12 · 공지 2027-01)</span></td><td class="ctr">GM · 이경연 실장</td><td class="ctr bad">결정 요청 01</td></tr>
-      <tr><td class="k">② 부서별 평가</td><td>평가 기준 완성(6축 100점 · 리더평가기준 A3) · 실측 재료 확보 <span class="est">(마감 준수율·제출률·회신 응답)</span></td><td class="ctr">이경연 실장·이정헌 소장 리더 평가 + 나우열M 실무 평가 채점 → 개선 과제 등록</td><td class="ctr">GM · 웰리</td><td class="ctr">9월 착수</td></tr>
-      <tr><td class="k">③ ERP·CRM 안정화</td><td>불일치 실측 4건 — 매출 3화면 최대 7,100만 차 · 점검 집계 0 · visited 빈칸 · 일정 덮어쓰기 <span class="est">· 브로제이 계약금 60%(2,343만) 지급 완료</span></td><td class="ctr">화면·원천 <b>같은 숫자</b> 내기(불일치 0) · 브로제이 업무분장 재개(2026-09)</td><td class="ctr">시토 · 파트너팀</td><td class="ctr warn">불일치 4건</td></tr>
-    </tbody>
-  </table>
-  </div>
-
-  <!-- ④ 3분할 -->
-  <div class="cols">
-    <div class="box rec">
-      <h3>8월에 좋아진 것</h3>
-      <ul>
-        <li>멤버십 문의 반등 — 7월 62건 → 8월 <b>78건</b> (+26%).</li>
-        <li>LOSS 감소 — 7월 33건 → 8월 <b>25건</b>, 등록은 54건으로 활발.</li>
-        <li>매출 페이스 — 26일 만에 7월 총액의 <b>92.1%</b>.</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>8월에 나빠진 것</h3>
-      <ul>
-        <li class="r1">종합접수처 적체 — 미완료 20건 · 7일 초과 8건 · 최장 16일.</li>
-        <li class="r1">유소년 문의 두 달 연속 급감 — 162 → 114 → 80 (6월 대비 −51%).</li>
-        <li class="r2">점검 사각 — 운영부·주차부 집계 경로 미가동(7월도 동일).</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>9월 GM 권고 (웰리)</h3>
-      <ul class="ord">
-        <li class="n">요금 — 인상 폭·갱신가를 <b>9월 상순</b>에 확정. 12월 사전 안내의 역산 기준선.</li>
-        <li class="n">만기 미컨택 63명 컨택 — 남은 매출 목표의 가장 빠른 경로.</li>
-        <li class="n">접수처 — 배정·기한 3일 라인 확정, 웰리가 매일 미완료 목록 전달.</li>
-        <li class="n">4분기 준비 — 지원부·경영지원 4분기 목표를 9월 안에 확정(현재 미정 · 10/1 분기 시작 전).</li>
-      </ul>
+  <!-- ⑤ 9월 실행 일정 -->
+  <div style="margin-top:9px;">
+    <div class="sec-h">Ⅶ. 9월 실행 일정 <span class="hint">전사 일정 25건 중 주요 건 · 회장님 일정 포함</span></div>
+    <div class="tl">
+      <div class="w">
+        <div class="wt">1주 · 9/1 ~ 9/7</div>
+        <ul>
+          <li class="key">9/3 회장님 오찬 — P.T팀</li>
+          <li>9/1 지원부 8인 재계약 · 주 5일제 시행</li>
+          <li>9/2 브로제이 미팅 · 키오스크 교체</li>
+          <li>9/3 부서장 회의</li>
+          <li>9/4 ADT캡스 설치 공사</li>
+          <li class="key">9/5 추석 선물세트 팝업 시작</li>
+        </ul>
+      </div>
+      <div class="w">
+        <div class="wt">2주 · 9/8 ~ 9/14</div>
+        <ul>
+          <li class="key">9/10 회장님 오찬 — 스쿼시&amp;체조팀</li>
+          <li>9/8 REAL Summit 2026 참관</li>
+          <li>9/9 승강기 자체점검(법정)</li>
+          <li>9/10 청소장비 견적 만료 — 결정 필요</li>
+        </ul>
+      </div>
+      <div class="w">
+        <div class="wt">3주 · 9/15 ~ 9/21</div>
+        <ul>
+          <li>9/15 선물세트 택배 주문 마감</li>
+          <li class="key">9/19 팝업 종료 · 500세트 목표 판정</li>
+          <li><b>요금 인상 폭 확정 권고 시점</b></li>
+        </ul>
+      </div>
+      <div class="w">
+        <div class="wt">4~5주 · 9/22 ~ 9/30</div>
+        <ul>
+          <li class="key">9/30 3대 과제 기한</li>
+          <li>9/30 이월 5건 기한</li>
+          <li>9/30 손소독제 사용량 → 예산 확정</li>
+          <li>9/30 해충 방제 효과 판정</li>
+        </ul>
+      </div>
     </div>
   </div>
 
-  <!-- ⑤ 각주 -->
+  <!-- ⑥ 각주 -->
   <div class="foot">
-    <div><b>기준 시점</b> — 8월 수치 전부 <b>2026-08-26 조회 · 8월 마감 전</b>(영업일 24일 · 휴관 8/9·8/23 제외). 달성률·페이스는 마감 시 달라진다. 추정치는 <b>(추정)</b> 표기. <b>차기 보고</b> — 9월 말 9월 계획 3건 진척 보고.</div>
-    <div><b>미확인 · 측정 불가</b> — ①운영부·주차부 점검 원장 위치 미확인 ②문의→방문 전환은 visited 칸이 8월 전건 빈칸이라 측정 불가(SUC가 실질 전환 표지) ③4분기 매출 목표는 확정 문서 없음 — 미확인.</div>
-    <div><b>출처</b> — 매출=매출보고 시트 말일탭(GAS 라이브 2회 동일값) · 회원=회원DB 스냅샷 · 문의=문의 스냅샷 · 접수=reg_board 8월분 · 9월 계획=monthly_ops_plan.json(GM 확정 08-27) · 요금 일정=GM 확정 08-28. 전부 원장 직접 카운트.</div>
+    <div><b>기준 시점</b> — 8월 수치는 전부 <b>2026-08-28 조회</b>이며 8월 마감 전입니다(영업일 26일 · 휴관 8/9·8/23 제외). 매출은 매출보고 원장 16:55 조회값, 연 누계는 같은 날 16:26 집계값으로 두 시각이 다릅니다(차이 61만 원). 마감 시 달성률·전월 대비는 달라집니다.</div>
+    <div><b>측정하지 못한 것</b> — ①운영부·주차부 점검은 집계 경로가 없어 수치를 낼 수 없습니다(실적 0이 아님) ②문의에서 방문으로 이어진 비율은 방문 기록 칸이 8월 전건 비어 있어 산출 불가하며, 상담 성공 건수를 대신 씁니다 ③지출·순이익은 집계 구조 정비 중이라 이번 보고에 넣지 않았습니다.</div>
+    <div><b>출처</b> — 매출=매출보고 원장 · 회원·만기=회원 원장 전수 · 문의=문의 원장 전수 · 접수=종합접수처 원장 8월분 · 점검=부서별 점검 원장 · 과제·일정=월간 운영계획 및 전사 일정. 멤버십 문의 78건만 8/26 집계값이며 나머지는 8/28 직접 카운트입니다. <b>다음 보고</b> — 9월 30일, 9월 3대 과제 결과.</div>
   </div>
 
 </div>
@@ -253,7 +421,7 @@ document.getElementById('png').onclick = function () {
   html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
     .then(function (canvas) {
       var a = document.createElement('a');
-      a.download = '260901_8월운영진행_9월운영계획_A3.png';
+      a.download = '260901_8월운영현황_9월운영계획_A3.png';
       a.href = canvas.toDataURL('image/png');
       a.click();
     })
