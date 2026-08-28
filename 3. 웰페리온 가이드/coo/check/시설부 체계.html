@@ -601,30 +601,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
   <div class="sub" id="headerSub"></div>
-  <div id="dailyStatusBoard" style="margin-top:8px;font-size:12.5px;color:var(--dim);">불러오는 중…</div>
 </div>
 <div class="toast-msg" id="toastMsg"></div>
-<script>
-/* 오늘 처리 현황판(맨 위) — GM 지시 2026-08-13: ★중간관리자 방 회신을 웰리가 판단해 매일 올린다.
-   새 데이터 원천 없음 — 이 페이지가 이미 쓰는 status/monthly_ops_plan.json practitioners[].daily_status
-   칸 하나 재사용(웰리가 매일 수기 갱신). 격리된 별도 <script>(위 메인 실행에 영향 안 줌). */
-(function(){
-  fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/monthly_ops_plan.json',{cache:'no-store'})
-    .then(function(r){return r.json();})
-    .then(function(j){
-      var p=(j.practitioners||[]).filter(function(x){return x.id==='lee-jh';})[0];
-      var ds=p&&p.daily_status;
-      var el=document.getElementById('dailyStatusBoard');
-      if(!el) return;
-      if(!ds){ el.textContent='오늘 처리 현황 — 아직 값 없음'; return; }
-      var ageDays=Math.floor((Date.now()-new Date(ds.date+'T00:00:00+09:00').getTime())/86400000);
-      var staleTag=ageDays>=2?(' <b style="color:var(--warm,#d98c5f);">('+ageDays+'일 전 기준)</b>'):'';
-      el.innerHTML='🧭 <b style="color:var(--text);">오늘('+ds.date+') 처리 현황(이정헌 소장)</b>'+staleTag+' — 마감 지난 '+ds.overdue_count+'건 · 최고 '+ds.oldest_days+'일 지남 · 오늘 처리 '+ds.processed+'건'
-        +' <span style="opacity:0.75;">('+ds.note+')</span>';
-    })
-    .catch(function(){ var el=document.getElementById('dailyStatusBoard'); if(el) el.textContent='오늘 처리 현황 — 불러오기 실패'; });
-})();
-</script>
 <div class="tabs">
   <button class="tab active" onclick="switchTab('policy')">📋 시설부 규정</button>
   <button class="tab" onclick="switchTab('guide')">📘 직원 가이드</button>
