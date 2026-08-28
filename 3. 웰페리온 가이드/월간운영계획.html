@@ -327,7 +327,14 @@
   .deptgoal-sec{margin-top:16px;}
   .deptgoal-h{font-size:15px; font-weight:800; color:var(--text); display:flex; align-items:baseline; gap:9px; margin-bottom:10px; letter-spacing:-0.01em; flex-wrap:wrap;}
   .deptgoal-sub{font-size:11.5px; font-weight:500; color:var(--dim);}
-  .deptgoal-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px;}
+  .deptgoal-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  /* 칸이 넷으로 줄어 좌우가 넓어졌다(GM 지시 2026-08-28) — 좁아서 글자가 세로로 흐르던 문제가 여기서 끝난다 */
+  @media (max-width:1400px){ .deptgoal-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:820px){ .deptgoal-grid{grid-template-columns:1fr;} }
+  .deptgoal-partner{margin-top:14px;}
+  .deptgoal-partner .dg-card.dg-partner{grid-column:auto;}
+  .pt-rep-h{margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:13px;font-weight:800;color:var(--accent-soft);}
+  .pt-rep-h span{font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;}
   .dg-flat-h{font-size:11px;font-weight:800;color:var(--accent-soft);margin:8px 0 3px;padding-top:6px;border-top:1px dashed var(--border);}
   .dg-card{background:var(--paper); border:1px solid var(--border); border-radius:13px; padding:13px 15px 14px; display:flex; flex-direction:column; gap:10px;}
   /* 파트너팀 칸 — 8팀이라 세로로 길다. 한 칸을 두 칸 폭으로 써 목표 문장이 잘리지 않게 한다(GM 지시 2026-08-28) */
@@ -896,7 +903,7 @@
     .findept td.num, .findept th.num, .findept td.pctc, .findept td.grp-cum{font-size:13px !important;}
     /* 📌 부서별 월 목표·진척 섹션 인쇄(중요하게 유지·2열) */
     .deptgoal-sec{margin-top:9px !important;} .deptgoal-h{font-size:12px !important; margin-bottom:5px !important;} .deptgoal-sub{font-size:9px !important;}
-    .deptgoal-grid{grid-template-columns:repeat(3,1fr) !important; gap:6px !important;}
+    .deptgoal-grid{grid-template-columns:repeat(4,1fr) !important; gap:6px !important;}
     .dg-card{padding:6px 9px 7px !important; gap:5px !important; background:#fff !important; border-color:#999 !important; break-inside:avoid;}
     .dg-card-h{padding-bottom:4px !important;} .dg-dept{font-size:11px !important; color:#111 !important;} .dg-own{font-size:9px !important;} .dg-note{font-size:8px !important;}
     .dg-objs{gap:6px !important;} .dg-obj{gap:2px !important;} .dg-obj-t{font-size:10px !important;} .dg-obj-p{font-size:10px !important;} .dg-obj-goal{font-size:8.5px !important;} .dg-obj-bar{height:5px !important;}
@@ -1055,13 +1062,7 @@
       <div id="issue-board" style="margin-top:14px;"><div class="board-status">종합 접수처 보드를 계산하는 중…</div></div>
     </section>
 
-    <!-- 📋 전 부서 보고 사항 — 매출·운영 보고 시트의 팀·부서 칸을 그대로 읽어 온다(GM 지시 2026-08-28:
-         "전부서 보고사항은 월간운영계획에 넣어서 정리", "운영 현황도 월간운영계획에"). 별도 페이지는 만들지 않는다. -->
-    <section class="blk" data-blkid="deptreport">
-      <h2 class="sec">📋 전 부서 보고 사항 <span class="lvb lvb-half" title="시설·지원·주차는 매일 09:00 자동 기입 / 나머지 칸은 각 팀·담당이 시트에 직접 적는다">🟠 반반</span> <span class="stag" id="deptreport-stag">매출·운영 보고 시트 · 팀별 · 인사&amp;파트너 · 핵심 보고 · 시설·지원·주차</span></h2>
-      <div id="deptreport-board"><div class="board-status">전 부서 보고 사항을 불러오는 중…</div></div>
-    </section>
-
+    
     
     
     
@@ -2299,10 +2300,12 @@
     //   한글이 한 글자씩 세로로 흘러 읽을 수 없게 된다(2026-08-28 실측). 두 부서를 나란히 두는 게 아니라
     //   한 부서처럼 과제를 이어 붙인다.
     {members:['sup','park'], flat:true, title:'지원부 · 주차관리부', note:'주차관리부 포함', head:'sup'},
-    {members:['gm']},
-    {members:['mgmt']},
-    {members:['partner']}
+    {members:['mgmt']}
   ];
+  /* ★2026-08-28 GM 지시 2차 — 부서 칸은 넷으로 줄인다(운영·시설·지원+주차·경영지원).
+     · 경영지원 김남욱 GM 칸 삭제 — GM 업무는 GM업무 페이지에서 본다. 여기 두면 부서 진척과 성격이 섞인다.
+     · 파트너팀(강습 8팀)은 4칸 그리드에서 빼내 아래 전폭 블록으로 옮기고, 「전 부서 보고 사항」을 그 안에 합친다
+       — 팀 목표·진척과 그 팀이 올린 보고가 떨어져 있으면 서로 이어지지 않는다(GM 지적). */
   function pracOf(id, roster){ for(var i = 0; i < roster.length; i++){ if(roster[i].id === id){ return roster[i]; } } return null; }
   function ownerCellHtml(cfg, roster){
     var p = pracOf(cfg.prac, roster);
@@ -2516,13 +2519,17 @@
              '<td class="pt-p">' + bar + '</td></tr>';
     }).join('');
     var done = PARTNER_TEAMS.filter(function(t){ return typeof prog[t.id] === 'number'; }).length;
+    /* 전 부서 보고 사항을 이 블록 안에 함께 둔다(GM 지시 2026-08-28) — 보고가 목표·진척 옆에 있어야
+       "무엇을 하기로 했고 무엇을 보고했나"가 한자리에서 읽힌다. 채우는 것은 기존 renderDeptReport 그대로다. */
     return '<div class="dg-card dg-partner">' +
-      '<div class="dg-card-h"><span class="dg-dept">' + esc(cfg.key) + '</span>' +
-      '<span class="dg-note">제출 ' + done + ' / ' + PARTNER_TEAMS.length + '팀</span>' +
+      '<div class="dg-card-h"><span class="dg-dept">' + esc(cfg.key) + ' · 전 부서 보고 사항</span>' +
+      '<span class="dg-note">목표 제출 ' + done + ' / ' + PARTNER_TEAMS.length + '팀</span>' +
       '<span class="dg-own">팀 리더 · 나우열M 총괄</span></div>' +
       (linkBtnsHtml(cfg) ? '<div class="dg-links">' + linkBtnsHtml(cfg) + '</div>' : '') +
       '<table class="pt-tbl"><thead><tr><th>팀</th><th>리더</th><th>이번 달 목표</th><th>진척</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table>' +
+      '<div class="pt-rep-h">📋 전 부서 보고 사항 <span>매출·운영 보고 시트에 각 팀·부서가 적은 것</span></div>' +
+      '<div id="deptreport-board"><div class="board-status">전 부서 보고 사항을 불러오는 중…</div></div>' +
     '</div>';
   }
 
@@ -2568,9 +2575,12 @@
   function deptGoalGridHtml(objs, roster, m){
     var mLabel = _sel ? (Number(String(_sel).split('-')[1]) + '월') : '';
     var cards = DEPT_GOAL_GROUPS.map(function(g){ return deptCardHtml(g, objs, roster, m); }).join('');
+    // 파트너팀 + 전 부서 보고는 4칸 그리드 밖 전폭 블록 — 8팀 표와 보고 카드가 좁은 칸에 들어가면 못 읽는다.
+    var partner = partnerCardHtml(DEPT_CARD_BY_ID['partner'], m);
     return '<div class="deptgoal-sec"><div class="deptgoal-h">📌 부서별 월 목표 · 진척 ' +
       '<span class="deptgoal-sub">' + esc(mLabel) + ' 부서별 핵심 과제 · 진척 · 매월 말일 각 부서 제출</span></div>' +
-      '<div class="deptgoal-grid">' + cards + '</div></div>';
+      '<div class="deptgoal-grid">' + cards + '</div>' +
+      '<div class="deptgoal-partner">' + partner + '</div></div>';
   }
   function renderDeptTable(){
     var board = document.getElementById('dept-cards-board');

@@ -86,10 +86,17 @@ def collect_sales(month: str) -> dict:
 
             live = E.fetch_sales_month_in_progress()
             if live and live.get("value"):
-                out["month"] = int(live["value"])
+                out["month_ledger_sheet"] = int(live["value"])   # 말일탭 값(주차 제외) — 대조용으로만 남긴다
                 out["asOf"] = live.get("asOf")
         except Exception as e:
             print(f"[경고] 당월 매출 라이브 조회 실패 — {e} (스냅샷 값 유지)")
+
+    # ★매출의 정의 = 부문 전부의 합(주차·뮤지컬 포함) — GM 확정 2026-08-28.
+    #   같은 8월이 5.23억(주차·뮤지컬 뺀 값)·5.451억(말일탭·주차 뺀 값)·5.476억(전부 합)으로
+    #   세 값이던 것을 여기 한 줄로 못박는다. 무엇을 넣는지는 공식값이라 코드가 정하지 않고 GM 이 정한다.
+    if out["by_segment"]:
+        out["month"] = sum(out["by_segment"].values())
+        out["month_basis"] = "부문 전부 합(주차·뮤지컬 포함) · GM 확정 2026-08-28"
     return out
 
 
