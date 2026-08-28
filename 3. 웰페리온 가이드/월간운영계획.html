@@ -965,6 +965,11 @@
   <!-- 경영진 보고 인쇄 배너(A3 한 장 상단 · 상시) -->
   <div class="print-head" id="print-head"></div>
 
+  <!-- 📅 아직 지나지 않은 달 배너 (GM 지시 2026-08-28 — "다음달도 현황이 나와버리네 아무것도 없는데")
+       이번 달 = 현황(실적) / 다음 달 = 계획. 아직 안 지난 달을 열면 실적 블록을 그리는 대신 이 배너로 바꾼다.
+       전사일정에 그 달 업무가 몇 건 잡혀 있는지도 여기서 함께 알린다(없으면 없다고 적는다). -->
+  <div class="plan-banner" id="plan-banner" style="display:none"></div>
+
   <!-- 📅 연간 A3 뷰 (뷰 토글 '연간 A3' 시 표시 · 월별 상세는 CSS로 숨김) -->
   <section class="annual-board" id="annual-board"><div class="board-status">연간 로드맵을 불러오는 중…</div></section>
 
@@ -973,6 +978,15 @@
   <!-- 📊 최상단 핵심 밴드(스크롤 없이 결론 먼저 · 전부 실측 · renderSummaryStrip()가 채움 · 배685 · 2026-08-01 GM 지시로 확장:
        매출은 기존 유지 + 전 부서 핵심 과제 진척/업무&결재 SSOT 현황/시설부·지원부 이행 현황/로드맵 현황 4칸 — home 히어로 KPI 밴드와 같은 결.
        각 칸 월값 옆에 연(또는 전체 누적) 값을 ss-sub 서브라인으로 병기 — 연 데이터가 없는 지표는 그 사실을 그대로 적는다(지어내지 않음). -->
+  <style>
+  /* 계획월 배너 — 이번 달(현황)과 다음 달(계획)을 눈으로 갈라 준다(GM 지시 2026-08-28) */
+  .plan-banner{margin:12px 0;padding:12px 16px;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;background:var(--paper)}
+  .plan-banner .pb-h{font-size:14px;font-weight:700}
+  .plan-banner .pb-b{margin-top:4px;font-size:13px;color:var(--dim)}
+  .plan-banner .pb-warn{color:var(--red);font-weight:700}
+  .sm-plan-note{margin:8px 0;font-size:13px;font-weight:600}
+  .sm-sch .sm-sch-i{font-size:12px;padding:2px 0;border-bottom:1px solid var(--border)}
+  </style>
   <div class="sumstrip" id="sumstrip">
     <div class="ss-i"><div class="ss-l">매출 페이스</div><div class="ss-v gold" id="ss-fin">불러오는 중…</div></div>
     <div class="ss-i"><div class="ss-l">전 부서 핵심 과제 진척</div><div class="ss-v" id="ss-top3">불러오는 중…</div></div>
@@ -1870,6 +1884,13 @@
     var host = document.getElementById('fin-board');
     if(!host) return;
 
+    // 아직 안 지난 달 = 매출 실적이 없다. '측정 전'·0원 대신 그 사실을 적는다(GM 지시 2026-08-28).
+    if(isPlanMonth(_sel)){
+      host.innerHTML = planNotice('매출 실적');
+      var _dh = document.getElementById('fin-dept-board'); if(_dh) _dh.innerHTML = '';
+      return;
+    }
+
     // 라이브 소스 도착 전 = '불러오는 중'(무거운 소스가 뒤에서 채워짐 — 실패 오인·전체 게이팅 방지)
     if(!_finReady){ host.innerHTML = '<div class="board-status">💰 매출·지출 라이브 미러 불러오는 중… (무거운 소스 · 잠시 후 표시)</div>'; return; }
 
@@ -2480,6 +2501,8 @@
   function renderCheckStatus(){
     var host = document.getElementById('check-board');
     if(!host) return;
+    // 아직 안 지난 달 = 점검 실적이 없다. 0%·빈 카드를 그리지 않는다(GM 지시 2026-08-28).
+    if(isPlanMonth(_sel)){ host.innerHTML = planNotice('점검 실적'); return; }
     fetchCheckMonthlyFor(_sel); // 선택월 지원부 월간 집계 kick-off(캐시 있으면 no-op) — 도착 시 점검 보드만 재렌더
     var cards = [];
     var mnumC = _sel ? Number(String(_sel).split('-')[1]) : null;
@@ -2806,6 +2829,8 @@
     if(!m){ host.innerHTML = '<div class="board-status">경영진 1장 요약을 불러오는 중…</div>'; return; }
     var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
     var ms = m.month_status || '';
+    /* 아직 안 지난 달 = 실적 칸(매출·점검·접수)이 전부 빈다 → 1장 요약 대신 계획만 낸다(GM 지시 2026-08-28). */
+    var _plan = isPlanMonth(_sel);
 
     // ① 헤더 밴드(월·테마·상태)
     var head = '<div class="sm-head">' +
@@ -2900,14 +2925,34 @@
       '</div>';
     }).join('') : '<div class="sm-empty">실무 도달율 정본이 없습니다.</div>';
 
+    /* 계획월은 실적 두 칸(매출·점검)을 아예 빼고 '무엇을 하기로 했나'만 낸다.
+       빈 실적 칸을 남겨 두면 숫자가 0으로 보여 실적이 나쁜 달로 오해된다. */
+    var schedRows = _plan ? schedOfMonth(_sel) : null;
+    var schedLine = '';
+    if(_plan){
+      if(!_schedReady)          schedLine = '전사일정 불러오는 중…';
+      else if(schedRows === null) schedLine = '전사일정을 불러오지 못했습니다 — 0건이 아니라 조회 실패입니다.';
+      else if(!schedRows.length)  schedLine = '<b>전사일정에 잡힌 ' + esc(monLabel(_sel)) + ' 업무가 없습니다.</b>';
+      else                        schedLine = schedRows.slice(0, 8).map(function(r){
+                                    return '<div class="sm-sch-i">' + esc(String(r.next_due || '').slice(5)) + ' · ' + esc(r.name || '') +
+                                      (r.assignee ? ' <span class="sm-dim">' + esc(r.assignee) + '</span>' : '') + '</div>';
+                                  }).join('') + (schedRows.length > 8 ? '<div class="sm-dim">외 ' + (schedRows.length - 8) + '건</div>' : '');
+    }
+
     host.innerHTML =
       head +
-      '<div class="sm-grid">' +
-        '<section class="sm-blk sm-span"><h3 class="sm-sec">💰 매출 헤드라인</h3>' + salesBlock + '</section>' +
-        '<section class="sm-blk sm-span"><h3 class="sm-sec">🎯 이달 핵심 과제 top3</h3><div class="sm-t3-grid">' + t3 + '</div></section>' +
-        '<section class="sm-blk"><h3 class="sm-sec">🔧 점검 요약</h3>' + chkBlock + '</section>' +
-        '<section class="sm-blk"><h3 class="sm-sec">👤 실무 · AI 활용 도달율</h3><div class="sm-prac-list">' + pracLines + '</div></section>' +
-      '</div>' +
+      (_plan
+        ? '<div class="sm-plan-note">📅 ' + esc(monLabel(_sel)) + '은 <b>계획</b>입니다 — 아직 지나지 않은 달이라 매출·점검 실적은 없습니다.</div>' +
+          '<div class="sm-grid">' +
+            '<section class="sm-blk sm-span"><h3 class="sm-sec">🎯 ' + esc(monLabel(_sel)) + ' 핵심 과제 top3</h3><div class="sm-t3-grid">' + t3 + '</div></section>' +
+            '<section class="sm-blk sm-span"><h3 class="sm-sec">🗓️ 전사일정에 잡힌 ' + esc(monLabel(_sel)) + ' 업무</h3><div class="sm-sch">' + schedLine + '</div></section>' +
+          '</div>'
+        : '<div class="sm-grid">' +
+            '<section class="sm-blk sm-span"><h3 class="sm-sec">💰 매출 헤드라인</h3>' + salesBlock + '</section>' +
+            '<section class="sm-blk sm-span"><h3 class="sm-sec">🎯 이달 핵심 과제 top3</h3><div class="sm-t3-grid">' + t3 + '</div></section>' +
+            '<section class="sm-blk"><h3 class="sm-sec">🔧 점검 요약</h3>' + chkBlock + '</section>' +
+            '<section class="sm-blk"><h3 class="sm-sec">👤 실무 · AI 활용 도달율</h3><div class="sm-prac-list">' + pracLines + '</div></section>' +
+          '</div>') +
       '<div class="sm-foot">웰페리온 AI·ERP 월간 운영 보고 · 경영진 제출용(A3 결론 1장) · 값=라이브 미러(가짜값 없음)</div>';
   }
 
@@ -2940,6 +2985,10 @@
   function renderSummaryStrip(){
     var host = document.getElementById('sumstrip');
     if(!host) return;
+    /* 아직 안 지난 달엔 실적 밴드를 숨긴다 — 매출 페이스·점검 이행률이 0이나 '측정 전'으로 떠서
+       "다음 달인데 현황이 나온다"로 읽혔다(GM 지적 2026-08-28). 계획은 아래 과제 섹션이 보여준다. */
+    if(isPlanMonth(_sel)){ host.style.display = 'none'; return; }
+    host.style.display = '';
     var m = _data && _data.months && _data.months[_sel];
     var mnum = _sel ? Number(String(_sel).split('-')[1]) : NaN;
 
@@ -3068,9 +3117,60 @@
     }
   }
 
+  /* ── 아직 지나지 않은 달 판정 (GM 지시 2026-08-28) ──────────────────────────────
+     기준은 달력이다 — month_status 는 사람이 손으로 적는 값이라 안 바꾸면 옛 상태로 굳는다.
+     선택월이 이번 달보다 뒤면 그 달은 '계획'이고, 매출·점검 같은 실적은 아직 존재하지 않는다. */
+  function _thisMonthKey(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  function isPlanMonth(k){ return !!k && String(k) > _thisMonthKey(); }
+  function monLabel(k){ var p = String(k || '').split('-'); return p.length === 2 ? (Number(p[1]) + '월') : String(k || ''); }
+  /* 실적 블록이 계획월에서 대신 낼 문장 — 빈 표를 그리지 않는다. */
+  function planNotice(what){
+    return '<div class="board-status">' + esc(monLabel(_sel)) + '은 아직 지나지 않았습니다 — ' + esc(what) + '은(는) 그 달이 시작되면 채워집니다.</div>';
+  }
+
+  /* ── 전사일정 그 달 업무 (GM 지시 2026-08-28 — "전사일정에 업무 일정이 없으면 없다고 이야기하고 들어가게") ──
+     정본은 전사일정 원장 하나뿐이다(status/schedule_ssot.json) — 여기서는 읽기만 하고 사본을 만들지 않는다. */
+  var _sched = null, _schedReady = false;
+  function schedOfMonth(k){
+    if(!_sched || !Array.isArray(_sched.items)) return null;
+    return _sched.items.filter(function(it){ return String(it.next_due || '').slice(0, 7) === String(k); });
+  }
+  function loadSchedule(){
+    fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/schedule_ssot.json?cb=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _sched = d; _schedReady = true; renderPlanBanner(); if(_data) renderSummaryBoard(); })
+      .catch(function(){ _schedReady = true; renderPlanBanner(); if(_data) renderSummaryBoard(); });   // 실패도 '조회 실패'로 정직 표기(0건으로 위장하지 않는다)
+  }
+  loadSchedule();
+
+  function renderPlanBanner(){
+    var host = document.getElementById('plan-banner');
+    if(!host) return;
+    if(!isPlanMonth(_sel)){ host.style.display = 'none'; host.innerHTML = ''; return; }
+    var m = _data && _data.months && _data.months[_sel];
+    var objs = (m && m.objectives) || [];
+    var rows = schedOfMonth(_sel);
+    var schedTxt;
+    if(!_schedReady)      schedTxt = '전사일정 불러오는 중…';
+    else if(rows === null) schedTxt = '전사일정을 불러오지 못했습니다 — 0건이 아니라 조회 실패입니다.';
+    else if(!rows.length)  schedTxt = '<b>전사일정에 잡힌 ' + esc(monLabel(_sel)) + ' 업무가 없습니다.</b>';
+    else                   schedTxt = '전사일정에 잡힌 ' + esc(monLabel(_sel)) + ' 업무 <b>' + rows.length + '건</b>';
+    host.style.display = '';
+    host.innerHTML =
+      '<div class="pb-h">📅 ' + esc(monLabel(_sel)) + '은 <b>계획</b>입니다 — 아직 지나지 않은 달이라 실적(매출·점검·접수)은 없습니다.</div>' +
+      '<div class="pb-b">' + schedTxt +
+        ' · 월간 과제 <b>' + objs.length + '건</b>' +
+        (objs.length ? '' : ' <span class="pb-warn">— 이 달에 등록된 과제가 없습니다</span>') +
+      '</div>';
+  }
+
   function render(){
     renderViewToggle();
     applyView();
+    renderPlanBanner();
     renderTop3();
     renderAnnual();
     renderRoadmap();
