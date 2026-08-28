@@ -474,8 +474,9 @@
       <!-- 매출: 월(좌)/연간(우) 좌우 2열 = 지출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
       <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--grow);border-radius:14px;padding:15px 16px;">
         <div style="display:flex;align-items:center;gap:7px;color:var(--grow);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 매출<span id="heroKpiFreshnessBadge" style="display:none;font-size:9.5px;font-weight:700;color:var(--dim);background:var(--accent-bg,rgba(183,159,138,0.12));border-radius:9px;padding:1px 7px;margin-left:2px;"></span></div>
-        <!-- 월 | 연간 좌우 배치 (세로로 안 늘어나게) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+        <!-- 월 | 연간 | 팀별 3열 배치 — [2026-08-28 GM 지시] 접혀 있던 팀별 보기를 카드 오른쪽에 그대로 편다.
+             세로를 안 늘리려고 가로를 쓴다. -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;margin-top:8px;">
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 매출<span id="salesMonthLabel"></span></div>
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesMonth">—</span></div>
@@ -488,25 +489,19 @@
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroSalesYear">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">달성률 <span id="heroSalesYearRate" style="color:var(--grow);font-weight:700;">—</span></div>
           </div>
-        </div>
-        <!-- 팀별 매출 토글 -->
-        <button id="salesBreakdownBtn" onclick="(function(){var p=document.getElementById('salesBreakdownPanel');var b=document.getElementById('salesBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'팀별 보기 ▾':'팀별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--grow);background:var(--grow-bg,rgba(106,191,123,0.1));border:1px solid rgba(106,191,123,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">팀별 보기 ▾</button>
-        <div id="salesBreakdownPanel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.12);border-radius:0 0 14px 14px;max-height:240px;overflow-y:auto;margin-top:0;border-top:1px dashed var(--border);padding:8px 16px 12px;">
-          <table style="width:100%;border-collapse:collapse;font-size:11px;">
-            <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
-              <th style="text-align:left;padding:3px 4px;">항목</th>
-              <th style="text-align:right;padding:3px 4px;">이번달</th>
-              <th style="text-align:right;padding:3px 4px;">달성률</th>
-            </tr></thead>
-            <tbody id="salesBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr></tbody>
-          </table>
+          <div style="padding-left:10px;border-left:1px dashed var(--border);min-width:0;">
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);margin-bottom:3px;">팀별 · 이번달</div>
+            <table style="width:100%;border-collapse:collapse;font-size:10px;">
+              <tbody id="salesBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:3px 2px;">세부 없음</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
       <!-- 지출: 월(좌)/연간(우) 좌우 2열 = 매출 카드와 대칭·콤팩트 (2026-06-20 시뽀) -->
       <div style="position:relative;background:var(--paper);border:1px solid var(--border);border-left:4px solid var(--warm);border-radius:14px;padding:15px 16px;">
         <div style="display:flex;align-items:center;gap:7px;color:var(--warm);font-size:12px;font-weight:700;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 지출</div>
-        <!-- 월 | 연간 좌우 배치 (매출과 동일 구조) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+        <!-- 월 | 연간 | 카테고리별 3열 배치 (매출 카드와 동일 구조 · 2026-08-28) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;margin-top:8px;">
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);">월 지출</div>
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpMonth">—</span></div>
@@ -519,18 +514,12 @@
             <div style="font-size:21px;font-weight:800;line-height:1.1;margin:2px 0 3px;letter-spacing:-0.02em;color:var(--text);"><span id="heroExpYear">—</span></div>
             <div style="font-size:10.5px;color:var(--dim);">올해 누적</div>
           </div>
-        </div>
-        <!-- 카테고리별 지출 토글 -->
-        <button id="expBreakdownBtn" onclick="(function(){var p=document.getElementById('expBreakdownPanel');var b=document.getElementById('expBreakdownBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'카테고리별 보기 ▾':'카테고리별 접기 ▴';})()" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--warm);background:var(--warm-bg,rgba(237,91,63,0.1));border:1px solid rgba(237,91,63,0.3);border-radius:20px;padding:3px 11px;cursor:pointer;">카테고리별 보기 ▾</button>
-        <div id="expBreakdownPanel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;background:var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.12);border-radius:0 0 14px 14px;max-height:240px;overflow-y:auto;margin-top:0;border-top:1px dashed var(--border);padding:8px 16px 12px;">
-          <table style="width:100%;border-collapse:collapse;font-size:11px;">
-            <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
-              <th style="text-align:left;padding:3px 4px;">항목</th>
-              <th style="text-align:right;padding:3px 4px;">이번달</th>
-              <th style="text-align:right;padding:3px 4px;">비중</th>
-            </tr></thead>
-            <tbody id="expBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr></tbody>
-          </table>
+          <div style="padding-left:10px;border-left:1px dashed var(--border);min-width:0;">
+            <div style="font-size:10.5px;font-weight:700;color:var(--dim);margin-bottom:3px;">카테고리별 · 이번달</div>
+            <table style="width:100%;border-collapse:collapse;font-size:10px;">
+              <tbody id="expBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:3px 2px;">세부 없음</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1234,15 +1223,13 @@
 
           /* 매출 팀별 breakdown */
           (function(){
-            var btn = document.getElementById('salesBreakdownBtn');
             var tbody = document.getElementById('salesBreakdownBody');
             var bd = Array.isArray(s.breakdown) ? s.breakdown : [];
-            if(!btn || !tbody) return;
+            if(!tbody) return;
             if(bd.length === 0) {
               tbody.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr>';
               return;
             }
-            btn.style.display = 'inline-block';
             var rows = '';
             for(var i = 0; i < bd.length; i++) {
               var item = bd[i];
@@ -1307,15 +1294,13 @@
 
           /* 지출 카테고리별 breakdown (매출 팀별과 동형) */
           (function(){
-            var btn = document.getElementById('expBreakdownBtn');
             var tbody = document.getElementById('expBreakdownBody');
             var bd = Array.isArray(e.breakdown) ? e.breakdown : [];
-            if(!btn || !tbody) return;
+            if(!tbody) return;
             if(bd.length === 0) {
               tbody.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 4px;">세부 없음</td></tr>';
               return;
             }
-            btn.style.display = 'inline-block';
             var rows = '';
             for(var i = 0; i < bd.length; i++) {
               var item = bd[i];
