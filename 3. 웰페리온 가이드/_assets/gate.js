@@ -20,7 +20,8 @@
   // 각 페이지 파일은 건드리지 않고 이 파일 한 곳에서 경로로 판정한다(약속 L21 — 관문 하나에만 둔다).
   var GATE_PW_GM = "1531";    // 회장님/대표님/GM 자세히보기 (coo/chairman/ 하위 전체)
   var GATE_PW_STAFF = "1200"; // 그 외 실무진 공용 페이지
-  var GATE_PW = /\/coo\/chairman\//.test(window.location.pathname) ? GATE_PW_GM : GATE_PW_STAFF;
+  // coo/report/ = GM 보고 화면(일일 운영보고 — 매출 금액·회원 실명이 실린다). GM 지시 2026-08-28로 GM 비번 쪽에 붙였다.
+  var GATE_PW = /\/coo\/(chairman|report)\//.test(window.location.pathname) ? GATE_PW_GM : GATE_PW_STAFF;
   window.WELP_GATE_PW = GATE_PW; // 기존 GAS 호출(password 동봉) 호환용
   var SKEY = "welp_gate_ok";     // 같은 탭 세션에서 한 번 통과하면 다른 보호 페이지도 통과
 
