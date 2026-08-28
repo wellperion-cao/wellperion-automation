@@ -525,7 +525,7 @@
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;container-type:inline-size;" class="ops-detail-grid">
 
       <!-- 업무&결재 현황 (통합) — 콜아웃 프레임 제거 후 운영현황상세/일일점검과 동일한 섹션헤더+풀폭 배치. SSOT pill 색=월간운영계획보고 링크와 통일(초록 그라디언트). 2026-07-15 시토(CTO). 우측 SSOT 진입점 = 업무 SSOT+결재 SSOT 2개 pill → 맨 우측 '업무&결재 SSOT' 1개(S3 통합 페이지 진입)로 병합. 2026-07-18 시토(CTO) GM 지시. 데이터바인딩 id·onclick 로직 무변경(칩 통합·라벨만 변경). -->
-      <div style="grid-column:1/-1;display:flex;flex-direction:column;">
+      <div style="grid-column:1/-1;">
         <!-- [2026-08-28 GM 지시] 세 카드(업무&결재·문의&등록·종합 접수처)의 머리줄을 같은 뼈대로 맞춘다:
              아이콘 30px + (제목 17px / 부제 10.5px 두 줄) + 오른쪽 끝 링크 하나. -->
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
@@ -536,7 +536,7 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="wa-block-grid">
           <!-- ◀ 업무 블록: 4지표(총·진행·완료(완료율%)·보류) + 각 오늘 N -->
-          <div style="display:flex;flex-direction:column;">
+          <div>
             <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px;">📋 업무</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;"><div style="font-size:23px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:7px;font-weight:600;">총</div><div style="font-size:11px;color:var(--dim);margin-top:6px;">오늘 <span id="kpiWorkTodayTotal">—</span> · 전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
@@ -546,7 +546,7 @@
             </div>
           </div>
           <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
-          <div style="display:flex;flex-direction:column;">
+          <div>
             <div style="font-size:11px;font-weight:800;color:var(--warm);margin-bottom:8px;">✍️ 결재</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;"><div style="font-size:23px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:7px;font-weight:600;">총</div><div style="font-size:11px;color:var(--dim);margin-top:6px;">오늘 <span id="kpiApprTodayTotal">—</span> · 전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
@@ -591,7 +591,7 @@
         <!-- [2026-08-28 GM 지시] 업무&결재 카드처럼 소제목을 칸 밖으로 뺀다 —
              「멤버십」·「강습」 아래에 각각 문의관리·등록 두 칸. 칸 안 라벨에서 그룹 이름을 뺐다. -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div style="display:flex;flex-direction:column;">
+          <div>
             <div style="font-size:11px;font-weight:800;color:var(--grow);margin-bottom:8px;">👥 멤버십</div>
             <div style="display:grid;grid-template-columns:1fr;gap:8px;">
           <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:58px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
@@ -604,7 +604,7 @@
           </a>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;">
+          <div>
             <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px;">🏊 강습</div>
             <div style="display:grid;grid-template-columns:1fr;gap:8px;">
           <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:8px 11px;min-height:58px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
