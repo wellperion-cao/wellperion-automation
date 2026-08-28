@@ -63,8 +63,6 @@
     .home-hero-row>*{margin:0!important;}
     .home-hero-row>div:first-child{display:flex;flex-direction:column;justify-content:center;}
     .home-hero-row>.lead{display:flex;align-items:center;}
-    .home-links-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;margin:0 0 24px;}
-    .home-links-row>a{margin:0!important;}
   }
   .doc{display:none; animation:fadeIn 0.18s ease-out;}
   .doc.active{display:block;}
@@ -303,7 +301,13 @@
 
   /* 인쇄 스타일 — 인쇄 버튼을 누른 활성 섹션 1개만, 라이트 테마로 출력 */
   @media print{
-    @page{margin:13mm;}
+    /* [2026-08-28 GM 지시] 기본 용지를 A3 가로로. ERP 화면은 가로가 넓어 A4 로는 표가 잘린다.
+       A4·세로가 필요하면 인쇄 버튼의 드롭다운(_assets/print_options.js)에서 고르면 이 규칙을 덮는다. */
+    @page{size:A3 landscape; margin:10mm;}
+    /* 홈 대시보드는 한 장에 담는다 — 카드가 잘려 다음 장으로 넘어가지 않게 축약해 출력. */
+    #home{zoom:0.68;}
+    #home .home-export-btns{display:none!important;}
+    #home .lead,#home .doc-header .meta{display:none!important;}
     :root{
       --bg:#ffffff; --paper:#ffffff; --sidebar:#ffffff; --gray-bg:#f0efed;
       --text:#1a1a1a; --text-soft:#2b2b2b; --dim:#555555; --dim-soft:#777777;
@@ -435,7 +439,10 @@
 <main class="main">
 
   <article class="doc active" id="home">
-    <div class="doc-header" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;"><h2 style="margin:0;">🏢 웰페리온 ERP</h2><div class="meta" style="margin:0;">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div></div>
+    <!-- [2026-08-28 GM 지시] 대시보드를 A3 한 장으로 인쇄하고 PNG 로도 저장할 수 있게 했다.
+         인쇄 버튼은 공용 컴포넌트(_assets/print_options.js)가 A4/A3·가로/세로 드롭다운으로 승격한다 —
+         새 인쇄 코드를 만들지 않는다(약속 L21). data-po-trigger 로 이 버튼만 승격 대상으로 못박는다. -->
+    <div class="doc-header" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;"><h2 style="margin:0;">🏢 웰페리온 ERP</h2><div class="meta" style="margin:0;">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div><span style="margin-left:auto;display:flex;gap:7px;flex-shrink:0;" class="home-export-btns"><button type="button" data-po-trigger class="print-btn" onclick="window.print()" style="font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;cursor:pointer;white-space:nowrap;">🖨 A3 인쇄</button><button type="button" id="homePngBtn" class="print-btn" style="font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;cursor:pointer;white-space:nowrap;">🖼 PNG 저장</button></span></div>
 
     <!-- ══ 전사 공식 슬로건 (canon: ssot/canon_values.json · GM 결재 2026-06-24) ══ -->
     <div class="home-hero-row"><!-- 1400px 이상 화면에서만 슬로건(좌)·설명(우)을 한 줄로. 그 아래 폭에서는 지금처럼 위아래로 쌓인다(2026-08-26) -->
@@ -537,38 +544,27 @@
           <div>
             <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px;">📋 업무</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">총</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiWorkTodayTotal">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">진행</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiWorkTodayActive">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiWorkAllActive" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">완료(율)</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiWorkTodayDone">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiWorkAllDone" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">보류</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiWorkTodayHold">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiWorkAllHold" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">총</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiWorkTodayTotal">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">진행</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiWorkTodayActive">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiWorkAllActive" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">완료(율)</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiWorkTodayDone">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiWorkAllDone" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">보류</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiWorkTodayHold">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiWorkAllHold" style="font-weight:700;">—</span></div></div>
             </div>
           </div>
           <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
           <div>
             <div style="font-size:11px;font-weight:800;color:var(--warm);margin-bottom:8px;">✍️ 결재</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">총</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiApprTodayTotal">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">대기</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiApprTodayPend">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">완료(율)</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiApprTodayDone">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiApprAllDone" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--paper);padding:8px 4px;text-align:center;"><div style="font-size:16px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:10.5px;color:var(--dim);margin-top:3px;font-weight:600;">반려</div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiApprTodayReject">—</span></div><div style="font-size:9.5px;color:var(--dim);margin-top:2px;">전체 <span id="kpiApprAllReject" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">총</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiApprTodayTotal">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">대기</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiApprTodayPend">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">완료(율)</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiApprTodayDone">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiApprAllDone" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--paper);padding:12px 6px;text-align:center;"><div style="font-size:23px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:12.5px;color:var(--dim);margin-top:5px;font-weight:600;">반려</div><div style="font-size:11px;color:var(--dim);margin-top:3px;">오늘 <span id="kpiApprTodayReject">—</span></div><div style="font-size:11px;color:var(--dim);margin-top:3px;">전체 <span id="kpiApprAllReject" style="font-weight:700;">—</span></div></div>
             </div>
           </div>
         </div>
 
-        <!-- 담당자별 업무&결재 보기 펼침 토글 (이번달 기준 · 실데이터만, 없으면 —) -->
-        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);">
-          <button id="kpiWaByOwnerBtn" onclick="(function(){var p=document.getElementById('kpiWaByOwnerPanel');var b=document.getElementById('kpiWaByOwnerBtn');if(!p)return;var open=p.style.display!=='none';p.style.display=open?'none':'block';b.textContent=open?'담당자별 업무&결재 보기 ▾':'담당자별 업무&결재 접기 ▴';})()" style="font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;">담당자별 업무&결재 보기 ▾</button>
-          <div id="kpiWaByOwnerPanel" style="display:none;margin-top:10px;">
-            <table style="width:100%;border-collapse:collapse;font-size:11px;">
-              <thead><tr style="color:var(--dim);font-weight:700;border-bottom:1px solid var(--border);">
-                <th style="text-align:left;padding:4px 6px;">담당자</th>
-                <th style="text-align:right;padding:4px 6px;">업무</th>
-                <th style="text-align:right;padding:4px 6px;">결재</th>
-              </tr></thead>
-              <tbody id="kpiWaByOwnerBody"><tr><td colspan="3" style="color:var(--dim);padding:6px 6px;">—</td></tr></tbody>
-            </table>
-          </div>
-        </div>
+        <!-- [2026-08-28 GM 지시] 「담당자별 업무&결재 보기」 토글 삭제 — 제목 우측 「업무&결재 SSOT →」
+             를 누르면 담당자별로 훨씬 자세히 볼 수 있어 같은 것을 두 자리에 두던 셈이었다.
+             렌더 함수(renderWaByOwner)도 함께 지웠다 — 꺼둔 자리를 남기지 않는다(약속 L21). -->
       </div>
 
       <!-- 문의&등록 현황 카드 — 멤버십/강습 × 문의관리/등록 2×2(AI CPO 시포 소관 실무 구조), 이번달+올해(2026) 누적 병기.
@@ -598,34 +594,31 @@
                타일 그리드가 **남는 높이를 스스로 채우게** 한다(flex:1 + grid-auto-rows:1fr). 옆 카드에도 같은 처리를 해
                어느 쪽 내용이 길어지든 두 카드가 항상 같이 늘어난다. min-height 는 최소 보장으로 남긴다. -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;grid-auto-rows:1fr;">
-          <div style="background:var(--grow-bg);border-radius:10px;padding:11px 12px;min-height:104px;">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">멤버십 문의관리 · 이번달</div>
+          <!-- [2026-08-28 GM 지시] 네 칸을 눌러 바로 관리 화면으로 간다. 카드 아래 링크 줄(멤버십 관리 →·
+               강습 관리 →·문의&등록 현황 →)은 같은 자리를 두 번 만드는 셈이라 함께 지웠다.
+               ▸멤버십 칸 → 멤버십 회원관리 · 강습 칸 → 강습 회원관리 -->
+          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:11px 12px;min-height:104px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">멤버십 문의관리 · 이번달 →</div>
             <div style="font-size:27px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqMonth">—</div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--grow);" id="kpiMiInqTotal">—</span></div>
-          </div>
-          <div style="background:var(--grow-bg);border-radius:10px;padding:11px 12px;min-height:104px;">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">멤버십 등록 · 이번달</div>
+          </a>
+          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:11px 12px;min-height:104px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">멤버십 등록 · 이번달 →</div>
             <div style="font-size:27px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiRegMonth">—</div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:5px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--grow);" id="kpiMiRegTotal">—</span></div>
-          </div>
-          <div style="background:var(--accent-bg);border-radius:10px;padding:11px 12px;min-height:126px;">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">강습 문의관리 · 이번달</div>
+          </a>
+          <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:11px 12px;min-height:126px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">강습 문의관리 · 이번달 →</div>
             <div style="font-size:27px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonInqMonth">—</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;color:var(--dim);">성인</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqAdultMonth">—</span><span style="font-size:10px;color:var(--dim);">· 유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqYouthMonth">—</span></div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonInqTotal">—</span></div>
-          </div>
-          <div style="background:var(--accent-bg);border-radius:10px;padding:11px 12px;min-height:126px;">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;" id="kpiLessonRegMonthLabel">강습 등록 · 이번달</div>
+          </a>
+          <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:11px 12px;min-height:126px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;" id="kpiLessonRegMonthLabel">강습 등록 · 이번달 →</div>
             <div style="font-size:27px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonRegMonth">—</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;color:var(--dim);">성인</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegAdultMonth">—</span><span style="font-size:10px;color:var(--dim);">· 유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegYouthMonth">—</span></div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);" id="kpiLessonRegTotalLabel">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonRegTotal">—</span></div>
-          </div>
-        </div>
-
-        <div style="margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <a href="#M1" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">문의&등록 현황 →</a>
-          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--grow-bg);color:var(--grow);border-radius:20px;text-decoration:none;border:1px solid var(--border);">멤버십 관리 →</a>
-          <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">강습 관리 →</a>
+          </a>
         </div>
       </div>
 
@@ -634,9 +627,13 @@
            [2026-07-14 GM 지시] 링크 행 flex column+margin-top:auto로 하단 고정(문의&등록 카드 링크 행과 높이 정렬).
            [2026-07-15 시토(CTO)] 콜아웃(외곽 카드 프레임) 제거 — 일일점검 현황처럼 내부 타일 직접 노출(이중 박스 제거). border/bg/radius/padding 제거·내부 타일/링크/id 무변경. 헤더=피어 섹션 스케일(30px chip/17px). -->
       <div id="homeReceptionCard" style="display:flex;flex-direction:column;">
+        <!-- [2026-08-28 GM 지시] 카드 아래 링크 3개(현황 보드 →·전용 현황 페이지·회원 접수 폼) 중
+             「전용 현황 페이지」만 남겨 제목 줄 오른쪽으로 올렸다. 나머지 둘은 지웠다 —
+             현황 보드(O1)는 왼쪽 메뉴로 가고, 회원 접수 폼은 회원이 쓰는 주소라 이 화면에 둘 자리가 아니다. -->
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">🙋</span>
           <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 이번달 · 누적</div></div>
+          <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
         </div>
         <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남).
              [2026-08-25 GM 지시] ①큰숫자=이번달 / 작은 서브=누적 으로 스왑(id 는 그대로 두고 표시 위치만 교체 —
@@ -677,18 +674,16 @@
             <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
         </div>
-        <div style="margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);display:flex;gap:7px;flex-wrap:wrap;">
-          <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=O1]').click();" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">현황 보드 →</a>
-          <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📊 전용 현황 페이지</a>
-          <a href="http://wellperion.com/ko/reception/" target="_blank" style="font-size:11px;font-weight:700;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;text-decoration:none;border:1px solid var(--border);">📲 회원 접수 폼</a>
-        </div>
       </div>
 
     </div>
 
     <!-- 점검 현황 (리디자인) -->
-    <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;flex-wrap:wrap;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">일일 점검 현황</span><span style="font-size:11.5px;color:var(--dim);">오늘 기준 · 부서별 체크리스트 완료율</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><a href="https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">🛠️ 부서별 점검 상세 →</a></div>
-    <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+    <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;flex-wrap:wrap;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">일일 점검 현황</span><span style="font-size:11.5px;color:var(--dim);">오늘 기준 · 부서별 체크리스트 완료율</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><!--
+      [2026-08-28 GM 지시] 「부서별 점검 상세 →」 한 개를 부서별 3개로 갈랐다. 지원부(남)·지원부(여)는
+      같은 페이지라 「지원부」 하나로 둔다. 카드는 네 라인(시설부·지원부(남)·지원부(여)·주차관리부). -->
+      <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><a href="coo/check/시설부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">🏭 시설부 →</a><a href="coo/check/지원부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">🧴 지원부 →</a><a href="coo/check/주차관리부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">🅿 주차관리부 →</a></span></div>
+    <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
       <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
     </div>
 
@@ -700,29 +695,10 @@
          ▸인사 카드의 정적 KPI 6숫자(2026-06-22 스냅샷·66일 묵음)는 H2 인사 허브의 실시간 배선이 대신한다.
            그 카드에 있던 id="ps-caption-top" 중복도 함께 해소된다(H2 psSet 이 홈 카드 캡션을 건드리던 겹침).
          ▸되살려야 하면 git 이력에서 본다. -->
-<div class="home-links-row"><!-- 1400px 이상 화면에서만 배너 2개를 좌우 한 줄로(2026-08-26) -->
-    <!-- ONBOARDING-GAME LINK START (삭제 시 이 블록+onboarding/game.html 제거) -->
-    <a href="onboarding/game.html" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;margin:0 0 24px;padding:16px 18px;background:linear-gradient(135deg,rgba(237,91,63,0.16),rgba(183,159,138,0.10));border:1px solid rgba(237,91,63,0.35);border-radius:14px;text-decoration:none;color:var(--text);transition:transform 0.12s,border-color 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--warm)';" onmouseout="this.style.transform='';this.style.borderColor='rgba(237,91,63,0.35)';">
-      <span style="font-size:30px;line-height:1;">🔥</span>
-      <span style="flex:1;">
-        <span style="display:block;font-weight:800;font-size:15.5px;letter-spacing:-0.01em;">신입 퀴즈 스트릭 <span style="font-size:11px;color:var(--warm);font-weight:700;background:var(--warm-bg);padding:2px 7px;border-radius:99px;margin-left:4px;">NEW</span></span>
-        <span style="display:block;font-size:12.5px;color:var(--dim);margin-top:2px;">웰페리온 핵심을 게임으로 익히는 온보딩 퀴즈 · 콤보·랭크·최고기록</span>
-      </span>
-      <span style="font-size:18px;color:var(--warm);">→</span>
-    </a>
-    <!-- ONBOARDING-GAME LINK END -->
-
-    <!-- STAFF-TRAINING LINK START (삭제 시 이 블록+onboarding/직원교육_30분.html 제거) -->
-    <a href="onboarding/직원교육_30분.html" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;margin:0 0 24px;padding:16px 18px;background:linear-gradient(135deg,rgba(183,159,138,0.16),rgba(237,91,63,0.08));border:1px solid rgba(183,159,138,0.40);border-radius:14px;text-decoration:none;color:var(--text);transition:transform 0.12s,border-color 0.15s;" onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--beige)';" onmouseout="this.style.transform='';this.style.borderColor='rgba(183,159,138,0.40)';">
-      <span style="font-size:30px;line-height:1;">🧭</span>
-      <span style="flex:1;">
-        <span style="display:block;font-weight:800;font-size:15.5px;letter-spacing:-0.01em;">운영부 직원 교육 (30분) <span style="font-size:11px;color:var(--warm);font-weight:700;background:var(--warm-bg);padding:2px 7px;border-radius:99px;margin-left:4px;">NEW</span></span>
-        <span style="display:block;font-size:12.5px;color:var(--dim);margin-top:2px;">웰페리온 ERP 들어가기 · 내 업무 보기 · AI 비서 쓰기 — 비개발자도 30분이면 OK</span>
-      </span>
-      <span style="font-size:18px;color:var(--beige);">→</span>
-    </a>
-    <!-- STAFF-TRAINING LINK END -->
-    </div><!-- /home-links-row -->
+    <!-- [2026-08-28 GM 지시] 「신입 퀴즈 스트릭」·「운영부 직원 교육(30분)」 배너 2개 삭제.
+         배너를 감싸던 .home-links-row 와 그 CSS도 함께 지웠다(꺼둔 자리를 남기지 않는다 · 약속 L21).
+         대상 페이지 onboarding/game.html · onboarding/직원교육_30분.html 은 살아 있다 —
+         진입점만 홈에서 내렸다. 되살려야 하면 git 이력에서 본다. -->
   </article>
   <script>
   // PII 게이트는 서버(TOKEN_ENFORCE)에서 유지 — 화면은 집계만 공개, 원본은 보호된 시트에서 본다(GM 옵션A).
@@ -947,40 +923,7 @@
         set('kpiApprAllDone',   aA.done + ' (' + aA.rate + '%)');
         set('kpiApprAllReject', aA.reject);
 
-        // 🧑‍💼 담당자별 업무&결재 (이번달 기준) — 실데이터만. owner 토큰별 업무 건수 + 결재 건수.
-        (function renderByOwner(){
-          var body = document.getElementById('kpiWaByOwnerBody');
-          if (!body) return;
-          var map = {};   // owner → { work, appr }
-          function bump(name, key){ if(!name) return; if(!map[name]) map[name]={work:0,appr:0}; map[name][key]++; }
-          work.forEach(function(r){
-            String(r['담당자']||r.owner||'').split(',').map(function(x){return x.trim();}).filter(Boolean).forEach(function(o){ bump(o,'work'); });
-          });
-          apprMonth.forEach(function(r){
-            String(r['담당자']||r.owner||'').split(',').map(function(x){return x.trim();}).filter(Boolean).forEach(function(o){ bump(o,'appr'); });
-          });
-          var names = Object.keys(map);
-          if (!names.length){ body.innerHTML = '<tr><td colspan="3" style="color:var(--dim);padding:6px 6px;">—</td></tr>'; return; }
-          var ORDER = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원'];
-          names.sort(function(a,b){
-            var ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
-            if (ia === -1 && ib === -1) return 0;
-            if (ia === -1) return 1;
-            if (ib === -1) return -1;
-            return ia - ib;
-          });
-          var html = '';
-          names.forEach(function(n,i){
-            var odd = i % 2 === 1;
-            html += '<tr style="' + (odd ? 'background:var(--accent-bg,rgba(183,159,138,0.06));' : '') + '">'
-              + '<td style="padding:4px 6px;font-weight:600;color:var(--text);">' + n + '</td>'
-              + '<td style="text-align:right;padding:4px 6px;color:var(--accent);font-weight:700;">' + (map[n].work || '—') + '</td>'
-              + '<td style="text-align:right;padding:4px 6px;color:var(--warm);font-weight:700;">' + (map[n].appr || '—') + '</td>'
-              + '</tr>';
-          });
-          body.innerHTML = html;
-        })();
-
+        // 담당자별 집계는 2026-08-28 GM 지시로 홈에서 뺐다 — 업무&결재 SSOT 페이지가 같은 것을 더 자세히 보여준다.
       })
       .catch(function(){ /* "—" 유지 */ });
 
@@ -11079,6 +11022,7 @@ function crTab(btn, panelId) {
     var CHECK_API = 'https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec';   // 현재 배포(@56) — 옛 @9는 스냅샷 집계 없어 오늘 0/0 반환→home '안뜸' 원인. GM 2026-06-16 시우.
     var FACILITY_URL = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%8B%9C%EC%84%A4%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
     var SUPPORT_URL  = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A7%80%EC%9B%90%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
+    var PARKING_URL  = 'https://wellperion-cao.github.io/wellperion-automation/coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html';
 
     function todayStr(){var d=new Date();return d.getFullYear()+'-'+(''+(d.getMonth()+1)).padStart(2,'0')+'-'+(''+(d.getDate())).padStart(2,'0');}
 
@@ -11437,10 +11381,11 @@ function crTab(btn, panelId) {
         +'</div>';
     }
 
-    function renderHomeKpi(facilityData, supportData, facilityBoard, ranges){
+    function renderHomeKpi(facilityData, supportData, facilityBoard, ranges, parkingData){
       var el=document.getElementById('home-check-kpi');
       if(!el)return;
       var fKpi=parseKpi(facilityData);
+      var pKpi=parseKpi(parkingData);
       var fBoard=parseFacilityBoard(facilityBoard,ranges);
       // 지원부 남/여 분리 — byGender 필드 우선 (회차별 rows 포함)
       var raw=(supportData&&supportData.byGender)?supportData:null;
@@ -11470,7 +11415,17 @@ function crTab(btn, panelId) {
       // 카드3: 지원부(여) — 이슈 현황 주(主) + 회차별 완료율 부차
       if(sFKpi) html+=buildSupportRoundCard('🚺','지원부(여)',sFKpi,SUPPORT_URL,sFIssues);
       else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;font-size:12px;color:var(--dim);box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">지원부(여) 점검 — 집계 중</div>';
-      // 주차관리부: 점검 없음 — 카드 제외(의도적). 부서 바로가기는 홈 하단 링크 버튼에 유지.
+      // 카드4: 주차관리부 — [2026-08-28 GM 지시] 네 라인을 한눈에 보이게 카드를 추가했다.
+      //   원천은 시설부와 같은 형식(?action=weekly&dept=parking) — 아침·저녁 카톡 정리가 이미 읽는 값이다.
+      //   제출이 아예 없는 날은 숫자를 지어내지 않고 「오늘 제출 없음」이라 적는다(0% 로 칠하면 안 한 것과
+      //   못 읽은 것이 같아 보인다 — 화면이 거짓말하는 자리).
+      if(pKpi && pKpi.total>0) html+=buildHomeKpiCard('🅿','주차관리부',pKpi,PARKING_URL);
+      else html+='<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:12px;padding:14px 16px;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">🅿 주차관리부 점검</div>'
+        +'<div style="font-size:15px;font-weight:700;color:var(--dim);line-height:1.4;">오늘 제출 없음</div>'
+        +'<div style="font-size:10.5px;color:var(--dim);margin-top:6px;">아직 일일점검이 올라오지 않았습니다</div>'
+        +'<div style="margin-top:10px;"><a href="'+PARKING_URL+'" target="_blank" style="font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;">주차관리부 체계 →</a></div>'
+        +'</div>';
       el.innerHTML=html;
       // 예외 스트립용 — 각 카드가 이미 세는 이상·이슈 건수를 그대로 합산해 태그(새 집계 없음).
       el.setAttribute('data-issue-total', String(fBoard.issues.length + sMIssues.length + sFIssues.length));
@@ -11498,7 +11453,9 @@ function crTab(btn, panelId) {
       var bP=fetch(CHECK_API+'?action=board&key='+encodeURIComponent('FACILITY_CHECK_'+today)+'&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(function(res){ return (res&&res.ok!==false)?res.board:null; }).catch(function(){return null;});
       // fcheck_ranges_get(계약서 §3) — 배포 전엔 반드시 실패(catch→null)하는 게 정상. 실패해도 나머지 카드는 그대로 동작해야 한다(계약 §4).
       var rP=fetchFacilityRanges();
-      Promise.all([fP,sP,bP,rP]).then(function(res){onSuccess(res[0],res[1],res[2],res[3]);});
+      // 주차관리부 — 시설부와 같은 weekly 형식(2026-08-28 GM 지시로 카드 추가). 실패해도 나머지 카드는 그대로 뜬다.
+      var pP=fetch(CHECK_API+'?action=weekly&dept=parking&_pv='+pv,{redirect:'follow',cache:'no-store'}).then(function(r){return r.json();}).then(pickToday).catch(function(){return null;});
+      Promise.all([fP,sP,bP,rP,pP]).then(function(res){onSuccess(res[0],res[1],res[2],res[3],res[4]);});
     }
 
     function loadHomeKpi(){
@@ -11519,5 +11476,61 @@ function crTab(btn, panelId) {
   // ── /home KPI ────────────────────────
 </script>
     <script src="/wellperion-automation/_assets/print_options.js"></script>
+    <!-- PNG 저장 (2026-08-28 GM 지시) — 화면 그대로 이미지로 내려받는다.
+         html2canvas 는 저장소 안에 두고 부른다(외부 주소를 매번 부르지 않는다 · MIT).
+         버튼을 처음 누를 때만 읽어 들여 평소 홈 로딩은 그대로다. -->
+    <script>
+    (function(){
+      var btn = document.getElementById('homePngBtn');
+      if(!btn) return;
+      var loading = null;
+      function load(){
+        if(window.html2canvas) return Promise.resolve();
+        if(loading) return loading;
+        loading = new Promise(function(res, rej){
+          var s = document.createElement('script');
+          s.src = '/wellperion-automation/_assets/html2canvas.min.js';
+          s.onload = res;
+          s.onerror = function(){ rej(new Error('load')); };
+          document.head.appendChild(s);
+        });
+        return loading;
+      }
+      btn.addEventListener('click', function(){
+        var target = document.getElementById('home');
+        if(!target) return;
+        var label = btn.textContent;
+        btn.disabled = true; btn.textContent = '🖼 만드는 중…';
+        var hide = document.querySelector('.home-export-btns');   // 버튼 자신은 이미지에 안 담는다
+        if(hide) hide.style.visibility = 'hidden';
+        load().then(function(){
+          return window.html2canvas(target, {
+            backgroundColor: getComputedStyle(document.body).backgroundColor || '#ffffff',
+            scale: 2,                 // 인쇄해도 글자가 뭉개지지 않게
+            useCORS: true,
+            logging: false,
+            windowWidth: target.scrollWidth
+          });
+        }).then(function(canvas){
+          var d = new Date();
+          var p = function(n){ return (n<10?'0':'') + n; };
+          var name = '웰페리온_ERP_대시보드_' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '.png';
+          canvas.toBlob(function(blob){
+            if(!blob){ alert('이미지를 만들지 못했습니다 — 다시 눌러 주세요.'); return; }
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+          }, 'image/png');
+        }).catch(function(){
+          alert('이미지를 만들지 못했습니다 — 새로고침 후 다시 눌러 주세요.');
+        }).then(function(){
+          if(hide) hide.style.visibility = '';
+          btn.disabled = false; btn.textContent = label;
+        });
+      });
+    })();
+    </script>
 </body>
 </html>
