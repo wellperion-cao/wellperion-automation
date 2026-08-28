@@ -301,12 +301,11 @@
 
   /* 인쇄 스타일 — 인쇄 버튼을 누른 활성 섹션 1개만, 라이트 테마로 출력 */
   @media print{
-    /* [2026-08-28 GM 지시] 기본 용지를 A3 가로로. ERP 화면은 가로가 넓어 A4 로는 표가 잘린다.
-       A4·세로가 필요하면 인쇄 버튼의 드롭다운(_assets/print_options.js)에서 고르면 이 규칙을 덮는다. */
+    /* 기본 용지를 A3 가로로. ERP 화면은 가로가 넓어 A4 로는 표가 잘린다.
+       (2026-08-28 GM 지시로 홈의 인쇄·PNG 버튼은 없앴다 — 브라우저 인쇄가 이 규칙을 그대로 쓴다.) */
     @page{size:A3 landscape; margin:10mm;}
     /* 홈 대시보드는 한 장에 담는다 — 카드가 잘려 다음 장으로 넘어가지 않게 축약해 출력. */
     #home{zoom:0.68;}
-    #home .home-export-btns{display:none!important;}
     #home .lead,#home .doc-header .meta{display:none!important;}
     :root{
       --bg:#ffffff; --paper:#ffffff; --sidebar:#ffffff; --gray-bg:#f0efed;
@@ -439,10 +438,11 @@
 <main class="main">
 
   <article class="doc active" id="home">
-    <!-- [2026-08-28 GM 지시] 대시보드를 A3 한 장으로 인쇄하고 PNG 로도 저장할 수 있게 했다.
-         인쇄 버튼은 공용 컴포넌트(_assets/print_options.js)가 A4/A3·가로/세로 드롭다운으로 승격한다 —
-         새 인쇄 코드를 만들지 않는다(약속 L21). data-po-trigger 로 이 버튼만 승격 대상으로 못박는다. -->
-    <div class="doc-header" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;"><h2 style="margin:0;">🏢 웰페리온 ERP</h2><div class="meta" style="margin:0;">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div><span style="margin-left:auto;display:flex;gap:7px;flex-shrink:0;" class="home-export-btns"><button type="button" data-po-trigger class="print-btn" onclick="window.print()" style="font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;cursor:pointer;white-space:nowrap;">🖨 A3 인쇄</button><button type="button" id="homePngBtn" class="print-btn" style="font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;cursor:pointer;white-space:nowrap;">🖼 PNG 저장</button></span></div>
+    <!-- [2026-08-28 GM 지시] 홈 맨 위 제목 줄(🏢 웰페리온 ERP · 인쇄 · PNG 저장)을 없앴다.
+         바로 아래 슬로건 칸이 첫 화면을 열고, 인쇄는 브라우저 인쇄(Ctrl+P)로 하면 된다 —
+         A3 가로·홈 한 장 규칙은 @media print 에 그대로 살아 있다.
+         PNG 저장은 이 버튼이 유일한 통로였으므로 함께 사라진다(html2canvas 로더 포함).
+         되살리려면 git 이력에서 본다. -->
 
     <!-- ══ 전사 공식 슬로건 (canon: ssot/canon_values.json · GM 결재 2026-06-24) ══ -->
     <!-- [2026-08-28] 슬로건 칸을 한 줄로 줄였다가 GM 지적("하루의 완성이 작아지고, ERP 내용이
@@ -11469,68 +11469,5 @@ function crTab(btn, panelId) {
   })();
   // ── /home KPI ────────────────────────
 </script>
-    <script src="/wellperion-automation/_assets/print_options.js"></script>
-    <!-- PNG 저장 (2026-08-28 GM 지시) — 화면 그대로 이미지로 내려받는다.
-         html2canvas 는 저장소 안에 두고 부른다(외부 주소를 매번 부르지 않는다 · MIT).
-         버튼을 처음 누를 때만 읽어 들여 평소 홈 로딩은 그대로다. -->
-    <script>
-    (function(){
-      var btn = document.getElementById('homePngBtn');
-      if(!btn) return;
-      var loading = null;
-      function load(){
-        if(window.html2canvas) return Promise.resolve();
-        if(loading) return loading;
-        loading = new Promise(function(res, rej){
-          var s = document.createElement('script');
-          s.src = '/wellperion-automation/_assets/html2canvas.min.js';
-          s.onload = res;
-          s.onerror = function(){ rej(new Error('load')); };
-          document.head.appendChild(s);
-        });
-        return loading;
-      }
-      btn.addEventListener('click', function(){
-        var target = document.getElementById('home');
-        if(!target) return;
-        var label = btn.textContent;
-        btn.disabled = true; btn.textContent = '🖼 만드는 중…';
-        var hide = document.querySelector('.home-export-btns');   // 버튼 자신은 이미지에 안 담는다
-        if(hide) hide.style.visibility = 'hidden';
-        load().then(function(){
-          return window.html2canvas(target, {
-            backgroundColor: getComputedStyle(document.body).backgroundColor || '#ffffff',
-            scale: 2,                 // 인쇄해도 글자가 뭉개지지 않게
-            useCORS: true,
-            logging: false,
-            // 창보다 넓은 화면도 통째로 담는다 — width 를 안 주면 브라우저 창 폭에서 잘린다(실측 858→452px).
-            width: target.scrollWidth,
-            /* ★2026-08-28 GM 지적 "png 다운받으니까 현황 3형제가 또 엇나가네".
-               windowWidth 에 카드 폭을 주고 있었다 — 이미지를 뜨는 사본은 그 폭을 '창 크기'로 알아듣고
-               1400px 이상에서만 켜지는 3열 배치를 꺼 버린다. 실제 창 폭을 그대로 넘겨 화면과 같게 뜬다. */
-            windowWidth: document.documentElement.clientWidth,
-            windowHeight: document.documentElement.clientHeight
-          });
-        }).then(function(canvas){
-          var d = new Date();
-          var p = function(n){ return (n<10?'0':'') + n; };
-          var name = '웰페리온_ERP_대시보드_' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '.png';
-          canvas.toBlob(function(blob){
-            if(!blob){ alert('이미지를 만들지 못했습니다 — 다시 눌러 주세요.'); return; }
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url; a.download = name;
-            document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
-          }, 'image/png');
-        }).catch(function(){
-          alert('이미지를 만들지 못했습니다 — 새로고침 후 다시 눌러 주세요.');
-        }).then(function(){
-          if(hide) hide.style.visibility = '';
-          btn.disabled = false; btn.textContent = label;
-        });
-      });
-    })();
-    </script>
 </body>
 </html>
