@@ -93,6 +93,7 @@
   .flow .fl{font-size:10.3px;color:#48525B;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .flow .fv{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;margin-top:1px;}
   .flow .in{border-top:3px solid var(--good);} .flow .in .fv{color:var(--good);}
+  .flow .keep{border-top:3px solid #8FA6BC;} .flow .keep .fv{color:#48525B;}
   .flow .out{border-top:3px solid var(--bad);} .flow .out .fv{color:var(--bad);}
   .flow .net{border-top:3px solid var(--navy);background:#F6F8FA;} .flow .net .fv{color:var(--navy);}
   .fnote{font-size:10.3px;color:#7A838B;margin-top:5px;line-height:1.45;}
@@ -103,6 +104,17 @@
   .vrow .vbar{flex:1;height:11px;background:#F0F3F7;border:1px solid var(--line);}
   .vrow .vbar i{display:block;height:100%;background:var(--navy);}
   .vrow .vn{width:44px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
+
+  /* 연 단위 4칸 */
+  .yr{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px;}
+  .yr .yb{border:1px solid var(--line);padding:5px 9px 6px;}
+  .yr .yl{font-size:10.3px;color:#48525B;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .yr .yv{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.5px;margin-top:1px;}
+  .yr .ys{font-size:9.8px;color:#7A838B;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* 달성률 미니 막대 — 숫자만 보면 팀 간 차이가 안 잡힌다 */
+  td.rate{position:relative;}
+  td.rate .rb{position:absolute;left:0;bottom:0;height:3px;background:currentColor;opacity:.55;}
 
   /* 등록·환불 매출 3칸 */
   .rr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
@@ -158,12 +170,7 @@
       작성 <b>웰페리온 ERP 자동 집계</b> · 원천 <b>매출·운영 보고 시트</b><br>
       읽은 시각 <b id="readat">—</b>
     </div>
-    <div class="sign">
-      <div><div class="t">담당</div><div class="b"></div></div>
-      <div><div class="t">GM</div><div class="b"></div></div>
-      <div><div class="t">대표</div><div class="b"></div></div>
-      <div><div class="t">회장</div><div class="b"></div></div>
-    </div>
+    <!-- 결재란 없음 — 매일 자동으로 나가는 일일 보고라 서명 자리가 필요 없다(GM 확정 2026-08-28). -->
   </div>
 
   <div id="err"></div>
@@ -192,8 +199,11 @@
       </div>
 
       <div class="sec">
-        <h2>연 목표 진행</h2>
-        <div class="bd" id="gauge"><div style="font-size:11.5px;color:#7A838B">불러오는 중…</div></div>
+        <h2>연 단위 (2026) — 올해 지금까지 어디까지 왔나</h2>
+        <div class="bd">
+          <div id="gauge"><div style="font-size:11.5px;color:#7A838B">불러오는 중…</div></div>
+          <div class="yr" id="yearly"></div>
+        </div>
       </div>
 
       <div class="sec" style="flex:1;min-height:0;">
@@ -203,7 +213,7 @@
           <span><i style="background:#146B4F"></i>누적 (오른쪽 눈금)</span>
         </div>
         <div class="chartwrap" style="flex:1;">
-          <svg id="chart" viewBox="0 0 900 290" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
+          <svg id="chart" viewBox="0 0 900 190" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
         </div>
       </div>
     </div>
@@ -274,15 +284,38 @@ function rateClass(v){ var n = parseFloat(String(v).replace('%','')); if (isNaN(
   return n >= 100 ? 'r-hi' : (n >= 70 ? 'r-mid' : 'r-lo'); }
 function eok(n){ return (n / 100000000).toFixed(1) + '억'; }
 
+/* 연 단위 4칸 — 두 조회(월별 매출 · ERP 지출)가 따로 도착하므로 도착하는 대로 다시 그린다. */
+var YEAR_STATE = { acc:0, filled:0, left:0, need:0, target:0, expense:null, expenseAt:'' };
+function paintYearly(){
+  var el = document.getElementById('yearly'); if (!el) return;
+  var s = YEAR_STATE;
+  if (!s.filled) { el.innerHTML = ''; return; }
+  var avg = s.acc / s.filled;
+  function box(l, v, sub){
+    return '<div class="yb"><div class="yl">' + l + '</div><div class="yv">' + v + '</div>' +
+           (sub ? '<div class="ys">' + sub + '</div>' : '') + '</div>';
+  }
+  el.innerHTML =
+    box('연 매출 (누적)', eok(s.acc), s.filled + '개월치') +
+    box('연 지출 (누적)', s.expense == null ? '–' : eok(s.expense),
+        s.expense == null ? 'ERP 집계 조회 실패' : 'ERP 집계 ' + (s.expenseAt || '')) +
+    box('월 평균 매출', eok(avg), '누적 ÷ ' + s.filled + '개월') +
+    box('남은 달 월 필요액', s.left > 0 ? eok(s.need) : '—',
+        s.left > 0 ? '목표까지 ' + eok(Math.max(0, s.target - s.acc)) + ' ÷ 남은 ' + s.left + '개월'
+                   : '올해 12개월 모두 집계됨');
+}
+
 function renderSheet(c){
   document.getElementById('asof').textContent = String(c.H2 || '').replace(/^📅\s*/, '').replace(' 매출 및 운영사항 보고','');
 
   document.getElementById('sales').innerHTML = SALES_ROWS.map(function(r){
     var name = c['H' + r]; if (!name) return '';
+    var rv = parseFloat(String(c['L'+r] || '').replace('%',''));
+    var bar = isNaN(rv) ? '' : '<span class="rb" style="width:' + Math.min(100, rv) + '%"></span>';
     return '<tr' + (r === 4 ? ' class="sum"' : '') + '><td>' + esc(name) + '</td>' +
       '<td>' + esc(c['I'+r] || '–') + '</td><td>' + esc(c['J'+r] || '–') + '</td>' +
       '<td>' + esc(c['K'+r] || '–') + '</td>' +
-      '<td class="rate ' + rateClass(c['L'+r]) + '">' + esc(c['L'+r] || '–') + '</td></tr>';
+      '<td class="rate ' + rateClass(c['L'+r]) + '">' + esc(c['L'+r] || '–') + bar + '</td></tr>';
   }).join('') || '<tr><td colspan="5">값 없음</td></tr>';
 
   // ── 회원 구성 : 총계 + 가로 누적 막대(구성이 한눈에 보이게) ──
@@ -305,18 +338,28 @@ function renderSheet(c){
   var flow = MEMBER_FLOW.map(function(r){
     return { label: String(c['M'+r] || '').replace(/\n/g,' '), raw: c['N'+r] || '–', n: num(c['N'+r]) };
   }).filter(function(x){ return x.label; });
-  var inCnt = (flow[0] ? flow[0].n : 0) + (flow[1] ? flow[1].n : 0);
+  /* ★순증 정정(GM 지적 2026-08-28) — 처음엔 신규+재등록−로스로 셌는데 틀렸다.
+     **재등록은 이미 회원이던 분의 갱신**이라 회원 수가 늘지 않는다. 회원 수를 늘리는 것은
+     ①신규 등록 ②나갔다 돌아오신 분(L재등록) 둘뿐이다.
+     L재등록 수는 시트가 재등록자 라벨 괄호에 적어 둔다 — 예 「재등록자 (L재등록 0명)」. */
+  var lre = 0;
+  var lreM = /L재등록\s*([0-9,]+)\s*명/.exec(String(c.M10 || ''));
+  if (lreM) lre = num(lreM[1]);
+  var newCnt = flow[0] ? flow[0].n : 0;
   var outCnt = flow[2] ? flow[2].n : 0;
-  var net = inCnt - outCnt;
+  var net = newCnt + lre - outCnt;
   document.getElementById('memberFlow').innerHTML =
     '<div class="flow">' + flow.map(function(x, i){
-        return '<div class="fb' + (i === 2 ? ' out' : ' in') + '"><div class="fl">' + esc(x.label) +
-               '</div><div class="fv">' + esc(x.raw) + '</div></div>'; }).join('') +
+        return '<div class="fb' + (i === 2 ? ' out' : (i === 1 ? ' keep' : ' in')) + '">' +
+               '<div class="fl">' + esc(x.label) + '</div>' +
+               '<div class="fv">' + esc(x.raw) + '</div></div>'; }).join('') +
       '<div class="fb net"><div class="fl">순증</div><div class="fv">' +
         (net > 0 ? '+' : '') + net + '명</div></div>' +
     '</div>' +
-    '<div class="fnote">들어온 분 ' + inCnt + '명 − 나간 분 ' + outCnt + '명 = <b>' +
-      (net > 0 ? '+' : '') + net + '명</b> · 인원 수는 시트 값 그대로이고, 순증만 여기서 뺀 값입니다</div>';
+    '<div class="fnote">신규 ' + newCnt + '명 + 돌아오신 분(L재등록) ' + lre + '명 − 나가신 분 ' +
+      outCnt + '명 = <b>' + (net > 0 ? '+' : '') + net + '명</b>' +
+      ' · <b>재등록(' + (flow[1] ? flow[1].raw : '–') + ')은 기존 회원 갱신이라 순증에 넣지 않습니다.</b>' +
+      ' 인원 수는 시트 값 그대로이고, 순증만 여기서 셈한 값입니다</div>';
 
   // ── 어제 다녀가신 분 ──
   var vis = VISIT_ROWS.map(function(r){
@@ -327,7 +370,8 @@ function renderSheet(c){
   var visMax = Math.max.apply(null, vis.map(function(x){ return x.n; }).concat([1]));
   var visSum = vis.reduce(function(a, b){ return a + b.n; }, 0);
   document.getElementById('visits').innerHTML =
-    '<div class="bigrow"><span class="bl">합계</span><span class="bv">' + visSum + '명</span></div>' +
+    '<div class="bigrow"><span class="bl">합계 <span style="font-weight:400;color:#7A838B">(세 줄을 더한 값)</span></span>' +
+      '<span class="bv">' + visSum + '명</span></div>' +
     vis.map(function(x){
       return '<div class="vrow"><span class="vl2">' + esc(x.label) + '</span>' +
              '<span class="vbar"><i style="width:' + (x.n / visMax * 100) + '%"></i></span>' +
@@ -368,7 +412,7 @@ function renderSheet(c){
 
 /* 연간 추이 — 월 매출 막대 + 누적 선 + 연 목표선. 외부 라이브러리 없이 SVG 로 그린다. */
 function renderChart(d){
-  var W = 900, H = 290, L = 58, R = 52, T = 16, B = 28;
+  var W = 900, H = 190, L = 58, R = 52, T = 16, B = 28;
   var months = (d && d.months) || [];
   var vals = months.map(function(m){ return m.value; });
   var maxV = Math.max.apply(null, vals.map(function(v){ return v || 0; }).concat([1]));
@@ -419,6 +463,14 @@ function renderChart(d){
   }
   document.getElementById('chart').innerHTML = s.join('');
 
+  // 연 단위 4칸 — 올해 지금까지의 그림. 월 평균·남은 달 필요액은 여기서 셈한 값이라 산식을 함께 적는다.
+  var filled = months.filter(function(m){ return m.value != null; }).length;
+  var left = 12 - filled;
+  var need = left > 0 ? Math.max(0, ((d && d.yearTarget) || 0) - acc) / left : 0;
+  YEAR_STATE.acc = acc; YEAR_STATE.filled = filled; YEAR_STATE.left = left; YEAR_STATE.need = need;
+  YEAR_STATE.target = (d && d.yearTarget) || 0;
+  paintYearly();
+
   // 연 목표 진행 — 막대 그래프와 축이 달라 선으로 겹치면 오해한다. 따로 한 줄로 보인다.
   var done = acc, tgt = (d && d.yearTarget) || 0;
   if (tgt) {
@@ -455,6 +507,18 @@ function load(){
     .then(function(r){ return r.json(); })
     .then(function(d){ if (d && d.ok) renderChart(d); })
     .catch(function(){ /* 그래프만 비고 나머지는 그대로 보인다 */ });
+
+  // 연 지출 — ERP 집계(home_kpi.expense.year). 매출과 원천이 달라 칸에 「ERP 집계」라고 밝혀 둔다.
+  fetch(ERP + '?action=home_kpi&cb=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.ok && d.expense && typeof d.expense.year === 'number') {
+        YEAR_STATE.expense = d.expense.year;
+        YEAR_STATE.expenseAt = String(d.asOf || '').substring(0, 10);
+        paintYearly();
+      }
+    })
+    .catch(function(){ /* 지출 칸만 '–' 로 남는다 */ });
 }
 load();
 </script>
