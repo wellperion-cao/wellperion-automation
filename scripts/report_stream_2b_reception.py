@@ -126,39 +126,210 @@ def _lost_found_month_cycle() -> dict | None:
         return None
 
 
-def _first_done_at_and_stats(rows: list[dict], now: datetime) -> tuple[dict[str, str], dict | None]:
+def _duration_stats(durations: list[int]) -> dict | None:
+    if not durations:
+        return None
+    d = sorted(durations)
+    n = len(d)
+    mid = n // 2
+    return {"count": n, "median_days": d[mid] if n % 2 else (d[mid - 1] + d[mid]) / 2,
+            "max_days": d[-1]}
+
+
+def _first_done_at_and_stats(rows: list[dict], now: datetime) -> tuple[dict[str, str], dict[str, str], dict | None]:
     """처리 소요일 자체 정립(GM 지시 2026-08-28) — reg_list에 완료 시각 칸이 없어
     「접수→완료」 소요일을 못 쟀다. 우리가 매일 이 관문을 도는 김에, regId별 '완료로
     처음 목격한 날'(first_done_at)을 기록해 두면 그 다음부터 소요일이 나온다.
-    ▸소급 불가 — 오늘부터 쌓는다(과거 완료건은 오늘 날짜로 처음 잡힌다).
     ▸최초값은 절대 덮어쓰지 않는다(행 삭제·상태 되돌림이 있어도 first_done_at 보존).
-    ▸새 파일을 만들지 않는다(약속 L21) — 기존 reception_watch.json에 얹는다."""
+    ▸새 파일을 만들지 않는다(약속 L21) — 기존 reception_watch.json에 얹는다.
+    ▸과거분은 backfill_first_done_at()이 메모·발신로그·통보스냅샷 3근거로 복원한다.
+      근거는 first_done_at_src(regId→memo|log|bucket|unknown|live)에 남기고, 실측(live)이
+      이미 있으면 백필이 절대 덮지 않는다. src에 있으면(=unknown 포함) 오늘 날짜를
+      새로 찍지 않는다 — 과거 완료건에 오늘을 찍는 것이 원래의 거짓말이었다."""
     prev_done_at: dict[str, str] = {}
+    src: dict[str, str] = {}
     try:
         prev = json.loads(RECEPTION_WATCH_PATH.read_text(encoding="utf-8"))
         prev_done_at = dict(prev.get("first_done_at") or {})
+        src = dict(prev.get("first_done_at_src") or {})
     except Exception:
         pass
     today_str = now.strftime("%Y-%m-%d")
     for r in rows:
         if str(r.get("status", "")) == "완료":
             reg = str(r.get("regId") or "")
-            if reg and reg not in prev_done_at:
+            if reg and reg not in prev_done_at and reg not in src:
                 prev_done_at[reg] = today_str
+                src[reg] = "live"
 
-    durations = []
+    by_src: dict[str, list[int]] = {}
+    by_cat: dict[str, list[int]] = {}
     for r in rows:
-        done_at = prev_done_at.get(str(r.get("regId") or ""))
-        if done_at:
-            durations.append(reception_elapsed_days(r, datetime.strptime(done_at, "%Y-%m-%d")))
-    stats = None
-    if durations:
-        durations.sort()
-        n = len(durations)
-        mid = n // 2
-        median = durations[mid] if n % 2 else (durations[mid - 1] + durations[mid]) / 2
-        stats = {"count": n, "median_days": median, "max_days": durations[-1]}
-    return prev_done_at, stats
+        reg = str(r.get("regId") or "")
+        done_at = prev_done_at.get(reg)
+        if not done_at:
+            continue
+        days = reception_elapsed_days(r, datetime.strptime(done_at, "%Y-%m-%d"))
+        by_src.setdefault(src.get(reg, "live"), []).append(days)
+        by_cat.setdefault(str(r.get("category") or "").strip() or "미분류", []).append(days)
+    memo_only = by_src.get("memo", [])
+    memo_log = memo_only + by_src.get("log", [])
+    every = [d for v in by_src.values() for d in v]
+    stats = {
+        "memo": _duration_stats(memo_only),
+        "memo_log": _duration_stats(memo_log),
+        "all": _duration_stats(every),
+        "by_category": {k: _duration_stats(v) for k, v in sorted(by_cat.items())},
+    } if every else None
+    return prev_done_at, src, stats
+
+
+# ── 과거 완료일 백필(GM 지적 2026-08-28: "과거분도 살릴 수 있을 것 같은데?") ──────────
+# 완료 시각 칸이 없던 시절의 완료건도 근거 3갈래로 완료일을 복원한다. 우선순위=메모>로그>
+# 스냅샷 구간. 셋 다 실패하면 unknown — 날짜를 지어내지 않는다.
+_MEMO_DATE_RE = re.compile(
+    r"(?P<y4>20\d{2})\s*[-./년]\s*(?P<y4m>\d{1,2})\s*[-./월]\s*(?P<y4d>\d{1,2})"      # 2026-08-24
+    r"|(?P<y2>2\d)\s*[-./년]\s*(?P<y2m>\d{1,2})\s*[-./월]\s*(?P<y2d>\d{1,2})"          # 26/7/27, 26년 7월 7일
+    r"|(?P<c6>2\d(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))\s*자"                      # 260816자로
+    r"|(?P<m>\d{1,2})\s*[/월]\s*(?P<d>\d{1,2})"                                        # 8/26, 7월 21일
+)
+
+
+def _memo_done_date(memo: str, created: str, today: str) -> str | None:
+    """처리메모에 적힌 조치 날짜 중 '접수일 이후 & 오늘 이전'인 가장 늦은 날짜.
+    메모는 시간순 조치 로그라 마지막 날짜가 완료일에 가장 가깝다. 연도가 없으면 접수일의
+    연도를 쓰고, 그 결과가 접수일보다 앞서면 채택하지 않는다(다음 근거로 넘긴다)."""
+    best = None
+    for mt in _MEMO_DATE_RE.finditer(str(memo or "")):
+        g = mt.groupdict()
+        if g["y4"]:
+            y, mo, dy = int(g["y4"]), int(g["y4m"]), int(g["y4d"])
+        elif g["y2"]:
+            y, mo, dy = 2000 + int(g["y2"]), int(g["y2m"]), int(g["y2d"])
+        elif g["c6"]:
+            y, mo, dy = 2000 + int(g["c6"][:2]), int(g["c6"][2:4]), int(g["c6"][4:])
+        else:
+            y, mo, dy = int(created[:4]), int(g["m"]), int(g["d"])
+        if not (1 <= mo <= 12 and 1 <= dy <= 31):
+            continue
+        try:
+            cand = datetime(y, mo, dy).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+        if created[:10] <= cand <= today and (best is None or cand > best):
+            best = cand
+    return best
+
+
+def _log_last_seen() -> dict[str, str]:
+    """logs/kakao_sent-YYYY-MM-DD.log 에 그 건이 마지막으로 등장한 날 = 완료 상한."""
+    out: dict[str, str] = {}
+    for p in sorted((REPO_ROOT / "logs").glob("kakao_sent-*.log")):
+        day = p.stem.replace("kakao_sent-", "")
+        try:
+            txt = p.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        for reg in set(re.findall(r"RECEPTION-\d+", txt)):
+            out[reg] = day  # 날짜 오름차순 순회 → 마지막 등장일이 남는다
+    return out
+
+
+def _done_bucket_dates(today: str) -> dict[str, str]:
+    """status/dept_completion_notify.json 의 reception_seen_done_ids(완료 목격 누적)를
+    git 커밋 시점별로 꺼내 비교 — 어느 구간에서 처음 나타났는지 = 그 구간에 완료됐다.
+    구간 끝 날짜(그 스냅샷의 커밋일)를 완료일로 쓴다. 현재 워킹 파일에만 있으면 오늘."""
+    import subprocess
+    rel = "status/dept_completion_notify.json"
+    try:
+        out = subprocess.run(["git", "log", "--format=%H %ad", "--date=short", "--", rel],
+                             cwd=REPO_ROOT, capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return {}
+    snaps: list[tuple[str, str]] = []          # (날짜, sha) 오래된 것부터
+    for line in reversed([ln for ln in out.splitlines() if ln.strip()]):
+        sha, _, day = line.partition(" ")
+        snaps.append((day.strip(), sha))
+    first: dict[str, str] = {}
+    for day, sha in snaps:
+        try:
+            blob = subprocess.run(["git", "show", f"{sha}:{rel}"], cwd=REPO_ROOT,
+                                  capture_output=True, timeout=30).stdout.decode("utf-8")
+            ids = json.loads(blob).get("reception_seen_done_ids") or []
+        except Exception:
+            continue
+        for reg in ids:
+            first.setdefault(str(reg), day)
+    try:
+        cur = json.loads((REPO_ROOT / rel).read_text(encoding="utf-8"))
+        for reg in cur.get("reception_seen_done_ids") or []:
+            first.setdefault(str(reg), today)
+    except Exception:
+        pass
+    return first
+
+
+def _selfcheck_memo_dates() -> None:
+    """파서 자가점검 — 라이브 메모에서 실제로 겪은 모양만 고정한다."""
+    t = "2026-08-28"
+    assert _memo_done_date("8/26일 교체완료", "2026-08-20", t) == "2026-08-26"
+    assert _memo_done_date("26/7/27 10:52 벨트 불량 교체 완료", "2026-07-25", t) == "2026-07-27"
+    assert _memo_done_date("26년 7월 7일 정리\n26.7.20 경연", "2026-07-05", t) == "2026-07-20"
+    assert _memo_done_date("260816자로 벌레 이슈 완료처리", "2026-07-25", t) == "2026-08-16"
+    assert _memo_done_date("2026-07-29 용접, 2026-08-10 교체 (2026-08-19 확인)",
+                           "2026-07-15", t) == "2026-08-19"
+    assert _memo_done_date("7/21 자체방역 실시", "2026-07-30", t) is None   # 접수일보다 앞 → 기각
+    assert _memo_done_date("22:30 이후 진행 / 010-8753-7909", "2026-08-01", t) is None
+    assert _memo_done_date("약정 만료가 2027-03-31", "2026-08-08", t) is None  # 오늘 이후 → 기각
+
+
+def backfill_first_done_at(rows: list[dict] | None = None, today: str | None = None) -> dict:
+    """과거 완료건의 완료일을 3근거로 복원해 reception_watch.json에 얹는다(1회성).
+    ★실측(src=live)이나 이미 박힌 first_done_at 은 절대 덮지 않는다."""
+    _selfcheck_memo_dates()
+    today = today or datetime.now().strftime("%Y-%m-%d")
+    rows = rows if rows is not None else (_fetch_rows() or [])
+    log_seen = _log_last_seen()
+    bucket = _done_bucket_dates(today)
+    try:
+        watch = json.loads(RECEPTION_WATCH_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        watch = {}
+    done_at = dict(watch.get("first_done_at") or {})
+    src = dict(watch.get("first_done_at_src") or {})
+
+    report: dict = {"rows_done": 0, "by_src": {}, "samples": [], "rejected": []}
+    for r in rows:
+        if str(r.get("status", "")) != "완료":
+            continue
+        reg = str(r.get("regId") or "")
+        if not reg:
+            continue
+        report["rows_done"] += 1
+        if reg in done_at or src.get(reg) == "live":
+            report["by_src"]["live"] = report["by_src"].get("live", 0) + 1
+            continue
+        created = str(r.get("createdAt") or "")[:10]
+        memo_hit = _memo_done_date(r.get("memo"), created, today) if created else None
+        cand, kind = None, "unknown"
+        for value, name in ((memo_hit, "memo"), (log_seen.get(reg), "log"), (bucket.get(reg), "bucket")):
+            if value and created and created <= value <= today:
+                cand, kind = value, name
+                break
+            if value:
+                report["rejected"].append((reg, name, value, created))
+        if cand:
+            done_at[reg] = cand
+            if kind == "memo":
+                report["samples"].append((reg, created, cand, str(r.get("memo") or "")))
+        src[reg] = kind
+        report["by_src"][kind] = report["by_src"].get(kind, 0) + 1
+
+    watch["first_done_at"] = done_at
+    watch["first_done_at_src"] = src
+    RECEPTION_WATCH_PATH.write_text(json.dumps(watch, ensure_ascii=False, indent=2),
+                                    encoding="utf-8")
+    return report
 
 
 def _write_reception_watch(rows: list[dict]) -> None:
@@ -168,7 +339,7 @@ def _write_reception_watch(rows: list[dict]) -> None:
     - 분실물 접수는 보관 성격이라 부서 적체 집계에서 빼고 따로 센다(웰리 실무진 공지 방침)."""
     try:
         now = datetime.now()
-        first_done_at, processing_days = _first_done_at_and_stats(rows, now)
+        first_done_at, first_done_src, processing_days = _first_done_at_and_stats(rows, now)
         by_dept: dict[str, dict] = {}
         member_reply_open = 0
         overdue_3d = 0
@@ -204,6 +375,7 @@ def _write_reception_watch(rows: list[dict]) -> None:
             "lost_items_open": lost_open,
             "lost_found": _lost_found_month_cycle(),
             "first_done_at": first_done_at,
+            "first_done_at_src": first_done_src,
             "processing_days": processing_days,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception as e:
@@ -836,7 +1008,17 @@ if __name__ == "__main__":
                     help="새 접수를 부서별 카톡 방에 전달(기본 드라이런 · --live 실발송 · --test 텔레그램 업무관리방)")
     p.add_argument("--test", action="store_true",
                     help="테스트 발신 — 실무진 방 대신 텔레그램 업무관리방으로만 보낸다")
+    p.add_argument("--backfill", action="store_true",
+                    help="과거 완료건 완료일 복원(메모·발신로그·통보스냅샷 3근거 · 실측 보존)")
     a = p.parse_args()
+    if a.backfill:
+        _rows = _fetch_rows() or []
+        _rep = backfill_first_done_at(_rows, today=a.today)
+        _write_reception_watch(_rows)
+        _w = json.loads(RECEPTION_WATCH_PATH.read_text(encoding="utf-8"))
+        print(f"[backfill] 완료 {_rep['rows_done']}건 근거별 {_rep['by_src']}")
+        print(json.dumps(_w.get("processing_days"), ensure_ascii=False, indent=2))
+        sys.exit(0)
     if a.intake_relay:
         _mode = "테스트발송" if a.test else ("발송" if a.live else "렌더")
         _sent = run_intake_relay(dry_run=not (a.live or a.test), test=a.test)
