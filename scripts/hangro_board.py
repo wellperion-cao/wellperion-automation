@@ -1725,6 +1725,30 @@ def _midmgr_saved_at(text: str) -> tuple[str, str, float | None]:
     return stamp, f" · ⚠️ {int(hours)}시간 전 수집 — 그 뒤 회신은 안 보인다", hours
 
 
+# 수집본이 이보다 오래되면 부팅 때 그 자리에서 한 번 다시 받아온다(GM 선택 2026-08-28 · 배792).
+MIDMGR_REFRESH_HOURS = 6
+
+
+def _refresh_midmgr_archive() -> bool:
+    """★중간관리자 방 카톡 아카이브를 한 번만 다시 받아온다.
+
+    새 예약작업을 만들지 않는다 — 부팅해서 이 칸을 그릴 때만 시도한다(약속 L21).
+    카톡 화면이 잠겨 있으면 수집기가 실패하는데, 그때는 조용히 옛 수집본을 그대로 쓴다
+    (실패를 성공으로 위장하지 않는다 — 아래 호출부가 경과 시간을 그대로 다시 찍는다).
+    """
+    try:
+        r = subprocess.run(
+            [sys.executable, str(_REPO / "scripts" / "kakao_export_chat.py"), "--room-key", "mgr"],
+            cwd=str(_REPO), capture_output=True, timeout=180,
+        )
+        if r.returncode != 0:
+            print(f"[WARN] 중간관리자 수집 재시도 실패(rc={r.returncode})", file=sys.stderr)
+        return r.returncode == 0
+    except Exception as e:  # 수집기 부재·타임아웃 등 — 부팅을 막지 않는다
+        print(f"[WARN] 중간관리자 수집 재시도 실패: {e}", file=sys.stderr)
+        return False
+
+
 def _midmgr_reply_slice(role_slug: str) -> str:
     """어제 ★중간관리자 방 회신 원문 — 실장·소장·나우열M 3명만, 웰리(ceo)만 본다(GM 지시 2026-08-13).
     "회신 받으면 웰리가 아침에 파악해서 신뢰할 수 있는 현황을" — 파악은 사람이 한다.
@@ -1752,6 +1776,19 @@ def _midmgr_reply_slice(role_slug: str) -> str:
         print(f"[WARN] 중간관리자 아카이브 읽기 실패: {e}", file=sys.stderr)
         return (f"\n📩 실무진 회신 — ❌ 확인 못 함(수집본 파일을 못 열었다: {type(e).__name__})\n"
                 "  회신이 없는 게 아니라 우리가 못 읽은 것이다 — '회신 없음'이라 보고하지 말 것.")
+
+    # ★낡았으면 그 자리에서 한 번 다시 받아온다 (GM 선택 2026-08-28 · 배792).
+    #   종전에는 "최신으로 다시 받기: …" 라는 안내만 찍고 사람이 손으로 치기를 기다렸다.
+    #   부팅 때 6시간 넘게 낡은 수집본을 보는 일이 반복돼 회신을 놓쳤다(2026-08-13 실사고).
+    _, _, _age_h = _midmgr_saved_at(text)
+    if _age_h is not None and _age_h >= MIDMGR_REFRESH_HOURS and _refresh_midmgr_archive():
+        _f2 = _latest_midmgr_file()
+        if _f2:
+            try:
+                text, f = _f2.read_text(encoding="utf-8", errors="ignore"), _f2
+            except Exception as e:
+                print(f"[WARN] 재수집본 읽기 실패: {e}", file=sys.stderr)
+
     date_marks = list(_RE_MIDMGR_DATE.finditer(text))
     if not date_marks:
         return ""
