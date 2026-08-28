@@ -460,7 +460,9 @@
          함께 지웠다 — 꺼두면 죽은 코드가 되어 누가 다시 켠다(약속 L21). -->
 
     <!-- 안쪽 span 은 세로 가운데 정렬용 한 덩어리다 — 없애면 굵은 글씨가 따로 떨어져 나간다(2026-08-27). -->
-    <p class="lead"><span><strong>웰페리온 ERP</strong>(전사적 자원 관리 · Enterprise Resource Planning)는 웰페리온의 모든 일이 하나의 북극성을 향해 같은 항로로 나아가게 잇는 통합 플랫폼입니다. 인사·재무·운영·회원·마케팅·업무결재·기술·경영 8개 모듈을 한 화면에 모아 — 사람은 방향을 정하고, 시스템은 항해를 책임집니다.</span></p>
+    <!-- [2026-08-28 GM 지시] ERP 소개 문단(4줄·115px)을 홈 첫 화면에서 뺐다 — 매일 보는 화면이라
+         현황이 먼저 오게 한다. 같은 설명은 S1 공통 가이드라인·회사 소개 페이지에 그대로 있다.
+         GM 원문: "home 스크롤없이 딱 1칸에 다 넣고 싶은데". 되살리려면 git 이력에서 본다. -->
     </div><!-- /home-hero-row -->
 
     <!-- ⑤ 운영 현황 상세 (컴팩트 v2 2026-06-08) -->
@@ -11299,11 +11301,15 @@ function crTab(btn, panelId) {
       //   내용은 title 툴팁에만 있어서 마우스를 올려야 보였다. 건수만 보고 무엇인지 모르면
       //   GM 이 되물어야 한다 — 화면에 한 줄로 그대로 띄운다(툴팁은 전체 목록용으로 유지).
       var esc=function(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+      /* [2026-08-28 GM 지시] 홈에는 현황만 — 작업사항 본문이 길어 카드 하나가 296px 까지 늘어났다.
+         2026-08-26 지시("이상 1건은 뭐야?")를 지키되 한 줄로만 보인다: 첫 건을 잘라서 한 줄,
+         나머지는 건수로. 전체 본문은 마우스 올리면 뜨는 툴팁과 상세 페이지에 그대로 있다. */
       var issueDetail='';
       if(issueCount>0){
-        issueDetail='<div style="font-size:11px;color:var(--dim);margin-top:4px;line-height:1.5;">'
-          + bi.issues.slice(0,2).map(function(x){ return '· <span style="color:var(--text);">'+esc(x.type)+'</span> '+esc(x.text); }).join('<br>')
-          + (issueCount>2 ? '<br><span style="opacity:.75;">…외 '+(issueCount-2)+'건</span>' : '')
+        var _f=bi.issues[0];
+        var _txt=esc(_f.type)+' '+esc(_f.text);
+        issueDetail='<div style="font-size:11px;color:var(--dim);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+          + '· ' + _txt + (issueCount>1 ? ' <span style="opacity:.75;">외 '+(issueCount-1)+'건</span>' : '')
           + '</div>';
       }
       var primaryHtml='<div'+(issueTitle?' title="'+issueTitle+'"':'')+'>'
