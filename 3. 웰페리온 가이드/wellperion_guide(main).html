@@ -445,11 +445,13 @@
     <div class="doc-header" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;"><h2 style="margin:0;">🏢 웰페리온 ERP</h2><div class="meta" style="margin:0;">웰페리온 통합 운영 시스템 · 웰페리온 ERP v2.7 · 최종 업데이트 2026-06-05</div><span style="margin-left:auto;display:flex;gap:7px;flex-shrink:0;" class="home-export-btns"><button type="button" data-po-trigger class="print-btn" onclick="window.print()" style="font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;cursor:pointer;white-space:nowrap;">🖨 A3 인쇄</button><button type="button" id="homePngBtn" class="print-btn" style="font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;cursor:pointer;white-space:nowrap;">🖼 PNG 저장</button></span></div>
 
     <!-- ══ 전사 공식 슬로건 (canon: ssot/canon_values.json · GM 결재 2026-06-24) ══ -->
-    <div class="home-hero-row"><!-- 1400px 이상 화면에서만 슬로건(좌)·설명(우)을 한 줄로. 그 아래 폭에서는 지금처럼 위아래로 쌓인다(2026-08-26) -->
-    <div style="text-align:center;margin:4px 0 22px;padding:22px 18px;background:var(--paper);border:1px solid var(--border);border-radius:14px;">
-      <div style="font-size:13px;letter-spacing:0.18em;color:var(--accent);font-weight:600;text-transform:uppercase;">A Day, Well Completed.</div>
-      <div style="font-size:22px;font-weight:800;letter-spacing:-0.01em;color:var(--text);margin-top:8px;">하루의 완성, 웰페리온</div>
-      <div style="font-size:13.5px;color:var(--dim);line-height:1.7;margin-top:12px;max-width:560px;margin-left:auto;margin-right:auto;">단순한 운동 시설이 아닙니다. 하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간.</div>
+    <!-- [2026-08-28 GM 지시] 홈을 스크롤 없이 한 화면에 담기 위해 슬로건 칸을 한 줄로 줄였다.
+         문구는 하나도 안 뺐다 — 세 줄로 쌓여 있던 것을 가로로 폈다(실측 173px → 약 56px). -->
+    <div class="home-hero-row">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 0 10px;padding:10px 16px;background:var(--paper);border:1px solid var(--border);border-radius:10px;">
+      <span style="font-size:11px;letter-spacing:0.16em;color:var(--accent);font-weight:600;text-transform:uppercase;white-space:nowrap;">A Day, Well Completed.</span>
+      <span style="font-size:16px;font-weight:800;letter-spacing:-0.01em;color:var(--text);white-space:nowrap;">하루의 완성, 웰페리온</span>
+      <span style="font-size:12px;color:var(--dim);line-height:1.5;">단순한 운동 시설이 아닙니다. 하루 루틴의 일부로, 건강의 기준을 세우고 그날의 완성도를 채워주는 공간.</span>
     </div>
 
     <!-- [2026-08-26 GM 지시] 예외 한 줄 스트립(결재 대기·밀린 회신·기한초과·점검 이상) 제거.
@@ -636,7 +638,7 @@
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
           <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">🙋</span>
           <div><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">종합 접수처</div><div style="font-size:10.5px;color:var(--dim);">6유형 종합 접수처 · AI COO(시우) · 이번달 · 누적</div></div>
-          <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
+          <a href="/wellperion-automation/coo/reception/종합접수처_현황.html" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">📊 전용 현황 페이지 →</a>
         </div>
         <!-- 밀린 회신·기한초과는 예외 스트립(맨 위)에서만 표시 — 이 카드에 중복 타일 없음(GM 지적 2026-08-24, 세로 스크롤만 늘어남).
              [2026-08-25 GM 지시] ①큰숫자=이번달 / 작은 서브=누적 으로 스왑(id 는 그대로 두고 표시 위치만 교체 —
@@ -685,7 +687,7 @@
     <div style="display:flex;align-items:center;gap:11px;margin:30px 0 14px;flex-wrap:wrap;"><span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">일일 점검 현황</span><span style="font-size:11.5px;color:var(--dim);">오늘 기준 · 부서별 체크리스트 완료율</span><span style="flex:1;height:1px;background:var(--border);min-width:12px;"></span><!--
       [2026-08-28 GM 지시] 「부서별 점검 상세 →」 한 개를 부서별 3개로 갈랐다. 지원부(남)·지원부(여)는
       같은 페이지라 「지원부」 하나로 둔다. 카드는 네 라인(시설부·지원부(남)·지원부(여)·주차관리부). -->
-      <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><a href="coo/check/시설부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">🏭 시설부 →</a><a href="coo/check/지원부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">🧴 지원부 →</a><a href="coo/check/주차관리부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--border);border-radius:20px;text-decoration:none;white-space:nowrap;">🅿 주차관리부 →</a></span></div>
+      <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;"><a href="coo/check/시설부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">🏭 시설부 →</a><a href="coo/check/지원부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">🧴 지원부 →</a><a href="coo/check/주차관리부 체계.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">🅿 주차관리부 →</a></span></div>
     <div id="home-check-kpi" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
       <div style="text-align:center;padding:16px;color:var(--dim);font-size:12px;grid-column:1/-1;">점검 현황 불러오는 중...</div>
     </div>
@@ -11324,11 +11326,20 @@ function crTab(btn, panelId) {
       return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
-        +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">그룹별 완료율(상세)</div>'
-        +rowsHtml
+        /* [2026-08-28 GM 지시] 홈에는 현황만 — 그룹별 작업사항 표와 조언은 시설부 체계 페이지와
+           카톡 하루 정리에서 본다. 여기서는 못 끝낸 그룹만 한 줄로 짚는다. */
+        +'<div style="font-size:11px;color:var(--dim);">'+_groupSummaryLine(groups)+'</div>'
         +'<div style="flex:1;"></div>'
-        +renderCheckAdvice(advice)
+        +'<div style="margin-top:8px;"><a href="'+href+'" target="_blank" style="font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;">상세 보기 →</a></div>'
         +'</div>';
+    }
+
+    /* 그룹 상세를 한 줄로 — 다 끝났으면 "전 그룹 완료", 아니면 덜 된 것만 이름과 함께. */
+    function _groupSummaryLine(groups){
+      if(!groups||!groups.length) return '그룹 데이터 없음';
+      var left=groups.filter(function(g){return g.pct<100;});
+      if(!left.length) return '전 그룹 완료';
+      return '남은 곳 ' + left.map(function(g){return g.label+' '+g.done+'/'+g.total;}).join(' · ');
     }
 
     // 지원부 이슈 파싱 — today_live 응답의 allIssues(led.cr[k].iss 원문, 이미 반환되던 필드·GAS 무변경) 성별 필터.
@@ -11377,11 +11388,24 @@ function crTab(btn, panelId) {
       return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
-        +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">회차별 완료율(상세)</div>'
-        +rowsHtml
+        /* [2026-08-28 GM 지시] 홈에는 현황만 둔다 — 회차별 상세와 조언은 부서 점검 페이지와
+           카톡 하루 정리에서 본다. GM 원문: "이건은 상세보기 or 카카오톡 하루일과 정리 때만
+           나오고 home에는 현황만". 계산(rowsHtml·advice)은 그대로 두고 홈에서만 안 그린다 —
+           같은 값을 카드 제목줄 아래 한 줄 요약으로 쓴다. */
+        +'<div style="font-size:11px;color:var(--dim);">'+_roundSummaryLine(gKpi.rounds)+'</div>'
         +'<div style="flex:1;"></div>'
-        +renderCheckAdvice(advice)
+        +'<div style="margin-top:8px;"><a href="'+href+'" target="_blank" style="font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;">상세 보기 →</a></div>'
         +'</div>';
+    }
+
+    /* 회차 상세를 한 줄로 — "오전 12/12 · 오후 예정 · 마감 예정". 홈에서 표를 없앤 자리를 채운다. */
+    function _roundSummaryLine(rounds){
+      if(!rounds||!rounds.length) return '회차 데이터 없음';
+      return rounds.map(function(r){
+        var notYet = r.total>0 && r.done===0 && !roundIsDue(r.name);
+        var nm = String(r.name||'').replace(/조$/,'');
+        return nm+' '+(notYet?'예정':(r.total>0?(r.done+'/'+r.total):'-'));
+      }).join(' · ');
     }
 
     function renderHomeKpi(facilityData, supportData, facilityBoard, ranges, parkingData){
