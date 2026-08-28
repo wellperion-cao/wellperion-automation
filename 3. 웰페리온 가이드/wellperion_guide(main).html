@@ -672,7 +672,7 @@
         <!-- 옆 문의&등록 카드와 짝 처리(2026-08-26) — 남는 높이를 이 블록이 채운다. 어느 카드 내용이 길어지든
              두 카드의 타일이 같이 늘어나 세로가 어긋나지 않는다. -->
         <div style="margin-top:8px;padding-top:9px;border-top:1px dashed var(--border);flex:1;display:flex;flex-direction:column;">
-          <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:6px;">유형별 건수 · 이번달 접수/완료 · 누적 접수/완료</div>
+          <div style="font-size:9.5px;color:var(--dim);font-weight:700;margin-bottom:4px;">유형별 · 위=이번달 접수/완료 · 아래=누적 접수/완료</div>
           <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;">
             <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
@@ -1413,7 +1413,7 @@
             var isDone = function(r){ return (r['상태'] || r['status']) === '완료'; };
             var mDone = catMonthRows.filter(isDone).length;
             var tDone = catRows.filter(isDone).length;   // 누적 완료 — 2026-08-26 GM 요청으로 추가
-            html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 6px;text-align:center;">'
+            html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;">'
               + '<div style="font-size:9px;color:var(--dim);margin-bottom:2px;font-weight:600;white-space:nowrap;">' + m.icon + ' ' + m.short + '</div>'
               // ★2026-08-26 GM 지시 — 한 칸에 네 숫자를 위아래로 나눈다.
               //   윗줄(큰글자) = 이번달 접수 / 이번달 완료 · 아랫줄(작은글자) = 누적 접수 / 누적 완료.
@@ -1421,13 +1421,14 @@
               //   ▸접수는 주황, 완료는 초록으로 색을 고정한다 — 카드 상단 3칸(접수·처리중·완료)과 같은 색이라
               //     위아래로 훑을 때 같은 뜻이 같은 색으로 읽힌다.
               + '<div style="line-height:1;white-space:nowrap;">'
-              +   '<span style="font-size:20px;font-weight:800;color:var(--orange,#e6944e);">' + mNew + '</span>'
+              +   '<span style="font-size:17px;font-weight:800;color:var(--orange,#e6944e);">' + mNew + '</span>'
               +   '<span style="font-size:9px;color:var(--dim);margin:0 2px;">/</span>'
               +   '<span style="font-size:14px;font-weight:800;color:var(--grow,#6abf7b);">' + mDone + '</span>'
               + '</div>'
-              + '<div style="font-size:8px;color:var(--dim);margin-top:1px;white-space:nowrap;">이번달 접수/완료</div>'
-              + '<div style="font-size:8.5px;color:var(--dim);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border);white-space:nowrap;">'
-              +   '누적 <b style="color:var(--text);">' + catRows.length + '</b> · 완료 <b style="color:var(--grow,#6abf7b);">' + tDone + '</b></div>'
+              /* [2026-08-28 GM 지시] 칸을 낮춘다 — '이번달 접수/완료' 라벨 줄은 위 안내문이 이미
+                 같은 말을 하므로 뺐다. 누적은 한 줄로 붙인다(맨 위 3칸을 줄인 방식과 같게). */
+              + '<div style="font-size:8.5px;color:var(--dim);margin-top:2px;white-space:nowrap;">'
+              +   '누적 <b style="color:var(--text);">' + catRows.length + '</b>·<b style="color:var(--grow,#6abf7b);">' + tDone + '</b></div>'
               + '</div>';
           });
           grid.innerHTML = html;
