@@ -196,6 +196,16 @@
   .mdp-list{display:flex;flex-direction:column;gap:7px}
   .mdp-list .day-list-item{font-size:13px;padding:10px 12px;min-height:20px}
 
+  /* [모바일 재설계 2026-08-28 A-5] 전체 페이지 스크롤(그리드+하단 목록) 동안 계속 고정되는 요일 바 —
+     .cal-card 내부 .wk-head(그리드 전용, 모바일에서 숨김)와 별개. 데스크톱 기본 숨김, ≤640px에서만
+     grid+sticky(위 미디어쿼리). .wrap의 형제 위치(=.cal-card·.mobile-day-panel과 동일 부모)라 그 둘을
+     스크롤하는 전체 범위에서 고정된다(원리 설명은 미디어쿼리 주석 참고). */
+  .mobile-wk-head{display:none;grid-template-columns:repeat(7,1fr);background:var(--surface-2);
+    border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-card);margin-bottom:8px}
+  .mobile-wk-head div{padding:8px 0;text-align:center;font-size:13px;font-weight:800;color:var(--ink-soft)}
+  .mobile-wk-head div:first-child{color:var(--red)}
+  .mobile-wk-head div:last-child{color:var(--blue)}
+
   .msg{font-size:12.5px;color:var(--ink-soft);padding:20px 4px}
   .msg.err{color:var(--red)}
 
@@ -286,14 +296,19 @@
     /* 팝업(모달)이 화면 밖으로 나가지 않도록 좌우 여백을 넓게, 세로는 내부 스크롤 유지(기존 max-height:88vh) */
     .modal{padding:18px;border-radius:14px}
     .modal-actions .btn{min-height:44px}
-    /* [모바일 재설계 2026-08-28 A-5] 요일 헤더 스크롤 시 안 잘리게 sticky 고정(매니저 필수 조건).
-       position:sticky는 조상에 overflow:hidden이 있으면(=자체 스크롤 컨테이너가 되어버려) 페이지
-       스크롤 기준으로 동작하지 않는 표준 CSS 함정 — .cal-card의 overflow:hidden(모서리 라운드
-       클리핑용)을 모바일에서만 visible로 풀어 body 스크롤 기준 sticky가 실제로 동작하게 한다
-       (카드 모서리가 각지게 보이는 아주 미세한 코스메틱 손실은 감수 — 스크린샷 검증 결과 육안 무시 수준).
-       top은 env(safe-area-inset-top)로 PWA standalone 노치 겹침도 방지(일반 브라우저는 0이라 회귀 없음). */
-    .cal-card{overflow:visible}
-    .wk-head{position:sticky;top:env(safe-area-inset-top);z-index:20}
+    /* [모바일 재설계 2026-08-28 A-5, 1차 수정 — 실측 재검증 후 재수정] 요일 헤더 스크롤 시 안 잘리게
+       sticky 고정(매니저 필수 조건). 최초 시도(.wk-head를 .cal-card 안에서 그대로 sticky)는 라이브
+       스크린샷 검증에서 실패 확인 — position:sticky의 "고정 범위"는 스크롤 컨테이너가 아니라 자신의
+       **containing block(부모 박스)** 이 위/아래로 움직이는 동안으로 한정된다(표준 스펙 동작, overflow
+       값과 무관). `.wk-head`의 부모가 `.cal-card`(그리드만 담아 키가 짧음, ~370px)라서 그리드를 다
+       지나 하단 목록 패널(`.mobile-day-panel`, 형제 요소라 다른 박스)을 스크롤하는 동안엔 부모 박스
+       자체가 화면 밖으로 밀려나며 헤더도 같이 사라짐(실측: 바쁜 날짜 선택 후 최대스크롤에서 헤더가
+       뷰포트 위로 -522px). 해결 = `.wk-head`는 그대로 두고(그리드 내부, 비-스틱키), `.cal-card`와
+       `.mobile-day-panel`의 공통 부모(`.wrap`)에 새 형제 바(`#mobileWkHead`)를 별도로 두어 그 바가
+       전체 페이지 스크롤 범위(그리드+목록 패널 다 포함) 동안 계속 고정되게 한다(아래 `.mobile-wk-head`
+       참고, 마크업은 `.cal-card` 바로 앞에 위치). */
+    .wk-head{display:none}
+    .mobile-wk-head{display:grid;position:sticky;top:env(safe-area-inset-top);z-index:20}
     /* 선택일 하단 패널 노출(데스크톱은 베이스 규칙 display:none 유지) */
     .mobile-day-panel{display:block}
   }
@@ -348,6 +363,10 @@
       <span class="legend-toggle" id="legendFirstday" title="클릭해서 첫출근 표시 켜기/끄기"><span class="dot" style="background:var(--red)"></span>첫출근(자동·읽기전용)</span>
       <span class="legend-toggle" id="legendSsot" title="클릭해서 SSOT 업무 표시 켜기/끄기"><span class="dot" style="background:var(--gold)"></span>SSOT업무(읽기전용)</span>
     </div>
+
+    <!-- [모바일 재설계 2026-08-28 A-5] 전체 페이지 스크롤(그리드+하단 목록) 동안 고정되는 요일 바.
+         데스크톱은 CSS로 항상 숨김(cal-card 안의 기존 .wk-head를 그대로 씀 — 회귀 0). -->
+    <div class="mobile-wk-head" id="mobileWkHead"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
 
     <div class="cal-card">
       <div class="wk-head"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
