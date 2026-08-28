@@ -11337,21 +11337,16 @@ function crTab(btn, panelId) {
       return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
-        /* [2026-08-28 GM 지시] 홈에는 현황만 — 그룹별 작업사항 표와 조언은 시설부 체계 페이지와
-           카톡 하루 정리에서 본다. 여기서는 못 끝낸 그룹만 한 줄로 짚는다. */
-        +'<div style="font-size:11px;color:var(--dim);">'+_groupSummaryLine(groups)+'</div>'
+        /* [2026-08-28] 그룹별 완료율 표를 뺐다가 GM 지적("그 체크 현황들이 길게 있었는데
+           없어졌네")으로 되돌렸다. GM 이 빼라고 한 것은 작업사항 본문(위 issueDetail)이지
+           이 현황 표가 아니었다. 표는 그대로, 작업사항만 한 줄로 유지한다. */
+        +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">그룹별 완료율</div>'
+        +rowsHtml
         +'<div style="flex:1;"></div>'
         +'<div style="margin-top:8px;"><a href="'+href+'" target="_blank" style="font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;">상세 보기 →</a></div>'
         +'</div>';
     }
 
-    /* 그룹 상세를 한 줄로 — 다 끝났으면 "전 그룹 완료", 아니면 덜 된 것만 이름과 함께. */
-    function _groupSummaryLine(groups){
-      if(!groups||!groups.length) return '그룹 데이터 없음';
-      var left=groups.filter(function(g){return g.pct<100;});
-      if(!left.length) return '전 그룹 완료';
-      return '남은 곳 ' + left.map(function(g){return g.label+' '+g.done+'/'+g.total;}).join(' · ');
-    }
 
     // 지원부 이슈 파싱 — today_live 응답의 allIssues(led.cr[k].iss 원문, 이미 반환되던 필드·GAS 무변경) 성별 필터.
     // GM 2026-07-14 후속지시: 지원부도 이슈 데이터 실측 결과 존재 확인 → 시설부처럼 주(主) 표시로 승격.
@@ -11399,24 +11394,12 @@ function crTab(btn, panelId) {
       return '<div style="background:var(--paper);border:1px solid var(--border);border-top:3px solid '+topColor+';border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;box-sizing:border-box;min-height:'+CHECK_CARD_MIN_H+';">'
         +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">'+icon+' '+label+' 점검</div>'
         +primaryHtml
-        /* [2026-08-28 GM 지시] 홈에는 현황만 둔다 — 회차별 상세와 조언은 부서 점검 페이지와
-           카톡 하루 정리에서 본다. GM 원문: "이건은 상세보기 or 카카오톡 하루일과 정리 때만
-           나오고 home에는 현황만". 계산(rowsHtml·advice)은 그대로 두고 홈에서만 안 그린다 —
-           같은 값을 카드 제목줄 아래 한 줄 요약으로 쓴다. */
-        +'<div style="font-size:11px;color:var(--dim);">'+_roundSummaryLine(gKpi.rounds)+'</div>'
+        /* [2026-08-28] 회차별 완료율 표를 뺐다가 GM 지적으로 되돌렸다 — 위 시설부 카드와 같은 이유. */
+        +'<div style="font-size:9.5px;color:var(--dim);margin-bottom:4px;">회차별 완료율</div>'
+        +rowsHtml
         +'<div style="flex:1;"></div>'
         +'<div style="margin-top:8px;"><a href="'+href+'" target="_blank" style="font-size:11px;font-weight:700;color:var(--accent);text-decoration:none;">상세 보기 →</a></div>'
         +'</div>';
-    }
-
-    /* 회차 상세를 한 줄로 — "오전 12/12 · 오후 예정 · 마감 예정". 홈에서 표를 없앤 자리를 채운다. */
-    function _roundSummaryLine(rounds){
-      if(!rounds||!rounds.length) return '회차 데이터 없음';
-      return rounds.map(function(r){
-        var notYet = r.total>0 && r.done===0 && !roundIsDue(r.name);
-        var nm = String(r.name||'').replace(/조$/,'');
-        return nm+' '+(notYet?'예정':(r.total>0?(r.done+'/'+r.total):'-'));
-      }).join(' · ');
     }
 
     function renderHomeKpi(facilityData, supportData, facilityBoard, ranges, parkingData){
