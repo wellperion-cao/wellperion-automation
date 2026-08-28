@@ -328,6 +328,7 @@
   .deptgoal-h{font-size:15px; font-weight:800; color:var(--text); display:flex; align-items:baseline; gap:9px; margin-bottom:10px; letter-spacing:-0.01em; flex-wrap:wrap;}
   .deptgoal-sub{font-size:11.5px; font-weight:500; color:var(--dim);}
   .deptgoal-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px;}
+  .dg-flat-h{font-size:11px;font-weight:800;color:var(--accent-soft);margin:8px 0 3px;padding-top:6px;border-top:1px dashed var(--border);}
   .dg-card{background:var(--paper); border:1px solid var(--border); border-radius:13px; padding:13px 15px 14px; display:flex; flex-direction:column; gap:10px;}
   /* 파트너팀 칸 — 8팀이라 세로로 길다. 한 칸을 두 칸 폭으로 써 목표 문장이 잘리지 않게 한다(GM 지시 2026-08-28) */
   .dg-card.dg-partner{grid-column:span 2;}
@@ -2250,7 +2251,7 @@
    // ★2026-08-28 GM 지시 — 경영지원을 김남욱GM·나우열M 둘로 가른다. 같은 '경영지원'이라도 보는 것이
    // 다르다: GM 은 전사·회장님/대표님 보고와 전략, 나우열M 은 인사·파트너팀·지출 실무.
    {id:'gm',   key:'경영지원 — 김남욱 GM(전사 총괄 · 회장님·대표님 보고 · 전략)', prac:'kim-nw', ai:'na-uy-gm',
-    deptKeys:['전사','전략','보고'], links:[{label:'GM 업무', href:'coo/chairman/GM업무.html'}]},
+    deptKeys:[], links:[{label:'GM 업무', href:'coo/chairman/GM업무.html'}]},
    // ★파트너팀 전체 — 8팀을 한 칸에 모아 팀별 목표·진척을 함께 본다(GM 지시 2026-08-28 "마지막 칸에 각 팀별
    // 파트너팀 전체 월 목표 및 현황"). 팀·리더 정본 = ssot/kpi.json _팀리더_2026_08_25 (여기에 이름을 복제하지
    // 않는다 · 약속 L01). 팀별 목표·진척은 monthly_ops_plan.json 의 practitioner_goals/progress 에
@@ -2294,7 +2295,10 @@
   var DEPT_GOAL_GROUPS = [
     {members:['ops']},
     {members:['fac']},
-    {members:['sup','park'], merged:true, title:'지원부 · 주차관리부', note:'주차관리부 포함', head:'sup'},
+    // ★flat — merged 로 두면 한 카드를 좌우로 쪼개(dg-subgrid) 각 칸 폭이 반이 되고, 좁아진 칸에서
+    //   한글이 한 글자씩 세로로 흘러 읽을 수 없게 된다(2026-08-28 실측). 두 부서를 나란히 두는 게 아니라
+    //   한 부서처럼 과제를 이어 붙인다.
+    {members:['sup','park'], flat:true, title:'지원부 · 주차관리부', note:'주차관리부 포함', head:'sup'},
     {members:['gm']},
     {members:['mgmt']},
     {members:['partner']}
@@ -2525,8 +2529,8 @@
   function deptCardHtml(group, objs, roster, m){
     var head = DEPT_CARD_BY_ID[group.head || group.members[0]];
     if(head && head.partner) return partnerCardHtml(head, m);
-    var title = group.merged ? group.title : head.key;
-    var note = group.merged ? group.note : head.note;
+    var title = (group.merged || group.flat) ? group.title : head.key;
+    var note = (group.merged || group.flat) ? group.note : head.note;
     var p = pracOf(head.prac, roster);
     var ownName = p ? (esc(p.name) + (p.role ? ' <span class="dg-role">' + esc(p.role) + '</span>' : '')) : esc(head.prac);
     var links = group.members.map(function(id){ return linkBtnsHtml(DEPT_CARD_BY_ID[id]); }).join('');
@@ -2537,6 +2541,17 @@
         return '<div class="dg-subgrp"><div class="dg-subgrp-h">' + esc(cfg.key) + '</div>' +
           qBlockHtml(cfg, objs) +
           '<div class="dg-objs">' + objsBlockHtml(cfg, objs) + '</div></div>';
+      }).join('') + '</div>';
+    } else if(group.flat){
+      /* 두 부서를 좌우로 쪼개지 않고 한 부서처럼 이어 붙인다 — 과제 앞에 어느 부서 것인지 꼬리표만 단다.
+         쪼개면 칸 폭이 반이 되어 한글이 세로로 흘러 읽히지 않는다(2026-08-28 실측). */
+      body = qBlockHtml(head, objs) + '<div class="dg-objs">' + group.members.map(function(id){
+        var cfg = DEPT_CARD_BY_ID[id];
+        var lst = objsForDept(cfg, objs);
+        if(!lst.length) return '';
+        return (group.members.length > 1
+                 ? '<div class="dg-flat-h">' + esc(cfg.key.split('(')[0]) + '</div>' : '')
+               + lst.map(objHtml).join('');
       }).join('') + '</div>';
     } else {
       body = qBlockHtml(head, objs) + '<div class="dg-objs">' + objsBlockHtml(head, objs) + '</div>';
