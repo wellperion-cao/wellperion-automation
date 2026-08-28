@@ -1492,13 +1492,32 @@
         }
     }
     try { var _rbC = localStorage.getItem('wp_reg_board_cache'); if(_rbC){ renderVoc(JSON.parse(_rbC)); } } catch(_e){}
+    /* ★2026-08-28 시토 — 이 칸은 '느린 것'과 '죽은 것'을 구분해 주지 않았다.
+       종합접수처 GAS 자체는 2초대인데(실측), 이 페이지가 로드하며 부르는 다른 호출들에
+       밀리면 캐시 없는 첫 방문에서 한참 '불러오는 중…'만 떠 있다. 2026-08-26 화면 실사는
+       그 상태를 55초 관찰하고 '고착'으로 적었다 — 실제로는 더 기다리면 채워진다.
+       그래서 오래 걸리면 오래 걸린다고 적고, 실패하면 실패했다고 적는다. */
+    var _vocGrid = document.getElementById('kpiVocCatGrid');
+    var _vocDone = false;
+    var _vocSlow = setTimeout(function(){
+      if(!_vocDone && _vocGrid && /불러오는 중/.test(_vocGrid.textContent)){
+        _vocGrid.textContent = '종합접수처를 아직 불러오는 중입니다 — 응답이 늦습니다';
+      }
+    }, 20000);
     fetch(RECEPTION_GAS + '?action=reg_board&_=' + Date.now(), { redirect: 'follow' })
       .then(function(r){ return r.json(); })
       .then(function(d){
+        _vocDone = true; clearTimeout(_vocSlow);
         if(d && d.ok){ try { localStorage.setItem('wp_reg_board_cache', JSON.stringify(d)); } catch(_e){} }
         renderVoc(d);
       })
-      .catch(function(){ /* "—" 유지 */ });
+      .catch(function(){
+        _vocDone = true; clearTimeout(_vocSlow);
+        /* 위 숫자 칸은 "—" 유지. 그리드는 '불러오는 중…'을 남겨 두면 영원히 로딩처럼 보인다. */
+        if(_vocGrid && /불러오는 중|응답이 늦습니다/.test(_vocGrid.textContent)){
+          _vocGrid.textContent = '종합접수처를 불러오지 못했습니다 — 새로고침해 주세요';
+        }
+      });
 
   })();
   </script>
