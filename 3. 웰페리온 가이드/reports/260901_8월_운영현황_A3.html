@@ -21,7 +21,7 @@
   .big .dot{ width:11px; height:11px; }
 </style>
 </head>
-<body>
+<body data-default-month="2026-08">
 
 <div class="bar">
   <b>2026년 8월 운영 현황 (A3 1장 · 9/1 보고)</b>
@@ -43,7 +43,7 @@
     <div class="meta">
       작성 <b>경영지원부</b> · 보고 <b>김남욱 GM</b><br>
       보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-01</b><br>
-      수치 기준 <b>2026-08-28 조회 · 마감 전</b> · 금액 <b>원</b>
+      수치 기준 <b data-asof>2026-08-28 조회</b> · 마감 전 · 금액 <b>원</b>
     </div>
     <div class="sign">
       <div><div class="t">담당</div><div class="b"></div></div>
@@ -86,35 +86,35 @@
           <tbody>
             <tr>
               <td class="k">매출</td>
-              <td class="strong">545,109,601 원 <span class="est">회원권 2.54 · 강습 2.72 · 기타 0.21억</span></td>
-              <td><div class="gwrap"><div class="gbar"><i style="width:82.6%"></i></div><span class="glab">월 6.6억 · <span class="warn">82.6%</span></span></div></td>
-              <td class="ctr">7월 5.70억의 <b>95.6%</b></td>
+              <td class="strong"><span data-f="sales.month" data-fmt="won">545,109,601 원</span> <span class="est">회원권 2.54 · 강습 2.72 · 기타 0.21억</span></td>
+              <td><div class="gwrap"><div class="gbar"><i data-w="sales.month_rate_pct" style="width:82.6%"></i></div><span class="glab">월 6.6억 · <span class="warn" data-f="sales.month_rate_pct" data-fmt="pct1">82.6%</span></span></div></td>
+              <td class="ctr">7월 5.70억의 <b data-f="sales.vs_prev_pct" data-fmt="pct1">95.6%</b></td>
               <td class="ctr"><span class="dot w"></span></td>
             </tr>
             <tr>
               <td class="k">연 누계</td>
-              <td>4,591,603,014 원 <span class="est">1~8월 실측 합</span></td>
-              <td><div class="gwrap"><div class="gbar"><i class="g" style="width:95.7%"></i></div><span class="glab">8월 페이스 · <span class="good">95.7%</span></span></div></td>
-              <td class="ctr">연 목표 72억의 63.8%</td>
+              <td><span data-f="sales.year_cum" data-fmt="won">4,591,603,014 원</span> <span class="est">1~8월 실측 합</span></td>
+              <td><div class="gwrap"><div class="gbar"><i class="g" data-w="sales.pace_rate_pct" style="width:95.7%"></i></div><span class="glab">8월 페이스 · <span class="good" data-f="sales.pace_rate_pct" data-fmt="pct1">95.7%</span></span></div></td>
+              <td class="ctr">연 목표 72억의 <span data-f="sales.year_rate_pct" data-fmt="pct1">63.8%</span></td>
               <td class="ctr"><span class="dot g"></span></td>
             </tr>
             <tr>
               <td class="k">회원</td>
-              <td>유효 <b>995명</b> <span class="est">멤버십 858 · 입주민 79 · 기타 58</span> + 법인 31</td>
+              <td>유효 <b><span data-f="member.active" data-fmt="num">995</span>명</b> <span class="est">멤버십 858 · 입주민 79 · 기타 58</span> + 법인 31</td>
               <td class="ctr">정원 1,000명 <b>마감 유지</b></td>
-              <td class="ctr">8월 등록 <b>58건</b><br><span class="est">신규 17 · 재등록 35 · 대기 5 · 양수 1</span></td>
+              <td class="ctr">8월 등록 <b><span data-f="member.registered" data-fmt="num">58</span>건</b><br><span class="est">신규 <span data-f="member.registered_by_class.신규" data-fmt="num">17</span> · 재등록 <span data-f="member.registered_by_class.재등록" data-fmt="num">35</span> · 대기 <span data-f="member.registered_by_class.대기" data-fmt="num">5</span> · 양수 1</span></td>
               <td class="ctr"><span class="dot g"></span></td>
             </tr>
             <tr>
               <td class="k">이탈</td>
-              <td><b>25건</b> <span class="est">가격을 이유로 한 이탈은 종료 207건 중 6건(3%)</span></td>
+              <td><b><span data-f="member.loss" data-fmt="num">26</span>건</b> <span class="est">가격을 이유로 한 이탈은 종료 <span data-f="member.price_reason_loss.of_total_ended" data-fmt="num">209</span>건 중 <span data-f="member.price_reason_loss.count" data-fmt="num">6</span>건(<span data-f="member.price_reason_loss.pct" data-fmt="pct1">2.9%</span>)</span></td>
               <td class="ctr">—</td>
-              <td class="ctr good">7월 33건 → <b>−8건</b></td>
+              <td class="ctr good">7월 <span data-f="member.loss_prev_month" data-fmt="num">33</span>건 → <b>−7건</b></td>
               <td class="ctr"><span class="dot g"></span></td>
             </tr>
             <tr>
               <td class="k">9월 만기</td>
-              <td class="bad">61명 — 재등록 상담 기록은 <b>1명</b>뿐입니다 <span class="est">멤버십 43 · 입주민 8 · 그 밖 10</span></td>
+              <td class="bad"><span data-f="member.next_month_expiry.count" data-fmt="num">61</span>명 — 재등록 상담 기록은 <b><span data-f="member.next_month_expiry.contacted" data-fmt="num">1</span>명</b>뿐입니다 <span class="est">멤버십 43 · 입주민 8 · 그 밖 10</span></td>
               <td class="ctr" colspan="2"><span class="bad">9월 최우선 관리</span> <span class="est">— 만기 이탈은 곧 빈자리</span></td>
               <td class="ctr"><span class="dot b"></span></td>
             </tr>
@@ -146,8 +146,8 @@
               <thead><tr><th class="k">경로</th><th>8월 문의</th><th>전월 대비</th><th></th></tr></thead>
               <tbody>
                 <tr><td class="k">멤버십</td><td><b>78건</b> → 상담 성공·등록 <b>16건</b> <span class="est">등록률 20.5%</span></td><td class="ctr good">7월 62 → <b>+26%</b></td><td class="ctr"><span class="dot g"></span></td></tr>
-                <tr><td class="k">성인 강습</td><td><b>99건</b> <span class="est">6월 89 · 7월 88</span></td><td class="ctr good">7월 88 → <b>+12%</b></td><td class="ctr"><span class="dot g"></span></td></tr>
-                <tr><td class="k">유소년 강습</td><td class="bad"><b>87건</b> — 두 달 만에 절반</td><td class="ctr bad">6월 대비 <b>−46%</b></td><td class="ctr"><span class="dot b"></span></td></tr>
+                <tr><td class="k">성인 강습</td><td><b><span data-f="inquiry.adult_lesson.count" data-fmt="num">99</span>건</b> <span class="est">6월 89 · 7월 88</span></td><td class="ctr good">7월 88 → <b>+12%</b></td><td class="ctr"><span class="dot g"></span></td></tr>
+                <tr><td class="k">유소년 강습</td><td class="bad"><b><span data-f="inquiry.youth_lesson.count" data-fmt="num">87</span>건</b> — 두 달 만에 절반</td><td class="ctr bad">6월 대비 <b>−46%</b></td><td class="ctr"><span class="dot b"></span></td></tr>
               </tbody>
             </table>
           </div>
@@ -171,14 +171,14 @@
           <tbody>
             <tr>
               <td class="k">종합접수처</td>
-              <td><b>54건</b> 접수 <span class="est">컴플레인 20 · 시설물 고장 18 · 그 밖 16</span></td>
-              <td class="ctr">완료 35 / <span class="bad">미완료 19</span> <span class="est">7일 초과 9 · 최장 18일</span></td>
+              <td><b><span data-f="reception.total" data-fmt="num">54</span>건</b> 접수 <span class="est">컴플레인 20 · 시설물 고장 18 · 그 밖 16</span></td>
+              <td class="ctr">완료 <span data-f="reception.done" data-fmt="num">37</span> / <span class="bad">미완료 <span data-f="reception.open" data-fmt="num">17</span></span> <span class="est">7일 초과 <span data-f="reception.over_7d" data-fmt="num">9</span> · 최장 <span data-f="reception.oldest_days" data-fmt="num">18</span>일</span></td>
               <td class="ctr good">7월 73건 → <b>−26%</b></td>
               <td class="ctr"><span class="dot w"></span></td>
             </tr>
             <tr>
               <td class="k">일일 점검</td>
-              <td>시설부 <b>93%</b> · 지원부 <b>100%</b></td>
+              <td>시설부 <b><span data-f="check.facility_pct" data-fmt="pct">93%</span></b> · 지원부 <b><span data-f="check.support_pct" data-fmt="pct">98%</span></b></td>
               <td class="ctr good">두 부서 정상 운영</td>
               <td class="ctr">리듬 유지</td>
               <td class="ctr"><span class="dot g"></span></td>
@@ -274,5 +274,6 @@ document.getElementById('png').onclick = function () {
     .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
 };
 </script>
+<script src="_a3_ledger.js"></script>
 </body>
 </html>

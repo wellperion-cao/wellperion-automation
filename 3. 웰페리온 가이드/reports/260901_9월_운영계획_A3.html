@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
 <link href="_a3_report.css" rel="stylesheet">
 </head>
-<body>
+<body data-default-month="2026-09" data-prev-month="2026-08">
 
 <div class="bar">
   <b>2026년 9월 운영 계획 (A3 1장 · 9/1 보고)</b>
@@ -143,14 +143,14 @@
       <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
         <div class="sec-h">Ⅴ. 다음 보고에서 확인할 것 <span class="hint">9월 관리 항목 · 10/1 보고의 채점표</span></div>
         <ul class="watch">
-          <li><b>9월 만기 61명 — 재등록 상담률</b>
-            <span>현재 상담 기록은 1명뿐입니다. 정원이 마감된 구조에서 만기 이탈은 곧 빈자리이며, 9월 매출에 가장 빠르게 닿습니다. 이경연 실장 라인에서 9월 중 전원 접촉하고, 다음 보고에 상담률로 답합니다.</span></li>
+          <li><b>9월 만기 <span data-f="prev.member.next_month_expiry.count" data-fmt="num">61</span>명 — 재등록 상담률</b>
+            <span>현재 상담 기록은 <span data-f="prev.member.next_month_expiry.contacted" data-fmt="num">1</span>명뿐입니다. 정원이 마감된 구조에서 만기 이탈은 곧 빈자리이며, 9월 매출에 가장 빠르게 닿습니다. 이경연 실장 라인에서 9월 중 전원 접촉하고, 다음 보고에 상담률로 답합니다.</span></li>
           <li><b>유소년 문의 회복 여부</b>
-            <span>6월 162건 → 8월 87건(−46%). 9월 첫 주에 유입 경로를 분석해 원인을 가른 뒤 대응하고, 다음 보고에 3개월 추이로 답합니다.</span></li>
+            <span>6월 <span data-f="prev.inquiry.youth_lesson.prev2" data-fmt="num">162</span>건 → 8월 <span data-f="prev.inquiry.youth_lesson.count" data-fmt="num">87</span>건(−46%). 9월 첫 주에 유입 경로를 분석해 원인을 가른 뒤 대응하고, 다음 보고에 3개월 추이로 답합니다.</span></li>
           <li class="w"><b>운영부·주차부 점검 첫 집계</b>
             <span>두 부서는 지금 실적이 0이 아니라 셀 수가 없는 상태입니다. 9월에 계측 체계를 세워 10월 보고부터 4개 부서 전부 수치로 올립니다.</span></li>
           <li class="g"><b>9월 매출 — 목표 6.6억</b>
-            <span>8월은 5.45억(82.6%·마감 전)이었습니다. 만기 61명 방어와 추석 팝업 500세트가 9월 달성의 두 축입니다.</span></li>
+            <span>8월은 <span data-f="prev.sales.month" data-fmt="eok">5.45억</span>(<span data-f="prev.sales.month_rate_pct" data-fmt="pct1">82.6%</span>·마감 전)이었습니다. 만기 61명 방어와 추석 팝업 500세트가 9월 달성의 두 축입니다.</span></li>
         </ul>
       </div>
 
@@ -203,5 +203,6 @@ document.getElementById('png').onclick = function () {
     .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
 };
 </script>
+<script src="_a3_ledger.js"></script>
 </body>
 </html>

@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.join(REPO, "scripts"))
 LEDGER = os.path.join(REPO, "status", "monthly_report_ledger.json")
 KPI_SNAP = os.path.join(REPO, "status", "home_kpi_snapshot.json")
 MEMBER_SNAP = os.path.join(REPO, "status", "member_active_snapshot.json")
+MEMBER_ENDED = os.path.join(REPO, "status", "member_ended_snapshot.json")
 LESSON_SNAP = os.path.join(REPO, "status", "inquiry_snapshot_lesson.json")
 OPS_PLAN = os.path.join(REPO, "status", "monthly_ops_plan.json")
 
@@ -115,11 +116,32 @@ def collect_member(month: str) -> dict:
     contact_cols = [c for c in rows[0] if "재등록" in c]
     contacted = [r for r in exp if any(str(r.get(c) or "").strip() for c in contact_cols)]
 
+    # 이탈(LOSS)은 유효회원 스냅샷에 없다 — 종료 스냅샷을 따로 읽는다. LOSS 일자가 비었으면 종료 일자로 떨어진다.
+    prev = (datetime.strptime(month + "-01", "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m")
+    loss = loss_prev = None
+    price = None
+    ended = (_load(MEMBER_ENDED) or {}).get("rows") or []
+    if ended:
+        lc = collections.Counter(
+            _month_of(r.get("LOSS\n일자") or r.get("종료\n일자")) for r in ended)
+        loss, loss_prev = lc.get(month, 0), lc.get(prev, 0)
+        # 가격을 이유로 한 이탈 — 요금 인상 판단의 근거라 매월 다시 센다.
+        # 사유 칸이 셋(미등록사유·종료사유·메모)이라 어디에 적혀 있어도 잡히게 셋 다 본다.
+        cols = [c for c in ended[0] if "사유" in c]
+        n = sum(1 for r in ended
+                if any(w in str(r.get(c) or "") for c in cols for w in ("가격", "금액", "비용")))
+        price = {"count": n, "of_total_ended": len(ended),
+                 "pct": round(n / len(ended) * 100, 1) if ended else None}
+
     return {
         "active": len(rows),
         "by_type": dict(collections.Counter(str(r.get("회원\n구분") or "미상") for r in rows)),
         "registered": len(reg),
         "registered_by_class": dict(collections.Counter(_reg_class(r) for r in reg)),
+        "loss": loss,
+        "loss_prev_month": loss_prev,
+        "ended_total": len(ended) or None,
+        "price_reason_loss": price,
         "next_month_expiry": {
             "month": nxt,
             "count": len(exp),
