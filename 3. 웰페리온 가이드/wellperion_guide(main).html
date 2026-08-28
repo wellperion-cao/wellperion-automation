@@ -50,7 +50,7 @@
      위 H3/H4 의 "이 문서만 980 해제" 방식을 :has() 로 이어, 음수 마진 같은 편법 없이 home 에만 건다.
      검증(설계 레인 실측): home 세로 3,158px → 2,336px(−26%) · 3열 각 440px 로 줄맞음. */
   @media screen and (min-width:1280px){ .main:has(#home.active){max-width:1600px;} }
-  @media screen and (min-width:1400px){
+  @media screen and (min-width:1200px){
     /* 업무&결재 | 문의&등록 | 종합접수처 를 3열로. 인라인 스타일을 이기려면 !important 가 필요하다
        (아래 모바일 규칙이 이미 같은 방식을 쓴다). */
     .main:has(#home.active) .ops-detail-grid{grid-template-columns:repeat(3,1fr)!important;}
@@ -525,7 +525,7 @@
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;container-type:inline-size;" class="ops-detail-grid">
 
       <!-- 업무&결재 현황 (통합) — 콜아웃 프레임 제거 후 운영현황상세/일일점검과 동일한 섹션헤더+풀폭 배치. SSOT pill 색=월간운영계획보고 링크와 통일(초록 그라디언트). 2026-07-15 시토(CTO). 우측 SSOT 진입점 = 업무 SSOT+결재 SSOT 2개 pill → 맨 우측 '업무&결재 SSOT' 1개(S3 통합 페이지 진입)로 병합. 2026-07-18 시토(CTO) GM 지시. 데이터바인딩 id·onclick 로직 무변경(칩 통합·라벨만 변경). -->
-      <div style="grid-column:1/-1;">
+      <div style="grid-column:1/-1;background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;">
         <!-- [2026-08-28 GM 지시] 세 카드(업무&결재·문의&등록·종합 접수처)의 머리줄을 같은 뼈대로 맞춘다:
              아이콘 30px + (제목 17px / 부제 10.5px 두 줄) + 오른쪽 끝 링크 하나. -->
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
@@ -578,7 +578,7 @@
            측정 기반 계산치 — before.png/after.png 참조). 데이터 바인딩 id·링크·하단정렬 구조는 무변경.
            [2026-07-15 시토(CTO)] 콜아웃(외곽 카드 프레임) 제거 — 일일점검 현황처럼 이중 박스 없이 내부 타일이 직접 노출.
            border/background/radius/padding 제거, flex-column(하단 링크 정렬)·내부 타일·min-height·id·링크 무변경. 헤더=피어 섹션 스케일(30px chip/17px). -->
-      <div style="display:flex;flex-direction:column;">
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;">
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--grow-bg);color:var(--grow);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg></span><div style="min-width:0;"><div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;color:var(--text);">문의&등록 현황</div><div style="font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">멤버십·강습 문의·등록 · AI CPO(시포)</div></div><a href="cpo/member/membership.html?manage=membership" target="_blank" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:6px 12px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">👥 회원 관리 →</a></div>
 
         <!-- [2026-08-26 GM 4번째 지적] "종합접수처 세로 사이즈 문의&등록 현황이랑 맞춰".
@@ -623,7 +623,7 @@
            유형별 건수 그리드 6→3열로 확장(누적+이번달 접수/완료 3숫자 표기 공간 확보) · 문의&등록 카드와 칸 구조 통일. 2026-07-10 GM 지시.
            [2026-07-14 GM 지시] 링크 행 flex column+margin-top:auto로 하단 고정(문의&등록 카드 링크 행과 높이 정렬).
            [2026-07-15 시토(CTO)] 콜아웃(외곽 카드 프레임) 제거 — 일일점검 현황처럼 내부 타일 직접 노출(이중 박스 제거). border/bg/radius/padding 제거·내부 타일/링크/id 무변경. 헤더=피어 섹션 스케일(30px chip/17px). -->
-      <div id="homeReceptionCard" style="display:flex;flex-direction:column;">
+      <div id="homeReceptionCard" style="background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;">
         <!-- [2026-08-28 GM 지시] 카드 아래 링크 3개(현황 보드 →·전용 현황 페이지·회원 접수 폼) 중
              「전용 현황 페이지」만 남겨 제목 줄 오른쪽으로 올렸다. 나머지 둘은 지웠다 —
              현황 보드(O1)는 왼쪽 메뉴로 가고, 회원 접수 폼은 회원이 쓰는 주소라 이 화면에 둘 자리가 아니다. -->
