@@ -7,6 +7,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
 <link href="_a3_report.css" rel="stylesheet">
+<style>
+  /* 매출·회원 표는 회장님이 가장 먼저·오래 보시는 자리라 이 장에서만 한 단계 더 키운다
+     (GM 지시 2026-08-28 "매출 및 회원 현황보고는 조금 더 글씨 크게"). 공용 CSS 를 키우면
+     9월 계획 장이 넘치므로 이 파일 안에서만 올린다. */
+  .big th, .big td{ font-size:14.2px; line-height:1.34; padding:0 10px; }
+  .big thead th{ height:33px; font-size:13.6px; }
+  .big tbody td{ height:37px; }
+  .big td.k{ font-size:13.6px; }
+  .big .est{ font-size:12px; }
+  .big .glab{ font-size:12.4px; }
+  .big .gbar{ height:13px; }
+  .big .dot{ width:11px; height:11px; }
+</style>
 </head>
 <body>
 
@@ -67,7 +80,7 @@
 
       <div>
         <div class="sec-h">Ⅰ. 8월 실적 <span class="hint">2026-08-28 조회 · 영업일 26일 · 마감 시 변동</span></div>
-        <table>
+        <table class="big">
           <colgroup><col style="width:96px"><col><col style="width:188px"><col style="width:142px"><col style="width:30px"></colgroup>
           <thead><tr><th class="k">구분</th><th>8월 실적</th><th>목표 대비</th><th>전월 대비</th><th></th></tr></thead>
           <tbody>
@@ -89,7 +102,7 @@
               <td class="k">회원</td>
               <td>유효 <b>995명</b> <span class="est">멤버십 858 · 입주민 79 · 기타 58</span> + 법인 31</td>
               <td class="ctr">정원 1,000명 <b>마감 유지</b></td>
-              <td class="ctr">8월 등록 <b>58건</b></td>
+              <td class="ctr">8월 등록 <b>58건</b><br><span class="est">신규 17 · 재등록 35 · 대기 5 · 양수 1</span></td>
               <td class="ctr"><span class="dot g"></span></td>
             </tr>
             <tr>
@@ -110,16 +123,16 @@
       </div>
 
       <div>
-        <div class="sec-h">Ⅱ. 부문별 매출 <span class="hint">8월 · 상위 5개와 그 밖</span></div>
-        <table>
+        <div class="sec-h">Ⅱ. 부문별 매출 <span class="hint">8월 · 상위 3개와 그 밖</span></div>
+        <table class="big">
           <colgroup><col style="width:96px"><col style="width:130px"><col><col style="width:60px"></colgroup>
           <thead><tr><th class="k">부문</th><th>8월 매출</th><th>구성</th><th>비중</th></tr></thead>
           <tbody>
             <tr><td class="k">회원권</td><td class="num strong">254,064,776</td><td><div class="gbar"><i style="width:46.6%"></i></div></td><td class="ctr strong">46.6%</td></tr>
             <tr><td class="k">P.T</td><td class="num">104,123,200</td><td><div class="gbar"><i style="width:19.1%"></i></div></td><td class="ctr">19.1%</td></tr>
             <tr><td class="k">수영</td><td class="num">96,358,750</td><td><div class="gbar"><i style="width:17.7%"></i></div></td><td class="ctr">17.7%</td></tr>
-            <tr><td class="k">스쿼시·체조</td><td class="num">42,223,400</td><td><div class="gbar"><i style="width:7.7%"></i></div></td><td class="ctr">7.7%</td></tr>
-            <tr><td class="k">그 밖</td><td class="num">48,339,475</td><td><div class="gbar"><i style="width:8.9%"></i></div><span class="est">뮤지컬 1,778 · 필라테스 1,501 · 골프 1,496 · 주차 249만 등</span></td><td class="ctr">8.9%</td></tr>
+            
+            <tr><td class="k">그 밖</td><td class="num">90,562,875</td><td><div class="gbar"><i style="width:16.6%"></i></div><span class="est">스쿼시 2,211 · 체조 2,011 · 뮤지컬 1,778 · 필라테스 1,501 · 골프 1,496 · 주차 249만</span></td><td class="ctr">16.6%</td></tr>
           </tbody>
         </table>
       </div>
@@ -173,7 +186,7 @@
             <tr>
               <td class="k">운영부·주차부</td>
               <td>측정 불가 — 실적이 0이 아니라, 셀 수가 없습니다</td>
-              <td class="ctr" colspan="2"><span class="est">주차부는 점검 항목이 등록돼 있지 않고, 운영부는 점검 화면 자체가 없습니다 → 9월 계측 체계 구축</span></td>
+              <td class="ctr" colspan="2"><span class="est">주차부=점검 항목 미등록 · 운영부=점검 화면 부재 → 9월 계측 구축</span></td>
               <td class="ctr"><span class="dot n"></span></td>
             </tr>
           </tbody>
