@@ -68,15 +68,48 @@
   /* 회원 현황 — 시트 순서를 뜻이 맞는 세 묶음으로 나눠 세로로 읽게 한다.
      ★2026-08-28 GM 지적("좌우칸으로 나눠버리네")로 2열 격자를 걷어냈다 — 나란히 놓인 두 값이
        서로 짝이 아닌데 짝처럼 보였다. 라벨·값은 시트 그대로 쓰고 배치만 바꾼다. */
-  .mgrp{margin-bottom:9px;}
-  .mgrp:last-child{margin-bottom:0;}
-  .mgrp > h3{font-size:10.5px;font-weight:800;color:#48525B;letter-spacing:1.5px;
-    margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--line);}
   .mrow{display:flex;align-items:baseline;gap:8px;padding:3px 2px;font-size:12px;}
   .mrow:not(:last-child){border-bottom:1px dotted var(--line);}
   .mrow .lb{color:#3C464F;}
   .mrow .dt{flex:1;border-bottom:1px dotted #C9D0D6;transform:translateY(-3px);}
   .mrow .vl{font-weight:800;font-size:13.5px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+  /* 큰 한 줄(총계) */
+  .bigrow{display:flex;align-items:baseline;gap:8px;padding-bottom:5px;}
+  .bigrow .bl{font-size:11.5px;color:#48525B;font-weight:700;}
+  .bigrow .bv{margin-left:auto;font-size:22px;font-weight:900;letter-spacing:-.6px;
+    font-variant-numeric:tabular-nums;}
+
+  /* 회원 구성 가로 누적 막대 */
+  .stack{display:flex;height:15px;border:1px solid var(--line);overflow:hidden;}
+  .stack i{display:block;height:100%;}
+  .chips{display:flex;flex-wrap:wrap;gap:5px 12px;margin-top:6px;font-size:11.3px;color:#3C464F;}
+  .chips .chip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
+  .chips b{font-variant-numeric:tabular-nums;}
+
+  /* 드나듦 4칸 */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .flow .fb{border:1px solid var(--line);padding:5px 8px 6px;text-align:center;}
+  .flow .fl{font-size:10.3px;color:#48525B;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .flow .fv{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;margin-top:1px;}
+  .flow .in{border-top:3px solid var(--good);} .flow .in .fv{color:var(--good);}
+  .flow .out{border-top:3px solid var(--bad);} .flow .out .fv{color:var(--bad);}
+  .flow .net{border-top:3px solid var(--navy);background:#F6F8FA;} .flow .net .fv{color:var(--navy);}
+  .fnote{font-size:10.3px;color:#7A838B;margin-top:5px;line-height:1.45;}
+
+  /* 입장객 막대 */
+  .vrow{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11.8px;}
+  .vrow .vl2{width:56px;color:#3C464F;}
+  .vrow .vbar{flex:1;height:11px;background:#F0F3F7;border:1px solid var(--line);}
+  .vrow .vbar i{display:block;height:100%;background:var(--navy);}
+  .vrow .vn{width:44px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
+
+  /* 등록·환불 매출 3칸 */
+  .rr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .rr .rrb{border:1px solid var(--line);border-top:3px solid var(--good);padding:6px 10px 7px;}
+  .rr .rrl{font-size:10.5px;color:#48525B;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rr .rrv{font-size:19px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.5px;margin-top:1px;}
+  .rr .rrv.minus{color:var(--bad);}
 
   /* 헤드라인 — 회장님·대표님이 맨 먼저 보는 네 숫자 */
   .hl{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:11px;}
@@ -90,7 +123,7 @@
     line-height:1.5;color:#22282E;}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:11px;min-height:0;}
 
-  .chartwrap{padding:6px 8px 2px;}
+  .chartwrap{padding:6px 8px 2px;overflow:hidden;min-height:0;}
   .lg{display:flex;gap:14px;font-size:10.5px;color:#48525B;padding:0 11px 6px;}
   .lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
 
@@ -153,6 +186,16 @@
         </table>
       </div>
 
+      <div class="sec">
+        <h2>등록 · 환불 매출 — 어제 돈이 어디서 들어오고 나갔나</h2>
+        <div class="bd" id="regRev"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+
+      <div class="sec">
+        <h2>연 목표 진행</h2>
+        <div class="bd" id="gauge"><div style="font-size:11.5px;color:#7A838B">불러오는 중…</div></div>
+      </div>
+
       <div class="sec" style="flex:1;min-height:0;">
         <h2>연간 매출 추이 (올해)</h2>
         <div class="lg">
@@ -160,20 +203,25 @@
           <span><i style="background:#146B4F"></i>누적 (오른쪽 눈금)</span>
         </div>
         <div class="chartwrap" style="flex:1;">
-          <svg id="chart" viewBox="0 0 900 400" style="width:100%;height:auto;display:block"></svg>
+          <svg id="chart" viewBox="0 0 900 290" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
         </div>
       </div>
     </div>
 
     <div class="col">
       <div class="sec">
-        <h2>회원 현황</h2>
-        <div class="bd" id="member"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+        <h2>회원 구성 — 오늘 몇 분이 회원인가</h2>
+        <div class="bd" id="memberMix"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
 
       <div class="sec">
-        <h2>연 목표 진행</h2>
-        <div class="bd" id="gauge"><div style="font-size:11.5px;color:#7A838B">불러오는 중…</div></div>
+        <h2>회원 드나듦 — 들어온 분 · 나간 분</h2>
+        <div class="bd" id="memberFlow"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+      </div>
+
+      <div class="sec">
+        <h2>어제 다녀가신 분</h2>
+        <div class="bd" id="visits"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
       </div>
 
       <div class="two" style="flex:1;min-height:0;">
@@ -206,16 +254,22 @@ var TOKEN = 'wellperion-2026';
 var ERP  = 'https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec';
 
 var SALES_ROWS  = [4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-/* 회원 현황 — 시트 M2:N15 를 뜻이 맞는 세 묶음으로 나눈다(값·라벨은 시트 그대로).
-   묶음 이름은 우리가 붙인 것이고, 안에 들어가는 행은 시트 순서 그대로다. */
-var MEMBER_GROUPS = [
-  { name: '회원 구성',   rows: [2, 3, 4, 5, 6] },      // 총·정회원·중단기·법인·대기
-  { name: '등록 · 해지', rows: [7, 8, 9, 10, 11, 12] },// 신규등록 매출·인원 / 재등록 매출·인원 / 환불 / 로스자
-  { name: '일일 입장객', rows: [13, 14, 15] }          // 멤버십·준회원·유소년
-];
+/* ★2026-08-28 GM 지적("신규등록·재등록·환불 매출이 다 우측으로 가 있다")로 배치를 뜻으로 다시 갈랐다.
+   시트는 오른쪽 한 칸에 회원 수와 등록 매출을 섞어 놓았지만, 보고서는 **왼쪽=돈 / 오른쪽=사람**으로 읽힌다.
+   ▸돈(왼쪽): 신규 등록 매출 N7 · 재등록 매출 N9 · 환불 매출 N11
+   ▸사람(오른쪽): 회원 구성 N2~N6 · 드나듦 N8·N10·N12 · 입장객 N13~N15
+   라벨과 숫자는 시트 그대로 쓴다 — 옮긴 것은 자리뿐이다. */
+var MEMBER_MIX  = [3, 4, 5, 6];        // 정회원·중단기·법인·대기 (총계 N2 는 막대 위에 따로)
+var MEMBER_FLOW = [8, 10, 12];         // 신규등록자 · 재등록자 · 로스자
+var VISIT_ROWS  = [13, 14, 15];        // 일일입장객 멤버십·준회원·유소년
+var REGREV_ROWS = [7, 9, 11];          // 신규 등록 매출 · 재등록 매출 · 환불 매출
+var MIX_COLORS  = ['#14304E', '#4A6B8A', '#8FA6BC', '#C2CEDA'];
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>]/g, function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+/* '1,026명' · ' 3,400,000 ' → 숫자. 막대 길이를 그릴 때만 쓴다(화면에 찍는 값은 시트 문자열 그대로). */
+function num(v){ var n = parseInt(String(v == null ? '' : v).replace(/[^0-9-]/g, ''), 10);
+  return isNaN(n) ? 0 : n; }
 function rateClass(v){ var n = parseFloat(String(v).replace('%','')); if (isNaN(n)) return '';
   return n >= 100 ? 'r-hi' : (n >= 70 ? 'r-mid' : 'r-lo'); }
 function eok(n){ return (n / 100000000).toFixed(1) + '억'; }
@@ -231,14 +285,64 @@ function renderSheet(c){
       '<td class="rate ' + rateClass(c['L'+r]) + '">' + esc(c['L'+r] || '–') + '</td></tr>';
   }).join('') || '<tr><td colspan="5">값 없음</td></tr>';
 
-  document.getElementById('member').innerHTML = MEMBER_GROUPS.map(function(g){
-    var rows = g.rows.map(function(r){
-      var k = c['M' + r]; if (!k) return '';
-      return '<div class="mrow"><span class="lb">' + esc(k.replace(/\n/g,' ')) + '</span>' +
-             '<span class="dt"></span><span class="vl">' + esc(c['N'+r] || '–') + '</span></div>';
-    }).join('');
-    return rows ? '<div class="mgrp"><h3>' + esc(g.name) + '</h3>' + rows + '</div>' : '';
-  }).join('') || '<div class="mrow"><span class="lb">값 없음</span></div>';
+  // ── 회원 구성 : 총계 + 가로 누적 막대(구성이 한눈에 보이게) ──
+  var mixItems = MEMBER_MIX.map(function(r, i){
+    return { label: String(c['M'+r] || '').replace(/\n/g,' ').replace(/\s*수$/,''),
+             raw: c['N'+r] || '–', n: num(c['N'+r]), color: MIX_COLORS[i] };
+  }).filter(function(x){ return x.label; });
+  var mixSum = mixItems.reduce(function(a, b){ return a + b.n; }, 0) || 1;
+  document.getElementById('memberMix').innerHTML =
+    '<div class="bigrow"><span class="bl">' + esc(String(c.M2 || '총 회원수').replace(/\n/g,' ')) + '</span>' +
+      '<span class="bv">' + esc(c.N2 || '–') + '</span></div>' +
+    '<div class="stack">' + mixItems.map(function(x){
+        return '<i style="width:' + (x.n / mixSum * 100) + '%;background:' + x.color + '" title="' +
+               esc(x.label) + '"></i>'; }).join('') + '</div>' +
+    '<div class="chips">' + mixItems.map(function(x){
+        return '<span class="chip"><i style="background:' + x.color + '"></i>' + esc(x.label) +
+               ' <b>' + esc(x.raw) + '</b></span>'; }).join('') + '</div>';
+
+  // ── 회원 드나듦 : 들어온 분 / 나간 분 / 순증 ──
+  var flow = MEMBER_FLOW.map(function(r){
+    return { label: String(c['M'+r] || '').replace(/\n/g,' '), raw: c['N'+r] || '–', n: num(c['N'+r]) };
+  }).filter(function(x){ return x.label; });
+  var inCnt = (flow[0] ? flow[0].n : 0) + (flow[1] ? flow[1].n : 0);
+  var outCnt = flow[2] ? flow[2].n : 0;
+  var net = inCnt - outCnt;
+  document.getElementById('memberFlow').innerHTML =
+    '<div class="flow">' + flow.map(function(x, i){
+        return '<div class="fb' + (i === 2 ? ' out' : ' in') + '"><div class="fl">' + esc(x.label) +
+               '</div><div class="fv">' + esc(x.raw) + '</div></div>'; }).join('') +
+      '<div class="fb net"><div class="fl">순증</div><div class="fv">' +
+        (net > 0 ? '+' : '') + net + '명</div></div>' +
+    '</div>' +
+    '<div class="fnote">들어온 분 ' + inCnt + '명 − 나간 분 ' + outCnt + '명 = <b>' +
+      (net > 0 ? '+' : '') + net + '명</b> · 인원 수는 시트 값 그대로이고, 순증만 여기서 뺀 값입니다</div>';
+
+  // ── 어제 다녀가신 분 ──
+  var vis = VISIT_ROWS.map(function(r){
+    return { label: String(c['M'+r] || '').replace(/\n/g,' ').replace(/^👤\s*/,'')
+                      .replace(/일일입장객\s*/,'').replace(/[()]/g,''),
+             raw: c['N'+r] || '–', n: num(c['N'+r]) };
+  }).filter(function(x){ return x.label; });
+  var visMax = Math.max.apply(null, vis.map(function(x){ return x.n; }).concat([1]));
+  var visSum = vis.reduce(function(a, b){ return a + b.n; }, 0);
+  document.getElementById('visits').innerHTML =
+    '<div class="bigrow"><span class="bl">합계</span><span class="bv">' + visSum + '명</span></div>' +
+    vis.map(function(x){
+      return '<div class="vrow"><span class="vl2">' + esc(x.label) + '</span>' +
+             '<span class="vbar"><i style="width:' + (x.n / visMax * 100) + '%"></i></span>' +
+             '<span class="vn">' + esc(x.raw) + '</span></div>'; }).join('');
+
+  // ── 등록·환불 매출 : 돈이라 왼쪽(매출) 열에 둔다 ──
+  document.getElementById('regRev').innerHTML =
+    '<div class="rr">' + REGREV_ROWS.map(function(r){
+      var lb = String(c['M'+r] || '').replace(/\n/g,' ');
+      if (!lb) return '';
+      var v = String(c['N'+r] || '–').trim();
+      var minus = /^-\s*[\d,]/.test(v) || v === '-';
+      return '<div class="rrb"><div class="rrl">' + esc(lb) + '</div>' +
+             '<div class="rrv' + (minus ? ' minus' : '') + '">' + esc(v) + '</div></div>';
+    }).join('') + '</div>';
 
   // 헤드라인 네 칸 — 시트 값을 그대로 옮긴다(다시 계산하지 않는다)
   var hl = document.getElementById('headline').children;
@@ -264,7 +368,7 @@ function renderSheet(c){
 
 /* 연간 추이 — 월 매출 막대 + 누적 선 + 연 목표선. 외부 라이브러리 없이 SVG 로 그린다. */
 function renderChart(d){
-  var W = 900, H = 400, L = 58, R = 52, T = 16, B = 28;
+  var W = 900, H = 290, L = 58, R = 52, T = 16, B = 28;
   var months = (d && d.months) || [];
   var vals = months.map(function(m){ return m.value; });
   var maxV = Math.max.apply(null, vals.map(function(v){ return v || 0; }).concat([1]));
