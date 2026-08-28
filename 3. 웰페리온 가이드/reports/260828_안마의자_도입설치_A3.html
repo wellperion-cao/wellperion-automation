@@ -36,17 +36,11 @@
   .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
   .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
     letter-spacing:6px; margin-bottom:5px; }
-  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:30px; letter-spacing:-.8px; line-height:1.15; }
   .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
   .meta b{ color:var(--ink); font-weight:700; }
-  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
-  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
-  .sign div:last-child{ border-right:0; }
-  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
-    border-bottom:1px solid var(--line); }
-  .sign .b{ height:38px; }
 
-  /* ② 결정 요청 */
+  /* ② 도입 방향 */
   .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
   .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-right:1px solid rgba(255,255,255,.28); }
@@ -56,54 +50,40 @@
   .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
   .ask .it:last-child{ border-right:0; }
   .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
-  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
-  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+  .ask .d{ font-size:12.5px; line-height:1.55; margin-top:4px; letter-spacing:-.2px; }
+  .ask .d b{ font-weight:700; }
 
-  /* 경고 밴드 */
-  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
-    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
-  .alert span{ font-weight:400; color:#6B2020; }
+  /* ③ 사진 3칸 */
+  .photos{ margin-top:12px; flex:1; min-height:0; display:flex; gap:12px; }
+  .photos figure{ flex:1; min-width:0; display:flex; flex-direction:column; border:1px solid var(--line); }
+  .photos img{ flex:1; min-height:0; width:100%; object-fit:cover; display:block; }
+  .photos .ph{ display:none; }
+  .photos figure.empty img{ display:none; }
+  .photos figure.empty .ph{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:1.5px dashed #B9C2CC; background:#FAFBFC; margin:8px; text-align:center; }
+  .photos .ph .t{ font-family:'Noto Serif KR',serif; font-size:15px; font-weight:700; color:#5C666F; }
+  .photos .ph .p{ font-size:11px; color:#8A939C; margin-top:7px; line-height:1.7; }
+  .photos .ph code{ font-family:inherit; background:#EFF2F5; padding:1px 6px; border-radius:2px; color:#48525B; }
+  .photos figcaption{ flex:none; background:var(--navy-bg); color:var(--navy); font-size:12.5px; font-weight:700;
+    text-align:center; padding:7px 10px; border-top:1px solid var(--line); letter-spacing:-.2px; }
 
-  /* ③ 비교표 */
-  .tblwrap{ margin-top:11px; }
+  /* ④ 요약표 */
+  .tblwrap{ margin-top:12px; }
   table{ width:100%; border-collapse:collapse; table-layout:fixed; }
-  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
-  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
-  thead th.k{ width:186px; background:#0E2439; }
-  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
-  tbody td{ height:29px; }
-  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
-  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
-    font-size:11.5px; letter-spacing:2.5px; }
-  .num{ text-align:right; font-variant-numeric:tabular-nums; }
-  .ctr{ text-align:center; }
+  th,td{ border:1px solid var(--line); padding:0 11px; font-size:12.8px; line-height:1.35; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; text-align:left; }
+  thead th .sub{ font-size:10.5px; font-weight:400; opacity:.8; margin-left:10px; }
+  tbody td{ height:33px; }
+  td.k{ background:#F6F8FA; font-weight:700; font-size:12.3px; color:var(--navy); width:150px; }
   .good{ color:var(--good); font-weight:700; }
   .warn{ color:var(--warn); font-weight:700; }
-  .bad{ color:var(--bad); font-weight:700; }
-  .est{ color:#5C666F; font-size:10.5px; }
-  td.strong{ font-weight:700; }
-  tr.sum td{ background:#F0F3F7; }
-  tr.sum td.k{ background:#E7ECF2; }
 
-  /* ④ 3분할 */
-  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
-  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
-  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
-  .box ul{ list-style:none; }
-  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
-  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
-  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
-  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
-  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
-    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
-  .box ul.ord{ counter-reset:a; }
-  .box li.n{ padding-left:20px; }
-  .box.rec{ border-top-color:var(--good); }
-  .box.rec h3{ color:var(--good); }
-  .box.rec b{ color:var(--good); }
+  /* 유의사항 한 줄 */
+  .note1{ margin-top:8px; font-size:12.3px; line-height:1.5; color:#6B2020; }
+  .note1 b{ color:var(--bad); }
 
   /* ⑤ 각주 */
-  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+  .foot{ margin-top:9px; border-top:1px solid var(--line); padding-top:7px;
     display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
@@ -128,146 +108,90 @@
       <div class="title">안마의자 도입·설치 보고 — 바디프렌드 비프리 · 9/1~2 입고</div>
     </div>
     <div class="meta">
-      작성 <b>경영지원부 (AI CEO 웰리)</b><br>
-      작성일 <b>2026. 08. 28.</b> · 문서번호 <b>WP-GM-260828-03</b><br>
-      담당 <b>윤병현AM</b> · 결재 <b>완료 (2026-08-21)</b>
-    </div>
-    <div class="sign">
-      <div><div class="t">담당</div><div class="b"></div></div>
-      <div><div class="t">GM</div><div class="b"></div></div>
-      <div><div class="t">대표</div><div class="b"></div></div>
-      <div><div class="t">회장</div><div class="b"></div></div>
+      작성 <b>경영지원부 (AI CEO 웰리)</b> · 담당 <b>윤병현AM</b><br>
+      작성일 <b>2026. 08. 28.</b> · 문서번호 <b>WP-GM-260828-03</b>
     </div>
   </div>
 
-  <!-- ② 결정 요청 -->
+  <!-- ② 도입 방향 -->
   <div class="ask">
-    <div class="lb"><span>DECISION</span><strong>확정 요청</strong></div>
+    <div class="lb"><span>DIRECTION</span><strong>도입 방향</strong></div>
     <div class="items">
       <div class="it">
-        <div class="n">01</div>
-        <div class="q">설치 대수와 최종 위치를 확정해 주십시오.</div>
-        <div class="d">결재본은 「웰페리온 내부 및 남자 탈의실 공유공간」까지만 정해져 있고 대수는 초기 구상 「2대 정도」 외 확정값이 없습니다. 입고가 09-01~02이므로 그 전에 확정이 필요합니다.</div>
+        <div class="n">왜 하는가</div>
+        <div class="d"><b>회원 서비스 확대.</b> 투자금 0원·렌탈료 없이, 회사 부담 없이 공용 공간을 수익 자리로 바꾸는 구조다.</div>
       </div>
       <div class="it">
-        <div class="n">02</div>
-        <div class="q">이용요금 게시와 회원 안내 시점을 정해 주십시오.</div>
-        <div class="d">요금은 10분 3,000 / 20분 4,000 / 30분 6,000원으로 확정되었습니다(GM 확정 2026-08-28). 언제·어떤 방식으로 회원께 알릴지 — 입고와 동시에 운영을 시작하려면 이번 주 내 준비가 필요합니다.</div>
+        <div class="n">어떻게 하는가</div>
+        <div class="d">설치·운영·A/S·인테리어까지 업체가 맡고, 웰페리온은 공간을 내주고 <b>매출의 30%</b>를 받는다. 무인 운영.</div>
+      </div>
+      <div class="it">
+        <div class="n">언제</div>
+        <div class="d"><b>2026-09-01~02 입고</b> · 계약 <b>1년</b>.</div>
+      </div>
+      <div class="it">
+        <div class="n">이어서 정할 것</div>
+        <div class="d">설치 대수와 최종 위치, 이용요금 게시·회원 안내 시점은 <b>입고 전에 정한다.</b></div>
       </div>
     </div>
   </div>
 
-  <!-- 경고 밴드 -->
-  <div class="alert">
-    고장 시 <b>대체기기 운영 불가</b> — 수리 3~5일 동안 해당 기기를 사용할 수 없다.
-    <span>대수가 적을수록 서비스 공백이 크다 — 설치 대수 확정(결정 요청 01) 시 함께 고려 필요.</span>
+  <!-- ③ 사진 3칸 -->
+  <div class="photos">
+    <figure>
+      <img src="../assets/안마의자/제품_BFV3070.jpg" alt="제품 — 비프리 BFV-3070" onerror="this.parentElement.classList.add('empty')">
+      <div class="ph">
+        <div class="t">사진 대기</div>
+        <div class="p"><code>assets/안마의자/제품_BFV3070.jpg</code><br>저장하면 자동 표시</div>
+      </div>
+      <figcaption>제품 — 비프리 BFV-3070</figcaption>
+    </figure>
+    <figure>
+      <img src="../assets/안마의자/설치공간.jpg" alt="설치 예정 공간" onerror="this.parentElement.classList.add('empty')">
+      <div class="ph">
+        <div class="t">사진 대기</div>
+        <div class="p"><code>assets/안마의자/설치공간.jpg</code><br>저장하면 자동 표시</div>
+      </div>
+      <figcaption>설치 예정 공간</figcaption>
+    </figure>
+    <figure>
+      <img src="../assets/안마의자/이용안내.jpg" alt="이용 안내 · 요금 게시(예시)" onerror="this.parentElement.classList.add('empty')">
+      <div class="ph">
+        <div class="t">사진 대기</div>
+        <div class="p"><code>assets/안마의자/이용안내.jpg</code><br>저장하면 자동 표시</div>
+      </div>
+      <figcaption>이용 안내 · 요금 게시(예시)</figcaption>
+    </figure>
   </div>
 
-  <!-- ③ 표 + 사진 자리 -->
-  <div class="tblwrap" style="display:flex; gap:12px;">
-  <div style="flex:1; min-width:0;">
+  <!-- ④ 요약표 -->
+  <div class="tblwrap">
   <table>
-    <colgroup><col style="width:186px"><col></colgroup>
+    <colgroup><col style="width:150px"><col></colgroup>
     <thead>
-      <tr>
-        <th class="k">판단 항목</th>
-        <th>내용<span class="sub">결재 기획안 원문 · 업무·결재 SSOT 원장 2026-08-28 조회</span></th>
-      </tr>
+      <tr><th colspan="2">핵심 조건<span class="sub">업무·결재 SSOT 원장 · 바디프렌드 제공 자료 (2026-08-28 조회)</span></th></tr>
     </thead>
     <tbody>
-      <tr class="grp"><td colspan="2">도 입 개 요</td></tr>
-      <tr><td class="k">업체 · 제품</td><td><b>바디프렌드 (확정)</b> · 운영 제품 <b>비프리(BE FREE) BFV-3070</b> · 업체 담당 공유마사지의자 사업팀 진철규 실장·이재웅 대리</td></tr>
-      <tr><td class="k">계약 기간</td><td><b>1년</b> (GM 확정 2026-08-28)</td></tr>
-      <tr><td class="k">위치 · 설치 대수</td><td>웰페리온 내부 및 남자 탈의실 공유공간 · <span class="warn">최종 위치·대수 미확정</span> (초기 구상 「2대 정도」 · 08-26 사전답사에서 가능 위치 검토)</td></tr>
-      <tr><td class="k">입고 일정 · 담당</td><td><b>2026-09-01 ~ 09-02</b> · 담당 윤병현AM</td></tr>
-
-      <tr class="grp"><td colspan="2">비 용 구 조</td></tr>
-      <tr><td class="k">초기 투자 · 월 비용</td><td>초기 투자 <span class="good">0 원</span> (설치비·운영비 전액 바디프렌드 부담) · 월 렌탈료 <span class="good">없음</span> · 참고 — 구매 시 대당 약 430만원</td></tr>
-
-      <tr class="grp"><td colspan="2">수 익 구 조</td></tr>
-      <tr><td class="k">이용요금</td><td><b>10분 3,000원 / 20분 4,000원 / 30분 6,000원</b> (GM 확정 2026-08-28)</td></tr>
-      <tr><td class="k">웰페리온 배분</td><td><b class="good">매출의 30%</b> — 10분 900 / 20분 1,200 / 30분 1,800원 · 월 단위 매출 정산 후 수수료 지급</td></tr>
-      <tr><td class="k">월 예상 수익</td><td>이용 1회당 900~1,800원 · <span class="warn">월 수익은 설치 대수·이용 인원 확정 후 산출</span></td></tr>
-
-      <tr class="grp"><td colspan="2">유 지 관 리</td></tr>
-      <tr><td class="k">A/S · 정기점검</td><td>정기점검 <b>월 2회(2주 1회)</b> · 계약 기간 동안 <b>전액 무상 A/S</b> (비용 바디프렌드 부담)</td></tr>
-      <tr><td class="k">고장 대응 · 파손</td><td>방문 점검·수리 3~5일 이내 처리 목표 · <span class="bad">고장 시 대체기기 운영 어려움</span> · 고의 파손은 양사 협의 후 비용 부담</td></tr>
-      <tr><td class="k">업체 제공 서비스</td><td>전문 배송·설치(전문 기사 직접 방문) · 무인 운영 · 설치 공간 인테리어 업체가 직접 계획·진행 · 수익 분배</td></tr>
-
-      <tr class="grp"><td colspan="2">결 재 이 력 · 진 행 경 과</td></tr>
-      <tr class="sum"><td class="k">결재 완료</td><td>부서장 서명 2026-08-21 18:35 · GM 서명 2026-08-21 18:36 · 대표 서명 등록 · <b>결재완료 2026-08-21</b></td></tr>
-      <tr><td class="k">경과</td><td>08-14 결재 상신 → <b>08-21 결재 완료</b> → 08-26 15시 바디프렌드 사전답사 → <b>09-01~02 입고</b></td></tr>
-
-      <tr class="grp"><td colspan="2">남 은 것</td></tr>
-      <tr><td class="k">입고 전 확정</td><td>설치 대수·최종 위치 확정 · 요금 게시·회원 안내 · 결제 수단 확정 (초기 구상 「카드로」)</td></tr>
-      <tr><td class="k">입고 후 정리</td><td>월 정산(매출 30%) 확인 절차 마련 · 사전답사 결과보고 1건 (GM 의견 08-26 — 기획안 1 + 결과보고 1로 마무리)</td></tr>
+      <tr><td class="k">업체 · 제품</td><td><b>바디프렌드 (확정)</b> · 비프리(BE FREE) <b>BFV-3070</b></td></tr>
+      <tr><td class="k">계약 · 입고</td><td>계약 <b>1년</b> · 입고 <b>2026-09-01 ~ 09-02</b> · 담당 <b>윤병현AM</b></td></tr>
+      <tr><td class="k">비용</td><td>초기 투자 <span class="good">0 원</span> · 월 렌탈료 <span class="good">없음</span> — 설치·운영 비용 전액 바디프렌드 부담</td></tr>
+      <tr><td class="k">이용요금</td><td><b>10분 3,000 / 20분 4,000 / 30분 6,000원</b> (GM 확정 2026-08-28)</td></tr>
+      <tr><td class="k">웰페리온 몫</td><td><b class="good">매출의 30%</b> = 1회 <b>900 ~ 1,800원</b> · 배분 구조 — 원가 40% · A/S·운영 20% · 업체 10% · 웰페리온 30%</td></tr>
+      <tr><td class="k">유지 관리</td><td>정기점검 <b>월 2회</b> · 계약 기간 <b>무상 A/S</b> · 무인 운영</td></tr>
+      <tr><td class="k">제품 사양</td><td>220V · 107kg · 타이머 10/20/30분 · UVC 살균 4개소 · 눕힘 160×78×85cm</td></tr>
+      <tr><td class="k">미확정</td><td><span class="warn">설치 대수 · 최종 위치 · 회원 안내 시점 · 결제 방식</span> — 입고 전에 정한다 · 월 예상 수익은 대수·이용 인원 확정 후 산출</td></tr>
     </tbody>
   </table>
   </div>
-  <div style="width:400px; flex:none; display:flex; flex-direction:column; gap:10px;">
-    <table>
-      <colgroup><col style="width:118px"><col></colgroup>
-      <thead><tr><th colspan="2">제품 사양 — 비프리 BFV-3070<span class="sub">바디프렌드 제공 자료</span></th></tr></thead>
-      <tbody>
-        <tr><td class="k">정격전압·소비전력</td><td>220V · 120W · 60Hz</td></tr>
-        <tr><td class="k">오토 타이머</td><td>10 / 20 / 30분</td></tr>
-        <tr><td class="k">에어백 · 마사지볼</td><td>어깨·팔·종아리(20포켓) · 목~엉덩이</td></tr>
-        <tr><td class="k">살균</td><td>UVC 살균 4개소(어깨 좌/우·손끝 좌/우) · 1회 작동 후 자동 살균</td></tr>
-        <tr><td class="k">무게 · 크기</td><td>107kg · 세움 147.5×78.3×111.1cm / 눕힘 160×78.3×85cm</td></tr>
-      </tbody>
-    </table>
-    <table>
-      <colgroup><col><col style="width:64px"><col style="width:84px"></colgroup>
-      <thead><tr><th colspan="3">수익 배분 — 1회 사용 3,000원 기준<span class="sub">바디프렌드 제공 자료</span></th></tr></thead>
-      <tbody>
-        <tr><td class="k">제품원가 (부자재·정기 교체 포함)</td><td class="ctr">40%</td><td class="num">1,200 원</td></tr>
-        <tr><td class="k">A/S·점검·운영관리·부품 교체</td><td class="ctr">20%</td><td class="num">600 원</td></tr>
-        <tr><td class="k">바디프렌드 순이익</td><td class="ctr">10%</td><td class="num">300 원</td></tr>
-        <tr class="sum"><td class="k strong">웰페리온 수익</td><td class="ctr strong good">30%</td><td class="num strong good">900 원</td></tr>
-      </tbody>
-    </table>
-    <div style="font-size:10.5px; color:#5C666F; line-height:1.5;">확정 요금 기준 웰페리온 몫(30%) — <b style="color:#146B4F;">10분 900원 · 20분 1,200원 · 30분 1,800원</b><br>자료 원문 — 「1명의 고객당, 약 900원의 수익이 생깁니다」</div>
-    <div style="flex:1; border:1.5px dashed #B9C2CC; background:#FAFBFC; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:14px;">
-      <div style="font-family:'Noto Serif KR',serif; font-size:15px; font-weight:700; color:#5C666F;">제품 사진</div>
-      <div style="font-size:11px; color:#8A939C; margin-top:6px; line-height:1.6;">바디프렌드 비프리 모델 — GM 전달 후 삽입</div>
-    </div>
-  </div>
-  </div>
 
-  <!-- ④ 3분할 -->
-  <div class="cols">
-    <div class="box">
-      <h3>핵심 리스크</h3>
-      <ul>
-        <li class="r1">설치 대수·최종 위치 미확정 — 입고(09-01)까지 남은 시간이 짧다.</li>
-        <li class="r1">고장 시 대체기기 없음 — 수리 3~5일간 기기 공백. 대수가 적을수록 서비스 공백이 커진다.</li>
-        <li class="r2">요금 게시·회원 안내 미준비 — 입고와 동시 운영을 시작하려면 이번 주 내 게시물·안내문이 필요하다.</li>
-        <li class="r2">월 정산 확인 절차 미비 — 절차 없이 첫 정산월을 맞으면 30% 배분 검증이 불가하다.</li>
-      </ul>
-    </div>
-    <div class="box">
-      <h3>실행 액션</h3>
-      <ul class="ord">
-        <li class="n">입고 전(~08-31) — 설치 대수·최종 위치 확정, 사전답사 결과보고 1건 정리 (윤병현AM)</li>
-        <li class="n">입고 전 — 이용요금 게시물·회원 안내문 준비 (10분 3,000 / 20분 4,000 / 30분 6,000원 확정 요금)</li>
-        <li class="n">입고 당일(09-01~02) — 설치 위치·전원·결제 수단 확인 (초기 구상 「카드로」)</li>
-        <li class="n">입고 후 — 월 정산(매출 30%) 확인 절차 확정 · 첫 달 이용 실적 보고</li>
-      </ul>
-    </div>
-    <div class="box rec">
-      <h3>GM 권고</h3>
-      <ul>
-        <li><b>입고 전 확정 1회로 끝낸다</b> — 대수·최종 위치·결제 수단을 한 번에 확정하고, 그 내용을 <b>사전답사 결과보고 1건</b>에 담아 결재를 종결한다 (GM 의견 08-26 「기획안 1 + 결과보고 1」에 부합).</li>
-        <li>대체기기가 없는 조건이므로, 확정 시 <b>기기 공백을 견딜 수 있는 대수인지</b>를 함께 판단한다.</li>
-      </ul>
-    </div>
-  </div>
+  <!-- 유의사항 한 줄 -->
+  <div class="note1"><b>유의</b> — 고장 시 대체기기가 없어 수리 3~5일 동안 그 자리가 빈다. 설치 대수를 정할 때 함께 본다.</div>
 
   <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>출처</b> — 업무·결재 SSOT 원장 2026-08-28 조회 · 「안마의자 구비 및 설치」 결재 기획안 원문 (TODO-20260814163530242 · 결재완료 2026-08-21) · 바디프렌드 제공 자료(제품 사양·수익 구조 · 08-28 GM 전달) · 업체 담당 (주)바디프렌드 공유마사지의자 사업팀 진철규 실장·이재웅 대리.</div>
-    <div><b>작성 기준</b> — 요금(10분 3,000 / 20분 4,000 / 30분 6,000원)·계약 1년 = GM 확정 2026-08-28. 30분 요금은 2026-08-21 결재본 5,000원 → GM 확정 2026-08-28 로 6,000원, 업체 자료 기준으로 통일했다. 정기점검은 결재본 「2주 1회」 = 자료 「월 2회」 같은 뜻이라 「월 2회(2주 1회)」로 통일. 추정치 없음.</div>
-    <div><b>미확인 항목</b> — 설치 대수 · 최종 설치 위치 · 월 예상 수익(이용 인원) · 결제 단말 연동 방식 · 사전답사 결과. <b>차기 보고</b> — 사전답사 결과보고 접수 후 본 문서 갱신 (같은 문서번호 유지).</div>
+    <div><b>출처</b> — 업무·결재 SSOT 원장 「안마의자 구비 및 설치」 (TODO-20260814163530242) · 바디프렌드 제공 자료(08-28 GM 전달). 경과 — 08-14 상신 → 08-21 결재완료 → 08-26 사전답사 → 09-01~02 입고.</div>
+    <div><b>작성 기준</b> — 30분 요금은 결재본 5,000원 → GM 확정 2026-08-28 6,000원. 정기점검 「2주 1회」=「월 2회」 동일 의미로 통일 · 참고 — 구매 시 대당 약 430만원.</div>
+    <div><b>차기 보고</b> — 사전답사 결과보고 접수 후 본 문서 갱신(같은 문서번호). 사진 3장은 <b>assets/안마의자/</b> 폴더에 지정 파일명으로 저장하면 자동 표시된다.</div>
   </div>
 
 </div>
