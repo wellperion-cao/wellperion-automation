@@ -735,12 +735,7 @@ function render() {
     list.sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
   } else {
     // 최신순(기본): 생성일(createdAt) 최신 상단 — GM 2026-06-12 (생성일 결측 시 수정일→시작일→완료시각 폴백)
-    // ★2026-08-28 GM 지시 — 결재완료 건만은 '결재된 시각'을 기준으로 센다. 생성일로 세면
-    //   몇 달 전 올라온 건이 방금 결재돼도 완료칸 아래로 가라앉아, GM 이 방금 누른 건을 못 찾는다.
-    //   여기 한 곳만 고치면 전체 보기의 ✅결재완료 묶음과 '결재완료' 필터 뷰가 함께 맞는다.
-    const sortKey = t => String(
-      (t.approvalStatus === '결재완료' && (t.completeTime || t['결재완료시각'])) ||
-      t.createdAt || t['생성일'] || t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
+    const sortKey = t => String(t.createdAt || t['생성일'] || t.updatedAt || t['수정일'] || t.startDate || t['시작일'] || t.completeTime || '');
     list.sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
   }
 
@@ -1375,7 +1370,7 @@ function docPrintBody(html) {
 function isUnfilledTemplate(html, taskTitle) {
   if (!isDocHtml(html)) return false;
   if (/<img/i.test(html)) return false;
-  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','이정헌 소장','김남욱GM','GM'];
+  const NAMES = ['이경연 실장','나우열M','최준용M','임정은M','윤병현AM','백승화 사원','진수아 사원','이정헌 소장','김남욱GM','GM'];
   const S = ['WELLPERION','주식회사 웰페리온 · 하이엔드 프라이빗 스포츠클럽','기 획 안','결 과 보 고','◆',
     '업무명','작성자','작성일','보고일','기간','수행 기간','핵심 요약',
     '결과를 한두 문장으로 요약해 주세요 — GM·대표님이 가장 먼저 읽는 칸입니다.','내용을 입력하세요.',
