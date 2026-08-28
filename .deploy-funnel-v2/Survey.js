@@ -12542,7 +12542,13 @@ function warmLessonRosterCache() {
       _wrProps.setProperty('WAIT_RELEASE_LAST', _wrToday);
       Logger.log('member_wait_auto_release_(warm): checked=' + _wr.checked + ' released=' + _wr.released);
     }
-    if (_wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
+    // ★LOSS일자는 오전 10시 이후에만 찍는다 (GM 지시 2026-08-28).
+    //   매일 09:30 에 회장님·부서장 방으로 매출보고가 나간다. 그 전에 LOSS 도장이 찍히면
+    //   보고서에 실린 회원수와 시트 회원수가 갈린다 — GM 실측: 8/28 12:05 에 찍혀 보고 인원이
+    //   계속 어긋났다. 보고가 나간 뒤에 찍히게 시각 게이트를 건다(날짜 도장은 그대로).
+    //   ▸양도·양수건은 실무자가 직접 넣는다 — 이 자동 도장의 대상이 아니다(빈칸만 채운다).
+    var _wrHour = Number(Utilities.formatDate(new Date(), _wrTz, 'H'));
+    if (_wrHour >= 10 && _wrProps.getProperty('LOSS_DATE_STAMP_LAST') !== _wrToday) {
       var _ld = member_loss_date_auto_stamp_();
       _wrProps.setProperty('LOSS_DATE_STAMP_LAST', _wrToday);
       Logger.log('member_loss_date_auto_stamp_(warm): checked=' + _ld.checked + ' stamped=' + _ld.stamped + (_ld.error ? ' error=' + _ld.error : ''));
