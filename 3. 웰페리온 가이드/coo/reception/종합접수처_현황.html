@@ -650,7 +650,7 @@ var CAT_META = [
   {label:'분실물 접수',          icon:'📦', dept:'운영부', color:'var(--orange)', bg:'var(--orange-bg)'},
   {label:'습득물 접수',          icon:'🧳', dept:'운영부', color:'var(--accent)', bg:'var(--accent-bg)'},
   {label:'시설물 고장 접수',      icon:'🔧', dept:'시설부', color:'var(--blue)',   bg:'var(--blue-bg)'},
-  {label:'청결 이슈 접수',        icon:'🧹', dept:'지원부', color:'var(--green)',  bg:'var(--green-bg)'},
+  {label:'청결 이슈 접수',        icon:'🧹', dept:'',      color:'var(--green)',  bg:'var(--green-bg)'},
   {label:'컴플레인 접수',        icon:'📣', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
   {label:'직원·강사 칭찬합니다',   icon:'⭐', dept:'운영부', color:'var(--green)',  bg:'var(--green-bg)'},
   {label:'직원·강사 쓴소리합니다', icon:'💬', dept:'운영부', color:'var(--red)',    bg:'var(--red-bg)'},
@@ -658,10 +658,14 @@ var CAT_META = [
 ];
 /* 강습 6팀 = P.T팀·수영팀·체조팀·골프팀·스쿼시팀·G.X팀 (GM 확정 2026-08-25 — G.X 도 강습 안이다).
    G.X팀만 빠져 있어 라인댄스 컴플레인이 운영부로 잡혔다. 팀 리더 정본 = ssot/kpi.json 팀리더 표. */
-var DEPT_LIST = ['운영부','시설부','지원부','지원부(남)','지원부(여)','주차관리부','수영팀','P.T팀','골프팀','스쿼시팀','체조팀','G.X팀','필라테스','카페','뮤지컬팀','루프메소드팀'];
+var DEPT_LIST = ['운영부','시설부','지원부(남)','지원부(여)','주차관리부','수영팀','P.T팀','골프팀','스쿼시팀','체조팀','G.X팀','필라테스','카페','뮤지컬팀','루프메소드팀'];
 /* 목록에 없는 dept 값을 모아 별도 칩으로 보여준다(데이터 자체는 손대지 않음).
-   ▸'지원부'(성별 구분 없는 값)는 2026-08-25 부터 정식 부서다 — GM 이 락커 건을 그리로 보내기로
-     확정했다. 그 전에는 옛 3분류 시절 잔여값이라 이 칩으로 모였다. */
+   ▸★2026-08-28 GM 지시로 '지원부'(성별 구분 없는 값)를 목록에서 뺐다. GM 원문: "지원부 /
+     지원부(남) / 지원부(여) 이렇게 있던데 지원부 <삭제". 세 개가 나란히 보여 어디로 가야 하는지가
+     흐려졌다. 기준은 구역이다 — 여자사우나·파우더는 지원부(여), 남자사우나·파우더는 지원부(남).
+     ▸2026-08-25 에 락커 건을 '지원부'로 보내기로 했던 결정은 이 지시로 대체됐다. 성별을 알 수 없는
+     건은 빈 값으로 남아 아래 '지원부(구분 전)' 칩에 모이고 사람이 배정한다.
+     ▸이미 시트에 '지원부'로 쓰인 옛 건들도 이 칩으로 모인다 — 데이터를 소급해 고치지 않는다. */
 var DEPT_OTHER = '__OTHER__';
 var DEPT_OTHER_LABEL = '지원부(구분 전)';
 
@@ -807,7 +811,9 @@ function _renderChips(){
     var n = _allItems.filter(function(r){ return String(r.dept||'')===dep; }).length;
     dh += '<button class="chip' + (_curDept===dep?' active':'') + '" onclick="setDept(\'' + dep + '\')">' + _esc(dep) + ' (' + n + ')</button>';
   });
-  var otherN = _allItems.filter(function(r){ var d = String(r.dept||''); return d && DEPT_LIST.indexOf(d) < 0; }).length;
+  /* ★2026-08-28 — 부서가 비어 있는 건도 이 칩에 모은다. 종전에는 빈 값을 빼서(d &&) 어느 칩에도
+     안 잡혔다. 8/28 부터 성별을 알 수 없는 청결 건이 빈 값으로 들어오므로, 빼면 화면에서 사라진다. */
+  var otherN = _allItems.filter(function(r){ return DEPT_LIST.indexOf(String(r.dept||'')) < 0; }).length;
   if(otherN){
     dh += '<button class="chip' + (_curDept===DEPT_OTHER?' active':'') + '" onclick="setDept(\'' + DEPT_OTHER + '\')">' + _esc(DEPT_OTHER_LABEL) + ' (' + otherN + ')</button>';
   }
@@ -833,7 +839,7 @@ function _filtered(){
     if(_curCat && String(r.category||'') !== _curCat) return false;
     if(_curDept){
       var d = String(r.dept||'');
-      if(_curDept === DEPT_OTHER){ if(!d || DEPT_LIST.indexOf(d) >= 0) return false; }
+      if(_curDept === DEPT_OTHER){ if(DEPT_LIST.indexOf(d) >= 0) return false; }   /* 빈 값도 여기로(2026-08-28) */
       else if(d !== _curDept) return false;
     }
     if(_curMonth && _monthOf(r) !== _curMonth) return false;
