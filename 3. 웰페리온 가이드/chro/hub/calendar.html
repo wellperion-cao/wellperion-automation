@@ -153,6 +153,23 @@
   .more-link{font-size:11px;padding:2px 5px;border-radius:4px;color:var(--ink-soft);
     background:var(--surface-2);cursor:pointer;font-weight:700;text-align:center}
   .more-link:hover{background:var(--line-soft)}
+  /* [모바일 재설계 2026-08-28 A-5, 매니저 실기기(갤럭시 S24+) 캡처 지적 — "칩 텍스트가 2~4글자로
+     잘려 식별 불가"] 유형별 점 표시 — 데스크톱에선 기본 숨김(display:none), ≤640px 미디어쿼리에서만
+     보이도록 전환(아래). 마크업은 데스크톱·모바일 공용으로 항상 렌더링해 JS가 폭을 오판할 여지를
+     구조적으로 없앤다(리사이즈·회전 시에도 CSS만으로 항상 정확). */
+  .day-dots{display:none;align-items:center;gap:3px;flex-wrap:wrap;margin-top:3px}
+  .day-dots .ddot{width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+  .day-dots .ddot.type-소통{background:var(--blue)}
+  .day-dots .ddot.type-미팅{background:var(--purple)}
+  .day-dots .ddot.type-면접{background:var(--amber)}
+  .day-dots .ddot.type-기타{background:var(--gray)}
+  .day-dots .ddot.type-SSOT업무{background:var(--gold)}
+  .day-dots .ddot.type-HR온보딩{background:var(--green)}
+  .day-dots .ddot.type-HR면접{background:var(--orange)}
+  .day-dots .ddot.type-HR첫출근{background:var(--red)}
+  .day-dots .dcount{font-size:9px;font-weight:800;color:var(--ink-soft);line-height:1}
+  /* .day.selected 배경은 데스크톱에 절대 새지 않도록 베이스가 아니라 ≤640px 미디어쿼리 안에서만 정의(아래) —
+     JS는 데스크톱에서도 클래스를 똑같이 붙이지만(선택 로직 공용), 스타일이 없으니 시각 차이가 없다. */
   .legend-toggle{cursor:pointer;user-select:none;border-radius:5px;padding:2px 6px;margin:-2px -6px}
   .legend-toggle:hover{background:var(--surface-2)}
   .legend-toggle.off{opacity:.4}
@@ -166,6 +183,18 @@
   .day-list-item.type-HR면접{background:var(--orange-bg);color:var(--orange);border-left-color:var(--orange)}
   .day-list-item.type-HR첫출근{background:var(--red-bg);color:var(--red);border-left-color:var(--red)}
   .day-list-item.done{opacity:.5;text-decoration:line-through}
+
+  /* [모바일 재설계 2026-08-28 A-5] 선택일 하단 패널 — 데스크톱 기본 숨김(display:none),
+     ≤640px에서만 block(아래 미디어쿼리). day-list-item 스타일 재사용(제목 잘림 없는 카드형,
+     기존 "+N건 더" 팝업과 동일 시각언어 — 새 스타일을 안 만들어 일관성 유지). */
+  .mobile-day-panel{display:none;margin-top:14px}
+  .mdp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-family:var(--serif);font-size:15px;font-weight:700;color:var(--navy);padding:2px 2px 10px}
+  .mdp-today-tag{font-size:10px;font-weight:800;color:var(--gold-deep);background:#f6efdd;
+    padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+  .mdp-count{font-size:11.5px;font-weight:700;color:var(--ink-soft);flex:0 0 auto}
+  .mdp-list{display:flex;flex-direction:column;gap:7px}
+  .mdp-list .day-list-item{font-size:13px;padding:10px 12px;min-height:20px}
 
   .msg{font-size:12.5px;color:var(--ink-soft);padding:20px 4px}
   .msg.err{color:var(--red)}
@@ -229,8 +258,13 @@
        [가독성 확대 2026-08-26] 데스크톱만 키우면 모바일이 상대적으로 더 작아 보여 모바일 폰트도 함께 상향
        (칸 높이도 104→118px로 소폭 확대해 커진 글자를 받아준다). 날짜 숫자는 데스크톱 기본값(14px)이 좁은
        칸엔 과할 수 있어 13px로 별도 지정(원래값 12.5px보다는 여전히 크다). */
-    .day{min-height:118px;padding:4px 3px 5px}
-    .day .chips{max-height:88px}
+    /* [모바일 재설계 2026-08-28 A-5, 매니저 실기기 캡처 지적] 칩 텍스트 방식을 완전히 접고
+       점 표시로 전환 — 칸 높이도 텍스트를 담을 필요가 없어져 118px→56px로 대폭 축소(한 화면에
+       월 전체가 더 잘 들어옴, 터치 타깃 44px는 여전히 만족). */
+    .day{min-height:56px;padding:6px 3px 4px}
+    .day .chips{display:none}
+    .day-dots{display:flex}
+    .day.selected{background:#f6efdd}
     .day .dnum{font-size:13px}
     .chip{font-size:11px;padding:2px 5px}
     .more-link{font-size:10px}
@@ -252,6 +286,16 @@
     /* 팝업(모달)이 화면 밖으로 나가지 않도록 좌우 여백을 넓게, 세로는 내부 스크롤 유지(기존 max-height:88vh) */
     .modal{padding:18px;border-radius:14px}
     .modal-actions .btn{min-height:44px}
+    /* [모바일 재설계 2026-08-28 A-5] 요일 헤더 스크롤 시 안 잘리게 sticky 고정(매니저 필수 조건).
+       position:sticky는 조상에 overflow:hidden이 있으면(=자체 스크롤 컨테이너가 되어버려) 페이지
+       스크롤 기준으로 동작하지 않는 표준 CSS 함정 — .cal-card의 overflow:hidden(모서리 라운드
+       클리핑용)을 모바일에서만 visible로 풀어 body 스크롤 기준 sticky가 실제로 동작하게 한다
+       (카드 모서리가 각지게 보이는 아주 미세한 코스메틱 손실은 감수 — 스크린샷 검증 결과 육안 무시 수준).
+       top은 env(safe-area-inset-top)로 PWA standalone 노치 겹침도 방지(일반 브라우저는 0이라 회귀 없음). */
+    .cal-card{overflow:visible}
+    .wk-head{position:sticky;top:env(safe-area-inset-top);z-index:20}
+    /* 선택일 하단 패널 노출(데스크톱은 베이스 규칙 display:none 유지) */
+    .mobile-day-panel{display:block}
   }
   /* [PWA 2026-08-28] standalone(주소창 없는 설치 앱) 상태에서도 로그인 게이트가 상단 상태바에
      가리지 않게 — 일반 브라우저 탭에서는 env() 값이 0이라 기존과 동일하게 보인다(회귀 없음). */
@@ -311,6 +355,14 @@
     </div>
 
     <div class="msg" id="loadMsg">불러오는 중…</div>
+
+    <!-- [모바일 재설계 2026-08-28 A-5] 선택일 목록 패널 — 데스크톱은 CSS로 숨김(display:none 기본),
+         ≤640px에서만 노출. 그리드 날짜 탭 → renderDayPanel()이 이 영역을 갱신(회귀 0: 데스크톱 마크업
+         자체는 추가됐지만 화면엔 절대 안 보임 — CSS 게이팅 셀프체크로 확인). -->
+    <div class="mobile-day-panel" id="mobileDayPanel">
+      <div class="mdp-head"><span id="mdpHeadLabel">-</span><span class="mdp-count" id="mdpCount"></span></div>
+      <div class="mdp-list" id="mdpList"></div>
+    </div>
 
   </div>
 </main>
@@ -514,6 +566,15 @@ var VIEW_Y, VIEW_M; // 보고 있는 달(1-based 아님, mIdx=0=1월) — KST �
   var p=kstTodayStr().split("-");
   VIEW_Y=Number(p[0]); VIEW_M=Number(p[1])-1;
 })();
+// [추가 2026-08-28 A-5, 모바일 재설계] 그리드에서 탭한 날짜 — 모바일 하단 목록 패널(#mobileDayPanel)이
+// 이 값 기준으로 렌더된다. 데스크톱은 이 값을 렌더에 쓰지 않는다(빈칸 클릭 시 여전히 즉시 추가모달 — 아래
+// isMobileView() 분기 참고). 기본값=오늘.
+var SELECTED_DATE = kstTodayStr();
+function isMobileView(){
+  try{ return window.matchMedia("(max-width:640px)").matches; }
+  catch(e){ return (window.innerWidth||document.documentElement.clientWidth||0)<=640; }
+}
+function selectDate(dstr){ SELECTED_DATE=dstr; renderCalendar(); }
 
 /* ============ 비밀번호 게이트 (허브 index.html과 동일 패턴 — db:emp 조회로 role 판정, admin만 통과) ============ */
 function showGate(){document.getElementById("gate").style.display="flex";}
@@ -717,6 +778,42 @@ function itemsForDay(dstr){
   out.sort(function(a,b){ return priorityOf_(a.kind)-priorityOf_(b.kind); });
   return out;
 }
+/* [추가 2026-08-28 A-5, 모바일 재설계] 유형별 점(최대 3개, 유형 다양성 표시) + 개수 배지(2건 이상일
+   때만 — 1건은 점 하나로 이미 식별됨). 데스크톱은 CSS(.day-dots{display:none})가 항상 숨기므로 이
+   마크업이 렌더돼도 화면엔 나타나지 않는다. */
+function buildDayDotsHTML(items){
+  if(!items.length) return "";
+  var seen={}, order=[];
+  items.forEach(function(it){ if(!seen[it.type]){ seen[it.type]=true; order.push(it.type); } });
+  var dots=order.slice(0,3).map(function(t){ return '<span class="ddot type-'+esc(t)+'"></span>'; }).join("");
+  var count=items.length>1 ? '<span class="dcount">'+items.length+'</span>' : "";
+  return dots+count;
+}
+/* 선택일 하단 패널 — day-list-item 스타일(제목 잘림 없는 카드형) 재사용. 기존 "+N건 더" 팝업
+   (openDayList, 아래)은 이미 검증된 코드라 건드리지 않고, 이 패널은 독립적으로 새로 구현해
+   회귀 리스크를 만들지 않는다(약간의 라벨 조립 로직 중복은 안전을 위한 의도적 트레이드오프). */
+function renderDayPanel(){
+  var panel=document.getElementById("mobileDayPanel"); if(!panel) return;
+  var dstr=SELECTED_DATE||kstTodayStr();
+  var items=itemsForDay(dstr);
+  var p=dstr.split("-"); var yy=Number(p[0]), moN=Number(p[1]), da=Number(p[2]);
+  var wd=["일","월","화","수","목","금","토"][weekdayOfUTC(yy,moN-1,da)];
+  var isToday=(dstr===kstTodayStr());
+  document.getElementById("mdpHeadLabel").innerHTML=moN+"월 "+da+"일 ("+wd+")"+(isToday?' <span class="mdp-today-tag">오늘</span>':"");
+  document.getElementById("mdpCount").textContent=items.length+"건";
+  var listEl=document.getElementById("mdpList");
+  listEl.innerHTML=items.map(function(it){
+    var cls="day-list-item type-"+it.type+(it.status==="완료"?" done":"");
+    var erpMark=(it.erpRequest==="요청됨")?"📌 ":"";
+    var label=erpMark+(it.startTime?it.startTime+" ":"")+esc(it.title);
+    return '<div class="'+cls+'" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'">'+label+'</div>';
+  }).join("")||'<div class="msg" style="padding:14px 2px">일정이 없습니다.</div>';
+  listEl.querySelectorAll(".day-list-item").forEach(function(el){
+    el.addEventListener("click",function(){
+      openDetailByRef(el.getAttribute("data-kind"), el.getAttribute("data-id"), dstr);
+    });
+  });
+}
 function renderCalendar(){
   var y=VIEW_Y, m=VIEW_M;
   document.getElementById("moLabel").textContent=y+"년 "+(m+1)+"월";
@@ -724,6 +821,7 @@ function renderCalendar(){
   var firstWeekday=weekdayOfUTC(y,m,1); // 0=일…6=토
   var firstUtcMs=Date.UTC(y,m,1);
   var todayStr=kstTodayStr();
+  var selDstr=SELECTED_DATE||todayStr; // [추가 2026-08-28] 모바일 선택일 하이라이트 기준(데스크톱은 CSS로 미노출)
   var html="";
   for(var i=0;i<42;i++){
     var offsetDays=i-firstWeekday; // 그 주 일요일 기준 오프셋(음수=지난달)
@@ -732,6 +830,7 @@ function renderCalendar(){
     var dstr=dy+"-"+pad2(dmIdx+1)+"-"+pad2(dnum);
     var isOther=(dmIdx!==m || dy!==y);
     var isToday=(dstr===todayStr);
+    var isSelected=(dstr===selDstr);
     var items=itemsForDay(dstr);
     var shown=items.slice(0,DAY_CHIP_CAP);
     var moreCount=items.length-shown.length;
@@ -743,11 +842,14 @@ function renderCalendar(){
       return '<div class="'+cls+'" data-kind="'+it.kind+'" data-id="'+esc(it.id)+'" title="'+esc(tt)+'">'+label+'</div>';
     }).join("");
     if(moreCount>0) chips+='<div class="more-link" data-more-date="'+dstr+'">+'+moreCount+'건 더</div>';
-    html+='<div class="day'+(isOther?" other":"")+(isToday?" today":"")+'" data-date="'+dstr+'">'+
-      '<div class="dnum">'+dnum+'</div><div class="chips">'+chips+'</div></div>';
+    // [추가 2026-08-28] .day-dots — 모바일 전용 점 표시(데스크톱은 CSS가 항상 숨김, 아래 dots 참고)
+    var dots=buildDayDotsHTML(items);
+    html+='<div class="day'+(isOther?" other":"")+(isToday?" today":"")+(isSelected?" selected":"")+'" data-date="'+dstr+'">'+
+      '<div class="dnum">'+dnum+'</div><div class="chips">'+chips+'</div><div class="day-dots">'+dots+'</div></div>';
   }
   document.getElementById("grid").innerHTML=html;
-  // 이벤트 위임: 칩 클릭=상세, "+N건 더"=그날 전체 목록, 빈 칸 클릭=해당 날짜로 추가
+  // 이벤트 위임: 칩 클릭=상세, "+N건 더"=그날 전체 목록, 빈 칸 클릭=해당 날짜로 추가(데스크톱)
+  // /해당 날짜 선택(모바일 — 하단 패널 갱신, 아래 isMobileView() 분기, 2026-08-28 추가)
   document.getElementById("grid").querySelectorAll(".chip").forEach(function(el){
     el.addEventListener("click",function(e){
       e.stopPropagation();
@@ -761,18 +863,30 @@ function renderCalendar(){
     });
   });
   document.getElementById("grid").querySelectorAll(".day").forEach(function(el){
-    el.addEventListener("click",function(){ openAddModal(el.getAttribute("data-date")); });
+    el.addEventListener("click",function(){
+      var dstr=el.getAttribute("data-date");
+      if(isMobileView()){ selectDate(dstr); } else { openAddModal(dstr); }
+    });
   });
+  renderDayPanel(); // [추가 2026-08-28] 모바일 하단 패널 동기화 — 데스크톱은 CSS로 미노출이라 비용 무시 가능
 }
 function shiftViewMonth(delta){
   VIEW_M+=delta;
   if(VIEW_M<0){VIEW_M=11;VIEW_Y--;}
   else if(VIEW_M>11){VIEW_M=0;VIEW_Y++;}
 }
-document.getElementById("prevMo").addEventListener("click",function(){shiftViewMonth(-1);renderCalendar();});
-document.getElementById("nextMo").addEventListener("click",function(){shiftViewMonth(1);renderCalendar();});
+// [2026-08-28 A-5 수정] 월 이동 시 SELECTED_DATE도 그 달 1일로 맞춰 모바일 하단 패널이 화면 밖 날짜를
+// 가리키지 않게 한다(데스크톱은 이 값을 렌더에 쓰지 않아 영향 없음). 날짜 탭(selectDate)은 이 로직을
+// 안 거치므로 인접달 칸(class="other") 탭도 그대로 선택된다 — 의도된 동작.
+document.getElementById("prevMo").addEventListener("click",function(){
+  shiftViewMonth(-1); SELECTED_DATE=VIEW_Y+"-"+pad2(VIEW_M+1)+"-01"; renderCalendar();
+});
+document.getElementById("nextMo").addEventListener("click",function(){
+  shiftViewMonth(1); SELECTED_DATE=VIEW_Y+"-"+pad2(VIEW_M+1)+"-01"; renderCalendar();
+});
 document.getElementById("todayBtn").addEventListener("click",function(){
-  var p=kstTodayStr().split("-"); VIEW_Y=Number(p[0]); VIEW_M=Number(p[1])-1; renderCalendar();
+  var p=kstTodayStr().split("-"); VIEW_Y=Number(p[0]); VIEW_M=Number(p[1])-1;
+  SELECTED_DATE=kstTodayStr(); renderCalendar();
 });
 
 /* ============ SSOT 표시 토글(범례 클릭, localStorage 기억) ============ */
@@ -1113,7 +1227,11 @@ function openEditModal(c){
   document.getElementById("editDelete").style.display="inline-block";
   document.getElementById("editBg").classList.add("show");
 }
-document.getElementById("addBtn").addEventListener("click",function(){openAddModal(kstTodayStr());});
+// [2026-08-28 A-5] 모바일은 선택일 기본값(더 자연스러운 UX), 데스크톱은 기존 그대로 항상 오늘 —
+// 분기 자체가 없으면 데스크톱 동작이 100% 그대로라 회귀 위험이 없다.
+document.getElementById("addBtn").addEventListener("click",function(){
+  openAddModal(isMobileView() ? (SELECTED_DATE||kstTodayStr()) : kstTodayStr());
+});
 document.getElementById("editCancel").addEventListener("click",function(){document.getElementById("editBg").classList.remove("show");});
 document.getElementById("editBg").addEventListener("click",function(e){if(e.target.id==="editBg")this.classList.remove("show");});
 document.getElementById("editDelete").addEventListener("click",async function(){
