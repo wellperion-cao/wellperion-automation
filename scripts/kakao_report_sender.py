@@ -916,6 +916,43 @@ def add_honorifics(text: str) -> str:
     return out
 
 
+# ── 명단 마스킹(GM 확정 2026-08-28 — "김남* 이렇게 하는건 어때? 연락처는 010-****-1531") ──
+# 회원 명단(이름·연락처)이 카톡 방에 그대로 남으면 안 된다 — 전체 정보는 실무진이 현황
+# 화면에 들어가 본다. 모든 카톡 발신이 지나가는 이 관문 하나에만 마스킹을 박는다(약속 L21).
+# ▸전화번호는 형식(대시 유무) 상관없이 앞3자리·뒤4자리만 남기고 가운데를 ****로 가린다.
+# ▸이름은 전화번호 바로 앞(명단 줄)에 붙은 것만 마지막 한 글자를 *로 가린다 — 자유 문장
+#   속 사람 이름(보고서 본문 등)은 손대지 않는다.
+# ▸이미 가려진 값(010-****-1531, 김남*)은 다시 건드리지 않는다: 전화 정규식은 가운데가
+#   숫자일 때만 잡고, 이름 정규식은 뒤에 *가 이미 있으면 그 자리에서 멈춘다.
+_PHONE_RE = re.compile(r"(?<!\d)(01[0-9])-?(\d{3,4})-?(\d{4})(?!\d)")
+_NAME_BEFORE_PHONE_RE = re.compile(
+    r"(?<![가-힣])([가-힣]{2,4})(?!\*)(?=\s*[:\-()]?\s*01[0-9]-\*{4}-\d{4})"
+)
+
+
+def mask_pii(text: str) -> str:
+    """카톡 발신 명단 줄의 이름·연락처를 가린다. 이름=마지막 한 글자만 *,
+    연락처=앞3자리·뒤4자리만 남기고 가운데 ****."""
+    out = _PHONE_RE.sub(lambda m: f"{m.group(1)}-****-{m.group(3)}", str(text or ""))
+    out = _NAME_BEFORE_PHONE_RE.sub(lambda m: m.group(1)[:-1] + "*", out)
+    return out
+
+
+def _selfcheck_mask_pii() -> None:
+    cases = [
+        ("김남욱 010-1234-1531", "김남* 010-****-1531"),          # 3자 이름
+        ("박민 010-2222-3333", "박* 010-****-3333"),               # 2자 이름
+        ("남궁도경 010-4444-5555", "남궁도* 010-****-5555"),       # 4자 이름
+        ("김남* 010-****-1531", "김남* 010-****-1531"),            # 이미 가려진 값(재적용 무변화)
+        ("황보준 01012341531", "황보* 010-****-1531"),             # 대시 없는 형식
+        ("이경연 실장님께 여쭙고 있습니다", "이경연 실장님께 여쭙고 있습니다"),  # 전화 없으면 이름 무영향
+    ]
+    for src, want in cases:
+        got = mask_pii(src)
+        assert got == want, f"{src!r} → {got!r} (기대 {want!r})"
+    print("[selfcheck] mask_pii OK")
+
+
 def _selfcheck_honorifics() -> None:
     cases = [
         ("이경연 실장 — 확인 부탁드립니다", "이경연 실장님 — 확인 부탁드립니다"),
@@ -936,13 +973,14 @@ def _selfcheck_honorifics() -> None:
 def build_caption(room: dict, base_caption: str) -> str:
     """방별 prefix + 원본 캡션(그대로, 날짜 재계산 없음) 조합. 회장님 방은 발신 전
     _sanitize_for_chairman()·_fix_avg_for_chairman()을 거친다(다른 방은 무영향).
-    마지막으로 모든 방 공통 존칭 보정(add_honorifics) + 링크 공백 인코딩을 거친다."""
+    마지막으로 모든 방 공통 명단 마스킹(mask_pii) + 존칭 보정(add_honorifics) +
+    링크 공백 인코딩을 거친다."""
     from tg_outbound_log import encode_url_spaces
     text = base_caption
     if room.get("name") == CHAIRMAN_ROOM_NAME:
         text = _sanitize_for_chairman(text)
         text = _fix_avg_for_chairman(text)
-    return encode_url_spaces(add_honorifics(f"{room.get('prefix', '')}{text}"))
+    return encode_url_spaces(add_honorifics(mask_pii(f"{room.get('prefix', '')}{text}")))
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -1743,8 +1781,10 @@ def _selftest() -> None:
         assert "원인 불명" in _failure_reason([("★관리부", "ZeroDivisionError")])
         print("SELFTEST OK: 발신 실패 사유 분류 정상")
 
-        # ⑦ 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로 주소를 열어 보므로
-        #    망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는 사고가 나면 안 된다.
+        # ⑦ 명단 마스킹 + 존칭 보정 + 발신 전 링크 검수(2026-08-27). 링크 검수는 실제로
+        #    주소를 열어 보므로 망이 끊긴 곳에서는 건너뛴다 — 검사 자체가 발신을 막는
+        #    사고가 나면 안 된다.
+        _selfcheck_mask_pii()
         _selfcheck_honorifics()
         try:
             _selfcheck_broken_links()
