@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>4개 부서 + 3라인 개선 결과보고 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style><style>
+  /* 한국어 자연 줄바꿈 — 단어 중간 끊김 방지(글 끊김 금지 원칙). 기준 CSS는 그대로 두고 덧댐. */
+  td, .ask .q, .ask .d, .alert, .box li, .foot{ word-break: keep-all; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>4개 부서 + 3라인 개선 결과보고 (A3 1장 · 9/1 보고 · 8/28 초판)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">4개 부서 + 3라인 개선 결과 보고</div>
+    </div>
+    <div class="meta">
+      작성 <b>경영지원부 (AI CEO 웰리)</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b>2026. 09. 01.</b> · 작성일 <b>2026. 08. 28. (초판)</b> · 문서번호 <b>WP-GM-260901-02</b><br>
+      대상 <b>운영부 · 시설부 · 지원부 · 주차관리부 + 3라인(실장·소장·나우열M)</b> · 수치 기준 <b>2026-08-26~28 조회</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">운영부·주차관리부 점검 집계 경로 수리를 승인해 주십시오.</div>
+        <div class="d">두 부서 점검 실측 0건은 부서 태만이 아니라 <b>집계 경로 미가동</b>입니다(운영부 = 원장 위치 없음 · 주차부 = 화면 8/18 개통·배선 8/25 수리 후 실데이터 아직 0). 수리 없이는 9월 실적도 통째로 빕니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">측정 원장 없는 4곳의 원장 지정을 승인해 주십시오 — 지출 · 비품/소모품 · 인사 A~Z · 능동성.</div>
+        <div class="d">3라인 역할 축과 브랜딩 3박자 중 이 4곳은 잴 원장 자체가 없습니다. 특히 <b>능동성</b>은 요청받지 않고 스스로 제기한 건을 구분하는 칸이 어디에도 없어, 9월부터 세기 시작합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경고 밴드 -->
+  <div class="alert">
+    운영부·주차관리부 점검 0건 = 집계 경로 미가동 — 실적이 아니라 측정 불가입니다.
+    <span>&nbsp;/ 본 판 = <b>8/28 기준 초판</b> · 8월 마감 전 수치 — <b>8/31 마감 수치로 최종 갱신 예정</b>(같은 문서번호).</span>
+  </div>
+
+  <!-- ③-1 덩어리 1 · 4개 부서 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:96px"><col style="width:436px"><col style="width:242px"><col style="width:262px"><col style="width:262px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k" style="width:96px">부서</th>
+        <th>8월 실적<span class="sub">기준일 각 칸 명기 · 마감 전</span></th>
+        <th>무엇이 좋아졌나</th>
+        <th>무엇이 남았나</th>
+        <th>9월 개선 과제</th>
+        <th>측정 상태</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">시설부</td>
+        <td>일일점검 제출 <b>23~24/24일</b> · 644항목 중 449 입력(70%) · 기준이탈 0 · 이슈 0 / 고장 18건 중 <b>16건 완료(89%)</b> · 소요 중앙 <b class="good">3일</b>(접수처 기준 72시간)<span class="est"> — 점검자별 김종현 차장 11건(입력률 64%) · 박호균 과장 16건(73%) · 이정헌 소장 4~5건(82%) · 8/26 조회</span></td>
+        <td>고장 처리 중앙 3일 — <b class="good">기준선(72시간)에 걸침</b> · 기준이탈·이슈 0 유지</td>
+        <td>항목 입력률 70% — 미입력 195항목 / 고장 미완 2건</td>
+        <td>입력률 상향 · 고장 미완 2건 완료</td>
+        <td class="ctr good">측정 가동</td>
+      </tr>
+      <tr>
+        <td class="k strong">지원부</td>
+        <td>제출 <b>24/24일</b> · 세션 64회(남 47·여 17) · 2,531항목 중 1,109 입력 · <b class="warn">이슈 57건</b> · 남측 결측 15일 19회차<span class="est"> — 반장별 박남일 반장(남) 30건 · 이연희 반장(여) 15건 · 8/26 조회</span></td>
+        <td>제출 24/24일 <b class="good">개근</b> — 4부서 중 유일</td>
+        <td>이슈 57건 처리 경로 미정 / 남측 결측 15일 19회차</td>
+        <td>이슈 57건 처리 라인 확정 · 남측 결측 해소</td>
+        <td class="ctr good">측정 가동</td>
+      </tr>
+      <tr>
+        <td class="k strong">운영부</td>
+        <td>점검 = <b class="bad">측정 불가 — 집계 경로 미가동</b>(7·8월 실측 0건 · 원장 위치 없음 · 부서 태만 아님) / 접수처 컴플레인 20건 중 완료 10 · 미완 10 · 소요 중앙 <b class="bad">14.5일</b>(기준 48시간) / 분실물 6건 중 완료 1 · 미완 5 · 최장 17일<span class="est"> — 8/28 실측</span></td>
+        <td>컴플레인·분실물 처리 소요일을 처음으로 잴 수 있게 됨(과거분 복원)</td>
+        <td>컴플레인 중앙 14.5일 vs 기준 48시간 / 분실물 미완 5건 적체</td>
+        <td><b>1순위 — 점검 집계 경로 수리(결정 01)</b> · 컴플레인 미완 10건 소진</td>
+        <td class="ctr bad">점검 측정 불가</td>
+      </tr>
+      <tr>
+        <td class="k strong">주차관리부</td>
+        <td>점검 = <b class="bad">측정 불가 — 집계 경로 미가동</b>(제출 화면 8/18 개통 · 집계 배선 8/25 수리 · 실데이터 아직 0) / 주차장 바닥보수 <b>10/11~13 예정</b></td>
+        <td>제출 화면 개통(8/18) · 집계 배선 수리(8/25) — 셀 준비는 끝남</td>
+        <td>실데이터 0 — 첫 집계 자체가 미시작</td>
+        <td><b>1순위 — 9월 첫 집계 데이터 확보(결정 01)</b> · 바닥보수 준비</td>
+        <td class="ctr bad">측정 불가</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ③-2 덩어리 2 · 3라인 + 브랜딩 3박자 -->
+  <div class="tblwrap" style="margin-top:9px">
+  <table>
+    <colgroup><col style="width:96px"><col style="width:300px"><col><col style="width:328px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k" style="width:96px">라인 · 총괄</th>
+        <th>소관 (역할 3가지 · 2026-08-28 확정)</th>
+        <th>8월 개선 결과<span class="sub">기준일 각 칸 명기</span></th>
+        <th>9월 개선 과제</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">1라인 운영부<br><span class="est">이경연 실장</span></td>
+        <td>① 멤버십 매출 ② 서비스 관리(컴플레인 + 예방점검) ③ 운영부 직원 관리(업무 SSOT)</td>
+        <td>회원권 매출 <b>2억 4,429만원</b>(08-03 확정 목표 2억 7,500만 대비 <b>88.8%</b> · 8/26 기준·진행 중) · 접수처 완료율 <b class="warn">63.0%</b>(목표 70%) · 업무 SSOT 완료율 <b class="warn">74.1%</b>(목표 80%) · 점검 완료율 <b class="bad">측정 불가</b>(목표 90% · 집계 미가동)<span class="est"> — 8/28 실측</span></td>
+        <td>컴플레인 미완 10건 소진 계획 회신 · 점검 집계 개시 후 목표 90% 관리 시작</td>
+      </tr>
+      <tr>
+        <td class="k strong">2라인 시설부<br><span class="est">이정헌 소장</span></td>
+        <td>① 시설·설비 관리·점검(예방) ② 고장 접수 24~48시간 즉각 조치 ③ 비품·소모품 관리</td>
+        <td>예방점검 <b class="good">23~24/24일</b> · 고장 처리 중앙 <b class="good">3일</b> · 법정·정기점검 회신 4건 중 <b>3건 당일 회신</b>(2026-08-26) · 비품·소모품 = <b class="bad">측정 원장 없음</b></td>
+        <td>비품·소모품 원장 지정(결정 02) · 법정·정기 미회신 1건 회신</td>
+      </tr>
+      <tr>
+        <td class="k strong">3라인 파트너팀<br><span class="est">나우열M</span></td>
+        <td>① 전체 지출 관리 + 파트너팀 매출 ② 인사 A~Z ③ 프로젝트 기획·진행</td>
+        <td>강습 매출 <b>2억 8,083만원</b>(8월 누적) · 업무 SSOT 완료 <b>57</b>·진행 14·보류 1 = 72건 <b>전사 최다</b> · 기한 내 <b class="warn">17/30(57%)</b> · 미완 기한초과 1건 · 지출 관리·인사 A~Z = <b class="bad">측정 원장 없음</b><span class="est"> — 8/28 실측</span></td>
+        <td>지출·인사 원장 지정(결정 02) · SSOT 기한 준수율 개선</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">브 랜 딩 3 박 자 <span style="letter-spacing:0" class="est">— GM 방향(2026-08-28): 고급화·단순화·프리미엄 확립을 위해 ①중간관리자 ②서비스마인드 ③스타트업 같은 빠른 판단·결정·진행의 3박자를 맞춘다. 중간관리자는 3박자 이해도와 회사 방향성에 맞는 방향성·능동성을 각 역할에 맞게 가진다.</span></td></tr>
+      <tr class="sum">
+        <td class="k">3박자 대비<br>현재 위치</td>
+        <td><b>서비스마인드</b> <span class="est">= 접수처 처리 소요일로 측정(가능)</span><br>시설물 고장 중앙 <b class="good">3일</b>(기준 72시간) / 컴플레인 중앙 <b class="bad">14.5일</b>(기준 48시간) — 격차 큼</td>
+        <td><b>빠른 판단·결정·진행</b> <span class="est">= 업무 SSOT 기한 준수·미결 적체로 측정(가능)</span><br>기한 내 완료 — 이경연 실장 <b class="warn">4/18(22%)</b> · 나우열M <b class="warn">17/30(57%)</b> · 이정헌 소장 <b>1/1</b><span class="est">(SSOT 등록 요구 없음 — 1건이 정상값)</span></td>
+        <td><b>중간관리자 이해도·방향성</b> <span class="est">= 역할 3가지 기반 정기 보고 여부로 측정</span> — 3인 모두 <b class="bad">미시행</b>(건별 응답만) / <b>능동성</b> = <b class="bad">측정 원장 없음</b> — 스스로 제기한 건 구분 칸 부재 · <b>9월부터 집계 시작</b>(결정 02)</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box rec">
+      <h3>8월에 좋아진 것</h3>
+      <ul>
+        <li>접수처 처리 소요일을 <b>과거분까지 복원해 처음으로 측정 가능</b>(완료 92건 전건).</li>
+        <li>시설물 고장 처리 중앙 <b>3일</b> — 접수처 기준선(72시간)에 걸침.</li>
+        <li>지원부 일일점검 <b>24/24일 개근</b> 제출.</li>
+        <li>중간관리자 3인 <b>역할 3가지 확정</b> — 다음 평가·보고의 공통 틀 마련.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>남은 것</h3>
+      <ul>
+        <li class="r1">운영부·주차관리부 점검 집계 미가동 — 두 부서 실적이 계속 빈다.</li>
+        <li class="r1">컴플레인 처리 중앙 <b>14.5일</b> vs 기준 <b>48시간</b> · 분실물 미완 5건(최장 17일).</li>
+        <li class="r2">측정 원장 없는 4곳 — 지출 · 비품/소모품 · 인사 A~Z · 능동성.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>GM 권고 (웰리)</h3>
+      <ul>
+        <li><b>9월은 「측정 배선의 달」로 간다</b> — 결정 01·02를 같이 승인해 점검 사각 2개 부서와 원장 없는 4곳을 9월 안에 전부 배선한다. 그러면 10월 보고부터 4부서·3라인·3박자 전 칸이 실측으로 채워지고, 이미 재지는 두 축(서비스마인드·빠른 판단)은 9월부터 기준선 대비로 관리한다.</li>
+        <li>좋다/나쁘다 단정 없음 — 숫자와 조건까지가 본 문서의 몫이고, 최종 판단은 결재선(GM·대표님·회장님)의 몫이다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>기준 시점</b> — 8월 수치 전부 <b>2026-08-26~28 조회 · 8월 마감 전</b>(칸별 기준일 명기). 본 판 = <b>8/28 기준 초판</b>이며 <b>8/31 마감 수치로 최종 갱신 예정</b>(같은 문서번호 유지). 매출·달성률·완료율은 마감 시 달라진다.</div>
+    <div><b>(추정) · 오차</b> — 접수처 처리 소요일 중 <b>구간 추정 31건은 며칠 오차 가능(추정)</b>. 운영부·주차부 점검 0건은 실적이 아니라 <b>집계 경로 미가동</b>. 지원부 반장별 이슈(30+15=45건)와 총 57건의 차이는 반장 미기재분.</div>
+    <div><b>측정하지 못한 것</b> — 운영부·주차부 점검(집계 미가동) · 지출 관리 · 비품/소모품 · 인사 A~Z · 능동성(원장 자체 없음 — 결정 02). <b>출처</b> — 점검 보드 · 종합접수처 reg_list · 업무 SSOT todo_list · 매출 = 8월 운영보고 A3. 전부 원장 직접 카운트. <b>차기</b> — 8/31 마감본 갱신 후 9/1 보고.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260901_4부서_3라인_개선결과_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
