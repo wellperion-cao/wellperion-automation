@@ -65,6 +65,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .cat-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
 .cat-badge.done{background:var(--green-bg);color:var(--green)}
 .cat-badge.pending{background:var(--yellow-bg);color:var(--yellow)}
+/* 조(회차) 선택 바 — 지원부 round-bar 와 같은 자리·같은 뜻(GM 지시 2026-08-28). 주차부는 2조라 반씩 나눠 찬다. */
+.park-round-bar{display:flex;gap:8px;margin-bottom:12px}
+.park-round-seg{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 8px;border:1px solid var(--border);background:var(--paper);border-radius:10px;cursor:pointer;font-family:inherit;color:var(--text)}
+.park-round-seg .prs-name{font-size:13px;font-weight:700}
+.park-round-seg .prs-time{font-size:11px;font-weight:600;color:var(--dim)}
+.park-round-seg.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.park-round-seg.active .prs-time{color:rgba(255,255,255,0.85)}
 .cat-body{border-top:1px solid var(--border);display:none}
 .cat-body.open{display:block}
 .item{padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.4)}
@@ -1781,19 +1788,51 @@ function printA3ParkingSupply(){
    A3 주차장 청결·점검표 인쇄 — 정적 체크리스트(GM 2026-07-07 주차부 자체 점검).
    지원부 점검 GAS 미연동 · 제출/저장/API 없음 · 화면 매뉴얼 탭 표와 동일 내용 하드코딩.
    ═══════════════════════════════════════════ */
+/* 점검 회차(조) — 지원부와 같은 얼개로 맞춘다(GM 지시 2026-08-28).
+   주차부 근무는 2조(오전조 08:30~17:30 · 오후조 10:00~19:00 · 야간조 없음 — pp_shift 기준)라
+   지원부 평일 3조가 아니라 2조로 둔다. 시각은 근무시간 안쪽으로 잡았다 —
+   평일 오전 09시(근무 시작 직후)·마감 18시(근무 종료 전) / 주말 근무는 09:00~16:00 이라 오전 09시·마감 15시.
+   baseShift 는 백엔드 _shiftBucket 이 읽는 값(am/pm)이라 지원부와 같은 값을 쓴다 — 백엔드 무변경. */
+const PARK_ROUNDS_WEEKDAY = [
+  { key:'am1',    name:'오전조', time:'09시', hour:9,  baseShift:'am' },
+  { key:'close1', name:'마감조', time:'18시', hour:18, baseShift:'pm' }
+];
+const PARK_ROUNDS_WEEKEND = [
+  { key:'am1',    name:'오전조', time:'09시', hour:9,  baseShift:'am' },
+  { key:'close1', name:'마감조', time:'15시', hour:15, baseShift:'pm' }
+];
+function parkRoundsFor(ds){
+  const d = ds ? new Date(ds+'T00:00:00') : new Date();
+  const w = d.getDay();                       // 0=일 · 6=토
+  return (w===0 || w===6) ? PARK_ROUNDS_WEEKEND : PARK_ROUNDS_WEEKDAY;
+}
+function parkRoundDef(rk, ds){ return parkRoundsFor(ds).find(function(r){ return r.key===rk; }) || PARK_ROUNDS_WEEKDAY[0]; }
+/* 지금 시각에서 가장 가까운(직전/현재) 조 — 지원부 autoRoundForNow 와 같은 판정. */
+function parkAutoRound(ds){
+  const arr = parkRoundsFor(ds), h = new Date().getHours();
+  let best = arr[0].key, gap = Infinity;
+  arr.forEach(function(r){ const g = h>=r.hour ? h-r.hour : (h-r.hour)+24; if(g<gap){ gap=g; best=r.key; } });
+  return best;
+}
+var PARK_ROUND = parkAutoRound();
+
 const PARK_CHECKLIST = {
+  /* r = 그 항목을 도는 조. 항목 순서·itemId(p1..pN)는 바꾸지 않는다 —
+     과거 제출 기록이 itemId 로 붙어 있어 순서를 밀면 다른 항목으로 읽힌다. */
   daily: [
-    '지상·지하 바닥 청결 — 오염·기름때 제거',
-    '통행로 적치물 정리 / 쓰레기 수거',
-    '배수구 막힘·이물질 제거',
-    '주차장 화장실 청결·비품(화장지·손세정제)·악취·조명',
-    '주차선·표시선 식별 상태',
-    '조명 점등·사각지대 조도',
-    '차단기·정산기 정상 작동',
-    'CCTV 화면 이상·녹화 정상',
+    { t:'지상·지하 바닥 청결 — 오염·기름때 제거',                        r:'am1'    },
+    { t:'통행로 적치물 정리 / 쓰레기 수거',                               r:'am1'    },
+    { t:'배수구 막힘·이물질 제거',                                        r:'am1'    },
+    { t:'주차장 화장실 청결·비품(화장지·손세정제)·악취·조명',             r:'am1'    },
+    { t:'주차선·표시선 식별 상태',                                        r:'am1'    },
+    { t:'조명 점등·사각지대 조도',                                        r:'close1' },
+    { t:'차단기·정산기 정상 작동',                                        r:'am1'    },
+    { t:'CCTV 화면 이상·녹화 정상',                                       r:'close1' },
     // 감염병 예방 — GM 지시 2026-08-25. 새 점검표를 만들지 않고 지금 도는 청소·점검 동선에 얹는다.
     // 주차관리인이 청결관리를 겸하므로 접점 소독만 일일에, 비품 재고는 주간에 둔다(지원부 G-2·G-4와 같은 결).
-    '접점 소독 — 정산기 버튼·차단기 조작부·화장실 손잡이 (오픈 전·마감 후)'
+    // 2026-08-28 — '오픈 전·마감 후' 한 줄이던 것을 조가 갈리며 두 줄로 나눴다(같은 조에 두면 마감 소독이 오전에 체크된다).
+    { t:'접점 소독(오픈 전) — 정산기 버튼·차단기 조작부·화장실 손잡이',   r:'am1'    },
+    { t:'접점 소독(마감 후) — 정산기 버튼·차단기 조작부·화장실 손잡이',   r:'close1' }
   ],
   weekly: [
     '소화기·소화전 위치·수량·압력게이지 / 통로 가림 여부',
@@ -1809,9 +1848,14 @@ function printA3ParkingChecklist(){
   const host=document.getElementById('a3-pchk-host');
   if(host){
     let html='<div class="a3-print-header">주차장 청결·점검 체크리스트 <span style="font-size:9px;font-weight:600;color:#8a7a6c;">[AI 초안 — GM 검토]</span></div>';
-    html+='<div class="a3-col-head">일일 점검</div>';
-    PARK_CHECKLIST.daily.forEach(function(t){
-      html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(t)+'</div></div>';
+    /* 인쇄본도 조로 묶어 낸다 — 종이로 들고 도는 사람이 '지금 내가 도는 조'만 보면 되게. */
+    PARK_ROUNDS_WEEKDAY.forEach(function(rd){
+      const rows=PARK_CHECKLIST.daily.filter(function(it){ return it.r===rd.key; });
+      if(!rows.length) return;
+      html+='<div class="a3-col-head">일일 점검 · '+escapeHTML(rd.name)+' '+escapeHTML(rd.time)+'</div>';
+      rows.forEach(function(it){
+        html+='<div class="a3-card"><div class="a3-card-title">☐ '+escapeHTML(it.t)+'</div></div>';
+      });
     });
     html+='<div class="a3-col-head" style="margin-top:6px;">주간 점검</div>';
     PARK_CHECKLIST.weekly.forEach(function(t){
@@ -2054,13 +2098,23 @@ async function loadParkingRevenue(){
    주차부 일일 점검 8항목 제출형 (GM승인 2026-08-18 a안 배672)
    PARK_CHECKLIST.daily(위 A3 인쇄와 동일 출처) 체크 → 지원부·시설부와 같은 점검 GAS(action=save,
    roundChecks 방식) dept=parking 재사용. dept=parking 탭(주차_공용구역)은 백엔드 DEPT_TAB_MAP에
-   이미 등록돼 있어 신규 배포 없이 그대로 쓴다. 회차는 단일 회차(am1→'오전조' 라벨)로 고정 —
-   주차부는 회차 개념이 없어 자리표시일 뿐, 화면·보고에는 노출 안 됨.
+   이미 등록돼 있어 신규 배포 없이 그대로 쓴다.
+   ★2026-08-28 GM 지시 — 지원부처럼 조(회차)를 나눴다. 오전조·마감조 2조이며 조마다 따로 체크·제출한다.
+   진행률·배지·잠금은 전부 '지금 고른 조' 기준이다(그 전엔 하루 1회 단일 제출이었다).
    ═══════════════════════════════════════════ */
+/* 지금 조의 항목만 [원본인덱스, 항목] 쌍으로 — 체크박스 id 는 원본 인덱스를 그대로 써서
+   itemId(p<i+1>) 가 조를 나눠도 안 밀린다. */
+function parkItemsOfRound(rk){
+  const out=[];
+  PARK_CHECKLIST.daily.forEach(function(it,i){ if(it.r===(rk||PARK_ROUND)) out.push([i,it]); });
+  return out;
+}
 function renderParkingDailyCheck(){
+  const rounds=parkRoundsFor();
+  const rows=parkItemsOfRound(PARK_ROUND);
   const dN=document.getElementById('parkChecklistDailyN'); if(dN) dN.textContent=PARK_CHECKLIST.daily.length;
   const wN=document.getElementById('parkChecklistWeeklyN'); if(wN) wN.textContent=PARK_CHECKLIST.weekly.length;
-  const progText=document.getElementById('parkingProgressText'); if(progText) progText.textContent='오늘 0/'+PARK_CHECKLIST.daily.length;
+  const progText=document.getElementById('parkingProgressText'); if(progText) progText.textContent='이번 조 0/'+rows.length;
   const body=document.getElementById('parkingDailyCheckBody');
   if(!body) return;
   /* 항목명 ' — ' 뒤는 상세 설명으로 내린다(지원부 item-detail 과 같은 구성). */
@@ -2070,55 +2124,79 @@ function renderParkingDailyCheck(){
     return '<div class="item"><div class="item-row">'+cbHtml+'</div>'
       +(nd.detail?'<div class="item-detail">'+escapeHTML(nd.detail)+'</div>':'')+'</div>';
   }
+  /* 조 선택 바 — 지원부 round-bar 와 같은 자리·같은 뜻. 조마다 몇 항목인지 함께 보인다. */
+  let bar='<div class="park-round-bar">';
+  rounds.forEach(function(rd){
+    const n=parkItemsOfRound(rd.key).length;
+    bar+='<button type="button" class="park-round-seg'+(rd.key===PARK_ROUND?' active':'')+'" onclick="switchParkRound(\''+rd.key+'\')">'
+      +'<span class="prs-name">'+escapeHTML(rd.name)+'</span>'
+      +'<span class="prs-time">'+escapeHTML(rd.time)+' · '+n+'항목</span></button>';
+  });
+  bar+='</div>';
   let daily='';
-  PARK_CHECKLIST.daily.forEach(function(t,i){
-    const nd=nameDetail(t);
-    daily+=itemHtml(t,'<input type="checkbox" id="pchk_'+i+'" onchange="onParkCheck()"><label for="pchk_'+i+'">'+escapeHTML(nd.name)+'</label>');
+  rows.forEach(function(pair){
+    const i=pair[0], nd=nameDetail(pair[1].t);
+    daily+=itemHtml(pair[1].t,'<input type="checkbox" id="pchk_'+i+'" onchange="onParkCheck()"><label for="pchk_'+i+'">'+escapeHTML(nd.name)+'</label>');
   });
   let weekly='';
   PARK_CHECKLIST.weekly.forEach(function(t){
     const nd=nameDetail(t);
     weekly+=itemHtml(t,'<input type="checkbox" disabled title="주간 점검은 육안 확인용 — 제출 대상이 아닙니다"><label>'+escapeHTML(nd.name)+'</label>');
   });
-  body.innerHTML=
-    '<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">일일 점검</span>'
-      +'<span class="cat-badge pending" id="parkDailyBadge">0/'+PARK_CHECKLIST.daily.length+'</span></div>'
+  const rd=parkRoundDef(PARK_ROUND);
+  body.innerHTML= bar
+    +'<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">일일 점검 · '+escapeHTML(rd.name)+' '+escapeHTML(rd.time)+'</span>'
+      +'<span class="cat-badge pending" id="parkDailyBadge">0/'+rows.length+'</span></div>'
       +'<div class="cat-body open">'+daily+'</div></div>'
     +'<div class="category"><div class="cat-header" style="cursor:default;"><span class="cat-title">주간 점검 <span style="font-size:11px;font-weight:600;color:var(--dim);">· 육안 확인용</span></span>'
       +'<span class="cat-badge pending">'+PARK_CHECKLIST.weekly.length+'항목</span></div>'
       +'<div class="cat-body open">'+weekly+'</div></div>';
 }
+/* 조 전환 — 다시 그리고 그 조의 서버 상태(체크·제출도장)를 불러온다. */
+function switchParkRound(rk){
+  if(rk===PARK_ROUND) return;
+  PARK_ROUND=rk;
+  renderParkingDailyCheck();
+  loadParkingCheckState();
+}
 /* 체크 즉시 진행률·배지·취소선 반영(서버 왕복 없음). 서버 값은 loadParkingCheckState 가 덮어쓴다. */
 function onParkCheck(){
-  const total=PARK_CHECKLIST.daily.length;
+  const rows=parkItemsOfRound(PARK_ROUND);
+  const total=rows.length;
   let done=0;
-  PARK_CHECKLIST.daily.forEach(function(t,i){
-    const cb=document.getElementById('pchk_'+i); if(!cb) return;
+  rows.forEach(function(pair){
+    const cb=document.getElementById('pchk_'+pair[0]); if(!cb) return;
     if(cb.checked) done++;
     const it=cb.closest('.item'); if(it) it.classList.toggle('checked',cb.checked);
   });
   const fill=document.getElementById('parkingProgressFill'); if(fill) fill.style.width=Math.round(done/total*100)+'%';
-  const text=document.getElementById('parkingProgressText'); if(text) text.textContent='오늘 '+done+'/'+total;
+  const text=document.getElementById('parkingProgressText'); if(text) text.textContent='이번 조 '+done+'/'+total;
   const badge=document.getElementById('parkDailyBadge');
   if(badge){ badge.textContent=done===total?'완료':done+'/'+total; badge.className='cat-badge '+(done===total?'done':'pending'); }
 }
 renderParkingDailyCheck();
 
 /* ── 오늘 제출 상태 복원(잠금 표시)+진행률 (배672 후속 · 지원부/시설부 대조 배선 · GM 2026-08-20)
-   지원부의 회차·성별 복원 구조(loadState)는 단일 회차·단일 제출자뿐인 주차부엔 과함 → 서버
-   checkedLedger.c(체크된 항목 id 집합)+행의 submitted_am만 본다. 새로고침해도 오늘 이미 제출했으면
-   그대로 잠금 표시되도록(지원부·시설부 파리티), 페이지 로드 시 1회 + 🔄 버튼으로 수동 재조회. ── */
+   서버 checkedLedger.c(체크된 항목 id 집합)+제출 도장(sub)을 본다. 새로고침해도 이미 제출했으면
+   그대로 잠금 표시되도록(지원부·시설부 파리티), 페이지 로드 시 1회 + 🔄 버튼으로 수동 재조회.
+   ★2026-08-28 — 조가 둘로 갈려 진행률·잠금을 '지금 고른 조' 기준으로 본다. 체크 복원도 그 조 항목만.
+   제출 도장은 그 조의 baseShift(am/pm)로 갈린다 — 오전조를 냈다고 마감조까지 잠기지 않는다. ── */
 async function loadParkingCheckState(){
   const date=new Date().toLocaleString('sv-SE').slice(0,10);
   const fillEl=document.getElementById('parkingProgressFill');
   const textEl=document.getElementById('parkingProgressText');
-  const total=PARK_CHECKLIST.daily.length;
+  const rows=parkItemsOfRound(PARK_ROUND);
+  const total=rows.length;
+  const _rdef=parkRoundDef(PARK_ROUND,date);
+  const _sh=_rdef.baseShift;
   try{
     const r=await fetch(API_URL+'?date='+date+'&dept=parking&gender=m',{redirect:'follow'});
     const j=await r.json();
     const doneIds=Object.keys((j&&j.checkedLedger&&j.checkedLedger.c)||{}).filter(function(k){ return j.checkedLedger.c[k]; });
-    if(fillEl) fillEl.style.width=Math.round(doneIds.length/total*100)+'%';
-    if(textEl) textEl.textContent='오늘 '+doneIds.length+'/'+total;
+    /* 진행률은 이번 조 항목만 센다 — 전체로 세면 다른 조가 낸 체크까지 섞여 늘 100% 가까이 보인다. */
+    const doneHere=rows.filter(function(pair){ return doneIds.indexOf('p'+(pair[0]+1))>=0; }).length;
+    if(fillEl) fillEl.style.width=(total?Math.round(doneHere/total*100):0)+'%';
+    if(textEl) textEl.textContent='이번 조 '+doneHere+'/'+total;
     const row=(j.rows||[])[0]||{};
     const btn=document.getElementById('parkingSubmitBtn');
     const stat=document.getElementById('parkingSubmitStatus');
@@ -2128,20 +2206,25 @@ async function loadParkingCheckState(){
        잠금해제가 아예 듣지 않았다. 지원부 화면도 원장(isRoundSubmitted)을 본다 — 같은 기준으로 맞춘다.
        원장 키가 아예 없는 옛 응답에서만 시트 행으로 떨어진다(하위호환). */
     const _led=(j&&j.checkedLedger)||{};
-    const _submitted = _led.sub ? !!_led.sub.am : !!row.submitted_am;
+    const _submitted = _led.sub ? !!_led.sub[_sh] : !!row['submitted_'+_sh];
     if(_submitted){
-      PARK_CHECKLIST.daily.forEach(function(t,i){
-        const cb=document.getElementById('pchk_'+i);
-        if(cb){ cb.checked=doneIds.indexOf('p'+(i+1))>=0; cb.disabled=true; }
+      rows.forEach(function(pair){
+        const cb=document.getElementById('pchk_'+pair[0]);
+        if(cb){ cb.checked=doneIds.indexOf('p'+(pair[0]+1))>=0; cb.disabled=true; }
       });
       onParkCheck();   // 복원된 체크 → 카드 배지·취소선 동기(진행률은 위에서 서버값으로 이미 세팅)
       if(btn){ btn.disabled=true; btn.textContent='제출완료'; btn.classList.add('submitted'); }
       if(stat){
-        const hhmm=/(\d{2}:\d{2})/.exec(String(row.submittedAt_am||''));
-        stat.innerHTML='오늘 제출완료 · '+(row.submitter_am||'-')+(hhmm?' · '+hhmm[1]:'')
+        const hhmm=/(\d{2}:\d{2})/.exec(String(row['submittedAt_'+_sh]||''));
+        stat.innerHTML=_rdef.name+' 제출완료 · '+(row['submitter_'+_sh]||'-')+(hhmm?' · '+hhmm[1]:'')
           +' <button id="parkingUnlockBtn" onclick="unlockParkingRound()" style="margin-left:8px;padding:3px 10px;font-size:11px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:6px;cursor:pointer;font-family:inherit;">🔓 잠금해제</button>';
         stat.style.color='var(--green)';
       }
+    } else {
+      /* 조를 바꿔 왔을 때 앞 조의 잠금 표시가 남지 않게 되돌린다. */
+      rows.forEach(function(pair){ const cb=document.getElementById('pchk_'+pair[0]); if(cb) cb.disabled=false; });
+      if(btn){ btn.disabled=false; btn.textContent='일일 점검 제출'; btn.classList.remove('submitted'); }
+      if(stat){ stat.textContent=_rdef.name+' '+_rdef.time+' — 아직 제출 전'; stat.style.color='var(--dim)'; }
     }
   }catch(e){ if(textEl) textEl.textContent='진행률 조회 실패'; }
 }
@@ -2150,18 +2233,20 @@ async function loadParkingCheckState(){
    지원부·시설부엔 있는데 주차부에만 없어서, 잘못 눌린 제출을 되돌릴 방법이 아예 없었다.
    백엔드는 그대로다(dept 값만 parking) — 새 액션·새 배포 없음(약속 L21). */
 async function unlockParkingRound(){
-  const pin=prompt('주차부 일일점검 잠금 해제\nPIN 번호를 입력하세요:');
+  const _rdef=parkRoundDef(PARK_ROUND);
+  const pin=prompt('주차부 일일점검 잠금 해제 — '+_rdef.name+' '+_rdef.time+'\nPIN 번호를 입력하세요:');
   if(!pin) return;
   const date=new Date().toLocaleString('sv-SE').slice(0,10);
   try{
+    /* round 는 그 조의 baseShift(am/pm) — 백엔드가 제출 도장을 그 버킷으로 지운다. 조를 안 넘기면 늘 오전조만 풀린다. */
     const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'unlock_round',dept:'parking',date:date,gender:'m',round:'am',pin:pin})});
+      body:JSON.stringify({action:'unlock_round',dept:'parking',date:date,gender:'m',round:_rdef.baseShift,pin:pin})});
     const j=await r.json();
     if(j&&(j.success||j.ok)){
-      alert('잠금을 풀었습니다. 다시 점검·제출하실 수 있습니다.');
+      alert(_rdef.name+' 잠금을 풀었습니다. 다시 점검·제출하실 수 있습니다.');
       const btn=document.getElementById('parkingSubmitBtn');
       if(btn){ btn.disabled=false; btn.textContent='일일 점검 제출'; btn.classList.remove('submitted'); }
-      PARK_CHECKLIST.daily.forEach(function(t,i){ const cb=document.getElementById('pchk_'+i); if(cb) cb.disabled=false; });
+      parkItemsOfRound(PARK_ROUND).forEach(function(pair){ const cb=document.getElementById('pchk_'+pair[0]); if(cb) cb.disabled=false; });
       loadParkingCheckState();
     }else{
       alert('잠금 해제 실패: '+((j&&(j.reason||j.error))||'PIN 을 다시 확인해 주세요'));
@@ -2173,25 +2258,30 @@ loadParkingCheckState();
 async function submitParkingDailyCheck(){
   const insp=(document.getElementById('parkingInspector').value||'').trim();
   if(!insp){ alert('점검자 이름을 입력해 주세요.'); return; }
+  /* 제출은 '지금 고른 조' 것만 보낸다 — 다른 조 항목까지 실으면 그 조가 낸 적 없는 체크가 함께 저장된다. */
+  const rows=parkItemsOfRound(PARK_ROUND);
+  const _rdef=parkRoundDef(PARK_ROUND);
+  const _sh=_rdef.baseShift;
   const checkedIdx=[];
-  PARK_CHECKLIST.daily.forEach(function(t,i){ if(document.getElementById('pchk_'+i).checked) checkedIdx.push(i); });
-  if(!checkedIdx.length && !confirm('체크된 항목이 하나도 없습니다. 그래도 제출하시겠습니까?')) return;
+  rows.forEach(function(pair){ const cb=document.getElementById('pchk_'+pair[0]); if(cb&&cb.checked) checkedIdx.push(pair[0]); });
+  if(!checkedIdx.length && !confirm(_rdef.name+'에 체크된 항목이 하나도 없습니다. 그래도 제출하시겠습니까?')) return;
   const btn=document.getElementById('parkingSubmitBtn');
   const stat=document.getElementById('parkingSubmitStatus');
   btn.disabled=true; if(stat){ stat.textContent='제출 중...'; stat.style.color='var(--dim)'; }
   const nowIso=new Date().toLocaleString('sv-SE').replace('T',' ');   // 'YYYY-MM-DD HH:MM:SS' KST(타 제출경로와 통일)
   const date=nowIso.slice(0,10);
-  const checks=PARK_CHECKLIST.daily.map(function(t,i){
-    return { itemId:'p'+(i+1), name:t, cat:'일일', checked:checkedIdx.indexOf(i)>=0, shift:'am' };
+  const checks=rows.map(function(pair){
+    return { itemId:'p'+(pair[0]+1), name:pair[1].t, cat:'일일', checked:checkedIdx.indexOf(pair[0])>=0, shift:_sh };
   });
-  const roundChecks=checkedIdx.map(function(i){ return 'am1_p'+(i+1); });
+  const roundChecks=checkedIdx.map(function(i){ return PARK_ROUND+'_p'+(i+1); });
   const roundCheckMeta={};
   roundChecks.forEach(function(k){ roundCheckMeta[k]={ by:insp, at:nowIso.slice(11,16) }; });
   const payload={
     action:'save', date:date, dept:'parking', genderTab:'m',
-    checks:checks, roundChecks:roundChecks, roundCheckMeta:roundCheckMeta,
-    submitter_am:insp, submittedAt_am:nowIso
+    checks:checks, roundChecks:roundChecks, roundCheckMeta:roundCheckMeta
   };
+  payload['submitter_'+_sh]=insp;
+  payload['submittedAt_'+_sh]=nowIso;
   try{
     const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
     const d=await r.json();
@@ -2200,25 +2290,26 @@ async function submitParkingDailyCheck(){
        안 잡혔다(실측: save 는 success·saved 3 인데 weekly 는 src='sheet' 폴백에 0건, monthly 0건).
        주차만 action='save' 하나로 끝냈고 지원부는 save 뒤 snapshot_append 를 따로 부른다 —
        집계 1차 출처가 '점검일지_<dept>' 스냅샷 시트이기 때문이다. 같은 호출을 그대로 붙인다.
-       shift='am' 은 위 checks·roundChecks('am1_*')와 같은 값 — GAS _shiftBucket 이 'am' 을 am 버킷으로 읽는다. */
+       shift 는 그 조의 baseShift(am/pm) — 위 checks·roundChecks 와 같은 값이라 조별로 한 줄씩 적립된다
+       (2026-08-28 조 분리 전에는 'am' 고정이었다). */
     try{
       const sr=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'snapshot_append',dept:'parking',date:date,zone:'m',shift:'am',
+        body:JSON.stringify({action:'snapshot_append',dept:'parking',date:date,zone:'m',shift:_sh,
           submitter:insp, submittedAt:nowIso,
-          total:PARK_CHECKLIST.daily.length, done:checkedIdx.length,
-          pct:PARK_CHECKLIST.daily.length?Math.round(checkedIdx.length/PARK_CHECKLIST.daily.length*100):0,
+          total:rows.length, done:checkedIdx.length,
+          pct:rows.length?Math.round(checkedIdx.length/rows.length*100):0,
           issuesCount:0, issues:'', startedAt:'', finishedAt:'', durationMin:''})});
       let sok=false; try{ const sj=await sr.json(); sok=!!(sj&&(sj.ok||sj.success)&&!sj.error); }catch(_){ sok=false; }
       if(!sok) alert('제출은 저장됐지만 점검일지 기록에 실패했습니다 — 현황에 안 잡힐 수 있습니다. 다시 제출해 주세요.');
     }catch(e){ alert('제출은 저장됐지만 점검일지 기록 실패: '+((e&&e.message)||e)); }
-    if(stat){ stat.textContent='제출완료 · '+insp+' · '+nowIso.slice(11,16); stat.style.color='var(--green)'; }
+    if(stat){ stat.textContent=_rdef.name+' 제출완료 · '+insp+' · '+nowIso.slice(11,16); stat.style.color='var(--green)'; }
     btn.textContent='제출완료'; btn.classList.add('submitted');
-    PARK_CHECKLIST.daily.forEach(function(t,i){ document.getElementById('pchk_'+i).disabled=true; });
+    rows.forEach(function(pair){ const cb=document.getElementById('pchk_'+pair[0]); if(cb) cb.disabled=true; });
     /* 🅿 주차부 텔레그램 알림(배672 후속) — 시설부가 쓰는 dept 무관 notify_round 엔드포인트 재사용
        (백엔드 무변경·같은 점검관리방 chat_id). 실패해도 제출 자체는 이미 성공이므로 조용히 무시. */
     fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'notify_round',dept:'parking',date:date,round:'am',
-        message:'🅿 주차부 일일점검 제출 · 점검자 '+insp+' · '+checkedIdx.length+'/'+PARK_CHECKLIST.daily.length+'건 체크'})}).catch(function(){});
+      body:JSON.stringify({action:'notify_round',dept:'parking',date:date,round:_sh,
+        message:'🅿 주차부 일일점검 제출 · '+_rdef.name+' '+_rdef.time+' · 점검자 '+insp+' · '+checkedIdx.length+'/'+rows.length+'건 체크'})}).catch(function(){});
     loadParkingCheckState();
   }catch(e){
     btn.disabled=false;
