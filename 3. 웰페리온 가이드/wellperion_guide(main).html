@@ -534,10 +534,10 @@
           <a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">📋 업무&amp;결재 SSOT →</a>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="wa-block-grid">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:start;" class="wa-block-grid">
           <!-- ◀ 업무 블록: 4지표(총·진행·완료(완료율%)·보류) + 각 오늘 N -->
-          <div>
-            <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px;">📋 업무</div>
+          <div style="display:grid;gap:8px;align-content:start;">
+            <div style="font-size:11px;font-weight:800;color:var(--accent);">📋 업무</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;"><div style="font-size:21px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:10px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiWorkTodayTotal">—</span> · 전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;"><div style="font-size:21px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">진행</div><div style="font-size:10px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiWorkTodayActive">—</span> · 전체 <span id="kpiWorkAllActive" style="font-weight:700;">—</span></div></div>
@@ -546,8 +546,8 @@
             </div>
           </div>
           <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
-          <div>
-            <div style="font-size:11px;font-weight:800;color:var(--warm);margin-bottom:8px;">✍️ 결재</div>
+          <div style="display:grid;gap:8px;align-content:start;">
+            <div style="font-size:11px;font-weight:800;color:var(--warm);">✍️ 결재</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;"><div style="font-size:21px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:10px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiApprTodayTotal">—</span> · 전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
               <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;"><div style="font-size:21px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">대기</div><div style="font-size:10px;color:var(--dim);margin-top:2px;">오늘 <span id="kpiApprTodayPend">—</span> · 전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
@@ -593,22 +593,25 @@
         <!-- [2026-08-28 GM 지시] 멤버십·강습을 한 격자에 담는다 — 소제목 두 개가 첫 행,
              문의관리가 둘째 행, 등록이 셋째 행. 같은 행끼리 높이가 자동으로 맞는다
              (따로 짜면 멤버십 70px · 강습 120px 로 갈렸다). -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-content:start;">
-            <div style="font-size:11px;font-weight:800;color:var(--grow);margin-bottom:8px;">👥 멤버십</div>
-            <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px;">🏊 강습</div>
+        <div style="display:grid;gap:8px;align-content:start;">
+          <div style="font-size:11px;font-weight:800;color:var(--grow);">👥 멤버십</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:58px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">문의관리 →</div>
             <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">이번달</span><span style="font-size:24px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqMonth">—</span><span style="font-size:9.5px;color:var(--dim);">/ 누적</span><span style="font-size:15px;font-weight:700;color:var(--grow);" id="kpiMiInqTotal">—</span></div>
           </a>
+          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:58px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">등록 →</div>
+            <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">이번달</span><span style="font-size:24px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiRegMonth">—</span><span style="font-size:9.5px;color:var(--dim);">/ 누적</span><span style="font-size:15px;font-weight:700;color:var(--grow);" id="kpiMiRegTotal">—</span></div>
+          </a>
+            </div>
+          <div style="font-size:11px;font-weight:800;color:var(--accent);">🏊 강습</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:8px 11px;min-height:58px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">문의관리 →</div>
             <div style="font-size:24px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonInqMonth">—</div>
             <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;color:var(--dim);">성인</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqAdultMonth">—</span><span style="font-size:10px;color:var(--dim);">· 유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonInqYouthMonth">—</span></div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonInqTotal">—</span></div>
-          </a>
-          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:58px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">등록 →</div>
-            <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">이번달</span><span style="font-size:24px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiRegMonth">—</span><span style="font-size:9.5px;color:var(--dim);">/ 누적</span><span style="font-size:15px;font-weight:700;color:var(--grow);" id="kpiMiRegTotal">—</span></div>
           </a>
           <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:8px 11px;min-height:58px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;" id="kpiLessonRegMonthLabel">등록 →</div>
@@ -616,6 +619,7 @@
             <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;color:var(--dim);">성인</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegAdultMonth">—</span><span style="font-size:10px;color:var(--dim);">· 유소년</span><span style="font-size:13px;font-weight:700;color:var(--accent);" id="kpiLessonRegYouthMonth">—</span></div>
             <div style="display:flex;align-items:center;gap:5px;margin-top:3px;"><span style="font-size:10.5px;color:var(--dim);" id="kpiLessonRegTotalLabel">누적</span><span style="font-size:14.5px;font-weight:700;color:var(--accent);" id="kpiLessonRegTotal">—</span></div>
           </a>
+            </div>
         </div>
       </div>
 
@@ -643,9 +647,10 @@
                옆 카드 첫 줄(104px)과 20px 어긋나 두 카드의 타일 바닥선이 안 맞았다. 글자 크기만 맞추고 칸 높이는
                안 맞춘 것이 원인이다. min-height 84 → 104px · 안쪽 여백 9/10 → 11/12 로 문의&등록 카드 첫 행과
                같은 값으로 되돌린다(줄이는 것보다 나란히 서는 것이 GM 요청의 본뜻). -->
-        <div style="font-size:11px;font-weight:800;color:var(--accent);margin-bottom:8px;">🙋 이번달 접수 흐름</div>
+        <div style="display:grid;gap:8px;align-content:start;">
+        <div style="font-size:11px;font-weight:800;color:var(--accent);">🙋 이번달 접수 흐름</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;">
+          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">접수 · 이번달</div>
             <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocNewMonth" style="font-size:25px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">—</span><span style="font-size:11px;color:var(--dim);">(미처리 <b id="kpiVocNew" style="font-weight:700;color:var(--orange,#e6944e);">—</b>)</span></div>
             <!-- kpiVocNew 는 누적이 아니라 '지금 상태가 접수인 것'(=아직 아무도 안 잡은 건)이다.
@@ -653,11 +658,11 @@
             
             <!-- 이 칸 세 숫자는 전부 이번달 기준이다(2026-08-26) — 접수 = 미처리 + 처리중 + 완료 로 떨어진다. -->
           </div>
-          <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;">
+          <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">처리중 · 이번달</div>
             <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocWip" style="font-size:25px;font-weight:800;color:var(--blue,#5b9fd5);line-height:1;">—</span><span style="font-size:11px;color:var(--dim);">(누적 <b id="kpiVocWipTotal" style="font-weight:700;color:var(--blue,#5b9fd5);">—</b>)</span></div>
           </div>
-          <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:58px;">
+          <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">완료 · 이번달</div>
             <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocDoneMonth" style="font-size:25px;font-weight:800;color:var(--grow,#6abf7b);line-height:1;" title="처리(완료) 일자 데이터 없음 — 이번달 접수 건 중 현재 완료 상태 근사치">—</span><span style="font-size:11px;color:var(--dim);">(누적 <b id="kpiVocDone" style="font-weight:700;color:var(--grow,#6abf7b);">—</b>)</span></div>
           </div>
@@ -669,6 +674,7 @@
           <div id="kpiVocCatGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
             <div style="grid-column:1/-1;text-align:center;font-size:10px;color:var(--dim);padding:4px 0;">불러오는 중…</div>
           </div>
+        </div>
         </div>
       </div>
 
