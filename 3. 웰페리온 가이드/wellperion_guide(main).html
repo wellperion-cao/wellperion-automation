@@ -491,9 +491,9 @@
           </div>
           <div style="padding-left:10px;border-left:1px dashed var(--border);min-width:0;">
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);margin-bottom:3px;">팀별 · 이번달</div>
-            <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <div style="max-height:96px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;font-size:10px;">
               <tbody id="salesBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:3px 2px;">세부 없음</td></tr></tbody>
-            </table>
+            </table></div>
           </div>
         </div>
       </div>
@@ -516,9 +516,9 @@
           </div>
           <div style="padding-left:10px;border-left:1px dashed var(--border);min-width:0;">
             <div style="font-size:10.5px;font-weight:700;color:var(--dim);margin-bottom:3px;">카테고리별 · 이번달</div>
-            <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <div style="max-height:96px;overflow-y:auto;"><table style="width:100%;border-collapse:collapse;font-size:10px;">
               <tbody id="expBreakdownBody"><tr><td colspan="3" style="color:var(--dim);padding:3px 2px;">세부 없음</td></tr></tbody>
-            </table>
+            </table></div>
           </div>
         </div>
       </div>
@@ -534,10 +534,14 @@
           [2026-08-28 GM 지시] 링크 버튼이 기간 안내("2026. 8. 1 ~ 8. 31 기준 …")보다 위·오른쪽에
           오게 한다. 제목과 안내를 세로 두 줄로 묶으면 버튼이 제목과 같은 줄에 선다 —
           종합접수처 카드와 똑같은 구조다. -->
-          <div style="min-width:0;"><div style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);">업무&amp;결재 현황</div><div style="font-size:11.5px;color:var(--dim);"><span id="kpiWaPeriodLabel">이번달 기준</span> · 큰 숫자=이번달 · 작은 회색 "전체 N"=누적 전체 · AI COO(시우)</div></div><!--
+          <div style="font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);white-space:nowrap;">업무&amp;결재 현황</div><!--
           [2026-08-28 GM 지시] 이 링크는 제목 줄 오른쪽 끝에 고정한다. 화면이 좁아도 아래로 밀리지
           않게 flex-shrink:0 + margin-left:auto 를 준다(종전에는 줄바꿈으로 제목 아래로 내려갔다). -->
           <span style="display:flex;gap:6px;justify-content:flex-end;flex-shrink:0;margin-left:auto;"><a href="#" onclick="event.preventDefault();document.querySelector('[data-id=S3]').click();" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:6px 13px;background:linear-gradient(135deg,#1c4a38,#173a2c);color:#a8e0c9;border:1px solid #2fa37a;border-radius:20px;text-decoration:none;white-space:nowrap;">📋 업무&amp;결재 SSOT →</a></span></div>
+        <!-- [2026-08-28 GM 지시] 기간 안내를 제목 줄에서 빼 아래로 내렸다. 링크 버튼이 제목과 한 줄에
+             서고 안내가 그 아래에 오게 하려는 것이다 — 종전에는 제목·안내가 한 덩어리라 화면이 좁아지면
+             버튼이 안내 옆·아래로 밀렸다. GM 원문: "안내보다 위에 우측으로 이동해야해". -->
+        <div style="font-size:11.5px;color:var(--dim);margin:-8px 0 12px;"><span id="kpiWaPeriodLabel">이번달 기준</span> · 큰 숫자=이번달 · 작은 회색 "전체 N"=누적 전체 · AI COO(시우)</div>
         <!-- 기간 라벨: 이번달(생성일 기준) — 현재 월 자동(로컬 KST). 일/주/월 셀렉터는 home에 두지 않음(드릴다운은 SSOT 페이지 소관) -->
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="wa-block-grid">
