@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>매출·운영 보고 무인화 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 1장 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* ① 헤더 */
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  /* ② 결정 요청 */
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  /* 경고 밴드 */
+  .alert{ margin-top:7px; background:#FBEDED; border:1.5px solid var(--bad); color:var(--bad);
+    padding:7px 15px; font-size:12.6px; font-weight:700; line-height:1.5; }
+  .alert span{ font-weight:400; color:#6B2020; }
+
+  /* ③ 비교표 */
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:186px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  /* ④ 3분할 */
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  /* ⑤ 각주 */
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>매출·운영 보고 무인화 — 손으로 치는 칸 없애기 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">매출·운영 보고 무인화 — 사람이 손으로 치는 칸 없애기</div>
+    </div>
+    <div class="meta">
+      작성 <b>운영부·경영지원부 (AI CPO 시포)</b><br>
+      작성일 <b>2026. 08. 28.</b> · 문서번호 <b>WP-GM-260828-14</b><br>
+      GM 업무 <b>14번</b> · 상위 <b>02번 웰페리온 ERP 고도화</b> · 진척 <b>60%</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">이탈자(로스자) 칸을 <u>전날 기준</u>으로 통일할지 정해 주십시오.</div>
+        <div class="d">매출은 전날 기준인데 이 칸만 다른 날짜로 적혀 온 적이 있습니다. 기준일만 정해지면 남은 손입력 칸 하나가 그날로 자동 전환됩니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">회원 쪽 칸을 어디까지 자동으로 옮길지 정해 주십시오.</div>
+        <div class="d">회원 구성·대기자 수는 우리 원장에 있어 바로 옮길 수 있습니다. 다만 <b>입장객 수는 스포피아에서 엑셀을 받아 붙이는 칸</b>이라 우리 손 밖입니다 — 9/1 브로제이 전환과 함께 볼지 결정이 필요합니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert">
+    보고 시트에는 아직 <b>「스포피아 회원분석 탭 → 엑셀 내려받기 → 복사·붙여넣기」 안내문이 그대로 박혀 있습니다.</b>
+    <span>&nbsp;/ 이 칸은 외부 시스템에서 사람이 받아 오는 구조라, 브로제이 전환(9/1) 전에는 코드로 없앨 수 없습니다.</span>
+  </div>
+
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:196px"><col style="width:250px"><col><col style="width:104px"><col style="width:300px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k">보고 시트의 칸</th>
+        <th>지금 누가 채우나</th>
+        <th>그 숫자가 원래 있는 곳<span class="sub">우리 시스템에서 매일 쌓이는 자료</span></th>
+        <th>상태</th>
+        <th>남은 것</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">이미 자동으로 넘어간 칸 &nbsp;— 매일 09:00 채워짐</td></tr>
+      <tr><td class="k">시설·지원·주차 현황</td><td>자동</td><td>부서별 점검 기록</td><td class="ctr good">완료</td><td>—</td></tr>
+      <tr><td class="k">금일 예상 컨택·예약</td><td>자동</td><td>멤버십 문의 원장(투어·체험 날짜)</td><td class="ctr good">완료</td><td>투어는 최근 기록이 없어 체험만 나갑니다</td></tr>
+      <tr><td class="k">LOSS 명단</td><td>자동</td><td>종료회원 원장(LOSS 일자·미등록사유)</td><td class="ctr good">완료</td><td>사유를 실무진이 안 채우면 이름만 나갑니다</td></tr>
+      <tr class="grp"><td colspan="5">숫자는 이미 있는데 아직 손으로 치는 칸</td></tr>
+      <tr><td class="k">이탈자 (단기 N명)</td><td>사람</td><td>종료회원 원장 — 같은 값이 이미 있음</td><td class="ctr warn">결정 대기</td><td class="strong">기준일만 정해 주시면 그날 전환 (결정 01)</td></tr>
+      <tr><td class="k">팀별 운영 현황 6칸</td><td>팀장이 월 1회 직접 씀</td><td>강습 문의 원장 · 종합접수처 미처리</td><td class="ctr warn">미착수</td><td>미션 글은 그대로 두고 <b>오늘 숫자 한 줄만</b> 아래에 붙입니다</td></tr>
+      <tr><td class="k">인사 &amp; 파트너팀</td><td>사람</td><td>업무 SSOT — 인사 9건 · 파트너팀 6건 진행중</td><td class="ctr warn">미착수</td><td>같은 내용을 두 번 쓰고 있습니다</td></tr>
+      <tr><td class="k">핵심 보고 및 진행</td><td>사람</td><td>GM 업무 02번(ERP 전환 일정)</td><td class="ctr warn">미착수</td><td>02번에서 그대로 끌어옵니다</td></tr>
+      <tr class="grp"><td colspan="5">회원 쪽 칸 &nbsp;— GM 지시 2026-08-28 로 이번에 새로 살펴본 부분</td></tr>
+      <tr><td class="k">회원 구성 (유효회원 수)</td><td>사람</td><td>회원 원장 — 자동 집계가 이미 돌고 있음(주 1회)</td><td class="ctr warn">주간→매일</td><td>매일 돌게 바꾸면 바로 붙습니다</td></tr>
+      <tr><td class="k">회원권 대기자 현황</td><td>사람</td><td>회원 원장 대기 인원</td><td class="ctr warn">미착수</td><td>원장 값을 그대로 옮기면 됩니다</td></tr>
+      <tr><td class="k">일일 입장객 (회원 출결)</td><td class="bad">스포피아 엑셀 복사·붙여넣기</td><td>스포피아 회원분석 탭 — <b>우리 원장에는 없음</b></td><td class="ctr bad">손 밖</td><td class="strong">9/1 브로제이 전환과 함께 봐야 합니다 (결정 02)</td></tr>
+      <tr class="grp"><td colspan="5">자동화 대상이 아닌 칸</td></tr>
+      <tr class="sum"><td class="k">팀장 이번달 미션·기대치</td><td>팀장 자기신고</td><td>사람이 정하는 목표 — 기계가 대신 못 씀</td><td class="ctr">유지</td><td>아래에 오늘 숫자 한 줄만 덧붙입니다</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1">보고 시트 전체 칸을 <b>아직 한 번도 전수로 훑지 않았습니다</b> — 위 표 밖에 손입력 칸이 더 있을 수 있습니다.</li>
+        <li class="r1">입장객 칸은 외부 시스템(스포피아)에서 사람이 받아 오는 구조 — 코드로 못 없앱니다.</li>
+        <li class="r2">LOSS 사유는 자동으로 옮기지만, <b>사유를 적는 것은 사람 몫</b>이라 비면 이름만 나갑니다.</li>
+        <li class="r2">강습 문의 숫자는 성인분만 집계되고 유소년 조회가 한 번 끊긴 적이 있습니다 — 팀별 칸을 자동화하기 전에 살려야 합니다.</li>
+        <li class="r2">체조팀은 강습 문의 원장에서 종목이 안 잡힙니다 — 그 팀만 자기신고로 남습니다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 액션</h3>
+      <ul class="ord">
+        <li class="n">보고 시트 칸 전수 분류 — 수식 / 손입력 / 미사용 (9월 첫 주)</li>
+        <li class="n">이탈자 칸 자동 전환 — 기준일 결정 즉시 (반나절)</li>
+        <li class="n">회원 구성 집계를 주 1회에서 매일로 전환 (반나절)</li>
+        <li class="n">팀별 칸에 오늘 숫자 한 줄 자동 덧붙이기 (유소년 조회 복구가 먼저)</li>
+        <li class="n">인사·파트너·핵심보고 3칸을 업무 SSOT·02번에서 끌어오기</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li><b>남은 칸을 한꺼번에 하지 않습니다.</b> 기준일 하나만 정해 주시면 오늘 한 칸이 더 자동으로 넘어갑니다.</li>
+        <li>회원 쪽은 <b>구성·대기자 두 칸부터</b> 옮기는 것이 가장 빠릅니다 — 원장에 이미 있고 위험이 없습니다.</li>
+        <li>입장객 칸은 <b>지금 건드리지 않기를 권합니다.</b> 9/1에 브로제이로 넘어가면 원천 자체가 바뀝니다.</li>
+        <li>팀장 미션 글은 <b>없애지 않습니다.</b> 그 아래 오늘 숫자가 붙으면 말과 숫자가 어긋날 때 바로 보입니다.</li>
+        <li>진척 60%는 <b>전수 분류가 끝나야 다시 잽니다</b> — 지금 값은 확인된 칸만 센 것입니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>진척 산식</b> — 확인된 손입력 칸 4개(운영 현황 · 컨택/예약 · LOSS 명단 · 이탈자) 중 3개가 자동으로 넘어가 75%. 다만 시트 전수 분류가 끝나지 않아 미발견 칸이 있을 수 있어 <b>60%</b>로 적었습니다. 전수 분류 후 다시 잽니다.</div>
+    <div><b>실측 근거</b> — 2026-08-28 보고 시트를 직접 열어 확인. 회원 출결 칸의 「스포피아 → 엑셀 → 복사·붙여넣기」 안내문, 「금일 예상 컨택」 칸의 손입력 형식(총 예약자·신규·재등록·LOSS 명단), 회원권 대기자 칸을 눈으로 확인했습니다. 회원 구성 수치는 주 1회 자동 집계본(직전 실행 8/24)에서 가져왔습니다.</div>
+    <div><b>(추정) 표기</b> — 「전수 분류 후 미발견 칸이 더 있을 수 있다」는 추정입니다. 확인된 칸만 표에 넣었습니다. <b>차기 보고</b> — 전수 분류 완료 후 이 문서를 같은 문서번호로 갱신합니다.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260828_매출운영보고_무인화_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] 에서 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
