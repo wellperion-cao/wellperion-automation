@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>안마의자 이용안내 — 웰페리온 A3 공지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 portrait; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 세로 1장 */
+  .page{ width:1123px; height:1587px; background:#fff; margin:66px auto 30px; padding:58px 64px 46px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  /* 헤더 */
+  .head{ text-align:center; border-bottom:3px solid var(--navy); padding-bottom:26px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:20px; color:var(--navy); letter-spacing:10px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:900; font-size:64px; letter-spacing:-1.5px; margin-top:14px; }
+
+  /* 사진 */
+  .photo{ margin-top:26px; flex:1; min-height:0; display:flex; flex-direction:column; border:1px solid var(--line); }
+  .photo img{ flex:1; min-height:0; width:100%; object-fit:cover; display:block; }
+  .photo .ph{ display:none; }
+  .photo.empty img{ display:none; }
+  .photo.empty .ph{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:2px dashed #B9C2CC; background:#FAFBFC; margin:10px; text-align:center; }
+  .photo .ph .t{ font-family:'Noto Serif KR',serif; font-size:20px; font-weight:700; color:#5C666F; }
+
+  /* 요금 — 가장 크게 */
+  .price{ margin-top:26px; display:flex; gap:16px; }
+  .price .p{ flex:1; background:var(--navy); color:#fff; text-align:center; padding:30px 10px 32px; }
+  .price .m{ font-size:26px; font-weight:700; letter-spacing:2px; opacity:.9; }
+  .price .w{ font-size:64px; font-weight:900; letter-spacing:-2px; line-height:1.1; margin-top:10px; }
+  .price .w small{ font-size:30px; font-weight:700; letter-spacing:0; }
+
+  /* 이용 방법 */
+  .sec{ margin-top:30px; }
+  .sec h2{ font-family:'Noto Serif KR',serif; font-size:26px; font-weight:700; color:var(--navy); letter-spacing:-.5px; }
+  .steps{ margin-top:14px; display:flex; gap:14px; }
+  .steps .s{ flex:1; background:var(--navy-bg); text-align:center; padding:20px 10px 22px; }
+  .steps .n{ font-size:20px; font-weight:900; color:var(--navy); }
+  .steps .d{ font-size:21px; font-weight:700; margin-top:8px; letter-spacing:-.5px; }
+  .steps-note{ margin-top:12px; font-size:19px; text-align:center; color:#3C464F; }
+  .steps-note b{ color:var(--ink); }
+
+  /* 위생 */
+  .uvc{ margin-top:30px; background:var(--good); color:#fff; text-align:center; padding:26px 20px; }
+  .uvc .h{ font-size:22px; font-weight:700; letter-spacing:3px; opacity:.9; }
+  .uvc .m{ font-size:29px; font-weight:900; letter-spacing:-.5px; margin-top:8px; line-height:1.4; }
+  .uvc .s{ font-size:18px; margin-top:6px; opacity:.9; }
+
+  /* 유의 */
+  .care{ margin-top:28px; display:flex; gap:14px; }
+  .care .c{ flex:1; border:1px solid var(--line); text-align:center; padding:18px 10px; font-size:20px; font-weight:700; letter-spacing:-.5px; }
+
+  /* 위치·문의 */
+  .foot{ margin-top:30px; border-top:2px solid var(--navy); padding-top:20px;
+    display:flex; align-items:center; justify-content:space-between; }
+  .foot .loc{ font-size:22px; font-weight:700; }
+  .foot .loc .slot{ color:var(--warn); }
+  .foot .ask{ font-size:22px; font-weight:700; text-align:right; }
+  .foot .ask b{ color:var(--navy); font-size:24px; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>안마의자 이용안내 (A3 세로 1장)</b>
+  <span class="note">인쇄: A3 · 세로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- 헤더 -->
+  <div class="head">
+    <div class="brand">WELLPERION</div>
+    <div class="title">안마의자 이용안내</div>
+  </div>
+
+  <!-- 사진 -->
+  <div class="photo">
+    <img src="../assets/안마의자/제품_BFV3070.jpg" alt="안마의자" onerror="this.parentElement.classList.add('empty')">
+    <div class="ph"><div class="t">사진 대기</div></div>
+  </div>
+
+  <!-- 요금 -->
+  <div class="price">
+    <div class="p"><div class="m">10분</div><div class="w">3,000<small>원</small></div></div>
+    <div class="p"><div class="m">20분</div><div class="w">4,000<small>원</small></div></div>
+    <div class="p"><div class="m">30분</div><div class="w">6,000<small>원</small></div></div>
+  </div>
+
+  <!-- 이용 방법 -->
+  <div class="sec">
+    <h2>이용 방법</h2>
+    <div class="steps">
+      <div class="s"><div class="n">①</div><div class="d">자리에 앉아 주세요</div></div>
+      <div class="s"><div class="n">②</div><div class="d">시간을 골라 주세요</div></div>
+      <div class="s"><div class="n">③</div><div class="d">결제해 주세요</div></div>
+      <div class="s"><div class="n">④</div><div class="d">마사지가 시작됩니다</div></div>
+    </div>
+    <div class="steps-note">결제 방법은 <b>기기 화면 안내</b>를 따라 주세요.</div>
+  </div>
+
+  <!-- 위생 -->
+  <div class="uvc">
+    <div class="h">위 생</div>
+    <div class="m">사용이 끝나면 UVC 살균이 자동으로 작동합니다</div>
+    <div class="s">어깨 좌·우, 손끝 좌·우 4개소</div>
+  </div>
+
+  <!-- 유의 -->
+  <div class="care">
+    <div class="c">음식물 반입은 삼가 주세요</div>
+    <div class="c">귀중품은 직접 소지해 주세요</div>
+    <div class="c">이상이 있으면 리셉션에 알려 주세요</div>
+  </div>
+
+  <!-- 위치·문의 -->
+  <div class="foot">
+    <div class="loc">설치 위치 &nbsp;<span class="slot">[설치 위치]</span></div>
+    <div class="ask">문의 &nbsp;리셉션 &nbsp;<b>02-6261-1200</b></div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260828_안마의자_이용안내_A3세로.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
