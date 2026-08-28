@@ -135,7 +135,28 @@
     line-height:1.5;color:#22282E;}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:11px;min-height:0;}
 
-  .chartwrap{padding:6px 8px 2px;overflow:hidden;min-height:0;}
+  .chartwrap{padding:6px 8px 2px;overflow:hidden;min-height:0;flex:1;}
+  /* 전폭 띠 — 폭 1527px 를 다 쓴다. 높이를 못 박아 두어야 SVG 배율이 1 근처로 유지된다
+     (배율이 0.7 밑으로 떨어지면 글자가 7px 이 되어 안 읽힌다 — 2026-08-28 GM 지적). */
+  /* 아래 전폭 띠 = 연 단위 + 연간 추이. 왼쪽 칸에 있던 그래프를 여기로 내려 폭을 두 배로 키웠다
+     (2026-08-28 GM 지적 "그래프가 잘 보이지도 않는다"). 높이를 못 박아야 배율이 1 근처로 유지된다. */
+  .band{height:214px;margin-top:11px;display:flex;gap:13px;}
+
+  /* 강습 신규·재등록 — 팀별 두 칸(신규/재등록) */
+  .ls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 26px;}
+  .ls .lsb{display:flex;align-items:baseline;gap:6px;font-size:11.6px;
+    border-bottom:1px dotted var(--line);padding:2px 0;}
+  .ls .lsn{color:#3C464F;font-weight:700;}
+  .ls .lsv{margin-left:auto;font-variant-numeric:tabular-nums;}
+  .ls .lsv b{font-size:12.6px;}
+  .lstitle{font-size:10.6px;font-weight:800;color:var(--navy);letter-spacing:.5px;
+    border-top:1px solid var(--line);margin-top:9px;padding-top:7px;}
+  .lsum{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:6px 0 6px;}
+  .lsum .lb2{border:1px solid var(--line);padding:5px 9px 6px;}
+  .lsum .lb2.new{border-top:3px solid var(--good);}
+  .lsum .lb2.re{border-top:3px solid #8FA6BC;}
+  .lsum .ll{font-size:10.4px;color:#48525B;font-weight:700;}
+  .lsum .lv{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;margin-top:1px;}
   .lg{display:flex;gap:14px;font-size:10.5px;color:#48525B;padding:0 11px 6px;}
   .lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px;}
 
@@ -176,8 +197,8 @@
   <div id="err"></div>
 
   <div class="hl" id="headline">
-    <div class="b"><div class="t">금일 매출</div><div class="v">—</div></div>
-    <div class="b"><div class="t">누적 매출</div><div class="v">—</div></div>
+    <div class="b"><div class="t">어제 매출</div><div class="v">—</div></div>
+    <div class="b"><div class="t">이번 달 누적</div><div class="v">—</div></div>
     <div class="b"><div class="t">목표 달성률</div><div class="v">—</div></div>
     <div class="b"><div class="t">총 회원수</div><div class="v">—</div></div>
   </div>
@@ -188,34 +209,20 @@
         <h2>매출 현황</h2>
         <table>
           <colgroup><col style="width:158px"><col><col><col><col style="width:78px"></colgroup>
-          <thead><tr><th>보고 항목</th><th>금일 매출</th><th>누적 매출</th><th>목표 매출</th><th>달성률</th></tr></thead>
+          <thead><tr><th>보고 항목</th><th>어제 매출</th><th>이번 달 누적</th><th>이번 달 목표</th><th>달성률</th></tr></thead>
           <tbody id="sales"><tr><td colspan="5">불러오는 중…</td></tr></tbody>
         </table>
       </div>
 
       <div class="sec">
-        <h2>등록 · 환불 매출 — 어제 돈이 어디서 들어오고 나갔나</h2>
-        <div class="bd" id="regRev"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
-      </div>
-
-      <div class="sec">
-        <h2>연 단위 (2026) — 올해 지금까지 어디까지 왔나</h2>
+        <h2>등록 · 재등록 · 환불 — 어제 돈이 어디서 들어오고 나갔나</h2>
         <div class="bd">
-          <div id="gauge"><div style="font-size:11.5px;color:#7A838B">불러오는 중…</div></div>
-          <div class="yr" id="yearly"></div>
+          <div class="lstitle" style="border-top:0;margin-top:0;padding-top:0;">회원권 · 옵션</div>
+          <div id="regRev" style="margin-top:6px;"><div class="mrow"><span class="lb">불러오는 중…</span></div></div>
+          <div id="lesson"></div>
         </div>
       </div>
 
-      <div class="sec" style="flex:1;min-height:0;">
-        <h2>연간 매출 추이 (올해)</h2>
-        <div class="lg">
-          <span><i style="background:#14304E"></i>월 매출 (왼쪽 눈금)</span>
-          <span><i style="background:#146B4F"></i>누적 (오른쪽 눈금)</span>
-        </div>
-        <div class="chartwrap" style="flex:1;">
-          <svg id="chart" viewBox="0 0 900 190" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
-        </div>
-      </div>
     </div>
 
     <div class="col">
@@ -243,6 +250,28 @@
           <h2>로스자</h2>
           <div class="bd"><pre class="txt" id="loss">—</pre></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 연간 추이 — 2026-08-28 GM 지적("그래프가 잘 보이지도 않는다")으로 왼쪽 칸에서 빼
+       아래 전폭 띠로 옮겼다. 폭이 두 배가 되어 글자·막대가 그만큼 커진다. -->
+  <div class="band">
+    <div class="sec" style="width:472px;flex:none;">
+      <h2>연 단위 (2026) — 올해 지금까지 어디까지 왔나</h2>
+      <div class="bd">
+        <div id="gauge"><div style="font-size:11.5px;color:#7A838B">불러오는 중…</div></div>
+        <div class="yr" id="yearly"></div>
+      </div>
+    </div>
+    <div class="sec" style="flex:1;min-width:0;">
+      <h2>연간 매출 추이 (올해) — 월 매출 막대 · 누적 선</h2>
+      <div class="lg">
+        <span><i style="background:#14304E"></i>월 매출 (왼쪽 눈금)</span>
+        <span><i style="background:#146B4F"></i>누적 (오른쪽 눈금)</span>
+      </div>
+      <div class="chartwrap">
+        <svg id="chart" viewBox="0 0 1020 180" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>
       </div>
     </div>
   </div>
@@ -398,8 +427,10 @@ function renderSheet(c){
     else if (s) { s.remove(); }
   }
   setHl(0, (c.I4 || '').trim(), '전날 하루');
-  setHl(1, (c.J4 || '').trim(), '목표 ' + (c.K4 || '–').trim());
-  setHl(2, (c.L4 || '').trim(), '올해 누적 기준');
+  setHl(1, (c.J4 || '').trim(), '이번 달 목표 ' + (c.K4 || '–').trim());
+  /* ★2026-08-28 정정 — 이 두 칸은 **이번 달** 값이다(시트 J=당월 누적 · K=당월 목표 · L=J/K).
+     그런데 '올해 누적 기준'이라 적혀 있어 연 누적으로 읽혔다. 연 값은 아래 「연 단위」 칸에 따로 있다. */
+  setHl(2, (c.L4 || '').trim(), '이번 달 목표 대비');
   setHl(3, (c.N2 || '').trim(), '정회원 ' + (c.N3 || '–').trim());
   var rc = rateClass(c.L4);
   hl[2].querySelector('.v').className = 'v ' + rc;
@@ -410,9 +441,37 @@ function renderSheet(c){
     c.H16.replace(/\n/g,' ').replace(/^📝\s*/, '').replace(/\s*\[환불자 내용 기록\]\s*$/, '');
 }
 
+/* 강습 신규·재등록 (GM 지시 2026-08-28 — "강습도 신규/재등록 구분이 가능한지, 등록자도 강습까지").
+   원천 = 보고 시트 일자탭 「강습 계약 현황」 블록. 실무진이 매일 등록분류(신규/재등록)를 적고 있는데
+   오른쪽 팀별 매출표는 그걸 합계로 접어 버려서 어디에도 안 보였다. 여기서는 읽기만 한다.
+   ▸양도·환불 건은 세지 않는다 — 환불은 왼쪽 「환불 매출」 칸이 이미 보여 준다. */
+function renderLesson(d){
+  var el = document.getElementById('lesson'); if (!el) return;
+  var t = (d && d.total) || {}, teams = (d && d.teams) || {};
+  function money(n){ return (n || 0).toLocaleString('ko-KR') + '원'; }
+  var names = Object.keys(teams).sort(function(a, b){
+    return ((teams[b]['신규']||{}).amount||0) + ((teams[b]['재등록']||{}).amount||0)
+         - ((teams[a]['신규']||{}).amount||0) - ((teams[a]['재등록']||{}).amount||0); });
+  var rows = names.map(function(nm){
+    var n = teams[nm]['신규'] || { count:0, amount:0 }, r = teams[nm]['재등록'] || { count:0, amount:0 };
+    return '<div class="lsb"><span class="lsn">' + esc(nm) + '</span>' +
+           '<span class="lsv">신규 <b>' + n.count + '명</b> · 재등록 <b>' + r.count + '명</b></span></div>';
+  }).join('');
+  el.innerHTML =
+    '<div class="lstitle">강습 — 새로 온 분인가 이어가는 분인가</div>' +
+    '<div class="lsum">' +
+      '<div class="lb2 new"><div class="ll">강습 신규</div><div class="lv">' +
+        ((t['신규']||{}).count || 0) + '명 · ' + money((t['신규']||{}).amount) + '</div></div>' +
+      '<div class="lb2 re"><div class="ll">강습 재등록</div><div class="lv">' +
+        ((t['재등록']||{}).count || 0) + '명 · ' + money((t['재등록']||{}).amount) + '</div></div>' +
+    '</div>' +
+    (rows ? '<div class="ls">' + rows + '</div>'
+          : '<div class="fnote">어제 강습 등록 건이 없습니다.</div>');
+}
+
 /* 연간 추이 — 월 매출 막대 + 누적 선 + 연 목표선. 외부 라이브러리 없이 SVG 로 그린다. */
 function renderChart(d){
-  var W = 900, H = 190, L = 58, R = 52, T = 16, B = 28;
+  var W = 1020, H = 180, L = 70, R = 62, T = 18, B = 28;
   var months = (d && d.months) || [];
   var vals = months.map(function(m){ return m.value; });
   var maxV = Math.max.apply(null, vals.map(function(v){ return v || 0; }).concat([1]));
@@ -428,13 +487,13 @@ function renderChart(d){
     var y = T + ih - (ih * g / 3);
     s.push('<line x1="' + L + '" y1="' + y + '" x2="' + (W-R) + '" y2="' + y +
            '" stroke="#E3E7EB" stroke-width="1"/>');
-    s.push('<text x="' + (L-6) + '" y="' + (y+3.5) + '" text-anchor="end" font-size="9.5" fill="#7A838B">' +
+    s.push('<text x="' + (L-8) + '" y="' + (y+4) + '" text-anchor="end" font-size="12" fill="#7A838B">' +
            eok(maxV * g / 3) + '</text>');
   }
   // 오른쪽 축(누적) 눈금 — 막대와 선은 축이 다르다. 축을 안 적으면 선이 막대보다 낮아 보여 오해한다.
   for (var g2 = 1; g2 <= 3; g2++) {
     var y2 = T + ih - (ih * g2 / 3);
-    s.push('<text x="' + (W-R+4) + '" y="' + (y2+3.5) + '" font-size="9.5" fill="#146B4F">' +
+    s.push('<text x="' + (W-R+6) + '" y="' + (y2+4) + '" font-size="12" fill="#146B4F">' +
            eok(maxC * g2 / 3) + '</text>');
   }
   // 월 막대
@@ -443,7 +502,7 @@ function renderChart(d){
     var h = ih * (m.value / maxV), x = L + bw * i + bw * 0.22, y = T + ih - h;
     s.push('<rect x="' + x + '" y="' + y + '" width="' + (bw*0.56) + '" height="' + h +
            '" fill="#14304E" rx="2"/>');
-    s.push('<text x="' + (x + bw*0.28) + '" y="' + (y-4) + '" text-anchor="middle" font-size="9.5" fill="#14304E">' +
+    s.push('<text x="' + (x + bw*0.28) + '" y="' + (y-5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#14304E">' +
            eok(m.value) + '</text>');
   });
   // 누적 선
@@ -458,7 +517,7 @@ function renderChart(d){
     s.push('<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="2.6" fill="#146B4F"/>'); });
   // 월 라벨
   for (var i = 0; i < 12; i++) {
-    s.push('<text x="' + (L + bw*i + bw*0.5) + '" y="' + (H-8) + '" text-anchor="middle" font-size="10" fill="#48525B">' +
+    s.push('<text x="' + (L + bw*i + bw*0.5) + '" y="' + (H-8) + '" text-anchor="middle" font-size="12.5" fill="#48525B">' +
            (i+1) + '월</text>');
   }
   document.getElementById('chart').innerHTML = s.join('');
@@ -502,6 +561,11 @@ function load(){
       e.innerHTML = '<div class="err">보고 시트를 못 읽었습니다 — ' + esc(err.message) +
         ' &nbsp;/ 잠시 뒤 [↻ 새로고침]을 눌러 주세요.</div>';
     });
+
+  fetch(GAS + '?token=' + encodeURIComponent(TOKEN) + '&lesson=1&cb=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if (d && d.ok) renderLesson(d); })
+    .catch(function(){ /* 강습 칸만 '불러오는 중'으로 남는다 */ });
 
   fetch(ERP + '?action=sales_monthly&cb=' + Date.now())
     .then(function(r){ return r.json(); })

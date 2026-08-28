@@ -59,6 +59,21 @@ function _a1(col) {
   return s;
 }
 
+/** 강습 상품명 → 보고 표의 팀 이름. 시트 오른쪽 팀별 매출표와 같은 말을 쓴다.
+ *  못 가리는 상품은 '기타'로 둔다 — 엉뚱한 팀에 붙이는 것보다 낫다. */
+function _lessonTeam(item) {
+  var s = String(item || '');
+  if (/P\.?\s*T|피티/i.test(s))              return 'P.T팀';
+  if (/필라테스/.test(s))                     return 'P.L팀';
+  if (/스쿼시/.test(s))                       return '스쿼시팀';
+  if (/수영|아쿠아/.test(s))                  return '수영팀';
+  if (/체조|트램폴린/.test(s))                return '체조팀';
+  if (/골프/.test(s))                         return '골프팀';
+  if (/GXE|줌바|G\.?X/i.test(s))              return 'GXE(파트너팀)';
+  if (/발레|바레|뮤지컬/.test(s))             return '뮤지컬팀';
+  return '기타';
+}
+
 function _sheet() {
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   if (!sh) throw new Error('시트를 찾지 못했습니다: ' + SHEET_NAME);
@@ -90,7 +105,12 @@ function doGet(e) {
   //   (GM 지시 2026-08-28: "운영 현황 상세에 버튼 누르면 지금 나오는 보고시트처럼 정리해서")
   //   읽기 전용이고 범위는 09:30 보고가 찍는 그 범위(H2:S21)로 고정한다 — 시트 다른 곳은 안 준다.
   if (p.dump) {
-    var dr = _sheet().getRange(DUMP_RANGE);
+    // sheet·range 를 주면 같은 파일의 다른 탭(일자탭 등)도 읽는다 — 읽기 전용이고 400칸으로 막는다.
+    // 어느 칸이 어디서 오는지 사람이 시트를 열어 확인해 주던 것을 없애려고 열었다(2026-08-28).
+    var dsh = p.sheet ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(p.sheet) : _sheet();
+    if (!dsh) return _json({ ok: false, error: 'sheet not found: ' + p.sheet });
+    var dr = dsh.getRange(p.sheet ? (p.range || 'A1:H20') : DUMP_RANGE);
+    if (dr.getNumRows() * dr.getNumColumns() > 400) return _json({ ok: false, error: 'range too large' });
     var dv = dr.getDisplayValues();
     var dr0 = dr.getRow(), dc0 = dr.getColumn(), cells = {};
     for (var dy = 0; dy < dv.length; dy++) {
@@ -99,8 +119,50 @@ function doGet(e) {
         if (val) cells[_a1(dc0 + dx) + (dr0 + dy)] = val;
       }
     }
-    return _json({ ok: true, range: DUMP_RANGE, cells: cells, at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
+    // formula=1 이면 각 칸의 수식도 함께 준다 — 어느 칸이 자동(수식)이고 어느 칸이
+    // 사람 손입력인지 가리는 데 쓴다. 값은 그대로 두고 fx 맵만 덧붙이므로 기존 호출부는 영향 없다.
+    var fx = null;
+    if (p.formula) {
+      var df = dr.getFormulas();
+      fx = {};
+      for (var fy = 0; fy < df.length; fy++) {
+        for (var fxi = 0; fxi < df[fy].length; fxi++) {
+          var f = String(df[fy][fxi] || '');
+          if (f) fx[_a1(dc0 + fxi) + (dr0 + fy)] = f;
+        }
+      }
+    }
+    return _json({ ok: true, range: dr.getA1Notation(), sheet: dsh.getName(), cells: cells, fx: fx, at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
   }
+  // 강습 신규·재등록 — 일자탭 「강습 계약 현황」 블록(H8:N60)을 종목 × 등록분류로 센다.
+  //   시트는 이 블록을 팀별 매출 합계로만 접어서 오른쪽 표에 올린다. 그래서 신규인지 재등록인지는
+  //   사람이 매일 M열에 적고 있는데도 어디에도 안 보였다(GM 2026-08-28: "강습도 신규/재등록 구분이
+  //   가능한지"). 여기서는 이미 적힌 칸을 읽기만 한다 — 실무진이 새로 채울 칸을 만들지 않는다.
+  if (p.lesson) {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var dayName = String(_sheet().getRange('I1').getDisplayValue() || '').trim();
+    var dsh2 = ss.getSheetByName(dayName);
+    if (!dsh2) return _json({ ok: false, error: 'day tab not found: ' + dayName });
+    var lv = dsh2.getRange('J8:N60').getDisplayValues();   // 종목 · 결제금액 · 결제방법 · 등록분류 · 등록경로
+    var teams = {}, total = {};
+    for (var li = 0; li < lv.length; li++) {
+      var item = String(lv[li][0] || '').trim();
+      var cls  = String(lv[li][3] || '').trim();
+      if (!item || !cls) continue;
+      if (cls.indexOf('신규') < 0 && cls.indexOf('재등록') < 0) continue;   // 양도·환불은 세지 않는다
+      var kind = cls.indexOf('신규') >= 0 ? '신규' : '재등록';
+      var amt = Number(String(lv[li][1] || '').replace(/[^0-9-]/g, '')) || 0;
+      var team = _lessonTeam(item);
+      if (!teams[team]) teams[team] = {};
+      if (!teams[team][kind]) teams[team][kind] = { count: 0, amount: 0 };
+      teams[team][kind].count++; teams[team][kind].amount += amt;
+      if (!total[kind]) total[kind] = { count: 0, amount: 0 };
+      total[kind].count++; total[kind].amount += amt;
+    }
+    return _json({ ok: true, day: dayName, teams: teams, total: total,
+      at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
+  }
+
   var cell = p.cell || ALLOWED_CELLS[0];
   if (ALLOWED_CELLS.indexOf(cell) < 0) return _json({ ok: false, error: 'cell not allowed: ' + cell });
   var v = _sheet().getRange(cell).getDisplayValue();
