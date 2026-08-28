@@ -957,7 +957,10 @@
       <span class="view-toggle" id="view-toggle"></span>
       <a class="allhands-link" href="전사회의.html" target="_blank" rel="noopener">📋 전사회의 자료 →</a>
     </div>
-    <a class="back" href="#" onclick="window.print();return false;">🖨️ 인쇄</a>
+    <!-- 🖨️ A3 보고서 — 이 화면이 아니라 결재용 A3 1장을 연다(GM 지시 2026-08-28).
+         현황(지나온 달)과 계획(다가올 달)은 성격이 달라 각각 한 장이다. 링크는 렌더 시 선택월로 갱신된다. -->
+    <span id="a3-print-links"></span>
+    <a class="back" href="#" onclick="window.print();return false;">🖨️ 이 화면 인쇄</a>
   </header>
 
   <!-- 🔥 임팩트 현황 4칸 = 폐지(GM 확정 2026-07-04 월별 상단 재구성). 매출=💰 0순위 섹션 + 핵심 과제=🎯 top3 섹션(중요도 자동)으로 대체·중복 제거. -->
@@ -3167,10 +3170,34 @@
       '</div>';
   }
 
+  /* ── A3 보고서 링크 (GM 지시 2026-08-28 — "월간 운영계획 보고에서 인쇄할 수 있도록") ──
+     보고서는 결재용이라 이 화면과 담는 것이 다르다(결재란·문서번호·본질 한 줄·역산 일정).
+     그래서 화면을 그대로 인쇄하지 않고, 그 달의 A3 파일을 열어 거기서 인쇄한다.
+     파일명 규칙 = reports/{YYMMDD}_{n}월_운영현황_A3.html · {YYMMDD}_{n}월_운영계획_A3.html
+     (YYMMDD = 그 달 보고일 = 다음 달 1일). 아직 만들지 않은 달은 링크를 내지 않는다 —
+     없는 파일을 링크하면 GM 화면에서 404 가 뜬다. */
+  var A3_REPORTS = {
+    '2026-08': { file:'reports/260901_8월_운영현황_A3.html', label:'8월 운영 현황' },
+    '2026-09': { file:'reports/260901_9월_운영계획_A3.html', label:'9월 운영 계획' }
+  };
+  function renderA3Links(){
+    var host = document.getElementById('a3-print-links');
+    if(!host) return;
+    var cur = A3_REPORTS[_sel];
+    if(!cur){ host.innerHTML = ''; return; }
+    /* 그 달 것 + 짝이 되는 다른 한 장(현황↔계획)을 함께 낸다 — 회장님 보고는 두 장이 한 벌이다. */
+    var other = null, keys = Object.keys(A3_REPORTS);
+    keys.forEach(function(k){ if(k !== _sel) other = A3_REPORTS[k]; });
+    var h = '<a class="allhands-link" href="' + cur.file + '" target="_blank" rel="noopener">🖨️ ' + esc(cur.label) + ' A3 →</a>';
+    if(other) h += '<a class="allhands-link" href="' + other.file + '" target="_blank" rel="noopener">🖨️ ' + esc(other.label) + ' A3 →</a>';
+    host.innerHTML = h;
+  }
+
   function render(){
     renderViewToggle();
     applyView();
     renderPlanBanner();
+    renderA3Links();
     renderTop3();
     renderAnnual();
     renderRoadmap();
