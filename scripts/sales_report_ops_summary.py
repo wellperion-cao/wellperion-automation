@@ -148,10 +148,14 @@ def build_text(day: str, value_up: list[str]) -> str:
 
 
 def build_contact_text(send_day: str) -> str:
-    """「보고」탭 I16 — 금일 예상 컨택 및 매출 현황 (2026-08-21 시토 · 배738).
+    """「보고」탭 I16 — 내일 투어·체험 예약 (2026-08-21 시토 · 배738 / 2026-08-28 GM 기준 확정).
 
-    지금까지 사람이 손으로 치던 칸이다. 09:30 보고가 나가는 날(send_day) 기준으로
-    ①그날 투어·체험 예약자 ②전날 LOSS 를 적는다. 실무진이 쓰던 문구 틀을 그대로 따른다.
+    지금까지 사람이 손으로 치던 칸이다. 실무진이 쓰던 문구 틀을 그대로 따른다.
+
+    ★기준일 = 보고 나가는 날의 **다음 날**이다. GM 확정 2026-08-28: "I16은 내일 투어 및
+      체험 예약(오늘 예약 달력 참고) / I18은 전날 LOSS기준". 그 전까지는 이 한 칸에
+      당일 예약과 전날 LOSS 를 함께 써서 두 기준일이 한 칸에 섞여 있었다 — LOSS 는
+      build_loss_text 로 떼어 I18 에 쓴다.
 
     ★원천을 새로 만들지 않는다: 예약은 아침 정리(ops_daily_digest.build_reservation_block)가
       쓰는 것과 **같은 규칙** — member_inquiry_list 의 reservations[].date 매칭이다.
@@ -160,7 +164,7 @@ def build_contact_text(send_day: str) -> str:
     """
     from scripts.collectors.ops_shared import FUNNEL_EXEC_URL  # noqa: PLC0415
 
-    prev_day = (date.fromisoformat(send_day) - timedelta(days=1)).isoformat()
+    target_day = (date.fromisoformat(send_day) + timedelta(days=1)).isoformat()
     md = lambda d: f"{int(d[5:7])}/{int(d[8:10])}"  # noqa: E731 — '8/22' 표기
 
     # ── 예약 ──
@@ -175,36 +179,48 @@ def build_contact_text(send_day: str) -> str:
             return ""
         for r in data.get("data", []) or []:
             for res in (r.get("reservations") or []):
-                if res.get("date") == send_day:
+                if res.get("date") == target_day:
                     events.append((res.get("time") or "", r.get("name") or ""))
     except Exception:
         return ""
     events.sort(key=lambda x: x[0])
     names = " / ".join(n for _, n in events if n)
 
-    lines = [f"{md(send_day)} 기준 [총 예약자  {len(events)}명]", ""]
+    lines = [f"{md(target_day)} 기준 [총 예약자  {len(events)}명]", ""]
     lines.append(f"[신   규  :  {len(events)} 명]")
     lines.append(f" - 투어 및 체험 : {names}" if names else " - 투어 및 체험 : ")
     lines.append("[재등록 : 0명]")
     lines.append("- 멤버십 : ")
-    lines.append("")
+    return "\n".join(lines)
 
-    # ── 전날 LOSS ── 종료회원 원장 스냅샷(19:00 자동 갱신)에서 센다
-    loss: list[str] = []
+
+def build_loss_text(send_day: str) -> str:
+    """「보고」탭 I18 — 로스자 칸. 전날 LOSS 기준(GM 확정 2026-08-28).
+
+    원천 = 종료회원 원장 스냅샷(status/member_ended_snapshot.json · 매일 19:00 자동 갱신).
+    사유(미등록사유)가 비면 이름만 적는다 — 사유를 지어내지 않는다(약속 L05).
+    원장을 못 읽으면 빈 문자열을 돌려주고, 호출부가 그 칸을 건드리지 않는다.
+    """
+    prev_day = (date.fromisoformat(send_day) - timedelta(days=1)).isoformat()
+    md = lambda d: f"{int(d[5:7])}/{int(d[8:10])}"  # noqa: E731
+
     snap = ROOT / "status" / "member_ended_snapshot.json"
     try:
         rows = json.loads(snap.read_text(encoding="utf-8")).get("rows") or []
-        for r in rows:
-            for k, v in r.items():
-                if k.replace("\n", "") == "LOSS일자" and str(v or "").strip()[:10] == prev_day:
-                    nm = next((str(vv) for kk, vv in r.items() if kk.replace("\n", "") == "회원명"), "")
-                    reason = next((str(vv).strip() for kk, vv in r.items() if kk.replace("\n", "") == "미등록사유"), "").strip()
-                    if nm:
-                        loss.append(f"{nm}({reason})" if reason else nm)
-                    break
     except Exception:
-        pass
-    lines.append(f"{md(prev_day)} 기준 [LOSS : {len(loss)}명]")
+        return ""      # 원장을 못 읽었다 — 사람이 쓴 글을 빈 값으로 지우지 않는다
+
+    loss: list[str] = []
+    for r in rows:
+        for k, v in r.items():
+            if k.replace("\n", "") == "LOSS일자" and str(v or "").strip()[:10] == prev_day:
+                nm = next((str(vv) for kk, vv in r.items() if kk.replace("\n", "") == "회원명"), "")
+                reason = next((str(vv).strip() for kk, vv in r.items() if kk.replace("\n", "") == "미등록사유"), "").strip()
+                if nm:
+                    loss.append(f"{nm}({reason})" if reason else nm)
+                break
+
+    lines = [f"{md(prev_day)} 기준 [LOSS : {len(loss)}명]"]
     lines.append(f"- 멤버십 : {' / '.join(loss)}" if loss else "- 멤버십 :")
     lines.append("- 단   기 :")
     return "\n".join(lines)
@@ -305,15 +321,31 @@ def main() -> int:
         if not ctext:
             # ★빈 값으로 사람이 쓴 글을 지우지 않는다. 원천을 못 읽으면 그냥 손대지 않는다.
             print("[I16] 원천(문의 원장)을 못 읽어 이번엔 쓰지 않았습니다 — 기존 내용 그대로 둡니다")
-            return rc or 1
-        print(ctext)
-        print("---")
-        if args.dry_run:
-            print(f"[미리보기 I16] {len(ctext)}자 · {ctext.count(chr(10)) + 1}줄 — 시트에 쓰지 않았습니다")
+            rc = rc or 1
         else:
-            cres = post_to_sheet(ctext, "I16")
-            print("[결과 I16]", json.dumps(cres, ensure_ascii=False))
-            rc = rc or (0 if cres.get("ok") else 1)
+            print(ctext)
+            print("---")
+            if args.dry_run:
+                print(f"[미리보기 I16] {len(ctext)}자 · {ctext.count(chr(10)) + 1}줄 — 시트에 쓰지 않았습니다")
+            else:
+                cres = post_to_sheet(ctext, "I16")
+                print("[결과 I16]", json.dumps(cres, ensure_ascii=False))
+                rc = rc or (0 if cres.get("ok") else 1)
+
+        # I18 로스자 — 전날 LOSS. I16 을 못 써도 이 칸은 따로 시도한다(두 칸은 원천이 다르다).
+        ltext = build_loss_text(args.send_day)
+        if not ltext:
+            print("[I18] 종료회원 원장을 못 읽어 이번엔 쓰지 않았습니다 — 기존 내용 그대로 둡니다")
+            rc = rc or 1
+        else:
+            print(ltext)
+            print("---")
+            if args.dry_run:
+                print(f"[미리보기 I18] {len(ltext)}자 · {ltext.count(chr(10)) + 1}줄 — 시트에 쓰지 않았습니다")
+            else:
+                lres = post_to_sheet(ltext, "I18")
+                print("[결과 I18]", json.dumps(lres, ensure_ascii=False))
+                rc = rc or (0 if lres.get("ok") else 1)
     return rc
 
 

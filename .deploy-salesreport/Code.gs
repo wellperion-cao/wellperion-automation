@@ -34,12 +34,26 @@ var SHEET_NAME = '보고';
 //         지금은 사람이 손으로 친다. 원천은 이미 매일 자동으로 쌓인다(문의 원장 예약/체험 · 종료회원 원장 LOSS).
 //         2026-08-21 시토가 「보고」 탭을 직접 읽어 이 칸임을 확인하고 열었다(배738).
 //         ※ 왼쪽 블록 B16 은 '어제' 열이라 열지 않는다 — 사람이 옮겨 적는 자리가 아니라 지나간 기록이다.
-var ALLOWED_CELLS = ['P20', 'I16'];
+//   I18 = 「로스자」 칸 — 전날 LOSS 기준. 2026-08-28 GM 이 두 칸의 뜻을 직접 갈라 주셨다:
+//         "I16은 내일 투어 및 체험 예약(오늘 예약 달력 참고) / I18은 전날 LOSS기준".
+//         그 전까지는 I16 한 칸에 예약과 LOSS 를 함께 써서 기준일이 섞여 있었다.
+var ALLOWED_CELLS = ['P20', 'I16', 'I18'];
 
 function _json(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** 열 번호 → A1 표기(1=A · 27=AA). find 응답에서 칸 주소를 만들 때만 쓴다. */
+function _a1(col) {
+  var s = '';
+  while (col > 0) {
+    var m = (col - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    col = (col - 1 - m) / 26;
+  }
+  return s;
 }
 
 function _sheet() {
@@ -52,6 +66,23 @@ function _sheet() {
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.token !== TOKEN) return _json({ ok: false, error: 'unauthorized' });
+  // 칸 찾기 — 보고 탭에서 어떤 글이 어느 칸에 있는지 주소를 돌려준다(읽기 전용).
+  // 쓰기 허용 칸을 늘릴 때마다 사람이 시트를 열어 주소를 확인해 주던 것을 없앤다(2026-08-28).
+  // 값은 앞 40자만 돌려준다 — 주소를 찾는 것이 목적이라 본문을 통째로 내보내지 않는다.
+  if (p.find) {
+    var rng = _sheet().getRange(p.range || 'A1:S40');
+    var vals = rng.getDisplayValues();
+    var r0 = rng.getRow(), c0 = rng.getColumn(), out = [];
+    for (var r = 0; r < vals.length; r++) {
+      for (var c = 0; c < vals[r].length; c++) {
+        var s = String(vals[r][c] || '');
+        if (s && s.indexOf(p.find) >= 0) {
+          out.push({ cell: _a1(c0 + c) + (r0 + r), head: s.substring(0, 40) });
+        }
+      }
+    }
+    return _json({ ok: true, find: p.find, hits: out });
+  }
   var cell = p.cell || ALLOWED_CELLS[0];
   if (ALLOWED_CELLS.indexOf(cell) < 0) return _json({ ok: false, error: 'cell not allowed: ' + cell });
   var v = _sheet().getRange(cell).getDisplayValue();
