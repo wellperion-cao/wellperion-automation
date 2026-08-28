@@ -329,6 +329,16 @@
   .deptgoal-sub{font-size:11.5px; font-weight:500; color:var(--dim);}
   .deptgoal-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px;}
   .dg-card{background:var(--paper); border:1px solid var(--border); border-radius:13px; padding:13px 15px 14px; display:flex; flex-direction:column; gap:10px;}
+  /* 파트너팀 칸 — 8팀이라 세로로 길다. 한 칸을 두 칸 폭으로 써 목표 문장이 잘리지 않게 한다(GM 지시 2026-08-28) */
+  .dg-card.dg-partner{grid-column:span 2;}
+  .pt-tbl{width:100%; border-collapse:collapse;}
+  .pt-tbl th{font-size:11.5px; font-weight:700; color:var(--dim); text-align:left; padding:4px 6px; border-bottom:1px solid var(--border);}
+  .pt-tbl td{font-size:12.5px; padding:6px; border-bottom:1px solid rgba(61,56,53,0.28); vertical-align:middle;}
+  .pt-tbl tr:last-child td{border-bottom:0;}
+  .pt-tbl .pt-n{font-weight:700; width:76px; white-space:nowrap;}
+  .pt-tbl .pt-l{width:92px; color:var(--dim); white-space:nowrap;}
+  .pt-tbl .pt-p{width:120px;}
+  @media (max-width:900px){ .dg-card.dg-partner{grid-column:span 1;} }
   .dg-card-h{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; border-bottom:1px solid var(--border); padding-bottom:8px;}
   .dg-dept{font-size:14px; font-weight:800; color:var(--text);}
   .dg-note{font-size:10px; font-weight:600; color:var(--text-soft); background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:1px 7px;}
@@ -1018,6 +1028,25 @@
       <div class="fin-dept-full" id="fin-dept-board"></div>
     </section>
 
+    <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
+    <section class="blk top3-wrap" id="top3-wrap" data-blkid="top3">
+      <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="lvb lvb-off" title="월간계획 objectives(수동 관리) — 순위만 자동 선정, 진척값은 실시간 측정 아님">🔴 비라이브</span> <span class="stag">매출 제외 · 중요도순 1·2·3</span></h2>
+      <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
+    </section>
+
+    <!-- 🗺️ 전략 로드맵 (GM 지시 2026-07-06 3차: 1~4분기 한 줄 가로 스트립) -->
+    <section class="blk erp-roadmap-merge" data-blkid="roadmap">
+      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="lvb lvb-off" title="전략 로드맵 정본(수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">6단계 · 현재 단계</span></h2>
+      <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
+    </section>
+
+    <!-- 🗂️ 부서별 내용 = 표(table.rpt) 전환(실무 도달율+AI 활용%+월 목표·진척+체계 페이지 매핑 · GM 지시 2026-07-07 3차: 카드 그리드 → 표·A3 1p 맞춤) -->
+    <section class="blk dept-cards" data-blkid="deptcards">
+      <h2 class="sec">🗂️ 부서별 내용 <span class="lvb lvb-off" title="월간계획 정본(objectives·수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">부서별 도달율 + 월 목표·진척 · 체계 페이지 매핑</span></h2>
+      <!-- 「경영 보고·GM 업무 현황 열기」 링크 삭제 (GM 지시 2026-08-26) — GM 업무는 GM업무 페이지에서 본다. -->
+      <div id="dept-cards-board"></div>
+    </section>
+
     <!-- 🔧 점검 현황 & 종합 접수처 (GM 지시 2026-07-06: 점검=선택월 월간 집계 전환·명칭 정합) -->
     <section class="blk" data-blkid="check">
       <h2 class="sec"><span class="chk-title-nw">🔧 점검 현황 &amp; 종합 접수처</span> <span class="lvb lvb-half" title="지원부 점검·종합접수처(습득물 포함)=실시간 자동측정 / 시설부 점검=월간 측정 개통 전(정직 표기)">🟠 반반</span> <span class="stag">선택월 월간 집계 · 지원부·종합접수처·ERP · 실측만</span></h2>
@@ -1032,25 +1061,11 @@
       <div id="deptreport-board"><div class="board-status">전 부서 보고 사항을 불러오는 중…</div></div>
     </section>
 
-    <!-- 🗂️ 부서별 내용 = 표(table.rpt) 전환(실무 도달율+AI 활용%+월 목표·진척+체계 페이지 매핑 · GM 지시 2026-07-07 3차: 카드 그리드 → 표·A3 1p 맞춤) -->
-    <section class="blk dept-cards" data-blkid="deptcards">
-      <h2 class="sec">🗂️ 부서별 내용 <span class="lvb lvb-off" title="월간계획 정본(objectives·수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">부서별 도달율 + 월 목표·진척 · 체계 페이지 매핑</span></h2>
-      <!-- 「경영 보고·GM 업무 현황 열기」 링크 삭제 (GM 지시 2026-08-26) — GM 업무는 GM업무 페이지에서 본다. -->
-      <div id="dept-cards-board"></div>
-    </section>
-
-    <!-- 🗺️ 전략 로드맵 (GM 지시 2026-07-06 3차: 1~4분기 한 줄 가로 스트립) -->
-    <section class="blk erp-roadmap-merge" data-blkid="roadmap">
-      <h2 class="sec">🗺️ 전략 로드맵 진척 <span class="lvb lvb-off" title="전략 로드맵 정본(수동 관리) — 실시간 자동측정 아님">🔴 비라이브</span> <span class="stag">6단계 · 현재 단계</span></h2>
-      <div id="roadmap-board"><div class="board-status">전략 로드맵 정본을 불러오는 중…</div></div>
-    </section>
-
-    <!-- 🎯 이달 핵심 과제 top3 (1·2·3순위 · 매출 제외 · 중요도 자동 선정 · GM 확정 2026-07-04) -->
-    <section class="blk top3-wrap" id="top3-wrap" data-blkid="top3">
-      <h2 class="sec">🎯 이달 핵심 과제 top3 <span class="lvb lvb-off" title="월간계획 objectives(수동 관리) — 순위만 자동 선정, 진척값은 실시간 측정 아님">🔴 비라이브</span> <span class="stag">매출 제외 · 중요도순 1·2·3</span></h2>
-      <div id="top3-board"><div class="board-status">핵심 과제 top3를 선정하는 중…</div></div>
-    </section>
-
+    
+    
+    
+    
+    
     <!-- 👑🤵👤 회장님 / 대표님 / 김남욱GM 업무 진행건 — 요약 토글 3개, 핵심 과제 상세 바로 위. 2026-08-05
          GM 직접 지시(2차례): ① 대표님 칸 신설(회장님 칸 오른쪽) + 브로제이 업무분장을 김남욱GM 칸 안으로
          흡수(독립 토글 폐기) ② 3칸 구성 통일("아이콘+제목+배지" summary·같은 표 칸(업무명/카테고리/일정)·
@@ -2231,8 +2246,37 @@
    // 회원관리(CPO/시포) — 사람 실무자(practitioner) 없이 AI가 직접 운영하는 도메인이라 prac 자리엔 닉네임만 둔다
    // (roster에 없는 값 → pracOf() 매칭 실패 → 그대로 "시포" 텍스트 표시. GM 지시 2026-08-08: 이달 핵심 과제
    // 상세 제거하며 dept:"회원관리" 항목(예 웰페리온 ERP/브로제이)이 부서 카드 어디에도 안 걸려 사라지던 것 보정).
-   {id:'cpo', key:'회원관리(회원·CS + 웰페리온 ERP)', prac:'시포', ai:null, deptKeys:['회원관리'], links:[]}
+   {id:'cpo', key:'회원관리(회원·CS + 웰페리온 ERP)', prac:'시포', ai:null, deptKeys:['회원관리'], links:[]},
+   // ★2026-08-28 GM 지시 — 경영지원을 김남욱GM·나우열M 둘로 가른다. 같은 '경영지원'이라도 보는 것이
+   // 다르다: GM 은 전사·회장님/대표님 보고와 전략, 나우열M 은 인사·파트너팀·지출 실무.
+   {id:'gm',   key:'경영지원 — 김남욱 GM(전사 총괄 · 회장님·대표님 보고 · 전략)', prac:'kim-nw', ai:'na-uy-gm',
+    deptKeys:['전사','전략','보고'], links:[{label:'GM 업무', href:'coo/chairman/GM업무.html'}]},
+   // ★파트너팀 전체 — 8팀을 한 칸에 모아 팀별 목표·진척을 함께 본다(GM 지시 2026-08-28 "마지막 칸에 각 팀별
+   // 파트너팀 전체 월 목표 및 현황"). 팀·리더 정본 = ssot/kpi.json _팀리더_2026_08_25 (여기에 이름을 복제하지
+   // 않는다 · 약속 L01). 팀별 목표·진척은 monthly_ops_plan.json 의 practitioner_goals/progress 에
+   // 팀 id(pt·swim·gym·golf·squash·gx·musical·pilates)로 들어온다 — 아직 안 들어온 팀은 '미제출'로 보인다.
+   {id:'partner', key:'파트너팀 전체(강습 8팀)', prac:'na-uy', ai:'na-uy-gm', deptKeys:['파트너','강습'],
+    partner:true, links:[{label:'파트너팀 체계', href:'coo/check/파트너팀 체계.html'}]}
   ];
+  // 파트너팀 목록 — 표시명만 둔다. 리더 이름은 kpi.json 정본에서 읽어 채운다(아래 _teamLeads).
+  var PARTNER_TEAMS = [
+    {id:'pt',      name:'P.T팀'},
+    {id:'swim',    name:'수영팀'},
+    {id:'gym',     name:'체조팀'},
+    {id:'golf',    name:'골프팀'},
+    {id:'squash',  name:'스쿼시팀'},
+    {id:'gx',      name:'G.X팀'},
+    {id:'musical', name:'뮤지컬팀'},
+    {id:'pilates', name:'필라테스'}
+  ];
+  var _teamLeads = {};   // kpi.json 도착 시 채움 — 못 읽으면 리더 칸은 비운다(지어내지 않는다)
+  fetch('https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/ssot/kpi.json?cb=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(k){
+      var t = k && k['_팀리더_2026_08_25'] && k['_팀리더_2026_08_25'].teams;
+      if(t){ _teamLeads = t; if(_data) renderDeptTable(); }
+    })
+    .catch(function(){});
   var DEPT_CARD_BY_ID = {}; DEPT_CARDS.forEach(function(c){ DEPT_CARD_BY_ID[c.id] = c; });
   // 렌더 그룹(GM 지시 2026-07-08): 시설·지원·주차 = 이정헌 소장 통합관리 → 표 1행·카드 1장으로 묶어 렌더.
   // 데이터(monthly_ops_plan.json)는 부서별 그대로 유지 — 렌더에서만 그룹핑(값 변경 없음). 실무 도달율·AI 활용은 세 부서 동일 실무자(lee-jh)라 1값이 3부서 대표.
@@ -2241,14 +2285,19 @@
     {members:['fac','sup','park'], merged:true, title:'시설·지원·주차 통합', note:'이정헌 소장 통합관리', head:'fac'},
     {members:['mgmt']}
   ];
-  // 📌 부서별 월 목표·진척 전용 그룹 — 시설·지원·주차 통합하지 않고 부서별로 분리 렌더(GM 지시 2026-07-09 원상복구). 부서별 내용 표(DEPT_GROUPS)는 통합 유지.
+  /* 📌 부서별 월 목표·진척 전용 그룹 — ★2026-08-28 GM 지시로 다시 짰다.
+     ①주차관리부는 별도 칸을 두지 않고 지원부 칸 안으로 넣는다(두 부서를 같은 사람들이 돌린다)
+     ②회원관리 칸은 뺀다(사람이 아니라 AI 도메인이라 부서 제출 대상이 아니다)
+     ③경영지원을 김남욱 GM · 나우열M 둘로 가른다
+     ④맨 마지막 칸 = 파트너팀 전체 — 8팀 목표·현황을 한자리에서 본다
+     ※ DEPT_CARDS·DEPT_GROUPS(부서별 내용 표)는 건드리지 않는다 — 저쪽은 도달율·AI 활용을 보는 다른 표다. */
   var DEPT_GOAL_GROUPS = [
     {members:['ops']},
     {members:['fac']},
-    {members:['sup']},
-    {members:['park']},
+    {members:['sup','park'], merged:true, title:'지원부 · 주차관리부', note:'주차관리부 포함', head:'sup'},
+    {members:['gm']},
     {members:['mgmt']},
-    {members:['cpo']}
+    {members:['partner']}
   ];
   function pracOf(id, roster){ for(var i = 0; i < roster.length; i++){ if(roster[i].id === id){ return roster[i]; } } return null; }
   function ownerCellHtml(cfg, roster){
@@ -2445,8 +2494,37 @@
     return (cfg.links || []).map(function(l){ return '<a class="dg-linkbtn" href="' + esc(l.href) + '" target="_blank">' + esc(l.label) + ' →</a>'; }).join('');
   }
   // 카드 1장 = 렌더 그룹 1개. 통합 그룹(시설·지원·주차)=헤더(이정헌 소장·통합관리)+체계 3버튼+3부서 소섹션(3컬럼 서브그리드·세로 과확장 방지·GM 지시 2026-07-08).
-  function deptCardHtml(group, objs, roster){
+  /* 파트너팀 칸 — 8팀을 한 칸에 줄로 세운다(GM 지시 2026-08-28).
+     목표·진척은 monthly_ops_plan.json 의 practitioner_goals/progress 에 팀 id 로 들어온다.
+     아직 제출 전인 팀은 '미제출'이라고 그대로 적는다 — 빈칸을 0%로 채우지 않는다. */
+  function partnerCardHtml(cfg, m){
+    var goals = (m && m.practitioner_goals) || {};
+    var prog  = (m && m.practitioner_progress) || {};
+    var rows = PARTNER_TEAMS.map(function(t){
+      var lead = _teamLeads[t.name] || '';
+      var g = String(goals[t.id] || '').trim();
+      var p = prog[t.id];
+      var bar = (typeof p === 'number') ? progBar(clampPct(p), null, false, '', false)
+                                        : '<span class="dc-dim">미제출</span>';
+      return '<tr><td class="pt-n">' + esc(t.name) + '</td>' +
+             '<td class="pt-l">' + esc(lead) + '</td>' +
+             '<td class="pt-g">' + (g ? esc(g) : '<span class="dc-dim">이번 달 목표 미제출</span>') + '</td>' +
+             '<td class="pt-p">' + bar + '</td></tr>';
+    }).join('');
+    var done = PARTNER_TEAMS.filter(function(t){ return typeof prog[t.id] === 'number'; }).length;
+    return '<div class="dg-card dg-partner">' +
+      '<div class="dg-card-h"><span class="dg-dept">' + esc(cfg.key) + '</span>' +
+      '<span class="dg-note">제출 ' + done + ' / ' + PARTNER_TEAMS.length + '팀</span>' +
+      '<span class="dg-own">팀 리더 · 나우열M 총괄</span></div>' +
+      (linkBtnsHtml(cfg) ? '<div class="dg-links">' + linkBtnsHtml(cfg) + '</div>' : '') +
+      '<table class="pt-tbl"><thead><tr><th>팀</th><th>리더</th><th>이번 달 목표</th><th>진척</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>' +
+    '</div>';
+  }
+
+  function deptCardHtml(group, objs, roster, m){
     var head = DEPT_CARD_BY_ID[group.head || group.members[0]];
+    if(head && head.partner) return partnerCardHtml(head, m);
     var title = group.merged ? group.title : head.key;
     var note = group.merged ? group.note : head.note;
     var p = pracOf(head.prac, roster);
@@ -2472,11 +2550,11 @@
     '</div>';
   }
   // 📌 부서별 월 목표·진척 — 부서 표 아래 전용 프로미넌트 섹션(GM 지시 2026-07-07 5차: 좁은 표 칸 → 크게·중요하게)
-  function deptGoalGridHtml(objs, roster){
+  function deptGoalGridHtml(objs, roster, m){
     var mLabel = _sel ? (Number(String(_sel).split('-')[1]) + '월') : '';
-    var cards = DEPT_GOAL_GROUPS.map(function(g){ return deptCardHtml(g, objs, roster); }).join('');
+    var cards = DEPT_GOAL_GROUPS.map(function(g){ return deptCardHtml(g, objs, roster, m); }).join('');
     return '<div class="deptgoal-sec"><div class="deptgoal-h">📌 부서별 월 목표 · 진척 ' +
-      '<span class="deptgoal-sub">' + esc(mLabel) + ' 부서별 핵심 과제 · 진척</span></div>' +
+      '<span class="deptgoal-sub">' + esc(mLabel) + ' 부서별 핵심 과제 · 진척 · 매월 말일 각 부서 제출</span></div>' +
       '<div class="deptgoal-grid">' + cards + '</div></div>';
   }
   function renderDeptTable(){
@@ -2493,7 +2571,7 @@
       '</tr></thead><tbody>' + DEPT_GROUPS.map(function(g){
         return deptRowHtml(g, roster, progMap, aiById);
       }).join('') + '</tbody></table></div>';
-    board.innerHTML = tbl + deptGoalGridHtml(objs, roster);
+    board.innerHTML = tbl + deptGoalGridHtml(objs, roster, m);
     // 舊 obj-board가 하던 #obj-{id} 해시 점프를 이관 — coo/chairman/GM업무.html의 「📌 월간운영계획에서 보기」가 이걸 쓴다.
     setTimeout(focusHashObj, 60);
   }
