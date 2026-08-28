@@ -126,6 +126,41 @@ def _lost_found_month_cycle() -> dict | None:
         return None
 
 
+def _first_done_at_and_stats(rows: list[dict], now: datetime) -> tuple[dict[str, str], dict | None]:
+    """처리 소요일 자체 정립(GM 지시 2026-08-28) — reg_list에 완료 시각 칸이 없어
+    「접수→완료」 소요일을 못 쟀다. 우리가 매일 이 관문을 도는 김에, regId별 '완료로
+    처음 목격한 날'(first_done_at)을 기록해 두면 그 다음부터 소요일이 나온다.
+    ▸소급 불가 — 오늘부터 쌓는다(과거 완료건은 오늘 날짜로 처음 잡힌다).
+    ▸최초값은 절대 덮어쓰지 않는다(행 삭제·상태 되돌림이 있어도 first_done_at 보존).
+    ▸새 파일을 만들지 않는다(약속 L21) — 기존 reception_watch.json에 얹는다."""
+    prev_done_at: dict[str, str] = {}
+    try:
+        prev = json.loads(RECEPTION_WATCH_PATH.read_text(encoding="utf-8"))
+        prev_done_at = dict(prev.get("first_done_at") or {})
+    except Exception:
+        pass
+    today_str = now.strftime("%Y-%m-%d")
+    for r in rows:
+        if str(r.get("status", "")) == "완료":
+            reg = str(r.get("regId") or "")
+            if reg and reg not in prev_done_at:
+                prev_done_at[reg] = today_str
+
+    durations = []
+    for r in rows:
+        done_at = prev_done_at.get(str(r.get("regId") or ""))
+        if done_at:
+            durations.append(reception_elapsed_days(r, datetime.strptime(done_at, "%Y-%m-%d")))
+    stats = None
+    if durations:
+        durations.sort()
+        n = len(durations)
+        mid = n // 2
+        median = durations[mid] if n % 2 else (durations[mid - 1] + durations[mid]) / 2
+        stats = {"count": n, "median_days": median, "max_days": durations[-1]}
+    return prev_done_at, stats
+
+
 def _write_reception_watch(rows: list[dict]) -> None:
     """미완 건을 부서별로 세어 스냅샷으로 남긴다.
     - 완료 도장이 아니라 memberReply(회원 안내) 빈칸을 진짜 마감 여부로 따로 센다
@@ -133,6 +168,7 @@ def _write_reception_watch(rows: list[dict]) -> None:
     - 분실물 접수는 보관 성격이라 부서 적체 집계에서 빼고 따로 센다(웰리 실무진 공지 방침)."""
     try:
         now = datetime.now()
+        first_done_at, processing_days = _first_done_at_and_stats(rows, now)
         by_dept: dict[str, dict] = {}
         member_reply_open = 0
         overdue_3d = 0
@@ -167,6 +203,8 @@ def _write_reception_watch(rows: list[dict]) -> None:
             "overdue_7d": overdue_7d,
             "lost_items_open": lost_open,
             "lost_found": _lost_found_month_cycle(),
+            "first_done_at": first_done_at,
+            "processing_days": processing_days,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception as e:
         print(f"[stream2b] reception_watch.json 쓰기 실패: {e}", file=sys.stderr)
