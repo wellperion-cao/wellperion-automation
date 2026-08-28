@@ -38,6 +38,9 @@ var SHEET_NAME = '보고';
 //         "I16은 내일 투어 및 체험 예약(오늘 예약 달력 참고) / I18은 전날 LOSS기준".
 //         그 전까지는 I16 한 칸에 예약과 LOSS 를 함께 써서 기준일이 섞여 있었다.
 var ALLOWED_CELLS = ['P20', 'I16', 'I18'];
+// 통째 읽기(dump) 허용 범위 — 09:30 매출보고 이미지가 찍히는 그 범위와 같다.
+// 여기를 넓히면 시트의 다른 내용까지 밖으로 나간다. 넓힐 때는 무엇이 함께 나가는지 보고 정한다.
+var DUMP_RANGE = 'H2:S21';
 
 function _json(obj) {
   return ContentService
@@ -82,6 +85,21 @@ function doGet(e) {
       }
     }
     return _json({ ok: true, find: p.find, hits: out });
+  }
+  // 보고 범위 통째 읽기 — ERP 「일일 운영보고」 화면이 시트 캡처 대신 값을 받아 직접 그린다.
+  //   (GM 지시 2026-08-28: "운영 현황 상세에 버튼 누르면 지금 나오는 보고시트처럼 정리해서")
+  //   읽기 전용이고 범위는 09:30 보고가 찍는 그 범위(H2:S21)로 고정한다 — 시트 다른 곳은 안 준다.
+  if (p.dump) {
+    var dr = _sheet().getRange(DUMP_RANGE);
+    var dv = dr.getDisplayValues();
+    var dr0 = dr.getRow(), dc0 = dr.getColumn(), cells = {};
+    for (var dy = 0; dy < dv.length; dy++) {
+      for (var dx = 0; dx < dv[dy].length; dx++) {
+        var val = String(dv[dy][dx] || '');
+        if (val) cells[_a1(dc0 + dx) + (dr0 + dy)] = val;
+      }
+    }
+    return _json({ ok: true, range: DUMP_RANGE, cells: cells, at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm') });
   }
   var cell = p.cell || ALLOWED_CELLS[0];
   if (ALLOWED_CELLS.indexOf(cell) < 0) return _json({ ok: false, error: 'cell not allowed: ' + cell });
