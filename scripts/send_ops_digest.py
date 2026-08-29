@@ -1524,7 +1524,8 @@ def _send_ovd_room(room: str) -> bool:
     if not block:
         log(f"[ovd] {room} — 3일+ 없음, 생략")
         return False
-    cmd = [sys.executable, str(SENDER), "--message", block, "--only-room", room]
+    cmd = [sys.executable, str(SENDER), "--message", block, "--only-room", room,
+           "--sender", "아침정리다이제스트"]
     log(f"[ovd] 발송 → {room}")
     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
     out = (proc.stdout or "").strip()
