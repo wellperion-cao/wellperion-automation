@@ -39,7 +39,8 @@ import os
 import re
 import subprocess
 import sys
-from datetime import date, datetime
+import time
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -58,6 +59,9 @@ PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부"
 # 배536(2026-08-11) — ops_daily_digest.py --room "★중간관리자" 가 만드는 그 방 전용 대화 정리.
 MGR_PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★중간관리자" / "_pending_digest.json"
 KILL_SWITCH = ROOT / "status" / "ops_digest_send.json"
+# 배 11070(웰리 ①) — 이 스크립트가 순서대로 여는 방(★운영부→★중간관리자→★부서장/★운영+시설+
+# 지원+주차)이 한 스케줄에 몰려 카톡 알림이 겹쳐 보였다. 방마다 이만큼 벌려 보낸다.
+SEND_STAGGER_SECONDS = 300
 TARGET_ROOM = "★운영부"  # 2026-08-04 시토: SSOT(kakao_rooms.json)와 표기 일치(공백 제거) —
 # 발송 자체는 _title_key 정규화로 공백 무관하게 동작하지만, 등록부 드리프트 체커가
 # SSOT 표기와 다르면 CODE_ROOM_NOT_IN_SSOT로 매번 걸린다(발송 실패 아님 — 표기만 정합화).
@@ -351,6 +355,41 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 # ══════════════════════════════════════════════════════════════════════════
 MGR_DAILY_SHOW_N = 3
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
+# ★2026-08-26 웰리 실측(배 11039 ⑤ · 배 11070 ③) — 절이 하나씩 늘며 한 통이 35줄까지
+# 나갔다. 카톡 한 통 10줄 안쪽이 GM 확정(2026-08-07)이라 25줄로 낮춘다.
+MGR_BRIEF_LINE_CAP = 25
+
+
+def _cap_message_lines(text: str, max_lines: int) -> str:
+    """메시지 줄 수 상한. 서명(RELAY_SIGNOFF)이 있으면 항상 마지막 줄로 살려 둔다 —
+    상한에 걸려도 누가 보낸 글인지는 잘리지 않는다. 잘렸으면 그 사실을 한 줄로 남긴다."""
+    lines = text.splitlines()
+    if len(lines) <= max_lines:
+        return text
+    keep_signoff = bool(lines) and lines[-1] == RELAY_SIGNOFF
+    body = lines[:-1] if keep_signoff else lines
+    limit = max_lines - (2 if keep_signoff else 1)  # 생략 안내줄(+서명줄) 자리를 남긴다
+    trimmed = body[:max(limit, 0)]
+    trimmed.append("…(분량 상한으로 일부 생략 — 화면에서 전체를 보실 수 있습니다)")
+    if keep_signoff:
+        trimmed.append(RELAY_SIGNOFF)
+    return "\n".join(trimmed)
+
+
+def _selfcheck_cap_message_lines() -> None:
+    """상한 이내면 그대로, 넘으면 자르되 서명줄은 항상 살아 있는지. 네트워크 없이 돈다."""
+    short = "\n".join(f"line{i}" for i in range(10))
+    assert _cap_message_lines(short, 25) == short, "상한 이내는 그대로여야 한다"
+    long_with_signoff = "\n".join(f"line{i}" for i in range(34)) + f"\n{RELAY_SIGNOFF}"
+    out = _cap_message_lines(long_with_signoff, 25)
+    out_lines = out.splitlines()
+    assert len(out_lines) == 25, len(out_lines)
+    assert out_lines[-1] == RELAY_SIGNOFF, "서명줄은 상한에 걸려도 마지막 줄로 남아야 한다"
+    assert "생략" in out_lines[-2], out_lines[-2]
+    long_no_signoff = "\n".join(f"line{i}" for i in range(34))
+    out2 = _cap_message_lines(long_no_signoff, 25)
+    assert len(out2.splitlines()) == 25, len(out2.splitlines())
+    print("[selfcheck] _cap_message_lines OK")
 
 # ══════════════════════════════════════════════════════════════════════════
 # 📮 회신 부탁 절 (2026-08-15 GM 승인 · C안) — 물음은 나가는데 답을 세는 곳이 없어
@@ -373,6 +412,10 @@ NUDGE_SHOW_N = 3          # 사람당 이 이상은 다음 회차로 — 길면 
 # ★중간관리자 방 구성원(수신자). 담당이 운영부 실무진(윤병현AM 등)인 건은 약속 L24
 # (운영부는 실장 경유)에 따라 이경연 실장 묶음에 싣되, 줄에 원 담당 이름을 남긴다.
 _NUDGE_MEMBERS = ["이경연 실장", "이정헌 소장", "나우열M"]
+# ★2026-08-28 GM 확정 역할(배 11070 ④) — 비품·소모품 구매·비치는 이정헌 소장 역할 3번이다.
+# owner 가 세 사람 중 아무도 아니면(빈칸·방 이름 등) 옛 코드는 무조건 이경연 실장으로
+# 떨어졌다 — 구매·비치 건도 실장 앞으로 잘못 쌓였다. 제목에 이 낱말이 있으면 소장으로 보낸다.
+_NUDGE_FACILITY_KEYWORDS = ("구매", "비치")
 
 
 def _nudge_norm(s: str) -> str:
@@ -397,7 +440,6 @@ def build_reply_nudge_items(target_date: str) -> list:
     닫힌 건 ③담당 빈칸(주인 없는 일은 사람한테 묻지 않는다 · 약속 L23) ④서로 닮은 중복
     (최신 문구만 남김). date = 이 창(window) 안에서 그 건이 처음 나온 날 — 오래 묵을수록
     먼저 보이게 한다."""
-    from datetime import timedelta
     try:
         ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
         t = date.fromisoformat(target_date)
@@ -431,7 +473,12 @@ def build_reply_nudge_items(target_date: str) -> list:
                 continue
             if any(_nudge_similar(title, x) for x in resolved_texts + today_texts):
                 continue
-            member = owner if owner in _NUDGE_MEMBERS else _NUDGE_MEMBERS[0]
+            if owner in _NUDGE_MEMBERS:
+                member = owner
+            elif any(kw in title for kw in _NUDGE_FACILITY_KEYWORDS):
+                member = "이정헌 소장"
+            else:
+                member = _NUDGE_MEMBERS[0]
             rows = kept.setdefault(member, [])
             if any(_nudge_similar(title, r["title"]) for r in rows):
                 continue
@@ -494,14 +541,22 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     room, contacts = relay_routes()[0]
     relay_items, relay_current = build_relay_message(contacts, relay_state.get(room, {}))
 
-    # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 오래된 순
-    # ASKS_SHOW_N건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
+    # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 사람당
+    # ASKS_PER_PERSON_CAP건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
     nudge_items = build_reply_nudge_items(target_date)
     asks = build_asks_section(relay_items, nudge_items)
     if asks:
         parts.append(asks)
 
-    return "\n\n".join(parts), relay_current
+    # 📅 다가오는 일정 — 관리자 건(미팅·방문·보고 등)만. 부서 소관은 send_overdue_reception_alerts
+    # 가 ★운영+시설+지원+주차 쪽에 따로 붙인다(위 「📅 다가오는 일정」 섹션 주석 참조).
+    sched_items = [x for x in _upcoming_schedule_items() if not x["dept_item"]]
+    sched_block = _build_schedule_block(sched_items)
+    if sched_block:
+        parts.append(sched_block)
+
+    message = _cap_message_lines("\n\n".join(parts), MGR_BRIEF_LINE_CAP)
+    return message, relay_current
 
 
 def _mgr_already_sent(target_date: str) -> bool:
@@ -686,6 +741,14 @@ def _is_stale(last_sent: str, today: str) -> bool:
         return False
 
 
+def _uncapped_line(text: str) -> str:
+    """카톡 표시 캡(RELAY_TITLE_CAP) 없이 줄바꿈만 정리한 원문 — 스냅샷 비교 전용.
+
+    ★2026-08-26 웰리 실측(배 11039) — 캡 뒤가 같으면 배626처럼 빈칸이 10건→3건으로
+    줄어도 '변화 없음'으로 잡혔다. 비교는 항상 원문으로, 캡은 표시할 때만 씌운다."""
+    return re.sub(r"\s+", " ", str(text or "")).strip()
+
+
 def _cap_line(text: str, cap: int = RELAY_TITLE_CAP) -> str:
     """카톡 한 줄용 길이 상한 — 낱말 한가운데서 자르지 않는다(GM 상시 지시).
 
@@ -769,6 +832,125 @@ def _resolve_staff_message(ship: dict) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# 📅 다가오는 일정 (2026-08-28 GM 지시 · 배 11070) — "카카오톡에 전사일정 관련해가지고도
+# 리마인드 같이 시켜주면 좋을 것 같긴해". 원장 = status/schedule_ssot.json 하나뿐(읽기 전용
+# — 이 파일이 쓰지 않는다, 다른 레인이 쓴다). 새 원장·새 통을 만들지 않는다(약속 L21) —
+# 이미 나가는 아침 통 끝에 블록 하나로 붙인다.
+#
+# 부서 소관(법정·정기점검·공사·점검 회차)과 관리자 건(미팅·방문·보고 등)은 방이 다르다
+# (GM 지시 — 같은 일정이 두 방에 겹쳐 나가면 안 된다). 가르는 기준 = type·담당 부서:
+#   부서 소관 → type이 정기점검이거나 dept가 시설·지원·주차·운영 4부서 중 하나
+#   관리자 건 → 그 밖(경영지원부 등 — 미팅·방문·보고류)
+# 호출부(build_mgr_daily_brief=관리자 건 / send_overdue_reception_alerts=부서 소관)가
+# _is_dept_schedule_item 으로 걸러서 넘긴다.
+# ponytail: 「전사일정에 넣은 것」(ops_daily_digest.py, 다른 파일의 절)과 겹칠 때 빼는
+#   로직은 안 넣었다 — 그 절의 원장을 이 파일이 몰라 넣으려면 파일을 하나 더 읽어야
+#   한다. 겹침이 실제로 눈에 띄면 그때 흡수한다.
+# ══════════════════════════════════════════════════════════════════════════
+SCHEDULE_LOOKAHEAD_DAYS = 7
+SCHEDULE_SHOW_N = 5
+_SCHEDULE_DEPT_ORGS = {"시설부", "지원부", "주차관리부", "운영부"}
+
+
+def _is_dept_schedule_item(item: dict) -> bool:
+    """부서 소관(법정·정기점검·공사·점검 회차)인가 — 아니면 관리자 건(미팅·방문·보고 등)."""
+    return str(item.get("type")) == "정기점검" or str(item.get("dept") or "").strip() in _SCHEDULE_DEPT_ORGS
+
+
+def _upcoming_schedule_items(today=None) -> list:
+    """오늘부터 SCHEDULE_LOOKAHEAD_DAYS일 안, 담당(assignee)이 잡힌 일정만 next_due 순으로.
+    applies='해당없음'은 뺀다(schedule_ssot.json honesty_note — 부서가 해당없음으로 끈 것)."""
+    today = today or date.today()
+    try:
+        data = json.loads(SCHEDULE_SSOT_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log(f"[schedule] 전사일정 읽기 실패 — 리마인드 절 생략: {exc}")
+        return []
+    horizon = today + timedelta(days=SCHEDULE_LOOKAHEAD_DAYS - 1)
+    out = []
+    for x in data.get("items", []):
+        if not isinstance(x, dict) or str(x.get("applies") or "") == "해당없음":
+            continue
+        assignee = str(x.get("assignee") or "").strip()
+        if not assignee:
+            continue
+        try:
+            d = date.fromisoformat(str(x.get("next_due") or "")[:10])
+        except Exception:
+            continue
+        if not (today <= d <= horizon):
+            continue
+        out.append({"date": d, "name": str(x.get("name") or "").strip(), "assignee": assignee,
+                    "dept_item": _is_dept_schedule_item(x)})
+    out.sort(key=lambda x: x["date"])
+    return out
+
+
+def _schedule_day_label(d, today) -> str:
+    delta = (d - today).days
+    if delta == 0:
+        return "오늘"
+    if delta == 1:
+        return "내일"
+    return f"{d.month}/{d.day}"  # GM 지시 — "D-3" 같은 표기는 못 읽는다, 실제 날짜로 적는다
+
+
+def _build_schedule_block(items: list, today=None) -> str:
+    """📅 다가오는 일정 블록. items 는 이미 부서/관리자 갈래로 걸러진 목록."""
+    if not items:
+        return ""
+    today = today or date.today()
+    shown, rest = items[:SCHEDULE_SHOW_N], items[SCHEDULE_SHOW_N:]
+    lines = ["📅 다가오는 일정"]
+    for it in shown:
+        lines.append(f" • {_schedule_day_label(it['date'], today)} — {it['name']} ({it['assignee']})")
+    if rest:
+        lines.append(f" • 그 밖 {len(rest)}건")
+    return "\n".join(lines)
+
+
+def _selfcheck_schedule_block() -> None:
+    """부서/관리자 갈래·7일 창·5건 상한·오늘·내일 표기. 네트워크 없이 돈다."""
+    today = date(2026, 8, 28)
+    raw = [
+        {"name": "손소독제 구매", "assignee": "이경연 실장", "dept": "운영부", "type": "정기점검",
+         "next_due": "2026-08-28", "applies": "있음"},
+        {"name": "매트릭스 방문", "assignee": "김남욱GM", "dept": "경영지원부", "type": "이벤트",
+         "next_due": "2026-08-29", "applies": "있음"},
+        {"name": "8일 뒤 — 창 밖", "assignee": "김남욱GM", "dept": "경영지원부", "type": "이벤트",
+         "next_due": "2026-09-05", "applies": "있음"},
+        {"name": "담당 미정 — 빠져야 함", "assignee": "", "dept": "시설부", "type": "정기점검",
+         "next_due": "2026-08-29", "applies": "있음"},
+        {"name": "해당없음 — 빠져야 함", "assignee": "이정헌 소장", "dept": "시설부", "type": "정기점검",
+         "next_due": "2026-08-29", "applies": "해당없음"},
+    ]
+    items = []
+    for x in raw:
+        d = date.fromisoformat(x["next_due"])
+        if x["applies"] == "해당없음" or not x["assignee"] or not (today <= d <= today + timedelta(days=6)):
+            continue
+        items.append({"date": d, "name": x["name"], "assignee": x["assignee"],
+                      "dept_item": _is_dept_schedule_item(x)})
+    dept_items = [x for x in items if x["dept_item"]]
+    mgr_items = [x for x in items if not x["dept_item"]]
+    assert len(dept_items) == 1 and dept_items[0]["name"] == "손소독제 구매", dept_items
+    assert len(mgr_items) == 1 and mgr_items[0]["name"] == "매트릭스 방문", mgr_items
+    dept_out = _build_schedule_block(dept_items, today)
+    assert "오늘 — 손소독제 구매 (이경연 실장)" in dept_out, dept_out
+    mgr_out = _build_schedule_block(mgr_items, today)
+    assert "내일 — 매트릭스 방문 (김남욱GM)" in mgr_out, mgr_out
+    assert "8일 뒤" not in dept_out and "8일 뒤" not in mgr_out, "7일 창 밖은 빠져야 한다"
+    assert "담당 미정" not in dept_out, "담당 없는 일정은 빠져야 한다"
+    assert "해당없음" not in dept_out, "applies=해당없음은 빠져야 한다"
+    many = [{"date": today, "name": f"건{i}", "assignee": "x", "dept_item": True} for i in range(7)]
+    out = _build_schedule_block(many, today)
+    assert out.count(" • ") == 6, "5건 + 「그 밖」 한 줄 = 6줄이어야 한다"
+    assert "그 밖 2건" in out, out
+    assert _build_schedule_block([], today) == "", "일정이 없으면 블록 자체가 없어야 한다"
+    print("[selfcheck] _build_schedule_block OK")
+
+
+# ══════════════════════════════════════════════════════════════════════════
 # 📌+📮 통합 「확인 부탁드릴 것」 절 (2026-08-20 GM 지적 수리)
 #
 # GM 원문: "정말 복잡해, 직관적이고 명확해야해, 내용도 다 체크되거나 완료된건 등등
@@ -782,9 +964,13 @@ def _resolve_staff_message(ship: dict) -> str:
 # 고친 것: 두 절을 하나로 합친다(build_asks_section). 헤더 건수 = 화면에 실제로 보이는
 # 줄 수(더 이상 숨은 잔여분을 포함하지 않는다). 완료 스냅샷은 아예 안 싣는다(약속
 # "★중복 최소화" — 완료는 대화 정리 절의 "✅ 확인된 것"이 이미 담당). 한 건 = 두 줄
-# (①무엇을 확인해 달라는지 ②어디서·어떻게 답하면 되는지), 오래된 순 ASKS_SHOW_N건만.
+# (①무엇을 확인해 달라는지 ②어디서·어떻게 답하면 되는지), 오래된 순 사람별 상한만.
+#
+# ★2026-08-26 웰리 실측(배 11039 ⑤) — 상한이 통 전체 5건 고정이라, 실장님 앞으로 5건이
+# 차면 다음 회차에 소장님 건이 새로 생겨도 밀려 접혔다. 사람별 상한으로 바꿔 한 사람이
+# 많이 밀려도 다른 사람 새 건은 그대로 보인다.
 # ══════════════════════════════════════════════════════════════════════════
-ASKS_SHOW_N = 5          # 한 통 최대 건수 — 18건은 한 번에 못 본다(GM 지적)
+ASKS_PER_PERSON_CAP = 5  # 사람 한 명당 한 통 최대 건수(전체 상한 아님)
 ASKS_TITLE_CAP = 50
 ASKS_HOW_CAP = 60
 _ROLE_TAG_RE = re.compile(r"^\[[^\]]*\]\s*")  # "[웰페리온 AI 웰리] " 같은 발신 태그
@@ -816,42 +1002,45 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
 
 
 def build_asks_section(relay_items: list, nudge_items: list) -> str:
-    """배 전달(relay)·회신 부탁(nudge) 항목을 한 목록으로 합쳐 오래된 순 ASKS_SHOW_N건만
+    """배 전달(relay)·회신 부탁(nudge) 항목을 사람별로 묶어 사람당 ASKS_PER_PERSON_CAP건만
     보여주고 나머지는 한 줄로 접는다. 헤더 건수 = 화면에 실제로 보이는 줄 수뿐이다."""
     items = sorted(relay_items + nudge_items, key=lambda x: x.get("date") or "9999-99-99")
     if not items:
         return ""
-    shown, rest = items[:ASKS_SHOW_N], items[ASKS_SHOW_N:]
     # ★2026-08-20 GM 지적("정말 복잡해, 직관적이고 명확해야해") — 사람 단위로 묶는다.
     #   전에는 항목마다 「…님께 한 마디만 답해 주시면 됩니다」가 그대로 반복돼 같은 문장이
     #   다섯 번 찍혔다. 답하는 방법은 맨 위에 한 번만 적고, 아래는 사람별로 자기 것만 모아
     #   한 줄씩 둔다 — 받는 사람이 자기 이름만 찾으면 자기 몫이 다 보인다.
     #   ▸어디서 하는지가 따로 있는 건(📎 링크가 붙은 건)만 그 줄을 살려 둔다.
-    lines = [f"🧾 확인 부탁드릴 것 {len(shown)}건 — 한 마디만 주시면 됩니다(진행 중 / 완료 / 날짜)"]
     by_who: dict = {}
-    for it in shown:
+    for it in items:
         by_who.setdefault(it["who"], []).append(it)
-    for who, group in by_who.items():
+    shown_by_who = {who: group[:ASKS_PER_PERSON_CAP] for who, group in by_who.items()}
+    total_shown = sum(len(g) for g in shown_by_who.values())
+    total_rest = sum(len(by_who[who]) - len(g) for who, g in shown_by_who.items())
+
+    lines = [f"🧾 확인 부탁드릴 것 {total_shown}건 — 한 마디만 주시면 됩니다(진행 중 / 완료 / 날짜)"]
+    for who, group in shown_by_who.items():
         lines.append(f"👤 {who}")
         for it in group:
             lines.append(f" • {it['ask']}")
             how = str(it.get("how") or "")
             if "📎" in how or "http" in how:
                 lines.append(f"   {how}")
-    if rest:
-        lines.append(f"…외 {len(rest)}건이 더 있습니다 — 급한 것부터 위 5건만 추렸습니다.")
+    if total_rest:
+        lines.append(f"…외 {total_rest}건이 더 있습니다 — 사람당 {ASKS_PER_PERSON_CAP}건까지만 추렸습니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
 
 
 def _selfcheck_asks_section() -> None:
-    """헤더 건수 = 실제로 보이는 줄 수인지, 오래된 순으로 자르는지. 네트워크 없이 돈다."""
-    relay = [{"date": "2026-08-18", "who": "이경연 실장", "ask": "가장 최신 건", "how": "h"}]
+    """헤더 건수 = 실제로 보이는 줄 수인지, 사람별로 따로 잘리는지(전체 상한 아님). 네트워크 없이 돈다."""
+    relay = [{"date": "2026-08-18", "who": "이경연 실장", "ask": "실장 건", "how": "h"}]
     nudge = [{"date": f"2026-08-{d:02d}", "who": "이정헌 소장", "ask": f"n{d}건", "how": "h"}
-             for d in range(10, 17)]  # 7건 — relay 1건과 합쳐 총 8건, 상한(5) 초과
+             for d in range(10, 17)]  # 7건 — 이경연 실장 1건과는 별개, 사람별 상한(5) 초과
     out = build_asks_section(relay, nudge)
-    assert "확인 부탁드릴 것 5건" in out, "헤더 건수가 실제 표시 줄 수와 달라야 할 이유 없음"
-    assert "외 3건이 더 있습니다" in out, out
+    assert "확인 부탁드릴 것 6건" in out, out  # 실장 1(상한 안 걸림) + 소장 5(상한 걸림)
+    assert "외 2건이 더 있습니다" in out, out  # 소장 초과분 2건(n15·n16)만 접힘
     # 답하는 방법 안내는 맨 위 한 번뿐이어야 한다(2026-08-20 GM: 같은 문장이 다섯 번 찍혔다)
     assert out.count("한 마디만 주시면 됩니다") == 1, out
     assert out.count("👤 이정헌 소장") == 1, "같은 사람 것은 한 묶음으로 모여야 한다"
@@ -859,7 +1048,7 @@ def _selfcheck_asks_section() -> None:
         assert f"n{d}건" in out, f"오래된 5건(n10~n14)은 화면에 보여야 한다: n{d}"
     for d in (15, 16):
         assert f"n{d}건" not in out, f"상한 초과분(n15·n16)은 접혀야 한다: n{d}"
-    assert "가장 최신 건" not in out, "가장 최신(2026-08-18)은 상한 밖 — 안 보여야 한다"
+    assert "실장 건" in out, "다른 사람 건은 사람별 상한과 무관하게 그대로 실려야 한다(전체 상한 폐지)"
     assert out.splitlines()[-1] == RELAY_SIGNOFF
     assert build_asks_section([], []) == "", "항목 0건이면 절 자체가 없어야 한다"
     print("[selfcheck] build_asks_section OK")
@@ -892,7 +1081,8 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     # ★제외 사유를 센다(2026-08-07 GM 지적 배442 — 조용한 탈락 금지). 안 나가는 것도 사고다:
     #   'AI 살림이라 뺐다'와 '전달문이 비어 안 나간다'는 전혀 다른 문제인데 둘 다 침묵이면 구별이 안 된다.
     #   담당이 아예 다른 역할인 배는 정상 범위 밖이라 세지 않는다(그건 탈락이 아니다).
-    dropped_why = {"닫힌 배": 0, "AI 내부 살림": 0, "전달문 비어 있음": 0, "audience 칸 비어 있음": 0}
+    dropped_why = {"닫힌 배": 0, "AI 내부 살림": 0, "전달문 비어 있음": 0, "audience 칸 비어 있음": 0,
+                   "공유 전용(답 불필요)": 0}
     ships = []
     for x in queue:
         if not isinstance(x, dict) or x.get("clevel") not in contacts:
@@ -908,15 +1098,23 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
         if not _has_staff_message(x):
             dropped_why["전달문 비어 있음"] += 1
             continue
+        # ★2026-08-26 웰리 실측(배 11039 ④) — "확인 부탁드릴 것" 절은 전부 답을 구하는
+        # 문구인데, 실제로는 사과·감사·완료 안내처럼 답이 필요 없는 배도 섞여 실무진에게
+        # 없던 부담을 만들었다. reply_needed=False 면 이 절(★중간관리자)에는 안 싣는다 —
+        # 새 방·새 절은 만들지 않는다(약속 L21). 안 적으면(기본값) 지금까지처럼 답 필요로 본다.
+        if not bool(x.get("reply_needed", True)):
+            dropped_why["공유 전용(답 불필요)"] += 1
+            continue
         ships.append(x)
-    log(f"[relay] 실을 배 {len(ships)}척 · 제외 "
-        + (" · ".join(f"{k} {v}" for k, v in dropped_why.items() if v) or "없음"))
     ships.sort(key=lambda x: (_RELAY_WEIGHT.get(x.get("priority"), 9),
                               str(x.get("enqueued_at", ""))))
 
     if _is_legacy_snapshot(prev_items):
+        log(f"[relay] 후보 {len(ships)}척 · 제외 "
+            + (" · ".join(f"{k} {v}" for k, v in dropped_why.items() if v) or "없음")
+            + " · 옛 스냅샷 형식 — 이번 회차는 발신 없이 새 키로만 다시 찍음")
         today = date.today().isoformat()
-        current = {_relay_key(s): {"line": _cap_line(_resolve_staff_message(s).strip().splitlines()[0]),
+        current = {_relay_key(s): {"line": _uncapped_line(_resolve_staff_message(s).strip().splitlines()[0]),
                                     "last_sent": today} for s in ships}
         return "", current  # 옛 키 형식 — 비교 건너뛰고 새 키로 스냅샷만 다시 찍는다(첫 회차)
 
@@ -929,7 +1127,7 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     current = {}
     for s in ships:
         k = _relay_key(s)
-        line = _cap_line(_resolve_staff_message(s).strip().splitlines()[0])
+        line = _uncapped_line(_resolve_staff_message(s).strip().splitlines()[0])
         if k not in prev_lines or prev_lines[k] != line:
             new_ships.append(s)
             current[k] = {"line": line, "last_sent": today}
@@ -938,6 +1136,14 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
             current[k] = {"line": line, "last_sent": today}  # 재알림 보냈으니 시계 리셋
         else:
             current[k] = {"line": line, "last_sent": prev_sent[k]}  # 변화 없음 — 시계 유지
+
+    # ★2026-08-26 웰리 실측(배 11039 ①) — 옛 로그는 후보 수를 "실을 배 N척"이라 적어
+    #   실제 발신 건수처럼 읽혔다. 이번 회차에 정말 나가는 수(신규+재알림)와 오늘 이미
+    #   보낸 수(변화 없음)를 갈라 적는다.
+    already_today = len(ships) - len(new_ships) - len(stale_ships)
+    log(f"[relay] 후보 {len(ships)}척 -> 이번 회차 실림 {len(new_ships) + len(stale_ships)}"
+        f"(신규 {len(new_ships)}·재알림 {len(stale_ships)}) · 오늘 이미 보냄 {already_today} · 제외 "
+        + (" · ".join(f"{k} {v}" for k, v in dropped_why.items() if v) or "없음"))
 
     # ★완료는 이 절에 안 싣는다(2026-08-20 GM 지적 — "확인해 달라"는 메시지에 "이미
     #   끝났다"가 섞여 신뢰를 깎는다). 대화 정리 절의 "✅ 확인된 것"이 이미 담당한다.
@@ -1287,9 +1493,17 @@ def send_overdue_reception_alerts() -> None:
                 if str(r.get("status", "")) not in {"완료"}
                 and str(r.get("category") or "").strip() not in _OVD_CAT_EXCLUDE]
     sent_any = False
-    for room in (_OVD_ROOM_LESSON, _OVD_ROOM_OPS):
+    for i, room in enumerate((_OVD_ROOM_LESSON, _OVD_ROOM_OPS)):
+        if i:
+            time.sleep(SEND_STAGGER_SECONDS)  # 배 11070 ① — 두 방 발신이 붙어 나가지 않게 벌린다
         room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
         block = _build_ovd_block(room_rows)
+        # 📅 다가오는 일정 — 부서 소관(법정·정기점검·공사)만 ★운영+시설+지원+주차에 붙인다.
+        # 관리자 건은 build_mgr_daily_brief 가 ★중간관리자에 따로 붙인다(위 섹션 주석 참조).
+        if room == _OVD_ROOM_OPS:
+            sched_block = _build_schedule_block([x for x in _upcoming_schedule_items() if x["dept_item"]])
+            if sched_block:
+                block = f"{block}\n\n{sched_block}" if block else sched_block
         if not block:
             log(f"[ovd] {room} — 3일+ 없음, 생략")
             continue
@@ -1338,10 +1552,12 @@ def main() -> int:
     # ★중간관리자 — ★운영부 결과와 무관하게 시도한다(방마다 독립 · 2026-08-15 수리,
     # send_mgr_brief docstring 참조). dry-run 은 방에 손대지 않으므로 원래대로 생략.
     if not args.dry_run:
+        time.sleep(SEND_STAGGER_SECONDS)  # 배 11070 ① — ★운영부 발신 직후 바로 붙지 않게 벌린다
         try:
             send_mgr_brief()
         except Exception as exc:
             log(f"[mgr] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+        time.sleep(SEND_STAGGER_SECONDS)
         try:
             send_overdue_reception_alerts()
         except Exception as exc:
