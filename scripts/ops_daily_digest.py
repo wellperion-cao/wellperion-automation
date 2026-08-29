@@ -314,46 +314,16 @@ def build_reception_block(target_date: str) -> str:
     active = sorted((r for r in unresolved if _elapsed_days(r) < STALE_DAYS), key=_elapsed_days, reverse=True)
     stale = sorted((r for r in unresolved if _elapsed_days(r) >= STALE_DAYS), key=_elapsed_days, reverse=True)
 
-    _ICON = {"컴플레인": "🗣️", "분실물": "🔑", "시설물 고장": "🔧",
-             "청결 이슈": "🧹", "직원·강사 칭찬합니다": "👏"}
-
-    def _line(r: dict, cap: int, with_loc: bool = True) -> str:
-        cat = _short_cat(r.get("category", ""))
-        ico = _ICON.get(cat, "•")  # 유형별 이모지로 한눈에 구분(가시성)
-        content = re.sub(r"\s+", " ", str(r.get("content", "") or "")).strip()
-        if len(content) > cap:
-            content = content[:cap] + "…"
-        loc = r.get("loc", "") or ""
-        tail = f" · {loc}" if (with_loc and loc) else ""
-        return f"   {ico} [{cat}] {content}{tail} · {_elapsed_days(r)}일째"
-
-    # 🔴 미해결(2주 이내) = 이상 신호 — 오래된 순 3건만 펼침(배97 압축: 5→3건·34→30자)
-    if active:
-        lines.append(f" • 🔴 미해결 {len(active)}건(2주내) — 오래된 순:")
-        for r in active[:3]:
-            lines.append(_line(r, 30))
-        if len(active) > 3:
-            lines.append(f"   · 외 {len(active) - 3}건")
-    else:
-        lines.append(" • 🔴 2주 이내 미해결 없음 👍")
-
-    # ⏸️ 대기·보류(2주+ 자동 이관) = 정상 접힘 — 건수 한 줄만(항목 나열 제거)
-    if stale:
-        lines.append(f" • ⏸️ 보류 {len(stale)}건(2주+ 자동 이관 · 별도 검토)")
-
-    # ⏳ 가장 오래된 건 — 버킷(미해결/보류) 무관하게 항상 노출. 오래될수록 보류로 내려가
-    # 개별 노출에서 빠지던 은폐 구조 수리(GM 2026-08-05 · RECEPTION-12 28.8일이 미해결 13일째
-    # 뒤에 숨던 실측). 보류 버킷 설계 자체는 유지하고 이 한 줄만 무조건 덧붙인다.
+    # [2026-08-29 GM 지시 · 카톡 중복 정리] ★운영부 아침은 건수만 낸다 — 접수 원문 펼침은
+    # 4부서방 아침 통(send_ops_digest._build_ovd_block) 한 곳뿐이다. 같은 건 원문이 아침에
+    # 두 방(4부서방·★운영부)으로 겹쳐 나가던 것을 끊는다(오래된 순 3건·가장 오래된 건 전문
+    # 나열 삭제 — 정보는 4부서방 통과 종합접수처 화면에 그대로 있다).
     oldest = max(unresolved, key=_elapsed_days)
-    oldest_cat = _short_cat(oldest.get("category", ""))
-    # 자르지 않는다(GM 지시 2026-08-27 "내용 끊지말고 다 나오게") — 한 건뿐이라 길어도 된다.
-    oldest_content = re.sub(r"\s+", " ", str(oldest.get("content", "") or "")).strip()
-    oldest_bucket = "보류 버킷" if _elapsed_days(oldest) >= STALE_DAYS else "미해결 버킷"
     lines.append(
-        f" • ⏳ 가장 오래된 건: [{oldest_cat}] · {_elapsed_days(oldest)}일째 ({oldest_bucket})"
+        f" • 미해결 {len(unresolved)}건 — 2주내 {len(active)} · 보류(2주+) {len(stale)}"
+        f" · 최장 {_elapsed_days(oldest)}일"
     )
-    if oldest_content:
-        lines.append(f"     {oldest_content}")
+    lines.append("   (상세 목록은 아침 4부서방 통과 종합접수처 화면에 있습니다)")
 
     return "\n".join(lines)
 

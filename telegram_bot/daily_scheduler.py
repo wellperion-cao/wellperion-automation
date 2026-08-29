@@ -2875,32 +2875,21 @@ def run_daily_digest(early: bool = False) -> None:
         else:
             logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP — 압축본 둘 다 없음(빌드 실패)")
 
-        # ── 강습·업장(팀) 기한초과분만 ★부서장 방으로 (GM 지시 2026-08-18 · 배696) ──
-        #   위 합본은 이제 강습·업장을 뺀 몫이다(_aging_block scope="ops"). 그 몫만 여기서
-        #   따로 보낸다 — 같은 목록을 두 방에 통째로 보내지 않는다(중복 발신 금지).
-        #   없는 날은 빈 문자열이 와서 아무것도 안 나간다.
+        # ── 강습·업장(팀) 기한초과분 — ★부서장 몫 (GM 지시 2026-08-18 · 배696) ──
+        #   [2026-08-29 GM 지시 · 카톡 중복 정리 ②⑧] 별도 통으로 보내지 않는다. 22:33·22:34
+        #   같은 방 두 통(접수 통 + 문의 통)이 1분 간격으로 나갔다(실측) — 아래 문의 정리
+        #   room_payload 의 ★부서장 통에 앞절로 합쳐 한 통으로 낸다. 여기서는 본문만 만든다.
         try:
             import report_stream_2b_reception as _s2b_lesson
-            _lesson_msg = _s2b_lesson.build_lesson_digest(today)
-            if _lesson_msg:
-                _room_lesson = _s2b_lesson._INTAKE_ROOM_LESSON
-                proc = subprocess.run(
-                    # --sender 강습업장접수 — ★부서장이 사람 방 가드(약속 L24)에 들어가며 추가.
-                    [sys.executable, str(_kakao_sender), "--message", _lesson_msg,
-                     "--only-room", _room_lesson, "--sender", "강습업장접수"],
-                    cwd=str(REPO_ROOT), capture_output=True, text=True,
-                    encoding="utf-8", errors="replace", env=_kakao_env, timeout=180,
-                )
-                tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-                logger.info(f"{label} 카톡 {_room_lesson}(강습·업장 접수) 발송: {tail[0]}")
-                if proc.returncode != 0:
-                    _kakao_fail_notify("강습·업장 접수", tail[0])
-            else:
-                logger.info(f"{label} 강습·업장 기한초과 0건 — ★부서장 발신 없음")
+            lesson_evening_msg = _s2b_lesson.build_lesson_digest(today) or ""
+            if not lesson_evening_msg:
+                logger.info(f"{label} 강습·업장 기한초과 0건 — ★부서장 접수절 없음")
         except Exception as e:
-            logger.error(f"{label} 강습·업장 접수 발송 예외: {e}")
+            logger.error(f"{label} 강습·업장 접수 빌드 예외: {e}")
+            lesson_evening_msg = ""
     else:
         logger.info(f"{label} 카톡 {KAKAO_OPS_ROOM} SKIP (KAKAO_GO_STREAM2=False)")
+        lesson_evening_msg = ""
 
     # ── 오늘 완료된 운영부 업무 — 하루 일과 정리에도 포함 (GM 2026-08-06 "완료 알림은
     #   완료 시 즉각 1회, 하루 일과 정리에서도 꼭 체크하고 정리해서 보내줘야해") ──────
@@ -2918,28 +2907,18 @@ def run_daily_digest(early: bool = False) -> None:
                 _od.build_daily_done_section(_od._fetch_todo_rows(), today),
                 _od.build_daily_feedback_done_section(today),
             ) if p]
+            # [2026-08-29 GM 지시 · 카톡 중복 정리 ⑧] 별도 통으로 보내지 않는다 — 22:33 완료건
+            # 통과 22:34 멤버십 문의 통이 같은 방(★운영부)에 1분 간격 두 통이었다(실측).
+            # 아래 문의 정리 room_payload 의 ★운영부 통에 절로 합쳐 한 통으로 낸다.
             daily_done_msg = "\n\n".join(_parts)
-            if daily_done_msg:
-                sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
-                # --sender 아침정리다이제스트 — 사람 방 발신 가드(배 11070 ⑤) 통과용. 이 완료건
-                # 절도 send_ops_digest(아침 정리 다이제스트) 가족이다(_od.build_daily_done_section).
-                proc = subprocess.run(
-                    [sys.executable, str(sender), "--message", daily_done_msg, "--only-room", _od.TARGET_ROOM,
-                     "--sender", "아침정리다이제스트"],
-                    cwd=str(REPO_ROOT), capture_output=True, text=True,
-                    encoding="utf-8", errors="replace", timeout=180,
-                    env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
-                )
-                tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-                logger.info(f"{label} 카톡 {_od.TARGET_ROOM}(오늘 완료건) 발송: {tail[0]}")
-                if proc.returncode != 0:
-                    _kakao_fail_notify("오늘 완료된 운영부 업무", tail[0], room=_od.TARGET_ROOM)
-            else:
-                logger.info(f"{label} 오늘 완료된 운영부 업무 0건 — 카톡 발송 없음")
+            if not daily_done_msg:
+                logger.info(f"{label} 오늘 완료된 운영부 업무 0건 — 완료건 절 없음")
         else:
             logger.info(f"{label} 완료건 정리 SKIP — ops_digest_send 킬스위치 OFF")
+            daily_done_msg = ""
     except Exception as e:
-        logger.error(f"{label} 오늘 완료건 카톡 발송 예외: {e}")
+        logger.error(f"{label} 오늘 완료건 빌드 예외: {e}")
+        daily_done_msg = ""
 
     # 카카오톡 ★부서장 방에도 문의 정리 발송 (GM 2026-07-18 · best-effort).
     # ★2026-08-18 GM 결정(배670) — 문의 정리 + 24h SLA 위반(sla_text, 위에서 계산분)을
@@ -2960,23 +2939,30 @@ def run_daily_digest(early: bool = False) -> None:
                                     completion_state=dict(_cursor))
             return _re_s2.sub(r"<[^>]+>", "", _html_s2.unescape(raw))
 
+        # [2026-08-29 GM 지시 · 카톡 중복 정리 ②⑧] 방마다 저녁 한 통 — 위에서 빌드만 해 둔
+        # 강습·업장 접수절(★부서장)과 오늘 완료건 절(★운영부)을 문의 통에 합쳐 싣는다.
         room_payload = [
             (KAKAO_DEPTHEAD_ROOM, "강습",
              _scoped_plain("lesson"),
              _un.build_sla_alert_text([v for v in sla_violations if "강습" in v["type"]])
-             if sla_text else ""),
+             if sla_text else "",
+             lesson_evening_msg),
             (KAKAO_OPS_DEPT_ROOM, "멤버십",
              _scoped_plain("membership"),
              _un.build_sla_alert_text([v for v in sla_violations if v["type"] == "멤버십"])
-             if sla_text else ""),
+             if sla_text else "",
+             daily_done_msg),
         ]
     except Exception as e:
         logger.error(f"{label} 문의 정리 방별 분리 실패 — 종전 병합본으로 발송: {e}")
-        room_payload = [(KAKAO_DEPTHEAD_ROOM, "문의+SLA", inquiry_plain or "", sla_text)]
+        room_payload = [
+            (KAKAO_DEPTHEAD_ROOM, "문의+SLA", inquiry_plain or "", sla_text, lesson_evening_msg),
+            (KAKAO_OPS_DEPT_ROOM, "완료건", "", "", daily_done_msg),
+        ]
 
     _sent_any = False
-    for _room, _tag, _body, _sla in room_payload:
-        parts = [p for p in (_body, _sla) if p]
+    for _room, _tag, _body, _sla, _extra in room_payload:
+        parts = [p for p in (_body, _sla, _extra) if p]
         if not parts:
             logger.info(f"{label} 카톡 {_room}({_tag}) 보낼 내용 없음 — 발송 없음")
             continue

@@ -140,16 +140,24 @@ def _ops_done_rows(rows: list) -> list:
             and str(r.get("id", ""))]
 
 
-def build_done_section(rows: list, prev_ids: dict) -> "tuple[str, dict]":
+def build_done_section(rows: list, prev_ids: dict, exclude_text: str = "") -> "tuple[str, dict]":
     """운영부 담당자(OPS_STAFF) 몫 중 상태='완료'인 건에서 지난 회차 이후 새로
     완료된 것만 골라 절로 만든다. 비교 키 = 시트 행 id 고정(업무명은 바뀔 수 있다 —
     relay 구간의 task_id 교훈과 동일). 반환 (섹션 텍스트, 현재 완료건 {id: 표시줄}) —
-    두 번째 값은 변화가 없어도 다음 회차 비교용으로 그대로 저장한다."""
+    두 번째 값은 변화가 없어도 다음 회차 비교용으로 그대로 저장한다.
+
+    exclude_text — [2026-08-29 GM 지시 · 한 통 안 같은 건 두 번 금지] 본문(아침 요약)에
+    업무명이 이미 언급된 완료건은 이 절에서 뺀다(실측: 「확인된 것 · 실장님 완료 — 환불
+    운영기준」과 「✅ 완료된 일 · 환불 운영기준」이 같은 통에 두 번). 스냅샷(current)은
+    전량 그대로 저장한다 — 다음 회차 비교가 틀어지지 않게."""
     done = _ops_done_rows(rows)
     current = {str(r["id"]): f"{str(r.get('업무명', '')).strip()} — {str(r.get('담당자', '')).strip()} 완료"
                for r in done}
 
     new_ids = [k for k in current if k not in prev_ids]
+    if exclude_text:
+        titles = {k: current[k].split(" — ")[0].strip() for k in new_ids}
+        new_ids = [k for k in new_ids if not (titles[k] and titles[k] in exclude_text)]
     if not new_ids:
         return "", current
 
@@ -354,10 +362,10 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 # 그럼 이 자리에 무엇이 와야 하나 = ★운영부와 같은 「어제 그 방 대화 정리」다. 원문 수집·
 # 대화 정리 배선은 시토 배536 — ops_daily_digest.py --room "★중간관리자" 가 그 방 폴더에
 # _pending_digest.json 을 만든다(새 생성기 아님, 방 디렉터리만 갈아 끼운 기존 생성기).
-# 이 함수는 그 message를 몸통으로 쓰고, 업무 시트 완료건은 뒤에 덧붙인다.
+# 이 함수는 그 message를 몸통으로 쓴다.
 #
-# 대화 정리가 없으면(원문 미수집 등) 「어제 완료」만 낸다. 낼 게 없으면 빈 문자열 = 발송 안 함
-# (GM 지시: 억지로 채우지 않는다 — 잘못된 것을 보내느니 안 보낸다).
+# 업무 시트 완료건 절은 2026-08-29 뺐다(카톡 중복 정리) — 같은 완료건이 ★운영부 아침 통에
+# 나간다. 낼 게 없으면 빈 문자열 = 발송 안 함(GM 지시: 억지로 채우지 않는다).
 #
 # ★2026-08-11 웰리 — 세 번째 절 「열린 요청」 추가(배238·544). send_ops_digest 의
 # 옛 사람전달(send_relays)이 2026-08-08 GM 지시로 꺼진 뒤, 각 배의 staff_message(예:
@@ -367,7 +375,6 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 # 상태 저장은 여기서 안 한다(미리보기가 상태를 건드리면 안 됨) — 실제 발송 성공 후
 # main()이 relay_current를 저장한다.
 # ══════════════════════════════════════════════════════════════════════════
-MGR_DAILY_SHOW_N = 3
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
 # ★2026-08-26 웰리 실측(배 11039 ⑤ · 배 11070 ③) — 절이 하나씩 늘며 한 통이 35줄까지
 # 나갔다. 카톡 한 통 10줄 안쪽이 GM 확정(2026-08-07)이라 25줄로 낮춘다.
@@ -538,17 +545,13 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     convo = _mgr_conversation_message(target_date)
     parts = [convo] if convo else []
 
+    # [2026-08-29 GM 지시 · 카톡 중복 정리] 「✅ 어제 완료 N건」 절 삭제 — 같은 완료건이
+    # ★운영부 아침 통(「✅ 완료된 일」 절 · _send_ops_room)에 이미 나간다. 두 방이 같은
+    # 말을 반복하지 않는다. 대화 정리(convo)가 없는 날은 제목만이라도 세운다(빈 통 방지).
     done = [r for r in _ops_done_rows(rows) if str(r.get("수정일", "") or "").startswith(target_date)]
-    if done:
-        names = ", ".join(str(r.get("업무명", "")).strip()
-                          for r in done[:MGR_DAILY_SHOW_N] if str(r.get("업무명", "")).strip())
-        tail = f" 외 {len(done) - MGR_DAILY_SHOW_N}건" if len(done) > MGR_DAILY_SHOW_N else ""
-        done_line = f"✅ 어제 완료 {len(done)}건({names}{tail})"
-        if convo:
-            parts.append(done_line)  # 대화 정리가 이미 제목을 갖고 있으니 완료줄만 덧붙인다
-        else:
-            _, m, d = target_date.split("-")
-            parts.append(f"🧭 {int(m)}/{int(d)} 어제 정리 — 판단·배정 필요한 것만\n{done_line}")
+    if done and not convo:
+        _, m, d = target_date.split("-")
+        parts.append(f"🧭 {int(m)}/{int(d)} 어제 정리 — 판단·배정 필요한 것만")
 
     relay_state = _relay_state()
     _migrate_relay_state(relay_state)
@@ -1442,8 +1445,12 @@ def _ovd_who(row: dict, dept: str) -> str:
     return _ovd_leaders().get(dept, "") or "담당 미정"
 
 
-def _build_ovd_block(rows_for_room: list) -> str:
-    """3일+ 미처리 접수 → 알림 블록. 완료·분실물은 이미 제외된 상태로 들어온다."""
+def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
+    """3일+ 미처리 접수 → 알림 블록. 완료·분실물은 이미 제외된 상태로 들어온다.
+
+    detail=False — [2026-08-29 GM 지시 · 카톡 중복 정리] 건수 리마인드만 낸다.
+    ★부서장 방은 같은 목록이 아침(여기)·저녁(build_lesson_digest) 하루 두 번 전문으로
+    나갔다. 원문 펼침은 저녁 문의 통 한 곳으로 몰고 아침은 건수만 — 정보는 저녁에 그대로."""
     from collectors.ops_shared import reception_elapsed_days
     now = datetime.now()
     items: list = []
@@ -1466,6 +1473,11 @@ def _build_ovd_block(rows_for_room: list) -> str:
     if not items:
         return ""
     items.sort(key=lambda x: -x["days"])
+    if not detail:
+        return "\n".join([
+            f"⏰ 아직 안 끝난 접수 {len(items)}건 — 목록은 저녁 정리 한 통에 담아 드립니다",
+            f"📎 종합접수처 {_OVD_BOARD_URL}",
+        ])
     shown, rest = items[:_OVD_LIST_CAP], items[_OVD_LIST_CAP:]
 
     lines = [f"⏰ 아직 안 끝난 접수 {len(items)}건 — 마무리 부탁드립니다",
@@ -1535,7 +1547,8 @@ def _send_ovd_room(room: str, attach_schedule: bool) -> bool:
                 if str(r.get("status", "")) not in {"완료"}
                 and str(r.get("category") or "").strip() not in _OVD_CAT_EXCLUDE]
     room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
-    block = _build_ovd_block(room_rows)
+    # ★부서장 아침 = 건수만(원문 펼침은 저녁 문의 통 한 곳 — 2026-08-29 GM 지시).
+    block = _build_ovd_block(room_rows, detail=(room != _OVD_ROOM_LESSON))
     # 📅 다가오는 일정 — 부서 소관(법정·정기점검·공사)만 ★운영+시설+지원+주차(4부서방)에 붙인다.
     # 관리자 건은 build_mgr_daily_brief 가 ★중간관리자에 따로 붙인다(위 섹션 주석 참조).
     if attach_schedule:
@@ -1674,7 +1687,8 @@ def _send_ops_room(args) -> int:
             return 0
 
     done_prev, done_bootstrap = _done_state()
-    done_section, done_current = build_done_section(_fetch_todo_rows(), done_prev)
+    done_section, done_current = build_done_section(_fetch_todo_rows(), done_prev,
+                                                    exclude_text=message)
     if done_bootstrap:
         done_section = ""  # 최초실행 — 과거 완료건 일괄 스팸 방지, 스냅샷만 찍고 이번엔 침묵
     if done_section:

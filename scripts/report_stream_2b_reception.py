@@ -855,6 +855,11 @@ def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
     정리 2026-08-15, 실측 8/15 11:56 2통). 새 접수가 없는 방은 아무것도 보내지 않는다.
     ▸test=True면 실무진 방 대신 텔레그램 업무관리방으로만 보낸다(GM 확정 — 테스트는 늘 그 방).
     """
+    # [2026-08-29 GM 지시 · 카톡 중복 정리 ⑦] 밤 22시~아침 7시엔 즉시 전달을 쉬고 다음 날
+    # 아침 회차로 미룬다(실무진 취침 시간 발신 금지). 커서(reception_seen_new_ids)는 실제
+    # 발송 후에만 전진하므로 밤 사이 접수는 사라지지 않고 아침 첫 회차에 그대로 나간다.
+    if not (dry_run or test) and not (7 <= datetime.now().hour < 22):
+        return []
     rows = _fetch_rows()
     if rows is None:
         return []
@@ -956,21 +961,23 @@ def build_kakao_digest(today: str | None = None) -> str:
     undone = [r for r in rows if str(r.get("status", "")) != "완료"]
     overdue = _collect_overdue(rows, scope="ops")
 
+    # [2026-08-29 GM 지시 · 카톡 중복 정리] 저녁은 건수·변동만 — 접수 원문 펼침은 아침
+    # 4부서방 통(send_ops_digest._build_ovd_block) 한 곳뿐이다. 종전 「오래된 순 3건 전문」
+    # (2026-08-27 지시분)은 아침 통과 같은 건을 하루 두 번 전문으로 싣는 중복이라 뺐다 —
+    # 원문은 아침 통·종합접수처 화면에 그대로 있다(정보 손실 없음).
+    # 변동(몇 건 → 몇 건)은 직전 회차 값을 상태파일에 적어 두고 대조한다(새 파일 없음).
+    state = _load_completion_state()
+    prev = state.get("kakao_digest_prev") or {}
+    delta = ""
+    if str(prev.get("date") or "") and str(prev["date"]) != today and isinstance(prev.get("undone"), int):
+        delta = f" · 전회 {prev['undone']}건 → 오늘 {len(undone)}건"
+    state["kakao_digest_prev"] = {"date": today, "undone": len(undone), "overdue": len(overdue)}
+    _save_completion_state(state)
+
     line = f"📮 접수 — 오늘 {len(today_rows)}건" + (f"({cat_str})" if cat_str else "")
     line += f" · 미처리 {len(undone)}건" + (f"(기한 지난 {len(overdue)}건)" if overdue else "")
+    line += delta
     lines = [line]
-    if overdue:
-        # 오래된 순 3건에서 분실물은 뒤로 뺀다 — 보관 성격(30일 주기)이라 늘 맨 위를 차지하는데,
-        # 그 자리에 있으면 실제로 손이 가야 할 컴플레인·고장이 밀려난다(2026-08-20 실측: 상위
-        # 3건이 전부 분실물이라 이 줄이 아무 행동도 못 만들었다). 건수(len)는 그대로 둔다.
-        ranked = sorted(overdue, key=lambda x: -x["elapsed_h"])
-        actionable = [it for it in ranked if it.get("cat") != "분실물 접수"]
-        oldest = (actionable or ranked)[:3]
-        # 한 줄에 셋을 '·' 로 붙이면 내용이 길 때 덩어리가 된다 — 한 줄에 하나씩 전문으로
-        # 싣는다(GM 지시 2026-08-27 · 8/25 가독 규칙과 같은 골격).
-        lines.append("오래된 순")
-        for it in oldest:
-            lines.append(f"  · ({it['created_md']} 접수) {it['content']}")
     # 탭 없는 단일 보드라 해시 딥링크가 없다 — 카톡이 ?쿼리를 자르므로 필터 파라미터도
     # 못 쓴다(2026-07-15 실측). 대신 화면 안 어디를 보면 되는지 한 줄로 안내한다
     # (STATUS_LIST=['접수','처리중','완료'] 순서라 맨 왼쪽 칸이 미처리 · 배670 후속 2026-08-20).
