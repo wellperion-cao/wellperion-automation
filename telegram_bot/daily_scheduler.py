@@ -2902,8 +2902,11 @@ def run_daily_digest(early: bool = False) -> None:
             daily_done_msg = "\n\n".join(_parts)
             if daily_done_msg:
                 sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+                # --sender 아침정리다이제스트 — 사람 방 발신 가드(배 11070 ⑤) 통과용. 이 완료건
+                # 절도 send_ops_digest(아침 정리 다이제스트) 가족이다(_od.build_daily_done_section).
                 proc = subprocess.run(
-                    [sys.executable, str(sender), "--message", daily_done_msg, "--only-room", _od.TARGET_ROOM],
+                    [sys.executable, str(sender), "--message", daily_done_msg, "--only-room", _od.TARGET_ROOM,
+                     "--sender", "아침정리다이제스트"],
                     cwd=str(REPO_ROOT), capture_output=True, text=True,
                     encoding="utf-8", errors="replace", timeout=180,
                     env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
@@ -2995,8 +2998,10 @@ def run_mgmt_notice_digest() -> None:
         notice_text = _mnq.build_digest_text(notice_items, today)
         if notice_text:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+            # --sender 중간관리자알림합본 — 사람 방 발신 가드(배 11070 ⑤) 통과용.
             proc = subprocess.run(
-                [sys.executable, str(sender), "--message", notice_text, "--only-room", _od3.RELAY_ROOM],
+                [sys.executable, str(sender), "--message", notice_text, "--only-room", _od3.RELAY_ROOM,
+                 "--sender", "중간관리자알림합본"],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=180,
                 env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
@@ -3256,9 +3261,11 @@ def run_weekly_ops_report() -> None:
         if not draft:
             logger.info("[주간 보고] 이번 주 진행/멈춤/완료 없음 — 발송 생략")
             return
+        # --sender 주간보고초안 — 사람 방 발신 가드(배 11070 ⑤) 통과용.
         proc = subprocess.run(
             [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
-             "--message", draft, "--only-room", _od.WEEKLY_ROOM],
+             "--message", draft, "--only-room", _od.WEEKLY_ROOM,
+             "--sender", "주간보고초안"],
             cwd=str(REPO_ROOT), capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=180,
             env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
@@ -4210,8 +4217,15 @@ def main():
                 cwd=str(BASE.parent), timeout=300,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
-            tail = (r.stdout or b"").decode("utf-8", "replace").strip().splitlines()
-            logger.info("매출보고 세션 점검: " + (tail[-1] if tail else "출력 없음"))
+            # ★배11025(2026-08-26 실사고) — 예전엔 tail[-1] 한 줄만 남겼다. 그런데
+            #   sales_session_guard 는 "OK: 세션 정상" 최종 줄 앞에 G.log() 진단 줄을
+            #   먼저 찍는데(예: 판정불가·재시도), 마지막 한 줄만 보면 그날 진짜 무슨
+            #   일이 있었는지(재시도했는지·판정 자체가 안 됐는지) 이 로그에서 안 보였다.
+            #   최근 2줄을 남긴다 — 진단 줄 + 최종 상태 줄.
+            lines = [ln for ln in (r.stdout or b"").decode("utf-8", "replace").splitlines() if ln.strip()]
+            logger.info("매출보고 세션 점검: " + (" | ".join(lines[-2:]) if lines else "출력 없음"))
+            if r.returncode == 2:
+                logger.warning("매출보고 세션 판정불가(재시도 소진) — 그날 실제 점검이 안 됐을 수 있음")
         except Exception as exc:
             logger.warning(f"매출보고 세션 점검 건너뜀: {type(exc).__name__}: {exc}")
 

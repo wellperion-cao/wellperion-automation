@@ -59,7 +59,16 @@ if %DIRTY% GTR 200 (
   echo   [warn] %DIRTY% uncommitted files - skipping pull
   set "WPWARN=1"
 ) else (
-  git pull --rebase --autostash origin master
+  REM -- --autostash removed (bae10978, 2026-08-29) --
+  REM    --autostash silently stashes whatever is dirty, rebases, then pops the
+  REM    stash back on top - no matter how old that dirty diff is. Confirmed root
+  REM    cause of files reverting to a stale committed version: files nobody ever
+  REM    commits (chro/cfo, owned by Nawool M) sat dirty with an old diff for
+  REM    weeks; this boot's autostash popped that old diff back over newer HEAD
+  REM    content every morning, silently. Without --autostash, `git pull --rebase`
+  REM    simply refuses when the tree is dirty for a touched path - same as the
+  REM    DIRTY>200 branch above, an honest skip instead of a silent revert.
+  git pull --rebase origin master
   if errorlevel 1 (
     echo   [warn] git pull failed - boot continues
     set "WPWARN=1"

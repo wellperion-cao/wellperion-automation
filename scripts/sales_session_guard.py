@@ -47,52 +47,66 @@ CHROME_CANDIDATES = [
 ]
 
 
-def resolve_today_edit_url() -> "tuple[str, str]":
-    """오늘 날짜 기준 이달 시트의 edit URL을 만든다. G.resolve_sheet()를 재사용해 판정기와
-    생성기가 같은 해석기를 보게 한다(약속 L01). 반환: (edit_url, 실패사유) — 그 달 시트가
-    아직 없는 등 해석 자체가 실패하면 edit_url은 빈 문자열(로그인 문제가 아니므로 호출부는
-    로그인 창을 띄우면 안 된다)."""
+def resolve_today() -> "tuple[str, str, str, str]":
+    """오늘 날짜 기준 이달 시트를 한 번만 해석한다(약속 L01 — session_alive 가 다시
+    resolve_sheet() 를 부르면 그 자체가 새 판정불가 지점이 된다 · 2026-08-26 실사고).
+    반환: (sheet_id, gid, edit_url, 실패사유) — 해석 자체가 실패하면 나머지는 빈 문자열
+    (로그인 문제가 아니므로 호출부는 로그인 창을 띄우면 안 된다)."""
     sheet_id, gid, resolve_fail = G.resolve_sheet(datetime.now())
     if resolve_fail:
-        return "", resolve_fail
-    return f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit", ""
+        return "", "", "", resolve_fail
+    return sheet_id, gid, f"https://docs.google.com/spreadsheets/d/{sheet_id}/edit", ""
 
 
-def session_alive() -> "tuple[bool, str]":
-    """09:30 이 실제로 하는 그 동작(PDF 내려받기)을 그대로 한 번 해 본다.
+SESSION_ALIVE = "ALIVE"      # PDF 내려받기 성공 — 진짜 살아있음
+SESSION_EXPIRED = "EXPIRED"  # export 가 로그인/세션만료로 막힘 — 진짜 만료
+SESSION_UNKNOWN = "UNKNOWN"  # 재시도까지 다 했는데도 판정 자체를 못 함(로그인 문제 아닐 수 있음)
 
-    ★2026-08-15 실사고로 바꿨다. 그 전에는 **시트 편집 페이지가 로그인으로 튕기는지만**
-      보고 "가볍게" 판정했다. 그런데 구글은 편집 페이지는 열어 주면서 export 엔드포인트만
-      401 로 막는 상태가 있다 — 실제로 그날 08:10 지킴이는 "세션 정상"을 찍었고, 같은
-      세션으로 09:30 매출보고가 401 로 펑크났다(로그 실측). 판정이 실동작과 다르면 그
-      판정은 매일 OK 만 찍는 장식이 된다.
-    ▸그래서 판정을 생성기의 export_pdf() **그 함수 자체**로 한다 — 판정용 사본을 따로
-      만들지 않는다(약속 L01). 받은 PDF 는 임시 파일이라 바로 지운다.
+_PROBE_RETRIES = 3       # export_pdf 총 시도 횟수(판정불가일 때만 재시도)
+_PROBE_RETRY_WAIT_SEC = 5
+
+
+def session_alive(sheet_id: str, gid: str) -> "tuple[str, str]":
+    """09:30 이 실제로 하는 그 동작(PDF 내려받기)을 그대로 해 본다. 반환 =
+    (SESSION_ALIVE|SESSION_EXPIRED|SESSION_UNKNOWN, 상세).
+
+    ★2026-08-15 실사고로 export_pdf() 그 함수 자체로 판정하게 바꿨다(편집 페이지는 열려도
+      export 엔드포인트만 401 인 상태가 있었다 — 그날 08:10 은 "정상"을 찍고 09:30 이 펑크).
+    ★2026-08-26 실사고 두 번째 구멍 — GAS 호출 일시 실패로 판정 자체가 안 될 때 이전 코드는
+      **OK 와 똑같이** 취급해 "OK: 세션 정상"을 찍었다(만료도 판정불가도 결과가 안 갈림).
+      이제 판정불가는 별도 상태(SESSION_UNKNOWN)로 반환하고, 그 자리에서 바로 포기하지
+      않고 export_pdf 를 최대 _PROBE_RETRIES회까지 다시 시도한다 — 일시적인 GAS 실패로
+      아침 점검을 통째로 건너뛰지 않기 위해서다. sheet_id/gid 는 호출부가 이미 해석해 준
+      것을 그대로 받는다(약속 L01 — 여기서 다시 resolve_sheet() 를 부르면 그 두 번째
+      호출 자체가 새로운 판정불가 지점이 된다).
     """
     import tempfile  # noqa: PLC0415
-
-    sheet_id, gid, resolve_fail = G.resolve_sheet(datetime.now())
-    if resolve_fail:
-        return True, f"판정 스킵(시트 해석 실패 — 로그인 문제 아님): {resolve_fail}"
+    import time  # noqa: PLC0415
 
     tmp = Path(tempfile.gettempdir()) / "wellperion_sales_session_probe.pdf"
-    try:
-        ok, fail = G.export_pdf(tmp, sheet_id, gid)
-    except Exception as exc:  # noqa: BLE001
-        # 판정 불가는 '만료'로 단정하지 않는다 — 괜히 로그인 창을 띄우면 프로필만 잠근다.
-        return True, f"판정 불가(예외라 살아있는 것으로 간주): {type(exc).__name__}: {exc}"
-    finally:
+    last_detail = ""
+    for attempt in range(1, _PROBE_RETRIES + 1):
         try:
-            tmp.unlink(missing_ok=True)
-        except Exception:
-            pass
+            ok, fail = G.export_pdf(tmp, sheet_id, gid)
+        except Exception as exc:  # noqa: BLE001
+            last_detail = f"판정불가(예외): {type(exc).__name__}: {exc}"
+        else:
+            if ok:
+                return SESSION_ALIVE, "PDF 내려받기 성공" + (f" ({attempt}회차)" if attempt > 1 else "")
+            if "세션만료" in fail or "로그인" in fail:
+                # 진짜 만료 — 재시도해도 스스로 안 풀린다. 즉시 확정한다.
+                return SESSION_EXPIRED, fail
+            last_detail = f"판정불가: {fail}"
+        finally:
+            try:
+                tmp.unlink(missing_ok=True)
+            except Exception:
+                pass
+        if attempt < _PROBE_RETRIES:
+            G.log(f"[{attempt}/{_PROBE_RETRIES}] {last_detail} — {_PROBE_RETRY_WAIT_SEC}초 뒤 재시도")
+            time.sleep(_PROBE_RETRY_WAIT_SEC)
 
-    if ok:
-        return True, "PDF 내려받기 성공"
-    # export 가 막힌 것만 '만료'로 본다. 그 밖의 실패(네트워크·예외)는 살아있는 것으로 둔다.
-    if "세션만료" in fail or "로그인" in fail:
-        return False, fail
-    return True, f"판정 불가(살아있는 것으로 간주): {fail}"
+    return SESSION_UNKNOWN, f"{_PROBE_RETRIES}회 재시도 후에도 판정 불가 — {last_detail}"
 
 
 def open_login_window(edit_url: str) -> bool:
@@ -118,7 +132,7 @@ def main() -> int:
         print("SKIP: Windows(cao 세션 프로필) 전용입니다.")
         return 0
 
-    edit_url, resolve_fail = resolve_today_edit_url()
+    sheet_id, gid, edit_url, resolve_fail = resolve_today()
     if resolve_fail:
         # 시트 해석 자체가 실패(그 달 시트가 아직 없음 등) — 로그인 문제가 아니므로
         # 로그인 창을 띄우지 않는다.
@@ -126,11 +140,19 @@ def main() -> int:
         print(f"SKIP: 시트 해석 실패(로그인 문제 아님) — {resolve_fail}")
         return 0
 
-    alive, detail = session_alive()
-    G.log(f"세션 판정: {'살아있음' if alive else '만료'} — {detail}")
-    if alive:
+    status, detail = session_alive(sheet_id, gid)
+    label = {SESSION_ALIVE: "살아있음", SESSION_EXPIRED: "만료", SESSION_UNKNOWN: "판정불가"}[status]
+    G.log(f"세션 판정: {label} — {detail}")
+
+    if status == SESSION_ALIVE:
         print("OK: 세션 정상")
         return 0
+    if status == SESSION_UNKNOWN:
+        # ★재시도 다 했는데도 판정 못 함 — '만료'로 단정해 로그인 창을 띄우지도, 'OK'로
+        # 뭉개지도 않는다. 로그·호출부(daily_scheduler)가 EXPIRED/OK 와 다른 결과로
+        # 구분해야 그날 점검이 실제로 안 됐다는 사실이 남는다(배11025 실사고).
+        print(f"UNKNOWN: 세션 판정 불가(재시도 {_PROBE_RETRIES}회 소진) — {detail}")
+        return 2
     if args.check_only:
         print("EXPIRED: 세션 만료(창 안 띄움 — --check-only)")
         return 1

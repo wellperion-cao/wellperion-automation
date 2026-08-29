@@ -1075,9 +1075,82 @@ def _commit_stale_machine_outputs(root: str) -> None:
         _log(f"PUSH_SWEEPER 묵은 산출물 적재 예외 {e}", root)
 
 
+def _detect_disk_reverted_to_history(root: str) -> list:
+    """디스크가 이 PC 자신의 HEAD(이미 커밋한 기록)보다도 옛것인 파일을 찾는다.
+    origin 과 무관 — 위 _check_remote_drift 의 사각지대를 메운다(배10978 · 2026-08-29).
+
+    왜 origin 대조만으로는 못 잡나: 실측(coo/todo/업무 현황 SSOT.html) — HEAD 3876줄 =
+    origin 3876줄인데 디스크는 3600줄이었다. head == theirs 라 위 함수는 아예 안 돈다.
+    즉 원인은 'pull 안 함'이 아니라 이 PC 자신의 워킹트리가 자기 HEAD 를 못 따라간 것 —
+    ① 파일 하나만 격리 커밋하는 임시 인덱스(R8) 프로토콜은 HEAD 만 전진시키고 워킹트리는
+    안 건드린다 ② Start-AI-Morning.bat 의 git pull --rebase --autostash 가 오래 묵어
+    이미 뒤에 다른 커밋으로 갱신된 dirty diff 를 그대로 되돌려 쓴다(실측: 이 커밋의
+    autostash 가 2026-08-05 시점 blob 을 2026-08-18 에 그대로 재현 — 08-12·08-14·08-17
+    세 번의 정식 갱신을 무효화). 어느 쪽이든 원격 fetch 로는 안 잡힌다.
+
+    판정: 현재 dirty(HEAD 대비 수정)한 추적 파일마다 디스크 blob 해시가 그 경로의
+    **과거(최신 아닌) 커밋 blob** 과 일치하면 '옛 버전이 되돌아온 것'으로 본다 — 새로
+    쓰고 있는 WIP 편집이 과거 커밋과 바이트 단위로 우연히 일치할 확률은 사실상 0이다."""
+    # ponytail: 경로 상한 150 — dirty 가 그 이상이면 이례적 상태라 이미 다른 경고가
+    # 돈다. Windows 는 프로세스 기동 자체가 느려 파일당 1회씩 왕복하면 76개도 수십초가
+    # 걸린다 — git cat-file --batch-check 로 커밋 대조를 한 프로세스에 묶는다.
+    _MAX_PATHS = 150
+    try:
+        diff = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        if diff.returncode != 0:
+            return []
+        paths = [x for x in diff.stdout.splitlines() if x.strip()][:_MAX_PATHS]
+        paths = [p for p in paths if os.path.isfile(os.path.join(root, p))]
+        if not paths:
+            return []
+
+        # 디스크 blob 해시 — 경로 전부 한 프로세스로(stdin-paths)
+        ho = subprocess.run(
+            ["git", "hash-object", "--stdin-paths"],
+            cwd=root, input="\n".join(paths), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30,
+        )
+        if ho.returncode != 0:
+            return []
+        disk_hash = dict(zip(paths, [h.strip() for h in ho.stdout.splitlines()]))
+
+        reverted: list = []
+        for p in paths:
+            blob = disk_hash.get(p)
+            if not blob:
+                continue
+            hist = subprocess.run(
+                ["git", "log", "-60", "--format=%H", "HEAD", "--", p],
+                cwd=root, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=20,
+            )
+            commits = [c for c in hist.stdout.splitlines() if c.strip()]
+            if len(commits) < 2:
+                continue  # 과거 버전 자체가 없으면(신규 파일) 대조 대상 아님
+            # commits[0]=현재 HEAD 판(이미 다르므로 제외) — 그 이전 커밋들만 배치 대조
+            batch_in = "\n".join(f"{c}:{p}" for c in commits[1:])
+            bc = subprocess.run(
+                ["git", "cat-file", "--batch-check=%(objectname)"],
+                cwd=root, input=batch_in, capture_output=True, text=True,
+                encoding="utf-8", errors="replace", timeout=20,
+            )
+            if bc.returncode == 0 and blob in bc.stdout.split():
+                reverted.append(p)
+        return reverted
+    except Exception as e:
+        _log(f"POST_COMMIT_PUSH HEAD 대비 옛버전 감지 실패(best-effort) {e}", root)
+        return []
+
+
 def _check_remote_drift(root: str) -> None:
     """★2026-08-13(시토 · 배591) — 로컬 커밋 시도가 0건이어도 origin 이 이 PC 를
-    앞서 있는지 표면화한다(경고만·덮어쓰지 않음).
+    앞서 있는지 표면화한다(경고만·덮어쓰지 않음). ★2026-08-29(배10978) — 이 PC 자신의
+    HEAD 보다도 디스크가 옛것인 경우(원격과 무관)도 함께 본다. 둘은 원인이 다르므로
+    경고 문구를 갈라 적는다 — 하나로 뭉치면 'pull 하면 된다'로 오해한다(GM 지적).
 
     왜: 통합·뒤진작업본감지(_detect_stale_worktree_copies)는 지금까지 _reconcile()
     안에서만, 즉 **이 PC 가 로컬 커밋을 push 하려다 non-ff 로 막혔을 때만** 돌았다.
@@ -1093,24 +1166,40 @@ def _check_remote_drift(root: str) -> None:
             cwd=root, capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=PUSH_TIMEOUT,
         )
-        if f.returncode != 0:
-            return
         head = _rev_parse(root, "HEAD")
-        theirs = _rev_parse(root, f"{REMOTE}/{BRANCH}")
-        if not head or not theirs or head == theirs:
-            return
-        stale = _detect_stale_worktree_copies(root, head, theirs)
-        if not stale:
-            return
-        warn = (
-            f"⚠️ 이 PC 디스크 파일 {len(stale)}개가 origin 최신본보다 뒤져 있습니다"
-            "(로컬 커밋 시도가 없어 자동 통합이 한 번도 안 돎) — 그대로 커밋하면 "
-            "남의 작업을 지웁니다: " + ", ".join(stale[:10])
-            + (f" 외 {len(stale) - 10}건" if len(stale) > 10 else "")
-        )
-        _log(f"PUSH_SWEEPER {warn}", root)
-        if _alert_should_send(root, warn):
-            _telegram_warn(root, warn)
+
+        # ① origin 이 이 PC(HEAD)를 앞서는 경우 — 진짜 'pull 필요'
+        if f.returncode == 0 and head:
+            theirs = _rev_parse(root, f"{REMOTE}/{BRANCH}")
+            if theirs and head != theirs:
+                stale = _detect_stale_worktree_copies(root, head, theirs)
+                if stale:
+                    warn = (
+                        f"⚠️ [원격 지연] 이 PC 디스크 파일 {len(stale)}개가 origin 최신본보다 "
+                        "뒤져 있습니다(origin 에 이미 들어온 변경을 이 PC 가 아직 못 받음 — "
+                        "pull 로 해소됨) — 그대로 커밋하면 남의 작업을 지웁니다: "
+                        + ", ".join(stale[:10])
+                        + (f" 외 {len(stale) - 10}건" if len(stale) > 10 else "")
+                    )
+                    _log(f"PUSH_SWEEPER {warn}", root)
+                    if _alert_should_send(root, warn):
+                        _telegram_warn(root, warn)
+
+        # ② 이 PC 자신의 HEAD 보다도 디스크가 옛것인 경우 — origin 무관, pull 로 안 풀림
+        if head:
+            reverted = _detect_disk_reverted_to_history(root)
+            if reverted:
+                warn2 = (
+                    f"⚠️ [자체 표류] 이 PC 디스크 파일 {len(reverted)}개가 origin 이 아니라 "
+                    "이 PC 자신의 HEAD(이미 커밋된 기록)보다도 옛 버전입니다 — pull 을 해도 "
+                    "안 풀립니다(임시인덱스 격리커밋 또는 부팅 시 git pull --rebase --autostash "
+                    "가 원인으로 추정). 그대로 커밋하면 이미 커밋된 내용을 되돌립니다: "
+                    + ", ".join(reverted[:10])
+                    + (f" 외 {len(reverted) - 10}건" if len(reverted) > 10 else "")
+                )
+                _log(f"PUSH_SWEEPER {warn2}", root)
+                if _alert_should_send(root, warn2):
+                    _telegram_warn(root, warn2)
     except Exception as e:
         _log(f"PUSH_SWEEPER 원격 표류 감지 실패(best-effort) {e}", root)
 
