@@ -194,7 +194,11 @@ def _schedule_row(erp, now=None):
 # ── §ERP 자가건강 (self_health_watchdog.build_digest 재사용, 재수집 금지) ────
 def _self_health_rows():
     """정상시에도 '이상 0건 ✅' 한 줄을 상시 노출(기존 watchdog은 정상시 무발신이라
-    GM 눈에 안 보였음 — 이 다이제스트가 상시화한다). 이상 섹션은 첫 줄만 요약."""
+    GM 눈에 안 보였음 — 이 다이제스트가 상시화한다).
+
+    [2026-08-29 GM 승인] 이상 섹션을 첫 줄 요약 → 전체 줄로 넓혔다. 같은 방에 2분 뒤
+    따라오던 09:12 별도 통(run_watchdog 단독 발신)을 이 09:10 다이제스트 한 통에 흡수
+    — 내용은 그대로, 통 수만 줄인다(단독 발신은 module_reporter 가 notify=False 로 끈다)."""
     try:
         _, sections = _self_health.build_digest()
     except Exception as e:
@@ -202,7 +206,8 @@ def _self_health_rows():
     active = {k: v for k, v in sections.items() if v}
     if not active:
         return [{"label": "ERP 이상 신호", "value": "이상 0건 ✅"}]
-    return [{"label": f"이상 신호·{name}", "value": lines[0]} for name, lines in active.items()]
+    return [{"label": f"이상 신호·{name}", "value": "\n    ".join(lines)}
+            for name, lines in active.items()]
 
 
 # ── §주간 품질 회귀 delta (module_report_log.jsonl 재사용 — 새 리포트·새 모듈 없음) ──

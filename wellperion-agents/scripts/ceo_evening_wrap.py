@@ -277,6 +277,55 @@ def save_marker(commits: list[str], done_q: list[dict],
     return out
 
 
+def absorbed_2100_blocks() -> str:
+    """[2026-08-29 GM 승인] 밤 통 합침 — 21:00 마감 통(daily_scheduler slot 21)과
+    21:02 마케팅 카드(weekly_marketing_feedback daily)를 이 23:00 하루 마감 한 통에 싣는다.
+
+    21시 통에서 가져오는 것 = 이 마감 보고에 없던 두 절뿐이다:
+      🗓 일정·회의(업무 시트 오늘 완료) · 🔗 내일 항로점(업무 시트 미완 이월).
+      커밋·끝낸 배는 위 본문이 이미 개수·대표로 싣는다(상세 → 자율현황 링크 · GM 2026-08-03)
+      — 같은 통에 두 번 적지 않는다.
+    어느 블록이든 실패하면 그 블록만 조용히 빠진다(마감 보고 본체는 죽지 않는다).
+    daily_scheduler 는 함수만 쓰는 import 라 안전하다(락은 __main__ 전용 · 배596)."""
+    parts: list[str] = []
+    try:
+        sys.path.insert(0, str(REPO / "telegram_bot"))
+        import daily_scheduler as ds  # noqa: PLC0415
+        today = datetime.now().strftime("%Y-%m-%d")
+        done_sheet = ds._fetch_yesterday_done_todos(day=today)
+        open_cards = ds._fetch_open_todo_cards_for_tomorrow()
+        lines: list[str] = []
+        if done_sheet:
+            lines.append("🗓 일정·회의 (업무 시트)")
+            lines += [f"  · {t}" for t in done_sheet[:4]]
+            if len(done_sheet) > 4:
+                lines.append(f"  ... 외 {len(done_sheet) - 4}건")
+        if open_cards:
+            if lines:
+                lines.append("")
+            lines.append("🔗 내일 항로점 (업무 시트 미완 → 이월)")
+            for c in open_cards[:8]:
+                ship = ds.classify_ship(c)
+                line = ds.render_ship_line(c["업무명"], c.get("담당자", ""), ship, c.get("due", ""))
+                st_part = f" [{c['상태']}]" if c.get("상태") else ""
+                lines.append(f"  {line}{st_part}")
+            if len(open_cards) > 8:
+                lines.append(f"  ... 외 {len(open_cards) - 8}건")
+        if lines:
+            parts.append("\n".join(lines))
+    except Exception as exc:
+        print(f"[WARN] 21시 흡수 블록 실패({exc}) — 생략", file=sys.stderr)
+    try:
+        sys.path.insert(0, str(REPO / "scripts"))
+        from weekly_marketing_feedback import build_daily_card_text  # noqa: PLC0415
+        card = (build_daily_card_text() or "").strip()
+        if card:
+            parts.append(card)
+    except Exception as exc:
+        print(f"[WARN] 마케팅 카드 흡수 실패({exc}) — 생략", file=sys.stderr)
+    return "\n\n".join(parts)
+
+
 def send_report(report: str, dry_run: bool) -> bool:
     if dry_run:
         print("\n========== [DRY-RUN] 텔레그램 마감 보고 (발송 안 함) ==========")
@@ -328,6 +377,9 @@ def run_wrap(dry_run: bool, once_per_day: bool = False) -> int:
 
     # 보고 빌드 + 발송 + 마커
     report = build_evening_report(commits, done_q, gm_decision, autonomous, deep_interview)
+    extra = absorbed_2100_blocks()   # 21시 마감·21:02 마케팅 흡수(2026-08-29 GM 승인)
+    if extra:
+        report = f"{report}\n\n{extra}"
     sent = send_report(report, dry_run)
     save_marker(commits, done_q, gm_decision, autonomous, deep_interview, dry_run)
     print(f"[보고] {'(dry-run 출력)' if dry_run else '발송'} — {'OK' if sent else 'FAIL'}")

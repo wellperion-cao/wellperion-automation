@@ -959,7 +959,10 @@ def run_daily(dry_run: bool = False):
     if dry_run:
         print("[INFO] --dry-run: 텔레그램 실제 발송 생략 — 카드 텍스트만 stdout 출력")
     else:
-        send_telegram_summary(summary_text)
+        # [2026-08-29 GM 승인] 21:02 단독 통 폐지 — 이 카드는 23:00 하루 마감
+        # (ceo_evening_wrap.absorbed_2100_blocks)이 build_daily_card_text() 로 다시 만들어
+        # 한 통에 싣는다. 여기(21:00 예약작업)는 브리프 md 생성까지만 하고 보내지 않는다.
+        print("[INFO] daily 텔레그램 단독 발송 생략 — 23:00 하루 마감 통에 흡수(2026-08-29)")
 
 
 def _parse_args():

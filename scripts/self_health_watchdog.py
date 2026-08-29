@@ -427,8 +427,12 @@ def _append_log(record, log_path=LOG_PATH):
 
 
 def run_watchdog(*, dry_run=True, now=None, log_path=LOG_PATH, rooms_path=ROOMS_PATH,
-                  sender=None):
-    """전체 조립 → 이상 있으면 하루 1통(멱등) 발송/드라이런. 반환: 결과 dict."""
+                  sender=None, notify=True):
+    """전체 조립 → 이상 있으면 하루 1통(멱등) 발송/드라이런. 반환: 결과 dict.
+
+    notify=False — [2026-08-29 GM 승인] 이상 전문은 09:10 자동화 다이제스트
+    (cto_automation_health._self_health_rows 전체 줄)가 싣는다. 같은 방에 2분 뒤
+    두 번째 통을 보내지 않도록, 기록·자가증명(하트비트)만 남기고 발신은 건너뛴다."""
     now = _now_utc(now)
     date_str = now.astimezone(KST).strftime("%Y-%m-%d")
 
@@ -443,6 +447,13 @@ def run_watchdog(*, dry_run=True, now=None, log_path=LOG_PATH, rooms_path=ROOMS_
 
     if dry_run:
         return {"date": date_str, "sections": sections, "action": "dry-run", "text": text}
+
+    if not notify:
+        if not _already_logged_today(date_str, log_path=log_path):
+            _append_log({"date": date_str, "sent": False, "reason": "absorbed_0910_digest"},
+                        log_path=log_path)
+        record_heartbeat(MODULE_ID, detail="이상 있음 — 09:10 다이제스트에 흡수(단독 발신 안 함)")
+        return {"date": date_str, "sections": sections, "action": "absorbed", "text": text}
 
     if _already_sent_today(date_str, log_path=log_path):
         return {"date": date_str, "sections": sections, "action": "skip",

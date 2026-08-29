@@ -1805,6 +1805,33 @@ def send_reports(report: str, question_card: str, dry_run: bool) -> bool:
 
 # ── 메인 ─────────────────────────────────────────────────────────────────────
 
+def _run_gm_autocheck(dry_run: bool) -> str:
+    """gm_task_autocheck 를 돌려 푸시 문안만 받아 온다 — 단독 발송 없음.
+
+    [2026-08-29 GM 승인] 08시 업무보고방에 「오늘의 항로」와 「GM 직접 업무 자동 점검」
+    두 통이 따로 나가던 것을 한 통으로 합친다. 점검 스크립트는 --body-out 으로 문안을
+    파일에 쓰고 발송을 건너뛰며, 여기서 읽어 본문 꼬리에 싣는다. 킬스위치 OFF·계획 없음
+    등으로 스킵되면 빈 문자열(파일이 비어 있음) — 본문에 아무것도 안 붙는다."""
+    import os
+    import tempfile
+    fd, path = tempfile.mkstemp(suffix=".txt", prefix="gm_autocheck_")
+    os.close(fd)
+    try:
+        subprocess.run(
+            [sys.executable, str(Path(__file__).parent / "gm_task_autocheck.py"),
+             "--body-out", path] + (["--dry-run"] if dry_run else []),
+            timeout=180)
+        return Path(path).read_text(encoding="utf-8").strip()
+    except Exception as exc:
+        print(f"[WARN] gm_task_autocheck 실패({exc}) — 계속", file=sys.stderr)
+        return ""
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
 def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> int:
     # 하루 1회 가드: 오늘 이미 실가동 계획이 있으면 즉시 스킵 (세션 시작 훅 다중 호출 대비).
     # dry-run 은 실제 파일을 만들지 않으므로 마커 점검에서 제외(가드 소모 안 함).
@@ -1866,6 +1893,12 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
     # 텔레그램이라 중복 → 발송 안 함. (build_question_card 함수는 보존)
     question_card = ""
 
+    # GM 직접 업무 자동 점검 — 체크리스트 배 대조 + 미완 푸시 (GM 요청 2026-08-15 · 웰리 설계 승인).
+    # [2026-08-29 GM 승인] 별도 두 번째 통이던 점검 카드를 「오늘의 항로」 본문 꼬리에 싣는다
+    # (같은 방 08시 두 통 → 한 통). 그래서 발송 전에 먼저 돌려 문안을 받아 온다.
+    # 실패해도 아침 보고를 막지 않는다. 킬스위치 = status/gm_autocheck.json (false면 스스로 스킵).
+    autocheck_body = _run_gm_autocheck(dry_run)
+
     # [2026-07-26 웰리 지시 배10244] 업무보고방/AI 진행현황방 분리 발신 시도.
     # 방 해소·분리 조립 중 무엇이든 실패하면 즉시 폴백 — 기존 단일 발신(통째 1회,
     # 업무보고방)으로 되돌아간다(정보 손실 0). 실무진 방으로는 절대 보내지 않는다.
@@ -1881,12 +1914,18 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
             split_ok = False
 
     plan_path = save_plan(s1, assigned, orch, dry_run)
+    if autocheck_body:
+        # 점검 카드를 업무보고방 본문 꼬리에 — 분리/폴백 어느 경로든 같은 방 한 통이다.
+        if split_ok:
+            office_report = f"{office_report}\n\n{autocheck_body}"
     if split_ok:
         sent = send_split_reports(office_report, ai_report, ai_chat_id, dry_run)
         print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — 분리(업무보고방+AI진행현황방) "
               f"{'OK' if sent else 'FAIL'}")
     else:
         report = build_telegram_report(s1, assigned, orch)
+        if autocheck_body:
+            report = f"{report}\n\n{autocheck_body}"
         sent = send_reports(report, question_card, dry_run)
         print(f"[STAGE 4] 보고 {'(dry-run 출력)' if dry_run else '발송'} — 단일 폴백 "
               f"{'OK' if sent else 'FAIL'}")
@@ -1903,16 +1942,7 @@ def run_pipeline(dry_run: bool, as_json: bool, once_per_day: bool = False) -> in
             "serialized_conflicts": orch["serialized_conflicts"],
         }, ensure_ascii=False, indent=2))
 
-    # GM 직접 업무 자동 점검 — 체크리스트 배 대조 + 미완 푸시 (GM 요청 2026-08-15 · 웰리 설계 승인).
-    # 실패해도 아침 보고를 막지 않는다. 킬스위치 = status/gm_autocheck.json (false면 스스로 스킵).
-    try:
-        subprocess.run(
-            [sys.executable, str(Path(__file__).parent / "gm_task_autocheck.py")]
-            + (["--dry-run"] if dry_run else []),
-            timeout=180)
-    except Exception as exc:
-        print(f"[WARN] gm_task_autocheck 실패({exc}) — 계속", file=sys.stderr)
-
+    # (gm_task_autocheck 는 위에서 발송 전에 돌려 본문에 실었다 — 2026-08-29 한 통 합침)
     ok = sent
     print(f"=== 파이프라인 종료 — {'성공' if ok else '실패'} ===")
     return 0 if ok else 1

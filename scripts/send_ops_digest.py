@@ -562,14 +562,17 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     if asks:
         parts.append(asks)
 
+    message = _cap_message_lines("\n\n".join(parts), MGR_BRIEF_LINE_CAP)
+
     # 📅 다가오는 일정 — 관리자 건(미팅·방문·보고 등)만. 부서 소관은 _send_ovd_room(main() 호출)
     # 가 4부서방(★운영+시설+지원+주차) 쪽에 따로 붙인다(위 「📅 다가오는 일정」 섹션 주석 참조).
+    # ★상한 적용 뒤에 붙인다(2026-08-29 실측 수리) — 맨 끝 part 로 넣으니 브리프가 긴 날
+    #   _cap_message_lines 가 일정 블록을 통째로 삼켜 한 번도 안 나갔다. 블록은 최대
+    #   7줄(제목+5건+그 밖)이라 상한을 조금 넘어도 일정 누락보다 낫다.
     sched_items = [x for x in _upcoming_schedule_items() if not x["dept_item"]]
     sched_block = _build_schedule_block(sched_items)
     if sched_block:
-        parts.append(sched_block)
-
-    message = _cap_message_lines("\n\n".join(parts), MGR_BRIEF_LINE_CAP)
+        message = f"{message}\n\n{sched_block}" if message else sched_block
     return message, relay_current
 
 
@@ -910,11 +913,20 @@ def _schedule_day_label(d, today) -> str:
 
 
 def _build_schedule_block(items: list, today=None) -> str:
-    """📅 다가오는 일정 블록. items 는 이미 부서/관리자 갈래로 걸러진 목록."""
+    """📅 다가오는 일정 블록. items 는 이미 부서/관리자 갈래로 걸러진 목록.
+
+    5건 선택은 날짜 다양성 우선(2026-08-29 실측 수리) — 앞 날짜 하나가 5건을 독식하면
+    9/2 미팅·9/4 공사 같은 뒤 날짜 핵심 일정이 「그 밖」으로 접혀 안 보였다(8/31 8건 실측).
+    날짜별 첫 건을 먼저 채우고 남는 자리를 날짜순으로 채운다. 표시는 날짜순 그대로."""
     if not items:
         return ""
     today = today or date.today()
-    shown, rest = items[:SCHEDULE_SHOW_N], items[SCHEDULE_SHOW_N:]
+    seen, first, later = set(), [], []
+    for it in items:
+        (later if it["date"] in seen else first).append(it)
+        seen.add(it["date"])
+    shown = sorted((first + later)[:SCHEDULE_SHOW_N], key=lambda x: x["date"])
+    rest = [it for it in items if it not in shown]
     lines = ["📅 다가오는 일정"]
     for it in shown:
         lines.append(f" • {_schedule_day_label(it['date'], today)} — {it['name']} ({it['assignee']})")

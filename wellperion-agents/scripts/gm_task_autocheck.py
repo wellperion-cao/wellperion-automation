@@ -81,7 +81,7 @@ def _ship_done_for_line(line: str, ships: dict) -> str | None:
     return no
 
 
-def run(dry_run: bool) -> int:
+def run(dry_run: bool, body_out: str | None = None) -> int:
     if not dry_run:
         try:
             if not json.loads(SWITCH.read_text(encoding='utf-8')).get('enabled'):
@@ -162,6 +162,12 @@ def run(dry_run: bool) -> int:
     print('----- 푸시 문안 -----')
     print(msg)
     print('---------------------')
+    if body_out:
+        # [2026-08-29 GM 승인] 같은 방(업무보고방) 08시 두 통 → 한 통. 문안을 파일로 넘겨
+        # ceo_morning_pipeline 이 「오늘의 항로」 본문 꼬리에 싣는다 — 단독 발송 안 함.
+        Path(body_out).write_text(msg, encoding='utf-8')
+        print(f'[발송] --body-out — 아침 통에 실어 보냄 · 단독 발송 안 함')
+        return 0
     if dry_run:
         print('[발송] dry-run — 발송 안 함')
         return 0
@@ -182,7 +188,10 @@ def run(dry_run: bool) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry-run', action='store_true', help='판정·문안만 출력, 저장·발송 없음')
-    return run(ap.parse_args().dry_run)
+    ap.add_argument('--body-out', default=None,
+                    help='푸시 문안을 이 파일에 쓰고 단독 발송은 생략(아침 통 합침용)')
+    args = ap.parse_args()
+    return run(args.dry_run, body_out=args.body_out)
 
 
 if __name__ == '__main__':

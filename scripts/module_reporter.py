@@ -365,9 +365,21 @@ def _format_automation_health_ai_room(payload, now):
     if m and int(m.group(1)) > 0:
         lines.append(f"▪ 회원 시트 규칙 위반 {m.group(1)}건 → 시포가 처리 중")
 
-    if not lines:
+    # [2026-08-29 GM 승인] 09:12 별도 통이던 「🚨 ERP 이상 신호」 전문을 이 09:10 통
+    # 꼬리에 싣는다(같은 방 두 통 → 한 통 · 내용 보존). 전문은 collector 의
+    # '이상 신호·*' metric(전체 줄)에 이미 들어 있어 여기서 다시 재지 않는다.
+    detail = []
+    for mrow in payload.get("metrics", []):
+        label = str(mrow.get("label") or "")
+        if label.startswith("이상 신호·"):
+            detail.append(str(mrow.get("value") or "").replace("\n    ", "\n  "))
+
+    if not lines and not detail:
         return ""
-    return f"🔧 자동화 이상 · {now.strftime('%m-%d')} — 시토\n" + "\n".join(lines)
+    body = f"🔧 자동화 이상 · {now.strftime('%m-%d')} — 시토\n" + "\n".join(lines or ["▪ 가동 지표 정상"])
+    if detail:
+        body += "\n\n🚨 ERP 이상 신호(상세)\n" + "\n\n".join(detail)
+    return body
 
 
 # ── 핵심 실행 ────────────────────────────────────────────────────────────────
@@ -622,14 +634,14 @@ def run_report(cadence, *, dry_run=False, only_module=None,
         except Exception:
             pass  # 회귀감시 실패가 본 리포터의 발송 결과를 막지 않는다
 
-        # 자가건강 감시 발신(2026-08-08 시토) — 위 회귀감시와 같은 이유로 여기 편승한다.
-        # self_health_watchdog.py 는 만들어진 뒤 어떤 예약작업에도 걸리지 않아 2026-07-21
-        # 수동 실행 1회 말고는 한 번도 돈 적이 없었다. 그 18일 동안 침묵 모듈·시트 계약
-        # 위반이 매일 쌓였는데 아무에게도 안 갔다. 이상 있을 때만 자동화현황방에 하루 1통
-        # (멱등), 정상이면 무발신 — 새 예약작업·새 방 없음(약속 L21).
+        # 자가건강 감시(2026-08-08 시토) — 위 회귀감시와 같은 이유로 여기 편승한다.
+        # [2026-08-29 GM 승인] 단독 발신은 껐다(notify=False) — 이상 전문은 바로 위에서
+        # 나간 09:10 cto-automation-health 다이제스트(_self_health_rows 전체 줄)에 이미
+        # 실려 있어, 같은 방에 2분 뒤 두 번째 통(09:12 「🚨 ERP 이상 신호」)이 중복이었다.
+        # 기록·하트비트(침묵 감지용 자가증명)는 그대로 남는다.
         try:
             from self_health_watchdog import run_watchdog  # noqa: PLC0415
-            run_watchdog(dry_run=False)
+            run_watchdog(dry_run=False, notify=False)
         except Exception:
             pass  # 자가건강 감시 실패가 본 리포터의 발송 결과를 막지 않는다
 
