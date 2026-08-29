@@ -32,8 +32,10 @@ import os
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+
+import requests
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
@@ -595,6 +597,243 @@ def _score_block() -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# 접수 처리 점수제 4규칙 (GM 승인 2026-08-29 · status/previews/접수_점수제_설계.md)
+# +1 완료일≤완료예정일(단 접수+7일 넘으면 무효) / +3 정책반영(체크만·GM 주간승인으로 확정,
+# 자동 가산 안 함) / -1 접수+7일 초과 완료 / -3 접수+14일 미완 그 자리에서 확정(뒤에
+# 완료해도 유지). 분실물 제외. 점수는 처리자·담당자(부서 책임자) 각각, 동일인 1회.
+#
+# ★완료일이 시트에 없다(_first_done_at_and_stats 주석 참고) — 유일한 출처가 이 파일의
+#   first_done_at 저널(status/reception_watch.json)이라 판정은 여기서만 한다. 위 _score_block
+#   (접수/완료 단순집계)의 "셈법은 서버(GAS) 한 곳" 원칙은 그 두 숫자에 한한다 — GAS는
+#   완료일을 몰라 이 4규칙을 못 판정한다(설계 문서도 이를 전제로 "칸 신설 후 착수분부터
+#   판정 가능"이라 적었다).
+# ══════════════════════════════════════════════════════════════════════════
+SCORE_DUE_DEFAULT_DAYS = 3     # 완료예정일 미설정 시 접수+3일로 간주(설계 ③)
+SCORE_LATE_DAYS = 7            # 완료까지 이 날짜를 넘기면 -1(예정일을 넉넉히 잡아도 못 피한다)
+SCORE_ABANDON_DAYS = 14        # 미완 상태로 이 날짜에 이르면 그 자리에서 -3 확정
+SCORE_EXCLUDE_CATEGORY = "분실물 접수"   # 3단계 마감(보관·공지·이관) 별도 소관
+SCORE_ESCALATE_MARKER = "14일 초과 — 운영부 실장 이관(원담당 −3 확정)"
+SCORE_ESCALATE_DEPT = "운영부"
+
+
+def _score_due_date(created: str, due_date_raw) -> "datetime | None":
+    """완료예정일 유효값 — 비어 있으면 접수+3일(설계 ③ 기본 규칙, '안 적는 게 이득'을 막는다)."""
+    created_s = str(created or "")[:10]
+    try:
+        created_dt = datetime.strptime(created_s, "%Y-%m-%d")
+    except Exception:
+        return None
+    d = str(due_date_raw or "").strip()[:10]
+    if d:
+        try:
+            return datetime.strptime(d, "%Y-%m-%d")
+        except Exception:
+            pass   # 값이 있는데 못 읽으면 기본값으로 폴백(판정 불가로 지어내지 않는다)
+    return created_dt + timedelta(days=SCORE_DUE_DEFAULT_DAYS)
+
+
+def score_row(row: dict, first_done_at: dict, today: datetime) -> "int | None":
+    """접수 1건의 확정 점수. 반환: 1·-1·-3 또는 None(분실물·판정불가·아직 미확정).
+    -3은 '미완 상태로 14일'에 확정되면 나중에 완료돼도 같은 값이 나온다 — days_to_complete
+    자체가 이미 14 이상이라 완료 시점을 나중에 넣어도 결과가 안 바뀐다(재판정 안전)."""
+    if str(row.get("category") or "").strip() == SCORE_EXCLUDE_CATEGORY:
+        return None
+    created_s = str(row.get("createdAt") or "")[:10]
+    if not created_s:
+        return None
+    try:
+        created_dt = datetime.strptime(created_s, "%Y-%m-%d")
+    except Exception:
+        return None
+    due_dt = _score_due_date(created_s, row.get("dueDate"))
+    if due_dt is None:
+        return None
+    reg_id = str(row.get("regId") or "")
+    is_done = str(row.get("status") or "") == "완료"
+    done_s = first_done_at.get(reg_id) if is_done else None
+    if done_s:
+        try:
+            done_dt = datetime.strptime(done_s, "%Y-%m-%d")
+        except Exception:
+            return None
+        days = (done_dt - created_dt).days
+        if days >= SCORE_ABANDON_DAYS:
+            return -3
+        if days > SCORE_LATE_DAYS:
+            return -1
+        return 1 if done_dt <= due_dt else 0
+    # 미완 — 14일 넘었으면 그 자리에서 -3 확정. 7~13일은 '예약'일 뿐 아직 확정 점수 없음.
+    age = (today - created_dt).days
+    return -3 if age >= SCORE_ABANDON_DAYS else None
+
+
+def _selfcheck_score_rule() -> None:
+    """경계값 자체 점검 — 실행하면 통과 시 조용히 끝나고, 실패하면 AssertionError."""
+    today = datetime(2026, 8, 29)
+    base = {"category": "컴플레인 접수", "createdAt": "2026-08-01", "regId": "T1"}
+
+    # 분실물 제외
+    assert score_row({**base, "category": SCORE_EXCLUDE_CATEGORY, "status": "완료"},
+                      {"T1": "2026-08-30"}, today) is None
+
+    # 완료예정일 미설정 = 접수+3일 기본값. 접수 8/1 → 기본 예정일 8/4.
+    assert score_row({**base, "status": "완료"}, {"T1": "2026-08-04"}, today) == 1   # 예정일(기본) 안에 완료
+    assert score_row({**base, "status": "완료"}, {"T1": "2026-08-05"}, today) == 0   # 기본 예정일은 넘겼지만 7일 안
+
+    # 예정일을 스스로 잡은 경우(8/6=접수+5일) — 경계값 정확히
+    row_due = {**base, "dueDate": "2026-08-06", "status": "완료"}
+    assert score_row(row_due, {"T1": "2026-08-06"}, today) == 1     # 예정일 당일 = 안 늦음
+    assert score_row(row_due, {"T1": "2026-08-05"}, today) == 1     # 예정일보다 일찍 = +1
+    assert score_row(row_due, {"T1": "2026-08-07"}, today) == 0     # 예정일(8/6) 넘겼지만 7일(8/8) 안 = 무점
+    assert score_row(row_due, {"T1": "2026-08-08"}, today) == 0     # 접수+7일 경계 — 아직 -1은 아니다(0)
+    # ★핵심 위험 케이스: 예정일을 7일 넘게(8/10=접수+9일) 잡아도 8일째 완료는 그대로 -1이다
+    #   ("예정일을 넉넉히 잡아 +1을 챙기는 길은 없다" — 설계 ① 위험 한 줄).
+    row_due_late = {**base, "dueDate": "2026-08-10", "status": "완료"}
+    assert score_row(row_due_late, {"T1": "2026-08-10"}, today) == -1   # 예정일 안에 완료해도 접수+9일 = -1
+    assert score_row({**base, "status": "완료"}, {"T1": "2026-08-08"}, today) == 0   # 접수+7일(경계) — 기본예정일 넘겨 0
+    assert score_row({**base, "status": "완료"}, {"T1": "2026-08-09"}, today) == -1  # 접수+8일 = -1(예정일 넉넉해도 못 피함)
+    assert score_row({**base, "status": "완료"}, {"T1": "2026-08-14"}, today) == -1  # 13일째 완료 = -1
+    assert score_row({**base, "status": "완료"}, {"T1": "2026-08-15"}, today) == -3  # 14일째 완료 = -3(그때부터 유지)
+    assert score_row({**base, "status": "완료"}, {"T1": "2026-09-01"}, today) == -3  # 훨씬 늦게 완료해도 -3 유지
+
+    # 미완 상태 — 7~13일은 아직 미확정(None), 14일부터 -3 확정
+    assert score_row({**base, "createdAt": "2026-08-20", "status": "처리중"}, {}, today) is None   # 9일째, 아직
+    assert score_row({**base, "createdAt": "2026-08-16", "status": "처리중"}, {}, today) is None   # 13일째, 아직
+    assert score_row({**base, "createdAt": "2026-08-15", "status": "처리중"}, {}, today) == -3     # 14일째, 확정
+    assert score_row({**base, "createdAt": "2026-06-01", "status": "접수"}, {}, today) == -3       # 훨씬 오래 미완도 -3
+
+
+def build_score4_table(rows: list[dict], today: datetime | None = None) -> dict[str, dict]:
+    """4규칙을 전 rows에 적용해 사람별 집계표를 만든다. 반환 {이름: {plus1,minus1,minus3,plus3_pending}}.
+    담당자(부서 책임자) 이름은 kpi.json 정본을 send_ops_digest._ovd_leaders()로 그대로 재사용한다
+    (약속 L01 — 여기서 다시 표를 만들지 않는다). 처리자·담당자가 동일인이면 그 건은 1회만 계상."""
+    today = today or datetime.now()
+    first_done_at, _src, _stats = _first_done_at_and_stats(rows, today)
+    try:
+        from send_ops_digest import _ovd_leaders  # noqa: PLC0415 (지연 임포트 — 순환 임포트 방지)
+        leaders = _ovd_leaders()
+    except Exception:
+        leaders = {}
+
+    # 처리자 칸(handlerCanon)은 GAS _regStaffCanonList 가 이미 직함을 뗀 맨이름으로 정규화한다
+    # (예: '이정헌소장'→'이정헌'). 담당자(dept 책임자) 이름은 kpi.json 정본이 직함 포함형이다
+    # (예: '이정헌 소장'). 같은 사람이 직함 유무로 갈려 두 줄로 잡히는 것을 막는다(GAS
+    # REG_STAFF_TITLE_RE 와 같은 직함 목록 재사용 — 약속 L01, 새 규칙 만들지 않는다).
+    _TITLE_SUFFIX_RE = re.compile(
+        r"\s*(GM|AM|M|매니저|사원|주임|대리|과장|차장|부장|실장|소장|팀장|프로|강사|시니어|주니어|코치|반장|님)$")
+
+    def _bare(name: str) -> str:
+        return _TITLE_SUFFIX_RE.sub("", str(name or "").strip()).strip()
+
+    bare_to_display = {_bare(disp): disp for disp in leaders.values() if disp}
+
+    tally: dict[str, dict] = {}
+
+    def _bump(name: str, key: str) -> None:
+        name = str(name or "").strip()
+        if not name:
+            return
+        tally.setdefault(name, {"plus1": 0, "minus1": 0, "minus3": 0, "plus3_pending": 0})
+        tally[name][key] += 1
+
+    for r in rows:
+        dept = str(r.get("dept") or "").strip()
+        owner = leaders.get(dept, "") if dept else ""
+        handler_canon = r.get("handlerCanon") or []
+        handler_raw = str(handler_canon[0]) if handler_canon else str(r.get("handler") or "").strip()
+        # 처리자가 알려진 부서 책임자와 같은 사람이면(직함만 다르면) 책임자 표기로 합친다.
+        handler = bare_to_display.get(_bare(handler_raw), handler_raw)
+
+        delta = score_row(r, first_done_at, today)
+        if delta == -3:
+            recipients = {owner} if owner else set()          # -3은 담당자만(처리자 아직 없음)
+        elif delta is not None:
+            recipients = {n for n in (owner, handler) if n}    # +1/-1은 처리자·담당자 각각(동일인 1회)
+        else:
+            recipients = set()
+        key = {1: "plus1", -1: "minus1", -3: "minus3"}.get(delta)
+        if key:
+            for who in recipients:
+                _bump(who, key)
+
+        # +3 후보 — 자동 확정 안 함(설계 GM 확정). 담당자·처리자 둘 다에 '후보'로만 표시.
+        if str(r.get("policyFix") or "").strip():
+            for who in {n for n in (owner, handler) if n}:
+                _bump(who, "plus3_pending")
+
+    return tally
+
+
+def _score4_block(rows: list[dict], today: datetime | None = None) -> str:
+    """📐 처리 점수제 — 기존 접수/완료 점수판(_score_block) 아래에 얹는 4규칙 요약.
+    표만 낸다(사람 탓 문장 금지 — 설계 문서 지시)."""
+    today = today or datetime.now()
+    table = build_score4_table(rows, today)
+    if not table:
+        return ""
+    names = sorted(table, key=lambda n: (-(table[n]["plus1"] - table[n]["minus1"] * 1 - table[n]["minus3"] * 3), n))
+    lines = [_DIVIDER, "📐 처리 점수제 (완료예정일 신설 이후 집계)", ""]
+    for name in names[:8]:
+        t = table[name]
+        net = t["plus1"] - t["minus1"] - t["minus3"] * 3
+        bits = []
+        if t["plus1"]:
+            bits.append(f"+1×{t['plus1']}")
+        if t["minus1"]:
+            bits.append(f"-1×{t['minus1']}")
+        if t["minus3"]:
+            bits.append(f"-3×{t['minus3']}")
+        if t["plus3_pending"]:
+            bits.append(f"+3 후보×{t['plus3_pending']}(GM 승인 대기)")
+        lines.append(f"▪ {name} — {net:+d}점 ({' · '.join(bits)})")
+    return "\n".join(lines)
+
+
+def apply_overdue_escalation(rows: list[dict], today: datetime | None = None,
+                              dry_run: bool = True) -> list[dict]:
+    """설계 ② — 14일 미완 확정건을 운영부로 재배정 + 메모 자동 기록(기존 처리메모 뒤에 덧붙임).
+    실장도 이관일부터 새 시계로 같은 규칙을 받는다(재배정된 dept='운영부' 건이 그 다음부터
+    createdAt 기준으로 다시 age를 재는 게 아니라, '이관 후 처리 소요'는 별도 시각이 없어
+    이번 구현에서는 재배정 사실만 남긴다 — 실장 몫 재귀 판정은 이관일 기준 별도 시계가
+    필요해 후속 과제로 남긴다).
+    dry_run=True(기본)면 대상 목록만 반환하고 쓰지 않는다(새 액션 없음 — 기존 reg_update 재사용)."""
+    today = today or datetime.now()
+    targets = []
+    for r in rows:
+        if str(r.get("status") or "") == "완료":
+            continue   # 이미 끝난 옛 건을 소급 이관하지 않는다 — '진행중' 확정건만
+        if score_row(r, {}, today) != -3:
+            continue
+        if str(r.get("dept") or "").strip() == SCORE_ESCALATE_DEPT:
+            continue   # 이미 운영부
+        if SCORE_ESCALATE_MARKER in str(r.get("memo") or ""):
+            continue   # 이미 이관 기록됨(멱등)
+        targets.append(r)
+    if dry_run or not targets:
+        return targets
+    done = []
+    for r in targets:
+        memo = str(r.get("memo") or "")
+        new_memo = memo + ("\n" if memo else "") + SCORE_ESCALATE_MARKER
+        payload = {"action": "reg_update", "id": r.get("regId"), "category": r.get("category"),
+                   "dept": SCORE_ESCALATE_DEPT, "memo": new_memo}
+        ok = _reg_update_post(payload)
+        done.append({"regId": r.get("regId"), "ok": ok})
+    return done
+
+
+def _reg_update_post(payload: dict, timeout: int = 20) -> bool:
+    """reg_update 관문 재사용(새 액션 안 만든다) — 화면(_update)과 같은 요청 형식(text/plain+JSON)."""
+    try:
+        resp = requests.post(RECEPTION_EXEC_URL,
+                              data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                              headers={"Content-Type": "text/plain;charset=UTF-8"}, timeout=timeout)
+        return resp.status_code == 200 and bool(resp.json().get("ok"))
+    except Exception:
+        return False
+
+
+# ══════════════════════════════════════════════════════════════════════════
 # 부서 톡방 처리완료 통보(2026-08-01 GM 지시) — 개인 회신이 아니라 부서 단위로.
 # GM: "접수한 사람으로 하는것보단, 톡방(부서 단위)으로 하는게 좋을 것 같아" — 접수자가
 # 익명 회원인 접수도 많아 개인 회신 자체가 불가능하고, 처리도 팀 단위로 움직인다.
@@ -953,11 +1192,17 @@ def build_digest(today: str | None = None, persist_completion: bool = True) -> s
     parts = [header]
     if score:
         parts.append(score.lstrip("\n").removeprefix(_DIVIDER).strip())
+    score4 = _score4_block(rows)
+    if score4:
+        parts.append(score4.lstrip("\n").removeprefix(_DIVIDER).strip())
     parts.append(f"{_DIVIDER}\n{_today_section(rows, today)}")
     parts.append(f"{_DIVIDER}\n{_aging_block(rows)}")
     completion = _completion_block(rows, persist=persist_completion)
     if completion:
         parts.append(completion)
+    # 14일 미완 확정건 운영부 이관 — 실제 쓰기는 이 다이제스트가 진짜 나갈 때만
+    # (persist_completion=not dry_run 과 같은 게이트, run() 참고). dry-run·수동 조회는 절대 안 쓴다.
+    apply_overdue_escalation(rows, dry_run=not persist_completion)
     return "\n\n".join(parts)
 
 
@@ -1077,7 +1322,13 @@ if __name__ == "__main__":
                     help="테스트 발신 — 실무진 방 대신 텔레그램 업무관리방으로만 보낸다")
     p.add_argument("--backfill", action="store_true",
                     help="과거 완료건 완료일 복원(메모·발신로그·통보스냅샷 3근거 · 실측 보존)")
+    p.add_argument("--selftest", action="store_true",
+                    help="접수 처리 점수제 4규칙 경계값 자체 점검(쓰기 없음)")
     a = p.parse_args()
+    if a.selftest:
+        _selfcheck_score_rule()
+        print("[selftest] 점수제 4규칙 경계값 OK")
+        sys.exit(0)
     if a.backfill:
         _rows = _fetch_rows() or []
         _rep = backfill_first_done_at(_rows, today=a.today)

@@ -221,7 +221,14 @@ var REG_TAIL_HEADERS = [
   { key: 'handler',  label: '처리자' },
   { key: 'reporter', label: '접수자' },
   // 회원 안내(회원 셀프 조회 노출 문구). 처리메모(내부)와 별개. 2026-08-03 복구.
-  { key: 'memberReply', label: '회원안내' }
+  { key: 'memberReply', label: '회원안내' },
+  // ─ 접수 처리 점수제(GM 승인 2026-08-29 · status/previews/접수_점수제_설계.md ③④) ─
+  // dueDate=완료예정일: 처리자가 착수하며 스스로 잡는 날짜. 비어 있으면 접수+3일로 간주해
+  //   판정한다(점수 계산은 Python report_stream_2b_reception.py — GAS는 칸만 들고 있는다).
+  // policyFix=정책반영: "직원 간 약속 성립·기존 정책 문서에 한 줄 추가" 후보를 처리자가 한 줄로
+  //   적는 칸(빈 값=해당 없음). +3 자동 확정은 안 한다 — GM 주간 승인으로 확정.
+  { key: 'dueDate',   label: '완료예정일' },
+  { key: 'policyFix', label: '정책반영' }
 ];
 
 function _regHeadersFor(catKey) {
@@ -461,6 +468,19 @@ function _regSelftestLostStage() {
     if (got !== cases[i][1]) throw new Error('lostStage(' + cases[i][0] + 'h)=' + got + ' ≠ ' + cases[i][1]);
   }
   return 'OK 7/7';
+}
+
+// 점수제 신설 칸(완료예정일·정책반영) 배선 점검 — GAS 에디터에서 실행. 판정 규칙 자체(4점제)는
+// Python(scripts/report_stream_2b_reception.py)이 한다 — 여기선 칸이 헤더·읽기·쓰기 경로에
+// 다 물렸는지만 본다(경계값 자체 점검은 Python 쪽 _selfcheck_score_rule 정본).
+function _regSelftestScoreColumns() {
+  var headers = _regHeadersFor('complaint');   // 어느 카테고리든 TAIL 은 공통
+  var labels = headers.map(function (h) { return h.label; });
+  if (labels.indexOf('완료예정일') < 0) throw new Error('dueDate 헤더 누락');
+  if (labels.indexOf('정책반영') < 0) throw new Error('policyFix 헤더 누락');
+  var keys = headers.map(function (h) { return h.key; });
+  if (keys.indexOf('dueDate') < 0 || keys.indexOf('policyFix') < 0) throw new Error('키 매핑 누락');
+  return 'OK — dueDate·policyFix 헤더 배선 확인';
 }
 
 // 60일(공지 종료) 넘은 분실물 신고 자동 종결 — 기존 30분 SLA 트리거(_regSlaCheckTrigger)에 편승.
@@ -1848,6 +1868,18 @@ function _regUpdate(body) {
     if (deptVal !== undefined) {
       var dpi = _idx('dept');
       if (dpi >= 0) existing[dpi] = String(deptVal);
+    }
+    // 완료예정일 — 처리자가 착수하며 스스로 잡는 날짜(점수제 ③). 2026-08-29.
+    var dueDateVal = body.dueDate !== undefined ? body.dueDate : undefined;
+    if (dueDateVal !== undefined) {
+      var ddi = _idx('dueDate');
+      if (ddi >= 0) existing[ddi] = String(dueDateVal);
+    }
+    // 정책반영 — "직원 간 약속·정책 문서 반영" 한 줄(점수제 ①). 빈 값=해당 없음. 2026-08-29.
+    var policyFixVal = body.policyFix !== undefined ? body.policyFix : undefined;
+    if (policyFixVal !== undefined) {
+      var pfi = _idx('policyFix');
+      if (pfi >= 0) existing[pfi] = String(policyFixVal);
     }
     // 완료로 전환되는 순간, 회원 안내가 비어 있으면 카테고리 문구를 채운다(2026-08-18 GM 지시 —
     //   105건 중 3건만 채워져 사실상 안 쓰이던 문제). 사람이 이미 쓴 값은 절대 덮지 않는다.

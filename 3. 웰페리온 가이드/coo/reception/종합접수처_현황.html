@@ -673,7 +673,7 @@ var DEPT_OTHER_LABEL = '지원부(구분 전)';
 /* 공통·SLA 키 → 나머지는 extras */
 /* ★2026-08-21 GM 확정 — 'assignee'(담당)·'assigneeCanon' 을 뺐다. 접수처의 사람 분류는
    접수자(reporter)·처리자(handler) 둘뿐이다. 서버도 이 값을 더 이상 내려보내지 않는다. */
-var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply','memberReplyTemplate'];
+var KNOWN_KEYS = ['regId','category','createdAt','name','contact','loc','content','photoUrl','status','memo','handler','handlerCanon','reporter','dept','slaHours','deadline','remainH','slaStatus','slaDays','smsReceived','smsResolved','memberReply','memberReplyTemplate','dueDate','policyFix'];
 
 /* ── 🏆 점수판 (GM 지시 2026-07-28) ──
    셈법은 서버(reg_scoreboard) 한 곳에만 있다 — 화면에서 다시 계산하지 않는다.
@@ -1079,6 +1079,17 @@ function _card(r){
   h += '<div class="field-row"><label>처리자</label>';
   h += '<input type="text" data-reg-handler list="reg-staff-names" placeholder="실제 처리한 사람" value="' + _esc(String(r.handler||'')) + '"></div>';
 
+  /* 완료예정일 — 처리자가 착수하며 스스로 잡는 날짜(접수 처리 점수제 ③, GM 승인 2026-08-29).
+     비우면 접수+3일로 간주해 판정한다(안 적는 게 이득이 되지 않게). +1은 이 날짜 안에
+     완료해야 붙는다 — 단 접수+7일을 넘기면 예정일과 무관히 -1이 이긴다. */
+  h += '<div class="field-row"><label>완료예정일</label>';
+  h += '<input type="date" data-reg-duedate value="' + _esc(String(r.dueDate||'')) + '"></div>';
+
+  /* 정책반영 — 처리 결과로 직원 간 약속이 성립했거나 정책 문서에 한 줄이라도 추가됐으면
+     한 줄로 적는다(+3 후보). 자동 확정 안 함 — GM 주간 승인으로 확정(설계 ①). */
+  h += '<div class="field-row"><label>정책반영</label>';
+  h += '<input type="text" data-reg-policyfix placeholder="예) 주차 정책에 한 줄 추가 (없으면 비워두세요)" value="' + _esc(String(r.policyFix||'')) + '"></div>';
+
   /* 접수자(적어 준 사람) — 점수판의 '접수 1점'이 이 칸에서 나온다(GM 지시 2026-07-28).
      회원이 폼에서 직접 넣으면 '회원'으로 들어오고, 직원이 대신 적어 준 건 여기서 고른다. */
   h += '<div class="field-row"><label>접수자</label>' + _staffFieldHtml('reporter', '접수자', r.reporter) + '</div>';
@@ -1122,6 +1133,8 @@ function _update(id, cat, payload, btn, statusEl, statusPrev){
   if('handler' in payload) body.handler = payload.handler;
   if('reporter' in payload) body.reporter = payload.reporter;
   if('slaDays' in payload) body.slaDays = payload.slaDays;
+  if('dueDate' in payload) body.dueDate = payload.dueDate;
+  if('policyFix' in payload) body.policyFix = payload.policyFix;
 
   fetch(REG_API, {
     method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'},
@@ -1532,11 +1545,15 @@ function _wireBoard(){
       var m = card.querySelector('[data-reg-memo]');
       var mr = card.querySelector('[data-reg-memberreply]');
       var sd = card.querySelector('[data-reg-sladays]');
+      var dd = card.querySelector('[data-reg-duedate]');
+      var pf = card.querySelector('[data-reg-policyfix]');
       payload.handler = _staffFieldValue(card, 'handler');
       payload.reporter = _staffFieldValue(card, 'reporter');
       if(m) payload.memo = m.value;
       if(mr) payload.memberReply = mr.value;
       if(sd) payload.slaDays = sd.value;
+      if(dd) payload.dueDate = dd.value;
+      if(pf) payload.policyFix = pf.value;
       _update(card.dataset.regCard, card.dataset.regCat, payload, saveBtn);
       return;
     }
