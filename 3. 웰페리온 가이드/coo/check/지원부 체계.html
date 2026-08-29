@@ -196,9 +196,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .nosub-done{background:var(--green-bg);border:1px solid rgba(106,191,123,0.4);color:var(--green);border-radius:10px;padding:10px 14px;margin:14px 0 0;font-size:13px;font-weight:700}
 .submit-btn.nudge{background:var(--red);color:#fff;box-shadow:0 0 0 3px rgba(237,91,63,0.28)}
 .submit-btn.primary.nudge:disabled{opacity:0.8}
-.group-submit-bar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px 4px;border-top:1px dashed var(--border);margin-top:6px}
-.group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
-.group-submit-btn:hover{background:var(--accent);color:#fff}
 /* 회차 점검자 배정 메모(공유·아무나 편집) — GM 2026-06-16 시우 */
 .insp-assign{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:10px 12px 11px;margin:0 0 12px}
 .insp-assign-label{font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:7px;display:flex;align-items:center;gap:5px}
@@ -206,7 +203,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .insp-assign-input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;line-height:1.55;padding:8px 11px;resize:vertical;min-height:40px}
 .insp-assign-input::placeholder{color:var(--dim)}
 .insp-assign-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
-.group-submitted{font-size:12px;font-weight:700;color:var(--green)}
 .saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 /* 저장 실패 배너(GM 2026-07-18 INC 07-16 저장유실 수리 Phase1④) — 조용한 토스트 대신 눈에 띄는 상단 고정 빨간 배너 + 재시도 안내.
    서버 응답 ok:false(진짜 시트 저장 실패)일 때만 표시 — ledgerOk:false(부가 상태동기화 지연)는 별도 약한 안내로 분리(과잉경보 방지). */
@@ -917,7 +913,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>지원부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.1 · 2026-07-14 (온도경고·반영완료·제출스냅샷)</span> <span id="dayType"></span></h1>
+    <h1>지원부 체계 <span id="dayType"></span></h1>
     <div class="sheet-links">
       <a class="sheet-link" onclick="switchTab('monthly')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -1441,8 +1437,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
             <td style="padding:8px 10px;">약품 청소</td>
             <td style="padding:8px 10px;">7월 한 달간(매일 새벽 5:30~회원 입장 전)</td>
             <td style="padding:8px 10px;">
-              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent);margin-right:4px;">진행중</span>
-              주민환 선생님 진행. 구역 넓어 한 달간 작업.
+              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--dim);border:1px solid var(--border);margin-right:4px;">미기록</span>
+              주민환 선생님 진행. 구역 넓어 한 달간 작업. (7월 종료 — 결과 미기록)
             </td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
@@ -1451,7 +1447,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
             <td style="padding:8px 10px;">전원 솔질</td>
             <td style="padding:8px 10px;">7/10(금)·7/24(금)</td>
             <td style="padding:8px 10px;">
-              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--dim);border:1px solid var(--border);margin-right:4px;">예정</span>
+              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--dim);border:1px solid var(--border);margin-right:4px;">미기록</span>
             </td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
@@ -1462,7 +1458,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
             <td style="padding:8px 10px;">
               <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--green-bg);color:var(--green);border:1px solid var(--green);margin-right:4px;">완료</span>
               7/6 완료 · 7/20
-              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--dim);border:1px solid var(--border);margin-left:4px;">예정</span>
+              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--dim);border:1px solid var(--border);margin-left:4px;">미기록</span>
             </td>
           </tr>
           <tr>
@@ -1471,7 +1467,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
             <td style="padding:8px 10px;">—</td>
             <td style="padding:8px 10px;">7/23(목)·7/24(금)</td>
             <td style="padding:8px 10px;">
-              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--dim);border:1px solid var(--border);margin-right:4px;">예정</span>
+              <span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:10px;background:var(--bg);color:var(--dim);border:1px solid var(--border);margin-right:4px;">미기록</span>
             </td>
           </tr>
         </tbody>
@@ -1807,7 +1803,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 
 <!-- ── 항목 관리 탭 (매뉴얼 탭으로 통합 이전 · 2026-05-29) ──
      폼/목록/유틸 UI는 매뉴얼 탭(tab-manual)으로 이동. 빈 패널 유지(switchTab 참조 보존). -->
-<div id="tab-manage" class="content hidden"></div>
 
 <!-- ══ 「🧺 린넨 관리」 탭 — GM 발주 2026-08-07(CTO지시_세탁물관리체계_구축.md) ══
      왜 만드나: 크린토피아 위탁 세탁이 매일 21:00 입고 → 익일 사용 구조인데 지금은 **입고량(명세서)만** 보인다.
@@ -4501,15 +4496,7 @@ function _onCkAfter(d,gender){
     total++; if(isChecked(it.id,curRound))done++;
   })));
   if(curRound==='close1'&&DAY_FOCUS[dow])DAY_FOCUS[dow].forEach(it=>{ if(shouldShowItemForGender(it,gender)){total++; if(isChecked(it.id,curRound))done++;} });
-  /* 2026-06-13 인시던트: 라운드 100% 자동제출 confirm 오발화(항목 적은 라운드가 즉시 100% 도달 →
-     거짓제출·연쇄리셋). 자동제출 폐기 — 제출은 명시 '조 제출' 버튼으로만(체크 자동저장은 유지). */
-  if(false && total>0&&done===total&&!isRoundSubmitted(d,gender,curRound)){
-    const sub=getSubmitterForGender(gender);
-    if(!sub){alert('점검자 이름을 먼저 입력하세요.');return}
-    if(confirm(`${rdef.name} ${rdef.time} 항목을 모두 완료했습니다.\n${sub}님 이름으로 제출할까요?`)){
-      submitRound(curRound,gender);
-    }
-  }
+  // 자동제출 폐기(2026-06-13 인시던트 — 거짓제출·연쇄리셋). 제출은 '조 제출' 버튼으로만.
 }
 
 /* 이슈/노하우 입력 핸들러. round 있으면 회차별 키(issKey/tipKey), 없으면(야간·매뉴얼) 레거시 키.
@@ -4578,11 +4565,9 @@ function renderManualItems(){
   /* 셋업 안내 + 편집모드 토글 + 추가항목 일괄정리(GM 2026-06-12): 매뉴얼=항목 단일출처(시트 동기화). 점검은 읽기전용. */
   const _emBtn=`<button onclick="toggleManualEdit()" style="${_btn}${EM?'color:#fff;background:var(--accent);border-color:var(--accent);':'color:var(--accent);background:var(--bg);border-color:var(--accent);'}">${EM?'✓ 편집 모드 (끄기)':'✎ 편집 모드'}</button>`;
   const _addGroupBtn=EM?`<button onclick="addManualGroup()" style="${_btn}color:var(--accent);background:var(--bg);border-color:var(--accent);">＋ 구역 추가</button>`:'';
-  /* Part1: 시드 명단 → 시트 단방향 push(syncSeedItems). 멱등이라 여러 번 눌러도 안전. 편집 모드에서만 노출(운영 실수 방지). */
-  const _seedBtn='';   // 2026-06-27 시드 동기화 버튼 폐지(시트=항목 마스터 단일출처)
-  /* 2026-06-27 GM: '🔄 시트 기준으로 초기화' 버튼 제거(위험 판단). resetManualLocalView 함수도 폐지. */
+  /* 2026-06-27 GM: 시드 동기화 버튼(시트=항목 마스터 단일출처) · '🔄 시트 기준으로 초기화' 버튼(위험 판단) 모두 폐지. */
   html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text);line-height:1.6;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_seedBtn}${_addGroupBtn}${_emBtn}</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"><span><b style="color:var(--accent);">매뉴얼 = 항목 단일출처</b> · 편집 모드를 켜면 구역(A·B…) <b>추가·이름변경·삭제·순서(▲▼)</b>와 항목 추가·편집·삭제가 나타납니다.</span><span style="display:inline-flex;gap:6px;">${_addGroupBtn}${_emBtn}</span></div>
   </div>`;
   catOrder.forEach((cat,gi)=>{
     const items=catMap[cat];
@@ -4668,14 +4653,6 @@ function renderManualItems(){
 
 /* 2026-06-27 GM: resetManualLocalView('🔄 시트 기준으로 초기화')는 위험 판단으로 제거됨. */
 
-/* 매뉴얼 탭 개별 항목 점검완료 체크 → 기존 체크 저장 시스템(STATE+saveState+pushToServer) 재사용 */
-function onManualCk(id){
-  const d=getDateG(activeGenderTab)||kstToday();   // KST 오늘(UTC 어긋남 차단)
-  STATE[id]=document.getElementById('mcb_'+id).checked;
-  saveState(d);
-  renderManualItems();
-}
-
 /* 매뉴얼 탭 항목 상세 토글 (이름 영역 클릭, 체크박스는 제외) */
 function togManualItem(nameEl){
   const det=nameEl.querySelector('.manual-item-detail');
@@ -4720,23 +4697,6 @@ function collectGroupSubmits(){
 // 그룹 제출 버튼/배지 HTML — '이 항목 제출' 기능 제거(GM 2026-06-12): 조 단위 제출만 사용(렌더 경량화).
 function groupSubmitBarHtml(g, gender, round){
   return '';
-  // eslint-disable-next-line no-unreachable
-  const gk = groupKey(g);
-  const visItems = (g.items||[]).filter(it=>shouldShowItemForGender(it,gender));
-  /* 회차별 체크 독립: round 있으면 그 회차 체크 기준 미흡건 계산 */
-  const _ck = it => round ? isChecked(it.id,round) : !!STATE[it.id];
-  const remain = visItems.length - visItems.filter(_ck).length;
-  if(STATE['_gsub_' + gk]){
-    const by = STATE['_gsubBy_' + gk] ? ' (' + STATE['_gsubBy_' + gk] + ')' : '';
-    const at = STATE['_gsubAt_' + gk] ? new Date(STATE['_gsubAt_' + gk]).toLocaleString('ko-KR') : '';
-    // 제출됐지만 미완료(미흡) 항목이 남으면 '완료'로 막지 않고 추가 제출 허용 (2026-06-05 GM)
-    if(remain > 0){
-      return '<div class="group-submit-bar"><span class="group-submitted" style="color:var(--accent)">⚠ 일부 제출' + by + ' · 미흡 ' + remain + '건</span>' +
-        '<button class="group-submit-btn" onclick="submitGroup(\'' + gk + '\',\'' + gender + '\')">➕ 추가 제출 (남은 ' + remain + '건)</button></div>';
-    }
-    return '<div class="group-submit-bar"><span class="group-submitted">✅ 제출됨' + by + ' ' + at + '</span></div>';
-  }
-  return '<div class="group-submit-bar"><button class="group-submit-btn" onclick="submitGroup(\'' + gk + '\',\'' + gender + '\')">이 항목 제출</button></div>';
 }
 
 async function submitShift(shift,gender){
@@ -5787,7 +5747,6 @@ function switchTab(tab, opts){
   document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
   document.getElementById('tab-check-m').classList.toggle('hidden',tab!=='check-m');
   document.getElementById('tab-check-f').classList.toggle('hidden',tab!=='check-f');
-  document.getElementById('tab-manage').classList.toggle('hidden',tab!=='manage');
   document.getElementById('tab-supply').classList.toggle('hidden',tab!=='supply');
   document.getElementById('tab-monthly').classList.toggle('hidden',tab!=='monthly');
   var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
@@ -6638,7 +6597,7 @@ function policyDeleteCard(colKey,id){
    점검 기록·근무자·제출 등 진짜 데이터는 전부 서버(GAS)에 있어 무손실 — 페이지는 비운 뒤 서버에서 다시 읽는다.
    ※ 페이지 내용을 의미있게 바꿔 배포할 때마다 APP_VER 값을 새로(날짜+접미) 올리면 전 사용자 창이 다음 새로고침 때 자동 최신화된다. */
 (function(){
-  var APP_VER='2026-06-29d';
+  var APP_VER='2026-08-29a';
   try{
     if(localStorage.getItem('wcheck_app_ver')!==APP_VER){
       Object.keys(localStorage)
@@ -7884,30 +7843,6 @@ function seedSignature(seeds){
 
 const SEED_SIG_KEY='wcheck_seed_sig';
 const SEED_SYNC_TS_KEY='wcheck_seed_sync_ts';
-const SEED_SYNC_DEBOUNCE_MS=10000;   // 멀티탭/연타 가드
-
-/* 로드 시 자동 시드 동기 — 시그니처가 바뀐 경우에만 push(쓰기 0 최적화). 비차단·실패 시 콘솔 경고만. */
-function autoSyncSeedsIfChanged(){
-  return;   // 2026-06-27 폐지(시트 단일출처). 아래 레거시 미실행.
-  try{
-    if(!ONLINE) return;
-    let seeds;
-    try{ seeds=buildSeedPayloads(); }catch(e){ console.warn('[seed-autosync] build 실패', e); return; }
-    if(!seeds.length) return;
-    const sig=seedSignature(seeds);
-    let prevSig=null, lastTs=0;
-    try{ prevSig=localStorage.getItem(SEED_SIG_KEY); lastTs=parseInt(localStorage.getItem(SEED_SYNC_TS_KEY)||'0',10)||0; }catch(e){}
-    if(prevSig===sig) return;                                  // 시드 무변경 → write 0
-    if(Date.now()-lastTs < SEED_SYNC_DEBOUNCE_MS) return;      // 멀티탭/연타 가드
-    try{ localStorage.setItem(SEED_SYNC_TS_KEY, String(Date.now())); }catch(e){}
-    fetch(API_URL,{method:'POST',redirect:'follow',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify(withDept({action:'syncSeedItems',seeds:seeds}))
-    }).then(function(){
-      try{ localStorage.setItem(SEED_SIG_KEY, sig); }catch(e){}
-    }).catch(function(e){ console.warn('[seed-autosync] push 실패(무시)', e); });
-  }catch(e){ console.warn('[seed-autosync] 예외(무시)', e); }
-}
 
 function pushSeedItemsToSheet(){
   if(!ONLINE){ try{ if(typeof alert==='function') alert('오프라인 — 시드 동기화 불가'); }catch(e){} return Promise.resolve(); }
