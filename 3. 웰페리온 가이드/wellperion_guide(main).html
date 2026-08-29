@@ -6876,11 +6876,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
          4층(문서고). 실장이 화면을 열면 오늘→주→월→문서고 순서로 훑는다.
          RAW_BASE·CHECK_API·TODO_API·withTimeout 패턴은 위 IIFE와 동일 — 이 블록은
          별도 script 태그라 상수만 최소 재선언(충돌 없는 별도 스코프, 로직 복제 아님). ══════════════ -->
-    <details id="o1-week-section" style="margin:22px 0;">
-      <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:1.05rem;font-weight:700;">
-        <span>📅 이번 주</span>
-        <span id="o1-week-summary-count" style="font-size:11px;font-weight:600;color:var(--dim);"></span>
-      </summary>
+    <details id="o1-week-section" style="margin:22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+      <summary style="cursor:pointer;padding:14px 18px;font-size:1.05rem;font-weight:700;"><span style="display:inline-flex;justify-content:space-between;align-items:center;gap:10px;width:calc(100% - 26px);vertical-align:middle;"><span>📅 이번 주</span><span id="o1-week-summary-count" style="font-size:11px;font-weight:600;color:var(--dim);"></span></span></summary>
       <div style="padding-top:6px;">
         <div id="o1-week-good" style="margin-bottom:10px;"></div>
         <div id="o1-week-table"></div>
@@ -6888,11 +6885,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
     </details>
 
-    <details id="o1-month-section" style="margin:22px 0;">
-      <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:1.05rem;font-weight:700;">
-        <span>🗓️ 이번 달</span>
-        <span id="o1-month-summary-count" style="font-size:11px;font-weight:600;color:var(--dim);"></span>
-      </summary>
+    <details id="o1-month-section" style="margin:22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+      <summary style="cursor:pointer;padding:14px 18px;font-size:1.05rem;font-weight:700;"><span style="display:inline-flex;justify-content:space-between;align-items:center;gap:10px;width:calc(100% - 26px);vertical-align:middle;"><span>🗓️ 이번 달</span><span id="o1-month-summary-count" style="font-size:11px;font-weight:600;color:var(--dim);"></span></span></summary>
       <div style="padding-top:10px;">
         <div id="o1-month-goals" style="margin-bottom:14px;"></div>
         <div id="o1-month-eval" style="margin-bottom:14px;"></div>
