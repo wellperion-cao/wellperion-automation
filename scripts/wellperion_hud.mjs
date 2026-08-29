@@ -88,7 +88,10 @@ function readStdin() { try { return readFileSync(0, 'utf8'); } catch { return '{
 //   → 비용·사용량은 초 단위로 급변하는 값이 아니다. 짧게 캐시해 재사용한다.
 //     캐시가 살아있으면 프로세스를 아예 안 띄우므로 상태줄이 상한 안에 안정적으로 들어온다.
 //   ※ OMC HUD 파일 자체는 여전히 건드리지 않는다(업데이트 시 덮어써짐 — 이 파일 상단 원칙).
-const OMC_CACHE_TTL_MS = 15000;               // 15초 — 비용 표시가 최대 15초 늦을 뿐, 값은 정확
+// ★60초 (2026-08-29 상향 · 종전 15초). OMC HUD 한 번 도는 데 실측 55초가 걸린다 — 15초 만료면
+//   배경 새로고침이 끝나기도 전에 다음 만료가 와서 55초짜리 프로세스를 쉼 없이 띄운다.
+//   갱신 주기를 한 번 도는 시간보다 길게 잡아 겹치지 않게 한다(값은 최대 60초 늦을 뿐 정확).
+const OMC_CACHE_TTL_MS = 60000;
 // ★2026-08-29 웰리 실측 확정 — OMC HUD 5.0.2 를 이 세션 대화기록(2.5MB)으로 직접 돌리면 55.5초
 //   걸린다(usage-api 네트워크 호출 탓). omcHud() 의 옛 spawnSync timeout 은 2500ms 라 매번
 //   타임아웃 → out='' 이 캐시에 박혀 토큰·ctx 줄이 영영 안 나왔다. 캐시 설계는 맞고 채울 길이
@@ -1331,7 +1334,15 @@ if (process.argv[2] === '--omc-refresh') {
     out = (r.stdout || '').replace(/\s+$/, '');
     if (isOmcBanner(out)) out = '';
   } catch { /* out = '' 유지 — 다음 새로고침이 다시 시도 */ }
-  _updateOmcCache((s) => { s[key] = { at: Date.now(), out }; });
+  // ★빈손이면 직전 성공값을 지우지 않는다 (GM 지적 2026-08-29 "또 변경되네? 버그야?").
+  //   OMC HUD 가 90초 안에 못 끝내거나 실패하면 out='' 인데, 그걸 그대로 덮어쓰면 다음 렌더가
+  //   빈 문자열을 내보내 **OMC 줄이 통째로 사라졌다가 한참 뒤 다시 나타난다** — 그게 GM 이 본
+  //   깜빡임이다. 실패는 조용히 넘기고 값은 옛것을 유지한다(늦은 값 > 없는 값).
+  _updateOmcCache((s) => {
+    const prev = s[key] || {};
+    s[key] = out ? { at: Date.now(), out }
+                 : { ...prev, at: Date.now(), out: prev.out || '' };
+  });
 } else {
   main();
 }
