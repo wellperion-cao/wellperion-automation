@@ -3303,40 +3303,188 @@ def run_weekly_ops_report() -> None:
 #   GM: "이승기 대표님에게 7:00 오전에 항상 강습 브랜드 관련 필요한 정보를 그리고
 #   가려운데를 정리해서 보내줄 수 있어?" 첫 발신(2026-08-26 09:17)은 GM 승인 후 수동
 #   호출로 나갔다 — 이 잡은 그 반복분을 배선한다.
-#   ★내용 원천이 아직 없다(시모 배790 브랜드 가이드 1단계 대기) — 원고를 새로 만들지
-#   않고, 누가 채워 넣을 단일 파일(DIET_CAMP_DRAFT)을 읽는다. 파일이 없거나 비어 있으면
-#   빈 메시지를 보내는 대신 이번 회차를 조용히 건너뛴다(로그만 남김).
-#   방은 kakao_rooms.json 에 이미 등재돼 있고(category=대외 · 매출보고 rooms[] 미포함),
-#   HUMAN_APPROVAL_ROOMS 밖이라 --sender 없이도 통과하지만, 정기 자동 발송은 전부
-#   --sender 로 주체를 밝히는 관례를 그대로 따른다(kakao_report_sender.AUTO_PIPELINE_SENDERS
-#   에 "다이어트캠프정기발신" 등록 — 약속 L21, 새 관문 안 만듦).
+#   [2026-08-29 확장 — GM 지시] 단발 발신 → 회차 진행형 문답으로. 원고는 다른 작업자가
+#   status/drafts/다이어트캠프_0700/01.md~07.md + 재문의.md 로 채운다(이 잡은 원고를
+#   쓰지 않고 회차대로 읽어 보내기만 한다). 회차 진행·답 수신 여부는 새 폴더·모듈 없이
+#   상태 파일 하나(DIET_CAMP_STATE)로만 기억한다(약속 L21). 답 읽기는 새 수신 경로를
+#   만들지 않고 kakao_room_listen.py 가 ★중간관리자에 쓰는 것과 같은 방식으로
+#   scripts/kakao_export_chat.py 를 그대로 재사용한다. 방은 kakao_rooms.json 에
+#   이미 등재돼 있고(category=대외), 정기 자동 발송은 --sender 로 주체를 밝히는 관례를
+#   그대로 따른다(kakao_report_sender.AUTO_PIPELINE_SENDERS 의 "다이어트캠프정기발신").
 DIET_CAMP_ROOM = "다이어트캠프 이승기 대표님"
-DIET_CAMP_DRAFT = STATUS_DIR / "drafts" / "다이어트캠프_0700.md"
+DIET_CAMP_DRAFT_DIR = STATUS_DIR / "drafts" / "다이어트캠프_0700"
+DIET_CAMP_REQUERY = DIET_CAMP_DRAFT_DIR / "재문의.md"
+DIET_CAMP_STATE = STATUS_DIR / "diet_camp_relay.json"
+DIET_CAMP_ROUNDS = 7
+DIET_CAMP_MAX_REQUERY = 2  # 같은 회차 재문의는 최대 2번 — 그 다음엔 재촉이 된다, 다음 회차로 넘어간다
+# 카톡 내보내기 한 줄 형식 — kakao_room_listen.py 의 LINE/DAY 패턴과 동일(정본 복제 아님,
+# 이 방 전용 파서라 별도 모듈로 빼지 않는다).
+DIET_CAMP_LINE = re.compile(r"^\[(?P<who>[^\]]+)\]\s*\[(?P<when>[^\]]+)\]\s*(?P<text>.*)$")
+DIET_CAMP_DAY = re.compile(r"^-{3,}\s*(?P<y>\d{4})년\s*(?P<m>\d{1,2})월\s*(?P<d>\d{1,2})일.*-{3,}$")
+
+
+def _diet_camp_state() -> dict:
+    try:
+        return json.loads(DIET_CAMP_STATE.read_text(encoding="utf-8"))
+    except Exception:
+        # enabled 기본값 False — 사람이 상태 파일에서 true 로 켜기 전엔 절대 발신 안 함
+        # (2026-08-29 사고 후 GM/team-lead 결정 — 원고 폴더가 채워지는 중에 회차 상태기계가
+        # 검증 중 실제 발신을 태운 사고가 있었다).
+        return {"round": 0, "date": "", "requery_count": 0, "reply_received": False,
+                "replies": [], "enabled": False}
+
+
+def _diet_camp_save(st: dict) -> None:
+    DIET_CAMP_STATE.write_text(json.dumps(st, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _diet_camp_extract_reply(text: str, since_date: str) -> str | None:
+    """내보낸 대화에서 since_date 이후 · 김남욱(GM) 이외 발화의 마지막 줄을 답으로 본다.
+    이 방 구성원은 이승기 대표·김남욱 GM 둘뿐이다(kakao_rooms.json all_rooms members)."""
+    day, last = "", None
+    for raw in text.splitlines():
+        d = DIET_CAMP_DAY.match(raw.strip())
+        if d:
+            day = f"{d.group('y')}-{int(d.group('m')):02d}-{int(d.group('d')):02d}"
+            continue
+        m = DIET_CAMP_LINE.match(raw.strip())
+        if m and day >= since_date and m.group("who").strip() != "김남욱":
+            last = m.group("text").strip()
+    return last or None
+
+
+def _diet_camp_check_reply(since_date: str) -> str | None:
+    """다이어트캠프 방 대화를 내보내 이승기 대표님 답을 확인한다. 새 수신 경로를 만들지
+    않고 기존 kakao_export_chat.py 를 그대로 부른다(약속 L21)."""
+    try:
+        r = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "kakao_export_chat.py"),
+             "--room", DIET_CAMP_ROOM],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=120,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+        )
+        tail = (r.stdout or "").strip().splitlines()
+        if r.returncode != 0 or not tail or not tail[-1].startswith("DONE:"):
+            logger.warning(f"[다이어트캠프] 대화 내보내기 실패 — {tail[-1] if tail else '(출력없음)'}")
+            return None
+        out_path = Path(tail[-1].partition("—")[-1].strip())
+        return _diet_camp_extract_reply(out_path.read_text(encoding="utf-8", errors="replace"), since_date)
+    except Exception as e:
+        logger.warning(f"[다이어트캠프] 답 확인 예외: {e}")
+        return None
+
+
+def _diet_camp_send(text: str, label: str) -> bool:
+    sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+    proc = subprocess.run(
+        [sys.executable, str(sender), "--message", text, "--only-room", DIET_CAMP_ROOM,
+         "--sender", "다이어트캠프정기발신"],
+        cwd=str(REPO_ROOT), capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=180,
+        env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+    )
+    tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+    logger.info(f"{label} 카톡 {DIET_CAMP_ROOM} 발송: {tail[0]}")
+    if proc.returncode != 0:
+        _kakao_fail_notify(label, tail[0], room=DIET_CAMP_ROOM)
+    return proc.returncode == 0
+
+
+def _diet_camp_notify_gm(msg: str, state: str) -> None:
+    """답 도착·회차 종료를 AI 진행현황방에 한 줄. 발신 도구는 notify_gm_progress.py 하나뿐
+    (약속 L21 — 새 알림 경로 안 만듦)."""
+    try:
+        subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "notify_gm_progress.py"),
+                         msg, "--ship", "시토 11022", "--state", state],
+                        capture_output=True, text=True, encoding="utf-8",
+                        cwd=str(REPO_ROOT), timeout=60)
+    except Exception as e:
+        logger.warning(f"[다이어트캠프] GM 알림 실패: {e}")
 
 
 def run_diet_camp_morning() -> None:
     label = "[다이어트캠프 07시]"
     try:
-        text = ""
-        if DIET_CAMP_DRAFT.exists():
-            text = DIET_CAMP_DRAFT.read_text(encoding="utf-8").strip()
-        if not text:
-            logger.info(f"{label} 발신 원고 없음({DIET_CAMP_DRAFT}) — 이번 회차 생략(빈 메시지 방지)")
+        st = _diet_camp_state()
+        if not st.get("enabled", False):
+            # ★잠금(2026-08-29 사고 후 team-lead 결정) — status/diet_camp_relay.json 의
+            # enabled 를 사람이 true 로 바꾸기 전엔 회차를 진행하지 않는다. 이 검사가
+            # 함수 맨 앞에 있어야 한다 — 아래 어떤 분기도 이 줄보다 먼저 발신을 태우면 안 된다.
+            logger.info(f"{label} 잠금 상태(enabled=false) — 사람이 켜기 전까지 발신 중지")
             return
-        sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
-        proc = subprocess.run(
-            [sys.executable, str(sender), "--message", text, "--only-room", DIET_CAMP_ROOM,
-             "--sender", "다이어트캠프정기발신"],
-            cwd=str(REPO_ROOT), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=180,
-            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
-        )
-        tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
-        logger.info(f"{label} 카톡 {DIET_CAMP_ROOM} 발송: {tail[0]}")
-        if proc.returncode != 0:
-            _kakao_fail_notify("다이어트캠프 07시 정기발신", tail[0], room=DIET_CAMP_ROOM)
+        if st.get("done"):
+            return  # 7회차 발신 끝 — 더 돌지 않는다(무한 반복 금지)
+        round_no = st.get("round", 0)
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        if round_no == 0:
+            advance = True
+        elif st.get("reply_received"):
+            advance = True
+        else:
+            reply = _diet_camp_check_reply(st.get("date") or today)
+            if reply:
+                st["reply_received"] = True
+                st.setdefault("replies", []).append(
+                    {"round": round_no, "reply": reply, "reply_date": today})
+                _diet_camp_save(st)
+                _diet_camp_notify_gm(f"다이어트캠프 {round_no}회차 답변 도착 — {reply[:60]}", "doing")
+                advance = True
+            elif st.get("requery_count", 0) < DIET_CAMP_MAX_REQUERY:
+                if DIET_CAMP_REQUERY.exists():
+                    text = DIET_CAMP_REQUERY.read_text(encoding="utf-8").strip()
+                    if text and _diet_camp_send(text, f"{label} {round_no}회차 재문의"):
+                        st["requery_count"] = st.get("requery_count", 0) + 1
+                        _diet_camp_save(st)
+                else:
+                    logger.info(f"{label} 재문의.md 없음({DIET_CAMP_REQUERY}) — 재문의 생략")
+                return  # 답 대기 계속 — 다음 회차로 넘어가지 않는다
+            else:
+                advance = True  # 재문의 2회 소진 — 답 없이 다음 회차로
+
+        next_round = round_no + 1
+        if next_round > DIET_CAMP_ROUNDS:
+            st["done"] = True
+            _diet_camp_save(st)
+            n_replies = len(st.get("replies", []))
+            logger.info(f"{label} {DIET_CAMP_ROUNDS}회차 완료 — 발신 종료, 답변 {n_replies}건 보관")
+            _diet_camp_notify_gm(
+                f"다이어트캠프 {DIET_CAMP_ROUNDS}회차 발신 종료 — 답변 {n_replies}건 수집, "
+                "브랜드 가이드 재료로 대기", "done")
+            return
+        draft = DIET_CAMP_DRAFT_DIR / f"{next_round:02d}.md"
+        if not draft.exists():
+            logger.info(f"{label} {next_round}회차 원고 없음({draft}) — 이번 회차 생략")
+            return
+        text = draft.read_text(encoding="utf-8").strip()
+        if not text:
+            logger.info(f"{label} {next_round}회차 원고 비어있음 — 이번 회차 생략")
+            return
+        if _diet_camp_send(text, f"{label} {next_round}회차"):
+            st["round"] = next_round
+            st["date"] = today
+            st["requery_count"] = 0
+            st["reply_received"] = False
+            _diet_camp_save(st)
     except Exception as e:
         logger.error(f"{label} 예외: {e}")
+
+
+def _diet_camp_selfcheck() -> None:
+    """자체 점검 — 답 파서가 GM 본인 발화·옛 날짜를 답으로 잘못 줍지 않는지."""
+    sample = (
+        "--------------- 2026년 8월 29일 토요일 ---------------\n"
+        "[김남욱] [오전 7:00] (1회차 발신)\n"
+        "--------------- 2026년 8월 30일 일요일 ---------------\n"
+        "[이승기] [오전 9:12] 좋은데 색은 좀 더 밝게 가고 싶어\n"
+        "[김남욱] [오전 9:20] 넵 반영할게요\n"
+    )
+    assert _diet_camp_extract_reply(sample, "2026-08-30") == "좋은데 색은 좀 더 밝게 가고 싶어"
+    assert _diet_camp_extract_reply(sample, "2026-08-31") is None, "since_date 이후만 잡아야 한다"
+    assert _diet_camp_extract_reply("[김남욱] [오전 9:00] 혼자 얘기\n", "2026-01-01") is None, \
+        "GM 본인 발화는 답으로 치지 않는다"
+    print("[OK] 다이어트캠프 답 파서 자체 점검 통과")
 
 
 def run_stream_3_mgmt() -> None:
