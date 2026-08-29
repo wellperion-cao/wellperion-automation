@@ -951,12 +951,20 @@ AUTO_PIPELINE_SENDERS = {
 }
 SENDER_WELLY = "웰리"
 
+# 테스트 꼬리표 — 사람 방 절대 금지(2026-08-29 실사고 후속: 10:42 ★운영부에 테스트 발신
+# + 10:43 정정문 두 통이 실무진에게 나갔다). 테스트는 업무보고방(--test 재경로)으로만 —
+# GM 확정 규칙. 화이트리스트·웰리 표기와 무관하게 이 꼬리표가 붙으면 사람 방은 막는다.
+_TEST_SENDER_RE = re.compile(r"테스트|test|tmp|샘플|smoke", re.IGNORECASE)
+
 
 def _sender_gate_ok(room_name: str, sender: str) -> bool:
     """사람 방(HUMAN_APPROVAL_ROOMS)이 아니면 발신 주체와 무관하게 항상 통과.
-    사람 방이면 웰리 본인이거나 이미 화이트리스트에 오른 자동 발송일 때만 통과."""
+    사람 방이면 웰리 본인이거나 이미 화이트리스트에 오른 자동 발송일 때만 통과.
+    테스트 꼬리표(_TEST_SENDER_RE)는 어떤 경우에도 사람 방 불가."""
     if room_name not in HUMAN_APPROVAL_ROOMS:
         return True
+    if _TEST_SENDER_RE.search(sender or ""):
+        return False
     return sender == SENDER_WELLY or sender in AUTO_PIPELINE_SENDERS
 
 
@@ -974,7 +982,11 @@ def _selfcheck_sender_gate() -> None:
     assert _sender_gate_ok("★운영+시설+지원+주차", "점검접수정리") is True
     assert _sender_gate_ok("★운영+시설+지원+주차", "접수전달") is True
     assert _sender_gate_ok("★부서장", "아무개") is False, "화이트리스트 밖 주체는 막혀야 한다"
-    print("[selfcheck] _sender_gate_ok OK — 사람 방 4곳(★중간관리자·★운영부·★부서장·★운영+시설+지원+주차) 전부 확인")
+    # 테스트 태그는 사람 방으로 못 간다(2026-08-29 실사고 후속) — 웰리 표기가 섞여도 금지.
+    for room in ("★중간관리자", "★운영부", "★부서장", "★운영+시설+지원+주차"):
+        for tag in ("테스트", "웰리테스트", "smoke-test", "tmp발신", "샘플카드"):
+            assert _sender_gate_ok(room, tag) is False, f"{room} — 테스트 태그({tag})는 사람 방 금지"
+    print("[selfcheck] _sender_gate_ok OK — 사람 방 4곳 + 테스트 태그 금지까지 확인")
 
 
 # ── 명단 마스킹(GM 확정 2026-08-28 — "김남* 이렇게 하는건 어때? 연락처는 010-****-1531") ──
@@ -1880,6 +1892,9 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true",
                      help="방 열기+클립보드+미리보기까지만, 실제 전송(Enter) 안 함")
     ap.add_argument("--only-room", default=None, help="지정한 방 1개만 처리(검증용)")
+    ap.add_argument("--test", action="store_true",
+                    help="테스트 발신 — 카톡에 일절 손대지 않고 본문을 텔레그램 업무보고방"
+                         "(8254867551)으로만 보낸다(GM 확정: 테스트는 항상 그 방).")
     ap.add_argument("--sender", default="",
                      help="이 발신을 실제로 작성한 주체 — 사람 방(★중간관리자·★운영부) 발신 가드용. "
                           "'웰리' 또는 정기 자동 발송 이름(AUTO_PIPELINE_SENDERS). 미지정 시 사람 방은 막힌다.")
@@ -1901,6 +1916,26 @@ def main() -> int:
     if not args.image and not args.from_folder and not args.message:
         print("BLOCKED: --image, --from-folder, --message 중 하나는 필수입니다.")
         return 1
+
+    # ── 테스트 재경로 (2026-08-29 실사고 후속) — 테스트는 업무보고방으로만(GM 확정) ──
+    #   10:42 ★운영부에 테스트 발신 + 10:43 정정문 두 통이 실무진에게 나간 사고의 근본 봉쇄.
+    #   --test 면 카톡 창·방 목록에 아예 접근하지 않고 텔레그램 업무보고방으로만 보낸다.
+    if args.test:
+        try:
+            agents_dir = str(ROOT / "wellperion-agents")
+            if agents_dir not in sys.path:
+                sys.path.insert(0, agents_dir)
+            from telegram_notifier import TelegramNotifier
+            body = (args.message or args.caption or "").strip()
+            img_line = f"\n(이미지 파일: {args.image})" if args.image else ""
+            msg = (f"🧪 [테스트 발신] 원래 대상 방 = {args.only_room or '(전체)'} — 카톡 미접촉\n\n"
+                   f"{body}{img_line}")
+            TelegramNotifier().send(msg)
+            print("DONE: 테스트 발신 — 텔레그램 업무보고방으로만 전송(카톡·실무진 방 미접촉)")
+            return 0
+        except Exception as exc:
+            print(f"BLOCKED: 테스트 발신 실패({exc}) — 카톡으로 폴백하지 않는다")
+            return 1
 
     cfg = load_rooms_config()
     gas_rooms = fetch_rooms_from_gas()
