@@ -493,6 +493,7 @@ a { color:var(--accent); text-decoration:none; }
 
       <h3>⑥ 기한 초과란</h3>
       <p>카드 상단 배지가 기한 상태를 보여줍니다 — <b>정상</b>(회색) → <b>임박</b>(주황) → <b>초과</b>(빨강, "+N시간/N일"). 카테고리마다 기본 기한이 있고, 카드마다 「기한(일)」 칸에 숫자를 넣어 그 건만 따로 조정할 수 있습니다(비우면 기본값 적용).</p>
+      <p><b>분실물은 3단계입니다</b>(2026-08-29 확정) — <b>보관 중</b>(0~30일) → <b>공지 중</b>(30~60일) → <b>이관·폐기 대상</b>(60일~). 60일이 지나면 습득물 처분 트랙(경찰인계/폐기)으로 이관 표시와 함께 자동 종결됩니다.</p>
 
       <h3>⑦ 분실물·습득물은 흐름이 다릅니다</h3>
       <p><b>📦 분실물 접수</b>는 다른 카테고리와 같습니다(③의 3단계 그대로). 회원의 신고를 접수해 처리합니다.</p>
@@ -862,6 +863,11 @@ function _renderSummary(rows){
 /* ── SLA 배지 (서버 slaStatus/remainH/deadline 기준) ── */
 function _slaBadge(r){
   var st = String(r.slaStatus||'');
+  /* 분실물 3단계(GM 확정 2026-08-29) — 서버(_regLostStage)가 보관/공지 중/이관대상을 내려준다.
+     30일만 넘으면 전부 빨간 '초과'로 뭉뚱그리던 것을 단계별로 가른다. 60일 초과는 서버가 자동 종결. */
+  if(st==='보관')   return '<span class="card-sla" style="background:var(--border);color:var(--dim);">보관 중</span>';
+  if(st==='공지 중') return '<span class="card-sla" style="background:var(--orange-bg);color:var(--orange);">공지 중</span>';
+  if(st==='이관대상') return '<span class="card-sla" style="background:var(--red-bg);color:var(--red);">이관·폐기 대상</span>';
   if(st!=='정상' && st!=='임박' && st!=='초과') return '';
   var rem = (r.remainH===null||r.remainH===undefined) ? null : Number(r.remainH);
   var bg, color, txt;

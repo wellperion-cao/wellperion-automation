@@ -439,6 +439,54 @@ function _regMask(row, staffPhoto) {
   return out;
 }
 
+// ─── 분실물 접수 3단계 마감 (GM 확정 2026-08-29 "30일보관 → 30일공지 → LOST 규정대로 이관 및 폐기") ───
+// 처분 자체(경찰인계/폐기)는 습득물 2트랙 규정이 담당한다(docs/superpowers/specs/
+// 2026-07-18-lostfound-2track-disposal.md · 빈 카테고리=경찰인계가 안전 기본값). 여기서는
+// 신고(접수) 쪽이 그 트랙으로 '이관됐다'는 사실만 적고 닫는다 — 임의 '폐기' 표기 금지.
+var LOST_KEEP_HOURS = 720;      // 0~30일 = 보관
+var LOST_NOTICE_HOURS = 1440;   // 30~60일 = 공지 중 · 60일부터 = 이관·폐기 대상(접수 종결)
+
+function _regLostStage(elapsedH) {
+  if (elapsedH < LOST_KEEP_HOURS) return '보관';
+  if (elapsedH < LOST_NOTICE_HOURS) return '공지 중';
+  return '이관대상';
+}
+
+// 경계값 자체 점검(29·30·59·60·61일) — GAS 에디터에서 실행하면 통과 시 'OK 7/7'.
+function _regSelftestLostStage() {
+  var cases = [[29 * 24, '보관'], [30 * 24 - 1, '보관'], [30 * 24, '공지 중'],
+               [59 * 24, '공지 중'], [60 * 24 - 1, '공지 중'], [60 * 24, '이관대상'], [61 * 24, '이관대상']];
+  for (var i = 0; i < cases.length; i++) {
+    var got = _regLostStage(cases[i][0]);
+    if (got !== cases[i][1]) throw new Error('lostStage(' + cases[i][0] + 'h)=' + got + ' ≠ ' + cases[i][1]);
+  }
+  return 'OK 7/7';
+}
+
+// 60일(공지 종료) 넘은 분실물 신고 자동 종결 — 기존 30분 SLA 트리거(_regSlaCheckTrigger)에 편승.
+// dryRun=true(기본)면 대상만 세고 쓰지 않는다. 처리메모는 덮지 않고 뒤에 덧붙인다.
+function _regCloseExpiredLost(dryRun) {
+  if (dryRun === undefined) dryRun = true;
+  var rows = JSON.parse(_regList({}).getContent()).data || [];
+  var now = new Date();
+  var closed = [];
+  rows.forEach(function (r) {
+    if (String(r.category || '').indexOf('분실물') < 0) return;
+    if (String(r.status || '') === '완료') return;
+    var m = String(r.createdAt || '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+    if (!m) return;
+    var elapsedH = (now.getTime() - new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime()) / 3600000;
+    if (elapsedH < LOST_NOTICE_HOURS) return;
+    var memo = (String(r.memo || '').trim() ? String(r.memo).trim() + '\n' : '') +
+      '[자동 종결 ' + Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd') + '] 60일 경과 — ' +
+      '습득물 처분 트랙 이관 대상(규정 2026-07-18 2트랙 · 빈 카테고리=경찰인계 기본). ' +
+      '처분 결과는 습득물 원장에서 관리.';
+    if (!dryRun) _regUpdate({ id: r.regId, category: 'lost', status: '완료', memo: memo });
+    closed.push(String(r.regId || ''));
+  });
+  return { ok: true, dryRun: dryRun, closed: closed.length, ids: closed };
+}
+
 // ─── SLA(처리기한) 계산 — 카드 객체에 기한/남은시간/상태 부여 ───
 // SSOT = REG_CATEGORIES[].slaHours. 보드에 하드코딩 금지.
 // 규칙: 완료 상태 → 계산 제외(sla='완료'). slaHours=null(칭찬 등) → slaStatus='-'(SLA 없음).
@@ -487,6 +535,14 @@ function _regComputeSla(row) {
 
   out.deadline = Utilities.formatDate(deadline, 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
   out.remainH = Math.round(remainH * 10) / 10;
+
+  // ─── 분실물은 초과가 아니라 3단계다 (GM 확정 2026-08-29 "30일보관 → 30일공지 → LOST 규정대로
+  //     이관 및 폐기"). 30일만 넘으면 전부 빨간 '초과'로 뭉뚱그려져 열린 신고 20건이 최장 52일째
+  //     쌓였다 — 단계가 보여야 다음 행동(공지·이관)이 보인다. 종결 자체는 _regCloseExpiredLost. ───
+  if (cat && cat.key === 'lost') {
+    out.slaStatus = _regLostStage((now.getTime() - created.getTime()) / 3600000);
+    return out;
+  }
 
   if (remainH < 0) {
     out.slaStatus = '초과';
@@ -586,6 +642,8 @@ function _regNotifySlaOverdue(dryRun) {
 // 시간 트리거 핸들러(실발송 고정) — installReceptionSlaTrigger()가 이 함수를 30분 주기로 건다.
 function _regSlaCheckTrigger() {
   _regNotifySlaOverdue(false);
+  // 분실물 60일 초과 자동 종결(GM 확정 2026-08-29) — 실패해도 SLA 알림은 이미 나갔다.
+  try { _regCloseExpiredLost(false); } catch (e) {}
 }
 
 // 트리거 설치(멱등 — 기존 동일 핸들러 있으면 스킵). 배포 1회성 설치용, GAS 에디터 실행 또는
