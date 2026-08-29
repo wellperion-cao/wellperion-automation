@@ -6968,11 +6968,62 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     .ops-board-cat{margin-bottom:6px}
     .ops-board-cat-label{font-size:11px;font-weight:700;color:var(--dim);margin-bottom:2px}
     .ops-board-line{font-size:12.5px;line-height:1.6;padding:3px 0}
+    /* ── 편집·저장 UI 복원 (운영부 체계.html 편집 로직 → O1, 2026-08-29) — 클래스명 원본 유지, 충돌 없음 확인 완료 ── */
+    .board-col{background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px}
+    .board-col-head{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:var(--bg)}
+    .board-col-head .bday{font-weight:800}
+    .board-col-body{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+    .day-type{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;margin-left:auto}
+    .day-type.weekday{background:var(--blue-bg);color:var(--blue)}
+    .dv-cell{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+    .dv-cell.male{border-left:4px solid var(--blue)}
+    .dv-cell.female{border-left:4px solid var(--orange)}
+    .dv-cell.outer{border-left:4px solid var(--green)}
+    .dv-cell-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;gap:8px}
+    .dv-cell-label{font-size:14px;font-weight:800}
+    .dv-cell-label.male{color:var(--blue)}
+    .dv-cell-label.female{color:var(--orange)}
+    .dv-cell-label.outer{color:var(--green)}
+    .dv-edit-btn{font-size:12px;font-weight:700;padding:5px 13px;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--paper);color:var(--accent);border:1px solid var(--accent)}
+    .dv-edit-btn:hover{background:var(--accent-bg)}
+    .dv-edit-btn.save{background:var(--green-bg);color:var(--green);border-color:rgba(106,191,123,0.4)}
+    .dv-edit-btn.cancel{background:var(--paper);color:var(--dim);border-color:var(--border)}
+    .dv-empty{font-size:13px;color:var(--dim);font-style:italic;padding:4px 0}
+    .dv-cell.editing .dv-body{display:none}
+    .dv-edit-hint{font-size:11.5px;color:var(--dim);margin-top:7px;display:none;line-height:1.5}
+    .dv-cell.editing .dv-edit-hint{display:block}
+    .pol-line{font-size:13.5px;line-height:1.6;color:var(--text);padding:3px 0}
+    .pol-line+.pol-line{border-top:1px solid var(--border)}
+    .pol-edit{display:none;margin-top:4px}
+    .dv-cell.editing .pol-edit{display:block}
+    .pol-edit-lab{display:block;font-size:11px;font-weight:700;color:var(--accent);margin:8px 0 4px}
+    .pol-edit-title,.pol-edit-body{width:100%;background:var(--paper);border:1.5px solid var(--accent);color:var(--text);padding:8px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+    .pol-edit-body{resize:vertical;min-height:80px}
+    .pol-del-btn{margin-top:10px;font-size:12px;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--red-bg);color:var(--red);border:1px solid rgba(237,91,63,0.4)}
+    .dv-g-addrow{margin-top:8px;font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:inherit;background:var(--green-bg);color:var(--green);border:1px dashed rgba(106,191,123,0.5)}
+    .dv-grid{display:none;margin:8px 0 0}
+    .dv-cell.editing .dv-grid{display:block}
+    .dv-grid-table{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+    .dv-grid-table col.dv-g-timecol{width:38%}
+    .dv-grid-table col.dv-g-delcol{width:30px}
+    .dv-grid-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+    .dv-grid-th{background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:11px;text-align:left;padding:5px 7px;border:1px solid var(--border)}
+    .dv-g-time,.dv-g-task{width:100%;background:var(--bg);border:none;color:var(--text);padding:6px 7px;font-size:12.5px;font-family:inherit;resize:none}
+    .dv-g-time:focus,.dv-g-task:focus{outline:none;background:var(--accent-bg)}
+    .dv-g-del{width:100%;height:100%;min-height:34px;background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px}
+    .dv-g-del:hover{background:var(--red-bg)}
+    .day-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+    .day-tab{padding:7px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--paper);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+    .day-tab.is-weekend{color:var(--accent)}
+    .day-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .day-tab.day-all{border-style:dashed;color:var(--accent)}
+    .day-tab.day-all.active{background:var(--accent-bg);color:var(--accent);border-style:solid}
     </style>
     <details id="o1-docs-archive" style="margin:22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;">
       <summary style="cursor:pointer;padding:14px 18px;font-size:1.05rem;font-weight:700;">📂 운영부 문서고 (규정·가이드·매뉴얼·채용)</summary>
       <div style="padding:2px 18px 18px;">
-        <div style="font-size:11.5px;color:var(--dim);margin-bottom:14px;">「운영부 체계」 규정·가이드·매뉴얼·채용 탭 내용을 여기로 옮겼다(2026-08-29 GM 승인) — 조회 전용, 편집은 없음.</div>
+        <div style="font-size:11.5px;color:var(--dim);margin-bottom:6px;">「운영부 체계」 규정·가이드·매뉴얼·채용 탭 내용을 여기로 옮겼다(2026-08-29 GM 승인) — 규정·가이드·요일별 업무 보드는 편집·저장 가능, 매뉴얼 원문·채용 현황은 조회 전용.</div>
+        <div id="opsmSaveInd" style="display:none;font-size:11px;font-weight:700;color:var(--accent);margin-bottom:10px;"></div>
         <details style="margin-bottom:10px;">
           <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">📋 운영부 규정</summary>
           <div id="o1-doc-policy" style="padding:10px 4px;color:var(--dim);font-size:13px;">펼치면 불러옵니다…</div>
@@ -7296,7 +7347,8 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         <details style="margin-top:10px;">
           <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">📅 요일별 업무 보드</summary>
           <div style="padding:10px 4px;">
-            <div class="board-intro">조회 전용 — 요일별 오전 응대·오후 응대·상시 업무를 한눈에 봅니다. 편집 기능은 운영부 체계.html과 함께 정리되어 이관하지 않았다(백엔드 저장값을 그대로 읽어 보여준다).</div>
+            <div class="board-intro">요일 버튼으로 볼 요일을 고르고, 각 칸의 <b>편집</b>으로 시간대·내용을 표에서 바로 고쳐 저장합니다(모든 기기 반영). 최초 편집 시 비밀번호를 한 번 확인합니다.</div>
+            <div id="ops-day-toolbar" class="day-toolbar"></div>
             <div id="o1-ops-board" style="color:var(--dim);font-size:13px;">펼치면 불러옵니다…</div>
           </div>
         </details>
@@ -7452,10 +7504,22 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       loadMonth();
 
       /* ── 4층 · 문서고 (펼칠 때만 로드 — 평소엔 조회 안 함) ── */
-      function docCard(title, body){
-        var lines = String(body||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
-        var b = lines.length ? lines.map(function(l){return '<div style="padding:2px 0;">'+l+'</div>';}).join('') : '<div style="color:var(--dim);font-style:italic;">내용 없음</div>';
-        return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;"><div style="font-weight:700;margin-bottom:4px;">'+title+'</div><div style="font-size:12.5px;line-height:1.6;">'+b+'</div></div>';
+      /* ── 편집 게이트(4개 부서 체계.html과 동일 비밀번호 — 사이트 공통 관례) ── */
+      function requireEditAuth(){
+        if(sessionStorage.getItem('editAuth')==='1') return true;
+        var pw = prompt('항목 편집 비밀번호를 입력하세요');
+        if(pw !== '1234'){ if(pw !== null) alert('비밀번호가 틀립니다.'); return false; }
+        sessionStorage.setItem('editAuth','1');
+        return true;
+      }
+      /* ── 백엔드 저장 공용(규정·가이드·요일별 업무 3보드 공용 — board_sync.js push()와 동일 방식) ── */
+      function persistOpsBoard(key, data, label){
+        var ind=document.getElementById('opsmSaveInd');
+        if(ind){ ind.style.display='block'; ind.textContent=label+' 저장 중...'; }
+        fetch(CHECK_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+          body:JSON.stringify({action:'saveBoard', key:key, board:data})
+        }).then(function(){ if(ind){ ind.textContent=label+' 저장 완료'; setTimeout(function(){ind.style.display='none';},1500); } })
+          .catch(function(){ if(ind){ ind.textContent=label+' 저장 실패 — 다시 시도'; setTimeout(function(){ind.style.display='none';},2500); } });
       }
       var POLICY_SEED = {
         ops:[
@@ -7477,26 +7541,192 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         {title:'복장·용모', body:'유니폼 → 웰페리온 지급 유니폼 착용 / 청결 유지\n명찰 → 항상 패용 / 좌측 가슴\n신발 → 미끄럼 방지 안전화 / 실외화 구역 내 착용 금지'},
         {title:'구역별 관리 기준', body:'리셉션 카운터 → PC·전화·POS 정상 / 안내물·비품 충분 / 카운터 청결 유지\n대기·로비 공간 → 좌석 청결·정돈 / 음료·안내물 보충 / 방문객 안내 즉시\n입구·안내 표지 → 운영시간 표지 정상 / 현수막·안내판 위치·상태\n방문자·문의 일지 → 방문·투어·전화 문의 당일 기록 완료\n종합접수 전달 → 접수된 건은 당일 해당 부서 전달 / 처리 결과 회원 고지'}
       ];
+      /* ── 📋 운영부 규정 보드 — 주제별 칸(운영 기준/정기 회의) × 편집 가능 카드 (운영부 체계.html renderPolicyBoard 복원) ── */
+      var POLICY_COLS = [{key:'ops', label:'운영 기준', cls:'male'}, {key:'meet', label:'정기 회의', cls:'female'}];
+      var POLICY_DATA = {}; // {colKey:[{id,title,body}, ...]}
+      function policyGenId(){ return 'pol_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
       function loadDocPolicy(){
         var el = document.getElementById('o1-doc-policy'); if(!el) return;
         withTimeout(jget(CHECK_API+"?action=board&key=OPS_POLICY_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
           var board = (res && res.ok && res.board) ? res.board : null;
-          var cols = board ? {ops:board.ops||[], meet:board.meet||[]} : POLICY_SEED;
-          el.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">운영 기준</div>'
-            + (cols.ops||[]).map(function(c){ return docCard(c.title, c.body); }).join('')
-            + '<div style="font-size:11px;font-weight:700;color:var(--dim);margin:10px 0 6px;">정기 회의</div>'
-            + (cols.meet||[]).map(function(c){ return docCard(c.title, c.body); }).join('')
-            + (board ? '' : '<div style="font-size:10.5px;color:var(--dim);">※ 백엔드에 저장된 편집분이 없어 기본값을 보여준다.</div>');
+          POLICY_DATA = {};
+          POLICY_COLS.forEach(function(c){
+            var arr = (board && Array.isArray(board[c.key])) ? board[c.key] : null;
+            var src = arr || (POLICY_SEED[c.key]||[]);
+            POLICY_DATA[c.key] = src.map(function(card){
+              return {id:(card&&card.id)?String(card.id):policyGenId(), title:(card&&card.title!=null)?String(card.title):'', body:(card&&card.body!=null)?String(card.body):''};
+            });
+          });
+          renderPolicyBoard();
         });
       }
+      function policyCardBodyHTML(body){
+        var lines=(body||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+        if(!lines.length) return '<div class="dv-empty">내용 없음 — 편집으로 추가</div>';
+        return lines.map(function(l){ return '<div class="pol-line">'+opsEsc(l)+'</div>'; }).join('');
+      }
+      function renderPolicyBoard(){
+        var wrap=document.getElementById('o1-doc-policy'); if(!wrap) return;
+        var html='';
+        POLICY_COLS.forEach(function(col){
+          var cards=POLICY_DATA[col.key]||[];
+          html+='<div class="board-col"><div class="board-col-head"><span class="bday">'+opsEsc(col.label)+'</span><span class="day-type weekday">'+cards.length+'개</span></div><div class="board-col-body">';
+          cards.forEach(function(card){
+            var cid=col.key+'__'+card.id;
+            html+='<div class="dv-cell '+col.cls+'" id="polcell_'+cid+'">'
+              +'<div class="dv-cell-head"><span class="dv-cell-label '+col.cls+'">'+opsEsc(card.title||'(제목 없음)')+'</span>'
+              +'<div style="display:flex;gap:4px;">'
+              +'<button type="button" class="dv-edit-btn" id="polbtn_'+cid+'" onclick="policyToggleEdit(\''+col.key+'\',\''+card.id+'\')">편집</button>'
+              +'<button type="button" class="dv-edit-btn cancel" id="polcancel_'+cid+'" style="display:none" onclick="policyCancelEdit(\''+col.key+'\',\''+card.id+'\')">취소</button>'
+              +'</div></div>'
+              +'<div class="dv-body">'+policyCardBodyHTML(card.body)+'</div>'
+              +'<div class="pol-edit" id="poledit_'+cid+'">'
+              +'<label class="pol-edit-lab">제목</label><input type="text" class="pol-edit-title" id="poltitle_'+cid+'" placeholder="카드 제목">'
+              +'<label class="pol-edit-lab">내용 (줄바꿈으로 항목 구분)</label><textarea class="pol-edit-body" id="polbody_'+cid+'" rows="4" placeholder="내용을 입력하세요"></textarea>'
+              +'<button type="button" class="pol-del-btn" onclick="policyDeleteCard(\''+col.key+'\',\''+card.id+'\')">이 카드 삭제</button>'
+              +'</div>'
+              +'<div class="dv-edit-hint">제목·내용을 수정하고 저장을 누르면 모든 기기에 반영됩니다. 공식값(운영시간 등)은 임의 변경하지 마세요.</div>'
+              +'</div>';
+          });
+          html+='<button type="button" class="dv-g-addrow" onclick="policyAddCard(\''+col.key+'\')">＋ 카드 추가</button></div></div>';
+        });
+        wrap.innerHTML=html;
+      }
+      function policyFindCard(colKey,id){ var arr=POLICY_DATA[colKey]||[]; for(var i=0;i<arr.length;i++){ if(arr[i].id===id) return {arr:arr,idx:i,card:arr[i]}; } return null; }
+      function policyHasEditing(){ var wrap=document.getElementById('o1-doc-policy'); return !!(wrap && wrap.querySelector('.dv-cell.editing')); }
+      window.policyToggleEdit = function(colKey,id){
+        var cid=colKey+'__'+id, cell=document.getElementById('polcell_'+cid), btn=document.getElementById('polbtn_'+cid), cancelbtn=document.getElementById('polcancel_'+cid), found=policyFindCard(colKey,id);
+        if(!cell||!btn||!found) return;
+        var editing=cell.classList.contains('editing');
+        if(!editing){
+          if(!requireEditAuth()) return;
+          cell.classList.add('editing');
+          var ti=document.getElementById('poltitle_'+cid), bo=document.getElementById('polbody_'+cid);
+          if(ti) ti.value=found.card.title||''; if(bo) bo.value=found.card.body||'';
+          btn.textContent='저장'; btn.classList.add('save'); if(cancelbtn) cancelbtn.style.display='';
+          if(ti) ti.focus();
+        }else{
+          var ti2=document.getElementById('poltitle_'+cid), bo2=document.getElementById('polbody_'+cid);
+          found.card.title=ti2?ti2.value.trim():found.card.title;
+          found.card.body=bo2?bo2.value:found.card.body;
+          cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save'); if(cancelbtn) cancelbtn.style.display='none';
+          var lab=cell.querySelector('.dv-cell-label'); if(lab) lab.textContent=found.card.title||'(제목 없음)';
+          var bodyEl=cell.querySelector('.dv-body'); if(bodyEl) bodyEl.innerHTML=policyCardBodyHTML(found.card.body);
+          persistOpsBoard('OPS_POLICY_BOARD', POLICY_DATA, '규정');
+        }
+      };
+      window.policyCancelEdit = function(colKey,id){
+        var cid=colKey+'__'+id, cell=document.getElementById('polcell_'+cid), btn=document.getElementById('polbtn_'+cid), cancelbtn=document.getElementById('polcancel_'+cid);
+        if(!cell||!btn) return;
+        cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save'); if(cancelbtn) cancelbtn.style.display='none';
+      };
+      window.policyAddCard = function(colKey){
+        if(!requireEditAuth()) return;
+        if(policyHasEditing()){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+        if(!Array.isArray(POLICY_DATA[colKey])) POLICY_DATA[colKey]=[];
+        var nid=policyGenId();
+        POLICY_DATA[colKey].push({id:nid,title:'새 카드',body:''});
+        persistOpsBoard('OPS_POLICY_BOARD', POLICY_DATA, '규정');
+        renderPolicyBoard();
+        window.policyToggleEdit(colKey,nid);
+      };
+      window.policyDeleteCard = function(colKey,id){
+        if(!requireEditAuth()) return;
+        if(!confirm('이 카드를 삭제할까요?')) return;
+        var found=policyFindCard(colKey,id); if(!found) return;
+        found.arr.splice(found.idx,1);
+        persistOpsBoard('OPS_POLICY_BOARD', POLICY_DATA, '규정');
+        renderPolicyBoard();
+      };
+
+      /* ── 📘 가이드 보드 — 단일 컬럼 카드(운영부 체계.html renderGuideBoard 복원, 규정 보드와 동일 UX) ── */
+      var GUIDE_DATA = {guide:[]}; // {guide:[{id,title,body}, ...]}
+      function guideGenId(){ return 'gd_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
       function loadDocGuide(){
         var el = document.getElementById('o1-doc-guide'); if(!el) return;
         withTimeout(jget(CHECK_API+"?action=board&key=OPS_GUIDE_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
-          var board = (res && res.ok && res.board && Array.isArray(res.board.guide)) ? res.board.guide : GUIDE_SEED;
-          el.innerHTML = board.map(function(c){ return docCard(c.title, c.body); }).join('')
-            + (res && res.ok && res.board ? '' : '<div style="font-size:10.5px;color:var(--dim);">※ 백엔드에 저장된 편집분이 없어 기본값을 보여준다.</div>');
+          var arr = (res && res.ok && res.board && Array.isArray(res.board.guide)) ? res.board.guide : null;
+          var src = arr || GUIDE_SEED;
+          GUIDE_DATA.guide = src.map(function(card){
+            return {id:(card&&card.id)?String(card.id):guideGenId(), title:(card&&card.title!=null)?String(card.title):'', body:(card&&card.body!=null)?String(card.body):''};
+          });
+          renderGuideBoard();
         });
       }
+      function guideCardBodyHTML(body){
+        var lines=(body||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+        if(!lines.length) return '<div class="dv-empty">내용 없음 — 편집으로 추가</div>';
+        return lines.map(function(l){ return '<div class="pol-line">'+opsEsc(l)+'</div>'; }).join('');
+      }
+      function renderGuideBoard(){
+        var wrap=document.getElementById('o1-doc-guide'); if(!wrap) return;
+        var cards=GUIDE_DATA.guide||[];
+        var html='<div class="board-col"><div class="board-col-head"><span class="bday">운영부 가이드</span><span class="day-type weekday">'+cards.length+'개</span></div><div class="board-col-body">';
+        cards.forEach(function(card){
+          var cid='guide__'+card.id;
+          html+='<div class="dv-cell outer" id="gdcell_'+cid+'">'
+            +'<div class="dv-cell-head"><span class="dv-cell-label outer">'+opsEsc(card.title||'(제목 없음)')+'</span>'
+            +'<div style="display:flex;gap:4px;">'
+            +'<button type="button" class="dv-edit-btn" id="gdbtn_'+cid+'" onclick="guideToggleEdit(\''+card.id+'\')">편집</button>'
+            +'<button type="button" class="dv-edit-btn cancel" id="gdcancel_'+cid+'" style="display:none" onclick="guideCancelEdit(\''+card.id+'\')">취소</button>'
+            +'</div></div>'
+            +'<div class="dv-body">'+guideCardBodyHTML(card.body)+'</div>'
+            +'<div class="pol-edit" id="gdedit_'+cid+'">'
+            +'<label class="pol-edit-lab">제목</label><input type="text" class="pol-edit-title" id="gdtitle_'+cid+'" placeholder="카드 제목">'
+            +'<label class="pol-edit-lab">내용 (줄바꿈으로 항목 구분)</label><textarea class="pol-edit-body" id="gdbody_'+cid+'" rows="4" placeholder="내용을 입력하세요"></textarea>'
+            +'<button type="button" class="pol-del-btn" onclick="guideDeleteCard(\''+card.id+'\')">이 카드 삭제</button>'
+            +'</div>'
+            +'<div class="dv-edit-hint">제목·내용을 수정하고 저장을 누르면 모든 기기에 반영됩니다.</div>'
+            +'</div>';
+        });
+        html+='<button type="button" class="dv-g-addrow" onclick="guideAddCard()">＋ 카드 추가</button></div></div>';
+        wrap.innerHTML=html;
+      }
+      function guideFindCard(id){ var arr=GUIDE_DATA.guide||[]; for(var i=0;i<arr.length;i++){ if(arr[i].id===id) return {arr:arr,idx:i,card:arr[i]}; } return null; }
+      function guideHasEditing(){ var wrap=document.getElementById('o1-doc-guide'); return !!(wrap && wrap.querySelector('.dv-cell.editing')); }
+      window.guideToggleEdit = function(id){
+        var cid='guide__'+id, cell=document.getElementById('gdcell_'+cid), btn=document.getElementById('gdbtn_'+cid), cancelbtn=document.getElementById('gdcancel_'+cid), found=guideFindCard(id);
+        if(!cell||!btn||!found) return;
+        var editing=cell.classList.contains('editing');
+        if(!editing){
+          if(!requireEditAuth()) return;
+          cell.classList.add('editing');
+          var ti=document.getElementById('gdtitle_'+cid), bo=document.getElementById('gdbody_'+cid);
+          if(ti) ti.value=found.card.title||''; if(bo) bo.value=found.card.body||'';
+          btn.textContent='저장'; btn.classList.add('save'); if(cancelbtn) cancelbtn.style.display='';
+          if(ti) ti.focus();
+        }else{
+          var ti2=document.getElementById('gdtitle_'+cid), bo2=document.getElementById('gdbody_'+cid);
+          found.card.title=ti2?ti2.value.trim():found.card.title;
+          found.card.body=bo2?bo2.value:found.card.body;
+          cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save'); if(cancelbtn) cancelbtn.style.display='none';
+          var lab=cell.querySelector('.dv-cell-label'); if(lab) lab.textContent=found.card.title||'(제목 없음)';
+          var bodyEl=cell.querySelector('.dv-body'); if(bodyEl) bodyEl.innerHTML=guideCardBodyHTML(found.card.body);
+          persistOpsBoard('OPS_GUIDE_BOARD', GUIDE_DATA, '가이드');
+        }
+      };
+      window.guideCancelEdit = function(id){
+        var cid='guide__'+id, cell=document.getElementById('gdcell_'+cid), btn=document.getElementById('gdbtn_'+cid), cancelbtn=document.getElementById('gdcancel_'+cid);
+        if(!cell||!btn) return;
+        cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save'); if(cancelbtn) cancelbtn.style.display='none';
+      };
+      window.guideAddCard = function(){
+        if(!requireEditAuth()) return;
+        if(guideHasEditing()){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+        var nid=guideGenId();
+        GUIDE_DATA.guide.push({id:nid,title:'새 카드',body:''});
+        persistOpsBoard('OPS_GUIDE_BOARD', GUIDE_DATA, '가이드');
+        renderGuideBoard();
+        window.guideToggleEdit(nid);
+      };
+      window.guideDeleteCard = function(id){
+        if(!requireEditAuth()) return;
+        if(!confirm('이 카드를 삭제할까요?')) return;
+        var found=guideFindCard(id); if(!found) return;
+        found.arr.splice(found.idx,1);
+        persistOpsBoard('OPS_GUIDE_BOARD', GUIDE_DATA, '가이드');
+        renderGuideBoard();
+      };
       function loadDocHiring(){
         var el = document.getElementById('o1-doc-hiring'); if(!el) return;
         var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
@@ -7513,11 +7743,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       }
       /* ══════════════════════════════════════════════════════════════
          운영부 매뉴얼 이관 로직 (운영부 체계.html → O1, 2026-08-29 GM 승인)
-         - 📅 요일별 업무 보드 = 조회 전용(백엔드 board_sync 저장값 읽기만, 편집 UI는 이관 안 함).
-         - 🧾 일일 점검 체크리스트 = 예외로 입력·제출 기능 그대로 이관(O1의 다른 문서고 항목은 조회 전용이지만
-           체크리스트는 실무 도구라 조회만으로는 기능을 잃는다 — GM 지시).
-         함수명(togManual·onManualCk·togManualItem·submitOpsDailyCheck)은 원본 그대로이며 이 IIFE
-         스코프 안에서도 window.* 로 노출한다 — 이관한 정적 HTML의 inline onclick이 전역에서 찾기 때문.
+         - 📅 요일별 업무 보드·📋 규정·📘 가이드 = 편집·저장 UI 복원(2026-08-29 2차) — 저장 경로는
+           원본 그대로(CHECK_API action=board/saveBoard), 요일 다중선택의 localStorage 영속만
+           생략(매번 오늘 요일로 시작 — ponytail: 필요해지면 BOARD_SELDAYS_KEY 패턴 추가).
+         - 🧾 일일 점검 체크리스트 = 입력·제출 기능 그대로 이관(실무 도구라 조회만으로는 기능을 잃는다 — GM 지시).
+         함수명(togManual·onManualCk·togManualItem·submitOpsDailyCheck·policy/guide/board 편집 함수)은
+         이 IIFE 스코프 안에서 window.* 로 노출한다 — inline onclick이 전역에서 찾기 때문.
          ══════════════════════════════════════════════════════════════ */
       function opsEsc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -7591,21 +7822,174 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           return '<div class="ops-board-line">'+(label?'<span style="color:var(--dim);">'+opsEsc(label)+'</span> ':'')+opsEsc(body)+'</div>';
         }).join('');
       }
+      /* ── 편집 그리드(시간대|내용 표) — 운영부 체계.html boardGrid* 복원. gk→색 클래스 매핑만 로컬 추가 ── */
+      var BOARD_DATA={}; // {dayKey:{m,f,outer}}
+      var DOW_TO_DAYKEY=['sun','mon','tue','wed','thu','fri','sat'];
+      var SELECTED_DAYS={}; SELECTED_DAYS[DOW_TO_DAYKEY[new Date().getDay()]]=true; // 오늘 요일만 기본 선택(다중선택 가능·새로고침 시 오늘로 리셋)
+      var BOARD_TIMESLOTS=[
+        {key:'오전(08:00~12:00)', short:'오전'},
+        {key:'오전후반(10:00~12:00)', short:'오전후반'},
+        {key:'오후(13:00~)', short:'오후(13시)'},
+        {key:'오후(14:00~18:00)', short:'오후'},
+        {key:'야간(18:00~)', short:'야간'},
+        {key:'종일(휴관일 집중)', short:'종일'}
+      ];
+      function opsGkCls(gk){ return gk==='m'?'male':(gk==='f'?'female':'outer'); }
+      function parseBoardLine(line){
+        var idx=line.indexOf('::');
+        if(idx>0 && idx<=20) return {tb:line.slice(0,idx).trim(), text:line.slice(idx+2).trim()};
+        return {tb:'', text:line};
+      }
+      function timeslotSortKey(label){
+        if(!label) return '99:99';
+        var m=String(label).match(/(\d{1,2}):(\d{2})/);
+        return m ? (m[1].padStart(2,'0')+':'+m[2]) : '98:98';
+      }
+      function boardMakeGridRow(tb,text){
+        var tr=document.createElement('tr');
+        var tdT=document.createElement('td');
+        var inT=document.createElement('input');
+        inT.type='text'; inT.className='dv-g-time'; inT.value=tb||''; inT.setAttribute('list','dv-timeslot-options'); inT.placeholder='시간대(선택)';
+        tdT.appendChild(inT); tr.appendChild(tdT);
+        var tdC=document.createElement('td');
+        var taC=document.createElement('textarea');
+        taC.className='dv-g-task'; taC.rows=1; taC.value=text||'';
+        taC.addEventListener('input',function(){ boardGridAutoSize(taC); });
+        tdC.appendChild(taC); tr.appendChild(tdC);
+        var tdD=document.createElement('td');
+        var btnD=document.createElement('button');
+        btnD.type='button'; btnD.className='dv-g-del'; btnD.textContent='✕'; btnD.title='행 삭제';
+        btnD.onclick=function(){ tr.remove(); };
+        tdD.appendChild(btnD); tr.appendChild(tdD);
+        return {tr:tr, ta:taC};
+      }
+      function boardGridAutoSize(ta){ ta.style.height='auto'; ta.style.height=Math.max(34,ta.scrollHeight)+'px'; }
+      function boardGridBuild(cid,text){
+        var body=document.getElementById('gridbody_'+cid); if(!body) return;
+        body.innerHTML='';
+        var lines=(text||'').split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length;});
+        var rows=lines.map(parseBoardLine);
+        rows.sort(function(a,b){ var ka=timeslotSortKey(a.tb||'기타'),kb=timeslotSortKey(b.tb||'기타'); return ka<kb?-1:(ka>kb?1:0); });
+        if(!rows.length) rows=[{tb:'',text:''}];
+        rows.forEach(function(r){ var made=boardMakeGridRow(r.tb,r.text); body.appendChild(made.tr); boardGridAutoSize(made.ta); });
+      }
+      window.boardGridAddRow = function(cid){
+        var body=document.getElementById('gridbody_'+cid); if(!body) return;
+        var made=boardMakeGridRow('',''); body.appendChild(made.tr); boardGridAutoSize(made.ta); made.ta.focus();
+      };
+      function boardGridSerialize(cid){
+        var body=document.getElementById('gridbody_'+cid); if(!body) return '';
+        var out=[];
+        body.querySelectorAll('tr').forEach(function(tr){
+          var t=tr.querySelector('.dv-g-time'), c=tr.querySelector('.dv-g-task');
+          if(!c) return;
+          var tb=(t?t.value:'').trim();
+          var text=c.value.replace(/\n/g,' ').trim();
+          if(!text) return;
+          out.push(tb?(tb+'::'+text):text);
+        });
+        return out.join('\n');
+      }
+      function boardHasEditing(){ var wrap=document.getElementById('o1-ops-board'); return !!(wrap && wrap.querySelector('.dv-cell.editing')); }
+      function renderDayToolbar(){
+        var bar=document.getElementById('ops-day-toolbar'); if(!bar) return;
+        var todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+        var allOn=OPS_BOARD_DAYS.every(function(d){ return SELECTED_DAYS[d.key]; });
+        var html='';
+        OPS_BOARD_DAYS.forEach(function(d){
+          var active=SELECTED_DAYS[d.key]?' active':'';
+          var we=d.weekend?' is-weekend':'';
+          html+='<button type="button" class="day-tab'+active+we+'" onclick="toggleBoardDay(\''+d.key+'\')">'+d.label+(d.key===todayKey?' · 오늘':'')+'</button>';
+        });
+        html+='<button type="button" class="day-tab day-all'+(allOn?' active':'')+'" onclick="toggleAllBoardDays()">'+(allOn?'전체 해제':'전체 선택')+'</button>';
+        bar.innerHTML=html;
+      }
+      window.toggleBoardDay = function(dayKey){
+        if(boardHasEditing()){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+        SELECTED_DAYS[dayKey]=!SELECTED_DAYS[dayKey];
+        renderDayToolbar();
+        renderOpsBoard();
+      };
+      window.toggleAllBoardDays = function(){
+        if(boardHasEditing()){ alert('편집 중인 카드를 먼저 저장하거나 닫아주세요.'); return; }
+        var allOn=OPS_BOARD_DAYS.every(function(d){ return SELECTED_DAYS[d.key]; });
+        SELECTED_DAYS={};
+        if(!allOn) OPS_BOARD_DAYS.forEach(function(d){ SELECTED_DAYS[d.key]=true; });
+        renderDayToolbar();
+        renderOpsBoard();
+      };
+      function renderOpsBoard(){
+        var wrap=document.getElementById('o1-ops-board'); if(!wrap) return;
+        var todayKey=DOW_TO_DAYKEY[new Date().getDay()];
+        var days=OPS_BOARD_DAYS.filter(function(d){ return SELECTED_DAYS[d.key]; });
+        if(!days.length){ wrap.innerHTML='<div style="color:var(--dim);font-size:12px;">위 요일 버튼을 눌러 보고 싶은 요일을 켜세요.</div>'; return; }
+        var html='';
+        days.forEach(function(d){
+          var cell=BOARD_DATA[d.key]||{};
+          html+='<div class="ops-board-day">';
+          html+='<div class="ops-board-day-label"'+(d.weekend?' style="color:var(--accent);"':'')+'>'+d.label+'요일'+(d.key===todayKey?' · 오늘':'')+'</div>';
+          OPS_BOARD_GENDERS.forEach(function(g){
+            var cid=d.key+'_'+g.gk;
+            var val=cell[g.gk]||'';
+            html+='<div class="dv-cell '+opsGkCls(g.gk)+'" id="cell_'+cid+'">'
+              +'<div class="dv-cell-head"><span class="ops-board-cat-label" style="margin:0;">'+g.label+'</span>'
+              +'<div style="display:flex;gap:4px;">'
+              +'<button type="button" class="dv-edit-btn" id="btn_'+cid+'" onclick="boardToggleEdit(\''+d.key+'\',\''+g.gk+'\')">편집</button>'
+              +'<button type="button" class="dv-edit-btn cancel" id="cancelbtn_'+cid+'" style="display:none" onclick="boardCancelEdit(\''+d.key+'\',\''+g.gk+'\')">취소</button>'
+              +'</div></div>'
+              +'<div class="dv-body">'+opsBoardCatHTML(val)+'</div>'
+              +'<div class="dv-grid" id="grid_'+cid+'">'
+                +'<table class="dv-grid-table"><colgroup><col class="dv-g-timecol"><col><col class="dv-g-delcol"></colgroup>'
+                +'<thead><tr><th class="dv-grid-th">시간대</th><th class="dv-grid-th">내용</th><th class="dv-grid-th"></th></tr></thead>'
+                +'<tbody id="gridbody_'+cid+'"></tbody></table>'
+                +'<button type="button" class="dv-g-addrow" onclick="boardGridAddRow(\''+cid+'\')">＋ 행 추가</button>'
+              +'</div>'
+              +'<div class="dv-edit-hint">시간대 칸(비워도 됨)과 내용 칸을 표에서 바로 수정하세요. 저장하면 모든 기기에 반영됩니다.</div>'
+              +'</div>';
+          });
+          html+='</div>';
+        });
+        html+='<datalist id="dv-timeslot-options">'+BOARD_TIMESLOTS.map(function(ts){ return '<option value="'+opsEsc(ts.key)+'">'+opsEsc(ts.short)+'</option>'; }).join('')+'</datalist>';
+        wrap.innerHTML=html;
+      }
+      window.boardToggleEdit = function(dayKey,gk){
+        var cid=dayKey+'_'+gk, cell=document.getElementById('cell_'+cid), btn=document.getElementById('btn_'+cid), cancelbtn=document.getElementById('cancelbtn_'+cid);
+        if(!cell||!btn) return;
+        var editing=cell.classList.contains('editing');
+        if(!editing){
+          if(!requireEditAuth()) return;
+          cell.classList.add('editing');
+          boardGridBuild(cid,(BOARD_DATA[dayKey]&&BOARD_DATA[dayKey][gk])||'');
+          btn.textContent='저장'; btn.classList.add('save'); if(cancelbtn) cancelbtn.style.display='';
+          var firstTask=cell.querySelector('.dv-g-task'); if(firstTask) firstTask.focus();
+        }else{
+          var serialized=boardGridSerialize(cid);
+          if(!BOARD_DATA[dayKey]) BOARD_DATA[dayKey]={};
+          BOARD_DATA[dayKey][gk]=serialized;
+          cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save'); if(cancelbtn) cancelbtn.style.display='none';
+          var bodyEl=cell.querySelector('.dv-body'); if(bodyEl) bodyEl.innerHTML=opsBoardCatHTML(serialized);
+          persistOpsBoard('OPS_MANUAL_BOARD', BOARD_DATA, '요일별 업무');
+        }
+      };
+      window.boardCancelEdit = function(dayKey,gk){
+        var cid=dayKey+'_'+gk, cell=document.getElementById('cell_'+cid), btn=document.getElementById('btn_'+cid), cancelbtn=document.getElementById('cancelbtn_'+cid);
+        if(!cell||!btn) return;
+        cell.classList.remove('editing'); btn.textContent='편집'; btn.classList.remove('save'); if(cancelbtn) cancelbtn.style.display='none';
+      };
       function loadOpsBoard(){
-        var el=document.getElementById('o1-ops-board'); if(!el) return;
         withTimeout(jget(CHECK_API+"?action=board&key=OPS_MANUAL_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
           var data=(res && res.ok && res.board) ? res.board : null;
-          var html='';
+          BOARD_DATA={};
           OPS_BOARD_DAYS.forEach(function(d){
-            var cell=(data && data[d.key]) || OPS_BOARD_SEED[d.key] || {};
-            html+='<div class="ops-board-day">';
-            html+='<div class="ops-board-day-label"'+(d.weekend?' style="color:var(--accent);"':'')+'>'+d.label+'요일</div>';
+            var s=(data && data[d.key]) || {};
+            var seed=OPS_BOARD_SEED[d.key] || {};
+            BOARD_DATA[d.key]={};
             OPS_BOARD_GENDERS.forEach(function(g){
-              html+='<div class="ops-board-cat"><div class="ops-board-cat-label">'+g.label+'</div>'+opsBoardCatHTML(cell[g.gk])+'</div>';
+              BOARD_DATA[d.key][g.gk]=(s[g.gk]!=null)?s[g.gk]:(seed[g.gk]||'');
             });
-            html+='</div>';
           });
-          el.innerHTML = html + (data ? '' : '<div style="font-size:10.5px;color:var(--dim);">※ 백엔드에 저장된 편집분이 없어 기본값(시드)을 보여준다.</div>');
+          renderDayToolbar();
+          renderOpsBoard();
         });
       }
 
