@@ -6551,7 +6551,11 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         // 카드 제목은 부서 페이지 이름 그대로 쓴다(GM 2026-07-25) — '시설'이 아니라 '시설부 체계'.
         // 화면에 뜬 이름과 눌러서 들어간 페이지 이름이 같아야 헷갈리지 않는다.
         el.innerHTML =
-            moduleCard({icon:'🏭',label:'시설부 체계',     caption:'오늘 점검 완료율', value:pctText(S.fPct), warn:fW.warn, warnLevel:fW.level, href:FACILITY_HREF})
+            // 시설부 값(fPct)은 항목표 전체 대비 '입력된' 항목 비율 = 입력률이지 완료율이 아니다.
+          // 시설부 체계 페이지는 원래 '입력률'로 정직하게 적고 있었는데 이 허브 카드만
+          // '완료율'로 불러 69% 가 완료율처럼 읽혔다(2026-08-29 시우). 낱말만 바로잡는다 —
+          // 값·소스는 그대로다. 시설부 지표는 회차·이상건수가 정본이다(monthly_ops_plan 확정).
+          moduleCard({icon:'🏭',label:'시설부 체계',     caption:'오늘 점검 입력률', value:pctText(S.fPct), warn:fW.warn, warnLevel:fW.level, href:FACILITY_HREF})
           + moduleCard({icon:'🚹',label:'지원부 체계(남)', caption:'오늘 점검 완료율', value:pctText(S.mPct), warn:mW.warn, warnLevel:mW.level, href:SUPPORT_HREF})
           + moduleCard({icon:'🚺',label:'지원부 체계(여)', caption:'오늘 점검 완료율', value:pctText(S.wPct), warn:wW.warn, warnLevel:wW.level, href:SUPPORT_HREF})
           + moduleCard({icon:'🅿️',label:'주차관리부 체계', caption:'이번달 실결제 매출', value:S.parkAmt,     warn:S.parkWarn, warnLevel:'ok',  href:PARKING_HREF})
