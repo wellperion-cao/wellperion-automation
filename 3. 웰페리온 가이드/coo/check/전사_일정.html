@@ -26,11 +26,9 @@ h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
 .fsel.on select{border-color:var(--accent);background:var(--accent-bg)}
 .fsel .caret{position:absolute;right:10px;font-size:9px;color:var(--dim);pointer-events:none}
 .fsel .cdot{position:absolute;left:11px;width:9px;height:9px;border-radius:50%;pointer-events:none;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
-.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:0 0 18px}
-.summary .sitem{display:flex;flex-direction:column;gap:5px;background:var(--paper);border:1px solid var(--border);border-top:2px solid var(--sc,var(--border));border-radius:12px;padding:12px 15px;color:var(--dim)}
-.summary .sitem .snum{font-size:23px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.02em}
-.summary .sitem .slabel{font-size:12px;font-weight:650;display:inline-flex;align-items:center;gap:6px}
-@media(max-width:560px){.summary{grid-template-columns:repeat(2,1fr)}}
+/* .summary 4칸 타일 CSS 삭제(GM 지시 2026-08-29) — 타일 자체를 없앴다. */
+.title-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.title-row .cal-nav{margin-left:4px}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block;vertical-align:middle}
 .bar{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:30px 0 14px}
 .bar h2{font-size:16px;margin:0;font-weight:750}
@@ -165,7 +163,17 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
 <div class="wrap">
   <div class="header-top">
     <div>
-      <h1>전사 일정<span class="scope" id="scopeLabel"></span></h1>
+      <!-- 달 넘김·오늘을 제목 옆에 둔다(GM 지시 2026-08-29) — 달력 위 별도 줄에 있으면
+           머리와 달력 사이가 벌어져 한 화면에 덜 들어온다. 여기 두면 제목을 보는 자리에서
+           바로 달을 넘긴다. -->
+      <h1 class="title-row">전사 일정<span class="scope" id="scopeLabel"></span>
+        <span class="cal-nav">
+          <button class="cal-btn" type="button" aria-label="이전 달" onclick="calNav(-1)">◀</button>
+          <span class="cal-title" id="calTitle"></span>
+          <button class="cal-btn" type="button" aria-label="다음 달" onclick="calNav(1)">▶</button>
+          <button class="cal-today-btn" type="button" onclick="calToday()">오늘</button>
+        </span>
+      </h1>
       <p class="sub">날짜가 정해진 <b>전사 일정</b>의 단일 출처 — <b>정기 안전·법정 점검</b> + 부서 <b>주요 이벤트</b>(행사·납품·교육 등). 반복(매주·격주·매월·매년)은 규칙 한 줄로 고정하면 달력에 계속 표시. 부서 체계 페이지 <b>🗓️ 일정 탭</b>에서 직접 작성 → 여기로 모임.</p>
     </div>
     <div class="sheet-links">
@@ -184,17 +192,11 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
   </div>
 
 
-  <div class="summary" id="summary"></div>
+  <!-- 지남·임박·여유·미정 4칸 타일 삭제(GM 지시 2026-08-29 "필요없는 대시보드임").
+       달력 안 일정만 보이는 게 직관적이다. 임박한 것은 아래 「임박 순」 목록과
+       🔥 임박순 팝업이 그대로 맡는다 — 정보 손실 없음. -->
 
   <div class="calwrap" id="calWrap">
-    <div class="cal-head">
-      <div class="cal-nav">
-        <button class="cal-btn" type="button" aria-label="이전 달" onclick="calNav(-1)">◀</button>
-        <span class="cal-title" id="calTitle"></span>
-        <button class="cal-btn" type="button" aria-label="다음 달" onclick="calNav(1)">▶</button>
-      </div>
-      <button class="cal-today-btn" type="button" onclick="calToday()">오늘</button>
-    </div>
     <div class="cal-legend"><span><span class="dot" style="width:7px;height:7px;background:var(--dim)"></span>확정</span><span><span class="cal-dot auto" style="border-color:var(--dim)"></span>예상(자동)</span></div>
     <div class="cal-grid" aria-hidden="true">
       <div class="cal-dow">일</div><div class="cal-dow">월</div><div class="cal-dow">화</div><div class="cal-dow">수</div><div class="cal-dow">목</div><div class="cal-dow">금</div><div class="cal-dow">토</div>
@@ -348,13 +350,8 @@ function syncFilterState(){
     :"conic-gradient(#ED5B3F,#e6c84e,#6abf7b,#5b9fd5,#a78bda,#ED5B3F)";
 }
 function syncScope(){document.getElementById("scopeLabel").textContent=(cur==="전체"?"":" · "+cur);}
-function sitem(l,n,v){return '<div class="sitem" style="--sc:var('+v+')"><span class="snum">'+n+'</span><span class="slabel"><span class="dot" style="background:var('+v+')"></span>'+l+'</span></div>';}
-function renderTiles(){
-  var f=items(),o=0,s=0,k=0,t=0;
-  f.forEach(function(it){var st=statusOf(it).k;if(st==="over")o++;else if(st==="soon")s++;else if(st==="ok")k++;else t++;});
-  document.getElementById("summary").innerHTML=
-    sitem("지남",o,"--red")+sitem("임박",s,"--yellow")+sitem("여유",k,"--green")+sitem("미정",t,"--dim");
-}
+// (삭제 2026-08-29) sitem·renderTiles — 지남·임박·여유·미정 4칸 타일을 그리던 함수.
+// GM 지시로 타일을 없앴고, 붙일 자리가 사라진 함수를 남겨 두면 다음에 누가 되살린다(약속 L21).
 // 지난 1회성 이벤트는 접는다 — GM 지적 2026-08-12 "지난건은 왜 보여주는거야? 일정 미리 체크하고
 // 놓치지만 않으면 되는데". 지우지는 않는다(기록은 남는다). 접는 대상 = 날짜가 지난 이벤트 중
 // 반복이 없는 것. 정기점검은 접지 않는다 — 날짜가 지났다는 건 법정 주기를 넘겼다는 뜻이라
@@ -600,7 +597,7 @@ function highlightDate(key){
 }
 window.highlightDate=highlightDate;
 
-function renderAll(){renderTiles();renderChips();renderCatChips();renderList();renderCalendar();fitFrame();}
+function renderAll(){renderChips();renderCatChips();renderList();renderCalendar();fitFrame();}
 
 // 부서 탭 임베드 시: iframe 높이를 내용에 맞춰 자체 조정 → 안쪽 스크롤 제거(페이지 하나로 스크롤). 동일 출처라 frameElement 접근 가능.
 function fitFrame(){
