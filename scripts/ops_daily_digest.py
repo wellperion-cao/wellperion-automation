@@ -1014,10 +1014,8 @@ def _run_one_day(target_date: str, room_dir_name: str, by_date: dict,
     #   주세요")는 ★운영부에 넣지 않는다. ★운영부는 공유 전용(약속 L24) — 답을 요구하지
     #   않는다. 두 문구 다 실질적으로 회신을 구하는 질문이라 ★중간관리자(소통 창구)로만.
     if room_dir_name != "★운영부":
-        # 자동 등록을 끊은 자리 — 대신 되묻는다 (GM 지시 2026-08-12 · 배589). 등록은 사람이 한다.
-        _ask = _bridge_ask_lines(ledger, target_date)
-        if _ask:
-            parts.append(_ask)
+        # 「🗂 업무 SSOT 에 올리실 건가요?」 되묻기 절은 GM 지시(2026-08-29)로 삭제 —
+        # _bridge_ask_lines 함수째 지웠다(배589 되묻기 종료 · 등록은 여전히 사람이 한다).
         _sched_reply = _schedule_reply_lines(schedule_added)
         if _sched_reply:
             parts.append(_sched_reply)
@@ -1202,7 +1200,7 @@ def _overlaps(a: str, b: str) -> bool:
 def mark_late_replied_resolved(issues: list[dict], messages: list[dict]) -> list[dict]:
     """오늘 대화 뒤쪽에 담당자 본인이 남긴 확인·완료 발언과 낱말이 겹치는 open 이슈를
     resolved 로 자동 강등한다. 강등된 issue 목록을 반환(호출부가 메시지 본문 대조에도 쓴다).
-    ledger 에 그대로 저장되므로 다음 날 '반복·미해결'·SSOT 되묻기(_bridge_ask_lines)에도
+    ledger 에 그대로 저장되므로 다음 날 '반복·미해결' 판정에도
     다시 안 뜬다 — 오늘 발송분만 고치는 게 아니라 내일 재발도 같이 막는다."""
     replies = _late_reply_texts_by_owner(messages)
     fixed: list[dict] = []
@@ -1256,31 +1254,7 @@ def strip_confirmed_bullets(message: str, resolved_titles: list[str]) -> str:
     return "\n".join(out)
 
 
-def _bridge_ask_lines(ledger: list[dict], target_date: str) -> str:
-    """자동 등록을 끊은 자리(배589)를 채우는 되묻기.
-
-    GM: "대신 할 수 있는 것 = 그 방에 한 줄로 '이건 SSOT 에 올리실 건가요?' 되묻는 것까지다."
-    담당이 분명하고 아직 안 올라간 열린 이슈만 이름과 함께 묻는다 — 주인 없는 일은 묻지 않는다
-    (약속 L23). 3건까지만: 매일 길게 나가면 아무도 안 읽는다(약속 L24 ★운영부는 공유 전용).
-    """
-    entry = next((e for e in ledger if e.get("date") == target_date), None)
-    if not entry:
-        return ""
-    rows = []
-    for issue in entry.get("issues") or []:
-        if issue.get("status") != "open" or issue.get("todo_id"):
-            continue
-        owner = str(issue.get("owner") or "").strip()
-        title = str(issue.get("issue") or "").strip()
-        if owner not in _OWNER_CHOICES or not title:
-            continue
-        rows.append("  · " + owner + " — " + title[:46])
-        if len(rows) >= 3:
-            break
-    if not rows:
-        return ""
-    return ("🗂 업무 SSOT 에 올리실 건가요?\n" + "\n".join(rows) +
-            "\n  (등록은 담당자가 직접 — AI 가 대신 올리지 않습니다)")
+# (_bridge_ask_lines 「🗂 업무 SSOT 에 올리실 건가요?」 되묻기는 2026-08-29 GM 지시로 삭제.)
 
 
 def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
@@ -1299,7 +1273,7 @@ def bridge_to_todo(ledger: list[dict], target_date: str, room_dir_name: str,
     #   올리면 그 사람의 일이 사라지고 우리는 진행 보고를 받을 수 없다.
     #   ▸스위치(todo_bridge_enabled)를 false 로만 두지 않는다 — 꺼둔 게이트는 죽은 코드가 되어
     #     나중에 누가 다시 켠다(약속 L21). 그래서 등록 경로 자체를 여기서 끊는다.
-    #   ▸대신 하는 것: 방에 "이건 업무 SSOT 에 올리실 건가요?" 한 줄로 되묻는다(_bridge_ask_lines).
+    #   ▸되묻기 절(_bridge_ask_lines)은 2026-08-29 GM 지시로 삭제 — 등록은 사람이 SSOT 화면에서 직접.
     #     등록은 사람이 한다.
     #   ▸구분: 전사일정 자동 등록(배577)은 그대로 간다 — 날짜는 놓치면 안 되고 GM 이 그 방식을 골랐다.
     if not dry_run:

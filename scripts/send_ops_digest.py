@@ -75,6 +75,9 @@ MORNING_SEND_TIMES = {
     "★운영부": (7, 45),
     "★중간관리자": (7, 50),
     "★부서장": (7, 55),
+    # 📅 다가오는 일정 별도 통(GM 지시 2026-08-29 "별도로 만들자 전사일정링크를 태워서") —
+    # 아침 4통 리듬(5분 간격)이 끝난 직후, 08:00 텔레그램 항로와 겹치기 전 07:58.
+    "일정": (7, 58),
 }
 TARGET_ROOM = "★운영부"  # 2026-08-04 시토: SSOT(kakao_rooms.json)와 표기 일치(공백 제거) —
 # 발송 자체는 _title_key 정규화로 공백 무관하게 동작하지만, 등록부 드리프트 체커가
@@ -538,13 +541,8 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     # [2026-08-29 GM 결정] 25줄 상한으로 본문을 자르던 것 삭제 — "줄을 접는 게 아니라
     # 안 끝난 건수를 줄여야 한다". 넘쳐도 자르지 않는다(밀린 일이 안 보이게 되는 게 더 나쁘다).
     message = "\n\n".join(parts)
-
-    # 📅 다가오는 일정 — 관리자 건(미팅·방문·보고 등)만. 부서 소관은 _send_ovd_room(main() 호출)
-    # 가 4부서방(★운영+시설+지원+주차) 쪽에 따로 붙인다(위 「📅 다가오는 일정」 섹션 주석 참조).
-    sched_items = [x for x in _upcoming_schedule_items() if not x["dept_item"]]
-    sched_block = _build_schedule_block(sched_items)
-    if sched_block:
-        message = f"{message}\n\n{sched_block}" if message else sched_block
+    # 📅 다가오는 일정은 이 통에 붙이지 않는다 — 별도 통(send_schedule_pings · 07:58)으로
+    # 분리했다(GM 지시 2026-08-29 "별도로 만들자 전사일정링크를 태워서").
     return message, relay_current
 
 
@@ -830,7 +828,7 @@ def _resolve_staff_message(ship: dict) -> str:
 # (GM 지시 — 같은 일정이 두 방에 겹쳐 나가면 안 된다). 가르는 기준 = type·담당 부서:
 #   부서 소관 → type이 정기점검이거나 dept가 시설·지원·주차·운영 4부서 중 하나
 #   관리자 건 → 그 밖(경영지원부 등 — 미팅·방문·보고류)
-# 호출부(build_mgr_daily_brief=관리자 건 / _send_ovd_room=부서 소관)가
+# 호출부(send_schedule_pings — 별도 통 · 2026-08-29)가
 # _is_dept_schedule_item 으로 걸러서 넘긴다.
 # ponytail: 「전사일정에 넣은 것」(ops_daily_digest.py, 다른 파일의 절)과 겹칠 때 빼는
 #   로직은 안 넣었다 — 그 절의 원장을 이 파일이 몰라 넣으려면 파일을 하나 더 읽어야
@@ -1455,14 +1453,17 @@ def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
         icon = "🔴" if it["days"] >= 14 else ("🟠" if it["days"] >= 7 else "🟡")
         # 장소가 내용 첫머리에 이미 적혀 있으면 두 번 쓰지 않는다("헬스장 헬스장 기구를…").
         where = f"{it['loc']} " if it["loc"] and not it["content"].startswith(it["loc"]) else ""
-        lines.append(f"{icon} {it['when']} [{it['cat']}] {where}{it['content']}"
+        # 「N일째」 병기 — GM 지시 2026-08-29 "처리 안된 소요 일정 체크". 2026-08-20의
+        # 'N일째 금지'는 재촉 문구 맥락이었고, 이번 지시가 소요일 표기를 명시적으로 요구해 대체한다.
+        lines.append(f"{icon} {it['when']} · {it['days']}일째 [{it['cat']}] {where}{it['content']}"
                      f" — {it['dept']} {it['who']}")
     if rest:
         lines.append(f"…그 밖에 {len(rest)}건이 더 있습니다(화면에서 보실 수 있습니다).")
+    # 처리 세 걸음 — GM 지시 2026-08-29 "어떻게 처리하면 되는지에 대한 안내가 있어야함".
     lines.append(f"📎 종합접수처 {_OVD_BOARD_URL}")
-    lines.append("   → 맨 위 부서 단추에서 본인 부서를 누르시면 그 부서 것만 남습니다.")
-    lines.append("처리하신 건은 「처리자」에 성함, 「처리 메모」에 한 줄 남기고 "
-                 "[저장] → [✅ 전달 완료]까지 눌러 주시면 목록에서 내려갑니다.")
+    lines.append("① 확인 — 맨 위 부서 단추에서 본인 부서를 누르면 그 부서 것만 남습니다.")
+    lines.append("② 처리 — 현장 조치 후 「처리자」에 성함, 「처리 메모」에 조치 내용 한 줄.")
+    lines.append("③ 기록 — [저장] → [✅ 전달 완료]까지 눌러야 목록에서 내려갑니다.")
     return "\n".join(lines)
 
 
@@ -1479,7 +1480,8 @@ def _selfcheck_ovd_block() -> None:
     assert "아직 안 끝난 접수 2건" in out, out
     assert "이경연 실장" in out and "이정헌 소장" in out, "부서 책임자로 떨어져야 한다"
     assert "@운영부" not in out, "방 이름을 사람 이름 자리에 쓰지 않는다"
-    assert "일째" not in out and "일 운영부" not in out, "N일 표기는 쓰지 않는다"
+    assert "일째" in out, "소요일(N일째) 표기가 있어야 한다(GM 지시 2026-08-29)"
+    assert "① 확인" in out and "② 처리" in out and "③ 기록" in out, "처리 세 걸음 안내가 빠졌다"
     assert _OVD_BOARD_URL in out and "전달 완료" in out, "어디서·무엇을 하면 되는지가 빠졌다"
     assert max(len(x) for x in out.splitlines()) < 120, "카톡 한 줄이 너무 길다"
     print("[selfcheck] _build_ovd_block OK")
@@ -1498,7 +1500,7 @@ def _ovd_ready() -> bool:
     return True
 
 
-def _send_ovd_room(room: str, attach_schedule: bool) -> bool:
+def _send_ovd_room(room: str) -> bool:
     """기한 초과 접수를 방 하나에 발송(원장은 그때그때 새로 조회 — 07:40·07:55로 시각이
     떨어져 있어 값이 살짝 다를 수 있는 것이 자연스럽다). 반환=실제 발송 여부."""
     from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get
@@ -1517,13 +1519,8 @@ def _send_ovd_room(room: str, attach_schedule: bool) -> bool:
                 and str(r.get("category") or "").strip() not in _OVD_CAT_EXCLUDE]
     room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
     # ★부서장 아침 = 건수만(원문 펼침은 저녁 문의 통 한 곳 — 2026-08-29 GM 지시).
+    # 📅 다가오는 일정은 이 통에 붙이지 않는다 — 별도 통(send_schedule_pings · 07:58).
     block = _build_ovd_block(room_rows, detail=(room != _OVD_ROOM_LESSON))
-    # 📅 다가오는 일정 — 부서 소관(법정·정기점검·공사)만 ★운영+시설+지원+주차(4부서방)에 붙인다.
-    # 관리자 건은 build_mgr_daily_brief 가 ★중간관리자에 따로 붙인다(위 섹션 주석 참조).
-    if attach_schedule:
-        sched_block = _build_schedule_block([x for x in _upcoming_schedule_items() if x["dept_item"]])
-        if sched_block:
-            block = f"{block}\n\n{sched_block}" if block else sched_block
     if not block:
         log(f"[ovd] {room} — 3일+ 없음, 생략")
         return False
@@ -1534,6 +1531,52 @@ def _send_ovd_room(room: str, attach_schedule: bool) -> bool:
     tail = out.splitlines()[-1] if out else "출력 없음"
     log(f"[ovd] rc={proc.returncode} · {tail}")
     return proc.returncode == 0 and "DONE" in out
+
+
+# ─── 📅 다가오는 일정 별도 통 (GM 지시 2026-08-29 "별도로 만들자 전사일정링크를 태워서") ───
+# 아침 통(접수·정리)에 끼워 붙이던 일정 칸을 독립된 짧은 통으로 뺐다. 부서 소관→4부서방 /
+# 관리자 건→★중간관리자(같은 일정이 두 방에 안 겹치는 배타 분류는 _is_dept_schedule_item 그대로).
+# 7일 안에 일정이 없으면 그 방 통 자체를 안 보낸다. 쿼리 없는 전사일정 링크를 맨 끝에 한 줄.
+_SCHEDULE_PAGE_URL = ("https://wellperion-cao.github.io/wellperion-automation/"
+                      "coo/check/전사_일정.html")
+_SCHED_PING_HEARTBEAT_ID = "morning-schedule-ping"
+
+
+def _sched_ping_already_sent_today() -> bool:
+    from module_heartbeat import last_heartbeat
+    rec = last_heartbeat(_SCHED_PING_HEARTBEAT_ID)
+    return bool(rec) and str((rec.get("state") or {}).get("date", "")) == date.today().isoformat()
+
+
+def send_schedule_pings() -> None:
+    """📅 다가오는 일정 통 — 4부서방(부서 소관)·★중간관리자(관리자 건) 각 1통. 하루 1회."""
+    if _sched_ping_already_sent_today():
+        log("[sched] 이미 발송된 회차 — 생략")
+        return
+    items = _upcoming_schedule_items()
+    sent_any = False
+    for i, (room, room_items) in enumerate((
+            (_OVD_ROOM_OPS, [x for x in items if x["dept_item"]]),
+            (RELAY_ROOM,    [x for x in items if not x["dept_item"]]))):
+        block = _build_schedule_block(room_items)
+        if not block:
+            log(f"[sched] {room} — 7일 내 일정 없음, 통 생략")
+            continue
+        if i:
+            time.sleep(SEND_STAGGER_SECONDS)
+        msg = f"{block}\n📎 전사일정 {_SCHEDULE_PAGE_URL}"
+        cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", room,
+               "--sender", "아침정리다이제스트"]
+        log(f"[sched] 발송 → {room}")
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        out = (proc.stdout or "").strip()
+        log(f"[sched] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
+        if proc.returncode == 0 and "DONE" in out:
+            sent_any = True
+    if sent_any:
+        from module_heartbeat import record_heartbeat
+        record_heartbeat(_SCHED_PING_HEARTBEAT_ID, detail="📅 다가오는 일정 통 발송",
+                         extra={"state": {"date": date.today().isoformat()}})
 
 
 def _seconds_until(hour: int, minute: int, now: "datetime | None" = None) -> float:
@@ -1603,7 +1646,7 @@ def main() -> int:
         _sleep_until(*MORNING_SEND_TIMES["4부서방"])
         if ovd_ready:
             try:
-                sent_ovd_ops = _send_ovd_room(_OVD_ROOM_OPS, attach_schedule=True)
+                sent_ovd_ops = _send_ovd_room(_OVD_ROOM_OPS)
             except Exception as exc:
                 log(f"[ovd] 4부서방 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
 
@@ -1622,11 +1665,18 @@ def main() -> int:
         _sleep_until(*MORNING_SEND_TIMES["★부서장"])
         if ovd_ready:
             try:
-                sent_ovd_lesson = _send_ovd_room(_OVD_ROOM_LESSON, attach_schedule=False)
+                sent_ovd_lesson = _send_ovd_room(_OVD_ROOM_LESSON)
             except Exception as exc:
                 log(f"[ovd] ★부서장 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
         if sent_ovd_ops or sent_ovd_lesson:
             _ovd_mark_sent()
+
+        # 📅 다가오는 일정 별도 통 — 아침 4통이 다 나간 뒤 07:58 (GM 지시 2026-08-29).
+        _sleep_until(*MORNING_SEND_TIMES["일정"])
+        try:
+            send_schedule_pings()
+        except Exception as exc:
+            log(f"[sched] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
     return rc
 
 
