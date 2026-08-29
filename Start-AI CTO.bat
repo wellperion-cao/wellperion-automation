@@ -28,7 +28,12 @@ for /f %%c in ('git status --porcelain ^| find /c /v ""') do set DIRTY=%%c
 if %DIRTY% GTR 200 (
   echo   [warn] 미커밋 %DIRTY%개 - pull 건너뜀 ^(대용량 autostash 사고 방지^)
 ) else (
-  git pull --rebase --autostash origin master
+  REM ★--autostash 제거 (GM 지적 2026-08-29 · 시토). 이 저장소는 여러 세션이 작업트리
+  REM    하나를 공유한다. --autostash 는 pull 직전 남의 미커밋 변경을 통째로 스태시했다가
+  REM    rebase 뒤 도로 풀어놓는다 — 그 결과 몇 주 묵은 옛 내용이 매일 아침 새 커밋 위에
+  REM    덮여 되살아났다(실측: 채용 페이지 2장이 8/25 커밋 내용으로 되돌아가 있었다).
+  REM    autostash 없이 두면 트리가 더러울 때 git 이 pull 을 그냥 거부한다 — 정직한 스킵.
+  git pull --rebase origin master
   if errorlevel 1 echo   [warn] git pull 실패 - 부팅은 계속합니다
 )
 :wp_after_git
