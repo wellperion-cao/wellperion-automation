@@ -208,19 +208,13 @@ function rosterBlock(scope){
   return `<div style="margin-top:14px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">🔓 90일 미만 명단 · ${list.length}명 <span class="pii-note">(개인정보 · 외부 공유 금지)</span></div>`+
     `<div style="overflow-x:auto"><table class="roster"><thead><tr><th>No</th>${wm?'<th>월</th>':''}<th>회원명</th><th>연락처</th><th>회원권</th><th>만기</th><th>이용</th><th>구분</th></tr></thead><tbody>${rosterRows(list,wm)}</tbody></table></div></div>`;}
 function reqRoster(){if(AUTHED){repaint();return;}
-  // ★2026-08-15 시토(배647) — 죽은 외부 인증 경로를 걷어냈다.
-  //   그 전에는 1200 이 아닌 값을 넣으면 입력한 PIN 을 외부 백엔드(APPS_URL)로 그대로 실어
-  //   보냈다. 그런데 그 백엔드는 **어떤 PIN 에도 authed:false 만 돌려주는 상태**다(2026-08-04
-  //   실측, 다른 구글 계정 소유라 이쪽에서 고칠 수 없다). 성공할 수 없는 통로에 사내 PIN 을
-  //   계속 흘려보내고 있었던 셈이라, 인증이 되지도 않으면서 값만 밖으로 나갔다.
-  //   → 이제 확인은 이 화면 안에서만 한다. 사내 표준 PIN(membership.html 커튼과 같은 값).
-  //   ▸'재등록 대상 명단'·'조건별 대상 인원'은 이 값과 무관한 별도 GAS(RENEWAL_FUNNEL_URL)에서
-  //     실데이터를 받으므로 통과 즉시 정상 동작한다.
-  //   ▸'90일 미만 명단'(ROSTER)만은 그 죽은 백엔드가 유일한 소스라 계속 빈다 — 이용일수는
-  //     다른 어떤 소스에도 없다. 0명으로 오인되지 않게 rosterRows() 가 사유를 띄운다.
+  // 2026-08-29 시토 — 외부 백엔드(APPS_URL) 소생 완료. 25일간 죽어 있던 원인은
+  // 프로젝트가 다른 계정(info@wellperion.com) 소유라 못 찾았던 것 + '목표' 시트 PIN 셀
+  // 오타(1206→1200)가 authed 고정 false 원인이었다. 둘 다 수리·실측 검증 완료 — 로컬 우회 제거.
   const pin=prompt('접속코드를 입력하세요 (사내 전용 화면 열기)');if(!pin)return;
-  if(pin.trim()==='1200'){ROSTER_LOCAL_ONLY=true;window.__wpR({authed:true,months:[]});return;}
-  alert('접속코드가 맞지 않습니다.');}
+  const s=document.createElement('script');s.onerror=()=>{s.remove();alert('연결 오류 — 잠시 후 다시 시도해주세요.');};s.onload=()=>s.remove();
+  s.src=APPS_URL+(APPS_URL.indexOf('?')<0?'?':'&')+'callback=__wpR&pin='+encodeURIComponent(pin)+'&_='+Date.now();
+  document.body.appendChild(s);}
 window.__wpR=function(p){if(!p||!p.authed){alert('PIN이 맞지 않습니다.');return;}
   AUTHED=true;ROSTER={};(p.months||[]).forEach(m=>{if(m.roster)ROSTER[m.num]=m.roster;});repaint();
   if(typeof rtRepaint==='function')rtRepaint();  // 2026-07-20: 같은 PIN 통과로 '이번 재등록 대상' 명단도 동시 해제
