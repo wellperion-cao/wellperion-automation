@@ -50,8 +50,8 @@
  * 원칙: OMC HUD 파일은 건드리지 않는다(업데이트 때 덮어써진다). 이 래퍼가 감싼다.
  *       무슨 일이 생겨도 statusline 이 비지 않게 — 실패하면 OMC 출력만이라도 낸다.
  */
-import { spawnSync } from 'node:child_process';
-import { readFileSync, statSync, writeFileSync, mkdirSync, openSync, readSync, closeSync, fstatSync, readdirSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { readFileSync, statSync, writeFileSync, mkdirSync, openSync, readSync, closeSync, fstatSync, readdirSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import tty from 'node:tty';
 import os from 'node:os';
@@ -89,15 +89,18 @@ function readStdin() { try { return readFileSync(0, 'utf8'); } catch { return '{
 //     캐시가 살아있으면 프로세스를 아예 안 띄우므로 상태줄이 상한 안에 안정적으로 들어온다.
 //   ※ OMC HUD 파일 자체는 여전히 건드리지 않는다(업데이트 시 덮어써짐 — 이 파일 상단 원칙).
 const OMC_CACHE_TTL_MS = 15000;               // 15초 — 비용 표시가 최대 15초 늦을 뿐, 값은 정확
-const OMC_EMPTY_CACHE_TTL_MS = 3000;          // 3초 — 빈 결과(배너·타임아웃 등)도 캐시하되 훨씬 짧게.
-// ★2026-08-06 시토: 빈 결과를 캐시에 안 쓰면 배너가 뜨는 동안(혹은 매 타임아웃마다) 렌더할 때마다
-//   프로세스 재기동(≈600ms)이 그대로 부활한다 — 캐시가 막으려던 바로 그 비용이다. 실측(아래
-//   isOmcBanner 주석): 우리 파이프라인은 실제 stdin 을 항상 넘기므로 배너는 안 뜬다(확정) —
-//   그래도 타임아웃·크래시 등 다른 이유로 빈 결과가 날 수 있어 짧은 TTL 로 캐시는 남겨 둔다.
+// ★2026-08-29 웰리 — OMC HUD 5.0.2 가 usage-api 네트워크 호출 때문에 느려졌다(실측 10~49초,
+//   예전 2.5초 블로킹 spawnSync 로는 절대 못 끝낸다). 빈 결과를 짧은 TTL 로 캐시해 재시도하던
+//   옛 방식은 "매번 2.5초를 블로킹하고도 영원히 빈손"이 돼 토큰·ctx 줄이 통째로 사라졌다
+//   (GM 신고 2026-08-29). 그래서 블로킹 재시도를 버리고 아래 omcHud() 에서 백그라운드 새로고침
+//   (느긋하게 최대 60초) + 마지막 성공값 즉시 표시로 바꿨다.
 // 캐시 위치는 이 스크립트 위치에서 잡는다(<repo>/scripts/ → <repo>/tmp/).
 // 상태줄은 cwd 가 매번 다를 수 있어 상대경로로 두면 캐시가 흩어진다.
 const REPO_ROOT = path.dirname(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')));
 const OMC_CACHE = path.join(REPO_ROOT, 'tmp', 'hud_omc_cache.json');   // .gitignore 대상(tmp/)
+const SELF_PATH = new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');   // 백그라운드 새로고침에서 이 파일 자신을 재실행할 때 씀
+const OMC_REFRESH_TMP_DIR = path.join(REPO_ROOT, 'tmp', 'hud_omc_refresh');   // 백그라운드 새로고침용 입력 임시파일(.gitignore 대상)
+const OMC_REFRESH_COOLDOWN_MS = 30000;   // 이 안에 이미 새로고침을 띄웠으면 또 안 띄운다(중복 프로세스 방지)
 
 // OMC 4.15.7 이 settings.json 의 statusLine 이 자기 스크립트를 안 가리키면(우리는 의도적으로
 // wellperion_hud.mjs 를 가리킨다) 정상 출력(branch/모델/한도/ctx — 원래도 여러 줄이다) 대신
@@ -132,38 +135,62 @@ function omcHud(input) {
   // 옛 형식({at,out} 한 벌)이 남아 있으면 버린다 — 세션 구분이 없던 값이라 남의 값일 수 있다.
   if (Object.prototype.hasOwnProperty.call(store, 'out')) store = {};
   const cached = store[key] || null;
+  const now = Date.now();
 
-  // 1) 살아있는 캐시가 있으면 프로세스를 띄우지 않는다. 빈 결과는 훨씬 짧은 TTL(위 상수 참고).
-  if (cached && typeof cached.out === 'string') {
-    const ttl = cached.out ? OMC_CACHE_TTL_MS : OMC_EMPTY_CACHE_TTL_MS;
-    if ((Date.now() - (cached.at || 0)) < ttl) return cached.out;
+  // 1) 살아있는 성공값이면 그대로 쓴다 — 새로고침도 안 띄운다.
+  if (cached && typeof cached.out === 'string' && cached.out && (now - (cached.at || 0)) < OMC_CACHE_TTL_MS) {
+    return cached.out;
   }
 
-  // 2) 새로 계산. timeout 을 5s → 2.5s 로 줄인다 — 5초를 다 쓰면 어차피 상태줄 상한을 넘겨
-  //    그 회차는 버려진다. 그럴 바엔 일찍 포기하고 직전 값이라도 내보내는 편이 화면이 안 빈다.
+  // 2) 캐시가 없거나 낡았으면 백그라운드로 새로고침한다 — 메인 렌더는 절대 안 기다린다(위 주석
+  //    참고, OMC HUD 가 10~49초 걸릴 수 있다). 이미 진행 중인 새로고침이 있으면 쿨다운 안엔
+  //    또 안 띄운다(렌더될 때마다 프로세스가 쌓이는 것 방지).
+  const refreshing = cached && cached.refreshing && (now - cached.refreshing) < OMC_REFRESH_COOLDOWN_MS;
+  if (!refreshing) {
+    try {
+      mkdirSync(OMC_REFRESH_TMP_DIR, { recursive: true });
+      const tmpFile = path.join(OMC_REFRESH_TMP_DIR, `${key.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`);
+      writeFileSync(tmpFile, input, 'utf8');
+      const child = spawn(NODE, [SELF_PATH, '--bg-refresh-omc', key, tmpFile], {
+        detached: true, stdio: 'ignore', windowsHide: true,
+      });
+      child.unref();
+      store[key] = { ...(cached || {}), refreshing: now };
+      const stale = Date.now();
+      for (const k of Object.keys(store)) {
+        if (stale - (store[k]?.at || store[k]?.refreshing || 0) > OMC_CACHE_STALE_MS) delete store[k];
+      }
+      const keys = Object.keys(store).sort((a, b) => (store[a].at || 0) - (store[b].at || 0));
+      for (const k of keys.slice(0, Math.max(0, keys.length - OMC_CACHE_MAX_SESSIONS))) delete store[k];
+      mkdirSync(path.dirname(cachePath), { recursive: true });
+      writeFileSync(cachePath, JSON.stringify(store), 'utf8');
+    } catch { /* 새로고침을 못 띄워도 표시는 마지막 값으로 정상 */ }
+  }
+
+  // 3) 지금 화면엔 마지막으로 성공한 값을 낸다(늦더라도 빈 화면보다 낫다). 한 번도 없었으면 빈 문자열.
+  return cached && typeof cached.out === 'string' ? cached.out : '';
+}
+
+// ── OMC HUD 백그라운드 새로고침 진입점 (2026-08-29 웰리) ───────────────────
+// omcHud() 가 spawn(detached)으로 이 파일을 재실행할 때 쓰는 경로. 메인 렌더 경로와 분리해
+// 여유 있게(60초) 기다린 뒤 캐시만 갱신하고 조용히 끝난다 — 화면에는 아무것도 안 낸다.
+function runBgRefreshOmc(key, tmpFile) {
   let out = '';
   try {
-    const r = spawnSync(NODE, [OMC_HUD], { input, encoding: 'utf8', timeout: 2500 });
+    const input = readFileSync(tmpFile, 'utf8');
+    const r = spawnSync(NODE, [OMC_HUD], { input, encoding: 'utf8', timeout: 60000 });
     out = (r.stdout || '').replace(/\s+$/, '');
     if (isOmcBanner(out)) out = '';
-  } catch { out = ''; }
-
-  // 3) 캐시 갱신 — 빈 결과도 쓴다(짧은 TTL 로 다음 렌더의 재기동을 막는다). 못 써도 표시는 정상.
+  } catch { /* out = '' 유지 — 다음 새로고침이 다시 시도 */ }
   try {
+    let store = {};
+    try { store = JSON.parse(readFileSync(OMC_CACHE, 'utf8')); } catch { /* 없으면 새로 */ }
+    if (!store || typeof store !== 'object' || Array.isArray(store)) store = {};
     store[key] = { at: Date.now(), out };
-    const now = Date.now();
-    for (const k of Object.keys(store)) {
-      if (now - (store[k]?.at || 0) > OMC_CACHE_STALE_MS) delete store[k];
-    }
-    const keys = Object.keys(store).sort((a, b) => (store[a].at || 0) - (store[b].at || 0));
-    for (const k of keys.slice(0, Math.max(0, keys.length - OMC_CACHE_MAX_SESSIONS))) delete store[k];
-    mkdirSync(path.dirname(cachePath), { recursive: true });
-    writeFileSync(cachePath, JSON.stringify(store), 'utf8');
-  } catch { /* 캐시 못 써도 표시는 정상 — 다음 회차에 다시 계산할 뿐 */ }
-
-  // 4) 이번 계산이 빈손이면 직전 값(있었다면)이라도 화면에 낸다(빈 화면보다 조금 늦은 값이 낫다).
-  if (!out && cached && typeof cached.out === 'string' && cached.out) return cached.out;
-  return out;
+    mkdirSync(path.dirname(OMC_CACHE), { recursive: true });
+    writeFileSync(OMC_CACHE, JSON.stringify(store), 'utf8');
+  } catch { /* 캐시 못 쓰면 다음 새로고침이 다시 시도 */ }
+  try { unlinkSync(tmpFile); } catch { /* 이미 없거나 못 지워도 무해 */ }
 }
 
 function git(cwd, args) {
@@ -1304,4 +1331,8 @@ function main() {
   process.stdout.write((line ? line + '\n' : '') + base + roleBlock);
 }
 
-main();
+if (process.argv[2] === '--bg-refresh-omc') {
+  runBgRefreshOmc(process.argv[3], process.argv[4]);
+} else {
+  main();
+}
