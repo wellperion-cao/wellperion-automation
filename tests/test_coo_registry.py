@@ -51,8 +51,10 @@ def test_pilot_check_status_enabled_and_wired():
 def test_iter_enabled_returns_all_enabled_coo_modules():
     reg = R.load_registry()
     enabled = {m["id"] for m in R.iter_enabled(reg)}
-    assert enabled == {"coo-check-status", "coo-work-approval", "coo-schedule-ssot",
-                        "coo-monthly-ops", "coo-notice", "coo-ops-fill-board"}
+    # coo-ops-fill-board 는 GM 지시 2026-08-29 로 전체 폐기(모듈·스크립트·예약·보드 전부 삭제).
+    # 이 목록은 그 전부터 등록부와 어긋나 있었다 — coo-schedule-ssot·coo-monthly-ops 는 등록부에
+    # 없는 id 였고 coo-reception(2026-08-13 독립)은 빠져 있었다. 실제 등록부에 맞춘다.
+    assert enabled == {"coo-check-status", "coo-work-approval", "coo-reception", "coo-notice"}
 
 
 def test_workapproval_module_enabled_and_wired():

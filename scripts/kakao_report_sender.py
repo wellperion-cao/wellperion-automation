@@ -932,7 +932,7 @@ AUTO_PIPELINE_SENDERS = {
     "중간관리자알림합본",   # daily_scheduler.run_mgmt_notice_digest — 17:00 알림성 합본
     "주간보고초안",        # daily_scheduler — 운영부 주간 보고 초안
     "아침요약카드",        # kakao_summary_card_auto.py — 07:30 경보·4지표 요약 카드(현재 킬스위치 OFF)
-    "업무판채움보드",       # ops_fill_board.py — 매주 월 10:00 업무판 채움 안내 카드
+    # "업무판채움보드" 제거(GM 지시 2026-08-29 폐기) — ops_fill_board 전체 폐기.
 }
 SENDER_WELLY = "웰리"
 
