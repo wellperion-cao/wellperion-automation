@@ -222,7 +222,14 @@ def compute_alerts(kpi: dict) -> list:
         pct = dround(insp_rate * 100, 0)
         month = extract_month(coo.get("지원부_점검완료율_기준", ""))
         month_label = f"{month}월 누적" if month else "이번달 누적"
-        alerts.append(f"지원부 점검 완료율 {pct}% — 목표 95% 미달 ({month_label})")
+        # 병기: 45% 한 줄만 보면 체크 태만으로 오독한다 — 제출률·제출분충실도로 원인을 가른다(값 없으면 종전 표기 유지).
+        submit_rate = coo.get("지원부_제출률")
+        fill_rate = coo.get("지원부_제출분충실도")
+        if isinstance(submit_rate, (int, float)) and isinstance(fill_rate, (int, float)):
+            detail = f"제출률 {dround(submit_rate * 100, 0)}% · 제출분 충실도 {dround(fill_rate * 100, 0)}%"
+        else:
+            detail = f"완료율 {pct}%"
+        alerts.append(f"지원부 점검 — {detail} — 목표 95% 미달 ({month_label})")
 
     sales = cfo.get("sales_month")
     target = cfo.get("sales_month_target")
@@ -317,11 +324,13 @@ def tile_inspection(coo: dict) -> str:
     rate = coo.get("지원부_점검완료율")
     done = coo.get("지원부_완료")
     total = coo.get("지원부_전체")
+    submit_rate = coo.get("지원부_제출률")
+    fill_rate = coo.get("지원부_제출분충실도")
 
     if not isinstance(rate, (int, float)):
         return (
             '<div class="tile">'
-            '<div class="lab"><span class="dot"></span> 점검 완료율</div>'
+            '<div class="lab"><span class="dot"></span> 지원부 점검 완료율</div>'
             f'<div class="big">{MISSING}</div>'
             '<div class="sub">데이터 없음</div>'
             '</div>'
@@ -331,11 +340,17 @@ def tile_inspection(coo: dict) -> str:
     warn = rate < 0.95
     dot_cls = "warn" if warn else "good"
     arrow = '<span class="arrow down" style="font-size:14px"> ▼</span>' if warn else ""
+    # 병기: 완료율 한 숫자만 보면 4부서 값처럼 읽힌다(지원부 한정) + 낮은 원인(제출 누락 vs 체크 태만)이 안 보인다.
+    # 값 없으면 종전 표기(완료/전체) 그대로 유지(fail-soft).
+    if isinstance(submit_rate, (int, float)) and isinstance(fill_rate, (int, float)):
+        sub = f'제출률 {dround(submit_rate * 100, 0)}% · 제출분 충실도 {dround(fill_rate * 100, 0)}%'
+    else:
+        sub = f'완료 {fmt_comma(done)} / 전체 {fmt_comma(total)} · 목표 95%'
     return (
         '<div class="tile">'
-        f'<div class="lab"><span class="dot {dot_cls}"></span> 점검 완료율</div>'
+        f'<div class="lab"><span class="dot {dot_cls}"></span> 지원부 점검 완료율</div>'
         f'<div class="big">{pct}%{arrow}</div>'
-        f'<div class="sub">완료 {fmt_comma(done)} / 전체 {fmt_comma(total)} · 목표 95%</div>'
+        f'<div class="sub">{sub}</div>'
         '</div>'
     )
 

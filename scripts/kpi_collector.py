@@ -220,9 +220,22 @@ def _coo_check_rate_monthly(month_str: str) -> dict | None:
             if isinstance(avg_pct, (int, float)) and not isinstance(avg_pct, bool)
             else (round(sum_done / sum_total, 4) if isinstance(sum_done, (int, float)) else None)
         )
+        # 제출률·제출분충실도 — 지원부 체계.html:8667 mrSubmitBreakdown 과 동일 산식(복제 아님·같은 필드 재사용).
+        # submitted = 제출된 세션에 실제 담긴 항목수(byZone.sumTotal 합) — sum_total(예정 전체)과 다르다.
+        zones = data.get("byZone")
+        submitted = (
+            sum((z.get("sumTotal") or 0) for z in zones if isinstance(z, dict))
+            if isinstance(zones, list) else None
+        )
+        submit_rate = round(submitted / sum_total, 4) if submitted else None
+        fill_rate = (
+            round(sum_done / submitted, 4)
+            if submitted and isinstance(sum_done, (int, float)) else None
+        )
         return {
             "rate": rate, "done": sum_done, "total": sum_total,
             "month": month_str, "active_days": active_days,
+            "submit_rate": submit_rate, "fill_rate": fill_rate,
         }
     except Exception:
         return None
@@ -238,6 +251,8 @@ def _coo_check_rate() -> dict:
     당일 today_live 값은 "_당일라이브" 접미 필드로 참고 병기(대표값 아님).
     반환: {"지원부_점검완료율": 0~1|null(대표=월간), "지원부_완료"/"지원부_전체": 월간 분자/분모,
            "지원부_점검완료율_기준": "YYYY-MM(누적,N일활성)"|"YYYY-MM(전월 최종)"|null,
+           "지원부_제출률": 0~1|null(예정 대비 제출), "지원부_제출분충실도": 0~1|null(제출분 안 체크율)
+             — 완료율=제출률×제출분충실도 분해(지원부 체계.html mrSubmitBreakdown 과 동일 산식),
            "지원부_점검완료율_당일라이브": 0~1|null(참고), "지원부_당일라이브_완료"/"_전체": int|null,
            "4부서_점검완료율": null, "_note": str}
     — 4부서 전체 완료율은 이 GAS로 측정 불가(지원부 데이터만 제공) → null 유지.
@@ -247,6 +262,8 @@ def _coo_check_rate() -> dict:
         "지원부_완료": None,
         "지원부_전체": None,
         "지원부_점검완료율_기준": None,
+        "지원부_제출률": None,
+        "지원부_제출분충실도": None,
         "지원부_점검완료율_당일라이브": None,
         "지원부_당일라이브_완료": None,
         "지원부_당일라이브_전체": None,
@@ -269,6 +286,8 @@ def _coo_check_rate() -> dict:
         result["지원부_완료"]           = monthly["done"]
         result["지원부_전체"]           = monthly["total"]
         result["지원부_점검완료율_기준"] = basis
+        result["지원부_제출률"]         = monthly.get("submit_rate")
+        result["지원부_제출분충실도"]   = monthly.get("fill_rate")
         result["_note"] = (
             "4부서전체=미측정(GAS가지원부한정) · 대표값=월간 누적 실측(monthly_report, "
             f"기준={basis}) · 당일 라이브는 _당일라이브 필드 참고(아침엔 0 정상·측정실패 아님)"
