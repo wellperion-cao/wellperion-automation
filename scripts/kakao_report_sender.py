@@ -1016,12 +1016,74 @@ def _mask_name(m: "re.Match") -> str:
     return word[:-1] + "*"
 
 
+# ── 회원 실명(전화 없는 명단 줄) 마스킹 (GM 승인 2026-08-29) ─────────────────────
+# 실무진 이름 정본 = ssot/kpi.json (약속 L01 — 코드에 이름을 복제하지 않는다).
+# ①「이름+직함」·「이름+M/AM」 짝 전수 스캔 ②팀리더·부서반장 표의 값이 이름뿐인 경우(편한별).
+# 못 읽으면 빈 집합 = 그날은 실무진 이름도 가려질 수 있으나 회원 노출보다 낫다(안전측).
+_STAFF_TITLE_RE = re.compile(
+    r"(?<![가-힣])([가-힣]{2,4})(?=\s*(?:팀장|실장|소장|반장|과장|차장|원장|사원|주임|프로|매니저)"
+    r"|(?:AM|M)(?![A-Za-z가-힣]))")
+_STAFF_CACHE: "set[str] | None" = None
+
+
+def _staff_names() -> "set[str]":
+    global _STAFF_CACHE
+    if _STAFF_CACHE is not None:
+        return _STAFF_CACHE
+    names: set[str] = set()
+    try:
+        d = json.loads((ROOT / "ssot" / "kpi.json").read_text(encoding="utf-8"))
+        # 전수 스캔은 3자 이상만 — 2자 매칭은 산문 부스러기(경연·정은·여자 등)라 회원 이름과
+        # 충돌해 마스킹 구멍이 된다. 실무진 정식 이름은 전원 3자다(2자 실무진이 생기면 dict 경로에 얹기).
+        names.update(n for n in _STAFF_TITLE_RE.findall(json.dumps(d, ensure_ascii=False))
+                     if len(n) >= 3)
+        for sec, key in (("_팀리더_2026_08_25", "teams"), ("_부서반장_2026_08_26", "depts")):
+            for v in ((d.get(sec) or {}).get(key) or {}).values():
+                w = str(v).split()[0] if str(v).split() else ""
+                if re.fullmatch(r"[가-힣]{2,4}", w):
+                    names.add(w)
+    except Exception:
+        pass
+    _STAFF_CACHE = names
+    return names
+
+
+_PURE_NAME_RE = re.compile(r"^[가-힣]{2,4}$")
+
+
+def _mask_roster_names(text: str) -> str:
+    """전화 없는 명단 줄의 회원 실명을 가린다(이경언→이경*).
+
+    명단 줄 판정 기준: 「·」(U+00B7)로 구분된 불릿 줄에서 **첫 번째 순수 한글 2~4자 구획**만
+    회원 이름으로 본다 — 문의정리 통의 두 명단 형태가 전부 이 꼴이다:
+      ①「· 이름 · 종목(…) · 담당강사 [상태]」  ②「· [강습] 일시 · 이름 · 종목 · N일째 · …」
+    뒤에 오는 순수 한글 구획(종목명 「바레」·담당 강사명)은 첫-구획 규칙으로 자연히 보호되고,
+    첫 구획이라도 실무진 정본(_staff_names)에 있으면 통과시킨다. 자유 문장·「•」 불릿 줄은
+    「·」 구분이 없어 애초에 안 걸린다."""
+    staff = _staff_names()
+    out_lines = []
+    for line in text.split("\n"):
+        if line.lstrip().startswith("·") and "·" in line.lstrip()[1:]:
+            segs = line.split("·")
+            for i, seg in enumerate(segs):
+                w = seg.strip()
+                if _PURE_NAME_RE.fullmatch(w):
+                    if w not in staff:
+                        segs[i] = seg.replace(w, w[:-1] + "*")
+                    break   # 첫 순수 한글 구획까지만 본다 — 이름 자리는 하나뿐
+            line = "·".join(segs)
+        out_lines.append(line)
+    return "\n".join(out_lines)
+
+
 def mask_pii(text: str) -> str:
     """카톡 발신 명단 줄의 이름·연락처를 가린다. 이름=마지막 한 글자만 *,
     연락처=앞3자리·뒤4자리만 남기고 가운데 ****. 「연락처」·「전화」 같은
-    비이름 낱말은 건드리지 않는다(_NOT_A_NAME)."""
+    비이름 낱말은 건드리지 않는다(_NOT_A_NAME). 전화 없는 「·」 명단 줄의
+    회원 실명도 가린다(_mask_roster_names · 실무진 이름은 kpi.json 정본으로 통과)."""
     out = _PHONE_RE.sub(lambda m: f"{m.group(1)}-****-{m.group(3)}", str(text or ""))
     out = _NAME_BEFORE_PHONE_RE.sub(_mask_name, out)
+    out = _mask_roster_names(out)
     return out
 
 
@@ -1042,6 +1104,15 @@ def _selfcheck_mask_pii() -> None:
         ("전화번호 010-1234-1531", "전화번호 010-****-1531"),
         # 비이름 낱말을 막아도 진짜 명단은 그대로 가려진다(회귀 0)
         ("담당 김남욱 010-1234-1531", "담당 김남* 010-****-1531"),
+        # 전화 없는 명단 줄 — 회원 실명은 가리고(첫 순수 한글 구획), 실무진·종목명은 그대로(GM 승인 2026-08-29)
+        ("· 이경언 · 성인강습(스쿼시)      · 이상훈  [컨택중]",
+         "· 이경* · 성인강습(스쿼시)      · 이상훈  [컨택중]"),
+        ("· [성인강습] 2026-08-01 10:14 · 이지수 · 바레 · 28일째 · 담당있음·컨택없음",
+         "· [성인강습] 2026-08-01 10:14 · 이지* · 바레 · 28일째 · 담당있음·컨택없음"),
+        ("· 이상훈 · 스쿼시 레인 안내", "· 이상훈 · 스쿼시 레인 안내"),          # 실무진(팀리더)은 통과
+        ("· 이경* · 성인강습(스쿼시)", "· 이경* · 성인강습(스쿼시)"),           # 이미 가려진 값 무변화
+        ("이경언 회원님이 문의 주셨습니다", "이경언 회원님이 문의 주셨습니다"),  # 자유 문장 무영향
+        (" • 이경연 실장님 — 확인 부탁", " • 이경연 실장님 — 확인 부탁"),       # 「•」 불릿(아침 통) 무영향
     ]
     for src, want in cases:
         got = mask_pii(src)

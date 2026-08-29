@@ -378,39 +378,9 @@ def build_weekly_report_draft(rows: list, today_str: str) -> str:
 MGR_DAILY_HEARTBEAT_ID = "mgr-daily-brief-sent"
 # ★2026-08-26 웰리 실측(배 11039 ⑤ · 배 11070 ③) — 절이 하나씩 늘며 한 통이 35줄까지
 # 나갔다. 카톡 한 통 10줄 안쪽이 GM 확정(2026-08-07)이라 25줄로 낮춘다.
-MGR_BRIEF_LINE_CAP = 25
-
-
-def _cap_message_lines(text: str, max_lines: int) -> str:
-    """메시지 줄 수 상한. 서명(RELAY_SIGNOFF)이 있으면 항상 마지막 줄로 살려 둔다 —
-    상한에 걸려도 누가 보낸 글인지는 잘리지 않는다. 잘렸으면 그 사실을 한 줄로 남긴다."""
-    lines = text.splitlines()
-    if len(lines) <= max_lines:
-        return text
-    keep_signoff = bool(lines) and lines[-1] == RELAY_SIGNOFF
-    body = lines[:-1] if keep_signoff else lines
-    limit = max_lines - (2 if keep_signoff else 1)  # 생략 안내줄(+서명줄) 자리를 남긴다
-    trimmed = body[:max(limit, 0)]
-    trimmed.append("…(분량 상한으로 일부 생략 — 화면에서 전체를 보실 수 있습니다)")
-    if keep_signoff:
-        trimmed.append(RELAY_SIGNOFF)
-    return "\n".join(trimmed)
-
-
-def _selfcheck_cap_message_lines() -> None:
-    """상한 이내면 그대로, 넘으면 자르되 서명줄은 항상 살아 있는지. 네트워크 없이 돈다."""
-    short = "\n".join(f"line{i}" for i in range(10))
-    assert _cap_message_lines(short, 25) == short, "상한 이내는 그대로여야 한다"
-    long_with_signoff = "\n".join(f"line{i}" for i in range(34)) + f"\n{RELAY_SIGNOFF}"
-    out = _cap_message_lines(long_with_signoff, 25)
-    out_lines = out.splitlines()
-    assert len(out_lines) == 25, len(out_lines)
-    assert out_lines[-1] == RELAY_SIGNOFF, "서명줄은 상한에 걸려도 마지막 줄로 남아야 한다"
-    assert "생략" in out_lines[-2], out_lines[-2]
-    long_no_signoff = "\n".join(f"line{i}" for i in range(34))
-    out2 = _cap_message_lines(long_no_signoff, 25)
-    assert len(out2.splitlines()) == 25, len(out2.splitlines())
-    print("[selfcheck] _cap_message_lines OK")
+# (구 25줄 상한 _cap_message_lines 은 2026-08-29 GM 결정으로 삭제 — "줄을 접는 게 아니라
+#  안 끝난 건수를 줄여야 한다". 본문을 자르면 밀린 일이 안 보이게 될 뿐이다. 길이 조절은
+#  건수 소진으로만 한다 · ★중간관리자 통이 유일한 사용처였다.)
 
 # ══════════════════════════════════════════════════════════════════════════
 # 📮 회신 부탁 절 (2026-08-15 GM 승인 · C안) — 물음은 나가는데 답을 세는 곳이 없어
@@ -565,13 +535,12 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     if asks:
         parts.append(asks)
 
-    message = _cap_message_lines("\n\n".join(parts), MGR_BRIEF_LINE_CAP)
+    # [2026-08-29 GM 결정] 25줄 상한으로 본문을 자르던 것 삭제 — "줄을 접는 게 아니라
+    # 안 끝난 건수를 줄여야 한다". 넘쳐도 자르지 않는다(밀린 일이 안 보이게 되는 게 더 나쁘다).
+    message = "\n\n".join(parts)
 
     # 📅 다가오는 일정 — 관리자 건(미팅·방문·보고 등)만. 부서 소관은 _send_ovd_room(main() 호출)
     # 가 4부서방(★운영+시설+지원+주차) 쪽에 따로 붙인다(위 「📅 다가오는 일정」 섹션 주석 참조).
-    # ★상한 적용 뒤에 붙인다(2026-08-29 실측 수리) — 맨 끝 part 로 넣으니 브리프가 긴 날
-    #   _cap_message_lines 가 일정 블록을 통째로 삼켜 한 번도 안 나갔다. 블록은 최대
-    #   7줄(제목+5건+그 밖)이라 상한을 조금 넘어도 일정 누락보다 낫다.
     sched_items = [x for x in _upcoming_schedule_items() if not x["dept_item"]]
     sched_block = _build_schedule_block(sched_items)
     if sched_block:
