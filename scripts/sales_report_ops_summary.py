@@ -203,12 +203,20 @@ def _fmt_loss_name(nm: str, reason: str) -> str:
 
 
 def build_loss_text(send_day: str) -> str:
-    """「보고」탭 I18 — 로스자 칸. 전날 LOSS 기준(GM 확정 2026-08-28).
+    """「보고」탭 I18 — 로스자 칸. 전날 LOSS 기준(GM 확정 2026-08-28 · 단기 칸도 배11027 GM
+    확정으로 같은 전날 기준을 쓴다).
 
     원천 = 종료회원 원장 스냅샷(status/member_ended_snapshot.json · 매일 19:00 자동 갱신).
     사유는 원장의 「미등록사유」 칸을 헤더 이름으로 찾는다(자리 폴백 금지 — 열 순서가
     바뀌어도 깨지지 않게). 비어 있으면 _fmt_loss_name 이 '(사유 미기재)'로 표시한다.
     원장을 못 읽으면 빈 문자열을 돌려주고, 호출부가 그 칸을 건드리지 않는다.
+
+    「단기」 축 확인(배11027) — 원장의 「회원\\n구분」 열은 멤버십·입주민·중단기·보증금·
+    FAN VIP·법인 6종이다(scripts/collectors/cpo_sheet_contract.py 대조 목록). 정확히
+    '단기'라는 값은 없고 '중단기'가 유일한 후보 — 미등록사유 목록에도 '단기'가 있지만
+    그건 개별 사유값이라 사람별 이름이 아니라 인원수만 요구하는 이 칸(이탈자 (단기 N명))과
+    맞지 않는다. 그래서 회원구분='중단기'를 '단기' 칸으로 쓴다. 그 외 카테고리(입주민·
+    보증금·법인)는 기존과 같이 멤버십 줄에 남긴다(회귀 없음).
     """
     prev_day = (date.fromisoformat(send_day) - timedelta(days=1)).isoformat()
     md = lambda d: f"{int(d[5:7])}/{int(d[8:10])}"  # noqa: E731
@@ -219,20 +227,30 @@ def build_loss_text(send_day: str) -> str:
     except Exception:
         return ""      # 원장을 못 읽었다 — 사람이 쓴 글을 빈 값으로 지우지 않는다
 
+    loss, danggi_count = _split_loss_rows(rows, prev_day)
+    lines = [f"{md(prev_day)} 기준 [LOSS : {len(loss) + danggi_count}명]"]
+    lines.append(f"- 멤버십 : {' / '.join(loss)}" if loss else "- 멤버십 :")
+    lines.append(f"- 단   기 : {danggi_count}명" if danggi_count else "- 단   기 :")
+    return "\n".join(lines)
+
+
+def _split_loss_rows(rows: list[dict], prev_day: str) -> tuple[list[str], int]:
+    """종료회원 원장 행을 그날 LOSS 기준으로 멤버십 명단 / 중단기(단기) 인원수로 가른다."""
     loss: list[str] = []
+    danggi_count = 0
     for r in rows:
         for k, v in r.items():
             if k.replace("\n", "") == "LOSS일자" and str(v or "").strip()[:10] == prev_day:
-                nm = next((str(vv) for kk, vv in r.items() if kk.replace("\n", "") == "회원명"), "")
-                reason = next((str(vv).strip() for kk, vv in r.items() if kk.replace("\n", "") == "미등록사유"), "").strip()
-                if nm:
-                    loss.append(_fmt_loss_name(nm, reason))
+                cat = next((str(vv).strip() for kk, vv in r.items() if kk.replace("\n", "") == "회원구분"), "")
+                if cat == "중단기":
+                    danggi_count += 1
+                else:
+                    nm = next((str(vv) for kk, vv in r.items() if kk.replace("\n", "") == "회원명"), "")
+                    reason = next((str(vv).strip() for kk, vv in r.items() if kk.replace("\n", "") == "미등록사유"), "").strip()
+                    if nm:
+                        loss.append(_fmt_loss_name(nm, reason))
                 break
-
-    lines = [f"{md(prev_day)} 기준 [LOSS : {len(loss)}명]"]
-    lines.append(f"- 멤버십 : {' / '.join(loss)}" if loss else "- 멤버십 :")
-    lines.append("- 단   기 :")
-    return "\n".join(lines)
+    return loss, danggi_count
 
 
 def _parking_lines(day: str) -> list[str]:
@@ -393,6 +411,16 @@ def _selftest() -> None:
     assert _fmt_loss_name("표소영", "양도/강습전환") == "표소영(양도/강습전환)"
     assert _fmt_loss_name("정재윤", "") == "정재윤(사유 미기재)"
     assert _fmt_loss_name("정재윤", "   ") == "정재윤(사유 미기재)"  # 공백만 있어도 빈 것으로 본다
+
+    # 이탈자(단기) 분리 — 회원구분='중단기'는 인원수만, 그 외는 이름+사유(배11027)
+    rows = [
+        {"LOSS\n일자": "2026-08-22", "회원\n구분": "멤버십", "회원명": "오수연", "미등록사유": "거주지변경"},
+        {"LOSS\n일자": "2026-08-22", "회원\n구분": "중단기", "회원명": "김단기", "미등록사유": "단기"},
+        {"LOSS\n일자": "2026-08-21", "회원\n구분": "멤버십", "회원명": "무관", "미등록사유": ""},  # 다른 날 — 제외
+    ]
+    loss, danggi = _split_loss_rows(rows, "2026-08-22")
+    assert loss == ["오수연(거주지변경)"], loss
+    assert danggi == 1, danggi
     print("selftest ok")
 
 
