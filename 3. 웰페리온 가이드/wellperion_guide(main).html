@@ -6957,30 +6957,39 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var tableEl = document.getElementById('o1-week-table');
         var timeEl = document.getElementById('o1-week-time');
         if(!goodEl || !tableEl) return;
+        // 접수 카테고리 원문은 길게 읽힌다 — 접두사(직원·강사)·어미(합니다)·꼬리(접수)를 걷어낸
+        // 짧은 이름만 쓴다("쓴소리"·"칭찬"·"시설물 고장"). RECEPTION_CAT_META(1382행)의 더 짧은
+        // "고장" 표기와는 다른 자리라 별도 정의 없이 정규식으로 뽑는다.
+        function shortCat(c){ return String(c||'').replace(/^직원·강사\s*/,'').replace(/합니다$/,'').replace(/\s*접수$/,'').trim(); }
         withTimeout(jget(RAW_BASE+"status/reception_watch.json?_pv="+pv), 8000, undefined).then(function(reception){
+          var summaryCountEl = document.getElementById('o1-week-summary-count');
           if(reception===undefined){ goodEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">접수 현황을 못 읽었습니다 — 안 한 것이 아닙니다.</div>'; return; }
           var byCat = (reception.processing_days && reception.processing_days.by_category) || {};
           var good = Object.keys(byCat).filter(function(c){ return byCat[c].median_days!=null && byCat[c].median_days<=3; });
-          var lines = good.map(function(c){ return weekLine('👏', c+' — 처리 중앙값 '+byCat[c].median_days+'일'); }).join('');
+          if(summaryCountEl) summaryCountEl.textContent = '잘 되고 있는 것 '+good.length+'건';
+          var goodLines = good.map(function(c){ return weekLine('👏', shortCat(c)+' '+byCat[c].median_days+'일'); });
           var praise = byCat['직원·강사 칭찬합니다'];
-          if(praise) lines += weekLine('👏', '칭찬 접수 '+praise.count+'건');
-          goodEl.innerHTML = lines ? ('<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:2px;">👏 잘 되고 있는 것</div>' + lines) : '';
+          if(praise) goodLines.push(weekLine('👏', '칭찬 '+praise.count+'건'));
+          goodLines = goodLines.slice(0,3); // 최대 3줄
+          goodEl.innerHTML = goodLines.length ? ('<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:2px;">👏 잘 되고 있는 것</div>' + goodLines.join('')) : '';
         });
         withTimeout(jget(TODO_API+"?action=todo_list&_pv="+pv), 8000, undefined).then(function(todo){
           var trows = todo && todo.data;
           if(!Array.isArray(trows)){ tableEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">업무 SSOT를 못 읽었습니다 — 안 한 것이 아닙니다.</div>'; return; }
           var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS_STAFF[String(t['담당자']||'').trim()]; })
             .sort(function(a,b){ return String(a['종료일']||'').localeCompare(String(b['종료일']||'')); });
-          var rows = mine.slice(0,8);
+          var rows = mine.slice(0,6); // 표 최대 6줄
           var th = function(t){ return '<th style="padding:6px 8px;border:1px solid var(--border);background:var(--card);text-align:left;">'+t+'</th>'; };
           var td = function(t){ return '<td style="padding:6px 8px;border:1px solid var(--border);">'+t+'</td>'; };
           var trs = rows.map(function(t){
-            var issue = t['보류사유'] ? String(t['보류사유']) : '원장에 없음';
-            return '<tr>'+td(String(t['업무명']||'').slice(0,30))+td(ownerTitle(t['담당자']))+td(String(t['상태']||''))+td(String(t['종료일']||'').slice(0,10))+'<td style="padding:6px 8px;border:1px solid var(--border);color:var(--dim);">'+issue+'</td></tr>';
+            var issue = t['보류사유'] ? String(t['보류사유']) : ''; // 빈칸 = 원장에 아직 안 적힌 것(안내는 표 아래 한 줄로)
+            return '<tr>'+td(String(t['업무명']||'').slice(0,30))+td(ownerTitle(t['담당자']))+td(String(t['상태']||''))+td(String(t['종료일']||'').slice(0,10))+td(issue)+'</tr>';
           }).join('');
-          var tail = mine.length>8 ? '<div style="font-size:11px;color:var(--dim);margin-top:6px;">외 '+(mine.length-8)+'건 — 업무·결재 SSOT에서 계속</div>' : '';
+          var tail = mine.length>6 ? '<div style="font-size:11px;color:var(--dim);margin-top:6px;">외 '+(mine.length-6)+'건 — 업무·결재 SSOT에서 계속</div>' : '';
           tableEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">📄 주간 보고 — 실무진은 GM께 직보하지 않는다, 실장이 취합해 올린다(약속 L24)</div>'
-            + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;"><tr>'+th('업무명')+th('담당')+th('상태')+th('기한')+th('이슈')+'</tr>'+trs+'</table></div>'+tail;
+            + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;"><tr>'+th('업무명')+th('담당')+th('상태')+th('기한')+th('이슈')+'</tr>'+trs+'</table></div>'
+            + '<div style="font-size:10.5px;color:var(--dim);margin-top:6px;">기한·이슈가 빈 칸은 원장에 아직 안 적힌 것입니다.</div>'
+            + tail;
           if(timeEl) timeEl.textContent = timeStr();
         });
       }
@@ -6995,24 +7004,33 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         var trendEl = document.getElementById('o1-month-trend');
         if(!goalsEl) return;
         withTimeout(jget(RAW_BASE+"status/monthly_ops_plan.json?_pv="+pv), 15000, undefined).then(function(plan){
+          var summaryCountEl = document.getElementById('o1-month-summary-count');
           if(plan===undefined){ goalsEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">월간 운영 계획을 못 읽었습니다 — 안 한 것이 아닙니다.</div>'; return; }
           var mk = monthKey();
           var month = plan && plan.months && plan.months[mk];
           var objs = (month && month.objectives) || [];
-          var ops = objs.filter(function(o){ return String(o.dept||'').indexOf('운영부')>=0; });
-          if(!ops.length){ goalsEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">🎯 운영부 목표 진척 ('+mk+')</div><div style="font-size:12px;color:var(--dim);">이번 달 운영부 목표 없음.</div>'; return; }
+          var deptOps = objs.filter(function(o){ return String(o.dept||'').indexOf('운영부')>=0; });
+          // GM 직접 건은 운영부 화면이 아니라 GM 업무 화면 몫 — 제목에 '(GM 직접)' 표기된 건 제외(GM 지적 2026-08-29).
+          var ops = deptOps.filter(function(o){ return !/\(GM 직접\)/.test(String(o.title||'')); });
+          var gmDirectCount = deptOps.length - ops.length;
+          if(summaryCountEl) summaryCountEl.textContent = '운영부 목표 '+ops.length+'건';
+          var gmNote = gmDirectCount>0 ? '<div style="font-size:10.5px;color:var(--dim);margin-top:6px;">GM 직접 건 '+gmDirectCount+'건은 GM 업무 화면에 있습니다.</div>' : '';
+          if(!ops.length){ goalsEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">🎯 운영부 목표 진척 ('+mk+')</div><div style="font-size:12px;color:var(--dim);">이번 달 운영부 목표 없음.</div>' + gmNote; return; }
           var rows = ops.map(function(o){
             return '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">'
               + '<span style="flex:1;">'+String(o.title||'')+' <span style="color:var(--dim);">('+String(o.dept||'')+')</span></span>'
               + '<span style="white-space:nowrap;color:var(--dim);">'+String(o.status||'')+' · '+(o.progress!=null?o.progress+'%':'—')+'</span></div>';
           }).join('');
-          goalsEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">🎯 운영부 목표 진척 ('+mk+')</div>' + rows;
+          goalsEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">🎯 운영부 목표 진척 ('+mk+')</div>' + rows + gmNote;
         });
+        // 6축을 한 줄에 다 붙이면 안 읽힌다 — 합계 + 낮은 축 2개만 크게, 나머지 4축은 접는다(GM 지적 2026-08-29).
         evalEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">📊 리더 평가 6축 — 2026-08-27 실측 · 3분기(정적값)</div>'
-          + '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">합계 54/100</div>'
-          + '<div style="font-size:12.5px;color:var(--text);line-height:1.7;">① 진척·효율 12/25 · ② 목표달성 15/25 · ③ 리더면모 11/20 · ④ 위임·육성 9/15 · ⑤ 기록·투명성 4/10 · ⑥ 소통·회신 3/5</div>'
+          + '<div style="font-size:1.1rem;font-weight:800;margin-bottom:4px;">3분기 54 / 100</div>'
+          + '<div style="font-size:12.5px;color:var(--text);line-height:1.6;">낮은 축 — 리더 면모 11/20 · 기록·투명성 4/10</div>'
           + '<div style="font-size:12px;color:var(--accent);margin-top:6px;">🎯 종합접수처 미결을 닫으면 ①③이 오른다</div>'
-          + '<a href="reports/260826_웰페리온_리더평가기준_A3.html" target="_blank" style="font-size:11.5px;color:var(--accent);">▸ 평가 원본 A3 보기</a>';
+          + '<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:11px;color:var(--dim);">나머지 4축 보기</summary>'
+          + '<div style="font-size:12px;color:var(--dim);line-height:1.7;margin-top:4px;">① 진척·효율 12/25 · ② 목표달성 15/25 · ④ 위임·육성 9/15 · ⑥ 소통·회신 3/5</div></details>'
+          + '<a href="reports/260826_웰페리온_리더평가기준_A3.html" target="_blank" style="font-size:11.5px;color:var(--accent);display:inline-block;margin-top:8px;">▸ 평가 원본 A3 보기</a>';
         withTimeout(gtext(RAW_BASE+"status/coo_daily.jsonl?_pv="+pv), 8000, undefined).then(function(daily){
           if(daily===undefined || daily===null){ trendEl.innerHTML=''; return; }
           var byDate = {};
