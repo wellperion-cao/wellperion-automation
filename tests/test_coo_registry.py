@@ -57,6 +57,24 @@ def test_iter_enabled_returns_all_enabled_coo_modules():
     assert enabled == {"coo-check-status", "coo-work-approval", "coo-reception", "coo-notice"}
 
 
+def test_daily_trend_parses_and_dedups_by_date(tmp_path, monkeypatch):
+    """운영 추이 원장 — 마감 넘김 건수를 문구에서 집고, 같은 날은 줄을 갈아 끼운다.
+
+    이 원장이 끊기면 '나아지고 있나'에 답할 수 없으므로(GM 2026-08-29) 최소 검사를 남긴다.
+    """
+    import coo_report_line as C
+
+    monkeypatch.setattr(C, "_TREND_PATH", str(tmp_path / "coo_daily.jsonl"))
+    detail = "■ 진행 중 — 활성 43건\n■ 마감 넘긴 일 — 3건 · 어떤 일(운영 정책·83일 초과)"
+    rec = C.append_daily_trend(detail)
+    assert rec["업무_마감넘김"] == 3
+    C.append_daily_trend(detail)                      # 같은 날 두 번
+    lines = (tmp_path / "coo_daily.jsonl").read_text(encoding="utf-8").strip().split("\n")
+    assert len(lines) == 1, "같은 날짜는 한 줄이어야 한다"
+    # 문구가 없으면 0 으로 메우지 않고 비운다(약속 L25 — 안 쌓인 날과 진짜 0 을 구분)
+    assert C.append_daily_trend("")["업무_마감넘김"] is None
+
+
 def test_workapproval_module_enabled_and_wired():
     reg = R.load_registry()
     m = R.get_module(reg, "coo-work-approval")
