@@ -14,6 +14,13 @@
     --grow:#6abf7b; --grow-bg:rgba(106,191,123,0.12);
     --border:#3d3835; --border-strong:#4d4845; --gray-bg:#2a2725;
     --paper-soft:#221F20;
+    /* 운영부 매뉴얼 이관 콘텐츠용 색(원본 운영부 체계.html :root 값 그대로, 2026-08-29) */
+    --green:#6abf7b; --green-bg:rgba(106,191,123,0.12);
+    --red:#ED5B3F; --red-bg:rgba(237,91,63,0.12);
+    --yellow:#e6c84e; --yellow-bg:rgba(230,200,78,0.12);
+    --blue:#5b9fd5; --blue-bg:rgba(91,159,213,0.12);
+    --purple:#a78bda; --purple-bg:rgba(167,139,218,0.12);
+    --orange:#e6944e; --orange-bg:rgba(230,148,78,0.12);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{height:100%;}
@@ -6895,6 +6902,73 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       </div>
     </details>
 
+    <style>
+    /* ── 운영부 매뉴얼 이관 스타일 (운영부 체계.html 매뉴얼 탭 → O1, 2026-08-29 GM 승인) ──
+       클래스명은 원본과 동일하게 유지(O1 전역에 동일 이름 없음 확인 완료) — progress/submit 계열만
+       O1 기존 .progress-bar와 충돌해 ops- 접두를 붙였다. */
+    .manual-section{background:var(--paper);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+    .manual-header{padding:14px 18px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between}
+    .manual-header:hover{background:var(--accent-bg)}
+    .manual-header h3{font-size:15px;font-weight:700;margin:0}
+    .manual-header .arrow{font-size:12px;color:var(--dim);transition:transform 0.2s}
+    .manual-header .arrow.open{transform:rotate(90deg)}
+    .manual-body{border-top:1px solid var(--border);padding:14px 18px;display:none;font-size:13px;line-height:1.8;color:var(--text)}
+    .manual-body.open{display:block}
+    .manual-body ul{margin:6px 0 6px 18px;list-style:disc}
+    .manual-body li{margin-bottom:4px}
+    .manual-body .manual-label{font-weight:700;color:var(--accent);display:block;margin-top:10px;margin-bottom:4px}
+    .manual-body .manual-label:first-child{margin-top:0}
+    .manual-body .highlight{color:var(--red);font-weight:600}
+    .recep-board{display:flex;flex-wrap:wrap;gap:12px;margin:4px 0 18px}
+    .recep-card{flex:1 1 220px;min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 15px;border-left:4px solid var(--accent);display:flex;flex-direction:column;gap:7px}
+    .recep-card.done{border-left-color:var(--green)}
+    .recep-card.form{border-left-color:var(--yellow)}
+    .recep-card.draft{border-left-color:var(--purple)}
+    .recep-card .rc-no{font-size:11px;font-weight:800;color:var(--dim)}
+    .recep-card .rc-title{font-size:14.5px;font-weight:800;line-height:1.35}
+    .recep-card .rc-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+    .recep-badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+    .recep-badge.owner{background:var(--blue-bg);color:var(--blue)}
+    .recep-badge.st-done{background:var(--green-bg);color:var(--green)}
+    .recep-badge.st-form{background:var(--yellow-bg);color:var(--yellow)}
+    .recep-badge.st-draft{background:var(--purple-bg);color:var(--purple)}
+    .recep-badge.wip{background:var(--orange-bg);color:var(--orange)}
+    .manual-body table.recep-tbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+    .manual-body table.recep-tbl td,.manual-body table.recep-tbl th{padding:6px 9px;border:1px solid var(--border);text-align:left;vertical-align:top}
+    .manual-body table.recep-tbl th{background:var(--accent-bg);color:var(--accent);font-weight:700}
+    .manual-body .src-tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:middle}
+    .manual-body .src-tag.sheet{background:var(--green-bg);color:var(--green)}
+    .manual-body .src-tag.empty{background:var(--yellow-bg);color:var(--yellow)}
+    .manual-body .src-tag.ai{background:var(--purple-bg);color:var(--purple)}
+    .manual-body .placeholder-note{background:var(--yellow-bg);border:1px solid rgba(230,200,78,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:12.5px;color:var(--text);line-height:1.6}
+    .manual-body .ai-note{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:12.5px;color:var(--text);line-height:1.6}
+    .board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
+    .rpt-intro{color:var(--dim);font-size:12.5px;margin-bottom:10px}
+    .rpt-step{margin:0 0 14px;padding-bottom:12px;border-bottom:1px dashed var(--border)}
+    .rpt-step:last-child{border-bottom:none}
+    .rpt-txt{margin:2px 0 6px}
+    .rpt-shot{margin:8px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg)}
+    .rpt-shot img{display:block;max-width:100%;height:auto}
+    .rpt-cap{font-size:11.5px;color:var(--dim);padding:5px 9px;background:var(--accent-bg)}
+    .rpt-tip{margin:6px 0 0 0!important;list-style:none!important;padding-left:0!important}
+    .rpt-tip li{position:relative;padding:6px 10px 6px 30px;margin:5px 0!important;background:var(--yellow-bg);border:1px solid var(--border);border-radius:7px;font-size:12.5px}
+    .rpt-tip li:before{content:"참고";position:absolute;left:8px;top:6px;font-size:9px;font-weight:700;color:var(--yellow)}
+    .manual-section .manual-section{margin:10px 0}
+    .ops-progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
+    .ops-progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
+    .ops-progress-fill{height:100%;background:var(--grow);border-radius:4px;transition:width 0.3s}
+    .ops-progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
+    .submitter-bar{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .submitter-bar label{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
+    .submit-btn{padding:12px 24px;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;font-family:inherit}
+    .submit-btn.primary{background:var(--accent);color:#fff}
+    .submit-btn.primary:disabled{opacity:0.4;cursor:not-allowed}
+    .ops-board-day{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+    .ops-board-day-label{font-weight:700;margin-bottom:6px}
+    .ops-board-cat{margin-bottom:6px}
+    .ops-board-cat-label{font-size:11px;font-weight:700;color:var(--dim);margin-bottom:2px}
+    .ops-board-line{font-size:12.5px;line-height:1.6;padding:3px 0}
+    </style>
     <details id="o1-docs-archive" style="margin:22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;">
       <summary style="cursor:pointer;padding:14px 18px;font-size:1.05rem;font-weight:700;">📂 운영부 문서고 (규정·가이드·매뉴얼·채용)</summary>
       <div style="padding:2px 18px 18px;">
@@ -6909,17 +6983,340 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         </details>
         <details>
   <summary style="cursor:pointer;font-weight:700;">📖 실무 매뉴얼</summary>
-  <!-- 요약본을 두지 않는다(2026-08-29). 매출보고서 작성 25단계·리셉션 업무 7항목은
-       스크린샷 19장과 함께 운영부 체계 화면에 원본이 있다. 여기에 줄여 옮기면 두 벌이 되고,
-       줄인 쪽이 옛것으로 어긋난다(약속 L01). 실무진이 보고 따라 하는 자료라 그 자리에 둔다. -->
-  <div style="font-size:12.5px;line-height:1.7;padding:8px 2px;">
-    매출보고서 작성 절차와 리셉션 업무 7항목은 <b>실무진이 보면서 따라 하는 자료</b>라
-    화면을 옮기지 않았습니다. 운영부 체계 화면의 <b>매뉴얼 탭</b>에 스크린샷과 함께 원본이 있습니다.
+  <!-- 원문 그대로 이관(2026-08-29 GM 지시) — 매출보고서 25단계·스크린샷 19장·리셉션 7항목·공통 유의사항을
+       요약 없이 옮겼다. 운영부 체계.html은 안내 화면으로 축소되어 더 이상 원본을 보유하지 않는다. -->
+  <div style="padding:8px 2px;">
+  <div class="manual-section" style="margin:6px 0 14px;">
+    <div class="manual-header" onclick="togManual(this)"><h3>공통 유의사항 (전 요일 공통)</h3><span class="arrow open">&#9654;</span></div>
+    <div class="manual-body open">
+      <ul>
+        <li><span class="highlight">리셉션·프론트는 항상 최소 1명이 자리를 지킨다</span> (절대 비우지 않음 · 휴게는 엇갈려)</li>
+        <li>회원이 보이면 하던 일을 멈추고 먼저 인사 — 눈 맞춤+미소 / 이름 알면 호칭 사용</li>
+        <li>모든 종합접수 건의는 즉시 구글 폼 기록 후 당일 해당 부서 전달 / 처리 결과 회원 고지</li>
+        <li>회원 개인정보·예약 정보는 외부 유출·임의 열람 금지</li>
+        <li>긴급·안전·민원은 즉시 팀장·소장 보고 후 조치 (자의 판단 금지)</li>
+      </ul>
+    </div>
   </div>
+  <!-- ===== [준용 추가: 매출보고서 매뉴얼 스타일] ===== -->
+
+<!-- ===== [붙여넣기 시작] '준용 수정 중' 토글 그룹 (매출보고서 작성 포함) ===== -->
+<div class="manual-section">
+<div class="manual-header" onclick="togManual(this)"><h3>🛠 준용 수정 중 <span class="src-tag" style="background:var(--yellow-bg);color:var(--yellow)">작성 중</span></h3><span class="arrow">▶</span></div>
+<div class="manual-body">
+<div class="rpt-intro">현재 준용이 작성·수정 중인 매뉴얼 모음입니다. 새 매뉴얼은 이 안에 토글로 추가하세요.</div>
+<div class="manual-section">
+<div class="manual-header" onclick="togManual(this)"><h3>📊 매출보고서 작성 <span class="src-tag" style="background:var(--yellow-bg);color:var(--yellow)">준용 작성</span></h3><span class="arrow">▶</span></div>
+<div class="manual-body"><div class="rpt-intro">아래 A→B→C→D→E 순서대로 진행하세요. 각 단계 사진과 내 화면을 비교하며 따라하면 됩니다.</div><div class="manual-section">
+<div class="manual-header" onclick="togManual(this)"><h3>A. 스포피아에서 매출 데이터 내려받기</h3><span class="arrow">▶</span></div>
+<div class="manual-body"><div class="rpt-intro">스포피아(POS)에서 그날의 매출 데이터를 엑셀 파일로 내려받습니다.</div><div class="rpt-step"><span class="manual-label">A-1 · 스포피아에서 메뉴 들어가기</span><div class="rpt-txt">스포피아에 로그인 → 화면 맨 위 오른쪽 <b>①[영업분석]</b> 클릭 → 펼쳐진 목록에서 <b>②[매출 집계표(일별)]</b> 클릭.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-01.jpg" alt="BIN0005"></div></div><div class="rpt-step"><span class="manual-label">A-2 · 날짜 조회하고 엑셀로 저장</span><div class="rpt-txt">날짜를 그날로 맞추고 <b>③[찾기]</b> → 매출 목록이 뜨면 <b>④데이터 클릭</b>해 선택 → <b>⑤[엑셀]</b> 버튼으로 엑셀 파일 저장.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-02.jpg" alt="BIN0006"></div></div><div class="rpt-step"><span class="manual-label">A-3 · 내려받은 엑셀 원본 모습</span><div class="rpt-txt">엑셀을 열면 한 줄에 한 건씩 매출이 들어 있습니다. 이 파일로 다음 단계를 진행합니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-03.jpg" alt="BIN0003"></div></div></div>
+</div><div class="manual-section">
+<div class="manual-header" onclick="togManual(this)"><h3>B. 엑셀에서 데이터 가공하기</h3><span class="arrow">▶</span></div>
+<div class="manual-body"><div class="rpt-intro">원본을 [가공] 시트로 옮긴 뒤 필요한 값만 남깁니다.</div><div class="rpt-step"><span class="manual-label">B-1 · 원본에서 복사</span><div class="rpt-txt">내려받은 엑셀 원본에서 <b>B열~V열 전체</b>를 복사합니다.</div></div><div class="rpt-step"><span class="manual-label">B-2 · 가공 시트에 붙여넣기</span><div class="rpt-txt">구글시트 <b>[가공] 시트</b>(예: "2025년 0월 매출 및 급여")의 <b>A1 칸</b>을 클릭하고 붙여넣기(Ctrl+V). 붙여넣으면 아래처럼 채워집니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-04.png" alt="BIN0007"></div><div class="rpt-shot"><img src="coo/check/report-img/rpt-05.jpg" alt="BIN0008"></div></div><div class="rpt-step"><span class="manual-label">B-3 · 매크로1 — 데이터 정렬</span><div class="rpt-txt"><b>Ctrl + Alt + Shift + 4</b>를 동시에 누릅니다. 필요한 값만 추려 정렬해 주는 매크로입니다.</div><ul class="rpt-tip"><li>옛 안내문엔 "Ctrl+Art+Shift"로 적혀 있지만 가운데 키는 <b>Alt</b>가 맞습니다.</li></ul></div><div class="rpt-step"><span class="manual-label">B-4 · 매크로2 — 불필요한 열 삭제</span><div class="rpt-txt">이어서 <b>Ctrl + Alt + Shift + 5</b>를 누릅니다. 필요 없는 열을 지워 줍니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-06.jpg" alt="BIN0009"></div></div><div class="rpt-step"><span class="manual-label">B-5 · 전체 데이터에 필터 씌우기</span><div class="rpt-txt">데이터 전체를 선택한 뒤 <b>필터</b> 버튼을 눌러 필터를 씌웁니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-07.jpg" alt="BIN000D"></div></div><div class="rpt-step"><span class="manual-label">B-6 · 품목별 오름차순 정렬</span><div class="rpt-txt"><b>C열(품목)</b> 기준으로 <b>오름차순</b> 정렬하면 같은 품목끼리 모입니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-08.png" alt="BIN000C"></div></div><div class="rpt-step"><span class="manual-label">B-7 · 매출 0원 줄 삭제</span><div class="rpt-txt"><b>D열(매출)이 0원</b>인 줄은 삭제합니다. (주차권 등 0원 데이터)</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-09.png" alt="BIN000B"></div></div><div class="rpt-step"><span class="manual-label">B-8 · 결제수단(E열) 채우기</span><div class="rpt-txt">결제수단은 카드사 열(H열)을 보고 채웁니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-10.png" alt="BIN000A"></div><ul class="rpt-tip"><li><b>H열(카드사)에 값이 있으면</b> → E열(결제수단)에 그대로 복사/붙여넣기.</li><li><b>H열(카드사)에 값이 없으면</b> → 영수증리스트·일일옵션 확인 후 직접 기입. 예) ①현금결제는 영수증리스트 확인, ②서울페이는 일일옵션에 기재됨.</li></ul></div><div class="rpt-step"><span class="manual-label">B-9 · 마지막 점검</span><div class="rpt-txt"><b>담당자 · 결제금액 · 결제수단</b>이 맞는지 확인하고, <b>회원권 매출과 강습 매출을 구분</b>해 둡니다.</div></div></div>
+</div><div class="manual-section">
+<div class="manual-header" onclick="togManual(this)"><h3>C. 시트에 입력하기</h3><span class="arrow">▶</span></div>
+<div class="manual-body"><div class="rpt-intro">정리한 데이터를 회원권/강습 시트와 매출보고서에 옮겨 적습니다.</div><div class="rpt-step"><span class="manual-label">C-1 · 회원권 시트 입력</span><div class="rpt-txt"><b>[회원권] 시트</b>의 해당 날짜 칸에 <b>A~G열</b> 데이터를 입력합니다.</div></div><div class="rpt-step"><span class="manual-label">C-2 · 강습 시트 입력</span><div class="rpt-txt"><b>[강습] 시트</b>의 해당 날짜 칸에 <b>A~G열</b> 데이터를 입력합니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-11.png" alt="BIN000F"></div><div class="rpt-shot"><img src="coo/check/report-img/rpt-12.png" alt="BIN000E"></div><ul class="rpt-tip"><li><b>반드시 해당 날짜 칸에 입력</b>해야 보고서에 반영됩니다. 날짜를 꼭 확인하세요.</li></ul></div><div class="rpt-step"><span class="manual-label">C-3 · 등록분류 · 등록경로 확인</span><div class="rpt-txt">당일 날짜 시트에서 회원권 매출의 <b>등록분류(자동)</b>와 <b>등록경로(수동)</b>를 확인합니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-13.jpg" alt="BIN0010"></div><ul class="rpt-tip"><li>회원권 <b>등록경로</b>는 ‘멤버십’ 시트의 ‘신규문의’에서 찾을 수 있습니다.</li><li>라커·일일입장·굿즈는 등록분류·등록경로를 <b>둘 다 비워</b> 둡니다.</li><li>정상 회원권 등록(신규·재등록)이 아닌 특이사항(업/다운그레이드, 결제변경 등)은 <b>등록분류만 채우고 등록경로는 비움</b>.</li><li>인원 수 카운팅 → 회원권 칸은 <b>등록경로</b>, 강습 칸은 <b>등록분류</b>로 셉니다.</li></ul></div><div class="rpt-step"><span class="manual-label">C-4 · 수기 입력 항목(4종)</span><div class="rpt-txt">아래 4가지는 자동이 아니라 <b>직접(수기) 입력</b>합니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-14.png" alt="BIN0004"></div><div class="rpt-shot"><img src="coo/check/report-img/rpt-15.png" alt="BIN0002"></div><ul class="rpt-tip"><li><b>1) 단말기 매출</b> : 리셉션 단말기 집계 영수증 확인(특이사항 외 거의 없음).</li><li><b>2) 무인발권기</b> : 스포피아 영수증리스트 → 신용카드 → 찾기(당일 날짜).</li><li><b>3) 스포피아 금액</b> : 영수증리스트의 (현금+카드) 합계.</li><li><b>4) 스포피아 현금영수증</b> : 영수증리스트 내 현금결제 합계(승인번호 꼭 확인).</li></ul></div></div>
+</div><div class="manual-section">
+<div class="manual-header" onclick="togManual(this)"><h3>D. 최종 확인</h3><span class="arrow">▶</span></div>
+<div class="manual-body"><div class="rpt-intro">보고서를 닫기 전 아래 4가지를 점검합니다.</div><div class="rpt-step"><span class="manual-label">D-1 · 비고차액</span><div class="rpt-txt">비고(차액)가 생기면 <b>특이사항 칸에 이유를 기재</b>합니다.</div></div><div class="rpt-step"><span class="manual-label">D-2 · 당일 LOSS현황</span><div class="rpt-txt">‘멤버십’ 시트 → 유효회원 → LOSS 날짜 입력.</div></div><div class="rpt-step"><span class="manual-label">D-3 · 일일방문객</span><div class="rpt-txt">회원분석 → 회원 출결 정보리스트(일자별) → 검색조건(수강분류: 스포피아플러스·회원권)으로 확인해 기재.</div></div><div class="rpt-step"><span class="manual-label">D-4 · 수식오류 체크</span><div class="rpt-txt">그 밖에 수식오류가 없는지 마지막으로 확인합니다.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-16.png" alt="BIN0011"></div></div></div>
+</div><div class="manual-section">
+<div class="manual-header" onclick="togManual(this)"><h3>E. 특이사항 처리</h3><span class="arrow">▶</span></div>
+<div class="manual-body"><div class="rpt-intro">환불·강습변경은 매출/인원이 틀어지기 쉬우니 규칙대로 처리합니다.</div><div class="rpt-step"><span class="manual-label">E-1 · 회원권 환불</span><div class="rpt-txt">회원권 <b>공제금 = 이용금액 + 위약금</b>으로 처리.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-17.png" alt="BIN0012"></div></div><div class="rpt-step"><span class="manual-label">E-2 · 강습 환불</span><div class="rpt-txt">강습 <b>공제금 = 수업 진행분</b>으로 처리하고 <b>위약금은 따로</b> 처리.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-18.png" alt="BIN0001"></div></div><div class="rpt-step"><span class="manual-label">E-3 · 강습변경</span><div class="rpt-txt">선생님 매출(페이롤)이 맞아야 하므로 <b>반드시 신경</b>. 환불처리로 카운팅됐던 <b>인원 수 정상화</b>.</div><div class="rpt-shot"><img src="coo/check/report-img/rpt-19.png" alt="BIN0013"></div></div></div>
+</div></div>
+</div>
+</div>
+</div>
+<!-- ===== [붙여넣기 끝] ===== -->  <!-- ===== [리셉션 업무 토글 시작] ===== -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>📞 리셉션 업무 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;">7항목 보드 + 매뉴얼</span></h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body">
+  <div class="board-intro">리셉션 7개 업무를 <strong>보드(카드)</strong>로 한눈에 보고, 각 카드 아래 <strong>매뉴얼</strong>을 펼쳐 절차·양식을 확인합니다. 색 테두리 = 상태: <span style="color:var(--green);font-weight:700;">초록=시트 근거로 완성</span> · <span style="color:var(--yellow);font-weight:700;">노랑=빈 양식(입력 대기)</span> · <span style="color:var(--purple);font-weight:700;">보라=AI 초안(GM 검토 전)</span>. <strong>지어낸 내용 없음</strong> — 시트에 없는 항목은 양식 틀·초안임을 명시했습니다.</div>
+
+  <!-- (A) 보드 — 7 업무 카드 -->
+  <div class="recep-board">
+    <div class="recep-card done">
+      <div class="rc-no">업무 1</div>
+      <div class="rc-title">휴회신청 응답 및 반영</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card done">
+      <div class="rc-no">업무 2</div>
+      <div class="rc-title">카드미소지 체크 기록</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card done">
+      <div class="rc-no">업무 3</div>
+      <div class="rc-title">시제금 입출내역 작성</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 일마감 근무자</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card done">
+      <div class="rc-no">업무 4</div>
+      <div class="rc-title">락커 키 관리</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-done">완성</span></div>
+    </div>
+    <div class="recep-card form">
+      <div class="rc-no">업무 5</div>
+      <div class="rc-title">락커 관리 (개인·골프·스쿼시)</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 윤병현AM</span><span class="recep-badge wip">윤병현AM 작업중</span><span class="recep-badge st-form">개인락커만</span></div>
+    </div>
+    <div class="recep-card form">
+      <div class="rc-no">업무 6</div>
+      <div class="rc-title">분실물 관리</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-form">빈 양식</span></div>
+    </div>
+    <div class="recep-card draft">
+      <div class="rc-no">업무 7</div>
+      <div class="rc-title">리셉션 매뉴얼 (오픈·업무·마감)</div>
+      <div class="rc-meta"><span class="recep-badge owner">담당: 리셉션 전원</span><span class="recep-badge st-draft">AI 초안</span></div>
+    </div>
+  </div>
+
+  <!-- (B) 매뉴얼 — 7항목 아코디언 -->
+
+  <!-- 업무 1: 휴회신청 응답 및 반영 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">1. 휴회신청 응답 및 반영 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">기록 양식 — 휴회 신청 대장 (12열)</span>
+      <table class="recep-tbl">
+        <tr><th>열</th><th>내용</th></tr>
+        <tr><td>신청일시</td><td>회원이 신청한 날짜·시각 (예: 2026. 1. 2 오후 4:38)</td></tr>
+        <tr><td>성명 / 연락처</td><td>회원명 · 휴대폰</td></tr>
+        <tr><td>휴회 차수</td><td>1회차 / 2회차 / 3회차 / "○회차연장"</td></tr>
+        <tr><td>휴회 시작일 / 만료일</td><td>적용 기간</td></tr>
+        <tr><td>휴회 사유</td><td>여행 · 출장 · 개인사유(개인사정) · 병가 · 수술 등</td></tr>
+        <tr><td>특이사항</td><td>잔여 초과·양도·스포피아 처리·미반영 보정 등 메모</td></tr>
+        <tr><td>담당자</td><td>처리한 리셉션 직원명</td></tr>
+        <tr><td>휴회 일수</td><td>적용 일수 (시작~만료)</td></tr>
+        <tr><td>진행 상황</td><td>적용완료</td></tr>
+        <tr><td>비고</td><td>"적용완" · "유효x" · "유효,문자x" · "문자 발송 ○/○" 등</td></tr>
+      </table>
+      <span class="manual-label">처리 절차 (적용 + 문자발송 2단계)</span>
+      <ul>
+        <li>① 신청 접수 → 회원·차수·기간·사유 확인 후 시스템에 <strong>휴회 적용</strong> → 진행상황 "적용완료"</li>
+        <li>② <strong>안내 문자 발송</strong> → 비고에 "적용완" / 문자 발송일 기록 ("유효,문자x"는 문자 미발송 표시)</li>
+      </ul>
+      <span class="manual-label">규칙 (시트 특이사항 칸에서 확인된 운영 기준)</span>
+      <ul>
+        <li><strong>잔여 초과 신청</strong>: 잔여 회차/일수를 넘기면 "가능한 일수만큼" 적용 후 안내</li>
+        <li><strong>최소 휴회</strong>: 7일 단위 안내 (예: "휴회 최소 7일 안내")</li>
+        <li><strong>사전 신청</strong>: 휴회 원하는 날 또는 전날에 미리 신청하도록 안내</li>
+        <li><strong>양도 회원권</strong>: 이전 회원의 휴회 사용 여부 확인 후 적용</li>
+        <li><strong>스포피아 회원권</strong>은 별도 휴회 처리 / 누락분은 보정 적용</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 2: 카드미소지 체크 기록 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">2. 카드미소지 체크 기록 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">기록 위치 — 입장(방문) 기록표의 분류값</span>
+      <ul>
+        <li>전용 표가 따로 있지 않고, <strong>입장 기록표</strong>의 <strong>입장사유 = "3. 카드미소지(수동발권)"</strong> 분류로 기록합니다.</li>
+      </ul>
+      <span class="manual-label">입장 기록표 컬럼</span>
+      <table class="recep-tbl">
+        <tr><th>열</th><th>내용</th></tr>
+        <tr><td>날짜 / 회원명 / 연락처</td><td>방문 회원</td></tr>
+        <tr><td>입장사유</td><td>1.무료체험예약 · 2.일일입장 · <strong>3.카드미소지(수동발권)</strong> · 4.회원권 관련 · 5.강습 관련 · 6.기타 · 7.초대권</td></tr>
+        <tr><td>성별 / 락커번호</td><td>발권한 락커 번호</td></tr>
+        <tr><td>입장시간 / 담당자</td><td>발권 시각 · 직원명</td></tr>
+        <tr><td>비고</td><td><strong>"수동발권"</strong> 명기 (필요 시 "운동시작일 변경" 등 부가 메모)</td></tr>
+        <tr><td>초대권 NO</td><td>초대권 입장 시에만</td></tr>
+      </table>
+      <span class="manual-label">규칙</span>
+      <ul>
+        <li>회원이 출입카드를 소지하지 않은 경우 <strong>수동 발권</strong> → 입장사유 3번으로 기록, 비고에 "수동발권" 표기.</li>
+        <li>카드미소지 건만 따로 모으려면 입장기록에서 <strong>사유=3 필터</strong>로 추출.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 3: 시제금 입출내역 작성 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">3. 시제금 입출내역 작성 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">표 ① 입출금 원장</span>
+      <table class="recep-tbl">
+        <tr><th>열</th><th>내용</th></tr>
+        <tr><td>날짜 / 담당자(확인)</td><td>처리일 · 직원명</td></tr>
+        <tr><td>입금 [회원명·종목·금액]</td><td>종목 예: wsc수영/골프/체조/스쿼시 · 일일입장 · PT · PL · 줌바 · 회원권 · 양도비 · 락카비 · 단기회원권</td></tr>
+        <tr><td>출금 [내역·금액]</td><td>주로 "관리부입금"(일 단위 매출 상납) · 환불 등</td></tr>
+        <tr><td>잔액 [금액]</td><td>입출 반영 누적 잔액</td></tr>
+        <tr><td>비고</td><td>수표·거스름돈·환불 메모 등</td></tr>
+      </table>
+      <span class="manual-label">표 ② 돈통(시재) 권종 카운트 — 일마감</span>
+      <ul>
+        <li>권종별 매수 기록: <strong>오만원권·만원권·오천원권·천원권·오백원·&lt;묶음 오백원×40개=2만원&gt;·백원·오십원·십원</strong> → <strong>도합</strong> 자동 합산</li>
+        <li><strong>기준 시재 = ₩303,000</strong> 유지. 불일치 시 <strong>차액</strong> 칸에 +/- 기록 (예: "-₩205,200 강습 환불건", "+₩205,200 관리부에서 전달받음")</li>
+      </ul>
+      <span class="manual-label">규칙</span>
+      <ul>
+        <li><strong>일 단위 마감 카운트</strong> — 담당자 교대 시 권종 실물 카운트 후 도합·차액 기록.</li>
+        <li><strong>환불</strong>은 시제금에서 우선 전달 → 이후 <strong>관리부가 보충</strong>("시제금 채움")해 기준 시재 ₩303,000 복원.</li>
+        <li>매출 입금분은 출금 "관리부입금"으로 상납.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 4: 락커 키 관리 (시트 근거 · 완성) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--green-bg);">
+      <h3 style="color:var(--green);">4. 락커 키 관리 <span class="src-tag sheet">시트 근거 · 완성</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">기록 양식 — 키 분실·고장 대장 (남/여/고장 분리)</span>
+      <table class="recep-tbl">
+        <tr><th>구분</th><th>컬럼</th></tr>
+        <tr><td>남 / 여</td><td>키번호 · 날짜 · 분실자 · 결제유무 · 비고</td></tr>
+        <tr><td>고장</td><td>키번호 · 키유무 (남·여 각 옆에 별도 칸)</td></tr>
+      </table>
+      <span class="manual-label">값·상태 (시트 실제 사용값)</span>
+      <ul>
+        <li><strong>결제유무</strong>: O(분실료 결제) / 공란 / "수동발권" / "기록없음" / "키분실료결제"</li>
+        <li><strong>고정키</strong>(고정 배정): 특정 회원 전용 — 예: 회장님 사모님 18 · 윤선하 181 · 유후문 38 → "고정키사용"</li>
+        <li><strong>리셉션보관</strong>: 골프만 치는 회원 등 키 미사용 → 리셉션 보관 / "락커 원래 사용 안 함" 회원은 발권 후 키 미사용 시 리셉션에 알려달라 요청</li>
+        <li><strong>고장 키</strong>: 교체 처리 (예: "26.6.15 교체완료") · 전일분실 등 비고 기록</li>
+      </ul>
+      <span class="manual-label">회수 절차</span>
+      <ul>
+        <li>분실 키 발생 → 대장 기록(분실자·결제유무) → <strong>키 회수 여부·회수일자</strong> 비고에 기록.</li>
+        <li>"키분실료 납부 / 회수 완료" 회수 체크표로 회수 완결 관리.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 업무 5: 락커 관리 (개인락커만 시트 근거 / 골프·스쿼시 플레이스홀더) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--yellow-bg);">
+      <h3 style="color:var(--yellow);">5. 락커 관리 (개인·골프·스쿼시) <span class="src-tag sheet">개인락커: 시트 근거</span> <span class="recep-badge wip" style="margin-left:4px;">윤병현AM 작업중</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <span class="manual-label">개인락커 — 시트 근거 (배치도 기반)</span>
+      <ul>
+        <li><strong>배치도</strong>: 락커 번호별 그리드에 회원명 배치(1~408대). 우측에 <strong>번호 · 회원명 · 만기일 · 연락처 · 비고</strong> 만기 관리 컬럼.</li>
+        <li><strong>만기 라벨</strong>: "이용가능" · "만기" · "만기 D-10" · "만기+20 - 라카 빼기" · "특별" · "잠금" · "대기" · "강제오픈" · "만지지 말 것"</li>
+        <li><strong>강제오픈 표</strong>: 락커번호 · 등록일 · 이름 · 키유무(o/x) · 비고("강제오픈"·"결제 완료"·"결제 거부"·"반환완료")</li>
+        <li><strong>희망 라카 신청표</strong>: 신청일 · 성함 · 현재번호 · 희망번호 · 비고</li>
+        <li><strong>라카 회수표</strong>: 성함 · 현재번호 (만기·해지 회수)</li>
+        <li><strong>위치변경 신청표</strong>: 신청일 · 성함 · 희망사유&요구 · 현재 라카 위치 · 희망번호 · 비고(예: "3배수/무릎 안좋음", "어깨 안좋아 중간 선호" → "배정완료/164번완료" 처리기록)</li>
+        <li><strong>개인물품 회수</strong>: "개인물품 있음 회수 안내 연락" · "물품 프론트(○번) 뒤 보관중" 메모</li>
+      </ul>
+      <div class="placeholder-note">
+        <strong>골프 락커 · 스쿼시 락커</strong> — 운영부 리셉션 시트에 <strong>전용 표가 없습니다</strong>(본문 "스쿼시"는 모두 강습 종목 데이터일 뿐). 아래는 입력 대기 양식 틀입니다. <strong>윤병현AM 작업중 · 실무 입력 대기</strong> — 임의 작성 금지.
+        <table class="recep-tbl" style="margin-top:8px;">
+          <tr><th>제안 컬럼(골프/스쿼시 락커)</th><th>비고</th></tr>
+          <tr><td>락커 번호</td><td>입력 대기</td></tr>
+          <tr><td>회원명 / 연락처</td><td>입력 대기</td></tr>
+          <tr><td>배정일 / 만기일</td><td>입력 대기</td></tr>
+          <tr><td>상태(이용가능·만기·회수)</td><td>입력 대기</td></tr>
+          <tr><td>비고</td><td>입력 대기</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 업무 6: 분실물(습득물) 관리 — 라이브 습득물 시스템이 정본. 아래는 그 규칙의 요약이며 재서술 금지(약속 L01) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--purple-bg);">
+      <h3 style="color:var(--purple);">6. 분실물(습득물) 관리 <span class="src-tag sheet">운영 중 · 시스템 정본</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <div class="ai-note">
+        분실물은 <strong>수기 대장이 아니라 습득물 시스템으로 운영 중</strong>입니다. 등록·수령·처분은
+        <a href="../reception/종합접수처_현황.html"><strong>종합접수처 현황</strong></a>(직원 전용)에서만 하고,
+        회원은 홈페이지 습득물 갤러리에서 <strong>조회만</strong> 합니다.
+        아래는 그 시스템에 이미 들어 있는 규칙의 요약입니다 — <strong>규칙이 바뀌면 시스템 쪽을 고치고 이 요약을 맞춥니다</strong>(두 곳에 따로 적지 않습니다).
+      </div>
+      <span class="manual-label">운영 규칙</span>
+      <table class="recep-tbl">
+        <tr><th>항목</th><th>내용</th></tr>
+        <tr><td>보관·공지·처분 주기</td><td>습득한 달 포함 <strong>1~2개월 보관·공지 후 처분</strong> (습득월 → 다음 달 공지 → 그다음 달 처분)</td></tr>
+        <tr><td>처분 방법</td><td>🟢 소모품(우산·수건·양말)은 처분월에 <strong>폐기</strong> / 🟡 일반·🔴 귀중품은 관할 <strong>경찰서·LOST112 인계</strong>(유실물법)</td></tr>
+        <tr><td>귀중품</td><td>현금·지갑·귀금속·전자기기는 접수 즉시 <strong>별도 보관</strong></td></tr>
+        <tr><td>수령(반환)</td><td>회원이 담당 매니저에게 문의 → <strong>직원 확인 후 현장에서 서명하고 수령</strong>. 수령 처리는 직원 화면에서만</td></tr>
+        <tr><td>등록 항목</td><td>습득일 · 품목/특징 · 습득 장소 · 분류(소모품/일반/귀중품) · 사진 · 상태(보관중/수령완료/처분완료)</td></tr>
+        <tr><td>처분 공지</td><td>처분 예정 물품은 갤러리에 ⏳ 배지로 표시되고, 종합접수처에서 <strong>A3 처분공지 인쇄</strong>가 가능합니다</td></tr>
+      </table>
+      <div class="placeholder-note" style="margin-top:8px;">
+        <strong>현장에서만 정할 것 하나</strong> — 보관함의 물리 위치·번호 규칙은 시스템에 없는 값입니다.
+        리셉션에서 쓰는 방식대로 정해 이 줄을 채워 주세요(GM 결재 사안이 아니라 현장 합의 사항입니다).
+      </div>
+    </div>
+  </div>
+
+  <!-- 업무 7: 리셉션 매뉴얼(오픈·업무·마감) (시트 근거 없음 · AI 초안) -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)" style="background:var(--purple-bg);">
+      <h3 style="color:var(--purple);">7. 리셉션 매뉴얼 (오픈·업무·마감) <span class="src-tag ai">AI 초안 · GM 검토 전</span></h3><span class="arrow">&#9654;</span>
+    </div>
+    <div class="manual-body">
+      <div class="ai-note">
+        운영부 리셉션 시트에 <strong>오픈/업무/마감 매뉴얼·체크리스트 문서가 없습니다</strong>. 아래는 위 1~5번 업무 로그에서 <strong>역산한 AI 초안(발의)</strong>입니다 — <strong>확정된 절차가 아니며, GM 검토 후 확정</strong>합니다. 사실로 단정 금지.
+      </div>
+      <span class="manual-label">🌅 오픈 (AI 초안)</span>
+      <ul>
+        <li>후문 출입카드 불출 세팅 (돈통 보관 카드 확인)</li>
+        <li>돈통 시재 <strong>₩303,000</strong> 권종 카운트로 확인</li>
+        <li>당일 예약·방문 일정 확인 / 카운터·비품 점검</li>
+      </ul>
+      <span class="manual-label">🌇 업무 중 (AI 초안)</span>
+      <ul>
+        <li>입장 발권 · <strong>카드미소지 시 수동발권</strong>(입장사유 3번 기록)</li>
+        <li>휴회 신청 접수·반영 + 안내 문자 발송</li>
+        <li>락커 발권·회수, 키 분실·고장 대장 기록</li>
+        <li>입금 발생 시 시제금 입출 원장 기록</li>
+      </ul>
+      <span class="manual-label">🌙 마감 (AI 초안)</span>
+      <ul>
+        <li>시제금 권종 카운트 → 도합·<strong>차액</strong> 기록</li>
+        <li>매출분 <strong>관리부 입금</strong> 처리</li>
+        <li>락커 키 회수 점검 / 분실·미회수 키 확인</li>
+        <li>카운터 정리 · 잠금 확인 후 마감 보고</li>
+      </ul>
+      <p style="font-size:12px;color:var(--purple);font-weight:700;margin-top:6px;">※ 위 절차는 GM 검토 후 확정됩니다. 시간·담당·세부 체크포인트는 실무 입력 필요.</p>
+    </div>
+  </div>
+
+    </div>
+  </div>
+  <!-- ===== [리셉션 업무 토글 끝] ===== -->  </div>
 </details>
         <details>
           <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">🧑‍💼 채용 현황</summary>
           <div id="o1-doc-hiring" style="padding:10px 4px;color:var(--dim);font-size:13px;">펼치면 불러옵니다…</div>
+        </details>
+        <details style="margin-top:10px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">📅 요일별 업무 보드</summary>
+          <div style="padding:10px 4px;">
+            <div class="board-intro">조회 전용 — 요일별 오전 응대·오후 응대·상시 업무를 한눈에 봅니다. 편집 기능은 운영부 체계.html과 함께 정리되어 이관하지 않았다(백엔드 저장값을 그대로 읽어 보여준다).</div>
+            <div id="o1-ops-board" style="color:var(--dim);font-size:13px;">펼치면 불러옵니다…</div>
+          </div>
+        </details>
+        <details style="margin-top:10px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">🧾 일일 점검 체크리스트 <span style="font-size:11px;font-weight:500;color:var(--dim);">평일(WEEKDAY) 기준 · 체크 후 제출</span></summary>
+          <div style="padding:10px 4px;">
+            <!-- 예외: O1의 문서고 항목은 조회 전용이 원칙이지만, 이 체크리스트만 GM 지시(2026-08-29)로
+                 입력·제출 기능을 그대로 가져왔다 — 체크리스트는 실무 도구라 조회만으로는 기능을 잃는다. -->
+            <div class="ops-progress">
+              <div class="ops-progress-text"><span id="opsProgressText">오늘 0/-</span></div>
+              <div class="ops-progress-bar"><div class="ops-progress-fill" id="opsProgressFill" style="width:0%;"></div></div>
+            </div>
+            <div id="manual-items-sync"></div>
+            <div class="submitter-bar" style="margin-top:12px;">
+              <label>점검자</label>
+              <input type="text" id="opsInspector" placeholder="점검자 이름 입력" autocomplete="off" style="flex:1;min-width:120px;max-width:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;">
+              <button type="button" class="submit-btn primary" style="flex:none;max-width:180px;" id="opsSubmitBtn" onclick="submitOpsDailyCheck()">일일 점검 제출</button>
+              <span id="opsSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
+            </div>
+          </div>
         </details>
       </div>
     </details>
@@ -7114,10 +7511,295 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             }).join('') : '<div style="color:var(--dim);">현재 운영부에서 모집 중인 자리가 없습니다.</div>';
           }).catch(function(){ el.innerHTML = '<div style="color:var(--dim);">채용 현황을 불러오지 못했습니다.</div>'; });
       }
+      /* ══════════════════════════════════════════════════════════════
+         운영부 매뉴얼 이관 로직 (운영부 체계.html → O1, 2026-08-29 GM 승인)
+         - 📅 요일별 업무 보드 = 조회 전용(백엔드 board_sync 저장값 읽기만, 편집 UI는 이관 안 함).
+         - 🧾 일일 점검 체크리스트 = 예외로 입력·제출 기능 그대로 이관(O1의 다른 문서고 항목은 조회 전용이지만
+           체크리스트는 실무 도구라 조회만으로는 기능을 잃는다 — GM 지시).
+         함수명(togManual·onManualCk·togManualItem·submitOpsDailyCheck)은 원본 그대로이며 이 IIFE
+         스코프 안에서도 window.* 로 노출한다 — 이관한 정적 HTML의 inline onclick이 전역에서 찾기 때문.
+         ══════════════════════════════════════════════════════════════ */
+      function opsEsc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+      /* ── 아코디언 토글(이관한 매출보고서·리셉션 정적 콘텐츠의 onclick="togManual(this)"가 호출) ── */
+      window.togManual = function(h){
+        const body=h.nextElementSibling;
+        const arrow=h.querySelector('.arrow');
+        body.classList.toggle('open');
+        arrow.classList.toggle('open');
+      };
+
+      /* ── 📅 요일별 업무 보드 데이터(BOARD_SEED 그대로) + 조회 전용 렌더 ── */
+      var OPS_BOARD_DAYS=[
+        {key:'mon',label:'월',weekend:false},
+        {key:'tue',label:'화',weekend:false},
+        {key:'wed',label:'수',weekend:false},
+        {key:'thu',label:'목',weekend:false},
+        {key:'fri',label:'금',weekend:false},
+        {key:'sat',label:'토',weekend:true},
+        {key:'sun',label:'일',weekend:true}
+      ];
+      var OPS_BOARD_GENDERS=[
+        {gk:'m',label:'🌅 오전 응대'},
+        {gk:'f',label:'🌇 오후 응대'},
+        {gk:'outer',label:'📋 상시·정기'}
+      ];
+      var OPS_BOARD_SEED={
+        mon:{
+          m:'오전(08:00~12:00)::오픈 점검 — PC·전화·POS·카운터·안내물\n오전(08:00~12:00)::입장 회원 응대·전화 문의 / 종합접수 폼 기록',
+          f:'오후(14:00~18:00)::입·퇴장 회원 응대·분실물 확인\n오후(14:00~18:00)::오후 종합접수 접수·전달 확인',
+          outer:'오전(08:00~12:00)::주말·전주 미처리 종합접수 정리·부서 재전달\n종일::안내물·음료·소모품 재고 점검·발주'
+        },
+        tue:{
+          m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::투어·방문 문의 응대·예약 기록',
+          f:'오후(14:00~18:00)::오후 회원·방문 응대\n오후(14:00~18:00)::전화 문의 메모·투어 예약 기록',
+          outer:'오전(08:00~12:00)::지난주 방문·문의·투어 일지 정리·백업\n종일::리셉션 PC·전화 상태 점검·업데이트'
+        },
+        wed:{
+          m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::종합접수 폼 기록·해당 부서 전달',
+          f:'오후(14:00~18:00)::오후 회원 응대·종합접수\n오후(14:00~18:00)::방문·투어 예약 기록',
+          outer:'종일::카운터 내부·서랍·비품함 정밀 정리\n종일::안내물·현수막 점검·교체 요청'
+        },
+        thu:{
+          m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::투어·방문 응대·예약 기록',
+          f:'오후(14:00~18:00)::오후 회원 응대·전화 문의\n오후(14:00~18:00)::오후 종합접수 기록·전달 확인',
+          outer:'오전(08:00~12:00)::이슈 응답 시트 미처리 건 점검·고지\n오후(14:00~18:00)::로비·대기 공간 집중 청소'
+        },
+        fri:{
+          m:'오전(08:00~12:00)::오픈 점검·입장 회원 응대\n오전(08:00~12:00)::종합접수 폼 기록·전달',
+          f:'오후(14:00~18:00)::오후 회원 응대·퇴장 인사\n오후(14:00~18:00)::오후 종합접수 접수·전달 확인',
+          outer:'오후(14:00~18:00)::주간 종합접수 현황 정리·미결 실장 보고\n오후(14:00~18:00)::주간 방문·문의 현황 집계 기록'
+        },
+        sat:{
+          m:'오전(09:00~14:00)::주말 오픈 점검·회원 입장 응대\n오전(09:00~14:00)::방문·투어 응대·종합접수 폼 기록',
+          f:'오후(14:00~18:00)::주말 회원·방문 응대\n오후(14:00~18:00)::혼잡 시 대기 안내·예약 기록',
+          outer:'오전(09:00~14:00)::주말 예약·투어 일정 최종 확인·비품 보충\n종일::종합접수 폼 링크 정상 접속·제출 테스트'
+        },
+        sun:{
+          m:'오전(09:00~14:00)::주말 오픈 점검·회원 입장 응대\n오전(09:00~14:00)::방문·투어 응대·종합접수 폼 기록',
+          f:'오후(14:00~17:00)::주말 회원 응대·퇴장 인사\n오후(14:00~17:00)::오후 종합접수 접수·전달',
+          outer:'종일::전주 방문·문의·종합접수 일지 마감 정리\n종일::다음주 안내물·비품 보충·예약 일정 확인'
+        }
+      };
+      function opsBoardCatHTML(text){
+        var lines=(text||'').split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length;});
+        if(!lines.length) return '<div style="color:var(--dim);font-size:12px;">항목 없음</div>';
+        return lines.map(function(l){
+          var idx=l.indexOf('::');
+          var label = (idx>0 && idx<=20) ? l.slice(0,idx).trim() : '';
+          var body = (idx>0 && idx<=20) ? l.slice(idx+2).trim() : l;
+          return '<div class="ops-board-line">'+(label?'<span style="color:var(--dim);">'+opsEsc(label)+'</span> ':'')+opsEsc(body)+'</div>';
+        }).join('');
+      }
+      function loadOpsBoard(){
+        var el=document.getElementById('o1-ops-board'); if(!el) return;
+        withTimeout(jget(CHECK_API+"?action=board&key=OPS_MANUAL_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
+          var data=(res && res.ok && res.board) ? res.board : null;
+          var html='';
+          OPS_BOARD_DAYS.forEach(function(d){
+            var cell=(data && data[d.key]) || OPS_BOARD_SEED[d.key] || {};
+            html+='<div class="ops-board-day">';
+            html+='<div class="ops-board-day-label"'+(d.weekend?' style="color:var(--accent);"':'')+'>'+d.label+'요일</div>';
+            OPS_BOARD_GENDERS.forEach(function(g){
+              html+='<div class="ops-board-cat"><div class="ops-board-cat-label">'+g.label+'</div>'+opsBoardCatHTML(cell[g.gk])+'</div>';
+            });
+            html+='</div>';
+          });
+          el.innerHTML = html + (data ? '' : '<div style="font-size:10.5px;color:var(--dim);">※ 백엔드에 저장된 편집분이 없어 기본값(시드)을 보여준다.</div>');
+        });
+      }
+
+      /* ── 🧾 일일 점검 체크리스트 데이터(WEEKDAY 그대로) + 입력·제출(원본 함수 그대로) ── */
+      var CUSTOM_ITEMS=[]; // 운영부 체계.html에서도 실제로 채워진 적 없는 빈 배열(관리 CRUD는 이관 대상 아님)
+      var WEEKDAY=[
+        {slot:"오픈 점검 07:30~08:30",shift:"am",groups:[
+          {title:"O-A 리셉션 오픈",items:[
+            {id:"oa1",name:"O-A1 PC·전화·POS 전원 점검",detail:"리셉션 PC·전화·POS 정상 부팅 | 당일 예약 일정 확인",gender:"m"},
+            {id:"oa2",name:"O-A2 카운터 청결·비품 점검",detail:"카운터 정돈·청결 | 안내물·음료·소모품 보충",gender:"m"},
+            {id:"oa3",name:"O-A3 입구·안내 표지 점검",detail:"입구 안내판·현수막 위치·상태 | 운영시간 표기 정상",gender:"m"}
+          ]}
+        ]},
+        {slot:"오전 응대 08:30~13:00",shift:"am",groups:[
+          {title:"O-B 회원 응대",items:[
+            {id:"ob1",name:"O-B1 입장 회원 확인·인사",detail:"눈 맞춤+미소 | 회원 카드 확인 | 이름 알면 호칭 사용",gender:"m"},
+            {id:"ob2",name:"O-B2 방문·투어 응대",detail:"방문 목적 파악 | 투어 안내 또는 담당자 연결 | 예약 기록",gender:"m"},
+            {id:"ob3",name:"O-B3 전화 문의 응대",detail:"3회 이내 응답 | 내용 기록 | 추후 연락 건 메모",gender:"m"}
+          ]},
+          {title:"O-C 종합접수",items:[
+            {id:"oc1",name:"O-C1 종합접수 폼 기록",detail:"회원 건의 즉시 구글 폼 기록 | 직원명·회원명·장소·부서 필수",gender:"all"},
+            {id:"oc2",name:"O-C2 해당 부서 전달",detail:"접수 당일 해당 부서에 전달 | 이슈 응답 시트 확인",gender:"all"}
+          ]}
+        ]},
+        {slot:"인수인계 13:00~14:00",shift:"am",groups:[
+          {title:"O-D 교대 인수인계",items:[
+            {id:"od1",name:"O-D1 미결 문의·이슈 인계",detail:"미처리 종합접수 | 방문 예정 | 전화 메모 | 이슈 공유",gender:"all"},
+            {id:"od2",name:"O-D2 카운터 점검 인계",detail:"비품 재고 | 현금/포스 상태 | 청결 상태 인계",gender:"all"}
+          ]}
+        ]},
+        {slot:"오후 응대 14:00~19:00",shift:"pm",groups:[
+          {title:"O-B 회원 응대",items:[
+            {id:"ob_pm1",name:"O-B1 입·퇴장 회원 응대",detail:"눈 맞춤+미소 | 퇴장 인사 | 분실물 확인",gender:"f"},
+            {id:"ob_pm2",name:"O-B2 방문·문의 응대",detail:"방문 목적 파악 | 투어 예약 기록 | 전화 문의 메모",gender:"f"}
+          ]},
+          {title:"O-C 종합접수",items:[
+            {id:"oc_pm1",name:"O-C1 오후 종합접수 기록",detail:"오후 접수 건의 즉시 폼 기록 | 전달 완료 확인",gender:"all"}
+          ]}
+        ]},
+        {slot:"마감 19:00~",shift:"pm",groups:[
+          {title:"O-E 마감",items:[
+            {id:"oe1",name:"O-E1 방문자·문의 일지 마감",detail:"당일 방문·문의·종합접수 기록 최종 확인",gender:"f"},
+            {id:"oe2",name:"O-E2 카운터·비품 정리",detail:"카운터 정돈 | 소모품 재고 확인 | 쓰레기 처리",gender:"f"},
+            {id:"oe3",name:"O-E3 시스템·잠금 마감",detail:"PC·전화 오프 | 조명 소등 | 잠금 확인 | 마감 보고",gender:"f"}
+          ]}
+        ]},
+        {slot:"상시",shift:"all",groups:[
+          {title:"O-F 복장·에티켓",items:[
+            {id:"of1",name:"O-F1 유니폼·명찰",detail:"웰페리온 유니폼 청결 | 명찰 좌측 가슴 패용",gender:"all"},
+            {id:"of2",name:"O-F2 응대 태도",detail:"먼저 인사 | 끝까지 경청 | 처리 결과 반드시 고지",gender:"all"}
+          ]}
+        ]}
+      ];
+      var STATE={};
+      var LK=function(d){ return 'opscheck3_'+d; };
+      function loadLocal(d){ try{ return JSON.parse(localStorage.getItem(LK(d)))||{}; }catch(e){ return {}; } }
+      function saveLocal(d,o){ localStorage.setItem(LK(d), JSON.stringify(o)); }
+      function saveState(d){ saveLocal(d, STATE); }
+      function getDateG(){ return new Date().toISOString().slice(0,10); }
+      function fmtLocalDate(d){ var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+day; }
+
+      /* renderManualItems·onManualCk·togManualItem·submitOpsDailyCheck = 운영부 체계.html 원본 그대로
+         (API_URL → CHECK_API만 이 IIFE의 기존 상수로 치환. 같은 GAS 주소라 동작은 동일) */
+      function renderManualItems(){
+        const el=document.getElementById('manual-items-sync');
+        if(!el)return;
+        const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
+        const catMap={};
+        const catOrder=[];
+        const seen=new Set();
+        function pushItem(cat,it){
+          if(!catMap[cat]){catMap[cat]=[];catOrder.push(cat);}
+          if(!seen.has(it.id)){seen.add(it.id);catMap[cat].push(it);}
+        }
+        sched.forEach(slot=>{
+          slot.groups.forEach(grp=>{
+            grp.items.forEach(it=>pushItem(grp.title,it));
+          });
+        });
+        if(typeof CUSTOM_ITEMS!=='undefined'){
+          CUSTOM_ITEMS.forEach(ci=>{
+            pushItem(ci.category||'추가 점검',{id:ci.id,name:ci.name,detail:ci.detail,gender:ci.gender,_custom:true});
+          });
+        }
+        let html='';
+        let doneCount=0;
+        catOrder.forEach(cat=>{
+          const items=catMap[cat];
+          html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
+          html+=`<div style="padding:10px 16px;font-size:13px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);">${cat}</div>`;
+          items.forEach(it=>{
+            const detHtml=it.detail?it.detail.replace(/\n/g,'<br>'):'';
+            const hasDet=!!detHtml;
+            const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">지상</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">지하</span>':'';
+            const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
+            const checked=!!STATE[it.id];
+            if(checked)doneCount++;
+            const checkMark=checked?' <span style="color:var(--green);font-weight:700;">&#10003;</span>':'';
+            const nameStyle=checked?'font-size:13px;font-weight:600;color:var(--dim);text-decoration:line-through;':'font-size:13px;font-weight:600;';
+            const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9654;</span>`:'';
+            const nameCursor=hasDet?'cursor:pointer;':'';
+            html+=`<div style="padding:10px 16px;border-bottom:1px solid rgba(61,56,53,0.35);">`;
+            html+=`<div style="display:flex;align-items:flex-start;gap:10px;">`;
+            html+=`<input type="checkbox" id="mcb_${it.id}" ${checked?'checked':''} onchange="onManualCk('${it.id}')" style="width:18px;height:18px;margin-top:1px;flex:0 0 auto;cursor:pointer;accent-color:var(--green);">`;
+            html+=`<div style="flex:1 1 auto;${nameCursor}" ${hasDet?'onclick="togManualItem(this)"':''}><div style="${nameStyle}display:flex;align-items:center;gap:6px;justify-content:space-between;"><span>${it.name}${genderLabel}${customLabel}${checkMark}</span>${arrow}</div>`;
+            if(hasDet)html+=`<div class="manual-item-detail" style="display:none;font-size:12px;color:var(--dim);margin-top:5px;line-height:1.5;">${detHtml}</div>`;
+            html+=`</div></div></div>`;
+          });
+          html+=`</div>`;
+        });
+        el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
+        const pTxt=document.getElementById('opsProgressText'), pFill=document.getElementById('opsProgressFill');
+        if(pTxt){
+          const tot=seen.size;
+          pTxt.textContent=`오늘 ${doneCount}/${tot}`;
+          if(pFill)pFill.style.width=(tot?Math.round(doneCount/tot*100):0)+'%';
+        }
+      }
+      window.onManualCk = function(id){
+        const d=getDateG();
+        STATE[id]=document.getElementById('mcb_'+id).checked;
+        saveState(d);
+        renderManualItems();
+      };
+      window.togManualItem = function(nameEl){
+        const det=nameEl.querySelector('.manual-item-detail');
+        if(!det)return;
+        const open=det.style.display!=='none';
+        det.style.display=open?'none':'block';
+        const arrow=nameEl.querySelector('.m-arrow');
+        if(arrow)arrow.style.transform=open?'rotate(0deg)':'rotate(90deg)';
+      };
+      window.submitOpsDailyCheck = async function(){
+        const inspEl=document.getElementById('opsInspector');
+        const insp=(inspEl&&inspEl.value||'').trim();
+        if(!insp){alert('점검자 이름을 입력해 주세요.');return}
+        const date=fmtLocalDate(new Date());
+        const nowIso=new Date().toLocaleString('sv-SE').replace('T',' ');
+        const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
+        const seen=new Set(); const checks=[]; const roundChecks=[];
+        let total=0, done=0;
+        sched.forEach(slot=>{
+          const rk=(slot.shift||'am')+'1';
+          slot.groups.forEach(grp=>{
+            grp.items.forEach(it=>{
+              if(seen.has(it.id))return; seen.add(it.id);
+              const ck=!!STATE[it.id];
+              total++; if(ck)done++;
+              checks.push({itemId:it.id,name:it.name,cat:grp.title,slot:slot.slot,shift:slot.shift,submitter:insp,checkedAt:nowIso,issue:'',tip:''});
+              if(ck)roundChecks.push(rk+'_'+it.id);
+            });
+          });
+        });
+        if(typeof CUSTOM_ITEMS!=='undefined'){
+          CUSTOM_ITEMS.forEach(ci=>{
+            if(seen.has(ci.id))return; seen.add(ci.id);
+            const ck=!!STATE[ci.id];
+            total++; if(ck)done++;
+            checks.push({itemId:ci.id,name:ci.name,cat:ci.category||'추가 점검',slot:'',shift:'',submitter:insp,checkedAt:nowIso,issue:'',tip:''});
+            if(ck)roundChecks.push('all1_'+ci.id);
+          });
+        }
+        const pct=total?Math.round(done/total*100):0;
+        const btn=document.getElementById('opsSubmitBtn'), stat=document.getElementById('opsSubmitStatus');
+        if(btn)btn.disabled=true;
+        try{
+          const r=await fetch(CHECK_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+            body:JSON.stringify({action:'save',date,dept:'ops',genderTab:'m',checks,roundChecks,roundCheckMeta:{},submitStatus:'제출완료',submittedAt:nowIso,duty:'',
+              submitter_am:insp,submittedAt_am:nowIso,submitter_pm:insp,submittedAt_pm:nowIso})});
+          const d=await r.json();
+          if(!d||!d.success)throw new Error((d&&d.error)||'서버 응답 오류(항목 저장)');
+          const sr=await fetch(CHECK_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+            body:JSON.stringify({action:'snapshot_append',dept:'ops',date,zone:'common',shift:(new Date().getHours()<14?'오전조':'오후조'),
+              submitter:insp,submittedAt:nowIso,total,done,pct,issuesCount:0,issues:'',startedAt:'',finishedAt:'',durationMin:''})});
+          let sok=false; try{const sj=await sr.json(); sok=!!(sj&&(sj.ok||sj.success)&&!sj.error);}catch(_){sok=false;}
+          if(!sok)throw new Error('점검일지 기록 실패(서버 응답 오류)');
+          if(stat){stat.textContent=insp+' · '+nowIso.slice(11,16)+' 제출완료('+done+'/'+total+')'; stat.style.color='var(--green)';}
+          alert(date+' 일일 점검이 '+insp+'님 이름으로 제출되었습니다('+done+'/'+total+').');
+        }catch(e){
+          if(stat){stat.textContent='제출 실패: '+((e&&e.message)||e); stat.style.color='var(--red)';}
+          alert('일일 점검 제출 실패: '+((e&&e.message)||e));
+        }finally{
+          if(btn)btn.disabled=false;
+        }
+      };
+      function opsInitDailyCheck(){
+        STATE = loadLocal(getDateG());
+        renderManualItems();
+      }
+
       var archiveEl = document.getElementById('o1-docs-archive');
       if(archiveEl){
         archiveEl.addEventListener('toggle', function(){
-          if(this.open && !this._o1Loaded){ this._o1Loaded = true; loadDocPolicy(); loadDocGuide(); loadDocHiring(); }
+          if(this.open && !this._o1Loaded){ this._o1Loaded = true; loadDocPolicy(); loadDocGuide(); loadDocHiring(); loadOpsBoard(); opsInitDailyCheck(); }
         });
       }
     })();
