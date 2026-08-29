@@ -432,7 +432,9 @@ def send_kakao(S) -> None:
            # 발신은 공백 무시 대조라 어느 쪽이든 나가지만, 발신 로그에 넘긴 문자열이 그대로 남아
            # 자율현황 「알림 한 장」이 '★ 운영부'와 '★운영부'를 다른 방 둘로 세고 있었다
            # (2026-08-08 GM 검수 지시로 발견). 기능 무변경 · 표기만 통일.
-           "--image", png, "--caption", build_caption(S), "--only-room", "★운영부"]
+           "--image", png, "--caption", build_caption(S), "--only-room", "★운영부",
+           # --sender 업무판채움보드 — kakao_report_sender 사람 방 발신 가드(배 11070 ⑤) 통과용.
+           "--sender", "업무판채움보드"]
     print("[발송] 카톡 ★운영부 —", need, "건 남음")
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     tail = (r.stdout or "").strip().splitlines()[-3:]

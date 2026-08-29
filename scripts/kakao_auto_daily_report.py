@@ -463,8 +463,11 @@ def run_sender(rooms: "list[str] | None", image_path: str, caption: str, dry_run
     failures: list[str] = []
     targets = rooms if rooms else [None]
     for room in targets:
+        # --sender 매출보고 — kakao_report_sender 사람 방 발신 가드(배 11070 ⑤) 통과용
+        # (rooms[] 기본 4방에 사람 방 ★운영부가 섞여 있다).
         cmd = [sys.executable, str(SENDER_SCRIPT), "--image", image_path, "--caption", caption,
-               "--status-file", str(STATUS_FILE), "--status-kind", "IMAGE_REPORT"]
+               "--status-file", str(STATUS_FILE), "--status-kind", "IMAGE_REPORT",
+               "--sender", "매출보고"]
         if dry_run:
             cmd.append("--dry-run")
         if room:
@@ -486,8 +489,10 @@ def run_sender_message(rooms: "list[str] | None", message: str, dry_run: bool) -
     failures: list[str] = []
     targets = rooms if rooms else [None]
     for room in targets:
+        # --sender 매출보고 — 위와 동일 가드 통과용(휴관일 안내문도 같은 3~4방 계열).
         cmd = [sys.executable, str(SENDER_SCRIPT), "--message", message,
-               "--status-file", str(STATUS_FILE), "--status-kind", "HOLIDAY_NOTICE"]
+               "--status-file", str(STATUS_FILE), "--status-kind", "HOLIDAY_NOTICE",
+               "--sender", "매출보고"]
         if dry_run:
             cmd.append("--dry-run")
         if room:

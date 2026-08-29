@@ -164,7 +164,9 @@ def run_sender(rooms: "list[str] | None", image_path: str, dry_run: bool) -> "tu
     failures: list[str] = []
     targets = rooms if rooms else [TARGET_ROOM]
     for room in targets:
-        cmd = [sys.executable, str(SENDER_SCRIPT), "--image", image_path, "--caption", "", "--only-room", room]
+        # --sender 아침요약카드 — kakao_report_sender 사람 방 발신 가드(배 11070 ⑤) 통과용.
+        cmd = [sys.executable, str(SENDER_SCRIPT), "--image", image_path, "--caption", "", "--only-room", room,
+               "--sender", "아침요약카드"]
         if dry_run:
             cmd.append("--dry-run")
         label = room

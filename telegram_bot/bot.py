@@ -1896,6 +1896,10 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
             str(_VENV_PY), "-u", str(_KAKAO_SENDER),
             "--image", str(local_path), "--caption", caption,
             "--status-file", str(_KAKAO_STATUS_FILE), "--status-kind", "IMAGE_REPORT",
+            # --sender 매출보고 — kakao_report_sender 사람 방 발신 가드(배 11070 ⑤) 통과용
+            # (기본 3~4방에 사람 방 ★운영부가 섞여 있다). GM이 직접 버튼을 눌러 보내는
+            # 것도 같은 매출보고 파이프라인의 수동 트리거일 뿐 내용은 동일하다.
+            "--sender", "매출보고",
             cwd=str(WORKDIR),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
@@ -1910,7 +1914,12 @@ async def cmd_kakao_send_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE
         return
 
     if proc.returncode == 0 and "DONE:" in out_text:
-        await ctx.bot.send_message(chat_id=msg.chat_id, text="✅ 카톡 3방 전송 완료")
+        # ★DONE 줄을 그대로 보여준다(정적 "완료" 문구로 뭉개지 않는다) — 일부 방이 가드에
+        # 걸려 보류돼도(예: 웰리_승인_필요) "(미발신 N개: [...])"가 DONE 줄에 이미 담겨
+        # 있다. 예전엔 여기서 고정 문구로 덮어써 부분 보류가 GM 눈에 안 보였다(배 11070 ⑤ 후속).
+        done_line = next((ln for ln in out_text.strip().splitlines() if ln.startswith("DONE:")),
+                         "DONE: 전송 완료")
+        await ctx.bot.send_message(chat_id=msg.chat_id, text=f"✅ {done_line}")
     else:
         tail = out_text.strip().splitlines()[-1] if out_text.strip() else "알 수 없는 오류"
         await ctx.bot.send_message(chat_id=msg.chat_id, text=f"⚠️ 카톡 전송 실패: {tail}")

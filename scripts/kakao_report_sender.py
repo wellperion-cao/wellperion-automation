@@ -927,9 +927,12 @@ def add_honorifics(text: str) -> str:
 HUMAN_APPROVAL_ROOMS = {"★중간관리자", "★운영부"}
 AUTO_PIPELINE_SENDERS = {
     "아침정리다이제스트",   # send_ops_digest.py — 아침 정리 다이제스트(★운영부·★중간관리자)
-    "매출보고",            # report_stream_3_mgmt.py — 09:30 매출·운영+인사 현황
+    "매출보고",            # report_stream_3_mgmt.py·kakao_auto_daily_report.py·bot.py 카톡버튼
+                          # — 09:30 매출·운영+인사 현황(예약·GM 수동버튼 두 갈래 모두 같은 보고)
     "중간관리자알림합본",   # daily_scheduler.run_mgmt_notice_digest — 17:00 알림성 합본
     "주간보고초안",        # daily_scheduler — 운영부 주간 보고 초안
+    "아침요약카드",        # kakao_summary_card_auto.py — 07:30 경보·4지표 요약 카드(현재 킬스위치 OFF)
+    "업무판채움보드",       # ops_fill_board.py — 매주 월 10:00 업무판 채움 안내 카드
 }
 SENDER_WELLY = "웰리"
 
@@ -1972,6 +1975,13 @@ def main() -> int:
                                      "텍스트(보류)", args.message)
             print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {dedup_skipped}")
             return 1
+        # ★일부만 보류돼도 조용히 넘어가지 않는다(전량 보류는 위에서 이미 알린다) — 특히
+        # 웰리 승인 가드에 걸린 방은 일반 dedup과 성격이 다르다(=배선 누락 사고). 다른 방이
+        # 정상 발신되면 exit 0 인 채 이 방만 묻혀 아무도 모르는 사고를 막는다(GM 지적).
+        gate_held = [k for k, v in dedup_skipped.items() if v == "웰리_승인_필요"]
+        if gate_held and not args.dry_run:
+            _notify_send_failure([(k, "웰리_승인_필요(--sender 누락/미승인 — 다른 방은 정상 발신)")
+                                  for k in gate_held], "텍스트(부분 보류)", args.message)
         note = f" (미발신 {len(dedup_skipped)}개: {list(dedup_skipped)})" if dedup_skipped else ""
         print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료(텍스트) — {len(rooms)}개 방{note}")
         return 0
@@ -2013,8 +2023,20 @@ def main() -> int:
         print(f"BLOCKED: {len(failures)}개 방 실패 — {_failure_reason(failures)} — {failures}")
         return 1
     if dedup_skipped and len(dedup_skipped) == len(rooms):
+        if not args.dry_run and any(r != "dedup" for r in dedup_skipped.values()):
+            _notify_send_failure([(k, f"보류: {v}") for k, v in dedup_skipped.items()],
+                                 "이미지(보류)", f"[사진 {image_path.name}]\n{args.caption or ''}")
         print(f"BLOCKED: 전량 중복/보류 스킵(실발신 0건) — {list(dedup_skipped)}")
         return 1
+    # ★일부만 보류돼도 조용히 넘어가지 않는다 — 특히 웰리 승인 가드에 걸린 방은 일반
+    # dedup과 성격이 다르다(=배선 누락 사고). 다른 방이 정상 발신되면 exit 0 인 채 이
+    # 방만 묻혀 아무도 모르는 사고를 막는다(GM 지적 — 09:30 매출보고 4방처럼 여러 방을
+    # 한 번에 도는 호출이 여기 해당한다).
+    gate_held = [k for k, v in dedup_skipped.items() if v == "웰리_승인_필요"]
+    if gate_held and not args.dry_run:
+        _notify_send_failure([(k, "웰리_승인_필요(--sender 누락/미승인 — 다른 방은 정상 발신)")
+                              for k in gate_held], "이미지(부분 보류)",
+                             f"[사진 {image_path.name}]\n{args.caption or ''}")
 
     note = f" (보류 {len(dedup_skipped)}개: {list(dedup_skipped)})" if dedup_skipped else ""
     print(f"DONE: {'DRY-RUN 검증' if args.dry_run else '전송'} 완료 — {len(rooms)}개 방{note}")
