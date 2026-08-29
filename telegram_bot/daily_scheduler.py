@@ -3317,6 +3317,14 @@ DIET_CAMP_REQUERY = DIET_CAMP_DRAFT_DIR / "재문의.md"
 DIET_CAMP_STATE = STATUS_DIR / "diet_camp_relay.json"
 DIET_CAMP_ROUNDS = 7
 DIET_CAMP_MAX_REQUERY = 2  # 같은 회차 재문의는 최대 2번 — 그 다음엔 재촉이 된다, 다음 회차로 넘어간다
+# 질문이 없는 회차(자료 전달용) — 답을 기다리지 않고 다음 07:00 에 바로 다음 회차로 넘어간다.
+# 1회차(01.md)가 "오늘은 답 없이 훑어봐 주시면 됩니다"로 끝나는데 답을 기다리면 다음날 재문의가
+# 나가 앞뒤가 안 맞았다(2026-08-29 team-lead 지적). README.md 「질문 없는 회차」참조.
+DIET_CAMP_NO_WAIT_ROUNDS = {1}
+# ★질문이 없는 회차는 답을 기다리지 않는다. 1회차는 "오늘은 답 없이 자료만 훑어봐 주시면
+#   됩니다" 로 끝난다 — 답을 요구하지 않은 회차인데 다음 날 재문의("지난번 여쭤봤던 질문에
+#   답해주시면")를 보내면 앞뒤가 어긋난다. 그런 회차는 여기 적어 바로 다음 회차로 넘긴다.
+DIET_CAMP_NO_REPLY_ROUNDS = {1}
 # 카톡 내보내기 한 줄 형식 — kakao_room_listen.py 의 LINE/DAY 패턴과 동일(정본 복제 아님,
 # 이 방 전용 파서라 별도 모듈로 빼지 않는다).
 DIET_CAMP_LINE = re.compile(r"^\[(?P<who>[^\]]+)\]\s*\[(?P<when>[^\]]+)\]\s*(?P<text>.*)$")
@@ -3420,6 +3428,8 @@ def run_diet_camp_morning() -> None:
 
         if round_no == 0:
             advance = True
+        elif round_no in DIET_CAMP_NO_REPLY_ROUNDS:
+            advance = True  # 질문이 없던 회차 — 답을 기다리지 않고 바로 다음으로
         elif st.get("reply_received"):
             advance = True
         else:
