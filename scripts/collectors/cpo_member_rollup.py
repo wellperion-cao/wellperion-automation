@@ -29,9 +29,14 @@ lesson_registered_roster 재호출일 뿐, 새 GAS 액션 아님) 재사용. 새
   · 데이터 완성도(멤버십) = _activeCompletenessGaps(담당 미배정·연락기록 없음·등록분류 상충).
   · 데이터 완성도(강습) = _lessonMemGapOf(담당 미배정·연락기록 없음·상태 미입력).
 
-정직 꼬리표: 각 줄은 소스 조회 실패 시 그 줄만 "측정 안 됨"(날조 금지). '지난주 대비 증감'은
-아직 주차별 스냅샷을 저장할 자리가 없어(새 파일 생성 금지 — 약속 L21) 매 회 "비교 이력 없음"
-으로 정직 표기한다(첫 주부터 그대로).
+정직 꼬리표: 각 줄은 소스 조회 실패 시 그 줄만 "측정 안 됨"(날조 금지). honesty_tag는
+데이터 상태에서 그대로 파생한다(하드코딩 아님) — 전 소스 실패="미측정", 요약에 "측정 안 됨"이
+하나라도 남으면 "부분", 없으면 "측정".
+
+'지난주 대비' 이력: 새 파일 생성 없이(약속 L21) module_reporter.py가 이미 매 발송마다
+payload.metrics를 status/module_report_log.jsonl에 적재하는 경로를 그대로 쓴다 —
+데이터 위생 5수치를 metrics로 실어 보내고, 다음 회차 collect() 호출 때 그 로그의 직전
+항목(module_reporter._last_metrics 재사용)을 읽어 증감을 계산한다.
 """
 from __future__ import annotations
 
@@ -48,8 +53,10 @@ if _SCRIPTS_DIR not in sys.path:
 
 from collectors.base import make_payload  # noqa: E402
 import cpo_report  # noqa: E402 — 기존 fetch 로직 재사용(중복 복사 금지)
+from module_reporter import REPORT_LOG_PATH, _last_metrics  # noqa: E402 — 지난주 대비용 로그 재사용(새 파일 금지)
 
 _LINK = "https://wellperion-cao.github.io/wellperion-automation/cpo/member/membership.html"
+_MODULE_ID = "cpo-member-rollup"
 
 _TYPO_MAP = {"맴버십": "멤버십", "멥버십": "멤버십"}
 # 회원 구분 정본 6종(GM 확정 2026-08-13). 법인은 별도 시트라 이 집계에선 0이지만 목록에는 둔다.
@@ -218,6 +225,31 @@ def _member_composition(active_rows: list[dict], today: str) -> dict:
     }
 
 
+def _hygiene_metrics(comp: dict) -> dict:
+    """데이터 위생 5수치 → {라벨: 값}(module_report_log.jsonl 적재용 · '지난주 대비' 재료)."""
+    return {
+        "오타": comp["typo_count"],
+        "미기재": comp["blank_type_count"],
+        "이름중복": comp["dup_count"],
+        "잔여일 공백": comp["remain_blank"],
+        "날짜형식 깨짐": comp["date_broken"],
+    }
+
+
+def _hygiene_delta_tail(prev: dict | None, cur: dict) -> str:
+    """위생 줄 꼬리표 — 이력 없으면 첫 측정, 있으면 바뀐 수치만 표기."""
+    if not prev:
+        return "(지난주 대비 비교 이력 없음 — 첫 측정)"
+    parts = [
+        f"{label} {prev[label]}→{now_v}({now_v - prev[label]:+d})"
+        for label, now_v in cur.items()
+        if label in prev and prev[label] != now_v
+    ]
+    if not parts:
+        return "(지난주 대비 변동 없음)"
+    return "(지난주 대비 " + " · ".join(parts) + ")"
+
+
 def _fmt_names(items: list, limit: int = 5) -> str:
     """이름 목록을 괄호 병기용 문자열로("(이름1·이름2·… 외 N명)"). 빈 목록이면 빈 문자열."""
     names = [str(n or "").strip() for n in items]
@@ -323,12 +355,15 @@ def collect(module=None) -> dict:
         line3 = "■ 문의에서 등록까지 — 측정 안 됨(문의 데이터 조회 실패)"
 
     # ── ④ 데이터 위생 ────────────────────────────────────────────────────────
+    hygiene_metrics: dict = {}
     if comp is not None:
+        hygiene_metrics = _hygiene_metrics(comp)
+        prev_hygiene = _last_metrics(REPORT_LOG_PATH, _MODULE_ID)
+        tail = _hygiene_delta_tail(prev_hygiene, hygiene_metrics)
         line4 = (
             f"■ 데이터 위생 — 회원구분 오타 {comp['typo_count']} · 미기재 {comp['blank_type_count']} · "
             f"이름중복 {comp['dup_count']} · 잔여일 공백 {comp['remain_blank']} · "
-            f"날짜형식 깨짐 {comp['date_broken']} "
-            f"(지난주 대비 측정 안 됨 — 비교 이력 없음)"
+            f"날짜형식 깨짐 {comp['date_broken']} {tail}"
         )
     else:
         line4 = "■ 데이터 위생 — 측정 안 됨(유효회원 조회 실패)"
@@ -345,12 +380,19 @@ def collect(module=None) -> dict:
 
     summary = "\n".join([line1, line2, line3, line4, line5])
     all_failed = comp is None and inq_rows is None and ended_rows is None
-    honesty_tag = "미측정" if all_failed else "부분"
+    if all_failed:
+        honesty_tag = "미측정"
+    elif "측정 안 됨" in summary:
+        honesty_tag = "부분"
+    else:
+        honesty_tag = "측정"
+
+    metrics = [{"label": k, "value": v} for k, v in hygiene_metrics.items()]
 
     return make_payload(
         title="회원 현황 롤업",
         summary_line=summary,
-        metrics=[],
+        metrics=metrics,
         honesty_tag=honesty_tag,
         link=_LINK,
     )
