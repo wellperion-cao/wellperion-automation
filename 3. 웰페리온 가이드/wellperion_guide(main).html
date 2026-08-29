@@ -801,6 +801,14 @@
     var _aiOwnerRe = /웰리|시뽀|시로|시모|시우|시포|시토|ai\s*ceo|ai\s*cfo|ai\s*chro|ai\s*cmo|ai\s*coo|ai\s*cpo|ai\s*cto/i;
 
     function set(id, v){ var el = document.getElementById(id); if (el) el.textContent = (v === null || v === undefined) ? '—' : v; }
+    // 업무·결재 조회 실패 표시 — "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시).
+    var WORK_APPR_IDS = ['kpiWorkStripTotal','kpiWorkStripActive','kpiWorkStripDone','kpiWorkStripHold',
+      'kpiWorkTodayTotal','kpiWorkTodayActive','kpiWorkTodayDone','kpiWorkTodayHold',
+      'kpiWorkAllTotal','kpiWorkAllActive','kpiWorkAllDone','kpiWorkAllHold',
+      'kpiApprStripTotal','kpiApprStripPend','kpiApprStripDone','kpiApprStripReject',
+      'kpiApprTodayTotal','kpiApprTodayPend','kpiApprTodayDone','kpiApprTodayReject',
+      'kpiApprAllTotal','kpiApprAllPend','kpiApprAllDone','kpiApprAllReject'];
+    function setWorkApprFail(){ WORK_APPR_IDS.forEach(function(id){ set(id, '⚠'); }); }
     function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
     function yearStart(){ return new Date().getFullYear()+'-01-01'; }
     // 이번달(생성일 기준) 범위 — 현재 월 1일~말일, 로컬(KST). home은 월+오늘만(일/주/월 셀렉터는 SSOT 페이지 소관).
@@ -852,7 +860,7 @@
 
     window.fetchTodoListShared()
       .then(function(res){
-        if (!res || !(res.ok||res.success) || !Array.isArray(res.data||res.todos)) return;
+        if (!res || !(res.ok||res.success) || !Array.isArray(res.data||res.todos)) { setWorkApprFail(); return; }
         // [정의 변경 2026-06-17 GM] 집계 기준 = 전체 진행분 → 이번달(생성일이 이번달인 행)으로 전환.
         //   분류 로직(진행/완료/보류·결재 대기/완료/반려)은 업무현황 SSOT 정의와 동일 — '이번달 생성' 필터만 추가.
         var rows = (res.data||res.todos).filter(function(r){
@@ -958,7 +966,7 @@
 
         // 담당자별 집계는 2026-08-28 GM 지시로 홈에서 뺐다 — 업무&결재 SSOT 페이지가 같은 것을 더 자세히 보여준다.
       })
-      .catch(function(){ /* "—" 유지 */ });
+      .catch(function(){ setWorkApprFail(); });
 
     // 멤버십 문의 관리 — 올해(2026) 누적 + 이번달.
     // ★2026-08-25 GM 지적 수리: 홈과 화면(멤버십 회원관리)이 같은 숫자를 서로 다른 데서 셌다.
@@ -972,7 +980,8 @@
       fetch(SURVEY_URL + '?action=member_inquiry_list&_pv=' + Date.now(), { redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (!d || !d.ok || !Array.isArray(d.data)) return;   // 실패는 "—" 유지(0으로 세지 않는다)
+          // 실패는 0으로 세지 않는다 — "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시).
+          if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); return; }
           var total = 0, month = 0;
           d.data.forEach(function(row){
             var ts = String(row.timestamp || '').slice(0, 10);
@@ -983,7 +992,7 @@
           set('kpiMiInqTotal', total.toLocaleString());
           set('kpiMiInqMonth', month);
         })
-        .catch(function(){ /* "—" 유지 */ });
+        .catch(function(){ set('kpiMiInqTotal', '⚠'); set('kpiMiInqMonth', '⚠'); });
     })();
 
     // 강습 문의 관리 — 성인+유소년 GAS lesson_stats 합산, 올해 기준 (2026-07-16 gviz 숨김행 감사 후 GAS 전환)
@@ -1011,7 +1020,10 @@
         set('kpiLessonInqYouthMonth', youth.month);
         var totalEl = document.getElementById('kpiLessonInqTotal');
         if (totalEl) totalEl.title = '성인 ' + adult.total.toLocaleString() + ' · 유소년 ' + youth.total.toLocaleString() + ' (올해 누적)';
-      }).catch(function(){ /* "—" 유지 */ });
+      }).catch(function(){   // "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시)
+        set('kpiLessonInqTotal', '⚠'); set('kpiLessonInqMonth', '⚠');
+        set('kpiLessonInqAdultMonth', '⚠'); set('kpiLessonInqYouthMonth', '⚠');
+      });
     })();
 
     // 멤버십 등록 — 올해(2026) 누적 + 이번달 (member_registered_list, 유효회원 시트 등록일자, 멤버십 전용).
@@ -1023,13 +1035,14 @@
       fetch(SURVEY_URL + '?action=member_registered_list&newOnly=1&from=' + yearStart() + '&to=' + todayStr() + '&_pv=' + Date.now(), { redirect:'follow' })
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (!d || !d.ok || !Array.isArray(d.data)) return; // "—" 유지
+          // "⚠" 로 로딩중("—")과 구분(2026-08-29 GM 지시)
+          if (!d || !d.ok || !Array.isArray(d.data)) { set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); return; }
           var total = (typeof d.count === 'number') ? d.count : d.data.length;
           var month = d.data.filter(function(row){ return String(row.regDate || '').slice(0, 7) === ym; }).length;
           set('kpiMiRegTotal', total.toLocaleString());
           set('kpiMiRegMonth', month);
         })
-        .catch(function(){ /* "—" 유지 */ });
+        .catch(function(){ set('kpiMiRegTotal', '⚠'); set('kpiMiRegMonth', '⚠'); });
     })();
 
     // 강습 등록 — 성인+유소년, 소스를 문의 시트 등록성공(SUC) 건으로 교체(배767 · 2026-08-25).
@@ -1052,9 +1065,13 @@
       }
       Promise.all([fetchType('성인강습'), fetchType('유소년강습')]).then(function(results){
         var adult = results[0], youth = results[1];
-        // ★한쪽만 실패해도 "—" 유지(2026-08-24) — 실패한 쪽이 total:0으로 대체돼 있어
-        //   AND로 두면 "성인 실패+유소년 성공"이 진짜 총합인 척 섞여 나간다.
-        if (!adult.ok || !youth.ok) return;
+        // ★한쪽만 실패해도 "⚠"(2026-08-29, 종전 "—" 유지에서 변경) — 실패한 쪽이 total:0으로 대체돼 있어
+        //   AND로 두면 "성인 실패+유소년 성공"이 진짜 총합인 척 섞여 나간다. "⚠" 로 로딩중("—")과 구분.
+        if (!adult.ok || !youth.ok) {
+          set('kpiLessonRegTotal', '⚠'); set('kpiLessonRegMonth', '⚠');
+          set('kpiLessonRegAdultMonth', '⚠'); set('kpiLessonRegYouthMonth', '⚠');
+          return;
+        }
         set('kpiLessonRegTotal', (adult.total + youth.total).toLocaleString());
         set('kpiLessonRegMonth', adult.month + youth.month);
         set('kpiLessonRegAdultMonth', adult.month);

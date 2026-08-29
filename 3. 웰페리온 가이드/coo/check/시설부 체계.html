@@ -4325,7 +4325,9 @@ function renderA3FacilityMonthlyFromData(month,data){
 
   const bodyRow=doc.querySelector('.mrp-body-row');
   if(bodyRow){
-    let catRows=''; fmSortByCat(data.byCategory).forEach(function(r){ catRows+='<tr><td>'+fmEsc(r.cat)+'</td><td>'+(r.total||0)+'</td><td>'+(r.done||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
+    // ★fmMergeCats 누락(2026-08-29 자동대조 발견) — renderFmCategory(화면)는 이름만 다른 같은 카테고리를
+    //   합치는데, A3 인쇄는 raw data.byCategory 를 그대로 써서 「F 안전」·「F 안전(AI초안)」이 두 줄로 남았다.
+    let catRows=''; fmSortByCat(fmMergeCats(data.byCategory)).forEach(function(r){ catRows+='<tr><td>'+fmEsc(r.cat)+'</td><td>'+(r.total||0)+'</td><td>'+(r.done||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
     let roundRows=''; (data.byRound||[]).forEach(function(r){ roundRows+='<tr><td>'+fmEsc(r.round)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+(r.total||0)+'</td><td>'+(r.pct!=null?r.pct+'%':'-')+'</td></tr>'; });
     let inspRows=''; (data.byInspector||[]).slice(0,8).forEach(function(r){ inspRows+='<tr><td>'+fmEsc(r.inspector)+'</td><td>'+(r.sessionCount||0)+'</td><td>'+(r.avgPct!=null?r.avgPct+'%':'-')+'</td></tr>'; });
     let dailyCells=''; (data.dailySeries||[]).forEach(function(d){ dailyCells+='<span style="display:inline-block;min-width:34px;text-align:center;font-size:9px;padding:1px 3px;color:'+fmPctColor(d.pct)+';">'+(d.date||'').slice(8,10)+':'+(Number(d.pct)||0)+'%</span>'; });

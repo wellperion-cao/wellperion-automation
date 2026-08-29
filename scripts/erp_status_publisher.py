@@ -845,6 +845,20 @@ def _kpi_crosscheck_rules():
     except Exception as e:
         out.append({"card": "시설부 점검", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
 
+    # ④ 지원부 월간 이슈 — 「이슈 원문 보기 (N건)」 표제의 건수와 펼침 목록(세션 단위 병합) 행수가
+    #    서로 다른 값인데 라벨이 하나만 보여줘 불일치처럼 읽혔다(2026-08-26 감사·57건 vs 34행).
+    #    이제 두 화면 모두 total·sessionsWithIssue 두 숫자를 같이 적는다(지원부 체계.html) —
+    #    여기서는 서버가 돌려주는 sessionsWithIssue 가 실제 list 길이와 맞는지만 본다(내적 정합).
+    try:
+        d = _get(CHECK_GAS + f"?action=monthly_report&dept=support&month={ym}")
+        issues = d.get("issues") or {}
+        list_len = len(issues.get("list") or [])
+        swi = issues.get("sessionsWithIssue")
+        out.append({"card": "지원부 점검", "what": "이슈 sessionsWithIssue = 펼침 목록 행수",
+                    "left": swi, "right": list_len, "ok": (swi == list_len)})
+    except Exception as e:
+        out.append({"card": "지원부 점검", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
     return out
 
 
