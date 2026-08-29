@@ -59,9 +59,23 @@ PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★운영부"
 # 배536(2026-08-11) — ops_daily_digest.py --room "★중간관리자" 가 만드는 그 방 전용 대화 정리.
 MGR_PENDING = ROOT / "1. AI자료_아카이브" / "11_카카오톡" / "★중간관리자" / "_pending_digest.json"
 KILL_SWITCH = ROOT / "status" / "ops_digest_send.json"
-# 배 11070(웰리 ①) — 이 스크립트가 순서대로 여는 방(★운영부→★중간관리자→★부서장/★운영+시설+
-# 지원+주차)이 한 스케줄에 몰려 카톡 알림이 겹쳐 보였다. 방마다 이만큼 벌려 보낸다.
-SEND_STAGGER_SECONDS = 300
+# 배 11070(웰리 ①) — 이 스크립트가 순서대로 여는 방들이 한 스케줄에 몰려 카톡 알림이
+# 겹쳐 보였다. ★2026-08-29 GM 확정(배826 재승인)으로 상대 시차(5분씩 밀리기)를
+# 절대시각으로 바꿨다 — 예약 실행(07:30)이 늦어져도 각 통은 자기 시각에 나간다.
+# 순서·시각: 4부서방 07:40 → ★운영부 07:45 → ★중간관리자 07:50 → ★부서장 07:55.
+# 이미 그 시각이 지났으면(앞 단계가 늦어졌으면) 기다리지 않고 바로 보낸다 —
+# 다음날까지 기다리는 사고를 막는다(_seconds_until 참고).
+# ▸예약 실행(Wellperion-Ops-Morning-Digest-0730)은 07:30 그대로 둔다 — 안 옮겼다. 이 파일
+#   앞에서 카톡방 내보내기·다이제스트 생성이 먼저 도는데(ops_morning_digest.bat), 실측
+#   (2026-08-25~29 로그)으로 그 준비가 매일 07:37 안쪽에 끝났다 — 첫 목표(07:40)까지 여유가
+#   있다. 07:40으로 옮기면 준비가 하루라도 오래 걸리는 날 07:40 자체를 넘겨버려 GM 안의
+#   기준시각이 그날그날 달라진다. 07:30 그대로 + 지난 시각은 즉시발송(위 주석)이 더 안전하다.
+MORNING_SEND_TIMES = {
+    "4부서방": (7, 40),      # ★운영+시설+지원+주차 (foursplit)
+    "★운영부": (7, 45),
+    "★중간관리자": (7, 50),
+    "★부서장": (7, 55),
+}
 TARGET_ROOM = "★운영부"  # 2026-08-04 시토: SSOT(kakao_rooms.json)와 표기 일치(공백 제거) —
 # 발송 자체는 _title_key 정규화로 공백 무관하게 동작하지만, 등록부 드리프트 체커가
 # SSOT 표기와 다르면 CODE_ROOM_NOT_IN_SSOT로 매번 걸린다(발송 실패 아님 — 표기만 정합화).
@@ -541,15 +555,15 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
     room, contacts = relay_routes()[0]
     relay_items, relay_current = build_relay_message(contacts, relay_state.get(room, {}))
 
-    # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 사람당
-    # ASKS_PER_PERSON_CAP건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
+    # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 한 통
+    # ASKS_TOTAL_CAP건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
     nudge_items = build_reply_nudge_items(target_date)
     asks = build_asks_section(relay_items, nudge_items)
     if asks:
         parts.append(asks)
 
-    # 📅 다가오는 일정 — 관리자 건(미팅·방문·보고 등)만. 부서 소관은 send_overdue_reception_alerts
-    # 가 ★운영+시설+지원+주차 쪽에 따로 붙인다(위 「📅 다가오는 일정」 섹션 주석 참조).
+    # 📅 다가오는 일정 — 관리자 건(미팅·방문·보고 등)만. 부서 소관은 _send_ovd_room(main() 호출)
+    # 가 4부서방(★운영+시설+지원+주차) 쪽에 따로 붙인다(위 「📅 다가오는 일정」 섹션 주석 참조).
     sched_items = [x for x in _upcoming_schedule_items() if not x["dept_item"]]
     sched_block = _build_schedule_block(sched_items)
     if sched_block:
@@ -841,7 +855,7 @@ def _resolve_staff_message(ship: dict) -> str:
 # (GM 지시 — 같은 일정이 두 방에 겹쳐 나가면 안 된다). 가르는 기준 = type·담당 부서:
 #   부서 소관 → type이 정기점검이거나 dept가 시설·지원·주차·운영 4부서 중 하나
 #   관리자 건 → 그 밖(경영지원부 등 — 미팅·방문·보고류)
-# 호출부(build_mgr_daily_brief=관리자 건 / send_overdue_reception_alerts=부서 소관)가
+# 호출부(build_mgr_daily_brief=관리자 건 / _send_ovd_room=부서 소관)가
 # _is_dept_schedule_item 으로 걸러서 넘긴다.
 # ponytail: 「전사일정에 넣은 것」(ops_daily_digest.py, 다른 파일의 절)과 겹칠 때 빼는
 #   로직은 안 넣었다 — 그 절의 원장을 이 파일이 몰라 넣으려면 파일을 하나 더 읽어야
@@ -967,10 +981,12 @@ def _selfcheck_schedule_block() -> None:
 # (①무엇을 확인해 달라는지 ②어디서·어떻게 답하면 되는지), 오래된 순 사람별 상한만.
 #
 # ★2026-08-26 웰리 실측(배 11039 ⑤) — 상한이 통 전체 5건 고정이라, 실장님 앞으로 5건이
-# 차면 다음 회차에 소장님 건이 새로 생겨도 밀려 접혔다. 사람별 상한으로 바꿔 한 사람이
-# 많이 밀려도 다른 사람 새 건은 그대로 보인다.
+# 차면 다음 회차에 소장님 건이 새로 생겨도 밀려 접혔다. 그래서 사람별 상한(5건씩)으로
+# 바꿨었는데, 형평은 지켰지만 사람이 여럿이면 한 통 총량이 다시 커졌다(오늘 실측 —
+# 총 5건 그대로 나감). ★2026-08-29 GM 확정(배826 재승인) — 형평보다 "한 통 3건" 총량이
+# 우선이다. 사람별 배려는 없앤다 — 오래된 순으로 3건만 자르고 나머지는 한 줄로 접는다.
 # ══════════════════════════════════════════════════════════════════════════
-ASKS_PER_PERSON_CAP = 5  # 사람 한 명당 한 통 최대 건수(전체 상한 아님)
+ASKS_TOTAL_CAP = 3  # 한 통 최대 건수(GM 확정 2026-08-29 · 배826 — 종전 사람당 5건 폐지)
 ASKS_TITLE_CAP = 50
 ASKS_HOW_CAP = 60
 _ROLE_TAG_RE = re.compile(r"^\[[^\]]*\]\s*")  # "[웰페리온 AI 웰리] " 같은 발신 태그
@@ -1002,53 +1018,57 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
 
 
 def build_asks_section(relay_items: list, nudge_items: list) -> str:
-    """배 전달(relay)·회신 부탁(nudge) 항목을 사람별로 묶어 사람당 ASKS_PER_PERSON_CAP건만
-    보여주고 나머지는 한 줄로 접는다. 헤더 건수 = 화면에 실제로 보이는 줄 수뿐이다."""
+    """배 전달(relay)·회신 부탁(nudge) 항목을 오래된 순으로 합쳐 한 통 ASKS_TOTAL_CAP건만
+    보여주고 나머지는 한 줄로 접는다(GM 확정 2026-08-29 — 종전 사람당 상한을 한 통 총량
+    상한으로 바꿨다). 표시는 여전히 사람별로 묶는다. 헤더 건수 = 화면에 실제로 보이는
+    줄 수뿐이다."""
     items = sorted(relay_items + nudge_items, key=lambda x: x.get("date") or "9999-99-99")
     if not items:
         return ""
+    shown = items[:ASKS_TOTAL_CAP]
+    rest = len(items) - len(shown)
+
     # ★2026-08-20 GM 지적("정말 복잡해, 직관적이고 명확해야해") — 사람 단위로 묶는다.
     #   전에는 항목마다 「…님께 한 마디만 답해 주시면 됩니다」가 그대로 반복돼 같은 문장이
     #   다섯 번 찍혔다. 답하는 방법은 맨 위에 한 번만 적고, 아래는 사람별로 자기 것만 모아
     #   한 줄씩 둔다 — 받는 사람이 자기 이름만 찾으면 자기 몫이 다 보인다.
     #   ▸어디서 하는지가 따로 있는 건(📎 링크가 붙은 건)만 그 줄을 살려 둔다.
     by_who: dict = {}
-    for it in items:
+    for it in shown:
         by_who.setdefault(it["who"], []).append(it)
-    shown_by_who = {who: group[:ASKS_PER_PERSON_CAP] for who, group in by_who.items()}
-    total_shown = sum(len(g) for g in shown_by_who.values())
-    total_rest = sum(len(by_who[who]) - len(g) for who, g in shown_by_who.items())
 
-    lines = [f"🧾 확인 부탁드릴 것 {total_shown}건 — 한 마디만 주시면 됩니다(진행 중 / 완료 / 날짜)"]
-    for who, group in shown_by_who.items():
+    lines = [f"🧾 확인 부탁드릴 것 {len(shown)}건 — 한 마디만 주시면 됩니다(진행 중 / 완료 / 날짜)"]
+    for who, group in by_who.items():
         lines.append(f"👤 {who}")
         for it in group:
             lines.append(f" • {it['ask']}")
             how = str(it.get("how") or "")
             if "📎" in how or "http" in how:
                 lines.append(f"   {how}")
-    if total_rest:
-        lines.append(f"…외 {total_rest}건이 더 있습니다 — 사람당 {ASKS_PER_PERSON_CAP}건까지만 추렸습니다.")
+    if rest:
+        lines.append(f"…외 {rest}건이 더 있습니다 — 오래된 순 {ASKS_TOTAL_CAP}건만 추렸습니다.")
     lines.append(RELAY_SIGNOFF)
     return "\n".join(lines)
 
 
 def _selfcheck_asks_section() -> None:
-    """헤더 건수 = 실제로 보이는 줄 수인지, 사람별로 따로 잘리는지(전체 상한 아님). 네트워크 없이 돈다."""
+    """헤더 건수 = 실제로 보이는 줄 수인지, 한 통 전체가 ASKS_TOTAL_CAP(3)건에서 잘리는지
+    (사람별 상한 아님 — 2026-08-29 GM 확정). 네트워크 없이 돈다."""
     relay = [{"date": "2026-08-18", "who": "이경연 실장", "ask": "실장 건", "how": "h"}]
     nudge = [{"date": f"2026-08-{d:02d}", "who": "이정헌 소장", "ask": f"n{d}건", "how": "h"}
-             for d in range(10, 17)]  # 7건 — 이경연 실장 1건과는 별개, 사람별 상한(5) 초과
+             for d in range(10, 17)]  # 7건 — 이경연 실장 1건과 합쳐 총 8건, 3건 상한 초과
     out = build_asks_section(relay, nudge)
-    assert "확인 부탁드릴 것 6건" in out, out  # 실장 1(상한 안 걸림) + 소장 5(상한 걸림)
-    assert "외 2건이 더 있습니다" in out, out  # 소장 초과분 2건(n15·n16)만 접힘
+    assert "확인 부탁드릴 것 3건" in out, out  # 한 통 전체 3건(사람 구분 없이 오래된 순)
+    assert "외 5건이 더 있습니다" in out, out  # 8건 - 3건 = 5건
     # 답하는 방법 안내는 맨 위 한 번뿐이어야 한다(2026-08-20 GM: 같은 문장이 다섯 번 찍혔다)
     assert out.count("한 마디만 주시면 됩니다") == 1, out
-    assert out.count("👤 이정헌 소장") == 1, "같은 사람 것은 한 묶음으로 모여야 한다"
-    for d in (10, 11, 12, 13, 14):
-        assert f"n{d}건" in out, f"오래된 5건(n10~n14)은 화면에 보여야 한다: n{d}"
-    for d in (15, 16):
-        assert f"n{d}건" not in out, f"상한 초과분(n15·n16)은 접혀야 한다: n{d}"
-    assert "실장 건" in out, "다른 사람 건은 사람별 상한과 무관하게 그대로 실려야 한다(전체 상한 폐지)"
+    # 오래된 순 정렬이므로 실장 건(8/18)이 소장 건(8/10~)보다 나중 — 상한 3건 안에
+    # 소장의 가장 오래된 것(n10·n11·n12)만 들어가고 실장 건은 밀려 빠져야 한다.
+    for d in (10, 11, 12):
+        assert f"n{d}건" in out, f"오래된 3건은 화면에 보여야 한다: n{d}"
+    for d in (13, 14, 15, 16):
+        assert f"n{d}건" not in out, f"상한 초과분은 접혀야 한다: n{d}"
+    assert "실장 건" not in out, "총량 상한(3건)에 밀리면 다른 사람 건도 접혀야 한다"
     assert out.splitlines()[-1] == RELAY_SIGNOFF
     assert build_asks_section([], []) == "", "항목 0건이면 절 자체가 없어야 한다"
     print("[selfcheck] build_asks_section OK")
@@ -1472,53 +1492,81 @@ def _selfcheck_ovd_block() -> None:
     print("[selfcheck] _build_ovd_block OK")
 
 
-def send_overdue_reception_alerts() -> None:
-    """기한 초과 접수를 ★부서장·★운영+시설+지원+주차 방에 아침 1회 발송."""
+def _ovd_ready() -> bool:
+    """기한 초과 접수 알림을 낼 준비가 됐는가 — 킬스위치+중복방지, 4부서방·★부서장
+    공통 게이트. 한 실행 안에서 한 번만 확인한다(두 방이 절대시각 07:40·07:55로
+    떨어져 있어도 이 실행 동안 상태가 바뀌지 않는다)."""
     if not _ovd_enabled():
         log("[ovd] 킬스위치 OFF — 생략")
-        return
+        return False
     if _ovd_already_sent_today():
         log("[ovd] 이미 발송된 회차 — 생략")
-        return
+        return False
+    return True
+
+
+def _send_ovd_room(room: str, attach_schedule: bool) -> bool:
+    """기한 초과 접수를 방 하나에 발송(원장은 그때그때 새로 조회 — 07:40·07:55로 시각이
+    떨어져 있어 값이 살짝 다를 수 있는 것이 자연스럽다). 반환=실제 발송 여부."""
     from collectors.ops_shared import RECEPTION_EXEC_URL, gas_get
     resp = gas_get(RECEPTION_EXEC_URL, {"action": "reg_list"}, timeout=20, label="ovd-alert")
     if resp is None:
         log("[ovd] 종합접수 조회 실패 — 생략")
-        return
+        return False
     try:
         data = resp.json()
         rows = data.get("data", []) if data.get("ok") else []
     except Exception:
         log("[ovd] 응답 파싱 실패 — 생략")
-        return
+        return False
     eligible = [r for r in rows
                 if str(r.get("status", "")) not in {"완료"}
                 and str(r.get("category") or "").strip() not in _OVD_CAT_EXCLUDE]
-    sent_any = False
-    for i, room in enumerate((_OVD_ROOM_LESSON, _OVD_ROOM_OPS)):
-        if i:
-            time.sleep(SEND_STAGGER_SECONDS)  # 배 11070 ① — 두 방 발신이 붙어 나가지 않게 벌린다
-        room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
-        block = _build_ovd_block(room_rows)
-        # 📅 다가오는 일정 — 부서 소관(법정·정기점검·공사)만 ★운영+시설+지원+주차에 붙인다.
-        # 관리자 건은 build_mgr_daily_brief 가 ★중간관리자에 따로 붙인다(위 섹션 주석 참조).
-        if room == _OVD_ROOM_OPS:
-            sched_block = _build_schedule_block([x for x in _upcoming_schedule_items() if x["dept_item"]])
-            if sched_block:
-                block = f"{block}\n\n{sched_block}" if block else sched_block
-        if not block:
-            log(f"[ovd] {room} — 3일+ 없음, 생략")
-            continue
-        cmd = [sys.executable, str(SENDER), "--message", block, "--only-room", room]
-        log(f"[ovd] 발송 → {room}")
-        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
-        out = (proc.stdout or "").strip()
-        tail = out.splitlines()[-1] if out else "출력 없음"
-        log(f"[ovd] rc={proc.returncode} · {tail}")
-        if proc.returncode == 0 and "DONE" in out:
-            sent_any = True
-    if sent_any:
-        _ovd_mark_sent()
+    room_rows = [r for r in eligible if _ovd_room_for(str(r.get("dept") or "")) == room]
+    block = _build_ovd_block(room_rows)
+    # 📅 다가오는 일정 — 부서 소관(법정·정기점검·공사)만 ★운영+시설+지원+주차(4부서방)에 붙인다.
+    # 관리자 건은 build_mgr_daily_brief 가 ★중간관리자에 따로 붙인다(위 섹션 주석 참조).
+    if attach_schedule:
+        sched_block = _build_schedule_block([x for x in _upcoming_schedule_items() if x["dept_item"]])
+        if sched_block:
+            block = f"{block}\n\n{sched_block}" if block else sched_block
+    if not block:
+        log(f"[ovd] {room} — 3일+ 없음, 생략")
+        return False
+    cmd = [sys.executable, str(SENDER), "--message", block, "--only-room", room]
+    log(f"[ovd] 발송 → {room}")
+    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    out = (proc.stdout or "").strip()
+    tail = out.splitlines()[-1] if out else "출력 없음"
+    log(f"[ovd] rc={proc.returncode} · {tail}")
+    return proc.returncode == 0 and "DONE" in out
+
+
+def _seconds_until(hour: int, minute: int, now: "datetime | None" = None) -> float:
+    """지금부터 오늘 그 시각까지 남은 초. 이미 지났으면 0 — 앞 단계(내보내기·다이제스트
+    생성)가 늦어져도 다음날까지 기다리지 않고 바로 진행한다(순서만 지킨다)."""
+    now = now or datetime.now()
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    return max((target - now).total_seconds(), 0.0)
+
+
+def _sleep_until(hour: int, minute: int) -> None:
+    wait = _seconds_until(hour, minute)
+    if wait:
+        log(f"[schedule] {hour:02d}:{minute:02d} 까지 {int(wait)}초 대기")
+        time.sleep(wait)
+
+
+def _selfcheck_seconds_until() -> None:
+    """절대시각 대기 계산 — 미래면 그만큼, 과거면 0(다음날까지 기다리지 않는다). 네트워크 없이 돈다."""
+    now = datetime(2026, 8, 29, 7, 30, 0)
+    assert _seconds_until(7, 40, now) == 600, _seconds_until(7, 40, now)
+    assert _seconds_until(7, 45, now) == 900
+    assert _seconds_until(7, 55, now) == 1500
+    late = datetime(2026, 8, 29, 7, 50, 0)
+    assert _seconds_until(7, 40, late) == 0, "이미 지난 시각은 0초여야 한다(다음날까지 대기 금지)"
+    assert _seconds_until(7, 50, late) == 0, "정확히 그 시각도 0초"
+    print("[selfcheck] _seconds_until OK")
 
 
 def main() -> int:
@@ -1549,21 +1597,42 @@ def main() -> int:
     # 처리할 업무' 전달은 ★중간관리자 통합본(build_mgr_daily_brief → send_mgr_brief)이
     # 대신 싣는다(배238·544, 2026-08-11 웰리 배선). 이 자리엔 이제 아무것도 없다.
 
+    # 기한 초과 접수(4부서방·★부서장) 킬스위치+중복방지는 여기서 한 번만 본다 — 이 실행이
+    # 07:40부터 07:55까지 15분을 걸치는 동안 상태가 바뀌지 않는다.
+    ovd_ready = _ovd_ready()
+    sent_ovd_ops = sent_ovd_lesson = False
+
+    # 절대시각 4통 — 4부서방 07:40 → ★운영부 07:45 → ★중간관리자 07:50 → ★부서장 07:55
+    # (GM 확정 배826 재승인 2026-08-29). dry-run 은 방에 손대지 않으므로 대기·mgr·ovd 는
+    # 그대로 건너뛴다(종전과 같음 · 미리보기는 --mgr-preview/--relay-preview 로 따로 본다).
+    if not args.dry_run:
+        _sleep_until(*MORNING_SEND_TIMES["4부서방"])
+        if ovd_ready:
+            try:
+                sent_ovd_ops = _send_ovd_room(_OVD_ROOM_OPS, attach_schedule=True)
+            except Exception as exc:
+                log(f"[ovd] 4부서방 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+
+        _sleep_until(*MORNING_SEND_TIMES["★운영부"])
     rc = _send_ops_room(args)
 
     # ★중간관리자 — ★운영부 결과와 무관하게 시도한다(방마다 독립 · 2026-08-15 수리,
-    # send_mgr_brief docstring 참조). dry-run 은 방에 손대지 않으므로 원래대로 생략.
+    # send_mgr_brief docstring 참조).
     if not args.dry_run:
-        time.sleep(SEND_STAGGER_SECONDS)  # 배 11070 ① — ★운영부 발신 직후 바로 붙지 않게 벌린다
+        _sleep_until(*MORNING_SEND_TIMES["★중간관리자"])
         try:
             send_mgr_brief()
         except Exception as exc:
             log(f"[mgr] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
-        time.sleep(SEND_STAGGER_SECONDS)
-        try:
-            send_overdue_reception_alerts()
-        except Exception as exc:
-            log(f"[ovd] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+
+        _sleep_until(*MORNING_SEND_TIMES["★부서장"])
+        if ovd_ready:
+            try:
+                sent_ovd_lesson = _send_ovd_room(_OVD_ROOM_LESSON, attach_schedule=False)
+            except Exception as exc:
+                log(f"[ovd] ★부서장 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+        if sent_ovd_ops or sent_ovd_lesson:
+            _ovd_mark_sent()
     return rc
 
 
