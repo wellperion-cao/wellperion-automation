@@ -6449,11 +6449,13 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <article class="doc" id="O1">
     <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 운영 SSOT · 계획 → 현황 → 접수 → 개선</div></div>
 
-    <!-- 오늘 실장이 손댈 것 (GM 지시 2026-08-29) — O1 최상단, 실장이 페이지를 열면 첫 화면이
-         '오늘 누구에게 무엇을 시키나'가 되게 한다. 숫자는 아래 5개 원천(json)에서 그대로 옮긴다
-         (재계산 금지). 0줄이면 덩이를 통째로 숨긴다(빈 상자 금지 — 약속). -->
+    <!-- 금일 조치 필요 사항 (GM 지시 2026-08-29) — O1 최상단, 실장이 페이지를 열면 첫 화면이
+         '오늘 무엇을 누구와 처리하나'가 되게 한다. 숫자는 아래 5개 원천(json)에서 그대로 옮긴다
+         (재계산 금지). 0줄이면 덩이를 통째로 숨긴다(빈 상자 금지 — 약속).
+         ▸제목은 처음 '오늘 실장이 손댈 것' 이었는데 GM 이 가볍다고 지적하셨다(2026-08-29).
+           실장님이 매일 보시는 화면이라 격에 맞는 말로 바꿨고, 사람을 지목하는 표현도 뺐다. -->
     <section id="o1-siljang-today" style="display:none;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--red, #c0392b);border-radius:12px;padding:15px 20px;margin:14px 0 16px;">
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--red, #c0392b);margin-bottom:8px;">🧭 오늘 실장이 손댈 것</div>
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--red, #c0392b);margin-bottom:8px;">🧭 금일 조치 필요 사항</div>
       <div id="o1-siljang-lines"></div>
       <div id="o1-siljang-missing" style="font-size:11px;color:var(--dim);margin-top:6px;"></div>
     </section>
@@ -6722,7 +6724,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       }
       loadHub();
 
-      /* ── 오늘 실장이 손댈 것 (GM 지시 2026-08-29) ──
+      /* ── 금일 조치 필요 사항 (GM 지시 2026-08-29) ──
          RAW_BASE 직독 + withTimeout 은 위 loadHub 와 같은 패턴 재사용. 숫자는 원천 그대로 옮긴다(재계산 금지).
          제출률 문턱값 90% 는 GM 이 2026-08-29 확정(종전 완료율 95% 를 대체). */
       function siljangJget(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); }
@@ -6841,7 +6843,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
     })();
     </script>
 
-    <!-- 종합접수처 처리 절차 박스 — 실장 손댈 것 신설(2026-08-29)로 net-zero 삭제. 절차 안내는
+    <!-- 종합접수처 처리 절차 박스 — 금일 조치 필요 사항 신설(2026-08-29)로 net-zero 삭제. 절차 안내는
          종합접수처 현황 페이지 몫(진입은 위 「🙋 종합접수처」 카드가 담당). -->
 
     <!-- 「부서별 체계」 5링크 섹션 제거(GM 지시 2026-07-25) — 위 「운영 모듈 현황」 카드가 그 역할을
