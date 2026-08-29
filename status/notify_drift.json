@@ -1,14 +1,26 @@
 {
-  "generated_at": "2026-08-29 08:57:00",
-  "registry_items": 50,
-  "automation_health_items": 34,
-  "mismatch_count": 1,
+  "generated_at": "2026-08-29 11:57:47",
+  "registry_items": 49,
+  "automation_health_items": 33,
+  "mismatch_count": 3,
   "mismatches": [
+    {
+      "kind": "CODE_MARKER_GONE",
+      "registry_id": null,
+      "task_name": "\"21\": (21, 0)",
+      "detail": "daily_scheduler.py에서 코드 마커 '\"21\": (21, 0)' 소실 — apscheduler 트리거 등록부 항목(24건) 재검증 필요"
+    },
     {
       "kind": "UNREGISTERED_TASK",
       "registry_id": null,
       "task_name": "Wellperion-SalesReport-OpsSummary-0900",
       "detail": "예약작업 'Wellperion-SalesReport-OpsSummary-0900'이 발신형 이름인데 notify_registry.json 어느 항목에도 안 걸림 — 신규 발신이면 등록부에 추가 필요(이름 휴리스틱, 오탐 가능)"
+    },
+    {
+      "kind": "UNREGISTERED_JOB",
+      "registry_id": null,
+      "task_name": "diet_camp_morning_0700",
+      "detail": "daily_scheduler 잡 'diet_camp_morning_0700'이 notify_registry.json 어느 항목의 job_id 에도 없음 — 사람 방으로 보내는 발신이면 등록부에 추가하고, 내부 전용이면 NON_NOTIFY_JOBS 에 근거와 함께 넣는다"
     }
   ]
 }
