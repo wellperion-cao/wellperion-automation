@@ -48,5 +48,8 @@ if errorlevel 1 set FAILED=%FAILED% send_ops_digest
 if not "%FAILED%"=="" goto :wpfailed
 endlocal & exit /b 0
 :wpfailed
-echo ===== %DATE% %TIME% ops-morning-digest FAILED steps:%FAILED% =====
+REM 2026-08-30 (CTO): this line used to go to a console that nobody sees (wscript window style 0),
+REM so a failed run left rc=1 in Task Scheduler with no record of WHICH step failed. Now it lands
+REM in the same log as everything else.
+echo ===== %DATE% %TIME% ops-morning-digest FAILED steps:%FAILED% ===== >> "%ROOT%\logs\ops_morning_digest.log"
 endlocal & exit /b 1

@@ -125,7 +125,24 @@ def export_room_chat(room_name: str, out_path: Path) -> bool:
         return False
 
     # Ctrl+S → '다른 이름으로 저장' 대화상자
-    room.type_keys("^s")
+    # 방 창이 아직 활성화되기 전(ElementNotEnabled)에 단축키를 보내면 예외로 스크립트가 통째로 죽는다.
+    # 최근 20일 중 5일이 이 지점에서 실패했고(08-17·21·22·24·29), 그날 아침 다이제스트는 옛 내보내기로
+    # 만들어졌다. 다시 포커스를 잡고 최대 3회 기다렸다 보낸다. 3회 모두 실패하면 예외 대신 False.
+    for attempt in range(3):
+        try:
+            room.type_keys("^s")
+            break
+        except Exception as e:
+            log(f"[export] Ctrl+S 미수신({attempt + 1}/3): {type(e).__name__}")
+            if attempt == 2:
+                log(f"[export] 방 창이 끝내 활성화되지 않음({room_name}) — 내보내기 건너뜀")
+                return False
+            try:
+                s.focus_window(room, room_name)
+            except Exception:
+                pass
+            time.sleep(1.5)
+
     dlg_h = _find_dialog("저장", timeout=8.0)
     if not dlg_h:
         log("[export] 저장 대화상자가 안 뜸(Ctrl+S 미반응) — 방 포커스 확인 필요")
