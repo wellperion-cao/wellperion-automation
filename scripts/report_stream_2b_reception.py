@@ -378,6 +378,20 @@ def _write_reception_watch(rows: list[dict]) -> None:
             "first_done_at_src": first_done_src,
             "processing_days": processing_days,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
+        # 살아있음 신호 — coo-reception 은 등록부에 enabled 로 올라 있는데 하트비트가 없어
+        # 침묵 감지기가 이 모듈의 신선도를 판정할 자기 산출물이 없었다(2026-08-29 시우 자가점검).
+        # 새 파일·새 관례를 만들지 않고 전 모듈이 이미 쓰는 module_heartbeat 관문에 합류한다(약속 L21).
+        try:
+            from module_heartbeat import record_heartbeat  # noqa: PLC0415
+            open_total = sum(s["open"] for s in by_dept.values())
+            record_heartbeat(
+                "coo-reception",
+                f"접수 현황 갱신 — 미처리 {open_total}건·3일초과 {overdue_3d}·"
+                f"7일초과 {overdue_7d}·분실물 {lost_open}",
+            )
+        except Exception as exc:  # fail-soft — 하트비트 실패가 스냅샷을 무효로 만들지 않는다
+            print(f"[stream2b] 하트비트 기록 건너뜀: {type(exc).__name__}: {exc}",
+                  file=sys.stderr)
     except Exception as e:
         print(f"[stream2b] reception_watch.json 쓰기 실패: {e}", file=sys.stderr)
 
