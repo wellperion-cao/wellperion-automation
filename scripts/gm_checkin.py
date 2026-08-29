@@ -29,6 +29,15 @@ import requests
 ROOT = Path(__file__).resolve().parent.parent
 JPATH = ROOT / 'status' / 'gm_personal_routine.json'
 
+# ── 하루방 새 체계 v2 (GM 지시 2026-08-29 · 세부 5건 웰리 결정) — 2026-09-01(월)부터 ──
+# 하루 9건 고정 + 미팅 + 일요일 주간 1건. 이날 전까지는 기존 체계 그대로(오늘·내일 무변).
+HARU_V2_START = datetime.date(2026, 9, 1)
+
+
+def haru_v2(day: str | None = None) -> bool:
+    d = datetime.date.fromisoformat(day) if day else datetime.date.today()
+    return d >= HARU_V2_START
+
 # ── 오늘 일정 (배514, GM 지시 2026-08-10 "나의하루에 오늘 일정이 있으면 항상 정리해서 보고") ──
 #   출처 후보 2곳 실측: G1 개인 캘린더(wellperion_guide(main).html #gm1-cal-wrap)는
 #   localStorage 전용 — 브라우저 밖(이 서버 스크립트)에서 못 읽는다. 전사일정(schedule_ssot)은
@@ -309,31 +318,43 @@ def build_slot(slot_id: str, day: str | None = None) -> dict:
     if not slot:
         return {'text': '', 'markup': None}
     _sid, _h, _m, title, items = slot
+    if haru_v2(day):
+        # [웰리 결정 2 · 2026-08-29] 간식 = 13:30 병합 — GM 지시문 6번이 「점심·간식 체크인」으로
+        # 못박았다. 16:30 통은 폐지(발신은 run_gm_checkin_slot 이 스킵), 축·기록 키는 그대로다.
+        if slot_id == 'lunch':
+            title = '🍪 점심·간식'
+            items = list(items) + list(next(s for s in SLOTS if s[0] == 'snack')[4])
     axes = _day(load(), day).get('axes') or {}
-    if all(axes.get(axis) in ('O', 'X') for axis, _label in items):
+    # 'M'(미응답 · v2 30분 재알림 뒤 확정)도 끝난 것으로 본다 — 더 묻지 않는다(GM 규약).
+    if all(axes.get(axis) in ('O', 'X', 'M') for axis, _label in items):
         return {'text': f"오늘 여기까지 — {_meal_ex_line(day)}", 'markup': None}
     lines = [title, '']
     rows = []
     for axis, label in items:
         v = axes.get(axis)
-        mark = {'O': '✅', 'X': '－'}.get(v, '·')
+        mark = {'O': '✅', 'X': '－', 'M': '–'}.get(v, '·')
         lines.append(f"{mark} {label}")
         # GM 이 G1 에 적어 둔 그날의 실제 구성을 그대로 읊는다 (GM 지시 2026-08-12 —
         # "아침을 먹었다"만으로는 부족하고 무엇을 먹는지가 중요하다). 값이 없으면 아무 것도 안 붙인다.
         plan = _axis_plan(axis, day)
         if plan:
             lines.append(f"   {plan}")
-        if v not in ('O', 'X'):
+        if v not in ('O', 'X', 'M'):
             # ★버튼에 무엇에 대한 답인지 적는다 (GM 지시 2026-08-13 "아침 식사 / 아침 운동
             #   이렇게 별도로 했다 안했다로 해줘"). 전에는 두 축 다 안 눌린 아침 카드에
             #   '○ 했다 / － 안 했다' 줄이 **똑같이 두 줄** 떠서 어느 줄이 식사고 어느 줄이
             #   운동인지 눌러 보기 전엔 알 수 없었다. 이름은 기존 축 분류에서 뽑는다
             #   (_MEAL_AXES/_EX_AXES — 새 표 만들지 않는다 · 약속 L01).
-            kind = '식사' if axis in _MEAL_AXES else '운동'
+            kind = '간식' if axis == 'snack' else ('식사' if axis in _MEAL_AXES else '운동')
             icon = label[0] if label and not label[0].isalnum() and label[0] not in ' ' else ''
             tag = f"{icon} {kind}".strip()
-            rows.append([{'text': f'○ {tag} 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
-                         {'text': f'－ {tag} 안 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
+            if haru_v2(day):
+                # v2 체크인 규약(GM 확정) — 버튼은 ✅했음/❌못함 둘뿐, 자유 입력 요구 없음.
+                rows.append([{'text': f'✅ {tag} 했음', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
+                             {'text': f'❌ {tag} 못함', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
+            else:
+                rows.append([{'text': f'○ {tag} 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:O'},
+                             {'text': f'－ {tag} 안 했다', 'callback_data': f'ck:s:{slot_id}:{axis}:X'}])
     # 구성이 적혀 있는 카드에만 고치는 길을 한 줄로 알린다(GM 지시 2026-08-12 "아닌건 수정하는 방향으로").
     if any(_axis_plan(axis, day) for axis, _label in items):
         lines += ['', '바뀐 게 있으면 답장으로 알려 주세요 — 그대로 고칩니다.']
@@ -540,8 +561,11 @@ def build_markup(day: str | None = None) -> dict:
 
 
 def week_card(day: str | None = None) -> str:
-    """일요일 저녁 한 주 카드 — 지난 7일 도달율. 없는 날은 없다고만 적는다."""
+    """일요일 저녁 한 주 카드 — 지난 7일 도달율. 없는 날은 없다고만 적는다.
+    v2(2026-09-01~)는 체크인 집계만 담는 주간 루틴 리포트(_week_card_v2)로 간다."""
     day = day or today()
+    if haru_v2(day):
+        return _week_card_v2(day)
     end = datetime.date.fromisoformat(day)
     data = load()
     days = data.get('days') or {}
@@ -980,8 +1004,11 @@ def _relayed_waiting_lines(day: str):
 
 
 def build_morning_brief(day: str | None = None) -> str:
-    """08:00 「나의하루」 GM 업무 브리핑 — 월~토 발송. 전사일정·GM업무·업무SSOT·회장님 보고건 4묶음."""
+    """08:00 「나의하루」 GM 업무 브리핑 — 월~토 발송. 전사일정·GM업무·업무SSOT·회장님 보고건 4묶음.
+    v2(2026-09-01~)는 「하루의 시작」 3절(_morning_brief_v2)로 간다."""
     day = day or today()
+    if haru_v2(day):
+        return _morning_brief_v2(day)
     d = datetime.date.fromisoformat(day)
     wd = '월화수목금토일'[d.weekday()]
 
@@ -1329,9 +1356,206 @@ def _tomorrow_section(day: str) -> str:
     return '🔜 내일\n' + '\n'.join(lines)
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 하루방 v2 (2026-09-01~ · GM 지시 2026-08-29) — 체크인 재알림·아침/마무리/주간 새 틀
+# 전부 기존 재료 재사용: 상태는 gm_personal_routine.json 한 곳(새 원장 0), 일정·SSOT·회장님
+# 소스는 build_morning_brief 가 쓰던 그 함수들. 발신 규칙 = 12줄 이내·이모지 머리 1개·
+# 빈 블록은 「없음」 한 줄·못함/미응답에 잔소리 0.
+# ══════════════════════════════════════════════════════════════════════════
+V2_CHECKIN_SLOTS = ('morning', 'lunch', 'dinner')   # v2 체크인 3건(간식은 lunch 에 병합)
+
+
+def _v2_slot_items(slot_id: str) -> list:
+    items = list(next(s for s in SLOTS if s[0] == slot_id)[4])
+    if slot_id == 'lunch':
+        items += list(next(s for s in SLOTS if s[0] == 'snack')[4])
+    return items
+
+
+def note_slot_sent(slot_id: str, day: str | None = None) -> None:
+    """v2 재알림 판정용 — 슬롯 카드가 나간 시각을 그 날짜 기록에 남긴다."""
+    day = day or today()
+    data = load()
+    _day(data, day).setdefault('slot_sent', {})[slot_id] = datetime.datetime.now().isoformat(timespec='seconds')
+    _write(data)
+
+
+def slot_followups(now: "datetime.datetime | None" = None) -> list:
+    """v2 체크인 후속 판정 — 5분 주기 폴러가 부른다. 반환 [(slot_id, 'remind'|'miss'), …].
+    규약(GM 확정): 30분 무응답 → 딱 한 번 재알림 · 그 뒤에도 무응답이면 미응답('M') 기록 후 종료.
+    사유를 캐묻지 않는다 — 상태 전이와 기록뿐."""
+    now = now or datetime.datetime.now()
+    day = now.strftime('%Y-%m-%d')
+    data = load()
+    d = _day(data, day)
+    sent = d.get('slot_sent') or {}
+    axes = d.setdefault('axes', {})
+    reminded = d.setdefault('slot_reminded', {})
+    actions, dirty = [], False
+    for sid in V2_CHECKIN_SLOTS:
+        ts = sent.get(sid)
+        if not ts:
+            continue
+        try:
+            elapsed = (now - datetime.datetime.fromisoformat(ts)).total_seconds() / 60.0
+        except Exception:
+            continue
+        pending = [a for a, _l in _v2_slot_items(sid) if axes.get(a) not in ('O', 'X', 'M')]
+        if not pending:
+            continue
+        if elapsed >= 60 and reminded.get(sid):
+            for a in pending:
+                axes[a] = 'M'
+            dirty = True
+            actions.append((sid, 'miss'))
+        elif elapsed >= 30 and not reminded.get(sid):
+            reminded[sid] = True
+            dirty = True
+            actions.append((sid, 'remind'))
+    if dirty:
+        _write(data)
+    return actions
+
+
+def _v2_first_pick(day: str) -> str:
+    """08:00 ③ 오늘의 한 건 — 항상 1건. 1순위 = 전날 20:00 이 넘긴 「내일 첫 건」.
+    없으면 기한 임박(가까운 순), 같으면 회장님·대표님 보고 건 우선(GM 확정)."""
+    tf = (load().get('tomorrow_first') or {})
+    if tf.get('date') == day and str(tf.get('text') or '').strip():
+        return str(tf['text']).strip()
+    ssot = _fetch_gm_ssot_open()
+    due_pairs, _rest = _split_by_due(ssot, day) if ssot is not None else ([], [])
+    chairman = _fetch_chairman_open() or []
+    chair_titles = {it['title'] for it in chairman}
+    cands = sorted(((due, str(x.get('업무명', '')).strip()) for x, due in due_pairs if x.get('업무명')),
+                   key=lambda p: (p[0], p[1] not in chair_titles))
+    if cands:
+        due, title = cands[0]
+        return f"{title} ({_due_label(due, day)})"
+    if chairman:
+        return f"{chairman[0]['title']} — 회장님 보고 대기"
+    return '없음'
+
+
+def _morning_brief_v2(day: str) -> str:
+    """v2 08:00 「하루의 시작」 — ①오늘 일정 ②보고할 것/받을 것 ③오늘의 한 건. 12줄 이내."""
+    d = datetime.date.fromisoformat(day)
+    wd = '월화수목금토일'[d.weekday()]
+    items, ok = _load_schedule_items_ex()
+    pairs = _filter_today_items(items, day) if ok else []
+    lines = [f"🧭 하루의 시작 — {d.month}/{d.day}({wd})"]
+    if pairs:
+        lines.append("① 오늘 일정")
+        lines += [f"· {(t + ' ') if t else ''}{title}" for t, title in pairs[:3]]
+        if len(pairs) > 3:
+            lines.append(f"· 외 {len(pairs) - 3}건")
+    else:
+        lines.append("① 오늘 일정 없음" if ok else "① 오늘 일정 (못 읽음 — 재확인)")
+    ssot = _fetch_gm_ssot_open()
+    due_pairs, ssot_rest = _split_by_due(ssot, day) if ssot is not None else ([], [])
+    chairman = _fetch_chairman_open()
+    report = [f"{x.get('업무명', '')} ({_due_label(due, day)})" for x, due in due_pairs[:2]]
+    receive = [f"{it['title']} — 회장님 보고 대기" for it in (chairman or [])[:1]]
+    receive += [f"{x.get('업무명', '')} — {x.get('상태', '')}" for x in ssot_rest[:1]]
+    lines.append("② 보고할 것 / 받을 것")
+    lines.append("· 보고: " + (" · ".join(report) if report else "없음"))
+    lines.append("· 받을 것: " + (" · ".join(v for v in receive if v.strip(' —')) or "없음"))
+    lines.append("③ 오늘의 한 건")
+    lines.append(f"· {_v2_first_pick(day)}")
+    return '\n'.join(lines[:12])
+
+
+def _evening_recap_v2(day: str) -> dict:
+    """v2 20:00 「하루의 마무리」 — 끝낸 것·남은 것·내일 첫 건. 버튼 없음(체크인은 3건뿐).
+    「내일 첫 건」은 다음 날 08:00 ③의 1순위 후보로 저장한다(같은 파일 · 새 원장 0)."""
+    snap = _recap_snapshot(day)
+    d = datetime.date.fromisoformat(day)
+    wd = '월화수목금토일'[d.weekday()]
+    done = snap.get('done') or []
+    pending = snap.get('pending') or []
+    lines = [f"🌙 하루의 마무리 — {d.month}/{d.day}({wd})"]
+    lines.append(f"끝낸 것 {len(done)}건" if done else "끝낸 것 없음")
+    if done:
+        lines.append("· " + " · ".join(x['item'][:24] for x in done[:3]))
+    lines.append(f"남은 것 {len(pending)}건" if pending else "남은 것 없음")
+    if pending:
+        lines.append("· " + " · ".join(x['item'][:24] for x in pending[:2]))
+    tomorrow = (d + datetime.timedelta(days=1)).isoformat()
+    first = pending[0]['item'] if pending else ''
+    if not first:
+        tpairs = _filter_today_items(_load_schedule_items_ex()[0], tomorrow)
+        first = (f"{tpairs[0][0]} {tpairs[0][1]}".strip() if tpairs else '')
+    lines.append("내일 첫 건")
+    lines.append(f"· {first}" if first else "· 없음")
+    data = load()
+    data['tomorrow_first'] = {'date': tomorrow, 'text': first}
+    _write(data)
+    return {'text': '\n'.join(lines[:12]), 'markup': None}
+
+
+def _week_card_v2(day: str) -> str:
+    """v2 일요일 21:10 주간 루틴 리포트 — 체크인 기록 집계만. 재질문 0 · 잔소리 0."""
+    end = datetime.date.fromisoformat(day)
+    days = (load().get('days') or {})
+    labels = {a: l.lstrip('🍚🏃 ').strip() for s in SLOTS for a, l in s[4]}
+    cnt = {a: 0 for a in labels}
+    missed = 0
+    for i in range(6, -1, -1):
+        rec = days.get((end - datetime.timedelta(days=i)).isoformat()) or {}
+        ax = rec.get('axes') or {}
+        for a in cnt:
+            if ax.get(a) == 'O':
+                cnt[a] += 1
+            elif ax.get(a) == 'M':
+                missed += 1
+    start = end - datetime.timedelta(days=6)
+    meals = " · ".join(f"{labels[a]} {cnt[a]}/7" for a in _MEAL_AXES if a in cnt)
+    exs = " · ".join(f"{labels[a]} {cnt[a]}/7" for a in _EX_AXES if a in cnt)
+    return (f"📋 한 주 루틴 — {start.month}/{start.day}(월)~{end.month}/{end.day}(일)\n"
+            f"{meals}\n{exs}\n미응답 {missed}회\n"
+            f"기록은 자율현황 루틴 탭에 있습니다.")
+
+
+def _selfcheck_haru_v2() -> None:
+    """v2 규약 자체 점검 — 병합·버튼·후속 상태 전이·12줄 상한."""
+    items = _v2_slot_items('lunch')
+    assert any(a == 'snack' for a, _l in items), '간식 축이 13:30에 병합돼야 한다'
+    assert [s for s in V2_CHECKIN_SLOTS] == ['morning', 'lunch', 'dinner'], '체크인은 3건'
+    now = datetime.datetime.now()
+    day = now.strftime('%Y-%m-%d')
+    data = load()
+    d = _day(data, day)
+    bak = {k: d.get(k) for k in ('slot_sent', 'slot_reminded', 'axes')}
+    try:
+        d['slot_sent'] = {'morning': (now - datetime.timedelta(minutes=31)).isoformat(timespec='seconds')}
+        d['slot_reminded'] = {}
+        d['axes'] = {}
+        _write(data)
+        acts = slot_followups(now)
+        assert ('morning', 'remind') in acts, f'30분 무응답 → 재알림 1회: {acts}'
+        acts2 = slot_followups(now)
+        assert not acts2, f'재알림은 딱 한 번: {acts2}'
+        acts3 = slot_followups(now + datetime.timedelta(minutes=31))
+        assert ('morning', 'miss') in acts3, f'재알림 뒤 무응답 → 미응답 확정: {acts3}'
+        ax = _day(load(), day).get('axes') or {}
+        assert ax.get('meal_breakfast') == 'M' and ax.get('morning_ex') == 'M', '미응답 M 기록'
+    finally:
+        data = load()
+        d = _day(data, day)
+        for k, v in bak.items():
+            if v is None:
+                d.pop(k, None)
+            else:
+                d[k] = v
+        _write(data)
+    print('[selfcheck] haru_v2 OK — 병합·재알림 1회·M 기록')
+
+
 def build_evening_recap(day: str | None = None) -> dict:
     """20:30 저녁 정리 카드 — {'text', 'markup'}. 08:00 업무 브리핑의 짝(할 일 ↔ 한 일)."""
     day = day or today()
+    if haru_v2(day):
+        return _evening_recap_v2(day)
     snap = _recap_snapshot(day)
     d = datetime.date.fromisoformat(day)
     wd = '월화수목금토일'[d.weekday()]

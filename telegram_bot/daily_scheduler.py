@@ -1441,7 +1441,31 @@ def _unified_header(hour: str, category: str, purpose: str) -> str:
 
 
 def _build_06_body() -> str:
-    """06시 — 하루 시작 아침당부·문구 + 매일 고정 운동 5종목 체크리스트 (v1.5)"""
+    """06시 — 하루 시작 아침당부·문구 + 매일 고정 운동 5종목 체크리스트 (v1.5)
+    v2(하루방 새 체계 · 2026-09-01~)는 담백한 「아침 루틴 안내」로 간다 — 격려문·명언 없이
+    항목만(GM 지시 2026-08-29 톤 규칙 · 웰리 결정 3: 항목은 기존 축 그대로)."""
+    import gm_checkin as _ck
+    if _ck.haru_v2():
+        d = datetime.now()
+        wd = '월화수목금토일'[d.weekday()]
+        plan = []
+        try:
+            plan = _ck.morning_plan_lines()
+        except Exception:
+            pass
+        items, ok = ([], False)
+        try:
+            items, ok = _ck._load_schedule_items_ex()
+        except Exception:
+            pass
+        pairs = _ck._filter_today_items(items, d.strftime('%Y-%m-%d')) if ok else []
+        sched = f"오늘 일정: {len(pairs)}건" if pairs else ("오늘 일정: 없음" if ok else "오늘 일정: (못 읽음)")
+        lines = [f"🌅 아침 루틴 — {d.month}/{d.day}({wd})"]
+        # morning_plan_lines 는 자기 머리줄(🌅 …)을 갖고 있다 — 이모지 머리 1개 규칙이라 뗀다.
+        plan = [l for l in plan if not l.lstrip().startswith('🌅')]
+        lines += (plan or ["· 아침 식사", "· 아침 운동"])
+        lines += [sched, "체크인은 09:00에 여쭙습니다."]
+        return "\n".join(lines[:12])
     quote = fetch_random_quote("06시")
     if quote:
         quote_line = f'\n\n> "{quote}"\n'
@@ -3054,9 +3078,11 @@ def _checkin_chat_id() -> str:
     return str(ENV.get("TELEGRAM_PERSONAL_CHAT_ID") or _GM_REPORT_CHAT_ID)
 
 
-def run_gm_checkin(weekly: bool = False) -> None:
+def run_gm_checkin(weekly: bool = False, v2_slot: bool = False) -> None:
     """기본=저녁 확인(버튼) · weekly=한 주 카드. (아침 「오늘 하나씩」은 06:00 하루시작 카드에
     _checkin_morning_block() 이 흡수 — 별도 morning 분기 없음. 업무 브리핑은 run_gm_morning_brief.)
+    v2(2026-09-01~): 22:00 저녁 설문은 폐지(웰리 결정 1 — 9건 고정에 자리 없음 · 취침 한 줄은
+    18:00 꼬리로 흡수), 주간 카드는 일 21:10(v2_slot=True 잡)으로 옮긴다.
     """
     label = "[GM 개인 체크인]"
     try:
@@ -3068,8 +3094,13 @@ def run_gm_checkin(weekly: bool = False) -> None:
             return
         chat = _checkin_chat_id()
         if weekly:
+            if _ck.haru_v2() != v2_slot:
+                return   # 구 22:10 잡 ↔ 새 21:10 잡 중 가동일에 맞는 쪽만 산다
             ok = _send(token, chat, _ck.week_card(), source="gm_checkin_week")
             logger.info(f"{label} 한 주 카드 발송 ok={ok} chat={chat}")
+            return
+        if _ck.haru_v2():
+            logger.info(f"{label} 22:00 저녁 설문 — v2 폐지(웰리 결정 1)")
             return
         # 저녁은 설문 첫 문항 하나만 보낸다 — 나머지는 같은 메시지를 갈아 끼우며 진행한다
         # (GM 2026-08-08 "Survey 처럼"). 버튼 10개를 한 화면에 깔던 옛 카드는 폐기.
@@ -3093,6 +3124,9 @@ def run_gm_morning_brief(chat_id: str | None = None) -> None:
     label = "[GM 아침 브리핑]"
     try:
         import gm_checkin as _ck
+        if _ck.haru_v2() and _haru_work_off():
+            logger.info(f"{label} 휴무일 — 업무 발신 쉼(v2 규칙 · 개인 6건은 그대로)")
+            return
         from tg_outbound_log import send as _send
         token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
         if not token:
@@ -3168,6 +3202,8 @@ def _run_meeting_reminder() -> None:
             return
         chat = _checkin_chat_id()
         now = datetime.now()
+        if _ck.haru_v2() and _haru_work_off(now):
+            return   # v2 휴무일 — 업무 3건(08:00·미팅·20:00) 쉼
         day = now.strftime("%Y-%m-%d")
         items, ok = _ck._load_schedule_items_ex()
         if not ok:
@@ -3191,10 +3227,20 @@ def _run_meeting_reminder() -> None:
             key = f"{day}|{hhmm}|{title}"
             if key in _MEETING_REMIND_SENT:
                 continue
+            # [웰리 결정 5 · 2026-08-29] 장소 칸을 새로 만들지 않는다 — 그 일정 note 첫 줄이
+            # 있으면 그 한 줄을 싣고, 없으면 링크로 대신한다(전사일정 참조).
+            place = ""
+            if _ck.haru_v2():
+                for it in items:
+                    if str(it.get("name", "")).strip() == title:
+                        place = str(it.get("note", "") or "").strip().splitlines()[0:1]
+                        place = place[0].strip() if place else ""
+                        break
             text = (
                 f"⏰ 30분 뒤 미팅 — {hhmm}\n"
-                f"{title}\n\n"
-                f"GM업무 화면\n"
+                f"{title}\n"
+                + (f"{place}\n" if place else "장소·안건: 전사일정 참조\n" if _ck.haru_v2() else "")
+                + f"\nGM업무 화면\n"
                 f"https://wellperion-cao.github.io/wellperion-automation/coo/chairman/GM%EC%97%85%EB%AC%B4.html"
             )
             if _send(token, chat, text, source="gm_meeting_reminder"):
@@ -3210,10 +3256,17 @@ def _run_meeting_reminder() -> None:
 #   08:00 업무 브리핑(할 일)의 짝 — 저녁엔 오늘 worklog GM지시 항목을 ok/warn ref 로 짝지어
 #   끝낸 것·아직 남은 것 체크 카드로 낸다(gm_checkin.build_evening_recap). 21:00 저녁 끼니슬롯·
 #   22:00 저녁 설문과 겹치지 않게 20:30 을 쓴다. chat_id 인자는 시험 발송용.
-def run_gm_evening_recap(chat_id: str | None = None) -> None:
+def run_gm_evening_recap(chat_id: str | None = None, v2_slot: bool = False) -> None:
+    """v2_slot=True = 새 체계의 20:00 잡 / False = 구 20:30 잡. 두 cron 을 다 걸어 두고
+    가동일(HARU_V2_START)이 지나면 자동으로 20:00 쪽만 산다 — 재기동 없이 전환된다."""
     label = "[GM 저녁 정리]"
     try:
         import gm_checkin as _ck
+        if _ck.haru_v2() != v2_slot:
+            return
+        if v2_slot and _haru_work_off():
+            logger.info(f"{label} 휴무일 — 업무 발신 쉼(v2 규칙)")
+            return
         from tg_outbound_log import send as _send
         token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
         if not token:
@@ -3222,14 +3275,85 @@ def run_gm_evening_recap(chat_id: str | None = None) -> None:
         chat = chat_id or _checkin_chat_id()
         step = _ck.build_evening_recap()
         extra = {"reply_markup": json.dumps(step["markup"], ensure_ascii=False)} if step.get("markup") else None
-        # 퇴근인사·저녁루틴·명언은 개인 몫이라 하루 방(여기)에 붙인다 — 21시 업무보고방 본문에서
-        # 옮겨 온 것이다(배541 · 2026-08-12). GM 정의: 하루 방은 업무 제외, 업무관리는 개인 제외.
-        # 배10011(2026-07-24)로 18시 단독 발신을 접으면서 21시에 얹었던 것이 그 정의보다 앞선다.
-        text = step["text"].rstrip() + "\n\n" + _18_evening_lines().rstrip()
+        if v2_slot:
+            text = step["text"]   # v2 = 담백 정리 통 — 퇴근인사·명언 안 붙인다(톤 규칙)
+        else:
+            # 퇴근인사·저녁루틴·명언은 개인 몫이라 하루 방(여기)에 붙인다 — 21시 업무보고방 본문에서
+            # 옮겨 온 것이다(배541 · 2026-08-12).
+            text = step["text"].rstrip() + "\n\n" + _18_evening_lines().rstrip()
         ok = _send(token, chat, text, source="gm_evening_recap", extra=extra)
         logger.info(f"{label} 발송 ok={ok} chat={chat}")
     except Exception as e:
         logger.warning(f"{label} 실패: {e}")
+
+
+def _haru_work_off(now: "datetime | None" = None) -> bool:
+    """v2 업무 3건(08:00·미팅·20:00) 휴무 판정 — 일요일·전사 휴관(close_days) + 전사일정의
+    「GM 휴무」 등록(웰리 결정 4 · 2026-08-29: 새 저장소 없이 기존 전사일정으로 표시).
+    ★_is_rest_day 자체에 안 얹은 이유: 그 함수는 전사 카톡 하루 일과 정리의 20:00/22:30
+    게이트도 갈라서, GM 개인 휴가가 실무진 발신 시각까지 바꿔 버린다 — 범위 밖 부작용."""
+    now = now or datetime.now()
+    if _is_rest_day(now.date()):
+        return True
+    try:
+        import gm_checkin as _ck
+        items, ok = _ck._load_schedule_items_ex()
+        if ok:
+            day = now.strftime('%Y-%m-%d')
+            for it in items:
+                if str(it.get('next_due', ''))[:10] == day and 'GM 휴무' in str(it.get('name', '')):
+                    return True
+    except Exception:
+        pass
+    return False
+
+
+def run_haru_notice(kind: str) -> None:
+    """v2 루틴 안내 2건 — 12:00 점심 · 18:00 저녁 (하루방 새 체계 신설 통 · GM 지시 2026-08-29).
+    [웰리 결정 1] 22:00 취침 체크인은 폐지하되 정보는 안 버린다 — 취침 안내 한 줄을 18:00
+    꼬리에 흡수한다(체크인 버튼은 3건 그대로)."""
+    label = f"[하루방 루틴 안내·{kind}]"
+    try:
+        import gm_checkin as _ck
+        if not _ck.haru_v2():
+            return
+        from tg_outbound_log import send as _send
+        token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
+        if not token:
+            return
+        if kind == "lunch":
+            text = "🍚 점심 루틴 — 12:00\n· 점심 식사\n· 간식은 가볍게\n체크인은 13:30에 여쭙습니다."
+        else:
+            text = ("🌆 저녁 루틴 — 18:00\n· 저녁 식사\n· 저녁 운동\n"
+                    "체크인은 21:00에 여쭙습니다.\n취침은 23:00 전으로.")
+        ok = _send(token, _checkin_chat_id(), text, source=f"haru_notice_{kind}")
+        logger.info(f"{label} 발송 ok={ok}")
+    except Exception as e:
+        logger.warning(f"{label} 실패: {e}")
+
+
+def _run_checkin_followups() -> None:
+    """v2 체크인 후속(5분 주기) — 30분 무응답 재알림 딱 1회, 그 뒤 무응답은 'M' 기록 후 종료.
+    판정·상태 전이는 gm_checkin.slot_followups 한 곳(정본), 여기는 발신만."""
+    try:
+        import gm_checkin as _ck
+        if not _ck.haru_v2():
+            return
+        from tg_outbound_log import send as _send
+        token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
+        for sid, act in _ck.slot_followups():
+            if act == "remind" and token:
+                step = _ck.build_slot(sid)
+                if step.get("text"):
+                    extra = ({"reply_markup": json.dumps(step["markup"], ensure_ascii=False)}
+                             if step.get("markup") else None)
+                    _send(token, _checkin_chat_id(), step["text"],
+                          source=f"gm_checkin_{sid}_remind", extra=extra)
+                    logger.info(f"[체크인 재알림] {sid} — 1회")
+            elif act == "miss":
+                logger.info(f"[체크인 미응답] {sid} — M 기록·종료(더 안 보냄)")
+    except Exception as e:
+        logger.warning(f"[체크인 후속] 실패: {e}")
 
 
 # ── 시점별 체크(끼니·운동) 4슬롯 (09:00·13:30·16:30·21:00 · 개인 방) — GM 요청 2026-08-09 ──
@@ -3239,6 +3363,8 @@ def run_gm_checkin_slot(slot_id: str) -> None:
     label = f"[GM 체크인·{slot_id}]"
     try:
         import gm_checkin as _ck
+        if _ck.haru_v2() and slot_id == "snack":
+            return   # [웰리 결정 2] 16:30 간식 통 폐지 — 13:30 점심·간식에 병합(GM 지시문 6번)
         from tg_outbound_log import send as _send
         token = ENV.get("TELEGRAM_BOT_TOKEN") or ""
         if not token:
@@ -3246,6 +3372,8 @@ def run_gm_checkin_slot(slot_id: str) -> None:
             return
         chat = _checkin_chat_id()
         step = _ck.build_slot(slot_id)
+        if _ck.haru_v2() and step.get("markup"):
+            _ck.note_slot_sent(slot_id)   # 30분 재알림 판정 시각(정본=gm_personal_routine.json)
         extra = {"reply_markup": json.dumps(step["markup"], ensure_ascii=False)} if step.get("markup") else None
         ok = _send(token, chat, step["text"], source=f"gm_checkin_{slot_id}", extra=extra)
         logger.info(f"{label} 발송 ok={ok} chat={chat}")
@@ -4364,6 +4492,30 @@ def main():
             logger.info("gm_evening_recap 등록 완료 — 월~토 20:30 나의하루 방(일요일 스킵)")
         except Exception as e:
             logger.warning(f"gm_evening_recap 등록 실패: {e}")
+
+        # ── 하루방 새 체계 v2 잡 (GM 지시 2026-08-29 · 2026-09-01 가동 · gm_checkin.haru_v2 게이트) ──
+        #   구·신 cron 을 함께 걸어 두고 핸들러가 가동일로 가른다 — 상주 프로세스 재기동 없이
+        #   9/1 아침부터 자동 전환된다(그 전엔 신규 잡이 조용히 return).
+        #   신설 12:00·18:00 루틴 안내 / 마무리 20:30→20:00 / 주간 22:10→일 21:10 /
+        #   16:30 간식·22:00 저녁 설문은 핸들러 안 게이트로 폐지 / 체크인 후속(재알림·미응답) 5분 폴러.
+        try:
+            scheduler.add_job(run_haru_notice, trigger=CronTrigger(hour=12, minute=0, timezone="Asia/Seoul"),
+                              args=["lunch"], id="haru_notice_1200", misfire_grace_time=600, coalesce=True)
+            scheduler.add_job(run_haru_notice, trigger=CronTrigger(hour=18, minute=0, timezone="Asia/Seoul"),
+                              args=["dinner"], id="haru_notice_1800", misfire_grace_time=600, coalesce=True)
+            scheduler.add_job(run_gm_evening_recap,
+                              trigger=CronTrigger(day_of_week="mon-sat", hour=20, minute=0, timezone="Asia/Seoul"),
+                              args=[None, True], id="gm_evening_recap_2000_v2",
+                              misfire_grace_time=1800, coalesce=True)
+            scheduler.add_job(run_gm_checkin,
+                              trigger=CronTrigger(day_of_week="sun", hour=21, minute=10, timezone="Asia/Seoul"),
+                              args=[True, True], id="gm_checkin_week_sun2110_v2",
+                              misfire_grace_time=1800, coalesce=True)
+            scheduler.add_job(_run_checkin_followups, trigger=IntervalTrigger(minutes=5),
+                              id="checkin_followup_5min", misfire_grace_time=300, coalesce=True)
+            logger.info("하루방 v2 잡 등록 완료 — 12:00·18:00 안내, 20:00 마무리, 일 21:10 주간, 후속 5분")
+        except Exception as e:
+            logger.warning(f"하루방 v2 잡 등록 실패: {e}")
 
         # ── 운영부 주간 보고 초안 (금요일 17:00 · ★중간관리자 방) — CTO 2026-08-06 ──
         try:
