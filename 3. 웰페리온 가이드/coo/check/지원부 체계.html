@@ -4824,13 +4824,88 @@ async function submitRound(round,gender){
      닫았다(점검관리방 알림도 그때는 안 나간다 — 조용히 빠진다). 끝났는지 아닌지는 그 자리에서
      알려줘야 다시 눌러 볼 수 있다. */
   if(ONLINE && !_saveConfirmed){
-    alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel}) — 화면에는 기록됐지만 서버 저장이 확인되지 않았습니다.\n\n인터넷 상태를 확인하고 [제출]을 한 번 더 눌러 주세요. 다시 눌러도 같은 안내가 나오면 알려 주세요.`);
+    /* 사람에게 "다시 눌러 주세요"라고만 하면 그 자리(사우나 안)에서는 눌러도 또 실패한다.
+       기계가 대신 다시 보낸다 — 큐에 넣고 연결이 돌아올 때 자동 재전송한다(GM 지적 2026-08-29). */
+    pendingAdd(d,gender,round,sub);
+    alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel}) — 화면에는 기록됐는데 인터넷이 끊겨 아직 서버에 안 올라갔습니다.\n\n다시 누르지 않으셔도 됩니다. 이 화면만 열어 두시면 연결이 돌아올 때 자동으로 올라갑니다.\n화면 아래 띠가 사라지면 올라간 것입니다.`);
   } else {
     alert(`${d} ${rdef.name} ${rdef.time} 점검(${genderLabel})이 ${sub}님 이름으로 ${_isAdd?'추가 ':''}제출되었습니다.`);
   }
   bumpSubmitStreak(gender);   // 미제출 안내 접기용 연속 카운터(GM 2026-08-25)
   drawUI(d,gender);
 }
+
+/* ════════════════════════════════════════════════════════════
+   제출 재전송 큐 (GM 지적 2026-08-29)
+   왜: 패드로 여자 사우나 안까지 들어가면 와이파이가 끊긴다. 실무진은 [제출]을 눌렀고
+       화면에도 기록됐는데 서버에는 안 올라간다 — 본인은 냈다고 알고 나오고, 집계는
+       미제출로 남는다. 지원부 제출률 48% 의 상당 부분이 이것이다.
+   무엇: 저장이 확인 안 된 제출을 큐에 담아 두고, 연결이 돌아오면 기계가 다시 보낸다.
+       사람에게 "한 번 더 눌러 주세요"라고 시키지 않는다.
+   한계(정직 표기): 다시 보내는 값은 지금 화면에 올라와 있는 그 날짜·성별의 상태다.
+       그래서 큐에 든 것과 지금 보고 있는 날짜·성별이 다르면 자동으로 안 보내고,
+       띠에 "그 화면을 열어 주세요"라고 적는다. 억지로 보내면 엉뚱한 날 값이 덮인다.
+   새 저장소·새 발신 경로를 만들지 않는다 — localStorage 한 칸과 기존 pushToServer 만 쓴다.
+   ════════════════════════════════════════════════════════════ */
+const PENDING_KEY='wcheck_pending_submit';
+function _pendingLoad(){try{return JSON.parse(localStorage.getItem(PENDING_KEY))||[]}catch(e){return[]}}
+function _pendingSave(a){try{localStorage.setItem(PENDING_KEY,JSON.stringify(a))}catch(e){}}
+function pendingAdd(d,g,round,sub){
+  const a=_pendingLoad();
+  if(!a.some(x=>x.d===d&&x.g===g&&x.round===round)){
+    a.push({d:d,g:g,round:round,sub:sub,at:new Date().toLocaleString('sv-SE').replace('T',' ')});
+    _pendingSave(a);
+  }
+  renderPendingBanner();
+}
+function _pendingDrop(d,g,round){
+  _pendingSave(_pendingLoad().filter(x=>!(x.d===d&&x.g===g&&x.round===round)));
+  renderPendingBanner();
+}
+let _retrying=false;
+async function retryPendingSubmits(){
+  if(_retrying||!ONLINE||!navigator.onLine)return;
+  const a=_pendingLoad(); if(!a.length)return;
+  _retrying=true;
+  try{
+    for(const p of a.slice()){
+      // 지금 화면이 그 날짜·성별일 때만 보낸다(위 한계 주석 참조)
+      if(p.d!==getDateG(p.g))continue;
+      let ok=false;
+      try{ ok=await pushToServer(p.d,p.g,true); }catch(e){ ok=false; }
+      if(!ok)continue;
+      _pendingDrop(p.d,p.g,p.round);
+      // 저장이 확인된 지금에서야 점검일지 기록과 회차 알림을 낸다 — 제출 때는 보류됐던 것들이다.
+      try{ await appendRoundSnapshot(p.d,p.round,p.sub,p.g); }catch(e){}
+      try{ await sendTelegramRound(p.d,p.round,p.sub,p.g); }catch(e){}
+      try{ drawUI(p.d,p.g); }catch(e){}
+    }
+  } finally { _retrying=false; renderPendingBanner(); }
+}
+function renderPendingBanner(){
+  let el=document.getElementById('pendingPushBar');
+  const a=_pendingLoad();
+  if(!a.length){ if(el)el.remove(); return; }
+  if(!el){
+    el=document.createElement('div');
+    el.id='pendingPushBar';
+    el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:10px 14px;'
+      +'background:#8a3b12;color:#fff;font-size:13px;font-weight:650;line-height:1.5;'
+      +'box-shadow:0 -2px 10px rgba(0,0,0,.25)';
+    document.body.appendChild(el);
+  }
+  const mine=a.filter(x=>x.d===getDateG(x.g));
+  const other=a.length-mine.length;
+  let msg='📶 아직 서버에 안 올라간 제출 '+a.length+'건 — 연결이 돌아오면 자동으로 올라갑니다';
+  if(other>0){
+    const o=a.filter(x=>x.d!==getDateG(x.g))[0];
+    msg+=' · '+o.d+' '+(o.g==='f'?'여성':'남성')+' 화면을 열어 주시면 그것도 올라갑니다';
+  }
+  el.textContent=msg;
+}
+window.addEventListener('online',retryPendingSubmits);
+document.addEventListener('visibilitychange',function(){ if(!document.hidden)retryPendingSubmits(); });
+setInterval(retryPendingSubmits,45000);
 
 /* 관리자 PIN 제출잠금 해제 — 2026-06-17 시우.
    1) PIN prompt → 백엔드 unlock_round POST
