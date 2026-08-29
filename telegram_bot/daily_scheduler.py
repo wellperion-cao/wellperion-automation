@@ -2441,12 +2441,18 @@ def _dept_status_lines(facility_row: dict | None, facility_sessions: int = 0) ->
     # 전체 응답이었는데 dept_line은 그 안의 '오늘 행'(total/done/pct)을 기대한다. 최상위엔
     # total 키가 없어 매번 0으로 읽혀 주차부가 실제로 제출을 시작해도 "미가동"으로 영구 고정되던
     # 버그 — 실제 제출은 아직 0건이라 겉보기엔 정상처럼 보였을 뿐이다. 오늘 행을 뽑아 넘긴다.
-    _parking_weekly = _fetch_dept_weekly("parking")
     _today_str = datetime.now().strftime("%Y-%m-%d")
-    parking = next(
-        (r for r in (_parking_weekly or {}).get("data", []) if r.get("date") == _today_str),
-        None,
-    ) if _parking_weekly else None
+
+    def _weekly_today_row(dept: str) -> dict | None:
+        weekly = _fetch_dept_weekly(dept)
+        if not weekly:
+            return None
+        return next((r for r in weekly.get("data", []) if r.get("date") == _today_str), None)
+
+    parking = _weekly_today_row("parking")
+    # 운영부(2026-08-29 시토 배11050): 그날까지 점검 체계가 없어 하드코딩 "점검 체계 없음"이었다.
+    # 오늘 일일 점검 제출을 붙였으니 다른 부서와 같은 방식(weekly 오늘 행)으로 실집계를 읽는다.
+    ops = _weekly_today_row("ops")
 
     def dept_line(icon: str, name: str, data: dict | None) -> str:
         if data is None:
@@ -2472,7 +2478,7 @@ def _dept_status_lines(facility_row: dict | None, facility_sessions: int = 0) ->
     return (
         f"{fac_line}\n"
         f"{dept_line('🅿', '주차', parking)}\n"
-        f"🏢 운영부: 점검 체계 없음(규정·매뉴얼 운영)"
+        f"{dept_line('🏢', '운영부', ops)}"
     )
 
 

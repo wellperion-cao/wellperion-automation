@@ -1467,8 +1467,13 @@ async function submitOpsDailyCheck(){
   const btn=document.getElementById('opsSubmitBtn'), stat=document.getElementById('opsSubmitStatus');
   if(btn)btn.disabled=true;
   try{
+    /* 제출도장(submitter_am/pm) 동봉 — 지원부·주차부와 같은 필드(GAS _updateCheckLedger가 읽는다).
+       운영부는 지원부처럼 조별로 나눠 제출하지 않고 하루 전체를 한 버튼으로 제출하는 구조라
+       오전·오후 도장을 한 번에 같이 찍는다. 이게 없으면 항목은 '완료'로 기록되는데 그 옆
+       '제출상태' 칸만 계속 '미제출'로 남아 화면이 실제와 다른 말을 한다(팀리드 지적 2026-08-29). */
     const r=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'save',date,dept:'ops',genderTab:'m',checks,roundChecks,roundCheckMeta:{},submitStatus:'제출완료',submittedAt:nowIso,duty:''})});
+      body:JSON.stringify({action:'save',date,dept:'ops',genderTab:'m',checks,roundChecks,roundCheckMeta:{},submitStatus:'제출완료',submittedAt:nowIso,duty:'',
+        submitter_am:insp,submittedAt_am:nowIso,submitter_pm:insp,submittedAt_pm:nowIso})});
     const d=await r.json();
     if(!d||!d.success)throw new Error((d&&d.error)||'서버 응답 오류(항목 저장)');
     const sr=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
