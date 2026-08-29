@@ -414,10 +414,13 @@ def build_caption(S) -> str:
     )
 
 
-def send_kakao(S) -> None:
+def send_kakao(S, dry_run: bool = False) -> None:
     """카톡 ★운영부 방 1개에만 발송. 회장님·관리부 방 오발송 방지를 위해 --only-room 고정.
 
     ★빈칸이 하나도 없으면 보내지 않는다 — 채울 게 없는데 매주 보내면 잔소리가 된다.
+    ★2026-08-29 — dry_run 매개변수가 없어 이 함수를 검증하려면 실발신뿐이었다
+    (실제로 테스트 중 ★운영부에 가짜 데이터가 나간 사고 · 배 11070 후속). --dry-run 을
+    kakao_report_sender.py 로 그대로 넘겨 실전송(Enter) 전 단계까지만 확인할 수 있게 한다.
     """
     import subprocess
     need = S["need_sched"] + S["rest"] + S["unlinked"]
@@ -435,6 +438,8 @@ def send_kakao(S) -> None:
            "--image", png, "--caption", build_caption(S), "--only-room", "★운영부",
            # --sender 업무판채움보드 — kakao_report_sender 사람 방 발신 가드(배 11070 ⑤) 통과용.
            "--sender", "업무판채움보드"]
+    if dry_run:
+        cmd.append("--dry-run")
     print("[발송] 카톡 ★운영부 —", need, "건 남음")
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     tail = (r.stdout or "").strip().splitlines()[-3:]
@@ -451,6 +456,8 @@ def main():
     ap.add_argument("--date", help="기준일 YYYY-MM-DD (기본=오늘)")
     ap.add_argument("--send", action="store_true",
                     help="카톡 ★운영부 방에 카드+안내 발송(빈칸 0이면 자동 생략)")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="--send 와 함께 쓰면 실전송(Enter) 직전까지만 확인, 실제 발송 안 함")
     # 커밋을 여기로 들여온 이유(2026-07-27 시우): 예약 배치(.bat)가 git commit 을 직접 부르면서
     #   한글 경로·한글 메시지를 담고 있었는데, .bat 이 LF 줄바꿈이라 cmd 가 그 줄을 토막 내
     #   배치 전체가 깨졌다(그래도 작업 결과는 0=성공으로 찍혀 아무도 몰랐다). 한글은 파이썬이
@@ -523,7 +530,7 @@ def main():
             print(f"[WARN] 커밋 건너뜀: {type(exc).__name__}: {exc}")
 
     if a.send:
-        send_kakao(S)
+        send_kakao(S, dry_run=a.dry_run)
 
 
 if __name__ == "__main__":
