@@ -168,7 +168,9 @@ function omcHud(input) {
   const pending = cached && cached.pending && (now - cached.pending) < OMC_REFRESH_PENDING_MS;
   if (!pending) {
     try {
-      const child = spawn(NODE, [SELF_PATH, '--omc-refresh'], { detached: true, stdio: ['pipe', 'ignore', 'ignore'] });
+      // windowsHide: Windows 에서 detached spawn 은 자식에게 새 콘솔을 붙여 준다 — 그 창이
+      // 상태줄 갱신마다 화면에 깜빡였다(GM 지적 2026-08-29). 이 플래그가 그 콘솔을 숨긴다.
+      const child = spawn(NODE, [SELF_PATH, '--omc-refresh'], { detached: true, windowsHide: true, stdio: ['pipe', 'ignore', 'ignore'] });
       child.stdin.end(input);
       child.unref();
     } catch { /* 못 띄워도 아래에서 직전 값이라도 낸다 */ }
@@ -1325,7 +1327,7 @@ if (process.argv[2] === '--omc-refresh') {
   const key = _sessionKey(input);
   let out = '';
   try {
-    const r = spawnSync(NODE, [OMC_HUD], { input, encoding: 'utf8', timeout: 90000 });
+    const r = spawnSync(NODE, [OMC_HUD], { input, encoding: 'utf8', timeout: 90000, windowsHide: true });
     out = (r.stdout || '').replace(/\s+$/, '');
     if (isOmcBanner(out)) out = '';
   } catch { /* out = '' 유지 — 다음 새로고침이 다시 시도 */ }
