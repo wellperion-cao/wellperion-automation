@@ -194,11 +194,20 @@ def build_contact_text(send_day: str) -> str:
     return "\n".join(lines)
 
 
+def _fmt_loss_name(nm: str, reason: str) -> str:
+    """LOSS 명단 한 사람 표기 — 이름(사유). 사유를 지어내진 않되, 빈 사유는 '(사유
+    미기재)'로 보이게 한다(GM 지시 2026-08-23 · 배751 "미등록사유까지 각각 추가해줘").
+    이름만 찍으면 실무진이 빈칸인 줄 모르고 넘어간다 — 채워야 할 자리를 드러낸다."""
+    reason = reason.strip()
+    return f"{nm}({reason})" if reason else f"{nm}(사유 미기재)"
+
+
 def build_loss_text(send_day: str) -> str:
     """「보고」탭 I18 — 로스자 칸. 전날 LOSS 기준(GM 확정 2026-08-28).
 
     원천 = 종료회원 원장 스냅샷(status/member_ended_snapshot.json · 매일 19:00 자동 갱신).
-    사유(미등록사유)가 비면 이름만 적는다 — 사유를 지어내지 않는다(약속 L05).
+    사유는 원장의 「미등록사유」 칸을 헤더 이름으로 찾는다(자리 폴백 금지 — 열 순서가
+    바뀌어도 깨지지 않게). 비어 있으면 _fmt_loss_name 이 '(사유 미기재)'로 표시한다.
     원장을 못 읽으면 빈 문자열을 돌려주고, 호출부가 그 칸을 건드리지 않는다.
     """
     prev_day = (date.fromisoformat(send_day) - timedelta(days=1)).isoformat()
@@ -217,7 +226,7 @@ def build_loss_text(send_day: str) -> str:
                 nm = next((str(vv) for kk, vv in r.items() if kk.replace("\n", "") == "회원명"), "")
                 reason = next((str(vv).strip() for kk, vv in r.items() if kk.replace("\n", "") == "미등록사유"), "").strip()
                 if nm:
-                    loss.append(f"{nm}({reason})" if reason else nm)
+                    loss.append(_fmt_loss_name(nm, reason))
                 break
 
     lines = [f"{md(prev_day)} 기준 [LOSS : {len(loss)}명]"]
@@ -370,6 +379,11 @@ def _selftest() -> None:
     assert not _human_edited(prev, "실장 추가", "2026-08-25")                   # 날이 바뀜 → 덮어쓴다
     assert not _human_edited(prev, None, "2026-08-24")                          # 못 읽음 → 막지 않는다
     assert not _human_edited({}, "무엇이든", "2026-08-24")                      # 기록 없음 → 덮어쓴다
+
+    # LOSS 명단 표기 — 사유 있음/없음(배751)
+    assert _fmt_loss_name("표소영", "양도/강습전환") == "표소영(양도/강습전환)"
+    assert _fmt_loss_name("정재윤", "") == "정재윤(사유 미기재)"
+    assert _fmt_loss_name("정재윤", "   ") == "정재윤(사유 미기재)"  # 공백만 있어도 빈 것으로 본다
     print("selftest ok")
 
 
