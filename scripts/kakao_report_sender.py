@@ -1049,6 +1049,9 @@ def _staff_names() -> "set[str]":
 
 
 _PURE_NAME_RE = re.compile(r"^[가-힣]{2,4}$")
+# 배정·완료 알림 줄 「✅ 문의 배정 — 김연희(강습팀·P.T) · 담당 김광수」 — 회원 이름 자리는
+# 「— 이름(」 한 곳뿐이다(report_stream_1_impl.py:385 단일 템플릿). 담당 강사는 뒤쪽이라 안 걸린다.
+_ASSIGN_NAME_RE = re.compile(r"(—\s*)([가-힣]{2,4})(?=\()")
 
 
 def _mask_roster_names(text: str) -> str:
@@ -1063,7 +1066,11 @@ def _mask_roster_names(text: str) -> str:
     staff = _staff_names()
     out_lines = []
     for line in text.split("\n"):
-        if line.lstrip().startswith("·") and "·" in line.lstrip()[1:]:
+        if line.lstrip().startswith("✅") and "—" in line:
+            line = _ASSIGN_NAME_RE.sub(
+                lambda m: m.group(1) + (m.group(2) if m.group(2) in staff
+                                        else m.group(2)[:-1] + "*"), line)
+        elif line.lstrip().startswith("·") and "·" in line.lstrip()[1:]:
             segs = line.split("·")
             for i, seg in enumerate(segs):
                 w = seg.strip()
@@ -1113,6 +1120,13 @@ def _selfcheck_mask_pii() -> None:
         ("· 이경* · 성인강습(스쿼시)", "· 이경* · 성인강습(스쿼시)"),           # 이미 가려진 값 무변화
         ("이경언 회원님이 문의 주셨습니다", "이경언 회원님이 문의 주셨습니다"),  # 자유 문장 무영향
         (" • 이경연 실장님 — 확인 부탁", " • 이경연 실장님 — 확인 부탁"),       # 「•」 불릿(아침 통) 무영향
+        # 배정·완료 알림 줄 — 회원은 가리고 담당 강사는 그대로(GM 결정 2026-08-29 후속)
+        ("✅ 문의 배정 — 김연희(강습팀·P.T) · 담당 김광수",
+         "✅ 문의 배정 — 김연*(강습팀·P.T) · 담당 김광수"),
+        ("✅ 등록 전환 — 박소원(강습팀·WSC필라테스) · 담당 담당자 X",
+         "✅ 등록 전환 — 박소*(강습팀·WSC필라테스) · 담당 담당자 X"),
+        ("✅ 문의 배정 — 편한별(강습팀·English Musical) · 담당 편한별",
+         "✅ 문의 배정 — 편한별(강습팀·English Musical) · 담당 편한별"),  # 실무진(팀리더)은 통과
     ]
     for src, want in cases:
         got = mask_pii(src)
