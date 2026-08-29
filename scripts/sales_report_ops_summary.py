@@ -131,7 +131,7 @@ def build_text(day: str, value_up: list[str]) -> str:
     blocks: list[tuple[str, list[str]]] = [
         ("■ 시설물 관리", facility_line(day) + reception_line()),
         ("■ 청결 관리", support_line(day)),
-        ("■ 주차 관리", _parking_lines()),
+        ("■ 주차 관리", _parking_lines(day)),
         ("■ 내부 환경 개선", value_up),
     ]
     # 이 블록만 '집계 중' 채움 대상이 아니다 — 수집 실패가 아니라 지침이라, 비면 안 싣는다.
@@ -235,10 +235,19 @@ def build_loss_text(send_day: str) -> str:
     return "\n".join(lines)
 
 
-def _parking_lines() -> list[str]:
-    """주차 — 지금은 점검이 종이 체크라 셀 숫자가 없다. 없는 숫자를 지어내지 않는다.
-    ponytail: 제출형 점검(시토 배672)이 붙으면 여기서 support_line 과 같은 방식으로 센다."""
-    return [" · 일일점검 전산화 진행 중"]
+def _parking_lines(day: str) -> list[str]:
+    """주차 — 일일점검 제출형(배672 배선 · 배11050 실측으로 GAS 원장 경로 확인) 집계.
+    원천 = 지원부·시설부와 같은 점검 GAS(action=weekly&dept=parking). 그날 제출이 아직
+    없으면(주차관리인이 그날 점검 제출 버튼을 안 눌렀으면) 빈 리스트 — 호출부가 '집계 중'으로
+    채운다. 0을 지어내지 않는다."""
+    r = gas_get(CHECK_API, {"action": "weekly", "dept": "parking"}, label="parking")
+    if r is None:
+        return []
+    rows = (r.json() or {}).get("data") or []
+    today = next((x for x in rows if str(x.get("date")) == day), None)
+    if not today or not today.get("total"):
+        return []
+    return [f" · 일일점검 {today.get('done')}/{today.get('total')} ({today.get('pct')}%)"]
 
 
 LAST_WRITE = ROOT / "status" / "sales_ops_last_write.json"

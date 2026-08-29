@@ -1112,6 +1112,26 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
     </div>
   </div>
   <!-- ===== [리셉션 업무 토글 끝] ===== -->
+
+  <!-- ══ 일일 점검 체크리스트 — 지원부·시설부·주차관리부와 같은 점검 GAS(action=save+snapshot_append) 제출 배선.
+       항목=WEEKDAY(위 리셉션 오픈·응대·인수인계·마감·상시). renderManualItems()가 이 안에 렌더(기존 함수·기존 항목 재사용,
+       그동안 담을 그릇이 없어 렌더 자체가 미동작이었다 — 그릇만 새로 둔다). 2026-08-29 시토 배11050. ══ -->
+  <div class="manual-section">
+    <div class="manual-header" onclick="togManual(this)"><h3>✅ 일일 점검 체크리스트 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:6px;">평일(WEEKDAY) 기준 · 체크 후 제출</span></h3><span class="arrow">&#9654;</span></div>
+    <div class="manual-body" style="display:block;">
+      <div class="progress" style="margin-bottom:12px;">
+        <div class="progress-text"><span id="opsProgressText">오늘 0/-</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="opsProgressFill" style="width:0%;"></div></div>
+      </div>
+      <div id="manual-items-sync"></div>
+      <div class="submitter-bar" style="margin-top:12px;">
+        <label>점검자</label>
+        <input type="text" id="opsInspector" placeholder="점검자 이름 입력" autocomplete="off" style="flex:1;min-width:120px;max-width:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;">
+        <button type="button" class="submit-btn primary" style="flex:none;max-width:180px;" id="opsSubmitBtn" onclick="submitOpsDailyCheck()">일일 점검 제출</button>
+        <span id="opsSubmitStatus" style="font-size:12px;color:var(--dim);"></span>
+      </div>
+    </div>
+  </div>
 </div>
 <!-- ↑ /tab-manual (닫는 태그 누락 수정 — tab-admin·tab-mplan이 tab-manual 자식으로 중첩되어 hidden 상속되던 버그 수정, 2026-07-07) -->
 
@@ -1371,6 +1391,7 @@ function renderManualItems(){
     });
   }
   let html='';
+  let doneCount=0;
   catOrder.forEach(cat=>{
     const items=catMap[cat];
     html+=`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">`;
@@ -1381,6 +1402,7 @@ function renderManualItems(){
       const genderLabel=it.gender==='m'?' <span style="font-size:10px;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:6px;">지상</span>':it.gender==='f'?' <span style="font-size:10px;color:var(--orange);background:var(--orange-bg);padding:1px 6px;border-radius:6px;">지하</span>':'';
       const customLabel=it._custom?' <span style="font-size:10px;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:6px;">추가</span>':'';
       const checked=!!STATE[it.id];
+      if(checked)doneCount++;
       const checkMark=checked?' <span style="color:var(--green);font-weight:700;">&#10003;</span>':'';
       const nameStyle=checked?'font-size:13px;font-weight:600;color:var(--dim);text-decoration:line-through;':'font-size:13px;font-weight:600;';
       const arrow=hasDet?`<span class="m-arrow" style="font-size:11px;color:var(--dim);transition:transform .2s;">&#9654;</span>`:'';
@@ -1395,6 +1417,57 @@ function renderManualItems(){
     html+=`</div>`;
   });
   el.innerHTML=html||'<div style="color:var(--dim);font-size:13px;">항목 없음</div>';
+  const pTxt=document.getElementById('opsProgressText'), pFill=document.getElementById('opsProgressFill');
+  if(pTxt){
+    const tot=seen.size;
+    pTxt.textContent=`오늘 ${doneCount}/${tot}`;
+    if(pFill)pFill.style.width=(tot?Math.round(doneCount/tot*100):0)+'%';
+  }
+}
+
+/* 일일 점검 제출 — WEEKDAY(+CUSTOM_ITEMS) 체크 상태를 지원부·시설부·주차관리부와 같은 점검 GAS(action=snapshot_append)로
+   전송해 점검일지_ops 에 적립(월간 집계 monthly_report 가 읽는 원천). 항목별 서버 원장(action=save 의 checks 배열 경로)은
+   붙이지 않았다 — 그 경로가 15열 헤더에 14열 값만 써서 열 수 불일치 에러를 내는 기존 버그를 실측으로 확인(배11050 연장 보고).
+   체크 자체는 지금처럼 STATE+localStorage(saveState)로 기기 내 보존, 제출은 스냅샷 요약 1행만. 2026-08-29 시토. */
+async function submitOpsDailyCheck(){
+  const inspEl=document.getElementById('opsInspector');
+  const insp=(inspEl&&inspEl.value||'').trim();
+  if(!insp){alert('점검자 이름을 입력해 주세요.');return}
+  const date=fmtLocalDate(new Date());
+  const nowIso=new Date().toLocaleString('sv-SE').replace('T',' ');
+  const sched=typeof WEEKDAY!=='undefined'?WEEKDAY:[];
+  const seen=new Set(); let total=0, done=0;
+  sched.forEach(slot=>{
+    slot.groups.forEach(grp=>{
+      grp.items.forEach(it=>{
+        if(seen.has(it.id))return; seen.add(it.id);
+        total++; if(STATE[it.id])done++;
+      });
+    });
+  });
+  if(typeof CUSTOM_ITEMS!=='undefined'){
+    CUSTOM_ITEMS.forEach(ci=>{
+      if(seen.has(ci.id))return; seen.add(ci.id);
+      total++; if(STATE[ci.id])done++;
+    });
+  }
+  const pct=total?Math.round(done/total*100):0;
+  const btn=document.getElementById('opsSubmitBtn'), stat=document.getElementById('opsSubmitStatus');
+  if(btn)btn.disabled=true;
+  try{
+    const sr=await fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'snapshot_append',dept:'ops',date,zone:'common',shift:(new Date().getHours()<14?'오전조':'오후조'),
+        submitter:insp,submittedAt:nowIso,total,done,pct,issuesCount:0,issues:'',startedAt:'',finishedAt:'',durationMin:''})});
+    let sok=false; try{const sj=await sr.json(); sok=!!(sj&&(sj.ok||sj.success)&&!sj.error);}catch(_){sok=false;}
+    if(!sok)throw new Error('점검일지 기록 실패(서버 응답 오류)');
+    if(stat){stat.textContent=insp+' · '+nowIso.slice(11,16)+' 제출완료('+done+'/'+total+')'; stat.style.color='var(--green)';}
+    alert(date+' 일일 점검이 '+insp+'님 이름으로 제출되었습니다('+done+'/'+total+').');
+  }catch(e){
+    if(stat){stat.textContent='제출 실패: '+((e&&e.message)||e); stat.style.color='var(--red)';}
+    alert('일일 점검 제출 실패: '+((e&&e.message)||e));
+  }finally{
+    if(btn)btn.disabled=false;
+  }
 }
 
 /* 매뉴얼 탭 개별 항목 점검완료 체크 → STATE+saveState(로컬 저장) */
