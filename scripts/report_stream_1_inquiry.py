@@ -85,7 +85,9 @@ def _send_kakao(plain_text: str) -> None:
     try:
         env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
         subprocess.run(
-            [sys.executable, str(_SENDER), "--message", plain_text, "--only-room", KAKAO_ROOM],
+            # --sender 문의정리 — ★부서장이 사람 방 가드(약속 L24)에 들어가며 추가.
+            [sys.executable, str(_SENDER), "--message", plain_text, "--only-room", KAKAO_ROOM,
+             "--sender", "문의정리"],
             cwd=str(REPO_ROOT), capture_output=True, text=True,
             encoding="utf-8", errors="replace", env=env, timeout=180,
         )

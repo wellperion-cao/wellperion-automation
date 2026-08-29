@@ -924,7 +924,7 @@ def add_honorifics(text: str) -> str:
 # ▸이미 틀이 확정된 정기 자동 발송(호출부가 --sender 로 자기 이름을 밝힌 것)은 그대로
 #   통과한다 — 그때그때 사람이 즉흥으로 쓰는 글이 아니라 정해진 시각·형식의 현황 발신이다.
 # ▸--sender 를 안 넘기면(기본값 "") 사람 방에서 막힌다 — 새 호출부가 생겨도 기본은 안전측.
-HUMAN_APPROVAL_ROOMS = {"★중간관리자", "★운영부"}
+HUMAN_APPROVAL_ROOMS = {"★중간관리자", "★운영부", "★부서장", "★운영+시설+지원+주차"}   # 약속 L24 — 사람 방 4곳 전부 웰리 경유(2026-08-29 확대)
 AUTO_PIPELINE_SENDERS = {
     "아침정리다이제스트",   # send_ops_digest.py — 아침 정리 다이제스트(★운영부·★중간관리자)
     "매출보고",            # report_stream_3_mgmt.py·kakao_auto_daily_report.py·bot.py 카톡버튼
@@ -936,6 +936,18 @@ AUTO_PIPELINE_SENDERS = {
                           # 대표님」 방(배 11022 · GM 승인 2026-08-29). 대외 방이라 HUMAN_APPROVAL_ROOMS
                           # 밖이지만 정기 자동 발송은 전부 --sender 로 밝히는 관례를 그대로 따른다.
     # "업무판채움보드" 제거(GM 지시 2026-08-29 폐기) — ops_fill_board 전체 폐기.
+    # ── 아래 4개(2026-08-29 · ★부서장·★운영+시설+지원+주차를 HUMAN_APPROVAL_ROOMS 에
+    #    추가하며 신규) — status/kakao_auto_send_inventory.json 전수 등록부 대조로 이 두
+    #    방에 실제로 자동 발신하는 호출부를 찾아 배선했다(회귀 위험 전수 폐쇄, eae230dc6 와
+    #    같은 방식). ─────────────────────────────────────────────────────────
+    "문의정리",            # report_stream_1_inquiry.py·daily_scheduler.py — 22:30/20:00
+                          # 문의+컨택&등록 현황(★부서장) + 멤버십 몫(★운영부)
+    "점검접수정리",         # report_stream_2_check.py·daily_scheduler.py — 22:30/20:00
+                          # 시설·지원·주차 점검현황+종합접수현황 합본(★운영+시설+지원+주차)
+    "강습업장접수",         # report_stream_2b_reception.py build_lesson_digest — 22:30/20:00
+                          # 강습·업장 접수 기한초과분(★부서장)
+    "접수전달",            # report_stream_2b_reception.py run_intake_relay — 신규 접수 부서별
+                          # 실시간 전달(대상 방이 매번 달라 항상 이 이름으로 통과)
 }
 SENDER_WELLY = "웰리"
 
@@ -950,11 +962,19 @@ def _sender_gate_ok(room_name: str, sender: str) -> bool:
 
 def _selfcheck_sender_gate() -> None:
     assert _sender_gate_ok("★관리부", "") is True, "사람 방이 아니면 발신 주체 무관 통과"
-    assert _sender_gate_ok("★중간관리자", "") is False, "주체 미상은 사람 방에서 막혀야 한다"
-    assert _sender_gate_ok("★중간관리자", "웰리") is True
+    # 사람 방 4곳(약속 L24) 전부 — 주체 미상(빈 문자열)은 막히고, 웰리 본인은 항상 통과.
+    for room in ("★중간관리자", "★운영부", "★부서장", "★운영+시설+지원+주차"):
+        assert room in HUMAN_APPROVAL_ROOMS, f"{room} 이 사람 방 가드에서 빠졌다"
+        assert _sender_gate_ok(room, "") is False, f"{room} — 주체 미상은 사람 방에서 막혀야 한다"
+        assert _sender_gate_ok(room, "웰리") is True, f"{room} — 웰리는 항상 통과해야 한다"
     assert _sender_gate_ok("★운영부", "아침정리다이제스트") is True
     assert _sender_gate_ok("★운영부", "아무개") is False, "화이트리스트 밖 주체는 막혀야 한다"
-    print("[selfcheck] _sender_gate_ok OK")
+    assert _sender_gate_ok("★부서장", "문의정리") is True
+    assert _sender_gate_ok("★부서장", "강습업장접수") is True
+    assert _sender_gate_ok("★운영+시설+지원+주차", "점검접수정리") is True
+    assert _sender_gate_ok("★운영+시설+지원+주차", "접수전달") is True
+    assert _sender_gate_ok("★부서장", "아무개") is False, "화이트리스트 밖 주체는 막혀야 한다"
+    print("[selfcheck] _sender_gate_ok OK — 사람 방 4곳(★중간관리자·★운영부·★부서장·★운영+시설+지원+주차) 전부 확인")
 
 
 # ── 명단 마스킹(GM 확정 2026-08-28 — "김남* 이렇게 하는건 어때? 연락처는 010-****-1531") ──

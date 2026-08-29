@@ -832,8 +832,10 @@ def _send_kakao(room: str, text: str, image: Path | None = None) -> bool:
     import subprocess  # noqa: PLC0415
     args = (["--image", str(image), "--caption", text] if image else ["--message", text])
     proc = subprocess.run(
+        # --sender 접수전달 — room 이 사람 방(★부서장·★운영+시설+지원+주차 등)일 때 가드(약속
+        # L24) 통과용. room 이 사람 방이 아니면 가드가 무시하는 값이라 항상 붙여도 무해하다.
         [sys.executable, "-u", str(SCRIPTS_DIR / "kakao_report_sender.py"),
-         *args, "--only-room", room],
+         *args, "--only-room", room, "--sender", "접수전달"],
         cwd=str(REPO_ROOT), capture_output=True,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )

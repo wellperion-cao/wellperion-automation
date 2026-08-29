@@ -682,13 +682,14 @@ def fetch_yesterday_summary() -> str:
     return "\n".join(lines)
 
 
-def _fetch_yesterday_done_todos() -> list[str]:
+def _fetch_yesterday_done_todos(day: str | None = None) -> list[str]:
     """
-    todo_list API에서 어제 완료된 항목 제목 리스트 반환.
-    updatedAt == 어제 AND 상태 == 완료 기준.
+    todo_list API에서 그날 완료된 항목 제목 리스트 반환.
+    updatedAt == 그 날짜 AND 상태 == 완료 기준. day 를 안 주면 예전 그대로 '어제'
+    (기존 호출부 동작 불변 — 배447 의 queue 사촌과 같은 확장 방식 · 약속 L21).
     실패 시 빈 리스트.
     """
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    yesterday = day or (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     resp = _gas_get(SSOT_API_URL, params={"action": "todo_list"}, label="_fetch_yesterday_done_todos")
     if resp is None:
         return []
@@ -2827,7 +2828,9 @@ def run_daily_digest(early: bool = False) -> None:
         def _send_ops_kakao(text: str, tag: str) -> None:
             try:
                 proc = subprocess.run(
-                    [sys.executable, str(_kakao_sender), "--message", text, "--only-room", KAKAO_OPS_ROOM],
+                    # --sender 점검접수정리 — ★운영+시설+지원+주차가 사람 방 가드(약속 L24)에 들어가며 추가.
+                    [sys.executable, str(_kakao_sender), "--message", text, "--only-room", KAKAO_OPS_ROOM,
+                     "--sender", "점검접수정리"],
                     cwd=str(REPO_ROOT), capture_output=True, text=True,
                     encoding="utf-8", errors="replace", env=_kakao_env, timeout=180,
                 )
@@ -2882,8 +2885,9 @@ def run_daily_digest(early: bool = False) -> None:
             if _lesson_msg:
                 _room_lesson = _s2b_lesson._INTAKE_ROOM_LESSON
                 proc = subprocess.run(
+                    # --sender 강습업장접수 — ★부서장이 사람 방 가드(약속 L24)에 들어가며 추가.
                     [sys.executable, str(_kakao_sender), "--message", _lesson_msg,
-                     "--only-room", _room_lesson],
+                     "--only-room", _room_lesson, "--sender", "강습업장접수"],
                     cwd=str(REPO_ROOT), capture_output=True, text=True,
                     encoding="utf-8", errors="replace", env=_kakao_env, timeout=180,
                 )
@@ -2980,7 +2984,9 @@ def run_daily_digest(early: bool = False) -> None:
             sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
             env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
             proc = subprocess.run(
-                [sys.executable, str(sender), "--message", "\n\n".join(parts), "--only-room", _room],
+                # --sender 문의정리 — ★부서장·★운영부가 사람 방 가드(약속 L24)에 들어가며 추가.
+                [sys.executable, str(sender), "--message", "\n\n".join(parts), "--only-room", _room,
+                 "--sender", "문의정리"],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", env=env, timeout=180,
             )
@@ -4045,7 +4051,7 @@ def main():
             next_run_time=datetime.now(),
         )
     else:
-        logger.info("=== 정규 스케줄 시작: 06/12/21/23시 (GM 알림 홍수 축소 · 2026-07-18 GM 승인, 배10011로 18시 흡수) ===")
+        logger.info("=== 정규 스케줄 시작: 06/12/23시 (GM 알림 홍수 축소 · 2026-07-18 GM 승인 · 2026-08-29 21시는 23시 하루 마감에 흡수) ===")
         # [2026-06-07 GM 확정] 08시는 ceo_morning_pipeline(별도 Task Scheduler) 담당.
         # [2026-07-18 GM 승인] GM DM 홍수 축소 — 07(어제결산)·09(매출/진행)·15(중간정리)·
         #   22(취침) GM DM 슬롯 폐지. 핵심값(어제완료·매출1줄·북극성top·직원카드)은 08:00
@@ -4054,10 +4060,12 @@ def main():
         #   builder 함수(_build_07/09/12/15/18/22_body)는 보존 — 되돌림·--manual-test 미리보기용.
         # [2026-07-24 GM 승인·배10011] 18시(퇴근인사·저녁루틴·명언) 단독 발신 폐지 — 21시 본문
         #   서두로 흡수(_build_21_body 참조). schedule_map에서 "18" 제거.
+        # [2026-08-29 GM 승인] 21시 마감 통 폐지 — 내용(업무 시트 완료·내일 항로점)은
+        #   23:00 하루 마감(ceo_evening_wrap.absorbed_2100_blocks)이 흡수해 한 통으로
+        #   싣는다. _build_21_body 는 그 흡수분 헬퍼·--manual-test 미리보기용으로 보존.
         schedule_map = {
             "06": (6, 0),
             "12": (12, 0),
-            "21": (21, 0),
             "23": (23, 0),
         }
         for slot, (hour, minute) in schedule_map.items():
