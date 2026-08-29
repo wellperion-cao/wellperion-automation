@@ -62,8 +62,10 @@ def run(dry_run: bool = True, now: datetime | None = None) -> list[Path]:
         if dry_run:
             print(f"[pending-kakao] DRY-RUN {room} ← {path.name}\n{text}\n", flush=True)
             continue
+        # --sender 웰리 — 이 큐는 웰리가 초안 잡아 GM 승인 뒤 나가는 경로다(kakao_report_sender
+        # 사람 방 발신 가드, 배 11070 ⑤).
         r = subprocess.run([sys.executable, str(SENDER), "--message", text,
-                            "--only-room", room],
+                            "--only-room", room, "--sender", "웰리"],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
         ok = r.returncode == 0 and "DONE: 전송 완료" in (r.stdout or "")
         if not ok:

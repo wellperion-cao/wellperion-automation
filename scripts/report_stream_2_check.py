@@ -44,6 +44,27 @@ KAKAO_ROOM = "★운영+시설+지원+주차"
 _SENDER = REPO_ROOT / "scripts" / "kakao_report_sender.py"
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 
+# ── 「급할 때만」 강등 스위치 (배 11070 잔여 · 발신 체계 확정안 텔레그램 11곳 중 하나) ──
+# status/telegram_urgent_only.json 하나를 3개 스트림(문의·점검·접수)이 같이 쓴다(약속 L21).
+# urgent_only=false(기본) 면 지금처럼 매번 전문 발송 — 카카오 실발신이 확인되고 2주 병행이
+# 끝난 뒤에만 true 로 켠다.
+_URGENT_ONLY_FLAG = REPO_ROOT / "status" / "telegram_urgent_only.json"
+_URGENT_MARKERS = ("❗", "🔴", "기한 초과", "이탈")
+
+
+def _urgent_only_enabled(stream_key: str) -> bool:
+    try:
+        import json
+        cfg = json.loads(_URGENT_ONLY_FLAG.read_text(encoding="utf-8"))
+        return bool((cfg.get(stream_key) or {}).get("urgent_only", False))
+    except Exception:
+        return False  # 못 읽으면 안전측(종전처럼 매번 발송)
+
+
+def _looks_urgent(text: str) -> bool:
+    """이상 신호 마커가 있는가 — 기준이탈(❗🔴)·기한 초과."""
+    return any(m in text for m in _URGENT_MARKERS)
+
 
 # 2026-08-01 GM 지시 — 북극성 대비 블록 제외(하루 일과 정리는 그대로 진행)
 
@@ -350,8 +371,11 @@ def run(today: str | None = None, dry_run: bool = True, kakao_go: bool = False) 
         if legal_alert:
             print("\n=== 법정·정기점검 안내(별도 발송분) ===\n" + legal_alert, flush=True)
         return text
-    ok = _send_telegram(text)
-    print(f"[stream2] 텔레그램 {'완료' if ok else '실패'} → {TELEGRAM_CHAT_ID}", flush=True)
+    if _urgent_only_enabled("check") and not _looks_urgent(text):
+        print(f"[stream2] 텔레그램 SKIP — 급할 때만 모드·이상 신호 없음", flush=True)
+    else:
+        ok = _send_telegram(text)
+        print(f"[stream2] 텔레그램 {'완료' if ok else '실패'} → {TELEGRAM_CHAT_ID}", flush=True)
     if kakao_go:
         _send_kakao(text)
         print(f"[stream2] 카카오 → {KAKAO_ROOM}", flush=True)

@@ -93,8 +93,11 @@ def _send_kakao(today: str) -> None:
     for room in rooms:
         try:
             env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+            # --sender 매출보고 — kakao_report_sender 의 사람 방 발신 가드(배 11070 ⑤) 통과용
+            # (rooms 안에 사람 방 ★운영부가 섞여 있다 — 그 밖의 방은 가드 무영향).
             subprocess.run(
-                [sys.executable, str(_SENDER), "--message", plain, "--only-room", room],
+                [sys.executable, str(_SENDER), "--message", plain, "--only-room", room,
+                 "--sender", "매출보고"],
                 cwd=str(REPO_ROOT), capture_output=True, text=True,
                 encoding="utf-8", errors="replace", env=env, timeout=180,
             )

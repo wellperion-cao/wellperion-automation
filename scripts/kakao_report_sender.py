@@ -916,6 +916,41 @@ def add_honorifics(text: str) -> str:
     return out
 
 
+# ── 사람 방 발신 주체 가드(배 11070 ⑤ · 약속 L24 "사람 방 발신은 웰리 한 사람") ──
+# ★중간관리자·★운영부는 사람이 읽는 방이다. GM 원문(2026-08-28 웰리 판정): "정기 자동
+# 발신이 웰리를 안 거친다 — 틀(제목·블록·상한)이 확정된 것만 자동으로 두고 문구가
+# 바뀌면 웰리 승인 뒤 나가게 가드를 건다." 여태 문서로만 있던 규칙을 모든 카톡 발신이
+# 지나는 이 관문 하나에 넣는다(약속 L21 — 새 관문 안 만든다).
+# ▸이미 틀이 확정된 정기 자동 발송(호출부가 --sender 로 자기 이름을 밝힌 것)은 그대로
+#   통과한다 — 그때그때 사람이 즉흥으로 쓰는 글이 아니라 정해진 시각·형식의 현황 발신이다.
+# ▸--sender 를 안 넘기면(기본값 "") 사람 방에서 막힌다 — 새 호출부가 생겨도 기본은 안전측.
+HUMAN_APPROVAL_ROOMS = {"★중간관리자", "★운영부"}
+AUTO_PIPELINE_SENDERS = {
+    "아침정리다이제스트",   # send_ops_digest.py — 아침 정리 다이제스트(★운영부·★중간관리자)
+    "매출보고",            # report_stream_3_mgmt.py — 09:30 매출·운영+인사 현황
+    "중간관리자알림합본",   # daily_scheduler.run_mgmt_notice_digest — 17:00 알림성 합본
+    "주간보고초안",        # daily_scheduler — 운영부 주간 보고 초안
+}
+SENDER_WELLY = "웰리"
+
+
+def _sender_gate_ok(room_name: str, sender: str) -> bool:
+    """사람 방(HUMAN_APPROVAL_ROOMS)이 아니면 발신 주체와 무관하게 항상 통과.
+    사람 방이면 웰리 본인이거나 이미 화이트리스트에 오른 자동 발송일 때만 통과."""
+    if room_name not in HUMAN_APPROVAL_ROOMS:
+        return True
+    return sender == SENDER_WELLY or sender in AUTO_PIPELINE_SENDERS
+
+
+def _selfcheck_sender_gate() -> None:
+    assert _sender_gate_ok("★관리부", "") is True, "사람 방이 아니면 발신 주체 무관 통과"
+    assert _sender_gate_ok("★중간관리자", "") is False, "주체 미상은 사람 방에서 막혀야 한다"
+    assert _sender_gate_ok("★중간관리자", "웰리") is True
+    assert _sender_gate_ok("★운영부", "아침정리다이제스트") is True
+    assert _sender_gate_ok("★운영부", "아무개") is False, "화이트리스트 밖 주체는 막혀야 한다"
+    print("[selfcheck] _sender_gate_ok OK")
+
+
 # ── 명단 마스킹(GM 확정 2026-08-28 — "김남* 이렇게 하는건 어때? 연락처는 010-****-1531") ──
 # 회원 명단(이름·연락처)이 카톡 방에 그대로 남으면 안 된다 — 전체 정보는 실무진이 현황
 # 화면에 들어가 본다. 모든 카톡 발신이 지나가는 이 관문 하나에만 마스킹을 박는다(약속 L21).
@@ -1786,6 +1821,7 @@ def _selftest() -> None:
         #    사고가 나면 안 된다.
         _selfcheck_mask_pii()
         _selfcheck_honorifics()
+        _selfcheck_sender_gate()
         try:
             _selfcheck_broken_links()
         except AssertionError:
@@ -1818,6 +1854,9 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true",
                      help="방 열기+클립보드+미리보기까지만, 실제 전송(Enter) 안 함")
     ap.add_argument("--only-room", default=None, help="지정한 방 1개만 처리(검증용)")
+    ap.add_argument("--sender", default="",
+                     help="이 발신을 실제로 작성한 주체 — 사람 방(★중간관리자·★운영부) 발신 가드용. "
+                          "'웰리' 또는 정기 자동 발송 이름(AUTO_PIPELINE_SENDERS). 미지정 시 사람 방은 막힌다.")
     ap.add_argument("--status-file", default=None,
                      help="발신 결과를 이 경로(JSON)에 기록(상태 기록 단일 관문). 미지정 시 기록 안 함 — "
                           "매출보고 등 상태 추적이 필요한 호출만 지정할 것")
@@ -1901,6 +1940,12 @@ def main() -> int:
         _log_room_members(rooms)
         for idx, room in enumerate(rooms):
             room_name = room["name"]
+            if not _sender_gate_ok(room_name, args.sender):
+                log(f"[gate] {room_name} — 사람 방은 웰리만 보낸다(--sender {args.sender!r} 거부)")
+                dedup_skipped[room_name] = "웰리_승인_필요"
+                if idx < len(rooms) - 1:
+                    time.sleep(2.0)
+                continue
             try:
                 sent, hold_reason = send_message_to_room(room, args.message, args.dry_run)
                 if not sent:
@@ -1940,6 +1985,12 @@ def main() -> int:
 
     for idx, room in enumerate(rooms):
         room_name = room["name"]
+        if not _sender_gate_ok(room_name, args.sender):
+            log(f"[gate] {room_name} — 사람 방은 웰리만 보낸다(--sender {args.sender!r} 거부)")
+            dedup_skipped[room_name] = "웰리_승인_필요"
+            if idx < len(rooms) - 1:
+                time.sleep(2.0)
+            continue
         try:
             sent, hold_reason = send_to_room(room, image_path, args.caption, args.dry_run)
             if not sent:

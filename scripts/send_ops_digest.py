@@ -1269,7 +1269,9 @@ def send_mgr_brief() -> None:
     if not mgr_msg:
         log("[mgr] 보낼 내용 0건 — 발송 생략")
         return
-    mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM]
+    # --sender 아침정리다이제스트 — kakao_report_sender 의 사람 방 발신 가드(배 11070 ⑤) 통과용.
+    mcmd = [sys.executable, str(SENDER), "--message", mgr_msg, "--only-room", WEEKLY_ROOM,
+            "--sender", "아침정리다이제스트"]
     log(f"[mgr] 결정거리 요약 발송(대상 {target_date}) → {WEEKLY_ROOM}")
     mproc = subprocess.run(mcmd, capture_output=True, text=True, encoding="utf-8")
     mout = (mproc.stdout or "").strip()
@@ -1597,7 +1599,9 @@ def _send_ops_room(args) -> int:
     if done_section:
         message = f"{message}\n\n{done_section}"
 
-    cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", TARGET_ROOM]
+    # --sender 아침정리다이제스트 — kakao_report_sender 의 사람 방 발신 가드(배 11070 ⑤) 통과용.
+    cmd = [sys.executable, str(SENDER), "--message", message, "--only-room", TARGET_ROOM,
+           "--sender", "아침정리다이제스트"]
     if args.dry_run:
         cmd.append("--dry-run")
     log(f"[send] 다이제스트 발송(대상 {data.get('date')}) → {TARGET_ROOM}")

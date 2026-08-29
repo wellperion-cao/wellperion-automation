@@ -48,6 +48,27 @@ DASHBOARD_URL = "https://wellperion-cao.github.io/wellperion-automation/coo/rece
 _WEEKDAY_KOR = ["월", "화", "수", "목", "금", "토", "일"]
 _DIVIDER = "━" * 10
 
+# ── 「급할 때만」 강등 스위치 (배 11070 잔여 · 발신 체계 확정안 텔레그램 11곳 중 하나) ──
+# status/telegram_urgent_only.json 하나를 3개 스트림(문의·점검·접수)이 같이 쓴다(약속 L21).
+# ★이 스트림은 카카오 이사 배선(kakao_go) 자체가 아직 없다 — urgent_only 를 켜도 대체
+# 채널이 없어지므로, JSON 의 reception.urgent_only 는 그 배선이 생기기 전까지 false 로 둔다.
+_URGENT_ONLY_FLAG = REPO_ROOT / "status" / "telegram_urgent_only.json"
+_URGENT_MARKERS = ("❗", "🔴", "기한 초과", "지연")
+
+
+def _urgent_only_enabled(stream_key: str) -> bool:
+    try:
+        import json
+        cfg = json.loads(_URGENT_ONLY_FLAG.read_text(encoding="utf-8"))
+        return bool((cfg.get(stream_key) or {}).get("urgent_only", False))
+    except Exception:
+        return False  # 못 읽으면 안전측(종전처럼 매번 발송)
+
+
+def _looks_urgent(text: str) -> bool:
+    """이상 신호 마커가 있는가 — 기준이탈(❗🔴)·기한 초과·지연."""
+    return any(m in text for m in _URGENT_MARKERS)
+
 # 카테고리(reg_list의 category=한글 라벨) → SLA 시간. SSOT=coo/reception/apps_script_reception.js
 # REG_CATEGORIES(:38-43). 보드·다른 소비자에 하드코딩 복사 금지 원칙과 동일하게 이 표는
 # GAS 응답 라벨 그대로를 키로 쓴다(코드 재구현 없이 라벨 정확일치). None=SLA 없음(집계 제외).
@@ -1004,6 +1025,9 @@ def run(today: str | None = None, dry_run: bool = True) -> str:
         print("[stream2b] TELEGRAM_BOT_TOKEN 미설정", flush=True)
         return text
     # 전역 페이싱·429 재시도·로깅 = tg_outbound_log.send() 경유(플러드 방어, 개별 requests 금지).
+    if _urgent_only_enabled("reception") and not _looks_urgent(text):
+        print(f"[stream2b] 텔레그램 SKIP — 급할 때만 모드·이상 신호 없음", flush=True)
+        return text
     ok = tg_send(token, TELEGRAM_CHAT_ID, text, source="report_stream_2b_reception")
     print(f"[stream2b] 텔레그램 {'완료' if ok else '실패'} → {TELEGRAM_CHAT_ID}", flush=True)
     if ok:
