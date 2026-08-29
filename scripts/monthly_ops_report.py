@@ -34,10 +34,11 @@ import html
 import io
 import json
 import os
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -359,6 +360,37 @@ def log_event(event: str, **fields) -> None:
 # ═══════════════════════════════════════════
 #  메인
 # ═══════════════════════════════════════════
+def _snapshot_ledger(mode: str, now: datetime) -> None:
+    """월간 보고 원장(status/monthly_report_ledger.json)을 그 달 값으로 채운다.
+
+    실패해도 월간 카드 발송을 막지 않는다 — 원장은 A3 가 읽는 곳이고,
+    카드는 텔레그램으로 나가는 별개 산출물이다.
+    """
+    if mode == "start":
+        first = now.replace(day=1)
+        target = (first - timedelta(days=1)).strftime("%Y-%m")
+        extra = ["--close"]
+        what = f"전월 {target} 마감 확정"
+    else:
+        target = now.strftime("%Y-%m")
+        extra = []
+        what = f"이번 달 {target} 재측정(마감 전)"
+    cmd = [sys.executable,
+           os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "monthly_report_snapshot.py"),
+           "--month", target, "--write"] + extra
+    print(f"[원장] {what}")
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True,
+                           encoding="utf-8", timeout=300)
+        print("  → " + ((r.stdout or "").strip() or (r.stderr or "").strip() or "출력 없음"))
+        if r.returncode != 0:
+            log_event("ledger_snapshot_failed", mode=mode, month=target, rc=r.returncode)
+    except Exception as exc:
+        print(f"  [WARN] 원장 갱신 건너뜀: {type(exc).__name__}: {exc}")
+        log_event("ledger_snapshot_failed", mode=mode, month=target, error=str(exc))
+
+
 def run(mode: str, send: bool = False) -> str:
     now = datetime.now()
     label = "라이브 발송(--send)" if send else "드라이런"
@@ -369,6 +401,16 @@ def run(mode: str, send: bool = False) -> str:
         print(f"[가드] 오늘({now.strftime('%Y-%m-%d')})은 말일 아님 — 월말 라이브 발송 생략")
         log_event("end_skipped", reason="not_last_day", date=now.strftime("%Y-%m-%d"))
         return ""
+
+    # 월간 보고 원장 갱신 — 회장님 A3 두 장이 이 원장을 직독한다(2026-08-29 시우).
+    # 왜 여기냐: 원장을 채우는 monthly_report_snapshot 이 어떤 예약에도 안 걸려 있어
+    #   사람이 손으로 실행해야 했다. 새 예약작업을 만들지 않고(약속 L21) 이미 매월
+    #   두 번 도는 이 진입점에 흡수시킨다.
+    #   · end(말일 21:00)  = 이번 달을 다시 세되 닫지 않는다(영업 마감 전이라 값이 더 는다)
+    #   · start(1일 09:00) = 전월을 다시 세고 --close 로 확정한다(달이 완전히 끝난 뒤)
+    # 라이브(--send)에서만 쓴다 — 드라이런은 부작용 0 을 유지한다.
+    if send:
+        _snapshot_ledger(mode, now)
 
     plan = load_plan()
 

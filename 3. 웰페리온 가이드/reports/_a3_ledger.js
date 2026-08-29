@@ -70,8 +70,13 @@
       if (typeof v === 'number') el.style.width = Math.max(0, Math.min(100, v)) + '%';
     });
     // 문서 머리의 기준 시각도 원장 값으로 맞춘다 — 화면과 각주가 서로 다른 시각을 말하면 안 된다.
-    var asOf = document.querySelector('[data-asof]');
-    if (asOf && data.asOf) asOf.textContent = data.asOf;
+    // 머리·본문 제목·각주 세 자리에 같은 날짜가 나오므로 전부 채운다(2026-08-29 시우 —
+    // querySelector 는 첫 자리만 고쳐 본문·각주가 옛 날짜로 남아 있었다).
+    if (data.asOf) {
+      document.querySelectorAll('[data-asof]').forEach(function (el) {
+        el.textContent = data.asOf + (el.hasAttribute('data-asof-bare') ? '' : ' 조회');
+      });
+    }
     if (data.closed === false) banner('이 달은 아직 마감 전입니다 — 숫자는 ' + (data.asOf || '') + ' 기준이며 마감 시 달라집니다.', 'warn');
   }
 
