@@ -601,8 +601,11 @@ def _classify(items: list[dict]) -> dict[str, list[dict]]:
         elif urgent_flag:
             sections["urgent"].append(item)
         elif done:
-            # 완료는 최근(오늘·어제) 완료만 — 옛 완료건은 이력이라 보드서 제외
-            if _is_recent(item.get("mod_date", "")):
+            # 완료는 **오늘 완료만** — 어제 것은 어젯밤 하루 마감 통이 이미 보고했다
+            # (2026-08-29 GM 지시 · 완료 두 번 보고 금지. 종전 3일 창은 주말 커버용이었는데
+            # 마감 통이 주말에도 매일 돌아 창이 필요 없다). 섹터 이름 「입항 완료 (오늘)」와도
+            # 이제 값이 맞는다.
+            if _is_recent(item.get("mod_date", ""), days=0):
                 # '다음' 없는 완료도 그냥 완료다 (GM 확정 2026-08-19 · 약속 L11).
                 sections["done"].append(item)
         else:
@@ -939,6 +942,23 @@ def _gm_directive_unresolved(role: str = "") -> list[dict]:
     except Exception:
         return []
     return _pair_gm_directives(entries)
+
+
+def _take_unlisted(seq: list, listed: set, key) -> "tuple[list, int]":
+    """한 배 한 자리(2026-08-29) — listed 에 없는 것만 돌려주고 등록. (남은 목록, 생략 수)."""
+    fresh = [x for x in seq if key(x) not in listed]
+    listed.update(key(x) for x in fresh)
+    return fresh, len(seq) - len(fresh)
+
+
+def _selftest_take_unlisted() -> None:
+    """한 배 한 자리 — 먼저 그린 표가 임자, 뒤 표는 생략 수만 늘어난다."""
+    listed: set = set()
+    a, h = _take_unlisted([1, 2, 3], listed, lambda x: x)
+    assert a == [1, 2, 3] and h == 0, (a, h)
+    b, h2 = _take_unlisted([2, 3, 4], listed, lambda x: x)
+    assert b == [4] and h2 == 2, (b, h2)
+    print("[selfcheck] _take_unlisted OK")
 
 
 def _selftest_gm_directives() -> None:
@@ -1347,9 +1367,18 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     #   그래서 본 섹터에도 나오는 배는 진단 표에서 설명·조언 두 칸을 접는다(제목·담당·꼬리표는 유지).
     def _ship_key(it):
         return f"{str(it.get('owner') or it.get('clevel') or '')}|{it.get('short_no') or it.get('ship_no') or it.get('title')}"
-    _main_keys = {_ship_key(it) for it in (inprog + waiting + list(secs["done"]))}
-    def _brief(it):
-        return _ship_key(it) in _main_keys
+
+    # [2026-08-29 GM 지시 · 텔레그램 중복 정리 ③] 한 배는 한 자리 — 좁은 뜻 섹터가 임자.
+    # 우선순위 = 🎯반드시끝낼것 → 🔴급한입항 → 🔔안닫힘 → 쿵짝 → 짝 → 자기정합 → 본 섹터.
+    # 2026-08-13 엔 설명·조언만 접었는데(같은 배 4번 노출 실측) 이제 줄 자체를 한 번만 그린다.
+    # 섹터·건수는 그대로 — 건수는 전체를 말하고, 줄이 빠진 표엔 생략 안내 한 줄이 남는다.
+    _listed: set[str] = set()
+
+    def _take(seq):
+        return _take_unlisted(seq, _listed, _ship_key)
+
+    def _skip_note(hidden: int) -> str:
+        return f"· 외 {hidden}척은 위 표에 이미 나옴(한 배 한 자리)" if hidden else ""
     n_total = n_urgent + len(inprog) + len(waiting) + n_appr
 
     _cnt_rows = [
@@ -1378,6 +1407,8 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
     # ── 🎯 오늘 반드시 끝낼 것 (GM 2026-08-10) — 보드 맨 위. 못 지킨 건 조용히 안 사라진다 ──
     mf_overdue = secs["must_finish_overdue"]
     mf_today   = secs["must_finish_today"]
+    mf_overdue, _ = _take(mf_overdue)   # 한 배 한 자리 — 맨 위 표라 생략될 일은 없고 표시만 남긴다
+    mf_today, _ = _take(mf_today)
     if mf_overdue or mf_today:
         lines.append("")
         if mf_overdue:
@@ -1388,6 +1419,9 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         if mf_today:
             lines.append("### 🎯 오늘 반드시 끝낼 것")
             lines.append(_md_table([_item_to_row(it) for it in mf_today]))
+
+    # 🔴 급한 입항은 진단 표보다 뜻이 좁다(마감임박) — 자리 선점만 여기서 하고 그리기는 아래 원래 자리.
+    urgent_rows, _urgent_hidden = _take(secs["urgent"])
 
     # 항로 정합경고
     try:
@@ -1425,24 +1459,34 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         lines.append("")
         # 표 제목이 무엇을 센 값인지 스스로 말한다(배540) — 옛 제목('마지막 기록 이후')은
         # 실제 기준과 어긋나 있었다. 꼬리표: N일째=안 닫힌 날수 · 기록N일전=note 공백.
+        # 한 배 한 자리(2026-08-29) — 진단 표끼리도 겹치지 않는다. 여기 남은 줄은 아래
+        # 본 섹터에 다시 안 나오므로 설명·조언을 접지 않는다(brief 폐지 — 접으면 아예 안 보인다).
+        stalled_rows, stalled_hidden = _take(stalled)
+        sent_rows, sent_hidden = _take(sent_unanswered)
+        recv_rows, recv_hidden = _take(received_unanswered)
         lines.append(f"### 🔔 안 닫힌 배 {len(stalled)}척 "
                      f"— 뜬 지 {_STALL_MIN_DAYS}일 넘게 안 닫힌 순(기록이 3일 이상 없으면 뒤에 함께 적음)")
-        if stalled:
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it), brief=True,
-                                                 brief_note=("↓ 아래 본 섹터에" if _brief(it) else ""))
-                                    for it in stalled]))
-        if sent_unanswered:
+        if stalled_rows:
+            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it))
+                                    for it in stalled_rows]))
+        if _skip_note(stalled_hidden):
+            lines.append(_skip_note(stalled_hidden))
+        if sent_rows or sent_hidden:
             lines.append(f"쿵짝 — 내가 띄우고 답 없는 배 {len(sent_unanswered)}척 "
                           "(보낸이=나 · 담당=받는이 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=True,
-                                                 brief_note="")
-                                    for it in sent_unanswered]))
-        if received_unanswered:
+            if sent_rows:
+                lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)))
+                                        for it in sent_rows]))
+            if _skip_note(sent_hidden):
+                lines.append(_skip_note(sent_hidden))
+        if recv_rows or recv_hidden:
             lines.append(f"짝 — 남이 내게 띄우고 내가 답 안 한 배 {len(received_unanswered)}척 "
                           "(보낸이=상대 · 담당=나 · N일째 오래된 순)")
-            lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)), brief=True,
-                                                 brief_note=("↓ 아래 본 섹터에" if _brief(it) else ""))
-                                    for it in received_unanswered]))
+            if recv_rows:
+                lines.append(_md_table([_item_to_row(it, ship_col_extra=_stall_tag(it, _open_days(it)))
+                                        for it in recv_rows]))
+            if _skip_note(recv_hidden):
+                lines.append(_skip_note(recv_hidden))
         if gm_gaps:
             lines.append(f"📨 GM 요청 미완 {len(gm_gaps)}건 — 접수(warn)만 있고 완료(ok) 짝 없음, 오래된 순")
             for g in gm_gaps:
@@ -1457,28 +1501,43 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         ):
             if not pair_list:
                 continue
-            shown = pair_list[:_SELFCHECK_CAP]
-            extra = f" (외 {len(pair_list) - len(shown)}척)" if len(pair_list) > len(shown) else ""
+            # 한 배 한 자리(2026-08-29) — 위 표에 이미 나온 배는 여기서 줄을 그리지 않는다.
+            fresh_pairs = [(it, ev) for it, ev in pair_list if _ship_key(it) not in _listed]
+            _listed.update(_ship_key(it) for it, _ev in fresh_pairs)
+            hidden_n = len(pair_list) - len(fresh_pairs)
+            shown = fresh_pairs[:_SELFCHECK_CAP]
+            extra = f" (외 {len(fresh_pairs) - len(shown)}척)" if len(fresh_pairs) > len(shown) else ""
+            if not shown and not hidden_n:
+                continue
             lines.append(f"{label} {len(shown)}척{extra} — 판정은 의심형·자동 종료 안 함, 사람 확인")
             rows = []
             for it, ev in shown:
-                base = _item_to_row(it, ship_col_extra=_stall_tag(it), brief=True, brief_note="")
+                base = _item_to_row(it, ship_col_extra=_stall_tag(it))
                 rows.append((base[0], base[1], base[2], ev, "👉 status/note 대조 확인"))
-            lines.append(_md_table(rows))
+            if rows:
+                lines.append(_md_table(rows))
+            if _skip_note(hidden_n):
+                lines.append(_skip_note(hidden_n))
 
-    # ── 🔴 급한 입항 (별도 알림) ──
-    if secs["urgent"]:
+    # ── 🔴 급한 입항 (별도 알림) — 자리 선점은 위(must_finish 직후)에서 했다 ──
+    if urgent_rows or _urgent_hidden:
         lines.append("")
-        lines.append("🔴 급한 입항 (마감임박 ≤3일)")
-        lines.append(_md_table([_item_to_row(it) for it in secs["urgent"]]))
+        lines.append(f"🔴 급한 입항 (마감임박 ≤3일) {len(secs['urgent'])}척")
+        if urgent_rows:
+            lines.append(_md_table([_item_to_row(it) for it in urgent_rows]))
+        if _skip_note(_urgent_hidden):
+            lines.append(_skip_note(_urgent_hidden))
 
-    # ── 🚢 진행중 섹터 ──
+    # ── 🚢 진행중 섹터 — 한 배 한 자리: 위 표에 나온 배는 줄 생략(건수는 전체) ──
+    inprog_rows, inprog_hidden = _take(inprog)
     lines.append("")
-    lines.append("### 🚢 진행중")
-    if inprog:
+    lines.append(f"### 🚢 진행중 {len(inprog)}척")
+    if inprog_rows:
         lines.append(_md_table([_item_to_row(it, ship_col_extra=("🤖" if it.get("_tag_ai") else ""))
-                                for it in inprog]))
-    else:
+                                for it in inprog_rows]))
+    if _skip_note(inprog_hidden):
+        lines.append(_skip_note(inprog_hidden))
+    if not inprog_rows and not inprog_hidden:
         lines.append("_(없음)_\n")
 
     # ── 🤖 자율화 미션 포인터 — 2026-08-26 병합으로 비어 있다(AI 배는 위 두 섹터에 🤖 꼬리표로 들어간다).
@@ -1498,11 +1557,12 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
         lines.append(f"\n### {_icon} {_label} {len(secs[_key])}건 — 진행대기 숫자 밖 ({_why})")
         lines.append(_md_table([_item_to_row(it) for it in secs[_key]]))
 
-    # ── ⚓ 대기중 섹터 ──
-    lines.append("### ⚓ 대기중")
-    if waiting:
+    # ── ⚓ 대기중 섹터 — 한 배 한 자리: 위 표에 나온 배는 줄 생략(건수는 전체) ──
+    waiting_rows, waiting_hidden = _take(waiting)
+    lines.append(f"### ⚓ 대기중 {len(waiting)}척")
+    if waiting_rows:
         wait_rows = []
-        for it in waiting:
+        for it in waiting_rows:
             st  = str(it.get("status", ""))
             tag = "보류" if st in {"보류", "ON_HOLD"} else ""
             # 🤖 = AI 내부 살림(2026-08-26 병합). 화면을 나누는 대신 꼬리표로 구분한다.
@@ -1510,7 +1570,9 @@ def build_board(gas_items: list[dict], queue_items: list[dict],
                 tag = (tag + " 🤖").strip()
             wait_rows.append(_item_to_row(it, ship_col_extra=tag))
         lines.append(_md_table(wait_rows))
-    else:
+    if _skip_note(waiting_hidden):
+        lines.append(_skip_note(waiting_hidden))
+    if not waiting_rows and not waiting_hidden:
         lines.append("_(없음)_\n")
 
     # ── 🏁 입항 완료 (오늘) 섹터 ──
@@ -2063,5 +2125,6 @@ def main() -> None:
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
         _selftest_gm_directives()
+        _selftest_take_unlisted()
     else:
         main()

@@ -317,39 +317,18 @@ def build_staff_feedback_block(today: str) -> str:
     return head + "\n<pre>\n" + "\n".join(lines) + more + "\n</pre>"
 
 
-from collectors.ops_shared import SCHEDULE_GAS_URL  # 전사일정 GAS 단일 출처(약속 L01)
-
-
-def _schedule_today(today: str) -> list[str]:
-    """전사일정에서 오늘 날짜로 잡힌 항목 이름. 실패하면 빈 목록 — 못 읽었다고 보고를 막지 않는다.
-    (주기로 계산되는 '예상' 일정은 빼고, 사람이 날짜를 박아 둔 것만 센다.)"""
-    import urllib.request
-    try:
-        with urllib.request.urlopen(f"{SCHEDULE_GAS_URL}?action=load_schedule", timeout=25) as r:
-            data = json.loads(r.read().decode("utf-8"))
-        items = ((data.get("data") or {}).get("items")) or []
-    except Exception:
-        return []
-    out = []
-    for it in items:
-        if str(it.get("next_due", ""))[:10] == today:
-            name = str(it.get("name", "")).strip()
-            who = str(it.get("assignee", "")).strip()
-            if name:
-                out.append(f"{name}{' · ' + who if who else ''}")
-    return out
-
-
 def _today_changes_block(items, active, overdue, pending_approval, today: str) -> str:
-    """어제와 달라진 것만 — 오늘 새로 지연된 것 · 어제 끝난 것 · 오늘 잡힌 일정."""
+    """어제와 달라진 것만 — 오늘 새로 지연된 것 · 어제 끝난 것.
+
+    [2026-08-29 GM 지시 · 텔레그램 중복 정리] 「📅 오늘 잡힌 일정」 절 삭제 — 같은 일정이
+    하루 다섯 번(06시·08시·09:30·20:30·23시) 나열되고 있었다. 일정 나열은 08시
+    「오늘의 항로」 한 곳만 남긴다(_schedule_today 헬퍼도 여기뿐이라 같이 지움)."""
     yday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
 
     newly = [x for x in overdue if _delta_days(_due_date10(x), today) == -1]
     done_yday = [x for x in items
                  if str(x.get("상태", "")).strip() in TODO_DONE_STATUSES
                  and str(x.get("수정일", "") or x.get("updatedAt", ""))[:10] == yday]
-    sched = _schedule_today(today)
-
     lines = ["🆕 어제와 달라진 것"]
     if newly:
         names = " · ".join(f"{_short_owner(x.get('담당자',''))} {_short_title(x.get('업무명',''), 20)}"
@@ -364,15 +343,6 @@ def _today_changes_block(items, active, overdue, pending_approval, today: str) -
                      + (f" 외 {len(done_yday)-3}건" if len(done_yday) > 3 else ""))
     else:
         lines.append("· ✅ 어제 끝낸 것 없음")
-    if sched:
-        # 한 줄에 하나씩 — 여러 건을 '·'로 이어 붙이면 줄이 길어져 훑히지 않는다(GM 지적 계열).
-        lines.append(f"· 📅 오늘 잡힌 일정 {len(sched)}건")
-        for s in sched[:4]:
-            lines.append(f"   – {html.escape(_short_title(s, 40))}")
-        if len(sched) > 4:
-            lines.append(f"   – 외 {len(sched)-4}건")
-    else:
-        lines.append("· 📅 오늘 잡힌 일정 없음")
     return "\n".join(lines)
 
 

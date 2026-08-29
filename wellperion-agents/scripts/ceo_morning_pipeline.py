@@ -1047,9 +1047,8 @@ def _next_waypoint(item: dict) -> str:
 
 # ── 08:00 흡수 섹션 (2026-07-18 GM 승인 — GM DM 알림 홍수 축소) ─────────────────
 # 폐지된 GM DM 슬롯의 핵심값을 08:00 통합브리프로 접어 넣는다(값 유실 0).
-#   · 07시(어제결산·직원 공유카드) · 09시(매출 1줄).
+#   · 07시(어제결산) · 09시(매출 1줄). (직원 공유카드는 2026-08-29 삭제 — 텔레그램 중복 정리)
 # 소스는 전부 기존 것 재사용 — 새 채널·새 SSOT·새 스크립트 없음.
-QUOTES_PATH = STATUS_DIR / "quotes.json"
 # home_kpi = 09시 _fetch_cfo_finance_block과 동일 소스(ERP home과 수치 일치). _G1_API와 같은 GAS 배포.
 _HOME_KPI_API = (
     "https://script.google.com/macros/s/"
@@ -1112,31 +1111,8 @@ def _snapshot_expense_month():
         return None
 
 
-def _staff_quote() -> str:
-    """직원 공유 카드용 06시대 명언 1건(활성). 실패 시 기본 문구."""
-    try:
-        data = json.loads(QUOTES_PATH.read_text(encoding="utf-8"))
-        active = [q.get("text", "") for q in data.get("06", []) if q.get("active") and q.get("text")]
-        if active:
-            import random
-            return random.choice(active)
-    except Exception:
-        pass
-    return "오늘 하루도 한 걸음씩, 꾸준함이 곧 실력입니다."
-
-
-def build_staff_share_card() -> str:
-    """직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 북극성 미션 + 오늘의 한 마디."""
-    now = datetime.now()
-    wd = ["월", "화", "수", "목", "금", "토", "일"][now.weekday()]
-    quote = _staff_quote()
-    return (
-        "✂️ ───── 직원 공유용 (아래부터 카톡 복붙) ─────\n"
-        f"🌟 {now.strftime('%Y-%m-%d')} ({wd}) 북극성\n"
-        "회원 한 사람의 건강한 하루를 완성한다\n\n"
-        "💬 오늘의 한 마디\n"
-        f"\"{quote}\""
-    )
+# (구 「직원 공유용 카톡 복붙 카드」 _staff_quote·build_staff_share_card 는 2026-08-29 삭제 —
+#  텔레그램 중복 정리 · 수동 복붙 시절 유물. 내용은 북극성 고정문구+명언뿐이라 정보 손실 없음.)
 
 
 def build_yesterday_done_line(yday_items: list[dict]) -> list[str]:
@@ -1486,8 +1462,10 @@ def _build_appendix_lines() -> list[str]:
         lines.append(f"🏢 운영 점검: (합류 실패 — {type(_e).__name__})")
         lines.append("")
 
-    # ── 직원 공유용 복붙 카드 (구 07시 직원카드 흡수) — 부록 맨 아래 배치 ──
-    lines.append(build_staff_share_card())
+    # [2026-08-29 GM 지시 · 텔레그램 중복 정리] 「✂️ 직원 공유용 카톡 복붙」 카드 삭제 —
+    # 실무진 카톡은 아침 정리·다이제스트가 자동으로 나가는데(수동 복붙 시절의 유물),
+    # 텔레그램 통 끝에 카톡용 덩어리가 달려 채널이 섞였다. 실패 대비용도 아니었다
+    # (카톡 발신 실패 경보는 _kakao_fail_notify 가 따로 담당).
     return lines
 
 

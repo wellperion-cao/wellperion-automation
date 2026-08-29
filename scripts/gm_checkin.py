@@ -1353,9 +1353,10 @@ def build_evening_recap(day: str | None = None) -> dict:
         tail = f"\n외 {len(p_lines) - RECAP_MAX_BUTTONS}건" if len(p_lines) > RECAP_MAX_BUTTONS else ''
         lines += ['', f"■ 아직 남은 것 ({len(p_lines)})\n" + '\n'.join(shown) + tail]
 
-    b = _bucket('오늘 일정', snap['sched_lines'])
-    if b:
-        lines += ['', b]
+    # [2026-08-29 GM 지시 · 텔레그램 중복 정리] 「오늘 일정」 절 삭제 — 같은 일정이 하루
+    # 다섯 번 나열됐다. 일정 나열은 08시 아침 브리핑 한 곳. 내일 일정(_tomorrow_section)은
+    # 성격이 달라(하루 마무리에서 내일 준비) 그대로 둔다. snap['sched_lines'] 는 다른
+    # 소비자(스냅샷 파일)가 있어 데이터는 그대로 만든다 — 여기 표시만 뺀다.
 
     b = _bucket('진행 중 과제', snap['plan_lines'])
     if b:
