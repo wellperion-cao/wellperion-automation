@@ -932,6 +932,9 @@ AUTO_PIPELINE_SENDERS = {
     "중간관리자알림합본",   # daily_scheduler.run_mgmt_notice_digest — 17:00 알림성 합본
     "주간보고초안",        # daily_scheduler — 운영부 주간 보고 초안
     "아침요약카드",        # kakao_summary_card_auto.py — 07:30 경보·4지표 요약 카드(현재 킬스위치 OFF)
+    "다이어트캠프정기발신", # daily_scheduler.run_diet_camp_morning — 07:00 「다이어트캠프 이승기
+                          # 대표님」 방(배 11022 · GM 승인 2026-08-29). 대외 방이라 HUMAN_APPROVAL_ROOMS
+                          # 밖이지만 정기 자동 발송은 전부 --sender 로 밝히는 관례를 그대로 따른다.
     # "업무판채움보드" 제거(GM 지시 2026-08-29 폐기) — ops_fill_board 전체 폐기.
 }
 SENDER_WELLY = "웰리"

@@ -3293,6 +3293,46 @@ def run_weekly_ops_report() -> None:
         logger.error(f"[주간 보고] 예외: {exc}")
 
 
+# ── 다이어트캠프 이승기 대표님 07:00 정기 발신 (배 11022 · GM 승인 2026-08-29) ─────────
+#   GM: "이승기 대표님에게 7:00 오전에 항상 강습 브랜드 관련 필요한 정보를 그리고
+#   가려운데를 정리해서 보내줄 수 있어?" 첫 발신(2026-08-26 09:17)은 GM 승인 후 수동
+#   호출로 나갔다 — 이 잡은 그 반복분을 배선한다.
+#   ★내용 원천이 아직 없다(시모 배790 브랜드 가이드 1단계 대기) — 원고를 새로 만들지
+#   않고, 누가 채워 넣을 단일 파일(DIET_CAMP_DRAFT)을 읽는다. 파일이 없거나 비어 있으면
+#   빈 메시지를 보내는 대신 이번 회차를 조용히 건너뛴다(로그만 남김).
+#   방은 kakao_rooms.json 에 이미 등재돼 있고(category=대외 · 매출보고 rooms[] 미포함),
+#   HUMAN_APPROVAL_ROOMS 밖이라 --sender 없이도 통과하지만, 정기 자동 발송은 전부
+#   --sender 로 주체를 밝히는 관례를 그대로 따른다(kakao_report_sender.AUTO_PIPELINE_SENDERS
+#   에 "다이어트캠프정기발신" 등록 — 약속 L21, 새 관문 안 만듦).
+DIET_CAMP_ROOM = "다이어트캠프 이승기 대표님"
+DIET_CAMP_DRAFT = STATUS_DIR / "drafts" / "다이어트캠프_0700.md"
+
+
+def run_diet_camp_morning() -> None:
+    label = "[다이어트캠프 07시]"
+    try:
+        text = ""
+        if DIET_CAMP_DRAFT.exists():
+            text = DIET_CAMP_DRAFT.read_text(encoding="utf-8").strip()
+        if not text:
+            logger.info(f"{label} 발신 원고 없음({DIET_CAMP_DRAFT}) — 이번 회차 생략(빈 메시지 방지)")
+            return
+        sender = REPO_ROOT / "scripts" / "kakao_report_sender.py"
+        proc = subprocess.run(
+            [sys.executable, str(sender), "--message", text, "--only-room", DIET_CAMP_ROOM,
+             "--sender", "다이어트캠프정기발신"],
+            cwd=str(REPO_ROOT), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=180,
+            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
+        )
+        tail = (proc.stdout or "").strip().splitlines()[-1:] or ["(출력없음)"]
+        logger.info(f"{label} 카톡 {DIET_CAMP_ROOM} 발송: {tail[0]}")
+        if proc.returncode != 0:
+            _kakao_fail_notify("다이어트캠프 07시 정기발신", tail[0], room=DIET_CAMP_ROOM)
+    except Exception as e:
+        logger.error(f"{label} 예외: {e}")
+
+
 def run_stream_3_mgmt() -> None:
     """스트림 #3 매출+운영+인사 현황 보고 (매일 09:30 · 업무보고방) — CTO 2026-07-22.
     확정 포맷: report_stream_3_impl v3 (54% 압축 · GM ok). 카카오=GM go 후 활성화.
@@ -4080,6 +4120,21 @@ def main():
             logger.info("reception_intake_relay 등록 완료 — 15분 간격, 새 접수를 부서별로 종합접수처방 전달")
         except Exception as e:  # noqa: BLE001
             logger.error(f"reception_intake_relay 등록 실패: {e}")
+
+        # ── 다이어트캠프 이승기 대표님 07:00 정기 발신 — 배 11022 (GM 승인 2026-08-29) ──
+        #   같은 스케줄러 안 다른 카톡 발신과 07시대 충돌 없음(parking_revenue_crawler
+        #   07:00 은 GAS 크롤이지 카톡 PC 자동화가 아니라 겹치지 않는다).
+        try:
+            scheduler.add_job(
+                run_diet_camp_morning,
+                trigger=CronTrigger(hour=7, minute=0, timezone="Asia/Seoul"),
+                id="diet_camp_morning_0700",
+                misfire_grace_time=600,
+                coalesce=True,
+            )
+            logger.info("diet_camp_morning 등록 완료 — 매일 07:00 「다이어트캠프 이승기 대표님」 방(원고 있을 때만 발송)")
+        except Exception as e:
+            logger.warning(f"diet_camp_morning 등록 실패: {e}")
 
         # ── 스트림 #3 매출+운영+인사 현황 보고 (매일 09:30) — CTO 2026-07-22 ───────────
         try:
