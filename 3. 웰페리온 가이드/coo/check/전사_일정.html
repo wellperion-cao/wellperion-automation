@@ -44,6 +44,9 @@ h1 .scope{font-size:14px;font-weight:600;color:var(--accent);margin-left:8px}
 .cal-today-btn{font:inherit;font-size:12px;font-weight:650;color:var(--dim);background:none;border:1px solid var(--border);border-radius:999px;padding:5px 13px;cursor:pointer}
 .cal-today-btn:hover{color:var(--text);border-color:var(--accent)}
 .cal-legend{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 9px;font-size:11.5px;color:var(--dim)}
+/* 안내 줄 끝에 붙는 범례 — 제목 아래 한 줄로 병합(GM 지시 2026-08-29). 줄 안에 들어가야
+   하므로 inline-flex 로 눕히고 아래 여백을 없앤다. 좁은 화면에선 다음 줄로 흐른다. */
+.sub-legend{display:inline-flex;margin:0 0 0 12px;vertical-align:middle}
 .cal-legend span{display:inline-flex;align-items:center;gap:5px}
 .cal-legend .cal-dot{background:var(--dim)}
 .cal-legend .cal-dot.auto{border-color:var(--dim)}
@@ -174,7 +177,10 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
           <button class="cal-today-btn" type="button" onclick="calToday()">오늘</button>
         </span>
       </h1>
-      <p class="sub">날짜가 정해진 <b>전사 일정</b>의 단일 출처 — <b>정기 안전·법정 점검</b> + 부서 <b>주요 이벤트</b>(행사·납품·교육 등). 반복(매주·격주·매월·매년)은 규칙 한 줄로 고정하면 달력에 계속 표시. 부서 체계 페이지 <b>🗓️ 일정 탭</b>에서 직접 작성 → 여기로 모임.</p>
+      <!-- 안내 한 줄 + 달력 범례를 여기 합쳤다(GM 지시 2026-08-29 "안내칸에 무의미한 내용
+           삭제하고 병합"). 뺀 것 = '단일 출처'(내부 용어) · 반복 규칙 작성법(작성은 이 화면이
+           아니라 부서 체계 페이지에서 한다). 달력 위에 따로 있던 cal-legend 는 이 줄로 옮겼다. -->
+      <p class="sub"><b>정기 안전·법정 점검</b>과 부서 <b>주요 이벤트</b>(행사·납품·교육 등)가 모이는 곳 — 작성은 부서 체계 페이지 <b>🗓️ 일정 탭</b>에서<span class="cal-legend sub-legend"><span><span class="dot" style="width:7px;height:7px;background:var(--dim)"></span>확정</span><span><span class="cal-dot auto" style="border-color:var(--dim)"></span>예상(자동)</span></span></p>
     </div>
     <div class="sheet-links">
       <span class="fsel" id="deptSelWrap"><select id="deptSel" aria-label="담당 부서 필터"></select><span class="caret">▼</span></span>
@@ -197,7 +203,6 @@ body.embed .sheet-links a.sheet-link:not(.hlink-add){display:none!important}
        🔥 임박순 팝업이 그대로 맡는다 — 정보 손실 없음. -->
 
   <div class="calwrap" id="calWrap">
-    <div class="cal-legend"><span><span class="dot" style="width:7px;height:7px;background:var(--dim)"></span>확정</span><span><span class="cal-dot auto" style="border-color:var(--dim)"></span>예상(자동)</span></div>
     <div class="cal-grid" aria-hidden="true">
       <div class="cal-dow">일</div><div class="cal-dow">월</div><div class="cal-dow">화</div><div class="cal-dow">수</div><div class="cal-dow">목</div><div class="cal-dow">금</div><div class="cal-dow">토</div>
     </div>
