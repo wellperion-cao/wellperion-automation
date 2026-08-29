@@ -321,6 +321,17 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .dash-issue-name{font-weight:600}
 .dash-issue-memo{color:var(--red);font-size:12px;margin-top:2px}
 .dash-issue-meta{color:var(--dim);font-size:11px}
+/* ── 실장 아침 점검 4카드 ── */
+.sj-card-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.sj-card{flex:1;min-width:220px;background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.sj-card-title{font-size:13px;font-weight:700;margin-bottom:6px}
+.sj-card-body{font-size:12px;line-height:1.6;white-space:pre-line}
+.sj-card-body b{color:var(--accent)}
+.sj-card-err{font-size:12px;color:var(--red)}
+.sj-card-time{font-size:10px;color:var(--dim);margin-top:8px}
+.sj-card-links{margin-top:6px;display:flex;gap:8px;flex-wrap:wrap}
+.sj-card-links a{font-size:11px;color:var(--blue);text-decoration:none}
+.sj-card-links a:hover{text-decoration:underline}
 /* ── Header utility buttons ── */
 .header-util-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .util-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background 0.15s}
@@ -1138,6 +1149,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div id="tab-admin" class="content hidden">
   <h2 style="font-size:20px;margin-bottom:6px;">현황 대시보드</h2>
   <p style="font-size:13px;color:var(--dim);margin-bottom:14px;line-height:1.6;">운영부(리셉션) 오늘 체크리스트 진행률과 규정·가이드·매뉴얼 보드 작성 현황, GM 확정이 필요한 항목을 한눈에 요약합니다. 탭을 열 때마다 최신 데이터로 갱신됩니다.</p>
+  <!-- ══ 이경연 실장 아침 점검 4카드 — 저장소 커밋 JSON(status/*)만 읽는다. 숫자 재계산·GAS 재호출 없음. 2026-08-29 배 ══ -->
+  <div id="sj-cards" class="sj-card-row"><div class="loading">불러오는 중...</div></div>
   <div id="admin-dash"><div class="loading">불러오는 중...</div></div>
 </div>
 
@@ -1874,7 +1887,7 @@ function switchTab(tab, opts){
   document.getElementById('tab-mplan').classList.toggle('hidden',tab!=='mplan');
   var _hr=document.getElementById('tab-hiring'); if(_hr) _hr.classList.toggle('hidden',tab!=='hiring');
   if(tab==='manual'){renderBoard();renderManualItems();}
-  if(tab==='admin'){renderAdmin();}
+  if(tab==='admin'){renderAdmin(); if(typeof loadSiljangCards==='function') loadSiljangCards();}
   if(tab==='mplan'){ if(typeof loadMonthlyPlanTab==='function') loadMonthlyPlanTab(); }
 }
 
@@ -2818,6 +2831,80 @@ function renderAdmin(){
 
   el.innerHTML=html;
 }
+
+/* ═══════════════════════════════════════════════
+   이경연 실장 아침 점검 4카드 — 접수·업무결재·점검·매출보고
+   전부 저장소에 커밋되는 status/*.json 을 그대로 읽는다(GAS 재호출 없음, 숫자 재계산 없음).
+   경로 선례: monthly_ops_plan.json 을 raw.githubusercontent 로 읽는 시설부/지원부 체계.html 과 동일 방식.
+   ═══════════════════════════════════════════════ */
+const SJ_RAW_BASE='https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/status/';
+function sjEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function sjFetchJson(path){
+  const r=await fetch(SJ_RAW_BASE+path,{cache:'no-store'});
+  if(!r.ok) throw new Error('http '+r.status);
+  return r.json();
+}
+function sjCard(title, bodyHtml, timeLabel, links){
+  const linkHtml=(links||[]).map(l=>`<a href="${sjEsc(l.href)}">${sjEsc(l.label)} →</a>`).join('');
+  return `<div class="sj-card"><div class="sj-card-title">${sjEsc(title)}</div><div class="sj-card-body">${bodyHtml}</div>`
+    +(timeLabel?`<div class="sj-card-time">기준 ${sjEsc(timeLabel)}</div>`:'')
+    +(linkHtml?`<div class="sj-card-links">${linkHtml}</div>`:'')+`</div>`;
+}
+function sjErrCard(title, links){
+  return sjCard(title, '<span class="sj-card-err">집계를 못 읽었습니다 — 안 한 것이 아닙니다.</span>', '', links);
+}
+function sjReceptionCard(d){
+  const byDept=d.by_dept||{};
+  const open=Object.values(byDept).reduce((s,v)=>s+(Number(v.open)||0),0);
+  const rows=Object.entries(byDept)
+    .sort((a,b)=>(Number(b[1].max_age_days)||0)-(Number(a[1].max_age_days)||0))
+    .map(([name,v])=>`${sjEsc(name)} ${v.open}건(최장 ${v.max_age_days}일)`)
+    .join('<br>');
+  const body=`미처리 <b>${open}건</b> · 7일 이상 지연 <b>${d.overdue_7d||0}건</b><br>${rows}`;
+  return sjCard('접수', body, d.generated_at, [
+    {href:'../reception/종합접수처_현황.html', label:'종합접수처 현황'}
+  ]);
+}
+function sjDetailCard(title, d, extraLine, links){
+  let body=sjEsc(d.detail||'');
+  if(extraLine) body+='\n'+sjEsc(extraLine);
+  return sjCard(title, body, d.generated_at_kst, links);
+}
+function sjKakaoCard(d){
+  const rooms=d.rooms||{};
+  const names=Object.keys(rooms);
+  const okCount=names.filter(n=>rooms[n].ok).length;
+  let body=`오늘 발송 성공 <b>${okCount}/${names.length}방</b>`;
+  const failed=names.filter(n=>!rooms[n].ok);
+  if(failed.length) body+='\n실패: '+failed.map(sjEsc).join(', ');
+  return sjCard('매출보고', body, d.at, [
+    {href:'../report/매출회원현황보고.html', label:'매출회원현황보고'}
+  ]);
+}
+async function loadSiljangCards(){
+  const el=document.getElementById('sj-cards');
+  if(!el) return;
+  const [reception, workApproval, checkStatus, kakao] = await Promise.allSettled([
+    sjFetchJson('reception_watch.json'),
+    sjFetchJson('heartbeats/coo-work-approval.json'),
+    sjFetchJson('heartbeats/coo-check-status.json'),
+    sjFetchJson('kakao_last_send.json')
+  ]);
+  let html='';
+  html+= reception.status==='fulfilled' ? sjReceptionCard(reception.value) : sjErrCard('접수',[{href:'../reception/종합접수처_현황.html',label:'종합접수처 현황'}]);
+  html+= workApproval.status==='fulfilled' ? sjDetailCard('업무·결재', workApproval.value, '', [
+    {href:'../todo/업무 현황 SSOT.html', label:'업무 현황 SSOT'},
+    {href:'../todo/업무판 채움 보드.html', label:'업무판 채움 보드'}
+  ]) : sjErrCard('업무·결재',[{href:'../todo/업무 현황 SSOT.html',label:'업무 현황 SSOT'}]);
+  html+= checkStatus.status==='fulfilled' ? sjDetailCard('점검', checkStatus.value, '■ 주차부 — 집계 없음(2026-08-28 신설)', [
+    {href:'지원부 체계.html', label:'지원부'},
+    {href:'시설부 체계.html', label:'시설부'},
+    {href:'주차관리부 체계.html', label:'주차관리부'}
+  ]) : sjErrCard('점검',[{href:'시설부 체계.html',label:'시설부'}]);
+  html+= kakao.status==='fulfilled' ? sjKakaoCard(kakao.value) : sjErrCard('매출보고',[{href:'../report/매출회원현황보고.html',label:'매출회원현황보고'}]);
+  el.innerHTML=html;
+}
+
 /* ═══════════════════════════════════════════════
    항목 관리 (CRUD) — localStorage 기반
    ═══════════════════════════════════════════════ */
