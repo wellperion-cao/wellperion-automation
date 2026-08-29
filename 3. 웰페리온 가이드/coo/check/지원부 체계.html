@@ -4906,6 +4906,11 @@ function renderPendingBanner(){
 window.addEventListener('online',retryPendingSubmits);
 document.addEventListener('visibilitychange',function(){ if(!document.hidden)retryPendingSubmits(); });
 setInterval(retryPendingSubmits,45000);
+// 화면을 다시 열었을 때도 띠부터 띄우고 한 번 보낸다 — 어제 못 올라간 것이 조용히 묻히지 않게.
+window.addEventListener('DOMContentLoaded',function(){
+  try{ renderPendingBanner(); }catch(e){}
+  setTimeout(function(){ try{ retryPendingSubmits(); }catch(e){} },4000);
+});
 
 /* 관리자 PIN 제출잠금 해제 — 2026-06-17 시우.
    1) PIN prompt → 백엔드 unlock_round POST

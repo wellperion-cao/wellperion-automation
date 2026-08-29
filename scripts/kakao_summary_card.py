@@ -13,7 +13,7 @@ scripts/kakao_summary_card.py — 카카오톡 아침 요약 카드 이미지 �
 표기한다. 매출은 최근 마감월 실적이므로 라벨에 "N월 마감"을 반드시 밝힌다.
 
 경보 엔진(오탐 금지 — 확실한 것만):
-  - 지원부 점검 완료율 < 95% → ⚠️ 경보
+  - 지원부 점검 제출률 < 90% → ⚠️ 경보 (GM 확정 2026-08-29 · 제출률을 못 받으면 완료율 95% 로 폴백)
   - 매출 달성률 < 90% → ⚠️ 경보
   - 경보 0건이면 🟢 "오늘 특이사항 없음" 배너
   - 주차 급락 경보는 이번 배치에서 보류(0원=미수집일 오탐 위험)
@@ -217,19 +217,25 @@ def compute_alerts(kpi: dict) -> list:
     coo = roles.get("coo", {})
     cfo = roles.get("cfo", {})
 
+    # 게이트는 '제출률 90%'다(GM 확정 2026-08-29). 종전엔 완료율 95% 였는데, 완료율은
+    # 제출률 × 제출분 충실도의 곱이라 무엇이 모자란지 가리키지 못했다. 실측상 항목 체크는
+    # 93% 로 충실하고 모자란 것은 제출(48%)이라, 사람이 실제로 움직여야 하는 숫자에 건다.
     insp_rate = coo.get("지원부_점검완료율")
-    if isinstance(insp_rate, (int, float)) and insp_rate < 0.95:
-        pct = dround(insp_rate * 100, 0)
+    submit_rate = coo.get("지원부_제출률")
+    fill_rate = coo.get("지원부_제출분충실도")
+    if isinstance(submit_rate, (int, float)):
+        gated, gate, gate_label = submit_rate, 0.90, "제출 목표 90%"
+    else:  # 제출률을 못 받았을 때만 종전 기준으로 돌아간다(fail-soft)
+        gated, gate, gate_label = insp_rate, 0.95, "목표 95%"
+    if isinstance(gated, (int, float)) and gated < gate:
         month = extract_month(coo.get("지원부_점검완료율_기준", ""))
         month_label = f"{month}월 누적" if month else "이번달 누적"
         # 병기: 45% 한 줄만 보면 체크 태만으로 오독한다 — 제출률·제출분충실도로 원인을 가른다(값 없으면 종전 표기 유지).
-        submit_rate = coo.get("지원부_제출률")
-        fill_rate = coo.get("지원부_제출분충실도")
         if isinstance(submit_rate, (int, float)) and isinstance(fill_rate, (int, float)):
             detail = f"제출률 {dround(submit_rate * 100, 0)}% · 제출분 충실도 {dround(fill_rate * 100, 0)}%"
         else:
-            detail = f"완료율 {pct}%"
-        alerts.append(f"지원부 점검 — {detail} — 목표 95% 미달 ({month_label})")
+            detail = f"완료율 {dround(insp_rate * 100, 0)}%"
+        alerts.append(f"지원부 점검 — {detail} — {gate_label} 미달 ({month_label})")
 
     sales = cfo.get("sales_month")
     target = cfo.get("sales_month_target")
@@ -337,13 +343,15 @@ def tile_inspection(coo: dict) -> str:
         )
 
     pct = dround(rate * 100, 0)
-    warn = rate < 0.95
+    # 경보와 같은 게이트를 쓴다 — 카드와 경보가 서로 다른 기준을 말하면 안 된다(약속 L01).
+    warn = (submit_rate < 0.90) if isinstance(submit_rate, (int, float)) else (rate < 0.95)
     dot_cls = "warn" if warn else "good"
     arrow = '<span class="arrow down" style="font-size:14px"> ▼</span>' if warn else ""
     # 병기: 완료율 한 숫자만 보면 4부서 값처럼 읽힌다(지원부 한정) + 낮은 원인(제출 누락 vs 체크 태만)이 안 보인다.
     # 값 없으면 종전 표기(완료/전체) 그대로 유지(fail-soft).
     if isinstance(submit_rate, (int, float)) and isinstance(fill_rate, (int, float)):
-        sub = f'제출률 {dround(submit_rate * 100, 0)}% · 제출분 충실도 {dround(fill_rate * 100, 0)}%'
+        sub = (f'제출률 {dround(submit_rate * 100, 0)}% · 제출분 충실도 '
+               f'{dround(fill_rate * 100, 0)}% · 제출 목표 90%')
     else:
         sub = f'완료 {fmt_comma(done)} / 전체 {fmt_comma(total)} · 목표 95%'
     return (
