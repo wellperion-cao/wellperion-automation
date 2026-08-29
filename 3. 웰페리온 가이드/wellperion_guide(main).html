@@ -6534,6 +6534,9 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       var TODO_API = (typeof TODO_API_URL !== 'undefined' && TODO_API_URL)
         ? TODO_API_URL
         : "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
+      // 운영부 실무진 명단 — 운영부 모듈 카드(todo_list 필터)와 1층 관리기준 점검(업무 마감 넘김 축)이
+      // 같은 기준을 쓴다(약속 L01 — 값 복제 금지). 정본 = ssot/kpi.json roles.coo.staff + _부서반장.
+      var OPS_STAFF = {'최준용M':1,'윤병현AM':1,'이경연 실장':1};
       /* 카드 1장 = 모듈 1개. 구성은 GM 확정(2026-07-25 딥인터뷰): **큰 숫자(대표값) + 작은 경고(볼 일)**.
          경고가 없으면 회색 정보 한 줄로 떨어뜨린다(빈 줄을 두지 않는다 — 카드 높이가 들쭉날쭉해짐).
          ★가짜 숫자 금지: 값이 없으면 '—' + '아직 측정 없음'. 0%로 떨어뜨리지 않는다. */
@@ -6709,8 +6712,7 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         withTimeout(jget(TODO_API+"?action=todo_list&_pv="+pv), 8000, null).then(function(todo){
           var trows = todo && todo.data;
           if(Array.isArray(trows)){
-            var OPS = {'최준용M':1,'윤병현AM':1,'이경연 실장':1};
-            var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS[String(t['담당자']||'').trim()]; });
+            var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS_STAFF[String(t['담당자']||'').trim()]; });
             S.opsTask = mine.length+'건';
             var td = todayStr();
             var over = mine.filter(function(t){ var e=String(t['종료일']||'').slice(0,10); return e && e<td; }).length;
@@ -6730,52 +6732,89 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
       }
       loadHub();
 
-      /* ── 운영 관리 기준 점검 (GM 지시 2026-08-29, 2차 개정) ──
+      /* ── 운영 관리 기준 점검 (GM 지시 2026-08-29, 3차 개정 — 1층 「오늘」을 운영부로 좁힘) ──
          RAW_BASE 직독 + withTimeout 은 위 loadHub 와 같은 패턴 재사용. 숫자는 원천 그대로 옮긴다(재계산 금지).
-         제출률 문턱값 90% 는 GM 이 2026-08-29 확정(종전 완료율 95% 를 대체).
-         축 4개(보고·결재·접수·점검) 고정 순서 — 초과 0인 축은 통째로 숨긴다. */
+         범위 = 운영부만(전 부서 아님) — 지원부 점검 제출률 축은 운영부 소관이 아니라서 뺐다(3차 개정).
+         업무 마감 넘김은 coo-work-approval 요약(카테고리만 있고 부서 문자열이 없음)이 아니라
+         todo_list 를 다시 읽어 OPS_STAFF(위 운영부 모듈 카드와 동일 명단)로 직접 거른다.
+         축 순서 고정: 업무 마감 넘김 → 접수 → 매출·운영 보고 → 추이 적재 끊김. 0건 축은 밀어넣지 않는다. */
       function siljangJget(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); }
+      function siljangGetText(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.text();}).catch(function(){return null;}); }
       function siljangLine(icon, text){ return '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:13px;line-height:1.55;color:var(--text);"><span>'+icon+'</span><span style="flex:1;">'+text+'</span></div>'; }
       function siljangAxisHead(title, countLabel){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 2px;font-size:11px;font-weight:700;color:var(--text);"><span>'+title+'</span><span style="font-size:10px;color:var(--dim);font-weight:600;">'+countLabel+'</span></div>'; }
       function siljangTimeStr(){ var d=new Date(); return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
-      // 업무·결재 detail 문자열 파싱: "■ 마감 넘긴 일 — N건 · 제목(카테고리·담당·NN일 초과), 제목2(...)"
-      function parseWorkApproval(detail){
-        var d = String(detail||'');
-        var cm = d.match(/마감\s*넘긴\s*일\s*—\s*(\d+)건/);
-        if(!cm || +cm[1]<=0) return null;
-        var n = +cm[1];
-        var rest = d.slice(cm.index+cm[0].length).replace(/^[\s·]+/, '');
-        var items = [], re = /([^,]+?)\(([^()·]+)·([^()·]+)·(\d+)일\s*초과\)/g, m;
-        while((m = re.exec(rest))){
-          items.push({title:m[1].replace(/^[,\s]+/,'').trim(), 담당:m[3].trim(), days:+m[4]});
-        }
-        if(!items.length) return {n:n, raw:d.trim()};
-        var maxDays = Math.max.apply(null, items.map(function(x){return x.days;}));
-        var first = items[0];
-        var t = first.title.length>20 ? first.title.slice(0,20)+'…' : first.title;
-        return {n:n, maxDays:maxDays, title:t, 담당:first.담당};
-      }
+      function siljangDaysBetween(fromYmd, toYmd){ return Math.floor((Date.parse(toYmd+'T00:00:00') - Date.parse(fromYmd+'T00:00:00'))/86400000); }
       function siljangLoad(){
         var pv = Date.now();
         var missing = [];
         var P = {
           kakao: withTimeout(siljangJget(RAW_BASE+"status/kakao_last_send.json?_pv="+pv), 8000, undefined),
-          approval: withTimeout(siljangJget(RAW_BASE+"status/heartbeats/coo-work-approval.json?_pv="+pv), 8000, undefined),
+          todo: withTimeout(siljangJget(TODO_API+"?action=todo_list&_pv="+pv), 8000, undefined),
           reception: withTimeout(siljangJget(RAW_BASE+"status/reception_watch.json?_pv="+pv), 8000, undefined),
-          kpi: withTimeout(siljangJget(RAW_BASE+"status/kpi_values.json?_pv="+pv), 8000, undefined),
-          leaders: withTimeout(siljangJget(RAW_BASE+"ssot/kpi.json?_pv="+pv), 8000, undefined)
+          daily: withTimeout(siljangGetText(RAW_BASE+"status/coo_daily.jsonl?_pv="+pv), 8000, undefined)
         };
-        Promise.all([P.kakao,P.approval,P.reception,P.kpi,P.leaders]).then(function(r){
-          var kakao=r[0], approval=r[1], reception=r[2], kpi=r[3], leadersDoc=r[4];
-          var depts = (leadersDoc && leadersDoc['_부서반장_2026_08_26'] && leadersDoc['_부서반장_2026_08_26'].depts) || {};
-          if(leadersDoc===undefined) missing.push('부서반장 정본');
+        Promise.all([P.kakao,P.todo,P.reception,P.daily]).then(function(r){
+          var kakao=r[0], todo=r[1], reception=r[2], daily=r[3];
+          var today = todayStr();
+          var axes = []; // 고정 순서: 업무 마감 넘김 → 접수 → 보고 → 추이 적재. 0건 축은 밀어넣지 않는다.
 
-          var axes = []; // 고정 순서: 보고 → 결재 → 접수 → 점검. 초과 0인 축은 밀어넣지 않는다.
+          // 축1 📝 업무 마감 넘김 · 기준 마감일 준수 (운영부 실무진만 — OPS_STAFF)
+          if(todo===undefined){ missing.push('업무 마감 넘김'); }
+          else if(todo && Array.isArray(todo.data)){
+            var opsOverdue = todo.data.filter(function(t){
+              return t['상태']!=='완료' && OPS_STAFF[String(t['담당자']||'').trim()]
+                && t['종료일'] && String(t['종료일']).slice(0,10) < today;
+            }).map(function(t){
+              var end = String(t['종료일']).slice(0,10);
+              return {title:String(t['업무명']||'').trim(), owner:String(t['담당자']||'').trim(), days:siljangDaysBetween(end, today)};
+            });
+            if(opsOverdue.length){
+              opsOverdue.sort(function(a,b){ return b.days-a.days; });
+              var top = opsOverdue[0];
+              var topTitle = top.title.length>20 ? top.title.slice(0,20)+'…' : top.title;
+              var ownerTitle = /실장/.test(top.owner) ? '운영부 실장' : '운영부 담당';
+              var tail = opsOverdue.length>1 ? (' 외 '+(opsOverdue.length-1)+'건') : '';
+              axes.push({count:opsOverdue.length,
+                head: siljangAxisHead('📝 업무 마감 넘김 · 기준 마감일 준수', opsOverdue.length+'건 초과'),
+                body: siljangLine('📝', '최장 '+top.days+'일 초과 · '+topTitle+tail+' → '+ownerTitle)});
+            }
+          }
 
-          // 축1 📤 매출·운영 보고 · 기준 당일 전 방 발송
+          // 축2 🙋 접수 처리 · 기준 3일 이내 (운영부만 줄로, 나머지 부서는 합계 1줄로 접는다)
+          // + 💬 회원 결과 안내 공란은 이 축의 마지막 줄로 붙인다.
+          if(reception===undefined){ missing.push('접수 현황'); }
+          else if(reception){
+            var receptionBody = '', receptionCount = 0;
+            if(reception.by_dept){
+              var opsRow = reception.by_dept['운영부'];
+              var otherOpen = 0;
+              Object.keys(reception.by_dept).forEach(function(dept){
+                if(dept==='운영부') return;
+                var row = reception.by_dept[dept];
+                if(row.open>0 && row.max_age_days>=3) otherOpen += Number(row.open||0);
+              });
+              if(opsRow && opsRow.open>0 && opsRow.max_age_days>=3){
+                receptionCount += opsRow.open;
+                receptionBody += siljangLine('🙋', '운영부 '+opsRow.open+'건 — 최장 '+opsRow.max_age_days+'일('+opsRow.max_age_reg_id+') → 운영부 실장');
+              }
+              if(otherOpen>0){
+                receptionBody += siljangLine('🔁', '타부서 처리 대기 '+otherOpen+'건 — 회신 오면 닫힌다 · 소통은 ★중간관리자 방으로, ★운영부 방은 공유 전용');
+              }
+            }
+            if(reception.member_reply_open>0){
+              receptionCount += reception.member_reply_open;
+              receptionBody += siljangLine('💬', '회원 결과 안내 공란 '+reception.member_reply_open+'건 — 처리 끝났는데 회원에게 답 안 감');
+            }
+            if(receptionCount>0){
+              axes.push({count:receptionCount,
+                head: siljangAxisHead('🙋 접수 처리 · 기준 3일 이내', receptionCount+'건'),
+                body: receptionBody});
+            }
+          }
+
+          // 축3 📤 매출·운영 보고 · 기준 당일 전 방 발송
           if(kakao===undefined){ missing.push('매출보고 발송'); }
           else if(kakao && kakao.rooms){
-            var today = todayStr();
             var stale = String(kakao.at||'').slice(0,10) !== today;
             var failed = Object.keys(kakao.rooms).filter(function(rn){
               return stale || kakao.rooms[rn].ok===false;
@@ -6787,67 +6826,22 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             }
           }
 
-          // 축2 📝 업무·결재 · 기준 마감일 준수
-          if(approval===undefined){ missing.push('업무·결재'); }
-          else if(approval && approval.detail){
-            var wa = parseWorkApproval(approval.detail);
-            if(wa){
-              var waText = wa.raw
-                ? ('마감 넘김 '+wa.n+'건 — '+wa.raw)
-                : ('마감 넘김 '+wa.n+'건 — 최장 '+wa.maxDays+'일 초과 · '+wa.title+' → '+wa.담당);
-              axes.push({count:wa.n,
-                head: siljangAxisHead('📝 업무·결재 · 기준 마감일 준수', wa.n+'건 초과'),
-                body: siljangLine('📝', waText)});
-            }
-          }
-
-          // 축3 🙋 접수 처리 · 기준 3일 이내 (부서별 open>0 & max_age_days>=3, 경과일 내림차순 · 4줄 넘으면 접기)
-          // + 💬 회원 결과 안내 공란은 이 축의 마지막 줄로 붙인다.
-          if(reception===undefined){ missing.push('접수 현황'); }
-          else if(reception){
-            var receptionBody = '', receptionCount = 0;
-            if(reception.by_dept){
-              var cands = Object.keys(reception.by_dept).map(function(dept){
-                var row = reception.by_dept[dept];
-                return {dept:dept, open:row.open, days:row.max_age_days, reg:row.max_age_reg_id};
-              }).filter(function(c){ return c.open>0 && c.days>=3; })
-                .sort(function(a,b){ return b.days-a.days; });
-              receptionCount += cands.length;
-              if(cands.length){
-                var show = cands.length<=4 ? cands : cands.slice(0,3);
-                receptionBody += show.map(function(c){
-                  return siljangLine('🙋', c.dept+' '+c.open+'건 — 최장 '+c.days+'일('+c.reg+') → '+(depts[c.dept]||c.dept));
-                }).join('');
-                if(cands.length>4){
-                  var rest = cands.slice(3);
-                  receptionBody += siljangLine('🙋', '그 외 '+rest.length+'곳 ('+rest.map(function(c){return c.dept+' '+c.days+'일';}).join(' · ')+') → 종합접수처 열기');
-                }
+          // 축4 ⚠ 추이 적재 끊김 · 기준 매일 적재 (coo_daily.jsonl 마지막 줄이 2일 이상 전이면)
+          if(daily===undefined || daily===null){ missing.push('추이 적재 기록'); }
+          else{
+            var dlines = String(daily).split('\n').map(function(s){return s.trim();}).filter(Boolean);
+            var last = dlines.length ? dlines[dlines.length-1] : null;
+            var rec = null;
+            try{ rec = last ? JSON.parse(last) : null; }catch(e){ rec = null; }
+            if(rec && rec.date){
+              var gap = siljangDaysBetween(rec.date, today);
+              if(gap>=2){
+                axes.push({count:1,
+                  head: siljangAxisHead('⚠ 추이 적재 끊김', gap+'일째'),
+                  body: siljangLine('⚠', '마지막 적재 '+rec.date+' — 3층 추이가 오늘 몫만큼 비어 있다')});
               }
-            }
-            if(reception.member_reply_open>0){
-              receptionCount += reception.member_reply_open;
-              receptionBody += siljangLine('💬', '회원 결과 안내 공란 '+reception.member_reply_open+'건 — 처리 끝났는데 회원에게 답 안 감');
-            }
-            if(receptionCount>0){
-              axes.push({count:receptionCount,
-                head: siljangAxisHead('🙋 접수 처리 · 기준 3일 이내', receptionCount+'건 초과'),
-                body: receptionBody});
-            }
-          }
-
-          // 축4 📋 점검 제출 · 기준 제출률 90%
-          if(kpi===undefined){ missing.push('KPI'); }
-          else if(kpi && kpi.roles && kpi.roles.coo){
-            var rate = kpi.roles.coo.지원부_제출률;
-            if(rate!=null && rate<0.90){
-              var 충실도 = kpi.roles.coo.지원부_제출분충실도;
-              var names = [depts['지원부(여)'], depts['지원부(남)']].filter(Boolean).join('·') || '지원부';
-              var kpiText = '지원부 '+Math.round(rate*100)+'%'
-                + (충실도!=null ? ' (8월 누적 · 제출분 충실도 '+Math.round(충실도*100)+'%)' : ' (8월 누적)')
-                + ' → '+names;
-              axes.push({count:1,
-                head: siljangAxisHead('📋 점검 제출 · 기준 제출률 90%', '기준 미달'),
-                body: siljangLine('📋', kpiText)});
+            }else{
+              missing.push('추이 적재 기록');
             }
           }
 
@@ -6858,7 +6852,14 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
           var missEl = document.getElementById('o1-siljang-missing');
           if(!box || !linesEl) return;
           if(!axes.length && !missing.length){ box.style.display='none'; return; }
-          linesEl.innerHTML = axes.map(function(a){ return a.head + a.body; }).join('');
+          // 1층 최대 5줄 — 축이 5개를 넘으면 6번째부터 접는다(오늘 실데이터로는 축 4개 이내).
+          var visible = axes.slice(0,5), overflow = axes.slice(5);
+          var html = visible.map(function(a){ return a.head + a.body; }).join('');
+          if(overflow.length){
+            html += '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:11px;color:var(--dim);">'+overflow.length+'개 더 보기</summary>'
+              + overflow.map(function(a){ return a.head + a.body; }).join('') + '</details>';
+          }
+          linesEl.innerHTML = html;
           countEl.textContent = axes.length ? ('기준 초과 '+totalCount+'건 · '+siljangTimeStr()+' 기준') : '';
           missEl.textContent = missing.length ? missing.map(function(m){return m+' 집계를 못 읽었습니다 — 안 한 것이 아닙니다';}).join(' · ') : '';
           box.style.display = (axes.length || missing.length) ? '' : 'none';
@@ -6870,6 +6871,262 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
     <!-- 종합접수처 처리 절차 박스 — 금일 조치 필요 사항 신설(2026-08-29)로 net-zero 삭제. 절차 안내는
          종합접수처 현황 페이지 몫(진입은 위 「🙋 종합접수처」 카드가 담당). -->
+
+    <!-- ══════════════════════════════════════════════════════════════════════════
+         O1 4층 재설계 (GM 승인 2026-08-29) — 운영부 실장 전용 화면.
+         1층(오늘) = 위 「⚙ 운영 관리 기준 점검」. 여기부터 2층(이번 주)·3층(이번 달)·
+         4층(문서고). 실장이 화면을 열면 오늘→주→월→문서고 순서로 훑는다.
+         RAW_BASE·CHECK_API·TODO_API·withTimeout 패턴은 위 IIFE와 동일 — 이 블록은
+         별도 script 태그라 상수만 최소 재선언(충돌 없는 별도 스코프, 로직 복제 아님). ══════════════ -->
+    <section id="o1-week-section" style="margin:22px 0;">
+      <h3 style="font-size:1.05rem;margin:0 0 4px;">📅 이번 주</h3>
+      <div id="o1-week-good" style="margin-bottom:10px;"></div>
+      <div id="o1-week-table"></div>
+      <div id="o1-week-time" style="font-size:10.5px;color:var(--dim);margin-top:6px;"></div>
+    </section>
+
+    <section id="o1-month-section" style="margin:22px 0;">
+      <h3 style="font-size:1.05rem;margin:0 0 10px;">🗓️ 이번 달</h3>
+      <div id="o1-month-goals" style="margin-bottom:14px;"></div>
+      <div id="o1-month-eval" style="margin-bottom:14px;"></div>
+      <div id="o1-month-trend" style="margin-bottom:10px;"></div>
+      <div style="font-size:12px;color:var(--dim);background:var(--card);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;">🚫 운영부·주차부 점검 집계 미배선 — 0이 아니라 아직 못 잽니다.</div>
+    </section>
+
+    <details id="o1-docs-archive" style="margin:22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;">
+      <summary style="cursor:pointer;padding:14px 18px;font-size:1.05rem;font-weight:700;">📂 운영부 문서고 (규정·가이드·매뉴얼·채용)</summary>
+      <div style="padding:2px 18px 18px;">
+        <div style="font-size:11.5px;color:var(--dim);margin-bottom:14px;">「운영부 체계」 규정·가이드·매뉴얼·채용 탭 내용을 여기로 옮겼다(2026-08-29 GM 승인) — 조회 전용, 편집은 없음.</div>
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">📋 운영부 규정</summary>
+          <div id="o1-doc-policy" style="padding:10px 4px;color:var(--dim);font-size:13px;">펼치면 불러옵니다…</div>
+        </details>
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">📘 가이드</summary>
+          <div id="o1-doc-guide" style="padding:10px 4px;color:var(--dim);font-size:13px;">펼치면 불러옵니다…</div>
+        </details>
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">📖 매뉴얼</summary>
+          <div style="padding:10px 4px;font-size:13px;line-height:1.7;">
+            <div style="font-weight:700;color:var(--accent);margin-bottom:4px;">공통 유의사항 (전 요일 공통)</div>
+            <ul style="margin:0 0 12px 18px;">
+              <li><strong>리셉션·프론트는 항상 최소 1명이 자리를 지킨다</strong>(절대 비우지 않음 · 휴게는 엇갈려)</li>
+              <li>회원이 보이면 하던 일을 멈추고 먼저 인사 — 눈 맞춤+미소 / 이름 알면 호칭 사용</li>
+              <li>모든 종합접수 건의는 즉시 구글 폼 기록 후 당일 해당 부서 전달 / 처리 결과 회원 고지</li>
+              <li>회원 개인정보·예약 정보는 외부 유출·임의 열람 금지</li>
+              <li>긴급·안전·민원은 즉시 팀장·소장 보고 후 조치(자의 판단 금지)</li>
+            </ul>
+            <div style="font-weight:700;color:var(--accent);margin-bottom:4px;">리셉션 업무 7항목</div>
+            <div style="overflow-x:auto;margin-bottom:12px;">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                <tr><th style="padding:5px 8px;border:1px solid var(--border);background:var(--bg,var(--paper));text-align:left;">업무</th><th style="padding:5px 8px;border:1px solid var(--border);background:var(--bg,var(--paper));text-align:left;">담당</th><th style="padding:5px 8px;border:1px solid var(--border);background:var(--bg,var(--paper));text-align:left;">상태</th></tr>
+                <tr><td style="padding:5px 8px;border:1px solid var(--border);">1. 휴회신청 응답 및 반영</td><td style="padding:5px 8px;border:1px solid var(--border);">리셉션 전원</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--green,var(--accent));">시트 근거 · 완성</td></tr>
+                <tr><td style="padding:5px 8px;border:1px solid var(--border);">2. 카드미소지 체크 기록</td><td style="padding:5px 8px;border:1px solid var(--border);">리셉션 전원</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--green,var(--accent));">시트 근거 · 완성</td></tr>
+                <tr><td style="padding:5px 8px;border:1px solid var(--border);">3. 시제금 입출내역 작성</td><td style="padding:5px 8px;border:1px solid var(--border);">일마감 근무자</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--green,var(--accent));">시트 근거 · 완성</td></tr>
+                <tr><td style="padding:5px 8px;border:1px solid var(--border);">4. 락커 키 관리</td><td style="padding:5px 8px;border:1px solid var(--border);">리셉션 전원</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--green,var(--accent));">시트 근거 · 완성</td></tr>
+                <tr><td style="padding:5px 8px;border:1px solid var(--border);">5. 락커 관리(개인·골프·스쿼시)</td><td style="padding:5px 8px;border:1px solid var(--border);">운영부 담당</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--dim);">개인락커만 시트 근거</td></tr>
+                <tr><td style="padding:5px 8px;border:1px solid var(--border);">6. 분실물(습득물) 관리</td><td style="padding:5px 8px;border:1px solid var(--border);">리셉션 전원</td><td style="padding:5px 8px;border:1px solid var(--border);">습득물 시스템이 정본 — 종합접수처 현황에서 운영</td></tr>
+                <tr><td style="padding:5px 8px;border:1px solid var(--border);">7. 리셉션 매뉴얼(오픈·업무·마감)</td><td style="padding:5px 8px;border:1px solid var(--border);">리셉션 전원</td><td style="padding:5px 8px;border:1px solid var(--border);color:var(--dim);">AI 초안 · GM 검토 전</td></tr>
+              </table>
+            </div>
+            <div style="font-weight:700;color:var(--accent);margin-bottom:4px;">매출보고서 작성 (준용 작성 · A→B→C→D→E)</div>
+            <ul style="margin:0 0 4px 18px;">
+              <li><strong>A. 스포피아에서 매출 데이터 내려받기</strong> — 영업분석 → 매출 집계표(일별) → 날짜 조회 → 엑셀 저장</li>
+              <li><strong>B. 엑셀에서 데이터 가공하기</strong> — [가공] 시트에 붙여넣고 매크로(Ctrl+Alt+Shift+4, +5)로 정렬·정리, 결제수단 채움</li>
+              <li><strong>C. 시트에 입력하기</strong> — 회원권·강습 시트에 날짜별 입력, 등록분류(자동)·등록경로(수동) 확인, 수기 입력 4종(단말기·무인발권기·스포피아 금액·현금영수증)</li>
+              <li><strong>D. 최종 확인</strong> — 비고차액·당일 LOSS현황·일일방문객·수식오류 점검</li>
+              <li><strong>E. 특이사항 처리</strong> — 회원권 환불(이용금액+위약금) / 강습 환불(진행분+위약금 별도) / 강습변경 시 인원 수 정상화</li>
+            </ul>
+            <div style="font-size:11px;color:var(--dim);">스크린샷 포함 상세 절차는 이 요약과 같은 내용이며, 이미지는 용량상 생략했다 — 필요하면 담당(준용)에게 원본 확인.</div>
+          </div>
+        </details>
+        <details>
+          <summary style="cursor:pointer;font-weight:700;font-size:13.5px;">🧑‍💼 채용 현황</summary>
+          <div id="o1-doc-hiring" style="padding:10px 4px;color:var(--dim);font-size:13px;">펼치면 불러옵니다…</div>
+        </details>
+      </div>
+    </details>
+    <script>
+    (function(){
+      // 2/3/4층 전용 IIFE — 위 loadHub/siljangLoad IIFE와 스코프를 섞지 않는다(재선언 충돌 방지).
+      var RAW_BASE = "https://raw.githubusercontent.com/wellperion-cao/wellperion-automation/master/";
+      var CHECK_API = "https://script.google.com/macros/s/AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec";
+      var TODO_API = (typeof TODO_API_URL !== 'undefined' && TODO_API_URL)
+        ? TODO_API_URL
+        : "https://script.google.com/macros/s/AKfycbxDwFkrxK1YIaEoSNcuw2MiHiZQ-7o5N6311ytksSyeEd86ZFOhLknOWqQgNArQvZ-7/exec";
+      var OPS_STAFF = {'최준용M':1,'윤병현AM':1,'이경연 실장':1};
+      function jget(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return undefined;}); }
+      function gtext(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.text();}).catch(function(){return undefined;}); }
+      function withTimeout(promise, ms, fallbackValue){
+        var timer;
+        var timeout = new Promise(function(resolve){ timer = setTimeout(function(){ resolve(fallbackValue); }, ms); });
+        return Promise.race([promise, timeout]).then(function(v){ clearTimeout(timer); return v; });
+      }
+      function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+      function timeStr(){ var d=new Date(); return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+' 기준'; }
+      function ownerTitle(name){ return /실장/.test(String(name||'')) ? '운영부 실장' : '운영부 담당'; }
+
+      /* ── 2층 · 이번 주 ── */
+      function weekLine(icon, text){ return '<div style="display:flex;gap:8px;padding:5px 0;font-size:13px;line-height:1.55;color:var(--text);"><span>'+icon+'</span><span style="flex:1;">'+text+'</span></div>'; }
+      function loadWeek(){
+        var pv = Date.now();
+        var goodEl = document.getElementById('o1-week-good');
+        var tableEl = document.getElementById('o1-week-table');
+        var timeEl = document.getElementById('o1-week-time');
+        if(!goodEl || !tableEl) return;
+        withTimeout(jget(RAW_BASE+"status/reception_watch.json?_pv="+pv), 8000, undefined).then(function(reception){
+          if(reception===undefined){ goodEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">접수 현황을 못 읽었습니다 — 안 한 것이 아닙니다.</div>'; return; }
+          var byCat = (reception.processing_days && reception.processing_days.by_category) || {};
+          var good = Object.keys(byCat).filter(function(c){ return byCat[c].median_days!=null && byCat[c].median_days<=3; });
+          var lines = good.map(function(c){ return weekLine('👏', c+' — 처리 중앙값 '+byCat[c].median_days+'일'); }).join('');
+          var praise = byCat['직원·강사 칭찬합니다'];
+          if(praise) lines += weekLine('👏', '칭찬 접수 '+praise.count+'건');
+          goodEl.innerHTML = lines ? ('<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:2px;">👏 잘 되고 있는 것</div>' + lines) : '';
+        });
+        withTimeout(jget(TODO_API+"?action=todo_list&_pv="+pv), 8000, undefined).then(function(todo){
+          var trows = todo && todo.data;
+          if(!Array.isArray(trows)){ tableEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">업무 SSOT를 못 읽었습니다 — 안 한 것이 아닙니다.</div>'; return; }
+          var mine = trows.filter(function(t){ return t['상태']!=='완료' && OPS_STAFF[String(t['담당자']||'').trim()]; })
+            .sort(function(a,b){ return String(a['종료일']||'').localeCompare(String(b['종료일']||'')); });
+          var rows = mine.slice(0,8);
+          var th = function(t){ return '<th style="padding:6px 8px;border:1px solid var(--border);background:var(--card);text-align:left;">'+t+'</th>'; };
+          var td = function(t){ return '<td style="padding:6px 8px;border:1px solid var(--border);">'+t+'</td>'; };
+          var trs = rows.map(function(t){
+            var issue = t['보류사유'] ? String(t['보류사유']) : '원장에 없음';
+            return '<tr>'+td(String(t['업무명']||'').slice(0,30))+td(ownerTitle(t['담당자']))+td(String(t['상태']||''))+td(String(t['종료일']||'').slice(0,10))+'<td style="padding:6px 8px;border:1px solid var(--border);color:var(--dim);">'+issue+'</td></tr>';
+          }).join('');
+          var tail = mine.length>8 ? '<div style="font-size:11px;color:var(--dim);margin-top:6px;">외 '+(mine.length-8)+'건 — 업무·결재 SSOT에서 계속</div>' : '';
+          tableEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">📄 주간 보고 — 실무진은 GM께 직보하지 않는다, 실장이 취합해 올린다(약속 L24)</div>'
+            + '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;"><tr>'+th('업무명')+th('담당')+th('상태')+th('기한')+th('이슈')+'</tr>'+trs+'</table></div>'+tail;
+          if(timeEl) timeEl.textContent = timeStr();
+        });
+      }
+      loadWeek();
+
+      /* ── 3층 · 이번 달 ── */
+      function monthKey(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2); }
+      function loadMonth(){
+        var pv = Date.now();
+        var goalsEl = document.getElementById('o1-month-goals');
+        var evalEl = document.getElementById('o1-month-eval');
+        var trendEl = document.getElementById('o1-month-trend');
+        if(!goalsEl) return;
+        withTimeout(jget(RAW_BASE+"status/monthly_ops_plan.json?_pv="+pv), 15000, undefined).then(function(plan){
+          if(plan===undefined){ goalsEl.innerHTML = '<div style="font-size:12px;color:var(--dim);">월간 운영 계획을 못 읽었습니다 — 안 한 것이 아닙니다.</div>'; return; }
+          var mk = monthKey();
+          var month = plan && plan.months && plan.months[mk];
+          var objs = (month && month.objectives) || [];
+          var ops = objs.filter(function(o){ return String(o.dept||'').indexOf('운영부')>=0; });
+          if(!ops.length){ goalsEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">🎯 운영부 목표 진척 ('+mk+')</div><div style="font-size:12px;color:var(--dim);">이번 달 운영부 목표 없음.</div>'; return; }
+          var rows = ops.map(function(o){
+            return '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">'
+              + '<span style="flex:1;">'+String(o.title||'')+' <span style="color:var(--dim);">('+String(o.dept||'')+')</span></span>'
+              + '<span style="white-space:nowrap;color:var(--dim);">'+String(o.status||'')+' · '+(o.progress!=null?o.progress+'%':'—')+'</span></div>';
+          }).join('');
+          goalsEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">🎯 운영부 목표 진척 ('+mk+')</div>' + rows;
+        });
+        evalEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">📊 리더 평가 6축 — 2026-08-27 실측 · 3분기(정적값)</div>'
+          + '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">합계 54/100</div>'
+          + '<div style="font-size:12.5px;color:var(--text);line-height:1.7;">① 진척·효율 12/25 · ② 목표달성 15/25 · ③ 리더면모 11/20 · ④ 위임·육성 9/15 · ⑤ 기록·투명성 4/10 · ⑥ 소통·회신 3/5</div>'
+          + '<div style="font-size:12px;color:var(--accent);margin-top:6px;">🎯 종합접수처 미결을 닫으면 ①③이 오른다</div>'
+          + '<a href="reports/260826_웰페리온_리더평가기준_A3.html" target="_blank" style="font-size:11.5px;color:var(--accent);">▸ 평가 원본 A3 보기</a>';
+        withTimeout(gtext(RAW_BASE+"status/coo_daily.jsonl?_pv="+pv), 8000, undefined).then(function(daily){
+          if(daily===undefined || daily===null){ trendEl.innerHTML=''; return; }
+          var byDate = {};
+          String(daily).split('\n').forEach(function(line){
+            line = line.trim(); if(!line) return;
+            try{ var rec=JSON.parse(line); if(rec && rec.date) byDate[rec.date]=rec; }catch(e){}
+          });
+          var days = [];
+          for(var i=13;i>=0;i--){ var d=new Date(); d.setDate(d.getDate()-i); days.push(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)); }
+          function bars(field){
+            return days.map(function(dt){
+              var rec = byDate[dt];
+              if(!rec || rec[field]==null) return '<div title="'+dt+' 기록 없음" style="flex:1;height:26px;background:repeating-linear-gradient(45deg,var(--border),var(--border) 3px,transparent 3px,transparent 6px);border-radius:2px;"></div>';
+              var v = Number(rec[field]);
+              var pct = field==='점검_제출률' ? Math.round(v*100) : v;
+              var h = field==='점검_제출률' ? Math.max(4,Math.round(pct/100*26)) : Math.max(4,Math.min(26,pct*2));
+              return '<div title="'+dt+' — '+pct+(field==='점검_제출률'?'%':'건')+'" style="flex:1;display:flex;align-items:flex-end;height:26px;"><div style="width:100%;height:'+h+'px;background:var(--accent);border-radius:2px;"></div></div>';
+            }).join('');
+          }
+          var lastDate = days.filter(function(dt){return byDate[dt];}).slice(-1)[0];
+          trendEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">📈 추이 3종(최근 14일 · 빗금=기록 없음)</div>'
+            + '<div style="font-size:11.5px;color:var(--text);margin-bottom:2px;">접수 3일초과</div><div style="display:flex;gap:2px;margin-bottom:8px;">'+bars('접수_3일초과')+'</div>'
+            + '<div style="font-size:11.5px;color:var(--text);margin-bottom:2px;">업무 마감넘김</div><div style="display:flex;gap:2px;margin-bottom:8px;">'+bars('업무_마감넘김')+'</div>'
+            + '<div style="font-size:11.5px;color:var(--text);margin-bottom:2px;">점검 제출률</div><div style="display:flex;gap:2px;margin-bottom:4px;">'+bars('점검_제출률')+'</div>'
+            + '<div style="font-size:10.5px;color:var(--dim);">마지막 적재 '+(lastDate||'기록 없음')+'</div>';
+        });
+      }
+      loadMonth();
+
+      /* ── 4층 · 문서고 (펼칠 때만 로드 — 평소엔 조회 안 함) ── */
+      function docCard(title, body){
+        var lines = String(body||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+        var b = lines.length ? lines.map(function(l){return '<div style="padding:2px 0;">'+l+'</div>';}).join('') : '<div style="color:var(--dim);font-style:italic;">내용 없음</div>';
+        return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;"><div style="font-weight:700;margin-bottom:4px;">'+title+'</div><div style="font-size:12.5px;line-height:1.6;">'+b+'</div></div>';
+      }
+      var POLICY_SEED = {
+        ops:[
+          {title:'운영시간', body:'클럽 공식 운영시간 기준 리셉션 운영.\n자세한 운영시간은 웰페리온 ERP 공식값 참조.'},
+          {title:'근무조 편성', body:'오전조: 운영부 실장\n오후조: 충원 예정\n2인 이상 근무 시 교대 휴게(리셉션 비우지 않음).'},
+          {title:'담당 구역', body:'리셉션 카운터 / 프론트 로비 / 입구 안내 / 방문자 응대 / 종합접수'},
+          {title:'이슈 보고', body:'회원 민원·안전 이슈 발생 시 즉시 조치 후 실장·GM 보고.\n자의 판단 금지.'},
+          {title:'개인정보', body:'회원 연락처·예약 정보는 외부 유출 금지.\n열람은 업무 목적+책임자 승인 한정.'}
+        ],
+        meet:[
+          {title:'주간 운영 미팅(정의 예정)', body:'주기: 미정(예: 매주 월 오전)\n참석: 운영부 직원 + 실장\n안건: 지난주 종합접수 현황 / 이번주 방문 일정 / 이슈 공유'},
+          {title:'월간 운영 회의(정의 예정)', body:'주기: 미정(예: 매월 첫째주)\n참석: 실장 + GM\n안건: 종합접수 트렌드 / 매뉴얼 개정 / 개선 사항'},
+          {title:'긴급 회의', body:'주기: 민원·사고 등 이슈 발생 즉시\n참석: 해당 담당자+실장\n안건: 원인 분석 / 즉시 조치'}
+        ]
+      };
+      var GUIDE_SEED = [
+        {title:'직원&파트너 기본 에티켓', body:'"내가 지나간 자리는 항상 깨끗하게 정리정돈하자"\n1. 회원이 먼저 — 회원이 보이면 하던 일을 멈추고 먼저 인사\n2. 한 발 앞서 행동 — 요청받기 전에 불편사항 발견·조치\n3. 모르면 바로 연결 — "확인 후 안내드리겠습니다" → 담당자 즉시 연결\n4. 끝까지 책임 — 내가 접수한 건은 끝까지 추적\n5. 프리미엄 격조 — 말투·행동·복장 모두 스포츠클럽 수준'},
+        {title:'응대 태도', body:'회원 첫 인사 → 눈 맞춤 + 미소 필수 / 먼저 인사 / 이름 알면 호칭 사용\n불편사항 접수 → 끝까지 경청 → 즉시 해결 가능 여부 판단 → 처리 결과 반드시 고지\n에티켓 위반 → 정중하되 단호하게 안내 / 반복 위반 시 팀장 보고\n긴급·안전 → 즉시 팀장·소장 보고 → 지시 후 조치 / 자의 판단 금지'},
+        {title:'복장·용모', body:'유니폼 → 웰페리온 지급 유니폼 착용 / 청결 유지\n명찰 → 항상 패용 / 좌측 가슴\n신발 → 미끄럼 방지 안전화 / 실외화 구역 내 착용 금지'},
+        {title:'구역별 관리 기준', body:'리셉션 카운터 → PC·전화·POS 정상 / 안내물·비품 충분 / 카운터 청결 유지\n대기·로비 공간 → 좌석 청결·정돈 / 음료·안내물 보충 / 방문객 안내 즉시\n입구·안내 표지 → 운영시간 표지 정상 / 현수막·안내판 위치·상태\n방문자·문의 일지 → 방문·투어·전화 문의 당일 기록 완료\n종합접수 전달 → 접수된 건은 당일 해당 부서 전달 / 처리 결과 회원 고지'}
+      ];
+      function loadDocPolicy(){
+        var el = document.getElementById('o1-doc-policy'); if(!el) return;
+        withTimeout(jget(CHECK_API+"?action=board&key=OPS_POLICY_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
+          var board = (res && res.ok && res.board) ? res.board : null;
+          var cols = board ? {ops:board.ops||[], meet:board.meet||[]} : POLICY_SEED;
+          el.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--dim);margin-bottom:6px;">운영 기준</div>'
+            + (cols.ops||[]).map(function(c){ return docCard(c.title, c.body); }).join('')
+            + '<div style="font-size:11px;font-weight:700;color:var(--dim);margin:10px 0 6px;">정기 회의</div>'
+            + (cols.meet||[]).map(function(c){ return docCard(c.title, c.body); }).join('')
+            + (board ? '' : '<div style="font-size:10.5px;color:var(--dim);">※ 백엔드에 저장된 편집분이 없어 기본값을 보여준다.</div>');
+        });
+      }
+      function loadDocGuide(){
+        var el = document.getElementById('o1-doc-guide'); if(!el) return;
+        withTimeout(jget(CHECK_API+"?action=board&key=OPS_GUIDE_BOARD&_pv="+Date.now()), 8000, undefined).then(function(res){
+          var board = (res && res.ok && res.board && Array.isArray(res.board.guide)) ? res.board.guide : GUIDE_SEED;
+          el.innerHTML = board.map(function(c){ return docCard(c.title, c.body); }).join('')
+            + (res && res.ok && res.board ? '' : '<div style="font-size:10.5px;color:var(--dim);">※ 백엔드에 저장된 편집분이 없어 기본값을 보여준다.</div>');
+        });
+      }
+      function loadDocHiring(){
+        var el = document.getElementById('o1-doc-hiring'); if(!el) return;
+        var NOTION_FN = "https://script.google.com/macros/s/AKfycbyyXrdM7nSXKPG3Dy8wI6_3AI1spZs24d-uHTzQZlsqzoRXKkFbSFnX-hr42D3ScQSSHQ/exec";
+        fetch(NOTION_FN, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:'public-job-status'})})
+          .then(function(r){ return r.json(); }).then(function(d){
+            if(!d || !d.ok || !Array.isArray(d.jobs)){ el.innerHTML = '<div style="color:var(--dim);">채용 현황을 불러오지 못했습니다.</div>'; return; }
+            var open = d.jobs.filter(function(j){ return j.closed!==true && j.bucket==='리셉션'; });
+            el.innerHTML = open.length ? open.map(function(j){
+              return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
+                + '<div style="font-weight:700;">'+String(j.position||'')+'</div>'
+                + '<a href="chro/recruiting/operations.html" target="_blank" style="font-size:12px;color:var(--accent);">▸ 원본 공고 보기</a></div>';
+            }).join('') : '<div style="color:var(--dim);">현재 운영부에서 모집 중인 자리가 없습니다.</div>';
+          }).catch(function(){ el.innerHTML = '<div style="color:var(--dim);">채용 현황을 불러오지 못했습니다.</div>'; });
+      }
+      var archiveEl = document.getElementById('o1-docs-archive');
+      if(archiveEl){
+        archiveEl.addEventListener('toggle', function(){
+          if(this.open && !this._o1Loaded){ this._o1Loaded = true; loadDocPolicy(); loadDocGuide(); loadDocHiring(); }
+        });
+      }
+    })();
+    </script>
 
     <!-- 「부서별 체계」 5링크 섹션 제거(GM 지시 2026-07-25) — 위 「운영 모듈 현황」 카드가 그 역할을
          대신한다. 카드 자체가 각 부서 페이지로 가는 문이며, 숫자가 없는 운영부·리셉션은 같은 섹션
