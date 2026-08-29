@@ -539,20 +539,20 @@
           <div style="display:grid;gap:8px;align-content:start;">
             <div style="font-size:11px;font-weight:800;color:var(--accent);">📋 업무</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayTotal">—</span> · 전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">진행</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayActive">—</span> · 전체 <span id="kpiWorkAllActive" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayDone">—</span> · 전체 <span id="kpiWorkAllDone" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">보류</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayHold">—</span> · 전체 <span id="kpiWorkAllHold" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiWorkStripTotal">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayTotal">—</span> · 전체 <span id="kpiWorkAllTotal" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--accent);line-height:1.1;" id="kpiWorkStripActive">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">진행</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayActive">—</span> · 전체 <span id="kpiWorkAllActive" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiWorkStripDone">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayDone">—</span> · 전체 <span id="kpiWorkAllDone" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiWorkStripHold">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">보류</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiWorkTodayHold">—</span> · 전체 <span id="kpiWorkAllHold" style="font-weight:700;">—</span></div></div>
             </div>
           </div>
           <!-- ▶ 결재 블록: 4지표(총·대기·완료(완료율%)·반려) + 각 오늘 N -->
           <div style="display:grid;gap:8px;align-content:start;">
             <div style="font-size:11px;font-weight:800;color:var(--warm);">✍️ 결재</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayTotal">—</span> · 전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">대기</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayPend">—</span> · 전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayDone">—</span> · 전체 <span id="kpiApprAllDone" style="font-weight:700;">—</span></div></div>
-              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;"><div style="font-size:21px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">반려</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayReject">—</span> · 전체 <span id="kpiApprAllReject" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--text);line-height:1.1;" id="kpiApprStripTotal">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">총</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayTotal">—</span> · 전체 <span id="kpiApprAllTotal" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--warm);line-height:1.1;" id="kpiApprStripPend">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">대기</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayPend">—</span> · 전체 <span id="kpiApprAllPend" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--grow);line-height:1.1;" id="kpiApprStripDone">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">완료(율)</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayDone">—</span> · 전체 <span id="kpiApprAllDone" style="font-weight:700;">—</span></div></div>
+              <div style="background:var(--accent-bg);border-radius:10px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;"><div style="font-size:21px;font-weight:800;color:var(--dim);line-height:1.1;" id="kpiApprStripReject">—</div><div style="font-size:11px;color:var(--dim);margin-top:2px;font-weight:600;">반려</div><div style="font-size:9px;color:var(--dim);margin-top:2px;white-space:nowrap;">오늘 <span id="kpiApprTodayReject">—</span> · 전체 <span id="kpiApprAllReject" style="font-weight:700;">—</span></div></div>
             </div>
           </div>
         </div>
@@ -596,23 +596,23 @@
         <div style="display:grid;gap:8px;align-content:start;">
           <div style="font-size:11px;font-weight:800;color:var(--grow);">👥 멤버십</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:120px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:92px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">문의관리 →</div>
             <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">이번달</span><span style="font-size:24px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiInqMonth">—</span><span style="font-size:9.5px;color:var(--dim);">/ 누적</span><span style="font-size:15px;font-weight:700;color:var(--grow);" id="kpiMiInqTotal">—</span></div>
           </a>
-          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:120px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+          <a href="cpo/member/membership.html?manage=membership" target="_blank" style="background:var(--grow-bg);border-radius:10px;padding:8px 11px;min-height:92px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">등록 →</div>
             <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">이번달</span><span style="font-size:24px;font-weight:800;color:var(--grow);line-height:1;" id="kpiMiRegMonth">—</span><span style="font-size:9.5px;color:var(--dim);">/ 누적</span><span style="font-size:15px;font-weight:700;color:var(--grow);" id="kpiMiRegTotal">—</span></div>
           </a>
             </div>
           <div style="font-size:11px;font-weight:800;color:var(--accent);">🏊 강습</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:8px 11px;min-height:120px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+          <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:8px 11px;min-height:92px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">문의관리 →</div>
             <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">이번달</span><span style="font-size:24px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonInqMonth">—</span><span style="font-size:9.5px;color:var(--dim);">/ 누적</span><span style="font-size:15px;font-weight:700;color:var(--accent);" id="kpiLessonInqTotal">—</span></div>
             <div style="font-size:9.5px;color:var(--dim);margin-top:3px;white-space:nowrap;">성인 <b style="color:var(--accent);" id="kpiLessonInqAdultMonth">—</b> · 유소년 <b style="color:var(--accent);" id="kpiLessonInqYouthMonth">—</b></div>
           </a>
-          <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:8px 11px;min-height:120px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+          <a href="cpo/member/membership.html?manage=lesson" target="_blank" style="background:var(--accent-bg);border-radius:10px;padding:8px 11px;min-height:92px;display:block;text-decoration:none;transition:transform .12s;" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;" id="kpiLessonRegMonthLabel">등록 →</div>
             <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;"><span style="font-size:9.5px;color:var(--dim);">이번달</span><span style="font-size:24px;font-weight:800;color:var(--accent);line-height:1;" id="kpiLessonRegMonth">—</span><span style="font-size:9.5px;color:var(--dim);">/ 누적</span><span style="font-size:15px;font-weight:700;color:var(--accent);" id="kpiLessonRegTotal">—</span></div>
             <div style="font-size:9.5px;color:var(--dim);margin-top:3px;white-space:nowrap;">성인 <b style="color:var(--accent);" id="kpiLessonRegAdultMonth">—</b> · 유소년 <b style="color:var(--accent);" id="kpiLessonRegYouthMonth">—</b></div>
@@ -648,7 +648,7 @@
         <div style="display:grid;gap:8px;align-content:start;">
         <div style="font-size:11px;font-weight:800;color:var(--accent);">🙋 이번달 접수 흐름</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;">
+          <div style="background:var(--orange-bg,rgba(230,148,78,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">접수 · 이번달</div>
             <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocNewMonth" style="font-size:25px;font-weight:800;color:var(--orange,#e6944e);line-height:1;">—</span><span style="font-size:11px;color:var(--dim);">(미처리 <b id="kpiVocNew" style="font-weight:700;color:var(--orange,#e6944e);">—</b>)</span></div>
             <!-- kpiVocNew 는 누적이 아니라 '지금 상태가 접수인 것'(=아직 아무도 안 잡은 건)이다.
@@ -656,11 +656,11 @@
             
             <!-- 이 칸 세 숫자는 전부 이번달 기준이다(2026-08-26) — 접수 = 미처리 + 처리중 + 완료 로 떨어진다. -->
           </div>
-          <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;">
+          <div style="background:var(--blue-bg,rgba(91,159,213,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">처리중 · 이번달</div>
             <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocWip" style="font-size:25px;font-weight:800;color:var(--blue,#5b9fd5);line-height:1;">—</span><span style="font-size:11px;color:var(--dim);">(누적 <b id="kpiVocWipTotal" style="font-weight:700;color:var(--blue,#5b9fd5);">—</b>)</span></div>
           </div>
-          <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:120px;">
+          <div style="background:var(--grow-bg,rgba(106,191,123,0.12));border-radius:10px;padding:8px 11px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:92px;">
             <div style="font-size:11px;color:var(--dim);margin-bottom:5px;font-weight:600;">완료 · 이번달</div>
             <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;"><span id="kpiVocDoneMonth" style="font-size:25px;font-weight:800;color:var(--grow,#6abf7b);line-height:1;" title="처리(완료) 일자 데이터 없음 — 이번달 접수 건 중 현재 완료 상태 근사치">—</span><span style="font-size:11px;color:var(--dim);">(누적 <b id="kpiVocDone" style="font-weight:700;color:var(--grow,#6abf7b);">—</b>)</span></div>
           </div>
@@ -6449,21 +6449,24 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
   <article class="doc" id="O1">
     <div class="doc-header"><h2>운영 통합 체계</h2><div class="meta">COO 운영 SSOT · 계획 → 현황 → 접수 → 개선</div></div>
 
-    <!-- 운영 관리 기준 점검 (GM 지시 2026-08-29, 2차 개정) — O1 최상단, 실장이 페이지를 열면 첫 화면이
+    <!-- 운영 관리 기준 점검 (GM 지시 2026-08-29, 3차 개정) — O1 최상단, 실장이 페이지를 열면 첫 화면이
          '오늘 무엇을 누구와 처리하나'가 되게 한다. 숫자는 아래 5개 원천(json)에서 그대로 옮긴다
          (재계산 금지). 0줄이면 덩이를 통째로 숨긴다(빈 상자 금지 — 약속).
          ▸1차는 경고 줄만 늘어놓아 '체계 없이 튀어나오는 알림'처럼 보인다는 지적(2026-08-29 재지적).
-           고정된 관리축 4개(보고·결재·접수·점검) 아래로 묶고, 각 축 제목에 기준값을 같이 적어
-           '정해진 기준을 넘긴 것만 올라온다'는 구조가 보이게 했다. 데이터·기준값·담당 매핑
-           로직은 그대로, 묶는 방식과 표기만 바꿨다. -->
-    <section id="o1-siljang-today" style="display:none;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--red, #c0392b);border-radius:12px;padding:15px 20px;margin:14px 0 16px;">
+           고정된 관리축 4개(보고·결재·접수·점검) 아래로 묶었다.
+         ▸2차도 축이 빽빽한 글 목록으로 읽혔다(2026-08-29 재지적). 「🏢 운영 모듈 현황」 카드 언어
+           (캡션+큰 숫자+작은 경고)로 바꿔 카드 최대 3장 + 부가 항목은 카드 아래 작은 줄로,
+           소통 원칙은 섹션 맨 아래 한 줄로 분리했다. 데이터·기준값·담당 매핑 로직은 그대로. -->
+    <section id="o1-siljang-today" style="display:none;margin:18px 0;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
-        <div style="font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--red, #c0392b);">⚙ 운영 관리 기준 점검</div>
+        <h3 style="font-size:1.05rem;margin:0;">⚡ 오늘 처리할 것</h3>
         <div id="o1-siljang-count" style="font-size:11px;color:var(--dim);white-space:nowrap;"></div>
       </div>
-      <div style="font-size:11px;color:var(--dim);margin:3px 0 6px;">정해진 관리 기준을 넘긴 것만 올라옵니다. 넘긴 것이 없으면 이 영역은 나타나지 않습니다.</div>
-      <div id="o1-siljang-lines"></div>
+      <div style="font-size:11px;color:var(--dim);margin:3px 0 10px;">정해진 기준을 넘긴 것만 올라옵니다.</div>
+      <div id="o1-siljang-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>
+      <div id="o1-siljang-extra" style="margin-top:10px;"></div>
       <div id="o1-siljang-missing" style="font-size:11px;color:var(--dim);margin-top:6px;"></div>
+      <div id="o1-siljang-note" style="font-size:10.5px;color:var(--dim);margin-top:8px;"></div>
     </section>
 
     <!-- 모듈 소개 (2026-07-25 GM: 'O1도 M1처럼 이 모듈에 대한 설명이 하나 있으면 좋겠다')
@@ -6740,8 +6743,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
          축 순서 고정: 업무 마감 넘김 → 접수 → 매출·운영 보고 → 추이 적재 끊김. 0건 축은 밀어넣지 않는다. */
       function siljangJget(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return null;}); }
       function siljangGetText(u){ return fetch(u,{cache:'no-store'}).then(function(r){return r.text();}).catch(function(){return null;}); }
-      function siljangLine(icon, text){ return '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:13px;line-height:1.55;color:var(--text);"><span>'+icon+'</span><span style="flex:1;">'+text+'</span></div>'; }
-      function siljangAxisHead(title, countLabel){ return '<div style="display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 2px;font-size:11px;font-weight:700;color:var(--text);"><span>'+title+'</span><span style="font-size:10px;color:var(--dim);font-weight:600;">'+countLabel+'</span></div>'; }
+      // 카드 1장 = 모듈 카드와 같은 언어(캡션+큰 숫자+작은 경고). 여기 렌더되는 카드는 전부
+      // 기준 초과일 때만 만들어지므로 경고색 고정 — moduleCard 처럼 level 분기를 두지 않는다.
+      function siljangCard(caption, value, sub){
+        return '<div style="border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--paper);">'
+          + '<div style="font-size:.82rem;color:var(--dim);margin-bottom:8px;">'+caption+'</div>'
+          + '<div style="font-size:1.4rem;font-weight:800;color:var(--text);">'+value+'</div>'
+          + '<div style="font-size:.74rem;color:var(--red, #c0392b);margin-top:6px;font-weight:700;">'+sub+'</div></div>';
+      }
+      function siljangSmallLine(text){ return '<div style="font-size:11.5px;color:var(--dim);padding:3px 0;">'+text+'</div>'; }
       function siljangTimeStr(){ var d=new Date(); return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
       function siljangDaysBetween(fromYmd, toYmd){ return Math.floor((Date.parse(toYmd+'T00:00:00') - Date.parse(fromYmd+'T00:00:00'))/86400000); }
       function siljangLoad(){
@@ -6756,9 +6766,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
         Promise.all([P.kakao,P.todo,P.reception,P.daily]).then(function(r){
           var kakao=r[0], todo=r[1], reception=r[2], daily=r[3];
           var today = todayStr();
-          var axes = []; // 고정 순서: 업무 마감 넘김 → 접수 → 보고 → 추이 적재. 0건 축은 밀어넣지 않는다.
+          // 고정 순서: 업무 마감 넘김 → 접수 3일 초과 → 회원 결과 안내 공란(카드) → 타부서 대기·보고·추이(작은 줄).
+          var cards = [];
+          var extra = [];
+          var totalCount = 0;
 
-          // 축1 📝 업무 마감 넘김 · 기준 마감일 준수 (운영부 실무진만 — OPS_STAFF)
+          // 업무 마감 넘김 · 기준 마감일 준수 (운영부 실무진만 — OPS_STAFF)
           if(todo===undefined){ missing.push('업무 마감 넘김'); }
           else if(todo && Array.isArray(todo.data)){
             var opsOverdue = todo.data.filter(function(t){
@@ -6771,20 +6784,15 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             if(opsOverdue.length){
               opsOverdue.sort(function(a,b){ return b.days-a.days; });
               var top = opsOverdue[0];
-              var topTitle = top.title.length>20 ? top.title.slice(0,20)+'…' : top.title;
               var ownerTitle = /실장/.test(top.owner) ? '운영부 실장' : '운영부 담당';
-              var tail = opsOverdue.length>1 ? (' 외 '+(opsOverdue.length-1)+'건') : '';
-              axes.push({count:opsOverdue.length,
-                head: siljangAxisHead('📝 업무 마감 넘김 · 기준 마감일 준수', opsOverdue.length+'건 초과'),
-                body: siljangLine('📝', '최장 '+top.days+'일 초과 · '+topTitle+tail+' → '+ownerTitle)});
+              totalCount += opsOverdue.length;
+              cards.push(siljangCard('업무 마감 넘김', opsOverdue.length+'건', '최장 '+top.days+'일 · → '+ownerTitle));
             }
           }
 
-          // 축2 🙋 접수 처리 · 기준 3일 이내 (운영부만 줄로, 나머지 부서는 합계 1줄로 접는다)
-          // + 💬 회원 결과 안내 공란은 이 축의 마지막 줄로 붙인다.
+          // 접수 3일 초과(운영부·카드) + 회원 결과 안내 공란(카드) + 타부서 처리 대기(작은 줄)
           if(reception===undefined){ missing.push('접수 현황'); }
           else if(reception){
-            var receptionBody = '', receptionCount = 0;
             if(reception.by_dept){
               var opsRow = reception.by_dept['운영부'];
               var otherOpen = 0;
@@ -6794,25 +6802,21 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
                 if(row.open>0 && row.max_age_days>=3) otherOpen += Number(row.open||0);
               });
               if(opsRow && opsRow.open>0 && opsRow.max_age_days>=3){
-                receptionCount += opsRow.open;
-                receptionBody += siljangLine('🙋', '운영부 '+opsRow.open+'건 — 최장 '+opsRow.max_age_days+'일('+opsRow.max_age_reg_id+') → 운영부 실장');
+                totalCount += opsRow.open;
+                cards.push(siljangCard('접수 3일 초과 (운영부)', opsRow.open+'건', '최장 '+opsRow.max_age_days+'일 · → 운영부 실장'));
               }
               if(otherOpen>0){
-                receptionBody += siljangLine('🔁', '타부서 처리 대기 '+otherOpen+'건 — 회신 오면 닫힌다 · 소통은 ★중간관리자 방으로, ★운영부 방은 공유 전용');
+                totalCount += otherOpen;
+                extra.push(siljangSmallLine('🔁 타부서 처리 대기 '+otherOpen+'건 — 회신 오면 닫힌다'));
               }
             }
             if(reception.member_reply_open>0){
-              receptionCount += reception.member_reply_open;
-              receptionBody += siljangLine('💬', '회원 결과 안내 공란 '+reception.member_reply_open+'건 — 처리 끝났는데 회원에게 답 안 감');
-            }
-            if(receptionCount>0){
-              axes.push({count:receptionCount,
-                head: siljangAxisHead('🙋 접수 처리 · 기준 3일 이내', receptionCount+'건'),
-                body: receptionBody});
+              totalCount += reception.member_reply_open;
+              cards.push(siljangCard('회원 결과 안내 공란', reception.member_reply_open+'건', '처리 끝났는데 답이 안 감'));
             }
           }
 
-          // 축3 📤 매출·운영 보고 · 기준 당일 전 방 발송
+          // 매출·운영 보고 · 기준 당일 전 방 발송(작은 줄)
           if(kakao===undefined){ missing.push('매출보고 발송'); }
           else if(kakao && kakao.rooms){
             var stale = String(kakao.at||'').slice(0,10) !== today;
@@ -6820,13 +6824,12 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
               return stale || kakao.rooms[rn].ok===false;
             });
             if(failed.length){
-              axes.push({count:failed.length,
-                head: siljangAxisHead('📤 매출·운영 보고 · 기준 당일 전 방 발송', failed.length+'건 초과'),
-                body: siljangLine('📤', '발송 실패 — '+failed.join('·'))});
+              totalCount += failed.length;
+              extra.push(siljangSmallLine('📤 매출·운영 보고 발송 실패 — '+failed.join('·')));
             }
           }
 
-          // 축4 ⚠ 추이 적재 끊김 · 기준 매일 적재 (coo_daily.jsonl 마지막 줄이 2일 이상 전이면)
+          // 추이 적재 끊김 · 기준 매일 적재(작은 줄) — coo_daily.jsonl 마지막 줄이 2일 이상 전이면
           if(daily===undefined || daily===null){ missing.push('추이 적재 기록'); }
           else{
             var dlines = String(daily).split('\n').map(function(s){return s.trim();}).filter(Boolean);
@@ -6836,33 +6839,28 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
             if(rec && rec.date){
               var gap = siljangDaysBetween(rec.date, today);
               if(gap>=2){
-                axes.push({count:1,
-                  head: siljangAxisHead('⚠ 추이 적재 끊김', gap+'일째'),
-                  body: siljangLine('⚠', '마지막 적재 '+rec.date+' — 3층 추이가 오늘 몫만큼 비어 있다')});
+                totalCount += 1;
+                extra.push(siljangSmallLine('⚠ 추이 적재 끊김 '+gap+'일째 — 마지막 적재 '+rec.date));
               }
             }else{
               missing.push('추이 적재 기록');
             }
           }
 
-          var totalCount = axes.reduce(function(s,a){ return s+a.count; }, 0);
           var box = document.getElementById('o1-siljang-today');
-          var linesEl = document.getElementById('o1-siljang-lines');
+          var cardsEl = document.getElementById('o1-siljang-cards');
+          var extraEl = document.getElementById('o1-siljang-extra');
           var countEl = document.getElementById('o1-siljang-count');
           var missEl = document.getElementById('o1-siljang-missing');
-          if(!box || !linesEl) return;
-          if(!axes.length && !missing.length){ box.style.display='none'; return; }
-          // 1층 최대 5줄 — 축이 5개를 넘으면 6번째부터 접는다(오늘 실데이터로는 축 4개 이내).
-          var visible = axes.slice(0,5), overflow = axes.slice(5);
-          var html = visible.map(function(a){ return a.head + a.body; }).join('');
-          if(overflow.length){
-            html += '<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:11px;color:var(--dim);">'+overflow.length+'개 더 보기</summary>'
-              + overflow.map(function(a){ return a.head + a.body; }).join('') + '</details>';
-          }
-          linesEl.innerHTML = html;
-          countEl.textContent = axes.length ? ('기준 초과 '+totalCount+'건 · '+siljangTimeStr()+' 기준') : '';
+          var noteEl = document.getElementById('o1-siljang-note');
+          if(!box || !cardsEl) return;
+          if(!cards.length && !extra.length && !missing.length){ box.style.display='none'; return; }
+          cardsEl.innerHTML = cards.join('');
+          extraEl.innerHTML = extra.join('');
+          countEl.textContent = (cards.length||extra.length) ? ('기준 초과 '+totalCount+'건 · '+siljangTimeStr()+' 기준') : '';
           missEl.textContent = missing.length ? missing.map(function(m){return m+' 집계를 못 읽었습니다 — 안 한 것이 아닙니다';}).join(' · ') : '';
-          box.style.display = (axes.length || missing.length) ? '' : 'none';
+          noteEl.textContent = extra.length ? '소통은 ★중간관리자 방으로, ★운영부 방은 공유 전용' : '';
+          box.style.display = '';
         });
       }
       siljangLoad();
@@ -6878,20 +6876,30 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
          4층(문서고). 실장이 화면을 열면 오늘→주→월→문서고 순서로 훑는다.
          RAW_BASE·CHECK_API·TODO_API·withTimeout 패턴은 위 IIFE와 동일 — 이 블록은
          별도 script 태그라 상수만 최소 재선언(충돌 없는 별도 스코프, 로직 복제 아님). ══════════════ -->
-    <section id="o1-week-section" style="margin:22px 0;">
-      <h3 style="font-size:1.05rem;margin:0 0 4px;">📅 이번 주</h3>
-      <div id="o1-week-good" style="margin-bottom:10px;"></div>
-      <div id="o1-week-table"></div>
-      <div id="o1-week-time" style="font-size:10.5px;color:var(--dim);margin-top:6px;"></div>
-    </section>
+    <details id="o1-week-section" style="margin:22px 0;">
+      <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:1.05rem;font-weight:700;">
+        <span>📅 이번 주</span>
+        <span id="o1-week-summary-count" style="font-size:11px;font-weight:600;color:var(--dim);"></span>
+      </summary>
+      <div style="padding-top:6px;">
+        <div id="o1-week-good" style="margin-bottom:10px;"></div>
+        <div id="o1-week-table"></div>
+        <div id="o1-week-time" style="font-size:10.5px;color:var(--dim);margin-top:6px;"></div>
+      </div>
+    </details>
 
-    <section id="o1-month-section" style="margin:22px 0;">
-      <h3 style="font-size:1.05rem;margin:0 0 10px;">🗓️ 이번 달</h3>
-      <div id="o1-month-goals" style="margin-bottom:14px;"></div>
-      <div id="o1-month-eval" style="margin-bottom:14px;"></div>
-      <div id="o1-month-trend" style="margin-bottom:10px;"></div>
-      <div style="font-size:12px;color:var(--dim);background:var(--card);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;">🚫 운영부·주차부 점검 집계 미배선 — 0이 아니라 아직 못 잽니다.</div>
-    </section>
+    <details id="o1-month-section" style="margin:22px 0;">
+      <summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:1.05rem;font-weight:700;">
+        <span>🗓️ 이번 달</span>
+        <span id="o1-month-summary-count" style="font-size:11px;font-weight:600;color:var(--dim);"></span>
+      </summary>
+      <div style="padding-top:10px;">
+        <div id="o1-month-goals" style="margin-bottom:14px;"></div>
+        <div id="o1-month-eval" style="margin-bottom:14px;"></div>
+        <div id="o1-month-trend" style="margin-bottom:10px;"></div>
+        <div style="font-size:12px;color:var(--dim);background:var(--card);border:1px dashed var(--border);border-radius:10px;padding:10px 14px;">🚫 운영부·주차부 점검 집계 미배선 — 0이 아니라 아직 못 잽니다.</div>
+      </div>
+    </details>
 
     <details id="o1-docs-archive" style="margin:22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;">
       <summary style="cursor:pointer;padding:14px 18px;font-size:1.05rem;font-weight:700;">📂 운영부 문서고 (규정·가이드·매뉴얼·채용)</summary>
