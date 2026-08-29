@@ -21,7 +21,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .day-type.weekday{background:var(--blue-bg);color:var(--blue)}
 .day-type.weekend{background:var(--accent-bg);color:var(--accent)}
 .day-type.closed{background:var(--red-bg);color:var(--red)}
-.mode-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;background:var(--green-bg);color:var(--green)}
 .tabs{display:flex;gap:4px;background:var(--bg);padding:8px 20px;z-index:9;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{padding:8px 18px;font-size:14px;font-weight:600;color:var(--dim);background:none;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
@@ -47,24 +46,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .guide-card.issue-guide .guide-title{color:var(--red)}
 .guide-card.tip-guide .guide-title{color:var(--purple)}
 .guide-card .guide-desc{font-size:12px;color:var(--dim);line-height:1.4}
-.shift-divider{background:var(--paper);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;margin:20px 0 12px;position:relative}
-.shift-divider:first-of-type{margin-top:0}
-.shift-divider.night-shift{border-color:var(--orange)}
-.shift-label{font-size:15px;font-weight:700;color:var(--accent)}
-.shift-divider.night-shift .shift-label{color:var(--orange)}
-.shift-progress{margin-top:8px}
-.shift-progress .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
-.shift-progress .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
-.shift-progress .progress-fill{height:100%;border-radius:4px;transition:width 0.3s}
-.shift-submitted{font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
 .progress{background:var(--paper);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border)}
 .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
 .progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width 0.3s}
 .progress-text{font-size:13px;color:var(--dim);display:flex;justify-content:space-between}
-.time-slot{margin-bottom:16px}
-.slot-header{font-size:13px;font-weight:700;color:var(--accent);padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px}
-.slot-time{background:var(--accent-bg);padding:2px 10px;border-radius:10px;font-size:12px}
-.slot-time.night{background:var(--orange-bg);color:var(--orange)}
 .category{background:var(--paper);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
 .vendor-group{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden;background:var(--paper)}
 .vendor-group-sum{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;font-weight:700;list-style:none;user-select:none}
@@ -104,10 +89,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .submit-btn.night-btn{background:var(--orange);color:#fff}
 .submit-btn.night-btn:disabled{opacity:0.4;cursor:not-allowed}
 .submit-btn.submitted{background:var(--green-bg);color:var(--green);border:1px solid rgba(106,191,123,0.3)}
-.group-submit-bar{display:flex;justify-content:flex-end;align-items:center;padding:8px 14px 4px;border-top:1px dashed var(--border);margin-top:6px}
-.group-submit-btn{padding:7px 16px;font-size:12.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;cursor:pointer;font-family:inherit}
-.group-submit-btn:hover{background:var(--accent);color:#fff}
-.group-submitted{font-size:12px;font-weight:700;color:var(--green)}
 .saving{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#15803d;color:#fff;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;display:none;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
 .admin-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .admin-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
@@ -115,7 +96,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .status-dot.green{background:var(--green)}.status-dot.yellow{background:var(--yellow)}.status-dot.red{background:var(--red)}
 .tip-card{background:var(--purple-bg);border:1px solid rgba(167,139,218,0.3);border-radius:12px;padding:16px 18px;margin-bottom:12px}
 .tip-card h3{color:var(--purple);font-size:15px;font-weight:700;margin-bottom:10px}
-.closed-msg{text-align:center;padding:60px 20px;color:var(--dim);font-size:16px}
 .hidden{display:none}
 .loading{text-align:center;padding:40px;color:var(--dim)}
 /* Manual tab styles */
@@ -135,8 +115,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 .manual-body .schedule-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
 .manual-body .schedule-table td,.manual-body .schedule-table th{padding:6px 10px;border:1px solid var(--border);text-align:left}
 .manual-body .schedule-table th{background:var(--accent-bg);color:var(--accent);font-weight:700}
-.day-focus-section{background:var(--paper);border:1px solid var(--blue);border-radius:12px;padding:14px 18px;margin:12px 0}
-.day-focus-section .day-focus-title{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:8px}
 /* ── 요일별 트렐로 칸반 보드 (매뉴얼 탭 주 콘텐츠 · 요일 다중선택) ── */
 .board-intro{font-size:12px;color:var(--dim);margin:2px 0 12px;line-height:1.5}
 /* 보드 풀폭 탈출(엣지투엣지): .content(720px·중앙) 제약을 벗어나 화면 좌측 끝~우측 끝까지 꽉 채움.
@@ -534,7 +512,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .item{border-bottom:1px solid #eee;padding:6px 12px;break-inside:avoid}
   .extra-input{display:none!important}
   .extra-input.show{display:block!important;border:1px solid #ccc}
-  .shift-divider{border:1px solid #ccc;margin:8px 0}
   .guide-cards,.submitter-bar{display:none!important}
   /* 대시보드 인쇄 */
   .admin-card{border:1px solid #ccc!important;break-inside:avoid;margin-bottom:8px}
@@ -576,7 +553,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
 <div class="sticky-top">
 <div class="header">
   <div class="header-top">
-    <h1>시설부 체계 <span style="font-size:11px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0.02em;">v1.0 · 2026-06-05</span> <span id="dayType"></span></h1>
+    <h1>시설부 체계 <span id="dayType"></span></h1>
     <div class="sheet-links">
       <a class="sheet-link" onclick="switchTab('monthly')" style="cursor:pointer;background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,218,0.3);">
         <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -1449,15 +1426,7 @@ function printA3Manual(){
   styleTag.textContent='';
 }
 
-/* ═══════════════════════════════════════════
-   A3 가이드라인 — '핵심 1장 압축본' 데이터 (시우 작성, GM 편집 가능)
-   ─ A3 인쇄(printA3Guideline)는 화면의 규정·가이드 상세 카드 전체를 덤프하지 않고
-     아래 A3_GUIDELINE만 읽어 좌(규정 핵심)·우(가이드 핵심) 2단으로 압축 인쇄한다.
-   ─ 내용 = 화면 규정 카드(POLICY_SEED)·가이드 탭에 이미 있는 실제 내용에서 핵심만 발췌·간결화.
-     없는 규칙 신설 금지. 항목별 1~3줄. A3 1장에 들어갈 분량만 선별.
-   ─ 3부서 전파 표준: title / policy(좌·규정핵심) / guide(우·가이드핵심) 구조 고정.
-     각 항목 { h:'제목', lines:['줄1','줄2',...] }. 항목 추가·삭제·수정은 이 상수만 손대면 됨.
-   ═══════════════════════════════════════════ */
+// A3 가이드라인 압축본 {title, policy[], guide[]} — printA3Guideline 전용
 const A3_GUIDELINE = {
   title: '시설부 운영 가이드라인',
   policy: [
@@ -3791,11 +3760,6 @@ function vendorSubmitAddForm(){
     else if(name){ sel.value='__custom__'; if(txt){txt.value=name; txt.style.display='';} }
     else { sel.value='박호균'; if(txt){txt.value='';txt.style.display='none';} }
   }
-  // 잔존 호출 대비 null-safe 유지: 현재 회차 캡처 후 화면 갱신만(select 참조 제거).
-  window.fcRoundChange=function(){
-    captureRound();
-    paintRound(); fcProgress(); fcRenderRoundTime();
-  };
   // 현재 날짜(KST) 'YYYY-MM-DD' — 제출시각 스탬프용.
   function nowKSTDate(){
     try{ return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'}); }
@@ -3831,10 +3795,6 @@ function vendorSubmitAddForm(){
       oocAction:(dmap['fc_ooc_action']||'')
     };
   }
-  // 작업일지 델타(GM 2026-07-23 "회차 제출 텔레그램에 작업일지도 — 누적 반복 금지") —
-  // 22:30 보고 support_check_summary.py facility_worklog()와 동일 규칙: work 는 현장에서
-  // '그 회차까지의 누적 텍스트'로 입력되므로 그대로 붙이면 뒤 회차일수록 앞 내용을 통째로
-  // 반복한다. 앞 회차(들)에 이미 있던 줄은 빼고 이번 회차에서 새로 늘어난 줄만 남긴다.
   function fcWorkDelta(allSubs,curWork){
     var seen={};
     var prev=(allSubs||[]).slice(0,-1);   // 마지막(이번 회차 자신) 제외 — 앞 회차만
@@ -3926,13 +3886,7 @@ function vendorSubmitAddForm(){
       '<span style="font-size:13px;font-weight:800;color:var(--text);margin-right:3px;">📋 오늘 '+n+'회 점검</span>'+chips+curChip+
       (fcViewing!==null?'<span style="font-size:11px;color:var(--dim);flex-basis:100%;margin-top:2px;">🔒 지난 회차는 읽기전용 — 수정하려면 「현재 회차로 돌아가기」</span>':'')+'</div>';
   };
-  // ─── 금일 작업사항·지시사항 자동 저장(GM 2026-07-09) — 정오(12:00) 이후 입력 시 디바운스 후 점검일지 시트에 자동 저장. 측정 미영향·리셋 없음. ───
-  // 기계실 가동값 6칸 예외(GM 2026-07-27 시토, 배10347): eq_night·eq_tank1·eq_gas·eq_hotw·eq_pump·eq_heat는
-  // 05~06시·14시에 계기판을 보는 그 순간 서버에 남아야 함 — 12:00 게이트를 기다리면 소장·과장이 종이에
-  // 먼저 적어야 하는 구조가 된다(코드 실측 — 실제로 종이를 쓰는지는 현장 미확인). 새 저장경로·새 함수
-  // 신설 없이(약속 L21) 이미 있는 saveBoard(fcSave 1번 포스트와 동일 액션·이미 board 스냅샷 복원에 쓰임)를
-  // 재사용해 디바운스마다 무조건 저장한다 — saveBoard는 PropertiesService KV 스냅샷일 뿐 점검일지_facility
-  // 시트에 쓰지 않으므로, 아래 12:00 게이트(save_facility_notes = 점검일지 시트 upsert)의 원래 취지는 그대로 보존.
+  // 기계실 6칸은 12:00 게이트 없이 saveBoard 즉시 저장 — 점검일지 시트 upsert는 정오 이후만(기존 그대로).
   var _fcNotesTimer=null;
   function fcAutoSaveNotes(){
     if(fcViewing!==null) return;                 // 읽기전용 조회 중엔 저장 안 함
@@ -3976,10 +3930,6 @@ function vendorSubmitAddForm(){
       .concat(FC_DAILY_ITEMS.map(function(it){ var m=measureFromMap(dmap,it); return {id:it.id,name:it.name,cat:it.cat,measure:m.measure,done:m.done}; }));
     posts.push(fetch(API_URL,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'save_facility_measure',date:date,round:ROUND_DAILY,inspector:insp,items:items,durMin:sub.durMin,startHHMM:sub.startHHMM,endHHMM:sub.endHHMM,work:sub.work,order:sub.order,note:sub.note})}).then(function(r){return r.json();}));
     Promise.all(posts).then(function(results){
-      // 저장 실패 표시(2026-07-22 시토, GM go): 서버가 error/ok:false를 반환해도 종전엔 무검사로
-      // '제출 완료' 표시했음(ScriptProperties 용량초과 등으로 saveBoard 실패해도 성공 위장 → 회차 유실
-      // 근본원인 중 하나). saveBoard(results[0])·save_facility_measure(results[1]) 응답을 검사해
-      // 실패 시 명확히 표시하고 리셋·완료 표기를 건너뛴다(재시도 가능하도록 로컬 입력 보존).
       var _r0=(results&&results[0])||{}, _r1=(results&&results[1])||{};
       var _err=(_r0.error||(_r0.ok===false&&'저장 실패'))||(_r1.error||(_r1.ok===false&&'저장 실패'));
       if(_err){ if(st)st.textContent='⚠️ 저장 실패('+_err+') — 공간부족/네트워크 가능성, 관리자에게 알리세요'; return; }
@@ -3987,9 +3937,6 @@ function vendorSubmitAddForm(){
       fcResetAfterSubmit(curR);
       fcRenderHistory();
       if(st)st.textContent='제출 완료 — 오늘 '+subCount+'건째 · 다시 점검하세요';
-      // 🏗 시설부 per-check 텔레그램 알림(GM 명시 요청, 2026-07-18 시토) — 지원부 sendTelegramRound가 쓰는
-      // 범용 notify_round 엔드포인트 재사용(백엔드 무변경, dept 무관·같은 점검관리방 chat_id). 기본 ON.
-      // abnormalCount는 save_facility_measure 응답(results[1])에서 옴 — 지어내기 금지(서버 실측값만).
       try{
         var _measureRes=(results&&results[1])||{};
         var _ab=Number(_measureRes.abnormalCount||0);
