@@ -1710,7 +1710,8 @@ function handleSave(body) {
       c.checkedAt || body.submittedAt || '',   // 항목별 체크시각 우선
       body.duty || '', inspector,              // 11열 담당자 · 12열 점검자
       _measureStr(c.measure),                  // 13열 측정값
-      c.reflected ? 'Y' : ''                   // 14열 반영완료
+      c.reflected ? 'Y' : '',                  // 14열 반영완료
+      ''                                        // 15열 소요시간(분) — 이 경로엔 라운드 타이머가 없어 빈칸(억지계산 금지). 배11050 후속: HEADERS 15열/values 14열 불일치로 열개수 오류 나던 것 수리.
     ];
     if (rowNum) {
       // 기존 행은 제자리 갱신 유지(이력 보존 — 정상완료로 바뀐 기존 이상치 행도 정확히 반영).

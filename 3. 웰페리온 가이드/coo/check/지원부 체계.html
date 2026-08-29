@@ -8723,12 +8723,13 @@ function renderMrKpi(data){
   const el=document.getElementById('mrKpiRow');
   if(!el) return;
   const t=data.monthTotals||{};
+  const noData=(t.sessionCount||0)===0 && t.avgPct==null;   // 배11050 후속(2026-08-29 시토): 무제출을 0%로 안 보인다 — null→"—"
   const pct=(t.avgPct!=null?t.avgPct:0);
   el.innerHTML =
     '<div class="dash-stat-row">'
     +'<div class="dash-stat-card"><div class="num">'+(t.sessionCount||0)+'</div><div class="label">세션수</div></div>'
     +'<div class="dash-stat-card"><div class="num">'+(t.activeDays||0)+'</div><div class="label">활성일</div></div>'
-    +'<div class="dash-stat-card"><div class="num" style="color:'+mrPctColor(pct)+'">'+pct+'%'+mrDenomBadge(data.denomNote)+'</div><div class="label">완료율</div></div>'
+    +'<div class="dash-stat-card"><div class="num" style="color:'+(noData?'var(--dim)':mrPctColor(pct))+'">'+(noData?'—':pct+'%'+mrDenomBadge(data.denomNote))+'</div><div class="label">완료율</div></div>'
     +'<div class="dash-stat-card"><div class="num" style="color:var(--red)">'+(t.issueCount||0)+'</div><div class="label">이슈 총계</div></div>'
     +'</div>'
     +'<div style="font-size:11px;color:var(--dim);margin:-6px 0 10px;">'+mrEsc(data.denomNote||'')+(data.testExcludedCount?(' · 테스트 제외 '+data.testExcludedCount+'건'):'')+'</div>'
@@ -8944,7 +8945,9 @@ function renderA3MonthlyFromData(month,data){
   const doc=document.querySelector('#a3-monthly-print .mrp-doc');
   if(!doc) return false;
   const t=data.monthTotals||{};
+  const noData=(t.sessionCount||0)===0 && t.avgPct==null;   // 배11050 후속: 무제출 달은 "—"로(2026-08-29 시토)
   const pct=(t.avgPct!=null?t.avgPct:0);
+  const pctS=noData?'—':(pct+'%');
 
   const titleEl=doc.querySelector('.mrp-main-title');
   if(titleEl) titleEl.textContent='지원부 점검 체계 — '+month+' 월간 보고 (KPI 실측)';
@@ -8958,7 +8961,7 @@ function renderA3MonthlyFromData(month,data){
     kpiRow.innerHTML=
       mrA3Chip((t.sessionCount||0)+' 세션','월간 점검 세션 수(회차 합계)')
       +mrA3Chip((t.activeDays||0)+' 일','점검이 1회 이상 실시된 활성일수')
-      +mrA3Chip('<span class="mrp-kpi-num">'+pct+'%</span> 완료율 <span style="font-size:10px;color:'+(mrDenomWord(data.denomNote)==='확정'?'#1a7f37':'#a8710a')+';">('+mrDenomWord(data.denomNote)+')</span>',mrEsc(data.denomNote||''))
+      +mrA3Chip('<span class="mrp-kpi-num">'+pctS+'</span> 완료율 <span style="font-size:10px;color:'+(mrDenomWord(data.denomNote)==='확정'?'#1a7f37':'#a8710a')+';">('+mrDenomWord(data.denomNote)+')</span>',mrEsc(data.denomNote||''))
       +mrA3SubmitChip(data)
       +mrA3Chip('<span class="mrp-kpi-num">'+(t.issueCount||0)+'건</span> 이슈','월중 등록된 이슈 총계');
   }

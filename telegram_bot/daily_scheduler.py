@@ -2437,7 +2437,16 @@ def _dept_status_lines(facility_row: dict | None, facility_sessions: int = 0) ->
     .store.submissions 실 제출건수, kakao_daily_check_share.py::build_facility_lines와 동일 정본 소스)로
     한다. facility_row(monthly)는 여전히 done/total/pct·기준이탈 건수 "장식"에만 쓰되, total=0인데
     board엔 실제 세션이 있으면(stale 케이스) 세션 수 기준으로 활동 표시(미가동 오탐 차단)."""
-    parking = _fetch_dept_weekly("parking")
+    # 배11050 후속 수리(2026-08-29 시토): _fetch_dept_weekly가 주는 건 {ok,dept,data:[...]}
+    # 전체 응답이었는데 dept_line은 그 안의 '오늘 행'(total/done/pct)을 기대한다. 최상위엔
+    # total 키가 없어 매번 0으로 읽혀 주차부가 실제로 제출을 시작해도 "미가동"으로 영구 고정되던
+    # 버그 — 실제 제출은 아직 0건이라 겉보기엔 정상처럼 보였을 뿐이다. 오늘 행을 뽑아 넘긴다.
+    _parking_weekly = _fetch_dept_weekly("parking")
+    _today_str = datetime.now().strftime("%Y-%m-%d")
+    parking = next(
+        (r for r in (_parking_weekly or {}).get("data", []) if r.get("date") == _today_str),
+        None,
+    ) if _parking_weekly else None
 
     def dept_line(icon: str, name: str, data: dict | None) -> str:
         if data is None:

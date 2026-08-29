@@ -2718,7 +2718,9 @@
     // ⑤ 웰페리온 ERP 개발 카드 = 폐지(GM 승인 2026-07-08) — 전략 로드맵·핵심 과제와 중복이라 점검 현황에서 제거.
 
     var cap = '';
-    if(cmData && cmData.monthTotals){
+    if(cmData && cmData.monthTotals && cmData.monthTotals.sessionCount){
+      // sessionCount 가드(배11050 후속 · 2026-08-29 시토): 그 달 제출이 0건이면 avgPct=null 이라
+      // 가드 없이 이어붙이면 "이행률 null%"로 뜬다. 무제출과 진짜 0%를 구분해 그릴 자리(무제출=캡션 자체를 안 그림)라 여기선 가드만.
       var mt = cmData.monthTotals;
       // 종합 월간 이행률=스케줄 기대분모(배14, 주말 pm 제외) 대비. 짧은 라벨만(GM 지시 2026-07-06 3차) · denomNote 확정 아니면 '참고값'.
       var dn = String(cmData.denomNote || '');
@@ -2995,7 +2997,9 @@
       return '<span class="sm-chk-i"><b>' + esc(label) + '</b> <span class="sm-dim">' + (_checkReady ? '측정 개통 전' : '월간 집계 조회 중…') + '</span></span>';
     }
     var mtSum = (cmData && cmData.monthTotals) ? cmData.monthTotals : null;
-    var ihChip = mtSum ? '<span class="sm-chk-i"><b>지원부 월간 이행률</b> ' + mtSum.avgPct + '% <span class="sm-dim">(대표 신뢰지표 · 분모 정합)</span></span>' : '';
+    // sessionCount 가드(배11050 후속): 무제출 달엔 avgPct=null → 가드 없으면 "이행률 null%"로 뜬다.
+    var ihChip = (mtSum && mtSum.sessionCount) ? '<span class="sm-chk-i"><b>지원부 월간 이행률</b> ' + mtSum.avgPct + '% <span class="sm-dim">(대표 신뢰지표 · 분모 정합)</span></span>'
+      : '<span class="sm-chk-i"><b>지원부 월간 이행률</b> <span class="sm-dim">' + (_checkReady ? '해당 월 데이터 없음(가짜값 없음)' : '월간 집계 조회 중…') + '</span></span>';
     var receptionTxt = _receptionBoard ? (_receptionBoard.length + '건') : (_checkReady ? '측정 개통 전' : '조회 중…');
     // 시설부 점검 = CHECK_GAS monthly_report dept=facility(선택월) 입력률+이상건수(metric map · home은 오늘치 스냅샷이라 값 다를 수 있음·둘 다 실측)
     var fRepS = (cmData && cmData.facilityReport) ? cmData.facilityReport : null;
@@ -3191,7 +3195,8 @@
         var mtSum = (cmData && cmData.monthTotals) ? cmData.monthTotals : null;
         var fRepC = (cmData && cmData.facilityReport) ? cmData.facilityReport : null;
         var fMtC = (fRepC && fRepC.monthTotals) ? fRepC.monthTotals : null;
-        var supTxt = mtSum ? ('지원부 ' + mtSum.avgPct + '%') : (_checkReady ? '지원부 측정 개통 전' : '지원부 불러오는 중…');
+        // sessionCount 가드(배11050 후속): 무제출 달엔 avgPct=null → 가드 없으면 "지원부 null%"로 뜬다.
+        var supTxt = (mtSum && mtSum.sessionCount) ? ('지원부 ' + mtSum.avgPct + '%') : (_checkReady ? '지원부 측정 개통 전' : '지원부 불러오는 중…');
         var facTxt = (fMtC && fMtC.sessionCount) ? ('시설부 입력률 ' + fMtC.avgPct + '%(점검 ' + fMtC.sessionCount + '회)')
           : (_checkReady ? '시설부 데이터 축적 중' : '시설부 불러오는 중…');
         chkEl.innerHTML = supTxt + '<div class="ss-sub">' + facTxt + ' · 연간 집계 미구축(월간만 실측)</div>';
