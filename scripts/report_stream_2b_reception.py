@@ -31,6 +31,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -828,21 +829,40 @@ def _send_intake_photos(room: str, rows: list[dict]) -> int:
 
 
 def _send_kakao(room: str, text: str, image: Path | None = None) -> bool:
-    """카톡 발신 관문(kakao_report_sender)을 그대로 탄다 — 새 발신 경로를 만들지 않는다(L21)."""
+    """카톡 발신 관문(kakao_report_sender)을 그대로 탄다 — 새 발신 경로를 만들지 않는다(L21).
+
+    ★승인 가드 보류는 한 번 다시 시도한다 (GM 지적 2026-08-29 · 실무진 알림 2회 유실).
+      2026-08-29 16:11·16:56 두 번, 이 경로가 「보류: 웰리_승인_필요」로 막혀 접수 알림이
+      실무진에게 안 갔다. --sender 는 아래대로 정확히 붙어 나가고(인자 실측 확인), 같은 인자·
+      같은 환경으로 손으로 부르면 그때도 지금도 통과한다 — **재현이 안 된다.** 원인을 모르는
+      채 판정 로직을 손대면 가드가 헛돌 수 있으므로, 여기서는 두 가지만 한다:
+        ① 보류로 막히면 5초 뒤 한 번 더 보낸다 — 사람에게 갈 것이 조용히 사라지지 않게.
+        ② 실패하면 관문이 낸 출력을 통째로 남긴다 — 종전엔 마지막 한 줄만 남아
+           「보류」라는 결과만 보이고 어느 발신 주체로 거부됐는지가 로그에 없었다.
+           다음 발생 때 [gate] 줄이 남으면 그 자리에서 원인이 확정된다.
+    """
     import subprocess  # noqa: PLC0415
     args = (["--image", str(image), "--caption", text] if image else ["--message", text])
-    proc = subprocess.run(
-        # --sender 접수전달 — room 이 사람 방(★부서장·★운영+시설+지원+주차 등)일 때 가드(약속
-        # L24) 통과용. room 이 사람 방이 아니면 가드가 무시하는 값이라 항상 붙여도 무해하다.
-        [sys.executable, "-u", str(SCRIPTS_DIR / "kakao_report_sender.py"),
-         *args, "--only-room", room, "--sender", "접수전달"],
-        cwd=str(REPO_ROOT), capture_output=True,
-        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
-    )
-    if proc.returncode != 0:
-        tail = (proc.stdout or b"").decode("utf-8", "replace").strip().splitlines()
-        print(f"[intake-relay] 카톡 발송 실패({room}): {tail[-1] if tail else 'no output'}", flush=True)
-    return proc.returncode == 0
+
+    def _once() -> tuple[int, str]:
+        proc = subprocess.run(
+            # --sender 접수전달 — room 이 사람 방(★부서장·★운영+시설+지원+주차 등)일 때 가드(약속
+            # L24) 통과용. room 이 사람 방이 아니면 가드가 무시하는 값이라 항상 붙여도 무해하다.
+            [sys.executable, "-u", str(SCRIPTS_DIR / "kakao_report_sender.py"),
+             *args, "--only-room", room, "--sender", "접수전달"],
+            cwd=str(REPO_ROOT), capture_output=True,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+        )
+        return proc.returncode, (proc.stdout or b"").decode("utf-8", "replace").strip()
+
+    rc, out = _once()
+    if rc != 0 and "웰리_승인_필요" in out:
+        print(f"[intake-relay] 승인 가드 보류 — 5초 뒤 재시도({room})\n{out}", flush=True)
+        time.sleep(5)
+        rc, out = _once()
+    if rc != 0:
+        print(f"[intake-relay] 카톡 발송 실패({room}) — 관문 출력 전문:\n{out or 'no output'}", flush=True)
+    return rc == 0
 
 
 def run_intake_relay(dry_run: bool = True, test: bool = False) -> list[str]:
