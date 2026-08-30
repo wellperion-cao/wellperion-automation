@@ -216,13 +216,20 @@ def export_pdf(out_pdf: Path, sheet_id: str, gid: str) -> "tuple[bool, str]":
             context = _launch_context(p)
 
             # 1차 시그널: 시트 편집 페이지 안착 확인(로그인 리다이렉트=세션만료를 export 요청 전에 조기 탐지)
-            page = context.pages[0] if context.pages else context.new_page()
-            page.goto(edit_url, wait_until="domcontentloaded", timeout=45_000)
-            page.wait_for_timeout(2500)
-            cur_url = page.url
-            log(f"시트 편집 페이지 현재 URL: {cur_url}")
-            if "accounts.google.com" in cur_url or "signin" in cur_url.lower():
-                return False, f"구글 세션만료(cao 재로그인 필요) — 로그인 페이지로 리다이렉트됨({cur_url})"
+            # ★이 단계는 '조기 탐지'용 보조 신호일 뿐 판정은 아래 2차(export 응답)가 한다.
+            # 2026-08-30: 편집 페이지가 45초 안에 안 열려 09:30 회차가 통째로 죽었다. 같은 시각
+            # export 요청은 2.7초 만에 200 application/pdf 로 정상 응답했다(세션 멀쩡). 보조 신호가
+            # 본 작업을 막으면 안 된다 — 실패하면 경고만 남기고 2차로 넘어간다.
+            try:
+                page = context.pages[0] if context.pages else context.new_page()
+                page.goto(edit_url, wait_until="domcontentloaded", timeout=45_000)
+                page.wait_for_timeout(2500)
+                cur_url = page.url
+                log(f"시트 편집 페이지 현재 URL: {cur_url}")
+                if "accounts.google.com" in cur_url or "signin" in cur_url.lower():
+                    return False, f"구글 세션만료(cao 재로그인 필요) — 로그인 페이지로 리다이렉트됨({cur_url})"
+            except Exception as exc:
+                log(f"[경고] 시트 편집 페이지 조기점검 건너뜀({type(exc).__name__}) — export 응답으로 판정한다")
 
             # 2차 시그널(최종 판정): export 응답 content-type이 pdf가 아니면 실패
             resp = context.request.get(export_url, timeout=60_000)
