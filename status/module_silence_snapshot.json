@@ -1,11 +1,11 @@
 {
   "_doc": "모듈 침묵 감지기 최신 스캔 스냅샷 — 자율현황.html #layer-automation 렌더 전용. 알림 발신과 무관(발신 로그는 module_silence_log.jsonl). 발행: module_silence_detector.py --publish.",
-  "generated_at": "2026-08-29T00:11:32Z",
-  "generated_at_kst": "2026-08-29 09:11",
-  "total": 29,
+  "generated_at": "2026-08-30T00:11:23Z",
+  "generated_at_kst": "2026-08-30 09:11",
+  "total": 28,
   "summary": {
-    "ok": 16,
-    "silent": 4,
+    "ok": 17,
+    "silent": 2,
     "unmeasurable": 4,
     "active_no_cadence": 4,
     "not_applicable": 1
@@ -17,7 +17,7 @@
       "owner_nick": "시토",
       "feature": "자동화 건강 점수판 — 예약작업 실행결과 30분 갱신. [2026-07-22 GM 지시·방4 승격] daily 추가 —collectors.cto_automation_health 가 라이브 상주 프로세스·오늘 스케줄 성공/실패·self_health_watchdog 자가건강(이상 0건도 상시노출)까지 병합해 자동화현황방(방4) '전체 자동화 현황' 단일 다이제스트로 발신(기존 weekly 유지, 새 모듈/새 방/새 예약작업 없음). [2026-07-24 웰리 승인 병합 34→26] 등록부 3건을 이 항목으로 흡수(코드·스크립트·게이트는 그대로 존치, 등록부 표기만 통합·비파괴) — ①`cto-module-silence-detector`: 등록부 전 모듈 신선도 감시(scan_registry/silent_modules) — self_health_watchdog §1 이 그대로 재사용해 09:10 다이제스트에 매일 실린다(재수집 아님). 독자 run_detector()/--live 발신경로는 2026-08-10 시토 은퇴 확정(같은 방에 중복이라 'GM go 대기'가 아니라 이미 대체된 것이었음 — self_health_watchdog 선례와 동일 사유, 다시 켜지 마라) ②`cto-gas-version-monitor`: GAS 5개 프로젝트(check·funnel·funnel-v2·todo·voc) 배포버전 조회, scripts/gas_version_monitor.py, 200 하드리밋 조기경고, 13시 telegram_health_check 편승 ③`cto-self-health-watchdog`: scripts/self_health_watchdog.py 애그리게이터 — 위 2건+erp_status.json+page_hygiene 제안서를 읽어 하루 1통 이상요약으로 조립하는 엔진. 2026-08-08 게이트(SELF_HEALTH_WATCHDOG_LIVE) 코드에서 삭제·독자발신 은퇴, build_digest()만 살아 cto-automation-health 09:10 다이제스트가 재사용 중(실측 status/self_health_watchdog_log.jsonl 08-08·08-09·08-10 sent:true). ④`cpo-sheet-contract-check`[2026-08-04 흡수·배 병합확대]: 시트 칸 계약 점검기(문의·회원·강습 6시트 헤더/값규칙 대조, ssot/sheet_columns.json 정본) — 07-24부터 §5 편입 제안 계류였던 것을 _라인분담_2026_08_04(백엔드 건=시토 직접 처리, ssot/kpi.json) 근거로 매듭. 실행체는 그대로(매일 07:50 daily_scheduler 직결·module_reporter 미경유·notify_wired false) — 발신·주기·목적지 무변경, 등록부 표기만 통합. 원 항목 스냅샷=_removed.",
       "status": "ok",
-      "last_activity": "2026-08-28T23:56:33+00:00",
+      "last_activity": "2026-08-29T23:56:30+00:00",
       "method": "erp_status.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
@@ -34,8 +34,8 @@
       "method": "self_review_log.jsonl 마지막 레코드 timestamp",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 142.6,
-      "detail": "142.6h 전 마지막 신호(self_review_log.jsonl 마지막 레코드 timestamp) · 허용 216h(weekly)"
+      "silence_hours": 166.6,
+      "detail": "166.6h 전 마지막 신호(self_review_log.jsonl 마지막 레코드 timestamp) · 허용 216h(weekly)"
     },
     {
       "id": "cto-ops-morning-digest",
@@ -43,12 +43,12 @@
       "owner_nick": "시토",
       "feature": "★운영부 아침 운영 다이제스트 — 매일 07:30, 어제 방 내용·오늘 챙길 것·업무·문의·종합접수를 자동 정리해 발송(승인 게이트)",
       "status": "ok",
-      "last_activity": "2026-08-28T22:36:58.985401+00:00",
+      "last_activity": "2026-08-29T22:45:08.306651+00:00",
       "method": "디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 1.6,
-      "detail": "1.6h 전 마지막 신호(디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime) · 허용 30h(daily)"
+      "silence_hours": 1.4,
+      "detail": "1.4h 전 마지막 신호(디렉터리 1. AI자료_아카이브/11_카카오톡/★운영부/ 내 최신파일(_pending_digest.json) mtime) · 허용 30h(daily)"
     },
     {
       "id": "cto-kakao-sales-report",
@@ -56,7 +56,7 @@
       "owner_nick": "시토",
       "feature": "카톡 매출·운영 보고 — 매일 09:30 매출 이미지를 카톡 3방(회장님·관리부·운영부)에 무인 발송(휴관일 인지)",
       "status": "ok",
-      "last_activity": "2026-08-28T09:31:28+09:00",
+      "last_activity": "2026-08-29T09:31:09+09:00",
       "method": "kakao_last_send.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
@@ -82,8 +82,8 @@
       "method": "review_queue.json mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 92.9,
-      "detail": "92.9h 전 마지막 신호(review_queue.json mtime) · 허용 30h(daily)"
+      "silence_hours": 116.9,
+      "detail": "116.9h 전 마지막 신호(review_queue.json mtime) · 허용 30h(daily)"
     },
     {
       "id": "cmo-marketing-funnel",
@@ -91,7 +91,7 @@
       "owner_nick": "시모",
       "feature": "마케팅 퍼널·채널 성과 — 채널별 문의·전환율(정직 꼬리표)",
       "status": "ok",
-      "last_activity": "2026-08-29T07:54:00+09:00",
+      "last_activity": "2026-08-30T07:53:21+09:00",
       "method": "kpi_values.json 내부 timestamp",
       "cadence": "weekly",
       "max_allowed_hours": 216,
@@ -103,26 +103,26 @@
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "개인계정 실전사례 시리즈 자동 디스패치 — 07:30 재고 순차 선정·검수카드 발송, GM 텔레그램 승인 후 자동 발행. 평일 트랙은 2026-07-27 종결 마커로 중단, 현재는 주말(토·일) GM 트랙만 가동(정상 발효)",
-      "status": "silent",
-      "last_activity": "2026-08-17T20:56:18.123578+00:00",
+      "status": "ok",
+      "last_activity": "2026-08-29T05:23:21.639033+00:00",
       "method": "_실전사례_2주플랜.md mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 267.3,
-      "detail": "267.3h 전 마지막 신호(_실전사례_2주플랜.md mtime) · 허용 216h(weekly)"
+      "silence_hours": 18.8,
+      "detail": "18.8h 전 마지막 신호(_실전사례_2주플랜.md mtime) · 허용 216h(weekly)"
     },
     {
       "id": "cmo-publish-digest",
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "발행완료 → 콘텐츠 1건 통합요약 자동발신 (문의·컨택·등록 알림방) — 채널별 조각 대신 한 장, 5채널 링크 묶음",
-      "status": "silent",
-      "last_activity": "2026-08-17T20:56:18.123578+00:00",
+      "status": "ok",
+      "last_activity": "2026-08-29T05:23:21.642034+00:00",
       "method": ".publish_digest_sent.json mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 267.3,
-      "detail": "267.3h 전 마지막 신호(.publish_digest_sent.json mtime) · 허용 216h(weekly)"
+      "silence_hours": 18.8,
+      "detail": "18.8h 전 마지막 신호(.publish_digest_sent.json mtime) · 허용 216h(weekly)"
     },
     {
       "id": "cmo-eval-feedback-loop",
@@ -134,8 +134,8 @@
       "method": "CMO-weekly-feedback-20260824.md mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 120.2,
-      "detail": "120.2h 전 마지막 신호(CMO-weekly-feedback-20260824.md mtime) · 허용 216h(weekly)"
+      "silence_hours": 144.2,
+      "detail": "144.2h 전 마지막 신호(CMO-weekly-feedback-20260824.md mtime) · 허용 216h(weekly)"
     },
     {
       "id": "cmo-reaction-loop",
@@ -143,7 +143,7 @@
       "owner_nick": "시모",
       "feature": "【반응루프 층1 — 편별 측정·판정】발행 루프를 감싸는 상위 루프 — 콘텐츠 1건=반응 성적표 1장(IG 도달·당근 조회/찜·카페 조회 실측, 클릭 아님) → 최근 발행분 대비 상대 판정(저조/정상범위/판정보류) → 저조 시 로드맵 근거 개선안 GM께 제안(반무인, 자동 재발행 없음). 배834(북극성 제작 루프) 폐루프의 클릭 대체 입력. 매일 09:45 IG 도달 수집(예약작업 Wellperion-IG-Reach-Collect-0945)에 편승 실행 · 관찰 모드 2026-08-20까지(판정·기록은 하되 알림 억제). 산출 성적표는 층2(cmo-eval-feedback-loop) 주간 브리프 §5와 M1 페이지가 소비한다. ※층2와 중복 아님 — 층1=측정·판정 생산, 층2=주간 종합·기획 결정(2026-07-23 배9422 확정).",
       "status": "ok",
-      "last_activity": "2026-08-28T00:45:13.209694+00:00",
+      "last_activity": "2026-08-29T00:45:12.731132+00:00",
       "method": "cmo_reaction_scorecard.json mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
@@ -164,7 +164,7 @@
       "owner_nick": "시우",
       "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황). [2026-07-24 웰리 승인 병합 34→26] `cto-check-gas`(점검 GAS 파이프 — CHECK_API weekly/monthly 집계, 12시 점검관리방 발송) 흡수 — 같은 CHECK_API·같은 자동화현황방 파이프라인. daily는 이미 이 모듈과 중복이라 2026-07-22에 꺼졌고 monthly만 잔존해 있던 것을 이 항목의 notify_spec.monthly로 편입(daily가 우선 판정이라 module_silence_detector.py::expected_max_silence_hours 침묵감지 로직 영향 없음 확인). ★2026-08-03 GM 확정 주간 보고 축 — 시설·지원·주차관리부 체계를 **점검 현황 기준**으로 매주 월요일 정리 보고(운영·시우). ▸최종 목적지(GM 확정 2026-08-03) = 점검 현황은 카톡 ★운영+시설+지원+주차(2026-08-19 GM 카톡방 정리 — ★관리부가 이 방으로 합병돼 없어졌다) · 종합접수처는 카톡 ★운영+시설+지원+주차. ▸단계: 확정 전까지 텔레그램 GM 업무보고방에서 다듬는다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
       "status": "ok",
-      "last_activity": "2026-08-29T00:10:40+00:00",
+      "last_activity": "2026-08-30T00:10:36+00:00",
       "method": "coo-check-status.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
@@ -177,7 +177,7 @@
       "owner_nick": "시우",
       "feature": "업무·결재 현황 — 활성 업무·결재 대기·마감 초과 ★2026-08-03 GM 확정 주간 보고 축 — 업무 SSOT + 종합접수처를 **월간 운영계획 기준**으로 매주 월요일 정리 보고(운영·시우). ▸최종 목적지(GM 확정 2026-08-03) = 카톡 ★운영부(업무·결재 SSOT). ▸단계: 구조가 확정될 때까지는 텔레그램 GM 업무보고방으로만 보내며 다듬고, 확정 후 카톡으로 옮긴다 — GM: 한 번에 많은 양이 넘어가면 정리가 안 된다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
       "status": "ok",
-      "last_activity": "2026-08-29T00:10:42+00:00",
+      "last_activity": "2026-08-30T00:10:38+00:00",
       "method": "coo-work-approval.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
@@ -190,12 +190,12 @@
       "owner_nick": "시우",
       "feature": "종합접수처 — VOC 6종(분실물·시설물고장·청결·칭찬·쓴소리·컴플레인) 접수·처리 현황과 SLA 초과 적체. 실무진 = 최준용M·윤병현AM(2026-08-13 이경연 실장 전달 기준). ★2026-08-13 GM 지시로 시우 소유 모듈로 독립 — 그 전까지 자기 항목 없이 coo-work-approval feature 안에 한 줄로만 있었고, 발송기는 시토가 만든 채 등록부에 안 잡혀 있었다. ▸발송 목적지(GM 확정 2026-08-03) = 카톡 ★운영+시설+지원+주차. 확정 전까지는 텔레그램 GM 업무보고방에서 다듬는다.",
       "status": "ok",
-      "last_activity": "2026-08-28T00:25:32.645305+00:00",
+      "last_activity": "2026-08-29T08:26:02.799551+00:00",
       "method": "종합접수처_현황.html mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 23.8,
-      "detail": "23.8h 전 마지막 신호(종합접수처_현황.html mtime) · 허용 30h(daily)"
+      "silence_hours": 15.8,
+      "detail": "15.8h 전 마지막 신호(종합접수처_현황.html mtime) · 허용 30h(daily)"
     },
     {
       "id": "coo-schedule-ssot",
@@ -203,10 +203,10 @@
       "owner_nick": "웰리",
       "feature": "전사 일정 SSOT — 반복 의무·법정 점검 단일출처(부서별 필터·기한 도래 선별·업무결재 예행연동)",
       "status": "active_no_cadence",
-      "detail": "최근 활동 감지(33.2h 전, schedule_ssot.json 내부 timestamp) — notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
-      "last_activity": "2026-08-28T00:00:00+09:00",
+      "detail": "최근 활동 감지(9.2h 전, schedule_ssot.json 내부 timestamp) — notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
+      "last_activity": "2026-08-30T00:00:00+09:00",
       "method": "schedule_ssot.json 내부 timestamp",
-      "silence_hours": 33.2
+      "silence_hours": 9.2
     },
     {
       "id": "coo-monthly-ops",
@@ -214,10 +214,10 @@
       "owner_nick": "웰리",
       "feature": "월간운영계획·전사회의 — 부서별 매출목표·이니셔티브·반기 리뷰 SSOT. objective.due 있는 목표는 monthly_ops_sync.py(기존 일일 파이프라인)가 전사일정 GAS(coo-schedule-ssot)에 mop-{id}로 멱등 등록(GM 지시 2026-08-03·약속 L23 — 복제 아닌 1회 연동)",
       "status": "active_no_cadence",
-      "detail": "최근 활동 감지(81.2h 전, monthly_ops_plan.json 내부 timestamp) — notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
+      "detail": "최근 활동 감지(105.2h 전, monthly_ops_plan.json 내부 timestamp) — notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
       "last_activity": "2026-08-26T00:00:00+09:00",
       "method": "monthly_ops_plan.json 내부 timestamp",
-      "silence_hours": 81.2
+      "silence_hours": 105.2
     },
     {
       "id": "coo-notice",
@@ -234,7 +234,7 @@
       "owner_nick": "시포",
       "feature": "문의 라이프사이클 일일 액션(미컨택·오늘 상담·이탈위험)",
       "status": "ok",
-      "last_activity": "2026-08-29T00:11:30+00:00",
+      "last_activity": "2026-08-30T00:11:22+00:00",
       "method": "cpo-inquiry-daily-actions.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
@@ -251,8 +251,8 @@
       "method": "cpo-member-rollup.json 내부 timestamp",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 119.9,
-      "detail": "119.9h 전 마지막 신호(cpo-member-rollup.json 내부 timestamp) · 허용 216h(weekly)"
+      "silence_hours": 143.9,
+      "detail": "143.9h 전 마지막 신호(cpo-member-rollup.json 내부 timestamp) · 허용 216h(weekly)"
     },
     {
       "id": "cpo-inquiry-snapshot",
@@ -261,7 +261,7 @@
       "feature": "문의 스냅샷 자동 발행(멤버십·성인강습·유소년 원장 3분 주기 캐시). [2026-08-04 흡수·배 병합확대] `cpo-staff-feedback-watch`(실무진 피드백 감시 — 접수 즉시 시포 배 생성, scripts/collectors/cpo_staff_feedback_watch.py) 흡수 — 07-25부터 이미 같은 cpo_inquiry_snapshot.bat 3분 슬롯에서 함께 실행돼 온 한 파이프라인(등록부만 둘). 실행체·코드 무변경, 둘 다 notify none 이라 발신 변화 0. 접수 알림은 GAS staff_feedback_submit 이 업무보고방으로 보내는 것 그대로(여기서 안 보냄, 중복 발신 금지 유지). 근거=_라인분담_2026_08_04(백엔드 건=시토 직접 처리). 원 항목 스냅샷=_removed.",
       "status": "active_no_cadence",
       "detail": "최근 활동 감지(0.0h 전, cpo-staff-feedback-watch.json 내부 timestamp) — notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
-      "last_activity": "2026-08-29T00:10:06+00:00",
+      "last_activity": "2026-08-30T00:09:59+00:00",
       "method": "cpo-staff-feedback-watch.json 내부 timestamp",
       "silence_hours": 0.0
     },
@@ -275,8 +275,8 @@
       "method": "page_hygiene_proposal_20260824.md mtime",
       "cadence": "weekly",
       "max_allowed_hours": 216,
-      "silence_hours": 109.8,
-      "detail": "109.8h 전 마지막 신호(page_hygiene_proposal_20260824.md mtime) · 허용 216h(weekly)"
+      "silence_hours": 133.8,
+      "detail": "133.8h 전 마지막 신호(page_hygiene_proposal_20260824.md mtime) · 허용 216h(weekly)"
     },
     {
       "id": "ceo-gm-aide",
@@ -285,7 +285,7 @@
       "feature": "GM 보좌 자율화 두뇌 — GM 성향·놓친 것 학습·선제 포착(재개가능 배 자율태그·정체 surface·프로필 일일갱신). [2026-07-24 웰리 승인 병합 34→26] `cto-aide-gap-detector`(자율 틈 감지기 — 정체/재개가능 배 감시, 재개=자율태그·정체=surface, 게이트 AIDE_RESUMABLE_APPLY) 흡수 — 같은 로그 status/gm_aide_scan_log.jsonl·같은 06:30 gm_aide_scan.bat 한 파이프라인이라 코드 변경 없이 등록부만 통합(2026-07-22 표기정리 배9421 #3에서 예고된 정리를 실행).",
       "status": "active_no_cadence",
       "detail": "최근 활동 감지(2.6h 전, gm_aide_scan_log.jsonl 마지막 레코드 timestamp) — notify_spec 주기 미선언(침묵 아님·기대주기 판정 보류)",
-      "last_activity": "2026-08-29T06:34:48+09:00",
+      "last_activity": "2026-08-30T06:35:06+09:00",
       "method": "gm_aide_scan_log.jsonl 마지막 레코드 timestamp",
       "silence_hours": 2.6
     },
@@ -299,25 +299,12 @@
       "method": "unresolvable"
     },
     {
-      "id": "coo-ops-fill-board",
-      "owner_role": "coo",
-      "owner_nick": "시우",
-      "feature": "실무진 업무판 '채움 보드' — 미등록·정체·마감일/점수 빈칸을 담당자별 완성도로 (GM 2026-07-23 지시)",
-      "status": "ok",
-      "last_activity": "2026-08-28T07:04:08+00:00",
-      "method": "coo-ops-fill-board.json 내부 timestamp",
-      "cadence": "weekly",
-      "max_allowed_hours": 216,
-      "silence_hours": 17.1,
-      "detail": "17.1h 전 마지막 신호(coo-ops-fill-board.json 내부 timestamp) · 허용 216h(weekly)"
-    },
-    {
       "id": "cmo-content-intake",
       "owner_role": "cmo",
       "owner_nick": "시모",
       "feature": "강사·직원 콘텐츠 접수건 자동 수집 → 검수큐 등록 + GM 카드 발송 (별도 화면 없이 GM께 찾아옴)",
       "status": "ok",
-      "last_activity": "2026-08-29T00:00:05.807662+00:00",
+      "last_activity": "2026-08-30T00:00:04.674687+00:00",
       "method": "cmo_intake_to_review.log mtime",
       "cadence": "daily",
       "max_allowed_hours": 30,
@@ -330,12 +317,12 @@
       "owner_nick": "시포",
       "feature": "문의 담당 배정 독려 + 24시간 미컨택 SLA 경보 + 60일 무응답 회전 안내 (GM 지시 2026-07-23·2026-08-05 \"무조건 철저하게 관리\"). 실제 가동 중이었으나 등록부에 없어 감시망 밖이던 것을 2026-08-08 등록.",
       "status": "ok",
-      "last_activity": "2026-08-28T13:31:00+00:00",
+      "last_activity": "2026-08-29T11:00:55+00:00",
       "method": "cpo-unassigned-nudge.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 10.7,
-      "detail": "10.7h 전 마지막 신호(cpo-unassigned-nudge.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 13.2,
+      "detail": "13.2h 전 마지막 신호(cpo-unassigned-nudge.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "cto-gm-day-pipeline",
@@ -347,8 +334,8 @@
       "method": "monthly_ops_plan.json 내부 timestamp",
       "cadence": "daily",
       "max_allowed_hours": 30,
-      "silence_hours": 81.2,
-      "detail": "81.2h 전 마지막 신호(monthly_ops_plan.json 내부 timestamp) · 허용 30h(daily)"
+      "silence_hours": 105.2,
+      "detail": "105.2h 전 마지막 신호(monthly_ops_plan.json 내부 timestamp) · 허용 30h(daily)"
     },
     {
       "id": "cto-kpi-crosscheck",
