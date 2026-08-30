@@ -84,19 +84,54 @@
 
   .seat8{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;min-width:0}
   .seat8.lead8{padding:6px 10px}
-  .spriteWrap8{width:44px;height:52px;position:relative;image-rendering:pixelated}
+  .spriteWrap8{width:44px;height:52px;position:relative;image-rendering:pixelated;transform-origin:50% 100%}
   .seat8.lead8 .spriteWrap8{width:58px;height:66px}
   .spriteWrap8 svg{width:100%;height:100%;display:block}
   .spriteWrap8 .eye{transition:none}
   .spriteWrap8.blink8 .eye{opacity:0}
-  @keyframes wiggle8{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
-  .seat8[data-status="busy"] .spriteWrap8{animation:wiggle8 .5s steps(2) infinite}
+
+  /* ---- 2026-08-30 매니저 지시: 모션 대폭 강화 — 상시 유휴(호흡·흔들림, 캐릭터별 위상차)·
+     작업중(타이핑 팔+서류+느낌표 블립, 유휴와 한눈에 구분)·이벤트 반응(핑/링 이펙트)·
+     가끔 걷기(steps 4프레임 왕복)·배경 소품(모니터 깜빡임·커피김·벽시계 초침).
+     전부 transform/opacity/clip-path만 사용(레이아웃 리플로 유발 속성 없음), will-change 미사용,
+     캐릭터별 위상은 --ph(기존 agents[].phase 값을 읽기만 해서 대입)로 스태거. ---- */
+  @keyframes idle8{0%,100%{transform:translateY(0) rotate(0deg)}33%{transform:translateY(-1px) rotate(-1deg)}66%{transform:translateY(-1px) rotate(1deg)}}
+  .spriteWrap8{animation:idle8 2.6s steps(3) infinite;animation-delay:calc(var(--ph,0) * -1s)}
+  @keyframes worktype8{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-1px) rotate(-1.5deg)}50%{transform:translateY(0) rotate(0deg)}75%{transform:translateY(-1px) rotate(1.5deg)}}
+  .seat8[data-status="busy"] .spriteWrap8{animation:worktype8 .45s steps(4) infinite}
   @keyframes donepop8{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
   .seat8[data-status="done"] .spriteWrap8{animation:donepop8 .3s steps(3)}
   .seat8.spotlight8 .spriteWrap8{box-shadow:0 0 0 2px var(--accent)}
+
+  /* 팔(타이핑) — armL/armR는 buildSpriteSVG가 부여하는 클래스, 업무중에만 서로 반대위상 바운스 */
+  .spriteWrap8 .armL,.spriteWrap8 .armR{transform-box:fill-box;transform-origin:50% 0%}
+  @keyframes armbounce8{0%,100%{transform:translateY(0)}50%{transform:translateY(1.1px)}}
+  .seat8[data-status="busy"] .armL{animation:armbounce8 .3s steps(2) infinite}
+  .seat8[data-status="busy"] .armR{animation:armbounce8 .3s steps(2) infinite;animation-delay:-.15s}
+  .spriteWrap8 .papers{transform-box:fill-box;transform-origin:100% 100%;opacity:0}
+  @keyframes paperflip8{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-9deg)}}
+  .seat8[data-status="busy"] .papers{opacity:1;animation:paperflip8 .6s steps(3) infinite}
+
+  /* 업무중 느낌표 블립 — 유휴와 즉시 구분되는 신호 */
+  .workBlip8{position:absolute;top:-9px;right:-6px;width:11px;height:11px;background:var(--accent);color:#241b00;font-family:var(--pxfont);font-size:8.5px;font-weight:900;display:none;align-items:center;justify-content:center;line-height:1;border:1px solid var(--bg)}
+  .seat8[data-status="busy"] .workBlip8{display:flex;animation:blip8 .9s steps(2) infinite}
+
+  /* 이벤트 반응 핑 — 신규 로그 감지 시 1회 재생(JS가 seat에 .ping8을 짧게 부여) — 소스순서상 위 상태규칙보다
+     아래 있어야 동률 specificity에서 우선 적용된다 */
+  @keyframes ping8{0%{transform:translateY(0) scale(1)}20%{transform:translateY(-6px) scale(1.16)}45%{transform:translateY(0) scale(.94)}70%{transform:translateY(-2px) scale(1.06)}100%{transform:translateY(0) scale(1)}}
+  .seat8.ping8 .spriteWrap8{animation:ping8 .5s steps(5) 1}
+  .seat8.ping8 .spriteWrap8::after{content:'';position:absolute;inset:-7px;box-shadow:0 0 0 3px var(--accent);animation:pingring8 .5s steps(4) 1}
+  @keyframes pingring8{0%{opacity:1;transform:scale(.7)}100%{opacity:0;transform:scale(1.35)}}
+
+  /* 가끔 걷기 — JS가 유휴 캐릭터 1명에게 주기적으로 .walk8을 짧게 부여(steps 4프레임 왕복) */
+  @keyframes walk8{0%,100%{transform:translate(0,0)}25%{transform:translate(-9px,-1px)}50%{transform:translate(-9px,0)}75%{transform:translate(6px,-1px)}}
+  .seat8.walk8 .spriteWrap8{animation:walk8 1.2s steps(4) 1}
+
   @media (prefers-reduced-motion: reduce){
-    .seat8[data-status="busy"] .spriteWrap8{animation:none}
-    .seat8[data-status="done"] .spriteWrap8{animation:none}
+    .spriteWrap8,.seat8[data-status="busy"] .spriteWrap8,.seat8[data-status="done"] .spriteWrap8,
+    .seat8[data-status="busy"] .armL,.seat8[data-status="busy"] .armR,.seat8[data-status="busy"] .papers,
+    .seat8.ping8 .spriteWrap8,.seat8.ping8 .spriteWrap8::after,.seat8.walk8 .spriteWrap8,
+    .workBlip8,.deskMon8::before,.steam8,.clktick8{animation:none!important}
     .bulb8{animation:none}
   }
   .doneMark8{position:absolute;top:-5px;right:-4px;width:12px;height:12px;background:var(--accent2);color:#04241a;font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;line-height:1;border:1px solid var(--bg)}
@@ -108,6 +143,19 @@
   .statusWord8.busy8{color:var(--accent2);animation:blip8 .9s steps(2) infinite}
   .statusWord8.done8{color:var(--accent)}
   @media (prefers-reduced-motion: reduce){.statusWord8.busy8{animation:none}}
+
+  /* ---- 배경 소품 미세 애니메이션 — 모니터 깜빡임(좌석별, --ph로 스태거)·커피 김(beh=coffee일 때만)·벽시계 초침 ---- */
+  .deskMon8{width:18px;height:11px;background:var(--bg2);border:1px solid var(--panel-brd);margin-top:3px}
+  .deskMon8::before{content:'';display:block;width:68%;height:55%;margin:2px auto 0;background:var(--accent2);opacity:.35}
+  .seat8[data-status="idle"] .deskMon8::before{animation:monflick8 3.2s steps(2) infinite;animation-delay:calc(var(--ph,0) * -1s)}
+  .seat8[data-status="busy"] .deskMon8::before{background:var(--accent);opacity:.75;animation:monflick8 .5s steps(2) infinite}
+  @keyframes monflick8{0%,100%{opacity:.3}50%{opacity:.7}}
+  .steam8{position:absolute;top:-11px;left:50%;width:3px;height:7px;opacity:0;pointer-events:none;background:var(--muted)}
+  .seat8[data-beh="coffee"] .steam8{animation:steamrise8 1.1s steps(4) infinite}
+  @keyframes steamrise8{0%{opacity:0;transform:translate(-50%,0)}30%{opacity:.6}100%{opacity:0;transform:translate(-50%,-9px)}}
+  .wallclock8{width:24px;height:24px;border:2px solid var(--panel-brd);border-radius:50%;position:relative;background:var(--panel);flex:none}
+  .clktick8{position:absolute;left:50%;top:50%;width:2px;height:9px;background:var(--accent);transform-origin:50% 100%;margin:-9px 0 0 -1px;animation:tick8 60s steps(60) infinite}
+  @keyframes tick8{to{transform:rotate(360deg)}}
 
   /* ---- char tooltip ---- */
   .char-tip{position:absolute;display:none;pointer-events:none;z-index:6;max-width:220px;background:var(--panel);color:var(--ink);border:2px solid var(--accent);padding:6px 9px;font-family:var(--pxfont);font-size:11px;line-height:1.5;box-shadow:3px 3px 0 var(--shadow)}
@@ -133,6 +181,10 @@
   .lf-row.newest{background:rgba(255,210,63,.08)}
   .lf-row.dim{opacity:1}
   .lf-row.dim2{opacity:1}
+  /* 신규 로그 = 대화창에 타이핑 효과로 흐름(clip-path만 사용 — 리플로 없음, 1회성 단일 요소라 상시비용 0) */
+  @keyframes typewriter8{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+  .lf-row.newest .msg{animation:typewriter8 .6s steps(14) both}
+  @media (prefers-reduced-motion: reduce){.lf-row.newest .msg{animation:none;clip-path:none}}
 
   /* ---- bottom-row: counters (아케이드 스코어) + tally(아이템 슬롯) ---- */
   .bottom-row8{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex:none;padding-top:8px}
@@ -241,6 +293,7 @@
         </div>
         <div class="status8">
           <div class="live8"><span class="bulb8"></span>LIVE</div>
+          <div class="wallclock8" aria-hidden="true" title="배경 소품(참고용 장식 — 데이터 미연동)"><div class="clktick8"></div></div>
           <div class="clock8" id="clock">00:00:00</div>
           <button class="tgl8" id="tgl" aria-label="라이트/다크 테마 전환" title="테마 전환">◐</button>
         </div>
@@ -699,16 +752,17 @@
     const arm=shade(body,0.72);
     const hair=c.hairColor||'#33291e';
     const rects=[];
-    const R=(x,y,w,h,fill)=>rects.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`);
+    const R=(x,y,w,h,fill,cls)=>rects.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"${cls?` class="${cls}"`:''}/>`);
     R(2,0,5,2,hair); R(1,2,1,3,hair); R(7,2,1,3,hair);
     (HAIR_EXTRA[c.hairStyle]||[]).forEach(seg=>R(seg[0],seg[1],seg[2],seg[3],hair));
     R(2,2,5,4,SKIN);
-    R(0,7,2,3,arm); R(7,7,2,3,arm);
+    R(0,7,2,3,arm,'armL'); R(7,7,2,3,arm,'armR');           // 2026-08-30: 업무중 타이핑 바운스용 클래스(표시 전용)
     R(2,6,5,5,body);
     if(isLead) R(4,6,1,5,LEAD_TIE);
     if(c.accessory==='headset'){ R(1,1,1,2,'#2a2a2a'); R(7,1,1,2,'#2a2a2a'); R(6,5,1,1,'#2a2a2a'); }
     rects.push(`<rect class="eye" x="3" y="3" width="1" height="1" fill="${EYE}"/><rect class="eye" x="5" y="3" width="1" height="1" fill="${EYE}"/>`);
     if(c.accessory==='glasses') R(2,3,5,1,'rgba(20,20,30,.55)');
+    R(7.6,7.4,1.1,1.6,'#f2ecd5','papers');                   // 2026-08-30: 업무중 서류 넘기기용(평시 opacity:0, CSS가 켬)
     return `<svg viewBox="0 0 9 11" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">${rects.join('')}</svg>`;
   }
 
@@ -735,15 +789,22 @@
   function makeSeat(c,isLead){
     const seat=document.createElement('div'); seat.className='seat8'+(isLead?' lead8':''); seat.dataset.id=c.id;
     const spriteWrap=document.createElement('div'); spriteWrap.className='spriteWrap8';
+    spriteWrap.style.setProperty('--ph', (c.phase||0));      // 기존 agents[].phase(읽기 전용)를 유휴 애니메이션 위상차로 재사용 — 캐릭터마다 동시에 안 움직이게
     spriteWrap.innerHTML=buildSpriteSVG(c);
     const doneMark=document.createElement('div'); doneMark.className='doneMark8'; doneMark.textContent='✓';
     spriteWrap.appendChild(doneMark);
+    const blip=document.createElement('div'); blip.className='workBlip8'; blip.textContent='!';
+    spriteWrap.appendChild(blip);
+    const steam=document.createElement('div'); steam.className='steam8'; steam.setAttribute('aria-hidden','true');
+    spriteWrap.appendChild(steam);
     seat.appendChild(spriteWrap);
     const label=document.createElement('div'); label.className='seatLabel8';
     label.innerHTML = isLead? '팀장 · CLAUDE' : `<b>${c.id}</b> ${escHtml(c.tag)}`;
     seat.appendChild(label);
     const sw=document.createElement('div'); sw.className='statusWord8'; sw.textContent='대기';
     seat.appendChild(sw);
+    const mon=document.createElement('div'); mon.className='deskMon8'; mon.setAttribute('aria-hidden','true');
+    seat.appendChild(mon);
     spriteEls[c.id]=spriteWrap; statusEls[c.id]=sw;
     seat.addEventListener('mouseenter', ()=>showTip(c));
     seat.addEventListener('mousemove', moveTip);
@@ -765,15 +826,30 @@
       floor.appendChild(zoneEl);
     });
   }
+  /* 2026-08-30: 이벤트 반응(핑) — c.status/c.task의 변화를 "읽기만" 해서 감지(새 상태를 만들지 않음).
+     대상 캐릭터 변화 = 실제 신규/진행 로그 도착 신호(업무담당 로직은 무변경). */
+  const seenKey={}, pingTO={};
+  function triggerPing(seat){
+    seat.classList.remove('ping8'); void seat.offsetWidth; seat.classList.add('ping8');
+    clearTimeout(pingTO[seat.dataset.id]);
+    pingTO[seat.dataset.id]=setTimeout(()=>seat.classList.remove('ping8'), 520);
+  }
+  let lastLeadFeedTop=null;
   function renderSprites(t){
     chars.forEach(c=>{
       const wrap=spriteEls[c.id]; if(!wrap) return;
       const seat=wrap.parentElement;
       const status=c.status||'idle';
       seat.dataset.status=status;
+      seat.dataset.beh=c.beh||'rest';
       seat.classList.toggle('spotlight8', lead.lookTarget===c);
       const blinking = (t-(c._blinkT||-9))<0.12;
       wrap.classList.toggle('blink8', blinking);
+      if(!c.lead){
+        const key=status+'|'+(c.task||'');
+        if(seenKey[c.id]!==undefined && seenKey[c.id]!==key && (status==='busy'||status==='done')) triggerPing(seat);
+        seenKey[c.id]=key;
+      }
       const sw=statusEls[c.id];
       if(sw){
         sw.classList.remove('busy8','done8');
@@ -782,6 +858,35 @@
         else { sw.textContent='대기'; }
       }
     });
+    // 팀장 전용 반응 — 브리핑(주체 미매칭) 로그가 새로 들어오면(logFeed[0] 갱신을 읽기만 함) 팀장이 핑
+    const top=logFeed[0];
+    if(top && top.id==='팀장'){
+      const topKey=top.time+'|'+top.text;
+      if(lastLeadFeedTop!==null && lastLeadFeedTop!==topKey){
+        const leadSeat=spriteEls['LEAD'] && spriteEls['LEAD'].parentElement;
+        if(leadSeat) triggerPing(leadSeat);
+      }
+      lastLeadFeedTop=topKey;
+    }
+  }
+
+  /* 가끔 걷기 — 유휴 캐릭터 중 1명을 골라 짧은 왕복(steps 4프레임)만 재생. 동시에 여러 명이 걷지 않도록
+     단일 스케줄러로 제한(성능·가독성 보호). 순수 표시 연출 — 상태·집계에는 관여하지 않음. */
+  function scheduleWalk8(){
+    const delay=6000+Math.random()*9000;
+    setTimeout(()=>{
+      try{
+        const idleAgents=agents.filter(a=>a.status==='idle');
+        const pool=idleAgents.length?idleAgents:agents;
+        const c=pool[(Math.random()*pool.length)|0];
+        const seat=spriteEls[c.id] && spriteEls[c.id].parentElement;
+        if(seat && !seat.classList.contains('ping8')){
+          seat.classList.add('walk8');
+          setTimeout(()=>seat.classList.remove('walk8'), 1250);
+        }
+      }catch(e){}
+      scheduleWalk8();
+    }, delay);
   }
 
   /* ---------- theme toggle (표시 전용) ---------- */
@@ -1028,6 +1133,7 @@
   /* ===== 부팅 ===== */
   try{ sessionStorage.removeItem('wp_cmd_pw'); }catch(e){}
   buildFloor();
+  if(MOTION===1) scheduleWalk8();   // reduced-motion이면 걷기 연출 자체를 스케줄하지 않음
   (function officeBoot(){
     loadRealData();
   })();
