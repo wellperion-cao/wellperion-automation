@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T07:30:20+09:00",
+  "generated_at": "2026-08-31T07:30:23+09:00",
   "gaps": [
     {
       "role": "cmo",
@@ -44,8 +44,8 @@
     {
       "role": "cmo",
       "severity": "low",
-      "title": "M1 수기 상태값 68일째 미갱신 (2026-06-23 기준)",
-      "detail": "… 각 단계의 실제 배선입니다.\n    <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM… 근처 상태 배지(✅/🟡/❌)가 68일 전 값 그대로",
+      "title": "M1 수기 상태값 69일째 미갱신 (2026-06-23 기준)",
+      "detail": "… 각 단계의 실제 배선입니다.\n    <!-- ── 마케팅 파이프라인 폐루프 5단계 (GM… 근처 상태 배지(✅/🟡/❌)가 69일 전 값 그대로",
       "hint": "각 단계 실제 진척과 대조해 상태 배지 갱신 또는 '변화 없음' 확인 후 날짜만 갱신",
       "ref": "wellperion_guide(main).html#M1 · 2026-06-23",
       "age": "누적",
@@ -54,7 +54,7 @@
     {
       "role": "cmo",
       "severity": "high",
-      "title": "공식계정 — 38일째 새 콘텐츠 0건 (예약은 정상 가동)",
+      "title": "공식계정 — 39일째 새 콘텐츠 0건 (예약은 정상 가동)",
       "detail": "검수큐 기준 마지막 신규 = 2026-07-23 · 그 뒤 신규 등록 없음. 예약작업은 매일 도는데 만들 재고가 없으면 조용히 빈손으로 끝난다",
       "hint": "재고(기획예정/대본완료)를 채우거나, 더 만들 계획이 없으면 모듈을 휴면으로 표시",
       "ref": "review_queue.json · account=wellperion",
@@ -74,60 +74,130 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "'A-1 사우나 탕' — 최근 7일 中 4일 미완료(오후조)",
+      "title": "'A-1 사우나 탕' — 최근 7일 中 5일 미완료(마감조)",
       "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
       "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "A-1 사우나 탕::pm::recurring",
+      "ref": "A-1 사우나 탕::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'A-2 건/습식 사우나' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "A-2 건/습식 사우나::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'A-3 사우나 내부' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "A-3 사우나 내부::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'A-7 사우나 화장실 청결 관리' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "A-7 사우나 화장실 청결 관리::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'B-2 파우더 청결 관리' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "B-2 파우더 청결 관리::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'B-3 신발장 정리(수시)' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "B-3 신발장 정리(수시)::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'B-5 헬스장&수영장 이동 통로 청결 관리' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "B-5 헬스장&수영장 이동 통로 청결 관리::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'C-1 내부 화장실' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "C-1 내부 화장실::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'C-2 복도 휴지통' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "C-2 복도 휴지통::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'C-5 분리수거장' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "C-5 분리수거장::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'C-6 청소 비품 관리' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "C-6 청소 비품 관리::close::recurring",
+      "age": "누적",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "'G-2 접점 소독' — 최근 7일 中 5일 미완료(마감조)",
+      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
+      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
+      "ref": "G-2 접점 소독::close::recurring",
       "age": "누적",
       "first_seen": "2026-08-30"
     },
     {
       "role": "coo",
       "severity": "mid",
-      "title": "'A-2 건/습식 사우나' — 최근 7일 中 4일 미완료(오후조)",
+      "title": "'G-3 환기' — 최근 7일 中 5일 미완료(마감조)",
       "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
       "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "A-2 건/습식 사우나::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'A-3 사우나 내부' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "A-3 사우나 내부::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'A-7 사우나 화장실 청결 관리' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "A-7 사우나 화장실 청결 관리::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'B-2 파우더 청결 관리' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "B-2 파우더 청결 관리::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'B-3 신발장 정리(수시)' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "B-3 신발장 정리(수시)::pm::recurring",
+      "ref": "G-3 환기::close::recurring",
       "age": "누적",
       "first_seen": "2026-08-30"
     },
@@ -144,97 +214,87 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "'B-5 헬스장&수영장 이동 통로 청결 관리' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "B-5 헬스장&수영장 이동 통로 청결 관리::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'C-1 내부 화장실' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "C-1 내부 화장실::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'C-2 복도 휴지통' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "C-2 복도 휴지통::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'C-5 분리수거장' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "C-5 분리수거장::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'C-6 청소 비품 관리' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "C-6 청소 비품 관리::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'C-8 센터 화분' — 최근 7일 中 4일 미완료(오후조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "C-8 센터 화분::pm::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-20"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'G-2 접점 소독' — 최근 7일 中 4일 미완료(마감조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "G-2 접점 소독::close::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "'G-3 환기' — 최근 7일 中 4일 미완료(마감조)",
-      "detail": "지원부 마감(23시) 반복 미체크 — check_incomplete_ledger.json 기반 자동 감지",
-      "hint": "일정(조·시각) 조율 검토 또는 담당 배정 재확인",
-      "ref": "G-3 환기::close::recurring",
-      "age": "누적",
-      "first_seen": "2026-08-30"
-    },
-    {
-      "role": "coo",
-      "severity": "mid",
-      "title": "브로제이 셀러리 강사인건비 세팅 — 마감 3일 경과",
-      "detail": "종료일=2026-08-27 · 상태=진행중(완료·보류 아님)",
+      "title": "26년 웰림픽 접수 홍보 시안 제작 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
       "hint": "종료일 갱신 또는 완료·보류 처리 필요",
-      "ref": "TODO-20260824134132726::overdue",
+      "ref": "TODO-20260828203103495::overdue",
       "age": "신규",
-      "first_seen": "2026-08-28"
+      "first_seen": "2026-08-31"
     },
     {
       "role": "coo",
       "severity": "mid",
-      "title": "리셉션 매뉴얼 작성 및 자동화 — 마감 63일 경과",
+      "title": "안마의자(사전 답사 방문) — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260825193634176::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "6월 습득물 폐기 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260825072527020::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "신규 리셉션 멤버십 업무 교육 계획 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260824170641026::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "8월 신규등록 현황 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260824154125186::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "8월 재등록 현황 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260824153947845::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "브로제이 단말기 설치 및 테스트 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260821170336577::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "직급체계 정비 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260729221854842::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "리셉션 매뉴얼 작성 및 자동화 — 마감 64일 경과",
       "detail": "종료일=2026-06-28 · 상태=진행중(완료·보류 아님)",
       "hint": "종료일 갱신 또는 완료·보류 처리 필요",
       "ref": "TODO-20260602142906139::overdue",
@@ -244,7 +304,17 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "리셉션 무인화(반자동화) 전환을 위한 리셉·… — 마감 84일 경과",
+      "title": "[ 3분기 ][ 4분기 ] 예상 매출 및 목… — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260601235855399::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "리셉션 무인화(반자동화) 전환을 위한 리셉·… — 마감 85일 경과",
       "detail": "종료일=2026-06-07 · 상태=진행중(완료·보류 아님)",
       "hint": "종료일 갱신 또는 완료·보류 처리 필요",
       "ref": "TODO-20260601171335035::overdue",
@@ -254,7 +324,47 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "컴플레인 접수 — 접수 8일째 미처리 (regId=RECEPTION-125)",
+      "title": "지원부서 칭찬사원제도 기획 및 운영 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260526191513510::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "요금 인상 라인업 공지 준비 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260526173211484::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "멤버십 매출정책 및 방향성 — 마감 1일 경과",
+      "detail": "종료일=2026-08-30 · 상태=진행중(완료·보류 아님)",
+      "hint": "종료일 갱신 또는 완료·보류 처리 필요",
+      "ref": "TODO-20260526173207359::overdue",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "컴플레인 접수 — 접수 7일째 미처리 (regId=RECEPTION-127)",
+      "detail": "dept=운영부 · status=접수 · 접수일=2026-08-24",
+      "hint": "종합접수처에서 처리 상태 갱신 필요",
+      "ref": "RECEPTION-127::reception",
+      "age": "신규",
+      "first_seen": "2026-08-31"
+    },
+    {
+      "role": "coo",
+      "severity": "mid",
+      "title": "컴플레인 접수 — 접수 9일째 미처리 (regId=RECEPTION-125)",
       "detail": "dept=수영팀 · status=처리중 · 접수일=2026-08-22",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-125::reception",
@@ -264,7 +374,7 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "컴플레인 접수 — 접수 8일째 미처리 (regId=RECEPTION-124)",
+      "title": "컴플레인 접수 — 접수 9일째 미처리 (regId=RECEPTION-124)",
       "detail": "dept=P.T팀 · status=접수 · 접수일=2026-08-22",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-124::reception",
@@ -274,7 +384,7 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "컴플레인 접수 — 접수 9일째 미처리 (regId=RECEPTION-123)",
+      "title": "컴플레인 접수 — 접수 10일째 미처리 (regId=RECEPTION-123)",
       "detail": "dept=운영부 · status=접수 · 접수일=2026-08-21",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-123::reception",
@@ -284,7 +394,7 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "컴플레인 접수 — 접수 10일째 미처리 (regId=RECEPTION-122)",
+      "title": "컴플레인 접수 — 접수 11일째 미처리 (regId=RECEPTION-122)",
       "detail": "dept=주차관리부 · status=접수 · 접수일=2026-08-20",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-122::reception",
@@ -294,7 +404,7 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "컴플레인 접수 — 접수 17일째 미처리 (regId=RECEPTION-105)",
+      "title": "컴플레인 접수 — 접수 18일째 미처리 (regId=RECEPTION-105)",
       "detail": "dept=운영부 · status=처리중 · 접수일=2026-08-13",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-105::reception",
@@ -304,7 +414,7 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "컴플레인 접수 — 접수 19일째 미처리 (regId=RECEPTION-99)",
+      "title": "컴플레인 접수 — 접수 20일째 미처리 (regId=RECEPTION-99)",
       "detail": "dept=운영부 · status=접수 · 접수일=2026-08-11",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-99::reception",
@@ -314,7 +424,7 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "청결 이슈 접수 — 접수 20일째 미처리 (regId=RECEPTION-97)",
+      "title": "청결 이슈 접수 — 접수 21일째 미처리 (regId=RECEPTION-97)",
       "detail": "dept=운영부 · status=처리중 · 접수일=2026-08-10",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-97::reception",
@@ -324,7 +434,7 @@
     {
       "role": "coo",
       "severity": "mid",
-      "title": "컴플레인 접수 — 접수 41일째 미처리 (regId=RECEPTION-54)",
+      "title": "컴플레인 접수 — 접수 42일째 미처리 (regId=RECEPTION-54)",
       "detail": "dept=운영부 · status=처리중 · 접수일=2026-07-20",
       "hint": "종합접수처에서 처리 상태 갱신 필요",
       "ref": "RECEPTION-54::reception",
@@ -858,6 +968,17 @@
       "age": "누적",
       "area": "강습",
       "first_seen": "2026-07-23"
+    },
+    {
+      "role": "cpo",
+      "severity": "low",
+      "title": "강습(성인강습) 문의 · 등록완료 처리인데 기록 흔적 없음",
+      "detail": "진행상태=SUC · 접수일=2026-08-25 · 메모·연락이력 모두 등록 흔적 없음",
+      "hint": "실제 등록 여부 확인 후 메모 보강(오기재 가능성도 확인)",
+      "ref": "lesson-adult::3649::regtrace",
+      "age": "신규",
+      "area": "강습",
+      "first_seen": "2026-08-31"
     },
     {
       "role": "cpo",
@@ -1643,7 +1764,7 @@
     }
   ],
   "summary": {
-    "신규": 16,
-    "누적": 125
+    "신규": 29,
+    "누적": 124
   }
 }
