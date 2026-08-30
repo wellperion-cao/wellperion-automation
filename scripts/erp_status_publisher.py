@@ -828,22 +828,15 @@ def _kpi_crosscheck_rules():
     except Exception as e:
         out.append({"card": "업무 현황", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
 
-    # ③ 시설부 점검 카테고리 — 이름만 다른 같은 카테고리가 두 줄로 갈려 있지 않은가
-    #    (2026-08-26 실사고: 'F 안전' 과 'F 안전(AI초안)' 이 따로 서서 새 줄이 0% 로 보였다)
-    try:
-        d = _get(CHECK_GAS + f"?action=monthly_report&dept=facility&month={ym}")
-        seen = {}
-        dup = []
-        for r in (d.get("byCategory") or []):
-            key = re.sub(r"\s*\((AI초안|AI 초안)\)\s*$", "", str(r.get("cat") or "")).strip()
-            if key in seen:
-                dup.append(key)
-            seen[key] = 1
-        out.append({"card": "시설부 점검", "what": "같은 카테고리가 두 줄로 갈리지 않았나",
-                    "left": len(d.get("byCategory") or []), "right": len(seen), "ok": not dup,
-                    "detail": (", ".join(dup) if dup else "")})
-    except Exception as e:
-        out.append({"card": "시설부 점검", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+    # ③ 시설부 점검 카테고리 분리 검사는 2026-08-31 에 제거했다.
+    #    이 검사는 2026-08-26 의 실사고('F 안전' 과 'F 안전(AI초안)' 이 두 줄로 서서 새 줄이
+    #    0% 로 보였다)를 잡으려고 붙였다. 같은 날 시설부 체계.html 이 fmMergeCats() 로
+    #    렌더 단계에서 접미사를 떼고 합치게 됐고, 그 병합은 카테고리 이름을 가리지 않는다 —
+    #    앞으로 어느 카테고리가 갈려도 화면에는 한 줄로만 뜬다. 사람이 보는 화면에서 사고가
+    #    재현될 수 없게 된 것이다.
+    #    반면 시트 원본은 지난 기록 보존을 위해 두 줄을 일부러 남긴다(비파괴). 그래서 이 검사는
+    #    고칠 수도 없고 고쳐서도 안 되는 상태를 매일 '어긋남 1건'으로 띄웠다 — 늘 켜져 있는
+    #    경보는 읽히지 않는 경보라 다른 진짜 어긋남까지 같이 묻는다.
 
     # ④ 지원부 월간 이슈 — 「이슈 원문 보기 (N건)」 표제의 건수와 펼침 목록(세션 단위 병합) 행수가
     #    서로 다른 값인데 라벨이 하나만 보여줘 불일치처럼 읽혔다(2026-08-26 감사·57건 vs 34행).
