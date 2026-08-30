@@ -27,10 +27,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -201,7 +202,76 @@ def close_profile_chrome() -> int:
     return len(pids)
 
 
-def export_pdf(out_pdf: Path, sheet_id: str, gid: str) -> "tuple[bool, str]":
+# ── 기준일 대조(GM 확정 2026-08-30) ──────────────────────────────────────────
+# 보고서 한 장에 기준일이 두 가지 섞여 있다. GM 확정 규칙:
+#   · 매출·LOSS      = 어제 일자 기준 (= 발송일 - 1, 보고 대상일)
+#   · 신규예약·재등록 = 오늘 일자 기준 (= 발송일)
+# 두 칸(보고 탭 I16 신규·재등록 / I18 LOSS) 모두 수식이 아니라 사람이 매일 손으로 고쳐
+# 쓰는 자유 텍스트라, 날짜가 조용히 밀린 채 굳는다. 실측 2026-08-30: 8/28 보고분부터
+# 신규·재등록 칸이 하루씩 앞서 적혀(8/28 보고에 8/30, 8/29 보고에 8/31) 회장님 방까지
+# 그대로 나갔다. 상태값은 전부 정상이라 어떤 감시기도 안 잡았다.
+# 여기서 막는 이유 = 이 스크립트가 이미 인증된 브라우저 컨텍스트를 들고 있는 유일한
+# 자리다(약속 L21 — 새 감시 스크립트를 만들지 않는다). 발송 자체는 막지 않는다.
+BASIS_CELL_ROWS = {"신규·재등록": 16, "LOSS": 18}  # 보고 탭 I열
+BASIS_CELL_COL = 8  # I열(0-based)
+
+
+def _parse_basis_date(text: str, year: int) -> "datetime | None":
+    """'8/31 기준 [총 예약자 0명]' → date(2026, 8, 31). 못 읽으면 None."""
+    m = re.search(r"(\d{1,2})\s*/\s*(\d{1,2})\s*기준", text or "")
+    if not m:
+        return None
+    try:
+        return datetime(year, int(m.group(1)), int(m.group(2)))
+    except ValueError:
+        return None
+
+
+def check_basis_dates(context, sheet_id: str, gid: str, send_date: datetime) -> list[str]:
+    """보고 탭 두 칸의 기준일이 GM 확정 규칙과 맞는지 본다. 이상 없으면 빈 목록.
+
+    읽기 실패(권한·형식 변경 등)는 경고로 올리지 않는다 — 발송을 흔드는 것보다
+    조용히 지나가는 편이 낫고, 진짜 어긋남은 다음 날 다시 걸린다.
+    """
+    import csv as _csv
+    import io as _io
+
+    expected = {
+        "신규·재등록": send_date,                       # 오늘 일자 기준
+        "LOSS": send_date - timedelta(days=1),          # 어제 일자 기준
+    }
+    try:
+        url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
+        resp = context.request.get(url, timeout=60_000)
+        if resp.status != 200 or "csv" not in resp.headers.get("content-type", "").lower():
+            return []
+        rows = list(_csv.reader(_io.StringIO(resp.text())))
+    except Exception as exc:
+        log(f"[경고] 기준일 대조 건너뜀(시트 값 읽기 실패: {type(exc).__name__})")
+        return []
+
+    warns: list[str] = []
+    for label, row_no in BASIS_CELL_ROWS.items():
+        try:
+            cell = rows[row_no - 1][BASIS_CELL_COL]
+        except IndexError:
+            continue
+        got = _parse_basis_date(cell, send_date.year)
+        if got is None:
+            continue
+        want = expected[label]
+        if got.date() != want.date():
+            warns.append(
+                f"{label} 칸 기준일이 {got.month}/{got.day} 로 적혀 있습니다 "
+                f"(맞는 값 {want.month}/{want.day})"
+            )
+    for w in warns:
+        log(f"[경고] 기준일 대조: {w}")
+    return warns
+
+
+def export_pdf(out_pdf: Path, sheet_id: str, gid: str,
+               send_date: "datetime | None" = None) -> "tuple[bool, str]":
     """Google Sheets export를 PDF로 받아 저장. 반환: (성공여부, 실패사유)."""
     from playwright.sync_api import sync_playwright
 
@@ -243,6 +313,16 @@ def export_pdf(out_pdf: Path, sheet_id: str, gid: str) -> "tuple[bool, str]":
             out_pdf.parent.mkdir(parents=True, exist_ok=True)
             out_pdf.write_bytes(body)
             log(f"PDF 저장: {out_pdf} ({len(body)} bytes)")
+
+            # 기준일 대조 — 발송은 막지 않고 업무보고방으로만 알린다(GM 확정 2026-08-30)
+            if send_date is not None:
+                warns = check_basis_dates(context, sheet_id, gid, send_date)
+                if warns:
+                    send_owner_alert(
+                        "⚠️ 매출보고 기준일이 어긋납니다(발송은 그대로 나갔습니다)\n"
+                        + "\n".join(f"· {w}" for w in warns)
+                        + "\n· 매출·LOSS=어제 / 신규예약·재등록=오늘 (GM 확정 2026-08-30)"
+                    )
             return True, ""
         except Exception as exc:
             return False, f"Playwright 실행/요청 예외 — {exc}"
@@ -267,12 +347,50 @@ def pdf_to_png(pdf_path: Path, png_path: Path) -> None:
         doc.close()
 
 
+def _selfcheck_basis_dates() -> None:
+    """기준일 대조 자체점검(--selfcheck). 시트·브라우저 없이 가짜 CSV로 돈다."""
+    for text, want in [("8/31 기준 [총 예약자  0명]", (8, 31)), ("8/29 기준 [LOSS : 0명]", (8, 29)),
+                       ("8/5 기준 [총 예약자  2 명]", (8, 5)), ("기준 없음", None), ("", None)]:
+        got = _parse_basis_date(text, 2026)
+        assert (got.month, got.day) if got else None == want, (text, got, want)
+
+    class _Ctx:
+        def __init__(self, csv_text):
+            self.request = type("R", (), {"get": lambda _s, _u, timeout=None: type(
+                "P", (), {"status": 200, "headers": {"content-type": "text/csv"},
+                          "text": lambda _p: csv_text})()})()
+
+    def _sheet(i16, i18):
+        out = []
+        for n in range(1, 21):
+            cells = [""] * 9
+            if n == 16:
+                cells[8] = i16
+            if n == 18:
+                cells[8] = i18
+            out.append(",".join(f'"{c}"' for c in cells))
+        return "\n".join(out)
+
+    send = datetime(2026, 8, 30)
+    assert check_basis_dates(_Ctx(_sheet("8/30 기준", "8/29 기준")), "x", "y", send) == []
+    bad_new = check_basis_dates(_Ctx(_sheet("8/31 기준", "8/29 기준")), "x", "y", send)
+    assert len(bad_new) == 1 and "신규" in bad_new[0], bad_new
+    bad_loss = check_basis_dates(_Ctx(_sheet("8/30 기준", "8/30 기준")), "x", "y", send)
+    assert len(bad_loss) == 1 and "LOSS" in bad_loss[0], bad_loss
+    print("[selfcheck] 기준일 대조 OK")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="매출보고 이미지 자체 생성(구글시트→PDF→PNG, 텔레그램 사진 불필요)")
     ap.add_argument("--out", default=None, help="지정 시 archive 저장과 별개로 이 경로에도 추가 저장")
     ap.add_argument("--date", default=None, help="보고 날짜 YYYYMMDD(기본 오늘) — archive 파일명에 사용")
+    ap.add_argument("--selfcheck", action="store_true", help="기준일 대조 로직만 점검(발송·시트 접근 없음)")
     args = ap.parse_args()
+
+    if args.selfcheck:
+        _selfcheck_basis_dates()
+        return 0
 
     if sys.platform != "win32":
         print("FAILED: 이 스크립트는 Windows(Playwright+cao 세션) 전용입니다.")
@@ -300,7 +418,7 @@ def main() -> int:
     png_path = month_dir / target_date.strftime(ARCHIVE_FILENAME_FMT)
     pdf_tmp = month_dir / (target_date.strftime("웰페리온_일일보고_%Y%m%d") + "_tmp.pdf")
 
-    ok, reason = export_pdf(pdf_tmp, sheet_id, gid)
+    ok, reason = export_pdf(pdf_tmp, sheet_id, gid, send_date=target_date)
     if not ok:
         msg = f"⚠️ 매출보고 자동생성 실패 — {reason}"
         log(msg)
