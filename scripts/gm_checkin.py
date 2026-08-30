@@ -451,6 +451,63 @@ def _write(data: dict) -> None:
     JPATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
+# ── 💡 아이디어 쌓아두기 (GM 지시 2026-08-30) ────────────────────────────────
+#   GM: "아이디어 생각날 때마다 말해줄 테니까 하루 공지에다가 조금씩 추가해주라."
+#   새 원장을 만들지 않는다(약속 L21) — 이미 GM 개인 것을 담는 이 파일에 ideas 한 칸을 얹는다.
+#   지우지 않고 쌓기만 한다. 만든 뒤에는 GM 이 done 처리한다(mark_idea_done).
+def add_idea(text: str, day: str | None = None) -> int:
+    """아이디어 한 줄을 쌓는다. 같은 글이 이미 열려 있으면 다시 넣지 않는다(중복 금지)."""
+    text = ' '.join(str(text or '').split())
+    if not text:
+        return 0
+    data = load()
+    ideas = data.setdefault('ideas', [])
+    if any(not i.get('done') and i.get('text') == text for i in ideas):
+        return 0
+    ideas.append({'t': day or today(), 'text': text, 'done': False})
+    _write(data)
+    return len(ideas)
+
+
+def open_ideas() -> list:
+    """아직 안 만든 아이디어 — 적은 순서 그대로. 잘라내지 않는다(GM 지시 2026-08-30 · 전부 보여준다)."""
+    try:
+        return [i for i in (load().get('ideas') or []) if not i.get('done')]
+    except Exception:
+        return []
+
+
+def mark_idea_done(text_or_index) -> bool:
+    """만들었으면 닫는다. 번호(1부터) 또는 글 일부로 찾는다."""
+    data = load()
+    ideas = data.get('ideas') or []
+    opened = [i for i in ideas if not i.get('done')]
+    target = None
+    if isinstance(text_or_index, int) or str(text_or_index).isdigit():
+        n = int(text_or_index)
+        if 1 <= n <= len(opened):
+            target = opened[n - 1]
+    else:
+        key = str(text_or_index).strip()
+        target = next((i for i in opened if key in i.get('text', '')), None)
+    if not target:
+        return False
+    target['done'] = True
+    target['done_at'] = today()
+    _write(data)
+    return True
+
+
+def _idea_section() -> str:
+    """하루 공지에 붙는 아이디어 절. 없으면 빈 문자열(빈 절을 만들지 않는다)."""
+    items = open_ideas()
+    if not items:
+        return ''
+    lines = [f"💡 쌓아둔 아이디어 {len(items)}건"]
+    lines += [f"· {i['text']} ({i['t'][5:].replace('-', '/')})" for i in items]
+    return '\n'.join(lines)
+
+
 def commit(day: str | None = None) -> bool:
     """저장을 눌렀을 때만 커밋한다 — 버튼 누를 때마다 커밋하면 하루에 열 번 쌓인다.
     실패해도 파일은 이미 로컬에 남아 있으므로 다음 커밋에 자연히 딸려 간다."""
@@ -1070,6 +1127,7 @@ def build_morning_brief(day: str | None = None) -> str:
         _bucket('내일 일정 — 시각이 비어 있습니다 (넣으시면 30분 전에 알려드립니다)',
                 _tomorrow_missing_time_lines(sched_items, day) if sched_ok else []),
         prog_section,
+        _idea_section(),   # 💡 쌓아둔 아이디어 (GM 지시 2026-08-30)
     ]
     sections = [s for s in sections if s]
 
@@ -1462,7 +1520,12 @@ def _morning_brief_v2(day: str) -> str:
     lines.append("· 받을 것: " + (" · ".join(v for v in receive if v.strip(' —')) or "없음"))
     lines.append("③ 오늘의 한 건")
     lines.append(f"· {_v2_first_pick(day)}")
-    return '\n'.join(lines[:12])
+    out = lines[:12]
+    # ④ 아이디어는 12줄 상한 밖에 붙인다 — GM 지시 2026-08-30 "쌓아둔 건 다 보고 싶다".
+    idea = _idea_section()
+    if idea:
+        out.append(idea)
+    return '\n'.join(out)
 
 
 def _evening_recap_v2(day: str) -> dict:
@@ -1659,6 +1722,24 @@ def _selfcheck_recap() -> None:
 if __name__ == '__main__':
     import sys
     sys.stdout.reconfigure(encoding='utf-8')
+
+    # 💡 아이디어 쌓기 (GM 지시 2026-08-30) — 하루 공지에 그날부터 함께 나간다.
+    #   담기 : python scripts/gm_checkin.py --idea "회의 때 쓸 음성 웰리"
+    #   보기 : python scripts/gm_checkin.py --ideas
+    #   닫기 : python scripts/gm_checkin.py --idea-done 1
+    if len(sys.argv) > 1 and sys.argv[1] in ('--idea', '--ideas', '--idea-done'):
+        cmd = sys.argv[1]
+        if cmd == '--ideas':
+            items = open_ideas()
+            print(f"💡 쌓아둔 아이디어 {len(items)}건")
+            for n, i in enumerate(items, 1):
+                print(f"{n}. {i['text']} ({i['t']})")
+        elif cmd == '--idea':
+            print('담았습니다.' if add_idea(' '.join(sys.argv[2:])) else '이미 있거나 내용이 비었습니다.')
+        else:
+            print('닫았습니다.' if mark_idea_done(' '.join(sys.argv[2:])) else '못 찾았습니다.')
+        raise SystemExit(0)
+
     _selfcheck_slots()
     _selfcheck_schedule()
     _selfcheck_morning_brief()
