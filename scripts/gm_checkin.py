@@ -508,6 +508,68 @@ def _idea_section() -> str:
     return '\n'.join(lines)
 
 
+# ── 📖 오늘의 문장 — 체화할 때까지 반복 (GM 지시 2026-08-30) ──────────────────
+#   GM: "매일 아침에 명언 및 진리로 문장을 반복되게(내가 체화할 때까지) 보고 싶어."
+#   그래서 날마다 바꾸지 않는다. 한 문장을 GM 이 「다음」 이라고 할 때까지 계속 같은 자리에 둔다.
+#   며칠째인지만 옆에 적는다 — 재촉이 아니라 얼마나 데리고 있었는지 보이라고.
+#   새 원장 0 — 아이디어와 같은 파일(gm_personal_routine.json) 의 creed 칸.
+def _creed(data: dict) -> dict:
+    return data.setdefault('creed', {'items': [], 'index': 0, 'since': today()})
+
+
+def creed_add(text: str, source: str = '') -> int:
+    """문장을 목록 끝에 더한다. 같은 글이 이미 있으면 넣지 않는다."""
+    text = ' '.join(str(text or '').split())
+    if not text:
+        return 0
+    data = load()
+    c = _creed(data)
+    if any(i.get('text') == text for i in c['items']):
+        return 0
+    c['items'].append({'text': text, 'source': source})
+    _write(data)
+    return len(c['items'])
+
+
+def creed_next() -> str:
+    """이 문장은 체화됐다 — 다음 문장으로 넘긴다. 끝에 닿으면 처음으로 돌아간다."""
+    data = load()
+    c = _creed(data)
+    if not c['items']:
+        return ''
+    c['index'] = (int(c.get('index') or 0) + 1) % len(c['items'])
+    c['since'] = today()
+    _write(data)
+    return c['items'][c['index']]['text']
+
+
+def creed_today() -> tuple:
+    """(문장, 출처, 며칠째). 목록이 비면 ('', '', 0)."""
+    try:
+        c = (load().get('creed') or {})
+        items = c.get('items') or []
+        if not items:
+            return ('', '', 0)
+        it = items[int(c.get('index') or 0) % len(items)]
+        try:
+            days = (datetime.date.fromisoformat(today())
+                    - datetime.date.fromisoformat(c.get('since') or today())).days + 1
+        except Exception:
+            days = 1
+        return (it.get('text', ''), it.get('source', ''), max(1, days))
+    except Exception:
+        return ('', '', 0)
+
+
+def _creed_section() -> str:
+    """아침 공지 맨 위에 붙는 오늘의 문장. 없으면 빈 문자열."""
+    text, source, days = creed_today()
+    if not text:
+        return ''
+    tail = f" — {source}" if source else ''
+    return f"📖 오늘의 문장 ({days}일째)\n「{text}」{tail}"
+
+
 def commit(day: str | None = None) -> bool:
     """저장을 눌렀을 때만 커밋한다 — 버튼 누를 때마다 커밋하면 하루에 열 번 쌓인다.
     실패해도 파일은 이미 로컬에 남아 있으므로 다음 커밋에 자연히 딸려 간다."""
@@ -1137,6 +1199,9 @@ def build_morning_brief(day: str | None = None) -> str:
         secretary = f"오늘은 답을 기다리는 {len(first_lines)}건이 먼저입니다."
 
     lines = [f"🌅 오늘의 업무  ·  {d.month}월 {d.day}일({wd})"]
+    creed = _creed_section()   # 📖 오늘의 문장 — 맨 위 (GM 지시 2026-08-30)
+    if creed:
+        lines += ['', creed]
     if secretary:
         lines += ['', secretary]
     for s in sections:
@@ -1521,7 +1586,11 @@ def _morning_brief_v2(day: str) -> str:
     lines.append("③ 오늘의 한 건")
     lines.append(f"· {_v2_first_pick(day)}")
     out = lines[:12]
-    # ④ 아이디어는 12줄 상한 밖에 붙인다 — GM 지시 2026-08-30 "쌓아둔 건 다 보고 싶다".
+    # 오늘의 문장·아이디어는 12줄 상한 밖에 붙인다 — GM 지시 2026-08-30
+    # ("쌓아둔 건 다 보고 싶다" · 문장은 체화할 때까지 매일 같은 자리).
+    creed = _creed_section()
+    if creed:
+        out.insert(1, creed)
     idea = _idea_section()
     if idea:
         out.append(idea)
@@ -1727,6 +1796,25 @@ if __name__ == '__main__':
     #   담기 : python scripts/gm_checkin.py --idea "회의 때 쓸 음성 웰리"
     #   보기 : python scripts/gm_checkin.py --ideas
     #   닫기 : python scripts/gm_checkin.py --idea-done 1
+    # 📖 오늘의 문장 (GM 지시 2026-08-30) — 체화할 때까지 같은 문장이 매일 아침 뜬다.
+    #   담기 : python scripts/gm_checkin.py --creed-add "문장" [출처]
+    #   보기 : python scripts/gm_checkin.py --creed
+    #   넘기기: python scripts/gm_checkin.py --creed-next     (체화됐을 때만)
+    if len(sys.argv) > 1 and sys.argv[1] in ('--creed', '--creed-add', '--creed-next'):
+        cmd = sys.argv[1]
+        if cmd == '--creed':
+            t, src, days = creed_today()
+            print(f"📖 오늘의 문장 ({days}일째)\n「{t}」" + (f" — {src}" if src else '') if t
+                  else '아직 담긴 문장이 없습니다.')
+        elif cmd == '--creed-add':
+            print('담았습니다.' if creed_add(sys.argv[2] if len(sys.argv) > 2 else '',
+                                          sys.argv[3] if len(sys.argv) > 3 else '')
+                  else '이미 있거나 내용이 비었습니다.')
+        else:
+            nxt = creed_next()
+            print(f"다음 문장으로 넘겼습니다.\n「{nxt}」" if nxt else '담긴 문장이 없습니다.')
+        raise SystemExit(0)
+
     if len(sys.argv) > 1 and sys.argv[1] in ('--idea', '--ideas', '--idea-done'):
         cmd = sys.argv[1]
         if cmd == '--ideas':
