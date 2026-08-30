@@ -846,7 +846,7 @@ def _reg_update_post(payload: dict, timeout: int = 20) -> bool:
 # 한 번에 최대 _COMPLETION_CAP건만 보이고 나머지는 "…외 N건"으로 접는다(폭주 방지).
 # ══════════════════════════════════════════════════════════════════════════
 COMPLETION_STATE_PATH = REPO_ROOT / "status" / "dept_completion_notify.json"
-_COMPLETION_CAP = 6  # 한 회차 최대 노출 건수(10줄 예산 안)
+_COMPLETION_CAP = 0  # 0 = 전부 보여줌(GM 지시 2026-08-30 "다 보고 싶다"). 종전 6건
 
 
 def _load_completion_state() -> dict:
@@ -927,11 +927,11 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
         head = f"✅ [{dept}] {cat} · 처리 {who} · 남은 미처리 {remain}건"
         return head + (f"\n     {content}" if content else "")
 
-    shown = new_done[:_COMPLETION_CAP]
+    shown = new_done if _COMPLETION_CAP <= 0 else new_done[:_COMPLETION_CAP]
     lines = [f"{_DIVIDER}\n✅ 처리 완료 알림 {len(new_done)}건"]
     lines += [_fmt(r) for r in shown]
-    if len(new_done) > _COMPLETION_CAP:
-        lines.append(f"  …외 {len(new_done) - _COMPLETION_CAP}건 더")
+    if len(new_done) > len(shown):
+        lines.append(f"  …외 {len(new_done) - len(shown)}건 더")
     return "\n".join(lines)
 
 
@@ -949,7 +949,7 @@ def _completion_block(rows: list[dict], state: dict | None = None, persist: bool
 # ▸게이트 intake_relay_enabled 기본 꺼짐. 실무진 방으로 나가는 새 발신이라 GM 이 문구를
 #   보고 확인한 뒤에만 켠다.
 # ══════════════════════════════════════════════════════════════════════════
-_INTAKE_CAP = 6  # 한 부서당 최대 노출 건수(나머지는 접어서 "…외 N건")
+_INTAKE_CAP = 0  # 0 = 부서별 전부 보여줌(GM 지시 2026-08-30). 종전 6건
 
 
 def _intake_relay_block(rows: list[dict], state: dict | None = None,
@@ -977,7 +977,7 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
     for dept in sorted(by_dept, key=lambda d: -len(by_dept[d])):
         items = by_dept[dept]
         lines.append(f"\n🏢 {dept} ({len(items)}건)")
-        for r in items[:_INTAKE_CAP]:
+        for r in (items if _INTAKE_CAP <= 0 else items[:_INTAKE_CAP]):
             cat = str(r.get("category") or "").strip()
             # ★2026-08-27 GM 지시 — "내용도 같이 넣어줘, 길어도 다 넣어줘". 종전에는 28자에서
             # 잘라 「수영장 내 샤워부스 총2개 남자쪽 1개 여자쪽 1개」처럼 무엇을 고쳐야 하는지
@@ -987,7 +987,7 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
             if content:
                 # 제목 줄만 훑어도 뜻이 통하게 — 상세는 다음 줄 들여쓰기(GM 2026-08-25 가독 규칙).
                 lines.append(f"     {content}")
-        if len(items) > _INTAKE_CAP:
+        if _INTAKE_CAP > 0 and len(items) > _INTAKE_CAP:
             lines.append(f"  …외 {len(items) - _INTAKE_CAP}건 더")
     lines.append(f"\n👉 상세·처리: {DASHBOARD_URL}")
     return "\n".join(lines)

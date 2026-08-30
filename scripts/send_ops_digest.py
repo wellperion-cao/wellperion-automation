@@ -597,7 +597,7 @@ def preview_mgr_brief() -> int:
 # ══════════════════════════════════════════════════════════════════════════
 QUEUE_PATH = ROOT / "status" / "_queue.json"
 RELAY_OPEN_STATUSES = {"PENDING", "IN_PROGRESS"}
-RELAY_TITLE_CAP = 34        # 스냅샷 길이 상한(카톡 한 줄) — 화면표시 상한은 ASKS_TITLE_CAP
+RELAY_TITLE_CAP = 0         # 0 = 자르지 않음(GM 지시 2026-08-30). 종전 34자
 RELAY_HEARTBEAT_ID = "clevel-queue-human-relay"  # 지난 회차 목록 보관 = 상설 하트비트 1파일
 RELAY_STALE_DAYS = 1  # 내용 안 바뀐 채 이만큼 묵으면 재알림 = 회신이 올 때까지 매일 다시 싣는다.
 #   ★2026-08-25 GM 방침으로 7일 → 1일. GM 원문: "그냥 계속 푸시하면 안되는거야? 그리고
@@ -740,9 +740,13 @@ def _cap_line(text: str, cap: int = RELAY_TITLE_CAP) -> str:
     """카톡 한 줄용 길이 상한 — 낱말 한가운데서 자르지 않는다(GM 상시 지시).
 
     상한 안에서 마지막 띄어쓰기까지만 남긴다. 띄어쓰기가 아예 없으면(붙여 쓴 긴 문장)
-    어쩔 수 없이 길이로 자른다 — 그때는 잘린 티가 나는 게 뜻이 끊기는 것보다 낫다."""
+    어쩔 수 없이 길이로 자른다 — 그때는 잘린 티가 나는 게 뜻이 끊기는 것보다 낫다.
+
+    ★cap <= 0 이면 자르지 않는다(GM 지시 2026-08-30 — "핵심 내용을 끝까지 보내 달라,
+      계속 …로 끝나는 것보다 다 보고 싶다"). 자르는 자리가 이 함수 하나뿐이라 여기서
+      끄면 카톡 통 전체가 원문 그대로 나간다(약속 L21 — 관문 하나에만 둔다)."""
     t = re.sub(r"\s+", " ", str(text or "")).strip()
-    if len(t) <= cap:
+    if cap <= 0 or len(t) <= cap:
         return t
     # 링크는 절대 자르지 않는다 — 잘린 주소는 눌러도 404 다(2026-08-26 실측: 중간관리자
     # 방 아침 정리의 멤버십·지원부 링크가 '…' 로 끝나 실무진이 못 들어갔다).
@@ -968,9 +972,13 @@ def _selfcheck_schedule_block() -> None:
 # 총 5건 그대로 나감). ★2026-08-29 GM 확정(배826 재승인) — 형평보다 "한 통 3건" 총량이
 # 우선이다. 사람별 배려는 없앤다 — 오래된 순으로 3건만 자르고 나머지는 한 줄로 접는다.
 # ══════════════════════════════════════════════════════════════════════════
-ASKS_TOTAL_CAP = 3  # 한 통 최대 건수(GM 확정 2026-08-29 · 배826 — 종전 사람당 5건 폐지)
-ASKS_TITLE_CAP = 50
-ASKS_HOW_CAP = 60
+# ★2026-08-30 GM 지시 — "가능하면 조금 더 넉넉한 줄수를 주고, 핵심 내용을 끝까지 보내 달라.
+#   계속 …로 끝나거나 '외 3건'으로 접히는 것보다 다 보고 싶다, 궁금하다."
+#   → 세 상한을 모두 0(= 자르지 않음)으로 둔다. 8/29 의 '한 통 3건'은 이 지시가 대체한다.
+#   접는 대신 줄여야 하는 건 화면에 뜨는 줄이 아니라 안 끝난 '건수' 자체다.
+ASKS_TOTAL_CAP = 0  # 0 = 전부 보여줌(GM 지시 2026-08-30). 종전 3건
+ASKS_TITLE_CAP = 0  # 0 = 안 자름. 종전 50자
+ASKS_HOW_CAP = 0    # 0 = 안 자름. 종전 60자
 _ROLE_TAG_RE = re.compile(r"^\[[^\]]*\]\s*")  # "[웰페리온 AI 웰리] " 같은 발신 태그
 _GREETING_RE = re.compile(r"^(답변\s*)?(감사|고맙|안녕|수고)")  # 인사·감사만 있는 줄
 _ADDRESS_ONLY_RE = re.compile(r"(님|께)\s*[,，]?$")            # 「이경연 실장님,」 같은 호칭 줄
@@ -1007,7 +1015,7 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
     items = sorted(relay_items + nudge_items, key=lambda x: x.get("date") or "9999-99-99")
     if not items:
         return ""
-    shown = items[:ASKS_TOTAL_CAP]
+    shown = items if ASKS_TOTAL_CAP <= 0 else items[:ASKS_TOTAL_CAP]
     rest = len(items) - len(shown)
 
     # ★2026-08-20 GM 지적("정말 복잡해, 직관적이고 명확해야해") — 사람 단위로 묶는다.
@@ -1034,23 +1042,24 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
 
 
 def _selfcheck_asks_section() -> None:
-    """헤더 건수 = 실제로 보이는 줄 수인지, 한 통 전체가 ASKS_TOTAL_CAP(3)건에서 잘리는지
-    (사람별 상한 아님 — 2026-08-29 GM 확정). 네트워크 없이 돈다."""
+    """헤더 건수 = 실제로 보이는 줄 수인지, 그리고 접히는 건·잘리는 글자가 없는지
+    (GM 지시 2026-08-30 — 전부 끝까지 보낸다). 네트워크 없이 돈다."""
     relay = [{"date": "2026-08-18", "who": "이경연 실장", "ask": "실장 건", "how": "h"}]
     nudge = [{"date": f"2026-08-{d:02d}", "who": "이정헌 소장", "ask": f"n{d}건", "how": "h"}
-             for d in range(10, 17)]  # 7건 — 이경연 실장 1건과 합쳐 총 8건, 3건 상한 초과
+             for d in range(10, 17)]  # 7건 — 이경연 실장 1건과 합쳐 총 8건
     out = build_asks_section(relay, nudge)
-    assert "확인 부탁드릴 것 3건" in out, out  # 한 통 전체 3건(사람 구분 없이 오래된 순)
-    assert "외 5건이 더 있습니다" in out, out  # 8건 - 3건 = 5건
+    assert "확인 부탁드릴 것 8건" in out, out  # 헤더 건수 = 실제로 보이는 줄 수
+    assert "더 있습니다" not in out, out       # 접는 꼬리줄이 남아 있으면 안 된다
     # 답하는 방법 안내는 맨 위 한 번뿐이어야 한다(2026-08-20 GM: 같은 문장이 다섯 번 찍혔다)
     assert out.count("한 마디만 주시면 됩니다") == 1, out
-    # 오래된 순 정렬이므로 실장 건(8/18)이 소장 건(8/10~)보다 나중 — 상한 3건 안에
-    # 소장의 가장 오래된 것(n10·n11·n12)만 들어가고 실장 건은 밀려 빠져야 한다.
-    for d in (10, 11, 12):
-        assert f"n{d}건" in out, f"오래된 3건은 화면에 보여야 한다: n{d}"
-    for d in (13, 14, 15, 16):
-        assert f"n{d}건" not in out, f"상한 초과분은 접혀야 한다: n{d}"
-    assert "실장 건" not in out, "총량 상한(3건)에 밀리면 다른 사람 건도 접혀야 한다"
+    # 여덟 건 전부 본문에 있어야 한다 — 사람이 여럿이어도 밀려 접히지 않는다.
+    for d in range(10, 17):
+        assert f"n{d}건" in out, f"모든 건이 보여야 한다: n{d}"
+    assert "실장 건" in out, "다른 사람 건도 접히지 않아야 한다"
+    # 긴 문장이 '…' 로 끊기지 않는지 — GM 지시 2026-08-30 의 핵심.
+    long_ask = "가나다라마바사아자차카타파하 " * 8
+    out2 = build_asks_section([{"date": "2026-08-01", "who": "테스트", "ask": _cap_line(long_ask, ASKS_TITLE_CAP), "how": "h"}], [])
+    assert "…" not in out2, out2
     assert out.splitlines()[-1] == RELAY_SIGNOFF
     assert build_asks_section([], []) == "", "항목 0건이면 절 자체가 없어야 한다"
     print("[selfcheck] build_asks_section OK")
@@ -1386,8 +1395,8 @@ def _ovd_mark_sent() -> None:
 #   (닫는 동작)를 넣는다 — 실무진 전달문 3줄 규칙(wellperion-gm-report §4-2-2).
 #   ▸「N일째」 표기는 뺀다. 밀린 건 우리 사정이고 그 숫자는 압박만 될 뿐 무엇을 하라는
 #     정보가 없다(같은 규칙). 대신 접수 날짜를 적는다 — 오래된 순 정렬은 그대로다.
-_OVD_LIST_CAP = 8            # 본문에 펼치는 최대 건수(나머지는 아래 한 줄로 접는다)
-_OVD_CONTENT_CAP = 24        # 내용 요약 길이 — 카톡 한 줄을 넘기지 않는 선
+_OVD_LIST_CAP = 0            # 0 = 전부 펼침(GM 지시 2026-08-30). 종전 8건
+_OVD_CONTENT_CAP = 0         # 0 = 안 자름(GM 지시 2026-08-30). 종전 24자
 _OVD_BOARD_URL = ("https://wellperion-cao.github.io/wellperion-automation/"
                   "coo/reception/종합접수처_현황.html")
 
@@ -1426,7 +1435,9 @@ def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
         if days < 3:
             continue
         dept = str(r.get("dept") or "").strip() or "부서 미정"
-        content = " ".join(str(r.get("content") or "").split())[:_OVD_CONTENT_CAP]
+        content = " ".join(str(r.get("content") or "").split())
+        if _OVD_CONTENT_CAP > 0:
+            content = content[:_OVD_CONTENT_CAP]
         items.append({
             "days": days,
             "dept": dept,
@@ -1445,7 +1456,7 @@ def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
             f"⏰ 아직 안 끝난 접수 {len(items)}건 — 목록은 저녁 정리 한 통에 담아 드립니다",
             f"📎 종합접수처 {_OVD_BOARD_URL}",
         ])
-    shown, rest = items[:_OVD_LIST_CAP], items[_OVD_LIST_CAP:]
+    shown, rest = (items, []) if _OVD_LIST_CAP <= 0 else (items[:_OVD_LIST_CAP], items[_OVD_LIST_CAP:])
 
     lines = [f"⏰ 아직 안 끝난 접수 {len(items)}건 — 마무리 부탁드립니다",
              "회원분이 남겨 주신 뒤로 아직 안 닫힌 건들입니다."]

@@ -143,7 +143,7 @@ AI_SIGNOFF = "AI 시포 드림"
 
 # 하루에 부탁드리는 건수 상한 — 소음은 상한(30일)이 아니라 건수로 잡는다(웰리 07-25).
 DAILY_TOP_N = 10              # 회전 선발 상한(가드 대상) — 기존 값 유지(웰리 07-25)
-MSG_DISPLAY_N = 5             # 메시지 본문에 실제로 줄로 싣는 건수(GM 08-05 "10줄 안쪽")
+MSG_DISPLAY_N = 0             # 0 = 선발된 것 전부 싣는다(GM 지시 2026-08-30 "다 보고 싶다"). 종전 5건
 STALE_MIN_DAYS = 3           # 갓 들어온 문의는 정상 응대 흐름에 맡긴다
 DORMANT_OVER_DAYS = 100      # 이 일수 "초과" + 연락이력 0건 = 휴면
 # ★2026-08-20 시포 — 화면 아카이브 기준과 맞춘다(GM 신고: 알림에 뜬 이효주 님을 화면에서 못 찾음).
@@ -163,14 +163,14 @@ HEARTBEAT_ID = "cpo-unassigned-nudge"  # 배10014 방식 — 상설 파일 1개 
 # ── 24시간 SLA 위반 → 카카오 ★부서장 방 (GM 2026-08-05 지시) ────────────────────
 SLA_SINCE_DATE = "2026-08-01"  # 대상 = 이 날짜(포함) 이후 접수분만
 SLA_HOURS = 24                 # 문턱 — 배정·컨택 둘 중 하나라도 없으면 위반
-SLA_MSG_DISPLAY_N = 3          # 본문에 줄로 싣는 건수(GM "10줄 안쪽" · 2026-08-14 기준·회신요청 2줄 추가분 상쇄)
+SLA_MSG_DISPLAY_N = 0          # 0 = 전부 싣는다(GM 지시 2026-08-30). 종전 3건
 KAKAO_DEPTHEAD_ROOM = "★부서장"  # scripts/kakao_rooms.json 정본과 동일 값(창-제목 대조용)
 ASSIGN_URL_MEMBER = _BASE + "membership.html"  # 회원 문의 처리 화면(60일 무응답 알림 링크용)
 
 # ── 컨택 후 60일(2개월) 무응답 → 카카오 ★부서장 방 (GM 2026-08-05 지시) ──────────
 NORESP_MIN_DAYS = 60    # 본선 문턱 — GM "기한을 2개월로"
 NORESP_WARN_DAYS = 45   # 예고 문턱 — 60일 도달 전에 미리 뜨게(문턱 넘고 알리면 늦다)
-NORESP_MSG_DISPLAY_N = 5  # 본문에 줄로 싣는 건수(GM "10줄 안쪽")
+NORESP_MSG_DISPLAY_N = 0  # 0 = 전부 싣는다(GM 지시 2026-08-30). 종전 5건
 
 
 def _has_contact(row: dict) -> bool:
@@ -534,7 +534,8 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     10줄 안쪽·한 줄에 한 건(접수일시·이름·종목·경과시간·상태)·부탁 조·AI 주체 명시."""
     if not violations:
         return ""
-    shown = violations[:SLA_MSG_DISPLAY_N]  # 이미 경과시간 내림차순(오래된 순)
+    # 이미 경과시간 내림차순(오래된 순). 0 = 전부(GM 지시 2026-08-30)
+    shown = violations if SLA_MSG_DISPLAY_N <= 0 else violations[:SLA_MSG_DISPLAY_N]
     rest_n = len(violations) - len(shown)
     lines = [f"⏰ 24시간 미배정·미컨택 · {len(violations)}건 (8/1 이후 접수분)"]
     # GM 지시 2026-08-14: 확인만 부탁하니 답이 없어 같은 건이 13일째 남았다.
@@ -669,7 +670,7 @@ def select_noresponse_rotation(due: list[dict], notified60: dict[str, str],
     내림차순. 오늘 보여준 건은 notified60 기록 후 다음 선발에서 뒤로 밀린다(라운드로빈).
     처리(등록/LOSS/재컨택)된 건은 due 자체에서 빠지므로 자동으로 회전에서 사라진다."""
     ordered = sorted(due, key=lambda it: (notified60.get(it["key"], ""), -it["days"]))
-    return ordered[:top_n]
+    return ordered if top_n <= 0 else ordered[:top_n]
 
 
 def build_noresponse_alert_text(due: list[dict], warn_n: int, selected: list[dict]) -> str:
@@ -677,7 +678,7 @@ def build_noresponse_alert_text(due: list[dict], warn_n: int, selected: list[dic
     10줄 이내·한 줄에 한 건(접수일·이름·종목·경과일·담당자)·상태선택 유도·AI 서명."""
     if not due:
         return ""
-    shown = selected[:NORESP_MSG_DISPLAY_N]
+    shown = selected if NORESP_MSG_DISPLAY_N <= 0 else selected[:NORESP_MSG_DISPLAY_N]
     rest_n = len(due) - len(shown)
     oldest = due[0]["days"]  # collect_noresponse()에서 이미 -days 정렬됨
     warn_part = f" · 2개월 임박(45~59일) {warn_n}건 곧 도달" if warn_n else ""
@@ -1007,8 +1008,9 @@ def _render_message(selected: list[dict], eligible: list[dict], dormant: list[di
 
     oldest = eligible[0]["days"]  # collect_unassigned() 에서 이미 -days 정렬됨
     # 팡파레가 붙는 날은 줄 수 상한(GM "10줄 안쪽")을 지키려고 목록을 그만큼 줄인다.
-    show_n = MSG_DISPLAY_N - (2 if cheer else 0)
-    shown = sorted(selected, key=lambda x: -x["days"])[:show_n]
+    show_n = 0 if MSG_DISPLAY_N <= 0 else max(1, MSG_DISPLAY_N - (2 if cheer else 0))
+    _ordered = sorted(selected, key=lambda x: -x["days"])
+    shown = _ordered if show_n <= 0 else _ordered[:show_n]
     rest_n = len(eligible) - len(shown)
 
     lines = []

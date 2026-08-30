@@ -312,7 +312,7 @@ def _special_notes(
 # 실질적으로 없음). 완료시각 칸도 없어 "직전 실행 이후 새로 배정/등록된 것"만 커서로 가른다.
 # ══════════════════════════════════════════════════════════════════════════
 COMPLETION_STATE_PATH = REPO_ROOT / "status" / "dept_completion_notify.json"
-_COMPLETION_CAP = 6
+_COMPLETION_CAP = 0  # 0 = 전부 보여줌(GM 지시 2026-08-30 "…외 N건 말고 다 보고 싶다"). 종전 6건
 
 
 def _load_completion_state() -> dict:
@@ -384,11 +384,11 @@ def _completion_block(raw_groups: dict[str, list[dict]], state: dict | None = No
         name = str(r.get("name") or "-").strip() or "-"
         return f"✅ 문의 {label} — {name}({team}) · 담당 {who or '-'}"
 
-    shown = events[:_COMPLETION_CAP]
+    shown = events if _COMPLETION_CAP <= 0 else events[:_COMPLETION_CAP]
     lines = [f"━━━━━━━━━━\n✅ 처리 완료 알림 {len(events)}건"]
     lines += [_fmt(*e) for e in shown]
-    if len(events) > _COMPLETION_CAP:
-        lines.append(f"  …외 {len(events) - _COMPLETION_CAP}건 더")
+    if len(events) > len(shown):
+        lines.append(f"  …외 {len(events) - len(shown)}건 더")
     return "\n".join(lines)
 
 
