@@ -486,6 +486,49 @@
     .sec-title::after{display:none}
     .panel[data-panel="hire"] .item-title{font-size:16.5px}
   }
+
+  /* ── 라이브 패널 2단(평가·보상 탭, 업무 정량평가) — 업무보드(coo/todo/업무 현황 SSOT.html) 상단
+     패널 이식(2026-08-30 매니저 지시, A-6 진단 확정). 구조·그리드·복호 방어선은 보드 원본 그대로 —
+     색상 토큰만 이 페이지의 라이트 콘시어지 테마(--surface/--line/--ink 계열)로 옮겼다. ── */
+  .wpl-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:2px 0 4px}
+  .wpl-strip .wpl-foot{grid-column:1/-1;font-size:11.5px;color:var(--ink-faint);text-align:center;padding:6px 0 0}
+  @media(max-width:860px){.wpl-strip{grid-template-columns:1fr}}
+  .wpl-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;container-type:inline-size;box-shadow:var(--shadow-card)}
+  .wpl-headline{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:11px}
+  .wpl-headline .wpl-sub{font-size:12px;font-weight:500;color:var(--ink-faint);margin-left:5px}
+  /* 2열 그리드 + 필드 줄맞춤(보드 2026-08-24 지시분 이식) — minmax(0,1fr) 필수(안 그러면 좁은 화면에서
+     행이 트랙을 뚫고 넘친다). */
+  .wpl-body{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px 14px;align-items:start}
+  .wpl-body::after{content:'';position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed var(--line);pointer-events:none}
+  /* 2열 폴백 기준 = 카드 자신의 렌더폭(@container) — 바깥 .wpl-strip 그리드가 몇 열이든 항상 안전
+     (보드 2026-08-25 수정분 이식, 사유는 보드 원본 주석 참조). */
+  @container(max-width:530px){.wpl-body{grid-template-columns:minmax(0,1fr)}.wpl-body::after{display:none}}
+  .wpl-dim{font-size:13px;color:var(--ink-faint)}
+  .wpl-row{font-size:15px;padding:2px 0}
+  .wpl-row.wpl-span2{grid-column:1/-1;display:flex;align-items:center;gap:9px;min-width:0}
+  .wpl-rank{min-width:23px;height:23px;border-radius:50%;background:rgba(169,138,82,.14);color:var(--gold-deep);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .wpl-name{font-weight:700;color:var(--ink);white-space:nowrap}
+  .wpl-pt{font-weight:800;color:var(--gold-deep);white-space:nowrap;font-size:16px}
+  .wpl-detail{font-size:13px;color:var(--ink-faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wpl-row-todo,.wpl-row-eval{display:grid;align-items:center;column-gap:6px;min-width:0}
+  .wpl-row-todo{grid-template-columns:25px minmax(0,1fr) 28px 26px 26px 38px 26px}
+  .wpl-row-eval{grid-template-columns:25px minmax(0,1fr) 38px 38px 54px 50px}
+  .wpl-row-todo .wpl-rank,.wpl-row-eval .wpl-rank{min-width:25px;width:25px;height:25px;font-size:13px}
+  .wpl-row-todo .wpl-name,.wpl-row-eval .wpl-name{overflow:hidden;text-overflow:ellipsis;min-width:0;font-size:16px}
+  .wpl-fld{font-size:14.5px;color:var(--ink-faint);text-align:right;white-space:nowrap;overflow:hidden;min-width:0}
+  .wpl-fld b{color:var(--ink);font-weight:800;font-size:15.5px}
+  .wpl-fld.wpl-late-hot{color:var(--red);font-weight:800}
+  .wpl-fld.wpl-eval-total{color:var(--gold-deep);font-weight:800;font-size:18px}
+  /* 미채점N 배지 — 문서 흐름 밖 절대배치 코너 배지(보드 2026-08-25 수리분 이식) — 배지 유무와
+     무관하게 모든 행이 항상 같은 1줄 높이를 유지한다. */
+  .wpl-fld-badged{position:relative;overflow:visible}
+  .wpl-unscored-badge{position:absolute;top:-5px;right:-4px;background:var(--gray-bg);color:var(--ink-soft);
+    font-size:8px;font-weight:800;line-height:1;padding:1.5px 3.5px;border-radius:7px;white-space:nowrap;
+    pointer-events:none}
+  .wpl-hdr{padding-bottom:2px}
+  .wpl-hdr .wpl-fld{font-size:10.5px;color:var(--ink-faint);font-weight:700;letter-spacing:.02em}
+  @container(max-width:530px){.wpl-hdr-b{display:none}}
+  @media print{.wpl-strip{display:none!important}}
 </style>
 <link rel="stylesheet" href="../../assets/wp-typography.css">
 </head>
@@ -4010,11 +4053,30 @@ var WP_QUANT_LAST=[]; // 마지막 renderQuantEval() 계산 결과(카드별 ite
 // 자동으로 라이브 값을 우선 사용한다 — 수동 플래그 전환 없이 카드 단위로 점진 전환된다.
 // 화이트리스트는 백엔드 SIZE_SCORE_WHITELIST(옵션 B, 2026-08-17 매니저 확정)와 동일하게 맞춘다.
 var WP_SIZE_SCORE_WHITELIST=["1","2","3","5","8"];
+/* 규모점수 열의 사후 지연 "날짜서식 오염" 방어 복호(2026-08-30 A-5 — 업무보드 qevDecodeDateScore
+   그대로 이식, 함정노트 "표시 서식 오염은 재기입으로 고치지 않는다" 절). 시트 날짜 직렬값
+   (1899-12-30=0일)으로 표시되어도 원점수를 복원해 계산에 넣는다 — 원인(시트 서식) 미제거 상태에서
+   재오염돼도 이 화면 수치는 무너지지 않는다. raw UTC 날짜 성분을 그대로 읽는다(시간대 보정 없음 —
+   보드 실측상 이 방식일 때만 원점수와 100% 일치). 복호 불가/화이트리스트 밖 값은 null(판정불가). */
+function wpDecodeDateScore(raw){
+  var s=String(raw).trim();
+  if(!s) return null;
+  if(/^-?\d+(\.\d+)?$/.test(s)) return null; // 순수 숫자문자열은 날짜 오염이 아님(화이트리스트 판정은 호출측에서 이미 끝남)
+  var d=new Date(s);
+  if(isNaN(d.getTime())) return null;
+  var target=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()); // raw UTC 날짜 성분 그대로(시간대 보정 없음)
+  var epoch=Date.UTC(1899,11,30);
+  var days=Math.round((target-epoch)/86400000);
+  var score=days+1;
+  return WP_SIZE_SCORE_WHITELIST.indexOf(String(score))>=0 ? score : null;
+}
 function wpScoreLookup(t){
   var live=t["규모점수"];
   var liveStr=(live===undefined||live===null)?"":String(live).trim();
   if(liveStr!==""){
     if(WP_SIZE_SCORE_WHITELIST.indexOf(liveStr)>=0) return {has:true,score:Number(liveStr)};
+    var decoded=wpDecodeDateScore(liveStr);
+    if(decoded!=null) return {has:true,score:decoded};
     return {has:true,score:null}; // 화이트리스트 밖 값(백엔드가 막지만 방어적으로) — 판정불가 취급
   }
   if(t.id in WP_R_SCORE) return {has:true,score:WP_R_SCORE[t.id]}; // 폴백: 정적 매핑(백필 전 구간)
@@ -4085,6 +4147,126 @@ function quantEvalCompute(tasks){
   });
   return out;
 }
+/* ============ 라이브 패널 2단 — 업무보드(coo/todo/업무 현황 SSOT.html) 상단 패널 그대로 이식
+   (2026-08-30 매니저 지시, A-6 진단 확정) ============
+   왼쪽 = 실시간 평가점수(위 quantEvalCompute 재사용) · 오른쪽 = 업무 처리 현황(완료/진행/보류/완료율/지연).
+   구 카드형 UI(quantEvalCard/quantEvalRenderHTML, 아래)는 화면에서만 제거 — 함수 정의·openQevPersonModal
+   연동은 무접촉 보존(git 복원 가능, 2026-08-17 정리와 동일 관례). 데이터 소스·계산은 보드와 완전히 동일
+   (같은 COO_TODO_FN todo_list 응답) — 인원별 산출값이 보드와 일치해야 한다. */
+var WP_TODO_MEMBERS=["이경연 실장","나우열M","최준용M","임정은M","윤병현AM","백승화 사원","진수아 사원","이정헌 소장"];
+var WP_STAFF_TOKENS={"이경연 실장":1,"나우열M":1,"최준용M":1,"임정은M":1,"윤병현AM":1,"백승화 사원":1,"진수아 사원":1,"이정헌 소장":1};
+function wpHasNoStaff(t){
+  var owners=wpOwners(t);
+  if(!owners.length) return true;
+  for(var i=0;i<owners.length;i++){ if(WP_STAFF_TOKENS[owners[i]]) return false; }
+  return true;
+}
+function wpExcludeNonStaff(list){ return (list||[]).filter(function(t){ return !wpHasNoStaff(t); }); }
+// KST 달력일 변환 — 업무보드 kstDateStr() 그대로 이식. 표시 전용, 저장값 무접촉.
+function wpKstDateStr(d){
+  if(!d) return "";
+  var str=String(d);
+  if(str.length>=11 && str[10]==="T"){
+    var dt=new Date(str);
+    if(!isNaN(dt.getTime())){
+      var kst=new Date(dt.getTime()+9*3600*1000);
+      return kst.getUTCFullYear()+"-"+String(kst.getUTCMonth()+1).padStart(2,"0")+"-"+String(kst.getUTCDate()).padStart(2,"0");
+    }
+  }
+  return str.slice(0,10);
+}
+// 담당자별 완료/진행/보류/완료율/지연 — 업무보드 renderTodoTable() 집계 로직 그대로 이식(오늘 기준은
+// 보드 원본과 동일하게 브라우저 로컬시각 사용 — KST 미보정, 보드와 값을 맞추기 위해 그대로 둔다).
+function wpTodoStatsCompute(tasks){
+  var all=wpExcludeNonStaff(tasks);
+  var pad=function(n){return (n<10?"0":"")+n;};
+  var d=new Date();
+  var today=d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  var st=function(t){return String(t["상태"]||"").trim();};
+  var stats=[];
+  WP_TODO_MEMBERS.forEach(function(m){
+    var mine=all.filter(function(t){ return String(t["담당자"]||"").indexOf(m)>=0; });
+    if(!mine.length) return;
+    var done=mine.filter(function(t){return st(t)==="완료";}).length;
+    var hold=mine.filter(function(t){return st(t)==="보류";}).length;
+    var prog=mine.filter(function(t){return st(t)!=="완료"&&st(t)!=="보류";}).length;
+    var late=mine.filter(function(t){
+      var e=wpKstDateStr(t["종료일"]);
+      return st(t)!=="완료"&&st(t)!=="보류"&&e&&e<today;
+    }).length;
+    stats.push({name:m,done:done,hold:hold,prog:prog,late:late,rate:mine.length?Math.round(done/mine.length*100):0});
+  });
+  stats.sort(function(a,b){return b.done-a.done||b.rate-a.rate;});
+  return stats;
+}
+function wplHdrEval(){
+  return '<span></span><span></span><span class="wpl-fld">볼륨</span><span class="wpl-fld">품질</span>'+
+    '<span class="wpl-fld">완료</span><span class="wpl-fld">점수</span>';
+}
+function wplHdrTodo(){
+  return '<span></span><span></span><span class="wpl-fld">완료</span><span class="wpl-fld">진행</span><span class="wpl-fld">보류</span>'+
+    '<span class="wpl-fld">완료율</span><span class="wpl-fld">지연</span>';
+}
+function renderWplEval(list){
+  var rows=[
+    '<div class="wpl-row wpl-row-eval wpl-hdr wpl-hdr-a">'+wplHdrEval()+'</div>',
+    '<div class="wpl-row wpl-row-eval wpl-hdr wpl-hdr-b">'+wplHdrEval()+'</div>'
+  ];
+  var totalUnscored=0;
+  list.forEach(function(r){
+    totalUnscored+=r.unscored.length;
+    if(r.gateOk){
+      rows.push('<div class="wpl-row wpl-row-eval" style="cursor:pointer" onclick="openQevPersonModal(\''+esc(r.key)+'\')" '+
+        'title="클릭하면 '+esc(r.name)+'님의 업무·점수 목록을 볼 수 있습니다">'+
+        '<span class="wpl-rank">'+esc(r.grade)+'</span>'+
+        '<span class="wpl-name">'+esc(r.name)+'</span>'+
+        '<span class="wpl-fld">'+r.volume+'</span>'+
+        '<span class="wpl-fld">'+r.quality+'</span>'+
+        '<span class="wpl-fld'+(r.unscored.length?' wpl-fld-badged':'')+'">'+r.completedCount+'/'+r.completedScore+
+          (r.unscored.length?'<span class="wpl-unscored-badge" title="미채점 '+r.unscored.length+'건">'+r.unscored.length+'</span>':'')+'</span>'+
+        '<span class="wpl-fld wpl-eval-total">'+r.total+'</span>'+
+        '</div>');
+    }else{
+      rows.push('<div class="wpl-row wpl-span2" style="cursor:pointer" onclick="openQevPersonModal(\''+esc(r.key)+'\')">'+
+        '<span class="wpl-rank" style="background:var(--gray-bg);color:var(--ink-faint)">–</span>'+
+        '<span class="wpl-name">'+esc(r.name)+'</span>'+
+        '<span class="wpl-pt" style="color:var(--ink-faint);font-size:14px">게이트 미달</span>'+
+        '<span class="wpl-detail">배정 '+r.n+'건(5건 이상 필요)</span>'+
+        '</div>');
+    }
+  });
+  rows.push(
+    '<div class="wpl-row wpl-span2">'+
+    '<span class="wpl-rank" style="background:var(--purple-bg);color:var(--purple)">–</span>'+
+    '<span class="wpl-name">임정은</span>'+
+    '<span class="wpl-pt" style="color:var(--ink-faint);font-size:14px">별도 기준</span>'+
+    '<span class="wpl-detail">상시 운영형 실적 — 규모채점 산식 적용 대상 아님</span>'+
+    '</div>'
+  );
+  var html=rows.join("");
+  if(totalUnscored){ html+='<div class="wpl-dim" style="margin-top:8px;text-align:center">신규 등재(2026-08-14 채점표 이후) 미채점 카드 총 '+totalUnscored+'건 — 점수 집계에서 제외, 다음 회차 채점 반영 대기.</div>'; }
+  return html;
+}
+function renderWplTodo(stats){
+  var rows=[
+    '<div class="wpl-row wpl-row-todo wpl-hdr wpl-hdr-a">'+wplHdrTodo()+'</div>',
+    '<div class="wpl-row wpl-row-todo wpl-hdr wpl-hdr-b">'+wplHdrTodo()+'</div>'
+  ];
+  var rank=0, prev=null;
+  stats.forEach(function(s,i){
+    if(prev===null||s.done!==prev){ rank=i+1; prev=s.done; }
+    rows.push('<div class="wpl-row wpl-row-todo">'+
+      '<span class="wpl-rank">'+rank+'</span>'+
+      '<span class="wpl-name">'+esc(s.name)+'</span>'+
+      '<span class="wpl-fld"><b>'+s.done+'</b></span>'+
+      '<span class="wpl-fld">'+s.prog+'</span>'+
+      '<span class="wpl-fld">'+s.hold+'</span>'+
+      '<span class="wpl-fld">'+s.rate+'%</span>'+
+      '<span class="wpl-fld'+(s.late?' wpl-late-hot':'')+'">'+s.late+'</span>'+
+      '</div>');
+  });
+  return rows.join("");
+}
 function quantEvalCard(r){
   var pct=function(v){return v==null?"—":(Math.round(v*1000)/10)+"%";};
   var head='<div class="item-top"><div><div class="item-title">'+esc(r.name)+' <span class="muted" style="font-weight:400">'+esc(r.title)+'</span></div>'+
@@ -4153,16 +4335,20 @@ function quantEvalRenderHTML(list){
   return html;
 }
 async function renderQuantEval(){
-  var box=document.getElementById("qevBox");
-  if(!box) return;
+  var evalBox=document.getElementById("wplEval"), todoBox=document.getElementById("wplTodo");
+  if(!evalBox||!todoBox) return;
   try{
     var raw=await withTimeout(fetch(COO_TODO_FN+"?action=todo_list",{redirect:"follow"}),20000).then(function(x){return x.json();});
     if(!(raw&&raw.ok&&raw.data)) throw new Error((raw&&raw.error)||"응답 없음");
     var list=quantEvalCompute(raw.data);
     WP_QUANT_LAST=list;
-    box.innerHTML=quantEvalRenderHTML(list);
+    evalBox.innerHTML=renderWplEval(list);
+    var stats=wpTodoStatsCompute(raw.data);
+    todoBox.innerHTML=stats.length?renderWplTodo(stats):'<div class="wpl-dim">업무 기록이 아직 없습니다.</div>';
   }catch(e){
-    box.innerHTML='<div class="card">'+emptyState("업무보드 로드 실패: "+((e&&e.message)||String(e)),"⚠")+'</div>';
+    var errMsg="업무보드 로드 실패: "+((e&&e.message)||String(e));
+    evalBox.innerHTML='<div class="wpl-dim">'+esc(errMsg)+'</div>';
+    todoBox.innerHTML='<div class="wpl-dim">'+esc(errMsg)+'</div>';
   }
 }
 function evalConsole(){
@@ -4248,7 +4434,12 @@ function renderEval(){
      구 UI(평가 실시 콘솔·평가 제도/기준·평가 기록 목록)는 화면에서만 제거. evalConsole()/
      criteriaSection() 등 함수 정의와 save-eval 등 백엔드 API는 무접촉 보존(git 복원 가능).
      [추가 2026-08-17 A-5] 정량평가 섹션 아래에 evalCriteriaSection() 접이식 "평가 기준" 안내 추가
-     (매니저 지시 "평가탭에 평가기준은 정리되면 좋을 것 같아"). */
+     (매니저 지시 "평가탭에 평가기준은 정리되면 좋을 것 같아").
+     [교체 2026-08-30 A-5, 매니저 지시·A-6 진단] 구 카드형 qevBox → 업무보드 상단 라이브 패널(2단)
+     그대로 이식. 같은 지표(정량평가)를 두 형태로 중복 표시하지 않기 위해 교체(오케스트레이터 A안) —
+     카드형이 제공하던 개인별 상세(완결력·기한준수·정체관리 비율, 배정 업무 목록)는 정보 손실 없이
+     행 클릭 → openQevPersonModal() 팝업으로 그대로 흡수. quantEvalCard/quantEvalRenderHTML 정의는
+     무접촉 보존(위와 동일 관례). */
   var html='<div class="sec-title">인사평가 · 포상</div>';
   if(ERR.eval){setPanel("eval",html+errCard("인사평가 DB","eval"));return;}
   if(SESSION_ROLE==="admin"){
@@ -4256,7 +4447,14 @@ function renderEval(){
       '<div class="muted" style="margin-bottom:10px">정량평가 — 업무보드 기록 기반 자동 산출 · 정성평가는 추후 도입 예정</div>'+
       '<div style="margin:0 0 12px"><a href="eval-guide.html" target="_blank" rel="noopener" class="btn-sm" '+
         'style="text-decoration:none;display:inline-flex;align-items:center;gap:5px;color:var(--gold-deep);border-color:var(--gold)">📖 평가 가이드</a></div>'+
-      '<div id="qevBox"><div class="card">'+emptyState("업무보드 데이터 로드 중…","◌")+'</div></div>'+
+      '<div class="wpl-strip" id="wplStrip">'+
+        '<section class="wpl-card"><div class="wpl-headline">📊 실시간 평가점수 <span class="wpl-sub">업무 정량평가</span></div>'+
+          '<div class="wpl-body" id="wplEval"><div class="wpl-dim">불러오는 중…</div></div></section>'+
+        '<section class="wpl-card"><div class="wpl-headline">📋 업무 처리 현황 <span class="wpl-sub">라이브</span></div>'+
+          '<div class="wpl-body" id="wplTodo"><div class="wpl-dim">불러오는 중…</div></div></section>'+
+        '<div class="wpl-foot">업무 처리 현황의 건수는 배분 현황이며 평가가 아닙니다. 평가점수는 완료 규모·품질 기반 정량 산출입니다'+
+          '(배정 5건 미만은 게이트 미달). 실시간 평가점수 행을 클릭하면 개인별 업무·점수 상세를 볼 수 있습니다.</div>'+
+      '</div>'+
       evalCriteriaSection();
   }else{
     html+='<div class="card">'+emptyState("관리자 모드에서만 조회할 수 있습니다.","◇")+'</div>';
