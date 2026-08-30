@@ -3286,18 +3286,36 @@ table.op-t td b{font-size:15px}
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbykgMyFc-g_KG7x3HoKStKBwerKhYYfmbqNeFqCL5O1b_4-1nng4wEiKhkNJtfB4BWo/exec';
 /* 미연동 판별 센티넬 — GAS_URL 이 아래 자리표시자와 같을 때만 '미연동'. 실제 URL 연동됨(2026-06-22) → 가드 비발동 */
 var GAS_PLACEHOLDER = '__PASTE_GAS_EXEC_URL__';
-/* ★GAS 예열 — 페이지를 여는 순간 서버를 미리 깨운다 (배754 · GM 선택 B안 2026-08-24).
-   실측(2026-08-24 라이브): 같은 목록이 첫 호출 6.7~25.6초 / 두 번째부터 3.1~3.4초다. 차이는 데이터
-   양이 아니라 **잠들어 있던 서버가 깨는 시간**이다(문의 목록 717KB 가 25.6초 → 3.1초).
-   그래서 사람이 메뉴를 고르기 전에, 가장 가벼운 조회(corp = 법인 목록)로 한 발 깨워 둔다.
-   ▸응답은 쓰지 않고 버린다 — 목적은 데이터가 아니라 서버 기동이다. 실패해도 조용히 넘어간다.
-   ▸새 액션·새 파일 0(약속 L21). 3초 왕복 지연 자체는 GAS 구조라 이걸로도 안 줄어든다 — 줄어드는 건
-     첫 진입의 콜드 구간뿐이다(과대보고 금지). */
+/* ★GAS 예열 + scope=valid 선입수 (배754·배845 · 2026-08-24·2026-08-31).
+   실측(2026-08-24): 같은 목록이 첫 호출 6.7~25.6초 / 두 번째부터 3.1~3.4초.
+   차이는 데이터 양이 아니라 잠든 서버가 깨는 시간이라, corp(경량)로 먼저 깨우고
+   scope=valid를 즉시 백그라운드 선입수해 응답을 캐시에 넣는다.
+   사용자가 회원 목록 탭을 클릭하는 시점(보통 페이지 오픈 후 2~5초)에 이미
+   캐시가 채워져 있으면 _activeApplyData가 즉시 실행돼 체감 0초가 된다.
+   ▸선입수 응답도 실패하면 조용히 폴백 — 기존 스냅샷+GAS 경로 그대로 동작(유실 0).
+   ▸_activeCache['valid']가 이미 있으면 덮지 않는다(loadActiveMembers 완료 레이스 가드).
+   ▸미인증(키 없음) 시에는 선입수 생략 — 빈 응답을 캐시에 넣으면 안 된다.
+   ponytail: 새 액션·새 파일 0. _maDecodeRowsFormat·_activeCacheSave 기존 함수 재사용. */
 (function _gasPrewarm(){
   try {
     if (GAS_URL === GAS_PLACEHOLDER) return;
+    // 서버 기동 (corp = 가장 가벼운 조회, 응답 폐기)
     fetch(GAS_URL + '?action=member_active_list&scope=corp&format=rows&_warm=' + Date.now(),
           { cache: 'no-store' }).catch(function(){});
+    // scope=valid 선입수 — 인증된 경우만
+    var kp = _wpKeyParam();
+    if (!kp) return;
+    fetch(GAS_URL + '?action=member_active_list&scope=valid&format=rows' + kp,
+          { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        data = _maDecodeRowsFormat(data);
+        if (!data.ok || !data.data || !data.data.length) return;
+        if (_activeCache['valid']) return;   // 이미 로드 완료됐으면 덮지 않는다
+        _activeCache['valid'] = { headers: data.headers || [], rows: data.data };
+        _activeCacheSave('valid', data.headers || [], data.data);
+      })
+      .catch(function(){});
   } catch (e) {}
 })();
 // ── PII 토큰 ── 입장 비번(= 서버 ACCESS_TOKEN, 소스에 없음)을 입장 게이트가 저장 → 데이터 호출에 부착.
