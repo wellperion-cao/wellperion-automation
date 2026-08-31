@@ -2257,18 +2257,21 @@
    // 파트너팀 전체 월 목표 및 현황"). 팀·리더 정본 = ssot/kpi.json _팀리더_2026_08_25 (여기에 이름을 복제하지
    // 않는다 · 약속 L01). 팀별 목표·진척은 monthly_ops_plan.json 의 practitioner_goals/progress 에
    // 팀 id(pt·swim·gym·golf·squash·gx·musical·pilates)로 들어온다 — 아직 안 들어온 팀은 '미제출'로 보인다.
-   {id:'partner', key:'파트너팀 전체(강습 8팀)', prac:'na-uy', ai:'na-uy-gm', deptKeys:['파트너','강습'],
+   {id:'partner', key:'파트너팀 전체(강습 6팀)', prac:'na-uy', ai:'na-uy-gm', deptKeys:['파트너','강습'],
     partner:true, links:[{label:'파트너팀 체계', href:'coo/check/파트너팀 체계.html'}]}
   ];
   // 파트너팀 목록 — 표시명만 둔다. 리더 이름은 kpi.json 정본에서 읽어 채운다(아래 _teamLeads).
+  // ★2026-09-01 GM 지시 — G.X팀·뮤지컬팀을 이 카드에서 뺐다("G.X랑 뮤지컬은 빼자
+  //   월간운영계획에서도 빼줘"). 6팀만 월간 목표·진척을 낸다.
+  //   ▸ssot/kpi.json 의 팀 리더 표는 그대로 둔다 — 그 표는 '강습 건을 누가 맡나'를 정하는
+  //     다른 목적이고, 두 팀은 여전히 강습이다. 여기서 빼는 것은 월간 보고 대상뿐이다.
+  //   ▸되살릴 일이 생기면 이 배열에 id 를 다시 넣으면 된다(gx · musical).
   var PARTNER_TEAMS = [
     {id:'pt',      name:'P.T팀'},
     {id:'swim',    name:'수영팀'},
     {id:'gym',     name:'체조팀'},
     {id:'golf',    name:'골프팀'},
     {id:'squash',  name:'스쿼시팀'},
-    {id:'gx',      name:'G.X팀'},
-    {id:'musical', name:'뮤지컬팀'},
     {id:'pilates', name:'필라테스'}
   ];
   var _teamLeads = {};   // kpi.json 도착 시 채움 — 못 읽으면 리더 칸은 비운다(지어내지 않는다)
