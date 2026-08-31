@@ -152,10 +152,16 @@ def build_contact_text(send_day: str) -> str:
 
     지금까지 사람이 손으로 치던 칸이다. 실무진이 쓰던 문구 틀을 그대로 따른다.
 
-    ★기준일 = 보고 나가는 날의 **다음 날**이다. GM 확정 2026-08-28: "I16은 내일 투어 및
-      체험 예약(오늘 예약 달력 참고) / I18은 전날 LOSS기준". 그 전까지는 이 한 칸에
-      당일 예약과 전날 LOSS 를 함께 써서 두 기준일이 한 칸에 섞여 있었다 — LOSS 는
-      build_loss_text 로 떼어 I18 에 쓴다.
+    ★기준일 = 보고 나가는 날 **당일**이다(GM 확정 2026-08-31). 칸 이름 그대로 "금일"이다.
+      ▸2026-08-28 확정문 "I16은 내일 투어 및 체험 예약"의 '내일'은 **보고 대상일(전날 실적)
+        기준의 내일** = 보고 나가는 날이라는 뜻이었는데, 이를 발송일+1 로 구현해 하루가 더
+        밀렸다. 08-30·08-31 이틀 연속 GM 이 잡아 주셨다 — "8/30 로스 기준이면 신규 투어·
+        체험이랑 재등록은 8/31 기준이어야 한다".
+      ▸따라서 한 보고서 안의 세 기준일은 이렇게 맞물린다:
+        매출·LOSS(I18) = send_day-1 (보고 대상일) / 신규·재등록(I16) = send_day (오늘).
+        두 칸의 간격은 항상 하루다 — 이 관계가 깨지면 아래 _selftest_base_dates 가 잡는다.
+      ▸그 전까지는 이 한 칸에 당일 예약과 전날 LOSS 를 함께 써서 두 기준일이 한 칸에
+        섞여 있었다 — LOSS 는 build_loss_text 로 떼어 I18 에 쓴다.
 
     ★원천을 새로 만들지 않는다: 예약은 아침 정리(ops_daily_digest.build_reservation_block)가
       쓰는 것과 **같은 규칙** — member_inquiry_list 의 reservations[].date 매칭이다.
@@ -164,7 +170,7 @@ def build_contact_text(send_day: str) -> str:
     """
     from scripts.collectors.ops_shared import FUNNEL_EXEC_URL  # noqa: PLC0415
 
-    target_day = (date.fromisoformat(send_day) + timedelta(days=1)).isoformat()
+    target_day = send_day
     md = lambda d: f"{int(d[5:7])}/{int(d[8:10])}"  # noqa: E731 — '8/22' 표기
 
     # ── 예약 ──
@@ -421,7 +427,25 @@ def _selftest() -> None:
     loss, danggi = _split_loss_rows(rows, "2026-08-22")
     assert loss == ["오수연(거주지변경)"], loss
     assert danggi == 1, danggi
+
+    _selftest_base_dates()
     print("selftest ok")
+
+
+def _selftest_base_dates() -> None:
+    """한 보고서 안 두 칸의 기준일 관계를 잡아 둔다 (GM 확정 2026-08-31).
+
+    I16(신규·재등록) = 보고 나가는 날 당일 / I18(LOSS) = 그 전날.
+    간격은 항상 하루다. 08-30·08-31 이틀 연속 GM 이 어긋남을 잡으셨기에,
+    다음에 누가 날짜 계산을 만지면 여기서 먼저 걸리게 한다.
+    """
+    send_day = "2026-08-31"
+    i16_base = send_day                                                        # build_contact_text 의 target_day
+    i18_base = (date.fromisoformat(send_day) - timedelta(days=1)).isoformat()  # build_loss_text 의 prev_day
+    assert i16_base == "2026-08-31", i16_base
+    assert i18_base == "2026-08-30", i18_base
+    gap = (date.fromisoformat(i16_base) - date.fromisoformat(i18_base)).days
+    assert gap == 1, f"I16 과 I18 기준일 간격이 {gap}일이다 — 하루여야 한다"
 
 
 if __name__ == "__main__":
