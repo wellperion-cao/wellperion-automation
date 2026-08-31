@@ -563,7 +563,7 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     # GM 지시 2026-08-14 도 그대로 산다: 연락을 안 한 건과 연락은 했는데 기록만 빠진 건을 가른다.
     lines.append("❗가장 중요한 건 연락 기록입니다 — 담당이 정해져 있어도 기록이 없으면 저희 화면엔 연락 안 한 건으로 남습니다.")
     lines.append("이미 통화·문자 하셨으면 화면에 한 줄만 남겨 주시고, 아직이면 연락 먼저 부탁드립니다.")
-    lines.append("기준은 접수 후 24시간 안 첫 연락입니다. 처리하신 건은 한 줄 회신 부탁드립니다 🙏")
+    lines.append("기준은 접수 후 24시간 안 첫 연락입니다.")
     for it in shown:
         # 유형(멤버십/강습)을 앞에 적는다 — 2026-08-14 회원 문의까지 넓히면서 어느 화면에서
         #   처리해야 하는지가 줄만 봐서는 안 보이게 됐다.
@@ -580,6 +580,10 @@ def build_sla_alert_text(violations: list[dict]) -> str:
         lines.append(f"👉 강습: {ASSIGN_URL_LESSON}")
     if "멤버십" in _types:
         lines.append(f"👉 멤버십: {ASSIGN_URL_MEMBER} (입장코드 {ENTRY_CODE})")
+    # ★2026-09-01 GM 지시 — "회신도 좀 해달라고 해줘. 매번 놓치는 것 같아."
+    #   회신 요청이 넷째 줄에 있었는데, 그 아래로 명단 수십 줄과 링크가 붙어 완전히 묻혔다.
+    #   맨 끝, 서명 바로 위로 옮긴다 — 카톡은 끝까지 읽지 않아도 마지막 줄은 눈에 걸린다.
+    lines.append("❓ 처리하신 건은 「○○ 완료」 한 줄만 이 방에 남겨 주시면 목록에서 빠집니다")
     lines.append(AI_SIGNOFF)
     return "\n".join(lines)
 

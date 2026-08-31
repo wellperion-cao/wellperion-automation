@@ -911,6 +911,19 @@ def _build_schedule_block(items: list, today=None) -> str:
         lines.append(f" • {_schedule_day_label(it['date'], today)} — {it['name']} ({it['assignee']})")
     if rest:
         lines.append(f" • 그 밖 {len(rest)}건")
+    # ★2026-09-01 GM 지시 — "운영부 직원들이 놓치지 않게끔 리마인드 잘 시켜줘, 회신도 좀 해달라고".
+    #   이 통은 지금까지 목록만 던지고 끝났다. 읽는 사람 입장에서 할 일이 안 적혀 있으면
+    #   '알아 두라는 말'로 읽히고, 그러면 다음 날 같은 줄이 또 나간다.
+    #   오늘 잡힌 건이 있을 때만 한 줄 붙인다 — 없는 날까지 붙이면 그 줄이 배경이 된다.
+    todays = [it for it in shown if it["date"] == today]
+    if todays:
+        names = []
+        for it in todays:                      # 순서 유지 · 중복 제거(같은 분이 두 건이면 한 번만 부른다)
+            nm = str(it["assignee"]).strip()
+            if nm and nm not in names:
+                names.append(nm)
+        who = " · ".join(names) if len(names) <= 2 else "담당자분들"
+        lines.append(f"👉 오늘 건 {who} — 마치시면 「완료」 한 마디만 이 방에 남겨 주세요")
     return "\n".join(lines)
 
 
