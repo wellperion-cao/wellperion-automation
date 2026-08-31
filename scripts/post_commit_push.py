@@ -1132,6 +1132,16 @@ def _detect_disk_reverted_to_history(root: str) -> list:
             return []
         paths = [x for x in diff.stdout.splitlines() if x.strip()][:_MAX_PATHS]
         paths = [p for p in paths if os.path.isfile(os.path.join(root, p))]
+        # ★2026-08-31(GM "이거 계속 나오는데 왜 그러는거야? 근본적으로 해결해줘") —
+        #   기계 산출물은 이 판정의 전제가 성립하지 않는다. 이 함수는 "디스크 blob 이 과거
+        #   커밋과 똑같다 = 누가 되돌렸다" 로 읽는데, 그 근거는 '사람이 새로 쓰는 편집이 과거
+        #   커밋과 바이트까지 같을 확률은 0' 이라는 것이다. 몇 분마다 **다시 생성되는** 파일은
+        #   내용이 오갈 뿐이라 옛 커밋과 같아지는 일이 정상적으로 계속 일어난다.
+        #   실측: status/kungjjak_today.json 은 하루에도 여러 번 자동 커밋되고(08-31 만 13:28·
+        #   14:43·14:52·15:04·16:01·16:04) 그 사이 늘 더러운 상태라, 되돌린 사람이 없는데도
+        #   경고가 반복해서 떴다. 되돌림 사고를 잡으라고 만든 경보가 매일 울려 진짜 사고를 덮었다.
+        #   판정 목록은 새로 만들지 않는다 — 이미 있는 _is_machine_output 하나를 그대로 쓴다.
+        paths = [p for p in paths if not _is_machine_output(p)]
         if not paths:
             return []
 
