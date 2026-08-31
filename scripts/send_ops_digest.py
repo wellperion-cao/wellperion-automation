@@ -1633,6 +1633,12 @@ def send_schedule_pings() -> None:
     ▸접지 않고 전부 싣는다(GM 2026-08-29 "줄을 접지 말고 건수를 줄여라") — 관리자가 챙기려면
       가려진 것이 없어야 한다.
     """
+    # ★2026-09-01 GM 지시 — "주말에는 보내지마." 창이 이번 주 금요일까지라 토·일에는 남은
+    #   일정이 없고, 쉬는 날 알림은 소음이다. 월요일 아침에 그 주 것을 다시 낸다.
+    #   (_schedule_horizon 의 토·일 → 다음 주 금요일 처리는 손으로 돌려 볼 때를 위해 남겨 둔다.)
+    if date.today().weekday() >= 5:
+        log("[sched] 주말 — 일정 통 보내지 않음(GM 지시 2026-09-01)")
+        return
     if _sched_ping_already_sent_today():
         log("[sched] 이미 발송된 회차 — 생략")
         return
