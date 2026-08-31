@@ -886,6 +886,9 @@ def _commit_machine_outputs(root: str, lock_timeout: int | None = None) -> bool:
 # ── 같은 사유 경보 도배 방지 (배147 · GM 이 5분마다 같은 문구를 받았다) ──────────────
 _ALERT_STATE = "tmp/push_alert_state.json"
 _ALERT_QUIET_SEC = 3600      # 같은 사유는 1시간에 1번만
+# 표류 경고는 하루 1번. 표류 목록은 며칠씩 그대로인 상태라(손댈 수 없는 파일이 섞여 있다)
+# 1시간마다 알리면 같은 사실을 하루 열 번 넘게 말하게 된다 — GM 지적 2026-08-31.
+_ALERT_DRIFT_QUIET_SEC = 86400
 _ALERT_STUCK_MAX_SEC = 1800  # 단 정체가 30분을 넘기면 같은 사유라도 반드시 알린다(배242)
 _PRECOMMIT_MAX_STREAK = 20   # 선커밋을 20회 연속 찍고도 push 가 안 되면 멈추고 알린다(배242)
 
@@ -938,8 +941,18 @@ def _push_succeeded(root: str) -> None:
             )
 
 
-def _alert_should_send(root: str, reason: str) -> bool:
+def _alert_should_send(root: str, reason: str, *, track_stuck: bool = True,
+                       quiet_sec: float | None = None) -> bool:
     """같은 사유가 조용한 시간 안에 또 오면 보내지 않는다. 사유가 바뀌면 즉시 보낸다.
+
+    ★2026-08-31(시토) — track_stuck / quiet_sec 를 붙였다.
+      왜: 이 함수는 'push 정체 시계'(stuck_since)를 켜는 자리이기도 한데, push 와 아무
+      상관없는 표류 경고까지 같은 자리를 지나가면서 시계를 켜고 있었다. 그러면 다음 push 가
+      성공할 때마다 _push_succeeded 가 '정체 N분 만에 정상화' 통지를 내보낸다 — 막힌 적이
+      없는데 풀렸다고 알리는 것이다. 실측 2026-08-31: 확인방 텔레그램 43통 중 15통이 그
+      '정상화' 통지였고 정체값은 0·1·2·4·6분이었다(전부 정상 운영 범위).
+      → 정체와 무관한 경보는 track_stuck=False 로 시계를 안 건드린다.
+      → quiet_sec 로 경보별 침묵 길이를 따로 준다(표류처럼 며칠 그대로인 상태는 하루 1번).
     상태 파일을 못 읽고 못 써도 **보내는 쪽**으로 판단한다 — 경보를 잃는 것보다 낫다.
 
     ★2026-07-31(시토 · 배242 2번) — 억제에 **지속시간 상한**을 뒀다.
@@ -965,25 +978,39 @@ def _alert_should_send(root: str, reason: str) -> bool:
         _lock_cm = nullcontext()
     try:
         with _lock_cm:
-            return _alert_should_send_locked(root, reason)
+            return _alert_should_send_locked(root, reason, track_stuck=track_stuck, quiet_sec=quiet_sec)
     except Exception:
         # 락 타임아웃 등 — 경보를 잃는 것보다 락 없이 진행하는 쪽을 택한다(기존 철학과 동일).
-        return _alert_should_send_locked(root, reason)
+        return _alert_should_send_locked(root, reason, track_stuck=track_stuck, quiet_sec=quiet_sec)
 
 
-def _alert_should_send_locked(root: str, reason: str) -> bool:
+def _alert_should_send_locked(root: str, reason: str, *, track_stuck: bool = True,
+                              quiet_sec: float | None = None) -> bool:
     """_alert_should_send의 실제 판정 로직(락으로 감싸진 임계구역)."""
     import hashlib
     import time
     key = hashlib.sha256(reason.encode("utf-8", "replace")).hexdigest()[:16]
     now = time.time()
     st = _alert_state_read(root)
+    quiet_window = _ALERT_QUIET_SEC if quiet_sec is None else quiet_sec
+
+    if not track_stuck:
+        # push 정체와 무관한 경보 — 시계를 켜지 않는다. 억제 판정만 별도 열쇠로 한다.
+        seen = st.get("nonstuck") or {}
+        last = float(seen.get(key) or 0)
+        if now - last < quiet_window:
+            return False
+        seen[key] = now
+        # 열쇠가 무한히 쌓이지 않게 침묵창 두 배가 지난 것은 버린다.
+        st["nonstuck"] = {k: v for k, v in seen.items() if now - float(v) < quiet_window * 2}
+        _alert_state_write(root, st)
+        return True
 
     # 정체 시계는 '연속 실패의 시작'을 기록한다 — 사유가 바뀌어도 이어진다(같은 정체이므로).
     stuck_since = float(st.get("stuck_since") or 0) or now
     stuck_for = now - stuck_since
 
-    quiet = (st.get("key") == key and (now - float(st.get("at") or 0)) < _ALERT_QUIET_SEC)
+    quiet = (st.get("key") == key and (now - float(st.get("at") or 0)) < quiet_window)
     if quiet:
         forced_at = float(st.get("forced_at") or 0)
         if stuck_for >= _ALERT_STUCK_MAX_SEC and (now - forced_at) >= _ALERT_STUCK_MAX_SEC:
@@ -1182,7 +1209,8 @@ def _check_remote_drift(root: str) -> None:
                         + (f" 외 {len(stale) - 10}건" if len(stale) > 10 else "")
                     )
                     _log(f"PUSH_SWEEPER {warn}", root)
-                    if _alert_should_send(root, warn):
+                    if _alert_should_send(root, warn, track_stuck=False,
+                                          quiet_sec=_ALERT_DRIFT_QUIET_SEC):
                         _telegram_warn(root, warn)
 
         # ② 이 PC 자신의 HEAD 보다도 디스크가 옛것인 경우 — origin 무관, pull 로 안 풀림
@@ -1201,7 +1229,8 @@ def _check_remote_drift(root: str) -> None:
                     + (f" 외 {len(reverted) - 10}건" if len(reverted) > 10 else "")
                 )
                 _log(f"PUSH_SWEEPER {warn2}", root)
-                if _alert_should_send(root, warn2):
+                if _alert_should_send(root, warn2, track_stuck=False,
+                                      quiet_sec=_ALERT_DRIFT_QUIET_SEC):
                     _telegram_warn(root, warn2)
     except Exception as e:
         _log(f"PUSH_SWEEPER 원격 표류 감지 실패(best-effort) {e}", root)
