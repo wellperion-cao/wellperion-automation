@@ -891,7 +891,20 @@ def _schedule_day_label(d, today) -> str:
     return f"{d.month}/{d.day}"  # GM 지시 — "D-3" 같은 표기는 못 읽는다, 실제 날짜로 적는다
 
 
-def _build_schedule_block(items: list, today=None) -> str:
+def _todays_assignees(items: list, today=None) -> list:
+    """오늘 날짜 건의 담당자 — 순서 유지·중복 제거. 없으면 빈 목록."""
+    today = today or date.today()
+    names: list = []
+    for it in items:
+        if it.get("date") != today:
+            continue
+        nm = str(it.get("assignee") or "").strip()
+        if nm and nm not in names:
+            names.append(nm)
+    return names
+
+
+def _build_schedule_block(items: list, today=None, show_all: bool = False) -> str:
     """📅 다가오는 일정 블록. items 는 이미 부서/관리자 갈래로 걸러진 목록.
 
     5건 선택은 날짜 다양성 우선(2026-08-29 실측 수리) — 앞 날짜 하나가 5건을 독식하면
@@ -904,6 +917,23 @@ def _build_schedule_block(items: list, today=None) -> str:
     for it in items:
         (later if it["date"] in seen else first).append(it)
         seen.add(it["date"])
+    # show_all — 관리자 방으로 한 통만 갈 때는 접지 않는다(GM 2026-09-01 "각 관리자들이 챙길 수
+    # 있도록"). 가려진 줄이 있으면 챙길 수가 없다.
+    if show_all:
+        # 날짜로 묶어 적는다. 스물 몇 줄이 날짜 없이 이어지면 같은 날 것이 몇 건인지 안 보이고,
+        # 관리자가 '오늘 우리 부서 것' 을 찾으려면 처음부터 다시 읽어야 한다.
+        # 한 줄에 한 가지 · 상세는 들여쓰기(실무진 전달문 표준).
+        shown = sorted(items, key=lambda x: x["date"])
+        lines = [f"📅 다가오는 일정 — 앞으로 {SCHEDULE_LOOKAHEAD_DAYS}일 {len(shown)}건"]
+        cur = None
+        for it in shown:
+            if it["date"] != cur:
+                cur = it["date"]
+                lab = _schedule_day_label(cur, today)
+                # '오늘'·'내일' 은 날짜를 같이 적어 준다. 그 밖은 라벨이 이미 날짜라 두 번 안 적는다.
+                lines.append(f"▪ {lab} ({cur.month}/{cur.day})" if lab in ("오늘", "내일") else f"▪ {lab}")
+            lines.append(f"   {it['name']} — {it['assignee']}")
+        return "\n".join(lines)
     shown = sorted((first + later)[:SCHEDULE_SHOW_N], key=lambda x: x["date"])
     rest = [it for it in items if it not in shown]
     lines = ["📅 다가오는 일정"]
@@ -911,19 +941,6 @@ def _build_schedule_block(items: list, today=None) -> str:
         lines.append(f" • {_schedule_day_label(it['date'], today)} — {it['name']} ({it['assignee']})")
     if rest:
         lines.append(f" • 그 밖 {len(rest)}건")
-    # ★2026-09-01 GM 지시 — "운영부 직원들이 놓치지 않게끔 리마인드 잘 시켜줘, 회신도 좀 해달라고".
-    #   이 통은 지금까지 목록만 던지고 끝났다. 읽는 사람 입장에서 할 일이 안 적혀 있으면
-    #   '알아 두라는 말'로 읽히고, 그러면 다음 날 같은 줄이 또 나간다.
-    #   오늘 잡힌 건이 있을 때만 한 줄 붙인다 — 없는 날까지 붙이면 그 줄이 배경이 된다.
-    todays = [it for it in shown if it["date"] == today]
-    if todays:
-        names = []
-        for it in todays:                      # 순서 유지 · 중복 제거(같은 분이 두 건이면 한 번만 부른다)
-            nm = str(it["assignee"]).strip()
-            if nm and nm not in names:
-                names.append(nm)
-        who = " · ".join(names) if len(names) <= 2 else "담당자분들"
-        lines.append(f"👉 오늘 건 {who} — 마치시면 「완료」 한 마디만 이 방에 남겨 주세요")
     return "\n".join(lines)
 
 
@@ -1586,25 +1603,40 @@ def _sched_ping_already_sent_today() -> bool:
 
 
 def send_schedule_pings() -> None:
-    """📅 다가오는 일정 통 — 4부서방(부서 소관)·★중간관리자(관리자 건) 각 1통. 하루 1회."""
+    """📅 다가오는 일정 통 — ★중간관리자 방 1통. 하루 1회.
+
+    ★2026-09-01 GM 지시 — "다가오는 일정은 전체 방 말고 중간관리자 방에만. 각 관리자들이
+      챙길 수 있도록." 종전엔 4부서방(부서 소관)·★중간관리자(관리자 건)로 갈라 두 통을 보냈다.
+      4부서방은 현장 실무진이 보는 자리라 일정 목록이 '내가 할 일'로 안 읽히고 흘러갔다.
+      일정은 관리자가 받아 자기 사람에게 내려보내는 것이 맞다 — 그래서 한 방으로 모은다.
+    ▸부서 소관 건도 함께 싣는다. 받는 사람이 관리자 한 자리로 바뀌었으니 갈라 둘 이유가 없다.
+    ▸접지 않고 전부 싣는다(GM 2026-08-29 "줄을 접지 말고 건수를 줄여라") — 관리자가 챙기려면
+      가려진 것이 없어야 한다.
+    """
     if _sched_ping_already_sent_today():
         log("[sched] 이미 발송된 회차 — 생략")
         return
     items = _upcoming_schedule_items()
     sent_any = False
-    for i, (room, room_items) in enumerate((
-            (_OVD_ROOM_OPS, [x for x in items if x["dept_item"]]),
-            (RELAY_ROOM,    [x for x in items if not x["dept_item"]]))):
-        block = _build_schedule_block(room_items)
-        if not block:
-            log(f"[sched] {room} — 7일 내 일정 없음, 통 생략")
-            continue
-        if i:
-            time.sleep(SEND_STAGGER_SECONDS)
-        msg = f"{block}\n📎 전사일정 {_SCHEDULE_PAGE_URL}"
-        cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", room,
+    block = _build_schedule_block(items, show_all=True)
+    if not block:
+        log("[sched] 7일 내 일정 없음 — 통 생략")
+    else:
+        # 오늘 건이 있으면 담당자를 불러 준다 — 이름이 없으면 아무도 자기 일로 안 읽는다.
+        _names = _todays_assignees(items)
+        _who = (" · ".join(_names) if len(_names) <= 2 else "담당자분들") if _names else ""
+        ask = (f"👉 오늘 건 {_who} — 본인 부서 건은 담당자에게 전달해 주시고, 끝나면 「완료」 한 마디만 남겨 주세요"
+               if _who else
+               "👉 본인 부서 건은 담당자에게 전달해 주시고, 끝나면 「완료」 한 마디만 남겨 주세요")
+        msg = "\n".join([
+            block,
+            ask,
+            f"📎 전사일정 {_SCHEDULE_PAGE_URL}",
+            "   날짜·담당이 비어 있으면 이 화면에서 직접 채워 주시면 됩니다",
+        ])
+        cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", RELAY_ROOM,
                "--sender", "아침정리다이제스트"]
-        log(f"[sched] 발송 → {room}")
+        log(f"[sched] 발송 → {RELAY_ROOM}")
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
         out = (proc.stdout or "").strip()
         log(f"[sched] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
