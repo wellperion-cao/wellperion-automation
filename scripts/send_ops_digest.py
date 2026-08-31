@@ -78,6 +78,10 @@ MORNING_SEND_TIMES = {
     # 📅 다가오는 일정 별도 통(GM 지시 2026-08-29 "별도로 만들자 전사일정링크를 태워서") —
     # 아침 4통 리듬(5분 간격)이 끝난 직후, 08:00 텔레그램 항로와 겹치기 전 07:58.
     "일정": (7, 58),
+    # ★2026-09-01 GM 지시 — "전달 후 추가로(이어쓰지 말고 별도로) 꼭 진행해 달라는 당부와
+    #   응원글도 남겨줘." 아침 통이 다 나간 뒤 별도 한 통. 본문에 붙이지 않는 이유가 있다 —
+    #   당부·응원을 목록 꼬리에 이어 쓰면 목록의 일부로 읽혀 그냥 지나간다.
+    "마무리인사": (8, 2),
 }
 # 📅 일정 통은 한 슬롯(07:58)에서 두 방(4부서방·★중간관리자)으로 연달아 나간다.
 # 두 알림이 같은 초에 겹치지 않을 만큼만 벌린다. 아침 4통의 5분 간격을 여기 쓰면
@@ -1681,6 +1685,101 @@ def send_schedule_pings() -> None:
                          extra={"state": {"date": date.today().isoformat()}})
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 아침 통 뒤 「당부 + 응원」 별도 한 통 (GM 지시 2026-09-01)
+#
+# GM 원문: "실무진 전달건은 신경 많이 써줘야해. 그리고 꼭 전달 후 추가로(이어쓰지말고
+#   별도로) 꼭 진행 해달라는 당부와 응원글도 남겨줘."
+# ▸왜 별도인가 — 목록 꼬리에 이어 쓰면 목록의 일부로 읽혀 그냥 지나간다. 한 통으로 따로
+#   오면 그것만 읽힌다. 대신 짧아야 한다(3줄). 길면 이것도 목록이 된다.
+# ▸어느 방에 — 오늘 아침 실제로 통이 나간 방에만. 아무것도 안 간 방에 응원만 가면 뜬금없다.
+#   판정은 발신 로그(logs/kakao_sent-<날짜>.log)로 한다 — 상태값이 아니라 실제로 나간 기록이다.
+# ▸매일 같은 문장이면 벽지가 된다. 요일로 갈라 쓴다(주 5종).
+_CLOSING_HEARTBEAT_ID = "morning-closing-note"
+_CLOSING_ROOMS = ("★운영+시설+지원+주차", "★운영부", "★중간관리자", "★부서장")
+_CLOSING_BY_DOW = {
+    0: "월요일입니다. 이번 주에 챙길 것이 위에 다 적혀 있으니 하나씩만 밟아 가시면 됩니다.",
+    1: "어제 못 끝낸 것부터 보시면 오늘이 가벼워집니다.",
+    2: "주 중간입니다. 밀린 것이 있으면 지금 손대는 편이 금요일이 편합니다.",
+    3: "금요일 전에 마칠 수 있는 것부터 보시면 좋겠습니다.",
+    4: "금요일입니다. 이번 주 안에 끝내기로 한 것만 마지막으로 확인 부탁드립니다.",
+    5: "주말 근무 고생 많으십니다. 급한 것만 보시고 나머지는 월요일에 이어가시죠.",
+    6: "주말 근무 고생 많으십니다. 급한 것만 보시고 나머지는 월요일에 이어가시죠.",
+}
+
+
+def _rooms_sent_this_morning(today=None) -> list:
+    """오늘 07:00 이후 실무진 방으로 실제로 나간 통이 있는 방 목록(발신 로그 실측)."""
+    today = today or date.today()
+    path = ROOT / "logs" / f"kakao_sent-{today.isoformat()}.log"
+    hit: list = []
+    try:
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            if not rec.get("ok"):
+                continue
+            if str(rec.get("ts", ""))[11:16] < "07:00":
+                continue
+            room = str(rec.get("chat_id") or "")
+            if room in _CLOSING_ROOMS and room not in hit:
+                hit.append(room)
+    except FileNotFoundError:
+        pass
+    except Exception as exc:
+        log(f"[closing] 발신 로그 읽기 실패 — 인사 생략: {exc}")
+    return hit
+
+
+def send_closing_note() -> None:
+    """아침 통이 나간 방에 「당부 + 응원」 한 통. 하루 1회."""
+    from module_heartbeat import last_heartbeat, record_heartbeat
+    rec = last_heartbeat(_CLOSING_HEARTBEAT_ID)
+    if rec and str((rec.get("state") or {}).get("date", "")) == date.today().isoformat():
+        log("[closing] 이미 발송된 회차 — 생략")
+        return
+    rooms = _rooms_sent_this_morning()
+    if not rooms:
+        log("[closing] 오늘 아침 나간 통이 없음 — 인사 생략")
+        return
+    body = "\n".join([
+        "🙌 오늘도 부탁드립니다",
+        f"   {_CLOSING_BY_DOW[date.today().weekday()]}",
+        "   처리하신 건은 「완료」 한 마디만 남겨 주시면 저희가 목록에서 내리겠습니다.",
+        "   늘 챙겨 주셔서 고맙습니다.",
+    ])
+    sent_any = False
+    for i, room in enumerate(rooms):
+        if i:
+            time.sleep(SEND_STAGGER_SECONDS)
+        cmd = [sys.executable, str(SENDER), "--message", body, "--only-room", room,
+               "--sender", "아침정리다이제스트"]
+        log(f"[closing] 발송 → {room}")
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        out = (proc.stdout or "").strip()
+        log(f"[closing] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
+        if proc.returncode == 0 and "DONE" in out:
+            sent_any = True
+    if sent_any:
+        record_heartbeat(_CLOSING_HEARTBEAT_ID, detail="🙌 아침 당부·응원 발송",
+                         extra={"state": {"date": date.today().isoformat()}})
+
+
+def _selfcheck_closing_note() -> None:
+    """문구가 요일마다 다르고, 빈 줄 없이 4줄인지. 네트워크 없이 돈다."""
+    seen = {v for k, v in _CLOSING_BY_DOW.items() if k <= 4}
+    assert len(seen) == 5, "평일 다섯 날 문구가 서로 달라야 한다(같으면 벽지가 된다)"
+    for d in range(7):
+        b = "\n".join(["🙌 오늘도 부탁드립니다", f"   {_CLOSING_BY_DOW[d]}",
+                       "   처리하신 건은 「완료」 한 마디만 남겨 주시면 저희가 목록에서 내리겠습니다.",
+                       "   늘 챙겨 주셔서 고맙습니다."])
+        assert len(b.splitlines()) == 4, b
+        assert all(ln.strip() for ln in b.splitlines()), "빈 줄을 넣지 않는다"
+    print("[selfcheck] closing_note OK")
+
+
 def _seconds_until(hour: int, minute: int, now: "datetime | None" = None) -> float:
     """지금부터 오늘 그 시각까지 남은 초. 이미 지났으면 0 — 앞 단계(내보내기·다이제스트
     생성)가 늦어져도 다음날까지 기다리지 않고 바로 진행한다(순서만 지킨다)."""
@@ -1779,6 +1878,13 @@ def main() -> int:
             send_schedule_pings()
         except Exception as exc:
             log(f"[sched] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
+
+        # 🙌 당부·응원 별도 통 — 아침 통이 다 나간 뒤 08:02 (GM 지시 2026-09-01).
+        _sleep_until(*MORNING_SEND_TIMES["마무리인사"])
+        try:
+            send_closing_note()
+        except Exception as exc:
+            log(f"[closing] 예외 — 다음 회차 재시도: {type(exc).__name__}: {exc}")
     return rc
 
 
