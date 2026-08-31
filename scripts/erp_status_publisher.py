@@ -852,6 +852,28 @@ def _kpi_crosscheck_rules():
     except Exception as e:
         out.append({"card": "지원부 점검", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
 
+    # ④ 전사일정 — 저장소 파일과 화면이 읽는 서버 사본이 같은가
+    #    2026-08-31 GM 지적("크롬창에 계속 반영이 안 되어 있어"). 이 화면은 저장소 파일을 밑그림으로만
+    #    쓰고 실제 값은 GAS 서버 사본에서 읽는다. 그래서 파일에만 적으면 화면에는 영영 안 뜨는데,
+    #    적은 사람은 적었으니 됐다고 믿는다 — 그날 딜라이브 일정 변경이 정확히 그렇게 사라져 있었고,
+    #    같은 자리에서 웰리와 시토가 각각 한 번씩 걸렸다. 건수만 대조해도 이 부류는 전부 잡힌다.
+    #    (규칙 수는 늘지 않는다 — 같은 날 없앤 시설부 카테고리 헛경보 자리를 이 검사가 대신한다.)
+    try:
+        # 주소는 화면이 들고 있는 것 하나만 쓴다 — 여기 또 적으면 두 벌이 되고, 배포가 바뀌면
+        # 한쪽만 옛 주소로 남아 이 검사가 조용히 '못 잼'으로 빠진다(약속 L01).
+        _page = (ROOT / "3. 웰페리온 가이드" / "coo" / "check" / "전사_일정.html").read_text(encoding="utf-8")
+        _gas = re.search(r'SCHEDULE_GAS_URL\s*=\s*"([^"]+)"', _page).group(1)
+        srv = _get(_gas + "?action=load_schedule&cb=1")
+        srv_n = len(((srv.get("data") or {}).get("items")) or [])
+        repo_n = len(json.loads(
+            (ROOT / "status" / "schedule_ssot.json").read_text(encoding="utf-8")).get("items") or [])
+        out.append({"card": "전사일정", "what": "저장소 파일 = 화면이 읽는 서버 사본",
+                    "left": repo_n, "right": srv_n, "ok": (repo_n == srv_n),
+                    "detail": ("" if repo_n == srv_n else
+                               "파일에만 적고 서버에 안 올린 일정이 있습니다 — 화면에는 안 뜹니다")})
+    except Exception as e:
+        out.append({"card": "전사일정", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
     return out
 
 
