@@ -1877,6 +1877,26 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
        board-fullwidth = 이 저장소 표준 좌측정렬·풀폭 탈출 클래스(채용현황 탭 등과 동일 패턴, 새 CSS 발명 안 함) —
        컨테이너 한 곳에서만 잡아 서브탭 3개가 자동으로 같이 넓어진다(GM 지시 2026-08-08). -->
   <div class="wp-ldy__wrap board-fullwidth" style="padding:0 20px 40px">
+    <!-- ⓪ 출하 체크리스트 — 종이(SAUNA(LINEN) SHIPPING CHECKLISTS)와 같은 표.
+         GM 지시 2026-08-31 "지원부 체계에 린넨 관리를 위 작성 페이지 참고해서 체계를 만들어줘".
+         현장이 실제로 쓰는 종이는 사우나 린넨 3종(타월·샤워타월·가운)을 날짜 1~31 행에
+         입고(W)/출고(D) 두 칸으로 적고, 맨 아래 합계와 월 요약(입고·출고·차이·보관수량)을 낸다.
+         종이와 화면의 칸이 다르면 옮겨 적다 틀린다 — 그래서 칸을 종이 그대로 맞췄다.
+         저장은 기존 저장소를 그대로 쓴다(daily[날짜][품목].in / .out / .end · 새 저장소 없음). -->
+    <div id="wpLdyView-sheet">
+      <div class="wp-ldy__h" style="margin-top:4px">📄 사우나 린넨 출하 체크리스트 <span class="wp-ldy__k" style="font-weight:600">— 종이와 같은 표</span></div>
+      <div class="wp-ldy__hint">종이에 적은 숫자를 그대로 옮겨 적습니다. <b>W</b>=입고(받은 것) · <b>D</b>=출고(내보낸 것). 빈 칸은 비워 두세요 — 0 과 다릅니다.</div>
+      <div class="wp-ldy__bar">
+        <input type="month" id="wpLdySheetMonth" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdySheetRender()">
+        <button class="wp-ldy__btn wp-ldy__btn--go" onclick="wpLdySheetSave()">저장</button>
+        <span id="wpLdySheetState" class="wp-ldy__k"></span>
+        <button class="wp-ldy__btn" onclick="printA3Laundry()" title="A3 가로 한 장 — 현장에서 손으로 적는 종이">🖨 출하표 인쇄 (A3)</button>
+      </div>
+      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetTbl"></table></div>
+      <div class="wp-ldy__h">📦 월 합계</div>
+      <div style="overflow-x:auto"><table class="wp-ldy__tbl" id="wpLdySheetSum"></table></div>
+      <div class="wp-ldy__hint">차이 = 입고 합계 − 출고 합계. 보관 수량 = 그 달 마지막으로 적은 마감재고(아래 「오늘 점검」의 마감재고 칸).</div>
+    </div>
     <!-- ① 오늘 점검 — 매일 쓰는 곳(맨 위) -->
     <div id="wpLdyView-today">
       <div class="wp-ldy__h">📝 오늘 점검</div>
@@ -6776,9 +6796,17 @@ function wpLdyUsage(itemId, dateStr){
    이론재고 = 전일마감 + 입고 + 신품 − Σ출고 — 마감 전에도 바로 보여줄 수 있다(실사 불필요).
    차이 = 사용량(마감실사로 검증) − Σ출고 — 0이 아니면 "기록 안 하고 뺀 것"이 있다는 신호. ── */
 function wpLdyIssueQty(itemId, dateStr){
-  return (LAUNDRY_DATA.issues || []).reduce(function(s, x){
+  var log = (LAUNDRY_DATA.issues || []).reduce(function(s, x){
     return s + ((x && x.date === dateStr && x.itemId === itemId) ? (wpLdyNum(x.qty) || 0) : 0);
   }, 0);
+  if (log > 0) return log;
+  /* 종이(SAUNA(LINEN) SHIPPING CHECKLISTS)를 그대로 옮겨 적는 경우 — 현장은 배치할 때마다
+     버튼을 누르는 게 아니라 하루치 출고 합계를 한 번에 적는다. 그 값은 daily[날짜][품목].out
+     에 들어간다. 버튼 기록(issues)이 하나라도 있으면 그쪽이 우선 — 두 벌로 세지 않는다.
+     (2026-08-31 GM 지시 "위 작성 페이지 참고해서 체계를 만들어줘") */
+  var rec = LAUNDRY_DATA.daily[dateStr];
+  var out = rec && rec[itemId] ? wpLdyNum(rec[itemId].out) : null;
+  return out === null ? 0 : out;
 }
 /* 오픈 셋팅분 / 보충분 따로 세기(GM 프로세스 2026-08-11).
    kind 가 없는 옛 기록은 보충으로 읽는다 — 그때는 구분 자체가 없었다(무회귀). */
@@ -6884,6 +6912,12 @@ function wpLdyTotals(itemId){
 function wpLdyApplyStored(stored){
   var s = (stored && typeof stored === 'object') ? stored : {};
   var master = Array.isArray(s.master) && s.master.length ? s.master : WP_LDY_SEED.map(function(m){ return Object.assign({}, m); });
+  /* 종이 「SAUNA(LINEN) SHIPPING CHECKLISTS」 3종 중 '가운' 이 품목표에 없었다(2026-08-31 실측).
+     종이에 칸이 있는데 화면에 품목이 없으면 옮겨 적을 자리가 없다 — 없을 때만 뒤에 붙인다.
+     이미 있으면 아무것도 안 한다(멱등). 단가·하한은 모르므로 0 으로 두고 원장에서 채운다. */
+  if (!master.some(function(m){ return String(m && m.id) === 'gown'; })){
+    master = master.concat([{id:'gown', name:'가운', unitPrice:0, lowLimit:0, active:true}]);
+  }
   LAUNDRY_DATA = {
     master: master.map(function(m){
       return {id:String(m.id), name:String(m.name || ''), unitPrice:(wpLdyNum(m.unitPrice) || 0),
@@ -6933,6 +6967,7 @@ function wpLdyGoOpening(){
   if (g && g.scrollIntoView) g.scrollIntoView({behavior:'smooth', block:'center'});
 }
 function wpLdyRenderAll(){
+  wpLdySheetRender();   /* 종이와 같은 표 — 맨 위에 있으니 먼저 그린다(2026-08-31) */
   wpLdyRenderToday();
   wpLdyRenderMonth();
   wpLdyRenderLedger();
@@ -7193,6 +7228,106 @@ function wpLdyEdit(el){
   try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
   wpLdyPersist();
   wpLdyMarkTodo();
+}
+/* ── 출하 체크리스트(종이와 같은 표) ─────────────────────────────────────────
+   GM 지시 2026-08-31. 종이 3종만 싣는다 — 종이에 없는 품목을 끼워 넣으면 옮겨 적을 때
+   줄이 밀린다. 값은 기존 저장소에 그대로 들어간다(새 저장소·새 동기화 없음 · 약속 L21). */
+var WP_LDY_SHEET_COLS = [
+  {id:'bath',   label:'타월'},        /* TOWEL */
+  {id:'shower', label:'샤워타월'},    /* S/TOWEL */
+  {id:'gown',   label:'가운'}         /* GOWN */
+];
+function wpLdySheetYm(){
+  var el = document.getElementById('wpLdySheetMonth');
+  if (el && !el.value) el.value = wpLdyToday().slice(0, 7);
+  return el ? el.value : wpLdyToday().slice(0, 7);
+}
+function wpLdySheetDays(ym){
+  var y = +ym.slice(0, 4), m = +ym.slice(5, 7);
+  return new Date(y, m, 0).getDate();   /* 그 달의 마지막 날 */
+}
+function wpLdySheetRec(dateStr, itemId){
+  if (!LAUNDRY_DATA.daily[dateStr]) LAUNDRY_DATA.daily[dateStr] = {};
+  if (!LAUNDRY_DATA.daily[dateStr][itemId]) LAUNDRY_DATA.daily[dateStr][itemId] = {};
+  return LAUNDRY_DATA.daily[dateStr][itemId];
+}
+/* 칸 하나가 바뀌면 그 값만 넣고 다시 그린다. 빈 칸은 지운다 — 0 과 '안 적음'은 다르다. */
+function wpLdySheetSet(dateStr, itemId, field, raw){
+  var rec = wpLdySheetRec(dateStr, itemId);
+  var v = String(raw == null ? '' : raw).trim();
+  if (v === '') delete rec[field]; else rec[field] = wpLdyNum(v);
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  wpLdySheetRenderSum();
+}
+function wpLdySheetSetRemark(dateStr, raw){
+  if (!LAUNDRY_DATA.daily[dateStr]) LAUNDRY_DATA.daily[dateStr] = {};
+  var v = String(raw == null ? '' : raw).trim();
+  if (v === '') delete LAUNDRY_DATA.daily[dateStr].remark;
+  else LAUNDRY_DATA.daily[dateStr].remark = v;
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+}
+function wpLdySheetCell(dateStr, itemId, field){
+  var rec = (LAUNDRY_DATA.daily[dateStr] || {})[itemId] || {};
+  var v = (rec[field] === undefined || rec[field] === null) ? '' : rec[field];
+  return '<input type="number" inputmode="numeric" class="wp-ldy__in" style="width:64px" value="' + v + '"'
+       + ' onchange="wpLdySheetSet(\'' + dateStr + '\',\'' + itemId + '\',\'' + field + '\',this.value)">';
+}
+function wpLdySheetRender(){
+  var tbl = document.getElementById('wpLdySheetTbl');
+  if (!tbl) return;
+  var ym = wpLdySheetYm(), n = wpLdySheetDays(ym);
+  var head = '<thead><tr><th rowspan="2">날짜</th>';
+  WP_LDY_SHEET_COLS.forEach(function(c){ head += '<th colspan="2">' + wpLdyEsc(c.label) + '</th>'; });
+  head += '<th rowspan="2" style="min-width:150px">비고</th></tr><tr>';
+  WP_LDY_SHEET_COLS.forEach(function(){ head += '<th>입고</th><th>출고</th>'; });
+  head += '</tr></thead>';
+  var body = '<tbody>';
+  for (var d = 1; d <= n; d++){
+    var ds = ym + '-' + (d < 10 ? '0' + d : d);
+    var rem = (LAUNDRY_DATA.daily[ds] || {}).remark || '';
+    body += '<tr><td class="wp-ldy__name">' + d + '</td>';
+    WP_LDY_SHEET_COLS.forEach(function(c){
+      body += '<td>' + wpLdySheetCell(ds, c.id, 'in') + '</td><td>' + wpLdySheetCell(ds, c.id, 'out') + '</td>';
+    });
+    body += '<td><input type="text" class="wp-ldy__in" style="width:100%;text-align:left" value="' + wpLdyEsc(rem)
+          + '" onchange="wpLdySheetSetRemark(\'' + ds + '\',this.value)"></td></tr>';
+  }
+  tbl.innerHTML = head + body + '</tbody>';
+  wpLdySheetRenderSum();
+}
+/* 월 요약 — 종이 첫 장(WARE HOUSING / DELVERY OF GOODS / QUANTITY DIFFERENCE / STORAGE QUANTITY). */
+function wpLdySheetRenderSum(){
+  var tbl = document.getElementById('wpLdySheetSum');
+  if (!tbl) return;
+  var ym = wpLdySheetYm(), n = wpLdySheetDays(ym);
+  var rows = WP_LDY_SHEET_COLS.map(function(c){
+    var inn = 0, out = 0, stock = null, any = false;
+    for (var d = 1; d <= n; d++){
+      var ds = ym + '-' + (d < 10 ? '0' + d : d);
+      var rec = (LAUNDRY_DATA.daily[ds] || {})[c.id] || {};
+      if (rec.in  !== undefined && rec.in  !== null){ inn += wpLdyNum(rec.in)  || 0; any = true; }
+      if (rec.out !== undefined && rec.out !== null){ out += wpLdyNum(rec.out) || 0; any = true; }
+      if (rec.end !== undefined && rec.end !== null){ stock = wpLdyNum(rec.end); }   /* 마지막으로 적은 마감재고 */
+    }
+    return {name:c.label, inn:inn, out:out, diff:inn - out, stock:stock, any:any};
+  });
+  var html = '<thead><tr><th style="text-align:left">품목</th><th>입고 합계</th><th>출고 합계</th>'
+           + '<th>차이</th><th>보관 수량</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    html += '<tr><td class="wp-ldy__name">' + wpLdyEsc(r.name) + '</td>'
+          + '<td class="wp-ldy__use">' + (r.any ? r.inn : '–') + '</td>'
+          + '<td class="wp-ldy__use">' + (r.any ? r.out : '–') + '</td>'
+          + '<td class="wp-ldy__use">' + (r.any ? r.diff : '–') + '</td>'
+          + '<td class="wp-ldy__use">' + (r.stock === null ? '–' : r.stock) + '</td></tr>';
+  });
+  tbl.innerHTML = html + '</tbody>';
+}
+function wpLdySheetSave(){
+  var st = document.getElementById('wpLdySheetState');
+  if (st) st.textContent = '저장 중…';
+  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
+  Promise.resolve(wpLdyPersist()).then(function(){ if (st) st.textContent = '저장됨'; })
+    .catch(function(){ if (st) st.textContent = '저장 실패 — 다시 눌러 주세요'; });
 }
 function wpLdySaveToday(){
   try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
