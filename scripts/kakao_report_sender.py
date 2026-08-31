@@ -1170,6 +1170,12 @@ def build_caption(room: dict, base_caption: str) -> str:
 # 실무진이 화면에 못 들어갔다. 사람이 매번 눈으로 보는 대신 관문에서 재고 보낸다.
 # 여기 한 곳에만 둔다(약속 L21) — 발신하는 모든 경로가 이 함수를 지난다.
 _LINK_RE = re.compile(r'https?://[^\s<>"\')]+')
+# ★2026-08-31(GM "링크 들어갔는데 404 뜬다") — 스킴 없이 도메인부터 적은 주소는 위 정규식에
+#   안 걸려 응답 확인을 통째로 건너뛴다. 실측: ★운영+시설+지원+주차 방으로
+#   'wellperion-cao.github.io/wellperion-automation/coo/check/' 가 나갔고, 그 경로는 폴더라
+#   index 가 없어 404 다. 관문을 지나갔는데 아무도 못 잡았다.
+#   우리 발행 도메인으로 시작하는 스킴 없는 주소도 같이 잡아 https 를 붙여 확인한다.
+_BARE_LINK_RE = re.compile(r'(?<![\w/@.])wellperion-cao\.github\.io/[^\s<>"\')]+')
 _LINK_TIMEOUT = 6.0
 _SKIP_LINK_CHECK_ENV = "WP_SKIP_LINK_CHECK"   # 급할 때 우회(값 1)
 _LINK_CACHE: dict[str, int | None] = {}
@@ -1209,6 +1215,9 @@ def broken_links(text: str) -> list[str]:
     bad: list[str] = []
     for line in str(text or "").splitlines():
         urls = _LINK_RE.findall(line)
+        # 스킴 없는 우리 주소도 같은 줄에서 세고 같이 확인한다(한 줄 링크 2개 판정에도 포함).
+        urls += ["https://" + u for u in _BARE_LINK_RE.findall(line)
+                 if ("https://" + u) not in urls and ("http://" + u) not in urls]
         if len(urls) > 1:
             bad.append(f"{urls[0]} (한 줄에 링크 {len(urls)}개 — 줄을 나눠 주세요)")
             continue
@@ -1225,6 +1234,12 @@ def _selfcheck_broken_links() -> None:
     assert broken_links(two), "한 줄에 링크 둘 — 잡아야 한다"
     assert not broken_links(f"👉 강습: {base}lesson.html"), "정상 링크는 통과해야 한다"
     assert broken_links(base + "없는페이지.html"), "404 는 잡아야 한다"
+    # 2026-08-31 — 스킴 없는 주소·폴더 경로(index 없음)를 잡는지. 실제로 나갔던 문장 그대로.
+    stub = "📎 주차관리부 체계 → wellperion-cao.github.io/wellperion-automation/coo/check/ 안 「주차관리부 체계」"
+    assert broken_links(stub), "스킴 없는 폴더 주소(404)를 놓쳤다"
+    ok = ("📎 주차관리부 체계 https://wellperion-cao.github.io/wellperion-automation/"
+          "coo/check/%EC%A3%BC%EC%B0%A8%EA%B4%80%EB%A6%AC%EB%B6%80%20%EC%B2%B4%EA%B3%84.html")
+    assert not broken_links(ok), "정상 주차관리부 링크는 통과해야 한다"
     print("[selfcheck] broken_links OK")
 
 
