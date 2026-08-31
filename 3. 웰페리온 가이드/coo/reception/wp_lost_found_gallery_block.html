@@ -189,7 +189,11 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 .wlp-lfg .page-nav{position:fixed;right:16px;bottom:16px;z-index:50;display:none;flex-direction:column;gap:10px}
 .wlp-lfg .page-nav button{width:52px;height:52px;border-radius:50%;border:1px solid var(--border);background:var(--paper);color:var(--text);font-size:18px;box-shadow:0 4px 16px rgba(0,0,0,.14);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .wlp-lfg .page-nav button.dim{opacity:.35;pointer-events:none}
-@media (min-width:700px) and (orientation:portrait){ .wlp-lfg .page-nav{display:flex} }
+/* ★2026-08-31 GM 재지적 "습득물 보기는 스크롤이 안 되네" — 종전엔 이 버튼을
+   (폭 700px 이상 + 세로 화면) 일 때만 띄웠다. 키오스크가 그 조건을 안 타면 버튼 자체가
+   화면에 없어서, 고쳤는데도 GM 눈에는 아무것도 안 바뀐 것으로 보인다.
+   조건을 화면 크기가 아니라 실제로 넘칠 때로 바꾼다 — 아래 JS 가 'on' 클래스로 켠다. */
+.wlp-lfg .page-nav.on{display:flex}
 </style>
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
@@ -539,16 +543,39 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
      키오스크 판정은 뒤로가기·확대잠금·자동복귀와 같은 조건(폭 700px 이상 + 세로 화면) — 새 판정 안 만든다. -->
 <script>
 (function(){
-  var KIOSK = window.matchMedia('(min-width:700px) and (orientation:portrait)');
+  var nav = document.getElementById('pageNav');
   var up = document.getElementById('pageUp'), down = document.getElementById('pageDown');
-  if(!up || !down) return;
-  function page(dir){ window.scrollBy({ top: dir * Math.round(window.innerHeight * 0.8), behavior: 'smooth' }); }
+  if(!up || !down || !nav) return;
+  /* 진짜로 스크롤되는 상자를 찾는다. 워드프레스 테마가 본문을 안쪽 상자에 담고 그 상자를
+     스크롤하면 window.scrollBy 는 아무 일도 안 한다 — 종합접수처는 되는데 여기는 안 되던
+     이유로 보인다(GM 2026-08-31 재지적). 문서가 넘치면 문서를, 아니면 이 블록의 조상 중
+     넘치는 상자를 쓴다. */
+  function scroller(){
+    var doc = document.scrollingElement || document.documentElement;
+    if (doc.scrollHeight > doc.clientHeight + 2) return doc;
+    var n = document.querySelector('.wlp-lfg');
+    while (n && n !== document.body){
+      var ov = getComputedStyle(n).overflowY;
+      if ((ov === 'auto' || ov === 'scroll') && n.scrollHeight > n.clientHeight + 2) return n;
+      n = n.parentElement;
+    }
+    return doc;
+  }
+  function _isDoc(el){ return el === (document.scrollingElement || document.documentElement); }
+  function _view(el){ return _isDoc(el) ? window.innerHeight : el.clientHeight; }
+  function page(dir){
+    var el = scroller(), step = dir * Math.round(_view(el) * 0.8);
+    if (el.scrollBy) el.scrollBy({ top: step, behavior: 'smooth' }); else el.scrollTop += step;
+  }
   up.addEventListener('click', function(){ page(-1); });
   down.addEventListener('click', function(){ page(1); });
   function refresh(){
-    if(!KIOSK.matches) return;
-    var atTop = window.scrollY <= 2;
-    var atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
+    var el = scroller(), view = _view(el);
+    var can = el.scrollHeight > view + 2;
+    nav.classList.toggle('on', can);   /* 넘칠 때만 버튼을 띄운다 */
+    if (!can) return;
+    var atTop = el.scrollTop <= 2;
+    var atBottom = el.scrollTop + view >= el.scrollHeight - 2;
     up.classList.toggle('dim', atTop);
     down.classList.toggle('dim', atBottom);
   }
