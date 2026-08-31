@@ -22,6 +22,21 @@
    "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
   },
   {
+   "id": "kk-diet-camp-0700",
+   "when": "07:00",
+   "when_sort": "0700",
+   "freq": "daily",
+   "channel": "kakao",
+   "room": "다이어트캠프 이승기 대표님",
+   "chat_id": null,
+   "what": "브랜드 가이드 문답 — 하루 한 가지씩 여쭙고 답을 반영",
+   "owner": "시토",
+   "trigger": "apscheduler",
+   "state": "live",
+   "state_note": "GM 지시 2026-08-26 · 배791. 등록부에 이 방 자체가 없었다 — 실측 2026-08-31 07:00:44 발신 확인(배798 감사)",
+   "source": "scripts/kakao_rooms.json all_rooms · 배791"
+  },
+  {
    "id": "win-0730-ig-review",
    "when": "07:30",
    "when_sort": "0730",
@@ -99,6 +114,21 @@
    "job_id": "gm_morning_brief_0800",
    "surface": "g1",
    "surface_note": "GM 개인 하루 방 — 자율현황이 아니라 G1(잠금)에서 본다 (GM 지시 2026-08-31)"
+  },
+  {
+   "id": "win-0800-ceo-ai",
+   "when": "08:00",
+   "when_sort": "0800",
+   "freq": "daily",
+   "channel": "telegram",
+   "room": "AI관리",
+   "chat_id": null,
+   "what": "🤖 AI C레벨 진행현황 — 아침 통합보고의 AI 몫(같은 파이프라인이 업무관리·AI관리 두 방으로 갈라 보낸다)",
+   "owner": "웰리",
+   "trigger": "schtasks",
+   "state": "live",
+   "state_note": "업무관리 몫은 win-0800-ceo 가 이미 등록돼 있었는데 AI관리 몫만 빠져 있었다 — 실측 2026-08-31 08:00:35 발신 확인(배798 감사)",
+   "source": "wellperion-agents/scripts/ceo_morning_pipeline.py send_split_reports · 예약작업 Wellperion-CEO-Morning-Brief-0800-Live"
   },
   {
    "id": "win-0845-lseries",
@@ -219,13 +249,13 @@
    "when_sort": "0910",
    "freq": "daily",
    "channel": "telegram",
-   "room": "AI관리",
+   "room": "AI관리 / 업무관리",
    "chat_id": -5498808140,
    "what": "모듈 일일 보고(등록부 daily 모듈 집계) — cto-automation-health가 '전체 자동화 현황' 단일 정리로 승격(라이브 상주 프로세스·오늘 스케줄 성공/실패·ERP 자가건강[이상 0건도 상시노출] 병합)",
    "owner": "시토",
    "trigger": "schtasks",
    "state": "live",
-   "state_note": "2026-07-22 GM 지시 — 새 모듈/새 방/새 예약작업 없이 기존 자산만 병합·승격",
+   "state_note": "2026-07-22 GM 지시 — 새 모듈/새 방/새 예약작업 없이 기존 자산만 병합·승격 ▸2026-08-31 정정: 주간 롤업 카드 3종(점검·업무결재·회원)은 업무관리 방으로도 나간다 — 등록부엔 AI관리만 적혀 있었다.",
    "source": "Wellperion-Module-Report-Daily · scripts/collectors/cto_automation_health.py",
    "gen": {
     "task": "Wellperion-Module-Report-Daily",
@@ -261,13 +291,13 @@
    "when_sort": "0930",
    "freq": "daily",
    "channel": "kakao",
-   "room": "차의주 회장님 / ★운영부 / ★부서장",
+   "room": "차의주 회장님 / ★관리부 / ★운영부 / ★부서장",
    "chat_id": null,
    "what": "매출·운영 보고 이미지 + 캡션에 「북극성 대비」(연 매출 도달률·남은 달 필요액)와 그 달 운영계획 요약(목표·진행·이월·평균 진척, 0% 과제 지목)이 함께 실린다 — 휴관일 자동 인지",
    "owner": "시토",
    "trigger": "schtasks",
    "state": "live",
-   "state_note": "[방 표기 정정 2026-08-01 시토] \"차의주 회장님·웰페리온 관리부·★운영부(3방)\" → \"차의주 회장님 / 웰페리온 관리부 / ★ 운영부\" · 방 칸에 문장이 들어가 있어 방 3개가 1개로 세어졌다 — kakao_rooms.json rooms[] 실측 | [2026-08-01 GM 지적 반영] GM: \"매월 1일에도 정리되는 것들이 카톡 3방에 가는 것 같은데 이 내용이 없다.\" 맞다 — 월초 요약이 이 캡션을 타고 나가는데 등록부엔 \"매출·운영 보고 이미지\"라고만 적혀 있어 보이지 않았다. | [2026-08-04 시토 · 배202] 배314(커밋 98f5c56c0)로 kakao_rooms.json rooms[] 에 ★부서장이 추가돼 실제 발신 대상이 4방이 됐는데 이 칸이 3방으로 낡아 있었다 — 문서만 정정(코드 무변경).",
+   "state_note": "[방 표기 정정 2026-08-01 시토] \"차의주 회장님·웰페리온 관리부·★운영부(3방)\" → \"차의주 회장님 / 웰페리온 관리부 / ★ 운영부\" · 방 칸에 문장이 들어가 있어 방 3개가 1개로 세어졌다 — kakao_rooms.json rooms[] 실측 | [2026-08-01 GM 지적 반영] GM: \"매월 1일에도 정리되는 것들이 카톡 3방에 가는 것 같은데 이 내용이 없다.\" 맞다 — 월초 요약이 이 캡션을 타고 나가는데 등록부엔 \"매출·운영 보고 이미지\"라고만 적혀 있어 보이지 않았다. | [2026-08-04 시토 · 배202] 배314(커밋 98f5c56c0)로 kakao_rooms.json rooms[] 에 ★부서장이 추가돼 실제 발신 대상이 4방이 됐는데 이 칸이 3방으로 낡아 있었다 — 문서만 정정(코드 무변경). ▸2026-08-31 정정: 3방으로 적혀 있었으나 실제는 4방이다(★관리부 포함 · GM 2026-08-26 확정).",
    "source": "Wellperion-Kakao-Sales-Report-0930 · scripts/kakao_rooms.json",
    "freq_note": "매일이지만 1일에는 캡션 내용이 달라진다: 그달 운영계획이 새로 잡힌 값으로 바뀌고 전월 이월 과제가 함께 나간다. 별도 월간 발신이 있는 게 아니라 **이 하루치 캡션에 실려** 나간다 (실측 2026-08-01: 월간 스크립트 5종 전부 카톡 호출 0건, 3방에 간 것은 09:30 매출보고 1건뿐)."
   },
@@ -612,6 +642,21 @@
     "daily_digest_early",
     "daily_digest_late"
    ]
+  },
+  {
+   "id": "evt-post-commit-push-drift",
+   "when": "수시(문제 있을 때)",
+   "when_sort": "9990",
+   "freq": "conditional",
+   "channel": "telegram",
+   "room": "AI관리",
+   "chat_id": null,
+   "what": "저장 밀림·디스크 표류 경고 — 고친 것이 GM 화면까지 못 갔을 때만",
+   "owner": "시토",
+   "trigger": "git post-commit hook",
+   "state": "conditional",
+   "state_note": "2026-08-31 수리 전에는 하루 22통까지 나갔다(표류 경고가 밀림 시계를 잘못 켜 「정상화」 통지를 연쇄 발생). 지금은 표류 하루 1통 상한 · 밀림은 진짜 막혔을 때만",
+   "source": "scripts/post_commit_push.py _telegram_warn · .git/hooks/post-commit"
   },
   {
    "id": "tg-5min-pretask",
