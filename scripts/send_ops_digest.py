@@ -415,10 +415,41 @@ NUDGE_SHOW_N = 3          # 사람당 이 이상은 다음 회차로 — 길면 
 # ★중간관리자 방 구성원(수신자). 담당이 운영부 실무진(윤병현AM 등)인 건은 약속 L24
 # (운영부는 실장 경유)에 따라 이경연 실장 묶음에 싣되, 줄에 원 담당 이름을 남긴다.
 _NUDGE_MEMBERS = ["이경연 실장", "이정헌 소장", "나우열M"]
-# ★2026-08-28 GM 확정 역할(배 11070 ④) — 비품·소모품 구매·비치는 이정헌 소장 역할 3번이다.
-# owner 가 세 사람 중 아무도 아니면(빈칸·방 이름 등) 옛 코드는 무조건 이경연 실장으로
-# 떨어졌다 — 구매·비치 건도 실장 앞으로 잘못 쌓였다. 제목에 이 낱말이 있으면 소장으로 보낸다.
-_NUDGE_FACILITY_KEYWORDS = ("구매", "비치")
+# ★배855(2026-09-01 시토) — owner 가 세 사람 중 아무도 아니면 예전엔 제목 낱말("구매"·
+# "비치"→소장, 그 밖→실장)로 때려맞혔다. 이제 GM업무 화면(회장님·대표님·GM 직접 업무)에
+# GM이 직접 채우는 '담당' 칸(GM_TASK_OWNERS 공용 보드)이 생겨 그 값을 그대로 읽는다 —
+# 추측 규칙 삭제. 매칭 안 되거나 담당이 비어 있으면 그 건은 보내지 않는다(시토 위임 판단 —
+# 틀린 방으로 보내는 것보다 조용한 게 낫다).
+GM_TASK_OWNER_BOARD_URL = (
+    "https://script.google.com/macros/s/"
+    "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
+)  # 3. 웰페리온 가이드/coo/chairman/_owner_directive.js 의 CH_BOARD_URL 과 동일 보드(약속 L21)
+GM_TASK_OWNERS_KEY = "GM_TASK_OWNERS"
+
+
+def _fetch_gm_task_owners() -> dict:
+    """GM업무 화면 '담당' 칸 값 — {SSOT id: 담당자 이름}. 조회 실패 시 {}(fail-soft —
+    아침 정리 전체를 막지 않고, 매칭될 항목이 없어질 뿐)."""
+    from collectors.ops_shared import gas_get
+    resp = gas_get(GM_TASK_OWNER_BOARD_URL, {"action": "board", "key": GM_TASK_OWNERS_KEY},
+                   label="gm_task_owners")
+    if resp is None:
+        return {}
+    try:
+        data = resp.json()
+        board = data.get("board") if data.get("ok") else None
+        return board if isinstance(board, dict) else {}
+    except Exception:
+        return {}
+
+
+def _gm_task_owner_for_title(title: str, gm_owned_rows: list, task_owners: dict) -> str:
+    """title 과 가장 닮은 GM 직접 업무(담당자=김남욱) SSOT 행을 찾아 그 행의 GM_TASK_OWNERS
+    담당값을 돌려준다. 매칭 실패·담당 미기입이면 빈 문자열."""
+    for r in gm_owned_rows:
+        if _nudge_similar(title, str(r.get("업무명", ""))):
+            return str(task_owners.get(str(r.get("id", "")), "")).strip()
+    return ""
 
 
 def _nudge_norm(s: str) -> str:
@@ -434,7 +465,7 @@ def _nudge_similar(a: str, b: str) -> bool:
     return na in nb or nb in na or SequenceMatcher(None, na, nb).ratio() >= 0.6
 
 
-def build_reply_nudge_items(target_date: str) -> list:
+def build_reply_nudge_items(target_date: str, todo_rows: "list | None" = None) -> list:
     """전날들의 열린 건(담당 있음)을 항목 리스트로 돌려준다 — {"date","who","ask","how"}.
     build_asks_section 이 배 전달(relay) 항목과 합쳐 오래된 순으로 잘라 보여준다
     (2026-08-20 GM 지적 — 📌·📮 절이 각자 헤더·건수를 가져 복잡하던 것을 하나로 합쳤다).
@@ -442,7 +473,11 @@ def build_reply_nudge_items(target_date: str) -> list:
     거르는 것: ①어제(target_date) 대화에 나온 건(⚠️/✅ 절이 담당) ②나중에 resolved 로
     닫힌 건 ③담당 빈칸(주인 없는 일은 사람한테 묻지 않는다 · 약속 L23) ④서로 닮은 중복
     (최신 문구만 남김). date = 이 창(window) 안에서 그 건이 처음 나온 날 — 오래 묵을수록
-    먼저 보이게 한다."""
+    먼저 보이게 한다.
+
+    todo_rows — 업무&결재 SSOT 전체 행(build_mgr_daily_brief 가 이미 _fetch_todo_rows()로
+    가져온 것을 그대로 넘긴다 · 새 조회 안 만든다). owner 가 3인방 아무도 아닐 때 이 중
+    담당자=김남욱 행과 제목을 대조해 GM_TASK_OWNERS 담당값을 찾는다(배855)."""
     try:
         ledger = json.loads(MGR_LEDGER.read_text(encoding="utf-8"))
         t = date.fromisoformat(target_date)
@@ -465,6 +500,9 @@ def build_reply_nudge_items(target_date: str) -> list:
             if str(e.get("date", "")) == target_date:
                 today_texts.append(title)
 
+    gm_owned_rows = [r for r in (todo_rows or []) if "김남욱" in str(r.get("담당자", ""))]
+    task_owners = _fetch_gm_task_owners() if gm_owned_rows else {}
+
     kept: dict = {}  # member -> [{"title","owner","date"}], 최신 날짜부터 채운다
     for e in sorted(window, key=lambda x: str(x.get("date", "")), reverse=True):
         if str(e.get("date", "")) == target_date:
@@ -478,10 +516,10 @@ def build_reply_nudge_items(target_date: str) -> list:
                 continue
             if owner in _NUDGE_MEMBERS:
                 member = owner
-            elif any(kw in title for kw in _NUDGE_FACILITY_KEYWORDS):
-                member = "이정헌 소장"
             else:
-                member = _NUDGE_MEMBERS[0]
+                member = _gm_task_owner_for_title(title, gm_owned_rows, task_owners)
+                if not member:
+                    continue  # 담당 미지정 — 안 보낸다(배855)
             rows = kept.setdefault(member, [])
             if any(_nudge_similar(title, r["title"]) for r in rows):
                 continue
@@ -542,7 +580,7 @@ def build_mgr_daily_brief(rows: list, target_date: str) -> "tuple[str, dict]":
 
     # 📌+📮 통합절(2026-08-20 GM 지적 수리) — 배 전달·회신 부탁을 하나로 합쳐 한 통
     # ASKS_TOTAL_CAP건만 보여준다(build_asks_section). 아래 두 줄만 지우면 절이 사라진다.
-    nudge_items = build_reply_nudge_items(target_date)
+    nudge_items = build_reply_nudge_items(target_date, rows)
     asks = build_asks_section(relay_items, nudge_items)
     if asks:
         parts.append(asks)
