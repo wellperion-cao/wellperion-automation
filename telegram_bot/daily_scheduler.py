@@ -2638,13 +2638,25 @@ def _kakao_fail_notify(tag: str, detail: str, room: str = "") -> None:
     다른 발신(회차 제출누락 알림)에서 부르면 이름을 못 찾는 상태였다. 카톡을 쓰는 곳이
     늘어나는데 실패 알림이 한 곳에만 묶여 있으면 나머지는 조용히 실패한다(약속 L21 관문).
     """
+    # ★2026-08-31 — 원인에 맞는 안내를 낸다(GM "이런식으로 자꾸 나오는데 근본적으로 해결해줘").
+    #   종전엔 어떤 실패든 "카톡 창이 열려 있는지 확인해 주세요" 였다. 그런데 실제로 반복된 실패는
+    #   창 문제가 아니라 **발신 주체 가드**(사람 방은 웰리 또는 등록된 자동 발신만 통과)에 걸린 것이었고,
+    #   GM 은 열어 봐야 소용없는 창을 확인하러 갔다. 원인별로 다음 할 일이 다르니 갈라 적는다.
+    d = str(detail or "")
+    if "승인_필요" in d or "승인 필요" in d:
+        why = ("   원인 = 발신 주체 가드입니다. 이 방은 웰리 이름으로만 나갑니다.\n"
+               "   카톡 창 문제가 아니라 배선 문제라 GM 이 하실 일은 없습니다 — 시토가 고칩니다.")
+    elif "중복" in d:
+        why = "   원인 = 같은 내용이 이미 나갔습니다. 실무진에게는 한 번 도착해 있습니다."
+    else:
+        why = "   PC 카카오톡에서 그 방 창이 열려 있는지 확인해 주세요."
     try:
         send_telegram(
             _GM_REPORT_CHAT_ID,
             "⚠️ 카톡 발송이 안 나갔습니다\n"
             f"▪ {room or KAKAO_OPS_ROOM} · {tag}\n"
             f"   {detail}\n"
-            "   PC 카카오톡에서 그 방 창이 열려 있는지 확인해 주세요.\n"
+            f"{why}\n"
             "   (텔레그램 쪽은 이미 정상 발송됐습니다)",
             parse_mode=None,
         )
@@ -4138,8 +4150,17 @@ def main():
             ok = False
             try:
                 kproc = subprocess.run(
+                    # ★2026-08-31 --sender 를 붙였다(GM "이런식으로 자꾸 나오는데 근본적으로 해결해줘").
+                    #   ★운영+시설+지원+주차는 사람 방이라 발신 주체 가드가 걸린다(약속 L24) —
+                    #   웰리 본인이거나 이미 등록된 자동 파이프라인 이름일 때만 통과한다.
+                    #   이 호출만 --sender 가 빠져 있어 매 회차 '웰리_승인_필요' 로 보류됐고,
+                    #   그때마다 GM 업무보고방에 '카톡 발신 실패' 알림이 두 통씩 갔다.
+                    #   실무진에게는 아무것도 안 갔는데 실패 알림만 GM 이 계속 받은 셈이다.
+                    #   이름은 새로 만들지 않는다 — 같은 방으로 나가는 밤 점검 정리가 쓰는
+                    #   '점검접수정리' 를 그대로 쓴다(같은 도메인·이미 화이트리스트에 있음).
                     [sys.executable, str(REPO_ROOT / "scripts" / "kakao_report_sender.py"),
-                     "--message", text, "--only-room", KAKAO_OPS_ROOM],
+                     "--message", text, "--only-room", KAKAO_OPS_ROOM,
+                     "--sender", "점검접수정리"],
                     cwd=str(REPO_ROOT), capture_output=True, text=True,
                     encoding="utf-8", errors="replace", timeout=180,
                     env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"),
