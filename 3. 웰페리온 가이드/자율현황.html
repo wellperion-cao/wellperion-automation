@@ -223,7 +223,6 @@
         <!-- ⏱ 시간순 (GM 지시 2026-08-08 "시간대별로 자동 발송 내용이 정리되는게 나을 것 같은데")
              방 기준은 '이 방에 뭐가 오나'(실무진 관점)이고, 시간순은 '오늘 몇 시에 뭐가 나가나'(GM 관점)다.
              정렬 기준은 등록부에 이미 있는 when_sort 를 그대로 쓴다 — 새 데이터 없음. -->
-        <button type="button" class="nf-btn active" id="notify-time-toggle">⏱ 시간순</button>
         <span class="nf-sep"></span>
         <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
       </div>
@@ -1237,17 +1236,10 @@
         alertApplyFilters();
       });
     }
-    // ⏱ 시간순 ↔ 방 기준 전환 (GM 지시 2026-08-08). 방별 보기가 기본 — 실무진 관점은 그대로 두고,
-    // '오늘 몇 시에 뭐가 나가나'를 볼 때만 시간순으로 바꾼다.
-    var timeBtn = document.getElementById('notify-time-toggle');
-    if(timeBtn){
-      timeBtn.addEventListener('click', function(){
-        _notifyState.view = (_notifyState.view === 'time') ? 'room' : 'time';
-        timeBtn.classList.toggle('active', _notifyState.view === 'time');
-        timeBtn.textContent = (_notifyState.view === 'time') ? '🏠 방별로' : '⏱ 시간순';
-        alertApplyFilters();
-      });
-    }
+    // ⏱ 시간순 = 고정 (GM 지시 2026-08-31 "그냥 시간순을 고정으로 해줘").
+    // 2026-08-08 에 넣었던 방별↔시간순 전환 버튼은 뺐다. 이 화면을 여는 사람이 GM 한 사람이고
+    // 보는 질문이 늘 '오늘 몇 시에 뭐가 나가나' 하나라, 누를 일 없는 버튼이 한 자리를 차지하고
+    // 있었다. 방 기준으로 보고 싶어지면 그때 되살린다(_notifyState.view = 'room').
   })();
 
   // ═══════════ ② 돌아가는 자동화: 상시가동 표 펼치기(구 T2 wpAutoToggle 이식) ═══════════
