@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>조직 통솔 체계 — 연말 위임 요청 · 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  .tblwrap{ margin-top:11px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  thead th.k{ width:172px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:29px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.5px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.5px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.5px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+
+  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>조직 통솔 체계 — 연말 위임 요청 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">조직 통솔 체계 정비 — 연말까지의 위임과 평가 요청</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      작성일 <b>2026. 08. 31.</b> · 문서번호 <b>WP-GM-260831-01</b><br>
+      보고 대상 <b>회장님 · 대표님</b> · 대상 기간 <b>2026. 09 ~ 12</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">연말까지 조직 통솔·인사 운영을 GM에게 맡겨 주십시오</div>
+        <div class="d">지시와 소통의 소임을 한 사람에게 모읍니다. 파트마다 주인을 세우고, 그 주인에게 권한과 책임을 함께 부여할 수 있어야 합니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">2026년 12월, 그 결과를 평가해 주십시오</div>
+        <div class="d">기간을 연말로 못 박고 평가를 받겠습니다. 평가 기준은 아래 지표 4종으로 미리 정해 두었습니다 — 사후에 만들지 않습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 진단표 -->
+  <div class="tblwrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="k">진단 항목</th>
+        <th>지금 상태<span class="sub">2026년 8월 실측</span></th>
+        <th>무엇을 보고 그렇게 판단했나<span class="sub">근거</span></th>
+        <th>그대로 두면<span class="sub">연말 예상</span></th>
+        <th>위임 후 달라지는 것<span class="sub">2026년 12월 목표</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">조 직 역 량</td></tr>
+      <tr>
+        <td class="k">일의 주인</td>
+        <td class="bad">주인이 GM 한 사람</td>
+        <td>8월 전사 목표 30건 중 <b>22건(73%)</b>이 GM 직접 관장</td>
+        <td class="bad">GM 부재 = 22건 동시 정지</td>
+        <td class="good">파트별 담당 지정 — GM 직접 <b>10건 이하</b></td>
+      </tr>
+      <tr>
+        <td class="k">실행 속도</td>
+        <td class="bad">시작되지 않은 일이 다수</td>
+        <td>세부 실행 항목 348건 중 <b>미착수 272건(78%)</b></td>
+        <td class="bad">9월에 26건이 그대로 이월</td>
+        <td class="good">미착수 비율 <b>40% 이하</b></td>
+      </tr>
+      <tr>
+        <td class="k">마감 관리</td>
+        <td class="warn">기한이 없는 목표 존재</td>
+        <td>30건 중 <b>14건(47%)</b>이 완료 기한 미기재</td>
+        <td class="warn">언제 끝나는지 아무도 모름</td>
+        <td class="good">전 목표 기한 기재 <b>100%</b></td>
+      </tr>
+      <tr class="grp"><td colspan="5">리 더 십 · 성 향</td></tr>
+      <tr>
+        <td class="k">지시 계통</td>
+        <td class="bad">한 사안이 여러 경로로 전달</td>
+        <td>같은 안건이 부서방·개인·구두로 중복 전달되어 담당이 갈림</td>
+        <td class="bad">현장이 누구 말을 따를지 판단</td>
+        <td class="good">단일 계통 — 부서장 경유 원칙 고정</td>
+      </tr>
+      <tr>
+        <td class="k">중간 관리</td>
+        <td class="warn">역할 기준 미확정</td>
+        <td>3라인 직속 중간관리자의 역할·평가 기준이 문서로 없음</td>
+        <td class="warn">성과·책임을 물을 근거 부재</td>
+        <td class="good">3인 역할기준서 · 분기 평가 정착</td>
+      </tr>
+      <tr>
+        <td class="k">의사결정 적체</td>
+        <td class="bad">결재가 장기 대기</td>
+        <td>최장 대기 <b>67일</b> (정상 소요 중앙값 2일 · 최대 14일)</td>
+        <td class="bad">맥락 소실 후 재검토 반복</td>
+        <td class="good">결재 대기 <b>14일 초과 0건</b></td>
+      </tr>
+      <tr class="grp"><td colspan="5">업 무 구 조</td></tr>
+      <tr>
+        <td class="k">요금 인상 대응력</td>
+        <td class="warn">현장 설명 역량 미검증</td>
+        <td>인상 시 회원 응대는 현장 몫인데, 응대 문구·기준이 아직 없음</td>
+        <td class="bad">인상해도 현장이 지치기만 함</td>
+        <td class="good">응대 문구 확정 · 전 파트 사전 교육</td>
+      </tr>
+      <tr class="sum">
+        <td class="k strong">종합</td>
+        <td class="bad strong">구조적 병목</td>
+        <td class="strong">사람이 부족한 것이 아니라 <b>결정과 실행이 한 곳에 몰려</b> 있음</td>
+        <td class="bad strong">인상·확장 모두 지연</td>
+        <td class="good strong">권한 분산 후 GM은 방향에 집중</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1"><b>지금 요금을 올리면 현장이 먼저 지친다.</b><br>인상 자체보다 설명·응대가 현장 부담이다. 회원의 첫 물음은 리셉션·강사에게 간다. 그 준비가 아직 없다.</li>
+        <li class="r1"><b>권한 없는 책임은 작동하지 않는다.</b><br>파트에 주인을 세우려면 인사·평가 권한이 함께 있어야 한다. 지금은 담당만 있고 권한이 없어 지시가 되돌아온다.</li>
+        <li class="r2"><b>평가할 근거가 없다.</b><br>중간관리자 역할 기준이 문서로 없어 성과를 물을 수 없고, 평가가 인상(印象)에 의존한다.</li>
+        <li class="r2"><b>같은 검토를 반복한다.</b><br>결재 적체가 길어질수록 판단 맥락이 사라져, 두 달 뒤 처음부터 다시 본다(최장 67일 실측).</li>
+        <li class="r2"><b>이 상태로 확장하면 더 어긋난다.</b><br>사람이 늘수록 한 사람에게 몰린 결정이 병목을 키운다 — 지금 정비하지 않으면 내년에 더 크게 든다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>실행 계획 — 연말까지 / 내년부터</h3>
+      <ul class="ord">
+        <li class="n"><b>9월 · 주인을 세운다</b><br>전 목표에 담당 지정 · 중간관리자 3인 역할기준서 확정 · 전 목표 완료 기한 기재<br><span class="est">판정 = GM 직접 관장 22건 → 10건 이하</span></li>
+        <li class="n"><b>10월 · 현장을 준비시킨다</b><br>요금 응대 문구 확정 · 전 파트 사전 교육 · 부서장 경유 단일 지시 계통 시행<br><span class="est">판정 = 전 파트 응대 교육 이수</span></li>
+        <li class="n"><b>11월 · 중간 점검한다</b><br>1차 평가 · 담당별 성과 점검 · 미달 파트 보완 조치<br><span class="est">판정 = 미착수 비율 40% 이하 · 결재 적체 0건</span></li>
+        <li class="n"><b>12월 · 평가받는다</b><br>연간 결과 보고 및 <b>GM 평가 수검</b> — 위 지표 4종으로 판정<br><span class="est">미달 시 위임 회수를 수용합니다</span></li>
+        <li class="n"><b>2027년 · 나아간다</b><br>확정된 통솔 체계 위에서 요금 인상 시행 · 신규 사업 확장 착수</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li><b>순서를 바꾸지 않기를 권합니다.</b><br>사람이 먼저이고 가격이 나중입니다. 준비 없이 올린 가격은 현장에서 되돌아옵니다.</li>
+        <li><b>기간을 연말로 한정합니다.</b><br>무기한 위임이 아니라 4개월입니다. 12월에 아래 지표로 평가받고, 미달이면 위임 회수를 수용합니다.</li>
+        <li><b>평가 기준을 먼저 정해 두었습니다.</b><br>① 담당 지정률 ② 미착수 비율 ③ 결재 적체 ④ 응대 준비도 — 사후에 만들지 않습니다.</li>
+        <li><b>요청하는 것은 사람을 바꾸는 권한이 아닙니다.</b><br>파트마다 주인을 정하고, 그 주인에게 권한과 책임을 함께 주는 권한입니다.</li>
+        <li><b>목표는 GM의 권한 확대가 아닙니다.</b><br>연말에 도달하려는 상태는 <b>GM이 없어도 굴러가는 조직</b>입니다. 그때 GM은 방향에만 집중합니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>수치 출처</b> — 전사 목표·실행 항목 수치는 2026-08-31 기준 월간운영계획 원장을 직접 집계한 값입니다. 결재 대기 67일은 업무·결재 SSOT 상신일 기준 실측입니다.</div>
+    <div><b>추정 표기</b> — 「연말 예상」 열은 현재 추세를 그대로 이었을 때의 <b>(추정)</b>이며 확정 수치가 아닙니다. 「12월 목표」 열은 달성 목표치로, 실적이 아닙니다.</div>
+    <div><b>범위</b> — 본 보고는 조직 통솔 체계에 한합니다. 요금 인상폭·시행 시점은 별도 보고(요금 변경 및 준비 보고서)에서 다룹니다. <b>차기 보고</b> 2026년 11월 1차 평가.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260831_조직통솔체계_위임요청_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
