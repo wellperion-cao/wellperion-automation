@@ -1471,8 +1471,15 @@ def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
         where = f"{it['loc']} " if it["loc"] and not it["content"].startswith(it["loc"]) else ""
         # 「N일째」 병기 — GM 지시 2026-08-29 "처리 안된 소요 일정 체크". 2026-08-20의
         # 'N일째 금지'는 재촉 문구 맥락이었고, 이번 지시가 소요일 표기를 명시적으로 요구해 대체한다.
-        lines.append(f"{icon} {it['when']} · {it['days']}일째 [{it['cat']}] {where}{it['content']}"
-                     f" — {it['dept']} {it['who']}")
+        #
+        # ★2026-08-31 두 줄로 갈랐다(GM "가독성 다 챙겼는지 확인해줘"). 종전엔 날짜·경과일·분류·
+        #   장소·회원 원문·부서·담당을 한 줄에 ' · ' 로 이어 붙였다 — 컴플레인 원문이 길어 한 줄이
+        #   휴대폰에서 대여섯 줄로 접혔고, 아홉 건이 붙으니 글자벽이 됐다. 실무진이 훑어서 자기
+        #   부서 것을 찾는 통인데 훑을 수가 없었다.
+        #   첫 줄 = 언제·얼마나 됐나·무슨 분류·누구 일 (훑는 줄)
+        #   둘째 줄 = 회원이 남기신 내용 (읽는 줄, 들여쓰기 3칸)
+        lines.append(f"{icon} {it['when']} · {it['days']}일째 [{it['cat']}] — {it['dept']} {it['who']}")
+        lines.append(f"   {where}{it['content']}")
     if rest:
         lines.append(f"…그 밖에 {len(rest)}건이 더 있습니다(화면에서 보실 수 있습니다).")
     # 처리 세 걸음 — GM 지시 2026-08-29 "어떻게 처리하면 되는지에 대한 안내가 있어야함".
