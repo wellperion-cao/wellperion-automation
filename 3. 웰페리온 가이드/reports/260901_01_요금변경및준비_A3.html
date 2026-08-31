@@ -70,6 +70,9 @@
   td.strong{ font-weight:700; }
   tr.sum td{ background:#F0F3F7; }
   tr.sum td.k{ background:#E7ECF2; }
+  td.hl{ background:#EDF1F6; font-weight:700; }
+  td.gb{ text-align:right; font-variant-numeric:tabular-nums; background-repeat:no-repeat;
+    background-position:left center; background-size:auto 60%; }
 
   .cols{ margin-top:10px; display:flex; gap:10px; flex:1; }
   .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:8px 12px 7px; }
@@ -147,24 +150,40 @@
     <table>
       <thead>
         <tr>
-          <th class="k">구분</th>
-          <th>현재<span class="sub">VAT 포함</span></th>
-          <th>A안 — 4등급 유지<span class="sub">전 등급 균일 인상</span></th>
-          <th>B안 — 2등급으로 통합<span class="sub">골프 미포함 등급 폐지</span></th>
+          <th class="k">A안 — 4등급 유지</th>
+          <th>현재<span class="sub">부가세 포함가</span></th>
+          <th>A안 공급가<span class="sub">부가세 별도</span></th>
+          <th>부가세 10%</th>
+          <th>A안 총액<span class="sub">부가세 포함 · 실청구액</span></th>
+          <th>인상률</th>
         </tr>
       </thead>
       <tbody>
-        <tr class="grp"><td colspan="4">등 급 별 금 액 · 인 원</td></tr>
-        <tr><td class="k">플래티넘 <span class="est">268명</span></td><td class="num">300만</td><td class="num">371만</td><td class="num bad">폐지 → 408만</td></tr>
-        <tr><td class="k">플래티넘+골프 <span class="est">322명</span></td><td class="num">340만</td><td class="num">421만</td><td class="num good">408만 <span class="est">590명</span></td></tr>
-        <tr><td class="k">노블레스 <span class="est">289명</span></td><td class="num">360만</td><td class="num">446만</td><td class="num bad">폐지 → 480만</td></tr>
-        <tr><td class="k">노블레스+골프 <span class="est">116명</span></td><td class="num">400만</td><td class="num">495만</td><td class="num good">480만 <span class="est">405명</span></td></tr>
-        <tr><td class="k">회원이 지는 인상폭</td><td class="ctr">—</td><td class="ctr strong">전 등급 +23.8%</td><td class="ctr strong">골프회원 +20% / <span class="bad">그 외 +33~36%</span></td></tr>
-        <tr class="grp"><td colspan="4">연 매 출 시 나 리 오</td></tr>
-        <tr class="sum"><td class="k strong">이탈 10%</td><td class="num">—</td><td class="num strong">37.88억 <span class="est">+11.3%</span></td><td class="num good strong">39.14억 <span class="est">+15.0%</span></td></tr>
-        <tr><td class="k">이탈 20%</td><td class="num">—</td><td class="num bad">33.7억대 <span class="est">마이너스</span></td><td class="num">34.81억 <span class="est">+2.3%</span></td></tr>
-        <tr><td class="k strong">본전이 되는 이탈률</td><td class="ctr">—</td><td class="ctr strong">19.2%</td><td class="ctr">21.8%</td></tr>
-        <tr class="sum"><td class="k strong">1,000명 회복 시</td><td class="num">—</td><td class="num good strong">42.11억 <span class="est">+8.1억</span></td><td class="num strong">43.51억 <span class="est">+9.5억</span></td></tr>
+        <tr class="grp"><td colspan="6">등 급 별 금 액 · 인 원 (995명)</td></tr>
+        <tr><td class="k">플래티넘 <span class="est">268명</span></td><td class="num">300만</td><td class="num">337.5만</td><td class="num est">33.8만</td><td class="num hl">371.3만</td><td class="ctr good strong" rowspan="4" style="font-size:20px; line-height:1.15;">+23.8%<br><span class="est" style="font-size:12px; color:#146B4F;">전 등급<br>똑같이 오른다</span></td></tr>
+        <tr><td class="k">플래티넘+골프 <span class="est">322명</span></td><td class="num">340만</td><td class="num">382.5만</td><td class="num est">38.3만</td><td class="num hl">420.8만</td></tr>
+        <tr><td class="k">노블레스 <span class="est">289명</span></td><td class="num">360만</td><td class="num">405.0만</td><td class="num est">40.5만</td><td class="num hl">445.5만</td></tr>
+        <tr class="sum"><td class="k strong">노블레스+골프 <span class="est">116명 · GM 예시</span></td><td class="num">400만</td><td class="num strong">450.0만</td><td class="num">45.0만</td><td class="num hl">495.0만</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="k" style="width:250px;">연매출 시나리오 <span class="sub">A안 · 부가세 포함 총액 기준</span></th>
+          <th style="width:78px;">회원 수</th>
+          <th style="width:96px;">연매출</th>
+          <th>현재 34.03억 대비 — 막대가 길수록 많이 는다</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="k">현재</td><td class="ctr">995명</td><td class="num">34.03억</td><td class="ctr est">기준선 (0)</td></tr>
+        <tr class="sum"><td class="k strong">인상 후 · 이탈 없음</td><td class="ctr">995명</td><td class="num strong">42.11억</td><td class="gb good strong" style="background-image:linear-gradient(#C9E2D6,#C9E2D6); background-size:100% 62%;">+8.08억 (+23.8%)</td></tr>
+        <tr><td class="k">인상 후 · 이탈 10%</td><td class="ctr">895명</td><td class="num">37.88억</td><td class="gb good" style="background-image:linear-gradient(#C9E2D6,#C9E2D6); background-size:47.6% 62%;">+3.85억 (+11.3%)</td></tr>
+        <tr><td class="k">인상 후 · 이탈 15%</td><td class="ctr">847명</td><td class="num">35.85억</td><td class="gb warn" style="background-image:linear-gradient(#C9E2D6,#C9E2D6); background-size:22.5% 62%;">+1.82억 (+5.4%)</td></tr>
+        <tr class="sum"><td class="k bad strong">인상 후 · 이탈 19.2%</td><td class="ctr bad strong">805명</td><td class="num bad strong">34.07억</td><td class="ctr bad strong">± 0 — 본 전 선 <span class="est">넘으면 인상 효과 소멸</span></td></tr>
+        <tr class="sum"><td class="k good strong">인상 후 · 1,000명 회복</td><td class="ctr good strong">995명</td><td class="num good strong">42.11억</td><td class="gb good strong" style="background-image:linear-gradient(#8FC7AE,#8FC7AE); background-size:100% 62%;">+8.08억 (+23.8%) — 목표</td></tr>
+        <tr><td class="k est">1,000명 회복이 가능한 이유</td><td class="est" colspan="3">정원 마감 · 대기자 보유 — 이탈한 자리는 신규로 되채워진다. B안(2등급 통합)은 타석 미증설로 제외.</td></tr>
       </tbody>
     </table>
 
@@ -177,12 +196,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr class="grp"><td colspan="4">★ 입 회 비 — 우 리 만 0 원 이 다</td></tr>
         <tr class="sum"><td class="k bad strong">웰페리온 입회비</td><td class="num bad strong">0원</td><td class="bad strong" colspan="2">7개사 중 <b>유일하게 없다</b> · 타사 1,000만 ~ 1.2억</td></tr>
         <tr class="sum"><td class="k good strong">신설하면</td><td class="num good strong">100만</td><td class="good strong" colspan="2">신규 회전 <b>314명</b> 기준 <b>연 3.14억</b> · 300만이면 9.42억</td></tr>
         <tr><td class="k">락커 <span class="est">신발장 270·골프 179</span></td><td class="num">연 6,462만</td><td colspan="2">월 1만·1.5만 → 20% 인상 시 <b>+1,292만</b></td></tr>
         <tr><td class="k">골프 옵션</td><td class="num">연 40만</td><td colspan="2">60만으로 올리면 438명 기준 <b>+8,760만</b></td></tr>
-        <tr><td class="k">강습 <span class="est">P.T 10회 109만 등</span></td><td class="ctr">정회원가</td><td colspan="2">정회원·준회원 이원 가격의 할인폭을 좁힌다</td></tr>
       </tbody>
     </table>
     </div>
@@ -225,48 +242,47 @@
       <h3>본론 — 무엇을 더 드릴 것인가</h3>
       <div class="lead">서비스 투자의 절반을 사우나에 넣는다. 타석은 늘리지 않는다.</div>
       <ul class="ord">
-        <li class="n"><b>사우나 가운 — 비교 6개사 전부 있고 우리만 없다</b><br>가장 먼저 메울 자리. 비용 대비 체감이 가장 크다.</li>
-        <li class="n"><b>사우나 휴식 공간 — 반얀트리는 탕 안에 선베드 수면실·안마의자를 갖췄다</b><br>씻고 나오는 곳에서 머무는 곳으로 바꾼다.</li>
-        <li class="n"><b>세신 — 우리는 여성만, 타사는 대부분 남녀 운영</b><br>남성 세신이 가장 자주 나오는 요구다.</li>
-        <li class="n"><b>린넨 · 바스타올 상시 비치</b> — 사우나 체감을 좌우하는 가장 싼 항목</li>
-        <li class="n"><b>회원 전용 식당 · 운동 설계</b> — 식당은 5개사 보유(카페 회원가로 시작) · 연 2회 체력 점검</li>
+        <li class="n"><b>사우나 가운 · 린넨 상시 비치</b> — 6개사 전부 있고 우리만 없다. 가장 싸고 체감이 크다</li>
+        <li class="n"><b>사우나 휴식 공간</b> — 반얀트리는 탕 안에 선베드 수면실·안마의자를 갖췄다</li>
+        <li class="n"><b>남성 세신</b> — 우리는 여성만, 타사는 대부분 남녀 운영. 가장 자주 나오는 요구다</li>
+        <li class="n"><b>회원 전용 식당 · 운동 설계</b> — 식당 5개사 보유 · 연 2회 체력 점검</li>
       </ul>
     </div>
     <div class="box snr w">
       <h3>70세 이상 124명 — 갈 곳이 없는 층이다</h3>
-      <div class="lead">우리 회원 <b>124명(12.4%)</b> — 70~74세 57명 · 75세 이상 67명. 타사 입회 상한은 최고가 차움 74세, 반얀트리는 59세다. <b>70세 이상을 받아 주는 곳이 사실상 우리뿐</b> — 인상 저항도 이탈 위험도 가장 낮다.</div>
+      <div class="lead">우리 회원 <b>124명(12.4%)</b> — 70~74세 57명 · 75세 이상 67명. 타사 상한은 최고가 차움 74세 — <b>받아 주는 곳이 우리뿐</b>이라 이탈 위험이 가장 낮다.</div>
       <ul class="ord">
-        <li class="n"><b>시니어 전용 구성</b> — 수영 제외, GYM + 사우나 중심 등급 (76세 이상 현행 운영과 맞물린다)</li>
-        <li class="n"><b>사우나 접근성</b> — 안전 손잡이 · 미끄럼 방지 · 휴식 공간. 70세 이상이 가장 오래 머무는 곳이다</li>
+        <li class="n"><b>시니어 전용 구성</b> — 수영 제외, GYM + 사우나 중심 등급</li>
+        <li class="n"><b>사우나 접근성</b> — 안전 손잡이 · 미끄럼 방지 · 휴식 공간</li>
         <li class="n"><b>건강 관리</b> — 연 2회 체력 점검 + 낙상 예방 프로그램</li>
-        <li class="n"><b>동반 · 컨시어지</b> — 76세 이상 컨시어지 필수 규정을 부담이 아니라 서비스로 바꾼다</li>
+        <li class="n"><b>동반 · 컨시어지</b> — 76세 이상 필수 규정을 서비스로 바꾼다</li>
       </ul>
     </div>
     <div class="box">
       <h3>핵심 리스크</h3>
       <ul>
-        <li class="r1"><b>B안은 검토 대상이 아니다.</b><br>타석을 늘리지 않기로 확정했으므로 전원 골프 등급으로 묶는 B안은 성립하지 않는다.</li>
-        <li class="r1"><b>A안은 여유가 작다.</b><br>본전 이탈률 19.2% — 20%를 넘으면 인상 전보다 매출이 줄어든다.</li>
-        <li class="r2"><b>9월 만기 61명 중 재등록 상담 기록이 1명뿐이다.</b><br>인상 전부터 갱신 관리가 비어 있다 — 여기부터 메운다.</li>
-        <li class="r2"><b>안내 시점이 촉박하다.</b><br>사전 안내 12월 · 공지 1월 · 시행 2027년 2월.</li>
+        <li class="r1"><b>A안은 여유가 작다.</b><br>본전 이탈률 <b>19.2%</b> — 이 선을 넘으면 인상 전보다 매출이 줄어든다.</li>
+        <li class="r1"><b>9월 만기 61명 중 재등록 상담 기록이 1명뿐이다.</b><br>인상 전부터 갱신 관리가 비어 있다 — 여기부터 메운다.</li>
+        <li class="r2"><b>B안은 검토 대상이 아니다</b> — 타석 미증설 확정으로 성립하지 않는다.</li>
+        <li class="r2"><b>안내 시점이 촉박하다</b> — 사전 안내 12월 · 공지 1월 · 시행 2027년 2월.</li>
       </ul>
     </div>
     <div class="box rec">
       <h3>실행 순서</h3>
       <ul>
-        <li><b>서비스안을 9월에 먼저 확정한다.</b><br>인상 문구보다 서비스 문구가 먼저 나와야 응대가 선다. 사우나 항목이 첫 줄에 온다.</li>
-        <li><b>입회비 방식을 9월에 정한다.</b><br>「입회금(반환 없음)」인지 「보증금(반환 의무)」인지부터 — 보증금은 회계상 부채다.</li>
-        <li><b>표기는 VAT 포함가로 통일한다.</b><br>회원은 인상폭이 아니라 「공급가 + 부가세」 구성을 본다.</li>
-        <li><b>목표는 인상이 아니라 회복이다.</b><br>995명을 1,000명으로 되돌리면 A안 <b>42.11억</b> — 지금보다 <b>8.1억</b> 늘어난다.</li>
+        <li><b>서비스안을 9월에 먼저 확정한다.</b><br>인상 문구보다 서비스 문구가 먼저 나와야 응대가 선다.</li>
+        <li><b>입회비 방식을 9월에 정한다.</b><br>「입회금(반환 없음)」인지 「보증금(회계상 부채)」인지부터.</li>
+        <li><b>안내는 부가세 포함가로 통일한다.</b><br>노블레스+골프 = 공급가 450만 + 부가세 45만 = <b>495만</b>으로 알린다.</li>
+        <li><b>목표는 인상이 아니라 회복이다.</b><br>995명을 1,000명으로 되돌리면 <b>42.11억</b> — 지금보다 <b>8.08억</b> 는다.</li>
       </ul>
     </div>
   </div>
 
   <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>수치 근거</b> — 등급별 인원(플래티넘 268·플래티넘+골프 322·노블레스 289·노블레스+골프 116 = 995명)은 2026-08-31 회원 원장 직접 집계. 연매출은 인원 × 등급가 단순 합이며 중도 해지·양도는 반영하지 않은 <b>(추정)</b>입니다.</div>
-    <div><b>이탈률 가정</b> — 10%·20%·19.2%·21.8%는 <b>(가정)</b>이며 실적이 아닙니다. 국내 프리미엄 클럽의 인상 후 이탈률 공개 자료는 찾지 못했습니다.</div>
-    <div><b>70세 이상</b> 124명(70~74세 57명 · 75세 이상 67명)은 회원 원장 998명 기준 실측(12.4%)이며 등급별 합 995명과는 기준 시점이 다릅니다. <b>시장 가격 · 입회 가능 연령 · 편의제공</b>은 운영부 「회사별 멤버십 요금 및 제도 비교」 시트(7개사 전수 실사) 값이며 VAT 포함 환산. 신규 314명은 2026년 「신규」 실측 <b>(가정)</b>.</div>
+    <div><b>수치 근거</b> — 등급별 인원(268·322·289·116 = 995명)은 2026-08-31 회원 원장 직접 집계. 연매출은 인원 × 등급가 단순 합이며 중도 해지·양도 미반영 <b>(추정)</b>.</div>
+    <div><b>인상 계산</b> — A안 금액은 현재가(부가세 포함)에 전 등급 +23.8%를 균일 적용한 뒤 공급가와 부가세로 분해한 값. 이탈률 10%·15%·19.2%는 <b>(가정)</b>이며 실적이 아닙니다.</div>
+    <div><b>70세 이상</b> 124명은 원장 998명 기준 실측(12.4%)이라 995명과 시점이 다릅니다. <b>시장 가격·입회 연령</b>은 운영부 7개사 실사 시트(부가세 포함 환산).</div>
   </div>
 
 </div>
