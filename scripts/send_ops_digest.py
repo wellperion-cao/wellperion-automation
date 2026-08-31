@@ -845,6 +845,21 @@ def _resolve_staff_message(ship: dict) -> str:
 # ══════════════════════════════════════════════════════════════════════════
 SCHEDULE_LOOKAHEAD_DAYS = 7
 SCHEDULE_SHOW_N = 5
+
+
+def _schedule_horizon(today=None):
+    """일정 리마인드의 끝 날짜 = **이번 주 금요일**(GM 지시 2026-09-01).
+
+    GM 원문: "항상 이번주 금요일까지 계속 리마인드해줘. 9.1(화)면 9.1~9.4(금),
+    9.2(수)면 9.2~9.4(금)." 창이 매일 7일씩 앞으로 밀리면 같은 일정이 일주일 내내
+    같은 자리에 떠 배경이 된다. 금요일로 못 박으면 주가 갈수록 목록이 줄어 —
+    남은 것이 눈에 띈다.
+    ▸토·일에는 이번 주 금요일이 이미 지났으므로 다음 주 금요일까지 본다(빈 통 방지).
+    """
+    today = today or date.today()
+    wd = today.weekday()                 # 월=0 … 금=4 · 토=5 · 일=6
+    ahead = (4 - wd) if wd <= 4 else (4 + 7 - wd)
+    return today + timedelta(days=ahead)
 _SCHEDULE_DEPT_ORGS = {"시설부", "지원부", "주차관리부", "운영부"}
 
 
@@ -862,7 +877,7 @@ def _upcoming_schedule_items(today=None) -> list:
     except Exception as exc:
         log(f"[schedule] 전사일정 읽기 실패 — 리마인드 절 생략: {exc}")
         return []
-    horizon = today + timedelta(days=SCHEDULE_LOOKAHEAD_DAYS - 1)
+    horizon = _schedule_horizon(today)
     out = []
     for x in data.get("items", []):
         if not isinstance(x, dict) or str(x.get("applies") or "") == "해당없음":
@@ -924,7 +939,12 @@ def _build_schedule_block(items: list, today=None, show_all: bool = False) -> st
         # 관리자가 '오늘 우리 부서 것' 을 찾으려면 처음부터 다시 읽어야 한다.
         # 한 줄에 한 가지 · 상세는 들여쓰기(실무진 전달문 표준).
         shown = sorted(items, key=lambda x: x["date"])
-        lines = [f"📅 다가오는 일정 — 앞으로 {SCHEDULE_LOOKAHEAD_DAYS}일 {len(shown)}건"]
+        _end = _schedule_horizon(today)
+        _dow = "월화수목금토일"
+        _rng = (f"{today.month}/{today.day}({_dow[today.weekday()]})"
+                if _end == today else
+                f"{today.month}/{today.day}({_dow[today.weekday()]}) ~ {_end.month}/{_end.day}({_dow[_end.weekday()]})")
+        lines = [f"📅 다가오는 일정 — {_rng} · {len(shown)}건"]
         cur = None
         for it in shown:
             if it["date"] != cur:
@@ -1634,14 +1654,21 @@ def send_schedule_pings() -> None:
             f"📎 전사일정 {_SCHEDULE_PAGE_URL}",
             "   날짜·담당이 비어 있으면 이 화면에서 직접 채워 주시면 됩니다",
         ])
-        cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", RELAY_ROOM,
-               "--sender", "아침정리다이제스트"]
-        log(f"[sched] 발송 → {RELAY_ROOM}")
-        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
-        out = (proc.stdout or "").strip()
-        log(f"[sched] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
-        if proc.returncode == 0 and "DONE" in out:
-            sent_any = True
+        # ★2026-09-01 GM 지시 — "중간관리자방 + 운영부방까지 공유하자."
+        #   ★운영부는 답을 요구하지 않는 공유 전용 방이다(약속 L24) — 같은 통을 그대로 보내되
+        #   묻는 자리는 ★중간관리자 한 곳으로 둔다. 같은 사람이 두 방에서 같은 걸 두 번 받는
+        #   중복이지만, 일정은 놓치면 되돌릴 수 없어 GM 이 중복을 감수하기로 정했다.
+        for _i, _room in enumerate((RELAY_ROOM, TARGET_ROOM)):
+            if _i:
+                time.sleep(SEND_STAGGER_SECONDS)   # 알림 두 개가 같은 초에 겹치지 않게
+            cmd = [sys.executable, str(SENDER), "--message", msg, "--only-room", _room,
+                   "--sender", "아침정리다이제스트"]
+            log(f"[sched] 발송 → {_room}")
+            proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            out = (proc.stdout or "").strip()
+            log(f"[sched] rc={proc.returncode} · {out.splitlines()[-1] if out else '출력 없음'}")
+            if proc.returncode == 0 and "DONE" in out:
+                sent_any = True
     if sent_any:
         from module_heartbeat import record_heartbeat
         record_heartbeat(_SCHED_PING_HEARTBEAT_ID, detail="📅 다가오는 일정 통 발송",
