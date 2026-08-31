@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>① 요금 변경 및 준비 — 웰페리온 A3 보고서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+
+  .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:15px; color:var(--navy);
+    letter-spacing:6px; margin-bottom:5px; }
+  .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:29px; letter-spacing:-.8px; line-height:1.15; }
+  .meta{ margin-left:auto; text-align:right; font-size:11.5px; line-height:1.65; color:#3C464F; }
+  .meta b{ color:var(--ink); font-weight:700; }
+  .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .sign div:last-child{ border-right:0; }
+  .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .sign .b{ height:38px; }
+
+  .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .ask .items{ flex:1; display:flex; }
+  .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .ask .it:last-child{ border-right:0; }
+  .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+
+  .tblwrap{ margin-top:11px; display:flex; gap:11px; }
+  .tblwrap > div:first-child{ flex:1.45; }
+  .tblwrap > div:last-child{ flex:1; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  thead th{ height:32px; background:var(--navy); color:#fff; font-weight:700; font-size:12.6px; border-color:#2A4763; }
+  thead th.k{ width:150px; background:#0E2439; }
+  thead th .sub{ display:block; font-size:10.3px; font-weight:400; opacity:.8; margin-top:1px; }
+  tbody td{ height:27px; }
+  td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  tr.grp td{ height:21px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.3px; letter-spacing:2.2px; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ctr{ text-align:center; }
+  .good{ color:var(--good); font-weight:700; }
+  .warn{ color:var(--warn); font-weight:700; }
+  .bad{ color:var(--bad); font-weight:700; }
+  .est{ color:#5C666F; font-size:10.3px; }
+  td.strong{ font-weight:700; }
+  tr.sum td{ background:#F0F3F7; }
+  tr.sum td.k{ background:#E7ECF2; }
+
+  .cols{ margin-top:11px; display:flex; gap:11px; flex:1; }
+  .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .box ul{ list-style:none; }
+  .box li{ font-size:11.8px; line-height:1.5; padding-left:15px; position:relative; margin-bottom:4px; }
+  .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .box li.r1::before{ content:'⚠'; left:0; font-size:10.3px; color:var(--bad); }
+  .box li.r2::before{ content:'△'; left:0; font-size:10px; color:var(--warn); }
+  .box li.n::before{ content:counter(a); counter-increment:a; left:0; font-size:10.3px; font-weight:700;
+    color:#fff; background:var(--navy); width:14px; height:14px; line-height:14px; text-align:center; border-radius:2px; top:2px; }
+  .box ul.ord{ counter-reset:a; }
+  .box li.n{ padding-left:20px; }
+  .box.rec{ border-top-color:var(--good); }
+  .box.rec h3{ color:var(--good); }
+  .box.rec b{ color:var(--good); }
+  .box.key{ border-top-color:var(--warn); }
+  .box.key h3{ color:var(--warn); }
+
+  .foot{ margin-top:9px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:24px; font-size:10.6px; line-height:1.5; color:#48525B; }
+  .foot div{ flex:1; }
+  .foot b{ color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>① 요금 변경 및 준비 (A3 1장)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+  <button id="png">PNG 다운로드</button>
+</div>
+
+<div class="page" id="sheet">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">① 회원권 요금 변경 및 준비 — 인상안과 서비스 강화</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-01</b><br>
+      현재 회원 <b>995명</b> · 금액 <b>전부 VAT 포함가</b>
+    </div>
+    <div class="sign">
+      <div><div class="t">담당</div><div class="b"></div></div>
+      <div><div class="t">GM</div><div class="b"></div></div>
+      <div><div class="t">대표</div><div class="b"></div></div>
+      <div><div class="t">회장</div><div class="b"></div></div>
+    </div>
+  </div>
+
+  <!-- ② 결정 요청 -->
+  <div class="ask">
+    <div class="lb"><span>DECISION</span><strong>결정 요청</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="n">01</div>
+        <div class="q">인상안을 A안으로 확정해 주십시오</div>
+        <div class="d">전 등급 균일 인상(VAT 포함가 표기) — 371 / 421 / 446 / 495만원. B안(골프 등급만 인상)은 부담이 438명에게만 몰리고 그 등급 이탈이 20%를 넘으면 매출이 오히려 줄어듭니다.</div>
+      </div>
+      <div class="it">
+        <div class="n">02</div>
+        <div class="q">서비스 강화안을 인상보다 먼저 진행하게 해 주십시오</div>
+        <div class="d">이탈률이 <b>19.2%</b>를 넘으면 인상해도 매출이 늘지 않습니다. 승부는 그 안쪽에서 갈립니다 — 오른쪽 서비스안이 이 보고의 본론입니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 표 2개 -->
+  <div class="tblwrap">
+    <div>
+    <table>
+      <thead>
+        <tr>
+          <th class="k">구분</th>
+          <th>현재<span class="sub">VAT 포함</span></th>
+          <th>A안 — 전 등급<span class="sub">균일 인상 · 권고</span></th>
+          <th>B안 — 골프 2종만<span class="sub">20% 인상</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="grp"><td colspan="4">등 급 별 금 액 · 인 원</td></tr>
+        <tr><td class="k">플래티넘 <span class="est">268명</span></td><td class="num">300만</td><td class="num good">371만</td><td class="num">300만 <span class="est">동결</span></td></tr>
+        <tr><td class="k">플래티넘+골프 <span class="est">322명</span></td><td class="num">340만</td><td class="num good">421만</td><td class="num">408만</td></tr>
+        <tr><td class="k">노블레스 <span class="est">289명</span></td><td class="num">360만</td><td class="num good">446만</td><td class="num">360만 <span class="est">동결</span></td></tr>
+        <tr><td class="k">노블레스+골프 <span class="est">116명</span></td><td class="num">400만</td><td class="num good">495만</td><td class="num">480만</td></tr>
+        <tr><td class="k">인상률</td><td class="ctr">—</td><td class="ctr strong">전 등급 +23.8%</td><td class="ctr">골프 2종만 +20%</td></tr>
+        <tr class="grp"><td colspan="4">연 매 출 시 나 리 오</td></tr>
+        <tr><td class="k">이탈 없을 때</td><td class="num">34.03억</td><td class="num good">42.11억</td><td class="num">37.15억</td></tr>
+        <tr class="sum"><td class="k strong">이탈 10%</td><td class="num">—</td><td class="num good strong">37.88억 <span class="est">+11.3%</span></td><td class="num strong">35.27억 <span class="est">+3.6%</span></td></tr>
+        <tr><td class="k">이탈 15%</td><td class="num">—</td><td class="num">35.85억 <span class="est">+5.4%</span></td><td class="num bad">33.4억대 <span class="est">마이너스 진입</span></td></tr>
+        <tr><td class="k strong">본전이 되는 이탈률</td><td class="ctr">—</td><td class="ctr good strong">19.2%</td><td class="ctr bad strong">골프 등급 17%</td></tr>
+        <tr class="sum"><td class="k strong">1,000명 회복 시</td><td class="num">—</td><td class="num good strong">42.11억 <span class="est">+8.1억</span></td><td class="num strong">37.15억 <span class="est">+3.1억</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div>
+    <table>
+      <thead>
+        <tr>
+          <th class="k">시장 비교</th>
+          <th>가격<span class="sub">공개 자료 기준</span></th>
+          <th>웰페리온 위치</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="grp"><td colspan="3">400 ~ 500 만 원 대 실 재 사 례</td></tr>
+        <tr><td class="k">롯데 트레비클럽<br><span class="est">액티비엘 5.0</span></td><td class="num">500만</td><td>보증금 없는 순수 연회비. <b>이미 있는 구간</b></td></tr>
+        <tr><td class="k">시그니엘 서울</td><td class="num">연회비 363만</td><td>+보증금 1.3억(10년). 웰페리온은 <b>보증금 없이</b> 이 구간</td></tr>
+        <tr><td class="k">조선팰리스 강남</td><td class="num">연 900만</td><td>무보증금 1년권</td></tr>
+        <tr class="grp"><td colspan="3">골 프 포 함 프 리 미 엄</td></tr>
+        <tr><td class="k">콩코드 피트니스</td><td class="num">+119만</td><td>151만(단독) → 270만(전종목)</td></tr>
+        <tr class="sum"><td class="k strong">웰페리온 현재</td><td class="num strong">+40만</td><td class="bad strong">시장의 1/3 — 타석을 거의 무료로 제공 중</td></tr>
+        <tr class="grp"><td colspan="3">인 상 사 례</td></tr>
+        <tr><td class="k">JW메리어트 반포</td><td class="num">3개월 +28%</td><td class="good">인상 후에도 <b>대기자 600명</b> 유지</td></tr>
+        <tr><td class="k strong">웰페리온</td><td class="ctr">—</td><td class="good strong">정원 마감 · 대기자 보유</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ④ 3분할 -->
+  <div class="cols">
+    <div class="box key">
+      <h3>본론 — 무엇을 더 드릴 것인가</h3>
+      <ul class="ord">
+        <li class="n"><b>운동 설계 — 연 2회 체력 점검 + 프로그램 처방</b><br>전 회원 대상. 가격이 아니라 결과를 판다.</li>
+        <li class="n"><b>게스트 동반 — 연 4회</b><br>회원이 자기 클럽을 자랑할 수 있게. 신규 유입 경로도 된다.</li>
+        <li class="n"><b>라운지 · F&amp;B 크레딧</b><br>500만원대 시설이 공통으로 갖는 항목(음료권·식사권).</li>
+        <li class="n"><b>사우나 · 린넨 품질 상향</b><br>바스타올 상시 비치 · 린넨 전담 관리. 지금 가장 많이 들어오는 불편이다.</li>
+        <li class="n"><b>골프 타석 예약 우선권</b><br>골프 등급의 인상분을 눈에 보이게 돌려준다.</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>핵심 리스크</h3>
+      <ul>
+        <li class="r1"><b>19.2%가 경계선이다.</b><br>A안으로 올려도 이탈이 그 선을 넘으면 매출은 제자리다. 인상만 하고 서비스가 그대로면 이 선을 넘을 수 있다.</li>
+        <li class="r1"><b>B안은 438명에게 부담이 몰린다.</b><br>골프 등급 이탈이 20%면 <b>-1.8%</b>로 마이너스. 폭이 좁아 뒤집히기 쉽다.</li>
+        <li class="r2"><b>9월 만기 61명 중 재등록 상담 기록이 1명뿐이다.</b><br>인상 전부터 갱신 관리가 비어 있다 — 여기부터 메워야 한다.</li>
+        <li class="r2"><b>안내 시점이 촉박하다.</b><br>사전 안내 12월 · 공지 1월 · 시행 2027년 2월. 문구 확정이 늦으면 전부 밀린다.</li>
+      </ul>
+    </div>
+    <div class="box rec">
+      <h3>GM 권고</h3>
+      <ul>
+        <li><b>A안으로 갑니다.</b><br>전 등급 균일 인상 + VAT 포함가 표기. 회원은 인상폭이 아니라 「공급가 + 부가세」 구성을 봅니다.</li>
+        <li><b>골프만 따로 올리지 않습니다.</b><br>시장 대비 낮은 것은 맞지만, 한 등급만 올리면 회원이 납득하기 어렵습니다.</li>
+        <li><b>서비스안을 9월에 먼저 확정합니다.</b><br>인상 문구보다 서비스 문구가 먼저 나와야 응대가 섭니다.</li>
+        <li><b>목표는 인상이 아니라 회복입니다.</b><br>995명을 1,000명으로 되돌리면 <b>42.11억</b> — 지금보다 8.1억 늘어납니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ⑤ 각주 -->
+  <div class="foot">
+    <div><b>수치 근거</b> — 등급별 인원(플래티넘 268·플래티넘+골프 322·노블레스 289·노블레스+골프 116 = 995명)은 2026-08-31 회원 원장 직접 집계. 연매출은 인원 × 등급가 단순 합으로, 중도 해지·양도는 반영하지 않은 <b>(추정)</b>입니다.</div>
+    <div><b>이탈률 가정</b> — 10%·15%·19.2%는 <b>(가정)</b>이며 실적이 아닙니다. 국내 프리미엄 클럽의 인상 후 이탈률 공개 자료는 찾지 못했습니다. JW메리어트 사례는 인상 후 대기자 유지만 확인된 것입니다.</div>
+    <div><b>시장 가격</b> — 롯데 트레비클럽(2025-05)·콩코드(2024-01)·시그니엘/조선팰리스(2021)·JW메리어트(2021) 공개 기사 기준. 한남·강남 하이엔드(그랜드하얏트·파크하얏트·포시즌스·신라)는 <b>가격 비공개</b>로 비교에서 제외했습니다. <b>차기</b> 서비스안 확정 2026년 9월.</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+document.getElementById('png').onclick = function () {
+  if (typeof html2canvas !== 'function') {
+    alert('PNG 변환 기능을 불러오지 못했습니다(인터넷 연결 확인).\n대신 [A3 인쇄] 버튼에서 「PDF로 저장」을 쓰세요.');
+    return;
+  }
+  var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
+  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
+    .then(function (canvas) {
+      var a = document.createElement('a');
+      a.download = '260901_01_요금변경및준비_A3.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    })
+    .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
+    .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
+};
+</script>
+</body>
+</html>
