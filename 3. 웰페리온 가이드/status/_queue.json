@@ -807,7 +807,7 @@
     "task_id": "CTO-2026-08-31-GM업무-담당-칸-배선-아침-카톡-릴레이가-키워드-",
     "clevel": "cto",
     "title": "[시토] GM업무 담당 칸 배선 — 아침 카톡 릴레이가 키워드 대신 담당값을 읽게",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-08-31",
     "from": "ceo",
@@ -822,13 +822,19 @@
     "work_type": "update",
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-08-31"
+    "updated_at": "2026-08-31",
+    "processed_at": "2026-09-01",
+    "artifact": "commit:5bf200aaf",
+    "saw": "키워드 추측(_NUDGE_FACILITY_KEYWORDS) 제거 → GM_TASK_OWNERS 보드 직독으로 교체. relay-preview: 후보8척, 키워드 없이 3인방 정확 라우팅 확인.",
+    "terminal": true,
+    "aide_interview_needed": true,
+    "aide_interview_reason": "자동 검수 결과 애매(WELLY_VERIFY 미출력/파싱불가) — 사후 확인 필요"
   },
   {
     "task_id": "CEO-2026-08-31-문의-24시간-알림-새-문구-발송-GM-승인-완료-",
     "clevel": "ceo",
     "title": "[웰리] 문의 24시간 알림 새 문구 발송 — GM 승인 완료 (2026-08-31)",
-    "status": "PENDING",
+    "status": "DONE",
     "priority": "⛵돛단배",
     "enqueued_at": "2026-08-31",
     "from": "cto",
@@ -843,7 +849,11 @@
     "work_type": null,
     "staff_message": "",
     "must_finish_on": "",
-    "updated_at": "2026-08-31"
+    "updated_at": "2026-08-31",
+    "processed_at": "2026-09-01",
+    "artifact": "kakao_report_sender: ★부서장 rc=0, ★운영부 rc=0",
+    "saw": "★부서장(강습 22건)·★운영부(멤버십 14건) 카톡 발신 완료 — 담당미정/연락기록없음 구분 새 문구 적용",
+    "terminal": true
   },
   {
     "task_id": "CTO-2026-08-31-웰리-백업-사람-방-회신-추적-미회신건-계속-푸시-",
@@ -1133,5 +1143,26 @@
     "source": "gm_aide_scan",
     "reversibility": "비가역",
     "aide_proposal_key": "gmaide|stale_approval|TODO-20260601235855399"
+  },
+  {
+    "task_id": "CEO-2026-09-01-중간관리자-방-호출-웰페리온-운영부-이경연-실장님-",
+    "clevel": "ceo",
+    "title": "[웰리] ★중간관리자 방 호출 — 웰페리온 운영부 이경연 실장님: 손소독제 비치완료",
+    "status": "PENDING",
+    "priority": "⛴️여객선",
+    "enqueued_at": "2026-09-01",
+    "from": "cto",
+    "note": "[시토 → 웰리 전달 2026-09-01] [카톡 호출 자동 접수] ★중간관리자 방 · 2026-08-31 오전 9:32 · 웰페리온 운영부 이경연 실장님\n\n손소독제 비치완료\n\n▸이 방에 글을 쓰는 쪽 = 중간관리자(실무진) · 웰리 · GM 셋뿐이다(GM 확정 2026-08-21).\n  AI 중에서는 웰리만 쓴다 — 다른 역할은 웰리에게 배로 넘긴다(약속 L24).\n▸사실 안내는 바로 답하고, 판단·약속·숫자가 들어가면 GM 승인을 먼저 받는다(GM 확정 2026-08-21).",
+    "next": "내용 확인 → 간단한 답은 바로 회신, 판단이 들어가면 GM 승인 후 회신",
+    "depends_on": "",
+    "ship_no": 11120,
+    "short_no": 872,
+    "module": "home",
+    "audience": "office",
+    "reversible": true,
+    "work_type": "update",
+    "staff_message": "",
+    "must_finish_on": "",
+    "updated_at": "2026-09-01"
   }
 ]
