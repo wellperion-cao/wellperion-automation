@@ -1694,6 +1694,15 @@ def _reception_watch_slice(role_slug: str) -> str:
     line2 = (f"   3일 이상 {data.get('overdue_3d', 0)}건 · 7일 이상 {data.get('overdue_7d', 0)}건 · "
              f"(분실물 {data.get('lost_items_open', 0)}건은 따로 셈) "
              f"· 참고: 회원 안내 공란 {data.get('member_reply_open', 0)}건")
+    # 14일 넘긴 건 = 부서에 두 번 알렸는데도 안 닫힌 것 → GM 몫으로 세운다(GM 확정 2026-08-31).
+    # 여기서 끝이라 카톡을 더 보내지 않는다 — 부서를 세 번 두드리는 대신 GM 이 본다.
+    gm_esc = data.get("gm_escalated") or []
+    if gm_esc:
+        head = f"   🔴 14일 넘김 {data.get('overdue_14d', len(gm_esc))}건 — GM 몫(부서 알림 2회 끝)"
+        rows = [f"      {i.get('dept', '')} · {i.get('days', 0)}일 · {i.get('category') or '접수'}"
+                + (f" — {i['title']}" if i.get("title") else "")
+                for i in gm_esc[:5]]
+        line2 += "\n" + "\n".join([head] + rows)
     stale = ""
     try:
         age_h = (dt.datetime.now()

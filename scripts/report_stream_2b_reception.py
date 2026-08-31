@@ -368,6 +368,7 @@ def _write_reception_watch(rows: list[dict]) -> None:
         member_reply_open = 0
         overdue_3d = 0
         overdue_7d = 0
+        overdue_14d: list[dict] = []
         lost_open = 0
         for r in rows:
             if str(r.get("status", "")) == "완료":
@@ -389,6 +390,14 @@ def _write_reception_watch(rows: list[dict]) -> None:
                 overdue_3d += 1
             if days >= 7:
                 overdue_7d += 1
+                if days >= 14:
+                    overdue_14d.append(
+                        {"regId": str(r.get("regId") or ""), "dept": dept, "days": days,
+                         "category": cat,
+                         # 줄바꿈이 섞이면 보드 한 줄이 두 줄로 갈라진다 — 한 줄로 눕힌다
+                         "title": " ".join(
+                             str(r.get("content") or r.get("title") or "").split())[:40]})
+        overdue_14d.sort(key=lambda x: -x["days"])
         RECEPTION_WATCH_PATH.parent.mkdir(parents=True, exist_ok=True)
         RECEPTION_WATCH_PATH.write_text(json.dumps({
             "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -396,6 +405,9 @@ def _write_reception_watch(rows: list[dict]) -> None:
             "member_reply_open": member_reply_open,
             "overdue_3d": overdue_3d,
             "overdue_7d": overdue_7d,
+            # 14일 넘게 안 닫힌 건 = 부서에 두 번 말해도 안 된 것 → GM 몫(GM 확정 2026-08-31)
+            "overdue_14d": len(overdue_14d),
+            "gm_escalated": overdue_14d[:10],
             "lost_items_open": lost_open,
             "lost_found": _lost_found_month_cycle(),
             "first_done_at": first_done_at,
