@@ -52,13 +52,13 @@
   <div class="top">
     <div class="core">
       <div class="c" style="flex:1.6;">
-        <div class="lb">한 줄 로 말 하 면</div>
-        <div class="tx">자리는 다 찼는데, <u>월 목표는 8개월 중 한 번</u> 넘었습니다.</div>
+        <div class="lb">8 월 의 결 론</div>
+        <div class="tx">8월은 잘 나왔습니다. 문제는 <u>9월</u>입니다.</div>
         <!-- 판단 문장도 원장에서 읽는다(2026-08-31 시우 · GM 지시). 숫자만 원장에 걸어 두고
              문장은 손으로 쓰던 탓에, 마감 재측정 뒤 문장만 옛 숫자로 남는 일이 실제로 났다.
              ▸원장이 없거나 못 불러오면 아래 적힌 문장이 그대로 남는다(연결 실패가 화면을 비우지 않게).
              ▸굵게 표시는 원장 문장으로 바뀌면서 사라진다 — 값이 맞는 것을 굵기보다 앞에 둔다. -->
-        <div class="sub" data-f="narrative.essence_sub">8월 매출 6억 2,805만(목표 6.36억의 98.7%) · 회원 998명으로 정원 1,000명 거의 다 참 · 그만둔 분 24명으로 줄었습니다(7월 33명). 그런데 올해 월 목표를 넘긴 달은 3월 한 번뿐입니다 — 사람을 더 받아서는 못 늘린다는 뜻입니다. 그래서 하반기는 값을 올리는 일(요금)과 새는 것을 줄이는 일(시스템) 두 가지입니다.</div>
+        <div class="sub" data-f="narrative.essence_sub">매출 6억 2,805만으로 목표 6.36억의 98.7%, 7월보다 10% 늘었습니다. 회원도 998명으로 정원 1,000명이 거의 찼고 그만둔 분은 24명으로 줄었습니다(7월 33명). 그런데 9월에 만기가 돌아오는 회원이 57명인데 아직 아무에게도 상담을 못 했습니다. 정원이 찬 상태라 이분들이 나가면 그대로 빈자리입니다.</div>
       </div>
       <div class="c sep">
         <div class="lb">한 눈 요 약</div>
@@ -155,9 +155,11 @@
               </tbody>
             </table>
           </div>
-          <div style="width:150px;flex:none;border:1px solid var(--line);border-top:2.5px solid var(--bad);padding:5px 9px 6px;">
+          <!-- 칸 아래쪽이 비어 그래프가 위에 떠 보였다(GM 지적 2026-08-31 "아래 정렬 해줄래").
+               칸을 세로 흐름으로 두고 그래프를 아래로 붙인다 — 막대도 그만큼 키운다. -->
+          <div style="width:150px;flex:none;border:1px solid var(--line);border-top:2.5px solid var(--bad);padding:5px 9px 6px;display:flex;flex-direction:column;">
             <div style="font-size:10.3px;font-weight:700;color:var(--bad);margin-bottom:3px;">유소년 문의 3개월</div>
-            <div class="trend">
+            <div class="trend" style="height:62px;margin-top:auto;">
               <div class="t"><span>162</span><i style="height:100%"></i></div>
               <div class="t"><span>114</span><i style="height:70%"></i></div>
               <div class="t last"><span data-f="inquiry.youth_lesson.count" data-fmt="num">101</span><i style="height:62%"></i></div>
