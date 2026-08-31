@@ -3282,23 +3282,42 @@
      보고서는 결재용이라 이 화면과 담는 것이 다르다(결재란·문서번호·본질 한 줄·역산 일정).
      그래서 화면을 그대로 인쇄하지 않고, 그 달의 A3 파일을 열어 거기서 인쇄한다.
      파일명 규칙 = reports/{YYMMDD}_{n}월_운영현황_A3.html · {YYMMDD}_{n}월_운영계획_A3.html
-     (YYMMDD = 그 달 보고일 = 다음 달 1일). 아직 만들지 않은 달은 링크를 내지 않는다 —
-     없는 파일을 링크하면 GM 화면에서 404 가 뜬다. */
-  var A3_REPORTS = {
-    '2026-08': { file:'reports/260901_8월_운영현황_A3.html', label:'8월 운영 현황' },
-    '2026-09': { file:'reports/260901_9월_운영계획_A3.html', label:'9월 운영 계획' }
-  };
+     현황은 보고일이 다음 달 1일, 계획은 그 달 1일이다.
+
+     2026-08-31 시우 — 달마다 손으로 목록에 적던 방식을 걷어냈다(GM 지시: A3 두 장은
+     월간운영계획 안에 들어가 있어야 하고, 시우가 챙긴다). 적는 것을 잊으면 그 달만 링크가
+     조용히 사라졌고, 사라진 것은 아무 데도 안 뜬다. 이제 파일명 규칙으로 후보를 만들고
+     실제로 있는 것만 링크한다 — 없는 달은 링크가 안 뜰 뿐 404 는 나지 않는다. */
+  function a3Candidates(ym){
+    var y = +ym.slice(0,4), m = +ym.slice(5,7);
+    var p2 = function(n){ return (n < 10 ? '0' : '') + n; };
+    var stamp = function(yy, mm){ return String(yy).slice(2) + p2(mm) + '01'; };
+    var nY = (m === 12) ? y + 1 : y, nM = (m === 12) ? 1 : m + 1;
+    var pY = (m === 1) ? y - 1 : y,  pM = (m === 1) ? 12 : m - 1;
+    /* 회장님 보고는 「지난달 현황 + 이번달 계획」 두 장이 한 벌이다.
+       선택한 달이 어느 벌에 속하든 그 벌이 다 나오게 네 후보를 낸다(있는 것만 걸린다). */
+    return [
+      { file:'reports/' + stamp(y, m)  + '_' + pM + '월_운영현황_A3.html', label:pM + '월 운영 현황' },
+      { file:'reports/' + stamp(y, m)  + '_' + m  + '월_운영계획_A3.html', label:m  + '월 운영 계획' },
+      { file:'reports/' + stamp(nY,nM) + '_' + m  + '월_운영현황_A3.html', label:m  + '월 운영 현황' },
+      { file:'reports/' + stamp(nY,nM) + '_' + nM + '월_운영계획_A3.html', label:nM + '월 운영 계획' }
+    ];
+  }
   function renderA3Links(){
     var host = document.getElementById('a3-print-links');
     if(!host) return;
-    var cur = A3_REPORTS[_sel];
-    if(!cur){ host.innerHTML = ''; return; }
-    /* 그 달 것 + 짝이 되는 다른 한 장(현황↔계획)을 함께 낸다 — 회장님 보고는 두 장이 한 벌이다. */
-    var other = null, keys = Object.keys(A3_REPORTS);
-    keys.forEach(function(k){ if(k !== _sel) other = A3_REPORTS[k]; });
-    var h = '<a class="allhands-link" href="' + cur.file + '" target="_blank" rel="noopener">🖨️ ' + esc(cur.label) + ' A3 →</a>';
-    if(other) h += '<a class="allhands-link" href="' + other.file + '" target="_blank" rel="noopener">🖨️ ' + esc(other.label) + ' A3 →</a>';
-    host.innerHTML = h;
+    var want = _sel, cands = a3Candidates(want);
+    Promise.all(cands.map(function(c){
+      return fetch(c.file, { method:'HEAD' })
+        .then(function(r){ return r.ok ? c : null; })
+        .catch(function(){ return null; });
+    })).then(function(found){
+      if(_sel !== want) return;               // 그 사이 달을 바꿨으면 옛 결과를 그리지 않는다
+      host.innerHTML = found.filter(Boolean).map(function(c){
+        return '<a class="allhands-link" href="' + c.file + '" target="_blank" rel="noopener">🖨️ ' +
+               esc(c.label) + ' A3 →</a>';
+      }).join('');
+    });
   }
 
   function render(){
