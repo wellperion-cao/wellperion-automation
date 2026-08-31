@@ -110,12 +110,47 @@
 </style><style>
   /* 한국어 자연 줄바꿈 — 단어 중간 끊김 방지(글 끊김 금지 원칙). 기준 CSS는 그대로 두고 덧댐. */
   td, .ask .q, .ask .d, .alert, .box li, .foot{ word-break: keep-all; overflow-wrap: anywhere; }
+
+  /* 전략 로드맵 진척 스트립 — 3분기 전략 로드맵 A3(WP-GM-260831-01) 병합분 */
+  .rmwrap{ margin-top:9px; }
+  .rmhd{ font-size:11.5px; font-weight:700; color:var(--navy); letter-spacing:2.5px;
+    background:var(--navy-bg); padding:4px 9px; }
+  .rmhd .est{ letter-spacing:0; font-weight:400; }
+  .rm{ display:flex; gap:8px; margin-top:6px; }
+  .rm .st{ flex:1; border:1px solid var(--line); padding:5px 9px 6px; }
+  .rm .st .t{ font-size:11.6px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .rm .st .g{ font-size:10.6px; color:#5C666F; line-height:1.4; margin-top:1px; word-break:keep-all; }
+  .rm .st .b{ height:8px; background:#E7ECF2; margin-top:5px; position:relative; }
+  .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .rm .st .p{ font-size:12.4px; font-weight:800; margin-top:2px; }
+  .rm .st.done .b i{ background:var(--good); } .rm .st.done .p{ color:var(--good); }
+  .rm .st.wait .b i{ background:#B9C2CC; } .rm .st.wait .p{ color:#7A838C; }
+  .rmnote{ margin-top:5px; border:1px solid var(--line); background:#F6F8FA; padding:5px 10px;
+    font-size:11.6px; line-height:1.45; color:#3C464F; word-break:keep-all; }
+  .rmnote b{ color:var(--ink); }
+
+  /* 4분할 — 병합으로 칸이 하나 늘었다 */
+  .cols .box{ padding:8px 11px 7px; }
+  .cols .box h3{ font-size:12.4px; margin-bottom:5px; }
+  .cols .box li{ font-size:10.8px; line-height:1.42; margin-bottom:3px; }
+  .cols{ margin-top:9px; }
+  .foot{ margin-top:7px; padding-top:6px; font-size:9.8px; line-height:1.44; }
+
+  /* 병합으로 표가 늘어 본문 밀도를 한 단계 올린다 */
+  th,td{ font-size:11.5px; }
+  thead th{ font-size:12.2px; height:31px; }
+  td.k{ font-size:11.4px; }
+  .est{ font-size:10px; }
+  tbody td{ height:27px; }
+  .page{ padding-bottom:18px; }
+  .box.fix{ border-top-color:var(--warn); }
+  .box.fix h3{ color:var(--warn); }
 </style>
 </head>
 <body>
 
 <div class="bar">
-  <b>4개 부서 + 3라인 개선 결과보고 (A3 1장 · 9/1 보고 · 8/28 초판)</b>
+  <b>6~8월 4개 부서 + 3라인 개선 결과 · 3분기 전략 로드맵 진척 (A3 1장 · 9/1 보고)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -128,19 +163,14 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">4개 부서 + 3라인 개선 결과 보고</div>
+      <div class="title" style="font-size:24px">6~8월 4개 부서 + 3라인 개선 결과 · 3분기 전략 로드맵 진척</div>
     </div>
     <div class="meta">
-      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
-      보고일 <b>2026. 09. 01.</b> · 작성일 <b>2026. 08. 28. (초판)</b> · 문서번호 <b>WP-GM-260901-03</b><br>
-      대상 <b>운영부 · 시설부 · 지원부 · 주차관리부 + 3라인(실장·소장·나우열M)</b> · 수치 기준 <b>2026-08-26~28 조회</b>
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>회장님 · 대표님 · 경영진</b><br>
+      보고일 <b>2026. 09. 01.</b> · 기간 <b>2026년 3분기 (6월 ~ 8월)</b> · 문서번호 <b>WP-GM-260901-03</b><span class="est"> (WP-GM-260831-01·02·03 병합)</span><br>
+      대상 <b>운영부 · 시설부 · 지원부 · 주차관리부 + 3라인(실장·소장·나우열M)</b> · 수치 기준 <b>8월분 2026-08-26~28 조회 · 3분기·인재분 2026-08-27 · 점검 원장 2026-08-25까지</b>
     </div>
-    <div class="sign">
-      <div><div class="t">담당</div><div class="b"></div></div>
-      <div><div class="t">GM</div><div class="b"></div></div>
-      <div><div class="t">대표</div><div class="b"></div></div>
-      <div><div class="t">회장</div><div class="b"></div></div>
-    </div>
+    
   </div>
 
   <!-- ② 결정 요청 -->
@@ -150,12 +180,12 @@
       <div class="it">
         <div class="n">01</div>
         <div class="q">운영부·주차관리부 점검 집계 경로 수리를 승인해 주십시오.</div>
-        <div class="d">두 부서 점검은 <b>측정 불가 — 집계 경로 미가동</b>입니다(부서 태만이 아님). 원인이 다릅니다: <b>운영부 = 점검 화면 자체 부재</b> · <b>주차부 = 원장 항목표 미등록</b>(제출 화면은 8/18 개통·8/25 배선 수리, 원장에 항목표가 없어 셀 대상이 0). 수리 없이는 9월 실적도 통째로 빕니다.</div>
+        <div class="d">두 부서 점검은 <b>측정 불가 — 집계 경로 미가동</b>이며 부서 태만이 아닙니다. <b>운영부 = 점검 화면 부재</b> · <b>주차부 = 원장 항목표 미등록</b>(제출 화면 8/18 개통·8/25 배선 수리). 수리 없이는 9월 실적도 빕니다.</div>
       </div>
       <div class="it">
         <div class="n">02</div>
         <div class="q">측정 원장 없는 4곳의 원장 지정을 승인해 주십시오 — 지출 · 비품/소모품 · 인사 A~Z · 능동성.</div>
-        <div class="d">3라인 역할 축과 브랜딩 3박자 중 이 4곳은 잴 원장 자체가 없습니다. 특히 <b>능동성</b>은 요청받지 않고 스스로 제기한 건을 구분하는 칸이 어디에도 없어, 9월부터 세기 시작합니다.</div>
+        <div class="d">3라인 역할 축과 브랜딩 3박자 중 이 4곳은 잴 원장 자체가 없습니다. <b>능동성</b>은 스스로 제기한 건을 구분하는 칸이 없어 9월부터 집계를 시작합니다.</div>
       </div>
     </div>
   </div>
@@ -163,7 +193,7 @@
   <!-- 경고 밴드 -->
   <div class="alert">
     운영부·주차관리부 점검 0건 = 집계 경로 미가동 — 실적이 아니라 측정 불가입니다.
-    <span>&nbsp;/ 본 판 = <b>8/28 기준 초판</b> · 8월 마감 전 수치 — <b>8/31 마감 수치로 최종 갱신 예정</b>(같은 문서번호).</span>
+    <span>&nbsp;/ 8월분은 마감 전 수치 — <b>8/31 마감 수치로 최종 갱신 예정</b>(같은 문서번호).</span>
   </div>
 
   <!-- ③-1 덩어리 1 · 4개 부서 -->
@@ -184,7 +214,7 @@
       <tr>
         <td class="k strong">시설부</td>
         <td>일일점검 제출 <b>23~24/24일</b> · 644항목 중 449 입력(70%) · 기준이탈 0 · 이슈 0 / 고장 18건 중 <b>16건 완료(89%)</b> · 소요 중앙 <b class="good">3일</b>(접수처 기준 72시간)<span class="est"> — 점검자별 김종현 차장 11건(입력률 64%) · 박호균 과장 16건(73%) · 이정헌 소장 4~5건(82%) · 8/26 조회</span></td>
-        <td>고장 처리 중앙 3일 — <b class="good">기준선(72시간)에 걸침</b> · 기준이탈·이슈 0 유지</td>
+        <td>고장 처리 중앙 3일 — <b class="good">기준선(72시간)에 걸침</b> · 기준이탈·이슈 0 유지<br><span class="est">점검 완료율 7월 60%(347/572) → 8월 <b class="good">68%</b>(424/617 · 원장 8/1~25 전수)</span></td>
         <td>항목 입력률 70% — 미입력 195항목 / 고장 미완 2건</td>
         <td>입력률 상향 · 고장 미완 2건 완료</td>
         <td class="ctr good">측정 가동</td>
@@ -192,7 +222,7 @@
       <tr>
         <td class="k strong">지원부</td>
         <td>제출 <b>24/24일</b> · 세션 64회(남 47·여 17) · 2,531항목 중 1,109 입력 · <b class="warn">이슈 57건</b> · 남측 결측 15일 19회차<span class="est"> — 반장별 박남일 반장(남) 30건 · 이연희 반장(여) 15건 · 8/26 조회</span></td>
-        <td>제출 24/24일 <b class="good">개근</b> — 4부서 중 유일</td>
+        <td>제출 24/24일 <b class="good">개근</b> — 4부서 중 유일<br><span class="est">점검 제출률 7월 12%(5/31일) → 8월 <b class="good">53%</b>(23/25일 · 원장 8/1~25 전수) — 4개 조직 중 최대 상승</span></td>
         <td>이슈 57건 처리 경로 미정 / 남측 결측 15일 19회차</td>
         <td>이슈 57건 처리 라인 확정 · 남측 결측 해소</td>
         <td class="ctr good">측정 가동</td>
@@ -208,7 +238,7 @@
       <tr>
         <td class="k strong">주차관리부</td>
         <td>점검 = <b class="bad">측정 불가 — 집계 경로 미가동</b>(원인=원장 항목표 미등록 — 제출 화면 8/18 개통·배선 8/25 수리에도 셀 대상이 원장에 없음) / 주차장 바닥보수 <b>10/11~13 예정</b></td>
-        <td>제출 화면 개통(8/18) · 집계 배선 수리(8/25) — 셀 준비는 끝남</td>
+        <td>제출 화면 개통(8/18) · 집계 배선 수리(8/25) — 셀 준비는 끝남<br><span class="est">원장 8/1~25 전수 기준 제출 <b>1일</b> · 조희제 관리인 8/18 입사 후 온보딩(체계·매뉴얼·점검표) 완료</span></td>
         <td>실데이터 0 — 첫 집계 자체가 미시작</td>
         <td><b>1순위 — 9월 첫 집계 데이터 확보(결정 01)</b> · 바닥보수 준비</td>
         <td class="ctr bad">측정 불가</td>
@@ -249,7 +279,7 @@
         <td>지출·인사 원장 지정(결정 02) · SSOT 기한 준수율 개선</td>
       </tr>
 
-      <tr class="grp"><td colspan="4">브 랜 딩 3 박 자 <span style="letter-spacing:0" class="est">— GM 방향(2026-08-28): 고급화·단순화·프리미엄 확립을 위해 ①중간관리자 ②서비스마인드 ③스타트업 같은 빠른 판단·결정·진행의 3박자를 맞춘다. 중간관리자는 3박자 이해도와 회사 방향성에 맞는 방향성·능동성을 각 역할에 맞게 가진다.</span></td></tr>
+      <tr class="grp"><td colspan="4">브 랜 딩 3 박 자 <span style="letter-spacing:0" class="est">— GM 방향(2026-08-28): 고급화·단순화·프리미엄 확립을 위해 ①중간관리자 ②서비스마인드 ③스타트업 같은 빠른 판단·결정·진행의 3박자를 맞춘다.</span></td></tr>
       <tr class="sum">
         <td class="k">3박자 대비<br>현재 위치</td>
         <td><b>서비스마인드</b> <span class="est">= 접수처 처리 소요일로 측정(가능)</span><br>시설물 고장 중앙 <b class="good">3일</b>(기준 72시간) / 컴플레인 중앙 <b class="bad">14.5일</b>(기준 48시간) — 격차 큼</td>
@@ -260,15 +290,29 @@
   </table>
   </div>
 
-  <!-- ④ 3분할 -->
+  <!-- ③-3 덩어리 3 · 3분기 전략 로드맵 진척 -->
+  <div class="rmwrap">
+    <div class="rmhd">3 분 기 전 략 로 드 맵 진 척 <span class="est">— 월간운영계획 로드맵 6단계·월별 목표 직독(2026-08-27 기준) · 진척은 각 목표 값의 산술평균(소수점 버림)</span></div>
+    <div class="rm">
+      <div class="st done"><div class="t">1분기 — 정원 1,000명 마감</div><div class="g">1~3월</div><div class="b"><i style="width:100%"></i></div><div class="p">완료 100%</div></div>
+      <div class="st done"><div class="t">2분기 — 대기자 시스템 운영</div><div class="g">4~6월</div><div class="b"><i style="width:100%"></i></div><div class="p">완료 100%</div></div>
+      <div class="st"><div class="t">3분기 1단계 — 자동화·매뉴얼 체계</div><div class="g">잔여 = 주차부 점검 정착 · 보고 무인화</div><div class="b"><i style="width:60%"></i></div><div class="p">60%</div></div>
+      <div class="st"><div class="t">3분기 2단계 — 체크리스트 경영·인재</div><div class="g">잔여 = 보고 주기 규정 2개 라인 · 팀장 발령</div><div class="b"><i style="width:40%"></i></div><div class="p">40%</div></div>
+      <div class="st wait"><div class="t">4분기 3단계 — 브랜드 구축</div><div class="g">프리미엄 인식 확립 — 10월 착수</div><div class="b"><i style="width:0%"></i></div><div class="p">착수 전 0%</div></div>
+    </div>
+    <div class="rmnote">월별 목표 진척 — 6월 목표 7건 <b class="good">72%</b> · 7월 21건 <b class="warn">44%</b>(이월 4건) · 8월 28건 <b class="warn">39%</b>(진행 21건) · <b>3분기 목표 총 56건</b>(6월 대비 8월 목표 수 4.0배) — 목표 수 증가로 평균 진척 <b>72% → 39%</b> 하락. &nbsp;/&nbsp; 3분기 전사 업무·결재 SSOT 생성 <b>131건</b> · 완료 <b>83건(63%)</b> · 진행 45 · 보류 3.</div>
+  </div>
+
+  <!-- ④ 4분할 -->
   <div class="cols">
     <div class="box rec">
-      <h3>8월에 좋아진 것</h3>
+      <h3>3분기(6~8월)에 좋아진 것</h3>
       <ul>
-        <li>접수처 처리 소요일을 <b>과거분까지 복원해 처음으로 측정 가능</b>(완료 92건 전건).</li>
-        <li>시설물 고장 처리 중앙 <b>3일</b> — 접수처 기준선(72시간)에 걸침.</li>
-        <li>지원부 일일점검 <b>24/24일 개근</b> 제출.</li>
-        <li>중간관리자 3인 <b>역할 3가지 확정</b> — 다음 평가·보고의 공통 틀 마련.</li>
+        <li><b>1·2분기 목표 유지</b> — 정원 1,000명 마감 · 대기자 시스템 운영.</li>
+        <li>4개 조직 <b>화면 제출 구조</b> 전환 · 주간회의 <b>14회 정착</b> · 결재 6월 5건 → 8월 <b>21건</b>(3분기 36건).</li>
+        <li>접수처 개설(7월) — 3분기 <b>127건 접수 · 91건 완료(72%)</b> · 카톡 자동 발신 <b>8월 27일 전부(518건)</b>.</li>
+        <li><b>인재</b> — 3라인 배치 · 지원부 3직급 급여 개편(9/1 시행) · <b>진급 2건 · 입사 3건</b>.</li>
+        <li>접수처 소요일 <b>과거분 복원</b> 측정 개시(92건) · 고장 중앙 <b>3일</b> · 중간관리자 <b>역할 3가지 확정</b>.</li>
       </ul>
     </div>
     <div class="box">
@@ -277,22 +321,36 @@
         <li class="r1">운영부·주차관리부 점검 집계 미가동 — 두 부서 실적이 계속 빈다.</li>
         <li class="r1">컴플레인 처리 중앙 <b>14.5일</b> vs 기준 <b>48시간</b> · 분실물 미완 5건(최장 17일).</li>
         <li class="r2">측정 원장 없는 4곳 — 지출 · 비품/소모품 · 인사 A~Z · 능동성.</li>
+        <li class="r2">보고 주기 규정 — 소장·나우열M 두 라인 <b>3분기 내내 부재</b>(8/27 기준).</li>
+        <li class="r2">지원부 남 주임 <b>1석 공석</b>(채용 2건 진행) · 나우열M 라인 조직표 미확정.</li>
+        <li class="r2">3단계(브랜드) <b>착수 전 0%</b> — 1·2단계가 60%·40%라 열지 않았다.</li>
+      </ul>
+    </div>
+    <div class="box fix">
+      <h3>GM 전결로 정한 것</h3>
+      <ul>
+        <li><b>점검 제출 관리</b> — 미제출을 부서장 확인 사항으로 4개 조직 일괄 적용(지원부 12% → 53% 실증).</li>
+        <li><b>주차관리부 점검 정착</b> — 입사 한 달 경과(2026-09-18)부터 매일 제출 기준 적용.</li>
+        <li><b>지원부 팀장 발령</b> — 9/1 재계약과 동시 확정(대표님 서명 잔여). 신 체계 <b>1,985만원</b> = 기존 2,026만원 대비 <b>월 41만원 · 연 492만원 감소</b>.</li>
+        <li><b>보고 주기 규정</b> — 이월 없이 9월 계약서 재작성 시 소장·나우열M 라인 반영.</li>
+        <li><b>운영부 기한 관리</b> — 안내가 아니라 화면에서 필수 칸 미입력 시 등록 차단.</li>
       </ul>
     </div>
     <div class="box">
       <h3>GM 권고 (웰리)</h3>
       <ul>
-        <li><b>9월은 「측정 배선의 달」로 간다</b> — 결정 01·02를 같이 승인해 점검 사각 2개 부서와 원장 없는 4곳을 9월 안에 전부 배선한다. 그러면 10월 보고부터 4부서·3라인·3박자 전 칸이 실측으로 채워지고, 이미 재지는 두 축(서비스마인드·빠른 판단)은 9월부터 기준선 대비로 관리한다.</li>
-        <li>좋다/나쁘다 단정 없음 — 숫자와 조건까지가 본 문서의 몫이고, 최종 판단은 결재선(GM·대표님·회장님)의 몫이다.</li>
+        <li><b>9월은 「측정 배선의 달」로 간다</b> — 결정 01·02를 같이 승인해 점검 사각 2개 부서와 원장 없는 4곳을 9월 안에 배선한다. 10월 보고부터 4부서·3라인·3박자 전 칸이 실측으로 채워진다.</li>
+        <li><b>4분기는 목표 수를 늘리지 않고 닫는 속도를 올린다</b> — 목표 4.0배 대비 평균 진척 72% → 39%. 진척률은 원장 자동 산출로 전환한다.</li>
+        <li>좋다/나쁘다 단정 없음 — 숫자와 조건까지가 본 문서의 몫이고, 최종 판단은 결재선의 몫이다.</li>
       </ul>
     </div>
   </div>
 
   <!-- ⑤ 각주 -->
   <div class="foot">
-    <div><b>기준 시점</b> — 8월 수치 전부 <b>2026-08-26~28 조회 · 8월 마감 전</b>(칸별 기준일 명기). 본 판 = <b>8/28 기준 초판</b>이며 <b>8/31 마감 수치로 최종 갱신 예정</b>(같은 문서번호 유지). 매출·달성률·완료율은 마감 시 달라진다.</div>
-    <div><b>(추정) · 오차</b> — 접수처 처리 소요일 중 <b>구간 추정 31건은 며칠 오차 가능(추정)</b>. 운영부·주차부 점검 0건은 실적이 아니라 <b>집계 경로 미가동</b>. 지원부 반장별 이슈(30+15=45건)와 총 57건의 차이는 반장 미기재분.</div>
-    <div><b>측정하지 못한 것</b> — 운영부·주차부 점검(집계 미가동) · 지출 관리 · 비품/소모품 · 인사 A~Z · 능동성(원장 자체 없음 — 결정 02). <b>출처</b> — 점검 보드 · 종합접수처 reg_list · 업무 SSOT todo_list · 매출 = 8월 운영보고 A3. 전부 원장 직접 카운트. ★강습(파트너) 매출 2억 8,083만원은 <b>원천 미확인</b> — 어느 세그먼트를 합한 값인지 규칙이 없다(8/31 확인: 합산 규칙 확정 후 원장 by_segment 로 재산출). <b>차기</b> — 8/31 마감본 갱신 후 9/1 보고.</div>
+    <div><b>기준 시점</b> — 8월 <b>08-26~28 조회(마감 전)</b> · 로드맵·인재 <b>08-27</b> · 점검 원장 <b>8/1~25 전수</b>. <b>8/31 마감 수치로 최종 갱신</b>(같은 문서번호). <b>분기 표기</b> — 로드맵상 6월이 2·3분기에 함께 들어, 월별 표의 6월은 3분기 몫으로 한 번만 셌다.</div>
+    <div><b>(추정) · 오차</b> — 접수처 소요일 중 <b>구간 추정 31건 오차 가능</b> · 점검 0건은 <b>집계 미가동</b> · 지원부 반장별 이슈(30+15)와 57건의 차이는 반장 미기재분. 1단계 60%=<b>ERP 진척 연동값</b>, 2단계 40%=90일 안정화 <b>경과 기준(추정)</b>. 점검 완료율 분모는 <b>기간 전체</b>.</div>
+    <div><b>측정하지 못한 것</b> — 운영부·주차부 점검 · 지출 · 비품/소모품 · 인사 A~Z · 능동성(원장 부재 — 결정 02). <b>출처</b> — 점검 보드 · 접수처 reg_list · 업무 SSOT todo_list · 월간운영계획 · 급여는 「지원부 근무조건 변경안 검토」(GM 결재 08-12). ★강습 매출 2억 8,083만원 <b>원천 미확인</b>. <b>병합</b> — 260831-01·02·03 흡수.</div>
   </div>
 
 </div>
