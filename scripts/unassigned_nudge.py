@@ -523,7 +523,11 @@ def collect_sla_violations(now: datetime | None = None) -> list[dict]:
                 "hours": hours,
                 "assigned": assigned,
                 "contacted": contacted,
-                "reason": "담당없음" if not assigned else "담당있음·컨택없음",
+                # GM 지적 2026-08-31 — "배정완료건도 보는데 미배정·미컨택 내용이 정확하지 않다."
+                # 담당이 이미 정해진 건을 '담당있음·컨택없음' 이라 적어도, 표제가 「미배정·미컨택」
+                # 이라 받는 사람은 전부 미배정으로 읽었다. 실측 당시 36건 중 30건이 배정완료였다.
+                # 두 상태를 사람 말로 갈라 적는다 — 해야 할 일이 서로 다르다(배정 vs 연락).
+                "reason": "담당 미정" if not assigned else "배정완료 · 연락기록 없음",
             })
     out.sort(key=lambda x: -x["hours"])
     return out
@@ -537,7 +541,20 @@ def build_sla_alert_text(violations: list[dict]) -> str:
     # 이미 경과시간 내림차순(오래된 순). 0 = 전부(GM 지시 2026-08-30)
     shown = violations if SLA_MSG_DISPLAY_N <= 0 else violations[:SLA_MSG_DISPLAY_N]
     rest_n = len(violations) - len(shown)
-    lines = [f"⏰ 24시간 미배정·미컨택 · {len(violations)}건 (8/1 이후 접수분)"]
+    # 표제는 두 숫자를 갈라 적는다(GM 지적 2026-08-31). 「미배정·미컨택 N건」 한 덩어리로 적으면
+    # 이미 담당이 정해진 건까지 미배정으로 읽힌다 — 실측 당시 36건 중 30건이 배정완료였고,
+    # 그 건들에 필요한 것은 배정이 아니라 연락(또는 연락 기록)이다.
+    _no_owner = sum(1 for v in violations if not v.get("assigned"))
+    _no_contact = len(violations) - _no_owner
+    _head = f"⏰ 24시간 넘긴 문의 {len(violations)}건 (8/1 이후 접수분)"
+    _parts = []
+    if _no_owner:
+        _parts.append(f"담당 미정 {_no_owner}건")
+    if _no_contact:
+        _parts.append(f"배정완료·연락기록 없음 {_no_contact}건")
+    if _parts:
+        _head += " — " + " · ".join(_parts)
+    lines = [_head]
     # GM 지시 2026-08-14: 확인만 부탁하니 답이 없어 같은 건이 13일째 남았다.
     #   ①기준(24시간)을 매번 알리고 ②회신을 명시적으로 요청한다. 줄 수는 표시 건수로 상쇄.
     lines.append("문의는 접수 후 24시간 안에 첫 연락이 기준입니다(멤버십·강습 같은 기준).")
@@ -1167,10 +1184,10 @@ def _selftest_sla() -> None:
         assert "담당있음미컨택" in names, "담당 있고 컨택만 없는 건이 안 잡힘"
 
         by_name = {it["name"]: it for it in v}
-        assert by_name["담당없음A"]["reason"] == "담당없음"
-        assert by_name["자동접수값"]["reason"] == "담당없음"
-        assert by_name["담당있음미컨택"]["reason"] == "담당있음·컨택없음", \
-            "담당있음·컨택없음이 담당없음과 구분 안 됨"
+        assert by_name["담당없음A"]["reason"] == "담당 미정"
+        assert by_name["자동접수값"]["reason"] == "담당 미정"
+        assert by_name["담당있음미컨택"]["reason"] == "배정완료 · 연락기록 없음", \
+            "배정완료·연락기록없음이 담당 미정과 구분 안 됨"
         print(f"  [판정] 위반 {len(v)}건 — 24h미만 제외/7월 제외/정상 제외/등록·LOSS 제외/"
               "담당없음↔담당있음·컨택없음 구분 — 전부 통과")
 
