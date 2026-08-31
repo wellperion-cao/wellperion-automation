@@ -936,66 +936,50 @@
      정렬은 등록부의 when_sort(HHMM, 부정기=null)를 그대로 쓴다. 새 데이터·새 파일 없음.
      ★when_sort 는 평일·휴일로 갈리는 발신도 잦은 쪽(평일)으로 통일해 뒀다 — 안 그러면 같은
      회차가 20시와 22시 두 자리에 흩어진다(2026-08-08 5건 정정). */
-  var TIME_BANDS = [
-    { key:'dawn',  label:'🌅 새벽·아침 (05~08시)', from:'0500', to:'0859' },
-    { key:'morn',  label:'☀️ 오전 (09~11시)',      from:'0900', to:'1159' },
-    { key:'day',   label:'🏢 낮 (12~17시)',        from:'1200', to:'1759' },
-    { key:'eve',   label:'🌙 저녁·밤 (18~23시)',   from:'1800', to:'2359' },
-    { key:'any',   label:'🔁 수시 · 부정기',        from:null,   to:null  }
-  ];
-  function bandOf(ws){
-    if(!ws) return 'any';
-    for(var i=0;i<TIME_BANDS.length;i++){
-      var b=TIME_BANDS[i];
-      if(b.from && ws>=b.from && ws<=b.to) return b.key;
-    }
-    return 'any';
-  }
+    /* ⏱ 시간순 — 한 줄로 쭉 이어지는 한 장(GM 지시 2026-08-31).
+     종전엔 새벽·오전·낮·저녁 네 묶음으로 접어 뒀다. GM: "새벽아침 오전 낮 분리해서 보여주는데
+     더 보기 불편해." 묶음이 있으면 접힌 칸을 눌러 열어야 하고, 07:58 다음이 09:00 인지 보려면
+     두 묶음을 오가야 한다. 시간순으로 보고 싶다는 건 '위에서 아래로 한 번에 읽고 싶다'는 뜻이다.
+     띠 구분·접기·'지금 이 시간대' 표시 전부 뺐다. 지금 시각에 가장 가까운 줄만 옅게 표시해
+     어디쯤인지 알 수 있게 둔다. 띠 정의(TIME_BANDS)와 판정 함수(bandOf)는 읽는 곳이 없어져 같이 지웠다. */
   function alertTimeHtml(rows){
-    var groups = {};
-    rows.forEach(function(r){
-      var b = bandOf(r.item.when_sort);
-      (groups[b] = groups[b] || []).push(r);
+    var list = rows.slice();
+    // 시각 있는 것 먼저 이른 순, 시각 없는 부정기는 맨 뒤에 이름순.
+    list.sort(function(x,y){
+      var a=x.item.when_sort||'', c=y.item.when_sort||'';
+      if(!a && !c) return String(x.item.what||'').localeCompare(String(y.item.what||''));
+      if(!a) return 1;
+      if(!c) return -1;
+      return a===c ? String(x.item.what||'').localeCompare(String(y.item.what||'')) : (a<c?-1:1);
     });
+    if(!list.length) return '<div class="feed-status">조건에 맞는 알림이 없습니다.</div>';
     var nowHHMM = (function(){ var d=new Date(); return String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0'); })();
-    return TIME_BANDS.map(function(b){
-      var list = groups[b.key] || [];
-      if(!list.length) return '';
-      // 이른 것부터. 부정기는 이름순으로 둔다(시각이 없으니 순서에 뜻을 두지 않는다).
-      list.sort(function(x,y){
-        var a=x.item.when_sort||'', c=y.item.when_sort||'';
-        return a===c ? String(x.item.what||'').localeCompare(String(y.item.what||'')) : (a<c?-1:1);
-      });
-      var problemCnt = list.filter(function(r){ return r.sevInfo.sev==='bad' || r.sevInfo.sev==='dead'; }).length;
-      // 지금 시각이 이 띠 안이면 펼쳐 둔다 — GM 이 열자마자 '지금 나가는 것'이 보이게.
-      var isNow = b.from && nowHHMM>=b.from && nowHHMM<=b.to;
-      var body = '<div class="coo-tbl-wrap"><table>' +
-        '<tr><th style="width:11%">시각</th><th style="width:32%">보내는 것</th>' +
-        '<th style="width:20%">어느 방으로</th><th style="width:37%">상태</th></tr>' +
-        list.map(function(r){
-          var when = esc(r.item.when || '부정기');
-          // 어느 방인지와 함께 **무엇으로 가는지(카카오톡·텔레그램)**를 같이 보여준다.
-          // GM 지시 2026-08-08 — 텔레그램을 카카오톡으로 합칠지 검토 중이라, 채널이 안 보이면
-          // 무엇을 옮겨야 하는지 셀 수가 없다.
-          var ch = NOTIFY_CH_EMOJI[r.item.channel] || '';
-          var chName = r.item.channel === 'kakao' ? '카카오톡'
-                     : r.item.channel === 'telegram' ? '텔레그램' : '';
-          return '<tr><td style="white-space:nowrap;font-weight:700;">' + when + '</td>' +
-                 '<td>' + esc(r.item.what || '') + '</td>' +
-                 '<td style="font-size:12px;color:var(--dim);">' +
-                   '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">' +
-                     ch + '<span style="font-weight:700;color:var(--text-soft);">' + chName + '</span></div>' +
-                   esc(r.item.room || '') + '</td>' +
-                 '<td><span class="statchip ' + r.sevInfo.sev + '">' + esc(r.sevInfo.label) + '</span></td></tr>';
-        }).join('') + '</table></div>';
-      return '<details class="coo-details" style="margin-top:8px;"' + (isNow?' open':'') + '>' +
-        '<summary>' + b.label +
-          '<span style="float:right;color:var(--dim);font-weight:400;">' + list.length + '건' +
-            (problemCnt ? ' · <span style="color:#ff8a80;">문제 ' + problemCnt + '건</span>' : '') +
-            (isNow ? ' · <span style="color:var(--accent);">지금 이 시간대</span>' : '') + '</span>' +
-        '</summary>' + body +
-        '</details>';
-    }).join('');
+    // 지금 시각을 막 지난 첫 줄 = '다음에 나갈 것'. 한 줄만 표시한다.
+    var nextIdx = -1;
+    for(var i=0;i<list.length;i++){
+      var ws = list[i].item.when_sort || '';
+      if(ws && ws >= nowHHMM){ nextIdx = i; break; }
+    }
+    return '<div class="coo-tbl-wrap"><table>' +
+      '<tr><th style="width:11%">시각</th><th style="width:32%">보내는 것</th>' +
+      '<th style="width:20%">어느 방으로</th><th style="width:37%">상태</th></tr>' +
+      list.map(function(r, idx){
+        var when = esc(r.item.when || '부정기');
+        // 어느 방인지와 함께 **무엇으로 가는지(카카오톡·텔레그램)**를 같이 보여준다.
+        // GM 지시 2026-08-08 — 채널이 안 보이면 무엇을 옮겨야 하는지 셀 수가 없다.
+        var ch = NOTIFY_CH_EMOJI[r.item.channel] || '';
+        var chName = r.item.channel === 'kakao' ? '카카오톡'
+                   : r.item.channel === 'telegram' ? '텔레그램' : '';
+        var mark = (idx === nextIdx)
+          ? '<span style="color:var(--accent);font-weight:700;font-size:11px;margin-left:6px;">다음</span>' : '';
+        return '<tr><td style="white-space:nowrap;font-weight:700;">' + when + mark + '</td>' +
+               '<td>' + esc(r.item.what || '') + '</td>' +
+               '<td style="font-size:12px;color:var(--dim);">' +
+                 '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">' +
+                   ch + '<span style="font-weight:700;color:var(--text-soft);">' + chName + '</span></div>' +
+                 esc(r.item.room || '') + '</td>' +
+               '<td><span class="statchip ' + r.sevInfo.sev + '">' + esc(r.sevInfo.label) + '</span></td></tr>';
+      }).join('') + '</table></div>';
   }
 
   // 방(room) 기준으로 접어 묶는다 — 문제(🔴+⚫) 많은 방을 위로. troom에는 있는데 발신 0건인 방(구멍)도 숨기지 않고 얹는다.
