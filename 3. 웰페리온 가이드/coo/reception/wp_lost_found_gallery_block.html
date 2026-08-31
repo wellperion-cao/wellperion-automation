@@ -232,7 +232,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
 <div class="modal-back" id="pinBack">
   <div class="modal">
     <h2>직원 확인</h2>
-    <div class="msub">직원 전용입니다. 수령은 현장 직원에게 요청해 주세요.</div>
+    <div class="msub">회원 서명까지 받았습니다. 마지막으로 직원 비밀번호를 입력하면 수령이 완료됩니다.</div>
     <div class="mfield">
       <label for="pinInput">직원 비밀번호</label>
       <input type="password" id="pinInput" placeholder="비밀번호 입력" autocomplete="off" inputmode="numeric">
@@ -435,12 +435,16 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
   });
   $('pinInput').addEventListener('keydown',function(e){ if(e.key==='Enter'){ $('pinConfirm').click(); } });
 
-  // ── 카드 클릭 → (PIN 확인 후) 수령 서명 모달 ──
+  /* ── 카드 클릭 → 바로 수령 서명 모달 (직원 코드는 맨 끝) ──
+     ★2026-08-31 GM 지시: "회원님이 먼저 수령 서명까지 완료하고 직원 코드 입력이 되게끔."
+     종전에는 카드를 누르는 순간 직원 비밀번호 창이 떠서, 회원이 자기 물건을 눌러도
+     비밀번호부터 마주쳤다. 순서를 뒤집는다 — 성함·서명·담당자까지 회원 앞에서 마치고,
+     「수령 완료」를 누를 때 직원이 코드를 넣는다. 잠금은 약해지지 않는다: 서버(lf_handover)가
+     서명 유무를 다시 검증하고, 코드를 취소하면 전송 자체가 일어나지 않는다. */
   $('grid').addEventListener('click',function(ev){
     var c=ev.target.closest('[data-claim]'); if(!c) return;
     _cur={ id:c.getAttribute('data-claim'), desc:c.getAttribute('data-desc'), loc:c.getAttribute('data-loc'), photo:c.getAttribute('data-photo') };
-    if(_staffPinOk()){ openModal(); return; }
-    _askStaffPin(openModal);
+    openModal();
   });
   function openModal(){
     var img=_cur.photo?('<img src="'+_esc(_thumb(_cur.photo,120))+'" alt="">'):'';
@@ -484,7 +488,15 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
     if(!staffSel){ toast('주는 담당자를 선택해 주세요',true); return; }
     if(staffSel==='기타' && !handoverStaff){ toast('담당자 성함을 입력해 주세요',true); $('m_staff_other').focus(); return; }
     var sign=_signCv.toDataURL('image/png');
-    var btn=this; btn.disabled=true; btn.textContent='처리 중…';
+    var btn=this;
+    /* 직원 코드는 서명이 끝난 여기서 받는다(GM 지시 2026-08-31). 이 기기에서 한 번 넣었으면
+       다시 묻지 않는다. 취소하면 아무것도 전송되지 않는다. */
+    if(_staffPinOk()){ _sendHandover(btn, receiver, handoverStaff, sign); }
+    else { _askStaffPin(function(){ _sendHandover(btn, receiver, handoverStaff, sign); }); }
+  });
+  function _sendHandover(btn, receiver, handoverStaff, sign){
+    if(!_cur){ return; }
+    btn.disabled=true; btn.textContent='처리 중…';
     var payload={ action:'lf_handover', t:RECEPTION_SUBMIT_TOKEN, id:_cur.id, receiver:receiver, handoverLoc:$('m_loc').value, handoverStaff:handoverStaff, signature:sign };
     fetch(RECEPTION_API,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){ return r.json(); })
@@ -494,7 +506,7 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
         else { toast((d&&d.error)||'수령 처리 실패',true); }
       })
       .catch(function(){ btn.disabled=false; btn.textContent='수령 완료'; toast('네트워크 오류 — 다시 시도해 주세요',true); });
-  });
+  }
 
   // 헤더 로고 → 홈 대신 종합접수처(/ko/reception/)로 (WP Salient #logo; 스탠드얼론엔 없음 → 무해)
   function _relinkLogo(){ try{ var lg=document.getElementById('logo'); if(lg){ var a=(lg.tagName==='A')?lg:(lg.querySelector('a')||lg); if(a&&a.setAttribute){ a.setAttribute('href','/ko/reception/'); } } }catch(e){} }
