@@ -5646,6 +5646,49 @@ STEP 5 — 통합 제안서 → 정비 .md 초안 + 트리거 명세
 
       <!-- ░░ 탭1: 내 리듬 = 평일+주말+트래커+영양 ░░ -->
       <div class="tab-panel active" data-panel="rhythm">
+
+      <!-- 🔔 개인 알림 — GM 지시 2026-08-31 "개인 하루는 별도로 G1에 정리해줘".
+           그동안 GM 개인 텔레그램 슬롯(하루시작·체크인 등)이 자율현황 「알림 한 장」에 섞여
+           있었다. 그 화면은 잠금이 없고 AI 살림을 보는 자리라, 개인 하루가 거기 있을 이유가
+           없다. 여기(G1·잠금)로 옮기고 자율현황에서는 뺀다.
+           원천은 옮기지 않는다 — status/notify_registry.json 한 벌 그대로 읽고, surface 가
+           'g1' 인 것만 여기서 그린다(약속 L01 · 두 벌 금지). -->
+      <div data-panel="personal-notify">
+        <h3><span class="ico">🔔</span>개인 알림 — 내 하루에 오는 것</h3>
+        <div id="gm1-personal-notify" class="sec-note">불러오는 중…</div>
+      </div>
+      <script>
+      (function(){
+        var box = document.getElementById('gm1-personal-notify');
+        if(!box) return;
+        fetch('status/notify_registry.json?_=' + Date.now())
+          .then(function(r){ return r.ok ? r.json() : null; })
+          .then(function(d){
+            var items = ((d && d.items) || []).filter(function(x){ return x && x.surface === 'g1'; });
+            items.sort(function(a,b){ return String(a.when_sort||'').localeCompare(String(b.when_sort||'')); });
+            if(!items.length){ box.textContent = '개인 알림으로 지정된 것이 없습니다.'; return; }
+            var STATE = { live:'🟢 가동', conditional:'🟡 조건부', off:'🔴 꺼짐', dead:'⚫ 죽은배선' };
+            var esc = function(t){ return String(t==null?'':t).replace(/[&<>"]/g, function(c){
+              return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); };
+            var html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+              + '<tr><th style="text-align:left;padding:6px 8px;">언제</th>'
+              + '<th style="text-align:left;padding:6px 8px;">무엇이 오나</th>'
+              + '<th style="text-align:left;padding:6px 8px;">주기</th>'
+              + '<th style="text-align:left;padding:6px 8px;">상태</th></tr>';
+            items.forEach(function(x){
+              html += '<tr style="border-top:1px solid rgba(61,56,53,0.28);">'
+                + '<td style="padding:6px 8px;white-space:nowrap;"><b>' + esc(x.when) + '</b></td>'
+                + '<td style="padding:6px 8px;">' + esc(x.what) + '</td>'
+                + '<td style="padding:6px 8px;white-space:nowrap;">' + esc(x.freq) + '</td>'
+                + '<td style="padding:6px 8px;white-space:nowrap;">' + (STATE[x.state] || '⚪ 못 잼') + '</td>'
+                + '</tr>';
+            });
+            box.innerHTML = html + '</table>';
+          })
+          .catch(function(){ box.textContent = '개인 알림 목록을 못 읽었습니다.'; });
+      })();
+      </script>
+
       <!-- 평일(월~토) -->
       <div data-panel="morning">
         <h3 style="display:flex;align-items:center;justify-content:space-between;">

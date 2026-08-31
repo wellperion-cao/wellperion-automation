@@ -50,6 +50,10 @@ SYNC_PAIRS = [
     ("status/learning_proposals.json",   "3. 웰페리온 가이드/status/learning_proposals.json"),
     # 항해 지도 (2026-07-06): 항해지도.html 이 발행루트 절대경로로 직독.
     ("status/voyage_map.json",           "3. 웰페리온 가이드/status/voyage_map.json"),
+    # 알림 등록부 (2026-08-31): G1 「개인 알림」 블록이 발행루트에서 직독한다. 개인 하루 슬롯을
+    # 자율현황에서 빼고 G1(잠금 화면)으로 옮기며 필요해졌다 — 등록부는 한 벌 그대로 두고
+    # surface 칸으로 어느 화면이 그릴지만 가른다(약속 L01).
+    ("status/notify_registry.json",      "3. 웰페리온 가이드/status/notify_registry.json"),
 ]
 
 # 하위 호환: 기존 단일 변수 참조 코드를 위해 유지

@@ -208,11 +208,11 @@
        ★2026-08-15 GM 승인 — 평소엔 요약 한 줄만, 이상이 있을 때만 펼쳐진다(id=alert-board-details 인
        details 요소를 JS가 문제 건수·드리프트 여부로 open 을 켠다). 컨테이너 id·렌더 함수는 그대로. ══ -->
   <div id="alert-board" class="autopanel" style="border-left-color:var(--gold);margin-top:14px;">
-    <h2 class="sec" style="margin-top:0;">📨 알림 한 장 — 어느 방으로 · 누가 · 살아있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(방 기준 · 카톡·텔레그램 발신 전체)</span></h2>
+    <h2 class="sec" style="margin-top:0;">📨 알림 한 장 — 몇 시에 · 어느 방으로 · 살아있나 <span style="font-size:12px;font-weight:400;color:var(--dim);">(시간대 순 · 카톡·텔레그램 발신 전체)</span></h2>
     <div id="alert-board-summary" class="sec-note" style="margin:0 0 8px;">불러오는 중…</div>
     <div id="notify-drift-banner" style="display:none;"></div>
-    <details id="alert-board-details">
-      <summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--accent-soft);">방별로 펼쳐보기</summary>
+    <details id="alert-board-details" open>
+      <summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--accent-soft);">접기 · 펼치기</summary>
       <div class="sec-note" style="margin:8px 0 10px;">방을 펼치면 그 방으로 나가는 발신이 한 줄씩. 🟢 <b>가동</b> · 🟡 <b>조건부</b>(안 오면 정상일 수 있음) · 🔴 <b>꺼짐</b>(GM 킬스위치 OFF) · ⚫ <b>죽은배선</b>(실행 실패·스케줄러 정지·방 매핑 끊김) · ⚪ <b>못 잼</b>(대조·확인 자체가 멈춰 진짜인지 알 수 없음). <span id="notifyDriftNote">대조 상태 확인 중…</span></div>
       <div class="notify-filters" id="notify-filters">
         <button type="button" class="nf-btn active" data-f="all">전체</button>
@@ -223,7 +223,7 @@
         <!-- ⏱ 시간순 (GM 지시 2026-08-08 "시간대별로 자동 발송 내용이 정리되는게 나을 것 같은데")
              방 기준은 '이 방에 뭐가 오나'(실무진 관점)이고, 시간순은 '오늘 몇 시에 뭐가 나가나'(GM 관점)다.
              정렬 기준은 등록부에 이미 있는 when_sort 를 그대로 쓴다 — 새 데이터 없음. -->
-        <button type="button" class="nf-btn" id="notify-time-toggle">⏱ 시간순</button>
+        <button type="button" class="nf-btn active" id="notify-time-toggle">⏱ 시간순</button>
         <span class="nf-sep"></span>
         <button type="button" class="nf-btn nf-problem" id="notify-problem-toggle">🔴⚫ 문제만 보기</button>
       </div>
@@ -828,7 +828,10 @@
   var TG_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="텔레그램"><title>텔레그램</title><rect width="24" height="24" rx="7" fill="#229ED9"/><path transform="translate(3.2 3.6) scale(0.72)" d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.9-.75 1.12-1.52.7L11.6 16.8l-1.65 1.6c-.19.19-.35.29-.56.29z" fill="#fff"/></svg>';
   var KT_LOGO = '<svg class="chlogo" viewBox="0 0 24 24" role="img" aria-label="카카오톡"><title>카카오톡</title><rect width="24" height="24" rx="7" fill="#FEE500"/><path d="M12 6c-3.6 0-6.5 2.28-6.5 5.09 0 1.82 1.22 3.42 3.06 4.32-.13.47-.49 1.78-.56 2.06-.09.35.13.34.27.25.11-.07 1.75-1.19 2.46-1.68.41.06.83.09 1.27.09 3.6 0 6.5-2.28 6.5-5.09S15.6 6 12 6z" fill="#3C1E1E"/></svg>';
   var NOTIFY_CH_EMOJI = { telegram: TG_LOGO, kakao: KT_LOGO };
-  var _notifyState = { channel:'all', owner:'all', problemOnly:false, view:'room' };
+  // view 기본값 = 'time' (GM 지시 2026-08-31 "직관적이게 정리해주면 좋을 것 같아, 시간대 순으로").
+  // 방 기준은 '이 방에 뭐가 오나'(실무진 관점), 시간순은 '오늘 몇 시에 뭐가 나가나'(GM 관점)다.
+  // 이 화면을 여는 사람이 GM 이라 시간순을 먼저 보여준다 — 방 기준은 버튼으로 그대로 남는다.
+  var _notifyState = { channel:'all', owner:'all', problemOnly:false, view:'time' };
 
   // 원천 신선도 판정 — GM 지시 2026-07-31(notify_drift.json 11일째 정지·0건을 진짜 0처럼 표시하던 함정).
   // 상수 한 곳 + 계산 함수 한 곳(복제 금지) · generated_at(날짜/일시 문자열) → 경과일. 필드 없음/파싱 불가 = null(측정 불가).
@@ -1102,7 +1105,12 @@
     var summaryEl = document.getElementById('alert-board-summary');
     var bannerEl = document.getElementById('notify-drift-banner');
     if(!wrap) return;
-    var items = (reg && Array.isArray(reg.items)) ? reg.items.slice() : null;
+    // surface==='g1' 인 항목은 여기서 안 그린다 — GM 개인 하루 방(06:00 루틴·끼니 체크·저녁
+    // 정리 등)이라 잠금 없는 이 화면이 아니라 G1(잠금)에서 본다(GM 지시 2026-08-31).
+    // 등록부는 한 벌 그대로다 — 어느 화면이 그릴지만 surface 칸으로 가른다(약속 L01).
+    var items = (reg && Array.isArray(reg.items))
+      ? reg.items.filter(function(x){ return !x || x.surface !== 'g1'; })
+      : null;
     if(!items){
       wrap.innerHTML = '<div class="feed-status">알림 등록부를 불러오지 못했습니다.</div>';
       if(summaryEl) summaryEl.textContent = '';
