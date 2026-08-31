@@ -988,7 +988,8 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
     lines = [f"📮 새 접수 {len(new_rows)}건 — 해당 부서에서 조치·회신 부탁드립니다."]
     for dept in sorted(by_dept, key=lambda d: -len(by_dept[d])):
         items = by_dept[dept]
-        lines.append(f"\n🏢 {dept} ({len(items)}건)")
+        # 빈 줄을 넣지 않는다 — 카톡은 빈 줄이 화면을 3배로 늘린다(전달문 표준 · 2026-09-01).
+        lines.append(f"🏢 {dept} ({len(items)}건)")
         for r in (items if _INTAKE_CAP <= 0 else items[:_INTAKE_CAP]):
             cat = str(r.get("category") or "").strip()
             # ★2026-08-27 GM 지시 — "내용도 같이 넣어줘, 길어도 다 넣어줘". 종전에는 28자에서
@@ -1001,7 +1002,7 @@ def _intake_relay_block(rows: list[dict], state: dict | None = None,
                 lines.append(f"     {content}")
         if _INTAKE_CAP > 0 and len(items) > _INTAKE_CAP:
             lines.append(f"  …외 {len(items) - _INTAKE_CAP}건 더")
-    lines.append(f"\n👉 상세·처리: {DASHBOARD_URL}")
+    lines.append(f"👉 상세·처리: {DASHBOARD_URL}")
     return "\n".join(lines)
 
 
