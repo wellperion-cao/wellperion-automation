@@ -281,8 +281,24 @@ def build_kakao_digest(today: str | None = None) -> str:
         return next((ln.strip() for ln in lines if ln.strip().startswith(prefixes)), "")
 
     out: list[str] = []
+    # ★2026-08-31 GM 재지적("가독성 생각 안 하고 보낼거야? 많이 이야기하는데도 안 되네").
+    #   종전 판은 부서마다 한 줄에 몰아 넣고 항목을 ' · ' 로 이어 붙였다 — 한 줄이 화면 서너 줄로
+    #   접혀 덩어리로 보인다. 실무진 전달문 표준(gm-report 스킬 §4-2-2)이 정한 모양으로 바꾼다:
+    #     · 제목 줄만 훑어도 뜻이 통하게 — 부서 + 한눈 숫자
+    #     · 상세는 다음 줄, 들여쓰기 3칸
+    #     · 한 줄에 한 가지 (' · ' 로 여러 건 잇지 않는다)
+    #     · 빈 줄은 쓰지 않는다 (카톡은 빈 줄이 화면을 3배로 늘린다)
+    #     · 링크는 그 부서 블록 안에 한 줄, 맨 끝에 상대가 할 일 한 줄
+    #   숫자는 각 build_*_section 이 이미 만든 값을 그대로 옮긴다 — 여기서 다시 계산하지 않는다.
+    IND = "   "
 
-    # 🏆 수고 인정 — 3부서 규칙은 _praise_block 그대로 재사용, 한 줄로 합친다.
+    def _sub(text: str) -> None:
+        """상세 한 줄 — 들여쓰기 3칸. 빈 값이면 아무것도 안 넣는다."""
+        t = str(text or "").strip()
+        if t:
+            out.append(IND + t)
+
+    # 🏆 수고 인정 — 3부서 규칙은 _praise_block 그대로 재사용. 부서별로 한 줄씩 세운다.
     filled = {**fac_f, **sup_f, **par_f}
     praise = _praise_block("\n".join(fac_lines + sup_lines + par_lines), filled)
     if praise:
@@ -294,32 +310,43 @@ def build_kakao_digest(today: str | None = None) -> str:
             t = re.sub(r"^(\S+)\s*—\s*", r"\1 ", t)
             bits.append(t)
         if bits:
-            out.append("🏆 " + " · ".join(bits) + " — 고생하셨습니다")
+            out.append("🏆 오늘 잘된 것 — 고생하셨습니다")
+            for b in bits:
+                _sub(b)
 
-    # 🛠 지원부 — 종일 완료율 + 구역 요약 + 오늘 짚을 점(있으면)만. sup_lines[0]에 이미
-    # "🛠 지원부 현황 …" 이모지가 있어 그대로 쓴다(중복 접두 방지).
+    # 🛠 지원부 — 제목 줄에 종일 완료율, 구역·짚을 점은 아랫줄로 하나씩.
     if sup_lines:
-        line = sup_lines[0]
-        zone = " · ".join(
-            ln.strip().split(" — ")[0] for ln in sup_lines[1:3]
-            if ln.strip().startswith(("남성구역", "여성구역")))
-        if zone:
-            line += f" — {zone}"
+        out.append(sup_lines[0])
+        for ln in sup_lines[1:3]:
+            if ln.strip().startswith(("남성구역", "여성구역")):
+                _sub(ln.strip().split(" — ")[0])
         issue = _pick(sup_lines, "❗ 짚을 점:")
         if issue:
-            line += f" / {issue}"
-        out.append(line)
+            body = issue.split(":", 1)[-1].strip()
+            # 짚을 점도 여러 건이면 한 줄에 하나씩 — 뒤에 붙는 '— 독려 필요' 꼬리는 마지막에만 남긴다.
+            tail = ""
+            m = re.search(r"\s+—\s+([^·]+)$", body)
+            if m:
+                tail = m.group(1).strip()
+                body = body[: m.start()].strip()
+            for piece in [p.strip() for p in re.split(r"[·,]", body) if p.strip()]:
+                _sub("❗ " + piece)
+            if tail:
+                _sub("👉 " + tail)
         # ★2026-08-20(배670 후속) — 짚을 점이 있을 때만 링크를 붙인다. 이상 없는 날 매번
         #   붙이면 클릭할 것도 없는 링크가 800자 예산만 깎아먹는다. 미체크 화면(점검 남/여)은
         #   PIN 게이트라 해시 딥링크 대상에서 제외돼 있어(약속 — PIN 우회 방지) 탭 이름만 안내한다.
         if issue:
-            out.append(f"👉 지원부 상세: {_page_url('지원부 체계')} → 「점검(남)/(여)」 탭(PIN)")
+            _sub(f"📎 지원부 체계 {_page_url('지원부 체계')}")
+            _sub("「점검(남)/(여)」 탭 · 비밀번호 필요")
 
     # 🔁 반복 미완료 — 원장 기반, 최근 7일 반복만(1회성 특이점 제외)
     rec = _scs.recurring_issue_lines(today, max_items=3)
     if rec:
-        items = " · ".join(ln.strip().lstrip("· ") for ln in rec[1:])
-        out.append(f"🔁 자주 빠지는 항목 — {items}")
+        out.append("🔁 자주 빠지는 항목 — 최근 7일")
+        for ln in rec[1:]:
+            # 제목 줄이 이미 '최근 7일' 이라고 말한다 — 줄마다 반복하면 같은 말이 네 번 나온다.
+            _sub(re.sub(r"\s*최근 7일 中\s*", " ", ln.strip().lstrip("· ")).strip())
 
     # 🏗 시설부 — 회차·이상 유무 head 1줄(이미 "🏗 시설부 현황 …" 이모지 포함) + 특이사항만.
     # 회차별 일지·측정값은 뺀다.
@@ -327,14 +354,20 @@ def build_kakao_digest(today: str | None = None) -> str:
         out.append(fac_lines[0])
     fac_note = _pick(fac_lines, "📝 특이사항:", "❗ 기준이탈")
     if fac_note:
-        out.append("📝 시설 특이 — " + fac_note.split(":", 1)[-1].strip())
+        _sub("📝 " + fac_note.split(":", 1)[-1].strip())
         # 시설점검 탭은 PIN 없음 — 해시 딥링크가 바로 먹힌다(위 지원부와 차이).
-        out.append(f"👉 시설부 상세: {_page_url('시설부 체계')}#fcheck")
+        _sub(f"📎 시설부 체계 {_page_url('시설부 체계')}#fcheck")
 
     if par_lines:
-        out.append(par_lines[0])
+        # 원본 줄 끝에 주소가 통째로 박혀 있다. 그 주소는 공백이 인코딩돼 있지 않아 카톡이
+        # 공백에서 링크를 끊는다(2026-08-08 GM "링크가 짤려서 404" 와 같은 부류) — 게다가
+        # 바로 아래 📎 줄과 같은 페이지라 두 번 나온다. 본문에서는 떼고 📎 한 줄만 남긴다.
+        # 주소 안에 인코딩 안 된 공백이 있어 \S+ 로는 끝까지 못 지운다(그 공백이 바로 링크가
+        # 끊기는 지점이다) — 주소가 시작되는 자리부터 줄 끝까지 통째로 지운다.
+        head = re.sub(r"\s*[—-]\s*https?://.*$", "", par_lines[0]).rstrip(" —-")
+        out.append(head)
         if not re.search(r"이슈사항:\s*없음", par_lines[0]):
-            out.append(f"👉 주차부 상세: {_page_url('주차관리부 체계')}#manual")
+            _sub(f"📎 주차관리부 체계 {_page_url('주차관리부 체계')}#manual")
 
     return "\n".join(out)
 
