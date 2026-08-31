@@ -113,6 +113,15 @@
   .sum td.dept{width:104px;color:var(--grey);font-weight:700;white-space:nowrap;}
   .sum td.dept.none{color:var(--mid);font-weight:500;}
 
+  /* 담당 칸 (GM 결정 2026-08-29 · 배843 "GM업무 관련 전체 담당칸이 있어야해") — 회장님·대표님·GM 직접
+     세 표 공통. 값은 셋 다 원본에 없어 공용 보드(GM_TASK_OWNERS)에 GM이 직접 입력한 값만 쌓인다 —
+     안 채우면 계속 빈칸(지어내지 않음). 저장은 체크박스와 같은 즉시저장(_owner_directive.js 참조). */
+  .sum td.mgr{width:96px;}
+  .sum td.mgr input.mgr-inp{width:100%;font-family:var(--font);font-size:12px;padding:3px 5px;
+    border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink);}
+  .sum td.mgr input.mgr-inp:disabled{background:var(--steam);color:var(--grey);}
+  .sum td.mgr input.mgr-inp:focus{outline:2px solid var(--mid);outline-offset:0;}
+
   .ft{border-top:1px solid var(--line);margin-top:8px;padding-top:5px;
       display:flex;justify-content:space-between;font-size:10.5px;color:var(--grey);}
 
@@ -790,6 +799,7 @@
     var deptCls = it.dept ? 'dept' : 'dept none';
     return '<tr><td>' + no + '</td><td><a href="#gm-' + esc(it.id) + '" style="color:inherit;text-decoration:none;">' +
       esc(it.title) + '</a></td><td class="' + deptCls + '">' + deptTxt + '</td>' +
+      '<td class="mgr">' + window.OwnerDirective.ownerCellHtml(it.id) + '</td>' +
       '<td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
   }
 

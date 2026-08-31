@@ -202,6 +202,60 @@
       }).join('\n');
   }
 
+  // 👤 담당 칸(GM 결정 2026-08-29 · 배843 "GM업무 관련 전체 담당 칸이 있어야해") — 회장님·대표님·
+  // GM 직접 업무 세 표 전부 같은 칸 하나(복제 없음). 세 원본(_chairman_items.js·업무&결재 SSOT 시트·
+  // monthly_ops_plan.json) 어디에도 담당자 칸이 없어, chairman_reported.json과 똑같은 방식으로
+  // 위 CH_BOARD_URL(이미 이 페이지들이 쓰는 공용 보드)에 키만 하나 더 두고 GM이 화면에서 직접
+  // 채운다 — 지어내지 않는다, 안 채우면 계속 빈칸. 저장은 체크박스 즉시저장과 같은 방식(포커스를
+  // 벗어나면 최신 보드를 다시 읽어 내 값 하나만 얹어 저장 — 남의 입력을 덮어쓰지 않는다).
+  var OWNER_BOARD_KEY = 'GM_TASK_OWNERS';
+  var taskOwners = {};
+  function loadTaskOwners() {
+    return _chGet(CH_BOARD_URL + '?action=board&key=' + OWNER_BOARD_KEY, 8000).then(function (j) {
+      taskOwners = (j && j.ok && j.board) ? j.board : {};
+      applyTaskOwnersToDom();
+    });
+  }
+  // 이미 그려진 입력칸 값만 값 갱신 — 세 표 어느 쪽이 다시 그려도(mount 여러 페이지·GM 직접 재렌더)
+  // 표마다 다시 걸 필요 없이 전역 하나로 맞춘다. 입력 중인 칸은 덮어쓰지 않는다.
+  function applyTaskOwnersToDom() {
+    document.querySelectorAll('input.mgr-inp').forEach(function (inp) {
+      if (document.activeElement === inp) return;
+      inp.value = taskOwners[inp.getAttribute('data-mgr-id')] || '';
+    });
+  }
+  function ownerCellHtml(id) {
+    return '<input type="text" class="mgr-inp" data-mgr-id="' + esc(id) + '" value="' + esc(taskOwners[id] || '') + '" placeholder="담당">';
+  }
+  function saveTaskOwner(id, value) {
+    return _chGet(CH_BOARD_URL + '?action=board&key=' + OWNER_BOARD_KEY, 8000).then(function (j) {
+      var fresh = (j && j.ok && j.board) ? j.board : {};
+      fresh[id] = value;
+      return fetch(CH_BOARD_URL, {
+        method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'saveBoard', key: OWNER_BOARD_KEY, board: fresh })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        taskOwners = fresh;
+        return !!(res && res.ok);
+      });
+    });
+  }
+  // 이벤트 위임 하나로 세 표 전부 잡는다 — 표를 다시 그려도(innerHTML 교체) 새 입력칸이 자동으로 걸린다.
+  document.addEventListener('change', function (e) {
+    var inp = e.target && e.target.closest ? e.target.closest('input.mgr-inp') : null;
+    if (!inp) return;
+    var id = inp.getAttribute('data-mgr-id');
+    inp.disabled = true;
+    saveTaskOwner(id, inp.value.trim()).then(function (ok) {
+      inp.disabled = false;
+      if (!ok) alert('담당 저장 실패 — 다시 시도해 주세요.');
+    }).catch(function () {
+      inp.disabled = false;
+      alert('담당 저장 실패 — 다시 시도해 주세요.');
+    });
+  });
+  loadTaskOwners();
+
   /* 문안은 실제로 담긴 것만 적는다(GM 지적 2026-08-14 "보고문안복사도 이상해").
      예전엔 대표님 보고건이 0건이어도 '■ 대표님 보고건 0건' 과 빈 줄이 그대로 찍히고,
      회장님 건만 있는데도 첫 줄이 '대표님께 …' 로 나갔다. 0건 구획은 빼고 인사말을 실제 대상에 맞춘다. */
@@ -318,7 +372,9 @@
           ? '<span class="done-badge">✅ 보고완료 ' + esc(it.reportedAt) + '</span>'
           : '<button type="button" class="ebtn save" data-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-          (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td><td>' + statusHtml + '</td>' +
+          (it.category ? ' <span class="cat">(' + esc(it.category) + ')</span>' : '') + '</td>' +
+          '<td class="mgr">' + ownerCellHtml(it.id) + '</td>' +
+          '<td>' + statusHtml + '</td>' +
           '<td class="rpt-actions">' + actionHtml + '</td></tr>';
       }).join('');
 
@@ -409,7 +465,9 @@
           : '<button type="button" class="ebtn save ch-rep-btn" data-ch-id="' + esc(it.id) + '">보고 완료로 표시</button>';
         // 대표님 표(elSum)와 같은 4열로 통일(GM 지적 2026-08-10) — 일정/액션을 별도 칸으로 분리.
         return '<tr><td>' + no + '</td><td>' + esc(it.title) +
-          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chLink(it) + '</td><td>' + esc(it.when || '일정 미정') +
+          ' <span class="cat">(' + esc(it.cat || '분류 미정') + ')</span>' + chLink(it) + '</td>' +
+          '<td class="mgr">' + ownerCellHtml(it.id) + '</td>' +
+          '<td>' + esc(it.when || '일정 미정') +
           pctBadge(stagePct(it.when)) + '</td>' +
           '<td class="rpt-actions">' + act + '</td></tr>';
       }).join('');
@@ -471,5 +529,5 @@
 
   // 보고 대기/완료 판정은 이 파일 하나만 갖는다 — 읽는 쪽(GM업무.html 인쇄·건수)은 이 두 함수를
   // 쓴다(약속 L01 · 판정 복제 금지). 상태 파일 조회 전에는 전부 '대기'로 나온다.
-  window.OwnerDirective = { mount: mount, chairmanPending: chairmanPending, chairmanDone: chairmanDone, chairmanDate: chDate };
+  window.OwnerDirective = { mount: mount, chairmanPending: chairmanPending, chairmanDone: chairmanDone, chairmanDate: chDate, ownerCellHtml: ownerCellHtml };
 })();
