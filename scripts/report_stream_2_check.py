@@ -89,7 +89,7 @@ def build_digest(today: str | None = None) -> str:
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
     header = (
-        f"📊 [하루 일과 정리] {today}({weekday})\n"
+        f"🌙 하루의 마무리 — 점검 {today}({weekday})\n"
         "🏗️ 시설&지원&주차 점검 및 이슈 현황\n"
         f"{_SENDER_LINE}"
     )

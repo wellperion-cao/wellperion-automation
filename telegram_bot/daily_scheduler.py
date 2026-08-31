@@ -2882,7 +2882,7 @@ def run_daily_digest(early: bool = False) -> None:
                 logger.error(f"{label} 카톡 {KAKAO_OPS_ROOM}({tag}) 발송 예외: {e}")
                 _kakao_fail_notify(tag, str(e)[:120])
 
-        _ops_title = f"🌙 오늘 점검·접수 정리 {now_dt.month}/{now_dt.day}({_WEEKDAY_KOR[now_dt.weekday()]})"
+        _ops_title = f"🌙 하루의 마무리 — 점검·접수 {now_dt.month}/{now_dt.day}({_WEEKDAY_KOR[now_dt.weekday()]})"
 
         # ★2026-08-18 GM 결정(배670 · 재설계안 확정) — 카톡은 텔레그램 전문(s2_msg/s2b_msg)을
         # 그대로 안 쓴다. 4,559자(회차별 일지·측정값 20줄·미처리 적체 전체목록)를 실측 지적받아

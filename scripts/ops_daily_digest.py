@@ -142,8 +142,13 @@ SYSTEM_LINE_RE = re.compile(r".*(들어왔습니다|나갔습니다|저장한 �
 # 있어, 사람이 직접 쓴 말과 발신자가 같다. 대신 본문 첫 줄 고정 머리글/말미 서명으로 가른다.
 AUTO_BROADCAST_HEADER_RE = re.compile(
     r"^("
-    r"🌅 .*정리 · |"                                    # ops_daily_digest 자신의 전날 정리(같은 방으로 되돌아온 것)
-    r"📊 \[하루 일과 정리\]|"                             # report_stream_1/2/2b/3 통일 포맷
+    # ★2026-08-31 제목 통일에 맞춰 넓혔다 — 「🌅 하루의 시작」·「🌙 하루의 마무리」.
+    #   옛 문구(🌅 …정리 · / 📊 [하루 일과 정리])도 그대로 둔다: 방에 이미 쌓인 지난 메시지가
+    #   내일부터 갑자기 '사람이 쓴 말'로 잡혀 요약에 섞이면 안 된다.
+    r"🌅 하루의 시작|"                                   # ops_daily_digest 자신의 아침 통(같은 방으로 되돌아온 것)
+    r"🌙 하루의 마무리|"                                 # report_stream_1/2/2b/3 저녁 통
+    r"🌅 .*정리 · |"                                    # (옛) ops_daily_digest 전날 정리
+    r"📊 \[하루 일과 정리\]|"                             # (옛) report_stream_1/2/2b/3 통일 포맷
     r"📊 .*(아침 브리핑|회장님 매출보고)|"                  # module_reporter(CFO 등) · kakao_auto_daily_report
     r"📋 (.*아침 브리핑|운영부 주간 보고 초안\(자동 생성)|"  # module_reporter(HR) · send_ops_digest 주간보고
     r"🧭 .*(어제 정리 — 판단·배정 필요한 것만|아침 보고 ·)|"  # send_ops_digest · module_reporter
@@ -786,12 +791,18 @@ def build_prompt(target_date: str, conversation: str, past_issues_digest: str, r
     try:
         _d = datetime.strptime(target_date, "%Y-%m-%d")
         disp = f"{_d.month}/{_d.day}(" + "월화수목금토일"[_d.weekday()] + ")"
-        # 대상일이 '진짜 어제'면 '어제 {방} 정리 · 날짜', 아니면(휴관 폴백 등) 날짜만 — 오해 방지
+        # ★2026-08-31 — 아침 통 이름을 「하루의 시작」으로 통일한다(2026-08-29 확정안 · GM 승인).
+        #   아침에 네 통이 각기 다른 제목으로 들어오면 실무진은 그때그때 무엇인지 다시 읽어야 한다.
+        #   앞머리가 같으면 '아침에 오는 것'으로 한 덩어리로 잡히고, 뒤 부제로 어느 방 것인지 갈린다.
+        #   ▸판별 목록(kakao_report_sender._ROUTINE_DIGEST_HEADS)에 「🌅 하루의 시작」을 먼저 넣어 뒀다 —
+        #     안 넣고 제목만 바꾸면 실장 경유 가드가 아침 통을 통째로 막는다(2026-08-19~20 실사고).
+        # 대상일이 '진짜 어제'면 날짜를 그대로, 아니면(휴관 폴백 등) 날짜만 — 오해 방지
         _yest = (datetime.now().date() - _d.date()).days == 1
-        header_label = f"어제 {room_short} 정리 · {disp}" if _yest else f"{disp} {room_short} 정리"
+        _when = f"어제 · {disp}" if _yest else disp
+        header_label = f"하루의 시작 — {room_short} {_when}"
     except Exception:
         disp = target_date
-        header_label = f"{target_date} {room_short} 정리"
+        header_label = f"하루의 시작 — {room_short} {target_date}"
     return f"""당신은 웰페리온(프리미엄 스포츠클럽 멤버십 커뮤니티) AI COO '시우'입니다.
 {room_dir_name} 카카오톡 방의 어제({target_date}) 하루 대화를 읽고, 오늘 아침 방에 바로 보낼 요약 메시지 1통을 작성합니다.
 

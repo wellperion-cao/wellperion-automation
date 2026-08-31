@@ -357,7 +357,7 @@ def build_digest(today: str | None = None, channel: str = "telegram") -> list[st
     100% 그대로 — 정보 소실 아님, 텔레그램에는 이 두 블록이 계속 그대로 나간다."""
     today = today or datetime.now().strftime("%Y-%m-%d")
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
-    header = f"📊 [하루 일과 정리] {today}({weekday})\n📈 매출 및 운영+인사 현황 보고"
+    header = f"🌙 하루의 마무리 — 매출·운영 {today}({weekday})\n📈 매출 및 운영+인사 현황 보고"
     # 2026-08-08 배446 — 여기가 7일 연속 '[연동 예정]' 문자열로 나갔다(텔레그램 + ★운영부 카톡).
     # 값은 home_kpi 스냅샷에 이미 있었고 판정·표기는 erp_status_publisher 한 곳이 한다(약속 L01).
     try:

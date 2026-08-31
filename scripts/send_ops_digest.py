@@ -1458,12 +1458,12 @@ def _build_ovd_block(rows_for_room: list, detail: bool = True) -> str:
     items.sort(key=lambda x: -x["days"])
     if not detail:
         return "\n".join([
-            f"⏰ 아직 안 끝난 접수 {len(items)}건 — 목록은 저녁 정리 한 통에 담아 드립니다",
+            f"🌅 하루의 시작 — 접수 {len(items)}건 · 목록은 저녁 정리 한 통에 담아 드립니다",
             f"📎 종합접수처 {_OVD_BOARD_URL}",
         ])
     shown, rest = (items, []) if _OVD_LIST_CAP <= 0 else (items[:_OVD_LIST_CAP], items[_OVD_LIST_CAP:])
 
-    lines = [f"⏰ 아직 안 끝난 접수 {len(items)}건 — 마무리 부탁드립니다",
+    lines = [f"🌅 하루의 시작 — 아직 안 끝난 접수 {len(items)}건, 마무리 부탁드립니다",
              "회원분이 남겨 주신 뒤로 아직 안 닫힌 건들입니다."]
     for it in shown:
         icon = "🔴" if it["days"] >= 14 else ("🟠" if it["days"] >= 7 else "🟡")

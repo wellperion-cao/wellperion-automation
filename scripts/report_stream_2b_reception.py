@@ -1178,7 +1178,7 @@ def build_digest(today: str | None = None, persist_completion: bool = True) -> s
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
     # 보낸이를 밝힌다(2026-07-31 GM 지시 "웰리가 보냈다는 것도 인지시켜야 하고").
     # 실무진 방에 뜨는 메시지가 누가 보낸 것인지 모르면 답할 곳도 모른다.
-    header = (f"📊 [하루 일과 정리] {today}({weekday})\n📮 종합접수 현황\n"
+    header = (f"🌙 하루의 마무리 — 접수 {today}({weekday})\n📮 종합접수 현황\n"
               "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다.")
     rows = _fetch_rows()
     if rows is None:
@@ -1266,7 +1266,7 @@ def build_lesson_digest(today: str | None = None) -> str:
     if "기한 초과 건 없음" in body:
         return ""      # 조용히 넘어간다 — 없는 날 매일 뜨면 소음이다
     weekday = _WEEKDAY_KOR[datetime.strptime(today, "%Y-%m-%d").weekday()]
-    return (f"📊 [하루 일과 정리] {today}({weekday})\n📮 강습·업장 접수 현황\n"
+    return (f"🌙 하루의 마무리 — 접수 {today}({weekday})\n📮 강습·업장 접수 현황\n"
             "— 웰페리온 AI 운영지원 '웰리'가 정리해 보내드립니다.\n\n" + body)
 
 

@@ -479,7 +479,7 @@ def build_digest(today: str | None = None, sample: bool = False, sample_n: int =
 
     _scope_label = {"membership": " · 멤버십", "lesson": " · 강습(성인·유소년)"}.get(scope, "")
     header = (
-        f"📊 [하루 일과 정리] {today}({weekday})\n"
+        f"🌙 하루의 마무리 — {today}({weekday})\n"
         f"🔔 문의 및 컨택&등록 현황 보고{_scope_label}"
     )
     _breakdown = " + ".join(
