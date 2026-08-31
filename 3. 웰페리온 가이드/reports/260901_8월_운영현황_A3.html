@@ -59,10 +59,10 @@
       <div class="c sep">
         <div class="lb">한 눈 요 약</div>
         <div class="sub" style="margin-top:2px;font-size:11.6px;color:var(--ink);line-height:1.62;">
-          <span class="dot g"></span><b>좋아진 것</b> — 멤버십 문의 +26% · 이탈 −8건 · 접수 −26%<br>
-          <span class="dot w"></span><b>지켜볼 것</b> — 월 매출 95.2%(마감 최종) · 접수 미완료 19건<br>
-          <span class="dot b"></span><b>손대야 할 것</b> — 유소년 문의 −46% · 9월 만기 상담 1명<br>
-          <span class="dot n"></span><b>못 재는 것</b> — 운영부·주차부 점검(9월 계측 구축)
+          <span class="dot g"></span><b>개선 항목</b> — 멤버십 문의 +26% · 이탈 −8건 · 접수 −26%<br>
+          <span class="dot w"></span><b>주시 항목</b> — 월 매출 95.2%(마감 최종) · 접수 미완료 19건<br>
+          <span class="dot b"></span><b>조치 항목</b> — 유소년 문의 −46% · 9월 만기 상담 1명<br>
+          <span class="dot n"></span><b>미집계 항목</b> — 운영부·주차부 점검(9월 계측 구축)
         </div>
       </div>
     </div>
@@ -113,8 +113,8 @@
             </tr>
             <tr>
               <td class="k">9월 만기</td>
-              <td class="bad"><span data-f="member.next_month_expiry.count" data-fmt="num">61</span>명 — 재등록 상담 기록은 <b><span data-f="member.next_month_expiry.contacted" data-fmt="num">1</span>명</b>뿐입니다 <span class="est">멤버십 43 · 입주민 8 · 그 밖 10</span></td>
-              <td class="ctr" colspan="2"><span class="bad">9월 최우선 관리</span> <span class="est">— 만기 이탈은 곧 빈자리</span></td>
+              <td class="bad"><span data-f="member.next_month_expiry.count" data-fmt="num">61</span>명 — 재등록 상담 기록 <b><span data-f="member.next_month_expiry.contacted" data-fmt="num">1</span>명</b> <span class="est">멤버십 43 · 입주민 8 · 기타 10</span></td>
+              <td class="ctr" colspan="2"><span class="bad">9월 최우선 관리</span> <span class="est">— 만기 이탈은 정원 공백으로 직결</span></td>
               <td class="ctr"><span class="dot b"></span></td>
             </tr>
           </tbody>
@@ -122,7 +122,7 @@
       </div>
 
       <div>
-        <div class="sec-h">Ⅱ. 부문별 매출 <span class="hint">8월 · 상위 3개와 그 밖</span></div>
+        <div class="sec-h">Ⅱ. 부문별 매출 <span class="hint">8월 · 상위 3개와 기타</span></div>
         <table class="big">
           <colgroup><col style="width:96px"><col style="width:130px"><col><col style="width:60px"></colgroup>
           <thead><tr><th class="k">부문</th><th>8월 매출</th><th>구성</th><th>비중</th></tr></thead>
@@ -131,13 +131,13 @@
             <tr><td class="k">P.T</td><td class="num">124,604,650</td><td><div class="gbar"><i style="width:19.8%"></i></div></td><td class="ctr">19.8%</td></tr>
             <tr><td class="k">수영</td><td class="num">112,182,750</td><td><div class="gbar"><i style="width:17.9%"></i></div></td><td class="ctr">17.9%</td></tr>
 
-            <tr><td class="k">그 밖</td><td class="num">125,944,555</td><td><div class="gbar"><i style="width:20.1%"></i></div><span class="est">스쿼시 3,145 · 체조 2,521 · 필라테스 1,887 · 뮤지컬 1,778 · 골프 1,624 · 옵션 1,487 · 주차 266만</span></td><td class="ctr">20.1%</td></tr>
+            <tr><td class="k">기타</td><td class="num">125,944,555</td><td><div class="gbar"><i style="width:20.1%"></i></div><span class="est">스쿼시 3,145 · 체조 2,521 · 필라테스 1,887 · 뮤지컬 1,778 · 골프 1,624 · 옵션 1,487 · 주차 266만</span></td><td class="ctr">20.1%</td></tr>
           </tbody>
         </table>
       </div>
 
       <div>
-        <div class="sec-h">Ⅲ. 수요 — 다음 매출은 어디서 오는가 <span class="hint">문의 원장 전수</span></div>
+        <div class="sec-h">Ⅲ. 수요 — 향후 매출의 발생 경로 <span class="hint">문의 원장 전수</span></div>
         <div style="display:flex;gap:9px;">
           <div style="flex:1;">
             <table>
@@ -170,23 +170,17 @@
           <tbody>
             <tr>
               <td class="k">종합접수처</td>
-              <td><b><span data-f="reception.total" data-fmt="num">54</span>건</b> 접수 <span class="est">컴플레인 20 · 시설물 고장 18 · 그 밖 16</span></td>
+              <td><b><span data-f="reception.total" data-fmt="num">54</span>건</b> 접수 <span class="est">컴플레인 20 · 시설물 고장 18 · 기타 16</span></td>
               <td class="ctr">완료 <span data-f="reception.done" data-fmt="num">37</span> / <span class="bad">미완료 <span data-f="reception.open" data-fmt="num">17</span></span> <span class="est">7일 초과 <span data-f="reception.over_7d" data-fmt="num">9</span> · 최장 <span data-f="reception.oldest_days" data-fmt="num">18</span>일</span></td>
               <td class="ctr good">7월 73건 → <b>−26%</b></td>
               <td class="ctr"><span class="dot w"></span></td>
             </tr>
             <tr>
               <td class="k">일일 점검</td>
-              <td>시설부 <b><span data-f="check.facility_pct" data-fmt="pct">93%</span></b> · 지원부 <b><span data-f="check.support_pct" data-fmt="pct">98%</span></b></td>
-              <td class="ctr good">두 부서 정상 운영</td>
+              <td>시설부 <b><span data-f="check.facility_pct" data-fmt="pct">93%</span></b> · 지원부 <b><span data-f="check.support_pct" data-fmt="pct">98%</span></b> <span class="est">운영부·주차부는 미집계(집계 경로 부재)</span></td>
+              <td class="ctr good">두 부서 정상 운영 <span class="est">9월 계측 구축</span></td>
               <td class="ctr">리듬 유지</td>
               <td class="ctr"><span class="dot g"></span></td>
-            </tr>
-            <tr>
-              <td class="k">운영부·주차부</td>
-              <td>측정 불가 — 실적이 0이 아니라, 셀 수가 없습니다</td>
-              <td class="ctr" colspan="2"><span class="est">주차부=점검 항목 미등록 · 운영부=점검 화면 부재 → 9월 계측 구축</span></td>
-              <td class="ctr"><span class="dot n"></span></td>
             </tr>
           </tbody>
         </table>
@@ -208,15 +202,15 @@
           </div>
           <div class="r">
             <div class="rt">공간 · 조직 · 자동화</div>
-            <div class="rd">상가 1F·B1 전체 운영 총괄 <b>체계 수립 (85%)</b> — 소통 창구·관리비 기준<br>
+            <div class="rd">상가(1F·B1) — <b>소통 창구 통일화 진행 중</b><br>
               외곽 인수인계 <b>완료 (80%)</b> — 기록 체계 전달 마무리<br>
-              지원부 8인 <b>재계약 · 주 5일제</b> 9/1 시행<br>
-              매출·운영 보고 <b>자동화 (60%)</b> — 손으로 치던 칸을 줄이는 중</div>
+              지원부 7인 <b>재계약 완료 · 주 5일제 9/1 시행</b><br>
+              매출·운영 보고 <b>자동화 (60%)</b> — 손으로 입력하던 항목을 단계적으로 축소하는 중</div>
           </div>
           <div class="r n">
             <div class="rt">요금 정책 준비 <span class="est" style="font-weight:400;">— 9월 결정의 재료</span></div>
-            <div class="rd">기획안 · 환불 운영기준 명문화 · 만기 회원 실측 · 이탈 사유 데이터 <b>8월에 모두 마쳤습니다</b>.<br>
-              남은 것은 <b>인상 폭 하나</b>이며, 9월 계획 보고에서 결정을 요청드립니다.</div>
+            <div class="rd">기획안 · 환불 운영기준 명문화 · 만기 회원 실측 · 이탈 사유 데이터 <b>8월 중 전부 완료</b>하였습니다.<br>
+              잔여 과제는 <b>인상 폭 확정</b> 하나이며, 9월 계획 보고에서 결정을 요청드립니다.</div>
           </div>
         </div>
       </div>
@@ -232,13 +226,13 @@
         <div class="stage"><span class="no wait">7</span><span class="nm">수익 모델 생성</span><span class="tr"><i style="width:0"></i></span><span class="pc">0%</span></div>
         <div class="stage"><span class="no wait">8</span><span class="nm">사업 확장</span><span class="tr"><i style="width:0"></i></span><span class="pc">0%</span></div>
         <div style="font-size:10.5px;line-height:1.5;color:var(--dim);margin-top:6px;border-top:1px dashed var(--line);padding-top:6px;">
-          1·2단계는 상반기에 끝났습니다. 지금은 <b style="color:var(--navy)">3·4단계를 동시에 진행</b>하는 구간이며, 하반기 기조 &lsquo;반복은 자동화, 사람은 본질에&rsquo;가 곧 3단계입니다.
+          1·2단계는 상반기에 완료되었습니다. 현재는 <b style="color:var(--navy)">3·4단계를 동시에 진행</b>하는 구간이며, 하반기 기조 &lsquo;반복은 자동화, 사람은 본질에&rsquo;가 곧 3단계입니다.
         </div>
-        <div class="sec-h" style="margin-top:9px;">하반기 3방향 대비 <span class="hint">상반기 확정</span></div>
+        <div class="sec-h" style="margin-top:9px;">하반기 집중 과제 — 요금 인상 <span class="hint">단일 집중</span></div>
         <ul class="dir">
-          <li><b>① 시설·설비·어메니티 밸류업</b> <span>— 안마의자 도입 · 헬스장 장비 4사 비딩 · 주차장 보수. 9월 장비 선정.</span></li>
-          <li class="mid"><b>② 전체 요금 인상 준비</b> <span>— 재료는 8월에 모두 준비했습니다. 남은 것은 인상 폭 결정.</span></li>
-          <li class="no"><b>③ 공간 활용 극대화·수익화</b> <span>— 상가 운영 총괄 85%로 기반은 섰으나 수익화는 착수 전.</span></li>
+          <li><b>① 인상안 확정</b> <span>— 기획안·환불 기준·이탈 사유 데이터 8월 완료. 잔여는 인상 폭 확정.</span></li>
+          <li class="mid"><b>② 서비스 강화</b> <span>— 인상의 근거. 사우나 가운 미제공 · 회원 전용 식당 미보유 · 주차 확대 검토.</span></li>
+          <li class="no"><b>③ 재등록·이탈 관리</b> <span>— 9월 만기 61명 중 상담 1명. 만기 전 접촉 체계 미구축.</span></li>
         </ul>
       </div>
 
@@ -247,9 +241,9 @@
 
   <!-- 각주 -->
   <div class="foot">
-    <div><b>기준 시점</b> — 매출은 <b>8월 마감 최종치</b> 628,049,695원(원장 총 합계 625,385,695 + 주차 2,664,000·494건), 월 목표는 GM 확정 <b>6.6억</b>입니다. 그 밖 지표는 <b data-asof>2026-08-28 조회</b>분입니다(영업일 <span data-f="business_days" data-fmt="num">26</span>일 · 휴관 8/9·8/23 제외). 연 누계는 8/28 16:26 집계값이라 8월 최종치가 아직 반영되지 않았으며, 95.7%는 8월말 목표 페이스 48억(연 72억×8/12) 대비입니다.</div>
-    <div><b>측정하지 못한 것</b> — ①운영부·주차부 점검은 집계 경로가 없어 수치를 낼 수 없습니다(실적 0이 아님) ②문의에서 방문으로 이어진 비율은 방문 기록 칸이 8월 전건 비어 있어 산출 불가하며 상담 성공 건수로 대신합니다 ③지출·순이익은 부문 집계만 있어 손익으로 오독될 수 있어 이번 보고에서 제외했습니다.</div>
-    <div><b>출처</b> — 매출=매출 원장 · 회원·만기=회원 원장 전수 · 문의=문의 원장 전수 · 접수=종합접수처 원장 8월분 · 점검=부서별 점검 원장 · 과제·로드맵=월간 운영계획. 멤버십 문의 78건만 8/26 집계값·<b>★원천 미확인</b>(원장에 없음 — 8/31 재집계 경로 확인, 못 찾으면 표기 유지)이며 나머지는 8/28 직접 카운트입니다. <b>함께 보는 문서</b> — 「2026년 9월 운영 계획」(WP-GM-260901-02).</div>
+    <div><b>기준 시점</b> — 매출은 <b>8월 마감 최종치</b> 628,049,695원(원장 총 합계 625,385,695 + 주차 2,664,000·494건), 월 목표는 GM 확정 <b>6.6억</b>입니다. 기타 지표는 <b data-asof>2026-08-28 조회</b>분입니다(영업일 <span data-f="business_days" data-fmt="num">26</span>일 · 휴관 8/9·8/23 제외). 연 누계는 8/28 16:26 집계값이라 8월 최종치가 아직 반영되지 않았으며, 95.7%는 8월말 목표 페이스 48억(연 72억×8/12) 대비입니다.</div>
+    <div><b>미집계 항목</b> — ①운영부·주차부 점검은 집계 경로 부재로 수치 산출이 불가합니다(실적 부재가 아님 · 운영부=점검 화면 부재 · 주차부=원장 항목 미등록) ②문의에서 방문으로 이어진 비율은 방문 기록 항목이 8월 전건 미기입되어 산출이 불가하며 상담 성공 건수로 대신합니다 ③지출·순이익은 부문 집계만 존재하여 손익으로 오독될 소지가 있어 이번 보고에서 제외하였습니다.</div>
+    <div><b>출처</b> — 매출=매출 원장 · 회원·만기=회원 원장 전수 · 문의=문의 원장 전수 · 접수=종합접수처 원장 8월분 · 점검=부서별 점검 원장 · 과제·로드맵=월간 운영계획. 멤버십 문의 78건만 8/26 집계값·<b>★원천 미확인</b>(원장 미등재 — 8/31 재집계 경로 확인, 미확인 시 표기 유지)이며 나머지는 8/28 직접 집계분입니다. <b>함께 보는 문서</b> — 「2026년 9월 운영 계획」(WP-GM-260901-02).</div>
   </div>
 
 </div>
