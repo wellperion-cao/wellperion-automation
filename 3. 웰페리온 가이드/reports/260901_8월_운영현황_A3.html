@@ -65,7 +65,10 @@
         <div class="sub" style="margin-top:2px;font-size:11.6px;color:var(--ink);line-height:1.62;">
           <span class="dot g"></span><b>좋아진 것</b> — <span data-f="narrative.good.0">멤버십 문의 +47%</span> · <span data-f="narrative.good.1">이탈 −9건</span> · <span data-f="narrative.good.2">접수 −21%</span><br>
           <span class="dot w"></span><b>지켜볼 것</b> — <span data-f="narrative.watch.0">월 매출 98.7%(마감 최종)</span> · <span data-f="narrative.watch.1">접수 미완료 20건</span><br>
-          <span class="dot b"></span><b>손봐야 할 것</b> — <span data-f="narrative.act.0">유소년 문의 −38%</span> · <span data-f="narrative.act.1">9월 만기 57명 상담 0명</span>
+          <!-- 문의 건수가 아니라 등록 건수를 건다(GM 지적 2026-09-01 "유소년 문의 회복이 아니라
+               매출에 영향이 있었는지가 본질"). 실측 = 총액 영향은 아직 없고 신규등록만 반토막.
+               문의는 연중 ±30% 출렁여 소음이 크고, 매출로 이어지는 길목은 등록이다. -->
+          <span class="dot b"></span><b>손봐야 할 것</b> — <span data-f="narrative.act.0">유소년 신규등록 21 → 11명(−48%)</span> · <span data-f="narrative.act.1">9월 만기 57명 상담 0명</span>
         </div>
       </div>
     </div>
@@ -153,7 +156,7 @@
               <tbody>
                 <tr><td class="k">멤버십</td><td><b>91건</b> → 상담 성공·등록 <b>19건</b> <span class="est">등록률 20.9%</span></td><td class="ctr good">7월 62 → <b>+47%</b></td><td class="ctr"><span class="dot g"></span></td></tr>
                 <tr><td class="k">성인 강습</td><td><b><span data-f="inquiry.adult_lesson.count" data-fmt="num">106</span>건</b> <span class="est">6월 89 · 7월 88</span></td><td class="ctr good">7월 88 → <b>+20%</b></td><td class="ctr"><span class="dot g"></span></td></tr>
-                <tr><td class="k">유소년 강습</td><td class="bad"><b><span data-f="inquiry.youth_lesson.count" data-fmt="num">101</span>건</b> — 두 달 만에 −38%</td><td class="ctr bad">6월 대비 <b>−38%</b></td><td class="ctr"><span class="dot b"></span></td></tr>
+                <tr><td class="k">유소년 강습</td><td class="bad"><b><span data-f="inquiry.youth_lesson.count" data-fmt="num">101</span>건</b> — 등록으로 이어진 것은 <b>11건</b>(6월 21건)</td><td class="ctr bad">등록 <b>−48%</b> <span class="est">문의 −38%</span></td><td class="ctr"><span class="dot b"></span></td></tr>
               </tbody>
             </table>
           </div>
@@ -161,6 +164,10 @@
                칸을 세로 흐름으로 두고 그래프를 아래로 붙인다 — 막대도 그만큼 키운다. -->
           <div style="width:150px;flex:none;border:1px solid var(--line);border-top:2.5px solid var(--bad);padding:5px 9px 6px;display:flex;flex-direction:column;">
             <div style="font-size:10.3px;font-weight:700;color:var(--bad);margin-bottom:3px;">유소년 문의 3개월</div>
+            <!-- 매출 영향 판정을 그래프 옆에 한 줄로 붙인다 — 문의 그래프만 있으면 "줄었다"까지만 보이고
+                 그래서 손해가 났는지는 안 보인다(GM 지적 2026-09-01).
+                 ▸박스 폭이 150px 라 두 줄을 넘기면 그래프 막대와 겹친다(2026-09-01 실측). 한 줄로 못 박는다. -->
+            <div style="font-size:9.3px;line-height:1.35;color:var(--dim);margin-bottom:2px;">매출은 아직 안 줄었습니다 — 영향은 <b style="color:var(--bad)">9~10월</b></div>
             <div class="trend" style="height:62px;margin-top:auto;">
               <div class="t"><span>162</span><i style="height:100%"></i></div>
               <div class="t"><span>114</span><i style="height:70%"></i></div>
