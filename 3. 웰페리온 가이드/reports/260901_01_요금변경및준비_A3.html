@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>① 요금 변경 및 준비 — 서비스 강화가 본론 · 웰페리온 A3 보고서</title>
+<title>① 요금 변경 및 준비 — 인상안·서비스 강화 + 시장 비교 · 웰페리온 A3 보고서</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -117,12 +117,36 @@
     display:flex; gap:12px; font-size:9.3px; line-height:1.3; color:#48525B; }
   .foot div{ flex:1; }
   .foot b{ color:var(--ink); }
+
+  /* ②번 전용 — 지면 여유가 커서 인쇄 가독을 위해 확대한다 */
+  #sheet2 .title{ font-size:27px; }
+  #sheet2 .ask .q{ font-size:15px; }
+  #sheet2 .ask .d{ font-size:12.1px; line-height:1.4; }
+  #sheet2 .ask .it{ padding:6px 13px; }
+  #sheet2 th,#sheet2 td{ font-size:13.2px; line-height:1.28; padding:0 9px; }
+  #sheet2 thead th{ height:28px; font-size:13.4px; }
+  #sheet2 tbody td{ height:28px; }
+  #sheet2 td.k{ font-size:13.6px; }
+  #sheet2 .est{ font-size:12.2px; }
+  #sheet2 .main h3{ font-size:16px; }
+  #sheet2 .main .lead{ font-size:12.6px; line-height:1.4; padding:4px 8px; margin:4px 0 5px; }
+  #sheet2 .main table td,#sheet2 .main table th{ font-size:13px; line-height:1.3; padding:3px 8px; }
+  #sheet2 .main .est{ font-size:12px; }
+  #sheet2 .box h3{ font-size:15px; margin-bottom:5px; }
+  #sheet2 .box .lead{ font-size:12.2px; line-height:1.4; padding:4px 7px; margin-bottom:5px; }
+  #sheet2 .box li{ font-size:12.6px; line-height:1.42; margin-bottom:5px; }
+  #sheet2 .box li.n::before{ width:17px; height:17px; line-height:17px; font-size:11.5px; }
+  #sheet2 table.mini td,#sheet2 table.mini th{ font-size:12.4px; line-height:1.28; padding:2px 7px; }
+  #sheet2 table.mini td.k{ width:auto; }
+  #sheet2 .foot{ font-size:10.8px; line-height:1.45; }
+  .page + .page{ margin-top:24px; }
+  @media print { .page{ page-break-after:always; margin-top:0 !important; } .page:last-of-type{ page-break-after:auto; } }
 </style>
 </head>
 <body>
 
 <div class="bar">
-  <b>① 요금 변경 및 준비 — 1단계 (A3 1장)</b>
+  <b>① 요금 변경 및 준비 — 1단계 (A3 2장 : 요금 + 시장 비교)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -313,7 +337,132 @@
   <div class="foot">
     <div><b>수치 근거</b> — 등급별 인원(268·322·289·116=995명)은 2026-08-31 원장 직접 집계, 09-01 유효회원은 994명(시점 차 1명). LOSS 24건·사유 분포·갱신 임박 59명·상담 1건 = 09-01 실측. 만기 인원(9월 66·10월 72·11월 76·12월 76) = 만기회원 실측. 입회비 연 2.28억은 8월 신규 19건 연환산 <b>(추정)</b>, 강습 +5% 연 2.06억도 <b>(추정)</b>.</div>
     <div><b>요금 표기</b> — 모든 금액은 <b>부가세 포함 실청구액</b>으로 통일했습니다. <b>공급가를 10만원 단위로 끊었습니다</b> — 공급가·부가세·청구액이 모두 정수로 떨어져 세금계산서와 회계 원장이 어긋나지 않습니다. 예) 노블레스+골프 = 공급가 450만 + 부가세 45만 = <b>청구액 495만</b>. 본전선은 정확히 LOSS 20.1%입니다. 연매출은 인원 × 등급가 단순 합이며 중도 해지·양도 미반영 <b>(추정)</b>, LOSS율 20%는 <b>(가정)</b>이며 실적이 아닙니다.</div>
-    <div><b>아직 못 채운 칸</b> — 시설 강화 비용은 견적 전이라 소·중·대 감각치 <b>(추정)</b>, 9월 견적 후 재보고. 70세 이상 124명은 원장 998명 기준(12.4%)이라 시점이 다릅니다. <b>인적 서비스는 7개사 실사 시트에 비교 항목이 없어</b> 사람 축은 내부 실측입니다(9월 실사에 항목 추가 예정). 회원 전용 식당은 투자 규모가 다른 별건이라 별도 보고합니다. 시장 가격·입회 연령 = 운영부 7개사 실사(부가세 포함 환산).</div>
+    <div><b>아직 못 채운 칸</b> — 시설 강화 비용은 견적 전이라 소·중·대 감각치 <b>(추정)</b>, 9월 견적 후 재보고. 70세 이상 124명은 원장 998명 기준(12.4%)이라 시점이 다릅니다. <b>인적 서비스는 7개사 실사 시트에 비교 항목이 없어</b> 사람 축은 내부 실측입니다(9월 실사에 항목 추가 예정). 회원 전용 식당은 투자 규모가 다른 별건이라 별도 보고합니다. 시장 가격·입회 연령은 <b>2장(시장 비교)</b>에 전부 실었습니다 — 운영부 7개사 실사 기준(부가세 포함 환산).</div>
+  </div>
+
+</div>
+
+<div class="page" id="sheet2">
+
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">[2장] 시장 비교 <span style="font-size:17px; color:#96601A;">— 6개사 요금 · 편의 · 입회 연령 (1장 인상안의 근거)</span></div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 시포</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-02</b><br>
+      비교 대상 <b>6개사</b> · 실사 시트 확보 <b>2026-08-31</b> · <b>1장(인상안)의 근거 자료</b>
+    </div>
+  </div>
+
+  <div class="ask">
+    <div class="lb"><span>JUDGEMENT</span><strong>판정</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="q">판정 1. 인상 후에도 시장 하단이다</div>
+        <div class="d">최상위 등급 청구액 <b>495만</b>은 보증금 없는 5개사 445~850만 구간의 <b>하단</b>이며, 기본 등급 <b>374만</b>은 인상 후에도 <b>전체 최저</b>다. 25% 인상이 가격 우위를 훼손하지 않는다.</div>
+      </div>
+      <div class="it">
+        <div class="q">판정 2. 격차는 가격이 아니라 편의 4건이다</div>
+        <div class="d">사우나 가운 · 회원 전용 식당 · 남성 세신 · 사우나 휴식 공간 — 비교 대상 중 <b>웰페리온만 비어 있는 칸</b>이다. 가운(10월)·남성 세신(11월)은 1장 본론 일정으로 이미 착수한다.</div>
+      </div>
+      <div class="it">
+        <div class="q">판정 3. 입회 연령은 웰페리온만의 자산이다</div>
+        <div class="d">타사 입회 상한 최고치는 <b>74세</b>(차움 프레스티지) — <b>75세 이하를 받는 곳은 웰페리온뿐</b>이다. 70세 이상 <b>124명(12.4%)</b>은 옮길 곳이 없는 갱신 방어층이다.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <h3>A. 시장 지도 — 보증금 없는 곳 <span class="est" style="color:#96601A;">웰페리온과 같은 조건</span></h3>
+    <div class="lead">보증금 없는 5개사 비교. 모든 금액은 <b>부가세 포함 청구액</b> 기준 환산이다. 인상 전 400만은 최저이며, <b>인상 후 495만도 구간 하단</b>에 머무른다.</div>
+    <table>
+      <thead>
+        <tr>
+          <th class="k" style="width:300px;">업장</th>
+          <th style="width:150px;">연회비 <span class="sub">부가세 포함</span></th>
+          <th style="width:150px;">웰페리온 인상 후 대비</th>
+          <th>비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="sum"><td class="k good strong">웰페리온 · 현재 최상위 <span class="est">노블레스+골프</span></td><td class="num good strong">400만</td><td class="ctr good">− 95만</td><td class="good">비교 대상 중 <b>최저</b></td></tr>
+        <tr><td class="k">앰배서더 서울 풀만</td><td class="num">445만</td><td class="ctr">− 50만</td><td>보증금 없음</td></tr>
+        <tr><td class="k">극동스포츠 <span class="est">헬스</span></td><td class="num">481.5만</td><td class="ctr">− 13.5만</td><td>헬스 단독 요금제</td></tr>
+        <tr class="sum"><td class="k bad strong">웰페리온 · 인상 후 최상위 <span class="est">2027년 2월 시행</span></td><td class="num bad strong">495만</td><td class="ctr bad strong">기준</td><td class="bad">인상률 +23.8% <span class="est">(공급가 450만 + 부가세 45만)</span></td></tr>
+        <tr><td class="k">몬드리안</td><td class="num">512만</td><td class="ctr">+ 17만</td><td>보증금 없는 요금제</td></tr>
+        <tr><td class="k">극동스포츠 <span class="est">헬스+골프</span></td><td class="num">549만</td><td class="ctr">+ 54만</td><td>웰페리온 노블레스+골프와 <b>구성이 가장 유사하다</b></td></tr>
+        <tr><td class="k">차움 단기 성품회원</td><td class="num">850만</td><td class="ctr">+ 355만</td><td>입회금 없음 · 테라스파 2회 · 셔틀 리무진 포함</td></tr>
+        <tr class="sum"><td class="k strong">인상 후 위치</td><td class="strong" colspan="3">최상위 495만은 위 6개 값 가운데 <b>낮은 쪽 세 번째</b>이며, 구성이 가장 유사한 극동 헬스+골프(549만)보다 <b>54만 낮다</b>. 4등급 청구액 374 · 429 · 451 · 495만 중 <b>플래티넘 374만은 비교 대상 전체 최저가를 유지</b>한다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="duo">
+    <div class="box w">
+      <h3>B. 보증금 받는 곳 — 실질 연 부담 환산</h3>
+      <div class="lead">보증금 1.2억과 연회비 400만을 나란히 놓으면 왜곡이다. <b>보증금은 반환 전제</b>이므로 실질 부담은 그 돈이 묶이는 기회비용이며, <b>연 3.0%</b>로 환산해 연회비에 더했다 <span class="est">(가정)</span>.</div>
+      <table class="mini">
+        <thead>
+          <tr><th class="k" style="width:114px;">업장</th><th style="width:72px;">보증금</th><th style="width:64px;">연회비</th><th style="width:72px;">기회비용<span class="sub">연 3.0%</span></th><th>실질 연 부담 <span class="sub">추정</span></th></tr>
+        </thead>
+        <tbody>
+          <tr class="sum"><td class="k good strong">웰페리온 <span class="est">인상 후 · 보증금 없음</span></td><td class="num good strong">없음</td><td class="num good strong">495만</td><td class="num good">0</td><td class="num good strong">495만</td></tr>
+          <tr><td class="k">반얀트리 <span class="est">평생</span></td><td class="num">1.2억</td><td class="num">570만</td><td class="num">360만</td><td class="num strong">930만</td></tr>
+          <tr><td class="k">차움 프레스티지</td><td class="num">1억</td><td class="num">1,082만</td><td class="num">300만</td><td class="num strong">1,382만</td></tr>
+          <tr><td class="k">차움 베네핏스파</td><td class="num">5,000만</td><td class="num">550만</td><td class="num">150만</td><td class="num strong">700만</td></tr>
+          <tr><td class="k">극동스포츠 <span class="est">보증금형</span></td><td class="num">2,500만</td><td class="num">389만</td><td class="num">75만</td><td class="num strong">464만</td></tr>
+          <tr><td class="k">드래곤시티</td><td class="num">4,000만</td><td class="num">334만</td><td class="num">120만</td><td class="num strong">454만</td></tr>
+          <tr class="sum"><td class="k good strong" colspan="5" style="text-align:left;">실질 최저는 드래곤시티 454만 — 웰페리온 인상 후 495만과 <b>41만 차이</b>다. 다만 초기 목돈 2,500만~4,000만 예치가 전제이므로, <b>목돈 없이 진입하는 조건에서는 웰페리온이 인상 후에도 하단</b>이다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box key">
+      <h3>C. 편의 제공 격차 — 웰페리온만 없는 것 4건</h3>
+      <div class="lead">요금이 아니라 <b>여기가 실제 격차</b>다. 4건 중 2건은 1장 본론 일정에 이미 들어 있다.</div>
+      <table class="mini">
+        <thead>
+          <tr><th class="k" style="width:92px;">항목</th><th>타사 현황</th><th style="width:126px;">대응 <span class="sub">1장 연계</span></th></tr>
+        </thead>
+        <tbody>
+          <tr class="sum"><td class="k bad strong">사우나 가운</td><td>비교 6개사 <b>전부 제공</b></td><td class="good strong">1장 본론 4 — 10월 비치<br><span class="est">사전 안내 전 완료</span></td></tr>
+          <tr class="sum"><td class="k bad strong">남성 세신</td><td>대부분 남녀 운영 — 우리는 <b>여성만</b></td><td class="good strong">1장 본론 5 — 11월 도입</td></tr>
+          <tr><td class="k">회원 전용 식당</td><td>반얀트리 · 극동 · 드래곤시티 · 몬드리안 · 풀만 제공</td><td class="est">투자 규모가 다른 별건 — 별도 보고</td></tr>
+          <tr><td class="k">사우나 휴식 공간</td><td>반얀트리 : 탕 내 선베드 · 수면실 · 안마의자</td><td class="est">70세 안전 설비(1장 전략 카드 2)와 묶어 검토</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="duo">
+    <div class="box w">
+      <h3>D. 입회 가능 연령 — 웰페리온만 있는 것</h3>
+      <div class="lead">전 비교 대상이 입회 연령에 상한을 둔다. <b>타사 최고치도 74세</b> — 75세 이하를 받는 곳은 웰페리온이 유일하다.</div>
+      <table class="mini">
+        <tbody>
+          <tr><td class="k">반얀트리</td><td class="ctr">59세 미만</td><td class="k">극동스포츠</td><td class="ctr">65세 미만</td><td class="k">몬드리안</td><td class="ctr">65세 미만</td></tr>
+          <tr><td class="k">앰배서더 서울 풀만</td><td class="ctr">65세 이하</td><td class="k">드래곤시티</td><td class="ctr">70세</td><td class="k">차움 프레스티지</td><td class="ctr bad strong">74세 <span class="est">타사 최고</span></td></tr>
+          <tr class="sum"><td class="k good strong">웰페리온</td><td class="good" colspan="5" style="text-align:left;"><b>75세 이하</b> <span class="est">(76세 이상은 컨시어지 필수 · 수영 제외)</span> — 70세 이상 회원 <b>124명(유효회원 994명의 12.4%)</b>은 어느 비교 대상으로도 옮길 수 없는 층이다. 요금 인상 시에도 <b>갱신 방어가 가장 확실한 구간</b>이며, 1장 전략 카드 2의 시장 근거가 여기다.</td></tr>
+          <tr><td class="k">70세 이상 내역</td><td class="ctr" colspan="5" style="text-align:left;">70~74세 <b>57명</b> · 75세 이상 <b>67명</b> — 이 가운데 <b>75세 이상 67명은 타사 어디에도 신규 입회가 불가능</b>하다. 차움(74세)까지 포함해도 받아 주는 곳이 없다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="box rec">
+      <h3>E. 종합 — 그래서 인상이 정당한가</h3>
+      <ul class="ord">
+        <li class="n"><b>가격 위치</b> — 인상 후 최상위 495만은 보증금 없는 시장 445~850만 구간의 <b>하단</b>이고, 기본 등급 374만은 <b>전체 최저</b>다. 25% 인상은 위치를 「최저」에서 「하단」으로 옮길 뿐 가격 경쟁력을 잃지 않는다.</li>
+        <li class="n"><b>명분</b> — 격차 4건 중 가운·남성 세신은 시행(2027년 2월) <b>전에</b> 메워진다. 12월 사전 안내문에 「이미 되어 있는 것」으로 적을 수 있다.</li>
+        <li class="n"><b>사용처</b> — 정원 마감·대기자 보유 상태이므로 이 비교 우위는 <b>모집 재료가 아니라 갱신 방어 재료</b>로만 쓴다.</li>
+        <li class="n"><b>재확인</b> — 이 비교표는 <b>2026년 8월 31일 확보분</b>이다. 타사 요금은 개정될 수 있으므로 <b>12월 사전 안내 직전에 한 번 더 실사</b>해 회장님·대표님 보고 수치를 갱신한다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div><b>① 근거</b> — 시장 가격 · 편의 제공 · 입회 연령 = 운영부 실사 시트 + 차움·반얀트리 실물 안내서 기준, <b>2026-08-31 확보·반영</b>(08-28 보고 시점에는 미확보 — 「착수 기록만」으로 보고됨). <b>원자료는 외부(구글 시트)에 있고 실사 수행일은 미확인</b>입니다. 타사 요금은 개정될 수 있어 12월 사전 안내 전 재확인이 필요합니다. 웰페리온 수치(4등급 청구액 · 유효회원 994명 · 70세 이상 124명)는 1장과 같은 원장 집계입니다.</div>
+    <div><b>② 환산 가정</b> — 모든 금액은 <b>부가세 포함 청구액</b> 기준 환산입니다. 보증금 실질 부담 = 연회비 + 보증금 × <b>연 3.0%</b>(정기예금 수준 기회비용 <b>가정</b> · 반환 전제). 반환 조건·중도 해지 규정은 업장별 미확인이라 환산치는 전부 <b>(추정)</b>입니다. 타사 연회비는 각사 대표 요금제 기준이며 등급 구성이 웰페리온 4등급과 1:1로 대응하지 않습니다.</div>
+    <div><b>③ 아직 못 채운 칸</b> — 실사는 「7개사」로 기록돼 있으나 회수된 표에는 <b>6개사</b>만 있어 나머지 1개사는 싣지 못했습니다. 남성 세신의 업장별 운영 여부, 차움의 회원 전용 식당 여부, 타사 등급 체계·포함 서비스 상세, 보증금 반환 조건, 실사 수행일은 <b>모두 미확인</b>입니다.</div>
   </div>
 
 </div>
@@ -326,13 +475,16 @@ document.getElementById('png').onclick = function () {
     return;
   }
   var btn = this; btn.textContent = '변환 중…'; btn.disabled = true;
-  html2canvas(document.getElementById('sheet'), { scale: 2, backgroundColor: '#ffffff' })
-    .then(function (canvas) {
-      var a = document.createElement('a');
-      a.download = '260901_01_요금변경및준비_A3.png';
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    })
+  var pages = [['sheet', '260901_01_요금변경및준비_A3_1of2.png'], ['sheet2', '260901_01_요금변경및준비_A3_2of2_시장비교.png']];
+  Promise.all(pages.map(function (pg) {
+    return html2canvas(document.getElementById(pg[0]), { scale: 2, backgroundColor: '#ffffff' })
+      .then(function (canvas) {
+        var el = document.createElement('a');
+        el.download = pg[1];
+        el.href = canvas.toDataURL('image/png');
+        el.click();
+      });
+  }))
     .catch(function () { alert('PNG 변환에 실패했습니다. [A3 인쇄] → 「PDF로 저장」을 쓰세요.'); })
     .finally(function () { btn.textContent = 'PNG 다운로드'; btn.disabled = false; });
 };
