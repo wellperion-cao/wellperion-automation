@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>3분기 전략 로드맵 진척 + 6~8월 4개 부서 개선 현황 (A3 2장) — 웰페리온</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== 공통 뼈대 — 두 장 공유 ===== */
+  @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root{
+    --ink:#101418; --navy:#14304E; --navy-bg:#EDF1F6;
+    --good:#146B4F; --warn:#96601A; --bad:#9E2A2A; --line:#E3E7EB;
+  }
+  html,body{ background:#8A9099; font-family:'Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* 툴바 — 묶음 파일은 맨 위 하나만 */
+  .bar{ position:fixed; top:0; left:0; right:0; height:46px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; gap:10px; padding:0 18px; z-index:99;
+    font-size:13px; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+  .bar b{ font-weight:700; letter-spacing:-.2px; }
+  .bar .sp{ flex:1; }
+  .bar button{ font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy);
+    background:#fff; border:0; border-radius:3px; padding:7px 15px; cursor:pointer; }
+  .bar button:hover{ background:#DCE4EE; }
+  .bar .note{ font-size:11.5px; opacity:.8; font-weight:400; }
+  @media print { .bar{ display:none !important; } html,body{ background:#fff; } .page{ margin:0 !important; box-shadow:none !important; } }
+
+  /* A3 가로 — 장마다 인쇄 새 페이지 */
+  .page{ width:1587px; height:1123px; background:#fff; margin:66px auto 30px; padding:30px 34px 24px;
+    display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,.35); overflow:hidden; }
+  .page{ break-after:page; page-break-after:always; }
+  .page:last-child{ break-after:auto; page-break-after:auto; }
+
+  /* 차례 한 줄 — 첫 장 헤더 아래 */
+  .toc{ margin-top:5px; font-size:11px; color:#5C666F; letter-spacing:-.2px; }
+  .toc b{ color:var(--navy); }
+
+  /* ===== 1장 — 3분기 전략 로드맵 진척 (.b1) ===== */
+  .b1 .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .b1 .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:13px; color:var(--navy);
+    letter-spacing:5px; margin-bottom:3px; }
+  .b1 .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:25px; letter-spacing:-.8px; line-height:1.15; }
+  .b1 .meta{ margin-left:auto; text-align:right; font-size:11.6px; line-height:1.5; color:#3C464F; }
+  .b1 .meta b{ color:var(--ink); font-weight:700; }
+  .b1 .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .b1 .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .b1 .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .b1 .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:21px; letter-spacing:-.5px; }
+  .b1 .ask .items{ flex:1; display:flex; }
+  .b1 .ask .it{ flex:1; padding:12px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .b1 .ask .it:last-child{ border-right:0; }
+  .b1 .ask .q{ font-size:15.5px; font-weight:700; line-height:1.3; letter-spacing:-.4px; }
+  .b1 .ask .d{ font-size:12.4px; line-height:1.45; opacity:.9; margin-top:4px; word-break:keep-all; overflow-wrap:anywhere; }
+  .b1 .tblwrap{ margin-top:12px; }
+  .b1 table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  .b1 th,.b1 td{ border:1px solid var(--line); padding:0 9px; font-size:13px; line-height:1.3; }
+  .b1 thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13.5px; border-color:#2A4763; }
+  .b1 thead th.k{ width:186px; background:#0E2439; }
+  .b1 thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  .b1 tbody td{ height:32px; }
+  .b1 td.k{ background:#F6F8FA; font-weight:500; font-size:12.6px; }
+  .b1 tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .b1 .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .b1 .ctr{ text-align:center; }
+  .b1 .good{ color:var(--good); font-weight:700; }
+  .b1 .warn{ color:var(--warn); font-weight:700; }
+  .b1 .bad{ color:var(--bad); font-weight:700; }
+  .b1 .est{ color:#5C666F; font-size:10.8px; }
+  .b1 td.strong{ font-weight:700; }
+  .b1 tr.sum td{ background:#F0F3F7; }
+  .b1 tr.sum td.k{ background:#E7ECF2; }
+  .b1 .subt{ margin-top:4px; font-size:13px; font-weight:500; color:#5C666F; letter-spacing:-.2px; word-break:keep-all; }
+  .b1 .subt b{ color:var(--navy); }
+  .b1 .foot{ margin-top:auto; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .b1 .foot div{ flex:1; }
+  .b1 .foot b{ color:var(--ink); }
+  .b1 td, .b1 .box li, .b1 .foot, .b1 .rm .st .g, .b1 .rmnote{ word-break: keep-all; overflow-wrap: anywhere; }
+  .b1 .rmwrap{ margin-top:14px; }
+  .b1 .rmhd{ font-size:12px; font-weight:700; color:var(--navy); letter-spacing:2.5px;
+    background:var(--navy-bg); padding:5px 10px; }
+  .b1 .rmhd .est{ letter-spacing:0; font-weight:400; }
+  .b1 .rm{ display:flex; gap:9px; margin-top:8px; }
+  .b1 .rm .st{ flex:1; border:1px solid var(--line); padding:8px 11px 9px; }
+  .b1 .rm .st .t{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .b1 .rm .st .g{ font-size:11.2px; color:#5C666F; line-height:1.4; margin-top:2px; }
+  .b1 .rm .st .b{ height:10px; background:#E7ECF2; margin-top:7px; position:relative; }
+  .b1 .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .b1 .rm .st .p{ font-size:14px; font-weight:800; margin-top:3px; }
+  .b1 .rm .st.done .b i{ background:var(--good); } .b1 .rm .st.done .p{ color:var(--good); }
+  .b1 .rm .st.wait .b i{ background:#B9C2CC; } .b1 .rm .st.wait .p{ color:#7A838C; }
+  .b1 .rmnote{ margin-top:7px; border:1px solid var(--line); background:#F6F8FA; padding:6px 11px;
+    font-size:12.2px; line-height:1.5; color:#3C464F; }
+  .b1 .rmnote b{ color:var(--ink); }
+  .b1 .sumtbl tr.grp td{ height:22px; font-size:12.2px; letter-spacing:3px; text-align:center; color:#fff; }
+  .b1 .sumtbl tr.grp td.gg{ background:var(--good); }
+  .b1 .sumtbl tr.grp td.gb{ background:var(--bad); }
+  .b1 .sumtbl tr.grp td.gw{ background:var(--warn); }
+  .b1 .sumtbl tr.grp td.gn{ background:var(--navy); }
+  .b1 .sumtbl td{ height:26px; }
+  .b1 .bar2{ display:inline-block; vertical-align:middle; width:70px; height:9px;
+    background:#E7ECF2; margin-left:8px; position:relative; }
+  .b1 .bar2 i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .b1 .bar2.g i{ background:var(--good); } .b1 .bar2.b i{ background:var(--bad); }
+  .b1 .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .b1 .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .b1 .box h3{ font-size:13.4px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .b1 .box.gm{ border-top-color:#0E2439; background:#F6F8FA; }
+  .b1 .box.gm h3{ color:#0E2439; }
+  .b1 .box.gm p{ font-family:'Noto Serif KR',serif; font-size:17.5px; font-weight:700;
+    line-height:1.62; letter-spacing:-.5px; word-break:keep-all; margin-top:4px; }
+  .b1 .box.gm .who{ margin-top:8px; font-size:10.8px; color:#5C666F; }
+  /* 1장 재조정 — 원본 순서 그대로 */
+  .b1 th,.b1 td{ font-size:14.4px; }
+  .b1 thead th{ height:38px; font-size:14.5px; }
+  .b1 tbody td{ height:46px; }
+  .b1 td.k{ font-size:14px; }
+  .b1 .est{ font-size:11.6px; }
+  .b1 .sumtbl td{ height:36px; }
+  .b1 .sumtbl tr.grp td{ height:26px; font-size:12.8px; }
+  .b1 .rmwrap{ margin-top:16px; }
+  .b1 .rm .st{ padding:11px 13px 12px; }
+  .b1 .rm .st .t{ font-size:14.5px; }
+  .b1 .rm .st .g{ font-size:12px; }
+  .b1 .rm .st .b{ height:12px; margin-top:9px; }
+  .b1 .rm .st .p{ font-size:16px; }
+  .b1 .rmnote{ font-size:13px; padding:8px 12px; }
+  .b1 .tblwrap{ margin-top:14px; }
+  .b1 tbody td{ height:43px; font-size:13.6px; }
+  .b1 td.k{ font-size:13.4px; }
+  .b1 thead th{ height:35px; font-size:13.8px; }
+  .b1 .sumtbl td{ height:34px; }
+  .b1 .sumtbl tr.grp td{ height:24px; font-size:12.4px; }
+  .b1 .rmwrap{ margin-top:13px; }
+  .b1 .rm .st{ padding:10px 12px 11px; }
+  .b1 .rm .st .t{ font-size:14px; }
+  .b1 .rm .st .g{ font-size:11.6px; }
+  .b1 .rm .st .b{ height:11px; margin-top:7px; }
+  .b1 .rm .st .p{ font-size:15px; }
+  .b1 .rmnote{ font-size:12.4px; padding:7px 11px; margin-top:7px; }
+  .b1 .tblwrap{ margin-top:12px; }
+  .b1 .ask .it{ padding:10px 15px; }
+  .b1 .ask .q{ font-size:15px; }
+  .b1 .ask .d{ font-size:12.2px; }
+  /* 차례 한 줄이 들어온 만큼 세로 여백을 회수 — 1장 한정 */
+  .b1 .toc{ margin-top:3px; font-size:10.5px; }
+  .b1 .ask{ margin-top:8px; }
+  .b1 .rmwrap{ margin-top:9px; }
+  .b1 .tblwrap{ margin-top:10px; }
+
+  /* ===== 2장 — 6~8월 4개 부서 개선 현황 (.b2) ===== */
+  .b2 .head{ display:flex; align-items:flex-end; border-bottom:2.5px solid var(--navy); padding-bottom:9px; }
+  .b2 .brand{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:13px; color:var(--navy);
+    letter-spacing:5px; margin-bottom:3px; }
+  .b2 .title{ font-family:'Noto Serif KR',serif; font-weight:700; font-size:25px; letter-spacing:-.8px; line-height:1.15; }
+  .b2 .meta{ margin-left:auto; text-align:right; font-size:11.6px; line-height:1.5; color:#3C464F; }
+  .b2 .meta b{ color:var(--ink); font-weight:700; }
+  .b2 .sign{ display:flex; margin-left:26px; border:1px solid var(--line); }
+  .b2 .sign div{ width:74px; text-align:center; border-right:1px solid var(--line); }
+  .b2 .sign div:last-child{ border-right:0; }
+  .b2 .sign .t{ background:var(--navy-bg); font-size:10.5px; font-weight:700; color:var(--navy); padding:3px 0;
+    border-bottom:1px solid var(--line); }
+  .b2 .sign .b{ height:38px; }
+  .b2 .ask{ margin-top:13px; background:var(--navy); color:#fff; display:flex; align-items:stretch; }
+  .b2 .ask .lb{ width:118px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px solid rgba(255,255,255,.28); }
+  .b2 .ask .lb span{ font-size:10.5px; letter-spacing:3px; opacity:.85; }
+  .b2 .ask .lb strong{ font-family:'Noto Serif KR',serif; font-size:19px; letter-spacing:-.5px; }
+  .b2 .ask .items{ flex:1; display:flex; }
+  .b2 .ask .it{ flex:1; padding:11px 16px; border-right:1px solid rgba(255,255,255,.2); }
+  .b2 .ask .it:last-child{ border-right:0; }
+  .b2 .ask .n{ font-size:11px; font-weight:700; opacity:.75; letter-spacing:1px; }
+  .b2 .ask .q{ font-size:15.5px; font-weight:700; line-height:1.35; margin-top:2px; letter-spacing:-.4px; }
+  .b2 .ask .d{ font-size:11.5px; line-height:1.5; opacity:.86; margin-top:4px; }
+  .b2 .tblwrap{ margin-top:11px; }
+  .b2 table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  .b2 th,.b2 td{ border:1px solid var(--line); padding:0 9px; font-size:12.2px; line-height:1.3; }
+  .b2 thead th{ height:34px; background:var(--navy); color:#fff; font-weight:700; font-size:13px; border-color:#2A4763; }
+  .b2 thead th.k{ width:186px; background:#0E2439; }
+  .b2 thead th .sub{ display:block; font-size:10.5px; font-weight:400; opacity:.8; margin-top:1px; }
+  .b2 tbody td{ height:29px; }
+  .b2 td.k{ background:#F6F8FA; font-weight:500; font-size:12px; }
+  .b2 tr.grp td{ height:22px; background:var(--navy-bg); color:var(--navy); font-weight:700;
+    font-size:11.5px; letter-spacing:2.5px; }
+  .b2 .num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .b2 .ctr{ text-align:center; }
+  .b2 .good{ color:var(--good); font-weight:700; }
+  .b2 .warn{ color:var(--warn); font-weight:700; }
+  .b2 .bad{ color:var(--bad); font-weight:700; }
+  .b2 .est{ color:#5C666F; font-size:10.5px; }
+  .b2 td.strong{ font-weight:700; }
+  .b2 tr.sum td{ background:#F0F3F7; }
+  .b2 tr.sum td.k{ background:#E7ECF2; }
+  .b2 .cols{ margin-top:12px; display:flex; gap:11px; flex:1; }
+  .b2 .box{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:9px 13px 8px; }
+  .b2 .box h3{ font-size:13px; font-weight:700; color:var(--navy); letter-spacing:-.3px; margin-bottom:6px; }
+  .b2 .box ul{ list-style:none; }
+  .b2 .box li{ font-size:12px; line-height:1.52; padding-left:15px; position:relative; margin-bottom:4px; }
+  .b2 .box li::before{ content:'·'; position:absolute; left:5px; font-weight:700; }
+  .b2 .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+    display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
+  .b2 .foot div{ flex:1; }
+  .b2 .foot b{ color:var(--ink); }
+  /* 2장 덧댐 블록 — 원본 순서 그대로 */
+  .b2 td, .b2 .ask .q, .b2 .ask .d, .b2 .alert, .b2 .box li, .b2 .foot{ word-break: keep-all; overflow-wrap: anywhere; }
+  .b2 .rmwrap{ margin-top:9px; }
+  .b2 .rmhd{ font-size:11.5px; font-weight:700; color:var(--navy); letter-spacing:2.5px;
+    background:var(--navy-bg); padding:4px 9px; }
+  .b2 .rmhd .est{ letter-spacing:0; font-weight:400; }
+  .b2 .rm{ display:flex; gap:8px; margin-top:6px; }
+  .b2 .rm .st{ flex:1; border:1px solid var(--line); padding:5px 9px 6px; }
+  .b2 .rm .st .t{ font-size:11.6px; font-weight:700; color:var(--navy); letter-spacing:-.2px; }
+  .b2 .rm .st .g{ font-size:10.6px; color:#5C666F; line-height:1.4; margin-top:1px; word-break:keep-all; }
+  .b2 .rm .st .b{ height:8px; background:#E7ECF2; margin-top:5px; position:relative; }
+  .b2 .rm .st .b i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .b2 .rm .st .p{ font-size:12.4px; font-weight:800; margin-top:2px; }
+  .b2 .rm .st.done .b i{ background:var(--good); } .b2 .rm .st.done .p{ color:var(--good); }
+  .b2 .rm .st.wait .b i{ background:#B9C2CC; } .b2 .rm .st.wait .p{ color:#7A838C; }
+  .b2 .rmnote{ margin-top:5px; border:1px solid var(--line); background:#F6F8FA; padding:5px 10px;
+    font-size:11.6px; line-height:1.45; color:#3C464F; word-break:keep-all; }
+  .b2 .rmnote b{ color:var(--ink); }
+  .b2 .cols .box{ padding:8px 11px 7px; }
+  .b2 .cols .box h3{ font-size:12.4px; margin-bottom:5px; }
+  .b2 .cols .box li{ font-size:10.8px; line-height:1.42; margin-bottom:3px; }
+  .b2 .cols{ margin-top:9px; }
+  .b2 .foot{ margin-top:7px; padding-top:6px; font-size:9.8px; line-height:1.44; }
+  .b2 th,.b2 td{ font-size:13.4px; }
+  .b2 thead th{ font-size:13.5px; height:32px; }
+  .b2 td.k{ font-size:13px; }
+  .b2 .est{ font-size:11px; }
+  .b2 tbody td{ height:32px; }
+  .b2.page{ padding-bottom:18px; }
+  .b2 .box.fix{ border-top-color:var(--warn); }
+  .b2 .box.fix h3{ color:var(--warn); }
+  .b2 .sumtbl tr.grp td{ height:20px; font-size:12.2px; letter-spacing:3px; text-align:center; color:#fff; }
+  .b2 .sumtbl tr.grp td.gg{ background:var(--good); }
+  .b2 .sumtbl tr.grp td.gb{ background:var(--bad); }
+  .b2 .sumtbl tr.grp td.gw{ background:var(--warn); }
+  .b2 .sumtbl tr.grp td.gn{ background:var(--navy); }
+  .b2 .sumtbl td{ height:27px; }
+  .b2 .box ul.two{ column-count:2; column-gap:16px; }
+  .b2 .box ul.two li{ break-inside:avoid; }
+  .b2 .cols .box li{ margin-bottom:5px; }
+  .b2 .tblwrap{ margin-top:11px; }
+  .b2 .cols .box{ padding:10px 13px 9px; }
+  .b2 .cols{ margin-top:11px; }
+  .b2 .foot{ margin-top:8px; padding-top:7px; }
+  .b2 .bar2{ display:inline-block; vertical-align:middle; width:70px; height:9px;
+    background:#E7ECF2; margin-left:8px; position:relative; }
+  .b2 .bar2 i{ position:absolute; left:0; top:0; bottom:0; background:var(--navy); }
+  .b2 .bar2.g i{ background:var(--good); } .b2 .bar2.b i{ background:var(--bad); }
+  .b2 .box.gm{ border-top-color:#0E2439; background:#F6F8FA; }
+  .b2 .box.gm h3{ color:#0E2439; }
+  .b2 .box.gm p{ font-family:'Noto Serif KR',serif; font-size:17.5px; font-weight:700;
+    line-height:1.62; letter-spacing:-.5px; word-break:keep-all; margin-top:4px; }
+  .b2 .box.gm .who{ margin-top:8px; font-size:10.8px; color:#5C666F; }
+  .b2 .box .note2{ margin-top:6px; border-top:1px dashed var(--line); padding-top:5px;
+    font-size:11.4px; line-height:1.45; color:#48525B; word-break:keep-all; }
+  .b2 .cols .box li{ font-size:12.4px; line-height:1.5; margin-bottom:4px; }
+  .b2 .cols .box h3{ font-size:13.4px; }
+  .b2 .glance thead th{ height:34px; font-size:14.5px; }
+  .b2 .glance thead th.k{ font-size:12.5px; line-height:1.2; }
+  .b2 .glance tbody td{ height:52px; font-size:15.5px; }
+  .b2 .glance b.good, .b2 .glance b.bad{ font-size:18px; }
+  .b2 .ask .lb strong{ font-size:21px; }
+  .b2 .ask .it{ padding:14px 18px; }
+  .b2 .ask .q{ font-size:16.5px; }
+  .b2 .ask .d{ font-size:12.8px; margin-top:5px; }
+  .b2 thead th{ height:36px; font-size:14.5px; }
+  .b2 tbody td{ height:46px; font-size:14.4px; }
+  .b2 td.k{ font-size:14px; }
+  .b2 .est{ font-size:11.6px; }
+  .b2 .foot{ margin-top:auto; font-size:10.6px; }
+  .b2 .subt{ margin-top:4px; font-size:13px; font-weight:500; color:#5C666F; letter-spacing:-.2px; word-break:keep-all; }
+  .b2 .subt b{ color:var(--navy); }
+  .b2 .charts{ margin-top:12px; flex:1; display:flex; gap:12px; min-height:0; }
+  .b2 .chart{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:13px 18px 11px;
+    display:flex; flex-direction:column; }
+  .b2 .chart h3{ font-size:15px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+  .b2 .chart h3 .est{ font-weight:400; font-size:12px; }
+  .b2 .chart .rows{ flex:1; display:flex; flex-direction:column; justify-content:space-evenly; padding:6px 0 2px; }
+  .b2 .crow{ display:flex; align-items:center; gap:12px; }
+  .b2 .crow .cl{ width:102px; flex:none; font-size:14px; font-weight:700; text-align:right; word-break:keep-all; }
+  .b2 .crow .ctrack{ flex:1; height:34px; background-color:#EEF1F4;
+    background-repeat:no-repeat; background-position:left center; }
+  .b2 .crow .ctrack.empty{ background-color:#fff; border:1.5px dashed #B9C2CC;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13.5px; font-weight:700; color:#7A838C; letter-spacing:-.2px; }
+  .b2 .crow .cv{ width:198px; flex:none; font-size:12.6px; line-height:1.35; }
+  .b2 .crow .cv b{ font-size:16.5px; }
+  .b2 .cnote{ margin-top:9px; border-top:1px dashed var(--line); padding-top:7px;
+    font-size:12.4px; line-height:1.45; color:#48525B; word-break:keep-all; }
+  .b2 .cnote b{ color:var(--ink); }
+  .b2 .charts .est{ word-break:keep-all; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>3분기 전략 로드맵 진척 + 6~8월 4개 부서 개선 현황 (A3 2장 · 9/1 보고)</b>
+  <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기 — 한 번에 2장이 나간다</span>
+  <span class="sp"></span>
+  <button onclick="window.print()">A3 인쇄</button>
+</div>
+
+<!-- ═══════ 1장 — 3분기 전략 로드맵 진척 현황 ═══════ -->
+<div class="page b1" id="b1">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">3분기 전략 로드맵 진척 현황</div>
+      <div class="subt">연결 보고 <b>① / ②</b> — 무엇을 하기로 했고 어디까지 왔나 · 현장 결과는 다음 장</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-03</b><br>
+      1·2분기 <b>완료 100%</b> · 3분기 1단계 <b>60%</b> · 2단계 <b>40%</b> · 전사 업무·결재 <b>83/131건 (63%)</b>
+    </div>
+  </div>
+
+  <div class="toc">차례 — <b>① 3분기 전략 로드맵 진척</b> · ② 6~8월 4개 부서 개선 현황 (A3 2장 묶음)</div>
+
+  <!-- ② 방향 -->
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="q">1. 중간관리자 소통 체계부터 세운다</div>
+        <div class="d">도전에 맞는 중간관리자 세팅이 관건 — 핵심은 <b>소통</b>이다. 3분기 내내 없던 <b>보고 주기 규정을 9월 계약서에 넣는다</b> — 실장·소장·나우열M 3개 라인 (GM 자체 진행).</div>
+      </div>
+      <div class="it">
+        <div class="q">2. 목표 수는 늘리지 않고 잔여부터 끝낸다</div>
+        <div class="d">목표 <b>4.0배</b>에 진척 72% → <b>39%</b> — 4분기 목표 수는 동결하고, 3분기 잔여(주차부 점검 정착 · 보고 무인화)를 9월 안에 끝낸다 — <b>웰리</b>.</div>
+      </div>
+      <div class="it">
+        <div class="q">3. 진척률은 원장에서 자동으로 뽑는다</div>
+        <div class="d">사람이 세어 올리는 진척 집계를 없애고 9월 안에 <b>원장 자동 산출</b>로 바꾼다 — <b>웰리</b>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 전략 로드맵 진척 스트립 -->
+  <div class="rmwrap">
+    <div class="rmhd">3 분 기 전 략 로 드 맵 진 척 <span class="est">— 월간운영계획 직독(2026-08-27) · 진척 = 각 목표 값의 평균</span></div>
+    <div class="rm">
+      <div class="st done"><div class="t">1분기 — 정원 1,000명 마감</div><div class="g">1~3월</div><div class="b"><i style="width:100%"></i></div><div class="p">완료 100%</div></div>
+      <div class="st done"><div class="t">2분기 — 대기자 시스템 운영</div><div class="g">4~6월</div><div class="b"><i style="width:100%"></i></div><div class="p">완료 100%</div></div>
+      <div class="st"><div class="t">3분기 1단계 — 자동화·매뉴얼 체계</div><div class="g">잔여 = 주차부 점검 정착 · 보고 무인화</div><div class="b"><i style="width:60%"></i></div><div class="p">60%</div></div>
+      <div class="st"><div class="t">3분기 2단계 — 체크리스트 경영·인재</div><div class="g">잔여 = 보고 주기 규정 2개 라인</div><div class="b"><i style="width:40%"></i></div><div class="p">40%</div></div>
+      <div class="st wait"><div class="t">4분기 3단계 — 브랜드 구축</div><div class="g">프리미엄 인식 확립 — 10월 착수</div><div class="b"><i style="width:0%"></i></div><div class="p">착수 전 0%</div></div>
+    </div>
+    <div class="rmnote">월별 목표 한 만큼 — 6월 <b>7건</b> <b class="good">72%</b> · 7월 <b>21건</b> <b class="warn">44%</b> · 8월 <b>28건</b> <b class="warn">39%</b> · 3분기 총 <b>56건</b>(목표 수 <b>4.0배</b>). &nbsp;/&nbsp; 전사 업무·결재 <b>131건 중 83건 완료 (63%)</b> · 진행 45 · 보류 3.</div>
+  </div>
+
+  <!-- ④ 한눈 요약 · 네 갈래 -->
+  <div class="tblwrap">
+  <table class="sumtbl">
+    <colgroup><col style="width:392px"><col style="width:368px"><col style="width:392px"><col></colgroup>
+    <tbody>
+      <tr class="grp">
+        <td colspan="2" class="gg">좋 아 진 것</td>
+        <td colspan="2" class="gb">안 좋 아 진 것</td>
+      </tr>
+      <tr>
+        <td>1 · 2분기 과제</td><td>정원 마감 · 대기자 시스템 <b class="good">완료 100%</b></td>
+        <td>월별 목표 한 만큼</td><td>6월 72% → 8월 <b class="bad">39%</b><span class="bar2 b"><i style="width:39%"></i></span></td>
+      </tr>
+      <tr>
+        <td>사람</td><td>진급 <b class="good">2건</b> · 입사 <b class="good">3건</b> <span class="est">· 3라인 배치</span></td>
+        <td>보고 주기 규정</td><td>2개 라인 · 3분기 내내 <b class="bad">없음</b></td>
+      </tr>
+      <tr>
+        <td>2라인 시설부</td><td>예방점검 <b class="good">23~24/24일</b> · 법정·정기 회신 4건 중 <b class="good">3건 당일</b></td>
+        <td>브랜드 만들기 <span class="est">(3단계)</span></td><td><b class="bad">0%</b> <span class="est">· 아직 안 열었다</span><span class="bar2 b"><i style="width:0%"></i></span></td>
+      </tr>
+      <tr class="grp">
+        <td colspan="2" class="gw">G M 자 체 진 행 으 로 정 한 것</td>
+        <td colspan="2" class="gn">G M 권 고 (웰 리)</td>
+      </tr>
+      <tr>
+        <td rowspan="2">보고 주기 규정</td><td rowspan="2"><b>9월 계약서</b>에 넣는다</td>
+        <td>4분기 = 목표 수를 늘리지 않는다</td><td>목표 <b>4.0배</b> · 진척 72% → <b>39%</b></td>
+      </tr>
+      <tr>
+        <td>진척률</td><td><b>원장에서 자동</b>으로 뽑는다</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ⑤ 9월 GM 자체 진행 범위 — 시범 1개월 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:186px"><col><col style="width:520px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k">9월 GM 자체 진행 범위<span class="sub">시범 9/1~9/30 · 결과는 9/30 보고</span></th>
+        <th>GM이 바로 처리하고 사후 보고</th>
+        <th>회장님께 먼저 여쭙는 것</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">시설 긴급 대응</td>
+        <td>안전 즉시 조치(운행 정지·출입 통제·펜스) · 긴급 A/S와 임시 조치 · 긴급 수선 <b>○○만원</b> 이하 · 회원 안내</td>
+        <td>설비 교체·공사 · <b>○○만원</b> 초과 · 운영 시간을 바꿔야 하는 조치</td>
+      </tr>
+      <tr>
+        <td class="k strong">운영 일상 결정</td>
+        <td>회원 응대·컴플레인 · 규정 안 환불/휴회/재등록 · 이미 승인된 프로모션 실행 · 비품 <b>○○만원</b> 이하 · 강사 시간표 조정</td>
+        <td>요금 정책 · 새 프로모션 · 시설 구조 변경 · 규정 밖 환불·특례</td>
+      </tr>
+      <tr class="sum">
+        <td class="k">기준·보고</td>
+        <td colspan="2">금액 기준(○○만원)은 <b>회장님께서 정해 주시는 대로</b> 채운다. 안전사고 또는 <b>4시간 이상 중단은 즉시</b>, 그 밖은 <b>주간 리포트</b>로 알린다. <span class="est">이번 시범에서 빼는 것 = 인사(채용·퇴직·직책·급여) · 예산(월 예산 밖·새 계약) · 대외(상가·임대인·제휴) — 지금처럼 먼저 보고드린다.</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ⑥ 3라인 + 브랜딩 3박자 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:104px"><col style="width:364px"><col><col style="width:292px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k" style="width:104px">라인 · 총괄</th>
+        <th>맡은 일 3가지</th>
+        <th>8월 숫자<span class="sub">센 것만</span></th>
+        <th>9월 할 일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">1라인 운영부<br><span class="est">이경연 실장</span></td>
+        <td>① 멤버십 매출 ② 서비스 관리 ③ 운영부 직원 관리</td>
+        <td>회원권 <b>2억 4,429만원</b> = 목표 2억 7,500만 대비 <b>88.8%</b> <span class="est">· 접수·점검 처리 숫자는 다음 장</span></td>
+        <td>컴플레인 미완 10건 계획 회신 · 점검 10/1 시작 준비</td>
+      </tr>
+      <tr>
+        <td class="k strong">2라인 시설부<br><span class="est">이정헌 소장</span></td>
+        <td>① 시설·설비 점검 ② 고장 24~48시간 조치 ③ 비품·소모품</td>
+        <td>예방점검 <b class="good">23~24/24일</b> · 법정·정기점검 회신 <b>4건 중 3건 당일</b> <span class="est">· 고장 처리 숫자는 다음 장</span></td>
+        <td>법정·정기 미회신 1건 회신</td>
+      </tr>
+      <tr>
+        <td class="k strong">3라인 파트너팀<br><span class="est">나우열M</span></td>
+        <td>① 지출 관리 + 파트너팀 매출 ② 인사 A~Z ③ 기획·진행</td>
+        <td>강습 <b>2억 8,083만원</b> · 업무 <b>72건</b>(완료 57·진행 14·보류 1) <b>전사 최다</b> · 기한 내 <b class="warn">17/30 (57%)</b></td>
+        <td>기한 지키는 비율 올리기</td>
+      </tr>
+
+      <tr class="grp"><td colspan="4">브 랜 딩 3 박 자 <span style="letter-spacing:0" class="est">— GM 방향 고급화·단순화·프리미엄 = ① 중간관리자 ② 서비스마인드 ③ 빠른 판단·결정·진행</span></td></tr>
+      <tr class="sum">
+        <td class="k">3박자 대비<br>지금 위치</td>
+        <td><b>서비스마인드</b> <span class="est">= 처리에 걸린 날로 잰다</span><br>기준 — 고장 <b>72시간</b> · 컴플레인 <b>48시간</b> <span class="est">· 실제 처리 일수는 다음 장 막대</span></td>
+        <td><b>빠른 판단·결정·진행</b> <span class="est">= 기한 지킨 만큼으로 잰다</span><br>기한 내 완료 — 이경연 실장 <b class="warn">4/18 (22%)</b> · 나우열M <b class="warn">17/30 (57%)</b></td>
+        <td><b>중간관리자 이해도·방향성</b> <span class="est">= 정기 보고로 잰다</span><br>3인 모두 <b class="bad">아직 안 함</b> <span class="est">(건별 응답만)</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ⑥ 각주 -->
+  <div class="foot">
+    <div><b>기준일</b> — 로드맵·인재분 <b>2026-08-27</b> · 3라인 8월 숫자 <b>08-26~28 조회</b> · 8월 마감 확정 숫자는 다음 장 기준. 6월은 3분기 몫으로 한 번만 셌다.</div>
+    <div><b>오차</b> — 1단계 60% = <b>ERP 연동값</b> · 2단계 40% = <b>경과 기준(추정)</b> · ★강습 매출 2억 8,083만원 <b>원천 미확인</b>.</div>
+    <div><b>출처</b> — 월간운영계획 직독(08-27) · 업무 시트 · 점검 화면. 로드맵이 현장에서 어떻게 나타났는지는 <b>다음 장 「6~8월 4개 부서 개선 현황」(WP-GM-260901-04)</b>에서 본다.</div>
+  </div>
+
+</div>
+
+<!-- ═══════ 2장 — 6~8월 4개 부서 개선 현황 ═══════ -->
+<div class="page b2" id="b2">
+
+  <!-- ① 헤더 -->
+  <div class="head">
+    <div>
+      <div class="brand">WELLPERION</div>
+      <div class="title">6~8월 4개 부서(운영·지원·시설·주차) 개선 현황</div>
+      <div class="subt">연결 보고 <b>② / ②</b> — 앞 장 「3분기 전략 로드맵 진척」이 현장에서 어떻게 나타났는가</div>
+    </div>
+    <div class="meta">
+      작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
+      보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-04</b><br>
+      시설부 채움 <b>74%</b> · 지원부 낸 날 <b>53%</b> · 고장 <b>18건 전부 완료</b> · 접수 <b>58건 완료 65.5%</b>
+    </div>
+  </div>
+
+  <!-- ② 방향 -->
+  <div class="ask">
+    <div class="lb"><span>DIRECTION</span><strong>방향</strong></div>
+    <div class="items">
+      <div class="it">
+        <div class="q">점검 시작일 확정 — 주차관리부 <b>9/18</b> · 운영부 <b>10/1</b>.</div>
+        <div class="d">주차관리부는 사전 요청 9/11 → <b>9/18 제출 시작</b>(그 전 0건은 정상). 운영부는 9월에 <b>ERP·브로제이 안정화를 먼저</b> 끝내고 그 위에 <b>10/1</b>부터 점검을 올린다 — 준비 <b>웰리</b>.</div>
+      </div>
+      <div class="it">
+        <div class="q">점검 빈칸 소화 — 시설부 · 지원부, 9월 안에.</div>
+        <div class="d">시설부는 안 채운 <b>205항목</b>을 채워 채움률 74%를 더 올린다. 지원부는 점검 이슈 <b>83건</b>의 처리 라인을 정해 소화를 시작한다.</div>
+      </div>
+      <div class="it">
+        <div class="q">접수 미완 종결 — 운영부, 9월 안에.</div>
+        <div class="d">컴플레인 미완 <b>10건</b> · 분실물 미완 <b>7건</b>을 9월 안에 전부 종결한다 — 처리 속도(컴플레인 중앙 <b>9일</b>)도 함께 당긴다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 네 부서 한눈에 -->
+  <div class="tblwrap" style="margin-top:12px">
+  <table class="glance">
+    <colgroup><col style="width:118px"><col style="width:730px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">네 부서<br>한눈에</th>
+        <th style="background:var(--good);border-color:var(--good)">① 가장 크게 좋아진 것</th>
+        <th style="background:var(--bad);border-color:var(--bad)">② 가장 크게 걸린 것</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">시설부</td>
+        <td>점검 항목 채움 7월 60% → 8월 <b class="good">74%</b> <span class="est">· 574/779 · 낸 날 28/31일</span></td>
+        <td>안 채운 항목 <b class="bad">205개</b> <span class="est">· 779개 중 574개 채움</span></td>
+      </tr>
+      <tr>
+        <td class="k strong">지원부</td>
+        <td>점검 낸 날 7월 12% → 8월 <b class="good">53%</b> <span class="est">· 4개 부서 중 유일한 개근(29/31일)</span></td>
+        <td>점검 이슈 <b class="bad">83건</b> — 처리 라인 미정</td>
+      </tr>
+      <tr>
+        <td class="k strong">운영부</td>
+        <td>컴플레인 처리 날수를 처음으로 셈 — 21건 중 <b class="good">완료 11건</b> <span class="est">· 중앙 9일</span></td>
+        <td>점검 <b class="bad">측정 불가</b> — <b>10/1 시작</b> <span class="est">· 9월 ERP·브로제이 안정화 선행</span></td>
+      </tr>
+      <tr>
+        <td class="k strong">주차관리부</td>
+        <td>제출 화면 <b class="good">8/18 개통</b> · 집계 배선 8/25 수리 · 관리인 온보딩 완료</td>
+        <td>점검 <b class="bad">측정 불가</b> — <b>9/18 시작</b> <span class="est">· 사전 요청 9/11</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ④ 부서별 8월 숫자 -->
+  <div class="tblwrap">
+  <table class="glance">
+    <colgroup><col style="width:118px"><col></colgroup>
+    <thead>
+      <tr>
+        <th class="k">부서</th>
+        <th>8월 숫자 — 무엇을 얼마나 했나<span class="sub">센 것만 — 못 센 것은 아래 별도 블록 · 판단은 위 「네 부서 한눈에」</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">시설부</td>
+        <td>낸 날 <b>28/31일</b> · 항목 채움 <b>574/779 (74%)</b> · 고장 <b>18건 전부 완료</b> — 중앙 <b class="good">1일</b><span class="est"> · 최장 12일</span></td>
+      </tr>
+      <tr>
+        <td class="k strong">지원부</td>
+        <td>낸 날 <b>29/31일</b> · 항목 채움 <b>1,435/3,029 (47%)</b> · 이슈 <b class="warn">83건</b></td>
+      </tr>
+      <tr>
+        <td class="k strong">운영부</td>
+        <td>컴플레인 <b>21건</b> — 완료 11 · 중앙 <b class="bad">9일</b><span class="est"> · 최장 13일</span> / 분실물 <b>8건</b> — 완료 1 / 청결 <b>7건</b> — 완료 5</td>
+      </tr>
+      <tr>
+        <td class="k strong">주차관리부</td>
+        <td>점검 <b>9/18 제출 시작</b> — 그 전 0건은 정상 <span class="est">· 바닥보수 10/11~13</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ⑤ 그래프 2종 — 점검 채움률 변화 · 접수 유형별 처리 -->
+  <div class="charts">
+    <div class="chart">
+      <h3>부서별 점검 채움률 — 7월 → 8월 <span class="est">연한 막대 = 7월 · 진한 막대 = 8월에 오른 폭</span></h3>
+      <div class="rows">
+        <div class="crow">
+          <div class="cl">시설부</div>
+          <div class="ctrack" style="background-image:linear-gradient(#B7D6C8,#B7D6C8),linear-gradient(#146B4F,#146B4F);background-size:60% 100%,74% 100%;"></div>
+          <div class="cv"><b class="good">60% → 74%</b><br><span class="est">항목 채움 574/779</span></div>
+        </div>
+        <div class="crow">
+          <div class="cl">지원부</div>
+          <div class="ctrack" style="background-image:linear-gradient(#B7D6C8,#B7D6C8),linear-gradient(#146B4F,#146B4F);background-size:12% 100%,53% 100%;"></div>
+          <div class="cv"><b class="good">12% → 53%</b><br><span class="est">낸 날 29/31일</span></div>
+        </div>
+        <div class="crow">
+          <div class="cl">운영부</div>
+          <div class="ctrack empty">10/1 시작 — 9월 ERP·브로제이 안정화 후</div>
+          <div class="cv"><b class="bad">측정 불가</b></div>
+        </div>
+        <div class="crow">
+          <div class="cl">주차관리부</div>
+          <div class="ctrack empty">9/18 시작 — 사전 요청 9/11</div>
+          <div class="cv"><b class="bad">측정 불가</b></div>
+        </div>
+      </div>
+      <div class="cnote">빈 막대는 실적 0이 아니다 — <b>아직 셀 방법이 없다</b>는 뜻이다. 적힌 시작일부터 센다 (방향 1).</div>
+    </div>
+    <div class="chart">
+      <h3>종합접수처 8월 — 유형별 처리 <span class="est">계 접수 58건 · 완료 38건 (65.5%)</span></h3>
+      <div class="rows">
+        <div class="crow">
+          <div class="cl">시설물 고장</div>
+          <div class="ctrack" style="background-image:linear-gradient(#146B4F,#146B4F);background-size:100% 100%;"></div>
+          <div class="cv"><b class="good">18/18 완료</b><br><span class="est">중앙 1일 — 다 끝냈다</span></div>
+        </div>
+        <div class="crow">
+          <div class="cl">청결</div>
+          <div class="ctrack" style="background-image:linear-gradient(#96601A,#96601A);background-size:71% 100%;"></div>
+          <div class="cv"><b class="warn">5/7 완료</b></div>
+        </div>
+        <div class="crow">
+          <div class="cl">컴플레인</div>
+          <div class="ctrack" style="background-image:linear-gradient(#96601A,#96601A);background-size:52% 100%;"></div>
+          <div class="cv"><b class="warn">11/21 완료</b><br><span class="est">중앙 9일 · 미완 10건</span></div>
+        </div>
+        <div class="crow">
+          <div class="cl">분실물</div>
+          <div class="ctrack" style="background-image:linear-gradient(#9E2A2A,#9E2A2A);background-size:12.5% 100%;"></div>
+          <div class="cv"><b class="bad">1/8 완료</b><br><span class="est">가장 막힌 곳 · 미완 7건</span></div>
+        </div>
+      </div>
+      <div class="cnote">막대가 빌수록 밀린 곳이다 — 컴플레인·분실물 미완 17건은 <b>9월 안에 종결</b>한다 (방향 3). 업무 시트 별도 157행 — 완료 107 · 진행 47 · 보류 3.</div>
+    </div>
+  </div>
+
+  <!-- ⑦ 각주 -->
+  <div class="foot">
+    <div><b>기준일</b> — 8월 수치 = <b>2026-09-01 원장 직접 카운트</b>(8월 마감분 전수). 6월은 3분기 몫으로 한 번만 셌다. 중앙 = 접수~완료 일수의 중앙값.</div>
+    <div><b>단서</b> — 지원부 '낸 날'은 일수 <b>29/31</b>과 비율 <b>7월 12% → 8월 53%</b>를 원장 값 그대로 병기(집계 기준이 다르다). 접수 배분 = 시설부 22 · 운영부 21 · 지원부(여) 4 · 지원부 3 · 수영팀 3 · 주차 2 · P.T 2 · 지원부(남) 1.</div>
+    <div><b>출처</b> — 점검 화면 · 종합접수처 · 업무 시트. 무엇을 하기로 했고 어디까지 왔는지는 <b>앞 장 「3분기 전략 로드맵 진척」(WP-GM-260901-03)</b> — 이 장은 그 현장 결과다.</div>
+  </div>
+
+</div>
+
+</body>
+</html>
