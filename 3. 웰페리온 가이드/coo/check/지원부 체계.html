@@ -537,8 +537,10 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   table.a3l-week td.a3l-name{font-size:15px;text-align:center;padding:0;vertical-align:middle}
   table.a3l-week td.a3l-rowkey{background:#faf7f3!important;font-size:13px;font-weight:700;color:#4a3a2e;text-align:left;padding-left:7px}
   table.a3l-week tr.a3l-itemtop td{border-top:2px solid #4a3a2e}
-  table.a3l-week thead th{font-size:16px;padding:6px 2px}
-  table.a3l-week .a3l-datebox{margin:5px auto 2px;width:78%;height:20px;border-bottom:1px solid rgba(255,255,255,0.75)}
+  table.a3l-week thead th{font-size:13px;padding:6px 2px}
+  /* 날짜를 종이에 미리 찍으면서(2026-09-01) 요일은 날짜 아래 작게 붙인다 — 손으로 적던 빈칸은 없앴다. */
+  table.a3l-week thead th .a3l-dow{margin-top:2px;font-size:11px;font-weight:600;opacity:0.88}
+  table.a3l-week .a3l-dow{font-size:11px;font-weight:700;margin-top:2px;color:rgba(255,255,255,0.85)}
   #a3-laundry-print .a3l-guide{margin-top:10px;font-size:13px;line-height:1.85;color:#2a2018}
   #a3-laundry-print .a3l-guide b{font-weight:800}
 }
@@ -994,7 +996,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div style="font-size:13px;color:#4a3a2e;margin-top:3px">담당 <b>김훈 주임</b> — 세탁물 받을 때 「입고」, 마감 때 「마감재고」를 그날 바로 적습니다</div>
     </div>
     <div class="a3l-meta">
-      <span>기간 <b class="a3l-blank"></b> ~ <b class="a3l-blank"></b></span>
       <span>작성 <b class="a3l-blank"></b></span>
       <span>확인 <b class="a3l-blank"></b></span>
     </div>
@@ -7137,6 +7138,19 @@ function printA4Laundry(){
      A4 세로 한 장에 들어간다(검증 2026-09-01 — 표+안내 약 770px < A4 내용높이 1,062px). */
   var items = wpLdyItems();
   var DOW = ['월', '화', '수', '목', '금', '토', '일'];
+  /* ★날짜를 종이에 미리 찍는다(GM 지시 2026-09-01 "날짜를 월까진 넣어줘 9월 1일 이런식으로 그리고 요일도").
+     종전엔 요일만 있고 날짜는 손으로 적는 빈칸이었다 — 매주 사람이 일곱 칸을 적어야 했고 틀리기도 쉬웠다.
+     인쇄한 날이 속한 주의 월~일 실제 날짜를 계산해 넣는다. 요일은 날짜에서 나오므로 달이 바뀌어도 안 틀린다.
+     휴관일(정본 close_days 규칙과 같은 wpLdyIsClosed)은 날짜 옆에 표시해 그날 칸을 비우게 안내한다. */
+  var _base = new Date();
+  var _mon = new Date(_base);
+  _mon.setDate(_base.getDate() - ((_base.getDay() + 6) % 7));   // 그 주 월요일
+  var DAYS = DOW.map(function(d, i){
+    var x = new Date(_mon);
+    x.setDate(_mon.getDate() + i);
+    var ymd = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+    return { label: (x.getMonth() + 1) + '월 ' + x.getDate() + '일', dow: d, closed: wpLdyIsClosed(ymd) };
+  });
   var ROWS = [
     { key: '입고',     cls: 'a3l-shade' },
     { key: '마감재고', cls: '' }
@@ -7144,7 +7158,9 @@ function printA4Laundry(){
   var h = '<table class="a3l-grid a3l-week"><colgroup><col style="width:96px"><col style="width:78px">'
         + new Array(DOW.length + 1).join('<col>') + '</colgroup><thead>'
         + '<tr><th class="a3l-item" colspan="2">품목 / 기록</th>'
-        + DOW.map(function(d){ return '<th>' + d + '<div class="a3l-datebox"></div></th>'; }).join('')
+        + DAYS.map(function(d){
+            return '<th>' + d.label + '<div class="a3l-dow">(' + d.dow + ')' + (d.closed ? ' 휴관' : '') + '</div></th>';
+          }).join('')
         + '</tr></thead><tbody>';
   items.forEach(function(m){
     ROWS.forEach(function(r, ri){
@@ -7304,7 +7320,11 @@ function wpLdySheetRender(){
   for (var d = 1; d <= n; d++){
     var ds = ym + '-' + (d < 10 ? '0' + d : d);
     var rem = (LAUNDRY_DATA.daily[ds] || {}).remark || '';
-    body += '<tr><td class="wp-ldy__name">' + d + '</td>';
+    /* 날짜는 「9월 1일 (화)」로 — 숫자만 있으면 무슨 달·무슨 요일인지 안 보인다(GM 지시 2026-09-01).
+       요일은 날짜에서 계산한다(손기입 금지 — 달이 바뀌면 전부 틀린다). 휴관일은 배지로 표시. */
+    var dowCh = '일월화수목금토'.charAt(new Date(ds + 'T00:00:00').getDay());
+    body += '<tr><td class="wp-ldy__name">' + (+ym.slice(5, 7)) + '월 ' + d + '일 (' + dowCh + ')'
+          + (wpLdyIsClosed(ds) ? ' <span class="wp-ldy__badge wp-ldy__badge--closed">휴관</span>' : '') + '</td>';
     cols.forEach(function(c){
       body += '<td>' + wpLdySheetCell(ds, c.id, 'in') + '</td><td>' + wpLdySheetCell(ds, c.id, 'end') + '</td>';
     });
