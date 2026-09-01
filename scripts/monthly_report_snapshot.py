@@ -313,27 +313,36 @@ def main() -> int:
         print(f"[중단] {a.month} 은 이미 마감된 달입니다 — 고치려면 --force (그리고 correction 에 사유를 남기세요).")
         return 2
 
-    fresh = build(a.month)
+    # ★--close 는 '닫기만' 한다 — 다시 재지 않는다(2026-09-01 시우).
+    #   마감 호출은 다음 달 1일 09:00 에 지난달을 대상으로 들어온다. 그때 다시 재면
+    #   collect_member/check/reception 이 '지금'(=새 달) 값을 지난달 칸에 넣고,
+    #   매출은 스냅샷 생성월이 안 맞아 전부 None 이 된다. 실제로 2026-09-01 09:00 실행이
+    #   8월 마감본의 매출 전 부문·연 누계를 None 으로, 회원·점검·접수를 9월 값으로 덮었다.
+    #   지난달의 진짜 값은 말일 21:00 실행이 이미 넣어 둔 것이다.
+    fresh = None if a.close else build(a.month)
     cur = cur if cur else months.setdefault(a.month, {"kind": "현황", "closed": False})
-    for k in MACHINE_KEYS:
+    for k in (MACHINE_KEYS if fresh else ()):
         v = fresh.get(k)
         if not v:                  # 조회 실패로 빈 값이면 기존 값을 지우지 않는다
             continue
         old = cur.get(k)
         # ★통째 교체가 아니라 얕은 병합이다. 목표치·전월 대비처럼 사람이 넣어 둔 칸이 이 블록 안에
         #   섞여 있는데(예 sales.month_target), 통째로 갈아끼우면 그 값이 조용히 사라진다.
+        #   ★None 으로는 덮지 않는다 — 조회가 한 항목만 실패해도 이미 잰 값이 '측정 불가'로 바뀐다.
         if isinstance(old, dict) and isinstance(v, dict):
-            old.update(v)
+            old.update({k2: v2 for k2, v2 in v.items() if v2 is not None})
         else:
             cur[k] = v
-    _derive(cur)
+    if fresh:
+        _derive(cur)
     if a.close:
         cur["closed"] = True
     led["updated_at"] = _now().strftime("%Y-%m-%d")
 
-    line = (f"{a.month} · 매출 {fresh['sales'].get('month')} · 회원 {fresh['member'].get('active')} "
-            f"· 등록 {fresh['member'].get('registered')} · 접수 {fresh['reception'].get('total')} "
-            f"· 점검 시설 {fresh['check'].get('facility_pct')} 지원 {fresh['check'].get('support_pct')}")
+    shown = fresh or cur          # --close 는 재측정을 안 하므로 원장에 이미 있는 값을 그대로 보여 준다
+    line = (f"{a.month} · 매출 {(shown.get('sales') or {}).get('month')} · 회원 {(shown.get('member') or {}).get('active')} "
+            f"· 등록 {(shown.get('member') or {}).get('registered')} · 접수 {(shown.get('reception') or {}).get('total')} "
+            f"· 점검 시설 {(shown.get('check') or {}).get('facility_pct')} 지원 {(shown.get('check') or {}).get('support_pct')}")
     if not a.write:
         print("[드라이런] 원장에 쓰지 않았습니다.")
         print(line)
