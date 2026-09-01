@@ -84,7 +84,7 @@
   tr.sum td{ background:#F0F3F7; }
 
   /* 본문 2단 — 왼쪽 네 부서 표 · 오른쪽 채움률 막대 */
-  .cols{ margin-top:10px; flex:1; display:flex; gap:12px; min-height:0; }
+  .cols{ margin-top:8px; flex:1; display:flex; gap:12px; min-height:0; }
   .cols .lft{ flex:1.28; display:flex; flex-direction:column; min-width:0; }
   .cols .rgt{ flex:1; display:flex; flex-direction:column; min-width:0; }
   .glance tbody td{ vertical-align:middle; }
@@ -108,10 +108,10 @@
     display:flex; flex-direction:column; }
   .chart h3{ font-size:14.5px; font-weight:700; color:var(--navy); letter-spacing:-.3px; word-break:keep-all; }
   .chart h3 .est{ font-weight:400; font-size:11.5px; }
-  .chart .rows{ flex:1; display:flex; flex-direction:column; justify-content:space-evenly; padding:6px 0 2px; }
+  .chart .rows{ flex:1; display:flex; flex-direction:column; justify-content:space-evenly; padding:2px 0 0; }
   .crow{ display:flex; align-items:center; gap:11px; }
   .crow .cl{ width:92px; flex:none; font-size:13.4px; font-weight:700; text-align:right; word-break:keep-all; }
-  .crow .ctrack{ flex:1; height:32px; background-color:#EEF1F4;
+  .crow .ctrack{ flex:1; height:24px; background-color:#EEF1F4;
     background-repeat:no-repeat; background-position:left center; }
   .crow .ctrack.empty{ background-color:#fff; border:1.5px dashed #B9C2CC;
     display:flex; align-items:center; justify-content:center;
@@ -122,8 +122,15 @@
     font-size:11.8px; line-height:1.45; color:#48525B; word-break:keep-all; }
   .cnote b{ color:var(--ink); }
 
+  /* 다음 단계 */
+  .nextstep{ margin-top:8px; border:1px solid var(--line); border-left:4px solid var(--navy);
+    background:#F6F8FA; padding:7px 13px; font-size:12.4px; line-height:1.5; color:#3C464F;
+    word-break:keep-all; }
+  .nextstep b{ color:var(--navy); font-size:13px; }
+  .nextstep strong{ color:var(--ink); }
+
   /* 각주 */
-  .foot{ margin-top:10px; border-top:1px solid var(--line); padding-top:7px;
+  .foot{ margin-top:8px; border-top:1px solid var(--line); padding-top:6px;
     display:flex; gap:24px; font-size:10.8px; line-height:1.55; color:#48525B; }
   .foot div{ flex:1; word-break:keep-all; overflow-wrap:anywhere; }
   .foot b{ color:var(--ink); }
@@ -148,7 +155,7 @@
     </div>
     <div class="meta">
       작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-03</b><br>
-      3분기 1단계 <b>60%</b> · 2단계 <b>40%</b> &nbsp;/&nbsp; 시설부 채움 <b>74%</b> · 지원부 낸 날 <b>53%</b> · 접수 <b>58건 완료 65.5%</b>
+      3분기 1단계 <b>60%</b> · 2단계 <b>40%</b> &nbsp;/&nbsp; 매출 <b>98.7%</b> · 시설부 채움 <b>74%</b> · 지원부 낸 날 <b>53%</b> · 접수 <b>58건 완료 65.5%</b>
     </div>
   </div>
 
@@ -158,7 +165,7 @@
     <div class="items">
       <div class="it">
         <div class="q">1. 중간관리자 소통 체계부터 세운다</div>
-        <div class="d">핵심은 <b>소통</b> — 3분기 내내 없던 <b>보고 주기 규정을 9월 계약서에 넣는다</b>. 실장·소장·나우열M 3개 라인 — 내부에서 정해 체계화한다.</div>
+        <div class="d">3라인(실장·소장·나우열M)의 <b>보고 주기와 형식을 9월 중 정해 굴린다</b>. 지금은 규정이 없어 사람마다 다르다.</div>
       </div>
       <div class="it">
         <div class="q">2. 점검 시작일 — 주차관리부 9/18 · 운영부 10/1</div>
@@ -181,8 +188,8 @@
     <div class="rm">
       <div class="st done"><div class="t">1분기 — 정원 1,000명 마감</div><div class="g">1~3월</div><div class="b"><i style="width:100%"></i></div><div class="p">완료 100%</div></div>
       <div class="st done"><div class="t">2분기 — 대기자 시스템 운영</div><div class="g">4~6월</div><div class="b"><i style="width:100%"></i></div><div class="p">완료 100%</div></div>
-      <div class="st"><div class="t">3분기 1단계 — 자동화·매뉴얼 체계</div><div class="g">잔여 = 주차부 점검 정착 · 보고 무인화</div><div class="b"><i style="width:60%"></i></div><div class="p">60%</div></div>
-      <div class="st"><div class="t">3분기 2단계 — 체크리스트 경영·인재</div><div class="g">잔여 = 보고 주기 규정 2개 라인</div><div class="b"><i style="width:40%"></i></div><div class="p">40%</div></div>
+      <div class="st"><div class="t">3분기 1단계 — 자동화·매뉴얼 체계</div><div class="g">몸통 = <b>ERP·브로제이</b> · 잔여 = 주차부 점검 정착·보고 무인화</div><div class="b"><i style="width:60%"></i></div><div class="p">60% <span class="est">→ 9월</span> 80%</div></div>
+      <div class="st"><div class="t">3분기 2단계 — 체크리스트 경영·인재</div><div class="g">잔여 = 3라인 보고 주기·형식 · 인재 체계</div><div class="b"><i style="width:40%"></i></div><div class="p">40% <span class="est">→ 9월</span> 80% 가까이</div></div>
       <div class="st wait"><div class="t">4분기 3단계 — 브랜드 구축</div><div class="g">프리미엄 인식 확립 — 10월 착수</div><div class="b"><i style="width:0%"></i></div><div class="p">착수 전 0%</div></div>
     </div>
     <div class="rmnote">월별 목표 한 만큼 — 6월 <b>7건</b> <b class="good">72%</b> · 7월 <b>21건</b> <b class="warn">44%</b> · 8월 <b>28건</b> <b class="warn">39%</b> · 3분기 총 <b>56건</b>(목표 수 <b>4.0배</b>). &nbsp;/&nbsp; 전사 업무·결재 <b>131건 중 83건 완료 (63%)</b> · 진행 45 · 보류 3.</div>
@@ -218,9 +225,9 @@
           </tr>
           <tr>
             <td class="k">운영부</td>
-            <td>컴플레인 <b>21건</b> — 완료 11 · 중앙 <b class="bad">9일</b><span class="est"> · 최장 13일</span> / 분실물 <b>8건</b> — 완료 1 / 청결 <b>7건</b> — 완료 5</td>
-            <td>컴플레인 처리 날수를 처음으로 셈 — 21건 중 <b class="good">완료 11건</b></td>
-            <td>점검 <b class="bad">측정 불가</b> — <b>10/1 시작</b> <span class="est">· ERP·브로제이 안정화 선행</span></td>
+            <td>총매출 <b>6억 2,787만</b> — 목표 6억 3,600만의 <b class="good">98.7%</b><span class="est"> · 회원권 2억 8,019만</span> / 컴플레인 <b>21건</b> — 완료 11 / 분실물 <b>8건</b> — 완료 1 / 청결 <b>7건</b> — 완료 5</td>
+            <td>8월 총매출 <b class="good">목표의 98.7%</b> — 전월 5억 7,023만 대비 <b class="good">110.1%</b></td>
+            <td>점검 <b class="bad">측정 불가</b> — ERP·브로제이 안정화 먼저 끝내고 <b>10/1 시작</b> / 컴플레인 처리 중앙 <b class="bad">9일</b></td>
           </tr>
           <tr>
             <td class="k">주차관리부</td>
@@ -253,17 +260,19 @@
           <colgroup><col style="width:148px"><col style="width:158px"><col></colgroup>
           <thead><tr><th>무엇</th><th>지금</th><th>9월 말</th></tr></thead>
           <tbody>
+            <tr><td class="k">ERP·브로제이 안정화</td><td>1단계 60%</td><td><b>80%</b> — 이 위에서 운영부 점검 10/1 시작</td></tr>
+            <tr><td class="k">체크리스트 경영·인재</td><td>2단계 40% <span class="est">· 인원(T/O)은 어느 정도 채움</span></td><td><b>80% 가까이</b> — 체계는 인사담당자에게 정리받아 세운다</td></tr>
             <tr><td class="k">주차관리부 점검 정착</td><td>집계 통로 없음</td><td><b>9/18 제출 시작</b> — 첫 데이터 확보</td></tr>
             <tr><td class="k">운영부 점검</td><td>화면 자체 없음</td><td>ERP·브로제이 안정화 끝내고 <b>10/1 시작 준비 완료</b></td></tr>
             <tr><td class="k">시설부 점검 채움</td><td>74% <span class="est">· 안 채운 205항목</span></td><td>205항목 소화</td></tr>
             <tr><td class="k">지원부 점검 이슈</td><td>83건 · 처리 라인 미정</td><td>처리 라인 확정 · 소화 시작</td></tr>
             <tr><td class="k">접수 미완</td><td>컴플레인 10건 · 분실물 7건</td><td><b>전건 종결</b></td></tr>
             <tr><td class="k">보고·매출 무인화</td><td>3분기 1단계 잔여</td><td>손입력 칸 없애기 완료</td></tr>
-            <tr><td class="k">중간관리자 보고 주기</td><td>규정 없음</td><td>9월 계약서에 규정 반영 <span class="est">· 3개 라인</span></td></tr>
+            <tr><td class="k">중간관리자 보고 주기</td><td>규정 없음 · 사람마다 다름</td><td>보고 주기·형식 정해 굴린다 <span class="est">· 3개 라인</span></td></tr>
             <tr><td class="k">진척률 집계</td><td>사람이 세어 올림</td><td>원장 자동 산출</td></tr>
           </tbody>
         </table>
-        <div class="fin">지금 3분기 1단계 <b>60%</b> · 2단계 <b>40%</b> — 위 여덟 건을 닫으면 1단계 잔여(주차부 점검 정착·보고 무인화)와 2단계 잔여(보고 주기 규정)가 소화돼 3분기를 마감한다.</div>
+        <div class="fin">지금 3분기 1단계 <b>60%</b> · 2단계 <b>40%</b> — 위 열 건을 닫으면 1단계 <b>80%</b> · 2단계 <b>80% 가까이</b>로 올려 3분기를 마감한다.</div>
       </div>
       <div class="chart">
         <h3>부서별 점검 채움률 — 7월 → 8월 <span class="est">연한 막대 = 7월 · 진한 막대 = 8월에 오른 폭</span></h3>
@@ -289,13 +298,19 @@
             <div class="cv"><b class="bad">측정 불가</b></div>
           </div>
         </div>
-        <div class="cnote">빈 막대는 실적 0이 아니다 — <b>아직 셀 방법이 없다</b>는 뜻이다. 적힌 시작일부터 센다 (방향 2). 컴플레인·분실물 미완 17건은 <b>9월 안에 종결</b>한다 (방향 3).</div>
+        <div class="cnote">빈 막대는 실적 0이 아니다 — <b>아직 셀 방법이 없다</b>는 뜻이다. 적힌 시작일부터 센다 (방향 2).</div>
       </div>
     </div>
 
   </div>
 
-  <!-- ⑥ 각주 -->
+  <!-- ⑥ 다음 단계 -->
+  <div class="nextstep">
+    <b>다음 단계 — 경영진 의견을 받아 체계화한다</b> &nbsp; 오늘 보고에서 <strong>회장님·대표님·이사님</strong>께서 주시는 의견을 받아, 그 의견을 기준으로 9월 중 체계를 세운다.
+    위 「9월에 끝낼 것」은 지금 잡혀 있는 것이고, <strong>주시는 의견이 그 위에 얹힌다</strong>. 정리된 체계는 3라인(운영·시설·인사/파트너팀)에 그대로 내려 굴린다.
+  </div>
+
+  <!-- ⑦ 각주 -->
   <div class="foot">
     <div><b>보고·결정 체계</b> — 9월 중 내부에서 정해 체계화한다.</div>
     <div><b>기준일·오차</b> — 8월 수치 = <b>2026-09-01 원장 직접 카운트</b> · 로드맵 = 월간운영계획 직독(08-27) · 중앙 = 접수~완료 일수의 중앙값. 1단계 60% = ERP 연동값 · 2단계 40% = 경과 기준(추정).</div>
