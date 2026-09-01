@@ -135,10 +135,14 @@
             <tr><td class="k ctr">9/1</td><td>지원부 7인 재계약 · <b>주 5일제 시행</b></td><td class="ctr est">나우열M · GM</td></tr>
             <tr><td class="k ctr">9/3</td><td class="strong">회장님 오찬 — P.T팀 <span class="est" style="font-weight:400;">· 같은 날 부서장 회의</span></td><td class="ctr est">회장님 · GM</td></tr>
             <tr><td class="k ctr">9/4</td><td>ADT캡스 설치 공사 <span class="est">무인경비 2 · 출입통제 3</span></td><td class="ctr est">이정헌 소장</td></tr>
-            <tr><td class="k ctr">9/5~19</td><td class="strong">추석 선물세트 팝업 <span class="est" style="font-weight:400;">· 500세트 목표 · 8/28 진척 45%</span></td><td class="ctr est">윤병현AM</td></tr>
+            <!-- 팝업 종료(9/19) 줄을 여기로 합쳤다 — 연휴 줄을 넣으면서 자리를 비웠다(순증 0 · 2026-09-01) -->
+            <tr><td class="k ctr">9/5~19</td><td class="strong">추석 선물세트 팝업 — 9/19 종료·500세트 판정 <span class="est" style="font-weight:400;">· 8/28 진척 45%</span></td><td class="ctr est">윤병현AM</td></tr>
             <tr><td class="k ctr">9/9</td><td>승강기 자체점검 <span class="est">법정</span></td><td class="ctr est">시설부</td></tr>
             <tr><td class="k ctr">9/10</td><td class="strong">회장님 오찬 — 스쿼시·체조팀</td><td class="ctr est">회장님 · GM</td></tr>
-            <tr><td class="k ctr">9/19</td><td>팝업 종료 · <b>500세트 목표 판정</b></td><td class="ctr est">윤병현AM</td></tr>
+            <!-- 추석 연휴가 달력에 아예 없었다(GM 지적 2026-09-01 "추석이 껴있어서 위험한 내용도 없어").
+                 실측 = 휴관은 9/25 하루뿐이고, 명절 달은 2·4주 일요일 휴관을 건너뛰어 9/13·9/27 이 영업이라
+                 9월 영업일 29일로 8월과 같다. 그래서 영업일 감소가 아니라 '상담 창이 9/23 까지'가 위험이다. -->
+            <tr><td class="k ctr">9/24~26</td><td class="strong">추석 연휴 — 휴관은 9/25 하루 <span class="est" style="font-weight:400;">· 24일 08~20 운영 · 근무 편성 9/12까지 확정 · 만기 상담은 9/23까지가 실제 창</span></td><td class="ctr est">전 부서 · GM</td></tr>
             <tr><td class="k ctr">9/30</td><td>3대 과제·이월 7건 기한 <span class="est">· 손소독제 예산 확정 · 방제 효과 판정</span></td><td class="ctr est">전 부서</td></tr>
           </tbody>
         </table>
@@ -148,22 +152,29 @@
         <div class="sec-h">Ⅴ. 다음 달에 확인할 것 <span class="hint">9월 관리 항목 · 10/1 보고의 점검 기준</span></div>
         <ul class="watch">
           <li><b>9월 만기 <span data-f="prev.member.next_month_expiry.count" data-fmt="num">61</span>명 — 재등록 상담률</b>
-            <span>현재 상담 기록은 <span data-f="prev.member.next_month_expiry.contacted" data-fmt="num">1</span>명뿐입니다. 정원이 마감된 구조에서 만기 이탈은 곧 빈자리이며, 9월 매출에 가장 빠르게 닿습니다. 이경연 실장 라인에서 9월 중 전원 접촉하고, 다음 보고에 상담률로 답합니다.</span></li>
+            <!-- "정원 마감이라 만기 이탈은 곧 빈자리" 문장은 뺐다 — 맨 위 결론 박스와 Ⅰ장에 이미 두 번 나온다.
+                 오른쪽 칸이 한 줄 넘쳐 Ⅵ 제목과 겹쳐 중복부터 걷었다(2026-09-01 렌더 실측). -->
+            <span>현재 상담 기록은 <span data-f="prev.member.next_month_expiry.contacted" data-fmt="num">1</span>명뿐입니다. 이경연 실장 라인에서 9월 중 전원 접촉하고, 다음 보고에 상담률로 답합니다.</span></li>
           <!-- 보는 지표를 문의 건수에서 등록·결제 건수로 옮겼다(GM 지적 2026-09-01 "문의 회복이 아니라
                매출에 영향이 있었는지가 본질"). 문의는 연중 ±30% 출렁여 소음이 크고, 매출로 이어지는
                길목은 등록이다. 실측 = 총액 영향은 아직 없고 신규등록만 21→11건으로 반토막. -->
           <!-- ★이 span 안에서는 <b> 를 쓰지 않는다 — 이 목록의 b 는 제목용이라 줄이 끊긴다(2026-09-01 실측).
                강조는 인라인 span(font-weight:700)으로 준다. -->
           <li><b>유소년 — 매출로 넘어오는지</b>
-            <span>매출은 아직 줄지 않았습니다(체조·뮤지컬 합 8월 4,299만·연중 최고). 줄어든 것은 신규 등록이며 6월 21건 → 8월 <span style="font-weight:700;">11건</span>입니다. 등록까지 2주~2개월이 걸려 <span style="font-weight:700;">9월 중순~10월</span>에 매출로 나타납니다. 다음 보고부터 문의 건수 대신 등록·결제 건수로 답합니다.</span></li>
+            <span>매출은 아직 줄지 않았습니다(체조·뮤지컬 합 8월 4,299만·연중 최고). 줄어든 것은 신규 등록이며 6월 21건 → 8월 <span style="font-weight:700;">11건</span>입니다. 등록까지 2주~2개월이 걸려 <span style="font-weight:700;">9월 중순~10월</span>에 매출로 나타납니다.</span></li>
           <!-- 2026-09-01 실측으로 앞 문장이 틀린 것을 확인해 고쳤다. "운영부=점검 화면 자체 부재 /
                주차부=원장 항목표 미등록"은 사실이 아니다 — 두 부서 모두 제출 화면과 원장 적재까지
                이미 살아 있고(운영부는 ERP 문서보관함 안, 주차부는 주차관리부 체계 화면),
                빠진 것은 월간 집계 분기뿐이다. 주차부 시작일 9/18 은 GM 확정(2026-09-01). -->
           <li class="w"><b>운영부·주차부 점검 첫 집계</b>
             <span>두 부서는 <span style="font-weight:700;">미집계</span>입니다 — 제출 화면과 기록 적재는 이미 갖춰져 있고 월간 집계만 붙어 있지 않습니다. 9월에 집계를 연결하고, 제출은 주차관리부 <span style="font-weight:700;">9/18</span>(주차관리인 입사 한 달 뒤) · 운영부 <span style="font-weight:700;">10/1</span>(웰페리온 ERP·브로제이 안정화 이후)부터 시작합니다. 그 전 미제출은 정상이며, 10월 보고부터 4개 부서 전부 수치로 올립니다.</span></li>
-          <li class="g"><b>9월 매출 — 목표 6.36억</b>
-            <span>8월은 <span>6억 2,805만</span>(<span>98.7%</span>·주차 포함 최종)이었습니다. 만기 57명 방어와 추석 팝업 500세트가 9월 달성의 두 축입니다.</span></li>
+          <!-- 「9월 매출 — 목표 6.36억」 항목을 이 자리로 바꿨다(GM 지적 2026-09-01 "사람에 대한 서비스가
+               빠져있네, 제일 중요한 건인데"). 뺀 이유는 두 가지다 — Ⅰ장과 내용이 겹치고,
+               적힌 목표(6.36억)가 Ⅰ장 9월 목표(6억 1,273만)와 어긋나 한 장 안에서 상충했다.
+               여기 담은 것은 전부 이미 계획·지시에 있는 재료다(monthly_ops_plan 2026-09 목표에서 골랐다). -->
+          <li class="g"><b>사람에 대한 서비스 — 회원·직원이 9월에 체감할 것</b>
+            <!-- 가운·전용 식당은 위 DECISION 박스에 이미 있어 뺐다 — 다섯 줄이 아래 Ⅵ 영역과 겹쳤다(2026-09-01 렌더 실측). -->
+            <span>회원 — 9/12부터 매주 토요일 자체 방역으로 벌레가 몰린 세 곳(여자 키즈락커·여자사우나·수영장)을 잡고, 사우나·수영장 환기는 9월에 실측을 마쳐 개선안을 올립니다. 리셉션은 회원님이 오시면 일어서서 응대하며, 묵은 회원 목소리 4건에 9월 안에 답을 드립니다. 직원 — 지원부 7인 재계약·주 5일제 9/1 시행, 회장님 팀별 오찬(9/3·9/10)으로 현장의 말을 듣습니다.</span></li>
         </ul>
       </div>
 
