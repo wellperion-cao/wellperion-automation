@@ -73,6 +73,10 @@
   tr.sum td{ background:#F0F3F7; }
   tr.sum td.k{ background:#E7ECF2; }
 
+  /* 연결 보고 부제 */
+  .subt{ margin-top:4px; font-size:13px; font-weight:500; color:#5C666F; letter-spacing:-.2px; word-break:keep-all; }
+  .subt b{ color:var(--navy); }
+
   /* 각주 */
   .foot{ margin-top:auto; border-top:1px solid var(--line); padding-top:7px;
     display:flex; gap:26px; font-size:10.8px; line-height:1.55; color:#48525B; }
@@ -138,6 +142,24 @@
   .rm .st .p{ font-size:16px; }
   .rmnote{ font-size:13px; padding:8px 12px; }
   .tblwrap{ margin-top:14px; }
+
+  /* 자체 진행 범위표가 들어오며 한 장 기준 재조정 */
+  tbody td{ height:43px; font-size:13.6px; }
+  td.k{ font-size:13.4px; }
+  thead th{ height:35px; font-size:13.8px; }
+  .sumtbl td{ height:34px; }
+  .sumtbl tr.grp td{ height:24px; font-size:12.4px; }
+  .rmwrap{ margin-top:13px; }
+  .rm .st{ padding:10px 12px 11px; }
+  .rm .st .t{ font-size:14px; }
+  .rm .st .g{ font-size:11.6px; }
+  .rm .st .b{ height:11px; margin-top:7px; }
+  .rm .st .p{ font-size:15px; }
+  .rmnote{ font-size:12.4px; padding:7px 11px; margin-top:7px; }
+  .tblwrap{ margin-top:12px; }
+  .ask .it{ padding:10px 15px; }
+  .ask .q{ font-size:15px; }
+  .ask .d{ font-size:12.2px; }
 </style>
 </head>
 <body>
@@ -157,6 +179,7 @@
     <div>
       <div class="brand">WELLPERION</div>
       <div class="title">3분기 전략 로드맵 진척 현황</div>
+      <div class="subt">연결 보고 <b>① / ②</b> — 무엇을 하기로 했고 어디까지 왔나 · 현장 결과는 다음 장</div>
     </div>
     <div class="meta">
       작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b><br>
@@ -171,7 +194,7 @@
     <div class="items">
       <div class="it">
         <div class="q">1. 중간관리자 소통 체계부터 세운다</div>
-        <div class="d">도전에 맞는 중간관리자 세팅이 관건 — 핵심은 <b>소통</b>이다. 3분기 내내 없던 <b>보고 주기 규정을 9월 계약서에 넣는다</b> — 실장·소장·나우열M 3개 라인 (GM 전결).</div>
+        <div class="d">도전에 맞는 중간관리자 세팅이 관건 — 핵심은 <b>소통</b>이다. 3분기 내내 없던 <b>보고 주기 규정을 9월 계약서에 넣는다</b> — 실장·소장·나우열M 3개 라인 (GM 자체 진행).</div>
       </div>
       <div class="it">
         <div class="q">2. 목표 수는 늘리지 않고 잔여부터 끝낸다</div>
@@ -219,7 +242,7 @@
         <td>브랜드 만들기 <span class="est">(3단계)</span></td><td><b class="bad">0%</b> <span class="est">· 아직 안 열었다</span><span class="bar2 b"><i style="width:0%"></i></span></td>
       </tr>
       <tr class="grp">
-        <td colspan="2" class="gw">G M 이 전 결 로 정 한 것</td>
+        <td colspan="2" class="gw">G M 자 체 진 행 으 로 정 한 것</td>
         <td colspan="2" class="gn">G M 권 고 (웰 리)</td>
       </tr>
       <tr>
@@ -233,14 +256,44 @@
   </table>
   </div>
 
-  <!-- ⑤ 3라인 + 브랜딩 3박자 -->
+  <!-- ⑤ 9월 GM 자체 진행 범위 — 시범 1개월 -->
+  <div class="tblwrap">
+  <table>
+    <colgroup><col style="width:186px"><col><col style="width:520px"></colgroup>
+    <thead>
+      <tr>
+        <th class="k">9월 GM 자체 진행 범위<span class="sub">시범 9/1~9/30 · 결과는 9/30 보고</span></th>
+        <th>GM이 바로 처리하고 사후 보고</th>
+        <th>회장님께 먼저 여쭙는 것</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k strong">시설 긴급 대응</td>
+        <td>안전 즉시 조치(운행 정지·출입 통제·펜스) · 긴급 A/S와 임시 조치 · 긴급 수선 <b>○○만원</b> 이하 · 회원 안내</td>
+        <td>설비 교체·공사 · <b>○○만원</b> 초과 · 운영 시간을 바꿔야 하는 조치</td>
+      </tr>
+      <tr>
+        <td class="k strong">운영 일상 결정</td>
+        <td>회원 응대·컴플레인 · 규정 안 환불/휴회/재등록 · 이미 승인된 프로모션 실행 · 비품 <b>○○만원</b> 이하 · 강사 시간표 조정</td>
+        <td>요금 정책 · 새 프로모션 · 시설 구조 변경 · 규정 밖 환불·특례</td>
+      </tr>
+      <tr class="sum">
+        <td class="k">기준·보고</td>
+        <td colspan="2">금액 기준(○○만원)은 <b>회장님께서 정해 주시는 대로</b> 채운다. 안전사고 또는 <b>4시간 이상 중단은 즉시</b>, 그 밖은 <b>주간 리포트</b>로 알린다. <span class="est">이번 시범에서 빼는 것 = 인사(채용·퇴직·직책·급여) · 예산(월 예산 밖·새 계약) · 대외(상가·임대인·제휴) — 지금처럼 먼저 보고드린다.</span></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <!-- ⑥ 3라인 + 브랜딩 3박자 -->
   <div class="tblwrap">
   <table>
     <colgroup><col style="width:104px"><col style="width:364px"><col><col style="width:292px"></colgroup>
     <thead>
       <tr>
         <th class="k" style="width:104px">라인 · 총괄</th>
-        <th>맡은 일 3가지 <span class="sub">2026-08-28 확정</span></th>
+        <th>맡은 일 3가지</th>
         <th>8월 숫자<span class="sub">센 것만</span></th>
         <th>9월 할 일</th>
       </tr>
@@ -249,13 +302,13 @@
       <tr>
         <td class="k strong">1라인 운영부<br><span class="est">이경연 실장</span></td>
         <td>① 멤버십 매출 ② 서비스 관리 ③ 운영부 직원 관리</td>
-        <td>회원권 <b>2억 4,429만원</b> = 목표 2억 7,500만 대비 <b>88.8%</b> · 종합접수처 <b class="warn">63.0%</b>(목표 70%) · 업무 시트 <b class="warn">74.1%</b>(목표 80%)</td>
-        <td>컴플레인 미완 10건 계획 회신 · 점검 집계 시작</td>
+        <td>회원권 <b>2억 4,429만원</b> = 목표 2억 7,500만 대비 <b>88.8%</b> <span class="est">· 접수·점검 처리 숫자는 다음 장</span></td>
+        <td>컴플레인 미완 10건 계획 회신 · 점검 10/1 시작 준비</td>
       </tr>
       <tr>
         <td class="k strong">2라인 시설부<br><span class="est">이정헌 소장</span></td>
         <td>① 시설·설비 점검 ② 고장 24~48시간 조치 ③ 비품·소모품</td>
-        <td>예방점검 <b class="good">23~24/24일</b> · 고장 중앙 <b class="good">3일</b> · 법정·정기점검 회신 <b>4건 중 3건 당일</b></td>
+        <td>예방점검 <b class="good">23~24/24일</b> · 법정·정기점검 회신 <b>4건 중 3건 당일</b> <span class="est">· 고장 처리 숫자는 다음 장</span></td>
         <td>법정·정기 미회신 1건 회신</td>
       </tr>
       <tr>
@@ -265,10 +318,10 @@
         <td>기한 지키는 비율 올리기</td>
       </tr>
 
-      <tr class="grp"><td colspan="4">브 랜 딩 3 박 자 <span style="letter-spacing:0" class="est">— GM 방향(2026-08-28) 고급화·단순화·프리미엄 = ① 중간관리자 ② 서비스마인드 ③ 빠른 판단·결정·진행</span></td></tr>
+      <tr class="grp"><td colspan="4">브 랜 딩 3 박 자 <span style="letter-spacing:0" class="est">— GM 방향 고급화·단순화·프리미엄 = ① 중간관리자 ② 서비스마인드 ③ 빠른 판단·결정·진행</span></td></tr>
       <tr class="sum">
         <td class="k">3박자 대비<br>지금 위치</td>
-        <td><b>서비스마인드</b> <span class="est">= 처리에 걸린 날로 잰다</span><br>고장 중앙 <b class="good">3일</b>(기준 72시간) / 컴플레인 중앙 <b class="bad">14.5일</b>(기준 48시간)</td>
+        <td><b>서비스마인드</b> <span class="est">= 처리에 걸린 날로 잰다</span><br>기준 — 고장 <b>72시간</b> · 컴플레인 <b>48시간</b> <span class="est">· 실제 처리 일수는 다음 장 막대</span></td>
         <td><b>빠른 판단·결정·진행</b> <span class="est">= 기한 지킨 만큼으로 잰다</span><br>기한 내 완료 — 이경연 실장 <b class="warn">4/18 (22%)</b> · 나우열M <b class="warn">17/30 (57%)</b></td>
         <td><b>중간관리자 이해도·방향성</b> <span class="est">= 정기 보고로 잰다</span><br>3인 모두 <b class="bad">아직 안 함</b> <span class="est">(건별 응답만)</span></td>
       </tr>
@@ -278,9 +331,9 @@
 
   <!-- ⑥ 각주 -->
   <div class="foot">
-    <div><b>기준일</b> — 로드맵·인재분 <b>2026-08-27</b> · 3라인 8월 숫자 <b>08-26~28 조회</b>(마감 전) · <b>8/31 마감 수치로 갱신</b>(같은 문서번호). 6월은 3분기 몫으로 한 번만 셌다.</div>
-    <div><b>오차</b> — 1단계 60% = <b>ERP 연동값</b> · 2단계 40% = <b>경과 기준(추정)</b> · ★강습 매출 2억 8,083만원 <b>원천 미확인</b>. <b>GM 소견(09-01)</b> 「도전에 맞는 중간관리자 세팅, 핵심은 소통」 = 방향 1에 반영.</div>
-    <div><b>출처</b> — 월간운영계획 직독(08-27) · 업무 시트 · 점검 화면. 6~8월 4개 부서 개선 현황 상세 = <b>4번 문서 (WP-GM-260901-04)</b>.</div>
+    <div><b>기준일</b> — 로드맵·인재분 <b>2026-08-27</b> · 3라인 8월 숫자 <b>08-26~28 조회</b> · 8월 마감 확정 숫자는 다음 장 기준. 6월은 3분기 몫으로 한 번만 셌다.</div>
+    <div><b>오차</b> — 1단계 60% = <b>ERP 연동값</b> · 2단계 40% = <b>경과 기준(추정)</b> · ★강습 매출 2억 8,083만원 <b>원천 미확인</b>.</div>
+    <div><b>출처</b> — 월간운영계획 직독(08-27) · 업무 시트 · 점검 화면. 로드맵이 현장에서 어떻게 나타났는지는 <b>다음 장 「6~8월 4개 부서 개선 현황」(WP-GM-260901-04)</b>에서 본다.</div>
   </div>
 
 </div>
