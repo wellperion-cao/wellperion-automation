@@ -6772,7 +6772,7 @@ var WP_LDY_UNDONE_TS = {};
    9/27 은 영업). close_days.json 이 바뀌면 아래 두 목록도 같이 고친다.
    ① 신정(1/1) ② 매월 2·4째 일요일 — 단 그 달에 명절이 있으면(major_holiday_dates) 건너뛴다
    ③ 수동 등록 휴관일(dates) */
-var WP_LDY_CLOSE_DATES = ['2026-02-17', '2026-09-13'];          /* = close_days.json dates */
+var WP_LDY_CLOSE_DATES = ['2026-02-17', '2026-09-13', '2026-09-24', '2026-09-25', '2026-09-26'];  /* = close_days.json dates · 추석 사흘 추가(GM 확정 2026-09-01) */
 var WP_LDY_MAJOR_HOLIDAY_MONTHS = ['2026-02', '2026-09'];       /* = major_holiday_dates 의 달 */
 function wpLdyIsClosed(dateStr){
   var s = String(dateStr);
