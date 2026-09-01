@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파우더룸·탈의실 스팀다리미 검토 · WELLPERION</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+  @page { size: A3 landscape; margin: 12mm; }
+  :root{
+    --deep:#22322D; --mid:#3D5A4F; --grey:#6E7772; --line:#C7CFC9;
+    --steam:#EDF1EE; --brass:#8F7029; --alert:#9A4A20; --alert-bg:#FAF0E5;
+    --ink:#111A16; --pick:#E4EDE7;
+    --font:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#8B948F;}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;}
+
+  .bar{width:396mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;}
+  .bar button,.bar a{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 16px;
+    border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
+    cursor:pointer;text-decoration:none;border-radius:2px;}
+  .bar button:hover,.bar a:hover{background:#fff;color:var(--deep);}
+
+  .sheet{width:396mm;min-height:269mm;margin:14px auto;background:#fff;
+    padding:10mm 12mm 8mm;box-shadow:0 3px 22px rgba(0,0,0,.3);}
+
+  .ref{font-size:11.5px;color:var(--grey);margin:0 0 9px;}
+  .hd{display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:14px;}
+  .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
+  .hd h1{font-size:29px;font-weight:800;letter-spacing:-.025em;margin:0;}
+  .hd .rt{text-align:right;font-size:13.5px;line-height:1.8;white-space:nowrap;}
+  .hd .rt b{color:var(--grey);font-weight:600;font-size:11.5px;letter-spacing:.08em;margin-right:7px;}
+
+  /* 결론 */
+  .concl{border:2.5px solid var(--deep);padding:16px 20px;margin-bottom:14px;}
+  .concl h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 12px;}
+  .concl .main{font-size:17.5px;font-weight:700;line-height:1.55;margin:0 0 12px;letter-spacing:-.01em;}
+  .concl .main em{font-style:normal;background:var(--pick);padding:1px 5px;}
+  .concl .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    border-top:1px solid var(--line);padding-top:11px;}
+  .concl .cols p{font-size:13.5px;line-height:1.6;margin:0;}
+  .concl .cols b{display:block;font-size:11.5px;letter-spacing:.1em;color:var(--mid);
+    font-weight:800;margin-bottom:4px;}
+
+  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:13px 18px;margin-top:13px;}
+  .hold p{font-size:13.5px;line-height:1.62;margin:0;}
+  .hold b{font-weight:800;color:var(--mid);}
+
+  h3{font-size:15px;font-weight:800;margin:0 0 8px;padding-bottom:5px;
+     border-bottom:1.5px solid var(--deep);}
+  h3 span{font-size:12px;font-weight:500;color:var(--grey);margin-left:9px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:middle;}
+  thead th{background:var(--deep);color:#fff;font-size:13.5px;font-weight:700;text-align:center;}
+  thead th:first-child{background:var(--mid);text-align:left;width:104px;}
+  tbody th{background:var(--steam);font-weight:600;font-size:13.5px;white-space:nowrap;}
+  td.p{background:var(--pick);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1.55fr;gap:13px;}
+  .blk{border:1px solid var(--line);padding:14px 17px;}
+  .blk.warn{background:var(--alert-bg);border-color:#E2CDB6;}
+  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 10px;}
+  .blk.warn h4{color:var(--alert);}
+  .blk p{font-size:13.5px;line-height:1.62;margin:0 0 9px;}
+  .blk p:last-child{margin-bottom:0;}
+  .blk.warn p{color:#573015;}
+  .blk strong{font-weight:700;}
+  .blk.warn strong{color:var(--alert);}
+  .blk ul{margin:0;padding-left:17px;}
+  .blk li{font-size:13.5px;line-height:1.6;margin-bottom:6px;}
+  .blk li:last-child{margin-bottom:0;}
+  .blk table{background:#fff;}
+
+  .ft{border-top:1px solid var(--line);margin-top:14px;padding-top:8px;
+    display:flex;justify-content:space-between;gap:20px;font-size:10.5px;color:var(--grey);
+    word-break:keep-all;}
+
+  @media print{
+    html,body{background:#fff;}
+    .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
+    .bar{display:none;}
+    .concl,table,.grid2,.blk,.hold{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+</div>
+
+<div class="sheet">
+  <p class="ref">별첨 · 2026년 8월 월간운영계획 — 회원 서비스 개선 07 · 파우더룸·탈의실 스팀다리미</p>
+
+  <div class="hd">
+    <div>
+      <p class="brand">WELLPERION</p>
+      <h1>파우더룸·탈의실 스팀다리미 배치·판매 검토</h1>
+    </div>
+    <div class="rt">
+      <div><b>보고일</b>2026. 09. 01.</div>
+      <div><b>작성</b>AI 웰리</div>
+      <div><b>담당</b>운영부</div>
+    </div>
+  </div>
+
+  <div class="concl">
+    <h2>결론 · 비치와 판매, 두 갈래로 진행하는 건</h2>
+    <p class="main">
+      남·여 파우더룸·탈의실에 <em>에이스전자 스팀다리미</em>를 각 1대(총 2대) 두어 회원이 그 자리에서 쓰시게 하고,
+      같은 제품을 원하시는 회원께 <em>108,000원</em>에 판매한다. A4 아크릴 안내판을 함께 비치해 두 가지 모두 안내한다.
+    </p>
+    <div class="cols">
+      <p><b>① 비치 — 회원이 쓰시게 두는 것</b>
+        사우나에 들어가기 전 파우더룸·탈의실 공간에 스팀다리미를 두어,
+        회원이 그 자리에서 바로 다림질을 하실 수 있게 한다. 남·여 각 1대.</p>
+      <p><b>② 판매 — 같은 제품을 회원께 파는 것</b>
+        비치된 제품을 써 보시고 원하시는 회원께 같은 제품을 판매한다.
+        매매가 128,000원 · 공급가 78,000원 · 판매가 108,000원 — 서로 부담 없는 선에서 판매해 보는 것으로 업체와 합의.</p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;">
+      <h3>확정 사항 <span>2026. 8. 4. 업체 통화 기준</span></h3>
+      <table>
+        <tbody>
+          <tr><th>제품</th><td>에이스전자 스팀다리미</td></tr>
+          <tr><th>업체</th><td>에이스전기 · 주영종 대표 (2026-08-04 14:30 통화 완료)</td></tr>
+          <tr><th>배치</th><td>남자 파우더룸·탈의실 1대 · 여자 파우더룸·탈의실 1대 (총 2대)</td></tr>
+          <tr><th>매매가</th><td>128,000원</td></tr>
+          <tr><th>공급가</th><td>78,000원</td></tr>
+          <tr><th>판매가</th><td class="p">108,000원 (회원 판매)</td></tr>
+          <tr><th>안내</th><td>A4 아크릴 안내판을 함께 비치</td></tr>
+          <tr><th>착수</th><td>2026-08-03 GM 요청으로 검토 시작</td></tr>
+        </tbody>
+      </table>
+
+      <div class="hold" style="margin-top:auto;">
+        <p><b>완료 기준</b>
+          남·여 파우더룸·탈의실에 각 1대가 놓이고 A4 안내판이 붙어,
+          회원이 그 자리에서 다림질을 하고 원하시면 구매까지 하실 수 있는 상태.</p>
+      </div>
+
+    </div>
+
+    <div>
+      <div class="blk warn">
+        <h4>확인해 주실 것 — 운영부</h4>
+        <table>
+          <thead>
+            <tr><th>확인할 것</th><th style="width:42%;">무엇을 봐야 하나</th><th style="width:29%;">어떻게 답하면 되나</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>1️⃣ 설치 자리<br><small style="font-weight:500;">남·여 각 1곳</small></th>
+              <td>습기가 직접 닿지 않고 회원 동선을 막지 않는 자리인지 ·
+                그 자리 콘센트가 스팀다리미를 감당하는지(기존 설비와 같이 켤 때 포함)</td>
+              <td>「어디에 둘지」 자리 하나 + 「전기 괜찮다 / 확인 필요」</td>
+            </tr>
+            <tr>
+              <th>2️⃣ 재고</th>
+              <td>보관할 자리가 있는지 · 회원이 바로 가져가시길 원하는지</td>
+              <td>「재고 둔다 / 주문 후 받는다」 하나</td>
+            </tr>
+            <tr>
+              <th>3️⃣ 판매가 부가세<br><small style="font-weight:500;">108,000원</small></th>
+              <td>업체와 합의한 조건 — 부가세 포함인지 별도인지</td>
+              <td>「포함 / 별도」 하나</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top:10px;"><strong>세 가지에 답을 주시면 설치와 판매 준비를 시작합니다.</strong></p>
+        <p style="margin-top:6px;font-size:12.5px;color:var(--grey);">참고 — 옷걸이 동선: 다리미대·옷걸이·거울을 한자리에 묶을지, 통행 폭이 확보되는지를 설치 자리 볼 때 같이 봐 주시면 됩니다.</p>
+      </div>
+
+      <div class="blk" style="margin-top:13px;">
+        <h4>인계 · 누가 무엇을 언제까지</h4>
+        <table>
+          <thead>
+            <tr><th>누가</th><th>무엇을</th><th style="width:24%;">언제까지</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th rowspan="2">운영부</th>
+              <td>설치 자리 확인 — 남·여 파우더룸·탈의실에서 습기·동선·콘센트를 보고 놓을 자리를 정한다 (옷걸이 동선 포함)</td>
+              <td rowspan="2">기한은 인계 시 함께 정한다</td>
+            </tr>
+            <tr>
+              <td>위 세 가지(설치 자리 · 재고 · 부가세)를 확인해 주시면 됩니다</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="ft">
+    <span>확정 값은 2026년 8월 4일 에이스전기 통화 기준이며, 확인해 주실 것 세 가지에 답이 모이면 설치·판매 준비를 시작한다.</span>
+    <span>웰페리온 · 2026년 8월 월간운영계획 회원 서비스 개선 07 별첨 · A3 가로 1매</span>
+  </div>
+
+</div>
+</body>
+</html>
