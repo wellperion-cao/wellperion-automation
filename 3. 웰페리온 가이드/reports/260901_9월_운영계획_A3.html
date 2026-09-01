@@ -51,7 +51,7 @@
              온힘" · "9월이 너무 걱정"). 결론 박스 아래 빈 공간(decide 박스가 더 높음)을 써서 순증 0.
              업무 SSOT 수치 = status/heartbeats/coo-work-approval.json 2026-09-01 09:10 실측(활성 47·마감 초과 15). -->
         <div class="sub" style="margin-top:5px;"><b>운영부는 넷에만 온힘을 씁니다</b> — 매출 · 종합접수처(미완료 20건) · 업무 SSOT(마감 초과 15건·활성 47건) · 점검. 나머지는 시설부·지원부·리셉션이, 서비스 도입 결정은 경영지원부·경영부가 맡습니다.<br>
-        <b>판가름 나는 날</b> — 9/12 만기 1차 접촉·근무 편성 → 9/19 팝업 판정 → 9/23 상담 창 마감 → 9/30 3대 과제. 이 순서대로 가면 됩니다.</div>
+        <b>판가름 나는 날</b> — 9/12 만기 1차 접촉 → 9/19 팝업 판정 → 9/23 상담 창 마감(추석 휴관 9/24~26) → 9/30 3대 과제. 이 순서대로 가면 됩니다.</div>
       </div>
     </div>
     <!-- DECISION 결정 요청 박스는 뺐다(GM 지시 2026-09-01 "결정요청은 빼달라 — 경영지원부 라인에서 챙긴다").
@@ -151,13 +151,12 @@
             <tr><td class="k ctr">9/5~19</td><td class="strong">추석 선물세트 팝업 — 9/19 종료·500세트 판정 <span class="est" style="font-weight:400;">· 8/28 진척 45%</span></td><td class="ctr est">윤병현AM</td></tr>
             <tr><td class="k ctr">9/9</td><td>승강기 자체점검 <span class="est">법정</span></td><td class="ctr est">시설부</td></tr>
             <tr><td class="k ctr">9/10</td><td class="strong">회장님 오찬 — 스쿼시·체조팀</td><td class="ctr est">회장님 · GM</td></tr>
-            <!-- 추석 연휴가 달력에 아예 없었다(GM 지적 2026-09-01 "추석이 껴있어서 위험한 내용도 없어").
-                 ★GM 정정 2026-09-01 "휴관은 9월 13일 하루야 25일 아냐" — 추석 연휴 사흘(9/24~26)은 전부 영업,
-                 9월 휴관은 9/13(둘째 일요일) 하루다(정본 close_days.json 정정 완료). 위험의 성격도 바뀐다 —
-                 하루 닫는 게 아니라 연휴 사흘을 내리 여는 것이라 근무 편성이 최우선이다.
-                 9월 영업일 29일로 8월과 같다. 그래서 영업일 감소가 아니라 '상담 창이 9/23 까지'가 위험이다. -->
-            <!-- 근무 편성·상담 창 대책은 바로 아래 축별 대책 블록으로 옮겼다(2026-09-01) — 이 줄은 날짜 사실만. -->
-            <tr style="background:#FDF4F3;"><td class="k ctr" style="color:var(--bad);font-weight:700;">9/24~26</td><td class="strong"><span style="color:var(--bad);font-weight:700;">추석 연휴 — 사흘 모두 영업(08~20)</span> <span class="est" style="font-weight:400;">· 9월 휴관은 9/13 하루 · 영업일 29일(8월과 같음)</span></td><td class="ctr est">전 부서 · GM</td></tr>
+            <!-- ★GM 최종 확정 2026-09-01 "9월 추석 명절 3일 휴관 9.27운영" — 앞선 두 판(9/25 하루 휴관 →
+                 사흘 전부 영업)이 모두 뒤집혔다. 확정 = 추석 사흘(9/24~26) 휴관 · 9/27(일) 영업 ·
+                 9월 휴관 나흘(9/13 포함) · 영업일 26일. 정본 close_days.json 정정 완료(팀 커밋).
+                 8월 지면 영업일도 26일 표기라 '8월보다 사흘 적다'는 비교는 산정 기준 충돌이 있어
+                 휴관 일수(8월 2일 → 9월 4일)로만 비교한다. -->
+            <tr style="background:#FDF4F3;"><td class="k ctr" style="color:var(--bad);font-weight:700;">9/24~26</td><td class="strong"><span style="color:var(--bad);font-weight:700;">추석 연휴 — 사흘 휴관 · 9/27(일) 영업</span> <span class="est" style="font-weight:400;">· 9월 휴관 나흘(9/13 포함) · 영업일 26일</span></td><td class="ctr est">전 부서 · GM</td></tr>
             <tr><td class="k ctr">9/30</td><td>3대 과제·이월 7건 기한 <span class="est">· 손소독제 예산 확정 · 방제 효과 판정</span></td><td class="ctr est">전 부서</td></tr>
           </tbody>
         </table>
@@ -172,12 +171,16 @@
              전원 재등록은 일어나지 않는 가정이라 겁주는 숫자일 뿐 실행을 못 만든다.
              블록은 대책만 남긴다 — 언제까지 누가 무엇을 하는가. 상담 가능일 22일 = 9/1~23 중 휴관 9/13 제외. -->
         <div style="margin-top:6px;border:1.5px solid var(--bad);border-left:5px solid var(--bad);background:#FDF4F3;padding:5px 11px 4px;">
-          <div style="font-size:12.4px;font-weight:700;color:var(--bad);line-height:1.3;">추석 대책 — 컨택은 연휴 전에 끝냅니다. 상담할 날이 22일뿐입니다.</div>
+<!-- ★GM 최종 확정 반영(2026-09-01 "추석 3일 휴관 9.27운영") — 사흘 영업→사흘 휴관으로 재반전.
+               상담 창 = 연휴 전 22일 + 9/27~30 나흘. 매출 노출 = 회원권 외 3억 6,272만 ÷ 26영업일 ≈ 하루 1,395만
+               × 사흘 ≈ 4,185만(원장 재계산 · 회원권은 월 단위라 제외). 근무 편성은 휴관이라 무게를 빼고
+               무인 사흘 순찰·9/27 운영만 남긴다. -->
+          <div style="font-size:12.4px;font-weight:700;color:var(--bad);line-height:1.3;">추석 사흘 휴관 — 컨택은 연휴 전에 끝냅니다. 상담할 날은 연휴 전 22일 + 9/27~30 나흘입니다.</div>
           <div style="font-size:10.5px;line-height:1.38;color:var(--ink);margin-top:3px;">
             만기 57명 · 문의 진행분 60건 · LOSS 209명 · 대기자를 <span style="font-weight:700;">연휴 전에</span> 모두 돌립니다.<br>
-            <span style="font-weight:700;">9/12</span> 만기 1차 접촉·근무 편성 확정 &emsp; <span style="font-weight:700;">9/15</span> 연휴 예약 점검·휴강 기준 사전 안내<br>
-            <span style="font-weight:700;">9/23</span> 재등록 확답·접수 20건 소진 &emsp; <span style="font-weight:700;">9/28~30</span> 미접촉·보류분 마지막 상담<br>
-            <span style="color:var(--dim);">연휴 사흘(9/24~26)은 모두 엽니다(08~20) — 예약 실측은 10월 보고에 담습니다.</span>
+            <span style="font-weight:700;">9/12</span> 만기 1차 접촉 완료 &emsp; <span style="font-weight:700;">9/15</span> 휴관·강습 보강 회원 사전 안내<br>
+            <span style="font-weight:700;">9/23</span> 재등록 확답·접수 20건 소진 &emsp; <span style="font-weight:700;">9/27~30</span> 영업 재개 — 미접촉·보류분 마지막 상담<br>
+            <span style="color:var(--dim);">휴관 사흘의 매출 노출은 회원권 외 기준 약 4,185만 원(하루 1,395만)이며, 회원권은 월 단위라 빠지지 않습니다. 무인 사흘 설비 순찰과 9/27(일) 근무는 연휴 전에 정합니다.</span>
           </div>
         </div>
       </div>
