@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>중간관리자 평가 — 평가 구조 (2026년 8월 · 정량 평가) — 웰페리온 A3</title>
+<title>중간관리자 평가 — 평가 구조 — 웰페리온 A3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
@@ -68,6 +68,19 @@
   td.strong{ font-weight:700; }
   tr.sum td{ background:#F0F3F7; }
   tr.sum td.k{ background:#E7ECF2; }
+  td.hl{ background:#FBF4E4; }
+  /* 가로 막대 — CSS 배경 그라디언트 (획득 ÷ 배점 = background-size 가로 %) */
+  td.gb{ background-repeat:no-repeat; background-position:left center; font-variant-numeric:tabular-nums;
+    vertical-align:middle; height:36px; }
+  td.gb b{ font-size:14.5px; }
+  /* 섹션 제목 줄 */
+  .st{ margin-top:9px; font-size:13.6px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+  .st .est{ font-weight:400; }
+  /* 소통 축 강조 */
+  .ask .it.hl2{ background:#1E5B45; }
+  .comm{ margin-top:9px; border:2px solid var(--good); border-left-width:6px; padding:7px 12px 6px; background:#F5FAF7; }
+  .comm h3{ font-size:13.6px; font-weight:700; color:var(--good); letter-spacing:-.3px; margin-bottom:5px; }
+  .comm > .est{ display:block; margin-top:4px; line-height:1.4; }
 
   /* ④ 3분할 */
   .cols{ margin-top:8px; display:flex; gap:10px; flex:1; }
@@ -90,7 +103,7 @@
 <body>
 
 <div class="bar">
-  <b>중간관리자 평가 — 평가 구조 (2026년 8월 · 정량 평가 · A3 1장)</b>
+  <b>중간관리자 평가 — 평가 구조 (A3 1장)</b>
   <span class="note">인쇄: A3 · 가로 · 배경 그래픽 켜기</span>
   <span class="sp"></span>
   <button onclick="window.print()">A3 인쇄</button>
@@ -102,108 +115,179 @@
   <div class="head">
     <div>
       <div class="brand">WELLPERION</div>
-      <div class="title">중간관리자 평가 — 평가 구조 <span style="font-size:16px;font-weight:600;color:#3C464F;letter-spacing:-.3px">2026년 8월 · 정량 평가</span></div>
+      <div class="title">중간관리자 평가 — 평가 구조</div>
     </div>
     <div class="meta">
       작성 <b>AI 웰리</b> · 보고 <b>김남욱 GM</b> · 대상 <b>이경연 실장 · 나우열M · 이정헌 소장</b><br>
       기간 <b>2026년 8월 (08-01 ~ 08-31)</b> · 보고일 <b>2026. 09. 01.</b> · 문서번호 <b>WP-GM-260901-05</b><br>
-      성격 <b>평가 구조 정리</b> — 역할군이 달라 세 사람을 견주는 장이 아니다 · 점수는 <b>각 개인 평가지</b>에서 본다 · 기준일 <b>2026-08-31 마감</b>
+      성격 <b>평가 구조 + 점수 한눈에</b> — 역할군이 달라 견주는 장이 아니다 · 판정 근거는 <b>각 개인 평가지</b> · 기준일 <b>2026-08-31 마감</b>
     </div>
   </div>
 
   <div class="ask">
     <div class="lb"><span>공 통 틀</span><strong>100 점</strong></div>
     <div class="items">
+      <div class="it hl2" style="flex:1.35">
+        <div class="n">소 통 · 20 <span style="letter-spacing:0">— 보고와 회신</span></div>
+        <div class="q">일이 오가는 통로</div>
+        <div class="d">얼마나 자주 답하고, 물었을 때 얼마나 돌아오고, 못 하게 됐을 때 먼저 알리는가 — 이 세 가지가 <b>조직이 굴러가는 속도</b>를 정한다. 세 사람 같은 산식으로 잰다.</div>
+      </div>
       <div class="it">
-        <div class="n">소 관 성 과 · 70</div>
+        <div class="n">소 관 성 과 · 65</div>
         <div class="q">자리가 맡은 성과</div>
-        <div class="d">소관 업무가 사람마다 다르므로 <b>항목은 각자 다르되 합은 70으로 같다.</b> 각 항목은 원장에 있는 실측치로만 잰다.</div>
+        <div class="d">소관 업무가 사람마다 다르므로 <b>항목은 각자 다르되 합은 65로 같다.</b> 실측치로만 잰다.</div>
       </div>
       <div class="it">
         <div class="n">기 록 · 15</div>
         <div class="q">일이 기록에 남는가</div>
-        <div class="d">한 일이 원장에 남아야 다음 사람이 잇는다. 실장·나우열M은 <b>업무 SSOT</b>로, 소장은 <b>법정·정기점검 기록</b>으로 잰다 — 자리는 같고 재는 대상이 다르다.</div>
-      </div>
-      <div class="it">
-        <div class="n">보 고 · 회 신 · 15</div>
-        <div class="q">넘긴 것이 닫히는가</div>
-        <div class="d">전달·지목한 건이 회신으로 닫혀야 관리가 돈다. 세 사람 <b>같은 산식</b>(응답 성실도 12 + 남은 미회신 3)으로 잰다.</div>
+        <div class="d">한 일이 남아야 다음 사람이 잇는다. 실장·나우열M은 <b>업무 시트</b>로, 소장은 <b>법정·정기점검 기록</b>으로 잰다.</div>
       </div>
     </div>
   </div>
 
-  <div class="tblwrap">
+  <div class="st">세 사람 축별 점수 — 한눈에 <span class="est">(막대 = 획득 ÷ 배점 · 개인 평가지의 점수 그대로)</span></div>
+  <div class="tblwrap" style="margin-top:4px">
   <table>
-    <colgroup><col style="width:150px"><col><col><col></colgroup>
+    <colgroup><col style="width:170px"><col><col><col><col style="width:300px"></colgroup>
     <thead><tr>
-      <th class="k">축 <span class="sub">공통 배점 틀 (GM 확정 2026-09-01)</span></th><th>운영 — 이경연 실장</th><th>파트너팀 — 나우열M</th><th>시설 — 이정헌 소장</th>
+      <th class="k" style="width:170px">사람</th><th>소관 성과 · 65</th><th>기록 · 15</th><th>소통 — 보고와 회신 · 20</th><th>총점 · 100</th>
     </tr></thead>
     <tbody>
-      <tr class="grp"><td colspan="4">자 리 별 로 무 엇 을 재 는 가 <span style="letter-spacing:0">(칸의 내용 = 재는 대상 · 어느 원장 — 점수 아님)</span></td></tr>
       <tr>
-        <td class="k">소관 성과 <b>70</b></td>
-        <td><b>매출 25</b>(멤버십+옵션 · 마감 시트) · <b>종합접수처 25</b>(접수 완료율·소요 · 접수 원장) · <b>점검 20</b>(지원부 점검 제출·항목 완료율 · 점검 원장)<br><span class="est">운영부는 자체 점검 화면이 없어 지원부 점검 실적으로 잰다(GM 지시)</span></td>
-        <td><b>인사 25</b>(평가 체계·계약·급여·진급 · 결재 문서) · <b>파트너팀 관리 25</b>(팀 체계·리더 공석·신규 팀 영입 — 루프메소드/GXE 포함) · <b>파트너팀 매출 20</b>(총매출 − 멤버십·옵션 − 주차 − 뮤지컬 · 마감 시트)<br><span class="est">지출 관리는 원장이 없어 측정 불가 — 배점 제외</span></td>
-        <td><b>예방점검 25</b>(설비 일일점검 제출·입력률 · 점검 원장) · <b>고장 대응 20</b>(고장 접수 종결·소요 · 접수 원장) · <b>안전 15</b>(기준 이탈 · 점검 원장) · <b>상가 관리 10</b>(1F·B1 — 원장 없음 · 9월부터 실측)<br><span class="est">지원부·주차부는 시설부 산하가 아니라 전부 뺐다(GM 확정)</span></td>
-      </tr>
-      <tr>
-        <td class="k">기록 <b>15</b></td>
-        <td><b>업무 SSOT</b> — 분모 = 운영부 전체 70건(실장 역할 3번 「운영부 직원 관리」) · 본인 30건은 병기</td>
-        <td><b>업무 SSOT</b> — 분모 = 본인 75건(전사 최다)</td>
-        <td><b>법정·정기점검 기록</b> — 실시일 기록 9 + 설비 매뉴얼 6<br><span class="est">소장은 점검·고장 접수가 일이라 SSOT에 등록이 안 올라오는 것이 정상(GM 기확정) — 같은 무게로 「일이 기록에 남는가」를 이걸로 잰다</span></td>
+        <td class="k">운영 — 이경연 실장</td>
+        <td class="gb" style="background-image:linear-gradient(#CBD9E7,#CBD9E7);background-size:68% 62%;"><b>44</b> / 65</td>
+        <td class="gb" style="background-image:linear-gradient(#CBD9E7,#CBD9E7);background-size:47% 62%;"><b>7</b> / 15</td>
+        <td class="gb" style="background-image:linear-gradient(#B9DECC,#B9DECC);background-size:65% 62%;"><b>13</b> / 20</td>
+        <td class="gb strong" style="background-image:linear-gradient(#A8C0D8,#A8C0D8);background-size:64% 62%;"><b>64</b> / 100</td>
       </tr>
       <tr>
-        <td class="k">보고 및 회신 <b>15</b></td>
-        <td colspan="3" class="ctr">세 사람 <b>같은 산식</b> — 응답 성실도 12(요청 대비 응답률 7 + 응답·발화량 5) + 남은 미회신 3(= 3 − 무회신 × 0.5 · 반올림 · 하한 0) · 원장 = ★중간관리자 카톡방 8월 원문 직독</td>
+        <td class="k">시설 — 이정헌 소장</td>
+        <td class="gb" style="background-image:linear-gradient(#CBD9E7,#CBD9E7);background-size:75% 62%;"><b>49</b> / 65</td>
+        <td class="gb" style="background-image:linear-gradient(#CBD9E7,#CBD9E7);background-size:60% 62%;"><b>9</b> / 15</td>
+        <td class="gb" style="background-image:linear-gradient(#B9DECC,#B9DECC);background-size:55% 62%;"><b>11</b> / 20</td>
+        <td class="gb strong" style="background-image:linear-gradient(#A8C0D8,#A8C0D8);background-size:69% 62%;"><b>69</b> / 100</td>
       </tr>
-      <tr class="sum">
-        <td class="k">웰페리온 방향성과의 매칭 <span class="est">— 웰리 소견</span></td>
-        <td>멤버십 매출을 목표 위로 올린 것은 요금 인상 준비 축에 정확히 붙어 있다. 다만 회원이 겪은 불편을 닫는 속도(접수처 완료 65.5% · 기한 내 26%)가 「하루의 완성」이라는 미션과 아직 어긋난다 — 방향은 맞고 속도가 남았다.</td>
-        <td>팀을 늘려 없던 수입원(GXE)을 만든 것은 공간 활용 수익화 축에 정확히 맞는다. 세 사람 중 방향을 스스로 넓힌 유일한 자리다 — 남은 것은 늘린 것을 원장에 얹어 추적 가능하게 만드는 일이다.</td>
-        <td>매일 도는 점검과 고장 18건 전건 종결은 시설·설비 밸류업 축 그 자체다. 다만 법정 기록과 매뉴얼이 남지 않아 그 가치가 밖으로 증명되지 않는다 — 일은 방향에 있고 증거가 빠졌다.</td>
+      <tr>
+        <td class="k">파트너팀 — 나우열M</td>
+        <td class="gb" style="background-image:linear-gradient(#CBD9E7,#CBD9E7);background-size:77% 62%;"><b>50</b> / 65</td>
+        <td class="gb" style="background-image:linear-gradient(#CBD9E7,#CBD9E7);background-size:73% 62%;"><b>11</b> / 15</td>
+        <td class="gb" style="background-image:linear-gradient(#B9DECC,#B9DECC);background-size:90% 62%;"><b>18</b> / 20</td>
+        <td class="gb strong" style="background-image:linear-gradient(#A8C0D8,#A8C0D8);background-size:79% 62%;"><b>79</b> / 100</td>
       </tr>
-      <tr><td class="k">정성 평가 <span class="est">— 경영진 인터뷰</span></td><td colspan="3"><span class="est">작성 예정 — 개인 평가지의 점수는 정량 평가다. GM이 경영진 인터뷰 정성 평가를 붙여 최종 평가를 확정한다.</span></td></tr>
     </tbody>
   </table>
   </div>
 
-  <div class="cols">
-    <div class="box rec">
-      <h3>산식 — 세 사람 동일</h3>
+  <div class="comm">
+    <h3>소통 — 보고와 회신 (20) · 상세 <span class="est" style="font-weight:400">— 소통은 조직이 굴러가는 속도를 정하는 축이라 배점을 20으로 두었다 · 응답량 9점이 사람 사이 차이를 가장 크게 가른다</span></h3>
+    <table>
+      <colgroup><col style="width:170px"><col style="width:470px"><col><col style="width:150px"><col style="width:300px"></colgroup>
+      <thead><tr><th class="k" style="width:170px">사람</th><th>8월 방 발화 <span class="sub">중간관리자 카톡방 원문</span></th><th>요청 대비 응답</th><th class="ctr" style="width:150px">무회신</th><th>점수 · 20</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="k">이경연 실장</td>
+          <td class="gb" style="background-image:linear-gradient(#8FC7AE,#8FC7AE);background-size:33% 62%;"><b>68</b>회</td>
+          <td class="gb" style="background-image:linear-gradient(#DDE9E2,#DDE9E2);background-size:94% 62%;">59/63 · <b>94%</b></td>
+          <td class="ctr" style="vertical-align:middle">3건</td>
+          <td class="gb" style="background-image:linear-gradient(#B9DECC,#B9DECC);background-size:65% 62%;"><b>13</b> / 20</td>
+        </tr>
+        <tr>
+          <td class="k">이정헌 소장</td>
+          <td class="gb" style="background-image:linear-gradient(#8FC7AE,#8FC7AE);background-size:13% 62%;"><b>26</b>회</td>
+          <td class="gb" style="background-image:linear-gradient(#DDE9E2,#DDE9E2);background-size:90% 62%;">28/31 · <b>90%</b></td>
+          <td class="ctr" style="vertical-align:middle">2건</td>
+          <td class="gb" style="background-image:linear-gradient(#B9DECC,#B9DECC);background-size:55% 62%;"><b>11</b> / 20</td>
+        </tr>
+        <tr>
+          <td class="k">나우열M</td>
+          <td class="gb" style="background-image:linear-gradient(#8FC7AE,#8FC7AE);background-size:95% 62%;"><b>193</b>회 — 전사 최다</td>
+          <td class="gb" style="background-image:linear-gradient(#DDE9E2,#DDE9E2);background-size:98% 62%;">41/42 · <b>98%</b></td>
+          <td class="ctr" style="vertical-align:middle">3건</td>
+          <td class="gb strong" style="background-image:linear-gradient(#B9DECC,#B9DECC);background-size:90% 62%;"><b>18</b> / 20</td>
+        </tr>
+      </tbody>
+    </table>
+    <span class="est">▸ 소장의 발화가 적은 것은 점검·고장 접수가 본업이라 방에 글을 적게 쓰는 자리인 영향이 있다 · 에스컬레이터 작업 지연을 사유까지 밝혀 사전 통보한 것(8/31)은 응답 가점 근거다</span>
+  </div>
+
+  <div class="st">무엇을 재는가 <span class="est">(칸 = 재는 대상만 — 점수는 위 표에서 본다)</span></div>
+  <div class="tblwrap" style="margin-top:4px">
+  <table>
+    <colgroup><col style="width:170px"><col><col><col></colgroup>
+    <thead><tr>
+      <th class="k" style="width:170px">축</th><th>운영 — 이경연 실장</th><th>시설 — 이정헌 소장</th><th>파트너팀 — 나우열M</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="k">소관 성과 <b>65</b></td>
+        <td><b>매출 23</b> — 멤버십+옵션 · 마감 시트<br><b>종합접수처 23</b> — 접수 완료·소요<br><b>점검 19</b> — 지원부 점검 제출·완료율 · 점검 화면</td>
+        <td><b>예방점검 23</b> — 설비 일일점검 · 점검 화면<br><b>고장 대응 19</b> — 종결·소요 · 종합접수처<br><b>안전 14</b> — 기준 이탈 · <b>상가 관리 9</b> — 1F·B1</td>
+        <td><b>인사 23</b> — 평가 체계·계약·급여·진급<br><b>파트너팀 관리 23</b> — 팀 체계·리더 공석·신규 팀 영입<br><b>강습팀 매출 19</b> — 강습 종목 매출 합산(P.T·수영·스쿼시·체조 등) · 매출 마감</td>
+      </tr>
+      <tr>
+        <td class="k">기록 <b>15</b></td>
+        <td><b>업무 시트</b> — 운영부 전체 70건(본인 30건 병기)</td>
+        <td class="hl"><b>★법정·정기점검 기록</b> — 실시일 기록 + 설비 매뉴얼<br><span class="est">소장만 다르다 — 점검·고장 접수가 본업이라 업무 시트에 안 올라오는 것이 정상</span></td>
+        <td><b>업무 시트</b> — 본인 75건(전사 최다)</td>
+      </tr>
+      <tr>
+        <td class="k">소통 — 보고와 회신 <b>20</b></td>
+        <td colspan="3" class="ctr" style="vertical-align:middle">세 사람 <b>같은 산식</b> · 중간관리자 카톡방 8월 원문으로 잰다 — 수치는 위 상세 표</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="cols" style="flex:0 0 auto">
+    <div class="box rec" style="flex:1.9">
+      <h3>웰페리온 방향성과의 매칭 — 웰리 소견</h3>
       <ul>
-        <li><b>업무 SSOT 15</b> = 완료율 7(완료 ÷ 전체 × 7 · 반올림) + 기한 준수 6(기한 내 완료 ÷ 판정 가능 완료건 × 6 · 반올림) + 적체 2(최장 지각 0일 2 · 30일 이하 1.5 · 60일 이하 1 · 60일 초과 0.5)</li>
-        <li><b>기한 내 판정</b> = 완료일 ≤ 종료일. 완료일·종료일이 둘 다 있는 완료건만 분모(빈 칸은 판정 불가라 제외)</li>
-        <li><b>보고 및 회신 15</b> = 응답 성실도 12(요청 대비 응답률 7 + 응답·발화량 5) + 남은 미회신 3(= 3 − 무회신 × 0.5 · 반올림 · 하한 0)</li>
-        <li><b>기록 15(소장)</b> = 법정·정기점검 실시일 기록 9(기록 건수 ÷ 14 × 9) + 설비 매뉴얼 6(확보 ÷ 12 × 6)</li>
-        <li>배점을 바꾼 축은 같은 비율로 환산 — 점수를 새로 지어내지 않는다</li>
+        <li><b>이경연 실장</b> — 멤버십 매출을 목표 위로 올린 것은 요금 인상 준비 축에 정확히 붙어 있다. 다만 회원이 겪은 불편을 닫는 속도(접수처 완료 65.5% · 기한 내 26%)가 「하루의 완성」이라는 미션과 아직 어긋난다 — 방향은 맞고 속도가 남았다.</li>
+        <li><b>이정헌 소장</b> — 매일 도는 점검과 고장 18건 전건 종결은 시설·설비 밸류업 축 그 자체다. 다만 법정 기록과 매뉴얼이 남지 않아 그 가치가 밖으로 증명되지 않는다 — 일은 방향에 있고 증거가 빠졌다.</li>
+        <li><b>나우열M</b> — 팀을 늘려 없던 수입원(GXE)을 만든 것은 공간 활용 수익화 축에 정확히 맞는다. 세 사람 중 방향을 스스로 넓힌 유일한 자리다 — 남은 것은 늘린 것을 원장에 얹어 추적 가능하게 만드는 일이다.</li>
       </ul>
     </div>
     <div class="box">
-      <h3>원장 출처 — 어디서 센 값인가</h3>
+      <h3>정성 평가 — 경영진 인터뷰 <span style="font-weight:400;font-size:11.5px;color:#5C666F">(작성 예정)</span></h3>
       <ul>
-        <li><b>업무 SSOT</b> = 업무 SSOT 시트 <code>todo_list</code> 157행(2026-09-01) 담당자 칸 직접 카운트</li>
-        <li><b>점검</b> = <code>status/check_incomplete_ledger.json</code> 부서별 원장 8/1~31 전수</li>
-        <li><b>종합접수처·고장</b> = <code>status/monthly_report_ledger.json</code>(reception) + 접수 원장 직접 집계</li>
-        <li><b>매출</b> = 8/31 마감 시트 최종치(<code>reports/260901_8월_운영현황_A3.html</code>) · GXE = <code>monthly_report_ledger.json</code> sales.by_segment</li>
-        <li><b>발화·회신·무회신</b> = ★중간관리자 카톡방 8월 원문 직독(2026-09-01 재집계) · 요청 대비 응답 = 8/1~26 수집분 · 무회신 = 2026-08-31 GM 실측</li>
+        <li>경영진 인터뷰 결과를 여기에 채운다 — 세 개인 평가지의 정성 평가 칸과 같은 자리다</li>
+        <li>인터뷰 후 최종 평가를 확정한다</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cols" style="flex:0 0 auto">
+    <div class="box">
+      <h3>산식</h3>
+      <ul>
+        <li><b>소통 20</b> = 응답률 7 + 응답량 9 + 남은 미회신 4(= 4 − 무회신 × 0.5)</li>
+        <li><b>기록 15</b> = 완료율 7 + 기한 준수 6 + 적체 2 · 소장은 실시일 기록 9 + 설비 매뉴얼 6</li>
+        <li><b>소관 65</b> = 자리별 하위 배분(위 「무엇을 재는가」 표) · 항목별 실측</li>
       </ul>
     </div>
     <div class="box">
-      <h3>못 재는 것 — 다음 달에 채울 칸</h3>
+      <h3>수치 출처</h3>
       <ul>
-        <li class="r2"><b>지출 관리(나우열M)</b> — 관리 원장이 없어 계획 대비·추이를 잴 수 없다 · 원장 지정이 9월 첫 과제</li>
-        <li class="r2"><b>상가(1F·B1) 관리(소장)</b> — 관리 대장·접수 이력 원장이 없어 8월 집계 없음 · 9월 대장 신설 후 실측</li>
-        <li class="r2"><b>운영부 자체 점검</b> — 자체 점검 화면이 없어 지원부 실적으로 대신 잰다</li>
-        <li class="r2"><b>주차부 점검</b> — 월간 집계 통로가 없어 8월 집계 자체가 없다(0%가 아니다)</li>
-        <li class="r2"><b>회신 추적 자동화</b> — 무회신은 GM 실측에 의존 · 사람별 자동 집계 배선이 진행 중</li>
+        <li><b>매출</b> = 매출 마감 · <b>접수·고장</b> = 종합접수처 · <b>점검</b> = 점검 화면</li>
+        <li><b>기록</b> = 업무 시트 · 소장은 법정·정기점검 기록</li>
+        <li><b>발화·응답·무회신</b> = 중간관리자 카톡방 8월 원문</li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>측정의 한계 — 다음 달에 채울 칸</h3>
+      <ul>
+        <li class="r2"><b>지출 관리(나우열M)</b> — 원장 없음 · 배점 제외 · 9월 원장 지정</li>
+        <li class="r2"><b>상가 관리 8월(소장)</b> — 원장 없음 · 9월부터 실측</li>
+        <li class="r2"><b>운영부·주차부 점검</b> — 집계 경로 없음(0%가 아니다) · 운영부는 지원부 실적으로 잰다</li>
+        <li><b>기한 내 판정</b> = 완료일 ≤ 종료일 · 두 날짜가 있는 완료건만 분모</li>
+        <li><b>요청 대비 응답</b>은 근사 집계다(키워드 기준)</li>
       </ul>
     </div>
   </div>
 
   <div class="foot">
-    <div><b>이 장의 성격</b> — 역할군이 달라 세 사람을 견주는 표가 아니다. 같은 틀로 재기 위해 <b>무엇을 어떤 원장으로 쟀는지</b>를 정리한 장이다. 점수는 각 개인 평가지에서 본다. 순위·서열은 매기지 않는다 — 소관 업무가 달라 총점 비교는 서열이 되지 않는다.</div>
-    <div><b>개인 평가지 (사람마다 1장)</b> — 이경연 실장 = <code>260831_중간관리자평가_이경연실장_A3.html</code> · 나우열M = <code>260831_중간관리자평가_나우열M_A3.html</code> · 이정헌 소장 = <code>260831_중간관리자평가_이정헌소장_A3.html</code>. 제목·부제·정량 평가 명시·방향성 매칭 행·정성 평가 행은 세 장 같은 자리다.</div>
-    <div><b>방향성 매칭 행의 기준</b> — 미션 「회원 한 사람의 건강한 하루를 완성한다」 + 하반기 3축(시설·설비 밸류업 / 요금 인상 준비 / 공간 활용 수익화). 점수가 아니라 방향 정합에 대한 웰리 소견이다. 회장님 팀별 오찬은 경영지원부 정규 업무라 중간관리자 평가에서 제외했다(GM 확정 2026-09-01).</div>
+    <div><b>이 장의 성격</b> — 역할군이 달라 세 사람을 견주는 표가 아니다. 순위·서열은 매기지 않는다 — 소관 업무가 달라 총점 비교는 서열이 되지 않는다. 점수의 판정 근거·항목별 상세는 <b>개인 평가지 3장</b>(이경연 실장 · 이정헌 소장 · 나우열M · 각 A3 1장)에서 본다. 회장님 팀별 오찬은 경영지원부 정규 업무라 중간관리자 평가에서 제외했다.</div>
+    <div><b>방향성 매칭의 기준</b> — 미션 「회원 한 사람의 건강한 하루를 완성한다」 + 하반기 3축(시설·설비 밸류업 / 요금 인상 준비 / 공간 활용 수익화). 점수가 아니라 방향 정합에 대한 웰리 소견이다.</div>
   </div>
 
 </div>
