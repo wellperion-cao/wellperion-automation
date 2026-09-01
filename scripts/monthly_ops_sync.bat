@@ -13,5 +13,10 @@ set LOGFILE=C:\Users\jjky0\welperion-automation\logs\monthly_ops_sync.log
 echo. >> "%LOGFILE%"
 echo ===== RUN %date% %time% ===== >> "%LOGFILE%"
 C:\Python314\python.exe scripts\monthly_ops_sync.py --apply >> "%LOGFILE%" 2>&1
+REM 2026-09-01 (cto, ship 860): weekly chairman-report draft, Mondays only (script self-gates,
+REM   non-Monday runs exit immediately). Piggybacks this daily 07:00 task per promise L21 -
+REM   no new scheduled task. Sends DRAFT to GM report room via telegram_notifier; GM reviews
+REM   before anything goes to the chairman.
+C:\Python314\python.exe scripts\weekly_report_draft.py --send >> "%LOGFILE%" 2>&1
 echo ===== END %date% %time% ===== >> "%LOGFILE%"
 exit /b 0
