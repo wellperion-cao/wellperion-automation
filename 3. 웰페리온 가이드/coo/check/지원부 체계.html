@@ -2299,6 +2299,20 @@ function roundsToStr(arr){
   return arr.filter(function(x){return ROUND_KEYS.indexOf(x)>=0;}).join(',');
 }
 
+/* 구역 폴백(2026-09-01 시토 · GM 지적 "매뉴얼이 다 뭉쳐놨네"):
+   시트 분류칸이 51행 전부 공란이라 매뉴얼 탭이 51개를 '추가 점검' 한 덩어리로 보여줬다.
+   항목 이름이 이미 OP-/A-/B-… 접두로 구역을 달고 있으므로 분류칸이 비면 그 접두로 구역을 정한다.
+   시트는 건드리지 않는다 — 실무진이 분류칸을 채우면 그 값이 그대로 이긴다. */
+var _CAT_BY_PREFIX = {
+  'OP':'오픈·마감 확인', 'A':'사우나', 'B':'락커·파우더·휴게', 'C':'공용 구역',
+  'D':'운동 시설', 'E':'외부', 'F':'정기 대청소', 'G':'방역·환기'
+};
+function catFromName(name){
+  var m = String(name==null?'':name).trim().match(/^(OP|[A-G])-\d/i);
+  if(!m) return '추가 점검';
+  return _CAT_BY_PREFIX[m[1].toUpperCase()] || '추가 점검';
+}
+
 /* 시트 행 → 프론트 항목 모델 */
 function itemFromSheet(row){
   return {
@@ -2307,7 +2321,7 @@ function itemFromSheet(row){
     shift: row.shift || slotToShiftFront(row.slot),
     dayType: row.dayType || 'both',
     gender: row.gender || 'all',
-    category: row.cat || '추가 점검',
+    category: row.cat || catFromName(row.name),
     name: row.name || '',
     detail: row.detail || '',
     order: row.order,
