@@ -92,6 +92,17 @@
   .glance td.k{ text-align:center; }
   .intake{ margin-top:10px; }
 
+  /* 9월에 끝낼 것 — 3분기 마감 */
+  .close9{ border:1px solid var(--line); border-top:3px solid var(--navy); padding:10px 14px 9px; margin-bottom:10px; }
+  .close9 h3{ font-size:14.5px; font-weight:700; color:var(--navy); letter-spacing:-.3px; word-break:keep-all; }
+  .close9 table{ margin-top:7px; }
+  .close9 th,.close9 td{ font-size:12.2px; padding:3px 8px; line-height:1.35; }
+  .close9 thead th{ height:26px; font-size:12.2px; padding:0 8px; }
+  .close9 td.k{ font-size:12.2px; }
+  .close9 .fin{ margin-top:6px; border-top:1px dashed var(--line); padding-top:5px;
+    font-size:11.8px; line-height:1.45; color:#48525B; word-break:keep-all; }
+  .close9 .fin b{ color:var(--ink); }
+
   /* 채움률 차트 */
   .chart{ flex:1; border:1px solid var(--line); border-top:3px solid var(--navy); padding:12px 16px 10px;
     display:flex; flex-direction:column; }
@@ -147,7 +158,7 @@
     <div class="items">
       <div class="it">
         <div class="q">1. 중간관리자 소통 체계부터 세운다</div>
-        <div class="d">핵심은 <b>소통</b> — 3분기 내내 없던 <b>보고 주기 규정을 9월 계약서에 넣는다</b>. 실장·소장·나우열M 3개 라인 (GM 자체 진행).</div>
+        <div class="d">핵심은 <b>소통</b> — 3분기 내내 없던 <b>보고 주기 규정을 9월 계약서에 넣는다</b>. 실장·소장·나우열M 3개 라인 — 내부에서 정해 체계화한다.</div>
       </div>
       <div class="it">
         <div class="q">2. 점검 시작일 — 주차관리부 9/18 · 운영부 10/1</div>
@@ -234,8 +245,26 @@
       </div>
     </div>
 
-    <!-- 오른쪽 — 채움률 막대 -->
+    <!-- 오른쪽 — 9월 마감 표 + 채움률 막대 -->
     <div class="rgt">
+      <div class="close9">
+        <h3>9월에 끝낼 것 — 3분기 마감</h3>
+        <table>
+          <colgroup><col style="width:148px"><col style="width:158px"><col></colgroup>
+          <thead><tr><th>무엇</th><th>지금</th><th>9월 말</th></tr></thead>
+          <tbody>
+            <tr><td class="k">주차관리부 점검 정착</td><td>집계 통로 없음</td><td><b>9/18 제출 시작</b> — 첫 데이터 확보</td></tr>
+            <tr><td class="k">운영부 점검</td><td>화면 자체 없음</td><td>ERP·브로제이 안정화 끝내고 <b>10/1 시작 준비 완료</b></td></tr>
+            <tr><td class="k">시설부 점검 채움</td><td>74% <span class="est">· 안 채운 205항목</span></td><td>205항목 소화</td></tr>
+            <tr><td class="k">지원부 점검 이슈</td><td>83건 · 처리 라인 미정</td><td>처리 라인 확정 · 소화 시작</td></tr>
+            <tr><td class="k">접수 미완</td><td>컴플레인 10건 · 분실물 7건</td><td><b>전건 종결</b></td></tr>
+            <tr><td class="k">보고·매출 무인화</td><td>3분기 1단계 잔여</td><td>손입력 칸 없애기 완료</td></tr>
+            <tr><td class="k">중간관리자 보고 주기</td><td>규정 없음</td><td>9월 계약서에 규정 반영 <span class="est">· 3개 라인</span></td></tr>
+            <tr><td class="k">진척률 집계</td><td>사람이 세어 올림</td><td>원장 자동 산출</td></tr>
+          </tbody>
+        </table>
+        <div class="fin">지금 3분기 1단계 <b>60%</b> · 2단계 <b>40%</b> — 위 여덟 건을 닫으면 1단계 잔여(주차부 점검 정착·보고 무인화)와 2단계 잔여(보고 주기 규정)가 소화돼 3분기를 마감한다.</div>
+      </div>
       <div class="chart">
         <h3>부서별 점검 채움률 — 7월 → 8월 <span class="est">연한 막대 = 7월 · 진한 막대 = 8월에 오른 폭</span></h3>
         <div class="rows">
@@ -268,7 +297,7 @@
 
   <!-- ⑥ 각주 -->
   <div class="foot">
-    <div><b>9월 GM 자체 진행(시범 9/1~9/30 · 결과는 9/30 보고)</b> — 시설 긴급 대응·운영 일상 결정은 GM이 바로 처리하고 사후 보고. 인사·예산·대외는 그대로 회장님께 먼저 여쭙는다. 금액 기준은 회장님께서 정해 주시는 대로 채운다.</div>
+    <div><b>보고·결정 체계</b> — 9월 중 내부에서 정해 체계화한다.</div>
     <div><b>기준일·오차</b> — 8월 수치 = <b>2026-09-01 원장 직접 카운트</b> · 로드맵 = 월간운영계획 직독(08-27) · 중앙 = 접수~완료 일수의 중앙값. 1단계 60% = ERP 연동값 · 2단계 40% = 경과 기준(추정).</div>
     <div><b>출처</b> — 월간운영계획 · 업무 시트 · 점검 화면 · 종합접수처. 지원부 '낸 날'은 일수 <b>29/31</b>과 비율 <b>12% → 53%</b>를 원장 값 그대로 병기(집계 기준이 다르다).</div>
   </div>
