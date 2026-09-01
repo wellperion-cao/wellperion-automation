@@ -1850,25 +1850,9 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   .wp-ldy__notice{border:1px solid rgba(232,163,61,0.55);background:rgba(232,163,61,0.12);border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:12.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .wp-ldy__guide{border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12.5px;line-height:1.75;color:var(--text)}
   .wp-ldy__guide b{font-weight:750}
+  /* diff 색 2종은 재고 원장의 '실사 대비' 표시가 쓴다 — 퀵탭 삭제(2026-09-01)와 무관하게 유지 */
   .wp-ldy__diff-ok{color:var(--dim)}
   .wp-ldy__diff-bad{color:#e06b6b;font-weight:750}
-  /* 출고 퀵탭 카드(2026-08-08 GM 정정 — 배치할 때마다 눌러 기록) */
-  .wp-ldy__issuecards{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
-  .wp-ldy__icard{border:1px solid var(--border);border-radius:10px;padding:9px 12px}
-  .wp-ldy__icard-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-  .wp-ldy__icard-name{font-weight:750;font-size:14px}
-  .wp-ldy__icard-stat{font-size:12px;color:var(--dim)}
-  .wp-ldy__icard-stat b{color:var(--text);font-variant-numeric:tabular-nums}
-  .wp-ldy__qrow{display:flex;gap:7px}
-  .wp-ldy__qbtn{flex:1;min-height:46px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;font-weight:750;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
-  .wp-ldy__qbtn:active{background:var(--accent,#4ec4c4);color:#141312}
-  /* 입력칸+버튼 2개 줄 — 버튼을 카드 폭만큼 늘리지 않는다(GM 2026-08-11 "좌우로 길게 가져갔어야해?").
-     퀵탭 시절엔 숫자 버튼 4개가 폭을 나눠 가져 flex:1 이 맞았지만, 지금은 버튼이 둘뿐이라
-     늘리면 손가락이 갈 자리보다 빈 공간이 커진다. 내용 폭 + 누르기 편한 최소치로 고정한다. */
-  .wp-ldy__qbtn--open{border-color:rgba(78,196,196,0.55)}
-  .wp-ldy__qrow--type{justify-content:flex-start}
-  .wp-ldy__qrow--type .wp-ldy__qbtn{flex:0 0 auto;padding:0 18px;font-size:14px}
-  .wp-ldy__qin{flex:0 0 84px;min-height:46px;text-align:center;font-size:16px;font-weight:750}
   @media(max-width:430px){
     .wp-ldy__tbl th,.wp-ldy__tbl td{padding:5px 4px;font-size:12px}
     .wp-ldy__in{width:62px;padding:5px 4px}
@@ -1885,7 +1869,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
          입고/출고 칸이었다 → 2026-09-01 GM "우리 기준으로 셋팅" — 품목은 품목 마스터(원장)와 같은 목록을
          쓰고, 칸은 계산식이 쓰는 「입고」·「마감재고」로 맞췄다(종이·화면·계산이 같은 두 칸을 본다).
          저장은 기존 저장소 그대로(daily[날짜][품목].in / .end · 새 저장소 없음). 옛 .out 데이터는 지우지
-         않는다 — 출고 계산(wpLdyIssueQty)이 계속 읽는다. -->
+         않는다 — 기록 보존(출고 화면·계산은 2026-09-01 GM 지시로 삭제). -->
     <div id="wpLdyView-sheet">
       <div class="wp-ldy__h" style="margin-top:4px">📄 월간 출하 기록 <span class="wp-ldy__k" style="font-weight:600">— 종이(출하표)를 옮겨 적는 곳</span></div>
       <div class="wp-ldy__hint">종이에 적은 숫자를 그대로 옮겨 적습니다. <b>입고</b>=받은 개수 · <b>마감재고</b>=마감 때 세어 남은 개수. 빈 칸은 비워 두세요 — 0 과 다릅니다.</div>
@@ -1905,12 +1889,13 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <!-- 기초재고가 비어 있으면 사용량이 계산되지 않는다 — 여기서 먼저 알린다(GM 요청 2026-08-07) -->
       <div id="wpLdyOpeningWarn"></div>
       <!-- 사용 가이드 — 실무진이 화면만 보고 바로 쓰게(GM 지시 2026-08-08, 08-08 흐름 정정 반영) -->
-      <!-- 6줄→4줄 축약(GM "스크롤이 너무 길다" 2026-09-01) — 오픈/보충 구분 이유·인쇄 위치 등 상세는 해당 접힘 안에 있다 -->
+      <!-- 출고 퀵탭(오픈 셋팅·보충·직접 입력·취소)과 출고/이론재고/차이 칼럼은 GM 지시로 삭제(2026-09-01
+           "출고 퀵탭 삭제") — 확정 운영은 종이(입고·마감재고) → 카톡 → 점검자 기록이라 실시간 출고 기록이 없다.
+           저장된 옛 출고 기록(issues)은 지우지 않는다 — 화면·입력만 걷었다. -->
       <div class="wp-ldy__guide">
         <b>① 받을 때</b> — 배송 오면 품목별 받은 개수를 <b>입고</b> 칸에(하루 1번).<br>
-        <b>② 배치할 때마다</b> — 아래 「출고 즉시 기록」에서 수량을 쳐 넣고 <b>오픈 셋팅</b>/<b>보충</b>을 누릅니다. 잘못 누르면 그 안의 <b>↩ 직전 출고 취소</b>.<br>
-        <b>③ 마감 때</b> — 남은 개수를 세서 <b>마감재고</b> 칸에. <b>차이</b>가 빨간 글씨면 분실·미기록 신호.<br>
-        <b>④ 종이</b> — 맨 위 「월간 출하 기록」에서 출하표를 인쇄해 현장이 손으로 적고, 점검 때 화면에 옮깁니다.
+        <b>② 마감 때</b> — 남은 개수를 세서 <b>마감재고</b> 칸에(하루 1번). 마감재고가 빨간 칸이면 익일 결품 위험.<br>
+        <b>③ 종이</b> — 맨 위 「월간 출하 기록」에서 출하표를 인쇄해 현장이 손으로 적고, 점검 때 화면에 옮깁니다.
       </div>
       <div class="wp-ldy__bar">
         <input type="date" id="wpLdyDate" class="wp-ldy__in" style="width:150px;text-align:left" onchange="wpLdyRenderToday()">
@@ -1920,26 +1905,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
         <span id="wpLdySaveState" class="wp-ldy__k"></span>
         <!-- 출하표 인쇄 버튼은 맨 위 「월간 출하 기록」 한 곳만 — 같은 버튼 두 개는 중복(GM 감사 2026-09-01) -->
       </div>
-      <!-- 출고 기록 — 배치할 때마다 누르는 곳(하루 여러 번, 모바일 우선 · GM 정정 2026-08-08).
-           카드 8품목이 화면 800px를 차지해 접었다(GM "스크롤이 너무 길다" 2026-09-01 — 이 페이지 기존 details 패턴 재사용). -->
-      <details style="margin-bottom:12px">
-        <summary style="cursor:pointer;font-size:12.5px;font-weight:650;color:var(--accent,#4ec4c4)">🔘 출고 즉시 기록 — 오픈 셋팅·보충 버튼 (배치할 때마다)</summary>
-        <div class="wp-ldy__bar" style="margin:8px 0">
-          <button class="wp-ldy__btn" onclick="wpLdyUndoIssue()">↩ 직전 출고 취소</button>
-          <span id="wpLdyUndoState" class="wp-ldy__k"></span>
-        </div>
-        <div class="wp-ldy__issuecards" id="wpLdyIssueCards"></div>
-      </details>
-      <details style="margin-bottom:12px">
-        <summary style="cursor:pointer;font-size:12.5px;font-weight:650;color:var(--accent,#4ec4c4)">＋ 직접 수량 입력 (버튼에 없는 정확한 개수)</summary>
-        <div class="wp-ldy__bar" style="margin-top:8px">
-          <select id="wpLdyOutItem" class="wp-ldy__in" style="width:130px;text-align:left"></select>
-          <input type="number" id="wpLdyOutQty" class="wp-ldy__in" placeholder="수량" min="1" inputmode="numeric">
-          <button class="wp-ldy__btn" onclick="wpLdyIssueManual()">출고 기록</button>
-        </div>
-      </details>
       <div style="overflow-x:auto"><table class="wp-ldy__tbl">
-        <thead><tr><th style="text-align:left">품목</th><th>전일마감</th><th>입고</th><th>신품</th><th>출고</th><th>이론재고</th><th>마감재고</th><th>차이</th></tr></thead>
+        <thead><tr><th style="text-align:left">품목</th><th>전일마감</th><th>입고</th><th>신품</th><th>마감재고</th></tr></thead>
         <tbody id="wpLdyTodayBody"></tbody>
       </table></div>
       <details style="margin-top:10px">
@@ -1951,7 +1918,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
           <button class="wp-ldy__btn" onclick="wpLdyAddNewInput()">기록</button>
         </div>
       </details>
-      <div class="wp-ldy__hint">이론재고 = 전일마감 + 입고 + 신품 − 출고(기록 누계). 차이 = (전일마감+입고+신품−마감재고) − 출고. 마감재고를 아직 안 적었으면 차이는 “–”로 둡니다.</div>
+      <div class="wp-ldy__hint">사용량 = 전일마감 + 입고 + 신품 − 마감재고 — 아래 「📊 월간 현황」에서 자동 집계됩니다.</div>
     </div>
 
     <!-- ② 월간 현황 — 월 선택은 맨 위 「월간 출하 기록」의 선택기 하나를 같이 쓴다(월간 뷰 단일화 · GM 감사 2026-09-01).
@@ -6763,12 +6730,9 @@ const WP_LDY_SEED = [
   {id:'btm',    name:'운동복 하', unitPrice:133,  lowLimit:65,  active:true},
   {id:'carpet', name:'카페트',    unitPrice:5000, lowLimit:1,   active:true}
 ];
+/* issues = 구 출고 퀵탭(2026-08-08~09-01)이 남긴 이벤트 로그. 퀵탭·출고 화면은 GM 지시로 삭제됐지만
+   (2026-09-01) 저장된 기록은 지우지 않는다 — 스키마에 남겨 옛 데이터를 보존한다. */
 var LAUNDRY_DATA = {master:[], openingStock:{}, daily:{}, newInput:[], audit:[], issues:[]};
-/* 출고 세션 안전망(2026-08-08 라이브 검증 중 발견·수정) — 탭을 다시 열 때마다 백엔드 재조회를 하는데(switchTab),
-   GAS 응답이 느리면(수 초) 그사이 누른 출고 버튼이 뒤늦게 도착한 옛 서버 스냅샷에 덮여 사라질 수 있었다.
-   이번 세션에서 기록/취소한 출고는 여기 따로 쥐고 있다가, 백엔드 응답이 들어올 때마다(wpLdyApplyStored) 다시 얹는다. */
-var WP_LDY_SESSION_ISSUES = [];
-var WP_LDY_UNDONE_TS = {};
 
 /* ── 계산 규칙(지시서 §6) — 화면과 검산이 같은 함수를 쓴다 ────────────────── */
 /* 휴관일 — 정본 = status/close_days.json + scripts/close_days.py(is_closed). 브라우저는 파이썬을
@@ -6822,50 +6786,8 @@ function wpLdyUsage(itemId, dateStr){
   if (prev === null) return null;
   return prev + (wpLdyIn(itemId, dateStr) || 0) + wpLdyNewQty(itemId, dateStr) - end;
 }
-/* ── 출고 기록(2026-08-08 GM 정정) — 배치할 때마다 버튼으로 즉시 기록되는 이벤트 로그.
-   Σ출고 = 오늘 실제로 "뺐다"고 기록된 양(사람이 버튼 눌러서 만든 값).
-   이론재고 = 전일마감 + 입고 + 신품 − Σ출고 — 마감 전에도 바로 보여줄 수 있다(실사 불필요).
-   차이 = 사용량(마감실사로 검증) − Σ출고 — 0이 아니면 "기록 안 하고 뺀 것"이 있다는 신호. ── */
-function wpLdyIssueQty(itemId, dateStr){
-  var log = (LAUNDRY_DATA.issues || []).reduce(function(s, x){
-    return s + ((x && x.date === dateStr && x.itemId === itemId) ? (wpLdyNum(x.qty) || 0) : 0);
-  }, 0);
-  if (log > 0) return log;
-  /* daily[날짜][품목].out = 하루치 출고 합계를 한 번에 적던 값(구 출하 체크리스트 2026-08-31 한시 운용
-     + 수동 입력 호환). 2026-09-01 화면 개편으로 새로 쓰이는 칸은 아니지만, 이미 적힌 값은 계속 읽는다.
-     버튼 기록(issues)이 하나라도 있으면 그쪽이 우선 — 두 벌로 세지 않는다. */
-  var rec = LAUNDRY_DATA.daily[dateStr];
-  var out = rec && rec[itemId] ? wpLdyNum(rec[itemId].out) : null;
-  return out === null ? 0 : out;
-}
-/* 오픈 셋팅분 / 보충분 따로 세기(GM 프로세스 2026-08-11).
-   kind 가 없는 옛 기록은 보충으로 읽는다 — 그때는 구분 자체가 없었다(무회귀). */
-function wpLdyIssueQtyBy(itemId, dateStr, kind){
-  return (LAUNDRY_DATA.issues || []).reduce(function(s, x){
-    if (!x || x.date !== dateStr || x.itemId !== itemId) return s;
-    var k = (x.kind === 'open') ? 'open' : 'refill';
-    return s + (k === kind ? (wpLdyNum(x.qty) || 0) : 0);
-  }, 0);
-}
-/* 어제 들어온 것 중 아직 안 나간 양 — GM 프로세스 2026-08-11 "어제 입고된 수량에서 -처리".
-   세탁물은 저녁(20:30~22:00)에 들어와 **다음날** 쓰인다. 그래서 오늘 화면이 봐야 하는 재고는
-   오늘 입고가 아니라 **어제 입고분**이다. 직전 기입일의 입고를 기준으로 오늘 나간 양을 뺀다
-   (휴관일·미기입일이 있어도 '하루 전'으로 못 박지 않는다 — 실제로 마지막에 들어온 날을 찾는다).
-   입고 기록이 아예 없으면 null(화면에 안 띄운다 — 0 으로 적으면 '다 썼다'로 읽힌다). */
-function wpLdyInboundLeft(itemId, dateStr){
-  var keys = Object.keys(LAUNDRY_DATA.daily).filter(function(k){ return k < dateStr; }).sort();
-  for (var i = keys.length - 1; i >= 0; i--){
-    var rec = LAUNDRY_DATA.daily[keys[i]];
-    var v = rec && rec[itemId] ? wpLdyNum(rec[itemId].in) : null;
-    if (v !== null) return v - wpLdyIssueQty(itemId, dateStr);
-  }
-  return null;
-}
-function wpLdyTheoretical(itemId, dateStr){
-  var prev = wpLdyPrevEnd(itemId, dateStr);
-  if (prev === null) return null;
-  return prev + (wpLdyIn(itemId, dateStr) || 0) + wpLdyNewQty(itemId, dateStr) - wpLdyIssueQty(itemId, dateStr);
-}
+/* (구 출고 기록 계산 4종 — wpLdyIssueQty·wpLdyIssueQtyBy·wpLdyInboundLeft·wpLdyTheoretical — 은
+   출고 퀵탭과 함께 삭제. 사용량 계산(wpLdyUsage)은 출고를 안 쓰므로 무영향 · GM 지시 2026-09-01) */
 /* 월 합계 — 품목별 사용/입고/로스 추정(Σ사용 − Σ입고). 지시서 §6. */
 function wpLdyMonthStats(ym){
   var days = Object.keys(LAUNDRY_DATA.daily).filter(function(k){ return k.indexOf(ym) === 0; }).sort();
@@ -6958,11 +6880,7 @@ function wpLdyApplyStored(stored){
     audit: Array.isArray(s.audit) ? s.audit : [],
     issues: Array.isArray(s.issues) ? s.issues : []
   };
-  // 세션 안전망 적용 — 이번 세션에 취소한 건 지우고, 이번 세션에 기록했는데 방금 온 스냅샷에 없는 건 다시 얹는다.
-  LAUNDRY_DATA.issues = LAUNDRY_DATA.issues.filter(function(x){ return !WP_LDY_UNDONE_TS[x.ts]; });
-  WP_LDY_SESSION_ISSUES.forEach(function(x){
-    if (!LAUNDRY_DATA.issues.some(function(y){ return y.ts === x.ts; })) LAUNDRY_DATA.issues.push(x);
-  });
+  // (구 출고 세션 안전망은 퀵탭 삭제와 함께 제거 — 출고를 쓰는 화면이 없어 경합 대상이 없다 · 2026-09-01)
 }
 function wpLdyLoadLocal(){
   var stored = null;
@@ -7054,85 +6972,25 @@ function wpLdyRenderToday(){
   var html = '';
   wpLdyItems().forEach(function(m){
     var prev = wpLdyPrevEnd(m.id, d), inv = wpLdyIn(m.id, d), end = wpLdyEnd(m.id, d);
-    var nq = wpLdyNewQty(m.id, d), issue = wpLdyIssueQty(m.id, d), theo = wpLdyTheoretical(m.id, d);
-    var use = wpLdyUsage(m.id, d), diff = (use === null ? null : use - issue);
+    var nq = wpLdyNewQty(m.id, d);
     var endCls = (end !== null && end < (m.lowLimit || 0)) ? ' wp-ldy__warn-low' : '';
-    var diffCls = (diff !== null && diff !== 0) ? ' wp-ldy__diff-bad' : (diff !== null ? ' wp-ldy__diff-ok' : '');
     html += '<tr data-item="' + m.id + '">'
       + '<td class="wp-ldy__name">' + wpLdyEsc(m.name) + '</td>'
       + '<td class="wp-ldy__prev" data-col="prev">' + (prev === null ? '–' : prev) + '</td>'
       + '<td><input type="number" class="wp-ldy__in" min="0" inputmode="numeric" data-ldy="in" data-item="' + m.id + '" value="'
         + (closed ? 0 : (inv === null ? '' : inv)) + '"' + (closed ? ' disabled' : '') + ' oninput="wpLdyEdit(this)"></td>'
       + '<td class="wp-ldy__prev" data-col="new">' + (nq || '–') + '</td>'
-      + '<td class="wp-ldy__use" data-col="issue">' + (issue || '–') + '</td>'
-      + '<td class="wp-ldy__use" data-col="theo">' + (theo === null ? '–' : theo) + '</td>'
       + '<td class="' + endCls + '" data-col="end"' + (endCls ? ' title="익일 결품 위험"' : '') + '><input type="number" class="wp-ldy__in" min="0" inputmode="numeric" data-ldy="end" data-item="' + m.id + '" value="'
         + (end === null ? '' : end) + '" oninput="wpLdyEdit(this)"></td>'
-      + '<td class="wp-ldy__use' + diffCls + '" data-col="diff"' + (diff !== null && diff !== 0 ? ' title="출고 기록과 마감 실사 차이 — 분실·미기록 의심"' : '') + '>'
-        + (diff === null ? '–' : (diff > 0 ? '+' : '') + diff) + '</td>'
       + '</tr>';
   });
   document.getElementById('wpLdyTodayBody').innerHTML = html;
   var sel = document.getElementById('wpLdyNiItem');
   if (sel && !sel.options.length) sel.innerHTML = wpLdyItems().map(function(m){
     return '<option value="' + m.id + '">' + wpLdyEsc(m.name) + '</option>'; }).join('');
-  var outSel = document.getElementById('wpLdyOutItem');
-  if (outSel && !outSel.options.length) outSel.innerHTML = wpLdyItems().map(function(m){
-    return '<option value="' + m.id + '">' + wpLdyEsc(m.name) + '</option>'; }).join('');
-  wpLdyRenderIssueCards();
 }
-/* 출고 퀵탭 카드 — 배치할 때마다 여기 버튼을 누른다(2026-08-08 GM 정정). */
-function wpLdyRenderIssueCards(){
-  var box = document.getElementById('wpLdyIssueCards'); if (!box) return;
-  var dEl = document.getElementById('wpLdyDate'); if (!dEl) return;
-  var d = dEl.value;
-  /* 한 품목을 기록하면 카드가 통째로 다시 그려진다 — 다른 칸에 미리 쳐 둔 숫자가 날아가지 않게
-     값과 포커스를 붙들었다 다시 얹는다(A3 종이 보고 여러 품목을 연달아 옮겨 적는 흐름). */
-  var keep = {}, focusId = (document.activeElement && document.activeElement.id) || '';
-  Array.prototype.forEach.call(box.querySelectorAll('input[id^="wpLdyQ_"]'), function(el){
-    if (el.value) keep[el.id] = el.value;
-  });
-  box.innerHTML = wpLdyItems().map(function(m){
-    var theo = wpLdyTheoretical(m.id, d), issue = wpLdyIssueQty(m.id, d);
-    var open = wpLdyIssueQtyBy(m.id, d, 'open'), refill = wpLdyIssueQtyBy(m.id, d, 'refill');
-    var left = wpLdyInboundLeft(m.id, d);
-    return '<div class="wp-ldy__icard">'
-      + '<div class="wp-ldy__icard-top"><span class="wp-ldy__icard-name">' + wpLdyEsc(m.name) + '</span>'
-      + '<span class="wp-ldy__icard-stat">오픈 <b>' + open + '</b> · 보충 <b>' + refill + '</b> = 오늘 <b>' + issue + '</b>개'
-      + (left === null ? '' : ' · 어제 입고분 남음 <b>' + left + '</b>개')
-      + ' · 이론재고 <b>' + (theo === null ? '–' : theo) + '</b>개</span></div>'
-      /* ★수량을 직접 친다(GM 2026-08-11 "일단 수량을 입력하게끔 만들어야할 것 같아").
-         현장은 A3 출하표에 손으로 적고, 점검할 때 그 숫자를 여기 옮겨 넣는다 —
-         고정 버튼(10·25·50…)으로는 종이에 적힌 실제 숫자를 그대로 넣을 수 없다. */
-      + '<div class="wp-ldy__qrow wp-ldy__qrow--type">'
-      + '<input class="wp-ldy__in wp-ldy__qin" id="wpLdyQ_' + m.id + '" type="number" min="1" step="1" placeholder="수량"'
-      + ' onkeydown="if(event.key===\'Enter\')wpLdyIssueTyped(\'' + m.id + '\',\'refill\')">'
-      + '<button class="wp-ldy__qbtn wp-ldy__qbtn--open" onclick="wpLdyIssueTyped(\'' + m.id + '\',\'open\')">오픈 셋팅</button>'
-      + '<button class="wp-ldy__qbtn" onclick="wpLdyIssueTyped(\'' + m.id + '\',\'refill\')">보충</button>'
-      + '</div></div>';
-  }).join('');
-  Object.keys(keep).forEach(function(id){ var el = document.getElementById(id); if (el) el.value = keep[id]; });
-  if (focusId){ var f = document.getElementById(focusId); if (f) f.focus(); }
-}
-/* 출고 기록 — 버튼 1탭 = 이벤트 1건(날짜+품목+수량+시각). 즉시 저장, 표 통째로 안 그림(입력칸 깨짐 방지). */
-function wpLdyIssue(itemId, qty, kind){
-  var d = document.getElementById('wpLdyDate').value;
-  if (!LAUNDRY_DATA.issues) LAUNDRY_DATA.issues = [];
-  /* kind = 'open'(오픈 셋팅) | 'refill'(중간 보충) — GM 프로세스 2026-08-11.
-     둘을 나누는 이유: 오픈에 까는 양은 거의 고정이고, 보충량이 그날 실제 이용량을 말한다.
-     합쳐 두면 '오늘 많이 나갔다'가 손님이 많아서인지 처음부터 많이 깔아서인지 못 가른다.
-     기본값 refill — 옛 기록에는 이 칸이 없어 전부 보충으로 읽힌다(무회귀). */
-  var evt = {date:d, itemId:itemId, qty:qty, kind:(kind === 'open' ? 'open' : 'refill'), ts:Date.now()};
-  LAUNDRY_DATA.issues.push(evt);
-  WP_LDY_SESSION_ISSUES.push(evt); // 늦게 도착하는 백엔드 응답이 못 지우게(세션 안전망)
-  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
-  wpLdyPersist();
-  wpLdyRefreshItemRow(itemId, d);
-  var m = LAUNDRY_DATA.master.filter(function(x){ return x.id === itemId; })[0];
-  var st = document.getElementById('wpLdyUndoState');
-  if (st) st.textContent = (m ? m.name : itemId) + ' ' + qty + '개 출고 기록함';
-  wpLdyMarkTodo();
-}
+/* (출고 퀵탭 카드·출고 기록 wpLdyRenderIssueCards/wpLdyIssue/wpLdyIssueTyped/wpLdyIssueManual/
+   wpLdyUndoIssue/wpLdyRefreshItemRow 는 GM 지시로 삭제 · 2026-09-01 "출고 퀵탭 삭제") */
 /* 🧺 세탁물 출하표 A4 세로 인쇄(GM 2026-08-11 발주 · 2026-09-01 A4 세로 전환) — 기존 인쇄 방식 재사용.
    품목 목록만 화면에서 가져오고 숫자는 전부 빈칸이다 — 종이가 원본이고, 화면이 나중에 옮겨 적는 쪽이다. */
 /* 영문판 품목명 — 표 생성 로직은 한 벌(printA4Laundry)이고 언어만 갈아 끼운다(GM 2026-09-01 "영어버전도").
@@ -7224,58 +7082,8 @@ function printA4Laundry(lang){
   document.body.classList.remove('a3-ldy-mode');
   styleTag.textContent = '';
 }
-/* 카드 입력칸에 친 수량으로 기록(GM 2026-08-11). 기록 뒤 칸을 비워 다음 입력을 바로 받는다. */
-function wpLdyIssueTyped(itemId, kind){
-  var el = document.getElementById('wpLdyQ_' + itemId);
-  var q = el ? parseFloat(el.value) : NaN;
-  if (isNaN(q) || q <= 0){ if (el) el.focus(); return; }
-  wpLdyIssue(itemId, q, kind);
-  if (el) el.value = '';
-}
-function wpLdyIssueManual(){
-  var item = document.getElementById('wpLdyOutItem').value;
-  var qty = parseFloat(document.getElementById('wpLdyOutQty').value);
-  if (!item || isNaN(qty) || qty <= 0){ alert('품목과 수량을 확인해 주세요.'); return; }
-  wpLdyIssue(item, qty);
-  document.getElementById('wpLdyOutQty').value = '';
-}
-/* 직전 출고 취소 — 선택된 날짜의 마지막 기록 1건만 되돌린다(GM: 잘못 눌렀을 때 되돌릴 수 있어야). */
-function wpLdyUndoIssue(){
-  var d = document.getElementById('wpLdyDate').value;
-  var arr = LAUNDRY_DATA.issues || [];
-  var idx = -1;
-  for (var i = arr.length - 1; i >= 0; i--){ if (arr[i] && arr[i].date === d){ idx = i; break; } }
-  var st = document.getElementById('wpLdyUndoState');
-  if (idx === -1){ if (st) st.textContent = '취소할 출고 기록이 없습니다.'; return; }
-  var removed = arr.splice(idx, 1)[0];
-  WP_LDY_UNDONE_TS[removed.ts] = true; // 늦게 도착하는 백엔드 응답이 되살리지 못하게(세션 안전망)
-  WP_LDY_SESSION_ISSUES = WP_LDY_SESSION_ISSUES.filter(function(x){ return x.ts !== removed.ts; });
-  try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
-  wpLdyPersist();
-  wpLdyRefreshItemRow(removed.itemId, d);
-  var m = LAUNDRY_DATA.master.filter(function(x){ return x.id === removed.itemId; })[0];
-  if (st) st.textContent = (m ? m.name : removed.itemId) + ' ' + removed.qty + '개 출고 취소함';
-  wpLdyMarkTodo();
-}
-/* 출고 카드 + 표의 출고/이론재고/차이 칸만 갱신(전체 재렌더 안 함 — 입력칸 포커스 안 끊기게). */
-function wpLdyRefreshItemRow(itemId, d){
-  wpLdyRenderIssueCards();
-  var row = document.querySelector('#wpLdyTodayBody tr[data-item="' + itemId + '"]');
-  if (!row) return;
-  var m = LAUNDRY_DATA.master.filter(function(x){ return x.id === itemId; })[0] || {};
-  var issue = wpLdyIssueQty(itemId, d), theo = wpLdyTheoretical(itemId, d);
-  var use = wpLdyUsage(itemId, d), diff = (use === null ? null : use - issue);
-  var issueTd = row.querySelector('[data-col="issue"]'), theoTd = row.querySelector('[data-col="theo"]'), diffTd = row.querySelector('[data-col="diff"]');
-  if (issueTd) issueTd.textContent = issue || '–';
-  if (theoTd) theoTd.textContent = (theo === null ? '–' : theo);
-  if (diffTd){
-    diffTd.textContent = (diff === null ? '–' : (diff > 0 ? '+' : '') + diff);
-    diffTd.className = 'wp-ldy__use' + (diff !== null && diff !== 0 ? ' wp-ldy__diff-bad' : (diff !== null ? ' wp-ldy__diff-ok' : ''));
-    diffTd.title = (diff !== null && diff !== 0) ? '출고 기록과 마감 실사 차이 — 분실·미기록 의심' : '';
-  }
-}
 /* 입력 즉시 메모리 반영 + 디바운스 저장. 표를 통째로 다시 그리지 않는다(한글 입력 깨짐 방지) —
-   이론재고·차이·경고 칸만 갱신한다. */
+   결품 경고 칸만 갱신한다. */
 function wpLdyEdit(el){
   var d = document.getElementById('wpLdyDate').value, item = el.getAttribute('data-item'), fld = el.getAttribute('data-ldy');
   if (!LAUNDRY_DATA.daily[d]) LAUNDRY_DATA.daily[d] = {};
@@ -7283,21 +7091,12 @@ function wpLdyEdit(el){
   LAUNDRY_DATA.daily[d][item][fld] = (el.value === '' ? '' : Number(el.value));
   var tr = el.closest('tr'); if (!tr) return;
   var m = LAUNDRY_DATA.master.filter(function(x){ return x.id === item; })[0] || {};
-  var issue = wpLdyIssueQty(item, d), theo = wpLdyTheoretical(item, d);
-  var use = wpLdyUsage(item, d), diff = (use === null ? null : use - issue);
-  var theoTd = tr.querySelector('[data-col="theo"]'), endTd = tr.querySelector('[data-col="end"]'), diffTd = tr.querySelector('[data-col="diff"]');
-  if (theoTd) theoTd.textContent = (theo === null ? '–' : theo);
-  if (diffTd){
-    diffTd.textContent = (diff === null ? '–' : (diff > 0 ? '+' : '') + diff);
-    diffTd.className = 'wp-ldy__use' + (diff !== null && diff !== 0 ? ' wp-ldy__diff-bad' : (diff !== null ? ' wp-ldy__diff-ok' : ''));
-    diffTd.title = (diff !== null && diff !== 0) ? '출고 기록과 마감 실사 차이 — 분실·미기록 의심' : '';
-  }
+  var endTd = tr.querySelector('[data-col="end"]');
   var end = wpLdyEnd(item, d);
   if (endTd){
     endTd.className = (end !== null && end < (m.lowLimit || 0)) ? 'wp-ldy__warn-low' : '';
     endTd.title = endTd.className ? '익일 결품 위험' : '';
   }
-  if (fld === 'in') wpLdyRenderIssueCards(); // 입고 바뀌면 카드의 이론재고도 즉시 갱신
   try{ localStorage.setItem(LAUNDRY_STORAGE_KEY, JSON.stringify(LAUNDRY_DATA)); }catch(e){}
   wpLdyPersist();
   wpLdyMarkTodo();

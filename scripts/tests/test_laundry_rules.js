@@ -102,20 +102,12 @@ ok('저장→복원 후 값 보존', wpLdyUsage('bath', '2026-08-01') === 280 &&
 ok('네임스페이스 키 6개만', Object.keys(LAUNDRY_DATA).sort().join(',') === 'audit,daily,issues,master,newInput,openingStock',
    Object.keys(LAUNDRY_DATA).sort().join(','));
 
-// ── 오픈 셋팅 / 보충 구분 + 어제 입고분 잔여 (GM 프로세스 2026-08-11) ──
-LAUNDRY_DATA.daily['2026-08-10'] = { bath: { in: 300, end: 120 } };
-LAUNDRY_DATA.daily['2026-08-11'] = { bath: { in: 280 } };
-LAUNDRY_DATA.issues = [
-  { date: '2026-08-11', itemId: 'bath', qty: 100, kind: 'open', ts: 1 },
-  { date: '2026-08-11', itemId: 'bath', qty: 30,  kind: 'refill', ts: 2 },
-  { date: '2026-08-11', itemId: 'bath', qty: 20,  ts: 3 },              // kind 없는 옛 기록
-];
-ok('오픈 셋팅만 100', wpLdyIssueQtyBy('bath', '2026-08-11', 'open') === 100, wpLdyIssueQtyBy('bath','2026-08-11','open'));
-ok('보충 50(옛 기록은 보충으로)', wpLdyIssueQtyBy('bath', '2026-08-11', 'refill') === 50, wpLdyIssueQtyBy('bath','2026-08-11','refill'));
-ok('오픈+보충 = 전체 출고 150', wpLdyIssueQty('bath', '2026-08-11') === 150, wpLdyIssueQty('bath','2026-08-11'));
-// 어제(8/10) 300 들어왔고 오늘 150 나갔다 → 남은 어제 입고분 150. 오늘 입고 280 은 내일 몫이라 안 센다.
-ok('어제 입고분 남음 150', wpLdyInboundLeft('bath', '2026-08-11') === 150, wpLdyInboundLeft('bath','2026-08-11'));
-ok('입고 기록 없는 품목은 null', wpLdyInboundLeft('socks', '2026-08-11') === null, wpLdyInboundLeft('socks','2026-08-11'));
+// ── 출고 퀵탭 삭제(GM 2026-09-01) 뒤에도 옛 출고 기록(issues)은 스키마에 보존된다 ──
+LAUNDRY_DATA.issues = [{ date: '2026-08-11', itemId: 'bath', qty: 100, kind: 'open', ts: 1 }];
+const round2 = JSON.parse(JSON.stringify(LAUNDRY_DATA));
+wpLdyApplyStored(round2);
+ok('옛 출고 기록 보존(저장→복원)', LAUNDRY_DATA.issues.length === 1 && LAUNDRY_DATA.issues[0].qty === 100);
+ok('출고 퀵탭 함수는 삭제됨', typeof (typeof wpLdyIssueQty === 'undefined' ? undefined : wpLdyIssueQty) === 'undefined');
 
 console.log('\n결과: ' + pass + ' 통과 · ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);
