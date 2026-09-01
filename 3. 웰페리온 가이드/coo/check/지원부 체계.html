@@ -523,8 +523,6 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   #a3-laundry-print .a3l-title{font-size:26px;font-weight:800;letter-spacing:0.04em;color:#2a2018}
   /* 서명란 3칸(GM 2026-09-01 — 오픈·마감 두 조가 한 장을 나눠 쓰니 작성 서명도 둘, 확인=김훈 주임).
      줄 2개(작성 한 줄·확인 한 줄)로 세워 머리 높이를 안 키운다. 빈칸은 3개가 들어가게 70px. */
-  #a3-laundry-print .a3l-meta{font-size:13px;color:#2a2018}
-  #a3-laundry-print .a3l-meta span{display:block;margin:0 0 4px;text-align:right}
   #a3-laundry-print .a3l-blank{display:inline-block;min-width:70px;border-bottom:1px solid #8a7a6c}
   table.a3l-grid{width:100%;border-collapse:collapse;table-layout:fixed}
   table.a3l-grid th,table.a3l-grid td{border:0.8px solid #8a7a6c;text-align:center}
@@ -542,7 +540,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   table.a3l-month thead th{font-size:13px;padding:5px 2px}
   /* 머리글 아랫줄(입고/마감재고·In/Closing Stock)은 한 줄 고정 — 영문 「Closing Stock」이 두 줄로 꺾이면 장 높이가 넘쳐 4장이 된다(실측 2026-09-01). */
   table.a3l-month thead tr+tr th{font-size:11px;white-space:nowrap}
-  table.a3l-month td{height:29px;font-size:12px}
+  table.a3l-month td{height:34px;font-size:12px} /* 가로판(2026-09-01) — 날짜별 손글씨·서명 들어갈 높이 */
+  .a3l-check{ text-align:right;font-size:13px;font-weight:700;color:#2a2018;margin:6px 0 2px }
   table.a3l-month td.a3l-date{background:#f3ede7!important;font-size:12px;font-weight:700;color:#2a2018;text-align:left;padding-left:8px;white-space:nowrap}
   table.a3l-month tr.a3l-closed td{background:#e7ddd2!important}
   /* 「휴관」은 날짜보다 작게 붙인다 — 같은 크기면 「9월 13일 (일) 휴관」이 칸을 넘친다(GM 지적 2026-09-01). */
@@ -1001,10 +1000,8 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
       <div class="a3l-title" id="a3lTitle">세탁물 출하표</div>
       <div id="a3lSub" style="font-size:13px;color:#4a3a2e;margin-top:3px">세탁물 받을 때 「입고」, 마감 때 「마감재고」를 그날 바로 적습니다</div>
     </div>
-    <div class="a3l-meta">
-      <span>작성 <b class="a3l-blank"></b></span>
-      <span>확인 <b class="a3l-blank"></b></span>
-    </div>
+    <!-- 머리 서명란 삭제(GM 2026-09-01 "작성/확인칸이 의미가 없네") — 서명은 날짜 행마다(오픈·마감)와
+         장 하단 확인 줄로 옮겼다. printA4Laundry 가 표와 함께 그린다. -->
   </div>
   <div id="a3l-table-host"></div>
   <!-- 안내문·서명란 라벨은 printA4Laundry(lang)가 한/영으로 채운다 — 글이 두 벌로 남지 않게 여긴 비워 둔다. -->
@@ -6991,18 +6988,20 @@ function wpLdyRenderToday(){
 }
 /* (출고 퀵탭 카드·출고 기록 wpLdyRenderIssueCards/wpLdyIssue/wpLdyIssueTyped/wpLdyIssueManual/
    wpLdyUndoIssue/wpLdyRefreshItemRow 는 GM 지시로 삭제 · 2026-09-01 "출고 퀵탭 삭제") */
-/* 🧺 세탁물 출하표 A4 세로 인쇄(GM 2026-08-11 발주 · 2026-09-01 A4 세로 전환) — 기존 인쇄 방식 재사용.
+/* 🧺 세탁물 출하표 A4 가로 인쇄(GM 2026-08-11 발주 · 2026-09-01 인쇄 검토로 가로·보름 분할 전환) —
    품목 목록만 화면에서 가져오고 숫자는 전부 빈칸이다 — 종이가 원본이고, 화면이 나중에 옮겨 적는 쪽이다. */
 /* 영문판 품목명 — 표 생성 로직은 한 벌(printA4Laundry)이고 언어만 갈아 끼운다(GM 2026-09-01 "영어버전도").
    두 벌로 복사하면 한쪽만 고쳐지는 일이 반드시 생긴다. 마스터에 없는 품목이 생기면 한글 이름 그대로 나간다. */
 var WP_LDY_EN_ITEM = {bath:'Bath Towel', face:'Face Towel', sweat:'Sweat Towel', shower:'Shower Towel',
                       socks:'Socks', top:'Gym Top', btm:'Gym Bottom', carpet:'Carpet'};
 function printA4Laundry(lang){
-  /* ★한 벌 = 한 달치(GM 2026-09-01 "1개월치 다 나왔으면 좋겠어 위에 종목, 왼쪽에 날짜, 2~3장 되어도 돼").
-     위(가로) = 품목, 왼쪽(세로) = 그 달 1일~말일. 품목마다 「입고」·「마감재고」 두 칸 —
-     계산식(사용량 = 전일마감 + 입고 + 신품 − 마감재고)이 쓰는 두 값이다.
-     8종을 한 장에 옆으로 다 세우면 칸 폭 39px(10mm)라 세 자리 손글씨가 안 들어간다 → 4종씩 2장,
-     각 장에 날짜 전체(검증 2026-09-01 — 31일 달 기준 장당 표 약 955px < A4 내용높이 1,062px).
+  /* ★A4 가로 · 1~15일 1장 / 16일~말일 1장 · 8품목 전부 한 장에(GM 2026-09-01 인쇄 검토
+     "인쇄를 가로로해서 날짜를 15일까지로 1장 / 16일~나머지까지가 1장, 매일 작성한사람 사인").
+     열 = 날짜 1 + 품목 8×(입고·마감재고) 16 + 서명 2(오픈·마감) = 19열.
+     서명이 날짜마다 2칸인 이유 — 입고는 오픈조가, 마감재고는 마감조가 적는다(GM 확정). 1칸이면
+     둘 중 누구 책임인지 안 갈린다. 장 하단에 확인(김훈 주임) 서명 1칸 — 보름치를 볼 때 한 번.
+     폭 실측(A4 가로 내용폭 1,062px = 281mm): 숫자칸 (1062−116−140)/16 ≈ 50px ≈ 13.3mm(하한 12mm 위),
+     서명칸 70px ≈ 18.5mm. 계산식(사용량 = 전일마감 + 입고 + 신품 − 마감재고)이 쓰는 두 칸 구조 유지.
      달 = 화면 「월간 출하 기록」의 월 선택(wpLdySheetYm)을 따른다. 요일은 날짜에서 계산(손기입 금지).
      휴관일(정본 close_days 규칙과 같은 wpLdyIsClosed)은 줄 전체 음영 + 「휴관/Closed」 표기.
      lang='en' 이면 영문판(A4-En) — 제목·머리글·날짜·안내문만 영문, 레이아웃·계산 동일. */
@@ -7014,48 +7013,40 @@ function printA4Laundry(lang){
   var ym = wpLdySheetYm();
   var y = +ym.slice(0, 4), mo = +ym.slice(5, 7);
   var nDays = new Date(y, mo, 0).getDate();
-  var half = Math.ceil(items.length / 2);
-  var pages = [items.slice(0, half), items.slice(half)].filter(function(p){ return p.length; });
+  var pages = [[1, Math.min(15, nDays)], [16, nDays]].filter(function(r){ return r[0] <= r[1]; });
   var title = en ? 'Linen Delivery Sheet — ' + EN_MON[mo - 1] + ' ' + y
                  : '세탁물 출하표 — ' + y + '년 ' + mo + '월';
   var tEl = document.getElementById('a3lTitle');
   if (tEl){ tEl.textContent = title; tEl.style.fontSize = en ? '21px' : ''; } /* 영문 제목은 길어 26px면 두 줄 — 한 줄 유지 */
   var subEl = document.getElementById('a3lSub');
   if (subEl) subEl.textContent = en
-    ? 'Write "In" on arrival, "Closing Stock" at closing — same day'
-    : '세탁물 받을 때 「입고」, 마감 때 「마감재고」를 그날 바로 적습니다';
-  /* 서명 3칸 — 작성은 오픈·마감 두 조가 각각(입고=오픈조·마감재고=마감조), 확인은 김훈 주임(GM 2026-09-01).
-     머리 담당 표기 제거와 별개 — 이름은 확인자 서명 자리에만 쓴다. */
-  var metaEl = document.querySelector('#a3-laundry-print .a3l-meta');
-  var BLK = ' <b class="a3l-blank"></b>';
-  if (metaEl) metaEl.innerHTML = (en
-    ? ['Written — Opening' + BLK, 'Written — Closing' + BLK, 'Checked — Kim Hun' + BLK]
-    : ['작성 — 오픈 주임' + BLK, '작성 — 마감 주임' + BLK, '확인 — 김훈 주임' + BLK])
-    .map(function(r){ return '<span>' + r + '</span>'; }).join('');
+    ? 'Write "In" on arrival, "Closing Stock" at closing — sign your row the same day'
+    : '세탁물 받을 때 「입고」, 마감 때 「마감재고」를 적고, 그날 줄 서명 칸에 사인합니다';
   var guideEl = document.getElementById('a3lGuide');
   if (guideEl) guideEl.innerHTML = en
-    ? '<b>①</b> Check the delivery slip against the <b>actual count</b>; write it in that day\'s "In" box.<br>'
-    + '<b>②</b> At closing, <b>count what\'s left</b> per item; write it in "Closing Stock".<br>'
+    ? '<b>①</b> Check the delivery slip against the <b>actual count</b>; write it in that day\'s "In" boxes and sign "Open".<br>'
+    + '<b>②</b> At closing, <b>count what\'s left</b> per item; write it in "Closing Stock" and sign "Close".<br>'
     + '<b>③</b> Post the same numbers in the KakaoTalk room; the inspector records them on the Linen tab.'
-    : '<b>①</b> 세탁물이 들어오면 <b>거래명세서와 실제 수량을 맞춰 본 뒤</b>, 받은 개수를 그날 줄 「입고」 칸에 적는다.<br>'
-    + '<b>②</b> 마감 때 품목별로 <b>남아 있는 개수를 전부 세서</b> 그날 줄 「마감재고」 칸에 적는다.<br>'
+    : '<b>①</b> 세탁물이 들어오면 <b>거래명세서와 실제 수량을 맞춰 본 뒤</b>, 받은 개수를 그날 줄 「입고」 칸에 적고 서명 「오픈」 칸에 사인한다.<br>'
+    + '<b>②</b> 마감 때 품목별로 <b>남아 있는 개수를 전부 세서</b> 「마감재고」 칸에 적고 서명 「마감」 칸에 사인한다.<br>'
     + '<b>③</b> 같은 숫자를 그날 <b>카카오톡 방에도 올린다</b> — 점검자가 점검 때 그 내용을 화면 「🧺 린넨 관리」에 기록한다.';
   var h = '';
-  pages.forEach(function(pg, pi){
+  pages.forEach(function(rng, pi){
     h += '<div class="a3l-page">';
     /* 2장짜리 실물 종이 — 첫 장엔 큰 머리가 있고, 둘째 장부터는 표만 있으면 어느 달 것인지 모른다. */
     if (pi > 0) h += '<div class="a3l-page-cap">' + title + ' (' + (pi + 1) + '/' + pages.length + ')</div>';
-    /* 날짜 칸 폭 104→116px (GM 지적 2026-09-01 "9월 13일 휴관 칸 넘어갔는데?").
-       「9월 13일 (일) 휴관」이 가장 긴 문자열인데 nowrap 이라 칸을 넘쳤다. 폭을 조금 넓히고
-       「휴관」은 작은 글씨로 붙인다. 숫자칸은 78→77px 로 1px 줄 뿐이라 손글씨에 영향 없다. */
-    /* 영문 날짜(Dec 13 (Sun) Closed)가 한글보다 길어 날짜열만 넓힌다 — 숫자칸 75.6px, 하한 75px 위. */
-    h += '<table class="a3l-grid a3l-month"><colgroup><col style="width:' + (en ? 128 : 116) + 'px"></colgroup><thead>'
+    /* 날짜열 116px(영문 128px — Dec 13 (Sun) Closed 가 더 길다) · 서명열 70px×2. 나머지가 숫자 16칸. */
+    h += '<table class="a3l-grid a3l-month"><colgroup><col style="width:' + (en ? 128 : 116) + 'px">'
+       + new Array(items.length * 2 + 1).join('<col>')
+       + '<col style="width:70px"><col style="width:70px"></colgroup><thead>'
        + '<tr><th class="a3l-item" rowspan="2">' + (en ? 'Date' : '날짜') + '</th>'
-       + pg.map(function(m){ return '<th colspan="2">' + wpLdyEsc(en ? (WP_LDY_EN_ITEM[m.id] || m.name) : m.name) + '</th>'; }).join('')
+       + items.map(function(m){ return '<th colspan="2">' + wpLdyEsc(en ? (WP_LDY_EN_ITEM[m.id] || m.name) : m.name) + '</th>'; }).join('')
+       + '<th colspan="2">' + (en ? 'Signature' : '서명') + '</th>'
        + '</tr><tr>'
-       + pg.map(function(){ return en ? '<th>In</th><th>Closing Stock</th>' : '<th>입고</th><th>마감재고</th>'; }).join('')
+       + items.map(function(){ return en ? '<th>In</th><th>Closing</th>' : '<th>입고</th><th>마감재고</th>'; }).join('')
+       + (en ? '<th>Open</th><th>Close</th>' : '<th>오픈</th><th>마감</th>')
        + '</tr></thead><tbody>';
-    for (var d = 1; d <= nDays; d++){
+    for (var d = rng[0]; d <= rng[1]; d++){
       var ds = ym + '-' + (d < 10 ? '0' + d : d);
       var dow = new Date(ds + 'T00:00:00').getDay();
       var closed = wpLdyIsClosed(ds);
@@ -7063,10 +7054,12 @@ function printA4Laundry(lang){
          + '<td class="a3l-date">'
          + (en ? EN_MON3[mo - 1] + ' ' + d + ' (' + EN_DOW3[dow] + ')' : mo + '월 ' + d + '일 (' + '일월화수목금토'.charAt(dow) + ')')
          + (closed ? '<span class="a3l-off">' + (en ? 'Closed' : '휴관') + '</span>' : '') + '</td>';
-      for (var i = 0; i < pg.length; i++) h += '<td class="a3l-shade"></td><td></td>';
-      h += '</tr>';
+      for (var i = 0; i < items.length; i++) h += '<td class="a3l-shade"></td><td></td>';
+      h += '<td></td><td></td></tr>';
     }
-    h += '</tbody></table></div>';
+    h += '</tbody></table>'
+       + '<div class="a3l-check">' + (en ? 'Checked — Kim Hun' : '확인 — 김훈 주임')
+       + ' <b class="a3l-blank"></b></div></div>';
   });
   var host = document.getElementById('a3l-table-host');
   if (host) host.innerHTML = h;
@@ -7077,7 +7070,7 @@ function printA4Laundry(lang){
     styleTag.id = 'a3-ldy-page-style';
     document.head.appendChild(styleTag);
   }
-  styleTag.textContent = '@media print{ @page{ size:A4 portrait; margin:8mm; } }';
+  styleTag.textContent = '@media print{ @page{ size:A4 landscape; margin:8mm; } }';
   window.print();
   document.body.classList.remove('a3-ldy-mode');
   styleTag.textContent = '';
