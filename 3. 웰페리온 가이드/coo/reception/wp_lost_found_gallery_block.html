@@ -26,7 +26,11 @@
 /* 키오스크 터치 스크롤 보장·반응속도 (2026-08-14 GM 지시) — 콘텐츠가 화면을 넘으면 항상 스크롤되게
    방어적으로 풀고(테마 no-overflow-y 잠김 대비), 스와이프 관성 + 탭 지연 제거 */
 html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
-.wlp-lfg{overscroll-behavior-y:contain}
+/* ★2026-09-01 GM 신고 "종합접수처는 터치로 밀면 스크롤되는데 습득물 현황은 안 된다" —
+   여기 있던 `.wlp-lfg{overscroll-behavior-y:contain}` 를 지웠다. 그 한 줄이 범인이었다.
+   contain 은 이 상자 안에서 시작한 스크롤이 바깥(문서)으로 넘어가지 않게 막는다. 그런데
+   .wlp-lfg 자체는 스크롤되는 상자가 아니라서, 손가락으로 밀면 문서로 넘어가야 하는데
+   그 길이 막혀 아무 일도 안 일어났다. 종합접수처·조회 화면엔 이 줄이 없어서 잘 됐다. */
 .wlp-lfg button,.wlp-lfg a,.wlp-lfg select{touch-action:manipulation}
 
 /* ── 습득 분실물 갤러리 페이지 한정 테마 보정 (body.wlp-lfg-page) ── */
@@ -200,14 +204,6 @@ body.wlp-lfg-page .vc_row,body.wlp-lfg-page .wpb_column,body.wlp-lfg-page .vc_co
    화면에 없어서, 고쳤는데도 GM 눈에는 아무것도 안 바뀐 것으로 보인다.
    조건을 화면 크기가 아니라 실제로 넘칠 때로 바꾼다 — 아래 JS 가 'on' 클래스로 켠다. */
 .wlp-lfg .page-nav.on{display:flex}
-/* ★2026-09-01 GM 신고 "키오스크에서 터치패드로 스크롤이 안 됨".
-   원인 = 워드프레스 테마가 본문을 안쪽 상자(#ajax-content-wrap)에 담는데, 그 상자가 넘쳐도
-   넘침 처리가 안 걸려 있어 손으로는 스크롤할 곳이 없었다. 어제 넣은 페이지 버튼은 그 상자를
-   찾아 스크롤해서 눌렀을 때만 됐고, 손가락·터치패드로는 안 됐다 — 같은 뿌리다.
-   넘칠 때만 스크롤되게 열어 준다(안 넘치면 스크롤바가 안 생기므로 화면은 종전 그대로). */
-body.wlp-lfg-page,
-body.wlp-lfg-page #ajax-content-wrap,
-body.wlp-lfg-page .container-wrap{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 </style>
 <script>try{document.body.classList.add('wlp-lfg-page');}catch(e){}</script>
 
