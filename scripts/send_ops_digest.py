@@ -1195,7 +1195,14 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
     for x in queue:
         if not isinstance(x, dict) or x.get("clevel") not in contacts:
             continue
-        if str(x.get("status", "")) not in RELAY_OPEN_STATUSES:
+        # ★2026-09-01 GM 지시 — "전달에서 확인하는건 필요없어 배편 다 내려, 확인이 안된것들은
+        # 계속 전달해서 하게끔 만들어줘". 전달문을 보낸 뒤 회신을 기다리는 동안 배를 열어 두면
+        # GM 항로에 답 기다리는 배만 쌓인다(2026-09-01 실측: 열린 배 51척 중 전달·회신대기 8척,
+        # 최장 18일). 그렇다고 배를 닫으면 여기 조건에 걸려 전달 자체가 끊긴다 — 그래서
+        # relay_until_replied 가 켜진 배는 **닫혀도 계속 싣는다.** 배 상태(GM 화면)와 전달 목록
+        # (실무진 화면)을 분리하는 것이 이 한 줄의 목적이다. 끄는 시점 = 회신을 받아 그 칸을
+        # false 로 내릴 때(아침 카톡의 「완료 한 마디만 남겨 주시면 목록에서 내리겠습니다」).
+        if str(x.get("status", "")) not in RELAY_OPEN_STATUSES and not x.get("relay_until_replied"):
             dropped_why["닫힌 배"] += 1
             continue
         aud = str(x.get("audience", "")).strip()
