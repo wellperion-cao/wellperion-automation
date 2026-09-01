@@ -15,7 +15,7 @@ import sys
 import urllib.request
 import urllib.error
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -196,6 +196,12 @@ def _http_get_json(url: str, timeout: int = _HTTP_TIMEOUT, retries: int = 2) -> 
     raise last_exc
 
 
+# 점검 제출 시작일 — 이 날 전의 0건은 미제출이 아니라 아직 시작 전이다.
+# 주차관리부: GM 확정 2026-09-01. 조희제 주차관리인 첫 출근(2026-08-18)에서 한 달 뒤로 잡았고,
+# 시작 1주일 전(9/11)에 양상규 고문님께 미리 안내한다(전사일정 park-check-start-20260918).
+_CHECK_START = {"parking": date(2026, 9, 18)}
+
+
 def _coo_check_rate_monthly(month_str: str) -> dict | None:
     """
     지원부 월간 점검완료율 조회(1개월). 실패/데이터없음=None.
@@ -340,6 +346,12 @@ def _coo_check_rate() -> dict:
     # 완료율은 제출이 있어야 나오므로 제출 0이면 null, 제출일수 0이 실측값이다(조회 실패만 None).
     ext_notes = []
     for dept, label in (("ops", "운영부"), ("parking", "주차부")):
+        # 시작일이 정해진 부서는 그 전 0건을 결함으로 잡지 않는다 — 아직 시작 전이지 미제출이 아니다.
+        start = _CHECK_START.get(dept)
+        if start and now.date() < start:
+            result[f"{label}_점검완료율_기준"] = f"시작 전({start:%Y-%m-%d}부터 · GM 확정 2026-09-01)"
+            ext_notes.append(f"{label}=시작 전({start:%m/%d}부터 · 0건은 정상)")
+            continue
         wk = _check_weekly(dept)
         if wk is None:
             ext_notes.append(f"{label}=조회실패(null·0 아님)")
