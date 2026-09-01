@@ -865,8 +865,17 @@
   // 계속 확대되거나 업데이트(병합+수정보완)가 되게끔"). 일은 달에 속하지 않고 끝날 때까지 이어진다.
   // 그래서 묶음 머리를 없애고, 급한 순(기한 이른 것 먼저 · 기한 없는 것은 뒤)으로만 세운다.
   // 어느 달에 시작했는지는 카드에 「8월부터」 한 조각으로만 남긴다 — 가르는 선이 아니라 이력 표시다.
+  /* 순서 = 무게 (GM 확정 2026-09-01 "우선순위 판단해서 01번부터 세워줘, 체크리스트가 많을수록,
+     요약본이 많을수록 우선순위가 높은거임"). 종전은 기한 이른 순이었다 — 기한은 급한 것을 말해 주지만
+     무거운 것을 말해 주지 않아, 할 일 28줄짜리가 기한 없다는 이유로 맨 아래에 있었다.
+     무게 = 할 일 줄 수 + 자료(요약본) 수. 같으면 기한 이른 것, 그것도 같으면 원래 순서(번호가 매일 안 바뀌게). */
+  function weightOf(o) {
+    return extractTodos(o.note || '').length + ((o.docs && o.docs.length) || 0) + (o.doc ? 1 : 0);
+  }
   function byUrgency(list) {
     return list.slice().sort(function (a, b) {
+      var wa = weightOf(a), wb = weightOf(b);
+      if (wa !== wb) return wb - wa;
       var da = String(a.due || ''), db = String(b.due || '');
       if (!da && !db) return a._ord - b._ord;
       if (!da) return 1;
