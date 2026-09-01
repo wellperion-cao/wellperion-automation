@@ -874,6 +874,57 @@ def _kpi_crosscheck_rules():
     except Exception as e:
         out.append({"card": "전사일정", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
 
+    # ⑤ 시설부 오늘 보드 — 같은 회차 중복 제출 탐지 (2026-09-01 배798 감사)
+    #    08-25 seq3=seq4, 08-31 seq5=seq6 — 점검자·시작·종료가 같은 제출이 두 번 쌓이면
+    #    home '오늘 N회 점검'이 부풀어 보인다(화면은 submissions.length 를 그대로 센다).
+    #    원장은 비파괴라 지난 날 것은 지우지 않는다 — 당일 발생분을 30분 주기로 잡는 게 목적.
+    try:
+        today = _dt.date.today().isoformat()
+        d = _get(CHECK_GAS + "?action=board&key=FACILITY_CHECK_" + today)
+        board = d.get("board")
+        if isinstance(board, str):
+            board = json.loads(board)
+        subs = ((board or {}).get("store") or {}).get("submissions") or []
+        seen, dups = set(), []
+        for s in subs:
+            fp = (s.get("inspector"), s.get("startHHMM"), s.get("endHHMM"))
+            if fp in seen:
+                dups.append(f"{fp[0]} {fp[1]}~{fp[2]}")
+            seen.add(fp)
+        out.append({"card": "시설부 점검", "what": "오늘 중복 제출(점검자·시작·종료 동일) = 0",
+                    "left": len(dups), "right": 0, "ok": not dups,
+                    "detail": ("" if not dups else "중복 쌍: " + ", ".join(dups) + " — 회차 수가 부풀어 보입니다")})
+    except Exception as e:
+        out.append({"card": "시설부 점검", "what": "조회 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
+    # ⑥ 매출 카드 — 방금 발행한 스냅샷으로 내적 정합 (2026-08-26 배798 감사 3)-①·②)
+    #    main() 이 publish_home_kpi_snapshot() 뒤에 이 함수를 부르므로 파일이 항상 방금 값이다.
+    #    ⓐ yesterday.mismatch: GAS 가 스스로 '역산≠시트 금일합계'를 신고하는 플래그 — 화면은 ⚠ 표기,
+    #       여기서는 어긋남으로 집계해 아침 자가점검 표에 오르게 한다.
+    #    ⓑ 팀별 펼침 합 − 주차 = 월 큰숫자(AV 마감값): 감사 때 14.1만 원 잔차(두 시트가 같은 달을
+    #       다르게 들고 있었다). AV 마감값이 있고 펼침이 같은 달일 때만 비교 — 진행중인 달은 대상 없음.
+    try:
+        snap = json.loads(HOME_KPI_OUT.read_text(encoding="utf-8"))
+        sales = ((snap.get("data") or {}).get("sales")) or {}
+        yd = sales.get("yesterday")
+        if isinstance(yd, dict) and yd.get("mismatch"):
+            out.append({"card": "매출", "what": "어제 역산 = 시트 금일합계 (GAS mismatch 플래그)",
+                        "left": yd.get("amount"), "right": yd.get("sheetToday"), "ok": False,
+                        "detail": "두 원천이 어제 매출을 다르게 들고 있습니다"})
+        if sales.get("hasCurMonth") and sales.get("month") is not None \
+                and not sales.get("breakdownFallback") \
+                and sales.get("breakdownMonth") == sales.get("curMonth"):
+            bsum = sum((b.get("month") or 0) for b in (sales.get("breakdown") or []))
+            parking = sum((b.get("month") or 0) for b in (sales.get("breakdown") or [])
+                          if "주차" in str(b.get("name") or ""))
+            diff = abs((bsum - parking) - sales["month"])
+            out.append({"card": "매출", "what": "팀별 펼침 합 − 주차 = 월 큰숫자 (오차 1만 이내)",
+                        "left": bsum - parking, "right": sales["month"], "ok": diff <= 10000,
+                        "detail": ("" if diff <= 10000 else
+                                   f"차 {diff:,.0f}원 — 보고 탭 팀별 합과 분석 시트 마감값이 다릅니다")})
+    except Exception as e:
+        out.append({"card": "매출", "what": "스냅샷 대조 실패", "error": f"{type(e).__name__}: {e}", "ok": None})
+
     return out
 
 
