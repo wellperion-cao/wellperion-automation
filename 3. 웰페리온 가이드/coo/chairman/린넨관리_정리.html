@@ -6,6 +6,10 @@
 <title>사우나 린넨(세탁물) 관리 정리 · WELLPERION</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
+  /* 2026-09-01 전면 단순화 (GM 지시 "더 단순하게, 명확하고 직관적으로 / 출하표 잘 안 보여 / 품목 8가지 표는 의미가 없는데?").
+     ▸뺀 것 — 품목·부족 기준선 표(김훈 주임님이 외울 값이 아니다. 기준선 아래로 내려가면 화면이 색으로 알려 준다),
+       「화면이 저절로 해 주는 것」 4줄 목록과 「어디서 하나」 블록(각각 한 줄로 줄임).
+     ▸키운 것 — 출하표 그림을 전폭으로. 이 문서에서 실제로 보셔야 하는 것은 이 종이 한 장이다. */
   @page { size: A3 landscape; margin: 12mm; }
   :root{
     --deep:#22322D; --mid:#3D5A4F; --grey:#6E7772; --line:#C7CFC9;
@@ -18,72 +22,60 @@
   body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;word-break:keep-all;}
 
   .bar{width:396mm;margin:16px auto 0;display:flex;gap:8px;justify-content:flex-end;}
-  .bar button,.bar a{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 16px;
-    border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;
-    cursor:pointer;text-decoration:none;border-radius:2px;}
-  .bar button:hover,.bar a:hover{background:#fff;color:var(--deep);}
+  .bar button{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 16px;
+    border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;cursor:pointer;border-radius:2px;}
+  .bar button:hover{background:#fff;color:var(--deep);}
 
   .sheet{width:396mm;min-height:269mm;margin:14px auto;background:#fff;
     padding:10mm 12mm 8mm;box-shadow:0 3px 22px rgba(0,0,0,.3);}
 
   .ref{font-size:11.5px;color:var(--grey);margin:0 0 9px;}
   .hd{display:flex;justify-content:space-between;align-items:flex-end;
-    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:14px;}
+    border-bottom:3px solid var(--deep);padding-bottom:9px;margin-bottom:13px;}
   .brand{font-size:11px;font-weight:800;letter-spacing:.26em;color:var(--brass);margin:0 0 6px;}
   .hd h1{font-size:29px;font-weight:800;letter-spacing:-.025em;margin:0;}
   .hd .rt{text-align:right;font-size:13.5px;line-height:1.8;white-space:nowrap;}
   .hd .rt b{color:var(--grey);font-weight:600;font-size:11.5px;letter-spacing:.08em;margin-right:7px;}
 
-  /* 결론 */
-  .concl{border:2.5px solid var(--deep);padding:13px 20px;margin-bottom:12px;}
-  .concl h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 12px;}
-  .concl .main{font-size:17.5px;font-weight:700;line-height:1.55;margin:0 0 12px;letter-spacing:-.01em;}
-  .concl .main em{font-style:normal;background:var(--pick);padding:1px 5px;}
-  .concl .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;
-    border-top:1px solid var(--line);padding-top:11px;}
-  .concl .cols p{font-size:13.5px;line-height:1.6;margin:0;}
-  .concl .cols b{display:block;font-size:11.5px;letter-spacing:.1em;color:var(--mid);
-    font-weight:800;margin-bottom:4px;}
+  /* 부탁드리는 것 — 이 장에서 가장 큰 글씨 한 줄 */
+  .ask{border:2.5px solid var(--deep);padding:15px 22px;margin-bottom:13px;}
+  .ask h2{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--brass);margin:0 0 9px;}
+  .ask p{font-size:21px;font-weight:700;line-height:1.5;margin:0;letter-spacing:-.015em;}
+  .ask em{font-style:normal;background:var(--pick);padding:1px 6px;}
+  .ask .sub{font-size:13.5px;font-weight:500;color:var(--mid);margin-top:9px;line-height:1.6;}
+  .ask .sub b{color:var(--deep);font-weight:800;}
 
-  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:9px 18px;margin-top:9px;}
-  .hold p{font-size:13.5px;line-height:1.62;margin:0;}
-  .hold b{font-weight:800;color:var(--mid);}
+  /* 출하표 — 이 장의 주인공 */
+  .paper h3{font-size:16px;font-weight:800;margin:0 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--deep);}
+  .paper h3 span{font-size:12.5px;font-weight:500;color:var(--grey);margin-left:9px;}
+  .paper img{width:100%;display:block;border:1px solid var(--line);}
+  .steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-top:9px;}
+  .steps div{border:1px solid var(--line);background:var(--steam);padding:9px 13px;font-size:13.5px;line-height:1.55;}
+  .steps b{display:block;font-size:11.5px;letter-spacing:.1em;color:var(--mid);font-weight:800;margin-bottom:3px;}
 
-  h3{font-size:15px;font-weight:800;margin:0 0 8px;padding-bottom:5px;
-     border-bottom:1.5px solid var(--deep);}
-  h3 span{font-size:12px;font-weight:500;color:var(--grey);margin-left:9px;}
-
-  table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5;}
-  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:middle;}
-  thead th{background:var(--deep);color:#fff;font-size:13.5px;font-weight:700;text-align:center;}
-  tbody th{background:var(--steam);font-weight:600;font-size:13.5px;white-space:nowrap;}
-  td.p{background:var(--pick);}
-  td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-
-  .grid2{display:grid;grid-template-columns:1fr 1.15fr;gap:13px;}
-  .blk{border:1px solid var(--line);padding:11px 16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:13px;}
+  .blk{border:1px solid var(--line);padding:12px 16px;}
   .blk.warn{background:var(--alert-bg);border-color:#E2CDB6;}
-  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 10px;}
+  .blk h4{font-size:11.5px;font-weight:800;letter-spacing:.14em;color:var(--grey);margin:0 0 9px;}
   .blk.warn h4{color:var(--alert);}
-  .blk p{font-size:13.5px;line-height:1.58;margin:0 0 7px;}
+  .blk p{font-size:13.5px;line-height:1.6;margin:0 0 7px;}
   .blk p:last-child{margin-bottom:0;}
   .blk.warn p{color:#573015;}
   .blk strong{font-weight:700;}
   .blk.warn strong{color:var(--alert);}
-  .blk ul{margin:0;padding-left:17px;}
-  .blk li{font-size:13.5px;line-height:1.55;margin-bottom:5px;}
-  .blk li:last-child{margin-bottom:0;}
-  .blk table{background:#fff;}
 
-  .ft{border-top:1px solid var(--line);margin-top:9px;padding-top:6px;
-    display:flex;justify-content:space-between;gap:20px;font-size:10.5px;color:var(--grey);
-    word-break:keep-all;}
+  .hold{border:1.5px dashed var(--mid);background:#F5F8F6;padding:10px 20px;margin-top:12px;}
+  .hold p{font-size:13.5px;line-height:1.6;margin:0;}
+  .hold b{font-weight:800;color:var(--mid);}
+
+  .ft{border-top:1px solid var(--line);margin-top:10px;padding-top:7px;
+    display:flex;justify-content:space-between;gap:20px;font-size:10.5px;color:var(--grey);word-break:keep-all;}
 
   @media print{
     html,body{background:#fff;}
     .sheet{width:auto;min-height:0;margin:0;padding:0;box-shadow:none;}
     .bar{display:none;}
-    .concl,table,.grid2,.blk,.hold{break-inside:avoid;}
+    .ask,.paper,.steps,.grid3,.blk,.hold{break-inside:avoid;}
   }
 </style>
 </head>
@@ -94,137 +86,74 @@
 </div>
 
 <div class="sheet">
-  <p class="ref">사우나 린넨(세탁물) 관리 · 9월 한 달 시범 안내 · 지원부 김훈 주임께 드리는 정리</p>
+  <p class="ref">사우나 린넨(세탁물) 관리 · 9월 1일 시작 · 지원부 김훈 주임께 드리는 정리</p>
 
   <div class="hd">
     <div>
       <p class="brand">WELLPERION</p>
-      <h1>사우나 린넨(세탁물) 관리 — 9월 한 달 시범</h1>
+      <h1>사우나 린넨(세탁물) 관리</h1>
     </div>
     <div class="rt">
       <div><b>보고일</b>2026. 09. 01.</div>
       <div><b>작성</b>AI 웰리</div>
-      <div><b>기간</b>9월 한 달 (10월에 함께 봄)</div>
+      <div><b>시작</b>2026. 09. 01. · 매달 개선</div>
     </div>
   </div>
 
-  <div class="concl">
-    <h2>부탁드리는 것 · 하루 두 번, 숫자만 적어 주시는 일</h2>
-    <p class="main">
-      화면은 <em>이미 다 만들어져 있습니다.</em> 부탁드리는 것은 하루 두 번, 숫자를 적는 일뿐입니다 —
-      세탁물을 받을 때 <em>「입고」</em>, 마감할 때 <em>「마감재고」</em>.
-      사용량 계산·부족 표시·요일별 평균은 화면이 저절로 해 줍니다.
-    </p>
-    <div class="cols">
-      <p><b>① 하루 두 번 · 한 번에 8칸</b>
-        받을 때(21:00 무렵 배송) 품목별 받은 개수 8칸 · 마감할 때(영업 종료) 남은 개수 8칸.
-        세어 보는 시간을 빼면 적는 것 자체는 금방 끝납니다.</p>
-      <p><b>② 9월 한 달만 해 보는 것</b>
-        한 달 해 보고 10월에 함께 봅니다. 이어갈지, 방식을 바꿀지 그때 같이 정합니다.
-        해 보다가 안 맞으면 바꾸면 됩니다.</p>
+  <div class="ask">
+    <h2>부탁드리는 것</h2>
+    <p>하루 두 번, 숫자만 적어 주십시오 — 받을 때 <em>「입고」</em>, 마감할 때 <em>「마감재고」</em>. 품목 여덟 칸씩입니다.</p>
+    <p class="sub">사용량 계산·부족 표시·요일별 평균은 <b>화면이 저절로</b> 합니다.
+      숫자는 <b>배송 배분을 고치는 재료</b>일 뿐이고, <b>개인 평가는 하지 않습니다.</b></p>
+  </div>
+
+  <div class="paper">
+    <h3>이 종이에 적으시면 됩니다 <span>세탁물 출하표 · 지원부 체계 페이지 「세탁물 관리」 탭에서 인쇄 · A4 가로</span></h3>
+    <img src="출하표_샘플.png" alt="세탁물 출하표 — 날짜별로 품목 8종의 입고·마감재고 칸과 오픈·마감 서명 칸이 있는 A4 가로 표">
+    <div class="steps">
+      <div><b>① 받을 때 · 21:00 무렵</b>거래명세서와 실제 개수를 맞춰 보고 「입고」 칸에. 그 줄 「오픈」 서명.</div>
+      <div><b>② 마감할 때 · 영업 종료</b>품목별로 남은 개수를 세어 「마감재고」 칸에. 그 줄 「마감」 서명.</div>
+      <div><b>③ 보름에 한 번 · 김훈 주임님</b>장 맨 아래 「확인」 칸. 1~15일 한 장, 16일~말일 한 장입니다.</div>
     </div>
   </div>
 
-  <div class="grid2">
-    <div style="display:flex;flex-direction:column;">
-      <h3>이미 있는 것 <span>지원부 체계 페이지 · 세탁물 관리 탭</span></h3>
-      <table>
-        <thead>
-          <tr><th style="background:var(--mid);text-align:left;">품목 (8가지)</th><th>부족 기준선</th>
-              <th style="background:var(--mid);text-align:left;">품목</th><th>부족 기준선</th></tr>
-        </thead>
-        <tbody>
-          <tr><th>바스타월</th><td class="n">70 장</td><th>양말</th><td class="n">70 장</td></tr>
-          <tr><th>세면타월</th><td class="n">380 장</td><th>운동복 상</th><td class="n">70 장</td></tr>
-          <tr><th>땀타월</th><td class="n">75 장</td><th>운동복 하</th><td class="n">65 장</td></tr>
-          <tr><th>샤워타월</th><td class="n">95 장</td><th>카페트</th><td class="n">1 장</td></tr>
-        </tbody>
-      </table>
-
-      <div class="blk" style="margin-top:13px;">
-        <h4>화면이 저절로 해 주는 것</h4>
-        <ul>
-          <li><strong>사용량 자동 계산</strong> — 입고·마감재고만 적으면 하루에 몇 장 썼는지를 화면이 계산합니다.</li>
-          <li><strong>부족 경고 색 표시</strong> — 마감재고가 위 기준선 아래로 내려간 칸은 색으로 표시됩니다.</li>
-          <li><strong>요일별 평균 입고 그래프</strong> — 바스타월·세면타월이 요일마다 평균 몇 장 들어오는지 그림으로 보입니다.</li>
-        </ul>
-      </div>
-
-      <div class="blk" style="margin-top:13px;">
-        <h4>어디서 하나</h4>
-        <p style="margin-bottom:6px;"><strong>지원부 체계 페이지 → 「세탁물 관리」 탭.</strong> 휴대폰·PC 어느 쪽에서든 열립니다.</p>
-        <p style="font-size:12px;color:var(--grey);margin:0;">https://wellperion-cao.github.io/wellperion-automation/coo/check/지원부 체계.html</p>
-      </div>
-
-      <!-- 창고 보관분 — GM 지시 2026-09-01 "현재 창고에 세탁물들이 있는데, 그것 재고도 파악해야할텐데,
-           그것도 중요한 내용이라 GM업무 린넨 관리 정리에다가 기록해놔야겠다".
-           매일 도는 린넨(입고·마감재고)과 창고에 쟁여 둔 새 제품은 다른 숫자다. 지금 화·수에 모자라
-           창고 것을 꺼내 쓰고 있는데, 창고에 몇 장 남았는지를 아무도 모른다 — 그게 바닥나면 그날로 막힌다.
-           ▸2026-09-01 출하표 그림을 넣으며 오른쪽 칸이 넘쳐 이 블록을 왼쪽 칸으로 옮겼다(내용 그대로). -->
-      <div class="blk warn" style="margin-top:13px;">
-        <h4>창고에 있는 새 제품 — 이것도 세어야 합니다</h4>
-        <p>지금 화·수요일에 모자라면 <strong>창고에 둔 새 제품을 꺼내 쓰고</strong> 있습니다.
-          그런데 창고에 몇 장 남았는지는 아무도 모릅니다 — <strong>바닥나는 날 그대로 막힙니다.</strong></p>
-        <p>매일 도는 세탁물과 창고 보관분은 다른 숫자입니다. 세는 방법도 다릅니다 —
-          <strong>창고는 처음 한 번 세고, 그 뒤로는 꺼낼 때마다 몇 장 꺼냈는지만</strong> 적으면 됩니다.
-          화면의 <strong>「신품 투입」</strong> 칸이 그 자리입니다.</p>
-        <p style="margin-bottom:0;">그러면 <strong>창고에 얼마 남았는지</strong>와 <strong>한 달에 새 제품을 몇 장 축냈는지</strong>가 함께 보입니다.
-          두 번째 숫자가 곧 손실액이고, 세탁 업체와 이야기할 때 가장 힘이 되는 근거입니다.</p>
-      </div>
+  <div class="grid3">
+    <div class="blk warn">
+      <h4>왜 세나</h4>
+      <p>화·수요일에 회원께 드릴 세탁물이 모자라 <strong>창고의 새 제품을 꺼내 쓰고</strong> 있습니다.
+        그런데 <strong>몇 장 나가고 몇 장 돌아오는지 세는 것이 없어</strong> 원인을 못 찾습니다.</p>
+      <p>숫자가 쌓이면 세탁 업체에 <strong>어느 요일 배송을 늘려 달라</strong>고 말할 근거가 생깁니다.</p>
+      <p><strong>목표 — 화·수요일 바스타월 평균 입고 275장 회복.</strong></p>
     </div>
 
-    <div>
-      <div class="blk warn">
-        <h4>왜 세나 — 배송 배분을 고치기 위한 숫자</h4>
-        <p>화요일·수요일에 회원께 드릴 세탁물이 모자라, 보관해 둔 <strong>새 제품을 꺼내 쓰고</strong> 있습니다.
-          그런데 지금은 <strong>몇 장 나가고 몇 장 돌아오는지 세는 것이 없어</strong> 원인을 못 찾고 있습니다 —
-          수요가 많은 것인지, 회수가 늦는 것인지, 어디선가 사라지는 것인지 가릴 수가 없습니다.</p>
-        <p>숫자가 쌓이면 세탁 업체와 이야기할 근거가 생깁니다. 요일별로 몇 장 들어오는지가 보이면,
-          어느 요일 배송을 늘려 달라고 할지가 정해집니다.</p>
-        <p><strong>목표 — 화·수요일 바스타월 평균 입고 275장 이상 회복.</strong>
-          이 숫자는 업체 배송 배분을 고치기 위한 것이지, 누구를 평가하기 위한 것이 아닙니다.</p>
-      </div>
+    <!-- 창고 보관분 — GM 지시 2026-09-01 "현재 창고에 세탁물들이 있는데, 그것 재고도 파악해야할텐데".
+         매일 도는 린넨과 창고에 쟁여 둔 새 제품은 다른 숫자다. 창고가 바닥나면 그날로 막힌다. -->
+    <div class="blk warn">
+      <h4>창고의 새 제품도 셉니다</h4>
+      <p>창고에 몇 장 남았는지는 지금 아무도 모릅니다 — <strong>바닥나는 날 그대로 막힙니다.</strong></p>
+      <p>세는 법은 더 쉽습니다. <strong>처음 한 번 세어 두고, 그 뒤로는 꺼낼 때마다 몇 장 꺼냈는지만</strong>
+        화면 <strong>「신품 투입」</strong> 칸에 적으면 됩니다.</p>
+      <p>그러면 <strong>남은 양</strong>과 <strong>한 달에 축낸 양</strong>이 함께 보입니다. 뒤 숫자가 곧 손실액입니다.</p>
+    </div>
 
-      <div class="blk" style="margin-top:13px;">
-        <h4>한 달 시범 — 무엇을 보고, 무엇을 안 보나</h4>
-        <table>
-          <tbody>
-            <tr>
-              <th style="width:104px;">보는 것</th>
-              <td>숫자가 매일 쌓이는가 · 부족 표시가 며칠에 몇 번 뜨는가 — 이 두 가지뿐입니다.</td>
-            </tr>
-            <tr>
-              <th>안 보는 것</th>
-              <td class="p"><strong>개인 평가는 하지 않습니다.</strong> 빈 날이 있어도 괜찮습니다 — 숫자는 배송 배분을 고치는 재료일 뿐입니다.</td>
-            </tr>
-            <tr>
-              <th>10월에</th>
-              <td>한 달 치 숫자를 같이 보고, 이어갈지·바꿀지 함께 정합니다.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 「하루 흐름」 2행 표는 뺐다(2026-09-01) — 바로 아래 출하표 그림이 「입고·마감재고」 칸을 그대로
-           보여 주고, 시각(21:00 배송·영업 종료)은 맨 위 결론 ①에 이미 적혀 있다. 같은 말을 세 번 하지 않는다. -->
-      <div class="blk" style="margin-top:13px;">
-        <h4>손으로 적는 종이 — 출하표 (화면에서 인쇄 · A4 가로)</h4>
-        <img src="출하표_샘플.png" alt="세탁물 출하표 — 날짜별로 품목 8종의 입고·마감재고 칸과 오픈·마감 서명 칸이 있는 A4 가로 표"
-             style="width:100%;display:block;border:1px solid var(--line);">
-        <p style="margin-top:7px;">1~15일 한 장 · 16일~말일 한 장. 그날 줄 <strong>오픈·마감 서명</strong> 칸에 사인하고,
-          장 아래 <strong>확인 칸이 김훈 주임님 자리</strong>입니다 — 보름에 한 번만 보시면 됩니다.</p>
-      </div>
+    <!-- 시범 프레임 폐기 — GM 지시 2026-09-01 "한달 시범할거면 안하지, 시작을 했으면 계속 개선해서 진행해야지".
+         멈출 수 있다는 말이 들어가면 시작부터 힘이 빠진다. 계속 가되 매달 손보는 일로 세운다. -->
+    <div class="blk">
+      <h4>시작하면 계속 갑니다 — 매달 고쳐 나갑니다</h4>
+      <p><strong>보는 것</strong> — 숫자가 매일 쌓이는가, 부족 표시가 며칠에 몇 번 뜨는가. 이 둘뿐입니다.</p>
+      <p><strong>안 보는 것</strong> — 개인 평가. 빈 날이 있어도 괜찮습니다.</p>
+      <p><strong>매달 초</strong>에 지난달 숫자를 같이 보고, <strong>불편한 곳을 그때그때 고칩니다.</strong> 그만두는 것이 아니라 나아지게 만듭니다.</p>
+      <p>화면 입력이 번거로운 날은 <strong>종이에 적어 두었다가 나중에 옮겨도</strong> 됩니다.</p>
     </div>
   </div>
 
   <div class="hold">
     <p><b>막히면 — 한 줄이면 됩니다</b>
-      숫자가 안 맞거나 화면이 안 되면 웰리에게 한 줄만 주십시오. GM께 올려 함께 풉니다.
-      혼자 안고 가시는 일이 아닙니다.</p>
+      숫자가 안 맞거나 화면이 안 되면 웰리에게 한 줄만 주십시오. GM께 올려 함께 풉니다. 혼자 안고 가시는 일이 아닙니다.</p>
   </div>
 
   <div class="ft">
-    <span>품목·부족 기준선·자동 계산은 지원부 체계 페이지 세탁물 관리 탭에 이미 갖춰져 있는 그대로이며, 9월 한 달 시범 후 10월에 함께 보고 이어갈지 정한다.</span>
+    <span>화면은 지원부 체계 페이지 → 「세탁물 관리」 탭. 품목·부족 기준선·자동 계산은 이미 갖춰져 있으며, 2026-09-01 시작해 매달 초에 지난달 숫자를 함께 보고 방식을 손본다.</span>
     <span>웰페리온 · 사우나 린넨(세탁물) 관리 정리 · A3 가로 1매</span>
   </div>
 
