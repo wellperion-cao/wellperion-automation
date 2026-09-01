@@ -521,7 +521,7 @@ body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sa
   body.a3-ldy-mode #a3-laundry-print{display:block!important}
   #a3-laundry-print .a3l-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #4a3a2e;padding-bottom:6px;margin-bottom:8px}
   #a3-laundry-print .a3l-title{font-size:26px;font-weight:800;letter-spacing:0.04em;color:#2a2018}
-  /* 서명란 3칸(GM 2026-09-01 — 오픈·마감 두 조가 한 장을 나눠 쓰니 작성 서명도 둘, 확인=김훈 주임).
+  /* 서명란 3칸(GM 2026-09-01 — 오픈·마감 두 조가 한 장을 나눠 쓰니 작성 서명도 둘, 확인=지원부 책임자).
      줄 2개(작성 한 줄·확인 한 줄)로 세워 머리 높이를 안 키운다. 빈칸은 3개가 들어가게 70px. */
   #a3-laundry-print .a3l-blank{display:inline-block;min-width:70px;border-bottom:1px solid #8a7a6c}
   table.a3l-grid{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -7002,7 +7002,7 @@ function printA4Laundry(lang){
      "인쇄를 가로로해서 날짜를 15일까지로 1장 / 16일~나머지까지가 1장, 매일 작성한사람 사인").
      열 = 날짜 1 + 품목 8×(입고·마감재고) 16 + 서명 2(오픈·마감) = 19열.
      서명이 날짜마다 2칸인 이유 — 입고는 오픈조가, 마감재고는 마감조가 적는다(GM 확정). 1칸이면
-     둘 중 누구 책임인지 안 갈린다. 장 하단에 확인(김훈 주임) 서명 1칸 — 보름치를 볼 때 한 번.
+     둘 중 누구 책임인지 안 갈린다. 장 하단에 지원부 확인 서명 1칸 — 보름치를 볼 때 한 번(이름 인쇄 안 함).
      폭 실측(A4 가로 내용폭 1,062px = 281mm): 숫자칸 (1062−116−140)/16 ≈ 50px ≈ 13.3mm(하한 12mm 위),
      서명칸 70px ≈ 18.5mm. 계산식(사용량 = 전일마감 + 입고 + 신품 − 마감재고)이 쓰는 두 칸 구조 유지.
      달 = 화면 「월간 출하 기록」의 월 선택(wpLdySheetYm)을 따른다. 요일은 날짜에서 계산(손기입 금지).
@@ -7061,7 +7061,9 @@ function printA4Laundry(lang){
       h += '<td></td><td></td></tr>';
     }
     h += '</tbody></table>'
-       + '<div class="a3l-check">' + (en ? 'Checked — Kim Hun' : '확인 — 김훈 주임')
+       /* 확인 칸은 역할 표기만 — 현장에 매일 걸리는 종이에 특정인 이름을 인쇄하면 새로 온 분이
+          "저 사람 때문에 바뀐다"로 읽힌다(GM 2026-09-01). 서명으로 이름을 쓰면 된다. */
+       + '<div class="a3l-check">' + (en ? 'Checked' : '지원부 확인')
        + ' <b class="a3l-blank"></b></div></div>';
   });
   var host = document.getElementById('a3l-table-host');
