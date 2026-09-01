@@ -118,6 +118,7 @@
      2026-08-10 GM 확정 — 단체가 = 소비자가 기준 30% (GM 확정 2026-08-10 · 지난 설 18,060원과 동일 산식).
      2026-08-31 윤병현 매니저 지시 — 10세트 이상 단체가를 절사값으로 확정: 2구 18,000원 / 3구 17,900원(bulk·GUIDES.ohnutti.note 동시 수정).
      2026-09-01 윤병현 매니저 지시 — 모바일(카톡·문자 유입)에서 "10세트 이상 가격"이 카드 오른쪽 밖으로 넘침 → g-price-row flex-wrap + 단체가 span을 g-price-bulk로 분리(480px 이하 줄바꿈·들여쓰기). WP 8460·8831 동시 반영.
+     2026-09-01 윤병현 매니저 지시(2차) — ①배송지(f_address)는 수량(f_qty) 10 이상일 때만 입력 가능(미만이면 disabled+값 비움+안내문, .is-locked) ②결제방법(f_pay) '계좌이체' 선택 시 .bank-box(국민은행 344901-04-093932 (주)웰페리온) + 입금자명=수령인 동일 안내 노출. buildForm 끝의 cat==='ohnutti' 블록, 다른 6종 무변화. 뒷단 GAS 계약 무변경(address는 빈값 허용).
      ★이 파일의 HTML 주석·인라인 스크립트는 view-source로 그대로 노출되므로
      비공개 원가 관련 항목은 이름조차 적지 않는다(GM 지시, ★주의: 이 파일 주석 텍스트 안에 꺾쇠괄호+
      script 글자를 그대로 적지 말 것 — Autoptimize가 진짜 스크립트로 오인해 본문 전체를 날려버림,
@@ -244,6 +245,14 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 .wlp-inq .field{margin-bottom:20px}
 .wlp-inq .field:last-child{margin-bottom:0}
 .wlp-inq .field-info{font-size:13.5px;color:var(--ink);line-height:1.6}
+.wlp-inq .field.is-locked input{background:var(--bg);color:var(--dim);cursor:not-allowed}
+.wlp-inq .field-lock{font-size:12px;color:var(--dim);margin:6px 0 0}
+.wlp-inq .bank-box{margin-top:12px;padding:14px 16px;border:1px solid var(--line);background:var(--bg)}
+.wlp-inq .bank-row{display:flex;gap:12px;font-size:13.5px;line-height:1.7}
+.wlp-inq .bank-row span{flex:0 0 68px;color:var(--dim)}
+.wlp-inq .bank-row b{font-weight:700;color:var(--ink);letter-spacing:.2px}
+.wlp-inq .bank-note{margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--muted);line-height:1.6}
+.wlp-inq .bank-note b{color:var(--coral)}
 .wlp-inq input[type=text],.wlp-inq input[type=tel],.wlp-inq input[type=date],.wlp-inq textarea,.wlp-inq select{
   width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);color:var(--ink);padding:11px 2px;border-radius:0;font-size:15px;font-family:inherit;line-height:1.5;transition:border-color .15s;-webkit-appearance:none;appearance:none;margin:0}
 .wlp-inq input:focus,.wlp-inq textarea:focus,.wlp-inq select:focus{outline:none;border-color:var(--ink);border-bottom-width:2px}
@@ -505,7 +514,7 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
         { key:'qty',      label:'수량(세트)', type:'text', ph:'숫자만 입력해 주세요 (예: 2)', req:true, hint:'선택하신 세트 기준 수량입니다' },
         { key:'methodInfo', label:'수령 방법', type:'info', text:'현장 수령이 기본입니다. 10세트 이상 주문 시 택배도 가능합니다.' },
         { key:'wantDate', label:'희망 수령일', type:'date', req:true },
-        { key:'address',  label:'배송지', type:'text', opt:true, hint:'10세트 이상 주문으로 택배를 원하시면 배송지를 남겨주세요', ph:'10세트 미만은 입력하지 않으셔도 됩니다' },
+        { key:'address',  label:'배송지', type:'text', opt:true, hint:'10세트 이상 주문 시에만 입력할 수 있습니다', ph:'10세트 이상 주문 시 입력 가능' },
         { key:'pay',      label:'결제 방법', type:'select', ph:'선택해 주세요', opts:['현장 결제','계좌이체'], req:true },
         { key:'note',     label:'요청 사항', type:'textarea', opt:true, ph:'요청하실 내용을 자유롭게 적어주세요.' }
       ]
@@ -755,6 +764,39 @@ html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch}
       }
       box.appendChild(field);
     });
+
+    // ── 오넛티 전용 상호작용(2026-09-01 윤병현 매니저 지시) ──
+    if (cat === 'ohnutti') {
+      // ① 배송지: 수량이 10세트 이상일 때만 입력 가능(미만이면 잠금 + 값 비움)
+      var qtyEl = $('f_qty'), addrEl = $('f_address');
+      if (qtyEl && addrEl) {
+        var addrField = addrEl.parentNode;
+        var addrNote = document.createElement('p'); addrNote.className = 'field-lock';
+        addrField.appendChild(addrNote);
+        var syncAddr = function(){
+          var n = parseInt(String(qtyEl.value).replace(/[^0-9]/g,''), 10) || 0;
+          var ok = n >= 10;
+          addrEl.disabled = !ok;
+          if (!ok) addrEl.value = '';
+          addrEl.placeholder = ok ? '택배 받으실 주소를 입력해 주세요' : '10세트 이상 주문 시 입력 가능';
+          addrField.classList.toggle('is-locked', !ok);
+          addrNote.textContent = ok ? '택배 배송이 가능합니다. 받으실 주소를 정확히 입력해 주세요.' : '10세트 미만은 현장 수령만 가능해 배송지를 입력하지 않습니다.';
+        };
+        qtyEl.addEventListener('input', syncAddr); syncAddr();
+      }
+      // ② 결제 방법: 계좌이체 선택 시 입금 계좌 + 입금자명 안내 노출
+      var payEl = $('f_pay');
+      if (payEl) {
+        var bank = document.createElement('div'); bank.className = 'bank-box'; bank.style.display = 'none';
+        bank.innerHTML = '<div class="bank-row"><span>은행명</span><b>국민은행</b></div>'
+          + '<div class="bank-row"><span>입금 계좌</span><b>344901-04-093932</b></div>'
+          + '<div class="bank-row"><span>예금주</span><b>(주)웰페리온</b></div>'
+          + '<p class="bank-note">입금자명은 신청하신 <b>수령인 성함과 동일하게</b> 입력해 주세요. 입금 확인 후 접수가 확정됩니다.</p>';
+        payEl.parentNode.appendChild(bank);
+        var syncBank = function(){ bank.style.display = (payEl.value === '계좌이체') ? 'block' : 'none'; };
+        payEl.addEventListener('change', syncBank); syncBank();
+      }
+    }
 
     // 개인정보 동의(필수) — PIPA 문안 승계
     var cField = document.createElement('div'); cField.className='field';
