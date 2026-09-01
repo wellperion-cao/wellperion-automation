@@ -154,7 +154,7 @@ def _mirror_ok() -> str | None:
         return None
 
 
-# 점검 GAS (지원팀 일일점검 · 4부서 공용 GAS이나 데이터는 지원부만 — 정직 표기)
+# 점검 GAS (지원팀 일일점검 · 4부서 공용 — 월간은 지원부만, 운영부·주차부는 weekly로 잠정 측정)
 _CHECK_GAS = (
     "https://script.google.com/macros/s/"
     "AKfycbyXw4ZaA6hLK567GC7NY33Y8SvNPW6kNtrXFz2OsSdFVBmCnZP-2oD-RQiX0IpekBu1/exec"
@@ -241,6 +241,26 @@ def _coo_check_rate_monthly(month_str: str) -> dict | None:
         return None
 
 
+def _check_weekly(dept: str) -> dict | None:
+    """운영부(ops)·주차부(parking) 최근 7일 점검 실측 — 점검 GAS weekly action.
+    월간 분기(monthly_report)가 이 두 부서엔 아직 없어(2026-09-01 설계 1·2단계 = 시토 GAS 배선 대기)
+    weekly(점검일지_<dept> 스냅샷 7일 집계)로 잠정 측정한다. GAS 분기가 생기면 monthly로 교체.
+    반환: {"days": 제출 있었던 날 수(0~7 — 0도 실측값), "done"/"total": 7일 합, "rate": done/total|None}
+    조회 실패=None (0 아님 — '진짜 미제출'과 '못 읽음'을 섞지 않는다)."""
+    try:
+        data = _http_get_json(f"{_CHECK_GAS}?action=weekly&dept={dept}")
+        if not isinstance(data, dict) or not data.get("ok"):
+            return None
+        rows = [r for r in (data.get("data") or []) if isinstance(r, dict)]
+        total = sum(int(r.get("total") or 0) for r in rows)
+        done = sum(int(r.get("done") or 0) for r in rows)
+        days = sum(1 for r in rows if int(r.get("total") or 0) > 0)
+        return {"days": days, "done": done, "total": total,
+                "rate": round(done / total, 4) if total > 0 else None}
+    except Exception:
+        return None
+
+
 def _coo_check_rate() -> dict:
     """
     지원부 점검완료율 — home/북극성 대표값 = 월간(당월 누적) 실측.
@@ -254,8 +274,9 @@ def _coo_check_rate() -> dict:
            "지원부_제출률": 0~1|null(예정 대비 제출), "지원부_제출분충실도": 0~1|null(제출분 안 체크율)
              — 완료율=제출률×제출분충실도 분해(지원부 체계.html mrSubmitBreakdown 과 동일 산식),
            "지원부_점검완료율_당일라이브": 0~1|null(참고), "지원부_당일라이브_완료"/"_전체": int|null,
+           "운영부/주차부_주간제출일수·_점검완료율·_기준": weekly 잠정 실측(_check_weekly — 조회실패=null·제출0=실측),
            "4부서_점검완료율": null, "_note": str}
-    — 4부서 전체 완료율은 이 GAS로 측정 불가(지원부 데이터만 제공) → null 유지.
+    — 4부서 합성값은 시설부 미수집·산식 미결재라 null 유지(부서별 필드가 실측 정본).
     """
     result: dict = {
         "지원부_점검완료율": None,
@@ -267,6 +288,12 @@ def _coo_check_rate() -> dict:
         "지원부_점검완료율_당일라이브": None,
         "지원부_당일라이브_완료": None,
         "지원부_당일라이브_전체": None,
+        "운영부_주간제출일수": None,
+        "운영부_점검완료율": None,
+        "운영부_점검완료율_기준": None,
+        "주차부_주간제출일수": None,
+        "주차부_점검완료율": None,
+        "주차부_점검완료율_기준": None,
         "4부서_점검완료율": None,
         "_note": "4부서전체=미측정(GAS가지원부한정)",
     }
@@ -308,6 +335,21 @@ def _coo_check_rate() -> dict:
             result["지원부_당일라이브_전체"]       = total
     except Exception:
         pass  # 참고값 실패는 대표값(월간)에 영향 없음(null 안전)
+
+    # 운영부·주차부 — 입력·적재 경로는 살아 있음(2026-09-01 실측: 응답 ok, 최근 7일 제출 0).
+    # 완료율은 제출이 있어야 나오므로 제출 0이면 null, 제출일수 0이 실측값이다(조회 실패만 None).
+    ext_notes = []
+    for dept, label in (("ops", "운영부"), ("parking", "주차부")):
+        wk = _check_weekly(dept)
+        if wk is None:
+            ext_notes.append(f"{label}=조회실패(null·0 아님)")
+            continue
+        result[f"{label}_주간제출일수"] = wk["days"]
+        result[f"{label}_점검완료율"] = wk["rate"]
+        result[f"{label}_점검완료율_기준"] = f"주간(최근7일·weekly&dept={dept}·휴관일 미보정)"
+        ext_notes.append(f"{label}=주간실측({wk['days']}일 제출)")
+    # 4부서 합성값은 억지로 만들지 않는다 — 시설부가 이 수집기에 없고 합성 산식은 공식값(GM 결재) 사안.
+    result["_note"] += " · " + " · ".join(ext_notes) + " · 4부서 합성값=미정의(시설부 미수집·산식은 GM 결재 사안)"
 
     return result
 

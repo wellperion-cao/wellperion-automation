@@ -419,7 +419,7 @@
       "feature": "부서별 점검 완료율·이상 한눈에 (운영 점검 현황). [2026-07-24 웰리 승인 병합 34→26] `cto-check-gas`(점검 GAS 파이프 — CHECK_API weekly/monthly 집계, 12시 점검관리방 발송) 흡수 — 같은 CHECK_API·같은 자동화현황방 파이프라인. daily는 이미 이 모듈과 중복이라 2026-07-22에 꺼졌고 monthly만 잔존해 있던 것을 이 항목의 notify_spec.monthly로 편입(daily가 우선 판정이라 module_silence_detector.py::expected_max_silence_hours 침묵감지 로직 영향 없음 확인). ★2026-08-03 GM 확정 주간 보고 축 — 시설·지원·주차관리부 체계를 **점검 현황 기준**으로 매주 월요일 정리 보고(운영·시우). ▸최종 목적지(GM 확정 2026-08-03) = 점검 현황은 카톡 ★운영+시설+지원+주차(2026-08-19 GM 카톡방 정리 — ★관리부가 이 방으로 합병돼 없어졌다) · 종합접수처는 카톡 ★운영+시설+지원+주차. ▸단계: 확정 전까지 텔레그램 GM 업무보고방에서 다듬는다. ▸주간분 발송 방식(GM 확정 2026-08-03): 월요일 주간 보고는 **자동 확정 발송이 아니다.** 업무보고봇(텔레그램 GM_DM)이 **최종본 초안**을 올리고, GM 이 확정한 뒤에야 카톡방으로 나간다. 일일 보고는 기존대로 자율 발송(변경 없음). 근거 = 자율화 규약 §4-1 '내용 변경·추가건 → 업무보고봇으로 승인 요청 후 발송'.",
       "data_source": {
         "kind": "gas",
-        "ref": "CHECK_API weekly&dept=facility / today_live&dept=support / monthly(구 cto-check-gas 흡수) + status/heartbeats/coo-check-status.json"
+        "ref": "CHECK_API weekly&dept=facility / today_live&dept=support / monthly(구 cto-check-gas 흡수) / weekly&dept=ops·parking(운영부·주차부 — 입력·스냅샷 경로 가동 확인 2026-09-01, kpi_collector 주간 잠정 측정 · 월간 제출률 분기는 GAS 배선 대기=시토) + status/heartbeats/coo-check-status.json"
       },
       "notify_spec": {
         "daily": true,
