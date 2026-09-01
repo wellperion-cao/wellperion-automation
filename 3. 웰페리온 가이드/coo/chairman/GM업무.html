@@ -412,7 +412,7 @@
 <!-- ?v= 는 브라우저 캐시 무력화용 버전표다. 이 파일을 고치면 날짜를 올린다 —
      2026-08-27 실측: 부서 칸을 붙였는데 GM 브라우저가 옛 _gm_direct_tasks.js 를 그대로 써서
      전 줄이 '미정' 으로 떴다(HTML 은 새것, 이 스크립트만 캐시). -->
-<script src="_gm_direct_tasks.js?v=20260827b"></script>
+<script src="_gm_direct_tasks.js?v=20260901a"></script>
 <script src="_chairman_items.js"></script>
 <script src="_owner_directive.js"></script>
 <script>
@@ -742,6 +742,9 @@
         // 전사 배지 — gm_top3_rank 로만 편입된 건(제목에 "(GM 직접)" 없음)은 회사 전체가 보는 과제라는 걸
         // 한눈에 구분한다(2026-08-07 GM 지시, 목록에서 빼진 않고 같은 자리에 둔다). 기존 .dept-badge 재사용.
         (!it.direct ? ' <span class="dept-badge">전사</span>' : '') +
+        // 이월 배지 — 지난 달에 안 끝나 이어서 보이는 건(GM 지시 2026-09-01 "다 그대로 나오게").
+        // 어느 달 것인지 함께 적는다. 판정은 _gm_direct_tasks.js 가 한다(여기서 다시 계산하지 않는다).
+        (it.carried ? ' <span class="dept-badge">' + esc(String(it.fromMonth || '').replace(/^\d{4}-0?/, '')) + '월에서 이어짐</span>' : '') +
         // ③ 큰 「…보기 →」 버튼 대신 제목 옆 작은 아이콘으로(GM 2026-08-06 "너무 정신없다")
         ' <a class="ic-link" href="../../월간운영계획.html#obj-' + esc(it.id) + '" title="월간운영계획에서 보기">📌</a>' +
         '</h2>' +

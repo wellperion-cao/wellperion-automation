@@ -71,7 +71,8 @@
   }
   // plan = status/monthly_ops_plan.json 파싱 결과, monthKey = 'YYYY-MM'. 반환 = []( 정상 0건 ) · [{...}](정상 n건).
   // plan 자체가 없으면 [] (호출부에서 조회 실패와 정상 0건을 구분해 처리).
-  function extract(plan, monthKey) {
+  // 한 달치만 뽑는다. 아래 extract() 가 이 함수를 이번 달 + 이전 달들에 각각 돌려 합친다.
+  function extractMonth(plan, monthKey) {
     var month = plan && plan.months && plan.months[monthKey];
     var objs = (month && month.objectives) || [];
     var schedule = monthRange(monthKey);
@@ -108,5 +109,32 @@
         };
       });
   }
-  window.WellperionGmDirect = { extract: extract, isGmDirect: isGmDirect, isGmTop3: isGmTop3, GM_TAG: GM_TAG };
+
+  // 이번 달 + 아직 안 끝난 지난 달 건을 함께 낸다 (GM 지시 2026-09-01 "다 그대로 나오게 해줘야해").
+  // 왜 — 달이 바뀌면 화면이 그 달 목표만 비춰서, 8월에 진행 중이던 GM 직접 건 20개가 9/1 0시에 한꺼번에
+  // 안 보이게 됐다. 데이터는 그대로 있는데 GM 눈에는 사라진 것으로 보인다.
+  // 어떻게 — 목표를 9월로 복사하지 않는다(약속 L01 · 진실은 한 곳). 읽는 쪽에서 지난 달의 미완 건을
+  // 이어 붙일 뿐이다. 끝난 건(status='완료')은 제외하고, 같은 목표가 두 달에 다 있으면 이번 달 것만 남긴다.
+  var DONE = '완료';
+  function extract(plan, monthKey) {
+    var cur = extractMonth(plan, monthKey);
+    var seen = {};
+    cur.forEach(function (o) { seen[o.id] = 1; });
+    var months = Object.keys((plan && plan.months) || {})
+      .filter(function (k) { return /^\d{4}-\d{2}$/.test(k) && k < String(monthKey); })
+      .sort();                                   // 오래된 달부터 — 화면에서도 그 순서로 이어 붙는다
+    var carried = [];
+    months.forEach(function (k) {
+      extractMonth(plan, k).forEach(function (o) {
+        if (seen[o.id]) return;                  // 이번 달에 같은 목표가 있으면 그쪽이 정본
+        if (String(o.status || '').trim() === DONE) return;
+        seen[o.id] = 1;
+        o.carried = true;                        // 화면이 '지난 달에서 이어짐' 배지를 달 때 쓴다
+        o.fromMonth = k;
+        carried.push(o);
+      });
+    });
+    return cur.concat(carried);
+  }
+  window.WellperionGmDirect = { extract: extract, extractMonth: extractMonth, isGmDirect: isGmDirect, isGmTop3: isGmTop3, GM_TAG: GM_TAG };
 })();
