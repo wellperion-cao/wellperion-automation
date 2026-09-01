@@ -119,10 +119,10 @@
   function extract(plan, monthKey) {
     var cur = extractMonth(plan, monthKey);
     var seen = {};
-    cur.forEach(function (o) { seen[o.id] = 1; });
+    cur.forEach(function (o) { seen[o.id] = 1; o.fromMonth = monthKey; });
     var months = Object.keys((plan && plan.months) || {})
       .filter(function (k) { return /^\d{4}-\d{2}$/.test(k) && k < String(monthKey); })
-      .sort();                                   // 오래된 달부터 — 화면에서도 그 순서로 이어 붙는다
+      .sort().reverse();                         // 최근 달부터 — 화면은 이번 달 → 지난달 → 그 전달 순으로 읽힌다
     var carried = [];
     months.forEach(function (k) {
       extractMonth(plan, k).forEach(function (o) {

@@ -60,6 +60,14 @@
 
   .item{border-top:1.5px solid var(--deep);padding:13px 0 16px;break-inside:avoid;}
   .grid .item:nth-child(-n+2){border-top:1.5px solid var(--deep);}
+  /* 달 묶음 머리 (GM 지시 2026-09-01 "병렬로 정리") — 두 칸을 가로질러 그 달 묶음의 시작을 알린다.
+     새 화면·새 토글을 만들지 않고 기존 격자 안에 줄만 하나 끼운 것이다. */
+  .grid .grp-card{grid-column:1/-1;margin:16px 0 2px;padding:5px 10px;background:var(--deep);color:#fff;
+    font-size:13px;font-weight:800;letter-spacing:.02em;display:flex;justify-content:space-between;align-items:center;}
+  .grid .grp-card:first-child{margin-top:2px;}
+  .grid .grp-card span{font-weight:600;opacity:.85;}
+  .sum tr.grp-row td{background:var(--steam);font-weight:800;font-size:12px;letter-spacing:.02em;
+    color:var(--deep);padding:4px 6px;border-bottom:1px solid var(--line);}
   .top{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:3px;}
   .top h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0;}
   .top h2 .no{color:var(--brass);margin-right:8px;}
@@ -806,6 +814,28 @@
       '<td>' + esc(it.status || '—') + ' · ' + pct + ' · ' + dueHtml + '</td></tr>';
   }
 
+  // 달이 바뀌는 자리에 묶음 머리를 끼워 넣는다. 카드 격자용(grp-card)과 요약표용(grp-row) 두 모양.
+  // 건수는 그 달 묶음 안의 개수다 — 전체 건수(위 배지)와 헷갈리지 않게 「n건」으로만 적는다.
+  function withMonthHeads(list, rowFn, cls) {
+    var out = [], prev = null;
+    list.forEach(function (it, i) {
+      var mk = String(it.fromMonth || '');
+      if (mk !== prev) {
+        prev = mk;
+        var n = 0;
+        list.forEach(function (x) { if (String(x.fromMonth || '') === mk) n++; });
+        var mo = mk.replace(/^\d{4}-0?/, '');
+        var label = mo ? (mo + '월') : '달 미상';
+        var tail = (mk === _monthKey) ? ' 진행' : '에서 이어짐';
+        out.push(cls === 'grp-row'
+          ? '<tr class="grp-row"><td colspan="5">' + esc(label + tail) + ' · ' + n + '건</td></tr>'
+          : '<div class="grp-card">' + esc(label + tail) + ' <span>' + n + '건</span></div>');
+      }
+      out.push(rowFn(it, i));
+    });
+    return out.join('');
+  }
+
   function renderGm(items) {
     if (items === null) {
       elGmGrid.innerHTML = '<div class="rep-empty">데이터를 불러오지 못했습니다.</div>';
@@ -846,8 +876,11 @@
       elGmGrid.innerHTML = '<div class="rep-empty">진행 중인 GM 직접 관장 건이 없습니다.</div>';
       elGmSum.innerHTML = '';
     } else {
-      elGmGrid.innerHTML = activeItems.map(cardHtml).join('');
-      elGmSum.innerHTML = activeItems.map(sumRowHtml).join('');
+      // 달별로 묶어서 낸다 (GM 지시 2026-09-01 "월 단위로 나눴다가 다시 살리니 혼잡 · 병렬로 정리").
+      // 이번 달 → 지난달 → 그 전달 순. 순서·판정은 _gm_direct_tasks.js 가 이미 정해 놓았고
+      // 여기서는 줄 사이에 묶음 머리만 끼운다(정렬 다시 하지 않는다 · 번호는 전체 통번호 유지).
+      elGmGrid.innerHTML = withMonthHeads(activeItems, cardHtml, 'grp-card');
+      elGmSum.innerHTML = withMonthHeads(activeItems, sumRowHtml, 'grp-row');
     }
 
     elGmDoneCnt.textContent = doneItems.length + '건';
