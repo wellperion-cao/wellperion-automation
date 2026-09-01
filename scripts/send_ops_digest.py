@@ -1087,10 +1087,18 @@ def _is_lead_in(line: str) -> bool:
     return bool(_GREETING_RE.match(line)) or (len(line) <= 15 and bool(_ADDRESS_ONLY_RE.search(line)))
 
 
-def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
+def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str, str]":
     """전달문 원문(여러 줄일 수 있음)에서 ①확인해 달라는 한 줄 ②어디서·어떻게 답하면
-    되는지 한 줄을 뽑는다. 링크(📎)가 있으면 그 줄을 '어떻게'로 쓰고, 없으면 담당자에게
-    한 마디로 답해 달라는 기본 문구를 쓴다. 배 note 를 통째로 붙이지 않는다(GM 지적)."""
+    되는지 한 줄 ③그 줄만으로는 뜻이 안 통할 때 필요한 상세 줄을 뽑는다. 링크(📎)가
+    있으면 그 줄을 '어떻게'로 쓰고, 없으면 담당자에게 한 마디로 답해 달라는 기본 문구를
+    쓴다. 배 note 를 통째로 붙이지 않는다(GM 지적).
+
+    ★상세(③)를 넣은 이유 — 2026-09-01 실측 결함. 종전에는 첫 줄 하나만 실었다. 그래서
+    배801 전달문이 「정은M님, 회원 두 분이 지금 명단과 예전 기록 양쪽에 같이 올라가
+    있습니다.」 까지만 나가고 **정작 누구인지(허나래·송의영·김혜경)가 다음 줄에 있어
+    통째로 잘렸다.** 받는 사람은 누굴 봐야 하는지 모른 채 링크만 받았다. 사람 이름·숫자는
+    보통 둘째 줄부터 나오므로 최대 2줄까지 함께 싣는다(카톡 10줄 규칙은 그대로 — 상세는
+    들여쓰기로 붙고 상한이 있다)."""
     text = _ROLE_TAG_RE.sub("", str(staff_message or "").strip())
     body_lines = [l.strip() for l in text.splitlines() if l.strip()]
     # ★인사·호칭만 있는 첫 줄은 건너뛴다(2026-08-26 실측 — 배784 는 「답변 감사합니다.」,
@@ -1101,7 +1109,12 @@ def _split_ask_how(staff_message: str, who: str) -> "tuple[str, str]":
     how = next((l for l in body_lines[idx + 1:] if l.startswith("📎")), "")
     if not how:
         how = f"{who}님께 말씀해 주시거나 톡으로 한 마디만 답해 주시면 됩니다."
-    return _cap_line(ask, ASKS_TITLE_CAP), _cap_line(how, ASKS_HOW_CAP)
+    # 상세 = ask 다음 줄부터 최대 2줄. 링크 줄(how 로 이미 나감)과 인사·호칭 줄은 뺀다.
+    detail = [l for l in body_lines[idx + 1:] if not l.startswith("📎") and not _is_lead_in(l)][:2]
+    # 줄바꿈으로 잇는다 — 「한 줄 = 한 가지」(GM 2026-08-25). 쉼표·가운뎃점으로 이어 붙이면
+    # 카톡에서 한 덩어리로 보여 아무도 안 읽는다.
+    return (_cap_line(ask, ASKS_TITLE_CAP), _cap_line(how, ASKS_HOW_CAP),
+            "\n".join(_cap_line(l, ASKS_TITLE_CAP) for l in detail))
 
 
 def build_asks_section(relay_items: list, nudge_items: list) -> str:
@@ -1129,6 +1142,11 @@ def build_asks_section(relay_items: list, nudge_items: list) -> str:
         lines.append(f"👤 {who}")
         for it in group:
             lines.append(f" • {it['ask']}")
+            # 상세는 제목 줄만으로 뜻이 안 통할 때만 붙는다 — 사람 이름·숫자가 여기 있다
+            # (2026-09-01 실측: 종전엔 첫 줄만 실려 「회원 두 분」이 누구인지 잘려 나갔다).
+            for dline in str(it.get("detail") or "").splitlines():
+                if dline.strip():
+                    lines.append(f"   {dline.strip()}")
             how = str(it.get("how") or "")
             if "📎" in how or "http" in how:
                 lines.append(f"   {how}")
@@ -1279,8 +1297,9 @@ def build_relay_message(contacts: dict, prev_items: dict) -> "tuple[list, dict]"
         # 전달문(주차 일일점검 담당 시설부 확정)이 「이경연 실장」 묶음 아래로 들어갔다.
         # 받는 사람이 배에 적혀 있으면(staff_to) 그것을 쓴다. 안 적힌 배는 종전 그대로다.
         who = str(s.get("staff_to") or "").strip() or contacts[s["clevel"]]
-        ask, how = _split_ask_how(_resolve_staff_message(s), who)
-        items.append({"date": str(s.get("enqueued_at", ""))[:10], "who": who, "ask": ask, "how": how})
+        ask, how, detail = _split_ask_how(_resolve_staff_message(s), who)
+        items.append({"date": str(s.get("enqueued_at", ""))[:10], "who": who, "ask": ask,
+                      "how": how, "detail": detail})
     return items, current
 
 
