@@ -232,6 +232,13 @@
   /* 카드 제목 옆 작은 아이콘 링크 — 큰 「…보기 →」 버튼 대체(GM 2026-08-06 "너무 정신없다") */
   .top h2 .ic-link{font-size:13px;text-decoration:none;margin-left:5px;vertical-align:middle;}
   @media print{ .top h2 .ic-link{display:none;} }
+  /* 찾기 한 줄 — 카드가 접혀 브라우저 Ctrl+F 가 못 잡는 자리를 대신한다(GM 지시 2026-09-01) */
+  .gm-find{display:flex;align-items:center;gap:10px;margin:0 0 11px;}
+  .gm-find input{flex:1;font-family:var(--font);font-size:13px;padding:8px 12px;
+    border:1.5px solid var(--line);background:#fff;color:var(--ink);}
+  .gm-find input:focus{outline:none;border-color:var(--mid);}
+  .gm-find span{font-size:12px;font-weight:700;color:var(--brass);white-space:nowrap;}
+  @media print{ .gm-find{display:none;} }
   .chkcnt{font-size:11.5px;font-weight:700;color:var(--mid);}
   .pendcnt{font-size:11.5px;font-weight:800;color:var(--brass);white-space:nowrap;}
   /* ★카드 접기 (GM 지시 2026-09-01 가독성) — .item 이 <details> 가 되고 머리줄이 <summary> 다.
@@ -401,6 +408,13 @@
            밝힌다. 정본 = _gm_direct_tasks.js. 제목에 '대표'가 들어간 카드가 있어도(예: 외부 협업처 대표 등
            인물 호칭) 그건 회사 대표님 보고 대상이 아니라 GM이 직접 관장하는 별개 실무다. -->
       <div style="font-size:11.5px;color:var(--grey);margin:0 0 10px;">월간운영계획 목표 중 제목에 '(GM 직접)' 표식이 있는 건 · 위 「경영 보고건」(회장님·대표님)과는 별개로 GM이 직접 챙기는 실무입니다</div>
+      <!-- ★찾기 (GM 지시 2026-09-01 "이렇게 찾기 어려워서 어떻하냐") — 카드를 접은 뒤로 안쪽 할 일·본문이
+           브라우저 Ctrl+F 에도 안 잡힌다(접힌 details 는 아예 안 그려진다). 그래서 화면이 직접 찾는다.
+           낱말을 치면 제목·부서·본문·할 일·자료 이름표까지 뒤져 맞는 카드만 남기고 그 카드를 펼친다. -->
+      <div class="gm-find">
+        <input type="search" id="gm-find" placeholder="찾기 — 낱말을 치면 그 말이 든 카드만 남습니다 (예: 스팀다리미)" autocomplete="off">
+        <span id="gm-find-cnt"></span>
+      </div>
       <div class="sum">
         <h3>업무명 · 부서 · 상태</h3>
         <table><tbody id="gm-sum-body"></tbody></table>
@@ -1016,6 +1030,38 @@
 
   window.addEventListener('hashchange', focusHashCard);
   setTimeout(focusHashCard, 1200);
+
+  /* 찾기 — 낱말이 든 카드만 남기고 펼친다. 카드를 접은 뒤로 안쪽 할 일·본문·자료 이름표가
+     브라우저 Ctrl+F 에 안 잡혀(접힌 details 는 그려지지 않는다) GM 이 스팀다리미를 못 찾으셨다.
+     요약표 행도 같이 걸러 낸다 — 카드가 숨는데 표에는 남아 있으면 그게 더 헷갈린다. */
+  (function () {
+    var inp = document.getElementById('gm-find');
+    var cnt = document.getElementById('gm-find-cnt');
+    var grid = document.getElementById('gm-grid');
+    var sumBody = document.getElementById('gm-sum-body');
+    if (!inp || !grid) return;
+    function norm(s) { return String(s || '').toLowerCase().replace(/\s+/g, ''); }
+    function run() {
+      var q = norm(inp.value);
+      var hit = 0, shown = {};
+      grid.querySelectorAll('.item').forEach(function (c) {
+        var on = !q || norm(c.textContent).indexOf(q) !== -1;
+        c.style.display = on ? '' : 'none';
+        if (q) { c.open = on; if (on) { hit++; shown[c.id] = 1; } }
+        else { c.open = false; }
+      });
+      if (sumBody) {
+        sumBody.querySelectorAll('tr').forEach(function (tr) {
+          var a = tr.querySelector('a[href^="#gm-"]');
+          var id = a ? a.getAttribute('href').slice(1) : '';
+          tr.style.display = (!q || shown[id]) ? '' : 'none';
+        });
+      }
+      cnt.textContent = q ? (hit ? hit + '건' : '없음') : '';
+    }
+    inp.addEventListener('input', run);
+    inp.addEventListener('search', run);   // 입력칸 ✕ 로 지웠을 때
+  })();
 
   /* 카드 머리(summary) 안의 📌 링크를 누르면 브라우저가 링크 이동과 접기·펴기를 같이 한다 — 링크만 듣는다. */
   document.addEventListener('click', function (e) {
