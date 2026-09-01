@@ -469,15 +469,28 @@ def emit(day: str) -> int:
         if (dirty.stdout or '').strip():
             sys.path.insert(0, str(ROOT / 'scripts'))
             from safe_commit import safe_commit
-            # ★push=False 인 이유(실측 2026-08-16) — push 경로는 커밋 뒤에 ad-hoc 자동기록을
-            #   부르고, 그게 worklog 에 한 줄을 쌓는다. 그런데 이 발행본의 원천이 바로 worklog 라,
-            #   커밋할 때마다 내용이 다시 바뀌어 3분마다 영원히 커밋이 찍히는 되먹임이 된다
-            #   (실측: 연속 3회 모두 새 커밋). 여기선 커밋만 하고, 올리기는 5분 스위퍼
-            #   (post_commit_push --sweep)가 이미 하던 일에 맡긴다 — 새 배선 0.
+            # ★push=False 인 이유(실측 2026-08-16) — safe_commit 의 push 경로는 커밋 뒤에
+            #   ad-hoc 자동기록(auto_log)을 부르고, 그게 worklog 에 한 줄을 쌓는다. 이 발행본의
+            #   원천이 바로 worklog 라, 커밋할 때마다 내용이 다시 바뀌어 3분마다 영원히 커밋이
+            #   찍히는 되먹임이 된다(실측: 연속 3회 모두 새 커밋). 그래서 auto_log 는 부르지 않는다.
             r = safe_commit([str(p)], f'chore(auto): 쿵짝 발행본 갱신 — {day}',
                             holder='kungjjak-emit', push=False)
             if not r.get('ok'):
                 print(f'[WARN] 쿵짝 발행본 커밋 건너뜀: {r.get("reason", "")[:120]}')
+            else:
+                # ★2026-09-01 시토(배757) — 올리기까지 여기서 한다. 예전엔 5분 스위퍼에
+                #   맡겼는데(위 되먹임 회피의 부수효과), PC 종료가 커밋과 다음 스위퍼 사이에
+                #   끼면 커밋이 밤새 로컬에 갇힌다(실측: 08-31 밤 95c8d686b 00:28 커밋 →
+                #   마지막 스위퍼 push 00:26 → 00:31 스위퍼 전에 PC 종료 → 아침 05:58 까지
+                #   원격 미반영). post_commit_push.py 직접 호출은 auto_log 를 부르지 않으므로
+                #   위 되먹임과 무관하다 — 기존 관문 재사용(약속 L21), 실패=fail-open(스위퍼가 백스톱).
+                try:
+                    subprocess.run(
+                        [sys.executable, str(ROOT / 'scripts' / 'post_commit_push.py')],
+                        cwd=str(ROOT), capture_output=True, text=True,
+                        encoding='utf-8', errors='replace', timeout=120)
+                except Exception as push_exc:
+                    print(f'[WARN] 쿵짝 발행본 push 건너뜀(스위퍼가 올림): {type(push_exc).__name__}: {push_exc}')
     except Exception as exc:
         print(f'[WARN] 쿵짝 발행본 커밋 건너뜀: {type(exc).__name__}: {exc}')
     return 0
