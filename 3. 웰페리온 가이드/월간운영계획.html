@@ -2516,17 +2516,26 @@
       var p = prog[t.id];
       var bar = (typeof p === 'number') ? progBar(clampPct(p), null, false, '', false)
                                         : '<span class="dc-dim">미제출</span>';
+      /* ✏️ 제출 창(배870 · GM 지시 2026-09-01) — 편집 모드에서 목표·진척을 팀별로 직접 넣는다.
+         기존 「GM/담당 편집 → PIN 저장」 파이프 그대로(새 장치 없음 · 약속 L21).
+         저장 위치 = monthly_ops_plan.json months[선택월].practitioner_goals/progress (팀 id 키). */
+      var gCell = _editMode
+        ? '<input type="text" data-pf="goal" data-team="' + esc(t.id) + '" value="' + esc(g) + '" placeholder="이번 달 목표" style="width:96%">'
+        : (g ? esc(g) : '<span class="dc-dim">이번 달 목표 미제출</span>');
+      var pCell = _editMode
+        ? '<input type="number" min="0" max="100" data-pf="prog" data-team="' + esc(t.id) + '" value="' + (typeof p === 'number' ? p : '') + '" placeholder="%" style="width:56px">'
+        : bar;
       return '<tr><td class="pt-n">' + esc(t.name) + '</td>' +
              '<td class="pt-l">' + esc(lead) + '</td>' +
-             '<td class="pt-g">' + (g ? esc(g) : '<span class="dc-dim">이번 달 목표 미제출</span>') + '</td>' +
-             '<td class="pt-p">' + bar + '</td></tr>';
+             '<td class="pt-g">' + gCell + '</td>' +
+             '<td class="pt-p">' + pCell + '</td></tr>';
     }).join('');
     var done = PARTNER_TEAMS.filter(function(t){ return typeof prog[t.id] === 'number'; }).length;
     /* 전 부서 보고 사항을 이 블록 안에 함께 둔다(GM 지시 2026-08-28) — 보고가 목표·진척 옆에 있어야
        "무엇을 하기로 했고 무엇을 보고했나"가 한자리에서 읽힌다. 채우는 것은 기존 renderDeptReport 그대로다. */
     return '<div class="dg-card dg-partner">' +
       '<div class="dg-card-h"><span class="dg-dept">' + esc(cfg.key) + ' · 전 부서 보고 사항</span>' +
-      '<span class="dg-note">목표 제출 ' + done + ' / ' + PARTNER_TEAMS.length + '팀</span>' +
+      '<span class="dg-note">목표 제출 ' + done + ' / ' + PARTNER_TEAMS.length + '팀 · 제출 창 = 매월 1일 1주일 전 ~ 1일 (✏️ 편집으로 입력)</span>' +
       '<span class="dg-own">팀 리더 · 나우열M 총괄</span></div>' +
       (linkBtnsHtml(cfg) ? '<div class="dg-links">' + linkBtnsHtml(cfg) + '</div>' : '') +
       '<table class="pt-tbl"><thead><tr><th>팀</th><th>리더</th><th>이번 달 목표</th><th>진척</th></tr></thead>' +
@@ -3394,6 +3403,22 @@
       var o = issById[iid]; if(!o) return;
       if(f === 'status'){ o.status = el.value; }
       else if(f === 'note'){ o.note = (el.innerText || el.textContent || '').trim(); }
+    });
+
+    // 파트너팀 목표·진척 제출 창(배870 · GM 지시 2026-09-01) — 파트너 카드의 [data-pf] 입력을
+    // practitioner_goals/progress(팀 id 키)로 수집. 빈 칸 = 키 삭제(미제출로 되돌림 · 0%로 채우지 않는다).
+    // 기존 실무자 id 키(lee-jh 등)는 건드리지 않는다 — 팀 id 키만 넣고 뺀다.
+    Array.prototype.forEach.call(document.querySelectorAll('#dept-cards-board [data-pf]'), function(el){
+      var team = el.getAttribute('data-team'), f = el.getAttribute('data-pf');
+      if(!team) return;
+      var v = el.value.trim();
+      if(f === 'goal'){
+        if(v){ (m.practitioner_goals || (m.practitioner_goals = {}))[team] = v; }
+        else if(m.practitioner_goals){ delete m.practitioner_goals[team]; }
+      } else if(f === 'prog'){
+        if(v !== ''){ (m.practitioner_progress || (m.practitioner_progress = {}))[team] = clampPct(v); }
+        else if(m.practitioner_progress){ delete m.practitioner_progress[team]; }
+      }
     });
 
     // 🚀 ERP 월별 진척 편집 수집 = 폐지(GM 지시 2026-07-06 2차 · #erp-board 렌더 제거) — erp_progress는 화면 편집 대상 아님(정본 파일 직접 관리).
